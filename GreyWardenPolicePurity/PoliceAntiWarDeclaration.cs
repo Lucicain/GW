@@ -42,8 +42,7 @@ namespace GreyWardenPolicePurity
                 {
                     policeInvolved = true;
                     // 纠察队参与的战斗，由 PolicePatrolBehavior 自己处理和平
-                    if (party.MobileParty.StringId != null &&
-                        party.MobileParty.StringId.StartsWith("gwp_patrol_"))
+                    if (GwpCommon.IsPatrolParty(party.MobileParty))
                         patrolInvolved = true;
                 }
                 else if (party.MobileParty.IsMainParty)
@@ -92,10 +91,7 @@ namespace GreyWardenPolicePurity
             if (policeInvolved && playerInvolved && !policeOnWinningSide && !patrolInvolved)
             {
                 IFaction playerFaction = Hero.MainHero?.MapFaction;
-                if (playerFaction != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-                {
-                    try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
-                }
+                GwpCommon.TrySetNeutral(policeClan, playerFaction);
             }
 
             if (policeInvolved && enemyFaction != null)
@@ -103,10 +99,7 @@ namespace GreyWardenPolicePurity
                 if (enemyFaction is Clan c && c.IsOutlaw && c.IsBanditFaction)
                     return;
 
-                if (FactionManager.IsAtWarAgainstFaction(policeClan, enemyFaction))
-                {
-                    try { FactionManager.SetNeutral(policeClan, enemyFaction); } catch { }
-                }
+                GwpCommon.TrySetNeutral(policeClan, enemyFaction);
             }
         }
 
@@ -120,7 +113,7 @@ namespace GreyWardenPolicePurity
                 return true;
 
             // 纠察队（CustomPartyComponent，可能 ActualClan 未生效）
-            if (party.StringId != null && party.StringId.StartsWith("gwp_patrol_"))
+            if (GwpCommon.IsPatrolParty(party))
                 return true;
 
             return false;

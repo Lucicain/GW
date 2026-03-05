@@ -119,8 +119,7 @@ namespace GreyWardenPolicePurity
 
             // 只处理正式警察部队（gw家族，非纠察队 gwp_patrol_ 前缀）
             if (conversationParty.ActualClan != policeClan) return false;
-            if (conversationParty.StringId != null &&
-                conversationParty.StringId.StartsWith("gwp_patrol_")) return false;
+            if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
             // 该警察必须有针对玩家的任务，且尚未宣战（宣战后走战斗流程）
             var task = CrimePool.GetTask(conversationParty.StringId);
@@ -706,10 +705,7 @@ namespace GreyWardenPolicePurity
                 if (playerFaction == null) return;
 
                 Clan policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-                {
-                    FactionManager.SetNeutral(policeClan, playerFaction);
-                }
+                GwpCommon.TrySetNeutral(policeClan, playerFaction);
 
                 foreach (var victim in PlayerBehaviorPool.VictimFactions)
                 {

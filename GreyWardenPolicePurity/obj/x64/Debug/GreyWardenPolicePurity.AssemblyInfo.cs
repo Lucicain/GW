@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GreyWardenPolicePurity")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.1.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.1+78d19527c6bf3b0bac3bdfae247efafb04267328")]
 [assembly: System.Reflection.AssemblyProductAttribute("GreyWardenPolicePurity")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GreyWardenPolicePurity")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.1.0")]

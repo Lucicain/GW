@@ -331,7 +331,7 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                try { _dialogPatrol.Ai.SetDoNotMakeNewDecisions(false); _dialogPatrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
                 _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
             }
 
@@ -378,7 +378,7 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                try { _dialogPatrol.Ai.SetDoNotMakeNewDecisions(false); _dialogPatrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
                 _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
             }
         }
@@ -396,8 +396,7 @@ namespace GreyWardenPolicePurity
             {
                 if (PlayerEncounter.IsActive)
                 {
-                    PlayerEncounter.LeaveEncounter = true;
-                    PlayerEncounter.Finish(false);
+                    GwpCommon.TryFinishPlayerEncounter();
                     DebugLog("PlayerEncounter.Finish(false) 已调用");
                 }
             }
@@ -466,7 +465,7 @@ namespace GreyWardenPolicePurity
                         var task = CrimePool.GetTask(pp.StringId);
                         if (task != null && task.TargetCrime?.Offender?.IsMainParty == true)
                         {
-                            try { pp.Ai.SetDoNotMakeNewDecisions(false); pp.Ai.SetInitiative(0f, 0f, 0f); } catch { }
+                            GwpCommon.TryResetAi(pp);
                             PoliceResourceManager.StartResupply(pp);
                         }
                     }
@@ -535,7 +534,7 @@ namespace GreyWardenPolicePurity
         private bool HasAnyPatrol()
         {
             if (_activePatrolIds.Count > 0 || _returningPatrolIds.Count > 0) return true;
-            return MobileParty.All.Any(p => p.IsActive && p.StringId?.StartsWith(PatrolIdPrefix) == true);
+            return MobileParty.All.Any(p => p.IsActive && IsPatrol(p));
         }
 
         #endregion
@@ -585,7 +584,7 @@ namespace GreyWardenPolicePurity
                         {
                             var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
                             if (patrol == null || !patrol.IsActive) continue;
-                            try { patrol.Ai.SetDoNotMakeNewDecisions(false); patrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                            GwpCommon.TrySetAggressiveAi(patrol);
                             patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
                         }
                     }
@@ -1012,8 +1011,7 @@ namespace GreyWardenPolicePurity
 
         private bool IsPatrol(MobileParty party)
         {
-            if (party == null) return false;
-            return party.StringId != null && party.StringId.StartsWith(PatrolIdPrefix);
+            return GwpCommon.IsPatrolParty(party);
         }
 
         /// <summary>
@@ -1027,7 +1025,7 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
-                try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
+                GwpCommon.TrySetNeutral(policeClan, playerFaction);
             }
         }
 
@@ -1043,7 +1041,7 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
-                try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
+                GwpCommon.TrySetNeutral(policeClan, playerFaction);
             }
 
             foreach (var victim in PlayerBehaviorPool.VictimFactions)
@@ -1190,8 +1188,7 @@ namespace GreyWardenPolicePurity
                 var encountered = PlayerEncounter.EncounteredParty?.MobileParty;
                 if (encountered == null || !IsPatrol(encountered)) return;
 
-                PlayerEncounter.LeaveEncounter = true;
-                PlayerEncounter.Finish(false);
+                GwpCommon.TryFinishPlayerEncounter();
             }
             catch { }
         }
@@ -1280,19 +1277,7 @@ namespace GreyWardenPolicePurity
 
         private Settlement FindNearestTown(MobileParty party)
         {
-            if (party == null) return null;
-
-            Vec2 pos = party.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsTown) continue;
-                float d = pos.Distance(s.Position.ToVec2());
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-            return best;
+            return GwpCommon.FindNearestTown(party)!;
         }
 
         #endregion
@@ -1350,6 +1335,8 @@ namespace GreyWardenPolicePurity
        #endregion
     }
 }
+
+
 
 
 
