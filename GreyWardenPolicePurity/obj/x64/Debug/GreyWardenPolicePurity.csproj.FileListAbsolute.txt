@@ -7,3 +7,4 @@ C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x6
 C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\GreyWardenPolicePurity.csproj.CoreCompileInputs.cache
 C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\GreyWardenPolicePurity.dll
 C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\GreyWardenPolicePurity.pdb
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\GreyWardenPolicePurity.sourcelink.json
