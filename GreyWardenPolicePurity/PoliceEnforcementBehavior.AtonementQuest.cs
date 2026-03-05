@@ -77,7 +77,7 @@ namespace GreyWardenPolicePurity
             {
                 try
                 {
-                    WriteLog($"赎罪完成：信誉 +{gain}，当前信誉 {currentReputation}。");
+                    WriteLog($"赎罪完成：声望 +{gain}，当前声望 {currentReputation}。");
                     CompleteQuestWithSuccess();
                 }
                 catch { }
@@ -238,10 +238,10 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(
                 "GWP_ENFORCEMENT_ATONEMENT_TURNIN_OPTION",
-                $"关于赎罪任务（提交后恢复最多 {_atonementReputationReward} 点信誉）");
+                $"关于赎罪任务（提交后恢复最多 {_atonementReputationReward} 点声望）");
             MBTextManager.SetTextVariable(
                 "GWP_ENFORCEMENT_ATONEMENT_TURNIN_TEXT",
-                $"核验无误。你已完成赎罪任务，按案卷可恢复最多 {_atonementReputationReward} 点信誉。");
+                $"核验无误。你已完成赎罪任务，按案卷可恢复最多 {_atonementReputationReward} 点声望。");
             return true;
         }
 
@@ -256,7 +256,7 @@ namespace GreyWardenPolicePurity
             try { _atonementQuest?.SucceedQuestWithReputation(gain, after); } catch { }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"赎罪任务已交付：信誉 +{gain}（当前 {after}）",
+                $"赎罪任务已交付：声望 +{gain}（当前 {after}）",
                 Colors.Green));
 
             ClearAtonementTaskState();

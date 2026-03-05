@@ -72,7 +72,7 @@ namespace GreyWardenPolicePurity
                     {
                         MakePeaceAction.Apply(playerFaction, victim);
                         InformationManager.DisplayMessage(new InformationMessage(
-                            $"[GWP] 已与 {victim.Name} 恢复和平",
+                            $"灰袍调停：你与 {victim.Name} 已恢复和平。",
                             Colors.Green));
                     }
                     catch { }
@@ -84,7 +84,7 @@ namespace GreyWardenPolicePurity
                     {
                         ChangeCrimeRatingAction.Apply(victim, -1000f, true);
                         InformationManager.DisplayMessage(new InformationMessage(
-                            $"[GWP] 已清除在 {victim.Name} 的犯罪评级",
+                            $"灰袍调停：已清除你在 {victim.Name} 的犯罪评级。",
                             Colors.Green));
                     }
                     catch { }

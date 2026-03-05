@@ -45,7 +45,7 @@ namespace GreyWardenPolicePurity
         private bool _playerRefused = false;
         private bool _warDeclared = false;
         private int _dayCounter = 0;      // 每隔天触发一次检测
-        private int _bribeProtectionDays = 0; // 行贿后的保护期天数（在这期间内不再派出新的纠察队）
+        private int _bribeProtectionDays = 0; // 谈判放行后的保护期天数（在这期间内不再派出新的纠察队）
         private int _dialogBribeAmount = 0; // 对话中计算出的谈判目标金额
         // 记录映射队的驻地点（战败后押送回此处）
         private Settlement _patrolOriginSettlement = null!;
@@ -117,7 +117,7 @@ namespace GreyWardenPolicePurity
                 _suppressPatrolMeetings = false;
             }
 
-            // 同步贿赂保护期
+            // 同步放行保护期
             dataStore.SyncData("gwp_patrol_bribe_protect", ref _bribeProtectionDays);
         }
 
@@ -149,7 +149,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_screen",
-                "按规矩办，先把正式罚金交清。",
+                "按灰袍法令，先把正式罚金缴清。",
                 null,
                 null,
                 100);
@@ -167,7 +167,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_success",
                 "gwp_patrol_pay_barter_post",
                 "close_window",
-                "罚金收到。这次就到此为止。",
+                "罚金确认。本轮案件到此结案。",
                 PatrolBarterSuccessfulCondition,
                 OnPatrolFineBarterAcceptedConsequence,
                 100);
@@ -176,7 +176,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_failed",
                 "gwp_patrol_pay_barter_post",
                 "gwp_patrol_options",
-                "这还不够。你可以继续谈条件，或者拒绝执法。",
+                "你的出价低于正式罚金。你可以继续出价，或拒绝执法。",
                 () => !PatrolBarterSuccessfulCondition(),
                 null,
                 100);
@@ -195,7 +195,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_screen",
-                "好，那就谈谈你该出多少代价。",
+                "可以，报出你的放行价码。",
                 null,
                 null,
                 100);
@@ -213,7 +213,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_success",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "成交。今天我们就放你一马。",
+                "报价通过。今日暂不追究。",
                 PatrolBarterSuccessfulCondition,
                 OnPatrolBarterAcceptedConsequence,
                 100);
@@ -222,7 +222,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_failed",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "这点价码可不够。那就动手吧！",
+                "报价未达底线。开始执法！",
                 () => !PatrolBarterSuccessfulCondition(),
                 OnPatrolBarterRejectedConsequence,
                 100);
@@ -232,7 +232,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse",
                 "gwp_patrol_options",
                 "gwp_patrol_refuse_response",
-                "我拒绝缴纳罚金！",
+                "我拒绝执法。",
                 null,
                 null,
                 100);
@@ -242,7 +242,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse_response",
                 "gwp_patrol_refuse_response",
                 "close_window",
-                "那你就别怪我们不客气了！纠察队集合，准备执法！",
+                "拒绝执法已记录。纠察队，执行抓捕！",
                 null,
                 OnRefuseConsequence,
                 100);
@@ -285,11 +285,11 @@ namespace GreyWardenPolicePurity
             DebugLog($"进入纠察队对话：party={conversationParty.StringId}, rep={rep}, fine={_dialogFine}");
 
             string canPay = playerGold >= _dialogFine
-                ? $"你的金币 {playerGold} 足够缴纳。"
-                : $"你的金币只有 {playerGold} 金，不足全额，差额将没收行李中的物品充抵。";
+                ? $"你当前携带 {playerGold} 金，可直接缴清。"
+                : $"你当前携带 {playerGold} 金，可在谈判界面继续出价或选择拒绝。";
 
             MBTextManager.SetTextVariable("GWP_PATROL_GREETING",
-                $"站住！纠察队正在此处执法！你当前有 {Math.Abs(rep)} 条违法记录，需缴罚金 {_dialogFine} 金。{canPay}");
+                $"站住！纠察队正在执法。你当前负声望 {Math.Abs(rep)}，正式罚金 {_dialogFine} 金。{canPay}");
 
             return true;
         }
@@ -299,7 +299,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool PatrolPayCondition()
         {
-            string payText = $"缴纳正式罚金（{_dialogFine}金，清除通缉）";
+            string payText = $"缴纳正式罚金（{_dialogFine} 金，结束本轮追捕）";
             MBTextManager.SetTextVariable("GWP_PATROL_PAY_TEXT", payText);
             return true;
         }
@@ -308,7 +308,7 @@ namespace GreyWardenPolicePurity
         {
             Hero barterHero = GetPatrolBarterHero();
             MBTextManager.SetTextVariable("GWP_PATROL_NEGOTIATE_TEXT",
-                $"我们谈谈放行条件（目标 {_dialogBribeAmount} 金）");
+                $"谈判放行（目标 {_dialogBribeAmount} 金，声望不变）");
             return barterHero != null && _dialogPatrol != null && _dialogPatrol.IsActive;
         }
 
@@ -336,7 +336,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你拒绝缴纳罚金！纠察队将执行武力执法。",
+                "你拒绝执法，纠察队将进行武力抓捕。",
                 Colors.Red));
         }
 
@@ -356,7 +356,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "谈判达成：你获得了 4 天的通缉保护期（声望不变）。",
+                "放行谈判达成：你获得 4 天保护期（声望不变）。",
                 Colors.Yellow));
         }
 
@@ -366,7 +366,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "正式罚金已缴清，当前通缉已解除。",
+                "正式罚金已缴清，当前通缉已解除，纠察队将撤离。",
                 Colors.Green));
         }
 
@@ -423,7 +423,7 @@ namespace GreyWardenPolicePurity
                 if (_bribeProtectionDays == 0)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "贿赂的保护期已过，灰袍守卫重新开始关注你的动向。", Colors.Red));
+                        "放行保护期已结束，纠察队将恢复例行检查。", Colors.Red));
                 }
             }
 
@@ -472,7 +472,7 @@ namespace GreyWardenPolicePurity
                     CrimePool.EndPlayerHunt();
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "因为正面声望，通缉已取消，所有追捕已撤回",
+                        "当前声望为正，现有通缉已取消，追捕全部撤回。",
                         Colors.Green));
                 }
             }
@@ -492,14 +492,14 @@ namespace GreyWardenPolicePurity
             // 每日检查：若无纠察队，则生成一支（上限仅允许一支）
             if (reputation >= -10 && reputation <= -1)
             {
-                // 如果在行贿保护期内，不再出动纠察队
+                // 如果在放行保护期内，不再出动纠察队
                 if (_bribeProtectionDays > 0) return;
 
                 if (!HasAnyPatrol())
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你有 {mag} 条违法记录，纠察队已出动追踪（{mag * PatrolSize}人）！",
+                        $"你当前负声望 {mag}，纠察队已出动（约 {mag * PatrolSize} 人）。",
                         Colors.Yellow));
                     SpawnPatrol(mag);
                     _warDeclared = false;
@@ -525,7 +525,7 @@ namespace GreyWardenPolicePurity
                         $"声望已达 {reputation}");
 
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"犯罪声望已达 {Math.Abs(reputation)} 次，灰袍守卫总部已开始追捕！",
+                        $"你已进入重罪区间（负声望 {Math.Abs(reputation)}），正式警察开始追捕。",
                         Colors.Red));
                 }
             }
@@ -584,7 +584,7 @@ namespace GreyWardenPolicePurity
                     PlayerBehaviorPool.ChangeReputation(-1);
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"纠察队消失，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
+                        $"你拒绝执法且案件未完成，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
                         Colors.Red));
                     _playerRefused = false;
                     return;
@@ -627,7 +627,7 @@ namespace GreyWardenPolicePurity
                     if (patrol.ItemRoster.TotalFood <= 0)
                     {
                         InformationManager.DisplayMessage(new InformationMessage(
-                            "纠察队粮草耗尽，返回！", Colors.Yellow));
+                            "纠察队补给耗尽，正在撤回。", Colors.Yellow));
                         ReturnAllPatrols();
                         return;
                     }
@@ -669,7 +669,7 @@ namespace GreyWardenPolicePurity
                 {
                     FactionManager.DeclareWar(policeClan, playerFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "你拒绝缴纳罚金！纠察队准备强制执法！",
+                        "你拒绝执法，纠察队将强制缉拿。",
                         Colors.Yellow));
                 }
                 catch { }
@@ -727,7 +727,7 @@ namespace GreyWardenPolicePurity
                 _activePatrolIds.Add(patrolId);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"纠察队从 {_patrolOriginSettlement.Name} 出发追踪犯人！",
+                    $"纠察队已从 {_patrolOriginSettlement.Name} 出发，正在追踪你。",
                     Colors.Yellow));
             }
             catch (Exception ex)
@@ -895,7 +895,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"你被纠察队击败！正在被押送回 {(_patrolOriginSettlement?.Name?.ToString() ?? "驻地点")} 接受处罚...",
+                $"你被纠察队击败，正被押送至 {(_patrolOriginSettlement?.Name?.ToString() ?? "驻地点")} 接受处罚...",
                 Colors.Yellow));
         }
 
@@ -998,7 +998,7 @@ namespace GreyWardenPolicePurity
 
                 string townName = settlement?.Name?.ToString() ?? "最近城镇";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送到 {townName}，应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}，已恢复和平",
+                    $"你被押送到 {townName}：应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}（按实缴恢复）。",
                     Colors.Yellow));
             }
             catch (Exception ex)
@@ -1018,7 +1018,7 @@ namespace GreyWardenPolicePurity
         {
             int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"纠察队已收取罚金{collected} 金（应缴 {fine} 金）",
+                $"纠察队已收取罚金 {collected} 金（应缴 {fine} 金，仅收金币）。",
                 Colors.Yellow));
             return collected;
         }

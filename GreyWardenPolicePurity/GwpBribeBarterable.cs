@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
             _ownerParty = ownerParty;
             _otherParty = otherParty;
             _name = new TextObject(string.IsNullOrWhiteSpace(displayName)
-                ? "{=gwp_patrol_barter_name_cn}Penalty payment"
+                ? "{=gwp_patrol_barter_name_cn}罚金条款"
                 : displayName);
         }
 

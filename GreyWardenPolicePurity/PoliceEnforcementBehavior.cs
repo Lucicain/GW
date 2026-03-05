@@ -118,7 +118,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_pre",
                 "gwp_enforcement_pay_barter_pre",
                 "gwp_enforcement_pay_barter_screen",
-                "按律执行。先把正式罚金交清。",
+                "按灰袍法令，先把正式罚金缴清。",
                 null,
                 null,
                 100);
@@ -136,7 +136,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_post_success",
                 "gwp_enforcement_pay_barter_post",
                 "close_window",
-                "罚金收到。灰袍守卫将撤销对你的通缉，你可以离开了。",
+                "罚金确认。本轮案件结案，你可以离开了。",
                 EnforcementBarterSuccessfulCondition,
                 OnEnforcementPayAcceptedConsequence,
                 100);
@@ -145,7 +145,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_post_failed",
                 "gwp_enforcement_pay_barter_post",
                 "gwp_enforcement_options",
-                "这还不够。你可以继续缴纳罚金，或者拒绝执法。",
+                "你的出价低于正式罚金。你可以继续出价，或拒绝执法。",
                 () => !EnforcementBarterSuccessfulCondition(),
                 OnEnforcementPayRejectedConsequence,
                 100);
@@ -155,7 +155,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_atonement",
                 "gwp_enforcement_options",
                 "gwp_enforcement_atonement_result",
-                "我认罪认罚，给我一个赎罪任务。",
+                "我认罪认罚，请给我赎罪任务。",
                 EnforcementAtonementCondition,
                 OnEnforcementAtonementConsequence,
                 100);
@@ -173,7 +173,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_atonement_failed",
                 "gwp_enforcement_atonement_result",
                 "gwp_enforcement_options",
-                "当前无法分配赎罪任务。你可以继续缴纳罚金，或者拒绝执法。",
+                "当前无法分配赎罪任务。你可以继续缴纳罚金，或拒绝执法。",
                 () => !_enforcementAtonementAssigned,
                 null,
                 100);
@@ -183,7 +183,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight",
                 "gwp_enforcement_options",
                 "gwp_enforcement_fight_response",
-                "你来试试！",
+                "拒绝执法，开战。",
                 null,
                 null,
                 100);
@@ -192,7 +192,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight_response",
                 "gwp_enforcement_fight_response",
                 "close_window",
-                "你自找的！灰袍守卫，准备战斗！",
+                "拒捕记录在案。灰袍守卫，执行抓捕！",
                 null,
                 OnEnforcementFightConsequence,
                 100);
@@ -250,12 +250,12 @@ namespace GreyWardenPolicePurity
 
             int playerGold = Hero.MainHero.Gold;
             string payInfo = playerGold >= _dialogFine
-                ? $"你有 {playerGold} 金，足够缴纳。"
-                : $"你只有 {playerGold} 金，不足全额，差额将没收行李中的物品充抵。";
+                ? $"你当前携带 {playerGold} 金，可直接缴清。"
+                : $"你当前携带 {playerGold} 金，可在谈判界面继续出价，或改选认罪认罚。";
 
             MBTextManager.SetTextVariable("GWP_ENFORCEMENT_GREETING",
-                $"站住！灰袍守卫奉命逮捕你！你有 {Math.Abs(rep)} 条严重违法记录，" +
-                $"可缴纳 {_dialogFine} 金消除通缉，否则我们将动用武力！{payInfo}");
+                $"站住！灰袍守卫正在执行逮捕。你当前负声望 {Math.Abs(rep)}，" +
+                $"本案正式罚金 {_dialogFine} 金。{payInfo}");
 
             return true;
         }
@@ -265,10 +265,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool EnforcementPayCondition()
         {
-            int playerGold = Hero.MainHero.Gold;
-            string text = playerGold >= _dialogFine
-                ? $"我愿意缴纳罚金（{_dialogFine} 金）"
-                : $"我愿意缴纳所有金币并以物品充抵（共 {_dialogFine} 金）";
+            string text = $"缴纳正式罚金（{_dialogFine} 金，清除通缉）";
             MBTextManager.SetTextVariable("GWP_ENFORCEMENT_PAY_TEXT", text);
             return true;
         }
@@ -321,11 +318,11 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable("GWP_ENFORCEMENT_ATONEMENT_TEXT",
                 $"赎罪任务已下达：追捕 {_atonementTargetName}（接案规模 {targetSizeSnapshot} 人）。" +
-                $"完成可恢复最多 {_atonementReputationReward} 点信誉（最高恢复到0）；" +
-                $"失败将追加 5 点恶名。");
+                $"完成可恢复最多 {_atonementReputationReward} 点声望（最高恢复到 0）；" +
+                $"失败将追加 5 点负声望。");
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"赎罪任务已记录到任务面板：击败 {_atonementTargetName}，随后向任意灰袍警察交付（{AtonementDeadlineDays:0}天内，失败信誉 -5）",
+                $"赎罪任务已记录到任务面板：击败 {_atonementTargetName} 后，向族长或任意灰袍警察交付（{AtonementDeadlineDays:0} 天内，失败声望 -5）。",
                 Colors.Yellow));
 
             try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
@@ -372,7 +369,7 @@ namespace GreyWardenPolicePurity
                 MakePeaceWithPoliceAndVictims();
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"缴纳罚金 {paid} 金，通缉已解除",
+                    $"正式罚金已收 {paid} 金，通缉已解除。",
                     Colors.Yellow));
 
                 try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
@@ -402,7 +399,7 @@ namespace GreyWardenPolicePurity
                     _dialogPolice.SetMoveEngageParty(MobileParty.MainParty, NavigationType.Default);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "你拒绝缴纳！灰袍守卫准备强制执法！",
+                    "你拒绝执法，灰袍守卫将强制抓捕。",
                     Colors.Red));
             }
             catch { }
@@ -490,7 +487,7 @@ namespace GreyWardenPolicePurity
 
             if (CampaignTime.Now.ToHours >= _atonementDeadlineHours)
             {
-                FailAtonementTask("赎罪任务超时，信誉 -5。");
+                FailAtonementTask("赎罪任务超时，声望 -5。");
                 return;
             }
 
@@ -498,7 +495,7 @@ namespace GreyWardenPolicePurity
                 p.StringId == _atonementTargetPartyId && p.IsActive);
             if (target == null)
             {
-                FailAtonementTask("赎罪目标已失踪，判定任务失败，信誉 -5。");
+                FailAtonementTask("赎罪目标已失踪，判定任务失败，声望 -5。");
                 return;
             }
 
@@ -552,7 +549,7 @@ namespace GreyWardenPolicePurity
             }
             else
             {
-                FailAtonementTask("赎罪任务失败，信誉 -5。");
+                FailAtonementTask("赎罪任务失败，声望 -5。");
             }
         }
 
@@ -765,7 +762,7 @@ namespace GreyWardenPolicePurity
                 // 步骤6：显示消息
                 string castleName = castle?.Name?.ToString() ?? "堡垒";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送至 {castleName}，应缴 {fine} 金，实缴 {collected} 金，声望恢复到 {repAfter}",
+                    $"你被押送至 {castleName}：应缴 {fine} 金，实缴 {collected} 金，声望恢复到 {repAfter}（按实缴恢复）。",
                     Colors.Yellow));
 
                 // 步骤7：恢复警察AI，开始补给
