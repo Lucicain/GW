@@ -164,13 +164,7 @@ namespace GreyWardenPolicePurity
 
             if (shelteredHours % ShelteredForceBattleIntervalHours == 0)
             {
-                bool started = TryForceStartBattle(policeParty, criminal);
-                if (started)
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"灰袍守卫强制发起战斗：{policeParty.Name} -> {criminal.Name}",
-                        Colors.Yellow));
-                }
+                TryForceStartBattle(policeParty, criminal);
             }
 
             if (criminal.CurrentSettlement == null)

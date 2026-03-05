@@ -219,14 +219,12 @@ namespace GreyWardenPolicePurity
                         : string.Empty;
 
                     SpawnDelayPatrolsForOffenders(offenders, representativeTaskId, targetId);
-                    ReportTwoDayWarDebug(targetFaction, offenders);
                 }
                 else
                 {
                     GwpCommon.TrySetNeutral(policeClan, targetFaction);
                     MarkDelayPatrolsReturningForTarget(targetId);
                     _warTargetSeenStreak.Remove(targetId);
-                    ReportTwoDayAutoPeaceDebug(targetFaction);
                 }
             }
         }
@@ -523,148 +521,5 @@ namespace GreyWardenPolicePurity
                 state.Returning = true;
         }
 
-        private void ReportTwoDayWarDebug(IFaction targetFaction, IReadOnlyList<MobileParty> offenders)
-        {
-            string factionName = targetFaction?.Name?.ToString() ?? "未知势力";
-            int offenderCount = offenders?.Count ?? 0;
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"[两日巡检][未自动和平] 目标势力：{factionName}；原因：犯罪池仍有 {offenderCount} 名在逃犯人。",
-                Colors.Yellow));
-
-            List<MobileParty> policeParties = GetActivePolicePartiesByWarTarget(targetFaction?.StringId ?? string.Empty);
-            if (policeParties.Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "[两日巡检][警察位置] 当前无可追踪的追捕警察队伍。",
-                    Colors.Gray));
-            }
-            else
-            {
-                foreach (MobileParty police in policeParties.Take(6))
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"[两日巡检][警察位置] {FormatPartyDebugPosition(police)}",
-                        Colors.Cyan));
-                }
-            }
-
-            List<MobileParty> activeOffenders = (offenders ?? Array.Empty<MobileParty>())
-                .Where(p => p != null && p.IsActive)
-                .Distinct()
-                .ToList();
-            if (activeOffenders.Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "[两日巡检][犯人位置] 当前无可追踪的在逃犯人。",
-                    Colors.Gray));
-            }
-            else
-            {
-                foreach (MobileParty offender in activeOffenders.Take(6))
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"[两日巡检][犯人位置] {FormatPartyDebugPosition(offender)}",
-                        Colors.Cyan));
-                }
-            }
-
-            List<MobileParty> supportParties = GetActiveDelayPatrolPartiesByWarTarget(targetFaction?.StringId ?? string.Empty);
-            if (supportParties.Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "[两日巡检][支援位置] 当前无可追踪的纠察支援队。",
-                    Colors.Gray));
-            }
-            else
-            {
-                foreach (MobileParty support in supportParties.Take(6))
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"[两日巡检][支援位置] {FormatPartyDebugPosition(support)}",
-                        Colors.Cyan));
-                }
-            }
-        }
-
-        private static void ReportTwoDayAutoPeaceDebug(IFaction targetFaction)
-        {
-            string factionName = targetFaction?.Name?.ToString() ?? "未知势力";
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"[两日巡检][自动和平] 目标势力：{factionName}；原因：犯罪池中无该势力在逃犯人。",
-                Colors.Green));
-        }
-
-        private static string FormatPartyDebugPosition(MobileParty party)
-        {
-            if (party == null || !party.IsActive) return "队伍无效";
-
-            Settlement nearest = FindNearestNamedSettlement(party.GetPosition2D);
-            if (nearest == null)
-                return $"{party.Name} | 无最近定居点";
-
-            float distance = party.GetPosition2D.Distance(nearest.GetPosition2D);
-            return $"{party.Name} | 最近{GetSettlementTypeName(nearest)} {nearest.Name}（距离 {distance:0.0}）";
-        }
-
-        private static List<MobileParty> GetActivePolicePartiesByWarTarget(string warTargetId)
-        {
-            if (string.IsNullOrEmpty(warTargetId)) return new List<MobileParty>();
-
-            return CrimePool.ActiveTasks.Values
-                .Where(t =>
-                    t != null &&
-                    t.WarDeclared &&
-                    string.Equals(t.WarTarget?.StringId, warTargetId, StringComparison.OrdinalIgnoreCase))
-                .Select(t => MobileParty.All.FirstOrDefault(p => p.StringId == t.PolicePartyId))
-                .Where(p => p != null && p.IsActive)
-                .Distinct()
-                .ToList();
-        }
-
-        private List<MobileParty> GetActiveDelayPatrolPartiesByWarTarget(string warTargetId)
-        {
-            if (string.IsNullOrEmpty(warTargetId)) return new List<MobileParty>();
-
-            return _delayPatrolStates.Values
-                .Where(s =>
-                    s != null &&
-                    !s.Returning &&
-                    string.Equals(s.WarTargetId, warTargetId, StringComparison.OrdinalIgnoreCase))
-                .Select(s => MobileParty.All.FirstOrDefault(p => p.StringId == s.PatrolPartyId))
-                .Where(p => p != null && p.IsActive)
-                .Distinct()
-                .ToList();
-        }
-
-        private static Settlement FindNearestNamedSettlement(Vec2 position)
-        {
-            Settlement nearest = null;
-            float minDistance = float.MaxValue;
-
-            foreach (Settlement settlement in Settlement.All)
-            {
-                if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage)
-                    continue;
-
-                float distance = position.Distance(settlement.GetPosition2D);
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    nearest = settlement;
-                }
-            }
-
-            return nearest;
-        }
-
-        private static string GetSettlementTypeName(Settlement settlement)
-        {
-            if (settlement == null) return "定居点";
-            if (settlement.IsTown) return "城镇";
-            if (settlement.IsCastle) return "城堡";
-            if (settlement.IsVillage) return "村庄";
-            return "定居点";
-        }
     }
 }

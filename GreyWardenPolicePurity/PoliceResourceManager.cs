@@ -26,6 +26,8 @@ namespace GreyWardenPolicePurity
     {
         private const int DailyGoldPerMember = 1000;
         private const int FoodDaysTarget = 15;
+        private const int EquipmentSlotCount = 12;
+        private const string CommanderTemplateCharacterId = "gw_leader_0";
 
         // 正在补给中的警察部队ID
         private static readonly HashSet<string> _resupplying = new HashSet<string>();
@@ -64,6 +66,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
+            CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -119,12 +122,13 @@ namespace GreyWardenPolicePurity
             foreach (Hero hero in policeClan.Heroes.ToList())
             {
                 if (hero == null || hero.IsDead || !hero.IsActive) continue;
+                if (!IsPoliceClanHero(hero)) continue;
                 if (hero.IsChild || hero.PartyBelongedTo != null || hero.IsPrisoner) continue;
-                if (hero.StringId == null ||
-                    !hero.StringId.StartsWith("gw", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!hero.CanLeadParty()) continue;
 
                 try
                 {
+                    ApplyCommanderLoadout(hero);
                     Settlement spawn = hero.CurrentSettlement
                         ?? FindNearestTown(policeClan.Leader?.PartyBelongedTo?.GetPosition2D ?? Vec2.Zero);
                     MobileParty newParty = MobilePartyHelper.SpawnLordParty(hero, spawn);
@@ -141,6 +145,45 @@ namespace GreyWardenPolicePurity
                     _ = ex;
                 }
             }
+        }
+
+        private void OnHeroComesOfAge(Hero hero)
+        {
+            if (hero == null || !IsPoliceClanHero(hero)) return;
+            ApplyCommanderLoadout(hero);
+        }
+
+        private static bool IsPoliceClanHero(Hero hero)
+        {
+            return hero?.Clan != null &&
+                   string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void ApplyCommanderLoadout(Hero hero)
+        {
+            if (hero == null) return;
+
+            CharacterObject template = CharacterObject.Find(CommanderTemplateCharacterId)
+                ?? hero.Clan?.Leader?.CharacterObject;
+            if (template == null) return;
+
+            Equipment battleTemplate = template.FirstBattleEquipment;
+            Equipment civilianTemplate = template.FirstCivilianEquipment;
+            if (battleTemplate == null || battleTemplate.IsEmpty()) return;
+            if (civilianTemplate == null || civilianTemplate.IsEmpty()) return;
+
+            // 先确保英雄拥有独立装备实例，避免写入共享的默认死者装备。
+            hero.ResetEquipments();
+            CopyEquipment(battleTemplate, hero.BattleEquipment);
+            CopyEquipment(civilianTemplate, hero.CivilianEquipment);
+            hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
+        }
+
+        private static void CopyEquipment(Equipment source, Equipment destination)
+        {
+            if (source == null || destination == null) return;
+            for (int i = 0; i < EquipmentSlotCount; i++)
+                destination[i] = source[i];
         }
 
         private void PaySalaries()

@@ -17,6 +17,7 @@ namespace GreyWardenPolicePurity
         private static void RegisterCampaignComponents(CampaignGameStarter starter)
         {
             starter.AddModel(new PoliceAntiRecruitmentModel());
+            starter.AddModel(new PoliceMarriageModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
             starter.AddBehavior(new PoliceEnforcementBehavior());
