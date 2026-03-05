@@ -1,9 +1,0 @@
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\bin\x64\Debug\net472\GreyWardenPolicePurity.dll
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\bin\x64\Debug\net472\GreyWardenPolicePurity.pdb
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.csproj.AssemblyReference.cache
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.AssemblyInfoInputs.cache
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.AssemblyInfo.cs
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.csproj.CoreCompileInputs.cache
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.dll
-C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\x64\Debug\net472\GreyWardenPolicePurity.pdb

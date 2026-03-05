@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -25,7 +25,7 @@ namespace GreyWardenPolicePurity
     /// 4. ExecutePunishment：★关键顺序★ 先 EndCaptivity + 清空花名册，
     ///    再 MakePeace，避免 SetNeutral 内部触发二次释放导致崩溃
     /// </summary>
-    public class PoliceEnforcementBehavior : CampaignBehaviorBase
+    public partial class PoliceEnforcementBehavior : CampaignBehaviorBase
     {
         private const float WarDistance = 3f;
         private const float WarDistancePlayer = 15f;
@@ -37,8 +37,8 @@ namespace GreyWardenPolicePurity
 
         // 对话临时变量（警察执法拦截：让玩家选择缴纳或战斗）
         private int _dialogFine = 0;
-        private MobileParty _dialogPolice = null;
-        private PoliceTask _dialogTask = null;
+        private MobileParty _dialogPolice = null!;
+        private PoliceTask _dialogTask = null!;
 
         public override void RegisterEvents()
         {
@@ -200,8 +200,8 @@ namespace GreyWardenPolicePurity
             finally
             {
                 _dialogFine = 0;
-                _dialogPolice = null;
-                _dialogTask = null;
+                _dialogPolice = null!;
+                _dialogTask = null!;
             }
         }
 
@@ -226,8 +226,8 @@ namespace GreyWardenPolicePurity
             finally
             {
                 _dialogFine = 0;
-                _dialogPolice = null;
-                _dialogTask = null;
+                _dialogPolice = null!;
+                _dialogTask = null!;
             }
         }
 
@@ -662,120 +662,6 @@ namespace GreyWardenPolicePurity
 
                 CrimePool.RefreshAccepting();
             }
-        }
-
-        #endregion
-
-        #region 辅助
-
-        private bool InEvent(MobileParty party, MapEvent mapEvent)
-        {
-            if (party == null || mapEvent == null) return false;
-            return mapEvent.InvolvedParties.Any(p => p.MobileParty == party);
-        }
-
-        private bool IsOnWinningSide(MobileParty party, MapEvent mapEvent)
-        {
-            if (!mapEvent.HasWinner || mapEvent.Winner == null) return false;
-
-            foreach (var p in mapEvent.Winner.Parties)
-            {
-                if (p?.Party?.IsMobile == true && p.Party.MobileParty == party)
-                    return true;
-            }
-            return false;
-        }
-
-        private void RestoreAi(MobileParty party)
-        {
-            if (party == null || !party.IsActive) return;
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.SetInitiative(0f, 0f, 0f);
-            }
-            catch { }
-        }
-
-        private void MakePeaceWithPoliceAndVictims()
-        {
-            try
-            {
-                IFaction playerFaction = Clan.PlayerClan?.MapFaction;
-                if (playerFaction == null) return;
-
-                Clan policeClan = PoliceStats.GetPoliceClan();
-                GwpCommon.TrySetNeutral(policeClan, playerFaction);
-
-                foreach (var victim in PlayerBehaviorPool.VictimFactions)
-                {
-                    if (victim == null || victim == playerFaction) continue;
-                    if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
-
-                    try
-                    {
-                        MakePeaceAction.Apply(playerFaction, victim);
-                    }
-                    catch { }
-                }
-
-                PlayerBehaviorPool.ClearVictimFactions();
-            }
-            catch { }
-        }
-
-        private Settlement FindNearestTown()
-        {
-            var player = MobileParty.MainParty;
-            if (player == null) return null;
-
-            Vec2 pos = player.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsTown) continue;
-                float d = pos.Distance(s.GetPosition2D);
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-            return best;
-        }
-
-        /// <summary>
-        /// 查找玩家附近最近的城堡（严格使用 IsCastle）。
-        ///
-        /// 修复说明：原 FindNearestFortress 使用 (!s.IsCastle &amp;&amp; !s.IsFortification) 条件，
-        /// 但 IsFortification 在 Bannerlord 中对城镇和城堡均为 true，
-        /// 导致函数实际上也会返回城镇，警察带着俘虏进城触发引擎崩溃。
-        /// 现在只用 IsCastle 精确匹配，城堡通常不允许非所有者自由进出。
-        /// </summary>
-        private Settlement FindNearestCastle()
-        {
-            var player = MobileParty.MainParty;
-            if (player == null) return null;
-
-            Vec2 pos = player.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsCastle) continue;  // 只选城堡，IsFortification 会误包含城镇
-                float d = pos.Distance(s.GetPosition2D);
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-
-            // 极端情况：地图上找不到城堡，降级用城镇
-            if (best == null)
-                best = FindNearestTown();
-
-            return best;
-        }
-
-        private void Reassign(CrimeRecord crime)
-        {
-            CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
         }
 
         #endregion

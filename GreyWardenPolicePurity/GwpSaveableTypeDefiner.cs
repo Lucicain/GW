@@ -1,4 +1,4 @@
-using TaleWorlds.SaveSystem;
+﻿using TaleWorlds.SaveSystem;
 
 namespace GreyWardenPolicePurity
 {

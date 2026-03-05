@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -32,7 +32,7 @@ namespace GreyWardenPolicePurity
             bool policeInvolved = false;
             bool patrolInvolved = false;
             bool playerInvolved = false;
-            IFaction enemyFaction = null;
+            IFaction enemyFaction = null!;
 
             foreach (var party in mapEvent.InvolvedParties)
             {

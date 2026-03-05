@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -74,8 +74,8 @@ namespace GreyWardenPolicePurity
                 _lastPurifyTime = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             }
 
-            List<string> keys = null;
-            List<double> values = null;
+            List<string> keys = null!;
+            List<double> values = null!;
             if (dataStore.IsSaving)
             {
                 keys = new List<string>(_lastPurifyTime.Keys);
@@ -425,7 +425,7 @@ namespace GreyWardenPolicePurity
 
         private static Settlement FindNearestTown(Vec2 position)
         {
-            Settlement nearest = null;
+            Settlement nearest = null!;
             float minDist = float.MaxValue;
             foreach (Settlement s in Settlement.All)
             {
