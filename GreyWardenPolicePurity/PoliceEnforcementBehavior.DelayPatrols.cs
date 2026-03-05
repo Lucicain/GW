@@ -119,9 +119,6 @@ namespace GreyWardenPolicePurity
 
         private void EnsureDelayPatrolStateForActiveParties()
         {
-            int adopted = 0;
-            int destroyedInSettlement = 0;
-
             foreach (MobileParty patrol in MobileParty.All.ToList())
             {
                 if (patrol == null || !patrol.IsActive) continue;
@@ -132,7 +129,9 @@ namespace GreyWardenPolicePurity
                 if (patrol.CurrentSettlement != null)
                 {
                     if (TryDestroyDelayPatrolParty(patrol))
-                        destroyedInSettlement++;
+                    {
+                        // no-op
+                    }
                     continue;
                 }
 
@@ -148,21 +147,6 @@ namespace GreyWardenPolicePurity
                     ReturnSettlementId = returnSettlement?.StringId ?? string.Empty,
                     Returning = nearestOffender == null
                 };
-                adopted++;
-            }
-
-            if (adopted > 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"[灰袍支援队恢复] 已接管 {adopted} 支读档后的纠察支援队。",
-                    Colors.Yellow));
-            }
-
-            if (destroyedInSettlement > 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"[灰袍支援队清理] 已销毁 {destroyedInSettlement} 支卡在定居点内的残留支援队。",
-                    Colors.Yellow));
             }
         }
 
@@ -234,23 +218,17 @@ namespace GreyWardenPolicePurity
                         ? taskId
                         : string.Empty;
 
-                    int spawned = SpawnDelayPatrolsForOffenders(offenders, representativeTaskId, targetId);
-                    if (spawned > 0)
-                    {
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            $"灰袍已派出 {spawned} 支纠察支援队支援战线。",
-                            Colors.Yellow));
-                    }
+                    SpawnDelayPatrolsForOffenders(offenders, representativeTaskId, targetId);
+                    ReportTwoDayWarDebug(targetFaction, offenders);
                 }
                 else
                 {
                     GwpCommon.TrySetNeutral(policeClan, targetFaction);
                     MarkDelayPatrolsReturningForTarget(targetId);
                     _warTargetSeenStreak.Remove(targetId);
+                    ReportTwoDayAutoPeaceDebug(targetFaction);
                 }
             }
-
-            ReportDelayPatrolStatusSnapshot();
         }
 
         private void CleanupDelayPatrolsInsideSettlements()
@@ -284,12 +262,6 @@ namespace GreyWardenPolicePurity
                     removed++;
             }
 
-            if (removed > 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"[灰袍支援队清理] 每两日巡检已销毁 {removed} 支城内残留支援队。",
-                    Colors.Yellow));
-            }
         }
 
         private static bool TryDestroyDelayPatrolParty(MobileParty patrol)
@@ -551,71 +523,118 @@ namespace GreyWardenPolicePurity
                 state.Returning = true;
         }
 
-        private void ReportDelayPatrolStatusSnapshot()
+        private void ReportTwoDayWarDebug(IFaction targetFaction, IReadOnlyList<MobileParty> offenders)
         {
-            if (_delayPatrolStates.Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "[灰袍支援队巡检] 当前场上无纠察支援队。",
-                    Colors.Gray));
-                return;
-            }
-
-            var activePatrols = new List<(MobileParty Patrol, DelayPatrolState State)>();
-            foreach (var kv in _delayPatrolStates)
-            {
-                MobileParty patrol = MobileParty.All.FirstOrDefault(p => p.StringId == kv.Key);
-                if (patrol == null || !patrol.IsActive) continue;
-                activePatrols.Add((patrol, kv.Value));
-            }
-
-            if (activePatrols.Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "[灰袍支援队巡检] 当前场上无可追踪的纠察支援队。",
-                    Colors.Gray));
-                return;
-            }
+            string factionName = targetFaction?.Name?.ToString() ?? "未知势力";
+            int offenderCount = offenders?.Count ?? 0;
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"[灰袍支援队巡检] 当前场上 {activePatrols.Count} 支纠察支援队。",
+                $"[两日巡检][未自动和平] 目标势力：{factionName}；原因：犯罪池仍有 {offenderCount} 名在逃犯人。",
                 Colors.Yellow));
 
-            const int maxLines = 8;
-            int shown = 0;
-            foreach (var item in activePatrols)
-            {
-                if (shown >= maxLines) break;
-
-                MobileParty patrol = item.Patrol;
-                DelayPatrolState state = item.State;
-                Settlement nearest = FindNearestNamedSettlement(patrol.GetPosition2D);
-                string stage = state.Returning ? "返航" : "追击";
-
-                string locationText;
-                if (nearest == null)
-                {
-                    locationText = "附近无城镇/城堡/村庄";
-                }
-                else
-                {
-                    float distance = patrol.GetPosition2D.Distance(nearest.GetPosition2D);
-                    locationText = $"最近{GetSettlementTypeName(nearest)} {nearest.Name}（距离 {distance:0.0}）";
-                }
-
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"[支援队定位] {patrol.Name} | 状态:{stage} | {locationText}",
-                    Colors.Cyan));
-                shown++;
-            }
-
-            int omitted = activePatrols.Count - shown;
-            if (omitted > 0)
+            List<MobileParty> policeParties = GetActivePolicePartiesByWarTarget(targetFaction?.StringId ?? string.Empty);
+            if (policeParties.Count == 0)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[支援队定位] 其余 {omitted} 支队伍已省略显示。",
-                    Colors.Cyan));
+                    "[两日巡检][警察位置] 当前无可追踪的追捕警察队伍。",
+                    Colors.Gray));
             }
+            else
+            {
+                foreach (MobileParty police in policeParties.Take(6))
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[两日巡检][警察位置] {FormatPartyDebugPosition(police)}",
+                        Colors.Cyan));
+                }
+            }
+
+            List<MobileParty> activeOffenders = (offenders ?? Array.Empty<MobileParty>())
+                .Where(p => p != null && p.IsActive)
+                .Distinct()
+                .ToList();
+            if (activeOffenders.Count == 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "[两日巡检][犯人位置] 当前无可追踪的在逃犯人。",
+                    Colors.Gray));
+            }
+            else
+            {
+                foreach (MobileParty offender in activeOffenders.Take(6))
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[两日巡检][犯人位置] {FormatPartyDebugPosition(offender)}",
+                        Colors.Cyan));
+                }
+            }
+
+            List<MobileParty> supportParties = GetActiveDelayPatrolPartiesByWarTarget(targetFaction?.StringId ?? string.Empty);
+            if (supportParties.Count == 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "[两日巡检][支援位置] 当前无可追踪的纠察支援队。",
+                    Colors.Gray));
+            }
+            else
+            {
+                foreach (MobileParty support in supportParties.Take(6))
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[两日巡检][支援位置] {FormatPartyDebugPosition(support)}",
+                        Colors.Cyan));
+                }
+            }
+        }
+
+        private static void ReportTwoDayAutoPeaceDebug(IFaction targetFaction)
+        {
+            string factionName = targetFaction?.Name?.ToString() ?? "未知势力";
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[两日巡检][自动和平] 目标势力：{factionName}；原因：犯罪池中无该势力在逃犯人。",
+                Colors.Green));
+        }
+
+        private static string FormatPartyDebugPosition(MobileParty party)
+        {
+            if (party == null || !party.IsActive) return "队伍无效";
+
+            Settlement nearest = FindNearestNamedSettlement(party.GetPosition2D);
+            if (nearest == null)
+                return $"{party.Name} | 无最近定居点";
+
+            float distance = party.GetPosition2D.Distance(nearest.GetPosition2D);
+            return $"{party.Name} | 最近{GetSettlementTypeName(nearest)} {nearest.Name}（距离 {distance:0.0}）";
+        }
+
+        private static List<MobileParty> GetActivePolicePartiesByWarTarget(string warTargetId)
+        {
+            if (string.IsNullOrEmpty(warTargetId)) return new List<MobileParty>();
+
+            return CrimePool.ActiveTasks.Values
+                .Where(t =>
+                    t != null &&
+                    t.WarDeclared &&
+                    string.Equals(t.WarTarget?.StringId, warTargetId, StringComparison.OrdinalIgnoreCase))
+                .Select(t => MobileParty.All.FirstOrDefault(p => p.StringId == t.PolicePartyId))
+                .Where(p => p != null && p.IsActive)
+                .Distinct()
+                .ToList();
+        }
+
+        private List<MobileParty> GetActiveDelayPatrolPartiesByWarTarget(string warTargetId)
+        {
+            if (string.IsNullOrEmpty(warTargetId)) return new List<MobileParty>();
+
+            return _delayPatrolStates.Values
+                .Where(s =>
+                    s != null &&
+                    !s.Returning &&
+                    string.Equals(s.WarTargetId, warTargetId, StringComparison.OrdinalIgnoreCase))
+                .Select(s => MobileParty.All.FirstOrDefault(p => p.StringId == s.PatrolPartyId))
+                .Where(p => p != null && p.IsActive)
+                .Distinct()
+                .ToList();
         }
 
         private static Settlement FindNearestNamedSettlement(Vec2 position)
