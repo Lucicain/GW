@@ -101,6 +101,14 @@ namespace GreyWardenPolicePurity
             {
                 if (patrol == null || !patrol.IsActive) continue;
 
+                // 进城后的纠察队不再参与地图执法，直接清理，避免“活体卡住”阻塞下一轮惩罚。
+                if (patrol.CurrentSettlement != null)
+                {
+                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                    _returningPatrolIds.Remove(patrol.StringId);
+                    continue;
+                }
+
                 patrol.Ai.SetDoNotMakeNewDecisions(true);
                 Settlement town = _patrolOriginSettlement ?? FindNearestTown(patrol);
                 if (town != null)
@@ -128,6 +136,14 @@ namespace GreyWardenPolicePurity
 
                 if (patrol == null || !patrol.IsActive)
                 {
+                    _returningPatrolIds.RemoveAt(i);
+                    continue;
+                }
+
+                // 修复：返程途中若已进入定居点，直接销毁，避免“在城里永久存活”。
+                if (patrol.CurrentSettlement != null)
+                {
+                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
                     _returningPatrolIds.RemoveAt(i);
                     continue;
                 }
@@ -179,6 +195,22 @@ namespace GreyWardenPolicePurity
             });
         }
 
+        /// <summary>
+        /// 清理已进入定居点的纠察队。
+        /// 这些队伍不会再执行地图追捕，若不清理会让 HasAnyPatrol() 长期返回 true，阻断后续惩罚生成。
+        /// </summary>
+        private void CleanupPatrolsInsideSettlements()
+        {
+            foreach (var patrol in MobileParty.All.Where(p => p != null && p.IsActive && IsPatrol(p)).ToList())
+            {
+                if (patrol.CurrentSettlement == null) continue;
+
+                try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                _activePatrolIds.Remove(patrol.StringId);
+                _returningPatrolIds.Remove(patrol.StringId);
+            }
+        }
+
         private void TryReleasePatrolMeetingSuppression()
         {
             if (!_suppressPatrolMeetings) return;
@@ -187,7 +219,8 @@ namespace GreyWardenPolicePurity
             bool hasTrackedPatrol = _activePatrolIds.Count > 0 || _returningPatrolIds.Count > 0;
             if (hasTrackedPatrol) return;
 
-            bool hasWorldPatrol = MobileParty.All.Any(p => p.IsActive && IsPatrol(p));
+            // 仅“地图上可行动”的纠察队才阻止解除抑制；城内残留队伍会被清理，不应继续阻塞。
+            bool hasWorldPatrol = MobileParty.All.Any(p => p.IsActive && IsPatrol(p) && p.CurrentSettlement == null);
             if (hasWorldPatrol) return;
 
             _suppressPatrolMeetings = false;

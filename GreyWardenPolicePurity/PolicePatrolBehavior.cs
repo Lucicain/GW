@@ -533,8 +533,20 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool HasAnyPatrol()
         {
-            if (_activePatrolIds.Count > 0 || _returningPatrolIds.Count > 0) return true;
-            return MobileParty.All.Any(p => p.IsActive && IsPatrol(p));
+            // 纠察队是否“仍在地图执法中”：城内队伍不计入，避免阻塞下一轮出队。
+            if (_activePatrolIds.Any(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p != null && p.IsActive && p.CurrentSettlement == null;
+            })) return true;
+
+            if (_returningPatrolIds.Any(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p != null && p.IsActive && p.CurrentSettlement == null;
+            })) return true;
+
+            return MobileParty.All.Any(p => p.IsActive && IsPatrol(p) && p.CurrentSettlement == null);
         }
 
         #endregion
@@ -546,6 +558,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 CleanDeadPatrols();
+                CleanupPatrolsInsideSettlements();
                 UpdateReturningPatrols();
                 TryReleasePatrolMeetingSuppression();
 
