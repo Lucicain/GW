@@ -31,6 +31,8 @@ namespace GreyWardenPolicePurity
 
             bool policeInvolved = false;
             bool patrolInvolved = false;
+            bool delayPatrolInvolved = false;
+            bool regularPoliceInvolved = false;
             bool playerInvolved = false;
             IFaction enemyFaction = null!;
 
@@ -41,9 +43,12 @@ namespace GreyWardenPolicePurity
                 if (IsPoliceParty(party.MobileParty))
                 {
                     policeInvolved = true;
-                    // 纠察队参与的战斗，由 PolicePatrolBehavior 自己处理和平
                     if (GwpCommon.IsPatrolParty(party.MobileParty))
                         patrolInvolved = true;
+                    else if (GwpCommon.IsEnforcementDelayPatrolParty(party.MobileParty))
+                        delayPatrolInvolved = true;
+                    else
+                        regularPoliceInvolved = true;
                 }
                 else if (party.MobileParty.IsMainParty)
                 {
@@ -57,6 +62,10 @@ namespace GreyWardenPolicePurity
 
             // 纠察队的战斗不在这里和平，由 PolicePatrolBehavior 在惩罚后统一处理
             if (patrolInvolved) return;
+
+            // 延迟纠察队单独作战时不在这里和平（用于拖住战线）；
+            // 但若正式警察也在同一场战斗中，则战后必须和平。
+            if (delayPatrolInvolved && !regularPoliceInvolved) return;
 
             // 核心修复（v2）：不能用 CrimePool.IsPlayerHunted 判断——
             // 玩家被击败后 MainParty.IsActive == false，导致 IsOffenderValid() 返回 false，

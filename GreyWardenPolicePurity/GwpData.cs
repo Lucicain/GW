@@ -22,6 +22,7 @@ namespace GreyWardenPolicePurity
         public string VictimName { get; set; } = string.Empty;
 
         public bool IsOffenderValid() => Offender?.IsActive == true;
+        public bool IsOffenderPursuable() => Offender?.IsActive == true && Offender.CurrentSettlement == null;
     }
 
     public class PoliceTask
@@ -56,7 +57,10 @@ namespace GreyWardenPolicePurity
             Clan clan = GetPoliceClan();
             if (clan == null) return new List<MobileParty>();
             return clan.WarPartyComponents
-                .Where(w => w?.MobileParty != null && w.MobileParty.IsActive)
+                .Where(w =>
+                    w?.MobileParty != null &&
+                    w.MobileParty.IsActive &&
+                    !GwpCommon.IsEnforcementDelayPatrolParty(w.MobileParty))
                 .Select(w => w.MobileParty)
                 .ToList();
         }
@@ -168,7 +172,7 @@ namespace GreyWardenPolicePurity
             float bestDist = float.MaxValue;
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
             }
@@ -181,7 +185,7 @@ namespace GreyWardenPolicePurity
             float bestDist = float.MaxValue;
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 if (c.Offender.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
@@ -197,7 +201,7 @@ namespace GreyWardenPolicePurity
 
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 if (c.Offender.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
@@ -205,7 +209,7 @@ namespace GreyWardenPolicePurity
             foreach (var task in _tasks.Values)
             {
                 var crime = task.TargetCrime;
-                if (crime == null || !crime.IsOffenderValid()) continue;
+                if (crime == null || !crime.IsOffenderPursuable()) continue;
                 if (crime.Offender.IsMainParty) continue;
                 float d = pos.Distance(crime.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = crime; }
@@ -280,6 +284,66 @@ namespace GreyWardenPolicePurity
         public static bool HasTask(string policePartyId) => _tasks.ContainsKey(policePartyId);
 
         public static void Clean() => _pool.RemoveAll(c => !c.IsOffenderValid());
+
+        /// <summary>
+        /// 获取犯罪池（待处理 + 已分配任务）中属于指定势力的活跃罪犯队伍。
+        /// 用于执法超时时判断是否仍有可追捕对象。
+        /// </summary>
+        public static List<MobileParty> GetTrackedOffendersByFaction(IFaction? faction)
+        {
+            var result = new List<MobileParty>();
+            if (faction == null) return result;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void TryAdd(MobileParty? offender)
+            {
+                if (offender == null || !offender.IsActive || offender.IsMainParty) return;
+                IFaction offenderFaction = offender.MapFaction;
+                if (offenderFaction == null || offenderFaction != faction) return;
+                if (string.IsNullOrEmpty(offender.StringId)) return;
+                if (!seen.Add(offender.StringId)) return;
+                result.Add(offender);
+            }
+
+            foreach (var c in _pool)
+                TryAdd(c.Offender);
+
+            foreach (var t in _tasks.Values)
+                TryAdd(t.TargetCrime?.Offender);
+
+            return result;
+        }
+
+        public static bool HasTrackedOffenderByFaction(IFaction? faction) =>
+            GetTrackedOffendersByFaction(faction).Count > 0;
+
+        /// <summary>
+        /// 获取犯罪池（待处理 + 已分配任务）中的全部活跃罪犯（可选是否包含玩家）。
+        /// 用于读档后恢复纠察支援队目标时进行就近匹配。
+        /// </summary>
+        public static List<MobileParty> GetAllTrackedOffenders(bool includePlayer = false)
+        {
+            var result = new List<MobileParty>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void TryAdd(MobileParty? offender)
+            {
+                if (offender == null || !offender.IsActive) return;
+                if (!includePlayer && offender.IsMainParty) return;
+                if (string.IsNullOrEmpty(offender.StringId)) return;
+                if (!seen.Add(offender.StringId)) return;
+                result.Add(offender);
+            }
+
+            foreach (var c in _pool)
+                TryAdd(c.Offender);
+
+            foreach (var t in _tasks.Values)
+                TryAdd(t.TargetCrime?.Offender);
+
+            return result;
+        }
 
         public static void RefreshAccepting()
         {

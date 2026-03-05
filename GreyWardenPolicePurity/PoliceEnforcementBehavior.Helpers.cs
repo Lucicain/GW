@@ -128,6 +128,79 @@ namespace GreyWardenPolicePurity
             CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
         }
 
+        private void ClearShelteredTargetTracking(string taskId)
+        {
+            if (string.IsNullOrEmpty(taskId)) return;
+            _shelteredTargetHoursByTaskId.Remove(taskId);
+        }
+
+        private bool HandleShelteredCriminal(
+            MobileParty policeParty,
+            PoliceTask task,
+            string taskId,
+            MobileParty criminal)
+        {
+            if (policeParty == null || !policeParty.IsActive) return true;
+            if (criminal == null || !criminal.IsActive) return false;
+            if (criminal.IsMainParty) return false;
+
+            Settlement shelter = criminal.CurrentSettlement;
+            if (shelter == null)
+            {
+                ClearShelteredTargetTracking(taskId);
+                return false;
+            }
+
+            int shelteredHours = 0;
+            _shelteredTargetHoursByTaskId.TryGetValue(taskId, out shelteredHours);
+            shelteredHours++;
+            _shelteredTargetHoursByTaskId[taskId] = shelteredHours;
+
+            // 围堵期间自动补粮，避免警察因缺粮脱离任务导致"消失后重刷"
+            PoliceResourceManager.ReplenishFood(policeParty, 2);
+            policeParty.Ai.SetDoNotMakeNewDecisions(true);
+            policeParty.Ai.SetInitiative(1f, 0f, 999f);
+            policeParty.SetMoveEngageParty(criminal, NavigationType.Default);
+
+            if (shelteredHours % ShelteredForceBattleIntervalHours == 0)
+            {
+                bool started = TryForceStartBattle(policeParty, criminal);
+                if (started)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"灰袍守卫强制发起战斗：{policeParty.Name} -> {criminal.Name}",
+                        Colors.Yellow));
+                }
+            }
+
+            if (criminal.CurrentSettlement == null)
+            {
+                ClearShelteredTargetTracking(taskId);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryForceStartBattle(MobileParty attacker, MobileParty defender)
+        {
+            if (attacker == null || defender == null) return false;
+            if (!attacker.IsActive || !defender.IsActive) return false;
+            if (attacker.MapEvent != null || defender.MapEvent != null) return false;
+            if (attacker.CurrentSettlement != null) return false;
+            if (string.Equals(attacker.StringId, defender.StringId, StringComparison.OrdinalIgnoreCase)) return false;
+
+            try
+            {
+                StartBattleAction.ApplyStartBattle(attacker, defender);
+                return attacker.MapEvent != null || defender.MapEvent != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #endregion
     }
 }

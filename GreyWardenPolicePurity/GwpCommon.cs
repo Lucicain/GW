@@ -10,6 +10,7 @@ namespace GreyWardenPolicePurity
     internal static class GwpCommon
     {
         public const string PatrolIdPrefix = "gwp_patrol_";
+        public const string EnforcementDelayPatrolIdPrefix = "gwp_enf_delay_";
         public const string HeavyInfantryId = "gwheavyinfantry";
         public const string ArcherId = "gwarcher";
         public const string KnightId = "gwknight";
@@ -17,6 +18,11 @@ namespace GreyWardenPolicePurity
         public static bool IsPatrolParty(MobileParty? party)
         {
             return party?.StringId?.StartsWith(PatrolIdPrefix, StringComparison.Ordinal) == true;
+        }
+
+        public static bool IsEnforcementDelayPatrolParty(MobileParty? party)
+        {
+            return party?.StringId?.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) == true;
         }
 
         public static Settlement? FindNearestTown(MobileParty? party)

@@ -29,6 +29,7 @@ namespace GreyWardenPolicePurity
     {
         private const float WarDistance = 3f;
         private const float WarDistancePlayer = 15f;
+        private const int ShelteredForceBattleIntervalHours = 6;
 
         // 距城堡多少格时触发惩罚。
         // 3格 > 引擎自动入城触发距离（约1-2格），确保 OnTick 距离判断先于自动入城发生。
@@ -39,18 +40,33 @@ namespace GreyWardenPolicePurity
         private int _dialogFine = 0;
         private MobileParty _dialogPolice = null!;
         private PoliceTask _dialogTask = null!;
+        private readonly Dictionary<string, int> _shelteredTargetHoursByTaskId =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         public override void RegisterEvents()
         {
             PoliceCrimeMonitorEnhanced.OnCrimeDetected += HandleCrimeDetected;
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
         }
 
-        public override void SyncData(IDataStore dataStore) => CrimePool.SyncData(dataStore);
+        public override void SyncData(IDataStore dataStore)
+        {
+            CrimePool.SyncData(dataStore);
+            dataStore.SyncData("gwp_enf_war_check_day_counter", ref _warStatusCheckDayCounter);
+            SyncWarTargetStreakData(dataStore);
+            SyncDelayPatrolStateData(dataStore);
+            if (dataStore.IsLoading)
+            {
+                if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
+                    _warStatusCheckDayCounter = 0;
+                _shelteredTargetHoursByTaskId.Clear();
+            }
+        }
 
         #region 对话系统（执法拦截：玩家可选择缴纳罚金或战斗）
 
@@ -428,6 +444,8 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
+            EnsureDelayPatrolStateForActiveParties();
+            UpdateDelayPatrols();
             CrimePool.Clean();
             AssignTasks();
             UpdateTasks();
@@ -438,6 +456,7 @@ namespace GreyWardenPolicePurity
         {
             foreach (var pp in PoliceStats.GetAllPoliceParties())
             {
+                if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
                 // ★ 兜底：跳过无首领或首领失效的部队（防止因纠察队/英雄失效导致无首领部队接任务）
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive) continue;
                 if (CrimePool.HasTask(pp.StringId)) continue;
@@ -473,6 +492,7 @@ namespace GreyWardenPolicePurity
 
                 if (pp == null || !pp.IsActive)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
@@ -481,6 +501,7 @@ namespace GreyWardenPolicePurity
                 // ★ 兜底：任务进行中首领失效（被俘/死亡）→ 结束任务，案件归池
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
@@ -488,11 +509,15 @@ namespace GreyWardenPolicePurity
 
                 // ★ 正在为玩家悬赏护送时，完全由 PlayerBountyBehavior 管理此部队的 AI，跳过。
                 if (task.IsPlayerBountyEscort)
+                {
+                    ClearTaskWarTracking(kvp.Key, true);
                     continue;
+                }
 
                 // 押送阶段：冻结AI，每小时重发行军命令（防止引擎覆盖方向）
                 if (task.IsEscortingPlayer)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     pp.Ai.SetDoNotMakeNewDecisions(true);
 
                     // 安全网：若玩家已被外部机制提前释放（例如某段和平逻辑绕过了守卫），
@@ -513,12 +538,15 @@ namespace GreyWardenPolicePurity
                 }
 
                 // 食物耗尽 → 案件归池，前往补给，等补完后重新接案
-                if (pp.ItemRoster.TotalFood <= 0)
+                bool targetSheltered = task.TargetCrime?.Offender?.IsMainParty != true &&
+                                      task.TargetCrime?.Offender?.CurrentSettlement != null;
+                if (pp.ItemRoster.TotalFood <= 0 && !targetSheltered)
                 {
                     // 警察部队粮草耗尽内部运营（不显示给玩家）
                     // InformationManager.DisplayMessage(new InformationMessage(
                     //     $"[GWP] {pp.Name} 粮草耗尽，案件归池，前往补给", Colors.Yellow));
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     PoliceResourceManager.StartResupply(pp);
@@ -528,6 +556,7 @@ namespace GreyWardenPolicePurity
                 if (!task.IsTargetValid())
                 {
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     PoliceResourceManager.StartResupply(pp);
                     continue;
@@ -535,6 +564,25 @@ namespace GreyWardenPolicePurity
 
                 // 正常追击
                 MobileParty criminal = task.TargetCrime.Offender;
+                if (!criminal.IsMainParty && criminal.CurrentSettlement != null)
+                {
+                    if (HandleShelteredCriminal(pp, task, kvp.Key, criminal))
+                        continue;
+                }
+                else
+                {
+                    ClearShelteredTargetTracking(kvp.Key);
+                }
+
+                if (!criminal.IsActive)
+                {
+                    RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
+                    CrimePool.EndTask(kvp.Key);
+                    PoliceResourceManager.StartResupply(pp);
+                    continue;
+                }
+
                 float dist = pp.GetPosition2D.Distance(criminal.GetPosition2D);
 
                 float warDist = criminal.IsMainParty ? WarDistancePlayer : WarDistance;
@@ -550,9 +598,15 @@ namespace GreyWardenPolicePurity
                 {
                     DeclareWar(task, criminal);
                 }
+                else if (!task.WarDeclared)
+                {
+                    ClearTaskWarTracking(kvp.Key, false);
+                }
 
                 try
                 {
+                    pp.Ai.SetDoNotMakeNewDecisions(true);
+                    pp.Ai.SetInitiative(1f, 0f, 999f);
                     pp.SetMoveEngageParty(criminal, NavigationType.Default);
                 }
                 catch { }
@@ -595,6 +649,7 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
+            HandleDelayPatrolBattleEnded(mapEvent);
             if (!mapEvent.IsFieldBattle) return;
 
             foreach (var kvp in CrimePool.ActiveTasks.ToList())
@@ -607,6 +662,7 @@ namespace GreyWardenPolicePurity
                 if (pp == null)
                 {
                     if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     Reassign(task.TargetCrime);
                     CrimePool.RefreshAccepting();
@@ -649,12 +705,14 @@ namespace GreyWardenPolicePurity
                     }
 
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     PoliceResourceManager.StartResupply(pp);
                 }
                 else
                 {
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     Reassign(task.TargetCrime);
                     PoliceResourceManager.StartResupply(pp);
