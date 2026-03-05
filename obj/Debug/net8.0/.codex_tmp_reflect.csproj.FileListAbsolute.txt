@@ -1,0 +1,15 @@
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.AssemblyInfoInputs.cache
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.AssemblyInfo.cs
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.csproj.CoreCompileInputs.cache
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.sourcelink.json
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\bin\Debug\net8.0\.codex_tmp_reflect.exe
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\bin\Debug\net8.0\.codex_tmp_reflect.deps.json
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\bin\Debug\net8.0\.codex_tmp_reflect.runtimeconfig.json
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\bin\Debug\net8.0\.codex_tmp_reflect.dll
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\bin\Debug\net8.0\.codex_tmp_reflect.pdb
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.dll
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\refint\.codex_tmp_reflect.dll
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.pdb
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\.codex_tmp_reflect.genruntimeconfig.cache
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\obj\Debug\net8.0\ref\.codex_tmp_reflect.dll
