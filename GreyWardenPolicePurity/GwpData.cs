@@ -138,6 +138,32 @@ namespace GreyWardenPolicePurity
             RefreshAccepting();
         }
 
+        /// <summary>获取当前玩家通缉记录（可能在待处理池，也可能在活跃任务中）。</summary>
+        public static CrimeRecord? GetPlayerCrime()
+        {
+            CrimeRecord? poolCrime = _pool.FirstOrDefault(c => c.CrimeId == PlayerCrimeId || c.Offender?.IsMainParty == true);
+            if (poolCrime != null) return poolCrime;
+
+            foreach (PoliceTask task in _tasks.Values)
+            {
+                if (task.TargetCrime?.Offender?.IsMainParty == true)
+                    return task.TargetCrime;
+            }
+
+            return null;
+        }
+
+        /// <summary>获取当前负责追捕玩家的警察部队 ID（无则 null）。</summary>
+        public static string? GetPlayerTaskPolicePartyId()
+        {
+            foreach (var kv in _tasks)
+            {
+                if (kv.Value.TargetCrime?.Offender?.IsMainParty == true)
+                    return kv.Key;
+            }
+            return null;
+        }
+
         public static bool TryAdd(string crimeType, MobileParty offender, Vec2 location, string victimName)
         {
             if (offender == null || !offender.IsActive) return false;
@@ -282,6 +308,61 @@ namespace GreyWardenPolicePurity
         }
 
         public static bool HasTask(string policePartyId) => _tasks.ContainsKey(policePartyId);
+
+        /// <summary>
+        /// 强制把玩家通缉案件分配给指定警察部队。
+        /// 若指定部队已有其他任务，会把该任务的犯罪记录退回池子。
+        /// 若玩家案件已在其他部队手中，会转移到指定部队。
+        /// </summary>
+        public static bool TryAssignPlayerCrimeToPolice(string policePartyId)
+        {
+            if (string.IsNullOrEmpty(policePartyId)) return false;
+
+            CrimeRecord? playerCrime = GetPlayerCrime();
+            if (playerCrime == null || playerCrime.Offender?.IsMainParty != true) return false;
+
+            if (_tasks.TryGetValue(policePartyId, out PoliceTask samePartyTask) &&
+                samePartyTask.TargetCrime?.Offender?.IsMainParty == true)
+            {
+                return true;
+            }
+
+            // 先把玩家案件从池中清掉（后续由指定部队接手）
+            _pool.RemoveAll(c => c.CrimeId == PlayerCrimeId || c.Offender?.IsMainParty == true);
+
+            // 移除旧的玩家追捕任务（若存在）
+            string? oldPlayerTaskPartyId = GetPlayerTaskPolicePartyId();
+            if (!string.IsNullOrEmpty(oldPlayerTaskPartyId))
+                _tasks.Remove(oldPlayerTaskPartyId);
+
+            // 指定部队已有非玩家任务时，案件归池（避免丢案）
+            if (_tasks.TryGetValue(policePartyId, out PoliceTask displacedTask))
+            {
+                CrimeRecord? displacedCrime = displacedTask.TargetCrime;
+                if (displacedCrime?.IsOffenderValid() == true &&
+                    displacedCrime.Offender?.IsMainParty != true &&
+                    !_pool.Any(c => c.Offender?.StringId == displacedCrime.Offender?.StringId))
+                {
+                    _pool.Add(displacedCrime);
+                }
+
+                _tasks.Remove(policePartyId);
+            }
+
+            _tasks[policePartyId] = new PoliceTask
+            {
+                PolicePartyId = policePartyId,
+                TargetCrime = playerCrime,
+                WarDeclared = false,
+                WarTarget = null,
+                IsEscortingPlayer = false,
+                EscortSettlement = null,
+                IsPlayerBountyEscort = false
+            };
+
+            RefreshAccepting();
+            return true;
+        }
 
         public static void Clean() => _pool.RemoveAll(c => !c.IsOffenderValid());
 
@@ -556,6 +637,7 @@ namespace GreyWardenPolicePurity
 
         public static int Reputation { get; private set; } = 0;
         public static bool IsWanted => Reputation <= -11;
+        public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyList<PlayerRecord> Records => _records;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
 
@@ -604,10 +686,12 @@ namespace GreyWardenPolicePurity
 
         public static void ResetReputation(int value) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
         public static void ChangeReputation(int delta) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));
+        public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
         public static void ClearAll()
         {
             Reputation = 0;
+            HasAtonementTask = false;
             _records.Clear();
             _victimFactions.Clear();
         }

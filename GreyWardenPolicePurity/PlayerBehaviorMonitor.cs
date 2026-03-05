@@ -304,8 +304,11 @@ namespace GreyWardenPolicePurity
             }
             // 玩家作为攻击方赢得村庄劫掠（包括强制介入后帮助劫掠方获胜的情况）
             bool playerRaidedVillage = mapEvent.IsRaid && mapEvent.Winner == mapEvent.AttackerSide;
+            bool playerForcedVolunteers = mapEvent.IsForcingVolunteers && mapEvent.Winner == mapEvent.AttackerSide;
+            bool playerForcedSupplies = mapEvent.IsForcingSupplies && mapEvent.Winner == mapEvent.AttackerSide;
+            bool playerForcedVillageAction = playerForcedVolunteers || playerForcedSupplies;
 
-            bool anyBadDeed = loserIsVillager || loserIsCaravan || playerRaidedVillage;
+            bool anyBadDeed = loserIsVillager || loserIsCaravan || playerRaidedVillage || playerForcedVillageAction;
             if (anyBadDeed)
             {
                 // 不设下限：无人死伤（如无人防守的村庄劫掠）时不扣声望
@@ -314,7 +317,7 @@ namespace GreyWardenPolicePurity
                 // ★ 功能 4B：村庄劫掠事件中 _pendingEnemyCount 始终为 0
                 // （MapEventStarted 的 defenderParty 是 Settlement 非 MobileParty → null → 提前 return，未记录人数）
                 // 兜底：直接从失败方的移动部队中计数（民兵/驻军等），确保"村民抵抗"战斗按每10人扣1分
-                if (playerRaidedVillage && killCount == 0)
+                if ((playerRaidedVillage || playerForcedVillageAction) && killCount == 0)
                 {
                     foreach (var p in loser.Parties)
                         if (p.Party?.IsMobile == true)
@@ -329,14 +332,18 @@ namespace GreyWardenPolicePurity
                     // 若已进入通缉状态，触发警察追捕
                     if (PlayerBehaviorPool.IsWanted)
                     {
-                        string crimeType = playerRaidedVillage ? "劫掠村庄"
-                                         : loserIsCaravan      ? "劫掠商队"
+                        string crimeType = playerRaidedVillage    ? "劫掠村庄"
+                                         : playerForcedVolunteers ? "强迫募兵"
+                                         : playerForcedSupplies   ? "强征给养"
+                                         : loserIsCaravan         ? "劫掠商队"
                                          : "杀害村民";
                         CrimePool.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
                     }
 
-                    string badDeedType = playerRaidedVillage ? "劫掠村庄"
-                                       : loserIsCaravan      ? "劫掠商队"
+                    string badDeedType = playerRaidedVillage    ? "劫掠村庄"
+                                       : playerForcedVolunteers ? "强迫募兵"
+                                       : playerForcedSupplies   ? "强征给养"
+                                       : loserIsCaravan         ? "劫掠商队"
                                        : "杀害村民";
                     InformationManager.DisplayMessage(new InformationMessage(
                         $"灰袍守卫记录了你的恶行：{badDeedType}（击败 {killCount} 人）| " +

@@ -47,6 +47,10 @@ namespace GreyWardenPolicePurity
             // Campaign 持久化通知列表。
             // 读档时 IsValid() 因 CrimePool 已清空而返回 false，通知自动清除。
             AddClassDefinition(typeof(PlayerBountyBehavior.BountyMapNotification), 2);
+
+            // localId = 3 → 全局 ID 2_894_635
+            // 警察执法中的“赎罪任务”，用于任务面板展示 + 读档恢复。
+            AddClassDefinition(typeof(PoliceEnforcementBehavior.AtonementQuest), 3);
         }
     }
 }

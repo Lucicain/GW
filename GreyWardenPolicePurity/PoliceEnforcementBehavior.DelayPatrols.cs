@@ -178,6 +178,7 @@ namespace GreyWardenPolicePurity
             _warStatusCheckDayCounter = 0;
 
             CheckPersistentWarTargetsEveryTwoDays();
+            EnsureNearestPoliceForWantedPlayer();
         }
 
         private void CheckPersistentWarTargetsEveryTwoDays()
@@ -519,6 +520,89 @@ namespace GreyWardenPolicePurity
             if (string.IsNullOrEmpty(patrolId)) return;
             if (_delayPatrolStates.TryGetValue(patrolId, out DelayPatrolState state))
                 state.Returning = true;
+        }
+
+        private void EnsureNearestPoliceForWantedPlayer()
+        {
+            MobileParty playerParty = MobileParty.MainParty;
+            if (playerParty == null || !playerParty.IsActive) return;
+            if (PlayerBehaviorPool.Reputation > -11) return;
+            if (PlayerBehaviorPool.HasAtonementTask) return;
+
+            if (!CrimePool.IsPlayerHunted)
+            {
+                CrimePool.TryAddPlayerCrime(
+                    "累计犯罪",
+                    playerParty.GetPosition2D,
+                    $"声望已达 {PlayerBehaviorPool.Reputation}");
+            }
+
+            MobileParty nearestPolice = FindNearestPolicePartyForPlayerCase(playerParty.GetPosition2D);
+            if (nearestPolice == null) return;
+
+            string nearestId = nearestPolice.StringId;
+            string currentPlayerPoliceId = CrimePool.GetPlayerTaskPolicePartyId() ?? string.Empty;
+            if (string.Equals(currentPlayerPoliceId, nearestId, StringComparison.OrdinalIgnoreCase))
+            {
+                PoliceResourceManager.CancelResupply(nearestPolice);
+                nearestPolice.Ai.SetDoNotMakeNewDecisions(true);
+                nearestPolice.Ai.SetInitiative(1f, 0f, 999f);
+                nearestPolice.SetMoveEngageParty(playerParty, NavigationType.Default);
+                return;
+            }
+
+            // 旧追捕方（若存在）恢复 AI，让其可继续常规执法
+            if (!string.IsNullOrEmpty(currentPlayerPoliceId))
+            {
+                MobileParty oldPolice = MobileParty.All.FirstOrDefault(p =>
+                    p.StringId == currentPlayerPoliceId && p.IsActive);
+                if (oldPolice != null)
+                    RestoreAi(oldPolice);
+                ClearTaskWarTracking(currentPlayerPoliceId, true);
+            }
+
+            // 最近警察若有旧案，先清掉战争追踪并交回犯罪池（由 CrimePool 内部处理）
+            PoliceTask nearestTask = CrimePool.GetTask(nearestId);
+            if (nearestTask != null && nearestTask.TargetCrime?.Offender?.IsMainParty != true)
+            {
+                ClearTaskWarTracking(nearestId, true);
+            }
+
+            if (!CrimePool.TryAssignPlayerCrimeToPolice(nearestId))
+                return;
+
+            // 若最近警察正处于补给流程，强制取消并立即转向玩家
+            PoliceResourceManager.CancelResupply(nearestPolice);
+            nearestPolice.Ai.SetDoNotMakeNewDecisions(true);
+            nearestPolice.Ai.SetInitiative(1f, 0f, 999f);
+            nearestPolice.SetMoveEngageParty(playerParty, NavigationType.Default);
+        }
+
+        private static MobileParty FindNearestPolicePartyForPlayerCase(Vec2 playerPos)
+        {
+            MobileParty best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (MobileParty police in PoliceStats.GetAllPoliceParties())
+            {
+                if (police == null || !police.IsActive) continue;
+                if (GwpCommon.IsPatrolParty(police)) continue;
+                if (GwpCommon.IsEnforcementDelayPatrolParty(police)) continue;
+                if (police.LeaderHero == null || !police.LeaderHero.IsActive) continue;
+
+                PoliceTask task = CrimePool.GetTask(police.StringId);
+                if (task?.IsEscortingPlayer == true) continue;
+                if (task?.IsPlayerBountyEscort == true) continue;
+
+                float dist = police.GetPosition2D.Distance(playerPos);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    best = police;
+                }
+            }
+
+            return best;
         }
 
     }

@@ -509,6 +509,9 @@ namespace GreyWardenPolicePurity
             // 低于-11：转为追捕状态，由正式警察接管
             else if (reputation <= -11)
             {
+                if (PlayerBehaviorPool.HasAtonementTask)
+                    return;
+
                 // 解散纠察队（已超出管辖范围），交由正式警察处理
                 if (_activePatrolIds.Count > 0)
                     ReturnAllPatrols();
@@ -986,15 +989,16 @@ namespace GreyWardenPolicePurity
 
                 int rep = PlayerBehaviorPool.Reputation;
                 int fine = Math.Abs(rep) * FinePerPoint;
-                CollectFine(fine);
-
-                PlayerBehaviorPool.ResetReputation(0);
+                int paid = CollectFine(fine);
+                int recovered = FinePerPoint > 0 ? paid / FinePerPoint : 0;
+                int repAfter = Math.Min(0, rep + recovered);
+                PlayerBehaviorPool.ResetReputation(repAfter);
 
                 MakePeaceWithPoliceAndVictims();
 
                 string townName = settlement?.Name?.ToString() ?? "最近城镇";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送到 {townName}，缴纳罚金 {fine} 金，声望已归零，已恢复和平",
+                    $"你被押送到 {townName}，应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}，已恢复和平",
                     Colors.Yellow));
             }
             catch (Exception ex)
@@ -1010,12 +1014,13 @@ namespace GreyWardenPolicePurity
 
         #region 罚金收取
 
-        private void CollectFine(int fine)
+        private int CollectFine(int fine)
         {
-            int collected = PoliceResourceManager.CollectFine(fine);
+            int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
             InformationManager.DisplayMessage(new InformationMessage(
                 $"纠察队已收取罚金{collected} 金（应缴 {fine} 金）",
                 Colors.Yellow));
+            return collected;
         }
 
         #endregion

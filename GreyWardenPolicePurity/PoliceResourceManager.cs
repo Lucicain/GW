@@ -52,6 +52,12 @@ namespace GreyWardenPolicePurity
             return !_resupplying.Contains(party.StringId);
         }
 
+        public static void CancelResupply(MobileParty police)
+        {
+            if (police == null) return;
+            _resupplying.Remove(police.StringId);
+        }
+
         public static void StartResupply(MobileParty police)
         {
             if (police == null || !police.IsActive) return;
@@ -419,6 +425,20 @@ namespace GreyWardenPolicePurity
             }
 
             return goldTaken + itemsValue;
+        }
+
+        /// <summary>
+        /// 只收金币，不没收背包物品。用于战败押送后的严肃罚款流程。
+        /// </summary>
+        public static int CollectFineGoldOnly(int fine)
+        {
+            if (fine <= 0) return 0;
+
+            int goldTaken = Math.Min(Hero.MainHero.Gold, fine);
+            if (goldTaken > 0)
+                Hero.MainHero.ChangeHeroGold(-goldTaken);
+
+            return goldTaken;
         }
 
         private static int ConfiscateItems(int debt)
