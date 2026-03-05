@@ -1,0 +1,686 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+using TaleWorlds.Localization;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 灰袍纠察队系统（声望 -1 到 -4 的罚款追讨）
+    ///
+    /// 核心机制：
+    ///   纠察队是警察家族的 WarParty（不是 CustomParty），因此引擎能正常处理投降/俘虏。
+    ///   玩家被击败/投降 → 引擎自动俘虏玩家 → 纠察队带着俘虏返回定居点 →
+    ///   到达定居点后执行惩罚（罚款+声望清零）→ 释放玩家 → 恢复和平 → 纠察队销毁
+    /// </summary>
+    public class PolicePatrolBehavior : CampaignBehaviorBase
+    {
+        private const int FinePerPoint = 100;
+        private const int RewardPerPointPerDay = 20;
+        private const int PatrolSize = 20;
+        private const string PatrolIdPrefix = "gwp_patrol_";
+
+        private readonly List<string> _activePatrolIds = new List<string>();
+        private readonly List<string> _returningPatrolIds = new List<string>();
+
+        private bool _fineAttempted = false;
+        private bool _playerRefused = false;
+
+        // 纠察队出发的定居点（战败后押送回此处）
+        private Settlement _patrolOriginSettlement = null;
+
+        // 玩家被纠察队俘虏，正在被押送回定居点
+        private bool _playerCapturedByPatrol = false;
+        private string _escortPatrolId = null;
+
+        public override void RegisterEvents()
+        {
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+        }
+
+        public override void SyncData(IDataStore dataStore) { }
+
+        #region 每日奖励
+
+        private void OnDailyTick()
+        {
+            if (PlayerBehaviorPool.Reputation > 0)
+            {
+                int reward = PlayerBehaviorPool.Reputation * RewardPerPointPerDay;
+                Hero.MainHero.ChangeHeroGold(reward);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍守卫嘉奖：+{reward}金（声望{PlayerBehaviorPool.Reputation} × {RewardPerPointPerDay}）",
+                    Colors.Green));
+            }
+        }
+
+        #endregion
+
+        #region 每小时
+
+        private void OnHourlyTick()
+        {
+            try
+            {
+                CleanDeadPatrols();
+                UpdateReturningPatrols();
+
+                // === 押送状态：玩家被俘虏，纠察队正在返回定居点 ===
+                if (_playerCapturedByPatrol)
+                {
+                    UpdateEscort();
+                    return;
+                }
+
+                // 玩家拒绝后纠察队全部消失（未通过战斗）→ 补扣声望
+                if (_playerRefused && _activePatrolIds.Count == 0)
+                {
+                    PlayerBehaviorPool.ChangeReputation(-5);
+                    CrimePool.TryAddPlayerCrime("抗拒执法",
+                        MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero,
+                        "拒绝缴纳灰袍纠察队罚款");
+                    MakePeaceWithAllFactions();
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 拒绝执法！声望 -5，当前声望：{PlayerBehaviorPool.Reputation}",
+                        Colors.Red));
+                    _playerRefused = false;
+                    _fineAttempted = false;
+                    return;
+                }
+
+                // 玩家拒绝后纠察队仍在追击/战斗中
+                if (_playerRefused)
+                    return;
+
+                int rep = PlayerBehaviorPool.Reputation;
+
+                // 只在 -1 到 -4 范围内工作
+                if (rep >= 0 || rep <= -5)
+                {
+                    if (_activePatrolIds.Count > 0)
+                        ReturnAllPatrols();
+                    return;
+                }
+
+                // 生成纠察队
+                if (_activePatrolIds.Count == 0)
+                {
+                    SpawnPatrol();
+                    _fineAttempted = false;
+                }
+
+                // 追击玩家
+                foreach (string patrolId in _activePatrolIds.ToList())
+                {
+                    var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
+                    if (patrol == null || !patrol.IsActive) continue;
+
+                    MobileParty player = MobileParty.MainParty;
+                    if (player == null || !player.IsActive) continue;
+
+                    patrol.SetMoveGoToPoint(
+                        new CampaignVec2(player.GetPosition2D, true),
+                        MobileParty.NavigationType.Default);
+
+                    float dist = patrol.GetPosition2D.Distance(player.GetPosition2D);
+                    if (dist < 3f && !_fineAttempted)
+                    {
+                        ShowFineDialog(patrol);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 纠察队Tick异常：{ex.Message}", Colors.Red));
+            }
+        }
+
+        #endregion
+
+        #region 生成纠察队
+
+        private void SpawnPatrol()
+        {
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+
+            _patrolOriginSettlement = FindNearestTown(MobileParty.MainParty);
+            if (_patrolOriginSettlement == null) return;
+
+            Hero clanLeader = policeClan.Leader;
+            if (clanLeader == null) return;
+
+            string patrolId = PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
+
+            try
+            {
+                // 使用带 leader 参数的重载，使纠察队拥有领导英雄
+                // 这样引擎在投降时能正常将玩家作为俘虏转交给领导英雄，不会崩溃
+                MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                    _patrolOriginSettlement.GatePosition,
+                    1f,
+                    _patrolOriginSettlement,
+                    new TextObject("灰袍纠察队"),
+                    policeClan,
+                    policeClan.DefaultPartyTemplate,
+                    clanLeader,     // owner
+                    clanLeader,     // leader（关键：有leader才能当captor）
+                    "", "",
+                    5f,
+                    true);          // avoidHostileActions=true：防止玩家点击触发原生遭遇
+
+                patrol.StringId = patrolId;
+                patrol.ActualClan = policeClan;
+
+                patrol.MemberRoster.Clear();
+                FillPatrolTroops(patrol);
+
+                patrol.Ai.SetDoNotMakeNewDecisions(true);
+                patrol.Ai.SetInitiative(1f, 0f, 999f);
+
+                _activePatrolIds.Add(patrolId);
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队从 {_patrolOriginSettlement.Name} 出发追讨罚款！",
+                    Colors.Yellow));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 生成纠察队失败：{ex.Message}", Colors.Red));
+            }
+        }
+
+        private void FillPatrolTroops(MobileParty patrol)
+        {
+            if (patrol == null) return;
+
+            CharacterObject infantry = CharacterObject.Find("gwheavyinfantry");
+            CharacterObject archer = CharacterObject.Find("gwarcher");
+
+            if (infantry != null && archer != null)
+            {
+                int infantryCount = (int)(PatrolSize * 0.6f);
+                int archerCount = PatrolSize - infantryCount;
+                patrol.MemberRoster.AddToCounts(infantry, infantryCount);
+                patrol.MemberRoster.AddToCounts(archer, archerCount);
+            }
+            else if (infantry != null)
+            {
+                patrol.MemberRoster.AddToCounts(infantry, PatrolSize);
+            }
+            else if (archer != null)
+            {
+                patrol.MemberRoster.AddToCounts(archer, PatrolSize);
+            }
+        }
+
+        #endregion
+
+        #region 罚款对话
+
+        private void ShowFineDialog(MobileParty patrol)
+        {
+            if (_fineAttempted) return;
+            _fineAttempted = true;
+
+            int rep = PlayerBehaviorPool.Reputation;
+            if (rep >= 0) return;
+
+            int fine = Math.Abs(rep) * FinePerPoint;
+            int playerGold = Hero.MainHero.Gold;
+
+            string dialogText = $"站住！灰袍纠察队在此执法。\n" +
+                $"你当前有 {Math.Abs(rep)} 次违规记录，需缴纳罚款 {fine} 金。\n" +
+                (playerGold >= fine
+                    ? $"你身上有 {playerGold} 金，足够缴纳。"
+                    : $"你身上只有 {playerGold} 金，不足以缴纳全部罚款，将尽数收取。");
+
+            InformationManager.ShowInquiry(new InquiryData(
+                "灰袍纠察队",
+                dialogText,
+                true,
+                true,
+                "缴纳罚款",
+                "拒绝缴纳",
+                () => OnAcceptFine(fine),
+                () => OnRefuseFine(patrol)),
+                true);
+        }
+
+        private void OnAcceptFine(int fine)
+        {
+            CollectFine(fine);
+            PlayerBehaviorPool.ResetReputation(0);
+            MakePeaceWithAllFactions();
+            ReturnAllPatrols();
+        }
+
+        private void OnRefuseFine(MobileParty patrol)
+        {
+            _playerRefused = true;
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 你拒绝缴纳罚款！纠察队将使用武力执法！",
+                Colors.Red));
+
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan != null)
+            {
+                IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+                if (playerFaction != null && !FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
+                {
+                    try { FactionManager.DeclareWar(policeClan, playerFaction); } catch { }
+                }
+            }
+
+            if (patrol != null && patrol.IsActive)
+            {
+                patrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
+            }
+        }
+
+        #endregion
+
+        #region 战斗结束
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            try
+            {
+                if (mapEvent == null) return;
+
+                bool patrolInvolved = false;
+                bool playerInvolved = false;
+                MobileParty involvedPatrol = null;
+
+                foreach (var p in mapEvent.InvolvedParties)
+                {
+                    if (p?.MobileParty == null) continue;
+                    if (IsPatrol(p.MobileParty))
+                    {
+                        patrolInvolved = true;
+                        involvedPatrol = p.MobileParty;
+                    }
+                    if (p.MobileParty.IsMainParty) playerInvolved = true;
+                }
+
+                if (!patrolInvolved || !playerInvolved) return;
+
+                // 只有玩家明确拒绝缴纳罚款后才处理战斗结果
+                // 防止玩家意外点击纠察队进入遭遇→离开→被误扣信誉
+                if (!_playerRefused) return;
+
+                bool patrolWon = false;
+                if (mapEvent.HasWinner && mapEvent.Winner != null)
+                {
+                    // 检查纠察队是否在胜方
+                    foreach (var p in mapEvent.Winner.Parties)
+                    {
+                        if (p?.Party?.IsMobile == true && IsPatrol(p.Party.MobileParty))
+                        {
+                            patrolWon = true;
+                            break;
+                        }
+                    }
+
+                    // 备用：检查玩家是否在败方
+                    if (!patrolWon)
+                    {
+                        var loser = (mapEvent.Winner == mapEvent.AttackerSide)
+                            ? mapEvent.DefenderSide
+                            : mapEvent.AttackerSide;
+                        if (loser != null)
+                        {
+                            foreach (var p in loser.Parties)
+                            {
+                                if (p?.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
+                                {
+                                    patrolWon = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (patrolWon)
+                {
+                    // 纠察队胜利：玩家已被引擎自动俘虏
+                    // 不立刻处罚！让纠察队带着俘虏返回定居点
+                    OnPatrolVictory(involvedPatrol);
+                }
+                else
+                {
+                    // 玩家胜利
+                    OnPlayerVictory();
+                    MakePeaceWithAllFactions();
+                    CleanDeadPatrols();
+                    ReturnAllPatrols();
+                }
+
+                _playerRefused = false;
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 纠察队战斗处理异常：{ex.Message}", Colors.Red));
+                try { MakePeaceWithAllFactions(); } catch { }
+                _playerRefused = false;
+            }
+        }
+
+        /// <summary>
+        /// 纠察队胜利：玩家已被引擎俘虏，纠察队带着俘虏返回定居点
+        /// </summary>
+        private void OnPatrolVictory(MobileParty patrol)
+        {
+            _playerCapturedByPatrol = true;
+            _escortPatrolId = patrol?.StringId;
+
+            // 纠察队设置目标为原定居点
+            if (patrol != null && patrol.IsActive && _patrolOriginSettlement != null)
+            {
+                patrol.Ai.SetDoNotMakeNewDecisions(true);
+                patrol.SetMoveGoToSettlement(
+                    _patrolOriginSettlement,
+                    MobileParty.NavigationType.Default,
+                    false);
+            }
+
+            // 移出活跃追击列表（不销毁，让它继续移动）
+            if (patrol != null)
+                _activePatrolIds.Remove(patrol.StringId);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 你被纠察队击败！正在被押送回 {(_patrolOriginSettlement?.Name?.ToString() ?? "定居点")} 接受处罚...",
+                Colors.Yellow));
+        }
+
+        private void OnPlayerVictory()
+        {
+            PlayerBehaviorPool.ChangeReputation(-5);
+            CrimePool.TryAddPlayerCrime("抗拒执法",
+                MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero,
+                _playerRefused ? "拒绝缴纳灰袍纠察队罚款" : "攻击灰袍纠察队");
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 击败纠察队！声望 -5，当前声望：{PlayerBehaviorPool.Reputation}，警察部队已介入！",
+                Colors.Red));
+        }
+
+        #endregion
+
+        #region 押送监控
+
+        /// <summary>
+        /// 每小时检查：纠察队是否到达定居点 → 执行惩罚 → 释放 → 和平
+        /// </summary>
+        private void UpdateEscort()
+        {
+            if (!_playerCapturedByPatrol) return;
+
+            MobileParty escort = null;
+            if (_escortPatrolId != null)
+                escort = MobileParty.All.FirstOrDefault(p => p.StringId == _escortPatrolId);
+
+            // 纠察队消失了 → 直接在当前位置执行惩罚
+            if (escort == null || !escort.IsActive)
+            {
+                Settlement fallback = FindNearestTown(MobileParty.MainParty) ?? _patrolOriginSettlement;
+                ExecutePunishment(fallback);
+                _playerCapturedByPatrol = false;
+                _escortPatrolId = null;
+                CleanDeadPatrols();
+                return;
+            }
+
+            // 确保纠察队继续朝定居点移动
+            if (_patrolOriginSettlement != null)
+            {
+                escort.SetMoveGoToSettlement(
+                    _patrolOriginSettlement,
+                    MobileParty.NavigationType.Default,
+                    false);
+            }
+
+            // 检查是否到达定居点
+            if (_patrolOriginSettlement != null)
+            {
+                float dist = escort.GetPosition2D.Distance(_patrolOriginSettlement.Position.ToVec2());
+                if (dist < 5f)
+                {
+                    // 到达！执行惩罚
+                    ExecutePunishment(_patrolOriginSettlement);
+
+                    // 释放完毕，销毁纠察队
+                    _playerCapturedByPatrol = false;
+                    _escortPatrolId = null;
+
+                    try { DestroyPartyAction.Apply(null, escort); } catch { }
+
+                    CleanDeadPatrols();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 执行惩罚（同 PoliceEnforcementBehavior.HandlePlayerCapturedByPolice 机制）：
+        /// 释放俘虏 → 传送到定居点 → 罚款 → 声望归零 → 和平
+        /// </summary>
+        private void ExecutePunishment(Settlement settlement)
+        {
+            try
+            {
+                // 1. 释放俘虏
+                if (PlayerCaptivity.IsCaptive)
+                {
+                    try { PlayerCaptivity.EndCaptivity(); } catch { }
+                }
+
+                // 2. 将玩家部队移动到定居点门口（不用TeleportHeroAction，避免模型消失）
+                MobileParty mainParty = MobileParty.MainParty;
+                if (mainParty != null && settlement != null)
+                {
+                    try
+                    {
+                        mainParty.Position = settlement.GatePosition;
+                        mainParty.Party.SetVisualAsDirty();
+                    }
+                    catch { }
+                }
+
+                // 3. 罚款
+                int rep = PlayerBehaviorPool.Reputation;
+                int fine = Math.Abs(rep) * FinePerPoint;
+                CollectFine(fine);
+
+                // 4. 声望归零
+                PlayerBehaviorPool.ResetReputation(0);
+
+                // 5. 恢复和平（警察+受害国）
+                MakePeaceWithAllFactions();
+
+                // 6. 消息
+                string townName = settlement?.Name?.ToString() ?? "最近城镇";
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 你被押送至 {townName}，缴纳罚款 {fine} 金，声望已清零，已与各方恢复和平",
+                    Colors.Yellow));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 执行惩罚异常：{ex.Message}", Colors.Red));
+                // 确保和平
+                try { MakePeaceWithAllFactions(); } catch { }
+            }
+        }
+
+        #endregion
+
+        #region 罚款收取
+
+        private void CollectFine(int fine)
+        {
+            int playerGold = Hero.MainHero.Gold;
+
+            if (playerGold >= fine)
+            {
+                Hero.MainHero.ChangeHeroGold(-fine);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队收取罚款：{fine}金",
+                    Colors.Yellow));
+            }
+            else
+            {
+                if (playerGold > 0)
+                    Hero.MainHero.ChangeHeroGold(-playerGold);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队收取罚款：{playerGold}金（应缴{fine}金，已尽数缴纳）",
+                    Colors.Yellow));
+            }
+        }
+
+        #endregion
+
+        #region 辅助
+
+        private bool IsPatrol(MobileParty party)
+        {
+            if (party == null) return false;
+            return party.StringId != null && party.StringId.StartsWith(PatrolIdPrefix);
+        }
+
+        /// <summary>
+        /// 恢复和平：警察势力 + 所有受害国
+        /// </summary>
+        private void MakePeaceWithAllFactions()
+        {
+            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            if (playerFaction == null) return;
+
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
+            {
+                try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
+            }
+
+            foreach (var victim in PlayerBehaviorPool.VictimFactions)
+            {
+                if (victim == null || victim == playerFaction) continue;
+                if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
+
+                try
+                {
+                    MakePeaceAction.Apply(playerFaction, victim);
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 灰袍守卫调停：你与 {victim.Name} 恢复和平",
+                        Colors.Green));
+                }
+                catch { }
+            }
+
+            PlayerBehaviorPool.ClearVictimFactions();
+        }
+
+        private void ReturnAllPatrols()
+        {
+            foreach (string id in _activePatrolIds.ToList())
+            {
+                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == id);
+                if (patrol != null && patrol.IsActive)
+                {
+                    patrol.Ai.SetDoNotMakeNewDecisions(true);
+                    Settlement town = _patrolOriginSettlement ?? FindNearestTown(patrol);
+                    if (town != null)
+                    {
+                        patrol.SetMoveGoToSettlement(town, MobileParty.NavigationType.Default, false);
+                        _returningPatrolIds.Add(id);
+                    }
+                    else
+                    {
+                        try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                    }
+                }
+            }
+            _activePatrolIds.Clear();
+            _fineAttempted = false;
+        }
+
+        private void UpdateReturningPatrols()
+        {
+            for (int i = _returningPatrolIds.Count - 1; i >= 0; i--)
+            {
+                string id = _returningPatrolIds[i];
+                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == id);
+
+                if (patrol == null || !patrol.IsActive)
+                {
+                    _returningPatrolIds.RemoveAt(i);
+                    continue;
+                }
+
+                Settlement target = _patrolOriginSettlement ?? FindNearestTown(patrol);
+                if (target != null)
+                {
+                    // 每次都重新下达移动指令，防止被玩家点击等操作中断
+                    patrol.Ai.SetDoNotMakeNewDecisions(true);
+                    patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+
+                    float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
+                    if (dist < 3f)
+                    {
+                        try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                        _returningPatrolIds.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        private void CleanDeadPatrols()
+        {
+            _activePatrolIds.RemoveAll(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p == null || !p.IsActive;
+            });
+
+            _returningPatrolIds.RemoveAll(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p == null || !p.IsActive;
+            });
+        }
+
+        private Settlement FindNearestTown(MobileParty party)
+        {
+            if (party == null) return null;
+
+            Vec2 pos = party.GetPosition2D;
+            Settlement best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (Settlement s in Settlement.All)
+            {
+                if (!s.IsTown) continue;
+                float d = pos.Distance(s.Position.ToVec2());
+                if (d < bestDist) { bestDist = d; best = s; }
+            }
+            return best;
+        }
+
+        #endregion
+    }
+}

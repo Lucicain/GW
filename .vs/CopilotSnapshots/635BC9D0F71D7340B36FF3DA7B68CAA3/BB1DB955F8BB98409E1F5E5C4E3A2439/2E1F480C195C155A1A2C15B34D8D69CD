@@ -1,0 +1,434 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Helpers;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+using TaleWorlds.ObjectSystem;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 灰袍纠察队系统
+    /// 
+    /// 声望 > 0：每点声望每天奖励20金，犯罪后声望直接降到-1
+    /// 声望 < 0：生成纠察队追讨罚款（每点负声望100金）
+    ///   玩家拒绝 → 声望降到-5，纠察队开战
+    ///   -5及以下 → 直接攻击
+    ///   -10及以下 → 被击败后没收所有第纳尔和装备
+    ///   -20及以下 → 2支纠察队
+    /// </summary>
+    public class PolicePatrolBehavior : CampaignBehaviorBase
+    {
+        private const int FinePerPoint = 100;
+        private const int RewardPerPointPerDay = 20;
+        private const int PatrolSize = 20;
+        private const string PatrolIdPrefix = "gwp_patrol_";
+
+        // 纠察队列表
+        private readonly List<string> _activePatrolIds = new List<string>();
+        private bool _fineCollected = false;
+
+        public override void RegisterEvents()
+        {
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+        }
+
+        public override void SyncData(IDataStore dataStore) { }
+
+        #region 每日
+
+        private void OnDailyTick()
+        {
+            // 声望 > 0：每天奖励
+            if (PlayerBehaviorPool.Reputation > 0)
+            {
+                int reward = PlayerBehaviorPool.Reputation * RewardPerPointPerDay;
+                Hero.MainHero.ChangeHeroGold(reward);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍守卫嘉奖：+{reward}金（声望{PlayerBehaviorPool.Reputation} × {RewardPerPointPerDay}）",
+                    Colors.Green));
+            }
+        }
+
+        #endregion
+
+        #region 每小时
+
+        private void OnHourlyTick()
+        {
+            CleanDeadPatrols();
+
+            if (PlayerBehaviorPool.Reputation >= 0) return;
+
+            // 需要多少支纠察队
+            int targetCount = PlayerBehaviorPool.Reputation <= -20 ? 2 : 1;
+
+            // 生成缺少的纠察队
+            while (_activePatrolIds.Count < targetCount)
+            {
+                SpawnPatrol();
+            }
+
+            // 追击玩家
+            foreach (string patrolId in _activePatrolIds.ToList())
+            {
+                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
+                if (patrol == null || !patrol.IsActive) continue;
+
+                MobileParty player = MobileParty.MainParty;
+                if (player == null || !player.IsActive) continue;
+
+                float dist = patrol.GetPosition2D.Distance(player.GetPosition2D);
+
+                // -5及以下：直接攻击模式
+                if (PlayerBehaviorPool.Reputation <= -5)
+                {
+                    EnsureWarWithPlayer();
+                    patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+                }
+                else
+                {
+                    // 追讨罚款：接近玩家
+                    patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+
+                    // 到达范围内：尝试收罚款
+                    if (dist < 3f && !_fineCollected)
+                    {
+                        TryCollectFine(patrol);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region 生成纠察队
+
+        private void SpawnPatrol()
+        {
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 找最近的城镇
+            Settlement nearestTown = FindNearestTown();
+            if (nearestTown == null) return;
+
+            string patrolId = PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
+
+            // 用 PatrolPartyComponent 生成
+            try
+            {
+                MobileParty patrol = PatrolPartyComponent.CreatePatrolParty(
+                    patrolId,
+                    nearestTown.GatePosition,
+                    1f,
+                    nearestTown,
+                    policeClan.DefaultPartyTemplate);
+
+                // 手动填充兵员（确保20人）
+                FillPatrolTroops(patrol);
+
+                _activePatrolIds.Add(patrolId);
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队从 {nearestTown.Name} 出发！",
+                    Colors.Red));
+            }
+            catch
+            {
+                // 备用方案：用 MobilePartyHelper.SpawnLordParty 风格
+                try
+                {
+                    SpawnPatrolFallback(patrolId, nearestTown, policeClan);
+                }
+                catch { }
+            }
+        }
+
+        private void SpawnPatrolFallback(string patrolId, Settlement town, Clan policeClan)
+        {
+            // 找一个空闲的警察英雄作为队长
+            Hero leader = null;
+            foreach (Hero hero in policeClan.Heroes.ToList())
+            {
+                if (hero == null || hero.IsDead || !hero.IsActive) continue;
+                if (hero.IsChild || hero.IsPrisoner) continue;
+                if (hero.PartyBelongedTo != null) continue;
+                if (hero == policeClan.Leader) continue;
+                leader = hero;
+                break;
+            }
+
+            if (leader == null) return;
+
+            var party = Helpers.MobilePartyHelper.SpawnLordParty(leader, town);
+            if (party == null) return;
+
+            FillPatrolTroops(party);
+            _activePatrolIds.Add(party.StringId);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 灰袍纠察队（{leader.Name}）从 {town.Name} 出发！",
+                Colors.Red));
+        }
+
+        private void FillPatrolTroops(MobileParty patrol)
+        {
+            if (patrol == null) return;
+
+            // 用gw兵种填充
+            CharacterObject infantry = CharacterObject.Find("gwheavyinfantry");
+            CharacterObject archer = CharacterObject.Find("gwarcher");
+
+            int currentCount = patrol.Party.NumberOfAllMembers;
+            int toAdd = PatrolSize - currentCount;
+            if (toAdd <= 0) return;
+
+            if (infantry != null && archer != null)
+            {
+                int infantryCount = (int)(toAdd * 0.6f);
+                int archerCount = toAdd - infantryCount;
+
+                patrol.MemberRoster.AddToCounts(infantry, infantryCount);
+                patrol.MemberRoster.AddToCounts(archer, archerCount);
+            }
+            else if (infantry != null)
+            {
+                patrol.MemberRoster.AddToCounts(infantry, toAdd);
+            }
+        }
+
+        #endregion
+
+        #region 罚款
+
+        private void TryCollectFine(MobileParty patrol)
+        {
+            int rep = PlayerBehaviorPool.Reputation;
+            if (rep >= 0) return;
+
+            int fine = Math.Abs(rep) * FinePerPoint;
+            int playerGold = Hero.MainHero.Gold;
+
+            if (playerGold >= fine)
+            {
+                // 有足够的钱：扣款
+                Hero.MainHero.ChangeHeroGold(-fine);
+                _fineCollected = true;
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队收取罚款：{fine}金（{Math.Abs(rep)}点违规 × {FinePerPoint}金）",
+                    Colors.Yellow));
+
+                // 声望归零
+                PlayerBehaviorPool.ResetReputation(0);
+
+                // 解散纠察队
+                DisbandAllPatrols();
+            }
+            else
+            {
+                // 没钱：算了，但警告
+                _fineCollected = true;
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 灰袍纠察队：你无法支付{fine}金罚款...",
+                    Colors.Yellow));
+
+                // 声望降到-5，纠察队开战
+                if (rep > -5)
+                {
+                    PlayerBehaviorPool.ResetReputation(-5);
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 拒绝缴纳罚款！声望降至{PlayerBehaviorPool.GetReputationDisplay()}",
+                        Colors.Red));
+                }
+
+                EnsureWarWithPlayer();
+            }
+        }
+
+        #endregion
+
+        #region 战斗结束
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null) return;
+
+            bool patrolInvolved = false;
+            bool playerInvolved = false;
+            bool patrolWon = false;
+
+            foreach (var p in mapEvent.InvolvedParties)
+            {
+                if (p?.MobileParty == null) continue;
+                if (IsPatrol(p.MobileParty)) patrolInvolved = true;
+                if (p.MobileParty.IsMainParty) playerInvolved = true;
+            }
+
+            if (!patrolInvolved || !playerInvolved) return;
+
+            // 检查纠察队是否赢了
+            if (mapEvent.HasWinner)
+            {
+                foreach (var p in mapEvent.Winner.Parties)
+                {
+                    if (p.Party?.IsMobile == true && IsPatrol(p.Party.MobileParty))
+                    {
+                        patrolWon = true;
+                        break;
+                    }
+                }
+            }
+
+            if (patrolWon)
+            {
+                int rep = PlayerBehaviorPool.Reputation;
+                int fine = Math.Abs(rep) * FinePerPoint;
+
+                if (rep <= -10)
+                {
+                    // -10及以下：没收所有金币和装备
+                    int gold = Hero.MainHero.Gold;
+                    if (gold > 0) Hero.MainHero.ChangeHeroGold(-gold);
+
+                    StripPlayerEquipment();
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 灰袍纠察队没收了你的全部财产（{gold}金）和装备！",
+                        Colors.Red));
+                }
+                else
+                {
+                    // 正常罚款
+                    int actual = Math.Min(fine, Hero.MainHero.Gold);
+                    if (actual > 0) Hero.MainHero.ChangeHeroGold(-actual);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 灰袍纠察队强制收取罚款：{actual}金",
+                        Colors.Yellow));
+                }
+
+                // 调用通缉结束流程（和平+解除通缉）
+                CrimePool.EndPlayerHunt();
+
+                // 声望归零
+                PlayerBehaviorPool.ResetReputation(0);
+
+                // 解散纠察队
+                DisbandAllPatrols();
+                _fineCollected = false;
+            }
+            else
+            {
+                // 玩家赢了：纠察队会被接手（普通通缉池逻辑处理）
+                // 清理被消灭的纠察队
+                CleanDeadPatrols();
+            }
+        }
+
+        #endregion
+
+        #region 辅助
+
+        private void EnsureWarWithPlayer()
+        {
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+
+            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            if (playerFaction == null) return;
+
+            if (!FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
+            {
+                try { FactionManager.DeclareWar(policeClan, playerFaction); } catch { }
+            }
+        }
+
+        private void StripPlayerEquipment()
+        {
+            try
+            {
+                var battleEquipment = Hero.MainHero.BattleEquipment;
+                for (int i = 0; i < 12; i++)
+                {
+                    var slot = (EquipmentIndex)i;
+                    if (!battleEquipment[slot].IsEmpty)
+                    {
+                        battleEquipment[slot] = EquipmentElement.Invalid;
+                    }
+                }
+
+                var civilianEquipment = Hero.MainHero.CivilianEquipment;
+                for (int i = 0; i < 12; i++)
+                {
+                    var slot = (EquipmentIndex)i;
+                    if (!civilianEquipment[slot].IsEmpty)
+                    {
+                        civilianEquipment[slot] = EquipmentElement.Invalid;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private bool IsPatrol(MobileParty party)
+        {
+            if (party == null) return false;
+            return party.StringId != null && party.StringId.StartsWith(PatrolIdPrefix);
+        }
+
+        private void DisbandAllPatrols()
+        {
+            foreach (string id in _activePatrolIds.ToList())
+            {
+                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == id);
+                if (patrol != null && patrol.IsActive)
+                {
+                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                }
+            }
+            _activePatrolIds.Clear();
+            _fineCollected = false;
+        }
+
+        private void CleanDeadPatrols()
+        {
+            _activePatrolIds.RemoveAll(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p == null || !p.IsActive;
+            });
+        }
+
+        private Settlement FindNearestTown()
+        {
+            MobileParty player = MobileParty.MainParty;
+            if (player == null) return null;
+
+            Vec2 playerPos = player.GetPosition2D;
+            Settlement best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (Settlement s in Settlement.All)
+            {
+                if (!s.IsTown) continue;
+                float d = playerPos.Distance(s.Position.ToVec2());
+                if (d < bestDist) { bestDist = d; best = s; }
+            }
+            return best;
+        }
+
+        #endregion
+    }
+}

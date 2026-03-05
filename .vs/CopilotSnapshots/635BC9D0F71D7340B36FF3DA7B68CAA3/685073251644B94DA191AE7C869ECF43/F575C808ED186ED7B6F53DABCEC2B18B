@@ -1,0 +1,47 @@
+﻿using System;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core;
+using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Diamond.Ranked;
+
+namespace GreyWardenPolicePurity
+{
+    public class SubModule : MBSubModuleBase
+    {
+        protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
+        {
+            base.OnGameStart(game, gameStarterObject);
+
+            if (game.GameType is Campaign && gameStarterObject is CampaignGameStarter starter)
+            {
+                // ======================
+                // 核心功能：士兵纯洁性维护
+                // ======================
+                starter.AddBehavior(new PolicePurityBehavior());
+
+                // ======================
+                // 核心功能：全地图犯罪监控
+                // ======================
+                starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
+
+                // ======================
+                // 防止被AI招募
+                // ======================
+                starter.AddBehavior(new PoliceAntiRecruitment());                
+                // ======================
+                // AI宣战逻辑
+                // ======================
+                starter.AddBehavior(new PoliceAntiWarDeclaration());
+                // ======================
+                // 核心功能5：警察惩戒罪犯
+                // ======================
+                starter.AddBehavior(new PoliceEnforcementBehavior());
+
+                // ======================
+                // 核心功能6：警察资源管理（发薪+补给）
+                // ======================
+                starter.AddBehavior(new PoliceResourceManager());
+            }
+        }
+    }
+}

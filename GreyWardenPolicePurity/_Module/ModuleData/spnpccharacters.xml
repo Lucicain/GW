@@ -1,0 +1,226 @@
+<!--You can add new or override old npc characters by adding nodes to this xml. For examples please refer to: SandBoxCore/ModuleData/spnpccharacters.xml, SandBox/ModuleData/lords.xml-->
+<NPCCharacters>
+
+<!--Recruit-->
+  <NPCCharacter id="gwrecruit"
+                default_group="Infantry"
+                level="15"
+                name="灰袍守护者轻步兵"
+                occupation="Soldier"
+                is_basic_troop="true"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.fighter_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="130" />
+      <skill id="Riding"
+             value="20" />
+      <skill id="OneHanded"
+             value="130" />
+      <skill id="TwoHanded"
+             value="80" />
+      <skill id="Polearm"
+             value="130" />
+      <skill id="Bow"
+             value="60" />
+      <skill id="Crossbow"
+             value="60" />
+      <skill id="Throwing"
+             value="80" />
+    </skills>
+	<upgrade_targets>
+      <upgrade_target id="NPCCharacter.gwheavyinfantry" />
+	  <upgrade_target id="NPCCharacter.gwarcher" />
+    </upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Body"
+                   id="winfarmor" />
+        <equipment slot="Gloves"
+                   id="winfgloves" />
+        <equipment slot="Leg"
+                   id="winflegs" />
+        <equipment slot="Head"
+                   id="winfhelmet" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t1"
+                    civilian="true" />
+    </Equipments>
+  </NPCCharacter>
+  
+  
+  
+  <!--Heavy Infantry-->
+  <NPCCharacter id="gwheavyinfantry"
+                default_group="Infantry"
+                level="26"
+                name="灰袍守护者重步兵"
+                occupation="Soldier"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.fighter_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="130" />
+      <skill id="Riding"
+             value="20" />
+      <skill id="OneHanded"
+             value="130" />
+      <skill id="TwoHanded"
+             value="80" />
+      <skill id="Polearm"
+             value="130" />
+      <skill id="Bow"
+             value="60" />
+      <skill id="Crossbow"
+             value="60" />
+      <skill id="Throwing"
+             value="80" />
+    </skills>
+    <upgrade_targets>
+	  <upgrade_target id="NPCCharacter.gwknight" />
+    </upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Item1"
+                   id="wlarge_shield" />
+        <equipment slot="Body"
+                   id="winfarmor" />
+        <equipment slot="Gloves"
+                   id="winfgloves" />
+        <equipment slot="Leg"
+                   id="winflegs" />
+        <equipment slot="Head"
+                   id="winfhelmethv" />
+        <equipment slot="Cape"
+                   id="winfshoulder" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t3"
+                    civilian="true" />
+    </Equipments>
+  </NPCCharacter>
+  
+  
+  
+  <!--Archer-->
+  <NPCCharacter id="gwarcher"
+                default_group="Ranged"
+                level="26"
+                name="灰袍守护者弓箭手"
+                occupation="Soldier"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.fighter_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="130" />
+      <skill id="Riding"
+             value="20" />
+      <skill id="OneHanded"
+             value="130" />
+      <skill id="TwoHanded"
+             value="30" />
+      <skill id="Polearm"
+             value="80" />
+      <skill id="Bow"
+             value="160" />
+      <skill id="Crossbow"
+             value="80" />
+      <skill id="Throwing"
+             value="60" />
+    </skills>
+    <upgrade_targets></upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="noble_long_bow" />
+        <equipment slot="Item1"
+                   id="piercing_arrows" />
+        <equipment slot="Item3"
+                   id="piercing_arrows" />
+        <equipment slot="Item2"
+                   id="gwonehandedsword" />
+        <equipment slot="Body"
+                   id="warcharmor" />
+        <equipment slot="Gloves"
+                   id="warchgloves" />
+        <equipment slot="Leg"
+                   id="warchlegs" />
+        <equipment slot="Head"
+                   id="warchhelmet" />
+        <equipment slot="Cape"
+                   id="warchshoulder" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t3"
+                    civilian="true" />
+    </Equipments>
+  </NPCCharacter>
+  
+  
+  
+  <!--Knight-->
+  <NPCCharacter id="gwknight"
+                default_group="Cavalry"
+                level="31"
+                name="灰袍守护者骑士"
+                occupation="Soldier"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.fighter_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="160" />
+      <skill id="Riding"
+             value="200" />
+      <skill id="OneHanded"
+             value="100" />
+      <skill id="TwoHanded"
+             value="300" />
+      <skill id="Polearm"
+             value="260" />
+      <skill id="Bow"
+             value="60" />
+      <skill id="Crossbow"
+             value="25" />
+      <skill id="Throwing"
+             value="45" />
+    </skills>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwlance" />
+        <equipment slot="Item1"
+                   id="gwtwohandedsword" />
+        <equipment slot="Item2"
+                   id="gwonehandedsword" />
+        <equipment slot="Item3"
+                   id="wlarge_shield" />
+        <equipment slot="Head"
+                   id="winfhelmethv" />
+        <equipment slot="Cape"
+                   id="winfshoulder" />
+        <equipment slot="Body"
+                   id="winfarmorhv" />
+        <equipment slot="Gloves"
+                   id="winfgloves" />
+        <equipment slot="Leg"
+                   id="winflegs" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t3"
+                    civilian="true" />
+      <equipment slot="Horse"
+                 id="Item.t2_empire_horse" />
+      <equipment slot="HorseHarness"
+                 id="wharness" />
+    </Equipments>
+  </NPCCharacter>
+  </NPCCharacters>

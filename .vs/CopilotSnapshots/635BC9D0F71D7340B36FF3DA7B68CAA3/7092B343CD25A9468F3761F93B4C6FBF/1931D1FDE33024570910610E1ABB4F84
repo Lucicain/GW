@@ -1,0 +1,85 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# Clan.Tier and CommanderLimit
+Write-Host "=== Clan.Tier ==="
+$ct = $a.GetType('TaleWorlds.CampaignSystem.Clan')
+$tp = $ct.GetProperty('Tier')
+Write-Host "  CanWrite: $($tp.CanWrite)"
+
+$cl = $ct.GetProperty('CommanderLimit')
+Write-Host "  CommanderLimit CanWrite: $($cl.CanWrite)"
+
+# DefaultClanTierModel.GetPartyLimitForTier - this determines CommanderLimit
+Write-Host ""
+Write-Host "=== DefaultClanTierModel ==="
+$dctm = $a.GetType('TaleWorlds.CampaignSystem.GameComponents.DefaultClanTierModel')
+foreach ($m in $dctm.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)) {
+    if ($m.DeclaringType -eq $dctm -and ($m.Name -match 'PartyLimit|GetParty|Commander')) {
+        $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+        Write-Host "  $($m.Name)($params) -> $($m.ReturnType.Name)"
+    }
+}
+
+# DefaultClanTierModel fields (might have constants for party limits per tier)
+Write-Host ""
+Write-Host "=== DefaultClanTierModel fields ==="
+foreach ($f in $dctm.GetFields([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance -bor [Reflection.BindingFlags]::Static)) {
+    Write-Host "  $($f.FieldType.Name) $($f.Name) = $(try{$f.GetValue($null)}catch{'(instance)'})"
+}
+
+# HeroSpawnCampaignBehavior - ConsiderSpawningLordParties
+Write-Host ""
+Write-Host "=== HeroSpawnCampaignBehavior.ConsiderSpawningLordParties ==="
+$hsb = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.HeroSpawnCampaignBehavior')
+$m2 = $hsb.GetMethod('ConsiderSpawningLordParties', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+if ($m2) {
+    $params = ($m2.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  $($m2.Name)($params)"
+}
+
+# HeroSpawnCampaignBehavior fields
+Write-Host ""
+Write-Host "=== HeroSpawnCampaignBehavior fields ==="
+foreach ($f in $hsb.GetFields([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance -bor [Reflection.BindingFlags]::Static)) {
+    Write-Host "  $($f.FieldType.Name) $($f.Name)"
+}
+
+# HeroSpawnCampaignBehavior.TrySpawnHeroesAndParties
+Write-Host ""
+Write-Host "=== TrySpawnHeroesAndParties ==="
+$m3 = $hsb.GetMethod('TrySpawnHeroesAndParties', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+if ($m3) {
+    $params = ($m3.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  $($m3.Name)($params)"
+}
+
+# Check Clan.CommanderLimit implementation - how it reads the model
+Write-Host ""
+Write-Host "=== Clan fields related to commander ==="
+foreach ($f in $ct.GetFields([Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)) {
+    if ($f.Name -match 'commander|Commander|partyLimit|PartyLimit|tier|Tier') {
+        Write-Host "  $($f.FieldType.Name) $($f.Name)"
+    }
+}
+
+# MobilePartyHelper.SpawnLordParty
+Write-Host ""
+Write-Host "=== MobilePartyHelper.SpawnLordParty ==="
+$mph = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.MobilePartyHelper')
+if (-not $mph) {
+    $types = $a.GetTypes()
+    foreach ($t in $types) {
+        if ($t.Name -eq 'MobilePartyHelper') {
+            $mph = $t
+            break
+        }
+    }
+}
+if ($mph) {
+    foreach ($m in $mph.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Static)) {
+        if ($m.DeclaringType -eq $mph -and $m.Name -match 'Spawn') {
+            $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+            Write-Host "  $($m.Name)($params) -> $($m.ReturnType.Name)"
+        }
+    }
+}

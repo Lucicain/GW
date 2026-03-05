@@ -1,0 +1,68 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# InitialChildGenerationCampaignBehavior - decompile the IL
+Write-Host "=== InitialChildGenerationCampaignBehavior.OnNewGameCreatedPartialFollowUp IL ==="
+$icg = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.InitialChildGenerationCampaignBehavior')
+$m = $icg.GetMethod('OnNewGameCreatedPartialFollowUp', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+$body = $m.GetMethodBody()
+$il = $body.GetILAsByteArray()
+Write-Host "  IL bytes: $($il.Length)"
+Write-Host "  Locals:"
+foreach ($l in $body.LocalVariables) {
+    Write-Host "    $($l.LocalIndex): $($l.LocalType.Name)"
+}
+
+# Check what properties it reads from Hero - look at method tokens in IL
+# We need to find what conditions it checks before generating spouse
+
+# Hero.Spouse - if already has spouse, skip?
+Write-Host ""
+Write-Host "=== Hero.Spouse ==="
+$ht = $a.GetType('TaleWorlds.CampaignSystem.Hero')
+$sp = $ht.GetProperty('Spouse')
+Write-Host "  CanWrite: $($sp.CanWrite)"
+Write-Host "  GetMethod token: $($sp.GetGetMethod().MetadataToken)"
+
+# Hero.Age
+$ap = $ht.GetProperty('Age')
+Write-Host ""
+Write-Host "=== Hero.Age ==="
+Write-Host "  GetMethod token: $($ap.GetGetMethod().MetadataToken)"
+
+# Hero.IsFemale
+$fp = $ht.GetProperty('IsFemale')
+Write-Host ""
+Write-Host "=== Hero.IsFemale ==="
+Write-Host "  CanWrite: $($fp.CanWrite)"
+Write-Host "  GetMethod token: $($fp.GetGetMethod().MetadataToken)"
+
+# Hero.Occupation
+$op = $ht.GetProperty('Occupation')
+Write-Host ""
+Write-Host "=== Hero.Occupation ==="
+Write-Host "  GetMethod token: $($op.GetGetMethod().MetadataToken)"
+
+# Hero.IsAlive
+$al = $ht.GetProperty('IsAlive')
+Write-Host ""
+Write-Host "=== Hero.IsAlive ==="
+Write-Host "  GetMethod token: $($al.GetGetMethod().MetadataToken)"
+
+# Clan.IsMinorFaction
+$ct = $a.GetType('TaleWorlds.CampaignSystem.Clan')
+$mf = $ct.GetProperty('IsMinorFaction')
+Write-Host ""
+Write-Host "=== Clan.IsMinorFaction ==="
+Write-Host "  GetMethod token: $($mf.GetGetMethod().MetadataToken)"
+
+# Clan.IsBanditFaction
+$bf = $ct.GetProperty('IsBanditFaction')
+Write-Host ""
+Write-Host "=== Clan.IsBanditFaction ==="
+Write-Host "  GetMethod token: $($bf.GetGetMethod().MetadataToken)"
+
+# Print full IL hex for analysis
+Write-Host ""
+Write-Host "=== Full IL hex ==="
+$hex = ($il | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
+Write-Host $hex

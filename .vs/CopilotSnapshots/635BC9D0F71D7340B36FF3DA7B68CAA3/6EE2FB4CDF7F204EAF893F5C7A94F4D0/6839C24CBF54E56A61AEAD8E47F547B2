@@ -1,0 +1,62 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# LordPartyComponent.CreateLordParty details
+Write-Host "=== LordPartyComponent.CreateLordParty ==="
+$lpc = $a.GetType('TaleWorlds.CampaignSystem.Party.PartyComponents.LordPartyComponent')
+$m = $lpc.GetMethod('CreateLordParty', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Static)
+if ($m) {
+    $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.FullName) $($_.Name) default=$($_.HasDefaultValue) $($_.DefaultValue)" }) -join "`n  "
+    Write-Host "  $($m.ReturnType.Name) CreateLordParty(`n  $params`n  )"
+}
+
+# Who calls CreateLordParty? Search behaviors
+Write-Host ""
+Write-Host "=== Behaviors with CreateLordParty/SpawnLord ==="
+$types = $a.GetTypes()
+foreach ($t in $types) {
+    $methods = $t.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance -bor [Reflection.BindingFlags]::Static)
+    foreach ($m in $methods) {
+        if ($m.DeclaringType -eq $t -and ($m.Name -match 'SpawnLord|CreateLordParty|SpawnWarParty|CreateWarParty|SpawnClanParty')) {
+            $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+            Write-Host "  $($t.Name).$($m.Name)($params)"
+        }
+    }
+}
+
+# Hero.CanLeadParty or similar
+Write-Host ""
+Write-Host "=== Hero - CanLead / Occupation ==="
+$ht = $a.GetType('TaleWorlds.CampaignSystem.Hero')
+foreach ($p in $ht.GetProperties()) {
+    if ($p.Name -match 'Occupation|CanLead|IsWanderer|IsLord|IsMinorFaction|IsCommander') {
+        $w = if ($p.CanWrite) { 'set' } else { 'ro' }
+        Write-Host "  $($p.PropertyType.Name) $($p.Name) { $w }"
+    }
+}
+
+# Occupation enum
+Write-Host ""
+Write-Host "=== Occupation enum ==="
+$occType = $a.GetType('TaleWorlds.CampaignSystem.Occupation')
+if ($occType -and $occType.IsEnum) {
+    foreach ($v in [Enum]::GetNames($occType)) {
+        Write-Host "  $v"
+    }
+}
+
+# Clan.CommanderLimit and how it's calculated
+Write-Host ""
+Write-Host "=== DefaultClanTierModel.GetPartyLimitForTier ==="
+$dctm = $a.GetType('TaleWorlds.CampaignSystem.GameComponents.DefaultClanTierModel')
+$m2 = $dctm.GetMethod('GetPartyLimitForTier')
+if ($m2) {
+    $params = ($m2.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  $($m2.ReturnType.Name) GetPartyLimitForTier($params)"
+}
+
+# Clan.CommanderLimit property
+Write-Host ""
+Write-Host "=== Clan.CommanderLimit ==="
+$ct = $a.GetType('TaleWorlds.CampaignSystem.Clan')
+$cl = $ct.GetProperty('CommanderLimit')
+Write-Host "  $($cl.PropertyType.Name) CommanderLimit { CanWrite=$($cl.CanWrite) }"

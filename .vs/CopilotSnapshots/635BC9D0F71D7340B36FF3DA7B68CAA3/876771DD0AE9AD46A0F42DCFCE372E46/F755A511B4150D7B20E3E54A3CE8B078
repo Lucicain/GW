@@ -1,0 +1,245 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 警察家族保护系统 - 堵死所有加入王国的路径
+    /// 
+    /// 第1层：设置 IsMinorFaction=false + IsClanTypeMercenary=false → 堵死雇佣兵路径
+    /// 第2层：设置 IsNoble=false → 堵死贵族加入路径（ConsiderClanJoin不会考虑非贵族）
+    /// 第3层：OnClanChangedKingdom 延迟退出 → 万一漏网，下一个Tick退出
+    /// 第4层：每日检查 IsEliminated → 防止被游戏删除
+    /// </summary>
+    public class PoliceAntiRecruitment : CampaignBehaviorBase
+    {
+        private const string PoliceClanId = "gw";
+
+        private bool _pendingLeave = false;
+
+        public override void RegisterEvents()
+        {
+            CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
+            CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+        }
+
+        public override void SyncData(IDataStore dataStore) { }
+
+        /// <summary>
+        /// 游戏加载时：堵死所有路径
+        /// </summary>
+        private void OnGameLoaded(CampaignGameStarter starter)
+        {
+            SealAllPaths();
+            CleanGhostHeroes();
+        }
+
+        /// <summary>
+        /// 堵死所有加入王国的路径
+        /// </summary>
+        private void SealAllPaths()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 堵雇佣兵路径：ConsiderClanJoinAsMercenary 检查这两个
+            SetBackingField(policeClan, "<IsMinorFaction>k__BackingField", false);
+            SetBackingField(policeClan, "<IsClanTypeMercenary>k__BackingField", false);
+            SetBackingField(policeClan, "<IsUnderMercenaryService>k__BackingField", false);
+
+            // 贵族路径由延迟退出安全网处理（不能设IsNoble=false，会导致俘虏崩溃）
+        }
+
+        /// <summary>
+        /// 清理游戏自动生成的幽灵成员（配偶、兄弟姐妹等）
+        /// 
+        /// 判定规则：家族英雄中，StringId不以"gw"开头的就是游戏自动生成的
+        /// </summary>
+        private void CleanGhostHeroes()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 收集需要清理的幽灵
+            var ghosts = new List<Hero>();
+            foreach (Hero hero in policeClan.Heroes.ToList())
+            {
+                if (hero == null) continue;
+                if (hero == policeClan.Leader) continue;
+
+                // 你定义的英雄StringId以"gw"开头，其他的是游戏自动生成的
+                if (hero.StringId != null &&
+                    hero.StringId.StartsWith("gw", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ghosts.Add(hero);
+            }
+
+            foreach (Hero ghost in ghosts)
+            {
+                try
+                {
+                    // 断绝家族关系
+                    if (ghost.Spouse != null) ghost.Spouse = null;
+                    if (ghost.Father != null) ghost.Father = null;
+                    if (ghost.Mother != null) ghost.Mother = null;
+
+                    // 用Disable移除（比Kill温和，不触发死亡事件链）
+                    DisableHeroAction.Apply(ghost);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 清理幽灵成员：{ghost.Name?.ToString() ?? ghost.StringId}",
+                        Colors.Yellow));
+                }
+                catch { }
+            }
+
+            if (ghosts.Count > 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 共清理 {ghosts.Count} 个自动生成的幽灵成员", Colors.Cyan));
+            }
+        }
+
+        /// <summary>
+        /// 第3层：万一被加入王国，延迟退出（不卡视角）
+        /// </summary>
+        private void OnClanChangedKingdom(
+            Clan clan, Kingdom oldKingdom, Kingdom newKingdom,
+            ChangeKingdomAction.ChangeKingdomActionDetail detail, bool showNotification)
+        {
+            if (!IsPoliceFamily(clan)) return;
+            if (newKingdom != null) _pendingLeave = true;
+        }
+
+        private void OnHourlyTick()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 退出王国
+            if (_pendingLeave || policeClan.Kingdom != null)
+            {
+                _pendingLeave = false;
+                if (policeClan.Kingdom != null)
+                {
+                    try
+                    {
+                        string kName = policeClan.Kingdom.Name?.ToString() ?? "未知";
+                        ChangeKingdomAction.ApplyByLeaveKingdom(policeClan, false);
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            $"[GWP] {policeClan.Name} 拒绝了 {kName} 的招募", Colors.Cyan));
+                    }
+                    catch { }
+                }
+
+                // 退出后重新封堵（退出过程可能重置属性）
+                SealAllPaths();
+            }
+        }
+
+        /// <summary>
+        /// 第4层：每日检查防删 + 重新封堵属性（游戏可能重置）
+        /// </summary>
+        private void OnDailyTick()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 防止被删除
+            if (policeClan.IsEliminated)
+            {
+                SetBackingField(policeClan, "_isEliminated", false);
+            }
+
+            // 每日重新封堵（防止游戏引擎重置属性）
+            SealAllPaths();
+
+            // Debug：输出每个英雄的状态和位置
+            DebugPrintClanMembers(policeClan);
+        }
+
+        private void DebugPrintClanMembers(Clan clan)
+        {
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP Debug] ===== {clan.Name} 成员报告 =====", Colors.Magenta));
+
+            int index = 0;
+            foreach (Hero hero in clan.Heroes.ToList())
+            {
+                if (hero == null) continue;
+                index++;
+
+                string name = hero.Name?.ToString() ?? "(无名)";
+                string id = hero.StringId ?? "?";
+                string state = hero.HeroState.ToString();
+                bool isLeader = hero == clan.Leader;
+                string leaderTag = isLeader ? " [族长]" : "";
+
+                // 位置信息
+                string location;
+                if (hero.IsDead)
+                {
+                    location = "已死亡";
+                }
+                else if (hero.IsPrisoner && hero.PartyBelongedToAsPrisoner != null)
+                {
+                    location = $"被俘于 {hero.PartyBelongedToAsPrisoner.Name}";
+                }
+                else if (hero.CurrentSettlement != null)
+                {
+                    location = $"在城镇 {hero.CurrentSettlement.Name}";
+                }
+                else if (hero.PartyBelongedTo != null)
+                {
+                    var party = hero.PartyBelongedTo;
+                    location = $"部队 {party.Name} 位置=({party.GetPosition2D.X:F1},{party.GetPosition2D.Y:F1}) 兵={party.Party.NumberOfAllMembers}";
+                }
+                else
+                {
+                    location = "未知位置（无部队/无城镇）";
+                }
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Debug] #{index} {name}{leaderTag} | ID={id} | 状态={state} | {location}",
+                    Colors.Magenta));
+            }
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP Debug] 总计 {index} 人，活跃部队 {PoliceStats.PartyCount} 支",
+                Colors.Magenta));
+        }
+
+        private static void SetBackingField(object obj, string fieldName, object value)
+        {
+            try
+            {
+                var field = obj.GetType().GetField(fieldName,
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                field?.SetValue(obj, value);
+            }
+            catch { }
+        }
+
+        private Clan GetPoliceClan()
+        {
+            return Clan.FindFirst(c =>
+                string.Equals(c.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsPoliceFamily(Clan clan)
+        {
+            return clan != null &&
+                   string.Equals(clan.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}

@@ -1,0 +1,40 @@
+﻿# Check what triggers clan elimination - DailyTickClan and WeeklyTickClan in ClanVariablesCampaignBehavior
+$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# DestroyClanAction details enum
+Write-Host "=== DestroyClanActionDetails ==="
+$t = $a.GetType('TaleWorlds.CampaignSystem.Actions.DestroyClanAction+DestroyClanActionDetails')
+if ($t -and $t.IsEnum) {
+    foreach ($v in [Enum]::GetNames($t)) {
+        Write-Host "  $v"
+    }
+}
+
+# Clan properties - ALL bool properties 
+Write-Host "=== Clan ALL bool properties ==="
+$ct = $a.GetType('TaleWorlds.CampaignSystem.Clan')
+foreach ($p in $ct.GetProperties([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Instance)) {
+    if ($p.PropertyType.Name -eq 'Boolean') {
+        $w = 'readonly'
+        if ($p.CanWrite) { $w = 'set' }
+        Write-Host "  $($p.Name) { $w }"
+    }
+}
+
+# Clan.Heroes / Clan.Lords
+Write-Host "=== Clan hero/lord/companion/warparty properties ==="
+foreach ($p in $ct.GetProperties([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Instance)) {
+    if ($p.Name -match 'Hero|Lord|Companion|Commander|WarParty|Leader') {
+        Write-Host "  $($p.PropertyType.Name) $($p.Name)"
+    }
+}
+
+# Clan.CommanderLimit
+Write-Host "=== Clan - Limit/Count ==="
+foreach ($p in $ct.GetProperties([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Instance)) {
+    if ($p.Name -match 'Limit|Count|Size|Tier') {
+        $w = 'readonly'
+        if ($p.CanWrite) { $w = 'set' }
+        Write-Host "  $($p.PropertyType.Name) $($p.Name) { $w }"
+    }
+}

@@ -1,0 +1,60 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# GetPartyLimitForTier - try to read the IL or find the formula
+# The typical Bannerlord formula: partyLimit = tier + 1 (for clans without kingdom)
+# or tier/2 + 1 depending on version
+
+# Let's check the base ClanTierModel
+Write-Host "=== ClanTierModel base ==="
+$ctm = $a.GetType('TaleWorlds.CampaignSystem.ComponentInterfaces.ClanTierModel')
+$m = $ctm.GetMethod('GetPartyLimitForTier')
+if ($m) {
+    Write-Host "  IsAbstract: $($m.IsAbstract)"
+    Write-Host "  IsVirtual: $($m.IsVirtual)"
+}
+
+# Check DefaultClanTierModel for any constants
+Write-Host ""
+Write-Host "=== DefaultClanTierModel - ALL methods ==="
+$dctm = $a.GetType('TaleWorlds.CampaignSystem.GameComponents.DefaultClanTierModel')
+foreach ($m in $dctm.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)) {
+    if ($m.DeclaringType -eq $dctm) {
+        $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+        Write-Host "  $($m.Name)($params) -> $($m.ReturnType.Name)"
+    }
+}
+
+# Try to read IL of GetPartyLimitForTier to find the formula
+Write-Host ""
+Write-Host "=== GetPartyLimitForTier IL body ==="
+$m2 = $dctm.GetMethod('GetPartyLimitForTier', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Instance)
+$body = $m2.GetMethodBody()
+$il = $body.GetILAsByteArray()
+Write-Host "  IL bytes count: $($il.Length)"
+# Print first 50 bytes as hex
+$hex = ($il[0..([Math]::Min(80, $il.Length-1))] | ForEach-Object { '{0:X2}' -f $_ }) -join ' '
+Write-Host "  IL hex: $hex"
+
+# Also check locals
+Write-Host "  Locals:"
+foreach ($l in $body.LocalVariables) {
+    Write-Host "    $($l.LocalIndex): $($l.LocalType.Name)"
+}
+
+# Renown property on Clan
+Write-Host ""
+Write-Host "=== Clan.Renown ==="
+$ct = $a.GetType('TaleWorlds.CampaignSystem.Clan')
+$rp = $ct.GetProperty('Renown')
+if ($rp) {
+    Write-Host "  $($rp.PropertyType.Name) Renown CanWrite=$($rp.CanWrite)"
+}
+
+# Check if party limit is also affected by being in a kingdom or not
+Write-Host ""
+Write-Host "=== AddPartyLimitPerkEffects ==="
+$m3 = $dctm.GetMethod('AddPartyLimitPerkEffects', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+if ($m3) {
+    $params = ($m3.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  $($m3.Name)($params)"
+}

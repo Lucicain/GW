@@ -1,0 +1,60 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# The exact event execution order for new game
+# OnNewGameCreatedPartialFollowUp runs with index parameter
+# Let's check which index InitialChildGenerationCampaignBehavior uses
+
+# Check if there's an event for OnNewGameCreated (runs before PartialFollowUp)
+Write-Host "=== Events order: OnNewGameCreated vs PartialFollowUp ==="
+$icg = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.InitialChildGenerationCampaignBehavior')
+# Check RegisterEvents to see what it listens to
+$re = $icg.GetMethod('RegisterEvents', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Instance)
+Write-Host "  RegisterEvents exists: $($re -ne $null)"
+
+# Check the PartialFollowUp method details
+$pfu = $icg.GetMethod('OnNewGameCreatedPartialFollowUp', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+Write-Host "  OnNewGameCreatedPartialFollowUp params:"
+foreach ($p in $pfu.GetParameters()) {
+    Write-Host "    $($p.ParameterType.Name) $($p.Name)"
+}
+
+# Check if HeroSpawnCampaignBehavior also does family stuff
+Write-Host ""
+Write-Host "=== HeroSpawnCampaignBehavior - ALL methods ==="
+$hsb = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.HeroSpawnCampaignBehavior')
+foreach ($m in $hsb.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)) {
+    if ($m.DeclaringType -eq $hsb) {
+        $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+        Write-Host "  $($m.Name)($params)"
+    }
+}
+
+# Check if there's a way to hook into OnNewGameCreatedPartialFollowUpEnd
+Write-Host ""
+Write-Host "=== OnNewGameCreatedPartialFollowUpEnd event ==="
+$ce = $a.GetType('TaleWorlds.CampaignSystem.CampaignEvents')
+$endEvent = $ce.GetProperty('OnNewGameCreatedPartialFollowUpEndEvent')
+if ($endEvent) {
+    Write-Host "  Type: $($endEvent.PropertyType.FullName)"
+}
+$endMethod = $ce.GetMethod('OnNewGameCreatedPartialFollowUpEnd')
+if ($endMethod) {
+    $params = ($endMethod.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  OnNewGameCreatedPartialFollowUpEnd($params)"
+}
+
+# OnNewGameCreatedEvent
+$ngcEvent = $ce.GetProperty('OnNewGameCreatedEvent')
+if ($ngcEvent) {
+    Write-Host "  OnNewGameCreatedEvent Type: $($ngcEvent.PropertyType.FullName)"
+}
+
+# Check PregnancyCampaignBehavior.RefreshSpouseVisit - this might generate more family over time
+Write-Host ""
+Write-Host "=== PregnancyCampaignBehavior.DailyTickHero ==="
+$pcb = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.PregnancyCampaignBehavior')
+$dth = $pcb.GetMethod('DailyTickHero', [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+if ($dth) {
+    $params = ($dth.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+    Write-Host "  DailyTickHero($params)"
+}

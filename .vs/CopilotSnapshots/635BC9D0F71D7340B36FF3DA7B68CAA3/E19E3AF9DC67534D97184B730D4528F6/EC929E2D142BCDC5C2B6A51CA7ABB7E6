@@ -1,0 +1,109 @@
+﻿using System;
+using System.Collections.Generic;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 警察和平系统
+    /// 
+    /// 策略：
+    /// 1. 战斗结束时：记录"待和平"目标
+    /// 2. 下一个小时Tick：执行和平（延迟，让游戏有时间处理俘虏）
+    /// 3. 野怪不需要和平处理
+    /// </summary>
+    public class PoliceAntiWarDeclaration : CampaignBehaviorBase
+    {
+        private const string PoliceClanId = "gw";
+
+        // 待和平的势力列表（延迟执行）
+        private readonly HashSet<IFaction> _pendingPeace = new HashSet<IFaction>();
+
+        public override void RegisterEvents()
+        {
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnBattleEnded);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+        }
+
+        public override void SyncData(IDataStore dataStore) { }
+
+        /// <summary>
+        /// 战斗结束：只记录，不立即和平（让游戏处理俘虏）
+        /// </summary>
+        private void OnBattleEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null) return;
+
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            bool policeInvolved = false;
+            IFaction enemyFaction = null;
+
+            foreach (var party in mapEvent.InvolvedParties)
+            {
+                if (party?.MobileParty == null) continue;
+
+                if (IsPoliceParty(party.MobileParty))
+                {
+                    policeInvolved = true;
+                }
+                else if (party.MobileParty.ActualClan != null)
+                {
+                    enemyFaction = party.MobileParty.ActualClan.MapFaction;
+                }
+            }
+
+            if (policeInvolved && enemyFaction != null)
+            {
+                // 野怪不需要和平
+                if (enemyFaction is Clan c && c.IsOutlaw && c.IsBanditFaction)
+                    return;
+
+                _pendingPeace.Add(enemyFaction);
+            }
+        }
+
+        /// <summary>
+        /// 每小时：执行延迟和平
+        /// </summary>
+        private void OnHourlyTick()
+        {
+            if (_pendingPeace.Count == 0) return;
+
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            foreach (var enemy in _pendingPeace)
+            {
+                if (enemy == null) continue;
+                if (!FactionManager.IsAtWarAgainstFaction(policeClan, enemy)) continue;
+
+                try
+                {
+                    FactionManager.SetNeutral(policeClan, enemy);
+                }
+                catch { }
+            }
+
+            _pendingPeace.Clear();
+        }
+
+        private bool IsPoliceParty(MobileParty party)
+        {
+            if (party == null) return false;
+            return party.ActualClan != null &&
+                   string.Equals(party.ActualClan.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private Clan GetPoliceClan()
+        {
+            return Clan.FindFirst(c =>
+                string.Equals(c.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+}

@@ -1,0 +1,56 @@
+﻿# Decode the IL of GetPartyLimitForTier
+# Key float constants in the IL (22 = ldc.r4, followed by 4 bytes IEEE 754):
+# 22 00 00 00 00 = 0.0f (base)
+# 22 00 00 80 3F = 1.0f
+# 22 00 00 00 40 = 2.0f  
+# 22 00 00 40 40 = 3.0f
+
+# Key integer constants:
+# 16 = ldc.i4.0 (0)
+# 19 = ldc.i4.3 (3)
+# 1B = ldc.i4.5 (5)
+
+# 2F = blt.s (branch if less than)
+# 04 = ldarg.2 (clanTierToCheck parameter)
+
+# Reconstructed logic:
+Write-Host "=== GetPartyLimitForTier - Decompiled Logic ==="
+Write-Host ""
+Write-Host "  int GetPartyLimitForTier(Clan clan, int clanTierToCheck)"
+Write-Host "  {"
+Write-Host "      ExplainedNumber result;"
+Write-Host "      if (clan is player clan) { ... special handling }"
+Write-Host "      else"
+Write-Host "      {"
+Write-Host "          if (clanTierToCheck < 3)  // 19 = ldc.i4.3"
+Write-Host "              result = new ExplainedNumber(1.0f);  // 1 party"
+Write-Host "          else if (clanTierToCheck < 5)  // 1B = ldc.i4.5"
+Write-Host "              result = new ExplainedNumber(2.0f);  // 2 parties"
+Write-Host "          else"
+Write-Host "              result = new ExplainedNumber(3.0f);  // 3 parties"
+Write-Host "      }"
+Write-Host "      AddPartyLimitPerkEffects(clan, ref result);"
+Write-Host "      return (int)result.ResultNumber;"
+Write-Host "  }"
+Write-Host ""
+Write-Host "  === PARTY LIMIT TABLE ==="
+Write-Host "  Tier 0 = 1 party"
+Write-Host "  Tier 1 = 1 party"
+Write-Host "  Tier 2 = 1 party"
+Write-Host "  Tier 3 = 2 parties"
+Write-Host "  Tier 4 = 2 parties"
+Write-Host "  Tier 5 = 3 parties"
+Write-Host "  Tier 6 = 3 parties"
+Write-Host ""
+Write-Host "  YOUR CLAN: Tier 5+ = max 3 parties (explains exactly 3 on map!)"
+Write-Host "  The other 3 heroes idle in towns because CommanderLimit = 3"
+Write-Host ""
+Write-Host "  TO GET 6 PARTIES: Need to override CommanderLimit via code"
+
+# Also check: what about the 3 extra generated family members?
+Write-Host ""
+Write-Host "  === WHY 3 EXTRA FAMILY ==="
+Write-Host "  6 defined heroes - 3 party limit = 3 idle heroes"
+Write-Host "  InitialChildGenerationCampaignBehavior sees 3 idle heroes as 'unmarried nobles'"
+Write-Host "  -> generates 1 spouse for each = 3 ghost members"
+Write-Host "  (The number matches because idle heroes get spouses!)"

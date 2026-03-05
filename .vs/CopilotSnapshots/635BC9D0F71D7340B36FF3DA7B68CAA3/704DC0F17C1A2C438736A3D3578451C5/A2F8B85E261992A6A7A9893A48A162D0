@@ -1,0 +1,10 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# MobilePartyHelper namespace
+$types = $a.GetTypes()
+foreach ($t in $types) {
+    if ($t.Name -eq 'MobilePartyHelper') {
+        Write-Host "  FullName: $($t.FullName)"
+        Write-Host "  Namespace: $($t.Namespace)"
+    }
+}

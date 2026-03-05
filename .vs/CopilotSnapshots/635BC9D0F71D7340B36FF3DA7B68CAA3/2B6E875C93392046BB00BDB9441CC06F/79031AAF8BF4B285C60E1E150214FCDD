@@ -1,0 +1,64 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# InitialChildGenerationCampaignBehavior - the culprit
+Write-Host "=== InitialChildGenerationCampaignBehavior ==="
+$icg = $a.GetType('TaleWorlds.CampaignSystem.CampaignBehaviors.InitialChildGenerationCampaignBehavior')
+foreach ($m in $icg.GetMethods([Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)) {
+    if ($m.DeclaringType -eq $icg) {
+        $params = ($m.GetParameters() | ForEach-Object { "$($_.ParameterType.Name) $($_.Name)" }) -join ", "
+        Write-Host "  $($m.Name)($params)"
+    }
+}
+
+# Check OnNewGameCreatedPartialFollowUp - this is where family members are generated
+Write-Host ""
+Write-Host "=== OnNewGameCreated related events ==="
+$ce = $a.GetType('TaleWorlds.CampaignSystem.CampaignEvents')
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'NewGameCreated|GameLoaded|SessionLaunched') {
+        Write-Host "  $($p.Name)"
+    }
+}
+
+# Hero family relationships - can we clear them to prevent generation?
+Write-Host ""
+Write-Host "=== Hero - Spouse/Father/Mother backing fields ==="
+$ht = $a.GetType('TaleWorlds.CampaignSystem.Hero')
+$fields = $ht.GetFields([Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+foreach ($f in $fields) {
+    if ($f.Name -match 'spouse|father|mother|child|sibling|Spouse|Father|Mother|Child|Sibling|_spouse|_father|_mother') {
+        Write-Host "  $($f.FieldType.Name) $($f.Name)"
+    }
+}
+
+# Hero.SetNewOccupation or Occupation setter
+Write-Host ""
+Write-Host "=== Hero.Occupation ==="
+$op = $ht.GetProperty('Occupation')
+Write-Host "  CanWrite: $($op.CanWrite)"
+$fields2 = $ht.GetFields([Reflection.BindingFlags]::NonPublic -bor [Reflection.BindingFlags]::Instance)
+foreach ($f in $fields2) {
+    if ($f.Name -match 'occupation' -or $f.Name -match 'Occupation') {
+        Write-Host "  BackingField: $($f.FieldType.Name) $($f.Name)"
+    }
+}
+
+# Check Hero.Age / BirthDay - can we set heroes as too old or too young to get spouses?
+Write-Host ""
+Write-Host "=== Hero - Age/Birth ==="
+foreach ($p in $ht.GetProperties()) {
+    if ($p.Name -match 'Age|Birth|IsFemale|Gender') {
+        $w = if ($p.CanWrite) { 'set' } else { 'ro' }
+        Write-Host "  $($p.PropertyType.Name) $($p.Name) { $w }"
+    }
+}
+
+# Check if there's a way to mark hero as "don't generate family"
+Write-Host ""
+Write-Host "=== Hero bool properties that might prevent family gen ==="
+foreach ($p in $ht.GetProperties()) {
+    if ($p.PropertyType.Name -eq 'Boolean' -and ($p.Name -match 'Template|Special|Generated|NoFamily|Companion|Wanderer|Minor')) {
+        $w = if ($p.CanWrite) { 'set' } else { 'ro' }
+        Write-Host "  $($p.Name) { $w }"
+    }
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="module_sound">
+  <module_sounds>
+    <module_sound name="gwp/support/horn" is_2d="true" sound_category="mission_ambient_bed" path="horn.ogg" />
+  </module_sounds>
+</base>

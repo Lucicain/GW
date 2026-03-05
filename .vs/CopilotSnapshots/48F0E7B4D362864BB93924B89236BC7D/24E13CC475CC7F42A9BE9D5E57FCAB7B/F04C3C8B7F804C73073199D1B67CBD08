@@ -1,0 +1,605 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+using static TaleWorlds.CampaignSystem.Party.MobileParty;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 警察惩戒系统
+    ///
+    /// 1. 追击罪犯（不宣战）
+    /// 2. 超近距离时：对罪犯的MapFaction宣战
+    /// 3. 战斗自然发生
+    /// 4. 胜利 → 任务完成
+    /// 5. 失败 → 另一个警察接手
+    /// 6. 和平由 PoliceAntiWarDeclaration 统一处理
+    /// 7. 犯罪池由 CrimePool 统一管理
+    /// </summary>
+    public class PoliceEnforcementBehavior : CampaignBehaviorBase
+    {
+        private const float WarDistance = 3f;
+        private const float WarDistancePlayer = 15f;
+        private bool _hasActiveEscort = false;
+
+        public override void RegisterEvents()
+        {
+            PoliceCrimeMonitorEnhanced.OnCrimeDetected += HandleCrimeDetected;
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
+        }
+
+        public override void SyncData(IDataStore dataStore)
+        {
+            if (dataStore.IsLoading)
+            {
+                _hasActiveEscort = false;
+            }
+        }
+
+        #region 犯罪通知
+
+        private void HandleCrimeDetected(string crimeType, MobileParty offender, Vec2 location, string victimName)
+        {
+            CrimePool.TryAdd(crimeType, offender, location, victimName);
+        }
+
+        #endregion
+
+        #region 每帧检查押送距离
+
+        private void OnTick(float dt)
+        {
+            if (!_hasActiveEscort) return;
+
+            try
+            {
+                foreach (var kvp in CrimePool.ActiveTasks.ToList())
+                {
+                    var task = kvp.Value;
+                    if (!task.IsEscortingPlayer) continue;
+
+                    Settlement target = task.EscortSettlement;
+                    if (target == null) continue;
+
+                    var pp = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+                    if (pp == null || !pp.IsActive)
+                    {
+                        FinishEscort(null, task, kvp.Key, target);
+                        return;
+                    }
+
+                    // 【修复】必须满足两个条件：
+                    // 1. 警察已抵达城镇
+                    // 2. 玩家处于俘虏状态（证明战斗已真正结束）
+                    float distToSettlement = pp.GetPosition2D.Distance(target.Position.ToVec2());
+                    
+                    bool policeArrivedAtSettlement = distToSettlement < 5f;
+                    bool playerStillCaptured = PlayerCaptivity.IsCaptive;
+
+                    // 【关键】只有警察到达且玩家仍被俘虏时才处理
+                    if (policeArrivedAtSettlement && playerStillCaptured)
+                    {
+                        FinishEscort(pp, task, kvp.Key, target);
+                        return;
+                    }
+
+                    // 超时安全网：30分钟内未能完成押送则强制结束
+                    if (task.EscortStartTime.ElapsedDaysUntilNow > 0.02f)
+                    {
+                        FinishEscort(pp, task, kvp.Key, target);
+                        return;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 押送结束：和平 → 引擎自动释放俘虏 → 惩罚
+        /// </summary>
+        private void FinishEscort(MobileParty pp, PoliceTask task, string taskKey, Settlement settlement)
+        {
+            // 1. 和平 → 引擎自动释放俘虏
+            MakePeaceWithAllFactions();
+
+            // 2. 安全网
+            try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch { }
+
+            // 3. 罚款
+            int rep = PlayerBehaviorPool.Reputation;
+            int fine = Math.Abs(rep) * 100;
+            int playerGold = Hero.MainHero.Gold;
+            if (playerGold >= fine)
+                Hero.MainHero.ChangeHeroGold(-fine);
+            else
+            {
+                if (playerGold > 0) Hero.MainHero.ChangeHeroGold(-playerGold);
+                fine = playerGold;
+            }
+
+            // 4. 声望归零 + 解除通缉
+            PlayerBehaviorPool.ResetReputation(0);
+            CrimePool.EndPlayerHunt();
+
+            string townName = settlement?.Name?.ToString() ?? "城镇";
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 你被押送至 {townName}，缴纳罚款 {fine} 金，通缉已解除",
+                Colors.Yellow));
+
+            // 5. 恢复警察
+            if (pp != null && pp.IsActive)
+            {
+                RestoreAi(pp);
+                PoliceResourceManager.StartResupply(pp);
+            }
+
+            CrimePool.EndTask(taskKey);
+            _hasActiveEscort = false;
+        }
+
+        #endregion
+
+        #region 每小时
+
+        private void OnHourlyTick()
+        {
+            // 【修复】检查是否在押送状态中
+            bool isEscorting = CrimePool.ActiveTasks.Values.Any(t => t.IsEscortingPlayer);
+            
+            if (!isEscorting)
+            {
+                SafetyReleaseCaptivePlayer();
+            }
+
+            CrimePool.Clean();
+            AssignTasks();
+            UpdateTasks();
+            CrimePool.RefreshAccepting();
+        }
+
+        private void SafetyReleaseCaptivePlayer()
+        {
+            if (!PlayerCaptivity.IsCaptive) return;
+
+            try
+            {
+                PartyBase captorParty = PlayerCaptivity.CaptorParty;
+                if (captorParty == null) return;
+
+                Clan policeClan = PoliceStats.GetPoliceClan();
+                if (policeClan == null) return;
+
+                bool isCapturedByPolice = false;
+                if (captorParty.IsMobile && captorParty.MobileParty?.ActualClan == policeClan)
+                    isCapturedByPolice = true;
+                if (captorParty.IsSettlement && captorParty.Settlement?.OwnerClan == policeClan)
+                    isCapturedByPolice = true;
+
+                if (!isCapturedByPolice) return;
+
+                // 【修复】【关键】检查是否有正在进行的押送任务
+                // 如果有，则安全网不应该触发，应该由 OnTick 处理
+                PoliceTask escortTask = CrimePool.ActiveTasks.Values.FirstOrDefault(t => 
+                    t.IsEscortingPlayer && 
+                    t.EscortSettlement != null &&
+                    t.TargetCrime?.Offender?.IsMainParty == true);
+
+                if (escortTask != null)
+                {
+                    // 正在进行押送，不要触发安全网！
+                    return;
+                }
+
+                // 【真正的残留俘虏】 - 没有对应的押送任务但玩家仍被俘虏
+                // 这是一个异常状态，应该强制释放并处罚
+                Settlement fallbackTown = FindNearestTown() ?? FindNearestSettlement();
+                
+                MakePeaceWithAllFactions();
+                try { PlayerCaptivity.EndCaptivity(); } catch { }
+
+                if (fallbackTown != null)
+                {
+                    ExecuteEmergencyPunishment(fallbackTown);
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP] 灰袍守卫在 {fallbackTown.Name} 释放你，并执行处罚",
+                        Colors.Yellow));
+                }
+                else
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "[GWP] 灰袍守卫已释放你", Colors.Green));
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 紧急惩罚流程（当安全网触发时）
+        /// </summary>
+        private void ExecuteEmergencyPunishment(Settlement settlement)
+        {
+            try
+            {
+                int rep = PlayerBehaviorPool.Reputation;
+                int fine = Math.Abs(rep) * 100;
+                int playerGold = Hero.MainHero.Gold;
+
+                if (playerGold >= fine)
+                    Hero.MainHero.ChangeHeroGold(-fine);
+                else
+                {
+                    if (playerGold > 0) Hero.MainHero.ChangeHeroGold(-playerGold);
+                    fine = playerGold;
+                }
+
+                PlayerBehaviorPool.ResetReputation(0);
+                CrimePool.EndPlayerHunt();
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP] 缴纳罚款 {fine} 金，声望已清零",
+                    Colors.Yellow));
+            }
+            catch { }
+        }
+
+        private void AssignTasks()
+        {
+            foreach (var pp in PoliceStats.GetAllPoliceParties())
+            {
+                if (CrimePool.HasTask(pp.StringId)) continue;
+                if (!PoliceResourceManager.IsReady(pp)) continue;
+
+                CrimeRecord crime = CrimePool.GetNearest(pp.GetPosition2D);
+                if (crime == null) continue;
+
+                BeginTask(pp, crime);
+            }
+        }
+
+        private void BeginTask(MobileParty police, CrimeRecord crime)
+        {
+            CrimePool.BeginTask(police.StringId, crime);
+
+            police.SetMoveEngageParty(crime.Offender, NavigationType.Default);
+            police.Ai.SetDoNotMakeNewDecisions(true);
+            police.Ai.SetInitiative(1f, 0f, 999f);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP 出警] {police.Name} → {crime.Offender.Name}（{crime.CrimeType}）",
+                Colors.Cyan));
+        }
+
+        private void UpdateTasks()
+        {
+            foreach (var kvp in CrimePool.ActiveTasks.ToList())
+            {
+                var task = kvp.Value;
+                var pp = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+
+                if (pp == null || !pp.IsActive)
+                {
+                    CrimePool.EndTask(kvp.Key);
+                    if (task.IsTargetValid()) Reassign(task.TargetCrime);
+                    continue;
+                }
+
+                if (!task.IsTargetValid())
+                {
+                    RestoreAi(pp);
+                    CrimePool.EndTask(kvp.Key);
+
+                    string crimeName = task.TargetCrime?.CrimeType ?? "未知";
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP 完成] 犯人已被消灭，案件（{crimeName}）自动结案",
+                        Colors.Green));
+
+                    PoliceResourceManager.StartResupply(pp);
+                    continue;
+                }
+
+                // 押送中：保持靠近但不进城
+                if (task.IsEscortingPlayer)
+                {
+                    Settlement target = task.EscortSettlement;
+                    if (target != null)
+                    {
+                        Vec2 settlementPos = target.Position.ToVec2();
+                        float distToSettlement = pp.GetPosition2D.Distance(settlementPos);
+                        
+                        if (distToSettlement > 5f)
+                        {
+                            pp.SetMoveGoToSettlement(target, NavigationType.Default, false);
+                        }
+                        else
+                        {
+                            pp.Ai.SetDoNotMakeNewDecisions(true);
+                        }
+                    }
+                    continue;
+                }
+
+                // 正常追击
+                MobileParty criminal = task.TargetCrime.Offender;
+                float dist = pp.GetPosition2D.Distance(criminal.GetPosition2D);
+
+                float warDist = criminal.IsMainParty ? WarDistancePlayer : WarDistance;
+
+                bool isPatrolRange = criminal.IsMainParty &&
+                    PlayerBehaviorPool.Reputation >= -4 &&
+                    PlayerBehaviorPool.Reputation <= -1;
+
+                if (!task.WarDeclared && dist < warDist && !isPatrolRange)
+                {
+                    DeclareWar(task, criminal);
+                }
+
+                try
+                {
+                    pp.SetMoveEngageParty(criminal, NavigationType.Default);
+                }
+                catch (Exception ex)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP Error] 追击异常：{ex.Message}", Colors.Red));
+                }
+            }
+        }
+
+        private void DeclareWar(PoliceTask task, MobileParty criminal)
+        {
+            try
+            {
+                Clan policeClan = PoliceStats.GetPoliceClan();
+                if (policeClan == null) return;
+
+                Clan criminalClan = criminal.ActualClan;
+                if (criminalClan == null) return;
+
+                task.WarDeclared = true;
+
+                if (criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
+
+                IFaction target = criminalClan.MapFaction;
+                if (target == null) return;
+
+                if (target == policeClan || target == policeClan.MapFaction) return;
+
+                task.WarTarget = target;
+
+                if (!FactionManager.IsAtWarAgainstFaction(policeClan, target))
+                {
+                    FactionManager.DeclareWar(policeClan, target);
+                }
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 宣战失败：{ex.Message}", Colors.Red));
+            }
+        }
+
+        #endregion
+
+        #region 战斗结束
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null) return;
+            if (!mapEvent.IsFieldBattle) return;
+
+            foreach (var kvp in CrimePool.ActiveTasks.ToList())
+            {
+                var task = kvp.Value;
+                if (!task.WarDeclared) continue;
+
+                var pp = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+
+                if (pp == null)
+                {
+                    if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+
+                    CrimePool.EndTask(kvp.Key);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP 失败] 警察部队阵亡，转交任务", Colors.Yellow));
+
+                    Reassign(task.TargetCrime);
+                    CrimePool.RefreshAccepting();
+                    continue;
+                }
+
+                if (!InEvent(pp, mapEvent)) continue;
+                if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+
+                bool policeWon = IsOnWinningSide(pp, mapEvent);
+
+                if (policeWon)
+                {
+                    if (CrimePool.IsPlayerCrime(task.TargetCrime))
+                    {
+                        // 【修复】优先使用玩家当前所在的定居点
+                        Settlement targetTown = GetPlayerCurrentSettlement() ?? FindNearestTown();
+                        task.EscortSettlement = targetTown;
+                        task.IsEscortingPlayer = true;
+                        task.EscortStartTime = CampaignTime.Now;
+                        _hasActiveEscort = true;
+
+                        if (targetTown != null)
+                        {
+                            pp.Ai.SetDoNotMakeNewDecisions(true);
+                            pp.SetMoveGoToSettlement(targetTown, NavigationType.Default, false);
+                        }
+
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            $"[GWP] 你被 {pp.Name} 击败！正在被押送至 {(targetTown?.Name?.ToString() ?? "城镇")}...",
+                            Colors.Yellow));
+
+                        continue;
+                    }
+
+                    RestoreAi(pp);
+                    CrimePool.EndTask(kvp.Key);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP 完成] {pp.Name} 击败 {task.TargetCrime.Offender.Name}",
+                        Colors.Green));
+
+                    PoliceResourceManager.StartResupply(pp);
+                }
+                else
+                {
+                    RestoreAi(pp);
+                    CrimePool.EndTask(kvp.Key);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP 失败] {pp.Name} 被击败，转交任务",
+                        Colors.Yellow));
+
+                    Reassign(task.TargetCrime);
+                    PoliceResourceManager.StartResupply(pp);
+                }
+
+                CrimePool.RefreshAccepting();
+            }
+        }
+
+        #endregion
+
+        #region 辅助
+
+        private bool InEvent(MobileParty party, MapEvent mapEvent)
+        {
+            if (party == null || mapEvent == null) return false;
+            return mapEvent.InvolvedParties.Any(p => p.MobileParty == party);
+        }
+
+        private bool IsOnWinningSide(MobileParty party, MapEvent mapEvent)
+        {
+            if (!mapEvent.HasWinner || mapEvent.Winner == null) return false;
+
+            foreach (var p in mapEvent.Winner.Parties)
+            {
+                if (p?.Party?.IsMobile == true && p.Party.MobileParty == party)
+                    return true;
+            }
+            return false;
+        }
+
+        private void RestoreAi(MobileParty party)
+        {
+            if (party == null || !party.IsActive) return;
+            try
+            {
+                party.Ai.SetDoNotMakeNewDecisions(false);
+                party.Ai.SetInitiative(0f, 0f, 0f);
+            }
+            catch { }
+        }
+
+        private void MakePeaceWithAllFactions()
+        {
+            try
+            {
+                IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+                if (playerFaction == null) return;
+
+                Clan policeClan = PoliceStats.GetPoliceClan();
+                if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
+                {
+                    FactionManager.SetNeutral(policeClan, playerFaction);
+                }
+
+                foreach (var victim in PlayerBehaviorPool.VictimFactions)
+                {
+                    if (victim == null || victim == playerFaction) continue;
+                    if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
+
+                    try
+                    {
+                        MakePeaceAction.Apply(playerFaction, victim);
+                    }
+                    catch { }
+                }
+
+                PlayerBehaviorPool.ClearVictimFactions();
+            }
+            catch { }
+        }
+
+        private Settlement FindNearestTown()
+        {
+            var player = MobileParty.MainParty;
+            if (player == null) return null;
+
+            Vec2 pos = player.GetPosition2D;
+            Settlement best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (Settlement s in Settlement.All)
+            {
+                if (!s.IsTown) continue;
+                float d = pos.Distance(s.Position.ToVec2());
+                if (d < bestDist) { bestDist = d; best = s; }
+            }
+            return best;
+        }
+
+        private Settlement FindNearestSettlement()
+        {
+            var player = MobileParty.MainParty;
+            if (player == null) return null;
+
+            Vec2 pos = player.GetPosition2D;
+            Settlement best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (Settlement s in Settlement.All)
+            {
+                float d = pos.Distance(s.Position.ToVec2());
+                if (d < bestDist) { bestDist = d; best = s; }
+            }
+            return best;
+        }
+
+        private void Reassign(CrimeRecord crime)
+        {
+            CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
+        }
+
+        /// <summary>
+        /// 获取玩家当前所在的定居点（如果在定居点内）
+        /// 包括城镇、村庄、城堡等所有定居点
+        /// </summary>
+        private Settlement GetPlayerCurrentSettlement()
+        {
+            var player = MobileParty.MainParty;
+            if (player == null) return null;
+
+            Vec2 pos = player.GetPosition2D;
+
+            // 遍历所有定居点，找距离最近的
+            // 如果玩家真的在某个定居点内，距离会很近（< 1.5）
+            foreach (Settlement s in Settlement.All)
+            {
+                float d = pos.Distance(s.Position.ToVec2());
+                if (d < 1.5f)  // 在定居点内
+                {
+                    return s;
+                }
+            }
+            
+            return null;
+        }
+
+        #endregion
+    }
+}

@@ -1,0 +1,659 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+using static TaleWorlds.CampaignSystem.Party.MobileParty;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 警察惩戒系统
+    /// 功能：警察主动从任务池中选择最近的犯罪进行追捕
+    /// </summary>
+    public class PoliceEnforcementBehavior : CampaignBehaviorBase
+    {
+        private const string PoliceClanId = "gw";
+
+        // 犯罪任务池（保留24小时）
+        private List<CrimeRecord> _crimePool = new List<CrimeRecord>();
+
+        // 活跃任务（警察PartyId -> 任务）
+        private Dictionary<string, PoliceTask> _activeTasks = new Dictionary<string, PoliceTask>();
+
+        // 警察冷却时间（警察PartyId -> 冷却结束时间）
+        // 用途：任务结束后24H内不接新案，让AI自动补给
+        private Dictionary<string, CampaignTime> _policeCooldowns = new Dictionary<string, CampaignTime>();
+
+        public override void RegisterEvents()
+        {
+            // 订阅犯罪通知事件
+            PoliceCrimeMonitorEnhanced.OnCrimeDetected += HandleCrimeDetected;
+
+            // 战斗结束
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+
+            // 每小时：警察接案 + 任务监控
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+
+            // 每日清理
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+        }
+
+        public override void SyncData(IDataStore dataStore) { }
+
+        #region 犯罪通知处理
+
+        /// <summary>
+        /// 处理犯罪通知
+        /// </summary>
+        private void HandleCrimeDetected(string crimeType, MobileParty offender, Vec2 location, string victimName)
+        {
+            if (offender == null || !offender.IsActive) return;
+
+            // 简化Debug信息（只显示关键信息）
+            if (offender.ActualClan != null)
+            {
+                Clan clan = offender.ActualClan;
+
+                // 关键：优先判断雇佣兵身份
+                // 即使 IsOutlaw=True，只要是雇佣兵就接受
+                bool isMercenary = clan.IsClanTypeMercenary;
+
+                // 只排除：非雇佣兵 且 是纯野怪（IsOutlaw && IsBanditFaction）
+                if (!isMercenary && clan.IsOutlaw && clan.IsBanditFaction)
+                {
+                    // 这是纯野怪（劫匪），排除
+                    return;
+                }
+
+                // 显示简化的入池消息
+                string clanType = GetClanTypeDescription(clan);
+                int validCount = _crimePool.Count(c => c.IsOffenderValid()) + 1; // +1 因为还没加入
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP 任务池] {clanType}犯罪入池：{crimeType} | 罪犯={offender.Name?.ToString()}（{clan.Name}）| 池中案件={validCount}/8",
+                    Colors.Yellow
+                ));
+            }
+            else
+            {
+                // 没有家族的犯罪者（罕见）
+                int validCount = _crimePool.Count(c => c.IsOffenderValid()) + 1;
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP 任务池] 未知势力犯罪入池：{crimeType} | 罪犯={offender.Name?.ToString()} | 池中案件={validCount}/8",
+                    Colors.Yellow
+                ));
+            }
+
+            // 检查是否已存在
+            if (_crimePool.Any(c => c.Offender != null && c.Offender.StringId == offender.StringId))
+            {
+                return;
+            }
+
+            var crime = new CrimeRecord
+            {
+                CrimeId = GenerateUniqueId(),
+                CrimeType = crimeType,
+                Offender = offender,
+                OccurredTime = CampaignTime.Now,
+                Location = location,
+                VictimName = victimName
+            };
+
+            _crimePool.Add(crime);
+        }
+
+        /// <summary>
+        /// 获取家族类型描述
+        /// </summary>
+        private string GetClanTypeDescription(Clan clan)
+        {
+            if (clan == null) return "未知势力";
+
+            if (clan.IsClanTypeMercenary)
+                return "雇佣兵";
+
+            if (clan.IsMinorFaction)
+                return "小派系";
+
+            if (clan.Kingdom != null)
+                return "贵族";
+
+            return "独立势力";
+        }
+
+        #endregion
+
+        #region 警察接案
+
+        private void OnHourlyTick()
+        {
+            AssignTasksToPolice();
+            UpdateActiveTasks();
+        }
+
+        private void AssignTasksToPolice()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 关键：只有池子满了（8个案件）才开始接案
+            int pendingCrimes = _crimePool.Count(c => c.IsOffenderValid());
+            if (pendingCrimes < 8)
+            {
+                // 案件不足8个，等待更多案件
+                return;
+            }
+
+            // 使用正确的API：WarPartyComponents
+            foreach (var component in policeClan.WarPartyComponents)
+            {
+                if (component == null) continue;
+
+                MobileParty policeParty = component.MobileParty;
+                if (policeParty == null || !policeParty.IsActive) continue;
+
+                // 检查是否已有任务
+                if (IsPoliceOnTask(policeParty)) continue;
+
+                // 关键：检查冷却时间（24H休息期）
+                if (IsPoliceOnCooldown(policeParty))
+                {
+                    // 冷却中，让AI自动补给，不接新案
+                    continue;
+                }
+
+                // 使用GetPosition2D属性获取Vec2位置
+                CrimeRecord nearestCrime = GetNearestCrime(policeParty.GetPosition2D);
+                if (nearestCrime == null) continue;
+
+                AssignTask(policeParty, nearestCrime);
+            }
+        }
+
+        /// <summary>
+        /// 检查警察是否在冷却期（24H休息，让AI补给）
+        /// </summary>
+        private bool IsPoliceOnCooldown(MobileParty police)
+        {
+            if (!_policeCooldowns.ContainsKey(police.StringId))
+                return false;
+
+            CampaignTime cooldownEnd = _policeCooldowns[police.StringId];
+
+            // 冷却结束
+            if (CampaignTime.Now.ToHours >= cooldownEnd.ToHours)
+            {
+                _policeCooldowns.Remove(police.StringId);
+                return false;
+            }
+
+            // 还在冷却
+            return true;
+        }
+
+        private CrimeRecord GetNearestCrime(Vec2 position)
+        {
+            CrimeRecord nearest = null;
+            float minDistance = float.MaxValue;
+
+            foreach (var crime in _crimePool)
+            {
+                // 只检查罪犯是否有效
+                if (!crime.IsOffenderValid()) continue;
+
+                // 使用GetPosition2D属性获取Vec2
+                float distance = position.Distance(crime.Offender.GetPosition2D);
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearest = crime;
+                }
+            }
+
+            return nearest;
+        }
+
+        private bool IsPoliceOnTask(MobileParty police)
+        {
+            return _activeTasks.ContainsKey(police.StringId);
+        }
+
+        private void AssignTask(MobileParty police, CrimeRecord crime)
+        {
+            var task = new PoliceTask
+            {
+                TaskId = GenerateUniqueId(),
+                PolicePartyId = police.StringId,
+                TargetCrime = crime,
+                AssignedTime = CampaignTime.Now,
+                Status = TaskStatus.InProgress,
+                Phase = TaskPhase.GoingToCrimeScene,  // 初始阶段：接近目标
+                HuntingStartTime = null  // 尚未开始计时
+            };
+
+            _activeTasks[police.StringId] = task;
+
+            // 关键：从池子移除（接案后不再保留）
+            _crimePool.Remove(crime);
+
+            // 关键：主动对罪犯家族宣战
+            DeclareWarOnCriminal(crime.Offender);
+
+            // 阶段1：前往罪犯当前位置（不是追击）
+            SetPoliceGoToTarget(police, crime.Offender);
+
+            // 计算当前距离
+            float distance = police.GetPosition2D.Distance(crime.Offender.GetPosition2D);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP 派遣] {police.Name?.ToString()} → {crime.Offender.Name?.ToString()} | 案件={crime.CrimeType} | 当前距离={distance:F0}",
+                Colors.Cyan
+            ));
+        }
+
+        /// <summary>
+        /// 对罪犯家族宣战（只对家族，不影响Kingdom）
+        /// </summary>
+        private void DeclareWarOnCriminal(MobileParty criminal)
+        {
+            if (criminal == null || criminal.ActualClan == null) return;
+
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            Clan criminalClan = criminal.ActualClan;
+
+            // 优先判断雇佣兵
+            bool isMercenary = criminalClan.IsClanTypeMercenary;
+
+            // 野怪不需要宣战（本来就敌对）
+            // 但雇佣兵即使 IsOutlaw=True 也要宣战
+            if (!isMercenary && criminalClan.IsOutlaw && criminalClan.IsBanditFaction)
+                return;
+
+            // 已经是敌对，不需要重复宣战
+            if (FactionManager.IsAtWarAgainstFaction(policeClan, criminalClan))
+                return;
+
+            try
+            {
+                // 使用FactionManager.DeclareWar：只对家族宣战，不影响Kingdom
+                FactionManager.DeclareWar(policeClan, criminalClan);
+
+                string kingdomInfo = criminalClan.Kingdom != null
+                    ? $"（{criminalClan.Kingdom.Name} 王国成员）"
+                    : "";
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP 宣战] 灰袍守卫 对 {criminalClan.Name} 家族宣战 {kingdomInfo}",
+                    Colors.Yellow
+                ));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 宣战失败：{ex.Message}",
+                    Colors.Red
+                ));
+            }
+        }
+
+        #endregion
+
+        #region AI控制
+
+        /// <summary>
+        /// 初始化警察前往罪犯的位置（只调用一次）
+        /// 用于阶段1：首次接近目标
+        /// 使用SetNavigationModePoint避免每小时重置参数
+        /// </summary>
+        private void SetPoliceGoToTarget(MobileParty police, MobileParty target)
+        {
+            try
+            {
+                // 获取罪犯当前位置（已经是CampaignVec2）
+                CampaignVec2 targetPosition = target.Position;
+
+                // 使用底层导航模式（避免ResetAllMovementParameters）
+                police.SetNavigationModePoint(targetPosition);
+
+                // 防止AI被内置逻辑分心
+                police.Ai.RethinkAtNextHourlyTick = false;
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 设置前往位置失败：{ex.Message}",
+                    Colors.Red
+                ));
+            }
+        }
+
+        /// <summary>
+        /// 让警察追击罪犯
+        /// 用于阶段2：正式追捕
+        /// </summary>
+        private void SetPoliceChaseTarget(MobileParty police, MobileParty target)
+        {
+            try
+            {
+                // 设置追击目标
+                police.SetMoveEngageParty(target, NavigationType.Default);
+
+                // 不再禁用AI决策
+                // 允许AI在需要时补给
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 设置追击失败：{ex.Message}",
+                    Colors.Red
+                ));
+            }
+        }
+
+        private void RestorePoliceNormalBehavior(MobileParty police)
+        {
+            try
+            {
+                // 清除追击目标
+                police.SetMoveEngageParty(null, NavigationType.Default);
+
+                // 不需要恢复AI决策（因为我们没有禁用）
+            }
+            catch { }
+        }
+
+        #endregion
+
+        #region 任务监控
+
+        private void UpdateActiveTasks()
+        {
+            var tasksToRemove = new List<string>();
+
+            foreach (var kvp in _activeTasks)
+            {
+                var task = kvp.Value;
+
+                var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+
+                if (policeParty == null || !policeParty.IsActive)
+                {
+                    tasksToRemove.Add(kvp.Key);
+                    continue;
+                }
+
+                // 目标有效性检查
+                if (!task.IsTargetValid())
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP 失效] 目标消失，{policeParty.Name?.ToString()} 任务取消",
+                        Colors.Yellow
+                    ));
+                    CancelTask(policeParty, task);
+                    tasksToRemove.Add(kvp.Key);
+                    continue;
+                }
+
+                // 关键：根据任务阶段执行不同逻辑
+                if (task.Phase == TaskPhase.GoingToCrimeScene)
+                {
+                    // 阶段1：接近目标
+                    // 检查是否接近罪犯（距离<15）
+                    if (task.IsNearTarget(policeParty.GetPosition2D))
+                    {
+                        // 接近罪犯，切换到追击阶段并开始计时
+                        task.Phase = TaskPhase.Hunting;
+                        task.HuntingStartTime = CampaignTime.Now;
+
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            $"[GWP 追击] {policeParty.Name?.ToString()} 接近目标，正式开始追捕（24H限时）",
+                            Colors.Yellow
+                        ));
+
+                        // 切换为真正的追击命令
+                        SetPoliceChaseTarget(policeParty, task.TargetCrime.Offender);
+                    }
+                    else
+                    {
+                        // 轻量级更新：只更新目标点，不重新初始化（高效）
+                        policeParty.MoveTargetPoint = task.TargetCrime.Offender.Position;
+                        // 继续防止AI分心
+                        policeParty.Ai.RethinkAtNextHourlyTick = false;
+                    }
+                }
+                else if (task.Phase == TaskPhase.Hunting)
+                {
+                    // 阶段2：追击罪犯（24H限制）
+                    // 超时检查
+                    if (task.IsHuntingExpired(CampaignTime.Now))
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            $"[GWP 超时] {policeParty.Name?.ToString()} 追捕超时（24H），任务取消",
+                            Colors.Yellow
+                        ));
+                        CancelTask(policeParty, task);
+                        tasksToRemove.Add(kvp.Key);
+                        continue;
+                    }
+
+                    // 每小时反复下达追击指令
+                    SetPoliceChaseTarget(policeParty, task.TargetCrime.Offender);
+                }
+            }
+
+            foreach (var key in tasksToRemove)
+            {
+                _activeTasks.Remove(key);
+            }
+        }
+
+        private void CancelTask(MobileParty police, PoliceTask task)
+        {
+            task.Status = TaskStatus.Cancelled;
+            RestorePoliceNormalBehavior(police);
+
+            // 设置24H冷却（让AI自动补给）
+            SetPoliceCooldown(police);
+
+            // 关键：确保与罪犯家族和平（包括战败被俘的情况）
+            if (task.TargetCrime != null)
+            {
+                EnsurePeaceWithCriminal(task.TargetCrime.Offender);
+                // 不需要恢复 IsAssigned（接案时已从池子移除）
+            }
+        }
+
+        /// <summary>
+        /// 设置警察冷却时间（24H休息期）
+        /// 让原版AI接管，自动补给粮食等资源
+        /// </summary>
+        private void SetPoliceCooldown(MobileParty police)
+        {
+            // 24小时后才能接下一个任务
+            CampaignTime cooldownEnd = CampaignTime.HoursFromNow(24);
+            _policeCooldowns[police.StringId] = cooldownEnd;
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP 休息] {police.Name?.ToString()} 进入24H休息期，AI自动补给",
+                Colors.Gray
+            ));
+        }
+
+        /// <summary>
+        /// 确保与罪犯家族和平
+        /// 无论警察输赢，任务结束时都应该和平
+        /// </summary>
+        private void EnsurePeaceWithCriminal(MobileParty criminal)
+        {
+            if (criminal == null || criminal.ActualClan == null) return;
+
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            Clan criminalClan = criminal.ActualClan;
+
+            // 优先判断雇佣兵
+            bool isMercenary = criminalClan.IsClanTypeMercenary;
+
+            // 野怪不需要和平（本来就敌对）
+            // 但雇佣兵即使 IsOutlaw=True 也要和平
+            if (!isMercenary && criminalClan.IsOutlaw && criminalClan.IsBanditFaction)
+                return;
+
+            // 如果是战争状态，立即和平
+            if (FactionManager.IsAtWarAgainstFaction(policeClan, criminalClan))
+            {
+                try
+                {
+                    FactionManager.SetNeutral(policeClan, criminalClan);
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP Police] 任务结束，与 {criminalClan.Name} 家族 恢复和平",
+                        Colors.Cyan
+                    ));
+                }
+                catch (Exception ex)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[GWP Error] 和平失败：{ex.Message}",
+                        Colors.Red
+                    ));
+                }
+            }
+        }
+
+        #endregion
+
+        #region 战斗监听
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null) return;
+
+            foreach (var kvp in _activeTasks.ToList())
+            {
+                var task = kvp.Value;
+                var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+
+                if (policeParty == null) continue;
+
+                bool policeInvolved = IsPartyInMapEvent(policeParty, mapEvent);
+                if (!policeInvolved) continue;
+
+                bool targetInvolved = IsPartyInMapEvent(task.TargetCrime.Offender, mapEvent);
+                if (!targetInvolved) continue;
+
+                CompleteTask(policeParty, task, mapEvent);
+            }
+        }
+
+        private bool IsPartyInMapEvent(MobileParty party, MapEvent mapEvent)
+        {
+            if (party == null || mapEvent == null) return false;
+
+            // 使用正确的API：mapEventParty.Party.MobileParty
+            foreach (var mapEventParty in mapEvent.AttackerSide.Parties)
+            {
+                if (mapEventParty.Party != null &&
+                    mapEventParty.Party.IsMobile &&
+                    mapEventParty.Party.MobileParty == party)
+                    return true;
+            }
+
+            foreach (var mapEventParty in mapEvent.DefenderSide.Parties)
+            {
+                if (mapEventParty.Party != null &&
+                    mapEventParty.Party.IsMobile &&
+                    mapEventParty.Party.MobileParty == party)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void CompleteTask(MobileParty police, PoliceTask task, MapEvent mapEvent)
+        {
+            task.Status = TaskStatus.Completed;
+
+            string result = mapEvent.Winner != null ? "胜利" : "战斗结束";
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP 完成] 罪犯已伏法！{task.TargetCrime.Offender.Name?.ToString()} | 执法={police.Name?.ToString()} | {task.TargetCrime.CrimeType} | {result}",
+                Colors.Green
+            ));
+
+            // 关键：确保与罪犯家族和平
+            EnsurePeaceWithCriminal(task.TargetCrime.Offender);
+
+            _crimePool.Remove(task.TargetCrime);
+            _activeTasks.Remove(task.PolicePartyId);
+            RestorePoliceNormalBehavior(police);
+
+            // 设置24H冷却（让AI自动补给）
+            SetPoliceCooldown(police);
+        }
+
+        #endregion
+
+        #region 定期清理
+
+        private void OnDailyTick()
+        {
+            var expiredCrimes = _crimePool.Where(c => c.IsExpired(CampaignTime.Now)).ToList();
+
+            foreach (var crime in expiredCrimes)
+            {
+                _crimePool.Remove(crime);
+
+                var relatedTask = _activeTasks.Values.FirstOrDefault(t => t.TargetCrime == crime);
+                if (relatedTask != null)
+                {
+                    var police = MobileParty.All.FirstOrDefault(p => p.StringId == relatedTask.PolicePartyId);
+                    if (police != null)
+                    {
+                        CancelTask(police, relatedTask);
+                        _activeTasks.Remove(relatedTask.PolicePartyId);
+                    }
+                }
+            }
+
+            if (expiredCrimes.Count > 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP 清理] 已清理 {expiredCrimes.Count} 个过期案件（24小时）",
+                    Colors.Gray
+                ));
+            }
+        }
+
+        #endregion
+
+        #region 辅助方法
+
+        private string GenerateUniqueId()
+        {
+            long timestamp = (long)CampaignTime.Now.ToHours;
+            int random = MBRandom.RandomInt(1000, 9999);
+            return $"CRIME_{timestamp}_{random}";
+        }
+
+        private Clan GetPoliceClan()
+        {
+            return Clan.FindFirst(c =>
+                string.Equals(c.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        #endregion
+    }
+}

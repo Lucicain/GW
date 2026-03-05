@@ -1,0 +1,200 @@
+﻿using System;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 基于真实API的防雇佣方案
+    /// 关键属性：
+    /// - IsClanTypeMercenary: 氏族类型是否为佣兵（可能只读）
+    /// - IsUnderMercenaryService: 氏族是否在提供佣兵服务（关键！）
+    /// - IsMinorFaction: 是否为小派系
+    /// 关键事件：
+    /// - OnClanChangedKingdomEvent: 家族改变王国事件
+    /// </summary>
+    public class PoliceAntiRecruitment : CampaignBehaviorBase
+    {
+        private const string PoliceClanId = "gw";
+
+        // 记录修改状态
+        private bool _hasAttemptedModification = false;
+        private bool _serviceModificationSuccess = false;
+        private bool _typeModificationSuccess = false;
+        private bool _hasShownSuccessMessage = false;  // 新增：是否已显示成功消息
+
+        public override void RegisterEvents()
+        {
+            // 游戏加载时立即修改
+            CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
+
+            // 每日检查（确保属性保持修改状态）
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+
+            // 监听家族改变王国事件（使用正确的事件名！）
+            CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
+        }
+
+        public override void SyncData(IDataStore dataStore)
+        {
+            dataStore.SyncData("GWPP_AttemptedMod", ref _hasAttemptedModification);
+            dataStore.SyncData("GWPP_ServiceSuccess", ref _serviceModificationSuccess);
+            dataStore.SyncData("GWPP_TypeSuccess", ref _typeModificationSuccess);
+            dataStore.SyncData("GWPP_ShownMessage", ref _hasShownSuccessMessage);  // 保存标志
+        }
+
+        private void OnGameLoaded(CampaignGameStarter starter)
+        {
+            // 游戏加载后立即尝试修改
+            TryModifyMercenaryProperties();
+        }
+
+        private void OnDailyTick()
+        {
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 如果还没修改成功，继续尝试
+            if (!_hasAttemptedModification || !_serviceModificationSuccess)
+            {
+                TryModifyMercenaryProperties();
+            }
+
+            // 兜底保护：如果被招募了，立即退出
+            if (policeClan.Kingdom != null)
+            {
+                ForceLeaveKingdom(policeClan);
+            }
+        }
+
+        /// <summary>
+        /// 关键事件：家族改变王国时触发
+        /// 参数完全匹配真实API！
+        /// </summary>
+        private void OnClanChangedKingdom(
+            Clan clan,
+            Kingdom oldKingdom,
+            Kingdom newKingdom,
+            ChangeKingdomAction.ChangeKingdomActionDetail detail,
+            bool showNotification)
+        {
+            if (!IsPoliceFamily(clan)) return;
+
+            // 如果警察家族加入了王国，立即退出
+            if (newKingdom != null)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Debug] 检测到加入王国：{newKingdom.Name.ToString()}，立即退出",
+                    Colors.Yellow
+                ));
+
+                ForceLeaveKingdom(clan);
+            }
+        }
+
+        /// <summary>
+        /// 核心方法：尝试修改雇佣兵相关属性
+        /// </summary>
+        private void TryModifyMercenaryProperties()
+        {
+            _hasAttemptedModification = true;
+
+            Clan policeClan = GetPoliceClan();
+            if (policeClan == null) return;
+
+            // 静默修改，不显示Debug信息
+
+            // 修改 IsUnderMercenaryService
+            if (!_serviceModificationSuccess)
+            {
+                if (TryModifyProperty(policeClan, "IsUnderMercenaryService", false))
+                {
+                    _serviceModificationSuccess = true;
+                }
+            }
+
+            // 修改 IsClanTypeMercenary
+            if (!_typeModificationSuccess)
+            {
+                if (TryModifyProperty(policeClan, "IsClanTypeMercenary", false))
+                {
+                    _typeModificationSuccess = true;
+                }
+            }
+
+            // 只在首次显示成功消息
+            if ((_serviceModificationSuccess || _typeModificationSuccess) && !_hasShownSuccessMessage)
+            {
+                _hasShownSuccessMessage = true;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Police] {policeClan.Name.ToString()} 已转变为独立势力，AI将无法招募",
+                    Colors.Cyan
+                ));
+            }
+        }
+
+        /// <summary>
+        /// 通用属性修改方法（使用反射）
+        /// </summary>
+        private bool TryModifyProperty(Clan clan, string propertyName, object value)
+        {
+            try
+            {
+                var property = typeof(Clan).GetProperty(propertyName);
+                if (property != null && property.CanWrite)
+                {
+                    property.SetValue(clan, value);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Debug] 修改 {propertyName} 失败：{ex.Message}",
+                    Colors.Red
+                ));
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 兜底方案：强制离开王国
+        /// </summary>
+        private void ForceLeaveKingdom(Clan clan)
+        {
+            try
+            {
+                Kingdom kingdom = clan.Kingdom;
+                if (kingdom == null) return;
+
+                ChangeKingdomAction.ApplyByLeaveKingdom(clan, false);
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Police] {clan.Name.ToString()} 拒绝了 {kingdom.Name.ToString()} 的雇佣，保持独立势力",
+                    Colors.Cyan
+                ));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[GWP Error] 离开王国失败：{ex.Message}",
+                    Colors.Red
+                ));
+            }
+        }
+
+        private Clan GetPoliceClan()
+        {
+            return Clan.FindFirst(c =>
+                string.Equals(c.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsPoliceFamily(Clan clan)
+        {
+            return clan != null &&
+                   string.Equals(clan.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}

@@ -1,0 +1,369 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+using TaleWorlds.Library;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 玩家行为记录
+    /// </summary>
+    public class PlayerRecord
+    {
+        public string Type { get; set; }
+        public bool IsCrime { get; set; }
+        public CampaignTime Time { get; set; }
+        public Vec2 Location { get; set; }
+        public string Detail { get; set; }
+    }
+
+    /// <summary>
+    /// 玩家行为池 - 记录玩家的犯罪和行善行为
+    /// 
+    /// 声望值（Reputation）：
+    ///   正数 = 好人（行善积累）
+    ///   0    = 中立
+    ///   负数 = 坏人（犯罪积累）
+    /// 
+    /// 评级为负时，玩家被列入通缉池，警察会主动追捕玩家
+    /// </summary>
+    public static class PlayerBehaviorPool
+    {
+        private static readonly List<PlayerRecord> _records = new List<PlayerRecord>();
+        private static readonly HashSet<IFaction> _victimFactions = new HashSet<IFaction>();
+
+        /// <summary>
+        /// 声望值（正=好人，负=坏人）
+        /// </summary>
+        public static int Reputation { get; private set; } = 0;
+
+        /// <summary>
+        /// 玩家是否处于被通缉状态（声望≤-5才触发通缉）
+        /// </summary>
+        public static bool IsWanted => Reputation <= -5;
+
+        /// <summary>
+        /// 所有行为记录（只读）
+        /// </summary>
+        public static IReadOnlyList<PlayerRecord> Records => _records;
+
+        /// <summary>
+        /// 玩家犯罪涉及的受害势力（供和平调停用）
+        /// </summary>
+        public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
+
+        /// <summary>
+        /// 清空受害势力记录（调停完成后调用）
+        /// </summary>
+        public static void ClearVictimFactions() => _victimFactions.Clear();
+
+        /// <summary>
+        /// 记录犯罪行为
+        /// </summary>
+        public static void AddCrime(string type, Vec2 location, string detail, IFaction victimFaction = null)
+        {
+            _records.Add(new PlayerRecord
+            {
+                Type = type,
+                IsCrime = true,
+                Time = CampaignTime.Now,
+                Location = location,
+                Detail = detail
+            });
+            Reputation--;
+
+            if (victimFaction != null)
+                _victimFactions.Add(victimFaction);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 灰袍守卫已记录你的罪行：{type}（{detail}）| {GetReputationDisplay()}",
+                Colors.Red));
+
+            // 声望变为负数 → 通缉玩家
+            if (IsWanted)
+            {
+                CrimePool.TryAddPlayerCrime(type, location, detail);
+            }
+        }
+
+        /// <summary>
+        /// 记录行善行为
+        /// </summary>
+        public static void AddGoodDeed(string type, Vec2 location, string detail)
+        {
+            _records.Add(new PlayerRecord
+            {
+                Type = type,
+                IsCrime = false,
+                Time = CampaignTime.Now,
+                Location = location,
+                Detail = detail
+            });
+            Reputation++;
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"[GWP] 灰袍守卫注意到你的善行：{type}（{detail}）| {GetReputationDisplay()}",
+                Colors.Green));
+        }
+
+        /// <summary>
+        /// 声望评级显示
+        /// </summary>
+        public static string GetReputationDisplay()
+        {
+            if (Reputation >= 20) return "声望：★★★★★ 人民英雄";
+            if (Reputation >= 10) return "声望：★★★★☆ 守护者";
+            if (Reputation >= 5)  return "声望：★★★☆☆ 善人";
+            if (Reputation >= 1)  return "声望：★★☆☆☆ 好感";
+            if (Reputation == 0)  return "声望：★☆☆☆☆ 中立";
+            if (Reputation >= -2) return "声望：☆☆☆☆☆ 可疑";
+            if (Reputation >= -5) return "声望：⚠☆☆☆☆ 通缉";
+            if (Reputation >= -10) return "声望：⚠⚠☆☆☆ 危险";
+            if (Reputation >= -20) return "声望：⚠⚠⚠☆☆ 极度危险";
+            return "声望：⚠⚠⚠⚠⚠ 全境通缉";
+        }
+
+        /// <summary>
+        /// 直接设置声望值
+        /// </summary>
+        public static void ResetReputation(int value)
+        {
+            Reputation = value;
+        }
+
+        /// <summary>
+        /// 增减声望值
+        /// </summary>
+        public static void ChangeReputation(int delta)
+        {
+            Reputation += delta;
+        }
+
+        /// <summary>
+        /// 清空所有静态状态（回档/读档时调用）
+        /// </summary>
+        public static void ClearAll()
+        {
+            Reputation = 0;
+            _records.Clear();
+            _victimFactions.Clear();
+        }
+    }
+
+    /// <summary>
+    /// 玩家行为监控 - 监听玩家的犯罪和行善行为，记录到 PlayerBehaviorPool
+    /// </summary>
+    public class PlayerBehaviorMonitor : CampaignBehaviorBase
+    {
+        public override void RegisterEvents()
+        {
+            // 犯罪：攻击村民/商队
+            CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
+
+            // 犯罪：劫掠村庄
+            CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, OnVillageBeingRaided);
+
+            // 犯罪：强迫募兵
+            CampaignEvents.ForceVolunteersCompletedEvent.AddNonSerializedListener(this, OnForceVolunteers);
+
+            // 犯罪：强征给养
+            CampaignEvents.ForceSuppliesCompletedEvent.AddNonSerializedListener(this, OnForceSupplies);
+
+            // 行善：战斗结束后检查玩家是否击败了劫匪/解救了受害者
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+        }
+
+        public override void SyncData(IDataStore dataStore)
+        {
+            if (dataStore.IsLoading)
+            {
+                PlayerBehaviorPool.ClearAll();
+                CrimePool.ClearAll();
+            }
+
+            int reputation = PlayerBehaviorPool.Reputation;
+            dataStore.SyncData("gwp_reputation", ref reputation);
+            PlayerBehaviorPool.ResetReputation(reputation);
+        }
+
+        #region 犯罪监听
+
+        private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
+        {
+            if (mapEvent == null || attackerParty == null || defenderParty == null) return;
+
+            MobileParty attacker = attackerParty.MobileParty;
+            MobileParty defender = defenderParty.MobileParty;
+            if (attacker == null || defender == null) return;
+
+            // 只监听玩家的行为
+            if (!attacker.IsMainParty) return;
+
+            Vec2 location = mapEvent.Position.ToVec2();
+
+            // 攻击村民
+            if (defender.PartyComponent is VillagerPartyComponent)
+            {
+                string victimName = defender.Name?.ToString() ?? "村民";
+                IFaction victimFaction = defender.ActualClan?.MapFaction;
+                PlayerBehaviorPool.AddCrime("攻击村民", location, victimName, victimFaction);
+                return;
+            }
+
+            // 攻击商队
+            if (defender.PartyComponent is CaravanPartyComponent)
+            {
+                string victimName = defender.Name?.ToString() ?? "商队";
+                IFaction victimFaction = defender.ActualClan?.MapFaction;
+                PlayerBehaviorPool.AddCrime("攻击商队", location, victimName, victimFaction);
+                return;
+            }
+        }
+
+        private void OnVillageBeingRaided(Village village)
+        {
+            if (village == null) return;
+
+            MobileParty raider = FindPlayerRaidingParty(village);
+            if (raider == null || !raider.IsMainParty) return;
+
+            Vec2 location = village.Settlement.Position.ToVec2();
+            IFaction victimFaction = village.Settlement.MapFaction;
+            PlayerBehaviorPool.AddCrime("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄", victimFaction);
+        }
+
+        private void OnForceVolunteers(BattleSideEnum side, ForceVolunteersEventComponent component)
+        {
+            // 只监听玩家发起的强迫募兵
+            if (side != BattleSideEnum.Attacker) return;
+
+            var settlement = component?.MapEvent?.MapEventSettlement;
+            if (settlement == null) return;
+
+            // 检查攻击方是否是玩家
+            bool playerInvolved = false;
+            foreach (var p in component.MapEvent.AttackerSide.Parties)
+            {
+                if (p.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
+                { playerInvolved = true; break; }
+            }
+            if (!playerInvolved) return;
+
+            Vec2 location = settlement.Position.ToVec2();
+            IFaction victimFaction = settlement.MapFaction;
+            PlayerBehaviorPool.AddCrime("强迫募兵", location, settlement.Name?.ToString() ?? "未知村庄", victimFaction);
+        }
+
+        private void OnForceSupplies(BattleSideEnum side, ForceSuppliesEventComponent component)
+        {
+            if (side != BattleSideEnum.Attacker) return;
+
+            var settlement = component?.MapEvent?.MapEventSettlement;
+            if (settlement == null) return;
+
+            bool playerInvolved = false;
+            foreach (var p in component.MapEvent.AttackerSide.Parties)
+            {
+                if (p.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
+                { playerInvolved = true; break; }
+            }
+            if (!playerInvolved) return;
+
+            Vec2 location = settlement.Position.ToVec2();
+            IFaction victimFaction = settlement.MapFaction;
+            PlayerBehaviorPool.AddCrime("强征给养", location, settlement.Name?.ToString() ?? "未知村庄", victimFaction);
+        }
+
+        #endregion
+
+        #region 行善监听
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null || !mapEvent.HasWinner) return;
+
+            bool playerWon = false;
+            bool enemyIsBandit = false;
+            bool defenderIsVillager = false;
+            bool defenderIsCaravan = false;
+
+            // 检查玩家是否在胜方
+            foreach (var p in mapEvent.Winner.Parties)
+            {
+                if (p.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
+                {
+                    playerWon = true;
+                    break;
+                }
+            }
+
+            if (!playerWon) return;
+
+            // 检查败方是否有劫匪，以及是否涉及村民/商队
+            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
+                ? mapEvent.DefenderSide
+                : mapEvent.AttackerSide;
+
+            foreach (var p in loser.Parties)
+            {
+                if (p.Party?.IsMobile != true) continue;
+                var mp = p.Party.MobileParty;
+
+                if (mp.ActualClan != null && mp.ActualClan.IsBanditFaction)
+                    enemyIsBandit = true;
+            }
+
+            // 检查友方是否有村民/商队（解救）
+            foreach (var p in mapEvent.Winner.Parties)
+            {
+                if (p.Party?.IsMobile != true) continue;
+                var mp = p.Party.MobileParty;
+
+                if (mp.PartyComponent is VillagerPartyComponent) defenderIsVillager = true;
+                if (mp.PartyComponent is CaravanPartyComponent) defenderIsCaravan = true;
+            }
+
+            Vec2 location = mapEvent.Position.ToVec2();
+
+            if (enemyIsBandit)
+            {
+                PlayerBehaviorPool.AddGoodDeed("击败劫匪", location, "维护了地区治安");
+            }
+
+            if (defenderIsVillager)
+            {
+                PlayerBehaviorPool.AddGoodDeed("解救村民", location, "保护了无辜村民");
+            }
+
+            if (defenderIsCaravan)
+            {
+                PlayerBehaviorPool.AddGoodDeed("解救商队", location, "保护了贸易安全");
+            }
+        }
+
+        #endregion
+
+        #region 辅助
+
+        private MobileParty FindPlayerRaidingParty(Village village)
+        {
+            Settlement target = village?.Settlement;
+            if (target == null) return null;
+
+            foreach (MobileParty party in MobileParty.All)
+            {
+                if (party.IsMainParty && party.TargetSettlement == target)
+                    return party;
+            }
+            return null;
+        }
+
+        #endregion
+    }
+}

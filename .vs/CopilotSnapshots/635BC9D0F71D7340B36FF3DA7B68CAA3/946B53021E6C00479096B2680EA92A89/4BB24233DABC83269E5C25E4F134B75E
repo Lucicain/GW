@@ -1,0 +1,46 @@
+﻿$a = [Reflection.Assembly]::LoadFrom('D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll')
+
+# Check events for forced recruitment and forced supply
+Write-Host "=== Village forced recruit/supply events ==="
+$ce = $a.GetType('TaleWorlds.CampaignSystem.CampaignEvents')
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'ForceVolunteer|ForceSuppl|ItemsLooted|VillageForcedTo|GetSupplies|Recruit') {
+        Write-Host "  $($p.Name)"
+    }
+}
+
+# Check for menu-related events (village menus trigger these)
+Write-Host ""
+Write-Host "=== Settlement/Village action events ==="
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'Village|Settlement' -and $p.Name -match 'Menu|Action|Force|Loot|Supply|Provision') {
+        Write-Host "  $($p.Name)"
+    }
+}
+
+# Broader search
+Write-Host ""
+Write-Host "=== All events with Force/Supply/Provision ==="
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'Force|Supply|Provision|Loot|Conscript') {
+        Write-Host "  $($p.Name)"
+    }
+}
+
+# Check ItemsLooted event
+Write-Host ""
+Write-Host "=== ItemsLooted/collected events ==="
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'Items|Collected|Looted|Taken') {
+        Write-Host "  $($p.Name)"
+    }
+}
+
+# Check for village volunteer events
+Write-Host ""
+Write-Host "=== Volunteer events ==="
+foreach ($p in $ce.GetProperties()) {
+    if ($p.Name -match 'Volunteer|Troop|Recruit') {
+        Write-Host "  $($p.Name)"
+    }
+}

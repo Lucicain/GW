@@ -1,0 +1,150 @@
+﻿using System;
+using System.Collections.Generic;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.Core;
+
+namespace GreyWardenPolicePurity
+{
+    public class PolicePurityBehavior : CampaignBehaviorBase
+    {
+        private const string PoliceClanId = "gw";
+
+        // 替换成的新兵ID
+        private const string PoliceRecruitId = "gwrecruit";
+
+        // 每6小时检查一次
+        private const double CheckIntervalHours = 6.0;
+
+        // 记录每个队伍上次检查时间
+        private Dictionary<string, double> _lastCheckTime =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        public override void RegisterEvents()
+        {
+            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
+        }
+
+        public override void SyncData(IDataStore dataStore)
+        {
+            List<string> keys = null;
+            List<double> values = null;
+
+            if (dataStore.IsSaving)
+            {
+                keys = new List<string>(_lastCheckTime.Count);
+                values = new List<double>(_lastCheckTime.Count);
+
+                foreach (var kv in _lastCheckTime)
+                {
+                    keys.Add(kv.Key);
+                    values.Add(kv.Value);
+                }
+            }
+
+            dataStore.SyncData("GWPP_CheckKeys", ref keys);
+            dataStore.SyncData("GWPP_CheckValues", ref values);
+
+            if (dataStore.IsLoading)
+            {
+                _lastCheckTime =
+                    new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+                if (keys != null && values != null)
+                {
+                    int count = Math.Min(keys.Count, values.Count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (!string.IsNullOrEmpty(keys[i]))
+                        {
+                            _lastCheckTime[keys[i]] = values[i];
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnHourlyTickParty(MobileParty party)
+        {
+            if (party == null)
+                return;
+
+            if (party.IsCaravan || party.IsMilitia || party.IsVillager)
+                return;
+
+            var clan = party.LeaderHero?.Clan;
+            if (clan == null)
+                return;
+
+            // 只处理警察家族
+            if (!string.Equals(clan.StringId, PoliceClanId,
+                StringComparison.OrdinalIgnoreCase))
+                return;
+
+            double now = CampaignTime.Now.ToHours;
+
+            if (_lastCheckTime.TryGetValue(party.StringId, out double lastCheck))
+            {
+                if (now - lastCheck < CheckIntervalHours)
+                    return; // 还没到6小时
+            }
+
+            // 更新检查时间
+            _lastCheckTime[party.StringId] = now;
+
+            // 立即净化
+            PurifyParty(party);
+        }
+
+        private void PurifyParty(MobileParty party)
+        {
+            var recruit = CharacterObject.Find(PoliceRecruitId);
+            if (recruit == null)
+                return;
+
+            var roster = party.MemberRoster;
+            var toRemove = new List<TroopRosterElement>();
+
+            foreach (var element in roster.GetTroopRoster())
+            {
+                if (element.Character == null)
+                    continue;
+
+                if (element.Character.IsHero)
+                    continue;
+
+                if (IsIllegal(element.Character))
+                {
+                    toRemove.Add(element);
+                }
+            }
+
+            foreach (var element in toRemove)
+            {
+                roster.AddToCounts(element.Character, -element.Number);
+                roster.AddToCounts(recruit, element.Number);
+            }
+        }
+
+        private bool IsIllegal(CharacterObject character)
+        {
+            if (character == null)
+                return false;
+
+            string id = character.StringId;
+
+            // 允许的四种兵
+            if (id == "gwrecruit" ||
+                id == "gwheavyinfantry" ||
+                id == "gwarcher" ||
+                id == "gwknight")
+            {
+                return false;
+            }
+
+            // 其他全部非法
+            return true;
+        }
+    }
+}

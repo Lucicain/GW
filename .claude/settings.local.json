@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(Select-String -Pattern \"error|Error|Build succeeded|Build FAILED\")",
+      "Bash(Select-Object -Last 20)",
+      "Bash(Select-String -Pattern \"error|Error|Build succeeded|FAILED\")",
+      "Bash(powershell -NoProfile:*)",
+      "Bash(/tmp/search_deep.ps1:*)",
+      "Bash(/tmp/search_events_actions.ps1:*)",
+      "Bash(/tmp/search_sandbox.ps1:*)",
+      "Bash(/tmp/search_sandbox2.ps1:*)",
+      "Bash(/tmp/search_sandbox3.ps1:*)",
+      "Bash(/tmp/search_modules.ps1:*)",
+      "Bash(/tmp/search_sandboxcore.ps1:*)",
+      "Bash(/tmp/search_sandbox_partial.ps1:*)",
+      "Bash(/tmp/search_sandbox_strings2.ps1:*)",
+      "Bash(/tmp/search_vassalai.ps1:*)",
+      "Bash(/tmp/search_defection.ps1:*)",
+      "Bash(/tmp/search_final2.ps1:*)",
+      "Bash(powershell.exe -NoProfile:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:docs.bannerlordmodding.com)",
+      "WebFetch(domain:apidoc.bannerlord.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.bannerlordmodding.lt)",
+      "WebFetch(domain:moddocs.bannerlord.com)",
+      "Bash(cmd.exe /c \"dir \"\"D:\\\\steam\\\\steamapps\\\\common\\\\Mount & Blade II Bannerlord\\\\Modules\\\\SandBox\"\"\")",
+      "Bash(cmd.exe /c dir \"D:\\\\steam\\\\steamapps\\\\common\\\\Mount & Blade II Bannerlord\\\\Modules\\\\SandBox\")",
+      "Bash(powershell -Command \"$dll = ''D:\\\\steam\\\\steamapps\\\\common\\\\Mount & Blade II Bannerlord\\\\Modules\\\\SandBox\\\\bin\\\\Win64_Shipping_Client\\\\SandBox.dll''; $bytes = [System.IO.File]::ReadAllBytes\\($dll\\); $text = [System.Text.Encoding]::ASCII.GetString\\($bytes\\); [regex]::Matches\\($text, ''encounter[a-zA-Z_0-9]{2,50}''\\) | ForEach-Object { $_Value } | Sort-Object -Unique | Select-Object -First 60\")",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"[System.Reflection.Assembly]::LoadFrom\\(''D:\\\\steam\\\\steamapps\\\\common\\\\Mount & Blade II Bannerlord\\\\Modules\\\\NavalDLC\\\\bin\\\\Win64_Shipping_Client\\\\NavalDLC.dll''\\).GetTypes\\(\\) | Where-Object { $_Name -match ''Ship|Naval|Hull|Vessel'' } | ForEach-Object { $_FullName }\")",
+      "Bash(ffmpeg:*)",
+      "Bash(dir \"C:\\\\Users\\\\lucif\\\\source\\\\repos\\\\GreyWardenPolicePurity\\\\GreyWardenPolicePurity\\\\_Module\" /s /b)",
+      "Bash(powershell.exe -Command \"Write-Host ''当前你的用户目录下有哪些FMOD Studio版本''; Get-ChildItem ''C:\\\\Program Files \\(x86\\)\\\\FMOD SteamAudio\\\\'' -ErrorAction SilentlyContinue; Get-ChildItem ''C:\\\\Program Files\\\\FMOD Studio\\\\'' -ErrorAction SilentlyContinue; Get-ChildItem ''C:\\\\Users\\\\lucif\\\\AppData\\\\Local\\\\FMOD Studio\\\\'' | Select-Object Name,LastWriteTime\")",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(head -5 \"D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/Native/ModuleData/module_sounds.xml\")",
+      "WebFetch(domain:forums.taleworlds.com)",
+      "WebFetch(domain:www.nexusmods.com)"
+    ]
+  }
+}

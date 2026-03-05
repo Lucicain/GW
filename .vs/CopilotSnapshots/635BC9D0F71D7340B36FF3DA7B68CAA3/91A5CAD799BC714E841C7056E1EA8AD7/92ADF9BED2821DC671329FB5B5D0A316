@@ -1,0 +1,69 @@
+﻿using System;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Library;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 犯罪记录
+    /// </summary>
+    public class CrimeRecord
+    {
+        public string CrimeId { get; set; }
+        public string CrimeType { get; set; }              // "劫掠村庄" / "攻击商队" / "攻击村民"
+        public MobileParty Offender { get; set; }          // 犯罪者
+        public CampaignTime OccurredTime { get; set; }     // 发生时间
+        public Vec2 Location { get; set; }                 // 犯罪地点（Vec2用于距离计算）
+        public string VictimName { get; set; }             // 受害者名称
+
+        /// <summary>
+        /// 犯罪者是否还有效
+        /// </summary>
+        public bool IsOffenderValid()
+        {
+            return Offender != null && Offender.IsActive;
+        }
+    }
+
+    /// <summary>
+    /// 警察任务
+    /// </summary>
+    public class PoliceTask
+    {
+        public string TaskId { get; set; }
+        public string PolicePartyId { get; set; }
+        public CrimeRecord TargetCrime { get; set; }
+        public CampaignTime AssignedTime { get; set; }
+        public TaskStatus Status { get; set; }
+
+        // 记录罪犯原家族和王国（用于战后恢复）
+        public Clan OriginalClan { get; set; }
+        public Kingdom OriginalKingdom { get; set; }
+
+        // 宣战目标（MapFaction，可能是Kingdom或Clan）
+        public IFaction WarTarget { get; set; }
+
+        // 是否已对罪犯家族宣战（接近时才宣战，只宣一次）
+        public bool WarDeclared { get; set; }
+
+        /// <summary>
+        /// 目标是否还有效
+        /// </summary>
+        public bool IsTargetValid()
+        {
+            return TargetCrime != null && TargetCrime.IsOffenderValid();
+        }
+    }
+
+    /// <summary>
+    /// 任务状态
+    /// </summary>
+    public enum TaskStatus
+    {
+        InProgress,
+        Completed,
+        Failed,
+        Cancelled
+    }
+}

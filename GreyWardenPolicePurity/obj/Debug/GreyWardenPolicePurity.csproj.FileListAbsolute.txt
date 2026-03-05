@@ -1,0 +1,9 @@
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.csproj.AssemblyReference.cache
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.AssemblyInfoInputs.cache
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.AssemblyInfo.cs
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.csproj.CoreCompileInputs.cache
+D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll
+D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.pdb
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.dll
+C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.pdb
