@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.CampaignSystem.Party;
@@ -47,7 +47,7 @@ namespace GreyWardenPolicePurity
         private int   _batchesDone     = 0;
         private int   _totalTroopCount = 0;
         private bool  _isSpawning      = false;
-        private SoundEvent? _hornSound  = null;
+        private SoundEvent? _hornSound  = null!;
         private float       _hornStopAt = -1f;
         private int         _hornPlayed = 0;
 
@@ -94,7 +94,7 @@ namespace GreyWardenPolicePurity
             {
                 _hornSound.Stop();
                 _hornSound.Release();
-                _hornSound  = null;
+                _hornSound  = null!;
                 _hornStopAt = -1f;
 
                 if (_hornPlayed < HornPlayCount)
@@ -229,7 +229,7 @@ namespace GreyWardenPolicePurity
             int archerCount   = (int)(BatchSize * 0.4f); // 4
             int cavalryCount  = BatchSize - infantryCount - archerCount; // 2
 
-            Agent? firstSpawned = null;
+            Agent? firstSpawned = null!;
             firstSpawned = SpawnTroops(_infantry, infantryCount, mission, playerTeam, spawnFrame, FormationClass.Infantry, ref firstSpawned);
             SpawnTroops(_archer,   archerCount,  mission, playerTeam, spawnFrame, FormationClass.Ranged,   ref firstSpawned);
             SpawnTroops(_cavalry,  cavalryCount, mission, playerTeam, spawnFrame, FormationClass.Cavalry,  ref firstSpawned);

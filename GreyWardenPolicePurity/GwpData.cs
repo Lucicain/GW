@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -14,25 +14,26 @@ namespace GreyWardenPolicePurity
 
     public class CrimeRecord
     {
-        public string CrimeId { get; set; }
-        public string CrimeType { get; set; }
-        public MobileParty Offender { get; set; }
+        public string CrimeId { get; set; } = string.Empty;
+        public string CrimeType { get; set; } = string.Empty;
+        public MobileParty? Offender { get; set; }
         public CampaignTime OccurredTime { get; set; }
         public Vec2 Location { get; set; }
-        public string VictimName { get; set; }
+        public string VictimName { get; set; } = string.Empty;
 
-        public bool IsOffenderValid() => Offender != null && Offender.IsActive;
+        public bool IsOffenderValid() => Offender?.IsActive == true;
+        public bool IsOffenderPursuable() => Offender?.IsActive == true && Offender.CurrentSettlement == null;
     }
 
     public class PoliceTask
     {
-        public string PolicePartyId { get; set; }
-        public CrimeRecord TargetCrime { get; set; }
+        public string PolicePartyId { get; set; } = string.Empty;
+        public CrimeRecord? TargetCrime { get; set; }
         public bool WarDeclared { get; set; }
-        public IFaction WarTarget { get; set; }
+        public IFaction? WarTarget { get; set; }
         public bool IsEscortingPlayer { get; set; }
         /// <summary>押送目标城镇（俘获玩家时记录，避免每帧重新计算导致目标漂移）</summary>
-        public Settlement EscortSettlement { get; set; }
+        public Settlement? EscortSettlement { get; set; }
         /// <summary>
         /// 是否正在为玩家悬赏任务护送（跟随玩家追击目标）。
         /// true 时 PoliceEnforcementBehavior.UpdateTasks() 完全跳过此任务，
@@ -40,7 +41,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         public bool IsPlayerBountyEscort { get; set; }
 
-        public bool IsTargetValid() => TargetCrime != null && TargetCrime.IsOffenderValid();
+        public bool IsTargetValid() => TargetCrime?.IsOffenderValid() == true;
     }
 
     /// <summary>警察家族统计工具</summary>
@@ -56,7 +57,10 @@ namespace GreyWardenPolicePurity
             Clan clan = GetPoliceClan();
             if (clan == null) return new List<MobileParty>();
             return clan.WarPartyComponents
-                .Where(w => w?.MobileParty != null && w.MobileParty.IsActive)
+                .Where(w =>
+                    w?.MobileParty != null &&
+                    w.MobileParty.IsActive &&
+                    !GwpCommon.IsEnforcementDelayPatrolParty(w.MobileParty))
                 .Select(w => w.MobileParty)
                 .ToList();
         }
@@ -134,6 +138,32 @@ namespace GreyWardenPolicePurity
             RefreshAccepting();
         }
 
+        /// <summary>获取当前玩家通缉记录（可能在待处理池，也可能在活跃任务中）。</summary>
+        public static CrimeRecord? GetPlayerCrime()
+        {
+            CrimeRecord? poolCrime = _pool.FirstOrDefault(c => c.CrimeId == PlayerCrimeId || c.Offender?.IsMainParty == true);
+            if (poolCrime != null) return poolCrime;
+
+            foreach (PoliceTask task in _tasks.Values)
+            {
+                if (task.TargetCrime?.Offender?.IsMainParty == true)
+                    return task.TargetCrime;
+            }
+
+            return null;
+        }
+
+        /// <summary>获取当前负责追捕玩家的警察部队 ID（无则 null）。</summary>
+        public static string? GetPlayerTaskPolicePartyId()
+        {
+            foreach (var kv in _tasks)
+            {
+                if (kv.Value.TargetCrime?.Offender?.IsMainParty == true)
+                    return kv.Key;
+            }
+            return null;
+        }
+
         public static bool TryAdd(string crimeType, MobileParty offender, Vec2 location, string victimName)
         {
             if (offender == null || !offender.IsActive) return false;
@@ -156,32 +186,32 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        public static void Return(CrimeRecord crime)
+        public static void Return(CrimeRecord? crime)
         {
             if (crime != null && crime.IsOffenderValid())
                 _pool.Add(crime);
         }
 
-        public static CrimeRecord GetNearest(Vec2 pos)
+        public static CrimeRecord? GetNearest(Vec2 pos)
         {
-            CrimeRecord best = null;
+            CrimeRecord? best = null;
             float bestDist = float.MaxValue;
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
             }
             return best;
         }
 
-        public static CrimeRecord GetNearestNonPlayer(Vec2 pos)
+        public static CrimeRecord? GetNearestNonPlayer(Vec2 pos)
         {
-            CrimeRecord best = null;
+            CrimeRecord? best = null;
             float bestDist = float.MaxValue;
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 if (c.Offender.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
@@ -190,14 +220,14 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>从待处理池 + 活跃任务中查找（悬赏猎人用）</summary>
-        public static CrimeRecord GetNearestNonPlayerFromAll(Vec2 pos)
+        public static CrimeRecord? GetNearestNonPlayerFromAll(Vec2 pos)
         {
-            CrimeRecord best = null;
+            CrimeRecord? best = null;
             float bestDist = float.MaxValue;
 
             foreach (var c in _pool)
             {
-                if (!c.IsOffenderValid()) continue;
+                if (!c.IsOffenderPursuable()) continue;
                 if (c.Offender.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
@@ -205,7 +235,7 @@ namespace GreyWardenPolicePurity
             foreach (var task in _tasks.Values)
             {
                 var crime = task.TargetCrime;
-                if (crime == null || !crime.IsOffenderValid()) continue;
+                if (crime == null || !crime.IsOffenderPursuable()) continue;
                 if (crime.Offender.IsMainParty) continue;
                 float d = pos.Distance(crime.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = crime; }
@@ -218,7 +248,7 @@ namespace GreyWardenPolicePurity
         /// 若无警察部队持有该任务（犯罪仍在 _pool 中），返回 null。
         /// 供玩家接悬赏时确定护送方使用。
         /// </summary>
-        public static string GetAssignedPolicePartyId(string offenderStringId)
+        public static string? GetAssignedPolicePartyId(string? offenderStringId)
         {
             if (string.IsNullOrEmpty(offenderStringId)) return null;
             foreach (var kv in _tasks)
@@ -240,7 +270,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>按犯罪者 StringId 查找（悬赏通知点击时用）</summary>
-        public static CrimeRecord GetByOffenderId(string partyStringId)
+        public static CrimeRecord? GetByOffenderId(string? partyStringId)
         {
             if (partyStringId == null) return null;
             foreach (var c in _pool)
@@ -271,7 +301,7 @@ namespace GreyWardenPolicePurity
             RefreshAccepting();
         }
 
-        public static PoliceTask GetTask(string policePartyId)
+        public static PoliceTask? GetTask(string policePartyId)
         {
             _tasks.TryGetValue(policePartyId, out var task);
             return task;
@@ -279,7 +309,122 @@ namespace GreyWardenPolicePurity
 
         public static bool HasTask(string policePartyId) => _tasks.ContainsKey(policePartyId);
 
+        /// <summary>
+        /// 强制把玩家通缉案件分配给指定警察部队。
+        /// 若指定部队已有其他任务，会把该任务的犯罪记录退回池子。
+        /// 若玩家案件已在其他部队手中，会转移到指定部队。
+        /// </summary>
+        public static bool TryAssignPlayerCrimeToPolice(string policePartyId)
+        {
+            if (string.IsNullOrEmpty(policePartyId)) return false;
+
+            CrimeRecord? playerCrime = GetPlayerCrime();
+            if (playerCrime == null || playerCrime.Offender?.IsMainParty != true) return false;
+
+            if (_tasks.TryGetValue(policePartyId, out PoliceTask samePartyTask) &&
+                samePartyTask.TargetCrime?.Offender?.IsMainParty == true)
+            {
+                return true;
+            }
+
+            // 先把玩家案件从池中清掉（后续由指定部队接手）
+            _pool.RemoveAll(c => c.CrimeId == PlayerCrimeId || c.Offender?.IsMainParty == true);
+
+            // 移除旧的玩家追捕任务（若存在）
+            string? oldPlayerTaskPartyId = GetPlayerTaskPolicePartyId();
+            if (!string.IsNullOrEmpty(oldPlayerTaskPartyId))
+                _tasks.Remove(oldPlayerTaskPartyId);
+
+            // 指定部队已有非玩家任务时，案件归池（避免丢案）
+            if (_tasks.TryGetValue(policePartyId, out PoliceTask displacedTask))
+            {
+                CrimeRecord? displacedCrime = displacedTask.TargetCrime;
+                if (displacedCrime?.IsOffenderValid() == true &&
+                    displacedCrime.Offender?.IsMainParty != true &&
+                    !_pool.Any(c => c.Offender?.StringId == displacedCrime.Offender?.StringId))
+                {
+                    _pool.Add(displacedCrime);
+                }
+
+                _tasks.Remove(policePartyId);
+            }
+
+            _tasks[policePartyId] = new PoliceTask
+            {
+                PolicePartyId = policePartyId,
+                TargetCrime = playerCrime,
+                WarDeclared = false,
+                WarTarget = null,
+                IsEscortingPlayer = false,
+                EscortSettlement = null,
+                IsPlayerBountyEscort = false
+            };
+
+            RefreshAccepting();
+            return true;
+        }
+
         public static void Clean() => _pool.RemoveAll(c => !c.IsOffenderValid());
+
+        /// <summary>
+        /// 获取犯罪池（待处理 + 已分配任务）中属于指定势力的活跃罪犯队伍。
+        /// 用于执法超时时判断是否仍有可追捕对象。
+        /// </summary>
+        public static List<MobileParty> GetTrackedOffendersByFaction(IFaction? faction)
+        {
+            var result = new List<MobileParty>();
+            if (faction == null) return result;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void TryAdd(MobileParty? offender)
+            {
+                if (offender == null || !offender.IsActive || offender.IsMainParty) return;
+                IFaction offenderFaction = offender.MapFaction;
+                if (offenderFaction == null || offenderFaction != faction) return;
+                if (string.IsNullOrEmpty(offender.StringId)) return;
+                if (!seen.Add(offender.StringId)) return;
+                result.Add(offender);
+            }
+
+            foreach (var c in _pool)
+                TryAdd(c.Offender);
+
+            foreach (var t in _tasks.Values)
+                TryAdd(t.TargetCrime?.Offender);
+
+            return result;
+        }
+
+        public static bool HasTrackedOffenderByFaction(IFaction? faction) =>
+            GetTrackedOffendersByFaction(faction).Count > 0;
+
+        /// <summary>
+        /// 获取犯罪池（待处理 + 已分配任务）中的全部活跃罪犯（可选是否包含玩家）。
+        /// 用于读档后恢复纠察支援队目标时进行就近匹配。
+        /// </summary>
+        public static List<MobileParty> GetAllTrackedOffenders(bool includePlayer = false)
+        {
+            var result = new List<MobileParty>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void TryAdd(MobileParty? offender)
+            {
+                if (offender == null || !offender.IsActive) return;
+                if (!includePlayer && offender.IsMainParty) return;
+                if (string.IsNullOrEmpty(offender.StringId)) return;
+                if (!seen.Add(offender.StringId)) return;
+                result.Add(offender);
+            }
+
+            foreach (var c in _pool)
+                TryAdd(c.Offender);
+
+            foreach (var t in _tasks.Values)
+                TryAdd(t.TargetCrime?.Offender);
+
+            return result;
+        }
 
         public static void RefreshAccepting()
         {
@@ -379,7 +524,7 @@ namespace GreyWardenPolicePurity
                     dataStore.SyncData($"gwp_cp_p{i}_locy",   ref clocy);
                     dataStore.SyncData($"gwp_cp_p{i}_victim", ref cvict);
 
-                    MobileParty offender = cid == PlayerCrimeId
+                    MobileParty? offender = cid == PlayerCrimeId
                         ? MobileParty.MainParty
                         : MobileParty.All.FirstOrDefault(p => p.StringId == coffe);
                     if (offender == null || !offender.IsActive) continue;
@@ -420,11 +565,11 @@ namespace GreyWardenPolicePurity
                     if (string.IsNullOrEmpty(tpol) || string.IsNullOrEmpty(tcid)) continue;
 
                     // 验证警察部队仍然存在
-                    MobileParty policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == tpol);
+                    MobileParty? policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == tpol);
                     if (policeParty == null) continue;
 
                     // 验证目标罪犯仍然存在
-                    MobileParty offender = tcid == PlayerCrimeId
+                    MobileParty? offender = tcid == PlayerCrimeId
                         ? MobileParty.MainParty
                         : MobileParty.All.FirstOrDefault(p => p.StringId == tcoffe);
                     if (offender == null || !offender.IsActive) continue;
@@ -440,13 +585,13 @@ namespace GreyWardenPolicePurity
                     };
 
                     // 恢复 WarTarget（Kingdom 或 Clan）
-                    IFaction warTarget = null;
+                    IFaction? warTarget = null;
                     if (!string.IsNullOrEmpty(twt))
                         warTarget = (IFaction)Kingdom.All.FirstOrDefault(k => k.StringId == twt)
                                  ?? Clan.All.FirstOrDefault(c => c.StringId == twt);
 
                     // 恢复 EscortSettlement
-                    Settlement escortSett = null;
+                    Settlement? escortSett = null;
                     if (!string.IsNullOrEmpty(tescs))
                         escortSett = Settlement.FindFirst(s => s.StringId == tescs);
 
@@ -471,11 +616,11 @@ namespace GreyWardenPolicePurity
 
     public class PlayerRecord
     {
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
         public bool IsCrime { get; set; }
         public CampaignTime Time { get; set; }
         public Vec2 Location { get; set; }
-        public string Detail { get; set; }
+        public string Detail { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -492,6 +637,7 @@ namespace GreyWardenPolicePurity
 
         public static int Reputation { get; private set; } = 0;
         public static bool IsWanted => Reputation <= -11;
+        public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyList<PlayerRecord> Records => _records;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
 
@@ -502,7 +648,7 @@ namespace GreyWardenPolicePurity
             if (faction != null) _victimFactions.Add(faction);
         }
 
-        public static void AddCrime(string type, Vec2 location, string detail, IFaction victimFaction = null)
+        public static void AddCrime(string type, Vec2 location, string detail, IFaction? victimFaction = null)
         {
             _records.Add(new PlayerRecord { Type = type, IsCrime = true, Time = CampaignTime.Now, Location = location, Detail = detail });
             Reputation = Math.Max(Reputation - 1, MinReputation);
@@ -520,7 +666,7 @@ namespace GreyWardenPolicePurity
         /// 仅记录犯罪事件（历史记录 + 受害势力追踪），不扣声望、不弹通知、不触发警察追捕。
         /// 用于"按战斗人数缩放扣声望"场景：调用方在战斗结束后（OnMapEventEnded）统一处理声望。
         /// </summary>
-        public static void AddCrimeRecord(string type, Vec2 location, string detail, IFaction victimFaction = null)
+        public static void AddCrimeRecord(string type, Vec2 location, string detail, IFaction? victimFaction = null)
         {
             _records.Add(new PlayerRecord { Type = type, IsCrime = true, Time = CampaignTime.Now, Location = location, Detail = detail });
             if (victimFaction != null) _victimFactions.Add(victimFaction);
@@ -540,10 +686,12 @@ namespace GreyWardenPolicePurity
 
         public static void ResetReputation(int value) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
         public static void ChangeReputation(int delta) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));
+        public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
         public static void ClearAll()
         {
             Reputation = 0;
+            HasAtonementTask = false;
             _records.Clear();
             _victimFactions.Clear();
         }

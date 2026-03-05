@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -26,6 +26,8 @@ namespace GreyWardenPolicePurity
     {
         private const int DailyGoldPerMember = 1000;
         private const int FoodDaysTarget = 15;
+        private const int EquipmentSlotCount = 12;
+        private const string CommanderTemplateCharacterId = "gw_leader_0";
 
         // 正在补给中的警察部队ID
         private static readonly HashSet<string> _resupplying = new HashSet<string>();
@@ -50,6 +52,12 @@ namespace GreyWardenPolicePurity
             return !_resupplying.Contains(party.StringId);
         }
 
+        public static void CancelResupply(MobileParty police)
+        {
+            if (police == null) return;
+            _resupplying.Remove(police.StringId);
+        }
+
         public static void StartResupply(MobileParty police)
         {
             if (police == null || !police.IsActive) return;
@@ -64,6 +72,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
+            CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -74,8 +83,8 @@ namespace GreyWardenPolicePurity
                 _lastPurifyTime = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             }
 
-            List<string> keys = null;
-            List<double> values = null;
+            List<string> keys = null!;
+            List<double> values = null!;
             if (dataStore.IsSaving)
             {
                 keys = new List<string>(_lastPurifyTime.Keys);
@@ -119,12 +128,13 @@ namespace GreyWardenPolicePurity
             foreach (Hero hero in policeClan.Heroes.ToList())
             {
                 if (hero == null || hero.IsDead || !hero.IsActive) continue;
+                if (!IsPoliceClanHero(hero)) continue;
                 if (hero.IsChild || hero.PartyBelongedTo != null || hero.IsPrisoner) continue;
-                if (hero.StringId == null ||
-                    !hero.StringId.StartsWith("gw", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!hero.CanLeadParty()) continue;
 
                 try
                 {
+                    ApplyCommanderLoadout(hero);
                     Settlement spawn = hero.CurrentSettlement
                         ?? FindNearestTown(policeClan.Leader?.PartyBelongedTo?.GetPosition2D ?? Vec2.Zero);
                     MobileParty newParty = MobilePartyHelper.SpawnLordParty(hero, spawn);
@@ -141,6 +151,45 @@ namespace GreyWardenPolicePurity
                     _ = ex;
                 }
             }
+        }
+
+        private void OnHeroComesOfAge(Hero hero)
+        {
+            if (hero == null || !IsPoliceClanHero(hero)) return;
+            ApplyCommanderLoadout(hero);
+        }
+
+        private static bool IsPoliceClanHero(Hero hero)
+        {
+            return hero?.Clan != null &&
+                   string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void ApplyCommanderLoadout(Hero hero)
+        {
+            if (hero == null) return;
+
+            CharacterObject template = CharacterObject.Find(CommanderTemplateCharacterId)
+                ?? hero.Clan?.Leader?.CharacterObject;
+            if (template == null) return;
+
+            Equipment battleTemplate = template.FirstBattleEquipment;
+            Equipment civilianTemplate = template.FirstCivilianEquipment;
+            if (battleTemplate == null || battleTemplate.IsEmpty()) return;
+            if (civilianTemplate == null || civilianTemplate.IsEmpty()) return;
+
+            // 先确保英雄拥有独立装备实例，避免写入共享的默认死者装备。
+            hero.ResetEquipments();
+            CopyEquipment(battleTemplate, hero.BattleEquipment);
+            CopyEquipment(civilianTemplate, hero.CivilianEquipment);
+            hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
+        }
+
+        private static void CopyEquipment(Equipment source, Equipment destination)
+        {
+            if (source == null || destination == null) return;
+            for (int i = 0; i < EquipmentSlotCount; i++)
+                destination[i] = source[i];
         }
 
         private void PaySalaries()
@@ -378,6 +427,20 @@ namespace GreyWardenPolicePurity
             return goldTaken + itemsValue;
         }
 
+        /// <summary>
+        /// 只收金币，不没收背包物品。用于战败押送后的严肃罚款流程。
+        /// </summary>
+        public static int CollectFineGoldOnly(int fine)
+        {
+            if (fine <= 0) return 0;
+
+            int goldTaken = Math.Min(Hero.MainHero.Gold, fine);
+            if (goldTaken > 0)
+                Hero.MainHero.ChangeHeroGold(-goldTaken);
+
+            return goldTaken;
+        }
+
         private static int ConfiscateItems(int debt)
         {
             var roster = MobileParty.MainParty?.ItemRoster;
@@ -425,7 +488,7 @@ namespace GreyWardenPolicePurity
 
         private static Settlement FindNearestTown(Vec2 position)
         {
-            Settlement nearest = null;
+            Settlement nearest = null!;
             float minDist = float.MaxValue;
             foreach (Settlement s in Settlement.All)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -31,8 +31,10 @@ namespace GreyWardenPolicePurity
 
             bool policeInvolved = false;
             bool patrolInvolved = false;
+            bool delayPatrolInvolved = false;
+            bool regularPoliceInvolved = false;
             bool playerInvolved = false;
-            IFaction enemyFaction = null;
+            IFaction enemyFaction = null!;
 
             foreach (var party in mapEvent.InvolvedParties)
             {
@@ -41,10 +43,12 @@ namespace GreyWardenPolicePurity
                 if (IsPoliceParty(party.MobileParty))
                 {
                     policeInvolved = true;
-                    // 纠察队参与的战斗，由 PolicePatrolBehavior 自己处理和平
-                    if (party.MobileParty.StringId != null &&
-                        party.MobileParty.StringId.StartsWith("gwp_patrol_"))
+                    if (GwpCommon.IsPatrolParty(party.MobileParty))
                         patrolInvolved = true;
+                    else if (GwpCommon.IsEnforcementDelayPatrolParty(party.MobileParty))
+                        delayPatrolInvolved = true;
+                    else
+                        regularPoliceInvolved = true;
                 }
                 else if (party.MobileParty.IsMainParty)
                 {
@@ -58,6 +62,10 @@ namespace GreyWardenPolicePurity
 
             // 纠察队的战斗不在这里和平，由 PolicePatrolBehavior 在惩罚后统一处理
             if (patrolInvolved) return;
+
+            // 延迟纠察队单独作战时不在这里和平（用于拖住战线）；
+            // 但若正式警察也在同一场战斗中，则战后必须和平。
+            if (delayPatrolInvolved && !regularPoliceInvolved) return;
 
             // 核心修复（v2）：不能用 CrimePool.IsPlayerHunted 判断——
             // 玩家被击败后 MainParty.IsActive == false，导致 IsOffenderValid() 返回 false，
@@ -92,10 +100,7 @@ namespace GreyWardenPolicePurity
             if (policeInvolved && playerInvolved && !policeOnWinningSide && !patrolInvolved)
             {
                 IFaction playerFaction = Hero.MainHero?.MapFaction;
-                if (playerFaction != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-                {
-                    try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
-                }
+                GwpCommon.TrySetNeutral(policeClan, playerFaction);
             }
 
             if (policeInvolved && enemyFaction != null)
@@ -103,10 +108,7 @@ namespace GreyWardenPolicePurity
                 if (enemyFaction is Clan c && c.IsOutlaw && c.IsBanditFaction)
                     return;
 
-                if (FactionManager.IsAtWarAgainstFaction(policeClan, enemyFaction))
-                {
-                    try { FactionManager.SetNeutral(policeClan, enemyFaction); } catch { }
-                }
+                GwpCommon.TrySetNeutral(policeClan, enemyFaction);
             }
         }
 
@@ -120,7 +122,7 @@ namespace GreyWardenPolicePurity
                 return true;
 
             // 纠察队（CustomPartyComponent，可能 ActualClan 未生效）
-            if (party.StringId != null && party.StringId.StartsWith("gwp_patrol_"))
+            if (GwpCommon.IsPatrolParty(party))
                 return true;
 
             return false;

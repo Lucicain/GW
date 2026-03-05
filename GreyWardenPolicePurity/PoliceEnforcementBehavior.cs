@@ -1,8 +1,10 @@
-using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.BarterSystem;
+using TaleWorlds.CampaignSystem.BarterSystem.Barterables;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -25,10 +27,11 @@ namespace GreyWardenPolicePurity
     /// 4. ExecutePunishment：★关键顺序★ 先 EndCaptivity + 清空花名册，
     ///    再 MakePeace，避免 SetNeutral 内部触发二次释放导致崩溃
     /// </summary>
-    public class PoliceEnforcementBehavior : CampaignBehaviorBase
+    public partial class PoliceEnforcementBehavior : CampaignBehaviorBase
     {
         private const float WarDistance = 3f;
         private const float WarDistancePlayer = 15f;
+        private const int ShelteredForceBattleIntervalHours = 6;
 
         // 距城堡多少格时触发惩罚。
         // 3格 > 引擎自动入城触发距离（约1-2格），确保 OnTick 距离判断先于自动入城发生。
@@ -37,20 +40,55 @@ namespace GreyWardenPolicePurity
 
         // 对话临时变量（警察执法拦截：让玩家选择缴纳或战斗）
         private int _dialogFine = 0;
-        private MobileParty _dialogPolice = null;
-        private PoliceTask _dialogTask = null;
+        private MobileParty _dialogPolice = null!;
+        private PoliceTask _dialogTask = null!;
+        private bool _enforcementBarterInProgress = false;
+        private bool _atonementActive = false;
+        private string _atonementTargetPartyId = string.Empty;
+        private string _atonementTargetName = string.Empty;
+        private int _atonementReputationReward = 0;
+        private float _atonementDeadlineHours = 0f;
+        private bool _enforcementAtonementAssigned = false;
+        private readonly Dictionary<string, int> _shelteredTargetHoursByTaskId =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         public override void RegisterEvents()
         {
             PoliceCrimeMonitorEnhanced.OnCrimeDetected += HandleCrimeDetected;
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
         }
 
-        public override void SyncData(IDataStore dataStore) => CrimePool.SyncData(dataStore);
+        public override void SyncData(IDataStore dataStore)
+        {
+            CrimePool.SyncData(dataStore);
+            dataStore.SyncData("gwp_enf_war_check_day_counter", ref _warStatusCheckDayCounter);
+            dataStore.SyncData("gwp_enf_atone_active", ref _atonementActive);
+            dataStore.SyncData("gwp_enf_atone_target_id", ref _atonementTargetPartyId);
+            dataStore.SyncData("gwp_enf_atone_target_name", ref _atonementTargetName);
+            dataStore.SyncData("gwp_enf_atone_target_faction_id", ref _atonementTargetFactionId);
+            dataStore.SyncData("gwp_enf_atone_reward", ref _atonementReputationReward);
+            dataStore.SyncData("gwp_enf_atone_deadline_hours", ref _atonementDeadlineHours);
+            dataStore.SyncData("gwp_enf_atone_waiting_turnin", ref _atonementWaitingForTurnIn);
+            dataStore.SyncData("gwp_enf_atone_target_size", ref _atonementTargetSizeSnapshot);
+            SyncWarTargetStreakData(dataStore);
+            SyncDelayPatrolStateData(dataStore);
+            if (dataStore.IsLoading)
+            {
+                if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
+                    _warStatusCheckDayCounter = 0;
+                _shelteredTargetHoursByTaskId.Clear();
+                _enforcementAtonementAssigned = false;
+                _atonementQuest = null!;
+                _awaitingAtonementQuestReconnect = false;
+                _lastAtonementIntelReportTime = CampaignTime.Zero;
+                PlayerBehaviorPool.SetAtonementTaskActive(_atonementActive || _atonementWaitingForTurnIn);
+            }
+        }
 
         #region 对话系统（执法拦截：玩家可选择缴纳罚金或战斗）
 
@@ -66,23 +104,78 @@ namespace GreyWardenPolicePurity
                 null,
                 100);
 
-            // 选项1：缴纳罚金
+            // 选项1：缴纳正式罚金（Barter 界面）
             starter.AddPlayerLine(
                 "gwp_enforcement_pay",
                 "gwp_enforcement_options",
-                "gwp_enforcement_pay_response",
+                "gwp_enforcement_pay_barter_pre",
                 "{GWP_ENFORCEMENT_PAY_TEXT}",
                 EnforcementPayCondition,
                 null,
                 100);
 
             starter.AddDialogLine(
-                "gwp_enforcement_pay_response",
-                "gwp_enforcement_pay_response",
-                "close_window",
-                "明智之举。灰袍守卫将撤销对你的通缉，你可以离开了。",
+                "gwp_enforcement_pay_barter_pre",
+                "gwp_enforcement_pay_barter_pre",
+                "gwp_enforcement_pay_barter_screen",
+                "按灰袍法令，先把正式罚金缴清。",
                 null,
-                OnEnforcementPayConsequence,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_pay_barter_screen",
+                "gwp_enforcement_pay_barter_screen",
+                "gwp_enforcement_pay_barter_post",
+                "{=!}Barter screen goes here",
+                null,
+                OnEnforcementPayBarterConsequence,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_pay_barter_post_success",
+                "gwp_enforcement_pay_barter_post",
+                "close_window",
+                "罚金确认。本轮案件结案，你可以离开了。",
+                EnforcementBarterSuccessfulCondition,
+                OnEnforcementPayAcceptedConsequence,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_pay_barter_post_failed",
+                "gwp_enforcement_pay_barter_post",
+                "gwp_enforcement_options",
+                "你的出价低于正式罚金。你可以继续出价，或拒绝执法。",
+                () => !EnforcementBarterSuccessfulCondition(),
+                OnEnforcementPayRejectedConsequence,
+                100);
+
+            // 选项1.5：认罪认罚（赎罪任务）
+            starter.AddPlayerLine(
+                "gwp_enforcement_atonement",
+                "gwp_enforcement_options",
+                "gwp_enforcement_atonement_result",
+                "我认罪认罚，请给我赎罪任务。",
+                EnforcementAtonementCondition,
+                OnEnforcementAtonementConsequence,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_atonement_success",
+                "gwp_enforcement_atonement_result",
+                "close_window",
+                "{GWP_ENFORCEMENT_ATONEMENT_TEXT}",
+                () => _enforcementAtonementAssigned,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_atonement_failed",
+                "gwp_enforcement_atonement_result",
+                "gwp_enforcement_options",
+                "当前无法分配赎罪任务。你可以继续缴纳罚金，或拒绝执法。",
+                () => !_enforcementAtonementAssigned,
+                null,
                 100);
 
             // 选项2：拒绝，武力解决
@@ -90,7 +183,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight",
                 "gwp_enforcement_options",
                 "gwp_enforcement_fight_response",
-                "你来试试！",
+                "拒绝执法，开战。",
                 null,
                 null,
                 100);
@@ -99,10 +192,32 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight_response",
                 "gwp_enforcement_fight_response",
                 "close_window",
-                "你自找的！灰袍守卫，准备战斗！",
+                "拒捕记录在案。灰袍守卫，执行抓捕！",
                 null,
                 OnEnforcementFightConsequence,
                 100);
+
+            // 任务交付：目标击败后可向族长或任意灰袍警察交付赎罪任务
+            starter.AddPlayerLine(
+                "gwp_enforcement_atonement_turnin",
+                "lord_talk_speak_diplomacy_2",
+                "gwp_enforcement_atonement_turnin_response",
+                "{GWP_ENFORCEMENT_ATONEMENT_TURNIN_OPTION}",
+                EnforcementAtonementTurnInCondition,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_enforcement_atonement_turnin_response",
+                "gwp_enforcement_atonement_turnin_response",
+                "lord_pretalk",
+                "{GWP_ENFORCEMENT_ATONEMENT_TURNIN_TEXT}",
+                null,
+                OnEnforcementAtonementTurnInConsequence,
+                100);
+
+            PlayerBehaviorPool.SetAtonementTaskActive(_atonementActive || _atonementWaitingForTurnIn);
+            TryRestoreAtonementQuestOnSessionStart();
         }
 
         /// <summary>
@@ -119,8 +234,7 @@ namespace GreyWardenPolicePurity
 
             // 只处理正式警察部队（gw家族，非纠察队 gwp_patrol_ 前缀）
             if (conversationParty.ActualClan != policeClan) return false;
-            if (conversationParty.StringId != null &&
-                conversationParty.StringId.StartsWith("gwp_patrol_")) return false;
+            if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
             // 该警察必须有针对玩家的任务，且尚未宣战（宣战后走战斗流程）
             var task = CrimePool.GetTask(conversationParty.StringId);
@@ -136,12 +250,12 @@ namespace GreyWardenPolicePurity
 
             int playerGold = Hero.MainHero.Gold;
             string payInfo = playerGold >= _dialogFine
-                ? $"你有 {playerGold} 金，足够缴纳。"
-                : $"你只有 {playerGold} 金，不足全额，差额将没收行李中的物品充抵。";
+                ? $"你当前携带 {playerGold} 金，可直接缴清。"
+                : $"你当前携带 {playerGold} 金，可在谈判界面继续出价，或改选认罪认罚。";
 
             MBTextManager.SetTextVariable("GWP_ENFORCEMENT_GREETING",
-                $"站住！灰袍守卫奉命逮捕你！你有 {Math.Abs(rep)} 条严重违法记录，" +
-                $"可缴纳 {_dialogFine} 金消除通缉，否则我们将动用武力！{payInfo}");
+                $"站住！灰袍守卫正在执行逮捕。你当前负声望 {Math.Abs(rep)}，" +
+                $"本案正式罚金 {_dialogFine} 金。{payInfo}");
 
             return true;
         }
@@ -151,18 +265,92 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool EnforcementPayCondition()
         {
-            int playerGold = Hero.MainHero.Gold;
-            string text = playerGold >= _dialogFine
-                ? $"我愿意缴纳罚金（{_dialogFine} 金）"
-                : $"我愿意缴纳所有金币并以物品充抵（共 {_dialogFine} 金）";
+            string text = $"缴纳正式罚金（{_dialogFine} 金，清除通缉）";
             MBTextManager.SetTextVariable("GWP_ENFORCEMENT_PAY_TEXT", text);
             return true;
         }
 
+        private bool EnforcementAtonementCondition()
+        {
+            if (_atonementActive || _atonementWaitingForTurnIn) return false;
+            if (_dialogFine <= 0) return false;
+            return Hero.MainHero.Gold < _dialogFine;
+        }
+
+        private void OnEnforcementAtonementConsequence()
+        {
+            _enforcementAtonementAssigned = TryAssignAtonementTask();
+        }
+
+        private bool TryAssignAtonementTask()
+        {
+            if (_atonementActive || _atonementWaitingForTurnIn) return false;
+
+            CrimeRecord targetCrime = CrimePool.GetNearestNonPlayerFromAll(
+                MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero);
+            if (targetCrime == null || targetCrime.Offender == null || !targetCrime.Offender.IsActive)
+                return false;
+
+            MobileParty offender = targetCrime.Offender;
+            int targetSizeSnapshot = Math.Max(1, offender.Party?.NumberOfAllMembers ?? 1);
+            int rewardRep = Math.Max(1, (int)Math.Ceiling(targetSizeSnapshot / 10f));
+
+            _atonementActive = true;
+            _atonementWaitingForTurnIn = false;
+            _atonementTargetPartyId = offender.StringId ?? string.Empty;
+            _atonementTargetName = offender.Name?.ToString() ?? "未知目标";
+            _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
+            _atonementTargetSizeSnapshot = targetSizeSnapshot;
+            _atonementReputationReward = rewardRep;
+            _atonementDeadlineHours = (float)(CampaignTime.Now.ToHours + AtonementDeadlineDays * 24f);
+            _lastAtonementIntelReportTime = CampaignTime.Now;
+            StartAtonementQuest();
+            PlayerBehaviorPool.SetAtonementTaskActive(true);
+
+            CrimePool.EndPlayerHunt();
+            if (_dialogPolice != null && _dialogPolice.IsActive)
+            {
+                RestoreAi(_dialogPolice);
+                PoliceResourceManager.StartResupply(_dialogPolice);
+                PoliceResourceManager.ForceImmediateMoveToResupply(_dialogPolice);
+            }
+            MakePeaceWithPoliceAndVictims();
+
+            MBTextManager.SetTextVariable("GWP_ENFORCEMENT_ATONEMENT_TEXT",
+                $"赎罪任务已下达：追捕 {_atonementTargetName}（接案规模 {targetSizeSnapshot} 人）。" +
+                $"完成可恢复最多 {_atonementReputationReward} 点声望（最高恢复到 0）；" +
+                $"失败将追加 5 点负声望。");
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"赎罪任务已记录到任务面板：击败 {_atonementTargetName} 后，向族长或任意灰袍警察交付（{AtonementDeadlineDays:0} 天内，失败声望 -5）。",
+                Colors.Yellow));
+
+            try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
+            return true;
+        }
+
+        private bool EnforcementBarterSuccessfulCondition()
+        {
+            return _enforcementBarterInProgress
+                && Campaign.Current?.BarterManager != null
+                && Campaign.Current.BarterManager.LastBarterIsAccepted;
+        }
+
+        private void OnEnforcementPayBarterConsequence()
+        {
+            _enforcementBarterInProgress =
+                StartEnforcementPaymentBarter(_dialogPolice, _dialogFine, "缴纳正式罚金");
+        }
+
+        private void OnEnforcementPayRejectedConsequence()
+        {
+            _enforcementBarterInProgress = false;
+        }
+
         /// <summary>
-        /// 缴纳结果：扣款 + 声望归零 + 任务结束 + 和平
+        /// 正式罚金缴纳成功：扣款 + 声望归零 + 任务结束 + 和平
         /// </summary>
-        private void OnEnforcementPayConsequence()
+        private void OnEnforcementPayAcceptedConsequence()
         {
             try
             {
@@ -175,34 +363,25 @@ namespace GreyWardenPolicePurity
                 {
                     RestoreAi(_dialogPolice);
                     PoliceResourceManager.StartResupply(_dialogPolice);
-                    // ★ 修复 Bug 2（真正原因）：StartResupply 只标记，不立即发移动命令（等每小时 tick）
-                    // 警察停在玩家接触范围内 → 遭遇结束后立刻重新触发 → 对话循环
-                    // 修复：立即 SetMoveGoToSettlement，模式与 ReturnAllPatrols() 一致
                     PoliceResourceManager.ForceImmediateMoveToResupply(_dialogPolice);
                 }
 
                 MakePeaceWithPoliceAndVictims();
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"缴纳罚金 {paid} 金，通缉已解除",
+                    $"正式罚金已收 {paid} 金，通缉已解除。",
                     Colors.Yellow));
 
-                try
-                {
-                    if (PlayerEncounter.IsActive)
-                    {
-                        PlayerEncounter.LeaveEncounter = true;  // ★ 修复 Bug 2：主动点击触发的遭遇需显式设置，否则引擎重新触发对话
-                        PlayerEncounter.Finish(false);
-                    }
-                }
-                catch { }
+                try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
             }
             catch { }
             finally
             {
+                _enforcementBarterInProgress = false;
+                _enforcementAtonementAssigned = false;
                 _dialogFine = 0;
-                _dialogPolice = null;
-                _dialogTask = null;
+                _dialogPolice = null!;
+                _dialogTask = null!;
             }
         }
 
@@ -220,16 +399,183 @@ namespace GreyWardenPolicePurity
                     _dialogPolice.SetMoveEngageParty(MobileParty.MainParty, NavigationType.Default);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "你拒绝缴纳！灰袍守卫准备强制执法！",
+                    "你拒绝执法，灰袍守卫将强制抓捕。",
                     Colors.Red));
             }
             catch { }
             finally
             {
+                _enforcementBarterInProgress = false;
+                _enforcementAtonementAssigned = false;
                 _dialogFine = 0;
-                _dialogPolice = null;
-                _dialogTask = null;
+                _dialogPolice = null!;
+                _dialogTask = null!;
             }
+        }
+
+        private bool StartEnforcementPaymentBarter(MobileParty policePartyMobile, int amount, string barterDisplayName)
+        {
+            if (policePartyMobile == null || !policePartyMobile.IsActive || MobileParty.MainParty == null)
+                return false;
+
+            Hero? barterHero = Hero.OneToOneConversationHero
+                               ?? policePartyMobile.LeaderHero
+                               ?? GetEnforcementBarterHero();
+            if (barterHero == null)
+                return false;
+
+            PartyBase policeParty = policePartyMobile.Party;
+            PartyBase playerParty = MobileParty.MainParty.Party;
+            if (policeParty == null || playerParty == null)
+                return false;
+
+            int paymentAmount = Math.Max(1, amount);
+            var fineBarter = new GwpBribeBarterable(
+                barterHero,
+                Hero.MainHero,
+                policeParty,
+                playerParty,
+                paymentAmount,
+                barterDisplayName);
+
+            try
+            {
+                Campaign.Current.BarterManager.StartBarterOffer(
+                    Hero.MainHero,
+                    barterHero,
+                    playerParty,
+                    policeParty,
+                    null,
+                    InitializeEnforcementBarterContext,
+                    0,
+                    false,
+                    new[] { fineBarter });
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool InitializeEnforcementBarterContext(Barterable barterable, BarterData args, object obj)
+        {
+            return barterable is GwpBribeBarterable;
+        }
+
+        private Hero? GetEnforcementBarterHero()
+        {
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return null;
+
+            Hero leader = policeClan.Leader;
+            if (leader != null && leader.IsActive && !leader.IsDead && !leader.IsChild)
+                return leader;
+
+            return policeClan.Heroes.FirstOrDefault(h =>
+                h != null &&
+                h.IsActive &&
+                !h.IsDead &&
+                !h.IsChild &&
+                !h.IsPrisoner);
+        }
+
+        private void UpdateAtonementTask()
+        {
+            TryReconnectAtonementQuestOnHourlyTick();
+            if (!_atonementActive) return;
+
+            if (CampaignTime.Now.ToHours >= _atonementDeadlineHours)
+            {
+                FailAtonementTask("赎罪任务超时，声望 -5。");
+                return;
+            }
+
+            MobileParty target = MobileParty.All.FirstOrDefault(p =>
+                p.StringId == _atonementTargetPartyId && p.IsActive);
+            if (target == null)
+            {
+                FailAtonementTask("赎罪目标已失踪，判定任务失败，声望 -5。");
+                return;
+            }
+
+            if ((CampaignTime.Now - _lastAtonementIntelReportTime).ToDays >= AtonementIntelReportIntervalDays)
+            {
+                _lastAtonementIntelReportTime = CampaignTime.Now;
+                AppendAtonementIntelLog(target);
+            }
+        }
+
+        private void HandleAtonementMapEventEnded(MapEvent mapEvent)
+        {
+            if (!_atonementActive || mapEvent == null) return;
+
+            bool playerInvolved = false;
+            bool targetInvolved = false;
+            foreach (var p in mapEvent.InvolvedParties)
+            {
+                MobileParty party = p?.MobileParty;
+                if (party == null) continue;
+                if (party.IsMainParty) playerInvolved = true;
+                if (party.StringId == _atonementTargetPartyId) targetInvolved = true;
+            }
+
+            if (!playerInvolved || !targetInvolved) return;
+
+            bool playerWon = false;
+            if (mapEvent.HasWinner && mapEvent.Winner != null)
+            {
+                foreach (var p in mapEvent.Winner.Parties)
+                {
+                    if (p?.Party?.IsMobile == true && p.Party.MobileParty?.IsMainParty == true)
+                    {
+                        playerWon = true;
+                        break;
+                    }
+                }
+            }
+
+            if (playerWon)
+            {
+                _atonementActive = false;
+                _atonementWaitingForTurnIn = true;
+                _atonementDeadlineHours = 0f;
+                PlayerBehaviorPool.SetAtonementTaskActive(true);
+
+                try { _atonementQuest?.MarkReadyForTurnIn(); } catch { }
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"赎罪目标已击败：{_atonementTargetName}。请前往族长或任意灰袍警察交付任务。",
+                    Colors.Green));
+            }
+            else
+            {
+                FailAtonementTask("赎罪任务失败，声望 -5。");
+            }
+        }
+
+        private void FailAtonementTask(string reason)
+        {
+            PlayerBehaviorPool.ChangeReputation(-5);
+            try { _atonementQuest?.FailQuestWithReason(reason); } catch { }
+            InformationManager.DisplayMessage(new InformationMessage(reason, Colors.Red));
+            ClearAtonementTaskState();
+        }
+
+        private void ClearAtonementTaskState()
+        {
+            _atonementActive = false;
+            _atonementWaitingForTurnIn = false;
+            _atonementTargetPartyId = string.Empty;
+            _atonementTargetName = string.Empty;
+            _atonementTargetFactionId = string.Empty;
+            _atonementTargetSizeSnapshot = 0;
+            _atonementReputationReward = 0;
+            _atonementDeadlineHours = 0f;
+            _lastAtonementIntelReportTime = CampaignTime.Zero;
+            _awaitingAtonementQuestReconnect = false;
+            _enforcementAtonementAssigned = false;
+            _atonementQuest = null!;
+            PlayerBehaviorPool.SetAtonementTaskActive(false);
         }
 
         #endregion
@@ -394,19 +740,29 @@ namespace GreyWardenPolicePurity
                 // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
                 MakePeaceWithPoliceAndVictims();
 
-                // 步骤4：罚款（每点300金，不足时没收行李物品充抵）
+                // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
                 int rep = PlayerBehaviorPool.Reputation;
                 int fine = Math.Abs(rep) * 300;
-                int collected = PoliceResourceManager.CollectFine(fine);
+                int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
+                int recovered = 300 > 0 ? collected / 300 : 0;
+                int repAfter = Math.Min(0, rep + recovered);
 
-                // 步骤5：声望归零 + 解除通缉（从 ActiveTasks 移除任务）
-                PlayerBehaviorPool.ResetReputation(0);
-                CrimePool.EndPlayerHunt();
+                // 步骤5：声望按实缴比例恢复（不再直接归零）
+                PlayerBehaviorPool.ResetReputation(repAfter);
+                if (repAfter > -11 || PlayerBehaviorPool.HasAtonementTask)
+                {
+                    CrimePool.EndPlayerHunt();
+                }
+                else
+                {
+                    CrimePool.EndTask(escortTask.PolicePartyId);
+                    CrimePool.TryAddPlayerCrime("罚款不足", MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, "押送罚款未缴清");
+                }
 
                 // 步骤6：显示消息
                 string castleName = castle?.Name?.ToString() ?? "堡垒";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送至 {castleName}，缴纳罚款 {collected} 金，通缉已解除",
+                    $"你被押送至 {castleName}：应缴 {fine} 金，实缴 {collected} 金，声望恢复到 {repAfter}（按实缴恢复）。",
                     Colors.Yellow));
 
                 // 步骤7：恢复警察AI，开始补给
@@ -429,6 +785,9 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
+            UpdateAtonementTask();
+            EnsureDelayPatrolStateForActiveParties();
+            UpdateDelayPatrols();
             CrimePool.Clean();
             AssignTasks();
             UpdateTasks();
@@ -439,6 +798,7 @@ namespace GreyWardenPolicePurity
         {
             foreach (var pp in PoliceStats.GetAllPoliceParties())
             {
+                if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
                 // ★ 兜底：跳过无首领或首领失效的部队（防止因纠察队/英雄失效导致无首领部队接任务）
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive) continue;
                 if (CrimePool.HasTask(pp.StringId)) continue;
@@ -474,6 +834,7 @@ namespace GreyWardenPolicePurity
 
                 if (pp == null || !pp.IsActive)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
@@ -482,6 +843,7 @@ namespace GreyWardenPolicePurity
                 // ★ 兜底：任务进行中首领失效（被俘/死亡）→ 结束任务，案件归池
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
@@ -489,11 +851,15 @@ namespace GreyWardenPolicePurity
 
                 // ★ 正在为玩家悬赏护送时，完全由 PlayerBountyBehavior 管理此部队的 AI，跳过。
                 if (task.IsPlayerBountyEscort)
+                {
+                    ClearTaskWarTracking(kvp.Key, true);
                     continue;
+                }
 
                 // 押送阶段：冻结AI，每小时重发行军命令（防止引擎覆盖方向）
                 if (task.IsEscortingPlayer)
                 {
+                    ClearTaskWarTracking(kvp.Key, true);
                     pp.Ai.SetDoNotMakeNewDecisions(true);
 
                     // 安全网：若玩家已被外部机制提前释放（例如某段和平逻辑绕过了守卫），
@@ -514,12 +880,15 @@ namespace GreyWardenPolicePurity
                 }
 
                 // 食物耗尽 → 案件归池，前往补给，等补完后重新接案
-                if (pp.ItemRoster.TotalFood <= 0)
+                bool targetSheltered = task.TargetCrime?.Offender?.IsMainParty != true &&
+                                      task.TargetCrime?.Offender?.CurrentSettlement != null;
+                if (pp.ItemRoster.TotalFood <= 0 && !targetSheltered)
                 {
                     // 警察部队粮草耗尽内部运营（不显示给玩家）
                     // InformationManager.DisplayMessage(new InformationMessage(
                     //     $"[GWP] {pp.Name} 粮草耗尽，案件归池，前往补给", Colors.Yellow));
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     PoliceResourceManager.StartResupply(pp);
@@ -529,6 +898,7 @@ namespace GreyWardenPolicePurity
                 if (!task.IsTargetValid())
                 {
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     PoliceResourceManager.StartResupply(pp);
                     continue;
@@ -536,6 +906,25 @@ namespace GreyWardenPolicePurity
 
                 // 正常追击
                 MobileParty criminal = task.TargetCrime.Offender;
+                if (!criminal.IsMainParty && criminal.CurrentSettlement != null)
+                {
+                    if (HandleShelteredCriminal(pp, task, kvp.Key, criminal))
+                        continue;
+                }
+                else
+                {
+                    ClearShelteredTargetTracking(kvp.Key);
+                }
+
+                if (!criminal.IsActive)
+                {
+                    RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
+                    CrimePool.EndTask(kvp.Key);
+                    PoliceResourceManager.StartResupply(pp);
+                    continue;
+                }
+
                 float dist = pp.GetPosition2D.Distance(criminal.GetPosition2D);
 
                 float warDist = criminal.IsMainParty ? WarDistancePlayer : WarDistance;
@@ -551,9 +940,15 @@ namespace GreyWardenPolicePurity
                 {
                     DeclareWar(task, criminal);
                 }
+                else if (!task.WarDeclared)
+                {
+                    ClearTaskWarTracking(kvp.Key, false);
+                }
 
                 try
                 {
+                    pp.Ai.SetDoNotMakeNewDecisions(true);
+                    pp.Ai.SetInitiative(1f, 0f, 999f);
                     pp.SetMoveEngageParty(criminal, NavigationType.Default);
                 }
                 catch { }
@@ -596,6 +991,8 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
+            HandleDelayPatrolBattleEnded(mapEvent);
+            HandleAtonementMapEventEnded(mapEvent);
             if (!mapEvent.IsFieldBattle) return;
 
             foreach (var kvp in CrimePool.ActiveTasks.ToList())
@@ -608,6 +1005,7 @@ namespace GreyWardenPolicePurity
                 if (pp == null)
                 {
                     if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     Reassign(task.TargetCrime);
                     CrimePool.RefreshAccepting();
@@ -650,12 +1048,14 @@ namespace GreyWardenPolicePurity
                     }
 
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     PoliceResourceManager.StartResupply(pp);
                 }
                 else
                 {
                     RestoreAi(pp);
+                    ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     Reassign(task.TargetCrime);
                     PoliceResourceManager.StartResupply(pp);
@@ -663,123 +1063,6 @@ namespace GreyWardenPolicePurity
 
                 CrimePool.RefreshAccepting();
             }
-        }
-
-        #endregion
-
-        #region 辅助
-
-        private bool InEvent(MobileParty party, MapEvent mapEvent)
-        {
-            if (party == null || mapEvent == null) return false;
-            return mapEvent.InvolvedParties.Any(p => p.MobileParty == party);
-        }
-
-        private bool IsOnWinningSide(MobileParty party, MapEvent mapEvent)
-        {
-            if (!mapEvent.HasWinner || mapEvent.Winner == null) return false;
-
-            foreach (var p in mapEvent.Winner.Parties)
-            {
-                if (p?.Party?.IsMobile == true && p.Party.MobileParty == party)
-                    return true;
-            }
-            return false;
-        }
-
-        private void RestoreAi(MobileParty party)
-        {
-            if (party == null || !party.IsActive) return;
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.SetInitiative(0f, 0f, 0f);
-            }
-            catch { }
-        }
-
-        private void MakePeaceWithPoliceAndVictims()
-        {
-            try
-            {
-                IFaction playerFaction = Clan.PlayerClan?.MapFaction;
-                if (playerFaction == null) return;
-
-                Clan policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-                {
-                    FactionManager.SetNeutral(policeClan, playerFaction);
-                }
-
-                foreach (var victim in PlayerBehaviorPool.VictimFactions)
-                {
-                    if (victim == null || victim == playerFaction) continue;
-                    if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
-
-                    try
-                    {
-                        MakePeaceAction.Apply(playerFaction, victim);
-                    }
-                    catch { }
-                }
-
-                PlayerBehaviorPool.ClearVictimFactions();
-            }
-            catch { }
-        }
-
-        private Settlement FindNearestTown()
-        {
-            var player = MobileParty.MainParty;
-            if (player == null) return null;
-
-            Vec2 pos = player.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsTown) continue;
-                float d = pos.Distance(s.GetPosition2D);
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-            return best;
-        }
-
-        /// <summary>
-        /// 查找玩家附近最近的城堡（严格使用 IsCastle）。
-        ///
-        /// 修复说明：原 FindNearestFortress 使用 (!s.IsCastle &amp;&amp; !s.IsFortification) 条件，
-        /// 但 IsFortification 在 Bannerlord 中对城镇和城堡均为 true，
-        /// 导致函数实际上也会返回城镇，警察带着俘虏进城触发引擎崩溃。
-        /// 现在只用 IsCastle 精确匹配，城堡通常不允许非所有者自由进出。
-        /// </summary>
-        private Settlement FindNearestCastle()
-        {
-            var player = MobileParty.MainParty;
-            if (player == null) return null;
-
-            Vec2 pos = player.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsCastle) continue;  // 只选城堡，IsFortification 会误包含城镇
-                float d = pos.Distance(s.GetPosition2D);
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-
-            // 极端情况：地图上找不到城堡，降级用城镇
-            if (best == null)
-                best = FindNearestTown();
-
-            return best;
-        }
-
-        private void Reassign(CrimeRecord crime)
-        {
-            CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
         }
 
         #endregion

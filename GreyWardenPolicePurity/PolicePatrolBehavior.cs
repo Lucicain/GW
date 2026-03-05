@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
     ///   玩家犯罪达标 → 生成对话系统 → 自定义对话选项（缴纳/拒绝）
     ///   投降 → 自动缴纳罚金 → 押送回最近城镇点 → 释放 → 和平
     /// </summary>
-    public class PolicePatrolBehavior : CampaignBehaviorBase
+    public partial class PolicePatrolBehavior : CampaignBehaviorBase
     {
         private const int FinePerPoint = 200;
         private const int PatrolNegotiationDivisor = 4; // 谈判目标金额=罚款的 1/4（改为 2 即 1/2）
@@ -45,14 +45,14 @@ namespace GreyWardenPolicePurity
         private bool _playerRefused = false;
         private bool _warDeclared = false;
         private int _dayCounter = 0;      // 每隔天触发一次检测
-        private int _bribeProtectionDays = 0; // 行贿后的保护期天数（在这期间内不再派出新的纠察队）
+        private int _bribeProtectionDays = 0; // 谈判放行后的保护期天数（在这期间内不再派出新的纠察队）
         private int _dialogBribeAmount = 0; // 对话中计算出的谈判目标金额
         // 记录映射队的驻地点（战败后押送回此处）
-        private Settlement _patrolOriginSettlement = null;
+        private Settlement _patrolOriginSettlement = null!;
 
         // 玩家被纠察队犯罪成功后正在被押送回驻地点
         private bool _playerCapturedByPatrol = false;
-        private string _escortPatrolId = null;
+        private string _escortPatrolId = null!;
 
         // 指引AI策略（AI确认无公开API可接管俘虏管理）
         // 纠察队胜利后，不会自动俘虏玩家。纠察队犯罪成功后，手动原地选择。
@@ -62,7 +62,7 @@ namespace GreyWardenPolicePurity
 
         // 对话中使用的临时变量
         private int _dialogFine = 0;
-        private MobileParty _dialogPatrol = null;
+        private MobileParty _dialogPatrol = null!;
         private static readonly bool DebugPatrol = false;
 
         public override void RegisterEvents()
@@ -106,18 +106,18 @@ namespace GreyWardenPolicePurity
                 _playerRefused = false;
                 _warDeclared = false;
                 _playerCapturedByPatrol = false;
-                _escortPatrolId = null;
-                _patrolOriginSettlement = null;
+                _escortPatrolId = null!;
+                _patrolOriginSettlement = null!;
                 _dialogFine = 0;
                 _dialogBribeAmount = 0;
-                _dialogPatrol = null;
+                _dialogPatrol = null!;
                 _dayCounter = 0;
                 _bribeProtectionDays = 0;
                 _destroyAllPatrolsOnNextTick = false;
                 _suppressPatrolMeetings = false;
             }
 
-            // 同步贿赂保护期
+            // 同步放行保护期
             dataStore.SyncData("gwp_patrol_bribe_protect", ref _bribeProtectionDays);
         }
 
@@ -149,7 +149,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_screen",
-                "按规矩办，先把正式罚金交清。",
+                "按灰袍法令，先把正式罚金缴清。",
                 null,
                 null,
                 100);
@@ -167,7 +167,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_success",
                 "gwp_patrol_pay_barter_post",
                 "close_window",
-                "罚金收到。这次就到此为止。",
+                "罚金确认。本轮案件到此结案。",
                 PatrolBarterSuccessfulCondition,
                 OnPatrolFineBarterAcceptedConsequence,
                 100);
@@ -176,7 +176,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_failed",
                 "gwp_patrol_pay_barter_post",
                 "gwp_patrol_options",
-                "这还不够。你可以继续谈条件，或者拒绝执法。",
+                "你的出价低于正式罚金。你可以继续出价，或拒绝执法。",
                 () => !PatrolBarterSuccessfulCondition(),
                 null,
                 100);
@@ -195,7 +195,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_screen",
-                "好，那就谈谈你该出多少代价。",
+                "可以，报出你的放行价码。",
                 null,
                 null,
                 100);
@@ -213,7 +213,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_success",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "成交。今天我们就放你一马。",
+                "报价通过。今日暂不追究。",
                 PatrolBarterSuccessfulCondition,
                 OnPatrolBarterAcceptedConsequence,
                 100);
@@ -222,7 +222,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_failed",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "这点价码可不够。那就动手吧！",
+                "报价未达底线。开始执法！",
                 () => !PatrolBarterSuccessfulCondition(),
                 OnPatrolBarterRejectedConsequence,
                 100);
@@ -232,7 +232,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse",
                 "gwp_patrol_options",
                 "gwp_patrol_refuse_response",
-                "我拒绝缴纳罚金！",
+                "我拒绝执法。",
                 null,
                 null,
                 100);
@@ -242,7 +242,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse_response",
                 "gwp_patrol_refuse_response",
                 "close_window",
-                "那你就别怪我们不客气了！纠察队集合，准备执法！",
+                "拒绝执法已记录。纠察队，执行抓捕！",
                 null,
                 OnRefuseConsequence,
                 100);
@@ -285,11 +285,11 @@ namespace GreyWardenPolicePurity
             DebugLog($"进入纠察队对话：party={conversationParty.StringId}, rep={rep}, fine={_dialogFine}");
 
             string canPay = playerGold >= _dialogFine
-                ? $"你的金币 {playerGold} 足够缴纳。"
-                : $"你的金币只有 {playerGold} 金，不足全额，差额将没收行李中的物品充抵。";
+                ? $"你当前携带 {playerGold} 金，可直接缴清。"
+                : $"你当前携带 {playerGold} 金，可在谈判界面继续出价或选择拒绝。";
 
             MBTextManager.SetTextVariable("GWP_PATROL_GREETING",
-                $"站住！纠察队正在此处执法！你当前有 {Math.Abs(rep)} 条违法记录，需缴罚金 {_dialogFine} 金。{canPay}");
+                $"站住！纠察队正在执法。你当前负声望 {Math.Abs(rep)}，正式罚金 {_dialogFine} 金。{canPay}");
 
             return true;
         }
@@ -299,7 +299,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool PatrolPayCondition()
         {
-            string payText = $"缴纳正式罚金（{_dialogFine}金，清除通缉）";
+            string payText = $"缴纳正式罚金（{_dialogFine} 金，结束本轮追捕）";
             MBTextManager.SetTextVariable("GWP_PATROL_PAY_TEXT", payText);
             return true;
         }
@@ -308,7 +308,7 @@ namespace GreyWardenPolicePurity
         {
             Hero barterHero = GetPatrolBarterHero();
             MBTextManager.SetTextVariable("GWP_PATROL_NEGOTIATE_TEXT",
-                $"我们谈谈放行条件（目标 {_dialogBribeAmount} 金）");
+                $"谈判放行（目标 {_dialogBribeAmount} 金，声望不变）");
             return barterHero != null && _dialogPatrol != null && _dialogPatrol.IsActive;
         }
 
@@ -331,12 +331,12 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                try { _dialogPatrol.Ai.SetDoNotMakeNewDecisions(false); _dialogPatrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
                 _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你拒绝缴纳罚金！纠察队将执行武力执法。",
+                "你拒绝执法，纠察队将进行武力抓捕。",
                 Colors.Red));
         }
 
@@ -356,7 +356,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "谈判达成：你获得了 4 天的通缉保护期（声望不变）。",
+                "放行谈判达成：你获得 4 天保护期（声望不变）。",
                 Colors.Yellow));
         }
 
@@ -366,7 +366,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "正式罚金已缴清，当前通缉已解除。",
+                "正式罚金已缴清，当前通缉已解除，纠察队将撤离。",
                 Colors.Green));
         }
 
@@ -378,7 +378,7 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                try { _dialogPatrol.Ai.SetDoNotMakeNewDecisions(false); _dialogPatrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
                 _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
             }
         }
@@ -396,8 +396,7 @@ namespace GreyWardenPolicePurity
             {
                 if (PlayerEncounter.IsActive)
                 {
-                    PlayerEncounter.LeaveEncounter = true;
-                    PlayerEncounter.Finish(false);
+                    GwpCommon.TryFinishPlayerEncounter();
                     DebugLog("PlayerEncounter.Finish(false) 已调用");
                 }
             }
@@ -424,7 +423,7 @@ namespace GreyWardenPolicePurity
                 if (_bribeProtectionDays == 0)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "贿赂的保护期已过，灰袍守卫重新开始关注你的动向。", Colors.Red));
+                        "放行保护期已结束，纠察队将恢复例行检查。", Colors.Red));
                 }
             }
 
@@ -466,14 +465,14 @@ namespace GreyWardenPolicePurity
                         var task = CrimePool.GetTask(pp.StringId);
                         if (task != null && task.TargetCrime?.Offender?.IsMainParty == true)
                         {
-                            try { pp.Ai.SetDoNotMakeNewDecisions(false); pp.Ai.SetInitiative(0f, 0f, 0f); } catch { }
+                            GwpCommon.TryResetAi(pp);
                             PoliceResourceManager.StartResupply(pp);
                         }
                     }
                     CrimePool.EndPlayerHunt();
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "因为正面声望，通缉已取消，所有追捕已撤回",
+                        "当前声望为正，现有通缉已取消，追捕全部撤回。",
                         Colors.Green));
                 }
             }
@@ -493,14 +492,14 @@ namespace GreyWardenPolicePurity
             // 每日检查：若无纠察队，则生成一支（上限仅允许一支）
             if (reputation >= -10 && reputation <= -1)
             {
-                // 如果在行贿保护期内，不再出动纠察队
+                // 如果在放行保护期内，不再出动纠察队
                 if (_bribeProtectionDays > 0) return;
 
                 if (!HasAnyPatrol())
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你有 {mag} 条违法记录，纠察队已出动追踪（{mag * PatrolSize}人）！",
+                        $"你当前负声望 {mag}，纠察队已出动（约 {mag * PatrolSize} 人）。",
                         Colors.Yellow));
                     SpawnPatrol(mag);
                     _warDeclared = false;
@@ -510,6 +509,9 @@ namespace GreyWardenPolicePurity
             // 低于-11：转为追捕状态，由正式警察接管
             else if (reputation <= -11)
             {
+                if (PlayerBehaviorPool.HasAtonementTask)
+                    return;
+
                 // 解散纠察队（已超出管辖范围），交由正式警察处理
                 if (_activePatrolIds.Count > 0)
                     ReturnAllPatrols();
@@ -523,7 +525,7 @@ namespace GreyWardenPolicePurity
                         $"声望已达 {reputation}");
 
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"犯罪声望已达 {Math.Abs(reputation)} 次，灰袍守卫总部已开始追捕！",
+                        $"你已进入重罪区间（负声望 {Math.Abs(reputation)}），正式警察开始追捕。",
                         Colors.Red));
                 }
             }
@@ -534,8 +536,20 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool HasAnyPatrol()
         {
-            if (_activePatrolIds.Count > 0 || _returningPatrolIds.Count > 0) return true;
-            return MobileParty.All.Any(p => p.IsActive && p.StringId?.StartsWith(PatrolIdPrefix) == true);
+            // 纠察队是否“仍在地图执法中”：城内队伍不计入，避免阻塞下一轮出队。
+            if (_activePatrolIds.Any(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p != null && p.IsActive && p.CurrentSettlement == null;
+            })) return true;
+
+            if (_returningPatrolIds.Any(id =>
+            {
+                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
+                return p != null && p.IsActive && p.CurrentSettlement == null;
+            })) return true;
+
+            return MobileParty.All.Any(p => p.IsActive && IsPatrol(p) && p.CurrentSettlement == null);
         }
 
         #endregion
@@ -547,6 +561,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 CleanDeadPatrols();
+                CleanupPatrolsInsideSettlements();
                 UpdateReturningPatrols();
                 TryReleasePatrolMeetingSuppression();
 
@@ -569,7 +584,7 @@ namespace GreyWardenPolicePurity
                     PlayerBehaviorPool.ChangeReputation(-1);
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"纠察队消失，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
+                        $"你拒绝执法且案件未完成，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
                         Colors.Red));
                     _playerRefused = false;
                     return;
@@ -585,7 +600,7 @@ namespace GreyWardenPolicePurity
                         {
                             var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
                             if (patrol == null || !patrol.IsActive) continue;
-                            try { patrol.Ai.SetDoNotMakeNewDecisions(false); patrol.Ai.SetInitiative(1f, 1f, 1f); } catch { }
+                            GwpCommon.TrySetAggressiveAi(patrol);
                             patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
                         }
                     }
@@ -612,7 +627,7 @@ namespace GreyWardenPolicePurity
                     if (patrol.ItemRoster.TotalFood <= 0)
                     {
                         InformationManager.DisplayMessage(new InformationMessage(
-                            "纠察队粮草耗尽，返回！", Colors.Yellow));
+                            "纠察队补给耗尽，正在撤回。", Colors.Yellow));
                         ReturnAllPatrols();
                         return;
                     }
@@ -654,7 +669,7 @@ namespace GreyWardenPolicePurity
                 {
                     FactionManager.DeclareWar(policeClan, playerFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "你拒绝缴纳罚金！纠察队准备强制执法！",
+                        "你拒绝执法，纠察队将强制缉拿。",
                         Colors.Yellow));
                 }
                 catch { }
@@ -712,7 +727,7 @@ namespace GreyWardenPolicePurity
                 _activePatrolIds.Add(patrolId);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"纠察队从 {_patrolOriginSettlement.Name} 出发追踪犯人！",
+                    $"纠察队已从 {_patrolOriginSettlement.Name} 出发，正在追踪你。",
                     Colors.Yellow));
             }
             catch (Exception ex)
@@ -762,7 +777,7 @@ namespace GreyWardenPolicePurity
 
                 bool patrolInvolved = false;
                 bool playerInvolved = false;
-                MobileParty involvedPatrol = null;
+                MobileParty involvedPatrol = null!;
 
                 foreach (var p in mapEvent.InvolvedParties)
                 {
@@ -880,7 +895,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"你被纠察队击败！正在被押送回 {(_patrolOriginSettlement?.Name?.ToString() ?? "驻地点")} 接受处罚...",
+                $"你被纠察队击败，正被押送至 {(_patrolOriginSettlement?.Name?.ToString() ?? "驻地点")} 接受处罚...",
                 Colors.Yellow));
         }
 
@@ -905,7 +920,7 @@ namespace GreyWardenPolicePurity
         {
             if (!_playerCapturedByPatrol) return;
 
-            MobileParty escort = null;
+            MobileParty escort = null!;
             if (_escortPatrolId != null)
                 escort = MobileParty.All.FirstOrDefault(p => p.StringId == _escortPatrolId);
 
@@ -915,7 +930,7 @@ namespace GreyWardenPolicePurity
                 ExecutePunishment(fallback);
 
                 _playerCapturedByPatrol = false;
-                _escortPatrolId = null;
+                _escortPatrolId = null!;
                 CleanDeadPatrols();
                 TryReleasePatrolMeetingSuppression();
                 return;
@@ -942,7 +957,7 @@ namespace GreyWardenPolicePurity
                     ExecutePunishment(_patrolOriginSettlement);
 
                     _playerCapturedByPatrol = false;
-                    _escortPatrolId = null;
+                    _escortPatrolId = null!;
 
                     try { DestroyPartyAction.Apply(null, escort); } catch { }
 
@@ -974,15 +989,16 @@ namespace GreyWardenPolicePurity
 
                 int rep = PlayerBehaviorPool.Reputation;
                 int fine = Math.Abs(rep) * FinePerPoint;
-                CollectFine(fine);
-
-                PlayerBehaviorPool.ResetReputation(0);
+                int paid = CollectFine(fine);
+                int recovered = FinePerPoint > 0 ? paid / FinePerPoint : 0;
+                int repAfter = Math.Min(0, rep + recovered);
+                PlayerBehaviorPool.ResetReputation(repAfter);
 
                 MakePeaceWithPoliceAndVictims();
 
                 string townName = settlement?.Name?.ToString() ?? "最近城镇";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送到 {townName}，缴纳罚金 {fine} 金，声望已归零，已恢复和平",
+                    $"你被押送到 {townName}：应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}（按实缴恢复）。",
                     Colors.Yellow));
             }
             catch (Exception ex)
@@ -998,1062 +1014,15 @@ namespace GreyWardenPolicePurity
 
         #region 罚金收取
 
-        private void CollectFine(int fine)
+        private int CollectFine(int fine)
         {
-            int collected = PoliceResourceManager.CollectFine(fine);
+            int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"纠察队已收取罚金{collected} 金（应缴 {fine} 金）",
+                $"纠察队已收取罚金 {collected} 金（应缴 {fine} 金，仅收金币）。",
                 Colors.Yellow));
+            return collected;
         }
 
         #endregion
-
-        #region 辅助
-
-        private bool IsPatrol(MobileParty party)
-        {
-            if (party == null) return false;
-            return party.StringId != null && party.StringId.StartsWith(PatrolIdPrefix);
-        }
-
-        /// <summary>
-        /// 与警察氏族恢复和平（解除战争状态，不影响通缉任务）
-        /// </summary>
-        private void MakePeaceWithPoliceClan()
-        {
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
-            if (playerFaction == null) return;
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-            {
-                try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
-            }
-        }
-
-        /// <summary>
-        /// 与警察氏族 + 受害方势力中的国家恢复和平（纠察队停止、缴纳罚金或被惩罚释放时）
-        /// 注意：只停止 VictimFactions 中的国家，其他正在交战的国家不受影响
-        /// </summary>
-        private void MakePeaceWithPoliceAndVictims()
-        {
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
-            if (playerFaction == null) return;
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-            {
-                try { FactionManager.SetNeutral(policeClan, playerFaction); } catch { }
-            }
-
-            foreach (var victim in PlayerBehaviorPool.VictimFactions)
-            {
-                if (victim == null || victim == playerFaction) continue;
-
-                // Fix: victim factions never formally at war (only crime rating)
-                // DeclareWarOnPlayer() only declares war between policeClan and playerFaction.
-                // IsAtWarAgainstFaction(playerFaction, victim) is always false -> old code skipped.
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, victim))
-                {
-                    // Formal war (rare) -> MakePeaceAction
-                    try
-                    {
-                        MakePeaceAction.Apply(playerFaction, victim);
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            $"[GWP] 已与 {victim.Name} 恢复和平",
-                            Colors.Green));
-                    }
-                    catch { }
-                }
-                else
-                {
-                    // Crime-only state (common) -> clear criminal rating
-                    try
-                    {
-                        ChangeCrimeRatingAction.Apply(victim, -1000f, true);
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            $"[GWP] 已清除在 {victim.Name} 的犯罪评级",
-                            Colors.Green));
-                    }
-                    catch { }
-                }
-            }
-
-            PlayerBehaviorPool.ClearVictimFactions();
-        }
-
-        private void ReturnAllPatrols()
-        {
-            var patrols = MobileParty.All.Where(IsPatrol).ToList();
-            foreach (var patrol in patrols)
-            {
-                if (patrol == null || !patrol.IsActive) continue;
-
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                Settlement town = _patrolOriginSettlement ?? FindNearestTown(patrol);
-                if (town != null)
-                {
-                    patrol.SetMoveGoToSettlement(town, MobileParty.NavigationType.Default, false);
-                    if (!_returningPatrolIds.Contains(patrol.StringId))
-                        _returningPatrolIds.Add(patrol.StringId);
-                }
-                else
-                {
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
-                }
-            }
-
-            _activePatrolIds.Clear();
-            DebugLog($"已下发返程命令，候选数量={patrols.Count}，returning={_returningPatrolIds.Count}");
-        }
-
-        private void UpdateReturningPatrols()
-        {
-            for (int i = _returningPatrolIds.Count - 1; i >= 0; i--)
-            {
-                string id = _returningPatrolIds[i];
-                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == id);
-
-                if (patrol == null || !patrol.IsActive)
-                {
-                    _returningPatrolIds.RemoveAt(i);
-                    continue;
-                }
-
-                Settlement target = _patrolOriginSettlement ?? FindNearestTown(patrol);
-                if (target != null)
-                {
-                    patrol.Ai.SetDoNotMakeNewDecisions(true);
-                    patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
-
-                    float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
-                    if (dist < 3f)
-                    {
-                        DebugLog($"纠察队已到达 {target.Name}，执行销毁：{id}");
-                        try { DestroyPartyAction.Apply(null, patrol); } catch { }
-
-                        var stillAlive = MobileParty.All.FirstOrDefault(p => p.StringId == id);
-                        if (stillAlive == null || !stillAlive.IsActive)
-                        {
-                            _returningPatrolIds.RemoveAt(i);
-                        }
-                        else
-                        {
-                            // 销毁失败时保留 returning 状态，下一小时继续重试，避免“活着但失联”
-                            try
-                            {
-                                stillAlive.Ai.SetDoNotMakeNewDecisions(true);
-                                stillAlive.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
-                            }
-                            catch { }
-                        }
-                    }
-                }
-            }
-        }
-
-        private void CleanDeadPatrols()
-        {
-            _activePatrolIds.RemoveAll(id =>
-            {
-                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
-                return p == null || !p.IsActive;
-            });
-
-            _returningPatrolIds.RemoveAll(id =>
-            {
-                var p = MobileParty.All.FirstOrDefault(x => x.StringId == id);
-                return p == null || !p.IsActive;
-            });
-        }
-
-        private void TryReleasePatrolMeetingSuppression()
-        {
-            if (!_suppressPatrolMeetings) return;
-            if (_playerCapturedByPatrol) return;
-
-            bool hasTrackedPatrol = _activePatrolIds.Count > 0 || _returningPatrolIds.Count > 0;
-            if (hasTrackedPatrol) return;
-
-            bool hasWorldPatrol = MobileParty.All.Any(p => p.IsActive && IsPatrol(p));
-            if (hasWorldPatrol) return;
-
-            _suppressPatrolMeetings = false;
-            DebugLog("返程销毁已完成，恢复正常会话。");
-        }
-
-        private void TryFinishSuppressedPatrolEncounter()
-        {
-            try
-            {
-                if (!PlayerEncounter.IsActive) return;
-                var encountered = PlayerEncounter.EncounteredParty?.MobileParty;
-                if (encountered == null || !IsPatrol(encountered)) return;
-
-                PlayerEncounter.LeaveEncounter = true;
-                PlayerEncounter.Finish(false);
-            }
-            catch { }
-        }
-
-        private Hero GetPatrolBarterHero()
-        {
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return null;
-
-            Hero leader = policeClan.Leader;
-            if (leader != null && leader.IsActive && !leader.IsDead && !leader.IsChild)
-                return leader;
-
-            return policeClan.Heroes.FirstOrDefault(h =>
-                h != null &&
-                h.IsActive &&
-                !h.IsDead &&
-                !h.IsChild &&
-                !h.IsPrisoner);
-        }
-
-        private bool StartPatrolPaymentBarter(MobileParty patrolPartyMobile, int amount, string barterDisplayName)
-        {
-            if (patrolPartyMobile == null || !patrolPartyMobile.IsActive || MobileParty.MainParty == null)
-                return false;
-
-            Hero barterHero = Hero.OneToOneConversationHero ?? GetPatrolBarterHero();
-            if (barterHero == null)
-                return false;
-
-            PartyBase patrolParty = patrolPartyMobile.Party;
-            PartyBase playerParty = MobileParty.MainParty.Party;
-            if (patrolParty == null || playerParty == null)
-                return false;
-
-            int negotiationAmount = Math.Max(1, amount);
-
-            var patrolBribe = new GwpBribeBarterable(
-                barterHero,
-                Hero.MainHero,
-                patrolParty,
-                playerParty,
-                negotiationAmount,
-                barterDisplayName);
-
-            try
-            {
-                Campaign.Current.BarterManager.StartBarterOffer(
-                    Hero.MainHero,
-                    barterHero,
-                    playerParty,
-                    patrolParty,
-                    null,
-                    InitializePatrolBribeBarterContext,
-                    0,
-                    false,
-                    new[] { patrolBribe });
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private bool InitializePatrolBribeBarterContext(Barterable barterable, BarterData args, object obj)
-        {
-            return barterable is GwpBribeBarterable;
-        }
-
-        private MobileParty ResolveEscortPatrol(MobileParty patrolHint)
-        {
-            if (patrolHint != null && patrolHint.IsActive) return patrolHint;
-
-            if (_dialogPatrol != null && _dialogPatrol.IsActive && IsPatrol(_dialogPatrol))
-                return _dialogPatrol;
-
-            foreach (string id in _activePatrolIds)
-            {
-                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == id);
-                if (patrol != null && patrol.IsActive) return patrol;
-            }
-
-            return MobileParty.All.FirstOrDefault(p => p.IsActive && IsPatrol(p));
-        }
-
-        private Settlement FindNearestTown(MobileParty party)
-        {
-            if (party == null) return null;
-
-            Vec2 pos = party.GetPosition2D;
-            Settlement best = null;
-            float bestDist = float.MaxValue;
-
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsTown) continue;
-                float d = pos.Distance(s.Position.ToVec2());
-                if (d < bestDist) { bestDist = d; best = s; }
-            }
-            return best;
-        }
-
-        #endregion
-
-        #region 遭遇战拦截
-
-        private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
-        {
-            // 拦截 MapEvent 开始事件，在纠察队发接触时强制进入对话（绕过战斗入口）
-            // 检查是否为纠察队 vs 玩家
-            bool isPatrolEvent = false;
-            bool isPlayerInvolved = false;
-            bool hasActivePatrolInvolved = false;
-            foreach (var p in mapEvent.InvolvedParties)
-            {
-                if (p.MobileParty != null && IsPatrol(p.MobileParty))
-                {
-                    isPatrolEvent = true;
-                    if (!_returningPatrolIds.Contains(p.MobileParty.StringId))
-                        hasActivePatrolInvolved = true;
-                }
-                if (p.MobileParty != null && p.MobileParty.IsMainParty)
-                    isPlayerInvolved = true;
-            }
-
-            if (!isPatrolEvent || !isPlayerInvolved)
-                return;
-
-            if (_suppressPatrolMeetings)
-            {
-                try
-                {
-                    if (PlayerEncounter.IsActive)
-                    {
-                        PlayerEncounter.LeaveEncounter = true;
-                        PlayerEncounter.Finish(false);
-                    }
-                }
-                catch { }
-                return;
-            }
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
-            bool atWar = policeClan != null && playerFaction != null &&
-                         FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction);
-
-            if (!atWar && hasActivePatrolInvolved && PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
-            {
-                // 未宣战时强制开启对话，防止引擎自动进入战斗模式
-                PlayerEncounter.DoMeeting();
-            }
-        }
-
-       #endregion
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

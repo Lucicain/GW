@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -15,7 +15,7 @@ namespace GreyWardenPolicePurity
     public class PoliceCrimeMonitorEnhanced : CampaignBehaviorBase
     {
         // 犯罪通知事件 - 供惩戒系统订阅
-        public static event Action<string, MobileParty, Vec2, string> OnCrimeDetected;
+        public static event Action<string, MobileParty, Vec2, string>? OnCrimeDetected;
 
         public override void RegisterEvents()
         {

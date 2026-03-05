@@ -1,0 +1,15 @@
+# IDE
+.vs/
+.vscode/
+.claude/
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Temporary decompile outputs
+.tmp_decompile_*/
+
+# User-specific files
+*.user
+*.suo
