@@ -13,9 +13,6 @@ namespace GreyWardenPolicePurity
 {
     public partial class PoliceEnforcementBehavior
     {
-        private const float AtonementIntelReportIntervalDays = 2f;
-        private const float AtonementDeadlineDays = 45f;
-
         private int _atonementTargetSizeSnapshot = 0;
         private string _atonementTargetFactionId = string.Empty;
         private bool _atonementWaitingForTurnIn = false;
@@ -30,16 +27,16 @@ namespace GreyWardenPolicePurity
 
             public AtonementQuest(Hero questGiver, string targetName, int repReward)
                 : base(
-                    "gwp_atonement_quest_" + MBRandom.RandomInt(1000, 9999),
+                    GwpIds.AtonementQuestPrefix + MBRandom.RandomInt(1000, 9999),
                     questGiver,
-                    CampaignTime.DaysFromNow(45f),
+                    CampaignTime.DaysFromNow(GwpTuning.Enforcement.AtonementDeadlineDays),
                     Math.Max(1, repReward))
             {
                 _targetName = string.IsNullOrWhiteSpace(targetName) ? "未知目标" : targetName;
             }
 
             internal AtonementQuest()
-                : base("gwp_atonement_quest_0", null, CampaignTime.Never, 0)
+                : base(GwpIds.AtonementQuestFallbackId, null, CampaignTime.Never, 0)
             {
                 _targetName = "未知目标";
             }
@@ -49,7 +46,7 @@ namespace GreyWardenPolicePurity
 
             public override bool IsRemainingTimeHidden => false;
 
-            public override string SpecialQuestType => "GwpPlayerAtonementQuest";
+            public override string SpecialQuestType => GwpIds.AtonementSpecialQuestType;
 
             protected override void SetDialogs() { }
 
@@ -89,7 +86,7 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private Hero GetAtonementQuestGiver()
+        private Hero? GetAtonementQuestGiver()
         {
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return null;
@@ -110,7 +107,7 @@ namespace GreyWardenPolicePurity
         {
             if (_atonementQuest != null && _atonementQuest.IsOngoing) return;
 
-            Hero questGiver = GetAtonementQuestGiver();
+            Hero? questGiver = GetAtonementQuestGiver();
             if (questGiver == null) return;
 
             try
@@ -130,7 +127,7 @@ namespace GreyWardenPolicePurity
                         targetSettlement = GetNearestSettlementName(target.GetPosition2D);
 
                     _atonementQuest.WriteLog(
-                        $"任务下达：在 {AtonementDeadlineDays:0} 天内击败 {_atonementTargetName}（接案规模 {_atonementTargetSizeSnapshot} 人）。");
+                        $"任务下达：在 {GwpTuning.Enforcement.AtonementDeadlineDays:0} 天内击败 {_atonementTargetName}（接案规模 {_atonementTargetSizeSnapshot} 人）。");
                     _atonementQuest.WriteLog(
                         $"探子初报：目标最后在 {targetSettlement} 附近活动。完成后向族长或任意灰袍警察交任务。");
                 }
@@ -143,7 +140,7 @@ namespace GreyWardenPolicePurity
 
         private static string GetNearestSettlementName(Vec2 position)
         {
-            Settlement nearest = null;
+            Settlement? nearest = null;
             float nearestDist = float.MaxValue;
             foreach (Settlement s in Settlement.All)
             {
@@ -188,7 +185,7 @@ namespace GreyWardenPolicePurity
 
             try
             {
-                AtonementQuest existing = Campaign.Current?.QuestManager?.Quests
+                AtonementQuest? existing = Campaign.Current?.QuestManager?.Quests
                     ?.OfType<AtonementQuest>()
                     ?.FirstOrDefault(q => q.IsOngoing);
                 if (existing != null)
@@ -266,7 +263,7 @@ namespace GreyWardenPolicePurity
         {
             if (string.IsNullOrEmpty(_atonementTargetFactionId)) return;
 
-            IFaction playerFaction = Hero.MainHero?.MapFaction;
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
             if (playerFaction == null) return;
 
             IFaction targetFaction = Kingdom.All.FirstOrDefault(k => k.StringId == _atonementTargetFactionId)

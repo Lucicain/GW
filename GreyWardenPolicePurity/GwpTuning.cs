@@ -1,0 +1,34 @@
+namespace GreyWardenPolicePurity
+{
+    internal static class GwpTuning
+    {
+        internal static class Bounty
+        {
+            public const float OfferCooldownDays = 2f;
+            public const float IntelReportIntervalDays = 2f;
+            public const int RewardPerTroop = 200;
+            public const float EscortEngageDistance = 3f;
+            public const int RecruitmentReputationThreshold = 20;
+            public const int RecruitmentPatrolSize = 20;
+        }
+
+        internal static class Enforcement
+        {
+            public const float WarDistance = 3f;
+            public const float PlayerWarDistance = 15f;
+            public const int ShelteredForceBattleIntervalHours = 6;
+            public const float EscortPunishDistance = 3f;
+            public const float AtonementIntelReportIntervalDays = 2f;
+            public const float AtonementDeadlineDays = 45f;
+        }
+
+        internal static class Patrol
+        {
+            public const int FinePerPoint = 200;
+            public const int NegotiationDivisor = 4;
+            public const int RewardPerPointPerDay = 20;
+            public const int PatrolSize = 10;
+            public const float WarDistance = 15f;
+        }
+    }
+}

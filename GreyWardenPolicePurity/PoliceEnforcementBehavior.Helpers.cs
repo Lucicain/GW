@@ -51,7 +51,7 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+                IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
                 if (playerFaction == null) return;
 
                 Clan policeClan = PoliceStats.GetPoliceClan();
@@ -74,13 +74,13 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
-        private Settlement FindNearestTown()
+        private Settlement? FindNearestTown()
         {
             var player = MobileParty.MainParty;
             if (player == null) return null;
 
             Vec2 pos = player.GetPosition2D;
-            Settlement best = null!;
+            Settlement? best = null;
             float bestDist = float.MaxValue;
 
             foreach (Settlement s in Settlement.All)
@@ -100,13 +100,13 @@ namespace GreyWardenPolicePurity
         /// 导致函数实际上也会返回城镇，警察带着俘虏进城触发引擎崩溃。
         /// 现在只用 IsCastle 精确匹配，城堡通常不允许非所有者自由进出。
         /// </summary>
-        private Settlement FindNearestCastle()
+        private Settlement? FindNearestCastle()
         {
             var player = MobileParty.MainParty;
             if (player == null) return null;
 
             Vec2 pos = player.GetPosition2D;
-            Settlement best = null!;
+            Settlement? best = null;
             float bestDist = float.MaxValue;
 
             foreach (Settlement s in Settlement.All)
@@ -123,8 +123,9 @@ namespace GreyWardenPolicePurity
             return best;
         }
 
-        private void Reassign(CrimeRecord crime)
+        private void Reassign(CrimeRecord? crime)
         {
+            if (crime?.Offender == null) return;
             CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
         }
 
@@ -162,7 +163,7 @@ namespace GreyWardenPolicePurity
             policeParty.Ai.SetInitiative(1f, 0f, 999f);
             policeParty.SetMoveEngageParty(criminal, NavigationType.Default);
 
-            if (shelteredHours % ShelteredForceBattleIntervalHours == 0)
+            if (shelteredHours % GwpTuning.Enforcement.ShelteredForceBattleIntervalHours == 0)
             {
                 TryForceStartBattle(policeParty, criminal);
             }

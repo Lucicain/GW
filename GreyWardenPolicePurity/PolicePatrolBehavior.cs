@@ -28,13 +28,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PolicePatrolBehavior : CampaignBehaviorBase
     {
-        private const int FinePerPoint = 200;
-        private const int PatrolNegotiationDivisor = 4; // 谈判目标金额=罚款的 1/4（改为 2 即 1/2）
-        private const int RewardPerPointPerDay = 20;
-        private const int PatrolSize = 10;
-        private const string PatrolIdPrefix = "gwp_patrol_";
-        private const float WarDistance = 15f; // 接敌距离15格（宣战后同步追击和遥）
-
         private readonly List<string> _activePatrolIds = new List<string>();
         private readonly List<string> _returningPatrolIds = new List<string>();
 
@@ -276,8 +269,8 @@ namespace GreyWardenPolicePurity
             if (rep >= 0) return false;
 
             // 计算罚款并设对话变量
-            _dialogFine = Math.Abs(rep) * FinePerPoint;
-            _dialogBribeAmount = _dialogFine / PatrolNegotiationDivisor;
+            _dialogFine = Math.Abs(rep) * GwpTuning.Patrol.FinePerPoint;
+            _dialogBribeAmount = _dialogFine / GwpTuning.Patrol.NegotiationDivisor;
             if (_dialogBribeAmount < 1) _dialogBribeAmount = 1;
             _dialogPatrol = conversationParty;
             int playerGold = Hero.MainHero.Gold;
@@ -432,7 +425,7 @@ namespace GreyWardenPolicePurity
 
             // 检测玩家与纠察队所属处于战争状态 → 声望扣4分并强制和平
             Clan gwClan = PoliceStats.GetPoliceClan();
-            IFaction playerFac = Clan.PlayerClan?.MapFaction;
+            IFaction? playerFac = Clan.PlayerClan?.MapFaction;
             if (gwClan != null && playerFac != null &&
                 FactionManager.IsAtWarAgainstFaction(gwClan, playerFac))
             {
@@ -448,10 +441,10 @@ namespace GreyWardenPolicePurity
             // 正面声望：每日发奖励 + 取消所有通缉和巡逻
             if (rep > 0)
             {
-                int reward = rep * RewardPerPointPerDay;
+                int reward = rep * GwpTuning.Patrol.RewardPerPointPerDay;
                 Hero.MainHero.ChangeHeroGold(reward);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫日津+{reward}金（声望{rep} × {RewardPerPointPerDay}）",
+                    $"灰袍守卫日津+{reward}金（声望{rep} × {GwpTuning.Patrol.RewardPerPointPerDay}）",
                     Colors.Green));
 
                 // 取消所有巡逻队
@@ -499,7 +492,7 @@ namespace GreyWardenPolicePurity
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你当前负声望 {mag}，纠察队已出动（约 {mag * PatrolSize} 人）。",
+                        $"你当前负声望 {mag}，纠察队已出动（约 {mag * GwpTuning.Patrol.PatrolSize} 人）。",
                         Colors.Yellow));
                     SpawnPatrol(mag);
                     _warDeclared = false;
@@ -660,7 +653,7 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
 
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
             if (playerFaction == null) return;
 
             if (!FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
@@ -691,7 +684,7 @@ namespace GreyWardenPolicePurity
             Hero clanLeader = policeClan.Leader;
             if (clanLeader == null) return;
 
-            string patrolId = PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
+            string patrolId = GwpIds.PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
 
             try
             {
@@ -743,10 +736,10 @@ namespace GreyWardenPolicePurity
 
             // 纠察队规模 = 违法点数 × PatrolSize（每分20人）
             // 例如声望-3 → 60人
-            int totalSize = Math.Max(1, repMagnitude) * PatrolSize;
+            int totalSize = Math.Max(1, repMagnitude) * GwpTuning.Patrol.PatrolSize;
 
-            CharacterObject infantry = CharacterObject.Find("gwheavyinfantry");
-            CharacterObject archer = CharacterObject.Find("gwarcher");
+            CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
+            CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
 
             if (infantry != null && archer != null)
             {
@@ -868,14 +861,15 @@ namespace GreyWardenPolicePurity
         internal void OnPatrolVictory(MobileParty patrol)
         {
             patrol = ResolveEscortPatrol(patrol);
+            if (patrol == null) return;
 
             _playerCapturedByPatrol = true;
-            _escortPatrolId = patrol?.StringId;
+            _escortPatrolId = patrol.StringId;
             _suppressPatrolMeetings = false;
 
-            Settlement escortTarget = _patrolOriginSettlement
-                                      ?? FindNearestTown(patrol)
-                                      ?? FindNearestTown(MobileParty.MainParty);
+            Settlement? escortTarget = _patrolOriginSettlement
+                                       ?? FindNearestTown(patrol)
+                                       ?? (MobileParty.MainParty != null ? FindNearestTown(MobileParty.MainParty) : null);
             if (escortTarget != null)
                 _patrolOriginSettlement = escortTarget;
 
@@ -988,9 +982,9 @@ namespace GreyWardenPolicePurity
                 }
 
                 int rep = PlayerBehaviorPool.Reputation;
-                int fine = Math.Abs(rep) * FinePerPoint;
+                int fine = Math.Abs(rep) * GwpTuning.Patrol.FinePerPoint;
                 int paid = CollectFine(fine);
-                int recovered = FinePerPoint > 0 ? paid / FinePerPoint : 0;
+                int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
                 int repAfter = Math.Min(0, rep + recovered);
                 PlayerBehaviorPool.ResetReputation(repAfter);
 

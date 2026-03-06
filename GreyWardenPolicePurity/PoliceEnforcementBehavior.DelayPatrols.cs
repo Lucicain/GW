@@ -387,9 +387,9 @@ namespace GreyWardenPolicePurity
 
         private static void FillDelayPatrolTroops(MobileParty patrol)
         {
-            CharacterObject infantry = CharacterObject.Find(GwpCommon.HeavyInfantryId);
-            CharacterObject archer = CharacterObject.Find(GwpCommon.ArcherId);
-            CharacterObject recruit = CharacterObject.Find("gwrecruit");
+            CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
+            CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
+            CharacterObject recruit = CharacterObject.Find(GwpIds.PoliceRecruitId);
 
             int infantryCount = (int)(DelayPatrolPartySize * 0.6f);
             int archerCount = DelayPatrolPartySize - infantryCount;

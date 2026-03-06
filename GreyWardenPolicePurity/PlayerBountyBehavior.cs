@@ -38,20 +38,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PlayerBountyBehavior : CampaignBehaviorBase
     {
-        // ---- 悬赏猎人常量 ----
-        private const float OfferCooldownDays = 2f; // 追捕任务推送冷却：每2天推送一次
-        private const float IntelReportIntervalDays = 2f; // 每2天向任务日志追加一条侦察情报
-        private const int RewardPerTroop = 200;
-        /// <summary>
-        /// 护送方与目标距离低于此值时自动宣战并接战（与 PoliceEnforcementBehavior.WarDistance 保持一致）。
-        /// </summary>
-        private const float EscortEngageDistance = 3f;
-
-        // ---- 招募系统常量 ----
-        private const int RecruitmentReputationThreshold = 20;
-        private const int RecruitmentPatrolSize = 20;
-        private const string RecruitmentPatrolPrefix = "gwp_recruit_";
-
         // ---- 持久化状态 ----
         private string _activeBountyTargetId = null!;
         private string _activeBountyTargetName = null!;     // 目标显示名（读档后恢复任务标题用）
@@ -82,18 +68,6 @@ namespace GreyWardenPolicePurity
         private bool _awaitingQuestReconnect = false;
 
         private static bool _notificationTypeRegistered = false;
-
-        // 黑袍指挥官全套装备ID（五件）
-        private static readonly HashSet<string> CommanderSetIds = new HashSet<string>(
-            StringComparer.OrdinalIgnoreCase)
-        {
-            "wcomlegs",
-            "wcomgloves",
-            "wcomarmorhv",
-            "wcomshoulder",
-            "wcomhelmethv",
-            "wharnesscom"
-        };
 
         public override void RegisterEvents()
         {
@@ -140,224 +114,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        #region 对话注册
-
-        private void OnSessionLaunched(CampaignGameStarter starter)
-        {
-            // ★ 每次新会话（新档/读档）必须重置此 static 标志。
-            // 原因：_notificationTypeRegistered 是 static 字段，在进程生命周期内持续存在。
-            // 会话1注册后置 true → 会话2 TryRegisterNotificationType() 直接 return →
-            // 新 MapNotificationView 未注册类型 → 通知图标消失 → 玩家永远看不到悬赏任务。
-            _notificationTypeRegistered = false;
-
-            // ── 招募对话（招募使者接触玩家时触发）────────────────────────────────────
-            starter.AddDialogLine(
-                "gwp_recruit_start",
-                "start",
-                "gwp_recruit_options",
-                "{GWP_RECRUIT_GREETING}",
-                RecruitDialogCondition,
-                null,
-                100);
-
-            starter.AddPlayerLine(
-                "gwp_recruit_accept",
-                "gwp_recruit_options",
-                "gwp_recruit_accept_response",
-                "我接受，愿为灰袍守卫效力。",
-                null, null, 100);
-
-            starter.AddDialogLine(
-                "gwp_recruit_accept_response",
-                "gwp_recruit_accept_response",
-                "close_window",
-                "很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。"
-                + "务必记住——追捕时引发的战争，灰袍会在任务结算后出面调停。",
-                null,
-                OnRecruitAcceptConsequence,
-                100);
-
-            starter.AddPlayerLine(
-                "gwp_recruit_refuse",
-                "gwp_recruit_options",
-                "gwp_recruit_refuse_response",
-                "不，我不感兴趣。",
-                null, null, 100);
-
-            starter.AddDialogLine(
-                "gwp_recruit_refuse_response",
-                "gwp_recruit_refuse_response",
-                "close_window",
-                "随你。若你改变主意，为时已晚——此机会不会再来。",
-                null,
-                OnRecruitRefuseConsequence,
-                100);
-
-            // ── 招募已完成时的兜底对话 ──────────────────────────────────────────────
-            // LeaveEncounter = true 正常情况下已足够；这条对话防止极端情况下
-            // 遭遇系统在 close_window 后再次触发对话，导致"我不能和你说话"→战斗准备。
-            starter.AddDialogLine(
-                "gwp_recruit_already_done",
-                "start",
-                "close_window",
-                "我们的事务已了结，请继续前行。",
-                () =>
-                {
-                    var conv = MobileParty.ConversationParty;
-                    if (conv == null || !IsRecruitmentPatrol(conv)) return false;
-                    if (!_recruitmentOffered) return false;
-                    // 兜底：再次确保遭遇被和平关闭
-                    if (PlayerEncounter.IsActive)
-                        PlayerEncounter.LeaveEncounter = true;
-                    return true;
-                },
-                () => TriggerPatrolReturn(), // ★ 立刻重定向，防止巡逻队继续追玩家
-                100);
-
-            // ── 赏金领取（向护送警察对话，优先）────────────────────────────────────
-            // 有护送方时，玩家与护送警察对话领取赏金；无护送方时降级为族长路径。
-            starter.AddPlayerLine(
-                "gwp_bounty_escort_collect",
-                "lord_talk_speak_diplomacy_2",
-                "gwp_bounty_escort_reward_response",
-                "关于那个悬赏任务，我已击败目标，来结算赏金。",
-                EscortBountyRewardCondition,
-                null,
-                101); // 优先级略高，防止与族长选项同时出现时冲突
-
-            starter.AddDialogLine(
-                "gwp_bounty_escort_reward_response",
-                "gwp_bounty_escort_reward_response",
-                "lord_pretalk",
-                "{GWP_BOUNTY_REWARD_RESPONSE}",
-                null,
-                BountyRewardConsequence, // 复用现有结算逻辑
-                100);
-
-            // ── 赏金领取（向警察领主对话，无护送时的兜底路径）────────────────────────
-            starter.AddPlayerLine(
-                "gwp_bounty_collect_option",
-                "lord_talk_speak_diplomacy_2",
-                "gwp_bounty_reward_response",
-                "关于那个悬赏任务，我已经完成了。",
-                BountyRewardCondition,
-                null,
-                100);
-
-            starter.AddDialogLine(
-                "gwp_bounty_reward_response",
-                "gwp_bounty_reward_response",
-                "lord_pretalk",
-                "{GWP_BOUNTY_REWARD_RESPONSE}",
-                null,
-                BountyRewardConsequence,
-                100);
-
-            // ── 读档后悬赏任务恢复（兜底）─────────────────────────────────────────
-            // 此时 SyncData 已完成，所有持久化字段均已正确加载，可以安全访问。
-            TryRestoreBountyQuestOnSessionStart();
-        }
-
-        #endregion
-
-        #region 招募对话逻辑
-
-        private bool RecruitDialogCondition()
-        {
-            MobileParty conversationParty = MobileParty.ConversationParty;
-            if (conversationParty == null) return false;
-            if (!IsRecruitmentPatrol(conversationParty)) return false;
-            if (_recruitmentOffered || _recruitmentAccepted) return false;
-
-            MBTextManager.SetTextVariable("GWP_RECRUIT_GREETING",
-                "旅行者，稍等。灰袍守卫注意到你近来的善行，我们想与你谈一笔生意。"
-                + "作为悬赏猎人，你可以协助我们追捕通缉犯，并获得丰厚赏金。"
-                + "但需提醒：追捕行动可能被当地国家视为入侵，引发战争。"
-                + "不过，任务完成并领取赏金后，灰袍守卫会出面调停，"
-                + "确保你不会承担战争后果。你是否愿意加入？");
-            return true;
-        }
-
-        private void OnRecruitAcceptConsequence()
-        {
-            _recruitmentAccepted = true;
-            _recruitmentOffered = true;
-            GiveCommanderEquipment();
-            // ★ 不在此处销毁部队 ★
-            // DestroyPartyAction 在对话 Consequence 中立即执行会导致
-            // MapConversationTableau.OnTick 仍在渲染时访问已销毁的角色装备槽
-            // → ArgumentOutOfRangeException。
-            // UpdateRecruitmentPatrol 会在下一次每小时 Tick（对话安全关闭后）执行销毁。
-
-            // ★ 通知遭遇系统：对话结束后和平收场，不进入战斗准备界面 ★
-            if (PlayerEncounter.IsActive)
-                PlayerEncounter.LeaveEncounter = true;
-
-            // ★ 立刻重定向巡逻队回定居点，防止其继续追玩家触发循环对话 ★
-            TriggerPatrolReturn();
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                "你已成为灰袍悬赏猎人！黑袍指挥官套装已加入行李，穿戴后即可接受悬赏任务。",
-                Colors.Green));
-        }
-
-        private void OnRecruitRefuseConsequence()
-        {
-            _recruitmentOffered = true;
-            // 同理，不在 Consequence 中销毁部队，交由下一 Tick 处理
-
-            // ★ 通知遭遇系统和平收场 ★
-            if (PlayerEncounter.IsActive)
-                PlayerEncounter.LeaveEncounter = true;
-
-            // ★ 立刻重定向巡逻队回定居点 ★
-            TriggerPatrolReturn();
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                "你拒绝了灰袍守卫的招募，此机会不会再来。",
-                Colors.Yellow));
-        }
-
-        /// <summary>
-        /// 将黑袍指挥官全套五件装备加入玩家行李。
-        /// 同时输出调试信息，方便确认每件装备是否成功找到。
-        /// </summary>
-        private static void GiveCommanderEquipment()
-        {
-            var roster = MobileParty.MainParty?.ItemRoster;
-            if (roster == null) return;
-
-            // 使用有序列表保证遍历顺序一致，便于比对调试日志
-            var ids = new List<string>(CommanderSetIds);
-            int given = 0;
-
-            foreach (string itemId in ids)
-            {
-                // 先用 MBObjectManager，失败时再遍历全部 ItemObject 兜底
-                ItemObject item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
-                if (item == null)
-                {
-                    // 大小写不敏感的全量搜索兜底
-                    foreach (ItemObject candidate in Game.Current.ObjectManager.GetObjectTypeList<ItemObject>())
-                    {
-                        if (candidate.StringId.Equals(itemId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            item = candidate;
-                            break;
-                        }
-                    }
-                }
-
-                if (item != null)
-                {
-                    roster.AddToCounts(new EquipmentElement(item), 1);
-                    given++;
-                }
-            }
-        }
-
-        #endregion
-
         #region 招募使者部队
 
         private void SpawnRecruitmentPatrol()
@@ -371,7 +127,7 @@ namespace GreyWardenPolicePurity
             Hero clanLeader = policeClan.Leader;
             if (clanLeader == null) return;
 
-            string patrolId = RecruitmentPatrolPrefix + MBRandom.RandomInt(10000, 99999);
+            string patrolId = GwpIds.RecruitmentPatrolPrefix + MBRandom.RandomInt(10000, 99999);
 
             try
             {
@@ -391,9 +147,9 @@ namespace GreyWardenPolicePurity
                 patrol.ActualClan = policeClan;
                 patrol.MemberRoster.Clear();
 
-                CharacterObject infantry = CharacterObject.Find("gwheavyinfantry");
+                CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
                 if (infantry != null)
-                    patrol.MemberRoster.AddToCounts(infantry, RecruitmentPatrolSize);
+                    patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
 
                 PoliceResourceManager.ReplenishFood(patrol, 5);
                 patrol.Ai.SetDoNotMakeNewDecisions(true);
@@ -497,7 +253,7 @@ namespace GreyWardenPolicePurity
         }
 
         private bool IsRecruitmentPatrol(MobileParty party) =>
-            party?.StringId?.StartsWith(RecruitmentPatrolPrefix) == true;
+            party?.StringId?.StartsWith(GwpIds.RecruitmentPatrolPrefix, StringComparison.Ordinal) == true;
 
         #endregion
 
@@ -550,7 +306,7 @@ namespace GreyWardenPolicePurity
                 if (criminal != null)
                 {
                     float dist = escort.GetPosition2D.Distance(criminal.GetPosition2D);
-                    if (dist < EscortEngageDistance)
+                    if (dist < GwpTuning.Bounty.EscortEngageDistance)
                         TryDeclareWarForEscort(criminal); // 仅宣战，AI 命令由下方 SetMoveEscortParty 统一下达
                 }
             }
@@ -601,7 +357,7 @@ namespace GreyWardenPolicePurity
         private void UpdateIntelReport()
         {
             if (_activeQuest == null || !_activeQuest.IsOngoing) return;
-            if ((CampaignTime.Now - _lastIntelReportTime).ToDays < IntelReportIntervalDays) return;
+            if ((CampaignTime.Now - _lastIntelReportTime).ToDays < GwpTuning.Bounty.IntelReportIntervalDays) return;
             _lastIntelReportTime = CampaignTime.Now;
 
             // 目标当前位置
@@ -640,120 +396,6 @@ namespace GreyWardenPolicePurity
                 }
                 catch { }
             }
-        }
-
-        #endregion
-
-        #region 强制对话拦截（招募使者遭遇玩家时）
-
-        private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
-        {
-            bool recruitInvolved = false;
-            bool playerInvolved = false;
-
-            foreach (var p in mapEvent.InvolvedParties)
-            {
-                if (p.MobileParty != null && IsRecruitmentPatrol(p.MobileParty)) recruitInvolved = true;
-                if (p.MobileParty != null && p.MobileParty.IsMainParty) playerInvolved = true;
-            }
-
-            if (recruitInvolved && playerInvolved &&
-                PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
-            {
-                try { PlayerEncounter.DoMeeting(); } catch { }
-            }
-        }
-
-        #endregion
-
-        #region 赏金领取对话
-
-        /// <summary>
-        /// 护送方对话领赏条件：有护送方 + 等待领赏 + 正在和护送方对话。
-        /// 优先于族长路径（优先级 101 vs 100）。
-        /// </summary>
-        private bool EscortBountyRewardCondition()
-        {
-            if (!_waitingForCollection) return false;
-            if (string.IsNullOrEmpty(_escortPolicePartyId)) return false;
-            var convParty = MobileParty.ConversationParty;
-            if (convParty?.StringId != _escortPolicePartyId) return false;
-
-            MBTextManager.SetTextVariable("GWP_BOUNTY_REWARD_RESPONSE",
-                $"出色的工作。任务已完成，这是约定的赏金：{_pendingReward} 第纳尔。");
-            return true;
-        }
-
-        /// <summary>
-        /// 族长对话领赏条件：无护送方（或护送方已失联）+ 等待领赏 + 正在和族长对话。
-        /// 作为护送路径不可用时的兜底。
-        /// </summary>
-        private bool BountyRewardCondition()
-        {
-            if (!_waitingForCollection) return false;
-            if (!string.IsNullOrEmpty(_escortPolicePartyId)) return false; // 有护送方时走护送路径
-            Hero conversationHero = Hero.OneToOneConversationHero;
-            if (conversationHero == null) return false;
-            Hero policeLeader = PoliceStats.GetPoliceClan()?.Leader;
-            if (policeLeader == null || conversationHero != policeLeader) return false;
-
-            MBTextManager.SetTextVariable("GWP_BOUNTY_REWARD_RESPONSE",
-                $"出色的工作。按照约定，这是你应得的赏金：{_pendingReward} 第纳尔。希望我们还有合作的机会。");
-            return true;
-        }
-
-        private void BountyRewardConsequence()
-        {
-            try
-            {
-                int reward = _pendingReward;
-                Hero.MainHero.ChangeHeroGold(reward);
-                try { _activeQuest?.SucceedQuest(); } catch { }
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"已从警察领主处领取悬赏赏金：{reward} 第纳尔",
-                    Colors.Green));
-                MakePeaceWithCriminalFaction();
-            }
-            catch { }
-            finally
-            {
-                // 释放护送方 AI 限制，让其恢复正常巡逻
-                ReleaseEscortAi();
-
-                _escortPolicePartyId         = null!;
-                _waitingForCollection        = false;
-                _pendingReward               = 0;
-                _activeBountyTargetSize      = 0;
-                _activeBountyTargetName      = null!;
-                _activeBountyTargetFactionId = null!;
-                _activeQuest                 = null!;
-            }
-        }
-
-        private void MakePeaceWithCriminalFaction()
-        {
-            if (string.IsNullOrEmpty(_activeBountyTargetFactionId)) return;
-            try
-            {
-                IFaction playerFaction = Hero.MainHero?.MapFaction;
-                if (playerFaction == null) return;
-
-                IFaction criminalFaction = null!;
-                foreach (Kingdom k in Kingdom.All)
-                    if (k.StringId == _activeBountyTargetFactionId) { criminalFaction = k; break; }
-                if (criminalFaction == null)
-                    foreach (Clan c in Clan.All)
-                        if (c.StringId == _activeBountyTargetFactionId) { criminalFaction = c; break; }
-
-                if (criminalFaction == null || criminalFaction == playerFaction) return;
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, criminalFaction))
-                {
-                    MakePeaceAction.Apply(playerFaction, criminalFaction);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"灰袍调停：已与 {criminalFaction.Name} 达成和平", Colors.Green));
-                }
-            }
-            catch { }
         }
 
         #endregion
@@ -798,15 +440,15 @@ namespace GreyWardenPolicePurity
                     // QM 中无活跃任务 → 旧存档兼容，安全创建新 Quest
                     if (!reconnected)
                     {
-                        Clan policeClan   = PoliceStats.GetPoliceClan();
-                        Hero policeLeader = policeClan?.Leader;
+                        Clan policeClan = PoliceStats.GetPoliceClan();
+                        Hero? policeLeader = policeClan?.Leader;
                         if (policeLeader != null)
                         {
                             try
                             {
                                 _activeQuest = new BountyHunterQuest(
                                     policeLeader,
-                                    _activeBountyTargetSize * RewardPerTroop,
+                                    _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop,
                                     _activeBountyTargetName ?? "未知目标");
                                 _activeQuest.StartQuest();
                                 if (!string.IsNullOrEmpty(_activeBountyTargetId))
@@ -831,7 +473,7 @@ namespace GreyWardenPolicePurity
             if (!_recruitmentOffered &&
                 !_recruitmentAccepted &&
                 _recruitmentPatrolId == null &&
-                PlayerBehaviorPool.Reputation >= RecruitmentReputationThreshold)
+                PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
             {
                 SpawnRecruitmentPatrol();
             }
@@ -868,15 +510,15 @@ namespace GreyWardenPolicePurity
 
             // ── 接任务三条件 ──────────────────────────────────────────────────────────
             if (!_recruitmentAccepted) return;                                        // 条件1：已接受招募
-            if (PlayerBehaviorPool.Reputation < RecruitmentReputationThreshold) return; // 条件2：声望足够
+            if (PlayerBehaviorPool.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold) return; // 条件2：声望足够
             if (!IsWearingCommanderSet()) return;                                     // 条件3：穿戴套装
             // ─────────────────────────────────────────────────────────────────────────
 
-            if ((CampaignTime.Now - _lastOfferTime).ToDays < OfferCooldownDays) return;
+            if ((CampaignTime.Now - _lastOfferTime).ToDays < GwpTuning.Bounty.OfferCooldownDays) return;
             _lastOfferTime = CampaignTime.Now;
 
             Vec2 playerPos = MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero;
-            CrimeRecord crime = CrimePool.GetNearestNonPlayerFromAll(playerPos);
+            CrimeRecord? crime = CrimePool.GetNearestNonPlayerFromAll(playerPos);
 
             if (crime == null)
             {
@@ -887,115 +529,6 @@ namespace GreyWardenPolicePurity
             }
 
             OfferBounty(crime);
-        }
-
-        #endregion
-
-        #region 悬赏派发（右侧通知面板）
-
-        private void OfferBounty(CrimeRecord crime)
-        {
-            if (!crime.IsOffenderValid()) return;
-            TryRegisterNotificationType();
-            var notification = new BountyMapNotification(crime);
-            // 通知系统异常时静默忽略（不再弹窗兜底，通知系统已稳定）
-            try { Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(notification); } catch { }
-        }
-
-        private static void TryRegisterNotificationType()
-        {
-            if (_notificationTypeRegistered) return;
-            _notificationTypeRegistered = true;
-            try
-            {
-                var mapScreen = ScreenManager.TopScreen as MapScreen;
-                mapScreen?.MapNotificationView?.RegisterMapNotificationType(
-                    typeof(BountyMapNotification),
-                    typeof(BountyMapNotificationItemVM));
-            }
-            catch { }
-        }
-
-        internal void ShowBountyInquiry(CrimeRecord crime)
-        {
-            if (crime == null || !crime.IsOffenderValid()) return;
-            if (!string.IsNullOrEmpty(_activeBountyTargetId)) return;
-
-            MobileParty target = crime.Offender;
-            int targetSize = target.Party.NumberOfAllMembers;
-            int estimatedReward = targetSize * RewardPerTroop;
-            string nearestSettlement = GetNearestSettlementName(target.GetPosition2D);
-
-            string description =
-                $"目标势力：{target.Name}\n" +
-                $"犯罪类型：{crime.CrimeType}\n" +
-                $"最后目击：{nearestSettlement} 附近\n" +
-                $"队伍规模：{targetSize} 人\n" +
-                $"预计赏金：约 {estimatedReward} 第纳尔\n" +
-                $"（按接任务时人数 × {RewardPerTroop} 结算）\n\n" +
-                $"完成后前往警察家族领主处领取赏金。";
-
-            InformationManager.ShowInquiry(
-                new InquiryData(
-                    "灰袍悬赏任务",
-                    description,
-                    true, true,
-                    "接受任务", "拒绝",
-                    () => AcceptBounty(crime),
-                    () => { },
-                    "event:/ui/panels/quest_start"),
-                true);
-        }
-
-        private void AcceptBounty(CrimeRecord crime)
-        {
-            if (!crime.IsOffenderValid())
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "目标已失效，悬赏任务取消", Colors.Red));
-                return;
-            }
-
-            _activeBountyTargetId   = crime.Offender.StringId;
-            _activeBountyTargetName = crime.Offender.Name.ToString(); // 持久化，读档后恢复任务标题
-            _activeBountyTargetFactionId = crime.Offender.MapFaction?.StringId;
-            _activeBountyTargetSize = crime.Offender.Party.NumberOfAllMembers;
-
-            // 查找已分配该犯罪任务的警察部队，绑定为护送方
-            // 护送方将跟随玩家追击，击败目标后玩家可直接向护送方领取赏金
-            _escortPolicePartyId = CrimePool.GetAssignedPolicePartyId(crime.Offender.StringId);
-            if (_escortPolicePartyId != null)
-            {
-                CrimePool.SetBountyEscortFlag(_escortPolicePartyId, true); // 阻止 PoliceEnforcementBehavior 干预
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "灰袍护送方已就位，跟随你追击目标。击败后直接向护送警察领取赏金。",
-                    Colors.Cyan));
-            }
-
-            Hero policeLeader = PoliceStats.GetPoliceClan()?.Leader;
-            if (policeLeader != null)
-            {
-                try
-                {
-                    _activeQuest = new BountyHunterQuest(
-                        policeLeader,
-                        _activeBountyTargetSize * RewardPerTroop,
-                        crime.Offender.Name.ToString());
-                    _activeQuest.StartQuest();
-                    string lastSeenNear = GetNearestSettlementName(crime.Offender.GetPosition2D);
-                    _activeQuest.WriteLog(
-                        $"目标：{crime.Offender.Name}（当前 {_activeBountyTargetSize} 人）。\n" +
-                        $"最后目击位置：{lastSeenNear} 附近。\n" +
-                        $"击败后前往警察领主处领取赏金约 {_activeBountyTargetSize * RewardPerTroop} 第纳尔。");
-                }
-                catch { _activeQuest = null!; }
-            }
-
-            int estimatedGold = _activeBountyTargetSize * RewardPerTroop;
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"已接受悬赏任务：追击 {crime.Offender.Name}" +
-                $"（{_activeBountyTargetSize} 人），赏金约 {estimatedGold} 第纳尔",
-                Colors.Cyan));
         }
 
         #endregion
@@ -1020,7 +553,7 @@ namespace GreyWardenPolicePurity
                 ? mapEvent.DefenderSide : mapEvent.AttackerSide;
             if (loserSide == null) return;
 
-            MobileParty defeatedTarget = null!;
+            MobileParty? defeatedTarget = null;
             foreach (var p in loserSide.Parties)
             {
                 if (p?.Party?.IsMobile == true &&
@@ -1030,13 +563,13 @@ namespace GreyWardenPolicePurity
             if (defeatedTarget == null) return;
 
             // 用接任务时快照的人数计算赏金（战后残余人数趋近0，不能用战后数值）
-            _pendingReward = _activeBountyTargetSize * RewardPerTroop;
+            _pendingReward = _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop;
             _activeBountyTargetId = null!;
             _waitingForCollection = true;
 
             try { _activeQuest?.WriteLog($"目标已击败！前往领取赏金 {_pendingReward} 第纳尔。"); } catch { }
 
-            Hero policeLeader = PoliceStats.GetPoliceClan()?.Leader;
+            Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
             string leaderName = policeLeader?.Name?.ToString() ?? "警察领主";
             string rewardHint = !string.IsNullOrEmpty(_escortPolicePartyId)
                 ? "找到你的护送警察对话，直接领取赏金"
@@ -1142,7 +675,7 @@ namespace GreyWardenPolicePurity
                 if (!elem.IsEmpty && elem.Item != null)
                     wornIds.Add(elem.Item.StringId);
             }
-            return CommanderSetIds.IsSubsetOf(wornIds);
+            return GwpIds.CommanderSetItemIds.All(wornIds.Contains);
         }
 
         #endregion

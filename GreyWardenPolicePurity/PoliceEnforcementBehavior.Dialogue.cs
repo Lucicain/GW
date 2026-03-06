@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_start",
                 "start",
                 "gwp_enforcement_options",
-                "{GWP_ENFORCEMENT_GREETING}",
+                "{" + GwpTextKeys.EnforcementGreeting + "}",
                 EnforcementDialogCondition,
                 null,
                 100);
@@ -39,7 +39,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay",
                 "gwp_enforcement_options",
                 "gwp_enforcement_pay_barter_pre",
-                "{GWP_ENFORCEMENT_PAY_TEXT}",
+                "{" + GwpTextKeys.EnforcementPayText + "}",
                 EnforcementPayCondition,
                 null,
                 100);
@@ -93,7 +93,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_atonement_success",
                 "gwp_enforcement_atonement_result",
                 "close_window",
-                "{GWP_ENFORCEMENT_ATONEMENT_TEXT}",
+                "{" + GwpTextKeys.EnforcementAtonementText + "}",
                 () => _enforcementAtonementAssigned,
                 null,
                 100);
@@ -149,7 +149,7 @@ namespace GreyWardenPolicePurity
 
         private bool EnforcementDialogCondition()
         {
-            MobileParty conversationParty = MobileParty.ConversationParty;
+            MobileParty? conversationParty = MobileParty.ConversationParty;
             if (conversationParty == null) return false;
 
             Clan policeClan = PoliceStats.GetPoliceClan();
@@ -158,7 +158,7 @@ namespace GreyWardenPolicePurity
             if (conversationParty.ActualClan != policeClan) return false;
             if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
-            PoliceTask task = CrimePool.GetTask(conversationParty.StringId);
+            PoliceTask? task = CrimePool.GetTask(conversationParty.StringId);
             if (task == null) return false;
             if (task.TargetCrime?.Offender?.IsMainParty != true) return false;
             if (task.WarDeclared) return false;
@@ -174,7 +174,7 @@ namespace GreyWardenPolicePurity
                 ? $"你当前携带 {playerGold} 金，可直接缴清。"
                 : $"你当前携带 {playerGold} 金，可在谈判界面继续出价，或改选认罪认罚。";
 
-            MBTextManager.SetTextVariable("GWP_ENFORCEMENT_GREETING",
+            MBTextManager.SetTextVariable(GwpTextKeys.EnforcementGreeting,
                 $"站住！灰袍守卫正在执行逮捕。你当前负声望 {Math.Abs(rep)}，" +
                 $"本案正式罚金 {_dialogFine} 金。{payInfo}");
 
@@ -184,7 +184,7 @@ namespace GreyWardenPolicePurity
         private bool EnforcementPayCondition()
         {
             MBTextManager.SetTextVariable(
-                "GWP_ENFORCEMENT_PAY_TEXT",
+                GwpTextKeys.EnforcementPayText,
                 $"缴纳正式罚金（{_dialogFine} 金，清除通缉）");
             return true;
         }
@@ -205,7 +205,7 @@ namespace GreyWardenPolicePurity
         {
             if (_atonementActive || _atonementWaitingForTurnIn) return false;
 
-            CrimeRecord targetCrime = CrimePool.GetNearestNonPlayerFromAll(
+            CrimeRecord? targetCrime = CrimePool.GetNearestNonPlayerFromAll(
                 MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero);
             if (targetCrime == null || targetCrime.Offender == null || !targetCrime.Offender.IsActive)
                 return false;
@@ -221,7 +221,7 @@ namespace GreyWardenPolicePurity
             _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _atonementTargetSizeSnapshot = targetSizeSnapshot;
             _atonementReputationReward = rewardRep;
-            _atonementDeadlineHours = (float)(CampaignTime.Now.ToHours + AtonementDeadlineDays * 24f);
+            _atonementDeadlineHours = (float)(CampaignTime.Now.ToHours + GwpTuning.Enforcement.AtonementDeadlineDays * 24f);
             _lastAtonementIntelReportTime = CampaignTime.Now;
             StartAtonementQuest();
             PlayerBehaviorPool.SetAtonementTaskActive(true);
@@ -235,13 +235,13 @@ namespace GreyWardenPolicePurity
             }
             MakePeaceWithPoliceAndVictims();
 
-            MBTextManager.SetTextVariable("GWP_ENFORCEMENT_ATONEMENT_TEXT",
+            MBTextManager.SetTextVariable(GwpTextKeys.EnforcementAtonementText,
                 $"赎罪任务已下达：追捕 {_atonementTargetName}（接案规模 {targetSizeSnapshot} 人）。" +
                 $"完成可恢复最多 {_atonementReputationReward} 点声望（最高恢复到 0）；" +
                 $"失败将追加 5 点负声望。");
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"赎罪任务已记录到任务面板：击败 {_atonementTargetName} 后，向族长或任意灰袍警察交付（{AtonementDeadlineDays:0} 天内，失败声望 -5）。",
+                $"赎罪任务已记录到任务面板：击败 {_atonementTargetName} 后，向族长或任意灰袍警察交付（{GwpTuning.Enforcement.AtonementDeadlineDays:0} 天内，失败声望 -5）。",
                 Colors.Yellow));
 
             try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
@@ -431,7 +431,7 @@ namespace GreyWardenPolicePurity
 
             if (!policeHasPlayerTask || !playerInvolved) return;
 
-            IFaction pf = Clan.PlayerClan?.MapFaction;
+            IFaction? pf = Clan.PlayerClan?.MapFaction;
             bool atWar = pf != null && FactionManager.IsAtWarAgainstFaction(policeClan, pf);
 
             if (!atWar && PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)

@@ -51,7 +51,7 @@ namespace GreyWardenPolicePurity
                 "gwp_grey_lord_met_greeting",
                 "start",
                 "lord_talk_speak_diplomacy_2",
-                "{GWP_GREY_LORD_GREETING}",
+                "{" + GwpTextKeys.GreyLordGreeting + "}",
                 GreyLordMetGreetingCondition,
                 null,
                 200);
@@ -59,7 +59,7 @@ namespace GreyWardenPolicePurity
 
         private static bool GreyLordMetGreetingCondition()
         {
-            Hero conversationHero = Hero.OneToOneConversationHero;
+            Hero? conversationHero = Hero.OneToOneConversationHero;
             if (!IsGreyWardenLord(conversationHero))
                 return false;
 
@@ -70,14 +70,14 @@ namespace GreyWardenPolicePurity
                 return false;
 
             MBTextManager.SetTextVariable(
-                "GWP_GREY_LORD_GREETING",
+                GwpTextKeys.GreyLordGreeting,
                 BuildMetGreeting(PlayerBehaviorPool.Reputation));
             return true;
         }
 
         private static bool IsPoliceInteractionConversation()
         {
-            MobileParty conversationParty = MobileParty.ConversationParty;
+            MobileParty? conversationParty = MobileParty.ConversationParty;
             if (conversationParty == null)
                 return false;
 
@@ -87,7 +87,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
-            PoliceTask task = CrimePool.GetTask(conversationParty.StringId);
+            PoliceTask? task = CrimePool.GetTask(conversationParty.StringId);
             return task?.TargetCrime?.Offender?.IsMainParty == true;
         }
 
@@ -145,12 +145,12 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static bool IsGreyWardenLord(Hero hero)
+        private static bool IsGreyWardenLord(Hero? hero)
         {
             if (hero == null || hero.Clan == null)
                 return false;
 
-            if (!string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, System.StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, System.StringComparison.OrdinalIgnoreCase))
                 return false;
 
             return hero.Occupation == Occupation.Lord;

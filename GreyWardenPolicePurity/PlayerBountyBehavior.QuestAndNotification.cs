@@ -43,7 +43,7 @@ namespace GreyWardenPolicePurity
             /// </summary>
             public BountyHunterQuest(Hero questGiver, int rewardGold, string targetName)
                 : base(
-                    "gwp_bounty_quest_" + MBRandom.RandomInt(1000, 9999),
+                    GwpIds.BountyQuestPrefix + MBRandom.RandomInt(1000, 9999),
                     questGiver,
                     CampaignTime.DaysFromNow(45),
                     rewardGold)
@@ -60,7 +60,7 @@ namespace GreyWardenPolicePurity
             /// 实际字段在 InitializeQuestOnGameLoad 中会立即被 Fail 处理，无需正确值。
             /// </summary>
             internal BountyHunterQuest()
-                : base("gwp_bounty_quest_0", null, CampaignTime.Never, 0)
+                : base(GwpIds.BountyQuestFallbackId, null, CampaignTime.Never, 0)
             {
                 _targetName = "";
             }
@@ -82,7 +82,7 @@ namespace GreyWardenPolicePurity
             /// "这是一个独立的特殊任务，不需要 IssueBase 也应当正常恢复"。
             /// IsSpecialQuest 的实现就是 string.IsNullOrEmpty(SpecialQuestType) == false。
             /// </summary>
-            public override string SpecialQuestType => "GwpBountyHunterQuest";
+            public override string SpecialQuestType => GwpIds.BountySpecialQuestType;
 
             protected override void SetDialogs() { }
 
@@ -134,8 +134,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal sealed class BountyMapNotification : InformationData
         {
-            internal string OffenderStringId { get; private set; }
-            private string _offenderName;
+            internal string OffenderStringId { get; private set; } = string.Empty;
+            private string _offenderName = "未知目标";
 
             // ★ 存档系统重建时需要无参构造器
             internal BountyMapNotification() : base(new TextObject("")) { }
@@ -143,8 +143,8 @@ namespace GreyWardenPolicePurity
             internal BountyMapNotification(CrimeRecord crime)
                 : base(new TextObject($"追缉目标：{crime?.Offender?.Name}"))
             {
-                OffenderStringId = crime?.Offender?.StringId;
-                _offenderName    = crime?.Offender?.Name?.ToString() ?? "未知目标";
+                OffenderStringId = crime?.Offender?.StringId ?? string.Empty;
+                _offenderName = crime?.Offender?.Name?.ToString() ?? "未知目标";
             }
 
             public override TextObject TitleText =>
@@ -172,11 +172,13 @@ namespace GreyWardenPolicePurity
                 _onInspect = () =>
                 {
                     ExecuteRemove();
+                    if (string.IsNullOrEmpty(offenderId)) return;
+
                     // 通过 StringId 从 CrimePool 查找 CrimeRecord
                     var behavior = Campaign.Current
                         ?.GetCampaignBehavior<PlayerBountyBehavior>();
                     if (behavior == null) return;
-                    CrimeRecord crime = CrimePool.GetByOffenderId(offenderId);
+                    CrimeRecord? crime = CrimePool.GetByOffenderId(offenderId);
                     if (crime != null)
                         behavior.ShowBountyInquiry(crime);
                     else

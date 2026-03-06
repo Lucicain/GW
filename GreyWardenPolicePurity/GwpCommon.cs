@@ -9,11 +9,11 @@ namespace GreyWardenPolicePurity
 {
     internal static class GwpCommon
     {
-        public const string PatrolIdPrefix = "gwp_patrol_";
-        public const string EnforcementDelayPatrolIdPrefix = "gwp_enf_delay_";
-        public const string HeavyInfantryId = "gwheavyinfantry";
-        public const string ArcherId = "gwarcher";
-        public const string KnightId = "gwknight";
+        public const string PatrolIdPrefix = GwpIds.PatrolIdPrefix;
+        public const string EnforcementDelayPatrolIdPrefix = GwpIds.EnforcementDelayPatrolIdPrefix;
+        public const string HeavyInfantryId = GwpIds.HeavyInfantryId;
+        public const string ArcherId = GwpIds.ArcherId;
+        public const string KnightId = GwpIds.KnightId;
 
         public static bool IsPatrolParty(MobileParty? party)
         {

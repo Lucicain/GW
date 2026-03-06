@@ -47,7 +47,7 @@ namespace GreyWardenPolicePurity
     /// <summary>警察家族统计工具</summary>
     public static class PoliceStats
     {
-        public const string PoliceClanId = "gw";
+        public const string PoliceClanId = GwpIds.PoliceClanId;
 
         public static Clan GetPoliceClan() =>
             Clan.FindFirst(c => string.Equals(c.StringId, PoliceClanId, StringComparison.OrdinalIgnoreCase));

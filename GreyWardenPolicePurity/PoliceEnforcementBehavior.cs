@@ -25,15 +25,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PoliceEnforcementBehavior : CampaignBehaviorBase
     {
-        private const float WarDistance = 3f;
-        private const float WarDistancePlayer = 15f;
-        private const int ShelteredForceBattleIntervalHours = 6;
-
-        // 距城堡多少格时触发惩罚。
-        // 3格 > 引擎自动入城触发距离（约1-2格），确保 OnTick 距离判断先于自动入城发生。
-        // 兜底：CurrentSettlement != null 紧急检测防止极端情况下的崩溃。
-        private const float EscortPunishDistance = 3f;
-
         private bool _atonementActive = false;
         private string _atonementTargetPartyId = string.Empty;
         private string _atonementTargetName = string.Empty;
@@ -99,7 +90,7 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if ((CampaignTime.Now - _lastAtonementIntelReportTime).ToDays >= AtonementIntelReportIntervalDays)
+            if ((CampaignTime.Now - _lastAtonementIntelReportTime).ToDays >= GwpTuning.Enforcement.AtonementIntelReportIntervalDays)
             {
                 _lastAtonementIntelReportTime = CampaignTime.Now;
                 AppendAtonementIntelLog(target);
@@ -114,7 +105,7 @@ namespace GreyWardenPolicePurity
             bool targetInvolved = false;
             foreach (var p in mapEvent.InvolvedParties)
             {
-                MobileParty party = p?.MobileParty;
+                MobileParty? party = p?.MobileParty;
                 if (party == null) continue;
                 if (party.IsMainParty) playerInvolved = true;
                 if (party.StringId == _atonementTargetPartyId) targetInvolved = true;
@@ -228,13 +219,13 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                Settlement castle = escortTask.EscortSettlement;
+                Settlement? castle = escortTask.EscortSettlement;
                 if (castle == null) return;
 
                 // 正常触发路径：警察通过混合寻路接近城堡，距离 < EscortPunishDistance 时执行惩罚。
                 // 近距离段用 GatePosition 直线导航，不触发自动入城，确保此距离判断先于入城发生。
                 float distToCastle = policeParty.GetPosition2D.Distance(castle.GetPosition2D);
-                if (distToCastle < EscortPunishDistance)
+                if (distToCastle < GwpTuning.Enforcement.EscortPunishDistance)
                 {
                     ExecutePunishment(castle, escortTask);
                 }
@@ -252,7 +243,7 @@ namespace GreyWardenPolicePurity
         /// EndCaptivity 管理的玩家，造成状态不一致，警察进城补给时或退城时崩溃。
         /// 先清理俘虏状态，再和平，彻底消除双重释放隐患。
         /// </summary>
-        private void ExecutePunishment(Settlement castle, PoliceTask escortTask)
+        private void ExecutePunishment(Settlement? castle, PoliceTask escortTask)
         {
             try
             {
@@ -266,7 +257,7 @@ namespace GreyWardenPolicePurity
                 // 必须在 EndCaptivity 之后、花名册清理之前，此时玩家党派已脱离俘虏链
                 try
                 {
-                    Settlement teleportTarget = castle ?? escortTask?.EscortSettlement ?? FindNearestCastle();
+                    Settlement? teleportTarget = castle ?? escortTask.EscortSettlement ?? FindNearestCastle();
                     if (teleportTarget != null && MobileParty.MainParty != null)
                     {
                         MobileParty.MainParty.Position = teleportTarget.GatePosition;
@@ -454,7 +445,14 @@ namespace GreyWardenPolicePurity
                 }
 
                 // 正常追击
-                MobileParty criminal = task.TargetCrime.Offender;
+                MobileParty? criminal = task.TargetCrime?.Offender;
+                if (criminal == null)
+                {
+                    ClearTaskWarTracking(kvp.Key, true);
+                    CrimePool.EndTask(kvp.Key);
+                    CrimePool.RefreshAccepting();
+                    continue;
+                }
                 if (!criminal.IsMainParty && criminal.CurrentSettlement != null)
                 {
                     if (HandleShelteredCriminal(pp, task, kvp.Key, criminal))
@@ -476,7 +474,9 @@ namespace GreyWardenPolicePurity
 
                 float dist = pp.GetPosition2D.Distance(criminal.GetPosition2D);
 
-                float warDist = criminal.IsMainParty ? WarDistancePlayer : WarDistance;
+                float warDist = criminal.IsMainParty
+                    ? GwpTuning.Enforcement.PlayerWarDistance
+                    : GwpTuning.Enforcement.WarDistance;
 
                 bool isPatrolRange = criminal.IsMainParty &&
                     PlayerBehaviorPool.Reputation >= -4 &&
@@ -553,7 +553,8 @@ namespace GreyWardenPolicePurity
 
                 if (pp == null)
                 {
-                    if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+                    MobileParty? offender = task.TargetCrime?.Offender;
+                    if (offender == null || !InEvent(offender, mapEvent)) continue;
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimePool.EndTask(kvp.Key);
                     Reassign(task.TargetCrime);
@@ -562,7 +563,8 @@ namespace GreyWardenPolicePurity
                 }
 
                 if (!InEvent(pp, mapEvent)) continue;
-                if (!InEvent(task.TargetCrime.Offender, mapEvent)) continue;
+                MobileParty? activeOffender = task.TargetCrime?.Offender;
+                if (activeOffender == null || !InEvent(activeOffender, mapEvent)) continue;
 
                 bool policeWon = IsOnWinningSide(pp, mapEvent);
 
@@ -578,7 +580,7 @@ namespace GreyWardenPolicePurity
                         // 玩家被击败 → 押送至最近城堡（IsCastle）→ OnTick 距离触发惩罚
                         task.IsEscortingPlayer = true;
 
-                        Settlement targetCastle = FindNearestCastle();
+                        Settlement? targetCastle = FindNearestCastle();
                         task.EscortSettlement = targetCastle;
 
                         // 冻结AI，地形寻路朝城堡行进

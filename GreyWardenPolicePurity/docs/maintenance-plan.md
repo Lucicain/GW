@@ -1,64 +1,72 @@
-# GreyWarden 可维护性优化计划
+# GreyWarden Maintenance Plan
 
-## 目标
+## Goal
 
-在不破坏现有玩法的前提下，逐步降低以下维护成本：
+Improve maintainability without changing gameplay behavior:
 
-- 单个行为类同时负责过多职责，阅读和回归成本高
-- 静态状态与事件时序耦合重，读档/新档/会话切换容易出问题
-- 文本、数值、机制逻辑分散，改设定时需要跨多个文件同步
-- 隐式状态机较多，后续扩展时容易出现边界条件回归
+- Reduce behavior classes that mix dialogue, AI, state, and persistence.
+- Reduce cross-file coupling caused by runtime static state and timing-sensitive logic.
+- Centralize IDs, tuning values, and text ownership.
+- Make hidden state machines easier to read and extend.
 
-## 分阶段计划
+## Phase 1
 
-### 第一阶段：拆分 `PoliceEnforcementBehavior` 的对话职责
+Split dialogue responsibilities out of `PoliceEnforcementBehavior`.
 
-目标：
+Status:
+- Completed
 
-- 将执法对话注册、对话条件、对话后果、遭遇拦截入口从主文件中抽离
-- 保持现有行为不变，只优化文件边界
-- 让主文件更聚焦于“执法流程与状态推进”
+Done:
+- Moved enforcement dialogue registration, dialogue conditions, and dialogue consequences into a separate partial file.
+- Kept enforcement state progression and punishment flow in the core behavior file.
+- Preserved existing gameplay behavior.
 
-交付：
+## Phase 2
 
-- 新增独立文件承载执法对话相关逻辑
-- `PoliceEnforcementBehavior.cs` 不再同时承载完整对话层与主流程
-- 编译通过，功能行为与拆分前一致
+Split dialogue and notification responsibilities out of `PlayerBountyBehavior`.
 
-状态：
+Status:
+- Completed
 
-- 已完成
+Done:
+- Moved recruitment dialogue, bounty reward dialogue, and map-notification flow into a separate partial file.
+- Kept bounty state progression, escort AI control, and quest recovery in the core behavior file.
+- Cleaned a batch of low-risk nullable warnings in the touched bounty files.
 
-### 第二阶段：拆分 `PlayerBountyBehavior` 的对话与任务展示职责
+## Phase 3
 
-目标：
+Centralize shared IDs, tuning values, and text keys.
 
-- 将招募使者对话、悬赏领取对话、通知展示逻辑从主流程拆开
-- 将悬赏状态推进与地图 AI 控制保留在核心行为中
+Status:
+- Completed
 
-### 第三阶段：集中 `Id`、阈值、文本键
+Scope:
+- Introduce `GwpIds` for hero, clan, item, party, and text keys.
+- Introduce `GwpTuning` for reputation thresholds, cooldowns, rewards, and timing values.
 
-目标：
+Done:
+- Added `GwpIds`, `GwpTuning`, and `GwpTextKeys` as shared constant entry points.
+- Replaced scattered literals in core bounty, enforcement, patrol, resource, lore, and submodule files.
+- Reduced warning count further while touching those files.
 
-- 新建统一的 `GwpIds` / `GwpTuning` 常量入口
-- 减少魔法字符串和散落阈值
+## Phase 4
 
-### 第四阶段：整理运行时状态入口
+Unify runtime state access.
 
-目标：
+Scope:
+- Add a single runtime entry point for `CrimePool` and `PlayerBehaviorPool`.
+- Centralize new-game init, load recovery, and session reconnect behavior.
 
-- 收拢 `CrimePool` / `PlayerBehaviorPool` 的直接访问入口
-- 统一新档初始化、读档恢复、会话重连时机
+## Phase 5
 
-### 第五阶段：显式化核心状态机
+Make core state machines explicit.
 
-目标：
+Scope:
+- Introduce explicit enums for enforcement, bounty, and atonement flows.
+- Reduce branching built from `bool + string + null` combinations.
 
-- 为执法、悬赏、赎罪等流程逐步引入明确状态枚举
-- 减少 `bool + string + null` 组合判断带来的分支复杂度
+## Constraints
 
-## 约束
-
-- 每个阶段都必须先保证编译通过
-- 每个阶段尽量避免同时改机制和结构
-- 只有在上一个阶段稳定后，才继续进入下一阶段
+- Each phase must compile before moving on.
+- Prefer structural refactors before gameplay changes.
+- Keep refactors incremental so in-game regression testing stays practical.

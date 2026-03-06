@@ -27,8 +27,6 @@ namespace GreyWardenPolicePurity
         private const int DailyGoldPerMember = 1000;
         private const int FoodDaysTarget = 15;
         private const int EquipmentSlotCount = 12;
-        private const string CommanderTemplateCharacterId = "gw_leader_0";
-
         // 正在补给中的警察部队ID
         private static readonly HashSet<string> _resupplying = new HashSet<string>();
 
@@ -41,8 +39,6 @@ namespace GreyWardenPolicePurity
         private Dictionary<string, double> _lastPurifyTime =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private const double PurifyIntervalHours = 6.0;
-        private const string PoliceRecruitId = "gwrecruit";
-
         public static bool IsResupplying(MobileParty party) =>
             party != null && _resupplying.Contains(party.StringId);
 
@@ -169,7 +165,7 @@ namespace GreyWardenPolicePurity
         {
             if (hero == null) return;
 
-            CharacterObject template = CharacterObject.Find(CommanderTemplateCharacterId)
+            CharacterObject? template = CharacterObject.Find(GwpIds.CommanderTemplateCharacterId)
                 ?? hero.Clan?.Leader?.CharacterObject;
             if (template == null) return;
 
@@ -303,7 +299,7 @@ namespace GreyWardenPolicePurity
 
         private void PurifyParty(MobileParty party)
         {
-            var recruit = CharacterObject.Find(PoliceRecruitId);
+            var recruit = CharacterObject.Find(GwpIds.PoliceRecruitId);
             if (recruit == null) return;
 
             var roster = party.MemberRoster;
@@ -357,7 +353,7 @@ namespace GreyWardenPolicePurity
             int needed = police.Party.NumberOfAllMembers * foodDays - police.ItemRoster.TotalFood;
             if (needed <= 0) return;
 
-            ItemObject foodItem = MBObjectManager.Instance.GetObject<ItemObject>("grain")
+            ItemObject foodItem = MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.GrainItemId)
                 ?? MBObjectManager.Instance.GetObject<ItemObject>(o => o is ItemObject item && item.IsFood) as ItemObject;
             if (foodItem == null) return;
 
