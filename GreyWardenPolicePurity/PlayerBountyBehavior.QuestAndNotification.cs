@@ -178,7 +178,7 @@ namespace GreyWardenPolicePurity
                     var behavior = Campaign.Current
                         ?.GetCampaignBehavior<PlayerBountyBehavior>();
                     if (behavior == null) return;
-                    CrimeRecord? crime = CrimePool.GetByOffenderId(offenderId);
+                    CrimeRecord? crime = CrimeState.GetByOffenderId(offenderId);
                     if (crime != null)
                         behavior.ShowBountyInquiry(crime);
                     else

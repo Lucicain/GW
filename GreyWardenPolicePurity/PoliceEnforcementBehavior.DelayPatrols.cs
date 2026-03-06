@@ -157,7 +157,7 @@ namespace GreyWardenPolicePurity
             MobileParty best = null;
             float bestDist = float.MaxValue;
 
-            foreach (MobileParty offender in CrimePool.GetAllTrackedOffenders(includePlayer: false))
+            foreach (MobileParty offender in CrimeState.GetAllTrackedOffenders(includePlayer: false))
             {
                 if (offender == null || !offender.IsActive) continue;
                 float dist = patrol.GetPosition2D.Distance(offender.GetPosition2D);
@@ -192,10 +192,9 @@ namespace GreyWardenPolicePurity
             var currentTargets = new Dictionary<string, IFaction>(StringComparer.OrdinalIgnoreCase);
             var representativeTaskIdByTarget = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
-                if (!task.WarDeclared) continue;
-                if (task.IsEscortingPlayer || task.IsPlayerBountyEscort) continue;
+                if (task.FlowState != PoliceTaskFlowState.WarPursuit) continue;
                 if (task.TargetCrime?.Offender?.IsMainParty == true) continue;
                 if (task.WarTarget == null) continue;
                 if (string.IsNullOrEmpty(task.WarTarget.StringId)) continue;
@@ -212,7 +211,7 @@ namespace GreyWardenPolicePurity
                 string targetId = kv.Key;
                 IFaction targetFaction = kv.Value;
 
-                List<MobileParty> offenders = CrimePool.GetTrackedOffendersByFaction(targetFaction);
+                List<MobileParty> offenders = CrimeState.GetTrackedOffendersByFaction(targetFaction);
                 if (offenders.Count > 0)
                 {
                     string representativeTaskId = representativeTaskIdByTarget.TryGetValue(targetId, out string taskId)
@@ -304,7 +303,7 @@ namespace GreyWardenPolicePurity
             string representativeTaskId,
             string warTargetId)
         {
-            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
                 if (task.TargetCrime?.Offender?.StringId == offender.StringId)
                     return task.PolicePartyId;
@@ -313,7 +312,7 @@ namespace GreyWardenPolicePurity
             if (!string.IsNullOrEmpty(representativeTaskId))
                 return representativeTaskId;
 
-            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
                 if (task.WarTarget?.StringId == warTargetId && !string.IsNullOrEmpty(task.PolicePartyId))
                     return task.PolicePartyId;
@@ -526,22 +525,22 @@ namespace GreyWardenPolicePurity
         {
             MobileParty playerParty = MobileParty.MainParty;
             if (playerParty == null || !playerParty.IsActive) return;
-            if (PlayerBehaviorPool.Reputation > -11) return;
-            if (PlayerBehaviorPool.HasAtonementTask) return;
+            if (PlayerState.Reputation > -11) return;
+            if (PlayerState.HasAtonementTask) return;
 
-            if (!CrimePool.IsPlayerHunted)
+            if (!CrimeState.IsPlayerHunted)
             {
-                CrimePool.TryAddPlayerCrime(
+                CrimeState.TryAddPlayerCrime(
                     "累计犯罪",
                     playerParty.GetPosition2D,
-                    $"声望已达 {PlayerBehaviorPool.Reputation}");
+                    $"声望已达 {PlayerState.Reputation}");
             }
 
             MobileParty nearestPolice = FindNearestPolicePartyForPlayerCase(playerParty.GetPosition2D);
             if (nearestPolice == null) return;
 
             string nearestId = nearestPolice.StringId;
-            string currentPlayerPoliceId = CrimePool.GetPlayerTaskPolicePartyId() ?? string.Empty;
+            string currentPlayerPoliceId = CrimeState.GetPlayerTaskPolicePartyId() ?? string.Empty;
             if (string.Equals(currentPlayerPoliceId, nearestId, StringComparison.OrdinalIgnoreCase))
             {
                 PoliceResourceManager.CancelResupply(nearestPolice);
@@ -562,13 +561,13 @@ namespace GreyWardenPolicePurity
             }
 
             // 最近警察若有旧案，先清掉战争追踪并交回犯罪池（由 CrimePool 内部处理）
-            PoliceTask nearestTask = CrimePool.GetTask(nearestId);
+            PoliceTask nearestTask = CrimeState.GetTask(nearestId);
             if (nearestTask != null && nearestTask.TargetCrime?.Offender?.IsMainParty != true)
             {
                 ClearTaskWarTracking(nearestId, true);
             }
 
-            if (!CrimePool.TryAssignPlayerCrimeToPolice(nearestId))
+            if (!CrimeState.TryAssignPlayerCrimeToPolice(nearestId))
                 return;
 
             // 若最近警察正处于补给流程，强制取消并立即转向玩家
@@ -590,7 +589,7 @@ namespace GreyWardenPolicePurity
                 if (GwpCommon.IsEnforcementDelayPatrolParty(police)) continue;
                 if (police.LeaderHero == null || !police.LeaderHero.IsActive) continue;
 
-                PoliceTask task = CrimePool.GetTask(police.StringId);
+                PoliceTask task = CrimeState.GetTask(police.StringId);
                 if (task?.IsEscortingPlayer == true) continue;
                 if (task?.IsPlayerBountyEscort == true) continue;
 

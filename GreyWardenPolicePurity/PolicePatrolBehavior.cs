@@ -28,6 +28,9 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PolicePatrolBehavior : CampaignBehaviorBase
     {
+        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+
         private readonly List<string> _activePatrolIds = new List<string>();
         private readonly List<string> _returningPatrolIds = new List<string>();
 
@@ -265,7 +268,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            int rep = PlayerBehaviorPool.Reputation;
+            int rep = PlayerState.Reputation;
             if (rep >= 0) return false;
 
             // 计算罚款并设对话变量
@@ -355,7 +358,7 @@ namespace GreyWardenPolicePurity
 
         private void OnPatrolFineBarterAcceptedConsequence()
         {
-            PlayerBehaviorPool.ResetReputation(0);
+            PlayerState.ResetReputation(0);
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
@@ -429,14 +432,14 @@ namespace GreyWardenPolicePurity
             if (gwClan != null && playerFac != null &&
                 FactionManager.IsAtWarAgainstFaction(gwClan, playerFac))
             {
-                PlayerBehaviorPool.ChangeReputation(-4);
+                PlayerState.ChangeReputation(-4);
                 MakePeaceWithPoliceClan();
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"与灰袍守卫处于战争状态，声望 -4。当前声望：{PlayerBehaviorPool.Reputation}",
+                    $"与灰袍守卫处于战争状态，声望 -4。当前声望：{PlayerState.Reputation}",
                     Colors.Red));
             }
 
-            int rep = PlayerBehaviorPool.Reputation;
+            int rep = PlayerState.Reputation;
 
             // 正面声望：每日发奖励 + 取消所有通缉和巡逻
             if (rep > 0)
@@ -451,18 +454,18 @@ namespace GreyWardenPolicePurity
                 ReturnAllPatrols();
 
                 // 取消所有针对玩家的警察通缉
-                if (CrimePool.IsPlayerHunted)
+                if (CrimeState.IsPlayerHunted)
                 {
                     foreach (var pp in PoliceStats.GetAllPoliceParties())
                     {
-                        var task = CrimePool.GetTask(pp.StringId);
+                        var task = CrimeState.GetTask(pp.StringId);
                         if (task != null && task.TargetCrime?.Offender?.IsMainParty == true)
                         {
                             GwpCommon.TryResetAi(pp);
                             PoliceResourceManager.StartResupply(pp);
                         }
                     }
-                    CrimePool.EndPlayerHunt();
+                    CrimeState.EndPlayerHunt();
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
                         "当前声望为正，现有通缉已取消，追捕全部撤回。",
@@ -502,7 +505,7 @@ namespace GreyWardenPolicePurity
             // 低于-11：转为追捕状态，由正式警察接管
             else if (reputation <= -11)
             {
-                if (PlayerBehaviorPool.HasAtonementTask)
+                if (PlayerState.HasAtonementTask)
                     return;
 
                 // 解散纠察队（已超出管辖范围），交由正式警察处理
@@ -510,9 +513,9 @@ namespace GreyWardenPolicePurity
                     ReturnAllPatrols();
 
                 // 检查是否已发出通缉令
-                if (!CrimePool.IsPlayerHunted)
+                if (!CrimeState.IsPlayerHunted)
                 {
-                    CrimePool.TryAddPlayerCrime(
+                    CrimeState.TryAddPlayerCrime(
                         "累计犯罪",
                         MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero,
                         $"声望已达 {reputation}");
@@ -574,10 +577,10 @@ namespace GreyWardenPolicePurity
                 // 玩家拒绝且纠察队全部消失（未通过战斗解决）→ 额外扣分
                 if (_playerRefused && _activePatrolIds.Count == 0)
                 {
-                    PlayerBehaviorPool.ChangeReputation(-1);
+                    PlayerState.ChangeReputation(-1);
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你拒绝执法且案件未完成，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
+                        $"你拒绝执法且案件未完成，声望 -1。当前声望：{PlayerState.Reputation}",
                         Colors.Red));
                     _playerRefused = false;
                     return;
@@ -600,7 +603,7 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                int rep = PlayerBehaviorPool.Reputation;
+                int rep = PlayerState.Reputation;
 
                 // 只在 -1 到 -10 范围内工作
                 if (rep >= 0 || rep <= -11)
@@ -632,7 +635,7 @@ namespace GreyWardenPolicePurity
                     patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 纠察队Tick异常：{ex.Message}", Colors.Red));
@@ -723,7 +726,7 @@ namespace GreyWardenPolicePurity
                     $"纠察队已从 {_patrolOriginSettlement.Name} 出发，正在追踪你。",
                     Colors.Yellow));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 生成纠察队失败：{ex.Message}", Colors.Red));
@@ -848,7 +851,7 @@ namespace GreyWardenPolicePurity
 
                 _playerRefused = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 纠察队战斗处理异常：{ex.Message}", Colors.Red));
@@ -895,10 +898,10 @@ namespace GreyWardenPolicePurity
 
         private void OnPlayerVictory()
         {
-            PlayerBehaviorPool.ChangeReputation(-1);
+            PlayerState.ChangeReputation(-1);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"你击败纠察队，声望 -1。当前声望：{PlayerBehaviorPool.Reputation}",
+                $"你击败纠察队，声望 -1。当前声望：{PlayerState.Reputation}",
                 Colors.Red));
         }
 
@@ -981,12 +984,12 @@ namespace GreyWardenPolicePurity
                     catch { }
                 }
 
-                int rep = PlayerBehaviorPool.Reputation;
+                int rep = PlayerState.Reputation;
                 int fine = Math.Abs(rep) * GwpTuning.Patrol.FinePerPoint;
                 int paid = CollectFine(fine);
                 int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
                 int repAfter = Math.Min(0, rep + recovered);
-                PlayerBehaviorPool.ResetReputation(repAfter);
+                PlayerState.ResetReputation(repAfter);
 
                 MakePeaceWithPoliceAndVictims();
 
@@ -995,7 +998,7 @@ namespace GreyWardenPolicePurity
                     $"你被押送到 {townName}：应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}（按实缴恢复）。",
                     Colors.Yellow));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 执行惩罚异常：{ex.Message}", Colors.Red));

@@ -13,6 +13,9 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed class GreyWardenLoreBehavior : CampaignBehaviorBase
     {
+        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+
         private static readonly Dictionary<string, TextObject> HeroEncyclopediaTexts =
             new Dictionary<string, TextObject>
             {
@@ -71,7 +74,7 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(
                 GwpTextKeys.GreyLordGreeting,
-                BuildMetGreeting(PlayerBehaviorPool.Reputation));
+                BuildMetGreeting(PlayerState.Reputation));
             return true;
         }
 
@@ -87,7 +90,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
-            PoliceTask? task = CrimePool.GetTask(conversationParty.StringId);
+            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
             return task?.TargetCrime?.Offender?.IsMainParty == true;
         }
 

@@ -169,9 +169,9 @@ namespace GreyWardenPolicePurity
 
         private void TryRestoreAtonementQuestOnSessionStart()
         {
-            if (!_atonementActive && !_atonementWaitingForTurnIn) return;
+            if (!HasAtonementTask) return;
 
-            PlayerBehaviorPool.SetAtonementTaskActive(true);
+            PlayerState.SetAtonementTaskActive(true);
             _awaitingAtonementQuestReconnect = true;
         }
 
@@ -180,7 +180,7 @@ namespace GreyWardenPolicePurity
             if (!_awaitingAtonementQuestReconnect) return;
             _awaitingAtonementQuestReconnect = false;
 
-            if (!_atonementActive && !_atonementWaitingForTurnIn)
+            if (!HasAtonementTask)
                 return;
 
             try
@@ -191,7 +191,7 @@ namespace GreyWardenPolicePurity
                 if (existing != null)
                 {
                     _atonementQuest = existing;
-                    if (_atonementWaitingForTurnIn)
+                    if (IsAtonementWaitingForTurnInState)
                         existing.MarkReadyForTurnIn();
                     else
                         existing.WriteLog("读档恢复：继续追踪赎罪目标。");
@@ -203,7 +203,7 @@ namespace GreyWardenPolicePurity
             StartAtonementQuest();
             if (_atonementQuest != null && _atonementQuest.IsOngoing)
             {
-                if (_atonementWaitingForTurnIn)
+                if (IsAtonementWaitingForTurnInState)
                     _atonementQuest.MarkReadyForTurnIn();
                 else
                     _atonementQuest.WriteLog("读档恢复：继续追踪赎罪目标。");
@@ -213,11 +213,11 @@ namespace GreyWardenPolicePurity
         internal void OnAtonementQuestLoadedFromSave(AtonementQuest quest)
         {
             if (quest == null || !quest.IsOngoing) return;
-            if (!_atonementActive && !_atonementWaitingForTurnIn) return;
+            if (!HasAtonementTask) return;
 
             _atonementQuest = quest;
             _awaitingAtonementQuestReconnect = false;
-            if (_atonementWaitingForTurnIn)
+            if (IsAtonementWaitingForTurnInState)
                 quest.MarkReadyForTurnIn();
             else
                 quest.WriteLog("读档恢复：继续追踪赎罪目标。");
@@ -225,7 +225,7 @@ namespace GreyWardenPolicePurity
 
         private bool EnforcementAtonementTurnInCondition()
         {
-            if (!_atonementWaitingForTurnIn) return false;
+            if (!IsAtonementWaitingForTurnInState) return false;
 
             Hero conversationHero = Hero.OneToOneConversationHero;
             Clan policeClan = PoliceStats.GetPoliceClan();
@@ -244,10 +244,10 @@ namespace GreyWardenPolicePurity
 
         private void OnEnforcementAtonementTurnInConsequence()
         {
-            int before = PlayerBehaviorPool.Reputation;
+            int before = PlayerState.Reputation;
             int after = Math.Min(0, before + Math.Max(1, _atonementReputationReward));
             int gain = after - before;
-            PlayerBehaviorPool.ResetReputation(after);
+            PlayerState.ResetReputation(after);
             MakePeaceWithAtonementTargetFaction();
 
             try { _atonementQuest?.SucceedQuestWithReputation(gain, after); } catch { }

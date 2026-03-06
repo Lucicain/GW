@@ -33,7 +33,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void MakePeaceWithPoliceClan()
         {
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
             if (playerFaction == null) return;
 
             Clan policeClan = PoliceStats.GetPoliceClan();
@@ -49,7 +49,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void MakePeaceWithPoliceAndVictims()
         {
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
             if (playerFaction == null) return;
 
             Clan policeClan = PoliceStats.GetPoliceClan();
@@ -240,7 +240,7 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
-        private Hero GetPatrolBarterHero()
+        private Hero? GetPatrolBarterHero()
         {
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return null;
@@ -368,7 +368,7 @@ namespace GreyWardenPolicePurity
             }
 
             Clan policeClan = PoliceStats.GetPoliceClan();
-            IFaction playerFaction = Clan.PlayerClan?.MapFaction;
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
             bool atWar = policeClan != null && playerFaction != null &&
                          FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction);
 

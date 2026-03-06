@@ -53,17 +53,33 @@ Done:
 
 Unify runtime state access.
 
+Status:
+- Completed
+
 Scope:
 - Add a single runtime entry point for `CrimePool` and `PlayerBehaviorPool`.
 - Centralize new-game init, load recovery, and session reconnect behavior.
+
+Done:
+- Added `GwpRuntimeState` as a thin runtime facade over `CrimePool` and `PlayerBehaviorPool`.
+- Moved new-game reset and player-behavior load/save flow behind the unified runtime entry point.
+- Switched core bounty, lore, patrol, and enforcement behaviors to read runtime state through the facade.
 
 ## Phase 5
 
 Make core state machines explicit.
 
+Status:
+- Completed
+
 Scope:
 - Introduce explicit enums for enforcement, bounty, and atonement flows.
 - Reduce branching built from `bool + string + null` combinations.
+
+Done:
+- Added shared flow enums for atonement, bounty, and police task states.
+- Replaced core enforcement and bounty branch checks with explicit state helpers.
+- Added a computed `PoliceTask.FlowState` so escort, war, and pursuit paths are easier to read at call sites.
 
 ## Constraints
 

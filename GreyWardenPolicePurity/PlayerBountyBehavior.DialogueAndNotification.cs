@@ -250,8 +250,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool EscortBountyRewardCondition()
         {
-            if (!_waitingForCollection) return false;
-            if (string.IsNullOrEmpty(_escortPolicePartyId)) return false;
+            if (!IsWaitingForBountyCollection) return false;
+            if (!HasEscortPoliceParty) return false;
 
             MobileParty? convParty = MobileParty.ConversationParty;
             if (convParty?.StringId != _escortPolicePartyId) return false;
@@ -267,8 +267,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool BountyRewardCondition()
         {
-            if (!_waitingForCollection) return false;
-            if (!string.IsNullOrEmpty(_escortPolicePartyId)) return false;
+            if (!IsWaitingForBountyCollection) return false;
+            if (HasEscortPoliceParty) return false;
 
             Hero? conversationHero = Hero.OneToOneConversationHero;
             if (conversationHero == null) return false;
@@ -296,15 +296,7 @@ namespace GreyWardenPolicePurity
             catch { }
             finally
             {
-                ReleaseEscortAi();
-
-                _escortPolicePartyId = null!;
-                _waitingForCollection = false;
-                _pendingReward = 0;
-                _activeBountyTargetSize = 0;
-                _activeBountyTargetName = null!;
-                _activeBountyTargetFactionId = null!;
-                _activeQuest = null!;
+                ClearBountyTaskState();
             }
         }
 
@@ -381,7 +373,7 @@ namespace GreyWardenPolicePurity
         internal void ShowBountyInquiry(CrimeRecord crime)
         {
             if (crime == null || !crime.IsOffenderValid()) return;
-            if (!string.IsNullOrEmpty(_activeBountyTargetId)) return;
+            if (HasBountyTask) return;
 
             MobileParty? target = crime.Offender;
             if (target == null) return;
@@ -433,10 +425,10 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _activeBountyTargetSize = offender.Party.NumberOfAllMembers;
 
-            _escortPolicePartyId = CrimePool.GetAssignedPolicePartyId(offender.StringId) ?? string.Empty;
+            _escortPolicePartyId = CrimeState.GetAssignedPolicePartyId(offender.StringId) ?? string.Empty;
             if (!string.IsNullOrEmpty(_escortPolicePartyId))
             {
-                CrimePool.SetBountyEscortFlag(_escortPolicePartyId, true);
+                CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
                 InformationManager.DisplayMessage(new InformationMessage(
                     "灰袍护送方已就位，跟随你追击目标。击败后直接向护送警察领取赏金。",
                     Colors.Cyan));

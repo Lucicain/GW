@@ -57,7 +57,7 @@ namespace GreyWardenPolicePurity
                 Clan policeClan = PoliceStats.GetPoliceClan();
                 GwpCommon.TrySetNeutral(policeClan, playerFaction);
 
-                foreach (var victim in PlayerBehaviorPool.VictimFactions)
+                foreach (var victim in PlayerState.VictimFactions)
                 {
                     if (victim == null || victim == playerFaction) continue;
                     if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
@@ -69,7 +69,7 @@ namespace GreyWardenPolicePurity
                     catch { }
                 }
 
-                PlayerBehaviorPool.ClearVictimFactions();
+                PlayerState.ClearVictimFactions();
             }
             catch { }
         }
@@ -126,7 +126,7 @@ namespace GreyWardenPolicePurity
         private void Reassign(CrimeRecord? crime)
         {
             if (crime?.Offender == null) return;
-            CrimePool.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
+            CrimeState.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
         }
 
         private void ClearShelteredTargetTracking(string taskId)

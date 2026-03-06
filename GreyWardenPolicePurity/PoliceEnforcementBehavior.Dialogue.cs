@@ -143,7 +143,7 @@ namespace GreyWardenPolicePurity
                 OnEnforcementAtonementTurnInConsequence,
                 100);
 
-            PlayerBehaviorPool.SetAtonementTaskActive(_atonementActive || _atonementWaitingForTurnIn);
+            PlayerState.SetAtonementTaskActive(HasAtonementTask);
             TryRestoreAtonementQuestOnSessionStart();
         }
 
@@ -158,13 +158,12 @@ namespace GreyWardenPolicePurity
             if (conversationParty.ActualClan != policeClan) return false;
             if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
-            PoliceTask? task = CrimePool.GetTask(conversationParty.StringId);
+            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
             if (task == null) return false;
             if (task.TargetCrime?.Offender?.IsMainParty != true) return false;
-            if (task.WarDeclared) return false;
-            if (task.IsEscortingPlayer) return false;
+            if (task.FlowState != PoliceTaskFlowState.Pursuit) return false;
 
-            int rep = PlayerBehaviorPool.Reputation;
+            int rep = PlayerState.Reputation;
             _dialogFine = Math.Abs(rep) * 300;
             _dialogPolice = conversationParty;
             _dialogTask = task;
@@ -191,7 +190,7 @@ namespace GreyWardenPolicePurity
 
         private bool EnforcementAtonementCondition()
         {
-            if (_atonementActive || _atonementWaitingForTurnIn) return false;
+            if (HasAtonementTask) return false;
             if (_dialogFine <= 0) return false;
             return Hero.MainHero.Gold < _dialogFine;
         }
@@ -203,9 +202,9 @@ namespace GreyWardenPolicePurity
 
         private bool TryAssignAtonementTask()
         {
-            if (_atonementActive || _atonementWaitingForTurnIn) return false;
+            if (HasAtonementTask) return false;
 
-            CrimeRecord? targetCrime = CrimePool.GetNearestNonPlayerFromAll(
+            CrimeRecord? targetCrime = CrimeState.GetNearestNonPlayerFromAll(
                 MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero);
             if (targetCrime == null || targetCrime.Offender == null || !targetCrime.Offender.IsActive)
                 return false;
@@ -214,8 +213,7 @@ namespace GreyWardenPolicePurity
             int targetSizeSnapshot = Math.Max(1, offender.Party?.NumberOfAllMembers ?? 1);
             int rewardRep = Math.Max(1, (int)Math.Ceiling(targetSizeSnapshot / 10f));
 
-            _atonementActive = true;
-            _atonementWaitingForTurnIn = false;
+            SetAtonementFlowState(AtonementFlowState.Active);
             _atonementTargetPartyId = offender.StringId ?? string.Empty;
             _atonementTargetName = offender.Name?.ToString() ?? "未知目标";
             _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
@@ -224,9 +222,8 @@ namespace GreyWardenPolicePurity
             _atonementDeadlineHours = (float)(CampaignTime.Now.ToHours + GwpTuning.Enforcement.AtonementDeadlineDays * 24f);
             _lastAtonementIntelReportTime = CampaignTime.Now;
             StartAtonementQuest();
-            PlayerBehaviorPool.SetAtonementTaskActive(true);
 
-            CrimePool.EndPlayerHunt();
+            CrimeState.EndPlayerHunt();
             if (_dialogPolice != null && _dialogPolice.IsActive)
             {
                 RestoreAi(_dialogPolice);
@@ -272,8 +269,8 @@ namespace GreyWardenPolicePurity
             {
                 int paid = PoliceResourceManager.CollectFine(_dialogFine);
 
-                PlayerBehaviorPool.ResetReputation(0);
-                CrimePool.EndPlayerHunt();
+                PlayerState.ResetReputation(0);
+                CrimeState.EndPlayerHunt();
 
                 if (_dialogPolice != null && _dialogPolice.IsActive)
                 {
@@ -418,7 +415,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                var task = CrimePool.GetTask(p.MobileParty.StringId);
+                var task = CrimeState.GetTask(p.MobileParty.StringId);
                 if (task != null &&
                     task.TargetCrime?.Offender?.IsMainParty == true &&
                     !task.WarDeclared &&

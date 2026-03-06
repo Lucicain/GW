@@ -38,6 +38,9 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PlayerBountyBehavior : CampaignBehaviorBase
     {
+        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+
         // ---- 持久化状态 ----
         private string _activeBountyTargetId = null!;
         private string _activeBountyTargetName = null!;     // 目标显示名（读档后恢复任务标题用）
@@ -68,6 +71,41 @@ namespace GreyWardenPolicePurity
         private bool _awaitingQuestReconnect = false;
 
         private static bool _notificationTypeRegistered = false;
+
+        private PlayerBountyFlowState CurrentBountyState =>
+            !string.IsNullOrEmpty(_activeBountyTargetId)
+                ? PlayerBountyFlowState.HuntingTarget
+                : (_waitingForCollection ? PlayerBountyFlowState.WaitingForCollection : PlayerBountyFlowState.Idle);
+
+        private bool HasBountyTask => CurrentBountyState != PlayerBountyFlowState.Idle;
+        private bool IsTrackingBountyTarget => CurrentBountyState == PlayerBountyFlowState.HuntingTarget;
+        private bool IsWaitingForBountyCollection => CurrentBountyState == PlayerBountyFlowState.WaitingForCollection;
+        private bool HasEscortPoliceParty => !string.IsNullOrEmpty(_escortPolicePartyId);
+
+        private void ClearActiveBountyTarget()
+        {
+            _activeBountyTargetId = null!;
+            _activeBountyTargetName = null!;
+            _activeBountyTargetFactionId = null!;
+            _activeBountyTargetSize = 0;
+        }
+
+        private void EnterBountyCollectionState(int reward)
+        {
+            _pendingReward = reward;
+            _activeBountyTargetId = null!;
+            _waitingForCollection = true;
+        }
+
+        private void ClearBountyTaskState()
+        {
+            ReleaseEscortAi();
+            _escortPolicePartyId = null!;
+            _waitingForCollection = false;
+            _pendingReward = 0;
+            ClearActiveBountyTarget();
+            _activeQuest = null!;
+        }
 
         public override void RegisterEvents()
         {
@@ -275,21 +313,21 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void UpdateEscortPatrol()
         {
-            if (string.IsNullOrEmpty(_escortPolicePartyId)) return;
+            if (!HasEscortPoliceParty) return;
 
             var escort = MobileParty.All.FirstOrDefault(p => p.StringId == _escortPolicePartyId);
             if (escort == null || !escort.IsActive)
             {
                 // 护送方消失 → 降级为族长领赏路径
                 _escortPolicePartyId = null!;
-                if (_waitingForCollection || !string.IsNullOrEmpty(_activeBountyTargetId))
+                if (HasBountyTask)
                     InformationManager.DisplayMessage(new InformationMessage(
                         "护送警察已失联，请前往警察族长处领取赏金。", Colors.Yellow));
                 return;
             }
 
             // ── 自愈：读档后 IsPlayerBountyEscort 标志丢失（CrimePool 不持久化），在此补设 ──
-            CrimePool.SetBountyEscortFlag(_escortPolicePartyId, true);
+            CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
 
             // ── 粮食检查：直接补粮，不让护送方跑去城市补给（避免脱离跟随） ──
             if (escort.ItemRoster.TotalFood <= 0)
@@ -298,7 +336,7 @@ namespace GreyWardenPolicePurity
             // ── 追击阶段：距目标足够近时宣战（护送方保持跟随玩家，不主动接战）──────────
             // 逻辑：护送方宣战 → 玩家宣战并与犯人交战 → 引擎自动将附近的护送方拉入战斗。
             // 不切换为 SetMoveEngageParty：若护送方先接战，玩家尚未宣战则无法参战（原版机制）。
-            if (!string.IsNullOrEmpty(_activeBountyTargetId))
+            if (IsTrackingBountyTarget)
             {
                 var criminal = MobileParty.All.FirstOrDefault(
                     p => p.StringId == _activeBountyTargetId && p.IsActive);
@@ -312,8 +350,7 @@ namespace GreyWardenPolicePurity
             }
 
             // ── 追击阶段 + 等待领赏阶段：均跟随玩家 ──
-            bool isActive = !string.IsNullOrEmpty(_activeBountyTargetId) || _waitingForCollection;
-            if (!isActive) return;
+            if (!HasBountyTask) return;
 
             MobileParty player = MobileParty.MainParty;
             if (player == null || !player.IsActive) return;
@@ -368,7 +405,7 @@ namespace GreyWardenPolicePurity
 
             // 情报来源：护送方名称；无护送方时用通用名称
             string reporterName = "灰袍侦察队";
-            if (!string.IsNullOrEmpty(_escortPolicePartyId))
+            if (HasEscortPoliceParty)
             {
                 var escort = MobileParty.All.FirstOrDefault(
                     p => p.StringId == _escortPolicePartyId && p.IsActive);
@@ -391,7 +428,7 @@ namespace GreyWardenPolicePurity
             {
                 try
                 {
-                    CrimePool.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
+                    CrimeState.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
                     escort.Ai.SetDoNotMakeNewDecisions(false);
                 }
                 catch { }
@@ -414,8 +451,7 @@ namespace GreyWardenPolicePurity
             if (_awaitingQuestReconnect)
             {
                 _awaitingQuestReconnect = false;
-                bool hasBountyTask = !string.IsNullOrEmpty(_activeBountyTargetId) || _waitingForCollection;
-                if (hasBountyTask && _activeQuest == null)
+                if (HasBountyTask && _activeQuest == null)
                 {
                     // ★ 优先从 QM 查找已加载的 Quest-A（SpecialQuestType 确保它不被引擎取消）
                     bool reconnected = false;
@@ -428,10 +464,10 @@ namespace GreyWardenPolicePurity
                         {
                             _activeQuest = existing;
                             reconnected  = true;
-                            if (!string.IsNullOrEmpty(_activeBountyTargetId))
+                            if (IsTrackingBountyTarget)
                                 existing.WriteLog(
                                     $"读档恢复：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
-                            else if (_waitingForCollection)
+                            else if (IsWaitingForBountyCollection)
                                 existing.WriteLog("读档恢复：目标已击败，前往领取赏金。");
                         }
                     }
@@ -451,10 +487,10 @@ namespace GreyWardenPolicePurity
                                     _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop,
                                     _activeBountyTargetName ?? "未知目标");
                                 _activeQuest.StartQuest();
-                                if (!string.IsNullOrEmpty(_activeBountyTargetId))
+                                if (IsTrackingBountyTarget)
                                     _activeQuest.WriteLog(
                                         $"读档恢复（兜底）：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
-                                else if (_waitingForCollection)
+                                else if (IsWaitingForBountyCollection)
                                     _activeQuest.WriteLog("读档恢复（兜底）：目标已击败，前往领取赏金。");
                             }
                             catch { _activeQuest = null!; }
@@ -473,13 +509,13 @@ namespace GreyWardenPolicePurity
             if (!_recruitmentOffered &&
                 !_recruitmentAccepted &&
                 _recruitmentPatrolId == null &&
-                PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
+                PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
             {
                 SpawnRecruitmentPatrol();
             }
 
             // 有活跃悬赏任务时，验证目标是否仍在地图上
-            if (!string.IsNullOrEmpty(_activeBountyTargetId))
+            if (IsTrackingBountyTarget)
             {
                 bool targetAlive = MobileParty.All.Any(
                     p => p.StringId == _activeBountyTargetId &&
@@ -490,14 +526,7 @@ namespace GreyWardenPolicePurity
                         "悬赏目标已消失（可能已被他人击败），任务自动取消",
                         Colors.Yellow));
                     try { _activeQuest?.FailQuestTargetGone(); } catch { }
-                    _activeQuest                 = null!;
-                    _activeBountyTargetId        = null!;
-                    _activeBountyTargetName      = null!;
-                    _activeBountyTargetFactionId = null!;
-                    _activeBountyTargetSize      = 0;
-                    // 释放护送方 AI，让其恢复正常行为
-                    ReleaseEscortAi();
-                    _escortPolicePartyId         = null!;
+                    ClearBountyTaskState();
                     return;
                 }
 
@@ -506,11 +535,11 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if (_waitingForCollection) return;
+            if (IsWaitingForBountyCollection) return;
 
             // ── 接任务三条件 ──────────────────────────────────────────────────────────
             if (!_recruitmentAccepted) return;                                        // 条件1：已接受招募
-            if (PlayerBehaviorPool.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold) return; // 条件2：声望足够
+            if (PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold) return; // 条件2：声望足够
             if (!IsWearingCommanderSet()) return;                                     // 条件3：穿戴套装
             // ─────────────────────────────────────────────────────────────────────────
 
@@ -518,7 +547,7 @@ namespace GreyWardenPolicePurity
             _lastOfferTime = CampaignTime.Now;
 
             Vec2 playerPos = MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero;
-            CrimeRecord? crime = CrimePool.GetNearestNonPlayerFromAll(playerPos);
+            CrimeRecord? crime = CrimeState.GetNearestNonPlayerFromAll(playerPos);
 
             if (crime == null)
             {
@@ -538,7 +567,7 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
-            if (string.IsNullOrEmpty(_activeBountyTargetId)) return;
+            if (!IsTrackingBountyTarget) return;
             if (!mapEvent.HasWinner || mapEvent.Winner == null) return;
 
             bool playerWon = false;
@@ -563,15 +592,13 @@ namespace GreyWardenPolicePurity
             if (defeatedTarget == null) return;
 
             // 用接任务时快照的人数计算赏金（战后残余人数趋近0，不能用战后数值）
-            _pendingReward = _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop;
-            _activeBountyTargetId = null!;
-            _waitingForCollection = true;
+            EnterBountyCollectionState(_activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop);
 
             try { _activeQuest?.WriteLog($"目标已击败！前往领取赏金 {_pendingReward} 第纳尔。"); } catch { }
 
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
             string leaderName = policeLeader?.Name?.ToString() ?? "警察领主";
-            string rewardHint = !string.IsNullOrEmpty(_escortPolicePartyId)
+            string rewardHint = HasEscortPoliceParty
                 ? "找到你的护送警察对话，直接领取赏金"
                 : $"前往 {leaderName} 处领取赏金";
             InformationManager.DisplayMessage(new InformationMessage(
@@ -600,8 +627,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void TryRestoreBountyQuestOnSessionStart()
         {
-            bool hasBountyTask = !string.IsNullOrEmpty(_activeBountyTargetId) || _waitingForCollection;
-            if (!hasBountyTask) return;
+            if (!HasBountyTask) return;
 
             // 仅设标志；若 InitializeQuestOnGameLoad 已重连（_activeQuest != null），
             // 首次 OnHourlyTick 会检测到后立即清除此标志，不做额外操作。
@@ -616,18 +642,16 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal void OnQuestLoadedFromSave(BountyHunterQuest quest)
         {
-            bool hasBountyTask = !string.IsNullOrEmpty(_activeBountyTargetId) || _waitingForCollection;
-
-            if (!hasBountyTask || quest == null || !quest.IsOngoing)
+            if (!HasBountyTask || quest == null || !quest.IsOngoing)
                 return; // 新档、任务已完结、或 quest 引擎内部已 Fail → 首次 Tick 兜底
 
             // ★ 成功重连：Quest-A 存活，直接绑定 _activeQuest，不创建 Quest-B
             _activeQuest = quest;
             _awaitingQuestReconnect = false; // 通知首次 Tick 无需兜底
 
-            if (!string.IsNullOrEmpty(_activeBountyTargetId))
+            if (IsTrackingBountyTarget)
                 quest.WriteLog($"读档恢复：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
-            else if (_waitingForCollection)
+            else if (IsWaitingForBountyCollection)
                 quest.WriteLog("读档恢复：目标已击败，前往护送警察或警察领主处领取赏金。");
         }
 

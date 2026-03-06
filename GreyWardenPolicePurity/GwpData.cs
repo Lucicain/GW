@@ -42,6 +42,18 @@ namespace GreyWardenPolicePurity
         public bool IsPlayerBountyEscort { get; set; }
 
         public bool IsTargetValid() => TargetCrime?.IsOffenderValid() == true;
+
+        internal PoliceTaskFlowState FlowState
+        {
+            get
+            {
+                if (IsPlayerBountyEscort) return PoliceTaskFlowState.PlayerBountyEscort;
+                if (IsEscortingPlayer) return PoliceTaskFlowState.EscortingPlayer;
+                if (WarDeclared) return PoliceTaskFlowState.WarPursuit;
+                if (TargetCrime != null) return PoliceTaskFlowState.Pursuit;
+                return PoliceTaskFlowState.None;
+            }
+        }
     }
 
     /// <summary>警察家族统计工具</summary>
@@ -94,8 +106,8 @@ namespace GreyWardenPolicePurity
         {
             get
             {
-                if (_pool.Any(c => c.IsOffenderValid() && c.Offender.IsMainParty)) return true;
-                if (_tasks.Values.Any(t => t.IsTargetValid() && t.TargetCrime.Offender.IsMainParty)) return true;
+                if (_pool.Any(c => c.Offender?.IsMainParty == true && c.IsOffenderValid())) return true;
+                if (_tasks.Values.Any(t => t.TargetCrime?.Offender?.IsMainParty == true && t.IsTargetValid())) return true;
                 return false;
             }
         }
@@ -199,7 +211,7 @@ namespace GreyWardenPolicePurity
             foreach (var c in _pool)
             {
                 if (!c.IsOffenderPursuable()) continue;
-                float d = pos.Distance(c.Offender.GetPosition2D);
+                float d = pos.Distance(c.Offender!.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
             }
             return best;
@@ -212,7 +224,7 @@ namespace GreyWardenPolicePurity
             foreach (var c in _pool)
             {
                 if (!c.IsOffenderPursuable()) continue;
-                if (c.Offender.IsMainParty) continue;
+                if (c.Offender!.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
             }
@@ -228,7 +240,7 @@ namespace GreyWardenPolicePurity
             foreach (var c in _pool)
             {
                 if (!c.IsOffenderPursuable()) continue;
-                if (c.Offender.IsMainParty) continue;
+                if (c.Offender!.IsMainParty) continue;
                 float d = pos.Distance(c.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = c; }
             }
@@ -236,7 +248,7 @@ namespace GreyWardenPolicePurity
             {
                 var crime = task.TargetCrime;
                 if (crime == null || !crime.IsOffenderPursuable()) continue;
-                if (crime.Offender.IsMainParty) continue;
+                if (crime.Offender!.IsMainParty) continue;
                 float d = pos.Distance(crime.Offender.GetPosition2D);
                 if (d < bestDist) { bestDist = d; best = crime; }
             }
@@ -274,10 +286,10 @@ namespace GreyWardenPolicePurity
         {
             if (partyStringId == null) return null;
             foreach (var c in _pool)
-                if (c.IsOffenderValid() && c.Offender.StringId == partyStringId) return c;
+                if (c.IsOffenderValid() && c.Offender!.StringId == partyStringId) return c;
             foreach (var task in _tasks.Values)
                 if (task.TargetCrime?.IsOffenderValid() == true &&
-                    task.TargetCrime.Offender.StringId == partyStringId) return task.TargetCrime;
+                    task.TargetCrime.Offender!.StringId == partyStringId) return task.TargetCrime;
             return null;
         }
 
@@ -333,7 +345,7 @@ namespace GreyWardenPolicePurity
             // 移除旧的玩家追捕任务（若存在）
             string? oldPlayerTaskPartyId = GetPlayerTaskPolicePartyId();
             if (!string.IsNullOrEmpty(oldPlayerTaskPartyId))
-                _tasks.Remove(oldPlayerTaskPartyId);
+                _tasks.Remove(oldPlayerTaskPartyId!);
 
             // 指定部队已有非玩家任务时，案件归池（避免丢案）
             if (_tasks.TryGetValue(policePartyId, out PoliceTask displacedTask))

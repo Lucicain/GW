@@ -112,7 +112,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 显示犯罪消息
         /// </summary>
-        private void Report(string type, MobileParty offender, string victimName, Vec2 location, string extra = null)
+        private void Report(string type, MobileParty offender, string victimName, Vec2 location, string? extra = null)
         {
             string offenderName = offender?.Name?.ToString() ?? "Unknown";
             string extraInfo = string.IsNullOrEmpty(extra) ? "" : $" | {extra}";
@@ -127,9 +127,9 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 找到正在劫掠村庄的队伍
         /// </summary>
-        private MobileParty FindRaidingParty(Village village)
+        private MobileParty? FindRaidingParty(Village village)
         {
-            Settlement target = village?.Settlement;
+            Settlement? target = village?.Settlement;
             if (target == null) return null;
 
             foreach (MobileParty p in MobileParty.All)

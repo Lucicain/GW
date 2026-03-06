@@ -19,6 +19,9 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PlayerBehaviorMonitor : CampaignBehaviorBase
     {
+        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+
         // 运行时（无需持久化）：记录战斗开始时敌方部队总人数，用于声望缩放计算
         private int _pendingEnemyCount = 0;
 
@@ -61,54 +64,12 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
-            PlayerBehaviorPool.ClearAll();
-            CrimePool.ClearAll();
+            GwpRuntimeState.ResetForNewGame();
         }
 
         public override void SyncData(IDataStore dataStore)
         {
-            if (dataStore.IsSaving)
-            {
-                int reputation = PlayerBehaviorPool.Reputation;
-                dataStore.SyncData("gwp_reputation", ref reputation);
-
-                List<string> victimFactionIds = PlayerBehaviorPool.VictimFactions
-                    .Where(f => f != null)
-                    .Select(f => f.StringId)
-                    .ToList();
-                int victimCount = victimFactionIds.Count;
-                dataStore.SyncData("gwp_victim_count", ref victimCount);
-                for (int i = 0; i < victimFactionIds.Count; i++)
-                {
-                    string factionId = victimFactionIds[i];
-                    dataStore.SyncData($"gwp_victim_{i}", ref factionId);
-                }
-            }
-            else if (dataStore.IsLoading)
-            {
-                // 先清空（包括上次会话残留），再读档，防止跨存档联动 bug
-                // 注意：CrimePool 已由 PoliceEnforcementBehavior.SyncData()（先执行）恢复，
-                // 此处不再调用 CrimePool.ClearAll()，否则会销毁刚恢复的数据。
-                PlayerBehaviorPool.ClearAll();
-
-                int reputation = 0;
-                dataStore.SyncData("gwp_reputation", ref reputation);
-                PlayerBehaviorPool.ResetReputation(reputation);
-
-                int victimCount = 0;
-                dataStore.SyncData("gwp_victim_count", ref victimCount);
-                for (int i = 0; i < victimCount; i++)
-                {
-                    string factionId = "";
-                    dataStore.SyncData($"gwp_victim_{i}", ref factionId);
-                    if (!string.IsNullOrEmpty(factionId))
-                    {
-                        IFaction faction = Kingdom.All.FirstOrDefault(k => k.StringId == factionId);
-                        if (faction != null)
-                            PlayerBehaviorPool.AddVictimFactionOnLoad(faction);
-                    }
-                }
-            }
+            GwpRuntimeState.SyncPlayerBehaviorData(dataStore);
         }
 
         #region 犯罪监听
@@ -148,7 +109,7 @@ namespace GreyWardenPolicePurity
                 string victimName = defender.Name?.ToString() ?? "村民";
                 IFaction victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerBehaviorPool.AddCrimeRecord("攻击村民", location, victimName, victimFaction);
+                PlayerState.AddCrimeRecord("攻击村民", location, victimName, victimFaction);
                 return;
             }
 
@@ -157,7 +118,7 @@ namespace GreyWardenPolicePurity
                 string victimName = defender.Name?.ToString() ?? "商队";
                 IFaction victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerBehaviorPool.AddCrimeRecord("攻击商队", location, victimName, victimFaction);
+                PlayerState.AddCrimeRecord("攻击商队", location, victimName, victimFaction);
             }
         }
 
@@ -172,19 +133,19 @@ namespace GreyWardenPolicePurity
             IFaction victimFaction = village.Settlement.MapFaction;
 
             // ★ 功能 4A：劫掠村庄固定扣 -2 声望（无论村庄有无防守者）
-            PlayerBehaviorPool.ChangeReputation(-2);
+            PlayerState.ChangeReputation(-2);
 
             // 若已进入通缉状态，立即触发警察追捕
-            if (PlayerBehaviorPool.IsWanted)
-                CrimePool.TryAddPlayerCrime("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄");
+            if (PlayerState.IsWanted)
+                CrimeState.TryAddPlayerCrime("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄");
 
             InformationManager.DisplayMessage(new InformationMessage(
                 $"灰袍守卫记录了你的恶行：劫掠村庄 {village.Name} | " +
-                $"{PlayerBehaviorPool.GetReputationDisplay()} (-2)",
+                $"{PlayerState.GetReputationDisplay()} (-2)",
                 Colors.Red));
 
             // 记录犯罪历史（供受害势力追踪等后续逻辑使用）
-            PlayerBehaviorPool.AddCrimeRecord("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄", victimFaction);
+            PlayerState.AddCrimeRecord("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄", victimFaction);
         }
 
         private void OnForceVolunteers(BattleSideEnum side, ForceVolunteersEventComponent component)
@@ -203,7 +164,7 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerBehaviorPool.AddCrime("强迫募兵", settlement.Position.ToVec2(),
+            PlayerState.AddCrime("强迫募兵", settlement.Position.ToVec2(),
                 settlement.Name?.ToString() ?? "未知村庄", settlement.MapFaction);
         }
 
@@ -223,7 +184,7 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerBehaviorPool.AddCrime("强征给养", settlement.Position.ToVec2(),
+            PlayerState.AddCrime("强征给养", settlement.Position.ToVec2(),
                 settlement.Name?.ToString() ?? "未知村庄", settlement.MapFaction);
         }
 
@@ -277,7 +238,7 @@ namespace GreyWardenPolicePurity
                 int enemyCount = Math.Max(1, _pendingEnemyCount); // 无法记录时保底+1
                 int repGain    = (enemyCount + 9) / 10;           // 向上取整
 
-                PlayerBehaviorPool.ChangeReputation(repGain);
+                PlayerState.ChangeReputation(repGain);
 
                 string deedType = defenderIsVillageRaid ? "保护村庄免遭劫掠"
                                 : defenderIsCaravan     ? "解救商队"
@@ -285,7 +246,7 @@ namespace GreyWardenPolicePurity
                                 : "击败劫匪";
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"灰袍守卫注意到你的善行：{deedType}（击败 {enemyCount} 人）| " +
-                    $"{PlayerBehaviorPool.GetReputationDisplay()} (+{repGain})",
+                    $"{PlayerState.GetReputationDisplay()} (+{repGain})",
                     Colors.Green));
             }
 
@@ -327,17 +288,17 @@ namespace GreyWardenPolicePurity
                 int repLoss   = (killCount + 9) / 10; // 向上取整；killCount=0 → repLoss=0
                 if (repLoss > 0)
                 {
-                    PlayerBehaviorPool.ChangeReputation(-repLoss);
+                    PlayerState.ChangeReputation(-repLoss);
 
                     // 若已进入通缉状态，触发警察追捕
-                    if (PlayerBehaviorPool.IsWanted)
+                    if (PlayerState.IsWanted)
                     {
                         string crimeType = playerRaidedVillage    ? "劫掠村庄"
                                          : playerForcedVolunteers ? "强迫募兵"
                                          : playerForcedSupplies   ? "强征给养"
                                          : loserIsCaravan         ? "劫掠商队"
                                          : "杀害村民";
-                        CrimePool.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
+                        CrimeState.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
                     }
 
                     string badDeedType = playerRaidedVillage    ? "劫掠村庄"
@@ -347,7 +308,7 @@ namespace GreyWardenPolicePurity
                                        : "杀害村民";
                     InformationManager.DisplayMessage(new InformationMessage(
                         $"灰袍守卫记录了你的恶行：{badDeedType}（击败 {killCount} 人）| " +
-                        $"{PlayerBehaviorPool.GetReputationDisplay()} (-{repLoss})",
+                        $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                         Colors.Red));
                 }
             }
