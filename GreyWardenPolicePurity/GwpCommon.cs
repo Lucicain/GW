@@ -25,6 +25,15 @@ namespace GreyWardenPolicePurity
             return party?.StringId?.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) == true;
         }
 
+        public static bool IsGreyWardenLord(Hero? hero)
+        {
+            if (hero?.Clan == null)
+                return false;
+
+            return string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase)
+                   && hero.Occupation == Occupation.Lord;
+        }
+
         public static Settlement? FindNearestTown(MobileParty? party)
         {
             return party == null ? null : FindNearestTown(party.GetPosition2D);

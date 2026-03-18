@@ -26,6 +26,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new PolicePatrolBehavior());
             starter.AddBehavior(new PlayerBountyBehavior());
             starter.AddBehavior(new GreyWardenLoreBehavior());
+            starter.AddBehavior(new GreyWardenTroopRequestBehavior());
         }
 
         // 不在此处过滤 IsFieldBattle，因为该属性在 OnMissionBehaviorInitialize

@@ -8,9 +8,10 @@
                 name="灰袍守护者轻步兵"
                 occupation="Soldier"
                 is_basic_troop="true"
+                is_female="true"
                 culture="Culture.empire">
     <face>
-      <face_key_template value="BodyProperty.fighter_empire" />
+      <face_key_template value="BodyProperty.townswoman_empire" />
     </face>
     <skills>
       <skill id="Athletics"
@@ -60,9 +61,10 @@
                 level="26"
                 name="灰袍守护者重步兵"
                 occupation="Soldier"
+                is_female="true"
                 culture="Culture.empire">
     <face>
-      <face_key_template value="BodyProperty.fighter_empire" />
+      <face_key_template value="BodyProperty.townswoman_empire" />
     </face>
     <skills>
       <skill id="Athletics"
@@ -115,9 +117,10 @@
                 level="26"
                 name="灰袍守护者弓箭手"
                 occupation="Soldier"
+                is_female="true"
                 culture="Culture.empire">
     <face>
-      <face_key_template value="BodyProperty.fighter_empire" />
+      <face_key_template value="BodyProperty.townswoman_empire" />
     </face>
     <skills>
       <skill id="Athletics"
@@ -172,9 +175,10 @@
                 level="31"
                 name="灰袍守护者骑士"
                 occupation="Soldier"
+                is_female="true"
                 culture="Culture.empire">
     <face>
-      <face_key_template value="BodyProperty.fighter_empire" />
+      <face_key_template value="BodyProperty.townswoman_empire" />
     </face>
     <skills>
       <skill id="Athletics"

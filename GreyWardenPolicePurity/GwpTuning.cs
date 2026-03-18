@@ -12,6 +12,19 @@ namespace GreyWardenPolicePurity
             public const int RecruitmentPatrolSize = 20;
         }
 
+        internal static class TroopRequest
+        {
+            public const int MinimumReputation = 20;
+            public const int VeteranReputation = 40;
+            public const int KnightReputation = 60;
+            public const int EliteDiscountReputation = 80;
+
+            public const int RecruitBasePrice = 120;
+            public const int HeavyInfantryBasePrice = 260;
+            public const int ArcherBasePrice = 280;
+            public const int KnightBasePrice = 750;
+        }
+
         internal static class Enforcement
         {
             public const float WarDistance = 3f;
