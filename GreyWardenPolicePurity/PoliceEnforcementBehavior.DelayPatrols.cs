@@ -587,6 +587,7 @@ namespace GreyWardenPolicePurity
                 if (police == null || !police.IsActive) continue;
                 if (GwpCommon.IsPatrolParty(police)) continue;
                 if (GwpCommon.IsEnforcementDelayPatrolParty(police)) continue;
+                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(police)) continue;
                 if (police.LeaderHero == null || !police.LeaderHero.IsActive) continue;
 
                 PoliceTask task = CrimeState.GetTask(police.StringId);

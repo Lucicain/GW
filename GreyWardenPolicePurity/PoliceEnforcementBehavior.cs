@@ -354,6 +354,7 @@ namespace GreyWardenPolicePurity
             foreach (var pp in PoliceStats.GetAllPoliceParties())
             {
                 if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
+                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) continue;
                 // ★ 兜底：跳过无首领或首领失效的部队（防止因纠察队/英雄失效导致无首领部队接任务）
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive) continue;
                 if (CrimeState.HasTask(pp.StringId)) continue;
