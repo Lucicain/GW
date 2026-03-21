@@ -27,6 +27,7 @@ namespace GreyWardenPolicePurity
         private const int DailyGoldPerMember = 1000;
         private const int FoodDaysTarget = 15;
         private const int EquipmentSlotCount = 12;
+        private const int TroopsPerShip = 50;
         // 正在补给中的警察部队ID
         private static readonly HashSet<string> _resupplying = new HashSet<string>();
 
@@ -65,6 +66,7 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
@@ -99,7 +101,16 @@ namespace GreyWardenPolicePurity
 
         #region 每日发薪 + 建队
 
-        private void OnGameLoaded(CampaignGameStarter starter) => SpawnIdleHeroes();
+        private void OnGameLoaded(CampaignGameStarter starter)
+        {
+            SpawnIdleHeroes();
+            EnsurePoliceClanShips();
+        }
+
+        private void OnSessionLaunched(CampaignGameStarter starter)
+        {
+            EnsurePoliceClanShips();
+        }
 
         private void OnDailyTick()
         {
@@ -114,6 +125,7 @@ namespace GreyWardenPolicePurity
 
             PaySalaries();
             SpawnIdleHeroes();
+            EnsurePoliceClanShips();
         }
 
         private void SpawnIdleHeroes()
@@ -259,6 +271,7 @@ namespace GreyWardenPolicePurity
                 ReleasePrisoners(police);
                 ReplenishTroops(police);
                 ReplenishFood(police);
+                GivePoliceShips(police);
             }
             catch (Exception ex)
             {
@@ -361,15 +374,25 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 给警察部队按人数比例配发初始船只（每100人1艘，最少1艘；无 NavalDLC 则静默跳过）
+        /// 按当前兵力为警察部队补足船只数量。
+        /// 规则：每 50 人 1 艘，向上取整，最少 1 艘。
+        /// 无 NavalDLC 时静默跳过，不报错。
         /// </summary>
         internal static void GivePoliceShips(MobileParty party)
         {
             if (!_navalDlcLoaded) return;
             try
             {
-                // 按部队规模计算船数：每50人配1艘，最少1艘
-                int count = Math.Max(1, party.MemberRoster.TotalManCount / 50);
+                if (party == null || !party.IsActive || party.Party == null) return;
+
+                int requiredCount = GetRequiredShipCount(party);
+                int currentCount = party.Ships?.Count ?? 0;
+                int missingCount = requiredCount - currentCount;
+                if (missingCount <= 0)
+                {
+                    party.SetNavalVisualAsDirty();
+                    return;
+                }
 
                 // 优先 dromon（中型战船），其次 liburna（轻型战舰），最后随机
                 ShipHull? hull = Kingdom.All
@@ -380,7 +403,7 @@ namespace GreyWardenPolicePurity
                     ?? Kingdom.All.SelectMany(k => k.Culture.AvailableShipHulls)
                                   .FirstOrDefault();
                 if (hull == null) return;
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < missingCount; i++)
                 {
                     Ship ship = new Ship(hull);
                     ChangeShipOwnerAction.ApplyByMobilePartyCreation(party.Party, ship);
@@ -394,6 +417,22 @@ namespace GreyWardenPolicePurity
         {
             if (police.PrisonRoster.TotalManCount > 0)
                 police.PrisonRoster.Clear();
+        }
+
+        private static int GetRequiredShipCount(MobileParty party)
+        {
+            int troopCount = Math.Max(1, party?.MemberRoster?.TotalManCount ?? 0);
+            return Math.Max(1, (troopCount + TroopsPerShip - 1) / TroopsPerShip);
+        }
+
+        private static void EnsurePoliceClanShips()
+        {
+            if (!_navalDlcLoaded) return;
+
+            foreach (MobileParty party in PoliceStats.GetAllPoliceParties())
+            {
+                GivePoliceShips(party);
+            }
         }
 
         #endregion
