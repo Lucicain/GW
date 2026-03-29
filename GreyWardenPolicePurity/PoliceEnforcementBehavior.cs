@@ -614,6 +614,7 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
+                    PoliceAIDeterrenceBehavior.RegisterEnforcementVictoryAgainst(activeOffender);
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);

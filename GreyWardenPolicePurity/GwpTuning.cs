@@ -53,5 +53,19 @@ namespace GreyWardenPolicePurity
             public const int AdoptedGirlMinAge = 2;
             public const int AdoptedGirlMaxAge = 6;
         }
+
+        internal static class Deterrence
+        {
+            public const float RaidPenaltyPerCapture = 1f;
+            public const float RaidPenaltyCap = 4f;
+            public const float RaidScoreMultiplierPerPoint = 0.65f;
+            public const float RaidScoreMultiplierFloor = 0.12f;
+            public const float BaseRecoveryPerDay = 0.18f;
+            public const float MinRecoveryPerDay = 0.08f;
+            public const float MaxRecoveryPerDay = 0.35f;
+            public const float ActiveDialogueThreshold = 0.25f;
+            public const float ForgetThreshold = 0.05f;
+            public const float CleanupGraceDays = 3f;
+        }
     }
 }

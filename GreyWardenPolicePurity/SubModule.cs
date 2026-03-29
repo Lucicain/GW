@@ -18,8 +18,10 @@ namespace GreyWardenPolicePurity
         {
             starter.AddModel(new PoliceAntiRecruitmentModel());
             starter.AddModel(new PoliceMarriageModel());
+            starter.AddModel(new PoliceRaidDeterrenceModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
+            starter.AddBehavior(new PoliceAIDeterrenceBehavior());
             starter.AddBehavior(new PoliceEnforcementBehavior());
             starter.AddBehavior(new PoliceResourceManager());
             starter.AddBehavior(new PlayerBehaviorMonitor());
