@@ -248,11 +248,6 @@ namespace GreyWardenPolicePurity
                     party.Ai.SetDoNotMakeNewDecisions(true);
                     party.SetMoveGoToSettlement(nearestTown, NavigationType.Default, false);
                 }
-                else
-                {
-                    DoResupply(party);
-                    toFinish.Add(partyId);
-                }
             }
 
             foreach (string id in toFinish)
@@ -268,7 +263,7 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                ReleasePrisoners(police);
+                ReleasePrisoners(police, police.CurrentSettlement);
                 ReplenishTroops(police);
                 ReplenishFood(police);
                 GivePoliceShips(police);
@@ -374,8 +369,10 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 按当前兵力为警察部队补足船只数量。
+        /// 按当前兵力为警察部队重建船只配置。
         /// 规则：每 50 人 1 艘，向上取整，最少 1 艘。
+        /// 每次都清掉现有船，只保留同数量的重型船。
+        /// 不安装任何升级件，也不挂船首像。
         /// 无 NavalDLC 时静默跳过，不报错。
         /// </summary>
         internal static void GivePoliceShips(MobileParty party)
@@ -386,43 +383,84 @@ namespace GreyWardenPolicePurity
                 if (party == null || !party.IsActive || party.Party == null) return;
 
                 int requiredCount = GetRequiredShipCount(party);
-                int currentCount = party.Ships?.Count ?? 0;
-                int missingCount = requiredCount - currentCount;
-                if (missingCount <= 0)
+                ShipHull? hull = ResolvePreferredHeavyHull();
+                if (hull == null) return;
+
+                List<Ship> existingShips = party.Ships?.ToList() ?? new List<Ship>();
+                foreach (Ship ship in existingShips)
                 {
-                    party.SetNavalVisualAsDirty();
-                    return;
+                    DestroyShipAction.ApplyByDiscard(ship);
                 }
 
-                // 优先 dromon（中型战船），其次 liburna（轻型战舰），最后随机
-                ShipHull? hull = Kingdom.All
-                    .SelectMany(k => k.Culture.AvailableShipHulls)
-                    .FirstOrDefault(h => h.StringId == "dromon")
-                    ?? Kingdom.All.SelectMany(k => k.Culture.AvailableShipHulls)
-                                  .FirstOrDefault(h => h.StringId == "liburna")
-                    ?? Kingdom.All.SelectMany(k => k.Culture.AvailableShipHulls)
-                                  .FirstOrDefault();
-                if (hull == null) return;
-                for (int i = 0; i < missingCount; i++)
+                for (int i = 0; i < requiredCount; i++)
                 {
                     Ship ship = new Ship(hull);
                     ChangeShipOwnerAction.ApplyByMobilePartyCreation(party.Party, ship);
                 }
+
                 party.SetNavalVisualAsDirty();
             }
             catch { }
         }
 
-        private static void ReleasePrisoners(MobileParty police)
+        private static void ReleasePrisoners(MobileParty police, Settlement? settlement)
         {
+            if (police == null || police.PrisonRoster.TotalManCount <= 0)
+                return;
+
+            if (settlement?.Party == null)
+                return;
+
+            foreach (TroopRosterElement prisoner in police.PrisonRoster.GetTroopRoster().ToList())
+            {
+                CharacterObject? character = prisoner.Character;
+                if (character?.HeroObject == null) continue;
+
+                TransferPrisonerAction.Apply(character, police.Party, settlement.Party);
+            }
+
             if (police.PrisonRoster.TotalManCount > 0)
-                police.PrisonRoster.Clear();
+                SellPrisonersAction.ApplyForAllPrisoners(police.Party, settlement.Party);
         }
 
         private static int GetRequiredShipCount(MobileParty party)
         {
             int troopCount = Math.Max(1, party?.MemberRoster?.TotalManCount ?? 0);
             return Math.Max(1, (troopCount + TroopsPerShip - 1) / TroopsPerShip);
+        }
+
+        private static ShipHull? ResolvePreferredHeavyHull()
+        {
+            List<ShipHull> hulls = Kingdom.All
+                .SelectMany(k => k.Culture.AvailableShipHulls)
+                .Where(h => h != null)
+                .GroupBy(h => h.StringId, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            string[] preferredIds =
+            {
+                "sturgia_heavy_ship",
+                "vlandia_heavy_ship",
+                "empire_heavy_ship",
+                "aserai_heavy_ship",
+                "ship_meditheavy_storyline"
+            };
+
+            foreach (string preferredId in preferredIds)
+            {
+                ShipHull? preferred = hulls.FirstOrDefault(h =>
+                    string.Equals(h.StringId, preferredId, StringComparison.OrdinalIgnoreCase));
+                if (preferred != null)
+                    return preferred;
+            }
+
+            ShipHull? fallbackHeavy = hulls.FirstOrDefault(h =>
+                string.Equals(h.Type.ToString(), "heavy", StringComparison.OrdinalIgnoreCase));
+            if (fallbackHeavy != null)
+                return fallbackHeavy;
+
+            return null;
         }
 
         private static void EnsurePoliceClanShips()

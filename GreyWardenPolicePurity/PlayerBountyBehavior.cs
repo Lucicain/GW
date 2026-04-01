@@ -154,8 +154,68 @@ namespace GreyWardenPolicePurity
 
         #region 招募使者部队
 
+        private List<MobileParty> GetActiveRecruitmentPatrols() =>
+            MobileParty.All
+                .Where(p => p != null && p.IsActive && IsRecruitmentPatrol(p))
+                .ToList();
+
+        private void ReconcileRecruitmentPatrolState()
+        {
+            List<MobileParty> patrols = GetActiveRecruitmentPatrols();
+            if (patrols.Count == 0)
+            {
+                _recruitmentPatrolId = null!;
+                _recruitmentPatrolOrigin = null!;
+                _recruitmentPatrolReturning = false;
+                return;
+            }
+
+            MobileParty trackedPatrol = null!;
+            if (!string.IsNullOrEmpty(_recruitmentPatrolId))
+                trackedPatrol = patrols.FirstOrDefault(p => p.StringId == _recruitmentPatrolId);
+
+            trackedPatrol ??= patrols[0];
+            _recruitmentPatrolId = trackedPatrol.StringId;
+            _recruitmentPatrolOrigin ??= FindNearestTown(trackedPatrol.GetPosition2D);
+
+            if ((_recruitmentOffered || _recruitmentAccepted) && !_recruitmentPatrolReturning)
+                _recruitmentPatrolReturning = true;
+        }
+
+        private Settlement GetRecruitmentPatrolReturnTarget(MobileParty patrol)
+        {
+            if (patrol == null) return null!;
+
+            if (!string.IsNullOrEmpty(_recruitmentPatrolId) &&
+                patrol.StringId == _recruitmentPatrolId &&
+                _recruitmentPatrolOrigin != null)
+            {
+                return _recruitmentPatrolOrigin;
+            }
+
+            return FindNearestTown(patrol.GetPosition2D);
+        }
+
+        private void DestroyRecruitmentPatrolParty(MobileParty patrol)
+        {
+            if (patrol != null && patrol.IsActive)
+            {
+                try { DestroyPartyAction.Apply(null, patrol); } catch { }
+            }
+
+            if (patrol != null && patrol.StringId == _recruitmentPatrolId)
+            {
+                _recruitmentPatrolId = null!;
+                _recruitmentPatrolOrigin = null!;
+                _recruitmentPatrolReturning = false;
+            }
+        }
+
         private void SpawnRecruitmentPatrol()
         {
+            ReconcileRecruitmentPatrolState();
+            if (GetActiveRecruitmentPatrols().Count > 0) return;
+
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
 
@@ -210,56 +270,54 @@ namespace GreyWardenPolicePurity
 
         private void UpdateRecruitmentPatrol()
         {
-            if (_recruitmentPatrolId == null) return;
+            ReconcileRecruitmentPatrolState();
+            List<MobileParty> patrols = GetActiveRecruitmentPatrols();
+            if (patrols.Count == 0) return;
 
-            var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == _recruitmentPatrolId);
-            if (patrol == null || !patrol.IsActive)
-            {
-                _recruitmentPatrolId = null!;
-                _recruitmentPatrolReturning = false;
-                return;
-            }
-
-            // ── 返回阶段（招募已结束或粮草耗尽）────────────────────────────────────
-            if (_recruitmentPatrolReturning)
-            {
-                Settlement target = _recruitmentPatrolOrigin ?? FindNearestTown(patrol.GetPosition2D);
-                if (target == null)
-                {
-                    // 找不到目标，直接销毁
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
-                    _recruitmentPatrolId = null!;
-                    _recruitmentPatrolReturning = false;
-                    return;
-                }
-
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
-
-                float dist = patrol.GetPosition2D.Distance(target.GetPosition2D);
-                if (dist < 3f)
-                {
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
-                    _recruitmentPatrolId = null!;
-                    _recruitmentPatrolReturning = false;
-                }
-                return;
-            }
-
-            // ── 触发返回的条件 ───────────────────────────────────────────────────────
-            // 招募已结束或粮草耗尽 → 立刻切换为返回状态并下达移动命令
-            if (_recruitmentOffered || patrol.ItemRoster.TotalFood <= 0)
-            {
-                // TriggerPatrolReturn 已在 Consequence 中提前调用，这里只是 hourly tick 的兜底
-                if (!_recruitmentPatrolReturning)
-                    TriggerPatrolReturn();
-                return;
-            }
-
-            // ── 正常追踪阶段 ─────────────────────────────────────────────────────────
             MobileParty player = MobileParty.MainParty;
-            if (player != null && player.IsActive)
-                patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+            foreach (MobileParty patrol in patrols)
+            {
+                bool isTrackedPatrol = !string.IsNullOrEmpty(_recruitmentPatrolId) &&
+                                       patrol.StringId == _recruitmentPatrolId;
+
+                bool shouldReturn = _recruitmentPatrolReturning ||
+                                    _recruitmentOffered ||
+                                    _recruitmentAccepted ||
+                                    patrol.ItemRoster.TotalFood <= 0 ||
+                                    !isTrackedPatrol;
+
+                if (shouldReturn)
+                {
+                    if (isTrackedPatrol &&
+                        !_recruitmentPatrolReturning &&
+                        (_recruitmentOffered || _recruitmentAccepted || patrol.ItemRoster.TotalFood <= 0))
+                    {
+                        _recruitmentPatrolReturning = true;
+                    }
+
+                    Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
+                    if (target == null)
+                    {
+                        DestroyRecruitmentPatrolParty(patrol);
+                        continue;
+                    }
+
+                    patrol.Ai.SetDoNotMakeNewDecisions(true);
+                    patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+
+                    float dist = patrol.GetPosition2D.Distance(target.GetPosition2D);
+                    if (dist < 3f)
+                        DestroyRecruitmentPatrolParty(patrol);
+
+                    continue;
+                }
+
+                if (player != null && player.IsActive)
+                {
+                    patrol.Ai.SetDoNotMakeNewDecisions(true);
+                    patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+                }
+            }
         }
 
         /// <summary>
@@ -269,25 +327,26 @@ namespace GreyWardenPolicePurity
         private void TriggerPatrolReturn()
         {
             _recruitmentPatrolReturning = true;
-            if (_recruitmentPatrolId == null) return;
+            ReconcileRecruitmentPatrolState();
 
-            var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == _recruitmentPatrolId);
-            if (patrol == null || !patrol.IsActive) return;
+            foreach (MobileParty patrol in GetActiveRecruitmentPatrols())
+            {
+                Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
+                if (target == null) continue;
 
-            Settlement target = _recruitmentPatrolOrigin ?? FindNearestTown(patrol.GetPosition2D);
-            if (target == null) return;
-
-            patrol.Ai.SetDoNotMakeNewDecisions(true);
-            patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+                patrol.Ai.SetDoNotMakeNewDecisions(true);
+                patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+            }
         }
 
         private void DestroyRecruitmentPatrol()
         {
-            if (_recruitmentPatrolId == null) return;
-            var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == _recruitmentPatrolId);
-            if (patrol != null && patrol.IsActive)
-                try { DestroyPartyAction.Apply(null, patrol); } catch { }
+            foreach (MobileParty patrol in GetActiveRecruitmentPatrols())
+                DestroyRecruitmentPatrolParty(patrol);
+
             _recruitmentPatrolId = null!;
+            _recruitmentPatrolOrigin = null!;
+            _recruitmentPatrolReturning = false;
         }
 
         private bool IsRecruitmentPatrol(MobileParty party) =>
@@ -508,10 +567,11 @@ namespace GreyWardenPolicePurity
             // 声望达标且尚未招募过 → 生成招募使者
             if (!_recruitmentOffered &&
                 !_recruitmentAccepted &&
-                _recruitmentPatrolId == null &&
                 PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
             {
-                SpawnRecruitmentPatrol();
+                ReconcileRecruitmentPatrolState();
+                if (_recruitmentPatrolId == null)
+                    SpawnRecruitmentPatrol();
             }
 
             // 有活跃悬赏任务时，验证目标是否仍在地图上

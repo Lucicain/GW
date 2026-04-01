@@ -1,0 +1,45 @@
+<Prefab>
+  <Window>
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+      <Children>
+
+        <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="1040" SuggestedHeight="520" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="Frame1Brush">
+          <Children>
+
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="56" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="26" Brush="Encyclopedia.Title" Text="@Title" />
+
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="840" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="104" Brush="Encyclopedia.Text" Text="@Description" />
+
+            <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="640" SuggestedHeight="64" HorizontalAlignment="Center" VerticalAlignment="Center" PositionYOffset="-8">
+              <Children>
+                <Standard.Slider WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="430" HorizontalAlignment="Center" VerticalAlignment="Center" Parameter.ValueInt="@SelectedAmount" Parameter.MinValue="0" Parameter.MaxValue="@MaxAmount" Parameter.IsDiscrete="true" Parameter.InnerCanvasSprite="SPGeneral\SPOptions\standart_slider_canvas" Parameter.FillSprite="SPGeneral\SPOptions\standart_slider_fill" Parameter.HandleBrush="SPOptions.Slider.Handle" Parameter.FrameBrush="Slider" />
+              </Children>
+            </Widget>
+
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" PositionYOffset="78" Brush="Order.TransferPopup.SliderValue" Text="@SelectionText" />
+
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="HorizontalSpaced" HorizontalAlignment="Center" VerticalAlignment="Bottom" MarginLeft="80" MarginRight="80" MarginBottom="30">
+              <Children>
+
+                <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="60" Brush="ButtonBrush3" Command.Click="ExecuteCancel">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@CancelText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />
+                  </Children>
+                </ButtonWidget>
+
+                <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="60" Brush="ButtonBrush1" Command.Click="ExecuteConfirm">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@ConfirmText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />
+                  </Children>
+                </ButtonWidget>
+
+              </Children>
+            </ListPanel>
+
+          </Children>
+        </BrushWidget>
+
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>

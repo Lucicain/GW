@@ -30,6 +30,10 @@ namespace GreyWardenPolicePurity
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
             public const int ShelteredForceBattleIntervalHours = 6;
+            public const float ShelteredForceBattleDistance = 1.5f;
+            public const float ShelteredGateDistance = 3f;
+            public const int ShelteredGateHoldHours = 1;
+            public const float ShelteredGateStopTolerance = 0.35f;
             public const float EscortPunishDistance = 3f;
             public const float AtonementIntelReportIntervalDays = 2f;
             public const float AtonementDeadlineDays = 45f;
@@ -52,6 +56,25 @@ namespace GreyWardenPolicePurity
             public const float VillageReliefArrivalDistance = 3f;
             public const int AdoptedGirlMinAge = 2;
             public const int AdoptedGirlMaxAge = 6;
+        }
+
+        internal static class VillageReward
+        {
+            public const int DenarsPerReputationPerDay = 10;
+        }
+
+        internal static class Deterrence
+        {
+            public const float RaidPenaltyCap = 9f;
+            public const float MaxPenaltyGainPerCapture = 9f;
+            public const float RaidScoreMultiplierPerPoint = 0.65f;
+            public const float RaidScoreMultiplierFloor = 0f;
+            public const float BaseRecoveryPerDay = 0.09f;
+            public const float MinRecoveryPerDay = 0.04f;
+            public const float MaxRecoveryPerDay = 0.175f;
+            public const float ActiveDialogueThreshold = 0.25f;
+            public const float ForgetThreshold = 0.05f;
+            public const float CleanupGraceDays = 3f;
         }
     }
 }

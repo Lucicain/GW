@@ -35,6 +35,12 @@ namespace GreyWardenPolicePurity
         private float _atonementDeadlineHours = 0f;
         private readonly Dictionary<string, int> _shelteredTargetHoursByTaskId =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Vec2> _shelteredPoliceLastPositionByTaskId =
+            new Dictionary<string, Vec2>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, int> _shelteredPoliceStoppedHoursByTaskId =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _ignoredInvalidShelteredBattlePartyIds =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private AtonementFlowState CurrentAtonementState =>
             _atonementWaitingForTurnIn
@@ -82,6 +88,9 @@ namespace GreyWardenPolicePurity
                 if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
                     _warStatusCheckDayCounter = 0;
                 _shelteredTargetHoursByTaskId.Clear();
+                _shelteredPoliceLastPositionByTaskId.Clear();
+                _shelteredPoliceStoppedHoursByTaskId.Clear();
+                _ignoredInvalidShelteredBattlePartyIds.Clear();
                 _enforcementAtonementAssigned = false;
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
@@ -343,6 +352,7 @@ namespace GreyWardenPolicePurity
             UpdateAtonementTask();
             EnsureDelayPatrolStateForActiveParties();
             UpdateDelayPatrols();
+            BreakInvalidShelteredBattles();
             CrimeState.Clean();
             AssignTasks();
             UpdateTasks();
@@ -351,8 +361,14 @@ namespace GreyWardenPolicePurity
 
         private void AssignTasks()
         {
+            if (!CrimeState.IsDispatchReady)
+                return;
+
             foreach (var pp in PoliceStats.GetAllPoliceParties())
             {
+                if (!CrimeState.IsDispatchReady)
+                    break;
+
                 if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
                 if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) continue;
                 // ★ 兜底：跳过无首领或首领失效的部队（防止因纠察队/英雄失效导致无首领部队接任务）
@@ -579,8 +595,11 @@ namespace GreyWardenPolicePurity
                 }
 
                 if (!InEvent(pp, mapEvent)) continue;
+                if (_ignoredInvalidShelteredBattlePartyIds.Remove(pp.StringId))
+                    continue;
                 MobileParty? activeOffender = task.TargetCrime?.Offender;
-                if (activeOffender == null || !InEvent(activeOffender, mapEvent)) continue;
+                bool playerOffender = task.TargetCrime?.Offender?.IsMainParty == true;
+                if (playerOffender && (activeOffender == null || !InEvent(activeOffender, mapEvent))) continue;
 
                 bool policeWon = IsOnWinningSide(pp, mapEvent);
 
@@ -591,7 +610,7 @@ namespace GreyWardenPolicePurity
                     // IsPlayerCrime 内部调用 IsOffenderValid() → Offender.IsActive → false，
                     // 导致误判为非玩家犯罪，走错路径（StartResupply → 进城补给 → 崩溃）。
                     // 改用 Offender.IsMainParty 直接判断，不依赖 IsActive。
-                    if (task.TargetCrime?.Offender?.IsMainParty == true)
+                    if (playerOffender)
                     {
                         // 玩家被击败 → 押送至最近城堡（IsCastle）→ OnTick 距离触发惩罚
                         task.IsEscortingPlayer = true;
