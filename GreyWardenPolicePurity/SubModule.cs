@@ -23,6 +23,7 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new PoliceShipParametersModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
+            starter.AddBehavior(new PoliceAntiVanillaWarBehavior());
             starter.AddBehavior(new PoliceAIDeterrenceBehavior());
             starter.AddBehavior(new PolicePrisonerImmunityBehavior());
             starter.AddBehavior(new PoliceEnforcementBehavior());

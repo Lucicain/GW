@@ -95,7 +95,10 @@ namespace GreyWardenPolicePurity
                 }
             }
 
-            if (playerInvolved && policeInvolved && policeOnWinningSide)
+            if (playerInvolved &&
+                policeInvolved &&
+                policeOnWinningSide &&
+                policeWasExecutingPlayerTask)
             {
                 return;
             }
