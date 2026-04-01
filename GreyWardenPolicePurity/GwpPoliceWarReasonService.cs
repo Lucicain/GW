@@ -46,12 +46,18 @@ namespace GreyWardenPolicePurity
                 return "未找到灰袍守卫家族，无法读取宣战原因。";
 
             Dictionary<string, FactionReasonBucket> buckets = CollectCurrentWarReasons(policeClan);
-            if (buckets.Count == 0)
-                return "灰袍守卫当前没有正式宣战对象。";
 
             StringBuilder sb = new StringBuilder();
+            AppendFamilyAdoptionStatus(sb);
+            sb.AppendLine();
             sb.AppendLine($"当前正式宣战对象：{buckets.Count} 个");
             sb.AppendLine();
+
+            if (buckets.Count == 0)
+            {
+                sb.AppendLine("灰袍守卫当前没有正式宣战对象。");
+                return sb.ToString().TrimEnd();
+            }
 
             bool first = true;
             foreach (FactionReasonBucket bucket in buckets.Values.OrderBy(static b => b.Faction.Name?.ToString() ?? string.Empty))
@@ -148,6 +154,48 @@ namespace GreyWardenPolicePurity
             }
 
             return buckets;
+        }
+
+        private static void AppendFamilyAdoptionStatus(StringBuilder sb)
+        {
+            sb.AppendLine("家族额外信息：");
+
+            if (!GreyWardenVillageAdoptionBehavior.TryGetAdoptionStatus(out var status))
+            {
+                sb.AppendLine("收养系统状态：当前未初始化。");
+                return;
+            }
+
+            sb.AppendLine($"收养冷却：全家族共享；自上一次成功收留女童起需等待 {GwpTuning.Family.AdoptionCooldownYears:0.#} 个游戏年。");
+            sb.AppendLine($"当前家族人数：{status.LivingMembers}/{status.MaxMembers}。");
+            sb.AppendLine($"当前善后任务：{DescribeReliefState(status)}");
+            sb.AppendLine(status.IsCooldownReady
+                ? "距离下一次可收养：冷却已结束，等待新的村庄被焚毁后触发善后。"
+                : $"距离下一次可收养：{FormatRemainingDuration(status.RemainingCooldownHours)}。");
+            sb.AppendLine(status.HasRecordedAdoption
+                ? $"上一个女童收留时间：{FormatCampaignDate(status.LastAdoptionTimeHours)}。"
+                : "上一个女童收留时间：本存档尚无成功收养记录。");
+        }
+
+        private static string DescribeReliefState(GreyWardenVillageAdoptionBehavior.AdoptionStatusInfo status)
+        {
+            string villageName = string.IsNullOrWhiteSpace(status.CurrentReliefVillageName)
+                ? "目标村庄"
+                : status.CurrentReliefVillageName;
+
+            switch (status.CurrentReliefStage)
+            {
+                case GreyWardenVillageAdoptionBehavior.ReliefStage.WaitingForAssignment:
+                    return $"已记录 {villageName} 的善后请求，正在等待最近的警察接手。";
+                case GreyWardenVillageAdoptionBehavior.ReliefStage.AwaitingResupply:
+                    return $"最近的警察已被抽调，正在补给后前往 {villageName}。";
+                case GreyWardenVillageAdoptionBehavior.ReliefStage.TravelingToVillage:
+                    return $"最近的警察正在赶往 {villageName} 进行善后。";
+                case GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage:
+                    return $"警察正在 {villageName} 善后，剩余约 {FormatRemainingDuration(status.CurrentReliefRemainingHours)}。";
+                default:
+                    return "当前没有善后任务。";
+            }
         }
 
         private static bool TaskMatchesFaction(PoliceTask task, IFaction targetFaction)
@@ -261,7 +309,7 @@ namespace GreyWardenPolicePurity
                 return "玩家案件执法";
 
             if (task.WarDeclared)
-                return "跨势力追捕";
+                return "跨势力追缉";
 
             return "执法任务";
         }
@@ -269,7 +317,7 @@ namespace GreyWardenPolicePurity
         private static string DescribeTaskStage(PoliceTask task)
         {
             if (task.IsPlayerBountyEscort)
-                return "灰袍部队正在护送玩家追捕目标";
+                return "灰袍部队正在护送玩家追缉目标";
 
             if (task.IsEscortingPlayer)
                 return "目标已被击败，正在押送玩家";
@@ -316,6 +364,36 @@ namespace GreyWardenPolicePurity
                 return $"{nearestTown.Name}附近 ({position.x:0.0}, {position.y:0.0})";
 
             return $"野外 ({position.x:0.0}, {position.y:0.0})";
+        }
+
+        private static string FormatRemainingDuration(double hours)
+        {
+            double clampedHours = Math.Max(0d, hours);
+            int days = (int)(clampedHours / CampaignTime.HoursInDay);
+            double hoursRemainder = clampedHours - days * CampaignTime.HoursInDay;
+
+            if (days <= 0)
+                return $"{hoursRemainder:0.#} 小时";
+
+            if (hoursRemainder < 0.05d)
+                return $"{days} 天";
+
+            return $"{days} 天 {hoursRemainder:0.#} 小时";
+        }
+
+        private static string FormatCampaignDate(double hours)
+        {
+            CampaignTime time = CampaignTime.Hours((float)hours);
+            string season = time.GetSeasonOfYear switch
+            {
+                CampaignTime.Seasons.Spring => "春",
+                CampaignTime.Seasons.Summer => "夏",
+                CampaignTime.Seasons.Autumn => "秋",
+                CampaignTime.Seasons.Winter => "冬",
+                _ => "未知季"
+            };
+
+            return $"{time.GetYear}年{season}季第{time.GetDayOfSeason + 1}天 {time.GetHourOfDay}:00";
         }
     }
 }

@@ -51,6 +51,10 @@ namespace GreyWardenPolicePurity
             // localId = 3 → 全局 ID 2_894_635
             // 警察执法中的“赎罪任务”，用于任务面板展示 + 读档恢复。
             AddClassDefinition(typeof(PoliceEnforcementBehavior.AtonementQuest), 3);
+
+            // localId = 4 → 全局 ID 2_894_636
+            // 灰袍收养女童时写入战役日志，供左侧蓝字与百科历史记录使用。
+            AddClassDefinition(typeof(GreyWardenAdoptionLogEntry), 4);
         }
     }
 }

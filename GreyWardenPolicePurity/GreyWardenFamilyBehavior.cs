@@ -92,6 +92,8 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnNewGameCreatedPartialFollowUpEvent.AddNonSerializedListener(this, OnNewGameCreatedPartialFollowUp);
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -111,6 +113,19 @@ namespace GreyWardenPolicePurity
         private void OnNewGameCreatedPartialFollowUp(CampaignGameStarter starter, int index)
         {
             if (index == 0)
+            {
+                RefreshPoliceClanFamilyPresentation();
+            }
+        }
+
+        private void OnDailyTick()
+        {
+            RefreshPoliceClanFamilyPresentation();
+        }
+
+        private void OnHeroComesOfAge(Hero hero)
+        {
+            if (hero != null && IsGeneratedPoliceHero(hero))
             {
                 RefreshPoliceClanFamilyPresentation();
             }

@@ -51,7 +51,7 @@ namespace GreyWardenPolicePurity
         internal static class Family
         {
             public const int MaxClanMembers = 15;
-            public const float AdoptionCooldownDays = 365f;
+            public const float AdoptionCooldownYears = 1f;
             public const float VillageReliefStayHours = 72f;
             public const float VillageReliefArrivalDistance = 3f;
             public const int AdoptedGirlMinAge = 2;

@@ -1,22 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.MapNotificationTypes;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
 
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 灰袍村庄善后与收养逻辑。
-    /// 村庄被成功劫掠后，派出一支空闲警察部队前往废墟驻留数日，
-    /// 善后完成后若冷却与人数上限允许，则为灰袍家族新增一名被收留的女童。
+    /// 村庄被焚毁后，灰袍守卫会派出一支警察队伍进行善后。
+    /// 若善后完成时满足家族人数与收养冷却条件，则新增一名被收留的女童。
     /// </summary>
     public sealed class GreyWardenVillageAdoptionBehavior : CampaignBehaviorBase
     {
@@ -28,20 +29,24 @@ namespace GreyWardenPolicePurity
         private const string ActiveVillageNamesKey = "GWPP_AdoptActiveVillageNames";
         private const string ActiveStartedFlagsKey = "GWPP_AdoptActiveStartedFlags";
         private const string ActiveEndHoursKey = "GWPP_AdoptActiveEndHours";
+        private const string ActiveAwaitingResupplyFlagsKey = "GWPP_AdoptActiveAwaitingResupplyFlags";
         private const string OriginHeroIdsKey = "GWPP_AdoptOriginHeroIds";
         private const string OriginVillageNamesKey = "GWPP_AdoptOriginVillageNames";
         private const string LastAdoptionHoursKey = "GWPP_LastAdoptionHours";
+        private const double NoRecordedAdoptionHours = -1000000d;
 
         private static GreyWardenVillageAdoptionBehavior? _instance;
         private static readonly HashSet<string> _activeReliefPartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly FieldInfo? CampaignMapNoticesField =
+            typeof(CampaignInformationManager).GetField("_mapNotices", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly List<PendingVillageRelief> _pendingReliefs = new List<PendingVillageRelief>();
         private readonly List<ActiveVillageRelief> _activeReliefs = new List<ActiveVillageRelief>();
         private readonly Dictionary<string, string> _adoptionOrigins =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        private double _lastAdoptionTimeHours = -1000000d;
+        private double _lastAdoptionTimeHours = NoRecordedAdoptionHours;
 
         public GreyWardenVillageAdoptionBehavior()
         {
@@ -67,6 +72,7 @@ namespace GreyWardenPolicePurity
             List<string>? activeVillageNames = null;
             List<int>? activeStartedFlags = null;
             List<double>? activeEndHours = null;
+            List<int>? activeAwaitingResupplyFlags = null;
             List<string>? originHeroIds = null;
             List<string>? originVillageNames = null;
 
@@ -81,6 +87,7 @@ namespace GreyWardenPolicePurity
                 activeVillageNames = _activeReliefs.Select(static x => x.VillageName).ToList();
                 activeStartedFlags = _activeReliefs.Select(static x => x.ReliefStarted ? 1 : 0).ToList();
                 activeEndHours = _activeReliefs.Select(static x => x.ReliefEndHours).ToList();
+                activeAwaitingResupplyFlags = _activeReliefs.Select(static x => x.AwaitingResupply ? 1 : 0).ToList();
 
                 originHeroIds = _adoptionOrigins.Keys.ToList();
                 originVillageNames = _adoptionOrigins.Values.ToList();
@@ -94,6 +101,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData(ActiveVillageNamesKey, ref activeVillageNames);
             dataStore.SyncData(ActiveStartedFlagsKey, ref activeStartedFlags);
             dataStore.SyncData(ActiveEndHoursKey, ref activeEndHours);
+            dataStore.SyncData(ActiveAwaitingResupplyFlagsKey, ref activeAwaitingResupplyFlags);
             dataStore.SyncData(OriginHeroIdsKey, ref originHeroIds);
             dataStore.SyncData(OriginVillageNamesKey, ref originVillageNames);
             dataStore.SyncData(LastAdoptionHoursKey, ref _lastAdoptionTimeHours);
@@ -123,10 +131,17 @@ namespace GreyWardenPolicePurity
                 });
             }
 
-            int activeCount = MinCount(activePartyIds, activeVillageIds, activeVillageNames, activeStartedFlags, activeEndHours);
+            int activeCount = MinCount(
+                activePartyIds,
+                activeVillageIds,
+                activeVillageNames,
+                activeStartedFlags,
+                activeEndHours,
+                activeAwaitingResupplyFlags);
             for (int i = 0; i < activeCount; i++)
             {
-                if (string.IsNullOrWhiteSpace(activePartyIds![i]) || string.IsNullOrWhiteSpace(activeVillageIds![i]))
+                if (string.IsNullOrWhiteSpace(activePartyIds![i]) ||
+                    string.IsNullOrWhiteSpace(activeVillageIds![i]))
                 {
                     continue;
                 }
@@ -137,7 +152,8 @@ namespace GreyWardenPolicePurity
                     VillageSettlementId = activeVillageIds[i],
                     VillageName = activeVillageNames![i] ?? string.Empty,
                     ReliefStarted = activeStartedFlags![i] != 0,
-                    ReliefEndHours = activeEndHours![i]
+                    ReliefEndHours = activeEndHours![i],
+                    AwaitingResupply = activeAwaitingResupplyFlags![i] != 0
                 });
             }
 
@@ -154,6 +170,7 @@ namespace GreyWardenPolicePurity
                 _adoptionOrigins[heroId] = villageName;
             }
 
+            SanitizeLegacyAdoptionMapNotices();
             RebuildActiveReliefPartyIndex();
         }
 
@@ -170,7 +187,19 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            return _instance._adoptionOrigins.TryGetValue(heroId!, out villageName);
+            return _instance._adoptionOrigins.TryGetValue(heroId, out villageName);
+        }
+
+        internal static bool TryGetAdoptionStatus(out AdoptionStatusInfo info)
+        {
+            if (_instance == null)
+            {
+                info = default;
+                return false;
+            }
+
+            info = _instance.BuildAdoptionStatusInfo();
+            return true;
         }
 
         private void OnNewGameCreated(CampaignGameStarter starter)
@@ -178,38 +207,88 @@ namespace GreyWardenPolicePurity
             _pendingReliefs.Clear();
             _activeReliefs.Clear();
             _adoptionOrigins.Clear();
-            _lastAdoptionTimeHours = -1000000d;
+            _lastAdoptionTimeHours = NoRecordedAdoptionHours;
             RebuildActiveReliefPartyIndex();
         }
 
         private void OnGameLoaded(CampaignGameStarter starter)
         {
+            NormalizeReliefStateAfterLoad();
             RebuildActiveReliefPartyIndex();
             GreyWardenFamilyBehavior.RefreshPoliceClanFamilyPresentation();
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            NormalizeReliefStateAfterLoad();
             RebuildActiveReliefPartyIndex();
+        }
+
+        private AdoptionStatusInfo BuildAdoptionStatusInfo()
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            int livingMembers = policeClan?.Heroes.Count(static h => h != null && h.IsAlive) ?? 0;
+
+            bool hasRecordedAdoption = _lastAdoptionTimeHours > NoRecordedAdoptionHours + 1d;
+            double remainingCooldownHours = hasRecordedAdoption
+                ? Math.Max(0d, GetAdoptionCooldownHours() - (CampaignTime.Now.ToHours - _lastAdoptionTimeHours))
+                : 0d;
+
+            ReliefStage currentReliefStage = ReliefStage.None;
+            string currentReliefVillageName = string.Empty;
+            double currentReliefRemainingHours = 0d;
+
+            if (_activeReliefs.Count > 0)
+            {
+                ActiveVillageRelief relief = _activeReliefs[0];
+                currentReliefVillageName = ResolveVillageName(relief.VillageSettlementId, relief.VillageName);
+
+                if (relief.AwaitingResupply)
+                {
+                    currentReliefStage = ReliefStage.AwaitingResupply;
+                }
+                else if (relief.ReliefStarted)
+                {
+                    currentReliefStage = ReliefStage.StayingInVillage;
+                    currentReliefRemainingHours = Math.Max(0d, relief.ReliefEndHours - CampaignTime.Now.ToHours);
+                }
+                else
+                {
+                    currentReliefStage = ReliefStage.TravelingToVillage;
+                }
+            }
+            else if (_pendingReliefs.Count > 0)
+            {
+                PendingVillageRelief relief = _pendingReliefs[0];
+                currentReliefStage = ReliefStage.WaitingForAssignment;
+                currentReliefVillageName = ResolveVillageName(relief.VillageSettlementId, relief.VillageName);
+            }
+
+            return new AdoptionStatusInfo(
+                livingMembers,
+                GwpTuning.Family.MaxClanMembers,
+                hasRecordedAdoption,
+                _lastAdoptionTimeHours,
+                remainingCooldownHours,
+                remainingCooldownHours <= 0d,
+                currentReliefStage,
+                currentReliefVillageName,
+                currentReliefRemainingHours);
         }
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            if (!WasVillageSuccessfullyRaided(mapEvent, out Settlement? villageSettlement))
+            if (!WasVillageSuccessfullyRaided(mapEvent, out Settlement? villageSettlement) || villageSettlement == null)
             {
                 return;
             }
 
-            if (villageSettlement == null || !IsAdoptionSystemEligible())
+            if (!IsAdoptionSystemEligible() || HasAnyQueuedOrActiveRelief())
             {
                 return;
             }
 
-            if (HasQueuedOrActiveRelief(villageSettlement.StringId))
-            {
-                return;
-            }
-
+            _pendingReliefs.Clear();
             _pendingReliefs.Add(new PendingVillageRelief
             {
                 VillageSettlementId = villageSettlement.StringId,
@@ -220,53 +299,58 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
-            AssignPendingReliefs();
             UpdateActiveReliefs();
+            AssignPendingReliefs();
         }
 
         private void AssignPendingReliefs()
         {
-            if (_pendingReliefs.Count == 0)
+            if (_pendingReliefs.Count == 0 || _activeReliefs.Count > 0)
             {
                 return;
             }
 
-            foreach (PendingVillageRelief pending in _pendingReliefs.ToList())
+            if (!IsAdoptionSystemEligible())
             {
-                Settlement? village = FindSettlement(pending.VillageSettlementId);
-                if (village == null || !village.IsVillage)
-                {
-                    _pendingReliefs.Remove(pending);
-                    continue;
-                }
+                _pendingReliefs.Clear();
+                return;
+            }
 
-                if (!IsAdoptionSystemEligible())
+            PendingVillageRelief pending = _pendingReliefs[0];
+            Settlement? village = FindSettlement(pending.VillageSettlementId);
+            if (village == null || !village.IsVillage)
+            {
+                _pendingReliefs.Clear();
+                return;
+            }
+
+            MobileParty? reservedPolice = null;
+            foreach (MobileParty police in GetReliefCandidatesByDistance(village))
+            {
+                if (PoliceEnforcementBehavior.TryReservePolicePartyForVillageRelief(police))
                 {
+                    reservedPolice = police;
                     break;
                 }
-
-                MobileParty? police = FindNearestAvailablePoliceParty(village);
-                if (police == null)
-                {
-                    continue;
-                }
-
-                police.Ai.SetDoNotMakeNewDecisions(true);
-                police.Ai.SetInitiative(1f, 0f, 999f);
-                police.SetMoveGoToSettlement(village, MobileParty.NavigationType.Default, false);
-
-                _activeReliefs.Add(new ActiveVillageRelief
-                {
-                    PolicePartyId = police.StringId,
-                    VillageSettlementId = pending.VillageSettlementId,
-                    VillageName = pending.VillageName,
-                    ReliefStarted = false,
-                    ReliefEndHours = 0d
-                });
-
-                _pendingReliefs.Remove(pending);
-                RebuildActiveReliefPartyIndex();
             }
+
+            if (reservedPolice == null)
+            {
+                return;
+            }
+
+            _activeReliefs.Add(new ActiveVillageRelief
+            {
+                PolicePartyId = reservedPolice.StringId,
+                VillageSettlementId = pending.VillageSettlementId,
+                VillageName = pending.VillageName,
+                AwaitingResupply = true,
+                ReliefStarted = false,
+                ReliefEndHours = 0d
+            });
+
+            _pendingReliefs.Clear();
+            RebuildActiveReliefPartyIndex();
         }
 
         private void UpdateActiveReliefs()
@@ -279,7 +363,7 @@ namespace GreyWardenPolicePurity
 
             foreach (ActiveVillageRelief relief in _activeReliefs.ToList())
             {
-                MobileParty? police = MobileParty.All.FirstOrDefault(p => string.Equals(p.StringId, relief.PolicePartyId, StringComparison.OrdinalIgnoreCase));
+                MobileParty? police = FindPoliceParty(relief.PolicePartyId);
                 Settlement? village = FindSettlement(relief.VillageSettlementId);
 
                 if (police == null || !police.IsActive || village == null || !village.IsVillage)
@@ -291,6 +375,25 @@ namespace GreyWardenPolicePurity
                 if (ShouldAbortReliefForOperationalReason(police))
                 {
                     FinishRelief(relief, police, shouldAdopt: false);
+                    continue;
+                }
+
+                if (relief.AwaitingResupply)
+                {
+                    if (PoliceResourceManager.IsResupplying(police))
+                    {
+                        continue;
+                    }
+
+                    relief.AwaitingResupply = false;
+                    police.Ai.SetDoNotMakeNewDecisions(true);
+                    police.Ai.SetInitiative(1f, 0f, 999f);
+                    police.SetMoveGoToSettlement(village, MobileParty.NavigationType.Default, false);
+                    continue;
+                }
+
+                if (police.MapEvent != null && !police.MapEvent.IsFinalized)
+                {
                     continue;
                 }
 
@@ -326,10 +429,10 @@ namespace GreyWardenPolicePurity
         private void FinishRelief(ActiveVillageRelief relief, MobileParty? police, bool shouldAdopt)
         {
             Settlement? village = FindSettlement(relief.VillageSettlementId);
-            bool adopted = false;
+            Hero? adoptedHero = null;
             if (shouldAdopt && village != null && IsAdoptionSystemEligible())
             {
-                adopted = TryCreateAdoptedGirl(village, relief.VillageName);
+                adoptedHero = TryCreateAdoptedGirl(village, relief.VillageName);
             }
 
             if (police != null && police.IsActive)
@@ -343,19 +446,20 @@ namespace GreyWardenPolicePurity
 
             _activeReliefs.Remove(relief);
 
-            if (adopted)
+            if (adoptedHero != null)
             {
+                PublishAdoptionLogEntry(adoptedHero, ResolveVillageName(relief.VillageSettlementId, relief.VillageName));
                 GreyWardenFamilyBehavior.RefreshPoliceClanFamilyPresentation();
             }
         }
 
-        private bool TryCreateAdoptedGirl(Settlement village, string fallbackVillageName)
+        private Hero? TryCreateAdoptedGirl(Settlement village, string fallbackVillageName)
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();
             CharacterObject? template = CharacterObject.Find(GwpIds.CommanderTemplateCharacterId);
             if (policeClan == null || template == null)
             {
-                return false;
+                return null;
             }
 
             int age = MBRandom.RandomInt(
@@ -363,11 +467,6 @@ namespace GreyWardenPolicePurity
                 GwpTuning.Family.AdoptedGirlMaxAge + 1);
 
             Hero hero = HeroCreator.CreateSpecialHero(template, village, policeClan, null, age);
-            if (hero == null)
-            {
-                return false;
-            }
-
             hero.IsFemale = true;
             hero.BornSettlement = village;
             hero.UpdateHomeSettlement();
@@ -386,7 +485,22 @@ namespace GreyWardenPolicePurity
             }
 
             _lastAdoptionTimeHours = CampaignTime.Now.ToHours;
-            return true;
+            return hero;
+        }
+
+        private static void PublishAdoptionLogEntry(Hero adoptedHero, string villageName)
+        {
+            try
+            {
+                if (adoptedHero == null)
+                {
+                    return;
+                }
+                LogEntry.AddLogEntry(new GreyWardenAdoptionLogEntry(adoptedHero, villageName));
+            }
+            catch
+            {
+            }
         }
 
         private static void EquipInitialChildGear(Hero hero)
@@ -448,14 +562,23 @@ namespace GreyWardenPolicePurity
 
         private bool IsAdoptionCooldownReady()
         {
+            if (_lastAdoptionTimeHours <= NoRecordedAdoptionHours + 1d)
+            {
+                return true;
+            }
+
             double elapsedHours = CampaignTime.Now.ToHours - _lastAdoptionTimeHours;
-            return elapsedHours >= GwpTuning.Family.AdoptionCooldownDays * 24f;
+            return elapsedHours >= GetAdoptionCooldownHours();
         }
 
-        private bool HasQueuedOrActiveRelief(string villageSettlementId)
+        private static double GetAdoptionCooldownHours()
         {
-            return _pendingReliefs.Any(x => string.Equals(x.VillageSettlementId, villageSettlementId, StringComparison.OrdinalIgnoreCase))
-                   || _activeReliefs.Any(x => string.Equals(x.VillageSettlementId, villageSettlementId, StringComparison.OrdinalIgnoreCase));
+            return CampaignTime.Years(GwpTuning.Family.AdoptionCooldownYears).ToHours;
+        }
+
+        private bool HasAnyQueuedOrActiveRelief()
+        {
+            return _pendingReliefs.Count > 0 || _activeReliefs.Count > 0;
         }
 
         private static Settlement? FindSettlement(string settlementId)
@@ -466,6 +589,17 @@ namespace GreyWardenPolicePurity
             }
 
             return Settlement.Find(settlementId);
+        }
+
+        private static MobileParty? FindPoliceParty(string partyId)
+        {
+            if (string.IsNullOrWhiteSpace(partyId))
+            {
+                return null;
+            }
+
+            return MobileParty.All.FirstOrDefault(p =>
+                string.Equals(p.StringId, partyId, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool HasArrivedAtVillage(MobileParty police, Settlement village)
@@ -487,35 +621,17 @@ namespace GreyWardenPolicePurity
 
         private static bool ShouldAbortReliefForOperationalReason(MobileParty police)
         {
-            return GwpCommon.IsEnforcementDelayPatrolParty(police)
-                   || PoliceResourceManager.IsResupplying(police)
-                   || CrimePool.HasTask(police.StringId);
+            return GwpCommon.IsPatrolParty(police) || GwpCommon.IsEnforcementDelayPatrolParty(police);
         }
 
-        private static MobileParty? FindNearestAvailablePoliceParty(Settlement village)
+        private static IEnumerable<MobileParty> GetReliefCandidatesByDistance(Settlement village)
         {
-            MobileParty? nearest = null;
-            float nearestDistance = float.MaxValue;
-
-            foreach (MobileParty police in PoliceStats.GetAllPoliceParties())
-            {
-                if (!IsEligiblePoliceParty(police))
-                {
-                    continue;
-                }
-
-                float distance = police.GetPosition2D.Distance(village.GetPosition2D);
-                if (distance < nearestDistance)
-                {
-                    nearest = police;
-                    nearestDistance = distance;
-                }
-            }
-
-            return nearest;
+            return PoliceStats.GetAllPoliceParties()
+                .Where(IsBasicVillageReliefCandidate)
+                .OrderBy(police => police.GetPosition2D.Distance(village.GetPosition2D));
         }
 
-        private static bool IsEligiblePoliceParty(MobileParty? police)
+        private static bool IsBasicVillageReliefCandidate(MobileParty? police)
         {
             if (police == null || !police.IsActive)
             {
@@ -529,14 +645,114 @@ namespace GreyWardenPolicePurity
 
             if (GwpCommon.IsPatrolParty(police)
                 || GwpCommon.IsEnforcementDelayPatrolParty(police)
-                || IsVillageReliefParty(police)
-                || PoliceResourceManager.IsResupplying(police)
-                || CrimePool.HasTask(police.StringId))
+                || IsVillageReliefParty(police))
             {
                 return false;
             }
 
-            return true;
+            return police.MapEvent == null || police.MapEvent.IsFinalized;
+        }
+
+        private string ResolveVillageName(string villageSettlementId, string fallbackVillageName)
+        {
+            Settlement? village = FindSettlement(villageSettlementId);
+            return village?.Name?.ToString() ?? fallbackVillageName;
+        }
+
+        private void NormalizeReliefStateAfterLoad()
+        {
+            bool hadBacklog = _pendingReliefs.Count > 0 || _activeReliefs.Count > 1;
+
+            if (_pendingReliefs.Count > 0)
+            {
+                _pendingReliefs.Clear();
+            }
+
+            if (_activeReliefs.Count == 0)
+            {
+                RebuildActiveReliefPartyIndex();
+                return;
+            }
+
+            if (hadBacklog)
+            {
+                foreach (ActiveVillageRelief relief in _activeReliefs.ToList())
+                {
+                    FinishRelief(relief, FindPoliceParty(relief.PolicePartyId), shouldAdopt: false);
+                }
+
+                RebuildActiveReliefPartyIndex();
+                return;
+            }
+
+            ActiveVillageRelief keep = ChooseReliefToKeep(_activeReliefs);
+            foreach (ActiveVillageRelief relief in _activeReliefs.ToList())
+            {
+                if (ReferenceEquals(relief, keep))
+                {
+                    continue;
+                }
+
+                FinishRelief(relief, FindPoliceParty(relief.PolicePartyId), shouldAdopt: false);
+            }
+
+            MobileParty? keepPolice = FindPoliceParty(keep.PolicePartyId);
+            Settlement? keepVillage = FindSettlement(keep.VillageSettlementId);
+            if (keepPolice == null || !keepPolice.IsActive || keepVillage == null || !keepVillage.IsVillage || !IsAdoptionSystemEligible())
+            {
+                FinishRelief(keep, keepPolice, shouldAdopt: false);
+                RebuildActiveReliefPartyIndex();
+                return;
+            }
+
+            if (keep.AwaitingResupply)
+            {
+                PoliceResourceManager.StartResupply(keepPolice);
+            }
+
+            RebuildActiveReliefPartyIndex();
+        }
+
+        // Older versions emitted ChildBornMapNotification for adopted girls.
+        // Those notices crash vanilla's newborn notification VM after a reload
+        // because adopted girls have no biological mother reference.
+        private static void SanitizeLegacyAdoptionMapNotices()
+        {
+            try
+            {
+                CampaignInformationManager? informationManager = Campaign.Current?.CampaignInformationManager;
+                if (informationManager == null || CampaignMapNoticesField == null)
+                {
+                    return;
+                }
+
+                if (CampaignMapNoticesField.GetValue(informationManager) is not List<InformationData> mapNotices ||
+                    mapNotices.Count == 0)
+                {
+                    return;
+                }
+
+                for (int i = mapNotices.Count - 1; i >= 0; i--)
+                {
+                    if (mapNotices[i] is ChildBornMapNotification childNotice &&
+                        (childNotice.NewbornHero == null || childNotice.NewbornHero.Mother == null))
+                    {
+                        mapNotices.RemoveAt(i);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static ActiveVillageRelief ChooseReliefToKeep(IEnumerable<ActiveVillageRelief> reliefs)
+        {
+            return reliefs
+                .OrderByDescending(static relief => relief.ReliefStarted)
+                .ThenBy(static relief => relief.AwaitingResupply ? 1 : 0)
+                .ThenBy(static relief => relief.ReliefEndHours <= 0d ? double.MaxValue : relief.ReliefEndHours)
+                .First();
         }
 
         private void RebuildActiveReliefPartyIndex()
@@ -574,8 +790,53 @@ namespace GreyWardenPolicePurity
             public string PolicePartyId { get; set; } = string.Empty;
             public string VillageSettlementId { get; set; } = string.Empty;
             public string VillageName { get; set; } = string.Empty;
+            public bool AwaitingResupply { get; set; }
             public bool ReliefStarted { get; set; }
             public double ReliefEndHours { get; set; }
+        }
+
+        internal enum ReliefStage
+        {
+            None,
+            WaitingForAssignment,
+            AwaitingResupply,
+            TravelingToVillage,
+            StayingInVillage
+        }
+
+        internal readonly struct AdoptionStatusInfo
+        {
+            public AdoptionStatusInfo(
+                int livingMembers,
+                int maxMembers,
+                bool hasRecordedAdoption,
+                double lastAdoptionTimeHours,
+                double remainingCooldownHours,
+                bool isCooldownReady,
+                ReliefStage currentReliefStage,
+                string currentReliefVillageName,
+                double currentReliefRemainingHours)
+            {
+                LivingMembers = livingMembers;
+                MaxMembers = maxMembers;
+                HasRecordedAdoption = hasRecordedAdoption;
+                LastAdoptionTimeHours = lastAdoptionTimeHours;
+                RemainingCooldownHours = remainingCooldownHours;
+                IsCooldownReady = isCooldownReady;
+                CurrentReliefStage = currentReliefStage;
+                CurrentReliefVillageName = currentReliefVillageName ?? string.Empty;
+                CurrentReliefRemainingHours = currentReliefRemainingHours;
+            }
+
+            public int LivingMembers { get; }
+            public int MaxMembers { get; }
+            public bool HasRecordedAdoption { get; }
+            public double LastAdoptionTimeHours { get; }
+            public double RemainingCooldownHours { get; }
+            public bool IsCooldownReady { get; }
+            public ReliefStage CurrentReliefStage { get; }
+            public string CurrentReliefVillageName { get; }
+            public double CurrentReliefRemainingHours { get; }
         }
     }
 }
