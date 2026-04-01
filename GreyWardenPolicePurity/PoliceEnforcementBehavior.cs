@@ -27,6 +27,7 @@ namespace GreyWardenPolicePurity
     {
         private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
         private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+        private static PoliceEnforcementBehavior? _instance;
 
         private bool _atonementActive = false;
         private string _atonementTargetPartyId = string.Empty;
@@ -41,6 +42,16 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _ignoredInvalidShelteredBattlePartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public PoliceEnforcementBehavior()
+        {
+            _instance = this;
+        }
+
+        internal static bool TryReservePolicePartyForVillageRelief(MobileParty? police)
+        {
+            return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police);
+        }
 
         private AtonementFlowState CurrentAtonementState =>
             _atonementWaitingForTurnIn

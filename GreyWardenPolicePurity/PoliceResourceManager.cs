@@ -104,12 +104,10 @@ namespace GreyWardenPolicePurity
         private void OnGameLoaded(CampaignGameStarter starter)
         {
             SpawnIdleHeroes();
-            EnsurePoliceClanShips();
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-            EnsurePoliceClanShips();
         }
 
         private void OnDailyTick()
@@ -125,7 +123,6 @@ namespace GreyWardenPolicePurity
 
             PaySalaries();
             SpawnIdleHeroes();
-            EnsurePoliceClanShips();
         }
 
         private void SpawnIdleHeroes()
@@ -369,9 +366,9 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 按当前兵力为警察部队重建船只配置。
+        /// 按当前兵力为警察部队补足缺少的船只。
         /// 规则：每 50 人 1 艘，向上取整，最少 1 艘。
-        /// 每次都清掉现有船，只保留同数量的重型船。
+        /// 只追加缺失的船，不删除现有船，也不重建整个舰队。
         /// 不安装任何升级件，也不挂船首像。
         /// 无 NavalDLC 时静默跳过，不报错。
         /// </summary>
@@ -386,13 +383,11 @@ namespace GreyWardenPolicePurity
                 ShipHull? hull = ResolvePreferredHeavyHull();
                 if (hull == null) return;
 
-                List<Ship> existingShips = party.Ships?.ToList() ?? new List<Ship>();
-                foreach (Ship ship in existingShips)
-                {
-                    DestroyShipAction.ApplyByDiscard(ship);
-                }
+                int existingCount = party.Ships?.Count() ?? 0;
+                int missingCount = requiredCount - existingCount;
+                if (missingCount <= 0) return;
 
-                for (int i = 0; i < requiredCount; i++)
+                for (int i = 0; i < missingCount; i++)
                 {
                     Ship ship = new Ship(hull);
                     ChangeShipOwnerAction.ApplyByMobilePartyCreation(party.Party, ship);
@@ -461,16 +456,6 @@ namespace GreyWardenPolicePurity
                 return fallbackHeavy;
 
             return null;
-        }
-
-        private static void EnsurePoliceClanShips()
-        {
-            if (!_navalDlcLoaded) return;
-
-            foreach (MobileParty party in PoliceStats.GetAllPoliceParties())
-            {
-                GivePoliceShips(party);
-            }
         }
 
         #endregion

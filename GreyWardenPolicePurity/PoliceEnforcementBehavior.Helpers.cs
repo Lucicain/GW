@@ -24,6 +24,53 @@ namespace GreyWardenPolicePurity
             return mapEvent.InvolvedParties.Any(p => p.MobileParty == party);
         }
 
+        private bool TryPreparePolicePartyForVillageRelief(MobileParty? police)
+        {
+            if (police == null || !police.IsActive)
+                return false;
+
+            if (police.LeaderHero == null || !police.LeaderHero.IsActive)
+                return false;
+
+            if (police.MapEvent != null && !police.MapEvent.IsFinalized)
+                return false;
+
+            PoliceTask? task = CrimeState.GetTask(police.StringId);
+            if (task != null)
+            {
+                if (task.IsEscortingPlayer || task.IsPlayerBountyEscort || task.TargetCrime?.Offender?.IsMainParty == true)
+                    return false;
+
+                IFaction? warTarget = task.WarTarget;
+                RestoreAi(police);
+                ClearTaskWarTracking(police.StringId, true);
+                CrimeState.EndTask(police.StringId);
+
+                CrimeRecord? displacedCrime = task.TargetCrime;
+                if (displacedCrime?.Offender != null && displacedCrime.Offender.IsActive)
+                {
+                    CrimeState.TryAdd(
+                        displacedCrime.CrimeType,
+                        displacedCrime.Offender,
+                        displacedCrime.Location,
+                        displacedCrime.VictimName);
+                }
+
+                Clan? policeClan = PoliceStats.GetPoliceClan();
+                if (policeClan != null &&
+                    warTarget != null &&
+                    !GwpPoliceWarReasonService.HasLegitimateWarReason(warTarget))
+                {
+                    GwpCommon.TrySetNeutral(policeClan, warTarget);
+                }
+            }
+
+            GwpCommon.TryResetAi(police);
+            PoliceResourceManager.CancelResupply(police);
+            PoliceResourceManager.StartResupply(police);
+            return true;
+        }
+
         private bool IsOnWinningSide(MobileParty party, MapEvent mapEvent)
         {
             if (!mapEvent.HasWinner || mapEvent.Winner == null) return false;
