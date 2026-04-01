@@ -76,6 +76,7 @@ namespace GreyWardenPolicePurity
         internal sealed class CrimeState
         {
             public bool IsAccepting => CrimePool.IsAccepting;
+            public bool IsDispatchReady => CrimePool.IsDispatchReady;
             public bool IsPlayerHunted => CrimePool.IsPlayerHunted;
             public IReadOnlyDictionary<string, PoliceTask> ActiveTasks => CrimePool.ActiveTasks;
 

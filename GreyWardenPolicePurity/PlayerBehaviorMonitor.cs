@@ -24,6 +24,7 @@ namespace GreyWardenPolicePurity
 
         // 运行时（无需持久化）：记录战斗开始时敌方部队总人数，用于声望缩放计算
         private int _pendingEnemyCount = 0;
+        private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
 
         public override void RegisterEvents()
         {
@@ -197,12 +198,40 @@ namespace GreyWardenPolicePurity
             if (mapEvent == null || !mapEvent.HasWinner) return;
 
             bool playerWon = false;
+            bool playerInvolved = false;
             foreach (var p in mapEvent.Winner.Parties)
             {
                 if (p.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
                 { playerWon = true; break; }
             }
-            if (!playerWon) return;
+            if (_pendingPoliceCrimeSupport != 0)
+            {
+                foreach (var p in mapEvent.InvolvedParties)
+                {
+                    if (p?.MobileParty?.IsMainParty == true)
+                    {
+                        playerInvolved = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!playerWon)
+            {
+                if (playerInvolved)
+                {
+                    _pendingEnemyCount = 0;
+                    _pendingPoliceCrimeSupport = 0;
+                }
+                return;
+            }
+
+            if (TryResolvePendingPoliceCriminalReputation(mapEvent))
+            {
+                _pendingEnemyCount = 0;
+                _pendingPoliceCrimeSupport = 0;
+                return;
+            }
 
             bool enemyIsBandit = false;
             bool defenderIsVillager = false;
@@ -314,6 +343,7 @@ namespace GreyWardenPolicePurity
             }
 
             _pendingEnemyCount = 0;
+            _pendingPoliceCrimeSupport = 0;
         }
 
         #endregion
@@ -331,7 +361,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-            // 强制介入（保护无辜方）：对攻击方宣战，以防守方身份加入战斗
+            // 强制介入（保护防守方）：无视外交状态，以防守方身份加入战斗
             starter.AddGameMenuOption(
                 "join_encounter",
                 "gwp_force_join_battle",
@@ -341,7 +371,7 @@ namespace GreyWardenPolicePurity
                 isLeave: false,
                 index: -1);
 
-            // 落井下石（帮助攻击方）：对防守方宣战，以攻击方身份加入战斗，可获收益但扣声望
+            // 落井下石（帮助攻击方）：无视外交状态，以攻击方身份加入战斗
             starter.AddGameMenuOption(
                 "join_encounter",
                 "gwp_force_join_attackers",
@@ -353,7 +383,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 条件：防守方为商队/村民/村庄，且玩家与攻击方未宣战时，显示"强制介入"选项。
+        /// 条件：当前遭遇属于可强制介入场景时，显示"强制介入"选项。
         /// </summary>
         private bool ForceJoinBattleCondition(MenuCallbackArgs args)
         {
@@ -364,40 +394,17 @@ namespace GreyWardenPolicePurity
                 MapEvent battle = PlayerEncounter.EncounteredBattle;
                 if (battle == null) return false;
 
-                // 获取攻击方领袖及其派系
-                PartyBase attackerLeader = battle.GetLeaderParty(BattleSideEnum.Attacker);
-                if (attackerLeader == null) return false;
+                if (!TryBuildForceJoinTexts(battle, out string defendText, out _))
+                    return false;
 
-                IFaction playerFaction   = Hero.MainHero?.MapFaction;
-                IFaction attackerFaction = attackerLeader.MapFaction;
-                if (playerFaction == null || attackerFaction == null) return false;
-
-                // 已宣战 → 不显示（原版"帮助防守方"选项此时已可用）
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, attackerFaction)) return false;
-
-                // 判断场景：防守方是商队、村民，或本场是村庄劫掠
-                bool defenderIsCaravan  = battle.DefenderSide.Parties
-                    .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsCaravan);
-                bool defenderIsVillager = battle.DefenderSide.Parties
-                    .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsVillager);
-                bool isVillageRaid      = battle.IsRaid
-                    && battle.GetLeaderParty(BattleSideEnum.Defender)?.IsSettlement == true;
-
-                if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid) return false;
-
-                // 设置按钮文本
-                string targetDesc = isVillageRaid      ? "村庄"
-                                  : defenderIsCaravan  ? "商队"
-                                  : "村民";
-                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT",
-                    new TextObject($"强制介入！对 {attackerFaction.Name} 宣战，保护{targetDesc}。"));
+                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT", new TextObject(defendText));
                 return true;
             }
             catch { return false; }
         }
 
         /// <summary>
-        /// 对攻击方势力宣战，记录敌方人数供声望缩放，以防守方身份加入战斗并切换到战斗菜单。
+        /// 记录敌方人数供声望缩放，以防守方身份加入战斗并切换到战斗菜单。
         /// </summary>
         private void ForceJoinBattleConsequence(MenuCallbackArgs args)
         {
@@ -406,24 +413,15 @@ namespace GreyWardenPolicePurity
                 MapEvent battle = PlayerEncounter.EncounteredBattle;
                 if (battle == null) return;
 
-                PartyBase attackerLeader = battle.GetLeaderParty(BattleSideEnum.Attacker);
-                IFaction playerFaction   = Hero.MainHero?.MapFaction;
-                IFaction attackerFaction = attackerLeader?.MapFaction;
+                CaptureForcedJoinEncounterState(battle, BattleSideEnum.Defender);
 
-                // 1. 宣战
-                if (playerFaction != null && attackerFaction != null
-                    && !FactionManager.IsAtWarAgainstFaction(playerFaction, attackerFaction))
-                {
-                    FactionManager.DeclareWar(playerFaction, attackerFaction);
-                }
-
-                // 2. 记录攻击方战前人数（JoinBattle 后不再触发 OnMapEventStarted，需在此预先记录）
+                // 记录攻击方战前人数（JoinBattle 后不再触发 OnMapEventStarted，需在此预先记录）
                 _pendingEnemyCount = 0;
                 foreach (var p in battle.AttackerSide.Parties)
                     if (p.Party?.IsMobile == true)
                         _pendingEnemyCount += p.Party.NumberOfAllMembers;
 
-                // 3. 以防守方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
+                // 以防守方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
                 PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
                 GameMenu.ActivateGameMenu("encounter");
             }
@@ -431,8 +429,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 条件：防守方为商队/村民/村庄，且玩家与防守方未宣战时，显示"落井下石"选项。
-        /// 点击后将对防守方势力宣战，并以攻击方身份加入战斗。
+        /// 条件：当前遭遇属于可强制介入场景时，显示"落井下石"选项。
         /// </summary>
         private bool ForceJoinAttackersCondition(MenuCallbackArgs args)
         {
@@ -443,40 +440,17 @@ namespace GreyWardenPolicePurity
                 MapEvent battle = PlayerEncounter.EncounteredBattle;
                 if (battle == null) return false;
 
-                // 获取防守方领袖及其派系（无辜方）
-                PartyBase defenderLeader = battle.GetLeaderParty(BattleSideEnum.Defender);
-                if (defenderLeader == null) return false;
+                if (!TryBuildForceJoinTexts(battle, out _, out string attackText))
+                    return false;
 
-                IFaction playerFaction   = Hero.MainHero?.MapFaction;
-                IFaction defenderFaction = defenderLeader.MapFaction;
-                if (playerFaction == null || defenderFaction == null) return false;
-
-                // 已对防守方宣战 → 不显示（原版"帮助攻击方"选项此时已可用）
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, defenderFaction)) return false;
-
-                // 判断场景：防守方是商队、村民，或本场是村庄劫掠
-                bool defenderIsCaravan  = battle.DefenderSide.Parties
-                    .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsCaravan);
-                bool defenderIsVillager = battle.DefenderSide.Parties
-                    .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsVillager);
-                bool isVillageRaid      = battle.IsRaid
-                    && battle.GetLeaderParty(BattleSideEnum.Defender)?.IsSettlement == true;
-
-                if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid) return false;
-
-                // 设置按钮文本
-                string targetDesc = isVillageRaid      ? "参与劫掠村庄"
-                                  : defenderIsCaravan  ? "劫掠商队"
-                                  : "攻击村民";
-                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT",
-                    new TextObject($"落井下石！对 {defenderFaction.Name} 宣战，{targetDesc}。"));
+                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT", new TextObject(attackText));
                 return true;
             }
             catch { return false; }
         }
 
         /// <summary>
-        /// 对防守方势力宣战，记录防守方人数供战后声望扣除缩放，以攻击方身份加入战斗。
+        /// 记录防守方人数供战后声望扣除缩放，以攻击方身份加入战斗。
         /// </summary>
         private void ForceJoinAttackersConsequence(MenuCallbackArgs args)
         {
@@ -485,28 +459,211 @@ namespace GreyWardenPolicePurity
                 MapEvent battle = PlayerEncounter.EncounteredBattle;
                 if (battle == null) return;
 
-                PartyBase defenderLeader = battle.GetLeaderParty(BattleSideEnum.Defender);
-                IFaction playerFaction   = Hero.MainHero?.MapFaction;
-                IFaction defenderFaction = defenderLeader?.MapFaction;
+                CaptureForcedJoinEncounterState(battle, BattleSideEnum.Attacker);
 
-                // 1. 宣战（对防守方所属势力）
-                if (playerFaction != null && defenderFaction != null
-                    && !FactionManager.IsAtWarAgainstFaction(playerFaction, defenderFaction))
-                {
-                    FactionManager.DeclareWar(playerFaction, defenderFaction);
-                }
-
-                // 2. 记录防守方战前人数（供战后按人数缩放扣声望；JoinBattle 不触发 OnMapEventStarted）
+                // 记录防守方战前人数（供战后按人数缩放扣声望；JoinBattle 不触发 OnMapEventStarted）
                 _pendingEnemyCount = 0;
                 foreach (var p in battle.DefenderSide.Parties)
                     if (p.Party?.IsMobile == true)
                         _pendingEnemyCount += p.Party.NumberOfAllMembers;
 
-                // 3. 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
+                // 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
                 PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
                 GameMenu.ActivateGameMenu("encounter");
             }
             catch { }
+        }
+
+        private bool TryBuildForceJoinTexts(MapEvent battle, out string defendText, out string attackText)
+        {
+            defendText = string.Empty;
+            attackText = string.Empty;
+
+            if (TryBuildCivilianEncounterTexts(battle, out defendText, out attackText))
+                return true;
+
+            if (TryBuildPoliceCriminalEncounterTexts(battle, out defendText, out attackText))
+                return true;
+
+            return false;
+        }
+
+        private static bool TryBuildCivilianEncounterTexts(MapEvent battle, out string defendText, out string attackText)
+        {
+            defendText = string.Empty;
+            attackText = string.Empty;
+
+            bool defenderIsCaravan = battle.DefenderSide.Parties
+                .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsCaravan);
+            bool defenderIsVillager = battle.DefenderSide.Parties
+                .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsVillager);
+            bool isVillageRaid = battle.IsRaid
+                && battle.GetLeaderParty(BattleSideEnum.Defender)?.IsSettlement == true;
+
+            if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid)
+                return false;
+
+            string defendTarget = isVillageRaid ? "村庄"
+                : defenderIsCaravan ? "商队"
+                : "村民";
+            string attackAction = isVillageRaid ? "参与劫掠村庄"
+                : defenderIsCaravan ? "劫掠商队"
+                : "攻击村民";
+
+            defendText = $"加入防守方，保护{defendTarget}。";
+            attackText = $"加入攻击方，{attackAction}。";
+            return true;
+        }
+
+        private bool TryBuildPoliceCriminalEncounterTexts(MapEvent battle, out string defendText, out string attackText)
+        {
+            defendText = string.Empty;
+            attackText = string.Empty;
+
+            if (!TryGetPoliceCriminalEncounter(battle, out BattleSideEnum policeSide, out MobileParty? criminal))
+                return false;
+
+            string criminalName = criminal?.Name?.ToString() ?? "犯人";
+            bool policeDefends = policeSide == BattleSideEnum.Defender;
+
+            defendText = policeDefends
+                ? "加入灰袍守卫一方，协助缉拿罪犯。"
+                : $"加入 {criminalName} 一方，对抗灰袍守卫。";
+            attackText = policeDefends
+                ? $"加入 {criminalName} 一方，对抗灰袍守卫。"
+                : "加入灰袍守卫一方，协助缉拿罪犯。";
+            return true;
+        }
+
+        private void CaptureForcedJoinEncounterState(MapEvent battle, BattleSideEnum playerJoinSide)
+        {
+            _pendingPoliceCrimeSupport = 0;
+
+            if (!TryGetPoliceCriminalEncounter(battle, out BattleSideEnum policeSide, out _))
+                return;
+
+            _pendingPoliceCrimeSupport = playerJoinSide == policeSide ? 1 : -1;
+        }
+
+        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent)
+        {
+            if (_pendingPoliceCrimeSupport == 0)
+                return false;
+
+            int enemyCount = Math.Max(1, _pendingEnemyCount);
+            int repDelta = (enemyCount + 9) / 10;
+            if (repDelta <= 0)
+                return false;
+
+            if (_pendingPoliceCrimeSupport > 0)
+            {
+                PlayerState.ChangeReputation(repDelta);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"灰袍守卫注意到你的善行：协助缉拿罪犯（击败 {enemyCount} 人）| " +
+                    $"{PlayerState.GetReputationDisplay()} (+{repDelta})",
+                    Colors.Green));
+            }
+            else
+            {
+                PlayerState.ChangeReputation(-repDelta);
+
+                if (PlayerState.IsWanted)
+                {
+                    CrimeState.TryAddPlayerCrime(
+                        "妨碍执法",
+                        mapEvent.Position.ToVec2(),
+                        "帮助罪犯对抗灰袍守卫");
+                }
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"灰袍守卫记录了你的恶行：妨碍执法（击败 {enemyCount} 人）| " +
+                    $"{PlayerState.GetReputationDisplay()} (-{repDelta})",
+                    Colors.Red));
+            }
+
+            return true;
+        }
+
+        private bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)
+        {
+            criminal = null!;
+            policeSide = BattleSideEnum.Attacker;
+
+            if (TryMatchPoliceCriminalEncounterOnSide(battle, BattleSideEnum.Attacker, out criminal))
+            {
+                policeSide = BattleSideEnum.Attacker;
+                return true;
+            }
+
+            if (TryMatchPoliceCriminalEncounterOnSide(battle, BattleSideEnum.Defender, out criminal))
+            {
+                policeSide = BattleSideEnum.Defender;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryMatchPoliceCriminalEncounterOnSide(
+            MapEvent battle,
+            BattleSideEnum policeSide,
+            out MobileParty? criminal)
+        {
+            criminal = null!;
+            MapEventSide policeEventSide = policeSide == BattleSideEnum.Attacker
+                ? battle.AttackerSide
+                : battle.DefenderSide;
+            BattleSideEnum criminalSide = policeSide == BattleSideEnum.Attacker
+                ? BattleSideEnum.Defender
+                : BattleSideEnum.Attacker;
+
+            foreach (var party in policeEventSide.Parties)
+            {
+                MobileParty? policeParty = party?.Party?.MobileParty;
+                if (!IsPoliceEncounterParty(policeParty))
+                    continue;
+
+                PoliceTask? task = policeParty?.StringId != null
+                    ? CrimeState.GetTask(policeParty.StringId)
+                    : null;
+                MobileParty? offender = task?.TargetCrime?.Offender;
+                if (offender == null || !offender.IsActive || offender.IsMainParty)
+                    continue;
+
+                if (!IsPartyOnBattleSide(battle, criminalSide, offender))
+                    continue;
+
+                criminal = offender;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPoliceEncounterParty(MobileParty? party)
+        {
+            if (party == null)
+                return false;
+
+            if (GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))
+                return true;
+
+            return string.Equals(
+                party.ActualClan?.StringId,
+                GwpIds.PoliceClanId,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsPartyOnBattleSide(MapEvent battle, BattleSideEnum side, MobileParty? party)
+        {
+            if (party == null)
+                return false;
+
+            MapEventSide eventSide = side == BattleSideEnum.Attacker
+                ? battle.AttackerSide
+                : battle.DefenderSide;
+
+            return eventSide.Parties.Any(p => p.Party?.MobileParty == party);
         }
 
         #endregion

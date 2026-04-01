@@ -36,6 +36,57 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
+        private void RegisterDeterrenceForDefeatedNonPlayerLords(MapEvent mapEvent)
+        {
+            if (mapEvent == null || !mapEvent.HasWinner || mapEvent.Winner == null)
+                return;
+
+            MapEventSide? loserSide = mapEvent.Winner == mapEvent.AttackerSide
+                ? mapEvent.DefenderSide
+                : mapEvent.AttackerSide;
+            if (loserSide == null)
+                return;
+
+            HashSet<string> processedHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var involvedParty in loserSide.Parties)
+            {
+                PartyBase? losingPartyBase = involvedParty?.Party;
+                MobileParty? losingParty = losingPartyBase?.MobileParty;
+                Hero? leader = losingParty?.LeaderHero
+                               ?? losingPartyBase?.LeaderHero
+                               ?? losingParty?.Owner
+                               ?? losingPartyBase?.Owner;
+                if (leader == null)
+                    continue;
+
+                if (losingParty?.IsMainParty == true || leader == Hero.MainHero)
+                    continue;
+
+                if (leader.Clan != null &&
+                    string.Equals(leader.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (losingParty?.ActualClan != null &&
+                    string.Equals(losingParty.ActualClan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!processedHeroIds.Add(leader.StringId))
+                    continue;
+
+                PoliceAIDeterrenceBehavior.RegisterEnforcementVictoryAgainst(leader, losingParty);
+            }
+
+            if (PoliceAIDeterrenceBehavior.TryBuildHighestDeterrenceSnapshot(out string debugText))
+            {
+                InformationManager.DisplayMessage(new InformationMessage(debugText, Colors.Cyan));
+            }
+        }
+
         private void RestoreAi(MobileParty party)
         {
             if (party == null || !party.IsActive) return;
@@ -133,6 +184,38 @@ namespace GreyWardenPolicePurity
         {
             if (string.IsNullOrEmpty(taskId)) return;
             _shelteredTargetHoursByTaskId.Remove(taskId);
+            _shelteredPoliceLastPositionByTaskId.Remove(taskId);
+            _shelteredPoliceStoppedHoursByTaskId.Remove(taskId);
+        }
+
+        private void BreakInvalidShelteredBattles()
+        {
+            foreach (var kvp in CrimeState.ActiveTasks.ToList())
+            {
+                PoliceTask task = kvp.Value;
+                MobileParty? policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
+                MobileParty? criminal = task.TargetCrime?.Offender;
+
+                if (policeParty == null || !policeParty.IsActive) continue;
+                if (criminal == null || !criminal.IsActive || criminal.IsMainParty) continue;
+                if (criminal.CurrentSettlement == null) continue;
+                if (policeParty.MapEvent == null || policeParty.MapEvent.IsFinalized) continue;
+                if (policeParty.MapEvent.IsPlayerMapEvent) continue;
+
+                float distToShelter = policeParty.GetPosition2D.Distance(criminal.CurrentSettlement.GetPosition2D);
+                if (distToShelter <= GwpTuning.Enforcement.WarDistance) continue;
+
+                _ignoredInvalidShelteredBattlePartyIds.Add(policeParty.StringId);
+
+                try
+                {
+                    policeParty.MapEvent.FinalizeEvent();
+                }
+                catch
+                {
+                    _ignoredInvalidShelteredBattlePartyIds.Remove(policeParty.StringId);
+                }
+            }
         }
 
         private bool HandleShelteredCriminal(
@@ -156,6 +239,9 @@ namespace GreyWardenPolicePurity
             _shelteredTargetHoursByTaskId.TryGetValue(taskId, out shelteredHours);
             shelteredHours++;
             _shelteredTargetHoursByTaskId[taskId] = shelteredHours;
+            float distToShelter = policeParty.GetPosition2D.Distance(shelter.GetPosition2D);
+            float distToGate = policeParty.GetPosition2D.Distance(shelter.GatePosition.ToVec2());
+            int stoppedHours = UpdateShelteredPoliceStoppedHours(taskId, policeParty);
 
             // 围堵期间自动补粮，避免警察因缺粮脱离任务导致"消失后重刷"
             PoliceResourceManager.ReplenishFood(policeParty, 2);
@@ -163,9 +249,18 @@ namespace GreyWardenPolicePurity
             policeParty.Ai.SetInitiative(1f, 0f, 999f);
             policeParty.SetMoveEngageParty(criminal, NavigationType.Default);
 
-            if (shelteredHours % GwpTuning.Enforcement.ShelteredForceBattleIntervalHours == 0)
+            // 躲进定居点时，必须先让“当前这条任务”进入战争追捕状态。
+            // 即便两边已经被别的警察任务拖入战争，也不能跳过这一步直接隔空强制开战。
+            if (!task.WarDeclared && distToShelter <= GwpTuning.Enforcement.WarDistance)
             {
-                TryForceStartBattle(policeParty, criminal);
+                DeclareWar(task, criminal);
+            }
+
+            if (task.WarDeclared &&
+                distToGate <= GwpTuning.Enforcement.ShelteredGateDistance &&
+                stoppedHours >= GwpTuning.Enforcement.ShelteredGateHoldHours)
+            {
+                TryForceExpelShelteredCriminal(policeParty, criminal);
             }
 
             if (criminal.CurrentSettlement == null)
@@ -177,18 +272,51 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private static bool TryForceStartBattle(MobileParty attacker, MobileParty defender)
+        private int UpdateShelteredPoliceStoppedHours(string taskId, MobileParty policeParty)
+        {
+            if (string.IsNullOrEmpty(taskId) || policeParty == null)
+                return 0;
+
+            Vec2 currentPosition = policeParty.GetPosition2D;
+            if (!_shelteredPoliceLastPositionByTaskId.TryGetValue(taskId, out Vec2 previousPosition))
+            {
+                _shelteredPoliceLastPositionByTaskId[taskId] = currentPosition;
+                _shelteredPoliceStoppedHoursByTaskId[taskId] = 0;
+                return 0;
+            }
+
+            float movedDistance = currentPosition.Distance(previousPosition);
+            int stoppedHours = movedDistance <= GwpTuning.Enforcement.ShelteredGateStopTolerance
+                ? (_shelteredPoliceStoppedHoursByTaskId.TryGetValue(taskId, out int lastStoppedHours)
+                    ? lastStoppedHours + 1
+                    : 1)
+                : 0;
+
+            _shelteredPoliceLastPositionByTaskId[taskId] = currentPosition;
+            _shelteredPoliceStoppedHoursByTaskId[taskId] = stoppedHours;
+            return stoppedHours;
+        }
+
+        private static bool TryForceExpelShelteredCriminal(MobileParty attacker, MobileParty defender)
         {
             if (attacker == null || defender == null) return false;
             if (!attacker.IsActive || !defender.IsActive) return false;
-            if (attacker.MapEvent != null || defender.MapEvent != null) return false;
             if (attacker.CurrentSettlement != null) return false;
             if (string.Equals(attacker.StringId, defender.StringId, StringComparison.OrdinalIgnoreCase)) return false;
 
             try
             {
-                StartBattleAction.ApplyStartBattle(attacker, defender);
-                return attacker.MapEvent != null || defender.MapEvent != null;
+                Settlement? defenderSettlement = defender.CurrentSettlement;
+                if (defenderSettlement != null)
+                {
+                    LeaveSettlementAction.ApplyForParty(defender);
+
+                    // 让刚被逼出城的目标先停住，避免它立刻重新钻回定居点，
+                    // 然后由警察已有的追击命令自然接管战斗。
+                    try { defender.SetMoveModeHold(); } catch { }
+                }
+
+                return defender.CurrentSettlement == null;
             }
             catch
             {

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
 namespace GreyWardenPolicePurity
@@ -13,8 +14,11 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed class GreyWardenLoreBehavior : CampaignBehaviorBase
     {
+        private const float MetGreetingChance = 0.5f;
         private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
         private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
+        private static string _lastGreetingConversationKey = string.Empty;
+        private static bool _lastGreetingConversationResult;
 
         private static readonly Dictionary<string, TextObject> HeroEncyclopediaTexts =
             new Dictionary<string, TextObject>
@@ -36,6 +40,7 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.ConversationEnded.AddNonSerializedListener(this, OnConversationEnded);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -48,13 +53,29 @@ namespace GreyWardenPolicePurity
             RegisterMetLordGreeting(starter);
         }
 
+        private void OnConversationEnded(IEnumerable<CharacterObject> characters)
+        {
+            _ = characters;
+            _lastGreetingConversationKey = string.Empty;
+            _lastGreetingConversationResult = false;
+        }
+
         private static void RegisterMetLordGreeting(CampaignGameStarter starter)
         {
             starter.AddDialogLine(
                 "gwp_grey_lord_met_greeting",
                 "start",
-                "lord_talk_speak_diplomacy_2",
+                "gwp_grey_lord_met_followup",
                 "{" + GwpTextKeys.GreyLordGreeting + "}",
+                GreyLordMetGreetingCondition,
+                null,
+                200);
+
+            starter.AddDialogLine(
+                "gwp_grey_lord_met_followup",
+                "gwp_grey_lord_met_followup",
+                "lord_talk_speak_diplomacy_2",
+                "{=gwp_grey_lord_followup}所以，怎么了？",
                 GreyLordMetGreetingCondition,
                 null,
                 200);
@@ -62,6 +83,9 @@ namespace GreyWardenPolicePurity
 
         private static bool GreyLordMetGreetingCondition()
         {
+            if (IsPostBattleCaptureConversation())
+                return false;
+
             Hero? conversationHero = Hero.OneToOneConversationHero;
             if (!IsGreyWardenLord(conversationHero))
                 return false;
@@ -70,6 +94,9 @@ namespace GreyWardenPolicePurity
                 return false;
 
             if (IsPoliceInteractionConversation())
+                return false;
+
+            if (!RollMetGreetingChance(conversationHero))
                 return false;
 
             MBTextManager.SetTextVariable(
@@ -92,6 +119,32 @@ namespace GreyWardenPolicePurity
 
             PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
             return task?.TargetCrime?.Offender?.IsMainParty == true;
+        }
+
+        private static bool IsPostBattleCaptureConversation()
+        {
+            Campaign? campaign = Campaign.Current;
+            if (campaign == null)
+                return false;
+
+            return campaign.CurrentConversationContext == ConversationContext.CapturedLord ||
+                   campaign.CurrentConversationContext == ConversationContext.FreeOrCapturePrisonerHero;
+        }
+
+        private static bool RollMetGreetingChance(Hero conversationHero)
+        {
+            Campaign? campaign = Campaign.Current;
+            string heroId = conversationHero.StringId ?? string.Empty;
+            string partyId = MobileParty.ConversationParty?.StringId ?? string.Empty;
+            string key = $"{campaign?.CurrentConversationContext}|{heroId}|{partyId}";
+
+            if (!string.Equals(_lastGreetingConversationKey, key, System.StringComparison.Ordinal))
+            {
+                _lastGreetingConversationKey = key;
+                _lastGreetingConversationResult = MBRandom.RandomFloat <= MetGreetingChance;
+            }
+
+            return _lastGreetingConversationResult;
         }
 
         private static TextObject BuildMetGreeting(int reputation)

@@ -15,6 +15,8 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PoliceAntiWarDeclaration : CampaignBehaviorBase
     {
+        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+
         public override void RegisterEvents()
         {
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnBattleEnded);
@@ -34,6 +36,7 @@ namespace GreyWardenPolicePurity
             bool delayPatrolInvolved = false;
             bool regularPoliceInvolved = false;
             bool playerInvolved = false;
+            bool policeWasExecutingPlayerTask = false;
             IFaction enemyFaction = null!;
 
             foreach (var party in mapEvent.InvolvedParties)
@@ -49,6 +52,10 @@ namespace GreyWardenPolicePurity
                         delayPatrolInvolved = true;
                     else
                         regularPoliceInvolved = true;
+
+                    PoliceTask? task = CrimeState.GetTask(party.MobileParty.StringId);
+                    if (task?.TargetCrime?.Offender?.IsMainParty == true)
+                        policeWasExecutingPlayerTask = true;
                 }
                 else if (party.MobileParty.IsMainParty)
                 {
@@ -97,7 +104,11 @@ namespace GreyWardenPolicePurity
             // 原代码只处理 policeInvolved && enemyFaction != null（警察打其他NPC），
             // 但警察自身是"敌人"时 enemyFaction 为 null，导致执法警察战败后持续宣战 → -4声望
             // 纠察队由 PolicePatrolBehavior.OnPlayerVictory()+MakePeaceWithPoliceClan() 已处理，此处排除
-            if (policeInvolved && playerInvolved && !policeOnWinningSide && !patrolInvolved)
+            if (policeInvolved &&
+                playerInvolved &&
+                !policeOnWinningSide &&
+                !patrolInvolved &&
+                policeWasExecutingPlayerTask)
             {
                 IFaction playerFaction = Hero.MainHero?.MapFaction;
                 GwpCommon.TrySetNeutral(policeClan, playerFaction);

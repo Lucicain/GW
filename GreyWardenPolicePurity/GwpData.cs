@@ -79,11 +79,13 @@ namespace GreyWardenPolicePurity
 
         public static int PartyCount => GetAllPoliceParties().Count;
         public static int MaxActiveTasks => PartyCount;
+        public static int PoliceClanMemberCount =>
+            GetPoliceClan()?.Heroes.Count(h => h != null && h.IsAlive) ?? 0;
     }
 
     /// <summary>
     /// 犯罪池管理
-    /// 池容量 = 空闲警察数量；每小时自动清理无效记录
+    /// 池容量 = 警察家族当前存活人数（固定上限）；每小时自动清理无效记录
     /// </summary>
     public static class CrimePool
     {
@@ -99,6 +101,7 @@ namespace GreyWardenPolicePurity
         }
 
         public static bool IsAccepting { get; private set; } = true;
+        public static bool IsDispatchReady => GetPoolCapacity() > 0 && GetValidPoolCount() >= GetPoolCapacity();
         public static IReadOnlyDictionary<string, PoliceTask> ActiveTasks => _tasks;
 
         /// <summary>玩家是否正在被通缉（池中或任务中有玩家犯罪）</summary>
@@ -179,11 +182,26 @@ namespace GreyWardenPolicePurity
         public static bool TryAdd(string crimeType, MobileParty offender, Vec2 location, string victimName)
         {
             if (offender == null || !offender.IsActive) return false;
-            if (!IsAccepting) return false;
 
             string offenderId = offender.StringId;
             if (_pool.Any(c => c.Offender?.StringId == offenderId)) return false;
             if (_tasks.Values.Any(t => t.TargetCrime?.Offender?.StringId == offenderId)) return false;
+
+            int poolCapacity = GetPoolCapacity();
+            if (poolCapacity <= 0) return false;
+
+            if (GetValidPoolCount() >= poolCapacity)
+            {
+                CrimeRecord? oldestCrime = _pool
+                    .Where(c => c.CrimeId != PlayerCrimeId && c.IsOffenderValid())
+                    .OrderBy(c => c.OccurredTime.ToHours)
+                    .FirstOrDefault();
+
+                if (oldestCrime == null)
+                    return false;
+
+                _pool.Remove(oldestCrime);
+            }
 
             _pool.Add(new CrimeRecord
             {
@@ -440,10 +458,14 @@ namespace GreyWardenPolicePurity
 
         public static void RefreshAccepting()
         {
-            int freePolice = PoliceStats.PartyCount - _tasks.Count;
-            int poolCount = _pool.Count(c => c.IsOffenderValid());
-            IsAccepting = poolCount < freePolice;
+            int poolCapacity = GetPoolCapacity();
+            int poolCount = GetValidPoolCount();
+            IsAccepting = poolCount < poolCapacity;
         }
+
+        private static int GetPoolCapacity() => Math.Max(0, PoliceStats.PoliceClanMemberCount);
+
+        private static int GetValidPoolCount() => _pool.Count(c => c.IsOffenderValid());
 
         /// <summary>
         /// 将 CrimePool 的运行时状态序列化到存档，或从存档恢复。
