@@ -441,15 +441,9 @@ namespace GreyWardenPolicePurity
 
             int rep = PlayerState.Reputation;
 
-            // 正面声望：每日发奖励 + 取消所有通缉和巡逻
+            // 正面声望：取消所有通缉和巡逻
             if (rep > 0)
             {
-                int reward = rep * GwpTuning.Patrol.RewardPerPointPerDay;
-                Hero.MainHero.ChangeHeroGold(reward);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫日津+{reward}金（声望{rep} × {GwpTuning.Patrol.RewardPerPointPerDay}）",
-                    Colors.Green));
-
                 // 取消所有巡逻队
                 ReturnAllPatrols();
 

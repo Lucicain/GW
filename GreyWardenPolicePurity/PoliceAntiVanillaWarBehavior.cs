@@ -35,11 +35,13 @@ namespace GreyWardenPolicePurity
         {
             if (faction1 == null || faction2 == null) return null;
 
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+
             if (IsGreyWardenFaction(policeClan, faction1))
-                return faction2;
+                return IsPlayerFaction(playerFaction, faction2) ? null : faction2;
 
             if (IsGreyWardenFaction(policeClan, faction2))
-                return faction1;
+                return IsPlayerFaction(playerFaction, faction1) ? null : faction1;
 
             return null;
         }
@@ -48,6 +50,12 @@ namespace GreyWardenPolicePurity
         {
             return faction == policeClan ||
                    string.Equals(faction.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsPlayerFaction(IFaction? playerFaction, IFaction faction)
+        {
+            return playerFaction != null &&
+                   string.Equals(playerFaction.StringId, faction.StringId, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

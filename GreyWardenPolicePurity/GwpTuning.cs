@@ -58,6 +58,11 @@ namespace GreyWardenPolicePurity
             public const int AdoptedGirlMaxAge = 6;
         }
 
+        internal static class VillageReward
+        {
+            public const int DenarsPerReputationPerDay = 10;
+        }
+
         internal static class Deterrence
         {
             public const float RaidPenaltyCap = 9f;
