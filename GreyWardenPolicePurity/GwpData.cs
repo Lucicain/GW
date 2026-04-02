@@ -32,6 +32,8 @@ namespace GreyWardenPolicePurity
         public bool WarDeclared { get; set; }
         public IFaction? WarTarget { get; set; }
         public bool IsEscortingPlayer { get; set; }
+        /// <summary>已接案，但需要先回城补给后再正式追击。</summary>
+        public bool IsPreparingDispatch { get; set; }
         /// <summary>押送目标城镇（俘获玩家时记录，避免每帧重新计算导致目标漂移）</summary>
         public Settlement? EscortSettlement { get; set; }
         /// <summary>
@@ -49,6 +51,7 @@ namespace GreyWardenPolicePurity
             {
                 if (IsPlayerBountyEscort) return PoliceTaskFlowState.PlayerBountyEscort;
                 if (IsEscortingPlayer) return PoliceTaskFlowState.EscortingPlayer;
+                if (IsPreparingDispatch) return PoliceTaskFlowState.PreparingDispatch;
                 if (WarDeclared) return PoliceTaskFlowState.WarPursuit;
                 if (TargetCrime != null) return PoliceTaskFlowState.Pursuit;
                 return PoliceTaskFlowState.None;
@@ -101,7 +104,7 @@ namespace GreyWardenPolicePurity
         }
 
         public static bool IsAccepting { get; private set; } = true;
-        public static bool IsDispatchReady => GetPoolCapacity() > 0 && GetValidPoolCount() >= GetPoolCapacity();
+        public static bool IsDispatchReady => GetValidPoolCount() > 0;
         public static IReadOnlyDictionary<string, PoliceTask> ActiveTasks => _tasks;
 
         /// <summary>玩家是否正在被通缉（池中或任务中有玩家犯罪）</summary>
@@ -182,6 +185,7 @@ namespace GreyWardenPolicePurity
         public static bool TryAdd(string crimeType, MobileParty offender, Vec2 location, string victimName)
         {
             if (offender == null || !offender.IsActive) return false;
+            if (GwpCommon.ShouldIgnoreCrimeTracking(offender)) return false;
 
             string offenderId = offender.StringId;
             if (_pool.Any(c => c.Offender?.StringId == offenderId)) return false;
@@ -311,6 +315,19 @@ namespace GreyWardenPolicePurity
             return null;
         }
 
+        public static bool RemovePendingCrimeByOffenderId(string? offenderStringId)
+        {
+            if (string.IsNullOrEmpty(offenderStringId)) return false;
+
+            int removed = _pool.RemoveAll(c =>
+                string.Equals(c.Offender?.StringId, offenderStringId, StringComparison.OrdinalIgnoreCase));
+
+            if (removed > 0)
+                RefreshAccepting();
+
+            return removed > 0;
+        }
+
         public static void BeginTask(string policePartyId, CrimeRecord crime)
         {
             _tasks[policePartyId] = new PoliceTask
@@ -319,7 +336,8 @@ namespace GreyWardenPolicePurity
                 TargetCrime = crime,
                 WarDeclared = false,
                 WarTarget = null,
-                IsEscortingPlayer = false
+                IsEscortingPlayer = false,
+                IsPreparingDispatch = false
             };
             _pool.Remove(crime);
             RefreshAccepting();
@@ -386,6 +404,7 @@ namespace GreyWardenPolicePurity
                 WarDeclared = false,
                 WarTarget = null,
                 IsEscortingPlayer = false,
+                IsPreparingDispatch = false,
                 EscortSettlement = null,
                 IsPlayerBountyEscort = false
             };
@@ -520,6 +539,7 @@ namespace GreyWardenPolicePurity
                     int    twar  = t.WarDeclared       ? 1 : 0;
                     string twt   = t.WarTarget?.StringId ?? "";
                     int    tesc  = t.IsEscortingPlayer  ? 1 : 0;
+                    int    tprep = t.IsPreparingDispatch ? 1 : 0;
                     string tescs = t.EscortSettlement?.StringId ?? "";
                     int    tbe   = t.IsPlayerBountyEscort ? 1 : 0;
                     dataStore.SyncData($"gwp_cp_t{i}_police",  ref tpol);
@@ -533,6 +553,7 @@ namespace GreyWardenPolicePurity
                     dataStore.SyncData($"gwp_cp_t{i}_war",     ref twar);
                     dataStore.SyncData($"gwp_cp_t{i}_wt",      ref twt);
                     dataStore.SyncData($"gwp_cp_t{i}_esc",     ref tesc);
+                    dataStore.SyncData($"gwp_cp_t{i}_prep",    ref tprep);
                     dataStore.SyncData($"gwp_cp_t{i}_escs",    ref tescs);
                     dataStore.SyncData($"gwp_cp_t{i}_be",      ref tbe);
                 }
@@ -581,7 +602,7 @@ namespace GreyWardenPolicePurity
                 {
                     string tpol = ""; string tcid = ""; string tctype = ""; string tcoffe = "";
                     float tctime = 0f; float tclocx = 0f; float tclocy = 0f; string tcvict = "";
-                    int twar = 0; string twt = ""; int tesc = 0; string tescs = ""; int tbe = 0;
+                    int twar = 0; string twt = ""; int tesc = 0; int tprep = 0; string tescs = ""; int tbe = 0;
                     dataStore.SyncData($"gwp_cp_t{i}_police",  ref tpol);
                     dataStore.SyncData($"gwp_cp_t{i}_cid",     ref tcid);
                     dataStore.SyncData($"gwp_cp_t{i}_ctype",   ref tctype);
@@ -593,6 +614,7 @@ namespace GreyWardenPolicePurity
                     dataStore.SyncData($"gwp_cp_t{i}_war",     ref twar);
                     dataStore.SyncData($"gwp_cp_t{i}_wt",      ref twt);
                     dataStore.SyncData($"gwp_cp_t{i}_esc",     ref tesc);
+                    dataStore.SyncData($"gwp_cp_t{i}_prep",    ref tprep);
                     dataStore.SyncData($"gwp_cp_t{i}_escs",    ref tescs);
                     dataStore.SyncData($"gwp_cp_t{i}_be",      ref tbe);
 
@@ -636,6 +658,7 @@ namespace GreyWardenPolicePurity
                         WarDeclared         = twar != 0,
                         WarTarget           = warTarget,
                         IsEscortingPlayer   = tesc != 0,
+                        IsPreparingDispatch = tprep != 0,
                         EscortSettlement    = escortSett,
                         IsPlayerBountyEscort = tbe != 0
                     };

@@ -2,8 +2,11 @@
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
+using System.Linq;
 
 namespace GreyWardenPolicePurity
 {
@@ -25,6 +28,11 @@ namespace GreyWardenPolicePurity
             return party?.StringId?.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) == true;
         }
 
+        public static bool ShouldIgnoreCrimeTracking(MobileParty? party)
+        {
+            return party?.IsPatrolParty == true;
+        }
+
         public static bool IsGreyWardenLord(Hero? hero)
         {
             if (hero?.Clan == null)
@@ -32,6 +40,48 @@ namespace GreyWardenPolicePurity
 
             return string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase)
                    && hero.Occupation == Occupation.Lord;
+        }
+
+        public static bool IsGreyWardenTroop(CharacterObject? character)
+        {
+            if (character == null || character.HeroObject != null)
+                return false;
+
+            return IsGreyWardenTroopId(character.StringId);
+        }
+
+        public static bool IsGreyWardenTroopId(string? characterId)
+        {
+            return !string.IsNullOrWhiteSpace(characterId)
+                   && characterId!.StartsWith("gw", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsDeserterParty(MobileParty? party)
+        {
+            return party?.ActualClan != null &&
+                   string.Equals(party.ActualClan.StringId, "deserters", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool RemoveGreyWardenTroops(TroopRoster? roster)
+        {
+            if (roster == null || roster.TotalRegulars <= 0)
+                return false;
+
+            bool removedAny = false;
+            foreach (TroopRosterElement element in roster.GetTroopRoster().ToList())
+            {
+                if (!IsGreyWardenTroop(element.Character) || element.Number <= 0)
+                    continue;
+
+                roster.AddToCounts(
+                    element.Character,
+                    -element.Number,
+                    insertAtFront: false,
+                    -element.WoundedNumber);
+                removedAny = true;
+            }
+
+            return removedAny;
         }
 
         public static Settlement? FindNearestTown(MobileParty? party)

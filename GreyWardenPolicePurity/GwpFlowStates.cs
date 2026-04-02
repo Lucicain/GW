@@ -17,9 +17,10 @@ namespace GreyWardenPolicePurity
     internal enum PoliceTaskFlowState
     {
         None = 0,
-        Pursuit = 1,
-        WarPursuit = 2,
-        EscortingPlayer = 3,
-        PlayerBountyEscort = 4
+        PreparingDispatch = 1,
+        Pursuit = 2,
+        WarPursuit = 3,
+        EscortingPlayer = 4,
+        PlayerBountyEscort = 5
     }
 }

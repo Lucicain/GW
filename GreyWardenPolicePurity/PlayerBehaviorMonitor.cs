@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -25,6 +27,7 @@ namespace GreyWardenPolicePurity
         // 运行时（无需持久化）：记录战斗开始时敌方部队总人数，用于声望缩放计算
         private int _pendingEnemyCount = 0;
         private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
+        private int _pendingPlayerKillBaseline = -1;
 
         public override void RegisterEvents()
         {
@@ -95,6 +98,8 @@ namespace GreyWardenPolicePurity
                 foreach (var p in enemySideForCount.Parties)
                     if (p.Party?.IsMobile == true)
                         _pendingEnemyCount += p.Party.NumberOfAllMembers;
+
+                CapturePlayerKillBaseline();
             }
 
             // 以下犯罪检测要求双方均为移动部队（Settlement 类型直接跳过，由其他事件处理）
@@ -222,14 +227,26 @@ namespace GreyWardenPolicePurity
                 {
                     _pendingEnemyCount = 0;
                     _pendingPoliceCrimeSupport = 0;
+                    _pendingPlayerKillBaseline = -1;
                 }
                 return;
             }
 
-            if (TryResolvePendingPoliceCriminalReputation(mapEvent))
+            int playerKillCount = GetPlayerKillCountSinceBattleStart();
+
+            if (TryResolvePendingPoliceCriminalReputation(mapEvent, playerKillCount))
             {
                 _pendingEnemyCount = 0;
                 _pendingPoliceCrimeSupport = 0;
+                _pendingPlayerKillBaseline = -1;
+                return;
+            }
+
+            if (TryApplyPoliceBattlePenalty(mapEvent))
+            {
+                _pendingEnemyCount = 0;
+                _pendingPoliceCrimeSupport = 0;
+                _pendingPlayerKillBaseline = -1;
                 return;
             }
 
@@ -264,19 +281,21 @@ namespace GreyWardenPolicePurity
             bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defenderIsVillageRaid;
             if (anyGoodDeed)
             {
-                int enemyCount = Math.Max(1, _pendingEnemyCount); // 无法记录时保底+1
-                int repGain    = (enemyCount + 9) / 10;           // 向上取整
+                int repGain = playerKillCount / 10;
 
-                PlayerState.ChangeReputation(repGain);
+                if (repGain > 0)
+                {
+                    PlayerState.ChangeReputation(repGain);
 
-                string deedType = defenderIsVillageRaid ? "保护村庄免遭劫掠"
-                                : defenderIsCaravan     ? "解救商队"
-                                : defenderIsVillager    ? "解救村民"
-                                : "击败劫匪";
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫注意到你的善行：{deedType}（击败 {enemyCount} 人）| " +
-                    $"{PlayerState.GetReputationDisplay()} (+{repGain})",
-                    Colors.Green));
+                    string deedType = defenderIsVillageRaid ? "保护村庄免遭劫掠"
+                                    : defenderIsCaravan     ? "解救商队"
+                                    : defenderIsVillager    ? "解救村民"
+                                    : "击败劫匪";
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"灰袍守卫注意到你的善行：{deedType}（亲手击败 {playerKillCount} 人）| " +
+                        $"{PlayerState.GetReputationDisplay()} (+{repGain})",
+                        Colors.Green));
+                }
             }
 
             // ── 声望扣除：按失败方战前人数向上取整（1~10人=-1，无人死伤=0）────────
@@ -344,6 +363,7 @@ namespace GreyWardenPolicePurity
 
             _pendingEnemyCount = 0;
             _pendingPoliceCrimeSupport = 0;
+            _pendingPlayerKillBaseline = -1;
         }
 
         #endregion
@@ -421,6 +441,8 @@ namespace GreyWardenPolicePurity
                     if (p.Party?.IsMobile == true)
                         _pendingEnemyCount += p.Party.NumberOfAllMembers;
 
+                CapturePlayerKillBaseline();
+
                 // 以防守方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
                 PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
                 GameMenu.ActivateGameMenu("encounter");
@@ -466,6 +488,8 @@ namespace GreyWardenPolicePurity
                 foreach (var p in battle.DefenderSide.Parties)
                     if (p.Party?.IsMobile == true)
                         _pendingEnemyCount += p.Party.NumberOfAllMembers;
+
+                CapturePlayerKillBaseline();
 
                 // 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
                 PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
@@ -545,27 +569,37 @@ namespace GreyWardenPolicePurity
             _pendingPoliceCrimeSupport = playerJoinSide == policeSide ? 1 : -1;
         }
 
-        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent)
+        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent, int playerKillCount)
         {
             if (_pendingPoliceCrimeSupport == 0)
                 return false;
 
-            int enemyCount = Math.Max(1, _pendingEnemyCount);
-            int repDelta = (enemyCount + 9) / 10;
-            if (repDelta <= 0)
-                return false;
-
             if (_pendingPoliceCrimeSupport > 0)
             {
-                PlayerState.ChangeReputation(repDelta);
+                int repGain = playerKillCount / 10;
+                if (repGain <= 0)
+                    return true;
+
+                PlayerState.ChangeReputation(repGain);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫注意到你的善行：协助缉拿罪犯（击败 {enemyCount} 人）| " +
-                    $"{PlayerState.GetReputationDisplay()} (+{repDelta})",
+                    $"灰袍守卫注意到你的善行：协助缉拿罪犯（亲手击败 {playerKillCount} 人）| " +
+                    $"{PlayerState.GetReputationDisplay()} (+{repGain})",
                     Colors.Green));
             }
             else
             {
-                PlayerState.ChangeReputation(-repDelta);
+                if (!TryGetPoliceCriminalEncounter(mapEvent, out BattleSideEnum policeSide, out _))
+                    return false;
+
+                MapEventSide policeEventSide = policeSide == BattleSideEnum.Attacker
+                    ? mapEvent.AttackerSide
+                    : mapEvent.DefenderSide;
+                int policeCasualties = CountPoliceCasualties(policeEventSide);
+                int repLoss = (policeCasualties + 9) / 10;
+                if (repLoss <= 0)
+                    return true;
+
+                PlayerState.ChangeReputation(-repLoss);
 
                 if (PlayerState.IsWanted)
                 {
@@ -576,11 +610,41 @@ namespace GreyWardenPolicePurity
                 }
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫记录了你的恶行：妨碍执法（击败 {enemyCount} 人）| " +
-                    $"{PlayerState.GetReputationDisplay()} (-{repDelta})",
+                    $"灰袍守卫记录了你的恶行：妨碍执法（击败 {policeCasualties} 名灰袍守卫）| " +
+                    $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                     Colors.Red));
             }
 
+            return true;
+        }
+
+        private bool TryApplyPoliceBattlePenalty(MapEvent mapEvent)
+        {
+            if (mapEvent == null || !mapEvent.HasWinner)
+                return false;
+
+            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
+                ? mapEvent.DefenderSide
+                : mapEvent.AttackerSide;
+            if (loser == null)
+                return false;
+
+            int policeCasualties = CountPoliceCasualties(loser);
+            if (policeCasualties <= 0)
+                return false;
+
+            bool loserHadPatrol = SideContainsPartyType(loser, static p => GwpCommon.IsPatrolParty(p));
+            int repLoss = (policeCasualties + 9) / 10;
+            if (repLoss <= 0)
+                return false;
+
+            PlayerState.ChangeReputation(-repLoss);
+
+            string targetName = loserHadPatrol ? "纠察队" : "灰袍守卫";
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"灰袍守卫记录了你的恶行：击败{targetName}（击败 {policeCasualties} 人）| " +
+                $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
+                Colors.Red));
             return true;
         }
 
@@ -652,6 +716,68 @@ namespace GreyWardenPolicePurity
                 party.ActualClan?.StringId,
                 GwpIds.PoliceClanId,
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void CapturePlayerKillBaseline()
+        {
+            _pendingPlayerKillBaseline = GetCurrentPlayerKillTotal();
+        }
+
+        private int GetPlayerKillCountSinceBattleStart()
+        {
+            int current = GetCurrentPlayerKillTotal();
+            if (_pendingPlayerKillBaseline < 0 || current < _pendingPlayerKillBaseline)
+                return 0;
+
+            return current - _pendingPlayerKillBaseline;
+        }
+
+        private static int GetCurrentPlayerKillTotal()
+        {
+            IStatisticsCampaignBehavior? stats =
+                Campaign.Current?.GetCampaignBehavior<IStatisticsCampaignBehavior>();
+            return stats?.GetNumberOfTroopsKnockedOrKilledByPlayer() ?? 0;
+        }
+
+        private static int CountPoliceCasualties(MapEventSide side)
+        {
+            int total = 0;
+
+            foreach (MapEventParty party in side.Parties)
+            {
+                MobileParty? mobileParty = party?.Party?.MobileParty;
+                if (!IsPoliceEncounterParty(mobileParty))
+                    continue;
+
+                total += CountRosterMembers(party.DiedInBattle);
+                total += CountRosterMembers(party.WoundedInBattle);
+                total += CountRosterMembers(party.RoutedInBattle);
+            }
+
+            return total;
+        }
+
+        private static int CountRosterMembers(TroopRoster? roster)
+        {
+            if (roster == null)
+                return 0;
+
+            int total = 0;
+            foreach (TroopRosterElement element in roster.GetTroopRoster())
+                total += element.Number;
+            return total;
+        }
+
+        private static bool SideContainsPartyType(MapEventSide side, Func<MobileParty, bool> predicate)
+        {
+            foreach (MapEventParty party in side.Parties)
+            {
+                MobileParty? mobileParty = party?.Party?.MobileParty;
+                if (mobileParty != null && predicate(mobileParty))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool IsPartyOnBattleSide(MapEvent battle, BattleSideEnum side, MobileParty? party)

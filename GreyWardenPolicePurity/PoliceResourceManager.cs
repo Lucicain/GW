@@ -132,30 +132,156 @@ namespace GreyWardenPolicePurity
 
             foreach (Hero hero in policeClan.Heroes.ToList())
             {
-                if (hero == null || hero.IsDead || !hero.IsActive) continue;
-                if (!IsPoliceClanHero(hero)) continue;
-                if (hero.IsChild || hero.PartyBelongedTo != null || hero.IsPrisoner) continue;
-                if (!hero.CanLeadParty()) continue;
-
-                try
-                {
-                    ApplyCommanderLoadout(hero);
-                    Settlement spawn = hero.CurrentSettlement
-                        ?? FindNearestTown(policeClan.Leader?.PartyBelongedTo?.GetPosition2D ?? Vec2.Zero);
-                    MobileParty newParty = MobilePartyHelper.SpawnLordParty(hero, spawn);
-                    if (newParty != null)
-                    {
-                        ReplenishTroops(newParty);
-                        ReplenishFood(newParty);
-                        GivePoliceShips(newParty);   // 按人数比例配船
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // 内部组队失败（开发错误日志，正式版静默忽略）
-                    _ = ex;
-                }
+                RecoverPoliceCommanderParty(hero, policeClan);
             }
+        }
+
+        private void RecoverPoliceCommanderParty(Hero? hero, Clan policeClan)
+        {
+            if (!IsEligiblePoliceCommander(hero))
+                return;
+
+            if (hero == null)
+                return;
+
+            try
+            {
+                EnsurePoliceCommanderIsActive(hero);
+                ApplyCommanderLoadout(hero);
+
+                MobileParty? existingParty = hero.PartyBelongedTo;
+                if (existingParty?.IsActive == true)
+                {
+                    RecoverPoliceShellPartyIfNeeded(existingParty);
+                    return;
+                }
+
+                if (hero.IsPrisoner || hero.PartyBelongedToAsPrisoner != null)
+                    return;
+
+                if (existingParty != null && !TryClearBrokenPartyReference(hero))
+                    return;
+
+                Settlement? spawn = ResolvePoliceSpawnSettlement(hero, policeClan);
+                if (spawn == null)
+                    return;
+
+                PreparePoliceCommanderForSpawn(hero, spawn);
+
+                MobileParty? newParty = MobilePartyHelper.SpawnLordParty(hero, spawn);
+                if (newParty == null)
+                    return;
+
+                RecoverPolicePartySupplies(newParty);
+            }
+            catch (Exception ex)
+            {
+                // 内部组队失败（开发错误日志，正式版静默忽略）
+                _ = ex;
+            }
+        }
+
+        private static bool IsEligiblePoliceCommander(Hero? hero)
+        {
+            if (!GwpCommon.IsGreyWardenLord(hero))
+                return false;
+
+            if (hero == null || hero.IsDead || hero.IsDisabled || hero.IsChild)
+                return false;
+
+            return hero.Age >= Campaign.Current.Models.AgeModel.HeroComesOfAge;
+        }
+
+        private static void EnsurePoliceCommanderIsActive(Hero hero)
+        {
+            if (hero.IsActive || hero.IsPrisoner || hero.IsDisabled || hero.IsDead)
+                return;
+
+            try { hero.ChangeState(Hero.CharacterStates.Active); } catch { }
+        }
+
+        private static Settlement? ResolvePoliceSpawnSettlement(Hero hero, Clan policeClan)
+        {
+            if (hero.CurrentSettlement?.IsTown == true && hero.CurrentSettlement.SiegeEvent == null)
+                return hero.CurrentSettlement;
+
+            if (hero.HomeSettlement?.IsTown == true && hero.HomeSettlement.SiegeEvent == null)
+                return hero.HomeSettlement;
+
+            Settlement? bestSettlement = SettlementHelper.GetBestSettlementToSpawnAround(hero);
+            if (bestSettlement?.IsTown == true && bestSettlement.SiegeEvent == null)
+                return bestSettlement;
+
+            if (policeClan.InitialHomeSettlement?.IsTown == true && policeClan.InitialHomeSettlement.SiegeEvent == null)
+                return policeClan.InitialHomeSettlement;
+
+            Vec2 fallbackPosition = hero.CurrentSettlement?.GetPosition2D
+                ?? hero.HomeSettlement?.GetPosition2D
+                ?? policeClan.Leader?.CurrentSettlement?.GetPosition2D
+                ?? policeClan.Leader?.PartyBelongedTo?.GetPosition2D
+                ?? Vec2.Zero;
+
+            return FindNearestTown(fallbackPosition);
+        }
+
+        private static void PreparePoliceCommanderForSpawn(Hero hero, Settlement spawn)
+        {
+            if (hero.GovernorOf != null)
+            {
+                try { ChangeGovernorAction.RemoveGovernorOf(hero); } catch { }
+            }
+
+            try { hero.StayingInSettlement = null; } catch { }
+
+            if (hero.CurrentSettlement != spawn)
+            {
+                try { TeleportHeroAction.ApplyImmediateTeleportToSettlement(hero, spawn); } catch { }
+            }
+        }
+
+        private static bool TryClearBrokenPartyReference(Hero hero)
+        {
+            if (hero.PartyBelongedTo == null)
+                return true;
+
+            if (hero.PartyBelongedTo.IsActive)
+                return false;
+
+            try
+            {
+                typeof(Hero)
+                    .GetMethod("SetPartyBelongedTo", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?.Invoke(hero, new object?[] { null });
+            }
+            catch { }
+
+            return hero.PartyBelongedTo == null;
+        }
+
+        private static void RecoverPoliceShellPartyIfNeeded(MobileParty party)
+        {
+            if (!party.IsActive || !IsPoliceClanHero(party.LeaderHero))
+                return;
+
+            if (party.MemberRoster.TotalRegulars > 0)
+                return;
+
+            if (party.CurrentSettlement == null || !party.CurrentSettlement.IsTown)
+            {
+                StartResupply(party);
+                return;
+            }
+
+            RecoverPolicePartySupplies(party);
+        }
+
+        private static void RecoverPolicePartySupplies(MobileParty party)
+        {
+            ReplenishTroops(party);
+            ReplenishFood(party);
+            GivePoliceShips(party);
+            CancelResupply(party);
+            GwpCommon.TryResetAi(party);
         }
 
         private void OnHeroComesOfAge(Hero hero)
@@ -326,9 +452,7 @@ namespace GreyWardenPolicePurity
 
         private static bool IsIllegalTroop(CharacterObject character)
         {
-            if (character == null) return false;
-            string id = character.StringId;
-            return id != "gwrecruit" && id != "gwheavyinfantry" && id != "gwarcher" && id != "gwknight";
+            return !GwpCommon.IsGreyWardenTroop(character);
         }
 
         #endregion

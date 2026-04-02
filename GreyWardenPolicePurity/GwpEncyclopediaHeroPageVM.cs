@@ -15,6 +15,13 @@ namespace GreyWardenPolicePurity
         private string _deterrenceButtonText = string.Empty;
         private HintViewModel? _deterrenceButtonHint;
 
+        private readonly struct DesireSuppressionDetails
+        {
+            public float RaidMultiplier { get; init; }
+            public float VillagerMultiplier { get; init; }
+            public float CaravanMultiplier { get; init; }
+        }
+
         public GwpEncyclopediaHeroPageVM(EncyclopediaPageArgs args)
             : base(args)
         {
@@ -68,14 +75,8 @@ namespace GreyWardenPolicePurity
                 return;
 
             GwpAiDeterrenceState.DeterrenceDetails details = GwpAiDeterrenceState.GetDeterrenceDetails(_hero);
-            string description =
-                $"当前震慑值：{details.EffectivePenalty:0.##}\n" +
-                $"个人犯罪被震慑次数：{details.EnforcementCount}\n" +
-                $"连坐被震慑次数：{details.SharedDeterrenceCount}\n" +
-                $"当前劫掠倍率：{details.RaidScoreMultiplier:0.###}\n" +
-                $"最近一次受震慑：{FormatLastEnforcement(details)}\n" +
-                $"大地图状态：{details.MapStatus}\n" +
-                $"具体位置：{details.MapLocation}";
+            DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero, details);
+            string description = BuildDeterrenceDescription(details, suppression);
 
             InformationManager.ShowInquiry(
                 new InquiryData(
@@ -111,6 +112,40 @@ namespace GreyWardenPolicePurity
             }
 
             return $"{details.DaysSinceLastEnforcement:0.##} 天前";
+        }
+
+        private static string BuildDeterrenceDescription(
+            GwpAiDeterrenceState.DeterrenceDetails details,
+            DesireSuppressionDetails suppression)
+        {
+            return string.Join(
+                "\n",
+                new[]
+                {
+                    $"当前震慑值：{details.EffectivePenalty:0.##}",
+                    $"个人犯罪被震慑次数：{details.EnforcementCount}",
+                    $"连坐被震慑次数：{details.SharedDeterrenceCount}",
+                    $"烧村欲望压制倍率：{suppression.RaidMultiplier:0.###}",
+                    $"攻击村民欲望压制倍率：{suppression.VillagerMultiplier:0.###}",
+                    $"攻击商队欲望压制倍率：{suppression.CaravanMultiplier:0.###}",
+                    $"最近一次受震慑：{FormatLastEnforcement(details)}",
+                    $"大地图状态：{details.MapStatus}",
+                    $"具体位置：{details.MapLocation}"
+                });
+        }
+
+        private static DesireSuppressionDetails GetDesireSuppressionDetails(
+            Hero? hero,
+            GwpAiDeterrenceState.DeterrenceDetails details)
+        {
+            float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero);
+
+            return new DesireSuppressionDetails
+            {
+                RaidMultiplier = multiplier,
+                VillagerMultiplier = multiplier,
+                CaravanMultiplier = multiplier
+            };
         }
     }
 }

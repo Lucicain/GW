@@ -1,3 +1,4 @@
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
@@ -21,7 +22,7 @@ namespace GreyWardenPolicePurity
             if (missionType != Army.ArmyTypes.Raider || baseScore <= 0f || mobileParty?.LeaderHero == null)
                 return baseScore;
 
-            float multiplier = GwpAiDeterrenceState.GetRaidScoreMultiplier(mobileParty);
+            float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(mobileParty);
             return baseScore * multiplier;
         }
     }

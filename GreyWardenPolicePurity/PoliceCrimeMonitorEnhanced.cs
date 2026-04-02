@@ -45,6 +45,10 @@ namespace GreyWardenPolicePurity
             // 警察全忙时静默
             if (!CrimePool.IsAccepting) return;
 
+            // 巡逻队只算临时执勤单位，不进犯罪池，也不挂犯罪标记。
+            if (GwpCommon.ShouldIgnoreCrimeTracking(attacker))
+                return;
+
             // 过滤野怪
             if (attacker.ActualClan != null)
             {
@@ -93,6 +97,7 @@ namespace GreyWardenPolicePurity
             MobileParty offender = FindRaidingParty(village);
 
             if (offender == null) return;
+            if (GwpCommon.ShouldIgnoreCrimeTracking(offender)) return;
 
             // 过滤野怪
             if (offender.ActualClan != null)

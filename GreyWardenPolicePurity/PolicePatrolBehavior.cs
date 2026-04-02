@@ -892,11 +892,8 @@ namespace GreyWardenPolicePurity
 
         private void OnPlayerVictory()
         {
-            PlayerState.ChangeReputation(-1);
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"你击败纠察队，声望 -1。当前声望：{PlayerState.Reputation}",
-                Colors.Red));
+            // 战后声望改由 PlayerBehaviorMonitor 按击败的纠察队人数统一结算，
+            // 避免这里的固定 -1 与正式警察战斗结算口径不一致。
         }
 
 

@@ -102,6 +102,7 @@ namespace GreyWardenPolicePurity
             public string? GetAssignedPolicePartyId(string? offenderStringId) => CrimePool.GetAssignedPolicePartyId(offenderStringId);
             public void SetBountyEscortFlag(string policePartyId, bool value) => CrimePool.SetBountyEscortFlag(policePartyId, value);
             public bool TryAssignPlayerCrimeToPolice(string policePartyId) => CrimePool.TryAssignPlayerCrimeToPolice(policePartyId);
+            public bool RemovePendingCrimeByOffenderId(string? offenderStringId) => CrimePool.RemovePendingCrimeByOffenderId(offenderStringId);
             public List<MobileParty> GetAllTrackedOffenders(bool includePlayer = false) => CrimePool.GetAllTrackedOffenders(includePlayer);
             public List<MobileParty> GetTrackedOffendersByFaction(IFaction? faction) => CrimePool.GetTrackedOffendersByFaction(faction);
         }
