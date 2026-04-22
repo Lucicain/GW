@@ -6,7 +6,6 @@ using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.MapNotificationTypes;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -56,7 +55,7 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
-            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.VillageLooted.AddNonSerializedListener(this, OnVillageLooted);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -276,13 +275,19 @@ namespace GreyWardenPolicePurity
                 currentReliefRemainingHours);
         }
 
-        private void OnMapEventEnded(MapEvent mapEvent)
+        private void OnVillageLooted(Village village)
         {
-            if (!WasVillageSuccessfullyRaided(mapEvent, out Settlement? villageSettlement) || villageSettlement == null)
+            Settlement? villageSettlement = village?.Settlement;
+            if (!IsLootedVillageSettlement(villageSettlement) || villageSettlement == null)
             {
                 return;
             }
 
+            QueuePendingRelief(villageSettlement);
+        }
+
+        private void QueuePendingRelief(Settlement villageSettlement)
+        {
             if (!IsAdoptionSystemEligible() || HasAnyQueuedOrActiveRelief())
             {
                 return;
@@ -525,22 +530,15 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static bool WasVillageSuccessfullyRaided(MapEvent? mapEvent, out Settlement? villageSettlement)
+        private static bool IsLootedVillageSettlement(Settlement? settlement)
         {
-            villageSettlement = null;
-            if (mapEvent == null || !mapEvent.IsRaid || !mapEvent.HasWinner || mapEvent.Winner != mapEvent.AttackerSide)
+            if (settlement?.IsVillage != true)
             {
                 return false;
             }
 
-            villageSettlement = mapEvent.MapEventSettlement;
-            if (villageSettlement?.IsVillage == true)
-            {
-                return true;
-            }
-
-            villageSettlement = mapEvent.DefenderSide?.LeaderParty?.Settlement;
-            return villageSettlement?.IsVillage == true;
+            Village? village = settlement.SettlementComponent as Village;
+            return village?.VillageState == Village.VillageStates.Looted;
         }
 
         private bool IsAdoptionSystemEligible()

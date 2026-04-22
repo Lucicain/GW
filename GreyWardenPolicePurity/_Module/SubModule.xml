@@ -2,17 +2,17 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-	<Version value="v1.3.14"/>
+	<Version value="v1.4.0"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>
 	<Official value="false"/>
 	<DependedModules>
-		<DependedModule Id="Native" DependentVersion="v1.3.14"/>
-		<DependedModule Id="SandBoxCore" DependentVersion="v1.3.14" />
-		<DependedModule Id="Sandbox" DependentVersion="v1.3.14" />
-		<DependedModule Id="CustomBattle" DependentVersion="v1.3.14" />
-		<DependedModule Id="StoryMode" DependentVersion="v1.3.14" />
+		<DependedModule Id="Native" DependentVersion="v1.4.0"/>
+		<DependedModule Id="SandBoxCore" DependentVersion="v1.4.0" />
+		<DependedModule Id="Sandbox" DependentVersion="v1.4.0" />
+		<DependedModule Id="CustomBattle" DependentVersion="v1.4.0" />
+		<DependedModule Id="StoryMode" DependentVersion="v1.4.0" />
 	</DependedModules>
 	<SubModules>
 		<SubModule>
