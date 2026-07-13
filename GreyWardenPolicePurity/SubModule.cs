@@ -54,6 +54,8 @@ namespace GreyWardenPolicePurity
             // 只在 Campaign 游戏中注入（过滤多人模式）
             if (Game.Current?.GameType is not Campaign) return;
 
+            mission.AddMissionBehavior(new GwpKickBehavior());
+
             CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
             CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
             CharacterObject cavalry = CharacterObject.Find(GwpIds.KnightId);

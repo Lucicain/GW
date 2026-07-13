@@ -512,17 +512,15 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                MBEquipmentRoster? roster =
-                    Campaign.Current.Models.EquipmentSelectionModel
-                        .GetEquipmentRostersForInitialChildrenGeneration(hero)
-                        .GetRandomElementInefficiently();
+                Equipment? equipment = Campaign.Current.Models.EquipmentSelectionModel
+                    .GetEquipmentForInitialChildrenGeneration(hero);
 
-                if (roster == null)
+                if (equipment == null)
                 {
                     return;
                 }
 
-                EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, roster.DefaultEquipment);
+                EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, equipment);
                 hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
             }
             catch
