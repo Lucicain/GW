@@ -1,4 +1,5 @@
-﻿﻿using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 
@@ -16,7 +17,11 @@ namespace GreyWardenPolicePurity
 
         private static void RegisterCampaignComponents(CampaignGameStarter starter)
         {
+            starter.RemoveBehaviors<DesertersCampaignBehavior>();
+
+            starter.AddModel(new PoliceClanTierModel());
             starter.AddModel(new PoliceAntiRecruitmentModel());
+            starter.AddModel(new PoliceMobilePartyAIModel());
             starter.AddModel(new PoliceMarriageModel());
             starter.AddModel(new PoliceRaidDeterrenceModel());
             starter.AddModel(new PoliceShipDamageModel());
@@ -25,6 +30,8 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new PoliceAntiWarDeclaration());
             starter.AddBehavior(new PoliceAntiVanillaWarBehavior());
             starter.AddBehavior(new PoliceAIDeterrenceBehavior());
+            starter.AddBehavior(new GreyWardenDesertersCampaignBehavior());
+            starter.AddBehavior(new GreyWardenDeserterFilterBehavior());
             starter.AddBehavior(new PolicePrisonerImmunityBehavior());
             starter.AddBehavior(new PoliceEnforcementBehavior());
             starter.AddBehavior(new PoliceResourceManager());
@@ -46,6 +53,8 @@ namespace GreyWardenPolicePurity
 
             // 只在 Campaign 游戏中注入（过滤多人模式）
             if (Game.Current?.GameType is not Campaign) return;
+
+            mission.AddMissionBehavior(new GwpKickBehavior());
 
             CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
             CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);

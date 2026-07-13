@@ -133,15 +133,37 @@ namespace GreyWardenPolicePurity
 
         public static float GetRaidScoreMultiplier(MobileParty party)
         {
-            if (Campaign.Current == null) return 1f;
-            if (party?.LeaderHero == null) return 1f;
+            return GetCrimeDesireMultiplier(party);
+        }
 
-            DeterrenceEntry? entry = FindEntryByHero(party.LeaderHero);
-            if (entry == null) return 1f;
+        public static float GetCrimeDesireMultiplier(MobileParty? party)
+        {
+            if (party == null)
+                return 1f;
+
+            if (IsGreyWardenPoliceParty(party.ActualClan))
+                return 0f;
+
+            return GetCrimeDesireMultiplier(party.LeaderHero);
+        }
+
+        public static float GetCrimeDesireMultiplier(Hero? hero)
+        {
+            NormalizeEntries();
+
+            if (Campaign.Current == null || hero == null)
+                return 1f;
+
+            if (IsGreyWardenPoliceHero(hero))
+                return 0f;
+
+            DeterrenceEntry? entry = FindEntryByHero(hero);
+            if (entry == null)
+                return 1f;
 
             float effectivePenalty = GetEffectivePenaltyInternal(
                 entry,
-                party.LeaderHero,
+                hero,
                 (float)CampaignTime.Now.ToHours,
                 updateEntry: false);
 
@@ -207,11 +229,7 @@ namespace GreyWardenPolicePurity
 
             float nowHours = (float)CampaignTime.Now.ToHours;
             float effectivePenalty = GetEffectivePenaltyInternal(entry, hero, nowHours, updateEntry: false);
-            float raidScoreMultiplier = effectivePenalty <= GwpTuning.Deterrence.ForgetThreshold
-                ? 1f
-                : MathF.Max(
-                    GwpTuning.Deterrence.RaidScoreMultiplierFloor,
-                    MathF.Pow(GwpTuning.Deterrence.RaidScoreMultiplierPerPoint, effectivePenalty));
+            float raidScoreMultiplier = GetCrimeDesireMultiplier(hero);
 
             return new DeterrenceDetails
             {
@@ -792,6 +810,20 @@ namespace GreyWardenPolicePurity
             return MobileParty.All?.FirstOrDefault(p =>
                 !string.IsNullOrEmpty(p.StringId) &&
                 string.Equals(p.StringId, partyId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsGreyWardenPoliceHero(Hero? hero)
+        {
+            return hero?.Clan != null &&
+                   IsGreyWardenPoliceParty(hero.Clan);
+        }
+
+        private static bool IsGreyWardenPoliceParty(Clan? clan)
+        {
+            return string.Equals(
+                clan?.StringId,
+                PoliceStats.PoliceClanId,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private static string? GetKey(MobileParty offender)

@@ -356,7 +356,25 @@ namespace GreyWardenPolicePurity
                 Settlement? defenderSettlement = defender.CurrentSettlement;
                 if (defenderSettlement != null)
                 {
-                    LeaveSettlementAction.ApplyForParty(defender);
+                    MobileParty expelParty = defender;
+                    MobileParty? armyLeader = defender.Army?.LeaderParty;
+
+                    // 目标若属于军团，且军团领队也在同一座城里，
+                    // 直接把领队整支拉出城，原版会递归带出附属军团成员。
+                    if (armyLeader != null &&
+                        armyLeader.IsActive &&
+                        armyLeader.CurrentSettlement == defenderSettlement)
+                    {
+                        expelParty = armyLeader;
+                    }
+
+                    LeaveSettlementAction.ApplyForParty(expelParty);
+
+                    try { expelParty.SetMoveModeHold(); } catch { }
+                    foreach (MobileParty attachedParty in expelParty.AttachedParties)
+                    {
+                        try { attachedParty.SetMoveModeHold(); } catch { }
+                    }
 
                     // 让刚被逼出城的目标先停住，避免它立刻重新钻回定居点，
                     // 然后由警察已有的追击命令自然接管战斗。

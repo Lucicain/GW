@@ -75,6 +75,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.AiHourlyTickEvent.AddNonSerializedListener(this, OnAiHourlyTick);
             CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
@@ -367,6 +368,7 @@ namespace GreyWardenPolicePurity
             CrimeState.Clean();
             AssignTasks();
             UpdateTasks();
+            UpdateIdlePoliceDuties();
             CrimeState.RefreshAccepting();
         }
 
@@ -397,10 +399,12 @@ namespace GreyWardenPolicePurity
         private void BeginTask(MobileParty police, CrimeRecord crime)
         {
             CrimeState.BeginTask(police.StringId, crime);
+            PoliceTask? task = CrimeState.GetTask(police.StringId);
+            if (task != null)
+                task.IsPreparingDispatch = true;
 
-            police.SetMoveEngageParty(crime.Offender, NavigationType.Default);
-            police.Ai.SetDoNotMakeNewDecisions(true);
-            police.Ai.SetInitiative(1f, 0f, 999f);
+            PoliceResourceManager.StartResupply(police);
+            PoliceResourceManager.ForceImmediateMoveToResupply(police);
 
             // 内部调度日志（开发调试）
             // InformationManager.DisplayMessage(new InformationMessage(
@@ -460,6 +464,24 @@ namespace GreyWardenPolicePurity
                         pp.SetMoveGoToSettlement(task.EscortSettlement, NavigationType.Default, false);
                     }
                     continue;
+                }
+
+                if (task.FlowState == PoliceTaskFlowState.PreparingDispatch)
+                {
+                    ClearTaskWarTracking(kvp.Key, false);
+
+                    if (!task.IsTargetValid())
+                    {
+                        RestoreAi(pp);
+                        CrimeState.EndTask(kvp.Key);
+                        PoliceResourceManager.StartResupply(pp);
+                        continue;
+                    }
+
+                    if (PoliceResourceManager.IsResupplying(pp))
+                        continue;
+
+                    task.IsPreparingDispatch = false;
                 }
 
                 // 食物耗尽 → 案件归池，前往补给，等补完后重新接案

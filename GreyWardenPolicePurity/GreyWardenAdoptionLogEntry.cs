@@ -57,7 +57,7 @@ namespace GreyWardenPolicePurity
             return BuildText("{=gwp_adoption_chat_notice}{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。");
         }
 
-        public bool IsVisibleInEncyclopediaPageOf<T>(T obj) where T : MBObjectBase
+        public bool IsVisibleInEncyclopediaPageOf(MBObjectBase obj)
         {
             MBObjectBase? entryTarget = obj;
             return entryTarget == AdoptedHero || entryTarget == AdoptedHero?.Clan;

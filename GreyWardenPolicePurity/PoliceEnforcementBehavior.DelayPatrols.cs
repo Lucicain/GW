@@ -227,6 +227,29 @@ namespace GreyWardenPolicePurity
                     _warTargetSeenStreak.Remove(targetId);
                 }
             }
+
+            CleanupStalePoliceWarsWithoutReasons(policeClan);
+        }
+
+        private void CleanupStalePoliceWarsWithoutReasons(Clan policeClan)
+        {
+            foreach (IFaction targetFaction in GwpPoliceWarReasonService.GetCurrentPoliceWarFactions(policeClan).ToList())
+            {
+                if (targetFaction == null)
+                    continue;
+
+                if (GwpPoliceWarReasonService.HasLegitimateWarReason(targetFaction))
+                    continue;
+
+                TryApplyPlayerAutoPeacePenalty(targetFaction);
+                GwpCommon.TrySetNeutral(policeClan, targetFaction);
+
+                if (!string.IsNullOrEmpty(targetFaction.StringId))
+                {
+                    MarkDelayPatrolsReturningForTarget(targetFaction.StringId);
+                    _warTargetSeenStreak.Remove(targetFaction.StringId);
+                }
+            }
         }
 
         private void CleanupDelayPatrolsInsideSettlements()
@@ -473,12 +496,154 @@ namespace GreyWardenPolicePurity
         {
             if (mapEvent == null) return;
 
+            HashSet<string> involvedWarTargetIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var involved in mapEvent.InvolvedParties)
             {
                 MobileParty party = involved?.MobileParty;
                 if (!GwpCommon.IsEnforcementDelayPatrolParty(party)) continue;
+
+                if (_delayPatrolStates.TryGetValue(party.StringId, out DelayPatrolState? state) &&
+                    !string.IsNullOrEmpty(state.WarTargetId))
+                {
+                    involvedWarTargetIds.Add(state.WarTargetId);
+                }
+
                 MarkDelayPatrolReturning(party.StringId);
             }
+
+            if (DelayPatrolWonBattle(mapEvent))
+                CleanupDefeatedTrackedOffendersAfterDelayPatrolVictory(mapEvent);
+
+            foreach (string warTargetId in involvedWarTargetIds)
+                TryResolveDelayPatrolWarTargetImmediately(warTargetId);
+        }
+
+        private bool DelayPatrolWonBattle(MapEvent mapEvent)
+        {
+            if (mapEvent?.HasWinner != true || mapEvent.Winner == null)
+                return false;
+
+            foreach (MapEventParty? winner in mapEvent.Winner.Parties)
+            {
+                MobileParty? winnerParty = winner?.Party?.MobileParty;
+                if (GwpCommon.IsEnforcementDelayPatrolParty(winnerParty))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void CleanupDefeatedTrackedOffendersAfterDelayPatrolVictory(MapEvent mapEvent)
+        {
+            if (mapEvent?.Winner == null) return;
+
+            MapEventSide? loserSide = mapEvent.Winner == mapEvent.AttackerSide
+                ? mapEvent.DefenderSide
+                : mapEvent.AttackerSide;
+            if (loserSide == null) return;
+
+            foreach (MapEventParty? losingPartyEntry in loserSide.Parties)
+            {
+                MobileParty? losingParty = losingPartyEntry?.Party?.MobileParty;
+                if (losingParty == null || losingParty.IsMainParty) continue;
+                if (IsGreyWardenPoliceParty(losingParty)) continue;
+
+                ResolveTrackedOffenderDefeatByDelayPatrol(losingParty.StringId);
+            }
+        }
+
+        private void ResolveTrackedOffenderDefeatByDelayPatrol(string? offenderId)
+        {
+            if (string.IsNullOrEmpty(offenderId))
+                return;
+
+            foreach (var kv in CrimeState.ActiveTasks.ToList())
+            {
+                PoliceTask task = kv.Value;
+                if (!string.Equals(task.TargetCrime?.Offender?.StringId, offenderId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                MobileParty? policeParty = MobileParty.All.FirstOrDefault(p =>
+                    p.StringId == task.PolicePartyId && p.IsActive);
+                if (policeParty != null)
+                {
+                    RestoreAi(policeParty);
+                    PoliceResourceManager.StartResupply(policeParty);
+                }
+
+                ClearTaskWarTracking(kv.Key, true);
+                CrimeState.EndTask(kv.Key);
+            }
+
+            CrimeState.RemovePendingCrimeByOffenderId(offenderId);
+        }
+
+        private void TryResolveDelayPatrolWarTargetImmediately(string? warTargetId)
+        {
+            if (string.IsNullOrEmpty(warTargetId))
+                return;
+
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null)
+                return;
+
+            IFaction? targetFaction = ResolveWarTargetFaction(warTargetId);
+            if (targetFaction == null)
+                return;
+
+            if (!FactionManager.IsAtWarAgainstFaction(policeClan, targetFaction))
+                return;
+
+            if (GwpPoliceWarReasonService.HasLegitimateWarReason(targetFaction))
+                return;
+
+            TryApplyPlayerAutoPeacePenalty(targetFaction);
+            GwpCommon.TrySetNeutral(policeClan, targetFaction);
+            MarkDelayPatrolsReturningForTarget(warTargetId);
+            _warTargetSeenStreak.Remove(warTargetId);
+        }
+
+        private void TryApplyPlayerAutoPeacePenalty(IFaction targetFaction)
+        {
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+            if (playerFaction == null || targetFaction == null)
+                return;
+
+            if (!string.Equals(playerFaction.StringId, targetFaction.StringId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            PlayerState.ChangeReputation(-4);
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"与灰袍守卫处于战争状态，声望 -4。当前声望：{PlayerState.Reputation}",
+                Colors.Red));
+        }
+
+        private static IFaction? ResolveWarTargetFaction(string warTargetId)
+        {
+            if (string.IsNullOrEmpty(warTargetId))
+                return null;
+
+            Kingdom? kingdom = Kingdom.All.FirstOrDefault(k =>
+                string.Equals(k.StringId, warTargetId, StringComparison.OrdinalIgnoreCase));
+            if (kingdom != null)
+                return kingdom;
+
+            Clan? clan = Clan.All.FirstOrDefault(c =>
+                string.Equals(c.StringId, warTargetId, StringComparison.OrdinalIgnoreCase));
+            return clan;
+        }
+
+        private static bool IsGreyWardenPoliceParty(MobileParty? party)
+        {
+            if (party == null) return false;
+            if (GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))
+                return true;
+
+            return string.Equals(
+                party.ActualClan?.StringId,
+                PoliceStats.PoliceClanId,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private void ClearDelayPatrolRuntimeState()
