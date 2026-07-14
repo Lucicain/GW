@@ -14,7 +14,11 @@ namespace GreyWardenPolicePurity
         public const string ArcherId = "gwarcher";
         public const string KnightId = "gwknight";
         public const string PoliceRecruitId = "gwrecruit";
+        public const string LeaderCharacterIdPrefix = "gw_leader_";
         public const string CommanderTemplateCharacterId = "gw_leader_0";
+        public const string CustomBattleCommanderId = "commander_2";
+        public const string LargeShieldItemId = "wlarge_shield";
+        public const string BlackLargeShieldItemId = "wlarge_shield_black";
         public const string GrainItemId = "grain";
 
         public const string BountyQuestPrefix = "gwp_bounty_quest_";
@@ -34,5 +38,17 @@ namespace GreyWardenPolicePurity
                 "wcomhelmethv",
                 "wharnesscom"
             };
+
+        public static bool IsGreyWardenLargeShieldItemId(string? itemId)
+        {
+            return string.Equals(
+                       itemId,
+                       LargeShieldItemId,
+                       StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(
+                       itemId,
+                       BlackLargeShieldItemId,
+                       StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

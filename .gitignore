@@ -9,6 +9,7 @@
 
 # Temporary decompile outputs
 .tmp_decompile_*/
+.codex_tmp/
 
 # User-specific files
 *.user

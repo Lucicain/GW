@@ -2,13 +2,12 @@
 <NPCCharacters>
 
   <NPCCharacter id="commander_2" name="灰袍纠察官尧" 
-  age="30" voice="curt" default_group="Cavalry" 
+  age="30" voice="curt" default_group="Infantry"
+  is_female="true"
   culture="Culture.empire" occupation="Lord" 
   skill_template="SkillSet.yao_skills" is_hero="true">
     <face>
-      <BodyProperties version="4" age="30" 
-      weight="0" build="0.7003"  
-      key="000DBC0E400013C33A9345778463F05776CD867784CBE806C9BB86656AA60C0500CB0603FCA7A6567FFFB4EF7F005FFA0000000000001AA400000000379C3002"  />
+      <face_key_template value="BodyProperty.townswoman_empire" />
     </face>
 	<Traits>
 		<Trait id="Honor" value="2" />
@@ -25,17 +24,13 @@
      <EquipmentRoster>
         <equipment slot="Item0" id="Item.gwonehandedsword"/>
         <equipment slot="Item1" id="Item.gwlance"/>
-        <equipment slot="Item2" id="Item.wlarge_shield"/>
+        <equipment slot="Item2" id="Item.wlarge_shield_black"/>
         <equipment slot="Head" id="Item.wcomhelmethv"/>
         <equipment slot="Cape" id="Item.wcomshoulder"/>
         <equipment slot="Body" id="Item.wcomarmorhv"/>
         <equipment slot="Gloves" id="Item.wcomgloves"/>
         <equipment slot="Leg" id="Item.wcomlegs"/>
       </EquipmentRoster>
-      <equipment slot="Horse"
-                 id="Item.t2_empire_horse" />
-      <equipment slot="HorseHarness"
-                 id="wharnesscom" />
     </Equipments>
   </NPCCharacter>
 

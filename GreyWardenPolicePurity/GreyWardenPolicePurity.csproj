@@ -60,6 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" PrivateAssets="all" />
     <PackageReference Include="Nullable" Version="1.3.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" IncludeAssets ="runtime; build; native; contentfiles; analyzers; buildtransitive" />
   </ItemGroup>
@@ -68,10 +69,33 @@
   <!-- 每次 build 后自动将 _Module\ 内所有文件同步到游戏模组目录 -->
   <Target Name="CopyModuleData" AfterTargets="Build">
     <ItemGroup>
-      <ModuleFiles Include="$(MSBuildProjectDirectory)\_Module\**" />
+      <!-- Assets and AssetSources are editor-development data. Copying them
+           into the live client module makes the client prefer that incomplete
+           editable tree over its published AssetPackages\pack0.tpac, which
+           hides the module's original meshes. Client builds must receive only
+           the published assets already present in AssetPackages. -->
+      <ModuleFiles Include="$(MSBuildProjectDirectory)\_Module\**"
+                   Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**" />
     </ItemGroup>
     <Copy SourceFiles="@(ModuleFiles)" DestinationFiles="@(ModuleFiles->'$(GameFolder)\Modules\GreyWarden\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="false" />
     <Message Text="ModuleData synced → $(GameFolder)\Modules\GreyWarden\" Importance="high" />
+  </Target>
+
+  <!-- The Modding Kit runs a different executable and only probes the
+       module's Win64_Shipping_wEditor directory. Keep the module assembly and
+       its Harmony runtime dependency in that directory after every build. -->
+  <Target Name="CopyEditorBinaries" AfterTargets="Build">
+    <PropertyGroup>
+      <EditorModuleBin>$(GameFolder)\Modules\GreyWarden\bin\Win64_Shipping_wEditor\</EditorModuleBin>
+    </PropertyGroup>
+    <ItemGroup>
+      <EditorBinaries Include="$(TargetPath)" />
+      <EditorBinaries Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+      <EditorBinaries Include="$(TargetDir)0Harmony.dll" Condition="Exists('$(TargetDir)0Harmony.dll')" />
+    </ItemGroup>
+    <MakeDir Directories="$(EditorModuleBin)" />
+    <Copy SourceFiles="@(EditorBinaries)" DestinationFolder="$(EditorModuleBin)" SkipUnchangedFiles="false" />
+    <Message Text="Editor binaries synced → $(EditorModuleBin)" Importance="high" />
   </Target>
 
 </Project>

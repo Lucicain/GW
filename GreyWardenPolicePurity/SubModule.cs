@@ -1,15 +1,46 @@
+using System;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
     public class SubModule : MBSubModuleBase
     {
+        private const string HarmonyId =
+            "GreyWardenPolicePurity.ShieldBashGuard";
+
+        protected override void OnSubModuleLoad()
+        {
+            base.OnSubModuleLoad();
+
+            // Self-contained library patch; no separate Harmony module or
+            // launcher dependency is required.
+            try
+            {
+                new Harmony(HarmonyId).PatchAll(typeof(SubModule).Assembly);
+            }
+            catch (Exception exception)
+            {
+                // Never turn an optional combat enhancement into a startup
+                // failure if a future game build changes the private callback.
+                Debug.Print(
+                    "[GreyWarden Shield Bash Guard] patch failed: "
+                    + exception);
+            }
+        }
+
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+
+            // Wrap whichever native damage model this game mode registered
+            // (Sandbox in Campaign, Custom in Custom Battle). The wrapper
+            // changes only Grey Warden alternative-attack knockdowns.
+            gameStarterObject.AddModel(new GwpAgentApplyDamageModel());
 
             if (game.GameType is not Campaign || gameStarterObject is not CampaignGameStarter starter) return;
             RegisterCampaignComponents(starter);
@@ -51,10 +82,16 @@ namespace GreyWardenPolicePurity
         {
             base.OnMissionBehaviorInitialize(mission);
 
-            // 只在 Campaign 游戏中注入（过滤多人模式）
-            if (Game.Current?.GameType is not Campaign) return;
+            GameType? gameType = Game.Current?.GameType;
+            if (gameType == null) return;
 
+            // 踢腿能力同时用于战役和自定义战斗。GreyWarden 本身是纯单人
+            // 模组，因此这里不需要用 Campaign 类型把 CustomGame 排除掉。
             mission.AddMissionBehavior(new GwpKickBehavior());
+            mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
+
+            // 战场增援依赖 Campaign 数据，自定义战斗中不注入。
+            if (gameType is not Campaign) return;
 
             CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
             CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
