@@ -403,8 +403,9 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   </Item>
 
   <!-- Lord-only black-and-gold variant. It uses a separately authored static
-       metamesh while continuing to reuse the inherited holster/collision
-       bodies. Runtime mesh/material mutation remains disabled. -->
+       metamesh and custom material. The inherited bodies were restored after
+       the current-official-body A/B reproduced the same shutdown crash.
+       Runtime mesh/material mutation remains disabled. -->
   <Item id="wlarge_shield_black"
         name="灰袍领主黑曜巨盾"
         body_name="bo_cap_wlarge_shield"

@@ -100,203 +100,173 @@ Done:
 - Keep developer-only build, asset-publishing, and debugging procedures in this
   maintenance document rather than in the release notes shipped to players.
 
-## Release packaging notes
+## Release packaging and asset layout
 
-- Keep the complete editable module locally and in the source repository, but
-  never include `Assets`, `Assets_EditorBackup`, `AssetSources`, or
-  `RuntimeDataCache` in a public player archive. Those directories contain the
-  Modding Kit work tree and generated cache rather than runtime deliverables.
-- A formal player archive must have one top-level `GreyWarden` directory and
-  contain only the published `AssetPackages`, client binaries, `GUI`,
-  `ModuleData`, `ModuleSounds`, `Shaders`, `README.md`, and `SubModule.xml`.
-  Exclude `Win64_Shipping_wEditor`, `.pdb`, and source FBX files. Validate the
-  ZIP entry list before upload instead of relying only on copy exclusions.
-- The first formal GitHub release uses module/tag version `v1.4.7` and artifact
-  name `GreyWarden-v1.4.7.zip`; publish a separate SHA-256 checksum file beside
-  it.
-- The current isolated client retest keeps the complete package inherited from
-  the old GreyWarden module as
-  `AssetPackages/gwp_inherited_legacy_assets.tpac`. It retains all original
-  models and the `bo_cap_wlarge_shield` / `bo_wlarge_shield` physics shapes. Its
-  verified size is `332,944,246` bytes and its SHA-256 is
-  `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`.
-- The newly published `AssetPackages/pack0.tpac` contains the corrected static
-  `wlarge_shield_black_static` metamesh, `gwp_black` material, and three
-  black-and-gold textures. Its final verified size is `39,073,074` bytes and its
-  SHA-256 is
-  `D14AE4B3F8576F963C9BF3B0A829402206F2EDDCE464202A24340612CFA1C287`.
-- The former material-only `gwp_black_assets_published.tpac` is not deployed in
-  this retest because the new `pack0.tpac` already contains those resources. A
-  verified backup remains on the desktop.
-- The Modding Kit always writes client assets to `AssetPackages/pack0.tpac` and
-  offers no package-name field. Before publishing, preserve the inherited TPAC
-  under its `gwp_inherited_legacy_assets.tpac` name and restore it beside the
-  newly generated `pack0.tpac` if the editor removes it.
-- The rejected Z-up static-mesh publication is preserved only for analysis at
-  `C:\Users\lucif\Desktop\gwp_static_mesh_zup_experimental_2026-07-15.tpac`.
-  It is `39,073,136` bytes, SHA-256
-  `443AF02C5BB92F5AD17A8B453810C0E7C96548EFBAC5B8E5981F7252F9598DCA`, package GUID
-  `807e3d8d-e501-499b-a1d3-22ae3f4e64f3`, with one metamesh, one material, and
-  three textures. Do not deploy it in the stable client.
-- Both current TPAC files are kept as verified local repository copies but
-  ignored by Git. A fresh checkout must restore them from the documented
-  recovery/desktop backups and verify both SHA-256 values before building a
-  distributable module.
-- Multiple TPAC files with different names are valid in Bannerlord. Native and
-  NavalDLC both ship many differently named TPACs in one `AssetPackages`
-  directory, so the two filenames alone are not evidence of a packaging error.
-- Preserve `Assets` and `AssetSources`; they are the Modding Kit's editable
-  resource data and are required to reopen, inspect, and republish the project.
-  The 2026-07-15 client log proves that when a folder named `Assets` exists in
-  the live module, this engine build logs `Loading packages
-  $BASE/Modules/GreyWarden/Assets...` and does not load that module's
-  `AssetPackages`. An incomplete editor tree therefore makes all inherited
-  equipment resources disappear even when both published TPAC files are valid.
-- Never delete `Assets`, `AssetSources`, or `RuntimeDataCache` as part of a
-  build, deployment, rollback, or client test. Use a reversible folder-name
-  switch for `Assets` (or maintain separate editor and runtime module copies):
-  restore the exact `Assets` name before opening the Modding Kit, and temporarily
-  use a non-reserved name before normal-client testing so `AssetPackages` loads.
-  The ordinary build excludes editor data from its copy operation only so it
-  cannot overwrite newer editor-side work. Preserve repository copies as a
-  recovery backup and update them intentionally after editor changes.
-- The resulting two-file layout is two legitimate resource packages, not a
-  binary merge. Do not concatenate them. The community TpacTool can
-  inspect/export but cannot write or merge TPAC packages.
+### Player archive
 
-## Bannerlord 1.4.7 native shutdown crash
+- Public artifact name: `GreyWarden-v1.4.7.zip` with a sibling SHA-256 file.
+- The ZIP must contain exactly one top-level `GreyWarden` directory.
+- Include only runtime data: `AssetPackages`, `bin/Win64_Shipping_Client`,
+  `GUI`, `ModuleData`, `ModuleSounds`, `Shaders`, `README.md`, and
+  `SubModule.xml`.
+- Exclude `Assets`, `AssetSources`, `RuntimeDataCache`,
+  `bin/Win64_Shipping_wEditor`, PDB files, source FBX/PNG files, and diagnostic
+  logs/dumps.
 
-- Windows dumps from processes `78556` and `2300` show the same native
-  allocator cleanup stack after `Managed Interface deleted`, with invalid
-  pointer reads at `TaleWorlds.Native.dll+0x74B34A` and `+0x74B1F0`.
-- The later dump proves the explicit `OnGameEnd` material release did not fix
-  the crash; it only removed the separate non-zero device-reference warning.
-- Process `84476` reproduced the same failure bucket and allocator-cleanup
-  thread after the managed bridge had already been deleted, this time at
-  `TaleWorlds.Native.dll+0x74B3F1`. RTTI identifies the queued object as an
-  engine `ftlObject`, which points to deferred resource/object destruction
-  rather than the removed managed wrapper cache.
-- The live module had the inherited complete `pack0.tpac` (332,944,246 bytes)
-  and the newly published `gwp_black_assets_published.tpac` (46,231,793
-  bytes). The package headers have different package UUIDs, and the new package
-  contains five assets: four shield textures and the `gwp_black` material.
-- The current diagnostic client temporarily omits the new package and uses
-  factor tinting on private mission meshes. The published package remains in
-  the repository but is excluded from the build copy target, so it is not
-  destroyed and cannot be accidentally reintroduced before the exit test.
-- This A/B test can determine whether the crash belongs to the custom-resource
-  path as a whole. It does not prove that having two TPACs or having different
-  filenames is the cause. If the crash disappears, test the new package loaded
-  but unused next to distinguish package loading from runtime material swap.
-- Process `92968` crashed with the new material package absent and only the
-  inherited `pack0.tpac` present. Windows reported the already observed
-  `TaleWorlds.Native.dll+0x74B1F0` invalid-pointer read after `Managed Interface
-  deleted`. This rules out the second TPAC, its external filename, and a
-  two-package collision as necessary causes of the crash.
-- The next diagnostic client removes the entire
-  `MissionWeapon.GetWeaponData` lord-shield visual postfix. It performs no
-  `MetaMesh` or `Mesh` retrieval, material replacement, or factor-color write.
-  If shutdown succeeds, the remaining suspect is runtime mutation/wrapper
-  creation on the weapon mesh. If it still fails, shield visuals and both TPAC
-  naming theories are excluded together.
-- The no-visual-postfix test exited without the native error while only the
-  inherited `pack0.tpac` was loaded. Compared with process `92968`, this
-  isolates the required trigger to the runtime lord-shield mesh path rather
-  than the inherited package name.
-- Final confirmation restores `gwp_black_assets_published.tpac` beside the
-  inherited `pack0.tpac` but keeps the visual postfix disabled. The shield uses
-  its original appearance, so this test loads the new package without creating
-  mesh wrappers, swapping materials, or writing factor colors.
-- The final confirmation also exited normally. The two TPAC packages and their
-  names are therefore cleared; the native shutdown crash requires the runtime
-  `MissionWeapon.GetWeaponData` mesh-access/mutation path. Keep that patch
-  disabled and restore the black-and-gold appearance through a statically
-  authored duplicate mesh instead.
-- The static replacement was published on 2026-07-15. Binary inspection of the
-  new `pack0.tpac` confirms `wlarge_shield_black_static`, `gwp_black`, and all
-  three black-and-gold texture resources. Binary inspection of the renamed
-  inherited package confirms both original shield physics shapes remain
-  available. The lord-only item now directly references the static metamesh.
-- The first in-game static-mesh test did not show a Windows crash dialog, but
-  its log still ended with `Non-Zero Device Reference Count (ERC2524)`. After
-  the asset was republished with both `Import meshes` and `Convert to Z-up`, the
-  next in-game test reproduced the original native shutdown failure at
-  `TaleWorlds.Native.dll+0x74B34A`. The imported static metamesh therefore is
-  not a stable replacement and must remain unused in the release client.
-- The first static visual was rotated because the recovered source FBX was
-  Z-up while the Blender export was tagged Y-up. `Convert to Z-up` corrected
-  that axis but left the shield reversed relative to the inherited physics
-  shapes. The six LOD transforms and bounds otherwise matched exactly; the
-  empty parent node was identity and was not the cause. Preserve the experiment
-  for analysis, but do not compensate through item XML because that would also
-  rotate the reused collision bodies.
-- The stable release rollback keeps the inherited package as `pack0.tpac`,
-  restores the former material-only `gwp_black_assets_published.tpac`, and
-  points the lord shield back to `wlarge_shield`. Both runtime recoloring and
-  `wlarge_shield_black_static` remain disabled.
-- The 2026-07-15 rollback retest exited without a Windows crash event and the
-  original shield orientation was correct. The custom black material was not
-  visible because this baseline deliberately references the inherited
-  `wlarge_shield` metamesh, which remains bound to its inherited material. Its
-  `rgl_log` still ended with `Non-Zero Device Reference Count (ERC2527)`, so
-  that line by itself is not evidence that the newly imported mesh is faulty;
-  only a matching Windows application error/native crash should fail a test.
-- The next 2026-07-15 editor publication is a new isolated retest, not the
-  rejected package above. The live runtime layout uses the verified inherited
-  package as `gwp_inherited_legacy_assets.tpac` and the newly published static
-  shield package as `pack0.tpac`. The lord-only item directly references
-  `wlarge_shield_black_static`; the ordinary shield remains on
-  `wlarge_shield`, and both still reuse the inherited collision bodies.
-- Before this client test, the editable `Assets` directory is preserved by
-  renaming it to `Assets_EditorBackup`. This is required because the client log
-  proved that an exact `Assets` directory makes this engine build bypass the
-  module's `AssetPackages`. Restore the exact `Assets` name before reopening
-  the Modding Kit; never delete the editor work tree.
-- Read-only Blender 5.2 comparison on 2026-07-15 rules out extracted geometry
-  corruption as the cause of the reversed shield. The recovered binary FBX and
-  current `dun.fbx` have identical six-LOD vertex/face counts, world bounds,
-  object transforms, sampled vertices, polygon normals, and determinant `+1`.
-  Only their FBX global axis declarations differ: the recovered file declares
-  Z-up, front `-Y`, coordinate `+X`, while `dun.fbx` declares Z-up, front `+Y`,
-  coordinate `-X`. Reversing both horizontal signs is the observed 180-degree
-  turn around Z.
-- A controlled Blender 5.2 export matrix confirms that `Forward: Y` (positive
-  Y) and `Up: Z` reproduces the recovered file's front/coordinate signs;
-  `Forward: -Y` produces the reversed signs found in the failed build. `Apply Transform` does
-  not change those declarations. The corrective re-export must therefore leave
-  the mesh transforms untouched, use positive Y forward and Z up, and the
-  Bannerlord import must not apply `Convert to Z-up` again. Do not compensate
-  through item rotation because the inherited collision bodies are already in
-  the correct orientation.
-- Final user testing on 2026-07-15 confirmed the positive-Y/Z-up publication:
-  all inherited equipment rendered, the lord shield used the corrected
-  black-and-gold material and orientation, and all shield defense features
-  behaved normally. The 18:35-18:39 normal-client run loaded
-  `GreyWarden/AssetPackages`, rendered both shield variants, and exited without
-  a matching Windows Application Error event. Its log still printed
-  `Non-Zero Device Reference Count (ERC2852)`, confirming again that this line
-  alone is not equivalent to the former native exit crash.
+### Required TPAC files
 
-## Legacy pack0 recovery
+- `AssetPackages/gwp_inherited_legacy_assets.tpac`
+  - Size: `332,944,246` bytes
+  - SHA-256: `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`
+  - Contains the inherited armour, weapons, ordinary shield, materials,
+    textures, and the original shield physics shapes.
+- `AssetPackages/gwp_black_gold_shield.tpac`
+  - Size: `37,594,977` bytes
+  - SHA-256: `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`
+  - Contains `wlarge_shield_black_static`, `gwp_black`, and the three
+    black-and-gold textures.
+- Both files are intentionally ignored by Git because the inherited package is
+  larger than GitHub's normal file limit. A distributable is not complete until
+  both hashes pass.
 
-- The inherited package was fully inventoried and recovered to
+### Modding Kit publication order
+
+The Modding Kit clears the live `AssetPackages` directory and writes only
+`pack0.tpac`. After every shield publication:
+
+1. Ensure the Modding Kit has fully exited.
+2. Preserve the new `pack0.tpac` immediately.
+3. Rename it to `gwp_black_gold_shield.tpac`.
+4. Copy the renamed file to repository `_Module/AssetPackages`.
+5. Restore `gwp_inherited_legacy_assets.tpac` beside it.
+6. Verify both file sizes and hashes before launching the client.
+7. Move live `Assets`, `AssetSources`, and `RuntimeDataCache` intact to sibling
+   `_GreyWardenEditorWorkspace` before a client test.
+
+Do not concatenate the two TPAC files. They are independent valid packages.
+
+## Solved: black-and-gold shield shutdown failure
+
+### Player symptom
+
+- The black-and-gold lord shield rendered correctly, but some game exits ended
+  after `Managed Interface deleted` with `0xc0000005` in
+  `TaleWorlds.Native.dll`.
+- The failure was intermittent, so absence of a visible dialog was not enough;
+  every acceptance run also checked Windows Application/WER events and dumps.
+
+### Important findings
+
+- Two TPAC files, their external filenames, inherited collision bodies, texture
+  names, and old/new TPAC coexistence were not sufficient causes.
+- Runtime retrieval and mutation of weapon meshes/materials was unsafe during
+  native teardown. The release therefore uses a statically authored lord-only
+  metamesh and never recolours or swaps its material at runtime.
+- Reusing a repeatedly edited generated `dun_geo.tpac` produced stale editor
+  state. `Ignore`/`Apply Ignores` and editor shutdown could then fault in native
+  code even though the FBX geometry was valid.
+- The successful rebuild was made after the editor fully exited and the old
+  generated `dun_geo.tpac` was removed. Reimporting the unchanged FBX created
+  new package, geometry, and metamesh GUIDs. The model, material, import settings,
+  and FBX checksum remained unchanged.
+- Modding Kit shutdown can still use a different native teardown path from the
+  normal client. Judge the player release only by normal-client runs; keep
+  editor crashes documented separately.
+
+### Final release state
+
+- Lord item `wlarge_shield_black` directly references the static
+  `wlarge_shield_black_static` metamesh and inherited
+  `bo_cap_wlarge_shield` / `bo_wlarge_shield` physics shapes.
+- The shield has six complete LODs, all bound to `gwp_black`:
+  - LOD0: 1,360 vertices / 1,642 faces
+  - LOD1: 1,142 / 1,312
+  - LOD2: 807 / 821
+  - LOD3: 413 / 328
+  - LOD4: 208 / 164
+  - LOD5: 104 / 82
+- Offline checks found no invalid index, bad face reference, degenerate face, or
+  non-finite position/normal/UV/tangent value.
+- Normal-client processes `22448` and `31172` both loaded
+  `GreyWarden/AssetPackages`, rendered `wlarge_shield_black`, completed a
+  battle, reached `Managed Interface deleted`, and passed delayed Windows
+  Application/WER/dump checks with no TaleWorlds crash.
+- `Non-Zero Device Reference Count` (`ERC...`) may still appear on successful
+  exits. It is not a failure unless Windows also records an application crash.
+
+## Correct shield LOD workflow
+
+### Blender/FBX
+
+- Put the six static mesh objects in one FBX. A dummy/empty parent is not
+  required.
+- Required names:
+  - `wlarge_shield_black_static`
+  - `wlarge_shield_black_static.lod1` through `.lod5`
+- All objects must have the same origin and applied transform, one material slot,
+  `gwp_black` assigned to every face, valid UVs, and decreasing polygon counts.
+  LODs do not need identical vertices or topology.
+- Export only the intended six mesh objects with `Selected Objects`, object type
+  `Mesh`, positive Y forward, and Z up.
+
+### Bannerlord import
+
+- The FBX dialog should report `Geometry(6) Model(6) Material(1)`.
+- Enable `Import meshes` and convert units to metres.
+- Leave `Convert to Z-up`, skeleton, animation, morph, and physics-shape import
+  disabled for this static shield.
+- In Meta Mesh Editor verify LOD0-LOD5 and `gwp_black` on every LOD. `Divide Into
+  Grid` is unnecessary. Do not recompute normals/tangents unless the source is
+  known to require it.
+- `Remove Redundant Vertices` may appear enabled by default. It was not the
+  proven shutdown fix and should not be toggled repeatedly as a diagnostic.
+
+### If the Meta Mesh Editor becomes unstable
+
+1. Stop changing Ignore flags.
+2. Close the editor completely.
+3. Back up the current generated `Assets/.../dun_geo.tpac` for diagnosis.
+4. Remove only that generated TPAC; preserve `AssetSources/.../dun.fbx`, the
+   material, textures, and inherited package.
+5. Start a fresh editor session and allow the FBX to generate a new resource.
+6. Verify the published TPAC offline before replacing the stable runtime package.
+
+## Common failure and recovery table
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| Only the black shield appears; inherited armour is missing | Client loaded live `GreyWarden/Assets` instead of `AssetPackages` | Exit the game and move `Assets`, `AssetSources`, and `RuntimeDataCache` to `_GreyWardenEditorWorkspace`; verify the next log says `Loading packages .../GreyWarden/AssetPackages` |
+| Publishing removes all inherited equipment | Modding Kit cleared `AssetPackages` and created only `pack0.tpac` | Rename the new package, then restore the verified inherited TPAC before testing |
+| Ignore/Apply Ignores or editor shutdown starts faulting | Stale generated resource/editor-session state | Fully exit the editor and regenerate `dun_geo.tpac` from the preserved FBX in a fresh session |
+| Black shield is rotated/reversed | Wrong FBX forward-axis declaration or double Z-up conversion | Export positive Y forward/Z up and keep Bannerlord `Convert to Z-up` disabled |
+| Game exit seems clean but reliability is uncertain | Native failure was intermittent and WER can be delayed | Require actual shield rendering, complete client exit, then delayed Application/WER/dump checks |
+| Six-LOD package fails again | Runtime package regression | Restore the retained single-mesh shield TPAC and repeat the same acceptance test |
+
+## Legacy package recovery
+
+- Canonical recovery directory:
   `C:\Users\lucif\Documents\GreyWarden旧资源恢复\pack0_2026-07-15`.
-- Package GUID: `cec987dc-80fc-47dd-9865-6fe9e9274db3`; SHA-256:
-  `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`.
-- Recovered inventory: 20 metameshes, 18 materials, 33 textures, and 2 physics
-  shapes. All 20 models were exported as both FBX and DAE; all 33 textures were
-  exported as both PNG and DDS; material parameters/dependencies were saved as
-  JSON. Every external segment was also preserved in stored and decompressed
-  form. The batch report records 599 successful operations and zero failures.
-- The original TPAC was copied into the recovery directory and its hash was
-  verified. `working_sets\wlarge_shield` contains the shield FBX/DAE, original
-  texture set, original material metadata, and the current black-and-gold
-  sources for the static replacement-mesh workflow.
-- Exported FBX/DAE files reconstruct the packed game data; they cannot restore
-  the deleted DCC project history or never-published helper objects. Physics
-  shapes have no common-format exporter, so their metadata and raw segments
-  are preserved and the black shield should continue referencing the existing
-  `bo_cap_wlarge_shield` and `bo_wlarge_shield` resources.
-- Do not cache or manually invalidate `Material`, `Texture`, or `Mesh` wrappers
-  for shield recoloring. Do not call `Mesh.SetMaterial` for an optional resource
-  that lives in a separately published partial package.
+- Package GUID: `cec987dc-80fc-47dd-9865-6fe9e9274db3`.
+- Inventory: 20 metameshes, 18 materials, 33 textures, and 2 physics shapes.
+- Models and textures were exported for reconstruction, and raw/external data
+  was retained. Common formats cannot recreate the original physics shapes, so
+  keep the inherited TPAC itself as the authoritative backup.
+- The inherited package is irreplaceable; the black-and-gold shield package is
+  reproducible. Never delete or overwrite the inherited package during shield
+  publication.
+
+## Formal release checklist
+
+1. Build `Release` against Bannerlord `1.4.7`.
+2. Confirm the live module has no `Assets`, `AssetSources`, or
+   `RuntimeDataCache` directory.
+3. Confirm both runtime TPAC hashes above.
+4. Confirm the player README describes functions/results only and matches the
+   live copy.
+5. Stage one top-level `GreyWarden` directory without editor binaries, PDBs, or
+   source assets.
+6. Create `GreyWarden-v1.4.7.zip` and its `.sha256` file.
+7. Inspect ZIP paths and extract-test it.
+8. Run at least one battle that renders the black shield, exit the client, and
+   check delayed Windows Application/WER/dump state.
+9. Commit source and documentation changes, then push GitHub.

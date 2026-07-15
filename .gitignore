@@ -16,8 +16,10 @@
 *.suo
 
 # Local published/recovered asset packages (kept locally and documented with hashes)
-/GreyWardenPolicePurity/_Module/AssetPackages/pack0.tpac
+/GreyWardenPolicePurity/_Module/AssetPackages/gwp_black_gold_shield.tpac
 /GreyWardenPolicePurity/_Module/AssetPackages/gwp_inherited_legacy_assets.tpac
+/GreyWardenPolicePurity/_Module/GreyWarden-v1.4.7.zip
+/GreyWardenPolicePurity/_Module/GreyWarden-v1.4.7.zip.sha256
 
 # Private Modding Kit work tree and generated cache (local editable copy only)
 /GreyWardenPolicePurity/_Module/Assets/

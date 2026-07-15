@@ -90,7 +90,7 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwlance" />
+                   id="Item.empire_mace_3_t4" />
         <equipment slot="Item1"
                    id="gwonehandedsword" />
         <equipment slot="Item2"
