@@ -10,8 +10,8 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// Preserves the active game mode's complete damage model and changes only
     /// the native knockdown decision for Grey Warden kicks and shield bashes.
-    /// This is evaluated once when a real alternative-attack blow connects;
-    /// there is no mission tick, target scan, forced animation, or extra blow.
+    /// This decision is evaluated once when a real alternative-attack blow
+    /// connects. There is no post-rise input lock or forced animation.
     /// </summary>
     internal sealed class GwpAgentApplyDamageModel : AgentApplyDamageModel
     {
@@ -77,6 +77,22 @@ namespace GreyWardenPolicePurity
             in AttackCollisionData collisionData,
             in Blow blow)
         {
+            // Prefer the collision flag because it is the engine's direct
+            // statement that this hit came from the alternative-attack input.
+            // AttackType is retained as a compatibility fallback for Kick/Bash.
+            bool isAlternativeAttack = collisionData.IsAlternativeAttack
+                || blow.AttackType == AgentAttackType.Kick
+                || blow.AttackType == AgentAttackType.Bash;
+
+            return isAlternativeAttack
+                ? GetGreyWardenKnockdownChance(attacker, victim)
+                : 0f;
+        }
+
+        internal static float GetGreyWardenKnockdownChance(
+            Agent? attacker,
+            Agent? victim)
+        {
             if (attacker == null
                 || victim == null
                 || !victim.IsHuman
@@ -86,15 +102,7 @@ namespace GreyWardenPolicePurity
                 return 0f;
             }
 
-            // Prefer the collision flag because it is the engine's direct
-            // statement that this hit came from the alternative-attack input.
-            // AttackType is retained as a compatibility fallback for Kick/Bash.
-            bool isAlternativeAttack = collisionData.IsAlternativeAttack
-                || blow.AttackType == AgentAttackType.Kick
-                || blow.AttackType == AgentAttackType.Bash;
-
-            if (!isAlternativeAttack
-                || !GwpKickBehavior.IsEligibleGreyWarden(attacker))
+            if (!GwpKickBehavior.IsEligibleGreyWarden(attacker))
             {
                 return 0f;
             }
@@ -499,7 +507,7 @@ namespace GreyWardenPolicePurity
                 in blow);
         }
 
-        private static bool RollKnockdown(float chance) =>
+        internal static bool RollKnockdown(float chance) =>
             chance >= 1f || MBRandom.RandomFloat < chance;
 
         private void ClearPendingKnockdownDecision()

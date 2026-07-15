@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.0.1</Version>
+    <Version>1.4.7</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -69,11 +69,13 @@
   <!-- 每次 build 后自动将 _Module\ 内所有文件同步到游戏模组目录 -->
   <Target Name="CopyModuleData" AfterTargets="Build">
     <ItemGroup>
-      <!-- Assets and AssetSources are editor-development data. Copying them
-           into the live client module makes the client prefer that incomplete
-           editable tree over its published AssetPackages\pack0.tpac, which
-           hides the module's original meshes. Client builds must receive only
-           the published assets already present in AssetPackages. -->
+      <!-- Assets and AssetSources are editor working data. Preserve them so
+           the Modding Kit can reopen and republish the resources. They are
+           excluded from this ordinary build copy to avoid overwriting newer
+           editor-side work; the build must never delete them. In the current
+           engine build, a live folder named Assets makes the normal client load
+           that editable tree instead of AssetPackages, so game testing must use
+           a reversible folder-name switch or a separate runtime module. -->
       <ModuleFiles Include="$(MSBuildProjectDirectory)\_Module\**"
                    Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**" />
     </ItemGroup>

@@ -68,9 +68,12 @@ namespace GreyWardenPolicePurity
             NativeGetDefendCollisionResults =
                 CreateGetDefendCollisionResultsDelegate();
 
-        // Use the authored active shield collision body at its exact size.
-        // Alignment is supplied by the live off-hand item bone plus the
-        // item's authored WeaponComponentData.Frame; no area/depth padding.
+        // Align to the authored active shield collision body by using the
+        // live off-hand bone plus WeaponComponentData.Frame.  The two broad
+        // shield-face axes receive the player's requested 30% coverage
+        // expansion, while the thin depth axis receives a 20% expansion.
+        private const float PassiveShieldFaceCoverageScale = 1.30f;
+        private const float PassiveShieldDepthScale = 1.20f;
         private const float PassiveShieldDurabilityMultiplier = 3f;
         private const int PassiveImpactDamage = 1;
         private const int BrokenShieldImpactDamage = 2;
@@ -104,6 +107,7 @@ namespace GreyWardenPolicePurity
                 || victim == null
                 || !attacker.IsHuman
                 || !victim.IsHuman
+                || !attacker.IsEnemyOf(victim)
                 || collisionData.IsAlternativeAttack
                 || collisionData.AttackBlockedWithShield
                 || !collisionData.IsColliderAgent
@@ -136,13 +140,15 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// During a Grey Warden's native Kick/KickContinue/KickHit/WeaponBash
-        /// action, turn a body-strike into a real held-shield block.  Unlike
-        /// passive coverage this is intentionally action-based and therefore
-        /// does not run a geometry test: the short alternative-attack window is
-        /// the whole protection window requested for these units.
+        /// Applies the Grey Warden's action-only extension of the unraised
+        /// shield passive.  While the native kick or weapon-bash animation is
+        /// in progress, a held giant shield protects against every incoming
+        /// melee body hit, rather than only hits whose weapon segment crosses
+        /// the shield volume.  The collision is still reconstructed as the
+        /// same ordinary passive held-shield block, so all durability and
+        /// feedback use the one shared passive-shield path below.
         /// </summary>
-        internal static bool TryConvertAlternativeAttackGuardMeleeHit(
+        internal static bool TryConvertAlternativeAttackForcedPassiveGuard(
             Agent? attacker,
             Agent? victim,
             ref AttackCollisionData collisionData)
@@ -151,6 +157,7 @@ namespace GreyWardenPolicePurity
                 || victim == null
                 || !attacker.IsHuman
                 || !victim.IsHuman
+                || !attacker.IsEnemyOf(victim)
                 || !collisionData.IsColliderAgent
                 || collisionData.CollisionResult
                     != CombatCollisionResult.StrikeAgent
@@ -167,6 +174,9 @@ namespace GreyWardenPolicePurity
             if (impactNormal.LengthSquared < 0.0001f)
                 impactNormal = Vec3.Up;
 
+            // Deliberately do not call IncomingMeleeSegmentHitsPassiveBody:
+            // this guard is the action-time guarantee requested for kick and
+            // shield-bash, not the normal geometry-only passive interception.
             return ConvertHeldShieldMeleeHitToBlock(
                 attacker,
                 victim,
@@ -500,9 +510,10 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// Reuses Bannerlord's native alternative-attack victim reactions.
-        /// A normal passive block is presented to HandleBlowAux as a shield
-        /// bash; the breaking hit is presented as a kick.  Both retain only
-        /// the vanilla short KnockBack flag and never receive KnockDown.
+        /// A normal passive block is presented to HandleBlowAux as the native
+        /// minimum ShrugOff response; the breaking hit is presented as a kick
+        /// and retains the vanilla short KnockBack reaction. Neither path ever
+        /// receives KnockDown.
         /// </summary>
         internal static void ApplyPassiveShieldImpactReaction(
             Agent? attacker,
@@ -557,10 +568,12 @@ namespace GreyWardenPolicePurity
                 // The breaking blow deliberately keeps the stock kick's
                 // knock-back reaction.
                 ? BlowFlags.KnockBack
-                // A normal shield contact must use only the small native light
-                // hit flinch.  KnockBack selects strike_knock_back, whose root
-                // motion caused the long displacement seen in the last build.
-                : BlowFlags.None;
+                // The stock 1.4.7 damage pipeline marks a sub-stagger-threshold
+                // blow as ShrugOff before RegisterBlow. This synthetic visual
+                // blow enters RegisterBlow directly, so supply that native
+                // minimum-reaction flag here. All shield damage, durability,
+                // stun values, sound and break behavior remain unchanged.
+                : BlowFlags.ShrugOff;
 
             // Bannerlord's real alternative-attack flow writes Bash/Kick into
             // Blow.AttackType, marks the collision as IsAlternativeAttack and
@@ -809,9 +822,10 @@ namespace GreyWardenPolicePurity
             if (!_shieldCollisionBoundsValid)
                 return false;
 
-            BoundingBox authoredBounds = _shieldCollisionBounds;
-            Vec3 expandedMin = authoredBounds.min;
-            Vec3 expandedMax = authoredBounds.max;
+            GetPassiveShieldCoverageBounds(
+                in _shieldCollisionBounds,
+                out Vec3 expandedMin,
+                out Vec3 expandedMax);
 
             if (!SegmentIntersectsBox(
                     localStart,
@@ -835,6 +849,39 @@ namespace GreyWardenPolicePurity
                 in localImpactNormal);
             shieldImpactNormal.Normalize();
             return true;
+        }
+
+        private static void GetPassiveShieldCoverageBounds(
+            in BoundingBox authoredBounds,
+            out Vec3 expandedMinimum,
+            out Vec3 expandedMaximum)
+        {
+            Vec3 center = (authoredBounds.min + authoredBounds.max) * 0.5f;
+            Vec3 halfExtent = (authoredBounds.max - authoredBounds.min) * 0.5f;
+
+            // Shield collision bodies have one very thin local axis. Expand
+            // the two face dimensions by 30% and that depth axis by 20%.
+            if (halfExtent.x <= halfExtent.y && halfExtent.x <= halfExtent.z)
+            {
+                halfExtent.x *= PassiveShieldDepthScale;
+                halfExtent.y *= PassiveShieldFaceCoverageScale;
+                halfExtent.z *= PassiveShieldFaceCoverageScale;
+            }
+            else if (halfExtent.y <= halfExtent.x && halfExtent.y <= halfExtent.z)
+            {
+                halfExtent.x *= PassiveShieldFaceCoverageScale;
+                halfExtent.y *= PassiveShieldDepthScale;
+                halfExtent.z *= PassiveShieldFaceCoverageScale;
+            }
+            else
+            {
+                halfExtent.x *= PassiveShieldFaceCoverageScale;
+                halfExtent.y *= PassiveShieldFaceCoverageScale;
+                halfExtent.z *= PassiveShieldDepthScale;
+            }
+
+            expandedMinimum = center - halfExtent;
+            expandedMaximum = center + halfExtent;
         }
 
         private static Vec3 GetBoxImpactNormal(
@@ -956,45 +1003,6 @@ namespace GreyWardenPolicePurity
             // Emit the stock shield-break burst/sound while the impact and
             // skeleton are still valid, leave one point for this callback,
             // then perform zero-HP -> removal on the next mission tick.
-            PlayShieldBreakFeedback(
-                victim,
-                shieldSlot,
-                in collisionData);
-            victim.ChangeWeaponHitPoints(shieldSlot, 1);
-            QueueShieldBreak(victim, shieldSlot);
-            collisionData.IsShieldBroken = false;
-            return true;
-        }
-
-        internal static bool ApplyAlternativeAttackGuardDurabilityDamage(
-            Agent victim,
-            ref AttackCollisionData collisionData)
-        {
-            if (!TryGetPassiveShieldSlot(
-                    victim,
-                    heldPassiveBlock: true,
-                    out EquipmentIndex shieldSlot))
-            {
-                return false;
-            }
-
-            MissionWeapon shield = victim.Equipment[shieldSlot];
-            int oldHitPoints = shield.HitPoints;
-            if (oldHitPoints <= 0)
-                return false;
-
-            // The special alternative-attack guard always costs exactly one
-            // point of shield durability, independent of the incoming weapon's
-            // calculated body damage.
-            if (oldHitPoints > 1)
-            {
-                victim.ChangeWeaponHitPoints(
-                    shieldSlot,
-                    (short)(oldHitPoints - 1));
-                collisionData.IsShieldBroken = false;
-                return false;
-            }
-
             PlayShieldBreakFeedback(
                 victim,
                 shieldSlot,
@@ -1155,8 +1163,8 @@ namespace GreyWardenPolicePurity
         private enum ShieldInterceptionKind
         {
             None,
-            PassiveHeld,
-            AlternativeAttackGuard
+            AlternativeAttackForcedPassive,
+            PassiveHeld
         }
 
         [HarmonyPrefix]
@@ -1169,14 +1177,14 @@ namespace GreyWardenPolicePurity
         {
             __state = ShieldInterceptionKind.None;
             if (GwpPassiveHeldShieldCollision
-                .TryConvertAlternativeAttackGuardMeleeHit(
+                .TryConvertAlternativeAttackForcedPassiveGuard(
                     attacker,
                     victim,
                     ref collisionData))
             {
-                __state = ShieldInterceptionKind.AlternativeAttackGuard;
-                GwpPassiveHeldShieldCollision
-                    .BeginSyntheticHeldShieldBlock();
+                __state = ShieldInterceptionKind
+                    .AlternativeAttackForcedPassive;
+                GwpPassiveHeldShieldCollision.BeginSyntheticHeldShieldBlock();
                 colReaction = MeleeCollisionReaction.Bounced;
                 GwpPassiveHeldShieldCollision.PlayNativeMetalShieldImpact(
                     attacker,
@@ -1221,15 +1229,23 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if (__state == ShieldInterceptionKind.AlternativeAttackGuard)
+            if (__state == ShieldInterceptionKind
+                .AlternativeAttackForcedPassive)
             {
                 try
                 {
+                    // The native callback began as a body wound, so it has no
+                    // stock held-shield durability event. Reuse the exact
+                    // passive path: base hit damage multiplied by three,
+                    // metal shield feedback, light flinch, and queued native
+                    // style break feedback. Immortal prevents the reaction
+                    // blow itself from costing the protected Warden health.
                     colReaction = MeleeCollisionReaction.Bounced;
                     bool shieldBroken = GwpPassiveHeldShieldCollision
-                        .ApplyAlternativeAttackGuardDurabilityDamage(
+                        .ApplyPassiveShieldDurabilityDamage(
                             victim,
-                            ref collisionData);
+                            ref collisionData,
+                            heldPassiveBlock: true);
                     GwpPassiveHeldShieldCollision
                         .ApplyPassiveShieldImpactReaction(
                             attacker,
@@ -1278,7 +1294,9 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if (!collisionData.CollidedWithShieldOnBack
+            if (attacker == null
+                || !attacker.IsEnemyOf(victim)
+                || !collisionData.CollidedWithShieldOnBack
                 || !GwpPassiveHeldShieldCollision
                     .HasGiantShieldCarriedOnBack(victim))
             {

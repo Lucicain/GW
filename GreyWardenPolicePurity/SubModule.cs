@@ -12,7 +12,6 @@ namespace GreyWardenPolicePurity
     {
         private const string HarmonyId =
             "GreyWardenPolicePurity.ShieldBashGuard";
-
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
@@ -41,6 +40,7 @@ namespace GreyWardenPolicePurity
             // (Sandbox in Campaign, Custom in Custom Battle). The wrapper
             // changes only Grey Warden alternative-attack knockdowns.
             gameStarterObject.AddModel(new GwpAgentApplyDamageModel());
+            gameStarterObject.AddModel(new GwpAgentStatCalculateModel());
 
             if (game.GameType is not Campaign || gameStarterObject is not CampaignGameStarter starter) return;
             RegisterCampaignComponents(starter);
@@ -73,6 +73,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenVillageRewardBehavior());
             starter.AddBehavior(new GreyWardenLoreBehavior());
             starter.AddBehavior(new GreyWardenFamilyBehavior());
+            starter.AddBehavior(new GreyWardenLeaderBalanceBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());
         }
 
@@ -88,6 +89,8 @@ namespace GreyWardenPolicePurity
             // 踢腿能力同时用于战役和自定义战斗。GreyWarden 本身是纯单人
             // 模组，因此这里不需要用 Campaign 类型把 CustomGame 排除掉。
             mission.AddMissionBehavior(new GwpKickBehavior());
+            mission.AddMissionBehavior(
+                new GwpAlternativeAttackControlBehavior());
             mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
 
             // 战场增援依赖 Campaign 数据，自定义战斗中不注入。

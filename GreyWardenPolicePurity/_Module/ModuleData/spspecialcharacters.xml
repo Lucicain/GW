@@ -9,7 +9,7 @@
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
-		skill_template="SkillSet.yao_skills" 
+		skill_template="SkillSet.spc_knight_skills"
 		occupation="Lord">
 		<face>
 			<BodyProperties version="4" age="22.01" weight="0.0463" build="0.0448"  key="00057C0FC00020029673264B47856554EA72881968858A46D9A287747665557700811603083345370000000000000000000000000000000000000000210C2003"  />
@@ -53,7 +53,7 @@
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
-		skill_template="SkillSet.yao_skills" 
+		skill_template="SkillSet.spc_phalanx_skills"
 		occupation="Lord">
 		<face>
 			<BodyProperties version="4" age="22.01" weight="0.5" build="0.5"  key="0010A80FD214300A607785872055553583B98910388F1112E4B99A1E858AA0070077760307F13BA200000000000000000000000000000000000000003AF41003"  />
@@ -94,7 +94,7 @@
 		name="{=gw1}弥瑟"
 		voice="softspoken"
 		is_female="true"
-		skill_template="SkillSet.yao_skills"
+		skill_template="SkillSet.spc_mounted_archery_skills"
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
@@ -138,7 +138,7 @@
 		name="{=gw1}圣铎"
 		voice="softspoken"
 		is_female="true"
-		skill_template="SkillSet.yao_skills"
+		skill_template="SkillSet.spc_quartermaster_skills"
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
@@ -182,7 +182,7 @@
 		name="{=gw1}晨曦"
 		voice="softspoken"
 		is_female="true"
-		skill_template="SkillSet.yao_skills"
+		skill_template="SkillSet.spc_politician_skills"
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
@@ -226,7 +226,7 @@
 		name="{=gw1}暮光"
 		voice="softspoken"
 		is_female="true"
-		skill_template="SkillSet.yao_skills"
+		skill_template="SkillSet.spc_diplomat_skills"
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"

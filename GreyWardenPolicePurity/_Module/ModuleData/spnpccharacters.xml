@@ -4,7 +4,7 @@
 <!--Recruit-->
   <NPCCharacter id="gwrecruit"
                 default_group="Infantry"
-                level="15"
+                level="6"
                 name="灰袍守护者轻步兵"
                 occupation="Soldier"
                 is_basic_troop="true"
@@ -15,21 +15,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="130" />
-      <skill id="Riding"
              value="20" />
+      <skill id="Riding"
+             value="0" />
       <skill id="OneHanded"
-             value="130" />
+             value="20" />
       <skill id="TwoHanded"
-             value="80" />
+             value="10" />
       <skill id="Polearm"
-             value="130" />
+             value="20" />
       <skill id="Bow"
-             value="60" />
+             value="5" />
       <skill id="Crossbow"
-             value="60" />
+             value="5" />
       <skill id="Throwing"
-             value="80" />
+             value="10" />
     </skills>
 	<upgrade_targets>
       <upgrade_target id="NPCCharacter.gwheavyinfantry" />
@@ -68,21 +68,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="130" />
+             value="180" />
       <skill id="Riding"
-             value="20" />
+             value="70" />
       <skill id="OneHanded"
-             value="130" />
+             value="180" />
       <skill id="TwoHanded"
-             value="80" />
-      <skill id="Polearm"
              value="130" />
+      <skill id="Polearm"
+             value="180" />
       <skill id="Bow"
-             value="60" />
+             value="110" />
       <skill id="Crossbow"
-             value="60" />
+             value="110" />
       <skill id="Throwing"
-             value="80" />
+             value="130" />
     </skills>
     <upgrade_targets>
 	  <upgrade_target id="NPCCharacter.gwknight" />
@@ -90,8 +90,10 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwonehandedsword" />
+                   id="gwlance" />
         <equipment slot="Item1"
+                   id="gwonehandedsword" />
+        <equipment slot="Item2"
                    id="wlarge_shield" />
         <equipment slot="Body"
                    id="winfarmor" />
@@ -124,21 +126,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="130" />
+             value="170" />
       <skill id="Riding"
-             value="20" />
+             value="80" />
       <skill id="OneHanded"
-             value="130" />
+             value="170" />
       <skill id="TwoHanded"
-             value="30" />
+             value="70" />
       <skill id="Polearm"
-             value="80" />
+             value="120" />
       <skill id="Bow"
-             value="160" />
+             value="180" />
       <skill id="Crossbow"
-             value="80" />
+             value="120" />
       <skill id="Throwing"
-             value="60" />
+             value="100" />
     </skills>
     <upgrade_targets></upgrade_targets>
     <Equipments>
@@ -182,21 +184,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="160" />
+             value="110" />
       <skill id="Riding"
-             value="200" />
+             value="250" />
       <skill id="OneHanded"
-             value="100" />
+             value="250" />
       <skill id="TwoHanded"
-             value="300" />
+             value="110" />
       <skill id="Polearm"
-             value="260" />
+             value="310" />
       <skill id="Bow"
-             value="60" />
+             value="110" />
       <skill id="Crossbow"
-             value="25" />
+             value="75" />
       <skill id="Throwing"
-             value="45" />
+             value="95" />
     </skills>
     <Equipments>
       <EquipmentRoster>

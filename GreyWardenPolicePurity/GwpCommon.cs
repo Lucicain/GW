@@ -35,11 +35,36 @@ namespace GreyWardenPolicePurity
 
         public static bool IsGreyWardenLord(Hero? hero)
         {
-            if (hero?.Clan == null)
+            return IsGreyWardenClanMember(hero)
+                   && hero!.Occupation == Occupation.Lord;
+        }
+
+        public static bool IsGreyWardenClanMember(Hero? hero)
+        {
+            return hero?.Clan != null
+                   && string.Equals(
+                       hero.Clan.StringId,
+                       GwpIds.PoliceClanId,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsGreyWardenAffiliatedCharacter(
+            BasicCharacterObject? character)
+        {
+            if (character == null)
                 return false;
 
-            return string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase)
-                   && hero.Occupation == Occupation.Lord;
+            if (IsGreyWardenTroopId(character.StringId)
+                || string.Equals(
+                    character.StringId,
+                    GwpIds.CustomBattleCommanderId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return character is CharacterObject campaignCharacter
+                   && IsGreyWardenClanMember(campaignCharacter.HeroObject);
         }
 
         public static bool IsGreyWardenTroop(CharacterObject? character)

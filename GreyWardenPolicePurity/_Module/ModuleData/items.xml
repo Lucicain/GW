@@ -402,15 +402,15 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
            HeldInOffHand="true" />
   </Item>
 
-  <!-- Lord-only black variant. It deliberately reuses the exact same mesh,
-       holster and collision bodies; its private WeaponData mesh copies receive
-       a persistent factor color before the engine creates player/AI entities. -->
+  <!-- Lord-only black-and-gold variant. It uses a separately authored static
+       metamesh while continuing to reuse the inherited holster/collision
+       bodies. Runtime mesh/material mutation remains disabled. -->
   <Item id="wlarge_shield_black"
         name="灰袍领主黑曜巨盾"
         body_name="bo_cap_wlarge_shield"
         shield_body_name="bo_wlarge_shield"
         recalculate_body="false"
-        mesh="wlarge_shield"
+        mesh="wlarge_shield_black_static"
         culture="Culture.empire"
         using_tableau="false"
         weight="5.5"

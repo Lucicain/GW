@@ -24,15 +24,13 @@ namespace GreyWardenPolicePurity
 
         // Once a tactical target is available, request an alternative attack
         // when the action cooldown expires. There is no separate trigger roll.
-        private const float KickCooldownSeconds = 7.0f;
-        private const float ShieldBashCooldownSeconds = 2.0f;
+        private const float KickCooldownSeconds = 3.0f;
+        private const float ShieldBashCooldownSeconds = 3.0f;
         private const float InputRequestWindowSeconds = 0.35f;
-        private const float ShieldBashGuardWindowSeconds = 1.0f;
         private const float FailedTargetProbeCooldownSeconds = 0.25f;
 
         private float _nextKickTime;
         private float _requestKickUntil;
-        private float _shieldBashGuardUntil;
         private float _nextTargetProbeTime;
         internal GwpKickInputComponent(Agent agent) : base(agent) { }
 
@@ -66,7 +64,7 @@ namespace GreyWardenPolicePurity
             ref Vec2 inputVector)
         {
             float now = Agent.Mission.CurrentTime;
-            MaintainShieldGuardDuringBash(now, ref movementFlag);
+            QueueAcceptedAlternativeAttack();
 
             if (!CanSupplyKickInput(now))
                 return;
@@ -81,50 +79,26 @@ namespace GreyWardenPolicePurity
                     + actionCooldown
                     + (Agent.Index % 7) * 0.09f;
                 _requestKickUntil = now + InputRequestWindowSeconds;
-                if (hasWieldedShield)
-                {
-                    _shieldBashGuardUntil = now
-                        + ShieldBashGuardWindowSeconds;
-                }
             }
 
             // This is the same EventControlFlag used by the player's Kick key.
             // If the AI is currently blocking with a shield, Bannerlord turns
             // this input into a shield bash; otherwise it performs a kick.
             eventFlag |= Agent.EventControlFlag.Kick;
-            MaintainShieldGuardDuringBash(now, ref movementFlag);
+            QueueAcceptedAlternativeAttack();
         }
 
-        private void MaintainShieldGuardDuringBash(
-            float now,
-            ref Agent.MovementControlFlag movementFlag)
+        private void QueueAcceptedAlternativeAttack()
         {
-            if (now > _shieldBashGuardUntil || !HasWieldedShield())
+            if (!IsPerformingAlternativeAttack(Agent))
                 return;
 
-            // Supply the native block input while starting the bash and while
-            // its alternative-attack animation is actually active. This is
-            // equivalent to the player holding Block while pressing Kick: the
-            // shield remains a real directional collision surface rather than
-            // granting blanket invulnerability. Stop as soon as the bash ends.
-            bool isStartingBash = now <= _requestKickUntil;
-            bool isPerformingBash = IsPerformingAlternativeAttack(Agent);
-            if (!isStartingBash && !isPerformingBash)
-                return;
-
-            Agent.MovementControlFlag defendFlag =
-                Agent.GetDefendMovementFlag()
-                & Agent.MovementControlFlag.DefendMask;
-            if ((defendFlag & Agent.MovementControlFlag.DefendDirMask)
-                == Agent.MovementControlFlag.None)
-            {
-                defendFlag |= Agent.MovementControlFlag.DefendAuto;
-            }
-
-            defendFlag |= Agent.MovementControlFlag.DefendBlock;
-            movementFlag &= ~(Agent.MovementControlFlag.AttackMask
-                | Agent.MovementControlFlag.DefendMask);
-            movementFlag |= defendFlag;
+            // Register only an action the native engine has genuinely begun.
+            // The mission behavior observes its real hit first, then gives
+            // the nearest enemy one shared fallback control decision only
+            // when the native action missed. Its per-action state deduplicates the AI's
+            // repeated input callback frames.
+            GwpAlternativeAttackControlBehavior.BeginAction(Agent);
         }
 
         private bool HasWieldedShield()
