@@ -208,10 +208,24 @@ Do not concatenate the two TPAC files. They are independent valid packages.
   LODs do not need identical vertices or topology.
 - Export only the intended six mesh objects with `Selected Objects`, object type
   `Mesh`, positive Y forward, and Z up.
+- `Selected Objects` is the actual inclusion rule: all six objects, including
+  the unsuffixed LOD0/base mesh, must be selected when the export starts. Making
+  the base mesh the last-selected/active object is a useful visual checklist,
+  but Blender's FBX exporter does not require that object to be active and
+  Bannerlord does not use Blender's active-object state.
+- If making the base mesh active after selecting all six, use Shift-click so the
+  other five remain selected. A normal click that leaves only the base selected
+  produces a one-model FBX.
+- The verified six-LOD FBX contains six independent root-level mesh nodes and no
+  dummy/empty parent. The base mesh is present first, each `.lod<n>` node is
+  present once, and the same `gwp_black` material is connected to every node.
 
 ### Bannerlord import
 
 - The FBX dialog should report `Geometry(6) Model(6) Material(1)`.
+- Treat those counts as the authoritative export-selection check. If they do
+  not read six/six/one, cancel the import and correct the Blender selection or
+  FBX contents instead of trying to repair the Meta Mesh afterward.
 - Enable `Import meshes` and convert units to metres.
 - Leave `Convert to Z-up`, skeleton, animation, morph, and physics-shape import
   disabled for this static shield.
@@ -235,12 +249,30 @@ Do not concatenate the two TPAC files. They are independent valid packages.
 
 | Symptom | Cause | Recovery |
 |---|---|---|
+| FBX import reports zero/one mesh or LOD0-LOD5 are not all present | Not all six intended mesh objects were selected when `Selected Objects` export was used, or `Import meshes` was disabled | Re-export with all six selected; confirm the unsuffixed base plus `.lod1`-`.lod5`, then require `Geometry(6) Model(6) Material(1)` before importing |
 | Only the black shield appears; inherited armour is missing | Client loaded live `GreyWarden/Assets` instead of `AssetPackages` | Exit the game and move `Assets`, `AssetSources`, and `RuntimeDataCache` to `_GreyWardenEditorWorkspace`; verify the next log says `Loading packages .../GreyWarden/AssetPackages` |
 | Publishing removes all inherited equipment | Modding Kit cleared `AssetPackages` and created only `pack0.tpac` | Rename the new package, then restore the verified inherited TPAC before testing |
 | Ignore/Apply Ignores or editor shutdown starts faulting | Stale generated resource/editor-session state | Fully exit the editor and regenerate `dun_geo.tpac` from the preserved FBX in a fresh session |
 | Black shield is rotated/reversed | Wrong FBX forward-axis declaration or double Z-up conversion | Export positive Y forward/Z up and keep Bannerlord `Convert to Z-up` disabled |
 | Game exit seems clean but reliability is uncertain | Native failure was intermittent and WER can be delayed | Require actual shield rendering, complete client exit, then delayed Application/WER/dump checks |
 | Six-LOD package fails again | Runtime package regression | Restore the retained single-mesh shield TPAC and repeat the same acceptance test |
+
+### Why the final six-LOD attempt succeeded
+
+- Correctly selecting and exporting all six meshes explains why the final FBX
+  exposed a complete LOD0-LOD5 set. It can also explain earlier imports that
+  contained no mesh, only one mesh, or an incomplete LOD group.
+- It does not explain the later native editor/client shutdown fault. The FBX
+  that faulted and the FBX that succeeded after regeneration had the same
+  checksum and import contents. The change that separated those attempts was a
+  fully closed editor plus regeneration of the stale generated resource, which
+  produced fresh package/geometry/metamesh identifiers.
+- It also does not explain the test where only the shield appeared. That client
+  loaded the editable `Assets` directory instead of the two complete packages
+  in `AssetPackages`, so the inherited armour package never entered that run.
+- Rigged equipment is different: its FBX must include the required mesh and
+  skeleton/armature data. Tutorials that select both and make the armature
+  active are not evidence that a static shield's base mesh must be active.
 
 ## Legacy package recovery
 
