@@ -145,6 +145,48 @@ The Modding Kit clears the live `AssetPackages` directory and writes only
 
 Do not concatenate the two TPAC files. They are independent valid packages.
 
+### Editor workspace parking and restoration
+
+The editable resource directories are currently parked intact at:
+
+`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
+
+That directory is outside the live `GreyWarden` module and contains exactly the
+three editor-only directories needed to resume asset work:
+
+- `Assets`: editable generated TPAC metadata, including the current
+  `GreyWardenRecovery/dun_geo.tpac`.
+- `AssetSources`: the six-LOD shield FBX and three source textures. The current
+  `GreyWardenRecovery/dun.fbx` is `218,316` bytes with SHA-256
+  `8FC25976E9A6E5B0663A6462EB6BB2F0F59E73C14AE899671A510825AB63B6AC`.
+- `RuntimeDataCache`: generated editor cache. It is movable with the workspace
+  but is not an authoritative backup and may be regenerated if necessary.
+
+To resume editing without opening or automating the editor on the user's behalf:
+
+1. Confirm the game and Modding Kit are fully closed.
+2. Move `Assets`, `AssetSources`, and `RuntimeDataCache` from
+   `_GreyWardenEditorWorkspace` back into the live module root:
+   `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
+3. Preserve both files in live `AssetPackages` before publishing; the Modding
+   Kit will clear that directory and create a new `pack0.tpac`.
+4. The user performs all Modding Kit/editor interaction. Do not control the
+   editor for them.
+
+Before normal-client testing or building a public archive:
+
+1. Fully close the Modding Kit.
+2. Move the same three directories back to
+   `_GreyWardenEditorWorkspace`; do not split their contents across locations.
+3. Confirm the live `GreyWarden` module has no `Assets`, `AssetSources`, or
+   `RuntimeDataCache` directory, otherwise the client can prefer editable
+   resources and ignore the complete runtime packages.
+4. Restore and verify both runtime TPAC files using the sizes and hashes above.
+
+Do not delete `_GreyWardenEditorWorkspace`. It is the current resumable editor
+state. The inherited `gwp_inherited_legacy_assets.tpac` remains the authoritative
+irreplaceable backup; the editor workspace does not replace it.
+
 ## Solved: black-and-gold shield shutdown failure
 
 ### Player symptom
