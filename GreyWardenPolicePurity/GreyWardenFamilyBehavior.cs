@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -24,57 +24,68 @@ namespace GreyWardenPolicePurity
             "gw_leader_5"
         };
 
+        private static readonly Dictionary<string, string> CoreLeaderNameTemplates =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["gw_leader_0"] = "{=gwp_hero_vandi}Aethelflaed",
+                ["gw_leader_1"] = "{=gwp_hero_yoer}Cyneburh",
+                ["gw_leader_2"] = "{=gwp_hero_mise}Mildthryth",
+                ["gw_leader_3"] = "{=gwp_hero_shengduo}Wynflaed",
+                ["gw_leader_4"] = "{=gwp_hero_chenxi}Eadgifu",
+                ["gw_leader_5"] = "{=gwp_hero_muguang}Wulfhild"
+            };
+
         private static readonly string[] GeneratedFemaleNames =
         {
-            "澄音",
-            "祈安",
-            "望舒",
-            "清岚",
-            "静禾",
-            "霁月",
-            "朝露",
-            "星祷",
-            "守真",
-            "昭宁",
-            "清律",
-            "若岚",
-            "听雪",
-            "慈光",
-            "霜晨",
-            "明祷",
-            "兰序",
-            "雅宁",
-            "晨铃",
-            "书弦",
-            "怀澄",
-            "澜音",
-            "芷宁",
-            "祷月",
-            "安禾",
-            "静澜",
-            "思律",
-            "清珑",
-            "雨谣",
-            "远星",
-            "采祷",
-            "露祈",
-            "映岚",
-            "书宁",
-            "凝光",
-            "夕晨"
+            GwpText.Get("{=gwp_greywardenfamilybehavior_001}Aebbe"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_002}Aeffe"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_003}Eadgyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_004}Eadleofu"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_005}Eadwyn"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_006}Ealdgyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_007}Ealhburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_008}Ealhflaed"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_009}Ealhgyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_010}Ealhswith"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_011}Ealhthryth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_012}Ealhwaru"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_013}Ealhwyn"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_014}Eanburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_015}Eanflaed"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_016}Eanswith"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_017}Eormenburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_018}Eormenhild"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_019}Folcburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_020}Frithugyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_021}Frithuswith"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_022}Godgifu"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_023}Godwife"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_024}Heahburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_025}Heregyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_026}Hereswith"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_027}Leofcwen"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_028}Leofflaed"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_029}Leofgifu"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_030}Leofrun"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_031}Mildburh"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_032}Wulfflaed"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_033}Wulfgifu"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_034}Wulfgyth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_035}Wulfthryth"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_036}Wulfwyn")
         };
 
         private static readonly string[] NameSuffixes =
         {
-            "二",
-            "三",
-            "四",
-            "五",
-            "六",
-            "七",
-            "八",
-            "九",
-            "十"
+            GwpText.Get("{=gwp_greywardenfamilybehavior_037} II"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_038} III"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_039} IV"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_040} V"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_041} VI"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_042} VII"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_043} VIII"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_044} IX"),
+            GwpText.Get("{=gwp_greywardenfamilybehavior_045} X")
         };
 
         private static readonly HashSet<string> CoreLeaderIdSet =
@@ -159,6 +170,12 @@ namespace GreyWardenPolicePurity
                 if (hero?.Name == null || !IsCoreLeader(hero))
                 {
                     continue;
+                }
+
+                if (CoreLeaderNameTemplates.TryGetValue(hero.StringId, out string nameTemplate))
+                {
+                    TextObject localizedName = new TextObject(nameTemplate);
+                    hero.SetName(localizedName, localizedName);
                 }
 
                 string existingName = hero.Name.ToString();
@@ -306,40 +323,40 @@ namespace GreyWardenPolicePurity
 
         private static TextObject BuildGeneratedMemberEncyclopedia(Hero hero)
         {
-            string name = hero.Name?.ToString() ?? "她";
+            string name = hero.Name?.ToString() ?? GwpText.Get("{=gwp_greywardenfamilybehavior_046}she");
 
             if (GreyWardenVillageAdoptionBehavior.TryGetAdoptionOrigin(hero.StringId, out string villageName))
             {
                 if (hero.Age < 12f)
                 {
                     return new TextObject(
-                        $"{name}是在{villageName}遭劫掠焚毁后，被灰袍守卫带回内院收养的女娃。她尚年幼，却已经在耳濡目染中听惯了巡路口令、案卷誊录与修会戒律。对灰袍而言，她不是寻常意义上的家族血亲，而是从灾厄中被接续下来的下一代誓女。");
+                        GwpText.Get("{=gwp_greywardenfamilybehavior_047}After {VAR_2} was sacked and put to the torch, the Grey Wardens took the girl {VAR_1} into their inner ward. Though still young, she has grown accustomed to patrol calls, copied depositions, and the discipline of the order. To the Wardens she is no common kinswoman, but a sworn daughter carried forward from calamity.", "VAR_1", name, "VAR_2", villageName));
                 }
 
                 if (hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
                 {
                     return new TextObject(
-                        $"{name}幼时曾在{villageName}遭焚后被灰袍守卫收养。如今的她已开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在长辈眼中，她正从劫后余生的孤女逐渐成长为灰袍内院受训的新一代后继者。");
+                        GwpText.Get("{=gwp_greywardenfamilybehavior_048}The Grey Wardens adopted {VAR_1} in childhood, after {VAR_2} was burned. She now learns to read case rolls, copy testimony, discern offences, and observe the rites of the road. In her elders’ eyes, the orphan who survived the flames is becoming an heir trained within the inner ward.", "VAR_1", name, "VAR_2", villageName));
                 }
 
                 return new TextObject(
-                    $"{name}幼年时因{villageName}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。");
+                    GwpText.Get("{=gwp_greywardenfamilybehavior_049}When criminals sacked {VAR_2}, {VAR_1} lost the life she had known and was taken in by the Grey Wardens. Her story is held within the order as proof of its purpose: the law does not end with seizing the guilty; it must also restore order and belonging to those left amid the ruins.", "VAR_1", name, "VAR_2", villageName));
             }
 
             if (hero.Age < 12f)
             {
                 return new TextObject(
-                    $"{name}生于灰袍守卫的内院。她自幼在巡路口令、旧帝国案卷与修会戒律之间长大，被长辈视作灰袍下一代的幼年继承者。对灰袍而言，像她这样的女孩并不是寻常贵族家族的孩子，而是未来要学会守路、记案与持法而行的人。");
+                    GwpText.Get("{=gwp_greywardenfamilybehavior_050}{VAR_1} was born within the Grey Wardens’ inner ward. She has grown among patrol calls, old Imperial case rolls, and the order’s discipline, and her elders regard her as one of their young heirs. Such girls are not reared as the daughters of an ordinary noble house, but to keep the roads, record the cases, and bear the law.", "VAR_1", name));
             }
 
             if (hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
             {
                 return new TextObject(
-                    $"{name}属于灰袍守卫的新生一代。她已经开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在灰袍长辈眼中，她迟早会披上真正的灰袍。外人常把她们当作家族子女，灰袍内部却更习惯把这一代视作仍在受训的后继者。");
+                    GwpText.Get("{=gwp_greywardenfamilybehavior_051}{VAR_1} belongs to the Grey Wardens’ rising generation. She already studies case rolls, copied testimony, the signs of crime, and the rites of patrol. Outsiders call them daughters of the house; within the order, they are known as heirs still under instruction, who will one day wear the grey in earnest.", "VAR_1", name));
             }
 
             return new TextObject(
-                $"{name}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。");
+                GwpText.Get("{=gwp_greywardenfamilybehavior_052}{VAR_1} was raised amid the old Imperial law, family blood, and ordered discipline preserved by the Grey Wardens. She is both heir to their lineage and one of the constabulary house’s next lawkeepers. To the common folk, she signifies not rank, but the promise that the Wardens will still keep the roads, seize malefactors, and hold the peace.", "VAR_1", name));
         }
 
         private static int StableHash(string value)

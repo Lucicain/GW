@@ -369,7 +369,7 @@ namespace GreyWardenPolicePurity
                     spawnSettlement.GatePosition,
                     1f,
                     spawnSettlement,
-                    new TextObject("灰袍纠察支援队"),
+                    new TextObject(GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_001}Grey Warden provost relief party")),
                     policeClan,
                     policeClan.DefaultPartyTemplate,
                     null,
@@ -615,7 +615,7 @@ namespace GreyWardenPolicePurity
 
             PlayerState.ChangeReputation(-4);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"与灰袍守卫处于战争状态，声望 -4。当前声望：{PlayerState.Reputation}",
+                GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_002}is at war with the Grey Wardens, reputation -4. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
                 Colors.Red));
         }
 
@@ -696,9 +696,9 @@ namespace GreyWardenPolicePurity
             if (!CrimeState.IsPlayerHunted)
             {
                 CrimeState.TryAddPlayerCrime(
-                    "累计犯罪",
+                    GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_003}Accumulated crimes"),
                     playerParty.GetPosition2D,
-                    $"声望已达 {PlayerState.Reputation}");
+                    GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_004}Reputation has reached {VAR_1}", "VAR_1", PlayerState.Reputation));
             }
 
             MobileParty nearestPolice = FindNearestPolicePartyForPlayerCase(playerParty.GetPosition2D);

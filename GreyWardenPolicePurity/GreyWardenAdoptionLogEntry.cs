@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.LogEntries;
@@ -54,7 +54,7 @@ namespace GreyWardenPolicePurity
 
         public TextObject GetNotificationText()
         {
-            return BuildText("{=gwp_adoption_chat_notice}{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。");
+            return BuildText(GwpText.Get("{=gwp_adoption_chat_notice}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}."));
         }
 
         public bool IsVisibleInEncyclopediaPageOf(MBObjectBase obj)
@@ -65,7 +65,7 @@ namespace GreyWardenPolicePurity
 
         public TextObject GetEncyclopediaText()
         {
-            return BuildText("{=gwp_adoption_log_entry}{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。");
+            return BuildText(GwpText.Get("{=gwp_adoption_log_entry}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised."));
         }
 
         public override string ToString()
@@ -81,7 +81,7 @@ namespace GreyWardenPolicePurity
                 StringHelpers.SetCharacterProperties("HERO", AdoptedHero.CharacterObject, text);
             }
 
-            text.SetTextVariable("VILLAGE", string.IsNullOrWhiteSpace(_originVillageName) ? "未知村庄" : _originVillageName);
+            text.SetTextVariable("VILLAGE", string.IsNullOrWhiteSpace(_originVillageName) ? GwpText.Get("{=gwp_greywardenadoptionlogentry_003}Unknown Village") : _originVillageName);
             return text;
         }
     }

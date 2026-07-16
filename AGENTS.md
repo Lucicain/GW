@@ -52,3 +52,23 @@ user's stated goal.
   packaging, deployment, asset recovery, or diagnostic knowledge changes.
 - Reuse this canonical maintenance file rather than creating parallel notes or
   additional problem-log files.
+
+## Live test directory must mirror the working directory
+
+- The deployable runtime files under `GreyWardenPolicePurity/_Module` are the
+  development source of truth during active work. After changing any of them,
+  immediately copy the same version into the live game module at
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
+- This live-mirror requirement is independent of Git publication. The working
+  tree may remain uncommitted until a formal upload, at which point the local
+  commit and GitHub are updated together.
+- After every deployment, compare file hashes rather than assuming the copy
+  succeeded. Do not begin or accept an in-game test while any deployable source
+  file differs from its live counterpart.
+- Editor-only `Assets`, `AssetSources`, and `RuntimeDataCache` are the explicit
+  exception: keep them out of the normal-client live module so the client loads
+  `AssetPackages`. Generated runtime-only `bin` and `Shaders` directories may
+  exist only in the live module.
+- Record each material deployment, test result, failed approach, and diagnostic
+  conclusion in `GreyWardenPolicePurity/docs/maintenance-plan.md` during the
+  same task.

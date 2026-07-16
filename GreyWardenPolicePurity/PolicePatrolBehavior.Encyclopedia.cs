@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
@@ -36,13 +36,13 @@ namespace GreyWardenPolicePurity
 
             string stage;
             if (_playerCapturedByPatrol)
-                stage = "玩家已被纠察队控制，正在押送或等待处罚";
+                stage = GwpText.Get("{=gwp_policepatrolbehavior_encyclopedia_001}The player is in provost custody, under escort or awaiting judgment.");
             else if (activePatrolCount > 0)
-                stage = $"地图上仍有 {activePatrolCount} 支纠察队在执行强制缉拿";
+                stage = GwpText.Get("{=gwp_policepatrolbehavior_encyclopedia_002}{VAR_1} provost patrols remain upon the map under orders of arrest.", "VAR_1", activePatrolCount);
             else
-                stage = "已进入纠察队战争状态，正在等待收尾";
+                stage = GwpText.Get("{=gwp_policepatrolbehavior_encyclopedia_003}has entered the picket war state and is waiting for the end.");
 
-            return $"纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{stage}；当前模组声望：{PlayerState.Reputation}。";
+            return GwpText.Get("{=gwp_policepatrolbehavior_encyclopedia_004}Provost enforcement: after the player refuses a lawful order while under warrant, the Grey Wardens declare war upon the player’s faction to compel arrest. Present stage: {VAR_1}; present standing: {VAR_2}.", "VAR_1", stage, "VAR_2", PlayerState.Reputation);
         }
     }
 }

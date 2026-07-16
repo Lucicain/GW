@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -76,14 +76,14 @@ namespace GreyWardenPolicePurity
             if (!_destroyAllPatrolsOnNextTick) return;
 
             _destroyAllPatrolsOnNextTick = false;
-            DebugLog("已下发返程命令，等待到达定居点后销毁");
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_001}A return order has been issued, waiting to be destroyed upon arrival at the settlement."));
         }
 
         private void FreezeAndScheduleDestroyAllPatrols()
         {
             ReturnAllPatrols();
             _destroyAllPatrolsOnNextTick = true;
-            DebugLog("已调度：返程至驻地后销毁纠察队");
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_002}has been scheduled: Destroy the pickets after returning to the settlement."));
         }
 
         private void DebugLog(string text)
@@ -121,6 +121,19 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            // A dismissed patrol remains on the map while returning to quarters. If the
+            // player catches it manually, give the conversation engine a valid closing
+            // line instead of falling through to the native
+            // default_conversation_for_wrongly_created_heroes path.
+            starter.AddDialogLine(
+                "gwp_patrol_returning_start",
+                "start",
+                "close_window",
+                GwpText.Get("{=gwp_patrol_returning_dialogue}This patrol has rendered its account and is returning to quarters. No further hearing will be held."),
+                ReturningPatrolDialogCondition,
+                null,
+                200);
+
             // 纠察队开场白（高优先级100，确保覆盖默认对话）
             starter.AddDialogLine(
                 "gwp_patrol_start",
@@ -145,7 +158,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_pre",
                 "gwp_patrol_pay_barter_screen",
-                "按灰袍法令，先把正式罚金缴清。",
+                GwpText.Get("{=gwp_policepatrolbehavior_003}According to the Grey Wardens decree, the formal fine must be paid first."),
                 null,
                 null,
                 100);
@@ -163,7 +176,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_success",
                 "gwp_patrol_pay_barter_post",
                 "close_window",
-                "罚金确认。本轮案件到此结案。",
+                GwpText.Get("{=gwp_policepatrolbehavior_004}Penalty confirmation. This round of cases is concluded."),
                 PatrolBarterSuccessfulCondition,
                 OnPatrolFineBarterAcceptedConsequence,
                 100);
@@ -172,7 +185,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_pay_barter_post_failed",
                 "gwp_patrol_pay_barter_post",
                 "gwp_patrol_options",
-                "你的出价低于正式罚金。你可以继续出价，或拒绝执法。",
+                GwpText.Get("{=gwp_policepatrolbehavior_005}Your bid is less than the formal penalty. You can continue bidding, or refuse enforcement."),
                 () => !PatrolBarterSuccessfulCondition(),
                 null,
                 100);
@@ -191,7 +204,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_pre",
                 "gwp_patrol_barter_screen",
-                "可以，报出你的放行价码。",
+                GwpText.Get("{=gwp_policepatrolbehavior_006}Yes, quote your release price."),
                 null,
                 null,
                 100);
@@ -209,7 +222,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_success",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "报价通过。今日暂不追究。",
+                GwpText.Get("{=gwp_policepatrolbehavior_007}Quotation approved. There will be no further investigation today."),
                 PatrolBarterSuccessfulCondition,
                 OnPatrolBarterAcceptedConsequence,
                 100);
@@ -218,7 +231,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_failed",
                 "gwp_patrol_barter_post",
                 "close_window",
-                "报价未达底线。开始执法！",
+                GwpText.Get("{=gwp_policepatrolbehavior_008}The quote did not reach the bottom line. Start enforcing the law!"),
                 () => !PatrolBarterSuccessfulCondition(),
                 OnPatrolBarterRejectedConsequence,
                 100);
@@ -228,7 +241,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse",
                 "gwp_patrol_options",
                 "gwp_patrol_refuse_response",
-                "我拒绝执法。",
+                GwpText.Get("{=gwp_policepatrolbehavior_009}I refuse enforcement."),
                 null,
                 null,
                 100);
@@ -238,7 +251,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_refuse_response",
                 "gwp_patrol_refuse_response",
                 "close_window",
-                "拒绝执法已记录。纠察队，执行抓捕！",
+                GwpText.Get("{=gwp_policepatrolbehavior_010}Refusal to Enforcement Recorded. Pickets, make arrests!"),
                 null,
                 OnRefuseConsequence,
                 100);
@@ -255,16 +268,7 @@ namespace GreyWardenPolicePurity
 
             if (_suppressPatrolMeetings)
             {
-                DebugLog("返程抑制中，拒绝再次进入纠察队对话");
-                try
-                {
-                    if (PlayerEncounter.IsActive)
-                    {
-                        PlayerEncounter.LeaveEncounter = true;
-                        PlayerEncounter.Finish(false);
-                    }
-                }
-                catch { }
+                DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_011}The return trip is being suppressed and refuses to enter the picket dialogue again."));
                 return false;
             }
 
@@ -278,16 +282,26 @@ namespace GreyWardenPolicePurity
             _dialogPatrol = conversationParty;
             int playerGold = Hero.MainHero.Gold;
 
-            DebugLog($"进入纠察队对话：party={conversationParty.StringId}, rep={rep}, fine={_dialogFine}");
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_012}Enter the picket dialogue: party={VAR_1}, rep={VAR_2}, fine={VAR_3}", "VAR_1", conversationParty.StringId, "VAR_2", rep, "VAR_3", _dialogFine));
 
             string canPay = playerGold >= _dialogFine
-                ? $"你当前携带 {playerGold} 金，可直接缴清。"
-                : $"你当前携带 {playerGold} 金，可在谈判界面继续出价或选择拒绝。";
+                ? GwpText.Get("{=gwp_policepatrolbehavior_013}You carry {VAR_1} denars, enough to pay in full.", "VAR_1", playerGold)
+                : GwpText.Get("{=gwp_policepatrolbehavior_014}You carry {VAR_1} denars. You may raise your offer at the table or refuse the order.", "VAR_1", playerGold);
 
             MBTextManager.SetTextVariable("GWP_PATROL_GREETING",
-                $"站住！纠察队正在执法。你当前负声望 {Math.Abs(rep)}，正式罚金 {_dialogFine} 金。{canPay}");
+                GwpText.Get("{=gwp_policepatrolbehavior_015}Stand! This provost patrol acts under warrant. Your standing is {VAR_1}; the lawful fine is {VAR_2} denars. {VAR_3}", "VAR_1", Math.Abs(rep), "VAR_2", _dialogFine, "VAR_3", canPay));
 
             return true;
+        }
+
+        private bool ReturningPatrolDialogCondition()
+        {
+            MobileParty conversationParty = MobileParty.ConversationParty;
+            if (conversationParty == null || !IsPatrol(conversationParty))
+                return false;
+
+            return _suppressPatrolMeetings ||
+                   _returningPatrolIds.Contains(conversationParty.StringId);
         }
 
         /// <summary>
@@ -295,7 +309,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool PatrolPayCondition()
         {
-            string payText = $"缴纳正式罚金（{_dialogFine} 金，结束本轮追捕）";
+            string payText = GwpText.Get("{=gwp_policepatrolbehavior_016}Pay the lawful fine ({VAR_1} denars; end this pursuit)", "VAR_1", _dialogFine);
             MBTextManager.SetTextVariable("GWP_PATROL_PAY_TEXT", payText);
             return true;
         }
@@ -304,7 +318,7 @@ namespace GreyWardenPolicePurity
         {
             Hero barterHero = GetPatrolBarterHero();
             MBTextManager.SetTextVariable("GWP_PATROL_NEGOTIATE_TEXT",
-                $"谈判放行（目标 {_dialogBribeAmount} 金，声望不变）");
+                GwpText.Get("{=gwp_policepatrolbehavior_017}Negotiate passage ({VAR_1} denars sought; standing unchanged)", "VAR_1", _dialogBribeAmount));
             return barterHero != null && _dialogPatrol != null && _dialogPatrol.IsActive;
         }
 
@@ -332,18 +346,18 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你拒绝执法，纠察队将进行武力抓捕。",
+                GwpText.Get("{=gwp_policepatrolbehavior_018}If you refuse to enforce the law, the pickets will arrest you by force."),
                 Colors.Red));
         }
 
         private void OnNegotiateBarterConsequence()
         {
-            StartPatrolPaymentBarter(_dialogPatrol, _dialogBribeAmount, "缴纳通融费");
+            StartPatrolPaymentBarter(_dialogPatrol, _dialogBribeAmount, GwpText.Get("{=gwp_policepatrolbehavior_019}Pay the facilitation fee"));
         }
 
         private void OnPayBarterConsequence()
         {
-            StartPatrolPaymentBarter(_dialogPatrol, _dialogFine, "缴纳正式罚金");
+            StartPatrolPaymentBarter(_dialogPatrol, _dialogFine, GwpText.Get("{=gwp_policepatrolbehavior_020}Pay the formal fine"));
         }
 
         private void OnPatrolBarterAcceptedConsequence()
@@ -352,7 +366,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "放行谈判达成：你获得 4 天保护期（声望不变）。",
+                GwpText.Get("{=gwp_policepatrolbehavior_021}Release negotiations are reached: you get a 4-day protection period (reputation remains unchanged)."),
                 Colors.Yellow));
         }
 
@@ -362,7 +376,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                "正式罚金已缴清，当前通缉已解除，纠察队将撤离。",
+                GwpText.Get("{=gwp_policepatrolbehavior_022}The lawful fine is paid and the warrant lifted. The provost patrol will withdraw."),
                 Colors.Green));
         }
 
@@ -385,7 +399,7 @@ namespace GreyWardenPolicePurity
             _playerRefused = false;
             _suppressPatrolMeetings = true;
 
-            DebugLog($"对话结束，开始遣返。active={_activePatrolIds.Count}, returning={_returningPatrolIds.Count}");
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_023}The conversation ends and repatriation begins. active={VAR_1}, returning={VAR_2}", "VAR_1", _activePatrolIds.Count, "VAR_2", _returningPatrolIds.Count));
             FreezeAndScheduleDestroyAllPatrols();
 
             try
@@ -393,7 +407,7 @@ namespace GreyWardenPolicePurity
                 if (PlayerEncounter.IsActive)
                 {
                     GwpCommon.TryFinishPlayerEncounter();
-                    DebugLog("PlayerEncounter.Finish(false) 已调用");
+                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_024}PlayerEncounter.Finish(false) has been called"));
                 }
             }
             catch { }
@@ -419,7 +433,7 @@ namespace GreyWardenPolicePurity
                 if (_bribeProtectionDays == 0)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "放行保护期已结束，纠察队将恢复例行检查。", Colors.Red));
+                        GwpText.Get("{=gwp_policepatrolbehavior_025}Your negotiated safe-conduct has expired. Provost patrols will resume their customary inspections."), Colors.Red));
                 }
             }
 
@@ -435,7 +449,7 @@ namespace GreyWardenPolicePurity
                 PlayerState.ChangeReputation(-4);
                 MakePeaceWithPoliceClan();
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"与灰袍守卫处于战争状态，声望 -4。当前声望：{PlayerState.Reputation}",
+                    GwpText.Get("{=gwp_policepatrolbehavior_026}is at war with the Grey Wardens, Reputation -4. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
                     Colors.Red));
             }
 
@@ -462,7 +476,7 @@ namespace GreyWardenPolicePurity
                     CrimeState.EndPlayerHunt();
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "当前声望为正，现有通缉已取消，追捕全部撤回。",
+                        GwpText.Get("{=gwp_policepatrolbehavior_027}Current reputation is positive, existing wanted orders have been cancelled, and all pursuits have been withdrawn."),
                         Colors.Green));
                 }
             }
@@ -489,7 +503,7 @@ namespace GreyWardenPolicePurity
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你当前负声望 {mag}，纠察队已出动（约 {mag * GwpTuning.Patrol.PatrolSize} 人）。",
+                        GwpText.Get("{=gwp_policepatrolbehavior_028}Your standing is {VAR_1}. A provost patrol of about {VAR_2} has been dispatched.", "VAR_1", mag, "VAR_2", mag * GwpTuning.Patrol.PatrolSize),
                         Colors.Yellow));
                     SpawnPatrol(mag);
                     _warDeclared = false;
@@ -510,12 +524,12 @@ namespace GreyWardenPolicePurity
                 if (!CrimeState.IsPlayerHunted)
                 {
                     CrimeState.TryAddPlayerCrime(
-                        "累计犯罪",
+                        GwpText.Get("{=gwp_policepatrolbehavior_029}Accumulated crimes"),
                         MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero,
-                        $"声望已达 {reputation}");
+                        GwpText.Get("{=gwp_policepatrolbehavior_030}Reputation has reached {VAR_1}", "VAR_1", reputation));
 
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你已进入重罪区间（负声望 {Math.Abs(reputation)}），正式警察开始追捕。",
+                        GwpText.Get("{=gwp_policepatrolbehavior_031}Your standing has fallen into grave offence ({VAR_1}); Grey Warden officers have begun pursuit.", "VAR_1", Math.Abs(reputation)),
                         Colors.Red));
                 }
             }
@@ -557,7 +571,6 @@ namespace GreyWardenPolicePurity
 
                 if (_suppressPatrolMeetings)
                 {
-                    TryFinishSuppressedPatrolEncounter();
                     return;
                 }
 
@@ -574,7 +587,7 @@ namespace GreyWardenPolicePurity
                     PlayerState.ChangeReputation(-1);
                     MakePeaceWithPoliceClan();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"你拒绝执法且案件未完成，声望 -1。当前声望：{PlayerState.Reputation}",
+                        GwpText.Get("{=gwp_policepatrolbehavior_032}You refuse to enforce the law and the case is not completed, reputation -1. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
                         Colors.Red));
                     _playerRefused = false;
                     return;
@@ -617,7 +630,7 @@ namespace GreyWardenPolicePurity
                     if (patrol.ItemRoster.TotalFood <= 0)
                     {
                         InformationManager.DisplayMessage(new InformationMessage(
-                            "纠察队补给耗尽，正在撤回。", Colors.Yellow));
+                            GwpText.Get("{=gwp_policepatrolbehavior_033}The pickets have run out of supplies and are withdrawing."), Colors.Yellow));
                         ReturnAllPatrols();
                         return;
                     }
@@ -659,7 +672,7 @@ namespace GreyWardenPolicePurity
                 {
                     FactionManager.DeclareWar(policeClan, playerFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "你拒绝执法，纠察队将强制缉拿。",
+                        GwpText.Get("{=gwp_policepatrolbehavior_034}You refused the order. The provost patrol will take you by force."),
                         Colors.Yellow));
                 }
                 catch { }
@@ -691,7 +704,7 @@ namespace GreyWardenPolicePurity
                     _patrolOriginSettlement.GatePosition,
                     1f,
                     _patrolOriginSettlement,
-                    new TextObject("纠察队巡逻"),
+                    new TextObject(GwpText.Get("{=gwp_policepatrolbehavior_035}Picket Patrol")),
                     policeClan,
                     policeClan.DefaultPartyTemplate,
                     null,           // ★ 修复 Bug 1：原为 clanLeader，会导致族长成为纠察队 LeaderHero
@@ -717,7 +730,7 @@ namespace GreyWardenPolicePurity
                 _activePatrolIds.Add(patrolId);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"纠察队已从 {_patrolOriginSettlement.Name} 出发，正在追踪你。",
+                    GwpText.Get("{=gwp_policepatrolbehavior_036}Picket has departed from {VAR_1} and is tracking you.", "VAR_1", _patrolOriginSettlement.Name),
                     Colors.Yellow));
             }
             catch (Exception)
@@ -785,7 +798,7 @@ namespace GreyWardenPolicePurity
                 // 投降/战败兜底：玩家已被俘则直接走押送惩罚
                 if (PlayerCaptivity.IsCaptive)
                 {
-                    DebugLog("MapEventEnded 检测到玩家已被俘，进入押送流程");
+                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_037}MapEventEnded It is detected that the player has been captured and enters the escort process"));
                     OnPatrolVictory(involvedPatrol);
                     _playerRefused = false;
                     return;
@@ -828,7 +841,7 @@ namespace GreyWardenPolicePurity
                 {
                     // 投降等收束路径可能没有 winner 信息，按纠察队执法成功处理
                     patrolWon = true;
-                    DebugLog("MapEventEnded 无 winner，按投降路径处理为纠察队胜利");
+                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_038}MapEventEnded No winner, the surrender path is processed as the picket victory"));
                 }
 
                 if (patrolWon)
@@ -886,7 +899,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"你被纠察队击败，正被押送至 {(_patrolOriginSettlement?.Name?.ToString() ?? "驻地点")} 接受处罚...",
+                GwpText.Get("{=gwp_policepatrolbehavior_039}You were defeated by the picket and are being escorted to {VAR_1} for punishment...", "VAR_1", (_patrolOriginSettlement?.Name?.ToString() ?? GwpText.Get("{=gwp_common_garrison}garrison"))),
                 Colors.Yellow));
         }
 
@@ -984,9 +997,9 @@ namespace GreyWardenPolicePurity
 
                 MakePeaceWithPoliceAndVictims();
 
-                string townName = settlement?.Name?.ToString() ?? "最近城镇";
+                string townName = settlement?.Name?.ToString() ?? GwpText.Get("{=gwp_policepatrolbehavior_040}The nearest town");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送到 {townName}：应缴 {fine} 金，实缴 {paid} 金，声望恢复到 {repAfter}（按实缴恢复）。",
+                    GwpText.Get("{=gwp_policepatrolbehavior_041}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", townName, "VAR_2", fine, "VAR_3", paid, "VAR_4", repAfter),
                     Colors.Yellow));
             }
             catch (Exception)
@@ -1006,7 +1019,7 @@ namespace GreyWardenPolicePurity
         {
             int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"纠察队已收取罚金 {collected} 金（应缴 {fine} 金，仅收金币）。",
+                GwpText.Get("{=gwp_policepatrolbehavior_042}The provost patrol took {VAR_1} denars in coin against {VAR_2} due.", "VAR_1", collected, "VAR_2", fine),
                 Colors.Yellow));
             return collected;
         }

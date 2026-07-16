@@ -28,6 +28,8 @@ namespace GreyWardenPolicePurity
         private int _pendingEnemyCount = 0;
         private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
         private int _pendingPlayerKillBaseline = -1;
+        private bool _pendingVillageDefenseEncounterText;
+        private string _pendingVillageDefenseName = string.Empty;
 
         public override void RegisterEvents()
         {
@@ -47,6 +49,7 @@ namespace GreyWardenPolicePurity
             // 修复：在此事件中手动调用 ClearAll()，保证新档从干净状态启动。
             CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.AfterGameMenuInitializedEvent.AddNonSerializedListener(this, OnAfterGameMenuInitialized);
 
             // ── 犯罪 / 行善监听 ─────────────────────────────────────────────────────
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
@@ -112,19 +115,19 @@ namespace GreyWardenPolicePurity
 
             if (defender.PartyComponent is VillagerPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? "村民";
+                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_001}Villager");
                 IFaction victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerState.AddCrimeRecord("攻击村民", location, victimName, victimFaction);
+                PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_002}Attack villager"), location, victimName, victimFaction);
                 return;
             }
 
             if (defender.PartyComponent is CaravanPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? "商队";
+                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_003}Caravan");
                 IFaction victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerState.AddCrimeRecord("攻击商队", location, victimName, victimFaction);
+                PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_004}Attack caravan"), location, victimName, victimFaction);
             }
         }
 
@@ -143,15 +146,15 @@ namespace GreyWardenPolicePurity
 
             // 若已进入通缉状态，立即触发警察追捕
             if (PlayerState.IsWanted)
-                CrimeState.TryAddPlayerCrime("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄");
+                CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_playerbehaviormonitor_005}Raid village"), location, village.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_006}Unknown village"));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"灰袍守卫记录了你的恶行：劫掠村庄 {village.Name} | " +
+                GwpText.Get("{=gwp_playerbehaviormonitor_007}The Grey Wardens enter your offence upon the roll: raid upon {VAR_1} |", "VAR_1", village.Name) +
                 $"{PlayerState.GetReputationDisplay()} (-2)",
                 Colors.Red));
 
             // 记录犯罪历史（供受害势力追踪等后续逻辑使用）
-            PlayerState.AddCrimeRecord("劫掠村庄", location, village.Name?.ToString() ?? "未知村庄", victimFaction);
+            PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_008}Raid village"), location, village.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_009}Unknown Village"), victimFaction);
         }
 
         private void OnForceVolunteers(BattleSideEnum side, ForceVolunteersEventComponent component)
@@ -170,8 +173,8 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime("强迫募兵", settlement.Position.ToVec2(),
-                settlement.Name?.ToString() ?? "未知村庄", settlement.MapFaction);
+            PlayerState.AddCrime(GwpText.Get("{=gwp_playerbehaviormonitor_010}Forced Recruitment"), settlement.Position.ToVec2(),
+                settlement.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_011}Unknown Village"), settlement.MapFaction);
         }
 
         private void OnForceSupplies(BattleSideEnum side, ForceSuppliesEventComponent component)
@@ -190,8 +193,8 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime("强征给养", settlement.Position.ToVec2(),
-                settlement.Name?.ToString() ?? "未知村庄", settlement.MapFaction);
+            PlayerState.AddCrime(GwpText.Get("{=gwp_playerbehaviormonitor_012}Forced Requisition of Supplies"), settlement.Position.ToVec2(),
+                settlement.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_013}Unknown Village"), settlement.MapFaction);
         }
 
         #endregion
@@ -287,12 +290,12 @@ namespace GreyWardenPolicePurity
                 {
                     PlayerState.ChangeReputation(repGain);
 
-                    string deedType = defenderIsVillageRaid ? "保护村庄免遭劫掠"
-                                    : defenderIsCaravan     ? "解救商队"
-                                    : defenderIsVillager    ? "解救村民"
-                                    : "击败劫匪";
+                    string deedType = defenderIsVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_014}Protect the Village from Plunder")
+                                    : defenderIsCaravan     ? GwpText.Get("{=gwp_playerbehaviormonitor_015}Rescue the Caravan")
+                                    : defenderIsVillager    ? GwpText.Get("{=gwp_playerbehaviormonitor_016}Rescue the Villagers")
+                                    : GwpText.Get("{=gwp_playerbehaviormonitor_017}Defeat the robbers");
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"灰袍守卫注意到你的善行：{deedType}（亲手击败 {playerKillCount} 人）| " +
+                        GwpText.Get("{=gwp_playerbehaviormonitor_018}The Grey Wardens mark your good service: {VAR_1} ({VAR_2} personally defeated) |", "VAR_1", deedType, "VAR_2", playerKillCount) +
                         $"{PlayerState.GetReputationDisplay()} (+{repGain})",
                         Colors.Green));
                 }
@@ -341,21 +344,21 @@ namespace GreyWardenPolicePurity
                     // 若已进入通缉状态，触发警察追捕
                     if (PlayerState.IsWanted)
                     {
-                        string crimeType = playerRaidedVillage    ? "劫掠村庄"
-                                         : playerForcedVolunteers ? "强迫募兵"
-                                         : playerForcedSupplies   ? "强征给养"
-                                         : loserIsCaravan         ? "劫掠商队"
-                                         : "杀害村民";
+                        string crimeType = playerRaidedVillage    ? GwpText.Get("{=gwp_playerbehaviormonitor_019}Raid the village")
+                                         : playerForcedVolunteers ? GwpText.Get("{=gwp_playerbehaviormonitor_020}Force recruits")
+                                         : playerForcedSupplies   ? GwpText.Get("{=gwp_playerbehaviormonitor_021}Force supplies")
+                                         : loserIsCaravan         ? GwpText.Get("{=gwp_playerbehaviormonitor_022}Raid the caravan")
+                                         : GwpText.Get("{=gwp_playerbehaviormonitor_023}Kill the villagers");
                         CrimeState.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
                     }
 
-                    string badDeedType = playerRaidedVillage    ? "劫掠村庄"
-                                       : playerForcedVolunteers ? "强迫募兵"
-                                       : playerForcedSupplies   ? "强征给养"
-                                       : loserIsCaravan         ? "劫掠商队"
-                                       : "杀害村民";
+                    string badDeedType = playerRaidedVillage    ? GwpText.Get("{=gwp_playerbehaviormonitor_024}Raid a village")
+                                       : playerForcedVolunteers ? GwpText.Get("{=gwp_playerbehaviormonitor_025}Force recruitment")
+                                       : playerForcedSupplies   ? GwpText.Get("{=gwp_playerbehaviormonitor_026}Forced supplies")
+                                       : loserIsCaravan         ? GwpText.Get("{=gwp_playerbehaviormonitor_027}Raid a caravan")
+                                       : GwpText.Get("{=gwp_playerbehaviormonitor_028}Kill villagers");
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"灰袍守卫记录了你的恶行：{badDeedType}（击败 {killCount} 人）| " +
+                        GwpText.Get("{=gwp_playerbehaviormonitor_029}The Grey Wardens enter your offence upon the roll: {VAR_1} ({VAR_2} defeated) |", "VAR_1", badDeedType, "VAR_2", killCount) +
                         $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                         Colors.Red));
                 }
@@ -443,11 +446,42 @@ namespace GreyWardenPolicePurity
 
                 CapturePlayerKillBaseline();
 
-                // 以防守方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
+                // 直接加入防守方的战斗阵营是正确的；问题仅在于原版仍沿用
+                // 村庄劫掠事件的 encounter 说明，把玩家写成了劫掠者。
+                // 在菜单完成原版初始化后覆盖说明文字，不改动任何战斗方。
+                if (battle.IsRaid)
+                {
+                    _pendingVillageDefenseEncounterText = true;
+                    _pendingVillageDefenseName = battle.MapEventSettlement?.Name?.ToString()
+                        ?? GwpText.Get("{=gwp_playerbehaviormonitor_050}the village");
+                }
+
                 PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
                 GameMenu.ActivateGameMenu("encounter");
             }
             catch { }
+        }
+
+        private void OnAfterGameMenuInitialized(MenuCallbackArgs args)
+        {
+            if (!_pendingVillageDefenseEncounterText ||
+                !string.Equals(args.MenuContext?.GameMenu?.StringId, "encounter", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            MBTextManager.SetTextVariable(
+                "ENCOUNTER_TEXT",
+                new TextObject(GwpText.Get(
+                    "{=gwp_playerbehaviormonitor_051}You have come to {VAR_1} and joined its militia against the raiders. When you are ready, stand with the villagers and meet the enemy.",
+                    "VAR_1",
+                    _pendingVillageDefenseName)));
+            MBTextManager.SetTextVariable(
+                "ATTACK_TEXT",
+                new TextObject(GwpText.Get("{=gwp_playerbehaviormonitor_052}Stand with the militia and attack")));
+
+            _pendingVillageDefenseEncounterText = false;
+            _pendingVillageDefenseName = string.Empty;
         }
 
         /// <summary>
@@ -527,15 +561,15 @@ namespace GreyWardenPolicePurity
             if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid)
                 return false;
 
-            string defendTarget = isVillageRaid ? "村庄"
-                : defenderIsCaravan ? "商队"
-                : "村民";
-            string attackAction = isVillageRaid ? "参与劫掠村庄"
-                : defenderIsCaravan ? "劫掠商队"
-                : "攻击村民";
+            string defendTarget = isVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_030}Village")
+                : defenderIsCaravan ? GwpText.Get("{=gwp_playerbehaviormonitor_031}Caravan")
+                : GwpText.Get("{=gwp_playerbehaviormonitor_032}Villager");
+            string attackAction = isVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_033}Participate in raiding village")
+                : defenderIsCaravan ? GwpText.Get("{=gwp_playerbehaviormonitor_034}Raid Caravan")
+                : GwpText.Get("{=gwp_playerbehaviormonitor_035}Attack villagers");
 
-            defendText = $"加入防守方，保护{defendTarget}。";
-            attackText = $"加入攻击方，{attackAction}。";
+            defendText = GwpText.Get("{=gwp_playerbehaviormonitor_036}Join the defenders and protect {VAR_1}.", "VAR_1", defendTarget);
+            attackText = GwpText.Get("{=gwp_playerbehaviormonitor_037}joins the attacker, {VAR_1}.", "VAR_1", attackAction);
             return true;
         }
 
@@ -547,15 +581,15 @@ namespace GreyWardenPolicePurity
             if (!TryGetPoliceCriminalEncounter(battle, out BattleSideEnum policeSide, out MobileParty? criminal))
                 return false;
 
-            string criminalName = criminal?.Name?.ToString() ?? "犯人";
+            string criminalName = criminal?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_038}Prisoner");
             bool policeDefends = policeSide == BattleSideEnum.Defender;
 
             defendText = policeDefends
-                ? "加入灰袍守卫一方，协助缉拿罪犯。"
-                : $"加入 {criminalName} 一方，对抗灰袍守卫。";
+                ? GwpText.Get("{=gwp_playerbehaviormonitor_039}Join the Grey Wardens and help hunt down criminals.")
+                : GwpText.Get("{=gwp_playerbehaviormonitor_040}Join {VAR_1} against the Grey Wardens.", "VAR_1", criminalName);
             attackText = policeDefends
-                ? $"加入 {criminalName} 一方，对抗灰袍守卫。"
-                : "加入灰袍守卫一方，协助缉拿罪犯。";
+                ? GwpText.Get("{=gwp_playerbehaviormonitor_041}Join {VAR_1} against the Grey Wardens.", "VAR_1", criminalName)
+                : GwpText.Get("{=gwp_playerbehaviormonitor_042}Join the Grey Wardens and help catch criminals.");
             return true;
         }
 
@@ -582,7 +616,7 @@ namespace GreyWardenPolicePurity
 
                 PlayerState.ChangeReputation(repGain);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫注意到你的善行：协助缉拿罪犯（亲手击败 {playerKillCount} 人）| " +
+                    GwpText.Get("{=gwp_playerbehaviormonitor_043}The Grey Wardens noticed your good deeds: Assisted in apprehending criminals (defeated {VAR_1} people personally) |", "VAR_1", playerKillCount) +
                     $"{PlayerState.GetReputationDisplay()} (+{repGain})",
                     Colors.Green));
             }
@@ -604,13 +638,13 @@ namespace GreyWardenPolicePurity
                 if (PlayerState.IsWanted)
                 {
                     CrimeState.TryAddPlayerCrime(
-                        "妨碍执法",
+                        GwpText.Get("{=gwp_playerbehaviormonitor_044}Obstructed enforcement"),
                         mapEvent.Position.ToVec2(),
-                        "帮助罪犯对抗灰袍守卫");
+                        GwpText.Get("{=gwp_playerbehaviormonitor_045}Helped criminals against the Grey Wardens"));
                 }
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍守卫记录了你的恶行：妨碍执法（击败 {policeCasualties} 名灰袍守卫）| " +
+                    GwpText.Get("{=gwp_playerbehaviormonitor_046}The Grey Wardens enter your offence upon the roll: obstruction of the law ({VAR_1} Wardens defeated) |", "VAR_1", policeCasualties) +
                     $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                     Colors.Red));
             }
@@ -640,9 +674,9 @@ namespace GreyWardenPolicePurity
 
             PlayerState.ChangeReputation(-repLoss);
 
-            string targetName = loserHadPatrol ? "纠察队" : "灰袍守卫";
+            string targetName = loserHadPatrol ? GwpText.Get("{=gwp_playerbehaviormonitor_047}Picket") : GwpText.Get("{=gwp_playerbehaviormonitor_048}Grey Wardens");
             InformationManager.DisplayMessage(new InformationMessage(
-                $"灰袍守卫记录了你的恶行：击败{targetName}（击败 {policeCasualties} 人）| " +
+                GwpText.Get("{=gwp_playerbehaviormonitor_049}The Grey Wardens enter your offence upon the roll: defeated {VAR_1} ({VAR_2} troops) |", "VAR_1", targetName, "VAR_2", policeCasualties) +
                 $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                 Colors.Red));
             return true;

@@ -603,7 +603,7 @@ namespace GreyWardenPolicePurity
                 itemsValue = ConfiscateItems(remaining);
                 if (itemsValue > 0)
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"金币不足，额外没收物品价值 {itemsValue} 金", Colors.Yellow));
+                        GwpText.Get("{=gwp_policeresourcemanager_001}Coin is insufficient; goods worth a further {VAR_1} denars have been confiscated.", "VAR_1", itemsValue), Colors.Yellow));
             }
 
             return goldTaken + itemsValue;

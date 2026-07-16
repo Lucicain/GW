@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -297,7 +297,7 @@ namespace GreyWardenPolicePurity
             _pendingReliefs.Add(new PendingVillageRelief
             {
                 VillageSettlementId = villageSettlement.StringId,
-                VillageName = villageSettlement.Name?.ToString() ?? "无名村庄",
+                VillageName = villageSettlement.Name?.ToString() ?? GwpText.Get("{=gwp_greywardenvillageadoptionbehavior_001}nameless village"),
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
         }

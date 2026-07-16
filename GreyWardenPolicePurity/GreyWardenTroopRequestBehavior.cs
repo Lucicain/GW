@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.BarterSystem;
@@ -21,11 +21,11 @@ namespace GreyWardenPolicePurity
     {
         private static readonly TroopOffer[] TroopOffers =
         {
-            new TroopOffer("recruits_small",  GwpIds.PoliceRecruitId,  5,  GwpTuning.TroopRequest.MinimumReputation, GwpTuning.TroopRequest.RecruitBasePrice,      "少量见习守卫"),
-            new TroopOffer("recruits_large",  GwpIds.PoliceRecruitId, 10,  GwpTuning.TroopRequest.MinimumReputation, GwpTuning.TroopRequest.RecruitBasePrice,      "一队见习守卫"),
-            new TroopOffer("infantry_small",  GwpIds.HeavyInfantryId,  5,  GwpTuning.TroopRequest.VeteranReputation, GwpTuning.TroopRequest.HeavyInfantryBasePrice, "重装步兵小队"),
-            new TroopOffer("archers_small",   GwpIds.ArcherId,         5,  GwpTuning.TroopRequest.VeteranReputation, GwpTuning.TroopRequest.ArcherBasePrice,        "持弓执勤队"),
-            new TroopOffer("knights_small",   GwpIds.KnightId,         3,  GwpTuning.TroopRequest.KnightReputation,  GwpTuning.TroopRequest.KnightBasePrice,        "披甲骑巡队")
+            new TroopOffer("recruits_small",  GwpIds.PoliceRecruitId,  5,  GwpTuning.TroopRequest.MinimumReputation, GwpTuning.TroopRequest.RecruitBasePrice,      GwpText.Get("{=gwp_greywardentrooprequestbehavior_001}A few Warden initiates")),
+            new TroopOffer("recruits_large",  GwpIds.PoliceRecruitId, 10,  GwpTuning.TroopRequest.MinimumReputation, GwpTuning.TroopRequest.RecruitBasePrice,      GwpText.Get("{=gwp_greywardentrooprequestbehavior_002}A company of Warden initiates")),
+            new TroopOffer("infantry_small",  GwpIds.HeavyInfantryId,  5,  GwpTuning.TroopRequest.VeteranReputation, GwpTuning.TroopRequest.HeavyInfantryBasePrice, GwpText.Get("{=gwp_greywardentrooprequestbehavior_003}A detachment of heavy foot")),
+            new TroopOffer("archers_small",   GwpIds.ArcherId,         5,  GwpTuning.TroopRequest.VeteranReputation, GwpTuning.TroopRequest.ArcherBasePrice,        GwpText.Get("{=gwp_greywardentrooprequestbehavior_004}A company of duty archers")),
+            new TroopOffer("knights_small",   GwpIds.KnightId,         3,  GwpTuning.TroopRequest.KnightReputation,  GwpTuning.TroopRequest.KnightBasePrice,        GwpText.Get("{=gwp_greywardentrooprequestbehavior_005}An armoured mounted patrol"))
         };
 
         private TroopOffer? _selectedOffer;
@@ -51,7 +51,7 @@ namespace GreyWardenPolicePurity
                 "gwp_troop_request_open",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_troop_request_response",
-                "我想调一些灰袍的人手。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_006}I would ask for Grey Warden personnel."),
                 CanOpenTroopRequestDialogue,
                 null,
                 100);
@@ -75,7 +75,7 @@ namespace GreyWardenPolicePurity
                 "gwp_troop_request_cancel",
                 "gwp_troop_request_menu",
                 "gwp_troop_request_cancel_response",
-                "先算了。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_007}Not now."),
                 null,
                 ClearSelectedOffer,
                 100);
@@ -84,7 +84,7 @@ namespace GreyWardenPolicePurity
                 "gwp_troop_request_cancel_response",
                 "gwp_troop_request_cancel_response",
                 "lord_talk_speak_diplomacy_2",
-                "那就等你准备好再来开口。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_008}Then speak again when you are ready."),
                 null,
                 null,
                 100);
@@ -111,7 +111,7 @@ namespace GreyWardenPolicePurity
                 "gwp_troop_request_barter_success",
                 "gwp_troop_request_barter_post",
                 "lord_pretalk",
-                "款项核清。灰袍会把人交给你，但别把她们当成寻常雇兵使唤。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_009}The sum is accounted for. The Grey Wardens shall place them under your charge; do not employ them as common sellswords."),
                 TroopRequestBarterSucceeded,
                 OnTroopRequestBarterAccepted,
                 100);
@@ -120,7 +120,7 @@ namespace GreyWardenPolicePurity
                 "gwp_troop_request_barter_failed",
                 "gwp_troop_request_barter_post",
                 "gwp_troop_request_menu",
-                "你的报价还不够。若真要调人，就拿出更像样的数目。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_010}Your offer falls short. If you truly seek a detachment, place a worthier sum upon the table."),
                 () => !TroopRequestBarterSucceeded(),
                 null,
                 100);
@@ -197,7 +197,7 @@ namespace GreyWardenPolicePurity
             int price = GetOfferPrice(offer, reputation);
             MBTextManager.SetTextVariable(
                 GwpTextKeys.TroopSelectedOfferPrice,
-                $"这批人不是市井佣兵。按你现在的名声，这笔调拨要 {price} 金。若你愿意，现在就把款项放上谈判桌。");
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_011}These are not mercenaries bought in a market. By your present standing, the detachment requires {VAR_1} denars. If you consent, place the sum upon the bargaining table.", "VAR_1", price));
             return true;
         }
 
@@ -231,7 +231,7 @@ namespace GreyWardenPolicePurity
 
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, offer.Count);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"灰袍已向你调拨 {offer.Count} 名{troop.Name}。",
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_012}The Grey Wardens have assigned {VAR_1} {VAR_2} to your command.", "VAR_1", offer.Count, "VAR_2", troop.Name),
                 Colors.Green));
         }
 
@@ -258,7 +258,7 @@ namespace GreyWardenPolicePurity
                 barterParty,
                 playerParty,
                 Math.Max(1, amount),
-                $"调拨{offer.DisplayName}");
+                GwpText.Get("{=gwp_greywardentrooprequestbehavior_013}Assign {VAR_1}", "VAR_1", offer.DisplayName));
 
             try
             {
@@ -328,8 +328,8 @@ namespace GreyWardenPolicePurity
             string troopName = troop?.Name?.ToString() ?? offer.DisplayName;
             int price = GetOfferPrice(offer, reputation);
             int discountPercent = GetDiscountPercent(reputation);
-            string discountText = discountPercent > 0 ? $"，按当前名声减免 {discountPercent}%" : "";
-            return $"我要 {offer.Count} 名{troopName}（{price} 金{discountText}）";
+            string discountText = discountPercent > 0 ? GwpText.Get("{=gwp_greywardentrooprequestbehavior_014}, with a {VAR_1}% reduction for your standing", "VAR_1", discountPercent) : "";
+            return GwpText.Get("{=gwp_greywardentrooprequestbehavior_015}I request {VAR_1} {VAR_2} ({VAR_3} denars{VAR_4})", "VAR_1", offer.Count, "VAR_2", troopName, "VAR_3", price, "VAR_4", discountText);
         }
 
         private static TextObject BuildTroopRequestResponse(int reputation)
@@ -337,17 +337,17 @@ namespace GreyWardenPolicePurity
             if (reputation >= GwpTuning.TroopRequest.KnightReputation)
             {
                 return new TextObject(
-                    "{=gwp_troop_req_high}你在灰袍这里的名声已经够高。若只是补一支执勤队，步弓与披甲骑巡都可以调给你，但数目不会太离谱。");
+                    GwpText.Get("{=gwp_troop_req_high}Your standing with the Grey Wardens is high. If you need to restore a duty company, archers and armoured mounted patrols may both be assigned to you, within reason."));
             }
 
             if (reputation >= GwpTuning.TroopRequest.VeteranReputation)
             {
                 return new TextObject(
-                    "{=gwp_troop_req_mid}你已证明自己值得托付。见习守卫之外，我也可以拨一些重装步兵或执勤弓手给你。你自己挑。");
+                    GwpText.Get("{=gwp_troop_req_mid}You have proved worthy of trust. Beyond initiates, I may assign heavy foot or duty archers to you. Choose."));
             }
 
             return new TextObject(
-                "{=gwp_troop_req_low}你现在的名声，还只够让灰袍放一些见习守卫跟着你办事。若想调更老练的人，就再多积些信誉。");
+                GwpText.Get("{=gwp_troop_req_low}At present, your standing warrants only a few initiates under your charge. Earn greater trust before asking for seasoned Wardens."));
         }
 
         private static bool IsPoliceInteractionConversation()

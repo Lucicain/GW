@@ -32,30 +32,30 @@ namespace GreyWardenPolicePurity
 
         public static string BuildInquiryTitle(Clan? clan)
         {
-            string clanName = clan?.Name?.ToString() ?? "灰袍守卫";
-            return $"{clanName}当前宣战详情";
+            string clanName = clan?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_001}the Grey Wardens Guard");
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_002}{VAR_1} Current declaration of war details", "VAR_1", clanName);
         }
 
         public static string BuildInquiryBody(Clan? clan)
         {
             if (!SupportsClan(clan))
-                return "只有灰袍守卫家族页会显示宣战详情。";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_003}Only the the Grey Wardens Guard family page will display the details of the declaration of war.");
 
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null)
-                return "未找到灰袍守卫家族，无法读取宣战原因。";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_004}The Grey Warden clan could not be found; grounds for war are unavailable.");
 
             Dictionary<string, FactionReasonBucket> buckets = CollectCurrentWarReasons(policeClan);
 
             StringBuilder sb = new StringBuilder();
             AppendFamilyAdoptionStatus(sb);
             sb.AppendLine();
-            sb.AppendLine($"当前正式宣战对象：{buckets.Count} 个");
+            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_005}The current target of formal declaration of war: {VAR_1}", "VAR_1", buckets.Count));
             sb.AppendLine();
 
             if (buckets.Count == 0)
             {
-                sb.AppendLine("灰袍守卫当前没有正式宣战对象。");
+                sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_006}The Grey Wardens currently have no target of formal declaration of war."));
                 return sb.ToString().TrimEnd();
             }
 
@@ -149,7 +149,7 @@ namespace GreyWardenPolicePurity
                     AddFactionReason(
                         buckets,
                         faction,
-                        "当前检测到正式战争状态，但运行时任务池里没有直接案由。通常说明战斗刚结束、正在等待自动停战，或这是旧流程留下的临时战争。");
+                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}A formal war is in progress, but no direct case remains in the active ledger. The battle may have only just ended, mediation may still be pending, or an older process may have left a temporary war unresolved."));
                 }
             }
 
@@ -158,43 +158,43 @@ namespace GreyWardenPolicePurity
 
         private static void AppendFamilyAdoptionStatus(StringBuilder sb)
         {
-            sb.AppendLine("家族额外信息：");
+            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_008}Family additional information:"));
 
             if (!GreyWardenVillageAdoptionBehavior.TryGetAdoptionStatus(out var status))
             {
-                sb.AppendLine("收养系统状态：当前未初始化。");
+                sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_009}Adoption system status: Currently not initialized."));
                 return;
             }
 
-            sb.AppendLine($"收养冷却：全家族共享；自上一次成功收留女童起需等待 {GwpTuning.Family.AdoptionCooldownYears:0.#} 个游戏年。");
-            sb.AppendLine($"当前家族人数：{status.LivingMembers}/{status.MaxMembers}。");
-            sb.AppendLine($"当前善后任务：{DescribeReliefState(status)}");
+            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_010}Adoption cooldown: Shared by the whole family; wait {VAR_1} game years since the last successful adoption of a girl.", "VAR_1", GwpText.Format(GwpTuning.Family.AdoptionCooldownYears, "0.#")));
+            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_011}Current family size: {VAR_1}/{VAR_2}.", "VAR_1", status.LivingMembers, "VAR_2", status.MaxMembers));
+            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_012}Current aftermath task: {VAR_1}", "VAR_1", DescribeReliefState(status)));
             sb.AppendLine(status.IsCooldownReady
-                ? "距离下一次可收养：冷却已结束，等待新的村庄被焚毁后触发善后。"
-                : $"距离下一次可收养：{FormatRemainingDuration(status.RemainingCooldownHours)}。");
+                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_013}Distance to next adoptability: cooldown has ended, waiting for the aftermath to be triggered after a new village is burned.")
+                : GwpText.Get("{=gwp_gwppolicewarreasonservice_014}away from next adoptable: {VAR_1}.", "VAR_1", FormatRemainingDuration(status.RemainingCooldownHours)));
             sb.AppendLine(status.HasRecordedAdoption
-                ? $"上一个女童收留时间：{FormatCampaignDate(status.LastAdoptionTimeHours)}。"
-                : "上一个女童收留时间：本存档尚无成功收养记录。");
+                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_015}Last girl taken in: {VAR_1}.", "VAR_1", FormatCampaignDate(status.LastAdoptionTimeHours))
+                : GwpText.Get("{=gwp_gwppolicewarreasonservice_016}Last girl adopted: There is no record of successful adoption in this archive."));
         }
 
         private static string DescribeReliefState(GreyWardenVillageAdoptionBehavior.AdoptionStatusInfo status)
         {
             string villageName = string.IsNullOrWhiteSpace(status.CurrentReliefVillageName)
-                ? "目标村庄"
+                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_017}Target village")
                 : status.CurrentReliefVillageName;
 
             switch (status.CurrentReliefStage)
             {
                 case GreyWardenVillageAdoptionBehavior.ReliefStage.WaitingForAssignment:
-                    return $"已记录 {villageName} 的善后请求，正在等待最近的警察接手。";
+                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_018}The request for relief at {VAR_1} is entered upon the roll, awaiting the nearest Warden.", "VAR_1", villageName);
                 case GreyWardenVillageAdoptionBehavior.ReliefStage.AwaitingResupply:
-                    return $"最近的警察已被抽调，正在补给后前往 {villageName}。";
+                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_019}The nearest warden has been mobilized and is heading to {VAR_1} after resupplying.", "VAR_1", villageName);
                 case GreyWardenVillageAdoptionBehavior.ReliefStage.TravelingToVillage:
-                    return $"最近的警察正在赶往 {villageName} 进行善后。";
+                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_020}The nearest Grey Warden is travelling to {VAR_1} to render relief.", "VAR_1", villageName);
                 case GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage:
-                    return $"警察正在 {villageName} 善后，剩余约 {FormatRemainingDuration(status.CurrentReliefRemainingHours)}。";
+                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_021}A Grey Warden is rendering relief at {VAR_1}; about {VAR_2} remains.", "VAR_1", villageName, "VAR_2", FormatRemainingDuration(status.CurrentReliefRemainingHours));
                 default:
-                    return "当前没有善后任务。";
+                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_022}There are currently no aftermath tasks.");
             }
         }
 
@@ -288,47 +288,47 @@ namespace GreyWardenPolicePurity
             CrimeRecord? crime = task.TargetCrime;
             MobileParty? offender = crime?.Offender;
 
-            string policePartyName = ResolvePartyName(task.PolicePartyId, "未记录的执法队");
-            string offenderName = offender?.Name?.ToString() ?? "未知目标";
+            string policePartyName = ResolvePartyName(task.PolicePartyId, GwpText.Get("{=gwp_gwppolicewarreasonservice_023}Unrecorded enforcement party"));
+            string offenderName = offender?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_024}Unknown Target");
             string actionType = GetActionType(task, offender);
-            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? "未记录" : crime.CrimeType;
-            string victimName = string.IsNullOrWhiteSpace(crime?.VictimName) ? "未记录" : crime.VictimName;
-            string occurredTime = crime != null ? FormatElapsedSince(crime.OccurredTime) : "未知";
-            string location = crime != null ? FormatLocation(crime.Location) : "未知";
+            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_025}Undocumented") : GwpText.CrimeType(crime.CrimeType);
+            string victimName = string.IsNullOrWhiteSpace(crime?.VictimName) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_026}Undocumented") : crime.VictimName;
+            string occurredTime = crime != null ? FormatElapsedSince(crime.OccurredTime) : GwpText.Get("{=gwp_gwppolicewarreasonservice_027}Unknown");
+            string location = crime != null ? FormatLocation(crime.Location) : GwpText.Get("{=gwp_gwppolicewarreasonservice_028}Unknown");
             string stage = DescribeTaskStage(task);
 
-            return $"{actionType}：{policePartyName} 正在处理 {offenderName} 的案件。案由：{crimeType}；受害方：{victimName}；立案时间：{occurredTime}；案发地点：{location}；当前阶段：{stage}。";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_029}{VAR_1}: {VAR_2} is working on the case of {VAR_3}. Cause of the case: {VAR_4}; Victim: {VAR_5}; Time of filing the case: {VAR_6}; Location of the crime: {VAR_7}; Current stage: {VAR_8}.", "VAR_1", actionType, "VAR_2", policePartyName, "VAR_3", offenderName, "VAR_4", crimeType, "VAR_5", victimName, "VAR_6", occurredTime, "VAR_7", location, "VAR_8", stage);
         }
 
         private static string GetActionType(PoliceTask task, MobileParty? offender)
         {
             if (task.IsPlayerBountyEscort)
-                return "玩家悬赏协同";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_030}Player bounty collaboration");
 
             if (offender?.IsMainParty == true)
-                return "玩家案件执法";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_031}Player case enforcement");
 
             if (task.WarDeclared)
-                return "跨势力追缉";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_032}Cross-faction pursuit");
 
-            return "执法任务";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_033}Law enforcement contract");
         }
 
         private static string DescribeTaskStage(PoliceTask task)
         {
             if (task.IsPlayerBountyEscort)
-                return "灰袍部队正在护送玩家追缉目标";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_034}A Grey Warden party is escorting the player in pursuit of the quarry");
 
             if (task.IsEscortingPlayer)
-                return "目标已被击败，正在押送玩家";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_035}The target has been defeated and is escorting the player");
 
             if (task.WarDeclared)
-                return "已正式宣战并持续追击";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_036}Formal war declared; pursuit continues");
 
             if (task.TargetCrime != null)
-                return "已立案追踪，尚未升级为正式战争";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_037}A case has been filed for tracking, but it has not been upgraded to a formal war.");
 
-            return "未记录";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_038}Not recorded");
         }
 
         private static string ResolvePartyName(string? partyId, string fallback)
@@ -349,21 +349,21 @@ namespace GreyWardenPolicePurity
         {
             float days = (float)(CampaignTime.Now - occurredTime).ToDays;
             if (days < (1f / CampaignTime.HoursInDay))
-                return "刚刚";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_039}Just now");
 
             if (days < 1f)
-                return $"{days * CampaignTime.HoursInDay:0.#} 小时前";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_040}{VAR_1} hours ago", "VAR_1", GwpText.Format(days * CampaignTime.HoursInDay, "0.#"));
 
-            return $"{days:0.##} 天前";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_041}{VAR_1} days ago", "VAR_1", GwpText.Format(days, "0.##"));
         }
 
         private static string FormatLocation(Vec2 position)
         {
             Settlement? nearestTown = GwpCommon.FindNearestTown(position);
             if (nearestTown != null)
-                return $"{nearestTown.Name}附近 ({position.x:0.0}, {position.y:0.0})";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_042}Near {VAR_1} ({VAR_2}, {VAR_3})", "VAR_1", nearestTown.Name, "VAR_2", GwpText.Format(position.x, "0.0"), "VAR_3", GwpText.Format(position.y, "0.0"));
 
-            return $"野外 ({position.x:0.0}, {position.y:0.0})";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_043}wild ({VAR_1}, {VAR_2})", "VAR_1", GwpText.Format(position.x, "0.0"), "VAR_2", GwpText.Format(position.y, "0.0"));
         }
 
         private static string FormatRemainingDuration(double hours)
@@ -373,12 +373,12 @@ namespace GreyWardenPolicePurity
             double hoursRemainder = clampedHours - days * CampaignTime.HoursInDay;
 
             if (days <= 0)
-                return $"{hoursRemainder:0.#} 小时";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_044}{VAR_1} hours", "VAR_1", GwpText.Format(hoursRemainder, "0.#"));
 
             if (hoursRemainder < 0.05d)
-                return $"{days} 天";
+                return GwpText.Get("{=gwp_gwppolicewarreasonservice_045}{VAR_1} days", "VAR_1", days);
 
-            return $"{days} 天 {hoursRemainder:0.#} 小时";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_046}{VAR_1} days {VAR_2} hours", "VAR_1", days, "VAR_2", GwpText.Format(hoursRemainder, "0.#"));
         }
 
         private static string FormatCampaignDate(double hours)
@@ -386,14 +386,14 @@ namespace GreyWardenPolicePurity
             CampaignTime time = CampaignTime.Hours((float)hours);
             string season = time.GetSeasonOfYear switch
             {
-                CampaignTime.Seasons.Spring => "春",
-                CampaignTime.Seasons.Summer => "夏",
-                CampaignTime.Seasons.Autumn => "秋",
-                CampaignTime.Seasons.Winter => "冬",
-                _ => "未知季"
+                CampaignTime.Seasons.Spring => GwpText.Get("{=gwp_gwppolicewarreasonservice_047}spring"),
+                CampaignTime.Seasons.Summer => GwpText.Get("{=gwp_gwppolicewarreasonservice_048}Summer"),
+                CampaignTime.Seasons.Autumn => GwpText.Get("{=gwp_gwppolicewarreasonservice_049}Autumn"),
+                CampaignTime.Seasons.Winter => GwpText.Get("{=gwp_gwppolicewarreasonservice_050}Winter"),
+                _ => GwpText.Get("{=gwp_gwppolicewarreasonservice_051}Unknown season")
             };
 
-            return $"{time.GetYear}年{season}季第{time.GetDayOfSeason + 1}天 {time.GetHourOfDay}:00";
+            return GwpText.Get("{=gwp_gwppolicewarreasonservice_052}Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00", "VAR_1", time.GetYear, "VAR_2", season, "VAR_3", time.GetDayOfSeason + 1, "VAR_4", time.GetHourOfDay);
         }
     }
 }

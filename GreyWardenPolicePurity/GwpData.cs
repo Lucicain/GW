@@ -136,7 +136,7 @@ namespace GreyWardenPolicePurity
             });
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你已被灰袍守卫列入通缉名单！", Colors.Red));
+                GwpText.Get("{=gwp_gwpdata_001}You have been put on the wanted list by the Grey Wardens!"), Colors.Red));
             return true;
         }
 
@@ -152,7 +152,7 @@ namespace GreyWardenPolicePurity
                 _tasks.Remove(key);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "通缉已解除，灰袍守卫不再追捕你", Colors.Green));
+                GwpText.Get("{=gwp_gwpdata_002}The wanted order has been lifted, and the Grey Wardens are no longer hunting you."), Colors.Green));
             RefreshAccepting();
         }
 
@@ -713,7 +713,7 @@ namespace GreyWardenPolicePurity
             if (victimFaction != null) _victimFactions.Add(victimFaction);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"灰袍守卫已记录你的罪行：{type}（{detail}）| {GetReputationDisplay()}", Colors.Red));
+                GwpText.Get("{=gwp_gwpdata_003}The Grey Wardens have recorded your crimes: {VAR_1} ({VAR_2}) | {VAR_3}", "VAR_1", type, "VAR_2", detail, "VAR_3", GetReputationDisplay()), Colors.Red));
 
             if (IsWanted)
                 CrimePool.TryAddPlayerCrime(type, location, detail);
@@ -736,10 +736,10 @@ namespace GreyWardenPolicePurity
             Reputation = Math.Min(Reputation + 1, MaxReputation);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"灰袍守卫注意到你的善行：{type}（{detail}）| {GetReputationDisplay()}", Colors.Green));
+                GwpText.Get("{=gwp_gwpdata_004}The Grey Wardens have noticed your good deeds: {VAR_1} ({VAR_2}) | {VAR_3}", "VAR_1", type, "VAR_2", detail, "VAR_3", GetReputationDisplay()), Colors.Green));
         }
 
-        public static string GetReputationDisplay() => $"声望：{Reputation}";
+        public static string GetReputationDisplay() => GwpText.Get("{=gwp_gwpdata_005}Reputation: {VAR_1}", "VAR_1", Reputation);
 
         public static void ResetReputation(int value) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
         public static void ChangeReputation(int delta) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));

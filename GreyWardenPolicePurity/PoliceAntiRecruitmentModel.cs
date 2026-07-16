@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Localization;
@@ -50,7 +50,7 @@ namespace GreyWardenPolicePurity
             if (IsGwFaction(factionDeclaresWar) || IsGwClan(evaluatingClan))
             {
                 reason = includeReason
-                    ? new TextObject("灰袍守卫不会参与原版外交 AI 的主动宣战。")
+                    ? new TextObject(GwpText.Get("{=gwp_policeantirecruitmentmodel_001}The Grey Wardens do not join wars of aggression declared by the realm’s ordinary diplomatic councils."))
                     : TextObject.GetEmpty();
                 return float.MinValue;
             }

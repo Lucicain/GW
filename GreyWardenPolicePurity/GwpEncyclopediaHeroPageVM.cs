@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
 using TaleWorlds.Core;
@@ -80,11 +80,11 @@ namespace GreyWardenPolicePurity
 
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    $"{_hero.Name} 的灰袍震慑明细",
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden deterrence record", "VAR_1", _hero.Name),
                     description,
                     true,
                     false,
-                    "关闭",
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_002}Close"),
                     string.Empty,
                     null,
                     null),
@@ -93,25 +93,25 @@ namespace GreyWardenPolicePurity
 
         private void RefreshDeterrenceButtonState()
         {
-            DeterrenceButtonText = "灰袍震慑";
-            DeterrenceButtonHint = new HintViewModel(new TextObject("查看此人物当前的灰袍震慑调试信息。"));
+            DeterrenceButtonText = GwpText.Get("{=gwp_gwpencyclopediaheropagevm_003}Deterrence");
+            DeterrenceButtonHint = new HintViewModel(new TextObject(GwpText.Get("{=gwp_gwpencyclopediaheropagevm_004}View this character’s present Grey Warden deterrence record.")));
         }
 
         private static string FormatLastEnforcement(GwpAiDeterrenceState.DeterrenceDetails details)
         {
             if (!details.HasEntry)
-                return "无记录";
+                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_005}No record");
 
             if (details.DaysSinceLastEnforcement < (1f / CampaignTime.HoursInDay))
-                return "刚刚";
+                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_006}Just");
 
             if (details.DaysSinceLastEnforcement < 1f)
             {
                 float hours = details.DaysSinceLastEnforcement * CampaignTime.HoursInDay;
-                return $"{hours:0.#} 小时前";
+                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_007}{VAR_1} hours ago", "VAR_1", GwpText.Format(hours, "0.#"));
             }
 
-            return $"{details.DaysSinceLastEnforcement:0.##} 天前";
+            return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_008}{VAR_1} days ago", "VAR_1", GwpText.Format(details.DaysSinceLastEnforcement, "0.##"));
         }
 
         private static string BuildDeterrenceDescription(
@@ -122,15 +122,15 @@ namespace GreyWardenPolicePurity
                 "\n",
                 new[]
                 {
-                    $"当前震慑值：{details.EffectivePenalty:0.##}",
-                    $"个人犯罪被震慑次数：{details.EnforcementCount}",
-                    $"连坐被震慑次数：{details.SharedDeterrenceCount}",
-                    $"烧村欲望压制倍率：{suppression.RaidMultiplier:0.###}",
-                    $"攻击村民欲望压制倍率：{suppression.VillagerMultiplier:0.###}",
-                    $"攻击商队欲望压制倍率：{suppression.CaravanMultiplier:0.###}",
-                    $"最近一次受震慑：{FormatLastEnforcement(details)}",
-                    $"大地图状态：{details.MapStatus}",
-                    $"具体位置：{details.MapLocation}"
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_009}Current shock value: {VAR_1}", "VAR_1", GwpText.Format(details.EffectivePenalty, "0.##")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_010}Number of times individual crimes were shocked: {VAR_1}", "VAR_1", details.EnforcementCount),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_011}Successive chastisements: {VAR_1}", "VAR_1", details.SharedDeterrenceCount),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_012}The desire suppression multiplier for burning villages: {VAR_1}", "VAR_1", GwpText.Format(suppression.RaidMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_013}The desire suppression multiplier for attacking villagers: {VAR_1}", "VAR_1", GwpText.Format(suppression.VillagerMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_014}The desire suppression multiplier for attacking caravans: {VAR_1}", "VAR_1", GwpText.Format(suppression.CaravanMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}The latest shock: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Large map status: {VAR_1}", "VAR_1", details.MapStatus),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_017}Specific location: {VAR_1}", "VAR_1", details.MapLocation)
                 });
         }
 

@@ -5,7 +5,7 @@
   <NPCCharacter id="gwrecruit"
                 default_group="Infantry"
                 level="6"
-                name="灰袍守护者轻步兵"
+                name="{=gwp_troop_light_infantry}Grey Warden Light Infantry"
                 occupation="Soldier"
                 is_basic_troop="true"
                 is_female="true"
@@ -49,7 +49,7 @@
                    id="winfhelmet" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t1"
-                    civilian="true" />
+				equipmentType="Civilian" />
     </Equipments>
   </NPCCharacter>
   
@@ -59,7 +59,7 @@
   <NPCCharacter id="gwheavyinfantry"
                 default_group="Infantry"
                 level="26"
-                name="灰袍守护者重步兵"
+                name="{=gwp_troop_heavy_infantry}Grey Warden Heavy Infantry"
                 occupation="Soldier"
                 is_female="true"
                 culture="Culture.empire">
@@ -107,7 +107,7 @@
                    id="winfshoulder" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t3"
-                    civilian="true" />
+				equipmentType="Civilian" />
     </Equipments>
   </NPCCharacter>
   
@@ -117,7 +117,7 @@
   <NPCCharacter id="gwarcher"
                 default_group="Ranged"
                 level="26"
-                name="灰袍守护者弓箭手"
+                name="{=gwp_troop_archer}Grey Warden Archer"
                 occupation="Soldier"
                 is_female="true"
                 culture="Culture.empire">
@@ -165,7 +165,7 @@
                    id="warchshoulder" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t3"
-                    civilian="true" />
+				equipmentType="Civilian" />
     </Equipments>
   </NPCCharacter>
   
@@ -175,7 +175,7 @@
   <NPCCharacter id="gwknight"
                 default_group="Cavalry"
                 level="31"
-                name="灰袍守护者骑士"
+                name="{=gwp_troop_knight}Grey Warden Knight"
                 occupation="Soldier"
                 is_female="true"
                 culture="Culture.empire">
@@ -222,7 +222,7 @@
                    id="winflegs" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t3"
-                    civilian="true" />
+				equipmentType="Civilian" />
       <equipment slot="Horse"
                  id="Item.t2_empire_horse" />
       <equipment slot="HorseHarness"

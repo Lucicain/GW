@@ -63,24 +63,24 @@ namespace GreyWardenPolicePurity
             // 攻击村民
             if (defender.PartyComponent is VillagerPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? "村民";
+                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_policecrimemonitorenhanced_001}Villager");
 
                 // 显示消息
-                Report("攻击村民", attacker, victimName, location);
+                Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_002}Attack villager"), attacker, victimName, location);
 
                 // 触发事件通知惩戒系统
-                OnCrimeDetected?.Invoke("攻击村民", attacker, location, victimName);
+                OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_003}Attack villager"), attacker, location, victimName);
                 return;
             }
 
             // 攻击商队
             if (defender.PartyComponent is CaravanPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? "商队";
+                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_policecrimemonitorenhanced_004}Caravan");
 
-                Report("攻击商队", attacker, victimName, location);
+                Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_005}Attack caravan"), attacker, victimName, location);
 
-                OnCrimeDetected?.Invoke("攻击商队", attacker, location, victimName);
+                OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_006}Attack caravan"), attacker, location, victimName);
                 return;
             }
         }
@@ -107,11 +107,11 @@ namespace GreyWardenPolicePurity
                     return;
             }
 
-            string victimName = $"{village.Name} 村民";
+            string victimName = GwpText.Get("{=gwp_policecrimemonitorenhanced_007}{VAR_1} Villager", "VAR_1", village.Name);
 
-            Report("劫掠村庄(开始)", offender, victimName, location, $"村庄={village.Name}");
+            Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_008}Raid village (start)"), offender, victimName, location, GwpText.Get("{=gwp_policecrimemonitorenhanced_009}Village={VAR_1}", "VAR_1", village.Name));
 
-            OnCrimeDetected?.Invoke("劫掠村庄", offender, location, victimName);
+            OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_010}Raid Village"), offender, location, victimName);
         }
 
         /// <summary>

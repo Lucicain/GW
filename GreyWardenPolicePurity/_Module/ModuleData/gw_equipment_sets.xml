@@ -15,7 +15,7 @@
 				<Equipment slot="Horse" id="Item.t2_empire_horse" />
 				<Equipment slot="HorseHarness" id="wharnesscom" />
 		</EquipmentSet>
-		<EquipmentSet civilian="true">
+		<EquipmentSet equipmentType="Civilian">
 				<Equipment slot="Item0" id="Item.gwonehandedsword"/>
 				<Equipment slot="Item1" id="Item.gwlance"/>
 				<Equipment slot="Item2" id="Item.wlarge_shield_black"/>

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -233,7 +233,7 @@ namespace GreyWardenPolicePurity
                     spawnPoint.GatePosition,
                     1f,
                     spawnPoint,
-                    new TextObject("灰袍招募使者"),
+                    new TextObject(GwpText.Get("{=gwp_playerbountybehavior_001}Grey Warden herald")),
                     policeClan,
                     policeClan.DefaultPartyTemplate,
                     clanLeader,
@@ -258,7 +258,7 @@ namespace GreyWardenPolicePurity
                 _recruitmentPatrolReturning = false;
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"灰袍招募使者正从 {spawnPoint.Name} 出发前来拜访...",
+                    GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
                     Colors.Cyan));
             }
             catch (Exception ex)
@@ -381,7 +381,7 @@ namespace GreyWardenPolicePurity
                 _escortPolicePartyId = null!;
                 if (HasBountyTask)
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "护送警察已失联，请前往警察族长处领取赏金。", Colors.Yellow));
+                        GwpText.Get("{=gwp_playerbountybehavior_003}The escorting Warden has been lost. Seek a Warden-lord to claim the bounty."), Colors.Yellow));
                 return;
             }
 
@@ -463,7 +463,7 @@ namespace GreyWardenPolicePurity
             string sightingLocation = GetNearestSettlementName(target.GetPosition2D);
 
             // 情报来源：护送方名称；无护送方时用通用名称
-            string reporterName = "灰袍侦察队";
+            string reporterName = GwpText.Get("{=gwp_playerbountybehavior_004}Grey Warden reconnaissance party");
             if (HasEscortPoliceParty)
             {
                 var escort = MobileParty.All.FirstOrDefault(
@@ -473,7 +473,7 @@ namespace GreyWardenPolicePurity
             }
 
             _activeQuest.WriteLog(
-                $"【侦情】{reporterName} 的探子来报：目标在 {sightingLocation} 附近目击。");
+                GwpText.Get("{=gwp_playerbountybehavior_005}[Investigation] The spies from {VAR_1} came to report: The target was sighted near {VAR_2}.", "VAR_1", reporterName, "VAR_2", sightingLocation));
         }
 
         /// <summary>
@@ -525,9 +525,9 @@ namespace GreyWardenPolicePurity
                             reconnected  = true;
                             if (IsTrackingBountyTarget)
                                 existing.WriteLog(
-                                    $"读档恢复：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
+                                    GwpText.Get("{=gwp_playerbountybehavior_006}Load recovery: continue to track the target ({VAR_1}).", "VAR_1", _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
                             else if (IsWaitingForBountyCollection)
-                                existing.WriteLog("读档恢复：目标已击败，前往领取赏金。");
+                                existing.WriteLog(GwpText.Get("{=gwp_playerbountybehavior_007}Load recovery: The target has been defeated, go and collect the bounty."));
                         }
                     }
                     catch { }
@@ -544,13 +544,13 @@ namespace GreyWardenPolicePurity
                                 _activeQuest = new BountyHunterQuest(
                                     policeLeader,
                                     _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop,
-                                    _activeBountyTargetName ?? "未知目标");
+                                    _activeBountyTargetName ?? GwpText.Get("{=gwp_playerbountybehavior_008}Unknown target"));
                                 _activeQuest.StartQuest();
                                 if (IsTrackingBountyTarget)
                                     _activeQuest.WriteLog(
-                                        $"读档恢复（兜底）：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
+                                        GwpText.Get("{=gwp_playerbountybehavior_009}Load recovery (cover): Continue to track the target ({VAR_1}).", "VAR_1", _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
                                 else if (IsWaitingForBountyCollection)
-                                    _activeQuest.WriteLog("读档恢复（兜底）：目标已击败，前往领取赏金。");
+                                    _activeQuest.WriteLog(GwpText.Get("{=gwp_playerbountybehavior_010}File loading recovery (double-down): The target has been defeated, go and collect the bounty."));
                             }
                             catch { _activeQuest = null!; }
                         }
@@ -583,7 +583,7 @@ namespace GreyWardenPolicePurity
                 if (!targetAlive)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "悬赏目标已消失（可能已被他人击败），任务自动取消",
+                        GwpText.Get("{=gwp_playerbountybehavior_011}The bounty target has disappeared (may have been defeated by others), and the contract is automatically canceled."),
                         Colors.Yellow));
                     try { _activeQuest?.FailQuestTargetGone(); } catch { }
                     ClearBountyTaskState();
@@ -612,7 +612,7 @@ namespace GreyWardenPolicePurity
             if (crime == null)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "已识别黑袍指挥官装备，当前暂无悬赏任务可接",
+                    GwpText.Get("{=gwp_playerbountybehavior_012}The black-robed commander's equipment has been identified. There is currently no bounty contract available."),
                     Colors.White));
                 return;
             }
@@ -654,15 +654,15 @@ namespace GreyWardenPolicePurity
             // 用接任务时快照的人数计算赏金（战后残余人数趋近0，不能用战后数值）
             EnterBountyCollectionState(_activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop);
 
-            try { _activeQuest?.WriteLog($"目标已击败！前往领取赏金 {_pendingReward} 第纳尔。"); } catch { }
+            try { _activeQuest?.WriteLog(GwpText.Get("{=gwp_playerbountybehavior_013}The target has been defeated! Go and claim your bounty {VAR_1} dinars.", "VAR_1", _pendingReward)); } catch { }
 
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
-            string leaderName = policeLeader?.Name?.ToString() ?? "警察领主";
+            string leaderName = policeLeader?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbountybehavior_014}warden-lord");
             string rewardHint = HasEscortPoliceParty
-                ? "找到你的护送警察对话，直接领取赏金"
-                : $"前往 {leaderName} 处领取赏金";
+                ? GwpText.Get("{=gwp_playerbountybehavior_015}Speak with your escorting Warden to claim the bounty directly")
+                : GwpText.Get("{=gwp_playerbountybehavior_016}Go to {VAR_1} to claim the bounty", "VAR_1", leaderName);
             InformationManager.DisplayMessage(new InformationMessage(
-                $"悬赏目标已击败！{rewardHint}（{_pendingReward} 第纳尔）",
+                GwpText.Get("{=gwp_playerbountybehavior_017}The bounty target has been defeated! {VAR_1} ({VAR_2} dinar)", "VAR_1", rewardHint, "VAR_2", _pendingReward),
                 Colors.Green));
         }
 
@@ -710,9 +710,9 @@ namespace GreyWardenPolicePurity
             _awaitingQuestReconnect = false; // 通知首次 Tick 无需兜底
 
             if (IsTrackingBountyTarget)
-                quest.WriteLog($"读档恢复：继续追踪目标（{_activeBountyTargetName ?? "未知目标"}）。");
+                quest.WriteLog(GwpText.Get("{=gwp_playerbountybehavior_018}Load recovery: Continue to track the target ({VAR_1}).", "VAR_1", _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
             else if (IsWaitingForBountyCollection)
-                quest.WriteLog("读档恢复：目标已击败，前往护送警察或警察领主处领取赏金。");
+                quest.WriteLog(GwpText.Get("{=gwp_playerbountybehavior_019}After loading: the quarry is defeated; report to the escorting Warden or a Warden-lord for payment."));
         }
 
         #endregion
@@ -732,7 +732,7 @@ namespace GreyWardenPolicePurity
                 float distSq = dx * dx + dy * dy;
                 if (distSq < nearestDistSq) { nearestDistSq = distSq; nearest = s; }
             }
-            return nearest?.Name?.ToString() ?? "未知位置";
+            return nearest?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbountybehavior_020}unknown location");
         }
 
         private static Settlement FindNearestTown(Vec2 position)

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -48,7 +48,7 @@ namespace GreyWardenPolicePurity
                     CampaignTime.DaysFromNow(45),
                     rewardGold)
             {
-                _targetName = targetName ?? "未知目标";
+                _targetName = targetName ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_001}Unknown target");
             }
 
             /// <summary>
@@ -66,7 +66,7 @@ namespace GreyWardenPolicePurity
             }
 
             public override TextObject Title =>
-                new TextObject($"灰袍悬赏：{_targetName ?? "未知目标"}");
+                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_002}Grey Warden bounty: {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
             public override bool IsRemainingTimeHidden => false;
 
             /// <summary>
@@ -109,7 +109,7 @@ namespace GreyWardenPolicePurity
             {
                 try
                 {
-                    AddLog(new TextObject("你击败了悬赏目标并成功领取了赏金。"), false);
+                    AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}You defeated the bounty target and successfully claimed the bounty.")), false);
                     CompleteQuestWithSuccess();
                 }
                 catch { }
@@ -117,7 +117,7 @@ namespace GreyWardenPolicePurity
 
             internal void FailQuestTargetGone()
             {
-                try { CompleteQuestWithFail(new TextObject("目标已失踪，悬赏任务取消。")); } catch { }
+                try { CompleteQuestWithFail(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_004}The target has disappeared and the reward contract has been cancelled."))); } catch { }
             }
 
         }
@@ -135,20 +135,20 @@ namespace GreyWardenPolicePurity
         internal sealed class BountyMapNotification : InformationData
         {
             internal string OffenderStringId { get; private set; } = string.Empty;
-            private string _offenderName = "未知目标";
+            private string _offenderName = GwpText.Get("{=gwp_playerbountybehavior_questandnotification_005}Unknown target");
 
             // ★ 存档系统重建时需要无参构造器
             internal BountyMapNotification() : base(new TextObject("")) { }
 
             internal BountyMapNotification(CrimeRecord crime)
-                : base(new TextObject($"追缉目标：{crime?.Offender?.Name}"))
+                : base(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_006}Hunted target: {VAR_1}", "VAR_1", crime?.Offender?.Name)))
             {
                 OffenderStringId = crime?.Offender?.StringId ?? string.Empty;
-                _offenderName = crime?.Offender?.Name?.ToString() ?? "未知目标";
+                _offenderName = crime?.Offender?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_007}Unknown target");
             }
 
             public override TextObject TitleText =>
-                new TextObject($"灰袍悬赏：{_offenderName ?? "未知目标"}");
+                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_008}Grey Warden bounty: {VAR_1}", "VAR_1", _offenderName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
             public override string SoundEventPath => "event:/ui/notification/quest_start";
 
             public override bool IsValid()
@@ -183,7 +183,7 @@ namespace GreyWardenPolicePurity
                         behavior.ShowBountyInquiry(crime);
                     else
                         InformationManager.DisplayMessage(new InformationMessage(
-                            "该悬赏目标已失效", Colors.Yellow));
+                            GwpText.Get("{=gwp_playerbountybehavior_questandnotification_009}The bounty target has expired"), Colors.Yellow));
                 };
             }
         }

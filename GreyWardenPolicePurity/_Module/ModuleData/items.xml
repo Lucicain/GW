@@ -3,7 +3,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   <Items>
   <!--Weapons-->
  <CraftedItem id="gwonehandedsword"
-               name="灰袍守护者单手剑"
+               name="{=gwp_item_sword_1h}Grey Warden Arming Sword"
                crafting_template="OneHandedSword"
                culture="Culture.empire">
       <Pieces>
@@ -23,7 +23,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   </CraftedItem>
   
   <CraftedItem id="gwtwohandedsword"
-               name="灰袍守护者双手剑"
+               name="{=gwp_item_sword_2h}Grey Warden Greatsword"
                crafting_template="TwoHandedSword"
                culture="Culture.empire">
     <Pieces>
@@ -43,7 +43,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   </CraftedItem>
   
   <CraftedItem id="gwlance"
-               name="灰袍守护者骑枪"
+               name="{=gwp_item_lance}Grey Warden Lance"
                crafting_template="TwoHandedPolearm"
                culture="Culture.empire">
     <Pieces>
@@ -65,7 +65,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--InfSet-->
    <Item id="winflegs"
-        name="灰袍守护者战靴"
+        name="{=gwp_item_boots}Grey Warden Sabatons"
         mesh="winflegs"
         culture="Culture.empire"
         weight="3.5"
@@ -80,7 +80,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="winfgloves"
-        name="灰袍守护者护手"
+        name="{=gwp_item_gloves}Grey Warden Gauntlets"
         mesh="winfgloves"
         culture="Culture.empire"
         weight="1.8"
@@ -95,7 +95,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="winfarmor"
-        name="灰袍守护者之铠"
+        name="{=gwp_item_armor}Grey Warden Harness"
         mesh="winfarmor"
         culture="Culture.empire"
         weight="24.1"
@@ -113,7 +113,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="winfshoulder"
-        name="灰袍守护者护肩"
+        name="{=gwp_item_shoulders}Grey Warden Mantle"
         mesh="winfshoulder"
         culture="Culture.empire"
         weight="3.5"
@@ -128,7 +128,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="winfhelmet"
-        name="灰袍守护者之盔"
+        name="{=gwp_item_helmet}Grey Warden Helm"
         mesh="winfhelmet"
         culture="Culture.empire"
         weight="4.2"
@@ -151,7 +151,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--InfHVSet-->
   <Item id="winfarmorhv"
-        name="灰袍守护者重铠"
+        name="{=gwp_item_heavy_armor}Grey Warden Plate Harness"
         mesh="winfarmorhv"
         culture="Culture.empire"
         weight="24.1"
@@ -169,7 +169,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="winfhelmethv"
-        name="灰袍守护者翼盔"
+        name="{=gwp_item_winged_helmet}Grey Warden Winged Helm"
         mesh="winfhelmethv"
         culture="Culture.empire"
         weight="4.2"
@@ -192,7 +192,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--ComSet-->
   <Item id="wcomlegs"
-        name="灰袍指挥官之靴"
+        name="{=gwp_item_commander_boots}Grey Warden Commander's Sabatons"
         mesh="wcomlegs"
         culture="Culture.empire"
         weight="3.5"
@@ -207,7 +207,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomgloves"
-        name="灰袍指挥官护手"
+        name="{=gwp_item_commander_gloves}Grey Warden Commander's Gauntlets"
         mesh="wcomgloves"
         culture="Culture.empire"
         weight="1.8"
@@ -222,7 +222,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomarmorhv"
-        name="灰袍指挥官之铠"
+        name="{=gwp_item_commander_armor}Grey Warden Commander's Harness"
         mesh="wcomarmorhv"
         culture="Culture.empire"
         weight="24.1"
@@ -240,7 +240,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomshoulder"
-        name="灰袍指挥官护肩"
+        name="{=gwp_item_commander_shoulders}Grey Warden Commander's Mantle"
         mesh="wcomshoulder"
         culture="Culture.empire"
         weight="3.5"
@@ -255,7 +255,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomhelmethv"
-        name="灰袍指挥官翼盔"
+        name="{=gwp_item_commander_helmet}Grey Warden Commander's Winged Helm"
         mesh="wcomhelmethv"
         culture="Culture.empire"
         weight="4.2"
@@ -278,7 +278,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--ArchSet-->
   <Item id="warchlegs"
-        name="灰袍守护者皮靴"
+        name="{=gwp_item_leather_boots}Grey Warden Leather Boots"
         mesh="warchlegs"
         culture="Culture.empire"
         weight="0.9"
@@ -293,7 +293,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="true" />
   </Item>
   <Item id="warchgloves"
-        name="灰袍守护者皮手套"
+        name="{=gwp_item_leather_gloves}Grey Warden Leather Gloves"
         mesh="warchgloves"
         culture="Culture.empire"
         weight="0.6"
@@ -309,7 +309,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="true" />
   </Item>
   <Item id="warcharmor"
-        name="灰袍守护者轻铠"
+        name="{=gwp_item_light_armor}Grey Warden Light Harness"
         mesh="warcharmor"
         culture="Culture.empire"
         weight="8.3"
@@ -327,7 +327,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="true" />
   </Item>
   <Item id="warchshoulder"
-        name="灰袍守护者鹰肩"
+        name="{=gwp_item_eagle_shoulders}Grey Warden Eagle Mantle"
         mesh="warchshoulder"
         culture="Culture.empire"
         weight="2.2"
@@ -341,7 +341,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="true" />
   </Item>
   <Item id="warchhelmet"
-        name="灰袍守护者兜帽"
+        name="{=gwp_item_hood}Grey Warden Hood"
         mesh="warchhelmet"
         culture="Culture.empire"
         weight="0.2"
@@ -364,7 +364,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--Shelds-->
   <Item id="wlarge_shield"
-        name="灰袍守护者巨盾"
+        name="{=gwp_item_great_shield}Grey Warden Great Shield"
         body_name="bo_cap_wlarge_shield"
         shield_body_name="bo_wlarge_shield"
         recalculate_body="false"
@@ -407,7 +407,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
        the current-official-body A/B reproduced the same shutdown crash.
        Runtime mesh/material mutation remains disabled. -->
   <Item id="wlarge_shield_black"
-        name="灰袍领主黑曜巨盾"
+        name="{=gwp_item_obsidian_great_shield}Grey Warden Lord's Obsidian Great Shield"
         body_name="bo_cap_wlarge_shield"
         shield_body_name="bo_wlarge_shield"
         recalculate_body="false"
@@ -452,7 +452,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   	<!--Harness-->
   <Item multiplayer_item="false"
         id="wharness"
-        name="灰袍守护者马铠"
+        name="{=gwp_item_horse_armor}Grey Warden Horse Armour"
         mesh="wharness"
         subtype="body_armor"
         weight="30"
@@ -472,7 +472,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
   <Item multiplayer_item="false"
         id="wharnesscom"
-        name="灰袍指挥官马铠"
+        name="{=gwp_item_commander_horse_armor}Grey Warden Commander's Horse Armour"
         mesh="wharnesscom"
         subtype="body_armor"
         weight="30"

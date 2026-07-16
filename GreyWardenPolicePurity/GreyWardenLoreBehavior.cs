@@ -24,17 +24,17 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, TextObject>
             {
                 ["gw_leader_0"] = new TextObject(
-                    "{=gwp_enc_vandi}梵蒂是现任灰袍总长，也是统一帝国旧警制在当世最直接的继承者之一。她将灰袍视作法统与誓约的共同体，而非寻常贵族家门。对外，她坚持灰袍不争王位、不扩领地，只守道路、村镇与市集的秩序；对内，她要求每一名灰袍之女都记住，执法的目的不是逞威，而是让百姓敢于相信明日仍有公道。"),
+                    GwpText.Get("{=gwp_enc_vandi}Aethelflaed is the present Warden-General and one of the clearest living heirs to the constabulary of the old, undivided Empire. She holds the Grey Wardens to be a fellowship of law and oath, not an ordinary noble house. Beyond their walls she forbids them to seek crowns or widen estates: they are to keep the roads, villages, towns, and markets. Within, she bids every sworn daughter remember that the law is not a stage for pride, but a covenant by which common folk may trust that justice will endure another day.")),
                 ["gw_leader_1"] = new TextObject(
-                    "{=gwp_enc_yoer}约珥长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。"),
+                    GwpText.Get("{=gwp_enc_yoer}Cyneburh has long kept watch over the post roads and countryside of the old Empire. She is most often found upon distant tracks, ferries, and the crossings of merchants, settling brigandage, blood-feuds, and unlawful tolls. Many traders and villagers remember the grey mantle before they learn her name. To them she embodies a plain and steadfast truth: the Empire has broken, yet someone still keeps the road.")),
                 ["gw_leader_2"] = new TextObject(
-                    "{=gwp_enc_mise}弥瑟主管灰袍内部的案卷、赎罪与归正事务。她坚信秩序若只剩惩罚，迟早会沦为恐惧；因此灰袍必须留下让罪人回头的门。许多关于罚金、押送、赎罪和调停的旧规，都是由她整理并续行的。她使灰袍看起来不像冷硬的军警，更像一支持戒而行的世俗修会。"),
+                    GwpText.Get("{=gwp_enc_mise}Mildthryth keeps the Grey Wardens’ case rolls and oversees atonement and amendment within the order. She believes that order reduced to punishment will in time become mere terror; therefore the guilty must be left a door by which to return. She has gathered and renewed many old rules of fines, escort, atonement, and settlement. Through her, the Wardens seem less a hard company of soldiers than a secular order bound by discipline.")),
                 ["gw_leader_3"] = new TextObject(
-                    "{=gwp_enc_shengduo}圣铎负责保存统一帝国时代遗留下来的法条、判例与巡察记录。她极少高谈理想，却能在最短时间内从旧卷宗里找出某项惯例的根源。对灰袍而言，档案不仅是文书，更是证明她们并非乱世私兵的依据：帝国失国，不等于法律失声。"),
+                    GwpText.Get("{=gwp_enc_shengduo}Wynflaed preserves the statutes, judgments, and patrol records inherited from the old, undivided Empire. She seldom speaks in lofty terms, yet can swiftly trace any custom to its root in the ancient rolls. To the Grey Wardens, an archive is more than parchment: it is proof that they are no private warband born of disorder. The Empire may have lost its throne; the law has not thereby lost its voice.")),
                 ["gw_leader_4"] = new TextObject(
-                    "{=gwp_enc_chenxi}晨曦常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。"),
+                    GwpText.Get("{=gwp_enc_chenxi}Eadgifu is often sent where villages have suffered disaster, famine grips the marches, or war has left its deepest scars. She is skilled in relief, allotment, mediation, and the restoration of the simplest public order, and the common folk speak gently of her. Many first understand the Grey Wardens not when they see a criminal seized, but when they see ordinary lives set upright again amid the worst confusion.")),
                 ["gw_leader_5"] = new TextObject(
-                    "{=gwp_enc_muguang}暮光统率灰袍中最强硬的外勤执法力量，常负责追缉拒捕者、押送重犯和震慑屡教不改之徒。她的名声往往先在案犯之间流传，再传到酒馆里。即便如此，她仍被灰袍内部视作守规矩的人，因为她相信刀剑只能替法律开路，不能代替法律本身。")
+                    GwpText.Get("{=gwp_enc_muguang}Wulfhild commands the sternest of the Grey Wardens’ field companies. She pursues those who resist arrest, escorts grave offenders, and chastens the incorrigible. Her name travels first among malefactors, and only afterward through the taverns. Yet the order counts her a strict keeper of rule, for she holds that steel may clear a path for the law, but must never take the law’s place."))
             };
 
         public override void RegisterEvents()
@@ -75,7 +75,7 @@ namespace GreyWardenPolicePurity
                 "gwp_grey_lord_met_followup",
                 "gwp_grey_lord_met_followup",
                 "lord_talk_speak_diplomacy_2",
-                "{=gwp_grey_lord_followup}所以，怎么了？",
+                GwpText.Get("{=gwp_grey_lord_followup}Well, then—what is it?"),
                 GreyLordMetGreetingCondition,
                 null,
                 200);
@@ -152,41 +152,41 @@ namespace GreyWardenPolicePurity
             if (reputation >= 40)
             {
                 return new TextObject(
-                    "{=gwp_greet_very_high}你的名字在村镇间传得很正。灰袍不会轻许赞誉，但百姓替你说了不少好话。只要你仍守得住分寸，我们便把你当可以托付的人。");
+                    GwpText.Get("{=gwp_greet_very_high}Your name is spoken with honour from village to town. The Grey Wardens give praise sparingly, yet the common folk have spoken well of you. Keep your measure, and we shall count you among those to whom a charge may safely be entrusted."));
             }
 
             if (reputation >= 20)
             {
                 return new TextObject(
-                    "{=gwp_greet_high}我看过你的记录。案卷干净，行迹也正；这样的人，灰袍记得。帝国旧法并不奖赏空话，只承认真正替百姓挡事的人。");
+                    GwpText.Get("{=gwp_greet_high}I have read your record. The rolls are clean and your conduct upright; the Grey Wardens remember such folk. The old Imperial law rewards no empty boast, only those who truly stand between the people and harm."));
             }
 
             if (reputation >= 5)
             {
                 return new TextObject(
-                    "{=gwp_greet_good}你的行止还算端正。灰袍守的是规矩，也是人心；既然你还在这条线上，我们便按守法之人待你。");
+                    GwpText.Get("{=gwp_greet_good}Your conduct has remained proper. The Grey Wardens keep both rule and public trust; while you hold to that path, we shall receive you as one who keeps the law."));
             }
 
             if (reputation <= -40)
             {
                 return new TextObject(
-                    "{=gwp_greet_very_low}你的名字已经不只是写在案卷里了。若你再越线，灰袍来见你时，带来的就不会只是言语。");
+                    GwpText.Get("{=gwp_greet_very_low}Your name is no longer merely written in the case rolls. Cross the line once more, and when the Grey Wardens come before you, they shall bring more than words."));
             }
 
             if (reputation <= -11)
             {
                 return new TextObject(
-                    "{=gwp_greet_wanted}你仍在案。今日我肯与你说话，是因为灰袍的法先于刀兵；别把这当成宽纵。");
+                    GwpText.Get("{=gwp_greet_wanted}Your case remains open. I speak with you today because the law of the Grey Wardens goes before the sword. Do not mistake that order for indulgence."));
             }
 
             if (reputation < 0)
             {
                 return new TextObject(
-                    "{=gwp_greet_bad}你的记录并不干净。灰袍会给人回头的机会，但不会给人装糊涂的余地。");
+                    GwpText.Get("{=gwp_greet_bad}Your record is not clean. The Grey Wardens leave a road back for those who will take it, but none for those who feign ignorance."));
             }
 
             return new TextObject(
-                "{=gwp_greet_neutral}灰袍记人，不只记功，也记过。你既来到我面前，我便按规矩与你说话。");
+                GwpText.Get("{=gwp_greet_neutral}The Grey Wardens remember both service and offence. Since you stand before me, I shall speak with you according to rule."));
         }
 
         private static void ApplyHeroEncyclopediaTexts()

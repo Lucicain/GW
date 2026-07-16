@@ -76,8 +76,11 @@
            engine build, a live folder named Assets makes the normal client load
            that editable tree instead of AssetPackages, so game testing must use
            a reversible folder-name switch or a separate runtime module. -->
+      <!-- Release ZIPs are created only by the formal GitHub release workflow
+           and live beside the GreyWarden directory in the game's Modules
+           folder. A normal build must never copy an archive into the module. -->
       <ModuleFiles Include="$(MSBuildProjectDirectory)\_Module\**"
-                   Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**" />
+                   Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**;$(MSBuildProjectDirectory)\_Module\*.zip;$(MSBuildProjectDirectory)\_Module\*.zip.sha256;$(MSBuildProjectDirectory)\_Module\**\*.zip;$(MSBuildProjectDirectory)\_Module\**\*.zip.sha256" />
     </ItemGroup>
     <Copy SourceFiles="@(ModuleFiles)" DestinationFiles="@(ModuleFiles->'$(GameFolder)\Modules\GreyWarden\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="false" />
     <Message Text="ModuleData synced → $(GameFolder)\Modules\GreyWarden\" Importance="high" />

@@ -118,7 +118,7 @@ namespace GreyWardenPolicePurity
 
             if (CampaignTime.Now.ToHours >= _atonementDeadlineHours)
             {
-                FailAtonementTask("赎罪任务超时，声望 -5。");
+                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_001}The atonement contract times out, reputation -5."));
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace GreyWardenPolicePurity
                 p.StringId == _atonementTargetPartyId && p.IsActive);
             if (target == null)
             {
-                FailAtonementTask("赎罪目标已失踪，判定任务失败，声望 -5。");
+                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_002}The atonement target has disappeared, the contract has failed, and the reputation is -5."));
                 return;
             }
 
@@ -173,12 +173,12 @@ namespace GreyWardenPolicePurity
 
                 try { _atonementQuest?.MarkReadyForTurnIn(); } catch { }
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"赎罪目标已击败：{_atonementTargetName}。请前往族长或任意灰袍警察交付任务。",
+                    GwpText.Get("{=gwp_policeenforcementbehavior_003}Atonement quarry defeated: {VAR_1}. Report to the Warden-General or any Grey Warden.", "VAR_1", _atonementTargetName),
                     Colors.Green));
             }
             else
             {
-                FailAtonementTask("赎罪任务失败，声望 -5。");
+                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_004}The atonement contract failed, reputation -5."));
             }
         }
 
@@ -332,13 +332,13 @@ namespace GreyWardenPolicePurity
                 else
                 {
                     CrimeState.EndTask(escortTask.PolicePartyId);
-                    CrimeState.TryAddPlayerCrime("罚款不足", MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, "押送罚款未缴清");
+                    CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_policeenforcementbehavior_005}Insufficient fine"), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get("{=gwp_policeenforcementbehavior_006}Escort fine unpaid"));
                 }
 
                 // 步骤6：显示消息
-                string castleName = castle?.Name?.ToString() ?? "堡垒";
+                string castleName = castle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_007}Fortress");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"你被押送至 {castleName}：应缴 {fine} 金，实缴 {collected} 金，声望恢复到 {repAfter}（按实缴恢复）。",
+                    GwpText.Get("{=gwp_policeenforcementbehavior_008}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
                     Colors.Yellow));
 
                 // 步骤7：恢复警察AI，开始补给
@@ -658,9 +658,9 @@ namespace GreyWardenPolicePurity
                             pp.SetMoveGoToSettlement(targetCastle, NavigationType.Default, false);
                         }
 
-                        string castleName = targetCastle?.Name?.ToString() ?? "堡垒";
+                        string castleName = targetCastle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_009}FORT");
                         InformationManager.DisplayMessage(new InformationMessage(
-                            $"你被 {pp.Name} 击败！正被押送至 {castleName}...",
+                            GwpText.Get("{=gwp_policeenforcementbehavior_010}You were defeated by {VAR_1}! Being escorted to {VAR_2}...", "VAR_1", pp.Name, "VAR_2", castleName),
                             Colors.Yellow));
 
                         continue;

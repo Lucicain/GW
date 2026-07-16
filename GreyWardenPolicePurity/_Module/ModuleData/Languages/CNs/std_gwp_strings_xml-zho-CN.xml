@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base type="string">
+ <tags>
+  <tag language="简体中文" />
+ </tags>
+ <strings>
+  <string id="gwp_adoption_chat_notice" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。" />
+  <string id="gwp_adoption_log_entry" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。" />
+  <string id="gwp_ai_deterrence_followup_1" text="嗯？你说吧。我只是想起了灰袍。挨过一次，人总会记得疼。" />
+  <string id="gwp_ai_deterrence_followup_2" text="啊，是你。没什么，只是忽然想到灰袍了。那一遭过后，我总比从前多一分小心。" />
+  <string id="gwp_ai_deterrence_followup_3" text="嗯，你说吧。我不过是想起了灰袍。人吃过亏，自然知道哪些事该缓一缓。" />
+  <string id="gwp_ai_deterrence_followup_4" text="啊？抱歉，我方才在想些旧事。灰袍那次教训，我还记着，所以这阵子行事收敛了些。" />
+  <string id="gwp_ai_deterrence_followup_5" text="你说。我只是忽然想起灰袍了。自从挨了他们那一回，我做事总会先停一停，再想一想。" />
+  <string id="gwp_ai_deterrence_followup_6" text="嗯？说吧。我方才只是想起了灰袍。吃过那样的亏，人总会先掂量掂量自己的命还值不值钱。" />
+  <string id="gwp_ai_deterrence_followup_7" text="啊，原来是你。失礼。我刚才走神了。灰袍给的那顿教训太狠，直到现在，我还时常会想起那一日。" />
+  <string id="gwp_ai_deterrence_followup_8" text="嗯？你方才说什么？抱歉，我又想起灰袍了。那群人下手太重，到现在想起来，身上都还发冷。" />
+  <string id="gwp_ai_deterrence_followup_9" text="……什么？啊，是你。失礼。我方才又梦见灰袍了。那一仗像钉子一样扎在脑子里，怎么也甩不掉。" />
+  <string id="gwp_ai_deterrence_intro_1" text="{HERO_NAME}目光停了一下，才像是从一阵短暂的失神里回过神来。" />
+  <string id="gwp_ai_deterrence_intro_2" text="{HERO_NAME}看上去有些心不在焉，像是方才又想起了什么不愉快的事。" />
+  <string id="gwp_ai_deterrence_intro_3" text="{HERO_NAME}目光略显迟滞，像是旧日那场败仗还在心里留着影子。" />
+  <string id="gwp_ai_deterrence_intro_4" text="{HERO_NAME}神色有些倦，像是连日来都没睡过一个安稳觉。" />
+  <string id="gwp_ai_deterrence_intro_5" text="{HERO_NAME}像是在想什么不痛快的事，半晌才察觉你已经到了面前。" />
+  <string id="gwp_ai_deterrence_intro_6" text="{HERO_NAME}神情阴郁，直到你出声，他才慢慢把目光挪到你身上。" />
+  <string id="gwp_ai_deterrence_intro_7" text="{HERO_NAME}站在那里出了会儿神，眉头紧锁，像是胸口还压着一口闷气。" />
+  <string id="gwp_ai_deterrence_intro_8" text="{HERO_NAME}目光有些散，像是正被一段不愿回想的旧事拖住心神。" />
+  <string id="gwp_ai_deterrence_intro_9" text="{HERO_NAME}脸色发白，手指无意识地按在旧伤上，连你走近都没听见脚步。" />
+  <string id="gwp_clan_description" text="灰袍守卫起源于统一帝国时期的巡察警队。帝国覆灭后，这支以女性为主体的警察家族没有随旧秩序一同消失，而是以家族血脉、修会戒律与旧帝国法统维系自身。她们巡察道路，缉捕罪犯，调停私斗，也为仍愿守法之人留下赎罪与归正的门。对许多百姓而言，灰袍不是寻常贵族，更像一支身披灰袍、持戒而行的世俗修女警团。" />
+  <string id="gwp_clan_intro" text="我们是灰袍守卫，承自统一帝国旧制的警察家族。帝国已崩，法统未绝；王朝可以更替，街巷、村庄与道路仍需有人巡察。世人把我们当作家族也好，当作修会也罢，于我们并无分别。只要百姓仍呼唤公道，灰袍便会回应。" />
+  <string id="gwp_clan_name" text="灰袍守卫" />
+  <string id="gwp_clan_short_name" text="灰袍" />
+  <string id="gwp_common_garrison" text="驻地点" />
+  <string id="gwp_common_unknown_target" text="未知目标" />
+  <string id="gwp_crime_aid_criminals" text="帮助罪犯对抗灰袍守卫" />
+  <string id="gwp_crime_attack_caravan" text="攻击商队" />
+  <string id="gwp_crime_attack_villagers" text="攻击村民" />
+  <string id="gwp_crime_forced_recruitment" text="强迫募兵" />
+  <string id="gwp_crime_forced_supplies" text="强征给养" />
+  <string id="gwp_crime_join_village_raid" text="参与劫掠村庄" />
+  <string id="gwp_crime_kill_villagers" text="杀害村民" />
+  <string id="gwp_crime_obstruct_law" text="妨碍执法" />
+  <string id="gwp_crime_raid_caravan" text="劫掠商队" />
+  <string id="gwp_crime_raid_village" text="劫掠村庄" />
+  <string id="gwp_custom_commander_yao" text="灰袍纠察官尧" />
+  <string id="gwp_enc_chenxi" text="晨曦常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。" />
+  <string id="gwp_enc_mise" text="弥瑟主管灰袍内部的案卷、赎罪与归正事务。她坚信秩序若只剩惩罚，迟早会沦为恐惧；因此灰袍必须留下让罪人回头的门。许多关于罚金、押送、赎罪和调停的旧规，都是由她整理并续行的。她使灰袍看起来不像冷硬的军警，更像一支持戒而行的世俗修会。" />
+  <string id="gwp_enc_muguang" text="暮光统率灰袍中最强硬的外勤执法力量，常负责追缉拒捕者、押送重犯和震慑屡教不改之徒。她的名声往往先在案犯之间流传，再传到酒馆里。即便如此，她仍被灰袍内部视作守规矩的人，因为她相信刀剑只能替法律开路，不能代替法律本身。" />
+  <string id="gwp_enc_shengduo" text="圣铎负责保存统一帝国时代遗留下来的法条、判例与巡察记录。她极少高谈理想，却能在最短时间内从旧卷宗里找出某项惯例的根源。对灰袍而言，档案不仅是文书，更是证明她们并非乱世私兵的依据：帝国失国，不等于法律失声。" />
+  <string id="gwp_enc_vandi" text="梵蒂是现任灰袍总长，也是统一帝国旧警制在当世最直接的继承者之一。她将灰袍视作法统与誓约的共同体，而非寻常贵族家门。对外，她坚持灰袍不争王位、不扩领地，只守道路、村镇与市集的秩序；对内，她要求每一名灰袍之女都记住，执法的目的不是逞威，而是让百姓敢于相信明日仍有公道。" />
+  <string id="gwp_enc_yoer" text="约珥长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。" />
+  <string id="gwp_greet_bad" text="你的记录并不干净。灰袍会给人回头的机会，但不会给人装糊涂的余地。" />
+  <string id="gwp_greet_good" text="你的行止还算端正。灰袍守的是规矩，也是人心；既然你还在这条线上，我们便按守法之人待你。" />
+  <string id="gwp_greet_high" text="我看过你的记录。案卷干净，行迹也正；这样的人，灰袍记得。帝国旧法并不奖赏空话，只承认真正替百姓挡事的人。" />
+  <string id="gwp_greet_neutral" text="灰袍记人，不只记功，也记过。你既来到我面前，我便按规矩与你说话。" />
+  <string id="gwp_greet_very_high" text="你的名字在村镇间传得很正。灰袍不会轻许赞誉，但百姓替你说了不少好话。只要你仍守得住分寸，我们便把你当可以托付的人。" />
+  <string id="gwp_greet_very_low" text="你的名字已经不只是写在案卷里了。若你再越线，灰袍来见你时，带来的就不会只是言语。" />
+  <string id="gwp_greet_wanted" text="你仍在案。今日我肯与你说话，是因为灰袍的法先于刀兵；别把这当成宽纵。" />
+  <string id="gwp_grey_lord_followup" text="所以，怎么了？" />
+  <string id="gwp_greywardenadoptionlogentry_003" text="未知村庄" />
+  <string id="gwp_greywardenfamilybehavior_001" text="澄音" />
+  <string id="gwp_greywardenfamilybehavior_002" text="祈安" />
+  <string id="gwp_greywardenfamilybehavior_003" text="望舒" />
+  <string id="gwp_greywardenfamilybehavior_004" text="清岚" />
+  <string id="gwp_greywardenfamilybehavior_005" text="静禾" />
+  <string id="gwp_greywardenfamilybehavior_006" text="霁月" />
+  <string id="gwp_greywardenfamilybehavior_007" text="朝露" />
+  <string id="gwp_greywardenfamilybehavior_008" text="星祷" />
+  <string id="gwp_greywardenfamilybehavior_009" text="守真" />
+  <string id="gwp_greywardenfamilybehavior_010" text="昭宁" />
+  <string id="gwp_greywardenfamilybehavior_011" text="清律" />
+  <string id="gwp_greywardenfamilybehavior_012" text="若岚" />
+  <string id="gwp_greywardenfamilybehavior_013" text="听雪" />
+  <string id="gwp_greywardenfamilybehavior_014" text="慈光" />
+  <string id="gwp_greywardenfamilybehavior_015" text="霜晨" />
+  <string id="gwp_greywardenfamilybehavior_016" text="明祷" />
+  <string id="gwp_greywardenfamilybehavior_017" text="兰序" />
+  <string id="gwp_greywardenfamilybehavior_018" text="雅宁" />
+  <string id="gwp_greywardenfamilybehavior_019" text="晨铃" />
+  <string id="gwp_greywardenfamilybehavior_020" text="书弦" />
+  <string id="gwp_greywardenfamilybehavior_021" text="怀澄" />
+  <string id="gwp_greywardenfamilybehavior_022" text="澜音" />
+  <string id="gwp_greywardenfamilybehavior_023" text="芷宁" />
+  <string id="gwp_greywardenfamilybehavior_024" text="祷月" />
+  <string id="gwp_greywardenfamilybehavior_025" text="安禾" />
+  <string id="gwp_greywardenfamilybehavior_026" text="静澜" />
+  <string id="gwp_greywardenfamilybehavior_027" text="思律" />
+  <string id="gwp_greywardenfamilybehavior_028" text="清珑" />
+  <string id="gwp_greywardenfamilybehavior_029" text="雨谣" />
+  <string id="gwp_greywardenfamilybehavior_030" text="远星" />
+  <string id="gwp_greywardenfamilybehavior_031" text="采祷" />
+  <string id="gwp_greywardenfamilybehavior_032" text="露祈" />
+  <string id="gwp_greywardenfamilybehavior_033" text="映岚" />
+  <string id="gwp_greywardenfamilybehavior_034" text="书宁" />
+  <string id="gwp_greywardenfamilybehavior_035" text="凝光" />
+  <string id="gwp_greywardenfamilybehavior_036" text="夕晨" />
+  <string id="gwp_greywardenfamilybehavior_037" text="二" />
+  <string id="gwp_greywardenfamilybehavior_038" text="三" />
+  <string id="gwp_greywardenfamilybehavior_039" text="四" />
+  <string id="gwp_greywardenfamilybehavior_040" text="五" />
+  <string id="gwp_greywardenfamilybehavior_041" text="六" />
+  <string id="gwp_greywardenfamilybehavior_042" text="七" />
+  <string id="gwp_greywardenfamilybehavior_043" text="八" />
+  <string id="gwp_greywardenfamilybehavior_044" text="九" />
+  <string id="gwp_greywardenfamilybehavior_045" text="十" />
+  <string id="gwp_greywardenfamilybehavior_046" text="她" />
+  <string id="gwp_greywardenfamilybehavior_047" text="{VAR_1}是在{VAR_2}遭劫掠焚毁后，被灰袍守卫带回内院收养的女娃。她尚年幼，却已经在耳濡目染中听惯了巡路口令、案卷誊录与修会戒律。对灰袍而言，她不是寻常意义上的家族血亲，而是从灾厄中被接续下来的下一代誓女。" />
+  <string id="gwp_greywardenfamilybehavior_048" text="{VAR_1}幼时曾在{VAR_2}遭焚后被灰袍守卫收养。如今的她已开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在长辈眼中，她正从劫后余生的孤女逐渐成长为灰袍内院受训的新一代后继者。" />
+  <string id="gwp_greywardenfamilybehavior_049" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。" />
+  <string id="gwp_greywardenfamilybehavior_050" text="{VAR_1}生于灰袍守卫的内院。她自幼在巡路口令、旧帝国案卷与修会戒律之间长大，被长辈视作灰袍下一代的幼年继承者。对灰袍而言，像她这样的女孩并不是寻常贵族家族的孩子，而是未来要学会守路、记案与持法而行的人。" />
+  <string id="gwp_greywardenfamilybehavior_051" text="{VAR_1}属于灰袍守卫的新生一代。她已经开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在灰袍长辈眼中，她迟早会披上真正的灰袍。外人常把她们当作家族子女，灰袍内部却更习惯把这一代视作仍在受训的后继者。" />
+  <string id="gwp_greywardenfamilybehavior_052" text="{VAR_1}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。" />
+  <string id="gwp_greywardentrooprequestbehavior_001" text="少量见习守卫" />
+  <string id="gwp_greywardentrooprequestbehavior_002" text="一队见习守卫" />
+  <string id="gwp_greywardentrooprequestbehavior_003" text="重装步兵小队" />
+  <string id="gwp_greywardentrooprequestbehavior_004" text="持弓执勤队" />
+  <string id="gwp_greywardentrooprequestbehavior_005" text="披甲骑巡队" />
+  <string id="gwp_greywardentrooprequestbehavior_006" text="我想调一些灰袍的人手。" />
+  <string id="gwp_greywardentrooprequestbehavior_007" text="先算了。" />
+  <string id="gwp_greywardentrooprequestbehavior_008" text="那就等你准备好再来开口。" />
+  <string id="gwp_greywardentrooprequestbehavior_009" text="款项核清。灰袍会把人交给你，但别把她们当成寻常雇兵使唤。" />
+  <string id="gwp_greywardentrooprequestbehavior_010" text="你的报价还不够。若真要调人，就拿出更像样的数目。" />
+  <string id="gwp_greywardentrooprequestbehavior_011" text="这批人不是市井佣兵。按你现在的名声，这笔调拨要 {VAR_1} 金。若你愿意，现在就把款项放上谈判桌。" />
+  <string id="gwp_greywardentrooprequestbehavior_012" text="灰袍已向你调拨 {VAR_1} 名{VAR_2}。" />
+  <string id="gwp_greywardentrooprequestbehavior_013" text="调拨{VAR_1}" />
+  <string id="gwp_greywardentrooprequestbehavior_014" text="，按当前名声减免 {VAR_1}%" />
+  <string id="gwp_greywardentrooprequestbehavior_015" text="我要 {VAR_1} 名{VAR_2}（{VAR_3} 金{VAR_4}）" />
+  <string id="gwp_greywardenvillageadoptionbehavior_001" text="无名村庄" />
+  <string id="gwp_greywardenvillagerewardbehavior_001" text="领取村民酬谢（可领 {VAR_1} 第纳尔）" />
+  <string id="gwp_greywardenvillagerewardbehavior_002" text="现在还没有村民筹出的酬谢可领。" />
+  <string id="gwp_greywardenvillagerewardbehavior_003" text="你从村民酬谢中领取了 {VAR_1} 第纳尔。剩余 {VAR_2} 第纳尔。" />
+  <string id="gwp_greywardenvillagerewardsliderscreen_001" text="设置领取金额" />
+  <string id="gwp_greywardenvillagerewardsliderscreen_002" text="拖动滑块，选择本次要领取的村民酬谢。当前最多可领 {VAR_1} 第纳尔。" />
+  <string id="gwp_greywardenvillagerewardsliderscreen_003" text="确认" />
+  <string id="gwp_greywardenvillagerewardsliderscreen_004" text="取消" />
+  <string id="gwp_greywardenvillagerewardsliderscreen_005" text="{VAR_1} 第纳尔" />
+  <string id="gwp_gwpaideterrencestate_001" text="状态不明" />
+  <string id="gwp_gwpaideterrencestate_002" text="未知位置" />
+  <string id="gwp_gwpaideterrencestate_003" text="此人" />
+  <string id="gwp_gwpaideterrencestate_022" text="未知领主" />
+  <string id="gwp_gwpaideterrencestate_023" text="测试追踪：最高震慑者 {VAR_1}。当前状态 {VAR_2}。位置 {VAR_3}。最高震慑值 {VAR_4}。当前被震慑领主总数 {VAR_5}。" />
+  <string id="gwp_gwpaideterrencestate_024" text="{VAR_1}内 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_025" text="{VAR_1}内 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_026" text="{VAR_1}附近 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_027" text="野外 {VAR_1}" />
+  <string id="gwp_gwpaideterrencestate_028" text="{VAR_1}内 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_029" text="{VAR_1}附近 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_030" text="野外 {VAR_1}" />
+  <string id="gwp_gwpaideterrencestate_031" text="{VAR_1}内 {VAR_2}" />
+  <string id="gwp_gwpaideterrencestate_032" text="未知位置" />
+  <string id="gwp_gwpaideterrencestate_033" text="状态不明" />
+  <string id="gwp_gwpaideterrencestate_034" text="被囚于 {VAR_1}" />
+  <string id="gwp_gwpaideterrencestate_035" text="被 {VAR_1} 俘虏" />
+  <string id="gwp_gwpaideterrencestate_036" text="处于俘虏状态" />
+  <string id="gwp_gwpaideterrencestate_037" text="率队驻留" />
+  <string id="gwp_gwpaideterrencestate_038" text="率队活动" />
+  <string id="gwp_gwpaideterrencestate_039" text="在 {VAR_1} 休整" />
+  <string id="gwp_gwpaideterrencestate_040" text="正在逃亡" />
+  <string id="gwp_gwpaideterrencestate_041" text="刚获释" />
+  <string id="gwp_gwpaideterrencestate_042" text="正在赶路" />
+  <string id="gwp_gwpaideterrencestate_043" text="尚未重新现身" />
+  <string id="gwp_gwpaideterrencestate_044" text="状态不明" />
+  <string id="gwp_gwpbattlereinforcementbehavior_001" text="你在心中祈祷神明的眷顾。" />
+  <string id="gwp_gwpbattlereinforcementbehavior_002" text="灰袍守卫增援到了！" />
+  <string id="gwp_gwpdata_001" text="你已被灰袍守卫列入通缉名单！" />
+  <string id="gwp_gwpdata_002" text="通缉已解除，灰袍守卫不再追捕你" />
+  <string id="gwp_gwpdata_003" text="灰袍守卫已记录你的罪行：{VAR_1}（{VAR_2}）| {VAR_3}" />
+  <string id="gwp_gwpdata_004" text="灰袍守卫注意到你的善行：{VAR_1}（{VAR_2}）| {VAR_3}" />
+  <string id="gwp_gwpdata_005" text="声望：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaclanpagevm_001" text="关闭" />
+  <string id="gwp_gwpencyclopediaclanpagevm_002" text="宣战详情" />
+  <string id="gwp_gwpencyclopediaclanpagevm_003" text="查看灰袍守卫当前对各势力宣战的详细原因。" />
+  <string id="gwp_gwpencyclopediaheropagevm_001" text="{VAR_1} 的灰袍震慑明细" />
+  <string id="gwp_gwpencyclopediaheropagevm_002" text="关闭" />
+  <string id="gwp_gwpencyclopediaheropagevm_003" text="灰袍震慑" />
+  <string id="gwp_gwpencyclopediaheropagevm_004" text="查看此人物当前的灰袍震慑调试信息。" />
+  <string id="gwp_gwpencyclopediaheropagevm_005" text="无记录" />
+  <string id="gwp_gwpencyclopediaheropagevm_006" text="刚刚" />
+  <string id="gwp_gwpencyclopediaheropagevm_007" text="{VAR_1} 小时前" />
+  <string id="gwp_gwpencyclopediaheropagevm_008" text="{VAR_1} 天前" />
+  <string id="gwp_gwpencyclopediaheropagevm_009" text="当前震慑值：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_010" text="个人犯罪被震慑次数：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_011" text="连坐被震慑次数：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_012" text="烧村欲望压制倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_013" text="攻击村民欲望压制倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_014" text="攻击商队欲望压制倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_015" text="最近一次受震慑：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_016" text="大地图状态：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_017" text="具体位置：{VAR_1}" />
+  <string id="gwp_gwppolicewarreasonservice_001" text="灰袍守卫" />
+  <string id="gwp_gwppolicewarreasonservice_002" text="{VAR_1}当前宣战详情" />
+  <string id="gwp_gwppolicewarreasonservice_003" text="只有灰袍守卫家族页会显示宣战详情。" />
+  <string id="gwp_gwppolicewarreasonservice_004" text="未找到灰袍守卫家族，无法读取宣战原因。" />
+  <string id="gwp_gwppolicewarreasonservice_005" text="当前正式宣战对象：{VAR_1} 个" />
+  <string id="gwp_gwppolicewarreasonservice_006" text="灰袍守卫当前没有正式宣战对象。" />
+  <string id="gwp_gwppolicewarreasonservice_007" text="当前检测到正式战争状态，但运行时任务池里没有直接案由。通常说明战斗刚结束、正在等待自动停战，或这是旧流程留下的临时战争。" />
+  <string id="gwp_gwppolicewarreasonservice_008" text="家族额外信息：" />
+  <string id="gwp_gwppolicewarreasonservice_009" text="收养系统状态：当前未初始化。" />
+  <string id="gwp_gwppolicewarreasonservice_010" text="收养冷却：全家族共享；自上一次成功收留女童起需等待 {VAR_1} 个游戏年。" />
+  <string id="gwp_gwppolicewarreasonservice_011" text="当前家族人数：{VAR_1}/{VAR_2}。" />
+  <string id="gwp_gwppolicewarreasonservice_012" text="当前善后任务：{VAR_1}" />
+  <string id="gwp_gwppolicewarreasonservice_013" text="距离下一次可收养：冷却已结束，等待新的村庄被焚毁后触发善后。" />
+  <string id="gwp_gwppolicewarreasonservice_014" text="距离下一次可收养：{VAR_1}。" />
+  <string id="gwp_gwppolicewarreasonservice_015" text="上一个女童收留时间：{VAR_1}。" />
+  <string id="gwp_gwppolicewarreasonservice_016" text="上一个女童收留时间：本存档尚无成功收养记录。" />
+  <string id="gwp_gwppolicewarreasonservice_017" text="目标村庄" />
+  <string id="gwp_gwppolicewarreasonservice_018" text="已记录 {VAR_1} 的善后请求，正在等待最近的警察接手。" />
+  <string id="gwp_gwppolicewarreasonservice_019" text="最近的警察已被抽调，正在补给后前往 {VAR_1}。" />
+  <string id="gwp_gwppolicewarreasonservice_020" text="最近的警察正在赶往 {VAR_1} 进行善后。" />
+  <string id="gwp_gwppolicewarreasonservice_021" text="警察正在 {VAR_1} 善后，剩余约 {VAR_2}。" />
+  <string id="gwp_gwppolicewarreasonservice_022" text="当前没有善后任务。" />
+  <string id="gwp_gwppolicewarreasonservice_023" text="未记录的执法队" />
+  <string id="gwp_gwppolicewarreasonservice_024" text="未知目标" />
+  <string id="gwp_gwppolicewarreasonservice_025" text="未记录" />
+  <string id="gwp_gwppolicewarreasonservice_026" text="未记录" />
+  <string id="gwp_gwppolicewarreasonservice_027" text="未知" />
+  <string id="gwp_gwppolicewarreasonservice_028" text="未知" />
+  <string id="gwp_gwppolicewarreasonservice_029" text="{VAR_1}：{VAR_2} 正在处理 {VAR_3} 的案件。案由：{VAR_4}；受害方：{VAR_5}；立案时间：{VAR_6}；案发地点：{VAR_7}；当前阶段：{VAR_8}。" />
+  <string id="gwp_gwppolicewarreasonservice_030" text="玩家悬赏协同" />
+  <string id="gwp_gwppolicewarreasonservice_031" text="玩家案件执法" />
+  <string id="gwp_gwppolicewarreasonservice_032" text="跨势力追缉" />
+  <string id="gwp_gwppolicewarreasonservice_033" text="执法任务" />
+  <string id="gwp_gwppolicewarreasonservice_034" text="灰袍部队正在护送玩家追缉目标" />
+  <string id="gwp_gwppolicewarreasonservice_035" text="目标已被击败，正在押送玩家" />
+  <string id="gwp_gwppolicewarreasonservice_036" text="已正式宣战并持续追击" />
+  <string id="gwp_gwppolicewarreasonservice_037" text="已立案追踪，尚未升级为正式战争" />
+  <string id="gwp_gwppolicewarreasonservice_038" text="未记录" />
+  <string id="gwp_gwppolicewarreasonservice_039" text="刚刚" />
+  <string id="gwp_gwppolicewarreasonservice_040" text="{VAR_1} 小时前" />
+  <string id="gwp_gwppolicewarreasonservice_041" text="{VAR_1} 天前" />
+  <string id="gwp_gwppolicewarreasonservice_042" text="{VAR_1}附近 ({VAR_2}, {VAR_3})" />
+  <string id="gwp_gwppolicewarreasonservice_043" text="野外 ({VAR_1}, {VAR_2})" />
+  <string id="gwp_gwppolicewarreasonservice_044" text="{VAR_1} 小时" />
+  <string id="gwp_gwppolicewarreasonservice_045" text="{VAR_1} 天" />
+  <string id="gwp_gwppolicewarreasonservice_046" text="{VAR_1} 天 {VAR_2} 小时" />
+  <string id="gwp_gwppolicewarreasonservice_047" text="春" />
+  <string id="gwp_gwppolicewarreasonservice_048" text="夏" />
+  <string id="gwp_gwppolicewarreasonservice_049" text="秋" />
+  <string id="gwp_gwppolicewarreasonservice_050" text="冬" />
+  <string id="gwp_gwppolicewarreasonservice_051" text="未知季" />
+  <string id="gwp_gwppolicewarreasonservice_052" text="{VAR_1}年{VAR_2}季第{VAR_3}天 {VAR_4}:00" />
+  <string id="gwp_hero_chenxi" text="晨曦" />
+  <string id="gwp_hero_mise" text="弥瑟" />
+  <string id="gwp_hero_muguang" text="暮光" />
+  <string id="gwp_hero_shengduo" text="圣铎" />
+  <string id="gwp_hero_vandi" text="梵蒂" />
+  <string id="gwp_hero_yoer" text="约珥" />
+  <string id="gwp_item_armor" text="灰袍守护者之铠" />
+  <string id="gwp_item_boots" text="灰袍守护者战靴" />
+  <string id="gwp_item_commander_armor" text="灰袍指挥官之铠" />
+  <string id="gwp_item_commander_boots" text="灰袍指挥官之靴" />
+  <string id="gwp_item_commander_gloves" text="灰袍指挥官护手" />
+  <string id="gwp_item_commander_helmet" text="灰袍指挥官翼盔" />
+  <string id="gwp_item_commander_horse_armor" text="灰袍指挥官马铠" />
+  <string id="gwp_item_commander_shoulders" text="灰袍指挥官护肩" />
+  <string id="gwp_item_eagle_shoulders" text="灰袍守护者鹰肩" />
+  <string id="gwp_item_gloves" text="灰袍守护者护手" />
+  <string id="gwp_item_great_shield" text="灰袍守护者巨盾" />
+  <string id="gwp_item_heavy_armor" text="灰袍守护者重铠" />
+  <string id="gwp_item_helmet" text="灰袍守护者之盔" />
+  <string id="gwp_item_hood" text="灰袍守护者兜帽" />
+  <string id="gwp_item_horse_armor" text="灰袍守护者马铠" />
+  <string id="gwp_item_lance" text="灰袍守护者骑枪" />
+  <string id="gwp_item_leather_boots" text="灰袍守护者皮靴" />
+  <string id="gwp_item_leather_gloves" text="灰袍守护者皮手套" />
+  <string id="gwp_item_light_armor" text="灰袍守护者轻铠" />
+  <string id="gwp_item_obsidian_great_shield" text="灰袍领主黑曜巨盾" />
+  <string id="gwp_item_shoulders" text="灰袍守护者护肩" />
+  <string id="gwp_item_sword_1h" text="灰袍守护者单手剑" />
+  <string id="gwp_item_sword_2h" text="灰袍守护者双手剑" />
+  <string id="gwp_item_winged_helmet" text="灰袍守护者翼盔" />
+  <string id="gwp_patrol_barter_name_cn" text="罚金条款" />
+  <string id="gwp_patrol_returning_dialogue" text="本轮案卷已结，纠察队正奉命返回驻地。此刻不再受理交涉。" />
+  <string id="gwp_playerbehaviormonitor_001" text="村民" />
+  <string id="gwp_playerbehaviormonitor_002" text="攻击村民" />
+  <string id="gwp_playerbehaviormonitor_003" text="商队" />
+  <string id="gwp_playerbehaviormonitor_004" text="攻击商队" />
+  <string id="gwp_playerbehaviormonitor_005" text="劫掠村庄" />
+  <string id="gwp_playerbehaviormonitor_006" text="未知村庄" />
+  <string id="gwp_playerbehaviormonitor_007" text="灰袍守卫记录了你的恶行：劫掠村庄 {VAR_1} | " />
+  <string id="gwp_playerbehaviormonitor_008" text="劫掠村庄" />
+  <string id="gwp_playerbehaviormonitor_009" text="未知村庄" />
+  <string id="gwp_playerbehaviormonitor_010" text="强迫募兵" />
+  <string id="gwp_playerbehaviormonitor_011" text="未知村庄" />
+  <string id="gwp_playerbehaviormonitor_012" text="强征给养" />
+  <string id="gwp_playerbehaviormonitor_013" text="未知村庄" />
+  <string id="gwp_playerbehaviormonitor_014" text="保护村庄免遭劫掠" />
+  <string id="gwp_playerbehaviormonitor_015" text="解救商队" />
+  <string id="gwp_playerbehaviormonitor_016" text="解救村民" />
+  <string id="gwp_playerbehaviormonitor_017" text="击败劫匪" />
+  <string id="gwp_playerbehaviormonitor_018" text="灰袍守卫注意到你的善行：{VAR_1}（亲手击败 {VAR_2} 人）| " />
+  <string id="gwp_playerbehaviormonitor_019" text="劫掠村庄" />
+  <string id="gwp_playerbehaviormonitor_020" text="强迫募兵" />
+  <string id="gwp_playerbehaviormonitor_021" text="强征给养" />
+  <string id="gwp_playerbehaviormonitor_022" text="劫掠商队" />
+  <string id="gwp_playerbehaviormonitor_023" text="杀害村民" />
+  <string id="gwp_playerbehaviormonitor_024" text="劫掠村庄" />
+  <string id="gwp_playerbehaviormonitor_025" text="强迫募兵" />
+  <string id="gwp_playerbehaviormonitor_026" text="强征给养" />
+  <string id="gwp_playerbehaviormonitor_027" text="劫掠商队" />
+  <string id="gwp_playerbehaviormonitor_028" text="杀害村民" />
+  <string id="gwp_playerbehaviormonitor_029" text="灰袍守卫记录了你的恶行：{VAR_1}（击败 {VAR_2} 人）| " />
+  <string id="gwp_playerbehaviormonitor_030" text="村庄" />
+  <string id="gwp_playerbehaviormonitor_031" text="商队" />
+  <string id="gwp_playerbehaviormonitor_032" text="村民" />
+  <string id="gwp_playerbehaviormonitor_033" text="参与劫掠村庄" />
+  <string id="gwp_playerbehaviormonitor_034" text="劫掠商队" />
+  <string id="gwp_playerbehaviormonitor_035" text="攻击村民" />
+  <string id="gwp_playerbehaviormonitor_036" text="加入防守方，保护{VAR_1}。" />
+  <string id="gwp_playerbehaviormonitor_037" text="加入攻击方，{VAR_1}。" />
+  <string id="gwp_playerbehaviormonitor_038" text="犯人" />
+  <string id="gwp_playerbehaviormonitor_039" text="加入灰袍守卫一方，协助缉拿罪犯。" />
+  <string id="gwp_playerbehaviormonitor_040" text="加入 {VAR_1} 一方，对抗灰袍守卫。" />
+  <string id="gwp_playerbehaviormonitor_041" text="加入 {VAR_1} 一方，对抗灰袍守卫。" />
+  <string id="gwp_playerbehaviormonitor_042" text="加入灰袍守卫一方，协助缉拿罪犯。" />
+  <string id="gwp_playerbehaviormonitor_043" text="灰袍守卫注意到你的善行：协助缉拿罪犯（亲手击败 {VAR_1} 人）| " />
+  <string id="gwp_playerbehaviormonitor_044" text="妨碍执法" />
+  <string id="gwp_playerbehaviormonitor_045" text="帮助罪犯对抗灰袍守卫" />
+  <string id="gwp_playerbehaviormonitor_046" text="灰袍守卫记录了你的恶行：妨碍执法（击败 {VAR_1} 名灰袍守卫）| " />
+  <string id="gwp_playerbehaviormonitor_047" text="纠察队" />
+  <string id="gwp_playerbehaviormonitor_048" text="灰袍守卫" />
+  <string id="gwp_playerbehaviormonitor_049" text="灰袍守卫记录了你的恶行：击败{VAR_1}（击败 {VAR_2} 人）| " />
+  <string id="gwp_playerbehaviormonitor_050" text="这个村庄" />
+  <string id="gwp_playerbehaviormonitor_051" text="你已抵达{VAR_1}，并与当地民兵一同抵御劫掠者。待整备妥当，便与村民并肩迎敌。" />
+  <string id="gwp_playerbehaviormonitor_052" text="与民兵并肩迎敌" />
+  <string id="gwp_playerbountybehavior_001" text="灰袍招募使者" />
+  <string id="gwp_playerbountybehavior_002" text="灰袍招募使者正从 {VAR_1} 出发前来拜访..." />
+  <string id="gwp_playerbountybehavior_003" text="护送警察已失联，请前往警察族长处领取赏金。" />
+  <string id="gwp_playerbountybehavior_004" text="灰袍侦察队" />
+  <string id="gwp_playerbountybehavior_005" text="【侦情】{VAR_1} 的探子来报：目标在 {VAR_2} 附近目击。" />
+  <string id="gwp_playerbountybehavior_006" text="读档恢复：继续追踪目标（{VAR_1}）。" />
+  <string id="gwp_playerbountybehavior_007" text="读档恢复：目标已击败，前往领取赏金。" />
+  <string id="gwp_playerbountybehavior_008" text="未知目标" />
+  <string id="gwp_playerbountybehavior_009" text="读档恢复（兜底）：继续追踪目标（{VAR_1}）。" />
+  <string id="gwp_playerbountybehavior_010" text="读档恢复（兜底）：目标已击败，前往领取赏金。" />
+  <string id="gwp_playerbountybehavior_011" text="悬赏目标已消失（可能已被他人击败），任务自动取消" />
+  <string id="gwp_playerbountybehavior_012" text="已识别黑袍指挥官装备，当前暂无悬赏任务可接" />
+  <string id="gwp_playerbountybehavior_013" text="目标已击败！前往领取赏金 {VAR_1} 第纳尔。" />
+  <string id="gwp_playerbountybehavior_014" text="警察领主" />
+  <string id="gwp_playerbountybehavior_015" text="找到你的护送警察对话，直接领取赏金" />
+  <string id="gwp_playerbountybehavior_016" text="前往 {VAR_1} 处领取赏金" />
+  <string id="gwp_playerbountybehavior_017" text="悬赏目标已击败！{VAR_1}（{VAR_2} 第纳尔）" />
+  <string id="gwp_playerbountybehavior_018" text="读档恢复：继续追踪目标（{VAR_1}）。" />
+  <string id="gwp_playerbountybehavior_019" text="读档恢复：目标已击败，前往护送警察或警察领主处领取赏金。" />
+  <string id="gwp_playerbountybehavior_020" text="未知位置" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_001" text="我接受，愿为灰袍守卫效力。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_003" text="务必记住——追捕时引发的战争，灰袍会在任务结算后出面调停。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_004" text="不，我不感兴趣。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_005" text="随你。若你改变主意，为时已晚——此机会不会再来。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_006" text="我们的事务已了结，请继续前行。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_007" text="关于那个悬赏任务，我已击败目标，来结算赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_008" text="关于那个悬赏任务，我已经完成了。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_009" text="旅行者，稍等。灰袍守卫注意到你近来的善行，我们想与你谈一笔生意。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_010" text="作为悬赏猎人，你可以协助我们追捕通缉犯，并获得丰厚赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_011" text="但需提醒：追捕行动可能被当地国家视为入侵，引发战争。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_012" text="不过，任务完成并领取赏金后，灰袍守卫会出面调停，" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_013" text="确保你不会承担战争后果。你是否愿意加入？" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_014" text="你已成为灰袍悬赏猎人！黑袍指挥官套装已加入行李，穿戴后即可接受悬赏任务。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_015" text="你拒绝了灰袍守卫的招募，此机会不会再来。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_016" text="出色的工作。任务已完成，这是约定的赏金：{VAR_1} 第纳尔。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_017" text="出色的工作。按照约定，这是你应得的赏金：{VAR_1} 第纳尔。希望我们还有合作的机会。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_018" text="已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_019" text="灰袍调停：已与 {VAR_1} 达成和平" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_020" text="目标势力：{VAR_1}&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_021" text="犯罪类型：{VAR_1}&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_022" text="最后目击：{VAR_1} 附近&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_023" text="队伍规模：{VAR_1} 人&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_024" text="预计赏金：约 {VAR_1} 第纳尔&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_025" text="（按接任务时人数 × {VAR_1} 结算）&#10;&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_026" text="完成后前往警察家族领主处领取赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_027" text="灰袍悬赏任务" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_028" text="接受任务" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_029" text="拒绝" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_030" text="目标已失效，悬赏任务取消" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_031" text="目标已失效，悬赏任务取消" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_032" text="灰袍护送方已就位，跟随你追击目标。击败后直接向护送警察领取赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_033" text="目标：{VAR_1}（当前 {VAR_2} 人）。&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_034" text="最后目击位置：{VAR_1} 附近。&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_035" text="击败后前往警察领主处领取赏金约 {VAR_1} 第纳尔。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_036" text="已接受悬赏任务：追击 {VAR_1}" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_037" text="（{VAR_1} 人），赏金约 {VAR_2} 第纳尔" />
+  <string id="gwp_playerbountybehavior_encyclopedia_001" text="未指定护送部队" />
+  <string id="gwp_playerbountybehavior_encyclopedia_002" text="未知目标" />
+  <string id="gwp_playerbountybehavior_encyclopedia_003" text="目标仍在逃逸，灰袍部队正在护送玩家追捕" />
+  <string id="gwp_playerbountybehavior_encyclopedia_004" text="目标已经被击败，等待玩家领取赏金并由灰袍善后" />
+  <string id="gwp_playerbountybehavior_encyclopedia_005" text="悬赏流程仍在进行" />
+  <string id="gwp_playerbountybehavior_encyclopedia_006" text="玩家悬赏协同：当前目标是 {VAR_1}，敌对势力为 {VAR_2}。护送部队：{VAR_3}；当前阶段：{VAR_4}。" />
+  <string id="gwp_playerbountybehavior_questandnotification_001" text="未知目标" />
+  <string id="gwp_playerbountybehavior_questandnotification_002" text="灰袍悬赏：{VAR_1}" />
+  <string id="gwp_playerbountybehavior_questandnotification_003" text="你击败了悬赏目标并成功领取了赏金。" />
+  <string id="gwp_playerbountybehavior_questandnotification_004" text="目标已失踪，悬赏任务取消。" />
+  <string id="gwp_playerbountybehavior_questandnotification_005" text="未知目标" />
+  <string id="gwp_playerbountybehavior_questandnotification_006" text="追缉目标：{VAR_1}" />
+  <string id="gwp_playerbountybehavior_questandnotification_007" text="未知目标" />
+  <string id="gwp_playerbountybehavior_questandnotification_008" text="灰袍悬赏：{VAR_1}" />
+  <string id="gwp_playerbountybehavior_questandnotification_009" text="该悬赏目标已失效" />
+  <string id="gwp_policeantirecruitmentmodel_001" text="灰袍守卫不会参与原版外交 AI 的主动宣战。" />
+  <string id="gwp_policecrimemonitorenhanced_001" text="村民" />
+  <string id="gwp_policecrimemonitorenhanced_002" text="攻击村民" />
+  <string id="gwp_policecrimemonitorenhanced_003" text="攻击村民" />
+  <string id="gwp_policecrimemonitorenhanced_004" text="商队" />
+  <string id="gwp_policecrimemonitorenhanced_005" text="攻击商队" />
+  <string id="gwp_policecrimemonitorenhanced_006" text="攻击商队" />
+  <string id="gwp_policecrimemonitorenhanced_007" text="{VAR_1} 村民" />
+  <string id="gwp_policecrimemonitorenhanced_008" text="劫掠村庄(开始)" />
+  <string id="gwp_policecrimemonitorenhanced_009" text="村庄={VAR_1}" />
+  <string id="gwp_policecrimemonitorenhanced_010" text="劫掠村庄" />
+  <string id="gwp_policeenforcementbehavior_001" text="赎罪任务超时，声望 -5。" />
+  <string id="gwp_policeenforcementbehavior_002" text="赎罪目标已失踪，判定任务失败，声望 -5。" />
+  <string id="gwp_policeenforcementbehavior_003" text="赎罪目标已击败：{VAR_1}。请前往族长或任意灰袍警察交付任务。" />
+  <string id="gwp_policeenforcementbehavior_004" text="赎罪任务失败，声望 -5。" />
+  <string id="gwp_policeenforcementbehavior_005" text="罚款不足" />
+  <string id="gwp_policeenforcementbehavior_006" text="押送罚款未缴清" />
+  <string id="gwp_policeenforcementbehavior_007" text="堡垒" />
+  <string id="gwp_policeenforcementbehavior_008" text="你被押送至 {VAR_1}：应缴 {VAR_2} 金，实缴 {VAR_3} 金，声望恢复到 {VAR_4}（按实缴恢复）。" />
+  <string id="gwp_policeenforcementbehavior_009" text="堡垒" />
+  <string id="gwp_policeenforcementbehavior_010" text="你被 {VAR_1} 击败！正被押送至 {VAR_2}..." />
+  <string id="gwp_policeenforcementbehavior_atonementquest_001" text="未知目标" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_002" text="未知目标" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_003" text="灰袍赎罪令：追捕 {VAR_1}" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_004" text="目标已击败。前往族长或任意灰袍警察处交付赎罪任务。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_005" text="赎罪完成：声望 +{VAR_1}，当前声望 {VAR_2}。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_006" text="未知位置" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_007" text="任务下达：在 {VAR_1} 天内击败 {VAR_2}（接案规模 {VAR_3} 人）。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_008" text="探子初报：目标最后在 {VAR_1} 附近活动。完成后向族长或任意灰袍警察交任务。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_009" text="未知位置" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_010" text="探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_011" text="读档恢复：继续追踪赎罪目标。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_012" text="读档恢复：继续追踪赎罪目标。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_013" text="读档恢复：继续追踪赎罪目标。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_014" text="关于赎罪任务（提交后恢复最多 {VAR_1} 点声望）" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_015" text="核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_016" text="赎罪任务已交付：声望 +{VAR_1}（当前 {VAR_2}）" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_017" text="赎罪交付后，灰袍调停：你与 {VAR_1} 已恢复和平。" />
+  <string id="gwp_policeenforcementbehavior_delaypatrols_001" text="灰袍纠察支援队" />
+  <string id="gwp_policeenforcementbehavior_delaypatrols_002" text="与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1}" />
+  <string id="gwp_policeenforcementbehavior_delaypatrols_003" text="累计犯罪" />
+  <string id="gwp_policeenforcementbehavior_delaypatrols_004" text="声望已达 {VAR_1}" />
+  <string id="gwp_policeenforcementbehavior_dialogue_001" text="按灰袍法令，先把正式罚金缴清。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_002" text="罚金确认。本轮案件结案，你可以离开了。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_003" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_004" text="我认罪认罚，请给我赎罪任务。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_005" text="当前无法分配赎罪任务。你可以继续缴纳罚金，或拒绝执法。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_006" text="拒绝执法，开战。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_007" text="拒捕记录在案。灰袍守卫，执行抓捕！" />
+  <string id="gwp_policeenforcementbehavior_dialogue_008" text="你当前携带 {VAR_1} 金，可直接缴清。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_009" text="你当前携带 {VAR_1} 金，可在谈判界面继续出价，或改选认罪认罚。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_010" text="站住！灰袍守卫正在执行逮捕。你当前负声望 {VAR_1}，" />
+  <string id="gwp_policeenforcementbehavior_dialogue_011" text="本案正式罚金 {VAR_1} 金。{VAR_2}" />
+  <string id="gwp_policeenforcementbehavior_dialogue_012" text="缴纳正式罚金（{VAR_1} 金，清除通缉）" />
+  <string id="gwp_policeenforcementbehavior_dialogue_013" text="未知目标" />
+  <string id="gwp_policeenforcementbehavior_dialogue_014" text="赎罪任务已下达：追捕 {VAR_1}（接案规模 {VAR_2} 人）。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_015" text="完成可恢复最多 {VAR_1} 点声望（最高恢复到 0）；" />
+  <string id="gwp_policeenforcementbehavior_dialogue_016" text="失败将追加 5 点负声望。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_017" text="赎罪任务已记录到任务面板：击败 {VAR_1} 后，向族长或任意灰袍警察交付（{VAR_2} 天内，失败声望 -5）。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_018" text="缴纳正式罚金" />
+  <string id="gwp_policeenforcementbehavior_dialogue_019" text="正式罚金已收 {VAR_1} 金，通缉已解除。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_020" text="你拒绝执法，灰袍守卫将强制抓捕。" />
+  <string id="gwp_policepatrolbehavior_001" text="已下发返程命令，等待到达定居点后销毁" />
+  <string id="gwp_policepatrolbehavior_002" text="已调度：返程至驻地后销毁纠察队" />
+  <string id="gwp_policepatrolbehavior_003" text="按灰袍法令，先把正式罚金缴清。" />
+  <string id="gwp_policepatrolbehavior_004" text="罚金确认。本轮案件到此结案。" />
+  <string id="gwp_policepatrolbehavior_005" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
+  <string id="gwp_policepatrolbehavior_006" text="可以，报出你的放行价码。" />
+  <string id="gwp_policepatrolbehavior_007" text="报价通过。今日暂不追究。" />
+  <string id="gwp_policepatrolbehavior_008" text="报价未达底线。开始执法！" />
+  <string id="gwp_policepatrolbehavior_009" text="我拒绝执法。" />
+  <string id="gwp_policepatrolbehavior_010" text="拒绝执法已记录。纠察队，执行抓捕！" />
+  <string id="gwp_policepatrolbehavior_011" text="返程抑制中，拒绝再次进入纠察队对话" />
+  <string id="gwp_policepatrolbehavior_012" text="进入纠察队对话：party={VAR_1}, rep={VAR_2}, fine={VAR_3}" />
+  <string id="gwp_policepatrolbehavior_013" text="你当前携带 {VAR_1} 金，可直接缴清。" />
+  <string id="gwp_policepatrolbehavior_014" text="你当前携带 {VAR_1} 金，可在谈判界面继续出价或选择拒绝。" />
+  <string id="gwp_policepatrolbehavior_015" text="站住！纠察队正在执法。你当前负声望 {VAR_1}，正式罚金 {VAR_2} 金。{VAR_3}" />
+  <string id="gwp_policepatrolbehavior_016" text="缴纳正式罚金（{VAR_1} 金，结束本轮追捕）" />
+  <string id="gwp_policepatrolbehavior_017" text="谈判放行（目标 {VAR_1} 金，声望不变）" />
+  <string id="gwp_policepatrolbehavior_018" text="你拒绝执法，纠察队将进行武力抓捕。" />
+  <string id="gwp_policepatrolbehavior_019" text="缴纳通融费" />
+  <string id="gwp_policepatrolbehavior_020" text="缴纳正式罚金" />
+  <string id="gwp_policepatrolbehavior_021" text="放行谈判达成：你获得 4 天保护期（声望不变）。" />
+  <string id="gwp_policepatrolbehavior_022" text="正式罚金已缴清，当前通缉已解除，纠察队将撤离。" />
+  <string id="gwp_policepatrolbehavior_023" text="对话结束，开始遣返。active={VAR_1}, returning={VAR_2}" />
+  <string id="gwp_policepatrolbehavior_024" text="PlayerEncounter.Finish(false) 已调用" />
+  <string id="gwp_policepatrolbehavior_025" text="放行保护期已结束，纠察队将恢复例行检查。" />
+  <string id="gwp_policepatrolbehavior_026" text="与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1}" />
+  <string id="gwp_policepatrolbehavior_027" text="当前声望为正，现有通缉已取消，追捕全部撤回。" />
+  <string id="gwp_policepatrolbehavior_028" text="你当前负声望 {VAR_1}，纠察队已出动（约 {VAR_2} 人）。" />
+  <string id="gwp_policepatrolbehavior_029" text="累计犯罪" />
+  <string id="gwp_policepatrolbehavior_030" text="声望已达 {VAR_1}" />
+  <string id="gwp_policepatrolbehavior_031" text="你已进入重罪区间（负声望 {VAR_1}），正式警察开始追捕。" />
+  <string id="gwp_policepatrolbehavior_032" text="你拒绝执法且案件未完成，声望 -1。当前声望：{VAR_1}" />
+  <string id="gwp_policepatrolbehavior_033" text="纠察队补给耗尽，正在撤回。" />
+  <string id="gwp_policepatrolbehavior_034" text="你拒绝执法，纠察队将强制缉拿。" />
+  <string id="gwp_policepatrolbehavior_035" text="纠察队巡逻" />
+  <string id="gwp_policepatrolbehavior_036" text="纠察队已从 {VAR_1} 出发，正在追踪你。" />
+  <string id="gwp_policepatrolbehavior_037" text="MapEventEnded 检测到玩家已被俘，进入押送流程" />
+  <string id="gwp_policepatrolbehavior_038" text="MapEventEnded 无 winner，按投降路径处理为纠察队胜利" />
+  <string id="gwp_policepatrolbehavior_039" text="你被纠察队击败，正被押送至 {VAR_1} 接受处罚..." />
+  <string id="gwp_policepatrolbehavior_040" text="最近城镇" />
+  <string id="gwp_policepatrolbehavior_041" text="你被押送到 {VAR_1}：应缴 {VAR_2} 金，实缴 {VAR_3} 金，声望恢复到 {VAR_4}（按实缴恢复）。" />
+  <string id="gwp_policepatrolbehavior_042" text="纠察队已收取罚金 {VAR_1} 金（应缴 {VAR_2} 金，仅收金币）。" />
+  <string id="gwp_policepatrolbehavior_encyclopedia_001" text="玩家已被纠察队控制，正在押送或等待处罚" />
+  <string id="gwp_policepatrolbehavior_encyclopedia_002" text="地图上仍有 {VAR_1} 支纠察队在执行强制缉拿" />
+  <string id="gwp_policepatrolbehavior_encyclopedia_003" text="已进入纠察队战争状态，正在等待收尾" />
+  <string id="gwp_policepatrolbehavior_encyclopedia_004" text="纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{VAR_1}；当前模组声望：{VAR_2}。" />
+  <string id="gwp_policepatrolbehavior_helpers_001" text="灰袍调停：你与 {VAR_1} 已恢复和平。" />
+  <string id="gwp_policepatrolbehavior_helpers_002" text="灰袍调停：已清除你在 {VAR_1} 的犯罪评级。" />
+  <string id="gwp_policepatrolbehavior_helpers_003" text="已下发返程命令，候选数量={VAR_1}，returning={VAR_2}" />
+  <string id="gwp_policepatrolbehavior_helpers_004" text="纠察队已到达 {VAR_1}，执行销毁：{VAR_2}" />
+  <string id="gwp_policepatrolbehavior_helpers_005" text="返程销毁已完成，恢复正常会话。" />
+  <string id="gwp_policeresourcemanager_001" text="金币不足，额外没收物品价值 {VAR_1} 金" />
+  <string id="gwp_troop_archer" text="灰袍守护者弓箭手" />
+  <string id="gwp_troop_heavy_infantry" text="灰袍守护者重步兵" />
+  <string id="gwp_troop_knight" text="灰袍守护者骑士" />
+  <string id="gwp_troop_light_infantry" text="灰袍守护者轻步兵" />
+  <string id="gwp_troop_req_high" text="你在灰袍这里的名声已经够高。若只是补一支执勤队，步弓与披甲骑巡都可以调给你，但数目不会太离谱。" />
+  <string id="gwp_troop_req_low" text="你现在的名声，还只够让灰袍放一些见习守卫跟着你办事。若想调更老练的人，就再多积些信誉。" />
+  <string id="gwp_troop_req_mid" text="你已证明自己值得托付。见习守卫之外，我也可以拨一些重装步兵或执勤弓手给你。你自己挑。" />
+ </strings>
+</base>

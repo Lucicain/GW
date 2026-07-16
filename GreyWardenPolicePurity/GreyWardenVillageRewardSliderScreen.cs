@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.Library;
 using TaleWorlds.ScreenSystem;
@@ -239,16 +239,16 @@ namespace GreyWardenPolicePurity
 
         private void RefreshTexts()
         {
-            Title = "设置领取金额";
-            Description = $"拖动滑块，选择本次要领取的村民酬谢。当前最多可领 {MaxAmount} 第纳尔。";
-            ConfirmText = "确认";
-            CancelText = "取消";
+            Title = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_001}Set the amount to be received");
+            Description = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_002}Drag the slider to select the villager reward to be received this time. You can currently claim up to {VAR_1} dinars.", "VAR_1", MaxAmount);
+            ConfirmText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_003}Confirm");
+            CancelText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_004}Cancel");
             RefreshSelectionText();
         }
 
         private void RefreshSelectionText()
         {
-            SelectionText = $"{SelectedAmount} 第纳尔";
+            SelectionText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_005}{VAR_1} Dinar", "VAR_1", SelectedAmount);
         }
     }
 }

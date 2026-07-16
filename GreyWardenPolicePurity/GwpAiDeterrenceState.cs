@@ -202,8 +202,8 @@ namespace GreyWardenPolicePurity
                     SharedDeterrenceCount = 0,
                     RaidScoreMultiplier = 1f,
                     DaysSinceLastEnforcement = 0f,
-                    MapStatus = "状态不明",
-                    MapLocation = "未知位置"
+                    MapStatus = GwpText.Get("{=gwp_gwpaideterrencestate_001}Unknown status"),
+                    MapLocation = GwpText.Get("{=gwp_gwpaideterrencestate_002}Unknown location")
                 };
             }
 
@@ -263,7 +263,7 @@ namespace GreyWardenPolicePurity
             if (effectivePenalty < GwpTuning.Deterrence.ActiveDialogueThreshold)
                 return false;
 
-            string heroName = hero.Name?.ToString() ?? entry.DisplayName ?? "此人";
+            string heroName = hero.Name?.ToString() ?? entry.DisplayName ?? GwpText.Get("{=gwp_gwpaideterrencestate_003}This person");
 
             int painLevel = Math.Max(1, Math.Min(9, (int)MathF.Ceiling(effectivePenalty)));
             intro = BuildPainIntro(heroName, painLevel);
@@ -276,15 +276,15 @@ namespace GreyWardenPolicePurity
         {
             string text = painLevel switch
             {
-                9 => "{=gwp_ai_deterrence_intro_9}{HERO_NAME}脸色发白，手指无意识地按在旧伤上，连你走近都没听见脚步。",
-                8 => "{=gwp_ai_deterrence_intro_8}{HERO_NAME}目光有些散，像是正被一段不愿回想的旧事拖住心神。",
-                7 => "{=gwp_ai_deterrence_intro_7}{HERO_NAME}站在那里出了会儿神，眉头紧锁，像是胸口还压着一口闷气。",
-                6 => "{=gwp_ai_deterrence_intro_6}{HERO_NAME}神情阴郁，直到你出声，他才慢慢把目光挪到你身上。",
-                5 => "{=gwp_ai_deterrence_intro_5}{HERO_NAME}像是在想什么不痛快的事，半晌才察觉你已经到了面前。",
-                4 => "{=gwp_ai_deterrence_intro_4}{HERO_NAME}神色有些倦，像是连日来都没睡过一个安稳觉。",
-                3 => "{=gwp_ai_deterrence_intro_3}{HERO_NAME}目光略显迟滞，像是旧日那场败仗还在心里留着影子。",
-                2 => "{=gwp_ai_deterrence_intro_2}{HERO_NAME}看上去有些心不在焉，像是方才又想起了什么不愉快的事。",
-                _ => "{=gwp_ai_deterrence_intro_1}{HERO_NAME}目光停了一下，才像是从一阵短暂的失神里回过神来。"
+                9 => GwpText.Get("{=gwp_ai_deterrence_intro_9}{HERO_NAME} has gone pale, fingers pressed unconsciously against an old wound, and does not hear your approach."),
+                8 => GwpText.Get("{=gwp_ai_deterrence_intro_8}{HERO_NAME} stares into the distance, held fast by a memory best left unbidden."),
+                7 => GwpText.Get("{=gwp_ai_deterrence_intro_7}{HERO_NAME} stands lost in thought, brow knotted as though some weight still lies upon the breast."),
+                6 => GwpText.Get("{=gwp_ai_deterrence_intro_6}{HERO_NAME} looks grim, and only slowly turns toward you when you speak."),
+                5 => GwpText.Get("{=gwp_ai_deterrence_intro_5}{HERO_NAME} seems occupied by some bitter thought, and only after a time notices you standing near."),
+                4 => GwpText.Get("{=gwp_ai_deterrence_intro_4}{HERO_NAME} looks weary, as though many nights have passed without sound sleep."),
+                3 => GwpText.Get("{=gwp_ai_deterrence_intro_3}{HERO_NAME} stares dully ahead, as though the shadow of an old defeat has not yet lifted."),
+                2 => GwpText.Get("{=gwp_ai_deterrence_intro_2}{HERO_NAME} appears distracted, some unwelcome memory newly returned."),
+                _ => GwpText.Get("{=gwp_ai_deterrence_intro_1}{HERO_NAME} pauses before seeming to wake from a brief reverie.")
             };
 
             TextObject intro = new TextObject(text);
@@ -296,15 +296,15 @@ namespace GreyWardenPolicePurity
         {
             string text = painLevel switch
             {
-                9 => "{=gwp_ai_deterrence_followup_9}……什么？啊，是你。失礼。我方才又梦见灰袍了。那一仗像钉子一样扎在脑子里，怎么也甩不掉。",
-                8 => "{=gwp_ai_deterrence_followup_8}嗯？你方才说什么？抱歉，我又想起灰袍了。那群人下手太重，到现在想起来，身上都还发冷。",
-                7 => "{=gwp_ai_deterrence_followup_7}啊，原来是你。失礼。我刚才走神了。灰袍给的那顿教训太狠，直到现在，我还时常会想起那一日。",
-                6 => "{=gwp_ai_deterrence_followup_6}嗯？说吧。我方才只是想起了灰袍。吃过那样的亏，人总会先掂量掂量自己的命还值不值钱。",
-                5 => "{=gwp_ai_deterrence_followup_5}你说。我只是忽然想起灰袍了。自从挨了他们那一回，我做事总会先停一停，再想一想。",
-                4 => "{=gwp_ai_deterrence_followup_4}啊？抱歉，我方才在想些旧事。灰袍那次教训，我还记着，所以这阵子行事收敛了些。",
-                3 => "{=gwp_ai_deterrence_followup_3}嗯，你说吧。我不过是想起了灰袍。人吃过亏，自然知道哪些事该缓一缓。",
-                2 => "{=gwp_ai_deterrence_followup_2}啊，是你。没什么，只是忽然想到灰袍了。那一遭过后，我总比从前多一分小心。",
-                _ => "{=gwp_ai_deterrence_followup_1}嗯？你说吧。我只是想起了灰袍。挨过一次，人总会记得疼。"
+                9 => GwpText.Get("{=gwp_ai_deterrence_followup_9}...What? Ah, it is you. Forgive me. I dreamt of the Grey Wardens again. That battle is a nail driven into my thoughts; I cannot draw it out."),
+                8 => GwpText.Get("{=gwp_ai_deterrence_followup_8}Hm? What did you say? Forgive me—I was remembering the Grey Wardens. Their hand was so heavy that even now the memory turns my blood cold."),
+                7 => GwpText.Get("{=gwp_ai_deterrence_followup_7}Ah, it is you. Forgive me; my thoughts strayed. The Grey Wardens taught me a cruel lesson, and that day returns to me still."),
+                6 => GwpText.Get("{=gwp_ai_deterrence_followup_6}Hm? Speak. I was thinking of the Grey Wardens. After such a defeat, one learns to weigh whether a deed is worth one’s life."),
+                5 => GwpText.Get("{=gwp_ai_deterrence_followup_5}Speak. The Grey Wardens came suddenly to mind. Since the reckoning they gave me, I stop before I act and consider twice."),
+                4 => GwpText.Get("{=gwp_ai_deterrence_followup_4}What? Forgive me; I was recalling old matters. I have not forgotten the Grey Wardens’ lesson, and I have kept a tighter rein upon myself since."),
+                3 => GwpText.Get("{=gwp_ai_deterrence_followup_3}Yes, speak. I was only thinking of the Grey Wardens. Once bitten, a person learns which deeds ought to be stayed."),
+                2 => GwpText.Get("{=gwp_ai_deterrence_followup_2}Ah, it is you. Nothing is amiss; I merely remembered the Grey Wardens. Since that day, I have been more cautious than before."),
+                _ => GwpText.Get("{=gwp_ai_deterrence_followup_1}Hm? Speak. I was thinking of the Grey Wardens. One chastening is enough to teach the memory pain.")
             };
 
             return new TextObject(text);
@@ -622,12 +622,12 @@ namespace GreyWardenPolicePurity
                 return false;
 
             MobileParty? party = hero?.PartyBelongedTo ?? FindPartyById(entry.Key);
-            string heroName = hero?.Name?.ToString() ?? entry.DisplayName ?? "未知领主";
+            string heroName = hero?.Name?.ToString() ?? entry.DisplayName ?? GwpText.Get("{=gwp_gwpaideterrencestate_022}Unknown Lord");
             string status = BuildTrackingStatus(hero, party);
             string location = BuildTrackingLocation(hero, party);
             int activeCount = CountActiveDeterrenceTargets(nowHours);
 
-            text = $"测试追踪：最高震慑者 {heroName}。当前状态 {status}。位置 {location}。最高震慑值 {effectivePenalty:0.##}。当前被震慑领主总数 {activeCount}。";
+            text = GwpText.Get("{=gwp_gwpaideterrencestate_023}Test record: most-deterrent Warden {VAR_1}; present state {VAR_2}; location {VAR_3}; highest deterrence {VAR_4}; lords currently deterred {VAR_5}.", "VAR_1", heroName, "VAR_2", status, "VAR_3", location, "VAR_4", GwpText.Format(effectivePenalty, "0.##"), "VAR_5", activeCount);
             return true;
         }
 
@@ -656,36 +656,36 @@ namespace GreyWardenPolicePurity
             if (hero?.IsPrisoner == true && captorParty != null)
             {
                 if (captorParty.IsSettlement && captorParty.Settlement != null)
-                    return $"{captorParty.Settlement.Name}内 {FormatPosition(captorParty.Settlement.GetPosition2D)}";
+                    return GwpText.Get("{=gwp_gwpaideterrencestate_024}Within {VAR_1} {VAR_2}", "VAR_1", captorParty.Settlement.Name, "VAR_2", FormatPosition(captorParty.Settlement.GetPosition2D));
 
                 MobileParty? captorMobile = captorParty.MobileParty;
                 if (captorMobile != null && captorMobile.IsActive)
                 {
                     if (captorMobile.CurrentSettlement != null)
-                        return $"{captorMobile.CurrentSettlement.Name}内 {FormatPosition(captorMobile.CurrentSettlement.GetPosition2D)}";
+                        return GwpText.Get("{=gwp_gwpaideterrencestate_025}Within {VAR_1} {VAR_2}", "VAR_1", captorMobile.CurrentSettlement.Name, "VAR_2", FormatPosition(captorMobile.CurrentSettlement.GetPosition2D));
 
                     Settlement? nearestCaptorTown = GwpCommon.FindNearestTown(captorMobile);
                     return nearestCaptorTown != null
-                        ? $"{nearestCaptorTown.Name}附近 {FormatPosition(captorMobile.GetPosition2D)}"
-                        : $"野外 {FormatPosition(captorMobile.GetPosition2D)}";
+                        ? GwpText.Get("{=gwp_gwpaideterrencestate_026}Near {VAR_1} {VAR_2}", "VAR_1", nearestCaptorTown.Name, "VAR_2", FormatPosition(captorMobile.GetPosition2D))
+                        : GwpText.Get("{=gwp_gwpaideterrencestate_027}Wild {VAR_1}", "VAR_1", FormatPosition(captorMobile.GetPosition2D));
                 }
             }
 
             if (party != null && party.IsActive)
             {
                 if (party.CurrentSettlement != null)
-                    return $"{party.CurrentSettlement.Name}内 {FormatPosition(party.CurrentSettlement.GetPosition2D)}";
+                    return GwpText.Get("{=gwp_gwpaideterrencestate_028}Within {VAR_1} {VAR_2}", "VAR_1", party.CurrentSettlement.Name, "VAR_2", FormatPosition(party.CurrentSettlement.GetPosition2D));
 
                 Settlement? nearestTown = GwpCommon.FindNearestTown(party);
                 return nearestTown != null
-                    ? $"{nearestTown.Name}附近 {FormatPosition(party.GetPosition2D)}"
-                    : $"野外 {FormatPosition(party.GetPosition2D)}";
+                    ? GwpText.Get("{=gwp_gwpaideterrencestate_029}Near {VAR_1} {VAR_2}", "VAR_1", nearestTown.Name, "VAR_2", FormatPosition(party.GetPosition2D))
+                    : GwpText.Get("{=gwp_gwpaideterrencestate_030}In the wild {VAR_1}", "VAR_1", FormatPosition(party.GetPosition2D));
             }
 
             if (hero?.CurrentSettlement != null)
-                return $"{hero.CurrentSettlement.Name}内 {FormatPosition(hero.CurrentSettlement.GetPosition2D)}";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_031}Within {VAR_1} {VAR_2}", "VAR_1", hero.CurrentSettlement.Name, "VAR_2", FormatPosition(hero.CurrentSettlement.GetPosition2D));
 
-            return "未知位置";
+            return GwpText.Get("{=gwp_gwpaideterrencestate_032}Unknown location");
         }
 
         private static string FormatPosition(Vec2 position)
@@ -696,46 +696,46 @@ namespace GreyWardenPolicePurity
         private static string BuildTrackingStatus(Hero? hero, MobileParty? knownParty = null)
         {
             if (hero == null)
-                return "状态不明";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_033}Unknown status");
 
             PartyBase? captorParty = hero.PartyBelongedToAsPrisoner;
             if (hero.IsPrisoner)
             {
                 if (captorParty?.IsSettlement == true && captorParty.Settlement != null)
-                    return $"被囚于 {captorParty.Settlement.Name}";
+                    return GwpText.Get("{=gwp_gwpaideterrencestate_034}is imprisoned in {VAR_1}", "VAR_1", captorParty.Settlement.Name);
 
                 if (captorParty?.IsMobile == true && captorParty.MobileParty != null)
-                    return $"被 {captorParty.MobileParty.Name} 俘虏";
+                    return GwpText.Get("{=gwp_gwpaideterrencestate_035}is captured by {VAR_1}", "VAR_1", captorParty.MobileParty.Name);
 
-                return "处于俘虏状态";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_036}is in a captive state");
             }
 
             MobileParty? party = knownParty ?? hero.PartyBelongedTo;
             if (party != null && party.IsActive)
             {
                 if (party.CurrentSettlement != null)
-                    return "率队驻留";
+                    return GwpText.Get("{=gwp_gwpaideterrencestate_037}holding position with a party");
 
-                return "率队活动";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_038}travelling with a party");
             }
 
             Settlement? settlement = hero.CurrentSettlement ?? hero.StayingInSettlement;
             if (settlement != null)
-                return $"在 {settlement.Name} 休整";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_039}rests in {VAR_1}", "VAR_1", settlement.Name);
 
             if (hero.IsFugitive)
-                return "正在逃亡";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_040}On the run");
 
             if (hero.IsReleased)
-                return "刚获释";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_041}Just released");
 
             if (hero.IsTraveling)
-                return "正在赶路";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_042}On the way");
 
             if (hero.IsNotSpawned)
-                return "尚未重新现身";
+                return GwpText.Get("{=gwp_gwpaideterrencestate_043}Not yet reappeared");
 
-            return "状态不明";
+            return GwpText.Get("{=gwp_gwpaideterrencestate_044}Status unknown");
         }
 
         private static DeterrenceEntry? FindEntryByHeroId(string? heroId)

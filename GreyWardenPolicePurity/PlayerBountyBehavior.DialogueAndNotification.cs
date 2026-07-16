@@ -42,15 +42,15 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_accept",
                 "gwp_recruit_options",
                 "gwp_recruit_accept_response",
-                "我接受，愿为灰袍守卫效力。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_001}I accept. I shall serve the Grey Wardens in this matter."),
                 null, null, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_accept_response",
                 "gwp_recruit_accept_response",
                 "close_window",
-                "很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。"
-                + "务必记住——追捕时引发的战争，灰袍会在任务结算后出面调停。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_002}Good. This raiment will mark you as our sworn agent. Once the wanted party is defeated, seek a Warden-lord and claim the bounty.")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_003}Remember this: should the pursuit kindle war, the Grey Wardens will mediate once the contract is settled."),
                 null,
                 OnRecruitAcceptConsequence,
                 100);
@@ -59,14 +59,14 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_refuse",
                 "gwp_recruit_options",
                 "gwp_recruit_refuse_response",
-                "不，我不感兴趣。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_004}No. I have no interest."),
                 null, null, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_refuse_response",
                 "gwp_recruit_refuse_response",
                 "close_window",
-                "随你。若你改变主意，为时已晚——此机会不会再来。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_005}As you will. Should you repent the choice, it will be too late; this offer shall not be made twice."),
                 null,
                 OnRecruitRefuseConsequence,
                 100);
@@ -78,7 +78,7 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_already_done",
                 "start",
                 "close_window",
-                "我们的事务已了结，请继续前行。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_006}Our business is concluded. Go on your way."),
                 () =>
                 {
                     MobileParty? conv = MobileParty.ConversationParty;
@@ -98,7 +98,7 @@ namespace GreyWardenPolicePurity
                 "gwp_bounty_escort_collect",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_bounty_escort_reward_response",
-                "关于那个悬赏任务，我已击败目标，来结算赏金。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_007}I defeated the quarry named in the bounty. I have come for settlement."),
                 EscortBountyRewardCondition,
                 null,
                 101);
@@ -117,7 +117,7 @@ namespace GreyWardenPolicePurity
                 "gwp_bounty_collect_option",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_bounty_reward_response",
-                "关于那个悬赏任务，我已经完成了。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_008}The bounty contract is fulfilled."),
                 BountyRewardCondition,
                 null,
                 100);
@@ -149,11 +149,11 @@ namespace GreyWardenPolicePurity
             if (_recruitmentOffered || _recruitmentAccepted) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.RecruitGreeting,
-                "旅行者，稍等。灰袍守卫注意到你近来的善行，我们想与你谈一笔生意。"
-                + "作为悬赏猎人，你可以协助我们追捕通缉犯，并获得丰厚赏金。"
-                + "但需提醒：追捕行动可能被当地国家视为入侵，引发战争。"
-                + "不过，任务完成并领取赏金后，灰袍守卫会出面调停，"
-                + "确保你不会承担战争后果。你是否愿意加入？");
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_009}Traveller, stay a moment. The Grey Wardens have marked your recent good service, and would set a charge before you.")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_010}As our sworn hunter, you may pursue wanted malefactors and receive a worthy bounty.")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_011}Be warned: a foreign realm may deem such pursuit an incursion and answer it with war.")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_012}Yet once the quarry is defeated and the bounty claimed, the Grey Wardens will mediate,")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_013}so that the war does not remain yours to bear. Will you take the oath?"));
             return true;
         }
 
@@ -169,7 +169,7 @@ namespace GreyWardenPolicePurity
             TriggerPatrolReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你已成为灰袍悬赏猎人！黑袍指挥官套装已加入行李，穿戴后即可接受悬赏任务。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_014}You are now a sworn hunter of the Grey Wardens. The black commander’s harness has been placed in your baggage; wear it to receive bounty contracts."),
                 Colors.Green));
         }
 
@@ -183,7 +183,7 @@ namespace GreyWardenPolicePurity
             TriggerPatrolReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                "你拒绝了灰袍守卫的招募，此机会不会再来。",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You refused the Grey Wardens’ summons. The offer shall not be made again."),
                 Colors.Yellow));
         }
 
@@ -258,7 +258,7 @@ namespace GreyWardenPolicePurity
             if (convParty?.StringId != _escortPolicePartyId) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.BountyRewardResponse,
-                $"出色的工作。任务已完成，这是约定的赏金：{_pendingReward} 第纳尔。");
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_016}Well done. The contract is fulfilled; here is the promised bounty: {VAR_1} denars.", "VAR_1", _pendingReward));
             return true;
         }
 
@@ -278,7 +278,7 @@ namespace GreyWardenPolicePurity
             if (policeLeader == null || conversationHero != policeLeader) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.BountyRewardResponse,
-                $"出色的工作。按照约定，这是你应得的赏金：{_pendingReward} 第纳尔。希望我们还有合作的机会。");
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_017}Well done. As agreed, here is your due: {VAR_1} denars. May we have cause to employ you again.", "VAR_1", _pendingReward));
             return true;
         }
 
@@ -290,7 +290,7 @@ namespace GreyWardenPolicePurity
                 Hero.MainHero.ChangeHeroGold(reward);
                 try { _activeQuest?.SucceedQuest(); } catch { }
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"已从警察领主处领取悬赏赏金：{reward} 第纳尔",
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_018}Bounty received from a Warden-lord: {VAR_1} denars", "VAR_1", reward),
                     Colors.Green));
                 MakePeaceWithCriminalFaction();
             }
@@ -337,7 +337,7 @@ namespace GreyWardenPolicePurity
                 {
                     MakePeaceAction.Apply(playerFaction, criminalFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"灰袍调停：已与 {criminalFaction.Name} 达成和平", Colors.Green));
+                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_019}Grey Warden mediation: peace concluded with {VAR_1}", "VAR_1", criminalFaction.Name), Colors.Green));
                 }
             }
             catch { }
@@ -384,20 +384,20 @@ namespace GreyWardenPolicePurity
             string nearestSettlement = GetNearestSettlementName(target.GetPosition2D);
 
             string description =
-                $"目标势力：{target.Name}\n" +
-                $"犯罪类型：{crime.CrimeType}\n" +
-                $"最后目击：{nearestSettlement} 附近\n" +
-                $"队伍规模：{targetSize} 人\n" +
-                $"预计赏金：约 {estimatedReward} 第纳尔\n" +
-                $"（按接任务时人数 × {GwpTuning.Bounty.RewardPerTroop} 结算）\n\n" +
-                $"完成后前往警察家族领主处领取赏金。";
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_020}Target Faction: {VAR_1}", "VAR_1", target.Name) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_021}Crime Type: {VAR_1}", "VAR_1", GwpText.CrimeType(crime.CrimeType)) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_022}Last sighting: {VAR_1} nearby", "VAR_1", nearestSettlement) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_023}Party strength: {VAR_1} people", "VAR_1", targetSize) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_024}Estimated bounty: About {VAR_1} dinars", "VAR_1", estimatedReward) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_025}(settled at the strength accepted × {VAR_1})", "VAR_1", GwpTuning.Bounty.RewardPerTroop) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_026}When the quarry is defeated, seek a Warden-lord to claim the bounty.");
 
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    "灰袍悬赏任务",
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_027}Grey Warden Bounty"),
                     description,
                     true, true,
-                    "接受任务", "拒绝",
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_028}Accept the charge"), GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_029}Refuse"),
                     () => AcceptBounty(crime),
                     () => { },
                     "event:/ui/panels/quest_start"),
@@ -409,7 +409,7 @@ namespace GreyWardenPolicePurity
             if (!crime.IsOffenderValid())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "目标已失效，悬赏任务取消", Colors.Red));
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target has expired and the bounty contract has been cancelled."), Colors.Red));
                 return;
             }
 
@@ -417,7 +417,7 @@ namespace GreyWardenPolicePurity
             if (offender == null)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "目标已失效，悬赏任务取消", Colors.Red));
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_031}The goal has expired and the bounty contract has been cancelled."), Colors.Red));
                 return;
             }
 
@@ -431,7 +431,7 @@ namespace GreyWardenPolicePurity
             {
                 CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "灰袍护送方已就位，跟随你追击目标。击败后直接向护送警察领取赏金。",
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_032}The Grey Warden escort is ready and will follow your pursuit. Once the quarry falls, claim the bounty from the escorting Warden."),
                     Colors.Cyan));
             }
 
@@ -447,17 +447,17 @@ namespace GreyWardenPolicePurity
                     _activeQuest.StartQuest();
                     string lastSeenNear = GetNearestSettlementName(offender.GetPosition2D);
                     _activeQuest.WriteLog(
-                        $"目标：{offender.Name}（当前 {_activeBountyTargetSize} 人）。\n" +
-                        $"最后目击位置：{lastSeenNear} 附近。\n" +
-                        $"击败后前往警察领主处领取赏金约 {_activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop} 第纳尔。");
+                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_033}Target: {VAR_1} (currently {VAR_2} people).", "VAR_1", offender.Name, "VAR_2", _activeBountyTargetSize) +
+                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.", "VAR_1", lastSeenNear) +
+                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_035}After defeating, go to the warden-lord to collect the bounty of approximately {VAR_1} dinars.", "VAR_1", _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop));
                 }
                 catch { _activeQuest = null!; }
             }
 
             int estimatedGold = _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop;
             InformationManager.DisplayMessage(new InformationMessage(
-                $"已接受悬赏任务：追击 {offender.Name}" +
-                $"（{_activeBountyTargetSize} 人），赏金约 {estimatedGold} 第纳尔",
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_036}has accepted the bounty contract: chasing {VAR_1}", "VAR_1", offender.Name) +
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_037}({VAR_1} person), the reward is about {VAR_2} dinars", "VAR_1", _activeBountyTargetSize, "VAR_2", estimatedGold),
                 Colors.Cyan));
         }
 

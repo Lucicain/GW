@@ -1,4 +1,4 @@
-using TaleWorlds.CampaignSystem;
+﻿using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
 using TaleWorlds.Core;
 using TaleWorlds.Core.ViewModelCollection.Information;
@@ -87,7 +87,7 @@ namespace GreyWardenPolicePurity
                     GwpPoliceWarReasonService.BuildInquiryBody(_clan),
                     true,
                     false,
-                    "关闭",
+                    GwpText.Get("{=gwp_gwpencyclopediaclanpagevm_001}Close"),
                     string.Empty,
                     null,
                     null),
@@ -97,8 +97,8 @@ namespace GreyWardenPolicePurity
         private void RefreshWarReasonButtonState()
         {
             IsWarReasonButtonVisible = GwpPoliceWarReasonService.SupportsClan(_clan);
-            WarReasonButtonText = "宣战详情";
-            WarReasonButtonHint = new HintViewModel(new TextObject("查看灰袍守卫当前对各势力宣战的详细原因。"));
+            WarReasonButtonText = GwpText.Get("{=gwp_gwpencyclopediaclanpagevm_002}Declaration of War Details");
+            WarReasonButtonHint = new HintViewModel(new TextObject(GwpText.Get("{=gwp_gwpencyclopediaclanpagevm_003}View the grounds for each war presently prosecuted by the Grey Wardens.")));
         }
     }
 }

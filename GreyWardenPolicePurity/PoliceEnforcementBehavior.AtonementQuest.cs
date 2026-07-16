@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -32,17 +32,17 @@ namespace GreyWardenPolicePurity
                     CampaignTime.DaysFromNow(GwpTuning.Enforcement.AtonementDeadlineDays),
                     Math.Max(1, repReward))
             {
-                _targetName = string.IsNullOrWhiteSpace(targetName) ? "未知目标" : targetName;
+                _targetName = string.IsNullOrWhiteSpace(targetName) ? GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_001}Unknown Target") : targetName;
             }
 
             internal AtonementQuest()
                 : base(GwpIds.AtonementQuestFallbackId, null, CampaignTime.Never, 0)
             {
-                _targetName = "未知目标";
+                _targetName = GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_002}Unknown Target");
             }
 
             public override TextObject Title =>
-                new TextObject($"灰袍赎罪令：追捕 {_targetName ?? "未知目标"}");
+                new TextObject(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_003}the Grey Wardens Atonement: The Hunt {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
 
             public override bool IsRemainingTimeHidden => false;
 
@@ -67,14 +67,14 @@ namespace GreyWardenPolicePurity
 
             internal void MarkReadyForTurnIn()
             {
-                WriteLog("目标已击败。前往族长或任意灰袍警察处交付赎罪任务。");
+                WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_004}The quarry is defeated. Report to the Warden-General or any Grey Warden to discharge the atonement."));
             }
 
             internal void SucceedQuestWithReputation(int gain, int currentReputation)
             {
                 try
                 {
-                    WriteLog($"赎罪完成：声望 +{gain}，当前声望 {currentReputation}。");
+                    WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_005}Atonement completed: reputation +{VAR_1}, current reputation {VAR_2}.", "VAR_1", gain, "VAR_2", currentReputation));
                     CompleteQuestWithSuccess();
                 }
                 catch { }
@@ -120,16 +120,16 @@ namespace GreyWardenPolicePurity
                 }
                 else
                 {
-                    string targetSettlement = "未知位置";
+                    string targetSettlement = GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_006}Unknown location");
                     MobileParty target = MobileParty.All.FirstOrDefault(p =>
                         p.StringId == _atonementTargetPartyId && p.IsActive);
                     if (target != null)
                         targetSettlement = GetNearestSettlementName(target.GetPosition2D);
 
                     _atonementQuest.WriteLog(
-                        $"任务下达：在 {GwpTuning.Enforcement.AtonementDeadlineDays:0} 天内击败 {_atonementTargetName}（接案规模 {_atonementTargetSizeSnapshot} 人）。");
+                        GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_007}Contract assigned: Defeat {VAR_2} within {VAR_1} days (case size {VAR_3} people).", "VAR_1", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0"), "VAR_2", _atonementTargetName, "VAR_3", _atonementTargetSizeSnapshot));
                     _atonementQuest.WriteLog(
-                        $"探子初报：目标最后在 {targetSettlement} 附近活动。完成后向族长或任意灰袍警察交任务。");
+                        GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_008}First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden.", "VAR_1", targetSettlement));
                 }
             }
             catch
@@ -152,7 +152,7 @@ namespace GreyWardenPolicePurity
                     nearest = s;
                 }
             }
-            return nearest?.Name?.ToString() ?? "未知位置";
+            return nearest?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_009}Unknown location");
         }
 
         private void AppendAtonementIntelLog(MobileParty target)
@@ -161,7 +161,7 @@ namespace GreyWardenPolicePurity
 
             int currentSize = Math.Max(1, target.Party?.NumberOfAllMembers ?? 1);
             string nearestSettlement = GetNearestSettlementName(target.GetPosition2D);
-            string intel = $"探子回报：{_atonementTargetName} 最近出现在 {nearestSettlement} 附近（约 {currentSize} 人）。";
+            string intel = GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_010}Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people).", "VAR_1", _atonementTargetName, "VAR_2", nearestSettlement, "VAR_3", currentSize);
 
             try { _atonementQuest?.WriteLog(intel); } catch { }
             InformationManager.DisplayMessage(new InformationMessage(intel, Colors.Cyan));
@@ -194,7 +194,7 @@ namespace GreyWardenPolicePurity
                     if (IsAtonementWaitingForTurnInState)
                         existing.MarkReadyForTurnIn();
                     else
-                        existing.WriteLog("读档恢复：继续追踪赎罪目标。");
+                        existing.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_011}Load recovery: Continue to track the atonement target."));
                     return;
                 }
             }
@@ -206,7 +206,7 @@ namespace GreyWardenPolicePurity
                 if (IsAtonementWaitingForTurnInState)
                     _atonementQuest.MarkReadyForTurnIn();
                 else
-                    _atonementQuest.WriteLog("读档恢复：继续追踪赎罪目标。");
+                    _atonementQuest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_012}Load recovery: Continue to track the atonement target."));
             }
         }
 
@@ -220,7 +220,7 @@ namespace GreyWardenPolicePurity
             if (IsAtonementWaitingForTurnInState)
                 quest.MarkReadyForTurnIn();
             else
-                quest.WriteLog("读档恢复：继续追踪赎罪目标。");
+                quest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_013}Load recovery: Continue to track the atonement target."));
         }
 
         private bool EnforcementAtonementTurnInCondition()
@@ -235,10 +235,10 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(
                 "GWP_ENFORCEMENT_ATONEMENT_TURNIN_OPTION",
-                $"关于赎罪任务（提交后恢复最多 {_atonementReputationReward} 点声望）");
+                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_014}Concerning the atonement (up to {VAR_1} standing may be restored upon discharge)", "VAR_1", _atonementReputationReward));
             MBTextManager.SetTextVariable(
                 "GWP_ENFORCEMENT_ATONEMENT_TURNIN_TEXT",
-                $"核验无误。你已完成赎罪任务，按案卷可恢复最多 {_atonementReputationReward} 点声望。");
+                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_015}The account is verified. Your atonement is complete, and the roll allows the restoration of up to {VAR_1} standing.", "VAR_1", _atonementReputationReward));
             return true;
         }
 
@@ -253,7 +253,7 @@ namespace GreyWardenPolicePurity
             try { _atonementQuest?.SucceedQuestWithReputation(gain, after); } catch { }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                $"赎罪任务已交付：声望 +{gain}（当前 {after}）",
+                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_016}Atonement contract delivered: Reputation +{VAR_1} (currently {VAR_2})", "VAR_1", gain, "VAR_2", after),
                 Colors.Green));
 
             ClearAtonementTaskState();
@@ -275,7 +275,7 @@ namespace GreyWardenPolicePurity
             {
                 MakePeaceAction.Apply(playerFaction, targetFaction);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"赎罪交付后，灰袍调停：你与 {targetFaction.Name} 已恢复和平。",
+                    GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_017}Atonement delivered, the Grey Wardens Mediation: Peace has been restored between you and {VAR_1}.", "VAR_1", targetFaction.Name),
                     Colors.Green));
             }
             catch

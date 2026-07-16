@@ -72,7 +72,7 @@ namespace GreyWardenPolicePurity
                     {
                         MakePeaceAction.Apply(playerFaction, victim);
                         InformationManager.DisplayMessage(new InformationMessage(
-                            $"灰袍调停：你与 {victim.Name} 已恢复和平。",
+                            GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
                             Colors.Green));
                     }
                     catch { }
@@ -84,7 +84,7 @@ namespace GreyWardenPolicePurity
                     {
                         ChangeCrimeRatingAction.Apply(victim, -1000f, true);
                         InformationManager.DisplayMessage(new InformationMessage(
-                            $"灰袍调停：已清除你在 {victim.Name} 的犯罪评级。",
+                            GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
                             Colors.Green));
                     }
                     catch { }
@@ -124,7 +124,7 @@ namespace GreyWardenPolicePurity
             }
 
             _activePatrolIds.Clear();
-            DebugLog($"已下发返程命令，候选数量={patrols.Count}，returning={_returningPatrolIds.Count}");
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_003}The return command has been issued, the number of candidates = {VAR_1}, returning = {VAR_2}", "VAR_1", patrols.Count, "VAR_2", _returningPatrolIds.Count));
         }
 
         private void UpdateReturningPatrols()
@@ -157,7 +157,7 @@ namespace GreyWardenPolicePurity
                     float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
                     if (dist < 3f)
                     {
-                        DebugLog($"纠察队已到达 {target.Name}，执行销毁：{id}");
+                        DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_004}The provost patrol reached {VAR_1}; disbanding: {VAR_2}", "VAR_1", target.Name, "VAR_2", id));
                         try { DestroyPartyAction.Apply(null, patrol); } catch { }
 
                         var stillAlive = MobileParty.All.FirstOrDefault(p => p.StringId == id);
@@ -224,20 +224,7 @@ namespace GreyWardenPolicePurity
             if (hasWorldPatrol) return;
 
             _suppressPatrolMeetings = false;
-            DebugLog("返程销毁已完成，恢复正常会话。");
-        }
-
-        private void TryFinishSuppressedPatrolEncounter()
-        {
-            try
-            {
-                if (!PlayerEncounter.IsActive) return;
-                var encountered = PlayerEncounter.EncounteredParty?.MobileParty;
-                if (encountered == null || !IsPatrol(encountered)) return;
-
-                GwpCommon.TryFinishPlayerEncounter();
-            }
-            catch { }
+            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_005}The return destruction has been completed and the normal session has been restored."));
         }
 
         private Hero? GetPatrolBarterHero()
@@ -355,15 +342,10 @@ namespace GreyWardenPolicePurity
 
             if (_suppressPatrolMeetings)
             {
-                try
-                {
-                    if (PlayerEncounter.IsActive)
-                    {
-                        PlayerEncounter.LeaveEncounter = true;
-                        PlayerEncounter.Finish(false);
-                    }
-                }
-                catch { }
+                // Returning patrol encounters are resolved by the dedicated
+                // gwp_patrol_returning_start dialogue. Do not finish the
+                // encounter from an event callback while conversation state is
+                // being created or closed.
                 return;
             }
 

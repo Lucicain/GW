@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <strings>
 	<string
 		id="str_comment_special_clan_intro_gw.default"
-		text="我们是灰袍守卫，承自统一帝国旧制的警察家族。帝国已崩，法统未绝；王朝可以更替，街巷、村庄与道路仍需有人巡察。世人把我们当作家族也好，当作修会也罢，于我们并无分别。只要百姓仍呼唤公道，灰袍便会回应。">
+		text="{=gwp_clan_intro}We are the Grey Wardens, a constabulary house descended from the institutions of the old, undivided Empire. The Empire is broken, yet lawful succession endures. Dynasties may rise and fall; streets, villages, and roads must still be watched. Call us a clan or call us an order—it is all one to us. So long as the common folk cry out for justice, the Grey Wardens shall answer.">
 		<tags>
 			<tag
 				tag_name="DefaultTag" />

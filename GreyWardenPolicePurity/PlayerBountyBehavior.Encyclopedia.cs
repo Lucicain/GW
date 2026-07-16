@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
             if (!HasActiveBountyWarForFaction(targetFaction))
                 return null;
 
-            string escortPartyName = "未指定护送部队";
+            string escortPartyName = GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_001}Unspecified escort unit");
             if (!string.IsNullOrEmpty(_escortPolicePartyId))
             {
                 MobileParty? escortParty = MobileParty.All.FirstOrDefault(p =>
@@ -35,14 +35,14 @@ namespace GreyWardenPolicePurity
                     escortPartyName = escortParty.Name?.ToString() ?? escortPartyName;
             }
 
-            string targetName = string.IsNullOrWhiteSpace(_activeBountyTargetName) ? "未知目标" : _activeBountyTargetName;
+            string targetName = string.IsNullOrWhiteSpace(_activeBountyTargetName) ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_002}Unknown target") : _activeBountyTargetName;
             string stage = IsTrackingBountyTarget
-                ? "目标仍在逃逸，灰袍部队正在护送玩家追捕"
+                ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_003}The target is still escaping, and the Grey Wardens troops are escorting the player to pursue")
                 : IsWaitingForBountyCollection
-                    ? "目标已经被击败，等待玩家领取赏金并由灰袍善后"
-                    : "悬赏流程仍在进行";
+                    ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_004}The target has been defeated, waiting for the player to receive the bounty and the Grey Wardens will deal with the aftermath")
+                    : GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_005}The bounty process is still in progress");
 
-            return $"玩家悬赏协同：当前目标是 {targetName}，敌对势力为 {targetFaction.Name}。护送部队：{escortPartyName}；当前阶段：{stage}。";
+            return GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_006}Player bounty collaboration: The current target is {VAR_1}, and the hostile forces are {VAR_2}. Escort force: {VAR_3}; current stage: {VAR_4}.", "VAR_1", targetName, "VAR_2", targetFaction.Name, "VAR_3", escortPartyName, "VAR_4", stage);
         }
     }
 }

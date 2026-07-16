@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -105,7 +105,7 @@ namespace GreyWardenPolicePurity
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
             MBTextManager.SetTextVariable(
                 "GWP_VILLAGE_REWARD_OPTION",
-                $"领取村民酬谢（可领 {_storedReward} 第纳尔）");
+                GwpText.Get("{=gwp_greywardenvillagerewardbehavior_001}Receive rewards from villagers (you can receive {VAR_1} dinars)", "VAR_1", _storedReward));
             return true;
         }
 
@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
             if (_storedReward <= 0)
             {
                 InformationManager.DisplayMessage(
-                    new InformationMessage("现在还没有村民筹出的酬谢可领。", Colors.Yellow));
+                    new InformationMessage(GwpText.Get("{=gwp_greywardenvillagerewardbehavior_002}There are currently no rewards raised by villagers to receive."), Colors.Yellow));
                 return;
             }
 
@@ -148,7 +148,7 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(
                 new InformationMessage(
-                    $"你从村民酬谢中领取了 {amount} 第纳尔。剩余 {_storedReward} 第纳尔。",
+                    GwpText.Get("{=gwp_greywardenvillagerewardbehavior_003}You received {VAR_1} dinars from villager rewards. {VAR_2} dinars remaining.", "VAR_1", amount, "VAR_2", _storedReward),
                     Colors.Green));
         }
 

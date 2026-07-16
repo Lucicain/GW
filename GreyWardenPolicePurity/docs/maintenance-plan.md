@@ -100,11 +100,98 @@ Done:
 - Keep developer-only build, asset-publishing, and debugging procedures in this
   maintenance document rather than in the release notes shipped to players.
 
+## Working-directory/live-module synchronization rule
+
+- During development, deployable files under `_Module` and their counterparts
+  in `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`
+  must be byte-for-byte identical before an in-game test is accepted.
+- Git publication is a separate release step. The working tree may remain
+  uncommitted during development; the local Git commit and GitHub are updated
+  together only when the user requests an upload or release.
+- Sync from the working directory to the live module after each runtime-file
+  change, then verify SHA-256 hashes. The MSBuild `CopyModuleData` target is the
+  canonical non-build copy path.
+- Exclude editor-only `Assets`, `AssetSources`, and `RuntimeDataCache` from the
+  normal-client live module. Live-only compiled `bin` and generated `Shaders`
+  are not source-mirror violations.
+- Update this maintenance document with material deployments, experiments,
+  failures, conclusions, asset locations, and rollback information as work
+  proceeds; do not rely on chat history.
+
+## 2026-07-16 Bannerlord 1.4.7 startup-error isolation
+
+- A later controlled launcher comparison materially narrowed the shutdown
+  failure. The Chinese-site Mod Manager writes
+  `bin\Win64_Shipping_Client\ModMasterStarter.bat` and directly launches
+  `Bannerlord.exe` with `/anticheat`. It also orders the official modules as
+  `Native, SandBoxCore, CustomBattle, Sandbox, StoryMode, BirthAndDeath,
+  FastMode`, rather than the official launcher's observed order
+  `Native, SandBoxCore, BirthAndDeath, CustomBattle, FastMode, Sandbox,
+  StoryMode`.
+- Two otherwise GreyWarden-only manager-style runs, PID `9752` at 20:59 and PID
+  `32964` at 21:07, used the reordered list plus `/anticheat` and crashed during
+  native shutdown in `TaleWorlds.Native.dll` with `0xc0000005` after
+  `Managed Interface deleted`.
+- Two later official-style runs, PID `28696` at 21:16 and PID `39268` at 21:20,
+  used the official module order without `/anticheat` and produced no Windows
+  Error Reporting crash. Both printed a non-fatal `Non-Zero Device Reference
+  Count` line (`ERC1513` and `ERC1567` respectively).
+- Therefore the immediate reproducible difference is the launch command built
+  by the Chinese-site manager, specifically its module ordering and/or forced
+  `/anticheat` flag. Do not attribute this comparison to the shield LOD package
+  without a separate controlled test. For current testing, prefer the official
+  launcher. If further isolation is required, vary module order and
+  `/anticheat` one at a time while leaving all module files unchanged.
+
+- The startup failure was not caused by the `Useful Skips` assembly itself.
+  Disabling only `UsefulSkips` left `Bannerlord.MBOptionScreen` (MCM) enabled,
+  so the same failure remained.
+- `LauncherData.xml` initially had MCM `v5.12.1` selected while its declared
+  dependencies ButterLib `v2.11.0` and UIExtenderEx `v2.13.2` were not
+  selected. That was an invalid module selection, but it was not the whole
+  cause: a controlled retry enabled Harmony, ButterLib, UIExtenderEx, and MCM
+  in the declared order while leaving Useful Skips absent.
+- The complete dependency-stack retry on build `117484` still failed at
+  20:47:36. The exact fault was an `IndexOutOfRangeException` in
+  `Bannerlord.ModuleLoader.SubModuleWrappers.Patches.MBSubModuleBasePatch.Enable`,
+  invoked by `Bannerlord.ModuleLoader.Bannerlord_MBOptionScreen..ctor`. All four
+  module assemblies had loaded successfully before this constructor failed.
+  Therefore the immediate cause is MCM's bundled module-loader patch being
+  incompatible with Bannerlord `1.4.7`, not a missing prerequisite and not
+  Useful Skips.
+- The installed MCM package contains game-version adapters through
+  `Bannerlord.MBOptionScreen.v1.4.5.dll` but no `v1.4.6` or `v1.4.7` adapter.
+  Treat MCM `v5.12.1` as not yet compatible with game build `117484` even
+  though it is the newest installed Workshop release.
+- A controlled build `117484` run at 20:42:59 loaded only Harmony, the official
+  single-player modules, and GreyWarden. It loaded
+  `GreyWarden/AssetPackages`, reached `GauntletInitialScreen` at 20:43:21, and
+  produced no `rgl_log_errors` entry or GreyWarden assertion. This isolates the
+  immediate startup failure to the MCM dependency stack rather than GreyWarden
+  or Useful Skips.
+- Current local isolation state in
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Configs\LauncherData.xml`:
+  Harmony, MCM, ButterLib, UIExtenderEx, ExceptionSentry, and Useful Skips are
+  disabled; official modules and GreyWarden remain enabled. The pre-isolation
+  launcher configuration is retained at
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Configs\LauncherData.xml.before-usefulskips-fix-20260716-2040.bak`.
+- Separate earlier build-117377 messages about `gw_leader_*` hair/tattoo tags
+  and obsolete `civilian="true"` equipment syntax were GreyWarden XML schema
+  assertions, not the later startup stop. Do not conflate those content
+  assertions with the MCM dependency-resolution failure.
+
 ## Release packaging and asset layout
 
 ### Player archive
 
 - Public artifact name: `GreyWarden-v1.4.7.zip` with a sibling SHA-256 file.
+- Create archives only during a formal GitHub push/release task. Ordinary
+  `dotnet build` runs must compile and synchronize the live module without
+  creating, refreshing, or copying any ZIP.
+- The local formal-release output directory is the game's module parent:
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules`. The ZIP and
+  checksum sit beside the `GreyWarden` directory, never inside the live
+  `Modules\GreyWarden` directory and never inside repository `_Module`.
 - The ZIP must contain exactly one top-level `GreyWarden` directory.
 - Include only runtime data: `AssetPackages`, `bin/Win64_Shipping_Client`,
   `GUI`, `ModuleData`, `ModuleSounds`, `Shaders`, `README.md`, and
@@ -339,8 +426,308 @@ irreplaceable backup; the editor workspace does not replace it.
    live copy.
 5. Stage one top-level `GreyWarden` directory without editor binaries, PDBs, or
    source assets.
-6. Create `GreyWarden-v1.4.7.zip` and its `.sha256` file.
-7. Inspect ZIP paths and extract-test it.
-8. Run at least one battle that renders the black shield, exit the client, and
+6. Commit and push the release source and documentation to GitHub as part of
+   the same formal release task.
+7. Create `GreyWarden-v1.4.7.zip` and its `.sha256` file directly under the
+   game's `Modules` directory, never under `Modules\GreyWarden` or `_Module`.
+8. Inspect ZIP paths and extract-test it, then create/update the GitHub release
+   and upload the matching ZIP and checksum.
+9. Run at least one battle that renders the black shield, exit the client, and
    check delayed Windows Application/WER/dump state.
-9. Commit source and documentation changes, then push GitHub.
+
+# 2026-07-16 English-base and Simplified-Chinese localization
+
+## Scope and language architecture
+
+- The module now treats English as the source-language fallback. Every
+  player-visible C# string has a stable `{=gwp_*}` key and an English default;
+  static XML names and descriptions use the same keyed-English pattern.
+- Simplified Chinese is supplied by:
+  - `_Module/ModuleData/Languages/CNs/language_data.xml`
+  - `_Module/ModuleData/Languages/CNs/std_gwp_strings_xml-zho-CN.xml`
+- The CNs table contains 507 keyed entries covering items, troops, clan and hero
+  names, dialogue, quest text, encyclopedia text, map notifications, enforcement
+  status, debugging UI that players can open, and dynamically formatted text.
+- `GwpText.cs` is the single code-side localization boundary. It creates a
+  `TextObject`, binds named variables such as `{VAR_1}`, and returns the text in
+  the current game language. Named variables were used instead of interpolating
+  a finished sentence so English and Chinese can change word order safely.
+
+## Voice and terminology
+
+- Core lore, greetings, troop requisition, bounty recruitment, atonement,
+  arrest dialogue, adopted-heir encyclopedia text, and deterrence reactions were
+  manually rewritten rather than accepted as raw machine translation.
+- The English register is restrained and old-Imperial, not pseudo-Shakespearean.
+  Canonical terms include:
+  - `Grey Wardens` for 灰袍守卫
+  - `the old, undivided Empire` for 统一帝国
+  - `constabulary house` or `order` for the police-family institution
+  - `provost patrol` / `provost` for 纠察队 / 纠察官
+  - `amendment`, `atonement`, `inner ward`, `case rolls`, and `lawful fine`
+- The six founders now have separate localization keys instead of the former
+  shared `gw1` key. Generated female heirs use stable romanized English names
+  and their original Chinese names in CNs.
+
+## Save compatibility
+
+- Existing saves may contain plain Chinese crime labels, while saves made in an
+  English session may contain the earlier English label. `GwpText.CrimeType`
+  recognizes both forms and renders the canonical label in the current game
+  language wherever crime records are shown.
+- Generated Grey Warden heirs are deterministically renamed by their stable hero
+  ID during the existing family-presentation refresh, so old saves receive the
+  current language's name set without changing which identity was selected.
+- No save fields or saveable type identifiers were removed or renumbered.
+
+## Validation evidence
+
+- Release build succeeds against Bannerlord 1.4.7 with 0 compiler errors. The
+  remaining nullable warnings pre-date localization and do not block output.
+- Roslyn scan after conversion found 0 CJK-bearing C# string literals outside
+  the CNs language table. Chinese source comments remain developer-only.
+- Localization integrity check found no duplicate keys with differing values,
+  no missing CNs entries (excluding TaleWorlds' special `{=!}` non-localized
+  barter placeholder), and no English/Chinese named-placeholder mismatch.
+- All shipped XML files parse successfully. The 1.4.7 civilian-equipment and
+  hero-appearance schema repairs remain present.
+- Ordinary `Release` build copied the bilingual module data and README to
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
+  Runtime acceptance still requires checking both English and CNs in the normal
+  client and confirming that the log loads `AssetPackages`, not the editor tree.
+- After the working-directory/live-module synchronization rule was made
+  mandatory, the runtime mirror was copied again with the `CopyModuleData`
+  target and verified by SHA-256: all `25` deployable `_Module` files matched
+  their live counterparts, the Release DLL matched the live client DLL, all
+  `13` live XML files parsed successfully, the README matched, and the live
+  module contained none of `Assets`, `AssetSources`, or `RuntimeDataCache`.
+
+# 2026-07-16 returning-patrol interception crash and encyclopedia button
+
+## Reproduction evidence and root cause
+
+- The English encyclopedia screenshot showed the deterrence action label
+  extending beyond a fixed `150`-pixel button. The Simplified Chinese label was
+  shorter and remained inside the same frame, so this was a layout-width defect,
+  not a missing or incorrectly selected localization entry.
+- The latest client log was
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_27944.txt`.
+  At `22:13:15`, the lawful-fine barter was rejected; at `22:13:36`, the player
+  instead entered the smaller passage negotiation; and at `22:13:39`,
+  `gwp_patrol_barter_post_success` accepted it. The patrol was dismissed and the
+  encounter closed normally.
+- At `22:14:00`, the player manually intercepted that returning patrol. The
+  conversation character was a `Grey Warden Heavy Infantry` troop rather than a
+  hero, and the log selected the native
+  `default_conversation_for_wrongly_created_heroes` line. The crash dumper began
+  immediately afterward. This isolates the crash from MCM, Useful Skips, the
+  payment barter, and localization loading.
+- A negotiated passage intentionally differs from payment of the lawful fine:
+  it restores peace and grants four days of safe-conduct while leaving negative
+  standing and the existing crime record in place. The user's remaining wanted
+  state after paying about `300` was therefore expected; the later conversation
+  fallback and crash were not.
+- The former suppressed-meeting branch attempted to finish the encounter from
+  inside the normal patrol dialogue condition and then returned `false`. During
+  a manual interception this left the engine without an applicable GreyWarden
+  start line, allowing it to fall through to the unsafe native line for the
+  troop-led party.
+
+## Repairs
+
+- `PolicePatrolBehavior.OnSessionLaunched` now registers the high-priority
+  `gwp_patrol_returning_start` dialogue before the ordinary enforcement start.
+  It applies only to a GreyWarden patrol marked as returning or while patrol
+  meetings are suppressed, gives a localized dismissal, and closes the player
+  encounter through `GwpCommon.TryFinishPlayerEncounter`.
+- `PatrolDialogCondition` no longer mutates or finishes `PlayerEncounter` from
+  inside its condition when meetings are suppressed. It simply declines the
+  ordinary enforcement branch, leaving the dedicated returning-patrol line to
+  own the conversation.
+- The encyclopedia deterrence button now uses `CoverChildren`, retains a
+  `150`-pixel minimum width, allows up to `300` pixels, and gives its label
+  `24`-pixel horizontal margins. This preserves the compact Chinese button while
+  expanding the English button around its full label.
+- The returning-patrol dismissal has English source text and a CNs entry under
+  `gwp_patrol_returning_dialogue`; no save schema was changed.
+
+## Validation and deployment
+
+- Localization integrity after the repair is `507` English defaults and `507`
+  CNs entries, with zero conflicting keys, duplicate translations, missing or
+  extra entries, and named-placeholder mismatches. Every shipped XML file parses
+  successfully.
+- A full `dotnet build GreyWardenPolicePurity.slnx -c Release` completed with
+  `0` errors and the existing `44` nullable-analysis warnings, then copied the
+  module data and compiled assembly to the normal client and editor module
+  directories.
+- All `25` deployable source `_Module` files matched their live-module copies by
+  SHA-256. The normal-client and editor assemblies matched at
+  `755638561B8568A105CB6C496250A5CC0A017C8623EFFC1F6F0798F441A7ECD5`,
+  and the repository/live player READMEs matched.
+- The live module contained none of `Assets`, `AssetSources`, or
+  `RuntimeDataCache`. The protected asset-package hashes remained unchanged:
+  `gwp_black_gold_shield.tpac` =
+  `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B` and
+  `gwp_inherited_legacy_assets.tpac` =
+  `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`.
+- Final acceptance still needs an in-game retry of the exact sequence: reject
+  the lawful fine, negotiate passage, catch the returning patrol, confirm its
+  one-line dismissal, and verify that the encyclopedia button contains the full
+  English label at the user's display scale.
+
+## Follow-up after failed in-game retry at 22:34
+
+- The first returning-patrol repair was incomplete. In
+  `rgl_log_36420.txt`, the original enforcement meeting succeeded, the lawful
+  fine was rejected at `22:33:52`, negotiated passage was accepted at
+  `22:34:02`, and the first conversation ended normally at `22:34:06`.
+- The player caught the patrol again almost immediately. At `22:34:07`, the
+  new high-priority `gwp_patrol_returning_start` line was selected, proving that
+  the native `default_conversation_for_wrongly_created_heroes` fallback had
+  been eliminated. However, the log ended before `Conversation End`, and the
+  crash dumper recorded an exception immediately afterward.
+- The remaining defect was in the new line's consequence: its target was
+  already `close_window`, but the consequence also called
+  `GwpCommon.TryFinishPlayerEncounter`. That attempted a second encounter
+  shutdown while the conversation engine was creating or closing the line.
+  Therefore the first repair changed the crash location rather than completing
+  the fix.
+- The returning line now has no consequence and relies exclusively on
+  Bannerlord's normal `close_window` flow. All suppression-time calls that
+  force-finished `PlayerEncounter` from the hourly tick or map-event callback
+  were also removed. Suppression now only selects the dedicated safe dialogue
+  and prevents the ordinary enforcement dialogue from being selected.
+- The first responsive-width button was also rejected visually in the in-game
+  retry: its `CoverChildren`/`MaxWidth=300` layout produced a long, thin banner.
+  The button has been restored to the original fixed `150 x 48` proportions,
+  and the English button label is now the compact `Deterrence`. The longer
+  explanatory wording remains in the hover hint and details window.
+- The corrective Release build completed with `0` errors and the existing `44`
+  nullable-analysis warnings. The deployed normal-client and editor assemblies
+  match at SHA-256
+  `47BFC370099AAFC607BF7E07BE8A1767ED31B51B93752D3DA13E0CC38033184C`.
+
+# 2026-07-16 Old English names and split player READMEs
+
+## Naming policy
+
+- Direct romanizations of the former Chinese founder names were rejected. The
+  six stable founder IDs use attested Old English feminine names only in
+  English, while CNs preserves the original Chinese names:
+  - `gw_leader_0`: `Aethelflaed` / `梵蒂`
+  - `gw_leader_1`: `Cyneburh` / `约珥`
+  - `gw_leader_2`: `Mildthryth` / `弥瑟`
+  - `gw_leader_3`: `Wynflaed` / `圣铎`
+  - `gw_leader_4`: `Eadgifu` / `晨曦`
+  - `gw_leader_5`: `Wulfhild` / `暮光`
+- The generated daughter/adopted-heir pool has two intentionally independent
+  presentations on the same `36` stable keys. English uses charter-attested Old
+  English spellings such as `Eadgyth`, `Ealhswith`, and `Leofgifu`; CNs restores
+  the original pool beginning `澄音`, `祈安`, `望舒` and ending `书宁`, `凝光`,
+  `夕晨` rather than phonetic translations of the English names.
+- If the full pool is exhausted, English uses Roman numerals `II` through `X`;
+  CNs preserves the original suffixes `二` through `十`.
+- `RefreshPoliceClanFamilyPresentation` now reapplies keyed localized names to
+  the six founders as well as deterministic names to generated members. This is
+  required so existing saves adopt the new names when loaded; no new campaign
+  is required and no save field was added or changed.
+- Founder encyclopedia prose uses the appropriate displayed name in each
+  language. Stable hero IDs and localization keys were deliberately kept
+  unchanged for save and translation compatibility.
+
+## Player documentation policy
+
+- The former bilingual `_Module/README.md` was too detailed for players and has
+  been replaced by two short files:
+  - `_Module/README.md`: Simplified Chinese
+  - `_Module/README_EN.md`: English
+- Both contain the same installation, latest-update, playable-content, and
+  contact information. Release notes now state only what was added or fixed;
+  voice-direction rationale, implementation details, test history, and minor
+  internal changes remain in this maintenance document only.
+
+## Validation and deployment
+
+- The English-default and CNs localization tables both contain `510` keyed
+  entries. Validation found `0` conflicting defaults, duplicate keys, missing
+  entries, extra entries, placeholder mismatches, or XML parse errors.
+- The six founders and `36` generated-heir keys are complete in both languages.
+  English and CNs deliberately use different name sets while sharing stable
+  keys, so changing the game language selects the intended set.
+- `_Module/README.md` and `_Module/README_EN.md` are each `38` lines. The
+  English file contains no CJK text, and both live copies match their repository
+  versions byte for byte.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable-analysis warnings. The normal-client and editor DLLs match at
+  SHA-256
+  `2BC151327BBFC490BF3F15B6A95507B059F3D56D2C50898C669CDA204B4A42F4`.
+- All `26` deployable `_Module` files match the live module. The live module
+  contains no `Assets`, `AssetSources`, or `RuntimeDataCache` directory. The
+  protected asset packages remain unchanged at their hashes recorded above.
+
+# 2026-07-16 village-relief encounter side repair
+
+- Symptom: after choosing the custom option to help villagers resist an active
+  raid, the next native `encounter` screen said that the player had arrived to
+  plunder the village and warned that raiding would declare war on its faction.
+- In-game verification clarified that the actual battle sides were already
+  correct: the player fought beside the militia against the raiders. The defect
+  was presentation-only, so replacing or rebuilding the map event would be an
+  unnecessary and potentially disruptive repair.
+- Cause: the custom option correctly calls
+  `PlayerEncounter.JoinBattle(BattleSideEnum.Defender)`, but Bannerlord retains
+  the raid event's standard hostile-village `ENCOUNTER_TEXT` when the generic
+  `encounter` menu initializes.
+- Repair: the direct defender join remains unchanged. A one-shot
+  `AfterGameMenuInitializedEvent` override now replaces `ENCOUNTER_TEXT` and
+  `ATTACK_TEXT` only for the next `encounter` menu opened by the custom village
+  defense action. CNs tells the player that they have joined the militia to
+  resist the raiders; English conveys the same meaning. The override then clears
+  itself and cannot affect ordinary encounters or a choice to aid the raiders.
+
+# 2026-07-16 release archive placement repair
+
+- Symptom: every ordinary build appeared to recreate
+  `Modules\GreyWarden\GreyWarden-v1.4.7.zip` and its checksum inside the live
+  module, adding roughly `374 MB` of non-runtime data to the test installation.
+- Cause: the formal `v1.4.7-r2` archive and checksum had been parked inside
+  repository `_Module`. The build target did not generate them, but its broad
+  `_Module\**` copy item treated them as ordinary runtime files and recopied
+  them into the live module after deletion. Exact `.gitignore` entries hid the
+  misplaced source artifacts from `git status`.
+- Repair:
+  - Moved the `v1.4.7-r2` ZIP and checksum to
+    `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules`, beside the
+    live `GreyWarden` directory. The ZIP SHA-256 remains
+    `673FD72AE70A467C3336D7DDC1762AA2CDE8735BAB05A0464FD38BBF1C4CEE27`,
+    matching the asset published in GitHub release `v1.4.7-r2`.
+  - Removed both copies from repository `_Module` and live
+    `Modules\GreyWarden`.
+  - Removed the two exact archive ignores so any future archive accidentally
+    placed in `_Module` becomes visible to Git.
+  - Added defensive `*.zip` and `*.zip.sha256` exclusions to `CopyModuleData`.
+    A normal build therefore cannot copy a release archive into the live module
+    even if one is mistakenly placed under `_Module` again.
+- Formal archives are now created only as part of a GitHub push/release task;
+  no automatic packaging target was added to compilation.
+
+# 2026-07-17 current archive and source push
+
+- At the user's request, refreshed the local player archive as part of the same
+  task that commits and pushes the current source, without creating a tag or a
+  GitHub Release.
+- Output remains beside the live module rather than inside it:
+  - `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7.zip`
+  - `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7.zip.sha256`
+- New archive size: `349,278,336` bytes. SHA-256:
+  `98A1FDE4E6992675AB8CA9C463EC0A1028F04FD30092F142D03D07DCA9DBA6CC`.
+- The ZIP contains one top-level `GreyWarden` directory and `28` runtime files.
+  It includes both player READMEs, the current normal-client DLL, both protected
+  TPACs, GUI, ModuleData/languages, sounds, shaders, and `SubModule.xml`.
+- Validation found no editor tree, editor binary, PDB, nested ZIP, or diagnostic
+  content. A full extraction produced `0` missing, mismatched, or extra files;
+  the extracted DLL matches the live normal-client DLL. Protected TPAC hashes
+  remain unchanged.
+- This archive refresh is local only. No new GitHub Release is to be created;
+  GitHub receives only the source commit on `main` in this task.

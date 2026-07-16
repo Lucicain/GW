@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Factions>
 	<Faction
 		id="gw"
@@ -12,8 +12,8 @@
 		default_party_template="PartyTemplate.gwMBP_template"
 		settlement_banner_mesh="encounter_flag_f"
 		is_outlaw="false"
-		name="灰袍守卫"
-		short_name="灰袍"
+		name="{=gwp_clan_name}Grey Wardens"
+		short_name="{=gwp_clan_short_name}Grey Wardens"
 		tier="6"
-		text="灰袍守卫起源于统一帝国时期的巡察警队。帝国覆灭后，这支以女性为主体的警察家族没有随旧秩序一同消失，而是以家族血脉、修会戒律与旧帝国法统维系自身。她们巡察道路，缉捕罪犯，调停私斗，也为仍愿守法之人留下赎罪与归正的门。对许多百姓而言，灰袍不是寻常贵族，更像一支身披灰袍、持戒而行的世俗修女警团。" />
+		text="{=gwp_clan_description}The Grey Wardens trace their charge to the constabulary of the old, undivided Empire. When the Empire broke apart, this sisterhood of lawkeepers did not perish with the former order. Blood, rule, and the lawful tradition of the old Empire bound them together. They ride the roads, seize malefactors, settle private feuds, and leave a road back to lawful conduct for those willing to atone. To many common folk, the Grey Wardens are less a noble house than a secular order of grey-robed sisters sworn to keep the peace." />
 </Factions>

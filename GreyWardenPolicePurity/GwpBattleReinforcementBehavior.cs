@@ -162,7 +162,7 @@ namespace GreyWardenPolicePurity
 
                 // 判定失败，提示祈祷，等待第二次机会
                 MBInformationManager.AddQuickInformation(
-                    new TaleWorlds.Localization.TextObject("{=*}你在心中祈祷神明的眷顾。"),
+                    new TaleWorlds.Localization.TextObject(GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray in your heart for God's favor.")),
                     0);
             }
             else
@@ -191,7 +191,7 @@ namespace GreyWardenPolicePurity
             _totalTroopCount = 20 + PlayerBehaviorPool.Reputation;
 
             MBInformationManager.AddQuickInformation(
-                new TaleWorlds.Localization.TextObject("{=*}灰袍守卫增援到了！"),
+                new TaleWorlds.Localization.TextObject(GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_002}Grey Warden reinforcements have arrived!")),
                 0);
         }
 
