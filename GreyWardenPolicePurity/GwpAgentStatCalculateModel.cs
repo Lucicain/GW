@@ -1,18 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Preserves the active game mode's stat model and changes only the
-    /// effective maximum health of Grey Warden-affiliated human agents.
-    /// The engine calls GetEffectiveMaxHealth while it initializes every
-    /// mission agent, so this covers troops, core lords, and future members of
-    /// the Grey Warden clan without a mission tick or a health refill loop.
+    /// Preserves the active game mode's stat model and exposes the temporary
+    /// battle masteries earned by individual Grey Warden agents. No character
+    /// or save-game skill is mutated: the effective values exist only while
+    /// the current mission and its agent objects exist.
     /// </summary>
     internal sealed class GwpAgentStatCalculateModel : AgentStatCalculateModel
     {
-        private const float GreyWardenHealthMultiplier = 1.5f;
+        internal const int MasteredSkillValue = 1000;
 
         private readonly AgentStatCalculateModel _fallbackModel =
             new CustomBattleAgentStatCalculateModel();
@@ -61,15 +64,8 @@ namespace GreyWardenPolicePurity
             Equipment equipment) =>
             NativeModel.GetEffectiveArmorEncumbrance(agent, equipment);
 
-        public override float GetEffectiveMaxHealth(Agent agent)
-        {
-            float nativeHealth = NativeModel.GetEffectiveMaxHealth(agent);
-            return agent != null
-                && agent.IsHuman
-                && GwpCommon.IsGreyWardenAffiliatedCharacter(agent.Character)
-                    ? nativeHealth * GreyWardenHealthMultiplier
-                    : nativeHealth;
-        }
+        public override float GetEffectiveMaxHealth(Agent agent) =>
+            NativeModel.GetEffectiveMaxHealth(agent);
 
         public override float GetEnvironmentSpeedFactor(Agent agent) =>
             NativeModel.GetEnvironmentSpeedFactor(agent);
@@ -92,7 +88,10 @@ namespace GreyWardenPolicePurity
             NativeModel.GetMaxCameraZoom(agent);
 
         public override int GetEffectiveSkill(Agent agent, SkillObject skill) =>
-            NativeModel.GetEffectiveSkill(agent, skill);
+            ApplyBattleMastery(
+                agent,
+                skill,
+                NativeModel.GetEffectiveSkill(agent, skill));
 
         public override int GetEffectiveSkillForWeapon(
             Agent agent,
@@ -132,5 +131,79 @@ namespace GreyWardenPolicePurity
 
         public override string GetMissionDebugInfoForAgent(Agent agent) =>
             NativeModel.GetMissionDebugInfoForAgent(agent);
+
+        internal static int ApplyBattleMastery(
+            Agent? agent,
+            SkillObject? skill,
+            int nativeSkill)
+        {
+            if (agent == null || skill == null)
+                return nativeSkill;
+
+            int bonus = 0;
+            if (skill == DefaultSkills.OneHanded
+                || skill == DefaultSkills.Athletics)
+            {
+                bonus = GwpAlternativeAttackControlBehavior
+                    .GetMeleeMasteryBonus(agent);
+            }
+            else if (skill == DefaultSkills.Bow)
+            {
+                bonus = GwpAlternativeAttackControlBehavior
+                    .GetBowMasteryBonus(agent);
+            }
+
+            return bonus > 0 && nativeSkill < MasteredSkillValue
+                ? Math.Min(MasteredSkillValue, nativeSkill + bonus)
+                : nativeSkill;
+        }
+    }
+
+    /// <summary>
+    /// Native campaign/custom-battle stat models call their own virtual
+    /// GetEffectiveSkill implementation while rebuilding driven properties.
+    /// Patch those concrete implementations as well as the shared base method
+    /// so movement, weapon handling, damage, accuracy, and AI all see the same
+    /// mission-local mastery value.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class GwpBattleMasteryEffectiveSkillPatch
+    {
+        private static IEnumerable<MethodBase> TargetMethods()
+        {
+            Type?[] candidateTypes =
+            {
+                typeof(AgentStatCalculateModel),
+                AccessTools.TypeByName(
+                    "SandBox.GameComponents.SandboxAgentStatCalculateModel"),
+                AccessTools.TypeByName(
+                    "NavalDLC.GameComponents.NavalAgentStatCalculateModel"),
+                AccessTools.TypeByName(
+                    "NavalDLC.ComponentInterfaces.NavalCustomBattleAgentStatCalculateModel")
+            };
+
+            HashSet<MethodBase> uniqueMethods = new();
+            foreach (Type? type in candidateTypes)
+            {
+                if (type == null)
+                    continue;
+
+                MethodInfo? method = AccessTools.DeclaredMethod(
+                    type,
+                    nameof(AgentStatCalculateModel.GetEffectiveSkill),
+                    new[] { typeof(Agent), typeof(SkillObject) });
+                if (method != null && uniqueMethods.Add(method))
+                    yield return method;
+            }
+        }
+
+        private static void Postfix(
+            Agent agent,
+            SkillObject skill,
+            ref int __result) =>
+            __result = GwpAgentStatCalculateModel.ApplyBattleMastery(
+                agent,
+                skill,
+                __result);
     }
 }

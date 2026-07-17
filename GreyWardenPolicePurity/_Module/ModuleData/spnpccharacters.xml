@@ -68,21 +68,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="180" />
+             value="130" />
       <skill id="Riding"
-             value="70" />
+             value="20" />
       <skill id="OneHanded"
-             value="180" />
+             value="130" />
       <skill id="TwoHanded"
-             value="130" />
+             value="80" />
       <skill id="Polearm"
-             value="180" />
-      <skill id="Bow"
-             value="110" />
-      <skill id="Crossbow"
-             value="110" />
-      <skill id="Throwing"
              value="130" />
+      <skill id="Bow"
+             value="60" />
+      <skill id="Crossbow"
+             value="60" />
+      <skill id="Throwing"
+             value="80" />
     </skills>
     <upgrade_targets>
 	  <upgrade_target id="NPCCharacter.gwknight" />
@@ -126,21 +126,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="170" />
+             value="130" />
       <skill id="Riding"
-             value="80" />
+             value="40" />
       <skill id="OneHanded"
-             value="170" />
+             value="130" />
       <skill id="TwoHanded"
-             value="70" />
+             value="30" />
       <skill id="Polearm"
-             value="120" />
+             value="80" />
       <skill id="Bow"
-             value="180" />
+             value="140" />
       <skill id="Crossbow"
-             value="120" />
+             value="80" />
       <skill id="Throwing"
-             value="100" />
+             value="60" />
     </skills>
     <upgrade_targets></upgrade_targets>
     <Equipments>
@@ -184,21 +184,21 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="110" />
+             value="60" />
       <skill id="Riding"
-             value="250" />
+             value="200" />
       <skill id="OneHanded"
-             value="250" />
+             value="200" />
       <skill id="TwoHanded"
-             value="110" />
+             value="60" />
       <skill id="Polearm"
-             value="310" />
+             value="260" />
       <skill id="Bow"
-             value="110" />
+             value="60" />
       <skill id="Crossbow"
-             value="75" />
+             value="25" />
       <skill id="Throwing"
-             value="95" />
+             value="45" />
     </skills>
     <Equipments>
       <EquipmentRoster>

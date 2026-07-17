@@ -18,6 +18,12 @@ user's stated goal.
 - Keep the README concise and directly reusable as a public release post. Its
   only jobs are to say when player-visible changes were added, what changed,
   and what content is currently playable.
+- Use a short bullet for each meaningful player-visible feature or outcome.
+  Keep enough bullets to distinguish materially different changes; do not
+  compress an entire update into one vague sentence merely for brevity. Group
+  related minor tuning together, and omit trigger counts, exact stat gains,
+  caps, formulas, implementation details, and inconsequential adjustment notes;
+  record those in `GreyWardenPolicePurity/docs/maintenance-plan.md` instead.
 - Organize each release under its date/version with short `新增与调整` and
   `修复` lists. Do not add a `未改动` section. Mention an unchanged behavior
   only when omitting it would make a changed mechanic materially misleading.
@@ -25,9 +31,9 @@ user's stated goal.
   Let players discover secondary behavior in play; do not fill the README with
   internal reasoning, exhaustive formulas, long FAQs, test history, or every
   edge case.
-- Write from the player's point of view. Retain exact chances, ranges, damage,
-  cooldowns, durations, multipliers, or other values only when they are needed
-  to understand a changed mechanic or make a gameplay decision.
+- Write from the player's point of view. Include an exact gameplay value only
+  when omitting it would materially prevent a player from making a necessary
+  decision, not merely because the implementation has a precise value.
 - Avoid implementation-only language such as callbacks, patches, synthetic
   blows, asset-pipeline steps, or private engine fields unless it is necessary
   for players to understand the result.

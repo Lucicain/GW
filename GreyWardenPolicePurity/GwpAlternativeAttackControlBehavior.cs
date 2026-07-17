@@ -16,8 +16,15 @@ namespace GreyWardenPolicePurity
         private const float NativeHitObservationWindowSeconds = 0.55f;
         private readonly Dictionary<int, PendingAlternativeAttack>
             _pendingActions = new();
+        private readonly Dictionary<int, int> _meleeMasteryBonusByAgentIndex =
+            new();
+        private readonly Dictionary<int, int> _bowMasteryBonusByAgentIndex =
+            new();
         private Agent? _observedPlayerAgent;
         private bool _playerActionObserved;
+
+        private const int MeleeMasteryPerAlternativeAction = 50;
+        private const int BowMasteryPerArrow = 10;
 
         private sealed class PendingAlternativeAttack
         {
@@ -48,6 +55,36 @@ namespace GreyWardenPolicePurity
             GwpAlternativeAttackControlBehavior? behavior = attacker.Mission
                 .GetMissionBehavior<GwpAlternativeAttackControlBehavior>();
             behavior?.QueueAction(attacker);
+        }
+
+        internal static int GetMeleeMasteryBonus(Agent? agent)
+        {
+            if (agent == null)
+                return 0;
+
+            GwpAlternativeAttackControlBehavior? behavior = agent.Mission?
+                .GetMissionBehavior<GwpAlternativeAttackControlBehavior>();
+            return behavior != null
+                && behavior._meleeMasteryBonusByAgentIndex.TryGetValue(
+                    agent.Index,
+                    out int bonus)
+                        ? bonus
+                        : 0;
+        }
+
+        internal static int GetBowMasteryBonus(Agent? agent)
+        {
+            if (agent == null)
+                return 0;
+
+            GwpAlternativeAttackControlBehavior? behavior = agent.Mission?
+                .GetMissionBehavior<GwpAlternativeAttackControlBehavior>();
+            return behavior != null
+                && behavior._bowMasteryBonusByAgentIndex.TryGetValue(
+                    agent.Index,
+                    out int bonus)
+                        ? bonus
+                        : 0;
         }
 
         public override void OnMissionTick(float dt)
@@ -120,6 +157,64 @@ namespace GreyWardenPolicePurity
             pending.NativeHitTargetIndices.Add(affectedAgent.Index);
         }
 
+        public override void OnAgentShootMissile(
+            Agent shooterAgent,
+            EquipmentIndex weaponIndex,
+            TaleWorlds.Library.Vec3 position,
+            TaleWorlds.Library.Vec3 velocity,
+            TaleWorlds.Library.Mat3 orientation,
+            bool hasRigidBody,
+            int forcedMissileIndex)
+        {
+            base.OnAgentShootMissile(
+                shooterAgent,
+                weaponIndex,
+                position,
+                velocity,
+                orientation,
+                hasRigidBody,
+                forcedMissileIndex);
+
+            if (shooterAgent == null
+                || !shooterAgent.IsHuman
+                || !GwpKickBehavior.IsEligibleGreyWarden(shooterAgent))
+            {
+                return;
+            }
+
+            MissionWeapon bow = shooterAgent.Equipment[weaponIndex];
+            if (bow.CurrentUsageItem?.RelevantSkill != DefaultSkills.Bow)
+                return;
+
+            if (AddMasteryBonus(
+                    _bowMasteryBonusByAgentIndex,
+                    shooterAgent.Index,
+                    BowMasteryPerArrow))
+            {
+                shooterAgent.UpdateAgentStats();
+            }
+        }
+
+        public override void OnAgentDeleted(Agent affectedAgent)
+        {
+            base.OnAgentDeleted(affectedAgent);
+            if (affectedAgent == null)
+                return;
+
+            int index = affectedAgent.Index;
+            _pendingActions.Remove(index);
+            _meleeMasteryBonusByAgentIndex.Remove(index);
+            _bowMasteryBonusByAgentIndex.Remove(index);
+        }
+
+        public override void OnRemoveBehavior()
+        {
+            base.OnRemoveBehavior();
+            _pendingActions.Clear();
+            _meleeMasteryBonusByAgentIndex.Clear();
+            _bowMasteryBonusByAgentIndex.Clear();
+        }
+
         private void ObservePlayerAlternativeAttack()
         {
             Agent? playerAgent = Mission.MainAgent;
@@ -157,6 +252,12 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // Mastery belongs to the deliberate alternative-attack action,
+            // not to whichever native or fallback contact later resolves it.
+            // Award exactly once when the action is accepted into this shared
+            // AI/player resolver, even if no nearby target is available.
+            AddMeleeMastery(attacker);
+
             Agent? fallbackTarget = GwpAlternativeAttackControl
                 .GetNearestEnemyTarget(attacker);
             if (fallbackTarget == null)
@@ -168,6 +269,35 @@ namespace GreyWardenPolicePurity
                     attacker,
                     Mission.CurrentTime + NativeHitObservationWindowSeconds,
                     fallbackTarget));
+        }
+
+        private void AddMeleeMastery(Agent attacker)
+        {
+            if (AddMasteryBonus(
+                    _meleeMasteryBonusByAgentIndex,
+                    attacker.Index,
+                    MeleeMasteryPerAlternativeAction))
+            {
+                attacker.UpdateAgentStats();
+            }
+        }
+
+        private static bool AddMasteryBonus(
+            IDictionary<int, int> bonuses,
+            int agentIndex,
+            int amount)
+        {
+            int current = bonuses.TryGetValue(agentIndex, out int existing)
+                ? existing
+                : 0;
+            int updated = Math.Min(
+                GwpAgentStatCalculateModel.MasteredSkillValue,
+                current + amount);
+            if (updated == current)
+                return false;
+
+            bonuses[agentIndex] = updated;
+            return true;
         }
 
         private static void ResolveFallbackTargets(
@@ -199,9 +329,8 @@ namespace GreyWardenPolicePurity
             }
 
             // The candidate was selected inside two metres when this native
-            // action began. Do not perform a second distance test after the
-            // short hit-observation window: a tiny step during the animation
-            // must not turn a guaranteed missed-action fallback into nothing.
+            // action began. Do not repeat its distance test after the short
+            // observation window.
             GwpAlternativeAttackControl.Apply(attacker, target);
         }
 

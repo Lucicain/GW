@@ -46,6 +46,13 @@ namespace GreyWardenPolicePurity
             RegisterCampaignComponents(starter);
         }
 
+        protected override void OnApplicationTick(float dt)
+        {
+            base.OnApplicationTick(dt);
+            _ = dt;
+            GreyWardenSparringBehavior.OnApplicationTick();
+        }
+
         private static void RegisterCampaignComponents(CampaignGameStarter starter)
         {
             starter.RemoveBehaviors<DesertersCampaignBehavior>();
@@ -75,6 +82,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenFamilyBehavior());
             starter.AddBehavior(new GreyWardenLeaderBalanceBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());
+            starter.AddBehavior(new GreyWardenSparringBehavior());
         }
 
         // 不在此处过滤 IsFieldBattle，因为该属性在 OnMissionBehaviorInitialize

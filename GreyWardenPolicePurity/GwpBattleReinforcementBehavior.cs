@@ -77,7 +77,9 @@ namespace GreyWardenPolicePurity
 
         public override void AfterStart()
         {
-            _isFieldBattle = Mission?.IsFieldBattle ?? false;
+            _isFieldBattle = (Mission?.IsFieldBattle ?? false)
+                && Mission?.GetMissionBehavior<
+                    GreyWardenFieldSparringMissionController>() == null;
         }
 
         /// <summary>

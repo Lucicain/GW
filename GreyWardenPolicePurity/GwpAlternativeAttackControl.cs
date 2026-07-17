@@ -39,6 +39,7 @@ namespace GreyWardenPolicePurity
             foreach (Agent candidate in attacker.Mission.Agents)
             {
                 if (candidate == attacker
+                    || candidate.IsMainAgent
                     || !candidate.IsActive()
                     || !candidate.IsHuman
                     || candidate.MountAgent != null

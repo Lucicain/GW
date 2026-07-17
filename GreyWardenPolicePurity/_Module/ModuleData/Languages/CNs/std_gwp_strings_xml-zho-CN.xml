@@ -514,5 +514,25 @@
   <string id="gwp_troop_req_high" text="你在灰袍这里的名声已经够高。若只是补一支执勤队，步弓与披甲骑巡都可以调给你，但数目不会太离谱。" />
   <string id="gwp_troop_req_low" text="你现在的名声，还只够让灰袍放一些见习守卫跟着你办事。若想调更老练的人，就再多积些信誉。" />
   <string id="gwp_troop_req_mid" text="你已证明自己值得托付。见习守卫之外，我也可以拨一些重装步兵或执勤弓手给你。你自己挑。" />
- </strings>
+  <string id="gwp_sparring_challenge" text="愿意和我切磋一下吗？我想试试自己的水平。" />
+  <string id="gwp_sparring_accept" text="当然。只是友好切磋，不伤和气。" />
+  <string id="gwp_sparring_launch_failed" text="这里不适合切磋，这次就先算了。" />
+  <string id="gwp_sparring_town_win" text="{OPPONENT}认输了，你赢得了这场切磋。" />
+  <string id="gwp_sparring_town_loss" text="你输给了{OPPONENT}。" />
+  <string id="gwp_sparring_spawn_failed" text="这里的地形不适合列阵，这次切磋取消。" />
+  <string id="gwp_sparring_field_win" text="{OPPONENT}认输了，你赢了。" />
+  <string id="gwp_sparring_field_loss" text="你输给了{OPPONENT}。" />
+  <string id="gwp_sparring_field_rule_loss" text="你没有按时下马，这场算你输。" />
+  <string id="gwp_sparring_cannot_leave" text="切磋还没有结束。" />
+  <string id="gwp_sparring_field_centre" text="你想怎么打？" />
+  <string id="gwp_sparring_field_mounted" text="骑马打。" />
+  <string id="gwp_sparring_field_foot" text="步战。" />
+  <string id="gwp_sparring_begin" text="切磋开始。" />
+  <string id="gwp_sparring_field_post_win" text="打得很好，你赢得很漂亮。继续保持。" />
+  <string id="gwp_sparring_field_post_loss" text="别灰心，你打得不错。下次再来，我相信你会更强。" />
+  <string id="gwp_sparring_field_post_rule_violation" text="说好步战，你却一直不肯下马。这场算你输。" />
+  <string id="gwp_sparring_field_post_rule_reply" text="我明白了。" />
+  <string id="gwp_sparring_field_post_reply" text="谢谢。下次再切磋。" />
+  <string id="gwp_sparring_talk" text="交谈" />
+</strings>
 </base>

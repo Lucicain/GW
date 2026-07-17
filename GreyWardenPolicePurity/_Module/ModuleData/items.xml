@@ -135,7 +135,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         appearance="2.6"
         Type="HeadArmor">
     <ItemComponent>
-      <Armor head_armor="52"
+      <Armor head_armor="45"
              has_gender_variations="false"
              hair_cover_type="all"
              beard_cover_type="all"
