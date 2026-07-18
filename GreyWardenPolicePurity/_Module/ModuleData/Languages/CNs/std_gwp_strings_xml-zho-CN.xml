@@ -519,7 +519,6 @@
   <string id="gwp_sparring_launch_failed" text="这里不适合切磋，这次就先算了。" />
   <string id="gwp_sparring_town_win" text="{OPPONENT}认输了，你赢得了这场切磋。" />
   <string id="gwp_sparring_town_loss" text="你输给了{OPPONENT}。" />
-  <string id="gwp_sparring_spawn_failed" text="这里的地形不适合列阵，这次切磋取消。" />
   <string id="gwp_sparring_field_win" text="{OPPONENT}认输了，你赢了。" />
   <string id="gwp_sparring_field_loss" text="你输给了{OPPONENT}。" />
   <string id="gwp_sparring_field_rule_loss" text="你没有按时下马，这场算你输。" />

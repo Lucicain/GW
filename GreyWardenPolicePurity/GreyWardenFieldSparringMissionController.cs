@@ -50,17 +50,20 @@ namespace GreyWardenPolicePurity
             internal Team Team { get; }
             internal WorldPosition Position { get; set; }
             internal Vec2 Facing { get; }
+            internal float Width { get; }
 
             internal FormationTarget(
                 Formation formation,
                 Team team,
                 WorldPosition position,
-                Vec2 facing)
+                Vec2 facing,
+                float width)
             {
                 Formation = formation;
                 Team = team;
                 Position = position;
                 Facing = facing;
+                Width = width;
             }
         }
 
@@ -71,11 +74,13 @@ namespace GreyWardenPolicePurity
         private const float MaximumAcceptableFrontGap = 110f;
         private const float DuelArenaLineClearance = 4f;
         private const float DuelArenaHalfWidth = 100f;
-        private const float FormationLateralGap = 2f;
+        private const float MaximumFormationFrontWidth = 100f;
+        private const float TerrainLineSampleStep = 2f;
+        private const float FormationLateralGap = 0.5f;
         private const float FormationArrivalTolerance = 5f;
         private const float FormationVelocityToleranceSquared = 0.25f;
         private const float FormationStableSeconds = 1f;
-        private const float MarchTimeoutSeconds = 150f;
+        private const float MarchTimeoutSeconds = 75f;
         private const float ConversationInteractionDistance =
             Agent.MaxInteractionDistance;
         private const float OpponentArrivalTolerance = 2f;
@@ -89,7 +94,6 @@ namespace GreyWardenPolicePurity
         private const float NativeDismountTimeoutSeconds = 10f;
         private const float SafetyRefreshInterval = 0.4f;
         private const float FormationOrderRefreshInterval = 0.4f;
-        private const float GapCorrectionInterval = 1f;
 
         private readonly Hero _opponent;
         private readonly List<FormationTarget> _formationTargets = new();
@@ -107,13 +111,14 @@ namespace GreyWardenPolicePurity
         private BoutPhase _phase = BoutPhase.NativeSpawning;
         private Vec2 _battleAxis = Vec2.Forward;
         private Vec2 _meetingCenter = Vec2.Zero;
+        private Vec2 _playerRankCenter = Vec2.Zero;
+        private Vec2 _opponentRankCenter = Vec2.Zero;
         private WorldPosition _opponentMeetingPosition = WorldPosition.Invalid;
         private WorldPosition _opponentMountHoldPosition = WorldPosition.Invalid;
         private float _phaseStartedAt;
         private float _formationsStableSince = -1f;
         private float _nextSafetyRefresh;
         private float _nextFormationOrderRefresh;
-        private float _nextGapCorrection;
         private float _opponentStableSince = -1f;
         private bool _abortMission;
         private bool _canLeave;
@@ -121,7 +126,6 @@ namespace GreyWardenPolicePurity
         private bool _playerWon;
         private bool _victoryReactionStarted;
         private bool _interactionAvailableLogged;
-        private bool _opponentAdvanceTimeoutLogged;
         private bool _opponentAdvanceOrderIssued;
         private DuelStyle _duelStyle = DuelStyle.Mounted;
         private Agent? _opponentDuelMount;
@@ -143,6 +147,7 @@ namespace GreyWardenPolicePurity
         private AgentControllerType _loanControllerBeforeDismount;
         private bool _ruleViolationLoss;
         private float _victoryReactionStartedAt;
+        private bool _interactionInfoCallbackRegistered;
 
         internal Hero Opponent => _opponent;
 
@@ -200,6 +205,7 @@ namespace GreyWardenPolicePurity
                 _spawnLogic.SetReinforcementsSpawnEnabled(false);
                 Mission.FocusableObjectInformationProvider.AddInfoCallback(
                     GetFocusableObjectInteractionInfoTexts);
+                _interactionInfoCallbackRegistered = true;
                 SetTeamsHostile(isHostile: false);
                 _phase = BoutPhase.NativeSpawning;
                 _phaseStartedAt = Mission.CurrentTime;
@@ -454,7 +460,9 @@ namespace GreyWardenPolicePurity
             }
 
             _battleAxis *= 1f / deploymentSeparation;
-            _meetingCenter = (playerCenter + opponentCenter) * 0.5f;
+            _meetingCenter = ResolveBattleCenter(
+                playerCenter,
+                opponentCenter);
 
             PrepareTeamFormations(Mission.PlayerTeam, _battleAxis);
             PrepareTeamFormations(Mission.PlayerEnemyTeam, -_battleAxis);
@@ -485,8 +493,6 @@ namespace GreyWardenPolicePurity
                 isPlayerSide: false);
             if (_formationTargets.Count == 0)
             {
-                _meetingCenter = (_playerAgent!.Position.AsVec2
-                    + _opponentAgent!.Position.AsVec2) * 0.5f;
                 _phase = BoutPhase.Marching;
                 _phaseStartedAt = Mission.CurrentTime;
                 Debug.Print(
@@ -501,7 +507,6 @@ namespace GreyWardenPolicePurity
             _phaseStartedAt = Mission.CurrentTime;
             _nextFormationOrderRefresh = Mission.CurrentTime
                 + FormationOrderRefreshInterval;
-            _nextGapCorrection = Mission.CurrentTime + 1f;
             Debug.Print(
                 "[GreyWarden Sparring] both native armies ordered to "
                 + $"advance; formations={_formationTargets.Count}");
@@ -516,18 +521,6 @@ namespace GreyWardenPolicePurity
                 _nextFormationOrderRefresh = Mission.CurrentTime
                     + FormationOrderRefreshInterval;
                 IssueFormationOrders();
-            }
-
-            if (Mission.CurrentTime >= _nextGapCorrection)
-            {
-                _nextGapCorrection = Mission.CurrentTime
-                    + GapCorrectionInterval;
-                if (AreFormationTargetsReached()
-                    && AreFormationTargetsStill())
-                {
-                    CorrectFormationGap();
-                    IssueFormationOrders();
-                }
             }
 
             float frontGap = CalculateRankFrontGap(out _, out _);
@@ -557,6 +550,7 @@ namespace GreyWardenPolicePurity
                 && Mission.CurrentTime - _phaseStartedAt
                     >= MarchTimeoutSeconds)
             {
+                LogFormationTargetState("timeout");
                 Debug.Print(
                     "[GreyWarden Sparring] formation march timed out; "
                     + "continuing from current ranks, gap="
@@ -587,12 +581,16 @@ namespace GreyWardenPolicePurity
                 >= OpponentAdvanceTimeoutSeconds;
             if (!arrived && !stoppedNear)
             {
-                if (timedOut && !_opponentAdvanceTimeoutLogged)
+                if (timedOut)
                 {
-                    _opponentAdvanceTimeoutLogged = true;
                     Debug.Print(
-                        "[GreyWarden Sparring] opponent is still advancing "
-                        + $"after timeout threshold; distance={distance:0.0}");
+                        "[GreyWarden Sparring] opponent advance timed out; "
+                        + "locking at the nearest reached position; "
+                        + $"distance={distance:0.0}");
+                    LockOpponentAtMeetingPoint();
+                    _phase = BoutPhase.AwaitingApproach;
+                    _phaseStartedAt = Mission.CurrentTime;
+                    return;
                 }
                 _opponentStableSince = -1f;
                 return;
@@ -912,91 +910,123 @@ namespace GreyWardenPolicePurity
             if (formations.Count == 0)
                 return;
 
-            float totalWidth = formations.Sum(GetFormationWidth)
+            Vec2 rankCenter = isPlayerSide
+                ? _playerRankCenter
+                : _opponentRankCenter;
+            float[] widths = AllocateFormationWidths(
+                formations,
+                MaximumFormationFrontWidth);
+            float totalWidth = widths.Sum()
                 + FormationLateralGap * (formations.Count - 1);
             float cursor = -totalWidth * 0.5f;
             Vec2 lateral = new Vec2(-_battleAxis.y, _battleAxis.x);
-            foreach (Formation formation in formations)
+            for (int index = 0; index < formations.Count; index++)
             {
-                float width = GetFormationWidth(formation);
+                Formation formation = formations[index];
+                float width = widths[index];
                 float lateralOffset = cursor + width * 0.5f;
                 cursor += width + FormationLateralGap;
 
-                float frontOffset = GetFormationFrontOffset(
-                    formation,
-                    isPlayerSide);
-                Vec2 sideOffset = _battleAxis
-                    * (DesiredFrontGap * 0.5f + frontOffset);
-                Vec2 center = isPlayerSide
-                    ? _meetingCenter - sideOffset
-                    : _meetingCenter + sideOffset;
+                Vec2 center = rankCenter;
                 center += lateral * lateralOffset;
 
-                WorldPosition position = CreateReachableWorldPosition(
-                    formation.CachedMedianPosition,
-                    center);
+                WorldPosition position = CreateFormationRankPosition(
+                    rankCenter,
+                    lateral,
+                    lateralOffset);
                 _formationTargets.Add(
                     new FormationTarget(
                         formation,
                         team,
                         position,
-                        facing));
+                        facing,
+                        width));
+                Debug.Print(
+                    "[GreyWarden Sparring] formation target; "
+                    + $"side={team.Side}; "
+                    + $"class={formation.FormationIndex}; "
+                    + $"units={formation.CountOfUnits}; "
+                    + $"start=({formation.CachedMedianPosition.AsVec2.x:0.0},"
+                    + $"{formation.CachedMedianPosition.AsVec2.y:0.0}); "
+                    + $"target=({position.AsVec2.x:0.0},"
+                    + $"{position.AsVec2.y:0.0}); "
+                    + $"distance={formation.CachedMedianPosition.AsVec2.Distance(position.AsVec2):0.0}; "
+                    + $"width={width:0.0}");
             }
+
+            Debug.Print(
+                "[GreyWarden Sparring] native obstacle-aware rank planned; "
+                + $"side={team.Side}; formations={formations.Count}; "
+                + $"frontLimit={MaximumFormationFrontWidth:0.0}; "
+                + $"assignedWidth={totalWidth:0.0}");
         }
 
-        private float GetFormationFrontOffset(
-            Formation formation,
-            bool isPlayerSide)
+        private WorldPosition CreateFormationRankPosition(
+            Vec2 rankCenter,
+            Vec2 lateral,
+            float requestedOffset)
         {
-            float medianProjection = Project(
-                formation.CachedMedianPosition.AsVec2,
-                _battleAxis);
-            float frontProjection = isPlayerSide
-                ? float.MinValue
-                : float.MaxValue;
-            foreach (Agent agent in Mission.Agents)
+            Vec2 target = rankCenter + lateral * requestedOffset;
+            if (TryCreateNavigablePosition(
+                    rankCenter,
+                    out WorldPosition position))
             {
-                if (!agent.IsHuman
-                    || !agent.IsActive()
-                    || agent.Formation != formation
-                    || agent == _playerAgent
-                    || agent == _opponentAgent)
-                {
-                    continue;
-                }
-
-                float projection = Project(agent.Position.AsVec2, _battleAxis);
-                frontProjection = isPlayerSide
-                    ? Math.Max(frontProjection, projection)
-                    : Math.Min(frontProjection, projection);
+                // Keep the complete geometric formation frame. Bannerlord's
+                // native line arrangement evaluates every unit slot against
+                // the navigation mesh and leaves obstacles empty or fills
+                // around them. The movement order may relocate only an
+                // unusable formation origin; we do not shrink the frontage.
+                position.SetVec2(target);
+                return position;
             }
 
-            if (frontProjection == float.MinValue
-                || frontProjection == float.MaxValue)
-            {
-                return Math.Max(0.75f, formation.Depth * 0.5f);
-            }
-
-            return Math.Max(
-                0.75f,
-                isPlayerSide
-                    ? frontProjection - medianProjection
-                    : medianProjection - frontProjection);
+            return new WorldPosition(
+                Mission.Scene,
+                UIntPtr.Zero,
+                target.ToVec3(Mission.Scene.GetTerrainHeight(target)),
+                hasValidZ: false);
         }
 
-        private static float GetFormationWidth(Formation formation)
+        private static float[] AllocateFormationWidths(
+            IReadOnlyList<Formation> formations,
+            float frontLimit)
         {
-            float width = formation.Width;
+            int count = formations.Count;
+            float gapWidth = FormationLateralGap * (count - 1);
+            float formationSpace = Math.Max(
+                count * 2f,
+                frontLimit - gapWidth);
+            float[] naturalWidths = formations
+                .Select(GetNaturalFormationWidth)
+                .ToArray();
+            float naturalTotal = naturalWidths.Sum();
+            if (naturalTotal <= formationSpace)
+                return naturalWidths;
+
+            var result = new float[count];
+            for (int index = 0; index < count; index++)
+            {
+                result[index] = Math.Max(
+                    2f,
+                    formationSpace
+                        * naturalWidths[index]
+                        / naturalTotal);
+            }
+
+            return result;
+        }
+
+        private static float GetNaturalFormationWidth(Formation formation)
+        {
+            float width = formation.MaximumWidth;
             if (float.IsNaN(width)
                 || float.IsInfinity(width)
                 || width < 2f)
             {
-                width = Math.Max(
-                    2f,
-                    (float)Math.Sqrt(formation.CountOfUnits) * 1.5f);
+                width = Math.Max(2f, formation.Width);
             }
 
-            return Math.Min(width, 80f);
+            return Math.Min(width, MaximumFormationFrontWidth);
         }
 
         private void IssueFormationOrders()
@@ -1014,8 +1044,15 @@ namespace GreyWardenPolicePurity
                     FiringOrder.FiringOrderHoldYourFire);
                 formation.SetFacingOrder(
                     FacingOrder.FacingOrderLookAtDirection(target.Facing));
+                formation.SetFormOrder(
+                    FormOrder.FormOrderCustom(target.Width));
                 formation.SetMovementOrder(
                     MovementOrder.MovementOrderMove(target.Position));
+                if (formation.OrderPositionIsValid)
+                {
+                    target.Position = formation.CreateNewOrderWorldPosition(
+                        WorldPosition.WorldPositionEnforcedCache.None);
+                }
             }
         }
 
@@ -1032,8 +1069,8 @@ namespace GreyWardenPolicePurity
                 float tolerance = Math.Max(
                     FormationArrivalTolerance,
                     Math.Min(12f, target.Formation.Depth * 0.4f + 3f));
-                if (target.Formation.CachedMedianPosition.AsVec2.Distance(
-                        target.Position.AsVec2)
+                Vec2 actualPosition = GetFormationFrontAnchor(target);
+                if (actualPosition.Distance(target.Position.AsVec2)
                     <= tolerance)
                 {
                     reachedTargets++;
@@ -1065,6 +1102,33 @@ namespace GreyWardenPolicePurity
                 && stillTargets == activeTargets;
         }
 
+        private void LogFormationTargetState(string reason)
+        {
+            foreach (FormationTarget target in _formationTargets)
+            {
+                if (target.Formation.CountOfUnits == 0)
+                    continue;
+
+                Vec2 actual = GetFormationFrontAnchor(target);
+                Debug.Print(
+                    "[GreyWarden Sparring] formation state; "
+                    + $"reason={reason}; side={target.Team.Side}; "
+                    + $"class={target.Formation.FormationIndex}; "
+                    + $"actual=({actual.x:0.0},{actual.y:0.0}); "
+                    + $"target=({target.Position.AsVec2.x:0.0},"
+                    + $"{target.Position.AsVec2.y:0.0}); "
+                    + $"remaining={actual.Distance(target.Position.AsVec2):0.0}; "
+                    + $"velocity={target.Formation.CachedCurrentVelocity.Length:0.0}");
+            }
+        }
+
+        private static Vec2 GetFormationFrontAnchor(FormationTarget target)
+        {
+            float halfDepth = Math.Max(0f, target.Formation.Depth * 0.5f);
+            return target.Formation.CachedMedianPosition.AsVec2
+                + target.Facing * halfDepth;
+        }
+
         private bool HasActiveFormationTarget(Team team)
         {
             return _formationTargets.Any(target =>
@@ -1077,30 +1141,6 @@ namespace GreyWardenPolicePurity
             return float.IsNaN(frontGap) || float.IsInfinity(frontGap)
                 ? "single-sided"
                 : frontGap.ToString("0.0");
-        }
-
-        private void CorrectFormationGap()
-        {
-            float gap = CalculateRankFrontGap(out _, out _);
-            if (float.IsNaN(gap) || float.IsInfinity(gap))
-                return;
-
-            float correction = MathF.Clamp(
-                (gap - DesiredFrontGap) * 0.5f,
-                -8f,
-                8f);
-            if (Math.Abs(correction) < 0.75f)
-                return;
-
-            foreach (FormationTarget target in _formationTargets)
-            {
-                Vec2 shift = target.Team == Mission.PlayerTeam
-                    ? _battleAxis * correction
-                    : -_battleAxis * correction;
-                target.Position = CreateReachableWorldPosition(
-                    target.Formation.CachedMedianPosition,
-                    target.Position.AsVec2 + shift);
-            }
         }
 
         private float CalculateRankFrontGap(
@@ -1149,29 +1189,6 @@ namespace GreyWardenPolicePurity
             float gap = CalculateRankFrontGap(
                 out float playerFront,
                 out float opponentFront);
-            float currentProjection = Project(_meetingCenter, _battleAxis);
-            float desiredProjection = currentProjection;
-            if (playerFront != float.MinValue
-                && opponentFront != float.MaxValue)
-            {
-                desiredProjection = (playerFront + opponentFront) * 0.5f;
-            }
-            else if (opponentFront != float.MaxValue)
-            {
-                // A lone player has no friendly rank. Place the bout in front
-                // of the opponent's actual settled line instead of inventing
-                // a second formation and a synthetic rank.
-                desiredProjection = opponentFront
-                    - DesiredFrontGap * 0.5f;
-            }
-            else if (playerFront != float.MinValue)
-            {
-                desiredProjection = playerFront
-                    + DesiredFrontGap * 0.5f;
-            }
-
-            _meetingCenter += _battleAxis
-                * (desiredProjection - currentProjection);
 
             if (_opponentAgent?.IsActive() != true)
                 throw new InvalidOperationException(
@@ -1179,14 +1196,20 @@ namespace GreyWardenPolicePurity
 
             _opponentAgent.Formation = null;
             _opponentMountHoldPosition = WorldPosition.Invalid;
-            _opponentMeetingPosition = CreateReachableWorldPosition(
-                _opponentAgent.GetWorldPosition(),
-                _meetingCenter);
-            _meetingCenter = _opponentMeetingPosition.AsVec2;
+            if (!TryCreateNavigablePosition(
+                    _meetingCenter,
+                    out _opponentMeetingPosition)
+                || !HasReasonablePath(
+                    _opponentAgent.GetWorldPosition(),
+                    _opponentMeetingPosition))
+            {
+                throw new InvalidOperationException(
+                    "the opposing lord has no route from his settled rank "
+                    + "to the selected meeting point");
+            }
             FreezeRanksForCeremony();
             _opponentStableSince = -1f;
             _opponentAdvanceOrderIssued = false;
-            _opponentAdvanceTimeoutLogged = false;
             _phase = BoutPhase.OpponentAdvancing;
             _phaseStartedAt = Mission.CurrentTime;
             DirectOpponentToMeetingPoint();
@@ -2063,15 +2086,23 @@ namespace GreyWardenPolicePurity
             out bool canPlayerLeave)
         {
             canPlayerLeave = _canLeave;
-            if (!canPlayerLeave)
-            {
-                MBInformationManager.AddQuickInformation(
-                    new TextObject(
-                        GwpText.Get(
-                            "{=gwp_sparring_cannot_leave}The match isn't over yet.")));
-            }
-
             return null!;
+        }
+
+        protected override void OnEndMission()
+        {
+            RemoveInteractionInfoCallback();
+            base.OnEndMission();
+        }
+
+        private void RemoveInteractionInfoCallback()
+        {
+            if (!_interactionInfoCallbackRegistered)
+                return;
+
+            Mission.FocusableObjectInformationProvider.RemoveInfoCallback(
+                GetFocusableObjectInteractionInfoTexts);
+            _interactionInfoCallbackRegistered = false;
         }
 
         private Vec2 GetTeamCenter(Team team, Agent? excludedAgent)
@@ -2107,6 +2138,393 @@ namespace GreyWardenPolicePurity
         private static float Project(Vec2 position, Vec2 axis)
         {
             return position.x * axis.x + position.y * axis.y;
+        }
+
+        private Vec2 ResolveBattleCenter(
+            Vec2 playerCenter,
+            Vec2 opponentCenter)
+        {
+            WorldPosition playerSource = CreateReachableWorldPosition(
+                _playerAgent!.GetWorldPosition(),
+                playerCenter);
+            WorldPosition opponentSource = CreateReachableWorldPosition(
+                _opponentAgent!.GetWorldPosition(),
+                opponentCenter);
+            List<Vec2> approachPath = BuildApproachPath(
+                playerSource,
+                opponentSource,
+                out float playerPathOffset,
+                out float opponentPathOffset,
+                out Vec2 playerProjection,
+                out Vec2 opponentProjection,
+                out float playerProjectionDistance,
+                out float opponentProjectionDistance,
+                out bool usesAuthorPath);
+            Vec2 selectedCenter = FindBestBattleCenterOnApproachPath(
+                approachPath,
+                playerPathOffset,
+                opponentPathOffset,
+                out Vec2 selectedAxis,
+                out Vec2 playerRankCenter,
+                out Vec2 opponentRankCenter,
+                out float usableWidth,
+                out float selectedPathOffset);
+            float playerAdvance = selectedPathOffset
+                - playerPathOffset
+                - DesiredFrontGap * 0.5f;
+            float opponentAdvance = opponentPathOffset
+                - selectedPathOffset
+                - DesiredFrontGap * 0.5f;
+            _battleAxis = selectedAxis;
+            _playerRankCenter = playerRankCenter;
+            _opponentRankCenter = opponentRankCenter;
+            Debug.Print(
+                "[GreyWarden Sparring] battle centre selected on the "
+                + (usesAuthorPath
+                    ? "map author's spawn path"
+                    : "direct fallback path")
+                + "; playerProjection=("
+                + $"{playerProjection.x:0.0},"
+                + $"{playerProjection.y:0.0}); "
+                + $"playerOffset={playerPathOffset:0.0}; "
+                + $"playerProjectionDistance={playerProjectionDistance:0.0}; "
+                + "opponentProjection=("
+                + $"{opponentProjection.x:0.0},"
+                + $"{opponentProjection.y:0.0}); "
+                + $"opponentOffset={opponentPathOffset:0.0}; "
+                + $"opponentProjectionDistance={opponentProjectionDistance:0.0}; "
+                + "selected=("
+                + $"{selectedCenter.x:0.0},"
+                + $"{selectedCenter.y:0.0},"
+                + $"z={Mission.Scene.GetTerrainHeight(selectedCenter):0.0}); "
+                + $"pathOffset={selectedPathOffset:0.0}; "
+                + $"playerAdvance={playerAdvance:0.0}; "
+                + $"opponentAdvance={opponentAdvance:0.0}; "
+                + $"imbalance={Math.Abs(playerAdvance - opponentAdvance):0.0}; "
+                + $"playerRank=({playerRankCenter.x:0.0},"
+                + $"{playerRankCenter.y:0.0}); "
+                + $"opponentRank=({opponentRankCenter.x:0.0},"
+                + $"{opponentRankCenter.y:0.0}); "
+                + $"lineWidth={usableWidth:0.0}; axis=("
+                + $"{selectedAxis.x:0.00},{selectedAxis.y:0.00})");
+            return selectedCenter;
+        }
+
+        private List<Vec2> BuildApproachPath(
+            WorldPosition playerSource,
+            WorldPosition opponentSource,
+            out float playerPathOffset,
+            out float opponentPathOffset,
+            out Vec2 playerProjection,
+            out Vec2 opponentProjection,
+            out float playerProjectionDistance,
+            out float opponentProjectionDistance,
+            out bool usesAuthorPath)
+        {
+            var points = new List<Vec2>();
+            usesAuthorPath = false;
+            try
+            {
+                Path authorPath = Mission.GetInitialSpawnPath();
+                if (authorPath != null && authorPath.NumberOfPoints > 1)
+                {
+                    var frames = new MatrixFrame[authorPath.NumberOfPoints];
+                    authorPath.GetPoints(frames);
+                    for (int index = 0;
+                        index < authorPath.NumberOfPoints;
+                        index++)
+                    {
+                        AddApproachPathPoint(
+                            points,
+                            frames[index].origin.AsVec2);
+                    }
+                    usesAuthorPath = points.Count > 1;
+                    if (usesAuthorPath)
+                    {
+                        Debug.Print(
+                            "[GreyWarden Sparring] map author spawn path "
+                            + $"loaded; nodes={points.Count}; "
+                            + $"engineLength={authorPath.GetTotalLength():0.0}; "
+                            + $"polylineLength={GetPolylineLength(points):0.0}");
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.Print(
+                    "[GreyWarden Sparring] map author spawn path was "
+                    + "unavailable; using the direct deployment axis: "
+                    + exception.Message);
+            }
+
+            if (!usesAuthorPath)
+            {
+                points.Clear();
+                AddApproachPathPoint(points, playerSource.AsVec2);
+                AddApproachPathPoint(points, opponentSource.AsVec2);
+            }
+
+            playerPathOffset = ProjectOntoPolyline(
+                points,
+                playerSource.AsVec2,
+                out playerProjection);
+            opponentPathOffset = ProjectOntoPolyline(
+                points,
+                opponentSource.AsVec2,
+                out opponentProjection);
+            if (playerPathOffset > opponentPathOffset)
+            {
+                points.Reverse();
+                float pathLength = GetPolylineLength(points);
+                playerPathOffset = pathLength - playerPathOffset;
+                opponentPathOffset = pathLength - opponentPathOffset;
+            }
+
+            playerProjection = GetPointAlongPolyline(
+                points,
+                playerPathOffset);
+            opponentProjection = GetPointAlongPolyline(
+                points,
+                opponentPathOffset);
+            playerProjectionDistance = playerSource.AsVec2.Distance(
+                playerProjection);
+            opponentProjectionDistance = opponentSource.AsVec2.Distance(
+                opponentProjection);
+            Debug.Print(
+                "[GreyWarden Sparring] deployment projections resolved; "
+                + $"playerOffset={playerPathOffset:0.0}; "
+                + $"opponentOffset={opponentPathOffset:0.0}; "
+                + $"between={opponentPathOffset - playerPathOffset:0.0}");
+            return points;
+        }
+
+        private static float ProjectOntoPolyline(
+            IReadOnlyList<Vec2> points,
+            Vec2 position,
+            out Vec2 projection)
+        {
+            projection = points[0];
+            float bestDistanceSquared = position.DistanceSquared(projection);
+            float bestOffset = 0f;
+            float traversed = 0f;
+            for (int index = 1; index < points.Count; index++)
+            {
+                Vec2 start = points[index - 1];
+                Vec2 segment = points[index] - start;
+                float segmentLengthSquared = segment.LengthSquared;
+                if (segmentLengthSquared < 0.0001f)
+                    continue;
+
+                float segmentLength = MathF.Sqrt(segmentLengthSquared);
+                Vec2 relative = position - start;
+                float fraction = MathF.Clamp(
+                    relative.DotProduct(segment) / segmentLengthSquared,
+                    0f,
+                    1f);
+                Vec2 candidate = start + segment * fraction;
+                float distanceSquared = position.DistanceSquared(candidate);
+                if (distanceSquared < bestDistanceSquared)
+                {
+                    bestDistanceSquared = distanceSquared;
+                    bestOffset = traversed + segmentLength * fraction;
+                    projection = candidate;
+                }
+
+                traversed += segmentLength;
+            }
+
+            return bestOffset;
+        }
+
+        private static void AddApproachPathPoint(
+            List<Vec2> points,
+            Vec2 point)
+        {
+            if (points.Count == 0
+                || points[points.Count - 1].DistanceSquared(point) >= 0.25f)
+            {
+                points.Add(point);
+            }
+        }
+
+        private Vec2 FindBestBattleCenterOnApproachPath(
+            IReadOnlyList<Vec2> approachPath,
+            float playerPathOffset,
+            float opponentPathOffset,
+            out Vec2 selectedAxis,
+            out Vec2 selectedPlayerRank,
+            out Vec2 selectedOpponentRank,
+            out float usableWidth,
+            out float selectedPathOffset)
+        {
+            float halfGap = DesiredFrontGap * 0.5f;
+            float midpoint = (playerPathOffset + opponentPathOffset) * 0.5f;
+            selectedPathOffset = midpoint;
+            Vec2 center = GetPointAlongPolyline(approachPath, midpoint);
+            Vec2 playerRankRoutePoint = GetPointAlongPolyline(
+                approachPath,
+                midpoint - halfGap);
+            Vec2 opponentRankRoutePoint = GetPointAlongPolyline(
+                approachPath,
+                midpoint + halfGap);
+            selectedAxis = opponentRankRoutePoint - playerRankRoutePoint;
+            if (selectedAxis.LengthSquared < 0.01f)
+                selectedAxis = _battleAxis;
+            else
+                selectedAxis.Normalize();
+
+            center = FindLowestPointOnBattleLine(
+                center,
+                selectedAxis,
+                "meeting");
+            playerRankRoutePoint = center - selectedAxis * halfGap;
+            opponentRankRoutePoint = center + selectedAxis * halfGap;
+            selectedPlayerRank = FindLowestPointOnBattleLine(
+                playerRankRoutePoint,
+                selectedAxis,
+                "player rank");
+            selectedOpponentRank = FindLowestPointOnBattleLine(
+                opponentRankRoutePoint,
+                selectedAxis,
+                "opponent rank");
+            usableWidth = MaximumFormationFrontWidth;
+            Debug.Print(
+                "[GreyWarden Sparring] fixed 200 m battle lines sampled; "
+                + $"formationFrontLimit={MaximumFormationFrontWidth:0.0}; "
+                + "native formation slots handle terrain obstacles");
+            return center;
+        }
+
+        private Vec2 FindLowestPointOnBattleLine(
+            Vec2 lineCenter,
+            Vec2 axis,
+            string lineName)
+        {
+            Vec2 lateral = new Vec2(-axis.y, axis.x);
+            Vec2 selected = lineCenter;
+            float selectedHeight = float.MaxValue;
+            float selectedOffset = 0f;
+            bool hasLineOrigin = TryCreateNavigablePosition(
+                lineCenter,
+                out WorldPosition lineOrigin);
+            for (float offset = -DuelArenaHalfWidth;
+                offset <= DuelArenaHalfWidth + 0.01f;
+                offset += TerrainLineSampleStep)
+            {
+                Vec2 candidate = lineCenter + lateral * offset;
+                if (!TryCreateNavigablePosition(
+                        candidate,
+                        out WorldPosition candidatePosition)
+                    || (hasLineOrigin
+                        && !HasReasonablePath(
+                            lineOrigin,
+                            candidatePosition)))
+                {
+                    continue;
+                }
+
+                float height = candidatePosition.GetGroundVec3().z;
+                if (height < selectedHeight - 0.05f
+                    || (Math.Abs(height - selectedHeight) <= 0.05f
+                        && Math.Abs(offset) < Math.Abs(selectedOffset)))
+                {
+                    selected = candidate;
+                    selectedHeight = height;
+                    selectedOffset = offset;
+                }
+            }
+
+            if (selectedHeight == float.MaxValue)
+            {
+                selectedHeight = Mission.Scene.GetTerrainHeight(lineCenter);
+                selectedOffset = 0f;
+            }
+
+            Debug.Print(
+                "[GreyWarden Sparring] lowest point selected on fixed "
+                + $"200 m {lineName} line; base=({lineCenter.x:0.0},"
+                + $"{lineCenter.y:0.0}); selected=({selected.x:0.0},"
+                + $"{selected.y:0.0}); lateralOffset={selectedOffset:0.0}; "
+                + $"height={selectedHeight:0.0}");
+            return selected;
+        }
+
+        private static float GetPolylineLength(
+            IReadOnlyList<Vec2> points)
+        {
+            float length = 0f;
+            for (int index = 1; index < points.Count; index++)
+                length += points[index - 1].Distance(points[index]);
+            return length;
+        }
+
+        private static Vec2 GetPointAlongPolyline(
+            IReadOnlyList<Vec2> points,
+            float distance)
+        {
+            if (distance <= 0f)
+                return points[0];
+
+            float remaining = distance;
+            for (int index = 1; index < points.Count; index++)
+            {
+                Vec2 start = points[index - 1];
+                Vec2 end = points[index];
+                float segmentLength = start.Distance(end);
+                if (segmentLength < 0.001f)
+                    continue;
+                if (remaining <= segmentLength)
+                {
+                    return start + (end - start)
+                        * (remaining / segmentLength);
+                }
+                remaining -= segmentLength;
+            }
+
+            return points[points.Count - 1];
+        }
+
+        private bool TryCreateNavigablePosition(
+            Vec2 position,
+            out WorldPosition worldPosition)
+        {
+            worldPosition = WorldPosition.Invalid;
+            if (!Mission.IsPositionInsideBoundaries(position))
+                return false;
+
+            Vec3 point = position.ToVec3(
+                Mission.Scene.GetTerrainHeight(position));
+            if (Mission.Scene.GetNavigationMeshForPosition(in point)
+                == UIntPtr.Zero)
+            {
+                return false;
+            }
+
+            worldPosition = new WorldPosition(
+                Mission.Scene,
+                UIntPtr.Zero,
+                point,
+                hasValidZ: false);
+            return true;
+        }
+
+        private bool HasReasonablePath(
+            WorldPosition start,
+            WorldPosition end)
+        {
+            WorldPosition pathStart = start;
+            WorldPosition pathEnd = end;
+            if (!Mission.Scene.GetPathDistanceBetweenPositions(
+                    ref pathStart,
+                    ref pathEnd,
+                    0f,
+                    out float pathDistance))
+            {
+                return false;
+            }
+
+            float directDistance = start.AsVec2.Distance(end.AsVec2);
+            return pathDistance <= directDistance * 3f + 20f;
         }
 
         private WorldPosition CreateReachableWorldPosition(
@@ -2148,10 +2566,6 @@ namespace GreyWardenPolicePurity
             Debug.Print(
                 "[GreyWarden Sparring] field mission failed during "
                 + phase + ": " + exception);
-            MBInformationManager.AddQuickInformation(
-                new TextObject(
-                    GwpText.Get(
-                        "{=gwp_sparring_spawn_failed}The terrain isn't suitable for forming up, so the match is cancelled.")));
         }
     }
 }

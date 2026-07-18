@@ -9,7 +9,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.CampaignSystem.Conversation;
 using TaleWorlds.CampaignSystem.Encounters;
-using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -42,12 +41,22 @@ namespace GreyWardenPolicePurity
             Field
         }
 
+        private enum PostBoutConversationKind
+        {
+            None,
+            Town,
+            Field
+        }
+
         private PendingSparringKind _pendingKind;
         private Hero? _pendingOpponent;
         private MobileParty? _pendingOpponentParty;
         private Settlement? _pendingSettlement;
         private Location? _pendingArena;
         private Hero? _pendingPostBoutOpponent;
+        private Settlement? _pendingPostBoutSettlement;
+        private string _pendingPostBoutConversationScene = string.Empty;
+        private PostBoutConversationKind _pendingPostBoutKind;
         private bool _pendingPostBoutPlayerWon;
         private bool _pendingPostBoutRuleViolation;
         private bool _postBoutConversationQueued;
@@ -59,9 +68,6 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(
                 this,
                 OnSessionLaunched);
-            CampaignEvents.BeforeGameMenuOpenedEvent.AddNonSerializedListener(
-                this,
-                OnBeforeGameMenuOpened);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(
                 this,
                 OnMapEventStarted);
@@ -228,7 +234,6 @@ namespace GreyWardenPolicePurity
             if (_pendingSettlement?.IsTown == true && _pendingArena != null)
             {
                 _pendingKind = PendingSparringKind.TownArena;
-                Campaign.Current.GameMenuManager.NextLocation = _pendingArena;
             }
             else
             {
@@ -241,40 +246,68 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // Follow the stock arena-quest transition: close the conversation
-            // mission first, then open the duel only after map state resumes.
+            // Close the conversation mission first. The arena duel is opened
+            // directly after map state resumes; entering the arena location
+            // here would launch the ordinary arena-master walkabout instead.
             Mission.Current?.EndMission();
         }
 
-        private void OnBeforeGameMenuOpened(MenuCallbackArgs args)
+        private void TryLaunchTownSparringImmediately()
         {
             if (_pendingKind != PendingSparringKind.TownArena
                 || _pendingOpponent == null
                 || _pendingSettlement == null
                 || _pendingArena == null
                 || Settlement.CurrentSettlement != _pendingSettlement
-                || args.MenuContext?.GameMenu?.StringId != "town"
-                || Campaign.Current.GameMenuManager.NextLocation != _pendingArena
+                || Mission.Current != null
+                || Campaign.Current.ConversationManager.IsConversationInProgress
                 || GameStateManager.Current.ActiveState is not MapState)
             {
+                return;
+            }
+
+            if (Hero.MainHero.IsPrisoner
+                || _pendingOpponent.IsDead
+                || _pendingOpponent.IsPrisoner)
+            {
+                ClearPendingSparring();
                 return;
             }
 
             Hero opponent = _pendingOpponent;
             Settlement settlement = _pendingSettlement;
             Location arena = _pendingArena;
-            ClearPendingSparring(clearNextLocation: false);
-            Campaign.Current.GameMenuManager.NextLocation = null;
+            ClearPendingSparring();
 
-            string scene = arena.GetSceneName(settlement.Town.GetWallLevel());
-            CampaignMission.OpenArenaDuelMission(
-                scene,
-                arena,
-                opponent.CharacterObject,
-                requireCivilianEquipment: false,
-                spawnBothSidesWithHorse: false,
-                winner => ShowTownResult(winner, opponent.CharacterObject),
-                customAgentHealth: 100f);
+            try
+            {
+                string scene = arena.GetSceneName(
+                    settlement.Town.GetWallLevel());
+                CampaignMission.OpenArenaDuelMission(
+                    scene,
+                    arena,
+                    opponent.CharacterObject,
+                    requireCivilianEquipment: false,
+                    spawnBothSidesWithHorse: false,
+                    winner => OnTownBoutEnded(
+                        winner,
+                        opponent,
+                        settlement),
+                    customAgentHealth: 100f);
+                Debug.Print(
+                    "[GreyWarden Sparring] native town arena duel opened; "
+                    + $"scene={scene}; opponent={opponent.StringId}");
+            }
+            catch (Exception exception)
+            {
+                Debug.Print(
+                    "[GreyWarden Sparring] town arena launch failed: "
+                    + exception);
+                MBInformationManager.AddQuickInformation(
+                    new TextObject(
+                        GwpText.Get(
+                            "{=gwp_sparring_launch_failed}This isn't a good place to spar, so we'll stop here.")));
+            }
         }
 
         internal static void OnApplicationTick()
@@ -287,8 +320,69 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            behavior.TryLaunchTownSparringImmediately();
             behavior.TryLaunchFieldSparringImmediately();
             behavior.TryOpenPostBoutConversation();
+        }
+
+        private static void OnTownBoutEnded(
+            CharacterObject winner,
+            Hero opponent,
+            Settlement settlement)
+        {
+            GreyWardenSparringBehavior? behavior = _activeBehavior;
+            if (behavior == null)
+                return;
+
+            PlayArenaVictoryCheer();
+
+            Settlement conversationSettlement =
+                ResolveTownPostBoutSettlement(settlement);
+
+            behavior.QueueTownResultConversation(
+                opponent,
+                conversationSettlement,
+                winner == CharacterObject.PlayerCharacter,
+                GetLordHallConversationScene(conversationSettlement));
+            Debug.Print(
+                "[GreyWarden Sparring] town arena duel resolved; "
+                + $"playerWon={winner == CharacterObject.PlayerCharacter}; "
+                + "waiting for the player to leave with Tab");
+        }
+
+        private static void PlayArenaVictoryCheer()
+        {
+            Mission? mission = Mission.Current;
+            if (mission == null)
+                return;
+
+            GameEntity arenaSoundEntity =
+                mission.Scene.FindEntityWithTag("arena_sound");
+            Vec3 soundPosition = arenaSoundEntity != null
+                ? arenaSoundEntity.GlobalPosition
+                : Vec3.Zero;
+            SoundManager.StartOneShotEvent(
+                "event:/mission/ambient/detail/arena/cheer_big",
+                soundPosition);
+        }
+
+        private void QueueTownResultConversation(
+            Hero opponent,
+            Settlement settlement,
+            bool playerWon,
+            string conversationScene)
+        {
+            _pendingPostBoutOpponent = opponent;
+            _pendingPostBoutSettlement = settlement;
+            _pendingPostBoutConversationScene = conversationScene;
+            _pendingPostBoutKind = PostBoutConversationKind.Town;
+            _pendingPostBoutPlayerWon = playerWon;
+            _pendingPostBoutRuleViolation = false;
+            _postBoutConversationQueued = true;
+            _postBoutConversationActive = false;
+            Debug.Print(
+                "[GreyWarden Sparring] town post-bout conversation queued; "
+                + $"playerWon={playerWon}; scene={conversationScene}");
         }
 
         internal static void QueueFieldResultConversation(
@@ -301,6 +395,9 @@ namespace GreyWardenPolicePurity
                 return;
 
             behavior._pendingPostBoutOpponent = opponent;
+            behavior._pendingPostBoutSettlement = null;
+            behavior._pendingPostBoutConversationScene = string.Empty;
+            behavior._pendingPostBoutKind = PostBoutConversationKind.Field;
             behavior._pendingPostBoutPlayerWon = playerWon;
             behavior._pendingPostBoutRuleViolation = ruleViolation;
             behavior._postBoutConversationQueued = true;
@@ -433,9 +530,20 @@ namespace GreyWardenPolicePurity
                 || Mission.Current != null
                 || Campaign.Current.ConversationManager
                     .IsConversationInProgress
-                || GameStateManager.Current.ActiveState is not MapState
-                || PlayerEncounter.IsActive
-                || MobileParty.MainParty.MapEvent != null)
+                || GameStateManager.Current.ActiveState is not MapState)
+            {
+                return;
+            }
+
+            if (_pendingPostBoutKind == PostBoutConversationKind.Field
+                && (PlayerEncounter.IsActive
+                    || MobileParty.MainParty.MapEvent != null))
+            {
+                return;
+            }
+
+            if (_pendingPostBoutKind == PostBoutConversationKind.Town
+                && _pendingPostBoutSettlement == null)
             {
                 return;
             }
@@ -455,19 +563,40 @@ namespace GreyWardenPolicePurity
                 ClearPostBoutConversation;
             try
             {
-                CampaignMapConversation.OpenConversation(
+                bool isTownConversation = _pendingPostBoutKind
+                    == PostBoutConversationKind.Town;
+                ConversationCharacterData playerData =
                     new ConversationCharacterData(
                         CharacterObject.PlayerCharacter,
                         MobileParty.MainParty.Party,
+                        noHorse: isTownConversation,
                         spawnAfterFight: true,
-                        noBodyguards: true),
+                        noBodyguards: true);
+                ConversationCharacterData opponentData =
                     new ConversationCharacterData(
                         opponent.CharacterObject,
                         opponent.PartyBelongedTo?.Party,
+                        noHorse: isTownConversation,
                         spawnAfterFight: true,
-                        noBodyguards: true));
+                        noBodyguards: true);
+
+                if (isTownConversation)
+                {
+                    CampaignMission.OpenConversationMission(
+                        playerData,
+                        opponentData,
+                        _pendingPostBoutConversationScene,
+                        string.Empty);
+                }
+                else
+                {
+                    CampaignMapConversation.OpenConversation(
+                        playerData,
+                        opponentData);
+                }
                 Debug.Print(
-                    "[GreyWarden Sparring] post-bout map conversation opened");
+                    "[GreyWarden Sparring] post-bout conversation opened; "
+                    + $"kind={_pendingPostBoutKind}");
             }
             catch (Exception exception)
             {
@@ -657,22 +786,6 @@ namespace GreyWardenPolicePurity
             return combatant;
         }
 
-        private static void ShowTownResult(
-            CharacterObject winner,
-            CharacterObject opponent)
-        {
-            string text = winner == CharacterObject.PlayerCharacter
-                ? GwpText.Get(
-                    "{=gwp_sparring_town_win}{OPPONENT} gives up. You won the match.",
-                    "OPPONENT",
-                    opponent.Name)
-                : GwpText.Get(
-                    "{=gwp_sparring_town_loss}You lost the match to {OPPONENT}.",
-                    "OPPONENT",
-                    opponent.Name);
-            MBInformationManager.AddQuickInformation(new TextObject(text));
-        }
-
         private static bool IsPoliceInteractionConversation()
         {
             MobileParty? conversationParty = MobileParty.ConversationParty;
@@ -693,28 +806,58 @@ namespace GreyWardenPolicePurity
         private void ClearPostBoutConversation()
         {
             _pendingPostBoutOpponent = null;
+            _pendingPostBoutSettlement = null;
+            _pendingPostBoutConversationScene = string.Empty;
+            _pendingPostBoutKind = PostBoutConversationKind.None;
             _pendingPostBoutPlayerWon = false;
             _pendingPostBoutRuleViolation = false;
             _postBoutConversationQueued = false;
             _postBoutConversationActive = false;
         }
 
-        private void ClearPendingSparring(bool clearNextLocation = true)
+        private void ClearPendingSparring()
         {
-            Campaign? campaign = Campaign.Current;
-            if (clearNextLocation
-                && campaign != null
-                && _pendingKind == PendingSparringKind.TownArena
-                && campaign.GameMenuManager.NextLocation == _pendingArena)
-            {
-                campaign.GameMenuManager.NextLocation = null;
-            }
-
             _pendingKind = PendingSparringKind.None;
             _pendingOpponent = null;
             _pendingOpponentParty = null;
             _pendingSettlement = null;
             _pendingArena = null;
+        }
+
+        private static Settlement ResolveTownPostBoutSettlement(
+            Settlement preferredSettlement)
+        {
+            Settlement? currentSettlement = Settlement.CurrentSettlement;
+            if (HasLordHall(currentSettlement))
+                return currentSettlement!;
+
+            Vec2 playerPosition = MobileParty.MainParty.Position.ToVec2();
+            Settlement? nearestFortification = Settlement.All
+                .Where(HasLordHall)
+                .OrderBy(settlement => settlement.GetPosition2D.DistanceSquared(
+                    playerPosition))
+                .FirstOrDefault();
+
+            return nearestFortification ?? preferredSettlement;
+        }
+
+        private static bool HasLordHall(Settlement? settlement)
+        {
+            return settlement != null
+                && (settlement.IsTown || settlement.IsCastle)
+                && settlement.Town != null
+                && settlement.LocationComplex?
+                    .GetLocationWithId("lordshall") != null;
+        }
+
+        private static string GetLordHallConversationScene(
+            Settlement settlement)
+        {
+            Location lordHall = settlement.LocationComplex
+                .GetLocationWithId("lordshall")
+                ?? throw new InvalidOperationException(
+                    "the selected fortification has no lord hall");
+            return lordHall.GetSceneName(settlement.Town.GetWallLevel());
         }
     }
 }

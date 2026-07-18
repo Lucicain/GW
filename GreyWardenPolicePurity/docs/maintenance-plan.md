@@ -2262,3 +2262,669 @@ irreplaceable backup; the editor workspace does not replace it.
 - This entry is the rollback point for the formal source commit, `main` push,
   `v1.4.7-r3` tag, and GitHub Release. The release assets must be the exact ZIP
   and checksum recorded above; do not regenerate them after the source commit.
+
+# 2026-07-18 native town-arena duel transition repair
+
+- In-game testing of the town challenge found that accepting the bout ended in
+  the ordinary arena walkabout beside the arena master, with no fight. The
+  previous transition set `GameMenuManager.NextLocation` to the arena before
+  ending the conversation mission and then attempted to call
+  `CampaignMission.OpenArenaDuelMission` from `BeforeGameMenuOpened`. The
+  location transition and the duel mission competed for the same state change;
+  the ordinary location mission won.
+- The original `SandBox.dll` was decompiled with the repository-local
+  `.codex_tmp\ilspy\ilspycmd.exe`. `SandBox.SandBoxMissions` confirms that
+  `OpenArenaDuelMission` directly opens mission type `ArenaDuelMission`, uses
+  `ArenaDuelMissionController`, and spawns the player and named opponent from
+  two different `sp_arena` frames. With `requireCivilianEquipment=false` and
+  `spawnBothSidesWithHorse=false`, both combatants use their first battle
+  equipment and no horse. `SandBox.View.dll` confirms the same mission type
+  automatically loads `MissionAudienceHandler`, the native status/equipment
+  views, cheer-bark handling, and campaign spectator view.
+- Town challenges no longer set `NextLocation` or subscribe to the town-menu
+  opening event. After the conversation mission closes and `MapState` is
+  active, the campaign behavior opens the native duel mission directly. The
+  stock duel controller remains responsible for teams, arena spawn markers,
+  equipment, AI, defeat detection, audience, and cheers; no custom arena
+  combat controller was added.
+- The duel result now enters the existing post-bout conversation queue. The
+  campaign behavior closes the finished native duel mission on the next
+  application tick and then opens the same concise victory/defeat response
+  conversation used by field sparring. This deliberately replaces the former
+  one-line quick-information result.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module, all `17` XML files parse, and the normal-client module has
+  no `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum entry.
+  Client and editor DLLs match at SHA-256
+  `093FA5B6C765195AC4830BD9BF4265FA71F95F49DE1BD8910AF6080930E69A81`.
+  Repository/live README hashes match at
+  `242DC17C3B0944C5F6FE017E7F209214CCAB846065CD7D1D619B87C636CF83B4`
+  for Chinese and
+  `68D0F72AA1698634899CD28342C8475B58697C1F814E5FF9EEACBBAB4AEDA517`
+  for English.
+- Decompilation of the deployed client DLL confirms that the town launcher no
+  longer contains a `NextLocation` transition and calls
+  `OpenArenaDuelMission(scene, arena, opponent, false, false, callback, 100f)`.
+  It also confirms that the callback queues the post-bout conversation and the
+  application tick closes the completed mission. No archive, commit, push,
+  tag, or GitHub Release was created. The next in-game test should verify the
+  two separate arena spawns, complete personal equipment, absence of mounts,
+  audience audio, and both victory and defeat return conversations.
+
+# 2026-07-18 town-arena knockdown and return-conversation repair
+
+- The first native-arena retest confirmed that both combatants and the fight
+  now spawn correctly, but exposed two follow-up defects. The application tick
+  ended the mission immediately when `ArenaDuelMissionController` reported a
+  winner, cutting off the visible fall. The result was also sent through
+  `CampaignMapConversation.OpenConversation`, which is the correct field-bout
+  path but selects a world-map conversation scene and therefore moved a town
+  challenge far away from its original presentation.
+- Decompiled stock `ArenaDuelQuestTask.MissionTick` establishes the native
+  timing: once either arena agent becomes inactive, it starts a
+  `BasicMissionTimer` and ends the mission only after `4 s`. The town callback
+  now follows the same delay before closing `ArenaDuelMission`, allowing the
+  knockdown and audience response to finish visibly.
+- At challenge acceptance, the behavior records the active conversation
+  mission's `SceneName` and `SceneLevels`. After the delayed arena exit, town
+  results now call the stock `CampaignMission.OpenConversationMission` with
+  those recorded values and two no-horse, no-bodyguard, post-fight character
+  records. This recreates the original town conversation presentation and lets
+  the existing concise win/loss dialogue finish the entire flow. Field results
+  retain their previous map-conversation route and horse behavior.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable files are SHA-256-identical live, all
+  `17` XML files parse, and the normal-client module contains no editor tree,
+  runtime cache, ZIP, or checksum entry. Client and editor DLLs match at
+  `9E1F6DC02F0FA77D6323FAFFABB1B0B3DFABA16340F89C41F5B8002B883BA00E`.
+  Repository/live README hashes match at
+  `A6ABFE089D5C43C50448B451AA134B870DD8DC768C32408669F0E0663C864ABC`
+  for Chinese and
+  `3DEA5AC311B82C4B22D19AE94C1553E404D912A733BF26382A92770B623BDF1B`
+  for English.
+- Decompilation of the deployed client DLL confirms the `4 s` timer gate,
+  capture of the original `SceneName` and `SceneLevels`, the town-only call to
+  `OpenConversationMission`, and retention of
+  `CampaignMapConversation.OpenConversation` for field results. No archive,
+  commit, push, tag, or GitHub Release was created.
+
+# 2026-07-18 town meeting background and longer result hold
+
+- The next retest confirmed that the four-second hold works, but the player
+  requested another five seconds. The total post-result arena hold is now
+  `9 s` before the mission closes.
+- The latest `rgl_log_29624.txt` proves why the result conversation still used
+  an outdoor background. The queued diagnostic recorded `scene=` with an empty
+  value. The challenge began from a menu/tableau lord conversation, not a live
+  three-dimensional mission, so `Mission.Current` was null and there was no
+  original `SceneName` to preserve. Passing the empty value to
+  `OpenConversationMission` correctly triggered its stock map-scene fallback,
+  which loaded `conversation_scene_forest`.
+- Town results now select the stock `MeetingSceneData` whose culture matches
+  the current settlement and pass its explicit `meeting_castle_*` scene ID to
+  `OpenConversationMission`. These scenes are registered by the original
+  `meeting_scenes.xml` and include the official meeting conversation spawn
+  prefab. An empire meeting scene is retained only as a fallback if the game
+  data contains no matching culture entry. The invalid attempt to remember a
+  nonexistent menu-conversation mission scene was removed.
+- The same log contains no managed exception or Grey Warden stack trace during
+  shutdown. It records successful save, screen cleanup, `There are no living
+  managed objects`, and normal managed-interface deletion. The only error log
+  entries are repeated FMOD event-not-found messages without a call stack;
+  these begin during general startup/audio loading rather than at the sparring
+  shutdown. No code change was attributed to an unproven exit crash.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable files are SHA-256-identical live, all
+  `17` XML files parse, and the normal-client module contains no editor tree,
+  runtime cache, ZIP, or checksum entry. Client and editor DLLs match at
+  `A706973F3661DD6F0FD2970B524088509E1B9C565E22C1EC6B70B932591E7542`.
+  Repository/live README hashes match at
+  `D91223270C82B38421285739AB89048E6895E2E0D69CA4C156DCEC0C71DFABA6`
+  for Chinese and
+  `42F2BC76D3173B60743FB40E5FB253BD00CF871D0C7360A9F6E01C82E12C2C8E`
+  for English.
+- Decompilation of the deployed client DLL confirms the `9 s` timer gate, the
+  culture-string lookup over `GameSceneDataManager.Instance.MeetingScenes`,
+  the stock empire meeting fallback, and the explicit town
+  `OpenConversationMission` call. No archive, commit, push, tag, or GitHub
+  Release was created.
+
+# 2026-07-18 use the actual nearest lord-hall interior
+
+- The generic culture-matched `meeting_castle_*` scene was rejected in favour
+  of the actual settlement interior. Town-result scene selection now first
+  uses `Settlement.CurrentSettlement` when it is a town or castle with a
+  `lordshall` location. If mission-state transitions temporarily clear the
+  current settlement, it compares the main party's current map position with
+  every town and castle that has a lord hall and selects the nearest one.
+- The selected settlement's `lordshall` location resolves its authored scene
+  through `GetSceneName(settlement.Town.GetWallLevel())`. The explicit result
+  passed to `OpenConversationMission` is therefore the real keep interior for
+  that settlement and upgrade level, not an outdoor map conversation or a
+  generic culture meeting scene.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable files are SHA-256-identical live, all
+  `17` XML files parse, and the normal-client module contains no editor tree,
+  runtime cache, ZIP, or checksum entry. Client and editor DLLs match at
+  `CA3A4CA82F9D3AA1C80E5F40CBE6121CFDC2E7959539895BFC96BBAEA3CCF6AA`.
+  Repository/live README hashes match at
+  `7AEC0F333286599FEF32F824BAAC0EDB4EFED2EB6B6111A453837196D7D542CE`
+  for Chinese and
+  `59BDB1B596F992355D9754E33651EB264CF584DD9EB01296D24BD39F993BADE1`
+  for English.
+- Decompilation of the deployed DLL confirms current-settlement priority,
+  squared-distance ordering over fortifications as the fallback, the explicit
+  `lordshall` lookup, upgrade-level scene resolution, and retention of the
+  `9 s` result hold. No archive, commit, push, tag, or GitHub Release was
+  created.
+
+# 2026-07-18 remove automatic town-arena exit
+
+- The fixed post-result timer was removed at the player's request. The stock
+  `ArenaDuelMissionController` already marks the duel as finished, allows the
+  normal leave request, and displays the native leave-key prompt. The mod no
+  longer calls `Mission.EndMission` after a town result or owns any town-duel
+  exit timer.
+- The result conversation is still queued as soon as the winner is known, but
+  `TryOpenPostBoutConversation` naturally waits while the arena mission exists.
+  The player may therefore watch the knockdown and crowd reaction for as long
+  as desired, press Tab to leave through the original mission flow, and only
+  then enter the selected lord-hall response conversation.
+
+# 2026-07-18 trigger the native large arena cheer on the result
+
+- The stock `MissionAudienceHandler` already supplies the arena spectators and
+  ambient crowd, but its largest reaction normally waits for mission shutdown.
+  That did not match the manual-Tab flow, where the player can remain in the
+  arena after the duel has been decided.
+- The town-duel result callback now plays the stock
+  `event:/mission/ambient/detail/arena/cheer_big` one-shot at the scene's
+  authored `arena_sound` entity as soon as either fighter wins. No lord victory
+  animation was added, and the mod still leaves mission exit entirely to the
+  player's Tab input.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module, all `17` XML files parse, and the normal-client module has
+  no `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum entry.
+  Client and editor DLLs match at SHA-256
+  `D4FF7C3904E2533DF5FDBE28982229874A11A867273FFB5912FF60FA135C8E19`.
+  Repository/live README hashes match at
+  `2B1AB72FC4866457E0DB7D9AF05009F21D879C432DE1D09DE59B2BA17B2CCE59`
+  for Chinese and
+  `BF856714EFACF5EB7BCEE0124B90C39607DFF5A5812C966B1CE2765DE2529CD1`
+  for English.
+- Decompilation of the deployed client DLL confirms that
+  `OnTownBoutEnded` calls `PlayArenaVictoryCheer`, which resolves the authored
+  `arena_sound` entity and starts the stock `cheer_big` event before queuing
+  the result conversation. No town-duel mission-end call was reintroduced; the
+  player still leaves with Tab. No archive, commit, push, tag, or GitHub
+  Release was created.
+
+# 2026-07-18 exit-crash investigation and leave-message flood repair
+
+- The latest reported exit failure was investigated from
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_33532.txt`, its
+  watchdog log, and Windows Application events. Both town arena bouts in that
+  run completed their result callbacks, accepted Tab, opened the real lord-hall
+  conversation, and finalized their arena scenes normally. The later crash
+  occurred after a separate field sparring mission had opened with `433`
+  agents and the game was closed while that bout was still unfinished.
+- Windows recorded a native access violation in `TaleWorlds.Native.dll` at
+  offset `0x74b3f1`, with no managed exception or Grey Warden stack. The same
+  `0x74b1f0`, `0x74b34a`, and `0x74b3f1` native shutdown-offset family appears
+  repeatedly in Application events from earlier dates and builds. A town-only
+  run at 07:28 followed the same arena and lord-hall path and exited normally,
+  so the evidence does not support attributing the native crash to the town
+  result callback or the newly added crowd cheer.
+- One concrete mod-side defect was visible immediately before the latest
+  failure: holding Tab while the field bout was unfinished called
+  `OnEndMissionRequest` every frame and generated hundreds of identical
+  quick-information messages. The field controller now simply refuses the
+  premature leave request without allocating and queueing another message on
+  every frame. The rule that an unfinished field bout cannot be abandoned is
+  unchanged.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module, all `17` XML files parse, and the normal-client module has
+  no `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum entry.
+  Client and editor DLLs match at SHA-256
+  `DEBFDE1AC44AA22822EF07F557574E87560436D8CE92777ADC4DC1D7D0E2699E`.
+  Repository/live README hashes match at
+  `8ABCF7D461A0899196D9173280FB41736AC50353BEFC3342A1745B2588FA35B9`
+  for Chinese and
+  `C4F6D0535A536B2F07696D1CC726672546DB35CC6166A2149F9004090D0F2480`
+  for English.
+- Decompilation of the deployed client DLL confirms that the field
+  `OnEndMissionRequest` now only returns `_canLeave` and no longer calls
+  `AddQuickInformation`. No archive, commit, push, tag, or GitHub Release was
+  created. The next test should finish a town bout, leave with Tab, close the
+  result dialogue, and exit the game before starting a field bout; a separate
+  test should hold Tab during an unfinished field bout and verify that the
+  message no longer floods the log.
+
+# 2026-07-18 native encounter-region field-rank planning
+
+- The `433`-agent valley test exposed a structural error in the original rank
+  planner. It used the midpoint of the two spawned army centres as the duel
+  centre and concatenated every active formation into one lateral line. Seven
+  formations capped at `80 m` each could request more than `500 m` of width;
+  individual navigation clamps then stranded formations at unrelated slopes or
+  valley mouths. The readiness gate required every formation to reach and stop
+  at its target with a `90-110 m` front gap, so a single unreachable target
+  held the flow until the old `150 s` fallback.
+- Decompiled stock `BattleSpawnPathSelector` confirms that the engine already
+  predicts this battle's encounter region. For patch scenes it converts the
+  campaign encounter coordinate through `GetPatchSceneEncounterPosition` and
+  uses the encounter direction to select the initial spawn path. The sparring
+  controller now uses that native encounter position as the preferred duel
+  centre. Only missions without patch encounter data fall back to the centre
+  of the current `walk_area` boundary resolved on the player-to-opponent battle
+  axes.
+- The preferred point is not accepted blindly. The controller searches outward
+  in `8 m` rings up to `80 m`, testing candidates inside the current mission
+  boundary and on navigation mesh. A candidate must provide reasonable paths
+  from both native army sides to their lines and from both lines to the centre.
+  It also measures continuous navigable width on both sides of the battle axis
+  and accepts only a symmetric corridor wide enough for the ceremony.
+- After the reachable centre is fixed, the two rank baselines are derived at
+  `50 m` on either side. Each baseline's actual continuous width is measured.
+  Formation widths are kept when space permits; when terrain is narrow, width
+  is distributed by the square root of formation size and applied through the
+  stock custom form order, increasing depth instead of sending ranks into
+  walls. The duel boundary uses the same verified symmetric corridor rather
+  than always claiming the full configured width.
+- The selected native encounter centre remains fixed after the armies settle;
+  the old recalculation from their actual front edges was removed because a
+  stalled formation could drag the duel back toward an unsuitable choke point.
+  Formation fallback was reduced from `150 s` to `45 s`. If the opposing lord
+  still cannot finish the final approach within `15 s`, the controller locks
+  him at the nearest position he actually reached and exposes the interaction
+  instead of logging forever.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module, all `17` XML files parse, and the normal-client module has
+  no `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum entry.
+  Client and editor DLLs match at SHA-256
+  `E8F01E0365FF5F29639CE814B54E32547677345851F1E16E5220566E079F0B6F`.
+  Repository/live README hashes match at
+  `6FD82577F5FBE16D9DBE88C080B3902E7CEFE0B66745F3BB75F14383ABB346F0`
+  for Chinese and
+  `490D953E792AFB30A23DA6D00BAD78EB6D6F92B334F034749E54CFD6E3B51E6D`
+  for English.
+- Decompilation of the deployed client DLL confirms the native encounter-region
+  lookup, boundary fallback, concentric reachable-centre search, two `50 m`
+  rank offsets, terrain-width allocation through `FormOrderCustom`, adaptive
+  duel width, the `45 s` formation fallback, and the `15 s` opposing-lord
+  nearest-position fallback. No archive, commit, push, tag, or GitHub Release
+  was created.
+
+# 2026-07-18 shared-navigation-route field-rank correction
+
+- The next valley test disproved the preceding interpretation of
+  `Mission.GetPatchSceneEncounterPosition`. The engine only uses that patch
+  coordinate to score authored spawn paths and select a pivot in
+  `BattleSpawnPathSelector.FindBestInitialPath`; it is not a predicted field
+  battle destination. The failing run logged native army centres at
+  `(389.7,511.8)` and `(424.2,853.3)`, but the patch coordinate
+  `(330.6,841.8)` caused the search to choose `(386.0,873.8)`, beside the
+  attacker deployment rather than between the armies.
+- That false centre provided only `24 m` of measured width. Seven active
+  formations were compressed into roughly `16 m` after edge clearance, and
+  the two fronts were still `275.3 m` apart when the `45 s` march fallback
+  fired. The opposing lord then stopped behind an obstacle and the old
+  `15 s` fallback exposed conversation while he remained `5.2 m` from the
+  requested point. This confirms the player's visual report and rules out
+  formation speed as the primary cause.
+- Decompiled stock deployment code confirms that `DefaultDeploymentPlan`
+  places both initial armies along the selected authored spawn path, while
+  `NavigationPath` exposes the actual navmesh route between their deployed
+  positions. The controller now builds that shared route directly with
+  `Scene.GetPathBetweenAIFaces` and treats its arc-length midpoint as the
+  preferred encounter region. It searches forward and backward only along
+  that route, so a valley bend or obstacle changes the candidate route instead
+  of leaving the candidate on an inaccessible straight line.
+- Each candidate derives both rank centres at `50 m` of route distance from
+  the meeting point and derives the battle axis from those two centres. The
+  candidate is rejected unless both ranks, the meeting point, and every final
+  formation centre are on navmesh and reachable from their actual formation
+  origins. The measured symmetric corridor must remain usable at the player
+  line, meeting point, and opponent line; the selector prefers the widest
+  valid candidate near the route midpoint.
+- Formation targets are no longer independently clamped toward an invalid
+  destination. Once a complete layout passes validation, the exact validated
+  positions are ordered as one layout. The later automatic gap correction was
+  removed because it could move a validated line back into a wall. The
+  opposing lord's meeting point is likewise required to have a real path from
+  his settled rank; it is no longer replaced by a silently truncated point.
+- The first Release compilation exposed only two uses of the modern `^1`
+  index syntax, which is unavailable to this `net472` build; replacing them
+  with explicit final indices produced a successful final build with `0`
+  errors and the existing `44` nullable warnings. All `24` deployable source
+  files are SHA-256-identical to the live module and all `17` XML files parse.
+  The live normal-client module has no `Assets`, `AssetSources`,
+  `RuntimeDataCache`, ZIP, or checksum entry.
+- Client and editor DLLs match at SHA-256
+  `CE12F5CD22C755FA6E28137504BFDA2E3658801BAC8E53FDDB03340A689F2E5A`.
+  Repository/live README hashes match at
+  `424A18445804794C45FD1B88D6EA3634F9AF7DB14664AB25D5C8A632CE88BA76`
+  for Chinese and
+  `CF82640FDF145F5461CB67DE325D66A5244C463A03F6FE4C33BBB324E2565E3A`
+  for English. Decompilation of the deployed client DLL confirms
+  `GetPathBetweenAIFaces`, route-midpoint candidate search, explicit player
+  and opponent rank centres, full-layout reachability checks, and the
+  opposing-lord route requirement. It contains neither the old
+  `GetPatchSceneEncounterPosition` centre lookup nor `CorrectFormationGap`.
+  No archive, commit, push, tag, or GitHub Release was created.
+
+# 2026-07-18 symmetric field advance and shared rank baseline
+
+- The first shared-navigation-route test still selected an unacceptable
+  candidate. The route between the native army centres was `351.8 m`, so its
+  arc-length midpoint was `175.9 m`, but the width-first score selected offset
+  `71.9 m` at `(408.6,581.2)`. This left the defender rank only about `21.9 m`
+  from its start while the attacker rank had roughly `229.9 m` to advance.
+  The player's report that the friendly army barely moved, the enemy advanced
+  much farther, and the opposing lord stopped near the friendly line is
+  therefore fully explained by the logged coordinates.
+- Width may no longer outweigh symmetry. The selector now starts at the exact
+  navigation-route midpoint and permits only a very small `8 m` correction
+  when the midpoint itself cannot host the complete layout. The log records
+  each side's requested advance distance and their imbalance explicitly. The
+  two rank baselines remain `50 m` on either side of the selected centre,
+  preserving the requested `100 m` fighting space.
+- The enemy cavalry, infantry, and ranged formations were separated in depth
+  because the former planner added a different forward offset derived from
+  each formation's current depth and front edge. That compensation has been
+  removed. Every formation on a side now receives a target on the same lateral
+  baseline; only its left/right offset differs.
+- Decompiled `LineFormation.GetLocalPositionOfUnit` confirms that a
+  formation's `OrderPosition` is the centre of its front rank and later ranks
+  extend backward along negative local Y. Consequently a reduced
+  `FormOrderCustom` width naturally increases depth without moving cavalry or
+  infantry away from the common front line. Candidate width requirements now
+  use only the minimum front width needed for each active formation plus gaps
+  and edge clearance; they no longer reject the balanced midpoint merely
+  because the full preferred frontage does not fit.
+- March readiness now estimates the moving front-rank anchor from the
+  formation median plus half its current depth instead of reading the already
+  assigned order coordinate. Per-formation logs record formation class, unit
+  count, start, target, requested distance, assigned width, and any remaining
+  distance at timeout. The march fallback was extended to `75 s` for the much
+  longer but symmetric advances expected on this valley route.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module and all `17` XML files parse. The live normal-client module
+  contains no editor-only directory, ZIP, or checksum entry. Client and editor
+  DLLs match at SHA-256
+  `185C8534DF632BCECA814225698E0E263C2BBF5B5BA3E82D0F631DEC7EBD8A0C`.
+  Repository/live README hashes match at
+  `E7645BEDDDAC2C5A41AC4E8E89074543197CDE8A2D00F8233540CB22F1836319`
+  for Chinese and
+  `4DC0E272EDD1167880E2A1502C2F0B500C7C3187CAB64E619F9BA013F8CAA3DE`
+  for English.
+- Decompilation of the deployed client DLL confirms the `8 m` maximum centre
+  correction, `75 s` march timeout, player/opponent advance and imbalance
+  logging, shared formation targets, reduced `FormOrderCustom` widths,
+  front-anchor readiness checks, and minimum-only corridor-width validation.
+  `GetFormationFrontOffset` is absent. No archive, commit, push, tag, or GitHub
+  Release was created.
+
+# 2026-07-18 fixed midpoint and no terrain-width cancellation
+
+- The next test never reached formation movement. Both attempts on
+  `battle_terrain_031` logged the correct `351.8 m` deployment route, then
+  threw `no complete and sufficiently wide formation layout was found` during
+  `NativeSpawning`. The user-facing terrain-cancellation message and immediate
+  `EndMission` were therefore caused by the planner's remaining hard width
+  gate, not by an unusable battle scene.
+- The field layout is now deliberately independent of terrain width. Its
+  centre is always the exact arc-length midpoint of the route between the two
+  native deployments. The rank baselines are always taken exactly `50 m` of
+  route distance on either side. There is no nearby-candidate search and no
+  corridor-width acceptance test capable of changing or rejecting those
+  points.
+- Width measurement now has one purpose only: selecting each formation's
+  `FormOrderCustom` frontage. All same-side formations keep the same front-rank
+  baseline. If the measured frontage is narrow, each formation is compressed
+  to its minimum front width and the stock line arrangement extends backward,
+  away from the duel ground. Lateral target points are navigation-clamped
+  locally and logged, but this cannot cancel the bout.
+- A missing navmesh route now falls back to the direct native deployment axis
+  instead of ending the mission. This fallback preserves the same midpoint
+  and `50 m` rank-offset rule.
+- No field-initialization exception is shown to the player. The obsolete
+  `gwp_sparring_spawn_failed` localization entry and the quick-information call
+  were removed completely; diagnostics remain in the engine log only.
+- The quit after the forced cancellation produced a native access violation
+  in `TaleWorlds.Native.dll` at offset `0x74b3f1`. The managed log completed
+  mission teardown and reported no living managed objects. Windows recorded
+  the identical native offset at `07:49` and `09:21`, so it is not a managed
+  Grey Warden stack. The field controller nevertheless now explicitly removes
+  its focusable-object interaction callback in `OnEndMission`, rather than
+  relying solely on the provider's later finalization. More importantly, the
+  terrain-width failure no longer drives the newly opened mission through an
+  immediate exception-and-EndMission cleanup path.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable files are SHA-256-identical to the
+  live module and all `17` XML files parse. Client and editor DLLs match at
+  SHA-256
+  `6B78B687781B278B4AC11A774E513CEA5171E68C0A1E0FAB30576C3CA46787FB`.
+  Repository/live README hashes match at
+  `1A337836FE5A72993E6FCED74E3E5D7F56A202FF8720F3ED6B876867C6AD7232`
+  for Chinese and
+  `7D86E688B5FDBA40CB243326AB4A3220625C322EFA621F7A97C3E2BFE9BB77C8`
+  for English. A repository-wide search finds no remaining
+  `gwp_sparring_spawn_failed`, terrain-cancellation text, or generic sparring
+  exception prompt. No archive, commit, push, tag, or GitHub Release was
+  created.
+
+# 2026-07-18 map-author route centre and strict shared rank
+
+- The user confirmed that the route-authored solution should apply to every
+  field map. `Mission.GetInitialSpawnPath()` exposes the exact `spawn_path`
+  selected by the stock battle setup for the current encounter. The field
+  controller now reads its authored points instead of building a generic
+  shortest navigation route between the two armies.
+- Each native army centre is projected onto that authored polyline. The duel
+  centre is the arc-length midpoint between the two projections, not the
+  midpoint of the entire scene path. The two rank centres are sampled on that
+  same path exactly `50 m` toward their respective armies, preserving the
+  requested `100 m` duel space while giving both sides comparable travel.
+  Reversed author paths are handled by reversing the sampled point list after
+  projection. A scene without a valid initial author path falls back to the
+  direct line between the native deployments and never cancels the bout or
+  displays an exception message.
+- This replaces the rejected `GetPathBetweenAIFaces` approach. That API found
+  a reachable shortest route, but on `battle_terrain_031` its midpoint was on
+  the valley side rather than the map author's low road. The selected
+  `spawn_path_01` stays at roughly `z=6–12 m`; projection of the observed army
+  centres placed its midpoint at approximately `(465.9,675.6,z6.6)`, matching
+  the low, flat combat area and nearby stock tactical markers.
+- Formation targets no longer run through an independent navigation clamp
+  that can move cavalry, infantry, or ranged troops forward or backward by
+  dozens of metres. Each side has one immutable front-rank centre and all of
+  its formations differ only by lateral offset. If a requested lateral point
+  is unavailable, the point is progressively compressed toward that same
+  rank centre. `FormOrderCustom` narrows the frontage and the stock line
+  formation adds ranks behind it; no terrain-width check can reject the bout.
+- Runtime diagnostics now record whether the author path or direct fallback
+  was used, authored and sampled path lengths, both projection points and
+  offsets, projection distances, selected centre height, exact rank centres,
+  advance balance, line width, and any lateral-only formation compression.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module and all `17` XML files parse. The live normal-client module
+  contains no `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum
+  entry. Client and editor DLLs match at SHA-256
+  `98513B9A95F07DD3721AE2AEF1FBCB0182E4EF61A97E1749B38A3360FB956CA4`.
+  Repository/live README hashes match at
+  `DE8B1D6D185BC88072C963E71844C3BD2E15F252C048C146A4935CC9DACE8FBD`
+  for Chinese and
+  `1F440DFA20B6CE250CC4A405CA01A59E12E9EAE9C662560EB1BDB794AE47D8E4`
+  for English.
+- ILSpy decompilation of the deployed client DLL is stored at
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\deployed_author_path\GreyWardenPolicePurity.GreyWardenFieldSparringMissionController.decompiled.cs`.
+  It confirms `Mission.GetInitialSpawnPath`, authored point extraction, both
+  polyline projections, midpoint and fixed `100 m` gap calculation,
+  lateral-only `CreateFormationRankPosition`, and `FormOrderCustom`. It has no
+  runtime `GetPathBetweenAIFaces` call. No archive, commit, push, tag, or
+  GitHub Release was created.
+
+# 2026-07-18 fixed 200 m arena and low-ground rank sampling
+
+- The latest `rgl_log_40152.txt` proved that the author-path midpoint was
+  correct, but `GetUsableLineWidth` was still coupled to the duel boundary.
+  On `battle_terrain_031` the measured corridor width was only `24.0 m`, and
+  the installed boundary therefore logged `width=24.0`. This was the direct
+  cause of the visibly narrow arena.
+- Arena size and formation frontage are now separate concepts. The native
+  `walk_area` boundary always uses `DuelArenaHalfWidth=100`, preserving a
+  fixed `200 m` crosswise battlefield. Its length remains bounded by the two
+  rank fronts, which are planned `50 m` on either side of the meeting point.
+  Terrain width can no longer shrink the duel boundary.
+- After the map-author path identifies the route midpoint and battle axis, the
+  controller samples the complete `200 m` perpendicular line at `2 m`
+  intervals and chooses the lowest navigable, reasonably connected point as
+  the actual meeting location. It then moves exactly `50 m` toward each army,
+  samples a new `200 m` perpendicular line for each side, and independently
+  chooses the lowest reachable point as that side's shared front-rank centre.
+  Lateral movement does not alter the planned `100 m` projection between the
+  two fronts.
+- Formation frontage is capped separately at `100 m`. If the current desired
+  formation widths fit, they remain natural; when troop demand exceeds the
+  available terrain or the cap, `FormOrderCustom` consumes the usable width
+  and the stock line formation adds depth behind the shared front line. The
+  lateral target compressor now also verifies connectivity to the selected
+  rank centre, preventing a target on an isolated navmesh island.
+- Runtime logs now print the base point, selected low point, lateral offset,
+  and height for the meeting, player-rank, and opponent-rank lines, followed
+  by the fixed `200 m` arena width and separate usable formation frontage.
+- The final Release build completed with `0` errors. All `24` deployable
+  source files are SHA-256-identical to the live module and all `17` XML files
+  parse. The live normal-client module has no `Assets`, `AssetSources`,
+  `RuntimeDataCache`, ZIP, or checksum entry. Client and editor DLLs match at
+  SHA-256
+  `8008E7A9FD5B345E5F5685FE6AE893C6330D50A58440651D237E53AB01CCC880`.
+  Repository/live README hashes match at
+  `64761C3151D1F0CAF408B315ABA33E0154A528C3CD82ADAFB511F5275962C84E`
+  for Chinese and
+  `C97903F6421A7EC3C1CD32E60D3954B4B55B36B7A590975660FDA69B7C625DBF`
+  for English.
+- ILSpy output for the deployed client DLL is stored at
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\deployed_fixed_200m\GreyWardenPolicePurity.GreyWardenFieldSparringMissionController.decompiled.cs`.
+  It confirms constants `DuelArenaHalfWidth=100`,
+  `MaximumFormationFrontWidth=100`, and `TerrainLineSampleStep=2`, all three
+  `FindLowestPointOnBattleLine` calls, formation-width measurement capped at
+  `50 m` per side, and a runtime boundary log of exactly `width=200`. No
+  archive, commit, push, tag, or GitHub Release was created.
+
+# 2026-07-18 native obstacle-aware formation frontage
+
+- Screenshots and `rgl_log_7812.txt` showed that the fixed `200 m` duel
+  boundary worked, but both armies still formed into narrow, deep blocks near
+  rocks. In the largest test the three low-point lines were selected as
+  intended and the front gap settled at `99.0 m`, yet the shared corridor
+  calculation reported only `24 m`; a later test reported `16 m`, with the
+  enemy formations receiving only `14 m` total frontage. The opposing lord's
+  blocked advance was a consequence of that excessive depth, not a separate
+  lord-movement defect.
+- The rejected implementation measured from the low point toward each side,
+  stopped at the first unavailable navmesh sample, doubled the shorter side,
+  and then compressed every formation centre back toward the low point. A
+  single rock or small navmesh gap could therefore discard open ground on the
+  other side and reduce a hundred-metre formation plan to a few metres.
+- Stock code confirms that this preprocessing duplicated and defeated the
+  engine's own formation placement. `LineFormation` maintains ordered and
+  available unit-position indices and obtains the per-slot world-position
+  table through `Formation.BatchUnitPositions`. `IFormation.GetIsLocalPositionAvailable`
+  calls `Mission.IsFormationUnitPositionAvailableMT` for every local slot.
+  Unavailable slots inside a rectangular formation are therefore omitted or
+  filled around by the native arrangement rather than requiring the entire
+  frontage to end at the first obstacle.
+- Formation planning now keeps the selected low point as the rank reference,
+  calculates natural widths from the active formations, and caps their
+  combined frontage at `100 m`. It no longer calls a continuous-terrain width
+  measurement, scales the layout to the shorter side, or compresses individual
+  formation centres toward the low point. Each formation receives its full
+  geometric centre and `FormOrderCustom` width; Bannerlord then evaluates the
+  complete width-and-depth rectangle and distributes units around rocks and
+  other unusable slots. Excess troop demand increases depth only.
+- The only retained validity requirement is the shared low-point rank origin,
+  which is already chosen from a navigable point. A formation's laterally
+  offset geometric centre is deliberately not pre-clamped. `MovementOrder`
+  handles an unusable formation origin with the stock alternate-position path,
+  while the width remains unchanged, preserving the same behavior as a player
+  dragging a formation across obstructed ground.
+- Natural frontage now uses each line formation's stock `MaximumWidth`, which
+  represents its one-rank width at the current native interval. If the sum is
+  below `100 m`, small forces remain naturally narrower. If it exceeds the
+  limit, all active formations share the complete `100 m` frontage in
+  proportion to those natural widths; the result is no longer limited by
+  their earlier, already-deep `Formation.Width` values. After each movement
+  order is applied, the stored arrival target is refreshed from the engine's
+  actual `Formation.OrderPosition`, so a stock alternate origin cannot cause a
+  false march timeout.
+- The final Release build completed with `0` errors and the existing `44`
+  nullable warnings. All `24` deployable source files are SHA-256-identical to
+  the live module and all `17` XML files parse. The live normal-client module
+  has no editor-only directory, ZIP, or checksum entry. Client and editor DLLs
+  match at SHA-256
+  `473C67F45319C2A7F39D5498528E24B3459318EE601E10FB2E467F0D2A5B6DD2`.
+  Repository/live README hashes match at
+  `0F9464F91F7272703CA6252FB4A6D30D9223D580391AAD25EA5F0D57194AB6EC`
+  for Chinese and
+  `6715E7AEAE81DCA0A2CEBEAA3C3B62C942A3861CDDD90CA8BCF352FFD6AE1412`
+  for English.
+- ILSpy output for the deployed client DLL is stored at
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\deployed_native_obstacle_rank\GreyWardenPolicePurity.GreyWardenFieldSparringMissionController.decompiled.cs`.
+  It confirms the `100 m` limit, `Formation.MaximumWidth`-based allocation,
+  unchanged `FormOrderCustom` widths, native order-position refresh, and the
+  fixed-`200 m` low-line selection. It contains no `GetUsableLineWidth`,
+  `MeasureNavigableLineSide`, or lateral-scale logic. No archive, commit,
+  push, tag, or GitHub Release was created.
+
+# 2026-07-18 final v1.4.7-r3 replacement release
+
+- The user accepted the completed town/field sparring system as the actual
+  `v1.4.7-r3`. The earlier Git tag and GitHub Release with the same name were
+  an incomplete intermediate publication. This formal task intentionally
+  replaces that tag, release description, ZIP, and checksum rather than
+  creating `r4`.
+- The player-facing Chinese and English READMEs were rewritten against the
+  real public baseline, GitHub release/tag `v1.4.7-r2`. They now contain one
+  concise formal `2026-07-18 v1.4.7-r3` entry covering only player-visible
+  differences: full English/CNs support; the troop and mission-local combat
+  mastery rebalance; complete native town-arena and formation-based field
+  sparring; authored-route, low-ground, fixed-width and native obstacle-aware
+  field formation behavior; the player alternative-attack fallback exception;
+  and the encyclopedia, returning-patrol, and village-defense text fixes.
+  Intermediate `r3/r4/testing` wording and step-by-step test history remain
+  absent from the shipped README.
+- Contact information now distinguishes personal QQ `157652226` from the
+  public QQ discussion/download group `981323752`. The group is described as
+  a place for discussion, feedback, and file downloads in both READMEs.
+- A final Release build succeeded with `0` errors. Repository and live module
+  contain `24` matching deployable source files; all `17` XML files parse;
+  client and editor binaries match. The deployed client DLL SHA-256 is
+  `473C67F45319C2A7F39D5498528E24B3459318EE601E10FB2E467F0D2A5B6DD2`.
+- The protected asset packages remain byte-identical:
+  - `gwp_inherited_legacy_assets.tpac`:
+    `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`
+  - `gwp_black_gold_shield.tpac`:
+    `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`
+- The formal archive was rebuilt from the verified live runtime at
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7.zip`
+  with its sibling `.sha256`. It contains one top-level `GreyWarden` directory
+  and `28` runtime files: both asset packages, client binaries, GUI,
+  ModuleData, ModuleSounds, Shaders, `SubModule.xml`, and both player READMEs.
+  It contains no editor workspace, editor binary, PDB, source asset, nested
+  archive, checksum, or diagnostic file. Size: `350,379,743` bytes. SHA-256:
+  `925B3D2B9CFAF92A6BFDF29172A9642247E839778018A8218C7EAD5E0493C4FE`.
+- The new archive was extracted under
+  `C:\tmp\gwp-r3-final-extract\GreyWarden` and compared file by file against
+  the staging tree at `C:\tmp\gwp-r3-final-package\GreyWarden`: `0` missing,
+  `0` hash mismatches, `0` extra files, and `0` forbidden entries. The final
+  Modules-directory archive hash matches the verified temporary archive.
+- This entry is the source of truth for the replacement `main` commit,
+  force-updated annotated `v1.4.7-r3` tag, and updated GitHub Release assets.
