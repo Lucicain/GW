@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -45,16 +45,9 @@ namespace GreyWardenPolicePurity
                 RestoreAi(police);
                 ClearTaskWarTracking(police.StringId, true);
                 CrimeState.EndTask(police.StringId);
-
                 CrimeRecord? displacedCrime = task.TargetCrime;
-                if (displacedCrime?.Offender != null && displacedCrime.Offender.IsActive)
-                {
-                    CrimeState.TryAdd(
-                        displacedCrime.CrimeType,
-                        displacedCrime.Offender,
-                        displacedCrime.Location,
-                        displacedCrime.VictimName);
-                }
+                if (displacedCrime?.Offender?.IsActive == true)
+                    CrimeState.ReopenCase(displacedCrime);
 
                 Clan? policeClan = PoliceStats.GetPoliceClan();
                 if (policeClan != null &&
@@ -81,57 +74,6 @@ namespace GreyWardenPolicePurity
                     return true;
             }
             return false;
-        }
-
-        private void RegisterDeterrenceForDefeatedNonPlayerLords(MapEvent mapEvent)
-        {
-            if (mapEvent == null || !mapEvent.HasWinner || mapEvent.Winner == null)
-                return;
-
-            MapEventSide? loserSide = mapEvent.Winner == mapEvent.AttackerSide
-                ? mapEvent.DefenderSide
-                : mapEvent.AttackerSide;
-            if (loserSide == null)
-                return;
-
-            HashSet<string> processedHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var involvedParty in loserSide.Parties)
-            {
-                PartyBase? losingPartyBase = involvedParty?.Party;
-                MobileParty? losingParty = losingPartyBase?.MobileParty;
-                Hero? leader = losingParty?.LeaderHero
-                               ?? losingPartyBase?.LeaderHero
-                               ?? losingParty?.Owner
-                               ?? losingPartyBase?.Owner;
-                if (leader == null)
-                    continue;
-
-                if (losingParty?.IsMainParty == true || leader == Hero.MainHero)
-                    continue;
-
-                if (leader.Clan != null &&
-                    string.Equals(leader.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (losingParty?.ActualClan != null &&
-                    string.Equals(losingParty.ActualClan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (!processedHeroIds.Add(leader.StringId))
-                    continue;
-
-                PoliceAIDeterrenceBehavior.RegisterEnforcementVictoryAgainst(leader, losingParty);
-            }
-
-            if (PoliceAIDeterrenceBehavior.TryBuildHighestDeterrenceSnapshot(out string debugText))
-            {
-                InformationManager.DisplayMessage(new InformationMessage(debugText, Colors.Cyan));
-            }
         }
 
         private void RestoreAi(MobileParty party)
@@ -223,8 +165,7 @@ namespace GreyWardenPolicePurity
 
         private void Reassign(CrimeRecord? crime)
         {
-            if (crime?.Offender == null) return;
-            CrimeState.TryAdd(crime.CrimeType, crime.Offender, crime.Location, crime.VictimName);
+            CrimeState.ReopenCase(crime);
         }
 
         private void ClearShelteredTargetTracking(string taskId)

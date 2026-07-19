@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -50,6 +50,7 @@ namespace GreyWardenPolicePurity
         private int _pendingReward = 0;
         private bool _recruitmentOffered = false;  // 是否已发出过招募邀请（拒绝或接受后均置true，防重复）
         private bool _recruitmentAccepted = false; // 玩家是否接受了招募
+        internal bool IsRecruitedByGreyWardens => _recruitmentAccepted;
         private string _escortPolicePartyId = null!; // 当前护送玩家追捕的警察部队 StringId（null=无护送，向族长领赏）
 
         // ---- 运行时状态（不持久化）----

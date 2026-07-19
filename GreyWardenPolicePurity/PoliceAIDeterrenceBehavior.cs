@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -11,70 +10,54 @@ using TaleWorlds.Localization;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 记录被灰袍执法击败过的 AI，并在恢复期内提供对话反馈。
-    /// 评分修正在 PoliceRaidDeterrenceModel 中生效。
+    /// 只有当前背负未结案件且被灰袍实际俘获的领主，才增加被捕次数与本人震慑。
+    /// 同场被灰袍俘获的无未结案件领主只获得目击型家族震慑，不向其家族继续传播。
     /// </summary>
     public sealed class PoliceAIDeterrenceBehavior : CampaignBehaviorBase
     {
-        private const float DeterrenceGreetingChance = 0.1f;
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
+        private sealed class CaptureShock
+        {
+            public string OffenderClanId { get; init; } = string.Empty;
+            public float SharedGain { get; init; }
+        }
+
+        private sealed class PoliceCaptureBatch
+        {
+            public Dictionary<string, Hero> Witnesses { get; } =
+                new Dictionary<string, Hero>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> OffenderIds { get; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public List<CaptureShock> Shocks { get; } = new List<CaptureShock>();
+        }
+
+        private const float DeterrenceGreetingChance = 1f;
         private static string _lastDeterrenceConversationKey = string.Empty;
         private static bool _lastDeterrenceConversationResult;
-
-        private readonly struct DirectDeterrenceTarget
-        {
-            public DirectDeterrenceTarget(Hero leader, MobileParty? sourceParty)
-            {
-                Leader = leader;
-                SourceParty = sourceParty;
-            }
-
-            public Hero Leader { get; }
-            public MobileParty? SourceParty { get; }
-        }
-
-        private readonly struct SharedDeterrenceTarget
-        {
-            public SharedDeterrenceTarget(Hero leader, MobileParty? sourceParty, float penaltyPoints)
-            {
-                Leader = leader;
-                SourceParty = sourceParty;
-                PenaltyPoints = penaltyPoints;
-            }
-
-            public Hero Leader { get; }
-            public MobileParty? SourceParty { get; }
-            public float PenaltyPoints { get; }
-        }
-
-        private readonly struct DirectDeterrenceResult
-        {
-            public DirectDeterrenceResult(Hero leader, float penaltyPoints)
-            {
-                Leader = leader;
-                PenaltyPoints = penaltyPoints;
-            }
-
-            public Hero Leader { get; }
-            public float PenaltyPoints { get; }
-        }
+        private static TextObject? _lastDeterrenceIntro;
+        private static TextObject? _lastDeterrenceFollowup;
+        private readonly Dictionary<MapEvent, PoliceCaptureBatch> _captureBatches =
+            new Dictionary<MapEvent, PoliceCaptureBatch>();
 
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.HeroPrisonerTaken.AddNonSerializedListener(this, OnHeroPrisonerTaken);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.ConversationEnded.AddNonSerializedListener(this, OnConversationEnded);
         }
 
         public override void SyncData(IDataStore dataStore)
         {
+            // 案底与两类威慑由 CrimePool 的统一账本保存；单场目击批次只存在于运行时。
             GwpAiDeterrenceState.SyncData(dataStore);
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            _captureBatches.Clear();
+
             starter.AddDialogLine(
                 "gwp_ai_deterrence_intro",
                 "start",
@@ -92,259 +75,129 @@ namespace GreyWardenPolicePurity
                 DeterrenceGreetingCondition,
                 null,
                 205);
-
         }
 
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
             _ = starter;
+            _captureBatches.Clear();
             GwpAiDeterrenceState.ClearAll();
         }
 
-        private void OnDailyTick()
-        {
-            GwpAiDeterrenceState.DailyCleanup();
-        }
+        private void OnDailyTick() => GwpAiDeterrenceState.DailyCleanup();
 
         private void OnConversationEnded(IEnumerable<CharacterObject> characters)
         {
             _ = characters;
             _lastDeterrenceConversationKey = string.Empty;
             _lastDeterrenceConversationResult = false;
+            _lastDeterrenceIntro = null;
+            _lastDeterrenceFollowup = null;
+        }
+
+        private void OnHeroPrisonerTaken(PartyBase capturerParty, Hero prisoner)
+        {
+            MobileParty? policeParty = capturerParty?.MobileParty;
+            if (!IsPoliceParty(policeParty) || prisoner == null || prisoner == Hero.MainHero ||
+                string.IsNullOrWhiteSpace(prisoner.StringId))
+                return;
+
+            MapEvent? mapEvent = policeParty?.MapEvent;
+            PoliceCaptureBatch? batch = null;
+            if (mapEvent != null)
+            {
+                if (!_captureBatches.TryGetValue(mapEvent, out batch))
+                {
+                    batch = new PoliceCaptureBatch();
+                    _captureBatches[mapEvent] = batch;
+                }
+            }
+
+            CrimeRecord? record = CrimePool.GetRecord(prisoner);
+            bool hasOpenCase = record?.HasOpenCase == true;
+            if (!hasOpenCase)
+            {
+                if (batch != null && !batch.OffenderIds.Contains(prisoner.StringId))
+                    batch.Witnesses[prisoner.StringId] = prisoner;
+                return;
+            }
+
+            if (batch != null)
+            {
+                batch.Witnesses.Remove(prisoner.StringId);
+                if (!batch.OffenderIds.Add(prisoner.StringId))
+                    return;
+            }
+
+            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(prisoner, record?.Offender);
+            float sharedGain = directGain * 0.5f;
+            if (sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
+                return;
+
+            ApplyClanShock(prisoner, sharedGain);
+            batch?.Shocks.Add(new CaptureShock
+            {
+                OffenderClanId = prisoner.Clan?.StringId ?? string.Empty,
+                SharedGain = sharedGain
+            });
         }
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            if (!TryCollectDeterrenceTargets(
-                    mapEvent,
-                    out List<DirectDeterrenceTarget> directTargets,
-                    out List<SharedDeterrenceTarget> sharedTargets))
+            if (mapEvent == null || !_captureBatches.TryGetValue(mapEvent, out PoliceCaptureBatch? batch))
                 return;
 
-            List<DirectDeterrenceResult> directResults = new List<DirectDeterrenceResult>();
-            foreach (DirectDeterrenceTarget target in directTargets)
+            _captureBatches.Remove(mapEvent);
+            if (batch.Shocks.Count == 0 || batch.Witnesses.Count == 0)
+                return;
+
+            foreach (Hero witness in batch.Witnesses.Values)
             {
-                float penaltyPoints = GwpAiDeterrenceState.RegisterDirectDeterrence(target.Leader, target.SourceParty);
-                if (penaltyPoints > 0f)
+                if (!IsEligibleWitness(witness))
+                    continue;
+
+                foreach (CaptureShock shock in batch.Shocks)
                 {
-                    directResults.Add(new DirectDeterrenceResult(target.Leader, penaltyPoints));
+                    // 同族成员已经由主犯的家族震慑获得本次分数，不能因同时在场再重复获得。
+                    if (!string.IsNullOrWhiteSpace(shock.OffenderClanId) &&
+                        string.Equals(witness.Clan?.StringId, shock.OffenderClanId, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(witness, shock.SharedGain);
                 }
             }
-
-            foreach (SharedDeterrenceTarget sharedTarget in sharedTargets)
-            {
-                if (sharedTarget.PenaltyPoints <= 0f)
-                    continue;
-
-                GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(sharedTarget.Leader, sharedTarget.PenaltyPoints);
-            }
-
-            foreach (DirectDeterrenceResult directResult in directResults)
-            {
-                ApplyClanShock(directResult.Leader, directResult.PenaltyPoints);
-            }
-
         }
 
-        internal static void RegisterEnforcementVictoryAgainst(MobileParty offender)
-        {
-            if (offender == null || offender.IsMainParty) return;
-            GwpAiDeterrenceState.RegisterEnforcementDefeat(offender);
-        }
+        private static bool IsEligibleWitness(Hero? hero) =>
+            hero != null && hero != Hero.MainHero && hero.IsAlive && !IsPoliceHero(hero);
 
-        internal static void RegisterEnforcementVictoryAgainst(Hero leader, MobileParty? sourceParty = null)
+        private static void ApplyClanShock(Hero offender, float sharedGain)
         {
-            if (leader == null || leader == Hero.MainHero)
+            if (offender.Clan == null || sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;
 
-            GwpAiDeterrenceState.RegisterEnforcementDefeat(leader, sourceParty);
-        }
-
-        internal static bool TryBuildHighestDeterrenceSnapshot(out string text)
-        {
-            return GwpAiDeterrenceState.TryBuildHighestDeterrenceSnapshot(out text);
-        }
-
-        private static bool TryCollectDeterrenceTargets(
-            MapEvent? mapEvent,
-            out List<DirectDeterrenceTarget> directTargets,
-            out List<SharedDeterrenceTarget> sharedTargets)
-        {
-            directTargets = new List<DirectDeterrenceTarget>();
-            sharedTargets = new List<SharedDeterrenceTarget>();
-            if (mapEvent == null)
-                return false;
-
-            bool attackerHasPolice = SideHasPolice(mapEvent.AttackerSide);
-            bool defenderHasPolice = SideHasPolice(mapEvent.DefenderSide);
-            if (attackerHasPolice == defenderHasPolice)
-                return false;
-
-            MapEventSide policeSide = attackerHasPolice ? mapEvent.AttackerSide : mapEvent.DefenderSide;
-            if (!SideHasLivingPolice(policeSide))
-                return false;
-
-            MapEventSide enemySide = attackerHasPolice ? mapEvent.DefenderSide : mapEvent.AttackerSide;
-            HashSet<string> directEnemyPartyIds = CollectDirectEnemyPartyIds(policeSide, enemySide);
-            HashSet<string> processedHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            List<(Hero Leader, MobileParty? Party)> undecidedTargets = new List<(Hero, MobileParty?)>();
-
-            foreach (var involvedParty in enemySide.Parties)
+            foreach (Hero clanMember in offender.Clan.Heroes)
             {
-                PartyBase? enemyPartyBase = involvedParty?.Party;
-                MobileParty? enemyParty = enemyPartyBase?.MobileParty;
-                Hero? leader = enemyParty?.LeaderHero
-                               ?? enemyPartyBase?.LeaderHero
-                               ?? enemyParty?.Owner
-                               ?? enemyPartyBase?.Owner;
-                if (leader == null || string.IsNullOrWhiteSpace(leader.StringId))
+                if (clanMember == offender || !IsEligibleWitness(clanMember))
                     continue;
 
-                if (leader == Hero.MainHero || enemyParty?.IsMainParty == true)
-                    continue;
-
-                if (IsPoliceHero(leader) || IsPoliceParty(enemyParty))
-                    continue;
-
-                if (!processedHeroIds.Add(leader.StringId))
-                    continue;
-
-                string enemyPartyId = enemyParty?.StringId ?? string.Empty;
-                if (directEnemyPartyIds.Count == 0 ||
-                    (!string.IsNullOrEmpty(enemyPartyId) && directEnemyPartyIds.Contains(enemyPartyId)))
-                {
-                    directTargets.Add(new DirectDeterrenceTarget(leader, enemyParty));
-                }
-                else
-                {
-                    undecidedTargets.Add((leader, enemyParty));
-                }
+                GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(clanMember, sharedGain);
             }
-
-            if (directTargets.Count == 0)
-            {
-                foreach ((Hero leader, MobileParty? sourceParty) in undecidedTargets)
-                    directTargets.Add(new DirectDeterrenceTarget(leader, sourceParty));
-
-                return directTargets.Count > 0;
-            }
-
-            float sharedPenalty = 0f;
-            foreach (DirectDeterrenceTarget target in directTargets)
-            {
-                float currentPenalty = GwpAiDeterrenceState.GetCurrentPenalty(target.Leader);
-                if (currentPenalty > sharedPenalty)
-                    sharedPenalty = currentPenalty;
-            }
-
-            sharedPenalty *= 0.5f;
-            if (sharedPenalty > GwpTuning.Deterrence.ForgetThreshold)
-            {
-                foreach ((Hero leader, MobileParty? sourceParty) in undecidedTargets)
-                    sharedTargets.Add(new SharedDeterrenceTarget(leader, sourceParty, sharedPenalty));
-            }
-
-            return directTargets.Count > 0 || sharedTargets.Count > 0;
-        }
-
-        private static HashSet<string> CollectDirectEnemyPartyIds(MapEventSide policeSide, MapEventSide enemySide)
-        {
-            HashSet<string> enemyPartyIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> partiesOnEnemySide = new HashSet<string>(
-                enemySide.Parties
-                    .Select(p => p?.Party?.MobileParty?.StringId)
-                    .Where(id => !string.IsNullOrWhiteSpace(id))!
-                    .Cast<string>(),
-                StringComparer.OrdinalIgnoreCase);
-
-            foreach (var involvedParty in policeSide.Parties)
-            {
-                string? policePartyId = involvedParty?.Party?.MobileParty?.StringId;
-                if (string.IsNullOrWhiteSpace(policePartyId))
-                    continue;
-
-                PoliceTask? task = CrimeState.GetTask(policePartyId);
-                string? offenderPartyId = task?.TargetCrime?.Offender?.StringId;
-                if (string.IsNullOrWhiteSpace(offenderPartyId))
-                    continue;
-
-                if (partiesOnEnemySide.Contains(offenderPartyId))
-                    enemyPartyIds.Add(offenderPartyId!);
-            }
-
-            return enemyPartyIds;
-        }
-
-        private static void ApplyClanShock(Hero offender, float offenderPenaltyPoints)
-        {
-            if (offender == null || offender.Clan == null)
-                return;
-
-            float sharedPenalty = offenderPenaltyPoints * 0.5f;
-            if (sharedPenalty <= GwpTuning.Deterrence.ForgetThreshold)
-                return;
-
-            foreach (Hero clanMember in offender.Clan.Heroes.Where(IsEligibleClanShockTarget))
-            {
-                if (clanMember == offender)
-                    continue;
-
-                GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(clanMember, sharedPenalty);
-            }
-        }
-
-        private static bool SideHasPolice(MapEventSide? side)
-        {
-            if (side == null)
-                return false;
-
-            return side.Parties.Any(p => IsPoliceParty(p?.Party?.MobileParty));
-        }
-
-        private static bool SideHasLivingPolice(MapEventSide? side)
-        {
-            if (side == null)
-                return false;
-
-            return side.Parties.Any(p =>
-            {
-                MobileParty? party = p?.Party?.MobileParty;
-                return IsPoliceParty(party) && IsPartyAliveAfterBattle(party);
-            });
-        }
-
-        private static bool IsEligibleClanShockTarget(Hero? hero)
-        {
-            if (hero == null || !hero.IsAlive || hero == Hero.MainHero)
-                return false;
-
-            return !IsPoliceHero(hero);
         }
 
         private static bool IsPoliceParty(MobileParty? party)
         {
-            if (party == null)
-                return false;
-
+            if (party == null) return false;
             if (party.ActualClan != null &&
                 string.Equals(party.ActualClan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
-            {
                 return true;
-            }
 
             return GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party);
         }
 
-        private static bool IsPoliceHero(Hero? hero)
-        {
-            return hero?.Clan != null &&
-                   string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsPartyAliveAfterBattle(MobileParty? party)
-        {
-            return party != null && (party.IsActive || party.MemberRoster.TotalManCount > 0);
-        }
+        private static bool IsPoliceHero(Hero? hero) =>
+            hero?.Clan != null &&
+            string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
 
         private static bool DeterrenceGreetingCondition()
         {
@@ -352,19 +205,10 @@ namespace GreyWardenPolicePurity
                 return false;
 
             Hero? conversationHero = Hero.OneToOneConversationHero;
-            if (conversationHero == null || conversationHero == Hero.MainHero)
+            if (conversationHero == null || conversationHero == Hero.MainHero || IsPoliceHero(conversationHero))
                 return false;
 
-            if (conversationHero.Clan != null &&
-                string.Equals(conversationHero.Clan.StringId, GwpIds.PoliceClanId, System.StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (!RollDeterrenceGreetingChance(conversationHero))
-                return false;
-
-            if (!GwpAiDeterrenceState.TryBuildPainDialogue(conversationHero, out var intro, out var followup))
+            if (!TryGetDeterrenceGreeting(conversationHero, out TextObject intro, out TextObject followup))
                 return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.AiDeterrenceIntro, intro);
@@ -375,27 +219,53 @@ namespace GreyWardenPolicePurity
         private static bool IsPostBattleCaptureConversation()
         {
             Campaign? campaign = Campaign.Current;
-            if (campaign == null)
-                return false;
-
-            return campaign.CurrentConversationContext == ConversationContext.CapturedLord ||
-                   campaign.CurrentConversationContext == ConversationContext.FreeOrCapturePrisonerHero;
+            return campaign != null &&
+                   (campaign.CurrentConversationContext == ConversationContext.CapturedLord ||
+                    campaign.CurrentConversationContext == ConversationContext.FreeOrCapturePrisonerHero);
         }
 
-        private static bool RollDeterrenceGreetingChance(Hero conversationHero)
+        private static bool TryGetDeterrenceGreeting(
+            Hero conversationHero,
+            out TextObject intro,
+            out TextObject followup)
         {
+            intro = new TextObject(string.Empty);
+            followup = new TextObject(string.Empty);
             Campaign? campaign = Campaign.Current;
             string heroId = conversationHero.StringId ?? string.Empty;
             string partyId = MobileParty.ConversationParty?.StringId ?? string.Empty;
-            string key = $"{campaign?.CurrentConversationContext}|{heroId}|{partyId}";
+            string key = (campaign?.CurrentConversationContext.ToString() ?? string.Empty) + "|" + heroId + "|" + partyId;
 
             if (!string.Equals(_lastDeterrenceConversationKey, key, StringComparison.Ordinal))
             {
                 _lastDeterrenceConversationKey = key;
                 _lastDeterrenceConversationResult = MBRandom.RandomFloat <= DeterrenceGreetingChance;
+                _lastDeterrenceIntro = null;
+                _lastDeterrenceFollowup = null;
+
+                if (_lastDeterrenceConversationResult)
+                {
+                    _lastDeterrenceConversationResult = GwpAiDeterrenceState.TryBuildPainDialogue(
+                        conversationHero,
+                        out TextObject selectedIntro,
+                        out TextObject selectedFollowup);
+                    if (_lastDeterrenceConversationResult)
+                    {
+                        _lastDeterrenceIntro = selectedIntro;
+                        _lastDeterrenceFollowup = selectedFollowup;
+                    }
+                }
             }
 
-            return _lastDeterrenceConversationResult;
+            if (!_lastDeterrenceConversationResult ||
+                _lastDeterrenceIntro == null ||
+                _lastDeterrenceFollowup == null)
+                return false;
+
+            intro = _lastDeterrenceIntro;
+            followup = _lastDeterrenceFollowup;
+            return true;
         }
+
     }
 }

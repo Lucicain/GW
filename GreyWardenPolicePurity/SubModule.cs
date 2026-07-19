@@ -36,6 +36,7 @@ namespace GreyWardenPolicePurity
         {
             base.OnGameStart(game, gameStarterObject);
 
+
             // Wrap whichever native damage model this game mode registered
             // (Sandbox in Campaign, Custom in Custom Battle). The wrapper
             // changes only Grey Warden alternative-attack knockdowns.

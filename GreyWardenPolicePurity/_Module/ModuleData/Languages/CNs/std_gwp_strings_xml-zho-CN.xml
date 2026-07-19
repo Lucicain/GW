@@ -6,24 +6,6 @@
  <strings>
   <string id="gwp_adoption_chat_notice" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。" />
   <string id="gwp_adoption_log_entry" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。" />
-  <string id="gwp_ai_deterrence_followup_1" text="嗯？你说吧。我只是想起了灰袍。挨过一次，人总会记得疼。" />
-  <string id="gwp_ai_deterrence_followup_2" text="啊，是你。没什么，只是忽然想到灰袍了。那一遭过后，我总比从前多一分小心。" />
-  <string id="gwp_ai_deterrence_followup_3" text="嗯，你说吧。我不过是想起了灰袍。人吃过亏，自然知道哪些事该缓一缓。" />
-  <string id="gwp_ai_deterrence_followup_4" text="啊？抱歉，我方才在想些旧事。灰袍那次教训，我还记着，所以这阵子行事收敛了些。" />
-  <string id="gwp_ai_deterrence_followup_5" text="你说。我只是忽然想起灰袍了。自从挨了他们那一回，我做事总会先停一停，再想一想。" />
-  <string id="gwp_ai_deterrence_followup_6" text="嗯？说吧。我方才只是想起了灰袍。吃过那样的亏，人总会先掂量掂量自己的命还值不值钱。" />
-  <string id="gwp_ai_deterrence_followup_7" text="啊，原来是你。失礼。我刚才走神了。灰袍给的那顿教训太狠，直到现在，我还时常会想起那一日。" />
-  <string id="gwp_ai_deterrence_followup_8" text="嗯？你方才说什么？抱歉，我又想起灰袍了。那群人下手太重，到现在想起来，身上都还发冷。" />
-  <string id="gwp_ai_deterrence_followup_9" text="……什么？啊，是你。失礼。我方才又梦见灰袍了。那一仗像钉子一样扎在脑子里，怎么也甩不掉。" />
-  <string id="gwp_ai_deterrence_intro_1" text="{HERO_NAME}目光停了一下，才像是从一阵短暂的失神里回过神来。" />
-  <string id="gwp_ai_deterrence_intro_2" text="{HERO_NAME}看上去有些心不在焉，像是方才又想起了什么不愉快的事。" />
-  <string id="gwp_ai_deterrence_intro_3" text="{HERO_NAME}目光略显迟滞，像是旧日那场败仗还在心里留着影子。" />
-  <string id="gwp_ai_deterrence_intro_4" text="{HERO_NAME}神色有些倦，像是连日来都没睡过一个安稳觉。" />
-  <string id="gwp_ai_deterrence_intro_5" text="{HERO_NAME}像是在想什么不痛快的事，半晌才察觉你已经到了面前。" />
-  <string id="gwp_ai_deterrence_intro_6" text="{HERO_NAME}神情阴郁，直到你出声，他才慢慢把目光挪到你身上。" />
-  <string id="gwp_ai_deterrence_intro_7" text="{HERO_NAME}站在那里出了会儿神，眉头紧锁，像是胸口还压着一口闷气。" />
-  <string id="gwp_ai_deterrence_intro_8" text="{HERO_NAME}目光有些散，像是正被一段不愿回想的旧事拖住心神。" />
-  <string id="gwp_ai_deterrence_intro_9" text="{HERO_NAME}脸色发白，手指无意识地按在旧伤上，连你走近都没听见脚步。" />
   <string id="gwp_clan_description" text="灰袍守卫起源于统一帝国时期的巡察警队。帝国覆灭后，这支以女性为主体的警察家族没有随旧秩序一同消失，而是以家族血脉、修会戒律与旧帝国法统维系自身。她们巡察道路，缉捕罪犯，调停私斗，也为仍愿守法之人留下赎罪与归正的门。对许多百姓而言，灰袍不是寻常贵族，更像一支身披灰袍、持戒而行的世俗修女警团。" />
   <string id="gwp_clan_intro" text="我们是灰袍守卫，承自统一帝国旧制的警察家族。帝国已崩，法统未绝；王朝可以更替，街巷、村庄与道路仍需有人巡察。世人把我们当作家族也好，当作修会也罢，于我们并无分别。只要百姓仍呼唤公道，灰袍便会回应。" />
   <string id="gwp_clan_name" text="灰袍守卫" />
@@ -168,23 +150,23 @@
   <string id="gwp_gwpencyclopediaclanpagevm_001" text="关闭" />
   <string id="gwp_gwpencyclopediaclanpagevm_002" text="宣战详情" />
   <string id="gwp_gwpencyclopediaclanpagevm_003" text="查看灰袍守卫当前对各势力宣战的详细原因。" />
-  <string id="gwp_gwpencyclopediaheropagevm_001" text="{VAR_1} 的灰袍震慑明细" />
+  <string id="gwp_gwpencyclopediaheropagevm_001" text="{VAR_1} 的灰袍案底与震慑" />
   <string id="gwp_gwpencyclopediaheropagevm_002" text="关闭" />
-  <string id="gwp_gwpencyclopediaheropagevm_003" text="灰袍震慑" />
-  <string id="gwp_gwpencyclopediaheropagevm_004" text="查看此人物当前的灰袍震慑调试信息。" />
+  <string id="gwp_gwpencyclopediaheropagevm_003" text="案底与震慑" />
+  <string id="gwp_gwpencyclopediaheropagevm_004" text="查看此人物永久保留的犯罪案底与当前灰袍震慑。" />
   <string id="gwp_gwpencyclopediaheropagevm_005" text="无记录" />
   <string id="gwp_gwpencyclopediaheropagevm_006" text="刚刚" />
   <string id="gwp_gwpencyclopediaheropagevm_007" text="{VAR_1} 小时前" />
   <string id="gwp_gwpencyclopediaheropagevm_008" text="{VAR_1} 天前" />
-  <string id="gwp_gwpencyclopediaheropagevm_009" text="当前震慑值：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_010" text="个人犯罪被震慑次数：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_011" text="连坐被震慑次数：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_012" text="烧村欲望压制倍率：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_013" text="攻击村民欲望压制倍率：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_014" text="攻击商队欲望压制倍率：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_015" text="最近一次受震慑：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_009" text="累计犯罪：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_010" text="被灰袍抓获：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_011" text="本人震慑：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_012" text="烧村欲望倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_013" text="攻击村民欲望倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_014" text="攻击商队欲望倍率：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_015" text="最近一次执法：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_016" text="大地图状态：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_017" text="具体位置：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_017" text="所在位置：{VAR_1}" />
   <string id="gwp_gwppolicewarreasonservice_001" text="灰袍守卫" />
   <string id="gwp_gwppolicewarreasonservice_002" text="{VAR_1}当前宣战详情" />
   <string id="gwp_gwppolicewarreasonservice_003" text="只有灰袍守卫家族页会显示宣战详情。" />
@@ -533,5 +515,144 @@
   <string id="gwp_sparring_field_post_rule_reply" text="我明白了。" />
   <string id="gwp_sparring_field_post_reply" text="谢谢。下次再切磋。" />
   <string id="gwp_sparring_talk" text="交谈" />
+  <string id="gwp_gwpencyclopediaheropagevm_018" text="家族震慑：{VAR_1}" />
+  <string id="gwp_gwpencyclopediaheropagevm_019" text="当前总震慑：{VAR_1}" />  <string id="gwp_ai_det_audience_outsider_high_calculating" text="无论你以为烧毁村庄能得到多少，都先把此后多年的追捕算进去。" />
+  <string id="gwp_ai_det_audience_outsider_high_cruel" text="你想烧什么都随你，但要明白，灰袍有办法让记忆活得比傲慢更久。" />
+  <string id="gwp_ai_det_audience_outsider_high_honorable" text="我明白地告诫你：保护你权力之下的村庄，否则公正迟早也会找到你。" />
+  <string id="gwp_ai_det_audience_outsider_high_merciful" text="先放过那些最早受苦的人，你也就不必亲自承受这份教训。" />
+  <string id="gwp_ai_det_audience_outsider_high_neutral" text="除非你已经准备好让灰袍沿着这条路一直追到你面前，否则就离它远一点。" />
+  <string id="gwp_ai_det_audience_outsider_high_valorous" text="如果你想找一个配得上的敌人，就找能够还手的人；若你选择弱者，灰袍自会回应。" />
+  <string id="gwp_ai_det_audience_outsider_low_calculating" text="如果你只看重收益，记得把灰袍也算进你的账里。" />
+  <string id="gwp_ai_det_audience_outsider_low_cruel" text="你尽可以照自己的意思做，只是别说从来没人提醒过你后果。" />
+  <string id="gwp_ai_det_audience_outsider_low_honorable" text="这是一句诚实的劝告：不要靠伤害村庄，让同样的裁断落到自己头上。" />
+  <string id="gwp_ai_det_audience_outsider_low_merciful" text="趁那些惊恐的家庭还没有为你付出代价，你仍然可以选择一条更好的路。" />
+  <string id="gwp_ai_det_audience_outsider_low_neutral" text="在选择自己的目标以前，你最好记住这一点。" />
+  <string id="gwp_ai_det_audience_outsider_low_valorous" text="真想证明勇气，就去面对持有武器的战士，而不是无法反抗的村民。" />
+  <string id="gwp_ai_det_audience_outsider_medium_calculating" text="如果你准备劫掠，就要明白：赃物花光以后，那份代价可能仍会追着你。" />
+  <string id="gwp_ai_det_audience_outsider_medium_cruel" text="你愿意走那条路就去吧，只要准备好付出的比抢到的更多。" />
+  <string id="gwp_ai_det_audience_outsider_medium_honorable" text="守住对无辜者的本分，你就不必像我一样亲自学会这个道理。" />
+  <string id="gwp_ai_det_audience_outsider_medium_merciful" text="让村庄安宁一些吧。那里的百姓已经受够了我们这些领主带来的苦难。" />
+  <string id="gwp_ai_det_audience_outsider_medium_neutral" text="在作出同样的选择之前，先想清楚后果。" />
+  <string id="gwp_ai_det_audience_outsider_medium_valorous" text="不要把欺凌弱者当作勇敢，也不要把灰袍的耐心当作软弱。" />
+  <string id="gwp_ai_det_audience_warden_high_calculating" text="既然你与他们共事，就该明白：恐惧很快就会耗尽，始终如一的规矩才能维持得更久。" />
+  <string id="gwp_ai_det_audience_warden_high_cruel" text="他们的印记留在我的家族身上，而你选择了站在他们一边。别指望我会把其中任何一样当成友谊。" />
+  <string id="gwp_ai_det_audience_warden_high_honorable" text="你现在代表着他们。若他们的公正真有意义，你的行为就必须比自己追捕的罪行更加干净。" />
+  <string id="gwp_ai_det_audience_warden_high_merciful" text="在你做得到的时候，挡住灰袍与不必要的痛苦；公正没有必要变成残忍。" />
+  <string id="gwp_ai_det_audience_warden_high_neutral" text="你选择与灰袍共事，就应该知道：通缉令了结以后，他们做过的事仍会被人记很久。" />
+  <string id="gwp_ai_det_audience_warden_high_valorous" text="要和他们站在一起，就堂堂正正地站；但衡量勇气的应是你保护了谁，而不是你能吓倒谁。" />
+  <string id="gwp_ai_det_audience_warden_low_calculating" text="你既然选择替灰袍办事，与其彼此装糊涂，不如把话说明白。" />
+  <string id="gwp_ai_det_audience_warden_low_cruel" text="原来你选择了替他们办事。别以为仅凭这一点，所有领主都会低头。" />
+  <string id="gwp_ai_det_audience_warden_low_honorable" text="既然你为他们效力，就应当遵守他们出手干预时所宣称维护的同一套规矩。" />
+  <string id="gwp_ai_det_audience_warden_low_merciful" text="如果你与他们共事，就利用自己的位置保护村民，别等到只能事后惩罚。" />
+  <string id="gwp_ai_det_audience_warden_low_neutral" text="你在替灰袍做事，应该明白为什么这件事会被人记住。" />
+  <string id="gwp_ai_det_audience_warden_low_valorous" text="你现在也带着他们的权威；证明这份权威依靠的是勇气，而不是恫吓。" />
+  <string id="gwp_ai_det_audience_warden_medium_calculating" text="与灰袍合作的人应该明白：有分寸的执法，比无谓的羞辱更容易换来长久的服从。" />
+  <string id="gwp_ai_det_audience_warden_medium_cruel" text="你可以替他们追捕别人，但别把一纸通缉令误当成刀枪不入。" />
+  <string id="gwp_ai_det_audience_warden_medium_honorable" text="如果你以他们的名义行事，就该让规矩高于报复，即便被指控的人并不值得同情。" />
+  <string id="gwp_ai_det_audience_warden_medium_merciful" text="利用你在他们之中的位置，阻止下一个村庄受害，而不是只在事后惩罚罪人。" />
+  <string id="gwp_ai_det_audience_warden_medium_neutral" text="你如今站在通缉令的另一边，应该记得这些手段最终会在人身上留下什么。" />
+  <string id="gwp_ai_det_audience_warden_medium_valorous" text="既然承担他们的权威，就该堂堂正正面对持械的犯人，把恐吓留给更卑劣的人。" />
+  <string id="gwp_ai_det_core_family_high_calculating" text="现在，家族里没有人会在谈论劫掠村庄时，不先计算灰袍将会作出的回应。" />
+  <string id="gwp_ai_det_core_family_high_cruel" text="他们的手至今仍沉重地压在我的家族身上。我们没有屈服，只是学会了何时报复的代价太高。" />
+  <string id="gwp_ai_det_core_family_high_honorable" text="整个家族都已经明白：身份和血统不能成为伤害受我们保护之人的借口。" />
+  <string id="gwp_ai_det_core_family_high_merciful" text="如果我的族人终于明白自己造成了多少痛苦，那么这场惩罚至少还能留下些善果。" />
+  <string id="gwp_ai_det_core_family_high_neutral" text="那场后果笼罩了整个家族。如今没有人还会把灰袍当成与自己无关的遥远传闻。" />
+  <string id="gwp_ai_det_core_family_high_valorous" text="我的家族仍有勇气，只是这份勇气如今总会与对灰袍的清晰记忆同行。" />
+  <string id="gwp_ai_det_core_family_low_calculating" text="发生在族人身上的事，让家族对其中的风险有了一个有用的估量。" />
+  <string id="gwp_ai_det_core_family_low_cruel" text="他们动了我的血亲。即便我暂时不再追究，也不会忘记。" />
+  <string id="gwp_ai_det_core_family_low_honorable" text="我的族人的确越过了界。我不能说灰袍出手回应是错的。" />
+  <string id="gwp_ai_det_core_family_low_merciful" text="比起族人受伤的颜面，我更在意那些遭受伤害的村民。" />
+  <string id="gwp_ai_det_core_family_low_neutral" text="那件事牵连了我的家人，家族自然会记得。" />
+  <string id="gwp_ai_det_core_family_low_valorous" text="我的家族受过打击，却没有失去勇气。不过，那次警告已经足够清楚。" />
+  <string id="gwp_ai_det_core_family_medium_calculating" text="一个鲁莽的选择让我们损失了多少士兵、钱财和自由，家族已经全部算清了。" />
+  <string id="gwp_ai_det_core_family_medium_cruel" text="灰袍让我的家族为别人的错误流了血。这种账不会被轻易忘记。" />
+  <string id="gwp_ai_det_core_family_medium_honorable" text="我的族人破坏了安宁，家族也为此付出了代价。血缘并不会让责任凭空消失。" />
+  <string id="gwp_ai_det_core_family_medium_merciful" text="我宁愿家人学会克制，也不愿再让农民为贵族的选择失去亲人。" />
+  <string id="gwp_ai_det_core_family_medium_neutral" text="发生在一个族人身上的事，已经改变了整个家族谈论劫掠与报复的方式。" />
+  <string id="gwp_ai_det_core_family_medium_valorous" text="我们并没有被吓倒，但也不会再盲目冲进同一种惩罚之中。" />
+  <string id="gwp_ai_det_core_personal_high_calculating" text="现在，每一条通往村庄的路都要算上同一笔账：灰袍会从我这里取走什么作为代价。" />
+  <string id="gwp_ai_det_core_personal_high_cruel" text="他们做过什么，我记得一清二楚。我的克制只是算计，不是屈服，更不是原谅。" />
+  <string id="gwp_ai_det_core_personal_high_honorable" text="我确实有罪，所受的惩罚也并不过分。教训再深，也不会让那次裁断变得不公。" />
+  <string id="gwp_ai_det_core_personal_high_merciful" text="真正压在我心上的，不是他们对我做了什么，而是我的选择早已伤害了那些无力反抗的人。" />
+  <string id="gwp_ai_det_core_personal_high_neutral" text="那次处置改变了我看待每次劫掠、每个俘虏，以及每一条归路的方式。" />
+  <string id="gwp_ai_det_core_personal_high_valorous" text="我仍然敢再面对他们，但这不代表我会愚蠢到把他们当成无害之人。" />
+  <string id="gwp_ai_det_core_personal_low_calculating" text="那件事让我明白，什么时候代价会开始超过收益。" />
+  <string id="gwp_ai_det_core_personal_low_cruel" text="他们已经表明了态度。我只不过暂时不打算再试一次。" />
+  <string id="gwp_ai_det_core_personal_low_honorable" text="我确实越过了界，被人阻止也是应有的结果。" />
+  <string id="gwp_ai_det_core_personal_low_merciful" text="不管我当时有什么理由，都不该让村民承担代价。" />
+  <string id="gwp_ai_det_core_personal_low_neutral" text="那件事已经过去，但我并没有丢掉它留下的教训。" />
+  <string id="gwp_ai_det_core_personal_low_valorous" text="一次失败不会让我害怕，但它让我知道不能轻视灰袍的能耐。" />
+  <string id="gwp_ai_det_core_personal_medium_calculating" text="损失我已经算过两遍。若没有更大的目的，没有哪个村庄值得招来那样的追捕。" />
+  <string id="gwp_ai_det_core_personal_medium_cruel" text="他们下手够重，让耐心变得有用。可别把这当成悔意。" />
+  <string id="gwp_ai_det_core_personal_medium_honorable" text="我破坏了安宁，也为此承担了后果。否认这一点，只会在过错之外再添一分怯懦。" />
+  <string id="gwp_ai_det_core_personal_medium_merciful" text="相比锁链，我记得更清楚的是那些受惊的村民。仅凭这一点，也足够让我停手。" />
+  <string id="gwp_ai_det_core_personal_medium_neutral" text="自从那次被捕以后，每次劫掠都多了一层盘算：灰袍会不会赶来。" />
+  <string id="gwp_ai_det_core_personal_medium_valorous" text="我不怕艰难的战斗，但只有蠢人才会把勇气当成不计后果。" />
+  <string id="gwp_ai_det_intro_family_high" text="{HERO_NAME}的神色一度变得冷硬。灰袍的行动所造成的后果，至今仍沉重地压在其家族身上。" />
+  <string id="gwp_ai_det_intro_family_low" text="{HERO_NAME}开口前短暂停顿了一下。灰袍与其族人之间发生的事，显然还没有被完全忘记。" />
+  <string id="gwp_ai_det_intro_family_medium" text="{HERO_NAME}谨慎地选择着措辞。家族与灰袍的那次冲突，至今仍是一件不能轻视的事。" />
+  <string id="gwp_ai_det_intro_personal_high" text="{HERO_NAME}刻意保持镇定，直视着你。灰袍曾在其身上留下的影响，已经深得难以掩饰。" />
+  <string id="gwp_ai_det_intro_personal_low" text="{HERO_NAME}平静地看着你。与灰袍的那次交锋仍被其记在心里，却还没有左右其举止。" />
+  <string id="gwp_ai_det_intro_personal_medium" text="{HERO_NAME}的语气变得更加慎重。亲自面对灰袍的经历，至今仍影响着其说出的每一句话。" />
+  <string id="gwp_ai_det_audience_outsider_high_cautious" text="如果你还在乎保全自己，就不要给他们记住你名字的理由。" />
+  <string id="gwp_ai_det_audience_outsider_high_closefisted" text="即便按照最自私的算法，答案也一样：一次劫掠不值得灰袍事后收取的代价。" />
+  <string id="gwp_ai_det_audience_outsider_high_dishonorable" text="仔细选择你要破坏哪些规矩。灰袍更在意你做了什么，而不是你准备了什么借口。" />
+  <string id="gwp_ai_det_audience_outsider_high_generous" text="在让家族和追随者继承你决定的代价以前，先替他们想一想。" />
+  <string id="gwp_ai_det_audience_outsider_high_impulsive" text="如果让脾气指挥你，最后可能由灰袍决定它何时停止。" />
+  <string id="gwp_ai_det_audience_outsider_low_cautious" text="你没有必要通过招惹一群会不知疲倦地追捕你的人来证明什么。" />
+  <string id="gwp_ai_det_audience_outsider_low_closefisted" text="如果良心不能打动你，那就至少保护好自己的钱袋和士兵。" />
+  <string id="gwp_ai_det_audience_outsider_low_dishonorable" text="守不守承诺由你，但至少不要让自己成为如此容易对付的猎物。" />
+  <string id="gwp_ai_det_audience_outsider_low_generous" text="不要让追随者和家人为一个只用来满足你自己的选择付出代价。" />
+  <string id="gwp_ai_det_audience_outsider_low_impulsive" text="不要让一时的怒火替你选择一条需要多年才能逃离的道路。" />
+  <string id="gwp_ai_det_audience_outsider_medium_cautious" text="趁选择权还在自己手里，离那些村庄远一点。追捕开始以前退让，代价要小得多。" />
+  <string id="gwp_ai_det_audience_outsider_medium_closefisted" text="一个村庄的战利品，补不回追捕可能夺走的士兵、钱财和自由。" />
+  <string id="gwp_ai_det_audience_outsider_medium_dishonorable" text="如果你越过那条界线，别以为身份或一个方便的借口能够保护你。" />
+  <string id="gwp_ai_det_audience_outsider_medium_generous" text="领主欠信任自己的人一份保护，而不是为了骄傲留下一路损失。" />
+  <string id="gwp_ai_det_audience_outsider_medium_impulsive" text="下令点燃火把以前先停一下。怒火消失的速度，总比后果更快。" />
+  <string id="gwp_ai_det_audience_warden_high_cautious" text="如果灰袍派你追捕危险的人，记住，谨慎才能让执法者活下来。" />
+  <string id="gwp_ai_det_audience_warden_high_closefisted" text="如果你只为收益而效力，就要明白：不受约束的执法，最终造成的损失会超过报酬。" />
+  <string id="gwp_ai_det_audience_warden_high_dishonorable" text="如果你把自己的行为称为公正，就用始终如一的行为来证明，而不是依靠惩罚别人的权力。" />
+  <string id="gwp_ai_det_audience_warden_high_generous" text="他们给你的权威，也让你必须为所有因你的决定而陷入危险的人负责。" />
+  <string id="gwp_ai_det_audience_warden_high_impulsive" text="如果脾气支配了你的剑，他们的权威也无法阻止你变成无辜者面对的另一种危险。" />
+  <string id="gwp_ai_det_audience_warden_low_cautious" text="权威会让蠢人变得鲁莽。别让他们的名号把你推入一场尚未衡量过的战斗。" />
+  <string id="gwp_ai_det_audience_warden_low_closefisted" text="如果悬赏会给你钱，就不要假装钱财与公正是同一回事。" />
+  <string id="gwp_ai_det_audience_warden_low_dishonorable" text="你替他们拿着通缉令，但纸上的墨迹并不能自动把权力变成美德。" />
+  <string id="gwp_ai_det_audience_warden_low_generous" text="既然为他们效力，就记住那些追随你、并会为你的每一道命令付出代价的人。" />
+  <string id="gwp_ai_det_audience_warden_low_impulsive" text="通缉令不能为愤怒中的行动开脱。接下来发生的事，仍然要由你负责。" />
+  <string id="gwp_ai_det_audience_warden_medium_cautious" text="一纸通缉令，代替不了判断何时前进、何时退让的能力。" />
+  <string id="gwp_ai_det_audience_warden_medium_closefisted" text="不要仅仅为了增加自己的赏金，就拿别人的性命作为花费。" />
+  <string id="gwp_ai_det_audience_warden_medium_dishonorable" text="你可以使用他们的权威，但不要一边为自己歪曲规矩，一边向别人宣扬纯洁。" />
+  <string id="gwp_ai_det_audience_warden_medium_generous" text="保护好你的同伴，也保护好村民。权威在成为特权以前，首先是一份债务。" />
+  <string id="gwp_ai_det_audience_warden_medium_impulsive" text="不要因为身后有他们的印记，就让一次冒犯把执法变成报复。" />
+  <string id="gwp_ai_det_core_family_high_cautious" text="我们知道他们能够怎样彻底包围一个家族。避免再次陷入那种危险，是为了生存，不是屈服。" />
+  <string id="gwp_ai_det_core_family_high_closefisted" text="灰袍让我们明白，一个亲族的愚行可能变成所有人的损失。我不会允许这种事发生第二次。" />
+  <string id="gwp_ai_det_core_family_high_dishonorable" text="我的家族把那场惩罚视为羞辱，而不是裁断。我们有所克制，并不代表承认他们拥有这种权力。" />
+  <string id="gwp_ai_det_core_family_high_generous" text="整个家族都承担了那份重担。当有人把灾祸带回家时，我有责任保护那些仍然忠于家族的人。" />
+  <string id="gwp_ai_det_core_family_high_impulsive" text="整个家族都承受了一个失控冲动造成的后果。如今就连愤怒，也必须先面对这段记忆。" />
+  <string id="gwp_ai_det_core_family_low_cautious" text="发生在族人身上的事让我们看清了一种危险。若无必要，家族主动招惹它才是愚蠢。" />
+  <string id="gwp_ai_det_core_family_low_closefisted" text="族人的愚行变成了整个家族的账单。那原本应该由他自己承担。" />
+  <string id="gwp_ai_det_core_family_low_dishonorable" text="血亲比外人的规矩更重要。我评判灰袍，只看他们对我的族人做了什么，而不是他们给出的罪名。" />
+  <string id="gwp_ai_det_core_family_low_generous" text="无论族人犯了什么错，他仍是我们的人。我们必须纠正他，却不能抛弃他。" />
+  <string id="gwp_ai_det_core_family_low_impulsive" text="我的族人还没有想清楚就采取了行动，结果却留给我们所有人铭记。" />
+  <string id="gwp_ai_det_core_family_medium_cautious" text="家族没有兴趣仅仅为了证明自己不怕，就再次走进同一个陷阱。" />
+  <string id="gwp_ai_det_core_family_medium_closefisted" text="我不打算再为某个亲族对劫掠的贪欲付账。" />
+  <string id="gwp_ai_det_core_family_medium_dishonorable" text="无论我的族人做过什么，外人都没有权力羞辱我们的家族，再把这称为公正。" />
+  <string id="gwp_ai_det_core_family_medium_generous" text="一个族人的错误让所有站在他身边的人付出了代价。我们现在的责任，是修补它造成的损害。" />
+  <string id="gwp_ai_det_core_family_medium_impulsive" text="一个头脑发热的决定把灰袍引到了我们所有人面前。这种事情不会轻易被忘记。" />
+  <string id="gwp_ai_det_core_personal_high_cautious" text="我靠着学会避开某些战斗才活了下来。再给他们一个追捕我的理由，只是毫无必要的愚蠢。" />
+  <string id="gwp_ai_det_core_personal_high_closefisted" text="我不会为了终将被灰袍连本带利夺回的战利品，把自己耗得一无所有。" />
+  <string id="gwp_ai_det_core_personal_high_dishonorable" text="我后悔的是被抓，而不是越过他们划下的界线。真正改变的是，我现在会把脚步藏得更好。" />
+  <string id="gwp_ai_det_core_personal_high_generous" text="我不能只为满足又一次劫掠，就要求家臣和亲族再次承受那样的代价。" />
+  <string id="gwp_ai_det_core_personal_high_impulsive" text="每当怒火升起，那次惩罚的记忆都会在我行动以前把它压下去。" />
+  <string id="gwp_ai_det_core_personal_low_cautious" text="我不想为了区区一次劫掠村庄，再去面对灰袍。" />
+  <string id="gwp_ai_det_core_personal_low_closefisted" text="我的损失超过了收获。我不会再这样浪费自己的士兵和钱财。" />
+  <string id="gwp_ai_det_core_personal_low_dishonorable" text="规矩只有在不妨碍必要之事时才有用。被抓只能证明我选错了时机。" />
+  <string id="gwp_ai_det_core_personal_low_generous" text="追随我的人和我一样为那个选择付出了代价。下一次，我有责任作出更好的判断。" />
+  <string id="gwp_ai_det_core_personal_low_impulsive" text="我一时愤怒便采取了行动，怒气尚未消退，代价就已经找上了我。" />
+  <string id="gwp_ai_det_core_personal_medium_cautious" text="你尽可以把这叫作谨慎。我知道他们封死一个人身边所有道路的速度有多快。" />
+  <string id="gwp_ai_det_core_personal_medium_closefisted" text="烧毁一个村庄，不值得让我同时赔上士兵、钱财和自由。" />
+  <string id="gwp_ai_det_core_personal_medium_dishonorable" text="我不会假装他们的规矩不可冒犯。我只学会了一件事：公然破坏规矩，就是把武器递给敌人。" />
+  <string id="gwp_ai_det_core_personal_medium_generous" text="追随我的人承担了那个决定造成的损失。忠义要求我不能再如此草率地牺牲他们。" />
+  <string id="gwp_ai_det_core_personal_medium_impulsive" text="我让怒火替我选了道路，而灰袍决定了这条路在哪里结束。" />
 </strings>
 </base>

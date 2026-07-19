@@ -1,19 +1,19 @@
-﻿using System;
+using System;
+using System.Reflection;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
 using TaleWorlds.Core;
 using TaleWorlds.Core.ViewModelCollection.Information;
-using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
 {
-    [EncyclopediaViewModel(typeof(Hero))]
-    public sealed class GwpEncyclopediaHeroPageVM : EncyclopediaHeroPageVM
+    internal sealed class GwpEncyclopediaHeroPageExtension
     {
         private readonly Hero? _hero;
-        private string _deterrenceButtonText = string.Empty;
-        private HintViewModel? _deterrenceButtonHint;
 
         private readonly struct DesireSuppressionDetails
         {
@@ -22,52 +22,17 @@ namespace GreyWardenPolicePurity
             public float CaravanMultiplier { get; init; }
         }
 
-        public GwpEncyclopediaHeroPageVM(EncyclopediaPageArgs args)
-            : base(args)
+        internal GwpEncyclopediaHeroPageExtension(Hero? hero)
         {
-            _hero = args.Obj as Hero;
-            RefreshDeterrenceButtonState();
+            _hero = hero;
+            DeterrenceButtonText = GwpText.Get("{=gwp_gwpencyclopediaheropagevm_003}Record and deterrence");
+            DeterrenceButtonHint = new HintViewModel(new TextObject(
+                GwpText.Get("{=gwp_gwpencyclopediaheropagevm_004}View this character's permanent criminal record and current Grey Warden deterrence.")));
         }
 
-        [DataSourceProperty]
-        public string DeterrenceButtonText
-        {
-            get => _deterrenceButtonText;
-            set
-            {
-                if (value != _deterrenceButtonText)
-                {
-                    _deterrenceButtonText = value;
-                    OnPropertyChangedWithValue(value, nameof(DeterrenceButtonText));
-                }
-            }
-        }
+        public string DeterrenceButtonText { get; }
 
-        [DataSourceProperty]
-        public HintViewModel? DeterrenceButtonHint
-        {
-            get => _deterrenceButtonHint;
-            set
-            {
-                if (value != _deterrenceButtonHint)
-                {
-                    _deterrenceButtonHint = value;
-                    OnPropertyChangedWithValue(value, nameof(DeterrenceButtonHint));
-                }
-            }
-        }
-
-        public override void RefreshValues()
-        {
-            base.RefreshValues();
-            RefreshDeterrenceButtonState();
-        }
-
-        public override void Refresh()
-        {
-            base.Refresh();
-            RefreshDeterrenceButtonState();
-        }
+        public HintViewModel DeterrenceButtonHint { get; }
 
         public void ExecuteOpenDeterrenceDetails()
         {
@@ -80,7 +45,7 @@ namespace GreyWardenPolicePurity
 
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden deterrence record", "VAR_1", _hero.Name),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden criminal record and deterrence", "VAR_1", _hero.Name),
                     description,
                     true,
                     false,
@@ -91,15 +56,9 @@ namespace GreyWardenPolicePurity
                 pauseGameActiveState: true);
         }
 
-        private void RefreshDeterrenceButtonState()
-        {
-            DeterrenceButtonText = GwpText.Get("{=gwp_gwpencyclopediaheropagevm_003}Deterrence");
-            DeterrenceButtonHint = new HintViewModel(new TextObject(GwpText.Get("{=gwp_gwpencyclopediaheropagevm_004}View this character’s present Grey Warden deterrence record.")));
-        }
-
         private static string FormatLastEnforcement(GwpAiDeterrenceState.DeterrenceDetails details)
         {
-            if (!details.HasEntry)
+            if (!details.HasEntry || (details.TotalArrestCount <= 0 && details.SharedDeterrenceCount <= 0))
                 return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_005}No record");
 
             if (details.DaysSinceLastEnforcement < (1f / CampaignTime.HoursInDay))
@@ -122,15 +81,17 @@ namespace GreyWardenPolicePurity
                 "\n",
                 new[]
                 {
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_009}Current shock value: {VAR_1}", "VAR_1", GwpText.Format(details.EffectivePenalty, "0.##")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_010}Number of times individual crimes were shocked: {VAR_1}", "VAR_1", details.EnforcementCount),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_011}Successive chastisements: {VAR_1}", "VAR_1", details.SharedDeterrenceCount),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_012}The desire suppression multiplier for burning villages: {VAR_1}", "VAR_1", GwpText.Format(suppression.RaidMultiplier, "0.###")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_013}The desire suppression multiplier for attacking villagers: {VAR_1}", "VAR_1", GwpText.Format(suppression.VillagerMultiplier, "0.###")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_014}The desire suppression multiplier for attacking caravans: {VAR_1}", "VAR_1", GwpText.Format(suppression.CaravanMultiplier, "0.###")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}The latest shock: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Large map status: {VAR_1}", "VAR_1", details.MapStatus),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_017}Specific location: {VAR_1}", "VAR_1", details.MapLocation)
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_009}Recorded crimes: {VAR_1}", "VAR_1", details.TotalCrimeCount),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_010}Grey Warden arrests: {VAR_1}", "VAR_1", details.TotalArrestCount),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_011}Personal deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.DirectPenalty, "0.##")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_018}Clan deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.SharedPenalty, "0.##")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_019}Current total deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.EffectivePenalty, "0.##")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_012}Village-raiding desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.RaidMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_013}Villager-attack desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.VillagerMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_014}Caravan-attack desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.CaravanMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}Latest enforcement: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Map status: {VAR_1}", "VAR_1", details.MapStatus),
+                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}", "VAR_1", details.MapLocation)
                 });
         }
 
@@ -146,6 +107,30 @@ namespace GreyWardenPolicePurity
                 VillagerMultiplier = multiplier,
                 CaravanMultiplier = multiplier
             };
+        }
+    }
+
+    [HarmonyPatch]
+    internal static class GwpEncyclopediaHeroPageExtensionPatch
+    {
+        private static MethodBase? TargetMethod()
+        {
+            return AccessTools.Constructor(
+                typeof(EncyclopediaHeroPageVM),
+                new[] { typeof(EncyclopediaPageArgs) });
+        }
+
+        [HarmonyPostfix]
+        private static void AttachGreyWardenControls(
+            EncyclopediaHeroPageVM __instance,
+            object[] __args)
+        {
+            Hero? hero = __args.Length > 0 && __args[0] is EncyclopediaPageArgs args
+                ? args.Obj as Hero
+                : null;
+            GwpNativeViewModelExtension.Attach(
+                __instance,
+                new GwpEncyclopediaHeroPageExtension(hero));
         }
     }
 }

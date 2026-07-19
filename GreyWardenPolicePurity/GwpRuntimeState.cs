@@ -27,6 +27,9 @@ namespace GreyWardenPolicePurity
                 int reputation = Player.Reputation;
                 dataStore.SyncData("gwp_reputation", ref reputation);
 
+                int goodDeedKillProgress = Player.GoodDeedKillProgress;
+                dataStore.SyncData("gwp_good_deed_kill_progress", ref goodDeedKillProgress);
+
                 List<string> victimFactionIds = Player.VictimFactions
                     .Where(static faction => faction != null)
                     .Select(static faction => faction.StringId)
@@ -51,6 +54,10 @@ namespace GreyWardenPolicePurity
             int loadedReputation = 0;
             dataStore.SyncData("gwp_reputation", ref loadedReputation);
             Player.ResetReputation(loadedReputation);
+
+            int loadedGoodDeedKillProgress = 0;
+            dataStore.SyncData("gwp_good_deed_kill_progress", ref loadedGoodDeedKillProgress);
+            Player.ResetGoodDeedKillProgress(loadedGoodDeedKillProgress);
 
             int victimCountOnLoad = 0;
             dataStore.SyncData("gwp_victim_count", ref victimCountOnLoad);
@@ -88,6 +95,7 @@ namespace GreyWardenPolicePurity
             public PoliceTask? GetTask(string policePartyId) => CrimePool.GetTask(policePartyId);
             public void BeginTask(string policePartyId, CrimeRecord crime) => CrimePool.BeginTask(policePartyId, crime);
             public void EndTask(string policePartyId) => CrimePool.EndTask(policePartyId);
+            public void ReopenCase(CrimeRecord? crime) => CrimePool.ReopenCase(crime);
             public void EndPlayerHunt() => CrimePool.EndPlayerHunt();
             public bool TryAdd(string crimeType, MobileParty offender, TaleWorlds.Library.Vec2 location, string victimName) =>
                 CrimePool.TryAdd(crimeType, offender, location, victimName);
@@ -110,6 +118,7 @@ namespace GreyWardenPolicePurity
         internal sealed class PlayerState
         {
             public int Reputation => PlayerBehaviorPool.Reputation;
+            public int GoodDeedKillProgress => PlayerBehaviorPool.GoodDeedKillProgress;
             public bool IsWanted => PlayerBehaviorPool.IsWanted;
             public bool HasAtonementTask => PlayerBehaviorPool.HasAtonementTask;
             public IReadOnlyCollection<IFaction> VictimFactions => PlayerBehaviorPool.VictimFactions;
@@ -117,6 +126,8 @@ namespace GreyWardenPolicePurity
             public void ResetForNewGame() => PlayerBehaviorPool.ClearAll();
             public void ClearAll() => PlayerBehaviorPool.ClearAll();
             public void ResetReputation(int value) => PlayerBehaviorPool.ResetReputation(value);
+            public void ResetGoodDeedKillProgress(int value) => PlayerBehaviorPool.ResetGoodDeedKillProgress(value);
+            public int AccumulateGoodDeedKills(int killCount) => PlayerBehaviorPool.AccumulateGoodDeedKills(killCount);
             public void ChangeReputation(int delta) => PlayerBehaviorPool.ChangeReputation(delta);
             public void AddCrime(string type, TaleWorlds.Library.Vec2 location, string detail, IFaction? victimFaction = null) =>
                 PlayerBehaviorPool.AddCrime(type, location, detail, victimFaction);

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -284,7 +284,8 @@ namespace GreyWardenPolicePurity
             bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defenderIsVillageRaid;
             if (anyGoodDeed)
             {
-                int repGain = playerKillCount / 10;
+                // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
+                int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
 
                 if (repGain > 0)
                 {
@@ -610,7 +611,8 @@ namespace GreyWardenPolicePurity
 
             if (_pendingPoliceCrimeSupport > 0)
             {
-                int repGain = playerKillCount / 10;
+                // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
+                int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
                 if (repGain <= 0)
                     return true;
 

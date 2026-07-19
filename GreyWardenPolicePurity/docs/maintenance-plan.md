@@ -2928,3 +2928,496 @@ irreplaceable backup; the editor workspace does not replace it.
   Modules-directory archive hash matches the verified temporary archive.
 - This entry is the source of truth for the replacement `main` commit,
   force-updated annotated `v1.4.7-r3` tag, and updated GitHub Release assets.
+
+# 2026-07-19 clean-shutdown native crash diagnosis
+
+- The latest session was reported as started through the desktop shortcut
+  `C:\Users\lucif\Desktop\骑砍中文站Mod管理器.lnk`, whose verified target is
+  `C:\Users\lucif\AppData\Local\Programs\modmaster\骑砍中文站Mod管理器.exe`.
+  Game process `27920` ran from `04:26:52` to `04:57:40`; gameplay and mission
+  teardown completed normally. `rgl_log_27920.txt` reached `Start Game Final Cleanup`,
+  deleted the game and managed interface, and reported `There are no living
+  managed objects` before logging stopped. `rgl_log_errors_27920.txt` contains
+  no managed exception or Grey Warden error.
+- Windows Application Error event `1000` then recorded a real native access
+  violation in the official executable: `Bannerlord.exe` / game build
+  `v1.4.7.117484`, faulting module `TaleWorlds.Native.dll`, exception
+  `0xc0000005`, offset `0x000000000074B3F1`. WER event `1001` archived report
+  ID `4319394d-6688-45bc-bc7f-c49a4d437382` under
+  `C:\ProgramData\Microsoft\Windows\WER\ReportArchive\AppCrash_Bannerlord.exe_5ef6f7d0c155a37c4ed93439c7161f7f5191c8_ebd6fe1f_a8b9f016-7f7f-4ca8-bf54-055dce82cb3b`.
+- The same native module and exact `0x74B3F1` offset occurred at `10:19:34` on
+  2026-07-18. That earlier `rgl_log_40152.txt` also reached the identical clean
+  managed-interface shutdown and reported no living managed objects. Nearby
+  native cleanup offsets `0x74B13F` and `0x74B34A` were also observed on
+  2026-07-16. This is therefore a repeatable final native-cleanup failure, not
+  a field/town sparring state-machine exception or a newly introduced managed
+  object leak.
+- The watchdog arguments match the manager-generated command already isolated
+  on 2026-07-16: `/anticheat` is forced and the official modules are ordered
+  `Native, SandBoxCore, CustomBattle, Sandbox, StoryMode, BirthAndDeath,
+  FastMode`. The manager itself does not need to inject a DLL for that launch
+  command to change shutdown behavior.
+- This recurrence is consistent with the earlier controlled comparison: two
+  manager-style GreyWarden-only runs crashed after `Managed Interface deleted`,
+  while two official-style runs using the official module order without
+  `/anticheat` exited without a WER crash. The established unresolved variable
+  remains the manager's module ordering and/or forced `/anticheat`, not the
+  sparring implementation. No further user test or Grey Warden code change was
+  requested for this recurrence; retain it as accumulated evidence.
+# 2026-07-19 permanent AI criminal ledger and split deterrence
+
+- Replaced the capacity-limited pending AI `CrimePool._pool` and the separate
+  deterrence dictionary with one canonical `CrimeRecord` per non-player lord,
+  keyed by stable `Hero.StringId`. Each record stores the latest case metadata,
+  the oldest unresolved-case time, permanent total crime count, permanent total
+  Grey Warden arrest count, open/closed state, direct deterrence, clan-shared
+  deterrence, and the few timestamps needed for recovery. Save growth is
+  therefore bounded by the number of lords rather than the number of offenses.
+- Police tasks now store only `TargetCrimeId` plus live workflow flags. Their
+  `TargetCrime` property resolves the canonical ledger record, eliminating the
+  former duplicate embedded crime copy. Failed or displaced tasks call
+  `ReopenCase` and do not increment the permanent crime count. This keeps the
+  small task table because it represents active police operations rather than
+  historical data.
+- Removed the `PoliceClanMemberCount` admission cap and the crime monitor's
+  `IsAccepting` early exits. Every distinct detected raid, villager attack, or
+  caravan attack can increment the responsible lord's permanent count even if
+  the same lord already has an unresolved case. Dispatch scans unassigned open
+  cases by oldest `OccurredTime`, using police distance only as the tie-break.
+- `HeroPrisonerTaken(PartyBase, Hero)` is now the authoritative arrest event.
+  A capture increments the permanent arrest total only when the captor is a
+  Grey Warden clan party, regular patrol, or delayed enforcement patrol and the
+  prisoner already has a real criminal record. This avoids treating a mere
+  battle defeat as an arrest and is independent of map-event cleanup ordering.
+- Direct and clan-shared deterrence are stored separately but share the existing
+  total cap and crime-desire multiplier. A real arrest adds direct deterrence
+  based on the permanent arrest count; the new direct gain has priority at the
+  cap and each eligible clan member receives half of that new gain as shared
+  deterrence. Recovery subtracts once from the combined total and scales both
+  components proportionally. Reaching zero clears only temporary deterrence;
+  permanent crime and arrest totals remain in the save.
+- Deterrence conversation source is selected from the larger effective
+  component, with direct winning ties. Responses are split into personal-arrest
+  and clan-event families, then chosen from honorable/merciful, calculating,
+  valorous, hostile, or neutral attitudes. The old uniformly fearful wound and
+  nightmare lines are no longer used. English source text and Simplified
+  Chinese entries were added for every new line.
+- The encyclopedia button now presents a permanent criminal record together
+  with direct deterrence, clan deterrence, combined deterrence, arrest totals,
+  crime totals, suppression multipliers, last enforcement, status, and
+  location. Player-facing Chinese and English READMEs were updated in the same
+  change.
+- Old `gwp_cp_*` and `gwp_det_*` save layouts are intentionally not migrated,
+  per the user's explicit decision that old-save compatibility is unnecessary
+  at the current pre-adoption stage. New canonical keys use `gwp_ledger_*`,
+  `gwp_l_*`, and `gwp_lt_*`.
+- Final Release build completed with `0` errors and the pre-existing nullable
+  warnings only. The deploy step copied the runtime module and editor binary.
+  Post-deploy verification found `24` deployable files with `0` missing/hash
+  mismatches, `17` XML files with `0` parse failures, matching client/editor
+  DLLs, matching Chinese/English READMEs, and `0` forbidden live root entries
+  (`Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum). The deployed
+  client DLL SHA-256 is
+  `2115F1677BEA1DA93524CCE514D83F14E11C1E9EB4D014D8728B5432061BBEDA`.
+- ILSpy `10.1.1.8388` successfully decompiled the deployed client DLL into
+  `.codex_tmp/deployed-ai-ledger-final` (`83` C# files). Decompiled-output probes
+  confirmed the new `gwp_ledger_count` save path, `HeroPrisonerTaken`
+  subscription, permanent `TotalCrimeCount`, split
+  `DirectDeterrencePoints`, and the new personality dialogue keys.
+
+# 2026-07-19 nearest-open-case dispatch adjustment
+
+- Confirmed that `CrimeRecord.HasOpenCase` is the lightweight operational
+  marker: permanent crime/arrest totals remain after it is cleared. A real
+  Grey Warden capture clears the marker through `CrimePool.RecordArrest`.
+- Changed `CrimePool.GetNearest` and `GetNearestNonPlayer` from oldest-case-first
+  ordering to pure distance ordering across valid, unassigned records whose
+  `HasOpenCase` marker is set. Each newly idle police party therefore selects
+  the nearest currently pursuable unresolved offender from its own position.
+- Removed the now-unused oldest-then-distance selector. Crime occurrence times
+  remain in the canonical ledger for history and future presentation, but no
+  longer control dispatch priority.
+- Updated both player-facing READMEs to describe nearest-offender dispatch.
+- Release build after the distance-priority adjustment succeeded with `0`
+  errors. Repository/live verification again found `24` deployable files with
+  `0` differences and `17` valid XML files with `0` failures; client/editor
+  DLLs and both READMEs match. Current deployed DLL SHA-256:
+  `BB4519B95901D48956B7075241688BD0472D94F48ABED4845DD296933420B24B`.
+- ILSpy decompilation of the deployed `CrimePool` was saved at
+  `.codex_tmp/CrimePool-nearest-final.cs` and confirms that both police dispatch
+  entry points now call the distance-only `SelectNearest` ordering.
+
+# 2026-07-19 co-captured witness deterrence
+
+- Tightened `HeroPrisonerTaken`: an AI lord now gains a permanent Grey Warden
+  arrest and direct deterrence only when that lord's canonical ledger has
+  `HasOpenCase == true` at the moment of police capture. A lord with only old,
+  closed criminal history is treated like any other non-offender in that
+  battle and does not receive another arrest or direct deterrence.
+- Added a non-serialized `PoliceCaptureBatch` keyed by the active `MapEvent`.
+  It records actual heroes captured by Grey Warden/patrol parties, separates
+  open-case offenders from no-open-case witnesses, and records each offender's
+  newly added direct deterrence divided by two. The batch is discarded when
+  `MapEventEnded` fires and is never written to the save.
+- At map-event completion, every co-captured eligible witness receives the
+  half-strength amount as `SharedDeterrencePoints` only. This changes neither
+  `TotalCrimeCount`, `TotalArrestCount`, nor `HasOpenCase`, and the witness's
+  clan is not traversed, so there is no second-generation propagation.
+- The actual offender's existing first-generation clan shock remains. A
+  co-captured witness belonging to that same clan is skipped by the witness
+  pass for that offender because the clan pass already granted the identical
+  half-strength amount; this prevents double credit for the same arrest.
+- Multiple open-case offenders captured in one battle each contribute one
+  half-strength witness event. All additions remain subject to the common
+  nine-point cap. `RegisterPoliceArrest` already gives direct deterrence
+  priority: new direct points replace shared points at the cap before the
+  combined total can exceed nine.
+- Updated both player-facing READMEs. No new localization keys were required;
+  witness responses intentionally use the existing clan/shared-deterrence
+  dialogue family.
+- Final Release deployment completed with `0` errors. A first verification
+  rebuild was launched without permission to write the external game folder;
+  MSBuild could compile the assembly but failed while replacing the live
+  client DLL. Re-running the same Release build with the required game-folder
+  permission immediately restored and deployed the client and editor DLLs.
+  This was a filesystem permission failure, not a compiler or gameplay-code
+  failure.
+- Post-deploy verification found `24` deployable source files with `0` missing
+  files or hash mismatches, `17` XML files with `0` parse failures, matching
+  client/editor DLLs, matching Chinese/English READMEs, and `0` forbidden live
+  root entries (`Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or
+  checksum). The deployed client DLL SHA-256 is
+  `2DF60090A1DDD012E78CBE567C183918256CB338498D3E5EEF7888F62E3B076C`.
+- ILSpy decompiled the deployed `PoliceAIDeterrenceBehavior` into
+  `.codex_tmp/PoliceAIDeterrenceBehavior-witness-final.cs`. The output confirms
+  the `HasOpenCase` gate, `PoliceCaptureBatch`, `MapEventEnded` batch handling,
+  same-clan duplicate suppression, and witness-only calls to
+  `RegisterSharedFamilyDeterrence`.
+
+# 2026-07-19 layered AI deterrence dialogue and player identity
+
+- Replaced the previous fixed-priority deterrence greeting with a four-layer response model. The selected line now combines the dominant deterrence source (`Personal` or `Family`), current combined deterrence tier (`0.25-3` low, `>3-6` medium, `>6-9` high), a personality-weighted voice, and whether the player has accepted Grey Warden recruitment.
+- Direct deterrence is the personal source and shared deterrence is the family/witness source. The larger current effective component selects the family of lines; direct wins an exact tie. Both components continue to use their existing proportional decay before dialogue selection, so the displayed attitude follows current rather than historical peak deterrence.
+- Personality no longer locks a lord to the first matching trait. Positive Honor, Calculating, Mercy, and Valor select the honorable, calculating, merciful, and valorous voices; negative Mercy selects the cruel voice. Each active trait uses weight `1 + 2 * trait level`, while neutral always keeps weight `1`. This makes stronger traits more likely without making them deterministic, and lets mixed personalities produce several believable responses.
+- Player identity is read from the existing saved `gwp_recruitment_accepted` state exposed by `PlayerBountyBehavior.IsRecruitedByGreyWardens`; the Grey Warden clan id is also recognized for future direct membership. Outsider lines advise or warn the player and never imply that the player made the arrest. Recruited-player lines recognize the black-robed bounty-hunter role and address how the player should use Grey Warden authority. Membership wording deliberately does not assume the player is currently wearing the black outfit, because the saved recruitment identity persists when equipment changes.
+- Added `GwpAiDeterrenceDialogueCatalog.cs` with six source/tier introductions, 36 source/tier/personality cores, and 36 player-role/tier/personality audience clauses. This produces 72 complete response combinations while keeping authorship and localization maintainable. English source text and all 78 Simplified Chinese localization entries are present. Obsolete uniformly fearful `gwp_ai_deterrence_*` wound/nightmare strings were removed.
+- The deterrence greeting remains a 10% replacement during an ordinary one-to-one lord conversation and remains disabled in immediate `CapturedLord` and `FreeOrCapturePrisonerHero` prisoner-decision contexts. The random trigger and selected intro/response are now cached for the conversation, because Bannerlord evaluates both dialogue nodes separately; without caching, the second node could reroll a different personality or fail after the first line had already appeared.
+- The first Release build exposed one new compiler error: `MBRandom` was unresolved in `GwpAiDeterrenceState.cs`. The cause was the missing `TaleWorlds.Core` import; adding that namespace fixed it. The full rebuild then succeeded with `0` errors and only the existing 44 nullable warnings. A final incremental Release build after README updates succeeded with `0` warnings and `0` errors.
+- Final deployment verification found `24` deployable source files with `0` missing/hash mismatches, `17` XML files with `0` parse failures, identical client/editor DLLs, identical Chinese/English source and live READMEs, and `0` forbidden live root entries (`Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum). Deployed client DLL SHA-256: `8CED48CCA26963D2EF5F27F1892AA07B81541AE646734B97555C5F1A87A61EC7`.
+- ILSpy `10.1.1.8388` decompiled the deployed classes into `.codex_tmp/GwpAiDeterrenceState-layered-final.cs`, `.codex_tmp/GwpAiDeterrenceDialogueCatalog-layered-final.cs`, and `.codex_tmp/PoliceAIDeterrenceBehavior-layered-final.cs`. Probes confirmed the `3/6` tier boundaries, weighted selector, recruitment-state role check, Warden high/honorable key, 10% chance, and per-conversation cached output.
+# 2026-07-19 official five-axis deterrence dialogue test build
+
+- Verified the current game build directly rather than inferring its personality
+  model from the encyclopedia display. The installed
+  `TaleWorlds.CampaignSystem.dll` defines five non-hidden personality traits,
+  each ranging from `-2` to `2`: `Honor`, `Valor`, `Mercy`, `Generosity`, and
+  `Calculating`. The official Simplified Chinese names are 荣誉、胆气、善恶、胸怀、谋略.
+  `CampaignUIHelper.GetHeroTraits()` returns all five, while
+  `EncyclopediaHeroPageVM` omits any trait whose value is zero. A particular
+  hero can therefore show four dimensions in the encyclopedia even though the
+  underlying system has five.
+- Replaced the incomplete personality selector with ten signed response voices:
+  high/low Honor, Valor, Mercy, Generosity, and Calculating. Selection weight is
+  the absolute value of each nonzero native trait, so a `+2` or `-2` direction
+  is twice as likely as a `+1` or `-1` direction. The neutral voice is available
+  only when all five values are zero. The existing dominant personal/family
+  source, low/medium/high deterrence tier, and outsider/recruited-player layers
+  remain intact.
+- The regenerated bilingual catalog contains `6` source/tier introductions,
+  `66` source/tier/voice cores, and `66` player-role/tier/voice clauses, for
+  `138` localized keys. This covers all ten official positive/negative trait
+  poles plus the all-zero fallback across both deterrence sources and all three
+  intensity tiers. The Simplified Chinese XML contains every referenced key.
+- For this explicit test build, changed `DeterrenceGreetingChance` from `0.1f`
+  to `1f`. Any otherwise eligible ordinary one-to-one conversation with at
+  least `0.25` effective deterrence now passes the greeting roll. Main-hero,
+  Grey-Warden-hero, immediate captured-lord, and prisoner-decision exclusions
+  remain unchanged, and the result is still cached once per conversation.
+- Fixed premature localization resolution in `GreyWardenAdoptionLogEntry`.
+  Previously `GwpText.Get()` converted the template to a string before
+  `HERO.LINK` and `VILLAGE` were assigned, producing a sentence with both
+  values blank. The entry now creates the `TextObject` first, assigns both
+  variables, and only then lets the engine resolve it. Applied the same fix to
+  deterrence introductions so `HERO_NAME` is not erased before assignment.
+- Final Release build succeeded with `0` warnings and `0` errors after the
+  README update. Deployment verification found `24` runtime deployable files
+  with `0` missing/hash mismatches after excluding the intentional `Assets` and
+  `AssetSources` editor-recovery trees, `17` XML files with `0` parse failures,
+  identical client/editor DLLs, matching Chinese/English source and live
+  READMEs, and no forbidden editor directory, ZIP, or checksum in the live
+  module. Deployed DLL SHA-256:
+  `2C169C242FA99F305961FECB8E7A6FECA004BF5032769760999462CA6F37D725`.
+- ILSpy `10.1.1.8388` decompiled the four deployed classes into
+  `.codex_tmp/deployed-deterrence-test-final`. Probes confirmed all five native
+  trait reads, all ten signed voice poles, the always-passing `<= 1f` test roll,
+  the new catalog poles, and deferred `HERO.LINK`, `VILLAGE`, and `HERO_NAME`
+  variable assignment. No Git commit, push, tag, package, or release was made.
+
+# 2026-07-19 persistent righteous-kill reputation progress
+
+- Confirmed the previous positive-reputation path used `playerKillCount / 10`
+  independently in each qualifying victory. It awarded one point per complete
+  ten personal kills in that battle and discarded every remainder at battle
+  end. The same isolated calculation existed both for ordinary good-deed
+  battles and for helping Grey Wardens apprehend a criminal.
+- Added `PlayerBehaviorPool.GoodDeedKillProgress`, constrained to `0..9`.
+  `AccumulateGoodDeedKills` combines the saved remainder with the current
+  qualifying battle's personal kills, returns one reputation point per complete
+  ten, and retains only the remainder. Thus `6 + 3 + 1` across three qualifying
+  victories grants one point, while `27` with no prior remainder grants two and
+  retains seven.
+- Both positive-reputation paths now use this common accumulator: defeating
+  bandits, rescuing villagers or caravans, defending a village from a raid, and
+  helping Grey Wardens defeat an offender. Non-qualifying battles, sparring,
+  and criminal-side battles do not add to or clear this progress.
+- Persisted the remainder under `gwp_good_deed_kill_progress` in the existing
+  player behavior save block. New games and `ClearAll` reset it to zero; loading
+  restores and clamps it to `0..9`. This adds one integer per save rather than a
+  battle history.
+- The negative-reputation paths were deliberately left unchanged. Criminal
+  actions and battles still settle their existing loss independently per event
+  or battle; losses neither consume nor reset the saved righteous-kill remainder.
+- Updated both player-facing READMEs. No localization key was added because the
+  existing reputation-award notifications remain unchanged and appear only
+  when at least one full ten-kill unit is converted into reputation.
+- Final Release build succeeded with `0` warnings and `0` errors. Live
+  verification found `24` runtime deployable files with `0` hash mismatches,
+  `17` XML files with `0` parse failures, identical client/editor DLLs,
+  matching Chinese and English READMEs, and no live editor-only directory, ZIP,
+  or checksum. Deployed DLL SHA-256:
+  `2280184ABAC0008FB005FF25F7F881882D0C07AB077984D42F3645093C29A51F`.
+- ILSpy `10.1.1.8388` decompiled the deployed `PlayerBehaviorPool`,
+  `GwpRuntimeState`, and `PlayerBehaviorMonitor` into
+  `.codex_tmp/deployed-persistent-reputation-final`. The output confirms the
+  `/ 10` and `% 10` accumulator, the save key, both positive accumulation call
+  sites, and the removal of per-battle `playerKillCount / 10` calculations. No
+  commit, push, archive, tag, or release was created.
+
+
+# 2026-07-19 CourierMessenger hero-page compatibility
+
+- Controlled tests with GreyWarden, `CourierMessenger v1.2.2`, and its four
+  prerequisites established that new campaigns start and reload, GreyWarden's
+  encyclopedia controls work, and Courier's injected button appears but remains
+  disabled. The user repeated the test after the first compatibility build in
+  both the existing test save and another new campaign; the button was still
+  disabled. Old-save migration is explicitly outside the requested scope.
+- The exact original conflict remains proven: Courier injects
+  `EncyclopediaHeroPageInject.xml`, but declares
+  `[ViewModelMixin("RefreshValues")]` only for the exact native
+  `EncyclopediaHeroPageVM`. GreyWarden previously registered the derived
+  `[EncyclopediaViewModel(typeof(Hero))] GwpEncyclopediaHeroPageVM`, so Courier's
+  exact-type lookup did not initialize its button properties and command.
+- The first attempted bridge copied Courier's mixin type into UIExtenderEx's
+  dictionary under `GwpEncyclopediaHeroPageVM`. This was insufficient and is now
+  removed. UIExtenderEx also patches each registered VM constructor and refresh
+  method; changing only its dictionary never installed those patches for the
+  derived GreyWarden page. The missing success marker in the 10:51 test log was
+  not by itself reliable because `Debug.Print` messages are not generally
+  emitted into `rgl_log`, but the repeated disabled-button test proves the
+  bridge did not produce a live mixin instance.
+- The replacement-page architecture has now been removed instead of adding
+  another Courier-specific workaround. GreyWarden no longer declares any hero
+  `EncyclopediaViewModel` and no longer supplies a
+  `GwpEncyclopediaHeroPageVM` subclass. A Harmony postfix on the native
+  `EncyclopediaHeroPageVM(EncyclopediaPageArgs)` constructor attaches only
+  GreyWarden's `DeterrenceButtonText`, `DeterrenceButtonHint`, and
+  `ExecuteOpenDeterrenceDetails` bindings to that individual native VM. The
+  existing GreyWarden prefab still displays the record button, while the page's
+  runtime type remains exactly native for Courier and other exact-type mixins.
+- `GwpNativeViewModelExtension` creates an instance-local copy of Bannerlord's
+  native binding dictionaries before adding the three GreyWarden members. It
+  uses only the already bundled Harmony and TaleWorlds runtime; there is no
+  compile-time or load-time reference to CourierMessenger, UIExtenderEx,
+  ButterLib, or MCM. GreyWarden therefore retains zero external prerequisites.
+  Courier is neither detected nor invoked by GreyWarden and continues to own
+  its availability rules, price, hint, click event, and campaign behavior.
+- Release build succeeded with zero errors. Final deployed DLL version is
+  `1.4.7.0`, SHA-256
+  `3379B6E1AFEF560421A87B945C94ABE2BCC52A6B9FF0F518637287196AFC7EE0`.
+  Mirror verification found `24` deployable files with `0` missing/hash
+  mismatches, `17` XML files with `0` parse failures, identical client/editor
+  DLLs, matching source/live Chinese and English READMEs, and no live
+  `Assets`, `AssetSources`, `RuntimeDataCache`, ZIP, or checksum artifacts.
+- ILSpy decompiled the deployed build into
+  `.codex_tmp/deployed-native-hero-page`. The deployed type list contains
+  `GwpEncyclopediaHeroPageExtension`, its native-constructor patch, and
+  `GwpNativeViewModelExtension`; it contains neither
+  `GwpEncyclopediaHeroPageVM` nor the removed Courier compatibility bridge.
+  In-game compatibility still requires the next user test; static validation
+  proves the native-page architecture and deployment, not Messenger's runtime
+  result.
+- No Git commit, push, archive, tag, or release was made in this iteration.
+# 2026-07-19 灰袍历史生命线与玩家统一后的归政规划（初稿）
+
+## 文档状态与使用边界
+
+- 本节记录当前已经讨论形成的世界观方向，作为后续剧情、任务、百科文本和玩法设计的统一依据。
+- 这是**设定规划初稿**，用户已经明确表示整体方向基本正确，但尚未达到最终预期；后续可以继续调整年代、人物、组织名称、表决规则与终局细节。
+- 当前只记录设定和实现方向，不代表相应主线检测、表决任务、王国加入或制度化玩法已经完成。
+- 本节不另建平行设定文档；后续重要修改继续维护在本文件，并在真正形成玩家可见内容时同步更新 \`_Module/README.md\` 与英文版本。
+
+## 采用的历史前提
+
+- 模组采用用户提供的完整潘德拉克战役文稿作为本模组世界中的客观历史。该文稿以《骑砍2》主线人物回忆和多位中文内容作者的共同分析为基础，将碎片化叙述连接成一条完整战役与政治发展史。
+- 1077 年潘德拉克大战中，德罗西俄斯·涅雷采斯率帝国主力，并获得部分阿塞莱与库赛特力量支援，对抗巴旦尼亚、斯特吉亚和后来倒向北方联盟的瓦兰迪亚。帝国先锋在森林伏击中覆灭，盟军在山谷交战中遭受重创，斯特吉亚最终攻破帝国营垒，涅雷采斯与大量元老、将官战死，帝国龙旗破碎并散失。
+- 阿雷尼科斯带领战后唯一仍保持组织的帝国部队和残余官员返回帝国，制止混乱并继位。他在其后数年中恢复秩序、推行改革，但最终遇刺身亡；卢孔、加里奥斯和拉盖娅分别代表元老院、军队与皇室继承主张，统一帝国由此分裂为北、西、南三部分。
+- 《骑砍2》时期是旧帝国衰亡与后来民族王国形成的过渡时代；《战团》时期的卡拉迪亚已经不再存在统一帝国，而由斯瓦迪亚、罗多克、维吉亚、诺德、库吉特和萨兰德等继承国家争夺。
+- 当前模组正典的关键新增前提是：**玩家最终会完成主线并重新统一卡拉迪亚。** 灰袍的历史终点因此不能建立在“玩家缺席、灰袍被新王国消灭”的假设上，而必须围绕玩家作为最终统一者重新设计。
+
+## 灰袍的制度祖先：统一帝国旧治安体系
+
+- 在潘德拉克大战以前，统一帝国已经拥有城市夜巡、市场秩序、驿道巡察、军团宪兵、缉盗队和秘密调查人员等分散制度。
+- 这些机构是灰袍的制度祖先，但当时尚不存在一个公开、统一且能够跨越地方贵族管辖的“灰袍守卫”势力。
+- 这一安排保留现有设定中“灰袍继承统一帝国旧警制”的核心，同时避免产生一个无法解释的问题：若灰袍早已作为强大公开势力存在，为何在潘德拉克大战和战后帝国危机中从未被提及。
+- 旧治安机构受地方总督、元老家族、军方和城市权贵分别控制；帝国强盛时尚能勉强协作，中央权力衰弱后则迅速派系化，无法阻止领主私斗、逃兵为匪、道路中断和村庄遭到报复性劫掠。
+
+## 1077—1084：阿雷尼科斯时期的地下警察组织
+
+- 潘德拉克惨败使帝国军团、行政和司法同时失灵。溃兵、逃兵、失去雇主的佣兵和趁乱扩张的贵族威胁道路、粮道、村镇与战后难民；地方官员也开始隐匿、篡改或销毁案卷。
+- 阿雷尼科斯从战场撤回并继位后，意识到帝国不能继续让军团兼任警察，也不能把公共秩序完全交给地方贵族。他秘密整合仍忠于公共秩序、未被三大政治派系控制的巡察和缉捕力量，建立灰袍的直接前身。暂定制度名称为“灰衣巡察署”，正式名称后续仍可调整。
+- 该机构不隶属于元老院、军团或地方总督，早期直接向阿雷尼科斯及其授权的总长负责。主要任务包括：
+  - 调查地方领主、官员和军需人员；
+  - 追捕逃兵、盗匪、战犯与拒捕者；
+  - 保护帝国驿道、粮道、渡口、市场和战后村庄；
+  - 保存不能交由派系控制机构保管的案卷、判例和未结通缉；
+  - 转移证人、受害者与重要罪犯；
+  - 防止潘德拉克之后的政治报复进一步摧毁帝国内部秩序。
+- 灰衣巡察署之所以必须地下化，是因为元老院会把它视为皇帝绕过传统法律的私兵，军方会把它视为监视将领的工具，地方贵族也不会公开接受一支中央力量调查自己的家族与领地。
+- 组织采用分散案卷、秘密驿站、灰色外袍、宣誓关系和收养继承。其“家族”性质不是普通封建血族，而是利用血缘、收养与誓约保护成员身份、案卷和机构连续性的办法。现有女性主体及收养后继者玩法应由此获得设定依据。
+
+## 1084：统一帝国三裂与灰袍公开
+
+- 阿雷尼科斯遇刺后，卢孔、加里奥斯和拉盖娅都会要求旧帝国机构承认自己的继承权。灰袍拒绝在三方之间选边，因为三方各自只继承了统一帝国的一部分权力，任何一次提前效忠都会使灰袍沦为内战派系清算政敌的工具。
+- 灰袍带走旧帝国案卷、巡察印信、通缉底册和地下联络网，从秘密机构转为公开活动的“灰袍守卫”。这就是模组在 1084 年开局时所处的历史阶段。
+- 此时灰袍不是突然出现的新家族，而是已经秘密运行数年、第一次公开面对全大陆的旧帝国警察组织。她们不争皇位、不主动扩张领地，也不承认任何一个分裂帝国可以独占旧法统；她们以保护道路、村庄、城镇、市场和普通人为公开使命。
+- 当前本地化中“帝国覆灭”“帝国已经崩塌”的表达后续应结合这一设定重新审定。1084 年更准确的表述应是“统一帝国崩裂”或“阿雷尼科斯遇刺后，统一帝国分裂”，因为三个帝国政权仍然真实存在。
+
+## 1084 年后的独立活动期：观察玩家，而非永久中立
+
+- 灰袍公开后的独立状态是过渡方案，不是永久拒绝一切国家权威。她们保持独立，是因为当时没有任何统治者既拥有全大陆的实际权力，又能证明自己愿意接受法律约束。
+- 玩家崛起后，灰袍开始把玩家视为潜在的新统一者。现有灰袍声望、犯罪记录、罚金、赎罪、村庄援助、正义战斗、悬赏任务、领主追捕和收养系统，应逐步成为灰袍观察玩家的证据。
+- 玩家完成龙旗重组、建立或领导一个统一政权后，可进入正式观察阶段。暂定任务名为《灰袍的注视》：灰袍承认玩家可能结束内战，但明确表示龙旗和胜利只能证明力量，不能证明玩家懂得公道。
+- 观察内容应覆盖玩家如何对待无力反抗者，而不仅是战场胜负，例如：
+  - 是否劫掠或保护村庄；
+  - 是否履行悬赏与救援承诺；
+  - 是否接受罚金、赔偿和赎罪；
+  - 是否滥杀俘虏或用灰袍追捕私人仇敌；
+  - 是否允许自己的亲信和同阵营领主留下真实案卷；
+  - 是否在战争结束后恢复道路、生产和公共秩序。
+
+## 玩家完成统一主线后的灰袍大会
+
+- 当前正典明确玩家最终完成主线并统一卡拉迪亚。完成主线后，灰袍不应自动以普通封臣身份加入，也不应继续假装整个大陆仍由互不相干的国家分割；应触发具有历史分量的归政任务线。
+- 暂定主任务名为《最后的授权》。灰袍六个核心席位（初代领主仍在世时由本人出席，死亡后由合法收养后继者继承席位）召开大会，表决是否结束独立状态，将旧帝国遗留的警察权交给玩家建立的新统一国家。
+- 六席应分别代表现有角色职责，而不是只按个人好感随机投票：
+  - 梵蒂：法统、总指挥与新国家的长期制度；
+  - 约珥：道路、乡野、商旅和村庄安全；
+  - 弥瑟：罚金、赎罪、归正及反对把执法变成复仇；
+  - 圣铎：案卷、判例、档案独立与法律连续性；
+  - 晨曦：救灾、战后恢复和普通人的生活；
+  - 暮光：强制执法能力、拒捕处置和国家是否敢惩治权贵。
+- 表决结果应读取玩家整个游戏过程中已经形成的行为记录。灰袍加入不应仅靠高关系或一次说服检定获得；统一者必须证明自己愿意受法律约束，而不仅是要求别人服从。
+- 若首次表决未通过，不应永久锁死。灰袍应给出具体未决事项，触发暂定任务《尚未偿还的旧账》，让玩家赔偿受害村庄、解决未结案件、释放错误关押者、允许调查亲信或完成其他针对性补救，之后重新表决。
+
+## 《灰袍归政宪章》与加入玩家势力
+
+- 表决通过后，玩家与灰袍签署暂定名为《灰袍归政宪章》的文件。灰袍随后**正式加入玩家势力**，但其身份是具有独立执法职责的国家警察机构，而不是普通争夺封地的封臣家族。
+- 玩家一方应承诺的核心原则：
+  - 承认灰袍在统一国家内的合法警察与巡察身份；
+  - 灰袍总长由组织内部依规则推举，不由统治者任意更换；
+  - 灰袍可以调查玩家王国内包括权贵在内的犯罪者；
+  - 玩家本人及亲信的原始案卷不得因政治需要删除；
+  - 灰袍不得被用作私人复仇、派系清洗或无案战争工具；
+  - 重大抓捕、罚金、赎罪和强制行动必须留下案卷；
+  - 灰袍不以执法为借口争夺王位或无限扩张领地。
+- 灰袍一方应承诺的核心原则：
+  - 承认玩家为完成统一后的合法最高统治者；
+  - 接受统一国家的财政和制度监督；
+  - 不再自行对国家或家族发动普通战争；
+  - 把原先的跨国通缉转化为统一国家内部的合法通缉；
+  - 继续保护村庄、道路、渡口、港口、市场和战俘；
+  - 对国王、贵族、军人和平民维持同一套基本案卷原则；
+  - 当成熟的国家司法和治安制度建成后，接受进一步制度化。
+
+## 加入后的玩法身份：特殊国家机构，而非普通封臣
+
+- 灰袍加入玩家王国后仍然必须执行现有警察玩法：追捕犯罪领主、保护村庄、清理盗匪、护送道路、发放悬赏、处理罚金与赎罪、保存个人和家族案底，并在当前海战版本中承担河流、港口、海盗和民船安全相关职责。
+- 灰袍不应像普通封臣一样因无封地而抱怨、争夺城市、推动无关宣战、跟随元帅进行普通侵略、劫掠敌方村庄或把所有对外战争都当作警察行动。
+- 加入后的战争权限应围绕防御、反劫掠、追捕、护送和依法支援设计。真正实现时需要审计 Bannerlord 王国成员身份带来的原版 AI、军团、封地、外交和战争行为，不能只设置 \`Clan.Kingdom\` 后假定现有独立警察逻辑仍会成立。
+- 统一后的主要犯罪来源应从“外国敌人”转向新国家内部治理：不服管束的新归顺领主、拒绝解散的私人军队、侵占村庄的贵族、私设关卡的官员、倒卖军粮的军需人员、战后逃兵集团、冒用玩家名义进行报复的人，以及可能滥权的灰袍成员本身。
+- 这一阶段使统一之后的游戏从单纯征服转向治理，也使灰袍在玩家完成主线后仍然拥有比此前更重要的功能。
+
+## 灰袍在后世的“消失”：制度吸收，而非毁灭
+
+- 《战团》时期不再存在名为灰袍守卫的独立势力，当前正典对此的解释不再是灰袍被各国围剿或毫无意义地灭亡，而是灰袍在加入玩家后完成了国家制度化。
+- 第一代仍以灰袍守卫家族和总长体系运行；随后数代中，统一国家逐步把其职责拆分、扩展为巡察、道路警备、城市治安、港口巡检、司法档案和战后救济等正式机构。
+- 收养制度也逐步从“收为灰袍家族之女”转变为训练、宣誓和任命新的国家执法人员。灰袍的家族外壳因此逐渐失去必要性，组织名称淡出，但其案卷、赎罪、护路和约束权贵的制度进入国家结构。
+- 玩家建立的统一王朝在后世仍会再次分裂，最终形成《战团》的多个继承国家。统一警察机构随国家分裂而被地方化，各国分别继承城镇卫队、道路巡逻、法庭和通缉制度。
+- 《战团》中的中立赏金猎人可以作为灰袍外勤形式的遥远、非正式残余：他们仍跨边界追捕强盗、逃兵并使用钝器活捉，但其中部分后来走向奴隶买卖，象征后世保留了“活捉可以换取赏金”的操作，却遗失了灰袍坚持审判、案卷和赎罪的伦理目的。赏金猎人不是仍然存在的灰袍组织，只是制度解体后的扭曲碎片。
+- 最终历史表述应是：**灰袍因旧统一帝国崩裂而公开，因玩家重新统一卡拉迪亚而归政；它作为独立势力退出历史，却作为公共制度进入历史。**
+
+## 后续开发路线（尚未实现）
+
+1. **走出地下**：补齐阿雷尼科斯、灰衣巡察署、六名初代成员和 1084 年公开宣言的百科、对话与任务证据。
+2. **观察统一者**：在玩家重组龙旗或建立统一政权后启动长期行为考察，复用现有声望、犯罪、赎罪、村庄援助与悬赏记录。
+3. **灰袍大会**：实现六席或后继者表决、逐席理由、补救任务和再次表决。
+4. **归政宪章**：让灰袍以特殊警察机构身份加入玩家王国，同时保留现有执法功能并阻止普通封臣 AI 破坏设定。
+5. **统一后治理**：把后期案件重心转向新国家内部的领主、官员、逃兵、私军、战后恢复和执法滥权。
+6. **制度化终章**：以任务、结局字幕、百科年表或多代玩法展示灰袍从独立家族逐步转为国家机构，并说明其名称为何在《战团》时代消失。
+
+## 当前实现前必须解决的问题
+
+- 确定“玩家正式完成主线”的可靠运行时判定，兼容玩家自建王国、支持既有势力以及后续可能确定的唯一模组正典路线。
+- 确定灰袍加入玩家王国后如何继续抓捕同阵营犯罪领主，且不会被原版友军、宣战和俘虏规则阻断。
+- 确定特殊家族是否持有封地、能否加入军团、如何参与王国投票，以及如何避免普通封臣经济与关系逻辑迫使其偏离警察职责。
+- 确定初代六席死亡、收养后继者、存档兼容和表决资格的持久化方案。
+- 确定玩家自身犯罪记录、已完成赎罪、亲信犯罪和旧案件在表决时分别如何计分。
+- 确定灰袍加入后的执法权限是否覆盖整个已统一领土，及统一尚未彻底完成时剩余敌对地区的处理方式。
+- 在任何玩家可见设定正式落地前，统一修订 \`spclans.xml\`、\`comment_strings.xml\`、\`GreyWardenLoreBehavior.cs\` 与中英文语言文件中关于“统一帝国”“帝国覆灭”“帝国崩塌”和灰袍起源的措辞。
+# 2026-07-19 formal v1.4.7-r4 release
+
+- The user verified in game that the native hero-page refactor fixes the
+  GreyWarden/CourierMessenger conflict: GreyWarden's record control and
+  Messenger's formerly disabled encyclopedia button now work together.
+  GreyWarden still has no external prerequisite requirement.
+- The repository, module metadata, and existing public releases all target
+  Bannerlord/GreyWarden `1.4.7`; the spoken `1.4.6` reference was therefore
+  treated as voice-transcription drift. This publication is tagged
+  `v1.4.7-r4` and compares against the actual preceding public release,
+  `v1.4.7-r3`.
+- Both player READMEs were rewritten as a single concise `v1.4.7-r4` entry.
+  Earlier release sections were removed. The new entry describes only visible
+  differences from `r3`: permanent AI crime/arrest history; separate open-case,
+  personal-deterrence, clan-deterrence, witness-capture, and nearest-offender
+  handling; personality/source/intensity/player-role deterrence greetings;
+  cross-battle righteous-kill reputation progress; corrected adoption text;
+  and native-page Messenger compatibility. The current-playable summary and QQ
+  group `981323752` remain.
+- Release build succeeded with zero errors. The deployed client DLL version is
+  `1.4.7.0`, SHA-256
+  `3379B6E1AFEF560421A87B945C94ABE2BCC52A6B9FF0F518637287196AFC7EE0`.
+  Repository/live verification found `24` deployable files with `0`
+  missing/hash mismatches, `17` XML files with `0` parse failures, identical
+  client/editor DLLs, matching source/live Chinese and English READMEs, and no
+  forbidden editor directory, nested ZIP, or checksum inside the live module.
+- The formal player archive is
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7.zip`
+  with its sibling `.sha256`. It contains one top-level `GreyWarden` directory
+  and `27` runtime files. It excludes `Assets`, `AssetSources`,
+  `RuntimeDataCache`, editor binaries, PDBs, source FBX/PNG files, logs, dumps,
+  nested archives, and checksums. Size: `349,741,341` bytes. SHA-256:
+  `E3073DE8B81A38395A930260BE3A3B8C2AACE12F3B786F5A9BC20284E5A4E3C1`.
+- The final archive was extracted to `C:\tmp\gwp-r4-extract\GreyWarden` and
+  compared file by file with `C:\tmp\gwp-r4-package\GreyWarden`: `27` files
+  on each side, `0` missing/hash mismatches/extras, and `0` forbidden entries.
+  Protected TPAC hashes remain:
+  - `gwp_inherited_legacy_assets.tpac`:
+    `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`
+  - `gwp_black_gold_shield.tpac`:
+    `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`
+- GitHub release retention is now explicit: for the same Bannerlord/mod version,
+  retain only the newest two public releases. After publishing `v1.4.7-r4`,
+  keep `v1.4.7-r3` and `v1.4.7-r4`; delete the older `v1.4.7` and
+  `v1.4.7-r2` GitHub Releases and their release tags. Milestone tags such as
+  `bannerlord-v1.4.7` are not public release records and remain untouched.

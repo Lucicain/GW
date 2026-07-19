@@ -14,6 +14,14 @@
 		<DependedModule Id="CustomBattle" DependentVersion="v1.4.7" />
 		<DependedModule Id="StoryMode" DependentVersion="v1.4.7" />
 	</DependedModules>
+	<!-- Optional compatibility ordering. GreyWarden remains standalone, but
+	     when the four community prerequisites and CourierMessenger are enabled,
+	     Bannerlord.Harmony loads first and CourierMessenger loads after
+	     GreyWarden's final encyclopedia hero-page resource. -->
+	<DependedModuleMetadatas>
+		<DependedModuleMetadata id="Bannerlord.Harmony" order="LoadBeforeThis" optional="true" />
+		<DependedModuleMetadata id="CourierMessenger" order="LoadAfterThis" optional="true" />
+	</DependedModuleMetadatas>
 	<SubModules>
 		<SubModule>
 			<Name value="GreyWardenPolicePurity" />

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -43,7 +43,6 @@ namespace GreyWardenPolicePurity
                 return;
 
             // 警察全忙时静默
-            if (!CrimePool.IsAccepting) return;
 
             // 巡逻队只算临时执勤单位，不进犯罪池，也不挂犯罪标记。
             if (GwpCommon.ShouldIgnoreCrimeTracking(attacker))
@@ -91,7 +90,6 @@ namespace GreyWardenPolicePurity
         private void OnVillageBeingRaided(Village village)
         {
             if (village == null) return;
-            if (!CrimePool.IsAccepting) return;
 
             Vec2 location = village.Settlement.Position.ToVec2();
             MobileParty offender = FindRaidingParty(village);

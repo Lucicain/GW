@@ -10,31 +10,31 @@ Chinese version: [README.md](README.md)
 2. Extract the complete new `GreyWarden` folder into the game's `Modules` directory.
 3. Enable `GreyWarden` in the launcher.
 
-Existing saves are supported. Do not install by copying only part of the module.
+This update rebuilds AI-lord record data, so a new campaign is recommended; legacy AI crime and deterrence records are not migrated. Do not install by copying only part of the module.
 
 ## Latest update
 
-### 2026-07-18 v1.4.7-r3
+### 2026-07-19 v1.4.7-r4
+
+Compared with `v1.4.7-r3`:
 
 #### Added and adjusted
 
-- Added full English and Simplified Chinese support; English names use an Old English style while Chinese retains the original names.
-- Added sparring with Grey Warden lords. Town bouts use the native two-person arena duel with personal equipment, spectators, and cheers. Field bouts form both armies as spectators and let the player choose mounted or foot combat; an unmounted player can receive a usable horse.
-- Field sparring follows the map author's route and chooses low ground for the meeting point and both ranks. The lines remain about a hundred metres apart, formations use up to a hundred metres of frontage, and the native layout fills around rocks before adding depth.
-- Rebalanced Grey Warden troops by removing their extra health advantage and lowering some starting attributes; Grey Wardens now improve combat skills through kicks, shield bashes, and archery during battle.
+- AI lords now permanently retain their total crimes and Grey Warden arrests. Open cases are tracked separately from historical records, and deterrence recovery no longer erases criminal history.
+- Personal and clan deterrence are now recorded separately. Lords captured in the same battle without an open case receive witness-style clan deterrence but are not marked as offenders or given an arrest; available Grey Wardens prioritize the nearest lord with an unresolved case.
+- Lords discussing Grey Warden enforcement now respond according to personal or clan deterrence, its intensity, all five personality tendencies, and whether the player has joined the Grey Wardens. An eligible lord with active deterrence consistently uses the matching greeting in ordinary conversation.
+- The player's personal kills in righteous battles now accumulate across battles and grant reputation when the threshold is reached. Reputation losses from criminal battles are still settled separately after each battle.
 
 #### Fixed
 
-- Completed the formation, interaction, dismounting, loan-horse, horse retention, spectator, result, and post-bout conversation flow for town and field sparring. Town duels now return to a lord-hall conversation after the player leaves with Tab.
-- Fixed field bouts drifting away from intended roads, obstacles incorrectly narrowing the arena or troop frontage, unequal marching distances, troop types forming at different depths, lords being blocked behind overly deep ranks, and terrain incorrectly cancelling a bout.
-- The player is no longer knocked down by a nearby Grey Warden kick or shield-bash fallback; only a real hit can trigger the reaction.
-- Fixed the encyclopedia button, the returning-patrol crash, and incorrect raiding text after aiding a village.
+- Fixed adoption notifications and encyclopedia records omitting the adopted hero's name and village of origin.
+- Grey Warden records now extend the native hero encyclopedia page directly, fixing Messenger's button being disabled when both mods are active. GreyWarden itself still has no external prerequisites.
 
 ## Playable content
 
 - Grey Warden reputation, crime records, fines, atonement, warrants, and pursuit.
 - Village rewards, bounty contracts, troop requests, and battle reinforcements.
-- Enforcement of AI lords and encyclopedia deterrence records.
+- Enforcement of AI lords, permanent records, and deterrence reactions.
 - Grey Warden troops, six founding lords, and the adopted-heir system.
 - Kicks, shield bashes, passive great-shield protection, and the black-and-gold shield appearance.
 - Town and field sparring with Grey Warden lords.
