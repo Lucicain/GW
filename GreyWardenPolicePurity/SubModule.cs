@@ -82,8 +82,12 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenLoreBehavior());
             starter.AddBehavior(new GreyWardenFamilyBehavior());
             starter.AddBehavior(new GreyWardenLeaderBalanceBehavior());
+            starter.AddBehavior(new GreyWardenNotableRelationsBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());
             starter.AddBehavior(new GreyWardenSparringBehavior());
+            // 行为只负责状态与事件；最终欲望过滤由 dispatcher postfix 在
+            // 所有原版评分器完成后执行，不能依赖 MbEvent 的注册顺序。
+            starter.AddBehavior(new GreyWardenPartyDesireBehavior());
         }
 
         // 不在此处过滤 IsFieldBattle，因为该属性在 OnMissionBehaviorInitialize

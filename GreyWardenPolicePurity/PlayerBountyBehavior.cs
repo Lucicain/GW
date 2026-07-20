@@ -250,9 +250,7 @@ namespace GreyWardenPolicePurity
                 if (infantry != null)
                     patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
 
-                PoliceResourceManager.ReplenishFood(patrol, 5);
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                patrol.Ai.SetInitiative(1f, 0f, 999f);
+                GreyWardenPartyDesireBehavior.RequestApproach(patrol, MobileParty.MainParty, 8f);
 
                 _recruitmentPatrolId = patrolId;
                 _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用
@@ -303,8 +301,7 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
-                    patrol.Ai.SetDoNotMakeNewDecisions(true);
-                    patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
 
                     float dist = patrol.GetPosition2D.Distance(target.GetPosition2D);
                     if (dist < 3f)
@@ -315,8 +312,7 @@ namespace GreyWardenPolicePurity
 
                 if (player != null && player.IsActive)
                 {
-                    patrol.Ai.SetDoNotMakeNewDecisions(true);
-                    patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+                    GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
                 }
             }
         }
@@ -335,8 +331,7 @@ namespace GreyWardenPolicePurity
                 Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
                 if (target == null) continue;
 
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+                GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
             }
         }
 
@@ -389,13 +384,9 @@ namespace GreyWardenPolicePurity
             // ── 自愈：读档后 IsPlayerBountyEscort 标志丢失（CrimePool 不持久化），在此补设 ──
             CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
 
-            // ── 粮食检查：直接补粮，不让护送方跑去城市补给（避免脱离跟随） ──
-            if (escort.ItemRoster.TotalFood <= 0)
-                PoliceResourceManager.ReplenishFood(escort, 5);
-
             // ── 追击阶段：距目标足够近时宣战（护送方保持跟随玩家，不主动接战）──────────
             // 逻辑：护送方宣战 → 玩家宣战并与犯人交战 → 引擎自动将附近的护送方拉入战斗。
-            // 不切换为 SetMoveEngageParty：若护送方先接战，玩家尚未宣战则无法参战（原版机制）。
+            // 不把护送欲望切换为主动接战：若护送方先开战，玩家尚未宣战则无法参战（原版机制）。
             if (IsTrackingBountyTarget)
             {
                 var criminal = MobileParty.All.FirstOrDefault(
@@ -405,7 +396,7 @@ namespace GreyWardenPolicePurity
                 {
                     float dist = escort.GetPosition2D.Distance(criminal.GetPosition2D);
                     if (dist < GwpTuning.Bounty.EscortEngageDistance)
-                        TryDeclareWarForEscort(criminal); // 仅宣战，AI 命令由下方 SetMoveEscortParty 统一下达
+                        TryDeclareWarForEscort(criminal); // 仅宣战，跟随职责由下方欲望请求统一维护
                 }
             }
 
@@ -415,9 +406,8 @@ namespace GreyWardenPolicePurity
             MobileParty player = MobileParty.MainParty;
             if (player == null || !player.IsActive) return;
 
-            // ★ SetMoveEscortParty：引擎持续追踪目标部队位置，无需每小时手动更新坐标
-            escort.Ai.SetDoNotMakeNewDecisions(true);
-            escort.SetMoveEscortParty(player, MobileParty.NavigationType.Default, false);
+            // 跟随职责进入原版欲望拍卖；资源危急时允许先补给再回来。
+            GreyWardenPartyDesireBehavior.RequestEscort(escort, player, 8f);
         }
 
         /// <summary>

@@ -1,0 +1,72 @@
+<Prefab>
+  <Window>
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+      <Children>
+
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Sprite="BlankWhiteSquare_9" Color="#00000099" />
+
+        <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="1280" SuggestedHeight="820" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="Frame1Brush">
+          <Children>
+
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="56" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="24" Brush="Encyclopedia.Title" Text="@Title" />
+
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="82" MarginLeft="55" MarginRight="55" Brush="Encyclopedia.Text" Text="@Summary" />
+
+            <Widget Id="CaseListRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="55" MarginRight="55" MarginTop="126" MarginBottom="104">
+              <Children>
+                <ScrollablePanel Id="CaseScrollablePanel" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" InnerPanel="CaseListClip\CaseList" ClipRect="CaseListClip" MouseScrollAxis="Vertical" VerticalScrollbar="..\CaseScrollbar" AutoHideScrollBars="true">
+                  <Children>
+                    <Widget Id="CaseListClip" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ClipContents="true">
+                      <Children>
+                        <ListPanel Id="CaseList" DataSource="{Cases}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom" MarginRight="24">
+                          <ItemTemplate>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="126" MarginBottom="6">
+                              <Children>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="28" VerticalAlignment="Top" MarginLeft="10" MarginRight="10" Brush="Encyclopedia.SubPage.Title.Text" Text="@Header" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24" VerticalAlignment="Top" MarginTop="30" MarginLeft="18" MarginRight="10" Brush="Encyclopedia.Text" Text="@TimeText" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24" VerticalAlignment="Top" MarginTop="56" MarginLeft="18" MarginRight="10" Brush="Encyclopedia.Text" Text="@AssignmentText" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" VerticalAlignment="Top" MarginTop="82" MarginLeft="18" MarginRight="10" Brush="Encyclopedia.Text" Text="@DetailsText" />
+                                <BrushWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="2" VerticalAlignment="Bottom" Brush="Encyclopedia.Scrollbar.Flat.Bed" />
+                              </Children>
+                            </Widget>
+                          </ItemTemplate>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </Children>
+                </ScrollablePanel>
+
+                <ScrollbarWidget Id="CaseScrollbar" WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" VerticalAlignment="Center" AlignmentAxis="Vertical" Handle="CaseScrollbarHandle" MinValue="0" MaxValue="100">
+                  <Children>
+                    <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="2" HorizontalAlignment="Center" Brush="Encyclopedia.Scrollbar.Flat.Bed" />
+                    <BrushWidget Id="CaseScrollbarHandle" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="8" SuggestedHeight="70" HorizontalAlignment="Center" Brush="Encyclopedia.Scrollbar.Flat.Handle" />
+                  </Children>
+                </ScrollbarWidget>
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="Encyclopedia.Text" Text="@EmptyText" IsVisible="@IsEmpty" />
+              </Children>
+            </Widget>
+
+            <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="60" StackLayout.LayoutMethod="HorizontalLeftToRight" HorizontalAlignment="Center" VerticalAlignment="Bottom" MarginBottom="28">
+              <Children>
+                <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="58" MarginRight="22" Brush="ButtonBrush3" Command.Click="ExecuteRefresh">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@RefreshText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />
+                  </Children>
+                </ButtonWidget>
+
+                <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="58" Brush="ButtonBrush1" Command.Click="ExecuteClose">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@CloseText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />
+                  </Children>
+                </ButtonWidget>
+              </Children>
+            </ListPanel>
+
+          </Children>
+        </BrushWidget>
+
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>

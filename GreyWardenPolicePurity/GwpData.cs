@@ -12,10 +12,7 @@ namespace GreyWardenPolicePurity
 {
     // ===================== 警察执法数据 =====================
 
-    /// <summary>
-    /// 每位领主唯一的一条永久案底账本。案件状态、累计犯罪/被捕次数与两类威慑共用此记录，
-    /// 避免把同一事件同时复制到犯罪池、任务和威慑表。
-    /// </summary>
+    /// <summary>只保存一件当前尚未结案的案件；结案后整条记录会从案件池删除。</summary>
     public class CrimeRecord
     {
         private MobileParty? _offender;
@@ -29,14 +26,7 @@ namespace GreyWardenPolicePurity
         public CampaignTime LastCrimeTime { get; set; }
         public Vec2 Location { get; set; }
         public string VictimName { get; set; } = string.Empty;
-        public int TotalCrimeCount { get; set; }
-        public int TotalArrestCount { get; set; }
         public bool HasOpenCase { get; set; }
-        public float DirectDeterrencePoints { get; set; }
-        public float SharedDeterrencePoints { get; set; }
-        public int SharedDeterrenceCount { get; set; }
-        public float LastDeterrenceUpdatedHours { get; set; }
-        public float LastEnforcementHours { get; set; }
 
         public Hero? OffenderHero
         {
@@ -47,8 +37,18 @@ namespace GreyWardenPolicePurity
                     string.Equals(_offenderHero.StringId, OffenderHeroId, StringComparison.OrdinalIgnoreCase))
                     return _offenderHero;
 
-                _offenderHero = Hero.FindFirst(h =>
-                    string.Equals(h.StringId, OffenderHeroId, StringComparison.OrdinalIgnoreCase));
+                try
+                {
+                    _offenderHero = Hero.FindFirst(h =>
+                        string.Equals(h.StringId, OffenderHeroId, StringComparison.OrdinalIgnoreCase));
+                }
+                catch (ArgumentNullException)
+                {
+                    // CampaignBehavior.SyncData runs before Bannerlord has finished
+                    // constructing Hero's global source collection. Resolution is lazy,
+                    // so simply retry after the campaign session has launched.
+                    return null;
+                }
                 return _offenderHero;
             }
         }
@@ -95,15 +95,70 @@ namespace GreyWardenPolicePurity
             HasOpenCase && Offender?.IsActive == true && Offender.CurrentSettlement == null;
     }
 
+    /// <summary>
+    /// 英雄页使用的长期数字档案。这里只保留累计次数和威慑数值，绝不保存案件时间、地点、
+    /// 受害者或罪名等已结案细节。
+    /// </summary>
+    public class HeroCrimeStats
+    {
+        private Hero? _hero;
+
+        public string HeroId { get; set; } = string.Empty;
+        public int TotalCrimeCount { get; set; }
+        public int TotalArrestCount { get; set; }
+        public float DirectDeterrencePoints { get; set; }
+        public float SharedDeterrencePoints { get; set; }
+        public int SharedDeterrenceCount { get; set; }
+        public float LastDeterrenceUpdatedHours { get; set; }
+        public float LastEnforcementHours { get; set; }
+
+        public Hero? Hero
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(HeroId)) return null;
+                if (_hero != null &&
+                    string.Equals(_hero.StringId, HeroId, StringComparison.OrdinalIgnoreCase))
+                    return _hero;
+
+                try
+                {
+                    _hero = TaleWorlds.CampaignSystem.Hero.FindFirst(hero =>
+                        string.Equals(hero.StringId, HeroId, StringComparison.OrdinalIgnoreCase));
+                }
+                catch (ArgumentNullException)
+                {
+                    return null;
+                }
+
+                return _hero;
+            }
+        }
+    }
+
     /// <summary>只保存警务流程状态；目标案情通过账本键实时解析，不再复制整条犯罪记录。</summary>
     public class PoliceTask
     {
+        private CrimeRecord? _targetCrime;
+
         public string PolicePartyId { get; set; } = string.Empty;
         public string TargetCrimeId { get; set; } = string.Empty;
         public CrimeRecord? TargetCrime
         {
-            get => CrimePool.GetRecordByKey(TargetCrimeId);
-            set => TargetCrimeId = value?.CrimeId ?? string.Empty;
+            get
+            {
+                if (_targetCrime != null &&
+                    string.Equals(_targetCrime.CrimeId, TargetCrimeId, StringComparison.OrdinalIgnoreCase))
+                    return _targetCrime;
+
+                _targetCrime = CrimePool.GetRecordByKey(TargetCrimeId);
+                return _targetCrime;
+            }
+            set
+            {
+                _targetCrime = value;
+                TargetCrimeId = value?.CrimeId ?? string.Empty;
+            }
         }
 
         public bool WarDeclared { get; set; }
@@ -151,29 +206,38 @@ namespace GreyWardenPolicePurity
         public static int MaxActiveTasks => PartyCount;
         public static int PoliceClanMemberCount =>
             GetPoliceClan()?.Heroes.Count(h => h != null && h.IsAlive) ?? 0;
+
+        public static bool CanHandleOrdinaryCase(MobileParty? party) =>
+            party?.IsActive == true && party.IsLordParty &&
+            party.LeaderHero?.IsActive == true &&
+            party.ActualClan == GetPoliceClan();
     }
 
     /// <summary>
-    /// 按领主聚合的永久案底账本。每名领主最多一条记录；未结案件只是记录上的一个状态，
-    /// 警察任务只保存账本键，因此存档大小随领主数量而不是犯罪事件数量增长。
+    /// 当前案件池与长期数字档案。案件池只保留未结案件；长期档案只按英雄保存累计数字。
     /// </summary>
     public static class CrimePool
     {
         private static readonly Dictionary<string, CrimeRecord> _ledger =
             new Dictionary<string, CrimeRecord>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, HeroCrimeStats> _history =
+            new Dictionary<string, HeroCrimeStats>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, PoliceTask> _tasks =
             new Dictionary<string, PoliceTask>(StringComparer.OrdinalIgnoreCase);
 
         public const string PlayerCrimeId = "PLAYER_WANTED";
+        public const int MaxTaskPoolEntries = 100;
 
         public static bool IsAccepting => true;
         public static bool IsDispatchReady => GetUnassignedOpenCases().Any(c => c.IsOffenderPursuable());
         public static IReadOnlyDictionary<string, PoliceTask> ActiveTasks => _tasks;
         public static IEnumerable<CrimeRecord> LedgerRecords => _ledger.Values;
+        public static IEnumerable<HeroCrimeStats> HistoryRecords => _history.Values;
 
         public static void ClearAll()
         {
             _ledger.Clear();
+            _history.Clear();
             _tasks.Clear();
         }
 
@@ -190,7 +254,29 @@ namespace GreyWardenPolicePurity
             return GetRecordByKey(hero.StringId);
         }
 
-        public static CrimeRecord GetOrCreateRecord(Hero hero)
+        public static HeroCrimeStats? GetHistory(Hero? hero)
+        {
+            if (hero == null || string.IsNullOrWhiteSpace(hero.StringId)) return null;
+            _history.TryGetValue(hero.StringId, out HeroCrimeStats? history);
+            return history;
+        }
+
+        public static HeroCrimeStats GetOrCreateHistory(Hero hero)
+        {
+            string key = hero.StringId;
+            if (_history.TryGetValue(key, out HeroCrimeStats? existing))
+                return existing;
+
+            var history = new HeroCrimeStats
+            {
+                HeroId = key,
+                LastDeterrenceUpdatedHours = (float)CampaignTime.Now.ToHours
+            };
+            _history[key] = history;
+            return history;
+        }
+
+        private static CrimeRecord GetOrCreateRecord(Hero hero)
         {
             string key = hero.StringId;
             if (_ledger.TryGetValue(key, out CrimeRecord? existing))
@@ -202,8 +288,7 @@ namespace GreyWardenPolicePurity
                 OffenderHeroId = key,
                 Offender = hero.PartyBelongedTo,
                 OccurredTime = CampaignTime.Now,
-                LastCrimeTime = CampaignTime.Now,
-                LastDeterrenceUpdatedHours = (float)CampaignTime.Now.ToHours
+                LastCrimeTime = CampaignTime.Now
             };
             _ledger[key] = record;
             return record;
@@ -228,9 +313,10 @@ namespace GreyWardenPolicePurity
                 LastCrimeTime = CampaignTime.Now,
                 Location = location,
                 VictimName = detail,
-                TotalCrimeCount = 1,
                 HasOpenCase = true
             };
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
+                GetForcedTaskCount());
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_gwpdata_001}You have been put on the wanted list by the Grey Wardens!"), Colors.Red));
@@ -272,16 +358,41 @@ namespace GreyWardenPolicePurity
             record.LastCrimeTime = now;
             record.Location = location;
             record.VictimName = victimName ?? string.Empty;
-            record.TotalCrimeCount++;
             record.HasOpenCase = true;
+            GetOrCreateHistory(leader).TotalCrimeCount++;
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
+                GetForcedTaskCount());
             return true;
         }
 
-        /// <summary>任务失败时只重开原案，不增加永久犯罪次数。</summary>
+        /// <summary>行政改派时重开原案，不增加永久犯罪次数；战败不调用此入口。</summary>
         public static void ReopenCase(CrimeRecord? crime)
         {
             if (crime == null || crime.CrimeId == PlayerCrimeId) return;
             crime.HasOpenCase = true;
+            _ledger[crime.CrimeId] = crime;
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
+                GetForcedTaskCount());
+        }
+
+        public static void TrimOpenCasesToCapacity(int capacity)
+        {
+            int safeCapacity = Math.Max(0, capacity);
+            var assignedCrimeIds = new HashSet<string>(_tasks.Values
+                .Select(task => task.TargetCrimeId)
+                .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+            List<CrimeRecord> openCases = _ledger.Values.Where(record => record.HasOpenCase).ToList();
+            int removeCount = openCases.Count - safeCapacity;
+            if (removeCount <= 0) return;
+
+            foreach (CrimeRecord record in openCases
+                         .Where(record => record.CrimeId != PlayerCrimeId &&
+                                          !assignedCrimeIds.Contains(record.CrimeId))
+                         .OrderBy(record => record.LastCrimeTime.ToHours)
+                         .ThenBy(record => record.CrimeId, StringComparer.OrdinalIgnoreCase)
+                         .Take(removeCount).ToList())
+                _ledger.Remove(record.CrimeId);
         }
 
         public static int RecordArrest(Hero? hero)
@@ -289,10 +400,9 @@ namespace GreyWardenPolicePurity
             if (hero == null || hero == Hero.MainHero || string.IsNullOrWhiteSpace(hero.StringId))
                 return 0;
 
-            CrimeRecord record = GetOrCreateRecord(hero);
-            record.TotalArrestCount++;
-            record.HasOpenCase = false;
-            return record.TotalArrestCount;
+            HeroCrimeStats history = GetOrCreateHistory(hero);
+            history.TotalArrestCount++;
+            return history.TotalArrestCount;
         }
 
         public static CrimeRecord? GetNearest(Vec2 pos) => SelectNearest(
@@ -352,21 +462,40 @@ namespace GreyWardenPolicePurity
             CrimeRecord? record = GetByOffenderId(offenderStringId);
             if (record == null || _tasks.Values.Any(t => t.TargetCrimeId == record.CrimeId))
                 return false;
-            record.HasOpenCase = false;
-            return true;
+            return _ledger.Remove(record.CrimeId);
         }
 
         public static void BeginTask(string policePartyId, CrimeRecord crime)
         {
             if (string.IsNullOrWhiteSpace(policePartyId) || crime == null) return;
+
+            // 双向唯一性兜底：一个案件只能有一名承办者，一名警察只能有一案。
+            if (_tasks.Any(kv =>
+                    !string.Equals(kv.Key, policePartyId, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(kv.Value.TargetCrimeId, crime.CrimeId,
+                        StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            if (_tasks.TryGetValue(policePartyId, out PoliceTask? previous))
+            {
+                if (string.Equals(previous.TargetCrimeId, crime.CrimeId,
+                        StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                ReopenCase(previous.TargetCrime);
+            }
+
             _tasks[policePartyId] = new PoliceTask
             {
                 PolicePartyId = policePartyId,
-                TargetCrimeId = crime.CrimeId
+                TargetCrime = crime
             };
         }
 
-        /// <summary>结束任务即结案；失败分支随后调用 ReopenCase 恢复原案。</summary>
+        /// <summary>
+        /// 结束任务即从当前案件池删除案件。战败或承办人失效也直接结案；只有玩家
+        /// 案件挤占、村庄救济调度等明确的行政移交路径才会先调用 ReopenCase。
+        /// </summary>
         public static void EndTask(string policePartyId)
         {
             if (_tasks.TryGetValue(policePartyId, out PoliceTask? task))
@@ -374,7 +503,10 @@ namespace GreyWardenPolicePurity
                 CrimeRecord? crime = task.TargetCrime;
                 _tasks.Remove(policePartyId);
                 if (crime != null && crime.CrimeId != PlayerCrimeId)
+                {
                     crime.HasOpenCase = false;
+                    _ledger.Remove(crime.CrimeId);
+                }
             }
         }
 
@@ -421,17 +553,17 @@ namespace GreyWardenPolicePurity
                          kv.Value.TargetCrime == null)
                      .Select(kv => kv.Key).ToList())
             {
-                if (_tasks.TryGetValue(policeId, out PoliceTask? task))
-                    ReopenCase(task.TargetCrime);
-                _tasks.Remove(policeId);
+                // 承办部队已经消失或案卷目标无法恢复时视为执法失败。EndTask
+                // 会删除普通领主案件；玩家长期通缉记录则按其专门规则保留。
+                EndTask(policeId);
             }
 
-            foreach (CrimeRecord record in _ledger.Values)
+            foreach (string crimeId in _ledger.Values.Where(record =>
             {
                 Hero? hero = record.OffenderHero;
-                if (record.CrimeId != PlayerCrimeId && hero != null && !hero.IsAlive)
-                    record.HasOpenCase = false;
-            }
+                return record.CrimeId != PlayerCrimeId && hero != null && !hero.IsAlive;
+            }).Select(record => record.CrimeId).ToList())
+                _ledger.Remove(crimeId);
         }
 
         public static List<MobileParty> GetTrackedOffendersByFaction(IFaction? faction)
@@ -461,15 +593,34 @@ namespace GreyWardenPolicePurity
 
         public static void RefreshAccepting() { }
 
+        public static int GetForcedTaskCount() =>
+            PoliceEnforcementBehavior.GetActiveAssistanceTaskCount() +
+            GreyWardenVillageAdoptionBehavior.GetTaskSnapshotCount();
+
         public static void SyncData(IDataStore dataStore)
         {
             if (dataStore.IsSaving)
             {
-                List<CrimeRecord> records = _ledger.Values.Where(ShouldPersist).ToList();
+                TrimOpenCasesToCapacity(MaxTaskPoolEntries -
+                    GetForcedTaskCount());
+                List<CrimeRecord> records = _ledger.Values.Where(record => record.HasOpenCase).ToList();
                 int count = records.Count;
                 dataStore.SyncData("gwp_ledger_count", ref count);
                 for (int i = 0; i < records.Count; i++)
-                    SyncRecord(dataStore, i, records[i], saving: true);
+                {
+                    HeroCrimeStats history = string.IsNullOrWhiteSpace(records[i].OffenderHeroId)
+                        ? new HeroCrimeStats()
+                        : _history.TryGetValue(records[i].OffenderHeroId, out HeroCrimeStats? savedHistory)
+                            ? savedHistory
+                            : new HeroCrimeStats { HeroId = records[i].OffenderHeroId };
+                    SyncRecord(dataStore, i, records[i], history, saving: true);
+                }
+
+                List<HeroCrimeStats> histories = _history.Values.Where(ShouldPersistHistory).ToList();
+                int historyCount = histories.Count;
+                dataStore.SyncData("gwp_history_count", ref historyCount);
+                for (int i = 0; i < histories.Count; i++)
+                    SyncHistory(dataStore, i, histories[i], saving: true);
 
                 List<PoliceTask> tasks = _tasks.Values.Where(t => t.TargetCrime != null).ToList();
                 int taskCount = tasks.Count;
@@ -480,6 +631,7 @@ namespace GreyWardenPolicePurity
             else if (dataStore.IsLoading)
             {
                 _ledger.Clear();
+                _history.Clear();
                 _tasks.Clear();
 
                 int count = 0;
@@ -487,9 +639,21 @@ namespace GreyWardenPolicePurity
                 for (int i = 0; i < count; i++)
                 {
                     CrimeRecord record = new CrimeRecord();
-                    SyncRecord(dataStore, i, record, saving: false);
-                    if (!string.IsNullOrWhiteSpace(record.CrimeId))
+                    var legacyHistory = new HeroCrimeStats();
+                    SyncRecord(dataStore, i, record, legacyHistory, saving: false);
+                    MergeLegacyHistory(legacyHistory);
+                    if (!string.IsNullOrWhiteSpace(record.CrimeId) && record.HasOpenCase)
                         _ledger[record.CrimeId] = record;
+                }
+
+                int historyCount = 0;
+                dataStore.SyncData("gwp_history_count", ref historyCount);
+                for (int i = 0; i < historyCount; i++)
+                {
+                    var history = new HeroCrimeStats();
+                    SyncHistory(dataStore, i, history, saving: false);
+                    if (!string.IsNullOrWhiteSpace(history.HeroId) && ShouldPersistHistory(history))
+                        _history[history.HeroId] = history;
                 }
 
                 int taskCount = 0;
@@ -504,16 +668,23 @@ namespace GreyWardenPolicePurity
                         continue;
                     _tasks[task.PolicePartyId] = task;
                 }
-
-                Clean();
+                TrimOpenCasesToCapacity(MaxTaskPoolEntries -
+                    GetForcedTaskCount());
             }
         }
 
-        private static bool ShouldPersist(CrimeRecord record) =>
-            record.CrimeId == PlayerCrimeId || record.TotalCrimeCount > 0 || record.TotalArrestCount > 0 ||
-            record.HasOpenCase || record.DirectDeterrencePoints > 0f || record.SharedDeterrencePoints > 0f;
+        private static bool ShouldPersistHistory(HeroCrimeStats history) =>
+            !string.IsNullOrWhiteSpace(history.HeroId) &&
+            (history.TotalCrimeCount > 0 || history.TotalArrestCount > 0 ||
+             history.DirectDeterrencePoints > 0f || history.SharedDeterrencePoints > 0f ||
+             history.SharedDeterrenceCount > 0);
 
-        private static void SyncRecord(IDataStore store, int i, CrimeRecord record, bool saving)
+        private static void SyncRecord(
+            IDataStore store,
+            int i,
+            CrimeRecord record,
+            HeroCrimeStats legacyHistory,
+            bool saving)
         {
             string id = record.CrimeId ?? string.Empty;
             string type = record.CrimeType ?? string.Empty;
@@ -524,14 +695,14 @@ namespace GreyWardenPolicePurity
             float x = record.Location.X;
             float y = record.Location.Y;
             string victim = record.VictimName ?? string.Empty;
-            int crimes = record.TotalCrimeCount;
-            int arrests = record.TotalArrestCount;
+            int crimes = legacyHistory.TotalCrimeCount;
+            int arrests = legacyHistory.TotalArrestCount;
             int open = record.HasOpenCase ? 1 : 0;
-            float direct = record.DirectDeterrencePoints;
-            float shared = record.SharedDeterrencePoints;
-            int sharedCount = record.SharedDeterrenceCount;
-            float updated = record.LastDeterrenceUpdatedHours;
-            float enforced = record.LastEnforcementHours;
+            float direct = legacyHistory.DirectDeterrencePoints;
+            float shared = legacyHistory.SharedDeterrencePoints;
+            int sharedCount = legacyHistory.SharedDeterrenceCount;
+            float updated = legacyHistory.LastDeterrenceUpdatedHours;
+            float enforced = legacyHistory.LastEnforcementHours;
 
             store.SyncData($"gwp_l_{i}_id", ref id);
             store.SyncData($"gwp_l_{i}_type", ref type);
@@ -564,15 +735,68 @@ namespace GreyWardenPolicePurity
                 record.LastCrimeTime = CampaignTime.Hours(lastCrime);
                 record.Location = new Vec2(x, y);
                 record.VictimName = victim;
-                record.TotalCrimeCount = Math.Max(0, crimes);
-                record.TotalArrestCount = Math.Max(0, arrests);
                 record.HasOpenCase = open != 0;
-                record.DirectDeterrencePoints = MathF.Max(0f, direct);
-                record.SharedDeterrencePoints = MathF.Max(0f, shared);
-                record.SharedDeterrenceCount = Math.Max(0, sharedCount);
-                record.LastDeterrenceUpdatedHours = updated;
-                record.LastEnforcementHours = enforced;
+
+                legacyHistory.HeroId = hero;
+                legacyHistory.TotalCrimeCount = Math.Max(0, crimes);
+                legacyHistory.TotalArrestCount = Math.Max(0, arrests);
+                legacyHistory.DirectDeterrencePoints = MathF.Max(0f, direct);
+                legacyHistory.SharedDeterrencePoints = MathF.Max(0f, shared);
+                legacyHistory.SharedDeterrenceCount = Math.Max(0, sharedCount);
+                legacyHistory.LastDeterrenceUpdatedHours = updated;
+                legacyHistory.LastEnforcementHours = enforced;
             }
+        }
+
+        private static void SyncHistory(IDataStore store, int i, HeroCrimeStats history, bool saving)
+        {
+            string hero = history.HeroId ?? string.Empty;
+            int crimes = history.TotalCrimeCount;
+            int arrests = history.TotalArrestCount;
+            float direct = history.DirectDeterrencePoints;
+            float shared = history.SharedDeterrencePoints;
+            int sharedCount = history.SharedDeterrenceCount;
+            float updated = history.LastDeterrenceUpdatedHours;
+            float enforced = history.LastEnforcementHours;
+
+            store.SyncData($"gwp_h_{i}_hero", ref hero);
+            store.SyncData($"gwp_h_{i}_crimes", ref crimes);
+            store.SyncData($"gwp_h_{i}_arrests", ref arrests);
+            store.SyncData($"gwp_h_{i}_direct", ref direct);
+            store.SyncData($"gwp_h_{i}_shared", ref shared);
+            store.SyncData($"gwp_h_{i}_sharedcount", ref sharedCount);
+            store.SyncData($"gwp_h_{i}_updated", ref updated);
+            store.SyncData($"gwp_h_{i}_enforced", ref enforced);
+
+            if (!saving)
+            {
+                history.HeroId = hero;
+                history.TotalCrimeCount = Math.Max(0, crimes);
+                history.TotalArrestCount = Math.Max(0, arrests);
+                history.DirectDeterrencePoints = MathF.Max(0f, direct);
+                history.SharedDeterrencePoints = MathF.Max(0f, shared);
+                history.SharedDeterrenceCount = Math.Max(0, sharedCount);
+                history.LastDeterrenceUpdatedHours = updated;
+                history.LastEnforcementHours = enforced;
+            }
+        }
+
+        private static void MergeLegacyHistory(HeroCrimeStats legacy)
+        {
+            if (!ShouldPersistHistory(legacy)) return;
+            if (!_history.TryGetValue(legacy.HeroId, out HeroCrimeStats? current))
+            {
+                _history[legacy.HeroId] = legacy;
+                return;
+            }
+
+            current.TotalCrimeCount = Math.Max(current.TotalCrimeCount, legacy.TotalCrimeCount);
+            current.TotalArrestCount = Math.Max(current.TotalArrestCount, legacy.TotalArrestCount);
+            current.DirectDeterrencePoints = MathF.Max(current.DirectDeterrencePoints, legacy.DirectDeterrencePoints);
+            current.SharedDeterrencePoints = MathF.Max(current.SharedDeterrencePoints, legacy.SharedDeterrencePoints);
+            current.SharedDeterrenceCount = Math.Max(current.SharedDeterrenceCount, legacy.SharedDeterrenceCount);
+            current.LastDeterrenceUpdatedHours = MathF.Max(current.LastDeterrenceUpdatedHours, legacy.LastDeterrenceUpdatedHours);
+            current.LastEnforcementHours = MathF.Max(current.LastEnforcementHours, legacy.LastEnforcementHours);
         }
 
         private static void SyncTask(IDataStore store, int i, PoliceTask task, bool saving)

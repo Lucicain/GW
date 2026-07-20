@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
@@ -148,7 +148,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.SetInitiative(1f, 1f, 1f);
+                party.Ai.RethinkAtNextHourlyTick = true;
             }
             catch { }
         }
@@ -159,7 +159,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.SetInitiative(0f, 0f, 0f);
+                party.Ai.RethinkAtNextHourlyTick = true;
             }
             catch { }
         }

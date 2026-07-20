@@ -654,5 +654,52 @@
   <string id="gwp_ai_det_core_personal_medium_dishonorable" text="我不会假装他们的规矩不可冒犯。我只学会了一件事：公然破坏规矩，就是把武器递给敌人。" />
   <string id="gwp_ai_det_core_personal_medium_generous" text="追随我的人承担了那个决定造成的损失。忠义要求我不能再如此草率地牺牲他们。" />
   <string id="gwp_ai_det_core_personal_medium_impulsive" text="我让怒火替我选了道路，而灰袍决定了这条路在哪里结束。" />
+  <string id="gwp_gwpencyclopediaclanpagevm_004" text="案件总卷" />
+  <string id="gwp_gwpencyclopediaclanpagevm_005" text="查看完整任务池、当前承办顺序与强制分配的协力任务。" />
+  <string id="gwp_gwpcasearchivescreen_001" text="灰袍案件总卷" />
+  <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
+  <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />
+  <string id="gwp_gwpcasearchivescreen_004" text="关闭" />
+  <string id="gwp_gwpcasearchivescreen_005" text="任务池：{VAR_1}/100　已分配：{VAR_2}　等待中：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_006" text="未结案" />
+  <string id="gwp_gwpcasearchivescreen_008" text="{VAR_1}　—　{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_009" text="最近案发：{VAR_1}　　立案时间：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_010" text="未记录" />
+  <string id="gwp_gwpcasearchivescreen_011" text="未记录" />
+  <string id="gwp_gwpcasearchivescreen_012" text="罪行：{VAR_1}　受害者：{VAR_2}　地点：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_013" text="追踪情况：无人承办" />
+  <string id="gwp_gwpcasearchivescreen_015" text="{VAR_1}（{VAR_2}）" />
+  <string id="gwp_gwpcasearchivescreen_016" text="追踪情况：{VAR_1}　当前阶段：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_017" text="玩家" />
+  <string id="gwp_gwpcasearchivescreen_018" text="悬赏护卫" />
+  <string id="gwp_gwpcasearchivescreen_019" text="抓捕后护送" />
+  <string id="gwp_gwpcasearchivescreen_020" text="准备出动" />
+  <string id="gwp_gwpcasearchivescreen_021" text="战时追捕" />
+  <string id="gwp_gwpcasearchivescreen_022" text="追踪目标" />
+  <string id="gwp_gwpcasearchivescreen_023" text="春季" />
+  <string id="gwp_gwpcasearchivescreen_024" text="夏季" />
+  <string id="gwp_gwpcasearchivescreen_025" text="秋季" />
+  <string id="gwp_gwpcasearchivescreen_026" text="冬季" />
+  <string id="gwp_gwpcasearchivescreen_027" text="未知季节" />
+  <string id="gwp_gwpcasearchivescreen_028" text="{VAR_1}年{VAR_2}第{VAR_3}日 {VAR_4}:00" />
+  <string id="gwp_gwpcasearchivescreen_029" text="{VAR_1}附近（{VAR_2}, {VAR_3}）" />
+  <string id="gwp_gwpcasearchivescreen_030" text="荒野（{VAR_1}, {VAR_2}）" />
+  <string id="gwp_gwpcasearchivescreen_031" text="未知城镇" />
+  <string id="gwp_gwpcasearchivescreen_032" text="协力任务 — {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_033" text="分配时间：{VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_034" text="受领人：{VAR_1}　支援主办人：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_035" text="任务类型：强制军团协力　来源案件：{VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_036" text="村庄善后 — {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_037" text="进入任务池：{VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_038" text="受领人：{VAR_1}　当前阶段：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_039" text="受领人：等待强制分配" />
+  <string id="gwp_gwpcasearchivescreen_040" text="任务类型：强制收养善后　剩余：{VAR_1}小时" />
+  <string id="gwp_gwpcasearchivescreen_041" text="任务类型：强制收养善后" />
+  <string id="gwp_gwpcasearchivescreen_042" text="等待分配" />
+  <string id="gwp_gwpcasearchivescreen_043" text="补给中" />
+  <string id="gwp_gwpcasearchivescreen_044" text="前往村庄" />
+  <string id="gwp_gwpcasearchivescreen_045" text="驻村善后" />
+  <string id="gwp_gwpcasearchivescreen_046" text="未知" />
+  <string id="gwp_location_duty_travelling" text="正在前往{TARGET_PARTY}最后出现的位置。" />
 </strings>
 </base>

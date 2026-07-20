@@ -10,8 +10,8 @@ using TaleWorlds.Localization;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 威慑状态直接存放在每位领主唯一的永久案底记录中。
-    /// 本人被捕与家族受震慑分别累计、按总量共同衰退，案底次数永不因威慑归零而删除。
+    /// 威慑状态与累计次数存放在每位领主唯一的长期数字档案中。
+    /// 本人被捕与家族受震慑分别累计、按总量共同衰退，长期数字不会因当前案件结案而删除。
     /// </summary>
     internal static class GwpAiDeterrenceState
     {
@@ -33,7 +33,7 @@ namespace GreyWardenPolicePurity
 
         public static void ClearAll()
         {
-            foreach (CrimeRecord record in CrimePool.LedgerRecords)
+            foreach (HeroCrimeStats record in CrimePool.HistoryRecords)
             {
                 record.DirectDeterrencePoints = 0f;
                 record.SharedDeterrencePoints = 0f;
@@ -44,13 +44,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>登记一次由灰袍实际实施的抓捕，并返回本次新增的本人威慑。</summary>
-        public static float RegisterPoliceArrest(Hero leader, MobileParty? sourceParty = null)
+        public static float RegisterPoliceArrest(Hero leader)
         {
             if (!CanTrack(leader)) return 0f;
 
-            CrimeRecord record = CrimePool.GetOrCreateRecord(leader);
-            if (sourceParty != null)
-                record.Offender = sourceParty;
+            HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
 
             UpdateDecay(record, leader, updateRecord: true);
             int arrestCount = CrimePool.RecordArrest(leader);
@@ -75,7 +73,7 @@ namespace GreyWardenPolicePurity
         {
             if (!CanTrack(leader) || penaltyGain <= 0f) return 0f;
 
-            CrimeRecord record = CrimePool.GetOrCreateRecord(leader);
+            HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
             UpdateDecay(record, leader, updateRecord: true);
 
             float total = record.DirectDeterrencePoints + record.SharedDeterrencePoints;
@@ -115,7 +113,7 @@ namespace GreyWardenPolicePurity
 
         public static float GetCurrentPenalty(Hero? hero)
         {
-            CrimeRecord? record = CrimePool.GetRecord(hero);
+            HeroCrimeStats? record = CrimePool.GetHistory(hero);
             if (record == null || hero == null) return 0f;
             GetEffectiveComponents(record, hero, out float direct, out float shared);
             return direct + shared;
@@ -126,7 +124,7 @@ namespace GreyWardenPolicePurity
             if (hero == null)
                 return EmptyDetails();
 
-            CrimeRecord? record = CrimePool.GetRecord(hero);
+            HeroCrimeStats? record = CrimePool.GetHistory(hero);
             string status = BuildTrackingStatus(hero);
             string location = BuildTrackingLocation(hero);
             if (record == null)
@@ -180,7 +178,7 @@ namespace GreyWardenPolicePurity
         {
             intro = new TextObject(string.Empty);
             followup = new TextObject(string.Empty);
-            CrimeRecord? record = CrimePool.GetRecord(hero);
+            HeroCrimeStats? record = CrimePool.GetHistory(hero);
             if (record == null) return false;
 
             GetEffectiveComponents(record, hero, out float direct, out float shared);
@@ -261,18 +259,18 @@ namespace GreyWardenPolicePurity
 
         public static void DailyCleanup()
         {
-            foreach (CrimeRecord record in CrimePool.LedgerRecords.ToList())
+            foreach (HeroCrimeStats record in CrimePool.HistoryRecords.ToList())
             {
-                Hero? hero = record.OffenderHero;
+                Hero? hero = record.Hero;
                 if (hero == null) continue;
                 UpdateDecay(record, hero, updateRecord: true);
             }
         }
 
-        /// <summary>威慑现已随案底账本统一序列化，避免重复存档。</summary>
+        /// <summary>威慑与累计次数已随长期数字档案统一序列化。</summary>
         public static void SyncData(IDataStore dataStore) { }
 
-        private static void GetEffectiveComponents(CrimeRecord record, Hero hero, out float direct, out float shared)
+        private static void GetEffectiveComponents(HeroCrimeStats record, Hero hero, out float direct, out float shared)
         {
             float total = UpdateDecay(record, hero, updateRecord: false);
             float storedTotal = record.DirectDeterrencePoints + record.SharedDeterrencePoints;
@@ -289,7 +287,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>两类威慑按当前占比共同衰退，避免分别扣减造成来源比重突变。</summary>
-        private static float UpdateDecay(CrimeRecord record, Hero hero, bool updateRecord)
+        private static float UpdateDecay(HeroCrimeStats record, Hero hero, bool updateRecord)
         {
             float storedTotal = MathF.Max(0f, record.DirectDeterrencePoints) +
                                 MathF.Max(0f, record.SharedDeterrencePoints);

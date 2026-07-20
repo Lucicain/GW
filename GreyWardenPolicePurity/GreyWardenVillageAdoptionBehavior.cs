@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -26,6 +26,7 @@ namespace GreyWardenPolicePurity
         private const string ActivePartyIdsKey = "GWPP_AdoptActivePartyIds";
         private const string ActiveVillageIdsKey = "GWPP_AdoptActiveVillageIds";
         private const string ActiveVillageNamesKey = "GWPP_AdoptActiveVillageNames";
+        private const string ActiveQueuedHoursKey = "GWPP_AdoptActiveQueuedHours";
         private const string ActiveStartedFlagsKey = "GWPP_AdoptActiveStartedFlags";
         private const string ActiveEndHoursKey = "GWPP_AdoptActiveEndHours";
         private const string ActiveAwaitingResupplyFlagsKey = "GWPP_AdoptActiveAwaitingResupplyFlags";
@@ -46,6 +47,17 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private double _lastAdoptionTimeHours = NoRecordedAdoptionHours;
+
+        internal sealed class VillageReliefTaskSnapshot
+        {
+            public string PolicePartyId { get; set; } = string.Empty;
+            public string VillageSettlementId { get; set; } = string.Empty;
+            public string VillageName { get; set; } = string.Empty;
+            public CampaignTime QueuedTime { get; set; }
+            public ReliefStage Stage { get; set; }
+            public double RemainingHours { get; set; }
+            public bool IsAssigned => !string.IsNullOrWhiteSpace(PolicePartyId);
+        }
 
         public GreyWardenVillageAdoptionBehavior()
         {
@@ -69,6 +81,7 @@ namespace GreyWardenPolicePurity
             List<string>? activePartyIds = null;
             List<string>? activeVillageIds = null;
             List<string>? activeVillageNames = null;
+            List<double>? activeQueuedHours = null;
             List<int>? activeStartedFlags = null;
             List<double>? activeEndHours = null;
             List<int>? activeAwaitingResupplyFlags = null;
@@ -84,6 +97,7 @@ namespace GreyWardenPolicePurity
                 activePartyIds = _activeReliefs.Select(static x => x.PolicePartyId).ToList();
                 activeVillageIds = _activeReliefs.Select(static x => x.VillageSettlementId).ToList();
                 activeVillageNames = _activeReliefs.Select(static x => x.VillageName).ToList();
+                activeQueuedHours = _activeReliefs.Select(static x => x.QueuedTimeHours).ToList();
                 activeStartedFlags = _activeReliefs.Select(static x => x.ReliefStarted ? 1 : 0).ToList();
                 activeEndHours = _activeReliefs.Select(static x => x.ReliefEndHours).ToList();
                 activeAwaitingResupplyFlags = _activeReliefs.Select(static x => x.AwaitingResupply ? 1 : 0).ToList();
@@ -98,6 +112,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData(ActivePartyIdsKey, ref activePartyIds);
             dataStore.SyncData(ActiveVillageIdsKey, ref activeVillageIds);
             dataStore.SyncData(ActiveVillageNamesKey, ref activeVillageNames);
+            dataStore.SyncData(ActiveQueuedHoursKey, ref activeQueuedHours);
             dataStore.SyncData(ActiveStartedFlagsKey, ref activeStartedFlags);
             dataStore.SyncData(ActiveEndHoursKey, ref activeEndHours);
             dataStore.SyncData(ActiveAwaitingResupplyFlagsKey, ref activeAwaitingResupplyFlags);
@@ -150,6 +165,9 @@ namespace GreyWardenPolicePurity
                     PolicePartyId = activePartyIds[i],
                     VillageSettlementId = activeVillageIds[i],
                     VillageName = activeVillageNames![i] ?? string.Empty,
+                    QueuedTimeHours = activeQueuedHours != null && i < activeQueuedHours.Count
+                        ? activeQueuedHours[i]
+                        : CampaignTime.Now.ToHours,
                     ReliefStarted = activeStartedFlags![i] != 0,
                     ReliefEndHours = activeEndHours![i],
                     AwaitingResupply = activeAwaitingResupplyFlags![i] != 0
@@ -200,6 +218,51 @@ namespace GreyWardenPolicePurity
             info = _instance.BuildAdoptionStatusInfo();
             return true;
         }
+
+        internal static IReadOnlyList<VillageReliefTaskSnapshot> GetTaskSnapshots()
+        {
+            var result = new List<VillageReliefTaskSnapshot>();
+            if (_instance == null)
+                return result;
+
+            foreach (ActiveVillageRelief relief in _instance._activeReliefs)
+            {
+                ReliefStage stage = relief.AwaitingResupply
+                    ? ReliefStage.AwaitingResupply
+                    : relief.ReliefStarted
+                        ? ReliefStage.StayingInVillage
+                        : ReliefStage.TravelingToVillage;
+                result.Add(new VillageReliefTaskSnapshot
+                {
+                    PolicePartyId = relief.PolicePartyId,
+                    VillageSettlementId = relief.VillageSettlementId,
+                    VillageName = _instance.ResolveVillageName(
+                        relief.VillageSettlementId, relief.VillageName),
+                    QueuedTime = CampaignTime.Hours((float)relief.QueuedTimeHours),
+                    Stage = stage,
+                    RemainingHours = relief.ReliefStarted
+                        ? Math.Max(0d, relief.ReliefEndHours - CampaignTime.Now.ToHours)
+                        : 0d
+                });
+            }
+
+            foreach (PendingVillageRelief relief in _instance._pendingReliefs)
+                result.Add(new VillageReliefTaskSnapshot
+                {
+                    VillageSettlementId = relief.VillageSettlementId,
+                    VillageName = _instance.ResolveVillageName(
+                        relief.VillageSettlementId, relief.VillageName),
+                    QueuedTime = CampaignTime.Hours((float)relief.QueuedTimeHours),
+                    Stage = ReliefStage.WaitingForAssignment
+                });
+
+            return result;
+        }
+
+        internal static int GetTaskSnapshotCount() =>
+            _instance == null
+                ? 0
+                : _instance._activeReliefs.Count + _instance._pendingReliefs.Count;
 
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
@@ -300,6 +363,8 @@ namespace GreyWardenPolicePurity
                 VillageName = villageSettlement.Name?.ToString() ?? GwpText.Get("{=gwp_greywardenvillageadoptionbehavior_001}nameless village"),
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
+            CrimePool.TrimOpenCasesToCapacity(
+                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
         }
 
         private void OnHourlyTick()
@@ -349,6 +414,7 @@ namespace GreyWardenPolicePurity
                 PolicePartyId = reservedPolice.StringId,
                 VillageSettlementId = pending.VillageSettlementId,
                 VillageName = pending.VillageName,
+                QueuedTimeHours = pending.QueuedTimeHours,
                 AwaitingResupply = true,
                 ReliefStarted = false,
                 ReliefEndHours = 0d
@@ -356,6 +422,8 @@ namespace GreyWardenPolicePurity
 
             _pendingReliefs.Clear();
             RebuildActiveReliefPartyIndex();
+            CrimePool.TrimOpenCasesToCapacity(
+                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
         }
 
         private void UpdateActiveReliefs()
@@ -391,9 +459,7 @@ namespace GreyWardenPolicePurity
                     }
 
                     relief.AwaitingResupply = false;
-                    police.Ai.SetDoNotMakeNewDecisions(true);
-                    police.Ai.SetInitiative(1f, 0f, 999f);
-                    police.SetMoveGoToSettlement(village, MobileParty.NavigationType.Default, false);
+                    GreyWardenPartyDesireBehavior.RequestVisit(police, village, 8f);
                     continue;
                 }
 
@@ -412,9 +478,7 @@ namespace GreyWardenPolicePurity
                     }
                     else
                     {
-                        police.Ai.SetDoNotMakeNewDecisions(true);
-                        police.Ai.SetInitiative(1f, 0f, 999f);
-                        police.SetMoveGoToSettlement(village, MobileParty.NavigationType.Default, false);
+                        GreyWardenPartyDesireBehavior.RequestVisit(police, village, 8f);
                     }
 
                     continue;
@@ -442,11 +506,8 @@ namespace GreyWardenPolicePurity
 
             if (police != null && police.IsActive)
             {
-                GwpCommon.TryResetAi(police);
-                if (!CrimePool.HasTask(police.StringId))
-                {
-                    PoliceResourceManager.StartResupply(police);
-                }
+                GreyWardenPartyDesireBehavior.ClearIntent(police);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
             }
 
             _activeReliefs.Remove(relief);
@@ -610,9 +671,9 @@ namespace GreyWardenPolicePurity
 
         private static void HoldPartyInVillage(MobileParty police)
         {
-            police.Ai.SetDoNotMakeNewDecisions(true);
-            police.Ai.SetInitiative(0f, 0f, 0f);
-            police.SetMoveModeHold();
+            Settlement? village = police.CurrentSettlement;
+            if (village != null)
+                GreyWardenPartyDesireBehavior.RequestVisit(police, village, 10f);
         }
 
         private static bool ShouldAbortReliefForOperationalReason(MobileParty police)
@@ -703,7 +764,8 @@ namespace GreyWardenPolicePurity
 
             if (keep.AwaitingResupply)
             {
-                PoliceResourceManager.StartResupply(keepPolice);
+                keep.AwaitingResupply = false;
+                GreyWardenPartyDesireBehavior.RequestVisit(keepPolice, keepVillage, 8f);
             }
 
             RebuildActiveReliefPartyIndex();
@@ -786,6 +848,7 @@ namespace GreyWardenPolicePurity
             public string PolicePartyId { get; set; } = string.Empty;
             public string VillageSettlementId { get; set; } = string.Empty;
             public string VillageName { get; set; } = string.Empty;
+            public double QueuedTimeHours { get; set; }
             public bool AwaitingResupply { get; set; }
             public bool ReliefStarted { get; set; }
             public double ReliefEndHours { get; set; }

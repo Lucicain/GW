@@ -90,13 +90,20 @@ Done:
 ## Player-facing release log rule
 
 - Every player-visible gameplay, balance, feedback, compatibility, or content
-  change must update `_Module/README.md` in the same change.
-- Write the `最近更新` section from the player's point of view: state what the
-  player will see, what can affect their character or units, and the exact
-  chances, ranges, damage, cooldowns, or other values that matter in play.
-- Clearly separate ordinary behavior, exceptional behavior such as an item
-  breaking, and unchanged behavior. Do not hide player-visible consequences
-  behind implementation terms such as callbacks, patches, or synthetic blows.
+  change must update both `_Module/README.md` and `_Module/README_EN.md` in the
+  same change.
+- Both READMEs retain exactly the newest two formal release entries, newest
+  first. An `r5` package therefore ships the `r5` and `r4` logs; publishing
+  `r6` replaces the oldest entry so the files contain `r6` and `r5`.
+- Fold all development iterations for one upcoming version into that version's
+  single entry. Each formal entry states its comparison baseline and uses short
+  added/adjusted and fixed lists.
+- Write from the player's point of view and summarize meaningful outcomes.
+  Omit formulas, internal trigger counts, implementation details, test history,
+  and exact values that are not required for a player decision. Do not add an
+  unchanged-behavior section.
+- Do not hide player-visible consequences behind implementation terms such as
+  callbacks, patches, synthetic blows, private fields, or diagnostic events.
 - Keep developer-only build, asset-publishing, and debugging procedures in this
   maintenance document rather than in the release notes shipped to players.
 
@@ -114,6 +121,9 @@ Done:
 - Exclude editor-only `Assets`, `AssetSources`, and `RuntimeDataCache` from the
   normal-client live module. Live-only compiled `bin` and generated `Shaders`
   are not source-mirror violations.
+- Keep the live module as the diagnostics-enabled development/test install.
+  Formal player builds use a separate diagnostics-disabled output and must not
+  overwrite the live test DLL.
 - Update this maintenance document with material deployments, experiments,
   failures, conclusions, asset locations, and rollback information as work
   proceeds; do not rely on chat history.
@@ -418,21 +428,26 @@ irreplaceable backup; the editor workspace does not replace it.
 
 ## Formal release checklist
 
-1. Build `Release` against Bannerlord `1.4.7`.
+1. Build the diagnostics-enabled `Release` against Bannerlord `1.4.7` and keep
+   it in the live test module.
 2. Confirm the live module has no `Assets`, `AssetSources`, or
    `RuntimeDataCache` directory.
 3. Confirm both runtime TPAC hashes above.
-4. Confirm the player README describes functions/results only and matches the
-   live copy.
-5. Stage one top-level `GreyWarden` directory without editor binaries, PDBs, or
-   source assets.
-6. Commit and push the release source and documentation to GitHub as part of
+4. Confirm both player READMEs describe functions/results only, retain exactly
+   the newest two formal versions, and match their live copies.
+5. Build a diagnostics-disabled player DLL into a separate staging directory
+   with live deployment disabled. Decompile it and confirm all diagnostic write
+   methods are inert and no test log can be created.
+6. Stage one top-level `GreyWarden` directory without `tools`, scripts, logs,
+   developer notes, editor binaries, PDBs, or source assets.
+7. Commit and push the release source and documentation to GitHub as part of
    the same formal release task.
-7. Create `GreyWarden-v1.4.7.zip` and its `.sha256` file directly under the
+8. Create the versioned ZIP and its `.sha256` file directly under the
    game's `Modules` directory, never under `Modules\GreyWarden` or `_Module`.
-8. Inspect ZIP paths and extract-test it, then create/update the GitHub release
-   and upload the matching ZIP and checksum.
-9. Run at least one battle that renders the black shield, exit the client, and
+9. Inspect ZIP paths, verify the packaged DLL hash equals the separate player
+   build, and confirm no diagnostic/test content exists; then create/update the
+   GitHub release and upload the matching ZIP and checksum.
+10. Run at least one battle that renders the black shield, exit the client, and
    check delayed Windows Application/WER/dump state.
 
 # 2026-07-16 English-base and Simplified-Chinese localization
@@ -3248,133 +3263,7 @@ irreplaceable backup; the editor workspace does not replace it.
   proves the native-page architecture and deployment, not Messenger's runtime
   result.
 - No Git commit, push, archive, tag, or release was made in this iteration.
-# 2026-07-19 灰袍历史生命线与玩家统一后的归政规划（初稿）
 
-## 文档状态与使用边界
-
-- 本节记录当前已经讨论形成的世界观方向，作为后续剧情、任务、百科文本和玩法设计的统一依据。
-- 这是**设定规划初稿**，用户已经明确表示整体方向基本正确，但尚未达到最终预期；后续可以继续调整年代、人物、组织名称、表决规则与终局细节。
-- 当前只记录设定和实现方向，不代表相应主线检测、表决任务、王国加入或制度化玩法已经完成。
-- 本节不另建平行设定文档；后续重要修改继续维护在本文件，并在真正形成玩家可见内容时同步更新 \`_Module/README.md\` 与英文版本。
-
-## 采用的历史前提
-
-- 模组采用用户提供的完整潘德拉克战役文稿作为本模组世界中的客观历史。该文稿以《骑砍2》主线人物回忆和多位中文内容作者的共同分析为基础，将碎片化叙述连接成一条完整战役与政治发展史。
-- 1077 年潘德拉克大战中，德罗西俄斯·涅雷采斯率帝国主力，并获得部分阿塞莱与库赛特力量支援，对抗巴旦尼亚、斯特吉亚和后来倒向北方联盟的瓦兰迪亚。帝国先锋在森林伏击中覆灭，盟军在山谷交战中遭受重创，斯特吉亚最终攻破帝国营垒，涅雷采斯与大量元老、将官战死，帝国龙旗破碎并散失。
-- 阿雷尼科斯带领战后唯一仍保持组织的帝国部队和残余官员返回帝国，制止混乱并继位。他在其后数年中恢复秩序、推行改革，但最终遇刺身亡；卢孔、加里奥斯和拉盖娅分别代表元老院、军队与皇室继承主张，统一帝国由此分裂为北、西、南三部分。
-- 《骑砍2》时期是旧帝国衰亡与后来民族王国形成的过渡时代；《战团》时期的卡拉迪亚已经不再存在统一帝国，而由斯瓦迪亚、罗多克、维吉亚、诺德、库吉特和萨兰德等继承国家争夺。
-- 当前模组正典的关键新增前提是：**玩家最终会完成主线并重新统一卡拉迪亚。** 灰袍的历史终点因此不能建立在“玩家缺席、灰袍被新王国消灭”的假设上，而必须围绕玩家作为最终统一者重新设计。
-
-## 灰袍的制度祖先：统一帝国旧治安体系
-
-- 在潘德拉克大战以前，统一帝国已经拥有城市夜巡、市场秩序、驿道巡察、军团宪兵、缉盗队和秘密调查人员等分散制度。
-- 这些机构是灰袍的制度祖先，但当时尚不存在一个公开、统一且能够跨越地方贵族管辖的“灰袍守卫”势力。
-- 这一安排保留现有设定中“灰袍继承统一帝国旧警制”的核心，同时避免产生一个无法解释的问题：若灰袍早已作为强大公开势力存在，为何在潘德拉克大战和战后帝国危机中从未被提及。
-- 旧治安机构受地方总督、元老家族、军方和城市权贵分别控制；帝国强盛时尚能勉强协作，中央权力衰弱后则迅速派系化，无法阻止领主私斗、逃兵为匪、道路中断和村庄遭到报复性劫掠。
-
-## 1077—1084：阿雷尼科斯时期的地下警察组织
-
-- 潘德拉克惨败使帝国军团、行政和司法同时失灵。溃兵、逃兵、失去雇主的佣兵和趁乱扩张的贵族威胁道路、粮道、村镇与战后难民；地方官员也开始隐匿、篡改或销毁案卷。
-- 阿雷尼科斯从战场撤回并继位后，意识到帝国不能继续让军团兼任警察，也不能把公共秩序完全交给地方贵族。他秘密整合仍忠于公共秩序、未被三大政治派系控制的巡察和缉捕力量，建立灰袍的直接前身。暂定制度名称为“灰衣巡察署”，正式名称后续仍可调整。
-- 该机构不隶属于元老院、军团或地方总督，早期直接向阿雷尼科斯及其授权的总长负责。主要任务包括：
-  - 调查地方领主、官员和军需人员；
-  - 追捕逃兵、盗匪、战犯与拒捕者；
-  - 保护帝国驿道、粮道、渡口、市场和战后村庄；
-  - 保存不能交由派系控制机构保管的案卷、判例和未结通缉；
-  - 转移证人、受害者与重要罪犯；
-  - 防止潘德拉克之后的政治报复进一步摧毁帝国内部秩序。
-- 灰衣巡察署之所以必须地下化，是因为元老院会把它视为皇帝绕过传统法律的私兵，军方会把它视为监视将领的工具，地方贵族也不会公开接受一支中央力量调查自己的家族与领地。
-- 组织采用分散案卷、秘密驿站、灰色外袍、宣誓关系和收养继承。其“家族”性质不是普通封建血族，而是利用血缘、收养与誓约保护成员身份、案卷和机构连续性的办法。现有女性主体及收养后继者玩法应由此获得设定依据。
-
-## 1084：统一帝国三裂与灰袍公开
-
-- 阿雷尼科斯遇刺后，卢孔、加里奥斯和拉盖娅都会要求旧帝国机构承认自己的继承权。灰袍拒绝在三方之间选边，因为三方各自只继承了统一帝国的一部分权力，任何一次提前效忠都会使灰袍沦为内战派系清算政敌的工具。
-- 灰袍带走旧帝国案卷、巡察印信、通缉底册和地下联络网，从秘密机构转为公开活动的“灰袍守卫”。这就是模组在 1084 年开局时所处的历史阶段。
-- 此时灰袍不是突然出现的新家族，而是已经秘密运行数年、第一次公开面对全大陆的旧帝国警察组织。她们不争皇位、不主动扩张领地，也不承认任何一个分裂帝国可以独占旧法统；她们以保护道路、村庄、城镇、市场和普通人为公开使命。
-- 当前本地化中“帝国覆灭”“帝国已经崩塌”的表达后续应结合这一设定重新审定。1084 年更准确的表述应是“统一帝国崩裂”或“阿雷尼科斯遇刺后，统一帝国分裂”，因为三个帝国政权仍然真实存在。
-
-## 1084 年后的独立活动期：观察玩家，而非永久中立
-
-- 灰袍公开后的独立状态是过渡方案，不是永久拒绝一切国家权威。她们保持独立，是因为当时没有任何统治者既拥有全大陆的实际权力，又能证明自己愿意接受法律约束。
-- 玩家崛起后，灰袍开始把玩家视为潜在的新统一者。现有灰袍声望、犯罪记录、罚金、赎罪、村庄援助、正义战斗、悬赏任务、领主追捕和收养系统，应逐步成为灰袍观察玩家的证据。
-- 玩家完成龙旗重组、建立或领导一个统一政权后，可进入正式观察阶段。暂定任务名为《灰袍的注视》：灰袍承认玩家可能结束内战，但明确表示龙旗和胜利只能证明力量，不能证明玩家懂得公道。
-- 观察内容应覆盖玩家如何对待无力反抗者，而不仅是战场胜负，例如：
-  - 是否劫掠或保护村庄；
-  - 是否履行悬赏与救援承诺；
-  - 是否接受罚金、赔偿和赎罪；
-  - 是否滥杀俘虏或用灰袍追捕私人仇敌；
-  - 是否允许自己的亲信和同阵营领主留下真实案卷；
-  - 是否在战争结束后恢复道路、生产和公共秩序。
-
-## 玩家完成统一主线后的灰袍大会
-
-- 当前正典明确玩家最终完成主线并统一卡拉迪亚。完成主线后，灰袍不应自动以普通封臣身份加入，也不应继续假装整个大陆仍由互不相干的国家分割；应触发具有历史分量的归政任务线。
-- 暂定主任务名为《最后的授权》。灰袍六个核心席位（初代领主仍在世时由本人出席，死亡后由合法收养后继者继承席位）召开大会，表决是否结束独立状态，将旧帝国遗留的警察权交给玩家建立的新统一国家。
-- 六席应分别代表现有角色职责，而不是只按个人好感随机投票：
-  - 梵蒂：法统、总指挥与新国家的长期制度；
-  - 约珥：道路、乡野、商旅和村庄安全；
-  - 弥瑟：罚金、赎罪、归正及反对把执法变成复仇；
-  - 圣铎：案卷、判例、档案独立与法律连续性；
-  - 晨曦：救灾、战后恢复和普通人的生活；
-  - 暮光：强制执法能力、拒捕处置和国家是否敢惩治权贵。
-- 表决结果应读取玩家整个游戏过程中已经形成的行为记录。灰袍加入不应仅靠高关系或一次说服检定获得；统一者必须证明自己愿意受法律约束，而不仅是要求别人服从。
-- 若首次表决未通过，不应永久锁死。灰袍应给出具体未决事项，触发暂定任务《尚未偿还的旧账》，让玩家赔偿受害村庄、解决未结案件、释放错误关押者、允许调查亲信或完成其他针对性补救，之后重新表决。
-
-## 《灰袍归政宪章》与加入玩家势力
-
-- 表决通过后，玩家与灰袍签署暂定名为《灰袍归政宪章》的文件。灰袍随后**正式加入玩家势力**，但其身份是具有独立执法职责的国家警察机构，而不是普通争夺封地的封臣家族。
-- 玩家一方应承诺的核心原则：
-  - 承认灰袍在统一国家内的合法警察与巡察身份；
-  - 灰袍总长由组织内部依规则推举，不由统治者任意更换；
-  - 灰袍可以调查玩家王国内包括权贵在内的犯罪者；
-  - 玩家本人及亲信的原始案卷不得因政治需要删除；
-  - 灰袍不得被用作私人复仇、派系清洗或无案战争工具；
-  - 重大抓捕、罚金、赎罪和强制行动必须留下案卷；
-  - 灰袍不以执法为借口争夺王位或无限扩张领地。
-- 灰袍一方应承诺的核心原则：
-  - 承认玩家为完成统一后的合法最高统治者；
-  - 接受统一国家的财政和制度监督；
-  - 不再自行对国家或家族发动普通战争；
-  - 把原先的跨国通缉转化为统一国家内部的合法通缉；
-  - 继续保护村庄、道路、渡口、港口、市场和战俘；
-  - 对国王、贵族、军人和平民维持同一套基本案卷原则；
-  - 当成熟的国家司法和治安制度建成后，接受进一步制度化。
-
-## 加入后的玩法身份：特殊国家机构，而非普通封臣
-
-- 灰袍加入玩家王国后仍然必须执行现有警察玩法：追捕犯罪领主、保护村庄、清理盗匪、护送道路、发放悬赏、处理罚金与赎罪、保存个人和家族案底，并在当前海战版本中承担河流、港口、海盗和民船安全相关职责。
-- 灰袍不应像普通封臣一样因无封地而抱怨、争夺城市、推动无关宣战、跟随元帅进行普通侵略、劫掠敌方村庄或把所有对外战争都当作警察行动。
-- 加入后的战争权限应围绕防御、反劫掠、追捕、护送和依法支援设计。真正实现时需要审计 Bannerlord 王国成员身份带来的原版 AI、军团、封地、外交和战争行为，不能只设置 \`Clan.Kingdom\` 后假定现有独立警察逻辑仍会成立。
-- 统一后的主要犯罪来源应从“外国敌人”转向新国家内部治理：不服管束的新归顺领主、拒绝解散的私人军队、侵占村庄的贵族、私设关卡的官员、倒卖军粮的军需人员、战后逃兵集团、冒用玩家名义进行报复的人，以及可能滥权的灰袍成员本身。
-- 这一阶段使统一之后的游戏从单纯征服转向治理，也使灰袍在玩家完成主线后仍然拥有比此前更重要的功能。
-
-## 灰袍在后世的“消失”：制度吸收，而非毁灭
-
-- 《战团》时期不再存在名为灰袍守卫的独立势力，当前正典对此的解释不再是灰袍被各国围剿或毫无意义地灭亡，而是灰袍在加入玩家后完成了国家制度化。
-- 第一代仍以灰袍守卫家族和总长体系运行；随后数代中，统一国家逐步把其职责拆分、扩展为巡察、道路警备、城市治安、港口巡检、司法档案和战后救济等正式机构。
-- 收养制度也逐步从“收为灰袍家族之女”转变为训练、宣誓和任命新的国家执法人员。灰袍的家族外壳因此逐渐失去必要性，组织名称淡出，但其案卷、赎罪、护路和约束权贵的制度进入国家结构。
-- 玩家建立的统一王朝在后世仍会再次分裂，最终形成《战团》的多个继承国家。统一警察机构随国家分裂而被地方化，各国分别继承城镇卫队、道路巡逻、法庭和通缉制度。
-- 《战团》中的中立赏金猎人可以作为灰袍外勤形式的遥远、非正式残余：他们仍跨边界追捕强盗、逃兵并使用钝器活捉，但其中部分后来走向奴隶买卖，象征后世保留了“活捉可以换取赏金”的操作，却遗失了灰袍坚持审判、案卷和赎罪的伦理目的。赏金猎人不是仍然存在的灰袍组织，只是制度解体后的扭曲碎片。
-- 最终历史表述应是：**灰袍因旧统一帝国崩裂而公开，因玩家重新统一卡拉迪亚而归政；它作为独立势力退出历史，却作为公共制度进入历史。**
-
-## 后续开发路线（尚未实现）
-
-1. **走出地下**：补齐阿雷尼科斯、灰衣巡察署、六名初代成员和 1084 年公开宣言的百科、对话与任务证据。
-2. **观察统一者**：在玩家重组龙旗或建立统一政权后启动长期行为考察，复用现有声望、犯罪、赎罪、村庄援助与悬赏记录。
-3. **灰袍大会**：实现六席或后继者表决、逐席理由、补救任务和再次表决。
-4. **归政宪章**：让灰袍以特殊警察机构身份加入玩家王国，同时保留现有执法功能并阻止普通封臣 AI 破坏设定。
-5. **统一后治理**：把后期案件重心转向新国家内部的领主、官员、逃兵、私军、战后恢复和执法滥权。
-6. **制度化终章**：以任务、结局字幕、百科年表或多代玩法展示灰袍从独立家族逐步转为国家机构，并说明其名称为何在《战团》时代消失。
-
-## 当前实现前必须解决的问题
-
-- 确定“玩家正式完成主线”的可靠运行时判定，兼容玩家自建王国、支持既有势力以及后续可能确定的唯一模组正典路线。
-- 确定灰袍加入玩家王国后如何继续抓捕同阵营犯罪领主，且不会被原版友军、宣战和俘虏规则阻断。
-- 确定特殊家族是否持有封地、能否加入军团、如何参与王国投票，以及如何避免普通封臣经济与关系逻辑迫使其偏离警察职责。
-- 确定初代六席死亡、收养后继者、存档兼容和表决资格的持久化方案。
-- 确定玩家自身犯罪记录、已完成赎罪、亲信犯罪和旧案件在表决时分别如何计分。
-- 确定灰袍加入后的执法权限是否覆盖整个已统一领土，及统一尚未彻底完成时剩余敌对地区的处理方式。
-- 在任何玩家可见设定正式落地前，统一修订 \`spclans.xml\`、\`comment_strings.xml\`、\`GreyWardenLoreBehavior.cs\` 与中英文语言文件中关于“统一帝国”“帝国覆灭”“帝国崩塌”和灰袍起源的措辞。
 # 2026-07-19 formal v1.4.7-r4 release
 
 - The user verified in game that the native hero-page refactor fixes the
@@ -3402,7 +3291,7 @@ irreplaceable backup; the editor workspace does not replace it.
   client/editor DLLs, matching source/live Chinese and English READMEs, and no
   forbidden editor directory, nested ZIP, or checksum inside the live module.
 - The formal player archive is
-  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7.zip`
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7-r4.zip`
   with its sibling `.sha256`. It contains one top-level `GreyWarden` directory
   and `27` runtime files. It excludes `Assets`, `AssetSources`,
   `RuntimeDataCache`, editor binaries, PDBs, source FBX/PNG files, logs, dumps,
@@ -3421,3 +3310,2111 @@ irreplaceable backup; the editor workspace does not replace it.
   keep `v1.4.7-r3` and `v1.4.7-r4`; delete the older `v1.4.7` and
   `v1.4.7-r2` GitHub Releases and their release tags. Milestone tags such as
   `bannerlord-v1.4.7` are not public release records and remain untouched.
+# 2026-07-19 release archive filename rule
+
+- Every formal player archive must preserve the complete public release
+  identifier in its filename, including the revision suffix. Required pattern:
+  `GreyWarden-v{game/mod-version}-r{revision}.zip`; examples:
+  `GreyWarden-v1.4.7-r3.zip` and `GreyWarden-v1.4.7-r4.zip`.
+- Never shorten a formal revision archive to `GreyWarden-v1.4.7.zip`. The
+  sibling checksum must use the same complete basename plus `.sha256`, and its
+  text must name that exact ZIP. Before reporting a package complete, verify the
+  ZIP filename, checksum filename, checksum text, release tag, and README
+  version all carry the same revision identifier.
+- The current local r4 archive and checksum were renamed accordingly; their
+  bytes and SHA-256 remain unchanged.
+
+
+# 2026-07-19 Grey Warden native desire integration
+
+- Scope: replaced Grey Warden strategic-map command injection with a final-registered `GreyWardenPartyDesireBehavior`. It participates in Bannerlord v1.4.7's `PartyThinkParams` score auction after native and existing mod listeners have produced their candidates. No Harmony patch to the engine's think loop was required.
+- Case duty is represented by `AiBehavior.GoAroundParty`. This works before a police war exists, so the assigned party can approach a neutral offender; the existing enforcement hourly distance check still declares war at the configured range, after which the native tactical AI can engage. Player targets retain their existing dialogue-before-war path.
+- Resource arbitration has three states. Ready parties receive a stable police-duty floor. Low-resource parties keep the case but reduce its duty score below a boosted settlement visit. Critical parties temporarily add no duty candidate and give an eligible town visit the strongest score. Once food, strength, and wounded ratios recover, the retained task naturally wins again.
+- Native `GoToSettlement` and `PatrolAroundPoint` candidates remain available. Raid, siege, army, generic war-target, and other incompatible kingdom duties are zeroed only for managed Grey Warden parties. The visit path therefore continues to drive native market food purchases, recruitment, healing, loot sales, and prisoner sales.
+- Temporary map roles use expiring desire requests rather than movement commands: approach, escort, or visit. This covers player pickets, recruitment heralds, enforcement-delay patrols, bounty escorts, captive escorts, village relief travel/stay, and return/disband travel. Requests are refreshed by their owning behavior and disappear after eight hours if not renewed.
+- Removed all Grey Warden strategic uses of `SetDoNotMakeNewDecisions(true)`, `SetMoveEngageParty`, `SetMoveEscortParty`, `SetMoveGoToSettlement`, and `SetMoveModeHold`. The desire layer only clears legacy locks, resets initiative, and requests a rethink; it never writes a map destination.
+- Removed the per-member daily `1000`-denar salary call. `PoliceResourceManager` no longer generates grain or fills a party to its size limit after a task or in a town. Existing compatibility entry points now only request an AI rethink and never create resources or issue movement orders.
+- Formal lord parties now use the native lord-party spawn roster and native recruitment. The existing six-hour purification remains the sole conversion step: any recruited non-Grey-Warden regular becomes `gwrecruit`. Ship assignment was not changed in this pass because the user explicitly deferred the wider economy redesign and scoped the immediate resource removal to money, food, and free troop refills.
+- Static validation: `dotnet msbuild ... /t:Compile /p:Configuration=Release` completed with zero compiler errors. Source audit found no remaining Grey Warden strategic `SetDoNotMakeNewDecisions(true)` or direct engage/escort/settlement/hold movement call. `GreyWardenDesertersCampaignBehavior` retains its independent bandit patrol command and battle-mission formation orders remain untouched because neither controls Grey Warden police parties.
+- Runtime validation still required in game: neutral approach, near-distance war declaration, temporary supply diversion and case resumption, genuine market spending, native recruitment plus six-hour purification, loot/prisoner sale, player dialogue/capture escort, village relief, temporary patrol return, and save/reload during both pursuit and recovery.
+- No commit, tag, archive, or GitHub release was created for this development build.
+
+- Final local compile artifact: `GreyWardenPolicePurity/obj/Release/GreyWardenPolicePurity.dll`, size `466432` bytes, SHA-256 `8EA585F12E8B063787EF43E9D0C95379E024548939BF12C5FBC67138E87E6E74`. ILSpy confirms the deployed-intent type and `PartyThinkParams.AddBehaviorScore` call are present.
+- Live deployment is not complete. The managed environment rejected the required elevated `dotnet build` because its approval/usage quota was exhausted. The attempted ordinary build could compile but could not write outside the repository. A subsequent read showed the live normal-client module currently has no `GreyWardenPolicePurity.dll` and no root README/SubModule files visible, while the editor directory still contains the previous `464896`-byte DLL. Do not launch an in-game test until an unsandboxed `dotnet build GreyWardenPolicePurity\GreyWardenPolicePurity.csproj -c Release --no-restore` succeeds and repository/live hashes are rechecked.
+
+
+## 2026-07-19 pursuit-continuity correction
+
+- Review of Bannerlord v1.4.7 `MobilePartyAi` confirmed the concern raised during handoff. `GoAroundParty` is not a permanent direct chase: `GetGoAroundPartyBehavior` may choose a defensive/interception point around a faster target, while ordinary initiative AI only converts a nearby enemy to `EngageParty` after its own local strength/priority evaluation. The task itself was retained, but relying on `GoAroundParty` alone did not provide a sufficiently explicit guarantee that a declared police target would remain continuously followed.
+- Added a separate `Pursue` intent. Before war, police still use `GoAroundParty` to approach a neutral offender without illegal hostility. After the existing distance rule declares war, the same retained task changes to native `EscortParty`; Bannerlord's `GetFollowBehavior` continuously updates the destination to the target party's current position and therefore does not abandon the assignment merely because the offender is faster.
+- When a pursued offender enters a settlement, the intent temporarily falls back to `GoAroundParty` rather than attempting to enter a hostile settlement. The existing sheltered-target gate watch, declaration, and expulsion path remains responsible for that state.
+- `PoliceMobilePartyAIModel.GetBestInitiativeBehavior` now supplies a narrow close-range guarantee only when the currently selected long-term behavior is the matching pursuit `EscortParty`. Within the native initiative radius, and only while the two factions are at war and the morale/navigation attack checks pass, the original engine receives `EngageParty` for the assigned offender with a score above unrelated nearby enemies. It does not write a movement command and it cannot override a selected town-recovery desire.
+- Enforcement-delay patrols and post-refusal player pickets now request the same `Pursue` intent. The existing two-day persistent-war scan still spawns one delay patrol per tracked offender; both the primary party and relief party keep following until battle, target invalidation, peace, or a critical-resource diversion.
+
+
+## 2026-07-19 pursuit rule clarification
+
+- Final user rule: only speed disadvantage is forbidden from cancelling or lowering the long-term police pursuit. Native strength, nearby ally/enemy power, morale, navigation, and other tactical engagement checks remain authoritative.
+- Removed the provisional close-range `GetBestInitiativeBehavior` override because its fixed high `EngageParty` score would have bypassed the native strength comparison. The custom `PoliceMobilePartyAIModel` again delegates ordinary engagement scoring to Bannerlord.
+- The final split is deliberate: a declared case selects persistent native `EscortParty` as its long-term tracking behavior, so a faster offender cannot make the task disappear; `MobilePartyAi.GetBestInitiativeBehavior` remains native, so an outmatched Warden follows without attacking. When a relief party arrives or the power balance changes, native initiative can select `EngageParty` and start the battle.
+
+
+## 2026-07-19 native-desire final build and deployment
+
+- The earlier “live deployment is not complete” entry above records the failed
+  restricted-environment attempt and is now superseded. With the required
+  filesystem access available, the final `Release --no-restore` build completed
+  with `0` errors. Its `46` warnings are the existing nullable diagnostics plus
+  `NU1900` because NuGet vulnerability metadata was unavailable; none prevented
+  compilation or deployment.
+- Final pursuit semantics match the clarified rule exactly. The desire layer
+  emits `GoAroundParty` before police war and persistent `EscortParty` after
+  war. No custom `GetBestInitiativeBehavior` override exists, so only speed is
+  excluded as a reason to abandon long-term tracking; native strength, nearby
+  support, morale, navigation, and other tactical checks still decide whether
+  the tracking party actually changes to `EngageParty`.
+- Static source audit found no managed Grey Warden strategic use of
+  `SetDoNotMakeNewDecisions(true)`, direct engage/escort/settlement/hold movement
+  commands, the removed salary symbol, generated food, or free troop filling.
+  `git diff --check` reported no whitespace error.
+- The build synchronized repository `_Module` files to
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
+  Final verification compared `24` deployable source files: `0` missing and `0`
+  hash mismatches. All `17` live XML files parsed successfully. Client and
+  editor DLLs are identical with SHA-256
+  `E4B1250E306D648B5EB99239F4A44CF9B407FC8EF65898A005E9B03746CA94B5`.
+  The live module contains no `Assets`, `AssetSources`, or `RuntimeDataCache`
+  directory and no nested archive.
+- ILSpy decompilation of the deployed DLL confirms the desire type writes
+  `PartyThinkParams` scores using engine enum values `8` (`GoAroundParty`) and
+  `14` (`EscortParty`). The deployed `PoliceMobilePartyAIModel` contains only
+  its existing `ShouldConsiderAttacking` override and no initiative override.
+  Runtime behavior still requires the focused in-game pursuit/power/resource
+  tests described in the handoff; no commit, tag, archive, or release was made.
+
+
+## 2026-07-19 native-first allowlist and fallback-case correction
+
+- The first desire integration was still too custom. It retained native
+  `PartyThinkParams`, but imposed its own food/strength/wounded states, raised a
+  chosen town to custom `7.5`/`12` floors, assigned police pursuit `6.5`/`7.25`,
+  and separately modified idle patrol scores. The user's in-game observation
+  that a shrinking party continued pursuing instead of resupplying showed that
+  this architecture did not satisfy “native desires minus forbidden desires,
+  plus a fallback police desire.” Those custom resource and patrol arbitration
+  paths are now removed rather than retuned.
+- Local decompilation of installed Bannerlord `v1.4.7`
+  `AiVisitSettlementBehavior` is the authoritative basis for the replacement.
+  Native `GoToSettlement` already combines food and food consumption, wounded
+  ratio, party-size ratio, available wage budget, volunteers, leader/party
+  money, sellable non-food items and mounts, prisoners, settlement food stock,
+  distance, and settlement safety into the visit score. Buying food,
+  recruitment, healing, selling loot, and selling prisoners therefore share
+  one strategic settlement desire and execute through their existing campaign
+  behaviors after arrival; they are not separate Grey Warden destinations.
+- `GreyWardenPartyDesireBehavior` is now a final-registered allowlist filter.
+  For managed Grey Warden parties it preserves every score generated by native
+  `GoToSettlement`, `MoveToNearestLandOrPort`, `Hold`, and `None`. Native
+  `PatrolAroundPoint` is preserved only when the party has no case or temporary
+  police duty. Raid, siege, defence, army/join, arbitrary enemy pursuit, and all
+  other kingdom-military candidates are set to zero. Native short-term fleeing,
+  local power comparison, morale, and navigation initiative are outside
+  `PartyThinkParams` and remain untouched.
+- All police duties now enter the same auction at the single fallback score
+  `1.0`. A healthy party with no stronger native need can pursue its case; a
+  native settlement visit elevated by food, wounds, missing troops, loot, or
+  prisoners can win without the mod detecting or estimating those needs. The
+  case record remains assigned while the party visits town, so the same
+  fallback candidate reappears after native needs subside. Assigned pursuit
+  remains `GoAroundParty` before war and `EscortParty` after war, preserving the
+  rule that speed cannot erase long-term tracking while native strength checks
+  still decide engagement.
+- Repeated requests for the same temporary intent now refresh only its expiry
+  and do not force another rethink. The former every-hour rethink in the main
+  case loop and sheltered-target loop was removed. Legacy AI unlocking and
+  genuine task-state changes may request the next native hourly auction, but no
+  code now calls `SetInitiative`, sets an aggressive destination, or clears a
+  live native short-term flee/engage decision.
+- `CrimePool.BeginTask` now enforces the assignment invariant at its data
+  boundary: one police party has at most one task and a crime already assigned
+  to another party cannot be assigned again. `PoliceMobilePartyAIModel` also
+  rejects proactive Grey Warden attacks against parties other than the current
+  case/temporary pursuit target or a bandit. This prevents an enforcement war
+  against a faction from turning its unrelated lords, villagers, or caravans
+  into extra police targets.
+- Important economy diagnostic for the next in-game test: in native `v1.4.7`,
+  `MobileParty.PartyTradeGold` returns `LeaderHero.Gold` for a lord party, while
+  `Clan.Gold` returns only `Clan.Leader.Gold`. The clan-screen wealth category
+  therefore does not prove that a non-leader Grey Warden commander personally
+  has the `>100` denars required by the native food-visit scoring branch. No
+  money was injected in this pass; if the party chooses town correctly but
+  cannot buy food, inspect that individual commander's gold as a separate
+  economy issue rather than raising the pursuit or resupply scores again.
+- Final `Release --no-restore` build completed with `0` errors and only the
+  offline NuGet vulnerability-metadata warning. ILSpy of the deployed DLL
+  confirms fallback constant `1.0`, pursuit enum values `8`/`14`, the native
+  allowlist (`0..2`, `13` only without a duty, and `17`), the attack-target
+  gate, and the bidirectional task uniqueness check. It contains no resource
+  threshold method or initiative reset.
+- Live mirror verification compared `24` deployable files with `0` missing and
+  `0` hash mismatches; all `17` XML files parsed; client/editor DLLs match; no
+  editor-only directory or nested archive is present. Deployed DLL SHA-256:
+  `5D7BF58A54C67020C937DF6BEBF9C98F107801D5439BB86643C946162C761BA7`.
+  No commit, tag, archive, or release was created.
+
+
+## 2026-07-20 Grey Warden case-ledger encyclopedia interface
+
+- Added a second Grey-Warden-only button to the clan encyclopedia page. The
+  existing war/adoption-details button remains unchanged; the new `案件总卷`
+  button opens a dedicated modal Gauntlet overlay rather than placing an
+  unbounded ledger inside the normal encyclopedia scroll area.
+- `GwpCaseArchiveVM` reads `CrimePool.LedgerRecords` directly. This is the
+  permanent, save-backed record collection and therefore includes both open
+  and closed records. The ledger is intentionally one aggregate record per
+  offender, not one row per individual criminal act. Rows are ordered by
+  `LastCrimeTime` descending, then by record key for deterministic ties.
+- Each row exposes the offender, open/closed state, latest offence time, current
+  case-open time, latest offence type and victim, total recorded offences and
+  arrests, saved map location, current assignee, and task stage. Assignment is
+  resolved from `CrimePool.ActiveTasks` by `TargetCrimeId`, which reflects the
+  same one-police/one-case relationship used by enforcement. Open records with
+  no matching task are explicitly shown as `无人承办`; closed records remain
+  visible and are marked as having no active tracker.
+- The header summarizes total/open/assigned/unassigned/closed counts. A
+  `刷新案卷` command rebuilds the view from live campaign state without closing
+  the encyclopedia, allowing assignment and stage transitions to be observed
+  during testing. The overlay is scrollable and blocks input to the underlying
+  encyclopedia until closed.
+- New runtime surface: `GUI/Prefabs/GwpCaseArchive.xml`; modified surface:
+  `GUI/Prefabs/Encyclopedia/EncyclopediaSubPages/EncyclopediaClanPage.xml`.
+  All new player text has English fallback strings and Simplified Chinese
+  entries. Both player READMEs record the feature under `2026-07-20
+  v1.4.7-r5-dev`.
+- Validation: final `Release --no-restore` build completed with `0` errors and
+  `46` existing nullable/offline-NuGet warnings. ILSpy of the deployed DLL
+  confirms the clan command calls `GwpCaseArchiveScreen.Show`, and the ledger VM
+  enumerates `CrimePool.LedgerRecords`, sorts by `LastCrimeTime`, joins current
+  tasks by `TargetCrimeId`, and supplies the refresh command.
+- Live deployment verification compared `25` deployable source files with `0`
+  missing and `0` hash mismatches. All `18` repository and live XML files parse
+  successfully; all `33` new localization references exist with no duplicate
+  localization IDs. Client/editor DLLs are byte-identical, size `474624`,
+  SHA-256
+  `249E17C67A81D0E4EE3E448FB00ADE40BB05AA16223382AA39F99CFF367B37BB`.
+  The live README matches the repository, the live case prefab matches its
+  source, and the live module contains no editor-only directories or nested
+  archives. No commit, tag, archive, or release was created.
+- Focused in-game test: open Encyclopedia -> Clans -> Grey Wardens, confirm both
+  top-right buttons appear, open `案件总卷`, verify newest-first ordering and
+  scrolling, compare each open case's assignee with the corresponding map
+  party, then leave the window open through an assignment change and press
+  `刷新案卷`. After an arrest, confirm the record remains present but changes to
+  `已结案`; create another offence for the same lord and confirm the same row is
+  reopened and moved to the top rather than duplicated.
+
+
+## 2026-07-20 case-save reload crash and ledger scrolling correction
+
+- Player reproduction: start a new campaign, allow at least one AI case to be
+  recorded, save and exit, then reload that save. The load raised an error
+  before entering the campaign. The save itself completed successfully; this
+  was a deterministic initialization-order crash during deserialization, not a
+  corrupt or incomplete save write.
+- Primary evidence is the local Windows Error Reporting dump
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.45916.dmp`.
+  WinDbg `!analyze -v` reports `System.ArgumentNullException: Value cannot be
+  null` with the managed stack `System.Linq.Enumerable.FirstOrDefault ->
+  Hero.FindFirst -> CrimeRecord.get_OffenderHero -> CrimePool.Clean ->
+  CrimePool.SyncData -> PoliceEnforcementBehavior.SyncData ->
+  CampaignBehaviorDataStore.LoadBehaviorData -> Campaign.OnInitialize`.
+  Independent dump
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.34736.dmp`
+  contains the same exception and stack, ruling out a one-off load failure.
+- Root cause: `CrimePool.SyncData` rebuilt the primitive case rows correctly,
+  but immediately called `Clean()` while `Campaign.OnInitialize` was still
+  constructing global campaign collections. A non-empty case ledger caused
+  `CrimeRecord.OffenderHero` to call `Hero.FindFirst`; its internal enumerable
+  source was still null at that exact phase. Empty ledgers did not enter the
+  failing path, which is why the bug appeared only after cases existed.
+- Correction: the loading branch now limits itself to reconstructing saved
+  records and tasks. `CrimeState.Clean()` runs at the start of
+  `OnSessionLaunched`, after Bannerlord has completed campaign initialization.
+  `CrimeRecord.OffenderHero` additionally catches the specific early-load
+  `ArgumentNullException` and leaves the lazy reference unresolved so the same
+  lookup can succeed later. No keys or stored values were changed, so the
+  player's already-created affected save should load directly after updating;
+  a new campaign is not required.
+- The first `GwpCaseArchive.xml` placed the list itself directly under the
+  `ScrollablePanel` while using the surrounding region as its clip target.
+  Although the first rows rendered, the scroll panel had no correctly linked
+  internal scrolling canvas and therefore could not translate the list.
+  Rebuilt it to match the native encyclopedia topology: the scroll panel owns
+  `CaseListClip`, that clip owns the cover-children `CaseList`, and the panel
+  references `InnerPanel="CaseListClip\CaseList"`, `ClipRect="CaseListClip"`,
+  and its sibling vertical scrollbar. Mouse wheel and scrollbar movement now
+  operate on the complete list rather than only the initially visible rows.
+- Validation: final `Release --no-restore` build completed with `0` errors.
+  ILSpy of the deployed DLL confirms `CrimePool.SyncData` no longer calls
+  `Clean`, the lazy hero getter contains the `ArgumentNullException` guard, and
+  `OnSessionLaunched` performs the deferred cleanup. Static prefab validation
+  confirms the new inner-panel/clip/list relationship and cover-children list.
+  All `18` repository and live XML files parse successfully.
+- Live mirror verification compared `25` deployable files with `0` missing and
+  `0` hash mismatches. Client and editor DLLs are byte-identical, size `474624`,
+  SHA-256
+  `D05FB25D38340D98280BB3D41F233750B58BAB6EE0C06F72EBC49F757597B87B`.
+  Repository/live README and case-prefab hashes match; no editor-only directory
+  or nested archive exists in the live module. No commit, tag, archive, or
+  release was created.
+- Required focused runtime retest: load the existing
+  `Ironman3cJKGr9YHkab.sav` directly, confirm the campaign reaches the map and
+  the saved case rows/assignees remain present, then save/reload it once more.
+  Open the clan `案件总卷` with enough rows to overflow and verify both mouse
+  wheel and dragging the right scrollbar can reach the oldest record.
+
+
+## 2026-07-20 open-case-only ledger and numeric-history separation
+
+- This section supersedes the earlier case-ledger description that treated
+  `CrimeRecord` as a permanent combined row and instructed testers to expect a
+  closed row to remain visible. The required model is now two independent
+  stores: `_ledger` contains only current open cases and their event details;
+  `_history` contains only per-hero cumulative crime/arrest counts and the
+  numeric personal/clan deterrence state used by the hero encyclopedia.
+- `CrimeRecord` no longer owns cumulative counts or deterrence fields.
+  `HeroCrimeStats` deliberately has no crime type, occurrence time, last-crime
+  time, map position, victim, offender-party ID, assignment, or open/closed
+  flag. This prevents a closed case from surviving indirectly merely because
+  its offender still needs a permanent numeric history.
+- Closing an AI case through `CrimePool.EndTask`, removing an unassigned
+  pending case, ending the player hunt, or cleaning a dead offender now removes
+  the case row from `_ledger`. Failed enforcement remains recoverable:
+  `PoliceTask` caches the current `CrimeRecord` object before removal and
+  `ReopenCase` puts that same live case back into `_ledger` without increasing
+  the crime count. Thus failure/reassignment does not lose an unresolved case,
+  while genuine closure deletes all of its event details.
+- Every detected AI crime increments `HeroCrimeStats.TotalCrimeCount`; a real
+  Grey Warden arrest increments `TotalArrestCount` and updates deterrence in
+  the same numeric record. The hero encyclopedia therefore keeps the numbers
+  the user expects even after the current case row disappears.
+- Save compatibility is explicit. Loading first reads the legacy `gwp_l_*`
+  rows and extracts their old count/deterrence fields into `_history`, but adds
+  only rows whose saved `open` flag is true to `_ledger`. It then reads the new
+  `gwp_history_count` / `gwp_h_*` numeric store when present; those new rows
+  replace the duplicated migration values. Consequently an old save keeps its
+  accumulated numbers and open cases, silently discards closed-case details,
+  and writes only the split format on its next save.
+- `案件总卷` now filters to open cases, summarizes current/assigned/unassigned
+  counts, and no longer displays closed state or cumulative history in each
+  case row. The clan-page hint, English fallback strings, Simplified Chinese
+  localization, player READMEs, and `docs/grey-warden-setting.md` all describe
+  the same current-only behavior.
+- Validation: final `Release --no-restore` build completed with `0` errors and
+  `46` existing nullable/offline-NuGet warnings. ILSpy of the deployed DLL
+  confirms `EndTask` removes non-player cases, `ReopenCase` re-inserts failed
+  cases, legacy loading calls `MergeLegacyHistory` but admits only
+  `HasOpenCase` rows, the new `gwp_history_count` / `gwp_h_*` keys are present,
+  and `GwpCaseArchiveVM` contains no closed-case or cumulative-count display.
+- Live mirror verification compared `25` deployable files with `0` missing and
+  `0` hash mismatches; all `18` XML files parsed; all `31` case-screen/clan
+  button localization references have Simplified Chinese entries with no
+  duplicate IDs. Client/editor DLLs are byte-identical, size `476672`, SHA-256
+  `EEF941E19D2F2C8F86D0A6790882A400D0C9DE6982822A03A654D296DEF0AD80`.
+  Repository/live README files match; no editor-only directory or nested
+  archive exists in the live module. No commit, tag, archive, or release was
+  created.
+- Focused in-game retest: load `Ironman3cJKGr9YHkab.sav`; confirm only its
+  still-open cases appear and their assignees survive. Let one AI lord commit a
+  new tracked offence, note the hero-page crime total, save/reload before
+  resolution, then let the Grey Wardens arrest and close the case. After
+  refreshing the ledger the row must disappear, while the same hero page keeps
+  the crime total and increased arrest total. Save/reload once more and confirm
+  the closed row does not return. Also let a pursuing Warden lose once and
+  confirm that unresolved case is reopened/reassigned rather than deleted.
+
+
+## 2026-07-20 assigned-case patrol suppression correction
+
+- Player observation: the case ledger showed a Grey Warden as the assigned
+  tracker, but the same map party still displayed/continued a patrol action.
+  Raising the police fallback score would violate the native-first design and
+  could again starve food, healing, recruitment, loot, or prisoner needs, so
+  this was corrected at the allowlist and target-resolution boundaries rather
+  than by increasing the `1.0` duty score.
+- `ResolveIntent` previously searched `MobileParty.All` only by the case row's
+  stored `OffenderPartyId`. A lord's party can be destroyed/recreated or change
+  after captivity, leaving that ID stale even though `CrimeRecord.Offender`
+  can resolve the hero's live party. The desire layer now uses the live
+  `TargetCrime.Offender` resolver, which also refreshes the stored party ID.
+- The native filter now treats `CrimePool.HasTask(party.StringId)` as an
+  assigned duty even during the short interval in which a target party cannot
+  be resolved. With a duty, `PatrolAroundPoint`, `Hold`, and `None` are all
+  suppressed; `GoToSettlement` and `MoveToNearestLandOrPort` remain allowed,
+  and native short-term flee/strength logic remains outside this filter. Thus a
+  Warden may still buy food, recruit, heal, sell cargo/prisoners, or recover
+  navigation, but cannot choose ordinary patrol/idle instead of an assigned
+  case once those needs no longer win.
+- The change does not force an immediate destination. Taking a case requests
+  Bannerlord's next hourly rethink; the pursuit remains a native auction
+  candidate rather than a direct movement order. A just-assigned party may
+  therefore retain its old status until that hourly decision occurs, but it
+  cannot select patrol again while the task exists.
+- Player READMEs record the visible correction. Final `Release --no-restore`
+  build completed with `0` errors and `46` existing nullable/offline-NuGet
+  warnings. ILSpy of the deployed DLL confirms the independent `HasTask` gate
+  and live `TargetCrime.Offender` resolution. Live verification found `25`
+  deployable files and `0` hash mismatches; client/editor DLLs are identical,
+  size `476160`, SHA-256
+  `BD2A5E2BFA895031C002FD59D7F91C5C5154862C2E484C1CE1F7F62D08541F62`.
+  No commit, tag, archive, or release was created.
+- Focused retest: assign a currently patrolling Grey Warden in `案件总卷`, let
+  one campaign hour pass, and confirm the party changes to approaching or
+  following the offender. If it first visits a settlement for a real native
+  need, allow that visit to complete and confirm it returns to the same case
+  rather than resuming patrol. Repeat with an offender whose party was recently
+  destroyed/recreated or released from captivity to verify live target
+  resolution.
+
+
+## 2026-07-20 native application-shutdown crash after successful save
+
+- Player reproduction: choose save-and-exit, return to the initial menu, then
+  close Bannerlord. Windows recorded
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.31280.dmp`
+  at `2026-07-20 01:15:38 +10:00`.
+- This was not a save failure. `rgl_log_31280.txt` reports the save starting at
+  `01:15:30.856` and `Successfully saved` at `01:15:32.504`. The resulting
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Game Saves\Ironman3cJKGr9YHkab.sav`
+  is `5,342,092` bytes, timestamped `01:15:32`, with SHA-256
+  `75AB58DF8AE0DDA8BD0D3911A511004FC2F38D1021D232BC2065DB4C3AF81EC2`.
+- The crash occurred only during final native application teardown. The log
+  had already returned to the initial menu, deleted the campaign game, deleted
+  resources, completed `Pre Finalizing Managed Interface`, reported `There are
+  no living managed objects`, and printed `Managed Interface deleted`.
+  WinDbg then identifies an invalid-pointer read (`0xc0000005`) at
+  `TaleWorlds.Native.dll+0x74b1f0`; the stack is native-only and contains no
+  GreyWarden managed frame. Full local analysis is preserved at
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\crash-31280-analysis.txt`.
+- This signature predates the current case-ledger and party-desire revisions.
+  Archived WER report
+  `C:\ProgramData\Microsoft\Windows\WER\ReportArchive\AppCrash_TaleWorlds.Mount_e978be8b478a106fd93641f8edccc0dc8de319ed_7140fc22_ba6e017d-275e-4c7e-b707-98f8e000306c\Report.wer`
+  records the same fault module, exception code, and exact offset at
+  `2026-07-18 07:03:29 +10:00`. Therefore the latest desire correction did not
+  introduce this crash, and the evidence does not justify a speculative
+  managed-state or serialization change.
+- The observed timing does leave a practical native teardown race as the most
+  useful next check: the player closed the application about `1.7` seconds
+  after the initial menu activated and its background video began. Retest by
+  loading the saved game, saving and exiting again, waiting at least ten
+  seconds on the initial menu, and then closing the application. If it still
+  crashes, retain the new dump and compare its native offset; the exact same
+  offset would confirm the recurring shutdown fault, while a managed stack or
+  different offset would be a separate issue.
+- No gameplay/runtime source, README, build, or live module was changed for
+  this diagnosis. This avoids claiming an unproven fix for a crash that occurs
+  after Bannerlord has already destroyed the managed interface.
+
+
+## 2026-07-20 staged long-range case approach and strict logistics priority
+
+- Player observation superseding the first patrol-suppression correction: an
+  assigned Grey Warden no longer selected ordinary patrol, but also did not
+  begin travelling toward a far-away offender. The required priority order is
+  now explicit: native food/recruitment/healing/sale/prisoner/ship needs first;
+  case duty only when none of those needs owns a viable native candidate;
+  ordinary patrol/idle is unavailable while a duty exists.
+- Decompiled local `v1.4.7` source is preserved under
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\vanilla-ai`.
+  `AiEngagePartyBehavior` searches only locatable parties around the acting
+  party, using `EncounterModel.NeededMaximum*Distance... * 45` as its radius.
+  It therefore cannot originate a normal cross-continent enemy pursuit.
+  `AiPartyThinkBehavior` handles `PatrolAroundPoint`, `GoToSettlement`,
+  `EscortParty`, and `GoAroundParty`, but has no winning-candidate branch for
+  `GoToPoint` or `EngageParty`. The native hostile chase candidate produced by
+  `AiEngagePartyBehavior` is in fact `GoAroundParty`.
+- Long-range pre-war approach now inserts a point candidate at the offender's
+  current known `CampaignVec2`, using `PatrolAroundPoint` solely as the native
+  desire resolver's supported point-movement carrier. It does not rely on the
+  offender being inside the acting party's locator/search radius. Navigation
+  capability is resolved for land/naval travel. Once the existing enforcement
+  layer observes the offender inside `WarDistance` and marks the task at war,
+  the duty switches to `GoAroundParty`; the native short-term layer still owns
+  strength, fleeing, and actual engagement.
+- The point carrier is not ordinary patrol. Native
+  `SetPartyAiAction.GetActionForPatrollingAroundPoint` compares the existing
+  behavior and navigation type but does not compare the newly selected point,
+  so a moving offender's refreshed location would otherwise be ignored after
+  the first auction win. `GwpLocationDutyRefreshPatch` updates the point only
+  when the location duty has already won the native auction and the known
+  location moved by more than `0.25`; it never creates a destination outside
+  that auction. `GwpLocationDutyBehaviorTextPatch` replaces the misleading
+  stock patrol label with “travelling toward the last known position” for this
+  state only. The Simplified Chinese localization is
+  `gwp_location_duty_travelling`.
+- Logistics priority is structural rather than another score adjustment.
+  `HasNativeLogisticsNeed` recognizes the same observable categories used by
+  `AiVisitSettlementBehavior`: low food days with purchasing money, materially
+  wounded parties, prisoners, affordable vacancies for recruitment,
+  meaningful sellable cargo, and damaged ships. While such a need exists,
+  native `GoToSettlement` candidates remain intact. If any protected
+  `GoToSettlement` or `MoveToNearestLandOrPort` candidate is present after
+  filtering, the Grey Warden behavior adds no police candidate at all that
+  hour; therefore neither the location approach nor hostile chase score can
+  outrank the protected native action. Without a logistics need, routine
+  settlement visits and ordinary `PatrolAroundPoint`/`Hold`/`None` candidates
+  are suppressed so the assigned case becomes the true fallback.
+- `EscortParty` remains only for actual escort duties. It is no longer used as
+  hostile pursuit after war, avoiding friend-follow semantics on an enemy.
+  Existing one-case-per-Warden ownership, automatic declaration range,
+  strength-aware non-engagement, and support-party behavior are unchanged.
+- Player-facing Chinese and English READMEs describe the staged approach,
+  strict native logistics precedence, and corrected map status text.
+- Validation: final `Release --no-restore` build completed with `0` errors and
+  `46` existing nullable/offline-NuGet warnings. The build copied source module
+  data and the assembly into both live client and editor module locations.
+  All `18` repository XML files parse successfully. Live-mirror verification
+  compared `25` deployable files with `0` missing and `0` hash mismatches.
+  Client and editor DLLs are byte-identical, size `479744`, SHA-256
+  `5745F65870DB34ECCBE9A688AFDB7A5123C3233B007002D550691771D93BD830`.
+  ILSpy of the deployed DLL confirms the point candidate, protected-native
+  early return, logistics detector, `GoAroundParty` war stage, and point-refresh
+  patch. Repository/live Chinese README, English README, and Simplified Chinese
+  localization hashes match. No commit, tag, archive, or release was created.
+- Focused runtime retest: assign a case whose offender is on the far side of
+  the continent. With a healthy, supplied, full-strength, low-cargo Warden,
+  allow one native AI rethink and verify its map text becomes “正在前往…最后出现
+  的位置” and its route advances toward the offender. Move the offender for
+  several hours and verify the destination refreshes rather than stopping at
+  the first snapshot. Then test separate Wardens with low food, recruitable
+  vacancies, significant wounds, sellable loot/prisoners, or a damaged ship:
+  each must finish the appropriate native settlement visit before resuming the
+  same case. Finally allow a non-player offender inside `3` map units; verify
+  war is declared and the Warden changes to continuous hostile chase.
+
+
+## 2026-07-20 real point movement, assigned-only ledger, and AI score telemetry
+
+- Player runtime observation disproved the previous point-carrier conclusion:
+  the map label changed to the case-tracking text, but the party still did not
+  travel toward the offender and continued the old patrol movement. The same
+  session did not provide enough evidence to distinguish a missing native
+  resupply candidate from a candidate that was later filtered or lost, so the
+  resupply cause must now be decided from recorded scores rather than another
+  speculative weight change.
+- The exact movement cause is confirmed in the local `v1.4.7` decompile.
+  `AiPartyThinkBehavior.PartyHourlyAiTick` has a winner branch for
+  `PatrolAroundPoint`, but `MobileParty.RecalculateShortTermBehavior` has no
+  matching `PatrolAroundPoint` branch. Calling
+  `SetPartyAiAction.GetActionForPatrollingAroundPoint` can therefore set the
+  displayed/default patrol state without creating the required point-to-point
+  short-term movement. Updating the patrol point alone could never repair this.
+- `GwpLocationDutyRefreshPatch` now translates only a winning Grey Warden
+  approach carrier at the native action boundary. Its prefix replaces the
+  stock point-patrol action with `SetMoveGoToPoint(position, navigationType)`
+  and skips the stock call. It does not run while a settlement/logistics
+  candidate wins and does not issue movement outside the completed native
+  desire auction. The tracking status override now requires the resulting
+  `GoToPoint` default behavior, so the UI can no longer claim location travel
+  while the party remains in a patrol default state.
+- `GwpAiDiagnostics` is diagnostic-only and does not enter save data or AI
+  decisions. Every loaded campaign session resets
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`.
+  For each managed Grey Warden party it records hourly state, raw native
+  scores, filtered final scores, active police intent, whether logistics was
+  protected, the police candidate added, the resolved default/short-term
+  behavior, real target settlement/party/point, food, food change, calculated
+  food days, party/leader/clan money, lord/patrol and faction eligibility,
+  strength/recruitment ratio, wounds, prisoners, case ID, war stage, offender,
+  and distance. The point-action translation also writes
+  an explicit `POINT_WINNER_TO_GOTOPOINT` row.
+- `tools\Watch-GreyWardenAI.ps1` tails that file while Bannerlord runs. Optional
+  `-Party <id-or-name>` limits output, `-Once` prints a snapshot and exits, and
+  `-Tail <count>` controls retained rows. PowerShell parser validation passes;
+  before a campaign with this assembly is loaded, its expected `-Once` result
+  is the explicit “diagnostic log does not exist yet” error.
+- The Case Ledger now enumerates only `CrimePool.ActiveTasks`, resolves each
+  task's current open `TargetCrime`, deduplicates by case ID, and sorts those
+  assigned cases by latest offence time. Unassigned open records remain in the
+  internal pool for future assignment but are intentionally hidden from this
+  testing UI. Button hint, empty state, summary, Simplified Chinese strings,
+  and both player READMEs were updated accordingly.
+- Validation: `Release --no-restore` completed with `0` errors and `47`
+  existing nullable/offline-NuGet warnings. ILSpy of the deployed assembly
+  confirms `SetMoveGoToPoint`, assigned-task enumeration, and raw/final score
+  logging. All `18` repository XML files parse. Live comparison found `25`
+  deployable files and `0` missing or hash mismatches. Client/editor DLLs are
+  byte-identical, size `488448`, SHA-256
+  `790C93C2486A62EA854AF4893FB43661DD43D84253DCBA470FB47AF361437B47`.
+  Repository/live Chinese README hashes both equal
+  `CD905DD5BA4217C0DA10968F4FFA8A5877292BE320D8F31E7DE62E4A70017C20`;
+  English README hashes both equal
+  `67C2A1BC1C2F9E89DE4CF9D7497D10D0415E1B37D0A707F425CA3266032B263B`.
+  No commit, tag, archive, or release was created.
+- Focused runtime retest: load a campaign, identify one assigned case in the
+  assigned-only ledger, and let at least one AI decision hour pass. A healthy
+  party should produce an `AUCTION` row whose final top candidate is the
+  approach carrier, followed by `ACTION ... POINT_WINNER_TO_GOTOPOINT` and a
+  `RESOLVED` row with `default=GoToPoint`; its map position must then converge
+  on `targetPoint`. Continue until food falls below the native threshold. The
+  corresponding `AUCTION` row will show whether a raw `GoToSettlement` exists,
+  whether `logisticsProtected=True`, and whether that candidate remains in
+  `finalScores`; the next correction, if needed, must address the first stage
+  where this chain actually breaks.
+
+
+## 2026-07-20 confirmed desire-event ordering fault and final-auction hook
+
+- The first instrumented runtime test produced decisive evidence rather than
+  another ambiguous map label. The session log contains `75` `AUCTION` rows;
+  all `75` report `rawScores=[]`, and the whole file contains `0`
+  `POINT_WINNER_TO_GOTOPOINT` action rows. Every Grey Warden had a resolved
+  `default=PatrolAroundPoint` and continued toward the same old patrol point
+  around `town_EN5`, even though the early snapshot showed the correct offender
+  coordinate as the sole police candidate. This proves that the police handler
+  executed before the native score producers, then later native patrol scores
+  overwrote its work before `AiPartyThinkBehavior` selected the winner.
+- Local `v1.4.7` decompilation explains the ordering. `MbEvent<T1,T2>` inserts
+  every `AddNonSerializedListener` at the head of a singly linked list and
+  invokes from the head, so listener order is LIFO. Registering the Grey Warden
+  behavior “last” therefore made its `AiHourlyTick` listener run first, not
+  last. The prior registration-order assumption was false; consequently the
+  filter never saw native food, recruitment, healing, sale, prisoner, patrol,
+  or idle scores, and the diagnostic `finalScores` field was only a premature
+  snapshot rather than the actual final auction.
+- The behavior no longer subscribes directly to `AiHourlyTickEvent`.
+  `GwpFinalDesireAuctionPatch` is a postfix on
+  `CampaignEventDispatcher.AiHourlyTick`, which returns only after all event
+  receivers and all native score listeners have completed. The postfix calls
+  `GreyWardenPartyDesireBehavior.ProcessFinalDesires` immediately before
+  control returns to `AiPartyThinkBehavior` and its winner loop. Raw diagnostics,
+  identity filtering, protected native logistics, suppression of patrol/idle
+  while assigned, and addition of the fallback police candidate now all operate
+  on the genuinely complete score collection.
+- This preserves the required priority model without a forced destination:
+  native score producers still create their own settlement and survival
+  desires; the Grey Warden layer removes forbidden kingdom/criminal activity,
+  protects valid logistics candidates, and adds the case only as the fallback.
+  If the final case point wins, the already deployed action-boundary patch then
+  translates that winner to real `GoToPoint` movement. The next runtime log
+  must therefore show non-empty `rawScores`, a filtered `finalScores`, followed
+  by `ACTION ... POINT_WINNER_TO_GOTOPOINT` and `default=GoToPoint` for a
+  supplied assigned Warden.
+- On session launch, every currently managed Grey Warden party is marked for
+  one immediate native rethink. This clears the practical test delay from an
+  old save whose party still holds the previous patrol winner; it does not set
+  a destination or bypass the corrected auction.
+- Player README wording now states that the corrected filtering occurs after
+  all native needs have been scored. This supersedes the earlier claim that
+  adding the behavior last was sufficient.
+- Validation: the final source-changing `Release --no-restore` build completed
+  with `0` errors and `47` existing nullable/offline-NuGet warnings. ILSpy
+  confirms the deployed assembly patches
+  `CampaignEventDispatcher.AiHourlyTick`, calls `ProcessFinalDesires` from its
+  postfix, and no longer subscribes that processor to `AiHourlyTickEvent`.
+  All `18` XML files parse. Live comparison found `25` deployable files and
+  `0` missing or hash mismatches. Client/editor DLLs are byte-identical, size
+  `488960`, SHA-256
+  `2A31B39F6510F37E2CCDD2C041FC35C4C5F5766E60D171E588828A9D791E15A4`.
+  Repository/live Chinese README hashes both equal
+  `B2477E6CDE86DA2CF331F5F32FE7C2DA1428F4CA364FC93DB7FF87E59C8E929F`;
+  English README hashes both equal
+  `2F826B365B8A40BD724F834D1E4F0F5AE5F4FC1DC45DEF88E057D1521D23DAB1`.
+  No commit, tag, archive, or release was created.
+
+
+## 2026-07-20 founder-only desire and treasury diagnostics
+
+- The first successful final-auction runtime log confirms that native desires
+  and the case fallback now coexist. Across `244` recorded auctions the
+  diagnostic contains `27` `POINT_WINNER_TO_GOTOPOINT` actions; assigned
+  Wardens also independently selected recruitment and settlement visits.
+  Consequently the former all-patrol symptom is resolved rather than merely
+  relabelled in the UI.
+- The reported leader stop is reproducible in the existing log for
+  `gw_leader_0_party_1` (梵蒂). At campaign hour `624935.38`, the open intent is
+  still `Approach:lord_1_37_party_1`, but the native auction contains
+  `GoToSettlement@castle_village_ES4_2=0.3840` and the same score for
+  `village_ES1_4`. Because `logisticsProtected=True`, the assigned-case
+  fallback is deliberately not added. Patrol candidates reach `3.0900` in the
+  raw list but are correctly reduced to zero while the case is assigned. The
+  selected village is already at the party's exact position, so the resolved
+  map behavior remains `Hold` rather than issuing another movement order.
+- This is a protected native settlement visit, not a return to patrol and not
+  loss of the case. The same row shows `221/221` men, `0` wounded, `0`
+  prisoners, `21.49` days of food, and `91,934` clan gold. Those values rule
+  out low food, recruitment, healing, and prisoner delivery under the current
+  protection predicate. The remaining possible predicates are sale of mounts
+  or other cargo, or repair of a damaged ship; cargo sale is the most likely
+  explanation, but the old log did not record the exact matched predicate and
+  therefore cannot prove which of those remaining cases won.
+- Diagnostics now deliberately include only parties led by the six founders
+  `gw_leader_0` through `gw_leader_5`; later children, temporary patrols, and
+  support parties no longer flood the trace. Every auction now includes an
+  explicit `logisticsReason` value (`low_food`, `wounded`, `prisoners`,
+  `recruitment`, `sell_mounts`, `sell_cargo`, `repair_ship`, or `none`). Party
+  state retains `party/leader/clan` money separately; `clanGold` is the shared
+  Grey Warden family treasury requested for economic observation.
+- `tools\Watch-GreyWardenAI.ps1` now prints the founder-only scope and identifies
+  `clanGold` as the family treasury before tailing the log. This turn changes
+  diagnostics only; it does not alter AI scores, logistics thresholds, money,
+  or player-visible gameplay, so no new player README entry was added.
+- Validation: the `Release` build completed with `0` errors and `48` existing
+  nullable/offline-NuGet warnings. The watcher parses successfully. Deployed
+  assembly strings confirm the founder scope and exact logistics-reason
+  instrumentation. All `18` repository XML files parse. Live comparison found
+  `25` deployable files and `0` missing or hash mismatches. Client/editor DLLs
+  are byte-identical, size `489472`, SHA-256
+  `F3411665B4B1C1E62E1AFE4EB34A4944C803A86A3B2FB960DE771ED3FEBDE4C3`.
+  No commit, tag, archive, or release was created.
+- Focused retest: start or reload a campaign with this assembly and let the
+  stopped founder reach the next six-hour auction. The new `AUCTION` row will
+  state the exact `logisticsReason`. If the reason remains `sell_mounts` or
+  `sell_cargo` while the founder repeatedly holds at the same village and the
+  relevant inventory value never falls, the next gameplay correction should
+  make only genuinely serviceable settlement visits protected, rather than
+  weakening food, recruitment, healing, or case priorities globally.
+
+
+## 2026-07-20 temporary-party economy audit and serviceable settlement filter
+
+- The two one-use party types retain their dedicated lifecycles. Player
+  pickets (`gwp_patrol_*`) continue to approach/pursue only the player, escort
+  after victory when applicable, return after settlement or resolution, and
+  are destroyed on arrival. Interception support parties (`gwp_enf_delay_*`)
+  continue to pursue the recorded fast offender, mark themselves returning
+  after their target/battle/war reason ends, request the recorded return town,
+  and are destroyed within three map units or immediately after entering a
+  settlement. The final-auction desire layer carries these existing explicit
+  intents; founder-only diagnostics merely stopped logging them and did not
+  remove their intents.
+- Local Bannerlord `v1.4.7` decompilation confirms both temporary types use
+  `CustomPartyComponent`, not `WarPartyComponent`. `DefaultClanFinanceModel`
+  charges the leader party and entries in `Clan.WarPartyComponents`, caravans,
+  and garrisons; it does not enumerate these leaderless custom parties. Their
+  troop wages therefore do not reduce Grey Warden clan gold. Their independent
+  party purse is now also explicitly initialized to zero for clarity and to
+  prevent it from being mistaken for part of the family economy.
+- The food side was not previously correct. `CustomPartyComponent` initializes
+  only the troop roster, while `DefaultMobilePartyFoodConsumptionModel`
+  considers these active, leaderless, non-bandit custom parties food-consuming.
+  At the same time `AiVisitSettlementBehavior` rejects a leaderless party of
+  the non-kingdom/non-minor Grey Warden faction, and
+  `PartiesBuyFoodCampaignBehavior` requires a non-null leader. Thus a spawned
+  picket/support party had no initial food and no native way to buy any.
+- Both temporary types now receive twenty days of grain once, immediately
+  after their roster is filled, calculated from the native base consumption of
+  one food unit per twenty men per day. The provision is created for that
+  one-use party and never charged to clan gold; unused food disappears with the
+  party. Session launch also repairs an old-save temporary party only when its
+  inventory contains no food, so repeatedly loading does not refill partially
+  consumed rations.
+- The stopped-founder hypothesis was corrected using the native source rather
+  than retained as speculation. `PartiesSellLootCampaignBehavior` sells lord
+  loot only when `settlement.IsTown`; it never sells at a village. At a town it
+  sells only the amount covered by the town's current gold and does not contain
+  any explicit “wait here until treasury refresh” state. The previous Grey
+  Warden filter detected a cargo-sale need globally but then protected every
+  native `GoToSettlement` candidate, allowing a generic village score
+  (`0.3840`) to defeat the slightly lower town score even though the village
+  could not perform the sale. This—not an empty village treasury—explains the
+  observed hold at `castle_village_ES4_2`.
+- Protected settlement candidates are now service-specific: food may select a
+  town or village; recruitment a town or village but not a castle; healing and
+  prisoner delivery require a fortification; loot/mount sale requires a town;
+  ship repair requires a port. If the native auction contains no settlement
+  able to satisfy the matched need, the assigned case fallback is restored in
+  that auction instead of letting an unrelated settlement suppress police
+  work. Player READMEs were updated with the temporary-party exception and the
+  village-sale stall fix.
+- Validation: the final `Release --no-restore` build completed with `0` errors
+  and `47` existing nullable/offline-NuGet warnings. ILSpy of the deployed DLL
+  confirms the twenty-day temporary provision, session repair, and
+  `IsSettlementAbleToServeLogistics` filter. All `18` XML files parse. Live
+  comparison found `25` deployable files and `0` missing or hash mismatches.
+  Client/editor DLLs are byte-identical, size `489984`, SHA-256
+  `0F8BEDE950A5BC05E0DBE45C611D1BD70B976D6AE6A900105CF9D282B95B85CF`.
+  Repository/live Chinese README hashes both equal
+  `3085FFE735F891DA461B110C8BA21DD7DCAF176B38209FBC41056F6A7465414F`;
+  English README hashes both equal
+  `2FDD40926E66BA444DE284251643346143D17192CF1679DAC240588E44ADE826`.
+  No commit, tag, archive, or release was created.
+- Focused retest: reload the current save. The leader's next auction should either
+  preserve a town-only `GoToSettlement` candidate for `sell_mounts`/
+  `sell_cargo`, or resume `ApproachPoint` if no serviceable town candidate
+  survives. A newly spawned or old zero-food temporary party should show zero
+  independent gold and approximately twenty days of food; it should retain its
+  player/offender pursuit and existing return-destroy sequence.
+
+
+## 2026-07-20 native-auction boundary correction: case outranks patrol only
+
+- User correction: the mod must not classify Bannerlord's food, recruitment,
+  trade, healing, prisoner, repair, safety, or other native desires and then
+  decide which settlements are acceptable. The Grey Warden addition is only a
+  persistent case duty whose score is slightly above the native patrol desire.
+  The service-specific settlement filter described above was therefore an
+  overreach and is superseded by this section.
+- `GreyWardenPartyDesireBehavior` no longer contains
+  `HasNativeLogisticsNeed`, `IsSettlementAbleToServeLogistics`, a settlement
+  allowlist, or any manual cargo/food/wound/prisoner/recruitment/ship threshold.
+  It also no longer suppresses `PatrolAroundPoint`, `Hold`, `None`, or any other
+  native candidate. The final native score list is copied for diagnostics but
+  every original tuple and score remains untouched.
+- For a party with a current case or temporary duty, the layer reads only the
+  highest positive native `PatrolAroundPoint` score. The added duty score is
+  the next representable `float` above that patrol score. If no positive patrol
+  candidate exists, the duty receives the minimal fallback `0.03`. Thus there
+  is no possible score between patrol and duty: any original candidate truly
+  above patrol is at least tied with the added duty and wins because the native
+  tuple occurs earlier and Bannerlord replaces its winner only on a strictly
+  greater score. `Hold` and `None` are not specially suppressed.
+- Duty candidates are always appended with `AddBehaviorScore`. Even if a native
+  producer already created an identical behavior and target, the mod does not
+  call `SetBehaviorScore` or mutate that native tuple. Remote approach still
+  uses a point-patrol carrier which is translated to real `GoToPoint` only if
+  the added case candidate wins; declared-war pursuit remains native
+  `GoAroundParty`, preserving native flee and strength decisions.
+- Diagnostics now state `nativeScoresPreserved=True`, round-trip-precision
+  `patrolCeiling`, the
+  dynamically calculated `dutyScore`, and `dutyAdded`. A direct invariant check
+  is possible: every entry in `rawScores` must remain in `finalScores` with the
+  same behavior, target, and score; the only extra entry is the one duty
+  candidate. The former logistics classifications and idle-suppression fields
+  are absent because the mod no longer makes those decisions.
+- The temporary-party economy result remains valid and independent: leaderless
+  custom pickets and interception support parties remain outside clan wage
+  accounting, keep zero independent gold, receive one fixed twenty-day ration
+  at creation (or once for an old zero-food save), and retain their dedicated
+  pursue/return/destroy intents. This is a spawn/lifecycle rule, not a
+  replacement for native lord desires.
+- Player READMEs now describe the exact boundary: case duty is above patrol,
+  but no original candidate is removed, reduced, overwritten, reclassified, or
+  routed to a mod-selected settlement.
+- Validation: the final `Release --no-restore` build completed with `0` errors
+  and `47` existing nullable/offline-NuGet warnings. ILSpy of the deployed
+  assembly confirms `GetPatrolCeiling`, next-representable-float duty scoring,
+  and `AddBehaviorScore`; it contains
+  no `SetBehaviorScore`, idle suppression, or manual logistics/settlement
+  filter in this behavior. Deployed diagnostics contain
+  `nativeScoresPreserved=True`, `patrolCeiling`, and `dutyScore`. All `18`
+  repository XML files parse. Live comparison found `25` deployable files and
+  `0` missing or hash mismatches. Client/editor DLLs are byte-identical, size
+  `487936`, SHA-256
+  `8842261D15D436F30E4584C17A1FD84453CE24730EC5AD798079283CCDD1AFF4`.
+  Repository/live Chinese README hashes both equal
+  `0223C7F2E0CACEE7D01F8B45806E5073FCE662F9AD79D90E4D399BBC5C1B5BE2`;
+  English README hashes both equal
+  `9EFF8C86923C586F9703D0C427107912A1F3D7972197140E4BABC3FCC8556DAD`.
+  No commit, tag, archive, or release was created.
+- Focused retest: reload the current save and let one founder with an assigned
+  case reach the next auction. The new row should show
+  `nativeScoresPreserved=True`, a `patrolCeiling` equal to the greatest raw
+  patrol score, a `dutyScore` just above that value, and an added case tuple.
+  Every raw tuple must still appear unchanged in `finalScores`. If another
+  native desire has a higher score, accept its target and action as Bannerlord's
+  own decision; when only ordinary patrol would win, the founder must instead
+  resume the same case.
+
+
+## 2026-07-20 暮光连续办案与兵员流失实测诊断
+
+- 本次运行日志包含 `1564` 行，其中暮光（`gw_leader_5_party_1`）有
+  `287` 行状态、动作和竞价记录。她在战役小时 `625207.05` 结清
+  `lord_1_41` 案件，`625208.06` 即被分配新案件
+  `CharacterObject_1592`。代码侧原因与日志一致：
+  `PoliceResourceManager.IsReady` 当前无条件返回 `true`，空闲警察扫描时
+  只检查其没有现案，因而没有结案冷却、恢复阶段或兵力准备条件。
+- 暮光并未挨饿或因无钱无法补粮。观察段内粮食天数约为 `39.26` 至
+  `68.34` 天，部队钱袋为 `5000` 至 `6914`，家族金库由 `46918`
+  降至 `28906`。因此本轮兵员下降不能归因于断粮，也没有证据表明
+  补粮欲望被案件错误删除。
+- 原版进城欲望确实存在，但没有胜出。暮光的最高原版巡逻分约
+  `2.55` 至 `2.64`，案件候选按当前规则取巡逻分的下一个浮点数；而
+  她的最高 `GoToSettlement` 通常只有 `0.38` 至 `0.85`，全段最高
+  仅 `1.0167`。即使已有 `15` 至 `19` 名俘虏、兵力比降至约
+  `0.29`，原版仍把这些进城候选排在巡逻之下。因此当前实现严格兑现
+  “案件略高于巡逻”，但日志推翻了“补兵、交俘等原版需求必然高于
+  巡逻”的前提：案件继承了巡逻的高基准，也就一并压过了这些较低的
+  原版维护欲望。
+- 暮光并非在该段反复领取多个领主案。`CharacterObject_1592` 从
+  `625208.06` 一直持续到日志末尾。沿途看似“马上又去打别人”的行为
+  来自原版短期交战：日志记录她先后以 `EngageParty` 攻击
+  `deserters_1`、`deserters_91930`、`looters_91957` 和
+  `looters_1862`。`GreyWardenPartyDesireBehavior.IsAuthorizedAttackTarget`
+  当前对任何 `target.IsBandit` 都直接放行，所以所有灰袍领主都会在办案
+  途中攻击野怪，而不仅是规划中负责逃兵或劫匪的专职角色。
+- 兵员变化也与交战而非饥饿相符：新案接手前后由 `73` 降至 `63`；
+  追踪途中多次与逃兵、劫匪交战后逐步降至 `50`。在
+  `625309` 对案件目标宣战并进入持续 `EngageParty` 后，兵力由 `50`
+  降至 `25`，伤员由 `0` 增至 `24`，目标距离固定约 `0.50`；这是正在
+  结算的地图战斗所造成的连续伤亡。日志结束时战斗尚未结算，因而尚未
+  观察到战后下一轮原版竞价。
+- 结论：问题不是“原版欲望没有接入”，而是两项现行规则共同造成：
+  （1）空闲即刻接新案，没有任何恢复窗口；（2）案件按最高巡逻分定价，
+  而原版的补兵、交俘和一般进城分并不保证高于巡逻。此外，全部灰袍均
+  可被短期 AI 分流去打野怪，加速了非专职角色的损耗。
+- 后续修正需要先由设计层确定边界。若仍坚持完全保留原版候选，最小
+  方案应围绕“结案后的原版恢复窗口”和“按岗位限制途中野怪交战”处理，
+  而不是伪造粮食或直接强制进城。若继续让案件严格继承最高巡逻分，则
+  必须接受原版中低于巡逻的招兵、交俘和一般进城欲望不会中断案件。
+
+
+## 2026-07-20 接案期间仅压低巡逻欲望与家族资金流向核验
+
+- 用户最终确定的欲望边界是不安排结案恢复流程，也不由模组判断何时补粮、
+  招兵、疗伤、交易或选择哪个聚落。灰袍没有案件时不得介入原版欲望；接到
+  案件后只压低 `PatrolAroundPoint`，案件追踪仅略高于压低后的巡逻，其余
+  原版候选和分数原样竞争。该设计取代上一节提出但未实施的“恢复窗口”。
+- `GreyWardenPartyDesireBehavior.ProcessFinalDesires` 现在先保留完整原版竞价
+  快照；存在有效案件或临时职责时，仅将高于 `0.03` 的原版
+  `PatrolAroundPoint` 候选封顶为 `0.03`。这个值不是自定的后勤阈值，而是
+  Bannerlord 1.4.7 `AiPartyThinkBehavior` 对巡逻/进城行为使用的最低执行
+  阈值。案件候选取该巡逻上限的下一个可表示 `float`，因此能作为真正可执行
+  的保底职责，同时任何高于最低门槛的补给、招兵、疗伤、交易、交俘、安全
+  等原版欲望都会自然排在案件前面。没有职责时不改任何候选，也不添加案件
+  候选。
+- 诊断字段相应改为 `originalPatrolCeiling`、`suppressedPatrolCeiling`、
+  `suppressedPatrolCount`、`dutyScore` 和
+  `nativeNonPatrolScoresPreserved=True`。状态行另增 `dailyWage`、
+  `wageLimit` 与 `unpaidWages`，下一轮测试可以直接核对六支常驻部队每日
+  工资、原版动态工资上限和欠薪比例。
+- 对 2026-07-20 08:34 会话日志的资金复核覆盖战役小时 `625200.94` 至
+  `625327.62`（约 `5.28` 天）。族长资金即家族资金，由 `46918` 降至
+  `28906`；六名创始人的可支配现金合计约由 `76425` 降至 `59654`，净少
+  `16771`。这不是隐藏的模组扣款。
+- 原版 `DefaultClanFinanceModel` 已给出精确流向：灰袍为 6 级、无封地、
+  非王国的 AI 家族，每日只有 `6 × 80 = 480` 第纳尔无地家族补贴；族长
+  部队工资直接由族长/家族资金支付。其余领主部队先从各自
+  `PartyTradeGold`（对领主队伍就是领主个人金钱）扣工资，若扣完低于原版
+  下限 `5000`，家族资金再补回 `5000`。因此日志里约珥等人长期停在
+  `5000` 并不代表没花工资，而是家族每天替他们填平工资缺口。
+- 六次原版每日结算与日志完全对上：家族金库净变化依次为 `-3359`、
+  `-2468`、`-4229`、`-2356`、`-1986`、`-2098`；加回每日 `480`
+  补贴，说明金库当日承担的“族长队工资＋其他领主补回 5000 的转账”为
+  `3839`、`2948`、`4709`、`2836`、`2466`、`2578`。这些数不是六队
+  完整工资，因为其他领主高于 5000 的部分会先由个人账户支付。把同一结算
+  前后六人的现金合计起来、抵消家族内部转账后，六队当日总工资约为
+  `6002`、`4096`、`4932`、`4770`、`3134`、`3883`。也就是说当前常态
+  被动收入只有 `480/日`，而六队工资约 `3100～6000/日`，仅靠被动收入
+  必然持续亏损。
+- 日结算以外的资金变化来自队伍自己的原版行动。族长凡蒂的队伍钱袋就是
+  家族金库，因此她招兵、买粮或交易会直接改变 `clanGold`；日志在
+  `625250` 附近资金减少 `437` 的同时增员 8 人、`625256` 附近减少
+  `1074` 的同时增员 7 人，符合原版招募/采购。其他领主先使用个人钱；
+  圣铎曾随俘虏增长收入 `2084`，暮光收入 `1914` 和 `472`，晨曦收入
+  `7053`，说明战斗战利品收入确实进入各自钱袋，但不足以稳定覆盖六队工资。
+- 当前轮只修正欲望边界和补充工资诊断，不新增补钱、免薪或被动收入。经济
+  结论是后续经济系统的设计依据：若不希望家族最终破产，需要独立增加可感知
+  的稳定收入或调整常驻队伍开支，而不是误判为原版补给欲望没有生效。
+- Release `--no-restore` 构建通过，`0` 错误、`47` 个既有 nullable/离线
+  NuGet 警告。部署后共核对 `25` 个 `_Module` 运行文件，缺失或哈希不一致
+  为 `0`；`18` 个 XML 全部可解析。客户端与编辑器 DLL 字节一致，大小
+  `488960`，SHA-256 为
+  `FD34AE899A850E163F9A28EA61362619683EC372634680A4518F335ACD8BD8C6`。
+  中英文 README 仓库/实机哈希分别一致，SHA-256 为
+  `ECCFB00DE8B6FED8D5EBB0D63D2A0806DA8BF771D338EAC3AF9C0236E0963D41`
+  与 `32C62FD9A7BE5E99EE621DF79CF5AE4354A3342EF94054F8527973F9A72B5D63`。
+  ILSpy 对实机 DLL 的反编译确认存在仅限巡逻的 `SetBehaviorScore(...,
+  0.03f)`、以 `Math.Max(0.03f, patrolCeiling)` 取下一浮点值，以及单独的
+  `AddBehaviorScore` 案件候选。未创建提交、标签或发布包。
+- 下一轮实测应在有案和无案的创始人之间对照：有案竞价应显示原始巡逻约
+  `2～3`、压低后巡逻 `0.03`、案件为紧邻其上的浮点数；原版
+  `GoToSettlement` 只要高于该值就先胜出。无案竞价的
+  `suppressedPatrolCount` 必须为 `0`。同时使用新增的 `dailyWage`、
+  `wageLimit`、`unpaidWages` 继续观察家族资金是否进入欠薪阶段。
+
+
+## 2026-07-20 当前罚款去向与灰袍可用收入边界
+
+- 代码核验确认，现有玩家罚款**不会进入灰袍领主个人钱袋或家族金库**。
+  `PoliceResourceManager.CollectFine` 与 `CollectFineGoldOnly` 都只调用
+  `Hero.MainHero.ChangeHeroGold(-goldTaken)`，没有对应的
+  `GiveGoldAction`、灰袍领主 `ChangeHeroGold(+...)` 或
+  `PartyTradeGold += ...`。因此金币在当前实现中被直接销毁。
+- 直接向常驻灰袍领主认罚的路径在
+  `PoliceEnforcementBehavior.Dialogue.OnEnforcementPayAcceptedConsequence`
+  调用 `CollectFine`；谈判界面的 `GwpBribeBarterable.Apply` 是空实现，只
+  用于表达接受条件，并不转账。战败押送后的领主罚款与临时纠察队罚款分别
+  调用 `CollectFineGoldOnly`，结果同样只是扣除玩家金币。故“交给领主”和
+  “交给巡逻队”当前没有经济去向上的区别。
+- `CollectFine` 在金币不足时调用 `ConfiscateItems`，只从玩家
+  `ItemRoster` 删除物品并把物品基础价值计入“已缴数”；物品没有加入承办
+  领主、临时队或家族库存，也没有按估值给家族加钱，因而同样被销毁。
+- 当前灰袍实际可获得的收入只有：（1）无地、非王国、6 级 AI 家族的原版
+  `480/日` 基础补贴；（2）常驻领主打赢案件目标、劫匪或逃兵后获得的原版
+  战利品、俘虏赎金及进城出售收入；（3）非族长领主个人钱袋超过 `10000`
+  后，原版家族财务每日抽取“超出部分的十分之一”进入族长/家族金库。
+  玩家悬赏奖励与村民声望奖励目前直接给玩家生成金币，也没有从灰袍金库
+  扣款。
+- 相比普通 NPC 家族，灰袍按既定限制不能依赖封地税收、村庄税、城镇关税、
+  王国预算补助、统治家族收入、雇佣兵工资、贡金与战争协议收入，也没有已
+  配置的工坊或商队；警察身份又排除了劫掠村庄、攻击村民/商队等掠夺收入。
+  因此现有固定 `480/日` 与行动战利品无法稳定承担六至十五支常驻队伍。
+- 尚未实施的推荐经济结构是统一使用“灰袍司法公库”（运行时可直接复用
+  `Clan.Leader.Gold`，无需再造一套货币）：所有玩家罚金和罚没品拍卖价进入
+  公库；成功结案获得商会、受害聚落或旧帝国治安契约的办案拨款；再由旧帝国
+  治安公产/商路保护捐金提供稳定基础收入。若要求货币守恒，可从受保护城镇的
+  `TradeTaxAccumulated` 提取极小比例，而不是凭空发固定人头工资；灰袍加入
+  玩家国家后则可由玩家王国 `KingdomBudgetWallet` 承担国家警察拨款。该方案
+  目前只是设计建议，未改代码、README、实机 DLL 或存档结构。
+
+
+## 2026-07-20 司法公库罚款入账与结案归因核验
+
+- 用户确认直接复用族长钱包作为“灰袍司法公库”，符合原版结构：
+  `Clan.Gold` 本来就是 `Clan.Leader.Gold`，非族长领主的原版部队盈余也会
+  逐步上交到这里。因此没有新增第二套金钱或存档字段。
+- `PoliceResourceManager.CollectFine` 和 `CollectFineGoldOnly` 已改为通过
+  `GiveGoldAction.ApplyBetweenCharacters` 把玩家实缴金币转入灰袍族长钱包。
+  常驻领主与临时纠察队调用的是同一入口，临时队只代收、不持有罚款。金币
+  不足时被 `ConfiscateItems` 移除的物品视为统一拍卖，其现有估值通过
+  `CreditJudicialTreasury` 进入族长钱包。族长不可用的异常兜底仍只扣玩家，
+  避免罚款流程因数据损坏而中断。
+- 为未来“灰袍成功结案奖励 5000”核验现有结案路径时发现一个真实漏洞：
+  `PoliceEnforcementBehavior.OnMapEventEnded` 过去只要求承办警察参加并赢得
+  一场战斗；非玩家案件没有核对罪犯是否也参加，因此承办人途中打赢无关
+  劫匪也可能错误结案。现已新增 `WasTaskOffenderInEvent`，按实时引用、案卷
+  保存的罪犯部队 ID 和英雄 ID 三重核验参战方。只有罪犯与承办警察同场且
+  承办警察在胜方，才属于常驻灰袍成功结案；承办警察失败则案件重新入池。
+- 犯罪目标被完全无关的王国、领主或野怪击败时，承办警察不在该场战斗，
+  不会进入上述成功分支；后续 `UpdateTasks` 发现目标失效后只清理案件，不应
+  获得未来办案拨款。一次性追截支援队属于灰袍自身，其胜利由
+  `DelayPatrolWonBattle` 与输家 ID 明确核验，未来可视为灰袍成功完成。当前
+  只修复归因基础，尚未发放每案 `5000`。
+- 关于案件保底分：`0.03` 不是任意接近零的值，而是 Bannerlord 1.4.7
+  `AiPartyThinkBehavior` 对 `PatrolAroundPoint`/`GoToSettlement` 的最低执行
+  阈值；降得更低会出现案件即使赢得竞价也难以真正换成行动。对 08:34 测试
+  日志全部原版竞价重新统计，原版 `GoToSettlement` 的最低正分为 `0.0386`，
+  共 `1918` 个候选中没有一个低于或等于 `0.03`；原版巡逻最低为 `1.5641`。
+  因而该实测中案件 `0.030000...` 低于所有原版进城欲望，不会压过补给。
+  但不能把一次存档的最小值当成全局定理，新诊断增加
+  `minimumPositiveNonPatrolScore` 与 `nonPatrolAtOrBelowDutyCount`，可直接
+  发现未来版本/场景是否出现低于案件的非巡逻欲望，而无需凭感觉改分。
+- 村庄的 `Village.Hearth` 是“户数/人口与生产规模”，不是村民钱包。
+  若按每户每日 `0.1` 计算后再从 `Hearth` 扣除同等数值，数学上等于每天
+  消灭约 10% 的家庭，会迅速摧毁全大陆村庄。正确的守恒实现应当是用
+  `Hearth × 0.1` 计算当日治安公产应缴额，但从每村原版已有的
+  `Village.TradeTaxAccumulated`（村庄贸易税池）扣款并转入司法公库，且以
+  税池现有余额为上限；`Hearth` 只作为计费基数，不应减少。该每日收入尚未
+  实装，等待确认扣款载体后再加入，玩家统一后的国家拨款也未提前设计。
+- Release `--no-restore` 构建通过，`0` 错误、`47` 个既有警告。部署后
+  `25` 个 `_Module` 运行文件全部一致，`18` 个 XML 全部可解析；客户端与
+  编辑器 DLL 字节一致，大小 `490496`，SHA-256 为
+  `65635ADE224EA99683E0C444DA78C839E735D0F025024B85BFAB4E2F8B1C1EAD`。
+  中英文 README 仓库/实机 SHA-256 分别为
+  `57FFD966AE47721F8E760CB2A28410D885F9C9A89C1597BE593E5740DE0EF0A3`
+  和 `AB73151FFAA4367717D2B7D000263F306F6E954177308F5DD2B330EE66B01C6A`，
+  均完全一致。ILSpy 对实机 DLL 确认金币转账、罚没品公库入账、罪犯参战
+  核验以及两个新增欲望诊断字段均存在。未提交 Git。
+
+
+## 2026-07-20 司法公库稳定收入、胜案拨款与失败删案
+
+- 用户最终确认司法公库的三项当前期收入规则：（1）常驻灰袍领主确实击败
+  自己承办案件的目标，公库增加 `5000`；（2）追截支援队确实位于胜方并
+  击败仍在案件池中的目标，公库增加 `5000`；（3）全大陆每个村庄每日按
+  当日 `Village.Hearth` 每户一第纳尔缴纳保护费。灰袍战败、外部势力或
+  野怪代为击败目标、目标自然失效、无案可结等路径均不得获得胜案拨款。
+- `PoliceResourceManager.SuccessfulCaseReward` 固定为 `5000`，所有拨款只经
+  `CreditSuccessfulCaseCompletion` 进入族长钱包所代表的司法公库。没有把
+  奖励放入通用 `CrimePool.EndTask`，因为该入口同时用于战败、失效、取消和
+  行政调度。常驻领主拨款只在 `OnMapEventEnded` 已通过
+  `WasTaskOffenderInEvent` 三重参战核验且承办灰袍位于胜方后调用；玩家案件
+  在灰袍取得本场胜利并开始押送时只计发一次，不在押送结束时重复计发。
+- 追截支援队仍先由 `DelayPatrolWonBattle` 确认支援队属于胜方，再逐一核对
+  败方部队。`ResolveTrackedOffenderDefeatByDelayPatrol` 现在只有在确实结束
+  一项活动任务或删除一项未分派开放案件时才将 `resolvedCase` 置为真，并且
+  每名罪犯/单一开放案件只拨款一次；支援队打赢无案目标不会凭空领款。
+- 普通 AI 领主案件的执法失败语义已按用户要求改为“失败即从当前案件池删除”。
+  `PoliceEnforcementBehavior.UpdateTasks` 在常驻部队失活、首领被俘/死亡时
+  直接 `EndTask`，不再 `Reassign`；`OnMapEventEnded` 在承办灰袍战败或该
+  部队于目标参战事件中消失时同样只 `EndTask`；`CrimePool.Clean` 清理消失
+  承办部队时也改为 `EndTask`。案件的时间、地点、罪名等当前记录被删除，
+  但 `HeroCrimeStats.TotalCrimeCount` 长期数字不回退，罪犯日后再次犯罪仍会
+  生成一宗新案。玩家通缉使用单独的长期追捕记录，仍维持既有的战败后继续
+  通缉规则，不把一次警察战败解释为清除玩家全部通缉状态。
+- `ReopenCase` 没有被全局删除：玩家案件挤占普通案件、同一警察被明确改派、
+  村庄救济等行政移交仍需要保留旧案。其注释已经明确它不再是战败默认路径，
+  防止以后误把所有 `EndTask` 都恢复入池。
+- `PoliceResourceManager.OnDailyTick` 新增
+  `CollectDailyVillageProtectionContributions`：逐个读取 `Village.All` 的
+  当前 `Hearth`，按 `floor(Hearth)` 累计公库收入，然后把该村户数改为
+  `max(10, Hearth × 0.99)`。因此恰好 `100` 户的村庄本日贡献 `100`，结算
+  后变为 `99` 户；小数户数按现值衰减，收入只取完整户数。保底 `10` 与原版
+  `Village.DailyTick` 的户数下限一致。没有排除被劫掠村庄，也没有动
+  `TradeTaxAccumulated`，因为用户明确要求全地图村庄直接以户数缴费并承担
+  `1%` 户数损耗。
+- 用户提出“有案时让巡逻分等于全部原版欲望中的最低值，再让案件分略高于
+  最低值”。该方案本轮没有实装，因为 Bannerlord 的欲望拍卖选择**最高分**，
+  不是只检查案件是否高于最低分。例如原版候选为 `0.04 / 0.40 / 0.80`，
+  案件即使取 `0.040001`，仍会永远输给 `0.80`；动态跟随最低值只改变了
+  巡逻和案件在队尾的顺序，不能保证案件获得执行机会。下一步若要同时避免
+  “永久不办案”和“办案压死补给”，应采用会随等待时间逐渐提高、并在案件
+  实际胜出后重置的职责紧迫度，或明确划分原版维护行动与办案行动的时间窗；
+  在用户确认前不擅自重排原版补给、招兵、交易、疗伤和逃跑欲望。
+- 最终 Release `--no-restore` 构建通过，`0` 错误、`47` 个既有 nullable/
+  离线 NuGet 警告。自动部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希
+  不一致为 `0`；`18` 个 XML 全部可解析。客户端与编辑器 DLL 字节一致，
+  大小 `491008`，SHA-256 为
+  `FD5FCF97B74544382BC6907B755B8A3FA3352CBF9C5E81FAD45C5491FC99341B`。
+  中英文 README 仓库/实机哈希分别一致，SHA-256 为
+  `71EEE85A11BC53B04A0A8E5594616F96AAF30BEAF1EB2A88BA8E257EE42D68FC`
+  与 `9B1219306AE8FFA3F22A377C656B392874FAFCB3882188C7525729DB8B2D34CB`。
+  ILSpy 对实机 DLL 确认存在 `SuccessfulCaseReward = 5000`、两条胜案拨款调用、
+  `Village.All` 日结算及 `Hearth × 0.99`，并确认失败路径不再调用
+  `Reassign`。`docs/grey-warden-setting.md` 的当前玩法章也已同步司法公库、
+  原版欲望接入和失败删案现状。未创建 Git 提交。
+
+
+## 2026-07-20 原版欲望分布复核与案件基准分建议
+
+- 重新统计文档目录下 `GreyWarden-AI-Diagnostics.log` 的 2026-07-20 08:34
+  会话，共有 `112` 次六名
+  创始人原版欲望竞价。该日志产生于“案件继承最高巡逻分”的旧实现，不能
+  直接代表当前 `0.03` 案件分的胜负结果，但其 `rawScores` 是未修改的原版
+  候选，适合确定原版分数尺度。
+- 原版 `PatrolAroundPoint` 共 `2157` 个候选，单项范围 `1.5641～3.09`；
+  每次竞价的最高巡逻分中位数约 `2.5576`。这证明巡逻与后勤不在同一常用
+  分数带，案件继承巡逻分必然长期压过普通进城需求；现行“有案只把巡逻压到
+  `0.03`”的方向是正确的。
+- 原版 `GoToSettlement` 共 `1918` 个候选，单项范围 `0.0386～19.5966`；
+  每次竞价的最高进城分范围 `0.3505～19.5966`，中位数 `0.5376`，90 分位
+  约 `2.0441`。全部 `112/112` 次竞价都至少有一个进城候选高于 `0.03`，
+  因此当前案件若永久固定在紧邻 `0.03` 的分数，按最高分拍卖确实可能一次
+  都无法胜出；让案件只略高于“最低原版欲望”同样无效。
+- 日志显示原版进城分具有可用的自然分层：状态正常时最高进城分多在
+  `0.35～0.85`；需要交付大量俘虏、恢复低编制或处理一般维护时会接近
+  `1.0～2.0`；真正紧急的缺粮和大量伤员恢复会跃升到 `3.7～19.6`。
+  具体例子包括梵蒂/约珥在只剩约 `4～5` 天粮时达到 `10.99～19.60`，弥瑟
+  有 `24～40` 名伤员时达到 `3.72～13.12`。这些高分原版需求应继续无条件
+  压过办案。
+- 建议下一版先采用最小、可解释的固定案件基准，而不是立刻增加复杂状态机：
+  有案时仍只把巡逻压到 `0.03`；案件候选取 `1.0` 的下一个可表示浮点值；
+  其他全部原版候选不改。按本次日志回放，最高进城分大于 `1.0` 的竞价为
+  `27/112`，这些时刻由原版维护行动胜出；其余 `85/112` 次由案件压过普通
+  低分进城访问并获得执行机会。这个比例正好实现“原版需求强时先维护，原版
+  需求低时去办案”，且不需要识别某个 `GoToSettlement` 究竟是在买粮、招兵、
+  卖货、交俘还是疗伤。
+- 初版不建议同时加入随时间无限增长的案件分。固定 `1.0` 已能利用原版分数
+  自己判断维护强度；若后续实测仍出现某支部队因长期维持 `1.0～1.2` 而永不
+  出警，再增加“连续等待若干小时后缓慢升至 `1.5`、案件实际胜出后归零”的
+  有上限老化机制。先固定基准再观察，可以避免一次同时引入两个变量，也不会
+  让案件最终上涨到压过 `3.7～19.6` 的饥荒和重伤恢复需求。
+
+
+## 2026-07-20 案件固定中间权重实装
+
+- 用户确认采用固定分界，但要求案件分“比一稍微低一点”。
+  `GreyWardenPartyDesireBehavior` 新增 `AssignedDutyScore = 0.99f`；只要存在
+  有效案件或临时警务职责，远距定点接近、宣战后追击、真实护送与职责性进城
+  都统一以 `0.99` 加入最终原版欲望拍卖。旧调用传入的 `priority` 参数继续为
+  兼容签名而保留，但不允许不同调用方重新放大职责分数。
+- 有职责时，原版 `PatrolAroundPoint` 仍只被封顶到 `0.03`；除巡逻外的
+  `rawScores` 不删除、不改分。低于 `0.99` 的普通定居点访问会输给案件；
+  高于 `0.99` 的补给、招兵、交易、疗伤、交俘、修船及其他原版维护候选仍
+  正常胜出。无职责时既不压巡逻，也不添加 `0.99` 候选。
+- 已删除按压低后巡逻分取“下一个可表示浮点值”的 `GetDutyScore` 与
+  `NextRepresentableFloat`。诊断日志继续输出 `originalPatrolCeiling`、
+  `suppressedPatrolCeiling`、`dutyScore`、原版最低非巡逻分以及低于案件分的
+  原版候选数量；新实测中有案部队应稳定显示 `dutyScore=0.99`，而不是
+  `0.030000...` 或继承原巡逻的 `2～3`。
+- 最终 Release 构建通过，`0` 错误；增量构建仅保留 `1` 个离线 NuGet
+  漏洞元数据警告。自动部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希
+  不一致为 `0`；`18` 个 XML 全部可解析。客户端与编辑器实机 DLL 字节一致，
+  大小 `490496`，SHA-256 为
+  `A8322799DFF6E1B0605CD643EFD2DAA2D03A7A2D2B5FB89B2099A2CB4193651B`。
+  中文 README 仓库/实机 SHA-256 均为
+  `AEBF00036CACA87CE8842B38F95C1F0C42027DD5E041F53910AB42AD29588E60`；
+  英文 README 仓库/实机 SHA-256 均为
+  `CCB9E98F82556EE70D4286A42D5F15F2355A353FAF779133D0E651AF6BCC7C2B`。
+- ILSpy 对实机 DLL 的反编译确认存在 `AssignedDutyScore = 0.99f`、
+  `AssignedPatrolScoreCeiling = 0.03f`、最终欲望竞价中的固定职责分和巡逻
+  封顶，并确认旧 `GetDutyScore` / `NextRepresentableFloat` 已不存在。未创建
+  Git 提交、标签或发布包。
+
+
+## 2026-07-20 固定案件分实测：司法公库暴涨与圣铎驻村招募
+
+- 最新诊断会话覆盖战役小时 `625327.84～625556.36`，约 `9.52` 个战役日。
+  灰袍家族资金从 `28906` 增至 `882193`，净增 `853287`。日志中出现 `9`
+  次约十万规模的日结算跳涨，观测增量合计 `886043`、平均约 `98449/日`；
+  同期只有两次可明确识别的 `+5000` 胜案拨款。由此可确认暴富并非办案收入，
+  而是当前 `floor(Village.Hearth)` 全大陆逐村日缴规则把全地图约十万户的
+  户数几乎一比一转成了每日金币。六支常驻队最新工资合计约 `6070/日`，即使
+  再计招兵、买粮和家族内部补款，也远低于约十万的保护费，因此公库必然快速
+  变成巨富。每日跳涨由约 `105283` 逐步降至约 `95649`，也与每村同时执行
+  `Hearth × 0.99` 的人口衰减相符。当前轮只完成诊断，尚未擅自更改用户此前
+  确认的每户一第纳尔与每日衰减规则。
+- 用户所称“圣泽”按日志对应创始人 `圣铎`。他从战役小时约 `625448` 起停在
+  `castle_village_K8_1`（埃泽努尔）的精确地图坐标 `(719.985, 262.71)`；
+  `CurrentSettlement` 虽显示为空、默认行为显示 `Hold`，但原版
+  `MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation` 会把
+  位于村庄图标上的队伍当作当前在村庄，原版 `RecruitmentCampaignBehavior`
+  因而仍会每小时调用 `CheckRecruiting`。这不是灰袍冻结或无法进入聚落。
+- 圣铎确实一直在招兵：驻留该村期间兵力由约 `78` 增至 `93`，最近状态为
+  `93/约175`（`sizeRatio=0.531`）；个人钱袋随招募多次由 `5000` 下降到
+  `4830/4660/4490/4320/4116`，并由原版家族财务在日结算时补回最低周转金。
+  `foodDays=19.16`、`dailyWage=753`、`wageLimit=10000`、`unpaidWages=0`，
+  家族资金又超过八十八万，所以饥饿、现金、工资预算和欠薪都没有禁止招募。
+- 他没有一次拿走玩家界面中可见的全部兵，是原版 AI 招募的明确限制。原版
+  `RecruitVolunteersFromNotable` 每小时对每名要人至多招一人，还要先通过随机
+  起始槽位和随当前编制比例变化的随机判定。`DefaultVolunteerModel` 又按与
+  要人的关系、聚落阵营和买方身份限制可用槽位：灰袍与普通异阵营村庄要人
+  在零关系下通常只能使用前两个槽位，而玩家可能因关系、同阵营或难度奖励
+  看到更多可招槽位。因此界面中后排仍有许多兵，不代表圣铎可以直接招走；
+  他会消耗前两格的可用兵，然后在村庄等待这些格子按日刷新。
+- 欲望日志也证明他是在主动选择补兵而非案件失效：驻村期间埃泽努尔的原版
+  `GoToSettlement` 分长期约为 `1.78～3.31`，持续高于固定案件分 `0.99`，
+  所以原版补员需求获胜并让他留在村庄；与此同时其兵力仍缓慢上升。这个结果
+  正是当前“案件只压过普通巡逻和弱访问、不压过高分原版维护”的规则。若不
+  希望领主为了补到高编制而在单一村庄停留多日，后续应单独决定是否接受原版
+  慢速招募，不能把它误判为案件欲望没有落实。
+- 本轮没有修改运行代码、README 或实机模组，也没有重新构建、部署或创建
+  Git 提交；只增加了上述诊断结论与原版反编译依据。
+
+
+## 2026-07-20 村庄保护费降档与灰袍—要人恒定满关系
+
+- 用户根据上一轮实测确认将保护费从每户每日 `1` 第纳尔降为 `0.1`，但保留
+  每村每日 `Hearth × 0.99`、最低 `10` 户的既有损耗规则。
+  `PoliceResourceManager.CollectDailyVillageProtectionContributions` 现先以
+  `double` 汇总全大陆 `Hearth × 0.1`，最后统一向下取整入司法公库；没有逐村
+  向下取整，避免大量小数尾款因村庄数量被反复吞掉。按 10:05 诊断会话约
+  十万总户数估算，新日收入应由约十万降到约一万。已有存档中已经进入公库的
+  钱不倒扣，下一次日结算起才使用新费率。
+- 新增 `GreyWardenNotableRelationsBehavior` 并注册为战役行为。读档、会话启动、
+  每日结算会遍历灰袍家族全部存活成员与 `Settlement.All` 的全部存活要人，把
+  基础关系设为 `100`；新要人生成、新灰袍成员生成和灰袍后继者成年时也会立即
+  补齐。该状态不新增独立存档字段，直接使用原版 `CharacterRelationManager`
+  的双英雄关系数据，所以旧档无需迁移结构。
+- 为落实用户要求的“强制拉满、不会变化”，仅靠每日回填不够。新增两个窄范围
+  Harmony 前缀：（1）任何 `CharacterRelationManager.SetHeroRelation` 写入若
+  配对恰好是一名灰袍家族成员与一名 `Hero.IsNotable`，写入值强制改为 `100`；
+  （2）`ChangeRelationAction.ApplyInternal` 遇到同一受保护配对时直接确认满值
+  并截断动作，防止实际关系没下降却仍广播负关系通知。其他英雄关系、灰袍与
+  普通领主关系、玩家与要人关系均不受影响。
+- 原版 `DefaultVolunteerModel.MaximumIndexHeroCanRecruitFromHero` 已复核：关系
+  `100` 提供最高关系档，最终槽位数封顶为 `6`；即使灰袍与聚落不同阵营，乃至
+  临时处于战争关系，关系加成在计算中仍足以抵消异阵营惩罚并保持六格。因而
+  圣铎一类灰袍 AI 不会再因零关系只能使用前两格而长时间等待它们刷新。原版
+  每小时招募随机判定、现金门槛、工资预算、编制上限及每名要人每次至多招一人
+  等其余规则没有修改。
+- 最终 Release `--no-restore` 增量构建通过，`0` 错误，仅有 `1` 个离线 NuGet
+  漏洞元数据警告。部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希不一致
+  为 `0`；`18` 个 XML 全部可解析。客户端与编辑器 DLL 字节一致，大小
+  `493568`，SHA-256 为
+  `5CDBB31CA637C5FAE4BFA19FAEC71C8A34D262DB85356FC4D8756D399BEF0650`。
+  中文 README 仓库/实机 SHA-256 均为
+  `BE6D1030C1CE3B837C2549A2B5B61CE048DDAB81C51E6D6ABE468364BA7ACDE1`；
+  英文 README 仓库/实机 SHA-256 均为
+  `F68AF5827337DA2160F415FA840AFB1E58063C3D5901CBADC957BBF9243AC905`。
+- ILSpy 对实机 DLL 确认保护费使用 `Hearth × 0.1`、人口仍使用
+  `Hearth × 0.99`，新关系行为已经注册，并存在关系写入与关系动作两个受保护
+  前缀。中英文玩家日志与 `docs/grey-warden-setting.md` 已同步。未创建 Git
+  提交、标签或发布包。
+
+
+## 2026-07-20 无英雄临时执法队关闭欲望并单次直攻
+
+- 用户明确要求无英雄临时部队不要持续接收移动命令，也不要像领主一样参与
+  欲望思考。范围只包括无 `LeaderHero` 的临时纠察队与追截支援队，且只在
+  已锁定敌对目标的 `Pursue` 阶段生效；常驻灰袍领主的固定 `0.99` 案件分、
+  原版实力判断及全部非巡逻欲望均不改。
+- `SetDirectAttackIntent` 现在首次锁定目标时只调用一次
+  `SetMoveEngageParty`，随后设置 `SetDoNotMakeNewDecisions(true)`。任务每小时
+  刷新时若目标未变，只延长运行时意图有效期，不再重复写入移动命令。
+- `AiPartyThinkBehavior.PartyHourlyAiTick` 前缀在该直攻锁存在期间直接跳过整个
+  小时思考回合，因此原版和模组评分器都不会为这支临时队生成巡逻、补给、
+  逃避、实力衡量或其他候选，也不会让空竞价的后续解析覆盖首次攻击命令。
+  小时维护只检查目标是否仍有效，不再重发攻击命令。
+- 目标失效、任务清理或支援队转入返程时，`ReleaseDirectAttackLock` 会解除
+  `DoNotMakeNewDecisions` 并允许下一小时重新思考；因此返回驻地和销毁流程仍
+  可使用既有的访问意图，不会被战斗阶段的锁永久冻结。
+- 最终 Release `--no-restore` 构建通过，`0` 错误、`47` 个既有 nullable/离线
+  NuGet 警告。自动部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希不一致
+  为 `0`；`18` 个 XML 全部可解析。客户端与编辑器 DLL 字节一致，大小
+  `495104`，SHA-256 为
+  `9AE957FF2E92984AB21F38DF0EF6760819D6012814046524A064FCA073880E08`。
+  中文 README 仓库/实机 SHA-256 均为
+  `E52B6AEDFAFD172E530E6B0A267FF32BE3B449868CAE7F3208EC410ABF5CEAF0`；
+  英文 README 仓库/实机 SHA-256 均为
+  `17BA5D8DF6F45940C5D1434D9D45815B6DA4E609F7DA393E4065B54666308A61`。
+  实机 DLL 字符串核验存在 `HasDirectAttackLock` 与 `StartDirectAttack`，且旧的
+  `ForceDirectAttack` 已不存在。未创建 Git 提交、标签或发布包。
+
+
+## 2026-07-20 无英雄临时队接触后立即和平的 Git 对比诊断
+
+- 用户实测新直攻锁后，追截支援队会冲上去接触目标，但没有持续完成交战，
+  随即散开、和平并撤退。本轮按要求只对比和诊断，没有修改运行代码、README
+  或实机模组，也没有重新构建部署。
+- Git `6bd3871`（后续一直保留到当前基线 `a51f9d9`）中的无领主追截支援队
+  完整战斗配置不是单独的 `SetMoveEngageParty`，而是连续执行：
+  `SetDoNotMakeNewDecisions(true)`、`SetInitiative(1f, 0f, 999f)`、
+  `SetMoveEngageParty(target)`。当前直攻层只恢复了冻结与 `EngageParty`，漏掉
+  `SetInitiative`。因此当前并没有完整复原用户所说的旧版良好行为。
+- Bannerlord 1.4.7 实机 `MobilePartyAi` 反编译确认，`SetInitiative` 三个参数
+  分别写入 `_attackInitiative`、`_avoidInitiative` 与恢复时间。原版
+  `DefaultMobilePartyAIModel` 的进攻评分直接乘 `AttackInitiative`，逃避评分与
+  逃避距离直接使用 `AvoidInitiative`。旧值 `1f, 0f, 999f` 的含义正是保持正常
+  进攻主动性、把逃避主动性降为零并长期维持；它不是欲望分，也不会恢复领主式
+  补给、巡逻或战略思考。
+- 第二个放大问题是既有战后收束仍然过宽：
+  `HandleDelayPatrolBattleEnded` 只要看到任何追截支援队参与某次已结束的
+  `MapEvent`，就无条件 `MarkDelayPatrolReturning`；随后
+  `TryResolveDelayPatrolWarTargetImmediately` 在当前案由已经被战斗结算清掉时
+  立刻 `SetNeutral` 并把同目标的支援队全部标记返程。该逻辑在旧 Git 中已经
+  存在，但旧版的零逃避主动性使队伍更稳定地把接触推进到明确胜负；当前漏掉
+  主动性配置后，一次短促或非决定性接触也会被这条无条件收束链解释成任务结束，
+  于是玩家看到“撞一下、散开、立即和平”。
+- 结论：当前症状不是欲望重新开启。最直接的回归是直攻层漏掉旧版
+  `SetInitiative(1f, 0f, 999f)`；和平与撤退则由既有的“任何支援队战斗结束均
+  返程”和“无剩余案由立即和平”继续完成。下一轮修复应先完整恢复旧版三件套，
+  同时把支援队返程/和平限制为案件目标已经真正战败或任务确实失效，而不是仅凭
+  任意一次 `MapEventEnded`。
+
+
+## 2026-07-20 无英雄临时队持续完成战斗任务
+
+- 按用户确认的最终 AI 边界实现：常驻灰袍领主仍只在有任务时把普通
+  `PatrolAroundPoint` 封顶到 `0.03`，并添加固定 `0.99` 案件候选；其他全部
+  原版欲望、分数、聚落选择和战力判断不改。无领主临时纠察/追截支援队则没有
+  战略欲望和自主强弱判断，只执行明确任务。
+- `StartDirectAttack` 恢复 Git `6bd3871` 的完整战术配置：先
+  `SetInitiative(1f, 0f, 999f)`，再 `SetMoveEngageParty`，最后冻结新决策。
+  这保持正常进攻主动性、把逃避主动性降为零，且不生成巡逻、补给或逃跑欲望。
+- `HandleDelayPatrolBattleEnded` 不再见到任意 `MapEventEnded` 就无条件返程。
+  现在只有目标部队失活或 `NumberOfHealthyMembers <= 0` 才视为真正战败；目标
+  仍有可战人员时保留直攻锁，并只登记一次战后续攻。续攻会在地图事件完全清除
+  后补发一次 `EngageParty`，不是每小时持续重发命令。
+- 支援队胜利后的案件清理与 `5000` 办案拨款同样增加“目标真正战败”门槛；
+  敌方撤退、脱离或非决定性交锋不会删案、发款或触发和平。常驻领主胜利结案
+  也使用同一可战人员门槛，防止目标撤退却被错误认定为已抓获。
+- `PoliceAntiWarDeclaration` 在战后恢复和平前新增现有合法战争理由核验。只要
+  同一阵营仍有活动案件、悬赏或玩家纠察理由，就维持战争；最后一项理由真正
+  消失后，原有自动和平流程才会执行。
+- Release `--no-restore` 构建通过，`0` 错误、`47` 个既有 nullable/离线 NuGet
+  警告。部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希不一致为 `0`；
+  `18` 个 XML 全部可解析。客户端与编辑器 DLL 字节一致，大小 `496640`，
+  SHA-256 为
+  `6BFAD5823F18300C47FA08B5C663CA38049D44C5BC1003E61C41A49BA6D1A661`。
+  中文 README 仓库/实机 SHA-256 均为
+  `5A71E2D5FE85010F390EC4F1B953240B7B5ADD41F18FD562DEF8F06844A42E49`；
+  英文 README 仓库/实机 SHA-256 均为
+  `349EC09F359DCA4078015FF7F92A4DAE5A00DCB23914056A7B6071854F5B57F9`。
+- ILSpy 对实机 DLL 确认直攻入口存在 `SetInitiative(1f, 0f, 999f)`、
+  `DirectAttackRefreshPending` 与一次性战后续攻；案件和支援队胜利结算均检查
+  `NumberOfHealthyMembers <= 0`；战后和平前存在 `HasLegitimateWarReason`
+  守卫。源码同时复核领主侧仍只有 `AssignedDutyScore = 0.99f` 与
+  `AssignedPatrolScoreCeiling = 0.03f` 两项欲望干预。未创建 Git 提交、标签
+  或发布包。
+
+
+## 2026-07-20 最新 AI 脚本输出与两类部队执行链复核
+
+- 最新 `GreyWarden-AI-Diagnostics.log` 截止本地时间 `11:55:36`，大小约
+  `8.6 MB`。日志中 `gwp_enf_delay_*`、`gwp_patrol_*`、`leader=-` 与
+  `DIRECT_ATTACK_STATE` 均为 `0` 条，但这不能证明无领主队伍没有生成：
+  `GwpAiDiagnostics.ShouldTraceFounderParty` 明确只允许六名创始英雄 ID 写入，
+  所有无 `LeaderHero` 的临时队都会被日志过滤。现有脚本只能直接验证创始领主，
+  不能观察临时纠察队或追截支援队。
+- 玩家声望 `-1～-10` 时，每日检查若当前没有纠察队且不在贿赂保护期，会从
+  玩家最近城镇生成一支 `gwp_patrol_*`。它无 `LeaderHero`，规模为声望绝对值
+  乘当前 `PatrolSize=10`。敌对前用 `Approach` 接近玩家并触发谈判；玩家拒绝且
+  宣战后才进入无欲望直攻锁。声望降至 `-11` 以下则撤回临时纠察队，改由正式
+  灰袍领主接管通缉。
+- 追截支援队不是每小时或每案立即生成。每两日检查一次已经进入
+  `WarPursuit`、非玩家目标且战争仍有效的案件；按敌对阵营收集所有仍被追踪的
+  罪犯部队，每个尚无活动支援队的罪犯生成一支 `gwp_enf_delay_*`。生成点优先
+  取承办灰袍附近城镇，否则取目标附近城镇；固定 `50` 人，约六成重步兵、四成
+  弓手，无 `LeaderHero`，保存来源案件、目标部队、敌对阵营与返程城镇后立即
+  进入无欲望 `EngageParty`。
+- 无领主队的边界按阶段不同：追截支援队的敌对执行阶段完全跳过小时思考，
+  使用 `SetInitiative(1,0,999)`、单次 `EngageParty` 和决策冻结；非决定性战斗
+  后只补发一次续攻。临时纠察队在尚未宣战、需要和平接触玩家时仍用 `Approach`
+  欲望；两类队伍任务结束返程时当前仍用 `Visit` 职责候选，而不是直攻锁。
+- 正式领主案件在 `WarDeclared=false` 时解析为 `Approach`：每次原版竞价以目标
+  当时坐标生成一个地点候选，案件候选胜出后转成真实 `GoToPoint`。它不是永远
+  固定的城镇或一次性旧坐标；后续竞价会读取目标的新位置。非玩家罪犯距离低于
+  `WarDistance=3` 时，小时任务更新调用 `DeclareWar`，案件阶段切为 `Pursue`。
+- 宣战后案件候选是目标部队上的 `GoAroundParty=0.99`，普通巡逻仍压到 `0.03`，
+  其他原版候选完全保留。它的含义是持续锁定、跟随和拦截目标，不是强制
+  `EngageParty`。原版短期主动性继续根据局部战力、士气、附近敌军和导航条件
+  选择真正接战或 `FleeToPoint`。最新日志多次显示 `war=True`、长期行为
+  `GoAroundParty`、短期行为 `FleeToPoint`，正好证明案件仍在而原版强弱判断
+  也仍然生效。
+- 晨曦的日志从 `war=False`、目标距离约 `2.37` 进入后续 `war=True`，符合小时
+  检查在三格内宣战；日志快照发生在移动之后，所以下一条显示的距离可重新超过
+  `3`。约珥在宣战后目标一度远至八十多格，仍保持 `GoAroundParty` 和相同案件，
+  说明宣战后的目标引用不会因距离拉大而丢失。玩家目标和躲入定居点的罪犯另有
+  对话/门口守候分支，不完全走上述非玩家野外自动宣战流程。
+
+
+## 2026-07-20 AI 诊断扩展至全部无领主灰袍部队
+
+- 用户要求现有脚本除六名创始领主外，也必须能观测所有灰袍无领主 AI。
+  `GwpAiDiagnostics` 的过滤器由 `ShouldTraceFounderParty` 扩展为
+  `ShouldTraceParty`：继续记录六名创始英雄，并记录所有 `LeaderHero == null`
+  且属于灰袍家族/阵营、临时纠察队前缀或追截支援队前缀的活动部队。其他王国、
+  野怪和非创始灰袍领主不会因此混入日志。
+- 每行前缀新增 `partyKind`：`founder_lord`、`leaderless_picket`、
+  `leaderless_delay_support` 或 `leaderless_grey_warden`。状态字段新增
+  `dutyIntent` 与 `directAttackLock`；无领主队没有 `PoliceTask` 时，`offender`
+  和 `offenderDistance` 会回退读取职责层的运行时目标，因此能直接看到临时队
+  正在接近、直攻或返程的对象。
+- `Watch-GreyWardenAI.ps1` 的说明已同步，并新增可选 `-Kind` 过滤。例如
+  `-Kind leaderless_delay_support` 只观察追截支援队，`-Kind leaderless_picket`
+  只观察临时纠察队；原有 `-Party`、`-Once` 和 `-Tail` 继续可用并可组合。
+- Release `--no-restore` 构建通过，`0` 错误、`47` 个既有 nullable/离线 NuGet
+  警告。部署后核对 `25` 个 `_Module` 运行文件，缺失或哈希不一致为 `0`；
+  PowerShell 对更新后的观察脚本解析成功。客户端与编辑器 DLL 字节一致，大小
+  `497664`，SHA-256 为
+  `2B4F6D20057D7158E91FBD90FBBD78AEA229A4B59E666470AB59111BFA59E67B`。
+  ILSpy 对实机 DLL 确认 `ShouldTraceParty`、全部三种无领主 `partyKind`、
+  `dutyIntent` 和 `directAttackLock` 均已部署。未创建 Git 提交、标签或发布包。
+
+
+## 2026-07-20 双领主协办思路的原版战力核验
+
+- 用户提出：承办领主宣战后若原版判断打不过，可临时调最近另一名灰袍领主
+  前来共同进攻。该方向与原版 AI 机制兼容，但不能简单给两支队各自一个相同
+  追击目标；若双方相距太远，它们会各自只用自身附近战力判断，并可能同时
+  `FleeToPoint`。
+- Bannerlord 1.4.7 实机 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior`
+  反编译确认，短期主动性先在约 `3 × GetEncounterJoiningRadius` 范围扫描相关
+  部队，然后把同阵营、可参与同场事件的附近友军战力加入局部优势计算。因而
+  第二名灰袍真正靠近主办领主后，原版确实会重新用合并后的附近战力比较敌方，
+  并可能自然从逃避切换为 `EngageParty`；若目标是更大的军团，两人合力仍不足，
+  原版继续不打也是正确结果。
+- 建议实现为独立的“主办—协办”关系，不修改 `CrimePool` 的一案一主办约束。
+  主办案件、结案归因和办案拨款保持唯一；协办领主通过临时外部职责以现有
+  `0.99` 分跟随主办领主，原任务保留但暂停。进入原版共同参战范围后无需模组
+  强制开战，由原版局部战力重算决定；主办案件结束、目标失效或协办失效时清除
+  临时职责，协办自动恢复原任务。
+- 触发不能只看一次 `FleeToPoint`，因为最新日志显示短期逃避目标有时是案件目标
+  附近的另一支敌军。较稳妥的门槛应为：主办已经宣战、长期目标仍是案犯、处于
+  接敌区域并连续若干小时由原版选择逃避；每案最多一名协办，避免六名领主全部
+  被一个军团吸走或形成循环支援。协办选择应排除被俘、战斗中、押送玩家、悬赏
+  护送和村庄救济中的部队，并优先最近的可用灰袍领主。
+- 本轮只完成可行性与原版依据核验，没有实现双领主协办状态、没有改变玩家
+  README，也没有为此再次构建部署。无领主诊断扩展是本轮唯一已部署的改动。
+
+
+## 2026-07-20 六领主逐级协力任务与完整任务池
+
+- 已实现案件绑定的领主协力机制。只观察六名创始领主的非玩家正式案件；必须
+  同时满足案卷仍开放、承办关系仍指向当前领主、案件已进入 `WarPursuit`、目标
+  部队仍有效且有健康兵员、双方仍实际交战、长期行为仍为该目标上的
+  `GoAroundParty`，并在十二格内连续三个小时由原版选择逃避，才生成协力任务。
+  单纯与同一国家交战、另一个案件尚未结束或旧目标残留均不能触发。
+- 协力任务生成即强制分配给距主办人最近的可用创始领主，不进入普通等待领取
+  流程。候选排除被俘、战斗中、玩家押送、悬赏护送、玩家案件和村庄救济；已经
+  是协力主办人或协办成员的领主也不可被其他小队抢走。同一小时的竞争按稳定的
+  创始部队 ID 顺序处理，先成功建立的关系立即占用双方，避免 A/B 循环求援。
+- 协办人原有普通案件调用 `EndTask` 后立即 `ReopenCase`，完整退回公共案件池；
+  不保存或恢复旧任务。协力结束后只解除 `EscortParty=0.99` 外部职责，该领主在
+  同一小时后续正常调度中重新领取当时距离最近的未分配案件。
+- 每个主办案件可形成一个多成员小队。已有成员必须全部进入主办人五格内，才会
+  重新累计主办人的连续逃避；若集合后仍连续三个小时逃避，再逐次增加一名最近
+  可用领主。成员只跟随主办人，不各自远程追击案犯；进入原版共同参战范围后，
+  原版继续决定是否按合并附近战力接战。案件、目标、主办人或战争失效时整组
+  解散，成员回到普通调度。
+- 协力状态与每名成员的分配时间已加入存档。AI 诊断每行新增 `assistance`：可见
+  `independent:blocked`、`leader:members/blocked/target` 或
+  `member:leader/distance/target`；增援加入和释放另写
+  `ASSISTANCE_ADDED/JOINED/RELEASED/DISBANDED` 动作行。协办人也被授权把来源
+  案件目标作为合法短期攻击对象，但没有新增强制接战命令。
+- 案件总卷改为完整任务池视图。普通开放案件、已分配普通任务和每名协办人的
+  强制协力任务共同占用最多一百条容量并全部显示；所有已分配任务置顶，再列
+  未分配案件，两组内部均按时间从新到旧。容量溢出时只移除最旧且无人承办的
+  普通案件，不移除玩家通缉、已分配案件或协力任务。摘要显示总数、已分配数和
+  等待数。
+- 首次实现构建曾因案件总卷缺少 `System.Collections.Generic` 及
+  `CampaignTime.Hours` 的 `double/float` 参数差异出现三个编译错误；补充引用并
+  显式转为 `float` 后构建恢复通过。这是实现过程中的已解决错误，不是运行时
+  缺陷。
+- 最终 Release `--no-restore` 构建通过，零错误；新增协力存档代码的可空警告已
+  收敛，剩余均为既有项目警告及离线 NuGet 漏洞源警告。构建自动同步 `_Module`
+  后复核二十五个可部署源文件，实机目录缺失或哈希不一致均为零，仓库与实机
+  `README.md` 哈希一致。客户端和编辑器 DLL 字节一致，大小 `514048`，SHA-256
+  为 `46CA1EBF9B6C319B6175D7BB6325EF25D0502CCB0D0BBAE5CE30CE9073B4C3C8`。
+  中文语言 XML、案件总卷 prefab XML 和观察脚本均通过解析；未创建 Git 提交、
+  标签或发布包。
+
+
+## 2026-07-20 完整任务池触发无领主支援队爆量的修复
+
+- 用户实测发现地图上出现大量无领主灰袍支援队。读取最新
+  `GreyWarden-AI-Diagnostics.log` 后确认，本次会话累计生成过 `77` 支
+  `leaderless_delay_support`；生成呈严格的两日批次，最近七批分别一次生成
+  `16、8、10、12、9、7、15` 支。最近一批在战役小时 `626720.68～626721.30`
+  之间生成十五支，分别追击十五个不同目标，因此不是同一目标的重复状态日志，
+  而是真实批量生成。
+- 根因位于 `CheckPersistentWarTargetsEveryTwoDays`：它先从任意
+  `WarPursuit` 任务得到敌对势力，再调用 `GetTrackedOffendersByFaction` 把该势力
+  所有开放案件目标交给 `SpawnDelayPatrolsForOffenders`。旧案件池很小时问题不
+  明显；案件总卷与池容量扩展到一百后，大量无人承办案件仍属于同一敌对势力，
+  因而被另一宗已宣战案件错误带入生成范围。日志中最近批次的十五支各自对应
+  不同 `CharacterObject_*` 或 `lord_*`，与该调用链完全一致。
+- 生成口径已改为具体承办任务。`GetEligibleDelaySupportTasks` 只接受当前仍在
+  `CrimeState.ActiveTasks`、案卷开放、目标有效且有健康兵员、非玩家、阶段为
+  `WarPursuit`、战争仍有效的任务；每个任务只把自己的 `TargetCrime.Offender`
+  交给生成器。无人承办的任务池案件不会再因同国另一宗案件宣战而生成支援。
+  每个具体目标仍通过 `_delayPatrolStates` 保证最多一支活动支援队。
+- `UpdateDelayPatrols` 每小时用相同资格集合复核现有支援队。旧版本批量生成、但
+  已不对应一宗当前有效承办案件的队伍会标记 `Returning`，下一步
+  `RequestVisit` 自动解除直攻锁并返城解散；因此旧存档无需重新开档或手工清队。
+- 修复后同时活动的追截支援队数量只可能等于当前符合条件的正式领主
+  `WarPursuit` 目标数。六名创始领主各自承办一案时理论上最多六支；正在执行
+  协力任务的成员没有普通承办案件，因此实际通常低于六支。支援队战败而对应
+  正式案件仍有效时，下一次两日检查仍可按原设计补发一支。
+- 最终增量 Release 构建通过，零错误；输出只报告离线 NuGet 漏洞源警告。自动
+  部署后复核二十五个可部署文件，实机缺失或哈希不一致均为零。客户端与编辑器
+  DLL 均为 `514048` 字节，SHA-256 为
+  `C4A6BF8E48EF5E92D7DB12B6A22E43F8D9494BE962E039C8E944785FB8309AC8`。
+
+
+## 2026-07-20 无王国原版军团协力
+
+- 用户否定了 `EscortParty=0.99` 的“多支队伍靠近后各自判断”方案，要求协办人
+  真正加入主办人的原版军团；同时明确灰袍不会建国、领主数量不能限制为六名，
+  未来收养成长的全部灰袍领主都必须纳入。
+- Bannerlord 1.4.7 反编译确认 `Army(Kingdom, MobileParty, ArmyTypes)` 的
+  `Kingdom` setter 对 `null` 安全，构造函数会把军团长写入 `LeaderParty.Army`；
+  `member.Army = army` 会调用原版 `OnAddPartyInternal`，同家族的
+  `CalculatePartyInfluenceCost` 明确返回零；原版 `AiArmyMemberBehavior` 随后为
+  未合并成员生成高分 `EscortParty`，接触后 `Army.Tick` 或
+  `AddPartyToMergedParties` 通过 `AttachedTo` 完成真实附着和同场参战。因此实现
+  使用 `new Army(null, leader, ArmyTypes.Patrolling)`，没有创建隐藏王国，也没有
+  自制军团对象。
+- `PoliceEnforcementBehavior.Assistance` 已改为识别灰袍家族下所有有效
+  `IsLordParty`，不再检查 `gw_leader_0..5`。触发条件仍是合法案件、有效目标、
+  `WarPursuit`、实际战争、十二格内连续三小时由原版选择逃避。首次触发创建原版
+  无王国军团，最近可用灰袍领主将旧案退回任务池后通过 `MobileParty.Army` 加入；
+  到达原版军团接触距离后通过 `AddPartyToMergedParties` 附着。全员附着后若军团长
+  再连续三小时逃避，则继续加入下一名最近可用领主，没有成员上限，直到没有
+  可用领主。
+- 军团长仍通过既有案件 `GoAroundParty=0.99` 参加最终欲望拍卖，其余原版补给、
+  招兵、疗伤、交俘和安全需求不改；协办人不再获得模组自定义跟随欲望，只依赖
+  原版军团成员行为。若一次原版进城行动曾为 Army 写入聚落目标，案件追击重新
+  胜出时会清除该过期 `AiBehaviorObject`，避免军团每小时逻辑把短暂停留的军团长
+  再拉回旧集合点。
+- 案件目标真正被击败或主办方战败时立即
+  `DisbandArmyAction.ApplyByObjectiveFinished`，其余案件/目标/战争失效由下一个
+  小时清理执行相同原版解散；成员解除 `Army/AttachedTo` 后进入普通调度，按当时
+  距离领取最近任务，不恢复被协力打断的旧任务。保存数据继续只记录主办、案件、
+  目标、成员和分配时间；读档后若 Army 对象未随对象图恢复，会按这些 ID 重建
+  原版无王国 Army 并重新加入成员。
+- 原版 `Army.HourlyTick` 的 `CheckArmyDispersion` 会随机按“战争中是否存在有封地
+  势力”解散军团；独立家族追捕无封地目标天然不满足。因此只对当前仍绑定合法
+  协力组的无王国 Army 窄拦截 `NoActiveWar`。最初实现曾同时拦截
+  `FoodProblem/CohesionDepleted/Inactivity/UnknownReason`，复核用户要求后确认范围
+  过宽并已撤销：超过半数部队断粮、长期停滞、军团长失效以及原版 AI 主动取消
+  均重新按原版解散。案件主动结束仍走原版 `ObjectiveFinished`。
+- 原版同家族加入只保证影响力成本为零，并不会自动停止凝聚力变化；默认模型仍
+  有基础日衰减和成员数量衰减。当前合法灰袍协力 Army 的
+  `CalculateDailyCohesionChange` 结果被窄改为零，使同家族执法军团凝聚力保持现值，
+  不需要花影响力维护；非协力军团的原版凝聚力公式完全不变。
+- 收紧后的最终 Release `--no-restore` 构建通过，零错误，仅有离线 NuGet 漏洞源
+  警告。自动部署后复核二十五个可部署文件，缺失与哈希不一致均为零，仓库与
+  实机 README 一致。客户端和编辑器 DLL 字节一致，大小 `519168`，SHA-256 为
+  `B80A43BB4F85FF2F090B76E8F1E9479E734042FF6A51183D3F78D20672525113`。
+
+
+## 2026-07-20 三百余人军团仍不接战的日志诊断
+
+- 最新 `GreyWarden-AI-Diagnostics.log` 显示弥瑟承办 `lord_1_5` 时先后召集暮光与
+  约珥。军团建立早期 `armyMemberCount=3` 只表示三支部队已加入 Army，并不表示
+  三支都已合并：弥瑟约一百五十余人、暮光一百二十余人已经 `AttachedTo`，约珥
+  一百余人仍在三十至四十格外集合，因此当时短期判断实际可立即参战的是约二百
+  八十人，而不是界面合计的三百八十余人。
+- 约珥后来也成功附着；战役小时约 `626850～626860` 的军团状态为
+  `members=2,attached=2`，三支合计约三百八十人。此时案件欲望没有被补给或其他
+  欲望击败：最近可见的一次主办人拍卖中，模组加入的
+  `GoAroundParty@lord_1_5=0.99` 排第一，最高原版进城候选仅约 `0.22`。问题不在
+  长期欲望权重。
+- 原版 `MobilePartyAi.GetGoAroundPartyBehavior` 的语义不是强制接战。只要它能在
+  目标周围找到一个防守/环绕位置，就把长期 `GoAroundParty` 落实成短期
+  `GoToPoint`；只有找不到该位置时才直接变成 `EngageParty`。全员附着后的日志
+  正是 `default=GoAroundParty, short=GoToPoint, shortTarget=lord_1_5`，军团停在目标
+  约 `5.95` 格处长时间不动。
+- 原版短期主动性确实把已附着军团的 `Army.EstimatedStrength` 用作本方基础战力，
+  因而不是“军团成员完全没有计入”。但它还会把扫描半径内同阵营敌军加入敌方
+  局部战力，并用攻击/逃避主动性、距离、速度等共同决定是否用 `EngageParty`
+  覆盖长期行为。军团形成前，弥瑟与已附着的暮光一直在逃避附近另一支敌军
+  `lord_1_20`，而不是案件目标 `lord_1_5`，说明该区域存在额外敌方战力。全员
+  附着后逃跑停止，却仍没有产生足以覆盖环绕行为的进攻分数。
+- 当前协力升级条件只把近距离 `FleeToPoint` 认作“仍然打不了”。全员附着后短期
+  行为变为 `GoToPoint`，`BlockedHours` 因此保持零，机制错误地认为阻塞已经解除，
+  不会继续召集第四名领主。这是“三百余人停着但不继续加人”的直接逻辑缺口。
+- 本轮仅完成日志与原版代码诊断，没有修改协力触发或追击行为，也没有重新构建
+  部署。后续修正应至少把“全员附着、案件目标仍合法、近距离持续
+  `GoAroundParty + GoToPoint/Hold` 且没有进入战斗”计为持续阻塞；若所有可用领主
+  都已加入后仍保持该状态，再决定是否把最终阶段切换为一次原版
+  `EngageParty`，以符合“全员集结后发动大战”的目标。
+- 反编译还发现玩家与任何 Army 相遇时的 `army_encounter` 背景代码直接读取
+  `Army.Kingdom.Culture`。已只对当前灰袍无王国执法军团使用原版
+  `wait_fallback` 背景，避免玩家点击相遇菜单时空引用；普通王国军团菜单不改。
+- 诊断范围从六名创始人扩展为所有灰袍领主及所有无领主灰袍部队。每行新增
+  `armyLeader/armyMemberCount/attachedTo/armyKingdom`，协力摘要改为
+  `armyLeader` 或 `armyMember` 并显示附着数量；动作日志使用
+  `ASSISTANCE_ARMY_*`。案件总卷把任务类型显示为“强制军团协力”。
+- 首轮与运行时保护增量 Release 构建均通过，零错误；最终构建仍只有既有可空
+  警告和离线 NuGet 漏洞源警告。构建自动同步后复核二十五个可部署源文件，实机
+  缺失与哈希不一致均为零；仓库和实机 `README.md` SHA-256 同为
+  `0E5735F909F84F273E0719B04399EBF60F7E0CB1104D77DAA9F37375056F74ED`。
+  客户端与编辑器 DLL 字节一致，大小 `519680`，SHA-256 为
+  `576C165D2F1604E286759391AA2E706361F9A780A0AD89F313B36F56DC464312`；中文
+  语言 XML 与案件总卷 prefab XML 均解析通过。未创建 Git 提交、标签或发布包。
+
+
+## 2026-07-20 单承办人新档测试模式与攻城诊断增强
+
+- 为隔离普通执法经济与调度过程，当前测试版把普通 AI 犯罪案件和玩家通缉案件
+  都限定为灰袍家族当前族长的部队领取。其余灰袍领主不再从普通案件池接案，但
+  仍是原版军团协力和村庄收养善后的合法强制候选；村庄善后候选主动排除族长，
+  避免唯一普通承办人被收养任务占用。该规则没有限制后续成长领主的数量。
+- 案件总卷的数据源补入村庄善后任务。等待分配的善后列在等待区；已分配任务与
+  普通案件、协力任务一同置顶，并显示补给、赶路或驻村阶段及驻村剩余时间。
+  普通案件、协力成员任务和收养善后共同占用一百条任务池/显示上限，新增强制
+  任务时会优先裁掉最早且无人承办的普通案件。
+- 为查明三百余人军团未加入攻城战的问题，AI 每行状态新增普通案件资格、任务
+  流程、己方地图事件/攻城营地，以及罪犯的 active、健康兵员、战争状态、原版
+  Army 军团长、AttachedTo、攻城营地领队、地图事件和双方是否处于同一事件。
+  地图事件开始/结束还会输出事件类型、攻守方领队、聚落和全部参战部队 ID。
+- 协力清理不再只留 `case_or_party_invalid` 这个笼统结果；解散前新增
+  `ASSISTANCE_VALIDATION_FAILED`，逐项记录 task 是否存在、承办人是否匹配、
+  WarDeclared、FlowState、案件是否开放、罪犯是否 active/有健康兵员、MapFaction、
+  实际战争关系、案件 ID 是否匹配，以及目标当时的军团/攻城/地图事件状态。这样
+  可直接判断攻城结算瞬间究竟是哪一项暂时失效。
+- 对旧日志的进一步核对确认，`gw_leader_2_party_1` 的三支军团并非原版自行因
+  粮食、凝聚力或无战争解散，而是模组小时清理在战役小时 `626860.52` 主动以
+  `case_or_party_invalid` 解散。下一小时案件仍为 `lord_1_5`、`war=True` 且目标可
+  解析，证明不是正常结案；高度疑似攻城/战斗结算切换中罪犯的 active、健康兵员、
+  MapFaction 或战争关系短暂失效。旧日志没有逐项字段，需由本轮增强日志在新档
+  复现后定案。
+- 原版 `AiEngagePartyBehavior` 还明确跳过所有“在 Army 中但不是军团长”的敌方
+  部队。因此若案件罪犯是攻城军团附属成员，长期 `GoAroundParty` 虽能跟到其
+  周围，普通主动进攻扫描却不会把这个罪犯对象当成合法 `EngageParty` 目标；本轮
+  新增的 `offenderArmyLeader/offenderAttachedTo/offenderSiegeLeader` 正是为了验证
+  该高度可疑路径。本轮没有提前改写攻击对象或强制参战，先保留可验证证据。
+- 最终 Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet
+  警告。中文语言 XML 与案件总卷 prefab XML 均解析通过；自动部署后复核二十五个
+  可部署源文件，实机缺失或哈希不一致均为零。客户端与编辑器 DLL 均为
+  `530944` 字节，SHA-256 为
+  `72B3F795E3CE71F8E4640645B422908AE3C158F6274D6D546BE776BCCDA398D4`；仓库与
+  实机中文 README SHA-256 同为
+  `1C6397837B0CAF5B9398BEE51D93530F4997E14B9A6CFDEE892618FD2391F4D8`。
+
+
+## 2026-07-20 玩家案件与普通案件路径复核
+
+- 单承办人规则已经覆盖玩家通缉的专门分配入口：声望达到重度通缉条件时，
+  `EnsureNearestPoliceForWantedPlayer` 不再选择最近的任意灰袍领主，而只返回当前
+  灰袍家族族长部队。因此玩家案件会由族长收到，其他领主仍只参与协力和收养。
+- 玩家案件进入 `PoliceTask` 后，与普通案件共用 `GreyWardenPartyDesireBehavior`：
+  宣战前是 `Approach` 定点候选，宣战后是 `Pursue/GoAroundParty`，固定任务分数和
+  仅压制普通巡逻的规则相同；非巡逻的原版补给、招兵、疗伤、安全等欲望评分
+  没有被删除，宣战后也继续由原版短期 AI 判断是否接战。
+- 但当前玩家流程并非完全等同普通案件。专门分配入口会调用
+  `PoliceResourceManager.CancelResupply` 并可通过 `TryAssignPlayerCrimeToPolice` 挤掉
+  族长已有的普通案件；普通案件只在承办人 `IsReady` 且无任务时领取。玩家接触
+  后不会自动宣战，而是先进入缴款/赎罪/拒捕对话，只有玩家选择拒捕才宣战。
+- 玩家目标还被明确排除在无领主追截支援与领主军团协力之外：
+  `GetEligibleDelaySupportTasks` 跳过 `offender.IsMainParty`，
+  `GetValidAssistanceOffender` 也拒绝玩家目标。因此现状满足“不强制 AI 直接打
+  玩家”，但若后续目标是把玩家案当作真正同级普通案件，还需单独决定是否取消
+  分配时的补给中断/强制顶案，并明确玩家是否永远不获得协力支援。
+- 本轮只复核并记录现状，没有修改玩家案件行为、构建或部署。
+
+
+## 2026-07-20 恢复协力军团原版攻击欲望与玩家协力
+
+- 原版 `AiEngagePartyBehavior.AiHourlyTick` 对“本队是 Army 军团长且 ArmyType 不是
+  Defender”的部队直接 return。灰袍执法军团必须保持 `Patrolling` 才不会改变
+  原版军团任务语义，因此没有把 Army 永久改成 Defender；新增 Harmony 窄补丁只
+  在这一个原版攻击欲望评分器执行期间临时暴露为 Defender，并在 postfix/finalizer
+  中立即恢复原类型。最终加入拍卖的敌军候选、战力比、速度、距离和分数仍全部由
+  原版 `AiEngagePartyBehavior` 计算，模组没有写固定攻击分数或移动命令。
+- `GoAroundParty=0.99` 仍是案件长期追踪候选。执法军团现在能同时获得原版主动
+  攻击欲望：军团战力足够时原版攻击候选可胜出，不足时继续包围/跟踪；原版补给、
+  招兵、疗伤和安全欲望不变。
+- 原版主动攻击扫描跳过敌方 Army 的非军团长成员。协力攻击授权因此把案件罪犯
+  的 `BesiegerCamp.LeaderParty`、`Army.LeaderParty` 或 `AttachedTo` 解析为同案的
+  合法战斗入口；案件归属和结案核验仍保存原罪犯，不会把敌方军团长改成罪犯。
+- 玩家案件保留“强制顶掉族长现有普通案件”的优先级，但删除玩家案分配/续期时
+  的 `CancelResupply`。宣战前仍以 `Approach=0.99` 接近并进入缴款/赎罪/拒捕对话；
+  玩家拒捕宣战后与普通案件相同使用 `GoAroundParty=0.99`，原版后勤和短期强弱
+  判断继续介入。
+- `GetValidAssistanceOffender` 删除玩家目标排除。玩家拒捕且正式进入
+  `WarPursuit` 后，族长在近距离连续由原版逃避时可建立同一套无王国原版军团并
+  逐步召集其他灰袍领主。无领主追截支援仍排除玩家，避免对玩家使用“无欲望、
+  直接攻击”的临时队伍逻辑；玩家协力只有保留原版判断的领主参与。
+- 最终 Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet
+  警告。ILSpy 反编译实机 DLL 确认 `AiEngagePartyBehavior.AiHourlyTick` 前缀只对
+  当前合法协力军团暂时写入 `ArmyTypes.Defender`，postfix/finalizer 均恢复保存的
+  原 ArmyType。自动部署后复核二十五个可部署源文件，实机缺失或哈希不一致均为
+  零；客户端与编辑器 DLL 均为 `531968` 字节，SHA-256 为
+  `A28BC3799E8433BF53FA7DFD81BA8B83D9CB641CF808C4B041C594ADE2285C06`。仓库与实机
+  中文 README SHA-256 同为
+  `2BFF217D592E1E606E800C59F6285F18F0FB20CB1DC2688FED90F4B4F8A78B16`。
+
+
+## 2026-07-20 新档实测：原版接战与连续无领主支援
+
+- 用户实测观察到灰袍军团在认为战力足够后参与战斗。日志对应案件为族长梵蒂
+  承办的 `lord_1_52`，处于 `WarPursuit`，长期案件候选始终保持
+  `GoAroundParty@lord_1_52=0.99`；最高可见原版进城欲望约 `0.38`，未覆盖案件。
+- 战役小时 `624745.56`，梵蒂建立无王国原版军团并召集约珥：
+  `armyMemberCount=2`、`members=1`。但直到案件结束始终是 `attached=0`，约珥仍在
+  远方赶来，因此最终战斗没有约珥参战。原版 Army 总人数显示与实际立即可参战
+  队伍需要继续区分；下一次完整集结测试应确认 `attached=1` 后是否由军团自身
+  发起战斗。
+- 同一案件先后只存在一支活跃无领主支援，而不是并发批量生成：
+  `gwp_enf_delay_73116` 于 `624729.20` 出发并在 `624746.74` 战败；
+  `gwp_enf_delay_86856` 于 `624777.19` 出发并在 `624799.83` 战败；案件和目标仍
+  有效后，`gwp_enf_delay_63725` 于 `624825.21` 再次出发。该序列符合“每案一支，
+  被消灭后经过下一轮两日检查再补发”的设计，没有发现同一时刻超额刷队。
+- 三支临时队在任务有效期间全部保持 `directAttackLock=True`、
+  `default=EngageParty`、`short=EngageParty`，没有产生战略欲望或中途改向。前两支
+  被包含多支帝国领主的敌方集团击败；第三支在 `624839.62` 左右触发最终
+  FieldBattle，梵蒂随后从 `GoAroundParty + FleeToPoint` 切到
+  `GoAroundParty + EngageParty` 并加入同一地图事件。
+- 最终地图事件参战方明确为
+  `gwp_enf_delay_63725, gw_leader_0_party_1, lord_1_52_party_1`，结果为
+  `DefenderVictory`。案件目标健康兵员在战斗中逐步降至零；梵蒂从约一百九十名
+  健康兵下降到一百六十五名并产生二十四名伤员，临时支援队剩三十名健康、
+  十六名伤员，证明两支灰袍确实共同参加并完成战斗，而不是只在地图旁观。
+- 战斗结束后案件被正常结案，下一次协力清理记录
+  `taskExists=False/caseOpen=False`，随后释放约珥并解散军团。这次
+  `ASSISTANCE_VALIDATION_FAILED` 是任务已成功结束后的预期清理，不是此前攻城
+  切换中“案件仍在却瞬时无效”的异常。支援队则解除直攻并转为前往城镇收尾。
+- 本轮只读取并归档实测证据，没有修改代码、构建或部署。结论是当前“持续锁案、
+  无领主支援逐次消耗、附近领主加入最终战斗、胜利后结案解散”的闭环已经成立；
+  尚待独立验证的是所有协力领主完成 AttachedTo 后，完整军团在没有无领主支援
+  先开战的情况下能否自行产生原版攻击并发起战斗。
+
+
+## 2026-07-20 外交和平回退与全领主恢复接案
+
+- 确认存在真实软卡死路径：`PoliceTask.WarDeclared` 是独立保存字段，原版外交或
+  其他系统恢复和平时不会自动清零。欲望层仍会按该字段产生
+  `Pursue/GoAroundParty=0.99`，但原版攻击欲望不会攻击中立目标；协力和无领主
+  支援又要求实际战争，因此案件可能永久停在目标周围。
+- 按用户要求只增加小时一致性检查，没有添加 MakePeace 事件监听。每小时在更新
+  支援与协力前检查所有 `WarDeclared=true` 且具有正式 `WarTarget` 的案件；若灰袍
+  与罪犯当前实际势力已非战争状态，则把 `WarDeclared=false`、`WarTarget=null`，
+  标记该案无领主支援返程，解散该案协力军团，并要求承办领主下一次重新拍卖。
+  野怪案件没有正式 WarTarget，不参与该检查，仍保留其原有直接敌对语义。
+- 回退不删除案件。随后同一个小时的既有 `UpdateTasks` 自然接管：距离外恢复
+  `Approach=0.99`；普通罪犯仍在宣战距离内时可按原规则重新宣战；玩家案件重新
+  接近并走缴款、赎罪或拒捕对话。日志新增 `CASE_WAR_STATE_RESET`，记录旧战争
+  目标、罪犯当前势力和回退原因。
+- 删除单承办人测试限制。`AssignTasks` 再次遍历灰袍家族全部有效领主，排除已有
+  案件、协力、收养善后、失效首领和资源未就绪者后，为每人领取距离最近的无人
+  承办案件。玩家重度通缉也恢复为从全部可用领主中选择离玩家最近的一支，并仍
+  保留强制顶掉该领主普通案件的玩家优先级。
+- 村庄收养善后候选不再排除族长；所有有效灰袍领主与未来成长领主重新处于同一
+  普通案件、协力和收养调度体系。诊断字段 `ordinaryCaseEligible` 现在对全部符合
+  条件的灰袍领主为 true，而不再只标记族长。
+- 最终 Release `--no-restore` 构建通过，零错误；增量构建只报告离线 NuGet 漏洞
+  数据源警告。中文语言 XML 与案件总卷 prefab XML 均解析通过；自动部署后复核
+  二十五个可部署源文件，实机缺失或哈希不一致均为零。客户端与编辑器 DLL 均为
+  `532480` 字节，SHA-256 为
+  `4C1DF820D92E535A2A807D232D9BA3521593616E32615A2E96AEA9D9E97B7FDE`；仓库与实机
+  中文 README SHA-256 同为
+  `D61B4B3EBC07F46C4282447F62B19DFF56BB7CF18A60D484421602AF0DC6F81B`。
+
+
+## 2026-07-20 协力任务改为完全绑定主办案件生命周期
+
+- 明确拆分“协力创建资格”和“协力成立后的存续资格”。创建前仍要求主办领主处于
+  合法战时追捕、目标可战、实际外交为战争，并连续出现原版近距离避战；这些条件
+  只负责证明此刻需要新增协办人，不再重复用于判断已接下的协力任务是否有效。
+- 已成立协力组现在只核验三项稳定身份：主办人的 `PoliceTask` 仍存在、任务仍归属
+  同一主办部队、`TargetCrimeId` 仍等于协力组保存的 `CrimeId`。暂时和平、
+  `WarDeclared=false`、流程退回接近、罪犯短暂失活、健康兵员瞬时归零、势力变化或
+  地图事件结算均不会再强制释放协办人或解散军团。
+- `UpdateLordAssistance` 先维护已经存在的协力组，再按严格条件解析当前可追捕目标。
+  目标暂时不可用于追捕时只清零本轮受阻计时并保留原版 Army；案件重新宣战并回到
+  `WarPursuit` 后，既有成员直接继续随主办人行动。只有尚未建立协力组的领主才走
+  原有严格触发判断。
+- 小时外交一致性检查仍会把不一致案件的 `WarDeclared` 与 `WarTarget` 清零，并让
+  无领主追截支援返程，但不再调用 `ReleaseAssistanceGroup`。因此同一案件可以在
+  原版外交恢复和平后保留领主军团，等待现有案件流程重新宣战或重新完成玩家执法
+  对话。
+- 原版 Army 因其自身规则暂时消失时，不再把“Army 当前不可用”解释为协力任务
+  失败；只要主办案件仍是同一案件，系统会保留协力记录，并在后续小时重新恢复该
+  无王国原版军团。真正 `EndTask`、任务换案或任务归属变化仍会输出
+  `ASSISTANCE_CASE_ENDED`，随后释放全部协办人并解散属于该组的军团。
+- Release `--no-restore` 最终构建通过，零错误、四十四条既有可空/离线 NuGet
+  警告。十八个仓库 XML 全部解析通过；自动部署后核对二十五个可部署文件，实机
+  缺失与哈希不一致均为零。客户端与编辑器 DLL 字节一致，大小 `533504`，
+  SHA-256 为
+  `73A8D5975EA3B93C8492A6C8BF0A6CD1DE53FFAF89BF2A1B443123F47F1FABD5`。
+  仓库与实机中文 README SHA-256 均为
+  `A022BFB323354A3869FC63EAB791936EDA395E3E27CDC657F10A6B023CFEDDEE`；英文
+  README SHA-256 均为
+  `FF5BAF7D70D3F1FA4C2405A87A5EDAA4B9620D198173BADFBD3ACC3D49689BBB`。
+
+
+## 2026-07-20 梵蒂在攻城结束后的城外对峙诊断
+
+- 本轮只读取 `GreyWarden-AI-Diagnostics.log`，没有修改运行代码。梵蒂承办
+  `lord_5_17`，案件一直保持 `WarPursuit/war=True`，长期候选为
+  `GoAroundParty@lord_5_17_party_1=0.99`。目标在攻城期间属于
+  `lord_5_20_party_1` 军团并附着于军团长；梵蒂的短期行为长期是以敌方军团长或
+  邻近成员为目标的 `FleeToPoint/FleeToParty`，与玩家看到的城外折返一致。
+- 梵蒂在战役小时 `624868.54` 召集约珥，在 `624947.50` 召集晨曦。第二次召集
+  发生在攻城仍未结束时，而不是城池攻下之后。攻城于 `624962.52` 以进攻方胜利
+  结束；之后案件罪犯的 `armyLeader/attachedTo` 从 `lord_5_20_party_1` 变为 `-`，
+  证明敌方原军团已经解散。
+- 最新状态约 `625080.62`：梵蒂的协力摘要为
+  `members=2,attached=1,blocked=0`，Army 内显示三支部队；约珥已真正附着于梵蒂，
+  晨曦仍距军团长约 `51.78`，正在以 `EscortParty` 赶来。因此地图上看见的增援是
+  已经下达的第二个协力任务仍在执行，并非当前每小时继续新增协办人。
+- 梵蒂当前仍在目标约 `8.8～9.1` 距离外反复于 `FleeToPoint`、`GoToPoint` 和短暂
+  `None` 之间切换。最新欲望拍卖只有案件的 `GoAroundParty=0.99` 与若干原版进城
+  候选，没有生成 `EngageParty` 候选。这证明卡点不是案件欲望被其他欲望覆盖，而是
+  原版当前没有给城内/受聚落保护的目标生成可执行的野战攻击；灰袍逻辑本身也没有
+  攻城任务，因此只能继续在城外跟踪。
+- 现有诊断没有记录罪犯的 `CurrentSettlement`，也不记录每支敌方领主自己的欲望
+  拍卖，所以不能仅凭日志严格证明“所有敌方领主均因灰袍更强而拒绝出城”。但攻城
+  胜利、敌军团解散、目标仍在同一聚落区域、灰袍无攻击候选且持续折返的组合，与
+  玩家观察的双方城内外互相威慑完全一致。后续若要精确区分，应为罪犯状态增加
+  `currentSettlement`，并记录目标聚落内敌方领主数、健康兵员合计和驻军/民兵战力。
+- 当前升级机制还有一层自然闸门：只有所有已召协办人均真正附着后，梵蒂再次满足
+  近距离 `GoAroundParty + Flee` 才会累计 `BlockedHours`。目前晨曦未集合，所以
+  `blocked=0`；并且现有 `IsCasePursuitBlocked` 在罪犯处于 `CurrentSettlement` 时
+  直接返回 false。若罪犯确实仍在城内，即使晨曦抵达，当前代码也不会继续召集第三
+  名协办人；只有罪犯离城后再次形成近距离连续避战，才会继续升级。
+- 继续反编译 Bannerlord `v1.4.7` 的 `DefaultMobilePartyAIModel` 后，已确认城内领主
+  可以导致城外军团长逃跑。原版局部主动性会以军团长及其 `AttachedParties` 的
+  `Army.EstimatedStrength` 作为灰袍本方战力，并把扫描半径内的其他敌对领主部队
+  合并进敌方局部战力；敌方领主处于 `CurrentSettlement` 并不会从避战计算中排除。
+  因此梵蒂追捕的罪犯虽然本人只有八十余名健康兵，但同城其他领主仍可共同抬高
+  `FleeToPoint` 分数。驻军本身被普通领主主动性扫描排除，日志所见逃避更可能来自
+  城内多支领主部队，而不是单独把驻军与民兵全部直接相加。
+- 原版同时明确把处于定居点且未参加地图事件的目标 `attackScore` 设为零，
+  `AiEngagePartyBehavior` 也跳过位于要塞中的敌军。因此即使灰袍军团已经明显占优，
+  它也不会隔着城墙生成野战 `EngageParty`；占优的直接效果首先是让避战分数下降，
+  军团长回到案件的 `GoAroundParty`，通常落实为靠近目标周边的 `GoToPoint`。
+- `Army.EstimatedStrength` 只累加军团长和已经进入 `LeaderParty.AttachedParties` 的
+  成员。仅显示在 `Army.Parties`、仍在路上的晨曦不计入梵蒂当前短期强弱判断；她
+  真正到达并 `AttachedTo=gw_leader_0_party_1` 后才会使本方局部战力立即增加。若增加
+  后超过城内敌方领主的合计局部战力，梵蒂应停止逃跑并靠近，但这不是按人数必然
+  触发：兵种战力、伤员、附近城外敌军、距离和原版进攻/避战主动性都会参与结果。
+- 灰袍已有城内目标保底流程。案件目标仍在城内时，主办人若能靠到城门三格内并
+  连续一小时移动不超过 `0.35`，`HandleShelteredCriminal` 会通过原版
+  `LeaveSettlementAction` 令罪犯离城；若目标仍属于同城军团则先赶军团长出城。
+  目标离城后才重新允许原版野战攻击判断。当前僵局的关键因此不是缺少后续流程，
+  而是梵蒂的原版避战尚未允许她进入这段城门触发距离。
+
+
+## 2026-07-20 无领主追截支援改为协力军团增援
+
+- 按用户要求改变同案已有领主协力军团后的支援用途。没有合法协力军团时，
+  无领主追截支援仍沿用既有“关闭其他欲望、零逃避主动性、一次直接攻击”路径；
+  同案一旦存在有效 `LordAssistanceGroup`，新生成及地图上已有的对应支援队都会解除
+  直攻锁，改为 `EscortParty` 前往主办领主并加入同一个原版 `Army`，不再逐队撞向
+  强敌送死。
+- 支援绑定优先使用保存的 `SourceTaskPolicePartyId` 查找主办协力组；旧存档状态若
+  缺少该 ID，则按同一 `TargetPartyId` 回退匹配。只有协力组仍绑定主办人的同一
+  `TargetCrimeId`、军团长仍为有效灰袍领主时才允许加入，避免把支援吸入其他案件
+  的军团。
+- 支援设置 `MobileParty.Army` 后使用原版 Army 集合和附着流程；到达原版军团接触
+  距离后调用既有 `AddPartyToMergedParties`。因此仅在路上的五十人支援不计入
+  `Army.EstimatedStrength`，真正 `AttachedTo` 军团长以后才作为同一军团的可参战
+  战力参与原版进攻/逃避判断。
+- Bannerlord 的 `Army.OnAddPartyInternal` 会对每个加入者调用
+  `CalculatePartyInfluenceCost`，而无领主支援没有 `LeaderHero`，直接走原版公式会
+  空引用。新增窄 Harmony 前缀只在“无英雄追截支援正在加入当前合法灰袍协力军团”
+  时返回零影响力费用；普通领主、其他无英雄部队和所有非灰袍协力军团继续使用
+  原版公式。
+- 案件失效或协力结束后，支援先从 Army 脱离，再使用既有返程欲望和到达销毁流程。
+  原版军团因断粮等规则暂时解散、但主办案件仍未结束时，支援记录不会丢失；后续
+  小时会随协力军团恢复而重新加入。旧版“卡进城即清理”兼容逻辑现在跳过仍属于
+  合法协力军团的支援，避免军团长进城时误删已经附着的增援。
+- AI 诊断中，军团长的协力摘要新增 `supports/attachedSupports`；无领主增援显示
+  `armySupport:leader/attached/distance/target`，并在首次加入时输出
+  `DELAY_SUPPORT_ARMY_JOINED`。这能直接区分支援仅在军团名单中赶路，还是已经
+  真正并入并计入战力。
+- 最终 Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet
+  警告。十八个 XML 全部解析通过；自动部署后核对二十五个可部署文件，实机缺失
+  与哈希不一致均为零。客户端与编辑器 DLL 均为 `535552` 字节，SHA-256 为
+  `2D53D8A77A585C811A0323690CBD8DF2899217C8A036D60D7888299E5CB41170`。
+  仓库与实机中文 README SHA-256 均为
+  `4AB58279082167806F36B664BFFC66BA4A6459489EF0E0D7C27DC47EAA96D6A4`；英文
+  README SHA-256 均为
+  `0B2671B91FE51DA3D587F53E55426598B63692A2EFE793CAD33AF80836DA46BB`。
+
+
+## 2026-07-20 城外围堵驱逐范围扩大
+
+- 用户选择沿用现有城内目标驱逐流程，只扩大触发范围，不新增强制靠近城门的
+  高权重欲望。已撤销本轮尚未构建的 `GateApproach` 临时代码，案件追踪仍只有
+  `Approach/Pursue/Escort/Visit` 四种职责，继续由原版欲望拍卖决定实际移动。
+- `GwpTuning.Enforcement.ShelteredGateDistance` 从 `3f` 提高到 `12f`。最新实测中
+  梵蒂停在案件目标约 `5.95` 距离，原三格触发线无法覆盖，而十二格与现有协力接触
+  观察范围一致，可覆盖原版 `GoAroundParty` 常用的城外围堵位置。
+- 这里只扩大距离，不放宽案件资格。驱逐仍要求非玩家案件、目标当前躲在定居点、
+  本案件已经宣战，并且承办部队在外围停稳达到既有时长；目标离城后仍交回原版
+  野战攻击与强弱判断。
+- Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet 警告；
+  十八个 XML 全部解析通过。自动部署后核对二十五个可部署文件，实机缺失与哈希
+  不一致均为零。客户端与编辑器 DLL 均为 `535552` 字节，SHA-256 为
+  `E63CD33BC54FAFA82893173F83F21C0A886E8944FDB2BCEE41F52EE7077D3B89`。
+  仓库与实机中文 README SHA-256 均为
+  `D2C9160813F314BF573F2A2879E4926BC7CB0C99C7367597B1CD8BF2EFEF843D`；英文
+  README SHA-256 均为
+  `2AD438CD9CCFF5E7B48240AD809E1E5EB4D36A8CC9C6D21F2507B71D567DCA5D`。
+- `git diff --check` 仍报告工作树既有的 `GwpAiDeterrenceState.cs:379` 文件末尾空行；
+  本轮未修改该文件，也没有为处理无关用户改动而重写它。
+
+
+## 2026-07-20 驱逐范围扩大后的实测诊断
+
+- 用户进入同一存档继续等待约一至两天，确认无领主支援已经真正附着于梵蒂的
+  原版军团，但地图上没有观察到案件目标被驱逐出城。本轮只读取日志、反编译实机
+  DLL 并对比 Git 历史，没有修改运行行为、构建或部署。
+- 最新诊断从战役小时 `625132.34` 持续到 `625159.62`：梵蒂案件始终为
+  `lord_5_17/WarPursuit/war=True`，军团成员由 `attached=2` 保持不变，无领主支援
+  最终从 `attachedSupports=0` 变为 `attachedSupports=1`。梵蒂位置始终为
+  `(272.7485,409.1314)`，目标距离始终为 `5.95`，证明至少连续二十七小时没有发生
+  超过 `0.35` 的位移，既有一小时停稳条件应已满足。
+- 欲望拍卖不是阻断点。梵蒂每轮都是案件 `GoAroundParty=0.99` 胜出，原版最高进城
+  候选仅约 `0.42`，短期行为在 `GoToPoint/None` 间切换；没有其他欲望夺走案件，
+  也没有重新补给、逃跑、进入地图事件或进入定居点。
+- 实机 DLL 反编译确认当前常量确实为 `ShelteredGateDistance=12f`，驱逐条件仍编译为
+  `WarDeclared && distToGate <= 12f && stoppedHours >= 1`。根据 SandBox 的
+  `settlements.xml`，梵蒂当前围堵的是 `castle_EW5`，其城门坐标为
+  `(267.33,406.6704)`；梵蒂到城门的实际距离为 `5.95119`，明确处于十二格内。
+- 当前诊断存在盲区：`HandleShelteredCriminal` 没有记录条件值或驱逐结果，
+  `TryForceExpelShelteredCriminal` 又会吞掉全部异常。因此仅凭现有日志不能严格区分
+  “`LeaveSettlementAction` 回调异常”与“成功离城后立刻重新进城”，但可以排除距离、
+  停稳、案件战争状态和灰袍欲望拍卖这四类原因。
+- Git 对比发现更直接的回归点：`v1.4.7-r4` 在
+  `LeaveSettlementAction.ApplyForParty(expelParty)` 后会对军团长、附着成员和案件
+  目标各执行一次 `SetMoveModeHold()`，注释明确说明是为了防止刚被逐出的目标立即
+  钻回定居点。AI 欲望整理时，为满足“不直接写地图移动命令”，这一组一次性 Hold
+  与其他长期强制追击代码一起被删除；当前版本只执行离城动作，然后立刻把目标交回
+  原版 AI。目标仍处于城门坐标且面对更强灰袍军团时，原版安全/进城决策可在玩家
+  可见之前重新进入同一座城。这是当前最符合代码历史与实测现象的根因。
+- 后续修复应保持范围狭窄：恢复“驱逐成功后的短时防回城窗口”，或使用等价的一次性
+  状态阻止同小时重新进入，而不恢复围堵期间的 AI 冻结、无限主动性或持续强制追击。
+  同时应新增 `SHELTERED_EXPULSION_CHECK/ATTEMPT/RESULT` 诊断，记录聚落、城门距离、
+  每小时位移、停稳小时、实际被逐出的军团长、调用结果及异常类型，以便下一次实测
+  能严格确认离城动作是否成功以及何时重新进城。
+
+
+## 2026-07-20 城内目标驱逐诊断增强
+
+- 按用户要求本轮只增强后台侦查，不修改驱逐距离、停稳条件、原版欲望或目标离城
+  后的行为。`HandleShelteredCriminal` 现在每个目标躲城小时输出
+  `SHELTERED_EXPULSION_CHECK`，记录案件、目标、聚落、灰袍/聚落/城门坐标、到聚落
+  与城门距离、阈值、目标躲城小时、本小时灰袍移动距离、停稳容差、连续停稳小时，
+  以及战争、距离和停稳三项条件分别是否通过。
+- 条件全部通过时先输出 `SHELTERED_EXPULSION_ATTEMPT`，明确原版离城动作实际作用于
+  案件目标还是同城敌方军团长，并记录该部队进入前所在城和附着成员数。调用后输出
+  `SHELTERED_EXPULSION_SUCCEEDED` 或 `SHELTERED_EXPULSION_FAILED`，同时记录目标与
+  实际驱逐部队调用后的 `CurrentSettlement`；异常不再无声吞掉，而是写入异常类型和
+  消息后仍沿用原有失败返回，不影响游戏继续运行。
+- 普通 `HOURLY_STATE/AUCTION/RESOLVED` 的 `offenderState` 新增罪犯当前聚落和地图坐标。
+  因此若驱逐当小时成功、下一小时又返回同一座城，日志可以直接用
+  `SUCCEEDED` 后的 `currentSettlement=-` 与后续状态的
+  `currentSettlement=原聚落` 串起完整证据。
+- `tools/Watch-GreyWardenAI.ps1` 新增 `-Sheltered` 过滤器，只显示上述驱逐检查、尝试、
+  结果和跳过事件；同时把领主类型过滤值从旧的 `founder_lord` 修正为运行日志实际
+  使用的 `grey_warden_lord`，并把说明范围改为全部当前及未来灰袍领主。
+- Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet 警告；
+  十八个 XML 全部解析通过。自动部署后核对二十五个可部署文件，实机缺失与哈希
+  不一致均为零。客户端与编辑器 DLL 均为 `538624` 字节，SHA-256 为
+  `5FA519949EDFD2C26C7B16B9A64F89A258379B54403C883CA93177E120A602A2`。
+- `Watch-GreyWardenAI.ps1 -Once -Tail 1 -Sheltered` 参数解析与过滤器启动检查通过；
+  当前旧会话日志尚无新增事件是预期结果，重新载入使用本 DLL 的战役后才会开始
+  产生 `SHELTERED_EXPULSION_*` 行。
+
+
+## 2026-07-20 驱逐成功后即时回城的实测定论与正式版诊断清理
+
+- 用户使用诊断增强版本快进数小时后，日志给出确定闭环。梵蒂到
+  `castle_EW5` 城门距离始终为 `5.951/12`，每小时位移为 `0.000`；第二个连续小时
+  `warPassed/distancePassed/holdPassed` 全为 true，驱逐资格正常成立，不存在欲望、
+  距离或停稳条件未通过。
+- 战役小时 `625162.14`、`625164.13`、`625166.18`、`625168.18` 均出现完整的
+  `CHECK -> ATTEMPT -> SUCCEEDED`。实际驱逐部队就是案件目标
+  `lord_5_17_party_1`，不是敌军团长；调用前 `CurrentSettlement=castle_EW5`，调用后
+  立即变为 `-`，没有异常，证明 `LeaveSettlementAction.ApplyForParty` 每次都成功。
+- 每次成功后约 `0.45～0.49` 个战役小时，普通状态日志已经重新显示
+  `currentSettlement=castle_EW5`，目标坐标仍为城门 `(267.33,406.6704)`。下一小时
+  驱逐跟踪又从 `shelteredHours=1/stoppedHours=0` 重新开始。因此现象已严格证明为
+  “目标成功离城后不到半小时立即进入同一座城”，而不是驱逐未触发或调用失败。
+- 修复方向应只处理驱逐后的防回城窗口。历史版本的一次性 `SetMoveModeHold` 正是为
+  此问题存在；若恢复，应限定在驱逐成功后的目标/同城军团成员，不恢复围堵期间的
+  长期 AI 冻结、强制攻击或持续地图命令。
+- 正式发行清理要求：仓库目前只有一个外部 PowerShell 查看器
+  `tools/Watch-GreyWardenAI.ps1`，它不位于 `_Module`、当前也没有任何 `.ps1` 或测试
+  文件被部署到游戏模组，因此可留在仓库开发工具区而不进入发行包。真正需要在正式
+  构建前处理的是编入 DLL 的 `GwpAiDiagnostics.cs` 及八个源码文件中的调用：当前它
+  会自动创建并持续写入玩家 Documents 下的 `GreyWarden-AI-Diagnostics.log`。
+- 在发布候选阶段增加硬性清理项：关闭或条件编译掉 `StartSession/WriteState/
+  WriteAuction/WriteResolved/WriteAction/WriteMapEvent` 全部运行时写盘路径，并验证正式
+  DLL 不再包含诊断日志文件名或 `SHELTERED_EXPULSION_*` 字符串；保留仓库 `tools`
+  脚本和维护历史即可。若未来仍需玩家协助排障，应另做默认关闭、明确手动启用的诊断
+  开关，而不是正式版每小时全量写盘。
+
+
+## 2026-07-20 恢复驱逐后短暂停留并保留通用 AI 观测
+
+- 按用户要求修复已证明的“成功离城后约半小时立即回城”。恢复 `v1.4.7-r4` 已验证
+  方案：`LeaveSettlementAction.ApplyForParty` 成功后，对实际被逐出的部队、其附着
+  成员及案件目标各执行一次 `SetMoveModeHold()`。该命令只清掉刚出城时立即选择的
+  回城移动；下一次原版 AI 思考、移动或接战会自然接管，不保存禁城状态，也不会让
+  目标永久无法进入任何聚落。
+- 驱逐资格保持不变：非玩家案件、目标在城内、本案件已宣战、灰袍距城门不超过
+  十二格并在外围连续停稳一小时。围堵期间没有恢复旧版 AI 冻结、无限主动性、自动
+  补粮或持续强制攻击；只有驱逐成功后的目标侧使用一次 Hold。
+- 用户澄清诊断需求：开发期仍需持续观察全部当前及未来灰袍领主、所有无领主队伍、
+  任务、欲望拍卖、军团/协力、兵力和经济字段。因此保留并恢复通用
+  `GwpAiDiagnostics`、军团/地图事件动作记录和 `tools/Watch-GreyWardenAI.ps1`。
+- 已删除刚才为城墙问题新增的全部 `SHELTERED_EXPULSION_*` 专项检查、尝试、结果和
+  异常日志，也删除脚本的 `-Sheltered` 过滤器；通用日志不再逐小时输出城门距离、
+  停稳计数等已解决问题的噪声。查看脚本继续支持按领主/无领主类型及具体 Party ID
+  过滤，普通状态仍含任务、欲望、军团、附着、粮食、粮耗、可用天数、领主/家族资金、
+  工资、欠薪、兵力、伤员和俘虏。
+- 正式发布原则不变：PowerShell 查看器留在仓库 `tools`，不进入 `_Module`；当前
+  DLL 内通用诊断只用于开发测试，正式发布候选时再统一关闭运行时日志写盘，而不是
+  在当前仍需经济和 AI 测试的阶段提前删除。
+- Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet 警告；
+  十八个 XML 全部解析通过。自动部署后核对二十五个可部署文件，实机缺失与哈希
+  不一致均为零。客户端与编辑器 DLL 均为 `535552` 字节，SHA-256 为
+  `928D31CEB6F556E9B16A1F7BB40A8501D9E5C9E25058E6DCBE6B7E9E8B6DDB3B`。
+- ILSpy 反编译实机 DLL 确认 `TryForceExpelShelteredCriminal` 在原版
+  `LeaveSettlementAction.ApplyForParty` 后依次调用实际驱逐部队、附着成员和案件
+  目标的 `SetMoveModeHold`；通用诊断仍包含 `GreyWarden-AI-Diagnostics.log`，但 DLL
+  与源码均不再包含任何 `SHELTERED_EXPULSION_*` 事件。查看脚本参数启动检查通过。
+- 仓库与实机中文 README SHA-256 均为
+  `FE5AE7ACAE36083CF294BFB630ADBB4557489E48D1B06C8ADD5064147180AB21`；英文 README
+  SHA-256 均为
+  `046AF2A4C5C176755A96DD6B3F66CEE884931905A4FF72DBEA590134FB7D6E54`。
+
+
+## 2026-07-20 已宣战案件目标禁止重新进入聚落
+
+- 用户复测确认一次性 `SetMoveModeHold` 仍不足：它只清空当前移动，原版下一次短期
+  AI 决策仍会立即再次调用进城。因此保留驱逐后的 Hold 作为第一帧清理，并新增真正
+  的案件期进城拦截，不再依赖下一次 AI 是否重新选择安全聚落。
+- 反编译 Bannerlord `v1.4.7` 确认所有普通部队进城最终统一经过
+  `EnterSettlementAction.ApplyForParty(MobileParty, Settlement)`，该方法会直接设置
+  `CurrentSettlement` 并触发聚落进入事件。新增 Harmony 前缀只在进入部队属于一宗
+  当前 `WarDeclared=true` 且目标仍有效的非玩家案件时返回 false，并清掉本次进城
+  移动；其他所有部队和所有非案件进城继续执行原版方法。
+- 拦截对象包括案件罪犯本人，以及罪犯当前原版 `Army` 中的军团长和成员。这样无论
+  是领主协力军团还是同案无领主支援先把目标拖入野战，同一个承办案件都会阻止目标
+  或同军团成员先钻回聚落再把其他成员吸回去。无领主支援不需要另建第二套禁城状态。
+- 禁城生命周期完全绑定案件现有数据，不保存永久名单：案件结束、换案、目标失效、
+  `WarDeclared` 因外交和平检查重置，或目标退出该军团后，前缀下一次检查自然放行。
+  玩家案件明确排除，仍保留原有玩家对话、补给和进城规则。
+- 通用 AI/经济诊断保持不变，仍观察全部灰袍领主和无领主队伍；没有重新加入任何
+  `SHELTERED_EXPULSION_*` 城墙专项日志。
+- Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet 警告；
+  十八个 XML 全部解析通过。自动部署后核对二十五个可部署文件，实机缺失与哈希
+  不一致均为零。客户端与编辑器 DLL 均为 `536064` 字节，SHA-256 为
+  `8EC2F78CB8777B841308B8003089370E835ACF07B2586576728E39E771C77468`。
+- ILSpy 反编译实机 DLL 确认 `GwpCaseSettlementEntryPatch` 精确 Harmony patch 原版
+  `EnterSettlementAction.ApplyForParty`，案件目标命中时执行一次 Hold 并返回 false；
+  `PoliceEnforcementBehavior.IsSettlementEntryBlockedByActiveCase` 实机方法包含
+  `WarDeclared`、目标有效、非玩家、罪犯本人及同 Army 成员判断。源码中的
+  `SHELTERED_EXPULSION_*` 计数为零。
+
+
+## 2026-07-20 驱逐目标改为案件期间持续 Hold
+
+- 用户进一步明确目标不是“阻止进城但仍允许原版在野外移动”，而是驱逐成功后始终
+  `Hold`，直到案件生命周期结束。此前一次性 Hold 和仅拦截进城入口都不足以满足该
+  语义，因此新增每帧维护的案件级 Hold 集合。
+- 驱逐前记录实际被逐出的原版军团长、当时全部附着成员和案件罪犯的 Party ID；
+  `LeaveSettlementAction` 成功后立即 Hold，并把这批 ID 绑定到承办任务 ID。之后
+  `CampaignEvents.TickEvent` 每帧对仍活跃、未处于地图事件且不在聚落内的记录部队
+  重复 `SetMoveModeHold()`，原版小时/短期 AI 即使重新选择移动也会被持续覆盖。
+- 进入战斗时 `MapEvent != null`，持续 Hold 暂停，避免干扰地图事件建立和战斗结算；
+  原版 `EnterSettlementAction.ApplyForParty` 前缀仍作为保险，只对当前 Hold 集合中的
+  部队拒绝进城。
+- Hold 集合不写入存档，也不永久绑定英雄。每帧先检查原承办任务是否仍存在、
+  `WarDeclared=true`、目标有效且不是玩家；案件结束、换案、和平回退、目标失效或
+  读档重建时集合被删除/清空，相关部队随即恢复原版移动和进城。
+- 该机制由承办案件建立，因此领主协力军团和同案无领主支援共享同一个被 Hold 的
+  目标集合；无需按攻击者类型重复实现。通用 AI/经济诊断继续保留，城墙专项日志
+  仍为零。
+- Release `--no-restore` 构建通过，零错误、四十四条既有可空/离线 NuGet 警告；
+  十八个 XML 全部解析通过。自动部署后核对二十五个可部署文件，实机缺失与哈希
+  不一致均为零。客户端与编辑器 DLL 均为 `538112` 字节，SHA-256 为
+  `8A52ACC0A6E52EE9067A636BE7DD2B6B7227FF2EB5A5CCC7EEC6BAA53CFFB39A`。
+- ILSpy 反编译实机 DLL 确认 `OnTick` 在任何玩家俘虏早退之前调用
+  `MaintainShelteredCaseHolds`，并逐帧遍历任务绑定 ID 调用 `SetMoveModeHold`；
+  `TryForceExpelShelteredCriminal` 在离城前保存军团长、附着成员与罪犯 ID，随后建立
+  Hold 集合。通用诊断保留，源码中的 `SHELTERED_EXPULSION_*` 计数仍为零。
+- 仓库与实机中文 README SHA-256 均为
+  `2D4D1D0F2645316EF45F325750D0EA8DCBB9DACE04C05A2DE28A190A18BF0B51`；英文 README
+  SHA-256 均为
+  `86310457F97CD6CD3F6019D81C7ABE633A78E2B6F2E7F152367A3875B71828EF`。
+
+
+## 2026-07-20 v1.4.7-r5 正式发行分层、安装包与验证
+
+- 正式版本号定为 `v1.4.7-r5`。玩家 README 的当前条目只写相较 `v1.4.7-r4` 的玩法结果：
+  案件总卷、原版欲望办案、灰袍真实经济、协力军团、无领主支援及本轮关键卡死修复；
+  同时按用户新增规则原样保留上一正式版 `v1.4.7-r4` 的玩家日志。以后每次正式发布均
+  只保留最新两个版本，新版本在前，第三旧版本移除。诊断字段、内部权重、测试过程和
+  构建细节不进入玩家发布说明。
+- 明确分离开发测试构建和玩家发行构建。`GwpDiagnosticsEnabled` 默认保持 `true`，普通
+  Release 构建继续把完整 `GwpAiDiagnostics` 编入 DLL，并自动同步到
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`，因此
+  工作目录源码、查看脚本和本地实机测试模块仍可持续输出并读取 AI/任务/军团/经济日志。
+- 正式包使用
+  `-p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false` 单独编译到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player`。
+  该分支把 `GwpAiDiagnostics` 编译为空壳，全部写入方法为空、`ShouldTraceParty=false`、
+  `LogPath=string.Empty`；同时禁止自动覆盖本地实机测试模块。ILSpy 反编译已确认发行 DLL
+  不创建目录、不创建文件、也不写入任何测试日志。
+- 本地实机测试 DLL 为 `537600` 字节，SHA-256
+  `99A9FE9781AD62DB62038FC806F176D0D3D3049218BE67DF144FDA18DBEC25BD`；玩家发行 DLL
+  为 `526848` 字节，SHA-256
+  `4E3EF8BA10061EBF00D1FD35B2BB7165EB1B55344EBC8520F7720950DCB9A154`。二者分开保存，
+  玩家包的制作没有替换实机测试 DLL。
+- 下述 ZIP 哈希是加入“双版本玩家日志”规则前的首轮候选值，已废弃，不能上传；最终
+  README、ZIP 和校验值见本节后续的最终验证补记。首轮候选安装包位于
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7-r5.zip`，
+  大小 `349767453` 字节，SHA-256
+  `5275559FB95B3979F7B9D742670EA1C937801E0D8E329C9526878C893B9E89A9`；校验文件为同目录
+  `GreyWarden-v1.4.7-r5.zip.sha256`。ZIP 顶层唯一目录为 `GreyWarden/`，发行 DLL 从包内
+  解出后与独立发行构建哈希完全一致。
+- 安装包沿用 `v1.4.7-r4` 的正常客户端结构，并加入本版案件总卷界面。内容检查确认不含
+  `tools`、PowerShell、测试日志、诊断目录、PDB、编辑器二进制、`Assets`、`AssetSources`、
+  `RuntimeDataCache` 或任何嵌套压缩包；仓库中的 `tools/Watch-GreyWardenAI.ps1` 只供本地
+  开发观测，不进入 ZIP 或 GitHub Release 资产内部。
+- 开发构建与独立发行构建均零错误；现有四十三至四十四条可空性/离线 NuGet 警告未新增
+  运行阻断。十八个 XML 全部解析通过。仓库 `_Module` 的二十五个可部署文件与实机测试
+  模块逐文件核对，缺失与哈希不一致均为零。
+- 正式发布沿用仓库既有流程：提交到 `main`，打注释标签 `v1.4.7-r5`，并将上述 ZIP 与
+  `.sha256` 作为 GitHub Release 资产发布；不为本次正式版本额外创建中间 PR。
+
+### 双版本玩家日志规则后的最终候选
+
+- 用户在正式发布前补充长期规则：中英文玩家 README 永远保留最近两个正式版本的
+  玩家日志。本次已从 `v1.4.7-r4` 标签恢复 `2026-07-19 v1.4.7-r4` 原始中英文条目，
+  放在精简后的 `2026-07-20 v1.4.7-r5` 条目之后；当前两份文件均只含 `r5`、`r4`，
+  顺序正确。根目录 `AGENTS.md`、本维护文档的发布日志规则和正式发布清单均已同步，
+  并一并固化“开发测试诊断可保留、玩家包必须使用独立无诊断 DLL”的边界。
+- 双版本日志更新后重新执行普通 Release 构建，实机测试模块继续得到诊断启用 DLL；
+  `_Module` 二十五个可部署文件与实机逐文件一致。最终中文 README SHA-256 为
+  `FB0D2723CEE63EFE995970BA6078DDAED50353550FB67044D18B57C0194374B2`，英文为
+  `B691FFEE5A5864D26C7DD52F862B4E382E9FFD59E3D54A51999AD6975E802B07`。
+- 最终安装包仍位于
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4.7-r5.zip`，
+  已覆盖首轮候选，最终大小 `349768562` 字节，SHA-256
+  `FA4C3157415D5B67431DF1C0269CD5882D013A1613D1B811D033FD46331CCEC2`；对应
+  `.sha256` 已同步重写。最终 ZIP 继续使用哈希为
+  `4E3EF8BA10061EBF00D1FD35B2BB7165EB1B55344EBC8520F7720950DCB9A154` 的独立无诊断
+  玩家 DLL；首轮候选哈希 `5275559F...` 作废，禁止上传。

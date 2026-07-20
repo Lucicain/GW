@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -341,8 +341,8 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
-                _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
+                GreyWardenPartyDesireBehavior.RequestPursuit(
+                    _dialogPatrol, MobileParty.MainParty, 9f);
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
@@ -388,8 +388,8 @@ namespace GreyWardenPolicePurity
 
             if (_dialogPatrol != null && _dialogPatrol.IsActive)
             {
-                GwpCommon.TrySetAggressiveAi(_dialogPatrol);
-                _dialogPatrol.SetMoveEngageParty(MobileParty.MainParty, MobileParty.NavigationType.Default);
+                GreyWardenPartyDesireBehavior.RequestPursuit(
+                    _dialogPatrol, MobileParty.MainParty, 9f);
             }
         }
 
@@ -470,7 +470,8 @@ namespace GreyWardenPolicePurity
                         if (task != null && task.TargetCrime?.Offender?.IsMainParty == true)
                         {
                             GwpCommon.TryResetAi(pp);
-                            PoliceResourceManager.StartResupply(pp);
+                            GreyWardenPartyDesireBehavior.ClearIntent(pp);
+                            GreyWardenPartyDesireBehavior.RequestImmediateRethink(pp);
                         }
                     }
                     CrimeState.EndPlayerHunt();
@@ -593,7 +594,7 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                // 玩家拒绝后，持续强制追击，避免纠察队原地不动
+                // 玩家拒绝后保留持续追踪欲望，直到战斗或案件结束
                 if (_playerRefused)
                 {
                     MobileParty player = MobileParty.MainParty;
@@ -603,8 +604,7 @@ namespace GreyWardenPolicePurity
                         {
                             var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
                             if (patrol == null || !patrol.IsActive) continue;
-                            GwpCommon.TrySetAggressiveAi(patrol);
-                            patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+                                    GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 9f);
                         }
                     }
                     return;
@@ -626,20 +626,11 @@ namespace GreyWardenPolicePurity
                     var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
                     if (patrol == null || !patrol.IsActive) continue;
 
-                    // 粮草耗尽 → 纠察队返回
-                    if (patrol.ItemRoster.TotalFood <= 0)
-                    {
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_policepatrolbehavior_033}The pickets have run out of supplies and are withdrawing."), Colors.Yellow));
-                        ReturnAllPatrols();
-                        return;
-                    }
-
                     MobileParty player = MobileParty.MainParty;
                     if (player == null || !player.IsActive) continue;
 
-                    // 未宣战+Engage=强制和平接触，自动弹出对话（纠察队找到玩家）
-                    patrol.SetMoveEngageParty(player, MobileParty.NavigationType.Default);
+                    // 和平接触由 GoAroundParty 欲望靠近；近距离仍触发原有对话。
+                    GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
                 }
             }
             catch (Exception)
@@ -719,13 +710,12 @@ namespace GreyWardenPolicePurity
 
                 patrol.MemberRoster.Clear();
                 FillPatrolTroops(patrol, repMagnitude);
-                // 5天食物量，确保足够追踪和返回
-                PoliceResourceManager.ReplenishFood(patrol, 5);
+                PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
                 // 赋发船只（仅当导航DLC/可选海战 DLC 时，无DLC时默认忽略）
                 PoliceResourceManager.GivePoliceShips(patrol);
 
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                patrol.Ai.SetInitiative(1f, 0f, 999f);
+                GreyWardenPartyDesireBehavior.RequestApproach(
+                    patrol, MobileParty.MainParty, 8f);
 
                 _activePatrolIds.Add(patrolId);
 
@@ -885,11 +875,7 @@ namespace GreyWardenPolicePurity
 
             if (patrol != null && patrol.IsActive && escortTarget != null)
             {
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
-                patrol.SetMoveGoToSettlement(
-                    escortTarget,
-                    MobileParty.NavigationType.Default,
-                    false);
+                GreyWardenPartyDesireBehavior.RequestVisit(patrol, escortTarget, 10f);
             }
 
             if (patrol != null)
@@ -942,11 +928,8 @@ namespace GreyWardenPolicePurity
 
             if (_patrolOriginSettlement != null)
             {
-                escort.Ai.SetDoNotMakeNewDecisions(true);
-                escort.SetMoveGoToSettlement(
-                    _patrolOriginSettlement,
-                    MobileParty.NavigationType.Default,
-                    false);
+                GreyWardenPartyDesireBehavior.RequestVisit(
+                    escort, _patrolOriginSettlement, 10f);
             }
 
             if (_patrolOriginSettlement != null)

@@ -50,7 +50,7 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            // 案底与两类威慑由 CrimePool 的统一账本保存；单场目击批次只存在于运行时。
+            // 累计次数与两类威慑由 CrimePool 的长期数字档案保存；单场目击批次只存在于运行时。
             GwpAiDeterrenceState.SyncData(dataStore);
         }
 
@@ -129,7 +129,7 @@ namespace GreyWardenPolicePurity
                     return;
             }
 
-            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(prisoner, record?.Offender);
+            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(prisoner);
             float sharedGain = directGain * 0.5f;
             if (sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;

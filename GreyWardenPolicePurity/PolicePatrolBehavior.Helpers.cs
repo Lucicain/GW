@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -109,11 +109,10 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                patrol.Ai.SetDoNotMakeNewDecisions(true);
                 Settlement town = _patrolOriginSettlement ?? FindNearestTown(patrol);
                 if (town != null)
                 {
-                    patrol.SetMoveGoToSettlement(town, MobileParty.NavigationType.Default, false);
+                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, town, 8f);
                     if (!_returningPatrolIds.Contains(patrol.StringId))
                         _returningPatrolIds.Add(patrol.StringId);
                 }
@@ -151,8 +150,7 @@ namespace GreyWardenPolicePurity
                 Settlement target = _patrolOriginSettlement ?? FindNearestTown(patrol);
                 if (target != null)
                 {
-                    patrol.Ai.SetDoNotMakeNewDecisions(true);
-                    patrol.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
+                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
 
                     float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
                     if (dist < 3f)
@@ -168,12 +166,7 @@ namespace GreyWardenPolicePurity
                         else
                         {
                             // 销毁失败时保留 returning 状态，下一小时继续重试，避免“活着但失联”
-                            try
-                            {
-                                stillAlive.Ai.SetDoNotMakeNewDecisions(true);
-                                stillAlive.SetMoveGoToSettlement(target, MobileParty.NavigationType.Default, false);
-                            }
-                            catch { }
+                            GreyWardenPartyDesireBehavior.RequestVisit(stillAlive, target, 8f);
                         }
                     }
                 }

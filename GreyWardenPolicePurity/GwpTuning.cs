@@ -31,12 +31,16 @@ namespace GreyWardenPolicePurity
             public const float PlayerWarDistance = 15f;
             public const int ShelteredForceBattleIntervalHours = 6;
             public const float ShelteredForceBattleDistance = 1.5f;
-            public const float ShelteredGateDistance = 3f;
+            // 城外围堵点可直接触发既有驱逐流程，不要求军团贴到城门脚下。
+            public const float ShelteredGateDistance = 12f;
             public const int ShelteredGateHoldHours = 1;
             public const float ShelteredGateStopTolerance = 0.35f;
             public const float EscortPunishDistance = 3f;
             public const float AtonementIntelReportIntervalDays = 2f;
             public const float AtonementDeadlineDays = 45f;
+            public const int AssistanceBlockedHours = 3;
+            public const float AssistanceContactDistance = 12f;
+            public const float AssistanceAssemblyDistance = 5f;
         }
 
         internal static class Patrol

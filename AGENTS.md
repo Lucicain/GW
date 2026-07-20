@@ -7,12 +7,12 @@ user's stated goal.
 
 ## Player-facing release log is mandatory
 
-- Treat `GreyWardenPolicePurity/_Module/README.md` as a release artifact that
-  ships with the formal mod build, not as optional documentation.
+- Treat `GreyWardenPolicePurity/_Module/README.md` and `README_EN.md` as release
+  artifacts that ship with the formal mod build, not as optional documentation.
 - Whenever a task changes anything players can see or experience—including
   gameplay, balance, numerical values, AI behavior, combat reactions, visual or
   audio feedback, content, compatibility, installation, or bug behavior—update
-  the `最近更新` section of that README in the same task.
+  the current-version section of both READMEs in the same task.
 - Do not wait for a separate documentation request. Do not report the task as
   complete while the player-facing README is stale.
 - Keep the README concise and directly reusable as a public release post. Its
@@ -27,6 +27,12 @@ user's stated goal.
 - Organize each release under its date/version with short `新增与调整` and
   `修复` lists. Do not add a `未改动` section. Mention an unchanged behavior
   only when omitting it would make a changed mechanic materially misleading.
+- Keep exactly the two most recent formal release entries in both player
+  READMEs, newest first. For example, an `r5` package contains the `r5` and
+  `r4` player logs; when `r6` is published, retain `r6` and `r5` and remove
+  `r4`. Each entry states which immediately preceding release it compares
+  against. Fold development iterations for one upcoming release into that
+  release's single entry instead of adding separate development logs.
 - Summarize existing playable systems by feature, not as a complete manual.
   Let players discover secondary behavior in play; do not fill the README with
   internal reasoning, exhaustive formulas, long FAQs, test history, or every
@@ -42,6 +48,23 @@ user's stated goal.
   log.
 - After a build or deployment, verify that the README copied into the live mod
   directory matches the repository version.
+
+## Formal player packages must be clean
+
+- Repository development tools and the live local test module may retain AI,
+  task, army, and economy diagnostics. Formal player ZIPs and GitHub Release
+  assets must use a separately built diagnostics-disabled DLL that cannot
+  create or write test logs on a player's computer.
+- Never replace the live local test DLL with the diagnostics-disabled player
+  DLL. Produce the player DLL in a separate staging directory with live-module
+  deployment disabled, then copy only that DLL into the formal package.
+- Do not include `tools`, PowerShell scripts, logs, diagnostic output,
+  developer notes, PDBs, editor binaries, `Assets`, `AssetSources`, or
+  `RuntimeDataCache` in a player ZIP. The archive must contain one top-level
+  `GreyWarden/` directory and only normal-client runtime content.
+- Before publication, inspect the final archive paths, compare the packaged DLL
+  hash with the diagnostics-disabled build, and verify by decompilation that
+  the packaged diagnostics implementation is inert.
 
 ## Developer maintenance history is mandatory
 
@@ -75,6 +98,10 @@ user's stated goal.
   exception: keep them out of the normal-client live module so the client loads
   `AssetPackages`. Generated runtime-only `bin` and `Shaders` directories may
   exist only in the live module.
+- The live module is the diagnostics-enabled local test installation. A formal
+  player package is a separate staged artifact and may intentionally contain a
+  different diagnostics-disabled DLL; package creation must not copy that DLL
+  back into the live module.
 - Record each material deployment, test result, failed approach, and diagnostic
   conclusion in `GreyWardenPolicePurity/docs/maintenance-plan.md` during the
   same task.

@@ -35,6 +35,9 @@ namespace GreyWardenPolicePurity
             if (police.MapEvent != null && !police.MapEvent.IsFinalized)
                 return false;
 
+            if (IsAssistanceOccupied(police))
+                return false;
+
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
             {
@@ -58,9 +61,8 @@ namespace GreyWardenPolicePurity
                 }
             }
 
-            GwpCommon.TryResetAi(police);
-            PoliceResourceManager.CancelResupply(police);
-            PoliceResourceManager.StartResupply(police);
+            GreyWardenPartyDesireBehavior.ClearIntent(police);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
             return true;
         }
 
@@ -82,7 +84,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.SetInitiative(0f, 0f, 0f);
+                party.Ai.RethinkAtNextHourlyTick = true;
             }
             catch { }
         }
@@ -171,7 +173,6 @@ namespace GreyWardenPolicePurity
         private void ClearShelteredTargetTracking(string taskId)
         {
             if (string.IsNullOrEmpty(taskId)) return;
-            _shelteredTargetHoursByTaskId.Remove(taskId);
             _shelteredPoliceLastPositionByTaskId.Remove(taskId);
             _shelteredPoliceStoppedHoursByTaskId.Remove(taskId);
         }
@@ -223,19 +224,11 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            int shelteredHours = 0;
-            _shelteredTargetHoursByTaskId.TryGetValue(taskId, out shelteredHours);
-            shelteredHours++;
-            _shelteredTargetHoursByTaskId[taskId] = shelteredHours;
             float distToShelter = policeParty.GetPosition2D.Distance(shelter.GetPosition2D);
             float distToGate = policeParty.GetPosition2D.Distance(shelter.GatePosition.ToVec2());
             int stoppedHours = UpdateShelteredPoliceStoppedHours(taskId, policeParty);
 
-            // 围堵期间自动补粮，避免警察因缺粮脱离任务导致"消失后重刷"
-            PoliceResourceManager.ReplenishFood(policeParty, 2);
-            policeParty.Ai.SetDoNotMakeNewDecisions(true);
-            policeParty.Ai.SetInitiative(1f, 0f, 999f);
-            policeParty.SetMoveEngageParty(criminal, NavigationType.Default);
+            // 围堵仍是案件保底欲望；原版补给/恢复欲望可自然打断并在完成后回来。
 
             // 躲进定居点时，必须先让“当前这条任务”进入战争追捕状态。
             // 即便两边已经被别的警察任务拖入战争，也不能跳过这一步直接隔空强制开战。
@@ -248,7 +241,7 @@ namespace GreyWardenPolicePurity
                 distToGate <= GwpTuning.Enforcement.ShelteredGateDistance &&
                 stoppedHours >= GwpTuning.Enforcement.ShelteredGateHoldHours)
             {
-                TryForceExpelShelteredCriminal(policeParty, criminal);
+                TryForceExpelShelteredCriminal(policeParty, criminal, taskId);
             }
 
             if (criminal.CurrentSettlement == null)
@@ -285,7 +278,10 @@ namespace GreyWardenPolicePurity
             return stoppedHours;
         }
 
-        private static bool TryForceExpelShelteredCriminal(MobileParty attacker, MobileParty defender)
+        private bool TryForceExpelShelteredCriminal(
+            MobileParty attacker,
+            MobileParty defender,
+            string taskId)
         {
             if (attacker == null || defender == null) return false;
             if (!attacker.IsActive || !defender.IsActive) return false;
@@ -309,17 +305,29 @@ namespace GreyWardenPolicePurity
                         expelParty = armyLeader;
                     }
 
+                    var heldPartyIds = new HashSet<string>(
+                        expelParty.AttachedParties
+                            .Where(party => party?.IsActive == true)
+                            .Select(party => party.StringId),
+                        StringComparer.OrdinalIgnoreCase)
+                    {
+                        expelParty.StringId,
+                        defender.StringId
+                    };
+
                     LeaveSettlementAction.ApplyForParty(expelParty);
 
+                    // 只打断刚被逐出城后的即时回城。下一次原版 AI 重新思考、
+                    // 移动或接战后自然结束，不会永久禁止该部队进入定居点。
                     try { expelParty.SetMoveModeHold(); } catch { }
                     foreach (MobileParty attachedParty in expelParty.AttachedParties)
                     {
                         try { attachedParty.SetMoveModeHold(); } catch { }
                     }
-
-                    // 让刚被逼出城的目标先停住，避免它立刻重新钻回定居点，
-                    // 然后由警察已有的追击命令自然接管战斗。
                     try { defender.SetMoveModeHold(); } catch { }
+
+                    if (!string.IsNullOrWhiteSpace(taskId))
+                        _shelteredHoldPartyIdsByTaskId[taskId] = heldPartyIds;
                 }
 
                 return defender.CurrentSettlement == null;
@@ -328,6 +336,66 @@ namespace GreyWardenPolicePurity
             {
                 return false;
             }
+        }
+
+        internal static bool IsSettlementEntryBlockedByActiveCase(
+            MobileParty? enteringParty,
+            Settlement? settlement)
+        {
+            if (enteringParty?.IsActive != true || settlement == null ||
+                enteringParty.IsMainParty)
+                return false;
+
+            return _instance?.IsPartyUnderShelteredCaseHold(enteringParty) == true;
+        }
+
+        private bool IsPartyUnderShelteredCaseHold(MobileParty enteringParty)
+        {
+            foreach (var entry in _shelteredHoldPartyIdsByTaskId)
+            {
+                PoliceTask? task = CrimeState.GetTask(entry.Key);
+                if (!IsShelteredHoldTaskActive(task))
+                    continue;
+                if (entry.Value.Contains(enteringParty.StringId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void MaintainShelteredCaseHolds()
+        {
+            foreach (string taskId in _shelteredHoldPartyIdsByTaskId.Keys.ToList())
+            {
+                PoliceTask? task = CrimeState.GetTask(taskId);
+                if (!IsShelteredHoldTaskActive(task))
+                {
+                    _shelteredHoldPartyIdsByTaskId.Remove(taskId);
+                    continue;
+                }
+
+                HashSet<string> heldPartyIds = _shelteredHoldPartyIdsByTaskId[taskId];
+                heldPartyIds.RemoveWhere(partyId => !MobileParty.All.Any(party =>
+                    party.IsActive && string.Equals(party.StringId, partyId,
+                        StringComparison.OrdinalIgnoreCase)));
+
+                foreach (MobileParty heldParty in MobileParty.All.Where(party =>
+                             party.IsActive && heldPartyIds.Contains(party.StringId)).ToList())
+                {
+                    if (heldParty.MapEvent != null || heldParty.CurrentSettlement != null)
+                        continue;
+                    try { heldParty.SetMoveModeHold(); } catch { }
+                }
+            }
+        }
+
+        private static bool IsShelteredHoldTaskActive(PoliceTask? task)
+        {
+            if (task == null || !task.WarDeclared || !task.IsTargetValid())
+                return false;
+
+            MobileParty? offender = task.TargetCrime?.Offender;
+            return offender?.IsActive == true && !offender.IsMainParty;
         }
 
         #endregion

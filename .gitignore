@@ -10,6 +10,8 @@
 # Temporary decompile outputs
 .tmp_decompile_*/
 .codex_tmp/
+/build-check/
+/.codex-permission-test.tmp
 
 # User-specific files
 *.user

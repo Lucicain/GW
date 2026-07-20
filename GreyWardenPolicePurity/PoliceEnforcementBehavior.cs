@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -16,7 +16,7 @@ namespace GreyWardenPolicePurity
     /// 警察惩戒系统
     ///
     /// 玩家被抓完整流程：
-    /// 1. OnMapEventEnded：标记 IsEscortingPlayer，冻结AI，SetMoveGoToSettlement 朝最近城堡行进
+    /// 1. OnMapEventEnded：标记 IsEscortingPlayer，将最近城堡登记为押送欲望目标
     /// 2. UpdateTasks（每小时）：维持AI冻结 + 重发行进命令（防止引擎覆盖）
     /// 3. OnTick（每帧）：距城堡 &lt; EscortPunishDistance(3格) 时执行惩罚；
     ///    CurrentSettlement!=null 为兜底防崩溃路径
@@ -34,14 +34,14 @@ namespace GreyWardenPolicePurity
         private string _atonementTargetName = string.Empty;
         private int _atonementReputationReward = 0;
         private float _atonementDeadlineHours = 0f;
-        private readonly Dictionary<string, int> _shelteredTargetHoursByTaskId =
-            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Vec2> _shelteredPoliceLastPositionByTaskId =
             new Dictionary<string, Vec2>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _shelteredPoliceStoppedHoursByTaskId =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _ignoredInvalidShelteredBattlePartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, HashSet<string>> _shelteredHoldPartyIdsByTaskId =
+            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
         public PoliceEnforcementBehavior()
         {
@@ -75,7 +75,6 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
-            CampaignEvents.AiHourlyTickEvent.AddNonSerializedListener(this, OnAiHourlyTick);
             CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
@@ -95,14 +94,15 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_atone_target_size", ref _atonementTargetSizeSnapshot);
             SyncWarTargetStreakData(dataStore);
             SyncDelayPatrolStateData(dataStore);
+            SyncAssistanceData(dataStore);
             if (dataStore.IsLoading)
             {
                 if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
                     _warStatusCheckDayCounter = 0;
-                _shelteredTargetHoursByTaskId.Clear();
                 _shelteredPoliceLastPositionByTaskId.Clear();
                 _shelteredPoliceStoppedHoursByTaskId.Clear();
                 _ignoredInvalidShelteredBattlePartyIds.Clear();
+                _shelteredHoldPartyIdsByTaskId.Clear();
                 _enforcementAtonementAssigned = false;
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
@@ -220,6 +220,8 @@ namespace GreyWardenPolicePurity
         {
             try
             {
+                MaintainShelteredCaseHolds();
+
                 if (!PlayerCaptivity.IsCaptive) return;
 
                 // 确认玩家被警察俘虏
@@ -346,7 +348,8 @@ namespace GreyWardenPolicePurity
                 if (policeParty != null && policeParty.IsActive)
                 {
                     RestoreAi(policeParty);
-                    PoliceResourceManager.StartResupply(policeParty);
+                    GreyWardenPartyDesireBehavior.ClearIntent(policeParty);
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(policeParty);
                 }
 
                 // 步骤8：安全调用 EndTask（EndPlayerHunt 已移除任务，此处幂等）
@@ -363,9 +366,11 @@ namespace GreyWardenPolicePurity
         {
             UpdateAtonementTask();
             EnsureDelayPatrolStateForActiveParties();
+            ReconcileTaskWarStatesWithDiplomacy();
             UpdateDelayPatrols();
             BreakInvalidShelteredBattles();
             CrimeState.Clean();
+            UpdateLordAssistance();
             AssignTasks();
             UpdateTasks();
             UpdateIdlePoliceDuties();
@@ -377,22 +382,57 @@ namespace GreyWardenPolicePurity
             if (!CrimeState.IsDispatchReady)
                 return;
 
-            foreach (var pp in PoliceStats.GetAllPoliceParties())
+            foreach (MobileParty pp in PoliceStats.GetAllPoliceParties())
             {
                 if (!CrimeState.IsDispatchReady)
                     break;
 
+                if (!PoliceStats.CanHandleOrdinaryCase(pp)) continue;
                 if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
                 if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) continue;
-                // ★ 兜底：跳过无首领或首领失效的部队（防止因纠察队/英雄失效导致无首领部队接任务）
-                if (pp.LeaderHero == null || !pp.LeaderHero.IsActive) continue;
+                if (IsAssistanceOccupied(pp)) continue;
                 if (CrimeState.HasTask(pp.StringId)) continue;
                 if (!PoliceResourceManager.IsReady(pp)) continue;
 
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D);
-                if (crime == null) continue;
+                if (crime != null)
+                    BeginTask(pp, crime);
+            }
+        }
 
-                BeginTask(pp, crime);
+        private void ReconcileTaskWarStatesWithDiplomacy()
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values.ToList())
+            {
+                if (!task.WarDeclared || task.WarTarget == null)
+                    continue;
+
+                MobileParty? offender = task.TargetCrime?.Offender;
+                IFaction? currentTarget = offender?.IsMainParty == true
+                    ? Clan.PlayerClan?.MapFaction
+                    : offender?.ActualClan?.MapFaction ?? offender?.MapFaction;
+                if (currentTarget != null &&
+                    FactionManager.IsAtWarAgainstFaction(policeClan, currentTarget))
+                    continue;
+
+                task.WarDeclared = false;
+                task.WarTarget = null;
+                ClearTaskWarTracking(task.PolicePartyId, true);
+
+                MobileParty? police = MobileParty.All.FirstOrDefault(candidate =>
+                    candidate.IsActive && string.Equals(candidate.StringId,
+                        task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
+                if (police != null)
+                {
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
+                    GwpAiDiagnostics.WriteAction(police,
+                        "CASE_WAR_STATE_RESET",
+                        "currentTarget=" + (currentTarget?.StringId ?? "-") +
+                        "; reason=actual_diplomacy_is_peace");
+                }
             }
         }
 
@@ -401,10 +441,9 @@ namespace GreyWardenPolicePurity
             CrimeState.BeginTask(police.StringId, crime);
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
-                task.IsPreparingDispatch = true;
+                task.IsPreparingDispatch = false;
 
-            PoliceResourceManager.StartResupply(police);
-            PoliceResourceManager.ForceImmediateMoveToResupply(police);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
 
             // 内部调度日志（开发调试）
             // InformationManager.DisplayMessage(new InformationMessage(
@@ -423,16 +462,15 @@ namespace GreyWardenPolicePurity
                 {
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
                 }
 
-                // ★ 兜底：任务进行中首领失效（被俘/死亡）→ 结束任务，案件归池
+                // 任务进行中部队失活或首领被俘/死亡均视为执法失败：普通领主
+                // 案件直接删除、不重新入池；玩家长期通缉仍沿用专门的数据规则。
                 if (pp.LeaderHero == null || !pp.LeaderHero.IsActive)
                 {
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    if (task.IsTargetValid()) Reassign(task.TargetCrime);
                     continue;
                 }
 
@@ -443,11 +481,10 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                // 押送阶段：冻结AI，每小时重发行军命令（防止引擎覆盖方向）
+                // 押送阶段：目的地作为高优先级欲望参与原版 AI 拍卖。
                 if (task.FlowState == PoliceTaskFlowState.EscortingPlayer)
                 {
                     ClearTaskWarTracking(kvp.Key, true);
-                    pp.Ai.SetDoNotMakeNewDecisions(true);
 
                     // 安全网：若玩家已被外部机制提前释放（例如某段和平逻辑绕过了守卫），
                     // 仍执行惩罚以确保罚款和声望清零。
@@ -458,11 +495,6 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
-                    if (task.EscortSettlement != null)
-                    {
-                        // 每小时重发行进命令（防止引擎覆盖），地形寻路朝城堡行进
-                        pp.SetMoveGoToSettlement(task.EscortSettlement, NavigationType.Default, false);
-                    }
                     continue;
                 }
 
@@ -474,38 +506,18 @@ namespace GreyWardenPolicePurity
                     {
                         RestoreAi(pp);
                         CrimeState.EndTask(kvp.Key);
-                        PoliceResourceManager.StartResupply(pp);
                         continue;
                     }
-
-                    if (PoliceResourceManager.IsResupplying(pp))
-                        continue;
 
                     task.IsPreparingDispatch = false;
                 }
 
-                // 食物耗尽 → 案件归池，前往补给，等补完后重新接案
-                bool targetSheltered = task.TargetCrime?.Offender?.IsMainParty != true &&
-                                      task.TargetCrime?.Offender?.CurrentSettlement != null;
-                if (pp.ItemRoster.TotalFood <= 0 && !targetSheltered)
-                {
-                    // 警察部队粮草耗尽内部运营（不显示给玩家）
-                    // InformationManager.DisplayMessage(new InformationMessage(
-                    //     $"[GWP] {pp.Name} 粮草耗尽，案件归池，前往补给", Colors.Yellow));
-                    RestoreAi(pp);
-                    ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
-                    if (task.IsTargetValid()) Reassign(task.TargetCrime);
-                    PoliceResourceManager.StartResupply(pp);
-                    continue;
-                }
-
+                // 资源不足时保留案件；欲望层会暂时让城镇补给压过追捕。
                 if (!task.IsTargetValid())
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    PoliceResourceManager.StartResupply(pp);
                     continue;
                 }
 
@@ -533,7 +545,6 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    PoliceResourceManager.StartResupply(pp);
                     continue;
                 }
 
@@ -559,13 +570,8 @@ namespace GreyWardenPolicePurity
                     ClearTaskWarTracking(kvp.Key, false);
                 }
 
-                try
-                {
-                    pp.Ai.SetDoNotMakeNewDecisions(true);
-                    pp.Ai.SetInitiative(1f, 0f, 999f);
-                    pp.SetMoveEngageParty(criminal, NavigationType.Default);
-                }
-                catch { }
+                // 不下达追击命令，也不每小时强迫重新决策；案件保底欲望会在
+                // 原版正常思考周期中持续存在，并与原版补给/恢复欲望竞争。
             }
         }
 
@@ -605,6 +611,7 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
+            GwpAiDiagnostics.WriteMapEvent(mapEvent, "ENDED");
             HandleDelayPatrolBattleEnded(mapEvent);
             HandleAtonementMapEventEnded(mapEvent);
             if (!mapEvent.IsFieldBattle) return;
@@ -622,7 +629,6 @@ namespace GreyWardenPolicePurity
                     if (offender == null || !InEvent(offender, mapEvent)) continue;
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    Reassign(task.TargetCrime);
                     CrimeState.RefreshAccepting();
                     continue;
                 }
@@ -632,12 +638,24 @@ namespace GreyWardenPolicePurity
                     continue;
                 MobileParty? activeOffender = task.TargetCrime?.Offender;
                 bool playerOffender = task.TargetCrime?.Offender?.IsMainParty == true;
-                if (playerOffender && (activeOffender == null || !InEvent(activeOffender, mapEvent))) continue;
+                // 承办警察打赢一场无关战斗不能让手中的案件自动结案。目标可能在
+                // 战败结算时已经失活或失去 PartyBelongedTo，所以除了实时引用，
+                // 还要用案卷保存的部队/英雄 ID 在本场参战方中核验。
+                if (!WasTaskOffenderInEvent(task, mapEvent)) continue;
 
                 bool policeWon = IsOnWinningSide(pp, mapEvent);
 
                 if (policeWon)
                 {
+                    // 敌方撤退或一次非决定性交锋不等于案件完成。目标仍有可战人员
+                    // 时保留案件和战争理由，领主下一轮仍按既有 0.99 欲望继续追踪。
+                    if (!WasTaskOffenderActuallyDefeatedInEvent(task, mapEvent))
+                        continue;
+
+                    // 只有承办灰袍与案件目标同场且灰袍位于胜方时才发办案经费。
+                    // 玩家案件随后进入押送流程，但本场胜利只会在这里计发一次。
+                    PoliceResourceManager.CreditSuccessfulCaseCompletion();
+
                     // ★关键修复★：不能用 CrimePool.IsPlayerCrime() 判断——
                     // 玩家被击败后 MainParty.IsActive == false，
                     // IsPlayerCrime 内部调用 IsOffenderValid() → Offender.IsActive → false，
@@ -651,12 +669,7 @@ namespace GreyWardenPolicePurity
                         Settlement? targetCastle = FindNearestCastle();
                         task.EscortSettlement = targetCastle;
 
-                        // 冻结AI，地形寻路朝城堡行进
-                        pp.Ai.SetDoNotMakeNewDecisions(true);
-                        if (targetCastle != null)
-                        {
-                            pp.SetMoveGoToSettlement(targetCastle, NavigationType.Default, false);
-                        }
+                        GreyWardenPartyDesireBehavior.RequestImmediateRethink(pp);
 
                         string castleName = targetCastle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_009}FORT");
                         InformationManager.DisplayMessage(new InformationMessage(
@@ -669,15 +682,14 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    PoliceResourceManager.StartResupply(pp);
+                    ReleaseAssistanceGroup(pp.StringId, "case_target_defeated");
                 }
                 else
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    Reassign(task.TargetCrime);
-                    PoliceResourceManager.StartResupply(pp);
+                    ReleaseAssistanceGroup(pp.StringId, "case_leader_defeated");
                 }
 
                 CrimeState.RefreshAccepting();
@@ -685,5 +697,59 @@ namespace GreyWardenPolicePurity
         }
 
         #endregion
+
+        private static bool WasTaskOffenderInEvent(PoliceTask task, MapEvent mapEvent)
+        {
+            CrimeRecord? crime = task?.TargetCrime;
+            if (crime == null || mapEvent == null) return false;
+
+            MobileParty? resolved = crime.Offender;
+            foreach (PartyBase? entry in mapEvent.InvolvedParties)
+            {
+                MobileParty? involved = entry?.MobileParty;
+                if (involved == null) continue;
+                if (involved == resolved) return true;
+                if (crime.CrimeId == CrimePool.PlayerCrimeId && involved.IsMainParty)
+                    return true;
+                if (!string.IsNullOrWhiteSpace(crime.OffenderPartyId) &&
+                    string.Equals(involved.StringId, crime.OffenderPartyId,
+                        StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!string.IsNullOrWhiteSpace(crime.OffenderHeroId) &&
+                    string.Equals(involved.LeaderHero?.StringId, crime.OffenderHeroId,
+                        StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool WasTaskOffenderActuallyDefeatedInEvent(
+            PoliceTask task, MapEvent mapEvent)
+        {
+            CrimeRecord? crime = task?.TargetCrime;
+            if (crime == null || mapEvent == null) return false;
+
+            foreach (PartyBase? entry in mapEvent.InvolvedParties)
+            {
+                MobileParty? involved = entry?.MobileParty;
+                if (involved == null) continue;
+
+                bool matches = involved == crime.Offender ||
+                    (crime.CrimeId == CrimePool.PlayerCrimeId && involved.IsMainParty) ||
+                    (!string.IsNullOrWhiteSpace(crime.OffenderPartyId) &&
+                     string.Equals(involved.StringId, crime.OffenderPartyId,
+                         StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(crime.OffenderHeroId) &&
+                     string.Equals(involved.LeaderHero?.StringId, crime.OffenderHeroId,
+                         StringComparison.OrdinalIgnoreCase));
+
+                if (!matches) continue;
+                return involved.IsActive != true || involved.Party == null ||
+                       involved.Party.NumberOfHealthyMembers <= 0;
+            }
+
+            return false;
+        }
     }
 }

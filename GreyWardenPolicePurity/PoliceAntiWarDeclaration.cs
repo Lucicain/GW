@@ -122,6 +122,11 @@ namespace GreyWardenPolicePurity
                 if (enemyFaction is Clan c && c.IsOutlaw && c.IsBanditFaction)
                     return;
 
+                // 一次地图战斗结束不代表执法任务结束。仍有案件、玩家纠察或悬赏
+                // 理由时维持战争，避免目标撤退后立即和平并拆散追击。
+                if (GwpPoliceWarReasonService.HasLegitimateWarReason(enemyFaction))
+                    return;
+
                 GwpCommon.TrySetNeutral(policeClan, enemyFaction);
             }
         }

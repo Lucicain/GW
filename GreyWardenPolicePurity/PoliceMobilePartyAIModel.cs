@@ -9,6 +9,11 @@ namespace GreyWardenPolicePurity
     {
         public override bool ShouldConsiderAttacking(MobileParty party, MobileParty targetParty)
         {
+            // 灰袍只会主动攻击其承办案件/临时追捕的目标或野怪；同一场警务战争中
+            // 的其他村民、商队和无关领主不会变成原版短期 AI 的额外猎物。
+            if (!GreyWardenPartyDesireBehavior.IsAuthorizedAttackTarget(party, targetParty))
+                return false;
+
             if (!base.ShouldConsiderAttacking(party, targetParty))
                 return false;
 

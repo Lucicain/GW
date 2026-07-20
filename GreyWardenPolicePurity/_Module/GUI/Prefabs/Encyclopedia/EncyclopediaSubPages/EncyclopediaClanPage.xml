@@ -222,6 +222,13 @@
               </Children>
             </ButtonWidget>
 
+            <ButtonWidget Id="CaseArchiveButton" DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="150" SuggestedHeight="48" HorizontalAlignment="Right" VerticalAlignment="Top" MarginRight="188" MarginTop="10" Brush="Popup.Done.Button.NineGrid" Command.Click="ExecuteOpenCaseArchive" UpdateChildrenStates="true" GamepadNavigationIndex="2" IsVisible="@IsCaseArchiveButtonVisible">
+              <Children>
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Popup.Button.Text" Text="@CaseArchiveButtonText" IsEnabled="false" />
+                <HintWidget DataSource="{CaseArchiveButtonHint}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint" Command.HoverEnd="ExecuteEndHint"/>
+              </Children>
+            </ButtonWidget>
+
           </Children>
         </Widget>
 

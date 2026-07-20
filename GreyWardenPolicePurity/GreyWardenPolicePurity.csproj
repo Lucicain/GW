@@ -13,11 +13,20 @@
     <ModuleName>$(MSBuildProjectName)</ModuleName>
     <ModuleUrl></ModuleUrl>
     <GameFolder>D:\steam\steamapps\common\Mount &amp; Blade II Bannerlord</GameFolder>
+    <!-- Ordinary development builds keep AI diagnostics and deploy straight to
+         the live test module. Formal player packages override both properties
+         so their DLL is produced separately and cannot write test logs. -->
+    <GwpDiagnosticsEnabled Condition="'$(GwpDiagnosticsEnabled)' == ''">true</GwpDiagnosticsEnabled>
+    <DeployToLiveModule Condition="'$(DeployToLiveModule)' == ''">true</DeployToLiveModule>
     <GameBinariesFolder Condition="Exists('$(GameFolder)\bin\Win64_Shipping_Client\Bannerlord.exe')">Win64_Shipping_Client</GameBinariesFolder>
     <GameBinariesFolder Condition="Exists('$(GameFolder)\bin\Gaming.Desktop.x64_Shipping_Client\Bannerlord.exe')">Gaming.Desktop.x64_Shipping_Client</GameBinariesFolder>
     <!-- 编译输出直接落到 GreyWarden 模组的 bin 目录 -->
     <OutputPath>$(GameFolder)\Modules\GreyWarden\bin\$(GameBinariesFolder)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GwpDiagnosticsEnabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);GWP_DIAGNOSTICS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(TargetFramework) == 'net472'">
@@ -74,7 +83,7 @@
 
 
   <!-- 每次 build 后自动将 _Module\ 内所有文件同步到游戏模组目录 -->
-  <Target Name="CopyModuleData" AfterTargets="Build">
+  <Target Name="CopyModuleData" AfterTargets="Build" Condition="'$(DeployToLiveModule)' == 'true'">
     <ItemGroup>
       <!-- Assets and AssetSources are editor working data. Preserve them so
            the Modding Kit can reopen and republish the resources. They are
@@ -96,7 +105,7 @@
   <!-- The Modding Kit runs a different executable and only probes the
        module's Win64_Shipping_wEditor directory. Keep the module assembly and
        its Harmony runtime dependency in that directory after every build. -->
-  <Target Name="CopyEditorBinaries" AfterTargets="Build">
+  <Target Name="CopyEditorBinaries" AfterTargets="Build" Condition="'$(DeployToLiveModule)' == 'true'">
     <PropertyGroup>
       <EditorModuleBin>$(GameFolder)\Modules\GreyWarden\bin\Win64_Shipping_wEditor\</EditorModuleBin>
     </PropertyGroup>

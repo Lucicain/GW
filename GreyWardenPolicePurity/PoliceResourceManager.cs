@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,19 +18,18 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 警察资源管理 + 兵员纯化
-    /// 1. 每日发薪：每人每天1000金
-    /// 2. 任务结束后：前往最近城镇补给（补兵+释放俘虏+补粮）
-    /// 3. 每6小时：净化各警察部队兵种（替换非法兵为新兵）
+    /// 1. 常驻领主资源完全交给原版经济和城镇访问欲望：不发钱、不造粮、不免费补兵
+    ///    无英雄的临时纠察/支援队是一次性任务单位，只在生成时携带固定行军口粮，
+    ///    不参与灰袍家族收支，也不会进城购买补给。
+    /// 2. 每6小时净化各警察部队兵种（原版招募的外族兵替换为灰袍新兵）
+    /// 3. 保留旧补给 API 仅用于存档/调用兼容；它只请求重新思考，不下移动命令
     /// </summary>
     public class PoliceResourceManager : CampaignBehaviorBase
     {
-        private const int DailyGoldPerMember = 1000;
-        private const int FoodDaysTarget = 15;
         private const int EquipmentSlotCount = 12;
         private const int TroopsPerShip = 50;
-        // 正在补给中的警察部队ID
-        private static readonly HashSet<string> _resupplying = new HashSet<string>();
-
+        private const int TemporaryDutyFoodDays = 20;
+        internal const int SuccessfulCaseReward = 5000;
         // NavalDLC 可选依赖：运行时一次性检测（所有模块 DLL 加载后）
         // 若 NavalDLC 未安装，GivePoliceShips 直接 return，不影响游玩
         private static readonly bool _navalDlcLoaded =
@@ -40,27 +39,40 @@ namespace GreyWardenPolicePurity
         private Dictionary<string, double> _lastPurifyTime =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private const double PurifyIntervalHours = 6.0;
-        public static bool IsResupplying(MobileParty party) =>
-            party != null && _resupplying.Contains(party.StringId);
+        public static bool IsResupplying(MobileParty party) => false;
 
         public static bool IsReady(MobileParty party)
         {
             if (party == null || !party.IsActive) return false;
-            return !_resupplying.Contains(party.StringId);
+            return true;
         }
 
-        public static void CancelResupply(MobileParty police)
-        {
-            if (police == null) return;
-            _resupplying.Remove(police.StringId);
-        }
+        public static void CancelResupply(MobileParty police) =>
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
 
-        public static void StartResupply(MobileParty police)
+        public static void StartResupply(MobileParty police) =>
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
+
+        /// <summary>
+        /// 临时纠察队和追截支援队没有英雄领队，原版不会让它们进城买粮；它们也
+        /// 不是 WarPartyComponent，不会进入氏族军费结算。生成时明确清零独立钱袋，
+        /// 并按原版每二十人每日一份粮食的基础消耗携带二十日口粮。剩余口粮随
+        /// 一次性部队销毁，不进入灰袍家族库存或金库。
+        /// </summary>
+        internal static void ProvisionTemporaryDutyParty(MobileParty? party)
         {
-            if (police == null || !police.IsActive) return;
-            if (_resupplying.Contains(police.StringId)) return;
-            // 只标记，实际移动由每小时Tick处理（战斗刚结束时移动命令会被引擎覆盖）
-            _resupplying.Add(police.StringId);
+            if (party?.IsActive != true) return;
+
+            party.PartyTradeGold = 0;
+            if (party.ItemRoster.TotalFood > 0) return;
+
+            ItemObject? grain = MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.GrainItemId);
+            if (grain == null) return;
+
+            int men = Math.Max(1, party.MemberRoster.TotalManCount);
+            int grainCount = Math.Max(1,
+                (int)Math.Ceiling(men / 20f * TemporaryDutyFoodDays));
+            party.ItemRoster.AddToCounts(grain, grainCount);
         }
 
         public override void RegisterEvents()
@@ -68,7 +80,6 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
         }
@@ -77,7 +88,6 @@ namespace GreyWardenPolicePurity
         {
             if (dataStore.IsLoading)
             {
-                _resupplying.Clear();
                 _lastPurifyTime = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             }
 
@@ -108,6 +118,15 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            // 旧存档中已存在的临时队伍可能由旧版本以零粮生成。只在完全无粮时
+            // 补发一次，不因重复读档刷新仍未吃完的口粮。
+            foreach (MobileParty party in MobileParty.All.Where(static party =>
+                         party?.IsActive == true &&
+                         (GwpCommon.IsPatrolParty(party) ||
+                          GwpCommon.IsEnforcementDelayPatrolParty(party))).ToList())
+            {
+                ProvisionTemporaryDutyParty(party);
+            }
         }
 
         private void OnDailyTick()
@@ -121,8 +140,31 @@ namespace GreyWardenPolicePurity
                     ?.SetValue(policeClan, false);
             }
 
-            PaySalaries();
+            CollectDailyVillageProtectionContributions();
             SpawnIdleHeroes();
+        }
+
+        /// <summary>
+        /// 全大陆村庄按当前户数每日向司法公库缴纳保护费：每户 0.1 第纳尔；
+        /// 同时扣除当前户数的 1%。原版后续仍可按自身规则恢复村庄户数。
+        /// </summary>
+        private static void CollectDailyVillageProtectionContributions()
+        {
+            double exactContribution = 0d;
+
+            foreach (Village? village in Village.All)
+            {
+                if (village == null) continue;
+
+                float currentHearth = Math.Max(0f, village.Hearth);
+                exactContribution += currentHearth * 0.1d;
+                village.Hearth = Math.Max(10f, currentHearth * 0.99f);
+            }
+
+            int totalContribution = Math.Max(
+                0,
+                (int)Math.Floor(exactContribution));
+            CreditJudicialTreasury(totalContribution);
         }
 
         private void SpawnIdleHeroes()
@@ -172,7 +214,8 @@ namespace GreyWardenPolicePurity
                 if (newParty == null)
                     return;
 
-                RecoverPolicePartySupplies(newParty);
+                GivePoliceShips(newParty);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(newParty);
             }
             catch (Exception ex)
             {
@@ -260,29 +303,10 @@ namespace GreyWardenPolicePurity
 
         private static void RecoverPoliceShellPartyIfNeeded(MobileParty party)
         {
-            if (!party.IsActive || !IsPoliceClanHero(party.LeaderHero))
-                return;
-
-            if (party.MemberRoster.TotalRegulars > 0)
-                return;
-
-            if (party.CurrentSettlement == null || !party.CurrentSettlement.IsTown)
-            {
-                StartResupply(party);
-                return;
-            }
-
-            RecoverPolicePartySupplies(party);
+            if (!party.IsActive || !IsPoliceClanHero(party.LeaderHero)) return;
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
         }
 
-        private static void RecoverPolicePartySupplies(MobileParty party)
-        {
-            ReplenishTroops(party);
-            ReplenishFood(party);
-            GivePoliceShips(party);
-            CancelResupply(party);
-            GwpCommon.TryResetAi(party);
-        }
 
         private void OnHeroComesOfAge(Hero hero)
         {
@@ -323,90 +347,11 @@ namespace GreyWardenPolicePurity
                 destination[i] = source[i];
         }
 
-        private void PaySalaries()
-        {
-            foreach (var party in PoliceStats.GetAllPoliceParties())
-            {
-                Hero leader = party.LeaderHero;
-                if (leader == null) continue;
-                int salary = party.Party.NumberOfAllMembers * DailyGoldPerMember;
-                leader.ChangeHeroGold(salary);
-            }
-        }
 
         #endregion
 
         #region 补给流程
 
-        private void OnHourlyTick() => CheckResupplyingParties();
-
-        private void CheckResupplyingParties()
-        {
-            var toFinish = new List<string>();
-
-            foreach (string partyId in _resupplying)
-            {
-                var party = MobileParty.All.FirstOrDefault(p => p.StringId == partyId);
-
-                if (party == null || !party.IsActive)
-                {
-                    toFinish.Add(partyId);
-                    continue;
-                }
-
-                // 押送玩家中，跳过补给
-                if (CrimePool.ActiveTasks.Values.Any(t => t.PolicePartyId == partyId && t.IsEscortingPlayer))
-                    continue;
-
-                if (party.CurrentSettlement != null && party.CurrentSettlement.IsTown)
-                {
-                    DoResupply(party);
-                    toFinish.Add(partyId);
-                    continue;
-                }
-
-                Settlement nearestTown = FindNearestTown(party.GetPosition2D);
-                if (nearestTown != null)
-                {
-                    party.Ai.SetDoNotMakeNewDecisions(true);
-                    party.SetMoveGoToSettlement(nearestTown, NavigationType.Default, false);
-                }
-            }
-
-            foreach (string id in toFinish)
-            {
-                var party = MobileParty.All.FirstOrDefault(p => p.StringId == id);
-                if (party != null && party.IsActive)
-                    FinishResupply(party);
-                _resupplying.Remove(id);
-            }
-        }
-
-        private static void DoResupply(MobileParty police)
-        {
-            try
-            {
-                ReleasePrisoners(police, police.CurrentSettlement);
-                ReplenishTroops(police);
-                ReplenishFood(police);
-                GivePoliceShips(police);
-            }
-            catch (Exception ex)
-            {
-                // 内部补给失败（开发错误日志，正式版静默忽略）
-                _ = ex;
-            }
-        }
-
-        private static void FinishResupply(MobileParty police)
-        {
-            police.Ai.SetDoNotMakeNewDecisions(false);
-            police.Ai.SetInitiative(0f, 0f, 0f);
-            // 内部补给完成日志（开发调试，正式版不显示）
-            // InformationManager.DisplayMessage(new InformationMessage(
-            //     $"[GWP 补给] {police.Name} 补给完成（兵员=...）",
-            //     Colors.Green));
-        }
 
         #endregion
 
@@ -459,35 +404,6 @@ namespace GreyWardenPolicePurity
 
         #region 补兵 / 补粮 / 释放俘虏
 
-        private static void ReplenishTroops(MobileParty police)
-        {
-            int needed = police.Party.PartySizeLimit - police.Party.NumberOfAllMembers;
-            if (needed <= 0) return;
-
-            CharacterObject infantry = MBObjectManager.Instance.GetObject<CharacterObject>("gwheavyinfantry");
-            CharacterObject ranged = MBObjectManager.Instance.GetObject<CharacterObject>("gwarcher");
-            if (infantry == null && ranged == null) return;
-
-            int infantryCount = needed / 2;
-            int rangedCount = needed - infantryCount;
-
-            if (infantry != null && infantryCount > 0)
-                police.MemberRoster.AddToCounts(infantry, infantryCount);
-            if (ranged != null && rangedCount > 0)
-                police.MemberRoster.AddToCounts(ranged, rangedCount);
-        }
-
-        public static void ReplenishFood(MobileParty police, int foodDays = FoodDaysTarget)
-        {
-            int needed = police.Party.NumberOfAllMembers * foodDays - police.ItemRoster.TotalFood;
-            if (needed <= 0) return;
-
-            ItemObject foodItem = MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.GrainItemId)
-                ?? MBObjectManager.Instance.GetObject<ItemObject>(o => o is ItemObject item && item.IsFood) as ItemObject;
-            if (foodItem == null) return;
-
-            police.ItemRoster.AddToCounts(foodItem, needed);
-        }
 
         /// <summary>
         /// 按当前兵力为警察部队补足缺少的船只。
@@ -522,25 +438,6 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
-        private static void ReleasePrisoners(MobileParty police, Settlement? settlement)
-        {
-            if (police == null || police.PrisonRoster.TotalManCount <= 0)
-                return;
-
-            if (settlement?.Party == null)
-                return;
-
-            foreach (TroopRosterElement prisoner in police.PrisonRoster.GetTroopRoster().ToList())
-            {
-                CharacterObject? character = prisoner.Character;
-                if (character?.HeroObject == null) continue;
-
-                TransferPrisonerAction.Apply(character, police.Party, settlement.Party);
-            }
-
-            if (police.PrisonRoster.TotalManCount > 0)
-                SellPrisonersAction.ApplyForAllPrisoners(police.Party, settlement.Party);
-        }
 
         private static int GetRequiredShipCount(MobileParty party)
         {
@@ -590,10 +487,7 @@ namespace GreyWardenPolicePurity
         {
             if (fine <= 0) return 0;
 
-            int gold = Hero.MainHero.Gold;
-            int goldTaken = Math.Min(gold, fine);
-            if (goldTaken > 0)
-                Hero.MainHero.ChangeHeroGold(-goldTaken);
+            int goldTaken = TransferPlayerGoldToJudicialTreasury(fine);
 
             int remaining = fine - goldTaken;
             int itemsValue = 0;
@@ -602,8 +496,11 @@ namespace GreyWardenPolicePurity
             {
                 itemsValue = ConfiscateItems(remaining);
                 if (itemsValue > 0)
+                {
+                    CreditJudicialTreasury(itemsValue);
                     InformationManager.DisplayMessage(new InformationMessage(
                         GwpText.Get("{=gwp_policeresourcemanager_001}Coin is insufficient; goods worth a further {VAR_1} denars have been confiscated.", "VAR_1", itemsValue), Colors.Yellow));
+                }
             }
 
             return goldTaken + itemsValue;
@@ -615,12 +512,42 @@ namespace GreyWardenPolicePurity
         public static int CollectFineGoldOnly(int fine)
         {
             if (fine <= 0) return 0;
+            return TransferPlayerGoldToJudicialTreasury(fine);
+        }
 
-            int goldTaken = Math.Min(Hero.MainHero.Gold, fine);
-            if (goldTaken > 0)
-                Hero.MainHero.ChangeHeroGold(-goldTaken);
+        /// <summary>
+        /// 族长的钱包就是原版家族金库，也作为灰袍司法公库。无论罚款由常驻
+        /// 领主还是临时纠察队代收，金币都从玩家真实转入族长，不留在经手队伍。
+        /// </summary>
+        private static int TransferPlayerGoldToJudicialTreasury(int requested)
+        {
+            if (requested <= 0 || Hero.MainHero == null) return 0;
 
-            return goldTaken;
+            int amount = Math.Min(Hero.MainHero.Gold, requested);
+            if (amount <= 0) return 0;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer != null && treasurer != Hero.MainHero && !treasurer.IsDead)
+                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, treasurer, amount,
+                    disableNotification: true);
+            else
+                Hero.MainHero.ChangeHeroGold(-amount);
+
+            return amount;
+        }
+
+        /// <summary>
+        /// 罚没物离开玩家背包后视为由灰袍统一拍卖，估值直接归司法公库。
+        /// </summary>
+        internal static void CreditSuccessfulCaseCompletion() =>
+            CreditJudicialTreasury(SuccessfulCaseReward);
+
+        private static void CreditJudicialTreasury(int amount)
+        {
+            if (amount <= 0) return;
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer != null && !treasurer.IsDead)
+                treasurer.ChangeHeroGold(amount);
         }
 
         private static int ConfiscateItems(int debt)
@@ -653,19 +580,11 @@ namespace GreyWardenPolicePurity
         #endregion
 
         /// <summary>
-        /// 立即给警察部队发往最近城镇的移动命令（不等每小时 tick）。
-        /// 用于对话缴罚款后立刻将部队重定向，防止其停在玩家接触范围内再次触发对话循环。
-        /// 模式与 PolicePatrolBehavior.ReturnAllPatrols() 一致：DoNotMakeNewDecisions + SetMoveGoToSettlement。
+        /// 旧版兼容入口：不再发出移动命令，只让原版 AI 在下一次拍卖中重算。
         /// </summary>
         public static void ForceImmediateMoveToResupply(MobileParty police)
         {
-            if (police == null || !police.IsActive) return;
-            Settlement nearestTown = FindNearestTown(police.GetPosition2D);
-            if (nearestTown != null)
-            {
-                police.Ai.SetDoNotMakeNewDecisions(true);
-                police.SetMoveGoToSettlement(nearestTown, NavigationType.Default, false);
-            }
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
         }
 
         private static Settlement FindNearestTown(Vec2 position)

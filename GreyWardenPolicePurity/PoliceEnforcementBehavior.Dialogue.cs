@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.BarterSystem;
@@ -26,6 +26,10 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            // Do not run this from SyncData: Hero.FindFirst's source collection is not
+            // guaranteed to exist until campaign initialization has completed.
+            CrimeState.Clean();
+
             starter.AddDialogLine(
                 "gwp_enforcement_start",
                 "start",
@@ -226,9 +230,8 @@ namespace GreyWardenPolicePurity
             CrimeState.EndPlayerHunt();
             if (_dialogPolice != null && _dialogPolice.IsActive)
             {
-                RestoreAi(_dialogPolice);
-                PoliceResourceManager.StartResupply(_dialogPolice);
-                PoliceResourceManager.ForceImmediateMoveToResupply(_dialogPolice);
+                GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
             }
             MakePeaceWithPoliceAndVictims();
 
@@ -274,9 +277,8 @@ namespace GreyWardenPolicePurity
 
                 if (_dialogPolice != null && _dialogPolice.IsActive)
                 {
-                    RestoreAi(_dialogPolice);
-                    PoliceResourceManager.StartResupply(_dialogPolice);
-                    PoliceResourceManager.ForceImmediateMoveToResupply(_dialogPolice);
+                    GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
                 }
 
                 MakePeaceWithPoliceAndVictims();
@@ -302,7 +304,7 @@ namespace GreyWardenPolicePurity
                     DeclareWar(_dialogTask, MobileParty.MainParty);
 
                 if (_dialogPolice != null && _dialogPolice.IsActive)
-                    _dialogPolice.SetMoveEngageParty(MobileParty.MainParty, NavigationType.Default);
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
 
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You have refused the order. The Grey Wardens will take you by force."),
@@ -398,6 +400,7 @@ namespace GreyWardenPolicePurity
         private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
         {
             if (mapEvent == null) return;
+            GwpAiDiagnostics.WriteMapEvent(mapEvent, "STARTED");
 
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
