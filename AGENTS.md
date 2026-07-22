@@ -51,6 +51,14 @@ user's stated goal.
 
 ## Formal player packages must be clean
 
+- In the game's parent `Modules` directory, keep exactly one local formal
+  GreyWarden package pair: the newest `GreyWarden-<version>.zip` and its
+  matching `.zip.sha256`. After the newest pair has been verified, delete all
+  older local GreyWarden ZIP/checksum pairs. This one-package local retention
+  rule is separate from the player READMEs, which still keep exactly the two
+  most recent release-log entries.
+- Ordinary development builds must not create release ZIPs. ZIP creation and
+  old-pair cleanup belong only to the formal release workflow.
 - Repository development tools and the live local test module may retain AI,
   task, army, and economy diagnostics. Formal player ZIPs and GitHub Release
   assets must use a separately built diagnostics-disabled DLL that cannot

@@ -6391,3 +6391,10 @@ irreplaceable backup; the editor workspace does not replace it.
 - 修复后的正式玩家 DLL 独立构建于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r6-interface-fix`，为 `596480` 字节，SHA-256 `E4CDC522BA4EA86DD407EF6EB2A5C514922899DA8479F515B886CB450ADE8D90`。ILSpy 确认两个兼容入口均为虚方法；`GwpAiDiagnostics` 仍是空实现，文件、目录、流写入和诊断日志路径命中为 `0`。
 - 修正版发行暂存位于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r6-interface-fix-20260722\GreyWarden`。最终 `GreyWarden-v1.4-r6.zip` 为 `349792649` 字节，SHA-256 `46CDF0F52D3EC562ACD44B823FF4AFF9D75BC171687C64B160600433906617AB`；校验文件正文准确命名该 ZIP。最终包仍只有一个 `GreyWarden/` 顶层和 `28` 个运行文件，禁止内容为 `0`；完整解压后与暂存相比缺失 `0`、哈希不一致 `0`、额外文件 `0`，包内 DLL 与独立玩家构建哈希一致。
 - 公开版本继续使用 `v1.4-r6`，不新增 r7。GitHub Release 的同名 ZIP 与校验文件用修正版覆盖，标签移动到包含本修复的最终提交；此前 SHA-256 `1536E5A4...` 的首次统一包作废，不再作为可下载发行物。
+
+## 2026-07-22 本地正式压缩包只保留最新版
+
+- 用户明确区分两类保留规则：`GreyWardenPolicePurity/_Module/README.md` 与 `README_EN.md` 继续保留最近两个正式版本的玩家更新记录；但游戏父级 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules` 只能保留最新版 GreyWarden ZIP 与其配套 `.sha256`，不能同时保留两个版本的压缩包。
+- 核对 `GreyWardenPolicePurity.csproj` 后确认普通编译不会生成 ZIP，且部署目标已明确排除所有 `.zip`/`.zip.sha256`；这次出现两套包不是编译代码自动产生，而是此前正式发布流程在生成 r6 后没有删除 r5 本地归档。
+- 已删除 `GreyWarden-v1.4.7-r5.zip` 与 `GreyWarden-v1.4.7-r5.zip.sha256`。最终 Modules 父目录只剩 `GreyWarden-v1.4-r6.zip`（`349792649` 字节，SHA-256 `46CDF0F52D3EC562ACD44B823FF4AFF9D75BC171687C64B160600433906617AB`）及匹配的 `GreyWarden-v1.4-r6.zip.sha256`。
+- 根目录 `AGENTS.md` 已新增强制规则：正式新版包验证后必须删除所有旧的本地 GreyWarden ZIP/校验文件，始终只保留最新版一套；普通开发构建不得创建发行 ZIP。GitHub 历史 Release 与 README 最近两版日志不受这条“本地只留一套”规则影响。
