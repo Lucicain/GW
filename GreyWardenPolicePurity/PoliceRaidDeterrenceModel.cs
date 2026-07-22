@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
             if (missionType != Army.ArmyTypes.Raider || baseScore <= 0f || mobileParty?.LeaderHero == null)
                 return baseScore;
 
-            float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(mobileParty);
+            float multiplier = GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(mobileParty);
             return baseScore * multiplier;
         }
     }

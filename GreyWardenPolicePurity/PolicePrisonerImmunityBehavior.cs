@@ -46,6 +46,7 @@ namespace GreyWardenPolicePurity
                 ? mapEvent.AttackerSide
                 : mapEvent.DefenderSide);
             HashSet<string> processedHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<Hero> defeatedPoliceHeroes = new List<Hero>();
             foreach (MapEventParty? involvedParty in loserSide.Parties)
             {
                 PartyBase? partyBase = involvedParty?.Party;
@@ -66,6 +67,14 @@ namespace GreyWardenPolicePurity
                 if (playerWonBattle)
                     continue;
 
+                defeatedPoliceHeroes.Add(leader);
+            }
+
+            // Changing a defeated hero to fugitive can remove that hero's party from the
+            // map event. Apply those changes only after loserSide.Parties is no longer
+            // being enumerated.
+            foreach (Hero leader in defeatedPoliceHeroes)
+            {
                 ForcePoliceHeroFugitive(leader);
             }
         }

@@ -23,20 +23,20 @@
   <string id="gwp_crime_raid_caravan" text="劫掠商队" />
   <string id="gwp_crime_raid_village" text="劫掠村庄" />
   <string id="gwp_custom_commander_yao" text="灰袍纠察官尧" />
-  <string id="gwp_enc_chenxi" text="晨曦常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。" />
-  <string id="gwp_enc_mise" text="弥瑟主管灰袍内部的案卷、赎罪与归正事务。她坚信秩序若只剩惩罚，迟早会沦为恐惧；因此灰袍必须留下让罪人回头的门。许多关于罚金、押送、赎罪和调停的旧规，都是由她整理并续行的。她使灰袍看起来不像冷硬的军警，更像一支持戒而行的世俗修会。" />
-  <string id="gwp_enc_muguang" text="暮光统率灰袍中最强硬的外勤执法力量，常负责追缉拒捕者、押送重犯和震慑屡教不改之徒。她的名声往往先在案犯之间流传，再传到酒馆里。即便如此，她仍被灰袍内部视作守规矩的人，因为她相信刀剑只能替法律开路，不能代替法律本身。" />
-  <string id="gwp_enc_shengduo" text="圣铎负责保存统一帝国时代遗留下来的法条、判例与巡察记录。她极少高谈理想，却能在最短时间内从旧卷宗里找出某项惯例的根源。对灰袍而言，档案不仅是文书，更是证明她们并非乱世私兵的依据：帝国失国，不等于法律失声。" />
-  <string id="gwp_enc_vandi" text="梵蒂是现任灰袍总长，也是统一帝国旧警制在当世最直接的继承者之一。她将灰袍视作法统与誓约的共同体，而非寻常贵族家门。对外，她坚持灰袍不争王位、不扩领地，只守道路、村镇与市集的秩序；对内，她要求每一名灰袍之女都记住，执法的目的不是逞威，而是让百姓敢于相信明日仍有公道。" />
-  <string id="gwp_enc_yoer" text="约珥长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。" />
-  <string id="gwp_greet_bad" text="你的记录并不干净。灰袍会给人回头的机会，但不会给人装糊涂的余地。" />
-  <string id="gwp_greet_good" text="你的行止还算端正。灰袍守的是规矩，也是人心；既然你还在这条线上，我们便按守法之人待你。" />
-  <string id="gwp_greet_high" text="我看过你的记录。案卷干净，行迹也正；这样的人，灰袍记得。帝国旧法并不奖赏空话，只承认真正替百姓挡事的人。" />
-  <string id="gwp_greet_neutral" text="灰袍记人，不只记功，也记过。你既来到我面前，我便按规矩与你说话。" />
-  <string id="gwp_greet_very_high" text="你的名字在村镇间传得很正。灰袍不会轻许赞誉，但百姓替你说了不少好话。只要你仍守得住分寸，我们便把你当可以托付的人。" />
-  <string id="gwp_greet_very_low" text="你的名字已经不只是写在案卷里了。若你再越线，灰袍来见你时，带来的就不会只是言语。" />
-  <string id="gwp_greet_wanted" text="你仍在案。今日我肯与你说话，是因为灰袍的法先于刀兵；别把这当成宽纵。" />
-  <string id="gwp_grey_lord_followup" text="所以，怎么了？" />
+  <string id="gwp_enc_chenxi" text="{HERO_NAME}常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。" />
+  <string id="gwp_enc_mise" text="{HERO_NAME}最常驰往村民在路上遭袭、或田野上升起浓烟的地方。她记得那些被烧毁村庄的名字，并以普通家庭能否不再沦为战争战利品、安心劳作和出行为尺度衡量法律。那些以农民为猎物的人已经知道，一旦村庄受到威胁，她安静的态度便会立刻结束。" />
+  <string id="gwp_enc_muguang" text="{HERO_NAME}尤其留意那些无法归入旧卷宗的请求，特别是由足以改变天下格局的旅人直接带给灰袍的请求。对于没有先例的事，她不会轻易许诺，却也很少只因旧日书记官从未设想过便驳回。六人之中，人们最常向她询问法律下一步应当变成什么。" />
+  <string id="gwp_enc_shengduo" text="{HERO_NAME}保存着旧日统一帝国传下的法令与判例，但她很少长久留在档案室。村庄首领、城镇商人、工匠，甚至巷道中更强硬的人物，都见过她前来听取尚未解决的请求，并留下来直到事由被撤回或得到解决。她认为，旧法律只有仍能平息当下的纠纷时，才证明自身价值。" />
+  <string id="gwp_enc_vandi" text="{HERO_NAME}是现任灰袍统领，也是旧日统一帝国巡法体系最清晰的在世继承者之一。黎明前，人们常在操练场看见她纠正盾墙，或要求老兵向新兵说明纪律为何重于炫技。对外，她禁止灰袍追逐王冠与领地；对内，她坚持让每一位宣誓者都做好准备，在法律必须以武力守卫时稳住道路。" />
+  <string id="gwp_enc_yoer" text="{HERO_NAME}长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。" />
+  <string id="gwp_greet_bad" text="你的记录里有些问题。不过只要你愿意改正，灰袍仍然会给你机会。" />
+  <string id="gwp_greet_good" text="你的记录不错。只要你继续遵守规矩、愿意帮助需要的人，我们就会把你当作值得信任的同伴。" />
+  <string id="gwp_greet_high" text="我看过你的记录。你一直在帮助受害者，也没有给我们添麻烦。这样的表现，灰袍会记住。" />
+  <string id="gwp_greet_neutral" text="我们会记录每个人做过的事，包括功劳和过错。目前你的记录没有问题，我愿意听你说。" />
+  <string id="gwp_greet_very_high" text="我听过不少关于你的好话。村民和商人都说你愿意帮忙，也守规矩。继续这样做，灰袍会放心把更重要的事情交给你。" />
+  <string id="gwp_greet_very_low" text="你的问题已经很严重了。如果你继续违法，下次见面我们就会直接采取行动。" />
+  <string id="gwp_greet_wanted" text="你涉及的案件还没有结束。我可以先听你解释，但这不代表事情已经过去。" />
+  <string id="gwp_grey_lord_followup" text="好，说吧。你找我有什么事？" />
   <string id="gwp_greywardenadoptionlogentry_003" text="未知村庄" />
   <string id="gwp_greywardenfamilybehavior_001" text="澄音" />
   <string id="gwp_greywardenfamilybehavior_002" text="祈安" />
@@ -173,7 +173,7 @@
   <string id="gwp_gwppolicewarreasonservice_004" text="未找到灰袍守卫家族，无法读取宣战原因。" />
   <string id="gwp_gwppolicewarreasonservice_005" text="当前正式宣战对象：{VAR_1} 个" />
   <string id="gwp_gwppolicewarreasonservice_006" text="灰袍守卫当前没有正式宣战对象。" />
-  <string id="gwp_gwppolicewarreasonservice_007" text="当前检测到正式战争状态，但运行时任务池里没有直接案由。通常说明战斗刚结束、正在等待自动停战，或这是旧流程留下的临时战争。" />
+  <string id="gwp_gwppolicewarreasonservice_007" text="当前仍处于战争状态，但没有处于战时追捕阶段的案件或其他有效执法理由。下一次两日检查会恢复和平。" />
   <string id="gwp_gwppolicewarreasonservice_008" text="家族额外信息：" />
   <string id="gwp_gwppolicewarreasonservice_009" text="收养系统状态：当前未初始化。" />
   <string id="gwp_gwppolicewarreasonservice_010" text="收养冷却：全家族共享；自上一次成功收留女童起需等待 {VAR_1} 个游戏年。" />
@@ -327,7 +327,7 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_003" text="务必记住——追捕时引发的战争，灰袍会在任务结算后出面调停。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_004" text="不，我不感兴趣。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_005" text="随你。若你改变主意，为时已晚——此机会不会再来。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_005" text="随你。这名使者不会再来打扰；以后若改变主意，可以亲自找一位灰袍领主谈。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_006" text="我们的事务已了结，请继续前行。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_007" text="关于那个悬赏任务，我已击败目标，来结算赏金。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_008" text="关于那个悬赏任务，我已经完成了。" />
@@ -337,7 +337,17 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_012" text="不过，任务完成并领取赏金后，灰袍守卫会出面调停，" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_013" text="确保你不会承担战争后果。你是否愿意加入？" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_014" text="你已成为灰袍悬赏猎人！黑袍指挥官套装已加入行李，穿戴后即可接受悬赏任务。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_015" text="你拒绝了灰袍守卫的招募，此机会不会再来。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_015" text="你拒绝了灰袍守卫的招募。使者不会再次来访，但你以后可以找灰袍领主重新加入。" />
+  <string id="gwp_membership_rejoin_player" text="我想再次申请成为灰袍受托猎手。" />
+  <string id="gwp_membership_rejoin_response" text="你的申请获得批准。你重新成为灰袍受托猎手；收下这套新的指挥官装备，认真履行我们交付的通缉任务。" />
+  <string id="gwp_membership_leave_player" text="我想退出灰袍，不再担任受托猎手。" />
+  <string id="gwp_membership_leave_prompt_higher" text="退出后，你将失去通缉任务、兵员征调与战场支援。再次加入需要达到 {VAR_1} 声望，并亲自向灰袍领主申请。你确定这是最后决定吗？" />
+  <string id="gwp_membership_leave_prompt_final" text="这次退出后，你的名字将被永久从名册上划去，任何灰袍领主都不会再接纳你。你确定这是最后决定吗？" />
+  <string id="gwp_membership_leave_confirm" text="确定。把我的名字从名册上划掉吧。" />
+  <string id="gwp_membership_leave_done" text="已经办妥。此前交给你的装备仍归你所有，但它不再代表任何灰袍权限。" />
+  <string id="gwp_membership_leave_cancel" text="不，我继续留下。" />
+  <string id="gwp_membership_leave_cancelled" text="那么你在名册上的位置维持不变。" />
+  <string id="gwp_bounty_membership_ended" text="你已经退出灰袍，正在执行的悬赏契约随之撤销。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_016" text="出色的工作。任务已完成，这是约定的赏金：{VAR_1} 第纳尔。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_017" text="出色的工作。按照约定，这是你应得的赏金：{VAR_1} 第纳尔。希望我们还有合作的机会。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_018" text="已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔" />
@@ -660,16 +670,16 @@
   <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
   <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />
   <string id="gwp_gwpcasearchivescreen_004" text="关闭" />
-  <string id="gwp_gwpcasearchivescreen_005" text="任务池：{VAR_1}/100　已分配：{VAR_2}　等待中：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_005" text="任务池：普通案件 {VAR_1}/100 | 其他任务 {VAR_2}（无上限） | 已分配：{VAR_3} | 等待：{VAR_4}" />
   <string id="gwp_gwpcasearchivescreen_006" text="未结案" />
-  <string id="gwp_gwpcasearchivescreen_008" text="{VAR_1}　—　{VAR_2}" />
-  <string id="gwp_gwpcasearchivescreen_009" text="最近案发：{VAR_1}　　立案时间：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_008" text="{VAR_1} — {VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_009" text="最近案发：{VAR_1} | 立案时间：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_010" text="未记录" />
   <string id="gwp_gwpcasearchivescreen_011" text="未记录" />
-  <string id="gwp_gwpcasearchivescreen_012" text="罪行：{VAR_1}　受害者：{VAR_2}　地点：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_012" text="罪行：{VAR_1} | 受害者：{VAR_2} | 地点：{VAR_3}" />
   <string id="gwp_gwpcasearchivescreen_013" text="追踪情况：无人承办" />
   <string id="gwp_gwpcasearchivescreen_015" text="{VAR_1}（{VAR_2}）" />
-  <string id="gwp_gwpcasearchivescreen_016" text="追踪情况：{VAR_1}　当前阶段：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_016" text="追踪情况：{VAR_1} | 当前阶段：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_017" text="玩家" />
   <string id="gwp_gwpcasearchivescreen_018" text="悬赏护卫" />
   <string id="gwp_gwpcasearchivescreen_019" text="抓捕后护送" />
@@ -687,19 +697,70 @@
   <string id="gwp_gwpcasearchivescreen_031" text="未知城镇" />
   <string id="gwp_gwpcasearchivescreen_032" text="协力任务 — {VAR_1}" />
   <string id="gwp_gwpcasearchivescreen_033" text="分配时间：{VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_034" text="受领人：{VAR_1}　支援主办人：{VAR_2}" />
-  <string id="gwp_gwpcasearchivescreen_035" text="任务类型：强制军团协力　来源案件：{VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_034" text="受领人：{VAR_1} | 支援主办人：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_035" text="协力原因：主办灰袍追击受阻，需要共同围捕 | 来源案件：{VAR_1} — {VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_036" text="村庄善后 — {VAR_1}" />
   <string id="gwp_gwpcasearchivescreen_037" text="进入任务池：{VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_038" text="受领人：{VAR_1}　当前阶段：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_038" text="受领人：{VAR_1} | 当前阶段：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_039" text="受领人：等待强制分配" />
-  <string id="gwp_gwpcasearchivescreen_040" text="任务类型：强制收养善后　剩余：{VAR_1}小时" />
+  <string id="gwp_gwpcasearchivescreen_040" text="任务类型：强制收养善后 | 剩余：{VAR_1}小时" />
   <string id="gwp_gwpcasearchivescreen_041" text="任务类型：强制收养善后" />
   <string id="gwp_gwpcasearchivescreen_042" text="等待分配" />
   <string id="gwp_gwpcasearchivescreen_043" text="补给中" />
   <string id="gwp_gwpcasearchivescreen_044" text="前往村庄" />
   <string id="gwp_gwpcasearchivescreen_045" text="驻村善后" />
   <string id="gwp_gwpcasearchivescreen_046" text="未知" />
+  <string id="gwp_gwpcasearchivescreen_047" text="未知灰袍队伍" />
+  <string id="gwp_gwpcasearchivescreen_048" text="未知目标" />
+  <string id="gwp_greywardenfamilybehavior_053" text="灰袍村庄重建官" />
+  <string id="gwp_greywardenfamilybehavior_054" text="灰袍巡法官" />
+  <string id="gwp_greywardenfamilybehavior_055" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。成年后，她正式受职为{VAR_3}并承担对应职责；她的经历证明，法律不仅要缉捕罪犯，也必须替灾后幸存者恢复秩序与归宿。" />
+  <string id="gwp_greywardenfamilybehavior_056" text="{VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。成年后，她正式受职为{VAR_2}并承担对应职责。对民众而言，她代表着灰袍仍会守护道路、缉捕罪犯、修复暴力造成的破坏并维持和平。" />
+  <string id="gwp_reconstruction_001" text="无名村庄" />
+  <string id="gwp_reconstruction_002" text="{VAR_1}完成了{VAR_2}的重建。" />
+  <string id="gwp_gwpcasearchivescreen_049" text="村庄重建 — {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_050" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_051" text="受领人：等待村庄重建官" />
+  <string id="gwp_gwpcasearchivescreen_052" text="受领人：村庄重建职务已经断绝" />
+  <string id="gwp_gwpcasearchivescreen_053" text="任务类型：村庄重建 | 剩余：{VAR_1}小时 | 预计拨款：{VAR_2} | 公库红线：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_054" text="任务类型：村庄重建 | 预计拨款：{VAR_1} | 公库红线：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_055" text="驻村重建中" />
+  <string id="gwp_gwpcasearchivescreen_056" text="司法公库：{VAR_1} 第纳尔" />
   <string id="gwp_location_duty_travelling" text="正在前往{TARGET_PARTY}最后出现的位置。" />
+  <string id="gwp_gwpencyclopediaheropagevm_020" text="村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
+  <string id="gwp_gwpencyclopediaheropagevm_021" text="商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
+  <string id="gwp_duty_training" text="灰袍练兵者" />
+  <string id="gwp_duty_caravan" text="灰袍商路巡法者" />
+  <string id="gwp_duty_village" text="灰袍乡土巡法者" />
+  <string id="gwp_duty_issues" text="灰袍请愿巡行者" />
+  <string id="gwp_duty_player" text="灰袍特别请愿记录者" />
+  <string id="gwp_adult_adopted_origin" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。{VAR_3}" />
+  <string id="gwp_adult_born_origin" text="{VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。{VAR_2}" />
+  <string id="gwp_bio_hint_law" text="她跟随案件卷宗奔走，在组织需要另一双稳健的手时补上空缺。" />
+  <string id="gwp_bio_hint_training" text="她常年出入操练场，把新募之兵训练成即使道路染血也能稳住阵形的战士。" />
+  <string id="gwp_bio_hint_caravan" text="她最常出现在桥梁、渡口与商旅交会处，追索袭击商队之人，直到道路重新安全。" />
+  <string id="gwp_bio_hint_village" text="她驰往农民遭袭或田地被焚之处，并以村庄生活能否得到守护衡量自己的职责。" />
+  <string id="gwp_bio_hint_issues" text="她往来于村庄首领、城镇商人乃至巷道中的强硬人物之间，听取未决请求，离开时总会少下一桩纠纷。" />
+  <string id="gwp_bio_hint_rebuild" text="人们屡次在焦黑屋顶与废弃水井之间看见她；战斗结束后她仍会留下，直到毁坏村庄能够重新接纳居民。" />
+  <string id="gwp_bio_hint_player" text="她尤其留意旧卷宗之外的请求，特别是那些由举足轻重的旅人直接带给灰袍的请愿。" />
+  <string id="gwp_issue_resolution_complete" text="{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。" />
+  <string id="gwp_issue_ledger_header" text="请愿任务 — {VAR_1}" />
+  <string id="gwp_issue_ledger_assignment" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
+  <string id="gwp_issue_ledger_waiting" text="受领人：正在无上限请愿任务池中等待" />
+  <string id="gwp_issue_ledger_review" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2} | 剩余审理：{VAR_3}小时" />
+  <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
+  <string id="gwp_issue_stage_travel" text="前往任务发布人" />
+  <string id="gwp_issue_stage_review" text="驻留审理六小时" />
+  <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
+  <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
+  <string id="gwp_det_ui_villager_desire" text="攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
+  <string id="gwp_det_ui_raid_desire" text="烧村欲望：原版的 {VAR_1}%（与攻击村民共用同一压制）" />
+  <string id="gwp_det_ui_caravan_heading" text="【侵害商队】" />
+  <string id="gwp_det_ui_caravan_desire" text="攻击商队欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
+  <string id="gwp_det_ui_source" text="压制来源：本人 {VAR_1} | 他人传递 {VAR_2}（{VAR_3}）" />
+  <string id="gwp_det_ui_source_personal" text="本人经历为主" />
+  <string id="gwp_det_ui_source_transmitted" text="族人转述或亲眼目击为主" />
+  <string id="gwp_det_ui_source_none" text="当前没有有效压制" />
+  <string id="gwp_det_ui_source_balanced" text="本人经历与他人传递接近" />
 </strings>
 </base>

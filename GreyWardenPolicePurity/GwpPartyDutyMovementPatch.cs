@@ -1,8 +1,11 @@
+using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
 namespace GreyWardenPolicePurity
@@ -21,6 +24,10 @@ namespace GreyWardenPolicePurity
         [HarmonyPostfix]
         private static void Postfix(MobileParty party, PartyThinkParams partyThinkParams)
         {
+            GwpCrimeDesireAuction.Apply(party, partyThinkParams);
+            if (GwpAiDiagnostics.ShouldTraceObservedParty(party))
+                GwpAiDiagnostics.WriteObservedAuction(
+                    party, partyThinkParams.AIBehaviorScores.ToList());
             GreyWardenPartyDesireBehavior.ProcessFinalDesires(party, partyThinkParams);
         }
     }
@@ -72,8 +79,34 @@ namespace GreyWardenPolicePurity
         {
             if (GwpAiDiagnostics.ShouldTraceParty(mobileParty))
                 GwpAiDiagnostics.WriteResolved(mobileParty);
+            else if (GwpAiDiagnostics.ShouldTraceObservedParty(mobileParty))
+                GwpAiDiagnostics.WriteObservedResolved(mobileParty);
         }
     }
+
+#if GWP_DIAGNOSTICS
+    /// <summary>
+    /// Captures the native short-term initiative winner for both managed Grey
+    /// Warden parties and the current case targets. This is observation only:
+    /// no score, target or returned behavior is changed.
+    /// </summary>
+    [HarmonyPatch(typeof(DefaultMobilePartyAIModel),
+        nameof(DefaultMobilePartyAIModel.GetBestInitiativeBehavior))]
+    internal static class GwpInitiativeDiagnosticsPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(MobileParty mobileParty,
+            ref AiBehavior bestInitiativeBehavior,
+            ref MobileParty bestInitiativeTargetParty,
+            ref float bestInitiativeBehaviorScore,
+            ref Vec2 averageEnemyVec)
+        {
+            GwpAiDiagnostics.CaptureInitiative(mobileParty,
+                bestInitiativeBehavior, bestInitiativeTargetParty,
+                bestInitiativeBehaviorScore, averageEnemyVec);
+        }
+    }
+#endif
 
     /// <summary>
     /// Point travel is represented internally by Bannerlord's point-patrol

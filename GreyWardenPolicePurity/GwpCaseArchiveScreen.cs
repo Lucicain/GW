@@ -84,6 +84,7 @@ namespace GreyWardenPolicePurity
         private readonly Action _onClose;
         private string _title = string.Empty;
         private string _summary = string.Empty;
+        private string _treasuryText = string.Empty;
         private string _emptyText = string.Empty;
         private string _refreshText = string.Empty;
         private string _closeText = string.Empty;
@@ -124,6 +125,18 @@ namespace GreyWardenPolicePurity
                 if (value == _summary) return;
                 _summary = value;
                 OnPropertyChangedWithValue(value, nameof(Summary));
+            }
+        }
+
+        [DataSourceProperty]
+        public string TreasuryText
+        {
+            get => _treasuryText;
+            set
+            {
+                if (value == _treasuryText) return;
+                _treasuryText = value;
+                OnPropertyChangedWithValue(value, nameof(TreasuryText));
             }
         }
 
@@ -214,6 +227,14 @@ namespace GreyWardenPolicePurity
                 .OrderByDescending(task => task.QueuedTime.ToHours)
                 .ThenBy(task => task.VillageSettlementId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var reconstructionTasks = GreyWardenVillageReconstructionBehavior.GetTaskSnapshots()
+                .OrderByDescending(task => task.QueuedTime.ToHours)
+                .ThenBy(task => task.VillageSettlementId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var issueTasks = GreyWardenIssueResolutionBehavior.GetTaskSnapshots()
+                .OrderByDescending(task => task.QueuedTime.ToHours)
+                .ThenBy(task => task.IssueId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             var assignedRows = new List<(double Time, string Key, GwpCaseArchiveItemVM Item)>();
             assignedRows.AddRange(assignedCases.Select(row =>
@@ -225,6 +246,12 @@ namespace GreyWardenPolicePurity
             assignedRows.AddRange(reliefTasks.Where(task => task.IsAssigned).Select(task =>
                 (task.QueuedTime.ToHours, "relief:" + task.PolicePartyId,
                     new GwpCaseArchiveItemVM(task))));
+            assignedRows.AddRange(reconstructionTasks.Where(task => task.IsAssigned).Select(task =>
+                (task.QueuedTime.ToHours, "rebuild:" + task.PolicePartyId,
+                    new GwpCaseArchiveItemVM(task))));
+            assignedRows.AddRange(issueTasks.Where(task => task.IsAssigned).Select(task =>
+                (task.QueuedTime.ToHours, "issue:" + task.IssueId,
+                    new GwpCaseArchiveItemVM(task))));
             foreach (var row in assignedRows
                          .OrderByDescending(row => row.Time)
                          .ThenBy(row => row.Key, StringComparer.OrdinalIgnoreCase))
@@ -235,13 +262,28 @@ namespace GreyWardenPolicePurity
             foreach (GreyWardenVillageAdoptionBehavior.VillageReliefTaskSnapshot task in
                      reliefTasks.Where(task => !task.IsAssigned))
                 Cases.Add(new GwpCaseArchiveItemVM(task));
+            foreach (GreyWardenVillageReconstructionBehavior.ReconstructionTaskSnapshot task in
+                     reconstructionTasks.Where(task => !task.IsAssigned))
+                Cases.Add(new GwpCaseArchiveItemVM(task));
+            foreach (GreyWardenIssueResolutionBehavior.IssueTaskSnapshot task in
+                     issueTasks.Where(task => !task.IsAssigned))
+                Cases.Add(new GwpCaseArchiveItemVM(task));
 
             Summary = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_005}Task pool: {VAR_1}/100   Assigned: {VAR_2}   Waiting: {VAR_3}",
-                "VAR_1", Cases.Count,
-                "VAR_2", assignedCases.Count + assistanceTasks.Count +
-                    reliefTasks.Count(task => task.IsAssigned),
-                "VAR_3", unassignedCases.Count + reliefTasks.Count(task => !task.IsAssigned));
+                "{=gwp_gwpcasearchivescreen_005}Task pool: ordinary cases {VAR_1}/100 | Other tasks {VAR_2} (uncapped) | Assigned: {VAR_3} | Waiting: {VAR_4}",
+                "VAR_1", assignedCases.Count + unassignedCases.Count,
+                "VAR_2", assistanceTasks.Count + reliefTasks.Count +
+                    reconstructionTasks.Count + issueTasks.Count,
+                "VAR_3", assignedCases.Count + assistanceTasks.Count +
+                    reliefTasks.Count(task => task.IsAssigned) +
+                    reconstructionTasks.Count(task => task.IsAssigned) +
+                    issueTasks.Count(task => task.IsAssigned),
+                "VAR_4", unassignedCases.Count + reliefTasks.Count(task => !task.IsAssigned) +
+                    reconstructionTasks.Count(task => !task.IsAssigned) +
+                    issueTasks.Count(task => !task.IsAssigned));
+            TreasuryText = GwpText.Get(
+                "{=gwp_gwpcasearchivescreen_056}Judicial treasury: {VAR_1} denars",
+                "VAR_1", PoliceResourceManager.GetJudicialTreasuryBalance());
             IsEmpty = Cases.Count == 0;
         }
     }
@@ -258,12 +300,12 @@ namespace GreyWardenPolicePurity
             string offenderName = ResolveOffenderName(record);
             string status = GwpText.Get("{=gwp_gwpcasearchivescreen_006}OPEN");
             Header = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_008}{VAR_1}  —  {VAR_2}",
+                "{=gwp_gwpcasearchivescreen_008}{VAR_1} — {VAR_2}",
                 "VAR_1", offenderName,
                 "VAR_2", status);
 
             TimeText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_009}Last offence: {VAR_1}   Case opened: {VAR_2}",
+                "{=gwp_gwpcasearchivescreen_009}Last offence: {VAR_1} | Case opened: {VAR_2}",
                 "VAR_1", FormatCampaignDate(record.LastCrimeTime),
                 "VAR_2", FormatCampaignDate(record.OccurredTime));
 
@@ -276,7 +318,7 @@ namespace GreyWardenPolicePurity
                 ? GwpText.Get("{=gwp_gwpcasearchivescreen_011}Unrecorded")
                 : record.VictimName;
             DetailsText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_012}Offence: {VAR_1}   Victim: {VAR_2}   Location: {VAR_3}",
+                "{=gwp_gwpcasearchivescreen_012}Offence: {VAR_1} | Victim: {VAR_2} | Location: {VAR_3}",
                 "VAR_1", crimeType,
                 "VAR_2", victim,
                 "VAR_3", FormatLocation(record.Location));
@@ -295,22 +337,31 @@ namespace GreyWardenPolicePurity
                 string.Equals(party.StringId, assistance.TargetPartyId,
                     StringComparison.OrdinalIgnoreCase));
             string leaderName = leader?.LeaderHero?.Name?.ToString() ??
-                                leader?.Name?.ToString() ?? assistance.LeaderPartyId;
+                                leader?.Name?.ToString() ??
+                                GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
             string helperName = helper?.LeaderHero?.Name?.ToString() ??
-                                helper?.Name?.ToString() ?? assistance.HelperPartyId;
-            string targetName = target?.LeaderHero?.Name?.ToString() ??
-                                target?.Name?.ToString() ?? assistance.TargetPartyId;
+                                helper?.Name?.ToString() ??
+                                GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+            CrimeRecord? sourceCase = CrimePool.GetRecordByKey(assistance.CrimeId);
+            string targetName = sourceCase != null
+                ? ResolveOffenderName(sourceCase)
+                : target?.LeaderHero?.Name?.ToString() ??
+                  target?.Name?.ToString() ??
+                  GwpText.Get("{=gwp_gwpcasearchivescreen_048}Unknown target");
+            string crimeType = sourceCase == null || string.IsNullOrWhiteSpace(sourceCase.CrimeType)
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_010}Unrecorded")
+                : GwpText.CrimeType(sourceCase.CrimeType);
 
             Header = GwpText.Get("{=gwp_gwpcasearchivescreen_032}Assistance — {VAR_1}",
                 "VAR_1", targetName);
             TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_033}Assigned: {VAR_1}",
                 "VAR_1", FormatCampaignDate(assistance.AssignedTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_034}Assignee: {VAR_1}   Supporting: {VAR_2}",
+                "{=gwp_gwpcasearchivescreen_034}Assignee: {VAR_1} | Supporting: {VAR_2}",
                 "VAR_1", helperName, "VAR_2", leaderName);
             DetailsText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_035}Task type: forced army assistance   Source case: {VAR_1}",
-                "VAR_1", assistance.CrimeId);
+                "{=gwp_gwpcasearchivescreen_035}Assistance reason: the lead Grey Warden's pursuit was blocked and requires a joint capture | Source case: {VAR_1} — {VAR_2}",
+                "VAR_1", targetName, "VAR_2", crimeType);
         }
 
         internal GwpCaseArchiveItemVM(
@@ -320,20 +371,81 @@ namespace GreyWardenPolicePurity
                 string.Equals(candidate.StringId, relief.PolicePartyId,
                     StringComparison.OrdinalIgnoreCase));
             string assignee = party?.LeaderHero?.Name?.ToString() ??
-                              party?.Name?.ToString() ?? relief.PolicePartyId;
+                              party?.Name?.ToString() ??
+                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
 
             Header = GwpText.Get("{=gwp_gwpcasearchivescreen_036}Village relief — {VAR_1}",
                 "VAR_1", relief.VillageName);
             TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
                 "VAR_1", FormatCampaignDate(relief.QueuedTime));
             AssignmentText = relief.IsAssigned
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_038}Assignee: {VAR_1}   Stage: {VAR_2}",
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_038}Assignee: {VAR_1} | Stage: {VAR_2}",
                     "VAR_1", assignee, "VAR_2", DescribeReliefStage(relief.Stage))
                 : GwpText.Get("{=gwp_gwpcasearchivescreen_039}Assignee: waiting for forced assignment");
             DetailsText = relief.Stage == GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_040}Task type: forced adoption relief   Remaining: {VAR_1} hours",
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_040}Task type: forced adoption relief | Remaining: {VAR_1} hours",
                     "VAR_1", Math.Ceiling(relief.RemainingHours))
                 : GwpText.Get("{=gwp_gwpcasearchivescreen_041}Task type: forced adoption relief");
+        }
+
+        internal GwpCaseArchiveItemVM(
+            GreyWardenVillageReconstructionBehavior.ReconstructionTaskSnapshot reconstruction)
+        {
+            MobileParty? party = MobileParty.All.FirstOrDefault(candidate =>
+                string.Equals(candidate.StringId, reconstruction.PolicePartyId,
+                    StringComparison.OrdinalIgnoreCase));
+            string assignee = party?.LeaderHero?.Name?.ToString() ??
+                              party?.Name?.ToString() ??
+                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+
+            Header = GwpText.Get("{=gwp_gwpcasearchivescreen_049}Village reconstruction — {VAR_1}",
+                "VAR_1", reconstruction.VillageName);
+            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+                "VAR_1", FormatCampaignDate(reconstruction.QueuedTime));
+            AssignmentText = reconstruction.IsAssigned
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_050}Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
+                    "VAR_1", assignee,
+                    "VAR_2", GreyWardenFamilyBehavior.GetDutyTitle(party?.LeaderHero),
+                    "VAR_3", DescribeReconstructionStage(reconstruction.Stage))
+                : GreyWardenFamilyBehavior.HasLivingReconstructionHolder()
+                    ? GwpText.Get("{=gwp_gwpcasearchivescreen_051}Assignee: waiting for a reconstruction warden")
+                    : GwpText.Get("{=gwp_gwpcasearchivescreen_052}Assignee: reconstruction office has died out");
+            DetailsText = reconstruction.Stage ==
+                          GreyWardenVillageReconstructionBehavior.ReconstructionStage.Rebuilding
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_053}Task type: village reconstruction | Remaining: {VAR_1} hours | Estimated allocation: {VAR_2} | Treasury reserve: {VAR_3}",
+                    "VAR_1", Math.Ceiling(reconstruction.RemainingHours),
+                    "VAR_2", reconstruction.EstimatedCost,
+                    "VAR_3", reconstruction.TreasuryReserve)
+                : GwpText.Get("{=gwp_gwpcasearchivescreen_054}Task type: village reconstruction | Estimated allocation: {VAR_1} | Treasury reserve: {VAR_2}",
+                    "VAR_1", reconstruction.EstimatedCost,
+                    "VAR_2", reconstruction.TreasuryReserve);
+        }
+
+        internal GwpCaseArchiveItemVM(
+            GreyWardenIssueResolutionBehavior.IssueTaskSnapshot issue)
+        {
+            MobileParty? party = MobileParty.All.FirstOrDefault(candidate =>
+                string.Equals(candidate.StringId, issue.PolicePartyId,
+                    StringComparison.OrdinalIgnoreCase));
+            string assignee = party?.LeaderHero?.Name?.ToString() ??
+                              party?.Name?.ToString() ??
+                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+            Header = GwpText.Get("{=gwp_issue_ledger_header}Petition — {VAR_1}",
+                "VAR_1", issue.IssueTitle);
+            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+                "VAR_1", FormatCampaignDate(issue.QueuedTime));
+            AssignmentText = issue.IsAssigned
+                ? GwpText.Get("{=gwp_issue_ledger_assignment}Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
+                    "VAR_1", assignee,
+                    "VAR_2", GreyWardenFamilyBehavior.GetDutyTitle(party?.LeaderHero),
+                    "VAR_3", DescribeIssueDutyStage(issue.Stage))
+                : GwpText.Get("{=gwp_issue_ledger_waiting}Assignee: waiting in the uncapped petition pool");
+            DetailsText = issue.Stage == GreyWardenIssueResolutionBehavior.IssueDutyStage.ReviewingPetition
+                ? GwpText.Get("{=gwp_issue_ledger_review}Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2} | Remaining review: {VAR_3} hours",
+                    "VAR_1", issue.OwnerName, "VAR_2", issue.SettlementName,
+                    "VAR_3", Math.Ceiling(issue.RemainingHours))
+                : GwpText.Get("{=gwp_issue_ledger_detail}Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2}",
+                    "VAR_1", issue.OwnerName, "VAR_2", issue.SettlementName);
         }
 
         [DataSourceProperty]
@@ -391,14 +503,15 @@ namespace GreyWardenPolicePurity
 
             MobileParty? party = MobileParty.All.FirstOrDefault(candidate =>
                 string.Equals(candidate.StringId, task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
-            string partyName = party?.Name?.ToString() ?? task.PolicePartyId;
+            string partyName = party?.Name?.ToString() ??
+                               GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
             string? leaderName = party?.LeaderHero?.Name?.ToString();
             string assignee = string.IsNullOrWhiteSpace(leaderName)
                 ? partyName
                 : GwpText.Get("{=gwp_gwpcasearchivescreen_015}{VAR_1} ({VAR_2})", "VAR_1", leaderName!, "VAR_2", partyName);
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_016}Tracking: {VAR_1}   Stage: {VAR_2}",
+                "{=gwp_gwpcasearchivescreen_016}Tracking: {VAR_1} | Stage: {VAR_2}",
                 "VAR_1", assignee,
                 "VAR_2", DescribeTaskStage(task));
         }
@@ -411,8 +524,7 @@ namespace GreyWardenPolicePurity
             return record.OffenderHero?.Name?.ToString()
                    ?? record.Offender?.LeaderHero?.Name?.ToString()
                    ?? record.Offender?.Name?.ToString()
-                   ?? record.OffenderHeroId
-                   ?? record.CrimeId;
+                   ?? GwpText.Get("{=gwp_gwpcasearchivescreen_048}Unknown target");
         }
 
         private static string DescribeTaskStage(PoliceTask task)
@@ -439,6 +551,30 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_gwpcasearchivescreen_044}travelling to village"),
             GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage =>
                 GwpText.Get("{=gwp_gwpcasearchivescreen_045}relief in progress"),
+            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+        };
+
+        private static string DescribeReconstructionStage(
+            GreyWardenVillageReconstructionBehavior.ReconstructionStage stage) => stage switch
+        {
+            GreyWardenVillageReconstructionBehavior.ReconstructionStage.WaitingForAssignment =>
+                GwpText.Get("{=gwp_gwpcasearchivescreen_042}waiting for assignment"),
+            GreyWardenVillageReconstructionBehavior.ReconstructionStage.TravelingToVillage =>
+                GwpText.Get("{=gwp_gwpcasearchivescreen_044}travelling to village"),
+            GreyWardenVillageReconstructionBehavior.ReconstructionStage.Rebuilding =>
+                GwpText.Get("{=gwp_gwpcasearchivescreen_055}reconstruction in progress"),
+            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+        };
+
+        private static string DescribeIssueDutyStage(
+            GreyWardenIssueResolutionBehavior.IssueDutyStage stage) => stage switch
+        {
+            GreyWardenIssueResolutionBehavior.IssueDutyStage.WaitingForAssignment =>
+                GwpText.Get("{=gwp_gwpcasearchivescreen_042}waiting for assignment"),
+            GreyWardenIssueResolutionBehavior.IssueDutyStage.TravelingToIssuer =>
+                GwpText.Get("{=gwp_issue_stage_travel}travelling to the issuer"),
+            GreyWardenIssueResolutionBehavior.IssueDutyStage.ReviewingPetition =>
+                GwpText.Get("{=gwp_issue_stage_review}reviewing for six hours"),
             _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
         };
 

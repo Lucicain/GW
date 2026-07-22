@@ -118,7 +118,7 @@ namespace GreyWardenPolicePurity
                 }
             }
             CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
+                CrimePool.MaxTaskPoolEntries);
         }
 
         private void UpdateLordAssistance()
@@ -392,10 +392,7 @@ namespace GreyWardenPolicePurity
             group.BlockedHours = 0;
             _assistanceAssignedHours[helper.StringId] = CampaignTime.Now.ToHours;
             CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries - Math.Max(
-                    CrimePool.GetForcedTaskCount(),
-                    _assistanceAssignedHours.Count +
-                    GreyWardenVillageAdoptionBehavior.GetTaskSnapshotCount()));
+                CrimePool.MaxTaskPoolEntries);
             _independentBlockedHours.Remove(leader.StringId);
             _independentBlockedHours.Remove(helper.StringId);
 
@@ -429,6 +426,8 @@ namespace GreyWardenPolicePurity
 
         private void ReleaseCandidateCaseToPool(MobileParty helper)
         {
+            GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(helper);
+            GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(helper);
             PoliceTask? oldTask = CrimeState.GetTask(helper.StringId);
             if (oldTask != null)
             {
@@ -508,6 +507,22 @@ namespace GreyWardenPolicePurity
             _independentBlockedHours.Remove(memberId);
         }
 
+        private void CompleteAssistanceTasks(string leaderId)
+        {
+            if (!_assistanceGroups.TryGetValue(leaderId, out LordAssistanceGroup? group))
+                return;
+
+            // Each current member is a separate assistance entry in the Case Ledger.
+            // A completed source case therefore completes and funds each entry once.
+            foreach (string memberId in group.MemberPartyIds.Distinct(
+                         StringComparer.OrdinalIgnoreCase))
+            {
+                PoliceResourceManager.CreditSuccessfulCaseCompletion();
+            }
+
+            ReleaseAssistanceGroup(leaderId, "case_target_defeated");
+        }
+
         private void ReleaseAssistanceGroup(string leaderId, string reason)
         {
             if (!_assistanceGroups.TryGetValue(leaderId, out LordAssistanceGroup? group))
@@ -545,7 +560,7 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_DISBANDED",
                     "reason=" + reason + "; released=" + group.MemberPartyIds.Count);
             CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
+                CrimePool.MaxTaskPoolEntries);
         }
 
         private static bool IsArmyOwnedByGroup(Army army, LordAssistanceGroup group) =>

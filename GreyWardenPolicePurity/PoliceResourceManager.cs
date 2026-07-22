@@ -29,7 +29,7 @@ namespace GreyWardenPolicePurity
         private const int EquipmentSlotCount = 12;
         private const int TroopsPerShip = 50;
         private const int TemporaryDutyFoodDays = 20;
-        internal const int SuccessfulCaseReward = 5000;
+        internal const int SuccessfulCaseReward = 3000;
         // NavalDLC 可选依赖：运行时一次性检测（所有模块 DLL 加载后）
         // 若 NavalDLC 未安装，GivePoliceShips 直接 return，不影响游玩
         private static readonly bool _navalDlcLoaded =
@@ -145,8 +145,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 全大陆村庄按当前户数每日向司法公库缴纳保护费：每户 0.1 第纳尔；
-        /// 同时扣除当前户数的 1%。原版后续仍可按自身规则恢复村庄户数。
+        /// 全大陆村庄按当前户数每日向司法公库缴纳保护费：每户 0.05 第纳尔。
+        /// 户数只作为计费基数，不因缴费发生变化。
         /// </summary>
         private static void CollectDailyVillageProtectionContributions()
         {
@@ -157,8 +157,7 @@ namespace GreyWardenPolicePurity
                 if (village == null) continue;
 
                 float currentHearth = Math.Max(0f, village.Hearth);
-                exactContribution += currentHearth * 0.1d;
-                village.Hearth = Math.Max(10f, currentHearth * 0.99f);
+                exactContribution += currentHearth * 0.05d;
             }
 
             int totalContribution = Math.Max(
@@ -541,6 +540,54 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static void CreditSuccessfulCaseCompletion() =>
             CreditJudicialTreasury(SuccessfulCaseReward);
+
+        /// <summary>
+        /// The clan leader's wallet is the judicial treasury. This read-only view is
+        /// used by the case ledger and never transfers money between parties.
+        /// </summary>
+        internal static int GetJudicialTreasuryBalance()
+        {
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            return treasurer?.IsDead == false ? Math.Max(0, treasurer.Gold) : 0;
+        }
+
+        internal static bool CanFundVillageReconstruction(out int cost, out int reserve)
+        {
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            int treasury = GetJudicialTreasuryBalance();
+            cost = CalculateVillageReconstructionCost(treasury);
+            int dailyWages = PoliceStats.GetAllPoliceParties()
+                .Where(party => party?.IsActive == true && party.LeaderHero != null)
+                .Sum(party => Math.Max(0, party.TotalWage));
+            reserve = Math.Max(
+                GwpTuning.Reconstruction.MinimumTreasuryReserve,
+                dailyWages * GwpTuning.Reconstruction.WageReserveDays);
+            return treasurer != null && !treasurer.IsDead && treasury - cost >= reserve;
+        }
+
+        internal static bool TrySpendVillageReconstructionFunds(out int cost, out int reserve)
+        {
+            if (!CanFundVillageReconstruction(out cost, out reserve))
+                return false;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer == null || treasurer.IsDead)
+                return false;
+            treasurer.ChangeHeroGold(-cost);
+            return true;
+        }
+
+        internal static void RefundJudicialTreasury(int amount) =>
+            CreditJudicialTreasury(amount);
+
+        private static int CalculateVillageReconstructionCost(int treasury)
+        {
+            int proportional = (int)Math.Round(
+                treasury * GwpTuning.Reconstruction.TreasuryShare / 100d,
+                MidpointRounding.AwayFromZero) * 100;
+            return Math.Max(GwpTuning.Reconstruction.MinimumCost,
+                Math.Min(GwpTuning.Reconstruction.MaximumCost, proportional));
+        }
 
         private static void CreditJudicialTreasury(int amount)
         {

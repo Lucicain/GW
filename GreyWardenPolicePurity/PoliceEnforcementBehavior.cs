@@ -32,6 +32,8 @@ namespace GreyWardenPolicePurity
         private bool _atonementActive = false;
         private string _atonementTargetPartyId = string.Empty;
         private string _atonementTargetName = string.Empty;
+        private string _atonementTargetHeroId = string.Empty;
+        private int _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private int _atonementReputationReward = 0;
         private float _atonementDeadlineHours = 0f;
         private readonly Dictionary<string, Vec2> _shelteredPoliceLastPositionByTaskId =
@@ -87,6 +89,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_atone_active", ref _atonementActive);
             dataStore.SyncData("gwp_enf_atone_target_id", ref _atonementTargetPartyId);
             dataStore.SyncData("gwp_enf_atone_target_name", ref _atonementTargetName);
+            dataStore.SyncData("gwp_enf_atone_target_hero_id", ref _atonementTargetHeroId);
+            dataStore.SyncData("gwp_enf_atone_crime_category", ref _atonementTargetCrimeCategory);
             dataStore.SyncData("gwp_enf_atone_target_faction_id", ref _atonementTargetFactionId);
             dataStore.SyncData("gwp_enf_atone_reward", ref _atonementReputationReward);
             dataStore.SyncData("gwp_enf_atone_deadline_hours", ref _atonementDeadlineHours);
@@ -107,6 +111,8 @@ namespace GreyWardenPolicePurity
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
                 _lastAtonementIntelReportTime = CampaignTime.Zero;
+                if (!Enum.IsDefined(typeof(GwpCrimeCategory), _atonementTargetCrimeCategory))
+                    _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
                 PlayerState.SetAtonementTaskActive(HasAtonementTask);
             }
         }
@@ -130,6 +136,17 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // 旧存档兼容：更新前已经接下的赎罪追捕没有保存犯人英雄与犯罪分类。
+            // 在案件仍存在时补齐，确保战斗结算采用原案件的商路/乡土分类。
+            CrimeRecord? activeCrime = CrimeState.GetByOffenderId(_atonementTargetPartyId);
+            if (activeCrime != null)
+            {
+                if (string.IsNullOrWhiteSpace(_atonementTargetHeroId))
+                    _atonementTargetHeroId = activeCrime.OffenderHeroId ?? string.Empty;
+                if ((GwpCrimeCategory)_atonementTargetCrimeCategory == GwpCrimeCategory.Unknown)
+                    _atonementTargetCrimeCategory = (int)activeCrime.CrimeCategory;
+            }
+
             if ((CampaignTime.Now - _lastAtonementIntelReportTime).ToDays >= GwpTuning.Enforcement.AtonementIntelReportIntervalDays)
             {
                 _lastAtonementIntelReportTime = CampaignTime.Now;
@@ -143,12 +160,17 @@ namespace GreyWardenPolicePurity
 
             bool playerInvolved = false;
             bool targetInvolved = false;
+            MobileParty? completedTarget = null;
             foreach (var p in mapEvent.InvolvedParties)
             {
                 MobileParty? party = p?.MobileParty;
                 if (party == null) continue;
                 if (party.IsMainParty) playerInvolved = true;
-                if (party.StringId == _atonementTargetPartyId) targetInvolved = true;
+                if (party.StringId == _atonementTargetPartyId)
+                {
+                    targetInvolved = true;
+                    completedTarget = party;
+                }
             }
 
             if (!playerInvolved || !targetInvolved) return;
@@ -168,6 +190,26 @@ namespace GreyWardenPolicePurity
 
             if (playerWon)
             {
+                CrimeRecord? completedCrime = CrimeState.GetByOffenderId(_atonementTargetPartyId);
+                Hero? completedOffender = completedTarget?.LeaderHero ?? completedCrime?.OffenderHero;
+                if (completedOffender == null && !string.IsNullOrWhiteSpace(_atonementTargetHeroId))
+                {
+                    try
+                    {
+                        completedOffender = Hero.FindFirst(hero =>
+                            string.Equals(hero.StringId, _atonementTargetHeroId,
+                                StringComparison.OrdinalIgnoreCase));
+                    }
+                    catch (ArgumentNullException) { }
+                }
+
+                GwpCrimeCategory completedCategory = (GwpCrimeCategory)_atonementTargetCrimeCategory;
+                if (completedCategory == GwpCrimeCategory.Unknown)
+                    completedCategory = completedCrime?.CrimeCategory ?? GwpCrimeCategory.Unknown;
+
+                Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                    ?.RegisterPlayerCompletedCase(mapEvent, completedOffender, completedCategory);
+
                 SetAtonementFlowState(AtonementFlowState.WaitingForTurnIn);
                 _atonementDeadlineHours = 0f;
 
@@ -194,6 +236,8 @@ namespace GreyWardenPolicePurity
         {
             _atonementTargetPartyId = string.Empty;
             _atonementTargetName = string.Empty;
+            _atonementTargetHeroId = string.Empty;
+            _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
             _atonementTargetFactionId = string.Empty;
             _atonementTargetSizeSnapshot = 0;
             _atonementReputationReward = 0;
@@ -375,6 +419,7 @@ namespace GreyWardenPolicePurity
             UpdateTasks();
             UpdateIdlePoliceDuties();
             CrimeState.RefreshAccepting();
+            GwpAiDiagnostics.RefreshObservedPartyCache();
         }
 
         private void AssignTasks()
@@ -382,22 +427,64 @@ namespace GreyWardenPolicePurity
             if (!CrimeState.IsDispatchReady)
                 return;
 
-            foreach (MobileParty pp in PoliceStats.GetAllPoliceParties())
+            List<MobileParty> available = PoliceStats.GetAllPoliceParties()
+                .Where(CanAssignOrdinaryCaseNow)
+                .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // First pass preserves each office's own priority. The second pass lets every
+            // idle office holder help with any ordinary case already admitted to the pool.
+            foreach (MobileParty pp in available.ToList())
             {
                 if (!CrimeState.IsDispatchReady)
                     break;
 
-                if (!PoliceStats.CanHandleOrdinaryCase(pp)) continue;
-                if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) continue;
-                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) continue;
-                if (IsAssistanceOccupied(pp)) continue;
-                if (CrimeState.HasTask(pp.StringId)) continue;
-                if (!PoliceResourceManager.IsReady(pp)) continue;
+                GwpCrimeCategory preferred = GetPreferredCrimeCategory(pp);
+                if (preferred == GwpCrimeCategory.Unknown)
+                    continue;
+
+                CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
+                    candidate => candidate.CrimeCategory == preferred);
+                if (crime == null) continue;
+                BeginTask(pp, crime);
+                available.Remove(pp);
+            }
+
+            foreach (MobileParty pp in available)
+            {
+                if (!CrimeState.IsDispatchReady)
+                    break;
 
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D);
                 if (crime != null)
                     BeginTask(pp, crime);
             }
+        }
+
+        private bool CanAssignOrdinaryCaseNow(MobileParty pp)
+        {
+            if (!PoliceStats.CanHandleOrdinaryCase(pp)) return false;
+            if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) return false;
+            if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) return false;
+            if (GreyWardenVillageReconstructionBehavior.ShouldReserveFromOrdinaryCases(pp)) return false;
+            if (GreyWardenIssueResolutionBehavior.ShouldReserveFromOrdinaryCases(pp)) return false;
+            if (IsAssistanceOccupied(pp)) return false;
+            if (CrimeState.HasTask(pp.StringId)) return false;
+            return PoliceResourceManager.IsReady(pp);
+        }
+
+        private static GwpCrimeCategory GetPreferredCrimeCategory(MobileParty party)
+        {
+            if (!GreyWardenFamilyBehavior.TryGetDuty(party?.LeaderHero,
+                    out GreyWardenFamilyBehavior.DutyKind duty))
+                return GwpCrimeCategory.Unknown;
+
+            return duty switch
+            {
+                GreyWardenFamilyBehavior.DutyKind.CaravanProtection => GwpCrimeCategory.CaravanAttack,
+                GreyWardenFamilyBehavior.DutyKind.VillageProtection => GwpCrimeCategory.VillageViolence,
+                _ => GwpCrimeCategory.Unknown
+            };
         }
 
         private void ReconcileTaskWarStatesWithDiplomacy()
@@ -663,6 +750,8 @@ namespace GreyWardenPolicePurity
                     // 改用 Offender.IsMainParty 直接判断，不依赖 IsActive。
                     if (playerOffender)
                     {
+                        CompleteAssistanceTasks(pp.StringId);
+
                         // 玩家被击败 → 押送至最近城堡（IsCastle）→ OnTick 距离触发惩罚
                         task.IsEscortingPlayer = true;
 
@@ -682,7 +771,7 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
-                    ReleaseAssistanceGroup(pp.StringId, "case_target_defeated");
+                    CompleteAssistanceTasks(pp.StringId);
                 }
                 else
                 {

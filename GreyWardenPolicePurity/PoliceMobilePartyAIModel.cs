@@ -20,7 +20,9 @@ namespace GreyWardenPolicePurity
             if (!IsSuppressibleCivilianTarget(targetParty))
                 return true;
 
-            float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(party);
+            float multiplier = targetParty.IsCaravan
+                ? GwpAiDeterrenceState.GetCaravanAttackScoreMultiplier(party)
+                : GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(party);
             if (multiplier <= 0f)
                 return false;
 

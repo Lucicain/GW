@@ -9,7 +9,11 @@ namespace GreyWardenPolicePurity
             public const int RewardPerTroop = 200;
             public const float EscortEngageDistance = 3f;
             public const int RecruitmentReputationThreshold = 20;
+            public const int ReadmissionReputationStep = 20;
+            public const int MaximumVoluntaryExits = 3;
             public const int RecruitmentPatrolSize = 20;
+            public const float RecruitmentContactDistance = 3f;
+            public const float RecruitmentPursuitTimeoutDays = 5f;
         }
 
         internal static class TroopRequest
@@ -67,18 +71,37 @@ namespace GreyWardenPolicePurity
             public const int DenarsPerReputationPerDay = 10;
         }
 
+        internal static class Reconstruction
+        {
+            public const float WorkHours = 24f;
+            public const float ArrivalDistance = 3f;
+            public const float TreasuryShare = 0.03f;
+            public const int MinimumCost = 15000;
+            public const int MaximumCost = 30000;
+            public const int MinimumTreasuryReserve = 50000;
+            public const int WageReserveDays = 7;
+        }
+
         internal static class Deterrence
         {
             public const float RaidPenaltyCap = 9f;
             public const float MaxPenaltyGainPerCapture = 9f;
             public const float RaidScoreMultiplierPerPoint = 0.65f;
             public const float RaidScoreMultiplierFloor = 0f;
-            public const float BaseRecoveryPerDay = 0.09f;
-            public const float MinRecoveryPerDay = 0.04f;
-            public const float MaxRecoveryPerDay = 0.175f;
+            // Deterrence now fades at one tenth of the former rate.
+            public const float BaseRecoveryPerDay = 0.009f;
+            public const float MinRecoveryPerDay = 0.004f;
+            public const float MaxRecoveryPerDay = 0.0175f;
             public const float ActiveDialogueThreshold = 0.25f;
             public const float ForgetThreshold = 0.05f;
             public const float CleanupGraceDays = 3f;
+        }
+
+        internal static class IssueResolution
+        {
+            public const float WorkHours = 6f;
+            public const float ArrivalDistance = 2.5f;
+            public const float LocalDevelopmentGain = 5f;
         }
     }
 }

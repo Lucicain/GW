@@ -17,8 +17,7 @@ namespace GreyWardenPolicePurity
 
         private readonly struct DesireSuppressionDetails
         {
-            public float RaidMultiplier { get; init; }
-            public float VillagerMultiplier { get; init; }
+            public float VillageMultiplier { get; init; }
             public float CaravanMultiplier { get; init; }
         }
 
@@ -40,7 +39,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             GwpAiDeterrenceState.DeterrenceDetails details = GwpAiDeterrenceState.GetDeterrenceDetails(_hero);
-            DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero, details);
+            DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero);
             string description = BuildDeterrenceDescription(details, suppression);
 
             InformationManager.ShowInquiry(
@@ -81,31 +80,64 @@ namespace GreyWardenPolicePurity
                 "\n",
                 new[]
                 {
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_009}Recorded crimes: {VAR_1}", "VAR_1", details.TotalCrimeCount),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_010}Grey Warden arrests: {VAR_1}", "VAR_1", details.TotalArrestCount),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_011}Personal deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.DirectPenalty, "0.##")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_018}Clan deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.SharedPenalty, "0.##")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_019}Current total deterrence: {VAR_1}", "VAR_1", GwpText.Format(details.EffectivePenalty, "0.##")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_012}Village-raiding desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.RaidMultiplier, "0.###")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_013}Villager-attack desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.VillagerMultiplier, "0.###")),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_014}Caravan-attack desire multiplier: {VAR_1}", "VAR_1", GwpText.Format(suppression.CaravanMultiplier, "0.###")),
+                    GwpText.Get("{=gwp_det_ui_record}Recorded crimes: {VAR_1} | Arrested by Grey Wardens: {VAR_2}",
+                        "VAR_1", details.TotalCrimeCount, "VAR_2", details.TotalArrestCount),
+                    string.Empty,
+                    GwpText.Get("{=gwp_det_ui_village_heading}Harm against villagers"),
+                    GwpText.Get("{=gwp_det_ui_villager_desire}Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%)",
+                        "VAR_1", FormatDesirePercent(suppression.VillageMultiplier),
+                        "VAR_2", FormatSuppressionPercent(suppression.VillageMultiplier)),
+                    GwpText.Get("{=gwp_det_ui_raid_desire}Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers)",
+                        "VAR_1", FormatDesirePercent(suppression.VillageMultiplier)),
+                    BuildSourceLine(details.VillageDirectPenalty, details.VillageSharedPenalty),
+                    string.Empty,
+                    GwpText.Get("{=gwp_det_ui_caravan_heading}Harm against caravans"),
+                    GwpText.Get("{=gwp_det_ui_caravan_desire}Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%)",
+                        "VAR_1", FormatDesirePercent(suppression.CaravanMultiplier),
+                        "VAR_2", FormatSuppressionPercent(suppression.CaravanMultiplier)),
+                    BuildSourceLine(details.CaravanDirectPenalty, details.CaravanSharedPenalty),
+                    string.Empty,
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}Latest enforcement: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Map status: {VAR_1}", "VAR_1", details.MapStatus),
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}", "VAR_1", details.MapLocation)
                 });
         }
 
-        private static DesireSuppressionDetails GetDesireSuppressionDetails(
-            Hero? hero,
-            GwpAiDeterrenceState.DeterrenceDetails details)
+        private static string BuildSourceLine(float personal, float transmitted)
         {
-            float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero);
+            string leading = personal > transmitted + GwpTuning.Deterrence.ForgetThreshold
+                ? GwpText.Get("{=gwp_det_ui_source_personal}mainly personal experience")
+                : transmitted > personal + GwpTuning.Deterrence.ForgetThreshold
+                    ? GwpText.Get("{=gwp_det_ui_source_transmitted}mainly warnings passed on by clan members or witnesses")
+                    : personal <= GwpTuning.Deterrence.ForgetThreshold &&
+                      transmitted <= GwpTuning.Deterrence.ForgetThreshold
+                        ? GwpText.Get("{=gwp_det_ui_source_none}no active deterrence")
+                        : GwpText.Get("{=gwp_det_ui_source_balanced}personal experience and passed-on warnings are similar");
+
+            return GwpText.Get(
+                "{=gwp_det_ui_source}Source of suppression: personal {VAR_1} | passed on {VAR_2} ({VAR_3})",
+                "VAR_1", GwpText.Format(personal, "0.##"),
+                "VAR_2", GwpText.Format(transmitted, "0.##"),
+                "VAR_3", leading);
+        }
+
+        private static string FormatDesirePercent(float multiplier) =>
+            GwpText.Format(MathF.Max(0f, MathF.Min(1f, multiplier)) * 100f, "0.#");
+
+        private static string FormatSuppressionPercent(float multiplier) =>
+            GwpText.Format((1f - MathF.Max(0f, MathF.Min(1f, multiplier))) * 100f, "0.#");
+
+        private static DesireSuppressionDetails GetDesireSuppressionDetails(Hero? hero)
+        {
+            float villageMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero,
+                GwpCrimeCategory.VillageViolence);
+            float caravanMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero,
+                GwpCrimeCategory.CaravanAttack);
 
             return new DesireSuppressionDetails
             {
-                RaidMultiplier = multiplier,
-                VillagerMultiplier = multiplier,
-                CaravanMultiplier = multiplier
+                VillageMultiplier = villageMultiplier,
+                CaravanMultiplier = caravanMultiplier
             };
         }
     }
@@ -133,4 +165,5 @@ namespace GreyWardenPolicePurity
                 new GwpEncyclopediaHeroPageExtension(hero));
         }
     }
+
 }

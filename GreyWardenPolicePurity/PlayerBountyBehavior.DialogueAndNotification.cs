@@ -43,7 +43,7 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_options",
                 "gwp_recruit_accept_response",
                 GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_001}I accept. I shall serve the Grey Wardens in this matter."),
-                null, null, 100);
+                null, OnRecruitAcceptConsequence, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_accept_response",
@@ -52,7 +52,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_002}Good. This raiment will mark you as our sworn agent. Once the wanted party is defeated, seek a Warden-lord and claim the bounty.")
                 + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_003}Remember this: should the pursuit kindle war, the Grey Wardens will mediate once the contract is settled."),
                 null,
-                OnRecruitAcceptConsequence,
+                null,
                 100);
 
             starter.AddPlayerLine(
@@ -60,15 +60,88 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_options",
                 "gwp_recruit_refuse_response",
                 GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_004}No. I have no interest."),
-                null, null, 100);
+                null, OnRecruitRefuseConsequence, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_refuse_response",
                 "gwp_recruit_refuse_response",
                 "close_window",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_005}As you will. Should you repent the choice, it will be too late; this offer shall not be made twice."),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_005}As you will. This herald will not trouble you again; if you later reconsider, speak to a Warden-lord."),
                 null,
-                OnRecruitRefuseConsequence,
+                null,
+                100);
+
+            // ── 通过灰袍领主重新加入 / 主动退出 ──────────────────────────────────
+            starter.AddPlayerLine(
+                "gwp_membership_rejoin",
+                "lord_talk_speak_diplomacy_2",
+                "gwp_membership_rejoin_response",
+                GwpText.Get("{=gwp_membership_rejoin_player}I wish to petition for a place among the Grey Warden sworn hunters again."),
+                CanRejoinThroughLord,
+                null,
+                102);
+
+            starter.AddDialogLine(
+                "gwp_membership_rejoin_response",
+                "gwp_membership_rejoin_response",
+                "lord_pretalk",
+                GwpText.Get("{=gwp_membership_rejoin_response}Your petition is accepted. You are again recognised as a sworn hunter; take a fresh commander's harness and answer our warrants faithfully."),
+                null,
+                OnRejoinThroughLord,
+                100);
+
+            starter.AddPlayerLine(
+                "gwp_membership_leave",
+                "lord_talk_speak_diplomacy_2",
+                "gwp_membership_leave_prompt",
+                GwpText.Get("{=gwp_membership_leave_player}I wish to relinquish my place with the Grey Wardens."),
+                CanLeaveThroughLord,
+                null,
+                102);
+
+            starter.AddDialogLine(
+                "gwp_membership_leave_prompt",
+                "gwp_membership_leave_prompt",
+                "gwp_membership_leave_options",
+                "{" + GwpTextKeys.MembershipLeavePrompt + "}",
+                PrepareMembershipLeavePrompt,
+                null,
+                100);
+
+            starter.AddPlayerLine(
+                "gwp_membership_leave_confirm",
+                "gwp_membership_leave_options",
+                "gwp_membership_leave_done",
+                GwpText.Get("{=gwp_membership_leave_confirm}Yes. Remove my name from the roll."),
+                null,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_membership_leave_done",
+                "gwp_membership_leave_done",
+                "lord_pretalk",
+                GwpText.Get("{=gwp_membership_leave_done}It is done. The equipment already entrusted to you remains yours, but it no longer grants any Grey Warden authority."),
+                null,
+                OnLeaveThroughLord,
+                100);
+
+            starter.AddPlayerLine(
+                "gwp_membership_leave_cancel",
+                "gwp_membership_leave_options",
+                "gwp_membership_leave_cancelled",
+                GwpText.Get("{=gwp_membership_leave_cancel}No. I will remain."),
+                null,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_membership_leave_cancelled",
+                "gwp_membership_leave_cancelled",
+                "lord_pretalk",
+                GwpText.Get("{=gwp_membership_leave_cancelled}Then your place on the roll remains unchanged."),
+                null,
+                null,
                 100);
 
             // ── 招募已完成时的兜底对话 ──────────────────────────────────────────────
@@ -84,12 +157,9 @@ namespace GreyWardenPolicePurity
                     MobileParty? conv = MobileParty.ConversationParty;
                     if (conv == null || !IsRecruitmentPatrol(conv)) return false;
                     if (!_recruitmentOffered) return false;
-                    // 兜底：再次确保遭遇被和平关闭
-                    if (PlayerEncounter.IsActive)
-                        PlayerEncounter.LeaveEncounter = true;
                     return true;
                 },
-                TriggerPatrolReturn,
+                CloseRecruitmentEncounterAndReturn,
                 100);
 
             // ── 赏金领取（向护送警察对话，优先）────────────────────────────────────
@@ -154,19 +224,22 @@ namespace GreyWardenPolicePurity
                 + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_011}Be warned: a foreign realm may deem such pursuit an incursion and answer it with war.")
                 + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_012}Yet once the quarry is defeated and the bounty claimed, the Grey Wardens will mediate,")
                 + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_013}so that the war does not remain yours to bear. Will you take the oath?"));
+            WriteRecruitmentTrace(conversationParty, "RECRUIT_DIALOG_OPENED",
+                "recruitment start line accepted");
             return true;
         }
 
         private void OnRecruitAcceptConsequence()
         {
+            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_SELECTED",
+                "player selected acceptance");
             _recruitmentAccepted = true;
             _recruitmentOffered = true;
+            WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_COMMITTED",
+                "membership state committed on player choice");
             GiveCommanderEquipment();
-
-            if (PlayerEncounter.IsActive)
-                PlayerEncounter.LeaveEncounter = true;
-
-            TriggerPatrolReturn();
+            CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_014}You are now a sworn hunter of the Grey Wardens. The black commander’s harness has been placed in your baggage; wear it to receive bounty contracts."),
@@ -175,16 +248,200 @@ namespace GreyWardenPolicePurity
 
         private void OnRecruitRefuseConsequence()
         {
+            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_SELECTED",
+                "player selected refusal");
             _recruitmentOffered = true;
+            WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_COMMITTED",
+                "refusal state committed on player choice");
+            CloseRecruitmentEncounterAndReturn();
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You refused the Grey Wardens’ summons. The herald will not return, but you may reconsider by speaking to a Warden-lord."),
+                Colors.Yellow));
+        }
+
+        /// <summary>
+        /// Recruitment can begin either because the player clicked the herald or
+        /// because the herald engaged the player and OnMapEventStarted forced a
+        /// meeting. In the forced path, issuing the return order before the
+        /// conversation has fully closed lets the encounter cleanup overwrite it
+        /// with another EngageParty order. Mark the encounter for departure now,
+        /// then finish it and reissue the return order after conversation cleanup.
+        /// </summary>
+        private void CloseRecruitmentEncounterAndReturn()
+        {
+            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            WriteRecruitmentTrace(herald, "RECRUIT_CLOSE_QUEUED",
+                "mark encounter for departure and queue conversation-end cleanup");
+            _recruitmentPatrolReturning = true;
 
             if (PlayerEncounter.IsActive)
                 PlayerEncounter.LeaveEncounter = true;
 
             TriggerPatrolReturn();
+            WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REQUESTED",
+                "initial return order issued");
 
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You refused the Grey Wardens’ summons. The offer shall not be made again."),
-                Colors.Yellow));
+            if (Campaign.Current?.ConversationManager == null)
+                return;
+
+            Campaign.Current.ConversationManager.ConversationEndOneShot -=
+                FinishRecruitmentEncounterAndReturn;
+            Campaign.Current.ConversationManager.ConversationEndOneShot +=
+                FinishRecruitmentEncounterAndReturn;
+        }
+
+        private void FinishRecruitmentEncounterAndReturn()
+        {
+            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            WriteRecruitmentTrace(herald, "RECRUIT_CONVERSATION_ENDED",
+                "conversation-end callback entered");
+            try
+            {
+                MobileParty? encountered = PlayerEncounter.IsActive
+                    ? PlayerEncounter.EncounteredMobileParty
+                    : null;
+                if (encountered != null && IsRecruitmentPatrol(encountered))
+                {
+                    PlayerEncounter.LeaveEncounter = true;
+                    PlayerEncounter.Finish();
+                }
+            }
+            catch (Exception ex)
+            {
+                // The native encounter may already have finished itself. The
+                // returning flag and the command below remain valid either way.
+                WriteRecruitmentTrace(herald, "RECRUIT_ENCOUNTER_FINISH_FAILED",
+                    ex.GetType().Name + ":" + ex.Message);
+            }
+
+            TriggerPatrolReturn();
+            WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REISSUED",
+                "native return order reissued after conversation cleanup");
+        }
+
+        private MobileParty? ResolveCurrentRecruitmentPatrol()
+        {
+            MobileParty? party = MobileParty.ConversationParty;
+            if (party != null && IsRecruitmentPatrol(party))
+                return party;
+
+            party = PlayerEncounter.IsActive
+                ? PlayerEncounter.EncounteredMobileParty
+                : null;
+            if (party != null && IsRecruitmentPatrol(party))
+                return party;
+
+            return GetActiveRecruitmentPatrols().FirstOrDefault();
+        }
+
+        private void WriteRecruitmentTrace(MobileParty? herald, string action,
+            string details)
+        {
+            if (herald == null) return;
+
+            try
+            {
+                string encounteredId = PlayerEncounter.IsActive
+                    ? PlayerEncounter.EncounteredMobileParty?.StringId ?? "-"
+                    : "-";
+                string conversationId = MobileParty.ConversationParty?.StringId ?? "-";
+                GwpAiDiagnostics.WriteAction(herald, action,
+                    details +
+                    "; offered=" + _recruitmentOffered +
+                    "; accepted=" + _recruitmentAccepted +
+                    "; returning=" + _recruitmentPatrolReturning +
+                    "; tracked=" + (_recruitmentPatrolId ?? "-") +
+                    "; encounterActive=" + PlayerEncounter.IsActive +
+                    "; encountered=" + encounteredId +
+                    "; conversation=" + conversationId);
+            }
+            catch
+            {
+                // Diagnostics must never interfere with the recruitment flow.
+            }
+        }
+
+        private bool CanRejoinThroughLord()
+        {
+            return IsOrdinaryGreyWardenLordConversation() &&
+                   _recruitmentOffered &&
+                   !_recruitmentAccepted &&
+                   _voluntaryExitCount < GwpTuning.Bounty.MaximumVoluntaryExits &&
+                   PlayerState.Reputation >= GetRequiredReadmissionReputation();
+        }
+
+        private bool CanLeaveThroughLord()
+        {
+            return IsOrdinaryGreyWardenLordConversation() && _recruitmentAccepted;
+        }
+
+        private int GetRequiredReadmissionReputation()
+        {
+            return GwpTuning.Bounty.RecruitmentReputationThreshold +
+                   _voluntaryExitCount * GwpTuning.Bounty.ReadmissionReputationStep;
+        }
+
+        private bool PrepareMembershipLeavePrompt()
+        {
+            string prompt;
+            int nextExitCount = _voluntaryExitCount + 1;
+            if (nextExitCount >= GwpTuning.Bounty.MaximumVoluntaryExits)
+            {
+                prompt = GwpText.Get(
+                    "{=gwp_membership_leave_prompt_final}If you withdraw this time, your name will be struck permanently and no Warden-lord will readmit you. Is this your final decision?");
+            }
+            else
+            {
+                int nextThreshold = GwpTuning.Bounty.RecruitmentReputationThreshold +
+                                    nextExitCount * GwpTuning.Bounty.ReadmissionReputationStep;
+                prompt = GwpText.Get(
+                    "{=gwp_membership_leave_prompt_higher}If you withdraw, your warrants, detachments, and battlefield relief end. Readmission will require {VAR_1} standing and a personal appeal to a Warden-lord. Is this your final decision?",
+                    "VAR_1", nextThreshold);
+            }
+
+            MBTextManager.SetTextVariable(GwpTextKeys.MembershipLeavePrompt, prompt);
+            return true;
+        }
+
+        private static bool IsOrdinaryGreyWardenLordConversation()
+        {
+            Hero? conversationHero = Hero.OneToOneConversationHero;
+            if (!GwpCommon.IsGreyWardenLord(conversationHero)) return false;
+
+            MobileParty? conversationParty = MobileParty.ConversationParty;
+            if (conversationParty == null) return true;
+            if (GwpCommon.IsPatrolParty(conversationParty) ||
+                GwpCommon.IsEnforcementDelayPatrolParty(conversationParty))
+                return false;
+
+            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
+            return task?.TargetCrime?.Offender?.IsMainParty != true;
+        }
+
+        private void OnRejoinThroughLord()
+        {
+            _recruitmentAccepted = true;
+            _recruitmentOffered = true;
+            DestroyRecruitmentPatrol();
+            GiveCommanderEquipment();
+        }
+
+        private void OnLeaveThroughLord()
+        {
+            _recruitmentAccepted = false;
+            _recruitmentOffered = true;
+            _voluntaryExitCount = Math.Min(
+                GwpTuning.Bounty.MaximumVoluntaryExits,
+                _voluntaryExitCount + 1);
+            DestroyRecruitmentPatrol();
+
+            if (!HasBountyTask) return;
+
+            try { _activeQuest?.FailQuestMembershipEnded(); } catch { }
+            MakePeaceWithCriminalFaction();
+            ClearBountyTaskState();
         }
 
         /// <summary>
@@ -227,17 +484,46 @@ namespace GreyWardenPolicePurity
         {
             bool recruitInvolved = false;
             bool playerInvolved = false;
+            MobileParty? herald = null;
 
             foreach (PartyBase p in mapEvent.InvolvedParties)
             {
-                if (p.MobileParty != null && IsRecruitmentPatrol(p.MobileParty)) recruitInvolved = true;
+                if (p.MobileParty != null && IsRecruitmentPatrol(p.MobileParty))
+                {
+                    recruitInvolved = true;
+                    herald = p.MobileParty;
+                }
                 if (p.MobileParty != null && p.MobileParty.IsMainParty) playerInvolved = true;
             }
 
-            if (recruitInvolved && playerInvolved &&
-                PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
+            if (!recruitInvolved || !playerInvolved)
+                return;
+
+            WriteRecruitmentTrace(herald, "RECRUIT_MAP_EVENT_STARTED",
+                "herald and player are involved in the same map event");
+
+            // Once the player has answered, this hook must never reopen the
+            // recruitment meeting while the herald is trying to leave.
+            if (_recruitmentOffered || _recruitmentAccepted)
             {
-                try { PlayerEncounter.DoMeeting(); } catch { }
+                WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_BLOCKED",
+                    "decision state already committed");
+                return;
+            }
+
+            if (PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
+            {
+                WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_REQUESTED",
+                    "calling PlayerEncounter.DoMeeting");
+                try
+                {
+                    PlayerEncounter.DoMeeting();
+                }
+                catch (Exception ex)
+                {
+                    WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_FAILED",
+                        ex.GetType().Name + ":" + ex.Message);
+                }
             }
         }
 
@@ -373,6 +659,10 @@ namespace GreyWardenPolicePurity
 
         internal void ShowBountyInquiry(CrimeRecord crime)
         {
+            if (!_recruitmentAccepted ||
+                PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold ||
+                !IsWearingCommanderSet())
+                return;
             if (crime == null || !crime.IsOffenderValid()) return;
             if (HasBountyTask) return;
 
@@ -406,6 +696,10 @@ namespace GreyWardenPolicePurity
 
         private void AcceptBounty(CrimeRecord crime)
         {
+            if (!_recruitmentAccepted ||
+                PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold ||
+                !IsWearingCommanderSet())
+                return;
             if (!crime.IsOffenderValid())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -424,6 +718,8 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetId = offender.StringId;
             _activeBountyTargetName = offender.Name.ToString();
             _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
+            _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
+            _activeBountyCrimeCategory = (int)crime.CrimeCategory;
             _activeBountyTargetSize = offender.Party.NumberOfAllMembers;
 
             _escortPolicePartyId = CrimeState.GetAssignedPolicePartyId(offender.StringId) ?? string.Empty;

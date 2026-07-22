@@ -220,6 +220,8 @@ namespace GreyWardenPolicePurity
             SetAtonementFlowState(AtonementFlowState.Active);
             _atonementTargetPartyId = offender.StringId ?? string.Empty;
             _atonementTargetName = offender.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_013}unknown quarry");
+            _atonementTargetHeroId = targetCrime.OffenderHeroId ?? string.Empty;
+            _atonementTargetCrimeCategory = (int)targetCrime.CrimeCategory;
             _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _atonementTargetSizeSnapshot = targetSizeSnapshot;
             _atonementReputationReward = rewardRep;

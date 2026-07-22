@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -102,6 +103,8 @@ namespace GreyWardenPolicePurity
             public bool TryAddPlayerCrime(string crimeType, TaleWorlds.Library.Vec2 location, string detail) =>
                 CrimePool.TryAddPlayerCrime(crimeType, location, detail);
             public CrimeRecord? GetNearest(TaleWorlds.Library.Vec2 position) => CrimePool.GetNearest(position);
+            public CrimeRecord? GetNearest(TaleWorlds.Library.Vec2 position,
+                Func<CrimeRecord, bool> predicate) => CrimePool.GetNearest(position, predicate);
             public CrimeRecord? GetNearestNonPlayer(TaleWorlds.Library.Vec2 position) => CrimePool.GetNearestNonPlayer(position);
             public CrimeRecord? GetNearestNonPlayerFromAll(TaleWorlds.Library.Vec2 position) => CrimePool.GetNearestNonPlayerFromAll(position);
             public CrimeRecord? GetByOffenderId(string? partyStringId) => CrimePool.GetByOffenderId(partyStringId);

@@ -24,8 +24,9 @@ namespace GreyWardenPolicePurity
     ///
     /// 招募流程：
     ///   声望 >= 阈值 → 派20人招募使者 → DoMeeting 对话 →
-    ///   接受：发放黑袍指挥官套装 + 永久标记已接受
-    ///   拒绝：永久标记已拒绝，不再发起招募
+    ///   接受：发放黑袍指挥官套装 + 标记已接受
+    ///   拒绝：不再派使者，但仍可在领主处按当前门槛申请
+    ///   主动退出：重新加入门槛按 20→40→60 递增，第三次退出后永久关闭
     ///
     /// 接任务条件（三选一都满足才生效）：
     ///   1. 已接受招募（_recruitmentAccepted）
@@ -45,11 +46,14 @@ namespace GreyWardenPolicePurity
         private string _activeBountyTargetId = null!;
         private string _activeBountyTargetName = null!;     // 目标显示名（读档后恢复任务标题用）
         private string _activeBountyTargetFactionId = null!;
+        private string _activeBountyTargetHeroId = null!;
+        private int _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private int _activeBountyTargetSize = 0;
         private bool _waitingForCollection = false;
         private int _pendingReward = 0;
         private bool _recruitmentOffered = false;  // 是否已发出过招募邀请（拒绝或接受后均置true，防重复）
         private bool _recruitmentAccepted = false; // 玩家是否接受了招募
+        private int _voluntaryExitCount = 0;       // 主动退出次数：1/2/3 对应下次 40/60/永久关闭
         internal bool IsRecruitedByGreyWardens => _recruitmentAccepted;
         private string _escortPolicePartyId = null!; // 当前护送玩家追捕的警察部队 StringId（null=无护送，向族长领赏）
 
@@ -60,6 +64,7 @@ namespace GreyWardenPolicePurity
         private string _recruitmentPatrolId = null!;       // 当前在场的招募使者队ID
         private Settlement _recruitmentPatrolOrigin = null!; // 使者出发的定居点（返回目标）
         private bool _recruitmentPatrolReturning = false;  // 是否已进入返回阶段
+        private double _recruitmentPatrolDispatchHour = -1d; // 本轮追赶玩家的起始小时
         /// <summary>
         /// 读档后重连 _activeQuest 的等待标志。
         /// OnSessionLaunched 中置 true（若有活跃悬赏）；重连成功或创建兜底 Quest 后置 false。
@@ -88,6 +93,8 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetId = null!;
             _activeBountyTargetName = null!;
             _activeBountyTargetFactionId = null!;
+            _activeBountyTargetHeroId = null!;
+            _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
             _activeBountyTargetSize = 0;
         }
 
@@ -123,6 +130,8 @@ namespace GreyWardenPolicePurity
             int acceptedInt = _recruitmentAccepted ? 1 : 0;
             dataStore.SyncData("gwp_recruitment_offered",  ref offeredInt);
             dataStore.SyncData("gwp_recruitment_accepted", ref acceptedInt);
+            dataStore.SyncData("gwp_recruitment_voluntary_exit_count", ref _voluntaryExitCount);
+            dataStore.SyncData("gwp_recruitment_patrol_dispatch_hour", ref _recruitmentPatrolDispatchHour);
 
             // ── 悬赏任务持久化状态 ────────────────────────────────────────────────────
             // 存档时把当前值序列化；读档时恢复（基元类型 ref 直接支持）
@@ -130,6 +139,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_bounty_target_id",        ref _activeBountyTargetId);
             dataStore.SyncData("gwp_bounty_target_name",      ref _activeBountyTargetName); // 读档后补回任务标题
             dataStore.SyncData("gwp_bounty_target_faction_id",ref _activeBountyTargetFactionId);
+            dataStore.SyncData("gwp_bounty_target_hero_id",   ref _activeBountyTargetHeroId);
+            dataStore.SyncData("gwp_bounty_crime_category",   ref _activeBountyCrimeCategory);
             dataStore.SyncData("gwp_bounty_target_size",      ref _activeBountyTargetSize);
             dataStore.SyncData("gwp_bounty_waiting",          ref waitingInt);
             dataStore.SyncData("gwp_bounty_pending_reward",   ref _pendingReward);
@@ -139,6 +150,11 @@ namespace GreyWardenPolicePurity
             {
                 _recruitmentOffered    = offeredInt  != 0;
                 _recruitmentAccepted   = acceptedInt != 0;
+                _voluntaryExitCount = Math.Max(0, Math.Min(
+                    _voluntaryExitCount,
+                    GwpTuning.Bounty.MaximumVoluntaryExits));
+                if (!Enum.IsDefined(typeof(GwpCrimeCategory), _activeBountyCrimeCategory))
+                    _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
                 _waitingForCollection  = waitingInt  != 0;
                 // null 保护：旧存档没有此 key 时 SyncData 不修改变量，保持 null
                 _activeBountyTargetName ??= "";
@@ -168,6 +184,7 @@ namespace GreyWardenPolicePurity
                 _recruitmentPatrolId = null!;
                 _recruitmentPatrolOrigin = null!;
                 _recruitmentPatrolReturning = false;
+                _recruitmentPatrolDispatchHour = -1d;
                 return;
             }
 
@@ -178,6 +195,8 @@ namespace GreyWardenPolicePurity
             trackedPatrol ??= patrols[0];
             _recruitmentPatrolId = trackedPatrol.StringId;
             _recruitmentPatrolOrigin ??= FindNearestTown(trackedPatrol.GetPosition2D);
+            if (_recruitmentPatrolDispatchHour < 0d)
+                _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
 
             if ((_recruitmentOffered || _recruitmentAccepted) && !_recruitmentPatrolReturning)
                 _recruitmentPatrolReturning = true;
@@ -209,6 +228,7 @@ namespace GreyWardenPolicePurity
                 _recruitmentPatrolId = null!;
                 _recruitmentPatrolOrigin = null!;
                 _recruitmentPatrolReturning = false;
+                _recruitmentPatrolDispatchHour = -1d;
             }
         }
 
@@ -250,11 +270,17 @@ namespace GreyWardenPolicePurity
                 if (infantry != null)
                     patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
 
+                // 招募使者没有英雄领队，原版不会替它进城采购。若生成时不主动
+                // 配粮，它会在下一个小时检查时因 TotalFood == 0 立刻掉头，玩家
+                // 永远等不到邀请。沿用其他一次性灰袍队的二十日口粮规则。
+                PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
+
                 GreyWardenPartyDesireBehavior.RequestApproach(patrol, MobileParty.MainParty, 8f);
 
                 _recruitmentPatrolId = patrolId;
                 _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用
                 _recruitmentPatrolReturning = false;
+                _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
 
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
@@ -279,17 +305,49 @@ namespace GreyWardenPolicePurity
                 bool isTrackedPatrol = !string.IsNullOrEmpty(_recruitmentPatrolId) &&
                                        patrol.StringId == _recruitmentPatrolId;
 
+                // 兼容已经被旧逻辑困在城里的存档：这种使者长期断粮后可能全员
+                // 负伤，既无法出城，也会一直占着唯一招募使者名额。清掉它，让
+                // 本小时末的资格检查立即生成一支健康、带粮的新使者队。
+                if (isTrackedPatrol &&
+                    !_recruitmentOffered &&
+                    !_recruitmentAccepted &&
+                    patrol.Party.NumberOfHealthyMembers <= 0)
+                {
+                    DestroyRecruitmentPatrolParty(patrol);
+                    continue;
+                }
+
+                // 旧存档中仍有健康成员但已经断粮的使者可直接恢复，不应把缺粮
+                // 当成放弃招募的理由。
+                if (isTrackedPatrol && !_recruitmentOffered && !_recruitmentAccepted)
+                    PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
+
+                bool chaseTimedOut = isTrackedPatrol &&
+                    !_recruitmentOffered &&
+                    !_recruitmentAccepted &&
+                    _recruitmentPatrolDispatchHour >= 0d &&
+                    CampaignTime.Now.ToHours - _recruitmentPatrolDispatchHour >=
+                        GwpTuning.Bounty.RecruitmentPursuitTimeoutDays * 24d;
+
+                if (chaseTimedOut && !_recruitmentPatrolReturning)
+                {
+                    // 玩家持续赶路时不让同一支使者无限横跨地图。使者先进入离
+                    // 自己最近的城镇销毁；下一次资格检查再从离玩家最近的城镇
+                    // 派出全新的队伍，因此派遣点会随玩家当前位置刷新。
+                    _recruitmentPatrolReturning = true;
+                    _recruitmentPatrolOrigin = FindNearestTown(patrol.GetPosition2D);
+                }
+
                 bool shouldReturn = _recruitmentPatrolReturning ||
                                     _recruitmentOffered ||
                                     _recruitmentAccepted ||
-                                    patrol.ItemRoster.TotalFood <= 0 ||
                                     !isTrackedPatrol;
 
                 if (shouldReturn)
                 {
                     if (isTrackedPatrol &&
                         !_recruitmentPatrolReturning &&
-                        (_recruitmentOffered || _recruitmentAccepted || patrol.ItemRoster.TotalFood <= 0))
+                        (_recruitmentOffered || _recruitmentAccepted))
                     {
                         _recruitmentPatrolReturning = true;
                     }
@@ -304,7 +362,7 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
 
                     float dist = patrol.GetPosition2D.Distance(target.GetPosition2D);
-                    if (dist < 3f)
+                    if (patrol.CurrentSettlement == target || dist < 3f)
                         DestroyRecruitmentPatrolParty(patrol);
 
                     continue;
@@ -312,7 +370,19 @@ namespace GreyWardenPolicePurity
 
                 if (player != null && player.IsActive)
                 {
-                    GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
+                    float contactDistance = patrol.GetPosition2D.Distance(player.GetPosition2D);
+                    if (contactDistance <= GwpTuning.Bounty.RecruitmentContactDistance)
+                    {
+                        // 远距离仍走统一欲望层；接近后恢复原版 EngageParty 接触，
+                        // 由 OnMapEventStarted 把中立遭遇转为招募对话。
+                        GreyWardenPartyDesireBehavior.ClearIntent(patrol);
+                        patrol.Ai.SetDoNotMakeNewDecisions(false);
+                        patrol.SetMoveEngageParty(player, patrol.NavigationCapability);
+                    }
+                    else
+                    {
+                        GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
+                    }
                 }
             }
         }
@@ -332,6 +402,31 @@ namespace GreyWardenPolicePurity
                 if (target == null) continue;
 
                 GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
+
+                // RequestVisit updates the Grey Warden desire layer, but the
+                // native party can keep its old EngageParty command until the
+                // next AI check. Apply the native return command immediately so
+                // TargetParty/ShortTermTargetParty are cleared before another
+                // encounter can be created while both parties still overlap.
+                // The short do-not-attack window is the same native safeguard
+                // PlayerEncounter uses when separating parties after combat.
+                try
+                {
+                    patrol.Ai.SetDoNotAttackMainParty(2);
+                    patrol.Ai.SetDoNotMakeNewDecisions(false);
+                    patrol.SetMoveGoToSettlement(
+                        target,
+                        patrol.NavigationCapability,
+                        false);
+                    WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
+                        "cleared native EngageParty and ordered immediate travel to " +
+                        target.StringId);
+                }
+                catch (Exception ex)
+                {
+                    WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_FAILED",
+                        ex.GetType().Name + ":" + ex.Message);
+                }
             }
         }
 
@@ -343,6 +438,7 @@ namespace GreyWardenPolicePurity
             _recruitmentPatrolId = null!;
             _recruitmentPatrolOrigin = null!;
             _recruitmentPatrolReturning = false;
+            _recruitmentPatrolDispatchHour = -1d;
         }
 
         private bool IsRecruitmentPatrol(MobileParty party) =>
@@ -568,6 +664,17 @@ namespace GreyWardenPolicePurity
             // 有活跃悬赏任务时，验证目标是否仍在地图上
             if (IsTrackingBountyTarget)
             {
+                // 旧存档兼容：更新前已经接下的悬赏没有保存犯人英雄与犯罪分类。
+                // 趁案件仍在池中时补齐，避免结算顺序先移除案件后只能按默认分类施加震慑。
+                CrimeRecord? activeCrime = CrimeState.GetByOffenderId(_activeBountyTargetId);
+                if (activeCrime != null)
+                {
+                    if (string.IsNullOrWhiteSpace(_activeBountyTargetHeroId))
+                        _activeBountyTargetHeroId = activeCrime.OffenderHeroId ?? string.Empty;
+                    if ((GwpCrimeCategory)_activeBountyCrimeCategory == GwpCrimeCategory.Unknown)
+                        _activeBountyCrimeCategory = (int)activeCrime.CrimeCategory;
+                }
+
                 bool targetAlive = MobileParty.All.Any(
                     p => p.StringId == _activeBountyTargetId &&
                          (p.IsActive || p.MapEvent != null));
@@ -641,6 +748,26 @@ namespace GreyWardenPolicePurity
                 { defeatedTarget = p.Party.MobileParty; break; }
             }
             if (defeatedTarget == null) return;
+
+            CrimeRecord? completedCrime = CrimeState.GetByOffenderId(_activeBountyTargetId);
+            Hero? completedOffender = defeatedTarget.LeaderHero ?? completedCrime?.OffenderHero;
+            if (completedOffender == null && !string.IsNullOrWhiteSpace(_activeBountyTargetHeroId))
+            {
+                try
+                {
+                    completedOffender = Hero.FindFirst(hero =>
+                        string.Equals(hero.StringId, _activeBountyTargetHeroId,
+                            StringComparison.OrdinalIgnoreCase));
+                }
+                catch (ArgumentNullException) { }
+            }
+
+            GwpCrimeCategory completedCategory = (GwpCrimeCategory)_activeBountyCrimeCategory;
+            if (completedCategory == GwpCrimeCategory.Unknown)
+                completedCategory = completedCrime?.CrimeCategory ?? GwpCrimeCategory.Unknown;
+
+            Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                ?.RegisterPlayerCompletedCase(mapEvent, completedOffender, completedCategory);
 
             // 用接任务时快照的人数计算赏金（战后残余人数趋近0，不能用战后数值）
             EnterBountyCollectionState(_activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop);

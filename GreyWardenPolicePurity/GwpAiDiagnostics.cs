@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
 {
@@ -20,6 +21,22 @@ namespace GreyWardenPolicePurity
     {
         private static readonly object Sync = new object();
         private static bool _sessionStarted;
+        private static readonly Dictionary<string, InitiativeSnapshot> InitiativeByPartyId =
+            new Dictionary<string, InitiativeSnapshot>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> ObservedPartyIds =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> ObservedCasesByPartyId =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static bool _observedPartyCacheInitialized;
+
+        private sealed class InitiativeSnapshot
+        {
+            internal AiBehavior Behavior { get; set; }
+            internal string TargetPartyId { get; set; } = string.Empty;
+            internal float Score { get; set; }
+            internal Vec2 AverageEnemyVector { get; set; }
+            internal double CampaignHour { get; set; }
+        }
 
         internal static string LogPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -36,8 +53,12 @@ namespace GreyWardenPolicePurity
                     File.WriteAllText(LogPath,
                         $"# GreyWarden AI diagnostics | session={DateTime.Now:O} | " +
                         $"assembly={typeof(GwpAiDiagnostics).Assembly.GetName().Version} | " +
-                        "scope=all_grey_warden_lord_parties_and_all_leaderless_grey_warden_parties\r\n",
+                        "scope=all_grey_warden_lord_parties_and_all_leaderless_grey_warden_parties_and_active_case_targets\r\n",
                         Encoding.UTF8);
+                    InitiativeByPartyId.Clear();
+                    ObservedPartyIds.Clear();
+                    ObservedCasesByPartyId.Clear();
+                    _observedPartyCacheInitialized = false;
                     _sessionStarted = true;
                 }
                 catch
@@ -84,6 +105,39 @@ namespace GreyWardenPolicePurity
 
         internal static void WriteResolved(MobileParty party) =>
             WriteState(party, "RESOLVED");
+
+        internal static void WriteObservedAuction(MobileParty party,
+            IReadOnlyCollection<(AIBehaviorData, float)> scores)
+        {
+            if (!ShouldTraceObservedParty(party)) return;
+            Append(BuildPrefix(party, "OBSERVED_AUCTION") +
+                " | observedForCases=" + DescribeObservedCases(party) +
+                " | " + BuildPartyState(party) +
+                " | rawScores=" + FormatScores(scores));
+        }
+
+        internal static void WriteObservedResolved(MobileParty party)
+        {
+            if (!ShouldTraceObservedParty(party)) return;
+            Append(BuildPrefix(party, "OBSERVED_RESOLVED") +
+                " | observedForCases=" + DescribeObservedCases(party) +
+                " | " + BuildPartyState(party));
+        }
+
+        internal static void CaptureInitiative(MobileParty party,
+            AiBehavior behavior, MobileParty? target, float score,
+            Vec2 averageEnemyVector)
+        {
+            if (!ShouldTraceParty(party) && !ShouldTraceObservedParty(party)) return;
+            InitiativeByPartyId[party.StringId] = new InitiativeSnapshot
+            {
+                Behavior = behavior,
+                TargetPartyId = target?.StringId ?? string.Empty,
+                Score = score,
+                AverageEnemyVector = averageEnemyVector,
+                CampaignHour = CampaignTime.Now.ToHours
+            };
+        }
 
         internal static void WriteAction(MobileParty party, string action, string details)
         {
@@ -139,6 +193,57 @@ namespace GreyWardenPolicePurity
                        StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static bool ShouldTraceObservedParty(MobileParty? party)
+        {
+            if (party?.IsActive != true || ShouldTraceParty(party)) return false;
+            EnsureObservedPartyCache();
+            return ObservedPartyIds.Contains(party.StringId);
+        }
+
+        internal static void RefreshObservedPartyCache()
+        {
+            _observedPartyCacheInitialized = false;
+            EnsureObservedPartyCache();
+        }
+
+        private static void EnsureObservedPartyCache()
+        {
+            if (_observedPartyCacheInitialized) return;
+
+            ObservedPartyIds.Clear();
+            ObservedCasesByPartyId.Clear();
+            var descriptions = new Dictionary<string, List<string>>(
+                StringComparer.OrdinalIgnoreCase);
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
+            {
+                MobileParty? offender = task.TargetCrime?.Offender;
+                if (offender?.IsActive != true) continue;
+                MobileParty combatLeader = offender.BesiegerCamp?.LeaderParty ??
+                    offender.Army?.LeaderParty ?? offender.AttachedTo ?? offender;
+
+                AddObservedParty(offender, task, "offender", descriptions);
+                if (combatLeader != offender)
+                    AddObservedParty(combatLeader, task, "combatLeader", descriptions);
+            }
+
+            foreach (KeyValuePair<string, List<string>> entry in descriptions)
+                ObservedCasesByPartyId[entry.Key] = Safe(string.Join(",", entry.Value));
+            _observedPartyCacheInitialized = true;
+        }
+
+        private static void AddObservedParty(MobileParty party, PoliceTask task,
+            string role, Dictionary<string, List<string>> descriptions)
+        {
+            if (party.IsActive != true || string.IsNullOrWhiteSpace(party.StringId)) return;
+            ObservedPartyIds.Add(party.StringId);
+            if (!descriptions.TryGetValue(party.StringId, out List<string>? cases))
+            {
+                cases = new List<string>();
+                descriptions[party.StringId] = cases;
+            }
+            cases.Add(task.PolicePartyId + ":" + task.TargetCrimeId + ":" + role);
+        }
+
         private static string BuildPrefix(MobileParty party, string stage)
         {
             double campaignHours = 0d;
@@ -184,6 +289,15 @@ namespace GreyWardenPolicePurity
                 "; mapFaction=" + Safe(party.MapFaction?.StringId) +
                 "; factionMinor=" + (party.MapFaction?.IsMinorFaction ?? false) +
                 "; factionKingdom=" + (party.MapFaction?.IsKingdomFaction ?? false) +
+                "; estimatedStrength=" + party.Party.EstimatedStrength.ToString("0.00", CultureInfo.InvariantCulture) +
+                "; armyStrength=" + (party.Army?.EstimatedStrength ?? party.Party.EstimatedStrength)
+                    .ToString("0.00", CultureInfo.InvariantCulture) +
+                "; aggressiveness=" + party.Aggressiveness.ToString("0.000", CultureInfo.InvariantCulture) +
+                "; attackInitiative=" + party.Ai.AttackInitiative.ToString("0.000", CultureInfo.InvariantCulture) +
+                "; avoidInitiative=" + party.Ai.AvoidInitiative.ToString("0.000", CultureInfo.InvariantCulture) +
+                "; alerted=" + party.Ai.IsAlerted +
+                "; baseSpeed=" + party.LastCalculatedBaseSpeed.ToString("0.00", CultureInfo.InvariantCulture) +
+                "; initiative=" + DescribeInitiative(party) +
                 "; default=" + party.DefaultBehavior +
                 "; short=" + party.ShortTermBehavior +
                 "; currentSettlement=" + Safe(party.CurrentSettlement?.StringId) +
@@ -257,6 +371,24 @@ namespace GreyWardenPolicePurity
                        (observer.MapEvent != null && observer.MapEvent == offender.MapEvent);
         }
 
+        private static string DescribeInitiative(MobileParty party)
+        {
+            if (!InitiativeByPartyId.TryGetValue(party.StringId,
+                    out InitiativeSnapshot? snapshot))
+                return "missing";
+            return snapshot.Behavior + "@" + Safe(snapshot.TargetPartyId) +
+                   ",score=" + snapshot.Score.ToString("0.0000", CultureInfo.InvariantCulture) +
+                   ",enemyVec=" + snapshot.AverageEnemyVector +
+                   ",hour=" + snapshot.CampaignHour.ToString("0.00", CultureInfo.InvariantCulture);
+        }
+
+        private static string DescribeObservedCases(MobileParty party)
+        {
+            EnsureObservedPartyCache();
+            return ObservedCasesByPartyId.TryGetValue(party.StringId,
+                out string? description) ? description : "-";
+        }
+
         private static string GetPartyKind(MobileParty party)
         {
             if (IsGreyWardenLordParty(party)) return "grey_warden_lord";
@@ -291,7 +423,7 @@ namespace GreyWardenPolicePurity
         private static string Safe(string? value) =>
             string.IsNullOrWhiteSpace(value)
                 ? "-"
-                : value.Replace("|", "/").Replace("\r", " ").Replace("\n", " ");
+                : value!.Replace("|", "/").Replace("\r", " ").Replace("\n", " ");
 
         private static void Append(string line)
         {
@@ -327,9 +459,17 @@ namespace GreyWardenPolicePurity
             int nonPatrolAtOrBelowDutyCount,
             string dutyAdded) { }
         internal static void WriteResolved(MobileParty party) { }
+        internal static void WriteObservedAuction(MobileParty party,
+            IReadOnlyCollection<(AIBehaviorData, float)> scores) { }
+        internal static void WriteObservedResolved(MobileParty party) { }
+        internal static void CaptureInitiative(MobileParty party,
+            AiBehavior behavior, MobileParty? target, float score,
+            TaleWorlds.Library.Vec2 averageEnemyVector) { }
         internal static void WriteAction(MobileParty party, string action, string details) { }
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
+        internal static bool ShouldTraceObservedParty(MobileParty? party) => false;
+        internal static void RefreshObservedPartyCache() { }
     }
 #endif
 }

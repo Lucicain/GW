@@ -20,21 +20,15 @@ namespace GreyWardenPolicePurity
         private static string _lastGreetingConversationKey = string.Empty;
         private static bool _lastGreetingConversationResult;
 
-        private static readonly Dictionary<string, TextObject> HeroEncyclopediaTexts =
-            new Dictionary<string, TextObject>
+        private static readonly Dictionary<string, string> HeroEncyclopediaTemplates =
+            new Dictionary<string, string>
             {
-                ["gw_leader_0"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_vandi}Aethelflaed is the present Warden-General and one of the clearest living heirs to the constabulary of the old, undivided Empire. She holds the Grey Wardens to be a fellowship of law and oath, not an ordinary noble house. Beyond their walls she forbids them to seek crowns or widen estates: they are to keep the roads, villages, towns, and markets. Within, she bids every sworn daughter remember that the law is not a stage for pride, but a covenant by which common folk may trust that justice will endure another day.")),
-                ["gw_leader_1"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_yoer}Cyneburh has long kept watch over the post roads and countryside of the old Empire. She is most often found upon distant tracks, ferries, and the crossings of merchants, settling brigandage, blood-feuds, and unlawful tolls. Many traders and villagers remember the grey mantle before they learn her name. To them she embodies a plain and steadfast truth: the Empire has broken, yet someone still keeps the road.")),
-                ["gw_leader_2"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_mise}Mildthryth keeps the Grey Wardens’ case rolls and oversees atonement and amendment within the order. She believes that order reduced to punishment will in time become mere terror; therefore the guilty must be left a door by which to return. She has gathered and renewed many old rules of fines, escort, atonement, and settlement. Through her, the Wardens seem less a hard company of soldiers than a secular order bound by discipline.")),
-                ["gw_leader_3"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_shengduo}Wynflaed preserves the statutes, judgments, and patrol records inherited from the old, undivided Empire. She seldom speaks in lofty terms, yet can swiftly trace any custom to its root in the ancient rolls. To the Grey Wardens, an archive is more than parchment: it is proof that they are no private warband born of disorder. The Empire may have lost its throne; the law has not thereby lost its voice.")),
-                ["gw_leader_4"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_chenxi}Eadgifu is often sent where villages have suffered disaster, famine grips the marches, or war has left its deepest scars. She is skilled in relief, allotment, mediation, and the restoration of the simplest public order, and the common folk speak gently of her. Many first understand the Grey Wardens not when they see a criminal seized, but when they see ordinary lives set upright again amid the worst confusion.")),
-                ["gw_leader_5"] = new TextObject(
-                    GwpText.Get("{=gwp_enc_muguang}Wulfhild commands the sternest of the Grey Wardens’ field companies. She pursues those who resist arrest, escorts grave offenders, and chastens the incorrigible. Her name travels first among malefactors, and only afterward through the taverns. Yet the order counts her a strict keeper of rule, for she holds that steel may clear a path for the law, but must never take the law’s place."))
+                ["gw_leader_0"] = "{=gwp_enc_vandi}{HERO_NAME} is the present Warden-General and one of the clearest living heirs to the constabulary of the old, undivided Empire. She is often found in the drill yard before dawn, correcting a shield line or making veterans teach recruits why discipline matters more than display. Beyond their walls she forbids the Grey Wardens to seek crowns or widen estates; within, she insists that every sworn daughter be made ready to hold the road when law must be defended by force.",
+                ["gw_leader_1"] = "{=gwp_enc_yoer}{HERO_NAME} has long kept watch over the post roads and countryside of the old Empire. She is most often found upon distant tracks, ferries, and the crossings of merchants, settling brigandage, blood-feuds, and unlawful tolls. Many traders and villagers remember the grey mantle before they learn her name. To them she embodies a plain and steadfast truth: the Empire has broken, yet someone still keeps the road.",
+                ["gw_leader_2"] = "{=gwp_enc_mise}{HERO_NAME} rides most often where villagers have been struck on the road or where smoke rises above the fields. She remembers the names of burned hamlets and measures the law by whether ordinary families can work and travel without becoming spoils of war. Those who prey upon peasants have learned that her quiet manner ends the moment a village is threatened.",
+                ["gw_leader_3"] = "{=gwp_enc_shengduo}{HERO_NAME} preserves the statutes and judgments inherited from the old, undivided Empire, but she seldom remains long beside the archive. Village headmen, town merchants, artisans, and even the harder figures of the alleys have seen her arrive, hear an unresolved petition, and stay until its cause is withdrawn or settled. She holds that an old law proves its worth only when it can still quiet a living grievance.",
+                ["gw_leader_4"] = "{=gwp_enc_chenxi}{HERO_NAME} is often sent where villages have suffered disaster, famine grips the marches, or war has left its deepest scars. She is skilled in relief, allotment, mediation, and the restoration of the simplest public order, and the common folk speak gently of her. Many first understand the Grey Wardens not when they see a criminal seized, but when they see ordinary lives set upright again amid the worst confusion.",
+                ["gw_leader_5"] = "{=gwp_enc_muguang}{HERO_NAME} keeps an uncommon watch for petitions that do not fit the old rolls, especially those carried directly to the Grey Wardens by travellers whose deeds have altered the realm. She is slow to promise what precedent has not yet defined, yet rarely dismisses a request merely because no former clerk imagined it. Among the six, she is the one most often asked what the law should become next."
             };
 
         public override void RegisterEvents()
@@ -75,7 +69,7 @@ namespace GreyWardenPolicePurity
                 "gwp_grey_lord_met_followup",
                 "gwp_grey_lord_met_followup",
                 "lord_talk_speak_diplomacy_2",
-                GwpText.Get("{=gwp_grey_lord_followup}Well, then—what is it?"),
+                GwpText.Get("{=gwp_grey_lord_followup}All right. Tell me what you need."),
                 GreyLordMetGreetingCondition,
                 null,
                 200);
@@ -152,52 +146,53 @@ namespace GreyWardenPolicePurity
             if (reputation >= 40)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_very_high}Your name is spoken with honour from village to town. The Grey Wardens give praise sparingly, yet the common folk have spoken well of you. Keep your measure, and we shall count you among those to whom a charge may safely be entrusted."));
+                    GwpText.Get("{=gwp_greet_very_high}I have heard a lot of good things about you. Villagers and merchants say you help when you can and respect the rules. Keep that up, and the Grey Wardens will trust you with more important work."));
             }
 
             if (reputation >= 20)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_high}I have read your record. The rolls are clean and your conduct upright; the Grey Wardens remember such folk. The old Imperial law rewards no empty boast, only those who truly stand between the people and harm."));
+                    GwpText.Get("{=gwp_greet_high}I have read your record. You have consistently helped victims without causing trouble for us. The Grey Wardens remember that kind of work."));
             }
 
             if (reputation >= 5)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_good}Your conduct has remained proper. The Grey Wardens keep both rule and public trust; while you hold to that path, we shall receive you as one who keeps the law."));
+                    GwpText.Get("{=gwp_greet_good}Your record is good. Keep following the rules and helping people who need it, and we will treat you as someone we can trust."));
             }
 
             if (reputation <= -40)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_very_low}Your name is no longer merely written in the case rolls. Cross the line once more, and when the Grey Wardens come before you, they shall bring more than words."));
+                    GwpText.Get("{=gwp_greet_very_low}Your situation is already serious. If you keep breaking the law, the next Grey Warden you meet will take action instead of offering another warning."));
             }
 
             if (reputation <= -11)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_wanted}Your case remains open. I speak with you today because the law of the Grey Wardens goes before the sword. Do not mistake that order for indulgence."));
+                    GwpText.Get("{=gwp_greet_wanted}The case involving you is still open. I can hear your explanation, but that does not mean the matter is over."));
             }
 
             if (reputation < 0)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greet_bad}Your record is not clean. The Grey Wardens leave a road back for those who will take it, but none for those who feign ignorance."));
+                    GwpText.Get("{=gwp_greet_bad}There are problems in your record. If you are willing to correct them, the Grey Wardens will still give you that chance."));
             }
 
             return new TextObject(
-                GwpText.Get("{=gwp_greet_neutral}The Grey Wardens remember both service and offence. Since you stand before me, I shall speak with you according to rule."));
+                GwpText.Get("{=gwp_greet_neutral}We keep track of what people do, both the good and the bad. At the moment, your record gives me no reason to turn you away."));
         }
 
         private static void ApplyHeroEncyclopediaTexts()
         {
-            foreach (var entry in HeroEncyclopediaTexts)
+            foreach (var entry in HeroEncyclopediaTemplates)
             {
                 Hero hero = Hero.Find(entry.Key);
                 if (hero == null)
                     continue;
 
-                hero.EncyclopediaText = entry.Value;
+                hero.EncyclopediaText = new TextObject(
+                    GwpText.Get(entry.Value, "HERO_NAME", hero.Name));
             }
         }
 

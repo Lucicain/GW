@@ -364,7 +364,7 @@ namespace GreyWardenPolicePurity
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
             CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
+                CrimePool.MaxTaskPoolEntries);
         }
 
         private void OnHourlyTick()
@@ -423,7 +423,7 @@ namespace GreyWardenPolicePurity
             _pendingReliefs.Clear();
             RebuildActiveReliefPartyIndex();
             CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries - CrimePool.GetForcedTaskCount());
+                CrimePool.MaxTaskPoolEntries);
         }
 
         private void UpdateActiveReliefs()
@@ -511,6 +511,13 @@ namespace GreyWardenPolicePurity
             }
 
             _activeReliefs.Remove(relief);
+
+            // Only the normal end of the full village stay is a completed ledger case.
+            // Abort, invalid-target, and load-normalization cleanup paths pass false.
+            if (shouldAdopt && police?.IsActive == true && village?.IsVillage == true)
+            {
+                PoliceResourceManager.CreditSuccessfulCaseCompletion();
+            }
 
             if (adoptedHero != null)
             {

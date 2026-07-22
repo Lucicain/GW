@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
+using System.Linq;
 
 namespace GreyWardenPolicePurity
 {
@@ -85,6 +86,58 @@ namespace GreyWardenPolicePurity
 
             args.MenuContext.SetBackgroundMeshName("wait_fallback");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Bannerlord's native "talk to other army members" row dereferences every
+    /// attached party's LeaderHero before checking whether that Hero exists.
+    /// Temporary enforcement support parties deliberately have no lord, so they
+    /// are not conversation candidates and must not reach that native row.
+    /// </summary>
+    [HarmonyPatch(typeof(EncounterGameMenuBehavior),
+        "game_menu_army_talk_to_other_members_item_on_condition")]
+    internal static class GwpLeaderlessSupportConversationItemPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(MenuCallbackArgs args, ref bool __result)
+        {
+            MobileParty? encountered = PlayerEncounter.EncounteredMobileParty;
+            if (!PoliceEnforcementBehavior.IsActiveAssistanceArmy(encountered?.Army))
+                return true;
+
+            MobileParty? member = args.MenuContext.GetCurrentRepeatableObject()
+                as MobileParty;
+            if (member == null || member.LeaderHero != null ||
+                !GwpCommon.IsEnforcementDelayPatrolParty(member))
+                return true;
+
+            __result = false;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// If an enforcement army contains no lord-led attached party at all, hide
+    /// the parent submenu as well instead of opening an empty member list.
+    /// </summary>
+    [HarmonyPatch(typeof(EncounterGameMenuBehavior),
+        "game_menu_army_talk_to_other_members_on_condition")]
+    internal static class GwpLeaderlessSupportConversationMenuPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(ref bool __result)
+        {
+            if (!__result)
+                return;
+
+            MobileParty? encountered = PlayerEncounter.EncounteredMobileParty;
+            Army? army = encountered?.Army;
+            if (!PoliceEnforcementBehavior.IsActiveAssistanceArmy(army))
+                return;
+
+            __result = army!.LeaderParty.AttachedParties.Any(member =>
+                member?.LeaderHero != null);
         }
     }
 

@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
         private int _warStatusCheckDayCounter = 0;
 
         // 兼容旧存档字段：原“连续两次命中才派支援”逻辑已废弃。
-        // 现在改为每两日检查到宣战势力有犯人就立即派支援。
+        // 现在改为每两日检查到仍未结案的宣战追捕就继续派出一支支援队。
         private readonly Dictionary<string, int> _warTargetSeenStreak =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -196,12 +196,9 @@ namespace GreyWardenPolicePurity
             foreach (PoliceTask task in eligibleTasks.Values)
             {
                 MobileParty offender = task.TargetCrime!.Offender!;
-                bool alreadyTracked = _delayPatrolStates.Values.Any(state =>
-                    !state.Returning &&
-                    string.Equals(state.TargetPartyId, offender.StringId,
-                        StringComparison.OrdinalIgnoreCase));
-                if (alreadyTracked) continue;
-
+                // 周期支援不再因已有一支同目标支援队而停止。案件仍处于
+                // WarPursuit，就在每次两日检查时继续补派一支；案件结束后
+                // UpdateDelayPatrols 会把所有对应支援队统一转为返程。
                 SpawnSingleDelayPatrol(offender, task.PolicePartyId,
                     task.WarTarget?.StringId ?? string.Empty);
             }
@@ -219,6 +216,15 @@ namespace GreyWardenPolicePurity
                 if (task.FlowState != PoliceTaskFlowState.WarPursuit) continue;
                 if (task.TargetCrime?.HasOpenCase != true) continue;
                 MobileParty? offender = task.TargetCrime.Offender;
+                // 周期支援只属于“已经有灰袍队伍承办”的非玩家案件。
+                // 案件池中的未分派案件没有 PolicePartyId；玩家案件即使已由
+                // 灰袍追捕，也明确排除，不进入这套无限周期增援。
+                if (string.IsNullOrWhiteSpace(task.PolicePartyId)) continue;
+                MobileParty? assignedPolice = MobileParty.All.FirstOrDefault(p =>
+                    p.IsActive && string.Equals(p.StringId, task.PolicePartyId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (assignedPolice == null || !IsGreyWardenPoliceParty(assignedPolice))
+                    continue;
                 if (offender?.IsActive != true || offender.IsMainParty ||
                     offender.Party == null || offender.Party.NumberOfHealthyMembers <= 0)
                     continue;
@@ -367,7 +373,15 @@ namespace GreyWardenPolicePurity
                 : GwpCommon.FindNearestTown(targetParty.GetPosition2D);
             if (spawnSettlement == null) return false;
 
-            string patrolId = GwpCommon.EnforcementDelayPatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
+            string patrolId;
+            do
+            {
+                patrolId = GwpCommon.EnforcementDelayPatrolIdPrefix +
+                           MBRandom.RandomInt(10000, 99999);
+            }
+            while (_delayPatrolStates.ContainsKey(patrolId) ||
+                   MobileParty.All.Any(party => string.Equals(
+                       party.StringId, patrolId, StringComparison.OrdinalIgnoreCase)));
 
             try
             {
@@ -667,7 +681,6 @@ namespace GreyWardenPolicePurity
             if (string.IsNullOrEmpty(offenderId))
                 return;
 
-            bool resolvedCase = false;
             foreach (var kv in CrimeState.ActiveTasks.ToList())
             {
                 PoliceTask task = kv.Value;
@@ -685,15 +698,13 @@ namespace GreyWardenPolicePurity
 
                 ClearTaskWarTracking(kv.Key, true);
                 CrimeState.EndTask(kv.Key);
-                resolvedCase = true;
+                PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                CompleteAssistanceTasks(task.PolicePartyId);
             }
 
+            // 未分派案件同样已经进入总卷；支援队实际击败目标并移除该条目时
+            // 按一次灰袍完成结算。外部势力代打不会进入本方法，因此不拨款。
             if (CrimeState.RemovePendingCrimeByOffenderId(offenderId))
-                resolvedCase = true;
-
-            // 支援队必须实际位于胜方，并且本场确实删掉了该目标的在办或待办案件，
-            // 才能按一次成功结案计发经费；无案可结、战败或外部击败均不发放。
-            if (resolvedCase)
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
         }
 

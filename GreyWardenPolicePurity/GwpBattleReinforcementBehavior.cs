@@ -23,7 +23,7 @@ namespace GreyWardenPolicePurity
     ///   两次机会用完后不再响应后续阵亡事件。
     ///
     /// 概率：声望20=10%，声望100=50%（Reputation / 200，上限 50%）。
-    /// 声望门槛：声望 &lt; 20 时不触发任何判定。
+    /// 资格门槛：必须仍是灰袍受托猎手，且声望不低于20。
     ///
     /// 增援构成：4成步兵、4成弓手、2成骑兵，共 20+声望 人，分批从边缘涌入。
     /// </summary>
@@ -143,8 +143,9 @@ namespace GreyWardenPolicePurity
             // 只关心己方战斗人员阵亡
             if (affectedAgent?.Team != m.PlayerTeam) return;
 
-            // 声望不足，不触发任何判定
-            if (PlayerBehaviorPool.Reputation < ReputationMinimum) return;
+            // 已退出灰袍或声望不足时，不再获得组织战场支援。
+            if (!IsRecruitedByGreyWardens() ||
+                PlayerBehaviorPool.Reputation < ReputationMinimum) return;
 
             if (!_firstCheckDone)
             {
@@ -212,6 +213,13 @@ namespace GreyWardenPolicePurity
             int n = 0;
             foreach (Agent a in team.ActiveAgents) if (a.IsActive()) n++;
             return n;
+        }
+
+        private static bool IsRecruitedByGreyWardens()
+        {
+            PlayerBountyBehavior? behavior = Campaign.Current
+                ?.GetCampaignBehavior<PlayerBountyBehavior>();
+            return behavior?.IsRecruitedByGreyWardens == true;
         }
 
         // ── 分批生成 ──────────────────────────────────────────────────────────────

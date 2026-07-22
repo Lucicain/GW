@@ -11,9 +11,9 @@ using TaleWorlds.Localization;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 高声望玩家可向灰袍领主征调兵员。
+    /// 已加入灰袍且声望达标的玩家可向灰袍领主征调兵员。
     /// 规则：
-    /// 1. 声望 20+ 开放征调；
+    /// 1. 已接受灰袍招募且声望 20+ 才开放征调；
     /// 2. 声望越高，可选兵种越精锐，价格越低；
     /// 3. 付款走 barter，成功后直接补兵到主角部队。
     /// </summary>
@@ -148,6 +148,9 @@ namespace GreyWardenPolicePurity
             if (!GwpCommon.IsGreyWardenLord(conversationHero))
                 return false;
 
+            if (!IsRecruitedByGreyWardens())
+                return false;
+
             if (GetPlayerReputation() < GwpTuning.TroopRequest.MinimumReputation)
                 return false;
 
@@ -178,7 +181,7 @@ namespace GreyWardenPolicePurity
                 return false;
 
             int reputation = GetPlayerReputation();
-            return reputation >= offer.MinimumReputation;
+            return IsRecruitedByGreyWardens() && reputation >= offer.MinimumReputation;
         }
 
         private void SelectOffer(string offerId)
@@ -299,6 +302,13 @@ namespace GreyWardenPolicePurity
         private static int GetPlayerReputation()
         {
             return GwpRuntimeState.Player.Reputation;
+        }
+
+        private static bool IsRecruitedByGreyWardens()
+        {
+            PlayerBountyBehavior? behavior = Campaign.Current
+                ?.GetCampaignBehavior<PlayerBountyBehavior>();
+            return behavior?.IsRecruitedByGreyWardens == true;
         }
 
         private static int GetOfferPrice(TroopOffer offer, int reputation)

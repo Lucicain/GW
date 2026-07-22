@@ -20,6 +20,7 @@ namespace GreyWardenPolicePurity
 
         public string CrimeId { get; set; } = string.Empty;
         public string CrimeType { get; set; } = string.Empty;
+        public GwpCrimeCategory CrimeCategory { get; set; }
         public string OffenderHeroId { get; set; } = string.Empty;
         public string OffenderPartyId { get; set; } = string.Empty;
         public CampaignTime OccurredTime { get; set; }
@@ -111,6 +112,12 @@ namespace GreyWardenPolicePurity
         public int SharedDeterrenceCount { get; set; }
         public float LastDeterrenceUpdatedHours { get; set; }
         public float LastEnforcementHours { get; set; }
+        public int CaravanArrestCount { get; set; }
+        public float CaravanDirectDeterrencePoints { get; set; }
+        public float CaravanSharedDeterrencePoints { get; set; }
+        public int CaravanSharedDeterrenceCount { get; set; }
+        public float CaravanLastDeterrenceUpdatedHours { get; set; }
+        public float CaravanLastEnforcementHours { get; set; }
 
         public Hero? Hero
         {
@@ -302,12 +309,14 @@ namespace GreyWardenPolicePurity
         public static bool TryAddPlayerCrime(string crimeType, Vec2 location, string detail)
         {
             MobileParty playerParty = MobileParty.MainParty;
-            if (playerParty == null || !playerParty.IsActive || IsPlayerHunted) return false;
+            if (playerParty == null || !playerParty.IsActive || IsPlayerHunted ||
+                !IsCategoryIntakeEnabled(GwpCrimeCategory.PlayerCase)) return false;
 
             _ledger[PlayerCrimeId] = new CrimeRecord
             {
                 CrimeId = PlayerCrimeId,
                 CrimeType = crimeType,
+                CrimeCategory = GwpCrimeCategory.PlayerCase,
                 Offender = playerParty,
                 OccurredTime = CampaignTime.Now,
                 LastCrimeTime = CampaignTime.Now,
@@ -315,8 +324,7 @@ namespace GreyWardenPolicePurity
                 VictimName = detail,
                 HasOpenCase = true
             };
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
-                GetForcedTaskCount());
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_gwpdata_001}You have been put on the wanted list by the Grey Wardens!"), Colors.Red));
@@ -348,20 +356,29 @@ namespace GreyWardenPolicePurity
             if (leader == null || string.IsNullOrWhiteSpace(leader.StringId) || leader == Hero.MainHero)
                 return false;
 
+            string normalizedCrimeType = crimeType ?? string.Empty;
+            GwpCrimeCategory category = GwpCrimeCategoryClassifier.FromCrimeType(
+                normalizedCrimeType, leader.StringId);
+            // Check the surviving office before touching an existing open record. Otherwise
+            // a crime from an extinct duty could overwrite the type/category of a valid case
+            // already being pursued against the same offender.
+            if (!IsCategoryIntakeEnabled(category))
+                return false;
+
             CrimeRecord record = GetOrCreateRecord(leader);
             CampaignTime now = CampaignTime.Now;
             if (!record.HasOpenCase)
                 record.OccurredTime = now;
 
-            record.CrimeType = crimeType ?? string.Empty;
+            record.CrimeType = normalizedCrimeType;
+            record.CrimeCategory = category;
             record.Offender = offender;
             record.LastCrimeTime = now;
             record.Location = location;
             record.VictimName = victimName ?? string.Empty;
             record.HasOpenCase = true;
             GetOrCreateHistory(leader).TotalCrimeCount++;
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
-                GetForcedTaskCount());
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             return true;
         }
 
@@ -371,8 +388,7 @@ namespace GreyWardenPolicePurity
             if (crime == null || crime.CrimeId == PlayerCrimeId) return;
             crime.HasOpenCase = true;
             _ledger[crime.CrimeId] = crime;
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries -
-                GetForcedTaskCount());
+            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
         }
 
         public static void TrimOpenCasesToCapacity(int capacity)
@@ -407,6 +423,21 @@ namespace GreyWardenPolicePurity
 
         public static CrimeRecord? GetNearest(Vec2 pos) => SelectNearest(
             GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable()), pos);
+
+        public static CrimeRecord? GetNearest(Vec2 pos, Func<CrimeRecord, bool> predicate) =>
+            SelectNearest(GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable() && predicate(c)), pos);
+
+        public static bool IsCategoryIntakeEnabled(GwpCrimeCategory category) => category switch
+        {
+            GwpCrimeCategory.CaravanAttack => GreyWardenFamilyBehavior.HasLivingDutyHolder(
+                GreyWardenFamilyBehavior.DutyKind.CaravanProtection),
+            GwpCrimeCategory.VillageViolence => GreyWardenFamilyBehavior.HasLivingDutyHolder(
+                GreyWardenFamilyBehavior.DutyKind.VillageProtection),
+            // The sixth office is reserved for future player petitions. Existing
+            // player wanted cases remain part of the pre-existing criminal system.
+            GwpCrimeCategory.PlayerCase => true,
+            _ => true
+        };
 
         public static CrimeRecord? GetNearestNonPlayer(Vec2 pos) => SelectNearest(
             GetUnassignedOpenCases().Where(c => c.CrimeId != PlayerCrimeId && c.IsOffenderPursuable()), pos);
@@ -593,16 +624,11 @@ namespace GreyWardenPolicePurity
 
         public static void RefreshAccepting() { }
 
-        public static int GetForcedTaskCount() =>
-            PoliceEnforcementBehavior.GetActiveAssistanceTaskCount() +
-            GreyWardenVillageAdoptionBehavior.GetTaskSnapshotCount();
-
         public static void SyncData(IDataStore dataStore)
         {
             if (dataStore.IsSaving)
             {
-                TrimOpenCasesToCapacity(MaxTaskPoolEntries -
-                    GetForcedTaskCount());
+                TrimOpenCasesToCapacity(MaxTaskPoolEntries);
                 List<CrimeRecord> records = _ledger.Values.Where(record => record.HasOpenCase).ToList();
                 int count = records.Count;
                 dataStore.SyncData("gwp_ledger_count", ref count);
@@ -668,8 +694,7 @@ namespace GreyWardenPolicePurity
                         continue;
                     _tasks[task.PolicePartyId] = task;
                 }
-                TrimOpenCasesToCapacity(MaxTaskPoolEntries -
-                    GetForcedTaskCount());
+                TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             }
         }
 
@@ -677,7 +702,10 @@ namespace GreyWardenPolicePurity
             !string.IsNullOrWhiteSpace(history.HeroId) &&
             (history.TotalCrimeCount > 0 || history.TotalArrestCount > 0 ||
              history.DirectDeterrencePoints > 0f || history.SharedDeterrencePoints > 0f ||
-             history.SharedDeterrenceCount > 0);
+             history.SharedDeterrenceCount > 0 || history.CaravanArrestCount > 0 ||
+             history.CaravanDirectDeterrencePoints > 0f ||
+             history.CaravanSharedDeterrencePoints > 0f ||
+             history.CaravanSharedDeterrenceCount > 0);
 
         private static void SyncRecord(
             IDataStore store,
@@ -688,6 +716,7 @@ namespace GreyWardenPolicePurity
         {
             string id = record.CrimeId ?? string.Empty;
             string type = record.CrimeType ?? string.Empty;
+            int category = (int)record.CrimeCategory;
             string hero = record.OffenderHeroId ?? string.Empty;
             string party = record.Offender?.StringId ?? record.OffenderPartyId ?? string.Empty;
             float occurred = (float)record.OccurredTime.ToHours;
@@ -706,6 +735,7 @@ namespace GreyWardenPolicePurity
 
             store.SyncData($"gwp_l_{i}_id", ref id);
             store.SyncData($"gwp_l_{i}_type", ref type);
+            store.SyncData($"gwp_l_{i}_category", ref category);
             store.SyncData($"gwp_l_{i}_hero", ref hero);
             store.SyncData($"gwp_l_{i}_party", ref party);
             store.SyncData($"gwp_l_{i}_occurred", ref occurred);
@@ -726,6 +756,9 @@ namespace GreyWardenPolicePurity
             {
                 record.CrimeId = id;
                 record.CrimeType = type;
+                record.CrimeCategory = Enum.IsDefined(typeof(GwpCrimeCategory), category) && category != 0
+                    ? (GwpCrimeCategory)category
+                    : GwpCrimeCategoryClassifier.FromCrimeType(type, id);
                 record.OffenderHeroId = hero;
                 record.OffenderPartyId = party;
                 record.Offender = id == PlayerCrimeId
@@ -758,6 +791,12 @@ namespace GreyWardenPolicePurity
             int sharedCount = history.SharedDeterrenceCount;
             float updated = history.LastDeterrenceUpdatedHours;
             float enforced = history.LastEnforcementHours;
+            int caravanArrests = history.CaravanArrestCount;
+            float caravanDirect = history.CaravanDirectDeterrencePoints;
+            float caravanShared = history.CaravanSharedDeterrencePoints;
+            int caravanSharedCount = history.CaravanSharedDeterrenceCount;
+            float caravanUpdated = history.CaravanLastDeterrenceUpdatedHours;
+            float caravanEnforced = history.CaravanLastEnforcementHours;
 
             store.SyncData($"gwp_h_{i}_hero", ref hero);
             store.SyncData($"gwp_h_{i}_crimes", ref crimes);
@@ -767,6 +806,12 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_h_{i}_sharedcount", ref sharedCount);
             store.SyncData($"gwp_h_{i}_updated", ref updated);
             store.SyncData($"gwp_h_{i}_enforced", ref enforced);
+            store.SyncData($"gwp_h_{i}_caravan_arrests", ref caravanArrests);
+            store.SyncData($"gwp_h_{i}_caravan_direct", ref caravanDirect);
+            store.SyncData($"gwp_h_{i}_caravan_shared", ref caravanShared);
+            store.SyncData($"gwp_h_{i}_caravan_sharedcount", ref caravanSharedCount);
+            store.SyncData($"gwp_h_{i}_caravan_updated", ref caravanUpdated);
+            store.SyncData($"gwp_h_{i}_caravan_enforced", ref caravanEnforced);
 
             if (!saving)
             {
@@ -778,6 +823,12 @@ namespace GreyWardenPolicePurity
                 history.SharedDeterrenceCount = Math.Max(0, sharedCount);
                 history.LastDeterrenceUpdatedHours = updated;
                 history.LastEnforcementHours = enforced;
+                history.CaravanArrestCount = Math.Max(0, caravanArrests);
+                history.CaravanDirectDeterrencePoints = MathF.Max(0f, caravanDirect);
+                history.CaravanSharedDeterrencePoints = MathF.Max(0f, caravanShared);
+                history.CaravanSharedDeterrenceCount = Math.Max(0, caravanSharedCount);
+                history.CaravanLastDeterrenceUpdatedHours = caravanUpdated;
+                history.CaravanLastEnforcementHours = caravanEnforced;
             }
         }
 
@@ -797,6 +848,19 @@ namespace GreyWardenPolicePurity
             current.SharedDeterrenceCount = Math.Max(current.SharedDeterrenceCount, legacy.SharedDeterrenceCount);
             current.LastDeterrenceUpdatedHours = MathF.Max(current.LastDeterrenceUpdatedHours, legacy.LastDeterrenceUpdatedHours);
             current.LastEnforcementHours = MathF.Max(current.LastEnforcementHours, legacy.LastEnforcementHours);
+            current.CaravanArrestCount = Math.Max(current.CaravanArrestCount,
+                legacy.CaravanArrestCount);
+            current.CaravanDirectDeterrencePoints = MathF.Max(
+                current.CaravanDirectDeterrencePoints, legacy.CaravanDirectDeterrencePoints);
+            current.CaravanSharedDeterrencePoints = MathF.Max(
+                current.CaravanSharedDeterrencePoints, legacy.CaravanSharedDeterrencePoints);
+            current.CaravanSharedDeterrenceCount = Math.Max(
+                current.CaravanSharedDeterrenceCount, legacy.CaravanSharedDeterrenceCount);
+            current.CaravanLastDeterrenceUpdatedHours = MathF.Max(
+                current.CaravanLastDeterrenceUpdatedHours,
+                legacy.CaravanLastDeterrenceUpdatedHours);
+            current.CaravanLastEnforcementHours = MathF.Max(
+                current.CaravanLastEnforcementHours, legacy.CaravanLastEnforcementHours);
         }
 
         private static void SyncTask(IDataStore store, int i, PoliceTask task, bool saving)

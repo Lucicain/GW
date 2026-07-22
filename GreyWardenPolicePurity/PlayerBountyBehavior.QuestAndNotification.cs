@@ -120,6 +120,11 @@ namespace GreyWardenPolicePurity
                 try { CompleteQuestWithFail(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_004}The target has disappeared and the reward contract has been cancelled."))); } catch { }
             }
 
+            internal void FailQuestMembershipEnded()
+            {
+                try { CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn."))); } catch { }
+            }
+
         }
 
         #endregion
@@ -154,6 +159,9 @@ namespace GreyWardenPolicePurity
             public override bool IsValid()
             {
                 if (OffenderStringId == null) return false;
+                PlayerBountyBehavior? behavior = Campaign.Current
+                    ?.GetCampaignBehavior<PlayerBountyBehavior>();
+                if (behavior?.IsRecruitedByGreyWardens != true) return false;
                 return MobileParty.All.Any(p => p.StringId == OffenderStringId && p.IsActive);
             }
         }

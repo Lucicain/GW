@@ -38,6 +38,9 @@ namespace GreyWardenPolicePurity
             if (IsAssistanceOccupied(police))
                 return false;
 
+            GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
+            GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(police);
+
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
             {

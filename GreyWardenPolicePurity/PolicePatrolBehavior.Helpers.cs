@@ -112,7 +112,7 @@ namespace GreyWardenPolicePurity
                 Settlement town = _patrolOriginSettlement ?? FindNearestTown(patrol);
                 if (town != null)
                 {
-                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, town, 8f);
+                    ApplyImmediatePatrolReturn(patrol, town);
                     if (!_returningPatrolIds.Contains(patrol.StringId))
                         _returningPatrolIds.Add(patrol.StringId);
                 }
@@ -150,7 +150,7 @@ namespace GreyWardenPolicePurity
                 Settlement target = _patrolOriginSettlement ?? FindNearestTown(patrol);
                 if (target != null)
                 {
-                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
+                    ApplyImmediatePatrolReturn(patrol, target);
 
                     float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
                     if (dist < 3f)
@@ -166,10 +166,44 @@ namespace GreyWardenPolicePurity
                         else
                         {
                             // 销毁失败时保留 returning 状态，下一小时继续重试，避免“活着但失联”
-                            GreyWardenPartyDesireBehavior.RequestVisit(stillAlive, target, 8f);
+                            ApplyImmediatePatrolReturn(stillAlive, target);
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 同步切换灰袍欲望层与原版队伍 AI 的返城命令。
+        /// 仅设置 RequestVisit 会让原版 EngageParty 在下一次 AI 检查前继续保留；
+        /// 双方仍重叠时，这个时间窗足以再次创建玩家遭遇并重开对话。
+        /// </summary>
+        private void ApplyImmediatePatrolReturn(MobileParty patrol, Settlement target)
+        {
+            GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
+
+            try
+            {
+                // 与原版 PlayerEncounter 分离队伍时采用的保护一致：先给一个很短的
+                // 不攻击玩家窗口，再用原版返城命令立即清掉 TargetParty/EngageParty。
+                patrol.Ai.SetDoNotAttackMainParty(2);
+                patrol.Ai.SetDoNotMakeNewDecisions(false);
+                patrol.SetMoveGoToSettlement(
+                    target,
+                    patrol.NavigationCapability,
+                    false);
+                GwpAiDiagnostics.WriteAction(
+                    patrol,
+                    "PATROL_NATIVE_RETURN_APPLIED",
+                    "cleared native EngageParty and ordered immediate travel to " +
+                    target.StringId);
+            }
+            catch (Exception ex)
+            {
+                GwpAiDiagnostics.WriteAction(
+                    patrol,
+                    "PATROL_NATIVE_RETURN_FAILED",
+                    ex.GetType().Name + ":" + ex.Message);
             }
         }
 

@@ -85,7 +85,7 @@ namespace GreyWardenPolicePurity
 
             foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
-                if (TaskMatchesFaction(task, targetFaction))
+                if (TaskMaintainsFactionWar(task) && TaskMatchesFaction(task, targetFaction))
                     return true;
             }
 
@@ -111,6 +111,8 @@ namespace GreyWardenPolicePurity
 
             foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
+                if (!TaskMaintainsFactionWar(task)) continue;
+
                 MobileParty? offender = task.TargetCrime?.Offender;
                 IFaction? targetFaction = task.WarTarget ?? offender?.ActualClan?.MapFaction;
                 if (targetFaction == null) continue;
@@ -149,7 +151,7 @@ namespace GreyWardenPolicePurity
                     AddFactionReason(
                         buckets,
                         faction,
-                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}A formal war is in progress, but no direct case remains in the active ledger. The battle may have only just ended, mediation may still be pending, or an older process may have left a temporary war unresolved."));
+                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}A war is currently in progress, but there is no active wartime-pursuit case or other valid enforcement reason. The next two-day review will restore peace."));
                 }
             }
 
@@ -221,6 +223,17 @@ namespace GreyWardenPolicePurity
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// An ordinary case is allowed to preserve a faction war only after its
+        /// enforcement task has actually entered wartime pursuit. Merely being
+        /// present in the case pool, assigned, preparing, or tracking a target
+        /// is not a legitimate reason to keep two factions at war.
+        /// </summary>
+        internal static bool TaskMaintainsFactionWar(PoliceTask? task)
+        {
+            return task != null && task.FlowState == PoliceTaskFlowState.WarPursuit;
         }
 
         private static IEnumerable<IFaction> GetCurrentWarFactions(Clan policeClan)
