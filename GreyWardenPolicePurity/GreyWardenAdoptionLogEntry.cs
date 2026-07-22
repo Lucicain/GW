@@ -8,7 +8,7 @@ using TaleWorlds.SaveSystem;
 
 namespace GreyWardenPolicePurity
 {
-    internal sealed class GreyWardenAdoptionLogEntry : LogEntry, IChatNotification, IEncyclopediaLog
+    internal class GreyWardenAdoptionLogEntry : LogEntry, IChatNotification, IEncyclopediaLog
     {
         [SaveableField(1)]
         public readonly Hero AdoptedHero;
@@ -57,7 +57,7 @@ namespace GreyWardenPolicePurity
             return BuildText("{=gwp_adoption_chat_notice}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}.");
         }
 
-        public bool IsVisibleInEncyclopediaPageOf(MBObjectBase obj)
+        public virtual bool IsVisibleInEncyclopediaPageOf(MBObjectBase obj)
         {
             MBObjectBase? entryTarget = obj;
             return entryTarget == AdoptedHero || entryTarget == AdoptedHero?.Clan;
@@ -65,9 +65,9 @@ namespace GreyWardenPolicePurity
 
         // Bannerlord 1.4.5 exposes this member as a generic interface method,
         // while 1.4.7 exposes the MBObjectBase overload above.  Keep both
-        // public overloads so the same source and assembly remain callable by
-        // either runtime contract.
-        public bool IsVisibleInEncyclopediaPageOf<T>(T obj) where T : MBObjectBase
+        // virtual overloads so a binary built against either version keeps a
+        // CLR interface slot for both runtime contracts.
+        public virtual bool IsVisibleInEncyclopediaPageOf<T>(T obj) where T : MBObjectBase
         {
             return IsVisibleInEncyclopediaPageOf((MBObjectBase)obj);
         }

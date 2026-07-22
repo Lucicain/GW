@@ -37,7 +37,7 @@ Compared with `v1.4.7-r5`:
 - Fixed heralds lacking food, failing to catch the player, or repeatedly reopening conversation. Heralds and peacefully dismissed provost patrols now return to town before disbanding.
 - Fixed crashes when talking to leaderless support parties, prolonged army standoffs, and cases failing to progress when more support was needed.
 - Fixed incorrect encyclopedia names and unclear deterrence or Case Ledger text.
-- Fixed the adoption-record encyclopedia contract difference on 1.4.5 and 1.4.6 that could otherwise prevent the module from loading.
+- Fixed adoption-record encyclopedia binding across 1.4.5, 1.4.6, and 1.4.7 so the same package loads correctly on all three versions.
 
 ### 2026-07-20 v1.4.7-r5
 

@@ -6378,3 +6378,16 @@ irreplaceable backup; the editor workspace does not replace it.
   - `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r6.zip.sha256`
   ZIP 为 `349792645` 字节，SHA-256 为 `1536E5A4FABA30CF2407B75FED1A75C3E8493CE47E1C7E7003DD69375AEE85D5`；校验文件正文准确命名 `GreyWarden-v1.4-r6.zip`。
 - 最终 ZIP 只有一个顶层 `GreyWarden/`，共 `28` 个正常客户端运行文件。路径检查确认 `Assets`、`AssetSources`、`RuntimeDataCache`、`tools`、编辑器目录、PDB、PowerShell、日志、dump、嵌套 ZIP 和校验文件均为 `0`；包内 DLL 与独立无诊断构建哈希一致，包内中英文 README 与仓库一致。发布使用 `main`、标签 `v1.4-r6` 和 GitHub Release `https://github.com/Lucicain/GW/releases/tag/v1.4-r6`，只上传上述 ZIP 与匹配校验文件；成功后删除旧的 `v1.4.7-r6` Release/标签及本地旧名包，`v1.4.7-r5` 继续作为上一正式版本保留。
+
+## 2026-07-22 v1.4-r6 的 1.4.7 CLR 接口绑定修复
+
+- `v1.4-r6` 首次统一包是在真实 1.4.5 安装程序集上构建。用户随后切回 1.4.7（构建号 `117484`）尝试启动，最新两次失败日志为 `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_18192.txt` 与 `rgl_log_65176.txt`。两份日志都完成 GreyWarden DLL 加载和绝大多数类型枚举，但在类型加载末尾明确记录：`GreyWardenAdoptionLogEntry` 的 `IsVisibleInEncyclopediaPageOf` “does not have an implementation”，随后 GreyWarden 因 dependency conflict 被拒绝载入。该证据排除了清单版本号、可选依赖、资源和存档问题。
+- 根因比“同时写两个重载”更深：C# 编译器只会把当前参考程序集接口所匹配的方法发行为 `final newslot virtual` 接口槽。旧实现用 1.4.5 编译时，泛型重载是虚接口槽，而非泛型 1.4.7 重载只是普通实例方法；因此 1.4.7 CLR 即使能看见同名非泛型方法，也不会把它当作接口实现。反过来只在 1.4.7 编译也会给 1.4.5 留下同类风险。
+- 最终修复取消 `GreyWardenAdoptionLogEntry` 的 `sealed`，并把泛型、非泛型两个重载都显式声明为 `public virtual`。这样无论使用 1.4.5、1.4.6 还是 1.4.7 参考程序集构建，两个签名都固定拥有可供 CLR 映射的虚方法槽；方法体和收养记录可见性规则没有变化。
+- 修复后完成三版本构建矩阵：真实 1.4.7 完整 `Release -t:Rebuild --no-restore` 为 `0` 错误、`43` 条既有警告；`.codex_tmp\compat-audit\build145\Build145.csproj` 对 `Bannerlord.ReferenceAssemblies 1.4.5.115026` 完整交叉构建为 `0` 错误、`42` 条既有警告；既有 `build146\Build146.csproj` 对 `1.4.6.115628` 同样为 `0` 错误、`42` 条既有警告。ILSpy 对三个产物均确认泛型与非泛型入口都是 `public hidebysig newslot virtual`。
+- 自动 1.4.7 运行验证使用当前启用模组序列并加 `/continuegame` 才能绕过启动器交互；不带该参数直接启动 `Bannerlord.exe` 或 `Bannerlord.Native.exe` 只停留在启动器/原生入口，未进入托管初始化，因此不能作为模组失败证据。成功日志为 `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_42140.txt`：构建号 `117484`，`Module Initialize end` 正常完成，随后到达 `GauntletInitialScreen::HandleActivate`；`GreyWarden could not be loaded correctly`、`Loader Exceptions` 和 dependency conflict 命中均为 `0`。测试在初始界面即关闭，没有等待大地图时间推进。
+- 用户随后在自己的正常 1.4.7 启动流程中实机验证，确认游戏能够打开且一切正常。这是本轮最终的玩家侧运行验收；1.4.5 此前也已由用户确认界面与玩法正常，1.4.6 则由完整参考程序集交叉构建覆盖。
+- 修复后的本地诊断 DLL 为 `611328` 字节，SHA-256 `F25209F83EE9AB2C78D0270D4D97AA79ED3FAA873548BCD7954A5AD1688D35C6`。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个 XML 全部解析通过，中英文 README 与实机一致。
+- 修复后的正式玩家 DLL 独立构建于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r6-interface-fix`，为 `596480` 字节，SHA-256 `E4CDC522BA4EA86DD407EF6EB2A5C514922899DA8479F515B886CB450ADE8D90`。ILSpy 确认两个兼容入口均为虚方法；`GwpAiDiagnostics` 仍是空实现，文件、目录、流写入和诊断日志路径命中为 `0`。
+- 修正版发行暂存位于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r6-interface-fix-20260722\GreyWarden`。最终 `GreyWarden-v1.4-r6.zip` 为 `349792649` 字节，SHA-256 `46CDF0F52D3EC562ACD44B823FF4AFF9D75BC171687C64B160600433906617AB`；校验文件正文准确命名该 ZIP。最终包仍只有一个 `GreyWarden/` 顶层和 `28` 个运行文件，禁止内容为 `0`；完整解压后与暂存相比缺失 `0`、哈希不一致 `0`、额外文件 `0`，包内 DLL 与独立玩家构建哈希一致。
+- 公开版本继续使用 `v1.4-r6`，不新增 r7。GitHub Release 的同名 ZIP 与校验文件用修正版覆盖，标签移动到包含本修复的最终提交；此前 SHA-256 `1536E5A4...` 的首次统一包作废，不再作为可下载发行物。
