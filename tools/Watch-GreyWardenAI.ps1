@@ -3,12 +3,48 @@ param(
     [ValidateSet('', 'grey_warden_lord', 'leaderless_picket', 'leaderless_delay_support', 'leaderless_grey_warden')]
     [string]$Kind = '',
     [switch]$Once,
-    [int]$Tail = 120
+    [int]$Tail = 120,
+    [string]$GameFolder = 'D:\steam\steamapps\common\Mount & Blade II Bannerlord'
 )
 
 $ErrorActionPreference = 'Stop'
 $logPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) `
     'Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log'
+$versionPath = Join-Path $GameFolder 'bin\Win64_Shipping_Client\Version.xml'
+$manifestPath = Join-Path $GameFolder 'Modules\GreyWarden\SubModule.xml'
+$moduleDllPath = Join-Path $GameFolder 'Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll'
+
+$installedVersion = ''
+if (Test-Path -LiteralPath $versionPath) {
+    [xml]$versionXml = Get-Content -LiteralPath $versionPath -Raw
+    $installedVersion = [string]$versionXml.Version.Singleplayer.Value
+    Write-Host "Installed Bannerlord: $installedVersion" -ForegroundColor Cyan
+}
+else {
+    Write-Warning "Bannerlord version file was not found: $versionPath"
+}
+
+if (Test-Path -LiteralPath $manifestPath) {
+    [xml]$manifestXml = Get-Content -LiteralPath $manifestPath -Raw
+    $versionedDependencies = @($manifestXml.Module.DependedModules.DependedModule |
+        Where-Object { $_.DependentVersion })
+    if ($versionedDependencies.Count -eq 0) {
+        Write-Host 'GreyWarden hard game-version dependencies: none' -ForegroundColor Green
+    }
+    else {
+        $dependencyVersions = @($versionedDependencies |
+            ForEach-Object { "$(($_.Id))=$([string]$_.DependentVersion)" })
+        Write-Warning "GreyWarden still declares hard dependency versions: $($dependencyVersions -join ', ')"
+    }
+}
+else {
+    Write-Warning "Live GreyWarden manifest was not found: $manifestPath"
+}
+
+if (Test-Path -LiteralPath $moduleDllPath) {
+    $moduleAssemblyVersion = [Reflection.AssemblyName]::GetAssemblyName($moduleDllPath).Version
+    Write-Host "GreyWarden assembly: $moduleAssemblyVersion" -ForegroundColor Cyan
+}
 
 Write-Host "Grey Warden AI diagnostics: $logPath" -ForegroundColor Cyan
 Write-Host 'Scope: every Grey Warden lord plus every leaderless Grey Warden party.' -ForegroundColor Cyan

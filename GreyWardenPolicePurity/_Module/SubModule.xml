@@ -2,25 +2,22 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-	<Version value="v1.4.7"/>
+	<!-- Public release v1.4-r6. The module schema requires three numeric parts;
+	     this value is the mod revision and is not a Bannerlord version gate. -->
+	<Version value="v1.4.6"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>
 	<Official value="false"/>
-	<DependedModules>
-		<DependedModule Id="Native" DependentVersion="v1.4.7"/>
-		<DependedModule Id="SandBoxCore" DependentVersion="v1.4.7" />
-		<DependedModule Id="Sandbox" DependentVersion="v1.4.7" />
-		<DependedModule Id="CustomBattle" DependentVersion="v1.4.7" />
-		<DependedModule Id="StoryMode" DependentVersion="v1.4.7" />
-	</DependedModules>
-	<!-- Optional compatibility ordering. GreyWarden remains standalone, but
-	     when the four community prerequisites and CourierMessenger are enabled,
-	     Bannerlord.Harmony loads first and CourierMessenger loads after
-	     GreyWarden's final encyclopedia hero-page resource. -->
+	<!-- Load ordering only: do not declare exact Bannerlord dependency versions.
+	     Runtime API compatibility, not a launcher-side version gate, decides
+	     whether GreyWarden can load. -->
 	<DependedModuleMetadatas>
-		<DependedModuleMetadata id="Bannerlord.Harmony" order="LoadBeforeThis" optional="true" />
-		<DependedModuleMetadata id="CourierMessenger" order="LoadAfterThis" optional="true" />
+		<DependedModuleMetadata id="Native" order="LoadBeforeThis" />
+		<DependedModuleMetadata id="SandBoxCore" order="LoadBeforeThis" />
+		<DependedModuleMetadata id="Sandbox" order="LoadBeforeThis" />
+		<DependedModuleMetadata id="CustomBattle" order="LoadBeforeThis" />
+		<DependedModuleMetadata id="StoryMode" order="LoadBeforeThis" />
 	</DependedModuleMetadatas>
 	<SubModules>
 		<SubModule>

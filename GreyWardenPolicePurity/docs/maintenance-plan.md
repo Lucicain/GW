@@ -6315,3 +6315,66 @@ irreplaceable backup; the editor workspace does not replace it.
   仓库 `_Module` 的 `25` 个可部署文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML 全部
   解析通过，`git diff --check` 通过。正式发布使用 `main`、标签 `v1.4.7-r6` 和 GitHub Release
   `https://github.com/Lucicain/GW/releases/tag/v1.4.7-r6`，并只上传上述最终 ZIP 与匹配校验文件。
+
+## 2026-07-22 Bannerlord 1.4.5/1.4.7 无硬版本门槛兼容
+
+- 用户转述网友判断“1.4.5 不支持本模组”后，本机 Steam 分支也已切到 `v1.4.5`：
+  `D:\steam\steamapps\appmanifest_261550.acf` 的 `BetaKey` 为 `v1.4.5`，实机
+  `bin\Win64_Shipping_Client\Version.xml` 为 `v1.4.5`，运行日志构建号为 `115026`。切换发生前的
+  AI 监控文件头只写 `assembly=1.4.7.0`，那是模组程序集版本而非游戏版本，不能用于判断实机版本。
+- 首个根因是 `_Module/SubModule.xml` 把 Native、SandBoxCore、Sandbox、CustomBattle、StoryMode
+  全部精确写成 `DependentVersion="v1.4.7"`。本机反编译 1.4.5 的官方
+  `TaleWorlds.MountAndBlade.Launcher.Library.LauncherVM.ExecuteStartGame` 证实，启动器逐项调用
+  `dependedModule.Version.IsSame(actual, checkChangeSet:false)`，主次修订号必须精确相等。只删除
+  `DependentVersion` 属性也无效：官方 `ModuleInfo` 会把它解析成 `ApplicationVersion.Empty`，仍与
+  实机版本不相等。因此最终按用户要求删除整个 `DependedModules` 精确依赖块，而不是维护 1.4.5、
+  1.4.7 两份限制清单。
+- 清单现在只用无版本号的 `DependedModuleMetadatas` 表达五个原版核心模块必须先加载。用户进一步
+  明确“不用理 optional 依赖”，所以 `Bannerlord.Harmony` 和 `CourierMessenger` 两条可选排序元数据
+  也已完全删除；GreyWarden 不再对任何第三方模组声明依赖、可选依赖或兼容承诺。曾短暂新增的
+  `tools/New-GreyWardenVersionManifest.ps1` 双清单生成方案已在同一轮撤回并删除，不可恢复为正式流程。
+- 第二个根因是真实 DLL API 差异。相同 r6 源码对 1.4.5 实机程序集首次编译报
+  `CS0535`：`GreyWardenAdoptionLogEntry` 未实现
+  `IEncyclopediaLog.IsVisibleInEncyclopediaPageOf<T>(T)`。反编译确认 1.4.5 接口要求泛型方法，而
+  已发布 r6 的 1.4.7 玩家 DLL 使用 `IsVisibleInEncyclopediaPageOf(MBObjectBase)`。当前类同时保留
+  非泛型 1.4.7 方法并新增泛型 1.4.5 转发方法；1.4.5 完整编译通过，最终实机 DLL 反编译也同时
+  显示两种签名。新增方法只调用本类既有非泛型实现，不改变收养记录可见性或存档字段。
+- `tools/Watch-GreyWardenAI.ps1` 现在读取实机 `Version.xml` 并显示当前游戏版本，同时检查实机
+  GreyWarden 清单是否仍存在任何 `DependentVersion`。最终输出为
+  `Installed Bannerlord: v1.4.5` 与 `GreyWarden hard game-version dependencies: none`；它不再把
+  模组程序集版本当作游戏兼容性结论。
+- 失败前的直接运行证据保存在
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_22928.txt`：1.4.5 构建号 `115026`
+  已加载 GreyWarden DLL，随后明确记录 `GreyWarden could not be loaded correctly` 和
+  `dependency conflict`。最终清单与双接口 DLL 部署后的完整正常模组序列测试保存在
+  `rgl_log_51852.txt`：同一构建号加载实机 GreyWarden DLL，于 `22:56:46` 到达
+  `GauntletInitialScreen::HandleActivate`，GreyWarden dependency-conflict、加载失败及盾击补丁失败均为
+  `0`。测试到达主菜单后由自动验证进程关闭，没有载入或改写玩家存档。
+- 1.4.7 是 r6 发布前已经通过实机运行验证的开发基准；当前机器已切换到 1.4.5，故本轮没有伪造一次
+  新的 1.4.7 实机启动。兼容改动保留了 1.4.7 已验证的非泛型接口和全部原有行为，只额外增加
+  1.4.5 泛型入口并移除启动器限制。下一次切回 1.4.7 时仍应重复主菜单和存档加载测试，但不存在
+  会阻止 1.4.7 加载的新接口替换。
+- 中英文玩家 README 已建立单一 `v1.4.7-r7（开发中）` 条目并只保留上一正式 `r6`，明确说明无
+  Bannerlord 版本硬门槛及 1.4.5/1.4.7 已验证范围。本轮只更新开发工作树和实机测试模块；没有
+  创建玩家 ZIP、提交、标签或 GitHub Release。
+- 最终 `Release -t:Rebuild --no-restore` 为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告。
+  自动部署后 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个
+  XML 全部解析通过，中英文 README 与实机逐字节一致，清单内 `DependentVersion`、
+  `Bannerlord.Harmony`、`CourierMessenger` 和 `optional=` 命中均为 `0`。客户端与编辑器 DLL 均为
+  `611328` 字节，SHA-256 均为
+  `2364002026DBB613439C8686E5AE4931C4027A31D5786353A914F901F7AB0D6E`；`git diff --check` 通过。
+
+## 2026-07-22 v1.4-r6 统一 1.4.x 入口与正式发行
+
+- 用户在 Bannerlord 1.4.5 完成实机复测，确认界面和现有玩法表现正常，并决定本轮直接作为第六次正式修订发行。从本版起，公开版本号不再把开发基准 `1.4.7` 写进模组版本，而统一命名为 `v1.4-r6`；同一玩家包明确覆盖当前 1.4 系列的 `1.4.5`、`1.4.6`、`1.4.7`，不按游戏修订号拆包，也不恢复任何启动器硬版本限制。
+- TaleWorlds 的 Bannerlord `v1.4.6` 正式更新说明只列出玩法修复和崩溃修复，没有列出 Modding/API 改动；这只能作为初步线索，不能代替二进制验证。进一步取得 `Bannerlord.ReferenceAssemblies 1.4.6.115628` 的精确参考元数据，反编译确认 `IEncyclopediaLog` 仍要求 `IsVisibleInEncyclopediaPageOf<T>(T obj) where T : MBObjectBase`，与 1.4.5 相同；1.4.7 才使用非泛型 `IsVisibleInEncyclopediaPageOf(MBObjectBase)`。当前 `GreyWardenAdoptionLogEntry` 同时实现两种签名，因此三个版本都能绑定到各自需要的入口。
+- 不只核对单个接口：临时交叉构建项目位于 `.codex_tmp\compat-audit\build146\Build146.csproj`，用 `Bannerlord.ReferenceAssemblies 1.4.6.115628` 对当前全部源码做了完整 `net472` Release 编译，结果 `0` 错误、`42` 条既有可空性警告。1.4.5 则已在真实安装程序集上完成 `0` 错误构建、正常启动到主菜单及用户界面实测；1.4.7 是此前 r6 开发和日常实机验证基准。由此，1.4.6 不是靠猜测纳入，而是已经通过完整 ABI 交叉构建。
+- `SubModule.xml` 仍只保留五个原版核心模块的无版本加载顺序；`DependentVersion`、`Bannerlord.Harmony`、`CourierMessenger` 和 `optional=` 均为 `0`。公开标签、README、ZIP 和校验文件统一使用 `v1.4-r6`。Bannerlord 模组清单只接受三段数字版本，所以模组自身内部版本表示为 `v1.4.6`，程序集为 `1.4.6.0`；这里最后一段表示 `r6`，不是对 Bannerlord 1.4.6 的依赖声明。监控脚本会分别显示实机 Bannerlord 版本、硬依赖检查和模组程序集版本，避免再次混淆。
+- 中英文玩家 README 已建立明确的 `Bannerlord 1.4.x` 单一兼容入口，列出 1.4.5、1.4.6、1.4.7 共用同一安装包；最近更新严格只保留 `v1.4-r6` 与上一正式 `v1.4.7-r5` 两条。兼容修复已经折叠进 r6，不再创建此前工作树中的 `r7（开发中）`。
+- 当前带诊断的本地实机 DLL 为 `611328` 字节，SHA-256 为 `C6B1ABD0B3508286F89B4913A77711A2400884FC765C060E77553990364D81E6`。完整 `Release -t:Rebuild --no-restore` 结果为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告；客户端与编辑器 DLL 保持一致。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个 XML 全部解析通过，两份 README 与实机逐字节一致。
+- 正式玩家 DLL 使用 `-p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false` 单独构建于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r6`，为 `596480` 字节，SHA-256 为 `4D7C9D6EC8B6D01FFF69ED90206B98EA71DCC5BC20B311339EDED486B7EED1E7`；它没有覆盖本地带诊断 DLL。ILSpy 反编译结果保存在 `.codex_tmp\release-v1.4-r6-diagnostics.cs`：`LogPath` 返回空字符串，全部写入/捕获方法为空，两个 `ShouldTrace` 方法返回 `false`，且不含 `File`、`Directory`、`StreamWriter`、`AppendAllText`、`Documents` 或诊断日志路径。
+- 最终发行暂存位于 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r6-final-20260722\GreyWarden`。正式文件位于：
+  - `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r6.zip`
+  - `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r6.zip.sha256`
+  ZIP 为 `349792645` 字节，SHA-256 为 `1536E5A4FABA30CF2407B75FED1A75C3E8493CE47E1C7E7003DD69375AEE85D5`；校验文件正文准确命名 `GreyWarden-v1.4-r6.zip`。
+- 最终 ZIP 只有一个顶层 `GreyWarden/`，共 `28` 个正常客户端运行文件。路径检查确认 `Assets`、`AssetSources`、`RuntimeDataCache`、`tools`、编辑器目录、PDB、PowerShell、日志、dump、嵌套 ZIP 和校验文件均为 `0`；包内 DLL 与独立无诊断构建哈希一致，包内中英文 README 与仓库一致。发布使用 `main`、标签 `v1.4-r6` 和 GitHub Release `https://github.com/Lucicain/GW/releases/tag/v1.4-r6`，只上传上述 ZIP 与匹配校验文件；成功后删除旧的 `v1.4.7-r6` Release/标签及本地旧名包，`v1.4.7-r5` 继续作为上一正式版本保留。

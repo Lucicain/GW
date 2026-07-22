@@ -63,6 +63,15 @@ namespace GreyWardenPolicePurity
             return entryTarget == AdoptedHero || entryTarget == AdoptedHero?.Clan;
         }
 
+        // Bannerlord 1.4.5 exposes this member as a generic interface method,
+        // while 1.4.7 exposes the MBObjectBase overload above.  Keep both
+        // public overloads so the same source and assembly remain callable by
+        // either runtime contract.
+        public bool IsVisibleInEncyclopediaPageOf<T>(T obj) where T : MBObjectBase
+        {
+            return IsVisibleInEncyclopediaPageOf((MBObjectBase)obj);
+        }
+
         public TextObject GetEncyclopediaText()
         {
             return BuildText("{=gwp_adoption_log_entry}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised.");
