@@ -7372,3 +7372,10 @@ irreplaceable backup; the editor workspace does not replace it.
   及 `.zip.sha256`；ZIP 为 `349824267` 字节，SHA-256 为
   `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`，校验内容与实算
   一致，`Modules` 父目录仍只保留这一组正式包。
+- 修正版代码提交为 `4e87bcca50fec8fcd2584c107b261aa9a3ae62cf`。旧 GitHub
+  `v1.4-r7` Release 及其远端标签已先完整删除，带注释的同名标签随后重建并准确指向该修正版
+  提交；`main`、本地标签和远端标签解析结果一致。新的同名 Release 已发布为 latest，非 draft、
+  非 prerelease；远端 ZIP 资产为 `349824267` 字节且 GitHub digest 为
+  `sha256:963aa367a2512126e5dbb92d04792a0075c3c1de20dd7d40b61b6e2468ece15a`，与本地一致。
+  远端校验文件为 `88` 字节，SHA-256 为
+  `8A5F963D1DB3AF6D45B53BF7D31EDB8A9157765643100A978A04AC9747438CB6`，同样与本地一致。
