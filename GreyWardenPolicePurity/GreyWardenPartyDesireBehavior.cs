@@ -25,7 +25,6 @@ namespace GreyWardenPolicePurity
             public MobileParty? Party;
             public Settlement? Settlement;
             public float Priority;
-            public bool PreserveAllNativeDesires;
             public double ExpiresAt;
         }
 
@@ -349,8 +348,11 @@ namespace GreyWardenPolicePurity
             List<(AIBehaviorData, float)> rawScores = think.AIBehaviorScores.ToList();
             Intent? intent = ResolveIntent(party);
             float originalPatrolCeiling = GetPatrolCeiling(rawScores);
-            int suppressedPatrolCount = intent == null ||
-                                        intent.PreserveAllNativeDesires
+            // 设计边界：只要本队当前存在任何有效任务意图，无论普通案件、
+            // 协力组长、协力支援、练兵还是玩家委托，所有原版巡逻候选都必须
+            // 压到最低执行阈值。这里不存在“保留巡逻”的任务类型；需要保留的
+            // 是补给、疗伤、访问等非巡逻原版欲望及其原始分数。
+            int suppressedPatrolCount = intent == null
                 ? 0
                 : SuppressAssignedPatrolScores(think, rawScores);
             float patrolCeiling = GetPatrolCeiling(think.AIBehaviorScores);
@@ -424,7 +426,6 @@ namespace GreyWardenPolicePurity
                         : IntentKind.Pursue,
                     Party = assistanceTarget,
                     Priority = AssignedDutyScore,
-                    PreserveAllNativeDesires = true,
                     ExpiresAt = double.MaxValue
                 };
             }

@@ -7315,3 +7315,60 @@ irreplaceable backup; the editor workspace does not replace it.
   draft 或 prerelease；远端 ZIP 资产为 `349824265` 字节，GitHub 报告的 SHA-256 digest 与
   本地 `DC5268...AB5BC` 一致，远端校验文件为 `88` 字节且 SHA-256 为
   `F2FE4C52FBDFC60508759C8B52A3951566D92D8DB50FAFE602A8A437C74488E0`，与本地文件一致。
+
+## 2026-07-23 v1.4-r7 紧急重发前修正：任务期间巡逻无条件降级与密泽亚巡逻根因
+
+- 本节固化灰袍任务欲望的不可破坏边界：**只要一支受管理部队存在任何有效任务意图，所有
+  `PatrolAroundPoint` 候选都必须压到原版最低执行阈值 `0.03`。**这条规则不因普通案件、协力
+  组长、协力支援者、练兵换防、地方任务或玩家委托而例外。应完整保留的是补给、疗伤、招兵、
+  访问等所有**非巡逻**原版长期欲望及其原始分数；其中任一分数高于任务分时仍可先执行。无任务
+  时完全不修改原版巡逻。今后“保留原版欲望”不得再次解释为“任务期间也保留高分巡逻”。
+- 用户实机监控确认协力组长明明持有任务却继续巡逻。当前会话中共有 `71` 次协力组长竞价出现
+  相同状态；清珑和梵蒂的协力追捕任务分均为 `0.99`，原版巡逻最高分别约为 `3.09` 和
+  `3.05`，日志同时显示 `suppressedPatrolCount=0`，最终持续选择巡逻。任务、目标和协力组均
+  正常存在，因此排除“任务未生成”或旧档目标丢失。
+- 根因是 `ResolveIntent` 为所有协力职责设置了 `PreserveAllNativeDesires=true`，而最终欲望
+  处理把这个标记直接用作跳过巡逻压制的条件。该实现把“长期欲望永远开启”错误扩大成了“连
+  巡逻也永远保持原分数”。现已删除这个标记和豁免分支：只要 `intent != null` 就统一调用
+  `SuppressAssignedPatrolScores`；非巡逻候选没有任何改分或删除，协力任务仍通过原版欲望拍卖，
+  不冻结 AI，也不关闭长期欲望。
+- 为解释灰袍无任务时几乎总选择密泽亚，已直接反编译 Bannerlord 1.4.7 的
+  `AiPatrollingBehavior` 与 `DefaultTargetScoreCalculatingModel`。灰袍家族没有封地，因此
+  原版走“无 faction settlement”备用分支：先在部队周边枚举城镇，再按
+  `平均相邻城镇距离 × 5 / max(平均距离, HomeSettlement 到目标城镇距离)` 调整每座城的巡逻
+  分。无家族封地时，原版对所有候选的归属偏好又是同一个中性值，最后主要差异就是它们离
+  `HomeSettlement` 的距离。
+- `spclans.xml` 把灰袍家族的 `initial_home_settlement` 设为 `village_EN5_1`，实机监控也显示
+  所有这些领主的 `leaderHomeSettlement=village_EN5_1`。原版中文本地化确认 `town_EN5` 就是
+  密泽亚；它离这个共同家园最近，所以稳定得到最高分。监控中的同一轮原始分数为
+  `town_EN5=3.0900`、`town_EN4=2.9035`，随后依距离继续下降。原版实际上也生成了许多其他
+  城镇候选，并非硬编码只允许密泽亚，只是共同家园和稳定的距离公式使密泽亚几乎总是获胜。
+  当前不永久关闭无任务巡逻，也不改写原版巡逻目标选择；任务繁多时它自然很少有机会生效，只有
+  真正无任务时才保留为兜底活动。
+- 用户将此问题定性为正式 `v1.4-r7` 刚发布即发现的内部缺陷，并要求撤下首个包后以同一个
+  `v1.4-r7` 修正版重发，不建立 `r8`，也不在玩家日志中加入玩家尚未来得及遇到的内部缺陷。
+  因此中英文玩家 README 恢复为正式 `r7` 与 `r6` 两个条目，`r7` 玩家变更列表保持不变；
+  本节完整技术记录只保留在开发维护文档。`Release -t:Rebuild --no-restore` 构建成功，`0` 错误、
+  `44` 条既有可空性/离线 NuGet 警告；自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与
+  实机相比缺失 `0`、SHA-256 不一致 `0`，`18` 个 XML 解析失败 `0`。客户端和编辑器 DLL 均为
+  `699392` 字节，SHA-256 均为
+  `BB674EDE0DA1A2190BCBF5FAABE986A68E892D3A177DE6808B79D317FEDAD555`；反编译实机 DLL
+  确认 `PreserveAllNativeDesires` 已不存在，协力职责仍正常解析且所有有效 intent 进入统一巡逻
+  压制路径。仓库与实机中文 README SHA-256 均为
+  `5C44489ACBB3DA45656C1A4D01E93E978F20ABC38BBD27AA3CE60ACF2C24CF4E`，英文均为
+  `9B5F69467CD9E0A41064B92487A18E028A541F9B729AE8EDA5AB4D114907E368`。没有启动游戏。
+- 修正版无监控玩家 DLL 单独输出到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r7-hotfix-20260723`，
+  文件为 `680448` 字节，SHA-256 为
+  `C8F8754A4906ED1452815B0F93A38C5723D0F443036409A61BBB12AB223BC08E`。反编译确认监控
+  `LogPath` 为空、追踪判断恒为 false、没有文件写入 API，同时确认巡逻豁免符号不存在且统一压制
+  方法已经进入玩家 DLL；本地测试 DLL 仍为不同哈希，没有被覆盖。
+- 修正版干净暂存目录为
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r7-hotfix-final-20260723`。
+  包内仍为单一顶层 `GreyWarden/` 和 `28` 个运行文件，禁入项命中 `0`。独立解压后的文件与暂存
+  目录相比缺失 `0`、多余 `0`、哈希不一致 `0`；包内 DLL 与上述无监控 DLL 哈希一致，包内
+  README 与仓库一致，反编译再次确认监控为空且巡逻修正存在。修正版已替换本地同名正式文件
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r7.zip`
+  及 `.zip.sha256`；ZIP 为 `349824267` 字节，SHA-256 为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`，校验内容与实算
+  一致，`Modules` 父目录仍只保留这一组正式包。

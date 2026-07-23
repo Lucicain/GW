@@ -2,7 +2,7 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-	<!-- Release v1.4-r7. The module schema requires three numeric parts;
+    <!-- Release v1.4-r7. The module schema requires three numeric parts;
 	     this value is the mod revision and is not a Bannerlord version gate. -->
 	<Version value="v1.4.7"/>
 	<DefaultModule value="false"/>
