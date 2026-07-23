@@ -1,11 +1,11 @@
 <!--You can add new or override old npc characters by adding nodes to this xml. For examples please refer to: SandBoxCore/ModuleData/spnpccharacters.xml, SandBox/ModuleData/lords.xml-->
 <NPCCharacters>
 
-<!--Recruit-->
-  <NPCCharacter id="gwrecruit"
+<!--New recruit: deliberately light equipment, with the archer mantle serving as the shared Warden badge.-->
+  <NPCCharacter id="gwnewrecruit"
                 default_group="Infantry"
-                level="6"
-                name="{=gwp_troop_light_infantry}Grey Warden Light Infantry"
+                level="11"
+                name="{=gwp_troop_new_recruit}Grey Warden Recruit"
                 occupation="Soldier"
                 is_basic_troop="true"
                 is_female="true"
@@ -15,25 +15,106 @@
     </face>
     <skills>
       <skill id="Athletics"
-             value="20" />
+             value="30" />
       <skill id="Riding"
-             value="0" />
+             value="30" />
       <skill id="OneHanded"
-             value="20" />
+             value="40" />
       <skill id="TwoHanded"
              value="10" />
       <skill id="Polearm"
-             value="20" />
+             value="40" />
       <skill id="Bow"
-             value="5" />
+             value="20" />
       <skill id="Crossbow"
-             value="5" />
+             value="10" />
       <skill id="Throwing"
              value="10" />
     </skills>
+    <upgrade_targets>
+      <upgrade_target id="NPCCharacter.gwrecruit" />
+    </upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Body"
+                   id="Item.empire_warrior_padded_armor_e" />
+        <equipment slot="Leg"
+                   id="Item.leather_cavalier_boots" />
+        <equipment slot="Head"
+                   id="Item.imperial_cloth_coif" />
+        <equipment slot="Gloves"
+                   id="Item.padded_mitten" />
+        <equipment slot="Cape"
+                   id="warchshoulder" />
+      </EquipmentRoster>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Body"
+                   id="Item.empire_warrior_padded_armor_d" />
+        <equipment slot="Leg"
+                   id="Item.leather_cavalier_boots" />
+        <equipment slot="Head"
+                   id="Item.imperial_cloth_coif" />
+        <equipment slot="Gloves"
+                   id="Item.padded_mitten" />
+        <equipment slot="Cape"
+                   id="warchshoulder" />
+      </EquipmentRoster>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Body"
+                   id="Item.leather_tunic" />
+        <equipment slot="Leg"
+                   id="Item.leather_cavalier_boots" />
+        <equipment slot="Head"
+                   id="Item.imperial_cloth_coif" />
+        <equipment slot="Gloves"
+                   id="Item.padded_mitten" />
+        <equipment slot="Cape"
+                   id="warchshoulder" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t2"
+                    equipmentType="Civilian" />
+    </Equipments>
+  </NPCCharacter>
+
+<!--Recruit-->
+  <NPCCharacter id="gwrecruit"
+                default_group="Infantry"
+                level="16"
+                name="{=gwp_troop_light_infantry}Grey Warden Light Infantry"
+                occupation="Soldier"
+                is_female="true"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.townswoman_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="70" />
+      <skill id="Riding"
+             value="40" />
+      <skill id="OneHanded"
+             value="70" />
+      <skill id="TwoHanded"
+             value="40" />
+      <skill id="Polearm"
+             value="70" />
+      <skill id="Bow"
+             value="40" />
+      <skill id="Crossbow"
+             value="30" />
+      <skill id="Throwing"
+             value="30" />
+    </skills>
 	<upgrade_targets>
       <upgrade_target id="NPCCharacter.gwheavyinfantry" />
-	  <upgrade_target id="NPCCharacter.gwarcher" />
+      <upgrade_target id="NPCCharacter.gwarcher" />
+      <upgrade_target id="NPCCharacter.gwknight" />
     </upgrade_targets>
     <Equipments>
       <EquipmentRoster>
@@ -47,6 +128,22 @@
                    id="winflegs" />
         <equipment slot="Head"
                    id="winfhelmet" />
+      </EquipmentRoster>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwonehandedsword" />
+        <equipment slot="Item1"
+                   id="wlarge_shield" />
+        <equipment slot="Body"
+                   id="warcharmor" />
+        <equipment slot="Gloves"
+                   id="warchgloves" />
+        <equipment slot="Leg"
+                   id="warchlegs" />
+        <equipment slot="Head"
+                   id="warchhelmet" />
+        <equipment slot="Cape"
+                   id="warchshoulder" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t1"
 				equipmentType="Civilian" />
@@ -84,9 +181,7 @@
       <skill id="Throwing"
              value="80" />
     </skills>
-    <upgrade_targets>
-	  <upgrade_target id="NPCCharacter.gwknight" />
-    </upgrade_targets>
+    <upgrade_targets></upgrade_targets>
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
@@ -174,7 +269,7 @@
   <!--Knight-->
   <NPCCharacter id="gwknight"
                 default_group="Cavalry"
-                level="31"
+                level="26"
                 name="{=gwp_troop_knight}Grey Warden Knight"
                 occupation="Soldier"
                 is_female="true"

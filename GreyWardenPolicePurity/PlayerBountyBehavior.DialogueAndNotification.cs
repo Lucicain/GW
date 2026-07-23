@@ -445,7 +445,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 将黑袍指挥官全套五件装备加入玩家行李。
+        /// 将黑袍指挥官全套装备和黑曜指挥官盾加入玩家行李。
         /// 同时输出调试信息，方便确认每件装备是否成功找到。
         /// </summary>
         private static void GiveCommanderEquipment()

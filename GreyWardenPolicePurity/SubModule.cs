@@ -58,6 +58,7 @@ namespace GreyWardenPolicePurity
         {
             starter.RemoveBehaviors<DesertersCampaignBehavior>();
 
+            starter.AddModel(new PoliceHeroCreationModel());
             starter.AddModel(new PoliceClanTierModel());
             starter.AddModel(new PoliceAntiRecruitmentModel());
             starter.AddModel(new PoliceMobilePartyAIModel());
@@ -83,6 +84,8 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenFamilyBehavior());
             starter.AddBehavior(new GreyWardenVillageReconstructionBehavior());
             starter.AddBehavior(new GreyWardenIssueResolutionBehavior());
+            starter.AddBehavior(new GreyWardenTrainingBehavior());
+            starter.AddBehavior(new GreyWardenPlayerRequestBehavior());
             starter.AddBehavior(new GreyWardenLeaderBalanceBehavior());
             starter.AddBehavior(new GreyWardenNotableRelationsBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());

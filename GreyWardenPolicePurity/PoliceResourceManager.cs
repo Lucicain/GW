@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Naval;
@@ -109,15 +108,20 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        #region 每日发薪 + 建队
+        #region 每日资源与成年战斗员保障
 
         private void OnGameLoaded(CampaignGameStarter starter)
         {
-            SpawnIdleHeroes();
+            CleanupLeaderlessPoliceLordParties();
+            EnsureAllAdultGreyWardensAreCombatants();
+            RepairGeneratedAdultCommanderLoadouts();
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            CleanupLeaderlessPoliceLordParties();
+            EnsureAllAdultGreyWardensAreCombatants();
+            RepairGeneratedAdultCommanderLoadouts();
             // 旧存档中已存在的临时队伍可能由旧版本以零粮生成。只在完全无粮时
             // 补发一次，不因重复读档刷新仍未吃完的口粮。
             foreach (MobileParty party in MobileParty.All.Where(static party =>
@@ -126,6 +130,20 @@ namespace GreyWardenPolicePurity
                           GwpCommon.IsEnforcementDelayPatrolParty(party))).ToList())
             {
                 ProvisionTemporaryDutyParty(party);
+            }
+        }
+
+        private static void CleanupLeaderlessPoliceLordParties()
+        {
+            foreach (MobileParty party in MobileParty.All.Where(static party =>
+                         party?.IsActive == true && party.IsLordParty &&
+                         party.LeaderHero == null &&
+                         string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
+                             StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                GwpAiDiagnostics.WritePartyLifecycle(party,
+                    "LEADERLESS_POLICE_LORD_PARTY_CLEANUP", string.Empty);
+                try { DestroyPartyAction.Apply(null, party); } catch { }
             }
         }
 
@@ -141,7 +159,7 @@ namespace GreyWardenPolicePurity
             }
 
             CollectDailyVillageProtectionContributions();
-            SpawnIdleHeroes();
+            EnsureAllAdultGreyWardensAreCombatants();
         }
 
         /// <summary>
@@ -166,177 +184,111 @@ namespace GreyWardenPolicePurity
             CreditJudicialTreasury(totalContribution);
         }
 
-        private void SpawnIdleHeroes()
+        private static void EnsureAllAdultGreyWardensAreCombatants()
         {
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return;
-
-            foreach (Hero hero in policeClan.Heroes.ToList())
-            {
-                RecoverPoliceCommanderParty(hero, policeClan);
-            }
-        }
-
-        private void RecoverPoliceCommanderParty(Hero? hero, Clan policeClan)
-        {
-            if (!IsEligiblePoliceCommander(hero))
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null)
                 return;
 
-            if (hero == null)
-                return;
-
-            try
+            foreach (Hero? hero in policeClan.Heroes.ToList())
             {
-                EnsurePoliceCommanderIsActive(hero);
-                ApplyCommanderLoadout(hero);
-
-                MobileParty? existingParty = hero.PartyBelongedTo;
-                if (existingParty?.IsActive == true)
-                {
-                    RecoverPoliceShellPartyIfNeeded(existingParty);
-                    return;
-                }
-
-                if (hero.IsPrisoner || hero.PartyBelongedToAsPrisoner != null)
-                    return;
-
-                if (existingParty != null && !TryClearBrokenPartyReference(hero))
-                    return;
-
-                Settlement? spawn = ResolvePoliceSpawnSettlement(hero, policeClan);
-                if (spawn == null)
-                    return;
-
-                PreparePoliceCommanderForSpawn(hero, spawn);
-
-                MobileParty? newParty = MobilePartyHelper.SpawnLordParty(hero, spawn);
-                if (newParty == null)
-                    return;
-
-                GivePoliceShips(newParty);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(newParty);
+                EnsureAdultGreyWardenIsCombatant(hero);
             }
-            catch (Exception ex)
-            {
-                // 内部组队失败（开发错误日志，正式版静默忽略）
-                _ = ex;
-            }
-        }
-
-        private static bool IsEligiblePoliceCommander(Hero? hero)
-        {
-            if (!GwpCommon.IsGreyWardenLord(hero))
-                return false;
-
-            if (hero == null || hero.IsDead || hero.IsDisabled || hero.IsChild)
-                return false;
-
-            return hero.Age >= Campaign.Current.Models.AgeModel.HeroComesOfAge;
-        }
-
-        private static void EnsurePoliceCommanderIsActive(Hero hero)
-        {
-            if (hero.IsActive || hero.IsPrisoner || hero.IsDisabled || hero.IsDead)
-                return;
-
-            try { hero.ChangeState(Hero.CharacterStates.Active); } catch { }
-        }
-
-        private static Settlement? ResolvePoliceSpawnSettlement(Hero hero, Clan policeClan)
-        {
-            if (hero.CurrentSettlement?.IsTown == true && hero.CurrentSettlement.SiegeEvent == null)
-                return hero.CurrentSettlement;
-
-            if (hero.HomeSettlement?.IsTown == true && hero.HomeSettlement.SiegeEvent == null)
-                return hero.HomeSettlement;
-
-            Settlement? bestSettlement = SettlementHelper.GetBestSettlementToSpawnAround(hero);
-            if (bestSettlement?.IsTown == true && bestSettlement.SiegeEvent == null)
-                return bestSettlement;
-
-            if (policeClan.InitialHomeSettlement?.IsTown == true && policeClan.InitialHomeSettlement.SiegeEvent == null)
-                return policeClan.InitialHomeSettlement;
-
-            Vec2 fallbackPosition = hero.CurrentSettlement?.GetPosition2D
-                ?? hero.HomeSettlement?.GetPosition2D
-                ?? policeClan.Leader?.CurrentSettlement?.GetPosition2D
-                ?? policeClan.Leader?.PartyBelongedTo?.GetPosition2D
-                ?? Vec2.Zero;
-
-            return FindNearestTown(fallbackPosition);
-        }
-
-        private static void PreparePoliceCommanderForSpawn(Hero hero, Settlement spawn)
-        {
-            if (hero.GovernorOf != null)
-            {
-                try { ChangeGovernorAction.RemoveGovernorOf(hero); } catch { }
-            }
-
-            try { hero.StayingInSettlement = null; } catch { }
-
-            if (hero.CurrentSettlement != spawn)
-            {
-                try { TeleportHeroAction.ApplyImmediateTeleportToSettlement(hero, spawn); } catch { }
-            }
-        }
-
-        private static bool TryClearBrokenPartyReference(Hero hero)
-        {
-            if (hero.PartyBelongedTo == null)
-                return true;
-
-            if (hero.PartyBelongedTo.IsActive)
-                return false;
-
-            try
-            {
-                typeof(Hero)
-                    .GetMethod("SetPartyBelongedTo", BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?.Invoke(hero, new object?[] { null });
-            }
-            catch { }
-
-            return hero.PartyBelongedTo == null;
-        }
-
-        private static void RecoverPoliceShellPartyIfNeeded(MobileParty party)
-        {
-            if (!party.IsActive || !IsPoliceClanHero(party.LeaderHero)) return;
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
         }
 
 
         private void OnHeroComesOfAge(Hero hero)
         {
             if (hero == null || !IsPoliceClanHero(hero)) return;
-            ApplyCommanderLoadout(hero);
+            EnsureAdultGreyWardenIsCombatant(hero);
         }
 
-        private static bool IsPoliceClanHero(Hero hero)
+        internal static bool IsPoliceClanHero(Hero? hero)
         {
             return hero?.Clan != null &&
                    string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static void ApplyCommanderLoadout(Hero hero)
+        /// <summary>
+        /// 在原版成年换装完成后补上灰袍领主套装。原版
+        /// AgingCampaignBehavior.OnHeroComesOfAge 会在自己的事件回调里重新生成
+        /// 战斗/平民装备，因此不能只依赖另一个同级事件监听器。
+        /// </summary>
+        internal static bool EnsureCommanderLoadout(Hero? hero, string reason)
         {
-            if (hero == null) return;
+            if (hero == null || !IsPoliceClanHero(hero) || hero.IsDead ||
+                hero.IsChild || hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
+                return false;
 
             CharacterObject? template = CharacterObject.Find(GwpIds.CommanderTemplateCharacterId)
                 ?? hero.Clan?.Leader?.CharacterObject;
-            if (template == null) return;
+            if (template == null) return false;
 
             Equipment battleTemplate = template.FirstBattleEquipment;
             Equipment civilianTemplate = template.FirstCivilianEquipment;
-            if (battleTemplate == null || battleTemplate.IsEmpty()) return;
-            if (civilianTemplate == null || civilianTemplate.IsEmpty()) return;
+            if (battleTemplate == null || battleTemplate.IsEmpty()) return false;
+            if (civilianTemplate == null || civilianTemplate.IsEmpty()) return false;
+            if (EquipmentMatches(battleTemplate, hero.BattleEquipment) &&
+                EquipmentMatches(civilianTemplate, hero.CivilianEquipment))
+                return false;
 
             // 先确保英雄拥有独立装备实例，避免写入共享的默认死者装备。
             hero.ResetEquipments();
             CopyEquipment(battleTemplate, hero.BattleEquipment);
             CopyEquipment(civilianTemplate, hero.CivilianEquipment);
             hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
+            GwpAiDiagnostics.WriteHeroLifecycle(hero, "ADULT_COMMANDER_LOADOUT_APPLIED",
+                "reason=" + reason + "; template=" + template.StringId);
+            return true;
+        }
+
+        private static void RepairGeneratedAdultCommanderLoadouts()
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null)
+                return;
+
+            foreach (Hero hero in policeClan.Heroes
+                         .Where(GreyWardenFamilyBehavior.IsGeneratedPoliceHero)
+                         .Where(hero => hero.IsAlive && !hero.IsChild &&
+                                        hero.Age >= Campaign.Current.Models.AgeModel.HeroComesOfAge)
+                         .ToList())
+            {
+                EnsureCommanderLoadout(hero, "existing_save_repair");
+            }
+        }
+
+        private static bool EquipmentMatches(Equipment expected, Equipment actual)
+        {
+            if (expected == null || actual == null)
+                return false;
+
+            for (int i = 0; i < EquipmentSlotCount; i++)
+            {
+                EquipmentElement expectedElement = expected[i];
+                EquipmentElement actualElement = actual[i];
+                if (expectedElement.Item != actualElement.Item ||
+                    expectedElement.ItemModifier != actualElement.ItemModifier)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static void EnsureAdultGreyWardenIsCombatant(Hero? hero)
+        {
+            if (hero == null || !IsPoliceClanHero(hero) || hero.IsDead || hero.IsDisabled ||
+                hero.IsChild || hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge ||
+                !hero.IsNoncombatant)
+                return;
+
+            // 正常情况下 PoliceHeroCreationModel 已直接返回战斗员。这里保留一次
+            // 运行时兜底，防止其他模组在更晚阶段替换 HeroCreationModel。
+            int oldValue = hero.GetSkillValue(DefaultSkills.OneHanded);
+            hero.SetSkillValue(DefaultSkills.OneHanded, Math.Max(100, oldValue));
+            GwpAiDiagnostics.WriteHeroLifecycle(hero, "ADULT_COMBATANT_INVARIANT_REPAIRED",
+                "skill=OneHanded; old=" + oldValue + "; new=" +
+                hero.GetSkillValue(DefaultSkills.OneHanded));
         }
 
         private static void CopyEquipment(Equipment source, Equipment destination)
@@ -364,6 +316,10 @@ namespace GreyWardenPolicePurity
             if (clan == null) return;
             if (!string.Equals(clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase)) return;
 
+            // 领主队现在由原版自然创建，不再经过模组的 SpawnLordParty 入口；
+            // 在首次小时维护补齐同样的航海载具，之后调用保持幂等。
+            GivePoliceShips(party);
+
             double now = CampaignTime.Now.ToHours;
             if (_lastPurifyTime.TryGetValue(party.StringId, out double lastCheck) &&
                 now - lastCheck < PurifyIntervalHours) return;
@@ -374,7 +330,7 @@ namespace GreyWardenPolicePurity
 
         private void PurifyParty(MobileParty party)
         {
-            var recruit = CharacterObject.Find(GwpIds.PoliceRecruitId);
+            var recruit = CharacterObject.Find(GwpIds.NewRecruitId);
             if (recruit == null) return;
 
             var roster = party.MemberRoster;
@@ -515,6 +471,42 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
+        /// Player-request payments are all-or-nothing and always enter the clan
+        /// leader's wallet, which is the Grey Warden public treasury.
+        /// </summary>
+        internal static bool CanCollectPlayerRequestPayment(int amount)
+        {
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            return amount > 0 && Hero.MainHero != null &&
+                   Hero.MainHero.Gold >= amount &&
+                   treasurer != null && !treasurer.IsDead &&
+                   treasurer != Hero.MainHero;
+        }
+
+        internal static bool TryCollectPlayerRequestPayment(int amount)
+        {
+            if (!CanCollectPlayerRequestPayment(amount)) return false;
+            return TransferPlayerGoldToJudicialTreasury(amount) == amount;
+        }
+
+        internal static void RefundPlayerRequestPayment(int amount)
+        {
+            if (amount <= 0 || Hero.MainHero == null) return;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            int treasuryRefund = treasurer?.IsDead == false &&
+                                 treasurer != Hero.MainHero
+                ? Math.Min(Math.Max(0, treasurer.Gold), amount)
+                : 0;
+            if (treasuryRefund > 0)
+                GiveGoldAction.ApplyBetweenCharacters(treasurer, Hero.MainHero,
+                    treasuryRefund, disableNotification: true);
+            int remainder = amount - treasuryRefund;
+            if (remainder > 0)
+                Hero.MainHero.ChangeHeroGold(remainder);
+        }
+
+        /// <summary>
         /// 族长的钱包就是原版家族金库，也作为灰袍司法公库。无论罚款由常驻
         /// 领主还是临时纠察队代收，金币都从玩家真实转入族长，不留在经手队伍。
         /// </summary>
@@ -634,17 +626,5 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
         }
 
-        private static Settlement FindNearestTown(Vec2 position)
-        {
-            Settlement nearest = null!;
-            float minDist = float.MaxValue;
-            foreach (Settlement s in Settlement.All)
-            {
-                if (!s.IsTown) continue;
-                float dist = position.Distance(s.GetPosition2D);
-                if (dist < minDist) { minDist = dist; nearest = s; }
-            }
-            return nearest;
-        }
     }
 }

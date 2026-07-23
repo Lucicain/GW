@@ -42,8 +42,12 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _ignoredInvalidShelteredBattlePartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, HashSet<string>> _shelteredHoldPartyIdsByTaskId =
+        private readonly Dictionary<string, HashSet<string>> _shelteredForcedPartyIdsByTaskId =
             new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        private const string ShelteredForcedTaskIdsKey =
+            "GWPP_ShelteredForcedAttackTaskIds";
+        private const string ShelteredForcedPartyIdsKey =
+            "GWPP_ShelteredForcedAttackPartyIds";
 
         public PoliceEnforcementBehavior()
         {
@@ -53,6 +57,11 @@ namespace GreyWardenPolicePurity
         internal static bool TryReservePolicePartyForVillageRelief(MobileParty? police)
         {
             return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police);
+        }
+
+        internal static bool TryReservePartyForPlayerRequest(MobileParty? police)
+        {
+            return _instance != null && _instance.TryPreparePartyForPlayerRequest(police);
         }
 
         private AtonementFlowState CurrentAtonementState =>
@@ -84,6 +93,23 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
+            List<string>? shelteredForcedTaskIds = null;
+            List<string>? shelteredForcedPartyIds = null;
+            if (dataStore.IsSaving)
+            {
+                shelteredForcedTaskIds = new List<string>();
+                shelteredForcedPartyIds = new List<string>();
+                foreach (KeyValuePair<string, HashSet<string>> entry in
+                         _shelteredForcedPartyIdsByTaskId)
+                {
+                    foreach (string partyId in entry.Value)
+                    {
+                        shelteredForcedTaskIds.Add(entry.Key);
+                        shelteredForcedPartyIds.Add(partyId);
+                    }
+                }
+            }
+
             CrimeState.SyncData(dataStore);
             dataStore.SyncData("gwp_enf_war_check_day_counter", ref _warStatusCheckDayCounter);
             dataStore.SyncData("gwp_enf_atone_active", ref _atonementActive);
@@ -99,6 +125,10 @@ namespace GreyWardenPolicePurity
             SyncWarTargetStreakData(dataStore);
             SyncDelayPatrolStateData(dataStore);
             SyncAssistanceData(dataStore);
+            dataStore.SyncData(ShelteredForcedTaskIdsKey,
+                ref shelteredForcedTaskIds);
+            dataStore.SyncData(ShelteredForcedPartyIdsKey,
+                ref shelteredForcedPartyIds);
             if (dataStore.IsLoading)
             {
                 if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
@@ -106,7 +136,28 @@ namespace GreyWardenPolicePurity
                 _shelteredPoliceLastPositionByTaskId.Clear();
                 _shelteredPoliceStoppedHoursByTaskId.Clear();
                 _ignoredInvalidShelteredBattlePartyIds.Clear();
-                _shelteredHoldPartyIdsByTaskId.Clear();
+                _shelteredForcedPartyIdsByTaskId.Clear();
+                int forcedCount = Math.Min(
+                    shelteredForcedTaskIds?.Count ?? 0,
+                    shelteredForcedPartyIds?.Count ?? 0);
+                for (int i = 0; i < forcedCount; i++)
+                {
+                    string taskId = shelteredForcedTaskIds![i];
+                    string partyId = shelteredForcedPartyIds![i];
+                    if (string.IsNullOrWhiteSpace(taskId) ||
+                        string.IsNullOrWhiteSpace(partyId))
+                        continue;
+
+                    if (!_shelteredForcedPartyIdsByTaskId.TryGetValue(
+                            taskId, out HashSet<string>? partyIds))
+                    {
+                        partyIds = new HashSet<string>(
+                            StringComparer.OrdinalIgnoreCase);
+                        _shelteredForcedPartyIdsByTaskId[taskId] = partyIds;
+                    }
+
+                    partyIds.Add(partyId);
+                }
                 _enforcementAtonementAssigned = false;
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
@@ -264,7 +315,7 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                MaintainShelteredCaseHolds();
+                MaintainShelteredCaseForcedAttacks();
 
                 if (!PlayerCaptivity.IsCaptive) return;
 
@@ -468,6 +519,11 @@ namespace GreyWardenPolicePurity
             if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(pp)) return false;
             if (GreyWardenVillageReconstructionBehavior.ShouldReserveFromOrdinaryCases(pp)) return false;
             if (GreyWardenIssueResolutionBehavior.ShouldReserveFromOrdinaryCases(pp)) return false;
+            if (GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(pp)) return false;
+            if (GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(pp))
+                return false;
+            if (GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(pp))
+                return false;
             if (IsAssistanceOccupied(pp)) return false;
             if (CrimeState.HasTask(pp.StringId)) return false;
             return PoliceResourceManager.IsReady(pp);
@@ -771,6 +827,8 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
+                    GwpPlayerRequestDeferral.NotifyDutyCompleted(pp,
+                        "criminal_case");
                     CompleteAssistanceTasks(pp.StringId);
                 }
                 else

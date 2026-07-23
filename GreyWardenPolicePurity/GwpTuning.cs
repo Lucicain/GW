@@ -23,10 +23,36 @@ namespace GreyWardenPolicePurity
             public const int KnightReputation = 60;
             public const int EliteDiscountReputation = 80;
 
-            public const int RecruitBasePrice = 120;
-            public const int HeavyInfantryBasePrice = 260;
-            public const int ArcherBasePrice = 280;
-            public const int KnightBasePrice = 750;
+            public const int RecruitBasePrice = 80;
+            public const int HeavyInfantryBasePrice = 180;
+            public const int ArcherBasePrice = 190;
+            public const int KnightBasePrice = 450;
+            public const int LowStandingOrderLimit = 20;
+            public const int VeteranOrderLimit = 40;
+            public const int KnightOrderLimit = 60;
+            public const int EliteOrderLimit = 80;
+            public const float PlayerOrderXpIntervalHours = 6f;
+            public const int PlayerOrderXpPerTroop = 1000;
+            public const float ContactDistance = 3f;
+        }
+
+        internal static class Training
+        {
+            public const float ExperienceIntervalHours = 6f;
+            public const int ExperiencePerTroopPerInterval = 250;
+            public const float ExchangeStayHours = 2f;
+            public const float MovementIntentHours = 8f;
+        }
+
+        internal static class PlayerRequests
+        {
+            public const int FiefAppealPrice = 50000;
+            public const float FiefAppealWindowDays = 30f;
+            public const float LobbyingHours = 24f;
+            public const float MovementIntentHours = 8f;
+            public const float ContactDistance = 3f;
+            public const float DeferredContactHours = 12f;
+            public const int DeferredOrdinaryTasks = 2;
         }
 
         internal static class Enforcement
@@ -45,6 +71,10 @@ namespace GreyWardenPolicePurity
             public const int AssistanceBlockedHours = 3;
             public const float AssistanceContactDistance = 12f;
             public const float AssistanceAssemblyDistance = 5f;
+            // Native GoAroundParty converts this defend radius into an actual
+            // ring distance of radius²/2. 5.5 therefore keeps a gathering
+            // leader roughly fifteen map units from the stronger case target.
+            public const float AssistanceGoAroundDefendRadius = 5.5f;
         }
 
         internal static class Patrol
@@ -88,10 +118,12 @@ namespace GreyWardenPolicePurity
             public const float MaxPenaltyGainPerCapture = 9f;
             public const float RaidScoreMultiplierPerPoint = 0.65f;
             public const float RaidScoreMultiplierFloor = 0f;
-            // Deterrence now fades at one tenth of the former rate.
+            // Deterrence first fell to one tenth of the original rate; the
+            // current balance halves that final recovery speed once more.
             public const float BaseRecoveryPerDay = 0.009f;
             public const float MinRecoveryPerDay = 0.004f;
             public const float MaxRecoveryPerDay = 0.0175f;
+            public const float RecoverySpeedMultiplier = 0.5f;
             public const float ActiveDialogueThreshold = 0.25f;
             public const float ForgetThreshold = 0.05f;
             public const float CleanupGraceDays = 3f;

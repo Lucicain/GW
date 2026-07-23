@@ -136,10 +136,18 @@ namespace GreyWardenPolicePurity
             // Bannerlord numeric level and not its infantry/ranged/cavalry role.
             if (string.Equals(
                     characterId,
-                    GwpIds.PoliceRecruitId,
+                    GwpIds.NewRecruitId,
                     StringComparison.OrdinalIgnoreCase))
             {
                 return TierOneKnockdownChance;
+            }
+
+            if (string.Equals(
+                    characterId,
+                    GwpIds.PoliceRecruitId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return TierTwoKnockdownChance;
             }
 
             if (string.Equals(
@@ -149,12 +157,8 @@ namespace GreyWardenPolicePurity
                 || string.Equals(
                     characterId,
                     GwpIds.ArcherId,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return TierTwoKnockdownChance;
-            }
-
-            if (string.Equals(
+                    StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
                     characterId,
                     GwpIds.KnightId,
                     StringComparison.OrdinalIgnoreCase))

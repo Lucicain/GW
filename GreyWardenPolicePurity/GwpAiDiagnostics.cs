@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
@@ -26,6 +27,8 @@ namespace GreyWardenPolicePurity
         private static readonly HashSet<string> ObservedPartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> ObservedCasesByPartyId =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> LastPartyByHeroId =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static bool _observedPartyCacheInitialized;
 
@@ -58,6 +61,7 @@ namespace GreyWardenPolicePurity
                     InitiativeByPartyId.Clear();
                     ObservedPartyIds.Clear();
                     ObservedCasesByPartyId.Clear();
+                    LastPartyByHeroId.Clear();
                     _observedPartyCacheInitialized = false;
                     _sessionStarted = true;
                 }
@@ -144,6 +148,39 @@ namespace GreyWardenPolicePurity
             if (!ShouldTraceParty(party)) return;
             Append(BuildPrefix(party, "ACTION") + " | action=" + Safe(action) +
                 " | " + Safe(details) + " | " + BuildPartyState(party));
+        }
+
+        internal static void WritePartyLifecycle(MobileParty? party, string action, string details)
+        {
+            if (!IsPoliceRelatedParty(party)) return;
+            Append(BuildPrefix(party!, "LIFECYCLE") + " | action=" + Safe(action) +
+                " | " + Safe(details) + " | " + BuildPartyState(party!));
+        }
+
+        internal static void WriteHeroLifecycle(Hero? hero, string action, string details)
+        {
+            if (!IsPoliceHero(hero)) return;
+            string lastParty = LastPartyByHeroId.TryGetValue(hero!.StringId,
+                out string? partyId) ? partyId : "-";
+            Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
+                " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
+                " | HERO_LIFECYCLE" +
+                " | hero=" + Safe(hero.StringId) +
+                " | name=" + Safe(hero.Name?.ToString()) +
+                " | action=" + Safe(action) +
+                " | " + Safe(details) +
+                " | currentParty=" + Safe(hero.PartyBelongedTo?.StringId) +
+                " | lastObservedParty=" + Safe(lastParty) +
+                " | state=" + hero.HeroState +
+                "; alive=" + hero.IsAlive +
+                "; age=" + hero.Age.ToString("0.00", CultureInfo.InvariantCulture) +
+                "; noncombatant=" + hero.IsNoncombatant +
+                "; commander=" + hero.IsCommander +
+                "; traveling=" + hero.IsTraveling +
+                "; fugitive=" + hero.IsFugitive +
+                "; prisoner=" + hero.IsPrisoner +
+                "; prisonerParty=" + Safe(DescribePartyBaseId(hero.PartyBelongedToAsPrisoner)) +
+                "; currentSettlement=" + Safe(hero.CurrentSettlement?.StringId));
         }
 
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage)
@@ -248,6 +285,10 @@ namespace GreyWardenPolicePurity
         {
             double campaignHours = 0d;
             try { campaignHours = CampaignTime.Now.ToHours; } catch { }
+            Hero? leader = party.LeaderHero;
+            if (leader != null && !string.IsNullOrWhiteSpace(leader.StringId) &&
+                !string.IsNullOrWhiteSpace(party.StringId))
+                LastPartyByHeroId[leader.StringId] = party.StringId;
             return DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
                 " | campaignHour=" + campaignHours.ToString("0.00", CultureInfo.InvariantCulture) +
                 " | " + stage +
@@ -263,6 +304,27 @@ namespace GreyWardenPolicePurity
             string foodDays = consumption > 0f
                 ? (Math.Max(0f, party.Food) / consumption).ToString("0.00", CultureInfo.InvariantCulture)
                 : "inf";
+            float nonFoodCargoValue = 0f;
+            float mountCargoValue = 0f;
+            for (int i = 0; i < party.ItemRoster.Count; i++)
+            {
+                ItemRosterElement rosterElement = party.ItemRoster[i];
+                ItemObject item = rosterElement.EquipmentElement.Item;
+                float stackValue = rosterElement.Amount * item.Value;
+                if (item.IsMountable)
+                    mountCargoValue += stackValue;
+                else if (!item.IsFood)
+                    nonFoodCargoValue += stackValue;
+            }
+            float mountSellFactor = mountCargoValue > party.PartyTradeGold * 0.1f
+                ? Math.Min(3f, (float)Math.Pow(
+                    (mountCargoValue + 1000f) / (party.PartyTradeGold * 0.1f + 1000f), 0.33f))
+                : 1f;
+            float goodsSellFactor = 1f + Math.Min(3f, (float)Math.Pow(
+                nonFoodCargoValue / ((party.MemberRoster.TotalManCount + 5f) * 100f), 0.33f));
+            float nativeSellFactor = mountSellFactor * goodsSellFactor;
+            if (party.Army != null)
+                nativeSellFactor = (float)Math.Sqrt(nativeSellFactor);
             PoliceTask? task = CrimePool.GetTask(party.StringId);
             MobileParty? offender = task?.TargetCrime?.Offender ??
                 GreyWardenPartyDesireBehavior.GetDiagnosticTargetParty(party);
@@ -286,6 +348,17 @@ namespace GreyWardenPolicePurity
                 "; siege=" + DescribeSiege(party) +
                 "; isLordParty=" + party.IsLordParty +
                 "; isPatrolParty=" + party.IsPatrolParty +
+                "; isDisbanding=" + party.IsDisbanding +
+                "; leaderId=" + Safe(party.LeaderHero?.StringId) +
+                "; leaderState=" + (party.LeaderHero?.HeroState.ToString() ?? "-") +
+                "; leaderAge=" + (party.LeaderHero?.Age.ToString("0.00", CultureInfo.InvariantCulture) ?? "-") +
+                "; leaderAlive=" + (party.LeaderHero?.IsAlive.ToString() ?? "-") +
+                "; leaderNoncombatant=" + (party.LeaderHero?.IsNoncombatant.ToString() ?? "-") +
+                "; leaderCommander=" + (party.LeaderHero?.IsCommander.ToString() ?? "-") +
+                "; leaderTraveling=" + (party.LeaderHero?.IsTraveling.ToString() ?? "-") +
+                "; leaderFugitive=" + (party.LeaderHero?.IsFugitive.ToString() ?? "-") +
+                "; leaderParty=" + Safe(party.LeaderHero?.PartyBelongedTo?.StringId) +
+                "; leaderPrisonerParty=" + Safe(DescribePartyBaseId(party.LeaderHero?.PartyBelongedToAsPrisoner)) +
                 "; mapFaction=" + Safe(party.MapFaction?.StringId) +
                 "; factionMinor=" + (party.MapFaction?.IsMinorFaction ?? false) +
                 "; factionKingdom=" + (party.MapFaction?.IsKingdomFaction ?? false) +
@@ -298,9 +371,11 @@ namespace GreyWardenPolicePurity
                 "; alerted=" + party.Ai.IsAlerted +
                 "; baseSpeed=" + party.LastCalculatedBaseSpeed.ToString("0.00", CultureInfo.InvariantCulture) +
                 "; initiative=" + DescribeInitiative(party) +
+                "; desiredNavigation=" + party.DesiredAiNavigationType +
                 "; default=" + party.DefaultBehavior +
                 "; short=" + party.ShortTermBehavior +
                 "; currentSettlement=" + Safe(party.CurrentSettlement?.StringId) +
+                "; currentSettlementGold=" + (party.CurrentSettlement?.SettlementComponent?.Gold ?? 0) +
                 "; targetSettlement=" + Safe(party.TargetSettlement?.StringId) +
                 "; targetParty=" + Safe(party.TargetParty?.StringId) +
                 "; shortTarget=" + Safe(party.ShortTermTargetParty?.StringId) +
@@ -309,8 +384,14 @@ namespace GreyWardenPolicePurity
                 "; food=" + party.Food.ToString("0.00", CultureInfo.InvariantCulture) +
                 "; foodChange=" + party.FoodChange.ToString("0.00", CultureInfo.InvariantCulture) +
                 "; foodDays=" + foodDays +
+                "; nonFoodCargoValue=" + nonFoodCargoValue.ToString("0", CultureInfo.InvariantCulture) +
+                "; mountCargoValue=" + mountCargoValue.ToString("0", CultureInfo.InvariantCulture) +
+                "; nativeSellFactor=" + nativeSellFactor.ToString("0.000", CultureInfo.InvariantCulture) +
                 "; gold=" + party.PartyTradeGold +
                 "; leaderGold=" + (party.LeaderHero?.Gold ?? 0) +
+                "; leaderHomeSettlement=" + Safe(party.LeaderHero?.HomeSettlement?.StringId) +
+                "; leaderTimeAtHome=" + (party.LeaderHero?.PassedTimeAtHomeSettlement
+                    .ToString("0.00", CultureInfo.InvariantCulture) ?? "-") +
                 "; clanGold=" + (party.ActualClan?.Gold ?? 0) +
                 "; dailyWage=" + party.TotalWage +
                 "; wageLimit=" + party.PaymentLimit +
@@ -340,6 +421,9 @@ namespace GreyWardenPolicePurity
                    ",attacker=" + (mapEvent.AttackerSide?.LeaderParty?.MobileParty?.StringId ?? "-") +
                    ",defender=" + (mapEvent.DefenderSide?.LeaderParty?.MobileParty?.StringId ?? "-");
         }
+
+        private static string DescribePartyBaseId(PartyBase? party) =>
+            party?.MobileParty?.StringId ?? party?.Settlement?.StringId ?? string.Empty;
 
         private static string DescribeSiege(MobileParty? party)
         {
@@ -402,6 +486,16 @@ namespace GreyWardenPolicePurity
             party.LeaderHero != null && party.IsLordParty &&
             string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
                 StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsPoliceHero(Hero? hero) =>
+            hero?.Clan != null && string.Equals(hero.Clan.StringId,
+                PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsPoliceRelatedParty(MobileParty? party) =>
+            party != null && (ShouldTraceParty(party) ||
+                string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
+                    StringComparison.OrdinalIgnoreCase) ||
+                IsPoliceHero(party.LeaderHero));
 
         private static string FormatScores(IEnumerable<(AIBehaviorData, float)> scores) =>
             "[" + string.Join(", ", scores
@@ -466,6 +560,8 @@ namespace GreyWardenPolicePurity
             AiBehavior behavior, MobileParty? target, float score,
             TaleWorlds.Library.Vec2 averageEnemyVector) { }
         internal static void WriteAction(MobileParty party, string action, string details) { }
+        internal static void WritePartyLifecycle(MobileParty? party, string action, string details) { }
+        internal static void WriteHeroLifecycle(Hero? hero, string action, string details) { }
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
         internal static bool ShouldTraceObservedParty(MobileParty? party) => false;

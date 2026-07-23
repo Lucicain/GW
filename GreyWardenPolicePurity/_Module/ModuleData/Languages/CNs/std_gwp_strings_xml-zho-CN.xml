@@ -90,8 +90,8 @@
   <string id="gwp_greywardenfamilybehavior_050" text="{VAR_1}生于灰袍守卫的内院。她自幼在巡路口令、旧帝国案卷与修会戒律之间长大，被长辈视作灰袍下一代的幼年继承者。对灰袍而言，像她这样的女孩并不是寻常贵族家族的孩子，而是未来要学会守路、记案与持法而行的人。" />
   <string id="gwp_greywardenfamilybehavior_051" text="{VAR_1}属于灰袍守卫的新生一代。她已经开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在灰袍长辈眼中，她迟早会披上真正的灰袍。外人常把她们当作家族子女，灰袍内部却更习惯把这一代视作仍在受训的后继者。" />
   <string id="gwp_greywardenfamilybehavior_052" text="{VAR_1}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。" />
-  <string id="gwp_greywardentrooprequestbehavior_001" text="少量见习守卫" />
-  <string id="gwp_greywardentrooprequestbehavior_002" text="一队见习守卫" />
+  <string id="gwp_greywardentrooprequestbehavior_001" text="少量灰袍新兵" />
+  <string id="gwp_greywardentrooprequestbehavior_002" text="一队灰袍新兵" />
   <string id="gwp_greywardentrooprequestbehavior_003" text="重装步兵小队" />
   <string id="gwp_greywardentrooprequestbehavior_004" text="持弓执勤队" />
   <string id="gwp_greywardentrooprequestbehavior_005" text="披甲骑巡队" />
@@ -101,7 +101,7 @@
   <string id="gwp_greywardentrooprequestbehavior_009" text="款项核清。灰袍会把人交给你，但别把她们当成寻常雇兵使唤。" />
   <string id="gwp_greywardentrooprequestbehavior_010" text="你的报价还不够。若真要调人，就拿出更像样的数目。" />
   <string id="gwp_greywardentrooprequestbehavior_011" text="这批人不是市井佣兵。按你现在的名声，这笔调拨要 {VAR_1} 金。若你愿意，现在就把款项放上谈判桌。" />
-  <string id="gwp_greywardentrooprequestbehavior_012" text="灰袍已向你调拨 {VAR_1} 名{VAR_2}。" />
+  <string id="gwp_greywardentrooprequestbehavior_012" text="这名灰袍领主已从自己的部队中调出 {VAR_1} 名{VAR_2}，交由你指挥。" />
   <string id="gwp_greywardentrooprequestbehavior_013" text="调拨{VAR_1}" />
   <string id="gwp_greywardentrooprequestbehavior_014" text="，按当前名声减免 {VAR_1}%" />
   <string id="gwp_greywardentrooprequestbehavior_015" text="我要 {VAR_1} 名{VAR_2}（{VAR_3} 金{VAR_4}）" />
@@ -503,9 +503,10 @@
   <string id="gwp_troop_heavy_infantry" text="灰袍守护者重步兵" />
   <string id="gwp_troop_knight" text="灰袍守护者骑士" />
   <string id="gwp_troop_light_infantry" text="灰袍守护者轻步兵" />
-  <string id="gwp_troop_req_high" text="你在灰袍这里的名声已经够高。若只是补一支执勤队，步弓与披甲骑巡都可以调给你，但数目不会太离谱。" />
-  <string id="gwp_troop_req_low" text="你现在的名声，还只够让灰袍放一些见习守卫跟着你办事。若想调更老练的人，就再多积些信誉。" />
-  <string id="gwp_troop_req_mid" text="你已证明自己值得托付。见习守卫之外，我也可以拨一些重装步兵或执勤弓手给你。你自己挑。" />
+  <string id="gwp_troop_new_recruit" text="灰袍新兵" />
+  <string id="gwp_troop_req_high" text="你在灰袍这里的名声已经够高。我可以调出弓手或披甲骑巡，但只能从我自己当前带领的部队中调。" />
+  <string id="gwp_troop_req_low" text="你现在的名声只够调灰袍新兵，而且我只能把自己部队里现有的人交给你。" />
+  <string id="gwp_troop_req_mid" text="你已证明自己值得托付。灰袍新兵之外，只要我自己的部队中数量足够，也可以调出重装步兵或执勤弓手。" />
   <string id="gwp_sparring_challenge" text="愿意和我切磋一下吗？我想试试自己的水平。" />
   <string id="gwp_sparring_accept" text="当然。只是友好切磋，不伤和气。" />
   <string id="gwp_sparring_launch_failed" text="这里不适合切磋，这次就先算了。" />
@@ -733,7 +734,7 @@
   <string id="gwp_duty_caravan" text="灰袍商路巡法者" />
   <string id="gwp_duty_village" text="灰袍乡土巡法者" />
   <string id="gwp_duty_issues" text="灰袍请愿巡行者" />
-  <string id="gwp_duty_player" text="灰袍特别请愿记录者" />
+  <string id="gwp_duty_player" text="贵族事务协调官" />
   <string id="gwp_adult_adopted_origin" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。{VAR_3}" />
   <string id="gwp_adult_born_origin" text="{VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。{VAR_2}" />
   <string id="gwp_bio_hint_law" text="她跟随案件卷宗奔走，在组织需要另一双稳健的手时补上空缺。" />
@@ -742,7 +743,7 @@
   <string id="gwp_bio_hint_village" text="她驰往农民遭袭或田地被焚之处，并以村庄生活能否得到守护衡量自己的职责。" />
   <string id="gwp_bio_hint_issues" text="她往来于村庄首领、城镇商人乃至巷道中的强硬人物之间，听取未决请求，离开时总会少下一桩纠纷。" />
   <string id="gwp_bio_hint_rebuild" text="人们屡次在焦黑屋顶与废弃水井之间看见她；战斗结束后她仍会留下，直到毁坏村庄能够重新接纳居民。" />
-  <string id="gwp_bio_hint_player" text="她尤其留意旧卷宗之外的请求，特别是那些由举足轻重的旅人直接带给灰袍的请愿。" />
+  <string id="gwp_bio_hint_player" text="她负责协调贵族与民间的诉求，尤其善于为遭到不公对待的灰袍成员重新争取公开议决。" />
   <string id="gwp_issue_resolution_complete" text="{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。" />
   <string id="gwp_issue_ledger_header" text="请愿任务 — {VAR_1}" />
   <string id="gwp_issue_ledger_assignment" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
@@ -751,6 +752,18 @@
   <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
   <string id="gwp_issue_stage_travel" text="前往任务发布人" />
   <string id="gwp_issue_stage_review" text="驻留审理六小时" />
+  <string id="gwp_training_ledger_header" text="练兵换防 — {VAR_1}" />
+  <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 接受换防：{VAR_2} | 当前阶段：{VAR_3}" />
+  <string id="gwp_training_unassigned_recipient" text="尚未指定" />
+  <string id="gwp_training_ledger_pending_place" text="待选定" />
+  <string id="gwp_training_ledger_queued" text="任务类型：练兵换防 | 已列为练兵官的下一项任务" />
+  <string id="gwp_training_ledger_waiting" text="任务类型：练兵换防 | 会合地点：{VAR_1} | 等待双方完成当前任务" />
+  <string id="gwp_training_ledger_stay" text="任务类型：练兵换防 | 定居点：{VAR_1} | 剩余驻留：{VAR_2}小时" />
+  <string id="gwp_training_ledger_travel" text="任务类型：练兵换防 | 会合地点：{VAR_1}" />
+  <string id="gwp_training_stage_queued" text="已列为下一项任务" />
+  <string id="gwp_training_stage_waiting" text="等待双方完成当前任务" />
+  <string id="gwp_training_stage_travel" text="前往会合地点" />
+  <string id="gwp_training_stage_stay" text="驻留两小时并换兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
   <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
   <string id="gwp_det_ui_villager_desire" text="攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
@@ -762,5 +775,66 @@
   <string id="gwp_det_ui_source_transmitted" text="族人转述或亲眼目击为主" />
   <string id="gwp_det_ui_source_none" text="当前没有有效压制" />
   <string id="gwp_det_ui_source_balanced" text="本人经历与他人传递接近" />
+  <string id="gwp_det_ui_recovery_complete" text="预计恢复原状：已经恢复" />
+  <string id="gwp_det_ui_recovery_hours" text="{VAR_1} 小时" />
+  <string id="gwp_det_ui_recovery_days" text="{VAR_1} 天" />
+  <string id="gwp_det_ui_recovery_paused" text="预计恢复原状：当前暂停恢复；恢复后约需 {VAR_1}" />
+  <string id="gwp_det_ui_recovery_active" text="预计恢复原状：约 {VAR_1}" />
+  <string id="gwp_fief_reconsideration_title" text="重新审议{SETTLEMENT_NAME}的归属" />
+  <string id="gwp_fief_reconsideration_support" text="灰袍已递交民间请愿，议会将重新审议谁应拥有{SETTLEMENT_NAME}。" />
+  <string id="gwp_fief_appeal_file" text="我想为一块封地申请重新审议。" />
+  <string id="gwp_fief_appeal_recorded" text="我会登记这份请愿。在收取任何费用前，贵族事务协调官会亲自来见你。" />
+  <string id="gwp_fief_payment_offer" text="你的请愿已交到我手中。向灰袍公库支付五万第纳尔后，我会发动民间支持，并重新开启封地决议。" />
+  <string id="gwp_fief_payment_accept" text="收下这五万第纳尔，开始行动吧。" />
+  <string id="gwp_fief_payment_accepted" text="款项已经记入公库。我现在就前往争议封地。" />
+  <string id="gwp_fief_payment_defer" text="先搁置这份请愿。" />
+  <string id="gwp_fief_payment_deferred" text="好。请愿会继续保留，时机合适时我会再来找你。" />
+  <string id="gwp_fief_payment_withdraw" text="撤回这份请愿。" />
+  <string id="gwp_fief_payment_withdrawn" text="那么无需支付费用，这份请愿就此关闭。" />
+  <string id="gwp_fief_payment_insufficient" text="你没有准备好所需的五万第纳尔。可以暂时搁置请愿，也可以直接撤回，无需付款。" />
+  <string id="gwp_fief_select_title" text="选择申诉封地" />
+  <string id="gwp_fief_select_description" text="选择一座近期攻下、需要重新审议归属的城镇或城堡。" />
+  <string id="gwp_fief_select_hint" text="你参加了这场攻城战，但封地最终授予了其他家族。" />
+  <string id="gwp_file_petition" text="提交请愿" />
+  <string id="gwp_cancel" text="取消" />
+  <string id="gwp_fief_auto_triggered" text="贵族事务协调官已经注意到你未获封地的情况，正赶来询问你是否需要灰袍协助。" />
+  <string id="gwp_fief_request_filed" text="封地请愿已经登记。现在没有收取任何费用；贵族事务协调官正在赶来与你见面。" />
+  <string id="gwp_fief_vote_reopened" text="灰袍在{VAR_1}的请愿已经完成。新的原版封地决议已经开启，你的家族必定进入候选名单。" />
+  <string id="gwp_fief_appeal_refunded" text="新的投票开启前，封地请愿已经失效。五万第纳尔已全额退还。" />
+  <string id="gwp_player_troop_order_file" text="我想让练兵官为我准备一批士兵。" />
+  <string id="gwp_player_troop_order_recorded" text="我会传达订单。现在无需付款；练兵官会训练真实士兵，完成后亲自送到你手中。" />
+  <string id="gwp_player_troop_delivery_offer" text="你的订单已经备好：{VAR_1}名{VAR_2}。约定价格为{VAR_3}第纳尔，款项将直接进入灰袍公库。" />
+  <string id="gwp_player_troop_delivery_accept" text="把约定款项交入公库，让这些士兵加入我的队伍。" />
+  <string id="gwp_player_troop_delivery_accepted" text="款项已经记入灰袍公库。这些士兵现在听从你的号令。" />
+  <string id="gwp_player_troop_delivery_defer" text="先让他们留在你那里。" />
+  <string id="gwp_player_troop_delivery_deferred" text="他们会继续留在我的队伍中。等你准备好后，我会再来找你。" />
+  <string id="gwp_player_troop_delivery_cancel" text="取消订单，士兵留给你。" />
+  <string id="gwp_player_troop_delivery_cancelled" text="那么无需付款，他们会回到灰袍的日常勤务中。" />
+  <string id="gwp_player_troop_delivery_insufficient" text="你无法支付约定价格，这份调兵订单将直接取消。没有收取任何费用，士兵继续留在灰袍服役。" />
+  <string id="gwp_player_troop_choice" text="{VAR_1}名{VAR_2} — {VAR_3}第纳尔" />
+  <string id="gwp_player_troop_order_title" text="提交调兵订单" />
+  <string id="gwp_player_troop_order_description" text="你在灰袍中的声望决定订单上限和可选兵种。" />
+  <string id="gwp_player_troop_order_confirm" text="发送订单" />
+  <string id="gwp_player_troop_order_filed" text="练兵官已经收到订单。现在没有收取任何费用；她会训练所需兵员，准备好后送到你身边。" />
+  <string id="gwp_player_request_unknown_liaison" text="未知的贵族事务协调官" />
+  <string id="gwp_player_request_ledger_header" text="玩家封地申诉 — {VAR_1}" />
+  <string id="gwp_player_request_ledger_assignment" text="协调官：{VAR_1} | 当前阶段：{VAR_2}" />
+  <string id="gwp_player_request_ledger_lobbying" text="任务类型：玩家封地申诉 | 费用：{VAR_1} | 民间支持：{VAR_2}% | 剩余驻留：{VAR_3}小时" />
+  <string id="gwp_player_request_ledger_detail" text="任务类型：玩家封地申诉 | 费用：{VAR_1} | 民间支持：{VAR_2}%" />
+  <string id="gwp_player_request_fee_paid" text="已交入公库" />
+  <string id="gwp_player_request_fee_unpaid" text="尚未收取" />
+  <string id="gwp_player_request_stage_payment" text="正在前往玩家身边收款" />
+  <string id="gwp_player_request_stage_travel" text="正在前往争议封地" />
+  <string id="gwp_player_request_stage_lobbying" text="正在组织民间请愿" />
+  <string id="gwp_player_request_stage_vote" text="新的封地投票已经开启" />
+  <string id="gwp_player_request_stage_deferred" text="请愿已搁置" />
+  <string id="gwp_fief_defer_complete" text="贵族事务协调官将回来继续处理你的封地请愿。" />
+  <string id="gwp_player_troop_ledger_header" text="玩家调兵订单 — {VAR_1}名{VAR_2}" />
+  <string id="gwp_player_troop_ledger_assignment" text="练兵官：{VAR_1} | 当前阶段：{VAR_2}" />
+  <string id="gwp_player_troop_ledger_detail" text="任务类型：玩家调兵订单 | 已备妥：{VAR_1}/{VAR_2} | 交付价格：{VAR_3}第纳尔" />
+  <string id="gwp_player_troop_stage_training" text="正在训练真实兵员" />
+  <string id="gwp_player_troop_stage_delivery" text="正在前往玩家身边交付" />
+  <string id="gwp_player_troop_stage_deferred" text="交付已延期" />
+  <string id="gwp_player_troop_defer_complete" text="练兵官将带着备好的士兵回来找你。" />
 </strings>
 </base>

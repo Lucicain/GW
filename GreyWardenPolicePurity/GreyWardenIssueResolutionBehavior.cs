@@ -248,6 +248,8 @@ namespace GreyWardenPolicePurity
                 issue.CompleteIssueWithAiLord(party.LeaderHero);
                 ApplyLocalDevelopmentGain(settlement);
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                GwpPlayerRequestDeferral.NotifyDutyCompleted(party,
+                    "issue_resolution");
                 _assignments.Remove(assignment);
                 GreyWardenPartyDesireBehavior.ClearIntent(party);
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
@@ -308,6 +310,9 @@ namespace GreyWardenPolicePurity
             if (party?.IsActive != true || party.LeaderHero?.IsActive != true ||
                 party.Army != null || party.MapEvent is { IsFinalized: false } ||
                 IsIssueDutyParty(party) ||
+                GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(party) ||
+                GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(party) ||
+                GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(party) ||
                 GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ||
                 GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ||
                 GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))

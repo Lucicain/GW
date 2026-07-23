@@ -14,6 +14,7 @@ namespace GreyWardenPolicePurity
         public const string ArcherId = "gwarcher";
         public const string KnightId = "gwknight";
         public const string PoliceRecruitId = "gwrecruit";
+        public const string NewRecruitId = "gwnewrecruit";
         public const string LeaderCharacterIdPrefix = "gw_leader_";
         public const string CommanderTemplateCharacterId = "gw_leader_0";
         public const string CustomBattleCommanderId = "commander_2";
@@ -36,7 +37,8 @@ namespace GreyWardenPolicePurity
                 "wcomarmorhv",
                 "wcomshoulder",
                 "wcomhelmethv",
-                "wharnesscom"
+                "wharnesscom",
+                BlackLargeShieldItemId
             };
 
         public static bool IsGreyWardenLargeShieldItemId(string? itemId)

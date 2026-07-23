@@ -33,6 +33,9 @@ namespace GreyWardenPolicePurity
             public float CaravanSharedPenalty { get; init; }
             public float CaravanEffectivePenalty { get; init; }
             public float CaravanScoreMultiplier { get; init; }
+            public float VillageRecoveryDaysRemaining { get; init; }
+            public float CaravanRecoveryDaysRemaining { get; init; }
+            public bool RecoveryPaused { get; init; }
             public float DaysSinceLastEnforcement { get; init; }
             public string MapStatus { get; init; }
             public string MapLocation { get; init; }
@@ -246,6 +249,10 @@ namespace GreyWardenPolicePurity
             float days = record.LastEnforcementHours > 0f
                 ? MathF.Max(0f, (now - record.LastEnforcementHours) / CampaignTime.HoursInDay)
                 : 0f;
+            float recoveryPerDay = GetRecoveryPerDay(hero);
+            bool recoveryPaused = !CanRecoverPenalty(hero) &&
+                                  (villageTotal > GwpTuning.Deterrence.ForgetThreshold ||
+                                   caravanTotal > GwpTuning.Deterrence.ForgetThreshold);
 
             return new DeterrenceDetails
             {
@@ -268,6 +275,11 @@ namespace GreyWardenPolicePurity
                 CaravanEffectivePenalty = caravanTotal,
                 CaravanScoreMultiplier = GetCrimeDesireMultiplier(hero,
                     GwpCrimeCategory.CaravanAttack),
+                VillageRecoveryDaysRemaining = GetRecoveryDaysRemaining(
+                    villageTotal, recoveryPerDay),
+                CaravanRecoveryDaysRemaining = GetRecoveryDaysRemaining(
+                    caravanTotal, recoveryPerDay),
+                RecoveryPaused = recoveryPaused,
                 DaysSinceLastEnforcement = days,
                 MapStatus = status,
                 MapLocation = location
@@ -496,7 +508,19 @@ namespace GreyWardenPolicePurity
             return MBMath.ClampFloat(
                 recovery,
                 GwpTuning.Deterrence.MinRecoveryPerDay,
-                GwpTuning.Deterrence.MaxRecoveryPerDay);
+                GwpTuning.Deterrence.MaxRecoveryPerDay) *
+                   GwpTuning.Deterrence.RecoverySpeedMultiplier;
+        }
+
+        private static float GetRecoveryDaysRemaining(
+            float currentPenalty,
+            float recoveryPerDay)
+        {
+            float remainingPenalty = MathF.Max(
+                0f, currentPenalty - GwpTuning.Deterrence.ForgetThreshold);
+            return recoveryPerDay > 0f
+                ? remainingPenalty / recoveryPerDay
+                : 0f;
         }
 
         private static bool CanTrack(Hero? hero) =>

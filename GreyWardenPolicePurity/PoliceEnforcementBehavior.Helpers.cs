@@ -69,6 +69,52 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        /// <summary>
+        /// A filed player request outranks every autonomous Grey Warden duty.
+        /// Never interrupt a live battle or an existing player-bounty escort;
+        /// ordinary work is returned to its pool before the specialist travels.
+        /// </summary>
+        private bool TryPreparePartyForPlayerRequest(MobileParty? police)
+        {
+            if (police?.IsActive != true || police.LeaderHero?.IsActive != true)
+                return false;
+            if (police.MapEvent is { IsFinalized: false })
+                return false;
+
+            ReleaseAssistanceForPlayerRequest(police);
+            if (police.Army != null)
+                return false;
+
+            GreyWardenTrainingBehavior.ReleasePartyForForcedDuty(police);
+            GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
+            GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(police);
+
+            PoliceTask? task = CrimeState.GetTask(police.StringId);
+            if (task != null)
+            {
+                if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
+                    task.TargetCrime?.Offender?.IsMainParty == true)
+                    return false;
+
+                IFaction? warTarget = task.WarTarget;
+                RestoreAi(police);
+                ClearTaskWarTracking(police.StringId, true);
+                CrimeState.EndTask(police.StringId);
+                CrimeRecord? displacedCrime = task.TargetCrime;
+                if (displacedCrime?.Offender?.IsActive == true)
+                    CrimeState.ReopenCase(displacedCrime);
+
+                Clan? policeClan = PoliceStats.GetPoliceClan();
+                if (policeClan != null && warTarget != null &&
+                    !GwpPoliceWarReasonService.HasLegitimateWarReason(warTarget))
+                    GwpCommon.TrySetNeutral(policeClan, warTarget);
+            }
+
+            GreyWardenPartyDesireBehavior.ClearIntent(police);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
+            return true;
+        }
+
         private bool IsOnWinningSide(MobileParty party, MapEvent mapEvent)
         {
             if (!mapEvent.HasWinner || mapEvent.Winner == null) return false;
@@ -308,7 +354,7 @@ namespace GreyWardenPolicePurity
                         expelParty = armyLeader;
                     }
 
-                    var heldPartyIds = new HashSet<string>(
+                    var forcedPartyIds = new HashSet<string>(
                         expelParty.AttachedParties
                             .Where(party => party?.IsActive == true)
                             .Select(party => party.StringId),
@@ -320,17 +366,14 @@ namespace GreyWardenPolicePurity
 
                     LeaveSettlementAction.ApplyForParty(expelParty);
 
-                    // 只打断刚被逐出城后的即时回城。下一次原版 AI 重新思考、
-                    // 移动或接战后自然结束，不会永久禁止该部队进入定居点。
-                    try { expelParty.SetMoveModeHold(); } catch { }
-                    foreach (MobileParty attachedParty in expelParty.AttachedParties)
-                    {
-                        try { attachedParty.SetMoveModeHold(); } catch { }
-                    }
-                    try { defender.SetMoveModeHold(); } catch { }
-
+                    // 目标被逐出城后不再原地等待。直接命令目标（若属于军团则命令
+                    // 军团领队）进攻当前案件的承办领主。关闭原版新欲望决策，
+                    // 案件结束前只允许执行这一条进攻指令。
                     if (!string.IsNullOrWhiteSpace(taskId))
-                        _shelteredHoldPartyIdsByTaskId[taskId] = heldPartyIds;
+                    {
+                        UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
+                        TryForceShelteredCaseAttack(defender, attacker);
+                    }
                 }
 
                 return defender.CurrentSettlement == null;
@@ -349,15 +392,24 @@ namespace GreyWardenPolicePurity
                 enteringParty.IsMainParty)
                 return false;
 
-            return _instance?.IsPartyUnderShelteredCaseHold(enteringParty) == true;
+            return _instance?.IsPartyBlockedFromSettlementByShelteredCase(
+                enteringParty) == true;
         }
 
-        private bool IsPartyUnderShelteredCaseHold(MobileParty enteringParty)
+        internal static void RedirectShelteredCasePartyToAssignee(
+            MobileParty? enteringParty)
         {
-            foreach (var entry in _shelteredHoldPartyIdsByTaskId)
+            if (enteringParty?.IsActive != true) return;
+            _instance?.TryForceShelteredCaseAttackForTrackedParty(enteringParty);
+        }
+
+        private bool IsPartyBlockedFromSettlementByShelteredCase(
+            MobileParty enteringParty)
+        {
+            foreach (var entry in _shelteredForcedPartyIdsByTaskId)
             {
                 PoliceTask? task = CrimeState.GetTask(entry.Key);
-                if (!IsShelteredHoldTaskActive(task))
+                if (!IsShelteredForcedAttackTaskActive(task))
                     continue;
                 if (entry.Value.Contains(enteringParty.StringId))
                     return true;
@@ -366,33 +418,144 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        private void MaintainShelteredCaseHolds()
+        private void TryForceShelteredCaseAttackForTrackedParty(
+            MobileParty trackedParty)
         {
-            foreach (string taskId in _shelteredHoldPartyIdsByTaskId.Keys.ToList())
+            foreach (var entry in _shelteredForcedPartyIdsByTaskId)
             {
-                PoliceTask? task = CrimeState.GetTask(taskId);
-                if (!IsShelteredHoldTaskActive(task))
-                {
-                    _shelteredHoldPartyIdsByTaskId.Remove(taskId);
-                    continue;
-                }
+                if (!entry.Value.Contains(trackedParty.StringId)) continue;
 
-                HashSet<string> heldPartyIds = _shelteredHoldPartyIdsByTaskId[taskId];
-                heldPartyIds.RemoveWhere(partyId => !MobileParty.All.Any(party =>
-                    party.IsActive && string.Equals(party.StringId, partyId,
-                        StringComparison.OrdinalIgnoreCase)));
+                PoliceTask? task = CrimeState.GetTask(entry.Key);
+                if (!IsShelteredForcedAttackTaskActive(task)) continue;
 
-                foreach (MobileParty heldParty in MobileParty.All.Where(party =>
-                             party.IsActive && heldPartyIds.Contains(party.StringId)).ToList())
-                {
-                    if (heldParty.MapEvent != null || heldParty.CurrentSettlement != null)
-                        continue;
-                    try { heldParty.SetMoveModeHold(); } catch { }
-                }
+                MobileParty? offender = task!.TargetCrime?.Offender;
+                MobileParty? assignee = MobileParty.All.FirstOrDefault(party =>
+                    party.IsActive &&
+                    string.Equals(party.StringId, task.PolicePartyId,
+                        StringComparison.OrdinalIgnoreCase));
+                TryForceShelteredCaseAttack(offender, assignee);
+                return;
             }
         }
 
-        private static bool IsShelteredHoldTaskActive(PoliceTask? task)
+        private void MaintainShelteredCaseForcedAttacks()
+        {
+            foreach (string taskId in _shelteredForcedPartyIdsByTaskId.Keys.ToList())
+            {
+                PoliceTask? task = CrimeState.GetTask(taskId);
+                if (!IsShelteredForcedAttackTaskActive(task))
+                {
+                    ReleaseShelteredForcedAttack(taskId);
+                    continue;
+                }
+
+                MobileParty? offender = task!.TargetCrime?.Offender;
+                MobileParty? assignee = MobileParty.All.FirstOrDefault(party =>
+                    party.IsActive &&
+                    string.Equals(party.StringId, task.PolicePartyId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (offender?.IsActive != true || assignee?.IsActive != true)
+                    continue;
+
+                MobileParty forceParty = GetShelteredForcedMovementParty(offender);
+                var forcedPartyIds = new HashSet<string>(
+                    forceParty.AttachedParties
+                        .Where(party => party?.IsActive == true)
+                        .Select(party => party.StringId),
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    forceParty.StringId,
+                    offender.StringId
+                };
+                UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
+
+                TryForceShelteredCaseAttack(offender, assignee);
+            }
+        }
+
+        private void UpdateShelteredForcedPartyTracking(
+            string taskId,
+            HashSet<string> currentPartyIds)
+        {
+            if (_shelteredForcedPartyIdsByTaskId.TryGetValue(
+                    taskId, out HashSet<string>? previousPartyIds))
+            {
+                foreach (string releasedPartyId in previousPartyIds
+                             .Where(partyId => !currentPartyIds.Contains(partyId))
+                             .ToList())
+                {
+                    MobileParty? releasedParty = MobileParty.All.FirstOrDefault(party =>
+                        party.IsActive &&
+                        string.Equals(party.StringId, releasedPartyId,
+                            StringComparison.OrdinalIgnoreCase));
+                    if (releasedParty != null)
+                        RestoreAi(releasedParty);
+                }
+            }
+
+            _shelteredForcedPartyIdsByTaskId[taskId] = currentPartyIds;
+        }
+
+        private void ReleaseShelteredForcedAttack(string taskId)
+        {
+            if (string.IsNullOrWhiteSpace(taskId) ||
+                !_shelteredForcedPartyIdsByTaskId.TryGetValue(
+                    taskId, out HashSet<string>? forcedPartyIds))
+                return;
+
+            foreach (MobileParty party in MobileParty.All.Where(party =>
+                         party.IsActive && forcedPartyIds.Contains(party.StringId)).ToList())
+            {
+                RestoreAi(party);
+            }
+
+            _shelteredForcedPartyIdsByTaskId.Remove(taskId);
+        }
+
+        private static MobileParty GetShelteredForcedMovementParty(
+            MobileParty offender)
+        {
+            MobileParty? armyLeader = offender.Army?.LeaderParty;
+            return armyLeader?.IsActive == true ? armyLeader : offender;
+        }
+
+        private bool TryForceShelteredCaseAttack(
+            MobileParty? offender,
+            MobileParty? assignee)
+        {
+            if (offender?.IsActive != true || assignee?.IsActive != true)
+                return false;
+            if (offender.IsMainParty)
+                return false;
+
+            MobileParty forceParty = GetShelteredForcedMovementParty(offender);
+            if (!forceParty.IsActive ||
+                forceParty.CurrentSettlement != null ||
+                forceParty.MapEvent != null ||
+                assignee.CurrentSettlement != null ||
+                assignee.MapEvent != null ||
+                string.Equals(forceParty.StringId, assignee.StringId,
+                    StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            try
+            {
+                forceParty.Ai.SetDoNotMakeNewDecisions(false);
+                forceParty.SetMoveEngageParty(
+                    assignee, forceParty.NavigationCapability);
+                forceParty.Ai.SetDoNotMakeNewDecisions(true);
+                return true;
+            }
+            catch
+            {
+                // 即使本帧的移动命令因原版瞬时状态失败，也不能重新开放
+                // 其他欲望；下一帧会再次尝试写入唯一的进攻目标。
+                try { forceParty.Ai.SetDoNotMakeNewDecisions(true); } catch { }
+                return false;
+            }
+        }
+
+        private static bool IsShelteredForcedAttackTaskActive(PoliceTask? task)
         {
             if (task == null || !task.WarDeclared || !task.IsTargetValid())
                 return false;

@@ -84,6 +84,12 @@ namespace GreyWardenPolicePurity
             if (!IsGreyWardenLord(conversationHero))
                 return false;
 
+            if (GreyWardenTroopRequestBehavior
+                    .IsPendingAutomaticConversation(conversationHero) ||
+                GreyWardenPlayerRequestBehavior
+                    .IsPendingAutomaticConversation(conversationHero))
+                return false;
+
             if (!conversationHero.HasMet)
                 return false;
 

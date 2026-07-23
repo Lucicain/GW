@@ -22,9 +22,10 @@ namespace GreyWardenPolicePurity
                     mobileParty, settlement))
                 return true;
 
-            // 清掉本次已经选中的进城动作；下一次原版思考仍可选择逃离、
-            // 接战或其他野外行为，但在案件有效期间不能再次钻入聚落。
-            try { mobileParty.SetMoveModeHold(); } catch { }
+            // 拒绝本次进城动作，并重新命令被逐出的案件目标（若属于军团则
+            // 命令军团领队）进攻承办该案的灰袍领主，避免在城门口停住。
+            PoliceEnforcementBehavior.RedirectShelteredCasePartyToAssignee(
+                mobileParty);
             return false;
         }
     }

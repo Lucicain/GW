@@ -26,6 +26,7 @@ namespace GreyWardenPolicePurity
             public string TargetPartyId { get; set; } = string.Empty;
             public List<string> MemberPartyIds { get; set; } = new List<string>();
             public int BlockedHours { get; set; }
+            public bool DispersedForSpeed { get; set; }
         }
 
         private readonly Dictionary<string, LordAssistanceGroup> _assistanceGroups =
@@ -51,6 +52,7 @@ namespace GreyWardenPolicePurity
             List<string> members = null!;
             List<string> memberTimes = null!;
             List<int> blocked = null!;
+            List<int> dispersedForSpeed = null!;
 
             if (dataStore.IsSaving)
             {
@@ -64,6 +66,8 @@ namespace GreyWardenPolicePurity
                         ? hours.ToString("R", CultureInfo.InvariantCulture)
                         : "0"))).ToList();
                 blocked = groups.Select(group => group.BlockedHours).ToList();
+                dispersedForSpeed = groups.Select(group =>
+                    group.DispersedForSpeed ? 1 : 0).ToList();
             }
 
             dataStore.SyncData("gwp_enf_assist_leaders", ref leaders);
@@ -72,6 +76,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_assist_members", ref members);
             dataStore.SyncData("gwp_enf_assist_member_times", ref memberTimes);
             dataStore.SyncData("gwp_enf_assist_blocked", ref blocked);
+            dataStore.SyncData("gwp_enf_assist_speed_dispersed",
+                ref dispersedForSpeed);
 
             if (!dataStore.IsLoading) return;
 
@@ -84,6 +90,7 @@ namespace GreyWardenPolicePurity
             List<string> loadedMembers = members ?? new List<string>();
             List<string> loadedMemberTimes = memberTimes ?? new List<string>();
             List<int> loadedBlocked = blocked ?? new List<int>();
+            List<int> loadedSpeedDispersed = dispersedForSpeed ?? new List<int>();
 
             for (int index = 0; index < leaders.Count; index++)
             {
@@ -99,7 +106,9 @@ namespace GreyWardenPolicePurity
                     TargetPartyId = index < loadedTargets.Count ? loadedTargets[index] ?? string.Empty : string.Empty,
                     MemberPartyIds = memberText.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
                         .Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-                    BlockedHours = index < loadedBlocked.Count ? Math.Max(0, loadedBlocked[index]) : 0
+                    BlockedHours = index < loadedBlocked.Count ? Math.Max(0, loadedBlocked[index]) : 0,
+                    DispersedForSpeed = index < loadedSpeedDispersed.Count &&
+                        loadedSpeedDispersed[index] != 0
                 };
                 string timeText = index < loadedMemberTimes.Count
                     ? loadedMemberTimes[index] ?? string.Empty
@@ -151,6 +160,15 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
+                    MobileParty? groupOffender = GetValidAssistanceOffender(leader, task);
+                    if (group.DispersedForSpeed)
+                    {
+                        MaintainSpeedDispersedPursuit(leader, group, groupOffender);
+                        group.BlockedHours = 0;
+                        _independentBlockedHours.Remove(leader.StringId);
+                        continue;
+                    }
+
                     Army? army = MaintainAssistanceArmy(leader, group);
                     if (army == null)
                     {
@@ -162,7 +180,22 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
-                    MobileParty? groupOffender = GetValidAssistanceOffender(leader, task);
+                    if (group.MemberPartyIds.Count == 0)
+                    {
+                        group.BlockedHours = 0;
+                        if (groupOffender != null)
+                            TryAddAssistanceMember(leader, task!, groupOffender,
+                                group, army);
+                    }
+
+                    if (group.MemberPartyIds.Count > 0 &&
+                        !AreAllMembersAssembled(leader, group, army))
+                    {
+                        group.BlockedHours = 0;
+                        _independentBlockedHours.Remove(leader.StringId);
+                        continue;
+                    }
+
                     if (groupOffender == null)
                     {
                         // The case can temporarily return to its peaceful
@@ -174,6 +207,13 @@ namespace GreyWardenPolicePurity
                     }
 
                     group.TargetPartyId = groupOffender.StringId;
+                    if (ShouldDisperseAssistanceArmyForSpeed(army, groupOffender))
+                    {
+                        DisperseAssistanceArmyForSpeed(leader, group,
+                            groupOffender, army);
+                        continue;
+                    }
+
                     if (leader.DefaultBehavior == AiBehavior.GoAroundParty &&
                         leader.TargetParty == groupOffender)
                     {
@@ -183,23 +223,19 @@ namespace GreyWardenPolicePurity
                         // hourly tick cannot redirect a briefly holding leader.
                         army.AiBehaviorObject = null;
                     }
-                    if (group.MemberPartyIds.Count == 0)
-                    {
-                        group.BlockedHours = 0;
-                        TryAddAssistanceMember(leader, task!, groupOffender, group, army);
-                        continue;
-                    }
-                    if (!AreAllMembersAssembled(leader, group, army))
-                    {
-                        group.BlockedHours = 0;
-                        continue;
-                    }
 
                     group.BlockedHours = IsCasePursuitBlocked(leader, groupOffender)
                         ? group.BlockedHours + 1
                         : 0;
                     if (group.BlockedHours >= GwpTuning.Enforcement.AssistanceBlockedHours)
-                        TryAddAssistanceMember(leader, task!, groupOffender, group, army);
+                    {
+                        if (TryAddAssistanceMember(leader, task!, groupOffender,
+                                group, army))
+                        {
+                            GreyWardenPartyDesireBehavior.RequestImmediateRethink(
+                                leader);
+                        }
+                    }
                     continue;
                 }
 
@@ -229,7 +265,10 @@ namespace GreyWardenPolicePurity
                 Army? newArmy = CreateOrRecoverAssistanceArmy(leader);
                 if (newArmy != null &&
                     TryAddAssistanceMember(leader, task, offender, newGroup, newArmy))
+                {
                     _assistanceGroups[leader.StringId] = newGroup;
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
+                }
                 else if (newArmy != null && newArmy.LeaderParty == leader &&
                          newArmy.Parties.Count <= 1)
                     DisbandArmyAction.ApplyByObjectiveFinished(newArmy);
@@ -313,10 +352,113 @@ namespace GreyWardenPolicePurity
             if (leader.GetPosition2D.Distance(offender.GetPosition2D) >
                 GwpTuning.Enforcement.AssistanceContactDistance)
                 return false;
-            if (leader.DefaultBehavior != AiBehavior.GoAroundParty ||
-                leader.TargetParty != offender)
+            if (!MobileParty.IsFleeBehavior(leader.ShortTermBehavior))
                 return false;
-            return MobileParty.IsFleeBehavior(leader.ShortTermBehavior);
+
+            // The native short-term flee decision is the actual evidence that
+            // this party cannot currently take the case target. The long-term
+            // auction may legitimately select resupply or another settlement
+            // behavior at the same moment, so it must not be a prerequisite.
+            MobileParty? fleeTarget = leader.ShortTermTargetParty;
+            if (fleeTarget == null)
+                return false;
+            MobileParty combatTarget = offender.BesiegerCamp?.LeaderParty ??
+                offender.Army?.LeaderParty ?? offender.AttachedTo ?? offender;
+            if (fleeTarget == offender || fleeTarget == combatTarget)
+                return true;
+
+            Army? offenderArmy = offender.Army ?? combatTarget.Army;
+            return offenderArmy != null &&
+                   (fleeTarget == offenderArmy.LeaderParty ||
+                    fleeTarget.Army == offenderArmy);
+        }
+
+        private static bool ShouldDisperseAssistanceArmyForSpeed(Army army,
+            MobileParty offender)
+        {
+            if (army?.LeaderParty?.IsActive != true || offender?.IsActive != true ||
+                army.Parties.Count <= 1)
+                return false;
+
+            float armySpeed = army.LeaderParty.LastCalculatedBaseSpeed;
+            float targetSpeed = offender.LastCalculatedBaseSpeed;
+            return armySpeed > 0.01f && targetSpeed > armySpeed;
+        }
+
+        private void DisperseAssistanceArmyForSpeed(MobileParty leader,
+            LordAssistanceGroup group, MobileParty offender, Army army)
+        {
+            float armySpeed = leader.LastCalculatedBaseSpeed;
+            float targetSpeed = offender.LastCalculatedBaseSpeed;
+            int supportCount = army.Parties.Count(party =>
+                GwpCommon.IsEnforcementDelayPatrolParty(party));
+
+            group.DispersedForSpeed = true;
+            group.BlockedHours = 0;
+
+            GwpAiDiagnostics.WriteAction(leader,
+                "ASSISTANCE_ARMY_SPEED_DISPERSED",
+                "target=" + offender.StringId +
+                "; targetSpeed=" + targetSpeed.ToString("0.00",
+                    CultureInfo.InvariantCulture) +
+                "; armySpeed=" + armySpeed.ToString("0.00",
+                    CultureInfo.InvariantCulture) +
+                "; lordMembers=" + group.MemberPartyIds.Count +
+                "; supports=" + supportCount);
+
+            try { DisbandArmyAction.ApplyByObjectiveFinished(army); }
+            catch { }
+
+            MaintainSpeedDispersedPursuit(leader, group, offender);
+            SendDelayPatrolsAfterSpeedDispersal(group, offender);
+        }
+
+        private void MaintainSpeedDispersedPursuit(MobileParty leader,
+            LordAssistanceGroup group, MobileParty? offender)
+        {
+            Army? staleArmy = leader.Army;
+            if (staleArmy != null && IsArmyOwnedByGroup(staleArmy, group))
+            {
+                try { DisbandArmyAction.ApplyByObjectiveFinished(staleArmy); }
+                catch { }
+            }
+
+            if (offender?.IsActive != true || offender.Party == null ||
+                offender.Party.NumberOfHealthyMembers <= 0)
+                return;
+
+            group.TargetPartyId = offender.StringId;
+            GreyWardenPartyDesireBehavior.RequestPursuit(leader, offender, 0.99f);
+            foreach (string memberId in group.MemberPartyIds.ToList())
+            {
+                MobileParty? member = FindActiveParty(memberId);
+                if (!IsGreyWardenLordParty(member))
+                {
+                    RemoveAssistanceMember(group, memberId);
+                    continue;
+                }
+
+                if (member!.Army != null)
+                    member.Army = null;
+                GreyWardenPartyDesireBehavior.RequestPursuit(member, offender, 0.99f);
+            }
+        }
+
+        private void SendDelayPatrolsAfterSpeedDispersal(
+            LordAssistanceGroup group, MobileParty offender)
+        {
+            foreach (DelayPatrolState state in _delayPatrolStates.Values.ToList())
+            {
+                if (state.Returning ||
+                    !string.Equals(state.TargetPartyId, group.TargetPartyId,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                MobileParty? patrol = FindActiveParty(state.PatrolPartyId);
+                if (patrol == null) continue;
+                DetachDelayPatrolFromArmy(patrol);
+                GreyWardenPartyDesireBehavior.RequestPursuit(patrol, offender, 8f);
+            }
         }
 
         private static Army? CreateOrRecoverAssistanceArmy(MobileParty leader)
@@ -400,6 +542,7 @@ namespace GreyWardenPolicePurity
             // its native same-clan influence-cost calculation (which is zero).
             helper.Army = army;
             TryMergeArmyMember(army, leader, helper);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(helper);
             GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_MEMBER_ADDED",
                 "helper=" + helper.StringId + "; target=" + offender.StringId +
                 "; crime=" + task.TargetCrimeId + "; memberCount=" + group.MemberPartyIds.Count +
@@ -415,6 +558,9 @@ namespace GreyWardenPolicePurity
             if (!IsGreyWardenLordParty(candidate) || candidate == leader ||
                 candidate!.MapEvent != null || candidate.LeaderHero?.IsPrisoner == true ||
                 candidate.Army != null || IsAssistanceOccupied(candidate) ||
+                GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(candidate) ||
+                GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(candidate) ||
+                GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(candidate) ||
                 GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(candidate))
                 return false;
 
@@ -460,7 +606,8 @@ namespace GreyWardenPolicePurity
             float contactDistance = member.IsCurrentlyAtSea
                 ? Campaign.Current.Models.EncounterModel.MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
                 : Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
-            if ((member.Position - leader.Position).LengthSquared < contactDistance)
+            if ((member.Position - leader.Position).LengthSquared <
+                contactDistance * contactDistance)
                 army.AddPartyToMergedParties(member);
         }
 
@@ -518,6 +665,8 @@ namespace GreyWardenPolicePurity
                          StringComparer.OrdinalIgnoreCase))
             {
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                GwpPlayerRequestDeferral.NotifyDutyCompleted(
+                    FindParty(memberId), "assistance_case");
             }
 
             ReleaseAssistanceGroup(leaderId, "case_target_defeated");
@@ -527,10 +676,14 @@ namespace GreyWardenPolicePurity
         {
             if (!_assistanceGroups.TryGetValue(leaderId, out LordAssistanceGroup? group))
                 return;
-            _assistanceGroups.Remove(leaderId);
-            _independentBlockedHours.Remove(leaderId);
 
             MobileParty? leader = FindParty(leaderId);
+            // Also clears the decision lock written by the briefly deployed
+            // assembly prototype. Current assistance never disables long-term AI.
+            if (leader?.IsActive == true)
+                RestoreAi(leader);
+            _assistanceGroups.Remove(leaderId);
+            _independentBlockedHours.Remove(leaderId);
             Army? army = leader?.Army;
             if (army == null || army.LeaderParty != leader)
             {
@@ -575,6 +728,20 @@ namespace GreyWardenPolicePurity
                    IsAssistanceMember(party.StringId);
         }
 
+        internal static bool IsPartyOccupiedByAssistance(MobileParty? party) =>
+            _instance != null && _instance.IsAssistanceOccupied(party);
+
+        private void ReleaseAssistanceForPlayerRequest(MobileParty party)
+        {
+            string? leaderId = _assistanceGroups.ContainsKey(party.StringId)
+                ? party.StringId
+                : _assistanceGroups.Values.FirstOrDefault(group =>
+                    group.MemberPartyIds.Contains(party.StringId,
+                        StringComparer.OrdinalIgnoreCase))?.LeaderPartyId;
+            if (!string.IsNullOrWhiteSpace(leaderId))
+                ReleaseAssistanceGroup(leaderId, "player_request_priority");
+        }
+
         private bool IsAssistanceMember(string partyId) =>
             _assistanceGroups.Values.Any(group => group.MemberPartyIds.Contains(
                 partyId, StringComparer.OrdinalIgnoreCase));
@@ -593,7 +760,60 @@ namespace GreyWardenPolicePurity
                 return false;
             return _instance._assistanceGroups.TryGetValue(
                        army.LeaderParty.StringId, out LordAssistanceGroup? group) &&
+                   !group.DispersedForSpeed &&
                    IsArmyOwnedByGroup(army, group);
+        }
+
+        internal static bool TryGetAssistanceDuty(MobileParty? party,
+            out MobileParty? target, out AiBehavior behavior)
+        {
+            target = null;
+            behavior = AiBehavior.None;
+            if (_instance == null || party?.IsActive != true)
+                return false;
+
+            LordAssistanceGroup? group = null;
+            bool isLeader = _instance._assistanceGroups.TryGetValue(
+                party.StringId, out group);
+            if (!isLeader)
+            {
+                group = _instance._assistanceGroups.Values.FirstOrDefault(candidate =>
+                    candidate.MemberPartyIds.Contains(party.StringId,
+                        StringComparer.OrdinalIgnoreCase));
+            }
+            if (group == null)
+                return false;
+
+            if (!group.DispersedForSpeed && !isLeader)
+            {
+                target = FindActiveParty(group.LeaderPartyId);
+                behavior = AiBehavior.EscortParty;
+                return target != null && target != party;
+            }
+
+            target = FindActiveParty(group.TargetPartyId);
+            behavior = AiBehavior.GoAroundParty;
+            return target != null && target != party;
+        }
+
+        internal static bool ShouldExpandAssistanceGoAroundRadius(
+            MobileParty? party, CampaignVec2 targetPosition)
+        {
+            if (_instance == null || party?.IsActive != true ||
+                !_instance._assistanceGroups.TryGetValue(
+                    party.StringId, out LordAssistanceGroup? group) ||
+                group.DispersedForSpeed || group.MemberPartyIds.Count == 0)
+                return false;
+
+            bool stillGathering = group.MemberPartyIds
+                .Select(FindActiveParty)
+                .Any(member => member != null && member.AttachedTo != party);
+            if (!stillGathering)
+                return false;
+
+            MobileParty? offender = FindActiveParty(group.TargetPartyId);
+            return offender != null &&
+                   offender.Position.DistanceSquared(targetPosition) < 0.25f;
         }
 
         private bool TryGetDelaySupportAssistanceArmy(
@@ -611,6 +831,7 @@ namespace GreyWardenPolicePurity
                     string.Equals(candidate.TargetPartyId, targetPartyId,
                         StringComparison.OrdinalIgnoreCase));
             if (group == null) return false;
+            if (group.DispersedForSpeed) return false;
 
             PoliceTask? task = CrimeState.GetTask(group.LeaderPartyId);
             if (!IsAssistanceGroupCaseStillActive(group, task)) return false;
@@ -664,6 +885,8 @@ namespace GreyWardenPolicePurity
                     candidate.AttachedTo == party) ?? 0;
                 return "armyLeader:members=" + led.MemberPartyIds.Count +
                        ",attached=" + attached + ",blocked=" + led.BlockedHours +
+                       ",assembling=" + (attached < led.MemberPartyIds.Count) +
+                       ",speedDispersed=" + led.DispersedForSpeed +
                        ",supports=" + supportCount +
                        ",attachedSupports=" + attachedSupportCount +
                        ",armyKingdom=" + (army?.Kingdom?.StringId ?? "-") +
@@ -679,6 +902,7 @@ namespace GreyWardenPolicePurity
                     return "armyMember:leader=" + group.LeaderPartyId +
                            ",inArmy=" + (party.Army?.LeaderParty == leader) +
                            ",attached=" + (party.AttachedTo == leader) +
+                           ",speedDispersed=" + group.DispersedForSpeed +
                            ",distance=" + distance + ",target=" + group.TargetPartyId;
                 }
             if (party.Army?.LeaderParty != null &&

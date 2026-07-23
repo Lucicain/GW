@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -11,9 +12,8 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 灰袍大地图职责接入层：有案件时只把原版巡逻候选压到原版可执行阈值，
-    /// 再加入固定为 0.99 的案件候选。除巡逻外的全部原版欲望和分数保持不变；
-    /// 低于 0.99 的普通访问会让位于办案，高于 0.99 的补给、招兵、交易、
-    /// 疗伤、交俘、修船及安全需求继续由原版优先执行。无案件时完全不改竞价。
+    /// 再加入职责候选。普通案件使用 0.99，玩家委托使用独立的最高优先分；
+    /// 除巡逻外的全部原版欲望和分数保持不变。无职责时完全不改竞价。
     /// </summary>
     public sealed class GreyWardenPartyDesireBehavior : CampaignBehaviorBase
     {
@@ -24,6 +24,8 @@ namespace GreyWardenPolicePurity
             public IntentKind Kind;
             public MobileParty? Party;
             public Settlement? Settlement;
+            public float Priority;
+            public bool PreserveAllNativeDesires;
             public double ExpiresAt;
         }
 
@@ -34,6 +36,9 @@ namespace GreyWardenPolicePurity
         // 开始并可在缺粮/重伤时升至 3.7～19.6。固定 0.99 让低分日常访问
         // 让位于案件，同时保持所有较强的原版维护需求优先。
         private const float AssignedDutyScore = 0.99f;
+        // 玩家委托是灰袍任务体系中的最高优先级。该分值只参加原版欲望拍卖，
+        // 不冻结 AI；战斗、逃跑等引擎强制状态仍由原版处理。
+        internal const float PlayerRequestScore = 10f;
         private static readonly Dictionary<string, Intent> Intents =
             new Dictionary<string, Intent>(StringComparer.OrdinalIgnoreCase);
         // 无英雄的一次性纠察/支援队进入 Pursue 阶段后完全关闭欲望生成，
@@ -49,6 +54,12 @@ namespace GreyWardenPolicePurity
         {
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.OnPartyDisbandStartedEvent.AddNonSerializedListener(this, OnPartyDisbandStarted);
+            CampaignEvents.OnPartyDisbandedEvent.AddNonSerializedListener(this, OnPartyDisbanded);
+            CampaignEvents.CharacterBecameFugitiveEvent.AddNonSerializedListener(this, OnCharacterBecameFugitive);
+            CampaignEvents.HeroKilledEvent.AddNonSerializedListener(this, OnHeroKilled);
+            CampaignEvents.OnHeroTeleportationRequestedEvent.AddNonSerializedListener(this, OnHeroTeleportationRequested);
+            CampaignEvents.HeroPrisonerTaken.AddNonSerializedListener(this, OnHeroPrisonerTaken);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -73,19 +84,47 @@ namespace GreyWardenPolicePurity
                 RequestImmediateRethink(party);
         }
 
+        private static void OnPartyDisbandStarted(MobileParty party) =>
+            GwpAiDiagnostics.WritePartyLifecycle(party, "PARTY_DISBAND_STARTED", string.Empty);
+
+        private static void OnPartyDisbanded(MobileParty party, Settlement settlement) =>
+            GwpAiDiagnostics.WritePartyLifecycle(party, "PARTY_DISBANDED",
+                "settlement=" + (settlement?.StringId ?? "-"));
+
+        private static void OnCharacterBecameFugitive(Hero hero, bool showNotification) =>
+            GwpAiDiagnostics.WriteHeroLifecycle(hero, "HERO_BECAME_FUGITIVE",
+                "showNotification=" + showNotification);
+
+        private static void OnHeroKilled(Hero victim, Hero killer,
+            KillCharacterAction.KillCharacterActionDetail detail, bool showNotification) =>
+            GwpAiDiagnostics.WriteHeroLifecycle(victim, "HERO_KILLED",
+                "killer=" + (killer?.StringId ?? "-") + "; detail=" + detail +
+                "; showNotification=" + showNotification);
+
+        private static void OnHeroTeleportationRequested(Hero hero, Settlement targetSettlement,
+            MobileParty targetParty, TeleportHeroAction.TeleportationDetail detail) =>
+            GwpAiDiagnostics.WriteHeroLifecycle(hero, "HERO_TELEPORT_REQUESTED",
+                "targetSettlement=" + (targetSettlement?.StringId ?? "-") +
+                "; targetParty=" + (targetParty?.StringId ?? "-") +
+                "; detail=" + detail);
+
+        private static void OnHeroPrisonerTaken(PartyBase capturer, Hero prisoner) =>
+            GwpAiDiagnostics.WriteHeroLifecycle(prisoner, "HERO_PRISONER_TAKEN",
+                "capturer=" + (capturer?.MobileParty?.StringId ??
+                    capturer?.Settlement?.StringId ?? "-"));
+
         internal static void RequestApproach(MobileParty party, MobileParty target,
             float priority = AssignedDutyScore, double validHours = 8d)
         {
-            _ = priority; // 保留旧调用签名；职责统一按固定案件分参与原版拍卖。
             ReleaseDirectAttackLock(party);
             SetIntent(party, new Intent { Kind = IntentKind.Approach, Party = target,
+                Priority = NormalizePriority(priority),
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
         internal static void RequestPursuit(MobileParty party, MobileParty target,
             float priority = AssignedDutyScore, double validHours = 8d)
         {
-            _ = priority;
             if (IsDisposableEnforcementParty(party))
             {
                 SetDirectAttackIntent(party, target, validHours);
@@ -94,24 +133,25 @@ namespace GreyWardenPolicePurity
 
             ReleaseDirectAttackLock(party);
             SetIntent(party, new Intent { Kind = IntentKind.Pursue, Party = target,
+                Priority = NormalizePriority(priority),
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
         internal static void RequestEscort(MobileParty party, MobileParty target,
             float priority = AssignedDutyScore, double validHours = 8d)
         {
-            _ = priority;
             ReleaseDirectAttackLock(party);
             SetIntent(party, new Intent { Kind = IntentKind.Escort, Party = target,
+                Priority = NormalizePriority(priority),
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
         internal static void RequestVisit(MobileParty party, Settlement target,
             float priority = AssignedDutyScore, double validHours = 8d)
         {
-            _ = priority;
             ReleaseDirectAttackLock(party);
             SetIntent(party, new Intent { Kind = IntentKind.Visit, Settlement = target,
+                Priority = NormalizePriority(priority),
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
@@ -179,6 +219,7 @@ namespace GreyWardenPolicePurity
                 IsSameIntent(current, intent))
             {
                 // 任务拥有者可以每小时续期，但不因此反复打断原版当前欲望。
+                current.Priority = NormalizePriority(intent.Priority);
                 current.ExpiresAt = intent.ExpiresAt;
                 return;
             }
@@ -210,6 +251,7 @@ namespace GreyWardenPolicePurity
             {
                 Kind = IntentKind.Pursue,
                 Party = target,
+                Priority = AssignedDutyScore,
                 ExpiresAt = expiresAt
             };
             DirectAttackLocks.Add(party.StringId);
@@ -307,11 +349,14 @@ namespace GreyWardenPolicePurity
             List<(AIBehaviorData, float)> rawScores = think.AIBehaviorScores.ToList();
             Intent? intent = ResolveIntent(party);
             float originalPatrolCeiling = GetPatrolCeiling(rawScores);
-            int suppressedPatrolCount = intent == null
+            int suppressedPatrolCount = intent == null ||
+                                        intent.PreserveAllNativeDesires
                 ? 0
                 : SuppressAssignedPatrolScores(think, rawScores);
             float patrolCeiling = GetPatrolCeiling(think.AIBehaviorScores);
-            float dutyScore = intent == null ? 0f : AssignedDutyScore;
+            float dutyScore = intent == null
+                ? 0f
+                : NormalizePriority(intent.Priority);
             float minimumPositiveNonPatrolScore = GetMinimumPositiveNonPatrolScore(rawScores);
             int nonPatrolAtOrBelowDutyCount = intent == null ? 0 : rawScores.Count(entry =>
                 entry.Item1.AiBehavior != AiBehavior.PatrolAroundPoint &&
@@ -367,6 +412,23 @@ namespace GreyWardenPolicePurity
 
         private static Intent? ResolveIntent(MobileParty party)
         {
+            if (PoliceEnforcementBehavior.TryGetAssistanceDuty(
+                    party, out MobileParty? assistanceTarget,
+                    out AiBehavior assistanceBehavior) &&
+                assistanceTarget?.IsActive == true)
+            {
+                return new Intent
+                {
+                    Kind = assistanceBehavior == AiBehavior.EscortParty
+                        ? IntentKind.Escort
+                        : IntentKind.Pursue,
+                    Party = assistanceTarget,
+                    Priority = AssignedDutyScore,
+                    PreserveAllNativeDesires = true,
+                    ExpiresAt = double.MaxValue
+                };
+            }
+
             if (Intents.TryGetValue(party.StringId, out Intent? external) &&
                 external.ExpiresAt >= CampaignTime.Now.ToHours && IsValid(external))
                 return external;
@@ -375,7 +437,7 @@ namespace GreyWardenPolicePurity
             if (task == null) return null;
             if (task.IsEscortingPlayer && task.EscortSettlement != null)
                 return new Intent { Kind = IntentKind.Visit, Settlement = task.EscortSettlement,
-                    ExpiresAt = double.MaxValue };
+                    Priority = AssignedDutyScore, ExpiresAt = double.MaxValue };
 
             // 必须通过案件的实时 Offender 解析目标。领主被俘、释放或重建部队后，
             // 保存的旧 PartyId 可能已经失效；只按旧 ID 搜索会让“已有承办人”的
@@ -383,8 +445,14 @@ namespace GreyWardenPolicePurity
             MobileParty? criminal = task.TargetCrime?.Offender;
             return criminal?.IsActive != true ? null : new Intent {
                 Kind = task.WarDeclared ? IntentKind.Pursue : IntentKind.Approach,
-                Party = criminal, ExpiresAt = double.MaxValue };
+                Party = criminal, Priority = AssignedDutyScore,
+                ExpiresAt = double.MaxValue };
         }
+
+        private static float NormalizePriority(float priority) =>
+            priority > 0f && !float.IsNaN(priority) && !float.IsInfinity(priority)
+                ? priority
+                : AssignedDutyScore;
 
         private static float GetPatrolCeiling(
             IEnumerable<(AIBehaviorData, float)> scores)

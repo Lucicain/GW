@@ -432,7 +432,7 @@ namespace GreyWardenPolicePurity
         {
             CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
             CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
-            CharacterObject recruit = CharacterObject.Find(GwpIds.PoliceRecruitId);
+            CharacterObject recruit = CharacterObject.Find(GwpIds.NewRecruitId);
 
             int infantryCount = (int)(DelayPatrolPartySize * 0.6f);
             int archerCount = DelayPatrolPartySize - infantryCount;
@@ -699,6 +699,8 @@ namespace GreyWardenPolicePurity
                 ClearTaskWarTracking(kv.Key, true);
                 CrimeState.EndTask(kv.Key);
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                GwpPlayerRequestDeferral.NotifyDutyCompleted(policeParty,
+                    "criminal_case");
                 CompleteAssistanceTasks(task.PolicePartyId);
             }
 
@@ -783,6 +785,7 @@ namespace GreyWardenPolicePurity
 
         private void ClearTaskWarTracking(string policeTaskId, bool markDelayPatrolReturning)
         {
+            ReleaseShelteredForcedAttack(policeTaskId);
             ClearShelteredTargetTracking(policeTaskId);
             if (!markDelayPatrolReturning || string.IsNullOrEmpty(policeTaskId)) return;
             MarkDelayPatrolsReturningForTask(policeTaskId);

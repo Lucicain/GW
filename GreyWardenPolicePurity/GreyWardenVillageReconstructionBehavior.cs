@@ -352,6 +352,8 @@ namespace GreyWardenPolicePurity
                 if (!IsLootedVillage(village))
                 {
                     PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                    GwpPlayerRequestDeferral.NotifyDutyCompleted(police,
+                        "village_reconstruction");
                     _tasks.Remove(task);
                     GreyWardenPartyDesireBehavior.ClearIntent(police);
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
@@ -414,6 +416,9 @@ namespace GreyWardenPolicePurity
             if (police?.IsActive != true || police.LeaderHero?.IsActive != true ||
                 GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(police) ||
                 IsReconstructionParty(police) || police.Army != null ||
+                GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(police) ||
+                GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(police) ||
+                GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(police) ||
                 GreyWardenIssueResolutionBehavior.IsIssueDutyParty(police) ||
                 GwpCommon.IsPatrolParty(police) ||
                 GwpCommon.IsEnforcementDelayPatrolParty(police))

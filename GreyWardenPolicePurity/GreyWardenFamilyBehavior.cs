@@ -249,6 +249,30 @@ namespace GreyWardenPolicePurity
         internal static bool IsReconstructionHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.Reconstruction;
 
+        internal static bool IsTrainingHero(Hero? hero) =>
+            TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.Training;
+
+        internal static bool IsTrainingParty(MobileParty? party) =>
+            IsTrainingHero(party?.LeaderHero);
+
+        internal static bool IsPlayerRequestsHero(Hero? hero) =>
+            TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.PlayerRequests;
+
+        internal static bool IsPlayerRequestsParty(MobileParty? party) =>
+            IsPlayerRequestsHero(party?.LeaderHero);
+
+        internal static Hero? GetLivingDutyHolder(DutyKind duty)
+        {
+            Clan? clan = PoliceStats.GetPoliceClan();
+            return clan?.Heroes
+                .Where(hero => hero != null && hero.IsAlive && IsAdult(hero) &&
+                               TryGetDuty(hero, out DutyKind assigned) &&
+                               assigned == duty)
+                .OrderByDescending(hero => hero.IsActive)
+                .ThenBy(hero => hero.StringId, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+
         internal static bool IsIssueResolutionHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.IssueResolution;
 
@@ -294,7 +318,7 @@ namespace GreyWardenPolicePurity
                 DutyKind.VillageProtection => GwpText.Get("{=gwp_duty_village}Village Protection Warden"),
                 DutyKind.IssueResolution => GwpText.Get("{=gwp_duty_issues}Petition Warden"),
                 DutyKind.Reconstruction => GwpText.Get("{=gwp_greywardenfamilybehavior_053}Village Reconstruction Warden"),
-                DutyKind.PlayerRequests => GwpText.Get("{=gwp_duty_player}Public Petition Warden"),
+                DutyKind.PlayerRequests => GwpText.Get("{=gwp_duty_player}Noble Affairs Liaison"),
                 _ => GwpText.Get("{=gwp_greywardenfamilybehavior_054}Grey Warden Lawkeeper")
             };
         }
@@ -392,7 +416,7 @@ namespace GreyWardenPolicePurity
         private static bool IsCoreLeader(Hero hero) =>
             CoreLeaderIdSet.Contains(hero.StringId);
 
-        private static bool IsGeneratedPoliceHero(Hero? hero) =>
+        internal static bool IsGeneratedPoliceHero(Hero? hero) =>
             hero != null && IsPoliceClanHero(hero) && !IsCoreLeader(hero);
 
         private static void EnsurePoliceHeroIsFemale(Hero hero)
@@ -571,7 +595,7 @@ namespace GreyWardenPolicePurity
                 DutyKind.VillageProtection => GwpText.Get("{=gwp_bio_hint_village}She rides where peasants have been attacked or fields put to the torch, and has made the protection of village life the measure of her service."),
                 DutyKind.IssueResolution => GwpText.Get("{=gwp_bio_hint_issues}She travels from village headmen to town merchants and even the harder figures of the alleys, hearing unresolved petitions and leaving fewer grievances behind her."),
                 DutyKind.Reconstruction => GwpText.Get("{=gwp_bio_hint_rebuild}She is repeatedly found among blackened roofs and abandoned wells, remaining after the fighting until ruined villages can receive their people once more."),
-                DutyKind.PlayerRequests => GwpText.Get("{=gwp_bio_hint_player}She keeps an uncommon watch for petitions that fall outside the old rolls, especially those carried directly to the order by travellers of consequence."),
+                DutyKind.PlayerRequests => GwpText.Get("{=gwp_bio_hint_player}She receives petitions from nobles, carries them before the people, and coordinates the Grey Wardens' answer when ordinary law offers no practical remedy."),
                 _ => GwpText.Get("{=gwp_bio_hint_law}She follows the case rolls wherever the order has need of another steady hand.")
             };
         }

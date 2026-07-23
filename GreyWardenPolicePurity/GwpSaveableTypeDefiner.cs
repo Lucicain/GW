@@ -55,6 +55,10 @@ namespace GreyWardenPolicePurity
             // localId = 4 → 全局 ID 2_894_636
             // 灰袍收养女童时写入战役日志，供左侧蓝字与百科历史记录使用。
             AddClassDefinition(typeof(GreyWardenAdoptionLogEntry), 4);
+
+            // localId = 5 → 灰袍替玩家发起的封地复议决议。决议本身会进入
+            // Kingdom.UnresolvedDecisions，因此必须由存档系统注册。
+            AddClassDefinition(typeof(GwpSettlementReconsiderationDecision), 5);
         }
     }
 }

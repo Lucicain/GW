@@ -517,6 +517,8 @@ namespace GreyWardenPolicePurity
             if (shouldAdopt && police?.IsActive == true && village?.IsVillage == true)
             {
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
+                GwpPlayerRequestDeferral.NotifyDutyCompleted(police,
+                    "village_relief");
             }
 
             if (adoptedHero != null)
@@ -709,6 +711,9 @@ namespace GreyWardenPolicePurity
 
             if (GwpCommon.IsPatrolParty(police)
                 || GwpCommon.IsEnforcementDelayPatrolParty(police)
+                || GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(police)
+                || GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(police)
+                || GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(police)
                 || IsVillageReliefParty(police))
             {
                 return false;

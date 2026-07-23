@@ -6398,3 +6398,915 @@ irreplaceable backup; the editor workspace does not replace it.
 - 核对 `GreyWardenPolicePurity.csproj` 后确认普通编译不会生成 ZIP，且部署目标已明确排除所有 `.zip`/`.zip.sha256`；这次出现两套包不是编译代码自动产生，而是此前正式发布流程在生成 r6 后没有删除 r5 本地归档。
 - 已删除 `GreyWarden-v1.4.7-r5.zip` 与 `GreyWarden-v1.4.7-r5.zip.sha256`。最终 Modules 父目录只剩 `GreyWarden-v1.4-r6.zip`（`349792649` 字节，SHA-256 `46CDF0F52D3EC562ACD44B823FF4AFF9D75BC171687C64B160600433906617AB`）及匹配的 `GreyWarden-v1.4-r6.zip.sha256`。
 - 根目录 `AGENTS.md` 已新增强制规则：正式新版包验证后必须删除所有旧的本地 GreyWarden ZIP/校验文件，始终只保留最新版一套；普通开发构建不得创建发行 ZIP。GitHub 历史 Release 与 README 最近两版日志不受这条“本地只留一套”规则影响。
+
+
+## 2026-07-23 敌方军团解散后协力军团无法追上单队的诊断
+
+- 用户实测发现：案件目标原先依靠敌方军团总战力触发灰袍协力军团；敌方军团随后
+  解散，目标缩成高速单队，但后续领主协办与无领主周期支援仍持续并入灰袍军团，
+  使军团速度继续下降，无法追上目标。初次取证先只诊断现行生命周期；随后按用户
+  确认的保底规则完成玩法修复。
+- 最新开发日志
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （取证时最后写入 `2026-07-23 00:20:00 +10:00`）与现场完全一致：主办
+  `gw_leader_0_party_1` 追捕 `CharacterObject_1543_party_1`；目标只有 `37` 名健康
+  成员，`armyLeader=-`、`attachedTo=-`、基础速度 `4.69`。灰袍一方仍是八队协力军团，
+  三名领主协办和三支无领主支援已经附着，另有一支新支援在赶来；军团估算战力
+  `1336.05`，军团长当前基础速度只有 `1.88`，双方距离约 `8.98`。这证明现行协力状态
+  没有把“案件目标已经脱离军团”当作解散条件。
+- 当前军团不会靠无战争或凝聚力自然结束。`GwpAssistanceArmyNoWarDisbandPatch` 会对仍
+  绑定案件的合法无王国协力军团跳过原版 `ApplyByNoActiveWar`；
+  `GwpAssistanceArmyCohesionPatch` 又把其每日凝聚力变化固定为零。原版不活动计数只对
+  `Hold`、特定 `GoToSettlement` 和 `PatrolAroundPoint` 等状态增长，现场军团长长期为
+  `GoAroundParty`，因此这条追逐通常也不会因不活动自动解散。
+- 原版仍保留断粮解散：`Army.CheckArmyDispersion` 在军团长与已附着成员中超过半数
+  `IsStarving` 时调用 `ApplyByFoodProblem`。现场粮食尚未满足该门槛：军团长约
+  `32.38` 日，已观察协办约 `9.55～25.75` 日，无领主支援约 `11～19` 日；每两日还会
+  继续生成携带二十日口粮的新支援。因此断粮既很慢，也可能被不断加入的新队推迟。
+- 更关键的是，断粮只会让原版 `Army` 对象暂时解散，不会结束模组保存的
+  `LordAssistanceGroup`。只要主办人的同一案件仍存在，下一次
+  `UpdateLordAssistance -> MaintainAssistanceArmy` 会新建无王国 `Army`，重新把已登记
+  领主成员加入；`UpdateDelayPatrols` 也会让仍有效的周期支援再次并入。因此“等粮食
+  吃光”不是此僵局的可靠终止条件，而可能表现为解散后再次组建。
+- 已新增协力军团速度保底。每次小时协力维护在案件目标有效时读取目标与军团长的
+  `LastCalculatedBaseSpeed`；只要目标速度严格高于当前协力军团速度，立即以原版
+  `DisbandArmyAction.ApplyByObjectiveFinished` 解散军团，并把协力组持久标记为
+  `DispersedForSpeed`。比较要求双方速度已经得到有效正值，避免读档初始尚未计算速度时
+  误触发；现有现场的 `4.69 > 1.88` 会在下一次小时维护直接命中。
+- 速度解散不等于撤销协力任务。主办人继续使用原案件追捕；所有已登记协力领主改为
+  各自 `Pursue` 同一目标，并在后续小时续期。已经生成的无领主支援会先脱离 Army，
+  然后恢复既有无欲望直攻目标。协力组仍占用这些领主、保留攻击授权、案件总卷条目和
+  结案拨款归属，直到原主办案件真正结束；不会让分散领主中途领取其他案件。
+- `DispersedForSpeed` 已加入存档字段 `gwp_enf_assist_speed_dispersed`。旧档缺少该字段时
+  默认仍为未分散，并会对现存军团执行第一次速度比较；新档读回分散状态后不会重建
+  Army。`TryGetDelaySupportAssistanceArmy` 同样拒绝为已速度分散的组返回军团，因此以后
+  每两日生成的新支援会直接追捕目标，不会重新加入旧军团。诊断摘要新增
+  `speedDispersed`，触发时写入 `ASSISTANCE_ARMY_SPEED_DISPERSED` 及双方速度、领主成员数、
+  支援数。
+- 最终 `Release --no-restore` 构建通过，`0` 错误；仅保留离线 NuGet 漏洞源警告。自动
+  部署后核对 `_Module` 的 `25` 个正常客户端可部署文件，实机缺失与哈希不一致均为
+  `0`；`18` 个 XML 全部解析成功。客户端与编辑器 DLL 均为 `614400` 字节，SHA-256
+  均为 `A962904F72CDFF0E57DD64D2396D6C1BECD68DC3E9A2B6F084AEE5DDA0F70020`；仓库与实机
+  中文 README SHA-256 均为
+  `C7D659A8E49382D202424868C96AAD1ECB3B613C9FE096BAE1833A144B925869`。
+- ILSpy 对实机 DLL 复核确认：存在目标/军团 `LastCalculatedBaseSpeed` 严格比较、
+  `DisbandArmyAction.ApplyByObjectiveFinished`、领主逐队 `RequestPursuit`、支援队脱离后
+  `RequestPursuit`、速度分散存档字段，以及 `TryGetDelaySupportAssistanceArmy` 对
+  `DispersedForSpeed` 的拒绝分支。本轮为普通开发构建，没有创建发行 ZIP。
+
+## 2026-07-23 战后灰袍领主队变成无领主壳队的首轮取证
+
+- 用户从同一存档反复复现：一场战斗结束后，地图上一支灰袍领主队失去首领并继续以无领主部队存在。最新开发日志 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`（会话 `2026-07-23T00:39:40+10:00`）已锁定新发生的队伍为 `CharacterObject_2877_party_90754`。该队在 `campaignHour=627727.12` 仍名为“雨谣的部队”，`leader=雨谣`、`men=148`；到 `627727.77` 同一个 party id 已变成“灰袍守卫的部队”，`leader=-`、`men=116`，并因承办人失效写出 `ISSUE_DUTY_RELEASED | reason=assignee_invalid`；`627728.01` 后继续以 `leaderless_grey_warden` 参加原版 AI 拍卖。
+- 本轮唯一记录到的地图事件在 `627724.20` 结束，参战方只有目标 `CharacterObject_1543_party_1` 与四支无领主纠察支援队；雨谣队不在 `involved` 列表，前后状态也都是 `mapEvent=-`。雨谣在该战后仍正常存在约三小时。因此已排除“雨谣本人在这场可见战斗里战败/被俘后立即丢队”以及协力军团速度解散代码直接删除领主；可见战斗只是同一时段的前置事件，不是监控已证明的直接触发点。
+- 存档中还同时存在旧的无领主壳队 `CharacterObject_2877_party_1`，而同一个动态英雄前缀又拥有新队 `CharacterObject_2877_party_90754`。结合 `PoliceResourceManager.SpawnIdleHeroes` 会把非 Active、无有效队伍的合格灰袍英雄强制改回 Active 并重新 `SpawnLordParty`，这强烈说明该英雄以前已经历过至少一次“原队留壳、英雄被恢复并另建新队”，而不是一次性的粮尽解散。
+- 现有证据更符合原版英雄生命周期/延迟传送/解散链先把英雄从队伍解绑，随后灰袍恢复器又为英雄另建队伍的循环。原版 `TeleportationCampaignBehavior`、`DisbandPartyCampaignBehavior` 都存在“先失去队长、壳队继续等待换将或解散”的合法中间态；灰袍恢复器目前既不识别原版待传送记录，也不清理失去领主的旧 LordParty 壳。另一方面，`MakeHeroFugitiveAction` 在英雄仍是领队时会直接 `DestroyPartyAction` 并清空全队，与现场保留 `116` 人的同 id 活动壳队不完全相符，所以目前不能把免俘回调直接定为这次解绑动作。
+- 旧监控只在小时/AI 拍卖采样中看到了“解绑前”和“解绑后”，没有记录 Hero 状态改变与原版队伍解散事件，因而尚不能在“死亡、逃亡、延迟传送换将、开始解散”中确定唯一入口。已扩展仅开发版启用的诊断：每条队伍状态新增 `isDisbanding`，并记录领主 id、HeroState、年龄、存活、是否非战斗员/指挥官、Traveling/Fugitive、当前所属队与俘虏队；同时新增 `HERO_BECAME_FUGITIVE`、`HERO_KILLED`、`HERO_TELEPORT_REQUESTED`、`HERO_PRISONER_TAKEN`、`PARTY_DISBAND_STARTED`、`PARTY_DISBANDED` 生命周期行，并保存英雄最后一次观测到的 party id。下一次读取同一存档复现时可直接确定是哪一个原版事件先发生。
+- 首次编译暴露三处诊断格式使用了 `PartyBase.StringId`，而 1.4.7 的 `PartyBase` 没有该成员；已改为从 `MobileParty.StringId` 或 `Settlement.StringId` 取标识。随后 `Release --no-restore` 构建通过，`0` 错误、`43` 条既有可空性/离线 NuGet 警告。
+- 诊断增强已部署到正常客户端与编辑器测试目录；两处 DLL 均为 `619008` 字节，SHA-256 均为 `87D4135993ADA61A83784A808CC4EF78A43F8328B5080DD6B43584B83D9ACAAD`。仓库 `_Module` 的 `25` 个正常客户端可部署文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML 全部解析通过，仓库与实机中文 README 哈希一致。此次只增强本机诊断、未改变玩家可见玩法，因此没有改玩家发行日志，也没有创建发行 ZIP。
+
+## 2026-07-23 收养后继者被原版换将并留下无领主壳队的根因与修复
+
+- 用户再次读取同一存档并稳定复现。增强后的日志在
+  `campaignHour=627727.38` 捕获了完整先后顺序：`雨谣`（`CharacterObject_2877`）先收到
+  `HERO_BECAME_FUGITIVE`，当时 `currentParty=-`、`lastObservedParty=CharacterObject_2877_party_90754`、
+  `state=Fugitive`、`noncombatant=True`、`commander=True`；紧接着 `约珥`（`gw_leader_1`）收到
+  `HERO_TELEPORT_REQUESTED`，目标正是该队，细节为 `DelayedTeleportToPartyAsPartyLeader`。此前该队
+  `leader=雨谣`、`men=148`、`isDisbanding=False`；之后成为 `leader=-`、`men=116`、
+  `isDisbanding=False`。全程没有 `PARTY_DISBAND_STARTED`，所以这不是粮尽、战败或模组解散队伍。
+- 反编译 1.4.7 原版
+  `.codex_tmp/campaign-decompiled/TaleWorlds.CampaignSystem.CampaignBehaviors/TeleportationCampaignBehavior.cs`
+  的 `DailyTickParty` 与日志逐项吻合：活动 LordParty 在 `Army == null`、`MapEvent == null` 且领主被
+  `DefaultHeroCreationModel` 判为非战斗员时，原版会寻找同家族无队伍的战斗指挥官，依次调用
+  `RemovePartyLeader`、`MakeHeroFugitiveAction.Apply`，再以
+  `TeleportHeroAction.ApplyDelayedTeleportToPartyAsPartyLeader` 安排换将。雨谣所有用于判定的战斗技能
+  都低于原版阈值 `100`，成年后虽然已经是灰袍指挥官，仍被判成 `IsNoncombatant=True`；约珥正好是
+  无队伍的可用替换者。
+- 因此用户对“无领主支援队”的怀疑只命中了发生时机，不是直接原因。原版换将条件要求雨谣队
+  `Army == null`，所以支援战斗结束、协力军团解散后才稳定触发，看起来像支援队导致；实际删除领主的
+  是原版每日传送/换将行为。反复读取同一存档会越过相同的 DailyTickParty，因而每次都能复现。
+- 首版修复曾暂时保留 `SpawnIdleHeroes` 强制建队，并在 `ApplyCommanderLoadout` 中把非战斗员的单手
+  技能补到 `100`。该版本构建与部署成功，但用户随后明确最终设计不是“用技能补丁配合模组强制带兵”，
+  而是“所有成年灰袍都是战斗员，部队由原版自然组建”。因此这版仅作为已验证的中间回滚点保留记录，
+  不再是当前实现。
+- 原版这里有两个彼此独立的限制，不能混为一个：`IsNoncombatant` 不是家族名额，而是
+  `HeroCreationModel.IsHeroCombatant` 按六类武器技能是否至少一项达到 `100` 动态计算；家族能有几支
+  LordParty 则由 `ClanTierModel.GetPartyLimitForTier` 决定，普通非小家族按阶级通常只有 `1/2/3` 支，
+  另受领袖 perk 修正。只把英雄改成战斗员不会自动突破部队数量上限。
+- 当前最终实现新增 `PoliceHeroCreationModel`：对在世、未禁用且达到成年年龄的灰袍家族成员直接返回
+  `IsHeroCombatant=true`，不再依赖武器技能阈值，也不改其技能；其他家族完整沿用原版模型。读档、会话
+  启动、每日结算和成年事件仍执行 invariant 检查；正常情况下模型已经保证通过，只有别的模组在更晚
+  阶段覆盖 HeroCreationModel、导致成年灰袍仍为非战斗员时，才用单手 `100` 的兜底并写
+  `ADULT_COMBATANT_INVARIANT_REPAIRED`。
+- 家族部队上限的突破其实已经由同一历史版本中的 `PoliceClanTierModel` 实现：灰袍家族上限至少等于
+  当前所有在世成年灰袍 Lord 的数量。因此无需再用另一套强制建队代码绕过上限。已删除
+  `SpawnIdleHeroes`、强制改回 Active、清除失效 Party 引用、移除总督、瞬移到城镇以及直接
+  `MobilePartyHelper.SpawnLordParty` 的整条恢复链；空闲成年灰袍是否以及何时建立领主队，现在完全交给
+  原版 `HeroSpawnCampaignBehavior` 在扩展后的上限内按其状态、经济和每日结算自然处理。
+- 过去直接 SpawnLordParty 时会顺便发放舰船。改为原版自然建队后，舰船保障移到灰袍领主队首次小时
+  维护，继续调用幂等的 `GivePoliceShips`，不会因为删除强制建队入口而让新领主队失去航海能力。
+- 读档与会话启动时同时清理灰袍家族中仍活动、`IsLordParty=True` 且 `LeaderHero=null` 的历史壳队，
+  并写 `LEADERLESS_POLICE_LORD_PARTY_CLEANUP` 诊断。过滤条件不匹配设计上就没有领主的支援队/纠察队，
+  因此不会误删正常无领主支援。已存在的 `CharacterObject_2877_party_1` 一类旧壳会被销毁，当前有效的
+  雨谣领主队则保留。
+- 中英文玩家 README 的当前 r6 条目已同步记录成年灰袍战斗员、扩展家族部队容量、原版自然建队、
+  无领主壳队修复，以及同轮协力军团速度保底。最终 `Release --no-restore` 构建为 `0` 错误、`43` 条
+  既有可空性/离线 NuGet 警告。自动部署后
+  `_Module` 的 `25` 个正常客户端可部署文件与实机缺失 `0`、哈希不一致 `0`；`18` 个 XML 全部解析
+  成功，中英文 README 与实机哈希一致。客户端与编辑器 DLL 均为 `619008` 字节，SHA-256 均为
+  `6D42C28628DCAD0331DDCAB4538764B7A6791A7B4A90532EF9D9A1FC0D9D88AD` 的中间版随后已被最终设计替换。
+  最终客户端与编辑器 DLL 均为 `617472` 字节，SHA-256 均为
+  `175475EF4BF1353B57824DF805F82CF8C8AFE1842D319BF62DB5C4A2CCB5FC34`。本轮为普通开发部署，
+  没有创建或改写正式玩家 ZIP。
+- ILSpy 对最终实机客户端 DLL 的复核输出保存在
+  `.codex_tmp/adult-combatant-native-parties-20260723/`。`PoliceHeroCreationModel` 明确对成年灰袍返回 true，
+  `PoliceClanTierModel` 明确按成年灰袍 Lord 数量提高上限；`PoliceResourceManager` 包含读档/每日 invariant、
+  壳队清理和小时舰船保障，但 `SpawnIdleHeroes` 与 `SpawnLordParty` 命中均为 `0`。这确认部署产物已经是
+  “战斗员模型 + 扩展上限 + 原版自然建队”，不是只改了未部署源码或仍暗中强制带兵。
+
+## 2026-07-23 协力军团短暂组建后按速度解散，以及退出游戏原生崩溃取证
+
+- 用户看到梵蒂追捕古兰受阻并发出协力任务，但地图上似乎没有拉起军团。最新开发诊断已经证明
+  不是“直接跳过组军”：`2026-07-23 12:15:47 +10:00`，梵蒂队
+  `gw_leader_0_party_1` 先写出 `ASSISTANCE_ARMY_MEMBER_ADDED`，暮光队
+  `gw_leader_5_party_1` 随即写出 `ASSISTANCE_ARMY_JOINED`；两条记录中的
+  `armyMemberCount=2`，即军团长加一名协办领主，顺序符合“先组军团”。
+- 下一次小时维护发生在约一秒后的 `12:15:48`：目标古兰队速度为 `3.44`，协力军团当前速度为
+  `3.38`，因此命中已实现的严格比较并写出 `ASSISTANCE_ARMY_SPEED_DISPERSED`。差值只有 `0.06`，
+  而组建到解散只跨一个游戏小时、现实约一秒，所以地图视觉上很容易表现成只看见协力任务、没看见
+  军团。其他现场样本也重复出现“成员加入后下一小时按速度解散”，说明现行顺序稳定执行，并非此次
+  没有建立 `Army` 对象。本轮没有修改速度门槛或增加宽限，因为当前结果正符合用户已确认的
+  “先拉军团，目标更快才分开追捕”规则。
+- 同次退出游戏的 `rgl_log_47044.txt` 显示存档已经成功完成，随后正常进入最终清理：
+  `Deleting Game... OK!`、`Pre Finalizing Managed Interface... OK!`，并明确写出
+  `There are no living managed objects` 与 `Managed Interface deleted`。日志中没有托管异常、
+  GreyWarden 异常或模组加载错误。
+- Windows Application Error 事件 `1000` 在 `2026-07-23 12:18:59 +10:00` 记录：崩溃进程为
+  `TaleWorlds.MountAndBlade.Launcher.exe`，故障模块为原版 `TaleWorlds.Native.dll`，异常码
+  `0xc0000005`，偏移 `0x74b1f0`，报告 ID
+  `81dafa58-6c8a-476e-8c0e-f5e94369cc97`。本机 WER 归档中共有 `37` 份 Bannerlord 崩溃报告，
+  其中 `9` 份同为 `TaleWorlds.Native.dll / 0xc0000005 / 0x74b1f0`，且同一签名至少在
+  `2026-07-20` 与 `2026-07-22` 的旧开发构建中已经反复出现。因此它不是本轮协力或成年战斗员代码
+  新引入的托管异常，而是托管层已经完全销毁后发生的原生退出清理崩溃。
+- 社区与 TaleWorlds 技术支持中确实能找到其他玩家的 `TaleWorlds.Native.dll`、`0xc0000005` 以及
+  退出/离开场景时崩溃报告；TaleWorlds 自己也曾在 v1.2.8 正式补丁说明中列出“修复关闭游戏时发生的
+  崩溃”，证明退出清理崩溃这一故障类别并非模组圈臆测。官方通用排查建议包括校验游戏文件、绕过启动器做对照测试、禁用 Steam
+  Overlay，并在仍可复现时提交 Crash Uploader ID。不过公开报告没有匹配到本机当前版本的精确
+  `0x74b1f0` 退出偏移，且本次进程同时加载了 Steam/NVIDIA/Nahimic 等原生叠加层，所以现有证据只能
+  定性为“原版原生退出路径或其与叠加层的交互”，不能仅凭故障模块断言纯净原版必现。最小鉴别测试是
+  保留同一存档，先只关闭 Steam 与 NVIDIA 游戏叠加层退出一次；若仍以同偏移崩溃，再用无模组原版
+  模块序列退出一次，并保存 Crash Uploader ID。
+- 本轮只完成现场诊断与维护记录，没有改变玩家可见行为、没有重新编译或部署 DLL，也没有创建发行 ZIP。
+
+## 2026-07-23 指挥官盾牌资格、练兵换防任务与实体调兵
+
+- 用户明确了三项联动设计。第一，玩家首次接受招募和以后重新加入时都应额外获得新制作的指挥官盾牌，
+  而悬赏任务必须实际使用该盾才能触发。第二，练兵职务领主仍像普通灰袍领主一样承办犯人追捕、原版
+  请求、村庄重建等全部既有工作，同时持续把自己部队训练到满级；满级且空闲后新增“练兵任务”，与
+  一名低练度灰袍领主前往双方之间的定居点，驻留六小时后等量互换精锐与低级兵。第三，玩家向灰袍
+  领主调兵不再凭空生成，只能取得当前交谈领主花名册中真实存在且数量足够的兵。
+- `GwpIds.CommanderSetItemIds` 已加入 `wlarge_shield_black`。招募接受与重新加入原本就统一调用
+  `GiveCommanderEquipment`，因此现在每次都会连同护甲和马具发放一面黑曜指挥官盾；同一集合也由
+  `IsWearingCommanderSet` 遍历玩家 `BattleEquipment`，所以悬赏的小时触发、通知和接受入口现在都要求
+  该盾实际装备在战斗栏位中，仅放在行李里不会取得任务资格。
+- 新增 `GreyWardenTrainingBehavior` 并注册为存档行为。所有持有 `DutyKind.Training` 的成年灰袍领主仍
+  进入普通案件的两轮调度，也仍可作为原版请求与重建的跨职务协办；训练职责与普通任务并行。首版曾
+  每六小时由模组直接替换约 `10%` 的花名册并自行选择兵种分支；用户随后明确要求“模组只给经验，
+  升级完全交给原版”，因此该直接升级路径已经删除，当前实现见下一节。
+- 练兵领主全队灰袍正规兵都满级且当前没有案件、协力、军团、地图战斗、村庄救济、重建或请愿任务时，
+  才会创建换防任务。目标必须是另一支同样空闲、拥有可升级灰袍士兵的领主队；从符合条件者中选择离
+  练兵领主最近的一支。会合地点从未被围攻、与灰袍不交战的城市或城堡中选择离双方位置中点最近者，
+  两队直接以原版访问欲望前往，不建立 `Army`。
+- 练兵任务期间两队都从普通案件、协力、重建、请愿和收养救济候选中暂时保留，避免另一个调度器覆盖
+  会合。只有两队同时处于指定定居点才开始累计六小时；任一方离开会把连续驻留计时清零。时间满足后，
+  练兵领主按最高阶优先交出满级兵，目标领主按最低阶优先交出可升级兵，交换量为双方可供数量的较小值，
+  严格一换一并保留每种兵的伤员数量。练兵领主带回低级兵后自动开始下一轮训练，接受方则真实获得
+  精锐，双方总人数不会由任务增殖。
+- 练兵任务以训练领主、目标领主、会合定居点、创建时刻和连续驻留起点保存到新存档键；读档会按英雄
+  id 重新解析当前领主队并清理重复或失效记录。案件总卷已经纳入该任务类型，显示会合双方、目的地、
+  行进或驻留阶段和剩余时间。开发诊断新增 `TRAINING_TROOP_XP_GRANTED`、
+  `TRAINING_TASK_ASSIGNED`、`TRAINING_STAY_STARTED/RESET`、`TRAINING_TASK_COMPLETED/CANCELLED`，
+  便于实机核对整条循环。
+- `GreyWardenTroopRequestBehavior` 现在在显示具体兵种选项、选择报价、打开 barter 和最终成交四个阶段
+  都核对最初交谈领主的实际队伍及该兵种数量。数量不足的固定档位不会显示；成交后从源队花名册扣除
+  同样数量，再加入玩家主队，健康兵优先转移、确需包含伤员时同步转移对应伤员数。诊断写出
+  `PLAYER_TROOP_TRANSFERRED`。相关中英文对话已经明确说明调兵来源是该领主自己的现役部队。
+- 对照 `origin/main` 与标签 `v1.4-r6` 后确认正式 r6 已固定在提交 `efd5c03`，日期为
+  `2026-07-22`；此前把 7 月 23 日的新功能直接并入 r6 并继续保留 r5 是错误的版本归档。中英文玩家
+  README 现已改为单一 `v1.4-r7（开发中）` 条目，并逐字保留 Git 上的正式 r6 条目、移除 r5，只保留
+  当前开发版与上一正式版两条。`SubModule.xml` 与程序集内部版本同步改为 `1.4.7`，最后一段表示模组
+  `r7` 修订，不是 Bannerlord 1.4.7 硬依赖。
+- 首版直接升级实现的 `Release --no-restore` 构建通过，`0` 错误、`43` 条既有可空性/离线 NuGet
+  漏洞源警告。该中间版客户端与编辑器测试 DLL 均为 `638976` 字节，SHA-256 均为
+  `FB31669B5C21757C0DC8C39374699D99ACB154BC1F50BC8B414164E1FE6A3F80`。ILSpy 对实机 DLL 的
+  复核输出保存在 `.codex_tmp/training-real-transfer-20260723/`，确认指挥官集合含
+  `wlarge_shield_black`、悬赏各入口仍统一调用装备检查、练兵分级/会合/等量交换和实体调兵扣减均进入
+  部署产物。仓库 `_Module` 的 `25` 个正常客户端可部署文件与实机缺失 `0`、哈希不一致 `0`，`18` 个
+  XML 全部解析成功；仓库与实机中文 README SHA-256 均为
+  `D072C37BAA3EDA5159386FEACC09787EE42CE7821681700772F8B76A2EFF2535`，英文 README 均为
+  `27113004740B6255DF258733876FF7AA315EA9E53AA14C482F573550D57F50E6`。该中间版随后已被下一节的
+  “只给经验、原版升级”设计替换；全程没有创建或改写正式玩家 ZIP。
+
+## 2026-07-23 练兵改为原版经验升级，并重构三终端灰袍兵种树
+
+- 用户进一步明确：练兵领主不应由模组代码直接把士兵替换成高阶兵，而应定期给予大量士兵经验，由
+  Bannerlord 原版自行决定何时升级、能否支付升级费用以及选择哪一条兵种分支。同时，现有
+  `轻步兵 -> 重步兵 -> 骑士` 会让强力重步兵最终全部继续转骑兵；新兵种树必须让重步兵、弓箭手和
+  骑士都成为并列终点，并在现有轻步兵下方再增加一层装备简陋的新兵。该单位最初曾按参考模板暂称
+  “贵族见习兵”，用户随后明确她们根本不是贵族，因此玩家文本、代码常量和内部对象 id 都已彻底改为
+  普通“新兵”，不能再恢复贵族称呼。
+- 已反编译本机 1.4.7 原版 `MobilePartyTrainingBehavior` 与 `PartyUpgraderCampaignBehavior`。原版训练
+  使用 `TroopRoster.AddXpToTroop` 累积整组经验；原版升级器在每日 tick 或战斗结束时读取经验、伤员、
+  升级金币、工资上限、坐骑/物品要求和领主 `PreferredUpgradeFormation`，再通过
+  `GetUpgradeChanceForTroopUpgrade` 选择分支并扣除经验。因此当前练兵代码只在每六小时为每名仍可
+  晋升的灰袍士兵增加 `750` 经验并写 `TRAINING_TROOP_XP_GRANTED`，不再调用花名册增减来完成升级，
+  也不存在 `ChooseUpgradeTarget`；升级本身完全由上述原版每日升级器执行。
+- 新增 `gwnewrecruit`（灰袍新兵）作为唯一 `is_basic_troop` 底层单位，仅参考原版
+  `SandBoxCore/ModuleData/spnpccharacters.xml` 中 `imperial_vigla_recruit` 的低阶装备结构与三套
+  装备模板。三套模板分别使用帝国软甲、帝国衬甲和皮外衣，搭配原版低阶长矛、短剑、布帽、皮靴与
+  手套；唯一固定的灰袍专属部件是弓箭手的 `warchshoulder` 鹰徽肩饰，三套模板人人佩戴，用低数值
+  小型肩饰表达灰袍身份而不是提前穿整套灰袍甲。用户随后指出新兵不应比轻步兵更早持盾，因此三套
+  新兵模板现已全部移除盾牌；轻步兵改为两套模板，一套无盾、一套使用原版轻盾，重步兵则继续全员
+  使用灰袍大盾。所有灰袍仍能踢击，但只有实际装备盾牌的轻步兵和重步兵能够使用盾击。
+- 当前升级树为 `gwnewrecruit -> gwrecruit -> gwheavyinfantry / gwarcher / gwknight`。
+  `gwrecruit` 调整为真正的中阶轻步兵并拥有三个直接升级目标；已删除重步兵到骑士的后续升级目标，
+  重步兵、弓箭手、骑士的 `UpgradeTargets` 均为空，三类都是并列终点。对应的灰袍踢击/盾击阶级也
+  调整为：新兵低阶、轻步兵中阶、三类终端精锐同属最高阶，不再让骑兵单独享有更高终端判定。
+- `gwMBP_template` 在保持原总人数范围不变的前提下，把原有轻步兵份额均分为新兵与轻步兵；
+  灰袍净化非法兵种、纠察支援缺省兵和玩家低声望调兵也都改用新的底层新兵。旧档中已经存在的
+  `gwrecruit` 不会被删除，只会按新树由原版继续分流到三种终端，因此不需要存档迁移。
+- 玩家 README 的 `v1.4-r7（开发中）` 条目已同步改写为“定期授予经验、原版决定升级”，并加入新底层
+  新兵与三条并列终端；正式 `v1.4-r6` 中英文内容仍与 Git 标签逐字一致。本轮仍是普通开发工作，
+  没有创建、改写或清理正式玩家 ZIP。
+- 用户随后纠正各阶装备：新兵不应携带原版低阶长矛或帝国短剑，三套模板现均只装备模组单手剑
+  `gwonehandedsword`，继续保持无盾。轻步兵仍是两套：无盾套完整保留原轻步兵的 `winfarmor`、
+  `winfgloves`、`winflegs` 与 `winfhelmet`；持盾套不再使用原版轻盾或轻/重步兵衣甲，而是装备
+  重步兵和骑士共用的银色模组盾 `wlarge_shield`，并完整采用弓箭手的 `warcharmor`、
+  `warchgloves`、`warchlegs`、`warchhelmet` 与 `warchshoulder`。两套轻步兵都只使用
+  `gwonehandedsword`，没有把重步兵护甲误配给持盾轻步兵。
+- 最终 `Release -t:Rebuild --no-restore` 为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告；`18`
+  个 XML 全部解析成功。结构复核确认只有 `gwnewrecruit` 是底层基础兵且含三套装备模板，三套都
+  固定佩戴 `warchshoulder`；`gwrecruit` 只有重步、弓手、骑士三个目标，而三个目标自身升级目标均为
+  空。源码与最终反编译产物中 `ChooseUpgradeTarget`、`TRAINING_TROOPS_UPGRADED` 命中均为 `0`，
+  `GreyWardenTrainingBehavior` 只以 `AddXpToTroop` 发放训练经验；ILSpy 复核输出保存在
+  `.codex_tmp/training-native-upgrades-r7-20260723-b/`，程序集版本为 `1.4.7.0`。
+- 自动部署后 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`。客户端与
+  编辑器 DLL 均为 `637952` 字节，SHA-256 均为
+  `7A55610CC649F63D0960E43D64BBD2B86E92BFDF805DE814DB0F780792D8487F`；仓库与实机中文 README
+  SHA-256 均为 `EFA9F3C1E01FF49BDF78D621323C6757CB347AEA3383385E53D52FEFD8AA4FA6`，英文均为
+  `6F9BE3736EA04F682E929BE285E7B2CE382A7185F9731133773F08774E868C7B`。本地正式包仍只有未改动的
+  `GreyWarden-v1.4-r6.zip` 与匹配校验文件，没有为开发中的 r7 生成 ZIP。
+- 最终部署后曾进行一次自动启动到初始界面的加载检查，日志为
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_30984.txt`：`Module Initialize end` 与
+  `GauntletInitialScreen::HandleActivate` 各出现一次，GreyWarden 加载失败、Loader Exceptions 与
+  dependency conflict 均为 `0`；该检查没有进入存档或推进大地图。用户随后明确“验证只能由用户进行”，
+  因此这次记录只能作为既已发生的加载事实，不能当作本功能的玩法验收；从此不再由开发代理启动游戏、
+  载入存档或宣称游戏内验证，练兵经验、原版分支选择和新兵种外观均留给用户亲自测试。
+- 上述最终装备纠正完成后再次执行 `Release -t:Rebuild --no-restore`，结果为 `0` 错误、`43` 条既有
+  可空性/离线 NuGet 警告。静态解析的三套 `gwnewrecruit` 均只有 `gwonehandedsword`，长矛、帝国短剑
+  与盾牌命中均为 `0`；`gwrecruit` 恰有两套装备，其中无盾套仍为完整轻步兵甲，持盾套恰有一面
+  `wlarge_shield` 并完整使用五件弓箭手穿戴部件。`18` 个 XML 全部解析成功，仓库 `_Module` 的
+  `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`。客户端与编辑器 DLL 仍为 `637952`
+  字节，SHA-256 均为 `7A55610CC649F63D0960E43D64BBD2B86E92BFDF805DE814DB0F780792D8487F`；
+  `spnpccharacters.xml` SHA-256 为
+  `55521528ECE5D53A45A928792F1DE245C3F99946D1C4FADD01AC06AA90F5E388`；仓库与实机中文 README
+  SHA-256 均为 `A294D8F542ED99ABE4EAC69659F8A3DAC97F7684B6A177529920C24FD02315C8`，英文均为
+  `C9E8899D2C95348604E36FE90EFE0E49CDB4F1BC0A910505936D196BFE02CF3D`。本轮没有启动游戏，也没有
+  创建或改写正式玩家 ZIP；实际外观与战场行为仍由用户验证。
+- 用户实测发现原版升级器明显偏爱骑士分支：三类精锐虽然都是轻步兵的直接终点，但骑士
+  `gwknight` 为 `level=31`，重步兵与弓箭手均为 `level=26`，使骑士在原版分支评价中具有额外优势。
+  现已只把骑士等级降为 `26`，令 `gwheavyinfantry`、`gwarcher`、`gwknight` 三个终端完全同级；
+  武器技能、装备和升级结构均未改变。`Release -t:Rebuild --no-restore` 结果为 `0` 错误、`43` 条
+  既有警告；静态复核确认三个终端均为 `level=26` 且升级目标均为空，`18` 个 XML 全部解析成功。
+  自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；
+  `spnpccharacters.xml` SHA-256 为
+  `F5545A630F198448C0831A2341B64486F225570FDFB587FCA2B414C23EDED106`，仓库与实机中文 README
+  SHA-256 均为 `1B70EF3897908AE8156117A20BADA9AD22CB1534AE07AE2185563AAA868B945D`，英文均为
+  `4F044C935C1391FAB05D5DF815F0FF9F83232D2166A154B9B79E219CADBEB0E4`。本轮没有启动游戏，也没有
+  创建或改写正式玩家 ZIP。
+
+## 2026-07-23 玩家封地申诉与练兵官调兵订单
+
+- 用户最终确认的玩家任务流程不采用“向接单领主当场付款”。玩家可以先向任意正常灰袍领主免费
+  登记：封地申诉转给“贵族事务协调官”，调兵订单转给练兵官。对应专员先暂停普通案件、协力、
+  重建、地方请求和自主练兵换防，以玩家任务专用的最高地图欲望分数前往玩家；只有专员与玩家实际
+  见面后才收款。谈话延期、取消、付款或交付后会立即清除追随命令并让原版 AI 重算，避免反复拦截。
+- 新增 `GreyWardenPlayerRequestBehavior`，保存最近一个月内的城镇/城堡易主记录、玩家攻城参与标记、
+  首次封地决议结果、自动触发抽签和当前申诉阶段。只有玩家仍是灰袍成员、仍在同一王国、确实参加
+  了攻城、首次决议已结束且封地未授予玩家时才可申请。首次落选后，以当前灰袍声望百分比进行一次
+  自动受理抽签；手动申请与自动申请都只是登记，不提前扣款。
+- 贵族事务协调官到达玩家身边后收取固定十万第纳尔。`TryCollectPlayerRequestPayment` 使用真实
+  `GiveGoldAction` 把玩家金币全额转入灰袍族长钱包；该钱包就是现有司法公库/家族公库，而不是经手
+  领主私款。付款后，协调官前往争议封地连续驻留二十四小时；离开定居点会重置驻留计时。若王国、
+  所有权、成员资格等前提在新投票开启前失效，则关闭任务并全额退款。
+- 新增 `GwpSettlementReconsiderationDecision : SettlementClaimantDecision`，并在
+  `GwpSaveableTypeDefiner` 以本地类型号 `5` 注册，保证投票跨存档保存。候选名单保留原版评价最高的
+  其他家族，同时强制加入玩家家族；裁决仍使用原版投票与 `ApplyChosenOutcome`，不会先清空当前
+  封地主。玩家声望在受理付款时锁定为民间支持：低、中、高、极高档分别提供温和递增的功绩加成，
+  不保证投票获胜，只保证玩家获得候选席位。
+- `GreyWardenTroopRequestBehavior` 已从“与当前交谈领主直接买固定少量士兵”重构为单一持久化订单。
+  声望决定可选兵种、每单数量上限与折扣；玩家向任意领主登记后不付款。练兵官从自己的真实花名册
+  开始准备，缺少正确兵种路线时会与其他未在战斗中的灰袍部队进行一换一真实换兵，不改变双方总
+  兵数；随后只通过 `TroopRoster.AddXpToTroop` 给能够通往目标的士兵经验，最终分支和升级费用继续
+  完全由原版升级器控制。错误分支不会被代码直接改兵，后续周期会继续用真实兵员等量换入可训练
+  批次。备足健康目标兵后，练兵官亲自赶到玩家身边，才收取报价并把真实士兵转入玩家队伍；延期或
+  取消均不收费。
+- 玩家订单价格改为更适合批量购兵的阶梯定价：基础价格按新兵、重步兵、弓箭手、骑士区分，声望
+  逐档提供折扣；常规订单上限随声望由小批提高到大批，骑士仍受更低的专项数量上限约束。具体数值
+  位于 `GwpTuning.TroopRequest`，玩家 README 只描述决策所需的趋势，不暴露内部公式。
+- `GreyWardenPartyDesireBehavior.Intent` 现在真正保存调用者传入的优先级。普通灰袍职责继续使用
+  `0.99`，两类玩家专员移动使用 `10`，因此玩家任务在灰袍任务拍卖中最高；这仍是原版欲望候选，
+  没有冻结 AI，也不会覆盖正在发生的地图战斗。案件总卷新增封地申诉和调兵订单行，显示承办专员、
+  阶段、费用/公库状态、民间支持、驻留剩余时间以及已备兵数。
+- 新行为使用平行基础类型字段保存捕获记录和当前流程；调兵订单同样只保存兵种 id、数量、报价、
+  阶段与时间，不保存 `MobileParty` 实例。协调官和练兵官每次均按职务持有人重新解析，因此职务
+  继承后可继续任务。新增中文字符串已写入现有 `std_gwp_strings_xml-zho-CN.xml`，没有创建平行
+  本地化文件。
+- 本节属于 `v1.4-r7（开发中）` 的同一开发迭代，不新增第三条玩家更新记录，也没有创建正式 ZIP。
+  用户明确游戏内验证只能由其本人完成；本轮只进行编译、XML 解析、静态结构和实时目录哈希核对，
+  不启动游戏、不载入存档，也不把静态成功描述成玩法验收。
+- 最终 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告；
+  本次涉及的全部本地化 id 缺失 `0`、重复 `0`，`_Module` 内所有 XML 解析失败 `0`。自动部署后，
+  仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`，实机继续没有
+  `Assets`。客户端与编辑器 DLL 均为 `676352` 字节，SHA-256 均为
+  `3949E7DBE68017ED510955B849C7F27069CC53CA3C225499AFB93598AC622D7E`；仓库与实机中文 README
+  SHA-256 均为 `25087DA69B5CCA1E6608D514F908F42712DC2AF0A05E3FE3E7CC4FFCFB2A0A5F`，英文均为
+  `4DC635C167AEA34F6A953ECC2B096AF4F24DA0B2ABCB99396AFC4D65C9892764`。本地正式发布文件仍只有
+  未改动的 `GreyWarden-v1.4-r6.zip` 与匹配 `.sha256`，本轮没有生成开发版 ZIP，也没有启动游戏。
+
+## 2026-07-23 封地申诉投票被立即自动裁定修复
+
+- 用户实测协调官已经收取十万第纳尔并完成封地请愿，但没有出现可参与的重新投票，封地由系统直接
+  重新分配。实机 `GreyWarden-AI-Diagnostics.log` 证明流程本身没有卡住：暮光于现实时间
+  `18:56:06` 收款，`18:58:24` 抵达 `castle_EN7` 开始驻留，游戏时间推进满二十四小时后于
+  `19:00:12` 记录 `PLAYER_FIEF_APPEAL_DECISION_OPENED`；不到一个游戏小时，暮光已被释放并接到
+  其他案件，说明新决议已被原版自动裁定。
+- 原因不是原版偶发重投，也不是协调官没有发起决议，而是
+  `GwpSettlementReconsiderationDecision` 把原版 `KingdomDecision.HoursToWait` 从四十八小时覆写成了
+  `0`。原版 `KingdomDecisionProposalBehavior.UpdateKingdomDecisions` 会在 `TriggerTime.IsPast` 且
+  玩家不是最终裁决者时调用 `StartElectionWithoutPlayer()`；零等待令新决议加入王国列表后立刻满足
+  该条件，因此玩家来不及看到或参加投票。
+- 已删除零小时覆写，恢复 `KingdomDecision` 自带的四十八小时投票期限。二十四小时请愿完成后仍立即
+  创建新封地决议，但接下来保留原版投票窗口；玩家家族仍由本模组保证进入候选名单，声望支持加成及
+  原版最终授地逻辑不变。决议结束时新增
+  `PLAYER_FIEF_APPEAL_DECISION_CONCLUDED` 诊断，记录目标封地、获胜家族和玩家是否参与，便于后续
+  直接区分“已开启待投票”和“已完成裁决”。已经在本次测试中被瞬间裁定的旧申诉不会追溯重开，
+  修复作用于之后创建的申诉决议。
+- `Release -t:Rebuild --no-restore` 构建结果为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告。
+  反编译实机 DLL 已确认 `GwpSettlementReconsiderationDecision` 不再覆写 `HoursToWait`，并包含新的
+  裁决完成诊断。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，
+  `18` 个 XML 全部解析成功，实机继续没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端与
+  编辑器 DLL 均为 `691712` 字节，SHA-256 均为
+  `CAAD66C0866CBA56CDDDE4C27CAA408598430DB1F06E2FA15C728674BD564056`；仓库与实机中文 README
+  SHA-256 均为 `484474A2E628C19CCC5DD7A6E2770188031647F95E53A1CED9CB11C14A9AEE53`，英文均为
+  `7FB029C2EF8495CD1CED84424A35669CF6B42D536FCC5A034E410E92454B8D6A`。本轮没有启动游戏，也没有
+  创建或改写正式玩家 ZIP；实际投票显示仍由用户验证。
+
+## 2026-07-23 玩家专员交接对话与反复拦截修复
+
+- 用户实测在向练兵官梵蒂提交简单调兵订单后，练兵官抵达玩家身边却进入旧的普通自我介绍，
+  没有出现交兵选项、没有转移士兵，并因持续重新接触而让玩家无法离开。实机
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_29016.txt` 显示
+  `14:33:26` 提交 `gwp_player_troop_order_file` 后，`14:35:42` 首次被梵蒂拦截，此后在
+  `14:35:55`、`14:36:01`、`14:36:05`、`14:36:13`、`14:36:17` 等时间反复重开对话，
+  期间从未进入 `gwp_player_troop_delivery_offer`。同时
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  显示梵蒂（`gw_leader_0`，练兵职务）反复以 `EngageParty` 追向 `player_party`，
+  `dutyIntent=none`，且没有 `PLAYER_TROOP_ORDER_DELIVERED`。监控与用户现象一致。
+- 根因是专员主动接触以对话状态 `start` 开场，而调兵交付和封地收款入口只挂在
+  `lord_talk_speak_diplomacy_2`；旧的普通灰袍寒暄先取得了开场，任务入口依赖后续状态转换，
+  失败后 `_nextContactHour` 仍允许下一次小时更新立即重新下达接触命令。因此不是兵员被虚空删除，
+  而是交接对话入口和接触失败后的重试保护同时缺失。
+- 调兵交付和封地申诉收款现各自增加优先级高于普通寒暄的 `start` 直达入口；普通灰袍寒暄在当前
+  对话英雄正承担这两种玩家专员会面时明确退出。付款、交兵、延期、取消后的答复全部直接进入
+  `close_window`，不再回到普通领主菜单。地图接触开始时还会先把下一次重试推迟十二小时并写入
+  `PLAYER_TROOP_ORDER_CONTACT_STARTED` 或 `PLAYER_FIEF_APPEAL_CONTACT_STARTED`，即使其他模组
+  干扰了对话，也不会在数秒内连续重新拦截。
+- 新增资金不足保底：练兵官交兵或贵族事务协调官收款时，如果玩家当时付不起完整报价，专员会直接
+  告知任务取消，任务状态和专员追随命令随即清除，不扣除任何金币；调兵取消另写
+  `PLAYER_TROOP_ORDER_CANCELLED_INSUFFICIENT_FUNDS`，封地申诉沿用
+  `PLAYER_FIEF_APPEAL_CANCELLED` 并记录 `reason=insufficient_player_funds`。
+- 调兵多选列表的悬停说明已改为空，不再向玩家解释真实兵员、经验或原版升级器等内部实现；订单行
+  本身只保留兵种、数量和总价，标题说明只保留声望会影响上限与可选兵种的必要决策信息。
+- 本轮依旧只进行源码、构建、XML 与实机镜像核验，不启动游戏、不载入存档；交接能否正常弹出、
+  士兵是否到账、资金不足自动取消以及是否仍会反复拦截，均留给用户本人按同一存档复测。
+- `Release -t:Rebuild --no-restore` 最终构建为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告。
+  `_Module` 内 `18` 个 XML 解析失败 `0`，中文本地化 id 重复 `0`；自动部署后仓库 `_Module`
+  的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`，实机继续没有 `Assets`
+  或 `AssetSources`。客户端与编辑器 DLL 均为 `678400` 字节，SHA-256 均为
+  `CFB7BA5CC1B8C6DF4DA84CBD5B40165AB4ECF415DCDC6ED29D1DD002EDF1B9CA`；仓库与实机中文
+  README SHA-256 均为
+  `09C8CBDC681239D6FD5C7F64C5545D0872808AF0DF84EA05372BC77E1D3191FE`，英文均为
+  `3FF4C4D91D8D222DA46BC9517C1CD5AE1D1560555AF51FA6D6AB9D5518FFF17E`。本轮没有创建或改写
+  正式 ZIP，也没有启动游戏。
+
+## 2026-07-23 调兵交接后误入战斗修复
+
+- 用户在上一轮修复后确认练兵官已能直接进入正确的交兵对话，士兵也成功到账，但关闭对话后引擎
+  又拉起了战斗界面。新一轮实机
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  明确记录：`14:50:25` 梵蒂完成 `PLAYER_TROOP_ORDER_DELIVERED`，转移 `20` 名 `gwknight`、
+  收取 `7200` 第纳尔；仅约一秒后，同一支梵蒂部队与 `player_party` 产生
+  `MAP_EVENT_STARTED eventType=FieldBattle`。因此交兵本身已经成功，错误发生在对话关闭后的原版
+  遭遇清理阶段。
+- 根因是专员用 `SetMoveEngageParty` 触发玩家会面。虽然交接后已经清除移动欲望并下达 Hold，
+  但只把对话终点设为 `close_window` 并不会自动和平结束底层 `PlayerEncounter`；残留的 Engage
+  遭遇会在对话返回大地图时继续解释成 FieldBattle。项目既有招募使者和野外切磋流程已经证明，
+  这类会面必须先设置 `PlayerEncounter.LeaveEncounter=true`，再在
+  `ConversationEndOneShot` 回调中执行 `PlayerEncounter.Finish(false)`，之后重新下达离开命令。
+- 调兵的付款交兵、延期、主动取消和资金不足取消现都会提前标记和平离开，并在对话彻底结束后调用
+  `GwpCommon.TryFinishPlayerEncounter()`；随后再次停止练兵官接触并按订单是否结束释放其任务占用。
+  回调写入 `PLAYER_TROOP_ORDER_ENCOUNTER_FINISHED`，便于确认遭遇已经关闭且没有生成 FieldBattle。
+- 同构的封地申诉付款、延期、撤回和资金不足取消也加入相同保护。协调官付款成功后，会在和平关闭
+  玩家遭遇之后重新取得前往争议封地的 Visit 指令，避免原版遭遇清理覆盖她接下来的行程；对应监控
+  为 `PLAYER_FIEF_APPEAL_ENCOUNTER_FINISHED`。
+- 本轮仍不由开发代理启动游戏。用户可继续使用当前存档重下订单，重点核对交兵后是否直接回到大
+  地图、是否不再出现战斗准备界面，以及监控中交兵后是否出现
+  `PLAYER_TROOP_ORDER_ENCOUNTER_FINISHED` 而不再紧跟 `MAP_EVENT_STARTED FieldBattle`。
+- `Release -t:Rebuild --no-restore` 最终为 `0` 错误、`44` 条既有警告；`18` 个 XML 解析失败
+  `0`。自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致
+  `0`。客户端与编辑器 DLL 均为 `679424` 字节，SHA-256 均为
+  `380C0A7A0EE2437257DD239D9CC2814E57107F6C4555716BF7FB14220584C952`；仓库与实机中文
+  README SHA-256 均为
+  `10383789F30A9A51A6481792C738B2C17F46D582CC92CA0AE4999752F31D0E76`，英文均为
+  `136D3ED6367AFF0E941F3691998D1F310AFD1A637C2B5FFBEBE7C52DE6E4595F`。没有创建正式 ZIP，也没有
+  启动游戏。
+
+## 2026-07-23 练兵任务强制排队与两小时交接
+
+- 用户实测练兵官梵蒂已经把部队训练至兵种树终点，却仍连续承接普通案件，始终不做练兵换防。
+  `GreyWarden-AI-Diagnostics.log` 中只有多轮 `TRAINING_TROOP_XP_GRANTED`，没有任何
+  `TRAINING_TASK_ASSIGNED/COMPLETED/CANCELLED`；随后梵蒂持续显示
+  `ordinaryCaseEligible=True` 并承办 `lord_6_13` 等普通案件。
+- 根因并非 Visit 欲望分数输给普通任务，而是旧实现只有在练兵官和接受换防的领主同时空闲后才
+  创建 `TrainingAssignment`。在任务对象建立以前没有练兵欲望，也没有任务占用；普通派案行为又
+  先于练兵行为执行，所以练兵官刚结束一案就可能立即再接一案，永远无法进入任务创建入口。
+- 新流程在练兵官的全部灰袍正规士兵都没有后续升级目标时立即写入一个没有接受方、没有会合地点
+  的待办练兵任务，并将其作为练兵官的下一项强制职责。现有任务不会被中途丢弃，但普通案件、
+  协力支援、收养救济、重建和地方请求的后续派发都会识别这项预留，不再把新任务插到它前面。
+- 练兵官完成当前任务后，系统选择距离她最近、不是练兵官且仍有可升级灰袍士兵的领主作为接受方；
+  接受方即使正在处理自己的任务也会被预留，完成手头任务后不再承接下一项普通职责。双方分别在
+  空闲时取得前往同一安全城镇或城堡的 Visit 欲望，不要求同时空闲才建任务，也不拉军团。
+- 双方进入同一会合定居点且都已结束旧任务后开始驻留；交接时间由六小时缩短为两小时。完成时仍
+  按一换一真实转移兵员：练兵官优先交出最高阶终点兵，接受方优先交出最低阶可升级兵，伤兵状态
+  保留。接受方失效或其待训练士兵自然升满时，任务保留并重新寻找接受方，而不是把练兵官放回普通
+  派案池。
+- 案件总卷现在区分“已列为下一项任务”“等待双方完成当前任务”“前往会合地点”和“两小时换兵”；
+  尚未选定接受方的练兵任务计入等待任务，而不是伪装成已经承办。新增监控事件
+  `TRAINING_TASK_QUEUED` 与 `TRAINING_RECIPIENT_REQUEUED`，原有分配、驻留、完成事件继续保留。
+- 每名可升级士兵每六小时获得的经验最终从 `750` 下调至 `200`；用户认为前一轮暂定的 `500`
+  仍然过高，因此再次下砍。模组仍只调用
+  `TroopRoster.AddXpToTroop`，不直接改兵或选择升级分支，升级继续完全由原版控制。
+- 本轮不启动游戏、不载入存档，玩法验证仍由用户本人完成。开发代理只进行编译、XML/本地化静态
+  检查、部署和仓库到实机的哈希核对；本节属于 `v1.4-r7（开发中）` 的同一迭代，不生成开发 ZIP。
+- 最终 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有可空性/离线 NuGet
+  警告；`18` 个 XML 解析失败 `0`，中文本地化 `824` 个 id、重复 `0`。源码断言确认“满级即排队、
+  最近非练兵官、双方分别等待当前任务、经验 `200`、驻留 `2` 小时”全部为真。自动部署后仓库
+  `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`。客户端与编辑器
+  DLL 均为 `683008` 字节，SHA-256 均为
+  `CBB7F9D3E524F51F1B4CF9DBD8B0D061C7A8B310E5D666D2550483212AF0767A`；仓库与实机中文
+  README SHA-256 均为
+  `273F9B9B5EA5CB39A14ECF84BFAC6766084C312197991265F0BC60E70A683347`，英文均为
+  `069C1E8011E402ABE89F1C7BE15FCC247A6B2FA2942E4CCFF732862484C0105F`。没有启动游戏，也没有
+  创建或改写正式 ZIP。
+
+## 2026-07-23 练兵任务排队后被补员取消
+
+- 用户继续实测时再次观察到梵蒂长期承办普通案件。最新实机监控给出了完整因果链：
+  `15:19:44`、游戏时 `628882.94`，梵蒂以 `198` 名终点兵成功写入
+  `TRAINING_TASK_QUEUED`；约十个游戏小时后部队人数从 `199` 增至 `200`，监控随即写入
+  `TRAINING_TASK_CANCELLED reason=trainer_role_or_roster_changed`。之后再无分配、驻留或完成事件，
+  梵蒂重新显示 `ordinaryCaseEligible=True` 并连续接案。
+- 取消后的监控持续出现 `TRAINING_TROOP_XP_GRANTED`，待训练人数先为个位数，随后因战斗损失和
+  原版/模组补员增加至 `64`。这证明任务曾经正确排队，问题不是经验没有发放、欲望分数不足或找
+  不到会合城，而是 `UpdateAssignments` 每小时重新要求练兵官仍保持“零名可升级士兵”；任意新兵
+  加入都会撤销已经锁定的下一职责。
+- 按用户定义，“确认全员满级”只负责触发一次强制排队，排队成功后必须锁存，不能再被后来补入的
+  新兵推翻。现已移除活动任务对 `IsFullyTrained` 的持续取消条件；只有练兵官失去练兵职务才取消。
+  后续新增的低级兵可以继续获得训练经验，但不会解除练兵官和接受方的任务预留，也不会允许新的
+  普通案件插队。
+- `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有警告；源码检查确认活动任务
+  只剩职务失效取消条件，不再包含 `!IsFullyTrained(trainer)`。自动部署后仓库 `_Module` 的
+  `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`。客户端与编辑器 DLL 均为
+  `683008` 字节，SHA-256 均为
+  `1FB21C2F1C85D10C5AD8CF9F1F950279405BA85329226C69E5E67DB435196112`；仓库与实机中文
+  README SHA-256 均为
+  `4A369522762EFAFE4C15F11C4CEF142A615A18B98F36EE4ACC1EA3D6AA98931B`，英文均为
+  `5AF68F8998AA8DDA4E1E8C5BB5B395960C0CB6B132D2130D5C1C16104E603DEC`。没有启动游戏，也没有
+  创建正式 ZIP。
+
+## 2026-07-23 新成年领主滞留城内：撤回欲望压制并定位原版来源
+
+- 用户指出不能直接压制“前往当前城镇”欲望，必须先查明它为何产生。上一轮尚未经过用户验证的
+  `SuppressAssignedSelfSettlementScores` 已完整撤回，中文和英文玩家日志中对应的“已修复”
+  表述也已删除；当前实机 DLL 不再修改这条原版欲望的分数。
+- 实机监控仍证明静澜并非没有部队：`CharacterObject_2875_party_1` 是活动领主队，
+  `isLordParty=True`、人数 `147`、零伤兵、满编、零俘虏，并携带约三十天食物。她已承办
+  `CharacterObject_1546`，但 `GoToSettlement@town_K3` 长期保持约 `1.2278–1.2318`，高于
+  模组职责候选 `0.99`。
+- 对 1.4.7 实机 `TaleWorlds.CampaignSystem.dll` 的 `AiVisitSettlementBehavior` 反编译确认：
+  领主的 `GoToSettlement` 候选只由原版访问定居点行为建立；分数综合缺粮、伤兵、缺员招募、
+  出售物品、俘虏、家乡访问、航行类型和延续当前目标等因素。现有监控已经排除缺粮、治疗、招募
+  和交俘，因此这次不是补给欲望。
+- 由原版公式反算，健康满编领主在当前城镇的基础项、`1.2` 倍当前目标延续和 `1.5` 倍相同航行
+  类型相乘后为 `0.4608`；实际分数约 `1.2278`，恰好还存在约 `2.664` 倍的城镇出售物品因子。
+  原版 `PartiesSellLootCampaignBehavior` 只在 `SettlementEntered` 事件发生时出售战利品；如果
+  部队已经在城内时才获得物品，或城镇资金不足未能全部买下，剩余物品会继续产生“访问当前城镇
+  以出售”的欲望，却不会再次触发入城出售事件。这是当前最符合日志与原版公式的原因，而不是粮食
+  补给。
+- 诊断状态新增 `nonFoodCargoValue`、`mountCargoValue`、`nativeSellFactor`、
+  `currentSettlementGold`、`leaderHomeSettlement` 和 `leaderTimeAtHome`，不改变任何欲望或
+  行动。用户再次载入并运行后，可以直接区分是未出售货物、城镇无钱，还是家乡访问因子；确认后
+  再决定应修正物品出售时机还是新部队生成顺序。
+- `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有警告；`18` 个 XML 解析失败
+  `0`。自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致
+  `0`。客户端与编辑器 DLL 均为 `684032` 字节，SHA-256 均为
+  `6C38F4F825A5C77CF2AA7CFFAD249944702D9D0FE9680E0D576F605C5503EE3C`；仓库与实机中文
+  README SHA-256 均为
+  `4A369522762EFAFE4C15F11C4CEF142A615A18B98F36EE4ACC1EA3D6AA98931B`，英文均为
+  `5AF68F8998AA8DDA4E1E8C5BB5B395960C0CB6B132D2130D5C1C16104E603DEC`。没有启动游戏，也没有
+  创建或改写正式 ZIP。
+
+## 2026-07-23 新成年领主离城原因与领主套装补正
+
+- 用户继续运行后观察到静澜终于离开 `town_K3`。最新监控证明这次并不是城内出售需求自行完成：
+  她的非食物货物价值仍为 `840`、坐骑货值仍为 `9905`、原版出售因子仍为 `2.676`，
+  `GoToSettlement@town_K3` 也仍有 `1.2331`，所有这些数据在离城前后都没有下降。
+- 实际离城触发点是上一宗 `CharacterObject_1546` 案件随
+  `MAP_EVENT_ENDED eventType=SallyOut` 结束并从她身上释放。游戏时 `629878.97` 的下一轮原版
+  AI 竞价里，她没有模组职责候选，而原版
+  `PatrolAroundPoint@town_EN5=3.0900` 明显高于仍存在的
+  `GoToSettlement@town_K3=1.2331`；最终行为因此变为前往 `town_EN5` 巡逻，她才从城内出来。
+  再下一小时新案件 `lord_6_22` 生成后，职责候选为 `0.99`，此时旧城访问候选已经降至
+  `0.8221`，所以她继续直接追案。这轮没有压制或修改任何访问城镇欲望。
+- `1.2331` 到 `0.8221` 的比例恰好是原版 `AiVisitSettlementBehavior` 中相同航行类型延续
+  奖励 `1.5` 的有无差异。为让下次直接看到这一状态，监控新增
+  `desiredNavigation` 字段；这只是诊断，不改变欲望分数或移动行为。
+- 同一名新成年领主没有穿灰袍领主装备的原因已经定位。收养时她先使用原版儿童初始装备；
+  `PoliceResourceManager` 虽然监听了 `HeroComesOfAgeEvent` 并尝试换上
+  `gw_leader_0` 的领主套装，但原版
+  `AgingCampaignBehavior.OnHeroComesOfAge` 也监听同一事件，并在自己的回调中分别调用
+  `GetEquipmentForHeroComeOfAge` 重新生成文化战斗装与平民装。事件监听器顺序不能保证，
+  因此原版成年换装能够在模组换装之后再次覆盖它。
+- 新增 `GwpAdultCommanderLoadoutPatch`，直接后缀原版
+  `AgingCampaignBehavior.OnHeroComesOfAge(Hero)`：等原版两套装备都分配完毕后，再把
+  `gw_leader_0` 的完整战斗/平民领主套装复制给成年灰袍。修正只在成年事件发生一次，不做逐小时
+  强制换装。为兼容当前旧档，载入时还会检查所有非六名初始领主的成年灰袍成员，只在装备与模板
+  不一致时补正；静澜在下次载入当前存档时即可得到正确套装。成功补正会写入
+  `ADULT_COMMANDER_LOADOUT_APPLIED`，并标明 `native_coming_of_age_postfix` 或
+  `existing_save_repair`。
+- `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有警告；实机反射确认
+  `AgingCampaignBehavior` 为公开类型且存在唯一
+  `Void OnHeroComesOfAge(Hero)` 目标。`18` 个 XML 解析失败 `0`。自动部署后仓库
+  `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`。客户端与编辑器
+  DLL 均为 `685568` 字节，SHA-256 均为
+  `AFF24ABE53127C068536DE6541D129368733EEFA91017F766A2805018BF002BB`；仓库与实机中文
+  README SHA-256 均为
+  `9A8AF45DD9CB3BCE52F3E24A476915CB3EC29602EEE6F26D2E80561863044903`，英文均为
+  `C696E6248AFFC158701D833610A68B565838D5BA89D409F323EBC49FBB57C789`。没有启动游戏，也没有
+  创建正式 ZIP；玩法验证仍由用户本人完成。
+
+## 2026-07-23 练兵官训练经验小幅上调
+
+- 最新实机监控中，梵蒂共触发 `66` 次 `TRAINING_TROOP_XP_GRANTED`，但
+  `TRAINING_TASK_QUEUED/ASSIGNED/COMPLETED/CANCELLED` 全部为 `0`。可升级兵最低一度降至
+  `4` 人，却在入城补员后随部队人数约从 `159` 增至 `188` 而重新升至 `34` 人；因此并非练兵
+  任务生成后卡在欲望、接收人或会合阶段，而是“可升级兵必须为零”的生成条件始终没有达到。
+- 按用户决定，不改变全员满级后才排入练兵任务的规则，也不直接控制升级或阻止原版补员；仅将
+  练兵官每六小时给予每名可升级士兵的经验从 `200` 提高到 `250`。升级时机和兵种分支仍完全由
+  原版系统决定。
+- `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有警告；`18` 个 XML 解析失败
+  `0`。自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256
+  不一致 `0`。客户端与编辑器 DLL 均为 `685568` 字节，SHA-256 均为
+  `C9AA98ACF6BE61C60AD8DFFA147BB183B4EAFB51310770E7D4A9FBF61450F831`；仓库与实机中文
+  README SHA-256 均为
+  `4FBE9C8255C35E11F3840DF41687B180B377C5710AA352B7993F973CB70A6970`，英文均为
+  `ED6B2B06C1754D1F4DF73A0D349215CCC91C0BA4D113901D9DC5BAE735022245`。没有启动游戏，也没有
+  创建正式 ZIP。
+
+## 2026-07-23 被逐出定居点的犯人强制反攻承办领主
+
+- 协力军团因高速目标而解散后，目标仍可能钻入定居点。既有围堵保底会在承办领主抵达城门并停滞
+  足够时间后用 `LeaveSettlementAction` 把目标拉出城；若目标属于军团，则拉出军团领队及附属
+  部队。问题在于逐出后代码立即对这些部队下达 `SetMoveModeHold`，而每帧维护和定居点禁入补丁
+  又会继续下达 Hold。目标因此固定停在城门口；城内多支敌方小部队与城外灰袍领主又可能被原版
+  安全判断互相阻止接战，形成长期僵局。
+- 曾讨论过让目标与所有定居点保持约 `15` 的排斥距离，但最终没有采用地图半径和强制寻路方案。
+  用户确定的更直接规则是：犯人被拉出城后，立即给被拉出的目标下达“进攻本案承办领主”的移动
+  指令。
+- `TryForceExpelShelteredCriminal` 现在不再 Hold 目标，而是读取当前任务的
+  `PolicePartyId` 作为承办领主并调用 `SetMoveEngageParty`。若犯人在军团内，实际移动指令发给
+  军团领队；否则直接发给犯人部队。`OnTick` 在案件有效期间持续重发该指令，避免原版大地图 AI
+  重新把目标停在城门口。
+- 任务期间禁止重新进入定居点的保护继续保留，但
+  `GwpCaseSettlementEntryPatch` 拦下进城动作后不再 Hold，而是再次把目标或其当前军团领队
+  重定向到承办领主。跟踪成员会按犯人当前军团实时刷新，军团解散后不再永久控制已经脱离犯人的
+  旧附属部队。案件结束、撤销、战争追捕状态消失或目标失效后，跟踪和强制指令自动解除。
+- 本轮仍不启动游戏；实际城门僵局是否按预期进入接战由用户本人复测。静态验证完成：
+  `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告，
+  `18` 个 XML 解析失败 `0`。自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比
+  缺失 `0`、SHA-256 不一致 `0`。客户端与编辑器 DLL 均为 `686080` 字节，SHA-256 均为
+  `097B98D48CE8BD47F0F71D70B576118993DB517D4C65C60A64377814DFB1263B`；仓库与实机中文
+  README SHA-256 均为
+  `F5C1366696C6609C558BF4C16FD01317C5157AE01FABA2C5277FCD3D1D37344C`，英文均为
+  `71893EC432E19E22A6BC3BDD111D599CD6CCBCB0248D44F4941871D501ECFBCB`。没有创建或改写正式
+  ZIP。
+
+## 2026-07-23 英雄百科震慑恢复时间与恢复速度再次减半
+
+- 英雄百科现有“案底与震慑”入口已经分别展示侵害村民与侵害商队的当前压制、来源和欲望倍率，
+  但玩家无法从震慑数值判断还要经过多久才会恢复正常。本轮在两类震慑各自的来源行后加入独立的
+  “预计恢复原状”时间。
+- 预计时间不以数值严格降到 `0` 为终点，而是使用玩法实际恢复点
+  `GwpTuning.Deterrence.ForgetThreshold`：震慑降至该阈值时，
+  `GetCrimeDesireMultiplier` 已返回原版倍率 `1`，玩家实际不再受到灰袍压制。计算式为
+  `(当前分类震慑 - ForgetThreshold) / 当前人物每日恢复量`，村庄与商队震慑并行恢复，因此分别
+  计算和显示。少于一天时显示小时，其余显示游戏天数。
+- 震慑恢复只在人物拥有活动部队或停留于定居点时进行；被俘或没有有效落脚状态时原有逻辑会暂停
+  衰退。百科会明确显示“当前暂停恢复”，并同时给出恢复条件重新满足后仍需的大致时间；已经低于
+  有效阈值的分类显示“已经恢复”。
+- 用户要求恢复速度再次减半。为保证基础值、人物性格修正及最小/最大恢复边界全部等比例变慢，
+  没有只改 `BaseRecoveryPerDay`，而是在既有性格计算和边界裁剪完成后统一乘
+  `RecoverySpeedMultiplier = 0.5`。村庄与商队两套衰退都调用同一个
+  `GetRecoveryPerDay`，因此实际恢复和百科预计时间使用完全相同的速度。
+- `v1.4-r7（开发中）` 的中英文玩家日志已同步说明百科预计时间和震慑持续时间调整。新增五条中文
+  本地化文本；中文表共 `829` 个 string id、重复 `0`。
+- 本轮不启动游戏，界面显示与存档时间推进仍由用户本人验证。最终
+  `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告；
+  `18` 个 XML 解析失败 `0`。自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比
+  缺失 `0`、SHA-256 不一致 `0`。客户端与编辑器 DLL 均为 `688128` 字节，SHA-256 均为
+  `5B77131F3059C18CD187D3BD02355329F525A4F758A896FB734A26BB4563970E`；仓库与实机中文
+  README SHA-256 均为
+  `FFF4E320C84DF5B7783A9507DDFD837BBD20F78FA5F283ED1FC7F4172CC33F47`，英文均为
+  `B56480B2A47454669A4DDC8C067527B426EC80EE648825499746475179974790`。没有创建或改写正式
+  ZIP。
+
+## 2026-07-23 被逐出定居点的犯人锁定反攻欲望
+
+- 上一轮虽然逐帧重发“进攻本案承办领主”的移动指令，但目标的原版大地图 AI 仍可在两次重发
+  之间重新竞价其他欲望，因此可能在进攻方向和原版目标之间左右摇摆。仅仅提高指令重发频率不能
+  保证“案件结束前只做反攻”。
+- `TryForceShelteredCaseAttack` 现在会先临时允许一次 AI 指令写入，调用
+  `SetMoveEngageParty` 后立即启用 `SetDoNotMakeNewDecisions(true)`。这不会删除目标原有的
+  欲望数据，但会停止新的原版大地图决策，使当前唯一可执行的移动目标保持为承办领主；即使写入
+  进攻指令时发生异常，也会再次尝试维持决策锁定。案件仍有效时逐帧维护继续校准进攻目标。
+- 犯人在军团中时锁定实际控制移动的军团领队；军团成员关系改变时会刷新跟踪，并立即恢复已经
+  脱离当前犯人移动组的旧控制者。军团解散后，下一轮维护会转为锁定犯人自己的部队。
+- 解除路径采用双重保底：任务、案件或目标失效时，逐帧维护调用
+  `ReleaseShelteredForcedAttack`；正常任务战争跟踪清理时，
+  `ClearTaskWarTracking` 也会立即调用同一方法。解除会执行
+  `SetDoNotMakeNewDecisions(false)` 并要求原版 AI 在下一小时重新思考，确保案件结束后恢复
+  正常欲望系统。任务与受控部队的对应关系还会用两列 string id 写入存档；中途保存再载入后会
+  继续维持唯一进攻指令，并且仍能在案件结束时准确恢复这些部队，而不是因运行时字典重建而永久
+  锁住 AI。
+- 一次中间重构把异常保护误放进相邻的逐出方法，导致重建出现
+  `CS0103: forceParty does not exist`；该位置已立即撤回并移到
+  `TryForceShelteredCaseAttack` 的异常分支。最终
+  `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告；
+  `18` 个 XML 解析失败 `0`，中文本地化共 `829` 个 string id、重复 `0`。
+- 自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致
+  `0`。Release 构建产物、客户端 DLL 与编辑器 DLL 均为 `690176` 字节，SHA-256 均为
+  `7E1CBFA7AEB0826FBEFEFFC20640795EBAA51A697CFA1E27B1E38900108717D3`；仓库与实机中文
+  README SHA-256 均为
+  `82018FFC770298AF6C585EF9CE947458525B0D0C05969F8DD3C446599A20031B`，英文均为
+  `966208D2F5FC30999E3889F31075A4610F05708EA789121DD3FF89B42A3C2D6F`。本轮没有启动游戏，
+  玩法验证仍由用户本人完成，也没有创建或改写正式 ZIP。
+
+## 2026-07-23 弱势追捕触发协力与原版动态相向集合
+
+- 实机监控确认本轮未触发协力的直接原因不是灰袍没有打不过，而是
+  `IsCasePursuitBlocked` 同时要求长期行为必须为
+  `GoAroundParty@本案犯人`。梵蒂追捕 `lord_1_14_party_1` 时，原版短期行为已经连续为
+  `FleeToPoint`，`shortTarget` 也明确是该犯人，双方距离最低约 `0.48`；但长期行为被原版补给
+  竞价切成 `GoToSettlement`，所以旧判定每小时都把受阻累计清零，监控始终显示
+  `assistance=none`。
+- 协力受阻判定现改为读取原版已经完成的强弱判断：只有短期行为属于原版逃跑行为，而且
+  `ShortTermTargetParty` 是本案犯人、犯人当前战斗控制者或其同一支军团时才累计。长期行为可以
+  同时是补给、访问或其他原版选择，不再要求必须恰好保持 `GoAroundParty`；因此仍然只在原版
+  确认“正在躲这个案件目标”时求援，不会把所有普通移动或逃离其他敌人的情况误算为协力。
+- 直接反编译当前 Bannerlord 1.4.7 的 `TaleWorlds.CampaignSystem.dll` 后确认，原版没有一个
+  “以可配置的更远半径动态监视敌军”的公开移动模式。`GoAroundParty` 使用
+  `EncounterJoiningRadius * 1.15` 的固定近距离防守环；`EscortParty` 会由引擎持续刷新被跟随
+  部队的实时位置，但它本身是靠近精确目标；只有 `GoToPoint` 能指定任意远处坐标，却是静态点，
+  若拿它监视移动目标就必须反复重算。故没有采用循环 `GoToPoint`。
+- 协力军团新增独立集合阶段：支援领主加入原版 `Army` 后，支援方仍按原版军团逻辑护送发起人；
+  发起人则临时使用原版 `SetMoveEscortParty` 动态跟随最近的尚未并入军团成员，让双方相向靠拢。
+  引擎自己刷新两队的位置，模组只在集合目标改变或命令被原版状态打断时重发一次，不逐帧、不每
+  小时重算地图坐标。集合期间暂时停止发起人的新战略竞价，防止 `AiPartyThinkBehavior` 用其他
+  长期行为覆盖集合命令或拆散无王国军团；原版短期逃跑和接战判断不被清空。
+- 所有支援领主真正 `AttachedTo` 发起人后立即解除集合控制，并要求原版在下一小时重新拍卖，
+  回到案件追捕。案件结束、玩家高优先委托接管、军团因目标速度过快而解散、成员失效和旧存档
+  恢复都设有解锁路径。集合控制状态已写入存档，避免集合中途存读后遗留永久决策锁。
+- 同时修正原有手工合并距离比较：原代码把二维距离平方直接与线性接触半径比较，现改为与接触
+  半径平方比较，确保进入原版允许的陆地或海上军团接触范围即可并入。
+- 静态断言确认：协力判定不再要求长期 `GoAroundParty`、使用
+  `ShortTermTargetParty`、集合使用原版 `SetMoveEscortParty`、协力代码不包含
+  `GoToPoint`、集合控制已持久化且欲望最终拍卖会避让集合状态。中英文 `v1.4-r7（开发中）`
+  玩家日志已同步。ILSpy 还把实机 DLL 反编译到
+  `.codex_tmp/PoliceEnforcementBehavior.Assistance-final.cs`，再次确认部署产物包含动态
+  `SetMoveEscortParty`、短期逃跑目标、集合存档键及接触半径平方比较。
+- 最终 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条既有可空性/离线 NuGet
+  警告；`18` 个 XML 解析失败 `0`，中文本地化共 `829` 个 string id、重复 `0`。自动部署后
+  仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`，实机
+  没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端与编辑器 DLL 均为
+  `692224` 字节，SHA-256 均为
+  `6C5C334CF886195C5472954180D0C442AFD833AA40344086D738804D2D2FA054`；仓库与实机中文
+  README SHA-256 均为
+  `80F73B7451FC3923BB5DDB0C47EE5348AF8B2C566197AAC4FAB53840774DA637`，英文均为
+  `C29E562C62C37CE8BC704B8B9B5F122FCD2EF3EBB64A6A339652835874D00FD6`。没有启动游戏，
+  玩法验证仍由用户本人完成，也没有创建或改写正式 ZIP。
+
+## 2026-07-23 撤回协力集合决策锁并扩大 GoAroundParty 监视环
+
+- 用户明确纠正：灰袍领主的长期欲望必须始终开启。协力任务只能像其他任务一样向原版欲望拍卖
+  加入一个固定分值候选；任何更高的原版长期欲望都应正常获胜。上一小节所记的“发起人直接
+  `SetMoveEscortParty` 并启用 `SetDoNotMakeNewDecisions(true)`”方案因此在用户实机验证前
+  完整撤回，不再作为当前实现。
+- 再次反编译 `MobilePartyAi.GetBehaviors`、`GetGoAroundPartyBehavior`、
+  `GetFollowBehavior`、`GetLandPatrolBehavior` 和 `AiPartyThinkBehavior.PartyHourlyAiTick`
+  后确认：`EscortParty` 会追到指定部队的精确实时位置；`PatrolAroundPoint` 只围绕一个静态
+  中心并最终落实为 `GoToPoint`；`DefendSettlement` 只接受定居点；逃跑行为属于原版短期强弱
+  判断。原版长期行为中，只有 `GoAroundParty` 同时满足“动态跟随敌军、保留原版逃跑判断、不过
+  度远离目标”，所以发起人的任务欲望继续使用它，而不是另造坐标循环。
+- `GoAroundParty` 贴得过近的根因也已确认：原版传入
+  `GetEncounterJoiningRadius * 1.15`，当前值约为 `3.45`；随后
+  `GetDefendingPosition` 又用 `defendRadius² / 2` 生成监视位置，最大只在目标外约 `5.95`
+  地图单位。现在只在协力军团尚未集合完成、且本次 `GoAroundParty` 确实指向本案犯人时，把
+  传给原版防守位置算法的半径提高到 `5.5`，实际外围距离约为 `15`。位置仍由原版
+  `GoAroundParty` 动态刷新，模组不写 `GoToPoint`，也不逐帧计算目标坐标；集合结束后立即恢复
+  原版普通半径。
+- 协力组现在直接向统一欲望层提供任务候选：发起人为
+  `GoAroundParty@本案犯人 = 0.99`，支援领主为
+  `EscortParty@发起人 = 0.99`；高速解散后的各领主则都是
+  `GoAroundParty@本案犯人 = 0.99`。这不是直接移动命令，也不关闭 AI。协力候选还标记为
+  `PreserveAllNativeDesires`，因此连普通案件会压低的原版巡逻分也不改动；补给、疗伤、招兵、
+  访问、巡逻等任意原版长期欲望只要高于 `0.99` 就照常先执行，之后再回到协力任务。
+- 已移除 `AssemblyControlActive`、`gwp_enf_assist_assembly_control`、集合期间的
+  `SetDoNotMakeNewDecisions(true)`、直接 `SetMoveEscortParty` 与相应欲望拍卖短路。为兼容
+  可能用上一轮短暂 DLL 保存的本地测试档，灰袍每小时既有旧锁清理和协力释放时的
+  `RestoreAi` 仍会解除保存于原版 `MobilePartyAi` 的遗留锁。
+- 扩大原版半径使用一个窄范围 Harmony 前缀，目标是
+  `MobilePartyAi.GetDefendingPosition`，并同时核对当前 AI 所属部队、本案目标坐标和“仍有
+  未附着支援领主”三项条件。私有接口定位带 `Prepare` 保底：若某个兼容游戏修订中目标签名或
+  `_mobileParty` 字段不存在，只跳过半径增强，不阻止模组其余补丁载入。
+- 源码与部署 DLL 反编译断言确认：协力文件不再含集合决策锁和直接 `GoToPoint`；发起人
+  `GoAroundParty`、支援人 `EscortParty`、完整保留原版分数的标记及窄范围半径补丁均已进入
+  实机 DLL。中英文 `v1.4-r7（开发中）` 玩家日志已改为当前最终行为。
+- 最终 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有可空性/离线 NuGet
+  警告；`18` 个 XML 解析失败 `0`，中文本地化共 `829` 个 string id、重复 `0`。自动部署后
+  仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`，实机
+  没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端与编辑器 DLL 均为
+  `691200` 字节，SHA-256 均为
+  `675C00CE614C39C29A59DC0442BF8903EB964A8B49CE821BBD9154CDBEC3809C`；仓库与实机中文
+  README SHA-256 均为
+  `345FAF578C663900D6926C2FE62F0F624046808074FE8998F05BA931F2C123AC`，英文均为
+  `CE050384ECB7374E409B4587174223AD1E2D9D240C7ECA7A8C63A5A076D01DD5`。本轮没有启动游戏，
+  玩法验证仍由用户本人完成，也没有创建或改写正式 ZIP。
+
+## 2026-07-23 玩家专员按完成任务延期、申诉重提与民间支持重算
+
+- 用户实测发现三个相互关联的问题：自动受理的封地申诉因资金不足取消后，会被同一条成功抽签记录
+  再次自动激活；协调官和练兵官的“之后再来”只使用短小时冷却，导致很快再次拦截；重新投票虽然
+  已能正常打开，但旧实现只给玩家候选功绩乘以最高 `1.20`，无法形成用户要求的明确民间基础票。
+  同时用户把请愿费用由十万下调为五万，并要求一个月内多块合格封地可由玩家明确选择。
+- 捕获记录新增持久化位 `AutoOfferConsumed=64`，把“随机抽中自动受理”和“这次自动受理已经实际
+  发出”分开。每次自动或手动激活一条已经抽中的记录都会消费自动机会；取消只清除
+  `RequestFiled`，不会清除消费位。因此同一封地不会再次自动弹出，但 `IsEligible` 不排除消费位，
+  玩家仍可在攻下后的三十天内找任意灰袍领主手动重申。载入旧档时，若一条带
+  `AutoTriggered` 的请求已经处于活动阶段，会自动补记消费位，避免旧档取消后复发。
+- `GetEligibleCaptures` 继续列出一个月内所有合格城镇和城堡，并按 `SettlementId` 去重、保留最近
+  一次捕获记录；对话中的原有封地多选询问现在可稳定显示多块不同封地，而同一封地不会因反复易主
+  出现重复行。一次仍只承办一份活动申诉，撤回后可重新打开列表选择仍在期限内的目标。
+- 协调官资金不足时不再自动关闭对话和取消任务，而是进入与正常收款相同的选择页：玩家可搁置或
+  撤回，付款选项因余额不足自然不可用。请愿费常量改为 `50000`，收款、退款、案件总卷与中英文
+  对话全部读取同一常量或对应五万文本，款项仍全额进入司法公库。
+- 两类玩家专员新增持久化 `DeferredTasksRemaining`。主动选择延期时设为 `2`、清除玩家接触欲望并
+  立即释放专员；延期期间 `IsPartyReservedForPlayerRequest`/
+  `IsTrainerReservedForPlayerOrder` 返回 false，专员重新参加普通任务拍卖，付款或交兵对话也不会
+  因玩家偶遇而提前打开。只有成功完成犯罪案件、协力案件、村庄重建、地方请求、村庄救济或 AI
+  练兵换防才会由 `GwpPlayerRequestDeferral` 扣减一次；取消、目标失效或被玩家任务抢占不计数。
+  完成第二项任务后，保留的原申诉/原调兵订单立即重新获得玩家任务优先级，专员再来找玩家。案件
+  总卷会显示还差几项任务，不再显示误导性的“正在前往玩家身边”。
+- 付款时锁定的民间支持改为 `clamp(灰袍声望, 0, 100) / 2`，即声望 `80` 对应 `40%`、声望
+  `100` 对应 `50%`。删除原来只乘候选功绩的最高 `20%` 加成，新增仅作用于
+  `GwpSettlementReconsiderationDecision` 的 `KingdomElection.DetermineOfficialSupport` 后缀：
+  在原版各家族投票完成后，为玩家候选补入恰好达到该基础占比所需的民间支持点，并重新计算所有
+  候选 `WinChance`；如果原版支持本来已经更高则不下调。随后玩家仍通过原版投票界面自行投入影响力，
+  原版国王裁决、关系变化、影响力消费与最终授地逻辑均不替换。
+- `Release -t:Rebuild --no-restore` 构建结果为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告。
+  反编译实机 DLL 已确认：费用为 `50000`、延期计数为 `2`、声望除以 `2`、自动机会消费位、两类
+  延期完成诊断、按封地去重，以及民间支持 Harmony 后缀均已进入部署产物；各普通任务完成路径共
+  有九个专员延期通知调用。`18` 个 XML 全部解析成功，中文本地化共有 `833` 个 string id、重复
+  `0`。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致 `0`，实机
+  没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端与编辑器 DLL 均为 `697856` 字节，
+  SHA-256 均为
+  `37CE069E23D14C7D5A4D44CDCD809D937CCD664952894390662A9FE20C1BB089`；仓库与实机中文
+  README SHA-256 均为
+  `2AEE0900516D0351BC4D6A74573F4F76CC05FA86ABD83FA228AA74E2AE6A5132`，英文均为
+  `DF1E2C39147A679C98461E347B65801F7F22E695395B9C148596358B2C6442B1`。本轮没有启动游戏，
+  没有创建或改写正式玩家 ZIP，实际延期和投票显示留给用户重新验证。
+
+## 2026-07-23 旧档申诉仍保存旧民间支持值
+
+- 用户再次读取测试档后看到重新投票中玩家仍只有约一成支持。监控证明民间支持补丁并非按新公式
+  得到了较高数值：本轮日志从 `19:36:26` 的 `PLAYER_FIEF_APPEAL_LOBBYING_STARTED` 直接开始，
+  没有新的 `PLAYER_FIEF_APPEAL_PAID`；`19:36:48` 开票记录明确为
+  `PLAYER_FIEF_APPEAL_DECISION_OPENED ... support=15`，随后 `19:37:08` 由
+  `clan_empire_north_2` 获胜。这说明用户读取的是已经在上一版付款、把旧阶梯公式结果 `15` 写入
+  存档的请求；此前改成“声望除以二”只在新付款时执行，没有迁移这条活动请求。
+- 新增持久化 `GWPP_PlayerRequestSupportFormulaVersion`。旧档在会话启动、所有玩家运行状态已恢复后，
+  如果仍有已付款活动申诉，会用当前灰袍声望重新计算基础支持，并同步刷新已经存在于
+  `Kingdom.UnresolvedDecisions` 中的本模组封地决议；迁移记录为
+  `PLAYER_FIEF_PUBLIC_SUPPORT_MIGRATED`，包含旧值、新值、当前声望和任务阶段。新付款请求直接写入
+  当前公式版本，仍保持付款时锁定支持的正常规则。
+- 民间支持后缀新增 `PLAYER_FIEF_PUBLIC_SUPPORT_APPLIED` 诊断，逐次记录目标封地、配置支持百分比、
+  原版家族票百分比、补足后的最终百分比和新增支持点。下次测试可以直接从后台区分“存档仍为旧值”
+  与“Harmony 已补足但界面显示异常”，不再只依靠投票画面反推。
+- `Release -t:Rebuild --no-restore` 结果为 `0` 错误、`44` 条既有警告；反编译实机 DLL 确认公式
+  版本迁移、活动决议刷新及两条新诊断均已部署。`18` 个 XML 解析失败 `0`；仓库 `_Module` 的
+  `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，实机仍没有编辑器目录。客户端与
+  编辑器 DLL 均为 `699392` 字节，SHA-256 均为
+  `D6FA92155A4376E9F7A9DF79F87F0EB7552B357B057B343103CF26DF2984914B`；中英文 README
+  SHA-256 分别为 `66CAD6529981C46387BE0FCC10612B3F98D4834DB72FF959460E82FF037E39E6` 与
+  `CA62118FDC683FF9B3D733C9A2C0E1E506357B8BC00C31DC774F4DF0D0E06609`。没有启动游戏或创建
+  正式 ZIP，仍由用户读取同一测试档复验。
+
+## 2026-07-23 玩家给自己投票时支持率不增长
+
+- 用户继续实测后纠正了上一节诊断：本次活动请求显示的基础民间支持已经正确，真正的问题是玩家在
+  原版投票界面继续投入影响力支持自己时，自己的百分比不再增长；把同样的影响力投给其他候选时，
+  对方的百分比可以正常增长。用户同时明确本功能不需要为旧测试档迁移旧公式，因此上一节临时加入的
+  `GWPP_PlayerRequestSupportFormulaVersion`、会话启动迁移、活动决议改值入口及
+  `PLAYER_FIEF_PUBLIC_SUPPORT_MIGRATED` 已全部撤回。新请求仍在付款时按当时灰袍声望锁定基础支持。
+- 反编译当前游戏的 `DecisionItemBaseVM` 和 `KingdomElection` 后确认原版刷新顺序：
+  `OnPlayerSupport` 先把玩家 `Supporter` 放入所选结果，界面随后调用
+  `DetermineOfficialSupport`，该方法把 `SlightlyFavor/StronglyFavor/FullyPush` 分别换成
+  `1/2/3` 个支持点并重算百分比。原版没有禁止玩家支持自己的候选，也没有漏加玩家票。
+- 根因在模组原来的“保底比例”算法：每次原版把玩家新投入的支持点加入后，后缀又根据新的原版总票
+  重新计算“刚好达到基础比例”所需的民间点数。只要玩家投入后仍未单靠家族票超过基础比例，民间点
+  数就会等量缩减，最终百分比始终停在原值；投给其他人时则不会从玩家候选中抵消，所以表现为只有
+  给自己投票无效。
+- 当前实现先从各候选的 `SupporterList` 中单独识别并扣出玩家本次投入的 `1/2/3` 个点，以不含
+  玩家手动票的原版基线一次性计算固定民间支持点，再把原版已经加入的玩家票叠加回来。这样未投票时
+  仍保持“灰袍声望的一半”为基础支持；给自己投入影响力会在此基础上继续上升，给其他候选也会照常
+  改变比例。极端的原版零票局使用总量 `10` 的固定合成基线，仍保留玩家投入的可见增量。诊断
+  `PLAYER_FIEF_PUBLIC_SUPPORT_APPLIED` 新增 `playerVotePoints`，可直接比较连续三档投入后的
+  `finalPercent`。
+- 中英文 `v1.4-r7（开发中）` 玩家日志已删除旧档迁移承诺，并改为说明民间支持是固定基础、玩家
+  给自己追加影响力会继续提高得票。`Release -t:Rebuild --no-restore` 构建成功，`0` 错误、
+  `44` 条既有可空性/离线 NuGet 警告；实机 DLL 反编译确认部署产物包含扣除玩家手动票后计算基线、
+  零票总量 `10`、`playerVotePoints` 诊断，且不再包含旧档公式迁移符号。
+- `18` 个正常客户端 XML 全部解析成功。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失
+  `0`、SHA-256 不一致 `0`，实机没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端
+  与编辑器 DLL 均为 `699904` 字节，SHA-256 均为
+  `785E8095C119BD3BCF3C95FF5E02792CB7582A1C4EA56DB0C70B4E96C592ABA3`；仓库与实机中文
+  README SHA-256 均为
+  `96ABF4AD54942C3D1A12A44CEFF22595CD58B71998EEE345475E98A53D7E6196`，英文均为
+  `7ABAAD64AD7ADBB20C5B3540074D44FFC652DD1CFD5C9562580BB0C05768DAA6`。没有启动游戏，
+  没有创建或改写正式玩家 ZIP，投票界面的实际变化仍由用户本人验证。
+
+## 2026-07-23 v1.4-r7 正式发行、玩家文案收束与无监控玩家包
+
+- 用户完成本轮实机复验并确认已无法继续发现问题，同意将当前开发内容正式发布为
+  `v1.4-r7`。中英文玩家 README 的本版条目已改为正式版本，并只保留 `r7` 与 `r6` 两个最近
+  版本；`r7` 内容压缩为玩家实际能看到和使用的新玩法、调整与修复，不再解释任务欲望、延期计数、
+  Harmony 补丁、支持点换算过程或监控实现。
+- 封地申诉与调兵交付的搁置对话、案件总卷阶段和再次来访提示已删除“完成两个任务/两个回合后再来”
+  一类机制说明。玩家现在只会得知请求已保留或交付已延期，并在合适时机继续；内部仍以完成两项
+  普通任务作为延期节奏，该事实只保留在开发维护记录中。资金不足的封地申诉仍可由玩家选择搁置
+  或撤回，不会扣款。
+- 当前完整源码分别针对 Bannerlord `1.4.5.115026`、`1.4.6` 和本机 `1.4.7` 接口完成交叉
+  重建，三者均为 `0` 错误；警告分别为 `43`、`43`、`44` 条既有可空性/离线 NuGet 警告。
+  这证明当前新增代码没有引入 1.4.5/1.4.6 缺失的编译期 API，但不能代替旧版本上的 Harmony
+  装载、存档读取与界面流程实机冒烟验证。
+- 正常 `Release -t:Rebuild --no-restore` 构建已部署到本地测试模组。仓库 `_Module` 的
+  `25` 个正常客户端文件与
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`
+  相比缺失 `0`、SHA-256 不一致 `0`；`18` 个 XML 解析失败 `0`，中文本地化共有 `833` 个
+  string id、重复 `0`，实机不存在 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端
+  与编辑器测试 DLL 均为 `699392` 字节，SHA-256 均为
+  `0C7FB36B7AB106AD106F0BA85B236CEDCD5625C7A4172DD3D2B4D3D2C5050B51`。仓库与实机中文
+  README SHA-256 均为
+  `5C44489ACBB3DA45656C1A4D01E93E978F20ABC38BBD27AA3CE60ACF2C24CF4E`，英文均为
+  `9B5F69467CD9E0A41064B92487A18E028A541F9B729AE8EDA5AB4D114907E368`。
+- 正式玩家 DLL 使用 `GwpDiagnosticsEnabled=false` 与 `DeployToLiveModule=false` 单独输出到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r7`，
+  文件为 `680448` 字节，SHA-256 为
+  `C3F1A7AFAA8E0F1D724AAEAAEA6D48FD8BED4986E21A1C733E19B527EC9DD63F`。ILSpy 反编译
+  确认 `GwpAiDiagnostics.LogPath` 为空、所有写入/捕获方法为空、两个追踪判断恒为 `false`，
+  DLL 字符串中也不存在 `AppendAllText`、`StreamWriter`、`FileStream`、监控日志名或文档目录；
+  本地测试 DLL 哈希保持不同，未被无监控玩家 DLL 覆盖。
+- 干净暂存目录位于
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r7-final-20260723`。
+  正式包含 `28` 个文件且只有一个顶层 `GreyWarden/`：仓库的正常客户端内容、客户端
+  `0Harmony.dll`、上述无监控 DLL 与已编译 shader cache。包内没有 `Assets`、`AssetSources`、
+  `RuntimeDataCache`、编辑器 DLL、PDB、脚本、工具、日志、监控输出、开发文档或嵌套压缩包。
+  解压到独立核验目录后的 `28` 个文件与暂存目录逐文件比较为缺失 `0`、多余 `0`、哈希不一致
+  `0`；包内 DLL 与无监控输出哈希一致，包内双语 README 与仓库一致，且再次反编译确认监控实现
+  为空。
+- 本地正式文件为
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r7.zip`
+  和同名 `.zip.sha256`。ZIP 为 `349824265` 字节，SHA-256 为
+  `DC5268FBD036C5BC55245234B6C7371E0393D6F5D6D5540949DA0F2FC82AB5BC`，校验文件内容与
+  实算一致。完成全部审计后已删除本地旧 `v1.4-r6` ZIP/校验文件，游戏 `Modules` 父目录只保留
+  最新 `v1.4-r7` 正式包对。GitHub 正式发布地址为
+  `https://github.com/Lucicain/GW/releases/tag/v1.4-r7`。

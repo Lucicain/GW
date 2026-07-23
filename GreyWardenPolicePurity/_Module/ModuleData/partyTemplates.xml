@@ -16,9 +16,13 @@
 				max_value="32"
 				troop="NPCCharacter.gwarcher" />
 			<PartyTemplateStack
-				min_value="32"
-				max_value="64"
+				min_value="16"
+				max_value="32"
 				troop="NPCCharacter.gwrecruit" />
+			<PartyTemplateStack
+				min_value="16"
+				max_value="32"
+				troop="NPCCharacter.gwnewrecruit" />
 		</stacks>
 	</MBPartyTemplate>
 </partyTemplates>

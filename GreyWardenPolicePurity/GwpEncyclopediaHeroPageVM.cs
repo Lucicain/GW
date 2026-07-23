@@ -90,12 +90,16 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_det_ui_raid_desire}Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers)",
                         "VAR_1", FormatDesirePercent(suppression.VillageMultiplier)),
                     BuildSourceLine(details.VillageDirectPenalty, details.VillageSharedPenalty),
+                    BuildRecoveryLine(details.VillageEffectivePenalty,
+                        details.VillageRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
                     GwpText.Get("{=gwp_det_ui_caravan_heading}Harm against caravans"),
                     GwpText.Get("{=gwp_det_ui_caravan_desire}Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%)",
                         "VAR_1", FormatDesirePercent(suppression.CaravanMultiplier),
                         "VAR_2", FormatSuppressionPercent(suppression.CaravanMultiplier)),
                     BuildSourceLine(details.CaravanDirectPenalty, details.CaravanSharedPenalty),
+                    BuildRecoveryLine(details.CaravanEffectivePenalty,
+                        details.CaravanRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}Latest enforcement: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Map status: {VAR_1}", "VAR_1", details.MapStatus),
@@ -119,6 +123,33 @@ namespace GreyWardenPolicePurity
                 "VAR_1", GwpText.Format(personal, "0.##"),
                 "VAR_2", GwpText.Format(transmitted, "0.##"),
                 "VAR_3", leading);
+        }
+
+        private static string BuildRecoveryLine(
+            float currentPenalty,
+            float daysRemaining,
+            bool recoveryPaused)
+        {
+            if (currentPenalty <= GwpTuning.Deterrence.ForgetThreshold)
+                return GwpText.Get(
+                    "{=gwp_det_ui_recovery_complete}Estimated return to normal: already restored");
+
+            string duration = daysRemaining < 1f
+                ? GwpText.Get(
+                    "{=gwp_det_ui_recovery_hours}{VAR_1} hours",
+                    "VAR_1", GwpText.Format(
+                        daysRemaining * CampaignTime.HoursInDay, "0.#"))
+                : GwpText.Get(
+                    "{=gwp_det_ui_recovery_days}{VAR_1} days",
+                    "VAR_1", GwpText.Format(daysRemaining, "0.#"));
+
+            return recoveryPaused
+                ? GwpText.Get(
+                    "{=gwp_det_ui_recovery_paused}Estimated return to normal: recovery is currently paused; about {VAR_1} after it resumes",
+                    "VAR_1", duration)
+                : GwpText.Get(
+                    "{=gwp_det_ui_recovery_active}Estimated return to normal: about {VAR_1}",
+                    "VAR_1", duration);
         }
 
         private static string FormatDesirePercent(float multiplier) =>
