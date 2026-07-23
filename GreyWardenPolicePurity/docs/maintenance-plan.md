@@ -7310,3 +7310,8 @@ irreplaceable backup; the editor workspace does not replace it.
   实算一致。完成全部审计后已删除本地旧 `v1.4-r6` ZIP/校验文件，游戏 `Modules` 父目录只保留
   最新 `v1.4-r7` 正式包对。GitHub 正式发布地址为
   `https://github.com/Lucicain/GW/releases/tag/v1.4-r7`。
+- 正式代码提交为 `589d350fd1dd4c8ac0015ca7d5da51e542b69ace`，`main` 与带注释标签
+  `v1.4-r7` 均已推送，标签准确指向该提交。GitHub Release 已成功发布且为当前 latest，状态不是
+  draft 或 prerelease；远端 ZIP 资产为 `349824265` 字节，GitHub 报告的 SHA-256 digest 与
+  本地 `DC5268...AB5BC` 一致，远端校验文件为 `88` 字节且 SHA-256 为
+  `F2FE4C52FBDFC60508759C8B52A3951566D92D8DB50FAFE602A8A437C74488E0`，与本地文件一致。
