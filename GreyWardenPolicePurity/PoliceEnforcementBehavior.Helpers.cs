@@ -273,19 +273,13 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            float distToShelter = policeParty.GetPosition2D.Distance(shelter.GetPosition2D);
             float distToGate = policeParty.GetPosition2D.Distance(shelter.GatePosition.ToVec2());
             int stoppedHours = UpdateShelteredPoliceStoppedHours(taskId, policeParty);
 
             // 围堵仍是案件保底欲望；原版补给/恢复欲望可自然打断并在完成后回来。
 
-            // 躲进定居点时，必须先让“当前这条任务”进入战争追捕状态。
-            // 即便两边已经被别的警察任务拖入战争，也不能跳过这一步直接隔空强制开战。
-            if (!task.WarDeclared && distToShelter <= GwpTuning.Enforcement.WarDistance)
-            {
-                DeclareWar(task, criminal);
-            }
-
+            // 本方法不决定是否宣战。调用者已经按协力总战力与现场区域
+            // 战力完成正常判定；只有本案确实进入 WarPursuit 后才能驱逐。
             if (task.WarDeclared &&
                 distToGate <= GwpTuning.Enforcement.ShelteredGateDistance &&
                 stoppedHours >= GwpTuning.Enforcement.ShelteredGateHoldHours)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -465,8 +466,8 @@ namespace GreyWardenPolicePurity
             UpdateDelayPatrols();
             BreakInvalidShelteredBattles();
             CrimeState.Clean();
-            UpdateLordAssistance();
             AssignTasks();
+            UpdateLordAssistance();
             UpdateTasks();
             UpdateIdlePoliceDuties();
             CrimeState.RefreshAccepting();
@@ -584,7 +585,10 @@ namespace GreyWardenPolicePurity
             CrimeState.BeginTask(police.StringId, crime);
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
+            {
                 task.IsPreparingDispatch = false;
+                TryCaptureAssistanceLeaderSoloSpeed(police, task);
+            }
 
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
 
@@ -601,19 +605,13 @@ namespace GreyWardenPolicePurity
                 var task = kvp.Value;
                 var pp = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
 
-                if (pp == null || !pp.IsActive)
+                // 只要承办人已经不能继续作为灰袍领主带兵，案件就立即失败。
+                // 协力军团必须在删除任务前同步解散，不能留下无首领 Army
+                // 等到下一轮小时清理。
+                if (!CanContinueLeadingPoliceTask(pp))
                 {
-                    ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
-                    continue;
-                }
-
-                // 任务进行中部队失活或首领被俘/死亡均视为执法失败：普通领主
-                // 案件直接删除、不重新入池；玩家长期通缉仍沿用专门的数据规则。
-                if (pp.LeaderHero == null || !pp.LeaderHero.IsActive)
-                {
-                    ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    FailTaskBecauseOwnerCannotLead(kvp.Key, pp,
+                        "hourly_owner_cannot_lead");
                     continue;
                 }
 
@@ -673,12 +671,10 @@ namespace GreyWardenPolicePurity
                     CrimeState.RefreshAccepting();
                     continue;
                 }
-                if (!criminal.IsMainParty && criminal.CurrentSettlement != null)
-                {
-                    if (HandleShelteredCriminal(pp, task, kvp.Key, criminal))
-                        continue;
-                }
-                else
+                bool isShelteredTarget =
+                    !criminal.IsMainParty &&
+                    criminal.CurrentSettlement != null;
+                if (!isShelteredTarget)
                 {
                     ClearShelteredTargetTracking(kvp.Key);
                 }
@@ -691,26 +687,118 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                float dist = pp.GetPosition2D.Distance(criminal.GetPosition2D);
+                MobileParty assistanceContact = pp;
+                MobileParty movementTarget =
+                    ResolveAssistanceMovementTarget(criminal);
+                float dist = pp.GetPosition2D.Distance(
+                    movementTarget.GetPosition2D);
+                if (!criminal.IsMainParty &&
+                    _assistanceGroups.ContainsKey(pp.StringId))
+                {
+                    dist = GetAssistanceContactDistance(
+                        pp, criminal, out assistanceContact);
+                }
 
                 float warDist = criminal.IsMainParty
                     ? GwpTuning.Enforcement.PlayerWarDistance
                     : GwpTuning.Enforcement.WarDistance;
+                if (!criminal.IsMainParty &&
+                    _assistanceGroups.ContainsKey(pp.StringId))
+                {
+                    warDist = Math.Max(
+                        warDist, GetNativeMaximumGoAroundDistance());
+                }
 
                 bool isPatrolRange = criminal.IsMainParty &&
                     PlayerState.Reputation >= -4 &&
                     PlayerState.Reputation <= -1;
+                bool assistanceReady = true;
+                float assistanceEngagementStrength =
+                    GetNativePartyStrength(pp);
+                float assistanceTargetStrength = 0f;
+                if (_assistanceGroups.ContainsKey(pp.StringId))
+                {
+                    assistanceReady =
+                        HasAssistanceEngagementStrengthAdvantage(
+                            pp, criminal,
+                            out assistanceEngagementStrength,
+                            out assistanceTargetStrength);
+                }
+
+                bool nativeDeclarationReady = false;
+                LocalStrengthDeclarationSnapshot? declarationPrediction = null;
+                if (assistanceReady && !isPatrolRange &&
+                    !criminal.IsMainParty && !task.WarDeclared)
+                {
+                    nativeDeclarationReady =
+                        TryGetNativeDeclarationCandidate(
+                            pp, criminal, warDist,
+                            out assistanceContact,
+                            out declarationPrediction);
+                    dist = declarationPrediction.Distance;
+                    if (!nativeDeclarationReady && dist <= warDist)
+                    {
+                        GwpAiDiagnostics.WriteAction(pp,
+                            "ASSISTANCE_DECLARATION_WAITING_LOCAL_STRENGTH",
+                            FormatLocalStrengthDeclarationDiagnostic(
+                                declarationPrediction,
+                                assistanceEngagementStrength,
+                                assistanceTargetStrength));
+                    }
+                }
 
                 // 玩家目标不自动宣战——改由对话系统让玩家选择缴纳或战斗。
                 // 只有玩家在对话中选择"战斗"后（OnEnforcementFightConsequence）才宣战。
-                // 非玩家目标仍在接近时自动宣战。
-                if (!task.WarDeclared && dist < warDist && !isPatrolRange && !criminal.IsMainParty)
+                // 非玩家目标只有在我方实际区域战力严格高于敌方
+                // 实际区域战力时才宣战；宣战后完全交还原版短期欲望。
+                if (!task.WarDeclared && dist <= warDist &&
+                    !isPatrolRange && !criminal.IsMainParty &&
+                    assistanceReady && nativeDeclarationReady)
                 {
+                    if (assistanceContact != pp ||
+                        _assistanceGroups.ContainsKey(pp.StringId))
+                    {
+                        GwpAiDiagnostics.WriteAction(pp,
+                            "ASSISTANCE_DECLARATION_LOCAL_STRENGTH_READY",
+                            FormatLocalStrengthDeclarationDiagnostic(
+                                declarationPrediction!,
+                                assistanceEngagementStrength,
+                                assistanceTargetStrength));
+                    }
                     DeclareWar(task, criminal);
+                    RefreshAssistanceDutyAfterWarDeclaration(pp);
+                    if (task.FlowState == PoliceTaskFlowState.WarPursuit &&
+                        !_assistanceGroups.ContainsKey(pp.StringId))
+                    {
+                        TrySpawnImmediateCaseInterceptor(pp, task, criminal,
+                            declarationPrediction!);
+                    }
                 }
                 else if (!task.WarDeclared)
                 {
                     ClearTaskWarTracking(kvp.Key, false);
+                }
+
+                // 藏城只改变宣战后的驱逐执行时机，不能绕过或截断上面的
+                // 两层战力判定。未满足战力条件时继续围堵；本案正式宣战后
+                // 才复用既有拉出定居点、禁止回城和攻击主理人的流程。
+                if (isShelteredTarget &&
+                    HandleShelteredCriminal(pp, task, kvp.Key, criminal))
+                {
+                    continue;
+                }
+
+                // 协力军团因目标速度而分散后，英雄领主仍完全服从原版
+                // 短期判断。案件已经正式宣战时，由主理人真实分出一支
+                // 能追上目标的骑兵截击队先建立地图战斗；同案同时只保留
+                // 一支，既有截击队会由其生命周期继续维护。
+                if (task.FlowState == PoliceTaskFlowState.WarPursuit &&
+                    _assistanceGroups.TryGetValue(pp.StringId,
+                        out LordAssistanceGroup? assistanceGroup) &&
+                    assistanceGroup.DispersedForSpeed)
+                {
+                    TrySpawnImmediateCaseInterceptor(
+                        pp, task, criminal, null);
                 }
 
                 // 不下达追击命令，也不每小时强迫重新决策；案件保底欲望会在
@@ -755,6 +843,7 @@ namespace GreyWardenPolicePurity
         {
             if (mapEvent == null) return;
             GwpAiDiagnostics.WriteMapEvent(mapEvent, "ENDED");
+            HandleTaskOwnerMapEventEnded(mapEvent);
             HandleDelayPatrolBattleEnded(mapEvent);
             HandleAtonementMapEventEnded(mapEvent);
             if (!mapEvent.IsFieldBattle) return;

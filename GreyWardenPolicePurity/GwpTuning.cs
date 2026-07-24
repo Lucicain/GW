@@ -68,13 +68,6 @@ namespace GreyWardenPolicePurity
             public const float EscortPunishDistance = 3f;
             public const float AtonementIntelReportIntervalDays = 2f;
             public const float AtonementDeadlineDays = 45f;
-            public const int AssistanceBlockedHours = 3;
-            public const float AssistanceContactDistance = 12f;
-            public const float AssistanceAssemblyDistance = 5f;
-            // Native GoAroundParty converts this defend radius into an actual
-            // ring distance of radius²/2. 5.5 therefore keeps a gathering
-            // leader roughly fifteen map units from the stronger case target.
-            public const float AssistanceGoAroundDefendRadius = 5.5f;
         }
 
         internal static class Patrol

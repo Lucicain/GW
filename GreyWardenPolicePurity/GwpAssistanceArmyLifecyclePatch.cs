@@ -7,65 +7,63 @@ using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
+using System;
 using System.Linq;
 using System.Reflection;
 
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// GoAroundParty is the only native long-term behavior which dynamically
-    /// follows a hostile party while still allowing native short-term flight.
-    /// Its stock ring is too close for an outmatched assistance leader, so only
-    /// while reinforcements are still gathering, enlarge the radius passed to
-    /// the native defending-position calculation. No desire is disabled and no
-    /// point destination is written by the mod.
+    /// While the source assistance task remains active, formation lifetime is
+    /// owned by the enforcement system rather than Bannerlord's kingdom-army
+    /// lifecycle. Native no-war, food, inactivity, cohesion and other automatic
+    /// dispersals are blocked. When a target outruns the formation, enforcement
+    /// detaches lord parties one at a time and keeps the remaining Army alive;
+    /// full dispersal is authorized only if every helper has already detached
+    /// without producing a faster catcher, or when the source task is released.
     /// </summary>
     [HarmonyPatch]
-    internal static class GwpAssistanceGoAroundRadiusPatch
+    internal static class GwpAssistanceArmyDisbandGuardPatch
     {
-        private static readonly FieldInfo? OwnerField =
-            AccessTools.Field(typeof(MobilePartyAi), "_mobileParty");
+        [ThreadStatic]
+        private static int _authorizedDepth;
 
         private static MethodBase? TargetMethod() =>
-            AccessTools.Method(typeof(MobilePartyAi), "GetDefendingPosition",
-                new[]
-                {
-                    typeof(CampaignVec2),
-                    typeof(MobileParty.NavigationType),
-                    typeof(float),
-                    typeof(CampaignVec2).MakeByRefType()
-                });
+            AccessTools.Method(typeof(DisbandArmyAction), "ApplyInternal");
 
-        private static bool Prepare() =>
-            OwnerField != null && TargetMethod() != null;
+        private static bool Prepare() => TargetMethod() != null;
 
         [HarmonyPrefix]
-        private static void Prefix(MobilePartyAi __instance,
-            CampaignVec2 targetPosition, ref float defendRadius)
+        private static bool Prefix(Army army,
+            Army.ArmyDispersionReason reason)
         {
-            MobileParty? owner = OwnerField?.GetValue(__instance) as MobileParty;
-            if (PoliceEnforcementBehavior.ShouldExpandAssistanceGoAroundRadius(
-                    owner, targetPosition))
+            if (_authorizedDepth > 0 ||
+                !PoliceEnforcementBehavior.IsActiveAssistanceArmy(army))
+                return true;
+
+            MobileParty? leader = army?.LeaderParty;
+            if (leader?.IsActive == true)
+                GwpAiDiagnostics.WriteAction(leader,
+                    "ASSISTANCE_ARMY_NATIVE_DISBAND_BLOCKED",
+                    "reason=" + reason);
+            return false;
+        }
+
+        internal static void ApplyAuthorizedObjectiveFinished(Army army)
+        {
+            if (army == null)
+                return;
+
+            _authorizedDepth++;
+            try
             {
-                defendRadius = System.Math.Max(defendRadius,
-                    GwpTuning.Enforcement.AssistanceGoAroundDefendRadius);
+                DisbandArmyAction.ApplyByObjectiveFinished(army);
+            }
+            finally
+            {
+                _authorizedDepth--;
             }
         }
-    }
-
-    /// <summary>
-    /// An independent clan has no kingdom war containing landed fiefs, so the
-    /// native Army lifecycle would otherwise disperse a valid police army for
-    /// the kingdom-only "landed war" check. Every other dispersion rule remains
-    /// native, including starvation, inactivity and ordinary AI cancellation.
-    /// </summary>
-    [HarmonyPatch(typeof(DisbandArmyAction),
-        nameof(DisbandArmyAction.ApplyByNoActiveWar))]
-    internal static class GwpAssistanceArmyNoWarDisbandPatch
-    {
-        [HarmonyPrefix]
-        private static bool Prefix(Army army) =>
-            !PoliceEnforcementBehavior.IsActiveAssistanceArmy(army);
     }
 
     /// <summary>

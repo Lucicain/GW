@@ -174,6 +174,8 @@ namespace GreyWardenPolicePurity
         public bool IsPreparingDispatch { get; set; }
         public Settlement? EscortSettlement { get; set; }
         public bool IsPlayerBountyEscort { get; set; }
+        public float LeaderSoloSpeedAtAssignment { get; set; }
+        public bool HasTheoreticalLeaderSoloSpeedAtAssignment { get; set; }
 
         public bool IsTargetValid() => TargetCrime?.IsOffenderValid() == true;
 
@@ -873,6 +875,10 @@ namespace GreyWardenPolicePurity
             int prep = task.IsPreparingDispatch ? 1 : 0;
             string settlement = task.EscortSettlement?.StringId ?? string.Empty;
             int bounty = task.IsPlayerBountyEscort ? 1 : 0;
+            float leaderSoloSpeed =
+                MathF.Max(0f, task.LeaderSoloSpeedAtAssignment);
+            int theoreticalLeaderSoloSpeed =
+                task.HasTheoreticalLeaderSoloSpeedAtAssignment ? 1 : 0;
 
             store.SyncData($"gwp_lt_{i}_police", ref police);
             store.SyncData($"gwp_lt_{i}_target", ref target);
@@ -882,6 +888,10 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_lt_{i}_prep", ref prep);
             store.SyncData($"gwp_lt_{i}_settlement", ref settlement);
             store.SyncData($"gwp_lt_{i}_bounty", ref bounty);
+            store.SyncData($"gwp_lt_{i}_leader_solo_speed",
+                ref leaderSoloSpeed);
+            store.SyncData($"gwp_lt_{i}_leader_solo_speed_theoretical",
+                ref theoreticalLeaderSoloSpeed);
 
             if (!saving)
             {
@@ -898,6 +908,10 @@ namespace GreyWardenPolicePurity
                     ? null
                     : Settlement.FindFirst(s => s.StringId == settlement);
                 task.IsPlayerBountyEscort = bounty != 0;
+                task.LeaderSoloSpeedAtAssignment =
+                    MathF.Max(0f, leaderSoloSpeed);
+                task.HasTheoreticalLeaderSoloSpeedAtAssignment =
+                    theoreticalLeaderSoloSpeed != 0;
             }
         }
     }

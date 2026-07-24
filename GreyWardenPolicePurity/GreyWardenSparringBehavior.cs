@@ -6,6 +6,7 @@ using SandBox.Conversation.MissionLogics;
 using SandBox.Missions.MissionLogics;
 using SandBox.Missions.MissionLogics.Arena;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.CampaignSystem.Conversation;
 using TaleWorlds.CampaignSystem.Encounters;
@@ -418,6 +419,13 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            MobileParty? mainParty = MobileParty.MainParty;
+            if (mainParty == null)
+            {
+                ClearPendingSparring();
+                return;
+            }
+
             if (Hero.MainHero.IsPrisoner
                 || _pendingOpponent.IsDead
                 || _pendingOpponent.IsPrisoner)
@@ -426,10 +434,46 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // A castle conversation leaves the main party inside the settlement.
+            // Opening a free-standing field mission from that state makes the
+            // engine restore the stale castle_outside menu after the post-bout
+            // map conversation. The native menu/encounter state can then fault
+            // after every managed sparring callback has already completed.
+            // Actually leave the settlement first and launch on the following
+            // application frame; this also matches the visible fiction that the
+            // two parties step outside the walls to spar.
+            Settlement? currentSettlement =
+                mainParty.CurrentSettlement
+                ?? Settlement.CurrentSettlement;
+            if (currentSettlement != null)
+            {
+                try
+                {
+                    LeaveSettlementAction.ApplyForParty(
+                        mainParty);
+                    Debug.Print(
+                        "[GreyWarden Sparring] left settlement before field "
+                        + $"launch; settlement={currentSettlement.StringId}");
+                }
+                catch (Exception exception)
+                {
+                    Debug.Print(
+                        "[GreyWarden Sparring] could not leave settlement "
+                        + "before field launch: " + exception);
+                    MBInformationManager.AddQuickInformation(
+                        new TextObject(
+                            GwpText.Get(
+                                "{=gwp_sparring_launch_failed}This isn't a good place to spar, so we'll stop here.")));
+                    ClearPendingSparring();
+                }
+
+                return;
+            }
+
             // Wait until the friendly party meeting has been fully removed.
             // Never open a stored practice mission on top of a MapEvent.
             if (PlayerEncounter.IsActive
-                || MobileParty.MainParty.MapEvent != null)
+                || mainParty.MapEvent != null)
             {
                 try
                 {
@@ -447,7 +491,7 @@ namespace GreyWardenPolicePurity
                 }
 
                 if (PlayerEncounter.IsActive
-                    || MobileParty.MainParty.MapEvent != null)
+                    || mainParty.MapEvent != null)
                 {
                     return;
                 }

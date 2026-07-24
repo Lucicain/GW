@@ -18,7 +18,7 @@ Existing saves remain supported. Replace the complete module when updating rathe
 
 ## Latest update
 
-### 2026-07-23 v1.4-r7
+### 2026-07-25 v1.4-r7
 
 Compared with `v1.4-r6`:
 
@@ -30,15 +30,21 @@ Compared with `v1.4-r6`:
 - Added fief appeals. After helping capture a fief but receiving no award, the player may pay 50,000 denars to reopen the vote. The player is guaranteed a nomination, and higher Warden standing brings stronger public support.
 - Troop requests now draw from real Warden forces and are delivered by the Training Warden. Standing increases the order limit, unlocks elite troops, lowers prices, and all proceeds enter the Warden treasury.
 - Hero encyclopedia pages now show estimated deterrence recovery time, and deterrence lasts longer.
+- Assistance armies now assess the target army and nearby enemy support, keep adding available Wardens, and close the case with peace restored if every eligible force would still be insufficient.
+- Wardens now adjust between coordinated and dispersed pursuit according to local strength and pursuit speed. Fast offenders can be intercepted by cavalry detached from the initiating party, with survivors returning afterward.
 
 #### Fixed
 
-- Fixed weaker lords failing to call for help, assistance parties struggling to gather, and fast offenders slowing an entire army. Wardens now disperse when separate pursuit is faster.
-- Fixed offenders hiding in settlements or blocking settlement gates and causing prolonged standoffs.
+- Fixed weaker lords failing to call for help, assistance parties struggling to gather, fast offenders slowing an army, and viable cases stalling instead of entering battle.
+- Fixed offenders hiding in settlements, blocking settlement gates, or attaching to other armies and causing prolonged standoffs.
+- Fixed cases and empty armies lingering after their initiating Warden was defeated, which could cause a crash.
 - Adult Wardens now form parties normally and wear Warden lord equipment. Leaderless remnant parties are cleaned up automatically.
 - Fixed the Training Warden and Noble Affairs Liaison opening ordinary greetings, repeatedly intercepting the player, or starting a battle after handover. Unfunded requests may be postponed or withdrawn.
 - Fixed training exchanges being interrupted by replenishment or the Training Warden repeatedly choosing ordinary work instead.
 - Fixed fief appeals being resolved before the player could vote, and fixed support spent on the player's own claim failing to raise its vote share.
+- Fixed the player losing Warden standing and receiving a fine merely because Wardens pursued another offender from the player's kingdom.
+- Provost patrols now initiate their conversation on contact instead of waiting for the player to click them.
+- Fixed a possible crash after returning from a field spar initiated inside a castle.
 
 ### 2026-07-22 v1.4-r6
 

@@ -1,5 +1,263 @@
 # GreyWarden Maintenance Plan
 
+## 2026-07-25 v1.4-r7 同版本稳定性重发与正式玩家包
+
+- 用户明确要求本轮不新增公开版本号。此前作为 `v1.4-r8（开发中）` 累积的协力追捕、战争收束、
+  玩家纠察接触和切磋稳定性修正全部并入现有正式 `v1.4-r7`，不建立 `r8`。中英文玩家 README
+  已删除开发版条目并把玩家可见结果合并到单一 `2026-07-25 v1.4-r7` 条目；两个 README 均只
+  保留正式 `r7` 与 `r6` 两条记录，不介绍速度公式、区域战力系数、任务欲望、监控或封堵实现。
+  `GreyWardenPolicePurity.csproj` 与 `SubModule.xml` 的说明也恢复为 `v1.4-r7`，内部三段式模块
+  版本继续是 `1.4.7`，不构成 Bannerlord 1.4.7 硬依赖。
+- 最终诊断版 1.4.7 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`45` 条既有可空性/
+  离线 NuGet 警告并自动部署。正式发布前同一源码针对 1.4.5 与 1.4.6 的全源码交叉重建均为
+  `0` 错误、`44` 条既有警告；本轮此后只调整版本注释和双语 README，没有再改运行时代码。
+- 实机测试模块继续使用诊断版 DLL：`730112` 字节，SHA-256
+  `555F0BB347438B35CB4F8F1314351B44B128825A88B7F2BB21F29D773C74814E`。仓库
+  `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`，`18` 个 XML 解析失败
+  `0`；中文本地化共有 `834` 个 string id、重复 `0`。实机不存在 `Assets`、`AssetSources`、
+  `RuntimeDataCache`，并已移除一次权限检查遗留的 `.codex-permission-test.tmp`。
+- 正式无监控玩家构建位于
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r7-reissue-20260725`。
+  玩家 DLL 为 `711680` 字节，SHA-256
+  `7309B0B93238BB9D8F57FF74EFEA07632741E609A5074842C95D3C9D850777CF`，与实机诊断版
+  哈希不同，且构建时使用 `GwpDiagnosticsEnabled=false`、`DeployToLiveModule=false`，没有覆盖
+  本地测试 DLL。ILSpy 确认其 `GwpAiDiagnostics.LogPath` 为空，所有写入方法为空，两个追踪判断
+  恒为 `false`；二进制中 `AppendAllText`、`StreamWriter`、`FileStream`、诊断日志名均命中
+  `0`，同时确认本轮纠察主动接触、城堡切磋离城及移除阵营连带扣分的修正均已进入玩家产物。
+- 干净暂存目录为
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r7-reissue-final-20260725\GreyWarden`。
+  包含单一 `GreyWarden/` 顶层下的 `28` 个运行文件：`25` 个仓库正常客户端文件、客户端
+  `0Harmony.dll`、上述无监控 DLL 和已编译 shader cache。禁入的编辑器资产、运行缓存、
+  wEditor DLL、PDB、脚本、工具、日志、临时文件、开发文档及嵌套压缩包命中 `0`。独立解压目录
+  `build-check\verify-v1.4-r7-reissue-20260725` 与暂存目录相比缺失 `0`、多余 `0`、哈希差异
+  `0`；包内 DLL、双语 README 和无监控反编译结果均再次核对通过。
+- 本地正式文件仍沿用同名
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r7.zip`
+  及其 `.zip.sha256`，没有生成更高版本。ZIP 为 `349835030` 字节，SHA-256
+  `AE01062E6FF1CDEB41FE5F5CB8066AB65938EBA584C12822D4EE3EAB47FD9BEE`；校验文件为
+  `88` 字节且正文准确命名同一 ZIP。`Modules` 父目录只保留这一组最新正式包。仓库与包内中文
+  README SHA-256 为
+  `82CCB560B69B4B93D095B6121F802B973DA3698B4CB0613A6275C9EF0BEF10ED`，英文为
+  `1CDDB4AE1B9500C9509D737B3B6CD595656E8123DFF41A2CFD5757C988490DE6`。
+
+## 2026-07-25 v1.4-r8：玩家阵营连带扣分、纠察接触与城堡切磋崩溃
+
+- 最新实机监控确认，玩家加入 `empire` 后，灰袍对该国其他 AI 犯人执行案件所产生的阵营战争，
+  被 `PolicePatrolBehavior.OnDailyTick` 的旧全局检查误认为玩家本人违法。该检查不核对战争
+  原因，只要灰袍与 `Clan.PlayerClan.MapFaction` 交战就每两日扣 `4` 点声望并强制和平；
+  `PoliceEnforcementBehavior.DelayPatrols` 在非玩家案件的自动和平路径还会再按同一阵营身份
+  扣一次。结果是 AI 案件可以连带处罚玩家、生成罚款纠察队，并且强制和平还会打断仍在执行的
+  同阵营案件。两处“仅凭玩家所属阵营正在交战便扣分”的路径现已删除；玩家自己的犯罪、拒绝
+  纠察和既有罚款处理保持原有专用流程，AI 犯人的案件不再转嫁给玩家。
+- 监控中的 `gwp_patrol_16389` 证明纠察队确实取得
+  `dutyIntent=Approach:player_party`，并以 `GoToPoint` 持续接近，但该命令不会建立
+  `PlayerEncounter`，所以 `MapEventStarted -> PlayerEncounter.DoMeeting()` 永远没有机会
+  触发，玩家只能手动点击。招募使者已经有经过实机验证的两段接触链：远距离使用
+  `Approach`，进入 `3` 距离后清除该欲望并调用原版 `SetMoveEngageParty`，地图遭遇建立后
+  再用 `DoMeeting` 转入对话。纠察队现复用完全相同的接触链，并新增
+  `PATROL_FORCE_MEETING_APPROACH` 诊断记录。
+- 家族族长梵蒂本轮没有被原版补给或巡逻欲望困在城内。监控在
+  `campaignHour=636084.98` 明确记录 `TRAINING_TASK_ASSIGNED`：
+  她作为练兵官选择 `gw_leader_4_party_1` 为换防对象、会合点为 `castle_EN4`，随后持续显示
+  `dutyIntent=Visit:castle_EN4`；本人已经到达，但目标领主仍在执行普通案件，
+  `trainerReady=true; targetReady=false`。因此她在城堡等待属于既定练兵换防流程，本轮不修改
+  欲望或练兵任务。
+- 最新引擎日志 `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_40932.txt`
+  显示城堡交谈于 `00:58:05` 关闭后成功打开 `battle_terrain_L` 野外切磋，战斗、胜负、
+  Tab 离场和赛后对话全部正常；`00:59:34` 赛后对话关闭后却重新进入
+  `[GAME MENU] castle_outside`，随后 Windows 在 `00:59:42` 记录
+  `TaleWorlds.MountAndBlade.Launcher.exe` 的 `0xc0000005` 原生访问冲突。没有托管异常或
+  GreyWarden 堆栈，用户也取消了转储，因此无法取得更深的原生调用栈；但时间线已经定位到
+  “从仍处于定居点状态直接打开独立野外任务，任务结束后恢复过期的城堡菜单”这一不安全边界，
+  而不是单挑战斗或胜负回调本身。
+- 城堡等无竞技场定居点发起野外切磋时，`TryLaunchFieldSparringImmediately` 现在先调用原版
+  `LeaveSettlementAction.ApplyForParty` 让玩家队伍真实离开定居点，并在下一应用帧才打开
+  野外任务。这样保留“出城切磋”的玩家体验，同时保证任务和赛后地图对话都返回普通大地图，
+  不再恢复旧 `castle_outside` 菜单；若原版离城动作失败，则安全取消切磋并显示既有地点不合适
+  提示。
+- 首次源码构建为 `0` 错误、`47` 条可空性/离线 NuGet 警告并自动部署；其中两条新增警告来自
+  新增离城代码对 `MobileParty.MainParty` 的可空分析，随后已改为显式解析并守卫本地变量。
+  最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条既有可空性/离线 NuGet
+  警告并自动部署；1.4.5 与 1.4.6 全源码交叉重建均为 `0` 错误、`44` 条既有警告。
+- ILSpy 对实机 DLL 确认纠察接触链中的 `SetMoveEngageParty` 与
+  `PATROL_FORCE_MEETING_APPROACH`、野外切磋前的
+  `LeaveSettlementAction.ApplyForParty` 均已进入产物；通用
+  `TryApplyPlayerAutoPeacePenalty` 调用和纠察每日检查中的
+  `ChangeReputation(-4)` 均命中 `0`。玩家自身违法的专用处罚入口未删除。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个 XML
+  解析失败 `0`。实机客户端与编辑器 DLL 均为 `730112` 字节，SHA-256 均为
+  `555F0BB347438B35CB4F8F1314351B44B128825A88B7F2BB21F29D773C74814E`。仓库与实机中文
+  README SHA-256 均为
+  `B66AD6AD7D2FE54A046C9C38981DED803A1E9685F0A5A758436865022C5E4396`，英文均为
+  `BB28710286F596BC09DB81110303A451CEEBA9CEFF32199292C34EB27A1266D7`。没有启动游戏，
+  行为验证仍由用户完成；本轮是普通开发构建，没有创建或改写正式 ZIP。
+
+## 2026-07-25 v1.4-r8 开发：原版理论速度与对称现场战力
+
+- 协力速度生命周期不再读取缓存的 `LastCalculatedBaseSpeed` 作为案件门槛。新增
+  `GetTheoreticalBaseSpeed`，每次直接调用原版
+  `Campaign.Current.Models.PartySpeedCalculatingModel.CalculateBaseSpeed`，使用原版返回的
+  `ExplainedNumber.BaseNumber` 和 `SumOfFactors` 计算当前部队结构下的理论基础速度；若部队正处于
+  `IsDisorganized`，只消除原版明确加入的 `-0.40` 战后混乱因子，不修改部队状态，也不复制
+  兵员、坐骑、载重、伤兵、俘虏和士气等原版公式。原版把潮湿天气对骑兵与骑马步兵的两条修正
+  异常地放在基础速度而非最终地形速度中，因此同时从 `ExplainedNumber.GetLines()` 精确识别并
+  排除这两条有文本标识的环境修正；不排除任何结构性速度项。
+- 主理人独立且首次接案时只锁定一次上述理论速度；目标则在每次协力更新中先解析到实际移动主体
+  （攻城队长、军团长、附着对象或目标本人），再重新调用同一原版算法。军团仅在目标当前理论速度
+  严格高于主理人接案时理论独立速度时全组分散；目标速度回落到小于等于该基准时，同一案件重新
+  组军。目标因伤亡、增兵、载重或加入/离开军团发生的结构变化仍会正常改变理论速度，短暂战后
+  混乱不再造成错误拆组。
+- `PoliceTask` 新增 `HasTheoreticalLeaderSoloSpeedAtAssignment`，存档键为
+  `gwp_lt_{i}_leader_solo_speed_theoretical`。新旧任务只有在该标志为真时才信任已保存速度；
+  旧存档缺少标志时，会在主理人下一次独立状态中用新口径重新锁定一次，因此当前测试档不会继续
+  沿用旧版可能受战后混乱污染的 `1.82` 等缓存值。
+- 第二层宣战仍比较“实际到场的我方区域战力”与“实际到场的敌方区域战力”，不会把远处未到场
+  的承诺力量虚算进来。友军扫描现按原版从行动者周围三倍接战半径查找，再限制为目标周围两倍
+  接战半径；普通外围友军继续使用原版线性衰减。
+- 补回了原版 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior` 的共同目标分支：附近友军的
+  原版 `AiBehaviorPartyBase`、同一 `MapEvent` 或模组协力职责若指向同一实际目标，该战斗组贡献
+  系数直接为 `1`。因此已经位于现场并共同环绕同一犯人的多名灰袍会按完整区域战力参与第二层
+  判断，不再出现敌方围城参战者全额计入、我方其他现场协力领主只剩约 `1.7%` 的不对称。
+- `ASSISTANCE_DECLARATION_*` 诊断新增 `friendlyLocalGroups`，逐组记录实际计入战力和系数；
+  速度诊断同时区分缓存基础速度、动态理论目标速度及主理人接案时理论速度，便于实机确认旧档
+  重算、共同目标全额计入及拆组边界。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`45` 条既有可空性/离线
+  NuGet 警告并自动部署；1.4.5 与 1.4.6 全源码交叉重建均为 `0` 错误、`44` 条既有警告。
+  ILSpy 对实机 DLL 确认原版 `CalculateBaseSpeed` 调用、`SumOfFactors`、混乱因子恢复、
+  `GetTheoreticalBaseSpeed`、共同目标全额分支、理论速度存档标志及
+  `friendlyLocalGroups`，以及两条潮湿天气环境修正的剔除均已进入产物。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个 XML
+  解析失败 `0`。实机客户端与编辑器 DLL 均为 `730112` 字节，SHA-256 均为
+  `A215FAF159BA49BA77E8FA7AF56B2AEFC521C6C3D74E7A98B55674FC8D2EE430`。仓库与实机中文
+  README SHA-256 均为
+  `D44D71DC21F90F3F4DB43A1C619823F62D04EA8C0A4DB0E4810E75E6D8A335C3`，英文均为
+  `E091EDB2F81887567967A8C9EB253CB941AF31931E956DBD79996DD8F4E5C350`。没有启动游戏，
+  行为验证仍由用户完成；普通开发构建没有创建或改写正式 `v1.4-r7` ZIP，其 SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-07-25 v1.4-r8 诊断修正：现场友军战力与速度基准口径
+
+- 最新监控中的案件为晨曦 `gw_leader_4_party_1` 追捕
+  `lord_6_1_party_1`。第一层整案战力没有漏算：围城开始时四名协办人与主理人的承诺战力约
+  `1385.61`，敌方目标、军团及围城参战者的区域战力约 `1310.04`，因此整案具备完成能力。
+- 第二层的 `265～296` 不是“现场只有一个灰袍”，而是现有近场公式把行动者本人按全额计入，
+  却把同样围绕该目标、位于约 `5.95` 距离的其他协力领主按外圈线性衰减到约 `1.7%`。敌方当时
+  已进入围城 `MapEvent`，七支实际参战部队则按全额计入，形成了敌方全额、我方除单个行动者外
+  几乎归零的不对称；这就是日志中我方现场战力异常偏低的直接原因。
+- 1.4.7 原版 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior` 并非单纯对所有外圈友军
+  做同一衰减。附近友军若已经把同一个敌方部队或同一个战斗作为 AI 目标，
+  原版 `flag2/flag3` 分支会把其贡献系数直接设为 `1`；同军团、同敌方军团和同围城目标也有
+  相同的全额协同分支。现有模组近场近似遗漏了“共同追踪同一目标”的分支，所以没有忠实复用
+  原版区域战力判断。
+- 正确的第二层仍应是“实际到场的我方区域战力”对“实际到场的敌方区域战力”，不能把远处尚未
+  到场的整案承诺战力直接算进来；但已经处在原版局部扫描区域内、且明确追踪同一案件目标的协力
+  主理人和协办人，应按原版共同目标规则全额计入，而不是逐个只看单队，也不是在外圈只剩
+  `1.7%`。用户现场看到约四支灰袍而日志仍只有约三百战力，确属公式缺口。
+- 当前速度字段同样被上一版诊断错误称为“理论最大速度”。源码实际保存和比较的是
+  `MobileParty.LastCalculatedBaseSpeed`。它虽已排除最终地形、昼夜等部分即时修正，但原版
+  `CalculateBaseSpeed` 仍包含当前兵员规模、骑兵与坐骑、载重、牲畜、伤兵、俘虏、士气、潮湿
+  天气，以及 `IsDisorganized` 的 `-40%` 修正，因此不是稳定的每队理论上限。
+- 这解释了主理人接案速度只有 `1.82`，以及目标在围城结束后出现
+  `2.21～2.33 -> 1.76 -> 2.65` 的变化：伤亡、军团附着、载重/俘虏、伤兵和战后混乱等状态
+  都会使 `LastCalculatedBaseSpeed` 重新计算。目标附着于军团时还必须解析到实际移动的军团长，
+  否则目标附属队自身速度会是零。
+- 更合适的追赶口径是“当前队伍结构下的标准化独立基础速度”：继续调用原版速度模型并保留会
+  实际影响长期追赶的兵种、坐骑、载重、伤兵、俘虏等结构性因素，但排除短暂的战后
+  `IsDisorganized` 修正，也不使用地形、昼夜和当前是否正在移动。主理人在接案时只锁定一次该
+  标准化独立速度；目标则始终解析到其实际移动主体，并动态重算同一口径。这样军团重组条件才是
+  “目标标准化基础速度小于等于主理人接案时的标准化独立基础速度”，不会因主理人刚打完一仗
+  而永久锁进过低阈值。
+- 目标速度仍可能因部队伤亡、增兵、加入或离开军团、载重及俘虏变化而合理变化；应消除的是战后
+  混乱等短期噪声，而不是把目标速度冻结成永远不变的常数。原版提供公开算法入口
+  `Campaign.Current.Models.PartySpeedCalculatingModel.CalculateBaseSpeed`，可直接得到具体部队
+  的完整 `ExplainedNumber`，包括 `BaseNumber`、`SumOfFactors` 和最终结果；因此无需复制整套
+  原版速度公式。它返回的是包含当前临时状态的基础速度，不是另一个已经剔除临时修正的专用
+  “理论最大速度”属性。模组可以调用该原版算法后，仅从公开因子结果中排除
+  `IsDisorganized=-0.4` 等明确不应污染案件基准的短期项，得到标准化理论速度。
+  `Campaign.EstimatedMaximumLordPartySpeedExceptPlayer` 则只是全局扫描估算值，不能代替具体
+  目标计算。本轮只完成诊断修正，尚未修改运行时代码，也没有启动游戏。
+
+## 2026-07-24 v1.4-r8 开发：分散协力案件追截队与藏城宣战流程
+
+- 最新监控中的阿塞莱目标同时对应三宗灰袍案件，但只有其中两宗已经把各自任务切入
+  `WarPursuit`。远星承办的 `CharacterObject_2717` 案件虽已有五名协力成员并因速度全组分散，
+  任务本身仍为 `Pursuit`、`war=False`；目标 `lord_3_3_party_1` 躲在 `town_A4`，远星和晨曦
+  均稳定停在距目标约 `5.95` 的原版 `GoAroundParty` 外圈。其他案件造成的势力战争不会代替
+  本案自己的宣战状态，因此既有“本案宣战后驱逐并强制目标攻击主理人”入口始终没有启动。
+- 根因是 `HandleShelteredCriminal` 在正常宣战判断之前提前处理并返回 `true`，调用者随即
+  `continue`，所以藏城案件完全没有执行既有两层判定：第一层
+  `HasAssistanceEngagementStrengthAdvantage` 比较全部已承诺协力战力与敌方区域战力；第二层
+  `TryGetNativeDeclarationCandidate` 再比较进入接触范围的我方实际区域战力与敌方实际区域
+  战力。正常协力路径原本已经把接触距离提高到
+  `GetNativeMaximumGoAroundDistance()`，距离本身并不是缺口。
+- 曾短暂把协力藏城案件的 `HandleShelteredCriminal` 宣战距离直接提高到原版环绕外圈，但该
+  做法错误地把“进入判定范围”当成了“获得宣战许可”，会绕过两层战力判断；用户指出后已立即
+  删除，不能作为最终实现。最终流程把藏城处理移到正常宣战判定之后：目标在城内时仍完整执行
+  两层战力比较，只有两层均通过并让本案真正进入 `WarPursuit` 后，才复用既有停留计时、拉出
+  定居点、禁止重新进入和强制目标攻击主理人的流程；未达到战力条件时只继续围堵和增援。
+- 原高速追截分兵只在普通案件刚发生 `Pursuit -> WarPursuit` 转换的一刻调用，因此上述另外
+  两宗已经宣战、但因目标更快而分散的协力案件不会派出追截队。现在任务为 `WarPursuit`、
+  主理人仍有效、协力组目标与本案目标一致且 `DispersedForSpeed=true` 时，也会从主理人现有
+  健康骑乘兵中真实转移 `3～8` 人建立同一类无英雄高速追截队。只有按原版即时速度确认追截队
+  严格快于目标实际移动主体后才保留，否则立即把士兵无损退回。
+- 同一案件仍只允许一支未返程追截队；它继续复用 `DirectAttackLock` 和原版
+  `EngageParty`，只负责先建立地图战斗，不修改任何英雄领主的长期或短期欲望。案件结束后的
+  幸存者仍真实返回主理人；若协力军团后来重组，现有追截队也可复用原入口加入军团。新增部署
+  诊断字段 `trigger=assistance_speed_dispersed`，可与普通案件的
+  `trigger=ordinary_declaration` 区分。
+- 本轮只修改高速追截保底和藏城控制流，没有改变协力战力规模、两层战力公式、任务级速度基准、
+  整组分散或重组条件。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条既有可空性/离线 NuGet
+  警告并自动部署；1.4.5 与 1.4.6 全源码交叉重建均为 `0` 错误、`44` 条既有警告。ILSpy 对
+  实机 DLL 确认 `TryGetNativeDeclarationCandidate` 和 `DeclareWar` 均位于
+  `HandleShelteredCriminal` 调用之前；后者函数体内 `DeclareWar` 与
+  `GetNativeMaximumGoAroundDistance` 均命中 `0`，只保留 `task.WarDeclared` 驱逐门槛。
+  分散协力追截入口与 `assistance_speed_dispersed` 诊断仍存在。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比差异 `0`，`18` 个 XML 解析失败 `0`。
+  实机客户端与编辑器 DLL 均为 `727552` 字节，SHA-256 均为
+  `0DB0CD6BE295F0BC85DAB0FDFD6326DDEF47214D136B405107B35210621EAD76`；仓库与实机中文
+  README SHA-256 均为
+  `592B48796360874D6349C449DE3DD851A9A1C76C21E6CD152A00C03C82D428A9`，英文均为
+  `84A025859BF27CFD7BD6D3A9B843F3BBFA01F6E186CC79E3B9D5CB21AD4E3CCF`。没有启动游戏，
+  行为验证仍交给用户；普通开发构建没有创建或改写正式 `v1.4-r7` ZIP，其 SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-07-24 v1.4-r8 开发：普通案件高速追截分兵
+
+- 用户确认该功能只服务于普通非玩家案件。势力层已经因其他案件处于战争状态不能触发分兵；唯一触发点放在当前任务自己的 `Pursuit -> WarPursuit` 转换之后，即 `task.WarDeclared` 在本次案件更新中刚被置为真时。
+- 该转换仍复用既有宣战门槛：主理人与本案目标距离不超过普通案件 `WarDistance=3`，`TryGetNativeDeclarationCandidate` 已按原版可参战范围确认我方实际区域战力严格高于敌方区域战力。协力组存在、玩家案件、主理人正在地图战斗或已属于军团时均不生成高速追截队。
+- 只有目标实际移动队伍按原版 `MobileParty.Speed` 即时重算后的速度高于主理人时才尝试分兵。追截队与主理人同一 `CampaignVec2` 创建，从主理人现有名单中真实转移健康骑乘兵，不生成士兵；按高阶优先最多取 `8` 人，少于 `3` 名可用骑乘兵则放弃生成。模板自带名单和物品会先清空，只保留现有临时执法补给入口提供的口粮。
+- 分兵完成后再次调用原版速度模型计算追截队实际速度；只有追截队严格快于目标实际移动队伍才保留并发令，仍追不上时立即把刚转移的士兵无损退回主理人并销毁空队，不把一个无效追截队留在地图上。
+- 追截队使用既有 `gwp_enf_delay_` 无英雄临时执法部队类型，因此复用已经验证的 `DirectAttackLock`：进攻主动性 `1`、逃避主动性 `0`、关闭后续欲望决策并只对本案目标下达原版 `EngageParty`。主理人的欲望和短期行动仍完全交给原版 AI；追截队只负责先建立地图战斗。
+- `DelayPatrolState` 新增并存档 `IsImmediateInterceptor`。每宗案件同时最多存在一支未返程的高速追截队；它若在追捕期间转为协力案件，仍可沿用现有入口加入协力军团，不会生成第二套军团逻辑。
+- 案件结束、目标被击败或战争理由清除后，追截队解除直攻并用原版 `EscortParty` 返回原主理人；进入原版军团接触距离后，把全部健康与负伤幸存者按真实名单并回来源部队，再销毁空队。追截队战败则其实际损失保留；主理人已失去带兵资格时仍走既有返城清理兜底。
+- 新增中文部队名 `灰袍高速追截队`，英文回退名为 `Grey Warden pursuit detachment`。新增诊断 `IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED`、`IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW` 与 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED`，分别记录本案任务、三方速度、区域战力、真实转移人数、速度不足回滚及归队人数。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条既有可空性/离线 NuGet 警告并自动部署；1.4.5 与 1.4.6 全源码交叉构建均为 `0` 错误、`44` 条既有警告。ILSpy 对实机 DLL 确认任务级宣战转换后的分兵入口、原版 `MobileParty.Speed` 三方重算、模板物品清空、真实名单转移、速度不足回滚、存档键 `gwp_enf_dp_immediate_interceptors` 和三条新诊断均已进入产物。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML 解析失败 `0`，`git diff --check` 通过。实机客户端与编辑器 DLL 均为 `727040` 字节，SHA-256 均为 `BE96635627FDE97179CCF3CA640717DE477C238FCF949D3B6D0601EFFDC9358F`；仓库与实机中文 README SHA-256 均为 `A0F5A75252DF2CA28D1926BFCA7D7465EC6AC6FA789A7603321ADB6B2FC1036B`，英文均为 `082DE95257E39CA1922E23078A998F5AC33850F3722CF2BCAA418679AC85884D`。按用户要求没有启动游戏，由用户进行行为验证；普通开发构建没有创建或改写正式 ZIP，本机唯一正式包仍为 `GreyWarden-v1.4-r7.zip`，SHA-256 仍为 `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-07-24 v1.4-r8 诊断：高速普通案件会从单人追捕拖成协力案件
+
+- 监控确认该现象真实存在。`21:44:14-19` 的 `lord_5_91` 案件中，梵蒂战力 `458.85`，目标最初仅 `40.44`，因此最初确实属于单人足以处理的普通案件；但梵蒂基础速度 `3.61`，目标速度 `3.90`。宣战后梵蒂长期行为保持案件要求的 `GoAroundParty`，短期行为反复为 `GoToPoint`，原版即时判断记录为 `FleeToPoint`，没有生成 `EngageParty`，双方距离长期维持在约 `5.7-6.2`。
+- 当前 1.4.7 原版 `AiEngagePartyBehavior` 已用 ILSpy 核验：它将追击方速度除以目标速度，并把这个比值取四次方写入接战分数；附近已经 `GoAroundParty` 或 `EngageParty` 同一目标的友军战力另行累加。因而高速目标不仅物理上更难追上，还会显著压低慢速领主的原版接战欲望；已经接战的友军到场则会同时提高原版对总友军力量的判断。
+- 同一 `lord_5_91` 案件拖到 `22:05:47` 后，目标已经从 `35` 人恢复到 `99` 人，附近又出现 `lord_5_6_party_1`。区域敌军总战力变为 `243.74`，高于当时新承办人远星的 `222.78`，协力系统因此才加入梵蒂并建立军团。这证明“最初单人可办，长期追不上后敌方区域增兵，最终又转为协力”是现有机制的真实结果。
+- 无英雄纠察支援队不是普通领主 AI。`GreyWardenPartyDesireBehavior` 会为其设置 `DirectAttackLock`、进攻主动性 `1`、逃避主动性 `0`，直接使用一次原版 `EngageParty` 并跳过后续小时思考。因此它能够先强行碰撞目标；地图战斗一旦建立，附近灰袍又会按原版加入。用户观察到“普通领主长期环绕，支援队先开战后其他灰袍才参战”与代码和监控均一致。
+- 这也说明普通案件当前存在一个边界缺口：是否需要协力只按战力决定，单人明显更强时不会因追击速度不足提前改变组织方式；宣战后的普通领主仍完全服从原版短期 AI，而原版接战分数又主动惩罚速度劣势。
+- 本次崩溃中书弦突然成为军团长是另一个独立路径：她在 `22:19:14.904` 已持有 `CharacterObject_1549` 案件，战力 `110.55` 对目标 `35.63`，无需协力；`22:19:15.217` 她被与案件无关的 `lord_1_67_party_1` 拉入野战。战斗进行到 `22:19:17.722` 时，伤亡结算让她的实时 `EstimatedStrength` 暂降到 `1.73`，小时协力评估遂把 `1.73` 与远处案件目标的 `35.63` 比较，当场把她设为军团长并征调静澜。该升级本身不再被禁止；最终修复点是她战败失去带兵资格时立即让任务失败并同步拆除军团。
+
+## 2026-07-24 v1.4-r8 开发：战斗结算期间建立协力军团导致原生崩溃
+
+- 最新复现不是普通原版退出崩溃，而是本模组协力军团生命周期造成的原生无效状态。Windows Application Event 1000/1001 记录 `TaleWorlds.MountAndBlade.Launcher.exe` 以 `0xc0000005`、`StackHash_dd2a` 终止；RGL 与 ButterLib 均无托管异常栈，watchdog 记录用户取消生成崩溃转储。
+- 诊断时间线证明：`22:19:17.283`，书弦的 `CharacterObject_2882_party_1` 正在一场尚未结算的野战中；`22:19:17.722-17.723`，即时协力评估仍以该部队为首领创建真实 `Army`，把静澜的 `CharacterObject_2875_party_1` 加入并附着。`22:19:18.168-18.171` 书弦战败被俘，首领从部队消失，但静澜仍附着于这个只剩无领主首领部队的协力军团；诊断于 `22:19:18.552` 停止，随后发生原生访问冲突。
+- 根因不是“任务在战斗中升级为协力”，而是升级后主理人战败失去带兵资格，旧任务失败门槛却没有立即命中。原有 `OnMapEventEnded` 只处理已宣战且案件目标同场的战斗，因此主办人在无关战斗中败北时既不结束任务，也不释放受协力军团保护的真实 `Army`，最终留下无有效军团长但仍有支援者附着的原生无效状态。
+- 曾短暂采用两层封堵：`UpdateLordAssistance` 在主办人处于 `MapEvent` 时跳过全部协力处理，`GetAssistanceEvaluationTarget` 再次拒绝把该任务升级为协力。用户确认这会不必要地禁止合法升级后，两层封堵均已删除；正在战斗本身不再阻止普通任务升级、重组或扩充协力。
+- 根因门槛同时下放到所有进行中的案件，而不只检查已有协力组：只要任务主理人参战后已失去有效带兵身份（部队失活、失去领主部队/首领、首领死亡、被俘或成为逃亡者），该任务就在本次 `MapEventEnded` 内立即失败。协力组若已存在，先授权解散真实军团并释放全部附着支援者，再清除任务、欲望和战争追踪；普通任务也走同一失败入口。小时更新保留相同条件作为非战斗生命周期变化的兜底。
+- 该失败判定不依赖任务是否已经宣战，不要求案件目标参加同一场战斗，也不等待下一次小时检测。普通案件按既有 `EndTask` 语义从案件总卷删除；玩家长期通缉仍由其专门规则保留。
+- 诊断动作只保留 `TASK_FAILED_OWNER_CANNOT_LEAD_AFTER_BATTLE`；已删除与旧封堵对应的 `ASSISTANCE_DEFERRED_LEADER_IN_MAP_EVENT`。
+- 崩溃证据位置：`C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_16428.txt`、`rgl_log_errors_16428.txt`、`watchdog_log_16428.txt`，以及 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`。
+- 修复后 1.4.7 正式 `Release -t:Rebuild --no-restore` 构建为 `0` 错误、`44` 条警告，其中一条是 NuGet 漏洞索引暂时无法连接；1.4.5 与 1.4.6 接口交叉构建均为 `0` 错误、`43` 条既有警告。
+- 实机诊断 DLL 为 `721920` 字节，SHA-256 `DAAD4D1C362A4E7AF4162F9CCA1C4932103006CDB96E672654CEAC11947C1EC6`。ILSpy 已确认 `HandleTaskOwnerMapEventEnded`、`FailTaskBecauseOwnerCannotLead`、带兵资格统一判定、小时兜底及新诊断动作均存在；`ASSISTANCE_DEFERRED_LEADER_IN_MAP_EVENT` 命中为 `0`，协力评估入口也不再检查主办人的 `MapEvent`。
+- `_Module` 到实机正常客户端目录共核对 `25` 个部署文件：缺失 `0`、哈希差异 `0`；中英文 README 均逐字节一致。解析 `18` 个运行时 XML，错误 `0`。本次是普通开发部署，没有创建或替换正式发布 ZIP。
+
 ## Canonical Original-History Baseline (2026-07-21)
 
 - Added `docs/original-history-canon.md` as the immutable historical baseline for all Grey Warden lore and quest design.
@@ -7379,3 +7637,336 @@ irreplaceable backup; the editor workspace does not replace it.
   `sha256:963aa367a2512126e5dbb92d04792a0075c3c1de20dd7d40b61b6e2468ece15a`，与本地一致。
   远端校验文件为 `88` 字节，SHA-256 为
   `8A5F963D1DB3AF6D45B53BF7D31EDB8A9157765643100A978A04AC9747438CB6`，同样与本地一致。
+
+## 2026-07-23 v1.4-r8 开发：协力军团可重复组建与纯速度生命周期
+
+- 用户重新定义协力军团的生命周期边界：一个案件不能一生只拉一次军团；因目标过快而分散后，
+  同一案件必须仍可再次组建。协力任务仍有效期间，军团不能再因原版无战争、缺粮、停滞、凝聚力、
+  AI 取消或未知原因自行解散；主动分散只取决于当前目标速度是否高于已组建军团速度。案件完成、
+  任务被替换、领主失效或玩家最高优先任务接管时的清理属于任务生命周期结束，不是追捕中的速度
+  分散。
+- 现状中的“一次性”来自 `LordAssistanceGroup.DispersedForSpeed`：一旦速度分散便永久保持 true，
+  后续每小时只让各领主分头追捕，直到案件结束，从未存在恢复为 false 的路径。现新增持久化的
+  `LastArmySpeedAtDispersal`；实际分散时记录当时真实军团速度。目标后来降到不高于这个可追赶
+  阈值时，原协力组会清除分散状态，使用同一批成员重新创建真实 `Army`、集合并再次检查实际
+  军团速度。若重新集合后仍追不上，会再次分散并记录新的真实速度，因此同一案件可以在
+  “组军—分散—再组军”之间反复切换，而不是永久锁死在第一次结果。
+- 用户怀疑非宣战阶段的快目标无法触发分散，该判断由源码证实：旧速度检查复用了
+  `GetValidAssistanceOffender`，而该入口要求 `WarDeclared=true`、流程为 `WarPursuit` 且双方
+  当前实际交战；只要其中一项不满足就返回 null，随后旧代码直接保留军团并跳过速度比较。现在将
+  “案件仍有效且目标部队活跃”的 `activeTarget` 与“允许战争追捕”的 `groupOffender` 分开：
+  速度比较始终读取 activeTarget，不再依赖宣战状态；非战争阶段分散后的领主使用 Approach，
+  战争追捕阶段才使用 Pursue，避免在和平阶段错误下达敌对追击欲望。
+- 原版 `DisbandArmyAction` 共有无战争、缺粮、停滞、凝聚力耗尽、成员不足、未知原因等多条入口；
+  旧实现只拦截 `ApplyByNoActiveWar`，因此“其他原因也会解散、之后再重建”的行为与新边界冲突。
+  现改为窄范围 Harmony 前缀拦截私有统一入口 `ApplyInternal`：只有
+  `IsActiveAssistanceArmy` 为 true 时才阻止全部原版自动解散，并记录
+  `ASSISTANCE_ARMY_NATIVE_DISBAND_BLOCKED` 及原版原因；普通王国军团完全不受影响。模组自己的
+  速度分散和任务结束清理通过线程局部授权作用域调用原版 `ApplyByObjectiveFinished`，不会被
+  该守卫拦截，也不会把授权泄漏给其他军团。
+- 旧存档没有新的速度阈值时使用当前组内灰袍领主的最慢独立速度作为一次保守估计；重建真实军团
+  后立即回到实际军团速度判断。新增存档键
+  `gwp_enf_assist_speed_thresholds` 与原协力组顺序同步，不改变既有组、成员、案件和分散状态
+  的载入方式。
+- 中英文玩家 README 已开启 `v1.4-r8（开发中）`，只以一条玩家结果说明协力军团可按速度分散并
+  在同一任务中再次集结，不公开上述状态机和原版拦截细节；README 只保留开发中 `r8` 与正式
+  `r7`。`Release -t:Rebuild --no-restore` 构建成功，`0` 错误、`44` 条既有可空性/离线 NuGet
+  警告。反编译实机 DLL 确认速度阈值持久化、重新组军日志、非战争 activeTarget、Approach
+  回退、`ApplyInternal` 守卫、原版解散拦截诊断和授权解散入口均已进入部署产物。
+- 自动部署后仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、SHA-256 不一致
+  `0`，`18` 个 XML 解析失败 `0`。客户端与编辑器 DLL 均为 `700928` 字节，SHA-256 均为
+  `CD1791F8E256A10D42BEB3047FF83DB337A466865048A275579EE150FFED34DC`；仓库与实机中文
+  README SHA-256 均为
+  `79BD33185B04DA89BEF68387177D032FC3AE97FA73FD1F8162F1DC8B4740D0EE`，英文均为
+  `DC8E25059DC7D8336EE58E0AC4687858BF17E5CDCB84164D0EA9F38DEB52BDA6`。没有启动游戏，
+  没有创建或改写正式 `v1.4-r7` ZIP。
+- 同一份完整源码继续使用既有兼容审计工程分别引用 Bannerlord `1.4.5` 与 `1.4.6` 程序集交叉
+  构建；两次均为 `0` 错误、`43` 条既有警告，确认本轮新增的私有解散入口守卫、速度阈值存档及
+  重组逻辑没有引入这两个目标版本的编译断裂。
+
+### 2026-07-23 实机监控：附属目标速度为零阻止重新组军
+
+- 最新监控中的协力案件由 `CharacterObject_2875_party_1` 主办，已有 `5` 名协办人；已承诺战力
+  `1980.46`，目标实际军团战力 `950.12`，因此不是战力不足或增员失败。组内保持
+  `speedDispersed=true` 且无 `Army`，说明流程停在速度分散后的重组门槛。
+- 案件目标 `CharacterObject_1584_party_1` 已附着于敌方军团长 `lord_1_41_party_1`。附属目标
+  自身 `LastCalculatedBaseSpeed=0.00`，实际移动的军团长为 `2.73`。旧重组判断直接读取附属目标
+  并把速度小于等于 `0.01` 当成“不可重组”，因此永久返回 false；战力已足够也无法重新建立军团。
+- 速度生命周期现与战力目标使用相同的实际主体解析顺序：攻城队长、军团长、附着对象、案件目标。
+  分散和重组均比较该实际移动主体；速度为零表示目标没有比上次军团更快，允许重新组军，不再作为
+  禁止条件。速度诊断同时记录 `speedTarget`、案件目标自身速度、实际移动主体速度及上次军团速度，
+  便于区分附属队伍与真实移动对象。玩家 README 现有“按速度分散并可在同案重组”说明已经准确，
+  本次只补充“目标加入其他军团后仍可重组”的玩家结果，不公开内部状态机。
+- 修复后的 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有警告；1.4.5 和
+  1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对实机 DLL 确认
+  `ResolveAssistanceMovementTarget`、速度分散/重组调用及新增速度对象诊断均已进入产物。
+  实机客户端与编辑器 DLL 均为 `703488` 字节，SHA-256 均为
+  `7184FD829C4248AA378881D075321FCA95DF390D59411CF5E16260BCDB779F99`。仓库 `_Module`
+  的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；`18` 个 XML 解析失败 `0`。
+  仓库与实机中文 README SHA-256 均为
+  `0D030E9792C26256CA85086A74A864A185127B2ED4876131E7862D763E9A71F4`，英文均为
+  `08C333442D8C058226377C5ACD4F21ECAD112C1C85CB46C7BA81845D52B49E15`。
+  没有启动游戏，没有创建或改写正式 `v1.4-r7` ZIP。
+
+### 2026-07-23 协力速度分散改为逐名脱离
+
+- 用户进一步纠正速度生命周期：军团慢于目标时不能一次解散整支军团，而应每次只让一名协力领主
+  脱离，只要已有一名独立领主或剩余军团速度严格高于目标，就停止继续拆分。第一版曾在同一次
+  小时更新中通过 `SpeedExplained` 立即刷新刚脱离领主并继续循环拆人；后续实机监控证明这个
+  即时数值仍带有军团附着状态，不能作为独立速度使用，该方案已在 2026-07-24 撤销。
+- `LordAssistanceGroup` 新增持久化的 `SpeedDetachedPartyIds`，存档键为
+  `gwp_enf_assist_speed_detached`。未脱离成员继续使用原版 `EscortParty` 追随主办人并保留在
+  真实 `Army`；已脱离成员改为独立追踪案件目标。部分分散期间原版无战争、粮食、凝聚力等自动
+  解散仍被守卫拦截，不能把剩余军团误拆掉。目标速度回落到完整军团可追赶范围时，清空逐名脱离
+  记录并让全部成员重新集结，因此同一案件仍可反复拆分和重组。
+- 每次速度更新最多只能实际脱离一人，必须等该领主在后续更新中确认 `Army == null` 且
+  `AttachedTo == null` 后，才读取稳定的独立速度并决定是否需要下一名。新诊断
+  `ASSISTANCE_ARMY_SPEED_SPLIT_STARTED`、`ASSISTANCE_SPEED_MEMBER_DETACHED` 和
+  `ASSISTANCE_SPEED_CATCHER_READY` 分别记录开始拆分、实际脱离者、当前追得上的领主，以及案件
+  目标/实际移动目标速度、剩余军团速度和脱离人数。总览诊断增加 `speedDetached` 与
+  `speedCatcher`，可以直接确认系统是否已停止继续拆分。
+- 旧版速度分散存档没有逐名列表且当时已把全组实际解散。载入这种状态时将主办人与全部既有协办
+  人迁移为已脱离者，保持地图现状，不会为了填新字段突然强制重组；之后仍按目标速度正常判断是否
+  重新集结。玩家 README 只说明“逐名派出直到有人能追上，并保留其余军团”的玩法结果，不公开
+  存档字段与逐小时状态机。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有警告；1.4.5 和
+  1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对实机 DLL 确认新存档键、
+  三条逐名速度诊断及 `AdvanceAssistanceSpeedDispersal` 已进入产物，旧整军速度解散诊断
+  `ASSISTANCE_ARMY_SPEED_DISPERSED` 命中为 `0`。实机客户端与编辑器 DLL 均为 `709120`
+  字节，SHA-256 均为
+  `54A5E6C5243FE4D206FE2CB2192819DA026908148550156DDDFF09AF06806C86`。仓库 `_Module`
+  的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML 解析失败 `0`；
+  中英文 README SHA-256 分别为
+  `CD50209D3B9D3D9661BD48EE011417F9C966497F0CB8325251F76F61B4DE05F2` 与
+  `B99A58BC0EFAEF77B875C3FB402D3AEB74179AC96E4588C87941968FAC8D5E68`，仓库与实机一致。
+  `git diff --check` 通过。没有启动游戏，没有创建或改写正式 `v1.4-r7` ZIP。
+
+## 2026-07-23 v1.4-r8 开发：协力战力组军与速度解散的最终边界
+
+- 用户最终明确协力只有两类相互独立的判定。战力只负责决定是否需要协力、需要加入多少领主，
+  以及全部合格领主仍不足时是否判定案件失败；速度只负责已经形成的军团是否解散。协力总战力
+  高于目标后不得因战力占优解散，必须保持军团继续追捕。只有目标速度严格高于当前军团速度时
+  才进行追捕中的主动解散；目标后来不再更快时，同一案件重新建立军团，因此一个案件可以反复
+  经历组军、速度解散和再次组军。
+- 旧触发依赖主办领主在近距离连续进入原版逃跑短期行为，后续增员也依赖再次逃跑。现已完全删除
+  `IsCasePursuitBlocked`、独立/军团受阻小时计数及相关距离、连续小时调参。普通 AI 案件在
+  `AssignTasks` 建立后同一小时即进入协力评估；玩家案件保留既有对话边界，只有玩家拒捕并进入
+  战争后才允许武装协力。
+- 双方当前实力直接读取原版生成的 `PartyBase.EstimatedStrength` 与
+  `Army.EstimatedStrength`。目标属于原版军团时比较其实际军团战力；目标属于攻城营地时使用
+  原版 `GetInvolvedPartiesForEventType()` 中各参战部队的 `EstimatedStrength` 合计。模组没有
+  自制兵种等级、人数或装备权重公式。主办人不足时按距离依次加入当前合格灰袍领主，直到已承诺
+  的原版战力严格高于目标；目标战力在任务中增长时继续补人。
+- 若主办人、既有协办人和当时所有合格候选的原版战力总和仍不高于目标，输出
+  `ASSISTANCE_CASE_FAILED_STRENGTH`，释放既有协办人、结束主办任务，并通过现有
+  `CrimeState.EndTask` 将普通案件从任务池和案件账本移除，不再让无法完成的案件永久占用调度。
+- 军团因目标更快而解散后，既有成员仍各自继续接近或追捕目标。分散期间若目标战力继续增长，
+  系统仍可追加合格协办人；这些人先作为同案独立追捕者加入记录。目标速度回落到不高于上次真实
+  军团速度时，全部记录成员重新进入同一个原版无王国 `Army`，到齐后重新读取真实军团速度；
+  若仍追不上便再次按速度解散。
+- 开发中曾短暂实现“协力战力高于目标后立即解散军团”，并让主办人在集合期间获得原版
+  `Hold` 欲望。用户指出两者均不符合需求：战力不应控制解散，主办人也不能原地等待。两项代码
+  均在部署前撤销；最终主办人始终沿用案件的 Approach/GoAroundParty 继续找目标，协办人使用
+  原版 EscortParty 追赶并加入。
+- 中英文玩家 README 的 `v1.4-r8` 条目只说明按战力召集、仅因速度分散、同案可重组及总战力
+  仍不足时案件失败，不公开战力来源、状态字段和失败实现。仓库内独立输出构建成功，`0` 错误、
+  `44` 条既有可空性/离线 NuGet 警告；正式开发构建同样为 `0` 错误、`44` 条既有警告并自动
+  部署。1.4.5 与 1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。反编译实机 DLL
+  确认原版战力读取、战力失败、速度分散和速度重组均进入产物，且不存在旧逃跑阻塞函数、战力
+  解散日志或集合等待欲望。仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希
+  不一致 `0`，`18` 个 XML 解析失败 `0`。客户端与编辑器 DLL 均为 `703488` 字节，SHA-256
+  均为 `CDE585E19701B908EF2966E295D1905D40413980044B4D3D1EB58FA0DDE613F1`；中英文
+  README SHA-256 分别为
+  `43DE0B48E0235C64BE2420CC1BB5EE8F56F49E9FBC79758FAEBC927299D72049` 与
+  `FC8F7E84315826378EC7DB48F930D78372449B1C2174E92DB90D082114943E13`。没有启动游戏；
+  正式 `v1.4-r7` ZIP 未改写，SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+
+## 2026-07-24 v1.4-r8 开发：保留军团主体与核算周边参战力量
+
+- 最新实机监控
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （最后写入 `2026-07-23 23:53:21 +10:00`）确认“逐名脱离”第一版仍会把整组拆光。静澜案件
+  `CharacterObject_2875_party_1 -> CharacterObject_1584_party_1` 中，实际移动目标是敌军军团长
+  `lord_1_41_party_1`，完整协力军团速度约 `2.28`、目标军团约 `2.73`。在同一个
+  `campaignHour=633870.80` 内，旧循环连续拆出五名协办人，并分别读到 `2.60`、`2.48`、
+  `2.06`、`2.03`、`1.61` 的即时速度；后续稳定监控却显示第一名梵蒂
+  `gw_leader_0_party_1` 已有约 `3.85`，单独一人便足以追上。根因不是没人更快，而是
+  `Army = null` 后立即读取的 `SpeedExplained`/`LastCalculatedBaseSpeed` 仍处于军团附着
+  过渡状态，同一小时的 `while` 循环因此把过渡值误判为独立速度。
+- `AdvanceAssistanceSpeedDispersal` 已删除同小时循环与主动刷新 `SpeedExplained` 的做法。
+  现在一次协力小时更新最多拆出一名领主；刚拆出的领主必须在后续更新中同时满足
+  `Army == null`、`AttachedTo == null`，才允许用其稳定的原版基础速度判断能否追上目标。
+  只要找到一名独立协办领主严格快于实际移动目标，就保留且仅保留这名领主独立追击，其他曾被
+  多拆出的协办人会重新分配给主办人的真实 `Army`。这不仅修复新拆分，也会主动收拢旧存档中
+  已被上一开发版全部拆散的组；新增 `ASSISTANCE_SPEED_SPLIT_CONSOLIDATED` 记录追击者、收拢
+  人数和恢复后的军团，`ASSISTANCE_SPEED_CATCHER_READY` 与脱离日志同时记录 `Army` 和
+  `AttachedTo`，便于确认使用的是稳定独立状态。
+- 协力敌方战力不再只取案件目标本人或其直属军团。新的
+  `GetNativeCombatStrengthSnapshot` 仍只使用原版 `PartyBase.EstimatedStrength` /
+  `Army.EstimatedStrength`，但会先汇总目标当前 `MapEvent` 同侧全部参战部队，再以原版
+  `EncounterModel.GetEncounterJoiningRadius` 为半径搜索周围部队。已有战斗时调用原版
+  `MapEvent.CanPartyJoinBattle` 判断能否加入目标一侧；尚未开战时计入目标同势力，以及已与
+  灰袍交战且不会攻击目标势力的附近部队。军团成员统一折叠到军团长并按 ID 去重，避免一个军团
+  被重复计算。诊断现在输出 `targetJoiningRadius` 和带逐组原版战力的
+  `targetCombatGroups`，可直接检查目标附近的第二支军团或其他参战力量是否已进入协力门槛。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有警告；1.4.5 与
+  1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对实机 DLL 确认
+  `GetNativeCombatStrengthSnapshot`、`StartFindingLocatablesAroundPosition`、
+  `CanPartyJoinBattle`、稳定独立追击者筛选及
+  `ASSISTANCE_SPEED_SPLIT_CONSOLIDATED` 已进入产物；协力类型内 `SpeedExplained`、
+  `while (true)` 和旧整军解散诊断 `ASSISTANCE_ARMY_SPEED_DISPERSED` 均命中 `0`。
+  实机客户端与编辑器 DLL 均为 `712704` 字节，SHA-256 均为
+  `323FCDA9CBE91704D61BF2FF981AC0C9666EAE4FCF2E57709F543DCD2958E87F`。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，
+  `18` 个 XML 解析失败 `0`；中英文 README SHA-256 分别为
+  `049643DB6ED9E70DB0DCFEA624011F5E932173707F8C1EEE9C07D5FCF7F7D48F` 与
+  `5034EA822FD9F3C2C1763E4300A2C2933206B1011A56ECE74BE3C9256C07591F`，仓库与实机
+  一致。`git diff --check` 通过。没有启动游戏，等待用户实机验证；没有创建或改写正式
+  `v1.4-r7` ZIP，其 SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-07-24 v1.4-r8 开发：协力军团持续移动与实际接战
+
+- 最新实机监控
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （最后写入 `2026-07-24 00:30:52 +10:00`）证明梵蒂案件并非战力不足。主办队
+  `gw_leader_0_party_1` 已有三名协办人全部附着，真实军团战力约 `1403.01`，目标攻城军团
+  `CharacterObject_2765_party_1` 为 `1227.07`；但案件仍为 `Pursuit`、`war=False`，
+  主办人的长期行为是 `GoAroundParty`，在距目标 `5.95` 处停止，而非玩家自动宣战距离只有
+  `3`。暮光案件也出现相同结构：当前已到位军团约 `1597.72`，目标约 `1138.20`，但因尚有
+  一名远途协办人未附着而停在约 `15.13`。因此“实力已经超过仍不敢打”的直接原因是和平阶段
+  环绕行为永远进不了宣战距离，不是原版战力比较拒绝进攻。
+- 宣战前的协力主办人和速度脱离追击者现使用原版 `EscortParty` 跟随
+  `ResolveAssistanceMovementTarget` 解析出的实际移动主体；普通协办人继续护送主办人。
+  军团不会为了等待远处成员停住，也不再扩大 `GoAroundParty` 防守半径。任一登记在同案中的
+  灰袍领主进入接触距离，都可代表协力组触发宣战；宣战后主办人及全部协办人立即请求重新决策，
+  再切回敌对 `GoAroundParty` 与原版短期接战/逃跑判断。
+- 为避免移动中的主办人早于援军抵达便宣战，未分散军团的首次接战只使用当前真实
+  `Army.EstimatedStrength`，不把仍在路上的已承诺协办人算作到位战力。当前军团严格高于目标
+  与其周围威胁后才允许触发宣战；速度分散组仍以整案已承诺力量为同一接触，允许最快追击者先
+  接触目标。总览诊断新增 `engagementStrength`、`movementTarget`、`contactParty` 和
+  `contactDistance`；宣战时新增 `ASSISTANCE_CONTACT_DECLARING_WAR`，可直接确认由谁接触、
+  当时双方战力及实际移动目标。
+- 原周边敌军扫描只使用原版实际战斗加入半径 `3`，但原版
+  `DefaultMobilePartyAIModel.GetBestInitiativeBehavior` 在决定攻击或逃跑时，会把该半径两倍
+  范围内、能够支援目标的同势力部队纳入威胁计算。这会漏掉玩家看到的第二支贴近军团，造成模组
+  认为已经占优、原版短期 AI 却仍选择回避。现保留原版 `GetEncounterJoiningRadius` 作为实际
+  接触值，同时按原版主动性判断范围计算 `ThreatRadius`，仍只汇总
+  `PartyBase.EstimatedStrength` / `Army.EstimatedStrength` 并按军团去重；攻城营地和已有
+  `MapEvent` 继续使用原版参战集合。诊断新增 `targetThreatRadius`，每个计入的敌方战斗组仍写入
+  `targetCombatGroups`。
+- 删除了两处 `CanAssistanceGroupEverOverpower` 理论预判。现在无论理论总和看起来是否足够，
+  `EnsureCommittedStrengthAdvantage` 都会按距离逐名实际调用 `TryAddAssistanceMember`，直到
+  已承诺力量严格高于动态敌方威胁；只有下一次实际招募返回“没有合格领主”且仍不足时，才调用
+  `FailAssistanceCase` 结束案件并移出任务池。这与“不断扩大，耗尽可招人员后才失败”的边界
+  一致，也避免候选状态在理论求和与实际接案之间变化造成提前判败。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有警告；1.4.5 与
+  1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对实机 DLL 确认
+  `ThreatRadius`、`HasAssistanceEngagementStrengthAdvantage`、
+  `GetAssistanceContactDistance`、和平阶段 `RequestEscort` 及
+  `ASSISTANCE_CONTACT_DECLARING_WAR` 均已进入产物，旧
+  `GwpAssistanceGoAroundRadiusPatch` 已不存在，原版自动解散守卫仍保留。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个
+  XML 解析失败 `0`。实机客户端与编辑器 DLL 均为 `713216` 字节，SHA-256 均为
+  `32A1AA846F861AD8A9F1C68DF611F661681199A2AC50A273061B943E9BC3AF75`；仓库与实机中文
+  README SHA-256 均为
+  `4C581E8B2A5D141765BB7783135C214E1D0019D6EB5869682B8C879AE8438329`，英文均为
+  `B3A582EBE0E3DF01021FB6F2A9D6E5D027B2AD4DB4FBF7FB89FB76E6AAE14304`。
+  `git diff --check` 通过。没有启动游戏，等待用户实机验证；没有创建或改写正式
+  `v1.4-r7` ZIP。
+
+## 2026-07-24 v1.4-r8 开发：协力最终简化为区域战力与整组速度两项判定
+
+- 用户否定了上一轮“逐名脱离、等待单人速度稳定、按实际到场战力宣战”的复杂状态机，并重新
+  确认唯一边界：敌方区域总战力只决定协力军团规模，军团规模只增不减；速度只决定保持军团或
+  全组分散。主办人、既有协办人和当前所有可投入领主的总战力仍不高于敌方区域总战力时，案件
+  必须立即失败、退出任务池并恢复和平。正在执行玩家委托、练兵、村庄救济、重建或地方请求等
+  强制职责的领主不属于“当前可投入力量”，不得先撤销其职责再计入理论上限。
+- 对本机当前原版
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll`
+  反编译核对了 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior` 与
+  `MobilePartyAi.GetGoAroundPartyBehavior`。原版以目标本队/真实军团或围城参战集合为基础，
+  再使用 `EncounterModel.GetEncounterJoiningRadius` 的内圈和最多两倍半径的外圈评估目标
+  周围支援；外圈力量按距离递减，不是全部满额相加。原版 `GoAroundParty` 使用
+  `joiningRadius * 1.15` 的防守半径，并优先尝试
+  `defendRadius² * 0.5` 的最外层合法点；默认接触半径为 `3` 时，该最外圈约为 `5.95`。
+- `GetNativeCombatStrengthSnapshot(observer, offender)` 现在采用上述原版口径：目标已经进入
+  `MapEvent` 时汇总目标侧真实参与者并以 `MapEvent.CanPartyJoinBattle` 核验新增支援；尚未
+  开战时只统计目标同势力、具有攻击性的真实移动战斗组，排除附着成员、民兵、驻军、其他战斗
+  和被围城内的部队，并把 `3～6` 的外圈战力线性折算。军团仍按军团长键去重，所有数值继续
+  使用原版 `PartyBase.EstimatedStrength` / `Army.EstimatedStrength`。诊断同时记录区域内
+  原版已计算基础速度最高的敌方战斗组。
+- `EnsureCommittedStrengthAdvantage` 先计算当前全部合格候选的最大可投入原版战力。若理论
+  上限仍不高于敌方区域总战力，则不再先抢走一个普通任务承办人再宣布失败，而是原地失败；
+  理论上可以取胜时才按距离逐名征调，直到已承诺战力严格高于敌方。成员不会因敌方后来变弱而
+  被主动移出。`FailAssistanceCase` 在结束案件后再次核验战争理由，没有其他合法灰袍战争理由
+  时调用既有中立化入口立即恢复和平。
+- 速度生命周期改为两态。军团状态下，用原版已经计算的军团长
+  `LastCalculatedBaseSpeed` 与敌方区域内所有目标战斗组的最高同类速度比较；敌方最高速度严格
+  更高时，同一更新中让主办人与全部协办领主退出 `Army` 并各自追捕。分散状态不再寻找单一
+  `speedCatcher`，目标最高速度回落到不高于解散前真实军团速度时才全组重建军团。旧的逐名
+  `AdvanceAssistanceSpeedDispersal` 路径不再被调用。
+- 协力主办人与速度分散成员在宣战前后都使用原版 `GoAroundParty` 长期欲望；未分散协办人
+  只用 `EscortParty` 追随主办人。协力案件的自动宣战距离从普通 `3` 扩大到原版
+  `GoAroundParty` 最外圈计算值，使环绕行为本身能够进入宣战范围，不再切换成面向友军的
+  `EscortParty` 追目标。接战许可仍使用已承诺总战力对同一敌方区域快照的比较，不再额外创造
+  “当前实际到场战力”边界。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有警告并自动部署；
+  1.4.5 与 1.4.6 完整源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对实机 DLL 确认
+  区域战力快照、外圈折算、敌方最高速度、理论最大可投入战力预判、强制职责排除、全组速度分散、
+  原版 `GoAroundParty` 枚举值、外圈宣战距离和失败后和平入口均已进入产物；最终实机客户端与
+  编辑器 DLL 均为 `715264` 字节，SHA-256 均为
+  `CE418F4A057E7C562C1F77B9EA088B6929A9F8B0094623A91355972D9A5B548A`。
+  仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML
+  解析失败 `0`；仓库与实机中文 README SHA-256 均为
+  `CA10D0391945E0A1B93CD7FDA837BD96D3D1C12706B4FCB2580DD75016765E0A`，英文均为
+  `F9BA4FBBAE950AD6411EFA6F15D8803CE05976792F4413E3A638685F05F2A329`。
+  `git diff --check` 通过。没有启动游戏，等待用户实机验证；没有创建或改写正式
+  `v1.4-r7` ZIP，其 SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-07-24 v1.4-r8 开发：两层协力判定与任务级独立速度基准
+
+- 本轮最终确认协力的战力和宣战必须分成两层，不能再用“已承诺成员战力总和高于目标区域”
+  一个条件同时代表增援规模与实际接战。第一层继续用原版
+  `PartyBase.EstimatedStrength` / `Army.EstimatedStrength`、目标真实军团或围城参战集合，
+  以及原版加入半径的内圈和递减外圈，决定协力组需要征调多少当前无强制职责的领主；成员只增
+  不减，全部合格力量仍不够才失败并恢复和平。第二层只负责宣战：进入外圈宣战距离后，按原版
+  本地区域战力口径核算实际行动者与当前能够加入战斗的友军，再与目标、目标军团及附近能够支援
+  目标的敌军比较；我方实际区域战力严格高于敌方实际区域战力便允许宣战。这里不预测
+  `EngageParty`，也不额外检查速度、追及时间、士气、目标暴露状态或其他行为条件；宣战后只请求
+  原版重新思考，不给英雄领主写强制攻击短期命令，也不关闭或替换原版欲望。
+- 未分散的协力军团只有军团长能够代表该原版战斗组通过第二层判定，仍在路上的协办人不能凭自己
+  更靠近目标而提前触发战争；速度分散状态下，每名独立追捕者都可以按自己的本地区域战力成为
+  宣战行动者。本地友军和敌军均按实际军团/战斗组去重，加入半径之外的已承诺协办人不再被当作
+  “此刻会一起开打”的本地支援。新增
+  `ASSISTANCE_DECLARATION_WAITING_LOCAL_STRENGTH` 与
+  `ASSISTANCE_DECLARATION_LOCAL_STRENGTH_READY`，记录行动者、双方本地区域战力、整案已承诺
+  战力、距离和强弱结果，便于下一次实机监控直接区分“整案已经征调够人”与“现场力量已经真正
+  足够宣战”。
+- 军团速度条件改为任务级固定基准。普通案件交给主办领主时，若其尚未进入军团且原版
+  `LastCalculatedBaseSpeed` 有效，立即把该独立速度写入 `PoliceTask`；若当刻尚无有效值，则只在
+  建立协力军团前的首个有效独立状态补记一次，随后整个案件、反复解散/重组及存读档均不再改变。
+  新存档键为 `gwp_lt_{i}_leader_solo_speed`。
+- 军团是否分散不再读取敌方区域内最快部队，也不再读取已经变慢的协力军团当前速度。只解析案件
+  目标的实际移动主体：
+  `BesiegerCamp.LeaderParty -> Army.LeaderParty -> AttachedTo -> offender`，并在该主体速度
+  严格高于主办人接案时独立速度时全组分散。目标实际移动主体速度重新不高于固定基准时，同一案件
+  才重建军团。目标本人附着军团后显示 `0` 速度不会再误判，目标附近另一支更快敌军也不会错误
+  拆散协力军团。诊断同时保留区域最快敌军速度作对照，但它不参与速度状态转换。
+- 最终 1.4.7 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有可空性/离线 NuGet
+  警告并自动部署；1.4.5 与 1.4.6 全源码交叉构建均为 `0` 错误、`43` 条既有警告。ILSpy 对
+  实机 DLL 确认 `LeaderSoloSpeedAtAssignment`、`gwp_lt_{i}_leader_solo_speed`、
+  `EvaluateLocalDeclarationStrength`、`GetNativeFriendlyLocalStrength`、两条新宣战诊断，
+  以及 `targetMovementSpeed > leaderSoloSpeed` / `<=` 的分散与重组边界均已进入产物。
+  仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，`18` 个 XML
+  解析失败 `0`。实机客户端与编辑器 DLL 均为 `720384` 字节，SHA-256 均为
+  `AB3AA79D47AE365912626FADFF4D696679047FB2BBBBCE57BC7BD6A9D98C9C9F`；仓库与实机中文
+  README SHA-256 均为
+  `416C8D84B2341F741B3F85559DD5FE6C372FA12BC024DC97318BBD0BAC660D0E`，英文均为
+  `AA1C862B688A513D851DE77F598A6C7044C98E90FC33CF5273B805B20C0B56D2`。按用户要求没有
+  启动游戏，由用户进行行为验证；普通开发构建没有创建或改写正式 ZIP，本机唯一正式包仍为
+  `GreyWarden-v1.4-r7.zip`，SHA-256 仍为
+  `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。

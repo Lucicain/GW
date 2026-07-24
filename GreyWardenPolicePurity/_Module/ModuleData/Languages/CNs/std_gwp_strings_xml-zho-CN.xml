@@ -427,6 +427,7 @@
   <string id="gwp_policeenforcementbehavior_delaypatrols_002" text="与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1}" />
   <string id="gwp_policeenforcementbehavior_delaypatrols_003" text="累计犯罪" />
   <string id="gwp_policeenforcementbehavior_delaypatrols_004" text="声望已达 {VAR_1}" />
+  <string id="gwp_policeenforcementbehavior_delaypatrols_005" text="灰袍高速追截队" />
   <string id="gwp_policeenforcementbehavior_dialogue_001" text="按灰袍法令，先把正式罚金缴清。" />
   <string id="gwp_policeenforcementbehavior_dialogue_002" text="罚金确认。本轮案件结案，你可以离开了。" />
   <string id="gwp_policeenforcementbehavior_dialogue_003" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />

@@ -440,19 +440,6 @@ namespace GreyWardenPolicePurity
             if (_dayCounter < 2) return;
             _dayCounter = 0;
 
-            // 检测玩家与纠察队所属处于战争状态 → 声望扣4分并强制和平
-            Clan gwClan = PoliceStats.GetPoliceClan();
-            IFaction? playerFac = Clan.PlayerClan?.MapFaction;
-            if (gwClan != null && playerFac != null &&
-                FactionManager.IsAtWarAgainstFaction(gwClan, playerFac))
-            {
-                PlayerState.ChangeReputation(-4);
-                MakePeaceWithPoliceClan();
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policepatrolbehavior_026}is at war with the Grey Wardens, Reputation -4. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
-                    Colors.Red));
-            }
-
             int rep = PlayerState.Reputation;
 
             // 正面声望：取消所有通缉和巡逻
@@ -629,8 +616,33 @@ namespace GreyWardenPolicePurity
                     MobileParty player = MobileParty.MainParty;
                     if (player == null || !player.IsActive) continue;
 
-                    // 和平接触由 GoAroundParty 欲望靠近；近距离仍触发原有对话。
-                    GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
+                    float contactDistance = patrol.GetPosition2D.Distance(
+                        player.GetPosition2D);
+                    if (contactDistance <=
+                        GwpTuning.Bounty.RecruitmentContactDistance)
+                    {
+                        // 和招募使者使用同一条原版接触链：远处只参加欲望
+                        // 拍卖，进入接触范围后切换 EngageParty，随后由
+                        // OnMapEventStarted 调用 DoMeeting。仅用 GoToPoint
+                        // 靠近不会建立 PlayerEncounter，玩家就只能手点部队。
+                        GreyWardenPartyDesireBehavior.ClearIntent(patrol);
+                        patrol.Ai.SetDoNotMakeNewDecisions(false);
+                        patrol.SetMoveEngageParty(
+                            player,
+                            patrol.NavigationCapability);
+                        GwpAiDiagnostics.WriteAction(
+                            patrol,
+                            "PATROL_FORCE_MEETING_APPROACH",
+                            "distance=" + contactDistance.ToString("0.00") +
+                            "; using native EngageParty contact");
+                    }
+                    else
+                    {
+                        GreyWardenPartyDesireBehavior.RequestApproach(
+                            patrol,
+                            player,
+                            8f);
+                    }
                 }
             }
             catch (Exception)
