@@ -39,6 +39,16 @@
   README SHA-256 为
   `82CCB560B69B4B93D095B6121F802B973DA3698B4CB0613A6275C9EF0BEF10ED`，英文为
   `1CDDB4AE1B9500C9509D737B3B6CD595656E8123DFF41A2CFD5757C988490DE6`。
+- 正式代码提交为 `d799644433c8a51746006f9bfce1c2ac80beee98` 并已推送到 `origin/main`。
+  旧的 GitHub `v1.4-r7` Release 与远端标签按用户“不升版本”的要求删除后重建；本地带注释标签、
+  远端标签解引用和正式代码提交均指向上述提交。新的同名 Release 位于
+  `https://github.com/Lucicain/GW/releases/tag/v1.4-r7`，状态为 latest，且不是 draft 或
+  prerelease。
+- GitHub 上的 `GreyWarden-v1.4-r7.zip` 为 `349835030` 字节，远端 digest 为
+  `sha256:ae01062e6ff1cdeb41fe5f5cb8066ab65938eba584c12822d4ee3eab47fd9bee`，与本地正式
+  ZIP 一致；远端 `.zip.sha256` 为 `88` 字节，digest 为
+  `sha256:a5cf37fc3659f5844ae322d73c257c43ab41e9cb3c9bd5495d33f109fa2508cd`，也与本地文件
+  一致。
 
 ## 2026-07-25 v1.4-r8：玩家阵营连带扣分、纠察接触与城堡切磋崩溃
 
