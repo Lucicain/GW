@@ -156,6 +156,9 @@ namespace GreyWardenPolicePurity
                     IsFullyTrained(party));
         }
 
+        internal static bool IsFreeForTrainingExchange(MobileParty? party) =>
+            IsFreeForTrainingWork(party);
+
         internal static void ReleasePartyForForcedDuty(MobileParty? party)
         {
             string? heroId = party?.LeaderHero?.StringId;
@@ -611,7 +614,7 @@ namespace GreyWardenPolicePurity
                     element.Character.UpgradeTargets.Length == 0)
                 .Sum(static element => Math.Max(0, element.Number));
 
-        private static Settlement? FindRendezvousSettlement(MobileParty trainer,
+        internal static Settlement? FindRendezvousSettlement(MobileParty trainer,
             MobileParty target)
         {
             Vec2 left = trainer.GetPosition2D;

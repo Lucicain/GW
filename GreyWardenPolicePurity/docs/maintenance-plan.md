@@ -1,5 +1,643 @@
 # GreyWarden Maintenance Plan
 
+## 2026-07-26 v1.4-r8 正式发行、玩家说明重写与无监控玩家包
+
+- 本轮正式版本从 `v1.4-r7` 升为 `v1.4-r8`；`SubModule.xml` 内部版本和程序集版本按
+  Bannerlord 三段数字格式写为 `1.4.8`，这里的末位表示灰袍第八次修订，不是对
+  Bannerlord `1.4.8` 的版本依赖。公开兼容范围仍为 Bannerlord `1.4.5`、`1.4.6`、
+  `1.4.7` 共用一个玩家包。
+- 中英文玩家 README 参考 Nexus Mods 常见的“开头一句说明模组改变什么—按玩家能玩到的
+  系统分组—简短安装兼容信息—按版本列 Added/Fixed”结构重新编写。旧版六条笼统的
+  “当前可玩内容”改成完整但不写内部公式的玩家视角介绍，覆盖活跃灰袍家族、全大陆执法、
+  案件与震慑、玩家正负声望路线、加入与悬赏、声望支援、练兵与实体换防、地方事务与收养、
+  司法公库与海战兼容、百科信息和专属战斗内容。更新日志严格只保留 `r8` 与 `r7` 两个正式
+  版本，`r8` 只记录相对 `r7` 的本轮玩家可见变化；`r7` 收束为其自身正式内容，不再把本轮
+  修复倒填进旧版本。
+- `docs/grey-warden-setting.md` 同步修正了已经过时的实现状态：练兵官的训练、真实换防和
+  调兵订单，以及贵族事务协调官的封地申诉都已经实装；旧“通过交易界面立即付款并直接加兵”
+  说明已改为下单、实体收集、升级锁定、练兵官交付和交付时付款的真实流程。
+- 当前完整源码对本机 Bannerlord `1.4.7` 执行
+  `Release -t:Rebuild --no-restore`，结果为 `0` 错误、`45` 条既有可空性/离线 NuGet
+  警告；同一源码对 `Bannerlord.ReferenceAssemblies 1.4.5.115026` 和 `1.4.6.115628`
+  交叉重建均为 `0` 错误、`44` 条既有警告。诊断版已部署到本地普通客户端和编辑器目录，
+  两份 DLL 均为 `749056` 字节，SHA-256
+  `2B0C269FD8445D29CBD05F61C400621F7F735A6864566DF21BD1B9EAD3A37B38`，程序集版本
+  `1.4.8.0`。
+- 仓库 `_Module` 排除 `Assets`、`AssetSources` 和 `RuntimeDataCache` 后共有 `27` 个
+  正常客户端文件，与
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`
+  相比缺失 `0`、SHA-256 不一致 `0`；实机 `20` 个 XML 解析失败 `0`，且不存在上述三个
+  编辑器目录。仓库与实机中文 README SHA-256 均为
+  `E15938272AC4F01638BE62FD33D9F0B5D6CC5A87D49C5BCBF7335CEBBBD0C7D8`，英文均为
+  `D30ADE33D2F3D9E96D841B546907F6CF4C0027FC1E6439169A1DFBCB5AD9FBDB`。
+- 正式玩家 DLL 使用
+  `GwpDiagnosticsEnabled=false`、`DeployToLiveModule=false` 单独输出到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r8`，
+  为 `730112` 字节，SHA-256
+  `CAFE5949BB89A38301CDA08991AF670E7CF32310A1AE8426608993E236A19F0C`。它与本地测试
+  诊断版哈希不同，且没有覆盖实机 DLL。ILSpy 对独立输出和最终包内 DLL 的两次反编译都确认：
+  `GwpAiDiagnostics.LogPath` 返回空字符串，全部写入和捕获方法为空，两个追踪判断恒为
+  `false`；二进制中也不存在 `AppendAllText`、`StreamWriter`、`FileStream`、监控日志名
+  或文档目录字符串。
+- 干净暂存目录为
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\package-v1.4-r8-final`。
+  包含 `30` 个文件并且只有一个顶层 `GreyWarden/`；正式内容为正常客户端资源、两个玩家
+  README、客户端 `0Harmony.dll`、无监控玩家 DLL 和编译后的 shader cache。包内没有
+  `Assets`、`AssetSources`、`RuntimeDataCache`、编辑器 DLL、PDB、脚本、工具、日志、
+  开发文档或嵌套压缩包。独立解压目录
+  `build-check\verify-package-v1.4-r8-final2` 的 `30` 个文件与暂存目录相比缺失 `0`、多余 `0`、
+  哈希不一致 `0`；`20` 个 XML 解析失败 `0`，中文本地化 `837` 个 string id 重复 `0`。
+- 本地正式文件为
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r8.zip`
+  及同名 `.zip.sha256`。ZIP 为 `349845455` 字节，SHA-256
+  `150009FADF4780F5CC149524DD2A99908B8EE8CFC6BFC4F2450A36DF11B955C3`；校验文件为
+  `90` 字节且内容与实算一致。完成文件表、解压哈希、包内 DLL 和无监控反编译审计后，
+  已删除本地旧 `v1.4-r7` ZIP/校验文件，游戏 `Modules` 父目录只保留最新 `v1.4-r8`
+  正式包对。
+
+## 2026-07-25 人物百科地点链接改回原版小弹窗
+
+- 用户实机点击人物百科“案底与震慑”后立即出现报错弹窗，并明确否决上一版独立大面板的
+  外观；最终目标改为完全保留此前原版 `SingleQueryPopup` 的小弹窗尺寸、边框、滚动区和
+  “关闭”按钮，只让正文地点名多出可用的百科链接。
+- 对应游戏进程 PID `57072` 的 `rgl_log_errors_57072.txt` 没有托管异常内容，
+  `watchdog_log_57072.txt` 只确认运行时崩溃且用户取消 dump/报告生成，因此没有可用于
+  符号化的异常栈，不能把报错精确归因到旧自制 XML 的某个控件属性。可以确认的是失败入口
+  正是新增的 `GwpDeterrenceDetailsScreen` 自建屏幕层和大面板电影；该整条自制界面路径
+  已删除，不再继续猜测修补。
+- 反编译 Bannerlord `1.4.7` 的 `GauntletQueryManager`、
+  `SingleQueryPopUpVM`、`PopUpBaseVM` 和原版 `SingleQueryPopup.xml` 后采用更窄的改法：
+  人物百科重新调用 `InformationManager.ShowInquiry`，因此弹出、暂停、焦点、手柄键位、
+  关闭与排队全部回归原版全局询问管理器。模组中的 `SingleQueryPopup.xml` 是本机原版文件
+  的逐字派生副本；布局、尺寸和全部原版素材引用不变，只把说明正文的 `RichTextWidget`
+  绑定到 `Command.LinkClick="ExecuteLink"`，并把正文刷子换成继承
+  `Popup.Description.Text` 的灰袍刷子。该刷子的默认文字外观完全继承原版，仅补入原版
+  `Info.Text` 使用的棕色 `Link.Settlement` 常态、悬停和按下样式，因此普通正文仍保持
+  原版小弹窗观感，只有可点击地点获得明确视觉反馈。
+- `SingleQueryPopUpVM` 构造后通过既有原生 VM 扩展器只追加一个
+  `ExecuteLink(string)` 命令。该命令只在灰袍人物百科详情打开期间生效；点击地点时先调用
+  `InformationManager.HideInquiry()` 走原版关闭路径，再把链接交给
+  `Campaign.Current.EncyclopediaManager.GoToLink`。原版询问关闭时会清除激活标记，普通
+  询问即使共享同一富文本模板也不会被误当成灰袍地点跳转。
+- Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、`45` 条既有可空性/离线 NuGet
+  警告；相同完整源码针对 `1.4.5` 与 `1.4.6` 参考程序集交叉重建均为 `0` 错误、
+  `44` 条既有警告。最终诊断版已部署到普通客户端和编辑器目录，两份 DLL 均为
+  `748032` 字节，SHA-256
+  `290CDA215BF86BDBF857D4C1549FF72AFC55FC908F24EBE58E949F10587DA363`。
+- 仓库 `_Module` 排除明确的编辑器素材例外后共有 `27` 个正常客户端文件，与实机相比
+  缺失 `0`、哈希差异 `0`；实机 `20` 个 XML 解析失败 `0`。新原版派生小弹窗和链接刷子
+  均已实装，旧 `GwpDeterrenceDetails.xml` 大面板已从实机删除。逐行比较确认派生弹窗
+  除正文刷子和 `Command.LinkClick` 绑定外与原版布局完全一致。中英文 README 仓库/实机
+  哈希分别一致为
+  `7E46A5A9CD03D245D2F3A3FA0D01F66479BE058F4C37B9A490FBDA51C1C68E98` 与
+  `1BEFAF91E7D25341F3FC13A0032DE6A55906A6BF4D920E2502EE7E8AEFDE668E`。
+  ILSpy 从最终实机 DLL 确认人物百科入口重新调用 `InformationManager.ShowInquiry`，
+  地点仍读取 `EncyclopediaLinkWithName`，询问 VM 构造补丁会附加链接命令，点击处理依次
+  调用 `HideInquiry` 和 `EncyclopediaManager.GoToLink`。没有创建或替换正式玩家 ZIP；
+  最终仍需实机点击复测，因为上一次用户取消 dump，且编译/反编译无法替代 Gauntlet 资源
+  在真实启动顺序中的载入验证。
+
+## 2026-07-25 人物百科案底详情改为正文内地点超链接
+
+- 用户否决了人物百科“案底与震慑”弹窗下方另加“在百科中查看某地”选项的中间方案，要求
+  与悬赏、赎罪任务日志一致：地点名称本身就是超链接，点击文字直接进入地点百科；本轮只改
+  人物百科这一处，用户暂时想不起的其他界面不猜测、不扩大范围。
+- 对 Bannerlord `1.4.7` 原版界面和 `RichTextWidget` 反编译确认：原版
+  `SingleQueryPopup.xml` 虽用富文本控件显示说明，却没有
+  `Command.LinkClick` 绑定，`SingleQueryPopUpVM` 也没有处理百科链接的
+  `ExecuteLink`，因此仅把 `EncyclopediaLinkWithName` 塞进旧 `InquiryData` 只能画出
+  链接样式，点击事件没有去处。人物百科原页则明确使用
+  `Command.LinkClick="ExecuteLink"`，其 VM 再把链接交给
+  `Campaign.Current.EncyclopediaManager.GoToLink`；最终实现复用的正是这条原版事件路径，
+  没有全局替换原版通用询问窗口。
+- 新增专用 `GwpDeterrenceDetails` Gauntlet 覆盖层和
+  `GwpDeterrenceDetailsVM`。详情正文改用继承原版 `Info.Text` 链接样式的
+  `RichTextWidget`，并绑定 `Command.LinkClick="ExecuteLink"`；地点变量直接保留
+  `Settlement.EncyclopediaLinkWithName`，点击棕色地点名会先关闭覆盖层，再进入该地点百科。
+  无法解析为定居点时仍显示原来的普通位置文字，不制造错误跳转。弹窗底部现在只有“关闭”，
+  已删除旧“在百科中查看某地”按钮及其专用本地化条目。这个独立大面板实机打开时报错且
+  外观不符合用户要求，随后被上一节的原版小弹窗派生方案完全删除。
+- Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、`45` 条既有可空性/离线 NuGet
+  警告；相同完整源码针对 `1.4.5` 与 `1.4.6` 参考程序集的交叉重建均为 `0` 错误、
+  `44` 条既有警告。最终诊断版已部署到普通客户端和编辑器目录，两份 DLL 均为
+  `748032` 字节，SHA-256
+  `CC10D27B4B74EE810255DE314E7C8EA19F1C8126A899D90E76D490103ABF2054`。
+- 仓库 `_Module` 排除明确的 `Assets`、`AssetSources` 编辑器素材例外后共有 `26` 个正常
+  客户端文件，与实机相比缺失 `0`、哈希差异 `0`；实机 `19` 个 XML 解析失败 `0`，
+  新 `GwpDeterrenceDetails.xml` 已存在并包含
+  `Command.LinkClick="ExecuteLink"`。中英文 README 仓库/实机哈希分别一致为
+  `EB4425BAF7599548540578339F2AB564B8FA576320CBCA444446B89442B1CE80` 与
+  `0975FE2FD8B1C89310C338182897F27BA72ED339C0F9A8E58754A402FB2C54C1`。
+  ILSpy 从最终实机 DLL 确认详情构造读取 `EncyclopediaLinkWithName`，入口调用专用覆盖层，
+  `ExecuteLink` 先关闭覆盖层再调用 `EncyclopediaManager.GoToLink`。没有创建或替换正式
+  玩家 ZIP；编译、XML 和反编译校验不能替代游戏内鼠标点击，复测应进入任意人物百科的
+  “案底与震慑”，确认棕色地点名可点击且底部只有“关闭”。
+
+## 2026-07-25 悬赏、赎罪任务地点链接与人物百科位置跳转
+
+- 用户把地点交互范围明确限定为悬赏任务日志、赎罪任务日志和人物百科中的位置；案件总卷、
+  悬赏确认窗口、左下角临时消息及其他坐标显示均不改。现有灰袍对话中也没有需要单独改造的
+  同类地点说明，因此本轮没有扩大到对话、案件总卷或通知界面。
+- 对本机 Bannerlord 原版程序集反编译确认，`Settlement.EncyclopediaLinkWithName` 调用
+  `HyperlinkTexts.GetSettlementHyperlinkText` 生成原版 `Link.Settlement` 事件链接；原版
+  间谍、家族世仇和浪子等任务都把这个 `TextObject` 直接写入任务日志。灰袍原实现却先由
+  `GetNearestSettlementName` 把最近定居点降成普通 `string`，所以截图中的“庞斯”只能显示
+  为纯文本。
+- `GwpText` 新增保留类型的 `Create` 入口，原有 `Get` 继续返回字符串，不改变旧调用方；
+  悬赏与赎罪任务的 `WriteLog` 增加 `TextObject` 重载。悬赏首次目击、后续侦情、赎罪首次
+  报告和后续探报现在都保留最近 `Settlement`，并将
+  `EncyclopediaLinkWithName` 作为本地化变量写入任务日志。赎罪探报的左下角消息仍单独使用
+  普通地点名，符合本轮不改临时消息的范围。
+- 人物百科最初采用标准 `InquiryData` 并在下方提供“在百科中查看某地”按钮；这是确认
+  通用询问窗口没有内嵌链接事件后的中间实现，随后按用户要求被上一节的专用富文本覆盖层
+  取代。最终界面不再保留这个额外按钮。
+- 第一次完整构建发现
+  `PlayerBountyBehavior.DialogueAndNotification.cs` 缺少
+  `TaleWorlds.CampaignSystem.Settlements` 引用，产生一个 `CS0246 Settlement`；失败产物
+  没有作为有效部署。补入命名空间后，Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、
+  `45` 条既有可空性/离线 NuGet 警告；`1.4.5` 与 `1.4.6` 参考程序集完整交叉重建均为
+  `0` 错误、`44` 条既有警告。
+- 最终诊断版已部署到普通客户端和编辑器目录，两个 DLL 均为 `747008` 字节，SHA-256
+  `6085A600F4A77AAE392411DA53FA2A6FAF753C07776A2E636B189707294B7C89`。仓库
+  `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`；实机 `18` 个
+  XML 解析失败 `0`，且不含编辑器素材目录。中英文 README 仓库/实机哈希分别一致为
+  `708F49A36D230578EF46B837E03254D4009B45882D2103066CDF153140E5ECEE` 与
+  `F247F11573291982FB56AC16CD709A2D7203B95681DC4B684C8B0AFC1FC1A6EE`。
+  ILSpy 从当时实机 DLL 确认悬赏与赎罪四个日志入口均读取
+  `EncyclopediaLinkWithName`，两个任务类都保留 `WriteLog(TextObject)`；该次人物百科
+  按钮方案随后由上一节的正文超链接取代。案件总卷和临时消息仍保持普通文字。没有创建或
+  替换正式玩家 ZIP。
+
+## 2026-07-25 调兵库存不足崩溃复现与实体会合换兵
+
+- 后续 PID `60716` 的同一路径复现终于生成完整
+  `C:\ProgramData\Mount and Blade II Bannerlord\crashes\2026-07-25_11.26.48\dump.dmp`
+  （约 `1.04 GiB`），并推翻了先前“报错可能来自跨地图换兵”的定位。RGL 明确记录
+  `21:26:40.509` 玩家选择 `gwp_player_troop_order_file`，`21:26:42.131` 点击多选框
+  “发送订单”后立即在 `MultiSelectionQueryPopUpVM.ExecuteAffirmativeAction` 内抛出
+  `NullReferenceException`；灰袍日志没有 `PLAYER_TROOP_ORDER_FILED`，也没有任何会合或换兵
+  记录，证明报错发生在订单回调内部，首个小时处理尚未开始。
+- ButterLib 保存的完整符号栈依次为
+  `TroopRosterElement.get_WoundedNumber` →
+  `GreyWardenTroopRequestBehavior.CountHealthy` →
+  `FileTroopOrder` →
+  多选框确认回调 →
+  `ExecuteAffirmativeAction`。用 Mono.Cecil 对实机 DLL 的元数据 token
+  `0600290D`、`06000203`、`060001E0`、`0600084C` 和 `06000602` 逐项解析后与上述方法完全
+  对应，不再只是时间相关性推测。
+- 根因是 `CountHealthy` 用 `FirstOrDefault` 查指定兵种。练兵官一个该兵种都没有时，
+  Bannerlord 返回默认 `TroopRosterElement`，其中 `Character == null`；其 `Number`
+  getter 能返回零，但 `WoundedNumber` getter 会先直接读取 `Character.IsHero`，所以恰好在
+  “库存为零”时空引用。这也准确解释了用户观察到有时正常、有时发送订单立刻报错：练兵官已经
+  持有至少一个指定兵种时匹配元素有效，完全没有时才触发。
+- `CountHealthy` 现在在读取 `WoundedNumber` 前先检查
+  `element.Character == null`，未找到兵种直接返回 `0`，让订单正常进入后续实体收集流程；
+  调兵换兵的批次转移辅助函数也加入相同的无效元素保护，防止名单发生变化时再次读取默认结构。
+  实体会合状态机本身保留，但它是库存判定修好后才会运行的后续机制，不再把它误写成本次
+  “点击发送立即报错”的根因。
+- 根因修复后的 Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、`45` 条既有警告，
+  `1.4.5` 与 `1.4.6` 交叉重建均为 `0` 错误、`44` 条既有警告并已部署。实机客户端与
+  编辑器 DLL 均为 `746496` 字节，SHA-256
+  `42AFFE86E7E839AD4183347EF44E03C545F351755AD9A95F08EFE214CF7C96C8`；仓库 `_Module`
+  的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`，实机 `18` 个 XML
+  解析失败 `0`，且不含编辑器素材目录。中英文 README 仓库/实机哈希分别一致为
+  `9B1B615711498F225F8CFA115228B5429082894CD89D6B8DFB83D2B074ADECDD` 与
+  `5FD65FE9C36FE95075D30F248A38D60C093B51AF2B82E2B33C63ABE13712F085`。
+  ILSpy 从实机 DLL 确认 `CountHealthy` 在 `FirstOrDefault` 后先执行
+  `val.Character == null` 返回零，之后才读取 `Number` 和 `WoundedNumber`。
+- 用户再次以“玩家下达招兵任务、练兵官没有足够指定士兵”的路径触发报错。本次是新的游戏
+  进程 PID `59232`，不能沿用上一轮 PID `37296` 对另一个模组战斗回调的结论。
+  `rgl_log_59232.txt` 记录玩家于 `18:37:44.255` 选择调兵对话，`18:37:47` 正常结束交谈；
+  Windows Application Error `1000` 随后记录启动器进程于 `18:38:01` 发生原生访问冲突
+  `0xc0000005`。`watchdog_log_59232.txt` 表明用户取消了 dump/报告，RGL 错误日志也没有托管
+  异常栈，所以现有证据能确认复现入口和时间关联，不能把原生崩溃符号化到某一条 CLR 指令。
+- 新灰袍诊断在对话前确认练兵官梵蒂约 `201` 人，规模比例约 `0.931`，即上限约 `216`，
+  符合“指定库存不足且接近满编”的复现条件。旧实现的
+  `RefreshTrainerStock` 会在练兵官和另一名领主仍位于地图不同位置时直接改写双方
+  `MemberRoster`，而且旧顺序先向接近满编的练兵官加入整批来兵、再移出等量旧兵；这既不是
+  用户要求的实体换兵，也会让实时部队名单短暂超过原规模。由于本次没有 dump，不能宣称该
+  瞬时超编就是已符号化的唯一崩溃指令，但该远程名单写法本身已被确认需要移除。
+- 用户明确纠正目标：调兵订单必须复用练兵官普通 AI 换防的实体流程。现在练兵官缺少可通往
+  指定兵种的兵员时，只选择一支满足普通练兵换防空闲条件的真实灰袍领主队；双方复用
+  `GreyWardenTrainingBehavior.FindRendezvousSettlement`，前往两队中点附近最近的非敌对、
+  未被围城城镇或城堡，并复用相同的移动意图有效期和
+  `GwpTuning.Training.ExchangeStayHours` 驻留时间。两队未同时进入同一定居点并完成驻留前，
+  不会改动任何士兵名单。
+- 会合来源队在任务期间写入调兵订单保留状态，普通案件、协力、玩家事务及普通练兵换防不会
+  再把它分配走；选择前仍要求它是活动领主队、未解散、未参军、未参战、未依附，并满足普通
+  换防已有的案件、救济、重建和事务排除条件。来源失效、兵员变化或会合点失效时会清除双方
+  移动意图并重新选人，不会把失效引用留在订单里。来源与会合点、驻留开始时间和上一来源均
+  已加入存档字段，读档后可以继续同一段实体路程。
+- 只有驻留完成后才进行一换一：练兵官交出无法升级到订单目标的健康灰袍兵，来源领主交出
+  已是目标兵种或能继续升级到该目标的健康灰袍兵。双方来兵和去兵先分别暂存在无主
+  `TroopRoster`，两边都腾出真实位置后再同时写回，因此两支真实部队在任何一步都不会超过
+  交换前人数。一次来源不足时只交换其实际可给数量，释放该领主并在下一小时优先寻找另一名
+  可用领主；全部目标兵备齐后立即解除会合来源保留，再由既有升级锁定和练兵官亲自交付流程
+  接管。
+- 新诊断链为
+  `PLAYER_TROOP_ORDER_FILED` →
+  `PLAYER_TROOP_ORDER_STOCK_RENDEZVOUS_ASSIGNED` →
+  `PLAYER_TROOP_ORDER_STOCK_STAY_STARTED` →
+  `PLAYER_TROOP_ORDER_STOCK_EXCHANGED` →
+  `PLAYER_TROOP_ORDER_STOCK_RENDEZVOUS_RELEASED`，会记录来源、会合点、双方暂存/移入/移出
+  数量和练兵官当前备齐数；离开会合点还会写
+  `PLAYER_TROOP_ORDER_STOCK_STAY_RESET`。这些记录能在下一次实机测试中明确证明没有远程换兵。
+- 第一次编译发现新文件缺少 `TaleWorlds.CampaignSystem.Settlements` 命名空间，产生三个
+  `CS0246 Settlement`，该失败构建未作为有效产物；补入正确引用后 Bannerlord `1.4.7`
+  完整重建为 `0` 错误、`45` 条既有可空性/离线 NuGet 警告，`1.4.5` 与 `1.4.6`
+  参考程序集交叉重建均为 `0` 错误、`44` 条既有警告。
+- 最终 `1.4.7` 诊断版已自动部署。仓库 `_Module` 排除明确的编辑器素材例外后共有 `25`
+  个正常客户端文件，与实机相比缺失 `0`、哈希差异 `0`；实机 `18` 个 XML 解析失败 `0`，
+  且不含 `Assets`、`AssetSources` 或 `RuntimeDataCache`。客户端与编辑器 DLL 均为
+  `746496` 字节，SHA-256
+  `95AEBD78452C9A5C0BB3BC7D0FB78CE609A5C2E112DB4860D015E6C7E8BA8A36`；实机中文
+  README 为
+  `AEB8B580031D6EA872A9E6C6653DD2A6FD0A065863A7C0283F39AE94E62451BA`，英文为
+  `0964730B3B52E6E2B6ECECEE0F72ACF3564A163E533A4A76C3E234048CF3E9A6`，均与仓库一致。
+- ILSpy 从实机客户端 DLL 确认：来源队被纳入订单保留判断；选人调用普通换防空闲条件，会合
+  点调用普通练兵的 `FindRendezvousSettlement`；代码先同时检查两队
+  `CurrentSettlement`，再等待实际常量 `2` 小时，之后才调用
+  `ExchangeStockAtRendezvous`；交换方法创建两个无主 `TroopRoster` 后分别暂存双方士兵。
+  因此最终产物中不存在原先跨地图直接遍历多个领主并当场换兵的入口。
+- 本轮没有创建或替换正式玩家 ZIP。构建、部署和反编译能证明实体会合状态机已进入 DLL，
+  但不能替代缺失的原生 dump，也不能代替下一次实机路线验证；复测应观察梵蒂与来源领主确实
+  在地图上前往同一定居点、驻留后才出现 `STOCK_EXCHANGED`，库存仍不足时再出现新的
+  `STOCK_RENDEZVOUS_ASSIGNED`。
+
+## 2026-07-25 协力军团派出极速追查队
+
+- 用户要求仍在集结追击的协力军团也能派出极速追查队，而不是必须等协力军团先因速度差完成
+  分散。`UpdateTasks` 现在在案件进入 `WarPursuit` 后，对普通承办队、完整协力军团和已经速度
+  分散的协力组统一调用 `TrySpawnImmediateCaseInterceptor`；同案已有一支未返程的极速追查队
+  时仍不会重复派出。
+- 完整协力军团的新增资格严格绑定当前案件：来源必须是协力组长、目标必须等于协力组目标，
+  且来源当前必须是该协力军团的真实军团长。其他原版军团、协力成员、正在战斗的部队和玩家
+  目标均不能借此入口分兵。
+- 速度判断继续调用原版
+  `PartySpeedCalculatingModel.CalculateBaseSpeed`。Bannerlord `1.4.7` 的
+  `DefaultPartySpeedCalculatingModel.CalculateLandBaseSpeed` 会把军团长的
+  `AttachedParties` 人数、骑兵、步兵、伤员、货物、负重、载重上限和俘虏一并计入，因此对
+  完整协力军团调用时得到的是军团整体的理论正常速度，不是只看军团长本队缓存速度；既有封装
+  仍排除战后混乱及湿地骑兵天气惩罚等临时噪声。
+- 只有目标理论速度高于军团理论速度时才尝试真实分出三至八名健康骑兵。完整协力军团会从
+  军团长和当前真实编入军团的登记协力领主中汇总健康骑兵，按等级优先抽调，不再错误地只检查
+  军团长本队；普通承办队和已分散协力组仍只动用主理人本队。新队生成后再次用同一原版模型
+  计算自身理论速度，不能超过目标就把每批士兵精确退还原来源部队并立即销毁。成功时诊断
+  `IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED` 新增 `trigger=assistance_army` 和实际兵源部队数，
+  可与普通宣战分兵及速度分散后的分兵区分。
+- `TryAssignDelayPatrolToAssistanceArmy` 新增极速追查队排除条件。否则完整协力军团派出的
+  极速队会在下一次小时维护中被普通周期支援逻辑重新并回军团，立刻失去分兵意义；现在只有
+  普通周期支援仍会加入军团，极速队会保持独立追击，案件结束后沿用既有返队流程把幸存者真实
+  交还组长。
+- Bannerlord `1.4.7` 诊断版执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45`
+  条既有可空性/离线 NuGet 警告并自动部署；相同完整源码针对 `1.4.5` 与 `1.4.6` 参考程序集
+  的交叉重建均为 `0` 错误、`44` 条既有警告。实机客户端和编辑器 DLL 的 SHA-256 均为
+  `DE96A4977EEB29BA3696F003DB420BA997A72B8CE3C25ADEC8587E6C2D1B06C9`。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`，实机
+  `18` 个 XML 解析失败 `0`，且不含 `Assets`、`AssetSources` 或 `RuntimeDataCache`。
+  中英文 README 仓库/实机哈希分别一致为
+  `097AFEC6A182921D6B46444DFDAD9441257EE0B5BA298E99A971655DCF6B3C43` 与
+  `FDC372B76EA22DDD4B777924C70A76D379FE6A9E6A2E78CB0A0B98111B683F85`。
+  ILSpy 从实机 DLL 确认跨协力领主抽调、失败时按原兵源回滚、`trigger=assistance_army`、
+  同案唯一极速队判断，以及 `state.IsImmediateInterceptor` 禁止重新并回协力军团均已进入
+  产物。
+- 本轮没有启动游戏，故构建和反编译只证明代码、接口与部署正确，不能代替实机案件推进。
+  下一次验证应观察完整协力军团追赶更快目标时是否写出
+  `IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED; trigger=assistance_army`，随后确认极速队未加入
+  原军团，并在案件结束后写出 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED`。
+
+## 2026-07-25 现有诊断日志归档与活动目录精简
+
+- 本轮仅整理已经生成的日志，不修改灰袍监控代码、游戏逻辑或另一个模组。整理前确认没有
+  Bannerlord、TaleWorlds 或 Watchdog 进程运行。
+- `C:\ProgramData\Mount and Blade II Bannerlord\logs` 中 `27` 个现有文件，加上
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  共 `1615.80 MB`，已完整归档为
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Log Archives\Bannerlord-logs-before-cleanup-20260725-175748.zip`。
+  ZIP 含 `28` 个文件，未压缩字节数与源文件逐项校验一致；归档大小为 `13.51 MB`。
+- 归档校验成功后，原 `ProgramData` 活动日志目录已精简为 `0` 个文件，灰袍活动诊断日志也已
+  移走。下次启动游戏会重新生成新的 RGL 和灰袍诊断日志。另一个项目的
+  `Expelliarmus-FlyingWeapon-Diagnostics.log`、`Yujian-FlyingWeapon-Diagnostics.log`
+  和 `BattlefieldSkills-FlyingWeapon-Diagnostics.log` 均未改动。
+- 如需恢复旧证据，必须先关闭游戏；把 ZIP 内 `ProgramData-logs/` 的文件复制回
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs`，把
+  `Documents-diagnostics/` 的文件复制回
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord`。分析后可再次移走，不应在游戏
+  运行时覆盖活动日志。
+
+## 2026-07-25 练兵任务测试弹窗崩溃诊断：除你武器调用无效战斗 Team
+
+- 本次运行对应 PID `37296`。Windows Application Error `1000` 记录游戏进程于
+  `2026-07-25 17:37:55 +10:00` 发生原生访问冲突 `0xc0000005`，故障模块未识别；Watchdog
+  确认触发崩溃事件，但用户在弹窗中取消了 dump 和报告生成，因此没有可用于最终指令级符号化的
+  TaleWorlds 崩溃包。对应 `watchdog_log_37296.txt`、`rgl_log_37296.txt`、
+  `rgl_log_errors_37296.txt` 和灰袍诊断日志现保存在上一节注明的 ZIP 中，Windows
+  Application 事件日志仍保留在系统中。
+- 灰袍订单日志确认新锁定流程已经完整成功跑过一次：`17:37:09` 梵蒂为二十名
+  `gwnewrecruit` 写出 `PLAYER_TROOP_ORDER_TARGET_LOCKED`，当时真实换入三人、目标经验发放
+  为零；`17:37:24` 正常写出 `PLAYER_TROOP_ORDER_DELIVERED`，`17:37:25` 又以
+  `stage=None` 完成交谈并解除订单。玩家于 `17:37:44` 发起第二次下单对话，但崩溃前没有第二
+  条锁定、经验、交换或交付记录，战役时间也只从 `628187.65` 走到 `628187.66`，尚未跨过
+  下一次每小时订单处理。故本次访问冲突不是在
+  `RefreshTrainerStock`、`LockOrderedTroopIfReady` 或升级模型中发生。
+- 同一进程在更早的 `17:29:17.489` 显示“除你武器！”后，从
+  `17:29:17.495` 到 `17:31:02.483` 连续写出
+  `SCRIPT ERROR: Condition not satisfied: IMono_MBTeam::is_enemy:
+  other_team_index_invalid!`。两份 RGL 日志因此分别膨胀到约 `683 MB`，错误文件几乎成为一条
+  连续的无效 Team 调用记录。对应
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Expelliarmus-FlyingWeapon-Diagnostics.log`
+  同时显示 `disarm=True, sharedControl=True`，到 `17:31:02` 技能关闭并释放两把物理武器后
+  错误才停止。
+- 精确源码入口位于
+  `C:\Users\lucif\source\repos\BattlefieldSkills\BattlefieldSkills\Source\FlyingSwordMissionBehavior.cs`
+  的 `IsHostileTo`：它只检查 `Agent` 和 `Team` 引用不为空，然后每帧直接执行
+  `caster.Team.IsEnemyOf(candidate.Team)`。本次至少一侧仍有非空 Team 对象，但其原生
+  `TeamIndex` 已经无效；因此托管空检查未拦住调用，持续进入
+  `IMono_MBTeam::is_enemy`。这是当前可证明的错误源，也与随后 Windows 记录的原生访问冲突
+  类型吻合。
+- 结论：玩家是在第二次测试练兵任务后看到崩溃弹窗，但时间上的最后操作不是代码归因。
+  灰袍第一次锁定和交付已由实机日志证明成功，第二次订单处理尚未执行；本轮真正异常来自
+  Expelliarmus 的敌我筛选对失效 Team 调用 `IsEnemyOf`。要消除该崩溃风险，应在
+  BattlefieldSkills 中为 Team 的有效索引/当前 Mission 归属增加原生调用前保护，并在对象
+  失效时清理锁定目标，而不是回退已经通过实测的灰袍订单锁定。本轮只完成诊断，未修改两个
+  模组的运行代码、双语玩家 README、实机 DLL 或正式玩家 ZIP。
+
+## 2026-07-25 满编精锐练兵官订单诊断与指定兵种临时锁定
+
+- 玩家下达六十名灰袍新兵订单后，练兵官会立即被
+  `GreyWardenTroopRequestBehavior` 预留：原有普通案件、协力、训练交换等职责会被解除，
+  且订单完成前不会再接受普通灰袍案件。因此“卡单以后去接另一个案件”不会发生。
+- 满编本身不会立刻卡死订单。每小时备兵刷新会从其他可用灰袍部队中寻找健康的订单目标兵种，
+  并用练兵官手上无法继续升级到目标的士兵按一比一真实交换；部队总人数不变。目标若是兵种树
+  根节点 `gwnewrecruit`，只有已经是 `gwnewrecruit` 的实体士兵能作为调入库存，精锐老兵和
+  更高阶兵种都不能逆向降级成新兵。
+- 如果其他灰袍部队合计有六十名健康新兵，练兵官即使满编且全是精锐，也能逐批用精锐换回
+  六十名新兵；备齐后的下一次每小时 tick 会把订单切到交付阶段并前往玩家。若全族可调的新兵
+  不足，现有逻辑不会删除精锐、凭空生成新兵、强制降级老兵或主动腾出名额重新招募，因此订单
+  会停留在训练阶段，直到其他灰袍部队以后偶然产生新的可调库存。
+- 原有训练逻辑还有一个会加重根节点新兵订单短缺的问题：
+  `TrainForOrderIfDue` 会把“当前已经等于目标、但仍有后续升级分支”的新兵也列入经验发放
+  队列。部分调入的新兵可能在原版每日升级时升成轻步兵，再次不满足“交付新兵”的计数条件。
+- 训练阶段只建立“职责预留”，没有向欲望系统提交专属的招募、待命或交付移动意图。
+  `TryPreparePartyForPlayerRequest` 清掉旧任务后，如果当时仍未备齐，原版 AI 欲望仍可让练兵官
+  巡逻、进城或补给。玩家因此可能看到她一边处于未完成的训练订单，一边继续巡逻；这不是她
+  接受了新案件，而是订单缺货时没有专属移动目标。
+- 诊断结论：用户预估在“全族实际新兵库存不足”的条件下成立，但不是“练兵官满编”单独
+  造成。缺货由根节点目标没有可训练来源、目标新兵仍会被加经验升级、缺货阶段没有补员意图
+  三者叠加产生。
+- 用户随后明确要求：指定兵种备齐后立即临时钉住，不再被练兵官经验或原版自动升级处理；
+  练兵官携带原兵种前往玩家，交付、取消或资金不足终止订单后解除，恢复原版正常升级。
+  `GreyWardenTroopRequestBehavior` 新增持久化
+  `GWPP_PlayerTroopOrderUpgradeLocked`。每小时检查、真实换兵完成后及读档会话启动时，只要目标
+  已经备齐，或旧档已经处于交付阶段，就把锁定设为真；即使途中战斗造成伤亡、订单退回训练
+  阶段，锁定仍持续到订单真正结束。
+- `TrainForOrderIfDue` 现在从订单经验队列排除“已经等于目标”的兵种；它仍会训练所有能够向
+  目标升级的前置兵种。这样部分收集到的新兵不会再被本次订单经验主动推离目标，备齐时则会
+  立即进入完整锁定。
+- `PolicePartyTroopUpgradeModel.IsTroopUpgradeable` 在且仅在实际练兵官部队、当前订单指定兵种、
+  锁定状态三项同时满足时返回 `false`。这会同时拦住原版每日部队 tick 和战斗结束后的
+  `PartyUpgraderCampaignBehavior.UpgradeReadyTroops`；没有扣除或清零既有经验。订单结束时
+  `ClearOrder` 清除锁定，下一次原版升级检查即可继续使用原有经验。
+- Bannerlord 的 `TroopRoster` 按兵种聚合人数与经验，不能在同一名单项内单独标记其中六十名
+  实体。因此锁定对象是练兵官名单中的“指定兵种整批”，而不是同兵种中不可辨认的部分人数；
+  其他兵种仍正常训练和升级。该做法不复制、删除或替换士兵，也不改动订单的一比一真实调拨。
+- Bannerlord `1.4.7` 诊断版执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条
+  既有可空性/离线 NuGet 警告并自动部署；相同源码针对 `1.4.5`、`1.4.6` 参考程序集的完整
+  交叉重建均为 `0` 错误、`44` 条既有警告。仓库 `_Module` 的 `25` 个正常客户端文件与实机
+  相比缺失 `0`、哈希差异 `0`，`18` 个 XML 解析失败 `0`，双语 README 均只保留两条正式
+  发布记录并与实机一致；实机不含 `Assets`、`AssetSources` 或 `RuntimeDataCache`。
+- 实机客户端与编辑器 DLL 均为 `739840` 字节，SHA-256
+  `B3945A3386A2E1E8273296A3CF42C9F1781039FDA6716124D58BDE1598E39D8E`；仓库与实机中文
+  README 均为
+  `AC8D74F13BF56A99444B811027A3F38AC4CEFE6CF2807255DBA620246F8F34DB`，英文均为
+  `A0A06707997FB299FFE5B5F5D07062FFCEEF532B8E4DA3F20E9CEDE9475D3729`。ILSpy 从实机 DLL
+  确认新存档键、备齐锁定、目标兵种经验排除、升级模型拒绝、订单结束解锁及诊断
+  `PLAYER_TROOP_ORDER_TARGET_LOCKED` 均已进入产物。本轮没有启动游戏，实际订单备齐和交付
+  流程由用户继续游玩验证；普通开发构建没有创建或替换正式玩家 ZIP。
+
+## 2026-07-25 练兵官长期升级同一兵种的原版机制诊断
+
+- 灰袍练兵代码没有直接升级兵种，也没有选择重步兵、弓箭手或骑士分支。
+  `GreyWardenTrainingBehavior.TrainPartyIfDue` 每六小时只调用
+  `TroopRoster.AddXpToTroop`，把经验加给仍有升级目标的灰袍士兵；真正升级仍由原版
+  `PartyUpgraderCampaignBehavior` 在每日部队 tick 或战斗结束时处理。
+- 本机当前 `TaleWorlds.CampaignSystem.dll` 的原版流程不是在多个分支间平均随机。
+  `DefaultPartyTroopUpgradeModel.GetUpgradeChanceForTroopUpgrade` 遇到多分支兵种时，如果领主
+  设置了 `PreferredUpgradeFormation`，包含该阵型的分支权重为 `9999`，其他分支各为 `1`；
+  如果没有设置偏好，则由领主存档中的固定 `RandomValue`、基础兵种 id 和兵阶算出一个固定
+  分支，仍给它 `9999` 权重。灰袍轻步兵的 XML 顺序是重步兵、弓箭手、骑士三支，所以固定
+  分支每次约有 `9999 / 10001`，即 `99.98%` 的概率被选择；对同一领主和同一基础兵种，这个
+  结果不会每天重新轮换。
+- `PartyUpgraderCampaignBehavior` 选中分支后，会把该兵种当前所有满足经验、健康、工资和金币
+  条件的 `PossibleUpgradeCount` 整批升级到同一目标，而不是逐名独立抽签。因此练兵官每六小时
+  给一大批轻步兵同步增加经验，会进一步放大原版的固定偏向，看起来就像她始终只训练一种精锐。
+  这不是经验发放代码误把分支写死，而是原版领主部队升级机制本身的设计。
+- 原版使用 `9999` 不是算术溢出或随机数错误，而是有意在统一的加权抽签器里制造“几乎强制”
+  的软偏好：不需要另外写一个硬选分支，同时仍给其他分支留下极小概率。领主已有阵型偏好时，
+  它塑造固定兵种倾向；没有明确偏好时，稳定哈希仍让不同领主在不同读档和日期中保持自己的
+  固定倾向。原版领主通常从多个不同文化兵种树招募，某一棵树偏科仍能由其他基础兵种补足阵容；
+  灰袍却把绝大多数兵员集中到同一个三分支轻步兵节点，再由练兵官同步发经验，所以这个原版设计
+  在灰袍树上被放大成近乎单一兵种。它不是原版所有场景都会出错，但不适合当前灰袍兵种结构。
+- 用户随后明确要求三个分支直接等权。新增
+  `PolicePartyTroopUpgradeModel : DefaultPartyTroopUpgradeModel` 并在战役模型中注册；只在实际
+  灰袍 AI 部队、灰袍兵种且升级目标多于一个时，把每个有效目标的
+  `GetUpgradeChanceForTroopUpgrade` 统一返回 `1`。当前轻步兵的重步兵、弓箭手、骑士三个
+  有效分支因此各占 `1/3` 权重。其他家族、非灰袍兵种、单分支新兵以及无效索引全部继续调用
+  原版模型。
+- 改动只覆盖原版抽签权重：升级仍由 `PartyUpgraderCampaignBehavior` 在原版时机执行，经验、
+  金币、健康、工资、所需物品/技能、一次可升级人数和实体士兵替换均未改。原版仍会把同一次
+  满足条件的整批轻步兵投入当次随机选中的一个分支，所以这是用户要求的“三路等概率”，不是
+  强行维护最终三系人数绝对相等。
+- Bannerlord `1.4.7` 诊断版执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条
+  既有可空性/离线 NuGet 警告并自动部署；相同源码针对 `1.4.5` 和 `1.4.6` 引用程序集的完整
+  交叉重建均为 `0` 错误、`44` 条既有警告。仓库 `_Module` 的 `25` 个正常客户端文件与实机
+  相比缺失 `0`、哈希差异 `0`，`18` 个 XML 解析失败 `0`，双语 README 都只保留两条正式
+  发布记录且与实机一致；实机不含 `Assets`、`AssetSources` 或 `RuntimeDataCache`。
+- 实机客户端和编辑器 DLL 均为 `738304` 字节，SHA-256
+  `DE908AD382807ED336B3D8A4F302FA01B77C0C3AA92BB5ADD0AF08011353A7F6`；仓库与实机中文
+  README 均为
+  `88E52EFEF7ED88E94A05A8477E40FBA53EB11C19171B0D5943085A9E77B41AE4`，英文均为
+  `BF9C39DE42E196C9F806E3DDC2FB2CFFA4BF17E6134560192B9C86DF1C522B91`。ILSpy 从实机
+  DLL 确认 `PolicePartyTroopUpgradeModel` 对符合条件的每个索引返回 `1f`，其他情况回退
+  `DefaultPartyTroopUpgradeModel`，并确认 `SubModule` 已把它注册为战役
+  `PartyTroopUpgradeModel`。本轮没有启动游戏，实际三路长期分布仍由用户继续游玩观察；没有
+  创建或替换正式玩家 ZIP。
+
+## 2026-07-25 晨曦十五艘船与战帆原版过量舰船处理诊断与修复
+
+- 用户在实机界面观察到晨曦拥有 `15` 艘船。现有
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （本次读取时最后写入 `2026-07-25 16:45:53 +10:00`）尚未记录舰船数量、船型、获得来源或
+  舰船交易事件，所以旧日志只能确认晨曦当时约 `158～167` 人、仍是正常活动领主队，不能单独
+  证明十五艘分别在哪场战斗获得。以下结论来自对本机当前
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\NavalDLC\bin\Win64_Shipping_Client\NavalDLC.dll`
+  和
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.CampaignSystem.dll`
+  的 ILSpy 反编译。
+- 战帆原版确实有过量舰船处理，但它不是“大地图去港口卖船”的欲望。
+  `ShipTradeCampaignBehavior` 每日对非玩家、非强盗且未灭亡家族做一次后台决策：
+  `NavalDLCShipLimitModel` 认为领主单队理想船数为 `3`；
+  `NavalDLCClanShipOwnershipModel` 认为全族理想船数为原版家族出队上限乘 `3`。当前灰袍是
+  六阶、非 minor 家族，原版 `DefaultClanTierModel` 的基础出队上限为 `3`，所以未计相关技能
+  时原版只把灰袍全族约 `9` 艘视为理想值，并不是允许晨曦单队留十五艘。
+- 只有全族舰船总数超过上述家族理想值时，原版每日才以 `10%` 概率尝试卖一艘，而且先在
+  `WarPartyComponents` 中随机抽一支队伍。被抽中的队必须在陆地、没有地图战斗或围城、领主
+  有效且仍活动；`TryGetShipToSell` 还要求删掉某一艘可交易船后能提高该队的舰队构成评分。
+  一次成功最多卖一艘，不会立即把十五艘裁到三艘。
+- 原版出售不是让领主产生访问港口欲望，而是直接把船的所有权交易给
+  `clan.MapFaction.Fiefs` 中随机一座拥有有效造船厂的本方城镇。灰袍没有自己的封地或港口，
+  所以 `GetTownToSellShip` 对灰袍返回空；即使每日 `10%` 检查抽中晨曦并挑出应卖船，也没有
+  合法买方，交易不会发生。这是十五艘长期留在她身上的主要原版适配缺口。每日另有 `75%`
+  概率在随机两支本族陆上队伍之间尝试交换一艘，只在全族总构成评分提高时执行，能偶尔重分配，
+  但不能替代卖出，而且不保证抽中晨曦。
+- 海战缴获本身也有原版筛选。`MapEvent.LootDefeatedPartyShips` 先给败方存活船追加相当于最大
+  耐久 `20%～50%` 的战后损伤；`NavalDLCBattleRewardModel` 再让每艘只有 `50%` 概率进入
+  可缴获池。AI 胜方只有在加入该船会提高自身
+  `ShipDistributionModel.GetScoreForPartyShipComposition` 时才接收；未分配的船被销毁并按
+  船价给合格胜方结算掠夺金。因此原版不是无条件把所有敌船塞给胜方，但人物后来损兵、舰队构成
+  改变或连续多次在不同状态下获船后仍可能形成当前过量，而上面的出售路径对无港口灰袍失效。
+- 模组现有 `PoliceResourceManager.GivePoliceShips` 每小时只在船数低于
+  `ceil(当前部队人数 / 50)` 时补齐重型船，晨曦当前约一百六十人只需要约四艘；该方法不会主动
+  把她补到十五艘，但注释和实现都明确“只追加缺失的船，不删除现有船”，所以也不会清理原版
+  缴获或转入的多余船。原版另有部队解散时把船分给族人、剩余折现的兜底，但晨曦仍是活动队伍，
+  不会触发。
+- 已按用户确认实施上述修复。`PoliceResourceManager` 每日检查所有活动灰袍领主队；队伍必须
+  在陆地、没有战斗或围城、领主有效且并未解散，船数超过
+  `ceil(当前人数 / 50)` 时才进入出售。每队每天最多出售一艘，避免一次 tick 突然清空舰队；
+  从可交易且售价为正的余船中先卖最低价值者，保留足够承载本队兵力的船。
+- 买方改为距离该队最近、未被围城、拥有至少一级 `building_shipyard` 且与灰袍不处于战争的
+  城镇，覆盖中立和友好造船港。仍调用原版
+  `ChangeShipOwnerAction.ApplyByTrade`，所以船作为真实实体转入港口，原版按船况结算价格，
+  并把收入交给灰袍家族领袖钱包，也就是既有司法公库；没有直接删船或额外造钱。
+- 新增 `SHIP_ACQUIRED`、`SHIP_DISPOSED` 与 `SURPLUS_SHIP_SOLD` 诊断，今后会记录船体 id、
+  所有权变化类型、原/新所有者、买方、售价、出售前后船数、保留需求和公库余额。它无法回填旧
+  存档中十五艘船过去的逐船来源，但更新后再次缴获、转移或出售均可追踪。
+- 首次增量构建在诊断所有者兜底文本中误用了不存在的 `PartyBase.StringId`，产生唯一错误
+  `CS1061`；该失败构建未生成可接受 DLL。兜底改为明确的 `"party"` 后，
+  Bannerlord `1.4.7` 执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条既有
+  可空性/离线 NuGet 警告，并自动部署。相同源码针对 `1.4.5` 和 `1.4.6` 的完整引用程序集
+  交叉重建也分别为 `0` 错误、`44` 条既有警告。
+- 仓库 `_Module` 的 `25` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`；`18` 个 XML
+  解析失败 `0`，实机不含 `Assets`、`AssetSources` 或 `RuntimeDataCache`。实机客户端和
+  编辑器 DLL 均为 `737792` 字节，SHA-256
+  `E83D004760194F3022FB5E3C73E91198596B4694C72DFC2AFB23D69EF325F0CE`；仓库和实机中文
+  README 均为
+  `49DDE2A23FB76532A6F90CB86FF713A7CD922ED643A43029BE391EAFA92B151D`，英文均为
+  `78E7327A928898521AB74625AE908CC4F355057DF907AB7B5479B1B2E57EA982`。
+  ILSpy 从实机 DLL 确认每日入口已调用 `SellSurplusPoliceShips`，出售条件、最近非敌对一级
+  船厂筛选、正价最低价值船选择、`ApplyByTrade` 和三类诊断均进入产物。本轮没有启动游戏，
+  晨曦实际每日减船和公库增款仍由用户载档验证；没有创建或替换正式玩家 ZIP。
+
+## 2026-07-25 暮光追捕 `CharacterObject_1825` 未留下高速追截队诊断
+
+- 最新监控
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （最后写入 `2026-07-25 15:14:37 +10:00`）中的最新暮光普通案件目标为
+  `CharacterObject_1825_party_1`。案件首次进入本段监控时是
+  `campaignHour=625653.77`、`taskFlow=Pursuit`、`war=False`，暮光距目标 `93.78`；当时刚结束
+  战斗处于混乱状态，缓存速度 `1.76`，但任务正确锁定的去除临时混乱后的单队理论速度为
+  `2.98`。其后暮光持续用案件点接近目标，并非案件、欲望或职责丢失。
+- 到 `campaignHour=625735.77`，双方距离 `2.85`，本案正常从 `Pursuit` 切为
+  `WarPursuit` 并进入普通案件高速分兵入口。入口确实从暮光的健康骑乘兵中真实取出上限
+  `8` 人建立候选队 `gwp_enf_delay_74190`，但原版即时速度复算结果为候选追截队
+  `4.50`、目标实际移动队 `4.55`。代码要求追截队必须严格快于目标，因此写出
+  `IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW`，随即把八人无损退回暮光并销毁空队；本目标没有
+  `IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED`。所以地图上看不到高速追截队不是没有触发，而是
+  触发后以仅差 `0.05` 的速度未通过最终有效性校验。
+- 目标在前一小时监控快照中的 `baseSpeed=4.37`，而旧分兵入口记录的 `targetSpeed=4.55`
+  来自当刻直接读取的实际移动主体 `MobileParty.Speed`。继续核对后确认这里的比较口径不对：
+  候选队生成在暮光当前位置，目标则在约 `2.85` 距离之外，双方瞬时 `Speed` 会分别混入所在
+  地形、天气、战后混乱等临时差异，不能用来判断八名骑兵按部队构成是否真追不上目标。
+- 后来出现的 `gwp_enf_delay_25328` 是既有的普通无领主纠察支援队
+  (`partyKind=leaderless_delay_support`)，不是上述被回滚的即时高速分兵。它从
+  `campaignHour=625770.29` 起以 `DirectAttackLock` 追同一目标，在 `625790.44` 建立地图
+  战斗，暮光同时加入，战斗于 `625794.00` 结束。这也证明该案最终由普通支援的强制接战保底
+  碰到目标，而不是高速队部署成功。
+- 用户明确要求复用协力追捕已经使用的原版理论速度推算。普通案件高速分兵现在对承办人、目标
+  实际移动主体和候选追截队全部调用同一个 `GetTheoreticalBaseSpeed`：内部仍由原版
+  `PartySpeedCalculatingModel.CalculateBaseSpeed` 计算具体队伍，再按协力既有规则排除战后
+  混乱与骑兵/骑马步兵天气惩罚，得到正常条件下的理论速度。是否需要分兵以及候选队是否严格
+  快于目标都改用这一口径，不再比较 `MobileParty.Speed`。当前瞬时速度仍写入诊断，方便同时
+  看出理论构成与现场地形状态，不参与去留决定；真实移兵、三至八人限制和速度必须严格更快的
+  安全条件不变。
+- 修正后的 Bannerlord `1.4.7` 诊断版执行
+  `dotnet build .\GreyWardenPolicePurity.slnx -c Release -t:Rebuild --no-restore`，结果为
+  `0` 错误、`45` 条既有可空性/离线 NuGet 警告并自动部署。仓库 `_Module` 的 `25` 个正常
+  客户端文件与实机相比缺失 `0`、哈希差异 `0`；`18` 个 XML 解析失败 `0`，中文本地化
+  `837` 个 string id、重复 `0`；实机不含 `Assets`、`AssetSources`、`RuntimeDataCache`，
+  双语 README 与仓库一致。客户端与编辑器 DLL 均为 `731648` 字节，SHA-256
+  `6E4B2F42635747149459BAE600A5019FA9008A7D7F39C6348B3665D14E549ECF`。ILSpy 从实机
+  DLL 确认 `TrySpawnImmediateCaseInterceptor` 对来源、目标和候选队均调用
+  `GetTheoreticalBaseSpeed`，两个最终分支分别使用理论速度比较，并同时保留三方
+  `CurrentSpeed` 诊断。本轮没有创建或替换正式玩家 ZIP；新的理论速度数值与实际出队结果需由
+  下一宗实机案件验证。
+
+## 2026-07-25 九级震慑逐级恢复下限与对话触发率
+
+- 九级总上限不变，同一犯罪方向的第 `n` 次被捕仍新增 `n` 级本人震慑（受九级总上限限制），
+  但恢复目标不再一律归零。用户进一步明确下限应逐次只提高一级，所以第 `n` 次被捕后的永久
+  下限为 `min(9, n - 1)`：第一次恢复到零、第二次恢复到一级、第三次恢复到二级、第四次
+  恢复到三级，此后照此递增，直到第十次及以后保持九级。举例：第二次若此前已经恢复至零，
+  本次会升至二级、以后最低恢复到一级；第三次在一级下限上再增加三级，最高到四级、以后最低
+  恢复到二级。
+- 乡土方向（袭击村民、劫掠和烧村）与商路方向（袭击商队）继续使用各自的被捕次数，所以
+  两套恢复下限互不串用。下限直接由现有的永久分类被捕数字推导，不新增存档字段；旧存档载入
+  后会按已有被捕史自动得到相应下限。族人转述或同场目击而从未在该方向亲自被捕者的下限仍为
+  零，可以完全恢复。
+- `GwpAiDeterrenceState` 的日衰减现在以分类下限为终点；达到下限时把剩余值归为本人直接经验，
+  避免永久部分继续显示为可消退的转述震慑。恢复暂停判断和百科预计时间也改为只计算当前值到
+  下限之间仍可恢复的部分。英雄百科在存在下限时显示最低压制；尚未到达时显示恢复至下限的
+  预计时间，达到后明确显示永久固定等级。
+- `PoliceAIDeterrenceBehavior.DeterrenceGreetingChance` 从测试阶段的 `1.0` 改为 `0.5`。每次
+  普通交谈仍只掷一次并缓存本次会话结果；只有掷中时才由震慑特殊开场替换普通问候，其余任务、
+  执法和悬赏对话排除条件不变。
+- 把下限公式改成线性增长后的第一次重建发现 TaleWorlds 提供的 `MathF.Min(float, int)` 重载
+  被标记为编译错误 `CS0619: Types must match!`；把 `Math.Max(0, arrestCount - 1)` 显式转换为
+  `float` 后消除。该次失败构建没有产生可接受的最终 DLL，随后以修正源码完整重建并重新部署。
+- 当前 Bannerlord `1.4.7` 诊断版执行
+  `dotnet build .\GreyWardenPolicePurity.slnx -c Release -t:Rebuild --no-restore`，结果为
+  `0` 错误、`45` 条既有可空性/离线 NuGet 警告并自动部署。仓库 `_Module` 的 `25` 个正常
+  客户端文件与实机相比缺失 `0`、哈希差异 `0`；`18` 个 XML 解析失败 `0`，中文本地化
+  `837` 个 string id、重复 `0`；实机不含 `Assets`、`AssetSources`、`RuntimeDataCache`。
+  客户端与编辑器 DLL 哈希一致，均为 `731648` 字节，SHA-256
+  `2D7A1687E8EF206A7EB679B75B78648A73C03100698C661EC7D0CA1C335148D2`，双语 README
+  与仓库一致。ILSpy 从实机客户端 DLL 确认恢复下限公式为
+  `min(9, arrestCount - 1)`、乡土/商路分别读取各自被捕数、日衰减以
+  下限为终点、百科包含下限三种状态文本，并确认普通交谈实际执行
+  `MBRandom.RandomFloat <= 0.5f`。本轮是普通开发部署，没有创建或替换正式玩家 ZIP。
+
+## 2026-07-25 战帆下水等待诊断：约珥欲望正常，等待舰队锚点抵达
+
+- 最新实机监控
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （最后写入 `2026-07-25 14:29:09 +10:00`）确认约珥
+  `gw_leader_1_party_1` 没有在岸边反复改主意。她在
+  `campaignHour=625315.99` 已把跨水域案件落实为
+  `desiredNavigation=All`、`default/short=GoToPoint`；到
+  `625316.99` 抵达 `(771.9366, 272.5201)` 后，位置连续保持到日志结束的
+  `625342.99`，共约 `26` 个战役小时。期间每小时仍重新取得同一案件目标
+  `CharacterObject_1824_party_1`，目标位置从约 `(614, 151)` 移到
+  `(638, 149)`，约珥持续更新追赶点但没有离开岸边；`aiDisabled=False`、
+  `doNotDecide=False`、`mapEvent=-`，排除 AI 被关闭、案件丢失或战斗锁定。
+- 对应欲望拍卖同样正常。岸边等待开始时和日志结束前，案件
+  `ApproachPoint` 均以 `0.99` 获胜；原版巡逻最高欲望为 `3.09`，按既有任务规则压到
+  `0.03`，原版访问定居点欲望最高分别约为 `0.642` 和 `0.293`，均低于案件。最终行为始终是
+  案件点的 `NavigationType.All`，不是巡逻、补给或进城欲望抢走控制权。
+- 对本机当前
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\NavalDLC\bin\Win64_Shipping_Client\NavalDLC.dll`
+  反编译核对了 `NavalDLCPartyTransitionModel.GetTransitionTimeForEmbarking`。战帆的 AI
+  下水不是到岸即一定完成：舰队锚点无效时固定等待 `48` 小时；锚点有效但距队伍至少
+  `10` 个地图距离时，等待
+  `clamp(distance^0.95 / 35, 3, 48)` 小时让舰队抵达；只有距离小于 `10` 时才即时下水。
+  这直接解释“有时很久、有时没问题”：舰船锚点恰在附近时为零等待，舰队留在远方或锚点尚未
+  建立时会在岸边等待 `3～48` 小时。战帆另把正常下船等待固定为 `2` 小时，和本次下水停顿
+  不是同一规则。
+- 当前灰袍监控只记录移动欲望、导航类型和地图位置，没有记录
+  `MobileParty.Anchor.IsValid`、锚点位置、到达时间或舰船数量，因此现有日志能确定“不是欲望
+  故障，而是进入战帆原版下水过渡”，但不能仅凭旧日志区分本次属于远距离舰队航行还是无效锚点
+  的 `48` 小时兜底。本轮没有修改运行时代码、玩家 README、实机模块或正式玩家包；若需要继续
+  精确到本次剩余等待时间，应在诊断状态中追加上述锚点字段后再做一次实机观察。
+
 ## 2026-07-25 v1.4-r7 同版本稳定性重发与正式玩家包
 
 - 用户明确要求本轮不新增公开版本号。此前作为 `v1.4-r8（开发中）` 累积的协力追捕、战争收束、

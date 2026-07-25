@@ -8,10 +8,15 @@ namespace GreyWardenPolicePurity
     {
         public static string Get(string template, params object[] variables)
         {
+            return Create(template, variables).ToString();
+        }
+
+        public static TextObject Create(string template, params object[] variables)
+        {
             var text = new TextObject(template);
             for (int i = 0; i + 1 < variables.Length; i += 2)
                 Set(text, variables[i]?.ToString() ?? string.Empty, variables[i + 1]);
-            return text.ToString();
+            return text;
         }
 
         public static string Format(object value, string format) =>

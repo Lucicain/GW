@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapNotificationTypes;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -741,11 +742,22 @@ namespace GreyWardenPolicePurity
                         _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop,
                         offender.Name.ToString());
                     _activeQuest.StartQuest();
-                    string lastSeenNear = GetNearestSettlementName(offender.GetPosition2D);
+                    Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
+                    TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
+                                              GwpText.Create(
+                                                  "{=gwp_playerbountybehavior_020}unknown location");
                     _activeQuest.WriteLog(
-                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_033}Target: {VAR_1} (currently {VAR_2} people).", "VAR_1", offender.Name, "VAR_2", _activeBountyTargetSize) +
-                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.", "VAR_1", lastSeenNear) +
-                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_035}After defeating, go to the warden-lord to collect the bounty of approximately {VAR_1} dinars.", "VAR_1", _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop));
+                        GwpText.Create(
+                            "{=!}{VAR_1}{VAR_2}{VAR_3}",
+                            "VAR_1", GwpText.Create(
+                                "{=gwp_playerbountybehavior_dialogueandnotification_033}Target: {VAR_1} (currently {VAR_2} people).",
+                                "VAR_1", offender.Name, "VAR_2", _activeBountyTargetSize),
+                            "VAR_2", GwpText.Create(
+                                "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.",
+                                "VAR_1", lastSeenNear),
+                            "VAR_3", GwpText.Create(
+                                "{=gwp_playerbountybehavior_dialogueandnotification_035}After defeating, go to the warden-lord to collect the bounty of approximately {VAR_1} dinars.",
+                                "VAR_1", _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop)));
                 }
                 catch { _activeQuest = null!; }
             }

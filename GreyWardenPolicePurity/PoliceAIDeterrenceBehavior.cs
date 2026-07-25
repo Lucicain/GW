@@ -31,7 +31,7 @@ namespace GreyWardenPolicePurity
             public List<CaptureShock> Shocks { get; } = new List<CaptureShock>();
         }
 
-        private const float DeterrenceGreetingChance = 1f;
+        private const float DeterrenceGreetingChance = 0.5f;
         private static string _lastDeterrenceConversationKey = string.Empty;
         private static bool _lastDeterrenceConversationResult;
         private static TextObject? _lastDeterrenceIntro;

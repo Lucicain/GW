@@ -119,6 +119,7 @@ namespace GreyWardenPolicePurity
             public const float RecoverySpeedMultiplier = 0.5f;
             public const float ActiveDialogueThreshold = 0.25f;
             public const float ForgetThreshold = 0.05f;
+            public const float RecoveryFloorTolerance = 0.0001f;
             public const float CleanupGraceDays = 3f;
         }
 

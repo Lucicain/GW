@@ -28,6 +28,7 @@ namespace GreyWardenPolicePurity
         private const int EquipmentSlotCount = 12;
         private const int TroopsPerShip = 50;
         private const int TemporaryDutyFoodDays = 20;
+        private const string ShipyardBuildingTypeId = "building_shipyard";
         internal const int SuccessfulCaseReward = 3000;
         // NavalDLC 可选依赖：运行时一次性检测（所有模块 DLL 加载后）
         // 若 NavalDLC 未安装，GivePoliceShips 直接 return，不影响游玩
@@ -81,6 +82,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
+            CampaignEvents.OnShipOwnerChangedEvent.AddNonSerializedListener(this, OnShipOwnerChanged);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -159,6 +161,7 @@ namespace GreyWardenPolicePurity
             }
 
             CollectDailyVillageProtectionContributions();
+            SellSurplusPoliceShips();
             EnsureAllAdultGreyWardensAreCombatants();
         }
 
@@ -391,6 +394,141 @@ namespace GreyWardenPolicePurity
                 party.SetNavalVisualAsDirty();
             }
             catch { }
+        }
+
+        /// <summary>
+        /// War Sails normally sells AI-clan surplus ships only to a shipyard owned
+        /// by that clan's map faction. The landless Grey Wardens can therefore
+        /// accumulate captured ships indefinitely. Once per day, each eligible
+        /// Warden lord sells at most one tradeable surplus ship to the nearest
+        /// non-hostile working shipyard. The native trade action keeps the ship as
+        /// a real physical asset at the port and credits the clan leader, whose
+        /// wallet is the judicial treasury.
+        /// </summary>
+        private static void SellSurplusPoliceShips()
+        {
+            if (!_navalDlcLoaded) return;
+
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null || policeClan.IsEliminated) return;
+
+            foreach (MobileParty party in PoliceStats.GetAllPoliceParties()
+                         .Where(CanSellSurplusShip)
+                         .OrderBy(static candidate => candidate.StringId,
+                             StringComparer.OrdinalIgnoreCase)
+                         .ToList())
+            {
+                int requiredCount = GetRequiredShipCount(party);
+                int currentCount = party.Ships?.Count() ?? 0;
+                if (currentCount <= requiredCount) continue;
+
+                Town? buyer = FindNearestNonHostileShipyard(party, policeClan);
+                if (buyer == null) continue;
+
+                Ship? ship = party.Ships
+                    .Where(static candidate => candidate != null && candidate.IsTradeable)
+                    .Select(candidate => new
+                    {
+                        Ship = candidate,
+                        Value = (int)Campaign.Current.Models.ShipCostModel
+                            .GetShipTradeValue(candidate, party.Party,
+                                buyer.Settlement.Party)
+                    })
+                    .Where(static candidate => candidate.Value > 0)
+                    .OrderBy(static candidate => candidate.Value)
+                    .ThenBy(static candidate =>
+                        candidate.Ship.ShipHull?.StringId ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(static candidate => candidate.Ship)
+                    .FirstOrDefault();
+                if (ship == null) continue;
+
+                int saleValue = Math.Max(0, (int)Campaign.Current.Models.ShipCostModel
+                    .GetShipTradeValue(ship, party.Party, buyer.Settlement.Party));
+                string hullId = ship.ShipHull?.StringId ?? string.Empty;
+                int treasuryBefore = GetJudicialTreasuryBalance();
+
+                ChangeShipOwnerAction.ApplyByTrade(buyer.Settlement.Party, ship);
+
+                GwpAiDiagnostics.WriteAction(party, "SURPLUS_SHIP_SOLD",
+                    "hull=" + hullId +
+                    "; buyer=" + buyer.Settlement.StringId +
+                    "; value=" + saleValue +
+                    "; shipsBefore=" + currentCount +
+                    "; shipsAfter=" + (party.Ships?.Count() ?? 0) +
+                    "; required=" + requiredCount +
+                    "; treasuryBefore=" + treasuryBefore +
+                    "; treasuryAfter=" + GetJudicialTreasuryBalance());
+            }
+        }
+
+        private static bool CanSellSurplusShip(MobileParty? party)
+        {
+            return party?.IsActive == true &&
+                   party.IsLordParty &&
+                   !party.IsDisbanding &&
+                   party.LeaderHero?.IsActive == true &&
+                   party.MapEvent == null &&
+                   party.SiegeEvent == null &&
+                   !party.IsCurrentlyAtSea;
+        }
+
+        private static Town? FindNearestNonHostileShipyard(
+            MobileParty party, Clan policeClan)
+        {
+            return Town.AllTowns
+                .Where(static town => town != null && !town.IsUnderSiege)
+                .Where(static town => town.Buildings.Any(building =>
+                    building?.BuildingType != null &&
+                    building.CurrentLevel > 0 &&
+                    string.Equals(building.BuildingType.StringId,
+                        ShipyardBuildingTypeId,
+                        StringComparison.OrdinalIgnoreCase)))
+                .Where(town => town.MapFaction == null ||
+                    !FactionManager.IsAtWarAgainstFaction(policeClan,
+                        town.MapFaction))
+                .OrderBy(town => town.Settlement.GetPosition2D
+                    .Distance(party.GetPosition2D))
+                .ThenBy(town => town.Settlement.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+
+        private static void OnShipOwnerChanged(
+            Ship ship,
+            PartyBase oldOwner,
+            ChangeShipOwnerAction.ShipOwnerChangeDetail detail)
+        {
+            MobileParty? oldParty = oldOwner?.MobileParty;
+            MobileParty? newParty = ship?.Owner?.MobileParty;
+            bool oldPolice = IsPoliceLordParty(oldParty);
+            bool newPolice = IsPoliceLordParty(newParty);
+            if (oldPolice == newPolice) return;
+
+            MobileParty? party = newPolice ? newParty : oldParty;
+            if (party == null) return;
+
+            GwpAiDiagnostics.WriteAction(
+                party,
+                newPolice ? "SHIP_ACQUIRED" : "SHIP_DISPOSED",
+                "hull=" + (ship?.ShipHull?.StringId ?? string.Empty) +
+                "; detail=" + detail +
+                "; oldOwner=" + DescribeShipOwner(oldOwner) +
+                "; newOwner=" + DescribeShipOwner(ship?.Owner));
+        }
+
+        private static bool IsPoliceLordParty(MobileParty? party) =>
+            party?.IsLordParty == true &&
+            string.Equals(party.ActualClan?.StringId,
+                PoliceStats.PoliceClanId,
+                StringComparison.OrdinalIgnoreCase);
+
+        private static string DescribeShipOwner(PartyBase? owner)
+        {
+            if (owner == null) return "-";
+            if (owner.IsSettlement)
+                return owner.Settlement?.StringId ?? "settlement";
+            return owner.MobileParty?.StringId ?? "party";
         }
 
 

@@ -62,7 +62,12 @@ namespace GreyWardenPolicePurity
 
             internal void WriteLog(string text)
             {
-                try { AddLog(new TextObject(text), false); } catch { }
+                WriteLog(new TextObject(text));
+            }
+
+            internal void WriteLog(TextObject text)
+            {
+                try { AddLog(text, false); } catch { }
             }
 
             internal void MarkReadyForTurnIn()
@@ -120,16 +125,21 @@ namespace GreyWardenPolicePurity
                 }
                 else
                 {
-                    string targetSettlement = GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_006}Unknown location");
+                    TextObject targetSettlement = GwpText.Create(
+                        "{=gwp_policeenforcementbehavior_atonementquest_006}Unknown location");
                     MobileParty target = MobileParty.All.FirstOrDefault(p =>
                         p.StringId == _atonementTargetPartyId && p.IsActive);
                     if (target != null)
-                        targetSettlement = GetNearestSettlementName(target.GetPosition2D);
+                    {
+                        Settlement? nearest = FindNearestSettlement(target.GetPosition2D);
+                        if (nearest != null)
+                            targetSettlement = nearest.EncyclopediaLinkWithName;
+                    }
 
                     _atonementQuest.WriteLog(
                         GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_007}Contract assigned: Defeat {VAR_2} within {VAR_1} days (case size {VAR_3} people).", "VAR_1", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0"), "VAR_2", _atonementTargetName, "VAR_3", _atonementTargetSizeSnapshot));
                     _atonementQuest.WriteLog(
-                        GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_008}First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden.", "VAR_1", targetSettlement));
+                        GwpText.Create("{=gwp_policeenforcementbehavior_atonementquest_008}First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden.", "VAR_1", targetSettlement));
                 }
             }
             catch
@@ -138,7 +148,7 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static string GetNearestSettlementName(Vec2 position)
+        private static Settlement? FindNearestSettlement(Vec2 position)
         {
             Settlement? nearest = null;
             float nearestDist = float.MaxValue;
@@ -152,7 +162,7 @@ namespace GreyWardenPolicePurity
                     nearest = s;
                 }
             }
-            return nearest?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_009}Unknown location");
+            return nearest;
         }
 
         private void AppendAtonementIntelLog(MobileParty target)
@@ -160,11 +170,26 @@ namespace GreyWardenPolicePurity
             if (target == null || !target.IsActive) return;
 
             int currentSize = Math.Max(1, target.Party?.NumberOfAllMembers ?? 1);
-            string nearestSettlement = GetNearestSettlementName(target.GetPosition2D);
-            string intel = GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_010}Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people).", "VAR_1", _atonementTargetName, "VAR_2", nearestSettlement, "VAR_3", currentSize);
+            Settlement? nearestSettlement = FindNearestSettlement(target.GetPosition2D);
+            string nearestSettlementName = nearestSettlement?.Name?.ToString() ??
+                                           GwpText.Get(
+                                               "{=gwp_policeenforcementbehavior_atonementquest_009}Unknown location");
+            TextObject nearestSettlementLink = nearestSettlement?.EncyclopediaLinkWithName ??
+                                               GwpText.Create(
+                                                   "{=gwp_policeenforcementbehavior_atonementquest_009}Unknown location");
+            TextObject intelLog = GwpText.Create(
+                "{=gwp_policeenforcementbehavior_atonementquest_010}Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people).",
+                "VAR_1", _atonementTargetName,
+                "VAR_2", nearestSettlementLink,
+                "VAR_3", currentSize);
+            string intelMessage = GwpText.Get(
+                "{=gwp_policeenforcementbehavior_atonementquest_010}Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people).",
+                "VAR_1", _atonementTargetName,
+                "VAR_2", nearestSettlementName,
+                "VAR_3", currentSize);
 
-            try { _atonementQuest?.WriteLog(intel); } catch { }
-            InformationManager.DisplayMessage(new InformationMessage(intel, Colors.Cyan));
+            try { _atonementQuest?.WriteLog(intelLog); } catch { }
+            InformationManager.DisplayMessage(new InformationMessage(intelMessage, Colors.Cyan));
         }
 
         private void TryRestoreAtonementQuestOnSessionStart()

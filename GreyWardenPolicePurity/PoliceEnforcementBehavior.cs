@@ -767,8 +767,7 @@ namespace GreyWardenPolicePurity
                     }
                     DeclareWar(task, criminal);
                     RefreshAssistanceDutyAfterWarDeclaration(pp);
-                    if (task.FlowState == PoliceTaskFlowState.WarPursuit &&
-                        !_assistanceGroups.ContainsKey(pp.StringId))
+                    if (task.FlowState == PoliceTaskFlowState.WarPursuit)
                     {
                         TrySpawnImmediateCaseInterceptor(pp, task, criminal,
                             declarationPrediction!);
@@ -788,14 +787,13 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                // 协力军团因目标速度而分散后，英雄领主仍完全服从原版
-                // 短期判断。案件已经正式宣战时，由主理人真实分出一支
-                // 能追上目标的骑兵截击队先建立地图战斗；同案同时只保留
-                // 一支，既有截击队会由其生命周期继续维护。
+                // 协力军团无论仍在集结追击，还是已经因目标速度而分散，
+                // 都可以由主理人真实分出一支能追上目标的骑兵截击队先
+                // 建立地图战斗；同案同时只保留一支，既有截击队会由其
+                // 生命周期继续维护。
                 if (task.FlowState == PoliceTaskFlowState.WarPursuit &&
                     _assistanceGroups.TryGetValue(pp.StringId,
-                        out LordAssistanceGroup? assistanceGroup) &&
-                    assistanceGroup.DispersedForSpeed)
+                        out LordAssistanceGroup? assistanceGroup))
                 {
                     TrySpawnImmediateCaseInterceptor(
                         pp, task, criminal, null);

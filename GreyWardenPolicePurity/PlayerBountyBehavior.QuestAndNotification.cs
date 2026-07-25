@@ -102,7 +102,12 @@ namespace GreyWardenPolicePurity
 
             internal void WriteLog(string text)
             {
-                try { AddLog(new TextObject(text), false); } catch { }
+                WriteLog(new TextObject(text));
+            }
+
+            internal void WriteLog(TextObject text)
+            {
+                try { AddLog(text, false); } catch { }
             }
 
             internal void SucceedQuest()

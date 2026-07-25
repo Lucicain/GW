@@ -547,7 +547,10 @@ namespace GreyWardenPolicePurity
             var target = MobileParty.All.FirstOrDefault(
                 p => p.StringId == _activeBountyTargetId && p.IsActive);
             if (target == null) return;
-            string sightingLocation = GetNearestSettlementName(target.GetPosition2D);
+            Settlement? sightingSettlement = FindNearestSettlement(target.GetPosition2D);
+            TextObject sightingLocation = sightingSettlement?.EncyclopediaLinkWithName ??
+                                          GwpText.Create(
+                                              "{=gwp_playerbountybehavior_020}unknown location");
 
             // 情报来源：护送方名称；无护送方时用通用名称
             string reporterName = GwpText.Get("{=gwp_playerbountybehavior_004}Grey Warden reconnaissance party");
@@ -560,7 +563,7 @@ namespace GreyWardenPolicePurity
             }
 
             _activeQuest.WriteLog(
-                GwpText.Get("{=gwp_playerbountybehavior_005}[Investigation] The spies from {VAR_1} came to report: The target was sighted near {VAR_2}.", "VAR_1", reporterName, "VAR_2", sightingLocation));
+                GwpText.Create("{=gwp_playerbountybehavior_005}[Investigation] The spies from {VAR_1} came to report: The target was sighted near {VAR_2}.", "VAR_1", reporterName, "VAR_2", sightingLocation));
         }
 
         /// <summary>
@@ -837,9 +840,9 @@ namespace GreyWardenPolicePurity
 
         #region 辅助
 
-        private static string GetNearestSettlementName(Vec2 position)
+        private static Settlement? FindNearestSettlement(Vec2 position)
         {
-            Settlement nearest = null!;
+            Settlement? nearest = null;
             float nearestDistSq = float.MaxValue;
             foreach (Settlement s in Settlement.All)
             {
@@ -850,8 +853,12 @@ namespace GreyWardenPolicePurity
                 float distSq = dx * dx + dy * dy;
                 if (distSq < nearestDistSq) { nearestDistSq = distSq; nearest = s; }
             }
-            return nearest?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbountybehavior_020}unknown location");
+            return nearest;
         }
+
+        private static string GetNearestSettlementName(Vec2 position) =>
+            FindNearestSettlement(position)?.Name?.ToString() ??
+            GwpText.Get("{=gwp_playerbountybehavior_020}unknown location");
 
         private static Settlement FindNearestTown(Vec2 position)
         {

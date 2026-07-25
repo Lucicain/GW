@@ -3,6 +3,7 @@ using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -11,7 +12,8 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 威慑状态与累计次数存放在每位领主唯一的长期数字档案中。
-    /// 本人被捕与家族受震慑分别累计、按总量共同衰退，长期数字不会因当前案件结案而删除。
+    /// 本人被捕与家族受震慑分别累计、按总量共同衰退；重复被捕形成永久恢复下限，
+    /// 长期数字不会因当前案件结案而删除。
     /// </summary>
     internal static class GwpAiDeterrenceState
     {
@@ -29,9 +31,11 @@ namespace GreyWardenPolicePurity
             public float VillageDirectPenalty { get; init; }
             public float VillageSharedPenalty { get; init; }
             public float VillageEffectivePenalty { get; init; }
+            public float VillageRecoveryFloor { get; init; }
             public float CaravanDirectPenalty { get; init; }
             public float CaravanSharedPenalty { get; init; }
             public float CaravanEffectivePenalty { get; init; }
+            public float CaravanRecoveryFloor { get; init; }
             public float CaravanScoreMultiplier { get; init; }
             public float VillageRecoveryDaysRemaining { get; init; }
             public float CaravanRecoveryDaysRemaining { get; init; }
@@ -244,6 +248,8 @@ namespace GreyWardenPolicePurity
                 out float caravanShared);
             float villageTotal = direct + shared;
             float caravanTotal = caravanDirect + caravanShared;
+            float villageRecoveryFloor = GetVillageRecoveryFloor(record);
+            float caravanRecoveryFloor = GetCaravanRecoveryFloor(record);
             float total = villageTotal + caravanTotal;
             float now = (float)CampaignTime.Now.ToHours;
             float days = record.LastEnforcementHours > 0f
@@ -251,8 +257,8 @@ namespace GreyWardenPolicePurity
                 : 0f;
             float recoveryPerDay = GetRecoveryPerDay(hero);
             bool recoveryPaused = !CanRecoverPenalty(hero) &&
-                                  (villageTotal > GwpTuning.Deterrence.ForgetThreshold ||
-                                   caravanTotal > GwpTuning.Deterrence.ForgetThreshold);
+                                  (HasRecoverablePenalty(villageTotal, villageRecoveryFloor) ||
+                                   HasRecoverablePenalty(caravanTotal, caravanRecoveryFloor));
 
             return new DeterrenceDetails
             {
@@ -270,15 +276,17 @@ namespace GreyWardenPolicePurity
                 VillageDirectPenalty = direct,
                 VillageSharedPenalty = shared,
                 VillageEffectivePenalty = villageTotal,
+                VillageRecoveryFloor = villageRecoveryFloor,
                 CaravanDirectPenalty = caravanDirect,
                 CaravanSharedPenalty = caravanShared,
                 CaravanEffectivePenalty = caravanTotal,
+                CaravanRecoveryFloor = caravanRecoveryFloor,
                 CaravanScoreMultiplier = GetCrimeDesireMultiplier(hero,
                     GwpCrimeCategory.CaravanAttack),
                 VillageRecoveryDaysRemaining = GetRecoveryDaysRemaining(
-                    villageTotal, recoveryPerDay),
+                    villageTotal, villageRecoveryFloor, recoveryPerDay),
                 CaravanRecoveryDaysRemaining = GetRecoveryDaysRemaining(
-                    caravanTotal, recoveryPerDay),
+                    caravanTotal, caravanRecoveryFloor, recoveryPerDay),
                 RecoveryPaused = recoveryPaused,
                 DaysSinceLastEnforcement = days,
                 MapStatus = status,
@@ -363,6 +371,26 @@ namespace GreyWardenPolicePurity
                 : DeterrenceVoice.CalculatingLow;
         }
 
+        internal static Settlement? GetTrackingSettlement(Hero? hero)
+        {
+            if (hero == null) return null;
+
+            if (hero.IsPrisoner && hero.PartyBelongedToAsPrisoner != null)
+            {
+                PartyBase captor = hero.PartyBelongedToAsPrisoner;
+                if (captor.IsSettlement && captor.Settlement != null)
+                    return captor.Settlement;
+                return null;
+            }
+
+            MobileParty? party = hero.PartyBelongedTo;
+            if (party?.CurrentSettlement != null)
+                return party.CurrentSettlement;
+            if (party != null)
+                return GwpCommon.FindNearestTown(party);
+            return hero.CurrentSettlement ?? hero.StayingInSettlement;
+        }
+
         private static bool TakeTraitWeight(ref float roll, int traitLevel)
         {
             int weight = Math.Abs(traitLevel);
@@ -403,9 +431,18 @@ namespace GreyWardenPolicePurity
         {
             float total = UpdateDecay(record, hero, updateRecord: false);
             float storedTotal = record.DirectDeterrencePoints + record.SharedDeterrencePoints;
+            float recoveryFloor = GetVillageRecoveryFloor(record);
             if (storedTotal <= 0f || total <= 0f)
             {
-                direct = 0f;
+                direct = total;
+                shared = 0f;
+                return;
+            }
+
+            if (total <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
+                total > storedTotal)
+            {
+                direct = total;
                 shared = 0f;
                 return;
             }
@@ -421,9 +458,17 @@ namespace GreyWardenPolicePurity
             float total = UpdateCaravanDecay(record, hero, updateRecord: false);
             float storedTotal = record.CaravanDirectDeterrencePoints +
                                 record.CaravanSharedDeterrencePoints;
+            float recoveryFloor = GetCaravanRecoveryFloor(record);
             if (storedTotal <= 0f || total <= 0f)
             {
-                direct = 0f;
+                direct = total;
+                shared = 0f;
+                return;
+            }
+            if (total <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
+                total > storedTotal)
+            {
+                direct = total;
                 shared = 0f;
                 return;
             }
@@ -437,21 +482,34 @@ namespace GreyWardenPolicePurity
         {
             float storedTotal = MathF.Max(0f, record.DirectDeterrencePoints) +
                                 MathF.Max(0f, record.SharedDeterrencePoints);
-            if (storedTotal <= 0f) return 0f;
+            float recoveryFloor = GetVillageRecoveryFloor(record);
+            if (storedTotal <= 0f && recoveryFloor <= 0f) return 0f;
 
             float now = (float)CampaignTime.Now.ToHours;
             float elapsedDays = CanRecoverPenalty(hero)
                 ? MathF.Max(0f, (now - record.LastDeterrenceUpdatedHours) / CampaignTime.HoursInDay)
                 : 0f;
-            float effective = MathF.Max(0f, storedTotal - elapsedDays * GetRecoveryPerDay(hero));
+            float effective = MathF.Max(
+                recoveryFloor,
+                storedTotal - elapsedDays * GetRecoveryPerDay(hero));
 
             if (updateRecord)
             {
-                float scale = storedTotal > 0f ? effective / storedTotal : 0f;
-                record.DirectDeterrencePoints *= scale;
-                record.SharedDeterrencePoints *= scale;
+                if (effective <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
+                    effective > storedTotal)
+                {
+                    record.DirectDeterrencePoints = effective;
+                    record.SharedDeterrencePoints = 0f;
+                }
+                else
+                {
+                    float scale = effective / storedTotal;
+                    record.DirectDeterrencePoints *= scale;
+                    record.SharedDeterrencePoints *= scale;
+                }
                 record.LastDeterrenceUpdatedHours = now;
-                if (effective <= GwpTuning.Deterrence.ForgetThreshold)
+                if (recoveryFloor <= 0f &&
+                    effective <= GwpTuning.Deterrence.ForgetThreshold)
                 {
                     record.DirectDeterrencePoints = 0f;
                     record.SharedDeterrencePoints = 0f;
@@ -466,7 +524,8 @@ namespace GreyWardenPolicePurity
         {
             float storedTotal = MathF.Max(0f, record.CaravanDirectDeterrencePoints) +
                                 MathF.Max(0f, record.CaravanSharedDeterrencePoints);
-            if (storedTotal <= 0f) return 0f;
+            float recoveryFloor = GetCaravanRecoveryFloor(record);
+            if (storedTotal <= 0f && recoveryFloor <= 0f) return 0f;
             float now = (float)CampaignTime.Now.ToHours;
             float updated = record.CaravanLastDeterrenceUpdatedHours > 0f
                 ? record.CaravanLastDeterrenceUpdatedHours
@@ -474,15 +533,26 @@ namespace GreyWardenPolicePurity
             float elapsedDays = CanRecoverPenalty(hero)
                 ? MathF.Max(0f, (now - updated) / CampaignTime.HoursInDay)
                 : 0f;
-            float effective = MathF.Max(0f,
+            float effective = MathF.Max(
+                recoveryFloor,
                 storedTotal - elapsedDays * GetRecoveryPerDay(hero));
             if (updateRecord)
             {
-                float scale = storedTotal > 0f ? effective / storedTotal : 0f;
-                record.CaravanDirectDeterrencePoints *= scale;
-                record.CaravanSharedDeterrencePoints *= scale;
+                if (effective <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
+                    effective > storedTotal)
+                {
+                    record.CaravanDirectDeterrencePoints = effective;
+                    record.CaravanSharedDeterrencePoints = 0f;
+                }
+                else
+                {
+                    float scale = effective / storedTotal;
+                    record.CaravanDirectDeterrencePoints *= scale;
+                    record.CaravanSharedDeterrencePoints *= scale;
+                }
                 record.CaravanLastDeterrenceUpdatedHours = now;
-                if (effective <= GwpTuning.Deterrence.ForgetThreshold)
+                if (recoveryFloor <= 0f &&
+                    effective <= GwpTuning.Deterrence.ForgetThreshold)
                 {
                     record.CaravanDirectDeterrencePoints = 0f;
                     record.CaravanSharedDeterrencePoints = 0f;
@@ -514,13 +584,48 @@ namespace GreyWardenPolicePurity
 
         private static float GetRecoveryDaysRemaining(
             float currentPenalty,
+            float recoveryFloor,
             float recoveryPerDay)
         {
-            float remainingPenalty = MathF.Max(
-                0f, currentPenalty - GwpTuning.Deterrence.ForgetThreshold);
+            float recoveryTarget = recoveryFloor > 0f
+                ? recoveryFloor
+                : GwpTuning.Deterrence.ForgetThreshold;
+            float remainingPenalty = MathF.Max(0f, currentPenalty - recoveryTarget);
             return recoveryPerDay > 0f
                 ? remainingPenalty / recoveryPerDay
                 : 0f;
+        }
+
+        private static bool HasRecoverablePenalty(float currentPenalty, float recoveryFloor)
+        {
+            float recoveryTarget = recoveryFloor > 0f
+                ? recoveryFloor
+                : GwpTuning.Deterrence.ForgetThreshold;
+            return currentPenalty >
+                   recoveryTarget + GwpTuning.Deterrence.RecoveryFloorTolerance;
+        }
+
+        private static float GetVillageRecoveryFloor(HeroCrimeStats record)
+        {
+            int villageArrests = Math.Max(
+                0,
+                record.TotalArrestCount - record.CaravanArrestCount);
+            return GetRecoveryFloor(villageArrests);
+        }
+
+        private static float GetCaravanRecoveryFloor(HeroCrimeStats record) =>
+            GetRecoveryFloor(Math.Max(0, record.CaravanArrestCount));
+
+        /// <summary>
+        /// 每次被捕新增与本分类累计被捕次数相同的震慑；恢复下限随每次被捕
+        /// 提高一级。因此第一、二、三、四次被捕后的下限依次为 0、1、2、3，
+        /// 最终停在九级上限。
+        /// </summary>
+        private static float GetRecoveryFloor(int arrestCount)
+        {
+            return MathF.Min(
+                GwpTuning.Deterrence.RaidPenaltyCap,
+                (float)Math.Max(0, arrestCount - 1));
         }
 
         private static bool CanTrack(Hero? hero) =>

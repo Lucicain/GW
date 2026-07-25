@@ -781,6 +781,9 @@
   <string id="gwp_det_ui_recovery_days" text="{VAR_1} 天" />
   <string id="gwp_det_ui_recovery_paused" text="预计恢复原状：当前暂停恢复；恢复后约需 {VAR_1}" />
   <string id="gwp_det_ui_recovery_active" text="预计恢复原状：约 {VAR_1}" />
+  <string id="gwp_det_ui_recovery_floor_complete" text="最低压制：永久固定为 {VAR_1} 级" />
+  <string id="gwp_det_ui_recovery_floor_paused" text="预计恢复至最低压制 {VAR_1} 级：当前暂停恢复；恢复后约需 {VAR_2}" />
+  <string id="gwp_det_ui_recovery_floor_active" text="预计恢复至最低压制 {VAR_1} 级：约 {VAR_2}" />
   <string id="gwp_fief_reconsideration_title" text="重新审议{SETTLEMENT_NAME}的归属" />
   <string id="gwp_fief_reconsideration_support" text="灰袍已递交民间请愿，议会将重新审议谁应拥有{SETTLEMENT_NAME}。" />
   <string id="gwp_fief_appeal_file" text="我想为一块封地申请重新审议。" />

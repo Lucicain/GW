@@ -48,6 +48,7 @@ namespace GreyWardenPolicePurity
             AddProperty(properties, extensionType, extension, "DeterrenceButtonText");
             AddProperty(properties, extensionType, extension, "DeterrenceButtonHint");
             AddMethod(methods, extensionType, extension, "ExecuteOpenDeterrenceDetails");
+            AddMethod(methods, extensionType, extension, "ExecuteLink");
         }
 
         private static void AddProperty(

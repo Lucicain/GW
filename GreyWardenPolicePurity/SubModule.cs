@@ -61,6 +61,7 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new PoliceHeroCreationModel());
             starter.AddModel(new PoliceClanTierModel());
             starter.AddModel(new PoliceAntiRecruitmentModel());
+            starter.AddModel(new PolicePartyTroopUpgradeModel());
             starter.AddModel(new PoliceMobilePartyAIModel());
             starter.AddModel(new PoliceMarriageModel());
             starter.AddModel(new PoliceRaidDeterrenceModel());

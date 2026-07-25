@@ -6,6 +6,7 @@ using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -46,6 +47,11 @@ namespace GreyWardenPolicePurity
         private double _lastOrderXpHour = -1d;
         private double _nextContactHour = -1d;
         private int _deferredTasksRemaining;
+        private bool _isOrderedTroopUpgradeLocked;
+        private string _stockSourcePartyId = string.Empty;
+        private string _stockRendezvousSettlementId = string.Empty;
+        private double _stockStayStartHour = -1d;
+        private string _lastStockSourcePartyId = string.Empty;
 
         internal enum PlayerTroopOrderStage
         {
@@ -120,17 +126,52 @@ namespace GreyWardenPolicePurity
                 ref _nextContactHour);
             dataStore.SyncData("GWPP_PlayerTroopOrderDeferredTasksRemaining",
                 ref _deferredTasksRemaining);
+            dataStore.SyncData("GWPP_PlayerTroopOrderUpgradeLocked",
+                ref _isOrderedTroopUpgradeLocked);
+            dataStore.SyncData("GWPP_PlayerTroopOrderStockSourcePartyId",
+                ref _stockSourcePartyId);
+            dataStore.SyncData("GWPP_PlayerTroopOrderStockSettlementId",
+                ref _stockRendezvousSettlementId);
+            dataStore.SyncData("GWPP_PlayerTroopOrderStockStayStartHour",
+                ref _stockStayStartHour);
+            dataStore.SyncData("GWPP_PlayerTroopOrderLastStockSourcePartyId",
+                ref _lastStockSourcePartyId);
         }
 
         internal static bool IsTrainerReservedForPlayerOrder(MobileParty? party)
         {
-            return party?.LeaderHero != null && _instance != null &&
-                   (PlayerTroopOrderStage)_instance._orderStage !=
-                   PlayerTroopOrderStage.None &&
-                   !((PlayerTroopOrderStage)_instance._orderStage ==
-                         PlayerTroopOrderStage.Delivering &&
-                     _instance._deferredTasksRemaining > 0) &&
-                   GreyWardenFamilyBehavior.IsTrainingHero(party.LeaderHero);
+            if (party?.LeaderHero == null || _instance == null)
+                return false;
+
+            PlayerTroopOrderStage stage =
+                (PlayerTroopOrderStage)_instance._orderStage;
+            if (stage == PlayerTroopOrderStage.None)
+                return false;
+
+            bool trainerReserved =
+                !(stage == PlayerTroopOrderStage.Delivering &&
+                  _instance._deferredTasksRemaining > 0) &&
+                GreyWardenFamilyBehavior.IsTrainingHero(party.LeaderHero);
+            bool stockSourceReserved =
+                stage == PlayerTroopOrderStage.Training &&
+                string.Equals(party.StringId,
+                    _instance._stockSourcePartyId,
+                    StringComparison.OrdinalIgnoreCase);
+            return trainerReserved || stockSourceReserved;
+        }
+
+        internal static bool IsOrderedTroopUpgradeLocked(PartyBase? party,
+            CharacterObject? troop)
+        {
+            if (_instance == null || party?.MobileParty?.IsActive != true ||
+                troop == null || !_instance._isOrderedTroopUpgradeLocked ||
+                (PlayerTroopOrderStage)_instance._orderStage ==
+                    PlayerTroopOrderStage.None ||
+                !string.Equals(troop.StringId, _instance._orderedTroopId,
+                    StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return party.MobileParty == _instance.ResolveTrainerParty();
         }
 
         internal static IReadOnlyList<PlayerTroopOrderSnapshot> GetTaskSnapshots()
@@ -168,6 +209,11 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            MobileParty? trainer = ResolveTrainerParty();
+            CharacterObject? target = CharacterObject.Find(_orderedTroopId);
+            if (trainer?.IsActive == true && target != null)
+                LockOrderedTroopIfReady(trainer, target);
+
             starter.AddPlayerLine(
                 "gwp_player_troop_order_file",
                 "lord_talk_speak_diplomacy_2",
@@ -341,6 +387,22 @@ namespace GreyWardenPolicePurity
             _lastOrderXpHour = -1d;
             _nextContactHour = -1d;
             _deferredTasksRemaining = 0;
+            _isOrderedTroopUpgradeLocked = false;
+            _stockSourcePartyId = string.Empty;
+            _stockRendezvousSettlementId = string.Empty;
+            _stockStayStartHour = -1d;
+            _lastStockSourcePartyId = string.Empty;
+            MobileParty? trainer = ResolveTrainerParty();
+            CharacterObject? target = CharacterObject.Find(_orderedTroopId);
+            if (trainer?.IsActive == true)
+            {
+                GwpAiDiagnostics.WriteAction(trainer,
+                    "PLAYER_TROOP_ORDER_FILED",
+                    "target=" + _orderedTroopId +
+                    "; requested=" + _orderedCount +
+                    "; ready=" + CountHealthy(trainer, target) +
+                    "; price=" + _orderPrice);
+            }
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_player_troop_order_filed}The Training Warden has received your order. No payment has been taken. She will train the requested troops and bring them to you."),
                 Colors.Cyan));
@@ -365,13 +427,25 @@ namespace GreyWardenPolicePurity
                 return;
 
             int ready = CountHealthy(trainer, target);
+            LockOrderedTroopIfReady(trainer, target);
             if (ready < _orderedCount)
             {
                 _orderStage = (int)PlayerTroopOrderStage.Training;
-                TrainForOrderIfDue(trainer, target);
-                return;
+                AdvanceStockCollection(trainer, target);
+                ready = CountHealthy(trainer, target);
+                LockOrderedTroopIfReady(trainer, target);
+                if (ready >= _orderedCount)
+                {
+                    ReleaseStockRendezvous("order_stock_ready");
+                }
+                else
+                {
+                    TrainForOrderIfDue(trainer, target);
+                    return;
+                }
             }
 
+            ReleaseStockRendezvous("order_stock_ready");
             _orderStage = (int)PlayerTroopOrderStage.Delivering;
             if (_nextContactHour < 0d)
                 _nextContactHour = CampaignTime.Now.ToHours;
@@ -389,11 +463,11 @@ namespace GreyWardenPolicePurity
                 return;
             _lastOrderXpHour = now;
 
-            int exchanged = RefreshTrainerStock(trainer, target);
             List<TroopRosterElement> cohorts = trainer.MemberRoster
                 .GetTroopRoster()
                 .Where(element => element.Character != null &&
                     !element.Character.IsHero && element.Number > 0 &&
+                    element.Character != target &&
                     GwpCommon.IsGreyWardenTroop(element.Character) &&
                     element.Character.UpgradeTargets.Length > 0 &&
                     CanReachTarget(element.Character, target,
@@ -413,10 +487,30 @@ namespace GreyWardenPolicePurity
                 "target=" + target.StringId +
                 "; requested=" + _orderedCount +
                 "; ready=" + CountHealthy(trainer, target) +
+                "; targetUpgradeLocked=" +
+                _isOrderedTroopUpgradeLocked +
                 "; cohorts=" + cohorts.Count +
-                "; realTroopsExchanged=" + exchanged +
                 "; xp=" + totalXp +
                 "; nativeUpgradePending=true");
+        }
+
+        private void LockOrderedTroopIfReady(MobileParty trainer,
+            CharacterObject target)
+        {
+            if (_isOrderedTroopUpgradeLocked ||
+                (PlayerTroopOrderStage)_orderStage ==
+                    PlayerTroopOrderStage.None ||
+                (_orderStage != (int)PlayerTroopOrderStage.Delivering &&
+                 CountHealthy(trainer, target) < _orderedCount))
+                return;
+
+            _isOrderedTroopUpgradeLocked = true;
+            GwpAiDiagnostics.WriteAction(trainer,
+                "PLAYER_TROOP_ORDER_TARGET_LOCKED",
+                "troop=" + target.StringId +
+                "; requested=" + _orderedCount +
+                "; ready=" + CountHealthy(trainer, target) +
+                "; stage=" + (PlayerTroopOrderStage)_orderStage);
         }
 
         private static bool CanReachTarget(CharacterObject current,
@@ -434,72 +528,293 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        private int RefreshTrainerStock(MobileParty trainer,
+        private void AdvanceStockCollection(MobileParty trainer,
+            CharacterObject target)
+        {
+            if (CountHealthy(trainer, target) >= _orderedCount)
+                return;
+            if (CountHealthy(GetOutgoingBatches(trainer, target)) <= 0)
+            {
+                ReleaseStockRendezvous("trainer_has_no_exchange_stock");
+                return;
+            }
+
+            MobileParty? source = ResolveStockSourceParty();
+            Settlement? rendezvous = ResolveStockRendezvousSettlement();
+            bool hasStoredRendezvous =
+                !string.IsNullOrWhiteSpace(_stockSourcePartyId) ||
+                !string.IsNullOrWhiteSpace(
+                    _stockRendezvousSettlementId);
+            if (hasStoredRendezvous &&
+                (source == null || rendezvous == null ||
+                 !IsAssignedStockSourceValid(source, target)))
+            {
+                ReleaseStockRendezvous("source_roster_or_role_changed");
+                source = null;
+                rendezvous = null;
+            }
+
+            if (source == null || rendezvous == null)
+            {
+                source = FindNextStockSource(trainer, target);
+                if (source == null) return;
+
+                rendezvous =
+                    GreyWardenTrainingBehavior.FindRendezvousSettlement(
+                        trainer, source);
+                if (rendezvous == null ||
+                    !PoliceEnforcementBehavior
+                        .TryReservePartyForPlayerRequest(source))
+                    return;
+
+                _stockSourcePartyId = source.StringId;
+                _stockRendezvousSettlementId = rendezvous.StringId;
+                _stockStayStartHour = -1d;
+                GwpAiDiagnostics.WriteAction(trainer,
+                    "PLAYER_TROOP_ORDER_STOCK_RENDEZVOUS_ASSIGNED",
+                    "source=" + source.StringId +
+                    "; settlement=" + rendezvous.StringId +
+                    "; target=" + target.StringId +
+                    "; requested=" + _orderedCount +
+                    "; ready=" + CountHealthy(trainer, target) +
+                    "; sourceAvailable=" +
+                    CountHealthy(GetIncomingBatches(source, target)));
+            }
+
+            if (trainer.MapEvent is { IsFinalized: false } ||
+                source.MapEvent is { IsFinalized: false })
+            {
+                ResetStockStayIfNeeded(trainer, source, rendezvous,
+                    "party_in_map_event");
+                return;
+            }
+
+            bool bothInside = trainer.CurrentSettlement == rendezvous &&
+                              source.CurrentSettlement == rendezvous;
+            if (!bothInside)
+            {
+                ResetStockStayIfNeeded(trainer, source, rendezvous,
+                    "party_left_rendezvous");
+                GreyWardenPartyDesireBehavior.RequestVisit(trainer,
+                    rendezvous,
+                    validHours: GwpTuning.Training.MovementIntentHours);
+                GreyWardenPartyDesireBehavior.RequestVisit(source,
+                    rendezvous,
+                    validHours: GwpTuning.Training.MovementIntentHours);
+                return;
+            }
+
+            if (_stockStayStartHour < 0d)
+            {
+                _stockStayStartHour = CampaignTime.Now.ToHours;
+                GwpAiDiagnostics.WriteAction(trainer,
+                    "PLAYER_TROOP_ORDER_STOCK_STAY_STARTED",
+                    "source=" + source.StringId +
+                    "; settlement=" + rendezvous.StringId +
+                    "; hours=" + GwpTuning.Training.ExchangeStayHours);
+            }
+
+            GreyWardenPartyDesireBehavior.RequestVisit(trainer, rendezvous,
+                validHours: GwpTuning.Training.MovementIntentHours);
+            GreyWardenPartyDesireBehavior.RequestVisit(source, rendezvous,
+                validHours: GwpTuning.Training.MovementIntentHours);
+            if (CampaignTime.Now.ToHours < _stockStayStartHour +
+                GwpTuning.Training.ExchangeStayHours)
+                return;
+
+            ExchangeStockAtRendezvous(trainer, source, rendezvous, target);
+            _lastStockSourcePartyId = source.StringId;
+            ReleaseStockRendezvous("rendezvous_exchange_completed");
+        }
+
+        private MobileParty? FindNextStockSource(MobileParty trainer,
+            CharacterObject target)
+        {
+            return PoliceStats.GetAllPoliceParties()
+                .Where(party => party != trainer &&
+                    party.AttachedTo == null &&
+                    GreyWardenTrainingBehavior
+                        .IsFreeForTrainingExchange(party) &&
+                    CountHealthy(GetIncomingBatches(party, target)) > 0)
+                .OrderBy(party => string.Equals(party.StringId,
+                    _lastStockSourcePartyId,
+                    StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(party => party.GetPosition2D.Distance(
+                    trainer.GetPosition2D))
+                .ThenBy(party => party.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+
+        private static bool IsAssignedStockSourceValid(MobileParty source,
+            CharacterObject target)
+        {
+            return source.IsActive && source.IsLordParty &&
+                   !source.IsDisbanding &&
+                   source.LeaderHero?.IsActive == true &&
+                   source.Army == null && source.AttachedTo == null &&
+                   CountHealthy(GetIncomingBatches(source, target)) > 0;
+        }
+
+        private int ExchangeStockAtRendezvous(MobileParty trainer,
+            MobileParty source, Settlement rendezvous,
             CharacterObject target)
         {
             int missing = Math.Max(0, _orderedCount -
                 CountHealthy(trainer, target));
-            if (missing <= 0) return 0;
+            List<TroopRosterElement> outgoing =
+                GetOutgoingBatches(trainer, target);
+            List<TroopRosterElement> incoming =
+                GetIncomingBatches(source, target);
+            int requestedSwap = Math.Min(missing,
+                Math.Min(CountHealthy(outgoing), CountHealthy(incoming)));
+            if (requestedSwap <= 0) return 0;
 
-            var outgoing = trainer.MemberRoster.GetTroopRoster()
+            // Both real parties have already reached the same settlement.
+            // Stage both sides outside the live party rosters before inserting
+            // either side, so this remains a physical one-for-one exchange and
+            // neither nearly-full party is ever transiently over capacity.
+            TroopRoster outgoingBuffer =
+                TroopRoster.CreateDummyTroopRoster();
+            TroopRoster incomingBuffer =
+                TroopRoster.CreateDummyTroopRoster();
+            int stagedOut = TransferHealthyBatches(trainer.MemberRoster,
+                outgoingBuffer, outgoing, requestedSwap);
+            int stagedIn = TransferHealthyBatches(source.MemberRoster,
+                incomingBuffer, incoming, requestedSwap);
+            int exchangeCount = Math.Min(stagedOut, stagedIn);
+
+            int movedIn = TransferHealthyBatches(incomingBuffer,
+                trainer.MemberRoster,
+                incomingBuffer.GetTroopRoster().ToList(), exchangeCount);
+            int movedOut = TransferHealthyBatches(outgoingBuffer,
+                source.MemberRoster,
+                outgoingBuffer.GetTroopRoster().ToList(), exchangeCount);
+
+            if (incomingBuffer.TotalManCount > 0)
+                TransferHealthyBatches(incomingBuffer, source.MemberRoster,
+                    incomingBuffer.GetTroopRoster().ToList(),
+                    incomingBuffer.TotalManCount);
+            if (outgoingBuffer.TotalManCount > 0)
+                TransferHealthyBatches(outgoingBuffer, trainer.MemberRoster,
+                    outgoingBuffer.GetTroopRoster().ToList(),
+                    outgoingBuffer.TotalManCount);
+
+            int completed = Math.Min(movedIn, movedOut);
+            GwpAiDiagnostics.WriteAction(trainer,
+                "PLAYER_TROOP_ORDER_STOCK_EXCHANGED",
+                "source=" + source.StringId +
+                "; settlement=" + rendezvous.StringId +
+                "; target=" + target.StringId +
+                "; requestedSwap=" + requestedSwap +
+                "; stagedOut=" + stagedOut +
+                "; stagedIn=" + stagedIn +
+                "; movedIn=" + movedIn +
+                "; movedOut=" + movedOut +
+                "; completed=" + completed +
+                "; trainerReady=" + CountHealthy(trainer, target));
+            return completed;
+        }
+
+        private static List<TroopRosterElement> GetOutgoingBatches(
+            MobileParty trainer, CharacterObject target)
+        {
+            return trainer.MemberRoster.GetTroopRoster()
                 .Where(element => element.Character != null &&
                     !element.Character.IsHero &&
                     GwpCommon.IsGreyWardenTroop(element.Character) &&
                     element.Character != target &&
                     !CanReachTarget(element.Character, target,
-                        new HashSet<string>(StringComparer.OrdinalIgnoreCase)))
+                        new HashSet<string>(
+                            StringComparer.OrdinalIgnoreCase)))
                 .OrderBy(element => element.Character.Tier)
                 .ThenBy(element => element.Character.StringId,
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            int outgoingHealthy = outgoing.Sum(element =>
+        }
+
+        private static List<TroopRosterElement> GetIncomingBatches(
+            MobileParty source, CharacterObject target)
+        {
+            return source.MemberRoster.GetTroopRoster()
+                .Where(element => element.Character != null &&
+                    !element.Character.IsHero &&
+                    GwpCommon.IsGreyWardenTroop(element.Character) &&
+                    CanReachTarget(element.Character, target,
+                        new HashSet<string>(
+                            StringComparer.OrdinalIgnoreCase)))
+                .OrderBy(element => element.Character == target ? 0 : 1)
+                .ThenBy(element => element.Character.Tier)
+                .ThenBy(element => element.Character.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static int CountHealthy(
+            IEnumerable<TroopRosterElement> batches)
+        {
+            return batches.Sum(element =>
                 Math.Max(0, element.Number - element.WoundedNumber));
-            int exchangeBudget = Math.Min(missing, outgoingHealthy);
-            if (exchangeBudget <= 0) return 0;
+        }
 
-            int exchanged = 0;
-            foreach (MobileParty source in PoliceStats.GetAllPoliceParties()
-                         .Where(party => party != trainer &&
-                             party.IsActive && party.MapEvent == null)
-                         .OrderBy(party => party.GetPosition2D.Distance(
-                             trainer.GetPosition2D))
-                         .ThenBy(party => party.StringId,
-                             StringComparer.OrdinalIgnoreCase))
+        private void ResetStockStayIfNeeded(MobileParty trainer,
+            MobileParty source, Settlement rendezvous, string reason)
+        {
+            if (_stockStayStartHour < 0d) return;
+            _stockStayStartHour = -1d;
+            GwpAiDiagnostics.WriteAction(trainer,
+                "PLAYER_TROOP_ORDER_STOCK_STAY_RESET",
+                "source=" + source.StringId +
+                "; settlement=" + rendezvous.StringId +
+                "; reason=" + reason);
+        }
+
+        private MobileParty? ResolveStockSourceParty()
+        {
+            if (string.IsNullOrWhiteSpace(_stockSourcePartyId))
+                return null;
+            return PoliceStats.GetAllPoliceParties().FirstOrDefault(party =>
+                string.Equals(party.StringId, _stockSourcePartyId,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private Settlement? ResolveStockRendezvousSettlement()
+        {
+            return string.IsNullOrWhiteSpace(
+                _stockRendezvousSettlementId)
+                ? null
+                : Settlement.Find(_stockRendezvousSettlementId);
+        }
+
+        private void ReleaseStockRendezvous(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(_stockSourcePartyId) &&
+                string.IsNullOrWhiteSpace(
+                    _stockRendezvousSettlementId))
+                return;
+
+            MobileParty? source = ResolveStockSourceParty();
+            MobileParty? trainer = ResolveTrainerParty();
+            string sourceId = _stockSourcePartyId;
+            string settlementId = _stockRendezvousSettlementId;
+            _stockSourcePartyId = string.Empty;
+            _stockRendezvousSettlementId = string.Empty;
+            _stockStayStartHour = -1d;
+
+            if (source?.IsActive == true)
             {
-                if (exchanged >= exchangeBudget) break;
-                var incoming = source.MemberRoster.GetTroopRoster()
-                    .Where(element => element.Character != null &&
-                        !element.Character.IsHero &&
-                        GwpCommon.IsGreyWardenTroop(element.Character) &&
-                        CanReachTarget(element.Character, target,
-                            new HashSet<string>(
-                                StringComparer.OrdinalIgnoreCase)))
-                    .OrderBy(element => element.Character == target ? 0 : 1)
-                    .ThenBy(element => element.Character.Tier)
-                    .ThenBy(element => element.Character.StringId,
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                int available = incoming.Sum(element =>
-                    Math.Max(0, element.Number - element.WoundedNumber));
-                int swap = Math.Min(exchangeBudget - exchanged, available);
-                if (swap <= 0) continue;
-
-                int movedIn = TransferHealthyBatches(source.MemberRoster,
-                    trainer.MemberRoster, incoming, swap);
-                if (movedIn <= 0) continue;
-                int movedOut = TransferHealthyBatches(trainer.MemberRoster,
-                    source.MemberRoster, outgoing, movedIn);
-                if (movedOut < movedIn)
-                {
-                    // 防止任何异常名单变化造成凭空扩军：未能完成的一换一部分
-                    // 立即从练兵官退回原来源部队。
-                    TransferHealthyBatches(trainer.MemberRoster,
-                        source.MemberRoster, incoming, movedIn - movedOut);
-                }
-                exchanged += Math.Min(movedIn, movedOut);
+                GreyWardenPartyDesireBehavior.ClearIntent(source);
+                GreyWardenPartyDesireBehavior
+                    .RequestImmediateRethink(source);
             }
-
-            return exchanged;
+            if (trainer?.IsActive == true)
+            {
+                GwpAiDiagnostics.WriteAction(trainer,
+                    "PLAYER_TROOP_ORDER_STOCK_RENDEZVOUS_RELEASED",
+                    "source=" + sourceId +
+                    "; settlement=" + settlementId +
+                    "; reason=" + reason);
+            }
         }
 
         private static int TransferHealthyBatches(TroopRoster source,
@@ -513,6 +828,7 @@ namespace GreyWardenPolicePurity
                 TroopRosterElement current = source.GetTroopRoster()
                     .FirstOrDefault(element =>
                         element.Character == batch.Character);
+                if (current.Character == null) continue;
                 int healthy = Math.Max(0,
                     current.Number - current.WoundedNumber);
                 int take = Math.Min(healthy, requested - moved);
@@ -800,6 +1116,7 @@ namespace GreyWardenPolicePurity
 
         private void ClearOrder()
         {
+            ReleaseStockRendezvous("order_cleared");
             _orderedTroopId = string.Empty;
             _orderedCount = 0;
             _orderPrice = 0;
@@ -808,6 +1125,8 @@ namespace GreyWardenPolicePurity
             _lastOrderXpHour = -1d;
             _nextContactHour = -1d;
             _deferredTasksRemaining = 0;
+            _isOrderedTroopUpgradeLocked = false;
+            _lastStockSourcePartyId = string.Empty;
         }
 
         private static int CountHealthy(MobileParty? party,
@@ -816,6 +1135,7 @@ namespace GreyWardenPolicePurity
             if (party?.IsActive != true || troop == null) return 0;
             TroopRosterElement element = party.MemberRoster.GetTroopRoster()
                 .FirstOrDefault(candidate => candidate.Character == troop);
+            if (element.Character == null) return 0;
             return Math.Max(0, element.Number - element.WoundedNumber);
         }
 

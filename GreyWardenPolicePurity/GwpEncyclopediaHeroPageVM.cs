@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
 using TaleWorlds.Core;
@@ -40,17 +41,24 @@ namespace GreyWardenPolicePurity
 
             GwpAiDeterrenceState.DeterrenceDetails details = GwpAiDeterrenceState.GetDeterrenceDetails(_hero);
             DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero);
-            string description = BuildDeterrenceDescription(details, suppression);
+            Settlement? locationSettlement = GwpAiDeterrenceState.GetTrackingSettlement(_hero);
+            string description = BuildDeterrenceDescription(
+                details,
+                suppression,
+                locationSettlement);
 
+            GwpLinkedInquiryState.Begin();
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden criminal record and deterrence", "VAR_1", _hero.Name),
+                    GwpText.Get(
+                        "{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden criminal record and deterrence",
+                        "VAR_1", _hero.Name),
                     description,
                     true,
                     false,
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_002}Close"),
                     string.Empty,
-                    null,
+                    GwpLinkedInquiryState.End,
                     null),
                 pauseGameActiveState: true);
         }
@@ -74,8 +82,14 @@ namespace GreyWardenPolicePurity
 
         private static string BuildDeterrenceDescription(
             GwpAiDeterrenceState.DeterrenceDetails details,
-            DesireSuppressionDetails suppression)
+            DesireSuppressionDetails suppression,
+            Settlement? locationSettlement)
         {
+            TextObject locationText = locationSettlement?.EncyclopediaLinkWithName
+                                      ?? GwpText.Create(
+                                          "{=!}{VAR_1}",
+                                          "VAR_1", details.MapLocation);
+
             return string.Join(
                 "\n",
                 new[]
@@ -91,6 +105,7 @@ namespace GreyWardenPolicePurity
                         "VAR_1", FormatDesirePercent(suppression.VillageMultiplier)),
                     BuildSourceLine(details.VillageDirectPenalty, details.VillageSharedPenalty),
                     BuildRecoveryLine(details.VillageEffectivePenalty,
+                        details.VillageRecoveryFloor,
                         details.VillageRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
                     GwpText.Get("{=gwp_det_ui_caravan_heading}Harm against caravans"),
@@ -99,11 +114,14 @@ namespace GreyWardenPolicePurity
                         "VAR_2", FormatSuppressionPercent(suppression.CaravanMultiplier)),
                     BuildSourceLine(details.CaravanDirectPenalty, details.CaravanSharedPenalty),
                     BuildRecoveryLine(details.CaravanEffectivePenalty,
+                        details.CaravanRecoveryFloor,
                         details.CaravanRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}Latest enforcement: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
                     GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Map status: {VAR_1}", "VAR_1", details.MapStatus),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}", "VAR_1", details.MapLocation)
+                    GwpText.Get(
+                        "{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}",
+                        "VAR_1", locationText)
                 });
         }
 
@@ -127,21 +145,34 @@ namespace GreyWardenPolicePurity
 
         private static string BuildRecoveryLine(
             float currentPenalty,
+            float recoveryFloor,
             float daysRemaining,
             bool recoveryPaused)
         {
+            if (recoveryFloor > GwpTuning.Deterrence.ForgetThreshold)
+            {
+                string floor = GwpText.Format(recoveryFloor, "0.##");
+                if (currentPenalty <=
+                    recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance)
+                    return GwpText.Get(
+                        "{=gwp_det_ui_recovery_floor_complete}Minimum suppression: permanently fixed at level {VAR_1}",
+                        "VAR_1", floor);
+
+                string floorDuration = FormatRecoveryDuration(daysRemaining);
+                return recoveryPaused
+                    ? GwpText.Get(
+                        "{=gwp_det_ui_recovery_floor_paused}Estimated recovery to the level-{VAR_1} minimum: recovery is currently paused; about {VAR_2} after it resumes",
+                        "VAR_1", floor, "VAR_2", floorDuration)
+                    : GwpText.Get(
+                        "{=gwp_det_ui_recovery_floor_active}Estimated recovery to the level-{VAR_1} minimum: about {VAR_2}",
+                        "VAR_1", floor, "VAR_2", floorDuration);
+            }
+
             if (currentPenalty <= GwpTuning.Deterrence.ForgetThreshold)
                 return GwpText.Get(
                     "{=gwp_det_ui_recovery_complete}Estimated return to normal: already restored");
 
-            string duration = daysRemaining < 1f
-                ? GwpText.Get(
-                    "{=gwp_det_ui_recovery_hours}{VAR_1} hours",
-                    "VAR_1", GwpText.Format(
-                        daysRemaining * CampaignTime.HoursInDay, "0.#"))
-                : GwpText.Get(
-                    "{=gwp_det_ui_recovery_days}{VAR_1} days",
-                    "VAR_1", GwpText.Format(daysRemaining, "0.#"));
+            string duration = FormatRecoveryDuration(daysRemaining);
 
             return recoveryPaused
                 ? GwpText.Get(
@@ -151,6 +182,16 @@ namespace GreyWardenPolicePurity
                     "{=gwp_det_ui_recovery_active}Estimated return to normal: about {VAR_1}",
                     "VAR_1", duration);
         }
+
+        private static string FormatRecoveryDuration(float daysRemaining) =>
+            daysRemaining < 1f
+                ? GwpText.Get(
+                    "{=gwp_det_ui_recovery_hours}{VAR_1} hours",
+                    "VAR_1", GwpText.Format(
+                        daysRemaining * CampaignTime.HoursInDay, "0.#"))
+                : GwpText.Get(
+                    "{=gwp_det_ui_recovery_days}{VAR_1} days",
+                    "VAR_1", GwpText.Format(daysRemaining, "0.#"));
 
         private static string FormatDesirePercent(float multiplier) =>
             GwpText.Format(MathF.Max(0f, MathF.Min(1f, multiplier)) * 100f, "0.#");

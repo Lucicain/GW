@@ -1,22 +1,51 @@
 # GreyWarden
 
-One package for **Mount & Blade II: Bannerlord 1.4.x (1.4.5, 1.4.6, and 1.4.7)**, with no hard game-revision gate.
-Chinese version: [README.md](README.md)
+GreyWarden adds an independent law-enforcement clan that investigates and resolves cases on Bannerlord's campaign map. Six Warden lords detect crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be judged as an outlaw or earn the Wardens' trust and join their work.
 
-## Installation
+One package supports **Bannerlord 1.4.x (1.4.5, 1.4.6, and 1.4.7)**.
+中文：[README.md](README.md)
+
+## Main features
+
+- **A living Warden clan:** Six founding women lead their own parties and specialize in training, caravan protection, rural protection, local petitions, village reconstruction, and player affairs. Adult successors inherit duties that still survive; an office can disappear permanently when its last holder dies.
+- **Continent-wide enforcement:** Wardens record attacks on caravans and villagers as well as village raids, then assign cases by duty and distance. Pursuit creates limited wars with a stated enforcement reason. Strong targets draw assistance armies, while fast targets may be intercepted by detached cavalry.
+- **Cases, records, and deterrence:** The Case Ledger lists open cases, assigned parties, assistance tasks, and the judicial treasury. Lords captured by Wardens keep a lasting record and receive crime-specific deterrence that recovers over time; repeat offenders develop an increasingly high recovery floor.
+- **Player standing and the outlaw route:** Protecting civilians and helping Warden cases raises standing. Attacking civilians, raiding, coercion, or resisting arrest lowers it. Lesser offences bring provost patrols and fines; serious offences bring pursuit by a Warden lord, imprisonment, or an atonement assignment.
+- **Membership and bounties:** At sufficient standing, a herald seeks out the player. Members receive commander equipment, may take bounties on real offenders, gain a Warden escort and tracking updates, and collect payment after completing the case. The player may leave and later reapply at a higher standing requirement.
+- **Standing-based support:** Members can order troops that the Training Warden collects, trains, and personally delivers from real Warden forces. Higher standing raises order limits, unlocks elite troops, and lowers prices. Eligible members may also receive battlefield relief, collect village gifts, and appeal a fief decision after helping in a siege without receiving land.
+- **Training and physical exchanges:** The Training Warden develops Warden troops, then meets other Warden lords in settlements to exchange elite soldiers for lower-tier troops that still need training. Shortages for player orders use the same physical rendezvous instead of creating soldiers from nothing.
+- **Settlement work:** Wardens resolve native town and village issues, rebuild raided villages, and may adopt a girl during disaster relief as a future clan member. Her origin, growth, and adoption history remain visible in the encyclopedia.
+- **Judicial treasury and naval support:** Fines, troop-order payments, case funding, and village protection income enter the treasury; reconstruction and other duties spend it. With naval content enabled, Wardens manage ships according to party needs and sell excess captured vessels.
+- **Readable case information:** Sighting locations in quest logs and criminal-record locations in hero encyclopedia details are clickable settlement links. Warden war pages explain whether the conflict comes from pursuit, resisting arrest, or a bounty.
+- **Dedicated combat content:** The mod includes a Warden troop tree, black-and-gold equipment, the obsidian commander's shield, kicks, shield bashes, and passive great-shield protection. In peacetime, the player may also spar with Warden lords in towns or in the field.
+
+## Installation and updating
 
 1. Delete the old `Modules/GreyWarden` folder.
-2. Extract the complete new `GreyWarden` folder into the game's `Modules` directory.
+2. Extract the complete `GreyWarden` folder from the archive into the game's `Modules` directory.
 3. Enable `GreyWarden` in the launcher.
 
 Existing saves remain supported. Replace the complete module when updating rather than copying only part of it.
+Version 1.4.5 has been tested in game, 1.4.6 passes a full interface cross-build, and 1.4.7 remains the routine-test baseline.
 
-## Compatibility entry
+## Changelog
 
-- Use the single `Bannerlord 1.4.x` entry. Versions 1.4.5, 1.4.6, and 1.4.7 all use the same package; there are no separate branches to choose from.
-- Version 1.4.5 has been tested in game, 1.4.6 passes a complete cross-build against its interfaces, and 1.4.7 remains the development and routine-test baseline.
+### 2026-07-26 v1.4-r8
 
-## Latest update
+Compared with `v1.4-r7`:
+
+#### Added and adjusted
+
+- Repeated arrests now increase both deterrence strength and its minimum recovery level. A first arrest can still recover fully, while persistent repeat offenders eventually remain at maximum suppression. Special deterrence greetings now trigger probabilistically.
+- Sighting locations in bounty and atonement logs, plus locations in hero criminal-record details, are now clickable links to the relevant settlement encyclopedia page.
+- Ordinary case parties and assistance armies may both detach fast cavalry interceptors. Pursuit speed is estimated from normal party composition rather than temporary terrain or conditions.
+- The three elite Warden upgrade branches now use equal selection weight. Landless Wardens also sell captured ships beyond their party's needs.
+
+#### Fixed
+
+- Fixed troop orders crashing immediately when the Training Warden had none of the requested troop type, and fixed prepared troops upgrading again and reducing the delivery stock.
+- When an order is short, the Training Warden now meets other Warden lords for a physical exchange and continues to another party if the first cannot supply enough.
+- Fixed an error when opening hero criminal-record and deterrence details. The compact native popup appearance is restored while inline settlement links remain available.
 
 ### 2026-07-25 v1.4-r7
 
@@ -24,57 +53,20 @@ Compared with `v1.4-r6`:
 
 #### Added and adjusted
 
-- Joining or rejoining grants the obsidian commander's shield. Bounty work requires the complete commander set with that shield equipped.
-- Added troop-training exchanges. The Training Warden raises elite troops and trades them for lower-tier soldiers from other Warden lords.
-- The Warden troop tree now begins with an unshielded recruit and branches into equal-tier heavy infantry, archers, and knights. Shield loadouts for light and heavy infantry have also been revised.
-- Added fief appeals. After helping capture a fief but receiving no award, the player may pay 50,000 denars to reopen the vote. The player is guaranteed a nomination, and higher Warden standing brings stronger public support.
-- Troop requests now draw from real Warden forces and are delivered by the Training Warden. Standing increases the order limit, unlocks elite troops, lowers prices, and all proceeds enter the Warden treasury.
-- Hero encyclopedia pages now show estimated deterrence recovery time, and deterrence lasts longer.
-- Assistance armies now assess the target army and nearby enemy support, keep adding available Wardens, and close the case with peace restored if every eligible force would still be insufficient.
-- Wardens now adjust between coordinated and dispersed pursuit according to local strength and pursuit speed. Fast offenders can be intercepted by cavalry detached from the initiating party, with survivors returning afterward.
+- Added training exchanges, a three-branch elite troop tree, physical troop orders, and fief appeals. Joining or rejoining also grants the obsidian commander's shield.
+- Hero encyclopedia pages now estimate deterrence recovery time, and deterrence lasts longer.
+- Assistance armies assess the target and nearby support, keep adding available lords, and close the case peacefully if every eligible force would still be insufficient.
+- Wardens choose between gathering, dispersed pursuit, and cavalry interception according to local strength and pursuit speed.
 
 #### Fixed
 
-- Fixed weaker lords failing to call for help, assistance parties struggling to gather, fast offenders slowing an army, and viable cases stalling instead of entering battle.
-- Fixed offenders hiding in settlements, blocking settlement gates, or attaching to other armies and causing prolonged standoffs.
-- Fixed cases and empty armies lingering after their initiating Warden was defeated, which could cause a crash.
-- Adult Wardens now form parties normally and wear Warden lord equipment. Leaderless remnant parties are cleaned up automatically.
-- Fixed the Training Warden and Noble Affairs Liaison opening ordinary greetings, repeatedly intercepting the player, or starting a battle after handover. Unfunded requests may be postponed or withdrawn.
-- Fixed training exchanges being interrupted by replenishment or the Training Warden repeatedly choosing ordinary work instead.
-- Fixed fief appeals being resolved before the player could vote, and fixed support spent on the player's own claim failing to raise its vote share.
-- Fixed the player losing Warden standing and receiving a fine merely because Wardens pursued another offender from the player's kingdom.
-- Provost patrols now initiate their conversation on contact instead of waiting for the player to click them.
-- Fixed a possible crash after returning from a field spar initiated inside a castle.
-
-### 2026-07-22 v1.4-r6
-
-Compared with `v1.4.7-r5`:
-
-#### Added and adjusted
-
-- The six founding lords now divide their work between caravan crime, rural crime, local petitions, and village reconstruction, while helping other duties when their own work runs out.
-- Added reconstruction of burned villages and resolution of native town and village issues. Wardens travel to the location, remain to do the work, and grant a small development benefit on completion.
-- Caravan crime and violence against villages now create separate deterrence. Cases completed by the player as a sworn Warden affect the offender, their clan, and eligible witnesses in the same way.
-- The task pool now covers ordinary cases, assistance, player work, adoption relief, reconstruction, and local issues. Assigned cases can receive continuing support, while successful closure earns judicial-treasury funding.
-- Warden village income has been reduced and reconstruction spends treasury funds. The Case Ledger now shows the current treasury balance.
-- The player may join through a herald, withdraw, and later apply again at a higher standing requirement. Bounties, troop requests, and battlefield relief require both active membership and sufficient standing.
-- The release entry is now unified under Bannerlord 1.4.x, with one package for 1.4.5, 1.4.6, and 1.4.7.
-
-#### Fixed
-
-- Fixed heralds lacking food, failing to catch the player, or repeatedly reopening conversation. Heralds and peacefully dismissed provost patrols now return to town before disbanding.
-- Fixed crashes when talking to leaderless support parties, prolonged army standoffs, and cases failing to progress when more support was needed.
-- Fixed incorrect encyclopedia names and unclear deterrence or Case Ledger text.
-- Fixed adoption-record encyclopedia binding across 1.4.5, 1.4.6, and 1.4.7 so the same package loads correctly on all three versions.
-
-## Playable content
-
-- Joining, leaving, and reapplying to the Grey Wardens, plus bounties, atonement, troop requests, and battlefield relief.
-- Categorized AI enforcement, troop-training exchanges, the Case Ledger, assistance armies, separate deterrence, and persistent criminal history.
-- Village reconstruction, local petitions, adopted successors, and offices that can become extinct with their holders.
-- The judicial treasury, fines, case funding, village income, and reconstruction spending.
-- Grey Warden troops, the black-and-gold shield, the obsidian commander's shield, kicks, shield bashes, and passive great-shield protection.
-- Town and field sparring with Grey Warden lords.
+- Fixed weaker lords failing to request help, assistance parties failing to gather, fast targets slowing armies, and viable cases stalling instead of entering battle.
+- Fixed offenders hiding in settlements, blocking gates, or attaching to other armies and causing prolonged standoffs.
+- Fixed cases and empty armies lingering after the initiating Warden was defeated, including the related crash.
+- Fixed the Training Warden and Noble Affairs Liaison being interrupted by ordinary dialogue or duties, repeatedly intercepting the player, or entering battle after a handover.
+- Fixed fief appeals resolving too early, preventing the player from voting, or ignoring support spent on the player's claim.
+- Fixed the player losing Warden standing or receiving a fine merely because Wardens pursued another offender from the player's kingdom.
+- Provost patrols now initiate conversation on contact. Also fixed a possible crash after returning from a field spar initiated inside a castle.
 
 ## Contact
 

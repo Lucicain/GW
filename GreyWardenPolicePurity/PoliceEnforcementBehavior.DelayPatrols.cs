@@ -43,6 +43,13 @@ namespace GreyWardenPolicePurity
             public bool IsImmediateInterceptor { get; set; }
         }
 
+        private sealed class ImmediateInterceptorTroopTransfer
+        {
+            public MobileParty SourceParty { get; set; } = null!;
+            public CharacterObject Character { get; set; } = null!;
+            public int Count { get; set; }
+        }
+
         private void SyncWarTargetStreakData(IDataStore dataStore)
         {
             List<string> keys = null!;
@@ -371,39 +378,52 @@ namespace GreyWardenPolicePurity
             PoliceTask task, MobileParty targetParty,
             LocalStrengthDeclarationSnapshot? declaration)
         {
-            bool ordinaryDeclaration =
-                !_assistanceGroups.ContainsKey(sourceParty.StringId) &&
-                declaration?.StrengthReady == true &&
-                declaration.Distance <= GwpTuning.Enforcement.WarDistance &&
-                declaration.FriendlyLocalStrength >
-                declaration.EnemyLocalStrength;
-            bool dispersedAssistance =
+            bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
-                assistanceGroup.DispersedForSpeed &&
                 string.Equals(assistanceGroup.LeaderPartyId,
                     sourceParty.StringId,
                     StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(assistanceGroup.TargetPartyId,
                     targetParty.StringId,
                     StringComparison.OrdinalIgnoreCase);
+            bool ordinaryDeclaration =
+                !hasAssistanceGroup &&
+                declaration?.StrengthReady == true &&
+                declaration.Distance <= GwpTuning.Enforcement.WarDistance &&
+                declaration.FriendlyLocalStrength >
+                declaration.EnemyLocalStrength;
+            bool dispersedAssistance =
+                hasAssistanceGroup &&
+                assistanceGroup.DispersedForSpeed &&
+                sourceParty.Army == null;
+            bool assembledAssistance =
+                hasAssistanceGroup &&
+                !assistanceGroup.DispersedForSpeed &&
+                sourceParty.Army?.LeaderParty == sourceParty &&
+                IsArmyOwnedByGroup(sourceParty.Army, assistanceGroup);
 
             if (sourceParty?.IsActive != true || sourceParty.MapEvent != null ||
-                sourceParty.Army != null || targetParty?.IsActive != true ||
+                sourceParty.Army != null && !assembledAssistance ||
+                targetParty?.IsActive != true ||
                 targetParty.IsMainParty ||
                 task.FlowState != PoliceTaskFlowState.WarPursuit ||
                 !string.Equals(task.PolicePartyId, sourceParty.StringId,
                     StringComparison.OrdinalIgnoreCase) ||
                 task.TargetCrime?.Offender != targetParty ||
-                (!ordinaryDeclaration && !dispersedAssistance))
+                (!ordinaryDeclaration && !dispersedAssistance &&
+                 !assembledAssistance))
                 return;
 
             MobileParty movementTarget =
                 ResolveAssistanceMovementTarget(targetParty);
-            float sourceSpeed = Math.Max(0f,
-                sourceParty.Speed);
-            float targetSpeed = Math.Max(0f,
-                movementTarget.Speed);
+            // 与协力军团的速度分散判定保持同一口径：调用原版
+            // PartySpeedCalculatingModel 推算具体部队在正常条件下的理论速度，
+            // 排除战后混乱、天气和双方所处地形不同造成的瞬时噪声。
+            float sourceCurrentSpeed = Math.Max(0f, sourceParty.Speed);
+            float targetCurrentSpeed = Math.Max(0f, movementTarget.Speed);
+            float sourceSpeed = GetTheoreticalBaseSpeed(sourceParty);
+            float targetSpeed = GetTheoreticalBaseSpeed(movementTarget);
             if (sourceSpeed <= 0.01f || targetSpeed <= sourceSpeed)
                 return;
 
@@ -416,18 +436,45 @@ namespace GreyWardenPolicePurity
             if (alreadyExists)
                 return;
 
-            List<TroopRosterElement> mountedBatches =
-                sourceParty.MemberRoster.GetTroopRoster()
-                    .Where(element => element.Character != null &&
-                        !element.Character.IsHero &&
-                        element.Character.IsMounted &&
-                        element.Number - element.WoundedNumber > 0)
-                    .OrderByDescending(element => element.Character.Tier)
-                    .ThenBy(element => element.Character.StringId,
+            List<MobileParty> troopSourceParties = assembledAssistance
+                ? sourceParty.Army!.Parties
+                    .Where(party => party?.IsActive == true &&
+                        (party == sourceParty ||
+                         assistanceGroup!.MemberPartyIds.Contains(
+                             party.StringId,
+                             StringComparer.OrdinalIgnoreCase)))
+                    .Distinct()
+                    .ToList()
+                : new List<MobileParty> { sourceParty };
+            List<ImmediateInterceptorTroopTransfer> mountedBatches =
+                troopSourceParties
+                    .SelectMany(party =>
+                        party.MemberRoster.GetTroopRoster()
+                            .Where(element => element.Character != null &&
+                                !element.Character.IsHero &&
+                                element.Character.IsMounted &&
+                                element.Number - element.WoundedNumber > 0)
+                            .Select(element =>
+                                new ImmediateInterceptorTroopTransfer
+                                {
+                                    SourceParty = party,
+                                    Character = element.Character
+                                }))
+                    .OrderByDescending(batch => batch.Character.Tier)
+                    .ThenBy(batch => batch.SourceParty == sourceParty ? 0 : 1)
+                    .ThenBy(batch => batch.SourceParty.StringId,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(batch => batch.Character.StringId,
                         StringComparer.OrdinalIgnoreCase)
                     .ToList();
             int availableMounted = mountedBatches.Sum(element =>
-                Math.Max(0, element.Number - element.WoundedNumber));
+            {
+                TroopRosterElement current = element.SourceParty.MemberRoster
+                    .GetTroopRoster().FirstOrDefault(candidate =>
+                        candidate.Character == element.Character);
+                return Math.Max(
+                    0, current.Number - current.WoundedNumber);
+            });
             int detachmentSize = Math.Min(
                 ImmediateInterceptorMaximumSize, availableMounted);
             if (detachmentSize < ImmediateInterceptorMinimumSize)
@@ -451,6 +498,8 @@ namespace GreyWardenPolicePurity
                        StringComparison.OrdinalIgnoreCase)));
 
             MobileParty? interceptor = null;
+            var transferredBatches =
+                new List<ImmediateInterceptorTroopTransfer>();
             try
             {
                 interceptor =
@@ -475,20 +524,23 @@ namespace GreyWardenPolicePurity
                 interceptor.MemberRoster.Clear();
                 interceptor.ItemRoster.Clear();
                 int moved = TransferHealthyTroops(
-                    sourceParty.MemberRoster,
                     interceptor.MemberRoster,
                     mountedBatches,
-                    detachmentSize);
+                    detachmentSize,
+                    transferredBatches);
                 if (moved < ImmediateInterceptorMinimumSize)
                 {
-                    TransferAllNonHeroTroops(interceptor.MemberRoster,
-                        sourceParty.MemberRoster);
+                    RollBackImmediateInterceptorTroops(
+                        interceptor.MemberRoster, transferredBatches);
                     TryDestroyDelayPatrolParty(interceptor);
                     return;
                 }
 
                 PoliceResourceManager.ProvisionTemporaryDutyParty(interceptor);
-                float interceptorSpeed = Math.Max(0f, interceptor.Speed);
+                float interceptorCurrentSpeed =
+                    Math.Max(0f, interceptor.Speed);
+                float interceptorSpeed =
+                    GetTheoreticalBaseSpeed(interceptor);
                 if (interceptorSpeed <= targetSpeed)
                 {
                     GwpAiDiagnostics.WriteAction(sourceParty,
@@ -497,11 +549,16 @@ namespace GreyWardenPolicePurity
                         "; target=" + targetParty.StringId +
                         "; movementTarget=" + movementTarget.StringId +
                         "; troops=" + moved +
-                        "; interceptorSpeed=" +
+                        "; interceptorTheoreticalSpeed=" +
                         interceptorSpeed.ToString("0.00") +
-                        "; targetSpeed=" + targetSpeed.ToString("0.00"));
-                    TransferAllNonHeroTroops(interceptor.MemberRoster,
-                        sourceParty.MemberRoster);
+                        "; targetTheoreticalSpeed=" +
+                        targetSpeed.ToString("0.00") +
+                        "; interceptorCurrentSpeed=" +
+                        interceptorCurrentSpeed.ToString("0.00") +
+                        "; targetCurrentSpeed=" +
+                        targetCurrentSpeed.ToString("0.00"));
+                    RollBackImmediateInterceptorTroops(
+                        interceptor.MemberRoster, transferredBatches);
                     TryDestroyDelayPatrolParty(interceptor);
                     return;
                 }
@@ -525,13 +582,27 @@ namespace GreyWardenPolicePurity
                     "; target=" + targetParty.StringId +
                     "; movementTarget=" + movementTarget.StringId +
                     "; troops=" + moved +
-                    "; sourceSpeed=" + sourceSpeed.ToString("0.00") +
-                    "; targetSpeed=" + targetSpeed.ToString("0.00") +
-                    "; interceptorSpeed=" +
+                    "; troopSourceParties=" +
+                    transferredBatches.Select(batch =>
+                            batch.SourceParty.StringId)
+                        .Distinct(StringComparer.OrdinalIgnoreCase).Count() +
+                    "; sourceTheoreticalSpeed=" +
+                    sourceSpeed.ToString("0.00") +
+                    "; targetTheoreticalSpeed=" +
+                    targetSpeed.ToString("0.00") +
+                    "; interceptorTheoreticalSpeed=" +
                     interceptorSpeed.ToString("0.00") +
-                    "; trigger=" + (dispersedAssistance
-                        ? "assistance_speed_dispersed"
-                        : "ordinary_declaration") +
+                    "; sourceCurrentSpeed=" +
+                    sourceCurrentSpeed.ToString("0.00") +
+                    "; targetCurrentSpeed=" +
+                    targetCurrentSpeed.ToString("0.00") +
+                    "; interceptorCurrentSpeed=" +
+                    interceptorCurrentSpeed.ToString("0.00") +
+                    "; trigger=" + (assembledAssistance
+                        ? "assistance_army"
+                        : dispersedAssistance
+                            ? "assistance_speed_dispersed"
+                            : "ordinary_declaration") +
                     "; friendlyLocalStrength=" +
                     (declaration?.FriendlyLocalStrength.ToString("0.00") ??
                      "n/a") +
@@ -544,22 +615,24 @@ namespace GreyWardenPolicePurity
                 _delayPatrolStates.Remove(patrolId);
                 if (interceptor?.IsActive == true)
                 {
-                    TransferAllNonHeroTroops(interceptor.MemberRoster,
-                        sourceParty.MemberRoster);
+                    RollBackImmediateInterceptorTroops(
+                        interceptor.MemberRoster, transferredBatches);
                     TryDestroyDelayPatrolParty(interceptor);
                 }
             }
         }
 
-        private static int TransferHealthyTroops(TroopRoster source,
-            TroopRoster destination,
-            IEnumerable<TroopRosterElement> batches, int requested)
+        private static int TransferHealthyTroops(TroopRoster destination,
+            IEnumerable<ImmediateInterceptorTroopTransfer> batches,
+            int requested,
+            ICollection<ImmediateInterceptorTroopTransfer> transfers)
         {
             int moved = 0;
-            foreach (TroopRosterElement batch in batches)
+            foreach (ImmediateInterceptorTroopTransfer batch in batches)
             {
                 if (moved >= requested)
                     break;
+                TroopRoster source = batch.SourceParty.MemberRoster;
                 TroopRosterElement current = source.GetTroopRoster()
                     .FirstOrDefault(element =>
                         element.Character == batch.Character);
@@ -571,9 +644,36 @@ namespace GreyWardenPolicePurity
 
                 source.AddToCounts(batch.Character, -take, false, 0);
                 destination.AddToCounts(batch.Character, take, false, 0);
+                transfers.Add(new ImmediateInterceptorTroopTransfer
+                {
+                    SourceParty = batch.SourceParty,
+                    Character = batch.Character,
+                    Count = take
+                });
                 moved += take;
             }
             return moved;
+        }
+
+        private static void RollBackImmediateInterceptorTroops(
+            TroopRoster interceptorRoster,
+            IEnumerable<ImmediateInterceptorTroopTransfer> transfers)
+        {
+            foreach (ImmediateInterceptorTroopTransfer transfer in transfers)
+            {
+                TroopRosterElement current = interceptorRoster
+                    .GetTroopRoster().FirstOrDefault(element =>
+                        element.Character == transfer.Character);
+                int returnCount = Math.Min(
+                    transfer.Count, Math.Max(0, current.Number));
+                if (returnCount <= 0)
+                    continue;
+
+                interceptorRoster.AddToCounts(
+                    transfer.Character, -returnCount, false, 0);
+                transfer.SourceParty.MemberRoster.AddToCounts(
+                    transfer.Character, returnCount, false, 0);
+            }
         }
 
         private static int TransferAllNonHeroTroops(TroopRoster source,
@@ -814,7 +914,10 @@ namespace GreyWardenPolicePurity
         private bool TryAssignDelayPatrolToAssistanceArmy(
             MobileParty patrol, DelayPatrolState state)
         {
-            if (patrol?.IsActive != true || state.Returning || patrol.MapEvent != null)
+            // 极速追查队必须保持独立，不能在下一次小时维护时又被并回
+            // 协力军团；普通周期支援仍照旧加入协力军团。
+            if (patrol?.IsActive != true || state.Returning ||
+                state.IsImmediateInterceptor || patrol.MapEvent != null)
                 return false;
             if (!TryGetDelaySupportAssistanceArmy(
                     state.SourceTaskPolicePartyId, state.TargetPartyId,

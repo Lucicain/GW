@@ -1,0 +1,9 @@
+<Brushes>
+  <Brush Name="Gwp.Popup.Description.Linked.Text" BaseBrush="Popup.Description.Text">
+    <Styles>
+      <Style Name="Link.Settlement" FontColor="#AA7449FF" TextGlowColor="#111111FF" />
+      <Style Name="Link.Settlement.MouseOver" TextColorFactor="1.5" FontColor="#AA7449BB" TextGlowColor="#111111FF" />
+      <Style Name="Link.Settlement.MouseDown" TextColorFactor="0.7" FontColor="#AA7449FF" TextGlowColor="#111111FF" />
+    </Styles>
+  </Brush>
+</Brushes>
