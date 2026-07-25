@@ -54,6 +54,12 @@
   `90` 字节且内容与实算一致。完成文件表、解压哈希、包内 DLL 和无监控反编译审计后，
   已删除本地旧 `v1.4-r7` ZIP/校验文件，游戏 `Modules` 父目录只保留最新 `v1.4-r8`
   正式包对。
+- 正式代码提交为 `634a7d4ea23154b724d9bf2d2593c821714cf48e`，`main` 与带注释标签
+  `v1.4-r8` 均已推送，标签解引用后准确指向该提交。GitHub Release 地址为
+  `https://github.com/Lucicain/GW/releases/tag/v1.4-r8`，已设为 latest，状态不是 draft
+  或 prerelease。远端 ZIP 资产为 `349845455` 字节，GitHub 报告的 SHA-256 digest 与本地
+  `150009FA...B955C3` 一致；远端校验文件为 `90` 字节，SHA-256
+  `F14FEE995E2F6307DF386384E173F0CA18A1C05F085D7A32769A707A39EBC1BB`，也与本地一致。
 
 ## 2026-07-25 人物百科地点链接改回原版小弹窗
 
