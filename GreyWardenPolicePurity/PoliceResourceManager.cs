@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Naval;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -81,6 +82,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
             CampaignEvents.OnShipOwnerChangedEvent.AddNonSerializedListener(this, OnShipOwnerChanged);
         }
@@ -331,6 +333,25 @@ namespace GreyWardenPolicePurity
             PurifyParty(party);
         }
 
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (mapEvent == null) return;
+
+            foreach (MobileParty party in mapEvent.InvolvedParties
+                .Where(static involved => involved?.MobileParty?.IsActive == true)
+                .Select(static involved => involved.MobileParty)
+                .Where(static party => party.LeaderHero?.Clan != null &&
+                    string.Equals(party.LeaderHero.Clan.StringId,
+                        PoliceStats.PoliceClanId,
+                        StringComparison.OrdinalIgnoreCase))
+                .Distinct()
+                .ToList())
+            {
+                _lastPurifyTime[party.StringId] = CampaignTime.Now.ToHours;
+                PurifyParty(party);
+            }
+        }
+
         private void PurifyParty(MobileParty party)
         {
             var recruit = CharacterObject.Find(GwpIds.NewRecruitId);
@@ -346,11 +367,48 @@ namespace GreyWardenPolicePurity
                     toRemove.Add(element);
             }
 
-            foreach (var element in toRemove)
+            if (toRemove.Count <= 0) return;
+
+            int foreignTotal = 0;
+            int foreignWounded = 0;
+            string foreignComposition = string.Join(",", toRemove
+                .OrderBy(static element => element.Character.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(static element => element.Character.StringId + ":" +
+                    element.Number));
+            foreach (TroopRosterElement element in toRemove)
             {
-                roster.AddToCounts(element.Character, -element.Number);
-                roster.AddToCounts(recruit, element.Number);
+                int number = Math.Max(0, element.Number);
+                int wounded = Math.Min(number, Math.Max(0, element.WoundedNumber));
+                if (number <= 0) continue;
+
+                roster.AddToCounts(element.Character, -number, false, -wounded);
+                foreignTotal += number;
+                foreignWounded += wounded;
             }
+
+            int rawAvailableSlots = Math.Max(0,
+                party.Party.PartySizeLimit - party.Party.NumberOfAllMembers);
+            int interceptorReserve =
+                PoliceEnforcementBehavior
+                    .GetReservedImmediateInterceptorTroopCount(party);
+            int availableSlots = Math.Max(0,
+                rawAvailableSlots - interceptorReserve);
+            int converted = Math.Min(foreignTotal, availableSlots);
+            int convertedWounded = Math.Min(converted, foreignWounded);
+            if (converted > 0)
+                roster.AddToCounts(recruit, converted, false, convertedWounded);
+
+            GwpAiDiagnostics.WriteAction(party, "POLICE_ROSTER_PURIFIED",
+                "foreign=" + foreignTotal +
+                "; converted=" + converted +
+                "; released=" + (foreignTotal - converted) +
+                "; availableSlots=" + availableSlots +
+                "; rawAvailableSlots=" + rawAvailableSlots +
+                "; interceptorReserve=" + interceptorReserve +
+                "; partySizeLimit=" + party.Party.PartySizeLimit +
+                "; membersAfter=" + party.Party.NumberOfAllMembers +
+                "; foreignComposition=" + foreignComposition);
         }
 
         private static bool IsIllegalTroop(CharacterObject character)

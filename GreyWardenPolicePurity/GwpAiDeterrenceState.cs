@@ -379,16 +379,32 @@ namespace GreyWardenPolicePurity
             {
                 PartyBase captor = hero.PartyBelongedToAsPrisoner;
                 if (captor.IsSettlement && captor.Settlement != null)
-                    return captor.Settlement;
+                    return GwpCommon.NormalizePlayerFacingSettlement(
+                        captor.Settlement,
+                        captor.Settlement.GetPosition2D);
+                if (captor.MobileParty != null)
+                {
+                    MobileParty captorParty = captor.MobileParty;
+                    return GwpCommon.NormalizePlayerFacingSettlement(
+                        captorParty.CurrentSettlement,
+                        captorParty.GetPosition2D);
+                }
                 return null;
             }
 
             MobileParty? party = hero.PartyBelongedTo;
-            if (party?.CurrentSettlement != null)
-                return party.CurrentSettlement;
             if (party != null)
-                return GwpCommon.FindNearestTown(party);
-            return hero.CurrentSettlement ?? hero.StayingInSettlement;
+                return GwpCommon.NormalizePlayerFacingSettlement(
+                    party.CurrentSettlement,
+                    party.GetPosition2D);
+
+            Settlement? heroSettlement = hero.CurrentSettlement ??
+                                         hero.StayingInSettlement;
+            return heroSettlement == null
+                ? null
+                : GwpCommon.NormalizePlayerFacingSettlement(
+                    heroSettlement,
+                    heroSettlement.GetPosition2D);
         }
 
         private static bool TakeTraitWeight(ref float roll, int traitLevel)
@@ -640,21 +656,8 @@ namespace GreyWardenPolicePurity
 
         private static string BuildTrackingLocation(Hero hero)
         {
-            if (hero.IsPrisoner && hero.PartyBelongedToAsPrisoner != null)
-            {
-                PartyBase captor = hero.PartyBelongedToAsPrisoner;
-                if (captor.IsSettlement && captor.Settlement != null)
-                    return captor.Settlement.Name.ToString();
-                if (captor.MobileParty != null)
-                    return captor.MobileParty.Name.ToString();
-            }
-
-            MobileParty? party = hero.PartyBelongedTo;
-            if (party?.CurrentSettlement != null) return party.CurrentSettlement.Name.ToString();
-            if (party != null) return GwpCommon.FindNearestTown(party)?.Name?.ToString()
-                                      ?? GwpText.Get("{=gwp_gwpaideterrencestate_032}Unknown location");
-            return (hero.CurrentSettlement ?? hero.StayingInSettlement)?.Name?.ToString()
-                   ?? GwpText.Get("{=gwp_gwpaideterrencestate_032}Unknown location");
+            return GetTrackingSettlement(hero)?.Name?.ToString() ??
+                   GwpText.Get("{=gwp_gwpaideterrencestate_032}Unknown location");
         }
 
         private static string BuildTrackingStatus(Hero hero)

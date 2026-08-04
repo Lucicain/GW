@@ -464,13 +464,15 @@ namespace GreyWardenPolicePurity
                 CountTrainableTroops(target));
             if (exchangeCount <= 0) return 0;
 
+            string trainerBefore = FormatGreyWardenRoster(trainer);
+            string targetBefore = FormatGreyWardenRoster(target);
+
             var elites = trainer.MemberRoster.GetTroopRoster()
                 .Where(static element => element.Character != null &&
                     !element.Character.IsHero && element.Number > 0 &&
                     GwpCommon.IsGreyWardenTroop(element.Character) &&
                     element.Character.UpgradeTargets.Length == 0)
-                .OrderByDescending(static element => element.Character.Tier)
-                .ThenBy(static element => element.Character.StringId,
+                .OrderBy(static element => element.Character.StringId,
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var trainees = target.MemberRoster.GetTroopRoster()
@@ -483,11 +485,76 @@ namespace GreyWardenPolicePurity
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            int movedElites = TransferFromBatches(trainer.MemberRoster,
-                target.MemberRoster, elites, exchangeCount);
+            int movedElites = TransferEliteTroopsProportionally(trainer.MemberRoster,
+                target.MemberRoster, elites, exchangeCount, out string movedComposition);
             int movedTrainees = TransferFromBatches(target.MemberRoster,
                 trainer.MemberRoster, trainees, exchangeCount);
+            GwpAiDiagnostics.WriteAction(trainer, "TRAINING_EXCHANGE_ROSTER",
+                "target=" + target.StringId + "; requested=" + exchangeCount +
+                "; movedElite=" + movedElites + "; movedTrainee=" + movedTrainees +
+                "; eliteComposition=" + movedComposition +
+                "; trainerBefore=" + trainerBefore +
+                "; trainerAfter=" + FormatGreyWardenRoster(trainer) +
+                "; targetBefore=" + targetBefore +
+                "; targetAfter=" + FormatGreyWardenRoster(target));
             return Math.Min(movedElites, movedTrainees);
+        }
+
+        private static int TransferEliteTroopsProportionally(TroopRoster source,
+            TroopRoster destination, IReadOnlyList<TroopRosterElement> batches,
+            int requested, out string composition)
+        {
+            int total = batches.Sum(static batch => Math.Max(0, batch.Number));
+            if (requested <= 0 || total <= 0)
+            {
+                composition = "none";
+                return 0;
+            }
+
+            int[] allocations = new int[batches.Count];
+            long[] remainders = new long[batches.Count];
+            int allocated = 0;
+            for (int index = 0; index < batches.Count; index++)
+            {
+                long scaled = (long)requested * Math.Max(0, batches[index].Number);
+                allocations[index] = (int)(scaled / total);
+                remainders[index] = scaled % total;
+                allocated += allocations[index];
+            }
+
+            foreach (int index in Enumerable.Range(0, batches.Count)
+                .OrderByDescending(index => remainders[index])
+                .ThenBy(index => batches[index].Character.StringId,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                if (allocated >= requested) break;
+                if (allocations[index] >= batches[index].Number) continue;
+                allocations[index]++;
+                allocated++;
+            }
+
+            int moved = 0;
+            var movedParts = new List<string>();
+            for (int index = 0; index < batches.Count; index++)
+            {
+                int planned = allocations[index];
+                if (planned <= 0) continue;
+
+                TroopRosterElement current = source.GetTroopRoster().FirstOrDefault(element =>
+                    element.Character == batches[index].Character);
+                int take = Math.Min(current.Number, planned);
+                if (take <= 0) continue;
+
+                int healthy = Math.Max(0, current.Number - current.WoundedNumber);
+                int wounded = Math.Max(0, take - healthy);
+                source.AddToCounts(batches[index].Character, -take, false, -wounded);
+                destination.AddToCounts(batches[index].Character, take, false, wounded);
+                moved += take;
+                movedParts.Add(batches[index].Character.StringId + ":" + take);
+            }
+
+            composition = movedParts.Count > 0 ? string.Join(",", movedParts) : "none";
+            return moved;
         }
 
         private static int TransferFromBatches(TroopRoster source, TroopRoster destination,
@@ -613,6 +680,19 @@ namespace GreyWardenPolicePurity
                     GwpCommon.IsGreyWardenTroop(element.Character) &&
                     element.Character.UpgradeTargets.Length == 0)
                 .Sum(static element => Math.Max(0, element.Number));
+
+        private static string FormatGreyWardenRoster(MobileParty party)
+        {
+            string[] parts = party.MemberRoster.GetTroopRoster()
+                .Where(static element => element.Character != null &&
+                    !element.Character.IsHero && element.Number > 0 &&
+                    GwpCommon.IsGreyWardenTroop(element.Character))
+                .OrderBy(static element => element.Character.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(static element => element.Character.StringId + ":" + element.Number)
+                .ToArray();
+            return parts.Length > 0 ? string.Join(",", parts) : "none";
+        }
 
         internal static Settlement? FindRendezvousSettlement(MobileParty trainer,
             MobileParty target)

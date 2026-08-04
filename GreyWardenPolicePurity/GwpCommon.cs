@@ -134,6 +134,46 @@ namespace GreyWardenPolicePurity
             return nearest;
         }
 
+        /// <summary>
+        /// 用于玩家可见的位置描述：城镇、城堡和村庄都参与比较，
+        /// 但不把藏身处等特殊地点当作普通地理参照。
+        /// </summary>
+        public static bool IsOrdinarySettlement(Settlement? settlement) =>
+            settlement?.IsTown == true || settlement?.IsVillage == true;
+
+        public static Settlement? FindNearestSettlement(Vec2 position)
+        {
+            Settlement? nearest = null;
+            float minDistance = float.MaxValue;
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (!IsOrdinarySettlement(settlement)) continue;
+
+                float distance = position.Distance(settlement.GetPosition2D);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearest = settlement;
+                }
+            }
+
+            return nearest;
+        }
+
+        /// <summary>
+        /// 保留正常定居点；若原版状态给出藏身处等特殊地点，则以该地点为
+        /// 坐标重新选择最近的城镇、城堡或村庄，保证玩家看到的地点可导航。
+        /// </summary>
+        public static Settlement? NormalizePlayerFacingSettlement(
+            Settlement? settlement,
+            Vec2 fallbackPosition)
+        {
+            if (IsOrdinarySettlement(settlement)) return settlement;
+            return FindNearestSettlement(
+                settlement?.GetPosition2D ?? fallbackPosition);
+        }
+
         public static void TrySetNeutral(IFaction? left, IFaction? right)
         {
             if (left == null || right == null) return;

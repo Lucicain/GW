@@ -9,6 +9,7 @@ namespace GreyWardenPolicePurity
         public const string PatrolIdPrefix = "gwp_patrol_";
         public const string EnforcementDelayPatrolIdPrefix = "gwp_enf_delay_";
         public const string RecruitmentPatrolPrefix = "gwp_recruit_";
+        public const string BountyCollectionCourierPrefix = "gwp_bounty_collect_";
 
         public const string HeavyInfantryId = "gwheavyinfantry";
         public const string ArcherId = "gwarcher";

@@ -11,6 +11,7 @@
   <string id="gwp_clan_name" text="灰袍守卫" />
   <string id="gwp_clan_short_name" text="灰袍" />
   <string id="gwp_common_garrison" text="驻地点" />
+  <string id="gwp_common_understood" text="知道了" />
   <string id="gwp_common_unknown_target" text="未知目标" />
   <string id="gwp_crime_aid_criminals" text="帮助罪犯对抗灰袍守卫" />
   <string id="gwp_crime_attack_caravan" text="攻击商队" />
@@ -305,7 +306,7 @@
   <string id="gwp_playerbehaviormonitor_052" text="与民兵并肩迎敌" />
   <string id="gwp_playerbountybehavior_001" text="灰袍招募使者" />
   <string id="gwp_playerbountybehavior_002" text="灰袍招募使者正从 {VAR_1} 出发前来拜访..." />
-  <string id="gwp_playerbountybehavior_003" text="护送警察已失联，请前往警察族长处领取赏金。" />
+  <string id="gwp_playerbountybehavior_003" text="护送灰袍已失联，但通缉令仍然有效。击败目标后，可由任意灰袍领主结案。" />
   <string id="gwp_playerbountybehavior_004" text="灰袍侦察队" />
   <string id="gwp_playerbountybehavior_005" text="【侦情】{VAR_1} 的探子来报：目标在 {VAR_2} 附近目击。" />
   <string id="gwp_playerbountybehavior_006" text="读档恢复：继续追踪目标（{VAR_1}）。" />
@@ -321,7 +322,7 @@
   <string id="gwp_playerbountybehavior_016" text="前往 {VAR_1} 处领取赏金" />
   <string id="gwp_playerbountybehavior_017" text="悬赏目标已击败！{VAR_1}（{VAR_2} 第纳尔）" />
   <string id="gwp_playerbountybehavior_018" text="读档恢复：继续追踪目标（{VAR_1}）。" />
-  <string id="gwp_playerbountybehavior_019" text="读档恢复：目标已击败，前往护送警察或警察领主处领取赏金。" />
+  <string id="gwp_playerbountybehavior_019" text="读档恢复：目标已击败，向任意灰袍领主报告即可结案并领取赏金。" />
   <string id="gwp_playerbountybehavior_020" text="未知位置" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_001" text="我接受，愿为灰袍守卫效力。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。" />
@@ -353,8 +354,8 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_018" text="已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_019" text="灰袍调停：已与 {VAR_1} 达成和平" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_020" text="目标势力：{VAR_1}&#10;" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_021" text="犯罪类型：{VAR_1}&#10;" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_022" text="最后目击：{VAR_1} 附近&#10;" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_021" text="犯罪类型：{VAR_1}" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_022" text="最后目击：{VAR_1} 附近" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_023" text="队伍规模：{VAR_1} 人&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_024" text="预计赏金：约 {VAR_1} 第纳尔&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_025" text="（按接任务时人数 × {VAR_1} 结算）&#10;&#10;" />
@@ -364,10 +365,47 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_029" text="拒绝" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_030" text="目标已失效，悬赏任务取消" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_031" text="目标已失效，悬赏任务取消" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_032" text="灰袍护送方已就位，跟随你追击目标。击败后直接向护送警察领取赏金。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_032" text="灰袍护送方已就位，将跟随你追击，直至目标落败。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_033" text="目标：{VAR_1}（当前 {VAR_2} 人）。&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_034" text="最后目击位置：{VAR_1} 附近。&#10;" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_035" text="击败后前往警察领主处领取赏金约 {VAR_1} 第纳尔。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_035" text="击败目标后，向任意灰袍领主报告，即可领取约 {VAR_1} 第纳尔赏金。" />
+  <string id="gwp_bounty_contract_timed_out" text="悬赏契约已到期。追捕结束，协办灰袍已返回原有职责。" />
+  <string id="gwp_bounty_contract_timed_out_log" text="悬赏契约到期时目标仍未被击败，任务失败。" />
+  <string id="gwp_bounty_ready_for_turnin" text="悬赏目标已被击败。你可以向任意灰袍领主领取赏金；五天仍未结案时，灰袍结算队会主动前来找你。" />
+  <string id="gwp_bounty_turnin_player" text="悬赏目标已经落败。我来结清这份通缉令，并领取约定的赏金。" />
+  <string id="gwp_bounty_turnin_lord" text="报告已经核实，通缉令就此结案。收下约定的 {VAR_1} 第纳尔赏金。" />
+  <string id="gwp_bounty_complete_notice_title" text="悬赏目标已被击败" />
+  <string id="gwp_bounty_complete_notice_body" text="追捕已经结束，协办灰袍已返回原有职责。你可以向任意灰袍领主领取 {VAR_1} 第纳尔；五天仍未结案时，灰袍结算队会主动前来找你。" />
+  <string id="gwp_bounty_notification_description" text="新的悬赏契约可供挑选。" />
+  <string id="gwp_bounty_notification_title" text="灰袍悬赏契约" />
+  <string id="gwp_bounty_choice_nearest" text="最近" />
+  <string id="gwp_bounty_choice_harder" text="较难" />
+  <string id="gwp_bounty_choice_easier" text="较简单" />
+  <string id="gwp_bounty_choice_unavailable" text="{VAR_1}：暂无可分配的独立契约" />
+  <string id="gwp_bounty_choice_unavailable_hint" text="需要更多未结案件才能提供另一份不同的选择。" />
+  <string id="gwp_bounty_choice_label" text="{VAR_1}：{VAR_2} — {VAR_3}，{VAR_4} 第纳尔" />
+  <string id="gwp_bounty_choice_hint" text="{VAR_1}；最近在 {VAR_2} 附近出现。" />
+  <string id="gwp_bounty_select_title" text="选择灰袍悬赏" />
+  <string id="gwp_bounty_select_description" text="选择最近、较难或较简单的目标。赏金按难度固定。" />
+  <string id="gwp_bounty_review_contract" text="查看契约" />
+  <string id="gwp_bounty_difficulty_easy" text="较简单" />
+  <string id="gwp_bounty_difficulty_standard" text="标准" />
+  <string id="gwp_bounty_difficulty_hard" text="较难" />
+  <string id="gwp_bounty_contract_target" text="目标：{VAR_1}" />
+  <string id="gwp_bounty_contract_difficulty" text="评估难度：{VAR_1}" />
+  <string id="gwp_bounty_contract_reward" text="固定赏金：{VAR_1} 第纳尔" />
+  <string id="gwp_bounty_contract_deadline" text="通缉令有效期为四十五天。" />
+  <string id="gwp_bounty_contract_turnin" text="击败目标后，向任意灰袍领主报告。" />
+  <string id="gwp_bounty_quest_target" text="目标：{VAR_1}。评估难度：{VAR_2}。&#10;" />
+  <string id="gwp_bounty_quest_reward" text="在四十五天内击败目标，再向任意灰袍领主报告，领取固定赏金 {VAR_1} 第纳尔。" />
+  <string id="gwp_bounty_contract_accepted" text="已接受悬赏：追捕 {VAR_1}。难度：{VAR_2}；固定赏金：{VAR_3} 第纳尔。" />
+  <string id="gwp_bounty_collection_courier_name" text="灰袍结算队" />
+  <string id="gwp_bounty_collection_courier_dispatched" text="目标落败已经五天。灰袍已从{VAR_1}派出结算队，正在前来与你会合并结清通缉令。" />
+  <string id="gwp_bounty_courier_greeting" text="灰袍派我们来找你。目标落败已经确认，我们可以在这里结清通缉令，并支付约定的 {VAR_1} 第纳尔。" />
+  <string id="gwp_bounty_courier_player" text="那就结清通缉令吧。我领取约定的赏金。" />
+  <string id="gwp_bounty_courier_response" text="通缉令已经结清。这是契约中登记的报酬。我们会返回最近的定居点复命。" />
+  <string id="gwp_bounty_courier_returning" text="通缉令已经结清。我们正在返回驻地，与你没有其他事务。" />
+  <string id="gwp_bounty_courier_payment_received" text="已从灰袍结算队领取赏金：{VAR_1} 第纳尔" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_036" text="已接受悬赏任务：追击 {VAR_1}" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_037" text="（{VAR_1} 人），赏金约 {VAR_2} 第纳尔" />
   <string id="gwp_playerbountybehavior_encyclopedia_001" text="未指定护送部队" />

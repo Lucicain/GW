@@ -107,6 +107,7 @@ namespace GreyWardenPolicePurity
                 Func<CrimeRecord, bool> predicate) => CrimePool.GetNearest(position, predicate);
             public CrimeRecord? GetNearestNonPlayer(TaleWorlds.Library.Vec2 position) => CrimePool.GetNearestNonPlayer(position);
             public CrimeRecord? GetNearestNonPlayerFromAll(TaleWorlds.Library.Vec2 position) => CrimePool.GetNearestNonPlayerFromAll(position);
+            public List<CrimeRecord> GetAvailablePlayerBounties() => CrimePool.GetAvailablePlayerBounties();
             public CrimeRecord? GetByOffenderId(string? partyStringId) => CrimePool.GetByOffenderId(partyStringId);
             public CrimeRecord? GetPlayerCrime() => CrimePool.GetPlayerCrime();
             public string? GetPlayerTaskPolicePartyId() => CrimePool.GetPlayerTaskPolicePartyId();

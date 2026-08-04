@@ -25,9 +25,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// ★ internal（非 private）：存档系统需通过反射访问此类型。
-        /// ★ SyncData 必须 override：保存 _targetName，否则读档后标题为空。
-        /// ★ InitializeQuestOnGameLoad 读档时自动 Fail：任务是当局会话的显示层，
-        ///   实际悬赏状态由 PlayerBountyBehavior.SyncData 持久化。
+        /// 任务本体由原版 QuestManager 保存，行为层只保存追捕状态。
         /// </summary>
         internal sealed class BountyHunterQuest : QuestBase
         {
@@ -37,68 +35,59 @@ namespace GreyWardenPolicePurity
             [SaveableField(1)]
             private string _targetName;
 
+            [SaveableField(2)]
+            private bool _readyForTurnInLogWritten;
+
             /// <summary>
             /// 正常构造器：接受悬赏任务时调用。
             /// questGiver 须为警察领主；rewardGold 用于任务日志显示。
             /// </summary>
             public BountyHunterQuest(Hero questGiver, int rewardGold, string targetName)
+                : this(
+                    questGiver,
+                    rewardGold,
+                    targetName,
+                    CampaignTime.DaysFromNow(GwpTuning.Bounty.DeadlineDays))
+            {
+            }
+
+            internal BountyHunterQuest(
+                Hero questGiver,
+                int rewardGold,
+                string targetName,
+                CampaignTime dueTime)
                 : base(
                     GwpIds.BountyQuestPrefix + MBRandom.RandomInt(1000, 9999),
                     questGiver,
-                    CampaignTime.DaysFromNow(45),
+                    dueTime,
                     rewardGold)
             {
                 _targetName = targetName ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_001}Unknown target");
+                _readyForTurnInLogWritten = false;
             }
 
             /// <summary>
-            /// 无参构造器：供存档系统反序列化时调用（安全兜底）。
-            ///
-            /// Bannerlord 通常通过 FormatterServices.GetUninitializedObject 创建实例
-            /// （完全绕过构造器），但部分版本或自定义序列化器可能会调用无参构造器。
-            /// 此构造器使用安全的哑值（id="gwp_bounty_quest_0", questGiver=null 等），
-            /// 实际字段在 InitializeQuestOnGameLoad 中会立即被 Fail 处理，无需正确值。
+            /// 无参构造器供存档系统反序列化时调用。
             /// </summary>
             internal BountyHunterQuest()
                 : base(GwpIds.BountyQuestFallbackId, null, CampaignTime.Never, 0)
             {
                 _targetName = "";
+                _readyForTurnInLogWritten = false;
             }
 
             public override TextObject Title =>
                 new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_002}Grey Warden bounty: {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
-            public override bool IsRemainingTimeHidden => false;
+            public override bool IsRemainingTimeHidden => _readyForTurnInLogWritten;
 
             /// <summary>
-            /// ★ 关键：必须返回非空字符串，才能让本 Quest 通过 QuestManager.OnGameLoaded() 的检查。
-            ///
-            /// Bannerlord 在每次读档时，对 QuestManager 中的每个 Quest 执行：
-            ///   if (有关联 IssueBase || IsSpecialQuest)
-            ///       InitializeQuestOnGameLoad(); // 正常恢复
-            ///   else
-            ///       CompleteQuestWithCancel();   // 直接取消！进"旧任务"
-            ///
-            /// 本 Quest 没有关联 IssueBase，因此必须通过 IsSpecialQuest 告知引擎
-            /// "这是一个独立的特殊任务，不需要 IssueBase 也应当正常恢复"。
-            /// IsSpecialQuest 的实现就是 string.IsNullOrEmpty(SpecialQuestType) == false。
+            /// 非空 SpecialQuestType 让没有 IssueBase 的独立任务按原版特殊任务恢复。
             /// </summary>
             public override string SpecialQuestType => GwpIds.BountySpecialQuestType;
 
             protected override void SetDialogs() { }
 
-            protected override void InitializeQuestOnGameLoad()
-            {
-                // ★ 由 QuestManager.OnGameLoaded() 调用（因 SpecialQuestType 非空，引擎不会取消本 Quest）。
-                // 通过 behavior 回调重连运行时引用。若 behavior.SyncData() 已先执行，
-                // OnQuestLoadedFromSave 中 hasBountyTask=true → 直接重连 _activeQuest。
-                // 若 SyncData 尚未执行 → 早返回 → 首次 OnHourlyTick 兜底从 QM 查找重连。
-                try
-                {
-                    var b = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-                    b?.OnQuestLoadedFromSave(this);
-                }
-                catch { }
-            }
+            protected override void InitializeQuestOnGameLoad() { }
 
             internal void WriteLog(string text)
             {
@@ -120,9 +109,34 @@ namespace GreyWardenPolicePurity
                 catch { }
             }
 
-            internal void FailQuestTargetGone()
+            internal void MarkReadyForTurnIn()
             {
-                try { CompleteQuestWithFail(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_004}The target has disappeared and the reward contract has been cancelled."))); } catch { }
+                try { ChangeQuestDueTime(CampaignTime.Never); } catch { }
+                if (_readyForTurnInLogWritten) return;
+
+                _readyForTurnInLogWritten = true;
+                WriteLog(GwpText.Get(
+                    "{=gwp_bounty_ready_for_turnin}The quarry has been defeated. Report to any Grey Warden lord to receive the bounty. If the warrant remains unsettled for five days, a Warden settlement party will come to you."));
+            }
+
+            internal void TimeOutQuest()
+            {
+                try
+                {
+                    CompleteQuestWithTimeOut(new TextObject(GwpText.Get(
+                        "{=gwp_bounty_contract_timed_out_log}The bounty contract expired before the quarry was defeated.")));
+                }
+                catch { }
+            }
+
+            protected override void OnTimedOut()
+            {
+                try
+                {
+                    Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
+                        ?.OnBountyQuestTimedOut(this);
+                }
+                catch { }
             }
 
             internal void FailQuestMembershipEnded()
@@ -138,36 +152,24 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// ★ internal（非 private）：存档系统需通过反射访问。
-        /// ★ 不存储 CrimeRecord/PlayerBountyBehavior 引用：这两者不可序列化。
-        ///   只存 offender 的 StringId 和显示名，均为可序列化的 string。
         /// ★ 无参构造器：存档系统重建对象时调用。
         /// </summary>
         internal sealed class BountyMapNotification : InformationData
         {
-            internal string OffenderStringId { get; private set; } = string.Empty;
-            private string _offenderName = GwpText.Get("{=gwp_playerbountybehavior_questandnotification_005}Unknown target");
-
-            // ★ 存档系统重建时需要无参构造器
-            internal BountyMapNotification() : base(new TextObject("")) { }
-
-            internal BountyMapNotification(CrimeRecord crime)
-                : base(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_006}Hunted target: {VAR_1}", "VAR_1", crime?.Offender?.Name)))
-            {
-                OffenderStringId = crime?.Offender?.StringId ?? string.Empty;
-                _offenderName = crime?.Offender?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_007}Unknown target");
-            }
+            internal BountyMapNotification()
+                : base(new TextObject(GwpText.Get(
+                    "{=gwp_bounty_notification_description}New bounty contracts are available."))) { }
 
             public override TextObject TitleText =>
-                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_008}Grey Warden bounty: {VAR_1}", "VAR_1", _offenderName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
+                new TextObject(GwpText.Get(
+                    "{=gwp_bounty_notification_title}Grey Warden bounty contracts"));
             public override string SoundEventPath => "event:/ui/notification/quest_start";
 
             public override bool IsValid()
             {
-                if (OffenderStringId == null) return false;
                 PlayerBountyBehavior? behavior = Campaign.Current
                     ?.GetCampaignBehavior<PlayerBountyBehavior>();
-                if (behavior?.IsRecruitedByGreyWardens != true) return false;
-                return MobileParty.All.Any(p => p.StringId == OffenderStringId && p.IsActive);
+                return behavior?.CanInspectBountyOffers() == true;
             }
         }
 
@@ -181,22 +183,12 @@ namespace GreyWardenPolicePurity
             public BountyMapNotificationItemVM(BountyMapNotification data) : base(data)
             {
                 NotificationIdentifier = "armycreation";
-                string offenderId = data.OffenderStringId;
                 _onInspect = () =>
                 {
                     ExecuteRemove();
-                    if (string.IsNullOrEmpty(offenderId)) return;
-
-                    // 通过 StringId 从 CrimePool 查找 CrimeRecord
                     var behavior = Campaign.Current
                         ?.GetCampaignBehavior<PlayerBountyBehavior>();
-                    if (behavior == null) return;
-                    CrimeRecord? crime = CrimeState.GetByOffenderId(offenderId);
-                    if (crime != null)
-                        behavior.ShowBountyInquiry(crime);
-                    else
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_playerbountybehavior_questandnotification_009}The bounty target has expired"), Colors.Yellow));
+                    behavior?.ShowBountySelectionInquiry();
                 };
             }
         }

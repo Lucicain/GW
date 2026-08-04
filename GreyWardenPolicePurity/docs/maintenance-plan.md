@@ -1,5 +1,871 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-05 v1.4-r9 正式发行
+
+- 用户以关闭作弊、只启用 GreyWarden 的新 StoryMode 战役完成最终实机验收。人物与家族百科按钮、
+  人物地点链接和悬赏协力流程均已通过；随后购买一百份黄油，Steam 成功弹出原版 Butterlord 成就。
+  这证明成就行为不是只在内部完整性检查中显示可用，而是原版统计、Steam 提交和解锁通知的完整链路
+  均已实际执行。验收档此前检查的 AchievementsDisabled 为 0。
+- 正式发行前从同一最终源码重新完成四分支矩阵：Bannerlord.ReferenceAssemblies
+  1.4.5.114824-beta、1.4.5.115026、1.4.6.115628 和本机 1.4.7 均为 0 编译错误；
+  只保留 43 条既有可空性警告。中英文玩家 README 已改为正式 v1.4-r9，并压缩为六条主要内容、
+  简短安装说明及恰好 v1.4-r9、v1.4-r8 两条正式日志；所有加粗和行内代码装饰均已删除。
+- 玩家 DLL 使用 GwpDiagnosticsEnabled=false、DeployToLiveModule=false 独立重建于
+  C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.4-r9\。
+  GreyWardenPolicePurity.dll 为 753664 字节，SHA-256 为
+  226270E8A6E8151DB378B8AF398EB9FD1B4A412F68447D777DF35A8957AC15CF。ILSpy 反编译确认
+  GwpAiDiagnostics 的 LogPath 返回空字符串，全部写入方法为空，两个追踪判断恒为 false；类型中不存在
+  System.IO、File.WriteAllText、File.AppendAllText 或 GreyWarden-AI-Diagnostics 字样。
+- 独立玩家构建没有覆盖实机测试安装。构建前后实机客户端 DLL 的 SHA-256 均为
+  87A84041B59081B098125F80DF88443C26AD77F0C25F172267030FFE0C9600FD，仍是诊断开启的开发 DLL；
+  仓库与实机中英文 README 及 SubModule.xml 逐文件哈希一致。
+- 正式 staging 位于
+  C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-stage-v1.4-r9\，
+  解包复验位于
+  C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\verify-package-v1.4-r9\。
+  最终包只有 GreyWarden 一个顶层目录和 27 个正常客户端文件；禁入文件为 0，17 个 XML 解析错误为 0。
+  包内玩家 DLL 与独立构建哈希一致，再次反编译仍是空诊断实现；0Harmony.dll SHA-256 为
+  7B9E756306FA3D7620E02A857C8927A6AB04973F9BD8A77D3866700A6DEAC55C。
+- 本地正式包为
+  D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r9.zip，
+  大小 349503814 字节，SHA-256 为
+  FD06FFB28B90F218A7522155BB0BAFC44B3B271D093F063CF2C69D284DDE7146；匹配的 .zip.sha256
+  内容已重新读取并核对一致。
+
+## 2026-08-05 R9 人物百科按钮挤压正文
+
+- 用户实机截图确认人物“案底与震慑”按钮已经恢复，但整块人物正文被挤窄，右侧历史信息缩成一列；
+  同一版本的灰袍家族页两枚按钮正常悬在右上角，正文宽度正常。该现象与是否启用四前置无关，直接原因是
+  两份原版页面的控件层级并不相同：家族页的 `RightSideScrollablePanel` 直接位于横向主分栏中，人物页
+  则先位于一个包含滚动条的普通 `Widget`，外面才是横向主分栏。上一版统一使用
+  `scrollable.ParentWidget.ParentWidget`，家族页恰好抵达页面主体，人物页却只抵达横向 `ListPanel`；
+  固定宽度按钮因此成为主分栏的新列，真实占用 `150` 像素并把人物正文推窄。
+- 不再按固定父级数量猜测挂载位置。`GwpGauntletWidgetUtility.FindAncestorChildOf<BrushWidget>` 从原版滚动区
+  向上寻找直接位于百科背景 Brush 下的页面主体；人物页和家族页均把按钮加入该绝对布局容器。按钮继续
+  使用固定尺寸和右上边距，但不再成为任何 `ListPanel` 的布局项，因此只覆盖右上角自身面积，不改变
+  原版正文、历史列或滚动区宽度。
+- 修正后本机 1.4.7 与 `Bannerlord.ReferenceAssemblies 1.4.5.114824-beta`、`1.4.5.115026`、
+  `1.4.6.115628` 均为 `0` 编译错误。最终客户端与编辑器 DLL 均为 `772096` 字节，SHA-256 均为
+  `87A84041B59081B098125F80DF88443C26AD77F0C25F172267030FFE0C9600FD`；仓库 `_Module` 的 `24` 个
+  正常客户端运行文件与实机相比缺失 `0`、哈希差异 `0`。中英文 R9 日志已同步实机；没有制作 ZIP。
+
+## 2026-08-05 R9 原版百科扩展统一与人物地点链接恢复
+
+- 用户再次确认所有百科扩展的唯一界面结构：保留原版页面，只在原版页面上增加灰袍按钮，按钮再打开
+  灰袍自己的内容；不得注册替代原版页面的百科 VM，也不得维护整份仿原版 XML。审计确认人物页已按
+  此结构修复，但家族页仍由 `GwpEncyclopediaClanPageVM` 和整份 `EncyclopediaClanPage.xml` 替换，
+  “战争理由/案件总卷”之所以还能显示，正是因为自定义 VM 绕开了原版预编译页面。这与最终架构不一致。
+- 家族页现恢复原版 `EncyclopediaClanPageVM` 和原版预编译页面。构造后只用
+  `ConditionalWeakTable` 保存当前家族对应的战争理由、案件总卷动作；原版
+  `EncyclopediaClanPage` 电影完成加载后，从原版 `RightSideScrollablePanel` 上溯到页面容器并加入两枚
+  灰袍按钮。按钮仍只在灰袍家族页显示，继续打开既有战争理由弹窗和独立案件总卷，不改原版家族页的
+  数据源、布局和其他模组扩展入口。
+- 人物案底详情的地点链接失效与人物按钮先前消失是同一类资源路径问题：GreyWarden 的整份
+  `SingleQueryPopup.xml` 给正文写了 `Command.LinkClick="ExecuteLink"`，但原版
+  `SingleQueryPopUpVM` 命中 Native 的预编译弹窗，松散同名 XML 没有被使用。旧方案还需要
+  `GwpNativeViewModelExtension` 反射改写原版 `ViewModel` 的私有方法绑定表，既没有进入实际控件树，
+  也不符合只扩展原版页面的原则。
+- 新方案保留原版 `SingleQueryPopup`。只在 `GwpLinkedInquiryState` 激活的人物案底详情中，在
+  `GauntletMovie.Load` 后找到原版 `RichTextWidget Id="Description"`，赋予既有灰袍地点链接样式并
+  直接监听其 `LinkClick`；点击时关闭当前弹窗并调用原版百科管理器打开定居点。ILSpy 对 1.4.7
+  `TaleWorlds.GauntletUI.BaseTypes.RichTextWidget.OnLateUpdate` 确认：控件自身在鼠标松开时调用
+  `EventFired("LinkClick", text)`，无需 XML 命令绑定，因此直接监听是原版事件路径。
+- 已删除仓库及实机的三份原版同名页面副本：人物 `EncyclopediaHeroPage.xml`、家族
+  `EncyclopediaClanPage.xml` 和 `SingleQueryPopup.xml`；同时删除已无调用者的
+  `GwpNativeViewModelExtension.cs`。GreyWarden GUI 只保留唯一命名的自有页面
+  `GwpCaseArchive.xml`、`GwpVillageRewardSlider.xml` 和地点链接 Brush，不再复制任何原版页面。
+- 完整源码针对 `Bannerlord.ReferenceAssemblies 1.4.5.114824-beta`、`1.4.5.115026`、
+  `1.4.6.115628` 以及本机 1.4.7 均为 `0` 编译错误、`43` 条既有可空性警告。1.4.7 Release 已部署
+  到正常客户端与编辑器目录，两份 DLL 均为 `772096` 字节，SHA-256 均为
+  `C886E2675D669B31DB3F63E6A41A826871D713FC2F7B48E05A69D4448CCE4250`。仓库 `_Module` 的
+  `24` 个正常客户端运行文件与实机相比缺失 `0`、哈希差异 `0`，`17` 个 XML 解析失败 `0`；三份
+  原版同名页面在仓库和实机均不存在。本轮没有创建 R9 ZIP。最终实机按钮显示与人物地点点击仍需
+  游戏内验证。
+
+## 2026-08-05 R9 人物百科按钮缺失现场排查
+
+- 用户在最新 1.4.7 StoryMode 实机中报告人物百科原有“案底与震慑”按钮不可见；本轮先按现有
+  已验证设计核对，没有在证据不足时移动控件或恢复旧的派生百科页面。该按钮按设计对所有人物页常驻，
+  不以人物是否已有犯罪或震慑数据为显示条件，因此用户记忆正确，当前画面属于待定位的界面缺失。
+- 本次现场日志为
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_44408.txt`、
+  `rgl_log_errors_44408.txt` 和 `watchdog_log_44408.txt`。战役正常运行，错误日志为空；RGL 没有
+  `Encyclopedia`、`HeroPageVM`、Gauntlet、按钮绑定或 Harmony 异常。资源收集顺序明确为 Native、
+  SandBoxCore、SandBox、StoryMode、NavalDLC、GreyWarden，GreyWarden GUI 最后收集。
+- 仓库与实机
+  `GUI/Prefabs/Encyclopedia/EncyclopediaSubPages/EncyclopediaHeroPage.xml` 均为 `27905` 字节，
+  SHA-256 均为
+  `35CA953A4A2326CFB6504741B344952B93DFEDECD0B260C86E91A88322E068E6`；与当前 1.4.7 SandBox
+  原版文件逐行比较，唯一差异正是末尾新增的 `DeterrenceButton`，因此已排除运行目录漏文件、旧 XML
+  覆盖和原版模板漂移。
+- 另用与游戏一致的 net472 独立探针加载当前实机 GreyWarden DLL、完整 Harmony 2.4.2 和当前游戏
+  程序集。`PatchAll` 成功，`EncyclopediaHeroPageVM(EncyclopediaPageArgs)` 的补丁所有者包含探针
+  Harmony ID；再对当前 TaleWorlds `ViewModel` 私有绑定存储执行同一
+  `GwpNativeViewModelExtension.Attach`，可正常读取 `DeterrenceButtonText=Record and deterrence`。
+  因此现阶段也排除了补丁目标消失、完整 Harmony 无法注册该后缀以及 1.4.7 私有绑定字段失配。
+- 用户随后提供完整人物百科截图：右侧原版内容和滚动条均正常，但“案底与震慑”按钮整体不存在，排除
+  分辨率裁剪、文字空白和按钮被人物信息遮挡。用户同时确认灰袍家族百科的“战争理由/案件总卷”按钮仍
+  正常显示。这个差异最终锁定根因：家族页运行类型是自有 `GwpEncyclopediaClanPageVM`，原版没有该类型
+  的预编译 Prefab，因而回退读取 GreyWarden XML；人物页为兼容其他百科扩展而保留原版
+  `EncyclopediaHeroPageVM`，恰好命中 `SandBox.GauntletUI.AutoGenerated.1.dll` 内原版预编译 Prefab，
+  `GauntletMovie.Load` 不再读取同名松散 XML。故之前“VM 绑定正常 + XML 含按钮”仍不能保证控件出现。
+- 用户重申原始设计边界是“在原版界面上增加按钮”，不是复制并维护一份仿原版页面。最终修复保留原版
+  `EncyclopediaHeroPageVM` 和原版预编译人物页；构造后只用 `ConditionalWeakTable` 保存该页面对应的
+  案底详情动作。`GwpEncyclopediaHeroPageWidgetPatch` 在 `GauntletMovie.Load` 完成后仅匹配电影名
+  `EncyclopediaHeroPage`，递归找到原版 `RightSideScrollablePanel` 的父容器，再添加一个按钮、文字和
+  提示控件。点击继续调用既有案底、震慑、最近普通定居点和正文地点链接逻辑；其他原版页面、原版人物
+  VM 以及其他模组对原版 VM 的扩展均不替换。
+- 已删除仓库和实机整份
+  `GUI/Prefabs/Encyclopedia/EncyclopediaSubPages/EncyclopediaHeroPage.xml`。该文件是原版人物页的完整副本
+  加一个按钮，既没有被当前原版 VM 路径采用，也违反只扩展原版页面的既定方案。家族页的独立 VM/XML
+  不受影响。当前源码分别对 `Bannerlord.ReferenceAssemblies 1.4.5.114824-beta`、`1.4.5.115026`、
+  `1.4.6.115628` 和本机 `1.4.7.117484` 完整编译，四者均为 `0` 错误、`43` 条既有可空性警告。
+  1.4.7 Release 已自动部署；客户端与编辑器 DLL SHA-256 均为
+  `7AFC65F669F58A691FC53D0C7787FE04AECFD58B5899A37772DD81F70308289E`。待用户实机验证按钮显示、点击
+  弹窗、当前位置和地点超链接。本轮没有制作 ZIP、提交或推送。
+
+## 2026-08-05 R9 原版成就兼容
+
+- 首次实机验收失败：用户只启用 GreyWarden、进入 StoryMode 新战役时立即弹出异常。现场
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_29720.txt` 在
+  `02:10:43.309` 明确记录 `new Harmony(...)` 抛出 `FileNotFoundException`：缺少
+  `MonoMod.Backports, Version=1.1.2.0`。因此不是成就条件或存档遍历崩溃，而是所有 Harmony 补丁在
+  `SubModule.OnSubModuleLoad` 阶段都未安装。此前同时启用 Bannerlord.Harmony 等框架时，它们先加载的
+  运行组件掩盖了 GreyWarden 自带文件不完整的问题。
+- 根因是仓库 `lib/0Harmony.dll` 虽标记为 `0Harmony 2.4.2.0`，实际为 `292352` 字节的外部依赖精简
+  版本，二进制引用 `MonoMod.Backports`、`MonoMod.Core` 和 `MonoMod.Utils`，但 GreyWarden 从未随包
+  提供这些 DLL。现替换为 NuGet 官方 `Lib.Harmony 2.4.2` 的 `net472` 完整程序集：程序集身份仍为
+  `0Harmony, Version=2.4.2.0`，不会为了单独运行而降级到另一 Harmony 版本；完整程序集本身为
+  `2461696` 字节，NuGet 的 net472 依赖组为空，所需运行实现封装在同一 DLL。构建项目继续只复制
+  `0Harmony.dll`，但它现在真正能够独立加载。
+- 独立运行验证不是只检查文件存在：临时 net472 控制台在只有这一个 `0Harmony.dll` 的输出目录中成功
+  执行 `new Harmony(...).PatchAll(...)`，并把一个禁止内联的测试方法返回值从 `1` 改为 `2`；进程退出码
+  为 `0`，没有加载或复制任何外部 MonoMod DLL。这同时验证构造、补丁扫描、方法改写和补丁执行四步。
+- 同一次失败日志的 watchdog 还显示用户新建的测试战役为 `Has Used Cheats=True`，尽管非官方模块历史确实
+  只有 `GreyWarden`。进一步定位到
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Configs\engine_config.txt` 的
+  `cheat_mode = 1`。原版在新战役创建时即把 `Game.Current.CheatMode` 写入持久化
+  `Campaign.EnabledCheatsBefore`，不要求玩家实际使用某个作弊操作；因此刚才的测试档即使修复崩溃也不会
+  获得成就。已把本机配置改为 `cheat_mode = 0`，必须在该修改后重新创建 StoryMode 战役，不能复用已经
+  标记作弊的测试档。本模组仍不绕过原版作弊限制。
+- 原版成就不是在 Steam 层统一检查“当前是否有模组”，而由 StoryMode 的
+  `AchievementsCampaignBehavior` 监听原版战役事件并把统计写入 `AchievementManager`。它在新游戏、
+  读档和配置变化时调用 `DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved`；后者依次检查作弊
+  历史、非官方模块历史和版本降级。任一检查失败都会持久化 `_deactivateAchievements=true`、移除该
+  行为的全部玩法监听器，并停止写入统计。因此只修改一次返回值不足以恢复已经因 GreyWarden 保存为禁用
+  的现有存档。
+- 新增 `GwpAchievementCompatibilityPatch.cs`，在原版公开完整性入口的后缀中只处理原因 ID
+  `R0AbAxqX`（非官方模块）。补丁重新遍历原版同一份 `Campaign.PreviouslyUsedModules` 历史：所有非官方
+  ID 都严格等于 `GreyWarden` 时才把这项结果改为通过；出现任何其他非官方模块、无法解析的记录、作弊
+  历史或版本降级时均保留原版失败。平台成就服务断线发生在随后的原版统计初始化中，本补丁不拦截其
+  临时禁用，也不修改任何成就 ID、统计值或完成条件。
+- 对已经保存 `_deactivateAchievements=true` 的存档，在
+  `AchievementsCampaignBehavior.CheckAchievementSystemActivity` 原版检查开始前读取该私有字段；只有
+  上述完整性入口此时已经通过才恢复为 `false`。读档时原版会先重新注册非序列化监听器，再读取持久化
+  字段，随后才执行本检查，因此恢复后原版监听和统计缓存沿正常载入流程继续，不需要复制监听列表、添加
+  新存档字段或重写成就逻辑。若禁用来自作弊、降级或其他模组，字段不会被清除。
+- 兼容面以公开 `IsGameIntegrityAchieved` 和 `CheckAchievementSystemActivity` 为 Harmony 目标，没有绑定
+  私有的 `CheckIfModulesAreDefault` 方法。当前支持范围按 Steam 实际仍可选择的分支定义为 1.4.5 beta、
+  1.4.5、1.4.6、1.4.7，不再为 Steam 已不提供的 1.4.0 至 1.4.4 beta 改动现有玩法代码。对 NuGet 中
+  1.4.0 至 1.4.7 的历史参考程序集做过一次额外完整矩阵审计：1.4.3 起全部通过；1.4.0 至 1.4.2 的失败
+  分别来自既有切磋出生逻辑类型和收养装备模型 API，不是本次成就补丁。用户确认这些旧 beta 已不属于
+  目标范围，因此没有为它们引入兼容分支。
+- 当前开发存档不能作为成就豁免验收档。最近 RGL 日志明确记录
+  `Dump integrity is compromised due to cheat usage`，并列出
+  `Bannerlord.Harmony; Bannerlord.ButterLib; Bannerlord.UIExtenderEx; Bannerlord.MBOptionScreen;
+  Bannerlord.Diplomacy; GreyWarden; RTSCamera; Expelliarmus` 等非官方模块历史。原版作弊标志和模块历史
+  都随存档保留；本补丁按需求不会清除作弊或其他模组造成的禁用。实机验收应使用未开过作弊、模块历史
+  只有原版与 GreyWarden 的 StoryMode 存档，并触发一项尚未取得且容易复现的原版成就。
+- 完整源码矩阵结果：1.4.5 beta 的 `1.4.5.114659-beta`、`1.4.5.114824-beta`，1.4.5 的
+  `1.4.5.114896`、`1.4.5.114927`、`1.4.5.115026`，1.4.6 的 `1.4.6.115439`、
+  `1.4.6.115628`，以及 1.4.7 的 `1.4.7.117131`、`1.4.7.117484` 均为 `0` 编译错误；各版本
+  只保留同一组 `43` 条既有可空性警告。参考元数据逐版确认
+  `AchievementsCampaignBehavior.CheckAchievementSystemActivity`、`_deactivateAchievements` 和
+  `DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved` 均存在。README 的公开范围已同步为 Steam
+  当前四个可选分支，而不是笼统声称所有历史 beta。
+- 本机 1.4.7 最终 `Release -t:Rebuild --no-restore` 为 `0` 错误、`43` 条既有警告并自动部署。
+  ILSpy 反编译实机 DLL 确认两个 Harmony 目标、原因 ID 精确匹配、原版/非官方模块遍历、仅
+  `GreyWarden` 放行及旧禁用字段恢复均进入产物。客户端与编辑器 DLL 均为 `772608` 字节，SHA-256
+  均为 `91C3CE37BD1929A24AC7C237BCFB5DD3F6198F51C5EA16B045D06DB9E87A7155`。
+  仓库 `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、哈希差异 `0`，实机 `20` 个 XML
+  解析错误 `0`；中英文 README 仓库/实机 SHA-256 分别为
+  `D4BB68F4CB441FBCF9ED757C75F20D91652A181A06EF24630520D939E6292CB7` 与
+  `A5E79DB1DFEC4C35435A43BA33AB33252C4D4AB4FBBD4137F8F096BAB4ACFCD9`。
+  `git diff --check` 通过。本轮没有启动游戏、创建 ZIP、提交或推送；本机正式包仍是既有
+  `GreyWarden-v1.4-r8.zip` 及匹配校验文件。
+- 单独运行修复后再次完成 1.4.7 Release 重建和 1.4.5/1.4.6 全源码交叉构建，三者均为 `0` 错误。
+  仓库、实机客户端、编辑器三份完整 `0Harmony.dll` 均为 `2461696` 字节、程序集
+  `0Harmony 2.4.2.0`，SHA-256 均为
+  `7B9E756306FA3D7620E02A857C8927A6AB04973F9BD8A77D3866700A6DEAC55C`。客户端与编辑器
+  `GreyWardenPolicePurity.dll` 均为 `772608` 字节，SHA-256 均为
+  `C3A1E935A6ED0A8AE61187FF9977D9898EFB98A01684510DEA5D39E2373D02C4`。当前游戏进程为
+  `0`。仓库 `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、哈希差异 `0`，实机 XML 解析错误
+  `0`；中英文 README 仓库/实机 SHA-256 分别为
+  `AFD5655C960C4985B9949A263FD0D93A281675E26F283E6EFAE914E783763DCA` 与
+  `CA3B5554439FA4C828B3B32992103118EFFDDBC4C9EC47364B05859085384FAF`。等待用户以只启用
+  GreyWarden、`cheat_mode = 0` 后新建的 StoryMode 战役复验，不能把独立 Harmony 烟雾测试代替完整
+  游戏验收。
+
+## 2026-08-05 玩家主导悬赏宣战与高速追截队
+
+- 最新实机诊断证明整组护送修复已经生效，但玩家接手案件后的宣战仍走旧单领主路径。案件
+  `lord_6_22` 的协力组总投入战力为 `837.85`，目标区域战力为 `87.48`；在
+  `campaignHour=625382.65、625383.64、625384.64`，最近协办人分别已距目标
+  `1.89、1.31、2.18`，原主办人却仍距目标 `31.65、29.18、26.64`，任务始终为
+  `PlayerBountyEscort; war=False`。`625384.94` 玩家主动建立地图战斗时，参战方只有
+  `player_party` 与 `lord_6_22_party_1`，三名附近灰袍仍未宣战，因而无法按原版阵营关系加入。
+- 根因有三层。`PlayerBountyBehavior.UpdateEscortPatrol` 只以 `_escortPolicePartyId` 对应的原主办人
+  距离和独立常量判断宣战，完全不读取协力组接触者；它直接调用 `FactionManager.DeclareWar`，也不写
+  案件已有的 `WarDeclared` 与 `WarTarget`。同时 `PoliceEnforcementBehavior.UpdateTasks` 遇到
+  `PlayerBountyEscort` 后执行 `ClearTaskWarTracking(..., true)` 并立即跳过，既绕过普通案件宣战，
+  也会把同案无领主追截队标记返程。高速追截队的生成与小时存续又只接受派生状态
+  `FlowState == WarPursuit`，而 `IsPlayerBountyEscort` 会优先遮蔽该派生状态，因此单独补一次阵营宣战
+  仍无法恢复完整流程。
+- 最终把玩家定义为行动主办人，不实际改写 `PoliceTask.PolicePartyId`、协力组长或原版 `Army`。原灰袍
+  主办人继续作为案件登记人、真实兵源和截击兵归还目标，所有原主办人与协办人仍沿已验证的原版
+  `EscortParty`/`Army` 关系护送玩家。玩家进入按原版接战半径推导的接触范围后，统一调用案件
+  `DeclareWar` 写入 `WarDeclared`、`WarTarget` 并正式改变阵营关系；玩家已经与悬赏目标进入同一
+  `MapEvent` 时另有同入口安全网。玩家既然主动接下并带领行动，宣战不再受双方战力强弱门槛阻止；
+  监控仍记录玩家战力、已投入灰袍战力和敌方区域战力，但只作诊断。
+- `TrySpawnImmediateCaseInterceptor` 现在同时接受“玩家护送且本案已宣战”的组合状态。玩家部队不会被
+  自动拆兵；目标理论速度高于原灰袍主办力量时，仍由原案件主办人按既有规则真实抽调灰袍健康骑兵，
+  候选队必须严格快于目标才保留，同案仍最多一支。生成诊断按组织状态区分
+  `player_bounty_owner`、`player_bounty_assistance_army` 与 `player_bounty_speed_dispersed`。
+  `UpdateDelayPatrols` 为这类即时队新增独立存续资格，读档后继续追同一目标，案件或战争结束后仍按既有
+  归队流程返还幸存者。
+- 每两日大型周期支援仍只读取原 `GetEligibleDelaySupportTasks` 的普通 `WarPursuit` 集合，没有因为
+  玩家悬赏的即时队资格而开放。这样玩家主导悬赏只获得既有一次性高速追截保障，不会意外产生重复的大型
+  无领主增援。实现没有新增存档字段；`IsPlayerBountyEscort`、`WarDeclared`、`WarTarget` 与
+  `DelayPatrolState.IsImmediateInterceptor` 原本均已持久化。
+- 最终 Bannerlord 1.4.7 诊断版 `Release -t:Rebuild --no-restore` 构建通过，`0` 错误、`43` 条既有
+  可空性警告，并自动部署客户端、编辑器 DLL 和两份 README。客户端与编辑器 DLL 均为 `771072` 字节，
+  SHA-256 均为 `6DE01DD2252B5DB77F68E12C3F679468C6A7E7559419CAB4FD4F49661FAE021D`；仓库
+  `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、哈希差异 `0`，仓库与实机各 `20` 个 XML
+  解析错误均为 `0`。中文 README 仓库与实机 SHA-256 均为
+  `686F72844331E3F26F78824C5FF43001AB08440ABBBFD8382DB5FD65F9CD25C8`，英文均为
+  `D09CAC03733858B4BB9D399B430A833E09C7F737DF3721915280F8B94DC5CBDD`。
+- ILSpy 反编译最终实机 DLL 确认 `RefreshPlayerBountyCaseContact`、
+  `UpdatePlayerBountyEscortCase`、`PLAYER_BOUNTY_CONTACT_DECLARING_WAR`、
+  `strengthGateIgnored=True`、三种 `player_bounty_*` 截击触发及
+  `IsActivePlayerBountyInterceptor` 均进入产物；`PlayerBountyBehavior` 中旧
+  `TryDeclareWarForEscort` 与 `EscortEngageDistance` 均命中 `0`。本轮没有启动游戏、创建或改写正式
+  ZIP、提交或推送；本机正式包仍是既有 `v1.4-r8` 包，等待用户用当前存档验证宣战、原版参战加入和
+  高速追截队。
+
+## 2026-08-05 玩家接手协力案件后的整组原版护送
+
+- 实机诊断确认案件 `lord_6_22` 已进入 `PlayerBountyEscort`，但主办队
+  `gw_leader_1_party_1` 的最终职责仍是 `Pursue:lord_6_22_party_1`；协力组当时为
+  `speedDispersed=True`，主办人与两名协办人均已脱离原版军团并继续各自追捕。根因不是悬赏状态
+  丢失，而是统一职责解析先返回协力追捕、后读取玩家护送请求；同时既有协力组的小时维护只核对
+  主办人与案件 ID，没有在 `IsPlayerBountyEscort` 阶段暂停速度、战力、重组和自主追捕流程。
+- 对本机 Bannerlord 1.4.7 `TaleWorlds.CampaignSystem.dll` 反编译复核：未附着的原版军团成员会
+  `EscortParty` 军团长，进入军团接触距离后由 `Army.AddPartyToMergedParties` 附着；已附着成员随
+  军团长整体移动。因此玩家接手未分散协力案件时，只需让军团长护送玩家并让协办人继续护送军团长；
+  速度分散状态没有 `Army`，则每名登记领主都应独立使用原版 `EscortParty` 护送玩家。
+- 现将玩家接手同一案件定义为协力组的临时护送状态，不删除协力关系、不清除速度分散记录。未分散
+  状态继续维护真实原版 `Army`，主办人以玩家委托最高分护送玩家，协办人按原版军团关系跟随主办人；
+  已分散状态下主办人与全部协办人分别护送玩家。该阶段跳过协力战力扩编、速度分散、速度重组和自主
+  追捕；护送结束时要求整组重新决策并从原保存状态恢复，目标落败仍沿用既有协力结案清理。
+- 新增运行时转换诊断 `ASSISTANCE_PLAYER_BOUNTY_ESCORT_STARTED` 与
+  `ASSISTANCE_PLAYER_BOUNTY_ESCORT_ENDED`，记录成员数、速度分散状态和真实军团是否存在。玩家接单
+  后立即通知整组重新决策；读档时不增加新存档字段，护送状态继续由已持久化的
+  `PoliceTask.IsPlayerBountyEscort` 与协力组数据推导，首次协力维护会重新进入相同护送状态。
+- Bannerlord 1.4.7 诊断版 `Release --no-restore` 构建通过，`0` 错误、`43` 条既有可空性警告；构建
+  已自动部署客户端、编辑器 DLL 和两份 README。实机反编译确认整组护送分支、玩家委托优先分和
+  两条转换诊断均进入产物。仓库 `_Module` 的 `27` 个正常客户端文件相对实机目录缺失 `0`、哈希
+  不一致 `0`；客户端与编辑器 DLL 均为 `769024` 字节，SHA-256 均为
+  `1D9EC501F1984CD0FD5EE7AF085F30370B83E6555B44B5A8E68119807A3D4C93`。中文 README 仓库与实机
+  SHA-256 均为 `526AC4ABDB7913AF1786C713D705F7D24B43021BE0CB1DB642C821F8398B8B00`，英文均为
+  `F2718A98908FD7EE5BDD0AC51156B8AA39A2E584B2FB1E526FD4B4104D014698`。尚未启动游戏，等待当前
+  `speedDispersed=True` 存档验证主办人与两名协办人均转为 `Escort:player_party`。
+
+## 2026-08-04 练兵官换防兵种比例修复
+
+- 用户观察到练兵官梵蒂的弓箭手在行军中大量消失，表面上像是弓箭手被升级成了其他精锐。初次诊断只
+  找到换防的固定选兵偏置，随后用户明确指出消失时梵蒂已经不在执行可见练兵任务。重新按战役小时核对后，
+  确认这是“换防偏置、原版整批升级、原版超编逃兵”三个机制叠加，不能把路上消失全部归因于换防。
+- 这次换防本身满足原设计时机：既有存档恢复了一条已经排队的练兵任务；梵蒂结束协力军团职责后，于
+  `campaignHour=624930.00` 把弥瑟指定为目标和 `castle_A8` 指定为会合点，`624934.00` 时双方的
+  `CurrentSettlement` 都是 `castle_A8` 并开始驻留，`624936.01` 才完成 `144` 人交换。小时状态中的
+  `task=-` 只表示没有司法案件，不代表没有独立保存的练兵任务；交换完成后任务会立即从界面移除，梵蒂
+  随即重新上路，因此玩家事后查看时会看到“没有练兵任务”。
+- 兵种 XML 确认只有 `gwrecruit` 拥有重步兵、弓箭手、骑士三个升级目标，`gwarcher` 本身没有升级目标，
+  所以弓箭手不可能沿兵种树直接变为其他精锐。当前模型给三个目标的抽签权重均为 `1`，但原版
+  `PartyUpgraderCampaignBehavior` 是“每次为整批可升级新兵抽一个分支”，不是逐名各抽一次；日志中待训练
+  人数按 `277 -> 243 -> 64 -> 16 -> 10 -> 6 -> 3` 成批减少，正是这种整批升级。因此三路是每批各
+  `1/3` 概率，不是最终人数严格 `1:1:1`，短期构成可以明显偏斜。
+- 真正的行军减员来自原版 `DesertionCampaignBehavior`。梵蒂最初 `men=385`、`sizeRatio=1.925`，严重超过
+  约 `200` 人的部队上限；无人为转移和战斗时，总人数仍按每日
+  `385 -> 339 -> 305 -> 280 -> 262 -> 248 -> 238 -> 230 -> 224 -> 220 -> 217` 下降。反编译本机
+  `DefaultPartyDesertionModel` 确认：原版每天移除“超出上限人数的 `25%`”，并从 `MemberRoster` 最后一个
+  名单项反向选择逃兵。新升级目标通常被追加在兵表尾部，因而某个刚形成的大批精锐，可能正好是弓箭手，
+  会被连续优先删除；这才是玩家在路上看到整个兵种消失的直接机制。
+- 超编也会在正常执法中重新出现：后段梵蒂在参与胜利战斗结算时从 `204` 人增至 `243` 人，同时新增
+  `30` 名俘虏；随后 `gwp_enf_delay_40552` 又以
+  `IMMEDIATE_CASE_INTERCEPTOR_REJOINED; returned=9` 实体归队，使母队达到 `252` 人。反编译原版
+  `MapEvent.LootDefeatedPartyPrisoners` 与 `MapEventParty.RosterToReceiveLootMembers` 后已确认，前一段 `39`
+  人增长不是普通俘虏招募，而是败方原本押着的非英雄俘虏在胜利后被作为获救人员直接加入获胜 AI 队伍的
+  `MemberRoster`；该入口没有部队上限检查。原版 `RecruitPrisonersCampaignBehavior` 对 AI 每日招募自己
+  押着的俘虏时反而明确按 `PartySizeLimit - TotalManCount` 限制数量，已经超编时招募数为 `0`。
+- `PoliceResourceManager.PurifyParty` 随后每六小时移除所有非灰袍普通成员，并为每人等量加入一个
+  `gwnewrecruit`，同样没有容量检查。于是完整链路是“胜利解救败方俘虏并绕过容量加入成员名单 -> 外族获救
+  人员被等量替换为灰袍新兵 -> 练兵官给这些新兵加经验 -> 原版按整批随机分支升级 -> 原版每日删除超编
+  逃兵”。这解释了为什么项目虽没有主动造兵入口，一场执法胜利仍能让灰袍名单多出几十名可训练新兵，
+  并最终表现为兵种数量剧烈变化。后续 `9` 人增长则是模组把此前真实抽出的截击兵归还；它也可能让已经
+  接近上限的母队再次轻微超编。
+- 修复后 `PoliceResourceManager` 同时监听战斗结束，不再等待六小时维护；对参战灰袍领主队先完整移除所有
+  外族普通成员，再按“移除后的原始空位 - 该队所有在外即时截击队中的灰袍幸存者”计算可用空位，只把
+  不超过剩余空位的人数转成 `gwnewrecruit`，其余获救人员直接释放。只为截击队内真正的灰袍成员预留，
+  截击队在战后偶然接收的外族获救人员不算精兵名额。`POLICE_ROSTER_PURIFIED` 诊断现在同时记录外族总数、
+  实际转换数、释放数、原始空位、扣除预留后的空位、截击队预留数、上限、净化后人数和外族构成；定期
+  六小时净化仍作为非战斗招募与异常状态的兜底。
+- 即时截击队靠近来源队时，先把截击队中的灰袍幸存者暂存，再以“可继续升级的低阶兵优先、较低阶优先、
+  同条件下当前大批次优先”的顺序，从来源队换出所需人数，最后把截击精兵归还。这样来源队若被战后新兵
+  临时补满，低阶成员会随无领主队返回驻地退场，截击精兵不会反而被淘汰；来源队若已经是历史超编，则
+  只做等人数替换，归队前后总数不再增加，也不会借此强制清理整个旧档超员。截击队中的外族成员或极端
+  情况下仍无位置的剩余成员继续沿已有无领主支援队流程返回原驻地后消失。`IMMEDIATE_CASE_INTERCEPTOR_REJOINED`
+  现记录截击灰袍数、换出退场数、实际归还数、剩余退场数、归队前空位、来源队归队前后人数及上限。
+  截击队组建入口也明确只从灰袍兵种中抽取健康骑兵，避免来源队短暂存在的外族骑兵被误当成预留精兵。
+- 既有存档中已经在旧逻辑下转成合法灰袍兵的历史超员不会被本轮强制删除或重排，仍由原版逃兵机制逐日
+  回落至上限；本轮只阻断新的战后获救人员和截击队归还继续制造超员，符合不做旧档迁移的当前原则。
+- 根因位于 `GreyWardenTrainingBehavior.ExchangeTroops`：原实现对同阶精锐按 `StringId` 排序后依次取人。
+  三个终阶兵等级相同，而 `gwarcher` 排在最前，因此较大的换防会稳定优先抽走弓箭手。换回的低阶兵随后
+  仍由原版 `PartyUpgraderCampaignBehavior` 按当次随机分支整批升级，于是最终构成看起来像“弓箭手变成了
+  其他兵种”。这是另一个已经证实的构成偏置，但不是上述行军减员的主因。此前三路权重统一为 `1f` 只保证
+  每批升级等概率，本来就不保证三个兵种的绝对数量相等。
+- 现改为按练兵官换防前各终阶兵种的实际人数计算配额：先取比例配额的整数部分，再以最大余数法补齐剩余
+  名额；交换总人数、目标队低阶兵优先回收以及原版升级机制均保持不变。新增
+  `TRAINING_EXCHANGE_ROSTER` 诊断，记录请求人数、实际换出/换回人数、换出精锐构成及双方换防前后完整
+  灰袍兵种数量，供实机区分比例换防、随机升级与战损。
+- `Release --no-restore` 构建通过，结果为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告，并已自动部署
+  客户端、编辑器 DLL 与两份 README。仓库 `_Module` 的 `27` 个正常客户端文件相对实机目录缺失 `0`、
+  SHA-256 不一致 `0`，实机 `20` 个 XML 解析错误 `0`；客户端与编辑器 DLL 均为 `761856` 字节，SHA-256
+  均为 `ECAFE2B94D8AA0F5F9FCA5044DA4C3A8854BC9F80F125D7ADF675904413C39C9`。ILSpy 对最终实机 DLL
+  确认比例换防函数、最大余数计算和 `TRAINING_EXCHANGE_ROSTER` 均已进入产物；三类兵各 `0` 至 `20` 人、
+  所有合法换防人数的穷举中，人数不守恒或分配超过现有人数的失败数为 `0`。没有创建发行 ZIP、提交或推送，
+  等待用户从现有存档继续实机复验。
+- 本次超员修复及“截击精兵优先”完善后再次执行 `Release --no-restore`，结果为 `0` 错误、`43` 条既有
+  警告。仓库 `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、SHA-256 不一致 `0`，实机 `20` 个
+  XML 解析错误 `0`，两份 README 与仓库逐字节一致；客户端与编辑器 DLL 均为 `766976` 字节，SHA-256
+  均为 `1F6FE1F22D0DC2DDD96520BE1CA2073D807C3FEA7ABAF2A6DCCE2B662472D6B8`。ILSpy 对最终实机 DLL
+  确认截击队灰袍预留计数、净化时扣除预留、归队临时名单、低阶优先换出、等人数归还、剩余成员返驻地
+  以及两组扩展诊断均已进入产物。没有创建发行 ZIP、提交或推送，等待现有存档实机复验。
+
+## 2026-08-04 灰袍骑枪整杆伤害与四向攻击（已放弃并完整回退）
+
+### 2026-08-04 第六轮：实机仍失败，按用户决定放弃功能并完整回退
+
+- 用户复验第五轮后明确反馈功能依旧不可用，并决定放弃“骑枪左右挥击、非攻击整杆持续碰撞伤害”方案。
+  因此第五轮及此前各轮均不得再视为待验收功能或 r9 已实装内容；以下历史只保留为失败方案与事故证据，
+  不代表当前代码仍包含这些机制。
+- 已删除整个 `GwpLanceCombatBehavior.cs`，同时移除 `SubModule.OnGameStart` 对
+  `GwpLanceRuntimeConfiguration.EnsureConfigured()` 的调用、任务创建时注入 `GwpLanceCombatBehavior` 的
+  行为以及只供该功能使用的 `GwpIds.LanceItemId`。当前运行时不会再追加武器 usage、切换攻击用法、扫描
+  枪杆碰撞、登记补充 Blow 或写入 `[GreyWarden Lance]` 诊断。该实验没有写入任何战役存档字段，因此
+  不需要旧档迁移或清理；完全退出游戏并使用回退后的 DLL 后即恢复原版武器行为。
+- 中英文 r9 玩家日志已删除两条骑枪实验功能说明，保留同一 r9 中已经完成的悬赏、结算队、地点与任务
+  清理内容。`gwlance` 物品仍是原有合法 `TwoHandedPolearm` 锻造物品，四个原版部件依次为
+  `spear_blade_6`、`spear_guard_13`、`spear_handle_19`、`spear_pommel_9`；本轮没有修改物品 XML、模型、
+  装备引用或其他武器机制。
+- 回退后的 `Release --no-restore` 构建通过，结果为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告，
+  并已自动部署客户端、编辑器 DLL 与两份 README。仓库 `_Module` 的 `27` 个正常客户端文件相对实机目录
+  缺失 `0`、哈希不一致 `0`，实机 `20` 个 XML 解析错误 `0`；客户端与编辑器 DLL 均为 `759296` 字节，
+  SHA-256 均为 `18368AA1C0C707FFA26DB14075FF81EC5303CB027A3E16C82027B5A8C1E31318`。反编译最终
+  实机 DLL 后，`GwpLanceCombatBehavior`、`GwpLanceRuntimeConfiguration`、`[GreyWarden Lance]`、
+  `polearm_block_long_swing_thrust` 和 `contactHit=` 命中数均为 `0`；`SubModule` 的任务行为列表也不再包含
+  骑枪行为。游戏进程为 `0`，本功能已经从源码、编译产物、实机模块和玩家说明四处完整撤销。
+
+### 2026-08-04 第五轮：四方向原版用法前置与持续接触重新结算
+
+- 用户复验第四轮确认“双手持枪和防御”已经成功，但左右仍完全无法挥砍；枪杆第一次接触造成并显示
+  `1` 点伤害，此后继续碰撞不再生效。最新日志
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_62220.txt` 与该现象完全一致：运行时四个 usage
+  已正确生成，默认双手刺击为 `polearm_block_long_shield_thrust`，附加双手四方向用法为
+  `polearm_block_long_swing_thrust`；整场却只记录一次 `direction=AttackDown, usageIndex=1`，没有任何
+  `AttackLeft/AttackRight`，并且只在 `10:46:48` 登记一次 `actualDamage=1`。这排除了装备、双手标志、附加
+  usage 缺失及伤害显示失败，失败点分别在输入方向暴露顺序和接触重置规则。
+- 左右失败的根因是仍把纯刺 usage 当作待机默认值。原版在托管代码运行前已按当前 usage 过滤输入，纯刺
+  用法根本不会把左右方向保留下来，所以事后读取 `MovementFlags` 或 `PlayerAttackDirection()` 都只能得到
+  上下。本轮改为待机、持握和防御时始终先使用原版 `polearm_block_long_swing_thrust`，让引擎从一开始就
+  接受四个方向；检测到上刺或下刺的起手输入时，才在原版 Agent 消费该输入前切回
+  `polearm_block_long_shield_thrust`。进入 `ReadyMelee/ReleaseMelee/ParriedMelee/BlockedMelee` 后锁定本次
+  已选 usage，不在动作中途切换；`PassiveUsage` 仍完全留给原版架枪。这样左右直接走原版 staff 挥击，
+  上下仍走原版长杆刺击，不再尝试从已经被纯刺 usage 过滤掉的输入中恢复左右方向。
+- 持续碰撞失败的根因是 `_previousContacts` 只允许“首次进入”造成伤害，必须整根三米枪杆在连续两帧间
+  完全离开目标的肢体碰撞体才会重置。实际人物即使后退再撞，枪杆的其他位置仍可能擦着同一目标，于是
+  该键会永久保持为已接触。本轮删除这个进入沿门槛，改为攻击者/目标组合各自拥有 `0.50` 秒重新结算
+  间隔：每次仍必须重新检出真实肢体交点、达到最低相对速度并通过完整原版伤害计算，成功后才启动间隔；
+  不会按渲染帧连续扣血，也不会让零相对速度的静止贴靠产生伤害。每组目标前五次成功结算都会记录
+  `contactHit=1..5`，下一轮可直接确认重复碰撞是否工作。
+- 中英文 r9 玩家日志已同步说明持续接触会随相对运动重新结算。`Release --no-restore` 构建通过，结果为
+  `0` 错误、`43` 条既有可空性/离线 NuGet 警告，并已自动部署客户端、编辑器 DLL 与正常客户端文件。
+  仓库 `_Module` 共 `39` 个文件，其中按规定不部署的 `Assets/AssetSources` 恢复源文件为 `12` 个；其余
+  `27` 个实机文件缺失 `0`、哈希不一致 `0`，实机 `20` 个 XML 解析错误 `0`。客户端和编辑器 DLL 均为
+  `774144` 字节，SHA-256 均为
+  `34CA8B181506F016D04D8CB604E935743FEC807BD5A2C5698053637E9F45C3BD`。最终 DLL 还会为每名 Agent
+  首次出现的每个原始攻击方向记录 `attack direction observed`，即使目标 usage 已经处于正确索引也会留下
+  证据。反编译最终实机 DLL 已确认待机选择四方向 usage、上下选择刺击 usage、五种动作锁、`0.50` 秒
+  重新结算、独立方向记录以及重复命中日志都存在；游戏
+  进程为 `0`。这些静态证据只证明部署内容，左右动作和多次接触伤害仍须本轮实机验收。
+
+### 2026-08-04 第四轮：双手默认用法与完整伤害反馈
+
+- 用户复验第三轮后报告三项现象：防御时只用单手举杆；整杆接触能听见敌人惨叫，却没有伤害数字、
+  伤害类型或明显受击动作；左右挥击尚未可靠复验。最新日志
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_3252.txt` 给出直接证据：持枪 Agent 的当前
+  usage `0` 是 `onehanded_polearm_block_long_rshield_thrust`；`10:16:06` 检出身体接触并登记了
+  `strike=Swing, speed=4.92, distance=3.11, damage=1`；全程只有 `AttackUp` 方向记录，没有左右输入记录。
+- 单手防御的原因不是动作资源异常，而是 `TwoHandedPolearm` 锻造模板同时生成单手持盾、双手、架枪等
+  多个原版用法，代码此前错误地把列表中的第一个非挥击用法当成上下刺默认用法。现在追加挥击数据时
+  先按 `WeaponClass.TwoHandedPolearm`、usage 同时包含 `block/thrust` 查找真正双手刺击源；附加的
+  `polearm_block_long_swing_thrust` 也继承该双手武器类别和 `NotUsableWithOneHand` 等原版标志，不再从
+  `PrimaryWeapon` 的单手数据复制。持枪后即使尚无攻击输入，只要当前还是单手用法便立即切到双手刺击；
+  原版 couch/bracing 的双手状态不被强制覆盖。启动日志会逐项列出全部 usage 名称和武器类别。
+- 只有惨叫没有数字的原因也已确认：补充碰撞此前直接调用 `Agent.RegisterBlow`，这会扣血和播放声音，
+  但绕过 `Mission.RegisterBlow` 中负责 `PrintAttackCollisionResults` 的战斗日志路径；实测又只有 `1` 点，
+  并被模组主动调用的原版 `DecideAgentShrugOffBlow` 标成轻微承受，所以几乎没有视觉反馈。本轮在真实
+  血量变化后构造原版 `CombatLogData` 并调用 `Mission.AddCombatLogSafe`，玩家造成或受到接触伤害时会
+  显示数字及 Cut/Pierce 类型；Blow 同时设置原版常用的 `DamagedPercentage=1`、`NoIgnore=true`，并删除
+  这条补充碰撞的主动 ShrugOff 标记，让 Agent 自身处理正常受击反应。伤害仍由既有原版幅度、护甲、
+  部位、难度和应用模型计算，没有另写固定伤害。
+- 武器包围盒最长轴的两端此前没有保证方向，可能把枪尖当作 Base，导致
+  `CollisionDistanceOnWeapon` 从错误端计算。本轮以手中武器实体的 attachment origin 为握持参考，自动
+  把更靠近手部的一端作为 Base，确保靠手木杆低、远端高的距离规律方向正确。接触日志新增 impact 比例、
+  伤害类型、幅度、原始伤害、计算伤害和实际掉血，下一轮可以直接核对伤害是否被护甲压到极低。
+- 中英文 r9 玩家日志已同步写明双手持握/防御、常驻接触的伤害显示与受击反馈。本轮仍未把“左右挥击
+  成功”写成实机结论；只有下一次日志出现 `direction=AttackLeft/AttackRight` 且用户看到对应动作，才能
+  验收该项。
+- `Release --no-restore` 完整构建通过，结果为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告；客户端与
+  编辑器 DLL 已自动部署到实机测试模组，两份均为 `816128` 字节，SHA-256 均为
+  `665ED4B7E7A8ACE120903E8D5184C80A1DEFC4001463BFBA443125FB72F88209`。仓库 `_Module` 的 `27`
+  个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`，实机 XML 解析错误 `0`。反编译最终 DLL 已确认
+  双手刺击源筛选、`polearm_block_long_swing_thrust`、`Mission.AddCombatLogSafe`、`NoIgnore=true` 和
+  `DamagedPercentage=1` 均存在，且旧的主动 `DecideAgentShrugOffBlow` 已移除。游戏进程为 `0`，可以开始
+  本轮实机验证；这些静态证据不替代实际动作、伤害数字和受击反应验收。
+
+### 2026-08-04 第三轮：按实测失败纠正输入源与碰撞实体
+
+- 用户已在战场明确否定第二轮玩法结果：上下仍能刺，但左右仍被表现为刺击；不进行攻击时，骑枪接触
+  敌人也完全没有伤害，因此第二轮不能记为功能验收通过。最新实测日志
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_53420.txt` 没有骑枪异常，并分别在
+  `09:59:20` 和 `10:03:13` 记录 `native side-swing usage attached; item=gwlance, usages=4`，证明附加
+  usage 已进入对象，却没有证明攻击方向切换或整杆碰撞真正运行。
+- 左右挥击的直接原因是第二轮读取 `PlayerAttackDirection()`：该值已经经过当前纯刺 usage 的原版方向
+  约束，玩家的左右输入在托管层读取前就可能被折算为可用刺击方向。本轮改为首先读取原版
+  `Agent.MovementFlags` 的 `AttackLeft/AttackRight/AttackUp/AttackDown` 原始攻击标志，再选择附加的
+  `polearm_block_swing_thrust` 或原刺击 usage；只有原始标志不存在时才回退到原方向接口。每次实际切换
+  现在会把方向、usage 索引和 item-usage 名称写入 RGL 日志，下一轮实测可以直接区分“没读到左右输入”
+  与“已切到挥击但原版动作未采用”。选择同时放在 `OnPreMissionTick`，确保在原版 Agent tick 消费攻击
+  标志前完成；普通 `OnMissionTick` 再检查一次，兼容更晚才发布输入的任务视图。
+- 常驻碰撞不再用主手骨骼和 authored frame 猜测枪杆轴线。现在优先取得
+  `Agent.GetWeaponEntityFromEquipmentSlot` 返回的、游戏正在手中显示的真实武器实体，从其本地物理包围盒
+  最长轴得到整杆两端并用实体全局 frame 转到战场坐标；物理包围盒不可用时才尝试可视包围盒，武器实体
+  尚未出现的过渡帧才回退旧手骨算法。这样检测线覆盖同一实体的枪头和木杆，并随原版持握/刺击/挥击
+  动画运动。首次取得每名持枪 Agent 的线段会记录来源、长度和 usage，首次身体接触与首次成功伤害也会
+  分别留下日志证据。
+- 按用户最新决定，已完整删除常驻接触的额外盾牌包围盒拦截及其金属碰撞反馈；友军仍在肢体检测之前
+  通过 `Agent.IsEnemyOf` 排除。普通刺击与挥击本来就由原版碰撞处理盾挡，不再重复实现一层模组盾判定。
+  常驻接触仍按枪杆接触点与目标的相对速度结算，最低有效速度从 `1.25 m/s` 降到 `0.35 m/s`，让缓慢
+  推进或敌人主动撞上持握长杆也能进入伤害计算；零相对速度的静止贴靠仍不会反复扣血。
+- 本轮仍保留原版攻击释放与被动架枪期间不生成补充伤害的防双算边界：这些状态继续由原版武器碰撞结算；
+  非攻击持握才由整杆接触补足。中英文 r9 玩家日志已删除不再存在的额外盾体拦截说明，改为准确说明
+  普通攻击继续采用原版盾挡与受击规则。
+- 最终 Debug 构建通过，`0` 错误、`43` 条既有可空性/离线 NuGet 警告；游戏进程数为 `0`。客户端与
+  编辑器诊断 DLL 均为 `814080` 字节，SHA-256 均为
+  `46C3BA036440957EB985C9EA98D9BD5E80658C83B5BABF1D0D5366B349E4C833`。反编译最终客户端 DLL
+  已确认包含原始 `MovementFlags` 读取、手中武器实体和本地物理包围盒调用、接触诊断，并且不再包含
+  `DoesAnyShieldInterceptSweep`。仓库 `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、哈希不一致
+  `0`，实机 XML 解析失败 `0`；中英文 README 亦与实机逐文件同哈希。本轮没有创建发行 ZIP，左右挥击
+  动作与非攻击整杆伤害仍须由用户在游戏中复验，不能用构建或反编译代替玩法验收。
+
+### 2026-08-04 第二轮：不替换物品对象的原版用法扩展
+
+- 用户明确纠正“为了止损而限制任何数据修改”的方向：项目没有额外的人为边界，唯一验收标准是装备与
+  存档能正常进入游戏，同时把需要的骑枪功能做成可玩的原版式效果。本轮因此不是停留在回滚版，而是在
+  保持 `gwlance` 原有合法物品定义的基础上重新实现功能。
+- 新增 `GwpLanceCombatBehavior.cs`。`GwpLanceRuntimeConfiguration` 在对象 XML 已经反序列化以后，只给
+  现有 `Item.gwlance` 追加第二个 `WeaponComponentData`，复用原版
+  `polearm_block_swing_thrust` 左右 staff 挥击、原骑枪重量、长度、惯量、重心、刺击和物品 frame；原
+  usage 继续负责上刺/下刺。玩家或 AI 请求左/右方向时切到原版挥击 usage，请求上/下方向时切回原刺击
+  usage。没有替换 `gwlance` 的锻造件、没有注册新 `CraftingPiece`、没有写入未知 item-usage ID，也没有
+  改动任何 Native 文件，因此存档中的装备仍指向同一个合法 ItemObject。重复开始游戏时会先检查已有
+  usage，避免向全局对象重复追加。
+- 挥击数据采用原版同档次长柄劈砍枪头的 `3.8` swing factor，伤害类型为 Cut；并非另造一套杆部伤害。
+  原版攻击释放仍由引擎自己的碰撞、盾挡、动作和伤害结算处理，实际碰撞距离继续参与重量、惯量、重心
+  计算，所以靠近握持点的木杆命中会自然比远端轻。上/下刺仍使用未改动的第一 usage。
+- 常驻接触只补足原版不处于攻击释放/被动架枪时的空缺。行为从主手动画骨骼叠加物品 authored frame
+  重建当前与上一帧整杆轴线，使用当前整杆射线与十个沿杆分段的逐帧扫掠对附近肢体做连续检测，候选
+  Agent 由 `AgentProximityMap` 限域。换武器、长帧或端点瞬移会重置轨迹；同一攻防双方持续贴靠只结算
+  一次，完全分离后才重新武装。
+- 补充伤害以接触点的世界速度减去目标速度作为相对速度，低于有效碰撞阈值不伤人；按相对速度相对枪轴
+  的轴向/横向分量选择原版 Thrust/Swing 幅度模型，并继续使用实际命中距离、武器伤害系数、技能倍率、
+  部位、护甲、难度与当前 `AgentApplyDamageModel`。非尖端刺中仍套用原版 non-tip 衰减。原版
+  `ReleaseMelee` 和 `PassiveUsage` 期间只记录接触而不生成补充伤害，避免与原版攻击双重结算。
+- 友军在任何肢体检测之前由 `Agent.IsEnemyOf` 排除。结算人物前会检查该目标四个武器槽中的真实盾牌；
+  手持盾使用副手动画骨骼与物品 frame，背负盾使用其实体现有 frame，并以对应 `BodyName` /
+  `CollisionBodyName` 包围盒检查当前整杆和全部分段扫掠。任一盾体截住本次整杆接触即取消人物伤害并
+  播放原版金属盾碰撞反馈；本轮没有另外给这类常驻接触扣普通盾牌耐久。
+- `SubModule.OnGameStart` 负责在 Agent 生成前追加用法，`OnMissionBehaviorInitialize` 在战役、自定义战斗
+  与编辑器任务统一注入行为；追加用法异常会保留原始合法刺击武器并写入原版调试日志，而不是中断模块
+  或破坏装备注册。中英文 r9 玩家日志已同步写入实际玩法。
+- 当前代码构建已通过，`0` 错误、`44` 条既有可空性/离线 NuGet 警告；构建目标已把诊断 DLL 与模块
+  文件部署到 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`。最终客户端和
+  编辑器 DLL 均为 `812544` 字节，SHA-256 均为
+  `84D6516E76532670683942AF80DAF59BA81E8FF8F124CD00469E35EBDF35DAF5`；反编译确认包含
+  `GwpLanceRuntimeConfiguration`、`GwpLanceCombatBehavior`、原版 swing/thrust 幅度模型调用、敌对过滤、
+  肢体射线和 `RegisterBlow`。
+- 仓库 `_Module` 的 `27` 个正常客户端文件相对实机缺失 `0`、哈希不一致 `0`，实机 XML 解析失败
+  `0`，中英文 README 哈希一致；事故中的两个自有 XML 仍不存在，`gwlance` 仍引用原版合法
+  `spear_blade_6`。验证时游戏进程数为 `0`，所以新 DLL 未被旧进程锁住。本节仍标为“待实机验收”：
+  编译和静态检查不能代替用户在战场确认四个攻击方向、整杆方向与模型重合、速度伤害手感、普通盾/背盾
+  拦截以及换武器后的连续性。
+
+### 2026-08-04 装备失效事故与紧急回滚
+
+- 用户启动存档后发现灰袍装备全部不显示并退化为垃圾物品。现场日志
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_46444.txt` 明确显示客户端载入
+  `GreyWarden/ModuleData/crafting_pieces.xml` 后报告
+  `gwp_spear_blade_6_swing is not a valid valid anymore.`。该自有枪头没有加入原版
+  `TwoHandedPolearm` 锻造模板的 `AvailablePieces`，因此不是合法的该模板部件；`items.xml` 中
+  `gwlance` 又位于其余灰袍盔甲和武器之前，非法锻造物品使后续模组物品没有正常建立，直接造成用户
+  看到的整套装备丢失/垃圾占位。
+- 最初口头判断为自有 `item_usage_sets.xml` 覆盖原版全局表，经日志复核后纠正：本次日志只打开了
+  `Native/ModuleData/item_usage_sets.xml`，没有打开 GreyWarden 的同名文件；真正有直接日志证据的原因是
+  上述非法自有锻造部件。以后不能在未把部件加入模板白名单并实机验证完整物品加载前替换 CraftedItem
+  的任何原版部件，也不能把仅通过 XML 解析当成对象系统加载成功。
+- 已完整回滚本轮玩家可见实现：删除仓库与实机中的 `crafting_pieces.xml`、`item_usage_sets.xml` 和
+  `GwpLanceContactBehavior.cs`；`gwlance` 恢复原版 `spear_blade_6`；移除 SubModule 锻造件注册、任务行为
+  注入、运行时 usage 修改、常驻碰撞 Harmony patch 以及中英文 README 中尚未成立的骑枪功能说明。
+- 回滚后重新构建为 `0` 错误、`44` 条既有警告。最终诊断 DLL 为 `800768` 字节，SHA-256
+  `1059CD0E86046B2A8B193FD4CD872E00A324AD6D617AC955053DC8A231EB6AD1`；客户端和编辑器 DLL 哈希一致，
+  反编译类型表已确认不再包含 `GwpLanceContactBehavior` 或其防重 patch。仓库 `_Module` 的 `27` 个正常
+  客户端文件相对实机目录缺失 `0`、哈希不一致 `0`；两个事故 XML 在实机均已不存在，`gwlance` 已确认
+  重新引用原版枪头。游戏进程已经载入的错误对象表不能热刷新，用户必须完全退出游戏并重新启动后再
+  读档确认装备恢复。
+
+### 2026-08-04 失败实现记录（已回滚，禁止原样复用）
+
+- `gwlance` 不再直接使用会排除 `swing` 的原版 `spear_blade_6`，改用模块自有
+  `gwp_spear_blade_6_swing`。新锻造件完全复用原版模型、长度、重量、刺击数据和碰撞体，只补充横向
+  切割数据；没有修改 Native 文件或影响其他使用同一枪头的原版武器。
+- `_Module/ModuleData/item_usage_sets.xml` 新增
+  `gwp_polearm_block_thrust_side_swing`：继承原版 `polearm_block_thrust` 的上下刺击，并逐项复用原版
+  staff 左右挥击动作（步战和骑乘）。`GwpLanceContactBehavior.ConfigureLanceItemUsage` 只把
+  `Item.gwlance` 的运行时 usage 指向该组合；若引擎没有载入自有 usage，检测到 native index 小于零时
+  会保留自动生成的原版用法而不是写入无效 ID，并在原版调试日志留下明确诊断。
+- 新增 `GwpLanceContactBehavior` 并在战役、自定义战斗和编辑器任务中统一注入。它只追踪当前主手持有
+  `gwlance` 的活动 Agent，从主手动画骨骼和物品 frame 重建整杆轴线；每帧使用当前整杆射线加十个分段
+  扫掠点对附近敌人肢体作连续检测，候选目标由 `AgentProximityMap` 限域。友军通过 Team 敌对关系在碰撞
+  前排除，换武器、长帧或瞬移会重置上一帧，避免伪碰撞。
+- 普通攻击释放和原版被动架枪仍完全交给原版；只有其他持握状态中的首次实体接触才生成补充伤害。补充
+  伤害按真实接触点速度判断刺/挥，调用当前 `StrikeMagnitudeModel` 的刺击或挥击幅度，并继续使用武器
+  重量、惯量、重心、命中距离、技能伤害倍率、部位护甲、战斗难度和当前 `AgentApplyDamageModel`。同一
+  对象持续贴靠只结算一次，完全分离后才重新武装。
+- 为防止持握接触已经结算后紧接着进入原版攻击释放而双重伤害，新增窄范围
+  `MeleeHitCallback` Harmony 防重：只在相同攻防双方仍处于该次已结算接触、且原版回调确认为
+  `gwlance` 身体命中时临时让受害者无敌；原版碰撞和受击反应仍保留，盾牌命中不进入此防重路径。
+- 盾牌优先检测覆盖受害者四个武器槽中的真实盾牌碰撞体：当前整杆或任一分段扫掠先与盾体相交时取消
+  人物伤害并播放原版金属盾碰撞反馈。手持盾使用动画化副手骨骼与物品 authored frame；背负盾优先使用
+  其实体现有全局 frame。本轮先落实用户要求的“整杆碰盾即不伤人”，尚未给这条常驻补充碰撞另行扣除
+  普通盾牌耐久。
+- 回滚前 `dotnet build -c Debug --no-restore` 曾通过：`0` 错误、`44` 条原有可空性/离线 NuGet 警告；构建目标
+  已自动把 DLL、`crafting_pieces.xml`、`item_usage_sets.xml`、物品数据和中英文 README 同步到实机
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`。仍需用户在战场验证自有
+  usage 是否被当前客户端载入、整杆方向与视觉模型是否重合、伤害手感及盾牌拦截；验证前不把本节标为
+  完成。随后实机物品加载已经证明这套做法失败，上述文件和代码现均已回滚。
+- 最终诊断 DLL 为 `812544` 字节，SHA-256
+  `988F91A3FB4F3E0F07B216C97B48075AFEC3F7BB3ABE3EF2638FEE0346511885`；客户端与编辑器 DLL 哈希一致。
+  仓库 `_Module` 的 `29` 个正常客户端文件相对实机目录缺失 `0`、哈希不一致 `0`，全模块 XML 解析失败
+  `0`；反编译类型表确认最终 DLL 同时包含 `GwpLanceContactBehavior` 和防重 Harmony patch。
+
+- 用户纠正上一版“只让矛尖具有伤害体”的设计：长杆本身也是武器，灰袍骑枪应在持握期间让从尾端到
+  刃尖的整个实体持续参与伤害检测。这里的“持续”是伤害体始终启用，不是让同一次贴靠按时间反复
+  扣血；仍按进入接触一次、完全分离后重新武装处理。
+- 随后针对用户指出的“原版长柄斧近身时已经会由木柄命中并造成很低伤害”重新核验 Bannerlord `1.4.7`
+  程序集，确认用户判断正确，上一版另行切分刃部/木杆并给木杆附加自定义钝击倍率的方案不应采用。
+  `Mission.RecalculateBody` 会为锻造武器建立贯穿整件武器长度的胶囊；斧类只是在这个整杆胶囊之外增加
+  斧刃形状，所以木柄本来就能参与原版攻击碰撞。原版命中数据同时记录 `CollisionDistanceOnWeapon`。
+- 原版低伤害不是按“命中木料”切换到另一套伤害类型，而是把实际命中点沿武器长度的比例传给
+  `CalculateStrikeMagnitudeForSwing`，再结合武器重量、总惯量、重心、角速度和双方线速度计算碰撞后损失
+  的动能；因此贴近握持点的斧柄命中自然远弱于远端斧刃命中。锻造件的 `BladeData.SwingDamageType` 仍是
+  整个该武器用法的伤害类型，`blade_length` 没有在这条近身低伤害判定中充当材质分区。设计应复用这一
+  原版“整杆碰撞 + 实际碰撞距离”机制，不再人工区分刃区、杆区，也不额外施加杆部倍率。
+- 常驻状态唯一需要补足的是：原版只在合法攻击/被动架枪判定中把武器碰撞提交为伤害，不能自动让普通
+  持握中的接触伤人。新增检测应取得整杆真实扫掠的接触点与 `CollisionDistanceOnWeapon`，再尽可能把该
+  数据送回原版挥击/刺击幅度、伤害类型、护甲和技能模型；模组不自行发明木柄伤害公式。低到不足以形成
+  有效撞击的接触仍由原版计算归零。
+- 盾牌规则按用户要求进一步简化为“整杆优先”：对每个即将结算的受害者，先用上一帧到当前帧的完整
+  长杆扫掠体检测附近所有真实盾牌体；只要杆、护手或刃尖任一部分在本次接触中碰到挡在路线上的盾牌，
+  就取消这次人物伤害，不再另外要求刃尖也碰到盾牌。盾牌检测不依赖格挡按键或阵营，实体位置成立
+  即可阻挡；盾牌可承受对应耐久与反馈，但当次即使破裂也不继续穿透伤人。
+- 原版 `spear_blade_6` 明确设置 `excluded_item_usage_features="swing"`，这是当前 `gwlance` 只能刺的
+  直接数据原因；`TwoHandedPolearm` 武器描述本身已经包含 `swing:thrust`，并有现成的左右 staff 挥击
+  动作。不能简单删除排除项后结束：原版双手 `polearm_block_swing_thrust` 会把向上攻击改成过顶挥击，
+  不符合用户要求的“上刺、下刺保持，额外增加左挥、右挥”。最终需要一个仅供 `gwlance` 使用的物品
+  usage 组合，保留原版 upper-thrust、lower-thrust、left-swing、right-swing 四组现成动作，不制作新动画。
+- 为避免改变同样使用 `spear_blade_6` 的原版帝国重骑枪与长枪，不能全局修改该原版锻造件。优先方案是
+  给 `gwlance` 设置模组自有 usage，并只补齐该物品的挥击数据；若当前引擎不合并模组自有
+  `item_usage_sets.xml`，再采用仅修改 `gwlance` 运行时 `WeaponComponentData` 的窄范围回退，不能让其他
+  原版长杆获得同一动作。
+- 上一节记录的矛尖专用伤害体方案现已被本节取代；本节最初记录的自定义刃/杆伤害分区又被上述原版
+  机制核验纠正。逐帧连续扫掠、实际接触距离、相对速度、敌对 Team 过滤、原版伤害模型、盾牌几何和
+  避免双重结算仍保留。本轮仍只修订设计并核对 Native XML/程序集，没有修改运行时代码或模块数据，
+  没有更新玩家 README、构建或部署。
+
+## 2026-08-04 灰袍骑枪常驻碰撞伤害设计调查（未实装）
+
+- 用户要求参考本机 `C:\Users\lucif\source\repos\BattlefieldSkills` 的御剑碰撞伤害，让本模组
+  `Item.gwlance` 在持握期间持续具有伤害能力：不以是否播放攻击/格挡动作作为命中前提，而以长矛的
+  伤害体是否真实接触敌方为准；友军绝不受伤，目标与矛尖之间存在盾牌实体时人物不受伤。
+- 御剑当前实现位于 `BattlefieldSkills\Source\FlyingSwordMissionBehavior.cs`。可复用部分是逐帧保存
+  武器前一位置、对刀身/刀尖做扫掠检测、用 `Team.IsEnemyOf` 排除盟友以及通过 `RegisterBlow` 提交真实
+  战斗命中；其伤害只是按受控飞行速度计算的固定合成值，且当前人物检测使用宽松中心球，也没有盾牌
+  遮挡判断，因此不能整段原样复制到持握骑枪。
+- 当前 `gwlance` 是 `items.xml` 中以 `TwoHandedPolearm` 模板和四个锻造部件生成的唯一灰袍骑枪。
+  实现应只识别该物品 ID，并从当帧 `MissionWeapon.CurrentUsageItem.GetRealWeaponLength()` 和手中武器实体
+  的动画帧取得实际矛尖位置，不扩大到原版或其他模组的所有长杆武器。
+- Bannerlord 当前程序集已有完全对应的原版计算链：
+  `StrikeMagnitudeCalculationModel.CalculateBaseBlowMagnitudeForPassiveUsage` 最终调用
+  `CombatStatCalculator.CalculateBaseBlowMagnitudeForPassiveUsage(weaponWeight, extraLinearSpeed)`；原版被动
+  架枪也是先取攻击者与受害者沿撞击方向的相对线速度，再走 `CalculatePassiveAttackDamage`、武器伤害
+  倍率、穿刺系数、部位护甲和通用伤害模型。新机制应复用这条公开模型链，而不是照搬御剑的固定伤害。
+- 拟采用独立 `MissionBehavior`：只追踪当前持握 `gwlance` 的活动 Agent；将矛尖最后一小段作为伤害
+  胶囊，并在上一帧与当前帧之间连续扫掠，以避免低帧率穿透。相对速度取矛尖世界速度减目标接触点
+  世界速度，并只保留朝矛尖轴向闭合的分量；静止接触不会反复掉血，步兵主动送上固定矛尖和骑兵高速
+  撞上矛尖都能按同一物理量产生伤害。每个“矛手—目标”接触只结算一次，必须完全分离后才能再次
+  武装，另丢弃换武器、出生、上马等造成的不合理瞬移帧。
+- 盾牌判断不能读取“正在格挡”布尔值，而应沿用本模组巨盾被动拦截已经验证的几何路线：读取盾牌
+  `CollisionBodyName` 的原始包围盒，叠加受害者动画骨骼和物品 `Frame` 得到盾牌当帧世界体积，并比较
+  矛尖扫掠进入盾牌与进入身体的先后。任意手持盾或背盾实体先被命中时取消人物伤害；可让盾牌承受
+  同一原版幅度的耐久伤害和命中反馈，但盾牌即使在本次撞击中破裂，也不在同一帧穿透伤害人物。
+- 为避免原版普通攻击命中与常驻伤害体在同一次接触中双重结算，最终实现必须只取消 `gwlance` 的
+  原版身体伤害，保留原版动画、武器碰撞和盾牌反应，再由常驻伤害体统一产生身体伤害。刀剑格挡动作
+  本身不再是免伤条件；只有实际位于矛尖与身体之间的盾牌几何体能够截断伤害。候选目标使用原版
+  `AgentProximityMap` 就近查询并用敌对 Team 过滤，避免大型战场中对全部 Agent 做平方级扫描。
+- 本轮只完成本地参考代码、当前 `gwlance` 定义和 Bannerlord `1.4.7` 原版程序集的设计核验；没有
+  修改运行时代码、物品 XML 或玩家 README，没有构建或部署，以上机制尚未实装也未经过实机碰撞验证。
+
+## 2026-08-04 VS Code 更新器重复报错修复
+
+- 用户从 VS Code 打开文件时反复出现 `Visual Studio Code - Updater` 弹窗，明确报错为无法删除
+  `C:\Users\lucif\AppData\Local\Programs\Microsoft VS Code\1b6a188127`，`Access is denied (os error 5)`。
+  该问题与本项目、C# 扩展或 .NET 运行时无关。
+- 现场同时存在两代 VS Code 进程：旧主进程 `68348` 的崩溃处理器标识为 `1.130.0`，新主进程
+  `29596` 的崩溃处理器标识为 `1.131.0`；另有两个来自
+  `C:\Users\lucif\AppData\Roaming\Claude\temp\vscode-stable-user-x64` 的同版本安装器实例和一个
+  `inno_updater.exe` 清理进程。旧进程仍占用旧哈希目录，导致已经完成主体升级的安装器无法善后。
+  目标目录所有者为当前用户，当前用户、Administrators 与 SYSTEM 均有完全控制权限，排除了 ACL
+  权限配置错误。
+- 只终止了旧版 `1.130.0` 进程树与卡住的安装/清理进程，保留正在使用的 `1.131.0` 窗口；随后删除
+  已核对父目录的旧安装目录 `1b6a188127`，并清除 Claude 临时目录中残留的安装器、更新标记和元数据，
+  避免后续打开文件时再次启动同一失败更新。
+- 修复后安装根目录只剩当前哈希目录 `e4c7e7b1d6`，`Code.exe` 文件版本和 `code.cmd --version` 均为
+  `1.131.0`。再次通过 VS Code 打开实机模块 README 并等待检查：旧目录与临时更新缓存均未重建，
+  `CodeSetup`/`inno_updater` 进程数为 `0`，重复更新弹窗未再次触发。
+
+## 2026-08-04 当前开发版本纠正为 v1.4-r9
+
+- 用户发现当前版本身份混乱并要求只纠正版本、不发行。在线核对确认 GitHub Latest 仍是
+  `GreyWarden v1.4-r8`，标签为 `v1.4-r8`，正式发布于 `2026-07-25T15:06:23Z`；GitHub 的 ZIP 为
+  `349845455` 字节，SHA-256 为
+  `150009FADF4780F5CC149524DD2A99908B8EE8CFC6BFC4F2450A36DF11B955C3`。本机正式 ZIP 与其字节数、
+  哈希一致，包内仍明确为模块 `v1.4.8` 和玩家版本 `v1.4-r8`，因此 r8 是已经冻结的上一正式版本。
+- 问题根因是 r8 发布后的三选一悬赏、固定难度赏金、任意领主/五日结算队交付、四十五日清理、百科
+  地点归一和待领奖计时修复仍被追加进 README 的 r8 条目，同时项目与模块版本继续停在 `1.4.8`。
+  这些工作不是 GitHub r8 包的内容，实际应属于下一开发修订 `v1.4-r9`。
+- 当前工作树已经统一纠正为 `v1.4-r9（开发中）`：`GreyWardenPolicePurity.csproj` 使用 `1.4.9`，
+  `_Module/SubModule.xml` 使用 `v1.4.9`，诊断版程序集为 `1.4.9.0`。中英文 README 新建单一 r9 开发
+  条目并声明相较正式 r8；正式 r8 条目恢复为 Git 标签中的原文，r7 从当前两条日志中移除。
+- 普通诊断版完整重建为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告。实机客户端与编辑器 DLL
+  均为 `759808` 字节，程序集版本均为 `1.4.9.0`，SHA-256 均为
+  `87E2C9B64DB255AD7EB15CC84A1FA33DC4B350967F690B5FCCD8B4E254174806`。仓库与实机
+  `_Module` 的 `27` 个正常客户端文件缺失 `0`、哈希不一致 `0`，实机 `20` 个 XML 解析失败 `0`；
+  `SubModule.xml`、中文 README、英文 README 哈希分别一致，实机已经成为 r9 诊断测试模块。
+- GitHub 上缺失于本地目录的正式 r8 校验文件已直接从该 Release 恢复；游戏 `Modules` 父目录现仍只
+  保留 `GreyWarden-v1.4-r8.zip` 与匹配 `.zip.sha256` 这一组正式文件。没有创建 r9 ZIP、没有构建
+  无诊断玩家包、没有提交或推送、没有新建标签，也没有修改 GitHub Release；r9 仍然只是本地开发版本。
+
+## 2026-08-03 设定按实装代码重审
+
+- 用户否定此前把设想完整并入总纲的整理方向，明确当前模组没有任何剧情，要求删除所有未落地设定，
+  只保留真实的大陆历史和已经实装的灰袍内容。`docs/grey-warden-setting.md` 仍是唯一设定文件；此前独立的
+  `docs/original-history-canon.md` 与 `docs/grey-warden-history-arc.md` 继续保持删除，不再保存平行设定源。
+- 对当前 C#、XML 和中文本地化进行了反向核验。仓库只有 `BountyHunterQuest` 与 `AtonementQuest` 两个
+  `QuestBase` 派生类，均为沙盒状态生成的可重复悬赏/赎罪任务；没有主线或人物剧情任务。用于设定展示的
+  `GreyWardenLoreBehavior.SyncData` 为空，只在会话启动时写入六名领主百科简介并注册按玩家声望变化的普通
+  问候，不保存剧情阶段。全仓库代码与 XML 也没有归政、宪章、灰衣缇骑、统一终局或阿雷尼科斯相关实现。
+- 唯一设定文件已删除原灰袍秘密总史、潘德拉克战役介入、阿雷尼科斯遇害参与、六名人物案件、玩家建国
+  观察、统一后三结局、专属婚恋路线和开发顺序等全部未实装内容。原文中“可以”“建议”“后续”“待设计”
+  形式的叙事也不再作为设定保留。
+- 大陆历史保留潘德拉克之前局势、参战军事特点、三处战场、龙旗破碎、各国后果、阿雷尼科斯继位与帝国
+  分裂及校订来源；它被明确标为模组采用的大陆历史，而不是灰袍参与这些事件的证明。灰袍自身只保留当前
+  `spclans.xml`、`comment_strings.xml` 与六人百科已经公开的概括：她们是旧统一帝国治安体系的继承者，
+  保护街道、村庄和道路，不追求王冠或领地扩张。
+- 当前灰袍设定按运行时注册项重写，覆盖六人六职务、家族与职务断绝、犯罪案卷、出警和有限执法战争、
+  长期震慑、玩家声望、纠察与赎罪、三档悬赏与五日结算队、成员和兵员订单、地方事务/重建/训练、村民
+  酬谢与战场援军、司法公库、军队战斗特征、俘虏规则和存档连续性。原版玩家婚姻兼容只作为已实现规则
+  记录，并明确没有专属恋爱剧情。
+- 重审后唯一设定文件由 `1038` 行缩减为 `271` 行且只有一个一级标题；未实装设定的特征词在正文中为
+  `0`。本轮只修改内部设定和维护文档，没有改变玩家可体验机制，因此不修改中英文玩家 README、不构建
+  DLL，也不部署实机模块。
+
+## 2026-08-02 结算队实体返程与藏身处地点归一
+
+- 用户实机确认上一轮的百科范围、五日派遣和待领赏计时均已解决，同时发现结算队付款后在玩家面前
+  直接消失，以及人物靠近或身处藏身处时仍可能出现无法打开的藏身处链接。最新诊断会话记录
+  `14:42:56` 派出 `gwp_bounty_collect_60767`，等待 `120.41` 小时、锁定赏金 `30000`；
+  `14:44:07` 正常进入付款完成。对应 `rgl_log_14484.txt` 依次记录
+  `gwp_bounty_courier_start`、`gwp_bounty_courier_turnin`、`gwp_bounty_courier_response`，没有本模组
+  托管异常。付款流程正确，原地消失来自本模组在对话结束回调中直接执行 `DestroyPartyAction`。
+- 对照现有招募使者和纠察队的无领主部队流程，结算队改为同一实体返程：付款时选择自身当前位置最近的
+  城镇或城堡，同时切换灰袍职责和原版 `SetMoveGoToSettlement` 命令，并提供短暂的不攻击玩家窗口；
+  对话关闭后再次下达返程命令，清除此前接触玩家的原版追击目标。每小时继续维护返程，只有进入目标
+  定居点或抵达其附近时才销毁；玩家改向灰袍领主领取、退出任务或其他路径清理任务时，已经出发的
+  结算队也会收到同样的返程命令，而不是在地图上直接消失。玩家主动追上返程队时只会听到“正在
+  返回驻地”的收尾对话，不会再次结算或误入战斗。
+- 返程状态以“结算队 ID + 目标定居点 ID”的紧凑字符串随战役存档，不保存运行时对象引用；读档后从
+  原版仍存在的实体队伍重新绑定、继续返程，并清除已经不存在的队伍记录。返程队与新的悬赏状态彼此
+  分离，因此旧队正在回营时仍可正常承接下一宗任务，后续结算队也不会把旧队重新当成追赶玩家的队伍。
+- 藏身处仍能漏进百科的原因不是最近距离函数，而是囚犯所在定居点、部队当前定居点以及英雄
+  `CurrentSettlement/StayingInSettlement` 三条直接返回分支绕过了普通定居点过滤。现在所有人物百科
+  地点统一经过 `NormalizePlayerFacingSettlement`：城镇、城堡、村庄原样保留；藏身处等特殊地点则以
+  其坐标重新选择最近的普通定居点。悬赏与赎罪任务的初始目击和后续情报也统一调用同一过滤函数，
+  不再产生藏身处百科链接。
+- 最终 Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告；
+  `1.4.5.115026`、`1.4.6.115628` 交叉重建均为 `0` 错误、`43` 条既有警告。实机客户端与编辑器
+  DLL 均为 `759808` 字节，SHA-256 均为
+  `FC8379788C3AEF87D2D6288BC9B602C640D05F4B5D8C0FB3BE1749D38948E473`。
+- 仓库 `_Module` 的 `27` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；实机 `20` 个
+  XML 解析失败 `0`，中文 string id 重复 `0`，且实机没有 `Assets` 或 `AssetSources`。仓库与实机
+  中文 README 哈希均为 `6BF6362E10EC721E10397B5A02428DDE58ECBC3B30DEC601ABED9A7095C18E4B`，
+  英文均为 `15307CFD33F657C3CEB79570434045159255397584CCA77D4C280D358E12606F`。ILSpy 对最终实机
+  DLL 确认返程存档键、原版返城命令、召回/抵达诊断、返程收尾对话以及所有人物状态分支的普通
+  定居点归一均已进入产物。仍需实机验证付款后实体返程、返程途中存读档、抵达后消失，以及人物
+  身处藏身处时改链最近普通定居点；本轮仍是诊断版开发部署，不创建正式 ZIP，也不发布 GitHub。
+
+## 2026-08-02 百科最近地点、五日结算队与待领赏计时修复
+
+- 用户实机确认三选一悬赏可用后报告三项体验问题：人物百科位置总指向大型定居点；目标落败后不易
+  找到忙于各自职责的灰袍领主；待领赏任务显示很大的负数剩余时间。检查最新实机诊断会话
+  `2026-08-02T05:37:20+10:00` 至 `06:06:09`（程序集 `1.4.8.0`）和
+  `rgl_log_53460.txt` 后，确认 `05:51:16` 已正常进入 `gwp_bounty_collect_option` 与
+  `gwp_bounty_reward_response`，没有托管异常或悬赏交付报错。`rgl_log_errors_53460.txt` 只有原版
+  对话语音播放记录；FMOD 句柄、缺少语音对象和资源局部读取提示也没有指向本悬赏状态。监控因此
+  证明领主交付本身成功，但不会记录原版任务界面如何格式化剩余时间。
+- 百科地点偏大的确定原因是 `GwpAiDeterrenceState.GetTrackingSettlement` 与
+  `BuildTrackingLocation` 对地图上移动的英雄调用 `GwpCommon.FindNearestTown`，该方法只接受
+  `Settlement.IsTown`，排除了村庄。新增统一的 `GwpCommon.FindNearestSettlement`，只在普通城镇、
+  城堡和村庄中选地图距离最近者，排除藏身处等特殊地点；百科链接与纯文字兜底都改用同一个结果。
+- 目标落败时新增并持久化待领赏起始小时。前五天仍保留玩家主动向任意灰袍领主交付的原流程；满
+  五天仍未结案时，从离玩家最近的城镇或城堡派出一支 `10` 人、无英雄领队的灰袍骑士结算队。
+  该队沿用原版 `CustomPartyComponent`、地图移动、`EngageParty` 接触和对话系统，带临时任务口粮及
+  可选海战船只，不创建自制界面。接触玩家后使用独立玩家视角对话支付原先锁定的赏金，结束原版
+  任务、执行同一战争善后并在对话关闭后销毁结算队；若玩家先向领主交付，地图上的结算队也会清理。
+- 结算队不另外保存容易失配的运行时对象引用，而以 `gwp_bounty_collect_` 前缀从原版已保存的地图
+  部队中重建；会话启动和每小时检查都会复用或清理现有队伍，避免存读档后重复派遣。诊断版在派出
+  和付款时分别记录 `BOUNTY_COLLECTION_COURIER_DISPATCHED` 与
+  `BOUNTY_COLLECTION_COURIER_PAYMENT_COMPLETE`，方便下一次实机验收直接核对后台。
+- 负数剩余时间的确定原因是完成后为防止领奖阶段超时而把 `QuestDueTime` 改为
+  `CampaignTime.Never`，但 `BountyHunterQuest.IsRemainingTimeHidden` 仍固定返回 `false`，原版界面
+  于是把“永不超时”的特殊时间值当作普通日期相减。现在仍保留待领赏无期限，同时在可存档的
+  `_readyForTurnInLogWritten` 状态为真时隐藏剩余时间；追捕阶段继续正常显示四十五日倒计时。
+- 最终 Bannerlord `1.4.7` 诊断版完整重建为 `0` 错误、`44` 条既有可空性/离线 NuGet 警告；
+  `1.4.5.115026`、`1.4.6.115628` 交叉重建均为 `0` 错误、`43` 条既有警告。实机客户端与编辑器
+  DLL 均为 `755712` 字节，SHA-256 均为
+  `4BBA39EA0D4CD10097FA9A0263BB3B0FE56789CE8079FA0BA70327DDA0FE8AF9`。
+- 仓库 `_Module` 的 `27` 个正常客户端文件与实机相比缺失 `0`、哈希不一致 `0`；实机 `20` 个
+  XML 解析失败 `0`，中文 string id 重复 `0`。仓库与实机中文 README 哈希均为
+  `6DAF084D11D2DB1BCE2A437B073CC151FDF93EC0D64809F0F7C3F26EC721495E`，英文均为
+  `74A60524486F35281EB606E345122BCC91C10D15B795304452D1038D0FC29DF0`。ILSpy 对最终实机 DLL
+  确认百科最近地点、`120` 小时派遣门槛、结算队生成/追踪/对话/付款/清理、待领赏起始存档键以及
+  条件式隐藏剩余时间均已进入产物。仍需实机分别验证百科靠近村庄时的链接、目标落败五日后结算队
+  主动接触、结算前后存读档以及待领赏任务不再显示负数；本轮不制作正式 ZIP，不发布 GitHub。
+
+## 2026-08-02 玩家悬赏三选一、统一难度赏金与状态代码收束
+
+- 用户已经实机完成上一轮 P0 验收，结论为“完美”。本轮在该已验证生命周期上继续整理玩家悬赏，
+  保留任意灰袍领主交付、目标落败消息、护送释放、待领赏无期限、战争来源保护与四十五日超时；
+  未再给目标消失、第三方击败等情况建立单独失败分支。这些情况在玩家未亲自完成任务时统一留到
+  四十五日超时，且失败不扣钱、不扣声望，也没有其他惩罚。
+- 派单仍从原版右侧地图通知进入，没有增加模组面板、Gauntlet 电影或自建界面。玩家点击通知后，
+  使用原版 `MBInformationManager.ShowMultiSelectionInquiry` 展示固定的“最近、较难、较简单”三行；
+  选中一行后再用原版 `InformationManager.ShowInquiry` 查看目标、罪名、最后出现地点、评估难度、
+  固定赏金、期限与交付规则，并可接受或拒绝。有效案件不足三宗时仍保留三行结构，但缺失的独立
+  候选会以不可选状态说明原因。
+- 候选只从仍有未结案件、目标部队存活并在地图上可追捕、且不是玩家自己的案件中产生。先选择距
+  玩家最近的目标，再从剩余案件中选择战力最高者作为“较难”，最后从其余案件选择战力最低者作为
+  “较简单”；三行永不重复指向同一案件。详情弹窗和最终接受动作都会重新检查目标是否仍可追捕，
+  避免玩家查看契约期间目标进入城镇或案件关闭后接到失效任务。
+- 难度以接单时原版 `Party.EstimatedStrength` 比较目标部队与玩家部队：不高于玩家战力的
+  `0.75` 倍为较简单，不低于 `1.25` 倍为较难，中间为标准。赏金彻底取消按人数相乘，改为三个
+  统一档位：较简单 `10000`、标准 `20000`、较难 `30000` 第纳尔；接受契约时锁定难度与赏金，
+  后续伤亡、增兵或读档不会重新计算付款。
+- 按用户明确要求不做旧悬赏存档适配：删除旧 `gwp_bounty_target_size`、
+  `gwp_bounty_pending_reward`、按人数回算、旧任务加载回调、小时级二次重连标志和旧案件字段补齐。
+  新流程只持久化当前目标、锁定赏金、追捕期限、待交付状态、护送和战争来源；会话启动时直接绑定
+  原版 `QuestManager` 中仍在进行的悬赏任务，显示任务缺失时才按当前持久化状态重建一次。没有有效
+  锁定赏金或追捕期限的旧状态直接清理，不再用猜测值修复旧档。
+- 最终 Bannerlord `1.4.7` 诊断版执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条
+  既有可空性/离线 NuGet 警告并自动部署；同一最终源码对
+  `Bannerlord.ReferenceAssemblies 1.4.5.115026` 与 `1.4.6.115628` 交叉重建均为 `0` 错误、
+  `43` 条既有警告。实机客户端与编辑器 DLL 均为 `750080` 字节，SHA-256 均为
+  `BE65E3CF16FF5F1A440A5B8A7FB3E0ADB4A3CE00648CA2C9D422859A544018C7`。
+- 仓库 `_Module` 排除 `Assets`、`AssetSources`、`RuntimeDataCache` 后共有 `27` 个正常客户端
+  文件，与实机模块相比缺失 `0`、SHA-256 不一致 `0`；实机 `20` 个 XML 解析失败 `0`，中文
+  string id 重复 `0`。仓库与实机中文 README 哈希均为
+  `9380D496B07459C7D7CF6B4E9950A0793DFA158A8E87F25FCC7440DD603B67DE`，英文均为
+  `8679A12D9F91BDF72041E0B7D5EEEAE15EADBB3A7DE8DA0272D8B80F0DE4355D`。ILSpy 对最终实机 DLL
+  确认三选一原版询问、三种候选算法、`0.75/1.25` 难度阈值、`10000/20000/30000` 固定赏金、
+  新 `gwp_bounty_reward` 存档键、单次会话恢复和四十五日超时均已进入产物，并确认旧人数赏金键、
+  `RewardPerTroop`、旧任务加载回调和二次重连字段均不存在。尚需实机测试三选一的显示、三个档位
+  接单与新档存读档连续性；本轮只是开发部署，不创建正式 ZIP，也不更新 GitHub Release。
+
+## 2026-08-02 玩家受托悬赏 P0 生命周期、统一交付与读档连续性
+
+- 本轮按玩家实机痛点完成 P0，没有新增案件面板或候选契约界面。目标落败后会使用原版
+  `InformationManager.ShowInquiry` 弹出一次“悬赏目标已被击败”消息，明确告知协办灰袍已经结束
+  护送，并提示向任意灰袍领主结案领赏。交付对话统一挂在普通灰袍领主的既有 `lord_talk` 流程；
+  玩家和领主台词只谈通缉令、报告与赏金，不暴露状态机、存档键或其他开发信息。无领主巡逻队
+  不再承担交付职责，有领主的原护送队也只在目标仍存在时跟随玩家；目标落败后立即释放原版 AI
+  决策权并返回灰袍正常职责。
+- 领赏条件从“护送领主优先、无护送时仅族长兜底”合并为一个入口：只要处于待结案状态，任意
+  正常灰袍领主均可领取同一条玩家台词并支付锁定赏金。普通领主判定继续排除无英雄巡逻队、延迟
+  巡逻队、正在以玩家为目标的执法队和其他特殊任务对话，避免抢占不适用的原版对话。
+- 反编译确认原版 `QuestManager.HourlyTick` 到期只调用 `QuestBase.CompleteQuestWithTimeOut`，它会
+  清理任务日志、跟踪对象和 `QuestManager` 注册，却不会知道或清理 `PlayerBountyBehavior` 另存的
+  目标、护送与派单锁。因此原实现会出现任务已经超时、行为状态仍继续追踪并永久阻止新派单的
+  确定性缺口，不能依赖“过一段时间让原版自行恢复”。本轮为 `BountyHunterQuest.OnTimedOut` 增加
+  行为层回调，并让行为层自己的绝对截止小时执行相同兜底；四十五日到期会终止任务、释放护送、
+  清除目标/赏金/重连字段并恢复后续派单，不增加额外失败惩罚。
+- 完成后的待领赏阶段不再继承追捕期限：`MarkReadyForTurnIn` 将原版任务截止时间改为
+  `CampaignTime.Never`，并且用可存档字段保证“向任意灰袍领主报告”的完成日志不会在每次读档时
+  重复追加。因此玩家击败目标后即使存档退出，也不会在寻找领主期间被原版四十五日超时错误清走。
+- 行为层新增并持久化绝对截止小时、接取时玩家势力、接取时是否已与目标势力交战、以及玩家是否
+  真正进入过目标战斗。读档时优先重连存活的特殊任务；旧存档缺少新截止字段时从原任务
+  `QuestDueTime` 恢复，缺少原任务时才按当前阶段重建兼容任务；待领赏任务一律恢复为无期限并继续
+  接受任意领主交付。目标 ID、锁定人数、赏金、护送 ID 与战争来源字段继续随档保存，完成、超时、
+  目标消失和退出灰袍都经过同一个幂等清理入口。
+- 原结算会无条件结束玩家势力与目标势力的当前战争。本轮只在以下条件全部成立时调停：接取时双方
+  尚未交战、玩家确实进入过本悬赏目标的战斗、结算时玩家仍属于接取时的同一势力。接取前已经存在
+  的正常战争绝不由本任务结束；旧存档没有来源快照时也采取不自动议和的保守行为。
+- 用户明确暂不需要主动放弃、失败惩罚、三宗候选窗口或报酬重做，本轮没有实现这些扩展。现有唯一
+  悬赏询问、原版任务日志和领主对话继续作为全部交互面；只有完成时按要求新增一条原版样式消息。
+- 最终 Bannerlord `1.4.7` 诊断版执行 `Release -t:Rebuild --no-restore` 为 `0` 错误、`45` 条既有
+  可空性/离线 NuGet 警告并自动部署；同一最终源码对 `Bannerlord.ReferenceAssemblies`
+  `1.4.5.115026` 和 `1.4.6.115628` 的完整交叉构建均为 `0` 错误、`44` 条既有警告。实机客户端
+  与编辑器 DLL 均为 `749568` 字节，SHA-256
+  `9B8BCD422763CC408E322884572028AC61303502E1676D51D6E1113238C85CFB`。
+- 仓库 `_Module` 排除 `Assets`、`AssetSources`、`RuntimeDataCache` 后共有 `27` 个正常客户端
+  文件，与实机模块相比缺失 `0`、SHA-256 不一致 `0`；实机 `20` 个 XML 解析失败 `0`，中文
+  string id 重复 `0`。仓库与实机中文 README 哈希均为
+  `C8A5622D6E092CB7BDB77A8DB84B9299F784BABA6D3893C9AFE19225FE1C5AB0`，英文均为
+  `09DC6BAB0B046822A54DAE7CD39E2BFFFF5EBADB8B4B7BA639B9BC13B6935CEF`。ILSpy 对最终实机 DLL
+  确认四十五日常量、超时回调、截止/战争来源存档键、完成消息、结束护送、任意领主条件以及待领赏
+  `ChangeQuestDueTime(CampaignTime.Never)` 均已进入产物。上述是构建、部署与静态产物验证；仍需
+  在游戏中分别测试“追捕中存读档”“击败后存读档再向另一位灰袍领主交付”和“四十五日超时”三条
+  运行路径，不能把编译和反编译代替为实机存档验收。
+
 ## 2026-07-26 v1.4-r8 正式发行、玩家说明重写与无监控玩家包
 
 - 本轮正式版本从 `v1.4-r7` 升为 `v1.4-r8`；`SubModule.xml` 内部版本和程序集版本按

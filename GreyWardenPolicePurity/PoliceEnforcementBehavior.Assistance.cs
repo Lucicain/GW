@@ -63,6 +63,8 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, LordAssistanceGroup>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, double> _assistanceAssignedHours =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _playerBountyEscortGroups =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private static bool IsGreyWardenLordParty(MobileParty? party)
         {
@@ -123,6 +125,7 @@ namespace GreyWardenPolicePurity
 
             _assistanceGroups.Clear();
             _assistanceAssignedHours.Clear();
+            _playerBountyEscortGroups.Clear();
             if (leaders == null) return;
             List<string> loadedCrimes = crimes ?? new List<string>();
             List<string> loadedTargets = targets ?? new List<string>();
@@ -221,6 +224,14 @@ namespace GreyWardenPolicePurity
                         ReleaseAssistanceGroup(leader.StringId, "leader_case_ended");
                         continue;
                     }
+
+                    if (task?.IsPlayerBountyEscort == true)
+                    {
+                        MaintainAssistancePlayerBountyEscort(leader, group);
+                        continue;
+                    }
+
+                    ExitAssistancePlayerBountyEscort(leader, group);
 
                     MobileParty? activeTarget =
                         GetActiveAssistanceCaseTarget(group, task);
@@ -426,6 +437,75 @@ namespace GreyWardenPolicePurity
                 StringComparison.OrdinalIgnoreCase) &&
             string.Equals(task.TargetCrimeId, group.CrimeId,
                 StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsAssistancePlayerBountyEscort(
+            LordAssistanceGroup group)
+        {
+            PoliceTask? task = CrimeState.GetTask(group.LeaderPartyId);
+            return task?.IsPlayerBountyEscort == true &&
+                   IsAssistanceGroupCaseStillActive(group, task);
+        }
+
+        private void MaintainAssistancePlayerBountyEscort(
+            MobileParty leader, LordAssistanceGroup group)
+        {
+            MobileParty player = MobileParty.MainParty;
+            if (player?.IsActive != true)
+                return;
+
+            Army? army = group.DispersedForSpeed
+                ? null
+                : MaintainAssistanceArmy(leader, group);
+            if (!_playerBountyEscortGroups.Add(group.LeaderPartyId))
+                return;
+
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
+            foreach (string memberId in group.MemberPartyIds)
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(
+                    FindActiveParty(memberId));
+
+            GwpAiDiagnostics.WriteAction(leader,
+                "ASSISTANCE_PLAYER_BOUNTY_ESCORT_STARTED",
+                "members=" + group.MemberPartyIds.Count +
+                "; speedDispersed=" + group.DispersedForSpeed +
+                "; armyActive=" + (army?.LeaderParty == leader));
+        }
+
+        private void ExitAssistancePlayerBountyEscort(
+            MobileParty leader, LordAssistanceGroup group)
+        {
+            if (!_playerBountyEscortGroups.Remove(group.LeaderPartyId))
+                return;
+
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
+            foreach (string memberId in group.MemberPartyIds)
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(
+                    FindActiveParty(memberId));
+
+            GwpAiDiagnostics.WriteAction(leader,
+                "ASSISTANCE_PLAYER_BOUNTY_ESCORT_ENDED",
+                "members=" + group.MemberPartyIds.Count +
+                "; speedDispersed=" + group.DispersedForSpeed);
+        }
+
+        internal static void RefreshPlayerBountyAssistanceEscort(
+            string leaderPartyId)
+        {
+            if (_instance == null ||
+                string.IsNullOrWhiteSpace(leaderPartyId) ||
+                !_instance._assistanceGroups.TryGetValue(
+                    leaderPartyId, out LordAssistanceGroup? group))
+                return;
+
+            MobileParty? leader = FindActiveParty(group.LeaderPartyId);
+            if (leader == null)
+                return;
+
+            if (IsAssistancePlayerBountyEscort(group))
+                _instance.MaintainAssistancePlayerBountyEscort(leader, group);
+            else
+                _instance.ExitAssistancePlayerBountyEscort(leader, group);
+        }
 
         private string DescribeAssistanceValidity(MobileParty? leader, PoliceTask? task)
         {
@@ -904,7 +984,7 @@ namespace GreyWardenPolicePurity
                 return true;
 
             if (TryGetAssistanceDuty(candidate,
-                    out MobileParty? dutyTarget, out _) &&
+                    out MobileParty? dutyTarget, out _, out _) &&
                 dutyTarget?.IsActive == true)
             {
                 return ResolveAssistanceMovementTarget(dutyTarget) ==
@@ -1811,6 +1891,7 @@ namespace GreyWardenPolicePurity
             // assembly prototype. Current assistance never disables long-term AI.
             if (leader?.IsActive == true)
                 RestoreAi(leader);
+            _playerBountyEscortGroups.Remove(leaderId);
             _assistanceGroups.Remove(leaderId);
             Army? army = leader?.Army;
             if (army == null || army.LeaderParty != leader)
@@ -1895,10 +1976,12 @@ namespace GreyWardenPolicePurity
         }
 
         internal static bool TryGetAssistanceDuty(MobileParty? party,
-            out MobileParty? target, out AiBehavior behavior)
+            out MobileParty? target, out AiBehavior behavior,
+            out bool playerBountyEscort)
         {
             target = null;
             behavior = AiBehavior.None;
+            playerBountyEscort = false;
             if (_instance == null || party?.IsActive != true)
                 return false;
 
@@ -1916,6 +1999,16 @@ namespace GreyWardenPolicePurity
 
             bool speedDetached =
                 IsSpeedDetached(group, party.StringId);
+            playerBountyEscort = IsAssistancePlayerBountyEscort(group);
+            if (playerBountyEscort)
+            {
+                target = !isLeader && !speedDetached
+                    ? FindActiveParty(group.LeaderPartyId)
+                    : MobileParty.MainParty;
+                behavior = AiBehavior.EscortParty;
+                return target?.IsActive == true && target != party;
+            }
+
             if (!isLeader && !speedDetached)
             {
                 target = FindActiveParty(group.LeaderPartyId);

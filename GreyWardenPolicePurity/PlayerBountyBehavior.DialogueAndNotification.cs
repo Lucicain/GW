@@ -163,35 +163,52 @@ namespace GreyWardenPolicePurity
                 CloseRecruitmentEncounterAndReturn,
                 100);
 
-            // ── 赏金领取（向护送警察对话，优先）────────────────────────────────────
-            // 有护送方时，玩家与护送警察对话领取赏金；无护送方时降级为族长路径。
-            starter.AddPlayerLine(
-                "gwp_bounty_escort_collect",
-                "lord_talk_speak_diplomacy_2",
-                "gwp_bounty_escort_reward_response",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_007}I defeated the quarry named in the bounty. I have come for settlement."),
-                EscortBountyRewardCondition,
-                null,
-                101);
+            // ── 五日后主动找上玩家的无领主结算队 ──────────────────────────────────
+            starter.AddDialogLine(
+                "gwp_bounty_courier_returning_start",
+                "start",
+                "close_window",
+                GwpText.Get("{=gwp_bounty_courier_returning}The warrant has been settled. We are returning to quarters and have no further business with you."),
+                BountyCollectionCourierReturningDialogCondition,
+                BountyCollectionCourierReturningConsequence,
+                130);
 
             starter.AddDialogLine(
-                "gwp_bounty_escort_reward_response",
-                "gwp_bounty_escort_reward_response",
-                "lord_pretalk",
-                "{" + GwpTextKeys.BountyRewardResponse + "}",
+                "gwp_bounty_courier_start",
+                "start",
+                "gwp_bounty_courier_player",
+                "{GWP_BOUNTY_COURIER_GREETING}",
+                BountyCollectionCourierDialogCondition,
+                null,
+                120);
+
+            starter.AddPlayerLine(
+                "gwp_bounty_courier_turnin",
+                "gwp_bounty_courier_player",
+                "gwp_bounty_courier_response",
+                GwpText.Get("{=gwp_bounty_courier_player}Then close the warrant. I accept the promised bounty."),
+                null,
+                null,
+                100);
+
+            starter.AddDialogLine(
+                "gwp_bounty_courier_response",
+                "gwp_bounty_courier_response",
+                "close_window",
+                GwpText.Get("{=gwp_bounty_courier_response}The warrant is closed. Here is the payment recorded in the contract. We will return to the nearest settlement to report."),
                 null,
                 BountyRewardConsequence,
                 100);
 
-            // ── 赏金领取（向警察领主对话，无护送时的兜底路径）────────────────────────
+            // ── 赏金领取（目标落败后可向任意普通灰袍领主统一结算）──────────────────
             starter.AddPlayerLine(
                 "gwp_bounty_collect_option",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_bounty_reward_response",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_008}The bounty contract is fulfilled."),
+                GwpText.Get("{=gwp_bounty_turnin_player}The quarry has been defeated. I have come to close the warrant and receive the promised bounty."),
                 BountyRewardCondition,
                 null,
-                100);
+                101);
 
             starter.AddDialogLine(
                 "gwp_bounty_reward_response",
@@ -206,6 +223,8 @@ namespace GreyWardenPolicePurity
             // 此时 SyncData 已完成，所有持久化字段均已正确加载，可以安全访问。
             ReconcileRecruitmentPatrolState();
             TryRestoreBountyQuestOnSessionStart();
+            _bountyCollectionCourierToResumeId = null!;
+            UpdateBountyCollectionCouriers();
         }
 
         #endregion
@@ -441,8 +460,7 @@ namespace GreyWardenPolicePurity
             if (!HasBountyTask) return;
 
             try { _activeQuest?.FailQuestMembershipEnded(); } catch { }
-            MakePeaceWithCriminalFaction();
-            ClearBountyTaskState();
+            EndBountyTaskState(tryRestorePeace: true);
         }
 
         /// <summary>
@@ -483,8 +501,13 @@ namespace GreyWardenPolicePurity
 
         private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
         {
+            if (mapEvent == null) return;
+
             bool recruitInvolved = false;
             bool playerInvolved = false;
+            bool bountyTargetInvolved = false;
+            bool bountyCollectionCourierInvolved = false;
+            MobileParty? bountyCollectionCourier = null;
             MobileParty? herald = null;
 
             foreach (PartyBase p in mapEvent.InvolvedParties)
@@ -495,6 +518,37 @@ namespace GreyWardenPolicePurity
                     herald = p.MobileParty;
                 }
                 if (p.MobileParty != null && p.MobileParty.IsMainParty) playerInvolved = true;
+                if (p.MobileParty != null && IsTrackingBountyTarget &&
+                    string.Equals(p.MobileParty.StringId, _activeBountyTargetId,
+                        StringComparison.OrdinalIgnoreCase))
+                    bountyTargetInvolved = true;
+                if (IsBountyCollectionCourier(p.MobileParty))
+                {
+                    bountyCollectionCourierInvolved = true;
+                    bountyCollectionCourier = p.MobileParty;
+                }
+            }
+
+            if (playerInvolved && bountyTargetInvolved)
+            {
+                _bountyTargetEncounterStarted = true;
+                if (!string.IsNullOrEmpty(_escortPolicePartyId))
+                {
+                    PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(
+                        _escortPolicePartyId, true);
+                }
+            }
+
+            if (playerInvolved && bountyCollectionCourierInvolved &&
+                (IsWaitingForBountyCollection ||
+                 IsReturningBountyCollectionCourier(bountyCollectionCourier)))
+            {
+                if (PlayerEncounter.IsActive &&
+                    PlayerEncounter.EncounteredParty != null)
+                {
+                    try { PlayerEncounter.DoMeeting(); } catch { }
+                }
+                return;
             }
 
             if (!recruitInvolved || !playerInvolved)
@@ -532,70 +586,118 @@ namespace GreyWardenPolicePurity
 
         #region 赏金领取对话
 
-        /// <summary>
-        /// 护送方对话领赏条件：有护送方 + 等待领赏 + 正在和护送方对话。
-        /// 优先于族长路径（优先级 101 vs 100）。
-        /// </summary>
-        private bool EscortBountyRewardCondition()
+        private bool BountyCollectionCourierDialogCondition()
         {
-            if (!IsWaitingForBountyCollection) return false;
-            if (!HasEscortPoliceParty) return false;
+            MobileParty? conversationParty = MobileParty.ConversationParty;
+            if (!IsWaitingForBountyCollection ||
+                !IsBountyCollectionCourier(conversationParty))
+                return false;
 
-            MobileParty? convParty = MobileParty.ConversationParty;
-            if (convParty?.StringId != _escortPolicePartyId) return false;
-
-            MBTextManager.SetTextVariable(GwpTextKeys.BountyRewardResponse,
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_016}Well done. The contract is fulfilled; here is the promised bounty: {VAR_1} denars.", "VAR_1", _pendingReward));
+            MBTextManager.SetTextVariable(
+                "GWP_BOUNTY_COURIER_GREETING",
+                GwpText.Get(
+                    "{=gwp_bounty_courier_greeting}The Grey Wardens sent us to find you. The quarry's defeat has been confirmed. We can close the warrant here and pay the promised {VAR_1} denars.",
+                    "VAR_1", _activeBountyReward));
             return true;
         }
 
-        /// <summary>
-        /// 族长对话领赏条件：无护送方（或护送方已失联）+ 等待领赏 + 正在和族长对话。
-        /// 作为护送路径不可用时的兜底。
-        /// </summary>
+        private bool BountyCollectionCourierReturningDialogCondition()
+        {
+            MobileParty? conversationParty = MobileParty.ConversationParty;
+            return IsBountyCollectionCourier(conversationParty) &&
+                   IsReturningBountyCollectionCourier(conversationParty);
+        }
+
+        private void BountyCollectionCourierReturningConsequence()
+        {
+            MobileParty? conversationParty = MobileParty.ConversationParty;
+            if (conversationParty != null &&
+                IsReturningBountyCollectionCourier(conversationParty))
+            {
+                ResumeBountyCollectionCourierEncounterAndReturn(
+                    conversationParty);
+            }
+        }
+
+        /// <summary>目标落败后可向任意正常灰袍领主统一结算。</summary>
         private bool BountyRewardCondition()
         {
             if (!IsWaitingForBountyCollection) return false;
-            if (HasEscortPoliceParty) return false;
-
-            Hero? conversationHero = Hero.OneToOneConversationHero;
-            if (conversationHero == null) return false;
-
-            Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
-            if (policeLeader == null || conversationHero != policeLeader) return false;
+            if (!IsOrdinaryGreyWardenLordConversation()) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.BountyRewardResponse,
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_017}Well done. As agreed, here is your due: {VAR_1} denars. May we have cause to employ you again.", "VAR_1", _pendingReward));
+                GwpText.Get("{=gwp_bounty_turnin_lord}The report is confirmed and the warrant is closed. Take the promised bounty of {VAR_1} denars.", "VAR_1", _activeBountyReward));
             return true;
+        }
+
+        private void ShowBountyCompletionNotice()
+        {
+            string title = GwpText.Get("{=gwp_bounty_complete_notice_title}Bounty target defeated");
+            string body = GwpText.Get(
+                "{=gwp_bounty_complete_notice_body}The pursuit is over and the assigned escort has returned to its duties. Report to any Grey Warden lord to receive {VAR_1} denars. If the warrant remains unsettled for five days, a Warden settlement party will come to you.",
+                "VAR_1", _activeBountyReward);
+
+            InformationManager.ShowInquiry(
+                new InquiryData(
+                    title,
+                    body,
+                    true,
+                    false,
+                    GwpText.Get("{=gwp_common_understood}Understood"),
+                    string.Empty,
+                    null,
+                    null,
+                    "event:/ui/notification/quest_finished"),
+                true);
         }
 
         private void BountyRewardConsequence()
         {
+            MobileParty? collectionCourier = IsBountyCollectionCourier(
+                MobileParty.ConversationParty)
+                ? MobileParty.ConversationParty
+                : null;
             try
             {
-                int reward = _pendingReward;
+                int reward = _activeBountyReward;
                 Hero.MainHero.ChangeHeroGold(reward);
                 try { _activeQuest?.SucceedQuest(); } catch { }
+                string paymentMessage = collectionCourier == null
+                    ? GwpText.Get(
+                        "{=gwp_playerbountybehavior_dialogueandnotification_018}Bounty received from a Warden-lord: {VAR_1} denars",
+                        "VAR_1", reward)
+                    : GwpText.Get(
+                        "{=gwp_bounty_courier_payment_received}Bounty received from the Grey Warden settlement party: {VAR_1} denars",
+                        "VAR_1", reward);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_018}Bounty received from a Warden-lord: {VAR_1} denars", "VAR_1", reward),
+                    paymentMessage,
                     Colors.Green));
                 MakePeaceWithCriminalFaction();
             }
             catch { }
             finally
             {
-                ClearBountyTaskState();
+                if (collectionCourier != null)
+                    CloseBountyCollectionCourierEncounterAndReturn(
+                        collectionCourier);
+                ClearBountyTaskState(collectionCourier);
             }
         }
 
         private void MakePeaceWithCriminalFaction()
         {
             if (string.IsNullOrEmpty(_activeBountyTargetFactionId)) return;
+            if (string.IsNullOrEmpty(_activeBountyPlayerFactionId)) return;
+            if (_playerFactionWasAtWarWhenBountyAccepted) return;
+            if (!_bountyTargetEncounterStarted) return;
 
             try
             {
                 IFaction? playerFaction = Hero.MainHero?.MapFaction;
                 if (playerFaction == null) return;
+                if (!string.Equals(playerFaction.StringId, _activeBountyPlayerFactionId,
+                        StringComparison.OrdinalIgnoreCase))
+                    return;
 
                 IFaction? criminalFaction = null;
                 foreach (Kingdom kingdom in Kingdom.All)
@@ -632,15 +734,51 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 悬赏派发（右侧通知面板）
+        #region 悬赏派发（原版通知与三选一询问）
 
-        private void OfferBounty(CrimeRecord crime)
+        private enum BountyDifficulty
         {
-            if (!crime.IsOffenderValid()) return;
+            Easy,
+            Standard,
+            Hard
+        }
 
+        private enum BountyOfferRole
+        {
+            Nearest,
+            Harder,
+            Easier
+        }
+
+        private sealed class BountyOfferChoice
+        {
+            internal CrimeRecord Crime { get; }
+            internal BountyOfferRole Role { get; }
+            internal BountyDifficulty Difficulty { get; }
+            internal int Reward { get; }
+
+            internal BountyOfferChoice(
+                CrimeRecord crime,
+                BountyOfferRole role,
+                BountyDifficulty difficulty,
+                int reward)
+            {
+                Crime = crime;
+                Role = role;
+                Difficulty = difficulty;
+                Reward = reward;
+            }
+        }
+
+        private void OfferBountySelection()
+        {
             TryRegisterNotificationType();
-            var notification = new BountyMapNotification(crime);
-            try { Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(notification); } catch { }
+            try
+            {
+                Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(
+                    new BountyMapNotification());
+            }
+            catch { }
         }
 
         private static void TryRegisterNotificationType()
@@ -658,77 +796,235 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
-        internal void ShowBountyInquiry(CrimeRecord crime)
+        internal bool CanInspectBountyOffers() =>
+            _recruitmentAccepted &&
+            PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold &&
+            IsWearingCommanderSet() &&
+            !HasBountyTask &&
+            CrimeState.GetAvailablePlayerBounties().Count > 0;
+
+        internal void ShowBountySelectionInquiry()
         {
-            if (!_recruitmentAccepted ||
-                PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold ||
-                !IsWearingCommanderSet())
-                return;
-            if (crime == null || !crime.IsOffenderValid()) return;
-            if (HasBountyTask) return;
+            if (!CanInspectBountyOffers()) return;
 
-            MobileParty? target = crime.Offender;
-            if (target == null) return;
+            List<BountyOfferChoice> choices = BuildBountyOfferChoices();
+            if (choices.Count == 0) return;
 
-            int targetSize = target.Party.NumberOfAllMembers;
-            int estimatedReward = targetSize * GwpTuning.Bounty.RewardPerTroop;
-            string nearestSettlement = GetNearestSettlementName(target.GetPosition2D);
+            var roles = new[]
+            {
+                BountyOfferRole.Nearest,
+                BountyOfferRole.Harder,
+                BountyOfferRole.Easier
+            };
+            var elements = new List<InquiryElement>(3);
 
-            string description =
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_020}Target Faction: {VAR_1}", "VAR_1", target.Name) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_021}Crime Type: {VAR_1}", "VAR_1", GwpText.CrimeType(crime.CrimeType)) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_022}Last sighting: {VAR_1} nearby", "VAR_1", nearestSettlement) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_023}Party strength: {VAR_1} people", "VAR_1", targetSize) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_024}Estimated bounty: About {VAR_1} dinars", "VAR_1", estimatedReward) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_025}(settled at the strength accepted × {VAR_1})", "VAR_1", GwpTuning.Bounty.RewardPerTroop) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_026}When the quarry is defeated, seek a Warden-lord to claim the bounty.");
+            foreach (BountyOfferRole role in roles)
+            {
+                BountyOfferChoice? choice = choices.FirstOrDefault(item => item.Role == role);
+                string roleText = GetRoleText(role);
+                if (choice == null)
+                {
+                    elements.Add(new InquiryElement(
+                        null,
+                        GwpText.Get("{=gwp_bounty_choice_unavailable}{VAR_1}: no separate valid contract", "VAR_1", roleText),
+                        null,
+                        false,
+                        GwpText.Get("{=gwp_bounty_choice_unavailable_hint}More open cases are needed for a separate choice.")));
+                    continue;
+                }
+
+                MobileParty target = choice.Crime.Offender!;
+                string label = GwpText.Get(
+                    "{=gwp_bounty_choice_label}{VAR_1}: {VAR_2} — {VAR_3}, {VAR_4} denars",
+                    "VAR_1", roleText,
+                    "VAR_2", target.Name,
+                    "VAR_3", GetDifficultyText(choice.Difficulty),
+                    "VAR_4", choice.Reward);
+                string hint = GwpText.Get(
+                    "{=gwp_bounty_choice_hint}{VAR_1}; last sighted near {VAR_2}.",
+                    "VAR_1", GwpText.CrimeType(choice.Crime.CrimeType),
+                    "VAR_2", GetNearestSettlementName(target.GetPosition2D));
+                elements.Add(new InquiryElement(choice, label, null, true, hint));
+            }
+
+            MBInformationManager.ShowMultiSelectionInquiry(
+                new MultiSelectionInquiryData(
+                    GwpText.Get("{=gwp_bounty_select_title}Select a Grey Warden bounty"),
+                    GwpText.Get("{=gwp_bounty_select_description}Choose the nearest quarry, a harder quarry, or an easier quarry. Payment is fixed by difficulty."),
+                    elements,
+                    true,
+                    1,
+                    1,
+                    GwpText.Get("{=gwp_bounty_review_contract}Review contract"),
+                    GwpText.Get("{=gwp_cancel}Cancel"),
+                    selected =>
+                    {
+                        BountyOfferChoice? choice = selected.FirstOrDefault()?.Identifier
+                            as BountyOfferChoice;
+                        if (choice != null)
+                            ShowBountyInquiry(choice);
+                    },
+                    _ => { }),
+                true);
+        }
+
+        private List<BountyOfferChoice> BuildBountyOfferChoices()
+        {
+            List<CrimeRecord> available = CrimeState.GetAvailablePlayerBounties();
+            if (available.Count == 0) return new List<BountyOfferChoice>();
+
+            Vec2 playerPosition = MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero;
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<BountyOfferChoice>(3);
+
+            AddBountyChoice(
+                result,
+                used,
+                available.OrderBy(crime =>
+                    playerPosition.Distance(crime.Offender!.GetPosition2D)).FirstOrDefault(),
+                BountyOfferRole.Nearest);
+            AddBountyChoice(
+                result,
+                used,
+                available.Where(crime => !used.Contains(crime.CrimeId))
+                    .OrderByDescending(GetBountyStrength).FirstOrDefault(),
+                BountyOfferRole.Harder);
+            AddBountyChoice(
+                result,
+                used,
+                available.Where(crime => !used.Contains(crime.CrimeId))
+                    .OrderBy(GetBountyStrength).FirstOrDefault(),
+                BountyOfferRole.Easier);
+
+            return result;
+        }
+
+        private static void AddBountyChoice(
+            ICollection<BountyOfferChoice> result,
+            ISet<string> used,
+            CrimeRecord? crime,
+            BountyOfferRole role)
+        {
+            if (crime == null || !used.Add(crime.CrimeId)) return;
+
+            BountyDifficulty difficulty = GetBountyDifficulty(crime);
+            result.Add(new BountyOfferChoice(
+                crime,
+                role,
+                difficulty,
+                GetBountyReward(difficulty)));
+        }
+
+        private static float GetBountyStrength(CrimeRecord crime) =>
+            Math.Max(1f, crime.Offender?.Party.EstimatedStrength ?? 0f);
+
+        private static BountyDifficulty GetBountyDifficulty(CrimeRecord crime)
+        {
+            float playerStrength = Math.Max(
+                1f,
+                MobileParty.MainParty?.Party.EstimatedStrength ?? 0f);
+            float ratio = GetBountyStrength(crime) / playerStrength;
+            if (ratio <= GwpTuning.Bounty.EasyStrengthRatio)
+                return BountyDifficulty.Easy;
+            if (ratio >= GwpTuning.Bounty.HardStrengthRatio)
+                return BountyDifficulty.Hard;
+            return BountyDifficulty.Standard;
+        }
+
+        private static int GetBountyReward(BountyDifficulty difficulty) => difficulty switch
+        {
+            BountyDifficulty.Easy => GwpTuning.Bounty.EasyReward,
+            BountyDifficulty.Hard => GwpTuning.Bounty.HardReward,
+            _ => GwpTuning.Bounty.StandardReward
+        };
+
+        private static string GetDifficultyText(BountyDifficulty difficulty) => difficulty switch
+        {
+            BountyDifficulty.Easy => GwpText.Get("{=gwp_bounty_difficulty_easy}Easy"),
+            BountyDifficulty.Hard => GwpText.Get("{=gwp_bounty_difficulty_hard}Hard"),
+            _ => GwpText.Get("{=gwp_bounty_difficulty_standard}Standard")
+        };
+
+        private static string GetRoleText(BountyOfferRole role) => role switch
+        {
+            BountyOfferRole.Harder => GwpText.Get("{=gwp_bounty_choice_harder}Harder"),
+            BountyOfferRole.Easier => GwpText.Get("{=gwp_bounty_choice_easier}Easier"),
+            _ => GwpText.Get("{=gwp_bounty_choice_nearest}Nearest")
+        };
+
+        private void ShowBountyInquiry(BountyOfferChoice choice)
+        {
+            if (!CanInspectBountyOffers()) return;
+            CrimeRecord crime = choice.Crime;
+            if (!crime.IsOffenderPursuable()) return;
+
+            MobileParty target = crime.Offender!;
+            string description = string.Join(
+                Environment.NewLine,
+                GwpText.Get("{=gwp_bounty_contract_target}Target: {VAR_1}", "VAR_1", target.Name),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_021}Crime Type: {VAR_1}", "VAR_1", GwpText.CrimeType(crime.CrimeType)),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_022}Last sighting: {VAR_1} nearby", "VAR_1", GetNearestSettlementName(target.GetPosition2D)),
+                GwpText.Get("{=gwp_bounty_contract_difficulty}Assessed difficulty: {VAR_1}", "VAR_1", GetDifficultyText(choice.Difficulty)),
+                GwpText.Get("{=gwp_bounty_contract_reward}Fixed bounty: {VAR_1} denars", "VAR_1", choice.Reward),
+                GwpText.Get("{=gwp_bounty_contract_deadline}The warrant remains active for 45 days."),
+                GwpText.Get("{=gwp_bounty_contract_turnin}After defeating the quarry, report to any Grey Warden lord."));
 
             InformationManager.ShowInquiry(
                 new InquiryData(
                     GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_027}Grey Warden Bounty"),
                     description,
-                    true, true,
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_028}Accept the charge"), GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_029}Refuse"),
-                    () => AcceptBounty(crime),
+                    true,
+                    true,
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_028}Accept the charge"),
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_029}Refuse"),
+                    () => AcceptBounty(choice),
                     () => { },
                     "event:/ui/panels/quest_start"),
                 true);
         }
 
-        private void AcceptBounty(CrimeRecord crime)
+        private void AcceptBounty(BountyOfferChoice choice)
         {
-            if (!_recruitmentAccepted ||
-                PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold ||
-                !IsWearingCommanderSet())
-                return;
-            if (!crime.IsOffenderValid())
+            if (!CanInspectBountyOffers()) return;
+
+            CrimeRecord crime = choice.Crime;
+            if (!crime.IsOffenderPursuable())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target has expired and the bounty contract has been cancelled."), Colors.Red));
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target is no longer available, and the bounty contract has been cancelled."), Colors.Red));
                 return;
             }
 
-            MobileParty? offender = crime.Offender;
-            if (offender == null)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_031}The goal has expired and the bounty contract has been cancelled."), Colors.Red));
-                return;
-            }
-
+            MobileParty offender = crime.Offender!;
             _activeBountyTargetId = offender.StringId;
             _activeBountyTargetName = offender.Name.ToString();
             _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
             _activeBountyCrimeCategory = (int)crime.CrimeCategory;
-            _activeBountyTargetSize = offender.Party.NumberOfAllMembers;
+            _activeBountyReward = choice.Reward;
+            _waitingForCollection = false;
+            _activeBountyDeadlineHours = CampaignTime.Now.ToHours +
+                                         GwpTuning.Bounty.DeadlineDays * 24d;
+
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            IFaction? targetFaction = offender.MapFaction;
+            _activeBountyPlayerFactionId = playerFaction?.StringId ?? string.Empty;
+            _playerFactionWasAtWarWhenBountyAccepted =
+                playerFaction != null &&
+                targetFaction != null &&
+                FactionManager.IsAtWarAgainstFaction(playerFaction, targetFaction);
+            _bountyTargetEncounterStarted = false;
 
             _escortPolicePartyId = CrimeState.GetAssignedPolicePartyId(offender.StringId) ?? string.Empty;
             if (!string.IsNullOrEmpty(_escortPolicePartyId))
             {
                 CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
+                PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(
+                    _escortPolicePartyId);
+                PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(
+                    _escortPolicePartyId);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_032}The Grey Warden escort is ready and will follow your pursuit. Once the quarry falls, claim the bounty from the escorting Warden."),
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_032}The Grey Warden escort is ready and will follow your pursuit until the quarry falls."),
                     Colors.Cyan));
             }
 
@@ -739,33 +1035,35 @@ namespace GreyWardenPolicePurity
                 {
                     _activeQuest = new BountyHunterQuest(
                         policeLeader,
-                        _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop,
+                        _activeBountyReward,
                         offender.Name.ToString());
                     _activeQuest.StartQuest();
                     Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
                     TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
-                                              GwpText.Create(
-                                                  "{=gwp_playerbountybehavior_020}unknown location");
+                                              GwpText.Create("{=gwp_playerbountybehavior_020}unknown location");
                     _activeQuest.WriteLog(
                         GwpText.Create(
                             "{=!}{VAR_1}{VAR_2}{VAR_3}",
                             "VAR_1", GwpText.Create(
-                                "{=gwp_playerbountybehavior_dialogueandnotification_033}Target: {VAR_1} (currently {VAR_2} people).",
-                                "VAR_1", offender.Name, "VAR_2", _activeBountyTargetSize),
+                                "{=gwp_bounty_quest_target}Target: {VAR_1}. Assessed difficulty: {VAR_2}.\n",
+                                "VAR_1", offender.Name,
+                                "VAR_2", GetDifficultyText(choice.Difficulty)),
                             "VAR_2", GwpText.Create(
-                                "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.",
+                                "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.\n",
                                 "VAR_1", lastSeenNear),
                             "VAR_3", GwpText.Create(
-                                "{=gwp_playerbountybehavior_dialogueandnotification_035}After defeating, go to the warden-lord to collect the bounty of approximately {VAR_1} dinars.",
-                                "VAR_1", _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop)));
+                                "{=gwp_bounty_quest_reward}Defeat the quarry within 45 days, then report to any Grey Warden lord for the fixed bounty of {VAR_1} denars.",
+                                "VAR_1", _activeBountyReward)));
                 }
                 catch { _activeQuest = null!; }
             }
 
-            int estimatedGold = _activeBountyTargetSize * GwpTuning.Bounty.RewardPerTroop;
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_036}has accepted the bounty contract: chasing {VAR_1}", "VAR_1", offender.Name) +
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_037}({VAR_1} person), the reward is about {VAR_2} dinars", "VAR_1", _activeBountyTargetSize, "VAR_2", estimatedGold),
+                GwpText.Get(
+                    "{=gwp_bounty_contract_accepted}Bounty accepted: pursue {VAR_1}. Difficulty: {VAR_2}; fixed reward: {VAR_3} denars.",
+                    "VAR_1", offender.Name,
+                    "VAR_2", GetDifficultyText(choice.Difficulty),
+                    "VAR_3", _activeBountyReward),
                 Colors.Cyan));
         }
 

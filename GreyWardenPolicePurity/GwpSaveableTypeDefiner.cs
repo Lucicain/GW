@@ -43,9 +43,9 @@ namespace GreyWardenPolicePurity
             AddClassDefinition(typeof(PlayerBountyBehavior.BountyHunterQuest), 1);
 
             // localId = 2 → 全局 ID 2_894_634
-            // BountyMapNotification 在 OfferBounty() → NewMapNoticeAdded() 后进入
+            // BountyMapNotification 在 OfferBountySelection() → NewMapNoticeAdded() 后进入
             // Campaign 持久化通知列表。
-            // 读档时 IsValid() 因 CrimePool 已清空而返回 false，通知自动清除。
+            // IsValid() 会按当前成员资格、装备、任务状态和可用案件自动刷新。
             AddClassDefinition(typeof(PlayerBountyBehavior.BountyMapNotification), 2);
 
             // localId = 3 → 全局 ID 2_894_635

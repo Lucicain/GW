@@ -149,21 +149,7 @@ namespace GreyWardenPolicePurity
         }
 
         private static Settlement? FindNearestSettlement(Vec2 position)
-        {
-            Settlement? nearest = null;
-            float nearestDist = float.MaxValue;
-            foreach (Settlement s in Settlement.All)
-            {
-                if (s == null) continue;
-                float dist = s.GetPosition2D.Distance(position);
-                if (dist < nearestDist)
-                {
-                    nearestDist = dist;
-                    nearest = s;
-                }
-            }
-            return nearest;
-        }
+            => GwpCommon.FindNearestSettlement(position);
 
         private void AppendAtonementIntelLog(MobileParty target)
         {

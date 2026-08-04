@@ -416,7 +416,8 @@ namespace GreyWardenPolicePurity
         {
             if (PoliceEnforcementBehavior.TryGetAssistanceDuty(
                     party, out MobileParty? assistanceTarget,
-                    out AiBehavior assistanceBehavior) &&
+                    out AiBehavior assistanceBehavior,
+                    out bool playerBountyEscort) &&
                 assistanceTarget?.IsActive == true)
             {
                 return new Intent
@@ -425,7 +426,9 @@ namespace GreyWardenPolicePurity
                         ? IntentKind.Escort
                         : IntentKind.Pursue,
                     Party = assistanceTarget,
-                    Priority = AssignedDutyScore,
+                    Priority = playerBountyEscort
+                        ? PlayerRequestScore
+                        : AssignedDutyScore,
                     ExpiresAt = double.MaxValue
                 };
             }

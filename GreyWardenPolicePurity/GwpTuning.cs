@@ -6,8 +6,14 @@ namespace GreyWardenPolicePurity
         {
             public const float OfferCooldownDays = 2f;
             public const float IntelReportIntervalDays = 2f;
-            public const int RewardPerTroop = 200;
-            public const float EscortEngageDistance = 3f;
+            public const float DeadlineDays = 45f;
+            public const float EasyStrengthRatio = 0.75f;
+            public const float HardStrengthRatio = 1.25f;
+            public const int EasyReward = 10000;
+            public const int StandardReward = 20000;
+            public const int HardReward = 30000;
+            public const float CollectionCourierDelayDays = 5f;
+            public const int CollectionCourierPatrolSize = 10;
             public const int RecruitmentReputationThreshold = 20;
             public const int ReadmissionReputationStep = 20;
             public const int MaximumVoluntaryExits = 3;

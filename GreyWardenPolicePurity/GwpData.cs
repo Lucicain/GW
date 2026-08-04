@@ -447,6 +447,13 @@ namespace GreyWardenPolicePurity
         public static CrimeRecord? GetNearestNonPlayerFromAll(Vec2 pos) => SelectNearest(
             _ledger.Values.Where(c => c.CrimeId != PlayerCrimeId && c.HasOpenCase && c.IsOffenderPursuable()), pos);
 
+        public static List<CrimeRecord> GetAvailablePlayerBounties() =>
+            _ledger.Values
+                .Where(c => c.CrimeId != PlayerCrimeId &&
+                            c.HasOpenCase &&
+                            c.IsOffenderPursuable())
+                .ToList();
+
 
         private static CrimeRecord? SelectNearest(IEnumerable<CrimeRecord> source, Vec2 pos)
         {

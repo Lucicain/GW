@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -7,8 +9,13 @@ using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
 using TaleWorlds.Core;
 using TaleWorlds.Core.ViewModelCollection.Information;
+using TaleWorlds.GauntletUI;
+using TaleWorlds.GauntletUI.BaseTypes;
+using TaleWorlds.GauntletUI.Data;
+using TaleWorlds.GauntletUI.PrefabSystem;
 using TaleWorlds.Localization;
 using TaleWorlds.Library;
+using TaleWorlds.MountAndBlade.GauntletUI.Widgets;
 
 namespace GreyWardenPolicePurity
 {
@@ -217,6 +224,10 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch]
     internal static class GwpEncyclopediaHeroPageExtensionPatch
     {
+        private static readonly ConditionalWeakTable<
+            EncyclopediaHeroPageVM,
+            GwpEncyclopediaHeroPageExtension> Extensions = new();
+
         private static MethodBase? TargetMethod()
         {
             return AccessTools.Constructor(
@@ -232,9 +243,111 @@ namespace GreyWardenPolicePurity
             Hero? hero = __args.Length > 0 && __args[0] is EncyclopediaPageArgs args
                 ? args.Obj as Hero
                 : null;
-            GwpNativeViewModelExtension.Attach(
+            Extensions.Remove(__instance);
+            Extensions.Add(
                 __instance,
                 new GwpEncyclopediaHeroPageExtension(hero));
+        }
+
+        internal static bool TryGetExtension(
+            EncyclopediaHeroPageVM viewModel,
+            out GwpEncyclopediaHeroPageExtension extension) =>
+            Extensions.TryGetValue(viewModel, out extension!);
+    }
+
+    /// <summary>
+    /// Bannerlord uses a compiled prefab for the native hero page, so a loose
+    /// same-name XML file is skipped. Add only the Grey Warden control after
+    /// the original page has been instantiated, preserving the native layout.
+    /// </summary>
+    [HarmonyPatch(typeof(GauntletMovie), nameof(GauntletMovie.Load))]
+    internal static class GwpEncyclopediaHeroPageWidgetPatch
+    {
+        private const string HeroPageMovieName = "EncyclopediaHeroPage";
+        private const string ButtonId = "GwpDeterrenceButton";
+        private const string RightSidePanelId = "RightSideScrollablePanel";
+
+        [HarmonyPostfix]
+        private static void AddDeterrenceButton(
+            string movieName,
+            IViewModel datasource,
+            IGauntletMovie __result)
+        {
+            if (!string.Equals(
+                    movieName,
+                    HeroPageMovieName,
+                    StringComparison.Ordinal)
+                || datasource is not EncyclopediaHeroPageVM heroPage
+                || __result?.RootWidget == null
+                || !GwpEncyclopediaHeroPageExtensionPatch.TryGetExtension(
+                    heroPage,
+                    out GwpEncyclopediaHeroPageExtension extension)
+                || GwpGauntletWidgetUtility.FindById(
+                    __result.RootWidget,
+                    ButtonId) != null)
+            {
+                return;
+            }
+
+            Widget? scrollablePanel = GwpGauntletWidgetUtility.FindById(
+                __result.RootWidget,
+                RightSidePanelId);
+            Widget? parent = scrollablePanel == null
+                ? null
+                : GwpGauntletWidgetUtility.FindAncestorChildOf<BrushWidget>(
+                    scrollablePanel);
+            if (parent == null)
+                return;
+
+            UIContext context = __result.RootWidget.Context;
+            var button = new ButtonWidget(context)
+            {
+                Id = ButtonId,
+                WidthSizePolicy = SizePolicy.Fixed,
+                HeightSizePolicy = SizePolicy.Fixed,
+                SuggestedWidth = 150f,
+                SuggestedHeight = 48f,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                MarginRight = 28f,
+                MarginTop = 10f,
+                Brush = context.GetBrush("Popup.Done.Button.NineGrid"),
+                DoNotPassEventsToChildren = true,
+                UpdateChildrenStates = true,
+                GamepadNavigationIndex = 1
+            };
+
+            var text = new TextWidget(context)
+            {
+                WidthSizePolicy = SizePolicy.StretchToParent,
+                HeightSizePolicy = SizePolicy.StretchToParent,
+                Brush = context.GetBrush("Popup.Button.Text"),
+                Text = extension.DeterrenceButtonText,
+                IsEnabled = false
+            };
+            button.AddChild(text);
+
+            var hint = new HintWidget(context)
+            {
+                WidthSizePolicy = SizePolicy.StretchToParent,
+                HeightSizePolicy = SizePolicy.StretchToParent
+            };
+            button.AddChild(hint);
+
+            button.EventFire += (widget, commandName, args) =>
+            {
+                if (commandName == "Click")
+                    extension.ExecuteOpenDeterrenceDetails();
+            };
+            hint.EventFire += (widget, commandName, args) =>
+            {
+                if (commandName == "HoverBegin")
+                    extension.DeterrenceButtonHint.ExecuteBeginHint();
+                else if (commandName == "HoverEnd")
+                    extension.DeterrenceButtonHint.ExecuteEndHint();
+            };
+
+            parent.AddChild(button);
         }
     }
 
