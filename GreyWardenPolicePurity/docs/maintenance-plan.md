@@ -31,6 +31,13 @@
   大小 349503814 字节，SHA-256 为
   FD06FFB28B90F218A7522155BB0BAFC44B3B271D093F063CF2C69D284DDE7146；匹配的 .zip.sha256
   内容已重新读取并核对一致。
+- 发行代码提交为 dcdc042450b4abf5d0e3e9b096df6a7feed5cb92，main 与带注释标签 v1.4-r9 已推送；
+  标签解引用后准确指向该提交。正式 Release 位于
+  https://github.com/Lucicain/GW/releases/tag/v1.4-r9，为非草稿、非预发行并已标记 latest。
+  远端 ZIP 状态为 uploaded，大小仍为 349503814 字节，GitHub digest 为
+  sha256:fd06ffb28b90f218a7522155bb0bafc44b3b271d093f063cf2c69d284dde7146；远端校验文件为
+  89 字节，digest 为 sha256:535aa0ed60a93dbe14f27d569eac40225fe34470eca254a3e2fa666cbba3fbd7，
+  两者均与本地文件一致。本机 Modules 父目录已删除旧 R8 ZIP 与校验文件，只保留 R9 一对。
 
 ## 2026-08-05 R9 人物百科按钮挤压正文
 
