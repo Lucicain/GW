@@ -1,5 +1,39 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 用户确认：NPC 双刀实现成功，建立稳定检查点
+
+- **用户实机确认：双刀功能正常，人物模型/预览显示正常。** 双刃卫士在战斗中真正双持，左右手动作与玩家一致；英雄预览、百科与自定义战斗预览均无异常。
+- 本检查点提交 `b98d01e`，本地标签 `checkpoint/npc-dual-blade`。这是"NPC 可用双刀"的首个已验证基线，后续任何回归直接回到该提交。
+
+### 最终生效的实现（三部分，全部落在预览安全区）
+
+1. **建立 —— 无需任何代码。** 原生自身的出生拔刀（`Agent.WieldInitialWeapons` → `Equipment.GetInitialWeaponIndicesToEquip`）就能把 `Weapon0` 副手刀与 `Weapon1` 主手刀正确配好。部署阶段的实测截图证实了这一点。此前两周所有"设法把副手塞进手里"的尝试都是在解决一个不存在的问题。
+2. **保持之一 · 阵型 —— `GwpDualBladeShieldDirectionPatch`。** 后置 `ArrangementOrder.GetShieldDirectionOfUnit`，把双刃卫士的返回值由 `UsageDirection.None`（`-1`，语义为"收起副手"）改为 `AttackEnd`（`4`，"携带但不举起"）。两处收刀调用点（`ArrangementOrder.OnApply` 与 `Agent.UpdateFormationOrders`）共用该静态方法，一个补丁覆盖两者。
+3. **保持之二 · AI 武器重选 —— `GwpDualBladeGuardBehavior` + `GwpDualBladeGuardInputComponent`。** 通过 `AgentComponent.OnAIInputSet`（**组件，非 Harmony 补丁**）丢弃双刃卫士的全部换武器输入（`Wield0..Wield3`、`Sheath0/1`、`ToggleAlternativeWeapon`）。该兵种只带两把刀、没有第二种武器，因此不损失任何战术行为；移动、攻击、格挡等决策完全交给原生。
+- 配套数据：`gwtwinblade` 兵种（`Item0` 副手刀 / `Item1` 主手刀，无弓，level 26，由 `gwrecruit` 升级）；`gwdualbladeoffhandai`（与玩家副手刀复用同一锻造模板与同样四个部件，外观一致，仅 id 不同）；`GwpDualBladeNpcItemSetup` 在 `OnGameInitializationFinished` 对该 NPC 物品一次性写入 `CollisionBodyName = BodyName`、`WeaponFlags |= HasHitPoints | CanBlockRanged`（遍历全部 usage）、`MaxDataValue = 500`。玩家的 `gwdualbladeoffhand` 完全未改动。
+- 伤害与击倒：`IsOffHandBladeId` 使玩家刀与 NPC 刀在装备判定、副手伤害类型与 bone-20 击倒三处一视同仁。
+
+### 补丁目标安全边界（本模组 1.5.2 的硬性结论）
+
+| 目标 | 预览 | 依据 |
+|---|---|---|
+| `Mission.*` | 安全 | `2367e60` 用户确认"什么都好" |
+| `ArrangementOrder.*` | 安全 | 本轮英雄预览正常 |
+| `MissionBehavior` / `AgentComponent`（非补丁） | 安全 | 本轮确认 |
+| **`Agent.*` per-call** | **有毒** | 两次复现，第二次判定已窄到只读不可变 id，排除判定条件变量 |
+| **`MissionWeapon.*` per-call** | **有毒** | 多轮复现；`GwpBlackLordShieldBehavior` 早年也因此被清空 |
+
+**两周内反复出现的"人物模型消失/姿态异常"，成因就是在后两类类型上安装 per-call 补丁，与补丁内容无关。** 后续任何开发不得违反此边界。
+
+### 基线校验值
+
+- 离线预检 `PATCH_OK=38; PATCH_FAIL=0`（检查点 37 + `ArrangementOrder` 1），程序集类型数 411；`HarmonyPatch(typeof(Agent)` 与 `HarmonyPatch(typeof(MissionWeapon)` 命中均为 0。
+- XSLT 变换后 action_set 总数 102（与原版一致）、重复 id 0、`as_human_female_warrior` 保持原版 298 条。
+- 30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件缺失 0、差异 0。
+- 客户端与编辑器 DLL 均为 797696 字节、SHA-256 `D473A3E99BBFAE9B5ED586005420CC8A929BE405318459DA7241B54CC6280A26`。Bannerlord 进程数 0。
+- 已知取舍（用户已同意）：双刃卫士的副手刀带 `CanBlockRanged`，因此能挡下飞箭；这是让原生 AI 承认该副手所必需的，玩家双刀不受影响。
+- 失败候选全部保留可查：`failed/npc-native-qualification`、`failed/npc-ai-input-boundary`、`failed/shield-enforcement-bypass`、`failed/shield-bypass-narrow`，以及两个 stash 与 reflog。
+
 ## 2026-08-30 部署阶段实证：双刀本来就能拿住，开战时被原生 AI 武器重选收走
 
 - 用户实测并附截图：**部署阶段双刃卫士双刀在手且稳定**（截图中卫士背后为交叉双刀）；**点击开始战斗的瞬间只剩主剑**，并且主剑被重复拔出三次；英雄预览模型正常。
