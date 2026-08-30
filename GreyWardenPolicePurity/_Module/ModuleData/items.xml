@@ -1,4 +1,4 @@
-<!--You can add new or override old items(weapons and armors) by adding nodes to this xml.
+﻿<!--You can add new or override old items(weapons and armors) by adding nodes to this xml.
 For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   <Items>
   <!--Weapons-->
@@ -27,6 +27,27 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
        gwonehandedsword appearance. The off-hand blade piece changes only the
        attachment flags required by the dual-wield skeleton. -->
   <CraftedItem id="gwdualbladeoffhand"
+               name="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)"
+               crafting_template="GwpOneHandedSwordDualOffhand"
+               culture="Culture.empire"
+               is_merchandise="false">
+    <Pieces>
+      <Piece id="gwp_vlandian_blade_3_dual"
+             Type="Blade"
+             scale_factor="100" />
+      <Piece id="vlandian_guard_8"
+             Type="Guard"
+             scale_factor="100" />
+      <Piece id="sturgian_grip_36"
+             Type="Handle"
+             scale_factor="100" />
+      <Piece id="empire_pommel_6"
+             Type="Pommel"
+             scale_factor="100" />
+    </Pieces>
+  </CraftedItem>
+
+  <CraftedItem id="gwdualbladeoffhandai"
                name="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)"
                crafting_template="GwpOneHandedSwordDualOffhand"
                culture="Culture.empire"

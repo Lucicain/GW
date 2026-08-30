@@ -38,6 +38,14 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        // Item XMLs are not deserialized yet in OnGameStart, so the NPC
+        // blade's one-time setup waits until object initialization finishes.
+        public override void OnGameInitializationFinished(Game game)
+        {
+            base.OnGameInitializationFinished(game);
+            GwpDualBladeNpcItemSetup.Apply(game);
+        }
+
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);

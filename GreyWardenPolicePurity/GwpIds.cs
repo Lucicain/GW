@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,6 +26,11 @@ namespace GreyWardenPolicePurity
         public const string BlackLargeShieldItemId = "wlarge_shield_black";
         public const string GrainItemId = "grain";
         public const string DualBladeOffhandItemId = "gwdualbladeoffhand";
+
+        // Visually identical NPC copy of the off-hand blade. A separate
+        // id is what lets the native off-hand qualification be written to
+        // the NPC blade alone, leaving the player's item untouched.
+        public const string DualBladeOffhandAiItemId = "gwdualbladeoffhandai";
         public const string DualBladeMainhandItemId = "gwdualblademainhand";
         public const string DualBladeOffhandCraftingTemplateId =
             "GwpOneHandedSwordDualOffhand";

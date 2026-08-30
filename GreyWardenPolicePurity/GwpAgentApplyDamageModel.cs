@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -113,9 +113,8 @@ namespace GreyWardenPolicePurity
             try
             {
                 MissionEquipment equipment = attacker.Equipment;
-                if (!IsItem(
-                        equipment[EquipmentIndex.Weapon0],
-                        GwpIds.DualBladeOffhandItemId)
+                if (!GwpDualBladeLoadout.IsOffHandBladeId(
+                        equipment[EquipmentIndex.Weapon0].Item?.StringId)
                     || !IsItem(
                         equipment[EquipmentIndex.Weapon1],
                         GwpIds.DualBladeMainhandItemId))
@@ -129,9 +128,8 @@ namespace GreyWardenPolicePurity
                 // keeps an optional lance in Weapon2 from gaining the
                 // paired-blade knockdown effect.
                 bool isLeftHandAttack = collisionData.AttackBoneIndex == 20
-                    && IsItem(
-                        attacker.WieldedOffhandWeapon,
-                        GwpIds.DualBladeOffhandItemId);
+                    && GwpDualBladeLoadout.IsOffHandBladeId(
+                        attacker.WieldedOffhandWeapon.Item?.StringId);
                 bool isMainHandAttack = collisionData.AttackBoneIndex != 20
                     && IsItem(
                         attacker.WieldedWeapon,

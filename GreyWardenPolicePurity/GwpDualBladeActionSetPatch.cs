@@ -269,8 +269,8 @@ namespace GreyWardenPolicePurity
             {
                 Equipment? spawnEquipment = agent.SpawnEquipment;
                 if (spawnEquipment != null
-                    && IsItem(spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item,
-                        GwpIds.DualBladeOffhandItemId)
+                    && IsOffHandBladeId(
+                        spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
                     && IsItem(spawnEquipment[EquipmentIndex.Weapon1].Item,
                         GwpIds.DualBladeMainhandItemId))
                 {
@@ -279,8 +279,8 @@ namespace GreyWardenPolicePurity
 
                 MissionEquipment? equipment = agent.Equipment;
                 return equipment != null
-                    && IsItem(equipment[EquipmentIndex.WeaponItemBeginSlot],
-                        GwpIds.DualBladeOffhandItemId)
+                    && IsOffHandBladeId(
+                        equipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
                     && IsItem(equipment[EquipmentIndex.Weapon1],
                         GwpIds.DualBladeMainhandItemId);
             }
@@ -292,6 +292,17 @@ namespace GreyWardenPolicePurity
 
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
+
+        /// <summary>
+        /// The player's blade and its visually identical NPC copy are the same
+        /// weapon as far as every combat rule is concerned; only the item id
+        /// differs, so the native qualification can be applied to one of them.
+        /// </summary>
+        internal static bool IsOffHandBladeId(string? itemId) =>
+            string.Equals(itemId, GwpIds.DualBladeOffhandItemId,
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(itemId, GwpIds.DualBladeOffhandAiItemId,
+                StringComparison.OrdinalIgnoreCase);
 
         private static bool IsItem(ItemObject? item, string itemId) =>
             item != null

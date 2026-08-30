@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -60,8 +60,7 @@ namespace GreyWardenPolicePurity
 
             MissionWeapon attackerWeapon = attackInformation.AttackerWeapon;
             if (attackerWeapon.IsEmpty
-                || attackerWeapon.Item?.StringId
-                    != GwpIds.DualBladeOffhandItemId)
+                || !GwpDualBladeLoadout.IsOffHandBladeId(attackerWeapon.Item?.StringId))
             {
                 return;
             }

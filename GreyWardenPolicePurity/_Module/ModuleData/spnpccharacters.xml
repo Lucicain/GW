@@ -241,7 +241,7 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwdualbladeoffhand" />
+                   id="gwdualbladeoffhandai" />
         <equipment slot="Item1"
                    id="gwdualblademainhand" />
         <equipment slot="Body"

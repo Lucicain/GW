@@ -1,5 +1,23 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 隔离结论：预览损坏来自代码而非数据；改用零补丁的 NPC 专用副手刀（待用户实机验收）
+
+- **单变量隔离得到明确结论。** 用户实测上一轮（检查点代码 + 仅新增带双刀的双刃卫士）：**模型正常、预览正常、双刀已装备上，只有副手拔不出来**。因此：
+  - "兵种携带双刀"这一数据事实**不会**破坏人物预览；
+  - 两周来反复出现的模型异常**全部来自代码侧的 per-call Harmony 补丁**；
+  - 上一轮"副剑没装备上"确认是当时那两个补丁引入的，与兵种数据无关。
+  这是两周来第一次把数据与代码两个变量真正分开，此前所有归因（动作集注入、槽位布局、`GetWeaponData`）均已被逐一证伪。
+- 由此确立设计红线：**任何 NPC 双刀方案都不得在 `MissionWeapon`、`Agent` 装备/输入链上新增 per-call 补丁。**
+- 本轮据此改为**零补丁**实现，只用数据 + 一次性对象写入：
+  - 新增 `gwdualbladeoffhandai`：与玩家副手刀**复用同一个锻造模板与同样四个部件**，因此外观完全一致，只有 item id 不同。双刃卫士的 `Item0` 改用它，玩家的 `gwdualbladeoffhand` 完全不动。
+  - 新增 `GwpDualBladeNpcItemSetup`，在 `OnGameInitializationFinished`（物品 XML 已加载）对该 NPC 物品**一次性**写入：`CollisionBodyName = BodyName`、`WeaponFlags |= HasHitPoints | CanBlockRanged`（按位 OR，`MeleeWeapon` 与剑用途保留）、`MaxDataValue = 500`。
+  - 取证依据：`Crafting.SetWeaponData` 中 `maxDataValue` 只对投掷类赋值，`OneHandedSword` 恒为 `0`；`BladeData` 无碰撞体字段。因此这两项是锻造物在 XML 层**拿不到**的，只能写到已加载的对象上 —— 这也是历史上必须 patch `MissionWeapon` 的真正原因，现在用一次性写入替代。
+  - 识别侧新增 `IsOffHandBladeId`，玩家刀与 NPC 刀在装备判定、副手伤害类型、bone-20 击倒三处一视同仁，因此双刃卫士的左手刀伤害与击倒与玩家一致。
+- **关键验证：补丁面与检查点完全相同。** 离线预检 `PATCH_OK=37; PATCH_FAIL=0`，与用户确认预览正常的检查点**逐一相同**；全仓库 `HarmonyPatch(typeof(MissionWeapon)` 与 `HarmonyPatch(typeof(Agent)` 命中均为 **0**；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。类型数仅由 407 增至 408（新增的一次性设置类）。
+- 如实说明的已知偏差：`CanBlockRanged` 会让**双刃卫士的**副手刀挡住弓箭，与"挡不住弓箭"的要求不符。玩家的刀不受影响。其还原方案（`Mission.MissileHitCallback`）是战斗热路径上的全局入口，按上述红线**暂不加入**，待本轮确认副手能持稳后再单独评估。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 795648 字节、SHA-256 `1DA7B1419AB70BE8D8E2C04F9933D2DAB0A996BEE5ADCB3F73C5AA8BC94D7FB4`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收顺序：① 追踪中 `NPC_ITEM_SETUP` 是否写入成功且 `flags` 含 `HasHitPoints, CanBlockRanged`、`maxDataValue=500`；② 人物预览/百科是否仍正常（补丁面未变，预期不变）；③ 双刃卫士左手刀是否持续出鞘；④ 格挡时是否崩溃。
+
 ## 2026-08-30 单变量隔离：检查点代码 + 仅新增带双刀的双刃卫士兵种（待用户实机验收）
 
 - 用户实测上一候选：副剑仍未装备上，模型依旧异常。用户据此要求回退到稳定点、**只保留双刃卫士并给它双刀**，判断依据是"模型正常 + 进场带双剑"这两点应当能同时成立，只是副剑可能拔不出来。该判断与本方证据一致，本轮照此执行。
