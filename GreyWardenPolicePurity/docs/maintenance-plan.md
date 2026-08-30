@@ -1,5 +1,41 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 NPC 双刀第三轮：合并两条线索——沿用其 AI 输入边界，但把主副手拆到不同输入帧（待用户实机验收）
+
+- 本轮接手另一模型的两轮开发。**其最有价值的产出是找到了 `Agent.OnAIInputSet` 这个托管钩子**，此前本记录曾错误断言"原生 AI 的武器决策不经过任何托管入口"——该结论作废。取证：`agent.cs.txt:1626` 的 `internal void OnAIInputSet(ref EventControlFlag, ref MovementControlFlag, ref Vec2)` 会把**可变的**输入标志逐个交给 `AgentComponent`，配合 `Agent.SetHasOnAiInputSetCallback(true)` 启用；`Agent.EventControlFlag` 含 `Wield0..Wield3` 与 `Sheath0/Sheath1`。AI 的换武器是以**输入标志**表达的，不是 `Agent.UpdateWeapons`——所以此前只查后者才得出了错误结论。
+- 其两轮实测结果（`19:31` 会话）：`NPC_DUAL_INITIAL_RANGED` 199 条（出生强制先拿弓，成功）、**`NPC_DUAL_INPUT_MELEE_PAIR` 596 条（钩子确实命中并改写了标志）**、`NPC_DUAL_INPUT_KEEP_PAIR` **0 条**（双刀始终没握住）。首轮该钩子为 0 条，第二轮才真正生效。
+- **失败原因已定位**：其实现在**同一个输入帧内同时请求 `Wield0 | Wield2`**。这正好撞上本项目此前已两次测得的同一条规律——同帧内同时处理主副手，只有一只手会留下（原生 `WieldInitialWeapons` 同帧先副后主 → `offhand=None`；同样三次调用拆到不同帧 → `paired=True` 553/597）。两条线索合起来就是解法：**用它的钩子，按我们的分帧规律驱动。**
+- **模型稳定性丢失的来源已定位并修复**：其第二轮把 `gwarcher` 槽位改成 Weapon0=副刀 / Weapon1=弓 / Weapon2=主刀 / Weapon3=箭。核对 `Equipment.GetInitialWeaponIndicesToEquip` 后确认**该改动毫无必要**：在原 ROT 布局（W0=副刀、W1=主刀、W2=弓、W3=箭）下配合 `RangedForMainHand`，扫描顺序为 W0(HeldInOffHand→副手) → W1(主手，flag2=false) → W2(`RangedForMainHand && !flag2` 成立 → 主手=弓)，同样得到"主手弓 + 副手刀"。而改后的布局让弓箭手变成"远程主手 + `HeldInOffHand` 刀"的组合，人物预览没有对应姿势映射——这是模型异常的直接来源。已恢复 ROT 标准布局，玩家与 NPC 重新共用同一套槽位。
+- 本轮实现：
+  - 保留其 `Agent.WieldInitialWeapons` 前置（`Any` → `RangedForMainHand`），但资格判定改为纯装备判定，不再硬编码 `gwarcher`。
+  - 保留 `GwpDualBladeNpcBehavior` + `GwpDualBladeNpcInputComponent`，但把 `OnAIInputSet` 改为**三帧状态机**：第 1 帧只请求 `Wield0`（副手）并清除竞争性 `Sheath0/1`；第 2 帧只请求 `Wield1`（主手）；第 3 帧让原生自行落定。双刀已在手时清掉重复的近战重选与收刀标志，防止原生每个决策周期重拔主手时把副手带走。
+  - 弓箭相关标志（`Wield2`/`Wield3`）全程原样放行，AI 何时射击、何时切近战完全由原生决定。
+  - `TryGetCombatPair` 由双布局收敛回单一 ROT 布局（W0 副手 / W1 主手），伤害类型与击倒判定对玩家和 NPC 一致；地面拾取仍严格保持玩家专属（沿用其判断，避免扩散到所有 AI）。
+  - 每 agent 最多 4 条输入日志，避免刷屏。
+- 未新增任何动作集、武器数据或预览路径改动。Harmony 目标：`Mission.SpawnAgent`、`Agent.WieldInitialWeapons`、两个 `MissionCombatMechanicsHelper`、`SpawnedItemEntity.OnUseStopped`、`CraftingTemplate.All`、自定义战斗角色列表；无 `CharacterCode`/`CharacterTableau`/`MissionWeapon`/`AgentVisuals` 命中。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=38; PATCH_FAIL=0`，类型数 412；XSLT 复验仍为 102 个 action_set、`as_human_female_warrior` 保持原版 298 条；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 797184 字节、SHA-256 `A5E97FFCEDC2979B8A48640ACE0BAF91E893BBC0F7B616F7D6B23B262908CE9A`。
+- 资产完整性：另一模型的两轮工作保存在 stash `54aa30d`（`failed-npc-dual-input-2026-08-30`），本方此前的分帧候选保存在 reflog（至 `3693545`），检查点标签 `checkpoint/player-only-dual-blade` (`003fea5`) 完好，均可恢复。
+- 判读：看 `NPC_DUAL_INPUT_OFFHAND` → `NPC_DUAL_INPUT_MAINHAND` → `NPC_DUAL_INPUT_KEEP_PAIR` 是否按序出现。出现 `KEEP_PAIR` 即表示双刀已稳定握住且原生重选被成功抑制。
+
+## 2026-08-30 NPC 双刀重做第二轮：改用原生 AI 输入边界与远程初始偏好（待用户实机验收）
+
+- 按用户要求废弃上一代 Mission Tick/分帧补刀候选：当前仓库已回退到 `003fea5`，上一代完整改动保存在 `failed-npc-dual-input-2026-08-30`。本轮不创建新的 Git 检查点，等待实机确认。
+- 采用更接近原版/玩家路径的底层入口：Harmony 只对 `Agent.WieldInitialWeapons` 的 `gwarcher` AI 将 `InitialWeaponEquipPreference.Any` 改为原生 `RangedForMainHand`；不改全局 Agent、武器数据或动作集，不在 Mission Tick 中调用拔刀 API。
+- `gwarcher` 装备槽改为 Weapon0=`gwdualbladeoffhand`、Weapon1=`noble_long_bow`、Weapon2=`gwdualblademainhand`、Weapon3=`piercing_arrows`。这样原版 `Equipment.GetInitialWeaponIndicesToEquip` 会优先选 Weapon1 弓，Weapon0 仍保留为真实副手剑，Weapon2 作为近战主手剑。
+- 新增 `GwpDualBladeNpcBehavior`/`GwpDualBladeNpcInputComponent`，只挂在真实战场中的 `gwarcher` AI。`OnAIInputSet` 放行 Wield1/Wield3 的弓箭请求；检测到近战 Wield0/Wield2 时，在同一原生输入帧请求 Weapon0+Weapon2 并清除竞争性的 Sheath0/Sheath1；双刀已在手时清掉重复近战重选，避免副手被原生二次选择清空。
+- 玩家双刀布局 Weapon0+Weapon1 保持不变。伤害类型/击倒判定新增 NPC 的 Weapon0+Weapon2 槽位识别，地面拾取仍严格保持玩家专属；bone-20 碰撞例外继续使用既有 ROT 对等实现。
+- Release 构建成功：0 个编译错误、44 条既有可空性警告。客户端 DLL 798208 字节，SHA-256 `30A7CF44918147E2DE1A9D2DBFC0D5CB205915638B3F9D918AAD0596D5A59C95`；仓库 `_Module` 与 live `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 的 36 个可部署源文件哈希差异 0，README 已在构建后单独同步并复核。
+- 取证依据：当前 Bannerlord 客户端反编译的 `Equipment.GetInitialWeaponIndicesToEquip` 明确按 ExtraWeaponSlot→Weapon0→Weapon1→Weapon2→Weapon3 扫描，并以 `RangedForMainHand` 保留首个远程主手；`Agent.WieldInitialWeapons` 先请求 off-hand 再请求 main-hand；`Agent.OnAIInputSet` 将可变 `EventControlFlag` 传给 AgentComponent。临时反编译目录已从仓库删除。
+- 实机验收重点：出生是否只拿弓箭；停止射击后是否一次性出现左右双刀；左手模型/攻击是否持续；再次切弓和再次切回近战是否无闪烁、无单独收回副手。若失败，保留日志后回退到 `003fea5`，不在本候选上继续堆叠补丁。
+
+## 2026-08-30 NPC 双刀重做首轮实测：初始配对时序错误，输入拦截未命中（已回退，待重做）
+
+- 用户实机复测上一代候选：弓箭手出生时短暂拿出双刀，随后把两把刀逐把收回并正常切到长弓/箭；停止射击回到近战时双刀短暂出现，但左手剑又立即被收回。弓与箭本身的远程切换正常。
+- 对应 `GreyWarden-DualBlade-Trace.log` 的 `18:58` 会话：共记录约 199 个 `gwarcher` AI 的 `NPC_DUAL_PAIR_START` / `NPC_DUAL_PAIR_RESULT`。几乎所有配对开始都记录为 `main=Weapon1; offhand=None`，时间集中在出生后的初始装备阶段；配对结果绝大多数为 `paired=True`，少数为 `false`。
+- 该会话没有任何 `NPC_DUAL_INPUT_FILTER` 记录。因此不能证明左手剑被收回是上一代正在过滤的 `Wield0/Wield1/Sheath0` 输入组合；实际清除可能发生在原生远程选择路径、另一组输入标志，或回调未覆盖的执行边界。
+- 已确认的错误归因：`Agent.WieldInitialWeapons()` 使用默认 `InitialWeaponEquipPreference.Any`，不会因为兵种 `default_group="Ranged"` 就强制先拿弓；当 Weapon0/1 放双刀、Weapon2/3 放弓箭时，原生初始选择先给出 `Weapon1` 主手剑。上一代候选把这个“主手剑已出现、副手为空”的出生状态误判为近战入口，主动开始配对，正好造成“出生双刀→逐把收回→弓箭”。
+- 上一代候选已保存为 Git stash `failed-npc-dual-input-2026-08-30`，并已回退到稳定检查点 `003fea5`（标签 `checkpoint/player-only-dual-blade`）。本轮不继续在错误状态机上修补；下一轮从该点重新探索原生 AI 的初始装备与切换边界。
+
 ## 2026-08-30 用户确认稳定基线与弓箭手遗留问题
 
 - 用户实机确认：人物预览恢复正常；双刀与灰袍单手剑外观一致；自定义战斗灰袍武将能正常拔出双刀且双刀动作正常；双刀与普通士兵交战正常，没有此前的防御报错/卡死。

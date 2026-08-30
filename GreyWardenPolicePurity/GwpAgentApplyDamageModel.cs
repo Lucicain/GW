@@ -102,7 +102,10 @@ namespace GreyWardenPolicePurity
         {
             if (attacker == null
                 || attackerWeapon == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker)
+                || !GwpDualBladeLoadout.TryGetCombatPair(
+                    attacker,
+                    out EquipmentIndex offhandSlot,
+                    out EquipmentIndex mainhandSlot)
                 || (collisionData.StrikeType != (int)StrikeType.Swing
                     && collisionData.StrikeType != (int)StrikeType.Thrust)
                 )
@@ -114,10 +117,10 @@ namespace GreyWardenPolicePurity
             {
                 MissionEquipment equipment = attacker.Equipment;
                 if (!IsItem(
-                        equipment[EquipmentIndex.Weapon0],
+                        equipment[offhandSlot],
                         GwpIds.DualBladeOffhandItemId)
                     || !IsItem(
-                        equipment[EquipmentIndex.Weapon1],
+                        equipment[mainhandSlot],
                         GwpIds.DualBladeMainhandItemId))
                 {
                     return false;

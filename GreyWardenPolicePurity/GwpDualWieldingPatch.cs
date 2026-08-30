@@ -68,17 +68,20 @@ namespace GreyWardenPolicePurity
 
             Agent? attacker = attackInformation.AttackerAgent;
             if (attacker == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker))
+                || !GwpDualBladeLoadout.TryGetCombatPair(
+                    attacker,
+                    out EquipmentIndex offhandSlot,
+                    out EquipmentIndex mainhandSlot))
                 return;
 
             try
             {
                 MissionEquipment equipment = attacker.Equipment;
                 if (IsItem(
-                        equipment[EquipmentIndex.Weapon0],
+                        equipment[offhandSlot],
                         GwpIds.DualBladeOffhandItemId)
                     && IsItem(
-                        equipment[EquipmentIndex.Weapon1],
+                        equipment[mainhandSlot],
                         GwpIds.DualBladeMainhandItemId))
                 {
                     damageType = DamageTypes.Cut;

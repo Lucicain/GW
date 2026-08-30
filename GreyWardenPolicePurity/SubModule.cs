@@ -115,6 +115,10 @@ namespace GreyWardenPolicePurity
 
             // 踢腿能力同时用于战役和自定义战斗。GreyWarden 本身是纯单人
             // 模组，因此这里不需要用 Campaign 类型把 CustomGame 排除掉。
+            // The NPC dual-blade component only changes the final AI weapon
+            // selection flags for the Grey Warden archer.  It is deliberately
+            // installed before the kick component so both remain independent.
+            mission.AddMissionBehavior(new GwpDualBladeNpcBehavior());
             mission.AddMissionBehavior(new GwpKickBehavior());
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
