@@ -102,7 +102,7 @@ namespace GreyWardenPolicePurity
         {
             if (attacker == null
                 || attackerWeapon == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker)
+                || !GwpDualBladeLoadout.IsDualBladeCombatant(attacker)
                 || (collisionData.StrikeType != (int)StrikeType.Swing
                     && collisionData.StrikeType != (int)StrikeType.Thrust)
                 )

@@ -67,7 +67,7 @@ namespace GreyWardenPolicePurity
 
             Agent? attacker = attackInformation.AttackerAgent;
             if (attacker == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker))
+                || !GwpDualBladeLoadout.IsDualBladeCombatant(attacker))
                 return;
 
             try

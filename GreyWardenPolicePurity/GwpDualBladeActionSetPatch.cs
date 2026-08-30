@@ -290,6 +290,33 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>
+        /// Anyone actually fighting with the pair, player or AI. The off-hand
+        /// damage type and the Warden knockdown use this, so an NPC's left
+        /// blade behaves exactly like the player's and the knockdown roll is
+        /// reached at all. Ground pickup deliberately keeps the narrower
+        /// player-only predicate below.
+        /// </summary>
+        internal static bool IsDualBladeCombatant(Agent? agent)
+        {
+            if (agent?.Character == null)
+                return false;
+
+            try
+            {
+                MissionEquipment? equipment = agent.Equipment;
+                return equipment != null
+                    && IsOffHandBladeId(
+                        equipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
+                    && IsItem(equipment[EquipmentIndex.Weapon1],
+                        GwpIds.DualBladeMainhandItemId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
 

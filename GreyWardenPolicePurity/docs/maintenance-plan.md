@@ -1,5 +1,22 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 击倒未触发的真正原因（判定入口仍是玩家专属）；同时撤销强制防御姿态
+
+- 用户反馈：AI 武将双刀已正常拿出；但双刀击倒始终不触发（与武将对打也没有），且**双刃卫士不会踢腿**。
+- **① 击倒未触发 —— 原因不在兵种概率表，而在更上游的判定入口。** `GwpAgentApplyDamageModel.IsDualBladeAttack` 的第一道门是：
+  ```csharp
+  || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker)
+  ```
+  而检查点里该判定为 `agent?.Character != null && !agent.IsAIControlled` —— **玩家专属**。所有 AI 的双刀攻击在第一道门就被挡掉，因此击倒与副手伤害类型对 NPC 从未生效。上一轮只补了 `TierThreeKnockdownChance` 的兵种表，没有看到这道门，属于修错了层级。
+  - 修法：新增 `IsDualBladeCombatant`（**按装备判定**：`Weapon0` 为任一副手刀 id 且 `Weapon1` 为主手刀，玩家或 AI 皆可），`GwpAgentApplyDamageModel` 与 `GwpDualWieldingPatch` 改用它。地面拾取仍保留玩家专属的 `IsEligibleDualBladeUser`，避免扩散到所有 AI。
+  - 兵种概率表保持上一轮的改动：`gwtwinblade` 属 `TierThreeKnockdownChance`（0.80），与重步兵/弓箭手/骑士同级（皆 level 26）；AI 武将走 `CustomBattleCommanderId` / 领主分支的 `LordKnockdownChance`（最高档），符合用户"按等级、武将最高"的既有设计。
+- **② 不会踢腿 —— 定位到 `ArrangementOrder` 补丁，已撤销。** 用户怀疑是新 id 未进既有机制，实测排除：`GwpKickBehavior.IsEligibleGreyWarden` 经 `GwpCommon.IsGreyWardenTroopId` 判定，后者是 `characterId.StartsWith("gw")` 前缀匹配，`gwtwinblade` 本就通过；踢腿注入的是 `EventControlFlag.Kick`，不在本模组输入抑制的掩码内。
+  - 真正嫌疑是 `GwpDualBladeShieldDirectionPatch` 把 `GetShieldDirectionOfUnit` 的返回值由 `None` 改为 `AttackEnd`。查 `Agent.UsageDirection` 枚举可见 `AttackEnd = 4` 与 `DefendUp = 4` **数值相同**，即等于持续告诉原生"该单位应向上防御"。对一个没有盾的角色，这会把它压在防御姿态里，踢腿与攻击判定都会受影响。
+  - 更关键的是时间线证据：**只有该补丁、尚无输入抑制时，副刀依然被收走**（用户当时描述"稳定拿出右手剑、左手剑在鞘里"），是加入 `OnAIInputSet` 抑制后才成功的。因此该补丁对保持双刀**从未被证明有贡献**，却带来了确定的副作用，已完整删除。
+- **结果：NPC 双刀功能现在完全不依赖任何 Harmony 补丁。** 离线预检回到 `PATCH_OK=37`，与"仅玩家双持"检查点的补丁数完全相同；实现只剩三部分：原生自身的出生拔刀（建立）、`MissionBehavior` + `AgentComponent.OnAIInputSet` 抑制 AI 换武器（保持）、以及 `OnGameInitializationFinished` 的一次性物品数据写入。这是本功能可能达到的最小侵入形态。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条；仓库 `_Module` 与 live 36 个可部署文件差异 0。回滚点 `checkpoint/npc-dual-blade` (`90d73cb`)。
+- 验收：① 双刃卫士与 AI 武将是否**仍然保持双刀**（本轮撤销了阵型补丁，需确认它确实无贡献）；② 左手挥砍是否触发击倒（卫士 80%、武将最高档）；③ 双刃卫士是否恢复踢腿/盾击；④ 模型与预览是否仍正常。
+
 ## 2026-08-30 检查点后的两项补齐：AI 武将双持与双刃卫士击倒概率（待用户实机验收）
 
 - 基线为已确认的检查点 `90d73cb` / 标签 `checkpoint/npc-dual-blade`。用户在其上反馈两个遗漏，均已定位到具体原因：
