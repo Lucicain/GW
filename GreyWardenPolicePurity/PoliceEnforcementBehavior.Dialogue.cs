@@ -21,6 +21,7 @@ namespace GreyWardenPolicePurity
         private PoliceTask _dialogTask = null!;
         private bool _enforcementBarterInProgress = false;
         private bool _enforcementAtonementAssigned = false;
+        private bool _enforcementEncounterFinishQueued = false;
 
         #region 对话系统（执法拦截：玩家可选择缴纳罚金或战斗）
 
@@ -171,8 +172,19 @@ namespace GreyWardenPolicePurity
             _dialogFine = Math.Abs(rep) * 300;
             _dialogPolice = conversationParty;
             _dialogTask = task;
+            // Arm the same retry guard for a player-initiated encounter as for
+            // the automatic EngageParty bridge.  Closing the conversation
+            // without choosing an outcome must not immediately reopen it.
+            _nextPlayerEnforcementContactHour = CampaignTime.Now.ToHours +
+                GwpTuning.PlayerRequests.DeferredContactHours;
 
             int playerGold = Hero.MainHero.Gold;
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "ENFORCEMENT_FINE_DIALOG_OPENED",
+                "police=" + conversationParty.StringId +
+                "; taskState=" + task.FlowState +
+                "; fine=" + _dialogFine +
+                "; playerGold=" + playerGold);
             string payInfo = playerGold >= _dialogFine
                 ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_008}You carry {VAR_1} denars, enough to pay in full.", "VAR_1", playerGold)
                 : GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_009}You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment.", "VAR_1", playerGold);
@@ -202,6 +214,8 @@ namespace GreyWardenPolicePurity
         private void OnEnforcementAtonementConsequence()
         {
             _enforcementAtonementAssigned = TryAssignAtonementTask();
+            if (_enforcementAtonementAssigned)
+                QueueFinishEnforcementEncounter();
         }
 
         private bool TryAssignAtonementTask()
@@ -246,7 +260,6 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_017}The charge of atonement is entered in your quest roll: defeat {VAR_1}, then report to the Warden-General or any Grey Warden within {VAR_2} days. Failure: -5 standing.", "VAR_1", _atonementTargetName, "VAR_2", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0")),
                 Colors.Yellow));
 
-            try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
             return true;
         }
 
@@ -272,6 +285,10 @@ namespace GreyWardenPolicePurity
         {
             try
             {
+                GwpAiDiagnostics.WritePlayerJusticeState(
+                    "ENFORCEMENT_FINE_ACCEPTED_BEFORE_CLEAR",
+                    "fine=" + _dialogFine +
+                    "; police=" + (_dialogPolice?.StringId ?? "-"));
                 int paid = PoliceResourceManager.CollectFine(_dialogFine);
 
                 PlayerState.ResetReputation(0);
@@ -285,15 +302,93 @@ namespace GreyWardenPolicePurity
 
                 MakePeaceWithPoliceAndVictims();
 
+                GwpAiDiagnostics.WritePlayerJusticeState(
+                    "ENFORCEMENT_FINE_ACCEPTED_AFTER_CLEAR",
+                    "fine=" + _dialogFine +
+                    "; paid=" + paid +
+                    "; police=" + (_dialogPolice?.StringId ?? "-"));
+
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The lawful fine of {VAR_1} denars has been received. The warrant is lifted.", "VAR_1", paid),
                     Colors.Yellow));
 
-                try { GwpCommon.TryFinishPlayerEncounter(); } catch { }
+                // The line's normal target is close_window.  Finish the native
+                // PlayerEncounter only after ConversationManager has actually
+                // closed the conversation; doing it from this consequence leaves
+                // EngageParty/TargetParty alive and can reopen the same warrant.
+                QueueFinishEnforcementEncounter();
             }
-            catch { }
+            catch
+            {
+                // Even if a native economy/faction callback fails, the accepted
+                // outcome must still close the encounter instead of leaving the
+                // old EngageParty target available for another conversation.
+                QueueFinishEnforcementEncounter();
+            }
+        }
+
+        private void QueueFinishEnforcementEncounter()
+        {
+            if (_enforcementEncounterFinishQueued)
+                return;
+
+            _enforcementEncounterFinishQueued = true;
+            if (PlayerEncounter.IsActive)
+                PlayerEncounter.LeaveEncounter = true;
+
+            var conversationManager = Campaign.Current?.ConversationManager;
+            if (conversationManager == null)
+            {
+                FinishEnforcementEncounter();
+                return;
+            }
+
+            conversationManager.ConversationEndOneShot -=
+                FinishEnforcementEncounter;
+            conversationManager.ConversationEndOneShot +=
+                FinishEnforcementEncounter;
+
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "ENFORCEMENT_CONTACT_FINISH_QUEUED",
+                "police=" + (_dialogPolice?.StringId ?? "-") +
+                "; encounterActive=" + PlayerEncounter.IsActive);
+        }
+
+        private void FinishEnforcementEncounter()
+        {
+            MobileParty? police = _dialogPolice;
+            try
+            {
+                GwpCommon.TryFinishPlayerEncounter();
+
+                // EndPlayerHunt removes the case, but native EngageParty can
+                // survive the conversation for one AI pass.  Reset the native
+                // movement target immediately so the finished case cannot make
+                // another contact while both parties are still overlapping.
+                if (police?.IsActive == true)
+                {
+                    GreyWardenPartyDesireBehavior.ClearIntent(police);
+                    police.Ai.SetDoNotAttackMainParty(2);
+                    police.Ai.SetDoNotMakeNewDecisions(false);
+                    police.SetMoveModeHold();
+                    police.Ai.RethinkAtNextHourlyTick = true;
+                }
+
+                GwpAiDiagnostics.WritePlayerJusticeState(
+                    "ENFORCEMENT_CONTACT_FINISHED",
+                    "police=" + (police?.StringId ?? "-") +
+                    "; encounterActive=" + PlayerEncounter.IsActive);
+            }
+            catch (Exception exception)
+            {
+                GwpAiDiagnostics.WritePlayerJusticeState(
+                    "ENFORCEMENT_CONTACT_FINISH_FAILED",
+                    "police=" + (police?.StringId ?? "-") +
+                    "; error=" + exception.GetType().Name);
+            }
             finally
             {
+                _enforcementEncounterFinishQueued = false;
                 ResetDialogueState();
             }
         }

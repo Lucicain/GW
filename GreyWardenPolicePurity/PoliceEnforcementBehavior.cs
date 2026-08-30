@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -29,6 +30,11 @@ namespace GreyWardenPolicePurity
         private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
         private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
         private static PoliceEnforcementBehavior? _instance;
+
+        // Peaceful player-case contact is attempted at most once per cooldown.
+        // Without this guard, a native EngageParty contact can be re-issued every
+        // frame while the conversation is closing and reopen the same dialogue.
+        private double _nextPlayerEnforcementContactHour = -1d;
 
         private bool _atonementActive = false;
         private string _atonementTargetPartyId = string.Empty;
@@ -63,6 +69,18 @@ namespace GreyWardenPolicePurity
         internal static bool TryReservePartyForPlayerRequest(MobileParty? police)
         {
             return _instance != null && _instance.TryPreparePartyForPlayerRequest(police);
+        }
+
+        internal static bool IsPlayerEnforcementApproach(
+            MobileParty? police, MobileParty? target)
+        {
+            if (police?.IsActive != true || target?.IsMainParty != true)
+                return false;
+
+            PoliceTask? task = GwpRuntimeState.Crime.GetTask(police.StringId);
+            return task?.FlowState == PoliceTaskFlowState.Pursuit &&
+                   !task.WarDeclared &&
+                   task.TargetCrime?.Offender?.IsMainParty == true;
         }
 
         internal static void RefreshPlayerBountyCaseContact(
@@ -140,6 +158,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_atone_deadline_hours", ref _atonementDeadlineHours);
             dataStore.SyncData("gwp_enf_atone_waiting_turnin", ref _atonementWaitingForTurnIn);
             dataStore.SyncData("gwp_enf_atone_target_size", ref _atonementTargetSizeSnapshot);
+            dataStore.SyncData("gwp_enf_player_contact_hour",
+                ref _nextPlayerEnforcementContactHour);
             SyncWarTargetStreakData(dataStore);
             SyncDelayPatrolStateData(dataStore);
             SyncAssistanceData(dataStore);
@@ -180,6 +200,9 @@ namespace GreyWardenPolicePurity
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
                 _lastAtonementIntelReportTime = CampaignTime.Zero;
+                if (double.IsNaN(_nextPlayerEnforcementContactHour) ||
+                    double.IsInfinity(_nextPlayerEnforcementContactHour))
+                    _nextPlayerEnforcementContactHour = -1d;
                 if (!Enum.IsDefined(typeof(GwpCrimeCategory), _atonementTargetCrimeCategory))
                     _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
                 PlayerState.SetAtonementTaskActive(HasAtonementTask);
@@ -329,10 +352,81 @@ namespace GreyWardenPolicePurity
 
         #region 每帧检查 - 距城堡距离触发惩罚
 
+        /// <summary>
+        /// A wanted player is intentionally not declared at war on approach: the
+        /// player must first receive the fine/atonement/refusal dialogue.  The
+        /// normal task intent uses a static GoToPoint during that peaceful phase,
+        /// so bridge the final few map units back to the native EngageParty
+        /// contact once the assigned Warden arrives.
+        /// </summary>
+        private void MaintainPlayerEnforcementContact()
+        {
+            try
+            {
+                if (CampaignTime.Now.ToHours < _nextPlayerEnforcementContactHour)
+                    return;
+
+                MobileParty? player = MobileParty.MainParty;
+                if (player?.IsActive != true || player.MapEvent != null ||
+                    PlayerEncounter.IsActive ||
+                    Campaign.Current?.ConversationManager?.IsConversationInProgress == true)
+                    return;
+
+                string? policeId = CrimeState.GetPlayerTaskPolicePartyId();
+                if (string.IsNullOrWhiteSpace(policeId))
+                    return;
+
+                PoliceTask? task = CrimeState.GetTask(policeId);
+                if (task == null || task.WarDeclared || task.IsEscortingPlayer ||
+                    task.FlowState != PoliceTaskFlowState.Pursuit ||
+                    task.TargetCrime?.Offender?.IsMainParty != true)
+                    return;
+
+                Clan? policeClan = PoliceStats.GetPoliceClan();
+                MobileParty? police = MobileParty.All.FirstOrDefault(party =>
+                    party.IsActive && string.Equals(party.StringId, policeId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (police == null || police.MapEvent != null ||
+                    police.ActualClan != policeClan)
+                    return;
+
+                float distance = police.GetPosition2D.Distance(player.GetPosition2D);
+                if (distance > GwpTuning.Enforcement.WarDistance)
+                    return;
+
+                // Reserve the cooldown before changing native AI state.  The
+                // command can synchronously raise encounter callbacks, and the
+                // reservation must already exist if that happens.
+                double now = CampaignTime.Now.ToHours;
+                _nextPlayerEnforcementContactHour = now +
+                    GwpTuning.PlayerRequests.DeferredContactHours;
+
+                GreyWardenPartyDesireBehavior.ClearIntent(police);
+                police.Ai.SetDoNotMakeNewDecisions(false);
+                police.SetMoveEngageParty(player, police.NavigationCapability);
+
+                GwpAiDiagnostics.WriteAction(police,
+                    "PLAYER_ENFORCEMENT_CONTACT_REQUESTED",
+                    "distance=" + distance.ToString("0.00", CultureInfo.InvariantCulture) +
+                    "; retryAfterHour=" + _nextPlayerEnforcementContactHour);
+            }
+            catch (Exception exception)
+            {
+                // A transient native map state must not turn into a per-frame
+                // retry loop.  Retry on the next campaign hour instead.
+                _nextPlayerEnforcementContactHour = CampaignTime.Now.ToHours + 1d;
+                GwpAiDiagnostics.WritePlayerJusticeState(
+                    "PLAYER_ENFORCEMENT_CONTACT_FAILED",
+                    "retryAfterHour=" + _nextPlayerEnforcementContactHour +
+                    "; error=" + exception.GetType().Name);
+            }
+        }
+
         private void OnTick(float dt)
         {
             try
             {
+                MaintainPlayerEnforcementContact();
                 MaintainShelteredCaseForcedAttacks();
 
                 if (!PlayerCaptivity.IsCaptive) return;
@@ -665,6 +759,7 @@ namespace GreyWardenPolicePurity
                     {
                         RestoreAi(pp);
                         CrimeState.EndTask(kvp.Key);
+                        RestorePeaceAfterCaseEnd(task);
                         continue;
                     }
 
@@ -677,6 +772,7 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
+                    RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
 
@@ -687,6 +783,7 @@ namespace GreyWardenPolicePurity
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
                     CrimeState.RefreshAccepting();
+                    RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
                 bool isShelteredTarget =
@@ -702,6 +799,7 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
+                    RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
 
@@ -943,6 +1041,7 @@ namespace GreyWardenPolicePurity
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
                     CrimeState.RefreshAccepting();
+                    RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
 
@@ -997,6 +1096,7 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
+                    RestorePeaceAfterCaseEnd(task);
                     GwpPlayerRequestDeferral.NotifyDutyCompleted(pp,
                         "criminal_case");
                     CompleteAssistanceTasks(pp.StringId);
@@ -1006,6 +1106,7 @@ namespace GreyWardenPolicePurity
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
                     CrimeState.EndTask(kvp.Key);
+                    RestorePeaceAfterCaseEnd(task);
                     ReleaseAssistanceGroup(pp.StringId, "case_leader_defeated");
                 }
 

@@ -1395,6 +1395,10 @@ namespace GreyWardenPolicePurity
             if (!CrimeState.TryAssignPlayerCrimeToPolice(nearestId))
                 return;
 
+            // A newly assigned warrant must not inherit the previous case's
+            // contact cooldown.
+            _nextPlayerEnforcementContactHour = -1d;
+
             // 案件进入与普通案件相同的欲望拍卖。保留原版正在进行的补给、
             // 招兵、疗伤和安全决策；玩家案件只保留强制顶掉普通案件的优先权。
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(nearestPolice);

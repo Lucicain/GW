@@ -165,6 +165,25 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
+        /// <summary>
+        /// 案件结案后恢复和平：仅当对 warTarget 不再存在任何合法执法理由时才
+        /// 与目标国家/势力中立。承办领主结案后仍把整国视为敌人，会立刻转身
+        /// 攻击刚协助灰袍缉捕本国罪犯的玩家，形成"打完马上又打玩家"的循环。
+        /// 必须在 CrimeState.EndTask 之后调用，HasLegitimateWarReason 才会看到
+        /// 案件已经关闭；其他仍针对同一势力的案件/悬赏/纠察理由会保留战争。
+        /// </summary>
+        internal static void RestorePeaceAfterCaseEnd(PoliceTask? task)
+        {
+            if (task?.WarTarget == null) return;
+
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+            if (GwpPoliceWarReasonService.HasLegitimateWarReason(task.WarTarget))
+                return;
+
+            GwpCommon.TrySetNeutral(policeClan, task.WarTarget);
+        }
+
         private Settlement? FindNearestTown()
         {
             var player = MobileParty.MainParty;

@@ -304,6 +304,8 @@
   <string id="gwp_playerbehaviormonitor_050" text="这个村庄" />
   <string id="gwp_playerbehaviormonitor_051" text="你已抵达{VAR_1}，并与当地民兵一同抵御劫掠者。待整备妥当，便与村民并肩迎敌。" />
   <string id="gwp_playerbehaviormonitor_052" text="与民兵并肩迎敌" />
+  <string id="gwp_playerbehaviormonitor_053" text="击倒在案罪犯部队" />
+  <string id="gwp_playerbehaviormonitor_054" text="灰袍守卫注意到你的善行：击倒在案罪犯部队（亲手击败 {VAR_1} 人）| " />
   <string id="gwp_playerbountybehavior_001" text="灰袍招募使者" />
   <string id="gwp_playerbountybehavior_002" text="灰袍招募使者正从 {VAR_1} 出发前来拜访..." />
   <string id="gwp_playerbountybehavior_003" text="护送灰袍已失联，但通缉令仍然有效。击败目标后，可由任意灰袍领主结案。" />

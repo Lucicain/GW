@@ -282,6 +282,15 @@ namespace GreyWardenPolicePurity
             _dialogPatrol = conversationParty;
             int playerGold = Hero.MainHero.Gold;
 
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "PATROL_FINE_DIALOG_OPENED",
+                "patrol=" + conversationParty.StringId +
+                "; fine=" + _dialogFine +
+                "; playerGold=" + playerGold +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count +
+                "; suppressMeetings=" + _suppressPatrolMeetings);
+
             DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_012}Enter the picket dialogue: party={VAR_1}, rep={VAR_2}, fine={VAR_3}", "VAR_1", conversationParty.StringId, "VAR_2", rep, "VAR_3", _dialogFine));
 
             string canPay = playerGold >= _dialogFine
@@ -372,9 +381,21 @@ namespace GreyWardenPolicePurity
 
         private void OnPatrolFineBarterAcceptedConsequence()
         {
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "PATROL_FINE_ACCEPTED_BEFORE_CLEAR",
+                "fine=" + _dialogFine +
+                "; patrol=" + (_dialogPatrol?.StringId ?? "-") +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count);
             PlayerState.ResetReputation(0);
             MakePeaceWithPoliceAndVictims();
             EndDialogueAndDismissPatrols();
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "PATROL_FINE_ACCEPTED_AFTER_CLEAR",
+                "fine=" + _dialogFine +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count +
+                "; suppressMeetings=" + _suppressPatrolMeetings);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_policepatrolbehavior_022}The lawful fine is paid and the warrant lifted. The provost patrol will withdraw."),
                 Colors.Green));
@@ -419,6 +440,13 @@ namespace GreyWardenPolicePurity
 
         private void OnDailyTick()
         {
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "DAILY_PUNISHMENT_TICK",
+                "captivity=" + PlayerCaptivity.IsCaptive +
+                "; dayCounterBefore=" + _dayCounter +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count +
+                "; bribeProtectionDays=" + _bribeProtectionDays);
             // 玩家被俘虏不处理（正在纠察队押送中）——跳过所有检测
             // 原因：每日检查调用 MakePeaceWithPoliceClan() 会解除战争状态，导致玩家意外被释放，
             //        且声望扣4分，会导致新的额外惩罚。
@@ -441,6 +469,14 @@ namespace GreyWardenPolicePurity
             _dayCounter = 0;
 
             int rep = PlayerState.Reputation;
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "DAILY_PUNISHMENT_CHECK",
+                "reputation=" + rep +
+                "; playerWanted=" + PlayerState.IsWanted +
+                "; isPlayerHunted=" + CrimeState.IsPlayerHunted +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count +
+                "; bribeProtectionDays=" + _bribeProtectionDays);
 
             // 正面声望：取消所有通缉和巡逻
             if (rep > 0)
@@ -480,14 +516,28 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void CheckAndEnforcePunishment(int reputation)
         {
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "WANTED_STATE_EVALUATED",
+                "reputationArgument=" + reputation +
+                "; activePatrols=" + _activePatrolIds.Count +
+                "; returningPatrols=" + _returningPatrolIds.Count +
+                "; bribeProtectionDays=" + _bribeProtectionDays +
+                "; suppressMeetings=" + _suppressPatrolMeetings);
             // -1 到 -10：派出纠察队巡逻追踪
             // 每日检查：若无纠察队，则生成一支（上限仅允许一支）
             if (reputation >= -10 && reputation <= -1)
             {
                 // 如果在放行保护期内，不再出动纠察队
-                if (_bribeProtectionDays > 0) return;
+                if (_bribeProtectionDays > 0)
+                {
+                    GwpAiDiagnostics.WritePlayerJusticeState(
+                        "PATROL_SPAWN_SKIPPED_PROTECTION",
+                        "reputation=" + reputation + "; bribeProtectionDays=" + _bribeProtectionDays);
+                    return;
+                }
 
-                if (!HasAnyPatrol())
+                bool hasPatrol = HasAnyPatrol();
+                if (!hasPatrol)
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
@@ -496,6 +546,14 @@ namespace GreyWardenPolicePurity
                     SpawnPatrol(mag);
                     _warDeclared = false;
                     _playerRefused = false;
+                }
+                else
+                {
+                    GwpAiDiagnostics.WritePlayerJusticeState(
+                        "PATROL_SPAWN_SKIPPED_EXISTING_PATROL",
+                        "reputation=" + reputation +
+                        "; activePatrols=" + _activePatrolIds.Count +
+                        "; returningPatrols=" + _returningPatrolIds.Count);
                 }
             }
             // 低于-11：转为追捕状态，由正式警察接管
@@ -591,7 +649,7 @@ namespace GreyWardenPolicePurity
                         {
                             var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
                             if (patrol == null || !patrol.IsActive) continue;
-                                    GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 9f);
+                            GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 9f);
                         }
                     }
                     return;
@@ -607,7 +665,9 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                // 追击玩家，控制接近，宣战后会触发对话（交互）
+                // 追击玩家。纠察队是无领主的一次性执法队，直接使用原版
+                // EngageParty 追踪实时玩家位置；不要先把玩家当前位置快照成
+                // GoToPoint，否则玩家移动后纠察队可能继续赶往旧位置而错过会面。
                 foreach (string patrolId in _activePatrolIds.ToList())
                 {
                     var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
@@ -618,30 +678,15 @@ namespace GreyWardenPolicePurity
 
                     float contactDistance = patrol.GetPosition2D.Distance(
                         player.GetPosition2D);
+                    GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 8f);
                     if (contactDistance <=
                         GwpTuning.Bounty.RecruitmentContactDistance)
                     {
-                        // 和招募使者使用同一条原版接触链：远处只参加欲望
-                        // 拍卖，进入接触范围后切换 EngageParty，随后由
-                        // OnMapEventStarted 调用 DoMeeting。仅用 GoToPoint
-                        // 靠近不会建立 PlayerEncounter，玩家就只能手点部队。
-                        GreyWardenPartyDesireBehavior.ClearIntent(patrol);
-                        patrol.Ai.SetDoNotMakeNewDecisions(false);
-                        patrol.SetMoveEngageParty(
-                            player,
-                            patrol.NavigationCapability);
                         GwpAiDiagnostics.WriteAction(
                             patrol,
                             "PATROL_FORCE_MEETING_APPROACH",
                             "distance=" + contactDistance.ToString("0.00") +
                             "; using native EngageParty contact");
-                    }
-                    else
-                    {
-                        GreyWardenPartyDesireBehavior.RequestApproach(
-                            patrol,
-                            player,
-                            8f);
                     }
                 }
             }
@@ -726,7 +771,10 @@ namespace GreyWardenPolicePurity
                 // 赋发船只（仅当导航DLC/可选海战 DLC 时，无DLC时默认忽略）
                 PoliceResourceManager.GivePoliceShips(patrol);
 
-                GreyWardenPartyDesireBehavior.RequestApproach(
+                // This is a disposable, leaderless enforcement party.  Pursuit
+                // uses the native EngageParty target directly and therefore
+                // follows the moving player instead of the spawn-time position.
+                GreyWardenPartyDesireBehavior.RequestPursuit(
                     patrol, MobileParty.MainParty, 8f);
 
                 _activePatrolIds.Add(patrolId);

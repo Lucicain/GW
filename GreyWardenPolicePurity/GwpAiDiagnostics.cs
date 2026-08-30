@@ -217,6 +217,51 @@ namespace GreyWardenPolicePurity
                 WriteAction(party, "MAP_EVENT_" + stage, details);
         }
 
+        /// <summary>
+        /// 仅开发构建使用的玩家执法状态快照。它不订阅新事件、不修改游戏状态，
+        /// 只在现有犯罪、缴款与通缉流程主动调用时写一行，便于区分自定义声望、
+        /// 玩家案卷、承办任务和原版战争状态。
+        /// </summary>
+        internal static void WritePlayerJusticeState(string action, string details)
+        {
+            try
+            {
+                CrimeRecord? playerCrime = CrimePool.GetPlayerCrime();
+                string tasks = string.Join(",", CrimePool.ActiveTasks.Values
+                    .Where(task => string.Equals(task.TargetCrimeId, CrimePool.PlayerCrimeId,
+                        StringComparison.OrdinalIgnoreCase))
+                    .Select(task => Safe(task.PolicePartyId) + ":" + task.FlowState));
+
+                IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+                Clan? policeClan = PoliceStats.GetPoliceClan();
+                bool policeWar = playerFaction != null && policeClan != null &&
+                    FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction);
+                MobileParty? mainParty = MobileParty.MainParty;
+
+                Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
+                    " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
+                    " | PLAYER_JUSTICE" +
+                    " | action=" + Safe(action) +
+                    " | " + Safe(details) +
+                    " | customReputation=" + PlayerBehaviorPool.Reputation +
+                    "; customWanted=" + PlayerBehaviorPool.IsWanted +
+                    "; clanRenown=" + (Clan.PlayerClan?.Renown.ToString("0.00", CultureInfo.InvariantCulture) ?? "-") +
+                    "; playerCrimeExists=" + (playerCrime != null) +
+                    "; playerCrimeOpen=" + (playerCrime?.HasOpenCase == true) +
+                    "; playerCrimeOffenderValid=" + (playerCrime?.IsOffenderValid() == true) +
+                    "; isPlayerHunted=" + CrimePool.IsPlayerHunted +
+                    "; playerTasks=" + Safe(tasks) +
+                    "; policeWar=" + policeWar +
+                    "; victimFactions=" + Safe(string.Join(",", PlayerBehaviorPool.VictimFactions
+                        .Where(faction => faction != null)
+                        .Select(faction => faction.StringId))) +
+                    "; mainTargetSettlement=" + Safe(mainParty?.TargetSettlement?.StringId) +
+                    "; mainDefaultBehavior=" + (mainParty?.DefaultBehavior.ToString() ?? "-") +
+                    "; mainShortTermBehavior=" + (mainParty?.ShortTermBehavior.ToString() ?? "-"));
+            }
+            catch { }
+        }
+
         internal static bool ShouldTraceParty(MobileParty? party)
         {
             if (party?.IsActive != true) return false;
@@ -563,6 +608,7 @@ namespace GreyWardenPolicePurity
         internal static void WritePartyLifecycle(MobileParty? party, string action, string details) { }
         internal static void WriteHeroLifecycle(Hero? hero, string action, string details) { }
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
+        internal static void WritePlayerJusticeState(string action, string details) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
         internal static bool ShouldTraceObservedParty(MobileParty? party) => false;
         internal static void RefreshObservedPartyCache() { }

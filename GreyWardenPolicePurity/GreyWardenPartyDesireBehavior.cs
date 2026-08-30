@@ -38,6 +38,9 @@ namespace GreyWardenPolicePurity
         // 玩家委托是灰袍任务体系中的最高优先级。该分值只参加原版欲望拍卖，
         // 不冻结 AI；战斗、逃跑等引擎强制状态仍由原版处理。
         internal const float PlayerRequestScore = 10f;
+        // 正规灰袍领主承办玩家案件时使用原版竞价中的固定 1.0 欲望；
+        // 这不会覆盖更高的补给、疗伤等原版维护欲望。
+        private const float PlayerEnforcementScore = 1f;
         private static readonly Dictionary<string, Intent> Intents =
             new Dictionary<string, Intent>(StringComparer.OrdinalIgnoreCase);
         // 无英雄的一次性纠察/支援队进入 Pursue 阶段后完全关闭欲望生成，
@@ -367,15 +370,29 @@ namespace GreyWardenPolicePurity
 
             if (intent?.Kind == IntentKind.Approach && intent.Party?.IsActive == true)
             {
-                // 原版 AiEngagePartyBehavior 只扫描本队附近约“最大接触距离×45”
-                // 的可定位部队，并不提供横跨大陆的目标搜索。远距离阶段因此不
-                // 直接跟随一个可能不在感知范围内的 Party，而是把罪犯本小时的
-                // 已知坐标作为地点候选送进同一场原版欲望拍卖。
-                ResolveNavigation(party, intent.Party, out MobileParty.NavigationType navigation,
-                    out bool isFromPort);
-                AddDutyCandidate(think, CreatePoint(intent.Party.Position, navigation, isFromPort),
-                    dutyScore);
-                dutyAdded = "ApproachPoint:" + intent.Party.StringId;
+                if (PoliceEnforcementBehavior.IsPlayerEnforcementApproach(
+                        party, intent.Party))
+                {
+                    // Player enforcement is still an ordinary score-1 desire,
+                    // but its winning action is native EngageParty rather than
+                    // a snapshot GoToPoint.  The action bridge below performs
+                    // that translation only for this player warrant.
+                    AddDutyCandidate(think, Create(party, intent.Party,
+                        AiBehavior.GoAroundParty), PlayerEnforcementScore);
+                    dutyAdded = "PlayerEnforcementEngage:" + intent.Party.StringId;
+                }
+                else
+                {
+                    // Other approach duties still travel to the target's last
+                    // known position and retain their existing point behavior.
+                    ResolveNavigation(party, intent.Party,
+                        out MobileParty.NavigationType navigation,
+                        out bool isFromPort);
+                    AddDutyCandidate(think,
+                        CreatePoint(intent.Party.Position, navigation, isFromPort),
+                        dutyScore);
+                    dutyAdded = "ApproachPoint:" + intent.Party.StringId;
+                }
             }
             else if (intent?.Kind == IntentKind.Pursue && intent.Party?.IsActive == true)
             {

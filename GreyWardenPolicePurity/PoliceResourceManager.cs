@@ -427,6 +427,10 @@ namespace GreyWardenPolicePurity
         /// 只追加缺失的船，不删除现有船，也不重建整个舰队。
         /// 不安装任何升级件，也不挂船首像。
         /// 无 NavalDLC 时静默跳过，不报错。
+        /// R10 起常驻领主队不再免费获得船只：原版 NavalDLC 的购船决策会让领主在
+        /// 有资金和可用船坞时自行购买（监控日志已有 ApplyByTrade 实购记录），
+        /// 免费生成后再按人数波动出售多余船会形成重复造钱。无英雄的临时纠察队
+        /// 和悬赏结算队仍免费配船，它们不进入家族公库，也不参与余船出售。
         /// </summary>
         internal static void GivePoliceShips(MobileParty party)
         {
@@ -434,6 +438,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 if (party == null || !party.IsActive || party.Party == null) return;
+                if (party.IsLordParty) return;
 
                 int requiredCount = GetRequiredShipCount(party);
                 ShipHull? hull = ResolvePreferredHeavyHull();

@@ -25,3 +25,16 @@
 /GreyWardenPolicePurity/_Module/Assets/
 /GreyWardenPolicePurity/_Module/AssetSources/
 /GreyWardenPolicePurity/_Module/RuntimeDataCache/
+
+# Local reference decompiles kept at the repository root for dual-blade forensics
+# (regenerated on demand from the installed game and ROT; never part of a build)
+/rot_decompile/
+/agent.cs.txt
+/agent.il.txt
+/custombattle.cs.txt
+/itemobject.cs.txt
+/mission.txt
+/missioncombat.txt
+/missionweapon.cs.txt
+/navalcustombattle.cs.txt
+/weaponcomponent.cs.txt

@@ -136,6 +136,18 @@ namespace GreyWardenPolicePurity
             if (village == null) return;
 
             MobileParty raider = FindPlayerRaidingParty(village);
+            MobileParty mainParty = MobileParty.MainParty;
+            float distance = mainParty == null
+                ? -1f
+                : mainParty.GetPosition2D.Distance(village.Settlement.Position.ToVec2());
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "VILLAGE_BEING_RAIDED_EVALUATED",
+                "village=" + village.Settlement.StringId +
+                "; distance=" + distance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) +
+                "; detectedRaider=" + (raider?.StringId ?? "-") +
+                "; playerTargetMatches=" + (mainParty?.TargetSettlement == village.Settlement) +
+                "; playerMapEventIsRaid=" + (mainParty?.MapEvent?.IsRaid == true) +
+                "; playerMapEventSettlement=" + (mainParty?.MapEvent?.MapEventSettlement?.StringId ?? "-"));
             if (raider == null || !raider.IsMainParty) return;
 
             Vec2 location = village.Settlement.Position.ToVec2();
@@ -143,6 +155,9 @@ namespace GreyWardenPolicePurity
 
             // ★ 功能 4A：劫掠村庄固定扣 -2 声望（无论村庄有无防守者）
             PlayerState.ChangeReputation(-2);
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "VILLAGE_RAID_REPUTATION_APPLIED",
+                "village=" + village.Settlement.StringId + "; delta=-2");
 
             // 若已进入通缉状态，立即触发警察追捕
             if (PlayerState.IsWanted)
@@ -246,6 +261,17 @@ namespace GreyWardenPolicePurity
             }
 
             if (TryApplyPoliceBattlePenalty(mapEvent))
+            {
+                _pendingEnemyCount = 0;
+                _pendingPoliceCrimeSupport = 0;
+                _pendingPlayerKillBaseline = -1;
+                return;
+            }
+
+            // ★ R10：玩家亲手击败仍在案的罪犯部队也会获得声望。
+            // 与剿匪/救援共用同一把"亲手击倒十人得一点"的累计器，并与上面的
+            // 协助灰袍抓捕路径互斥，避免同一场战斗被重复结算。
+            if (TryResolveCaseCriminalReputation(mapEvent, playerKillCount))
             {
                 _pendingEnemyCount = 0;
                 _pendingPoliceCrimeSupport = 0;
@@ -682,6 +708,59 @@ namespace GreyWardenPolicePurity
                 $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
                 Colors.Red));
             return true;
+        }
+
+        /// <summary>
+        /// 玩家获胜且失败方包含仍有开放案卷的罪犯部队时，按其亲手击倒数
+        /// 累计灰袍声望（每十人一点，跨战斗保留余数）。仅当该罪犯同时是
+        /// 灰袍承办目标且玩家走了强制介入协助路径时，由
+        /// TryResolvePendingPoliceCriminalReputation 先结算并短路，不会重复计。
+        /// </summary>
+        private bool TryResolveCaseCriminalReputation(
+            MapEvent mapEvent,
+            int playerKillCount)
+        {
+            if (mapEvent == null || !mapEvent.HasWinner)
+                return false;
+
+            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
+                ? mapEvent.DefenderSide
+                : mapEvent.AttackerSide;
+            if (loser == null || !SideContainsOpenCaseCriminal(loser))
+                return false;
+
+            int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
+            if (repGain <= 0)
+                return true;
+
+            PlayerState.ChangeReputation(repGain);
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_playerbehaviormonitor_054}The Grey Wardens mark your good service: defeated the forces of a wanted criminal ({VAR_1} personally defeated) |", "VAR_1", playerKillCount) +
+                $"{PlayerState.GetReputationDisplay()} (+{repGain})",
+                Colors.Green));
+            return true;
+        }
+
+        private static bool SideContainsOpenCaseCriminal(MapEventSide side)
+        {
+            foreach (var p in side.Parties)
+            {
+                MobileParty? party = p?.Party?.MobileParty;
+                if (party == null) continue;
+
+                if (IsOpenCaseCriminal(party) ||
+                    IsOpenCaseCriminal(party.AttachedTo) ||
+                    IsOpenCaseCriminal(party.Army?.LeaderParty))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool IsOpenCaseCriminal(MobileParty? party)
+        {
+            if (party == null || party.IsMainParty)
+                return false;
+            return CrimeState.GetByOffenderId(party.StringId) != null;
         }
 
         private bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)

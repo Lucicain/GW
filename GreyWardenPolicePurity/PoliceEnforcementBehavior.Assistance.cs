@@ -1752,8 +1752,10 @@ namespace GreyWardenPolicePurity
                 return;
 
             float contactDistance = member.IsCurrentlyAtSea
-                ? Campaign.Current.Models.EncounterModel.MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
-                : Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
+                ? Campaign.Current.Models.EncounterModel
+                    .MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
+                : Campaign.Current.Models.EncounterModel
+                    .MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
             if ((member.Position - leader.Position).LengthSquared <
                 contactDistance * contactDistance)
                 army.AddPartyToMergedParties(member);
@@ -1838,6 +1840,7 @@ namespace GreyWardenPolicePurity
             // The assistance Army must be dissolved while its group still
             // identifies every attached helper. EndTask comes afterwards so
             // no leaderless native Army survives this same event callback.
+            PoliceTask? task = CrimeState.GetTask(ownerId);
             ReleaseAssistanceGroup(ownerId, reason);
             if (owner?.IsActive == true)
             {
@@ -1847,6 +1850,7 @@ namespace GreyWardenPolicePurity
             ClearTaskWarTracking(ownerId, true);
             CrimeState.EndTask(ownerId);
             CrimeState.RefreshAccepting();
+            RestorePeaceAfterCaseEnd(task);
             if (owner?.IsActive == true)
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(owner);
         }

@@ -582,7 +582,8 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                Equipment? equipment = Campaign.Current.Models.EquipmentSelectionModel
+                Equipment? equipment = Campaign.Current.Models
+                    .EquipmentSelectionModel
                     .GetEquipmentForInitialChildrenGeneration(hero);
 
                 if (equipment == null)

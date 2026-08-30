@@ -335,10 +335,13 @@ namespace GreyWardenPolicePurity
 
         public static void EndPlayerHunt()
         {
+            GwpAiDiagnostics.WritePlayerJusticeState("PLAYER_HUNT_ENDING", string.Empty);
             _ledger.Remove(PlayerCrimeId);
             foreach (string key in _tasks.Where(kv => kv.Value.TargetCrimeId == PlayerCrimeId)
                          .Select(kv => kv.Key).ToList())
                 _tasks.Remove(key);
+
+            GwpAiDiagnostics.WritePlayerJusticeState("PLAYER_HUNT_ENDED", string.Empty);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_gwpdata_002}The wanted order has been lifted, and the Grey Wardens are no longer hunting you."), Colors.Green));
@@ -995,7 +998,14 @@ namespace GreyWardenPolicePurity
 
         public static string GetReputationDisplay() => GwpText.Get("{=gwp_gwpdata_005}Reputation: {VAR_1}", "VAR_1", Reputation);
 
-        public static void ResetReputation(int value) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
+        public static void ResetReputation(int value)
+        {
+            int before = Reputation;
+            Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "CUSTOM_REPUTATION_RESET",
+                "before=" + before + "; requested=" + value + "; after=" + Reputation);
+        }
         public static void ResetGoodDeedKillProgress(int value) => GoodDeedKillProgress = Math.Max(0, Math.Min(9, value));
 
         public static int AccumulateGoodDeedKills(int killCount)
@@ -1007,7 +1017,14 @@ namespace GreyWardenPolicePurity
             GoodDeedKillProgress = accumulated % 10;
             return reputationGain;
         }
-        public static void ChangeReputation(int delta) => Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));
+        public static void ChangeReputation(int delta)
+        {
+            int before = Reputation;
+            Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "CUSTOM_REPUTATION_CHANGED",
+                "before=" + before + "; delta=" + delta + "; after=" + Reputation);
+        }
         public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
         public static void ClearAll()

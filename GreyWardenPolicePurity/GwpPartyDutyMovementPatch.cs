@@ -60,6 +60,35 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
+    /// The native desire auction has no EngageParty winner branch: it normally
+    /// materializes GoAroundParty through this action helper.  For a peaceful
+    /// player warrant, translate that one winning candidate to the native
+    /// EngageParty command so a persistent Warden follows the moving player
+    /// from any distance while retaining the score-1 auction semantics.
+    /// </summary>
+    [HarmonyPatch(typeof(SetPartyAiAction),
+        nameof(SetPartyAiAction.GetActionForGoingAroundParty))]
+    internal static class GwpPlayerEnforcementEngageActionPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(MobileParty owner, MobileParty mobileParty,
+            MobileParty.NavigationType navigationType, bool isFromPort)
+        {
+            if (!PoliceEnforcementBehavior.IsPlayerEnforcementApproach(
+                    owner, mobileParty))
+                return true;
+
+            owner.SetMoveEngageParty(mobileParty, navigationType);
+            GwpAiDiagnostics.WriteAction(owner,
+                "PLAYER_ENFORCEMENT_ENGAGE_WINNER",
+                "target=" + mobileParty.StringId +
+                "; navigation=" + navigationType +
+                "; fromPort=" + isFromPort);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Prevents a leaderless enforcement party's direct attack from being
     /// replaced by Bannerlord's ordinary hourly AI auction.
     /// </summary>
