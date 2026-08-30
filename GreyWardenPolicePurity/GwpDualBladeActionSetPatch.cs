@@ -290,6 +290,41 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>
+        /// An AI mission agent carrying the complete pair. Requiring a live
+        /// Mission keeps tableau and preview objects out no matter what they
+        /// hold; the shield-enforcement bypass is scoped by this.
+        /// </summary>
+        internal static bool IsDualBladeNpc(Agent? agent)
+        {
+            if (agent == null || !agent.IsAIControlled || agent.Mission == null)
+                return false;
+
+            try
+            {
+                MissionEquipment? equipment = agent.Equipment;
+                if (equipment != null
+                    && IsOffHandBladeId(
+                        equipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
+                    && IsItem(equipment[EquipmentIndex.Weapon1],
+                        GwpIds.DualBladeMainhandItemId))
+                {
+                    return true;
+                }
+
+                Equipment? spawnEquipment = agent.SpawnEquipment;
+                return spawnEquipment != null
+                    && IsOffHandBladeId(
+                        spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
+                    && IsItem(spawnEquipment[EquipmentIndex.Weapon1].Item,
+                        GwpIds.DualBladeMainhandItemId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
 

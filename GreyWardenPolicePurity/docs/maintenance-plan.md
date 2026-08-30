@@ -1,5 +1,28 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 重新梳理：v1.4.8 是四个脚本协同，当前缺的是 `EnforceShieldUsage` 旁路
+
+- 用户实测：**模型正常、副剑显示正常（已装备、可见），但仍不出鞘**。追踪确认资格这次真的写进去了：
+  ```
+  NPC_ITEM_SETUP | gwdualbladeoffhandai; collision=bo_sword_one_handed;
+                   flags=MeleeWeapon, HasHitPoints, CanBlockRanged; maxDataValue=500; qualified=True
+  ```
+  因此得到一条干净的否定结论：**仅在物品层补齐资格（标志 + 耐久 + 碰撞体），在 1.5.2 上不足以让原生 AI 拔出副手。**
+- 用户提供关键历史：v1.4.8 的可用实现是**四个脚本协同**，后来整合进一个脚本，随后因未提交而丢失。与记录逐一对号后确认这四个是：
+  | 当年补丁类 | 目标方法 | 当前状态 |
+  |---|---|---|
+  | `GwpDualBladeAiWeaponDataPatch` | `MissionWeapon.GetWeaponData` | 已由数据层一次性写入替代（碰撞体） |
+  | `GwpDualBladeAiWeaponStatsPatch` | `MissionWeapon.GetWeaponStatsData` | 已由数据层一次性写入替代（标志 + 耐久） |
+  | `GwpDualBladeAiEquipmentSyncScopePatch` | `Agent.EquipItemsFromSpawnEquipment` | 仅为上两者的作用域，数据层方案下不再需要 |
+  | **`GwpDualBladeAiShieldEnforcementPatch`** | **`Agent.EnforceShieldUsage`** | **从未与"真正生效的资格"同时存在过** |
+- 也就是说，此前每一轮都只复现了四分之二或四分之三，而第四块从来没和有效资格同时上过场。记录对它的原话是"**避免原版盾墙整理再次把非标准副手直接剔除**"，即原生阵型盾墙逻辑会主动剔除非标准副手物品 —— 这正与"资格齐全但副手始终不出鞘"的现象吻合。
+- 本轮补上第四块 `GwpDualBladeShieldEnforcementPatch`：对通过 `IsDualBladeNpc`（AI + 有 Mission + 携带完整双刀）的 agent 跳过 `Agent.EnforceShieldUsage`。选择它而非四者全复原的理由：它是 **Agent 实例方法**，tableau 走 `AgentVisuals` 且没有 Agent，因此不可能触及预览链；而已被隔离实验证明有毒的是 `MissionWeapon` 那两个 per-call 补丁，本轮仍保持 0 命中。这些角色本来就没有盾，跳过它不损失任何原版行为。
+- 同时修正一处可能的遗漏：资格写入原先只作用于 `blade.PrimaryWeapon`，现改为遍历 `blade.Weapons` 的**每一个 usage**。锻造物可能生成多个 `WeaponComponentData`，原生读取的是当前 usage，只改第一个可能改不到实际生效的那个。诊断输出新增 `usages=已限定/总数`。
+- 需求放宽已生效：用户明确副手刀可以挡飞箭，因此不再需要 `Mission.MissileHitCallback` 还原补丁，战斗热路径上没有任何新增全局入口。碰撞体按用户要求限制为与剑 mesh 一致（`bo_sword_one_handed`），未借用大盾体积。
+- 补丁面：`PATCH_OK=38; PATCH_FAIL=0`，相对检查点（37）**只新增 `Agent.EnforceShieldUsage` 一个**；`HarmonyPatch(typeof(MissionWeapon)` 命中 0；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 797184 字节、SHA-256 `11AEFADAA2C8965BCAA30AB752E4EE6CC0546FD2109D119C51AFB1297674DBF4`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收：① `NPC_ITEM_SETUP` 的 `usages=` 是否全部限定；② 是否出现 `NPC_SHIELD_ENFORCEMENT_BYPASSED`；③ **双刃卫士左手刀是否出鞘并持续握住**；④ 模型/预览是否仍正常（预期不变）。若 ①② 都成立而 ③ 仍失败，则四块拼齐后仍不成立，说明 v1.4.8 结论不适用于 1.5.2，该方向可判定终结。
+
 ## 2026-08-30 上一轮资格标志根本没写进去（反射目标类型判断错误），已直接赋值修正
 
 - 用户实测上一轮：**模型正常**（零补丁方案确实保住了预览），但左手刀仍未出鞘。

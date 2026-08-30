@@ -60,8 +60,12 @@ namespace GreyWardenPolicePurity
                         ?.SetValue(blade, blade.BodyName);
                 }
 
-                WeaponComponentData? weapon = blade.PrimaryWeapon;
-                if (weapon == null)
+                // Every usage, not just the primary one. A crafted item can
+                // carry more than one WeaponComponentData, and native reads
+                // whichever usage is current - qualifying only the first would
+                // leave the one actually in play untouched.
+                var usages = blade.Weapons;
+                if (usages == null || usages.Count == 0)
                 {
                     GwpDualBladeTrace.Write(
                         "NPC_ITEM_SETUP_NO_WEAPON",
@@ -69,29 +73,38 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                // WeaponComponentData.WeaponFlags is a public field, not a
-                // property. The previous build reached for it with
-                // AccessTools.Property, which returned null and was swallowed
-                // by the null-conditional call, so the flags were never written
-                // and the qualification was never actually exercised - the
-                // trace read back "flags=MeleeWeapon". Assign it directly.
-                // MeleeWeapon and the sword usage are preserved by OR; clearing
-                // the weapon mask caused its own native crash historically.
-                weapon.WeaponFlags |= Qualification;
-
-                if (weapon.MaxDataValue < OffHandHitPoints)
+                foreach (WeaponComponentData usage in usages)
                 {
-                    AccessTools.Property(typeof(WeaponComponentData), "MaxDataValue")
-                        ?.SetValue(weapon, OffHandHitPoints);
+                    // WeaponComponentData.WeaponFlags is a public field, not a
+                    // property; the build before last reached for it with
+                    // AccessTools.Property, got null, and the null-conditional
+                    // call swallowed the miss. Assign it directly. MeleeWeapon
+                    // and the sword usage are preserved by OR - clearing the
+                    // weapon mask caused its own native crash historically.
+                    usage.WeaponFlags |= Qualification;
+
+                    if (usage.MaxDataValue < OffHandHitPoints)
+                    {
+                        AccessTools.Property(
+                                typeof(WeaponComponentData), "MaxDataValue")
+                            ?.SetValue(usage, OffHandHitPoints);
+                    }
                 }
 
                 WeaponComponentData? readback = blade.PrimaryWeapon;
+                int qualifiedUsages = 0;
+                foreach (WeaponComponentData usage in usages)
+                {
+                    if ((usage.WeaponFlags & Qualification) == Qualification)
+                        qualifiedUsages++;
+                }
                 GwpDualBladeTrace.Write(
                     "NPC_ITEM_SETUP",
                     details: blade.StringId
                         + "; collision=" + blade.CollisionBodyName
                         + "; flags=" + readback?.WeaponFlags
                         + "; maxDataValue=" + readback?.MaxDataValue
+                        + "; usages=" + qualifiedUsages + "/" + usages.Count
                         + "; qualified="
                         + (readback != null
                             && (readback.WeaponFlags & Qualification) == Qualification));
