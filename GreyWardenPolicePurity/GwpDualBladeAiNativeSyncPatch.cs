@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using TaleWorlds.Core;
-using TaleWorlds.Engine;
 using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
@@ -21,21 +20,31 @@ namespace GreyWardenPolicePurity
     ///     item being a shield.
     ///   - with CanBlockRanged but no shield collision object, the first real
     ///     block crashed at TaleWorlds.Native.dll+0x73ddf8, a null source in an
-    ///     object copy. Supplying a real collision shape is what addressed it.
+    ///     object copy. That remains an open risk here; see below.
     ///
     /// So the off-hand blade's *native copy* is given HasHitPoints,
-    /// CanBlockRanged, durability and a shield collision body, while
-    /// MeleeWeapon is preserved by OR rather than replaced - clearing the
-    /// weapon mask is what produced a different crash and must not come back.
+    /// CanBlockRanged and durability, while MeleeWeapon is preserved by OR
+    /// rather than replaced - clearing the weapon mask produced its own native
+    /// crash and must not come back.
     ///
-    /// Everything is confined to one thread-local scope around a single
-    /// Agent.EquipItemsFromSpawnEquipment call for an AI agent that carries the
-    /// complete pair. The managed MissionWeapon is never modified, the player
-    /// never enters the scope, and no preview path can either: tableaus build
-    /// through AgentVisuals and never call Agent.EquipItemsFromSpawnEquipment,
-    /// so with the scope closed these postfixes return the stock data
-    /// unchanged. No preview-side patch is added - adding one is what damaged
-    /// character models in earlier rounds.
+    /// MissionWeapon.GetWeaponData is deliberately NOT patched. It returns a
+    /// large by-value WeaponData carrying MetaMesh, TableauMaterial and
+    /// PhysicsShape handles, and the last round proved that merely having it
+    /// patched corrupts what every caller receives: the patch could not even
+    /// fire, because __instance was declared 'in' on a struct method and never
+    /// bound, yet the character previews broke exactly as they have every other
+    /// time this method was patched. AgentVisuals builds weapon meshes through
+    /// it, which is the whole story of the recurring model damage. The
+    /// historical collision-shape fix went through that method and therefore
+    /// cannot be reused; if blocking crashes, the collision body has to be
+    /// supplied some other way.
+    ///
+    /// GetWeaponStatsData is safe by comparison - it returns a managed array
+    /// reference - and carries the flags and durability that decide the
+    /// qualification. Everything is confined to one thread-local scope around a
+    /// single Agent.EquipItemsFromSpawnEquipment call for an AI agent with the
+    /// complete pair; the managed MissionWeapon is never modified, the player
+    /// never enters the scope, and no preview-side patch is added.
     /// </summary>
     internal static class GwpDualBladeAiNativeSync
     {
@@ -48,13 +57,8 @@ namespace GreyWardenPolicePurity
         private const ulong OffHandQualification =
             (ulong)(WeaponFlags.HasHitPoints | WeaponFlags.CanBlockRanged);
 
-        private const string ShieldCollisionBody = "bo_wlarge_shield";
-
         [ThreadStatic]
         private static Agent? _scope;
-
-        private static PhysicsShape? _shieldCollision;
-        private static bool _shieldCollisionResolved;
 
         internal static bool InScope => _scope != null;
 
@@ -80,41 +84,23 @@ namespace GreyWardenPolicePurity
                 GwpIds.DualBladeOffhandItemId,
                 StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// Resolved once and cached. A miss leaves the collision shape alone
-        /// rather than substituting anything.
-        /// </summary>
-        internal static PhysicsShape? ShieldCollision
-        {
-            get
-            {
-                if (_shieldCollisionResolved)
-                    return _shieldCollision;
-
-                _shieldCollisionResolved = true;
-                try
-                {
-                    _shieldCollision =
-                        PhysicsShape.GetFromResource(ShieldCollisionBody);
-                }
-                catch (Exception exception)
-                {
-                    GwpDualBladeTrace.Write(
-                        "AI_NATIVE_SYNC_NO_COLLISION",
-                        details: ShieldCollisionBody
-                            + " -> " + exception.GetType().Name);
-                    _shieldCollision = null;
-                }
-
-                return _shieldCollision;
-            }
-        }
+        private static bool _appliedOnceLogged;
 
         internal static void ApplyQualification(ref WeaponStatsData stats)
         {
             stats.WeaponFlags |= OffHandQualification;
             if (stats.MaxDataValue < OffHandHitPoints)
                 stats.MaxDataValue = OffHandHitPoints;
+
+            if (!_appliedOnceLogged)
+            {
+                _appliedOnceLogged = true;
+                GwpDualBladeTrace.Write(
+                    "AI_NATIVE_SYNC_APPLIED",
+                    _scope,
+                    "flags=" + (WeaponFlags)stats.WeaponFlags
+                    + "; maxDataValue=" + stats.MaxDataValue);
+            }
         }
     }
 
@@ -141,32 +127,6 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// Supplies the off-hand blade's native durability and a real collision
-    /// body. Without a collision object the shield-qualified path dereferences
-    /// null on the first block.
-    /// </summary>
-    [HarmonyPatch(
-        typeof(MissionWeapon),
-        nameof(MissionWeapon.GetWeaponData),
-        new[] { typeof(bool) })]
-    internal static class GwpDualBladeAiWeaponDataPatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix(in MissionWeapon __instance, ref WeaponData __result)
-        {
-            if (!GwpDualBladeAiNativeSync.InScope
-                || !GwpDualBladeAiNativeSync.IsOffHandBlade(in __instance))
-            {
-                return;
-            }
-
-            PhysicsShape? collision = GwpDualBladeAiNativeSync.ShieldCollision;
-            if (collision != null)
-                __result.CollisionShape = collision;
-        }
-    }
-
-    /// <summary>
     /// The qualification itself. MeleeWeapon and the sword usage are preserved:
     /// the record shows that clearing the weapon mask produced its own native
     /// crash, and ROT's blades keep OneHandedSword + MeleeWeapon throughout.
@@ -178,7 +138,7 @@ namespace GreyWardenPolicePurity
     {
         [HarmonyPostfix]
         private static void Postfix(
-            in MissionWeapon __instance,
+            ref MissionWeapon __instance,
             ref WeaponStatsData[] __result)
         {
             if (__result == null

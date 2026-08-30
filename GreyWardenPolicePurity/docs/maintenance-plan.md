@@ -1,5 +1,20 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 定位到预览损坏的真正机制：`MissionWeapon.GetWeaponData` 不可被 patch（永久结论）
+
+- 用户实测上一候选：预览界面模型异常**同样复现**；双刃卫士游戏里**没有第二把刀**。追踪显示 `AI_NATIVE_SYNC_BEGIN` 出现 199 次（角色为 `gwtwinblade`），作用域正常开合，但没有任何实际效果。
+- **两个现象同源，且都定位到具体代码缺陷：**
+  1. **没有第二把刀**：`MissionWeapon` 是 **struct**。Harmony 对值类型实例方法要求 `ref MissionWeapon __instance`，上一版写成了 `in MissionWeapon __instance` —— 绑定失败，`IsOffHandBlade` 从未命中，**资格标志一次都没施加**。
+  2. **预览损坏**：这才是关键。既然 (1) 说明那两个 postfix **实际什么都没做**，预览却照样坏 —— 说明**光是把补丁挂在 `MissionWeapon.GetWeaponData` 上就会破坏预览**，与补丁内容无关。
+- 机制解释：`GetWeaponData` **按值返回 `WeaponData`**，该结构体内含 `MetaMesh WeaponMesh/HolsterMesh/FlyingMesh`、`Material TableauMaterial`、`PhysicsShape Shape/CollisionShape` 等原生句柄。Harmony 包住一个大型按值返回的结构体方法，会破坏**所有调用方**收到的数据；`AgentVisuals` 正是通过它构建武器网格，因此人物 tableau 首当其冲。
+- **第三次独立佐证**：仓库中 `GwpBlackLordShieldBehavior.cs` 至今是空实现，其注释写明"Intentionally empty during native-shutdown diagnosis. The previous `MissionWeapon.GetWeaponData` postfix retrieved and recolored private..." —— 该文件当年也是因为在这个方法上挂 postfix 引发原生关闭问题而被清空。加上本轮，以及维护记录中多轮"安装这两个全局补丁会污染 CharacterTableau/AgentVisuals"的结论，证据链已经闭合。
+- **永久结论（写死，任何方案不得违反）：`MissionWeapon.GetWeaponData` 绝对不可被 Harmony patch。** 此前一周反复出现、每次都被归因到别处（动作集注入、槽位布局、CraftedItem 标志、预览隔离补丁）的"人物模型消失/姿态异常"，真正的成因就是它。历史上那次"用 `WeaponData.CollisionShape = bo_wlarge_shield` 修复格挡崩溃"的做法正是走这个方法，**因此不可复用**。
+- 本轮修改：完整删除 `GetWeaponData` 补丁及其碰撞体逻辑；`GetWeaponStatsData` 的 `__instance` 改为 `ref MissionWeapon`。`GetWeaponStatsData` 返回的是托管数组引用（`WeaponStatsData[]`），不是按值大结构体，postfix 安全，且资格标志与耐久本来就在它里面。新增一次性 `AI_NATIVE_SYNC_APPLIED`，记录实际写入的 `flags` 与 `maxDataValue`，用于确认这次真的生效。
+- **已知未决风险（如实说明）**：`CanBlockRanged` 生效后若没有盾碰撞对象，历史上首次真实格挡会崩在 `Native.dll+0x73ddf8`。原来的解法走 `GetWeaponData`，已被本轮结论封死。若本轮出现格挡崩溃，下一步方向是**在物品加载后一次性设置 `ItemObject.CollisionBodyName`**（一次性托管对象写入，不是热路径补丁），而不是重新 patch `GetWeaponData`。
+- 同样如实说明：`CanBlockRanged` 目前会让副手刀挡住弓箭，与需求不符。其还原方案（`Mission.MissileHitCallback`）仍刻意未与本轮捆绑，待持刀与格挡两项确认后再单独加入。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=39; PATCH_FAIL=0`（检查点 37 + 装备作用域 + 武器统计），类型数 410；全仓库 Harmony 目标中 `GetWeaponData` 命中 **0**；XSLT 复验 102 个 action_set、`as_human_female_warrior` 保持原版 298 条；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 796672 字节、SHA-256 `CD9BCB24856C605532F8E38688D18F5556C59260C96361D791CB8F9C9FDA1944`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收顺序：① **人物预览/百科是否恢复正常**（这是本轮最主要的验证目标，若恢复即证明上述永久结论成立）；② `AI_NATIVE_SYNC_APPLIED` 是否出现且 `flags` 含 `HasHitPoints, CanBlockRanged`；③ 双刃卫士左手剑是否持续出鞘超过 3 秒；④ 格挡时是否崩溃。
+
 ## 2026-08-30 按 v1.4.8 已成功配方重建 NPC 双刀：原生资格代理 + 独立双刃卫士兵种（待用户实机验收）
 
 - 用户指出关键事实：**v1.4.8 时期本项目配合 ROT 确实做出过 AI 双持**，当时不是逼弓箭手用，而是单独造了兵种「双刃卫士」，之后才移植的双刀击倒机制。据此回查开发记录，找到了完整配方。
