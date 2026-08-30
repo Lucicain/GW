@@ -1,5 +1,15 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 落水崩溃复验：碰撞体假设未成立，暂不修复
+
+- 用户确认当前状态：五项 NPC 双刀功能已解决，AI 双刀攻击判定与击倒已解决；落水崩溃仍然存在。负声望纠察队、村庄误扣声望、缴款后残留通缉等旧战役问题暂时搁置，不在本轮处理。
+- 最新实机崩溃为 `TaleWorlds.Native.dll + 0x586f0b`、`0xc0000005`，进程 `9588`，WER 时间 `2026-08-31 00:18:12`；转储位于 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.9588.dmp`。WinDbg 显示故障指令为 `cmp dword ptr [rax+rsi*8],0`，其中索引寄存器为异常值，表现为 Native 内部表项/句柄索引损坏或未初始化，而不是托管层可捕获的空引用。
+- 本次追踪 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Trace.log` 在 `00:17:03` 明确记录三把刀（`gwdualbladeoffhand`、`gwdualblademainhand`、`gwdualbladeoffhandai`）均成功写入 `CollisionBodyName=bo_sword_one_handed`，NPC 副手同时记录 `qualified=True`、`MaxDataValue=500`；随后仍在相同 Native 偏移崩溃。因此“只因 CollisionBodyName 为空”已被当前 A/B 证伪。
+- `rgl_log_9588.txt` 的最后一条仍是 `Render Requested: gwdualblademainhand` / `gwdualbladeoffhand`，没有 `wood_weapon/water` 事件；较早的 `rgl_log_13328.txt` 虽在 `23:46:12` 出现一次水面音效索引缺失，但随后战斗在 `23:47:09` 正常结束并显示胜利，崩溃发生在 `23:47:33`。故缺失水面音效不是原因，“落水”目前更像触发场景或表象，不能再把根因锁定为水面物理。
+- 当前最可能的两条解释：① `OnGameInitializationFinished` 之后修改 `ItemObject.CollisionBodyName` 没有重建 Native 已缓存的 WeaponData/物理句柄，后续掉落、渲染或清理阶段仍拿到坏索引；② CraftedItem 双刀的某个 mesh/usage/资源句柄在 NavalDLC 的战斗结束或世界物件路径中生成了无效 Native 索引。现有转储没有符号，不能仅凭 `0x586f0b` 把它进一步命名为碰撞体、网格或声音表。
+- 下一轮应先做单变量隔离，而不是继续叠加碰撞体写入：A) 保持双刀战斗功能，暂时去掉三把刀的运行时 `CollisionBodyName` 写入；B) 若仍崩溃，再把 `DoesNotSpawnWhenDropped` 只加到双刀物品，区分“世界掉落/物理实体”与“战场渲染/资源句柄”；C) 若 B 仍崩溃，再以原生静态 `Item` 或普通单手剑替换双刀逐项对照。`CannotBePickedUp` 不是首选隔离变量，因为它可能仍创建掉落实体，只禁止交互。
+- 版本策略按用户决定记录：不再把 v1.4-r10/r11 当作发布目标；后续从已发布 r9 直接整理到用户计划的 1.5-21 版本，玩家 README、版本号、正式包和旧包清理统一等玩家版发布时处理。
+
 ## 2026-08-30 海战落水崩溃：为全部双刀补上碰撞体（待用户实机验收）
 
 - 用户反馈新崩溃点：双刃兵与武将**掉进海里即报错弹出**。
