@@ -95,12 +95,64 @@ namespace GreyWardenPolicePurity
                               + "; equipment="
                               + character.Equipment.CalculateEquipmentCode()));
                 }
+
+                AuditActionSets();
             }
             catch (Exception exception)
             {
                 Write(
                     "OBJECT_AUDIT_FAILED",
                     details: exception.GetType().Name + ": " + exception.Message);
+            }
+        }
+
+        /// <summary>
+        /// as_human_warrior and as_human_female_warrior are the sets every human
+        /// in the game resolves, and CharacterTableau builds every preview from
+        /// them, so record that they stay valid alongside the two dedicated
+        /// dual-blade sets. CheckActionAnimationClipExists additionally says
+        /// whether the animation clips the dual actions name are actually
+        /// present in the loaded asset packages — an action that resolves to a
+        /// missing clip is exactly what a broken pose looks like.
+        /// </summary>
+        private static void AuditActionSets()
+        {
+            string[] setIds =
+            {
+                "as_human_warrior",
+                "as_human_female_warrior",
+                "as_human_gwp_dual",
+                "as_human_female_gwp_dual"
+            };
+
+            string[] probeActions =
+            {
+                "act_inventory_idle_start",
+                "act_gwd_ready_thrust_1h",
+                "act_walk_idle_1h_with_gwd_shld"
+            };
+
+            foreach (string setId in setIds)
+            {
+                MBActionSet actionSet = MBActionSet.GetActionSet(setId);
+                string details = "id=" + setId + "; valid=" + actionSet.IsValid;
+
+                if (actionSet.IsValid)
+                {
+                    foreach (string actionName in probeActions)
+                    {
+                        ActionIndexCache action =
+                            ActionIndexCache.Create(actionName);
+                        details += "; " + actionName
+                            + "=index:" + action.Index
+                            + ",clip:"
+                            + (action.Index >= 0
+                                && MBActionSet.CheckActionAnimationClipExists(
+                                    actionSet, in action));
+                    }
+                }
+
+                Write("ACTION_SET_AUDIT", details: details);
             }
         }
 

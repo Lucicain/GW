@@ -6,6 +6,23 @@
 - 用户同时确认唯一遗留问题：灰袍弓箭手切入近战时只拔出右手刀，副手刀没有拔出。该问题与已确认稳定的预览、模型和接战路径分开处理。
 - 上述稳定功能已建立本地 Git 检查点 `eda353f`（`checkpoint: stable dual-blade models and combat`）。下一轮只允许围绕弓箭手副手拔刀同步做增量实验；若需要回滚，恢复到该提交即可。
 
+## 2026-08-30 用户截图定性：预览损坏波及原版兵种，根因是双刀动作污染了全局共用动作集
+
+- 用户提供四张截图，彻底改变了"人物显示异常"的定性：
+  1. 海上自定义战斗选人界面：灰袍武将只剩两把刀悬空，**人物身体完全不显示**。
+  2. 战场：灰袍士兵确实只有单刀在手，副刀挂在背后（`gwp_dual_back` holster，`show_holster_when_drawn="true"`）。
+  3. 读档界面（旧 v1.4.8 会话）：玩家人物**横躺悬空**，坐骑正常。
+  4. 百科 → 士兵 → **古拉姆骑兵**：人物瘫成一堆，武器竖立悬空，**坐骑渲染完全正常**。
+- **第 4 张是决定性证据**：古拉姆骑兵是原版阿塞莱兵种，身上没有任何 GreyWarden 物品，却同样损坏。因此预览问题**根本不是双刀特有**，而是全局波及所有人物 tableau。此前所有"双刀物品/装备码/材质"方向的排查都对错了目标。
+- 四张图的共同特征：**武器和坐骑渲染正常，唯独人类身体缺失或塌陷**，即人类骨架拿不到有效姿势。
+- 结合已确认的 `CharacterTableau` 实现（`_characterActionSet = MBGlobals.GetActionSetWithSuffix(MonsterData, _isFemale, "_warrior")`，idle 为 `act_inventory_idle_start`），根因锁定：本模组的 `action_sets.xslt` 一直在把 84 条自定义双刀动作**注入全游戏人物共用的 `as_human_warrior` 与 `as_human_female_warrior`** —— 而这两个正是每个人物 tableau 解析的动作集。原版兵种同样解析它们，所以一起损坏。
+- 这也是本模组对"所有人类角色"唯一的全局改动。核对确认其余数据层没有全局副作用：`combat_parameters.xml` 只用 `gwp_*` 前缀 id；`movement_sets.xml`/`full_movement_sets.xml`/`item_usage_sets.xml` 只新增 `dual_*`/`1h_with_dual_shield` 等新 id，与原版无冲突（原版确有 `hand_shield` 根集，`dual_shield` 的 `base_set` 可解析）；`gwp_dual_back` 与 ROT `dual_back` 逐字段相同。
+- 本轮修改：`action_sets.xslt` 不再向两个共用集追加任何动作，只保留派生出的专用集。用游戏同款 `XslCompiledTransform` 对 live 文件实测确认：`as_human_warrior` 动作数 **4700**、`as_human_female_warrior` **298**，与原版逐数一致且 gwd 动作数为 **0**；`as_human_gwp_dual` 4784 条、`as_human_female_gwp_dual` 382 条，各含 84 条 gwd 动作；全局 104 个 action_set、重复 id 0；含 gwd 动作的集合**只有那两个专用集**。
+- 新增 `ACTION_SET_AUDIT` 监控：在首个双刀出生时记录四个动作集的 `IsValid`，并对 `act_inventory_idle_start`、`act_gwd_ready_thrust_1h`、`act_walk_idle_1h_with_gwd_shld` 分别记录 `ActionIndexCache` 索引与 `MBActionSet.CheckActionAnimationClipExists` 结果。若专用集里的双刀动作 clip 不存在（`gwp_dual_wield_animations.tpac` 缺片段），下一轮可直接看到，而且损坏范围已被限制在灰袍双刀单位内，不再波及原版人物。
+- 弓箭手副手仍按上一条记录使用原生 `WieldInitialWeapons()`，本轮未改动；`ARCHER_OFFHAND_PAIR_RESULT` 与 `CHARACTER_TABLEAU_REFRESH_FAILED` 两条监控同时保留。
+- 用户同时说明：**玩家双持是移植 ROT 的实现，本来就没有问题**，与 ROT 只做玩家双持的取证结论一致；AI 双持仍是本项目独有、无参考实现的部分。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=41; PATCH_FAIL=0`；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 802304 字节、SHA-256 `CA28ADD83CC07BCF444B338E9CFF37C921BE3F622E9D6FA85A372D24BB22E241`（README 同步后的最终增量构建）。未代表用户启动游戏。回滚点仍为 `eda353f`。
+
 ## 2026-08-30 15:40 会话：物品数据彻底证清白，副手拒绝点锁定在单槽位拔刀调用
 
 - 用户复测 `15:40:16`–`15:42`，`rgl_log_errors_31704.txt` 无托管异常、CrashDumps 目录为空、watchdog 记录为正常 `EXIT_PROCESS_DEBUG_EVENT`。用户反馈两项均未解决：士兵依旧单刀，人物显示依旧有问题。
