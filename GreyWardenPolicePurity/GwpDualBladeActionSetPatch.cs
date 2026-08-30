@@ -53,10 +53,15 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
+                // gwonehandedsword is the Grey Warden arming sword the paired
+                // blades are supposed to match. Auditing it beside them turns
+                // "the model looks wrong" into a comparison against a known
+                // good item built from the same four crafting pieces.
                 foreach (string itemId in new[]
                 {
                     GwpIds.DualBladeOffhandItemId,
-                    GwpIds.DualBladeMainhandItemId
+                    GwpIds.DualBladeMainhandItemId,
+                    "gwonehandedsword"
                 })
                 {
                     ItemObject? item = game.ObjectManager.GetObject<ItemObject>(itemId);
@@ -566,10 +571,26 @@ namespace GreyWardenPolicePurity
                             "ARCHER_OFFHAND_PAIR_REQUEST",
                             agent,
                             "main=" + primarySlot + "; offhand=" + offhandSlot);
-                        agent.TryToWieldWeaponInSlot(
-                            EquipmentIndex.WeaponItemBeginSlot,
-                            Agent.WeaponWieldActionType.InstantAfterPickUp,
-                            isWieldedOnSpawn: false);
+
+                        // A bare single-slot request for Weapon0 is rejected by
+                        // native once the main hand is already drawn: the trace
+                        // records main=Weapon1, offhand=None both before and
+                        // after the call, 199 times a session. The
+                        // player-controlled commander carries the very same two
+                        // items and does get the pair, because it goes through
+                        // WieldInitialWeapons, which wields the off hand first
+                        // and passes isWieldedOnSpawn: true. Re-run that native
+                        // routine instead of re-issuing the request native has
+                        // already refused. These characters carry nothing but
+                        // the pair, so "initial weapons" is exactly the pair.
+                        agent.WieldInitialWeapons(
+                            Agent.WeaponWieldActionType.InstantAfterPickUp);
+
+                        GwpDualBladeTrace.Write(
+                            "ARCHER_OFFHAND_PAIR_RESULT",
+                            agent,
+                            "main=" + agent.GetPrimaryWieldedItemIndex()
+                            + "; offhand=" + agent.GetOffhandWieldedItemIndex());
                     }
                     finally
                     {
@@ -602,45 +623,6 @@ namespace GreyWardenPolicePurity
                     }
                 }
             }
-        }
-    }
-
-    /// <summary>
-    /// The measured spawn trace shows the archers leave WieldInitialWeapons
-    /// with the pair correctly in hand — exactly like the player-controlled
-    /// commander, which keeps both blades — and then lose Weapon0 about two
-    /// seconds later, at the one point where native re-runs the AI weapon
-    /// selection.  That selection only keeps an off-hand item when it is a
-    /// shield, so it drops the off-hand blade; every previous attempt tried to
-    /// put the blade back afterwards and was undone again by the same
-    /// selection state.
-    ///
-    /// Skip that re-selection for the eligible GreyWarden pair instead. These
-    /// characters carry nothing but the two blades, so native has no other
-    /// weapon to choose and the skipped call has no work to do for them. This
-    /// writes no weapon data, fakes no shield, and touches no native handle;
-    /// every other agent — including ordinary soldiers who happen to share a
-    /// mission with them — keeps the stock selection.
-    /// </summary>
-    [HarmonyPatch(typeof(Agent), nameof(Agent.UpdateWeapons))]
-    internal static class GwpDualBladeAiWeaponSelectionPatch
-    {
-        [HarmonyPrefix]
-        private static bool Prefix(Agent __instance)
-        {
-            if (!GwpDualBladeLoadout.HasCompleteAiLoadout(__instance))
-                return true;
-
-            GwpDualBladeTrace.Write(
-                "AI_WEAPON_SELECTION_SKIPPED",
-                __instance,
-                "main=" + __instance.GetPrimaryWieldedItemIndex()
-                + "; offhand=" + __instance.GetOffhandWieldedItemIndex());
-
-            // Recover the pair if anything ahead of this boundary had already
-            // sheathed it; a correctly paired agent falls straight through.
-            GwpDualBladeWieldSync.Synchronize(__instance);
-            return false;
         }
     }
 

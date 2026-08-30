@@ -41,7 +41,7 @@ Compared with v1.4-r10:
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
 - Fixed the pre-battle dual-blade registration error in 1.5.2; the native equipment flow now registers the pair without reattaching weapons in previews.
 - Fixed a remaining direct error during the first Custom Battle agent equipment pass; paired-blade attributes now apply only while a real archer's battle equipment is being built.
-- Fixed Warden archers losing the off-hand blade shortly after they reach the field and fighting with a single sword; the general weapon-swap decision no longer takes their second blade away, and weapon swapping for ordinary soldiers and every other troop is untouched.
+- Fixed Warden archers drawing only one blade in the field; they now draw the pair through the same routine the player character uses, leaving ordinary soldiers and every other troop untouched.
 - Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
 - Fixed incomplete male and female action mappings that made character models disappear or enter broken poses; the paired blades now ship separate male and female action sets, so female Warden archers and commanders no longer run male animations, while ordinary characters retain native actions.
 - Fixed possible errors or freezes when the off-hand blade contacted or defended against ordinary soldiers; it retains melee attacks and parries but cannot block ranged attacks.

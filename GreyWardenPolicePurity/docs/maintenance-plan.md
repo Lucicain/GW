@@ -6,7 +6,24 @@
 - 用户同时确认唯一遗留问题：灰袍弓箭手切入近战时只拔出右手刀，副手刀没有拔出。该问题与已确认稳定的预览、模型和接战路径分开处理。
 - 上述稳定功能已建立本地 Git 检查点 `eda353f`（`checkpoint: stable dual-blade models and combat`）。下一轮只允许围绕弓箭手副手拔刀同步做增量实验；若需要回滚，恢复到该提交即可。
 
-## 2026-08-30 弓箭手副手：改为阻止原生 AI 换武器判断，并补齐女性双刀动作集
+## 2026-08-30 15:40 会话：物品数据彻底证清白，副手拒绝点锁定在单槽位拔刀调用
+
+- 用户复测 `15:40:16`–`15:42`，`rgl_log_errors_31704.txt` 无托管异常、CrashDumps 目录为空、watchdog 记录为正常 `EXIT_PROCESS_DEBUG_EVENT`。用户反馈两项均未解决：士兵依旧单刀，人物显示依旧有问题。
+- **上一轮的 `Agent.UpdateWeapons` 前置被实测证明完全无效**：`AI_WEAPON_SELECTION_SKIPPED` 计数为 `0`，即托管 `Agent.UpdateWeapons()` 在该场景下根本没有被调用过。由此也修正了上一轮的一个错误归因：12:10 会话里的 199 条配对请求并非来自 `UpdateWeapons` 后置，而是一直来自 `OnAgentWieldedItemChange` 事件。该补丁已从代码中完整删除，不留死代码（`PATCH_OK` 由 41 降回 40，类型数 413→412）。
+- **一次性审计首次拿到关键数据**（`phase=FirstDualBladeSpawn`，此前 8 个会话 18 条全是 `missing=true`）：
+  - `gwdualbladeoffhand`：`type=OneHandedWeapon; body=bo_sword_one_handed; collision=; usage=dual_shield; flags=ForceAttachOffHandPrimaryItemBone, WoodenParry, HeldInOffHand`
+  - `gwdualblademainhand`：`type=OneHandedWeapon; body=bo_sword_one_handed; collision=; usage=dual_shield_thrust; flags=0`
+  - 两个角色的装备码完整，`CHARACTER_CODE_CREATE` 7 次全部 `OK`/`exception=none`。
+  这与 ROT 的 `dual_blades`/`dual_blades2` 在 usage 与副手标志上逐项一致。**至此"锻造物丢失副手标志"、"item usage 合成错误"、"装备码缺失"、"对象未注册"四条假设全部由实测排除，物品数据层不需要再改，双刀外观不必让步。**
+- **拒绝点已精确定位到调用形式**：新增的 `SPAWN_AGENT_POSTFIX` 字段显示所有 Agent（含玩家）在 `SpawnAgent` 后置时都是 `main=None; offhand=None`，符合 `SpawnTroop` 在 `SpawnAgent` 返回后才调用 `WieldInitialWeapons` 的顺序。AI 弓箭手在 `15:41:45.6` 生成、`15:41:49.1` 才拔刀（+3.5 秒），拔出的只有主手 `Weapon1`。`rgl_log` 的 `archer_melee_pair` 是在 `TryToWieldWeaponInSlot` **返回之后**写的，199 条全部是 `main=Weapon1; offhand=None` —— 即原生**直接拒绝**了 `TryToWieldWeaponInSlot(Weapon0, InstantAfterPickUp, isWieldedOnSpawn: false)`，不是拔出后又被清空。
+- **玩家路径的对照是本轮最强证据**：agent `400`（`gwp_custom_commander`，`isAi=False; isPlayer=True`）全程没有发出任何配对请求，说明它双刀在手。它与弓箭手用的是**完全相同的两件物品和相同的固定槽位**，唯一差别是它经由原生 `WieldInitialWeapons()` 拿到配对 —— 该routine 先拔副手、后拔主手，且两次都传 `isWieldedOnSpawn: true`。
+- 本轮据此把 `Synchronize` 里那次被拒绝的单槽位请求，替换为直接调用原生 `agent.WieldInitialWeapons(WeaponWieldActionType.InstantAfterPickUp)`。这些角色身上只有两把刀，所谓"初始武器"就是这一对，因此重跑该 routine 不会改变武器组合。新增 `ARCHER_OFFHAND_PAIR_RESULT` 记录调用**之后**的主副手槽位，下一轮可直接判定原生是否接受。
+- 女性动作集修复保留并已验证生效：`gwarcher` 与 `gwp_custom_commander` 均为 `female=True`，`actionSet=True` 200 次、`ACTION_SET_MISSING` 0 次，说明 `as_human_female_gwp_dual` 正常解析。
+- 为下一轮定位"人物显示"问题，审计新增对照项 `gwonehandedsword`（双刀本应与之同型、且由同样四个锻造部件构成）。注意当前双刀的 `collision=` 为空而 ROT 显式使用 `body_name="bo_mace_a" recalculate_body="false"`；在拿到对照数据前不改动该字段，避免重蹈 2026-08-30 早期"运行时改写碰撞体导致预览中断"的覆辙。
+- 本轮日志中没有任何网格/资源缺失、动作集断言或托管异常，因此"人物显示异常"无法仅从监控判定具体形态，已就现象向用户提出定位问题（发生界面、具体表现），不做猜测式改动。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=40; PATCH_FAIL=0`，`GwpDualBladeAiWeaponSelectionPatch` 与 `GwpDualBladeUpdateWeaponsPatch` 均已不存在。仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 800768 字节、SHA-256 `FED71EEE68395F12C0570F492BD5C34902653CFA49EA3EE80C2729E5C5F9C590`。未代表用户启动游戏。回滚点仍为 `eda353f`。
+
+## 2026-08-30 弓箭手副手：改为阻止原生 AI 换武器判断，并补齐女性双刀动作集（阻断部分已实测无效，已删除；女性动作集保留）
 
 - 用户复测已在 `12:06`–`12:10` 产生新会话，上一条候选的"待验收"状态由本轮追踪直接结案：`SUBMODULE_PATCH_OK` 1 次、`CHARACTER_CODE_CREATE_OK` 7 次、`CUSTOM_BATTLE_COMMANDER_INSERT` 8 次、CrashDumps 目录为空，因此预览崩溃、模型消失与接战卡死三项确实已经稳定，不再复现。
 - 同一会话记录 `SPAWN_AGENT_POSTFIX` 200 次、`ARCHER_OFFHAND_PAIR_REQUEST` 199 次，全部为 `main=Weapon1; offhand=None`，与 2026-08-29 的 199 次 `archer_melee_pair` 逐字相同。`Agent.UpdateWeapons` 后置候选因此判定失败：它既没有改变结果，也没有产出新信息，已从代码中完整删除。
