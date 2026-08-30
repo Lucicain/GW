@@ -1,5 +1,15 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 深度调研与修复：双刀两把出鞘进入水体前强制收刀
+
+- 用户已完成触发条件隔离：任何玩家、NPC 携带双刀时，只要主手和副手两把刀同时出鞘并进入水体，就必然报错退出；仅一把出鞘或两把都在鞘中不会退出；其他武器不触发。独立掉落的双刀进入水体安全，因此本次不再修改掉落实体、拾取或死亡掉落规则。
+- 本地一手证据：反编译的 `Mission.TickAgentsAndTeamsImp` 先进入 `Agent.Tick` 原生更新；原版攀爬机在 `agent.IsInWater()` 时对主手和副手依次调用 `TryToSheathWeaponInHand(..., Instant)`。这说明“进入原生水体更新前先收刀”是引擎已有的安全处理模式，而不是另造一套武器物理逻辑。
+- 根因判断（高可信推断，非声称已修改 Native 根因）：`CraftedItem` 的掉落路径会由 `Mission.RecalculateBody` 重建物理形状并且已被用户证实安全；人物携带路径则直接走 `Agent.WeaponEquipped` 与原生持握/水体状态转换。双持两把同时出鞘时，Native 在该转换中访问了无效的武器句柄/索引，崩溃点为 `TaleWorlds.Native.dll + 0x586f0b`、`0xc0000005`。此前仅运行时补写 `CollisionBodyName` 未改变崩溃入口，已排除为单纯掉落碰撞体缺失。
+- 修复实现：新增 `GwpDualBladeWaterSafetyPatch`，对 `Mission.TickAgentsAndTeamsImp` 加前置保护，在每次原生 Agent Tick 前检查双刀角色是否两把都在手，并用 `Agent.IsInWater()`、`Mission.GetWaterLevelAtPositionMT()` 和短时速度投影判断已入水或即将跨过水面；命中后以 `WeaponWieldActionType.Instant` 先收副手、再收主手，保留原装备槽，不删除武器、不改变掉落。离开水体并确认在陆地后，自动恢复 `Weapon0`/`Weapon1`。
+- 保护逻辑覆盖玩家和 AI，因为判定基于实际 Agent 的完整双刀装备而非角色输入回调；普通武器、单刀出鞘、全收刀及独立掉落实体不进入该路径。所有保护和恢复调用均有异常隔离，不能把托管异常升级为任务崩溃。
+- 构建/部署：Release `Rebuild` 成功，0 errors、44 条既有 nullable warnings；工作目录 `_Module` 与 live 模组 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 的 36 个可部署文件缺失 0、差异 0。客户端与编辑器 DLL 均为 801280 字节，SHA-256 `5DAF5405B114099305B7BF41EDB9EED35FC80957ACD241EBA502DCAAD9FCC8A4`。
+- 当前仍未宣称“用户实机已确认修复版”：本轮完成的是直接代码修复、构建和 live 部署；待用户下一次实际落水确认后，才能为该稳定特性建立 Git checkpoint。1.5-21 正式版本号、旧版迁移和已搁置的调查旧问题本轮均不处理。
+
 ## 2026-08-31 用户复验：掉落双刀安全，只有“人物携带双刀入水”触发崩溃
 
 - 用户再次做了路径隔离：双刀作为独立掉落武器进入水体不会报错；只有仍由人物携带的双刀随人物进入水体时必然弹出。此前“掉落世界物件 `SpawnedItemEntity` 进入水体”这一分支已排除。

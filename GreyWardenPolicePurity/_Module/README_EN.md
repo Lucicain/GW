@@ -41,6 +41,7 @@ Compared with v1.4-r10:
 
 #### Fixed
 
+- Fixed a crash when a dual-blade character entered water with both blades drawn; the pair is sheathed before the water transition and restored on land.
 - Fixed the incompatibility introduced by Bannerlord 1.5.2 changing the damage-model interface, which previously prevented GreyWarden from compiling and loading.
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
 - Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
