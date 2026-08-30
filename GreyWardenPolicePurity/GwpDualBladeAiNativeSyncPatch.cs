@@ -27,17 +27,12 @@ namespace GreyWardenPolicePurity
     /// rather than replaced - clearing the weapon mask produced its own native
     /// crash and must not come back.
     ///
-    /// MissionWeapon.GetWeaponData is deliberately NOT patched. It returns a
-    /// large by-value WeaponData carrying MetaMesh, TableauMaterial and
-    /// PhysicsShape handles, and the last round proved that merely having it
-    /// patched corrupts what every caller receives: the patch could not even
-    /// fire, because __instance was declared 'in' on a struct method and never
-    /// bound, yet the character previews broke exactly as they have every other
-    /// time this method was patched. AgentVisuals builds weapon meshes through
-    /// it, which is the whole story of the recurring model damage. The
-    /// historical collision-shape fix went through that method and therefore
-    /// cannot be reused; if blocking crashes, the collision body has to be
-    /// supplied some other way.
+    /// MissionWeapon.GetWeaponData is still not patched, but only because
+    /// nothing here needs it: removing that patch did NOT restore the character
+    /// previews, so the earlier claim that patching it was the cause of the
+    /// recurring model damage is withdrawn. The collision body it used to
+    /// supply is set once on the ItemObject instead, which is both simpler and
+    /// outside the render path.
     ///
     /// GetWeaponStatsData is safe by comparison - it returns a managed array
     /// reference - and carries the flags and durability that decide the
@@ -60,7 +55,59 @@ namespace GreyWardenPolicePurity
         [ThreadStatic]
         private static Agent? _scope;
 
+        private static bool _collisionBodyEnsured;
+
         internal static bool InScope => _scope != null;
+
+        /// <summary>
+        /// A HasHitPoints item needs a collision object; the blade had none,
+        /// and the round that added the flags without one left the off-hand
+        /// blade not equipped at all. WeaponData.CollisionShape is read
+        /// straight from Item.CollisionBodyName, so this is settable once on
+        /// the item after load instead of through a patch on GetWeaponData.
+        ///
+        /// The blade's own body is used rather than a shield's. The historical
+        /// crash was a null source pointer, so any valid collision object
+        /// answers it, and borrowing a large shield's body would inflate the
+        /// blade's hitbox for the player too.
+        /// </summary>
+        private static void EnsureCollisionBody()
+        {
+            if (_collisionBodyEnsured)
+                return;
+
+            _collisionBodyEnsured = true;
+
+            try
+            {
+                foreach (string itemId in new[]
+                {
+                    GwpIds.DualBladeOffhandItemId,
+                    GwpIds.DualBladeMainhandItemId
+                })
+                {
+                    ItemObject? item = Game.Current?.ObjectManager?
+                        .GetObject<ItemObject>(itemId);
+                    if (item == null || !string.IsNullOrEmpty(item.CollisionBodyName))
+                        continue;
+
+                    AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
+                        ?.SetValue(item, item.BodyName);
+
+                    GwpDualBladeTrace.Write(
+                        "AI_NATIVE_COLLISION_BODY",
+                        details: itemId
+                            + "; body=" + item.BodyName
+                            + "; collision=" + item.CollisionBodyName);
+                }
+            }
+            catch (Exception exception)
+            {
+                GwpDualBladeTrace.Write(
+                    "AI_NATIVE_COLLISION_BODY_FAILED",
+                    details: exception.GetType().Name + ": " + exception.Message);
+            }
+        }
 
         internal static void OpenScope(Agent? agent)
         {
@@ -68,6 +115,7 @@ namespace GreyWardenPolicePurity
 
             if (_scope != null)
             {
+                EnsureCollisionBody();
                 GwpDualBladeTrace.Write(
                     "AI_NATIVE_SYNC_BEGIN",
                     _scope,

@@ -1,5 +1,20 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 撤销上一条错误结论；补上碰撞体解决"副剑未装备"；预览成因仍未定位
+
+- **撤销上一条记录的"永久结论"**：上一轮断言"`MissionWeapon.GetWeaponData` 不可被 patch，它就是人物模型异常的成因"。本轮已把该补丁完整移除，**预览依旧异常** —— 该结论被证伪，予以撤销。这是本方在预览成因上连续第二次误判（前一次归因于共用动作集注入），记录在此以免后续再次沿此方向浪费轮次。
+- 上一轮修正确实生效的部分：`MissionWeapon` 是 struct，Harmony 对值类型实例方法需 `ref __instance`；改正后资格代理才真正具备生效条件。
+- **新现象"副剑没有装备上"（此前从未出现）已定位**：上一轮在移除 `GetWeaponData` 补丁时，连带删掉了碰撞体设置，于是副手只有 `HasHitPoints | CanBlockRanged` 而**没有任何碰撞对象**。带耐久的物品在原生注册时需要碰撞体，缺失导致该武器根本没能挂上，表现为"没装备"。这也与记录中"缺盾碰撞对象时首次真实格挡崩在 `Native.dll+0x73ddf8`（`rdx=0` 空源指针）"同源 —— 都是缺少碰撞对象。
+- 修复方式改走**数据层一次性写入**，不再碰 `GetWeaponData`：反编译确认 `MissionWeapon.GetWeaponData` 中 `weaponData.CollisionShape` 直接取自 `Item.CollisionBodyName`，因此在物品加载后对 `ItemObject.CollisionBodyName` 写一次即可（首个双刀 AI 装备作用域开启时触发，带幂等保护与异常兜底，写入结果记 `AI_NATIVE_COLLISION_BODY`）。
+- **不使用大盾碰撞体**：历史方案填的是 `bo_wlarge_shield`，但崩溃本质是空指针，任何**有效**碰撞体即可满足；借用大盾体积会连玩家的剑一起把碰撞盒撑大。本轮填入刀自身的 `BodyName`（`bo_sword_one_handed`）。
+- 当前 NPC 双刀实现面收敛为两处：`Agent.EquipItemsFromSpawnEquipment` 的线程局部作用域，以及作用域内 `MissionWeapon.GetWeaponStatsData` 的 `WeaponFlags |= HasHitPoints | CanBlockRanged`、`MaxDataValue = 500`。加上一次性的 `ItemObject.CollisionBodyName` 写入。托管 `MissionWeapon` 不改、玩家不进作用域、无预览侧补丁、无动作集改动（XSLT 复验仍为 102 个 action_set、`as_human_female_warrior` 原版 298 条）。
+- **预览成因仍未定位，需要用户一次观察来切分**：检查点状态（无任何兵种携带双刀、无这两个补丁）用户确认预览正常；当前状态同时引入了"兵种携带双刀"与"MissionWeapon 补丁"两个变量。下一轮实测时只需额外确认一点 —— **百科里的原版兵种（如古拉姆骑兵）是否也异常**：
+  - 原版兵种也异常 → 成因是代码（全局补丁），与本模组兵种数据无关；
+  - 只有灰袍兵种异常 → 成因是"兵种携带双刀"这一数据事实本身。
+  该观察不额外增加测试轮次，但能一次性把两周来一直没分开的两个变量切开。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=39; PATCH_FAIL=0`，类型数 410；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 797184 字节、SHA-256 `64C7A0D1BB22A4FBBA6FD464FEE9A0E4833E07EA64912E9CDE60AA1034AA3073`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收顺序：① `AI_NATIVE_COLLISION_BODY` 是否写入成功；② 双刃卫士**是否装备上副剑**（本轮首要修复目标）；③ 左手剑是否持续出鞘；④ 格挡是否崩溃；⑤ 百科中原版兵种与灰袍兵种的预览分别是否异常。
+
 ## 2026-08-30 定位到预览损坏的真正机制：`MissionWeapon.GetWeaponData` 不可被 patch（永久结论）
 
 - 用户实测上一候选：预览界面模型异常**同样复现**；双刃卫士游戏里**没有第二把刀**。追踪显示 `AI_NATIVE_SYNC_BEGIN` 出现 199 次（角色为 `gwtwinblade`），作用域正常开合，但没有任何实际效果。
