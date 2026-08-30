@@ -6,7 +6,23 @@
 - 用户同时确认唯一遗留问题：灰袍弓箭手切入近战时只拔出右手刀，副手刀没有拔出。该问题与已确认稳定的预览、模型和接战路径分开处理。
 - 上述稳定功能已建立本地 Git 检查点 `eda353f`（`checkpoint: stable dual-blade models and combat`）。下一轮只允许围绕弓箭手副手拔刀同步做增量实验；若需要回滚，恢复到该提交即可。
 
-## 2026-08-30 用户截图定性：预览损坏波及原版兵种，根因是双刀动作污染了全局共用动作集
+## 2026-08-30 16:10 会话：共用动作集假设被 A/B 证伪并回滚；预览需要模组级隔离
+
+- 用户复测结论：百科士兵预览没有恢复；在存档里移动时游戏直接崩溃退出；重启后复检，其余问题也全部依旧。
+- **共用动作集假设被本轮自己的监控证伪。** 新增的 `ACTION_SET_AUDIT` 显示四个动作集 `valid=True`，且：
+  - `act_inventory_idle_start`（预览 idle）在四个集里都是 `index:4009, clip:True` —— 预览用的 idle 动画本来就完好。
+  - `act_gwd_ready_thrust_1h` / `act_walk_idle_1h_with_gwd_shld` 在 `as_human_warrior`、`as_human_female_warrior` 中 `clip:False`（本轮按预期移除），在 `as_human_gwp_dual`、`as_human_female_gwp_dual` 中 `clip:True`。
+  即：双刀动画片段确实存在于 `gwp_dual_wield_animations.tpac`，XSLT 改动也确实生效，但预览依旧损坏。这构成一次完整 A/B：**注入共用动作集与不注入，预览都坏，因此"共用动作集污染"不是预览根因。**
+- **`CHARACTER_TABLEAU_REFRESH_FAILED` 计数为 0。** 预览链不抛异常，属于"构建成功但姿势/挂点错误"，不是构建失败。上一轮设计的二分到此有了答案。
+- **新增回归：本轮候选疑似引入战役地图崩溃。** 15:40 会话（改动前）无崩溃；16:08 会话读档进入 `NavalDLC.View.Map.NavalMapScreen::HandleActivate` 后原生崩溃，WER 记录 `APPCRASH / c0000005 / 模块 unknown`，转储为 CrashDumps 目录下的 `TaleWorlds.MountAndBlade.Launcher.exe.22272.dmp`（100124045 字节，16:08），托管错误日志为空。合理机制：移除后 `act_*_gwd_shld` 在全局动作类型表里仍能解析出索引（如 5244）却在共用集里 `clip:False`，这种"有类型无片段"的中间状态比原状态更危险。
+- 据此**已把 `action_sets.xslt` 回滚到 `784cc3b` 的版本**（共用集重新带 84 条动作，`as_human_warrior` 4784 / `as_human_female_warrior` 382，两个专用集不变），恢复到 15:40 那个不崩溃的动作集状态。用游戏同款 `XslCompiledTransform` 对 live 文件复验：104 个 action_set、重复 id 0。
+- **弓箭手副手：`WieldInitialWeapons()` 候选同样失败。** `ARCHER_OFFHAND_PAIR_RESULT` 全部为 `main=Weapon1; offhand=None`，即调用原生自身的配对 routine 之后副手仍为空。结合上一轮结论，**"换一种拔刀调用形式"这条路已经走到头**：单槽位 `TryToWieldWeaponInSlot` 与整套 `WieldInitialWeapons` 都被拒绝，而同样两件物品在玩家 Agent 上成功。差异不在调用方式，而在 Agent 本身（`IsAIControlled`）。诊断保留，本轮未再改动。
+- 用户补充的关键信息：**玩家双持是移植 ROT 的实现，本来就没问题**。与 ROT 反编译取证一致（`dual_blades` 只出现在 `items.xml`，兵种/领主/英雄/装备表 0 命中，ROT 从未做过 AI 双持）。
+- 预览方向目前已被实测排除的根因：双刀物品数据（usage/flags 已审计正确）、装备码、`CharacterCode` 生成、holster 定义、item usage set、共用动作集注入、预览链抛异常；且故障波及原版兵种（古拉姆骑兵）。**剩余唯一未做的关键切分是模组级隔离**：在启动器中只关闭 GreyWarden，查看同一个百科兵种页，以判定该预览损坏是否由本模组引起。已就此向用户提出该 A/B，在拿到结果前不再改动预览相关代码。
+- 两个 README 已按实际状态回退不实条目，并新增"已知问题"行（弓箭手仍单刀；预览仍异常且波及原版兵种）。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。回滚点仍为 `eda353f`。
+
+## 2026-08-30 用户截图定性：预览损坏波及原版兵种（共用动作集假设已被 A/B 证伪并回滚）
 
 - 用户提供四张截图，彻底改变了"人物显示异常"的定性：
   1. 海上自定义战斗选人界面：灰袍武将只剩两把刀悬空，**人物身体完全不显示**。
