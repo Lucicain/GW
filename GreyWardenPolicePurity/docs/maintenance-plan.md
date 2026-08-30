@@ -1,5 +1,20 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 NPC 双刀第四轮：修正拔刀顺序（持弓时必须先收主手），并杜绝失败时的动画循环
+
+- 用户实机：弓箭手停射拔左手剑异常，**持续触发拔剑/收剑动画**；模型异常未解决。
+- 追踪 `20:56` 会话给出直接原因，且是本方上一版自身的实现错误：
+  ```
+  NPC_DUAL_INPUT_OFFHAND | before=Wield1, Walk, Stand; after=Wield0, Walk, Stand; main=Weapon2; offhand=None
+  ```
+  `main=Weapon2` 表示弓箭手**手里还握着弓**，AI 发出的 `Wield1` 是要从弓切到主手刀；而上一版把这个请求**替换成了 `Wield0`**（副手）。主手被弓占着时副手不可能拔出，于是重试 6 次 → `NPC_DUAL_INPUT_GAVE_UP` → 60 帧冷却 → 恢复入口再次触发，形成约 1 秒一轮的拔/收循环。会话计数印证：`NPC_DUAL_INPUT_OFFHAND` 398、`GAVE_UP` 398、`MAINHAND` 与 `KEEP_PAIR` 均为 0，一步都没走通。
+- 错误根源是把"副手优先"从**空手**场景（`WieldInitialWeapons` 从双手皆空开始）照搬到了**持弓**场景。本项目此前测得的可用序列本来就是"**主手先空出来** → 拔副手 → 拔主手"（分帧执行，553/597）。
+- 本轮修正：状态机改为四步 `Sheathing → OffHandRequested → MainHandRequested → 落定`。截获 AI 的近战意图后**先发 `Sheath0` 收掉主手（弓）**，确认主手为空后再请求 `Wield0`，确认副手到手后再请求 `Wield1`。每一步都先校验上一步是否真的落地才推进。
+- 同时杜绝动画循环：任一步骤重试超过 6 帧即 `Abandon` —— 把主手刀放回并进入 180 帧冷却；连续 3 次序列失败后该 agent 永久停用（`Step.Disabled`，回调直接返回）。**失败的最坏结果是 NPC 单刀作战，不会再出现反复拔刀收刀。** 另修掉 `Abandon` 的 `eventFlag` 按值传参缺陷（改动传不回调用方，主手刀放不回去）。
+- 模型异常方面本轮未做改动，因为取证显示与之无关：`git diff 2367e60 HEAD -- _Module/ModuleData/` **为空**，即当前数据层与用户曾确认"什么都好"的 `2367e60` **逐字节相同**；与检查点 `003fea5` 的唯一差异是 `spnpccharacters.xml`（弓箭手重新携带双刀），而该状态在 `2367e60` 时预览正常。本轮亦无新崩溃转储。因此若"模型异常"指的是**百科/自定义战斗预览**，则其成因不在当前数据层，需要用户区分它与"战场上弓箭手因拔刀循环而看起来不正常"是否为同一现象后再定位；若指的就是战场上的拔刀循环，则本轮修正已直接针对它。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=38; PATCH_FAIL=0`，类型数 412；XSLT 复验 102 个 action_set、`as_human_female_warrior` 保持原版 298 条；仓库 `_Module` 与 live 36 个可部署文件差异 0；客户端/编辑器 DLL 均为 798208 字节、SHA-256 `2782CCE32ABC5368A7A193DF37B52864B15D546D12A26D0995C7716BEE89F994`。
+- 判读：按序应出现 `NPC_DUAL_INPUT_SHEATHE` → `NPC_DUAL_INPUT_OFFHAND` → `NPC_DUAL_INPUT_MAINHAND` → `NPC_DUAL_INPUT_KEEP_PAIR`。若停在 `SHEATHE` 说明 `Sheath0` 未能清空主手；若停在 `OFFHAND` 说明主手已空但副手仍被拒——那将是"经由输入边界也无法把非盾牌放入 AI 副手"的最终证据，届时三条路径（拔刀 API、Mission Tick、AI 输入边界）全部否定，应停止该方向。
+
 ## 2026-08-30 NPC 双刀第三轮：合并两条线索——沿用其 AI 输入边界，但把主副手拆到不同输入帧（待用户实机验收）
 
 - 本轮接手另一模型的两轮开发。**其最有价值的产出是找到了 `Agent.OnAIInputSet` 这个托管钩子**，此前本记录曾错误断言"原生 AI 的武器决策不经过任何托管入口"——该结论作废。取证：`agent.cs.txt:1626` 的 `internal void OnAIInputSet(ref EventControlFlag, ref MovementControlFlag, ref Vec2)` 会把**可变的**输入标志逐个交给 `AgentComponent`，配合 `Agent.SetHasOnAiInputSetCallback(true)` 启用；`Agent.EventControlFlag` 含 `Wield0..Wield3` 与 `Sheath0/Sheath1`。AI 的换武器是以**输入标志**表达的，不是 `Agent.UpdateWeapons`——所以此前只查后者才得出了错误结论。

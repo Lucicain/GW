@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -118,14 +118,19 @@ namespace GreyWardenPolicePurity
     /// point the earlier tick-driven attempts were missing: rather than undoing
     /// the AI's decision after the fact, the decision itself is amended.
     ///
-    /// The one thing that must not be done here is asking for both hands in the
-    /// same input frame. Measured twice, from opposite directions: native
-    /// WieldInitialWeapons wields off hand then main hand within one frame and
-    /// ends with no off hand, and the previous version of this component
-    /// injected Wield0 and the main-hand flag together 596 times without the
-    /// pair ever being held. The same three calls spread across frames reach
-    /// paired=True. So the off hand is requested on one frame and the main hand
-    /// on the next.
+    /// Two things are known about the order, both measured. Asking for both
+    /// hands in the same input frame never works: native WieldInitialWeapons
+    /// wields off hand then main hand within one frame and ends with no off
+    /// hand, and an earlier version of this component injected Wield0 and the
+    /// main-hand flag together 596 times without the pair ever being held. And
+    /// the off hand will not take while the main hand is occupied - the version
+    /// before this one replaced the AI's main-hand request with an off-hand one
+    /// while the bow was still in the main hand, which could never land and
+    /// showed up in game as a repeating draw-and-sheathe.
+    ///
+    /// So the sequence mirrors the one that measured 553 of 597, spread one
+    /// step per frame: sheathe the main hand, wield the off hand, wield the
+    /// main hand, then let native settle.
     /// </summary>
     internal sealed class GwpDualBladeNpcInputComponent : AgentComponent
     {
@@ -141,24 +146,32 @@ namespace GreyWardenPolicePurity
         private const Agent.EventControlFlag RangedWield =
             Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Wield3;
 
+        private const Agent.EventControlFlag SheathMainHand =
+            Agent.EventControlFlag.Sheath0;
+
         private const Agent.EventControlFlag SheathFlags =
             Agent.EventControlFlag.Sheath0 | Agent.EventControlFlag.Sheath1;
 
         private enum Step
         {
             Idle,
+            Sheathing,
             OffHandRequested,
-            MainHandRequested
+            MainHandRequested,
+            Disabled
         }
 
-        // A wield takes a frame or two to land. These bound the retry so a
-        // refusal can never become a per-frame loop.
-        private const int MaxOffHandAttempts = 6;
-        private const int CooldownFrames = 60;
+        // A wield or sheath takes a frame or two to land. These bound every
+        // step so a refusal can never become a visible loop, and after a few
+        // failed sequences the agent is left alone permanently.
+        private const int MaxStepAttempts = 6;
+        private const int CooldownFrames = 180;
+        private const int MaxSequenceFailures = 3;
 
         private Step _step;
         private int _attempts;
         private int _cooldown;
+        private int _failures;
         private int _logged;
 
         internal GwpDualBladeNpcInputComponent(Agent agent)
@@ -187,8 +200,11 @@ namespace GreyWardenPolicePurity
             _ = movementFlag;
             _ = inputVector;
 
-            if (!GwpDualBladeNpcLoadout.IsNpcDualBladeAgent(Agent))
+            if (_step == Step.Disabled
+                || !GwpDualBladeNpcLoadout.IsNpcDualBladeAgent(Agent))
+            {
                 return;
+            }
 
             // Anything to do with the bow stays completely native, so the AI
             // keeps full control of when it shoots and when it closes.
@@ -229,15 +245,39 @@ namespace GreyWardenPolicePurity
             switch (_step)
             {
                 case Step.Idle:
-                    // Enter either on the AI's own melee request, or on the
-                    // recovery case where it already holds the main blade with
-                    // an empty off hand.
+                    // Enter on the AI's own melee request, or on the recovery
+                    // case where it already holds the main blade with an empty
+                    // off hand after native's periodic re-selection.
                     if (!wantsMelee && main != GwpDualBladeNpcLoadout.MainhandSlot)
                         return;
 
                     if (_cooldown > 0)
                     {
                         _cooldown--;
+                        return;
+                    }
+
+                    // The main hand has to be empty before the off hand will
+                    // take. This is where the previous build was wrong: it
+                    // replaced the AI's main-hand request with an off-hand one
+                    // while the bow was still held, so the off hand could never
+                    // land and the retry showed up as a draw/sheathe loop.
+                    eventFlag = (eventFlag & ~MeleeWield) | SheathMainHand;
+                    _step = Step.Sheathing;
+                    _attempts = 0;
+                    Log("NPC_DUAL_INPUT_SHEATHE", before, eventFlag, main, off);
+                    return;
+
+                case Step.Sheathing:
+                    if (main != EquipmentIndex.None)
+                    {
+                        if (++_attempts > MaxStepAttempts)
+                        {
+                            Abandon(before, ref eventFlag, main, off);
+                            return;
+                        }
+
+                        eventFlag = (eventFlag & ~MeleeWield) | SheathMainHand;
                         return;
                     }
 
@@ -251,14 +291,9 @@ namespace GreyWardenPolicePurity
                 case Step.OffHandRequested:
                     if (off != GwpDualBladeNpcLoadout.OffhandSlot)
                     {
-                        // The off hand has not taken yet. Spending this frame
-                        // on the main hand would just re-create the state we
-                        // are trying to leave, so ask again.
-                        if (++_attempts > MaxOffHandAttempts)
+                        if (++_attempts > MaxStepAttempts)
                         {
-                            _step = Step.Idle;
-                            _cooldown = CooldownFrames;
-                            Log("NPC_DUAL_INPUT_GAVE_UP", before, eventFlag, main, off);
+                            Abandon(before, ref eventFlag, main, off);
                             return;
                         }
 
@@ -270,15 +305,43 @@ namespace GreyWardenPolicePurity
                     eventFlag &= ~SheathFlags;
                     eventFlag = (eventFlag & ~MeleeWield) | MainHandWield;
                     _step = Step.MainHandRequested;
+                    _attempts = 0;
                     Log("NPC_DUAL_INPUT_MAINHAND", before, eventFlag, main, off);
                     return;
 
                 default:
-                    // Let native settle; the result is judged on the next call
-                    // through the pairHeld branch above.
+                    // Let native settle; the pairHeld branch above judges it on
+                    // the next call.
                     _step = Step.Idle;
                     return;
             }
+        }
+
+        /// <summary>
+        /// Puts the main blade back and stops trying. After a few failed
+        /// sequences the agent is left alone for good, so a refusal can never
+        /// become the repeating draw-and-sheathe the previous build produced.
+        /// </summary>
+        private void Abandon(
+            Agent.EventControlFlag before,
+            ref Agent.EventControlFlag eventFlag,
+            EquipmentIndex main,
+            EquipmentIndex off)
+        {
+            eventFlag = (eventFlag & ~SheathFlags) | MainHandWield;
+            _attempts = 0;
+            _failures++;
+
+            if (_failures >= MaxSequenceFailures)
+            {
+                _step = Step.Disabled;
+                Log("NPC_DUAL_INPUT_DISABLED", before, eventFlag, main, off);
+                return;
+            }
+
+            _step = Step.Idle;
+            _cooldown = CooldownFrames;
+            Log("NPC_DUAL_INPUT_GAVE_UP", before, eventFlag, main, off);
         }
 
         private void Log(
