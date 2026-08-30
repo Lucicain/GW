@@ -42,6 +42,39 @@ namespace GreyWardenPolicePurity
 
             try
             {
+                // Every blade needs a collision body, not just the NPC copy.
+                // Crafted items get none - BladeData has no collision-body
+                // attribute - and a weapon dropped into water is handled as a
+                // world object with physics. Agents drowning in a naval battle
+                // crashed inside TaleWorlds.Native with an access violation,
+                // the last log line each time being a render request for a
+                // dual blade, which is a null physics body all over. ROT's
+                // plain blades declare a body explicitly for the same reason.
+                foreach (string bladeId in new[]
+                {
+                    GwpIds.DualBladeOffhandItemId,
+                    GwpIds.DualBladeMainhandItemId,
+                    GwpIds.DualBladeOffhandAiItemId
+                })
+                {
+                    ItemObject? anyBlade = game.ObjectManager
+                        .GetObject<ItemObject>(bladeId);
+                    if (anyBlade == null
+                        || !string.IsNullOrEmpty(anyBlade.CollisionBodyName))
+                    {
+                        continue;
+                    }
+
+                    AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
+                        ?.SetValue(anyBlade, anyBlade.BodyName);
+
+                    GwpDualBladeTrace.Write(
+                        "BLADE_COLLISION_BODY",
+                        details: bladeId
+                            + "; body=" + anyBlade.BodyName
+                            + "; collision=" + anyBlade.CollisionBodyName);
+                }
+
                 ItemObject? blade = game.ObjectManager
                     .GetObject<ItemObject>(GwpIds.DualBladeOffhandAiItemId);
                 if (blade == null)
@@ -50,14 +83,6 @@ namespace GreyWardenPolicePurity
                         "NPC_ITEM_SETUP_MISSING",
                         details: GwpIds.DualBladeOffhandAiItemId);
                     return;
-                }
-
-                // A collision object has to exist before the qualification is
-                // added; without one the weapon does not register at all.
-                if (string.IsNullOrEmpty(blade.CollisionBodyName))
-                {
-                    AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
-                        ?.SetValue(blade, blade.BodyName);
                 }
 
                 // Every usage, not just the primary one. A crafted item can

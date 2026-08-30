@@ -1,5 +1,17 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 海战落水崩溃：为全部双刀补上碰撞体（待用户实机验收）
+
+- 用户反馈新崩溃点：双刃兵与武将**掉进海里即报错弹出**。
+- 取证：WER 记录为 `TaleWorlds.Native.dll` 原生访问违例 `0xc0000005`，偏移 `0x586f0b`（与历史上盾牌碰撞那次的 `0x73ddf8` 不是同一处）。转储 `TaleWorlds.MountAndBlade.Launcher.exe.7420.dmp`（23:44）与 `...13328.dmp`（23:47）。托管错误日志为空。
+- **排除音效假设**：`rgl_log_13328` 中出现一次 `Could not find the event index for: event:/mission/combat/impact/wood_weapon/water`，一度像是成因；但 `rgl_log_7420` 中该条**出现 0 次**却同样崩溃，因此缺失音效不是崩溃原因，不再追。
+- **共同点**：两个会话崩溃前的最后一行都是 `Render Requested: gwdualblademainhand` / `Render Requested: gwdualbladeoffhand`，即双刀物品的网格/物理被请求的时刻 —— 与"角色落水阵亡、武器作为世界物件被处理"吻合。
+- **定位**：锻造物在 XML 层拿不到碰撞体（`BladeData` 无该字段，已在早前记录中确认），因此三把双刀的 `CollisionBodyName` 原本**全为空**；此前只对 NPC 专用刀 `gwdualbladeoffhandai` 做过一次性写入。落水时武器作为带物理的世界物件处理，缺少碰撞对象即为空指针来源。ROT 的普通物品双刀正是**显式声明** `body_name="bo_mace_a" recalculate_body="false"`，同样是为此。
+- 修法：把既有的一次性数据写入从"只处理 NPC 刀"扩展到**三把刀全部**（`gwdualbladeoffhand`、`gwdualblademainhand`、`gwdualbladeoffhandai`），在 `OnGameInitializationFinished` 将各自的 `CollisionBodyName` 补为其 `BodyName`（`bo_sword_one_handed`），已有则跳过，结果写入 `BLADE_COLLISION_BODY`。**纯数据写入，不新增任何 Harmony 补丁**；玩家与 NPC 的双刀在这一点上就此一致。
+- 补丁面不变：`PATCH_OK=37; PATCH_FAIL=0`，与"仅玩家双持"检查点相同；`Agent`/`MissionWeapon`/`ArrangementOrder` 补丁命中均为 0。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。回滚点 `checkpoint/npc-dual-blade` (`90d73cb`)。
+- 验收：① 双刃兵与武将落水是否不再崩溃；② 追踪中 `BLADE_COLLISION_BODY` 是否对三把刀都写入成功；③ 上一轮的三项（双刀保持、击倒触发、踢腿恢复）是否正常。若落水仍崩溃，则碰撞体不是成因，下一步应改为在物品上设置 `CannotBePickedUp`/`DoesNotSpawnWhenDropped` 之类的标志，避免双刀在阵亡时被生成为世界物件。
+
 ## 2026-08-30 击倒未触发的真正原因（判定入口仍是玩家专属）；同时撤销强制防御姿态
 
 - 用户反馈：AI 武将双刀已正常拿出；但双刀击倒始终不触发（与武将对打也没有），且**双刃卫士不会踢腿**。
