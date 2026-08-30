@@ -1,5 +1,19 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 结论确立：任何针对 `Agent` 的 per-call 补丁都会破坏预览；改攻静态阵型方法（本方向最后一个候选）
+
+- 用户实测：把 `EnforceShieldUsage` 旁路的判定收窄到**只读一个不可变角色 id**（不访问 Equipment/SpawnEquipment、不查 Mission、不写日志）后，**英雄预览仍然损坏**，双刀也未实现。已回退（标签 `failed/shield-bypass-narrow`，`852326f`），补丁面回到 `PATCH_OK=37`，`Agent`/`MissionWeapon` per-call 补丁 0 命中。
+- **由此确立结论（排除了判定条件这一变量）：任何针对 `Agent` 的 per-call Harmony 补丁都会波及人物预览。** 连同此前对 `MissionWeapon.GetWeaponData`/`GetWeaponStatsData` 的多次复现，本模组的预览损坏与"补丁做了什么"无关，只与"在这两个类型上安装了 per-call 补丁"有关。
+- 已确认良好的状态（模型正常、预览正常、双刀装备并显示，仅副手不出鞘）对应：检查点代码 + 双刃卫士兵种 + NPC 专用刀 + 一次性数据写入，`PATCH_OK=37`。这是当前的可用基线。
+- 本方向的最后一个候选：**改攻静态方法 `ArrangementOrder.GetShieldDirectionOfUnit`，完全不碰 `Agent`。** 依据是两处收刀调用点走的是同一个静态帮助方法：
+  - `ArrangementOrder.OnApply` → `agent.EnforceShieldUsage(GetShieldDirectionOfUnit(...))`
+  - `Agent.UpdateFormationOrders` → `EnforceShieldUsage(ArrangementOrder.GetShieldDirectionOfUnit(...))`
+  该方法对 `ShieldWall`/`Circle`/`Square` 之外的一切阵型返回 `UsageDirection.None`（`-1`），而 `None` 正是"收起副手"。盾墙中间排返回的是 `AttackEnd`（`4`），语义为"携带但不朝某方向举起" —— 正是需要的状态。
+- 因此后置把双刃卫士的返回值由 `None` 改为 `AttackEnd`。一个补丁同时覆盖两个调用点；目标类型是阵型/命令类，与人物渲染无关，预览不存在 Formation。判定仍只读 `Character.StringId`，英雄与预览角色不可能匹配。
+- 补丁面：`PATCH_OK=38; PATCH_FAIL=0`，相对基线只多 `ArrangementOrder.GetShieldDirectionOfUnit` 一个；`HarmonyPatch(typeof(Agent)` 与 `HarmonyPatch(typeof(MissionWeapon)` 命中均为 0；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 796672 字节。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- **明确的停止条件**：若本轮预览再次损坏，则说明连阵型类的 per-call 补丁也会波及预览，本模组在 1.5.2 上无法通过任何 Harmony 手段阻止阵型收刀，AI 双持方向应就此终止，保留"仅玩家双持 + 双刃卫士带刀但只用主手"的可用形态。若预览正常而副手仍不出鞘，则 `EnforceShieldUsage` 并非唯一收刀者，但此时至少证明阵型类补丁是安全的落点，可继续在该类内定位。
+
 ## 2026-08-30 底层定位：阵型 `EnforceShieldUsage(None)` 就是收刀者；旁路收窄到只匹配双刃卫士
 
 - 用户实测上一轮：`EnforceShieldUsage` 旁路**反而弄丢了预览界面的英雄模型**，副手仍未出鞘。已回退该补丁（标签 `failed/shield-enforcement-bypass`，`9c95a97`），代码回到已确认良好的 `2381a22` 状态，仅保留其中无害的"限定所有 weapon usage"数据写入改进；离线预检回到 `PATCH_OK=37`，与检查点一致。
