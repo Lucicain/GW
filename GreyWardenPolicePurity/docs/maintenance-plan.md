@@ -1,5 +1,32 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 NPC 双刀全部候选失败，按用户要求回退到检查点重新开发
+
+- 用户结论：两个都是老问题（人物模型异常、NPC 只拿单刀），要求回退到稳定点重新开发。
+- 已回退：代码与检查点 `003fea5`（标签 `checkpoint/player-only-dual-blade`）**逐字节一致**（`git diff 003fea5 -- . ':!docs'` 为空）。复验：离线预检 `PATCH_OK=37; PATCH_FAIL=0`、类型数 407、`spnpccharacters.xml` 中 `gwdualblade` 命中 0、XSLT 输出 102 个 action_set 且 `as_human_female_warrior` 保持原版 298 条、30 个 XML 解析失败 0、仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 794112 字节、SHA-256 `ACB648082282D25FF95E043D58AFD791CE496E0FDDEB19C6E8E91F5D52953AF0`。
+- 失败资产全部保留，可随时取回：标签 `failed/npc-ai-input-boundary`（`ca3df79`，AI 输入边界方案）、stash `failed-npc-dual-input-2026-08-30`、stash `failed-direction2-shield-offhand-2026-08-30`、reflog 中的 Mission Tick 方案（至 `3693545`）。
+
+### NPC 副手：已穷尽的三条路径（重新开发时不要重走）
+
+1. **拔刀 API（事后补拔）** —— `TryToWieldWeaponInSlot` 单槽位、`WieldInitialWeapons` 整套。主手被占用时 620/620 全部被拒。
+2. **Mission Tick 分帧序列**（收主手 → 拔副手 → 拔主手）—— 配对成功率 553/597 ≈ 92.6%，但 `NPC_PAIR_LOST` 2169 次，副手存活中位 `1.29s` 后被清空，与原生 AI decide timer 吻合；以重试对抗必然产生"反复拔刀收刀"。
+3. **AI 输入边界 `Agent.OnAIInputSet`** —— 钩子确实触发（`NPC_DUAL_INPUT_MELEE_PAIR` 596 条），但同帧同时请求双手无效；改为分帧后，因错把"副手优先"用在持弓状态而失败（`GAVE_UP` 398），修正为"先 `Sheath0` 收弓 → 拔副手 → 拔主手"后仍未通过实机。
+
+### 引擎侧已确证的硬约束（永久结论）
+
+- 原版 `mpitems.xml` 中 **53 件 `HeldInOffHand` 物品全部是 `Type="Shield"`、`weapon_class="LargeShield"`，`MeleeWeapon` 命中 0**。引擎的"副手"概念等同于盾。
+- `WeaponComponentData.IsShield` = 不含 `MeleeWeapon`/`RangedWeapon` 且同时具备 `HasHitPoints | CanBlockRanged`。因此"引擎认可的副手"与用户要求（有伤害、挡不住弓箭）**定义上互斥**，副手改盾类方向作废。
+- 同一输入/调用帧内同时处理主副手，只有一只手会留下。
+- 主手被占用时，单独请求副手一定失败；必须先让主手为空。
+- 原生 AI 按 decide timer（约 1.3 秒）周期性重拔主手，副手随之被清；盾能留住是因为原生有独立的盾重装逻辑。
+- 玩家之所以可用，是因为 `Equipment.GetInitialWeaponIndicesToEquip` 在出生时认 `HeldInOffHand`，且玩家不触发 AI 武器重选 —— ROT 钻的就是这个空子，且 ROT **从未**把双刀给过任何 AI（`dual_blades` 仅出现在其 `items.xml`，兵种/领主/英雄/装备表 0 命中）。
+
+### 人物模型异常：尚未定位，且与本模组数据层不相关
+
+- 用户两次提供的模型异常截图（读档界面人物横躺悬空、坐骑正常）**游戏版本均为 `v1.4.8.119303`**，模组列表含 `War Sails v1.2.8.119303`；而本模组当前开发目标为 `v1.5.2.120933`。该版本差异尚未与用户确认，是后续定位该问题时必须先排除的变量。
+- 取证显示该现象与本模组数据层无关：`git diff 2367e60 HEAD -- _Module/ModuleData/` 为空，即出现异常时的数据层与用户曾确认"什么都好"的状态逐字节相同；且关闭 GreyWarden 后一切正常这一结论来自更早的 1.5.2 会话，与本次 1.4.8 截图不是同一条证据线。
+- 重新开发时应**先单独定位模型异常**（确认复现所用的游戏版本、是否为预览链、是否波及原版兵种），再动 NPC 双刀 —— 两个问题混在一起是此前多轮反复的主要原因。
+
 ## 2026-08-30 NPC 双刀第四轮：修正拔刀顺序（持弓时必须先收主手），并杜绝失败时的动画循环
 
 - 用户实机：弓箭手停射拔左手剑异常，**持续触发拔剑/收剑动画**；模型异常未解决。

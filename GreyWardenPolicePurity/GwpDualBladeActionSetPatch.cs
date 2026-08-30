@@ -253,10 +253,10 @@ namespace GreyWardenPolicePurity
 
 
     /// <summary>
-    /// Pure loadout checks shared by the stable player ROT path. NPC archer
-    /// combat uses the separate slot-aware helper below; keeping this player
-    /// predicate unchanged prevents ground-pickup and inventory behavior from
-    /// silently expanding to every AI agent.
+    /// Pure loadout checks shared by the dual-blade patches. Dual wielding is
+    /// deliberately limited to the human-controlled character, which is the
+    /// only form ROT ever implemented and the only one this mod has ever had
+    /// working. AI never qualifies, so no soldier enters a dual-blade path.
     /// </summary>
     internal static class GwpDualBladeLoadout
     {
@@ -292,39 +292,6 @@ namespace GreyWardenPolicePurity
 
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
-
-        /// <summary>
-        /// The pair slots, which are ROT's and identical for player and NPC:
-        /// off-hand blade in Weapon0, main-hand blade in Weapon1.
-        /// </summary>
-        internal static bool TryGetCombatPair(
-            Agent? agent,
-            out EquipmentIndex offhandSlot,
-            out EquipmentIndex mainhandSlot)
-        {
-            offhandSlot = EquipmentIndex.WeaponItemBeginSlot;
-            mainhandSlot = EquipmentIndex.Weapon1;
-
-            return agent?.Character != null
-                && HasItems(
-                    agent.Equipment,
-                    offhandSlot,
-                    mainhandSlot,
-                    GwpIds.DualBladeOffhandItemId,
-                    GwpIds.DualBladeMainhandItemId);
-        }
-
-        internal static bool IsEligibleDualBladeCombatant(Agent? agent) =>
-            TryGetCombatPair(agent, out _, out _);
-
-        private static bool HasItems(
-            MissionEquipment equipment,
-            EquipmentIndex offhandSlot,
-            EquipmentIndex mainhandSlot,
-            string offhandItemId,
-            string mainhandItemId) =>
-            IsItem(equipment[offhandSlot], offhandItemId)
-            && IsItem(equipment[mainhandSlot], mainhandItemId);
 
         private static bool IsItem(ItemObject? item, string itemId) =>
             item != null

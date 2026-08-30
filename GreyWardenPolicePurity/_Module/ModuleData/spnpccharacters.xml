@@ -239,13 +239,13 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwdualbladeoffhand" />
-        <equipment slot="Item1"
-                   id="gwdualblademainhand" />
-        <equipment slot="Item2"
                    id="noble_long_bow" />
+        <equipment slot="Item1"
+                   id="piercing_arrows" />
         <equipment slot="Item3"
                    id="piercing_arrows" />
+        <equipment slot="Item2"
+                   id="gwonehandedsword" />
         <equipment slot="Body"
                    id="warcharmor" />
         <equipment slot="Gloves"

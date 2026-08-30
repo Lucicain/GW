@@ -33,9 +33,8 @@ Compared with v1.4-r10:
 - The current development build supports Bannerlord 1.5.2 beta while retaining the existing campaign, combat, and paired-blade gameplay.
 - The separate Twinblade troop has been removed. Light infantry now upgrade to heavy infantry, archers, or knights.
 - Custom Battle places the Grey Warden commander first while preserving every native commander entry, with full Warden troop and equipment registration.
-- The player's ROT-style paired-blade experience remains stable. Grey Warden archers now carry a noble long bow, piercing arrows, and the real paired blades; they use the bow first and the same paired-blade actions when they enter melee.
-- The paired blades are no longer tied to a particular character: anyone equipped with the pair dual wields, and NPCs share the player's appearance, animations, attacks and parries. The off-hand blade deals damage and can parry, and like the main blade it cannot block arrows.
-- NPC dual wielding only takes effect in real battles and does not alter the encyclopedia or Custom Battle previews. The blades still use GreyWarden's own item and action resources rather than a shield substitute.
+- The paired blades are once again usable by the player character only, which is the form this mod has always had working. Grey Warden archers return to being ordinary ranged troops with the noble long bow, piercing arrows, and the Grey Warden arming sword.
+- Everything that let soldiers use the paired blades has been removed, including the dual-blade action resources added for them. That work was what left character models missing or badly posed in the encyclopedia and the Custom Battle preview, and it reached native troops as well.
 - The paired blades keep the same appearance as the Grey Warden arming sword, using GreyWarden's own item definitions without loading ROT or other external-mod resources.
 
 #### Fixed
@@ -44,7 +43,6 @@ Compared with v1.4-r10:
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
 - Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
 - When NavalDLC owns the Custom Battle screen, its separate character catalogue is covered as well; the Grey Warden commander remains first while native commander choices are preserved.
-- Grey Warden archer initial selection and melee switching now request the bow first and both paired blades together; this NPC dual-blade path is currently under in-game validation.
 
 ### 2026-08-28 v1.4-r10
 
