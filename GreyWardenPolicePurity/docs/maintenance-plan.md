@@ -1,5 +1,30 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 底层定位：阵型 `EnforceShieldUsage(None)` 就是收刀者；旁路收窄到只匹配双刃卫士
+
+- 用户实测上一轮：`EnforceShieldUsage` 旁路**反而弄丢了预览界面的英雄模型**，副手仍未出鞘。已回退该补丁（标签 `failed/shield-enforcement-bypass`，`9c95a97`），代码回到已确认良好的 `2381a22` 状态，仅保留其中无害的"限定所有 weapon usage"数据写入改进；离线预检回到 `PATCH_OK=37`，与检查点一致。
+- **底层机制已在原生托管代码中定位到确切位置**。`ArrangementOrder.OnApply` 对阵型内每个 AI 单位执行：
+  ```csharp
+  formation.ApplyActionOnEachUnit(delegate(Agent agent) {
+      if (agent.IsAIControlled) {
+          var dir = GetShieldDirectionOfUnit(formation, agent, orderEnum);
+          agent.EnforceShieldUsage(dir);
+      }
+      ...
+  ```
+  而 `GetShieldDirectionOfUnit` 只在 `ShieldWall`/`Circle`/`Square` 三种阵型下返回具体方向，**其余一律返回 `UsageDirection.None`**（`default: return Agent.UsageDirection.None;`）。`EnforceShieldUsage(None)` 即"收起副手物品"。
+- 该机制一次性解释了此前所有观测：
+  - 弓箭手当年"出生是双刀在手、随后就没了"—— 阵型指令在出生之后才应用；
+  - 双刃卫士"从来看不到拔出"—— 它是 Infantry，编入阵型并立即整理；
+  - 副手存活中位约 1.3 秒且与 AI decide timer 吻合 —— 阵型/命令刷新周期；
+  - 物品层资格齐全（`qualified=True`）仍不出鞘 —— 资格决定"能不能拿"，阵型整理决定"允不允许留着"，是两件事。
+  同时也确认 `ApplyActionOnEachUnit` 是普通 `foreach`，不涉及多线程，先前的线程安全猜测排除。
+- **上一版旁路为何弄丢英雄模型，找到了具体嫌疑**：其判定条件是"AI + 有 Mission + 携带完整双刀"，而**自定义战斗的灰袍武将 `gwp_custom_commander` 恰好也携带完整双刀**。若英雄预览会创建真实 Agent，该补丁就会在英雄预览身上触发 —— 而丢的正是英雄模型。此外该判定还会访问 `agent.Equipment` / `agent.SpawnEquipment`，在预览构建阶段读取装备容器本身也有风险。
+- 本轮据此把旁路收窄到**只匹配 `gwtwinblade` 这一个兵种 id**：`__instance?.Character?.StringId != GwpIds.TwinbladeTroopId`。这是一次不可变引用读取，**不访问 Equipment/SpawnEquipment、不查 Mission、不写日志**，且任何英雄或预览角色都不可能匹配（武将 id 为 `gwp_custom_commander`）。这些卫士本来就没有盾，跳过盾牌整理不损失任何原版行为。
+- 补丁面：`PATCH_OK=38; PATCH_FAIL=0`，相对检查点只多 `Agent.EnforceShieldUsage` 一个；`HarmonyPatch(typeof(MissionWeapon)` 命中 0；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 796672 字节、SHA-256 `6DBC847D16C945985AC5E45D52FBE831C31C16505617FC489F451D393651E492`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 判读：① 英雄预览模型是否正常（若正常，则证实上一轮的损坏来自"判定条件误匹配武将"，而非"patch Agent 方法"本身）；② 双刃卫士左手刀是否出鞘并持续握住。若 ① 正常而 ② 仍失败，则 `EnforceShieldUsage` 并非唯一收刀者，需继续在 `Agent.UpdateFormationOrders` 等其余调用点定位；若 ① 再次损坏，则"任何针对 `Agent` 的 per-call 补丁都会波及预览"成立，该方向终结。
+
 ## 2026-08-30 重新梳理：v1.4.8 是四个脚本协同，当前缺的是 `EnforceShieldUsage` 旁路
 
 - 用户实测：**模型正常、副剑显示正常（已装备、可见），但仍不出鞘**。追踪确认资格这次真的写进去了：
