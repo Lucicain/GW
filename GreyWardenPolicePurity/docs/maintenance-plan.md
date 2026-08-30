@@ -1,5 +1,19 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 单变量隔离：检查点代码 + 仅新增带双刀的双刃卫士兵种（待用户实机验收）
+
+- 用户实测上一候选：副剑仍未装备上，模型依旧异常。用户据此要求回退到稳定点、**只保留双刃卫士并给它双刀**，判断依据是"模型正常 + 进场带双剑"这两点应当能同时成立，只是副剑可能拔不出来。该判断与本方证据一致，本轮照此执行。
+- 本轮是两周以来**第一次真正的单变量隔离**。此前每一轮都同时改动代码与数据，因此"预览异常"始终无法归因。当前状态：
+  - **代码与检查点 `003fea5` 逐字节一致**（`git diff 003fea5 -- "*.cs"` 为空）。已删除 `GwpDualBladeAiNativeSyncPatch.cs` 与 `GwpDualBladeNpcBehavior.cs`，`GwpDualBladeActionSetPatch`/`GwpAgentApplyDamageModel`/`GwpDualWieldingPatch`/`SubModule` 全部还原。离线预检 `PATCH_OK=37; PATCH_FAIL=0`、类型数 407，与检查点完全相同。
+  - **数据层唯一差异**：新增兵种 `gwtwinblade`（`Item0=gwdualbladeoffhand`、`Item1=gwdualblademainhand`，无弓箭，level 26，由 `gwrecruit` 升级）与其中文名字符串；`gwarcher` 保持纯远程（双刀命中 0）。动作集未动（XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条）。
+- 该状态的判定力：检查点已由用户确认"预览正常、仅玩家可用双刀"，两者之间只差"一个兵种携带双刀"这一条数据事实。因此本轮实测可以一次性回答两周未决的问题：
+  - **预览仍异常** → 成因就是"兵种携带双刀"这一数据事实本身（与任何 Harmony 补丁无关）。下一步应转向物品/装备数据侧：对比 `gwonehandedsword` 与两把双刀在 `CraftedItem` 解析结果上的差异，重点查 `HeldInOffHand` 锻造物在 `CharacterTableau` 中的处理，而不再改任何运行时代码。
+  - **预览恢复正常** → 成因是代码侧的全局补丁；此前所有候选中被反复怀疑的三处（动作集注入、`GetWeaponData`、`GetWeaponStatsData`）都已被单独证伪或撤销，需要重新逐一排查，但至少可以确定与兵种数据无关。
+  - 同时确认第二点：**双刃卫士是否带着两把刀进场**（装备栏/背后是否有第二把刀）。上一轮"副剑没装备上"是在有补丁的状态下出现的；若本轮纯数据状态下能正常装备，则可确认该现象由那两个补丁引入，而非兵种数据问题。
+- 预期的已知不足：本轮没有任何 AI 双持代码，双刃卫士只会用主手刀作战，左手刀不会拔出，也不具备左手伤害与击倒。双语 README 已按此如实描述，不写成已实现。
+- 失败候选全部保留：`failed/npc-native-qualification`（`3459f7c`，原生资格代理 + 碰撞体）、`failed/npc-ai-input-boundary`（`ca3df79`，AI 输入边界）、两个 stash、reflog 中的 Mission Tick 方案。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 794112 字节、SHA-256 `6119130BC2239284A9B1549DD255F6320516C2E95D869120FE312D049ABD5113`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+
 ## 2026-08-30 撤销上一条错误结论；补上碰撞体解决"副剑未装备"；预览成因仍未定位
 
 - **撤销上一条记录的"永久结论"**：上一轮断言"`MissionWeapon.GetWeaponData` 不可被 patch，它就是人物模型异常的成因"。本轮已把该补丁完整移除，**预览依旧异常** —— 该结论被证伪，予以撤销。这是本方在预览成因上连续第二次误判（前一次归因于共用动作集注入），记录在此以免后续再次沿此方向浪费轮次。

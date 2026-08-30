@@ -293,53 +293,6 @@ namespace GreyWardenPolicePurity
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
 
-        /// <summary>
-        /// Anyone actually fighting with the pair, player or NPC. The off-hand
-        /// damage type and the knockdown rule use this so an NPC's left blade
-        /// behaves exactly like the player's. Ground pickup deliberately keeps
-        /// the narrower player-only predicate above.
-        /// </summary>
-        internal static bool IsDualBladeCombatant(Agent? agent) =>
-            agent?.Character != null && HasPair(agent);
-
-        /// <summary>
-        /// A mission agent run by the game that carries the complete pair.
-        /// Requiring a live Mission keeps tableau and preview objects out of
-        /// the native synchronisation scope whatever they are holding.
-        /// </summary>
-        internal static bool IsDualBladeNpc(Agent? agent) =>
-            agent != null
-            && agent.IsAIControlled
-            && agent.Mission != null
-            && HasPair(agent);
-
-        private static bool HasPair(Agent agent)
-        {
-            try
-            {
-                Equipment? spawnEquipment = agent.SpawnEquipment;
-                if (spawnEquipment != null
-                    && IsItem(spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item,
-                        GwpIds.DualBladeOffhandItemId)
-                    && IsItem(spawnEquipment[EquipmentIndex.Weapon1].Item,
-                        GwpIds.DualBladeMainhandItemId))
-                {
-                    return true;
-                }
-
-                MissionEquipment? equipment = agent.Equipment;
-                return equipment != null
-                    && IsItem(equipment[EquipmentIndex.WeaponItemBeginSlot],
-                        GwpIds.DualBladeOffhandItemId)
-                    && IsItem(equipment[EquipmentIndex.Weapon1],
-                        GwpIds.DualBladeMainhandItemId);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private static bool IsItem(ItemObject? item, string itemId) =>
             item != null
             && string.Equals(item.StringId, itemId,
