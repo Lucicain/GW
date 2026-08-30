@@ -41,9 +41,9 @@ Compared with v1.4-r10:
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
 - Fixed the pre-battle dual-blade registration error in 1.5.2; the native equipment flow now registers the pair without reattaching weapons in previews.
 - Fixed a remaining direct error during the first Custom Battle agent equipment pass; paired-blade attributes now apply only while a real archer's battle equipment is being built.
-- Fixed archers drawing only one sword after Bannerlord 1.5.2 changed mission-agent spawning; switching to melee now pairs the off-hand blade, while other troops remain outside the dual-blade system.
+- Fixed Warden archers losing the off-hand blade shortly after they reach the field and fighting with a single sword; the general weapon-swap decision no longer takes their second blade away, and weapon swapping for ordinary soldiers and every other troop is untouched.
 - Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
-- Fixed incomplete male and female action mappings that made character models disappear or enter broken poses; paired-blade archers use their complete dedicated actions while ordinary characters retain native actions.
+- Fixed incomplete male and female action mappings that made character models disappear or enter broken poses; the paired blades now ship separate male and female action sets, so female Warden archers and commanders no longer run male animations, while ordinary characters retain native actions.
 - Fixed possible errors or freezes when the off-hand blade contacted or defended against ordinary soldiers; it retains melee attacks and parries but cannot block ranged attacks.
 - Restored the paired blades to the same appearance as the Grey Warden arming sword, using GreyWarden's own item definitions without loading ROT or other external-mod resources; AI use is limited to Warden archers and the Custom Battle Warden commander, while player use remains available.
 - When NavalDLC owns the Custom Battle screen, its separate character catalogue is covered as well; the Grey Warden commander remains first while native commander choices are preserved.

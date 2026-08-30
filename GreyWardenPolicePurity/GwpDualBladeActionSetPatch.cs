@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,7 +23,27 @@ namespace GreyWardenPolicePurity
                 || string.Equals(characterId, "commander_2", StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static void AuditLoadedObjects(Game? game)
+        private static bool _auditedAfterLoad;
+
+        /// <summary>
+        /// OnGameStart runs before the item XMLs are deserialized, so the audit
+        /// there has only ever been able to report missing=true and has never
+        /// captured the two values that decide whether the off-hand blade can
+        /// be wielded at all. Run it once more from the first real dual-blade
+        /// spawn, where the objects are guaranteed to exist.
+        /// </summary>
+        internal static void AuditLoadedObjectsOnce(Game? game)
+        {
+            if (_auditedAfterLoad)
+                return;
+
+            _auditedAfterLoad = true;
+            AuditLoadedObjects(game, "FirstDualBladeSpawn");
+        }
+
+        internal static void AuditLoadedObjects(
+            Game? game,
+            string phase = "OnGameStart")
         {
             try
             {
@@ -42,7 +62,7 @@ namespace GreyWardenPolicePurity
                     ItemObject? item = game.ObjectManager.GetObject<ItemObject>(itemId);
                     Write(
                         "OBJECT_AUDIT_ITEM",
-                        details: "phase=OnGameStart; "
+                        details: "phase=" + phase + "; "
                             + (item == null
                             ? "id=" + itemId + "; missing=true"
                             : "id=" + itemId
@@ -63,7 +83,7 @@ namespace GreyWardenPolicePurity
                         .GetObject<BasicCharacterObject>(characterId);
                     Write(
                         "OBJECT_AUDIT_CHARACTER",
-                        details: "phase=OnGameStart; "
+                        details: "phase=" + phase + "; "
                             + (character == null
                             ? "id=" + characterId + "; missing=true"
                             : "id=" + characterId
@@ -434,8 +454,14 @@ namespace GreyWardenPolicePurity
         })]
     internal static class GwpDualBladeActionSetPatch
     {
-        private const string DualBladeActionSetId =
-            "as_gwp_dual_warrior";
+        // Native builds a special action set name from the agent's monster and
+        // gender (see MBGlobals.GetActionSetWithSuffix), so a dual-blade set has
+        // to exist for both. action_sets.xslt emits as_human_gwp_dual from
+        // as_human_warrior and as_human_female_gwp_dual from
+        // as_human_female_warrior; the female one keeps its base_set, so it
+        // still inherits the shared animations instead of replacing a female
+        // agent's skeleton-bound set with the male root set.
+        private const string DualBladeActionSetSuffix = "_gwp_dual";
 
         [HarmonyPostfix]
         private static void Postfix(Agent __result)
@@ -449,6 +475,8 @@ namespace GreyWardenPolicePurity
             if (!isAiDual && !isPlayerDual)
                 return;
 
+            GwpDualBladeTrace.AuditLoadedObjectsOnce(Game.Current);
+
             bool applied = TryApplyActionSet(__result);
             GwpDualBladeWieldSync.Attach(__result);
             GwpDualBladeTrace.Write(
@@ -456,7 +484,10 @@ namespace GreyWardenPolicePurity
                 __result,
                 "isAi=" + isAiDual
                 + "; isPlayer=" + isPlayerDual
-                + "; actionSet=" + applied);
+                + "; female=" + __result.IsFemale
+                + "; actionSet=" + applied
+                + "; main=" + __result.GetPrimaryWieldedItemIndex()
+                + "; offhand=" + __result.GetOffhandWieldedItemIndex());
 #if GWP_DIAGNOSTICS
             Debug.Print(
                 "[GreyWarden Dual Blade] archer_spawn character="
@@ -472,10 +503,20 @@ namespace GreyWardenPolicePurity
             if (agent == null)
                 return false;
 
-            MBActionSet actionSet =
-                MBActionSet.GetActionSet(DualBladeActionSetId);
+            string actionSetId = ActionSetCode.GenerateActionSetNameWithSuffix(
+                agent.Monster,
+                agent.IsFemale,
+                DualBladeActionSetSuffix);
+
+            MBActionSet actionSet = MBActionSet.GetActionSet(actionSetId);
             if (!actionSet.IsValid)
+            {
+                GwpDualBladeTrace.Write(
+                    "ACTION_SET_MISSING",
+                    agent,
+                    "actionSet=" + actionSetId);
                 return false;
+            }
 
             AnimationSystemData animationSystemData = agent.Monster
                 .FillAnimationSystemData(
@@ -503,7 +544,7 @@ namespace GreyWardenPolicePurity
             agent.OnAgentWieldedItemChange += () => Synchronize(agent);
         }
 
-        private static void Synchronize(Agent agent)
+        internal static void Synchronize(Agent agent)
         {
             if (_synchronizing
                 || !GwpDualBladeLoadout.HasCompleteLoadout(agent))
@@ -521,6 +562,10 @@ namespace GreyWardenPolicePurity
                     _synchronizing = true;
                     try
                     {
+                        GwpDualBladeTrace.Write(
+                            "ARCHER_OFFHAND_PAIR_REQUEST",
+                            agent,
+                            "main=" + primarySlot + "; offhand=" + offhandSlot);
                         agent.TryToWieldWeaponInSlot(
                             EquipmentIndex.WeaponItemBeginSlot,
                             Agent.WeaponWieldActionType.InstantAfterPickUp,
@@ -557,6 +602,45 @@ namespace GreyWardenPolicePurity
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// The measured spawn trace shows the archers leave WieldInitialWeapons
+    /// with the pair correctly in hand — exactly like the player-controlled
+    /// commander, which keeps both blades — and then lose Weapon0 about two
+    /// seconds later, at the one point where native re-runs the AI weapon
+    /// selection.  That selection only keeps an off-hand item when it is a
+    /// shield, so it drops the off-hand blade; every previous attempt tried to
+    /// put the blade back afterwards and was undone again by the same
+    /// selection state.
+    ///
+    /// Skip that re-selection for the eligible GreyWarden pair instead. These
+    /// characters carry nothing but the two blades, so native has no other
+    /// weapon to choose and the skipped call has no work to do for them. This
+    /// writes no weapon data, fakes no shield, and touches no native handle;
+    /// every other agent — including ordinary soldiers who happen to share a
+    /// mission with them — keeps the stock selection.
+    /// </summary>
+    [HarmonyPatch(typeof(Agent), nameof(Agent.UpdateWeapons))]
+    internal static class GwpDualBladeAiWeaponSelectionPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(Agent __instance)
+        {
+            if (!GwpDualBladeLoadout.HasCompleteAiLoadout(__instance))
+                return true;
+
+            GwpDualBladeTrace.Write(
+                "AI_WEAPON_SELECTION_SKIPPED",
+                __instance,
+                "main=" + __instance.GetPrimaryWieldedItemIndex()
+                + "; offhand=" + __instance.GetOffhandWieldedItemIndex());
+
+            // Recover the pair if anything ahead of this boundary had already
+            // sheathed it; a correctly paired agent falls straight through.
+            GwpDualBladeWieldSync.Synchronize(__instance);
+            return false;
         }
     }
 

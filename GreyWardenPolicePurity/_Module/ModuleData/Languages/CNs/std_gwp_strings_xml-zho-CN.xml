@@ -880,5 +880,7 @@
   <string id="gwp_player_troop_stage_delivery" text="正在前往玩家身边交付" />
   <string id="gwp_player_troop_stage_deferred" text="交付已延期" />
   <string id="gwp_player_troop_defer_complete" text="练兵官将带着备好的士兵回来找你。" />
+  <string id="gwp_item_dual_offhand" text="灰袍双持剑（副手）" />
+  <string id="gwp_item_dual_mainhand" text="灰袍双持剑（主手）" />
 </strings>
 </base>

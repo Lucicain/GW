@@ -6,6 +6,30 @@
 - 用户同时确认唯一遗留问题：灰袍弓箭手切入近战时只拔出右手刀，副手刀没有拔出。该问题与已确认稳定的预览、模型和接战路径分开处理。
 - 上述稳定功能已建立本地 Git 检查点 `eda353f`（`checkpoint: stable dual-blade models and combat`）。下一轮只允许围绕弓箭手副手拔刀同步做增量实验；若需要回滚，恢复到该提交即可。
 
+## 2026-08-30 弓箭手副手：改为阻止原生 AI 换武器判断，并补齐女性双刀动作集
+
+- 用户复测已在 `12:06`–`12:10` 产生新会话，上一条候选的"待验收"状态由本轮追踪直接结案：`SUBMODULE_PATCH_OK` 1 次、`CHARACTER_CODE_CREATE_OK` 7 次、`CUSTOM_BATTLE_COMMANDER_INSERT` 8 次、CrashDumps 目录为空，因此预览崩溃、模型消失与接战卡死三项确实已经稳定，不再复现。
+- 同一会话记录 `SPAWN_AGENT_POSTFIX` 200 次、`ARCHER_OFFHAND_PAIR_REQUEST` 199 次，全部为 `main=Weapon1; offhand=None`，与 2026-08-29 的 199 次 `archer_melee_pair` 逐字相同。`Agent.UpdateWeapons` 后置候选因此判定失败：它既没有改变结果，也没有产出新信息，已从代码中完整删除。
+- 关键新证据一（agent 编号）：agent `201`–`399` 是 `isAi=True` 的 `gwarcher`，agent `400` 是 `isAi=False; isPlayer=True` 的 `gwp_custom_commander`。**只有 400 号没有发出配对请求**，即玩家控制的武将双刀始终在手，而 199 个 AI 弓箭手在出生后约 1.9 秒（`12:10:00.6` 生成完毕 → `12:10:02.5` 请求）丢掉 `Weapon0`。这把故障从"物品数据/装备码"彻底移到"原生 AI 换武器选择"。
+- 关键新证据二（物品标志已可反推）：对照 1.5.2 的 `Equipment.GetInitialWeaponIndicesToEquip`，主手是按数组顺序取第一个**不带** `HeldInOffHand` 的槽位。日志中主手稳定解析为 `Weapon1` 而不是 `Weapon0`，只有在 `gwdualbladeoffhand` 确实带 `HeldInOffHand` 时才可能出现。因此"锻造物 `ItemFlags` 丢失副手标志"这一条已由实测排除，不需要再把双刀改回普通 `<Item>`，外观也不必让步。
+- 关键新证据三（ROT 参考的边界）：全量检索本机 `rot_decompile` 后确认，ROT 的双持战斗实现只有 `IsCollisionBoneDifferentThanWeaponAttachBonePatch`（bone 20）一个补丁，`DualWieldingPatches` 只做库存界面提示；并且 `dual_blades` 仅出现在 ROT 的 `items.xml`，`ROT-Troops.xml`、`ROT_lords.xml`、`ROT_heroes.xml`、装备表全部为 0 命中。**ROT 从未让 AI 兵种双持**，所以此前反复用 ROT 当作 AI 分支的参照本身不成立，这解释了 B 类候选连续五次失败。
+- 本轮改为阻断而非补救：新增 `GwpDualBladeAiWeaponSelectionPatch`，在 `Agent.UpdateWeapons` 前置对**符合 `HasCompleteAiLoadout` 的灰袍双刀 AI** 返回 `false`，跳过原生武器重选；这些角色身上只有两把刀，原生本来也无从可选。前置内仍调用一次现有 `Synchronize` 作兜底。该补丁不写任何 `WeaponData`/`WeaponStatsData`、不伪装盾牌、不获取或传入原生句柄，因此不触碰 2026-08-29 已确认会污染 tableau 的那类全局入口；其他所有 Agent（含同场普通士兵）保持原生选择。
+- 同时修复一个独立的真实缺陷：`gwarcher` 与 `gwp_custom_commander` 均为 `is_female="true"`，而旧的 `as_gwp_dual_warrior` 是从 `as_human_warrior` 复制出来的**男性根动作集**（带 `skeleton="human_skeleton"`、4784 条动作），且没有任何女性变体。按 1.5.2 原生 `MBGlobals.GetActionSetWithSuffix` → `ActionSetCode.GenerateActionSetNameWithSuffix` 的约定改为后缀式命名：`action_sets.xslt` 现在从 `as_human_warrior` 生成 `as_human_gwp_dual`，从 `as_human_female_warrior` 生成 `as_human_female_gwp_dual`；代码改用 `ActionSetCode.GenerateActionSetNameWithSuffix(agent.Monster, agent.IsFemale, "_gwp_dual")`，取不到时写 `ACTION_SET_MISSING` 而不抛异常。
+- 监控修正：`AuditLoadedObjects` 此前只在 `OnGameStart` 调用，8 个会话共 18 条 `OBJECT_AUDIT_ITEM` 全是 `missing=true`，从未捕获过 `usage=` 与 `flags=`。新增一次性的 `AuditLoadedObjectsOnce`，由首个双刀 `SpawnAgent` 后置触发（此时对象必然已加载）；`SPAWN_AGENT_POSTFIX` 也补记 `female=`、`main=`、`offhand=`，新增 `AI_WEAPON_SELECTION_SKIPPED` 记录跳过前的主副手状态。
+- 验证：`dotnet build ... --configuration Release --no-restore -t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、44 条既有 nullable warnings。Windows PowerShell 5.1 离线预检逐类 `CreateClassProcessor().Patch()` 全部通过：`PATCH_OK=41; PATCH_FAIL=0`，程序集 413 个类型；`GwpDualBladeUpdateWeaponsPatch` 已不存在、`GwpDualBladeAiWeaponSelectionPatch` 存在；`GenerateActionSetNameWithSuffix` 实测返回 `as_human_gwp_dual` / `as_human_female_gwp_dual`，与 XSLT 产出的 id 精确一致。
+- XSLT 用游戏同款 `System.Xml.Xsl.XslCompiledTransform` 对 live 模组的 `action_sets.xslt` + Native `action_sets.xml` 实跑：共 104 个 action_set、重复 id 0；`as_human_gwp_dual` = 4784 条动作 / `skeleton=human_skeleton` / 无 base_set（对齐 `as_human_warrior`），`as_human_female_gwp_dual` = 382 条动作 / `base_set=as_human_warrior`（对齐 `as_human_female_warrior`），两者各含 84 条 gwd 动作。
+- 部署：仓库 `_Module` 与 live 模组 36 个可部署文件缺失 0、哈希差异 0；30 个 XML/XSLT/mbproj 解析失败 0。客户端与编辑器 diagnostics-enabled DLL 均为 801280 字节、SHA-256 `28F473F47FF0D6920C903564526A886B6435FE366118417C87F792E6F83DBBEB`（该哈希取自加入本地化字符串后的最终增量构建，并已用同一份 live DLL 重跑离线预检：`PATCH_OK=41; PATCH_FAIL=0`）；`action_sets.xslt` SHA-256 `80D652A4DBF28A05475F2528FDA5705C088C15D2B1F8505F090449F693503D47`，中文 README SHA-256 `214DE41964270E426171130F8C4DB6643538201EF4B4978A57279D976BB3D817`、英文 README SHA-256 `70F86072E3D8DB9EAF5C7D8BE5AB7DC984499B1CFE40A8C804664F7F64CECF52`，仓库与 live 全部一致。Bannerlord 相关进程数 0，未代表用户启动游戏。
+- 回滚点：稳定基线仍是 `eda353f`。本轮的仓库卫生提交为 `2210f01`（把 15 个无关治安/声望改动单独固化，使双刀实验可以整体丢弃而不损失其他工作）。
+- 待用户实机验收：进入自定义战斗，确认（1）人物预览与模型正常；（2）灰袍弓箭手在战场上保持双刀出鞘；（3）双刀动作与接战无报错。若仍只剩单刀，直接读取新会话的 `OBJECT_AUDIT_ITEM`（现在会带 `usage=`/`flags=`）与 `AI_WEAPON_SELECTION_SKIPPED` 的 `main=`/`offhand=`：若跳过前 offhand 已是 `None`，说明清空发生在 `UpdateWeapons` 之外，下一步应转向 `Agent.UpdateFormationOrders` → `EnforceShieldUsage` 这一条 Agent 级（非 tableau）边界，而不是再换一个出生期入口。
+
+## 2026-08-30 弓箭手原生武器选择后的副手同步候选（已实测失败，已撤回）
+
+- 用户确认当前基线：预览人物正常、双刀与灰袍单手剑同型、灰袍武将双刀动作正常，双刀与普通士兵交战正常；唯一遗留是灰袍弓箭手切入近战时只拔出右手刀。
+- 对照 1.5.2 反编译，`Mission.SpawnTroopWithAgentBuildData` 在 `SpawnAgent` 返回后才调用 `WieldInitialWeapons()`；现有 `OnAgentWieldedItemChange` 监听已在 SpawnAgent 后挂载，但 Native AI 的 `UpdateWeapons()` 可能清空 Weapon0 而不触发该托管回调。此前追踪只看到 `SPAWN_AGENT_POSTFIX`，无法证明近战选择边界被覆盖。
+- 新增精确到 `Agent.UpdateWeapons()` 的 Harmony postfix：调用现有标准 `TryToWieldWeaponInSlot(WeaponItemBeginSlot, InstantAfterPickUp)`，仅当 Agent 携带完整 GreyWarden 双刀且角色为 `gwarcher`/自定义武将或玩家时才进入；普通 AI、原生武将、盾牌、远程防御、伤害和模型路径不变。同步请求会写入 `ARCHER_OFFHAND_PAIR_REQUEST`，便于从监控确认 Native 清空后的补拔刀是否命中。
+- 本候选不使用 Mission Tick、不创建或复制武器实体、不修改 `MissionWeapon` 统计，不恢复已撤销的盾牌字段或合成伤害补丁。若实机仍只显示单刀，需读取 `ARCHER_OFFHAND_PAIR_REQUEST` 的主副手索引和后续状态，再决定是否继续沿同一 Native 边界收敛。
+- `dotnet build GreyWardenPolicePurity.slnx --configuration Release --no-restore -t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、44 条既有 nullable warnings；离线 Harmony 预检确认 `Agent.UpdateWeapons_Patch1` 可生成。仓库 `_Module` 与 live 模组 36 个可部署文件缺失/哈希差异均为 0，ModuleData XML 解析失败 0；live diagnostics DLL SHA-256 为 `5C7D575C2E8F04594D0C88197B99998287FD1370C3237E89BB197059CACA0B36`，中文 README `B7FF0E57C6D5B6927F5EBAA587C7B8AB4964516DCF1A1D715D1748F16131F538`、英文 README `A3BADFBEA0CCC693C941D9ACC5CB4CDF84894A7FFF77955A61EDE54FADC14356`；Bannerlord 进程数 0，未启动游戏。
+
 ## 2026-08-30 1.5.2 进入成功后的三项回归：恢复弓箭手 AI 资格并确认模型差异来源
 
 - 用户复测确认自定义战斗已经可以正常进入，但反馈预览模型异常、弓箭手双刀没有生效，以及武将/士兵双刀外观不同于灰袍单手剑。最新追踪在 `11:08:24` 显示 `gwp_custom_commander` 两个 `CharacterCode.CreateFrom` 重载均成功；大量 `gwarcher` 的 `EQUIP_SCOPE_PREFIX active=False` 与当时刻的稳定性开关一致，说明弓箭手没有进入双刀 AI 装配链，而不是装备码缺失。
