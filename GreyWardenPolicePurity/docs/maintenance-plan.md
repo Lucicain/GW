@@ -1,5 +1,27 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 补丁目标的安全/有毒分界确立；拆成"保持 + 建立"两半，各用安全落点
+
+- 用户实测上一轮：**英雄预览模型正常**，士兵**稳定**拿出右手剑、左手剑留在鞘里，无闪烁。两条结论：
+  1. **`ArrangementOrder` 补丁对预览是安全的。** 因此"任何 Harmony 补丁都会破坏预览"不成立，有毒的是特定类型。
+  2. 副手"稳定在鞘里"说明阵型已不再收刀（保持问题已解决），**剩下的是从来没被拔出来过**（建立问题）。
+- **补丁目标分界（本模组 1.5.2 的经验结论，后续一律遵守）：**
+  | 目标 | 预览 | 依据 |
+  |---|---|---|
+  | `Mission.*` | 安全 | `2367e60` 使用 `Mission.SpawnAgent`，用户当时确认"什么都好" |
+  | `ArrangementOrder.*` | 安全 | 本轮英雄预览正常 |
+  | `MissionBehavior`（非补丁） | 安全 | 同上 |
+  | **`Agent.*` per-call** | **有毒** | 两次复现，第二次判定已窄到只读不可变 id，排除判定条件变量 |
+  | **`MissionWeapon.*` per-call** | **有毒** | 多轮复现 |
+- 据此把功能拆成两半，各用安全落点：
+  - **保持**：`GwpDualBladeShieldDirectionPatch`（`ArrangementOrder.GetShieldDirectionOfUnit` 后置，双刃卫士的 `None` → `AttackEnd`）。已由本轮实测验证既安全又生效（副刀不再被反复收放）。
+  - **建立**：新增 `GwpDualBladeGuardBehavior`（`MissionBehavior`，**完全不是补丁**），在 `OnMissionTick` 中以**跨帧序列**为双刃卫士拔出副手：收主手 → 拔副手 → 拔主手 → 校验，每帧只推进一步，且仅在动作码为 `Other`/`Idle`/`Guard` 时动作。
+- 选择跨帧序列的依据是既有实测：同一帧内同时请求主副手从不成功（原生 `WieldInitialWeapons` 即如此，另有一版把两个输入标志同帧注入 596 次而配对为 0）；同样三次调用摊到不同帧则达到 **553/597**。当年该方案失败的唯一原因是拔出后又被阵型收走 —— 而这正是本轮"保持"那一半已经堵上的。
+- 序列上限 3 次/每兵，失败即停，绝不会重现早期的"反复拔刀收刀"。作用域只按 `Character.StringId == gwtwinblade` 判定（不可变读取），英雄与预览角色不可能匹配。
+- 补丁面：`PATCH_OK=38; PATCH_FAIL=0` —— 检查点 37 + `ArrangementOrder` 1；`HarmonyPatch(typeof(Agent)` 与 `HarmonyPatch(typeof(MissionWeapon)` 命中均为 **0**；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 798208 字节、SHA-256 `A4BFF87A7BA618BCDECB22DF7FA0D604CB72ECDFBA5BA7F8AA4633022374E561`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收：① 英雄预览是否仍正常（本轮未新增任何有毒目标，预期不变）；② 双刃卫士左手刀是否拔出并**保持**；③ 追踪中 `GUARD_PAIR_RESULT` 的 `offhand=` 是否为 `WeaponItemBeginSlot`。若 ③ 显示配对成功而实机仍看不到，则问题在视觉挂点而非拔刀逻辑；若 ③ 始终为 `None`，则跨帧序列在无弓兵种上不成立，需回到 `Mission.SpawnAgent` 时机重新定位建立点。
+
 ## 2026-08-30 结论确立：任何针对 `Agent` 的 per-call 补丁都会破坏预览；改攻静态阵型方法（本方向最后一个候选）
 
 - 用户实测：把 `EnforceShieldUsage` 旁路的判定收窄到**只读一个不可变角色 id**（不访问 Equipment/SpawnEquipment、不查 Mission、不写日志）后，**英雄预览仍然损坏**，双刀也未实现。已回退（标签 `failed/shield-bypass-narrow`，`852326f`），补丁面回到 `PATCH_OK=37`，`Agent`/`MissionWeapon` per-call 补丁 0 命中。

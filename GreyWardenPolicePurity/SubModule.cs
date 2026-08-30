@@ -123,6 +123,10 @@ namespace GreyWardenPolicePurity
 
             // 踢腿能力同时用于战役和自定义战斗。GreyWarden 本身是纯单人
             // 模组，因此这里不需要用 Campaign 类型把 CustomGame 排除掉。
+            // Draws the Twinblade Guard's off-hand blade. A mission
+            // behaviour rather than a patch: previews break on per-call
+            // Agent and MissionWeapon patches, never on these.
+            mission.AddMissionBehavior(new GwpDualBladeGuardBehavior());
             mission.AddMissionBehavior(new GwpKickBehavior());
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
