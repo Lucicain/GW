@@ -1,5 +1,1849 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 1.5.2 进入成功后的三项回归：恢复弓箭手 AI 资格并确认模型差异来源
+
+- 用户复测确认自定义战斗已经可以正常进入，但反馈预览模型异常、弓箭手双刀没有生效，以及武将/士兵双刀外观不同于灰袍单手剑。最新追踪在 `11:08:24` 显示 `gwp_custom_commander` 两个 `CharacterCode.CreateFrom` 重载均成功；大量 `gwarcher` 的 `EQUIP_SCOPE_PREFIX active=False` 与当时刻的稳定性开关一致，说明弓箭手没有进入双刀 AI 装配链，而不是装备码缺失。
+- 按本次实测结果，将 `HasCompleteAiLoadout` 从恒 false 改为严格限定：`IsAIControlled && Mission != null && gwarcher && Weapon0/Weapon1` 完整双刀。这样只恢复真实战场弓箭手的 AI 装配、专用动作集和双刀同步；百科、人物预览、自定义战斗 tableau 没有 Mission，不会进入该链。玩家路径保持不变。
+- 双刀外观不同的原因已确认：上一候选为避开预览链，把双刀临时改成固定 `mesh="vlandia_twohanded_sword_a"` 的普通 Item，而灰袍 `gwonehandedsword` 是由 `vlandian_blade_3 + vlandian_guard_8 + sturgian_grip_36 + empire_pommel_6` 组合的 CraftedItem，因此不可能同型。用户明确要求只用 GreyWarden 既有外观后，已撤回该普通 Item 候选，恢复项目中原有的 `GwpOneHandedSwordDualOffhand/Mainhand` 模板、`gwp_vlandian_blade_3_dual` 副手片和四件同型部件。
+- 对照 ROT 的 `DualWieldingPatches`，其双刀 Item 只依靠 `dual_shield`/`dual_shield_thrust` usage、`HeldInOffHand` 和 bone-20 碰撞例外，并不把副手剑改成盾牌。旧 `MissionWeapon.GetWeaponStatsData` 后置曾给副手注入 `HasHitPoints | CanBlockRanged`，与用户反馈的防御状态异常相符；本轮先撤销这些写入，取得后续接战转储后又把相关全局入口完整删除。
+- 11:16:53 的上一候选实测追踪显示所有记录到的 `gwarcher` 均以 `active=True` 完成装配作用域、`exception=False`，并成功应用 `as_gwp_dual_warrior`；这证明弓箭手生成阶段不是 11:18 Native 崩溃点，不能再把问题归回装备码缺失。
+- 已核对程序集、`SubModule.xml` 和全部双刀 XML：没有 ROT DLL、程序集、物品 ID 或模型路径。`CraftingPieces`、`CraftingTemplates`、`WeaponDescriptions` 现重新对 Campaign、CustomGame 与 EditorGame 注册，避免人物预览解析 CraftedItem 时缺少模板；副手片只增加 `ForceAttachOffHandPrimaryItemBone + HeldInOffHand + WoodenParry`，武器描述仍只有 `MeleeWeapon`，没有 `HasHitPoints`、`CanBlockRanged`、盾牌类别或盾牌碰撞体。
+- 11:18:34 的最新 WER/应用事件确认 `TaleWorlds.Native.dll` 在 0x720e18 处发生 `0xc0000005`，时间线位于 11:17:54 冲锋命令之后；加载、`CharacterCode` 和弓箭手生成均已成功。该边界与防御接触时 `MeleeHitCallback` 重新调用 `victim.RegisterBlow` 的合成控制伤害一致。按 ROT 的最小实现，已完整删除 `GwpDualBladeDefenceBypassPatch`，不再 patch `MeleeHitCallback` 或把伪造 `Blow/AttackCollisionData` 送回 Native；原生近战格挡、双刀 bone-20 碰撞和普通伤害仍保留。
+- 同时完整删除只剩监控作用的 `Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData/GetWeaponStatsData` 以及 `Mission.MissileHitCallback` 补丁。它们不再改变任何武器数据，也不再占用曾污染 tableau 和接战路径的全局入口。当前战斗运行面只剩真实 Agent 出生后的专用动作集、事件式拔刀同步、bone-20 碰撞例外与左手挥砍伤害类型修正。
+- 双刀资格重新明确为：AI 只允许 `gwarcher` 与 `gwp_custom_commander`，其他 AI 士兵即使意外取得同名物品也不进入动作集/同步；玩家控制的角色只要携带完整配对即可继续使用双刀。伤害类型、击倒资格和地面拾取使用同一判断，避免配置与运行范围分叉。
+- 最终 Release 重建与 live 部署成功，0 errors、44 条既有 nullable warnings；客户端/编辑器 DLL 为 800256 字节、SHA-256 `47B2639352F4077E2EB6E8E1BFC69AAB15F17E06CA710601CC90A31D780DB527`。离线 Harmony 预检只剩 CharacterCode/自定义武将目录、模板目录、bone-20 碰撞、伤害类型、真实 Agent 动作集和地面拾取入口，已删除的五个全局/合成入口不再出现。仓库与 live 36 个可部署文件缺失/差异均为 0；中文 README SHA-256 `C8FE2B1915984E108CC8DDEEA903A1257CBDCDC99009AC89D9C99EF570AA6717`、英文 README SHA-256 `69D21CF1C91E3340A897E340954DD3F931FC1551B50AA4F4A0EA443BF17804C0` 均与 live 一致。Bannerlord 进程数 0，未启动游戏。下一轮由用户验证预览人物、双刀同型外观、AI 双刀拔出以及首次真实近战防御/接战。
+
+## 2026-08-30 1.5.2 自定义战斗弹窗：接入 NavalDLC 角色列表并补齐枚举监控
+
+- 用户最新复测仍是在点击自定义战斗后直接弹错；本轮没有启动游戏，只读取最新追踪和转储。`GreyWarden-DualBlade-Trace.log` 的新会话为 `NavalDLC.CustomBattle.NavalCustomGame`，早期 `OBJECT_AUDIT_* missing=true` 发生在 `OnGameStart`，不能作为对象未注册证据；随后 `gwarcher` 的两个 `CharacterCode.CreateFrom` 重载均出现 `OK` 且 `exception=none`。最新转储为 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.27740.dmp`（101494121 字节，10:57:32），故障边界已从 CharacterCode 前移到其后的自定义战斗角色目录/视图初始化。
+- 反编译 `NavalDLC.CustomBattle.dll` 确认该 DLC 使用独立的 `NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleData.Characters` 迭代器，原有 `CustomBattleData.get_Characters` 补丁不会覆盖海战自定义模式。新增反射目标补丁，在可选 NavalDLC 已加载时把灰袍自定义武将插入第一项，同时保留 `commander_1..commander_24`；若 DLC 未安装，目标枚举为空，不会阻断启动。
+- 自定义武将 XML 的双刀槽位统一使用普通 Item ID（去掉 `Item.` 前缀），并复用与弓箭手相同的静态普通物品解析链。新增角色列表入口 Prefix/Postfix/Finalizer；Postfix 先物化原生迭代器并过滤空项，若原生枚举器抛异常会留下 `CUSTOM_BATTLE_COMMANDER_INSERT_FAILED`，不再让诊断逻辑改变返回值。
+- 离线预检已实际加载本机 NavalDLC 程序集，确认 `NavalCustomBattleData.get_Characters` 与原生 `CustomBattleData.get_Characters` 均能生成 Harmony replacement；Release 重编译/部署成功，0 errors、44 条既有 nullable warnings。客户端/编辑器 diagnostics-enabled DLL 均为 800768 字节、SHA-256 `54B989D12E935598FE63124B11DF0464A9956186C021C0EEC3AE64A1AEB8418A`；仓库 `_Module` 与 live 的 36 个可部署文件缺失 0、哈希差异 0，中英文 README 也已同步。未启动游戏，等待用户重新点击自定义战斗后再读取 `NAVAL_CUSTOM_BATTLE_*` 与 `CUSTOM_BATTLE_*` 事件。
+
+## 2026-08-30 1.5.2 双刀稳定性基线：改用 ROT 普通物品并停用 NPC 注入
+
+- 用户连续两次复测均在点击自定义模式时直接报错。最新会话生成 CrashDump `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.28100.dmp`（102020306 字节，02:08:19）；`GreyWarden-DualBlade-Trace.log` 最后仍是 02:08:05 的 `CHARACTER_CODE_CREATE` 与 `CHARACTER_CODE_CREATE_EQUIPMENT`，没有成功后置、没有自定义武将列表事件。恢复 `bo_sword_one_handed` 后症状完全不变，因此排除“仅由静态 `bo_mace_a` 导致”；稳定崩溃边界是 `CharacterCode` 将 `gwarcher` 的隐藏双刀 CraftedItem 交给原生 tableau 解析之后。
+- 直接核对本机 ROT 运行数据：`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\ROT-Content\ModuleData\items.xml:843-860` 的 `dual_blades/dual_blades2` 均是普通 `<Item>`，不是 CraftedItem；两者固定 `body_name="bo_mace_a"`、`recalculate_body="false"`。主手使用 `dual_shield_thrust`；副手使用 `dual_shield` 并设置 `WoodenParry + ForceAttachOffHandPrimaryItemBone + HeldInOffHand`。这条静态物品链不依赖锻造模板，也不需要 `MissionWeapon` 运行时改写。
+- 已把 `gwdualbladeoffhand/gwdualblademainhand` 从 CraftedItem 重建为同结构普通 Item，保留本模组剑刃 mesh 与既有双刀 usage/holster 资源；从 `SubModule.xml` 停止注册已不再需要的 `CraftingPieces`、`CraftingTemplates` 和 `WeaponDescriptions`。没有预览装备替换或隔离副本。
+- `gwarcher` 固定槽位仍为 `Item0=gwdualbladeoffhand`、`Item1=gwdualblademainhand`，已删除贵族长弓和箭袋并改为 Infantry；`gwp_custom_commander` 同样只装备这两个固定槽位。所有原生自定义武将仍保留，灰袍武将继续由列表补丁插入第一项。
+- 按用户要求暂停 NPC 双刀机制：`GwpDualBladeLoadout.HasCompleteAiLoadout` 当前恒为 false，因而 AI 装备作用域、WeaponData/WeaponStats、专用动作集、远程格挡修正和 AI 接战分支均不对任何 NPC 生效。当前候选只验证“普通物品能否进入自定义模式、显示人物并静态装备双刀”；后续机制必须在该基线由用户确认后另行恢复。
+- 监控加强：`OnGameStart` 新增游戏类型、双刀 Item 的类型/body/collision/usage/flags、弓箭手与自定义武将完整装备码审计；两个 `CharacterCode.CreateFrom` 重载新增成功后置和异常 finalizer。若再次原生退出，可由最后一条事件精确区分对象加载、装备码生成、CharacterCode 返回和自定义武将列表枚举。
+- 项目根 `AGENTS.md` 新增“Stable features require local Git checkpoints”：用户实机确认功能稳定后，继续风险开发前必须创建包含实现、双语 README 和维护记录的本地 checkpoint commit，并在本文记录 commit hash 与复测结论；仍崩溃或未测试候选不得伪装成稳定检查点。规则本身已单独保存为本地 commit `d90dac1`；当前双刀版本尚未实机通过，因此不创建错误的功能基线提交。
+- Release 重编译/部署成功，0 errors、44 条既有 nullable warnings；XML 解析检查 `items.xml/spnpccharacters.xml/sphpcustombattle.xml/SubModule.xml` 全部通过。离线 Harmony 预检确认 CharacterCode 双重载监控、自定义武将列表、装备作用域及现有战斗入口均能生成；NPC 资格因稳定性开关恒为 false，不会进入注入分支。仓库 `_Module` 与 live 的 36 个可部署文件缺失 0、哈希差异 0；live 客户端/编辑器 DLL 均为 800768 字节、SHA-256 `D4902E51E8041EC331C4D5C8D024E7F64DF9D6D565542A9EEBB70BB1FD04DE6D`。未启动游戏、未制作正式 ZIP。
+
+## 2026-08-30 1.5.2 双刀原生装配崩溃定位：移除运行时碰撞体改写
+
+- 用户最新复测反馈为“普通士兵可以进入，但双刀弓箭手弹错；外部武将预览没有模型”。本次没有启动游戏，只读取监控文件。最新双刀追踪日志 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Trace.log` 在 `gwarcher` 的 `WEAPON_STATS_PATCH` 后立即结束；没有对应的 `EQUIP_SCOPE_FINALIZER` 或 `SPAWN_AGENT_POSTFIX`。普通士兵的作用域进入/退出均完整，说明崩溃点已收窄到副手 `WeaponData` 写入之后的原生 `WeaponEquipped` 参数消费。
+- 追踪中最后一条双刀数据曾显示代码在托管侧把 `WeaponData.Shape` 与 `CollisionShape` 运行时替换为 `PhysicsShape.GetFromResource("bo_mace_a")`。这会在原生装备注册时传入新取得的非原生时序句柄，是当前最直接的高风险点；不能继续依赖运行时句柄改写。
+- 已删除 `GwpDualBladeAiWeaponDataPatch` 中的运行时 `PhysicsShape` 获取和 `Shape/CollisionShape` 赋值；本次进一步撤回静态 `body_name="bo_mace_a"`，恢复双刀 BladeData 原有 `bo_sword_one_handed`，因为新追踪证明前者会在 `CharacterCode.CreateFrom(gwarcher)` 预览阶段直接中断。远程命中回调仍会把副手的远程盾挡结果还原为普通命中，因此不增加远程防御。
+- 外部预览仍通过只读 `CharacterCode.CreateFrom` 监控确认：此前的 `gwarcher` 和原 `commander_2` 均能生成完整装备码。本轮将自定义武将改为新增 `gwp_custom_commander`，并通过 `CustomBattleData.get_Characters` 插入第一项，保留原生 `commander_1..commander_24`；本轮没有对预览对象做装备替换或隔离。若模型仍缺失，将以新追踪中的自定义角色装备码与对象加载日志继续区分“资源解析失败”和“自定义战斗选择器覆盖”。
+- Release 重编译/部署已通过，0 errors、44 条既有 nullable warnings；离线 Harmony 预检确认新增 `CustomBattleData.get_Characters` 插入补丁、双刀作用域和武器数据入口均成功生成。仓库 `_Module` 与 live 的 36 个可部署文件缺失 0、哈希差异 0；live 客户端/编辑器 DLL 均为 798208 字节、SHA-256 `B2466D3709811203C678BC9C814B1A12EBEA24B2D3B658FC8F778BBECDED6DFA`。未制作正式 ZIP、未启动游戏。用户负责实机复测，开发侧只读取监控。
+
+## 2026-08-30 1.5.2 追加双刀/预览边界监控
+
+- 用户复测后生成最新 `rgl_log_21560.txt` 与 CrashDump `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.21560.dmp`；日志仍在 `MissionScreen::OnActivate` 后停止，未出现 `archer_spawn`，`rgl_log_errors_21560.txt` 没有托管异常。由此确认上次候选仍未能定位原生退出点。
+- 在唯一的 `GwpDualBladeActionSetPatch.cs` 中加入开发期 `GreyWarden-DualBlade-Trace.log`：记录 SubModule Harmony 安装结果、`CharacterCode.CreateFrom` 的弓箭手/指挥官预览输入、Agent 装备注入作用域进入/退出、双刀 `WeaponData`/`WeaponStatsData` 修改以及 `SpawnAgent` 后置结果。每条记录立即追加到文档目录，诊断异常自动吞掉，不改变游戏流程。
+- 保持本轮安全边界：监控补丁只读/记录，不替换预览装备，不调用原生 `WeaponEquipped`，不启动游戏。用户下一次复现后，先读取 `GreyWarden-DualBlade-Trace.log` 最后一条事件，再与同一时间的 `rgl_log` 对齐，即可判断崩溃发生在预览 CharacterCode、装备作用域、武器数据生成还是 SpawnAgent 之后。
+- Release 重编译成功，0 errors；离线 Harmony 预检新增两个 CharacterCode 追踪目标并全部成功。仓库 `_Module` 与 live 运行文件共 36 个文件缺失 0、哈希差异 0；live 客户端/编辑器 DLL 均为 798208 字节、SHA-256 `4D8DEB1A66D1EDCC5480E145ED11309616BD8F09C8E0E5BE6053EA5693E3E491`。未制作正式 ZIP、未启动游戏。
+
+## 2026-08-30 1.5.2 装备注入回归：撤销 WeaponEquipped 原生入口补丁
+
+- 用户复测仍在进入自定义战斗后报错且没有人物；最新 `rgl_log_6088.txt` 在
+  `MissionScreen::HandleActivate` 后停止，没有 `archer_spawn`，错误日志无托管异常，CrashDump 为
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.6088.dmp`。
+- 这排除了弓箭手接战、双刀碰撞和动作切换；崩溃发生在第一批 Agent 装备注入时。上一候选把
+  `Agent.WeaponEquipped` 私有原生入口作为 Harmony 前置并修改 `WeaponData`，即使不主动调用该方法，仍会把
+  原生注册时序暴露给托管补丁，不能继续保留。
+- 已从 `GwpDualBladeActionSetPatch.cs` 删除 `GwpDualBladeAiNativeRegistrationPatch`。双刀数据改为同一文件中的三个协同入口：
+  精确四参数 `Agent.EquipItemsFromSpawnEquipment` 作用域、作用域内的 `MissionWeapon.GetWeaponData` 和
+  `MissionWeapon.GetWeaponStatsData`。只有真实战场中携带完整 `gwarcher` 双刀的 AI 才进入作用域；百科、士兵百科和
+  自定义战斗人物预览不会调用 Agent 装配链。
+- 副手仍使用 `bo_mace_a` 的形状、有效耐久和近战标志；远程命中回调继续把副手的远程盾挡结果还原为普通命中，因而不提供
+  远程防护。未恢复旧的四个全局补丁，也未启动游戏。
+- Release 重编译成功，0 errors；离线 Harmony 预检确认四参数装配作用域、两个 MissionWeapon 数据补丁、模板目录过滤、
+  SpawnAgent、远程命中、碰撞、伤害、击倒和地面拾取目标均成功。仓库 `_Module` 与 live 运行文件共 36 个文件缺失 0、哈希差异 0；
+  live 客户端/编辑器 DLL 均为 795136 字节、SHA-256 `935C673DD91421469D21BC94A8B591FCF727580F925F8A8F029C82D6BE35BEDB`。
+
+## 2026-08-30 1.5.2 双刀与预览回归：恢复单入口原生注册并保留真实模板
+
+- 用户最新复测仍是“进入游戏直接报错、人物模型不显示”。按用户要求没有启动游戏，只读取 `rgl_log_22108.txt`、WER、CrashDump、ROT 数据、源码和维护记录；当前没有晚于 01:05 的新测试日志。
+- 该会话在 `MissionScreen::HandleActivate` 后立即停止，没有任何 `archer_spawn`；Windows WER `CLR20r3` 记录故障程序集 `TaleWorlds.MountAndBlade.AutoGenerated`、`System.AccessViolationException`，转储为 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.22108.dmp`。根因是上一候选在 `Mission.BuildAgent` 结束后反射调用私有 `Agent.WeaponEquipped`，并传入从错误时序取得的武器实体句柄；该直接 Native 重挂已完整删除。
+- 开发记录的既有 A/B 已证明四个 `Agent.EnforceShieldUsage` / `Agent.EquipItemsFromSpawnEquipment` / `MissionWeapon.GetWeaponData/GetWeaponStatsData` 全局脚本会令人物预览回归。短暂恢复的四脚本候选因此同样撤销；当前双刀资格、动作分配和切手逻辑重新合并在唯一的 `GwpDualBladeActionSetPatch.cs` 中。
+- 新的 `GwpDualBladeAiNativeRegistrationPatch` 只在原生自己调用私有 `Agent.WeaponEquipped` 的入口前修改当前 `gwarcher` 的 `Weapon0` 参数；不主动调用该方法、不缓存或传入实体句柄、不重复注册。原生调用继续拥有正确时序、实体和释放流程。副手参数保留剑用途，补 `HasHitPoints | CanBlockRanged`、有效耐久，并同时使用 ROT 固定双刀验证过的 `bo_mace_a` Shape/CollisionShape；不再使用曾导致接战崩溃的 `bo_wlarge_shield` 碰撞体。`Mission.MissileHitCallback` 仍把该副手的远程盾挡结果改回普通命中，所以只保留近战攻击/招架，不提供远程防护。
+- 人物模型消失的另一条直接根因是 `SubModule.AfterRegisterSubModuleObjects` 曾注销 `GwpOneHandedSwordDualOffhand/Mainhand`。1.5.2 的 `CharacterCode`、百科和自定义战斗 tableau 会重新解析真实 CraftedItem 的模板，注销后模型链失效。现在模板始终保留在对象管理器供真实人物和武器解析；同一脚本中的 `GwpDualBladeCraftingTemplateVisibilityPatch` 只从 `CraftingTemplate.All` 公共目录过滤这两个模板，因此城镇订单和锻造界面仍不会选中它们。没有装备码替换、展示用剑盾、人物数据副本或预览隔离。
+- ROT 当前 `dual_blades/dual_blades2` 静态定义再次核对：两把刀使用 `bo_mace_a`，副手为 `OneHandedSword + MeleeWeapon + HeldInOffHand`，固定槽位规则与本模组一致。`gwarcher` 仍是唯一带 `Weapon0=gwdualbladeoffhand`、`Weapon1=gwdualblademainhand` 的兵种；主手以外的领主、玩家和普通士兵不进入 AI 注册补丁。
+- 最终 `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 已通过，0 errors、44 条既有 nullable warnings。离线 Harmony 预检成功生成 `Agent.WeaponEquipped`、`CraftingTemplate.get_All`、`Mission.SpawnAgent`、远程命中、ROT 碰撞/伤害、击倒和地面拾取 replacement；ILSpy 类型表确认旧四个资格类型与直接 `WeaponEquipped.Invoke` 均不再存在。客户端和编辑器 diagnostics-enabled DLL 均为 `794624` 字节、SHA-256 `86F6DAEDBDF32C7487D54B0B5ECE1FB32B6CCA18CE4424A41697CDD08B4F7573`；仓库 `_Module` 与 live 的 36 个运行文件缺失 0、哈希差异 0，26 个 XML/XSLT/mbproj 解析错误 0。中英文 README 仓库/live SHA-256 分别为 `E0A4ADC9F6830523DAFAFBCC9BFE11D2774E3F0E05D010CB336623A2F87D623B`、`FEC3C9587CD68038C03C5200878A22E9D43E3E1552B29236549DAFEA00B15E0B`；Bannerlord 相关进程数 0。未启动游戏、未制作正式 ZIP，实机结果仍由用户测试。
+
+## 2026-08-29 回归修正：恢复已验证动作资源并修复双刀预览入口
+
+- 用户在上一版测试后报告两个明确回归：弓箭手切入近战又只拔出一把剑，人物预览/士兵百科模型再次消失；按要求没有启动游戏，开发侧只读取监控和历史记录。
+- 最新 `rgl_log_38508.txt`（19:29 会话）记录 `199` 次 `archer_spawn` 与 `199` 次 `archer_melee_pair`；配对行连续显示 `main=Weapon1; offhand=None`，且错误日志没有托管异常或新的 CrashDump。由此排除“本轮接战碰撞再次崩溃”，确认单纯调用 `TryToWieldWeaponInSlot` 不能把副手注册到 1.5.2 的 Native Agent。
+- 按 2026-08-28 已确认的 ROT/双刀基线恢复 `ModuleData/action_sets.xml` 为空入口，并恢复同时覆盖 `as_human_warrior` 与 `as_human_female_warrior` 的 `action_sets.xslt`；此前物化的单独 action-set 文件已经由用户实测排除，保留在 `.codex_tmp/action-set-materialization-audit-20260828/` 仅作回滚材料。这样女性 `gwarcher` 的生成校验和专用 `as_gwp_dual_warrior` 都有闭合动作映射。
+- 在 `CharacterViewModel.FillFrom(BasicCharacterObject,int,string)` 增加完整 `gwarcher` 双刀的预览安全副本：身体属性、护甲、坐骑和角色数据保持原值，只把展示装备码中的双刀替换为普通灰袍剑盾。自定义战斗的 `UpdateCharacterVisual` 仍有线程范围装备码兜底；真实战场和装备图标不改，因此百科与自定义战斗不再把隐藏双刀锻造物直接交给共享 tableau。
+- 恢复 1.5.2 精确 `Agent.EquipItemsFromSpawnEquipment(bool,bool,bool,int)` 作用域及其 `MissionWeapon` 数据代理，仅对当前 Mission 中完整 `gwarcher` 的 Native 装备副本补齐原生双持资格；其他兵种、玩家装备和预览对象不进入该作用域。ROT 的固定槽位约定继续保持：副手 `Weapon0`、主手 `Weapon1`；骨骼 20 的碰撞例外也已按 ROT 规则收窄。
+- Release 构建成功（0 errors；44 条既有 nullable warnings），客户端与编辑器 diagnostics-enabled DLL 均为 `798208` 字节、SHA-256 `8CB30AEAF06933F09243884B1E2E21794101ECEF3D6A74AAB85F1A40A393C958`。仓库 `_Module` 与 live 的 36 个运行文件缺失 0、哈希差异 0；构建后另将双语 README 镜像到 live，中文 SHA-256 `4529A027EB8F5C5AD4B796CA9C40705425837AC1E3DE43AB88646BADA0F50ED5`、英文 SHA-256 `BB98AFA89489B206BAF402EF588705E13B29D783B4E1922BA8ED9FBA0DB3740E` 均一致。`action_sets.xml` SHA-256 为 `06C5509045556C00081B93395A2E84CD863419F6ACA9FAA7320ACED8B99A1E60`，含男女动作映射的 `action_sets.xslt` SHA-256 为 `64B4766189AF48D28ADBE0F6047054EFDCB8345E8E5BBFA8AE37475E77F6B947`。离线 Harmony 预检确认三个预览入口、四个 AI 资格入口及 ROT 碰撞入口全部生成；Bannerlord 相关进程数为 `0`。本轮仍由用户实测，随后只读取新的 `rgl_log`。
+
+## 2026-08-29 双刀接战弹错/卡死与人物预览回归：撤销四个全局盾牌伪装补丁
+
+- 用户指出两个问题均是此前已经定位并修复过的回归：百科/人物预览模型消失或姿态异常，以及双刀士兵与普通士兵接战时弹错或卡死；副手刀只能用于近战格挡，不能防御远程攻击。按要求只读取开发记录、源码、`rgl_log` 与系统事件，没有启动游戏。
+- 维护记录中的既有 A/B 已证明：安装 `Agent.EnforceShieldUsage`、`Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData` 或 `MissionWeapon.GetWeaponStatsData` 这些全局双刀补丁会污染 `CharacterTableau` / `AgentVisuals`，曾导致百科与自定义战斗人物模型消失。旧版把副手剑加入 `CanBlockRanged` 并赋予 `bo_wlarge_shield` 碰撞体时，也曾在真实接战阶段触发 `TaleWorlds.Native.dll` 空指针；不应把近战剑伪装成盾牌。
+- 当前回归代码重新包含了上述四个全局 Harmony 类型，并给 `gwdualbladeoffhand` 的 Native 副本加入 `HasHitPoints | CanBlockRanged`、`bo_mace_a` 主体及 `bo_wlarge_shield` 碰撞体。最新 `rgl_log_34236.txt` 没有托管异常，但在下达冲锋命令后停止；同一会话记录 `597` 次弓箭手生成和 `1759` 次 `archer_melee_pair`，说明旧的全局资格链与高频武器回调都已重新进入运行时。当前没有对应的新 CrashDump，因此本轮根因判断来自“相同代码重新出现 + 历史转储/A-B 已确认”的直接证据，不把缺失的新转储伪装成新增证据。
+- 已删除 `GwpDualBladeAiNativeSyncPatch.cs`，把无副作用的 `GwpDualBladeLoadout` 资格判断并回唯一的 `GwpDualBladeActionSetPatch.cs`；最终 DLL 不再包含 `GwpDualBladeAiShieldEnforcementPatch`、`GwpDualBladeAiEquipmentSyncScopePatch`、`GwpDualBladeAiWeaponDataPatch` 或 `GwpDualBladeAiWeaponStatsPatch`，也不再 patch 上述四个全局方法。副手保持原始 `OneHandedSword + MeleeWeapon`、`HeldInOffHand` 与剑体碰撞数据，不注入 `CanBlockRanged`、盾牌碰撞体或盾牌主体。
+- `GwpDualBladeWieldSyncPatch` 只在灰袍弓箭手实际切到 `Weapon1` 主手刀且副手尚未在手时补一次配对；加线程重入保护，收刀同理。开发日志只在状态确实改变时写 `archer_melee_pair`，不再为已经正确持刀的每次回调重复写入。左手 bone 20 碰撞例外同时要求攻击来源槽为 `Weapon0`，普通士兵或普通主手武器不会误入双刀碰撞放行。
+- Release 重建成功，`0` errors、`44` 条既有 nullable warnings；更新文档后的最终增量构建为 `0` errors、`0` warnings。Windows PowerShell 5.1 / .NET Framework 对六个保留的双刀 Harmony 类型逐类安装，全部返回 `PATCH_OK`；ILSpy 类型表确认四个旧全局类型均不存在，只保留同一动作脚本中的 `GwpDualBladeActionSetPatch`、`GwpDualBladeWieldSyncPatch` 与纯帮助类 `GwpDualBladeLoadout`。客户端与编辑器 diagnostics-enabled DLL 均为程序集 `1.4.11.0`、`793600` 字节、SHA-256 `BF57B583371C9A8E5CFDD011B51EF7115E204A3D2D3DA18EDF17609DD09EABCB`。仓库 `_Module` 的 `36` 个可部署文件与 live 缺失 `0`、哈希差异 `0`，XML/XSLT/mbproj 解析失败 `0`；中英文 README SHA-256 分别为 `77FA9D61DB9C2DA0317E93F2F5B695AF5D6AF55C1E5468266E56B21842F7E099`、`046EA05BBDD4D6E7B0DDCFE80651F30E7E99C890DDB5D555C0CEB84F8B9C5A1A`，均已同步 live。`git diff --check` 无空白错误，Bannerlord 相关进程数为 `0`。未制作正式 ZIP；游戏内结果仍由用户测试。
+
+## 2026-08-29 Bannerlord 1.5.2 弓箭手双刀补丁未加载：修复 SpawnAgent 四参数签名
+
+- 用户说明其他模型已完成多轮自定义战斗修复，当前问题已收敛为：`gwarcher` 能进入战斗，但无法正常拔出双刀；功能边界明确为仅灰袍弓箭手使用双刀，领主、玩家和其他兵种均不用。
+- 最新四次实机日志 `rgl_log_13684.txt`、`rgl_log_37492.txt`、`rgl_log_16140.txt`、`rgl_log_41700.txt` 均在启动时明确报告
+  `Undefined target method for ... GwpDualBladeActionSetPatch::Postfix`。日志同时能读取双刀物品并正常进入/退出战斗，证明资源和弓箭手装备已经存在，真正断点是 Harmony 没有安装运行逻辑。
+- 直接反编译本机 Bannerlord `v1.5.2.120933` 的当前 `TaleWorlds.MountAndBlade.dll`，确认
+  `Mission.SpawnAgent` 已由旧的 `(AgentBuildData, bool)` 改为
+  `(AgentBuildData, bool, Equipment, ItemObject)`。旧属性目标找不到后，`SubModule` 的一次性 `PatchAll` 在该类中止，动作集切换、主副手同步和后续双刀补丁因此都没有生效。
+- `GwpDualBladeActionSetPatch` 已精确改挂四参数重载。出生后只安装专用动作集，不再强制覆盖原生初始武器选择：弓箭手可先使用 `Item2` 贵族长弓和 `Item3` 穿甲箭；原生 AI 切换 `Item1` 主手刀进入近战时，`OnWieldedItemIndexChange` postfix 同步拔出 `Item0` 副手刀。
+- 双刀资格现在同时要求角色 ID 为 `gwarcher` 且 `Weapon0/Weapon1` 是完整双刀。该限制覆盖动作集、AI 副手资格、盾牌阵型绕过、地面拾取、双刀伤害类型与击倒判定。`gw_leader_0`、`gw_leader_5` 已恢复普通领主装备表，入会发放表也移除双刀；未再使用的 `spc_gw_leader_dual` 装备表已删除，因此 XML 层也只有弓箭手装备双刀。
+- diagnostics-enabled DLL 为弓箭手出生和弓转近战配对各写一条
+  `[GreyWarden Dual Blade] archer_spawn` / `archer_melee_pair` 记录，不使用 Mission Tick 或持续轮询。用户测试后只需读取新 `rgl_log`，确认启动阶段不再出现 `Undefined target method`，并观察近战切换记录。
+- Release 构建成功（`0` errors、`44` 条既有 nullable warnings）。使用 Windows PowerShell 5.1 / .NET Framework 对 live DLL 执行完整 `Harmony.PatchAll` 离线预检，结果为 `FULL_HARMONY_PREFLIGHT=OK`；另逐类检查十个双刀 Harmony 类型，目标解析失败 `0`。本轮未启动 Bannerlord，由用户实测。
+- 最终增量 Release 同步为 `0` errors、`0` warnings。客户端与编辑器 diagnostics-enabled DLL 均为程序集 `1.4.11.0`、`795648` 字节、SHA-256 `E59B06AF9F86D465F63239A64C4B3444BD47DEE75C8EF2A1FC372350864973AF`。仓库 `_Module` 与 live 可部署文件缺失 `0`、哈希差异 `0`；`spnpccharacters.xml`、`spspecialcharacters.xml`、`gw_equipment_sets.xml` 分别为 `B9AFC0064FB6C4DB7C3902CBCEB40D8F7CDAEBCD5FFD3B3F49E7AD7BCD61E014`、`E67B25D5A2891B304207714FAFB1F5017D1F764F589AC36B9E8A573EDDB57970`、`78D81B290DDCF09F7A02C0066310AE0928FB41FFC53C8F0A3900120FE94021EE`。中英文 README 与 live 分别为 `6660EED494C31F38AB956413314F682E720FCFE401576A74C461BB21A2DAE58C`、`2C056D47C0302FA5DA5F2A138DB8568BEDF9D38AF0F467DAF8E86A0BFF8FF64B`；Bannerlord/Launcher/Native 进程数为 `0`。
+
+## 2026-08-29 修复 EquipItemsFromSpawnEquipment 4 参数重载挂载与 SpawnEquipment 判定
+
+- 根因排查突破：
+  - 反编译分析 `TaleWorlds.MountAndBlade.Agent` 内部装备装配机制，发现关键盲点：
+    1. `Agent.EquipItemsFromSpawnEquipment` 存在两个重载：2 参数的 `(Equipment, Banner)` 和真正执行 Native 数据注入的 4 参数 `(bool neededBatchedItems, bool prepareImmediately, bool useFaceCache, int faceCacheID)`。
+    2. 此前未显式指定参数类型导致 Harmony 挂接到 2 参数入口，在 2 参数入口前置执行时，`Agent.Equipment` 尚未被 `FillFrom` 填充（槽位全部为 Empty）。
+    3. `HasCompleteDualBladeLoadout` 原先仅检查 `agent.Equipment`，导致 `_activeAgent` 在真正执行武器数据注入时判定为 `false`，未能成功注入 Native 盾牌耐久和碰撞体。
+- 本轮修复实施：
+  1. `GwpDualBladeAiEquipmentSyncScopePatch` 精确挂接到 4 参数重载 `EquipItemsFromSpawnEquipment(bool, bool, bool, int)`。
+  2. `HasCompleteDualBladeLoadout` 与 `IsPlayerDualBlade` 扩展为优先检查 `agent.SpawnEquipment`，并兼顾 `agent.Equipment`，确保在装备注入前即能 100% 识别双刀兵种并开启 Native 注入作用域。
+  3. `GwpDualBladeActionSetPatch` 在 `SpawnAgent` 后置中，确保对未出鞘的副手与主手双刀执行即时出鞘。
+  4. `spnpccharacters.xml` 中 `gwarcher` 继续保持纯双刀配置（`Item0` 副手双刀、`Item1` 主手双刀，无长弓箭矢）。
+- 构建与部署：
+  - Release 构建通过（`0` errors、`44` 条既有 nullable warnings）；客户端与编辑器 DLL 均为程序集 `1.4.11.0`、`792064` 字节、SHA-256 `7FD790022B9174FC56111A1195F80E6ECEDB61063CCD9808EAF118BDBCA89169`。
+  - 仓库 `_Module` 与实机 live 目录逐文件哈希核对一致，`spnpccharacters.xml` SHA-256 为 `61DDBB2467C7932D6F435CDB1B9EEC2DBCDBD325EEAE703A53873FF5912E9B4A`。
+
+
+
+
+
+## 2026-08-29 灰袍弓箭手双刀拔刀隔离测试（纯双刀进场）
+
+- 用户实测反馈：弓箭手携带“双刀 + 弓箭”进场时，初始拔出长弓；当下达“停止射击”指令或切换近战时，AI 仅拔出主手单手剑，未能进入双持双刀拔刀状态。
+- 为隔离该问题究竟是“AI 双持拔刀机制在纯近战下即存在问题”还是“弓箭手从远程武器切换至近战时的切换逻辑未拔出副手”，按用户指令配置隔离测试：
+  - `spnpccharacters.xml` 中 `gwarcher` 仅保留 `Item0`（副手双刀 `gwdualbladeoffhand`）与 `Item1`（主手双刀 `gwdualblademainhand`），临时移除 `Item2`（长弓）与 `Item3`（箭矢）。
+- Release 构建通过（`0` errors、`0` warnings）；DLL SHA-256 为 `C0CFD70517FFB41248B2503C6A5AED31672E70078AB55891F475401620DE1FFA`。
+- 仓库 `_Module` 与实机 live 目录逐文件哈希核对一致，`spnpccharacters.xml` SHA-256 为 `61DDBB2467C7932D6F435CDB1B9EEC2DBCDBD325EEAE703A53873FF5912E9B4A`。
+
+
+
+## 2026-08-29 修复战场生成时女性/男性动作集缺失双刀动作引发的崩溃（as_human_female_warrior）
+
+- 崩溃日志排查：`rgl_log_11840.txt` 记录在战场初始化（`CustomBattleScreen` 点击开始战斗并加载 `MissionScreen` 时，时间戳 `17:37:54.970`）抛出大量 `as_human_female_warrior does not contain act_gwd_quick_release_thrust_1h`、`act_run_idle_1h_with_gwd_shld` 等动作缺失报错并导致引擎底层退出。
+- 根因定位：
+  - `gwarcher` 等兵种设定了 `is_female="true"`，在战场 Agent 创建阶段，原生引擎调用 `CreateAgent` 默认根据性别为 Agent 分配 `as_human_female_warrior`（女性）或 `as_human_warrior`（男性）。
+  - 在随后的 `BuildAgent` 中，原生引擎读取武器的 `item_usage_set`（`dual_shield_swing_thrust`），并在当前的动作集中校验动作条目。
+  - 原有 `action_sets.xslt` 仅在 `as_human_warrior` 分支克隆并新建了 `as_gwp_dual_warrior`，而未给原生 `as_human_female_warrior` 和 `as_human_warrior` 注入双刀动作映射，导致在 Agent 刚创建还未进入 Postfix 的短暂窗口内触发了原生动作绑定断言崩溃。
+- 修复措施：
+  - 更新 `action_sets.xslt`：对 `as_human_warrior` 与 `as_human_female_warrior` 均注入 84 个双刀动作映射，并同时保留 `as_gwp_dual_warrior`。
+  - 这样无论男性、女性兵种还是英雄，在生成并装配双刀武器时均能原生通过动作校验，配合 `GwpDualBladeActionSetPatch` 完美运行双刀攻防与击倒。
+- Release 构建通过（`0` errors、`0` warnings）；客户端与编辑器 DLL 均为程序集 `1.4.11.0`、`792064` 字节、SHA-256 `C0CFD70517FFB41248B2503C6A5AED31672E70078AB55891F475401620DE1FFA`。
+- 仓库 `_Module` 与实机 live 目录逐文件哈希核对一致，`action_sets.xslt` SHA-256 为 `9A9B48F6C912FA2E21DC682F0B9C694F4DFBF197C77EAF6C1FFC5E098FEE6B68`。
+
+
+
+## 2026-08-29 灰袍弓箭手移除单手剑并配置双刀机制
+
+- 用户实机验证确认自定义战斗正常打开、第二位指挥官 Yao 恢复、灰袍全兵种显示正常。按用户指令进一步调整灰袍弓箭手装备：移除单手剑 `gwonehandedsword`，配备副手双刀 `gwdualbladeoffhand` 与主手双刀 `gwdualblademainhand`，并保留贵族长弓与穿甲箭。
+- `spnpccharacters.xml` 中 `gwarcher` 的装备槽位配置为：`Item0`=副手双刀、`Item1`=主手双刀、`Item2`=贵族长弓、`Item3`=穿甲箭。在战场生成时由 `GwpDualBladeActionSetPatch` 识别并挂载专用双刀动作集 `as_gwp_dual_warrior` 与 AI 防御同步，近战攻击与格挡应用灰袍双刀规则与击倒判定。
+- Release 构建通过（`0` errors、`0` warnings）；客户端与编辑器 DLL 均为程序集 `1.4.11.0`、`792064` 字节、SHA-256 `C0CFD70517FFB41248B2503C6A5AED31672E70078AB55891F475401620DE1FFA`。
+- 仓库 `_Module` 与实机 live 目录逐文件哈希核对一致，`spnpccharacters.xml` SHA-256 为 `B9AFC0064FB6C4DB7C3902CBCEB40D8F7CDAEBCD5FFD3B3F49E7AD7BCD61E014`，README 中英文已同步更新。
+
+
+
+## 2026-08-29 恢复 commander_2 原版覆盖与清除 gwarcher 静态双刀装备：稳定进入自定义战斗基线
+
+- 用户实测反馈点击自定义战斗依然在同一处闪退（停在 `NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleScreen::HandleInitialize`），确认用户明确要求：不退回 Bannerlord 版本（保持 1.5.2 beta 兼容），先回退到稳定无报错状态。
+- 根因定位确认两项直接诱因：
+  1. `sphpcustombattle.xml` 此前改为 `gwp_custom_battle_commander` 并尝试动态插入破坏了原版稳定机制；原生 `NavalCustomBattleData.Characters` / `CustomBattleData.Characters` 固定遍历 `commander_1..commander_24`。旧版直接将灰袍领主 ID 设为 `commander_2` 借助 XML 原生覆盖替换第二名指挥官，无需任何 C# 动态注入，此前一直 100% 稳定运行。
+  2. `gwarcher` 在 `spnpccharacters.xml` 中被直接挂载了 `gwdualbladeoffhand` 与 `gwdualblademainhand`，且 `spnpccharacters` 注册了 `CustomGame`。自定义战斗打开时 `NavalCustomBattleArmyCompositionGroupVM` 遍历所有士兵兵种并调用 `CharacterCode.CreateFrom` 生成头像，在非战斗环境下解析副手双刀及已被注销的锻造模板引发原生断言/空引用崩溃。
+- 本轮修复实施：
+  1. `sphpcustombattle.xml` 灰袍领主 ID 恢复为 `commander_2`，`GwpIds.CustomBattleCommanderId` 同步恢复为 `"commander_2"`。
+  2. `spnpccharacters.xml` 中 `gwarcher` 装备恢复为标准配置（`noble_long_bow`, `piercing_arrows`, `gwonehandedsword`），从静态 XML 中移除副手双刀。双刀机制仍完整保留在代码（动作集补丁、伤害模型、击倒判定、切磋与入队获赠），不污染兵种静态预览。
+  3. `SubModule.xml` 维持 `spnpccharacters`、`gw_equipment_sets`、`sphpcustombattle`、`items`、`yao_skill` 在 `CustomGame` 生效；`spspecialcharacters` 保持仅在 `Campaign` / `CampaignStoryMode` / `EditorGame` 生效（避免 1.5.2 缺失 `spc_mounted_archery_skills`）。
+- Release 构建成功（`0` errors、`44` 条既有 nullable warnings）；客户端与编辑器 diagnostics-enabled DLL 均为程序集 `1.4.11.0`、`792064` 字节、SHA-256 `C0CFD70517FFB41248B2503C6A5AED31672E70078AB55891F475401620DE1FFA`。
+- 部署后仓库与 live 可部署文件缺失 `0`、哈希差异 `0`；`SubModule.xml` 当前 SHA-256 为 `26F2790DDF19D9CFC4DB1BC3FBDD4B547BCCC87729A60162DFE7ABF1EE54DABB`，中英文 README 与 live 分别为 `FE9A360D5AA483C4851683C864FCC9A1139B8B71F5E9B46C5C0400E8DDACCAD9`、`5ADFEFA23E0435AEF94F0C277B1DF9FE11642A5107D9E1A3461D169B0392D3C6`。Bannerlord 进程数为 `0`。
+
+
+## 2026-08-29 第四次自定义战斗崩溃：界面初始化期间注入指挥官是直接触发器
+
+- 最新 `rgl_log_44724.txt` 已确认本轮完全没有打开 `spspecialcharacters.xml`，但仍精确停在
+  `NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleScreen::HandleInitialize`；因此战役 Hero、技能模板和装备表均不
+  是这次直接触发器。
+- 维护历史中的两次 A/B 已给出可复现结论：`CustomBattleData.Characters` getter 包装和
+  `CustomBattleSideVM.RefreshValues()` postfix 都在同一个界面初始化阶段导致相同原生崩溃。当前重新启用的
+  `GwpCustomBattleCommanderPatch` 属于第一种路径，必须删除，不能继续在该初始化链插入首位指挥官。
+- 已删除 `GwpCustomBattleCommanderPatch.cs` 并移除 `OnSubModuleLoad` 的独立安装；保留唯一 ID 的
+  `sphpcustombattle.xml` 数据但不注入原生角色枚举。`spnpccharacters`、`gw_equipment_sets`、`items.xml` 和双刀仍注册
+  `CustomGame`，灰袍兵种与装备不隔离；`spspecialcharacters` 仍只用于战役/编辑器。
+- 这轮先恢复“能进入自定义战斗”的稳定基线，再另行设计不触碰界面初始化链的首位指挥官方案；在找到兼容入口前，不能声称
+  “首位且不替换原生”已经实现。本轮不启动游戏，由用户实测后再读新日志。
+- 本轮 Release 构建成功（`0` errors、`44` 条既有 nullable warnings）；客户端与编辑器 diagnostics-enabled DLL 均为程序集
+  `1.4.11.0`、`792576` 字节、SHA-256
+  `4B772E23DBAAFC277A9D937496A310BEDD5316A6166DA15C93EB677A20B58551`。部署后仓库与 live 可部署文件缺失
+  `0`、哈希差异 `0`；`SubModule.xml` 当前 SHA-256 为
+  `26F2790DDF19D9CFC4DB1BC3FBDD4B547BCCC87729A60162DFE7ABF1EE54DABB`，中英文 README 与 live 现分别为
+  `C6BEE3B039E4154A78A055A0CAE2FFBF26D5CCA1C7E32A6B1A6A077A250F5911`、
+  `8833E11DDDDEF2B02CBCBB6F604B7EBF28300FB080CB7D8CB8C60387CFAF7A50`。构建不会删除旧 ModuleData，故已核对并从
+  live 目录移除本轮撤销的 `ModuleData/gwp_customgame_skill_sets.xml`（旧 SHA-256
+  `78A9B3F4DCCC95CFED2D0C5FFB4E20333455DD79467A062E303157015172820D`）。Bannerlord 进程数为 `0`。
+
+## 2026-08-29 自定义战斗恢复完整灰袍数据与首位专属指挥官
+
+- 用户明确纠正功能边界：自定义战斗用于验证并游玩完整灰袍兵种、领主和装备，不应隔离这些内容；灰袍专属
+  指挥官应位于人物列表第一位，但不能覆盖任何原生指挥官。上一候选把双刀并入弓箭手后的崩溃与
+  CustomGame 数据加载相关联，在没有本次崩溃异常文本的情况下过度隔离了兵种、领主和装备。该方向会直接造成
+  灰袍士兵消失，现已判定为错误并撤销，不再作为设计目标。
+- `_Module/SubModule.xml` 现在让 `spnpccharacters`、`sphpcustombattle`、`spspecialcharacters` 和
+  `gw_equipment_sets` 四个灰袍人物/装备节点全部注册 `Campaign`、`CampaignStoryMode`、`CustomGame` 与
+  `EditorGame`。因此自定义战斗会读取完整兵种树、六名领主的装备模板和全部灰袍装备表，而不只是独立指挥官。
+- 反编译当前 Bannerlord 1.5.2 的 `CustomBattleData.Characters` 再次确认原生列表固定返回
+  `commander_1..commander_24`；`CustomBattleSideVM.RefreshValues()` 按该枚举顺序建立人物选择，玩家侧默认选择索引
+  `0`。原先 `sphpcustombattle.xml` 使用 `commander_2` 会按对象 ID 覆盖原生第二名指挥官，不能实现“新增”。
+- 专属指挥官 XML 与 `GwpIds.CustomBattleCommanderId` 已改用唯一 ID
+  `gwp_custom_battle_commander`。新增 `GwpCustomBattleCommanderPatch`，只把该对象插入原生枚举首位；先完整物化原生
+  迭代器并保持其顺序，不删除或改名任何原生对象。静态对象检查结果：官方 XML 仍有 `24` 名指挥官，
+  `commander_2` 恰好 `1` 个，官方 XML 与新唯一 ID 冲突 `0`。
+- 此补丁在 `OnSubModuleLoad` 中独立安装，然后才执行其它 `PatchAll`。这样 1.5.2 中任何不相关的可选战斗补丁目标
+  变化都不会阻止灰袍指挥官进入列表。diagnostics-enabled 开发 DLL 会在列表实际构建时向 `rgl_log` 写入
+  `[GreyWarden Custom Battle] commander first=...; total=...; native_commander_2=...`，只记录列表结果，不轮询
+  Agent、不启动任务监控；正式 diagnostics-disabled 构建不会包含该输出。
+- 两次 Release 构建均成功，最终为 `0` errors、`44` 条既有 nullable warnings。客户端与编辑器开发 DLL 均为
+  `794624` 字节、程序集 `1.4.11.0`、SHA-256
+  `C79BD7DE4E7A1D7B091ABDFEE9C03B3A3DDAFD6CFCDD8CDDADED915D2FDA25B7`。ILSpy 复核成品确认唯一 ID、首位插入、
+  原生顺序保留和开发诊断字符串均已进入 DLL。
+- 仓库 `_Module` 与 live 可部署文件缺失 `0`、哈希差异 `0`；`SubModule.xml`、中文 README、英文 README 的
+  仓库/live SHA-256 分别一致为 `FAE9E3176086940EFA8B8CB3726158E4C010F19CE201AC61CBEB03373CE674B0`、
+  `AFB3F11058C44634AB076F2B520F4C09F8EE7CFA174A87F1B645C442D032D6A3`、
+  `72D7EB25FE363F6E44038E7D0A8CC253BE61163B72C195B856C8A09E5F8AF319`。本轮没有启动 Bannerlord，相关进程数
+  始终为 `0`，也没有制作正式 ZIP。
+- 下一次由用户实测：进入自定义战斗后确认灰袍指挥官位于第一位、原生第二名指挥官仍在、灰袍五级兵种与
+  装备都可选并能出生。测试完成后只读取最新 `rgl_log` 中的上述诊断行、四份 XML 打开记录和任何异常。
+
+## 2026-08-29 自定义战斗完整领主数据的技能集注册补全
+
+- 用户按上一候选实测后立即弹错。最新 `rgl_log_7824.txt` 已读取到完整灰袍文件：`gw_equipment_sets.xml`、
+  `spnpccharacters.xml`、`sphpcustombattle.xml`、`spspecialcharacters.xml` 均打开成功；随后在
+  `NavalCustomBattleScreen::HandleInitialize` 前记录 `Null object reference found with ID:
+  spc_mounted_archery_skills`，watchdog `7824` 确认发生原生崩溃。没有新的托管异常文本。
+- 只读检查原版 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\SandBox\ModuleData\sandbox_skill_sets.xml`
+  确认六个 `spc_knight_skills`、`spc_phalanx_skills`、`spc_mounted_archery_skills`、
+  `spc_quartermaster_skills`、`spc_politician_skills`、`spc_diplomat_skills` 都存在；原版
+  `SandBox/SubModule.xml` 却只将 `sandbox_skill_sets` 注册到 `Campaign` 与 `CampaignStoryMode`，所以
+  放开 `spspecialcharacters` 到 CustomGame 后出现空引用是注册闭环缺口，不是灰袍领主装备本身的问题。
+- 已在 GreyWarden `SubModule.xml` 添加同一原版 `SkillSets path="sandbox_skill_sets"` 的 `CustomGame` 注册。
+  这不会复制或修改原版技能数值，只让原版模板在 CustomGame 可用；灰袍兵种、六名领主、灰袍装备表和首位专属
+  指挥官仍全部保持 CustomGame 生效。
+- 第二次日志证明引擎不会跨模块解析这个路径：`sandbox_skill_sets.xml` 没有在 GreyWarden 的 CustomGame
+  加载记录中出现。因此改为新增 `ModuleData/gwp_customgame_skill_sets.xml`，逐项镜像原版六个模板的技能值，并将
+  GreyWarden 节点改为 `SkillSets path="gwp_customgame_skill_sets"`。该文件只在 CustomGame 注册，避免 Campaign
+  对象重复；文件 SHA-256 为 `78A9B3F4DCCC95CFED2D0C5FFB4E20333455DD79467A062E303157015172820D`。
+- 修复后 Release 构建为 `0` errors、`0` warnings；客户端和编辑器 DLL 均为程序集 `1.4.11.0`、
+  `794624` 字节、SHA-256 `C79BD7DE4E7A1D7B091ABDFEE9C03B3A3DDAFD6CFCDD8CDDADED915D2FDA25B7`。
+  仓库/live 可部署文件缺失 `0`、哈希差异 `0`，Bannerlord 进程数为 `0`。
+- 本轮仍未启动游戏；下一次只由用户实测。应先确认能进入自定义战斗，再确认灰袍指挥官第一位、原生指挥官未被替换、
+  灰袍兵种和装备可选。若进入成功，读取 `rgl_log` 确认 `spc_mounted_archery_skills` 空引用消失。
+
+## 2026-08-29 自定义战斗灰袍士兵消失：恢复兵种 XML 的 CustomGame 注册
+
+- 本节是随即被用户纠正的中间候选，仅保留为失败方案记录；“继续隔离战役领主和装备”的结论已由上一节撤销。
+- 用户反馈自定义战斗中灰袍士兵消失，并指出是 `SubModule` 未注册。只读复核最近一次现有日志
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_45340.txt`：CustomGame 初始化阶段记录了原版
+  `SandBoxCore/ModuleData/spnpccharacters.xml`，随后读取 GreyWarden 的 `sphpcustombattle.xml`，但没有读取
+  GreyWarden 的 `spnpccharacters.xml`。仓库配置也确认该 `NPCCharacters` 节点缺少 `CustomGame`。
+- 已在 `_Module/SubModule.xml` 的 `spnpccharacters` 节点补回 `<GameType value="CustomGame"/>`。因此
+  `gwnewrecruit`、`gwrecruit`、`gwheavyinfantry`、`gwarcher` 和 `gwknight` 会在自定义战斗对象注册阶段存在；
+  `spspecialcharacters` 与 `gw_equipment_sets` 仍不注册 CustomGame，战役专用领主和装备不会重新污染自定义战斗。
+- 这是 XML 注册修复，没有启动游戏、没有运行 build，也没有替换当前已部署的 1.4.11 diagnostics DLL。四个相关 XML
+  均解析通过；确认 `Bannerlord.Native`、`Bannerlord` 和 `Bannerlord.Launcher` 进程数为 `0`。
+- 已将 `SubModule.xml`、中英文 README 镜像到
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`。三份文件逐一 SHA-256 一致：
+  `SubModule.xml=205B073FBFB651E8C3FDF514E667DD43DBA58A650A4668B0B9D18B229EAF064E`、
+  `README.md=4BAB0489512A320D52E493E3E481E2428CA34B11000649A851930BF969F9E9CB`、
+  `README_EN.md=23795BEC2518195A18E6ED259435493ED9DEF791B53B95A11A9D899291B49DF5`。
+- 后续由用户实机验证：进入自定义战斗选择灰袍指挥官，确认灰袍士兵列表和战场出生；再在战役验证弓箭手的弓箭/双刀切换。
+  维护流程只读取用户测试后产生的监控与日志，不代替用户启动游戏。
+
+## 2026-08-29 自定义战斗崩溃：隔离双刀兵种数据
+
+- 本节记录的 CustomGame 隔离是导致灰袍士兵消失的失败方案，已由“恢复完整灰袍数据与首位专属指挥官”撤销。
+- 用户将双刀并入 `gwarcher` 后再次进入自定义战斗立即报错退出。当前没有生成新的托管异常或有效
+  崩溃文本；旧双刀诊断日志只对应 2026-08-28 的旧 `gwdualbladeguard` 测试，不能拿来冒充本次
+  崩溃证据。
+- 静态结构确认 `spnpccharacters.xml`、`spspecialcharacters.xml` 和 `gw_equipment_sets.xml` 原先
+  都注册到 `CustomGame`。这会让自定义战斗初始化阶段读取战役兵种/领主装备，其中包含双刀装备和
+  专用数据；自定义战斗实际需要的指挥官仍在独立的 `sphpcustombattle.xml` 中。
+- 已将上述三个战役数据节点的 `CustomGame` 注册移除，保留 `Campaign`、`CampaignStoryMode` 和
+  `EditorGame`；`sphpcustombattle`、双刀物品定义和战役运行路径不变。该改动只隔离 CustomGame
+  加载，不关闭 AI 双刀，也不修改击倒概率或双刀动作逻辑。
+- 四个相关 XML 解析通过，仓库 `_Module` 与 live 的 `36` 个部署文件缺失 `0`、哈希差异 `0`。
+  实机客户端与编辑器 DLL 均恢复为当前诊断版 `792064` 字节，SHA-256
+  `5BC924339689B57B9930EF71BCD7D24B9FFF5EAE13074EE599BBD3F6D17FD76C`；README 已同步，中文
+  `5BF2CE2E9713D20C43E8CD7FEEDEC33D2DD4D461D4B0DA521A6D58DB5DB667FF`、英文
+  `C1A5815417416556DBFB1FF4EC4D83E15C586DED2CF51735BA1B66572429258A`。未制作正式 ZIP。
+- 下一步只需完全退出并重启游戏，先验证自定义战斗能否进入，再验证战役中弓箭手能否正常切换弓箭和
+  双刀。若自定义战斗仍崩溃，下一隔离点应是 `Items`/动作资源的 `CustomGame` 注册，而不是继续
+  修改 AI 或击倒代码。
+
+## 2026-08-29 Bannerlord 1.5.2 beta compatibility repair
+
+- 用户将 Bannerlord 升级到本机测试版 `v1.5.2` 后，GreyWarden 在启动器中被标记为不兼容。直接以当前游戏目录程序集编译复现了唯一阻断错误：`AgentApplyDamageModel.CalculatePassiveAttackDamage` 已从
+  `BasicCharacterObject, in AttackCollisionData, float` 改为
+  `in AttackInformation, in AttackCollisionData, float`；旧覆盖方法因此同时触发 `CS0115` 和抽象成员未实现的 `CS0534`。
+- `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 已改用 1.5.2 的 `in AttackInformation` 签名，并将完整结构按 `in` 原样转发给活动原生伤害模型，未改变 GreyWarden 的伤害或击倒规则。该接口中的 `AttackerAgentCharacter` 保留在结构内，但本转发路径不额外读取它。
+- 编译项目与 `D:\steam\steamapps\common\Mount & Blade II Bannerlord` 当前 `Win64_Shipping_Client` 程序集对齐；Release `-t:Rebuild --no-restore` 成功，`0` errors、`44` 条既有 nullable warnings。产物 DLL 为 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll`。
+- 模组内部版本推进为 `1.4.11`（玩家版本 `v1.4-r11` 开发中），仅用于模组修订标识，不声明启动器侧 Bannerlord 版本依赖。中英文 README 当前开发版说明已更新为 Bannerlord 1.5.2 测试版，并保留最新两条玩家发布记录（r11、r10）。
+- 本轮构建会自动同步正常客户端运行文件和编辑器 DLL 到 live 模块；完成后必须再次执行逐文件 SHA-256 核对，确认仓库 `_Module`（排除编辑器专用 `Assets`、`AssetSources`、`RuntimeDataCache`）与 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 完全一致。正式玩家包尚未制作，不能用玩家 DLL 覆盖 diagnostics-enabled live DLL。
+- 用 `Bannerlord.Native.exe /continuegame` 对当前 `Build Version: 120933`（对应 1.5.2 beta）做启动验收，日志为
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_9148.txt`。日志到达 `Module Initialize end`、
+  `GauntletInitialScreen::HandleInitialize/HandleActivate`；`GreyWarden could not be loaded correctly`、
+  `dependency conflict` 和 `Loader Exceptions` 均为 `0`。退出前仅见原版 `TaleWorlds.PSAI.XmlSerializers.dll: Invalid Image`
+  与联网服务解析错误，未指向 GreyWarden，故不作为本修复回归。
+- 最终部署核对：仓库 `_Module` 的 `36` 个可部署文件与 live 缺失 `0`、哈希差异 `0`；客户端诊断 DLL 大小
+  `792576` 字节，SHA-256 为 `5A998E8E7CDB0E9AC545C17D66F51ECB32B8E8A825CC944BA4EEB015C219D52E`。
+- 用户随后反馈仍在加载界面弹出旧错误。复核 `rgl_log_11448.txt` 确认启动器加载的是旧的 `1.4.9.0` DLL，
+  Loader Exception 仍为旧签名缺失；当时 live DLL 哈希为上一轮 `5BC924...`，而不是本轮 Release 的
+  `5A998...`。已明确将 `obj\Release\GreyWardenPolicePurity.dll`（程序集 `1.4.11.0`）复制到客户端和编辑器
+  两个 live 目录，二者现在均为 `792576` 字节、`5A998...` 哈希。用户明确要求由本人进行后续实机测试，之后不得由维护流程自动启动 Bannerlord。
+
+## 2026-08-28 负声望未派出纠察队：日志复核与补充诊断
+
+- 用户实测犯罪后认为灰袍声望约为 `-5` 或 `-8`，但没有灰袍纠察队来抓。复核当前
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log` 后，
+  该文件本次会话没有任何 `WANTED_STATE_EVALUATED`、`DAILY_PUNISHMENT_CHECK`、纠察队生成或罚款事件；
+  最后一条玩家快照仍为 `customReputation=8`、`customWanted=False`、`isPlayerHunted=False`。因此现有证据只
+  能证明这份日志没有观察到负声望惩罚流程，不能把“没有派队”归因于 AI 追捕失败。
+- 代码中的 `PolicePatrolBehavior.OnDailyTick` 不是即时触发：它先跳过俘虏状态，每次每日 tick 递增计数，
+  每两天才读取一次灰袍自定义声望。`-1~-10` 才派纠察队；若处于谈判保护期或地图上已有活跃/返程纠察队，
+  也会跳过生成。`<=-11` 则不派纠察队，改为正式玩家案卷流程。这些条件解释了短时间内犯罪后看不到队伍的
+  合法可能性，但仍需新的状态快照确认。
+- 补充开发诊断：每次自定义声望 `ChangeReputation`/`ResetReputation` 都记录前值、增量/请求值和后值；每次
+  每日 tick 与实际惩罚检查记录囚禁状态、计数器、保护期、纠察队数量、自定义通缉状态和玩家案卷状态；
+  `-1~-10` 分支明确记录因保护期或已有纠察队而跳过的原因。它们仍只存在于 `#if GWP_DIAGNOSTICS`，不改
+  玩法、不安装 Harmony、不写正式玩家包。
+- 默认 Debug 重建成功，`0` errors、`43` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端和 live
+  编辑器 DLL 均为 `832000` 字节，SHA-256
+  `3C0E1300512AC38922AACBB0203D81714B96362ABD1794838C3A0768ED9EC9CF`；源码 `_Module` 的 36 个运行文件与
+  live 目录缺失 `0`、哈希差异 `0`。尚未修改正式玩法、README、版本号或发布包。
+
+## 2026-08-28 玩家靠近劫掠村庄误扣声望 / 罚款后零罚金通缉：复现诊断阶段
+
+- 玩家转述了两个尚未由开发者本人复现的现场问题：靠近一个正在被劫掠的村庄时出现“掉声望”；随后缴清
+  罚款，自定义显示中的罚金已经为 `0`，但遇到灰袍领主或队伍仍被当作通缉对象，重复缴纳也无法解除。
+  当前不根据转述直接改变玩法，先保留原逻辑供本机复现；本节记录的是代码审计结论与诊断准备，不是已经
+  验收的正式修复。
+- 第一条反馈存在高度吻合的代码路径：`PlayerBehaviorMonitor.OnVillageBeingRaided` 通过
+  `FindPlayerRaidingParty` 判断玩家是否为劫掠者，但旧判断只要求主角队伍的 `TargetSettlement` 等于事件村庄，
+  没有要求 `DefaultBehavior` / `ShortTermBehavior` 为 `RaidSettlement`，也没有要求主角队伍正处于该村庄的
+  Raid `MapEvent`。玩家点击或靠近一个恰好正在被别人劫掠的村庄时，`TargetSettlement` 可能已经指向该村庄，
+  因而有可能被误判并扣除灰袍自定义 `PlayerBehaviorPool.Reputation`。同项目的 NPC 犯罪监听
+  `PoliceCrimeMonitorEnhanced.FindRaidingParty` 已经同时检查目标村庄和 `RaidSettlement` 行为，形成明确对照。
+- 第二条反馈存在一条能精确产生“罚金 0 但仍有通缉对话”的不一致：纠察队的
+  `OnPatrolFineBarterAcceptedConsequence` 会把自定义声望重置为 `0`、恢复和平并遣返纠察队，但不会调用
+  `CrimeState.EndPlayerHunt()`；正式灰袍执法对话 `EnforcementDialogCondition` 则以仍存在且处于 Pursuit 的
+  玩家案卷任务为入口，并未要求当前声望仍小于 `0`。若旧的 `PLAYER_WANTED` 案卷/任务仍在，下一次遇到承办
+  灰袍时就会继续进入通缉对话，而 `Math.Abs(0) * 300` 正好显示为 `0` 罚金。此链路目前仍需实机日志确认，
+  不能只凭静态审计认定玩家现场一定经过了纠察队缴款入口。
+- 为复现新增的记录只扩展既有 `GwpAiDiagnostics`，没有新建后台脚本、Harmony patch、Campaign Tick、Agent
+  或动作监控，也不修改任何状态。仅在原有事件入口主动写入 `PLAYER_JUSTICE` 快照：村庄劫掠事件判定与
+  扣分、纠察队罚款对话和结算前后、正式执法罚款对话和结算前后、每日通缉分级检查、玩家案卷删除前后。
+  每条同时保存灰袍自定义声望/通缉阈值、原版氏族 renown、`PLAYER_WANTED` 案卷是否存在/开放、承办任务与
+  FlowState、灰袍和玩家势力是否交战、受害势力列表，以及主角队伍的目标村庄和当前 AI 行为。村庄事件还
+  单独保存距离、目标匹配、主角是否实际处于 Raid MapEvent 及事件村庄 ID。
+- 所有新增写入仍严格位于 `#if GWP_DIAGNOSTICS` 的开发实现内；`GwpDiagnosticsEnabled=false` 分支只增加同名
+  空方法，正式玩家 DLL 不会创建或写入该日志。本轮没有更新玩家 README，因为没有改变玩家可见机制，
+  也没有制作 ZIP、改版本号、提交或发布。
+- 默认 Debug `dotnet build ... -t:Rebuild --no-restore` 构建为 `0` errors、`43` 条既有 nullable warnings。
+  仓库 `obj/Debug`、live 客户端和 live 编辑器 DLL 均为 `830464` 字节，SHA-256
+  `B563E619075F4A7766108025B2B315F0FF4B79794CE7225BC1CC0874E5963851`。复现后读取
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`，筛选
+  `PLAYER_JUSTICE` 即可判断扣除的是灰袍声望还是原版 renown，并确认缴款后残留的是声望、案卷、任务、战争
+  状态还是地图纠察队。
+- 另在独立临时目录
+  `C:\Users\lucif\AppData\Local\Temp\gwp-diagnostics-off-check` 使用
+  `GwpDiagnosticsEnabled=false`、`DeployToLiveModule=false` 完成 Release 重建，产物为 `768000` 字节，SHA-256
+  `A42336C0D87796CED4619A383590C361983540D6E39538E7E6342FC90DA0A7BA`。ILSpy 反编译确认
+  `WritePlayerJusticeState(string,string)` 方法体为空，且类型中不存在 `File.AppendAllText`、`File.WriteAllText`、
+  日志路径或 `PLAYER_JUSTICE` 字符串。独立构建后再次核对 live 客户端、live 编辑器和 `obj/Debug`，三者仍为
+  上述 `B563...3851` 的开发诊断 DLL，正式隔离校验没有覆盖本机测试安装。
+
+## 2026-08-28 双刀拾取回归：移除 Agent / MissionEquipment 全局 detour
+
+- 用户实测上一轮地面拾取已经实现：先副手后主手、先主手后副手均能正常完成并进入双刀状态；但百科士兵
+  主模型和自定义战斗人物预览同时复现此前“不显示或姿态异常”的故障。故拾取事务本身正确，回归只来自为
+  实现它新增的 Harmony 安装范围，不能通过放弃拾取功能回退。
+- 最新 `rgl_log_44464.txt` 能正常进入 `CustomBattleScreen::HandleActivate`、加载
+  `inventory_character_scene`、进入两次真实战斗并分别渲染两把双刀；没有新的双刀动作缺失或托管异常。
+  与用户确认正常的上一 DLL 相比，唯一结构变化是新增
+  `Agent.OnItemPickup` prefix 与 `MissionEquipment.SelectWeaponPickUpSlot` postfix。此前 A/B 已证明全局
+  `Agent`/`MissionWeapon` detour 即使不在 tableau 内命中，也会污染人物展示；因此本轮不再浪费一次实测逐个
+  开关，而是同时移除两个不必要的公共方法补丁。
+- 反编译 Bannerlord 1.4.8 原版确认真实地面拾取的唯一常规上游是
+  `SpawnedItemEntity.OnUseStopped(Agent,bool,int)`：交互成功后它调用一次 `Agent.OnItemPickup`，随后根据
+  `removeWeapon` 设置 `_readyToBeDeleted`、停止物理并禁用地面实体。新实现只对
+  `SpawnedItemEntity.OnUseStopped` 安装一个 transpiler，把这一处调用替换为
+  `GwpDualBladeGroundPickup.RoutePickup`；非双刀立即回调完全未修改的原版 `Agent.OnItemPickup`，双刀继续执行
+  已验收的固定 `Weapon0/Weapon1`、第一件不拔出、凑齐后先切动作集再按副手/主手顺序拔刀。原方法其余 IL、
+  地面实体删除、UseObject 清理、AgentComponent/AI/Mission 通知均保留。
+- 最终 DLL 不再包含 `GwpDualBladePickupSlotPatch`，`GwpDualBladeGroundPickupPatch` 的 Harmony 目标只剩
+  `SpawnedItemEntity.OnUseStopped`；没有 `Agent.OnItemPickup`、`MissionEquipment.SelectWeaponPickUpSlot`、
+  `TryToWieldWeaponInSlot`、Mission Tick、监控或 tableau/ViewModel 补丁。默认 Debug
+  `-t:Rebuild --no-restore` 为 `0` errors、`43` 条既有 nullable warnings；仓库 `obj/Debug`、live 客户端与
+  live 编辑器 DLL 均为 `826368` 字节，SHA-256
+  `DED004F03D4FEA95DBA2F346682516472F061B7DFD4595A820C3989C965A1926`。ILSpy 确认目标、transpiler 与
+  RoutePickup 已进入产物，仓库 `_Module` 的 `36` 个运行文件与 live 相比缺失 `0`、哈希差异 `0`，`30` 个
+  XML/XSLT/mbproj 解析失败 `0`。中英文 README 已单独镜像到 live，仓库/live SHA-256 分别为
+  `FAA741E2BA5C2258EC6310D339A1CA0E8020FA6747FE3935ED4949FA72AD5677` 与
+  `B9781A1AAFDA6822CA22992D0435D4CD5D0D40B0C5E51E75E317FE38E5DFA790`。下一次实测优先检查百科士兵和
+  自定义战斗双方英雄预览，再抽查任意一种双刀拾取顺序仍正常；未制作正式 ZIP。
+
+## 2026-08-28 双刀地面拾取：固定槽位与完整套装后切换动作
+
+- 用户确认百科、自定义战斗预览、玩家双刀与 AI 双刀均已恢复正常，当前唯一已知故障是从地面拾取
+  `gwdualbladeoffhand` / `gwdualblademainhand` 会触发原生报错退出；无论先拾主手或先拾副手都可能复现，
+  但体感上副手更容易成为直接触发点。此次不改已经验收的 AI 生成同步、击倒或展示隔离方案。
+- 最新复现日志 `rgl_log_22464.txt` 在退出前依次记录
+  `Render Requested: gwdualblademainhand`、`Render Requested: gwdualbladeoffhand`，随后明确报告基础动作集
+  `as_human_female_warrior` 缺少 `act_gwd_quick_release_thrust_1h`、`act_gwd_release_thrust_1h`、
+  `act_gwd_quick_release_slashleft_1h` 与双刀持盾移动动作；没有托管异常。反编译原版
+  `Agent.OnItemPickup` 证明拾取会在 `EquipWeaponFromSpawnedItemEntity` 后立即调用
+  `TryToWieldWeaponInSlot(...InstantAfterPickUp...)`。因此根因不是拾取实体本身，而是为修复展示污染而把双刀动作隔离到
+  `as_gwp_dual_warrior` 后，原版动态拾取仍在动作集切换前尝试拔出专用武器。
+- ROT 1.3.15.3 的 `DualWieldingPatches` 只在 `SPInventoryVM.RefreshInformationValues` 校验第一格必须是
+  `dual_shield`、第二格必须是 `dual_shield_thrust`，并提示半套或错槽；ROT DLL 中没有
+  `Agent.OnItemPickup`、`CanQuickPickUp`、`SelectWeaponPickUpSlot` 或
+  `EquipWeaponFromSpawnedItemEntity` 补丁。其 XML 同样只通过 `HeldInOffHand` 与两种 usage 表达双刀。故 ROT
+  不能直接提供安全地面拾取实现，但它证明固定 `Weapon0/Weapon1` 是必须保持的不变量。
+- 新增 `GwpDualBladePickupSlotPatch`，只对这两个物品覆写原版
+  `MissionEquipment.SelectWeaponPickUpSlot` 的结果：副手固定 `WeaponItemBeginSlot`，主手固定 `Weapon1`。
+  `GwpDualBladeGroundPickupPatch` 只接管这两个物品的真实 `Agent.OnItemPickup`：沿用原版丢弃目标格旧物、
+  `EquipWeaponFromSpawnedItemEntity`、AgentComponent 通知、AI 拾取完成通知与 Mission 拾取事件；第一件只装备不拔出，
+  第二件补齐后先为该真实 Mission Agent 分配 `as_gwp_dual_warrior`，AI 再复用既有局部副手资格同步，最后按原版
+  `WieldInitialWeapons` 的顺序先拔副手、再拔主手。其他任何地面物品继续执行原版方法。
+- `GwpDualBladeActionSetPatch` 仅抽出可复用的 `TryApplyActionSet(Agent)`；SpawnAgent 行为和完整双刀检查不变。
+  没有恢复全局 `Agent`/`MissionWeapon` 数据补丁，没有 Mission Tick、监控、持续重挂、额外物品、人物数据或
+  tableau/ViewModel 修改。默认 Debug `-t:Rebuild --no-restore` 构建为 `0` errors、`43` 条既有 nullable
+  warnings；仓库 `obj/Debug`、live 客户端与 live 编辑器 DLL 均为 `823808` 字节，SHA-256
+  `A0F7A7B4271BD9EF7E4AA330CCF444ED41445D662E40E979951171186C9B924E`。ILSpy 确认新 DLL 包含
+  `GwpDualBladePickupSlotPatch` 与 `GwpDualBladeGroundPickupPatch`，四个已删除的全局 AI 类型仍全部不存在。
+  仓库 `_Module` 的 `36` 个正常客户端文件与 live 相比缺失 `0`、哈希差异 `0`；`30` 个
+  XML/XSLT/mbproj 解析失败 `0`。中英文 README 的仓库/live SHA-256 分别为
+  `5A6881F0494580EA3BAE0540503F34454BC518B7ECA7FA0651B2B5B65A0EE625` 与
+  `E4D49C27097518F524843CE1F1147973305252E64FE70CD8A54CA27B85CF653B`。下一次实测只需在真实战场分别验证
+  “主手后副手”和“副手后主手”两种拾取顺序；未制作正式 ZIP。
+
+## 2026-08-28 AI 双刀直接重构：移除四个全局补丁
+
+- 用户要求停止继续逐层开关测试，直接修复已经缩小到四个脚本内的结构问题。现有正反对照已经证明：玩家
+  专用 `Mission.SpawnAgent` 动作分配不会破坏展示，而对 `Agent.EnforceShieldUsage` 的全局 prefix 单独存在
+  即可复现百科和自定义战斗人物异常；关闭它但恢复其余全局 AI 链后故障仍存在，说明继续给
+  `Agent`/`MissionWeapon` 公共方法安装 detour 不是可接受的最终架构。
+- 已删除 `GwpDualBladeAiShieldEnforcementPatch`、`GwpDualBladeAiEquipmentSyncScopePatch`、
+  `GwpDualBladeAiWeaponDataPatch`、`GwpDualBladeAiWeaponStatsPatch` 四个 Harmony 类型。最终 DLL 的类型表只保留
+  `GwpDualBladeAiSpawnSync` 普通帮助类与既有 `GwpDualBladeActionSetPatch`；ILSpy 逐个查询四个旧类型均返回
+  “type definition not found”。因此运行时不再 patch `Agent.EnforceShieldUsage`、
+  `Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData` 或
+  `MissionWeapon.GetWeaponStatsData`，百科和自定义战斗的 `AgentVisuals`/tableau 不再可能经过 AI 双刀代码。
+- 新实现继续复用已经证明不影响玩家专用阶段展示的 `Mission.SpawnAgent` postfix。完整双刀 Agent 完成真实
+  Mission 构建和初始装备后，玩家只切换到 `as_gwp_dual_warrior`；AI 先由
+  `GwpDualBladeAiSpawnSync.TryApply` 读取该 Agent 自己的副手 `MissionWeapon`，在局部
+  `WeaponData/WeaponStatsData` 副本中加入耐久、`bo_mace_a` shape、`bo_wlarge_shield` collision shape 与
+  `HasHitPoints | CanBlockRanged`，再调用 Agent 私有原生 `WeaponEquipped` 写回同一个副手槽。
+- 写回时使用 `agent.GetWeaponEntityFromEquipmentSlot(WeaponItemBeginSlot)` 获得现有副手实体，传入
+  `removeOldWeaponFromScene=false` 和 `isWieldedOnSpawn=true`；不创建第二个物品、不修改全局 ItemObject、不替换
+  装备栏、不发强制拔刀/收刀命令、不做 Tick、持续重挂或监控。局部 WeaponData 的托管资源在调用后立即
+  `DeinitializeManagedPointers()`。反射预检已在实机依赖环境中确认目标为
+  `TaleWorlds.MountAndBlade.Agent.WeaponEquipped`，八个参数精确匹配
+  `EquipmentIndex, WeaponData&, WeaponStatsData[], WeaponData&, WeaponStatsData[], WeakGameEntity, bool, bool`；
+  静态句柄不为 null。
+- 默认 Debug 开发重建成功，`0` errors、`43` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端与
+  live 编辑器 DLL 均为 `822784` 字节，SHA-256
+  `5C4EB9A6ED96C0325F9912603DB62AEB50FB1B476E6472F4ECE05ADA5B527CCE`。ILSpy 确认唯一 Harmony 入口为
+  `Mission.SpawnAgent(AgentBuildData,bool)` postfix，且 AI 局部同步发生在完整双刀检查之后。中文 README
+  SHA-256 为 `6A2F0985A51FBE451853B3C1E944CA59C80912217DDC22CD1B77D21FD427C5FA`，英文为
+  `4EEC9414EE3142D71DC34FAF88EF33EAAC09030BFCB6EC93C8DFAD6A8E3A46E2`，均已同步 live。
+- 下一次只需一次联合验收：完全退出并重启后检查百科士兵主模型、自定义战斗英雄预览、AI 左手剑持续出鞘、
+  AI 攻击和四向格挡、玩家双刀与击倒。展示路径现在与 AI 代码结构性隔离；若仅 AI 仍收起副手，后续只调整
+  `Mission.SpawnAgent` 内这一名 Agent 的局部原生写入，不得重新引入四个全局补丁。未制作正式 ZIP。
+
+## 2026-08-28 AI 双刀第二污染源 A/B：仅启用 EquipmentSyncScope
+
+- 用户实测关闭已确认有问题的 `EnforceShieldUsage` prefix、但恢复装备同步、两个 `MissionWeapon` 数据层和
+  AI 动作分配的修复候选后，百科士兵主模型与自定义战斗英雄预览仍然故障。这证明
+  `EnforceShieldUsage` 是一个确定污染源，但不是唯一污染源；其余四层中至少还有第二个会破坏展示的补丁。
+  上一记录中“永久关闭该层后即可修复展示”的候选结论已被实测否定，不能继续宣称问题已经解决。
+- 当前按调用依赖顺序重新隔离：`ShieldEnforcementEnabled=false`、
+  `EquipmentSyncScopeEnabled=true`、`WeaponDataEnabled=false`、`WeaponStatsEnabled=false`、
+  `AiActionSetEnabled=false`。因此本轮只安装 `Agent.EquipItemsFromSpawnEquipment` 的 Prefix/Finalizer：进入方法
+  时为完整双刀 AI 设置线程局部 `_activeAgent`，离开或异常时恢复旧值；没有任何消费者读取该值，也不修改
+  `WeaponData`、`WeaponStatsData` 或动作集。玩家双刀保留，AI 双刀按设计仍暂停。
+- 这一单层测试专门回答 Prefix/Finalizer 的全局 detour 是否本身影响展示管线。若两个界面再次故障，第二污染
+  源即锁定为 `EquipItemsFromSpawnEquipment` scope；若恢复正常，则该 scope 被排除，下一轮在其基础上只加入
+  `GetWeaponData`，因为后两个数据 postfix 没有 ActiveAgent scope 时不会进入有效分支。
+- 默认 Debug 开发重建成功，`0` errors、`43` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端与
+  live 编辑器 DLL 均为 `822784` 字节，SHA-256
+  `9F677DD85E8836628B1AF74AA86B83CF1C318A1BAAAB66A05301BCBE25237EAA`。ILSpy 对 live DLL 确认只有
+  `EquipItemsFromSpawnEquipment.Prepare()` 返回 `true`；`EnforceShieldUsage`、`GetWeaponData`、
+  `GetWeaponStatsData` 三个 `Prepare()` 均返回 `false`，动作集 postfix 只接受 `!IsAIControlled`。中文 README
+  SHA-256 为 `12E64819A5E89C3626AB10194E3B7C243FEBEDBDB9DAC883D0C2F9FDBBAADFA6`，英文为
+  `C2FFF56D7D4D20E274E32FC60969FF0833C3487D1737ABD44068664829D90708`，均已同步 live。
+- 下一轮只需完全退出并重启，验证百科士兵主模型与自定义战斗双方英雄预览；不需要测试 AI 双刀。未制作
+  正式 ZIP。
+
+## 2026-08-28 AI 双刀展示修复候选：永久移除 EnforceShieldUsage detour
+
+- 用户实测上一轮“只恢复 `Agent.EnforceShieldUsage` prefix、其余 AI 双刀层仍关闭”的单层版本后，百科士兵
+  主模型和自定义战斗英雄预览同时再次出现人物消失/姿态异常。该结果与完整关闭补丁组时两个界面全部恢复
+  构成直接正反对照，证明安装 `GwpDualBladeAiShieldEnforcementPatch` 本身足以触发展示故障。这个全局
+  Agent detour 是已证实根因，不能继续保留在最终 AI 双刀实现中。
+- 当前修复候选设置为：`ShieldEnforcementEnabled=false`，永久不安装
+  `Agent.EnforceShieldUsage` prefix；恢复 `EquipmentSyncScopeEnabled=true`、`WeaponDataEnabled=true`、
+  `WeaponStatsEnabled=true` 和 `AiActionSetEnabled=true`。因此完整双刀 AI 会在一次
+  `Agent.EquipItemsFromSpawnEquipment()` 作用域内获得副手耐久、`bo_mace_a` shape、
+  `bo_wlarge_shield` collision shape、`HasHitPoints | CanBlockRanged`，并在 Mission 生成后切换到
+  `as_gwp_dual_warrior`；普通物品、玩家和 Mission 外的调用仍因线程局部 ActiveAgent 为空而不改结果。
+- 这一步不是重新启用全局盾牌规则旁路，也没有加入监控、Tick、强制拔刀、实体生成、装备重挂、人物数据或
+  tableau 补丁。若 AI 仅凭一次性 Native 数据资格即可保持副手，则同时满足 AI 双持与正常展示；若 AI 仍被
+  原版阵型逻辑收起副手，下一步必须寻找不 patch `Agent.EnforceShieldUsage` 的局部替代入口，而不能恢复已证实
+  破坏展示的旧 prefix。
+- 默认 Debug 开发重建成功，`0` errors、`43` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端和
+  live 编辑器 DLL 均为 `822784` 字节，SHA-256
+  `C53AA23994A3E684FEB85C841B291D8FC971DA94B08F699751D21D730B412BA0`。ILSpy 对 live DLL 确认
+  `EnforceShieldUsage.Prepare()` 返回 `false`，装备同步、`GetWeaponData`、`GetWeaponStatsData` 三个
+  `Prepare()` 均返回 `true`，Mission SpawnAgent postfix 对完整双刀玩家与 AI 都会分配专用动作。中文 README
+  SHA-256 为 `BE8C6571B49B4DB3DA588217B7E7BB5E7B0E721285310E0DEB89CF1654CEFBDB`，英文为
+  `0864585355C147E261B51D492DAC443400BA4DB85DA85B83817AF3AC50F15522`，已同步 live。
+- 下一轮必须完全退出并重启后同时验证：百科士兵主模型、自定义战斗双方英雄预览、双刃卫士/双刀领主是否
+  持续拔出左手剑、AI 攻击和四向格挡，以及玩家双刀。若展示正常且 AI 正常，修复完成；若展示正常但 AI
+  收起副手，则 `EnforceShieldUsage` 确实同时承担了必要资格和展示污染，需要重新设计局部旁路；若展示再次
+  失败，则说明已证实的 `EnforceShieldUsage` 之外，剩余三个全局 Harmony 安装层中还有第二个污染源，应再
+  对 `EquipItemsFromSpawnEquipment` 与两个 `MissionWeapon` postfix 分组 A/B。未制作正式 ZIP。
+
+## 2026-08-28 AI 双刀逐层 A/B：仅恢复 EnforceShieldUsage
+
+- 用户实测完整关闭 AI 双刀补丁组和 AI 动作分配的版本后，百科士兵主模型与自定义战斗双方英雄预览
+  全部恢复正常。用户未测试该版 AI 双刀，按设计它也不应正常工作。这个阳性 A/B 已证明展示故障位于
+  “AI 双刀 Harmony 安装组或 AI 动作分配”之内，排除副手 `WoodenParry`、动作集物化、战役英雄
+  `CustomGame` 注册以及此前所有预览 ViewModel 候选作为唯一根因。
+- 为保持一次只恢复一层，把原统一开关拆成五个常量：
+  `ShieldEnforcementEnabled=true`，`EquipmentSyncScopeEnabled=false`，
+  `WeaponDataEnabled=false`，`WeaponStatsEnabled=false`，`AiActionSetEnabled=false`。本轮只有
+  `GwpDualBladeAiShieldEnforcementPatch` 的 `[HarmonyPrepare]` 返回 `true`，因此只重新安装
+  `Agent.EnforceShieldUsage` prefix；该 prefix 仍只会对完整双刀且 `IsAIControlled` 的 Agent 跳过盾牌阵型
+  约束。装备同步作用域、两个全局 `MissionWeapon` postfix 和 AI 专用动作分配全部继续关闭。
+- 玩家双刀继续由 `GwpDualBladeActionSetPatch` 获取专用动作。该 postfix 现在按
+  `agent.IsAIControlled && !AiActionSetEnabled` 排除 AI，便于后续只修改一个常量恢复动作层；没有删除兵种、
+  领主、装备或资源，也没有新增监控、Tick、强制拔刀、重挂、人物数据或 tableau 补丁。本轮 AI 仍不应
+  被视为双刀功能恢复，只需验证两个展示界面。
+- 默认 Debug 开发重建成功，`0` errors、`43` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端与
+  live 编辑器 DLL 均为 `822784` 字节，SHA-256
+  `329A8596D86D3E20FF5C6C5B2BA4C2BD168200B2A48093CD912526177817EAC7`。ILSpy 对 live DLL 确认
+  `EnforceShieldUsage.Prepare()` 返回 `true`，其余三个 AI `Prepare()` 返回 `false`，动作集 postfix 仍只接受
+  `!IsAIControlled`。中文 README SHA-256 为
+  `30E738A4C8872E53B3992A3BF36F9D8B330C628C251F084AFB867397459ED3B0`，英文为
+  `B54CE0C2DB662E1C213DE116CD495FBF9A6CCD0405BF7A27A4AEC8D44CB0B8BB`，均已同步 live。
+- 下一轮只需完全退出并重启游戏，查看百科任意士兵主模型和自定义战斗双方英雄预览。若仍正常，
+  `EnforceShieldUsage` 补丁被排除，下一层启用 `EquipItemsFromSpawnEquipment` scope；若故障立即复现，则根因
+  已锁定为 `EnforceShieldUsage` detour 本身，后续应把它永久替换为不全局 patch Agent 的实现，而不是继续
+  启用后面三层。未制作正式 ZIP。
+
+## 2026-08-28 玩家双刀保留 / AI 双刀补丁关闭 A/B
+
+- 用户实测上一轮移除副手锻造片 `WoodenParry` 后，百科士兵主展示和自定义战斗英雄预览仍然无法正确
+  加载人体/护甲，或出现异常姿态；因此 `WoodenParry` 候选已被排除。本轮先精确恢复该标志，仓库与 live
+  的 `gwp_crafting_pieces.xml` SHA-256 均回到
+  `8BE1EAD5BDFC8C08DF8682E7BEB8880D364604DFB8AE57535CAE48A29C5B2B65`，动作集和角色注册继续保持
+  上一轮已经恢复的基线，不再叠加 XML 实验。
+- 按用户要求进入具有直接判定力的代码 A/B：保留双刀物品、双刃卫士、双刀领主、装备表、动画资源、玩家
+  双刀碰撞和击倒，只暂停“让 AI 能长期使用非盾牌副手”的运行时补丁。新增统一
+  `GwpDualBladeAiAbSwitch.Enabled = false`；四个 AI 专用 Harmony 类
+  `GwpDualBladeAiShieldEnforcementPatch`、`GwpDualBladeAiEquipmentSyncScopePatch`、
+  `GwpDualBladeAiWeaponDataPatch`、`GwpDualBladeAiWeaponStatsPatch` 均通过 `[HarmonyPrepare]` 返回该开关。
+  Harmony 在准备阶段得到 `false` 后不会为
+  `Agent.EnforceShieldUsage`、`Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData` 或
+  `MissionWeapon.GetWeaponStatsData` 安装这些 detour，而不是在补丁命中后再做空操作。
+- `GwpDualBladeActionSetPatch` 同时收紧为只给 `IsAIControlled == false` 且完整装备双刀的 Mission Agent
+  分配 `as_gwp_dual_warrior`。这恢复“玩家可双刀、AI 不使用双刀”的历史功能边界；AI 兵种和领主的数据
+  没有删除，因此 A/B 结束后只需把统一开关改回 `true` 并撤销该玩家条件即可恢复原功能。没有加入监控、
+  Mission Tick、强制拔刀、实体生成、装备重挂、人物数据或预览 ViewModel 补丁。
+- 使用默认 Debug 开发配置执行
+  `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -t:Rebuild --no-restore`，结果为
+  `0` errors、`43` 条既有 nullable warnings，并由项目目标同步到 live 客户端与编辑器目录。三份 DLL 均为
+  `822784` 字节，SHA-256
+  `76B115896DB94297F5057CE5288478BF2D7320BC9B10CB301BA8AFCB6E2F8363`。ILSpy 对 live DLL 逐类
+  反编译确认四个 `Prepare()` 均直接 `return false`，动作集 postfix 明确要求
+  `__result != null && !__result.IsAIControlled`。原稳定 DLL 仍保存在
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\stable-custombattle-baseline-20260828-1117\GreyWardenPolicePurity.dll`，
+  SHA-256 为 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`。
+- 仓库 `_Module` 的 `36` 个正常客户端文件与 live 缺失 `0`、哈希差异 `0`；`30` 个
+  XML/XSLT/mbproj 解析失败 `0`，`git diff --check` 通过。中文 README SHA-256 为
+  `45CC1731CED64723082FA61CC05C2B28E6EBD46052889241BF7C710771721D32`，英文为
+  `9E949363B822C815CECDDA8162A1596EBCE47A5C9A38AA1B842695D7D07618EA`，仓库与 live 一致；未制作
+  正式 ZIP。
+- 本轮实测顺序：完全退出后重新启动，先看百科任意士兵主模型，再看自定义战斗双方英雄预览，最后只验证
+  玩家双刀。预期 AI 双刃卫士和领主本轮不会维持左手剑或获得专用动作，这是有意的 A/B 状态。若两个
+  tableau 恢复，根因已锁定在这四个 AI Harmony 安装组或 AI 动作分配；下一轮保持界面正常基线，按
+  `EnforceShieldUsage -> EquipItemsFromSpawnEquipment scope -> GetWeaponData -> GetWeaponStatsData -> AI action set`
+  顺序一次启用一层。若仍不恢复，则可证明这些 AI detour 本身不是根因，必须转向 AI 开发同时新增的全局
+  action type、usage set、movement set 或 AssetPackage 资源做玩家阶段/AI 阶段差分。
+
+## 2026-08-28 百科/自定义人物展示：恢复基线并隔离副手 WoodenParry
+
+- 用户复测物化后的自包含 `as_gwp_dual_warrior` 后，百科士兵主展示区仍不显示人体与护甲；因此“空
+  `action_sets.xml` 与 XSLT 混合加载是唯一根因”的候选已被实测排除。仓库与 live 已恢复此前精确动作
+  基线：空 `action_sets.xml` SHA-256
+  `06C5509045556C00081B93395A2E84CD863419F6ACA9FAA7320ACED8B99A1E60`，以及
+  `action_sets.xslt` SHA-256
+  `1AA305379F827C5562B2FC60A16F55437DA866C4A2AE7DE84577C863F483BFD0`。被排除的物化文件仍可由
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\action-set-materialization-audit-20260828\`
+  中的审计产物重建；旧动作基线继续保存在
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\action-set-loading-baseline-20260828\`。
+- 从 `spspecialcharacters` 的游戏类型中移除 `CustomGame` 后，用户此前也已确认百科仍出现同类故障；该项
+  不是跨界面人物消失的根因。本轮在 `SubModule.xml` 恢复 `CustomGame`，避免把一个无效实验继续混入后续
+  A/B。六个技能模板空引用仍是独立数据缺陷，但当前证据不能把它当作人物 tableau 消失原因。
+- 按用户提供的时间线重新比较玩家专用阶段与 AI 资格开发记录：隐藏副手锻造片
+  `gwp_vlandian_blade_3_dual` 的 `WoodenParry` 是 2026-08-27 为 AI 拔刀资格后来补入的持久物品标志；
+  `ForceAttachOffHandPrimaryItemBone` 与 `HeldInOffHand` 在玩家专用实现中已经存在。当前
+  `BladeData.body_name` 已是原版剑主体 `bo_sword_one_handed`，该锻造片没有发现其他尚未隔离的 AI 实验字段。
+- 本轮唯一的新变量是从该副手锻造片移除 `WoodenParry`，保留两个原有挂接标志。最终成功的 AI 双刀战斗
+  资格仍由 `GwpDualBladeAiNativeSyncPatch` 在完整双刀 AI 的一次
+  `Agent.EquipItemsFromSpawnEquipment()` 作用域内提供耐久、碰撞体和阻挡统计，因此没有修改 AI 补丁、动作
+  分配、人物定义、装备槽、剑模型、剑鞘、击倒或玩家路径。当前推断是：tableau 会在 Mission 外直接读取
+  CraftedItem 的持久标志，而 `WoodenParry` 已不再是最终 AI 战斗链的必要条件；该推断尚未经过用户实测，
+  不能写成已修复。
+- 精确回退本候选只需在 `gwp_crafting_pieces.xml` 的该锻造片 `<Flags>` 中重新加入
+  `<Flag name="WoodenParry" type="ItemFlags" />`；修改前文件 SHA-256 为
+  `8BE1EAD5BDFC8C08DF8682E7BEB8880D364604DFB8AE57535CAE48A29C5B2B65`，修改后为
+  `D63E477BD6DB8D593EC3BA258E831687F161E2AE7B051675F72A7B008B0C5AF7`。
+- 本轮没有运行 build；live 客户端与编辑器 DLL 均继续保持用户确认可进入界面的稳定 SHA-256
+  `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`。六个改动文件已逐一同步并确认
+  source/live 哈希一致；XML/XSLT 解析失败 0，`git diff --check` 通过。中英文 README 已删除未被实测支持的
+  “自定义战斗不再加载战役领主”表述，并明确展示故障仍在排查；未制作正式 ZIP。
+- 下一次实测必须使用同一轮启动依次检查：百科士兵主模型、自定义战斗双方英雄预览、玩家双刀、双刃卫士或
+  双刀领主的拔刀/攻击/四向格挡。若两个 tableau 恢复且 AI 双刀仍正常，`WoodenParry` 即为根因；若展示
+  仍不恢复，则立即恢复该单行并进入严格 DLL A/B：保留玩家双刀，临时只停用四个 AI 原生资格 Harmony 补丁
+  且动作集仅分配给玩家 Agent，再逐层启用定位。A/B 只用于找出具体补丁，不代表放弃 AI 双刀。
+
+## 2026-08-28 Tableau 全局动作集资源改为自包含专用文件
+
+- 用户在百科士兵页面发现与自定义战斗相同的故障：主展示区的人体与护甲不显示，只剩武器、坐骑或局部装备实体；兵种树缩略图仍正常。百科与自定义战斗使用不同 ViewModel，但都通过 `CharacterTableau` / `AgentVisuals` 构建展示人物，因此该证据排除“仅 CustomBattle 角色列表或角色 XML 导致”的方向，根因必须位于两类 tableau 共同读取的全局人物动作/资源层。
+- 审计 `project.mbproj` 及本机已安装动作模组后发现，GreyWarden 把 `ModuleData/action_sets.xml` 注册为 `type="action_set"`，但该文件只有 55 字节，内容是空的 `<action_sets />`；实际 `as_gwp_dual_warrior` 只存在于 `action_sets.xslt`，运行时通过匹配并复制原版 `as_human_warrior` 动态生成。ROT-Content、ROT-Dragon 与 ArtemsCinematicCharges 等同样注册 action-set 资源的本机模组，其 `action_sets.xml` 均包含实际动作集；GreyWarden 是当前唯一注册空动作集文件的模组。
+- 这一结构来自 2026-08-28 把双刀动作从全局 `as_human_warrior` 隔离到专用动作集时未完成的迁移：XSLT 已改为生成 `as_gwp_dual_warrior`，但项目资源入口仍指向空文件。战场合并链可以从 XSLT 得到专用动作集，而百科、自定义战斗和其他独立 tableau 场景会直接加载 GreyWarden 项目 action-set 资源；空资源与动态复制原版动作集的组合会让人物动作集/骨架初始化结果依赖加载路径，符合“人体消失但物品实体仍在”的跨界面症状。
+- 已用 .NET `XslCompiledTransform` 对当前 Bannerlord 1.4.8 原版 `Native/ModuleData/action_sets.xml` 应用现有 GreyWarden XSLT，再只提取 `as_gwp_dual_warrior`，物化为新的自包含 `ModuleData/action_sets.xml`。成品只含 1 个动作集，骨架为 `human_skeleton`、移动系统为 `bipedal`，完整动作映射 4783 项；相对原版 `as_human_warrior` 新增 84 项，缺失 action type 0、重复 action type 0，不包含或覆盖 `as_human_warrior`。新文件 SHA-256 为 `382D601B2657E8B26CE0CA6BD0131FD21C5B2BD48C18CB57EADAF85B8F9F5FF3`。
+- 已从仓库和 live 删除 `ModuleData/action_sets.xslt`，停止运行时动态复制/接触原版人类动作集；`project.mbproj` 继续注册现在非空且只包含专用动作集的 `action_sets.xml`。战场 `GwpDualBladeActionSetPatch` 仍按原逻辑只给完整双刀 Agent 切换到 `as_gwp_dual_warrior`，普通 Agent 与所有 tableau 继续使用 Native 自己的 `as_human_warrior`。
+- 旧空文件和 XSLT 已可恢复地备份到绝对目录 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\action-set-loading-baseline-20260828\`：`action_sets.empty.xml` SHA-256 为 `06C5509045556C00081B93395A2E84CD863419F6ACA9FAA7320ACED8B99A1E60`，`action_sets.xslt` SHA-256 为 `1AA305379F827C5562B2FC60A16F55437DA866C4A2AE7DE84577C863F483BFD0`。若需精确回退，将空 XML 复制回仓库/live 的 `ModuleData/action_sets.xml`，并把备份 XSLT 复制回仓库/live 的 `ModuleData/action_sets.xslt`。
+- 本轮没有运行 build，稳定客户端和编辑器 DLL 继续保持用户已确认可进入界面的 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`。仓库 `_Module` 与 live 当前 35 个正常客户端源文件缺失 0、哈希差异 0，XML/XSLT/mbproj 解析失败 0；中英文 README 与 live 一致。下一次实测同时检查百科士兵页和自定义战斗预览的人体/护甲是否恢复，并在进入战场后确认玩家与 AI 双刀动作仍正常；若两处 tableau 均恢复，根因即为该空 action-set/XSLT 混合加载结构。
+- 本轮未制作正式 ZIP，也未改变或清理用户其他工作区修改。
+
+## 2026-08-28 自定义战斗隔离战役专用灰袍领主数据
+
+- 用户已确认精确恢复 SHA-256 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE` 的历史 live DLL 后，自定义战斗重新能够进入，唯一剩余问题恢复为双方英雄人体/护甲预览不显示。由此确认本轮 Release 构建和新增指挥官/拾取补丁造成的直接退出已经消失，后续必须保持该 DLL不变并一次只隔离一项 ModuleData。
+- 重读 2026-08-26 至 08-28 双刀开发记录后确认：最早的 `Agent.WieldInitialWeapons` + Mission Tick 监控确实曾访问未完成 Agent，造成“只剩武器、预览缺人和进入场景崩溃”；但当前源码与稳定 DLL均不存在 `GwpDualBladeDiagnostics`、`GwpDualBladeDiagnosticBehavior` 或任何双刀 Tick 监控。当前预览症状不是旧监控仍在执行，而是监控阶段之后留下的双刀数据仍会随 CustomGame 加载。
+- AI 双刀开发期间新增 `spc_gw_leader_dual`，并让 `gw_leader_0` 与 `gw_leader_5` 两名战役领主使用完整双刀。`spspecialcharacters.xml` 原先同时注册到 `Campaign`、`CampaignStoryMode`、`CustomGame` 与 `EditorGame`，因此六名只供战役使用的灰袍英雄也会在自定义战斗对象注册阶段被加载；原版 `CustomBattleData.Characters` 固定只读取 `commander_1..24`，这些 `gw_leader_*` 不属于角色选择列表。
+- 六名战役英雄分别引用 `spc_knight_skills`、`spc_phalanx_skills`、`spc_mounted_archery_skills`、`spc_quartermaster_skills`、`spc_politician_skills` 与 `spc_diplomat_skills`，而 GreyWarden 当前唯一注册的自定义 SkillSet 文件 `yao_skill.xml` 只定义 `yao_skills`。实机自定义战斗日志持续出现 `Null object reference found with ID: spc_mounted_archery_skills`。该警告在旧版本仍可进入界面，不能单独解释崩溃，但证明战役英雄数据确实不完整地污染了 CustomGame 对象加载。
+- 本轮只从 `SubModule.xml` 的 `spspecialcharacters` 节点移除 `<GameType value="CustomGame"/>`；保留 `Campaign`、`CampaignStoryMode` 和 `EditorGame`。没有修改英雄定义、双刀装备、双刃卫士、`commander_2`、动作资源、Harmony 代码、BodyProperties、人物比例或预览 ViewModel。预期结果是自定义战斗不再注册六名战役英雄，同时战役和编辑器继续正常读取它们。
+- 为避免再次破坏已验证基线，本轮没有运行任何 build，只把 `SubModule.xml`、`README.md` 与 `README_EN.md` 直接镜像到 live。仓库 `_Module` 与 live 的 36 个正常客户端文件缺失 0、哈希差异 0，XML/XSLT/mbproj 解析失败 0；live 客户端和编辑器 DLL 仍精确保持 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`。下一次实测只验证英雄预览是否恢复及日志中的 `spc_mounted_archery_skills` 空引用是否消失；若模型仍不显示，则此候选被排除，下一步才隔离双刀全局资源加载闭包。
+- 本轮未制作正式 ZIP，也未改变或清理用户其他工作区修改。
+
+## 2026-08-28 回退到 11:17 已知稳定二进制与本轮流程审计
+
+- 用户连续实测本轮三份候选后，进入自定义战斗都会直接报错退出。`rgl_log_14640.txt`、`rgl_log_39656.txt` 与 `rgl_log_42768.txt` 都停在 `NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleScreen::HandleInitialize`，没有像此前 `rgl_log_3892.txt` 那样继续进入 `HandleActivate` 并加载 `inventory_character_scene`。第三份候选已经没有任何自定义战斗 UI/列表补丁仍然崩溃，证明上一轮回退不完整，不能继续把问题单独归咎于指挥官枚举补丁。
+- 本轮流程错误已明确：第一，没有先回到用户已确认“能进入界面、只是人物不显示”的稳定二进制便继续叠加候选；第二，把地面拾取禁用、`commander_2` ID 重构和预览排查放在同一轮，扩大变量；第三，在 live 开发模块上擅自使用 `-c Release`，而该项目此前稳定的开发构建命令是默认 Debug 的 `dotnet build --no-restore -p:DeployToLiveModule=true`。正式玩家 Release/诊断关闭构建应进入单独 staging，不能替代 live 的 Debug 测试 DLL；这一点没有按现有维护流程执行。
+- 已完整撤销本轮所有运行改动：`GwpIds.CustomBattleCommanderId` 与 `sphpcustombattle.xml` 恢复为 `commander_2`，删除 `IsDualBladeItemId()` 和整个 `GwpDualBladeGroundPickupPatch.cs`，删除两种 `GwpCustomBattleCommanderPatch` 实现，并从双语玩家 README 移除尚未验收的地面拾取与指挥官列表说明。当前源码重新回到提出“禁止拾取双刀”之前的功能边界；地面双刀拾取崩溃尚未修复，不得宣称已经修复。
+- 本地 `GreyWardenPolicePurity\obj\Debug\GreyWardenPolicePurity.dll` 在回退前仍保存着 2026-08-28 11:17 的已知稳定 DLL，SHA-256 为 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`，与此前 live 维护记录完全一致。为防后续构建覆盖，已复制到绝对路径 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\stable-custombattle-baseline-20260828-1117\GreyWardenPolicePurity.dll`；该文件当前同样为 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`。
+- 精确恢复方法：把上述备份 DLL 分别复制到 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll` 和 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_wEditor\GreyWardenPolicePurity.dll`。本轮已经执行该恢复，两个 live DLL 的 SHA-256 均重新为 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`；仓库 `_Module` 与 live 的 36 个正常客户端运行文件缺失 0、哈希差异 0。
+- 源码回退后的全量 Debug 重建得到 `BB7944758BAEEAB48C8D6A0BF735CFEBB160F8202FC0082AA76C46041A9F87AB`，没有复现旧 DLL 哈希，原因包括重新生成的调试/源校验元数据；因此没有把“源码语义相同”当作“二进制已恢复”，而是恢复了用户实际测试过的原 DLL。后续在该稳定基线验收前不得再运行会覆盖 live DLL 的 build；若误覆盖，按上一条复制备份恢复。
+- 对恢复后的稳定 DLL 做类型清单核对：存在当前已验收的 `GwpDualBladeActionSetPatch`、四个 AI 原生同步类、双刀碰撞/伤害和防御击倒类；不存在 `GwpDualBladeDiagnostics`、`GwpDualBladeDiagnosticBehavior`、`GwpCustomBattleDualBladePreviewPatch`、`GwpCustomBattleCommanderPatch` 或地面拾取补丁。项目仍保留军团、任务和经济等既有开发诊断，这是 AGENTS.md 明确允许留在 live 测试 DLL 中的项目级诊断，与已删除的双刀 Mission Tick 监控不是同一功能。
+- 只读结构审计确认下一阶段仍有两个真实但未验证的预览候选：`spspecialcharacters.xml` 被注册到 `CustomGame`，但其六个英雄引用的 `spc_knight_skills`、`spc_phalanx_skills`、`spc_mounted_archery_skills`、`spc_quartermaster_skills`、`spc_politician_skills`、`spc_diplomat_skills` 均未由 GreyWarden 的唯一 `yao_skill.xml` 定义；实机日志会报告 `spc_mounted_archery_skills` 空引用。该警告在旧版本仍能进入界面，不能解释本轮直接崩溃，但这些战役英雄又不属于原版固定自定义战斗指挥官列表，因此其 `CustomGame` 注册是后续可隔离的数据污染候选。另一个候选是双刀全局资源文件/AssetPackage 的加载闭包，而不是已经排除的 Agent 方法或预览 getter。必须先由用户确认 `0B435...` 稳定 DLL重新能够进入界面，再一次只改一个数据变量。
+- 本轮没有制作正式 ZIP，也没有清理用户现有工作区改动。
+
+## 2026-08-28 地面双刀拾取禁用与自定义战斗指挥官 ID 隔离
+
+- 用户实测专用 `as_gwp_dual_warrior` 动作集隔离后，玩家与 AI 双刀战斗功能正常，但自定义战斗准备界面的人物仍全部不显示；因此“全局 `as_human_warrior` 注入导致 tableau 失效”的假设已被正式排除。预览问题本轮仍只作为候选修复等待实测，不在玩家日志中宣称已经修复。
+- 用户同时确认拾取地面的 `gwdualbladeoffhand` 或 `gwdualblademainhand` 会直接报错退出。最新 `rgl_log_3892.txt` 与 `watchdog_log_3892.txt` 没有托管异常，原生崩溃前最后记录分别为 `Render Requested: gwdualbladeoffhand` 与 `Render Requested: gwdualblademainhand`，说明故障位于原生地面物品视觉/换装路径，而不是双刀攻击逻辑。
+- 新增 `GwpDualBladeGroundPickupPatch.cs`，同时拦截 `SpawnedItemEntity.IsDisabledForAgent()`、`Agent.CanInteractableWeaponBePickedUp()`、`Agent.CanQuickPickUp()` 和 `Agent.OnItemPickup()`。两把双刀的地面实体不再显示为可交互物，也不能通过快速拾取或直接拾取入口进入原生换装路径；最后一层会保留地面实体并跳过原方法。其他物品完全沿用原版拾取。
+- 没有给物品添加 `ItemFlags.CannotBePickedUp`：Bannerlord 的 `Mission.SpawnAgent()` 会按该标志从出生装备中移除物品，使用它会破坏玩家与 AI 已验收的双刀出生装备。当前方案只识别 `SpawnedItemEntity.WeaponCopy.Item.StringId`，不影响库存装备、入会获赠、战利品持有、玩家双刀或 AI 双刀。
+- 反编译当前 1.4.8 `CustomBattleData.Characters` 后确认，自定义战斗不是枚举全部英雄，而是固定读取 `commander_1` 到 `commander_24`。GreyWarden 的 `sphpcustombattle.xml` 此前把专属指挥官也注册为 `commander_2`，实际效果是全局覆盖原版 Elthild，而不是新增灰袍指挥官；这也是启用/停用模组切换后对象状态与共享预览异常的新高概率来源。
+- `sphpcustombattle.xml` 与 `GwpIds.CustomBattleCommanderId` 已改为唯一 ID `gwp_custom_battle_commander`，恢复原版 `commander_2`。第一版 `GwpCustomBattleCommanderPatch` 包装 `CustomBattleData.Characters` 的迭代器以追加唯一对象；用户实测进入自定义战斗时直接报错退出。最新 `rgl_log_14640.txt` 停在 `NavalCustomBattleScreen::HandleInitialize`，而上一版同一位置之后会继续执行 `HandleActivate` 并加载 `inventory_character_scene`，证明新枚举包装就是这次回归来源。
+- 日志中的 `Null object reference found with ID: spc_mounted_archery_skills` 不是这次直接退出的新增原因：`rgl_log_3892.txt` 和 `rgl_log_15752.txt` 在同一警告后都能正常进入自定义战斗。该缺失模板仍是既有 CustomGame 数据污染线索，后续预览排查时单独处理，不能拿它解释本次回归。
+- 第二版改为 `CustomBattleSideVM.RefreshValues()` 完成后的 postfix，用户复测仍在进入自定义战斗时直接报错。`rgl_log_39656.txt` 再次精确停在 `NavalCustomBattleScreen::HandleInitialize`，没有进入 `HandleActivate`；因此不仅枚举包装不可用，任何在该界面初始化期间追加灰袍指挥官的 Harmony 路径都必须从稳定基线中移除。
+- 已完整删除 `GwpCustomBattleCommanderPatch.cs`。当前成品 DLL 不再补丁 `CustomBattleData.Characters`、`CustomBattleSideVM`、`UpdateCharacterVisual()`、`CharacterTableau` 或人物装备 getter；自定义战斗完全使用原版指挥官列表。唯一 XML 对象 `gwp_custom_battle_commander` 暂时不进入角色选择，后续只能在不修改界面初始化链的前提下重新设计；双刃卫士、AI 双刀和地面拾取禁用全部保留。
+- 数据检查确认 GreyWarden 已不再定义 `commander_2`，原版 `custombattlecharacters.xml` 仍定义原生 `commander_2`。Harmony 独立预检现在只生成原有 7 个双刀战斗补丁与新增 4 个地面拾取补丁，共 11 个 replacement method；不存在自定义战斗界面或角色列表 replacement。
+- `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings。仓库 `_Module` 与 live 的 36 个正常客户端运行文件缺失 0、哈希差异 0；仓库 `obj/Release`、live 客户端和 live 编辑器 DLL SHA-256 均为 `5931C5E4CD1EB1BAF15015ACC9AD37C39DD9A8D3F0D9FE34BC5FE2F1AE018F55`，中英文 README 与 live 一致。本轮未制作正式 ZIP。
+
+## 2026-08-28 自定义战斗预览第二阶段：双刀动作集从全局人物动作中隔离
+
+- 用户实测上一轮恢复坐骑护具引用并统一 XML 编码后，自定义战斗人物仍不显示；因此 `Item.wharnesscom` 和编码声明不是该显示故障的根因，玩家 README 中对应“已修复”表述已撤回。用户同时确认切换 GreyWarden 启用状态后启动会出现报错，而双刀功能加入前没有该现象。
+- 对照当前 Bannerlord 1.4.8 反编译结果确认，自定义战斗人物 tableau 与普通战场人类默认都使用 `as_human_warrior`。旧 `action_sets.xslt` 直接把 84 个 GreyWarden 双刀动作注入这一全局动作集，因此任何加载双刀资源的界面都会接触这批动作；此前针对 `Equipment.CalculateEquipmentCode`、`CharacterViewModel.FillFrom`、`BasicCharacterObject.get_Equipment`、`CharacterObject.get_Equipment` 的预览补丁均已被实测排除。
+- 已删除整个 `GwpCustomBattleDualBladePreviewPatch.cs`，不再 Harmony 修改 `CustomBattleSideVM.UpdateCharacterVisual()` 或两个角色装备 getter。普通自定义战斗预览现在完全回到原版 ViewModel 与装备读取路径。
+- `action_sets.xslt` 现在保持原版 `as_human_warrior` 原样，并另建 `as_gwp_dual_warrior`：专用动作集复制当前原版人类动作后仅在副本追加 84 个双刀动作。离线 `XslCompiledTransform` 验证合并结果为 103 个动作集；原版动作集包含 4699 项、GreyWarden 动作 0 项，专用动作集包含 4783 项、GreyWarden 动作 84 项，缺失 action type 0。
+- 新增 `GwpDualBladeActionSetPatch`。它只在 `Mission.SpawnAgent(AgentBuildData,bool)` 已完成真实 Agent 构建后检查第一格副手剑和第二格主手剑；完整配对的玩家或 AI 才调用原版 `Agent.SetActionSet()` 切换到 `as_gwp_dual_warrior`。普通英雄、非双刀兵种、人物预览和库存 tableau 不读取专用动作集。该补丁不生成 Agent、不重挂武器、不轮询、不使用 Mission Tick，也不修改 BodyProperties。
+- Harmony 独立预检成功生成 AI 盾牌资格、装备同步、WeaponData、WeaponStatsData、双刀碰撞、伤害类型和新 `Mission.SpawnAgent` 动作集补丁共 7 个 replacement method；旧的三个自定义战斗预览补丁类型已从成品 DLL 消失。
+- 读取 10:37 与 10:39 两次实机 `rgl_log` 发现：停用和启用 GreyWarden 的两次进程都正常进入 NavalDLC 自定义战斗界面并执行正常退出清理，日志均没有托管异常；两次末尾都存在 `Non-Zero Device Reference Count`（停用时 ERC2222、启用时 ERC2211）。因此该末尾错误并非只由 GreyWarden 产生，不能把它单独当作本模组启动异常的已证实根因；本轮仍通过专用动作集缩小 GreyWarden 对全局人物资源的影响，等待用户复测切换启动与预览。
+- 最终 `dotnet build --no-restore -p:DeployToLiveModule=true` 成功，0 errors、0 warnings（增量构建）。仓库 `_Module` 与 live 模组的 36 个正常客户端文件缺失 0、哈希差异 0，全部 XML/XSLT/mbproj 解析失败 0；live 客户端 DLL SHA-256 为 `0B435AF0A76A678100F639599AFE46308DE655C27EBAB842A5387E8FD5CBF3DE`，专用动作集 XSLT SHA-256 为 `1AA305379F827C5562B2FC60A16F55437DA866C4A2AE7DE84577C863F483BFD0`。本轮未制作正式 ZIP。
+
+## 2026-08-28 已排除：坐骑护具引用与 XML 编码
+
+- 用户复测确认：等级、重步兵小锤、指挥官剑盾和双刀战斗均已正常，唯一残留是启用 AI 双刀后自定义战斗预览的人物模型不显示。
+- 对照工作区相对 `HEAD` 的装备表变更发现，`gw_equipment_sets.xml` 原有合法的 `HorseHarness id="wharnesscom"` 被误改为 `Item.wharnesscom`；`items.xml` 中实际对象 ID 是 `wharnesscom`。灰袍英雄的自定义战斗 tableau 会读取完整英雄装备并生成坐骑/人体视觉，无效护具引用会使该视觉创建链失败，同时武器、旗帜和坐骑占位仍可能保留，符合用户症状。已将四处引用恢复为 `wharnesscom`，不改英雄脸型、体型、双刀装备或 AI 逻辑。
+- 同轮核对发现 `action_types.xml`、`combat_parameters.xml`、`full_movement_sets.xml`、`item_usage_sets.xml`、`movement_sets.xml` 的 XML 声明写成 `utf-16`，实际文件字节为 UTF-8；已统一声明为 `utf-8`，避免动作资源解析器在预览路径产生部分加载。该修正不改变节点内容或动作名。
+- 未重新加入任何双刀监控、Mission Tick、强制生成/重挂武器或人物缩放补丁；AI 双刀补丁、击倒判定和双刀资源保持不变。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj --no-restore -p:DeployToLiveModule=true` 成功，0 errors、0 warnings（增量构建）；仓库 `_Module` 与 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 的 36 个正常客户端文件缺失 0、哈希差异 0。live 客户端 DLL SHA-256 为 `2911F533B08F7356F09F1419E1E576E9C3551AA3D83A94C8F33B7F8585AEEA68`。
+- 本轮尚未代替用户启动游戏；下一验证只需打开自定义战斗预览确认英雄人体/护甲恢复，同时快速确认战场双刀 AI 未回退。若仍缺失，下一隔离点才是 `action_sets.xslt` 的全局 `as_human_warrior` 扩展，不应再叠加 Equipment getter 补丁。
+
+## 2026-08-28 双刃卫士等级、重步兵装备与自定义指挥官预览隔离
+
+- 用户确认双刃卫士显示等级高于普通重步兵。核对 `spnpccharacters.xml` 后发现双刃卫士为 `level=31`、重步兵为 `level=26`；已把双刃卫士改为 `level=26`，两者现在同级，升级关系仍由轻步兵单独指向双刃卫士。
+- 普通重步兵原本额外携带 `empire_mace_3_t4` 小锤；已从其战斗装备栏移除，只保留灰袍剑和大盾。没有改双刃卫士的双刀装备。
+- 为隔离自定义战斗共享预览问题，`sphpcustombattle.xml` 中的专属指挥官 `commander_2` 已改回普通灰袍剑 `gwonehandedsword` + 黑曜大盾 `wlarge_shield_black`，其余护甲、人物属性和英雄身份不变。双刀领主和双刃卫士的战场配置保留，预览 getter 隔离补丁也保留用于其它可能被选入的双刀角色。
+- 这是一次针对预览故障来源的 XML 级 A/B 隔离，不是放弃 AI 双刀；如果自定义战斗人物恢复显示，说明冲突点确实在专属指挥官双刀装备进入共享 tableau 的路径。没有新增监控、Mission Tick、强制拔刀或人物缩放。
+- `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings；仓库 `_Module` 与 live 的 36 个运行文件缺失 0、哈希差异 0。等待用户验证：双刃卫士等级、重步兵不再带锤、自定义战斗人物模型是否恢复，以及战场双刀 AI 是否仍正常。
+
+## 2026-08-28 双刀全方向击倒判定扩展
+
+- 按用户要求，双刀击倒不再只检查左手挥砍。完整双刀装备现在覆盖左挥、右挥、上挥、下劈以及突刺等普通近战攻击；主手附带的长枪等其他武器不会继承双刀击倒。
+- 防御碰撞的绕过入口同步扩展到双刀的两只手：被盾挡、武器格挡、招架或 Chamber 时，双刀任一方向的攻击都可以按原有灰袍概率触发同一击倒反应。踢击和盾击仍走原有逻辑，不会重复套用双刀判定。
+- 判定依据改为“完整双刀装备 + 当前攻击骨骼对应的实际持用武器”：骨骼 `20` 识别左手副剑，其余近战攻击骨骼识别主手剑；这样不会把领主装备栏中的长枪误判为双刀攻击。没有新增监控、轮询、强制拔刀或人物预览代码。
+- `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings；Harmony 预检成功，仓库、live 客户端和 live 编辑器 DLL SHA-256 均为 `2B88BD9D15D3D2EA8721EF78C46AEA58ECDDAFA50F68015F7A43D17E351AD9D4`。本轮未启动游戏，等待用户实测四向攻击及防御中的击倒。
+
+## 2026-08-28 英雄装备 getter 覆盖补齐（上一版仍不显示）
+
+- 用户实测上一候选后，自定义战斗人物仍不显示，说明只拦 `BasicCharacterObject.get_Equipment` 没有覆盖实际入口。
+- 反编译当前 Bannerlord 1.4.8 后确认：`TaleWorlds.CampaignSystem.CharacterObject` 覆盖了 `Equipment` 属性；英雄会直接返回 `HeroObject.BattleEquipment`，不会经过 `BasicCharacterObject.get_Equipment`。灰袍自定义战斗指挥官带 `is_hero="true"`，因此上一版对英雄完全没有生效，这解释了为什么全体共享预览仍被双刀英雄拖坏。
+- 新增 `GwpCustomBattleHeroEquipmentGetterPatch`，与基础 getter 共用同一个预览安全装备清理器。它只在 `CustomBattleSideVM.UpdateCharacterVisual()` 的线程局部作用域内生效，仍只返回普通灰袍剑盾克隆；真实英雄装备、AI 战场双刀、BodyProperties、体型、动作、击倒均不改。非英雄和非双刀角色路径不变。
+- `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings。Harmony 预检同时成功生成 `BasicCharacterObject.get_Equipment` 和 `CharacterObject.get_Equipment` 两个预览入口，以及六个双刀战斗补丁。需要用户再次实测自定义战斗预览与双刀战场；本条暂不宣称已修复。
+
+## 2026-08-28 监控时间线复核与自定义战斗装备读取隔离
+
+- 用户补充了最早出现预览缺人的准确时间线：为判断 AI 双刀是否启用以及接战闪退发生在哪一步，第一版曾在 `Agent.WieldInitialWeapons()` 前后记录装备索引，并由 Mission Tick 持续轮询 Agent；从加入这套监控后，自定义战斗开始出现人体/护甲不加载、只剩武器，并伴随过闪退。该记忆与 2026-08-26 的现场记录一致：轮询读取了尚未完成构建的预览 Agent，确实能破坏预览和进入场景流程，不能把这段历史当成用户误判。
+- 当前源码和 live DLL 已再次核对：`GwpDualBladeDiagnostics`、`GwpDualBladeDiagnosticBehavior`、初始拔刀/武器更新/收刀请求/拔刀请求/武器选择失效等六类双刀诊断补丁均不存在；双刀也没有 Mission Tick 轮询。项目原有的 `GwpAiDiagnostics` 是大地图办案、队伍和经济诊断，不访问自定义战斗 Agent，不属于当时的双刀监控。故当前症状不是旧监控仍在运行，而是 AI 双刀适配曾把不适用于 tableau 的装备数据带进预览路径。
+- 前两轮 `Equipment.CalculateEquipmentCode` 与 `CharacterViewModel.FillFrom` 隔离均已由用户实测证明无效，现已完整撤回，不继续叠加。进一步核对 `CustomBattleSideVM.UpdateCharacterVisual()` 的读取路径后，确认它还会直接访问 `BasicCharacterObject.Equipment`；只替换装备码或 ViewModel 内部副本无法覆盖这条入口。
+- 当前候选只在 `CustomBattleSideVM.UpdateCharacterVisual()` 执行期间建立线程局部作用域，并在该作用域内拦截 `BasicCharacterObject.Equipment` 的读取。若角色是完整 GreyWarden 双刀配置，仅向这次预览返回普通灰袍剑与黑曜大盾的装备克隆；角色的真实 `Equipment`、角色定义、BodyProperties、战场生成和 AI 双刀原生同步都不改，非双刀角色完全走原版。作用域用 Harmony finalizer 回收，即使原预览方法抛出异常也不会把隔离状态泄漏到后续界面或战场。
+- 本候选没有增加日志、监控、Mission Tick、强制拔刀、重新生成或重挂武器，也没有修改左手击倒。验证目标只有两个：自定义战斗双方人物是否恢复；专属双刀指挥官进入实际战场后是否仍正常双持。未得到用户实测前，不把本候选记作已经修复。
+- `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 已成功，`0` errors、`43` 条既有 nullable warnings。Harmony 独立预检成功生成 `CustomBattleSideVM.UpdateCharacterVisual` 与 `BasicCharacterObject.get_Equipment` 两个 replacement，并同时确认六个已验收的双刀战斗补丁仍可生成。仓库 `obj/Release`、live 客户端和 live 编辑器 DLL SHA-256 均为 `B8BAFB290D1FD61E6D46E09251F1844F5E7A40D86A23F2117642E3EE32DC95EE`；仓库 `_Module` 的 `36` 个部署文件与 live 缺失 `0`、哈希差异 `0`。README 已撤下尚未实测的“预览已修复”表述；未制作正式 ZIP。
+
+## 2026-08-28 自定义战斗预览第二层隔离（上一版仍不显示）
+
+- 用户截图确认：上一版只隔离 `EquipmentCode` 后，AI 双刀战斗仍正常，但自定义战斗预览依旧只显示武器和旗帜，人体/护甲没有恢复。因此不能把“只替换装备码”当成已解决。
+- 反编译 `CharacterViewModel.FillFrom(BasicCharacterObject, int, string)` 后确认它会先读取角色装备生成 `BodyProperties`，再把真实装备克隆到视图模型；仅在 `Equipment.CalculateEquipmentCode()` 返回安全码仍可能让原始双刀装备留在视图模型内部。新增同一自定义战斗线程范围内的 `FillFrom` 前置替代：完整双刀角色使用普通灰袍剑盾副本同时生成身体属性、坐骑键和装备码，然后跳过原版对双刀装备的克隆。`SelectedCharacter`、武器图标列表和战场 AI 装备不改。
+- AI 双刀原生同步、双刃卫士、双刀领主、自定义战斗指挥官和左手挥砍击倒均未改；没有监控、轮询、强制拔刀、重新生成、体型/脸型修改。
+- Harmony 预检新增并成功生成 `CharacterViewModel.FillFrom` replacement；`Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`44` 条既有 nullable warnings。仓库 `obj/Release`、live 客户端和 live 编辑器 DLL SHA-256 均为 `70252E2F11BF2CFCBE289A604359CE1333C4FA8A7FFA48E04BC441E2CF16D485`；仓库 `_Module` 的 `36` 个部署文件与 live 缺失 `0`、哈希差异 `0`，中英文 README 与 live 哈希一致。该版本等待用户再次打开自定义战斗界面验收。
+
+## 2026-08-28 AI 双刀与自定义战斗预览的独立修复
+
+- 用户多次完成启用/停用对照：AI 双刀内容存在时，自定义战斗共享预览中的双方人物会消失或比例异常；把双刀指挥官、双刀领主、双刃卫士及 AI 原生同步临时隔离后，人物显示恢复。该回退只用于建立诊断基线，不代表放弃 AI 双刀。
+- 上一候选把 AI 资格收紧为 `agent.Mission == Mission.Current`，但用户复测显示预览问题仍在。反编译确认 `CustomBattleSideVM.UpdateCharacterVisual()` 根本不创建 `Agent`：它直接克隆 `SelectedCharacter.Equipment`、计算 `EquipmentCode`，再交给 `CharacterTableau`。因此该 Agent 条件无法触达故障路径，旧记录中“Mission 归属隔离已修复”的结论错误，现已更正。
+- 临时隔离基线之后，已恢复实测能够让 NPC 持续拔出副手、正常攻击和格挡的 `GwpDualBladeAiNativeSyncPatch.cs`，恢复轻步兵到 `gwdualbladeguard` 的独立升级路线、`spc_gw_leader_dual`（仅 `gw_leader_0` 与 `gw_leader_5`）以及双刀自定义战斗指挥官。没有新增物品，也没有恢复监控、Mission Tick、强制拔刀、重新生成或人物数据修改。
+- 新增 `GwpCustomBattleDualBladePreviewPatch.cs`。只在 `CustomBattleSideVM.UpdateCharacterVisual()` 的当前线程范围内拦截完整 GreyWarden 双刀装备的 `Equipment.CalculateEquipmentCode()`：克隆一份预览装备，把该副本的武器格换成普通灰袍剑与黑曜大盾后计算展示码；`SelectedCharacter.Equipment`、装备图标列表和进入战场后的真实双刀装备均不改。这样预览场景不再接收 AI 兼容双刀码，而战场 AI 仍走原先已验收的双刀链。
+- 左手挥砍与防御中的击倒实现完全未改。Harmony 独立预检已成功生成 `UpdateCharacterVisual`、`CalculateEquipmentCode` 以及四个 AI 双刀目标的 replacement method；仍需用户实机确认自定义战斗双方人物恢复，同时确认专属指挥官和双刃卫士进入战场后继续正常双持。
+- 最终 `Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings。成品反编译确认预览补丁只替换当前线程的展示装备码，AI 原生副本仍带 `bo_mace_a`、`bo_wlarge_shield`、近战位、耐久与格挡资格。仓库 `obj/Release`、live 客户端和 live 编辑器 DLL SHA-256 均为 `B53A9CCD6C9C7CCB47A2C19C413808E4B2E42F66F8DC9BB0AC6AC3CC05D7E407`；仓库 `_Module` 的 `36` 个部署文件与 live 缺失 `0`、哈希差异 `0`，`24` 个 XML/XSLT/mbproj 文本解析失败 `0`，中英文 README 与 live 哈希一致。结构核对为：自定义指挥官双刀、双刀领主精确为 `gw_leader_0/gw_leader_5`、双刃卫士一名且由轻步兵升级。未制作正式 ZIP。
+
+## 2026-08-28 左手挥砍无视防御击倒
+
+- 用户确认双刀战斗功能正常，但要求左手挥砍像灰袍踢击/盾击一样，不因目标处于盾挡、武器格挡、招架或
+  Chamber 状态而失去击倒反应。反编译 Bannerlord 1.4.8 的 `Mission.MeleeHitCallback()` 后确认：这些防御
+  碰撞会让原版跳过 `Mission.RegisterBlow()`；因此仅覆盖
+  `AgentApplyDamageModel.DecideAgentKnockedDownByBlow()` 不足以让防御者真正倒地。
+- 新增 `GwpDualBladeDefenceBypassPatch`，只匹配完整 Grey Warden 双刀、攻击骨骼 `20`、普通挥砍，并且只在
+  原碰撞结果为盾挡/武器格挡/招架/Chamber 时按现有灰袍领主/兵种概率进行一次判定。成功时向同一受击者发送
+  一个静音、1 点控制接触、`BlowFlags.KnockDown` 的原生 `Agent.RegisterBlow()`；真实左手剑的伤害、盾牌耐久、
+  攻击动作和未防御碰撞路径保持原样。没有新增监控、轮询、强制拔刀或人物数据改写。
+- 该控制接触沿用现有踢击/盾击控制反应的原生入口，目的只是绕过防御碰撞本身跳过 `RegisterBlow()` 的边界；
+  实机仍需确认防御中的目标确实播放击倒反应且未产生额外伤害异常。
+- 本轮 `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild
+  --no-restore -p:DeployToLiveModule=true` 成功，`0` errors、`43` 条既有 nullable warnings。仓库、live
+  客户端和 live 编辑器 DLL SHA-256 均为
+  `2D557904E1144CBDD69024BD1B5E3D7FE35C8A8686D7E83DDF414414D8E58281`；仓库 `_Module` 的 `36` 个
+  正常客户端部署文件与 live 缺失 `0`、哈希差异 `0`。本轮未启动游戏，等待用户实机验证防御中的击倒表现。
+
+## 2026-08-28 自定义战斗人物预览显示问题（上一候选未解决）
+
+- 用户实测上一候选后，自定义战斗仍出现双方人体/护甲消失、只剩武器、旗帜和坐骑；因此“把真实副手锻造片
+  `body_name` 恢复为 `bo_sword_one_handed` 即可修复预览”的假设已被排除。本轮不再继续修改
+  `BodyProperties`、体型、比例或真实人物数据，也不把该问题写入玩家 README 的“已修复”列表。
+- 已确认玩家双刀和 NPC 双刀战斗动作仍正常；显示问题与战场 AI 拔刀/击倒逻辑分离。下一隔离目标是自定义战斗
+  `CharacterTableau` 所使用的动作集/XSLT、AssetPackages 资源闭包及其共享预览场景加载，不恢复双刀监控或在
+  Mission Tick 中添加补偿逻辑。
+
+## 2026-08-28 自定义战斗人物预览消失修复
+
+- 用户用同一自定义战斗界面完成启用/停用对照：停用 GreyWarden 时双方人物正常，启用后双方人体与
+  护甲消失，只剩武器、旗帜和坐骑；用户进一步确认玩家专用双刀阶段没有该问题，症状从 NPC 双刀适配
+  后开始。该证据排除单个 `NPCCharacter` 的脸、年龄、体重和体型定义，也不允许继续改
+  `BodyProperties`。
+- 反编译 Bannerlord 1.4.8 的 `CustomBattleSideVM.UpdateCharacterVisual()` 与
+  `CharacterTableau.InitializeAgentVisuals()` 确认，预览不生成战场 `Agent`，而是直接把所选人物的真实
+  `Equipment` 交给共享预览场景中的 `AgentVisuals`。因此 `Agent.EnforceShieldUsage()`、
+  `EquipItemsFromSpawnEquipment()` 和其线程局部 Native 数据代理不会直接参与预览；继续修改 AI Agent
+  条件无法修复这个界面。
+- 时间线差分发现 AI 资格实验曾把真实隐藏锻造片 `gwp_vlandian_blade_3_dual` 的 `BladeData.body_name`
+  从原版剑主体 `bo_sword_one_handed` 改为 ROT 固定物品使用的 `bo_mace_a`。这一真实物品字段会被
+  CharacterTableau 读取，并可使同一共享场景中的双方人物视觉一起失效。现只把锻造片恢复为
+  `bo_sword_one_handed`；当前原版
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\Native\ModuleData\crafting_pieces.xml`
+  的 `vlandian_blade_3` 也在其 `BladeData` 明确定义同一主体。AI 战场所需的 `bo_mace_a` 与
+  `bo_wlarge_shield` 仍仅由
+  `GwpDualBladeAiWeaponDataPatch` 在完整双刀 AI 的一次 `EquipItemsFromSpawnEquipment()` 数据副本中
+  提供。没有改动作、装备槽、模型、剑鞘、AI 拔刀、格挡、左手劈砍或击倒，也没有恢复任何双刀监控。
+- 此项属于基于对照现象和反编译路径的最小修复。`Release -t:Rebuild --no-restore
+  -p:DeployToLiveModule=true` 构建通过，`0` errors、`43` 条既有 nullable warnings；仓库、live 客户端和
+  live 编辑器 DLL 的 SHA-256 均为
+  `17A535B2EAF7CD76137D058DFBD2F06F18505C28C52ADD37BBBF926DA10BF1E8`，证明本轮没有改变已实测成功的
+  AI 双持托管代码。`gwp_crafting_pieces.xml` 在仓库与 live 的 SHA-256 均为
+  `8BE1EAD5BDFC8C08DF8682E7BEB8880D364604DFB8AE57535CAE48A29C5B2B65`；仓库 `_Module` 的 `36` 个
+  正常客户端部署文件与 live 缺失 `0`、哈希差异 `0`。ModuleData 的 `24` 个 XML/XSLT/mbproj 按文本
+  实际编码解析失败 `0`；其中 5 个既有动作数据文件声明 UTF-16 但实际为 UTF-8，直接按声明载入会报
+  BOM 不匹配，游戏实际读取与按文本规范化解析均不受影响。`git diff --check` 通过，没有创建正式 ZIP。
+  尚未代替用户启动游戏；下一次实测只需先进入自定义战斗界面确认双方人体恢复，再进入战场确认 NPC
+  仍持续双持、攻击和格挡。
+
+## 2026-08-28 双刀监控移除与左手劈砍判定修复
+
+- 用户明确要求停止双刀相关监控。删除 `GwpDualBladeDiagnostics.cs`，移除
+  `SubModule.OnMissionBehaviorInitialize()` 中的 `GwpDualBladeDiagnosticBehavior` 注册，并从
+  `GwpDualBladeAiNativeSyncPatch.cs` 删除所有双刀诊断调用。双刀功能补丁、AI 原生同步和项目其他
+  AI 诊断不受影响；已有的
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Diagnostics.log`
+  未做破坏性删除，代码已不再写入它。
+- 左手剑伤害被原版判成钝击的直接路径是 `MissionCombatMechanicsHelper.GetAttackCollisionResults()`：
+  当 `HitWithAnotherBone()` 为真时，原版把伤害类型改成 `Blunt`。ROT v1.3.15.3 的补丁只要
+  `AttackCollisionData.AttackBoneIndex == 20` 就把骨骼不匹配判定改为假。GreyWarden 的
+  `GwpDualWieldingPatch` 已对齐这一规则，不再额外要求副手槽索引为 `0`；放行后保留武器 XML 的
+  `Swing damage_type="Cut"`，由原版正常计算劈砍伤害和护甲倍率。
+- 左手挥砍击倒不再依赖 `IsAlternativeAttack == false`、固定 `Weapon0` 碰撞槽或
+  `Blow.AttackType == Standard`。`GwpAgentApplyDamageModel` 现在确认攻击者完整装备
+  `gwdualbladeoffhand` + `gwdualblademainhand`，命中类型为挥砍，并且传入伤害模型的
+  `attackerWeapon` 就是当前挥出的 `WieldedOffhandWeapon.CurrentUsageItem`；这样可覆盖玩家和 AI
+  的真实副手挥砍，同时不会把右手剑、踢击或盾击误判为左手剑。击倒概率仍复用原有灰袍领主/兵种档位，
+  成功时抑制额外击退，失败时回到原版普通近战击退。
+- 本轮没有新增监控、日志、伤害倍率、合成攻击、实体生成、持续重挂或强制拔刀。中英文玩家 README
+  的 v1.4-r10 条目已同步说明左手挥砍按劈砍伤害处理并可触发灰袍击倒判定。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild --no-restore
+  -p:DeployToLiveModule=true` 已通过，0 errors、43 条既有 nullable warnings。仓库
+  `obj/Release` 客户端 DLL 与 live 客户端 DLL 均为 `788480` 字节，SHA-256
+  `0943B5DBF8FDC35475BB1CAE6E95A9D1605C040ABFF07E74329B934FD0285AA6`；仓库 `_Module` 与 live
+  模组 36 个可部署文件缺失 0、哈希差异 0。代码源文件与成品 DLL 均未发现
+  `GwpDualBladeDiagnostics` 或 `GwpDualBladeDiagnosticBehavior` 引用，`git diff --check` 通过。
+  尚未代表用户启动游戏实测。
+
+## 2026-08-28 双刀左手挥砍击倒机制
+
+- 用户确认当前 NPC 双刀已经能够拔出左手剑并正常攻击、格挡，但左手剑伤害体感低于右手剑；用户明确要求不再继续增加伤害监控或倍率修正，而是把现有灰袍踢击/盾击使用的击倒判定接到左手挥砍命中。
+- 修改 `GwpAgentApplyDamageModel`：仅当命中来自 `Weapon0`、该槽是 `gwdualbladeoffhand`、`Weapon1` 是 `gwdualblademainhand`、碰撞类型为普通挥砍且 `Blow.AttackType` 为 `Standard` 时，复用原有领主/兵种等级击倒概率；双刃卫士补入原有精英兵种概率档。成功时沿用现有“击倒抑制额外击退”的流程；失败时调用当前游戏原生普通近战击退判定，不给左手挥砍额外强制击退。右手剑、左手刺击、踢击/盾击和非双刀装备不受此分支影响。
+- 本轮没有新增命中监控、伤害倍率、合成攻击、实体生成、持续重挂或玩家专用分支。README 的当前 v1.4-r10 中英文条目已同步说明左手挥砍命中可触发灰袍击倒判定。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 已通过，0 errors、44 条既有 nullable warnings。`obj/Release`、客户端和编辑器 DLL 均为 788480 字节，SHA-256 `E17B5A6CE2E493F343207F3B7D24C85B5C2B1D3622C1DA335395D3DC3D3219F1`；仓库 `_Module` 与 live 模组 36 个可部署文件缺失 0、哈希差异 0，`git diff --check` 通过。本轮仅完成代码和部署验证，尚未代表用户启动实机测试。
+
+## 2026-08-28 双刀 AI 原生副手碰撞体候选（待实机验收）
+
+- 当前实测基线是：玩家双刀正常，NPC 初始拔刀后又被 Native AI 清除左手剑；上一候选只保留
+  `MeleeWeapon + HasHitPoints`，因此没有崩溃但也没有持续副手。此前加入 `CanBlockRanged`
+  能让 NPC 持刀，却在接战格挡时触发 `TaleWorlds.Native.dll+0x73ddf8` 空指针。
+- 本轮只在完整 GreyWarden 双刀 AI 的一次 `Agent.EquipItemsFromSpawnEquipment()` Native 同步作用域
+  内恢复 `CanBlockRanged`，保留 `MeleeWeapon`、`HasHitPoints`、`DataValue/MaxDataValue=500`，并把
+  `WeaponData.CollisionShape` 补为游戏中已存在的 `bo_wlarge_shield`。`WeaponData.Shape` 仍为
+  ROT 使用的 `bo_mace_a`。这解决的是 Native 盾资格路径读取空碰撞对象的问题；不改托管
+  `MissionWeapon`、玩家路径、模型、剑鞘、动作资源，不生成实体、不持续重挂、不用 Mission Tick 补拔刀。
+- 预期验证顺序：新开自定义战斗后 NPC 左手剑持续出鞘；玩家攻击双刀 NPC 不崩溃；NPC 能用双持
+  攻击及四向近战格挡。若仍崩溃，下一步应撤回 `CanBlockRanged`，不要继续扩大盾牌伪装字段。
+- 构建部署：`dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild --no-restore -p:DeployToLiveModule=true`，
+  0 errors、44 条既有 nullable warnings。客户端与编辑器 DLL 均为 787968 字节，SHA-256
+  `6B74A7D05DBDC3AD3695E208E80F0FED1126D378A638656724012AE5E9AA60CB`；仓库 `_Module` 与 live
+  模组 36 个可部署文件缺失 0、哈希差异 0。当前诊断日志仍是上一会话
+  `2026-08-28T02:07:47–02:07:51`，尚未包含本候选的实机结果。
+
+## 2026-08-28 双刀 AI 碰撞体同步（待实机验收）
+
+- 用户反馈本轮 NPC 没有拔出副手剑，但现有诊断日志最后一次会话仍是
+  `2026-08-28T01:19:46–01:22:05`；实时客户端 DLL 在 `01:40:06` 已换成另一份构建，
+  因此不能把旧日志归因到当前候选。为隔离这个时间线问题，先做单字段回退：保留
+  `HasHitPoints`、`DataValue/MaxDataValue=500`、`MeleeWeapon`、`bo_mace_a` 和原始剑攻击数据，
+  移除 `CanBlockRanged`。该标志会把近战剑带入盾牌专用的远程格挡碰撞路径，既可能让初始副手资格
+  被 Native 拒绝，也可能重现此前接战格挡空指针；本轮不改玩家路径、不生成实体、不强制重挂。
+
+- 用户最新实测确认上一版已退步：玩家双刀不受影响，但双刃卫士 NPC 不再拔出左手剑。诊断日志显示 `WieldInitialWeapons()` 之后短暂得到
+  `actualOff=WeaponItemBeginSlot`，随后仍被 Native AI 清为空；当前副手统计只有 `MeleeWeapon + HasHitPoints`，没有触发原版可长期占用副手的完整判定。
+- 对照已安装的 ROT v1.3.15 数据，非锻造左手剑明确使用 `body_name="bo_mace_a"`，对应 `WeaponData.Shape`；ROT 没有声明 `collision_body`。此前恢复
+  `CanBlockRanged` 时，副手仍使用锻造剑的 `bo_sword_one_handed` 主体，且没有复制 ROT 的主体形状；该差异与“能出鞘但真实格挡进入 Native 后崩溃”相符。
+- 调整 `GwpDualBladeAiNativeSyncPatch`：仅在完整双刀 AI 的一次 `EquipItemsFromSpawnEquipment()` 同步作用域内，对传给 Native 的副本加入
+  `HasHitPoints`、`DataValue/MaxDataValue=500`，并将 `WeaponData.Shape` 对齐为原版资源 `bo_mace_a`；不再加入
+  `CanBlockRanged`，避免近战剑进入盾牌专用碰撞路径。`CollisionShape` 保持 ROT 的空值。副手锻造片的
+  `body_name` 也同步为 `bo_mace_a`。保留 `MeleeWeapon`、剑类用途、伤害、动作、模型、剑鞘和托管
+  `MissionWeapon`；玩家和普通装备不进入作用域，不生成实体、不强制重挂、不轮询拔刀。
+- 诊断现在记录 `WeaponData.Shape` 与 `CollisionShape` 名称，下一次测试应看到 AI 副手行 `shape=bo_mace_a` 且 `collisionShape=-`，并依次验证：NPC 左手剑持续出鞘；玩家攻击双刀 NPC 不崩溃；NPC 能用双持攻击和四向近战格挡。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild --no-restore -p:DeployToLiveModule=true`：0 errors、44 条既有 nullable warnings。`obj/Release`、客户端和编辑器 DLL SHA-256 均为
+  `763007E718B01226BAEA966A3EBEF0A1BF40AF4BB088B2ED7BBB60C37E49E2FA`；仓库 `_Module` 与 live 模组 36 个可部署文件缺失 0、哈希差异 0，ModuleData XML/XSLT 解析失败 0。仅部署诊断开发版，本轮不制作正式 ZIP，等待实机验收后再决定是否保留此候选。
+
+## 2026-08-28 双刀 AI 最小原生资格同步（待实机验收）
+
+- 用户最新实测确认：NPC 已成功拔出左手剑并保持双持动作，但玩家双刀攻击、NPC 双刀进入防御时，客户端在接战阶段发生
+  `TaleWorlds.Native.dll+0x73ddf8` 的 `0xc0000005`。这次不是生成或收刀问题，崩溃只在真实格挡碰撞发生时出现。
+- 新转储 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.47008.dmp` 由 WinDbg 确认：
+  故障指令为 `mov rbp,[rdx+8]`，`rdx=0`；调用者位于原生战斗更新路径，故障函数是一个空源对象的 `std::vector` 复制函数。
+  这与把剑的 `CanBlockRanged` 发送给 Native 后、第一次真实格挡访问不存在的盾牌碰撞对象相符，但不能据此声称已定位引擎私有函数名。
+- 对照 ROT v1.3.15.3 再次确认：ROT 没有 AI、`UpdateWeapons`、`WieldInitialWeapons` 或 AI 格挡补丁；玩家双刀始终保留
+  `OneHandedSword + MeleeWeapon`，只依靠 `dual_shield` 用法集和 bone 20 碰撞放行。因此“玩家正常”不能通过复制一段 ROT AI 代码解决，
+  需要避免把 AI 的剑统计伪装成盾牌统计。
+- 已做最小字段隔离：保留 `MeleeWeapon`、`OneHandedSword`、原始伤害/用途/动作与 `DataValue/MaxDataValue=500`，只从 AI 初次装备同步的
+  Native 副本移除 `CanBlockRanged`，不改玩家、不改托管 `MissionWeapon`、不生成或重挂实体。若副手仍能出鞘且格挡不崩，说明耐久资格足够而盾牌碰撞标志是崩溃触发点；若副手再次被清除，则证明原生 AI 资格判断要求更完整的盾牌记录。
+- 本轮构建 `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild --no-restore -p:DeployToLiveModule=true` 成功，
+  `0` errors、`44` 条既有 nullable warnings。仓库 `obj/Release`、客户端和编辑器 DLL 均为 `787456` 字节，SHA-256
+  `D060F186BEBC6662919130B67DE59F6570FEADB93B3A4A89D704367F4D273E09`；实机目录仍与 `_Module` 全量哈希一致。本轮尚未启动游戏，不制作正式 ZIP。
+
+- 由于转储对应的上一份客户端仍加载了带 `CanBlockRanged` 的旧 DLL，本轮再次执行完整 Rebuild 并覆盖客户端与编辑器 DLL。当前 live 与仓库 DLL
+  均为 `787456` 字节、SHA-256 `D060F186BEBC6662919130B67DE59F6570FEADB93B3A4A89D704367F4D273E09`；
+  运行文件缺失 `0`、哈希差异 `0`，`ModuleData` 的 `21` 个 XML 全部解析成功。下一次实机必须从新开自定义战斗开始，确认日志中的
+  `AI_NATIVE_WEAPON_STATS_PROXY` 只有 `MeleeWeapon, HasHitPoints`，再观察左手剑持续出鞘及真实格挡是否仍崩溃。
+
+- 最新 `2026-08-28T00:23:15` 自定义战斗日志覆盖 200 名双刃卫士：全部在
+  `WieldInitialWeapons()` 后达到 `actualMain=Weapon1`、`actualOff=WeaponItemBeginSlot`，约
+  2.3 秒后又统一变为 `actualOff=None`。期间已命中 `AI_SHIELD_ENFORCEMENT_BYPASSED` 与
+  `AI_FORMATION_INFO_BYPASSED`，却没有 `SHEATH_REQUEST`、`AI_UPDATE_WEAPONS_*` 或
+  `AI_INVALIDATE_WEAPON_SELECTIONS_*`。因此装备格、初始拔刀、用途名称和两条托管阵型入口均已排除；
+  清空发生在 Native AI 内部武器资格选择。
+- 撤回 `GwpDualBladeFormationInfoPatch`。它已由日志证明不能阻止清空，却会让双刀 AI 长期不向
+  Native 更新正常阵型文件/排位/间距元数据，副作用大于诊断价值。保留范围精确到完整双刀装备的
+  `Agent.EnforceShieldUsage()` 旁路，避免原版盾墙整理再次把非标准副手直接剔除。
+- 重新核对 `2026-08-27 12:25:09` 的 WER 事件：旧实验崩溃为
+  `TaleWorlds.Native.dll+0x73ddf8`、`0xc0000005`、读取地址 `0x8`。当前 Native DLL 反汇编显示该
+  地址位于内部对象复制函数 `0x73ddb0`，故障指令读取传入源对象的 `+8`。转储已经不在现有 WER
+  目录中，无法从当前文件继续恢复完整调用栈；但该崩溃只随“清除 `MeleeWeapon`”代理出现并在撤回
+  后消失，因而最可靠的字段差分是不能再让副手缺少完整近战数据。ROT 的原始左右手剑均明确保留
+  `OneHandedSword + MeleeWeapon`，所以不得恢复清除 `WeaponMask` 的实现，也不把当前反汇编结果
+  夸大为已定位具体 Native AI 函数名。
+- 恢复此前生成但从未实机验证的最小候选：只在
+  `Agent.EquipItemsFromSpawnEquipment()` 同步完整 GreyWarden 双刀 AI 的线程局部作用域内，给送往
+  Native 的副手数据副本补 `DataValue=500`、`MaxDataValue=500`、`HasHitPoints` 与
+  `CanBlockRanged`。原有 `MeleeWeapon` 以按位 OR 方式强制保留；`WeaponClass`、用途索引、伤害、
+  动作、模型、剑鞘及托管 `MissionWeapon` 均不改。玩家、普通 AI、拾取/掉落和后续运行时装备均
+  不进入此作用域；没有生成实体、补拔刀、Mission tick 重挂或持续强制。
+- 玩家排除不是依赖时序猜测：v1.4.8 反编译的 `Agent.Build()` 在
+  `Mission.BuildAgent()` 调用装备同步之前，已经把 `Controller` 设置为 `agentBuildData.AgentController`；
+  最新自定义战斗日志也记录玩家指挥官在 `AGENT_BUILD/WIELD_INITIAL` 阶段为 `isAI=False`。因此
+  `HasCompleteDualBladeLoadout()` 的 `IsAIControlled` 守卫不会把代理施加给玩家。
+- 诊断恢复 `AI_NATIVE_SYNC_BEGIN/END`、`AI_NATIVE_WEAPON_DATA_PROXY` 与
+  `AI_NATIVE_WEAPON_STATS_PROXY`，其中统计行明确记录 `meleePreserved=True`。下一次测试必须依次确认：
+  游戏与自定义战斗正常启动；接战前不再崩溃；出生约三秒后仍为
+  `actualOff=WeaponItemBeginSlot`；士兵和 NPC 领主能用同一动作移动、攻击及格挡。未通过实机前，
+  README 只写“待确认”，不得宣称问题已修复。
+- `Release -t:Rebuild --no-restore` 已通过，`0` error、`44` 条既有 nullable warning。独立 Harmony
+  预检进程分别为 `Agent.EnforceShieldUsage`、`Agent.EquipItemsFromSpawnEquipment`、
+  `MissionWeapon.GetWeaponData` 与 `MissionWeapon.GetWeaponStatsData` 成功生成 replacement method。
+  ILSpy 复核成品只执行 `originalFlags | 0x10000200`，不存在清除 `MeleeWeapon` 的按位操作，也不再包含
+  `GwpDualBladeFormationInfoPatch` 类型。实机客户端、编辑器与仓库 `obj/Release` DLL 均为
+  `787456` 字节，SHA-256 均为
+  `23B99D450DC02BB08E602194C96F203BCA7F6E112E3E23F6B7E0710A25FC87AA`；仓库 `_Module` 的
+  `36` 个普通客户端部署文件与实机缺失 `0`、哈希差异 `0`，ModuleData 的 `23` 个 XML/XSLT
+  解析失败 `0`，中英文 README 与实机哈希一致，`git diff --check` 通过。本轮只部署诊断开发版，
+  不制作正式 ZIP。
+
+## 2026-08-27 双刀 AI 原生武器选择观测补丁（待实机验收）
+
+- 在上一轮用途标识对齐之后，补充了只读 Harmony 观测：记录双刀 AI 进入和离开
+  `Agent.UpdateWeapons()`、`Agent.InvalidateAIWeaponSelections()` 时的主副手索引。
+  事件按 Agent 和手部状态去重，避免原生高频更新再次把诊断文件无限放大。
+- 观测补丁不改变返回值、装备槽、武器实体、动作、攻击输入或 AI 决策；玩家和普通
+  AI 不进入双刀筛选条件。它只用于确认副手清空发生在原生更新前后哪一个边界，之后
+  才决定是否需要针对该入口做最小旁路。
+- 本次 `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release
+  -t:Rebuild --no-restore` 成功，0 errors、44 条既有 nullable warnings。开发版 DLL
+  已自动部署到
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`；
+  仓库 `_Module` 的 36 个可部署文件与实机缺失 0、哈希差异 0。实机 DLL SHA-256 为
+  `971F24969BF9FA7D6110DE7ABA9C3C3511CF466113ACBFE00FECFB3537F603DB`。
+- 当前仍未代表用户启动游戏，下一次自定义战斗需重点保留
+  `AI_UPDATE_WEAPONS_*`、`AI_INVALIDATE_WEAPON_SELECTIONS_*`、
+  `WIELD_INITIAL_*` 和 `HAND_STATE_CHANGED` 行，以判断 AI 副手是被原生更新清空、
+  选择失效后未重挂，还是仅发生了视觉挂接问题。本轮不制作正式 ZIP。
+
+## 2026-08-27 双刀 AI 阵型元数据重算旁路（待实机验收）
+
+- 上一版实机日志把清空时序固定为：`WieldInitialWeapons()` 后约 `0.6s` 仍为
+  `Weapon1/WeaponItemBeginSlot`，约 `2s` 后才变成 `Weapon1/None`；期间没有托管
+  `TryToSheathWeaponInHand()`，而 `Agent.EnforceShieldUsage()` 已被前一轮补丁旁路。
+  因此“只跳过盾牌整理”不足以排除原生 AI 的第二个状态入口。
+- 反编译 Bannerlord 1.4.8 的 `Agent.ApplyFormationValuesPostUpdate(bool,bool)` 后确认，
+  AI 的完整阵型更新会依次调用 `UpdateFormationOrders()` 和原生
+  `IMBAgent.SetFormationInfo(...)`。前者已被旁路，但后者仍会把阵型元数据送入 native
+  agent 状态机，符合“没有收刀请求却清空副手”的剩余路径。新增
+  `GwpDualBladeFormationInfoPatch`，只对装备槽 `Weapon0/Weapon1` 精确匹配双刀的 AI
+  跳过该私有 post-update 方法；普通 AI、玩家、移动帧更新和完整武器实体均不改动。
+- 该补丁复现原方法的 detachment 更新和 `UpdateFormationOrders()`，只省略最后的
+  `SetFormationInfo(...)` 原生调用；不调用 `TryToWieldWeaponInSlot`、
+  `TryToSheathWeaponInHand`，不生成或复制实体，不改写武器统计。诊断新增一次性
+  `AI_FORMATION_INFO_BYPASSED`，用于确认补丁实际命中及清空时序是否消失。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj --no-restore
+  -p:DeployToLiveModule=true`：0 errors、44 条既有 nullable warnings。已自动部署到
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`；本轮尚未启动游戏，等待
+  自定义战斗实测左手剑是否保持出鞘、攻击和格挡。
+
+## 2026-08-27 双刀 AI 原生用途标识对齐（待实机验收）
+
+- 上一轮实机诊断已确定：双刀 AI 在 `WieldInitialWeapons()` 结束时同时持有
+  `Weapon1` 主手和 `WeaponItemBeginSlot` 副手；随后约两秒内 `actualOff` 变为 `None`，没有
+  `TryToSheathWeaponInHand()` 或托管 `OnWieldedItemIndexChange` 作为触发入口。跳过
+  `Agent.EnforceShieldUsage()` 只能证明阵型盾牌约束不是唯一清空路径，不能证明原生 AI 武器选择
+  已识别双刀用途。
+- 对照 ROT v1.3.15 的 XML，发现当前 GreyWarden 使用了自定义的
+  `gwp_dual_shield*`、`gwp_1h_with_dual_shield` 和 `gwp:dual:shield*` 标识，而 ROT 使用
+  `dual_shield*`、`1h_with_dual_shield` 和 `dual:shield*`。这些字符串会进入原生动作/武器用途
+  数据，可能是 native AI 非盾牌副手资格判断的硬编码识别点；ROT DLL 本身没有 NPC 双持补丁，
+  因此这次先恢复其原生用途命名，保留 GreyWarden 自己的动作内容和模型。
+- 已将 `weapon_descriptions.xml` 的 `item_usage_features`、`item_usage_sets.xml` 的四个用途
+  集及其 `base_set`/`require_left_hand_usage_root_set`、`full_movement_sets.xml` 的根集和
+  `movement_sets.xml` 的八个移动集 ID 对齐 ROT。`items.xml`、装备槽位、剑鞘、ItemFlags、
+  自定义攻击动作和碰撞补丁未改变；没有新物品、复制实体、Mission tick 重挂、强制拔刀或
+  持续维持副手。
+- 诊断日志现在在每次 Mission 开始时截断为单一会话，并按 Agent 手部状态去重记录
+  `AI_SHIELD_ENFORCEMENT_BYPASSED`，避免旧版高频阵型调用把日志增长到数 MB；状态改变时仍会
+  保留完整装备快照。下一次测试重点看 `WIELD_INITIAL_POSTFIX` 后副手是否仍被清空，以及
+  `actualOff=WeaponItemBeginSlot` 时左剑是否出鞘、AI 是否使用双持攻击/格挡。
+- `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj --no-restore
+  -p:DeployToLiveModule=true`：0 errors、44 条既有 nullable warnings。仓库 `_Module` 与实机
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 的四个双刀
+  XML、两个 README、`SubModule.xml` 均哈希一致；三个 XML 解析成功。诊断 DLL 的 Debug 输出
+  与实机客户端 DLL 均为 `825344` 字节，SHA-256 为
+  `F059D89B251DF713E5DDF2A3D9C5CC53DB2C121CA27AD1517A745855987DADEE`。
+- 本轮没有启动游戏，也没有制作正式 ZIP。若本次实机仍出现 `actualOff=None`，下一步应围绕
+  原生 AI 的 `UpdateWeapons`/武器选择路径继续做单入口观测，不恢复已失败的统计伪造、混合盾牌
+  数据或 Mission tick 强制重挂。
+
+## 2026-08-27 双刀 AI 阵型盾牌约束旁路（待实机验收）
+
+- 对照 Bannerlord 1.4.8 托管代码重新检查 AI 生成后的第一条阵型路径，定位到此前遗漏的明确入口：
+  `ArrangementOrder.Rearrange()` 和 `Agent.UpdateFormationOrders()` 会对每个 AI 调用
+  `Agent.EnforceShieldUsage()`。该方法直接进入原生层执行盾牌副手整理，不经过
+  `TryToSheathWeaponInHand()`；这与诊断中“`WieldInitialWeapons()` 已成功持有双刀，约 `0.37s` 后没有收刀
+  请求却把 `actualOff` 清成 `None`”的时序一致。玩家控制器不受 AI 阵型盾牌约束，因此玩家链始终正常。
+- 撤回并完整删除装备同步统计代理：不再 Harmony 修改
+  `Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData()` 或
+  `MissionWeapon.GetWeaponStatsData()`，不再向原生层发送混合的剑/盾 flags 与虚构耐久。由此也移除了上一版接战前
+  `TaleWorlds.Native.dll` 空指针崩溃的触发数据。
+- `GwpDualBladeAiNativeSyncPatch.cs` 现只 patch `Agent.EnforceShieldUsage()`：当 Agent 为 AI，并且
+  `Weapon0/Weapon1` 精确为 `gwdualbladeoffhand/gwdualblademainhand` 时跳过这一次盾牌专用阵型约束；所有其他
+  Agent 和所有原版盾牌仍执行原版方法。补丁不修改物品、统计、模型、剑鞘、动作或控制器，不调用拔刀/收刀，不生成
+  实体，也没有 Mission tick 重挂。双刀仍由 `WieldInitialWeapons()` 一次正常装备，攻击、防御、移动和目标选择仍交给
+  原版 AI 与现有双持动作资源。
+- 开发诊断新增 `AI_SHIELD_ENFORCEMENT_BYPASSED`，记录 Agent、阵型要求方向和调用当时主副手槽。下一次实机需确认：
+  接战前不再崩溃；日志出现旁路事件后 `actualOff` 持续为 `WeaponItemBeginSlot`；副手剑与剑鞘正确；普通士兵和 NPC
+  领主会使用双持移动、攻击与四向格挡；左手 bone 20 攻击能实际命中。若旁路后仍出现 `actualOff=None`，新的状态变化
+  时间点将证明还存在另一条原生武器选择入口，不能重新使用统计伪装或强制重挂。
+- `Release -t:Rebuild --no-restore` 已通过，`0` error、`44` 条既有 nullable warning。独立 Harmony 预检进程对
+  `GwpDualBladeAiShieldEnforcementPatch` 执行 `CreateClassProcessor(...).Patch()`，成功生成
+  `Agent.EnforceShieldUsage_Patch1`，排除补丁签名或目标解析导致启动报错。实机客户端与编辑器 DLL 均为
+  `782848` 字节，SHA-256 均为
+  `E1B379F8E500FA6031D7E38C1D13DC4F349540C3EE42523CDF2B9D2BEE427DB7`。仓库 `_Module` 的 `36` 个普通客户端
+  部署文件与实机缺失 `0`、哈希差异 `0`，ModuleData 的 `25` 个 XML/XSLT 解析失败 `0`，中英文 README 与实机
+  哈希一致，`git diff --check` 通过。本轮仅部署诊断开发版，不制作正式 ZIP。
+
+## 2026-08-27 AI 原生装备同步耐久资格实验（失败，已撤回）
+
+- 重新检查上一轮原生统计代理后发现决定性遗漏：`gwdualbladeoffhand` 是锻造剑，托管
+  `MissionWeapon` 的 `_dataValue/_modifiedMaxDataValue` 均为 `0`。上一轮只把传入原生层的 flags 从
+  `MeleeWeapon` 改为 `HasHitPoints | CanBlockRanged`，但 `WeaponData.DataValue` 与
+  `WeaponStatsData.MaxDataValue` 仍为 `0/0`；原生层因此可能将它视为已经损坏的盾牌并立即移除。这与当时
+  “副手剑和剑鞘一起消失”的实机现象吻合，不能再用该现象证明统计代理路线本身无效。
+- 新增 `GwpDualBladeAiNativeSyncPatch.cs`。补丁只在
+  `Agent.EquipItemsFromSpawnEquipment` 正在同步一个 AI Agent，并且该 Agent 的 `Weapon0/Weapon1` 精确为
+  `gwdualbladeoffhand/gwdualblademainhand` 时进入线程局部作用域；玩家与任何其他装备不进入该作用域。
+- 作用域内只改写交给原生 `WeaponEquipped` 的数据副本：副手的 `WeaponData.DataValue` 和
+  `WeaponStatsData.MaxDataValue` 同时设为 `500`，统计 flags 清除 `WeaponMask` 后加入
+  `HasHitPoints | CanBlockRanged`。物品 ID、`WeaponClass=OneHandedSword`、`gwp_dual_shield` usage、伤害、
+  模型、剑鞘和实际托管 `MissionWeapon` 均不变；没有新物品、武器实体生成、拔刀/收刀调用、Mission tick 重挂或
+  强制维持副手。
+- 开发诊断新增 `AI_NATIVE_SYNC_BEGIN/END`、`AI_NATIVE_WEAPON_DATA_PROXY` 和
+  `AI_NATIVE_WEAPON_STATS_PROXY`，会记录原始与传给原生层的 flags、当前耐久和最大耐久。下一次实机必须确认：
+  游戏和 Custom Battle 正常启动；`actualOff` 在原生 AI 接管后不再变为 `None`；副手剑与剑鞘显示正确；NPC 能用
+  双持移动、攻击与四向格挡；左手 bone 20 攻击能正常命中。未完成这些检查前不得在 README 宣称修复已验收。
+- `Release -t:Rebuild --no-restore` 已通过，`0` error、`44` 条既有 nullable warning。独立 Harmony 预检进程对
+  `Agent.EquipItemsFromSpawnEquipment`、`MissionWeapon.GetWeaponData` 与
+  `MissionWeapon.GetWeaponStatsData` 三个补丁逐一执行 `CreateClassProcessor(...).Patch()`，三个目标均成功生成
+  replacement method，排除了补丁参数签名导致启动时直接报错的风险。实机客户端与编辑器 DLL 均为
+  `785408` 字节，SHA-256 均为
+  `DCB330BB6859B4FC0F552EA6FF6196A8A15FAB9B85A2160B2C7C9AAD9432D295`；仓库 `_Module` 的 `36` 个
+  普通客户端部署文件与实机缺失 `0`、哈希差异 `0`，ModuleData 的 `25` 个 XML/XSLT 解析失败 `0`，
+  `git diff --check` 通过。本轮只部署诊断开发版，不制作正式 ZIP。
+- 后续版本虽然改成保留 `MeleeWeapon`，但整条统计代理路线已由上方“阵型盾牌约束旁路”取代并删除；这些字段实验仅作为
+  失败记录保留，不代表当前实现。
+
+## 2026-08-27 原生统计代理导致接战前 Native 崩溃（失败，已撤回）
+
+- 用户实测本轮版本“进入游戏正常，接战前弹出”。双刀诊断日志显示所有 `gwdualbladeguard` 均完成
+  `AI_NATIVE_SYNC_BEGIN → AI_NATIVE_WEAPON_DATA_PROXY → AI_NATIVE_WEAPON_STATS_PROXY → AI_NATIVE_SYNC_END`，
+  并在 `WIELD_INITIAL_POSTFIX` 看到主、副手均已拔出；补丁没有托管异常或作用域泄漏。
+- Windows WER 事件 `Application Error 1000`（`2026-08-27 12:25:09`）确认故障模块为
+  `TaleWorlds.Native.dll`，异常 `0xc0000005`。CDB 对
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.46268.dmp` 的
+  `!analyze -v` 显示 `READ_ADDRESS=0x8`；崩溃指令位于 `TaleWorlds.Native+0x73ddf8`，其调用栈是一个
+  原生 `std::vector` 复制路径，源对象指针为 null。该崩溃发生在最初装备同步约一分钟后、接战准备阶段。
+- 结合崩溃路径与前一版的统计代理，已确认不能在传给原生层的副手统计中清除 `MeleeWeapon`：虽然这会满足
+  托管 `WeaponComponentData.IsShield` 的“无 WeaponMask”条件，但原生后续双持动作/碰撞仍需要近战数据，
+  缺失会留下不完整对象并触发 Native 空指针。该行为不是可接受的“玩家与 AI 同动作”。
+- 崩溃后曾生成“保留 `MeleeWeapon`，仅叠加 `HasHitPoints | CanBlockRanged` 并补 `500` 耐久”的候选 DLL，
+  但在它产生新的实机日志前即定位到更直接的 `Agent.EnforceShieldUsage()` 阵型入口。为避免继续向原生层发送未经定义的
+  混合统计，该候选与整个装备统计代理已经撤回；当前 DLL 不再包含这些补丁。
+- 重新构建后实机客户端与编辑器 DLL 均为 `785408` 字节，SHA-256 均为
+  `4432401069E7356C87406084D54FC8A5B7B13A45ED260111EDEE46627E5B2582`；仓库 `_Module` 的 `36` 个普通
+  客户端部署文件与实机缺失 `0`、哈希差异 `0`，ModuleData 的 `25` 个 XML/XSLT 解析失败 `0`。
+
+## 2026-08-27 单次 Mission 级副手重试（失败，已撤回）
+
+- 实机日志确认上一版 `Agent.OnWieldedItemIndexChange` 监听从未触发（`NPC_OFFHAND_REISSUE_QUEUED=0`），因为
+  Bannerlord 的非托管 AI 清理副手时直接改写索引，不进入该托管回调。
+- 新增 `GwpDualBladeNpcWieldBehavior` 并注册到每场 Mission。Agent 生成时按装备格登记 AI 双刀对象（不能依赖
+  此时尚未完成的主手索引）；Mission 时间超过 `0.5s` 后，每 `0.1s` 仅观察一次状态，首次发现主手仍为双刀主手而
+  副手被清空，就通过 `Mission.AddTickAction(TryToWieldWeaponInSlot)` 对原有副手槽提交一次标准原版拔刀请求。
+  该 Agent 随后不再重试，未创建武器、未复制实体、未持续重挂。
+- 该行为在进入 Custom Battle 时导致游戏直接弹出，已删除 `GwpDualBladeNpcWieldBehavior.cs` 及其注册；不能作为
+  NPC 双持实现，也不应继续部署。当前 AI 仍在约出生后 0.4 秒由原生层清空副手。
+
+## 2026-08-27 AI 双持实现边界复核
+
+- 用户要求让 NPC 与玩家共用现有双剑、使用同一套双持动作。重新反编译 Bannerlord 1.4.8 的 `Agent`、`Equipment`
+  和 `HumanAIComponent` 后确认：`Agent.WieldInitialWeapons()` 会按 `HeldInOffHand` 正确选择并交给副手，
+  但后续原生 AI 的武器选择在 C++ 层执行，没有托管的 `HumanAIComponent` 虚方法或公开回调可改写“非盾副手”资格。
+- 实机诊断已复现同一顺序：`actualOff=WeaponItemBeginSlot` 成功维持约 0.37 秒，随后变为 `None`；没有
+  `TryToSheathWeaponInHand`、没有模组收刀调用，说明不是动画、物品格、模型或剑鞘资源问题。
+- `MissionEquipment.ContainsShield()`、`MissionWeapon.IsShield()` 和 `GetWeaponStatsData()` 的 Harmony 改写均未改变
+  原生 AI 决策；其中清除 `MeleeWeapon` 以伪造盾牌资格会破坏副手剑/剑鞘挂接，已撤回。给同一物品追加第二用途也
+  无效，因为 `MissionWeapon.IsShield()` 对多用途物品不成立。
+- 因此在当前纯 C#/Harmony/XML 范围内，不能证实存在“玩家双持链直接扩展到普通 AI”的安全实现。继续尝试 Mission
+  tick、强制重挂或生成替代实体都会偏离用户要求，并已在本轮导致崩溃或物品消失。若要继续，下一阶段必须研究
+  原生 AI 选择函数的版本固定 Native DLL hook；这不是 ROT 已提供的功能，也不是普通 Modding Kit XML 导入能完成的。
+- 证据来源：本地 `rot_decompile/ROT.HarmonyPatches.Core/DualWieldingPatches.cs`（仅玩家装备校验及碰撞放行）、
+  `.codex_tmp/mountandblade148-decomp/TaleWorlds.MountAndBlade/Agent.cs`（`WieldInitialWeapons` 与原生调用边界）、
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Diagnostics.log`（实际索引变化）。
+
+## 2026-08-27 原生 AI 清理后的单次副手重试
+
+- 新实测日志确认 `WoodenParry` 已进入副手物品（`spawnFlags=ForceAttachOffHandPrimaryItemBone, WoodenParry, HeldInOffHand`），
+  但 NPC 仍在约 `0.82s` 后由非托管 AI 清掉 `actualOff`；全程没有 `TryToSheathWeaponInHand`，说明引擎直接重置了副手索引。
+- ROT DLL 与 XML 没有任何 NPC/AI 拔刀补丁；其双刀实现只覆盖玩家控制器，因此不能通过继续添加 ROT XML 找到 NPC 兼容开关。
+- 新增 `GwpDualBladeNpcWieldPatch`：仅针对同时装备 GreyWarden 主、副手双刀且为 AI Agent 的对象，监听原生
+  `Agent.OnWieldedItemIndexChange`。当引擎首次清空副手后，向同一 Mission 队列加入一次原版
+  `TryToWieldWeaponInSlot(WeaponItemBeginSlot, Instant)`，每个 Agent 每场战斗最多一次。没有创建武器、复制实体、
+  每帧轮询或持续重挂；调用仍是 Bannerlord 自己的拔刀接口。现有诊断的 `WIELD_REQUEST` 会记录该重试。
+- 这是针对 1.4.8/1.4.9 非托管 AI 分支的兼容性补偿，未声称 ROT 原生支持 NPC 双持。下一次测试需确认单次重试后
+  `actualOff` 是否保持、左手模型是否显示，以及不会造成战斗启动崩溃或副手剑鞘消失。
+
+## 2026-08-27 ROT 原生副手标志对齐与统计层回滚
+
+- 用户实测上一版后确认副手武器与剑鞘直接消失，玩家双持仍可用，NPC 仍不能使用副手。
+- 失败方案 `GwpDualBladeNativeWeaponStatsPatch` 已删除。它对 `MissionWeapon.GetWeaponStatsData()` 清除
+  `MeleeWeapon` 并加入 `HasHitPoints | CanBlockRanged`，虽然试图伪造盾牌资格，但会破坏原生武器/剑鞘
+  挂接链，不能继续使用。此前的 `MissionWeapon.IsShield` 与 `MissionEquipment.ContainsShield` postfix 也一并
+  删除，因为日志证明它们返回 `true` 后 NPC 仍在 `WieldInitialWeapons` 后清空副手，且会污染正常盾牌判断。
+- 对照 ROT v1.3.15.3 的 `dual_blades2`，当前 GreyWarden 副手锻造刃已有
+  `ForceAttachOffHandPrimaryItemBone` 与 `HeldInOffHand`，但缺少 ROT 明确声明的 `WoodenParry`。在
+  `gwp_crafting_pieces.xml` 为同一副手刃补上 `WoodenParry`，不新增物品、不改 WeaponStatsData、不生成或
+  重挂实体；该标志通过原版 CraftedItem 生成链传递到现有 `gwdualbladeoffhand`。
+- 这次只完成 XML 原生标志对齐，尚未有新的实机验收。下一次测试必须同时确认：副手剑鞘仍存在、玩家双持不受影响、
+  `gwdualbladeguard` 和自定义战斗指挥官的 `actualOff` 不再被原生 AI 清空。未确认前不得宣称 NPC 双持已修复。
+- `Release -t:Rebuild --no-restore` 成功，`0` error、`44` 条既有 nullable warning。诊断 DLL SHA-256 为
+  `3D4975BE9449DFF5BDCB8AF28022F0E0642C9681114F4ECB274DB89733CBD053`，仓库构建输出与实机
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll`
+  哈希一致；副手锻造片、两份 README 与实机哈希一致，ModuleData XML/XSLT 解析失败 `0`。本轮未制作正式 ZIP。
+
+## 2026-08-27 原生武器统计层副手资格放行
+
+- 用户再次实测确认仅修改托管层 `MissionWeapon.IsShield()` 与
+  `MissionEquipment.ContainsShield()` 仍无效：最新日志中两项均为 `true`、`hasShieldCached=true`，但
+  `gwdualbladeguard` 约一秒后仍把 `actualOff` 清为 `None`。这证明原生 AI 使用的是装备同步时的
+  `WeaponStatsData.WeaponFlags`，没有读取 Harmony 改写后的托管布尔结果。
+- 在同一 `gwdualbladeoffhand` 物品上新增 `MissionWeapon.GetWeaponStatsData()` postfix：只对该物品的唯一
+  用途清除原生 `WeaponMask`（`MeleeWeapon`），加入 `HasHitPoints | CanBlockRanged`，让引擎统计层把它视为
+  可长期占用副手的盾牌资格；`ItemUsageIndex`、`gwp_dual_shield`、剑模型、动作、伤害和物品 ID 均保持不变。
+  这不是新物品，也不生成/重挂实体，不向 Agent 发出拔刀或收刀命令。
+- 该统计层修改对玩家和 NPC 共用同一物品，因此两条链使用完全一致；自定义战斗 `commander_2` 仍使用
+  `Item0=gwdualbladeoffhand`、`Item1=gwdualblademainhand`。专用诊断继续保留，用于确认原生层最终不再
+  清除副手以及双刀动作是否仍正常。
+
+## 2026-08-27 同物品 AI 副手判断放行与自定义战斗双刀指挥官
+
+- 用户否决 NPC 专用第二物品，要求玩家与所有 NPC 继续共用现有 `gwdualbladeoffhand`，并指出应绕过
+  原版 AI 的盾牌副手限制，而不是把剑改造成盾。按此约束，没有新增 CraftedItem、WeaponDescription、
+  CraftingTemplate 或装备实体，也没有修改现有副手剑的 `OneHandedSword + MeleeWeapon + HeldInOffHand` 数据。
+- 新增 `GwpDualBladeAiQualificationPatch.cs`，只在原版两个判断入口
+  `MissionWeapon.IsShield()` 与 `MissionEquipment.ContainsShield()` 对精确物品 ID
+  `gwdualbladeoffhand` 返回副手资格。物品模型、单用途剑属性、`gwp_dual_shield` usage、伤害、动作与玩家
+  输入链保持原样；不调用 `TryToWieldWeaponInSlot`，不在 Agent 生成后补拔刀，不重挂实体，也不持续控制
+  AI。现有专用监控暂时保留，用下一次实测确认原生 AI 接管后是否还会把 `actualOff` 清为 `None`。
+- 自定义战斗 `commander_2` 按用户最新要求改为
+  `Item0=gwdualbladeoffhand`、`Item1=gwdualblademainhand`，移除其灰袍单手剑、骑枪与黑曜大盾，使玩家链与
+  普通双刃卫士 AI 链可在同一自定义战斗入口分别复测。
+- `Release -t:Rebuild --no-restore` 构建成功，`0` error、`44` 条既有/nullable warning。客户端与编辑器
+  DLL 均为 `782848` 字节，SHA-256 均为
+  `BC33C124A400550334D2AFC9F838D1E2137806C03F033D86903DF53E6A7CB3E4`。ILSpy 已确认两个补丁只改写
+  原版布尔判断的 postfix 结果，资格 helper 只扫描现有 MissionEquipment，不含 Agent 拔刀、收刀、生成、
+  重挂或物品修改调用。自定义战斗武器格结构检查为精确的双刀 `Item0/Item1`；ModuleData 的 `25` 个
+  XML/XSLT 解析失败 `0`，仓库 `_Module` 的 `36` 个客户端部署文件与实机缺失 `0`、哈希差异 `0`，
+  `git diff --check` 通过。本轮未制作正式 ZIP，结果仍需由保留的专用监控进行实机验收。
+
+## 2026-08-27 双刃卫士副手第二用途失败与无干预监控
+
+- 用户实测确认 `GwpDualBladeUsageInitializer` 的“剑用途后追加盾牌用途”方案没有改变 AI 行为：
+  双刃卫士仍只拔主手，副手剑继续留在鞘内；自定义战斗现有指挥官已经按此前要求恢复剑、骑枪和盾，
+  本身没有双刀，因此不能用来复测玩家链。该结果推翻了 README 中“AI 副手资格已补全”的描述。
+- 反编译补充确认 `MissionWeapon.IsShield()` 只有在用途数恰好为 `1` 时才会返回唯一用途的
+  `WeaponComponentData.IsShield`。失败候选把副手剑扩成两个用途，所以即使
+  `MissionEquipment.ContainsShield()` 能看到其中的盾牌用途，运行时物品本身仍不是真盾牌；该候选不能
+  继续作为修复基础。
+- 已完整删除 `GwpDualBladeUsageInitializer.cs` 及 `AfterRegisterSubModuleObjects()` 中的调用，恢复原本
+  单用途副手剑数据；两份玩家 README 同步撤掉未经实测成立的 AI 修复声明。保留玩家双持物品、动作、
+  左手碰撞骨骼兼容和兵种装备，不加入替 AI 补拔刀、收起重挂或武器实体生成。
+- 按用户要求进入重新取证阶段。新增仅在开发诊断构建存在的
+  `GwpDualBladeDiagnostics`/`GwpDualBladeDiagnosticBehavior`：单独写入
+  `%USERPROFILE%\\Documents\\Mount and Blade II Bannerlord\\GreyWarden-DualBlade-Diagnostics.log`，记录双刃
+  卫士生成后的四个武器格、物品 flags、全部用途、原版盾牌判定、原版初始主副手选择、实际持握槽，
+  并旁路记录 `WieldInitialWeapons`、`TryToWieldWeaponInSlot` 与 `TryToSheathWeaponInHand` 的调用。
+  监控不修改返回值、不调用拔刀/收刀、不改装备；状态轮询只接触已经完成 `OnAgentBuild` 的目标 Agent，
+  并只在主副手槽发生变化时写日志，避免恢复此前会访问未完成 Agent 并导致自定义战斗崩溃的诊断方式。
+- `Release -t:Rebuild --no-restore` 构建成功，`0` error、`44` 条既有/nullable warning。实机客户端与
+  编辑器 DLL 均为 `781824` 字节，SHA-256 均为
+  `3D4975BE9449DFF5BDCB8AF28022F0E0642C9681114F4ECB274DB89733CBD053`；ILSpy 类型清单包含五个新的双刀
+  诊断类型且不再包含 `GwpDualBladeUsageInitializer`。仓库 `_Module` 的 `36` 个普通客户端部署文件与
+  实机缺失 `0`、哈希差异 `0`，ModuleData XML/XSLT 共 `25` 个且解析失败 `0`，中英文 README 已同步到
+  实机。本轮是开发诊断部署，没有创建正式 ZIP；玩家包构建关闭 `GWP_DIAGNOSTICS` 时只保留空 Behavior，
+  不包含文件写入或 Harmony 诊断补丁。
+- 用户于 `2026-08-27 00:51` 完成一名 `gwdualbladeguard` 的自定义战斗复测，专用日志为
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Diagnostics.log`（本次
+  `5994` 字节）。`AGENT_BUILD` 时四格装备已完整落入 Agent：`slot0=gwdualbladeoffhand`、
+  `slot1=gwdualblademainhand`，副手 flags 为 `ForceAttachOffHandPrimaryItemBone | HeldInOffHand`；原版初始选择
+  为 `selectedMain=Weapon1`、`selectedOff=WeaponItemBeginSlot`。
+- `WieldInitialWeapons` postfix 在 `00:51:29.699` 明确记录
+  `actualMain=Weapon1`、`actualOff=WeaponItemBeginSlot`，证明副手并非“出生时没有生成”或“初始拔刀请求
+  失败”。约 `0.37` 秒后的 `00:51:30.073`，同一 Agent 在装备和物品数据完全未变的情况下变成
+  `actualMain=Weapon1`、`actualOff=None`；全程
+  `spawnContainsShield=False`、`missionContainsShield=False`、`hasShieldCached=False`。因此可复现根因是
+  原生 AI 接管后主动清除不具盾牌资格的副手近战剑，而不是模型、剑鞘、装备格或初始选择错误。
+- 诊断 Harmony 没有记录到模组侧 `SHEATH_REQUEST`，现有 GreyWarden 代码也没有对该 Agent 发出收刀；
+  最新 `rgl_log_11668.txt` 与 `rgl_log_errors_11668.txt` 没有 GreyWarden、动作、XML 或托管异常。监控本身
+  没有造成预览缺人或战斗崩溃。下一修复必须让 NPC 使用的副手在原版 AI 看来是单用途真盾牌，或找到
+  等价的原版资格数据；再次追加第二用途不能解决 `MissionWeapon.IsShield()` 的单用途限制。
+
+## 2026-08-26 双刃卫士原版 AI 副手资格补全
+
+- 用户再次实测确认玩家出生时两把剑均自然在手、背部副手剑鞘为空；同一装备的普通 AI 只持主手，
+  左手为空且副手剑模型仍留在背部剑鞘。结合此前 `WieldInitialWeapons()` 前后均为
+  `selectedOff/actualOff=WeaponItemBeginSlot` 的证据，问题已收敛为 AI 接管后的副手资格差异，而非装备格、
+  `HeldInOffHand`、模型加载或出生时漏调拔刀。
+- v1.4.8 反编译确认 `Agent.HasShieldCached` 调用 `MissionEquipment.ContainsShield()`；后者遍历物品的全部
+  `WeaponComponentData`，只要任一用途的 `IsShield=true` 即可。`IsShield` 的精确条件是没有
+  `MeleeWeapon/RangedWeapon` 掩码并同时具有 `HasHitPoints | CanBlockRanged`。现有副手剑只有
+  `OneHandedSword + MeleeWeapon`，所以玩家输入可以使用，原版 AI 却没有盾牌副手资格。
+- 重新完整反编译 ROT v1.3.15.3（`ROT.dll` SHA-256
+  `4C416526ECB272164FFE4A85E7C451EA458AABF49F33E002E8AA9A3DA0423FCF`）确认，ROT 没有 Agent、AI、
+  `WieldInitialWeapons` 或武器选择补丁。其 `DualWieldingPatches` 只在玩家物品栏检查第一格
+  `dual_shield` 与第二格 `dual_shield_thrust` 是否配对；运行时唯一相关补丁是对
+  `AttackBoneIndex == 20` 放行。测试副手 `dual_blades2` 本身明确仍为
+  `OneHandedSword + MeleeWeapon + HeldInOffHand`，并非真正盾牌。玩家成立依靠的是原版玩家控制器接受
+  `HeldInOffHand` 以及 `dual_shield base_set=hand_shield`；GreyWarden 已逐项复制这条数据链，因此不存在
+  一段遗漏的 ROT 玩家拔刀代码可直接扩大到 NPC。
+- 没有直接采用“在 `weapon_descriptions.xml` 加第二用途”的表面方案。原版
+  `Crafting.CraftedItemGenerationHelper.SetWeaponData()` 对非投掷锻造用途把 `MaxDataValue` 固定为 `0`；若仅用
+  XML 添加 `HasHitPoints`，生成的盾牌用途耐久仍为 `0`，会成为出生即损坏的无效用途。
+- 新增 `GwpDualBladeUsageInitializer.RegisterAiShieldUsage()`，在
+  `AfterRegisterSubModuleObjects()` 中、注销双刀锻造模板之前执行一次。它保留现有
+  `gwdualbladeoffhand` 的第一用途 `OneHandedSword + MeleeWeapon + gwp_dual_shield`，再通过原版公开
+  `WeaponComponentData`/`ItemObject.AddWeapon()` API 追加 `SmallShield + HasHitPoints + CanBlockRanged` 用途，
+  复制原剑的 usage、伤害、速度、长度和 frame，并赋予有效耐久。`MissionWeapon` 默认仍从第一用途开始，
+  玩家现有双持链和模型不变；AI 可由原版多用途选择与 `HasShield` 资格自行决定副手。
+- 本方案不包含 `Agent.WieldInitialWeapons()` Harmony 补丁、Mission tick 轮询、生成后收剑再拔、实体补建、
+  每帧重挂或任何 AI 强制控制。仍需用户实机确认 AI 是否会切换到新增盾牌用途并真正显示左手剑，以及
+  左手攻击、四向格挡和玩家双持是否保持正常；确认前不得把实机结果记录为已验证。
+- `Release -t:Rebuild --no-restore` 构建成功，`0` error、`43` 条既有 nullable warning。实机客户端与
+  编辑器 DLL 均为 `776704` 字节，SHA-256 均为
+  `57E535CA8F04BE87C0EE0D266B5CB6F0ABFCCCBBA2027C9F59304C6777FAF631`。ILSpy 已确认新增类型只调用
+  `WeaponComponentData.Init`、`SetFrame`、`SetAmmoOffset` 与 `ItemObject.AddWeapon`，不含
+  `TryToWieldWeaponInSlot`、`WieldInitialWeapons`、`AddTickActionMT`、Mission tick 或补装备实体调用。
+  仓库 `_Module` 的 `36` 个普通客户端部署文件与实机缺失 `0`、哈希差异 `0`；两份 README 哈希一致，
+  ModuleData XML/XSLT 解析失败 `0`，实机仍无 `Assets`、`AssetSources`、`RuntimeDataCache`。本轮未制作正式
+  ZIP，当前玩法结果等待用户实机验收。
+
+## 2026-08-26 双刃卫士副手不可见与诊断回滚
+
+- 用户已稳定复现 `gwdualbladeguard` 普通 AI 只拔主手、始终不拔副手。静态配置复核确认兵种装备仍为
+  `Item0=gwdualbladeoffhand`、`Item1=gwdualblademainhand`；副手锻造剑刃也仍带
+  `HeldInOffHand` 与 `ForceAttachOffHandPrimaryItemBone`。v1.4.8 托管代码中
+  `Equipment.GetInitialWeaponIndicesToEquip()` 会按 `HeldInOffHand` 选出副手，
+  `Agent.WieldInitialWeapons()` 也确实先请求副手、再请求主手，因此问题不能归因于装备格顺序或漏掉
+  副手标志。
+- ROT v1.3.15.3 的双刀只存在于物品 XML 与玩家物品栏检查中；其兵种/领主装备表没有双刀测试对象，
+  DLL 也没有让普通 AI 拔副手的兼容层。ROT 证明的是玩家双持动作链，不证明 Bannerlord 普通战斗 AI
+  会把 `OneHandedSword + MeleeWeapon` 当成可持续使用的副手。v1.4.8 的盾牌判断仍读取
+  `WeaponComponentData.IsShield`；GreyWarden 副手剑和 ROT 原物一样不是原版盾牌，仅继承
+  `hand_shield` usage。因此当前高概率原因是原生 AI 选武器时排除了“不是盾牌的副手近战剑”，但仍需
+  实测手部索引确认它究竟在初始请求时失败，还是先拔出后被 AI 收回。
+- 首版本地诊断在 `Agent.WieldInitialWeapons()` 前后记录手部索引，并于 Mission tick 轮询后续变化。
+  用户启动自定义战斗后出现人物预览只剩武器、进入场景时直接报错退出。现场日志为
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_22880.txt` 与
+  `watchdog_log_22880.txt`；崩溃发生在大批 Agent 尚未全部构建完成时，轮询已访问这些未完成对象。
+  该诊断行为和 Harmony 诊断补丁已完整删除，不能把访问未完成 Agent 的 Mission tick 轮询留在实机。
+- 崩溃前已经取得决定性证据：`gwdualbladeguard` 的每个样本在
+  `WieldInitialWeapons()` prefix 都是 `selectedMain=Weapon1`、`selectedOff=WeaponItemBeginSlot`；postfix
+  都是 `actualMain=Weapon1`、`actualOff=WeaponItemBeginSlot`。副手最终物品标志同时显示
+  `ForceAttachOffHandPrimaryItemBone,HeldInOffHand`。因此原版初始选武器和逻辑拔出均成功，用户看到的
+  “生成时左手为空”不是 AI 没选 Item0，而是逻辑副手索引已经成立后，左手武器实体/骨骼挂接没有显示。
+  后续调查应对比玩家手动拔刀与 AI `isWieldedOnSpawn=true` 的实体挂接路径；不得再按“副手索引为空”
+  设计修复，也暂不把剑改成真正盾牌。
+- 回滚后 `Release -t:Rebuild --no-restore` 为 `0` error、`43` 条既有 nullable warning；实机客户端与
+  编辑器 DLL 均恢复为 `774656` 字节，SHA-256 均为
+  `B41F158125B5F2BBBB384995A2B25EDA7B257CC88CCF4C4726738F7347C1AC1F`。ILSpy 类型清单不再包含
+  `GwpDualWieldDiagnostic*`；仓库 `_Module` 的 `36` 个可部署文件与实机缺失 `0`、哈希差异 `0`，
+  `git diff --check` 通过。此次只撤回开发诊断并记录结论，没有改变玩家玩法，不更新玩家 README，
+  也没有制作正式 ZIP。
+- 用户随后明确拒绝任何“生成后收起再重新挂接”或其他强制生成方案，要求 NPC 与玩家一样依靠同一套
+  原版机制自然成立。上述 `Agent.WieldInitialWeapons()` postfix、下一帧 tick action 和对应中英文玩家
+  日志已全部撤回，不能把它们当成完成方案。后续调查必须比较玩家与 NPC 的原版装备/控制器数据差异，
+  找到造成原版路径分叉的配置或标志；除现有左手碰撞骨骼兼容外，不得靠补拔刀、补实体或持续控制来
+  掩盖差异。
+- 被拒绝方案的构建记录仍保留作失败证据：首次编译因 v1.4.8 枚举应写作 `Agent.HandIndex` 出现
+  `CS0103`，没有部署；修正后曾产出 SHA-256
+  `677E7919FF1F3BC4C8DB3C4BD60FF91C0E250A34F2B5EE37C2941F2B23C72213` 的 DLL，随后按用户要求撤回，
+  不得恢复。
+
+## 2026-08-26 Bannerlord v1.4.8 沙盒锻造订单崩溃与双持范围收口
+
+- 用户在启动兼容修复后已能进入游戏，但新开沙盒仍于战役创建阶段直接报错退出。最新日志为
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_13040.txt`，完整转储为
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.13040.dmp`。
+  WinDbg/CDB 确认托管异常为 `InvalidOperationException: Sequence contains no matching element`，调用链为
+  `CraftingCampaignBehavior.GetWeaponPieces -> CreateTownOrder -> OnNewGameCreatedPartialFollowUpEnd`。
+  根因不是 ROT 或双持动画加载：原版创建城镇订单时从 `CraftingTemplate.All` 随机抽中了
+  `GwpOneHandedSwordDualOffhand`，但其 Blade 只有带 `is_hidden="true"` 的专用副手剑刃，原版随后执行
+  `First(p => !p.CraftingPiece.IsHiddenOnDesigner)` 时找不到候选并崩溃。
+- 保留两个专用 `CraftingTemplate` 的 XML，因为 `items.xml` 必须先用它们反序列化固定的主手和副手成品；
+  在 `SubModule.AfterRegisterSubModuleObjects()`（所有静态物品注册完成之后）再从 `MBObjectManager` 注销
+  `GwpOneHandedSwordDualOffhand` 与 `GwpOneHandedSwordDualMainhand`。反编译 v1.4.8 已确认
+  `CraftingTemplate.All` 每次直接读取 `MBObjectManager.GetObjectTypeList<CraftingTemplate>()`，而双刀
+  `ItemObject.WeaponDesign` 已持有模板对象引用。因此注销后固定双刀仍可装备、保存和成为战利品，但模板
+  不再进入玩家锻造界面、城镇订单或 `CraftingCampaignBehavior` 的零件字典。
+- 双持装备范围按用户要求收口：`gwheavyinfantry` 恢复开发前的锤、灰袍剑和大盾并保持独立终阶；
+  `gwdualbladeguard`（灰袍双刃卫士）改为直接从 `gwrecruit`（轻步兵）分出的独立高阶路线，不再是
+  重步兵的后继；通用领主模板 `spc_gw_leader_0` 与自定义战斗
+  `commander_2` 恢复原来的灰袍剑、骑枪和黑曜大盾。新增 `spc_gw_leader_dual`，仅初始领主
+  `gw_leader_0`（凡蒂/Aethelflaed）与 `gw_leader_5`（暮光/Wulfhild）引用。其余四名初始领主和后续
+  成年灰袍继续使用普通领主模板。
+- 用户首次观察双刃卫士 AI 时怀疑其没有拔出副手剑，但同时说明可能看错并准备再次测试；按用户明确要求，
+  本轮只改兵种树，没有修改物品格、AI、动作、usage、武器标志或双持补丁。待稳定复现后再根据具体场景
+  （开战前/接敌后、第一格是否出鞘、主手是否攻击）继续取证，不能据单次观察先行改动第二项。
+- 加入和重新加入灰袍仍统一调用 `GiveCommanderEquipment()`；新增 `MembershipGrantItemIds`，在原指挥官
+  套装之外各发放一把 `gwdualbladeoffhand` 与 `gwdualblademainhand`。悬赏着装资格继续只检查
+  `CommanderSetItemIds`，不会强迫玩家装备双刀。
+- 市场规则最终按用户要求改回纯原版实现：`items.xml` 中全部 `26` 件灰袍武器、护甲、盾牌与马铠
+  均使用 `is_merchandise="false"`，由该原版字段阻止它们进入城镇商品自动生成池；不新增交易方向拦截、市场库存
+  扫描或战利品过滤，也不从玩家行李删除物品。已经写出的 `GwpExclusiveItemTradePatch` 与
+  `GreyWardenExclusiveItemBehavior` 已完整撤销，SubModule 不再注册市场清理行为。玩家持有和主动卖给
+  城镇均交回 Bannerlord 原版库存流程处理。进一步反编译 v1.4.8
+  `DefaultBattleRewardModel.GetLootedItemFromTroop()` 后确认，原版 `GetRandomItem()` 也明确以
+  `!equipment[i].Item.NotMerchandise` 过滤装备掉落；战败队物品库存的分配同样排除
+  `NotMerchandise`。因此“纯原版非商品字段”与“仍能作为常规战利品掉落”在当前版本不能同时满足。
+  按用户最后明确的纯原版要求，本轮不写战利品例外补丁；当前实际结果是不会自然刷新到市场，也不会
+  作为常规装备战利品掉落，但玩家持有和卖出不受本模组额外限制。
+- 静态与部署验证：`Release -t:Rebuild --no-restore` 为 `0` 错误、`43` 条既有 nullable 警告；
+  实机客户端与编辑器 DLL 均为 `774656` 字节，SHA-256 均为
+  `29DA7362B659B92FA2AA45C82504D85AC2DECC4494AFC3B88E218E32DF533DBF`。ILSpy 完整反编译退出码
+  `0`，产物包含 `AfterRegisterSubModuleObjects` 的模板注销和 `MembershipGrantItemIds` 发放路径，且不含
+  自定义交易补丁或市场扫描行为。ModuleData 的 XML/XSLT 共 `25` 个，.NET XML 解析失败 `0`；
+  `items.xml` 共 `26` 件物品，缺少 `is_merchandise="false"` 的数量为 `0`；双持领主精确为
+  `gw_leader_0`、`gw_leader_5`，普通重步兵、双刃卫士和自定义战斗装备均通过结构检查。仓库 `_Module`
+  的 `36` 个可部署文件与实机缺失 `0`、哈希差异 `0`，中英文 README 哈希一致，实机不存在 `Assets`、
+  `AssetSources` 或 `RuntimeDataCache`；`git diff --check` 通过。普通开发构建未创建正式 ZIP。尚未代替
+  用户实机新开沙盒，因此当前只确认崩溃根因与静态修复链闭合，仍需游戏内验证新战役创建、双刃卫士
+  升级、入会发放以及市场不自然刷新灰袍装备。
+
+## 2026-08-23 GreyWarden 独立双持剑原型实施与部署
+
+- **2026-08-26 Bannerlord v1.4.8 启动兼容修复：**游戏升级后最新
+  `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_30176.txt` 的实际启动模块只有
+  `Native`、`SandBoxCore`、`BirthAndDeath`、`CustomBattle`、`FastMode`、`Sandbox`、
+  `StoryMode`、`NavalDLC` 与 `GreyWarden`，没有加载 ROT；ROT-Core/ROT-Content 保留
+  `v1.3.15.3` 只作为双持机制取证来源，不属于本轮兼容范围。游戏 Build Version 为 `119303`，
+  Native 为 `v1.4.8`。崩溃的直接异常是 `ReflectionTypeLoadException`：旧实机 DLL 中
+  `GreyWardenSafePartyAgentOrigin` 未能按新版元数据实现
+  `IAgentOriginBase.get_IsInSameArmyAsPlayer()`，继而被启动器报告为 GreyWarden 依赖冲突。
+- 源码本来已有 `IsInSameArmyAsPlayer` getter，因此不能靠重复添加属性修复；必须针对 v1.4.8
+  程序集完整重编译。重编译同时暴露并迁移了本次官方 API 变化：战场刷兵实现改为
+  `DefaultBattleMissionAgentSpawnLogic`；收养儿童的初始装备改用直接返回 `Equipment` 的
+  `GetEquipmentForInitialChildrenGeneration()`；军团接触距离按实际场景分别使用新版陆地和海上
+  属性。最终 `Release -t:Rebuild --no-restore` 为 `0` 错误、`44` 条既有 nullable 警告并自动
+  部署到实机客户端与编辑器目录。
+- 新实机客户端与编辑器 DLL 均为 `775680` 字节，SHA-256 均为
+  `CF08AB31A922B3DD4A173B836BF23402EC294A05BBBB5FFA222A6FAA33D5F1A2`。反射
+  `GetInterfaceMap(IAgentOriginBase)` 已确认新版 DLL 的
+  `Boolean get_IsInSameArmyAsPlayer()` 精确映射到同名目标 getter，不再复现日志中的缺失实现。
+  对实机 DLL 执行 `Assembly.GetTypes()` 已完整载入 `391` 个类型，无 loader exception；仓库
+  `_Module` 的 `36` 个正常客户端文件与实机相比缺失 `0`、哈希差异 `0`，`29` 个 XML/XSLT
+  解析失败 `0`，实机也没有 `Assets`、`AssetSources` 或 `RuntimeDataCache`。`git diff --check`
+  通过。尚未代表用户启动游戏；下一步由用户实机确认能否越过模组加载并进入主菜单。普通开发
+  构建未创建正式 ZIP。
+
+- **2026-08-26 首次实机动作测试与副手物品修复：**用户确认缩短 action type ID 后游戏已能进入，
+  自定义战斗装备格也正确显示双剑；但实际拔出时播放盾牌动作/声音，左手剑不可见，随后主手与
+  副手均无法攻击或防御，只剩移动有效。四套 GreyWarden item usage set 去除独立前缀后，与
+  ROT 的 `dual_shield_swing`、`dual_shield_swing_thrust`、`dual_shield_thrust`、
+  `dual_shield` 逐节点完全一致；八套 movement set 同样逐项一致，因此问题不在动作输入表的
+  漏抄。
+- 反编译当前 `TaleWorlds.Core.Crafting` 确认，锻造物品的 `ItemFlags` 只取剑刃部件的
+  `CraftingPiece.AdditionalItemFlags`。ROT 的副手锻造剑使用专门 `_duel` 剑刃，其 XML 明确带
+  `ForceAttachOffHandPrimaryItemBone` 与 `HeldInOffHand`；GreyWarden 首版却让副手模板直接复用
+  普通 `vlandian_blade_3`，最终生成物因此仍是普通主手剑。它虽然得到继承 `hand_shield` 的
+  `gwp_dual_shield` usage，却没有真正成为副手装备，准确解释了左手空手、盾牌拔出反馈及主副手
+  输入停住。
+- 新增 `ModuleData\gwp_crafting_pieces.xml` 与 `CraftingPieces` SubModule 注册，定义隐藏的
+  `gwp_vlandian_blade_3_dual`：网格、剑鞘、长度、重量及伤害参数仍全部复用 Native
+  `vlandian_blade_3`，只增加上述两个 ROT 同款副手标志，不调用 ROT 模型。副手物品与其模板、
+  weapon description 改用该专用剑刃；主手继续使用普通 `vlandian_blade_3`。副手根 usage 覆盖
+  装备/收起音效为剑声。按用户要求，自定义战斗 `commander_2` 已移除 `gwlance`，武器格只剩
+  `gwdualbladeoffhand` 与 `gwdualblademainhand`；战役装备未按此句扩大修改。
+- Release 构建为 `0` error、`0` warning。静态核验确认副手最终剑刃带
+  `ForceAttachOffHandPrimaryItemBone,HeldInOffHand`，主手仍为普通剑刃，自定义战斗长矛为 `0`；
+  全部 ModuleData XML/XSLT/项目文件解析失败 `0`。仓库 `_Module` 的 `36` 个可部署文件与实机
+  缺失 `0`、哈希差异 `0`，新增 crafting pieces SHA-256 为
+  `D63E477BD6DB8D593EC3BA258E831687F161E2AE7B051675F72A7B008B0C5AF7`。实机没有 `Assets`、
+  `AssetSources` 或 `RuntimeDataCache`。仍需用户下一轮实机确认双剑可见、攻击/防御输入与副手
+  碰撞；尚未把行为手感标记为完成。
+
+- **2026-08-26 启动崩溃修复：**首版部署后用户确认游戏在启动阶段直接报错。最新
+  `rgl_log_26308.txt` 显示 GreyWarden 的 `project.mbproj` 被读取后，进程停在
+  `reading action files!` 并由 watchdog 捕获崩溃；没有进入 GreyWarden DLL 的战役初始化。
+  首轮修复确认首版只新增了 `action_sets.xslt` 和各数据 XML，却漏了在既有
+  `ModuleData\project.mbproj` 中注册 `action_set`、`animation_combat_parameters`、
+  `action_type`、`item_usage_set`、`item_holster`、`movement_set` 与
+  `full_movement_set`。用户随后指出以往动画导入均由官方 Modding Kit 完成；进一步逐项对照
+  Native、ROT-Content、ROT-Dragon 与 ArtemsCinematicCharges 后发现，所有声明
+  `type="action_set"` 且可用的模块均同时存在实体 `ModuleData\action_sets.xml`，而首轮修复后的
+  GreyWarden 是唯一声明该资源却仍缺少目标文件的模块。因此不能把“补七项注册”单独宣称为
+  完整修复。现新增有效的空根文件 `action_sets.xml` 作为本模块 action-set 资源入口；具体对
+  Native `as_human_warrior` 的增量继续由 `action_sets.xslt` 注入，避免在实体文件与 XSLT 中
+  重复定义同一批 action。必须在 Native 动作表离线变换、action type/animation 引用闭合检查、
+  构建部署完成后，再由用户实机确认是否越过 `reading action files!`；在此之前不宣称已修复。
+  离线使用 .NET `XslCompiledTransform` 将本模块 XSLT 作用于当前 Native `action_sets.xml` 成功，
+  合并结果包含 `84` 个 GreyWarden action，且 `action_types.xml` 中相应定义缺失 `0`。
+  TpacTool 重新读取 `gwp_dual_wield_animations.tpac` 成功，仍可枚举 `68` 个资产。最终 Release
+  构建为 `0` error、`0` warning；仓库 `_Module` 的 `35` 个可部署文件与实机相比缺失 `0`、
+  哈希差异 `0`，`23` 个动作/模块 XML、XSLT 与项目文件解析失败 `0`。新
+  `action_sets.xml` 的仓库/实机 SHA-256 均为
+  `06C5509045556C00081B93395A2E84CD863419F6ACA9FAA7320ACED8B99A1E60`，TPAC 仍为
+  `652634753C25CEFBD2547B8AC49D26A493C28C896225EF074665D9864E727F2B`，实机诊断 DLL 仍为
+  `31D5529F5DE1FD1BB6AE856B2199F1CC892CF3027770FAB4B14FBE8C0B2664D5`。实机未保留
+  `Assets`、`AssetSources` 或 `RuntimeDataCache`。尚未代表用户启动游戏，仍需实机启动验证。
+  用户第二次启动仍然崩溃；新日志 `rgl_log_30924.txt` 已越过旧日志的
+  `reading action files!`，明确成功打开 GreyWarden `action_types.xml`，随后才在原生模块/人体
+  资源加载阶段终止。进一步检查发现首版为隔离 ROT ID 而统一加入的 `gwp_` 前缀使最长 action
+  type 达到 `66` 字符；当前 Native 最长 action type 为 `63` 字符，ROT 最长为 `62`。这正好
+  越过引擎动作 ID 的 64 字节存储边界，并与“读完 GreyWarden action types 后立即原生崩溃、
+  没有托管异常”的时序一致。现将动作 ID 缩短为仍与 ROT 隔离的 `act_gwd*` / `gwd_shld`
+  前缀，最长降为 `61`；XSLT 的 `84` 个新增 action、action type 声明及 item usage 的 `105` 个
+  唯一动作引用重新核验后均缺失 `0`。Release 构建为 `0` error、`0` warning，仓库与实机
+  `35` 个可部署文件缺失 `0`、哈希差异 `0`；客户端与编辑器 DLL 均为
+  `31D5529F5DE1FD1BB6AE856B2199F1CC892CF3027770FAB4B14FBE8C0B2664D5`。此项修复仍需下一次
+  启动日志确认。
+
+- 根据用户确认直接复刻 ROT 双持机制，但不使用 ROT 武器模型。新增
+  `gwdualbladeoffhand` 与 `gwdualblademainhand` 两件锻造物品，均复用
+  `gwonehandedsword` 的 `vlandian_blade_3`、`vlandian_guard_8`、
+  `sturgian_grip_36`、`empire_pommel_6` 四个部件；物品仍为灰袍专属且不进入市场。
+  第一武器格固定副手、第二武器格固定主手。重步兵、战役领主模板与自定义战斗指挥官已换成
+  该配对，第三格保留原有备用武器或骑枪。
+- 新增独立前缀的数据链：`gwp_dual_shield*` item usage、`act_gwp_dual_*` action type、
+  `gwp_1h_with_dual_shield` movement set、`gwp_*dual*` combat parameter、
+  `GwpOneHandedSwordDualOffhand/Mainhand` 锻造模板与武器描述，以及 `gwp_dual_back`
+  收纳位。武器描述用 `gwp:dual:shield` 和 `gwp:dual:shield:thrust`，按原版
+  `Crafting.GetItemUsage()` 的冒号拆分/下划线拼接规则精确生成两件物品所需 usage ID。
+- 从 ROT `pack0` 至 `pack7` 只抽取名称或混合源引用包含 `dual` 的 64 个
+  `AnimationClip`，再按 GUID 闭包加入 4 个 ROT 自定义 `SkeletalAnimation`；另有 3 个底层
+  animation GUID 属于游戏原版依赖，未复制。产物为
+  `_Module\AssetPackages\gwp_dual_wield_animations.tpac`，共 68 项、`1,076,983` 字节，
+  SHA-256 `652634753C25CEFBD2547B8AC49D26A493C28C896225EF074665D9864E727F2B`。
+  数字名平衡混合 clip 与其源 clip 保留原内部名字/GUID，避免破坏引擎计算出的混合动作索引；
+  对外 item/action/usage/movement/combat/template ID 均已隔离。四个自定义 combat parameter
+  引用在抽取时改为 `gwp_` 前缀。
+- `.codex_tmp\tpac-diagnose\Program.cs` 新增 `--extract-dual`。初次尝试把所有外部段反序列化时，
+  TpacTool 因 ROT 当前优化动画变体报 `Frames not equal`；最终采用只解析 TPAC 头、对所需外部段
+  做原压缩字节复制的方式，避免重编码关键帧。输出重新读取成功，包 GUID 为
+  `94ca4c3d-685b-4cae-9f10-67edc31bacdf`，68 个资产均可枚举。
+- 新增 `GwpDualWieldCollisionPatch` 后置修补
+  `MissionCombatMechanicsHelper.IsCollisionBoneDifferentThanWeaponAttachBone`。只在原版已判定骨骼
+  不匹配、`AttackBoneIndex == 20` 且命中来源为固定副手第一武器格时放行；没有照搬 ROT 对所有
+  bone 20 攻击全局放行的宽补丁。
+- 当前 2026-08-23 游戏程序集已移除旧的 `DefaultBattleMissionAgentSpawnLogic`、海陆分离军团接触
+  距离属性与直接生成幼儿装备方法。为恢复本轮构建，只做等价 API 迁移：决斗使用
+  `MissionAgentSpawnLogic`；军团接触使用统一的
+  `MaximumAllowedDistanceForEncounteringMobilePartyInArmy`；收养装备从
+  `GetEquipmentRostersForInitialChildrenGeneration()` 的首个 roster 取得默认装备。双持修改前的
+  R10 工作树曾因此无法针对当前实机程序集编译。
+- 所有新增 XML 与 XSLT 已通过 .NET XML 解析；项目 Release 构建 0 error、44 个既有 nullable
+  warning。普通开发构建已把诊断版 DLL 与 `_Module` 同步到
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`；未制作正式 ZIP。
+  最终增量构建为 0 error/0 warning，实机诊断 DLL SHA-256 为
+  `31D5529F5DE1FD1BB6AE856B2199F1CC892CF3027770FAB4B14FBE8C0B2664D5`。仓库 `_Module`
+  中排除编辑器目录后的 34 个可部署文件逐一与实机比较，缺失 0、哈希差异 0；实机只有
+  `AssetPackages`、`bin`、`GUI`、`ModuleData`、`ModuleSounds`、`Shaders`，没有会让普通客户端
+  绕过 TPAC 的 `Assets`/`AssetSources`。ILSpy 反编译实机 DLL 已确认窄碰撞补丁条件实际进入产物。
+  仍需实机进入战斗确认资源注册、第一/第二格配对、左挥/下刺、副手真实命中、四向格挡和 AI
+  使用效果，不能仅凭静态解析宣称最终手感已经验收。
+
+## 2026-08-23 ROT 双持武器机制取证（只读调查，尚未实施）
+
+- 调查对象为实机 ROT `v1.3.15.3`：
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\ROT-Content` 与
+  `ROT-Core`。本轮没有修改 ROT、GreyWarden 玩家内容或实机模块，也没有构建、部署或制作 ZIP。
+- ROT 的“双手剑”实为两件一手剑配对的真正双持。主手测试物品为 `dual_blades`，仍是
+  `OneHandedSword`，但使用 `item_usage="dual_shield_thrust"`；副手为 `dual_blades2`，同样是
+  `OneHandedSword`，使用 `item_usage="dual_shield"`，并带
+  `HeldInOffHand`、`ForceAttachOffHandPrimaryItemBone` 和 `WoodenParry`。副手不是
+  `SmallShield`/`LargeShield` 伪装，也没有盾牌耐久或 `CanBlockRanged`，所以其核心是近战武器
+  格挡与攻击，不应误当成能像盾牌一样挡箭的剑形盾。
+- `ModuleData\item_usage_sets.xml` 只新增四个双持相关用法集：`dual_shield_swing`、
+  `dual_shield_swing_thrust`、`dual_shield_thrust` 与 `dual_shield`。副手根集
+  `dual_shield` 继承原版 `hand_shield`，让引擎接受副手装备和格挡状态；主手用法在检测到左手
+  根集为 `dual_shield` 时，为左向挥砍改用 `act_dual_*slashleft*`，为下向刺击改用
+  `act_dual_*thrust*`。其余挥砍继续使用主手动作。格挡仍定义上、下、左、右四向，因此玩家看到
+  的是两把剑共同构成一套方向攻击/方向格挡，而不是新增一个独立的“副手攻击键”。
+- 流畅动作来自完整数据链，不是物品 XML：`action_types.xml` 定义准备、快速准备、释放、受阻和
+  卡住等双持动作类型；`action_sets.xslt` 把对应动画注入原版 `as_human_warrior`；
+  `movement_sets.xml` 与 `full_movement_sets.xml` 定义步行、奔跑、蹲走、蹲跑及左右架势；
+  `item_usage_sets.xml` 再把攻击方向、手臂/手掌起止位置和动作绑定起来。正常客户端只提供
+  `AssetPackages\pack0.tpac` 至 `pack7.tpac`，动画片段在 TPAC 中以大量散列名存储，未提供可直接
+  维护的 FBX/Blender 动画源文件。复制架构可行，但 GreyWarden 若要独立发布，应制作并发布自己
+  的双持动画资源，不能指望只复制 XML 后复用原版动作就获得同样的副手命中与流畅度。
+- 反编译
+  `ROT-Core\bin\Gaming.Desktop.x64_Shipping_Client\ROT.dll` 证明还需要两个 Harmony 行为。
+  `DualWieldingPatches` 本身不生成攻击，只在物品栏检查配对：第一武器格必须是
+  `dual_shield` 副手，第二格必须是 `dual_shield_thrust` 主手，否则禁用完成按钮并显示错误。
+  真正让副手命中成立的是
+  `IsCollisionBoneDifferentThanWeaponAttachBonePatch`：它后置修补
+  `MissionCombatMechanicsHelper.IsCollisionBoneDifferentThanWeaponAttachBone`，当
+  `AttackCollisionData.AttackBoneIndex == 20` 时强制接受该碰撞。原版会把这个副手攻击骨骼与
+  默认武器挂接骨骼不一致判为无效；因此漏掉此补丁时可能有左手挥剑动画，却不会形成可靠的真实
+  武器碰撞。实现 GreyWarden 版本时应把补丁限制在本模组双持用法/物品，不能像 ROT 当前实现那样
+  对所有骨骼索引 `20` 的攻击全局放行，以降低与其他动画模组的冲突面。
+- ROT 还定义了锻造模板 `OneHandedSwordDual` 和武器描述特征
+  `item_usage_features="dual:shield"` / `dual:shield:thrust`，说明正式玩法不是只能使用两把测试
+  剑，而是分别锻造副手与主手并按固定武器格配对。当前 ROT 内用于快速实测的明确 ID 为
+  `dual_blades2`（第一格/副手）与 `dual_blades`（第二格/主手）。
+- 非枪械的其他特殊武器机制中，代码证据最明确的是 `giant_club` 与 `ice_spear`。
+  `ROTWeaponComponetData` 给巨人棍动态加入 `CanCrushThrough`、`AffectsArea`、
+  `CanKnockDown`、`CanPenetrateShield` 和 `MultiplePenetration`，并修补碰撞反应与剩余动量，使其
+  能击穿、击倒并继续传递伤害；冰矛被加入 `MultiplePenetration`。这两项比普通高数值武器更
+  接近可移植的特殊机制。Winterfell/Castle Black/The Wall 场景中隐藏生成的
+  `stark_sword_1`、`ranseur`、`woodland_longbow`、`weirwood_bow` 只是彩蛋拾取/入库逻辑，未发现
+  独立战斗机制。龙焰、龙骑和战车也有成套任务逻辑与专用动画，但属于载具/怪物战斗系统，不是
+  适合与双持并列复制的普通武器用法。
+- 可行性结论：GreyWarden 可以实现无 ROT 运行依赖的双持，最小完整范围是两类配对物品、四个
+  item usage set、双持 action types、注入人类 action set 的 XSLT、四种移动状态及左右架势、
+  原创动画 TPAC、受限的副手碰撞补丁，以及装备格配对验证。C# 工作量较小，动画制作、调参和
+  实机碰撞验证是主要成本。若先做技术原型，可暂用 GreyWarden 自有剑网格和最少一组左挥/刺击
+  动画验证副手命中，再扩展到完整移动与受阻动作；正式实现前需先确定给哪类灰袍角色、是否允许
+  玩家使用、是否允许骑乘，以及副手剑是否只挡近战。
+
+## 2026-08-17 工作区体积审计：垃圾来源、可再生性与删除边界
+
+- 本轮先完成只读盘点，再经用户确认执行下述第一阶段清理。清理前工作区约 `12.6 GiB`，
+  但当前 Git 跟踪文件只有
+  `124` 个、工作树内容约 `5 MiB`；体积增长不是源码造成，而是正式发行过程中反复保留
+  staging、ZIP 解包验收目录、反编译输出、外部工具副本和未压缩 Git 对象造成。
+- `build-check` 为 `7,813.08 MiB`。其中每个 `package-*`/`release-stage-*` 是正式玩家包
+  staging，每个 `extract-*`/`verify-*` 是 ZIP 解包后的逐文件验收副本，`release-player-*`
+  是 `GwpDiagnosticsEnabled=false`、`DeployToLiveModule=false` 的独立玩家 DLL 构建，
+  `matrix147`/根目录 DLL、PDB 是兼容性或早期构建输出。这里共有二十九份相同的
+  `gwp_inherited_legacy_assets.tpac` 和二十八份相同的 `gwp_black_gold_shield.tpac`；所有
+  staging/验收目录中的两个 TPAC 均分别匹配权威哈希
+  `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40` 和
+  `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`。
+- 最新 `build-check/release-stage-v1.4-r9/GreyWarden` 与
+  `build-check/verify-package-v1.4-r9/GreyWarden` 均为 `27` 个文件，并与本地正式
+  `GreyWarden-v1.4-r9.zip` 比较得到缺失 `0`、额外 `0`、哈希差异 `0`。正式 ZIP 的
+  SHA-256 仍为 `FD06FFB28B90F218A7522155BB0BAFC44B3B271D093F063CF2C69D284DDE7146`，
+  与旁置校验文件一致；包内玩家 DLL 哈希
+  `226270E8A6E8151DB378B8AF398EB9FD1B4A412F68447D777DF35A8957AC15CF` 也与
+  `release-player-v1.4-r9` 一致。GitHub 已确认 r3、r4、r5、r6、r7、r8、r9 的正式
+  Release ZIP 和校验文件仍在线且带 digest。因此 `build-check` 全目录是已验证可删除的
+  构建/发行中间产物；删除不会改变仓库源码、实时测试模块或正式发行资产。执行删除时须在
+  本节记录完成时间，不能删除游戏 `Modules` 父目录中唯一保留的 r9 ZIP/校验文件。
+- `.codex_tmp` 实际约 `4,031 MiB`，不能整目录删除。约 `2,832 MiB` 的
+  `release-v1.4.7*`、`package-20260717-000742`、`package-extract-check-*`、
+  `verify-v1.4.7-*`、`verify-readme-r2` 和 `verify-doc-rule-r2` 是已被后续正式版本取代的
+  staging、ZIP 和解包验收副本，可删除。`TaleWorlds-Documentations` 为干净的上游 Git
+  clone，HEAD `08f74df3f3ce6f80cc18bb30c0418bea8688710d`，可重新 clone，故其
+  `791.92 MiB` 可删除或移到仓库外共享缓存。`ilspy`、`py`、`harmony242`、
+  `harmony-smoke` 和仅剩 `bin/obj` 的 `PatchProbe` 是可重新安装/构建的工具缓存，也可删除。
+  其余以 `decompile*`、`deployed*`、`*-live*`、`*-il*`、`*-build*` 命名的目录主要是
+  已安装游戏程序集或本模组 DLL 的反编译/探针输出；结论已写入本维护文件，但删除会失去
+  原始取证便利性，统一归为“先归档文本证据，再删除生成目录”，不与大包副本一起盲删。
+- `.codex_tmp/TpacTool-src` 不是纯缓存：上游 clone HEAD
+  `b56b77ad273ba67192b1594dbb2eeca8c542b3b7` 上有两处未提交修改，分别给
+  `ExternalLoader.cs` 增加 `DebugGetRawData()`，以及在 `AssetPackage.cs` 中增加
+  `TPACDBG` 元数据诊断和损坏偏移恢复；`.codex_tmp/tpac-diagnose` 依赖该改版。
+  在把两处 diff 和诊断项目提取到持久工具目录前，这两个目录不得删除。
+- `.codex_tmp/published-assets` 和 `.codex_tmp/pre-six-lod-package` 是三个互不相同、也不等于
+  当前正式盾牌 TPAC 的历史发布/回滚资产，SHA-256 分别为
+  `031DC4430DA668D1FAB30C57518F99C19A762A99AD938A8D4C8558D417AD1E6A`、
+  `D14AE4B3F8576F963C9BF3B0A829402206F2EDDCE464202A24340612CFA1C287` 和
+  `1606CAD209D02A33AC75F5FA1F4E3726882F6985B2979046C34017D09A28955B`。
+  它们是盾牌资源故障的回滚点，不属于垃圾，不得删除。三张 UI 截图、monitor 原始日志和
+  crash 分析文件同样不是可再生内容；它们只可在另有带哈希归档并更新绝对路径后移出仓库。
+- 仓库 `_Module/Assets`/`AssetSources` 不是外置编辑器工作区的重复备份。与
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
+  比较时，文件名集合相同，但 `Assets` 有三个文件哈希不同，`AssetSources` 也有三个文件
+  哈希不同；外置工作区另有可再生的 `RuntimeDataCache`。两套代表不同的可恢复编辑状态，
+  当前均保留。仓库和实时模块中的两个正式 TPAC 哈希完全一致，也必须保留。
+- `.vs` (`8.41 MiB`)、`.codegraph` (`8.26 MiB`) 和项目 `obj` (`4.26 MiB`) 分别由
+  Visual Studio 索引、Codex codegraph 索引和 MSBuild 中间编译产生；确认相关进程关闭后可删，
+  下次打开/构建会自动重建。它们不包含源码。
+- `.git/objects` 为 `608.64 MiB`。其中十五个 `tmp_obj_*` 共 `199.93 MiB`，全部生成于
+  2026-07-14 至 2026-07-15，名称不是合法对象 ID，是当时向对象库写入大文件时中断留下的
+  临时文件，可在没有 Git 进程运行时直接删除。另有 `4,343` 个有效但不可达的 blob/tree/tag；
+  它们不影响当前分支，却可能用于恢复过去未提交或重写前的内容。在当前 R10 修改提交或制作
+  补丁备份前不执行 `git gc --prune=now`，避免把“当前功能不引用”误当成“没有恢复价值”。
+- 第一阶段零功能影响清理边界因此为：整个 `build-check`；上述明确列出的旧发行/验收副本和
+  可重装工具缓存；关闭进程后的 `.vs`、`.codegraph`、`obj`；以及十五个无效
+  `tmp_obj_*`。按本次逐项统计，第一阶段可释放 `11,754.13 MiB`（`11.48 GiB`）。明确暂缓：
+  TPAC 调试工具改版、兼容性审计的自定义 csproj/探针输入、历史盾牌
+  回滚资产、原始截图/日志/crash 证据、两套不同编辑工作区，以及全部有效不可达 Git 对象。
+- 第一阶段执行完成：十八个目标路径和十五个 `tmp_obj_*` 已全部删除，残留目标 `0`。
+  `.codegraph/codegraph.db` 初次因本仓库专属 Codegraph worker 占用而未删除；确认 PID `12752`
+  的命令行准确指向本仓库、不是 Codex 主进程后，仅停止该索引子进程并删除可再生索引。
+  工作区清理后为 `1,209,162,239` 字节（`1,153.15 MiB`，`1.13 GiB`），实际释放
+  `11,754.08 MiB`（四舍五入为 `11.48 GiB`）。`git count-objects` 的 `garbage=0`、
+  `size-garbage=0 bytes`；未对 `4,343` 个有效不可达对象执行 GC。
+- 删除后保护项复验通过：仓库两个正式 TPAC、r9 正式 ZIP/校验文件和三个历史盾牌回滚 TPAC
+  的七个 SHA-256 均与删除前一致；`TpacTool-src` 的两处未提交修改及 `tpac-diagnose`、
+  `compat-audit` 均仍存在；仓库两套编辑素材目录和外置 `_GreyWardenEditorWorkspace` 均仍存在。
+  游戏 `Modules` 父目录仍恰好只有 r9 的一个 ZIP/校验文件对，仓库与实时模块的中英文 README
+  哈希一致。本次没有构建、部署、制作 ZIP 或改变任何玩家行为。
+
+## 2026-08-06 R10 结案后立即恢复和平（修复“帮灰袍打本国罪犯后灰袍转身打玩家”）
+
+- 根因：灰袍追捕罪犯时由 `DeclareWar` 对罪犯所属整个国家宣战；战斗结束后
+  `PoliceAntiWarDeclaration.OnBattleEnded` 先于 `PoliceEnforcementBehavior.OnMapEventEnded`
+  结案执行，检查 `HasLegitimateWarReason` 时案件仍在案卷中，于是保留战争。案件随后关闭，
+  但战斗胜利结案路径没有像协力失败/玩家请求让位那样在结案后复查和平，导致灰袍仍与玩家
+  所在国家保持战争；刚并肩作战的承办领主就在玩家旁边，下一轮 AI 直接发起第二场战斗对话。
+- 修复：新增 `PoliceEnforcementBehavior.RestorePeaceAfterCaseEnd(PoliceTask?)`，统一在
+  `CrimeState.EndTask` 之后调用——若 `WarTarget` 已无任何合法执法理由（其他案件/悬赏/纠察
+  仍针对该势力时保留战争），立即 `GwpCommon.TrySetNeutral` 恢复中立。已接到 `UpdateTasks`
+  的三处无效/失活结案、`OnMapEventEnded` 的承办人消失/胜利/战败三条分支，以及
+  `FailTaskBecauseOwnerCannotLead`（先捕获任务再 EndTask 再查和平）。玩家押送分支不调用，
+  押送期间战争必须保留。玩家 README v1.4-r10 已补对应条目。
+- 构建与部署验证：`dotnet build -c Release` 成功，`0` 错误、`44` 条既有警告；仓库 `_Module`
+  与实机 `24` 个普通客户端运行文件 `缺失=0、哈希差异=0`；实机客户端 DLL SHA-256
+  `8FC050E5040719FCE097510D948C564EEE79C063DE6338E17ED67EA95D3FFB6F`，二进制包含
+  `RestorePeaceAfterCaseEnd`。用户将实测“帮灰袍打本国罪犯后不再被立刻攻击”。
+
+## 2026-08-06 R10 实机验证：结案和平修复通过；关闭报错继续观察
+
+- 用户实机验证“帮灰袍打本国罪犯”场景：结案后灰袍不再立刻转身攻击玩家，核心修复通过。
+  验证场景同时包含黑金盾与每两天派出的纠察队（可能带 NavalDLC 船）；用户在该纠察队回到
+  出生点消除之前保存并退出游戏，未出现关闭报错。关闭报错本轮未复现。
+- 按用户决定本轮不做任何隔离改动（临时队停船/移除 TPAC 的诊断变体 A/B 挂起），继续正常
+  游玩观察。若关闭报错再次出现：弹窗时选择生成报告/转储、不要取消；记录退出前最后一分钟
+  正在做什么（大地图/对话/战斗/切磋/是否有纠察队在场），保留新转储并与既有
+  `0x74b1f0/0x74b34a/0x74b3f1` 同族偏移比对。
+- 本轮无源码、构建、部署或玩家 README 改动；仓库与实机仍保持上一轮验证状态
+  （DLL SHA-256 `1BC286E0D4DCD34DE00B815172C6C90CB0024172E9C1DA432220DEFFAFFE6238`，
+  24 个运行文件缺失 0、哈希差异 0）。
+
+## 2026-08-06 R10 关闭游戏报错：旧线索汇总与本次复发取证
+
+- 用户确认该报错仅在本模组启用后偶尔出现、原版不出现。维护计划历史已有完整探索：
+  （1）2026-07-16 启动方式隔离：中文站 Mod Manager 的 `ModMasterStarter.bat` 直接以
+  `/anticheat` 且按自定义顺序启动 `Bannerlord.exe` 时，两次灰袍单模组运行都在原生 teardown
+  （`Managed Interface deleted` 之后）以 `TaleWorlds.Native.dll 0xc0000005` 崩溃；同一构建
+  用官方启动器顺序、不带 `/anticheat` 的两次运行均无 WER 崩溃，只打印无危害的
+  `Non-Zero Device Reference Count (ERC1513/ERC1567)`。（2）2026-07-18/07-20 同族偏移
+  `0x74b1f0/0x74b34a/0x74b3f1` 在原生 teardown 复现，无托管栈；已分别修掉黑金盾运行时
+  网格/材质变更、协力军团无首领原生状态、野战未完成时按住 Tab 刷消息三个具体入口。
+- 本次复发取证：今天 `10:29:56` 用户关闭游戏后，Windows 事件日志在 `10:32:55` 记录
+  `TaleWorlds.MountAndBlade.Launcher.exe` 以 `TaleWorlds.Native.dll`、`0xc0000005`、
+  偏移 `0x000000000074b3f1` 终止——正是维护计划记录的同族关闭崩溃偏移；新转储已保留于
+  `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.23780.dmp`
+  （112822847 字节，`10:33:09`）。本机未安装 cdb/WinDbg 命令行，未做符号化分析。
+- 下一步判定需用户回答两点：本次是用官方启动器/Steam 启动，还是中文站
+  `ModMasterStarter.bat`（`/anticheat`）启动；弹窗文字是“Non-Zero Device Reference Count
+  (ERC…)”（无危害，维护计划明确记录不构成失败）还是 Windows 崩溃窗口。若走官方启动器且
+  只是 ERC 提示，按计划无需改代码；若仍有 WER 崩溃，按 07-16 结论优先改用官方启动器
+  复测，并保留新转储比对偏移。
+
+## 2026-08-06 R10 关闭游戏报错：官方启动器复现取证与隔离计划
+
+- 用户确认一直用官方启动器/Steam 启动：正常流程是退回主菜单再点“退出游戏”，偶尔弹出
+  “程序遇到问题”的 Windows 崩溃窗口，偶现、无实际损失。因此 07-16 的“仅中文站
+  ModMasterStarter 才崩”结论只适用于当时两轮对照，官方启动器同样会间歇复现。
+- 本次复现（PID `23780`）深挖结果：`watchdog_log_23780.txt` 确认模块列表为标准官方顺序
+  （Native/SandBoxCore/BirthAndDeath/CustomBattle/FastMode/Sandbox/StoryMode/NavalDLC/
+  GreyWarden v1.4.9.0），`Has Used Cheats=False`、`Game Integrity is Achieved=True`；
+  `rgl_log_23780.txt` 正常走到 `Deleting resources... OK`、`Pre Finalizing Managed
+  Interface... OK`、`There are no living managed objects`、`Managed Interface deleted`，
+  崩溃发生在托管接口已删除之后的原生工作线程（07-20 分析同款：`TaleWorlds_Native!
+  create_game_application+0x1d6300` 读取已释放对象 `[rcx+0B18h]`，栈纯原生、无托管帧）。
+- 时间线反驳了“回主菜单后 1.7 秒内立刻退出”的旧假说：本次最后一次玩法活动约
+  `10:29:56`，退出流程到 `10:32:48-52` 才执行，用户在菜单/与灰袍领主弥瑟的对话中停留约
+  三分钟后关闭，仍然崩溃。`rgl_log` 最后活动是与灰袍领主的对话（10:28/10:29/10:31），
+  与 07-18 “关闭时仍处于模组相关对话/菜单附近”的现象有相似性，但无法据此单独归因。
+- 模组侧原生资源差异只剩两个可测候选：临时纠察/结算队持有的 NavalDLC 船只
+  （原版不会给无英雄自定义队配船，销毁自定义队时船只归属可能悬空）；以及黑金盾
+  `AssetPackages` 的 GPU 设备资源（历史 ERC1513/ERC1567 证据）。模组托管代码已无运行时
+  网格/材质变更（`GwpBlackLordShieldBehavior` 已是占位类型），也未发现托管线程/异步加载。
+- 隔离计划（待用户选择）：A) 出诊断变体停掉临时队配船，正常游玩并反复正常退出
+  5～10 次观察是否还崩；B) 临时从实机移除两个 TPAC 包（黑金盾退回普通外观）同样反复退出
+  观察。下次弹窗时务必选择生成报告/转储而不是取消，保留新转储用于比对偏移。另请记录
+  退出前最后一分钟在做什么（大地图/对话/战斗/切磋）。
+- 附带修复：实机日志显示市场清理打印出现负数（`removed -1/-2`），系 `AddToCounts` 返回
+  负增量被累加所致，清理本身成功；已改为按移除清单累计正数。`dotnet build -c Release`
+  `0` 错误、`44` 条既有警告，24 个运行文件与实机哈希一致，DLL SHA-256
+  `1BC286E0D4DCD34DE00B815172C6C90CB0024172E9C1DA432220DEFFAFFE6238`。
+
+## 2026-08-06 R10 读档/启动异常排查与市场清理加固
+
+- 用户反馈改动后存档进不去、有报错弹窗。Windows 事件日志显示当天 `09:54` 与 `09:55`
+  各有一次 `TaleWorlds.MountAndBlade.Launcher.exe` 崩溃（`0xe0434352`，.NET 未处理异常，
+  KERNELBASE），且与 `08/05 02:12` 的崩溃是同一 WER 桶（`AppCrash_TaleWorlds.Mount_4c92cee…`），
+  即该启动器崩溃在我们 R10 改动之前就已存在，属启动器侧间歇性问题，不是 GreyWarden 的
+  模块文件导致：`SubModule.xml` 未改动，启动器不解析 `items.xml`/README/CN 文本，也不加载
+  模块 DLL。同日 `GreyWarden-AI-Diagnostics.log` 在 `08:09` 后无新会话，说明游戏本体从未
+  启动到战役；命令行直接启动 Launcher.exe 时正常退出（code=0），未能复现。
+- 为排除“市场清理在存档加载阶段改动城镇库存”这一潜在读档风险，对
+  `GreyWardenExclusiveItemBehavior` 做了加固：移除 `OnGameLoadedEvent` 钩子，清理只保留在
+  `OnSessionLaunchedEvent`（新档与读档完成后都会触发）和 `DailyTickEvent`；`SweepMarkets`
+  整体包 `try/catch`，任何异常只打 `Debug.Print`，绝不向战役流程抛出。这样即使清理逻辑
+  在某个环境下失败，读档与日常游玩也不会被拖垮。
+- 加固后 `dotnet build -c Release` 成功，`0` 错误、`44` 条既有警告；仓库 `_Module` 与实机
+  `24` 个普通客户端运行文件 `缺失=0、哈希差异=0`；实机客户端 DLL SHA-256
+  `0FEF55E37FDE3AF03BCADB5BABAA213098933AB25D09CB094757B83FCA6F33B6`。启动器崩溃的复现
+  与进一步处理（重试启动、Steam 校验文件、清理启动器缓存）留给用户确认，本次未做任何
+  删除操作。
+
+## 2026-08-06 R10 经济方案一实施：不再免费给常驻领主发船
+
+- 按用户选择只实施经济方案一：`PoliceResourceManager.GivePoliceShips` 增加
+  `if (party.IsLordParty) return;`，常驻灰袍领主队不再由模组免费生成船只；无英雄的临时
+  纠察队与悬赏结算队（`CustomPartyComponent` 创建，非 lord party）仍保留免费配船，
+  它们不进入家族公库、也不参与 `SellSurplusPoliceShips` 余船出售。
+- 购船能力已核实，不依赖模组：仓库代码中 `ApplyByTrade` 只出现在
+  `SellSurplusPoliceShips`（卖船给船坞）；监控日志的三条购船记录
+  （campaignHour=628540.03 约珥买自 town_K3、628876.21 暮光买自 town_K5、
+  628924.21 圣铎买自 town_EW4，均为 `eastern_trade_ship`、`detail=ApplyByTrade`）只能是
+  原版 NavalDLC 的购船决策产生。`NavalDLC.dll` 中亦存在 `BuyShip`/`BuyShipFrom`/
+  `BuyShipFromTown` 方法，确认原生 AI 会在有资金和可用船坞时自行购船。
+- 行为预期：新档灰袍领主落地时不带模组赠送的船，之后由原版经济在需要时购船（灰袍公库
+  充裕，购船无困难）；旧档已经免费生成的船仍保留，可在人数回落时一次性出售，之后不再
+  补充，造钱循环即断。玩家 README 的 v1.4-r10 条目已补“常驻队伍不再凭空获得船只”。
+- 临时队伍类型全清单（核对 `IsLordParty` 守卫无遗漏）：模组全部临时队均为
+  `CustomPartyComponent` 创建、无英雄领队、`IsLordParty=false`，不受新守卫影响。
+  （1）纠察队 `gwp_patrol_`（PolicePatrolBehavior）创建时调用 `GivePoliceShips`，仍免费配船；
+  （2）悬赏结算队 `gwp_bounty_collect_`（PlayerBountyBehavior.CollectionCourier）创建时调用
+  `GivePoliceShips`，仍免费配船；（3）招募使者队 `gwp_recruit_`（PlayerBountyBehavior）只配
+  二十日口粮，从不配船，陆路信使不需要船，保持不变；（4）追截支援队 `gwp_enf_delay_`
+  （PoliceEnforcementBehavior.DelayPatrols）有即时骑兵截击队与普通延滞支援队两种，均只配
+  口粮、从不配船，截击队还需要轻装高速，保持不变。其余“临时”职责（协力军团、村庄救济、
+  重建、练兵、调兵、玩家请求）都由灰袍领主队本身执行，属于 lord party，正是本轮停止免费
+  发船的对象。
+- 构建与部署验证：`dotnet build -c Release` 成功，`0` 错误、`44` 条既有警告；仓库 `_Module`
+  与实机 `D:\steam\...\Modules\GreyWarden` 的 `24` 个普通客户端运行文件 `缺失=0、哈希差异=0`；
+  实机客户端 DLL SHA-256 `2C5674DE6919F2204059F3A5BCC7CC45B0A16AA1BBA6F18DE2A03C622B52E03F`，
+  二进制包含 `IsLordParty` 守卫；`items.xml` SHA-256 不变
+  `AAB699DCF6CCCCB1E8C1669F2EF85ED51DC2674AAFD743A3BDE72BF0C09FC070`。未制作 ZIP、
+  未替换诊断 DLL。
+
+## 2026-08-06 R10 实施：在案罪犯声望通道 + 专属装备市场隔离
+
+- 玩家声望新增通道：玩家获胜且失败方包含仍有开放案卷的罪犯部队时，按玩家亲手击倒数
+  累计灰袍声望，与剿匪/救援共用 `PlayerBehaviorPool.AccumulateGoodDeedKills` 的同一把
+  “亲手击倒十人得一点、余数跨战斗存档保留”累计器。实现位于
+  `PlayerBehaviorMonitor.TryResolveCaseCriminalReputation` / `SideContainsOpenCaseCriminal`，
+  覆盖罪犯本人部队、附着目标与军团首领三种战场身份；玩家通缉身份（`IsMainParty`）被排除。
+  与既有“协助灰袍抓捕”路径互斥：`_pendingPoliceCrimeSupport > 0` 时先由
+  `TryResolvePendingPoliceCriminalReputation` 结算并短路；玩家帮助罪犯击败灰袍时则先命中
+  `TryApplyPoliceBattlePenalty`，不会误发奖励。新增中文文本
+  `gwp_playerbehaviormonitor_053/054`。中英文玩家 README 已加入 v1.4-r10 条目，并按要求
+  保留 r10、r9 两条、移除 r8 条目。
+- 专属装备市场隔离：`_Module/ModuleData/items.xml` 全部 `24` 件灰袍专属物品（三件锻造武器、
+  十九件盔甲/盾牌、两件马铠）均已补 `is_merchandise="false"`（原版 CraftedItem 同款用法，
+  见 SandBoxCore tournament_weapons.xml），阻止市场后续生成。新增
+  `GreyWardenExclusiveItemBehavior`，在会话启动（含读档完成）与每日结算时扫描全部城镇
+  `Settlement.ItemRoster`，把 `GwpIds.ExclusiveItemIds` 内物品清零；已在 SubModule 注册。
+  清理整体捕获异常，不参与存档加载流程（见上方“读档/启动异常排查与市场清理加固”一节）。
+  当前游戏版本不存在 `NotSellable` 物品旗标（已在 TaleWorlds.Core 枚举与全部原版 XML 中确认），
+  因此玩家或 AI 战后缴获后主动转卖，仍可能短暂进入某城镇库存，直到当日/次日扫描清除；
+  “市场不再生成”由 XML 标志保证，旧档存量清理由每日扫描保证。
+- 构建与部署验证：`dotnet build -c Release` 成功，`0` 错误、`44` 条既有可空性警告（与 R9 基线一致）。
+  仓库 `_Module` 与实机 `D:\steam\...\Modules\GreyWarden` 的 `24` 个普通客户端运行文件
+  `缺失=0、哈希差异=0`。实机客户端 DLL 为 `775168` 字节，SHA-256
+  `82BCFAC2B6FF8C310F8881F4E4FD768F7528719B3DD36289295B905C4B462BA6`，二进制中包含
+  `GreyWardenExclusiveItemBehavior` 与 `SideContainsOpenCaseCriminal` 两个新类型/方法。
+  `items.xml` SHA-256 `AAB699DCF6CCCCB1E8C1669F2EF85ED51DC2674AAFD743A3BDE72BF0C09FC070`，
+  XML 解析确认 `24` 件物品全部带 `is_merchandise="false"`；中文语言文件解析正常。未制作 ZIP、
+  未替换诊断 DLL、未发布 R10。
+
+## 2026-08-06 R10 经济系统调整方案（待用户选定后实施）
+
+- 依据上一节实测日志：约 28 个游戏日内公库净增 `165160`；地方请求 `16×3000=48000`，村庄重建
+  净支出 `270000`，村庄保护费日结算约 `6700～6900`，余船出售 `18` 艘共 `276824`（其中免费生成
+  重船 `13` 艘 `263303`）。
+- 方案一（已实施，见上方“经济方案一实施”一节）：切断“免费补船→卖船”的造钱循环。
+  `GivePoliceShips` 此前每小时按 `ceil(人数/50)` 用 `ApplyByMobilePartyCreation` 免费生成
+  首选重船，`SellSurplusPoliceShips` 每日又按同一需求线出售多余船；日志已证实 `18` 次免费
+  生成重船、其中 `13` 艘随后以约 `20250` 出售。已改为不再为常驻领主免费生成船只（无领主
+  临时队仍保留补给船），预期把约 `26.33 万/28 日` 的最大异常收入直接移除。
+- 方案二：协力拨款去重。`PoliceEnforcementBehavior.Assistance.CompleteAssistanceTasks` 现在
+  按协力军团每个成员案卷各发一次 `3000`，一个案件会按成员数重复拨款；应改为每个案件只结算
+  一次。
+- 方案三：案件/请求拨款降额。`SuccessfulCaseReward` 由 `3000` 降至 `1000`（或地方请求直接
+  不发公库拨款），当前约每 `1.75` 日完成一件，28 日可少约 `3.2 万`。
+- 方案四：村庄保护费再降档。上次 2026-07-21 已把日结算收入下调过一次；若方案一、二落地后
+  公库斜率仍偏高，再把当前约 `6700～6900/日` 的净增量按系数减半，预期 28 日少约 `9 万`。
+- 建议执行顺序：先实施方案一加方案二，实测一到两周游戏时间复查 `leaderGold/clanGold` 斜率，
+  仍偏高再启用方案三、方案四。公库上限、重建费用与工资储备保持不变，避免在来源未修好时
+  用支出掩盖问题。上述方案均未在本轮实施，等待用户确认具体组合。
+
+## 2026-08-06 R10 需求调查：案件目标声望、专属装备市场与司法公库暴涨
+
+- 本轮按用户要求只调查、不改玩法代码，也未制作、部署或打包 R10。性能问题暂不进入修改范围；唯一可量化的
+  开发环境现象是当前诊断日志在约五十分钟现实时间内写到 `27763733` 字节、`12611` 行，且
+  `GwpAiDiagnostics.Append` 每条都同步调用 `File.AppendAllText`。正式玩家构建的诊断实现为空，因此这条证据
+  只能说明本地诊断构建可能有额外 I/O 开销，不能据此认定用户观察到的性能问题来自 GreyWarden。
+- 当前玩家声望的善行战斗统一按玩家亲自击倒数累计，每满十人结算一点，余数跨战斗和存档保留。
+  `PlayerBehaviorMonitor.OnMapEventEnded` 已覆盖强盗、保护村民/商队、阻止烧村，以及玩家通过灰袍正在进行的
+  交战界面选边后协助承办队抓捕罪犯；后者依赖 `_pendingPoliceCrimeSupport`，并要求战场中同时存在持有该案
+  的灰袍队和其案件目标。玩家独自在别处攻击某个仍有开放案卷的罪犯部队时，当前没有检查
+  `CrimePool.ActiveTasks` 或开放 `CrimeRecord`，所以不会因“击倒在案罪犯部队成员”获得声望。这正是 R10
+  新入口的现有缺口。实现时应在玩家获胜且失败方确实包含开放案件目标时复用同一累计器，并避免与现有
+  “协助灰袍抓捕”路径重复计数；案件目标并入军团或附着队伍时还需按真实参战方而非只看战役地图当前队伍引用。
+- `_Module/ModuleData/items.xml` 当前定义 `24` 件灰袍专属物品（三件锻造武器、十九件盔甲/盾牌和两件马铠），
+  全部带帝国文化或可交易物品的一般定义，但 `24` 件都没有 `is_merchandise="false"`。原版普通商品同样可省略
+  该字段，而专用/测试装备会显式写 `false`；这解释了灰袍装备能被原版市场商品生成器选入商店。仅补 XML
+  标志可以阻止新市场库存自然生成，但不能保证从战斗缴获、玩家或 AI 转卖的灰袍装备永不进入城镇库存。
+  若 R10 的边界是“任何来源都不得在市场出现”，除给全部专属物品加非商品标志外，还需要在载档/会话启动
+  和城镇库存更新后清除已有存档市场中的灰袍物品，不能只依赖 XML。
+- 现场经济日志为
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`，本次会话覆盖战役小时
+  `628310.48～628983.55`，约 `28.0` 个游戏日。司法公库首个可见余额 `2586989`，末次为 `2752149`，
+  净增 `165160`；因此二百七十多万的大部分在本次载档前已经形成，但本次仍明确持续净增长。
+- 用户怀疑的地方请求确实有收入：`SuccessfulCaseReward` 当前为 `3000`，圣铎在这二十八日完成
+  `16` 个城镇/村庄原版请求，合计只入账 `48000`。同期晨曦完成 `10` 次村庄重建，每次先支出 `30000`、
+  再回拨 `3000`，合计净支出 `270000`；所以“每个地方请求给三千”会推高公库，但不是这段现场记录中的
+  最大异常来源。成功刑事案件、协力成员、村庄救济等其他案卷也各自调用同一个三千拨款入口，协力军团按
+  每个成员案卷分别拨款，后续平衡时应一起审计，不能只改地方请求常量。
+- 更严重的已证实来源是舰船循环造钱。`GivePoliceShips` 每小时按
+  `ceil(当前部队人数 / 50)` 免费创建首选重船；`SellSurplusPoliceShips` 每日又按同一随人数变化的需求线
+  出售多余船。日志记录 `21` 次获得舰船，其中 `18` 次明确为 `ApplyByMobilePartyCreation` 免费生成重船；
+  同期出售 `18` 艘船，收入 `276824`，其中 `13` 艘 `sturgia_heavy_ship` 收入 `263303`。兵力跨过五十人
+  阈值时免费补船、人数随后回落时卖船，构成可重复的系统性造钱路径，推翻了 2026-07-25 记录中“只出售
+  缴获余船、没有额外造钱”的旧结论。R10 经济修复应优先切断免费补船资产与可出售资产之间的转换，例如
+  记录模组配发船并禁止其出售或取消按短期兵力波动反复免费补船；之后再决定是否下调三千拨款和全大陆
+  村庄保护费。
+
 ## 2026-08-05 v1.4-r9 正式发行
 
 - 用户以关闭作弊、只启用 GreyWarden 的新 StoryMode 战役完成最终实机验收。人物与家族百科按钮、
@@ -1661,6 +3505,167 @@
   `E091EDB2F81887567967A8C9EB253CB941AF31931E956DBD79996DD8F4E5C350`。没有启动游戏，
   行为验证仍由用户完成；普通开发构建没有创建或改写正式 `v1.4-r7` ZIP，其 SHA-256 仍为
   `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-08-28 玩家重度通缉自动接触执法对话修复
+
+- 实机诊断复现：玩家自定义声望为 `-12`，`PLAYER_WANTED` 案件开放且有效，
+  `gw_leader_3_party_1` 已承办案件并持续追踪玩家；圣铎与玩家距离从 `12.43` 降至
+  `1.98`，但其 `dutyIntent=Approach:player_party`、`default=GoToPoint`，没有
+  `MAP_EVENT_STARTED` 或 `ENFORCEMENT_FINE_DIALOG_OPENED`。故障不在声望、案卷、
+  任务分配或追踪，而在和平阶段没有把静态 `Approach` 转入原版 `EngageParty` 接触。
+- 原设计的玩家案件必须先通过执法对话让玩家选择缴纳罚金、接受赎罪或拒捕；代码明确禁止
+  玩家目标在接近时自动宣战，且现有 `OnMapEventStarted` 只能在地图遭遇已经建立后调用
+  `PlayerEncounter.DoMeeting()`，不能凭空创建遭遇。普通非玩家案件的 `DeclareWar`/
+  `GoAroundParty` 路径不能替代这条玩家专用入口。
+- `PoliceEnforcementBehavior.MaintainPlayerEnforcementContact` 新增窄范围桥接：仅当当前
+  承办人是灰袍正规领主、案件仍为玩家 `Pursuit`、双方和平、没有地图战斗/进行中对话且距离
+  不超过现有 `Enforcement.WarDistance(3)` 时，清除地点接近意图并调用原版
+  `SetMoveEngageParty`。接触请求在写入原版命令前记录 12 小时冷却，避免对话收尾期间每帧
+  重发导致重复弹窗；遭遇/战斗/付款状态仍由既有对话和案件状态机处理。冷却写入
+  `gwp_enf_player_contact_hour`，存读档后仍保持保护；新一宗玩家案件会清除旧冷却。
+- 诊断仍只在开发构建启用，新增 `PLAYER_ENFORCEMENT_CONTACT_REQUESTED` 与失败重试记录；
+  没有新增正式玩家监控输出。中文和英文玩家 README 的 r10 修复列表已加入该结果。
+- `dotnet build GreyWardenPolicePurity\\GreyWardenPolicePurity.csproj -t:Rebuild --no-restore`
+  成功，`0` 错误、`44` 条既有可空性/离线 NuGet 警告。开发 DLL 已自动同步实机，客户端
+  SHA-256 为 `6A49C86403F8A4EC3730D66ECB3F5B7051BF98F3F854705AE776E287A1563605`；
+  `_Module` 中排除编辑器专用 `Assets`、`AssetSources`、`RuntimeDataCache` 和
+  `AssetPackages` 后，33 个可部署文件与
+  `D:\\steam\\steamapps\\common\\Mount & Blade II Bannerlord\\Modules\\GreyWarden`
+  缺失 `0`、哈希差异 `0`。两份 README 也已复制并逐一核对哈希。尚未启动游戏，等待用户
+  在当前负声望存档中验证自动接触、对话只出现一次，以及付款/赎罪/拒捕三条后续分支。
+
+## 2026-08-28 执法对话结案后重复弹出的修复
+
+- 用户实测确认自动接触已经成功，但选择认罪认罚后同一执法对话立即再次出现。结合此前调兵交接、
+  封地申诉和招募使者的同类故障，根因不是案件状态没有清除，而是赎罪/缴款 consequence 在对话
+  仍处于打开或收尾阶段就直接调用 `GwpCommon.TryFinishPlayerEncounter()`；原版
+  `EngageParty/TargetParty` 因而可能存活到下一次地图 AI 检查，再次建立玩家遭遇。
+- 赎罪和缴款分支现在只在 consequence 阶段标记 `PlayerEncounter.LeaveEncounter=true`，并注册
+  `ConversationManager.ConversationEndOneShot`。对话真正结束后才调用 `TryFinishPlayerEncounter()`，
+  清除承办灰袍的灰袍欲望和原版接触目标，设置短暂的 `SetDoNotAttackMainParty(2)` 安全窗，恢复
+  原版 AI 思考并重置临时对话变量。拒捕分支保持原有宣战/战斗流程，不走和平结案清理。
+- 删除了赎罪路径在对话仍打开时的即时 `TryFinishPlayerEncounter()`，并将缴款分支的
+  `ResetDialogueState()` 移到收尾回调，避免回调失去承办队引用。新增的开发期诊断事件为
+  `ENFORCEMENT_CONTACT_FINISH_QUEUED/FINISHED/FAILED`；没有向正式玩家版加入监控输出。
+- `dotnet build GreyWardenPolicePurity\\GreyWardenPolicePurity.csproj -t:Rebuild --no-restore` 成功，
+  `0` 错误、`44` 条既有可空性/离线 NuGet 警告。构建自动同步实机客户端和编辑器 DLL；两者均为
+  `834048` 字节、SHA-256 `F48F343A8045BAAE5CA0B000B32E7AEFA427B71836390650DD21A3CA75B2B541`。
+  仓库 `_Module` 与实机的 README（中文 `C3BB11C913CA06C6D91222944654D63B0F0984AF0A8BBCC2B75DFCA304CE52D6`，
+  英文 `F811746C233676F246388B9D1E315C8879E528B577863FDE153F533CD44F7441`）已核对一致。尚未启动
+  游戏；下一次实机验证应确认认罚/缴款后回到大地图且不再重复弹出执法对话，拒捕仍能正常进入战斗。
+
+## 2026-08-28 纠察队改为实时追踪玩家位置
+
+- 用户确认正规灰袍领主主动执法和和平结案已经正常，随后指出轻度负声望生成的无领主纠察队仍会
+  先赶往玩家之前的位置，玩家持续移动时可能与其错过。源码确认两类追捕的职责边界不同：正规灰袍
+  领主的玩家案件由 `GreyWardenPartyDesireBehavior` 以普通案件分 `0.99` 参与原版欲望竞价，远程
+  `Approach` 被实现为本小时玩家坐标的 `GoToPoint`，抵达三格内才由
+  `MaintainPlayerEnforcementContact` 切换 `EngageParty`；纠察队则是无领主、一次性、无需补给竞价的
+  专用执法队，已有 `RequestPursuit` 的直接攻击锁可安全使用原版移动目标。
+- 正规灰袍领主保持现状：案件欲望仍可被原版更高的补给、疗伤和安全需求覆盖，近距离才建立会面，
+  结案后继续复用本日已验证的延迟 encounter 收尾、清除接触目标和短时不攻击玩家保护。没有把持久
+  领主改成全程冻结或强制追击。
+- `PolicePatrolBehavior` 的纠察队在生成时及和平追捕的小时维护中，均由 `RequestApproach` 改为
+  `RequestPursuit`。由于 `GreyWardenPartyDesireBehavior.IsDisposableEnforcementParty` 已将无领主纠察队
+  路由到一次性的 `SetMoveEngageParty` 并锁住小时 AI，这个目标会随玩家实时移动，不再是位置快照；
+  后续小时只续期，不反复重发移动命令。纠察队付款、议和、胜负与押送结案仍通过 `RequestVisit`/
+  `ApplyImmediatePatrolReturn` 释放直接追击锁、清除原版目标并返城，故不会重新引入重复交谈。
+- 中英文 r10 玩家日志已加入“纠察队不再追旧位置”的简短结果。Release Rebuild 成功，`0` 错误、
+  `44` 条既有可空性/离线 NuGet 警告；构建自动部署客户端与编辑器 DLL，两者均为 `834048` 字节、
+  SHA-256 `73C4AC28F498AF54D5D9B935A566B37BE90278D3E32FF039EA02CA41ACC3FEFE`。实机 README 哈希为中文
+  `7401B259070733FDCBA53E52781866450F6932BABC05C54E4FEF4E4AFBE4EAB5`、英文
+  `AD4869DF969CF23294FCFA62EE0637C8ADF54E4DBFB3640B105FD69F59B59B50`。没有制作正式 ZIP；游戏内
+  仍需验证纠察队能从远处持续跟随移动玩家、接触后正常打开一次对话，并在付款/议和后正常返城。
+
+## 2026-08-28 双刀并入弓箭手兵种
+
+- 用户决定取消独立双刃卫士兵种，将双刀配置并入现有 `gwarcher`。已从轻步兵升级树移除
+  `gwdualbladeguard`，并删除该独立 `NPCCharacter` 与对应中文名称字符串；轻步兵仍直接升级为
+  重步兵、弓箭手或骑士。
+- 弓箭手的战斗装备现在固定为 `Weapon0=gwdualbladeoffhand`、`Weapon1=gwdualblademainhand`，
+  以满足当前 AI 双刀资格和专用动作集的原生槽位要求；弓与箭移动到 `Weapon2/Weapon3`，保留
+  弓箭手的远程能力。击倒概率代码不变，弓箭手仍使用原有三级兵种概率档。
+- 已移除不再使用的 `GwpIds.DualBladeGuardId` 分支；双刀命中、伤害类型、防御击倒、拾取和 AI
+  生成同步逻辑均未改动。本轮不做旧存档兼容，实机需要用新兵种树验证招募、升级、弓箭切换和双刀动作。
+- `spnpccharacters.xml` 与中文字符串 XML 解析通过；`Release -t:Rebuild --no-restore`
+  （`DeployToLiveModule=false`、`ReleaseLocal`）成功，`44` 条既有可空性警告、`0` 错误。诊断版 DLL
+  SHA-256 为 `5BC924339689B57B9930EF71BCD7D24B9FFF5EAE13074EE599BBD3F6D17FD76C`，已同步到实机客户端
+  与编辑器且两边一致；仓库 `_Module` 与实机的 `36` 个部署文件缺失 `0`、哈希差异 `0`。中英文 README
+  已同步，哈希分别为 `600F6B40212EAB77058C0592E608823E3608DB59DD3980264A9462C90A091BD2`、
+  `87BF6A5C28DEC7D743FDC02ED0D7FAB16C21994D37A3437824DB29B870BE10D1`。未制作正式 ZIP。
+
+## 2026-08-28 正规灰袍领主案件欲望改为原版实时接触
+
+- 用户进一步明确：正规灰袍领主的玩家案件应以精确 `1.0` 的欲望参加原版竞价，但该候选胜出后不能
+  继续走当前玩家坐标的 `GoToPoint`；必须直接使用原版 `EngageParty`，跟随玩家移动目标。无领主
+  纠察队上一轮已采用同样的实时追击目标，本轮只扩展到持久灰袍领主，不改变其补给、疗伤和其他
+  原版高优先需求。
+- 原版 `AiPartyThinkBehavior` 没有把 `EngageParty` 作为欲望胜出分支，而是通过
+  `SetPartyAiAction.GetActionForGoingAroundParty` 落地 `GoAroundParty`。因此新增了窄范围 action
+  bridge：仅当候选队伍仍有未宣战的玩家 `Pursuit` 案件且目标是玩家时，将这个胜出的
+  `GoAroundParty` 转译为 `SetMoveEngageParty`；其他灰袍案件、玩家委托专员、原版 AI 候选和战斗
+  行为完全不受影响。
+- `GreyWardenPartyDesireBehavior.ProcessFinalDesires` 现在为上述玩家案件加入目标部队候选而不是旧坐标
+  候选，诊断标记为 `PlayerEnforcementEngage:<party>`。当补给等更高原版欲望胜出时，领主仍执行原版
+  维护行为；案件欲望重新胜出时会重新使用实时接触目标。对话结案仍沿用上一轮延迟关闭、清除目标和
+  短时不攻击保护，避免重复弹窗。
+- `Release --no-restore` 构建成功，`0` 错误、`44` 条既有可空性/离线 NuGet 警告；随后以
+  `DeployToLiveModule=false`、独立 `ReleaseLocal` 输出重新编译，`44` 条既有可空性警告、`0` 错误。新的诊断版 DLL
+  为 `792064` 字节，SHA-256 `3345053F9D383AF77875296653D6DF7FE74FE24146BA98F5C54541D4B2F9165D`，
+  已同步到实机客户端和编辑器目录，两边哈希一致。README 已同步实机，中文 SHA-256
+  `88B07C0010328BB848A33B0F163532DA51DF0BFDFD8F6908AD7B2E3642C3B45B`、英文
+  `3E95BB850863B574D588182648B87C520E3340A8C1F1FC3AECF26BEF03FBA7B5`；本轮没有制作正式 ZIP。下一步
+  实机应验证领主案件欲望胜出后能持续追随移动玩家，并在接触后只打开一次执法对话，同时确认领主在
+  缺粮或重伤时仍可被原版维护欲望暂时覆盖。
+
+## 2026-08-23 Bannerlord 安装目录体积调查（未执行删除）
+
+- 实机安装目录
+  `D:\steam\steamapps\common\Mount & Blade II Bannerlord` 约为 `134.7 GiB`，其中
+  `Modules` 约 `129.81 GiB`。这不是日志、崩溃转储或临时缓存失控，而是官方游戏、官方
+  Modding Kit、NavalDLC 与第三方模组共同写入同一安装目录的结果。目录内日志几乎为零，
+  `dump`、`tmp`、`bak`、`old` 类文件没有形成可观占用；根目录 `Shaders` 约 `1.52 GiB`，
+  是官方压缩着色器数据，不能按普通缓存删除。
+- Steam 清单 `appmanifest_261550.acf` 记录游戏本体 App `261550` 占用
+  `94,728,857,120` 字节；已安装 depot 包含基础内容 `261551`、`261552`、Digital Companion
+  `2240111`，以及独立 DLC depot `2927200`。其中 `2927200` 的清单大小为
+  `33,393,276,540` 字节，落盘的 `Modules\NavalDLC` 约 `31.10 GiB`；它应通过 Steam 的
+  DLC 管理取消安装，不能手工掏空目录。当前 `LauncherData.xml` 中 NavalDLC 未选中，但这
+  只说明最近一次单人启动配置没有加载它，不证明用户以后不再游玩该 DLC。
+- Steam 清单 `appmanifest_1393600.acf` 证明 Modding Kit 是另一个已安装产品，App
+  `1393600`、depot `1393601`，清单大小 `30,921,657,359` 字节（约 `28.8 GiB`）。其主要
+  内容是散布在官方模块中的 `EmAssetPackages`（约 `28.45 GiB`），另有 `SceneEditData`、
+  `Win64_Shipping_wEditor`、根目录 `modding_resources` 和 `XmlEditor`。若不再使用官方编辑器，
+  应从 Steam 单独卸载 `Mount & Blade II: Bannerlord - Modding Kit`，不要手工删除这些交错
+  目录；若仍需恢复或编辑 GreyWarden 盾牌资产，则必须保留。项目外置
+  `_GreyWardenEditorWorkspace` 是可恢复编辑状态，也不属于垃圾。
+- 第三方模块共约 `21.71 GiB`。最大一组为 ROT：`ROT-Content` 约 `13.21 GiB`、
+  `ROT-Map` 约 `2.58 GiB`，连同其余 ROT 模块合计约 `15.9 GiB`；当前启动器中全部 ROT
+  模块未选中。ROT 内部 `EmAssetPackages` 合计约 `2.06 GiB`，但不能只凭目录名断定客户端
+  不读取；若确认不再游玩 ROT，按其安装/模组管理方式整体移除整组模块，比拆删内部资产可靠。
+- `Modules\Coop` 约 `5.66 GiB`，其中 `DedicatedServer` 独占约 `5.63 GiB`，普通客户端部分
+  只有约 `29 MiB`。`DedicatedServer\release-info.txt` 明确说明它是 Windows x64 自包含专用
+  服务器，入口为 `BannerlordCoopServer.exe`，内部 `engine` 带有独立的 Native、SandBoxCore、
+  SandBox、Coop、服务器二进制和资源副本；普通客户端及玩家托管 Coop 不需要读取这一副本。
+  服务器持久数据另存于
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\CoopData\DedicatedServer`。
+  因此用户若明确不运行独立 Coop 服务器，可按 Coop 发布包/安装方式移除整个
+  `Modules\Coop\DedicatedServer`，预计释放 `5.63 GiB`，且保留 Coop 客户端；但该服务器标记
+  为 `2026-08-22` 构建并校验配套 Coop 哈希，属于近期有意部署内容，不得未经确认当垃圾删除。
+- 当前启动器最近一次单人配置中，GreyWarden 与 SimaAndCaesar 处于选中状态；ROT、Coop、
+  Diplomacy、RTSCamera 及 NavalDLC 未选中。启动器选中状态只是当前配置证据，不能替代用户对
+  “以后是否还需要”的确认。GreyWarden 实机模块约 `0.35 GiB`，且 `Modules` 父目录当前保留
+  唯一正式包对 `GreyWarden-v1.4-r9.zip` 与匹配 `.zip.sha256`，均按项目规则保留。
+- 精确重复的大文件仅约 `298.6 MiB`：两个相同官方过场视频及 Native/NavalDLC 间两个重复
+  tileset 页。它们属于 Steam depot，手工删除后会被校验或更新恢复，收益小且不应作为清理项。
+  游戏目录 ZIP 总计约 `369 MiB`，其中约 `333.3 MiB` 是必须保留的最新 GreyWarden 正式包。
+  `D:\steam\steamapps\downloading` 另有约 `16.41 GiB`，清单对应 Victoria 3 App `529340`
+  的下载/更新暂存，不属于 Bannerlord，除非用户先在 Steam 取消对应下载，否则不得删除。
+- 安全精简应按功能取舍分层进行：保留全部功能时没有多 GiB 的纯垃圾可删；Steam 卸载 Modding
+  Kit 预计减少约 `28.8 GiB`，但失去官方资产编辑能力；Steam 取消 NavalDLC 安装预计再减少
+  约 `31.1 GiB`，但失去该 DLC；确认弃用 ROT 后整体移除约 `15.9 GiB`；确认不运行独立 Coop
+  服务器后可移除约 `5.63 GiB`。本次仅完成只读调查与记录，没有卸载产品、删除游戏内容或改变
+  实机模块。
 
 ## 2026-07-25 v1.4-r8 诊断修正：现场友军战力与速度基准口径
 

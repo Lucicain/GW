@@ -9,9 +9,10 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// Preserves the active game mode's complete damage model and changes only
-    /// the native knockdown decision for Grey Warden kicks and shield bashes.
-    /// This decision is evaluated once when a real alternative-attack blow
-    /// connects. There is no post-rise input lock or forced animation.
+    /// the native knockdown decision for Grey Warden kicks, shield bashes, and
+    /// all melee attacks made with the Grey Warden paired blades.
+    /// This decision is evaluated once when an eligible blow connects. There
+    /// is no post-rise input lock or forced animation.
     /// </summary>
     internal sealed class GwpAgentApplyDamageModel : AgentApplyDamageModel
     {
@@ -47,7 +48,8 @@ namespace GreyWardenPolicePurity
                 attackerAgent,
                 victimAgent,
                 in collisionData,
-                in blow);
+                in blow,
+                attackerWeapon);
 
             if (chance > 0f)
             {
@@ -75,7 +77,8 @@ namespace GreyWardenPolicePurity
             Agent? attacker,
             Agent? victim,
             in AttackCollisionData collisionData,
-            in Blow blow)
+            in Blow blow,
+            WeaponComponentData? attackerWeapon)
         {
             // Prefer the collision flag because it is the engine's direct
             // statement that this hit came from the alternative-attack input.
@@ -83,11 +86,72 @@ namespace GreyWardenPolicePurity
             bool isAlternativeAttack = collisionData.IsAlternativeAttack
                 || blow.AttackType == AgentAttackType.Kick
                 || blow.AttackType == AgentAttackType.Bash;
+            bool isDualBladeAttack = blow.AttackType != AgentAttackType.Kick
+                && blow.AttackType != AgentAttackType.Bash
+                && IsDualBladeAttack(attacker, in collisionData, attackerWeapon);
 
-            return isAlternativeAttack
+            return (isAlternativeAttack || isDualBladeAttack)
                 ? GetGreyWardenKnockdownChance(attacker, victim)
                 : 0f;
         }
+
+        internal static bool IsDualBladeAttack(
+            Agent? attacker,
+            in AttackCollisionData collisionData,
+            WeaponComponentData? attackerWeapon)
+        {
+            if (attacker == null
+                || attackerWeapon == null
+                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker)
+                || (collisionData.StrikeType != (int)StrikeType.Swing
+                    && collisionData.StrikeType != (int)StrikeType.Thrust)
+                )
+            {
+                return false;
+            }
+
+            try
+            {
+                MissionEquipment equipment = attacker.Equipment;
+                if (!IsItem(
+                        equipment[EquipmentIndex.Weapon0],
+                        GwpIds.DualBladeOffhandItemId)
+                    || !IsItem(
+                        equipment[EquipmentIndex.Weapon1],
+                        GwpIds.DualBladeMainhandItemId))
+                {
+                    return false;
+                }
+
+                // Bone 20 is the authored left-hand attachment used by the
+                // paired-blade action set. Every other melee attack bone is
+                // the main hand; checking the corresponding wielded item
+                // keeps an optional lance in Weapon2 from gaining the
+                // paired-blade knockdown effect.
+                bool isLeftHandAttack = collisionData.AttackBoneIndex == 20
+                    && IsItem(
+                        attacker.WieldedOffhandWeapon,
+                        GwpIds.DualBladeOffhandItemId);
+                bool isMainHandAttack = collisionData.AttackBoneIndex != 20
+                    && IsItem(
+                        attacker.WieldedWeapon,
+                        GwpIds.DualBladeMainhandItemId);
+                return isLeftHandAttack || isMainHandAttack;
+            }
+            catch
+            {
+                // A collision can arrive while native equipment is being
+                // rebuilt. Preserve the ordinary damage-model decision when
+                // the pair cannot be confirmed safely.
+                return false;
+            }
+        }
+
+        private static bool IsItem(
+            in MissionWeapon weapon,
+            string itemId) =>
+            !weapon.IsEmpty
+            && weapon.Item?.StringId == itemId;
 
         internal static float GetGreyWardenKnockdownChance(
             Agent? attacker,
@@ -263,11 +327,11 @@ namespace GreyWardenPolicePurity
                 weapon);
 
         public override float CalculatePassiveAttackDamage(
-            BasicCharacterObject attackerCharacter,
+            in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
             float baseDamage) =>
             NativeModel.CalculatePassiveAttackDamage(
-                attackerCharacter,
+                in attackInformation,
                 in collisionData,
                 baseDamage);
 
@@ -485,12 +549,19 @@ namespace GreyWardenPolicePurity
             // Grey Warden alternatives use only KnockDown on a successful roll,
             // so the victim falls near the contact point instead of flying away.
             float chance = GetGreyWardenKnockdownChance(
-                    attackerAgent,
-                    victimAgent,
-                    in collisionData,
-                    in blow);
+                attackerAgent,
+                victimAgent,
+                in collisionData,
+                in blow,
+                attackerWeapon);
             if (chance > 0f)
             {
+                bool isDualBladeAttack = blow.AttackType != AgentAttackType.Kick
+                    && blow.AttackType != AgentAttackType.Bash
+                    && IsDualBladeAttack(
+                        attackerAgent,
+                        in collisionData,
+                        attackerWeapon);
                 bool knockedDown = RollKnockdown(chance);
                 _pendingAttacker = attackerAgent;
                 _pendingVictim = victimAgent;
@@ -498,8 +569,19 @@ namespace GreyWardenPolicePurity
                 _hasPendingKnockdownDecision = true;
 
                 // Success: fall at the contact point, without the simultaneous
-                // long launch. Failure: preserve vanilla alternative-attack
-                // KnockBack so a landed bash/kick still visibly controls them.
+                // long launch. A failed dual-blade attack delegates to the
+                // native ordinary-melee decision so this feature adds no
+                // extra push when its probability roll misses.
+                if (isDualBladeAttack && !knockedDown)
+                {
+                    return NativeModel.DecideAgentKnockedBackByBlow(
+                        attackerAgent,
+                        victimAgent,
+                        in collisionData,
+                        attackerWeapon,
+                        in blow);
+                }
+
                 return !knockedDown;
             }
 

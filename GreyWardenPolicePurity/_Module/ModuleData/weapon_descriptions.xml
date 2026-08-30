@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WeaponDescriptions>
+  <WeaponDescription id="GwpOneHandedSwordDualOffhand"
+                     weapon_class="OneHandedSword"
+                     item_usage_features="dual:shield">
+    <WeaponFlags>
+      <WeaponFlag value="MeleeWeapon" />
+    </WeaponFlags>
+    <AvailablePieces>
+      <AvailablePiece id="gwp_vlandian_blade_3_dual" />
+      <AvailablePiece id="vlandian_guard_8" />
+      <AvailablePiece id="sturgian_grip_36" />
+      <AvailablePiece id="empire_pommel_6" />
+    </AvailablePieces>
+  </WeaponDescription>
+  <WeaponDescription id="GwpOneHandedSwordDualMainhand"
+                     weapon_class="OneHandedSword"
+                     item_usage_features="dual:shield:thrust">
+    <WeaponFlags>
+      <WeaponFlag value="MeleeWeapon" />
+    </WeaponFlags>
+    <AvailablePieces>
+      <AvailablePiece id="vlandian_blade_3" />
+      <AvailablePiece id="vlandian_guard_8" />
+      <AvailablePiece id="sturgian_grip_36" />
+      <AvailablePiece id="empire_pommel_6" />
+    </AvailablePieces>
+  </WeaponDescription>
+</WeaponDescriptions>

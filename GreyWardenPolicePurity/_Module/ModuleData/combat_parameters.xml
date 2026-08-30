@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base type="combat_parameters">
+  <definitions>
+    <def name="gwp_overswing_rider_rot_limit_left" val="100" />
+    <def name="gwp_overswing_rider_rot_limit_right" val="80" />
+    <def name="gwp_up_min_rider_rot_limit_left" val="45" />
+    <def name="gwp_up_min_rider_rot_limit_right" val="10" />
+    <def name="gwp_overswing_rider_look_down_limit" val="120" />
+    <def name="gwp_overswing_ladder_rot_limit_left" val="67.3" />
+    <def name="gwp_overswing_ladder_rot_limit_right" val="57.3" />
+    <def name="gwp_thrust_vertical_rot_limit" val="1.0" />
+    <def name="gwp_thrust_rider_rot_limit_left" val="120" />
+    <def name="gwp_thrust_rider_rot_limit_right" val="90" />
+    <def name="gwp_thrust_rider_look_down_limit" val="-10" />
+    <def name="gwp_down_and_upperstab_min_rider_rot_limit_left" val="40" />
+    <def name="gwp_down_and_upperstab_min_rider_rot_limit_right" val="0" />
+    <def name="gwp_thrust_ladder_rot_limit_left" val="80.59" />
+    <def name="gwp_thrust_ladder_rot_limit_right" val="57.3" />
+    <def name="gwp_swing_vertical_rot_limit" val="0.75" />
+    <def name="gwp_right_swing_rider_rot_limit_left" val="110" />
+    <def name="gwp_right_swing_rider_rot_limit_right" val="100" />
+    <def name="gwp_right_min_rider_rot_limit_left" val="120" />
+    <def name="gwp_right_min_rider_rot_limit_right" val="100" />
+    <def name="gwp_right_swing_rider_look_down_limit" val="-10" />
+    <def name="gwp_right_swing_ladder_rot_limit_left" val="57.3" />
+    <def name="gwp_right_swing_ladder_rot_limit_right" val="57.3" />
+  </definitions>
+  <combat_parameters>
+    <combat_parameter id="gwp_1h_dual_others" collision_check_starting_percent="0.29" collision_check_ending_percent="0.39" vertical_rot_limit_multiplier_up="1" vertical_rot_limit_multiplier_down="0.4" left_rider_rot_limit="gwp_overswing_rider_rot_limit_left" left_rider_min_rot_limit="gwp_up_min_rider_rot_limit_left" right_rider_rot_limit="gwp_overswing_rider_rot_limit_right" right_rider_min_rot_limit="gwp_up_min_rider_rot_limit_right" rider_look_down_limit="gwp_overswing_rider_look_down_limit" left_ladder_rot_limit="gwp_overswing_ladder_rot_limit_left" right_ladder_rot_limit="gwp_overswing_ladder_rot_limit_right" hit_bone_index="20" shoulder_hit_bone_index="14" />
+    <combat_parameter id="gwp_onehanded_dual_thrust" collision_check_starting_percent="0.27" collision_damage_starting_percent="0.32" collision_check_ending_percent="0.51" vertical_rot_limit_multiplier_up="gwp_thrust_vertical_rot_limit" vertical_rot_limit_multiplier_down="gwp_thrust_vertical_rot_limit" left_rider_rot_limit="gwp_thrust_rider_rot_limit_left" left_rider_min_rot_limit="gwp_down_and_upperstab_min_rider_rot_limit_left" right_rider_rot_limit="gwp_thrust_rider_rot_limit_right" right_rider_min_rot_limit="gwp_down_and_upperstab_min_rider_rot_limit_right" rider_look_down_limit="gwp_thrust_rider_look_down_limit" left_ladder_rot_limit="gwp_thrust_ladder_rot_limit_left" right_ladder_rot_limit="gwp_thrust_ladder_rot_limit_right" hit_bone_index="20" shoulder_hit_bone_index="14" />
+    <combat_parameter id="gwp_onehanded_dual_right" collision_check_starting_percent="0.333" collision_check_ending_percent="0.56" vertical_rot_limit_multiplier_up="gwp_swing_vertical_rot_limit" vertical_rot_limit_multiplier_down="gwp_swing_vertical_rot_limit" left_rider_rot_limit="gwp_right_swing_rider_rot_limit_left" left_rider_min_rot_limit="gwp_right_min_rider_rot_limit_left" right_rider_rot_limit="gwp_right_swing_rider_rot_limit_right" right_rider_min_rot_limit="gwp_right_min_rider_rot_limit_right" rider_look_down_limit="gwp_right_swing_rider_look_down_limit" left_ladder_rot_limit="gwp_right_swing_ladder_rot_limit_left" right_ladder_rot_limit="gwp_right_swing_ladder_rot_limit_right" hit_bone_index="20" shoulder_hit_bone_index="14" />
+    <combat_parameter id="gwp_onehanded_dual_right_balanced" collision_check_starting_percent="0.363" collision_check_ending_percent="0.56" vertical_rot_limit_multiplier_up="gwp_swing_vertical_rot_limit" vertical_rot_limit_multiplier_down="gwp_swing_vertical_rot_limit" left_rider_rot_limit="gwp_right_swing_rider_rot_limit_left" left_rider_min_rot_limit="gwp_right_min_rider_rot_limit_left" right_rider_rot_limit="gwp_right_swing_rider_rot_limit_right" right_rider_min_rot_limit="gwp_right_min_rider_rot_limit_right" rider_look_down_limit="gwp_right_swing_rider_look_down_limit" left_ladder_rot_limit="gwp_right_swing_ladder_rot_limit_left" right_ladder_rot_limit="gwp_right_swing_ladder_rot_limit_right" hit_bone_index="20" shoulder_hit_bone_index="14" />
+  </combat_parameters>
+</base>

@@ -149,9 +149,6 @@
 				equipmentType="Civilian" />
     </Equipments>
   </NPCCharacter>
-  
-  
-  
   <!--Heavy Infantry-->
   <NPCCharacter id="gwheavyinfantry"
                 default_group="Infantry"
@@ -184,8 +181,6 @@
     <upgrade_targets></upgrade_targets>
     <Equipments>
       <EquipmentRoster>
-        <equipment slot="Item0"
-                   id="Item.empire_mace_3_t4" />
         <equipment slot="Item1"
                    id="gwonehandedsword" />
         <equipment slot="Item2"
@@ -205,12 +200,15 @@
 				equipmentType="Civilian" />
     </Equipments>
   </NPCCharacter>
+
+
+
   
   
   
   <!--Archer-->
   <NPCCharacter id="gwarcher"
-                default_group="Ranged"
+                default_group="Infantry"
                 level="26"
                 name="{=gwp_troop_archer}Grey Warden Archer"
                 occupation="Soldier"
@@ -241,13 +239,9 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="noble_long_bow" />
+                   id="gwdualbladeoffhand" />
         <equipment slot="Item1"
-                   id="piercing_arrows" />
-        <equipment slot="Item3"
-                   id="piercing_arrows" />
-        <equipment slot="Item2"
-                   id="gwonehandedsword" />
+                   id="gwdualblademainhand" />
         <equipment slot="Body"
                    id="warcharmor" />
         <equipment slot="Gloves"

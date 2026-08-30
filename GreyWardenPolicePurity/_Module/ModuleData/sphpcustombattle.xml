@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <NPCCharacters>
 
-  <NPCCharacter id="commander_2" name="{=gwp_custom_commander_yao}Grey Warden Provost Yao"
+  <NPCCharacter id="gwp_custom_commander" name="{=gwp_custom_commander_yao}Grey Warden Provost Yao"
   age="30" voice="curt" default_group="Infantry"
   is_female="true"
   culture="Culture.empire" occupation="Lord"
@@ -22,9 +22,8 @@
 	</Traits>
     <Equipments>
      <EquipmentRoster>
-        <equipment slot="Item0" id="Item.gwonehandedsword"/>
-        <equipment slot="Item1" id="Item.gwlance"/>
-        <equipment slot="Item2" id="Item.wlarge_shield_black"/>
+        <equipment slot="Item0" id="gwdualbladeoffhand"/>
+        <equipment slot="Item1" id="gwdualblademainhand"/>
         <equipment slot="Head" id="Item.wcomhelmethv"/>
         <equipment slot="Cape" id="Item.wcomshoulder"/>
         <equipment slot="Body" id="Item.wcomarmorhv"/>

@@ -18,12 +18,18 @@ namespace GreyWardenPolicePurity
 
             // Self-contained library patch; no separate Harmony module or
             // launcher dependency is required.
+            Harmony harmony = new(HarmonyId);
+            GwpDualBladeTrace.Write("SUBMODULE_PATCH_BEGIN");
             try
             {
-                new Harmony(HarmonyId).PatchAll(typeof(SubModule).Assembly);
+                harmony.PatchAll(typeof(SubModule).Assembly);
+                GwpDualBladeTrace.Write("SUBMODULE_PATCH_OK");
             }
             catch (Exception exception)
             {
+                GwpDualBladeTrace.Write(
+                    "SUBMODULE_PATCH_FAILED",
+                    details: exception.GetType().FullName + ":" + exception.Message);
                 // Never turn an optional combat enhancement into a startup
                 // failure if a future game build changes the private callback.
                 Debug.Print(
@@ -35,6 +41,10 @@ namespace GreyWardenPolicePurity
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+            GwpDualBladeTrace.Write(
+                "GAME_START",
+                details: "type=" + game.GameType?.GetType().FullName);
+            GwpDualBladeTrace.AuditLoadedObjects(game);
 
 
             // Wrap whichever native damage model this game mode registered

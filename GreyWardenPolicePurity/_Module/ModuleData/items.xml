@@ -5,7 +5,8 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
  <CraftedItem id="gwonehandedsword"
                name="{=gwp_item_sword_1h}Grey Warden Arming Sword"
                crafting_template="OneHandedSword"
-               culture="Culture.empire">
+               culture="Culture.empire"
+               is_merchandise="false">
       <Pieces>
         <Piece id="vlandian_blade_3"
                Type="Blade"
@@ -21,11 +22,57 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
              scale_factor="100" />
       </Pieces>
   </CraftedItem>
+
+  <!-- GreyWarden-owned paired blades. Both reuse the exact four-piece
+       gwonehandedsword appearance. The off-hand blade piece changes only the
+       attachment flags required by the dual-wield skeleton. -->
+  <CraftedItem id="gwdualbladeoffhand"
+               name="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)"
+               crafting_template="GwpOneHandedSwordDualOffhand"
+               culture="Culture.empire"
+               is_merchandise="false">
+    <Pieces>
+      <Piece id="gwp_vlandian_blade_3_dual"
+             Type="Blade"
+             scale_factor="100" />
+      <Piece id="vlandian_guard_8"
+             Type="Guard"
+             scale_factor="100" />
+      <Piece id="sturgian_grip_36"
+             Type="Handle"
+             scale_factor="100" />
+      <Piece id="empire_pommel_6"
+             Type="Pommel"
+             scale_factor="100" />
+    </Pieces>
+  </CraftedItem>
+
+  <CraftedItem id="gwdualblademainhand"
+               name="{=gwp_item_dual_mainhand}Grey Warden Dual Blade (Main Hand)"
+               crafting_template="GwpOneHandedSwordDualMainhand"
+               culture="Culture.empire"
+               is_merchandise="false">
+    <Pieces>
+      <Piece id="vlandian_blade_3"
+             Type="Blade"
+             scale_factor="100" />
+      <Piece id="vlandian_guard_8"
+             Type="Guard"
+             scale_factor="100" />
+      <Piece id="sturgian_grip_36"
+             Type="Handle"
+             scale_factor="100" />
+      <Piece id="empire_pommel_6"
+             Type="Pommel"
+             scale_factor="100" />
+    </Pieces>
+  </CraftedItem>
   
   <CraftedItem id="gwtwohandedsword"
                name="{=gwp_item_sword_2h}Grey Warden Greatsword"
                crafting_template="TwoHandedSword"
-               culture="Culture.empire">
+               culture="Culture.empire"
+               is_merchandise="false">
     <Pieces>
       <Piece id="vlandian_blade_3"
              Type="Blade"
@@ -45,7 +92,8 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   <CraftedItem id="gwlance"
                name="{=gwp_item_lance}Grey Warden Lance"
                crafting_template="TwoHandedPolearm"
-               culture="Culture.empire">
+               culture="Culture.empire"
+               is_merchandise="false">
     <Pieces>
       <Piece id="spear_blade_6"
              Type="Blade"
@@ -68,6 +116,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_boots}Grey Warden Sabatons"
         mesh="winflegs"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="3.5"
         appearance="3"
         Type="LegArmor">
@@ -83,6 +132,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_gloves}Grey Warden Gauntlets"
         mesh="winfgloves"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="1.8"
         appearance="3"
         Type="HandArmor">
@@ -98,6 +148,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_armor}Grey Warden Harness"
         mesh="winfarmor"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="24.1"
         appearance="3"
         Type="BodyArmor">
@@ -116,6 +167,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_shoulders}Grey Warden Mantle"
         mesh="winfshoulder"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="3.5"
         appearance="3"
         Type="Cape">
@@ -131,6 +183,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_helmet}Grey Warden Helm"
         mesh="winfhelmet"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="4.2"
         appearance="2.6"
         Type="HeadArmor">
@@ -154,6 +207,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_heavy_armor}Grey Warden Plate Harness"
         mesh="winfarmorhv"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="24.1"
         appearance="3"
         Type="BodyArmor">
@@ -172,6 +226,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_winged_helmet}Grey Warden Winged Helm"
         mesh="winfhelmethv"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="4.2"
         appearance="2.6"
         Type="HeadArmor">
@@ -195,6 +250,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_boots}Grey Warden Commander's Sabatons"
         mesh="wcomlegs"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="3.5"
         appearance="3"
         Type="LegArmor">
@@ -210,6 +266,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_gloves}Grey Warden Commander's Gauntlets"
         mesh="wcomgloves"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="1.8"
         appearance="3"
         Type="HandArmor">
@@ -225,6 +282,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_armor}Grey Warden Commander's Harness"
         mesh="wcomarmorhv"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="24.1"
         appearance="3"
         Type="BodyArmor">
@@ -243,6 +301,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_shoulders}Grey Warden Commander's Mantle"
         mesh="wcomshoulder"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="3.5"
         appearance="3"
         Type="Cape">
@@ -258,6 +317,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_helmet}Grey Warden Commander's Winged Helm"
         mesh="wcomhelmethv"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="4.2"
         appearance="2.6"
         Type="HeadArmor">
@@ -281,6 +341,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_leather_boots}Grey Warden Leather Boots"
         mesh="warchlegs"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="0.9"
         appearance="1"
         Type="LegArmor">
@@ -296,6 +357,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_leather_gloves}Grey Warden Leather Gloves"
         mesh="warchgloves"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="0.6"
         difficulty="0"
         appearance="3"
@@ -312,6 +374,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_light_armor}Grey Warden Light Harness"
         mesh="warcharmor"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="8.3"
         appearance="1.8"
         Type="BodyArmor">
@@ -330,6 +393,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_eagle_shoulders}Grey Warden Eagle Mantle"
         mesh="warchshoulder"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="2.2"
         appearance="2"
         Type="Cape">
@@ -344,6 +408,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_hood}Grey Warden Hood"
         mesh="warchhelmet"
         culture="Culture.empire"
+        is_merchandise="false"
         weight="0.2"
         appearance="1"
         Type="HeadArmor">
@@ -370,6 +435,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         recalculate_body="false"
         mesh="wlarge_shield"
         culture="Culture.empire"
+        is_merchandise="false"
         using_tableau="true"
         weight="5.5"
         difficulty="0"
@@ -413,6 +479,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         recalculate_body="false"
         mesh="wlarge_shield_black_static"
         culture="Culture.empire"
+        is_merchandise="false"
         using_tableau="false"
         weight="5.5"
         difficulty="0"
@@ -455,6 +522,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_horse_armor}Grey Warden Horse Armour"
         mesh="wharness"
         subtype="body_armor"
+        is_merchandise="false"
         weight="30"
         difficulty="0"
         appearance="0.5"
@@ -475,6 +543,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
         name="{=gwp_item_commander_horse_armor}Grey Warden Commander's Horse Armour"
         mesh="wharnesscom"
         subtype="body_armor"
+        is_merchandise="false"
         weight="30"
         difficulty="0"
         appearance="0.5"

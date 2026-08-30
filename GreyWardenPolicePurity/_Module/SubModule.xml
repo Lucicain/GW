@@ -2,9 +2,9 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-    <!-- Release v1.4-r9. The module schema requires three numeric parts;
+	<!-- Development release v1.4-r11. The module schema requires three numeric parts;
 	     this value is the mod revision and is not a Bannerlord version gate. -->
-	<Version value="v1.4.9"/>
+	<Version value="v1.4.11"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>
@@ -28,6 +28,33 @@
 		</SubModule>
 	</SubModules>
 	<Xmls>
+		<XmlNode>
+			<XmlName id="CraftingPieces" path="gwp_crafting_pieces" />
+			<IncludedGameTypes>
+				<GameType value="Campaign" />
+				<GameType value="CampaignStoryMode" />
+				<GameType value="CustomGame" />
+				<GameType value="EditorGame" />
+			</IncludedGameTypes>
+		</XmlNode>
+		<XmlNode>
+			<XmlName id="CraftingTemplates" path="crafting_templates" />
+			<IncludedGameTypes>
+				<GameType value="Campaign" />
+				<GameType value="CampaignStoryMode" />
+				<GameType value="CustomGame" />
+				<GameType value="EditorGame" />
+			</IncludedGameTypes>
+		</XmlNode>
+		<XmlNode>
+			<XmlName id="WeaponDescriptions" path="weapon_descriptions" />
+			<IncludedGameTypes>
+				<GameType value="Campaign" />
+				<GameType value="CampaignStoryMode" />
+				<GameType value="CustomGame" />
+				<GameType value="EditorGame" />
+			</IncludedGameTypes>
+		</XmlNode>
 		<XmlNode>
 			<XmlName id="Heroes" path="heroes"/>
 			<IncludedGameTypes>
@@ -76,7 +103,6 @@
 			<IncludedGameTypes>
 				<GameType value="Campaign"/>
 				<GameType value="CampaignStoryMode"/>
-				<GameType value="CustomGame"/>
 				<GameType value="EditorGame"/>
 			</IncludedGameTypes>
 		</XmlNode>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<action_types>
+  <action name="act_gwd_ready_thrust_1h" type="actt_ready_melee" usage_direction="ud_attack_down" action_stage="as_attack_ready" />
+  <action name="act_gwd_quick_release_thrust_1h" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_thrust_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_release_thrust_1h" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_release_thrust_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_thrust_1h" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_quick_blocked_thrust_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_blocked_thrust_1h" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_blocked_thrust_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_stuck_thrust_1h" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_stuck_quick_thrust_1h" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_ready_thrust_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_down" action_stage="as_attack_ready" />
+  <action name="act_gwd_quick_release_thrust_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_thrust_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_release_thrust_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_release_thrust_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_thrust_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_quick_blocked_thrust_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_blocked_thrust_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_blocked_thrust_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_down" />
+  <action name="act_gwd_stuck_thrust_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_stuck_quick_thrust_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_down" action_stage="as_attack_release" />
+  <action name="act_gwd_ready_slashright_1h" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_ready" />
+  <action name="act_gwd_ready_from_up_slashright_1h" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_up_slashright_1h_unbalanced" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_right_slashright_1h" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_right_slashright_1h_unbalanced" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_quick_release_slashright_1h" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd2_quick_release_slashright_1h" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_slashright_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd2_quick_release_slashright_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashright_1h" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashright_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_slashright_1h" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_quick_blocked_slashright_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_blocked_slashright_1h" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_blocked_slashright_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_ready_slashright_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_ready" />
+  <action name="act_gwd_ready_from_up_slashright_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_up_slashright_1h_unbalanced_left_stance" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_right_slashright_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_right_slashright_1h_unbalanced_left_stance" type="actt_ready_melee" usage_direction="ud_attack_right" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_quick_release_slashright_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_slashright_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashright_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashright_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_right" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_slashright_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_quick_blocked_slashright_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_blocked_slashright_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_blocked_slashright_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_right" />
+  <action name="act_gwd_ready_slashleft_1h" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_ready" />
+  <action name="act_gwd_ready_from_up_slashleft_1h" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_up_slashleft_1h_unbalanced" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_left_slashleft_1h" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_left_slashleft_1h_unbalanced" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_quick_release_slashleft_1h" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_slashleft_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashleft_1h" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashleft_1h_balanced" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_slashleft_1h" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_quick_blocked_slashleft_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_blocked_slashleft_1h" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_blocked_slashleft_1h_balanced" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_ready_slashleft_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_ready" />
+  <action name="act_gwd_ready_from_up_slashleft_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_up_slashleft_1h_unbalanced_left_stance" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_left_slashleft_1h_left_stance" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_ready_from_left_slashleft_1h_unbalanced_left_stance" type="actt_ready_melee" usage_direction="ud_attack_left" action_stage="as_attack_quick_ready" />
+  <action name="act_gwd_quick_release_slashleft_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_release_slashleft_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashleft_1h_left_stance" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_release_slashleft_1h_balanced_left_stance" type="actt_release_melee" usage_direction="ud_attack_left" action_stage="as_attack_release" />
+  <action name="act_gwd_quick_blocked_slashleft_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_quick_blocked_slashleft_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_blocked_slashleft_1h_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_gwd_blocked_slashleft_1h_balanced_left_stance" type="actt_blocked_melee" usage_direction="ud_attack_left" />
+  <action name="act_walk_idle_1h_with_gwd_shld" />
+  <action name="act_walk_forward_1h_with_gwd_shld" />
+  <action name="act_walk_idle_1h_with_gwd_shld_left_stance" />
+  <action name="act_walk_forward_1h_with_gwd_shld_left_stance" />
+  <action name="act_run_idle_1h_with_gwd_shld" />
+  <action name="act_run_forward_1h_with_gwd_shld" />
+  <action name="act_run_idle_1h_with_gwd_shld_left_stance" />
+  <action name="act_run_forward_1h_with_gwd_shld_left_stance" />
+</action_types>
