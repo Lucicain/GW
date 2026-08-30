@@ -90,6 +90,25 @@ user's stated goal.
 - Reuse this canonical maintenance file rather than creating parallel notes or
   additional problem-log files.
 
+## Stable features require local Git checkpoints
+
+- When the user confirms that a newly added or repaired feature works in the
+  live game, create a local Git checkpoint commit before beginning further
+  risky experimentation or unrelated feature work. Do not leave a confirmed
+  working implementation only in an uncommitted working tree.
+- A checkpoint must contain the complete, reproducible implementation of that
+  confirmed feature together with its player README and maintenance-history
+  updates. Record the commit hash and the user-confirmed test result in
+  `GreyWardenPolicePurity/docs/maintenance-plan.md`.
+- Never checkpoint a candidate that is still crashing, untested, or explicitly
+  reported broken merely to make the tree look clean. Preserve unrelated user
+  changes and include only files belonging to the confirmed checkpoint unless
+  inseparable dependencies are documented.
+- Before replacing or removing a previously confirmed feature, identify its
+  checkpoint commit and record the rollback path. If the current working tree
+  contains multiple uncommitted feature generations, establish the last known
+  working checkpoint before continuing whenever the history and files allow it.
+
 ## Live test directory must mirror the working directory
 
 - The deployable runtime files under `GreyWardenPolicePurity/_Module` are the
