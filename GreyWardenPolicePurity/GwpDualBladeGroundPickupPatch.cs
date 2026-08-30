@@ -77,21 +77,10 @@ namespace GreyWardenPolicePurity
                 spawnedItemEntity,
                 removeWeapon: true);
 
-            if (GwpDualBladeLoadout.HasCompleteLoadout(userAgent))
-            {
-                if (GwpDualBladeActionSetPatch
-                        .TryApplyActionSet(userAgent))
-                {
-                    userAgent.TryToWieldWeaponInSlot(
-                        EquipmentIndex.WeaponItemBeginSlot,
-                        Agent.WeaponWieldActionType.InstantAfterPickUp,
-                        isWieldedOnSpawn: false);
-                    userAgent.TryToWieldWeaponInSlot(
-                        EquipmentIndex.Weapon1,
-                        Agent.WeaponWieldActionType.InstantAfterPickUp,
-                        isWieldedOnSpawn: false);
-                }
-            }
+            // Routing the blade into its fixed slot is all this needs to do.
+            // Forcing an action set and re-wielding both hands from here was
+            // part of the removed AI dual-blade work; native decides what the
+            // character wields, exactly as it does in ROT.
 
             foreach (AgentComponent component in userAgent.Components)
                 component.OnItemPickup(spawnedItemEntity);

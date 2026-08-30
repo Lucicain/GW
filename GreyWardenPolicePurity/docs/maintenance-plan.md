@@ -6,6 +6,25 @@
 - 用户同时确认唯一遗留问题：灰袍弓箭手切入近战时只拔出右手刀，副手刀没有拔出。该问题与已确认稳定的预览、模型和接战路径分开处理。
 - 上述稳定功能已建立本地 Git 检查点 `eda353f`（`checkpoint: stable dual-blade models and combat`）。下一轮只允许围绕弓箭手副手拔刀同步做增量实验；若需要回滚，恢复到该提交即可。
 
+## 2026-08-30 模组级 A/B 定案：移除士兵双刀的全部开发，回到 ROT 式"仅玩家双持"
+
+- 用户执行模组级隔离并给出结论：**关闭 GreyWarden 后一切恢复正常**，因此两个问题都由本模组的双刀开发引起，与 1.5.2 beta、NavalDLC/War Sails 无关。用户同时指明稳定回退点是"只有玩家能用双刀（ROT 已实现的形态）"，并要求不再让其做诊断性实验，直接移除士兵双刀的全部开发后重做。
+- 与 ROT 逐项对照后确认本模组相对 ROT 的三处结构性偏差，全部集中在为"让士兵用双刀"而新增的东西上：
+  1. ROT 的 `action_sets.xslt` **只**注入 `as_human_warrior` 一个模板（218 条动作），从不创建额外 action_set；本模组除注入外还**额外生成两个完整 action_set**（`as_human_gwp_dual` 4784 条 / `as_human_female_gwp_dual` 382 条），纯粹为了给 AI 调 `SetActionSet`。
+  2. ROT 从不碰 `as_human_female_warrior`；该集带 `base_set="as_human_warrior"`，本来就继承注入结果。本模组却在这个派生集里**重复定义同样 84 条动作类型**，这是 ROT 从未产生过的状态。
+  3. ROT 的双持只作用于玩家：`dual_blades` 仅出现在 `items.xml`，`ROT-Troops.xml`/`ROT_lords.xml`/`ROT_heroes.xml`/装备表 0 命中；战斗侧只有 `IsCollisionBoneDifferentThanWeaponAttachBonePatch`（bone 20）一个补丁，`DualWieldingPatches` 只做库存界面提示。
+- 本轮移除的内容（全部属于士兵/AI 双刀开发）：
+  - 代码：`GwpDualBladeActionSetPatch`（`Mission.SpawnAgent` 后置强制套用自定义动作集）、`GwpDualBladeWieldSync`（Attach/Synchronize 副手同步）、`GwpCharacterTableauTracePatch`、`GwpCharacterCodeTracePatch`、`GwpCharacterCodeEquipmentTracePatch`（三者都是追这个 bug 时加在预览链上的诊断）、`AuditLoadedObjects`/`AuditActionSets` 全套审计、`HasCompleteAiLoadout`/`HasCompletePlayerLoadout`。地面拾取不再强制套动作集与双手拔刀，只保留固定槽位路由。
+  - 资格：`IsEligibleDualBladeUser` 收敛为 `agent?.Character != null && !agent.IsAIControlled`，**AI 永远不合格**，因此伤害类型、击倒、地面拾取三条共用该判断的路径同时只对玩家生效。
+  - 动作资源：`action_sets.xslt` 由 362 行减到 96 行，只保留对 `as_human_warrior` 的注入，删除两个额外 action_set 与整个 `as_human_female_warrior` 模板 —— 与 ROT 形状完全一致。
+  - 兵种数据：`gwarcher` 按 v1.4-r9 (`dcdc042`) 的定义还原为 `default_group="Ranged"` + `noble_long_bow` / `piercing_arrows` ×2 / `gwonehandedsword`，不再携带双刀。全模组只剩 `gwp_custom_commander` 带双刀，而追踪已证实自定义战斗中该角色就是玩家本人（agent 400，`isAi=False; isPlayer=True`）。
+- 保留（ROT 对等的玩家双持）：两把刀的物品与锻造数据、`item_usage_sets`/`movement_sets`/`full_movement_sets`/`item_holsters`、`GwpDualWieldCollisionPatch`（bone 20，与 ROT 同款）、`GwpDualWieldDamageTypePatch`（副手挥砍伤害类型，仅玩家）、`GwpDualBladeCraftingTemplateVisibilityPatch`（双刀模板不进锻造目录）、自定义战斗灰袍武将列表插入（含 NavalDLC 反射目标）。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings。离线预检 `PATCH_OK=37; PATCH_FAIL=0`（补丁类由 41 降到 37），程序集类型数 413→407，`GwpDualBladeActionSetPatch`/`GwpDualBladeWieldSync`/三个预览诊断类型均已不存在。全仓库与 `_Module` 已无 `as_human_gwp_dual`、`as_gwp_dual_warrior`、`HasCompleteAiLoadout`、`TryApplyActionSet` 的任何引用。
+- 用游戏同款 `XslCompiledTransform` 对 live 的 `action_sets.xslt` + Native `action_sets.xml` 实跑：**总 action_set 数 102，与原版完全相同（不再多出任何集）**，重复 id 0；`as_human_warrior` 4700→4784（注入 84 条，与 ROT 注入 218 条同一形式），`as_human_female_warrior` 保持原版 298 条、gwd 动作 0 条，由 `base_set` 继承。
+- 部署：30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件缺失 0、差异 0。客户端与编辑器 DLL 均为 794112 字节、SHA-256 `0AB0B1CCFFA4883C2E7F10CCCAE5342EA9C3DF50C00E9208606FB605E1150C04`（README 同步后的最终增量构建）；`action_sets.xslt` SHA-256 `99B2A23FDA62D59708E8B387DC932C4219BE271BEABE21DE6723FDB9A7AFCC8F`。Bannerlord 进程数 0，未代表用户启动游戏。
+- 双语 README 已同步：移除全部与士兵双刀相关的条目和"已知问题"行，改为说明双刀回到仅玩家可用、弓箭手恢复远程兵种。
+- 后续重做 AI 双持时的硬性前提（写死在此，避免重复本轮循环）：ROT 没有 AI 双持参考实现；已实测证明单槽位 `TryToWieldWeaponInSlot` 与整套 `WieldInitialWeapons` 对 AI Agent 均被原生拒绝，而同样两件物品在玩家 Agent 上成功，差异在 `IsAIControlled` 本身；任何新方案都不得再向 `as_human_warrior` 之外增建全局 action_set，也不得在派生集里重复定义同名动作类型。
+
 ## 2026-08-30 16:10 会话：共用动作集假设被 A/B 证伪并回滚；预览需要模组级隔离
 
 - 用户复测结论：百科士兵预览没有恢复；在存档里移动时游戏直接崩溃退出；重启后复检，其余问题也全部依旧。

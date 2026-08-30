@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
@@ -44,8 +44,6 @@ namespace GreyWardenPolicePurity
             GwpDualBladeTrace.Write(
                 "GAME_START",
                 details: "type=" + game.GameType?.GetType().FullName);
-            GwpDualBladeTrace.AuditLoadedObjects(game);
-
 
             // Wrap whichever native damage model this game mode registered
             // (Sandbox in Campaign, Custom in Custom Battle). The wrapper

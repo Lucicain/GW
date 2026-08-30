@@ -208,7 +208,7 @@
   
   <!--Archer-->
   <NPCCharacter id="gwarcher"
-                default_group="Infantry"
+                default_group="Ranged"
                 level="26"
                 name="{=gwp_troop_archer}Grey Warden Archer"
                 occupation="Soldier"
@@ -239,9 +239,13 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwdualbladeoffhand" />
+                   id="noble_long_bow" />
         <equipment slot="Item1"
-                   id="gwdualblademainhand" />
+                   id="piercing_arrows" />
+        <equipment slot="Item3"
+                   id="piercing_arrows" />
+        <equipment slot="Item2"
+                   id="gwonehandedsword" />
         <equipment slot="Body"
                    id="warcharmor" />
         <equipment slot="Gloves"
