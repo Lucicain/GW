@@ -1,5 +1,20 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 部署阶段实证：双刀本来就能拿住，开战时被原生 AI 武器重选收走
+
+- 用户实测并附截图：**部署阶段双刃卫士双刀在手且稳定**（截图中卫士背后为交叉双刀）；**点击开始战斗的瞬间只剩主剑**，并且主剑被重复拔出三次；英雄预览模型正常。
+- 这组观测把"建立"与"保持"彻底分开，结论明确：
+  1. **原生自己的出生拔刀就能把双刀正确配好** —— 建立从来不是问题，也不需要任何代码。此前所有"想办法把副手塞进手里"的努力都是在解决一个不存在的问题。
+  2. 部署阶段没有 AI 武器决策在运行 → 双刀一直保持。**开战瞬间 AI 激活 → 立即收掉副手。**
+  3. **收刀者不是阵型。** `ArrangementOrder` 后置已经生效（副刀不再被反复收放，士兵稳定持主刀），且部署阶段本就没有阵型收刀问题。真正的收刀者是**原生 AI 的武器重选**。
+  4. "主剑重复拔出三次"是上一版 `GwpDualBladeGuardBehavior` 的 `MaxSequences=3` 序列在徒劳挣扎：收主手 → 拔副手（失败）→ 拔回主手，重复三轮。该行为不仅无效，还制造了可见抽搐，已完整删除。
+- 原生 AI 武器重选的**唯一托管接口**是 `AgentComponent.OnAIInputSet`（`agent.cs.txt:1626`，原生按引用交出 `EventControlFlag`，由 `SetHasOnAiInputSetCallback(true)` 启用）。关键是：**这是组件，不是 Harmony 补丁**，因此不触碰 `Agent`/`MissionWeapon` 这两个已确证会破坏预览的类型。
+- 本轮实现：`GwpDualBladeGuardBehavior` 改为只做一件事 —— 给双刃卫士挂 `GwpDualBladeGuardInputComponent`，在 `OnAIInputSet` 中**丢弃全部换武器输入**（`Wield0..Wield3`、`Sheath0/1`、`ToggleAlternativeWeapon`）。移动、攻击、格挡等其余一切决策完全交给原生。
+- 这样做的依据是兵种设计本身：双刃卫士**身上只有两把刀，没有第二种武器**，因此不存在任何有意义的武器选择可做；把这半个输入丢掉不损失任何战术行为，而原生在出生时已经配好的双刀就会保持不变。此前对该钩子的尝试之所以失败，是因为当时试图**用它去建立**配对（同帧请求双手，596 次全败）；现在只用它**阻止破坏**，与已证实可行的"原生自己建立"配合。
+- 补丁面：`PATCH_OK=38; PATCH_FAIL=0`（检查点 37 + `ArrangementOrder` 1）；`HarmonyPatch(typeof(Agent)` 与 `HarmonyPatch(typeof(MissionWeapon)` 命中均为 **0**；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 797696 字节、SHA-256 `F91398BD72DA652F4EA39C1FFF11F3F89371E67D1373FDC6478A5D79ECC7DDC0`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收：① 开战后双刃卫士是否**保持**双刀（部署阶段已知可行，本轮验证能否延续到战斗中）；② 是否还有主剑重复拔出的抽搐（该逻辑已删除，预期消失）；③ 英雄预览是否仍正常；④ 追踪中 `GUARD_WEAPON_SELECTION_SUPPRESSED` 是否出现及其记录的主副手槽位。若开战后仍被收走，则原生 AI 的收刀不经过 `OnAIInputSet`，该方向的托管接口即告穷尽。
+
 ## 2026-08-30 补丁目标的安全/有毒分界确立；拆成"保持 + 建立"两半，各用安全落点
 
 - 用户实测上一轮：**英雄预览模型正常**，士兵**稳定**拿出右手剑、左手剑留在鞘里，无闪烁。两条结论：

@@ -1,53 +1,36 @@
-using System.Collections.Generic;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Draws the Twinblade Guard's off-hand blade. This is the establishment
-    /// half; GwpDualBladeShieldDirectionPatch is the retention half.
+    /// Keeps the Twinblade Guard's pair in hand once the battle starts.
     ///
-    /// Why a MissionBehavior and not a patch: previews break whenever a
-    /// per-call Harmony patch is installed on Agent or MissionWeapon,
-    /// reproduced repeatedly and finally with a predicate narrowed to a single
-    /// immutable id read. Mission and ArrangementOrder patches and plain
-    /// mission behaviours have all been observed preview-safe. This touches
-    /// neither toxic type - it only calls public Agent methods on agents it
-    /// already tracks.
+    /// The deployment phase settled what was actually wrong. Guards stand in
+    /// deployment holding both blades, stably, with no help from this mod -
+    /// native's own spawn wield pairs them correctly. The instant the battle
+    /// begins the off-hand blade is gone. So establishment was never the
+    /// problem and retention is, and the disruptor is not the formation: the
+    /// ArrangementOrder postfix already stopped the repeated sheathing, and
+    /// deployment has no active AI. What starts at battle start is the native
+    /// AI's own weapon selection, which only ever keeps a shield in an off
+    /// hand.
     ///
-    /// Why across frames: asking for the off hand and the main hand in one
-    /// frame never works. Native WieldInitialWeapons does exactly that and ends
-    /// with no off hand, and an earlier build issued both input flags together
-    /// 596 times without the pair ever forming. The same three calls spread one
-    /// per tick reached paired=True 553 times out of 597 - they simply could
-    /// not survive the formation sheathing the blade again, which is what the
-    /// companion patch now prevents.
+    /// That selection has exactly one managed surface: AgentComponent
+    /// .OnAIInputSet, where native hands over its EventControlFlag by
+    /// reference. It is a component, not a Harmony patch, so it stays clear of
+    /// the Agent and MissionWeapon types whose per-call patches break the
+    /// character previews.
+    ///
+    /// A guard carries nothing but the two blades, so there is no weapon choice
+    /// worth making: every wield and sheath request is simply dropped, and the
+    /// pair native already gave it stays where it is. The previous behaviour -
+    /// sheathing and re-drawing the main blade to force a pair - is gone; that
+    /// was what the user saw as the main sword being drawn three times.
     /// </summary>
     internal sealed class GwpDualBladeGuardBehavior : MissionBehavior
     {
-        private enum Step
-        {
-            Idle,
-            SheatheMainHand,
-            WieldOffHand,
-            WieldMainHand
-        }
-
-        private sealed class Guard
-        {
-            internal Agent Agent = null!;
-            internal Step Step;
-            internal int Sequences;
-        }
-
-        // Retention is handled by the shield-direction patch, so a couple of
-        // sequences is plenty. Bounding it means a refusal can never become the
-        // visible draw-and-sheathe loop an earlier build produced.
-        private const int MaxSequences = 3;
-
-        private readonly List<Guard> _guards = new List<Guard>();
-
         public override MissionBehaviorType BehaviorType =>
             MissionBehaviorType.Other;
 
@@ -57,102 +40,71 @@ namespace GreyWardenPolicePurity
 
             if (agent != null
                 && agent.IsAIControlled
-                && agent.Character?.StringId == GwpIds.TwinbladeTroopId)
+                && agent.Character?.StringId == GwpIds.TwinbladeTroopId
+                && agent.GetComponent<GwpDualBladeGuardInputComponent>() == null)
             {
-                _guards.Add(new Guard { Agent = agent });
+                agent.AddComponent(new GwpDualBladeGuardInputComponent(agent));
             }
         }
+    }
 
-        public override void OnMissionTick(float dt)
+    internal sealed class GwpDualBladeGuardInputComponent : AgentComponent
+    {
+        private const Agent.EventControlFlag WeaponChange =
+            Agent.EventControlFlag.Wield0
+            | Agent.EventControlFlag.Wield1
+            | Agent.EventControlFlag.Wield2
+            | Agent.EventControlFlag.Wield3
+            | Agent.EventControlFlag.Sheath0
+            | Agent.EventControlFlag.Sheath1
+            | Agent.EventControlFlag.ToggleAlternativeWeapon;
+
+        private bool _logged;
+
+        internal GwpDualBladeGuardInputComponent(Agent agent)
+            : base(agent)
         {
-            for (int i = _guards.Count - 1; i >= 0; i--)
-            {
-                Guard guard = _guards[i];
-                if (!guard.Agent.IsActive())
-                {
-                    _guards.RemoveAt(i);
-                    continue;
-                }
-
-                Advance(guard);
-            }
         }
 
-        private static void Advance(Guard guard)
+        public override void Initialize()
         {
-            Agent agent = guard.Agent;
-            EquipmentIndex main = agent.GetPrimaryWieldedItemIndex();
-            EquipmentIndex off = agent.GetOffhandWieldedItemIndex();
-
-            // Paired, or not holding the main blade yet.
-            if (off == EquipmentIndex.WeaponItemBeginSlot)
-            {
-                guard.Step = Step.Idle;
-                return;
-            }
-
-            if (main != EquipmentIndex.Weapon1)
-            {
-                guard.Step = Step.Idle;
-                return;
-            }
-
-            // Never take the main hand away mid-swing.
-            if (!IsIdle(agent))
-                return;
-
-            switch (guard.Step)
-            {
-                case Step.Idle:
-                    if (guard.Sequences >= MaxSequences)
-                        return;
-
-                    guard.Sequences++;
-                    agent.TryToSheathWeaponInHand(
-                        Agent.HandIndex.MainHand,
-                        Agent.WeaponWieldActionType.Instant);
-                    guard.Step = Step.SheatheMainHand;
-                    return;
-
-                case Step.SheatheMainHand:
-                    // The off hand only takes once the main hand is free.
-                    if (main != EquipmentIndex.None)
-                        return;
-
-                    agent.TryToWieldWeaponInSlot(
-                        EquipmentIndex.WeaponItemBeginSlot,
-                        Agent.WeaponWieldActionType.Instant,
-                        isWieldedOnSpawn: true);
-                    guard.Step = Step.WieldOffHand;
-                    return;
-
-                case Step.WieldOffHand:
-                    agent.TryToWieldWeaponInSlot(
-                        EquipmentIndex.Weapon1,
-                        Agent.WeaponWieldActionType.Instant,
-                        isWieldedOnSpawn: true);
-                    guard.Step = Step.WieldMainHand;
-                    return;
-
-                default:
-                    GwpDualBladeTrace.Write(
-                        "GUARD_PAIR_RESULT",
-                        agent,
-                        "sequence=" + guard.Sequences
-                        + "; main=" + agent.GetPrimaryWieldedItemIndex()
-                        + "; offhand=" + agent.GetOffhandWieldedItemIndex());
-                    guard.Step = Step.Idle;
-                    return;
-            }
+            base.Initialize();
+            Agent.SetHasOnAiInputSetCallback(true);
         }
 
-        private static bool IsIdle(Agent agent) =>
-            IsIdleCode(agent.GetCurrentActionType(0))
-            && IsIdleCode(agent.GetCurrentActionType(1));
+        public override void OnFormationSet()
+        {
+            base.OnFormationSet();
+            if (!Agent.GetHasOnAiInputSetCallback())
+                Agent.SetHasOnAiInputSetCallback(true);
+        }
 
-        private static bool IsIdleCode(Agent.ActionCodeType code) =>
-            code == Agent.ActionCodeType.Other
-            || code == Agent.ActionCodeType.Idle
-            || code == Agent.ActionCodeType.Guard;
+        public override void OnAIInputSet(
+            ref Agent.EventControlFlag eventFlag,
+            ref Agent.MovementControlFlag movementFlag,
+            ref Vec2 inputVector)
+        {
+            _ = movementFlag;
+            _ = inputVector;
+
+            if ((eventFlag & WeaponChange) == Agent.EventControlFlag.None)
+                return;
+
+            // Movement, attacks, blocks and every other decision stay entirely
+            // native; only the weapon-selection half of the input is dropped.
+            Agent.EventControlFlag before = eventFlag;
+            eventFlag &= ~WeaponChange;
+
+            if (!_logged)
+            {
+                _logged = true;
+                GwpDualBladeTrace.Write(
+                    "GUARD_WEAPON_SELECTION_SUPPRESSED",
+                    Agent,
+                    "before=" + before
+                    + "; main=" + Agent.GetPrimaryWieldedItemIndex()
+                    + "; offhand=" + Agent.GetOffhandWieldedItemIndex());
+            }
+        }
     }
 }
