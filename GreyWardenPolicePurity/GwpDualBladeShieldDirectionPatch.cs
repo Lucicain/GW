@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
@@ -34,8 +34,12 @@ namespace GreyWardenPolicePurity
         [HarmonyPostfix]
         private static void Postfix(Agent unit, ref Agent.UsageDirection __result)
         {
+            // Membership was decided once when the agent was built, so this
+            // is a lookup rather than an equipment read during arrangement.
+            // It covers the Twinblade Guard and any AI-controlled Grey Warden
+            // commander alike - both carry the pair.
             if (__result == Agent.UsageDirection.None
-                && unit?.Character?.StringId == GwpIds.TwinbladeTroopId)
+                && GwpDualBladeAgents.IsRegistered(unit))
             {
                 __result = Agent.UsageDirection.AttackEnd;
             }

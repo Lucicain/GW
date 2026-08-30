@@ -32,7 +32,8 @@ Compared with v1.4-r10:
 
 - The current development build supports Bannerlord 1.5.2 beta while retaining the existing campaign, combat, and paired-blade gameplay.
 - The separate Grey Warden Twinblade Guard is back: it is equipped with a pair of blades and no bow, upgrades from light infantry, and sits at the same tier as heavy infantry.
-- Twinblade Guards genuinely dual wield in battle, matching the player's animations, with the off-hand blade dealing damage and able to trigger the Warden knockdown. Their off-hand blade can also stop arrows; the player's pair keeps its existing behaviour. Archers stay purely ranged.
+- Twinblade Guards genuinely dual wield in battle, matching the player's animations, with the off-hand blade dealing damage and triggering the Warden knockdown at their troop tier. Archers stay purely ranged.
+- AI-controlled Grey Warden commanders dual wield as well, through the same mechanism as the guards.
 - Custom Battle places the Grey Warden commander first while preserving every native commander entry, with full Warden troop and equipment registration.
 - The paired blades are once again usable by the player character only, which is the form this mod has always had working. Grey Warden archers return to being ordinary ranged troops with the noble long bow, piercing arrows, and the Grey Warden arming sword.
 - Everything that let soldiers use the paired blades has been removed, including the dual-blade action resources added for them. That work was what left character models missing or badly posed in the encyclopedia and the Custom Battle preview, and it reached native troops as well.

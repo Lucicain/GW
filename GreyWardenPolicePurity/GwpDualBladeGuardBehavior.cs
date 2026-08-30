@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.CompilerServices;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -5,29 +7,81 @@ using TaleWorlds.MountAndBlade;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Keeps the Twinblade Guard's pair in hand once the battle starts.
+    /// Registry of AI agents that dual wield. Qualification is decided once,
+    /// when the agent is built, and read back later by a simple lookup - the
+    /// formation patch must not go poking at an agent's equipment while the
+    /// game is arranging troops.
     ///
-    /// The deployment phase settled what was actually wrong. Guards stand in
-    /// deployment holding both blades, stably, with no help from this mod -
-    /// native's own spawn wield pairs them correctly. The instant the battle
-    /// begins the off-hand blade is gone. So establishment was never the
-    /// problem and retention is, and the disruptor is not the formation: the
-    /// ArrangementOrder postfix already stopped the repeated sheathing, and
-    /// deployment has no active AI. What starts at battle start is the native
-    /// AI's own weapon selection, which only ever keeps a shield in an off
-    /// hand.
+    /// Membership is by equipment, not by character id: a Twinblade Guard and
+    /// an AI-controlled Grey Warden commander both carry the pair and both
+    /// need the same handling.
+    /// </summary>
+    internal static class GwpDualBladeAgents
+    {
+        private static readonly ConditionalWeakTable<Agent, object> Registered =
+            new ConditionalWeakTable<Agent, object>();
+
+        internal static bool IsRegistered(Agent? agent) =>
+            agent != null && Registered.TryGetValue(agent, out _);
+
+        internal static bool TryRegister(Agent? agent)
+        {
+            if (agent == null
+                || !agent.IsAIControlled
+                || Registered.TryGetValue(agent, out _)
+                || !CarriesPair(agent))
+            {
+                return false;
+            }
+
+            Registered.Add(agent, new object());
+            return true;
+        }
+
+        private static bool CarriesPair(Agent agent)
+        {
+            try
+            {
+                Equipment? spawnEquipment = agent.SpawnEquipment;
+                if (spawnEquipment != null
+                    && GwpDualBladeLoadout.IsOffHandBladeId(
+                        spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
+                    && IsMainBlade(spawnEquipment[EquipmentIndex.Weapon1].Item?.StringId))
+                {
+                    return true;
+                }
+
+                MissionEquipment? equipment = agent.Equipment;
+                return equipment != null
+                    && GwpDualBladeLoadout.IsOffHandBladeId(
+                        equipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
+                    && IsMainBlade(equipment[EquipmentIndex.Weapon1].Item?.StringId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsMainBlade(string? itemId) =>
+            string.Equals(itemId, GwpIds.DualBladeMainhandItemId,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Keeps an AI dual wielder's pair in hand once the battle starts.
     ///
-    /// That selection has exactly one managed surface: AgentComponent
-    /// .OnAIInputSet, where native hands over its EventControlFlag by
-    /// reference. It is a component, not a Harmony patch, so it stays clear of
-    /// the Agent and MissionWeapon types whose per-call patches break the
-    /// character previews.
+    /// Deployment settled how this works: native's own spawn wield already
+    /// pairs Weapon0 and Weapon1 correctly, and the pair survives for as long
+    /// as no AI weapon selection runs. Establishment therefore needs no code;
+    /// only retention does, and it has two disruptors - formation shield
+    /// tidying, handled by GwpDualBladeShieldDirectionPatch, and the native AI's
+    /// own weapon selection, handled here.
     ///
-    /// A guard carries nothing but the two blades, so there is no weapon choice
-    /// worth making: every wield and sheath request is simply dropped, and the
-    /// pair native already gave it stays where it is. The previous behaviour -
-    /// sheathing and re-drawing the main blade to force a pair - is gone; that
-    /// was what the user saw as the main sword being drawn three times.
+    /// That selection's one managed surface is AgentComponent.OnAIInputSet,
+    /// which is a component rather than a Harmony patch and so stays clear of
+    /// the Agent and MissionWeapon types whose per-call patches break character
+    /// previews.
     /// </summary>
     internal sealed class GwpDualBladeGuardBehavior : MissionBehavior
     {
@@ -38,9 +92,7 @@ namespace GreyWardenPolicePurity
         {
             base.OnAgentBuild(agent, banner);
 
-            if (agent != null
-                && agent.IsAIControlled
-                && agent.Character?.StringId == GwpIds.TwinbladeTroopId
+            if (GwpDualBladeAgents.TryRegister(agent)
                 && agent.GetComponent<GwpDualBladeGuardInputComponent>() == null)
             {
                 agent.AddComponent(new GwpDualBladeGuardInputComponent(agent));
@@ -90,8 +142,9 @@ namespace GreyWardenPolicePurity
             if ((eventFlag & WeaponChange) == Agent.EventControlFlag.None)
                 return;
 
-            // Movement, attacks, blocks and every other decision stay entirely
-            // native; only the weapon-selection half of the input is dropped.
+            // These characters carry nothing but the pair, so there is no
+            // weapon choice worth making. Movement, attacks, blocks and every
+            // other decision stay entirely native.
             Agent.EventControlFlag before = eventFlag;
             eventFlag &= ~WeaponChange;
 

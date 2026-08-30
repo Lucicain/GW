@@ -223,6 +223,10 @@ namespace GreyWardenPolicePurity
                 || string.Equals(
                     characterId,
                     GwpIds.KnightId,
+                    StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    characterId,
+                    GwpIds.TwinbladeTroopId,
                     StringComparison.OrdinalIgnoreCase))
             {
                 return TierThreeKnockdownChance;

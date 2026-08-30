@@ -1,5 +1,18 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 检查点后的两项补齐：AI 武将双持与双刃卫士击倒概率（待用户实机验收）
+
+- 基线为已确认的检查点 `90d73cb` / 标签 `checkpoint/npc-dual-blade`。用户在其上反馈两个遗漏，均已定位到具体原因：
+- **① 电脑控制的灰袍武将没有双刀。** 原因：检查点的两处保持机制都按 `Character.StringId == gwtwinblade` 硬编码限定，AI 武将（`gwp_custom_commander`）虽然携带完整双刀却不在范围内。
+  - 修法：新增 `GwpDualBladeAgents` 注册表，**按装备而非角色 id 判定** —— 在 `OnAgentBuild`（`MissionBehavior`，安全区）时一次性判定"AI 且 `Weapon0`/`Weapon1` 为完整双刀"，写入 `ConditionalWeakTable`；`GwpDualBladeShieldDirectionPatch` 与输入组件改为查表。
+  - 特意采用"建立时判定一次 + 之后查表"而非"在补丁里现读装备"：`ArrangementOrder` 后置运行在游戏整理队列的过程中，不应在该时机去读 agent 的装备容器。
+- **② 双刃卫士没有击倒效果。** 原因：`GwpAgentApplyDamageModel.GetKnockdownChance` 的概率表按角色 id 硬编码，新增兵种 `gwtwinblade` 不在任何分支中，因此落到末尾 `return 0f`。
+  - 修法：将 `gwtwinblade` 并入 `TierThreeKnockdownChance`（0.80），与重步兵、弓箭手、骑士同档 —— 该兵种 `level=26`，与三者同级，符合"击倒按兵种树等级绑定"的既有设计。AI 武将走 `CustomBattleCommanderId` 与领主分支的 `LordKnockdownChance`，本就已覆盖。
+- **关于"副手刀挡不住弓箭"**：用户反馈实机中副刀并不挡箭，与需求一致。据此可以确认：`CanBlockRanged` 单独并不足以让物品挡下远程 —— `WeaponComponentData.IsShield` 还要求**不带 `MeleeWeapon`**，而双刀始终保留该标志。因此此前预留的 `Mission.MissileHitCallback` 还原补丁**永远不需要**，战斗热路径上零新增全局入口。该结论可写死。
+- 补丁面未变：`PATCH_OK=38; PATCH_FAIL=0`（检查点 37 + `ArrangementOrder` 1）；`HarmonyPatch(typeof(Agent)` 与 `HarmonyPatch(typeof(MissionWeapon)` 命中均为 0；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 798208 字节、SHA-256 `FF7473B5E72FEB33191F0FFC9413816FB0E7C48C5CF98337E5D9D728FA8F3433`。回滚点 `checkpoint/npc-dual-blade` (`90d73cb`)。
+- 验收：① AI 控制的灰袍武将是否双持；② 双刃卫士左手挥砍是否按 80% 触发击倒；③ 双刃卫士双持是否仍正常、模型预览是否仍正常（本轮未新增任何补丁目标，预期不变）。
+
 ## 2026-08-30 用户确认：NPC 双刀实现成功，建立稳定检查点
 
 - **用户实机确认：双刀功能正常，人物模型/预览显示正常。** 双刃卫士在战斗中真正双持，左右手动作与玩家一致；英雄预览、百科与自定义战斗预览均无异常。
