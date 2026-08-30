@@ -97,12 +97,18 @@ namespace GreyWardenPolicePurity
         public override MissionBehaviorType BehaviorType =>
             MissionBehaviorType.Other;
 
-        public override void OnAgentCreated(Agent agent)
+        // OnAgentBuild rather than OnAgentCreated: native calls it after
+        // BuildAgent, so the equipment the qualification reads is already in
+        // place.
+        public override void OnAgentBuild(Agent agent, Banner banner)
         {
-            base.OnAgentCreated(agent);
+            base.OnAgentBuild(agent, banner);
 
-            if (GwpDualBladeNpcLoadout.IsNpcDualBladeAgent(agent))
+            if (GwpDualBladeNpcLoadout.IsNpcDualBladeAgent(agent)
+                && agent.GetComponent<GwpDualBladeNpcInputComponent>() == null)
+            {
                 agent.AddComponent(new GwpDualBladeNpcInputComponent(agent));
+            }
         }
     }
 
@@ -145,7 +151,14 @@ namespace GreyWardenPolicePurity
             MainHandRequested
         }
 
+        // A wield takes a frame or two to land. These bound the retry so a
+        // refusal can never become a per-frame loop.
+        private const int MaxOffHandAttempts = 6;
+        private const int CooldownFrames = 60;
+
         private Step _step;
+        private int _attempts;
+        private int _cooldown;
         private int _logged;
 
         internal GwpDualBladeNpcInputComponent(Agent agent)
@@ -190,32 +203,70 @@ namespace GreyWardenPolicePurity
             bool pairHeld = main == GwpDualBladeNpcLoadout.MainhandSlot
                 && off == GwpDualBladeNpcLoadout.OffhandSlot;
             Agent.EventControlFlag before = eventFlag;
+            bool wantsMelee =
+                (eventFlag & MeleeWield) != Agent.EventControlFlag.None;
 
             if (pairHeld)
             {
-                // Both blades are in hand. A repeated melee selection would
-                // re-wield the main hand and take the off hand with it, which
-                // is what cleared the pair roughly every 1.3s.
-                eventFlag &= ~(MeleeWield | SheathFlags);
                 _step = Step.Idle;
-                Log("NPC_DUAL_INPUT_KEEP_PAIR", before, eventFlag, main, off);
+                _attempts = 0;
+
+                // Only a repeated melee selection is suppressed: that is the
+                // one that re-wields the main hand and takes the off hand with
+                // it, which cleared the pair roughly every 1.3s. A sheath on
+                // its own is the AI genuinely putting the blades away — often
+                // the first half of switching back to the bow — so it has to
+                // pass through, or the archer can never go ranged again.
+                if (wantsMelee)
+                {
+                    eventFlag &= ~(MeleeWield | SheathFlags);
+                    Log("NPC_DUAL_INPUT_KEEP_PAIR", before, eventFlag, main, off);
+                }
+
                 return;
             }
 
             switch (_step)
             {
                 case Step.Idle:
-                    // Only act on the AI's own melee request.
-                    if ((eventFlag & MeleeWield) == Agent.EventControlFlag.None)
+                    // Enter either on the AI's own melee request, or on the
+                    // recovery case where it already holds the main blade with
+                    // an empty off hand.
+                    if (!wantsMelee && main != GwpDualBladeNpcLoadout.MainhandSlot)
                         return;
+
+                    if (_cooldown > 0)
+                    {
+                        _cooldown--;
+                        return;
+                    }
 
                     eventFlag &= ~SheathFlags;
                     eventFlag = (eventFlag & ~MeleeWield) | OffHandWield;
                     _step = Step.OffHandRequested;
+                    _attempts = 0;
                     Log("NPC_DUAL_INPUT_OFFHAND", before, eventFlag, main, off);
                     return;
 
                 case Step.OffHandRequested:
+                    if (off != GwpDualBladeNpcLoadout.OffhandSlot)
+                    {
+                        // The off hand has not taken yet. Spending this frame
+                        // on the main hand would just re-create the state we
+                        // are trying to leave, so ask again.
+                        if (++_attempts > MaxOffHandAttempts)
+                        {
+                            _step = Step.Idle;
+                            _cooldown = CooldownFrames;
+                            Log("NPC_DUAL_INPUT_GAVE_UP", before, eventFlag, main, off);
+                            return;
+                        }
+
+                        eventFlag &= ~SheathFlags;
+                        eventFlag = (eventFlag & ~MeleeWield) | OffHandWield;
+                        return;
+                    }
+
                     eventFlag &= ~SheathFlags;
                     eventFlag = (eventFlag & ~MeleeWield) | MainHandWield;
                     _step = Step.MainHandRequested;
@@ -223,8 +274,8 @@ namespace GreyWardenPolicePurity
                     return;
 
                 default:
-                    // Give native a frame to settle before judging the result;
-                    // if it did not take, the next melee request starts over.
+                    // Let native settle; the result is judged on the next call
+                    // through the pairHeld branch above.
                     _step = Step.Idle;
                     return;
             }

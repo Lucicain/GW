@@ -15,7 +15,14 @@
 - 未新增任何动作集、武器数据或预览路径改动。Harmony 目标：`Mission.SpawnAgent`、`Agent.WieldInitialWeapons`、两个 `MissionCombatMechanicsHelper`、`SpawnedItemEntity.OnUseStopped`、`CraftingTemplate.All`、自定义战斗角色列表；无 `CharacterCode`/`CharacterTableau`/`MissionWeapon`/`AgentVisuals` 命中。
 - 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=38; PATCH_FAIL=0`，类型数 412；XSLT 复验仍为 102 个 action_set、`as_human_female_warrior` 保持原版 298 条；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 797184 字节、SHA-256 `A5E97FFCEDC2979B8A48640ACE0BAF91E893BBC0F7B616F7D6B23B262908CE9A`。
 - 资产完整性：另一模型的两轮工作保存在 stash `54aa30d`（`failed-npc-dual-input-2026-08-30`），本方此前的分帧候选保存在 reflog（至 `3693545`），检查点标签 `checkpoint/player-only-dual-blade` (`003fea5`) 完好，均可恢复。
-- 判读：看 `NPC_DUAL_INPUT_OFFHAND` → `NPC_DUAL_INPUT_MAINHAND` → `NPC_DUAL_INPUT_KEEP_PAIR` 是否按序出现。出现 `KEEP_PAIR` 即表示双刀已稳定握住且原生重选被成功抑制。
+- 第三轮补完（本次）：
+  - 组件挂载点由 `OnAgentCreated` 改为 `OnAgentBuild`。取证 `mission.txt:4359`：原生在 `BuildAgent(agent, agentBuildData)` **之后**才广播 `OnAgentBuild`，此时装备已就位，资格判定读到的 `SpawnEquipment`/`Equipment` 才是完整的；并加了重复挂载保护。
+  - **修掉一个会让 AI 卡在近战的缺陷**：原实现在双刀已在手时无条件清除 `Sheath0/Sheath1`。但 AI 切回弓箭往往先发单独的收刀标志，被清掉后弓箭手将再也无法转回远程。现改为**只有在同一帧还伴随近战 `Wield` 请求时才清除收刀标志**（那才是会带走副手的重复重选）；单独的收刀一律放行。
+  - 分帧序列增加落地校验：第 2 帧先确认副手确实已进手才请求主手；未进手则重发副手请求，最多 6 次后放弃并进入 60 帧冷却，避免把"拒绝"变成每帧循环。
+  - 新增恢复入口：即使 AI 没有发出近战请求，只要处于"主手为主刀、副手为空"的状态也会启动序列，用于覆盖原生周期性重选清空副手的情况。
+- 需求逐条对照（均为数据/既有实现，本轮只做核对）：左右手动作 = `as_human_warrior` 内 84 条 gwd 动作，全体人类 agent 共用；左手伤害 = 副手件 `Swing Cut 4.1` / `Thrust Pierce 3.2`，伤害类型与 bone-20 碰撞判定已改用与角色无关的 `TryGetCombatPair`，NPC 与玩家一致；格挡 = `WoodenParry`（与 ROT 逐字相同）；**挡不住弓箭 = 副手 WeaponFlags 只有 `MeleeWeapon`，无 `CanBlockRanged`，故 `IsShield` 为假**，无需再加 `MissileHitCallback` 还原补丁；击倒 = `GwpAgentApplyDamageModel` 同样走 `TryGetCombatPair`。地面拾取仍严格保持玩家专属。
+- 最终验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=38; PATCH_FAIL=0`，类型数 412；XSLT 复验 102 个 action_set、重复 id 0、`as_human_female_warrior` 保持原版 298 条；30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件差异 0；客户端/编辑器 DLL 均为 797696 字节、SHA-256 `E298CB961E3D70B1EC5707AF5D22100353359FFA213BE003D4041086A4813374`（README 同步后的最终增量构建）；Bannerlord 进程数 0。
+- 判读：看 `NPC_DUAL_INPUT_OFFHAND` → `NPC_DUAL_INPUT_MAINHAND` → `NPC_DUAL_INPUT_KEEP_PAIR` 是否按序出现。出现 `KEEP_PAIR` 即表示双刀已稳定握住且原生重选被成功抑制；若出现 `NPC_DUAL_INPUT_GAVE_UP`，说明经由输入边界的副手请求同样被拒，届时该结论适用于全部三条已知路径（拔刀 API、Mission Tick、AI 输入边界）。
 
 ## 2026-08-30 NPC 双刀重做第二轮：改用原生 AI 输入边界与远程初始偏好（待用户实机验收）
 

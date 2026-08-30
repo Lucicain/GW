@@ -34,7 +34,8 @@ Compared with v1.4-r10:
 - The separate Twinblade troop has been removed. Light infantry now upgrade to heavy infantry, archers, or knights.
 - Custom Battle places the Grey Warden commander first while preserving every native commander entry, with full Warden troop and equipment registration.
 - The player's ROT-style paired-blade experience remains stable. Grey Warden archers now carry a noble long bow, piercing arrows, and the real paired blades; they use the bow first and the same paired-blade actions when they enter melee.
-- NPC dual wielding is scoped to real Grey Warden archer agents in battle and does not alter encyclopedia, Custom Battle previews, or other troops. The blades still use GreyWarden's own item and action resources rather than a shield substitute.
+- The paired blades are no longer tied to a particular character: anyone equipped with the pair dual wields, and NPCs share the player's appearance, animations, attacks and parries. The off-hand blade deals damage and can parry, and like the main blade it cannot block arrows.
+- NPC dual wielding only takes effect in real battles and does not alter the encyclopedia or Custom Battle previews. The blades still use GreyWarden's own item and action resources rather than a shield substitute.
 - The paired blades keep the same appearance as the Grey Warden arming sword, using GreyWarden's own item definitions without loading ROT or other external-mod resources.
 
 #### Fixed
