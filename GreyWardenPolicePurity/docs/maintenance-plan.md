@@ -1,5 +1,22 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 按 v1.4.8 已成功配方重建 NPC 双刀：原生资格代理 + 独立双刃卫士兵种（待用户实机验收）
+
+- 用户指出关键事实：**v1.4.8 时期本项目配合 ROT 确实做出过 AI 双持**，当时不是逼弓箭手用，而是单独造了兵种「双刃卫士」，之后才移植的双刀击倒机制。据此回查开发记录，找到了完整配方。
+- **该实现从未进入过 Git**：`eda353f` 是首个含双刀文件的提交，那时同步补丁与双刃卫士兵种都已被删除；`git log -S` 在全历史中查不到 `GwpDualBladeAiNativeSyncPatch` 与 `gwtwinblade`。两者都只存在于当时未提交的工作树，属于此前记录的"项目管理问题导致功能丢失"。本轮按维护记录重建。
+- 记录中的 A/B 阶梯（2026-08-27/28）明确给出原生 AI 保留副手所需的条件：
+  1. 仅 `MeleeWeapon + HasHitPoints`：200 名双刃卫士在 `WieldInitialWeapons()` 后达到 `actualOff=WeaponItemBeginSlot`，**约 2.3 秒后统一变回 `None`** —— 耐久不足以让原生长期占用副手。
+  2. 追加 `CanBlockRanged`：记录原文"**NPC 已成功拔出左手剑并保持双持动作**"。这正是原生副手资格实际检验的标志，与"原版 53 件 `HeldInOffHand` 物品全是盾"完全自洽。
+  3. 带 `CanBlockRanged` 但没有盾碰撞对象时，首次真实格挡崩在 `TaleWorlds.Native.dll+0x73ddf8`（`mov rbp,[rdx+8]`，`rdx=0`，空源对象复制）。补上真实碰撞体是当时的应对。
+  4. 清除 `WeaponMask`（去掉 `MeleeWeapon`）会引发另一处原生崩溃，**不得重现**；ROT 的左右手剑始终保留 `OneHandedSword + MeleeWeapon`。
+- 本轮实现 `GwpDualBladeAiNativeSyncPatch`：在**一次** `Agent.EquipItemsFromSpawnEquipment(bool,bool,bool,int)` 的线程局部作用域内（`[ThreadStatic]`，仅当 `IsDualBladeNpc` 成立即 AI + 有 Mission + 携带完整双刀），对送往 Native 的**副手副本**执行：`WeaponFlags |= HasHitPoints | CanBlockRanged`（按位 OR，`MeleeWeapon` 与剑用途原样保留）、`MaxDataValue = 500`、`WeaponData.CollisionShape = bo_wlarge_shield`（一次性解析并缓存，取不到就不改）。托管 `MissionWeapon` 不改、玩家不进作用域、不生成实体、不重挂、不用 Mission Tick。
+- **不添加任何预览侧补丁**。历史上正是"为隔离预览而增加的展示装备码替换/tableau 补丁"反复搞坏人物模型。tableau 走 `AgentVisuals`，不会调用 `Agent.EquipItemsFromSpawnEquipment`，因此作用域关闭时这两个 postfix 原样返回原生数据。本轮 XSLT 复验仍为 102 个 action_set、`as_human_female_warrior` 保持原版 298 条，动作集结构完全没动。
+- 兵种侧按 v1.4.8 形态重建 `gwtwinblade`（灰袍守护者双刃卫士）：`level=26`、`default_group="Infantry"`、由 `gwrecruit` 升级、**只带 Weapon0 副手刀 + Weapon1 主手刀，没有弓箭**。这一点是关键 —— 身上没有第二种武器，原生 AI 就没有远程/近战重选可走，直接避开了此前把双刀塞给弓箭手所引出的一整类问题。`gwarcher` 保持纯远程，不再携带双刀。新增中文名字符串 `gwp_troop_twinblade`。
+- 伤害侧新增 `IsDualBladeCombatant`（任何携带完整双刀者，玩家或 NPC），`GwpAgentApplyDamageModel` 与 `GwpDualWieldingPatch` 改用它，使双刃卫士的左手伤害类型与击倒判定与玩家一致；地面拾取仍保留玩家专属的 `IsEligibleDualBladeUser`。
+- **本轮刻意未做的一项**：`CanBlockRanged` 会让副手刀同时挡住弓箭，与用户"挡不住弓箭"的要求不符。记录显示当时的解法是用 `Mission.MissileHitCallback` 把该副手的远程盾挡结果还原为普通命中。该补丁是战斗热路径上的全局入口，本轮**不与资格代理捆绑**，以便万一出问题能明确归因；待 NPC 确认能持刀且近战格挡不崩后再单独加入。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=40; PATCH_FAIL=0`（检查点 37 + 新增 3 个入口全部解析成功），类型数 411；30 个 XML/XSLT/mbproj 解析失败 0；仓库 `_Module` 与 live 36 个可部署文件差异 0；`gwarcher` 装备中 `gwdualblade` 命中 0。客户端/编辑器 DLL 均为 797184 字节、SHA-256 `DDD7D43D990A4028683BC62DDCCEEBD3997D323DA4CA29D78F062D4836330890`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收重点（按记录当年的顺序）：① 人物预览/百科是否仍正常（本轮未动预览链，预期不变）；② 双刃卫士出生后左手剑是否**持续**出鞘、超过 3 秒不被清空；③ 玩家攻击双刃卫士、双刃卫士格挡时是否崩溃；④ 双刃卫士能否用双持攻击与四向近战格挡。若 ② 通过而 ③ 崩溃，说明碰撞体仍不足，应调整碰撞体而非撤回 `CanBlockRanged`。
+
 ## 2026-08-30 NPC 双刀全部候选失败，按用户要求回退到检查点重新开发
 
 - 用户结论：两个都是老问题（人物模型异常、NPC 只拿单刀），要求回退到稳定点重新开发。

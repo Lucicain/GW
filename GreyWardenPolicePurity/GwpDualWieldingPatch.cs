@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -68,7 +68,7 @@ namespace GreyWardenPolicePurity
 
             Agent? attacker = attackInformation.AttackerAgent;
             if (attacker == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker))
+                || !GwpDualBladeLoadout.IsDualBladeCombatant(attacker))
                 return;
 
             try

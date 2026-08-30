@@ -542,6 +542,7 @@
   <string id="gwp_policeresourcemanager_001" text="金币不足，额外没收物品价值 {VAR_1} 金" />
   <string id="gwp_troop_archer" text="灰袍守护者弓箭手" />
   <string id="gwp_troop_heavy_infantry" text="灰袍守护者重步兵" />
+  <string id="gwp_troop_twinblade" text="灰袍守护者双刃卫士" />
   <string id="gwp_troop_knight" text="灰袍守护者骑士" />
   <string id="gwp_troop_light_infantry" text="灰袍守护者轻步兵" />
   <string id="gwp_troop_new_recruit" text="灰袍新兵" />

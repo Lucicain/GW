@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -102,7 +102,7 @@ namespace GreyWardenPolicePurity
         {
             if (attacker == null
                 || attackerWeapon == null
-                || !GwpDualBladeLoadout.IsEligibleDualBladeUser(attacker)
+                || !GwpDualBladeLoadout.IsDualBladeCombatant(attacker)
                 || (collisionData.StrikeType != (int)StrikeType.Swing
                     && collisionData.StrikeType != (int)StrikeType.Thrust)
                 )

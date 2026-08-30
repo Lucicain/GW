@@ -113,6 +113,7 @@
     </skills>
 	<upgrade_targets>
       <upgrade_target id="NPCCharacter.gwheavyinfantry" />
+      <upgrade_target id="NPCCharacter.gwtwinblade" />
       <upgrade_target id="NPCCharacter.gwarcher" />
       <upgrade_target id="NPCCharacter.gwknight" />
     </upgrade_targets>
@@ -206,6 +207,59 @@
   
   
   
+
+  <!--Twinblade Guard-->
+  <NPCCharacter id="gwtwinblade"
+                default_group="Infantry"
+                level="26"
+                name="{=gwp_troop_twinblade}Grey Warden Twinblade Guard"
+                occupation="Soldier"
+                is_female="true"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.townswoman_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="130" />
+      <skill id="Riding"
+             value="20" />
+      <skill id="OneHanded"
+             value="150" />
+      <skill id="TwoHanded"
+             value="80" />
+      <skill id="Polearm"
+             value="80" />
+      <skill id="Bow"
+             value="60" />
+      <skill id="Crossbow"
+             value="60" />
+      <skill id="Throwing"
+             value="80" />
+    </skills>
+    <upgrade_targets></upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="gwdualbladeoffhand" />
+        <equipment slot="Item1"
+                   id="gwdualblademainhand" />
+        <equipment slot="Body"
+                   id="winfarmor" />
+        <equipment slot="Gloves"
+                   id="winfgloves" />
+        <equipment slot="Leg"
+                   id="winflegs" />
+        <equipment slot="Head"
+                   id="winfhelmethv" />
+        <equipment slot="Cape"
+                   id="winfshoulder" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t3"
+				equipmentType="Civilian" />
+    </Equipments>
+  </NPCCharacter>
+
   <!--Archer-->
   <NPCCharacter id="gwarcher"
                 default_group="Ranged"
