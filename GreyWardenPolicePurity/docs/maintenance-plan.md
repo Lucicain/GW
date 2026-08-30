@@ -20,8 +20,12 @@
 - 本轮据此把 `Synchronize` 里那次被拒绝的单槽位请求，替换为直接调用原生 `agent.WieldInitialWeapons(WeaponWieldActionType.InstantAfterPickUp)`。这些角色身上只有两把刀，所谓"初始武器"就是这一对，因此重跑该 routine 不会改变武器组合。新增 `ARCHER_OFFHAND_PAIR_RESULT` 记录调用**之后**的主副手槽位，下一轮可直接判定原生是否接受。
 - 女性动作集修复保留并已验证生效：`gwarcher` 与 `gwp_custom_commander` 均为 `female=True`，`actionSet=True` 200 次、`ACTION_SET_MISSING` 0 次，说明 `as_human_female_gwp_dual` 正常解析。
 - 为下一轮定位"人物显示"问题，审计新增对照项 `gwonehandedsword`（双刀本应与之同型、且由同样四个锻造部件构成）。注意当前双刀的 `collision=` 为空而 ROT 显式使用 `body_name="bo_mace_a" recalculate_body="false"`；在拿到对照数据前不改动该字段，避免重蹈 2026-08-30 早期"运行时改写碰撞体导致预览中断"的覆辙。
-- 本轮日志中没有任何网格/资源缺失、动作集断言或托管异常，因此"人物显示异常"无法仅从监控判定具体形态，已就现象向用户提出定位问题（发生界面、具体表现），不做猜测式改动。
-- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=40; PATCH_FAIL=0`，`GwpDualBladeAiWeaponSelectionPatch` 与 `GwpDualBladeUpdateWeaponsPatch` 均已不存在。仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 800768 字节、SHA-256 `FED71EEE68395F12C0570F492BD5C34902653CFA49EA3EE80C2729E5C5F9C590`。未代表用户启动游戏。回滚点仍为 `eda353f`。
+- 本轮日志中没有任何网格/资源缺失、动作集断言或托管异常，因此“人物显示异常”无法仅从监控判定具体形态。已向用户定位现象，用户答复：**出现在自定义战斗选人/预览界面与百科页面**（战场模型不在其列），表现为**模型完全不显示（空白）**与**模型显示但姿势异常**两种。
+- 据此确认故障面是 `CharacterTableau` 这条预览链，而不是战场 Agent 链。反编译 `TaleWorlds.MountAndBlade.View.Tableaus.CharacterTableau` 确认：预览用的动作集是 `MBGlobals.GetActionSetWithSuffix(MonsterData, _isFemale, "_warrior")`，即 `as_human_warrior` / `as_human_female_warrior`（两者都已由本模组 XSLT 追加 84 条 gwd 动作），idle 为 `act_inventory_idle_start`。
+- 已排除的预览侧数据项：`gwp_dual_back` holster 与 ROT 的 `dual_back` 除 id 外逐字段完全相同；`item_usage_sets.xml` 的四个 dual 集与 ROT 逐节点一致；两把刀的 usage/flags 已由本轮审计证实正确。另外核实全部 104 个 action_set 中，自定义 `act_*_gwd_shld` 动作只在 `as_human_warrior`、`as_human_female_warrior` 及两个 `*_gwp_dual` 中有映射——而预览恰好用前两者，因此“预览动作集缺少自定义动作映射”这一条也不成立。
+- 新增只读诊断 `GwpCharacterTableauTracePatch`：对 `CharacterTableau.RefreshCharacterTableau` 挂 Finalizer，原样返回 `__exception`，因此不改变任何行为，只在预览构建抛异常时写 `CHARACTER_TABLEAU_REFRESH_FAILED`。目标按名称反射解析，类型改名时 `Prepare()` 直接跳过而不影响 `PatchAll`。下一轮据此可一刀切分：“预览构建抛异常”与“构建成功但姿势/挂点错误”两类，避免继续猜测式改动。
+- 已请用户提供预览界面截图，以进一步区分空白与姿势异常分别出现在哪些角色上。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；离线预检 `PATCH_OK=40; PATCH_FAIL=0`，`GwpDualBladeAiWeaponSelectionPatch` 与 `GwpDualBladeUpdateWeaponsPatch` 均已不存在。仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 801280 字节、SHA-256 `322577EFED685E5D3EE2881C011121EFD6EB7B9391D72D46B51288A65DCD4ED7`（含预览诊断，离线预检 `PATCH_OK=41; PATCH_FAIL=0`）。未代表用户启动游戏。回滚点仍为 `eda353f`。
 
 ## 2026-08-30 弓箭手副手：改为阻止原生 AI 换武器判断，并补齐女性双刀动作集（阻断部分已实测无效，已删除；女性动作集保留）
 

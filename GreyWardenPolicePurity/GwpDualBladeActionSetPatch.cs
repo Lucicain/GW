@@ -156,6 +156,45 @@ namespace GreyWardenPolicePurity
 #endif
     }
 
+    /// <summary>
+    /// The encyclopedia and the Custom Battle character preview both build
+    /// their model through CharacterTableau, which takes the equipment code
+    /// (confirmed to generate cleanly) and turns it into AgentVisuals. A blank
+    /// or badly posed model there is invisible in every log we have: the last
+    /// session produced no managed exception, no crash dump, no missing-asset
+    /// message and no action-set assert.
+    ///
+    /// Observe that build without changing it. The finalizer returns the
+    /// exception untouched, so behaviour is identical whether or not the
+    /// tableau throws — it only makes a throwing preview visible in the trace.
+    /// Resolved by name so a moved or renamed type just skips the patch.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class GwpCharacterTableauTracePatch
+    {
+        private static MethodBase? TargetMethod() =>
+            AccessTools.TypeByName(
+                "TaleWorlds.MountAndBlade.View.Tableaus.CharacterTableau") is Type tableau
+                ? AccessTools.Method(tableau, "RefreshCharacterTableau")
+                : null;
+
+        private static bool Prepare() => TargetMethod() != null;
+
+        [HarmonyFinalizer]
+        private static Exception? Finalizer(Exception? __exception)
+        {
+            if (__exception != null)
+            {
+                GwpDualBladeTrace.Write(
+                    "CHARACTER_TABLEAU_REFRESH_FAILED",
+                    details: __exception.GetType().FullName
+                        + ": " + __exception.Message);
+            }
+
+            return __exception;
+        }
+    }
+
     [HarmonyPatch(
         typeof(CharacterCode),
         nameof(CharacterCode.CreateFrom),
