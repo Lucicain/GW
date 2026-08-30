@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using TaleWorlds.Core;
 
@@ -27,6 +27,9 @@ namespace GreyWardenPolicePurity
     internal static class GwpDualBladeNpcItemSetup
     {
         private const short OffHandHitPoints = 500;
+
+        private const WeaponFlags Qualification =
+            WeaponFlags.HasHitPoints | WeaponFlags.CanBlockRanged;
 
         private static bool _applied;
 
@@ -66,14 +69,15 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
+                // WeaponComponentData.WeaponFlags is a public field, not a
+                // property. The previous build reached for it with
+                // AccessTools.Property, which returned null and was swallowed
+                // by the null-conditional call, so the flags were never written
+                // and the qualification was never actually exercised - the
+                // trace read back "flags=MeleeWeapon". Assign it directly.
                 // MeleeWeapon and the sword usage are preserved by OR; clearing
                 // the weapon mask caused its own native crash historically.
-                AccessTools.Property(typeof(WeaponComponentData), "WeaponFlags")
-                    ?.SetValue(
-                        weapon,
-                        weapon.WeaponFlags
-                            | WeaponFlags.HasHitPoints
-                            | WeaponFlags.CanBlockRanged);
+                weapon.WeaponFlags |= Qualification;
 
                 if (weapon.MaxDataValue < OffHandHitPoints)
                 {
@@ -81,12 +85,16 @@ namespace GreyWardenPolicePurity
                         ?.SetValue(weapon, OffHandHitPoints);
                 }
 
+                WeaponComponentData? readback = blade.PrimaryWeapon;
                 GwpDualBladeTrace.Write(
                     "NPC_ITEM_SETUP",
                     details: blade.StringId
                         + "; collision=" + blade.CollisionBodyName
-                        + "; flags=" + weapon.WeaponFlags
-                        + "; maxDataValue=" + weapon.MaxDataValue);
+                        + "; flags=" + readback?.WeaponFlags
+                        + "; maxDataValue=" + readback?.MaxDataValue
+                        + "; qualified="
+                        + (readback != null
+                            && (readback.WeaponFlags & Qualification) == Qualification));
             }
             catch (Exception exception)
             {

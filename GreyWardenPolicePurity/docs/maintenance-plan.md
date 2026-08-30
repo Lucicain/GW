@@ -1,5 +1,21 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-30 上一轮资格标志根本没写进去（反射目标类型判断错误），已直接赋值修正
+
+- 用户实测上一轮：**模型正常**（零补丁方案确实保住了预览），但左手刀仍未出鞘。
+- 追踪给出了确切原因，而且不是机制问题：
+  ```
+  NPC_ITEM_SETUP | gwdualbladeoffhandai; collision=bo_sword_one_handed; flags=MeleeWeapon; maxDataValue=500
+  ```
+  `collision` 与 `maxDataValue` 都写入成功，**`flags` 仍然只有 `MeleeWeapon`** —— `HasHitPoints | CanBlockRanged` 一个都没生效。
+- 根因：`WeaponComponentData.WeaponFlags` 在 1.5.2 中是 **`public WeaponFlags WeaponFlags;`，即公开字段而非属性**（`core-latest/TaleWorlds.Core/WeaponComponentData.cs:19`）。上一轮用 `AccessTools.Property(typeof(WeaponComponentData), "WeaponFlags")` 取，返回 `null`，又被 `?.SetValue(...)` 的空条件调用静默吞掉，因此既没写入也没抛异常。**该字段是公开的，根本不需要反射**，已改为 `weapon.WeaponFlags |= Qualification;` 直接赋值。
+- **结论修正**：因此"给 NPC 副手补 `HasHitPoints | CanBlockRanged` 能否让原生 AI 持刀"这一机制，在上一轮**从未被真正验证过** —— 那轮测的是一个空操作。记录中 v1.4.8 的 A/B 结论仍是当前最可靠依据，本轮才是对它的第一次有效复现。
+- 诊断加固：`NPC_ITEM_SETUP` 现在从物品上**回读**写入结果，并输出 `qualified=`（`(WeaponFlags & Qualification) == Qualification`）。下一轮只需看这一个布尔值即可判定写入是否真正生效，不会再出现"以为写了其实没写"。
+- 需求放宽（用户明确）：**副手刀可以挡飞箭**，用户只要求双刀在观感与体验上与玩家一致。因此 `Mission.MissileHitCallback` 还原补丁**不再需要**，战斗热路径上不新增任何全局入口，符合上一轮确立的红线。用户同时指出碰撞体应限制为与剑 mesh 一致 —— 当前实现正是如此（`CollisionBodyName = BodyName = bo_sword_one_handed`，未借用大盾体积）。
+- 补丁面保持不变：离线预检 `PATCH_OK=37; PATCH_FAIL=0`，与用户确认预览正常的检查点逐一相同；全仓库 `HarmonyPatch(typeof(MissionWeapon)` 与 `HarmonyPatch(typeof(Agent)` 命中均为 0；XSLT 复验 102 个 action_set、`as_human_female_warrior` 原版 298 条。
+- 验证：Release 重建 0 errors、44 条既有 nullable warnings；仓库 `_Module` 与 live 36 个可部署文件差异 0。客户端/编辑器 DLL 均为 795648 字节、SHA-256 `1FD794C2279ABE6B6DDFC7BA29E1FDC924156ABBB6C877ABC4955497AB5EA335`。回滚点 `checkpoint/player-only-dual-blade` (`003fea5`)。
+- 验收：① `NPC_ITEM_SETUP` 的 `qualified=True` 且 `flags` 含 `HasHitPoints, CanBlockRanged`；② 双刃卫士左手刀是否出鞘并**持续**握住；③ 模型/预览是否仍正常（补丁面未变，预期不变）；④ 格挡是否崩溃。若 ① 为 True 而 ② 仍失败，则 v1.4.8 的 A/B 结论在 1.5.2 上不成立，届时该方向可判定终结。
+
 ## 2026-08-30 隔离结论：预览损坏来自代码而非数据；改用零补丁的 NPC 专用副手刀（待用户实机验收）
 
 - **单变量隔离得到明确结论。** 用户实测上一轮（检查点代码 + 仅新增带双刀的双刃卫士）：**模型正常、预览正常、双刀已装备上，只有副手拔不出来**。因此：
