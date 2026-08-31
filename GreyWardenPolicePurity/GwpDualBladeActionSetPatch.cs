@@ -14,7 +14,23 @@ using TaleWorlds.ObjectSystem;
 
 namespace GreyWardenPolicePurity
 {
-    internal static class GwpDualBladeTrace
+    /// <summary>
+    /// Records only the paths that should never be taken: a Harmony install
+    /// that threw, a custom-battle hook that failed, an item the mod expected
+    /// to find and did not.
+    ///
+    /// It began as a dual-blade trace and narrated the healthy path too -
+    /// which is what a feature under construction needs, and what a finished
+    /// one does not. Once NPC dual wielding, the knockdown, the water
+    /// transition and the 1.4.8 load were confirmed and checkpointed, that
+    /// narration was pure noise: a single battle wrote over 23,000 lines,
+    /// nearly all of it reporting that settled mechanics had worked again.
+    /// Only the failure paths are left, so in a healthy game this file stays
+    /// empty and anything in it is worth reading. Keep it that way: add a
+    /// line here when something is being built or is misbehaving, and take it
+    /// out again once that work is confirmed.
+    /// </summary>
+    internal static class GwpFaultTrace
     {
 #if GWP_DIAGNOSTICS
         private static readonly object Sync = new object();
@@ -22,7 +38,7 @@ namespace GreyWardenPolicePurity
         private static string LogPath => IOPath.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "Mount and Blade II Bannerlord",
-            "GreyWarden-DualBlade-Trace.log");
+            "GreyWarden-Faults.log");
 
         internal static void Write(
             string stage,
@@ -78,10 +94,6 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch(typeof(CustomBattleData), "get_Characters")]
     internal static class GwpCustomBattleCommanderListPatch
     {
-        [HarmonyPrefix]
-        private static void Prefix() =>
-            GwpDualBladeTrace.Write("CUSTOM_BATTLE_CHARACTERS_GET_BEGIN");
-
         [HarmonyPostfix]
         private static void Postfix(ref IEnumerable<BasicCharacterObject> __result)
         {
@@ -93,7 +105,7 @@ namespace GreyWardenPolicePurity
         {
             if (__exception != null)
             {
-                GwpDualBladeTrace.Write(
+                GwpFaultTrace.Write(
                     "CUSTOM_BATTLE_CHARACTERS_GET_FAILED",
                     details: __exception.GetType().FullName + ": " + __exception.Message);
             }
@@ -138,17 +150,9 @@ namespace GreyWardenPolicePurity
             MethodInfo? getter = type == null
                 ? null
                 : AccessTools.DeclaredMethod(type, "get_Characters");
-            GwpDualBladeTrace.Write(
-                "NAVAL_CUSTOM_BATTLE_PATCH_TARGET",
-                details: "type=" + (type?.AssemblyQualifiedName ?? "missing")
-                    + "; getter=" + (getter?.ToString() ?? "missing"));
             if (getter != null)
                 yield return getter;
         }
-
-        [HarmonyPrefix]
-        private static void Prefix() =>
-            GwpDualBladeTrace.Write("NAVAL_CUSTOM_BATTLE_CHARACTERS_GET_BEGIN");
 
         [HarmonyPostfix]
         private static void Postfix(ref IEnumerable<BasicCharacterObject> __result)
@@ -161,7 +165,7 @@ namespace GreyWardenPolicePurity
         {
             if (__exception != null)
             {
-                GwpDualBladeTrace.Write(
+                GwpFaultTrace.Write(
                     "NAVAL_CUSTOM_BATTLE_CHARACTERS_GET_FAILED",
                     details: __exception.GetType().FullName + ": " + __exception.Message);
             }
@@ -177,16 +181,10 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                GwpDualBladeTrace.Write(
-                    "CUSTOM_BATTLE_COMMANDER_INSERT_BEGIN",
-                    details: "source=" + source);
                 BasicCharacterObject? custom = Game.Current?.ObjectManager?
                     .GetObject<BasicCharacterObject>(GwpIds.CustomBattleCommanderId);
                 if (custom == null)
                 {
-                    GwpDualBladeTrace.Write(
-                        "CUSTOM_BATTLE_COMMANDER_INSERT_SKIPPED",
-                        details: "source=" + source + "; reason=object_missing");
                     return;
                 }
 
@@ -199,15 +197,10 @@ namespace GreyWardenPolicePurity
                     .ToList();
                 characters.Insert(0, custom);
                 result = characters;
-                GwpDualBladeTrace.Write(
-                    "CUSTOM_BATTLE_COMMANDER_INSERT",
-                    details: "source=" + source
-                        + "; id=" + custom.StringId
-                        + "; count=" + characters.Count);
             }
             catch (Exception exception)
             {
-                GwpDualBladeTrace.Write(
+                GwpFaultTrace.Write(
                     "CUSTOM_BATTLE_COMMANDER_INSERT_FAILED",
                     details: "source=" + source + "; "
                         + exception.GetType().FullName + ": " + exception.Message);

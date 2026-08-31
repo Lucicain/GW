@@ -19,15 +19,13 @@ namespace GreyWardenPolicePurity
             // Self-contained library patch; no separate Harmony module or
             // launcher dependency is required.
             Harmony harmony = new(HarmonyId);
-            GwpDualBladeTrace.Write("SUBMODULE_PATCH_BEGIN");
             try
             {
                 harmony.PatchAll(typeof(SubModule).Assembly);
-                GwpDualBladeTrace.Write("SUBMODULE_PATCH_OK");
             }
             catch (Exception exception)
             {
-                GwpDualBladeTrace.Write(
+                GwpFaultTrace.Write(
                     "SUBMODULE_PATCH_FAILED",
                     details: exception.GetType().FullName + ":" + exception.Message);
                 // Never turn an optional combat enhancement into a startup
@@ -49,10 +47,6 @@ namespace GreyWardenPolicePurity
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
-            GwpDualBladeTrace.Write(
-                "GAME_START",
-                details: "type=" + game.GameType?.GetType().FullName);
-
             // Wrap whichever native damage model this game mode registered
             // (Sandbox in Campaign, Custom in Custom Battle). The wrapper
             // changes only Grey Warden alternative-attack knockdowns.

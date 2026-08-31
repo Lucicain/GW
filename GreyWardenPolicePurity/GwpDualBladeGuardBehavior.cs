@@ -111,8 +111,6 @@ namespace GreyWardenPolicePurity
             | Agent.EventControlFlag.Sheath1
             | Agent.EventControlFlag.ToggleAlternativeWeapon;
 
-        private bool _logged;
-
         internal GwpDualBladeGuardInputComponent(Agent agent)
             : base(agent)
         {
@@ -145,19 +143,7 @@ namespace GreyWardenPolicePurity
             // These characters carry nothing but the pair, so there is no
             // weapon choice worth making. Movement, attacks, blocks and every
             // other decision stay entirely native.
-            Agent.EventControlFlag before = eventFlag;
             eventFlag &= ~WeaponChange;
-
-            if (!_logged)
-            {
-                _logged = true;
-                GwpDualBladeTrace.Write(
-                    "GUARD_WEAPON_SELECTION_SUPPRESSED",
-                    Agent,
-                    "before=" + before
-                    + "; main=" + Agent.GetPrimaryWieldedItemIndex()
-                    + "; offhand=" + Agent.GetOffhandWieldedItemIndex());
-            }
         }
     }
 }

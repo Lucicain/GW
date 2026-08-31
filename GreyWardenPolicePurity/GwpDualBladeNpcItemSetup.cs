@@ -68,18 +68,13 @@ namespace GreyWardenPolicePurity
                     AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
                         ?.SetValue(anyBlade, anyBlade.BodyName);
 
-                    GwpDualBladeTrace.Write(
-                        "BLADE_COLLISION_BODY",
-                        details: bladeId
-                            + "; body=" + anyBlade.BodyName
-                            + "; collision=" + anyBlade.CollisionBodyName);
                 }
 
                 ItemObject? blade = game.ObjectManager
                     .GetObject<ItemObject>(GwpIds.DualBladeOffhandAiItemId);
                 if (blade == null)
                 {
-                    GwpDualBladeTrace.Write(
+                    GwpFaultTrace.Write(
                         "NPC_ITEM_SETUP_MISSING",
                         details: GwpIds.DualBladeOffhandAiItemId);
                     return;
@@ -92,7 +87,7 @@ namespace GreyWardenPolicePurity
                 var usages = blade.Weapons;
                 if (usages == null || usages.Count == 0)
                 {
-                    GwpDualBladeTrace.Write(
+                    GwpFaultTrace.Write(
                         "NPC_ITEM_SETUP_NO_WEAPON",
                         details: blade.StringId);
                     return;
@@ -123,20 +118,10 @@ namespace GreyWardenPolicePurity
                     if ((usage.WeaponFlags & Qualification) == Qualification)
                         qualifiedUsages++;
                 }
-                GwpDualBladeTrace.Write(
-                    "NPC_ITEM_SETUP",
-                    details: blade.StringId
-                        + "; collision=" + blade.CollisionBodyName
-                        + "; flags=" + readback?.WeaponFlags
-                        + "; maxDataValue=" + readback?.MaxDataValue
-                        + "; usages=" + qualifiedUsages + "/" + usages.Count
-                        + "; qualified="
-                        + (readback != null
-                            && (readback.WeaponFlags & Qualification) == Qualification));
             }
             catch (Exception exception)
             {
-                GwpDualBladeTrace.Write(
+                GwpFaultTrace.Write(
                     "NPC_ITEM_SETUP_FAILED",
                     details: exception.GetType().Name + ": " + exception.Message);
             }

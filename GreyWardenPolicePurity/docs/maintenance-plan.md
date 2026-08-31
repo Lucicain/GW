@@ -1,5 +1,32 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 监控生命周期：双刀监控随功能完成一并退役
+
+- 用户确立原则：监控是为**在研功能**服务的临时脚手架——出现报错时可以加强监控，但功能开发完毕后，对应的监控代码**及其输出**都应清理，不应长期监控已完善的功能。本轮据此清理。
+
+### 证据：日志构成证明这条线该切在哪
+
+- `GreyWarden-DualBlade-Trace.log` 单次战斗写到 3.5 MB、23669 行。按标签统计，绝大多数是**已完成机制的成功路径叙述**：`NPC_PAIR` 3499、`NPC_PAIR_RESULT` 2820、`NPC_PAIR_LOST` 2169、`EQUIP_SCOPE_PREFIX` 1606、`EQUIP_SCOPE_FINALIZER` 1605、`SPAWN_AGENT_POSTFIX` 1399、`GUARD_WEAPON_SELECTION_SUPPRESSED` 1070、`ARCHER_OFFHAND_PAIR_*` 1600+ 等。其中多数标签在当前代码里**已不存在**，是历次被推翻方案留下的历史输出。
+- 结论：切分线不是"双刀 vs 非双刀"，而是**"正常运行时的例行输出" vs "出错时的输出"**。前者在功能确认后纯属噪声；后者在健康游戏里一行不写，只有未来游戏更新弄坏了才出声，正是应当保留的。
+
+### 处置
+
+- 撤除全部健康路径追踪：`CUSTOM_BATTLE_CHARACTERS_GET_BEGIN`、`NAVAL_CUSTOM_BATTLE_CHARACTERS_GET_BEGIN`、`NAVAL_CUSTOM_BATTLE_PATCH_TARGET`、`CUSTOM_BATTLE_COMMANDER_INSERT_BEGIN`、`CUSTOM_BATTLE_COMMANDER_INSERT_SKIPPED`、`CUSTOM_BATTLE_COMMANDER_INSERT`、`GUARD_WEAPON_SELECTION_SUPPRESSED`、`BLADE_COLLISION_BODY`、`NPC_ITEM_SETUP`、`SUBMODULE_PATCH_BEGIN`、`SUBMODULE_PATCH_OK`、`GAME_START`。
+- 连带删除两个**只为写追踪而存在的 Harmony 前置补丁**（`GwpCustomBattleCommanderListPatch.Prefix`、`GwpNavalCustomBattleCommanderListPatch.Prefix`）。删掉追踪后它们成了空的表达式体成员并导致 `CS1002`，正说明这两个补丁除了记日志没有任何作用。同时删除 `GwpDualBladeGuardInputComponent._logged` 字段（仅服务于那条已撤的追踪）。
+- 保留的 7 个标签全部是问题路径：`SUBMODULE_PATCH_FAILED`、`CUSTOM_BATTLE_CHARACTERS_GET_FAILED`、`NAVAL_CUSTOM_BATTLE_CHARACTERS_GET_FAILED`、`CUSTOM_BATTLE_COMMANDER_INSERT_FAILED`、`NPC_ITEM_SETUP_MISSING`、`NPC_ITEM_SETUP_NO_WEAPON`、`NPC_ITEM_SETUP_FAILED`。
+- 系统更名以名实相符：`GwpDualBladeTrace` → `GwpFaultTrace`，日志由 `GreyWarden-DualBlade-Trace.log` 改为 `GreyWarden-Faults.log`。它已不再服务双刀，而是全模组的故障记录；健康状态下该文件不应存在。类注释写明了这条使用约定：在研或异常时加行，确认后撤掉。
+- 输出清理：删除 `GreyWarden-DualBlade-Trace.log`（3526127 字节）、`GreyWarden-DualBlade-Diagnostics.log`（11939）、`GreyWarden-cdb-analysis.txt`（14584）、`GreyWarden-cdb-disasm.txt`（19637）。前两者属已退役系统，后两者是 8 月 27 日盾牌崩溃的一次性取证，问题早已解决。
+
+### 顺带确认
+
+- 用户已把游戏切回 1.5.2，构建自动检测到 `installed game v1.5.2 -> GwpTargetGame=150` 并 0 errors 通过。**这补上了上一轮明确记录为"无法验证"的一项**：`GwpTargetGame=150` 分支此前只验证过"开关会切"，没验证过真能编译，现已实测通过。
+- `tools\Verify-LiveModule.ps1` 双向核对通过：36 个仓库文件、43 个 live 文件，缺失/差异/残留均为 0。
+
+### 尚未处理（待用户判断）
+
+- `GwpAiDiagnostics` 仍有 **131 个调用点**，分布在协力军团（18）、兵员申请（14）、队伍欲望（10）、巡逻（9）、执法（9）、职责移动（9）、练兵（9）、玩家请求（9）等模块，输出 `GreyWarden-AI-Diagnostics.log`（当前 4.3 MB）。其中相当一部分服务的功能已稳定多个版本，按同一原则也该退役，但哪些算"已完成"需要用户判断，本轮未动。
+- 本轮新改的两条战役修复（村庄误扣声望、缴款后残留通缉）的监控**刻意保留**：用户尚未实机确认，正是监控该存在的场景。
+
 ## 2026-08-31 live 模组残留维护计划文件：核对方向缺了一半
 
 - 用户发现 live 游戏模组里有 `docs\maintenance-plan.md`，指出维护计划属于工作目录、不该出现在模组里，并怀疑职责划分出了问题。核查结论：用户是对的，而且问题出在核对流程，不是某一次手滑。
