@@ -32,6 +32,36 @@
     <DefineConstants>$(DefineConstants);GWP_DIAGNOSTICS</DefineConstants>
   </PropertyGroup>
 
+  <!-- Which game generation this build targets. 1.5.0 changed the abstract
+       AgentApplyDamageModel.CalculatePassiveAttackDamage from
+       (BasicCharacterObject, in AttackCollisionData, float) to
+       (in AttackInformation, in AttackCollisionData, float). A single
+       assembly cannot satisfy both, so the override is compiled per target
+       and the package is built once per game generation. Detected from the
+       referenced assemblies rather than hand-set, so a build always matches
+       whatever game is actually installed unless overridden. -->
+  <Target Name="GwpDetectTargetGame" BeforeTargets="CoreCompile"
+          Condition="'$(GwpTargetGame)' == ''">
+    <XmlPeek XmlInputPath="$(GameFolder)\Modules\Native\SubModule.xml"
+             Query="/Module/Version/@value">
+      <Output TaskParameter="Result" PropertyName="GwpNativeVersion" />
+    </XmlPeek>
+    <PropertyGroup>
+      <!-- "v1.5.2" -> 1.5; anything at or past 1.5 uses the new signature. -->
+      <GwpVersionNumber>$(GwpNativeVersion.TrimStart('vV'))</GwpVersionNumber>
+      <GwpVersionMajorMinor>$(GwpVersionNumber.Split('.')[0]).$(GwpVersionNumber.Split('.')[1])</GwpVersionMajorMinor>
+      <GwpTargetGame>148</GwpTargetGame>
+      <GwpTargetGame Condition="$([System.Version]::Parse('$(GwpVersionMajorMinor)').CompareTo($([System.Version]::Parse('1.5')))) &gt;= 0">150</GwpTargetGame>
+      <DefineConstants Condition="'$(GwpTargetGame)' == '150'">$(DefineConstants);GWP_GAME_150_OR_LATER</DefineConstants>
+    </PropertyGroup>
+    <Message Importance="high"
+             Text="GreyWarden: installed game $(GwpNativeVersion) -> GwpTargetGame=$(GwpTargetGame)" />
+  </Target>
+
+  <PropertyGroup Condition="'$(GwpTargetGame)' == '150'">
+    <DefineConstants>$(DefineConstants);GWP_GAME_150_OR_LATER</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="$(TargetFramework) == 'net472'">
     <BuildForWindows>true</BuildForWindows>
   </PropertyGroup>

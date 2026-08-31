@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-This release supports Bannerlord 1.5.2. Use the matching GreyWarden release for older game versions.
+This release ships two packages with identical content and different game support: v1.5-r1 for Bannerlord 1.5.2 and v1.4-r10 for Bannerlord 1.4.8. Pick the one matching your game; the wrong one reports that the module cannot be loaded at startup.
 Chinese: README.md
 
 ## Main features
@@ -24,13 +24,13 @@ Existing campaigns remain supported. Finish any old bounty already in progress b
 
 ## Changelog
 
-### 2026-08-31 v1.5-r1
+### 2026-08-31 v1.5-r1 (Bannerlord 1.5.2) / v1.4-r10 (Bannerlord 1.4.8)
 
-Compared with v1.4-r9:
+Both packages carry the same content, and everything below applies to both. Compared with v1.4-r9:
 
 #### Added and adjusted
 
-- Supports Bannerlord 1.5.2, including NavalDLC sea battles and its custom battle entry.
+- Ships as two packages, one for Bannerlord 1.5.2 and one for 1.4.8, with the same gameplay content in both. Each supports NavalDLC sea battles and its custom battle entry.
 - New troop: the Warden Twinblade Guard, who carries a pair of Warden dual blades and no bow, upgrades from light infantry, and stands at the same tier as heavy infantry. Warden archers remain purely ranged.
 - Twinblade Guards and AI-controlled Warden lords genuinely fight with both blades. The off-hand blade deals its own damage and can trigger the Warden knockdown according to troop tier.
 - The player receives a pair of dual blades on joining or rejoining the Wardens. Four-way blocking, attack animations, and movement transitions are shared with the AI and need no other mod; a connecting off-hand swing can trigger the Warden knockdown even against a defending opponent.
@@ -49,7 +49,7 @@ Compared with v1.4-r9:
 - Fixed staying wanted after the fine was paid. With standing back at zero or above, Wardens no longer stop the player to demand a 0 denar fine, and a pursuit left over from a settled case is retired automatically.
 - Fixed Warden lords reaching the player during a serious warrant without opening the enforcement conversation. The options to pay, atone, or resist now appear properly, and accepting judgment or paying ends the meeting cleanly.
 - Fixed provost patrols travelling to the player's former position. Patrols now follow the player's live position and open the meeting once in range.
-- Fixed GreyWarden failing to load and erroring on startup after the game was updated to a newer version.
+- Fixed GreyWarden failing to load and erroring on startup after the game changed version. 1.5.2 and 1.4.8 now each have their own package.
 - Fixed custom battle crashing to desktop during screen setup and troop preview.
 
 ### 2026-08-05 v1.4-r9

@@ -1,5 +1,40 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 1.4.8 无法加载：根因与双包发布（v1.5-r1 / v1.4-r10）
+
+- 用户把 Steam 安装回滚到 1.4.8 后测试 v1.5-r1，游戏启动即报 `GreyWarden could not be loaded correctly` / `submodule could not be loaded correctly due to a dependency conflict`（`rgl_log_3412.txt`，`Build Version v1.4.8.119303`）。
+
+### 根因（完整 API 比对，不是猜第一个错）
+
+- 写脚本索引了实装的 65 个 `TaleWorlds*` 程序集共 10263 个类型，再遍历模组 DLL 的全部 `TypeReference` / `MemberReference` 做差集。唯一缺失类型是 `TaleWorlds.Core.BattleEnvironment`（1.5.2 海战新增，1.4.8 不存在）。
+- **中途误报须记录**：第一版脚本查 `AgentApplyDamageModel` 时用了 `TaleWorlds.MountAndBlade` 命名空间，实际是 `TaleWorlds.MountAndBlade.ComponentInterfaces`，导致 9 个成员被误报为"1.4.8 缺失"（含 `CalculateSailFireDamage` / `CalculateHullFireDamage`）。核对类型全名后确认 1.4.8 全都有。以后按类型全名查，不要只按短名或猜命名空间。
+- 真正的断层是**一个抽象方法的签名**，直接用当前 1.4.8 程序集编译复现，错误恰好两条：
+  - 1.4.8：`AgentApplyDamageModel.CalculatePassiveAttackDamage(BasicCharacterObject, in AttackCollisionData, float)`
+  - 1.5.2：`AgentApplyDamageModel.CalculatePassiveAttackDamage(in AttackInformation, in AttackCollisionData, float)`
+  - 模组实现的是 1.5.2 那版 → 1.4.8 下 `CS0534`（抽象成员未实现）+ `CS0115`（无可覆盖方法），运行期即类型加载失败。
+- `AttackInformation` 本身 1.4.8 就有（70+ 字段），差异只在这一个方法的形参；`BattleEnvironment` 是随 1.5.2 签名一起被引入的类型引用。两者都是加载期硬阻断，**一个 DLL 无法同时满足两代**（C# 对不存在的基类成员会发 `newslot virtual`，不会隐式实现另一代的抽象槽）。
+
+### 实现：按游戏世代条件编译
+
+- `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 拆成 `#if GWP_GAME_150_OR_LATER` 两个分支。该方法是**纯转发**（只把参数原样交给 native model），两个分支行为完全一致，不涉及任何灰袍规则。
+- csproj 新增 `GwpDetectTargetGame` 目标：用 `XmlPeek` 读 `$(GameFolder)\Modules\Native\SubModule.xml` 的 `Version/@value`，按 `System.Version` 与 `1.5` 比较，`>= 1.5` 定义 `GWP_GAME_150_OR_LATER`。可用 `-p:GwpTargetGame=148|150` 覆盖。构建时打印 `GreyWarden: installed game v1.4.8 -> GwpTargetGame=148`。
+- 验证三点：① 当前 1.4.8 自动检测正确、0 errors；② 强制 `-p:GwpTargetGame=150` 在 1.4.8 下准确复现那两条错误，证明开关确实在切分支；③ 1.4.8 产物已无 `BattleEnvironment` 类型引用。
+- **未能验证的部分**：本机现在没有 1.5.2 程序集，`GwpTargetGame=150` 的实际编译无法在此复现。v1.5-r1 包里的 1.5.2 DLL 是沿用已发布包中那个（构建于 1.5.2 仍在装时、已通过全套验证），并非重新编译。
+
+### 双包发布
+
+- 用户决定：内容相同、按游戏版本分两个包 —— `v1.5-r1` 对应 1.5.2，`v1.4-r10` 对应 1.4.8。
+- 两份玩家 README 改为在顶部横幅与日志标题同时声明两个包，并说明装错会在启动时提示无法加载；日志条目仍是恰好两条（`v1.5-r1 / v1.4-r10` 与 `v1.4-r9`）。按既有排版规范去掉了全部加粗。
+- `SubModule.xml` 的版本号由打包脚本按包写入：v1.5-r1 → `v1.5.1`，v1.4-r10 → `v1.4.10`；仓库内保持 `v1.5.1`。重建 1.4-r10 包时须记得替换该值。
+- 1.4.8 玩家 DLL：`775168` 字节，SHA-256 `577B722652A340C8C808DECBA3698D77C0D59E7BCBF5474EF082EAFBB1E4E872`，零 System.IO 引用、零日志字面量、无 `BattleEnvironment`。
+- 1.5.2 玩家 DLL 沿用 `841DF9D63A7F0925E9F10666D41C1073152C7A583178745357FD05E9079FAE0C`（与首次发布一致，打包结果已比对确认）。
+- 包：`GreyWarden-v1.5-r1.zip` `351356123` 字节 / SHA-256 `2DF84E889DA0603D1464A976456A3743838CA5BCAB7A9A859EF10626175AFF47`；`GreyWarden-v1.4-r10.zip` `351356134` 字节 / SHA-256 `F8EDA683EAD8EE1EA3A5D0EE72E7C43E0C2C0C9CAD1CC480C194B1D83B075E8F`。两包各 38 文件、单顶层 `GreyWarden`、禁入项 0、XML 解析失败 0，解包复验通过。
+- 注意：v1.5-r1 的包体因 README 变更而重新生成，哈希与首次发布的 `AC605018…` 不同，GitHub 上的附件已一并替换。
+
+### live 测试模组
+
+- 用户的实机安装已回滚到 1.4.8，而 live 模组里还是 1.5.2 构建的诊断 DLL，同样无法加载。已用默认开发构建（诊断开启、部署 live）重建：`795648` 字节、SHA-256 `6F487858496784F8AEA38F098BC176031798F730B6776ED652F4C4A0F325D5A1`，确认已无 `BattleEnvironment` 引用。仓库 `_Module` 与 live 运行文件缺失 0、差异 0。
+
 ## 2026-08-31 正式发布 v1.5-r1（GitHub）
 
 - 用户实机验收通过后决定发版，版本号 v1.5-r1，从已发布的 v1.4-r9 直接跨过从未正式发布的 r10、r11。

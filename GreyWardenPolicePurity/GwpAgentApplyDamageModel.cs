@@ -328,6 +328,13 @@ namespace GreyWardenPolicePurity
                 in collisionData,
                 weapon);
 
+        // The one member whose base signature differs across game generations:
+        // 1.5.0 replaced the attacker's BasicCharacterObject with the whole
+        // AttackInformation.  Both bodies do the same thing - hand the call
+        // straight to the native model - but an assembly can only carry the
+        // override that matches the base it was compiled against, which is why
+        // the package is built once per generation.
+#if GWP_GAME_150_OR_LATER
         public override float CalculatePassiveAttackDamage(
             in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
@@ -336,6 +343,16 @@ namespace GreyWardenPolicePurity
                 in attackInformation,
                 in collisionData,
                 baseDamage);
+#else
+        public override float CalculatePassiveAttackDamage(
+            BasicCharacterObject attackerCharacter,
+            in AttackCollisionData collisionData,
+            float baseDamage) =>
+            NativeModel.CalculatePassiveAttackDamage(
+                attackerCharacter,
+                in collisionData,
+                baseDamage);
+#endif
 
         public override MeleeCollisionReaction DecidePassiveAttackCollisionReaction(
             Agent attacker,
