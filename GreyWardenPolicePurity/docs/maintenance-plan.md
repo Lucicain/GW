@@ -37,7 +37,9 @@
 - 玩家 DLL 独立构建：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.5-r1\`
 - 正式 staging：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-stage-v1.5-r1\`
 - 解包复验：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\verify-package-v1.5-r1\`
-- 三者均为可重建的临时产物，确认发布无误后可整体删除 `build-check\`。
+- **三者已于发布验证通过后整体删除**（`build-check\` 目录已不存在，移除 720.2 MB 临时产物）。删除前确认：GitHub release `v1.5-r1` 非草稿、两个附件 `state=uploaded`；本机 `Modules\GreyWarden-v1.5-r1.zip` 与 `.zip.sha256` 仍在，包哈希 `AC6050185133A79F4A1F0B61D837751645CE1D1B39D0FBA16DE8C4A36E6B271F`。
+- 需要重建时的完整步骤：① 检出标签 `v1.5-r1`（`319bf17`）；② 执行 `dotnet build GreyWardenPolicePurity\GreyWardenPolicePurity.csproj -c Release --no-restore -t:Rebuild -p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false -p:OutputPath=<staging>\`，产物应为 `775168` 字节、SHA-256 `841DF9D63A7F0925E9F10666D41C1073152C7A583178745357FD05E9079FAE0C`；③ 按本节「打包」小节的来源清单组装单顶层 `GreyWarden\` 目录。也可直接从 GitHub release 下载现成包。
+- **未删除**：`.codex_tmp\`（388 MB，Bannerlord 与 CampaignSystem 的反编译参考源）。本轮双刀落水根因（`full_movement_sets` 缺 swimming/diving）与 `VillageStateChanged` 事件签名都是从这里查到的，属高价值参考资料，保留。
 
 ## 2026-08-31 灰袍家族页两按钮合并为「灰袍事务」，并加入玩家声望（待实机验收）
 
