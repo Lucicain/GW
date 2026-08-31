@@ -17,7 +17,8 @@
 - **已删除 `GwpDualBladeWaterSafetyPatch.cs`**。除了用户不接受它的战斗代价之外，还有硬证据：带该补丁的转储 `29304` 崩在**另一个位置** `+0x514cd`（`cmp qword ptr [rax+40h],0`，`rax=0`，空指针而非坏索引），调用链也与原始崩溃不同——那一版在原生异步 tick 区里直接调 native 收刀/拔刀，自己引入了第二个崩溃点。留着它只会污染本轮的单变量验证。
 - 构建/部署：Release `-t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、44 条既有 nullable warnings。`full_movement_sets.xml` 通过 `[xml]` 解析校验，10 条 movement_set，其中 `swimming -> swim_unarmed`、`diving -> dive_unarmed`。仓库 `_Module` 与 live 逐文件比对：运行文件哈希差异 0（仅 `Assets`/`AssetSources` 编辑器源目录按既有规则不部署）。live 客户端 DLL 798208 字节、SHA-256 `C8CA371072CDA781F6D6EA94DA29E8A9135FC68A495F542FDA81A641E266A8F2`。
 - 回滚点：`55da713`（两级收刀版）、`5a935a1`（第一版收刀）、`73280bf`（NPC 双刀 checkpoint）。
-- 验收：① 双刃卫士、灰袍武将与玩家携双刀落水是否不再崩溃，且**双刀保持在手**、能正常游泳/潜水；② 陆地战斗的双持、左手刀伤害与击倒是否与之前一致；③ 追踪日志中不应再出现任何 `WATER_SAFETY` 记录。用户确认通过后建立 Git checkpoint。
+- **用户实机验收结果：通过（2026-08-31）**，原文"完美修好了"。落水崩溃在玩家与双刀 NPC 上均已消失，陆地战斗未受影响。至此本轮三项（NPC 双刀持握、AI 双刀攻击与击倒、落水崩溃）全部确认可用。
+- 检查点：实现提交 `7d0e1c8`，检查点分支 `checkpoint/dual-blade-water-fix` 指向 `9bff954`（实现 + 本验收记录）。该检查点包含完整可复现实现（`full_movement_sets.xml` 数据修复 + 删除收刀补丁）、两份玩家 README 与本维护记录。回滚路径：`7d0e1c8` → `55da713`（两级收刀版）→ `5a935a1`（第一版收刀）→ `73280bf`（NPC 双刀 checkpoint）。
 
 ## 2026-08-31 落水崩溃第二版修复：迟滞两级收刀，覆盖士兵（待用户实机验收）
 
