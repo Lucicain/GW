@@ -1,5 +1,25 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 落水崩溃第二版修复：迟滞两级收刀，覆盖士兵（待用户实机验收）
+
+- 用户复验结果把问题范围收窄了一大截：第一版 `GwpDualBladeWaterSafetyPatch` 之后**玩家落水已经不再报错**，但双刀 NPC 打仗时仍然崩溃，且陆地战斗从未出现过。因此"两把出鞘 + 入水 = 崩溃"这一根因判断成立，收刀这条修复路线有效，失效的只是它在士兵身上的触发/维持方式。
+- 第一版失效的原因已由日志定位，不是推测：
+  - `GreyWarden-DualBlade-Trace.log` 中 `inWater=True` 出现 **0 次**，567 次 `WATER_SAFETY_SHEATH` 全部是 `inWater=False`，保护全部由预测分支命中。
+  - 进入与释放共用同一个 0.30m 余量，导致判定每帧翻转：01:14:04–01:15:48 的 104 秒内产生 567 次收刀 + 569 次还刀，同一 agent 十几毫秒一个来回。旁证是 `rgl_log` 中 `Render Requested: gwdualblade*` 由修复前的 2 次涨到 40 次，即双刀网格/物理句柄被反复重建。
+  - 玩家能被救下来，是因为游泳时状态稳定地越过阈值后不再回摆；而在水线附近作战的士兵会被这套抖动**在入水的那一帧重新拔刀**，于是保护对 NPC 等于没有。
+  - 附带问题：`WATER_SAFETY_SHEATH` 打印的 `main`/`offhand` 是调用**之前**缓存的值，收刀成功与失败会输出完全相同的日志，这一轮实际没有采到有效数据；且 `GwpDualBladeTrace.Write` 每条都做一次带锁的 `File.AppendAllText`，1136 次同步磁盘写发生在 native agent tick 区间内。
+- 第二版实现（重写 `GwpDualBladeWaterSafetyPatch`，仍是 `Mission.TickAgentsAndTeamsImp` 前置，不新增补丁面）：
+  - **两级保护**。以"脚底相对水面的净空 clearance"为唯一度量：clearance ≤ 1.50m 只收**左手刀**，角色继续用右手刀作战；clearance ≤ 0.35m 或 `Agent.IsInWater()` 为真时收**双刀**，即第一版已被玩家验证有效的状态。单刀出鞘是用户实测安全的形态，因此近水阶段的战斗力损失极小。
+  - **迟滞 + 停留时间**。释放阈值单独放大（左手刀 3.00m、双刀 1.20m），并要求满足释放条件连续保持 `0.75s`，同时 `IsOnLand()` 为真且不在水中才降级；升级则立即生效。这直接消灭了每帧翻转。
+  - **每帧对齐而非每帧下令**。只有当实际持握状态与当前档位不符时才发 native 调用；AI 士兵在出招过程中被拒绝的收刀请求会在后续帧自动重试，直到生效。
+  - 追踪改为**每次档位变化只写一行**，并记录 `stage`、`clearance`、`inWater` 与调用后读回的持握槽位，日志量从每帧数十行降到整场几行，也不再有无效数据。
+  - 状态改用 `ConditionalWeakTable<Agent, GuardRecord>`，去掉原来的 `HashSet<Agent>` 与手工的 mission 切换清理；agent 列表按下标遍历，避免在 native tick 前持有可能失效的枚举器。
+  - 恢复仍只还这套保护自己收起来的刀，顺序与 native 出生装备一致：先 `Weapon0`（左手）再 `Weapon1`（右手）；不删除武器、不改变掉落与拾取规则。
+- 仍然保留的已知取舍：在水线 1.5m 以内作战的双刀角色只用右手刀，因此该范围内不会触发左手刀伤害与灰袍击倒。这是为换取零崩溃刻意接受的代价，若验收后觉得影响过大，可先下调 `OffHandEntryClearance`。
+- 构建/部署：`dotnet build GreyWardenPolicePurity.slnx --configuration Release --no-restore -t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、44 条既有 nullable warnings。live 客户端与编辑器 DLL 均为 801280 字节、SHA-256 `3CA7D6D57DB5C1E7D03781DFD5B67BC34BCCC7324D8673B32947E36AD9FAF42F`；元数据核对确认 `GwpDualBladeWaterSafetyPatch` 及其 8 个方法已在部署产物中。两份玩家 README 已同步更新并复制到 live，仓库与 live 哈希一致。
+- 回滚点：`5a935a1`（第一版收刀）与 `73280bf`（NPC 双刀 checkpoint）。
+- 验收：① 双刃卫士与武将在海战中落水是否不再崩溃；② 追踪中 `DUAL_BLADE_WATER_SAFETY_STAGE` 是否只在靠近/离开水面时各出现一次，而不是连续刷屏；③ 陆地战斗中双刀保持、左手刀伤害与击倒是否仍然正常。用户确认通过后再建立 Git checkpoint。
+
 ## 2026-08-31 深度调研与修复：双刀两把出鞘进入水体前强制收刀
 
 - 用户已完成触发条件隔离：任何玩家、NPC 携带双刀时，只要主手和副手两把刀同时出鞘并进入水体，就必然报错退出；仅一把出鞘或两把都在鞘中不会退出；其他武器不触发。独立掉落的双刀进入水体安全，因此本次不再修改掉落实体、拾取或死亡掉落规则。
