@@ -86,6 +86,7 @@ namespace GreyWardenPolicePurity
         private string _summary = string.Empty;
         private string _treasuryText = string.Empty;
         private string _reputationText = string.Empty;
+        private string _familyText = string.Empty;
         private string _emptyText = string.Empty;
         private string _refreshText = string.Empty;
         private string _closeText = string.Empty;
@@ -95,7 +96,7 @@ namespace GreyWardenPolicePurity
         {
             _onClose = onClose;
             Cases = new MBBindingList<GwpCaseArchiveItemVM>();
-            Title = GwpText.Get("{=gwp_gwpcasearchivescreen_001}Grey Warden case ledger");
+            Title = GwpText.Get("{=gwp_gwpcasearchivescreen_001}Grey Warden affairs");
             EmptyText = GwpText.Get("{=gwp_gwpcasearchivescreen_002}There are currently no tasks in the pool.");
             RefreshText = GwpText.Get("{=gwp_gwpcasearchivescreen_003}Refresh ledger");
             CloseText = GwpText.Get("{=gwp_gwpcasearchivescreen_004}Close");
@@ -156,6 +157,24 @@ namespace GreyWardenPolicePurity
                 if (value == _reputationText) return;
                 _reputationText = value;
                 OnPropertyChangedWithValue(value, nameof(ReputationText));
+            }
+        }
+
+        /// <summary>
+        /// Family size, adoption cooldown and the last adoption.  This used to
+        /// sit at the top of the war-grounds popup, where it had nothing to do
+        /// with grounds for war; the running relief task it also listed is a
+        /// row in this very list, and a fuller one.
+        /// </summary>
+        [DataSourceProperty]
+        public string FamilyText
+        {
+            get => _familyText;
+            set
+            {
+                if (value == _familyText) return;
+                _familyText = value;
+                OnPropertyChangedWithValue(value, nameof(FamilyText));
             }
         }
 
@@ -267,6 +286,15 @@ namespace GreyWardenPolicePurity
                 .ThenBy(task => task.TrainerPartyId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            // Standing wars lead the list.  They are the one thing here that is
+            // not a task, and they explain why several of the tasks below are
+            // being prosecuted across a border at all.
+            foreach (GwpPoliceWarReasonService.WarReasonEntry war in
+                     GwpPoliceWarReasonService.GetCurrentWarReasonEntries())
+            {
+                Cases.Add(new GwpCaseArchiveItemVM(war));
+            }
+
             var assignedRows = new List<(double Time, string Key, GwpCaseArchiveItemVM Item)>();
             assignedRows.AddRange(assignedCases.Select(row =>
                 (row.Record!.LastCrimeTime.ToHours, row.Record.CrimeId,
@@ -333,7 +361,44 @@ namespace GreyWardenPolicePurity
                 "{=gwp_gwpcasearchivescreen_056}Judicial treasury: {VAR_1} denars",
                 "VAR_1", PoliceResourceManager.GetJudicialTreasuryBalance());
             ReputationText = BuildReputationText();
+            FamilyText = BuildFamilyText();
             IsEmpty = Cases.Count == 0;
+        }
+
+        private static string BuildFamilyText()
+        {
+            if (!GreyWardenVillageAdoptionBehavior.TryGetAdoptionStatus(out var status))
+                return GwpText.Get("{=gwp_gwpcasearchivescreen_062}Family: not yet established");
+
+            string cooldown = status.IsCooldownReady
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_063}ready to take in a girl")
+                : GwpText.Get("{=gwp_gwpcasearchivescreen_064}{VAR_1} until the next adoption",
+                    "VAR_1", FormatRemainingHours(status.RemainingCooldownHours));
+
+            string last = status.HasRecordedAdoption
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_065}last adoption {VAR_1}",
+                    "VAR_1", GwpCaseArchiveItemVM.FormatCampaignDate(
+                        CampaignTime.Hours((float)status.LastAdoptionTimeHours)))
+                : GwpText.Get("{=gwp_gwpcasearchivescreen_066}no adoption on record");
+
+            return GwpText.Get(
+                "{=gwp_gwpcasearchivescreen_067}Family: {VAR_1}/{VAR_2} | {VAR_3} | {VAR_4}",
+                "VAR_1", status.LivingMembers,
+                "VAR_2", status.MaxMembers,
+                "VAR_3", cooldown,
+                "VAR_4", last);
+        }
+
+        private static string FormatRemainingHours(double hours)
+        {
+            if (hours <= 0d)
+                return GwpText.Get("{=gwp_gwpcasearchivescreen_068}less than an hour");
+
+            int days = (int)(hours / 24d);
+            return days >= 1
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_069}about {VAR_1} days", "VAR_1", days)
+                : GwpText.Get("{=gwp_gwpcasearchivescreen_070}about {VAR_1} hours",
+                    "VAR_1", Math.Max(1, (int)Math.Ceiling(hours)));
         }
 
         /// <summary>
@@ -377,6 +442,26 @@ namespace GreyWardenPolicePurity
         private string _timeText = string.Empty;
         private string _assignmentText = string.Empty;
         private string _detailsText = string.Empty;
+
+        /// <summary>
+        /// A standing war and one ground for it.  Grounds that rest on a case
+        /// name it rather than restate it, because that case has its own row
+        /// further down this same list.
+        /// </summary>
+        internal GwpCaseArchiveItemVM(GwpPoliceWarReasonService.WarReasonEntry war)
+        {
+            Header = GwpText.Get(
+                "{=gwp_gwpcasearchivescreen_071}War — {VAR_1}",
+                "VAR_1", war.Faction?.Name?.ToString()
+                    ?? GwpText.Get("{=gwp_gwpcasearchivescreen_072}Unnamed faction"));
+            TimeText = war.Total > 1
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_073}Ground {VAR_1} of {VAR_2}",
+                    "VAR_1", war.Ordinal, "VAR_2", war.Total)
+                : GwpText.Get("{=gwp_gwpcasearchivescreen_074}Ground for the war");
+            AssignmentText = war.Detail ?? string.Empty;
+            DetailsText = GwpText.Get(
+                "{=gwp_gwpcasearchivescreen_075}Peace returns once no ground remains.");
+        }
 
         public GwpCaseArchiveItemVM(CrimeRecord record, PoliceTask? task)
         {
@@ -808,7 +893,7 @@ namespace GreyWardenPolicePurity
             _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
         };
 
-        private static string FormatCampaignDate(CampaignTime time)
+        internal static string FormatCampaignDate(CampaignTime time)
         {
             string season = time.GetSeasonOfYear switch
             {

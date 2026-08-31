@@ -30,7 +30,9 @@ Compared with v1.4-r10:
 
 #### Added and adjusted
 
-- The case ledger now shows Your standing alongside the judicial treasury: the current value, the band it falls in (good standing / nothing on record / under suspicion / wanted), and, while wanted, what a provost patrol and a Grey Warden lord each charge to settle it. Standing used to appear only as a toast at the moment it changed.
+- The Grey Warden clan page's two buttons, war details and case ledger, are now one: Grey Warden affairs. The two used to show the same case information twice; standing wars now head the list, each naming only the faction and the ground for the war, with the case details left to that case's own row.
+- Grey Warden affairs now shows Your standing: the current value, the band it falls in (good standing / nothing on record / under suspicion / wanted), and, while wanted, what a provost patrol and a Grey Warden lord each charge to settle it. Standing used to appear only as a toast at the moment it changed.
+- The family roll (size, adoption cooldown, last adoption) moved out of the war details and into Grey Warden affairs, beside the judicial treasury and your standing.
 - The current development build supports Bannerlord 1.5.2 beta while retaining the existing campaign, combat, and paired-blade gameplay.
 - The separate Grey Warden Twinblade Guard is back: it is equipped with a pair of blades and no bow, upgrades from light infantry, and sits at the same tier as heavy infantry.
 - Twinblade Guards genuinely dual wield in battle, matching the player's animations, with the off-hand blade dealing damage and triggering the Warden knockdown at their troop tier. Archers stay purely ranged.

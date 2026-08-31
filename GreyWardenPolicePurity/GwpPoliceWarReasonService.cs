@@ -30,49 +30,59 @@ namespace GreyWardenPolicePurity
                    string.Equals(clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
         }
 
-        public static string BuildInquiryTitle(Clan? clan)
+        /// <summary>
+        /// One faction the Grey Wardens are at war with, and one ground for
+        /// that war.  A faction with several grounds yields several entries.
+        /// </summary>
+        internal readonly struct WarReasonEntry
         {
-            string clanName = clan?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_001}the Grey Wardens Guard");
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_002}{VAR_1} Current declaration of war details", "VAR_1", clanName);
+            internal WarReasonEntry(IFaction faction, string detail, int ordinal, int total)
+            {
+                Faction = faction;
+                Detail = detail;
+                Ordinal = ordinal;
+                Total = total;
+            }
+
+            internal IFaction Faction { get; }
+
+            internal string Detail { get; }
+
+            /// <summary>1-based position among this faction's grounds.</summary>
+            internal int Ordinal { get; }
+
+            /// <summary>How many grounds this faction has in total.</summary>
+            internal int Total { get; }
         }
 
-        public static string BuildInquiryBody(Clan? clan)
+        /// <summary>
+        /// The standing wars and why each one is being prosecuted, flattened
+        /// for the case ledger.  This used to be rendered into a separate
+        /// inquiry popup behind its own clan-page button; that popup repeated
+        /// the ledger's own case rows almost field for field, so the ledger now
+        /// owns the presentation and this only supplies the data.
+        /// </summary>
+        internal static IReadOnlyList<WarReasonEntry> GetCurrentWarReasonEntries()
         {
-            if (!SupportsClan(clan))
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_003}Only the the Grey Wardens Guard family page will display the details of the declaration of war.");
+            var entries = new List<WarReasonEntry>();
 
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_004}The Grey Warden clan could not be found; grounds for war are unavailable.");
+                return entries;
 
-            Dictionary<string, FactionReasonBucket> buckets = CollectCurrentWarReasons(policeClan);
-
-            StringBuilder sb = new StringBuilder();
-            AppendFamilyAdoptionStatus(sb);
-            sb.AppendLine();
-            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_005}The current target of formal declaration of war: {VAR_1}", "VAR_1", buckets.Count));
-            sb.AppendLine();
-
-            if (buckets.Count == 0)
+            foreach (FactionReasonBucket bucket in
+                     CollectCurrentWarReasons(policeClan).Values
+                         .OrderBy(static b => b.Faction.Name?.ToString() ?? string.Empty,
+                             StringComparer.Ordinal))
             {
-                sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_006}The Grey Wardens currently have no target of formal declaration of war."));
-                return sb.ToString().TrimEnd();
+                List<string> details = bucket.Details
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                for (int i = 0; i < details.Count; i++)
+                    entries.Add(new WarReasonEntry(bucket.Faction, details[i], i + 1, details.Count));
             }
 
-            bool first = true;
-            foreach (FactionReasonBucket bucket in buckets.Values.OrderBy(static b => b.Faction.Name?.ToString() ?? string.Empty))
-            {
-                if (!first)
-                    sb.AppendLine();
-
-                first = false;
-                sb.AppendLine($"【{bucket.Faction.Name}】");
-
-                foreach (string detail in bucket.Details.Distinct(StringComparer.Ordinal))
-                    sb.AppendLine(detail);
-            }
-
-            return sb.ToString().TrimEnd();
+            return entries;
         }
 
         public static bool HasLegitimateWarReason(IFaction? targetFaction)
@@ -156,48 +166,6 @@ namespace GreyWardenPolicePurity
             }
 
             return buckets;
-        }
-
-        private static void AppendFamilyAdoptionStatus(StringBuilder sb)
-        {
-            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_008}Family additional information:"));
-
-            if (!GreyWardenVillageAdoptionBehavior.TryGetAdoptionStatus(out var status))
-            {
-                sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_009}Adoption system status: Currently not initialized."));
-                return;
-            }
-
-            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_010}Adoption cooldown: Shared by the whole family; wait {VAR_1} game years since the last successful adoption of a girl.", "VAR_1", GwpText.Format(GwpTuning.Family.AdoptionCooldownYears, "0.#")));
-            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_011}Current family size: {VAR_1}/{VAR_2}.", "VAR_1", status.LivingMembers, "VAR_2", status.MaxMembers));
-            sb.AppendLine(GwpText.Get("{=gwp_gwppolicewarreasonservice_012}Current aftermath task: {VAR_1}", "VAR_1", DescribeReliefState(status)));
-            sb.AppendLine(status.IsCooldownReady
-                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_013}Distance to next adoptability: cooldown has ended, waiting for the aftermath to be triggered after a new village is burned.")
-                : GwpText.Get("{=gwp_gwppolicewarreasonservice_014}away from next adoptable: {VAR_1}.", "VAR_1", FormatRemainingDuration(status.RemainingCooldownHours)));
-            sb.AppendLine(status.HasRecordedAdoption
-                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_015}Last girl taken in: {VAR_1}.", "VAR_1", FormatCampaignDate(status.LastAdoptionTimeHours))
-                : GwpText.Get("{=gwp_gwppolicewarreasonservice_016}Last girl adopted: There is no record of successful adoption in this archive."));
-        }
-
-        private static string DescribeReliefState(GreyWardenVillageAdoptionBehavior.AdoptionStatusInfo status)
-        {
-            string villageName = string.IsNullOrWhiteSpace(status.CurrentReliefVillageName)
-                ? GwpText.Get("{=gwp_gwppolicewarreasonservice_017}Target village")
-                : status.CurrentReliefVillageName;
-
-            switch (status.CurrentReliefStage)
-            {
-                case GreyWardenVillageAdoptionBehavior.ReliefStage.WaitingForAssignment:
-                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_018}The request for relief at {VAR_1} is entered upon the roll, awaiting the nearest Warden.", "VAR_1", villageName);
-                case GreyWardenVillageAdoptionBehavior.ReliefStage.AwaitingResupply:
-                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_019}The nearest warden has been mobilized and is heading to {VAR_1} after resupplying.", "VAR_1", villageName);
-                case GreyWardenVillageAdoptionBehavior.ReliefStage.TravelingToVillage:
-                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_020}The nearest Grey Warden is travelling to {VAR_1} to render relief.", "VAR_1", villageName);
-                case GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage:
-                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_021}A Grey Warden is rendering relief at {VAR_1}; about {VAR_2} remains.", "VAR_1", villageName, "VAR_2", FormatRemainingDuration(status.CurrentReliefRemainingHours));
-                default:
-                    return GwpText.Get("{=gwp_gwppolicewarreasonservice_022}There are currently no aftermath tasks.");
-            }
         }
 
         private static bool TaskMatchesFaction(PoliceTask task, IFaction targetFaction)
@@ -305,12 +273,20 @@ namespace GreyWardenPolicePurity
             string offenderName = offender?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_024}Unknown Target");
             string actionType = GetActionType(task, offender);
             string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_025}Undocumented") : GwpText.CrimeType(crime.CrimeType);
-            string victimName = string.IsNullOrWhiteSpace(crime?.VictimName) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_026}Undocumented") : crime.VictimName;
-            string occurredTime = crime != null ? FormatElapsedSince(crime.OccurredTime) : GwpText.Get("{=gwp_gwppolicewarreasonservice_027}Unknown");
-            string location = crime != null ? FormatLocation(crime.Location) : GwpText.Get("{=gwp_gwppolicewarreasonservice_028}Unknown");
             string stage = DescribeTaskStage(task);
 
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_029}{VAR_1}: {VAR_2} is working on the case of {VAR_3}. Cause of the case: {VAR_4}; Victim: {VAR_5}; Time of filing the case: {VAR_6}; Location of the crime: {VAR_7}; Current stage: {VAR_8}.", "VAR_1", actionType, "VAR_2", policePartyName, "VAR_3", offenderName, "VAR_4", crimeType, "VAR_5", victimName, "VAR_6", occurredTime, "VAR_7", location, "VAR_8", stage);
+            // Names the case rather than restating it.  The long form used to
+            // repeat the ledger's own row field for field - offender, offence,
+            // victim, location, filing time, party and stage - which is why the
+            // two clan-page buttons felt like the same screen twice.  Victim,
+            // location and filing time are one row away in the same list.
+            return GwpText.Get(
+                "{=gwp_gwppolicewarreasonservice_029}{VAR_1}: {VAR_2} is pursuing {VAR_3} over {VAR_4} — {VAR_5}",
+                "VAR_1", actionType,
+                "VAR_2", policePartyName,
+                "VAR_3", offenderName,
+                "VAR_4", crimeType,
+                "VAR_5", stage);
         }
 
         private static string GetActionType(PoliceTask task, MobileParty? offender)

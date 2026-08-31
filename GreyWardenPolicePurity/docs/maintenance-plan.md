@@ -1,5 +1,31 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 灰袍家族页两按钮合并为「灰袍事务」，并加入玩家声望（待实机验收）
+
+- 起因：玩家反馈「有什么内置的可以看到声望的页面吗，有的时候忘记了自己声望，不清楚是多少」；作者同时指出家族页两个按钮功能重复，要求核查。
+
+### 重复核查结论（逐字段对照，非印象）
+
+- 「宣战详情」的案件明细由 `GwpPoliceWarReasonService.BuildTaskReasonDetail` 生成，「案件总卷」的案件行由 `GwpCaseArchiveItemVM(CrimeRecord, PoliceTask)` 生成，两者**同源于 `CrimeState.ActiveTasks` / `CrimeRecord`**，且共有 7 个字段：罪犯、罪名、受害者、犯罪地点、立案时间、承办队伍、当前阶段。差别仅在宣战详情只列维持战争的子集并按势力分组，总卷列全部任务。
+- 第二处重复：宣战详情顶部「家族附加信息 → 当前善后任务」与总卷的「村庄救济」行同源于 `GreyWardenVillageAdoptionBehavior`，且总卷版本更全（含承办人、排队时间，且列出全部救济任务而非仅"当前"一条）。
+- 宣战详情真正独有的只有四项：① 势力↔案件的分组关系；② 悬赏战争理由（`PlayerBountyBehavior.BuildActiveBountyWarReasonDetails`）；③ 巡逻战争理由（`PolicePatrolBehavior.BuildPatrolWarReasonDetails`）；④ 家族收养冷却/人数/上次收养——而第四项与"宣战理由"无关。
+
+### 改动（用户选定「合并成一个入口」）
+
+- `GwpEncyclopediaClanPageVM`：删除 `GwpWarReasonButton` 及其 `WarReasonButtonText/Hint`、`ExecuteOpenWarReasonDetails`；保留的单按钮改名「灰袍事务」并接管内侧位置（`MarginRight=28f`，`GamepadNavigationIndex=1`）。存在性判重由 `WarReasonButtonId` 改为 `CaseArchiveButtonId`，否则按钮会被重复注入。
+- `GwpPoliceWarReasonService`：删除 `BuildInquiryTitle`、`BuildInquiryBody`、`AppendFamilyAdoptionStatus`、`DescribeReliefState`；新增 `WarReasonEntry` 结构与 `GetCurrentWarReasonEntries()`，把"势力 + 单条依据（含序号/总数）"摊平供 UI 使用。`HasLegitimateWarReason`、`GetCurrentPoliceWarFactions`、`TaskMaintainsFactionWar` 等战争判定逻辑一律未动。
+- `BuildTaskReasonDetail` 由 8 变量长句压缩为 5 变量短句（行动类型、执法队、罪犯、罪名、阶段），去掉受害者、地点、立案时间——这三项在同一列表的案件行里就有。**`gwp_gwppolicewarreasonservice_029` 的中文串必须同步改写**，否则残留的 `{VAR_6}~{VAR_8}` 会直接显示在界面上；已改。
+- `GwpCaseArchiveScreen`：标题改「灰袍事务」；新增 `ReputationText`、`FamilyText` 两个 `DataSourceProperty`；`RefreshLedger` 开头插入对外战争行（`GwpCaseArchiveItemVM(WarReasonEntry)` 新构造函数），排在全部任务之前；`FormatCampaignDate` 由 `private` 提升为 `internal` 以供外层 VM 使用。
+- 声望行内容：数值 + 区间（声誉良好／尚无记录／已有嫌疑尚未通缉／通缉中）。通缉时同时给出巡逻队与灰袍领主两个罚金数——两者费率不同（200 与 300/点），只报一个会误导。为此把执法侧硬编码的 `300` 提为 `GwpTuning.Enforcement.FinePerPoint`，与 `GwpTuning.Patrol.FinePerPoint` 并列，界面与对话读同一常量，不会各自漂移。
+- 版面：`GwpCaseArchive.xml` 头部依次为 标题 / 概览 / 公库(122) / 声望(152) / 家族(182)，列表区 `MarginTop` 由 158 改为 218，`MarginBottom` 保持 104；列表可视高度由 558 降至 498。
+- 本地化：新增 `gwp_gwpcasearchivescreen_057`~`075` 共 19 条中文串；改写 `gwp_gwpcasearchivescreen_001`、`gwp_gwpencyclopediaclanpagevm_004/005`、`gwp_gwppolicewarreasonservice_029`。XML 解析通过，899 条串、无重复 id。弹窗时代遗留的 `gwp_gwpencyclopediaclanpagevm_002/003` 与 `gwp_gwppolicewarreasonservice_005/006/008`~`022` 等已无引用，保留为惰性串未删除（删除无收益且有误删风险）。
+
+### 构建与部署
+
+- Release `-t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、40 条既有 nullable warnings。live 客户端与编辑器 DLL 均为 795648 字节、SHA-256 `EE5795633A0A3C1AF50BA72FC1764CA70B37D135604A0A8D0F24D95CF1B06D8D`；prefab 与中文串文件与仓库哈希一致。两份玩家 README 已同步。
+- 回滚点：`338a97d`（仅加声望、两按钮仍在）、`88e2a8d`（两条战役 BUG 修复）、`checkpoint/dual-blade-water-fix`（`7c15a64`）。
+- 验收：① 灰袍家族页应只剩一个「灰袍事务」按钮，位置正常、可点开；② 页内自上而下为 概览 / 司法公库 / 你的声望 / 家族名册，列表首部是「对外战争 —— 势力名」行，其后才是案件与差事；③ 战争行文字不应出现 `{VAR_x}` 残留；④ 通缉状态下声望行应同时给出巡逻队与领主两个罚金数，且与实际对话中报价一致。
+
 ## 2026-08-31 玩家反馈两条战役 BUG 定位与修复（代码级证据，待实机验收）
 
 - 来源：玩家私聊「我在收税，然后他过来烧村，我就扣声望了」；模组评论区用户0845（2026-08-26）「靠近被劫掠的村庄会掉声望，还有个bug是我触发了上一个bug后交完罚款还处于通缉状态但是罚金是0，而且不管交多少次只要见到灰袍势力的人都是被通缉」。这两条正是维护记录里长期挂起的「村庄误扣声望」与「缴款后残留通缉」。作者本人无法用玩法复现（需要 AI 恰好来烧玩家所在的村），本轮改为代码定位，两个根因都已在源码中确认，不依赖复现。

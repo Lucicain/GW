@@ -196,7 +196,7 @@
   <string id="gwp_gwppolicewarreasonservice_026" text="未记录" />
   <string id="gwp_gwppolicewarreasonservice_027" text="未知" />
   <string id="gwp_gwppolicewarreasonservice_028" text="未知" />
-  <string id="gwp_gwppolicewarreasonservice_029" text="{VAR_1}：{VAR_2} 正在处理 {VAR_3} 的案件。案由：{VAR_4}；受害方：{VAR_5}；立案时间：{VAR_6}；案发地点：{VAR_7}；当前阶段：{VAR_8}。" />
+  <string id="gwp_gwppolicewarreasonservice_029" text="{VAR_1}：{VAR_2} 正在追捕 {VAR_3}（{VAR_4}）—— {VAR_5}" />
   <string id="gwp_gwppolicewarreasonservice_030" text="玩家悬赏协同" />
   <string id="gwp_gwppolicewarreasonservice_031" text="玩家案件执法" />
   <string id="gwp_gwppolicewarreasonservice_032" text="跨势力追缉" />
@@ -707,9 +707,9 @@
   <string id="gwp_ai_det_core_personal_medium_dishonorable" text="我不会假装他们的规矩不可冒犯。我只学会了一件事：公然破坏规矩，就是把武器递给敌人。" />
   <string id="gwp_ai_det_core_personal_medium_generous" text="追随我的人承担了那个决定造成的损失。忠义要求我不能再如此草率地牺牲他们。" />
   <string id="gwp_ai_det_core_personal_medium_impulsive" text="我让怒火替我选了道路，而灰袍决定了这条路在哪里结束。" />
-  <string id="gwp_gwpencyclopediaclanpagevm_004" text="案件总卷" />
-  <string id="gwp_gwpencyclopediaclanpagevm_005" text="查看完整任务池、当前承办顺序与强制分配的协力任务。" />
-  <string id="gwp_gwpcasearchivescreen_001" text="灰袍案件总卷" />
+  <string id="gwp_gwpencyclopediaclanpagevm_004" text="灰袍事务" />
+  <string id="gwp_gwpencyclopediaclanpagevm_005" text="查看对外战争与开战依据、案件与差事总池、司法公库、你的声望，以及家族名册。" />
+  <string id="gwp_gwpcasearchivescreen_001" text="灰袍事务" />
   <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
   <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />
   <string id="gwp_gwpcasearchivescreen_004" text="关闭" />
@@ -774,6 +774,20 @@
   <string id="gwp_gwpcasearchivescreen_059" text="尚无记录" />
   <string id="gwp_gwpcasearchivescreen_060" text="已有嫌疑，尚未通缉" />
   <string id="gwp_gwpcasearchivescreen_061" text="你的声望：{VAR_1} | {VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_062" text="家族：尚未建立" />
+  <string id="gwp_gwpcasearchivescreen_063" text="已可收养女孩" />
+  <string id="gwp_gwpcasearchivescreen_064" text="距下次收养还需 {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_065" text="上次收养于 {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_066" text="尚无收养记录" />
+  <string id="gwp_gwpcasearchivescreen_067" text="家族：{VAR_1}/{VAR_2} | {VAR_3} | {VAR_4}" />
+  <string id="gwp_gwpcasearchivescreen_068" text="不足一小时" />
+  <string id="gwp_gwpcasearchivescreen_069" text="约 {VAR_1} 天" />
+  <string id="gwp_gwpcasearchivescreen_070" text="约 {VAR_1} 小时" />
+  <string id="gwp_gwpcasearchivescreen_071" text="对外战争 —— {VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_072" text="未具名势力" />
+  <string id="gwp_gwpcasearchivescreen_073" text="开战依据 {VAR_1}/{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_074" text="开战依据" />
+  <string id="gwp_gwpcasearchivescreen_075" text="依据全部消失后即恢复和平。" />
   <string id="gwp_location_duty_travelling" text="正在前往{TARGET_PARTY}最后出现的位置。" />
   <string id="gwp_gwpencyclopediaheropagevm_020" text="村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
   <string id="gwp_gwpencyclopediaheropagevm_021" text="商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />

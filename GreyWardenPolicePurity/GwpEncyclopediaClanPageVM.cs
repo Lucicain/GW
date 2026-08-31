@@ -23,43 +23,20 @@ namespace GreyWardenPolicePurity
         internal GwpEncyclopediaClanPageExtension(Clan? clan)
         {
             _clan = clan;
-            WarReasonButtonText = GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_002}Declaration of War Details");
-            WarReasonButtonHint = new HintViewModel(new TextObject(GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_003}View the grounds for each war presently prosecuted by the Grey Wardens.")));
+            // One entry point.  The war-grounds popup that used to sit beside
+            // this button repeated the ledger's own case rows field for field,
+            // so its content moved into the ledger and its button went away.
             CaseArchiveButtonText = GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_004}Case ledger");
+                "{=gwp_gwpencyclopediaclanpagevm_004}Grey Warden affairs");
             CaseArchiveButtonHint = new HintViewModel(new TextObject(GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_005}View currently assigned cases by latest offence time and tracker.")));
+                "{=gwp_gwpencyclopediaclanpagevm_005}Standing wars and their grounds, the case and duty pool, the judicial treasury, your standing, and the family roll.")));
         }
 
         internal bool IsVisible => GwpPoliceWarReasonService.SupportsClan(_clan);
 
-        internal string WarReasonButtonText { get; }
-
-        internal HintViewModel WarReasonButtonHint { get; }
-
         internal string CaseArchiveButtonText { get; }
 
         internal HintViewModel CaseArchiveButtonHint { get; }
-
-        internal void ExecuteOpenWarReasonDetails()
-        {
-            if (!IsVisible)
-                return;
-
-            InformationManager.ShowInquiry(
-                new InquiryData(
-                    GwpPoliceWarReasonService.BuildInquiryTitle(_clan),
-                    GwpPoliceWarReasonService.BuildInquiryBody(_clan),
-                    true,
-                    false,
-                    GwpText.Get("{=gwp_gwpencyclopediaclanpagevm_001}Close"),
-                    string.Empty,
-                    null,
-                    null),
-                pauseGameActiveState: true);
-        }
 
         internal void ExecuteOpenCaseArchive()
         {
@@ -109,7 +86,6 @@ namespace GreyWardenPolicePurity
     {
         private const string ClanPageMovieName = "EncyclopediaClanPage";
         private const string RightSidePanelId = "RightSideScrollablePanel";
-        private const string WarReasonButtonId = "GwpWarReasonButton";
         private const string CaseArchiveButtonId = "GwpCaseArchiveButton";
 
         [HarmonyPostfix]
@@ -127,7 +103,7 @@ namespace GreyWardenPolicePurity
                 || !extension.IsVisible
                 || GwpGauntletWidgetUtility.FindById(
                     __result.RootWidget,
-                    WarReasonButtonId) != null)
+                    CaseArchiveButtonId) != null)
             {
                 return;
             }
@@ -142,21 +118,15 @@ namespace GreyWardenPolicePurity
             if (parent == null)
                 return;
 
-            AddButton(
-                parent,
-                WarReasonButtonId,
-                extension.WarReasonButtonText,
-                extension.WarReasonButtonHint,
-                28f,
-                1,
-                extension.ExecuteOpenWarReasonDetails);
+            // The second button is gone, so this one takes the inner slot the
+            // pair used to share.
             AddButton(
                 parent,
                 CaseArchiveButtonId,
                 extension.CaseArchiveButtonText,
                 extension.CaseArchiveButtonHint,
-                188f,
-                2,
+                28f,
+                1,
                 extension.ExecuteOpenCaseArchive);
         }
 
