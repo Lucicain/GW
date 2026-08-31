@@ -63,6 +63,14 @@ namespace GreyWardenPolicePurity
 
         internal static class Enforcement
         {
+            /// <summary>
+            /// The fine a Grey Warden lord levies per point of negative
+            /// standing.  It was a literal in the enforcement dialogue; the
+            /// case ledger has to quote the same figure, so both read it here.
+            /// A provost patrol settles for less - see Patrol.FinePerPoint.
+            /// </summary>
+            public const int FinePerPoint = 300;
+
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
             public const int ShelteredForceBattleIntervalHours = 6;
@@ -78,12 +86,17 @@ namespace GreyWardenPolicePurity
 
         internal static class Patrol
         {
+            /// <summary>
+            /// A patrol settles for less than a Warden lord does; both fines
+            /// scale with the same standing.  See Enforcement.FinePerPoint.
+            /// </summary>
             public const int FinePerPoint = 200;
             public const int NegotiationDivisor = 4;
             public const int RewardPerPointPerDay = 20;
             public const int PatrolSize = 10;
             public const float WarDistance = 15f;
         }
+
 
         internal static class Family
         {

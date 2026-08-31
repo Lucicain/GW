@@ -176,7 +176,7 @@ namespace GreyWardenPolicePurity
             // OnHourlyTick.CloseSettledPlayerHunt retires the task itself.
             if (rep >= 0) return false;
 
-            _dialogFine = Math.Abs(rep) * 300;
+            _dialogFine = Math.Abs(rep) * GwpTuning.Enforcement.FinePerPoint;
             _dialogPolice = conversationParty;
             _dialogTask = task;
             // Arm the same retry guard for a player-initiated encounter as for

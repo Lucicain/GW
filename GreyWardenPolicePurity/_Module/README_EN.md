@@ -30,6 +30,7 @@ Compared with v1.4-r10:
 
 #### Added and adjusted
 
+- The case ledger now shows Your standing alongside the judicial treasury: the current value, the band it falls in (good standing / nothing on record / under suspicion / wanted), and, while wanted, what a provost patrol and a Grey Warden lord each charge to settle it. Standing used to appear only as a toast at the moment it changed.
 - The current development build supports Bannerlord 1.5.2 beta while retaining the existing campaign, combat, and paired-blade gameplay.
 - The separate Grey Warden Twinblade Guard is back: it is equipped with a pair of blades and no bow, upgrades from light infantry, and sits at the same tier as heavy infantry.
 - Twinblade Guards genuinely dual wield in battle, matching the player's animations, with the off-hand blade dealing damage and triggering the Warden knockdown at their troop tier. Archers stay purely ranged.

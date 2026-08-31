@@ -85,6 +85,7 @@ namespace GreyWardenPolicePurity
         private string _title = string.Empty;
         private string _summary = string.Empty;
         private string _treasuryText = string.Empty;
+        private string _reputationText = string.Empty;
         private string _emptyText = string.Empty;
         private string _refreshText = string.Empty;
         private string _closeText = string.Empty;
@@ -137,6 +138,24 @@ namespace GreyWardenPolicePurity
                 if (value == _treasuryText) return;
                 _treasuryText = value;
                 OnPropertyChangedWithValue(value, nameof(TreasuryText));
+            }
+        }
+
+        /// <summary>
+        /// The player's own standing with the Grey Wardens.  Until now it only
+        /// ever appeared as a toast at the instant it changed, so a player who
+        /// looked away had no way to find out where they stood; the ledger is
+        /// the one screen that already exists to answer that kind of question.
+        /// </summary>
+        [DataSourceProperty]
+        public string ReputationText
+        {
+            get => _reputationText;
+            set
+            {
+                if (value == _reputationText) return;
+                _reputationText = value;
+                OnPropertyChangedWithValue(value, nameof(ReputationText));
             }
         }
 
@@ -313,7 +332,42 @@ namespace GreyWardenPolicePurity
             TreasuryText = GwpText.Get(
                 "{=gwp_gwpcasearchivescreen_056}Judicial treasury: {VAR_1} denars",
                 "VAR_1", PoliceResourceManager.GetJudicialTreasuryBalance());
+            ReputationText = BuildReputationText();
             IsEmpty = Cases.Count == 0;
+        }
+
+        /// <summary>
+        /// Standing, the band it falls in, and - while wanted - what settling
+        /// it would cost, since the lawful fine is derived from standing and a
+        /// player who is being hunted wants to know the number before meeting
+        /// a Warden rather than during the conversation.
+        /// </summary>
+        private static string BuildReputationText()
+        {
+            int reputation = GwpRuntimeState.Player.Reputation;
+
+            if (GwpRuntimeState.Player.IsWanted)
+            {
+                // A patrol and a Warden lord levy different rates, so quote
+                // both rather than a single number the player cannot match to
+                // whoever actually stops them.
+                return GwpText.Get(
+                    "{=gwp_gwpcasearchivescreen_057}Your standing: {VAR_1} | Wanted — the lawful fine is {VAR_2} denars to a provost patrol, {VAR_3} to a Grey Warden lord",
+                    "VAR_1", reputation,
+                    "VAR_2", Math.Abs(reputation) * GwpTuning.Patrol.FinePerPoint,
+                    "VAR_3", Math.Abs(reputation) * GwpTuning.Enforcement.FinePerPoint);
+            }
+
+            string band = reputation > 0
+                ? GwpText.Get("{=gwp_gwpcasearchivescreen_058}in good standing")
+                : reputation == 0
+                    ? GwpText.Get("{=gwp_gwpcasearchivescreen_059}nothing on record")
+                    : GwpText.Get("{=gwp_gwpcasearchivescreen_060}under suspicion, not yet wanted");
+
+            return GwpText.Get(
+                "{=gwp_gwpcasearchivescreen_061}Your standing: {VAR_1} | {VAR_2}",
+                "VAR_1", reputation,
+                "VAR_2", band);
         }
     }
 

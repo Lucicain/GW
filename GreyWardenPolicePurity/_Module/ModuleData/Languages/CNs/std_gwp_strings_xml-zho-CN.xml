@@ -769,6 +769,11 @@
   <string id="gwp_gwpcasearchivescreen_054" text="任务类型：村庄重建 | 预计拨款：{VAR_1} | 公库红线：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_055" text="驻村重建中" />
   <string id="gwp_gwpcasearchivescreen_056" text="司法公库：{VAR_1} 第纳尔" />
+  <string id="gwp_gwpcasearchivescreen_057" text="你的声望：{VAR_1} | 通缉中 —— 巡逻队罚金 {VAR_2} 第纳尔，灰袍领主罚金 {VAR_3} 第纳尔" />
+  <string id="gwp_gwpcasearchivescreen_058" text="声誉良好" />
+  <string id="gwp_gwpcasearchivescreen_059" text="尚无记录" />
+  <string id="gwp_gwpcasearchivescreen_060" text="已有嫌疑，尚未通缉" />
+  <string id="gwp_gwpcasearchivescreen_061" text="你的声望：{VAR_1} | {VAR_2}" />
   <string id="gwp_location_duty_travelling" text="正在前往{TARGET_PARTY}最后出现的位置。" />
   <string id="gwp_gwpencyclopediaheropagevm_020" text="村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
   <string id="gwp_gwpencyclopediaheropagevm_021" text="商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
