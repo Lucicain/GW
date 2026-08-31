@@ -31,6 +31,19 @@
 - 包：`GreyWarden-v1.5-r1.zip` `351356123` 字节 / SHA-256 `2DF84E889DA0603D1464A976456A3743838CA5BCAB7A9A859EF10626175AFF47`；`GreyWarden-v1.4-r10.zip` `351356134` 字节 / SHA-256 `F8EDA683EAD8EE1EA3A5D0EE72E7C43E0C2C0C9CAD1CC480C194B1D83B075E8F`。两包各 38 文件、单顶层 `GreyWarden`、禁入项 0、XML 解析失败 0，解包复验通过。
 - 注意：v1.5-r1 的包体因 README 变更而重新生成，哈希与首次发布的 `AC605018…` 不同，GitHub 上的附件已一并替换。
 
+### 用户实机验收（2026-08-31）
+
+- 用户在 1.4.8 实测通过，原文「1.4实际测试过了，没有问题」。v1.4-r10 的加载问题确认解决。
+- 检查点：`checkpoint/game-generation-split`，指向 `e04544a`（即标签 `v1.4-r10`）。该提交含完整可复现实现：世代条件编译、csproj 自动检测、两份玩家 README 与本维护记录。
+- 回滚路径：`e04544a` → `319bf17`（v1.5-r1 首发）→ `7c15a64`（`checkpoint/dual-blade-water-fix`）。
+- 三份 DLL 的监控状态已用元数据扫描逐一复核并留档：本机 live 开发版 `795648` 字节含 `Directory.CreateDirectory` / `File.AppendAllText` / `File.WriteAllText` 与 `GreyWarden-DualBlade-Trace`；两个玩家包各 `775168` 字节，System.IO 引用 0、日志字面量 0。两者相差 20480 字节即被剥除的诊断实现。
+
+### 标签可复现性说明（v1.5-r1）
+
+- 标签 `v1.5-r1`（`319bf17`）与实际发行包之间，**进包内容的差异仅有两份 README**。`git diff --name-only v1.5-r1 e04544a -- _Module` 只列出 `README.md` 与 `README_EN.md`；`csproj`、`GwpAgentApplyDamageModel.cs`、`maintenance-plan.md` 均不进包。
+- 该差异不影响 DLL：`GwpAgentApplyDamageModel.cs` 在两个提交之间是**纯增量**——`#if GWP_GAME_150_OR_LATER` 分支内是原封不动的原方法，新增的只有注释、预处理指令和 1.4.8 专用的 `#else` 分支。因此在 1.5.2 下从 `e04544a` 编译，预处理后参与编译的源码与 `319bf17` 完全一致。
+- 结论：把 `v1.5-r1` 标签移到 `e04544a` 可以完全消除该缺口，且不会让 DLL 失配。因涉及已公开标签的强推，等用户确认后再执行；未执行前以本条记录为准。
+
 ### live 测试模组
 
 - 用户的实机安装已回滚到 1.4.8，而 live 模组里还是 1.5.2 构建的诊断 DLL，同样无法加载。已用默认开发构建（诊断开启、部署 live）重建：`795648` 字节、SHA-256 `6F487858496784F8AEA38F098BC176031798F730B6776ED652F4C4A0F325D5A1`，确认已无 `BattleEnvironment` 引用。仓库 `_Module` 与 live 运行文件缺失 0、差异 0。
