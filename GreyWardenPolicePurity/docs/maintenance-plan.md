@@ -1,5 +1,24 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 落水崩溃根因确认：双持全动作集缺少 swimming/diving（数据修复，待用户实机验收）
+
+- 用户否决了收刀方案（不接受影响士兵作战），要求回答"为什么原版所有人落水都不崩、只有我们的双刀必崩"，并用原版机制修。本轮据此定位到确切根因，删除了全部收刀代码，改为纯数据修复。
+- **崩溃现场取证（cdb，四个转储互相印证）**：`7420`、`13328`、`9588`、`29484` 全部停在 `TaleWorlds_Native!create_game_application+0x2c2ab`，指令 `cmp dword ptr [rax+rsi*8],0`，调用链 `+0x2c2ab ← +0xdd4ff ← +0x930e4 ← +0x68f3c ← WotsMainNativeCoreCLR+0xb6798`，运行在**原生工作线程**（`ucrtbase!thread_start`），即并行 agent tick 而非主线程。四次的 `rdx=0x1484`、`r9=5`、`r13=5`、`r12=0x3d` 完全一致，说明是同一条确定性代码路径；`rsi` 每次都是**符号扩展后的垃圾 int**（`9588` 直接是 `0xffffffffaaaaaaaa`，其余三次是某个指针的低 32 位），即拿一个**未初始化/未解析的索引**去查一张 8 字节步长的表。这与"按索引查动作/移动集表，但该项不存在"完全吻合，而与碰撞体、网格、音效都不吻合。
+- **根因（已由原版数据对照证实，非推断）**：原版 `Native/ModuleData/full_movement_sets.xml` 共 25 个 `full_movement_set`，引擎有 6 种 `movement_mode`：`walking / running / crouch_walking / crouch_running / swimming / diving`。其中 **22 个直接声明** `swimming`+`diving`（全部指向 `swim_unarmed` / `dive_unarmed`，游戏里根本不存在按武器区分的游泳动作），另外 3 个 `onehanded_swing_cantblock_with_shield`、`parry_polearm_with_shield`、`stone_with_shield` **通过 `base_set` 继承**。也就是说，原版**没有任何一个可被 agent 使用的全动作集缺少游泳/潜水项**——这就是为什么原版士兵、NPC 和玩家落水永远不崩。
+  本模组的 `1h_with_dual_shield` 只声明了 4 个陆地模式、**既没有 swimming/diving 也没有 base_set**，是全游戏唯一一个"可被 agent 命中却答不出水中移动集"的全动作集。而它的激活条件正是 `item_usage_sets.xml` 里的 `require_left_hand_usage_root_set="dual_shield"` —— **只有两把刀同时出鞘时才成立**。
+- 由此，用户此前隔离出的每一条现象都被解释，且不再需要任何额外假设：
+  - 两把出鞘入水必崩：唯一会向引擎索取"不存在的水中移动集"的状态。
+  - 仅一把出鞘不崩：回落到原版 `onehanded_swing_cantblock`，有游泳/潜水项。
+  - 两把都收好不崩：回落到 `no_weapon`，同样有。
+  - 独立掉落的双刀入水不崩：世界物件不参与 agent 移动集。
+  - 陆地战斗从不崩：陆地四个模式我们已经声明齐全，永远不会去查水中项。
+  - 上一轮收刀补丁"玩家好了、士兵没好"：收刀把玩家切出了 `dual_shield` 根集；士兵在水线附近被那版补丁的抖动重新拔刀，又切了回去。
+- **修复（纯数据，零代码，零战斗影响）**：`_Module/ModuleData/full_movement_sets.xml` 的 `1h_with_dual_shield` 补上 `base_set="onehanded_swing_cantblock"`，并显式声明 `swim_unarmed`(`swimming`) 与 `dive_unarmed`(`diving`)。`base_set` 对应原版三个 `_with_shield` 变体的写法，显式两项对应其余 22 个集的写法，两条路径都写上以保证无论引擎走哪种解析都能取到。八条陆地移动集一字未动，因此陆地手感、双持保持、左手刀伤害与灰袍击倒全部不变。
+- **已删除 `GwpDualBladeWaterSafetyPatch.cs`**。除了用户不接受它的战斗代价之外，还有硬证据：带该补丁的转储 `29304` 崩在**另一个位置** `+0x514cd`（`cmp qword ptr [rax+40h],0`，`rax=0`，空指针而非坏索引），调用链也与原始崩溃不同——那一版在原生异步 tick 区里直接调 native 收刀/拔刀，自己引入了第二个崩溃点。留着它只会污染本轮的单变量验证。
+- 构建/部署：Release `-t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、44 条既有 nullable warnings。`full_movement_sets.xml` 通过 `[xml]` 解析校验，10 条 movement_set，其中 `swimming -> swim_unarmed`、`diving -> dive_unarmed`。仓库 `_Module` 与 live 逐文件比对：运行文件哈希差异 0（仅 `Assets`/`AssetSources` 编辑器源目录按既有规则不部署）。live 客户端 DLL 798208 字节、SHA-256 `C8CA371072CDA781F6D6EA94DA29E8A9135FC68A495F542FDA81A641E266A8F2`。
+- 回滚点：`55da713`（两级收刀版）、`5a935a1`（第一版收刀）、`73280bf`（NPC 双刀 checkpoint）。
+- 验收：① 双刃卫士、灰袍武将与玩家携双刀落水是否不再崩溃，且**双刀保持在手**、能正常游泳/潜水；② 陆地战斗的双持、左手刀伤害与击倒是否与之前一致；③ 追踪日志中不应再出现任何 `WATER_SAFETY` 记录。用户确认通过后建立 Git checkpoint。
+
 ## 2026-08-31 落水崩溃第二版修复：迟滞两级收刀，覆盖士兵（待用户实机验收）
 
 - 用户复验结果把问题范围收窄了一大截：第一版 `GwpDualBladeWaterSafetyPatch` 之后**玩家落水已经不再报错**，但双刀 NPC 打仗时仍然崩溃，且陆地战斗从未出现过。因此"两把出鞘 + 入水 = 崩溃"这一根因判断成立，收刀这条修复路线有效，失效的只是它在士兵身上的触发/维持方式。

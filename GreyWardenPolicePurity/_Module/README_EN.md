@@ -41,7 +41,7 @@ Compared with v1.4-r10:
 
 #### Fixed
 
-- Fixed the crash when a dual-blade character entered water, now covering soldiers and AI lords as well as the player. Near the waterline the off-hand blade is put away and the character keeps fighting with the main blade; in the water both blades are put away, and dual wielding returns once the character is clear of the water.
+- Fixed the crash when a dual-blade character entered water, covering the player, Twinblade Guards and AI Grey Warden lords alike. Dual-blade characters now swim and dive normally, keep both blades through the transition, and fight exactly as they do on land.
 - Fixed the incompatibility introduced by Bannerlord 1.5.2 changing the damage-model interface, which previously prevented GreyWarden from compiling and loading.
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
 - Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
