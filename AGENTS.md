@@ -90,6 +90,35 @@ user's stated goal.
 - Reuse this canonical maintenance file rather than creating parallel notes or
   additional problem-log files.
 
+## Diagnostics follow the feature, and retire with it
+
+- Diagnostics are scaffolding for work in progress, not a permanent narration
+  of the mod. Every trace has a lifecycle: added while something is being
+  built or is misbehaving, removed once that work is confirmed.
+- When development stalls on a specific problem, strengthening diagnostics on
+  that feature is the correct move. Widen the trace, add the fields the next
+  test needs, and say in the maintenance history what question each new line
+  is meant to answer.
+- When the user confirms the feature works in the live game, retire its
+  diagnostics in the same task as the checkpoint. Do not leave a settled
+  feature reporting its own success on every tick.
+- Cut on healthy path versus failure path, not on subject. Remove the traces
+  that fire while things work; keep the ones inside a catch or a
+  "this should never happen" branch, because those stay silent in a healthy
+  game and are the only signal when a future game build breaks something.
+- A trace that is the entire body of a method or patch means that method or
+  patch exists only to log. Delete it with the trace.
+- Delete the data too. When a diagnostic system is retired, remove its log
+  files from the game's Documents folder, along with one-off crash dumps and
+  decompiler output whose investigation has closed. Currently effective
+  diagnostics may stay, but their accumulated backlog should not: once its
+  findings are recorded in the maintenance history, the old log has no
+  further use.
+- Name a diagnostic system for what it currently covers. If its scope changed,
+  rename the system and its log file rather than leaving a misleading name.
+- All diagnostics stay inside `#if GWP_DIAGNOSTICS`, so retiring a trace is
+  about developer signal-to-noise, never about what a player receives.
+
 ## Stable features require local Git checkpoints
 
 - When the user confirms that a newly added or repaired feature works in the

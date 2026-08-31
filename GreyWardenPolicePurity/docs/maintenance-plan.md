@@ -1,5 +1,30 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 监控生命周期写入项目规则；历史监控数据清空
+
+- 用户要求把上一条确立的监控生命周期落实为项目规则，并清理已产生的监控数据；同时确认长期开发记录的归属。
+
+### 规则
+
+- `AGENTS.md` 新增一节「Diagnostics follow the feature, and retire with it」，位置在「Developer maintenance history」与「Stable features require local Git checkpoints」之间。要点：诊断是在研脚手架而非常驻叙述；开发卡住时应当加强目标功能的诊断并在维护记录里写明每条新增追踪要回答什么问题；用户实机确认后，在建立检查点的同一轮里退役对应诊断；切分线是健康路径 vs 失败路径而不是按主题；若某条追踪就是某方法或补丁的全部内容，说明该方法只为记日志而存在，应连同删除；退役时连数据一起删；系统覆盖范围变了就连同日志文件一起改名；所有诊断始终位于 `#if GWP_DIAGNOSTICS` 内，退役只影响开发者信噪比，与玩家无关。
+
+### 两套监控的数据行为不同，值得记住
+
+- `GwpFaultTrace`（原双刀追踪）用 `File.AppendAllText`，**只增不清**，所以能在单次战斗里堆到 3.5 MB／23669 行——这才是上一轮真正的问题来源。
+- `GwpAiDiagnostics.StartSession` 用 `File.WriteAllText` 写入会话头，**每次开局自动截断**，因此从不跨会话累积。删除时那份 4300005 字节其实只是当天 18:37 一次会话七分钟的数据，不是历史积压。
+- 结论：设计上 append 的诊断必须有明确退役时点，truncate-per-session 的可以长期存在。以后新增诊断先想清楚属于哪一类。
+
+### 数据清理
+
+- 已删除 `GreyWarden-AI-Diagnostics.log`（4300005 字节）。抽查 `ASSISTANCE_ARMY`、`BOUNTY_COLLECTION_COURIER`、`PLAYER_HUNT`、`VILLAGE_BEING_RAIDED` 四类标签，其结论均已写入本维护记录，原始日志无保留价值。
+- 至此 Documents 下已无任何 GreyWarden 监控数据文件。健康状态下 `GreyWarden-Faults.log` 不应出现；`GreyWarden-AI-Diagnostics.log` 会在下次进入战役时自动重建。
+- 同目录下 `BattlefieldSkills-*`、`Expelliarmus-*`、`Yujian-*` 属其他模组，未触碰。
+
+### 长期开发记录确认
+
+- 用户所指的长期记录即 `GreyWardenPolicePurity/docs/maintenance-plan.md`：1182905 字节、11293 行、300 条按日期与主题组织的条目，覆盖 2026-07-24 至 2026-08-31，已入 git 并随每次提交推送。所有遇到的问题、被推翻的假设、验证证据、回滚点与需求变更都记在这里，是唯一的开发侧真相来源（`AGENTS.md` 已规定不得另建平行笔记）。
+- `GwpAiDiagnostics` 的 131 个调用点按用户指示**保留**——它们仍是有效监控。
+
 ## 2026-08-31 监控生命周期：双刀监控随功能完成一并退役
 
 - 用户确立原则：监控是为**在研功能**服务的临时脚手架——出现报错时可以加强监控，但功能开发完毕后，对应的监控代码**及其输出**都应清理，不应长期监控已完善的功能。本轮据此清理。
