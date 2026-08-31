@@ -169,6 +169,13 @@ namespace GreyWardenPolicePurity
             if (task.FlowState != PoliceTaskFlowState.Pursuit) return false;
 
             int rep = PlayerState.Reputation;
+            // The fine follows standing, so at zero or better there is nothing
+            // lawful left to demand.  The patrol dialogue has always refused to
+            // open in that case; this one did not, which is how a task that
+            // outlived a payment kept re-opening the warrant for 0 denars.
+            // OnHourlyTick.CloseSettledPlayerHunt retires the task itself.
+            if (rep >= 0) return false;
+
             _dialogFine = Math.Abs(rep) * 300;
             _dialogPolice = conversationParty;
             _dialogTask = task;

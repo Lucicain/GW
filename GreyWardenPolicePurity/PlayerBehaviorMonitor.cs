@@ -53,7 +53,12 @@ namespace GreyWardenPolicePurity
 
             // ── 犯罪 / 行善监听 ─────────────────────────────────────────────────────
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
-            CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, OnVillageBeingRaided);
+            // VillageBeingRaided only names the village, so the raider used to be
+            // guessed from whichever party had it as its TargetSettlement - which
+            // is true of anyone standing in the village, tax collection included.
+            // VillageStateChanged carries the raider that ChangeVillageStateAction
+            // was given, so no guessing is needed.
+            CampaignEvents.VillageStateChanged.AddNonSerializedListener(this, OnVillageStateChanged);
             CampaignEvents.ForceVolunteersCompletedEvent.AddNonSerializedListener(this, OnForceVolunteers);
             CampaignEvents.ForceSuppliesCompletedEvent.AddNonSerializedListener(this, OnForceSupplies);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
@@ -131,24 +136,37 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private void OnVillageBeingRaided(Village village)
+        /// <summary>
+        /// The raid offence, charged only to the party that actually raided.
+        ///
+        /// This used to listen to VillageBeingRaided, which passes nothing but
+        /// the village, and recovered the raider by looking for a party whose
+        /// TargetSettlement was that village.  The player's own party matches
+        /// that test whenever it is simply at the village - collecting taxes,
+        /// running a duty, waiting - so an AI lord raiding a village the player
+        /// happened to be standing in charged the raid to the player: the -2,
+        /// the crime record, and the warrant that follows from it.  That is the
+        /// reported "losing reputation near a raided village".
+        ///
+        /// ChangeVillageStateAction is handed the raider and passes it through
+        /// VillageStateChanged, so the offender is now read rather than guessed.
+        /// </summary>
+        private void OnVillageStateChanged(
+            Village village,
+            Village.VillageStates oldState,
+            Village.VillageStates newState,
+            MobileParty raiderParty)
         {
-            if (village == null) return;
+            if (village?.Settlement == null) return;
+            if (newState != Village.VillageStates.BeingRaided) return;
 
-            MobileParty raider = FindPlayerRaidingParty(village);
-            MobileParty mainParty = MobileParty.MainParty;
-            float distance = mainParty == null
-                ? -1f
-                : mainParty.GetPosition2D.Distance(village.Settlement.Position.ToVec2());
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "VILLAGE_BEING_RAIDED_EVALUATED",
                 "village=" + village.Settlement.StringId +
-                "; distance=" + distance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) +
-                "; detectedRaider=" + (raider?.StringId ?? "-") +
-                "; playerTargetMatches=" + (mainParty?.TargetSettlement == village.Settlement) +
-                "; playerMapEventIsRaid=" + (mainParty?.MapEvent?.IsRaid == true) +
-                "; playerMapEventSettlement=" + (mainParty?.MapEvent?.MapEventSettlement?.StringId ?? "-"));
-            if (raider == null || !raider.IsMainParty) return;
+                "; oldState=" + oldState +
+                "; raider=" + (raiderParty?.StringId ?? "-") +
+                "; raiderIsPlayer=" + (raiderParty?.IsMainParty == true));
+            if (raiderParty == null || !raiderParty.IsMainParty) return;
 
             Vec2 location = village.Settlement.Position.ToVec2();
             IFaction victimFaction = village.Settlement.MapFaction;
@@ -908,18 +926,5 @@ namespace GreyWardenPolicePurity
         }
 
         #endregion
-
-        private MobileParty FindPlayerRaidingParty(Village village)
-        {
-            Settlement target = village?.Settlement;
-            if (target == null) return null;
-
-            foreach (MobileParty party in MobileParty.All)
-            {
-                if (party.IsMainParty && party.TargetSettlement == target)
-                    return party;
-            }
-            return null;
-        }
     }
 }

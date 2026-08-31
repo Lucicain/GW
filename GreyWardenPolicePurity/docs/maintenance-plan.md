@@ -1,5 +1,39 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 玩家反馈两条战役 BUG 定位与修复（代码级证据，待实机验收）
+
+- 来源：玩家私聊「我在收税，然后他过来烧村，我就扣声望了」；模组评论区用户0845（2026-08-26）「靠近被劫掠的村庄会掉声望，还有个bug是我触发了上一个bug后交完罚款还处于通缉状态但是罚金是0，而且不管交多少次只要见到灰袍势力的人都是被通缉」。这两条正是维护记录里长期挂起的「村庄误扣声望」与「缴款后残留通缉」。作者本人无法用玩法复现（需要 AI 恰好来烧玩家所在的村），本轮改为代码定位，两个根因都已在源码中确认，不依赖复现。
+
+### BUG 1（根因）：劫掠者靠 TargetSettlement 猜测，站在村里就会被当成劫掠者
+
+- `PlayerBehaviorMonitor` 监听的是 `CampaignEvents.VillageBeingRaided`，该事件**只传 `Village`，不带劫掠者**。原实现用 `FindPlayerRaidingParty(village)` 反推：遍历 `MobileParty.All`，取 `party.IsMainParty && party.TargetSettlement == village.Settlement`。
+- `TargetSettlement` 在玩家**前往或停留**某据点时就会指向它——收税、办差、等待、访问都算。因此只要玩家人在村里、而 AI 领主来劫这座村，反推就会命中玩家自己，随后无条件执行 `PlayerState.ChangeReputation(-2)`、`AddCrimeRecord("劫掠村庄")`，若已通缉还会 `TryAddPlayerCrime` 触发追捕。与玩家描述逐字吻合。
+- **原版机制**：`ChangeVillageStateAction.ApplyInternal` 在改状态时会调用 `CampaignEventDispatcher.OnVillageStateChanged(village, oldState, newState, raiderParty)`，对应公开事件 `CampaignEvents.VillageStateChanged`（`IMbEvent<Village, VillageStates, VillageStates, MobileParty>`）。`RaidEventComponent` 传入的 `raiderParty` 是 `AttackerSide.LeaderParty.MobileParty`，即真正的劫掠方。
+- **修复**：改听 `VillageStateChanged`，只在 `newState == BeingRaided` 且 `raiderParty.IsMainParty` 时追究，删除 `FindPlayerRaidingParty`。诊断行 `VILLAGE_BEING_RAIDED_EVALUATED` 保留并改为记录 `raider` / `raiderIsPlayer`。
+- 注：玩家**参与**他人劫掠仍由 `OnMapEventEnded` 的 `playerRaidedVillage` 分支按击败人数扣分，本次改动不影响该路径。
+
+### BUG 2：罚金随声望计算，声望归零后残留任务仍能开启 0 元罚单
+
+- `IsWanted => Reputation <= -11`；执法罚金 `_dialogFine = Math.Abs(rep) * 300`，巡逻罚金同理。缴款成功走 `OnEnforcementPayAcceptedConsequence` → `ResetReputation(0)` + `EndPlayerHunt()`。
+- 缺陷在开启条件：`PoliceEnforcementBehavior.Dialogue.EnforcementFineCondition` 只检查「对方是灰袍、持有针对玩家的任务、且处于 Pursuit」，**完全没有声望/通缉判断**；而巡逻侧 `PolicePatrolBehavior` 有 `if (rep >= 0) return false;`。因此只要有一个追捕任务因任何原因残留或被重建，声望已是 0 的玩家仍会被拦下，罚金算出 `|0| * 300 = 0`，缴 0 元自然什么也解决不了，且每遇到一个灰袍就重演一次——与玩家「罚金是0、交多少次都没用、见到灰袍就是通缉」完全一致。BUG 1 是它的常见触发源，故用户描述为「触发上一个 bug 后」。
+- **修复**：① `EnforcementFineCondition` 补上 `if (rep >= 0) return false;`，与巡逻侧对齐；② `PoliceEnforcementBehavior.OnHourlyTick` 新增 `CloseSettledPlayerHunt()`，在声望 ≥ 0 却仍存在玩家案底或追捕任务时调用 `CrimeState.EndPlayerHunt()` 自动撤案，并记录诊断 `PLAYER_HUNT_SETTLED_CLOSED`。副作用清理放在 tick 而非对话条件里，避免在会被反复求值的 condition 中产生状态变更。
+
+### 存档与验证环境
+
+- 玩家存档 `save007.sav`（6,830,630 字节，SHA-256 `D076BD53D8844D83EDFB5FAA92F77DFC…`）已从桌面装入 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Game Saves\`，未覆盖既有 `save001.sav`。用户实测可正常加载，无报错。
+- **但该存档与当前环境不同源**：存档头记录 `ApplicationVersion v1.4.8.119303`、`NavalDLC v1.2.8.119303`、`GreyWarden v1.4.9.0`，共 26 个模块；当前环境为 Bannerlord v1.5.2、NavalDLC v1.3.2.120933、GreyWarden v1.4.11，且缺 17 个模块（Harmony/ButterLib/UIExtenderEx/MBOptionScreen/BetterTime/CaravanProfitConfigurable/CourierMessenger/FQ_Editor2/Hairstyles_dlx/MutliLittleFixes/ProjectileTrajectorySystem/RTSCamera.CommandSystem/SiegeDefenseLootFix/SmileySans-Oblique/TournamentIcons/WomeninCalradiaR/WPS_EnableAchievements）。用它复现战役行为时须记住这一差异，观测到的经济/掉落/任务异常不一定属于本模组。
+- 存档角色：等级 23、健康部队 63、俘虏 7、伤员 4、金币 231939、封地 0、游戏内第 35 天。
+
+### 未处理项
+
+- 玩家同时提出「有什么内置的可以看到声望的页面吗」，作者已答复「可以做个界面」。当前声望**只在变化瞬间以飘字显示**（`GetReputationDisplay()` 全部调用点都在 `InformationManager.DisplayMessage`），没有任何常驻查看入口；`GwpCaseArchiveScreen` 未显示声望。该界面属独立功能，本轮未做，待与用户确认承载位置（案件总卷页 / 氏族页 / 独立菜单入口）后再实现。
+
+### 构建与部署
+
+- Release `-t:Rebuild -p:DeployToLiveModule=true` 成功，0 errors、41 条既有 nullable warnings（较上轮 44 条减少 3 条，来自删除的 `FindPlayerRaidingParty`）。live 客户端与编辑器 DLL 均为 798208 字节、SHA-256 `594497FE24804E580BFDE8096F9F20F19EE988161D4C8BC328419B00CEB840C9`。两份玩家 README 已同步更新。
+- 回滚点：`checkpoint/dual-blade-water-fix`（`7c15a64`）。
+- 验收：① 玩家在村内收税/办差时，AI 领主劫掠该村，玩家不应再掉声望、不应出现劫掠案底；② 玩家自己劫掠村庄仍应正常扣分与立案；③ 缴清罚金、声望回到 0 后，再遇灰袍不应再弹出罚金 0 的通缉对话，且一小时内残留追捕任务应自动撤销并提示解除通缉。
+
 ## 2026-08-31 落水崩溃根因确认：双持全动作集缺少 swimming/diving（数据修复，待用户实机验收）
 
 - 用户否决了收刀方案（不接受影响士兵作战），要求回答"为什么原版所有人落水都不崩、只有我们的双刀必崩"，并用原版机制修。本轮据此定位到确切根因，删除了全部收刀代码，改为纯数据修复。

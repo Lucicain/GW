@@ -576,6 +576,7 @@ namespace GreyWardenPolicePurity
             ReconcileTaskWarStatesWithDiplomacy();
             UpdateDelayPatrols();
             BreakInvalidShelteredBattles();
+            CloseSettledPlayerHunt();
             CrimeState.Clean();
             AssignTasks();
             UpdateLordAssistance();
@@ -583,6 +584,36 @@ namespace GreyWardenPolicePurity
             UpdateIdlePoliceDuties();
             CrimeState.RefreshAccepting();
             GwpAiDiagnostics.RefreshObservedPartyCache();
+        }
+
+        /// <summary>
+        /// Retires a pursuit of the player once the player no longer owes
+        /// anything, so a settled debt cannot leave a warrant standing.
+        ///
+        /// The lawful fine is derived from standing, so at a standing of zero
+        /// or better it is zero.  A task that outlived the payment therefore
+        /// used to stop the player at every Grey Warden they met and demand
+        /// nothing, and paying nothing settled nothing - the reported "paid the
+        /// fine, still wanted, fine is 0, no number of payments helps".  Once
+        /// there is nothing left to collect the pursuit has no subject, so it
+        /// is closed here rather than being offered again.
+        /// </summary>
+        private void CloseSettledPlayerHunt()
+        {
+            if (PlayerState.Reputation < 0)
+                return;
+
+            if (CrimeState.GetPlayerCrime() == null
+                && CrimeState.GetPlayerTaskPolicePartyId() == null)
+            {
+                return;
+            }
+
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "PLAYER_HUNT_SETTLED_CLOSED",
+                "reputation=" + PlayerState.Reputation +
+                "; taskParty=" + (CrimeState.GetPlayerTaskPolicePartyId() ?? "-"));
+            CrimeState.EndPlayerHunt();
         }
 
         private void AssignTasks()

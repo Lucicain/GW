@@ -41,6 +41,8 @@ Compared with v1.4-r10:
 
 #### Fixed
 
+- Fixed losing reputation for a raid you did not commit. While a village was being raided, anyone whose destination was that village - collecting taxes, running a duty, simply waiting there - was treated as the raider and charged the reputation loss and a crime record. Only the party that actually raids is held responsible now.
+- Fixed staying wanted after the fine was paid. With standing back at zero or above, Grey Wardens no longer stop the player to demand a 0 denar fine, and a pursuit left over from a settled case is now retired automatically.
 - Fixed the crash when a dual-blade character entered water, covering the player, Twinblade Guards and AI Grey Warden lords alike. Dual-blade characters now swim and dive normally, keep both blades through the transition, and fight exactly as they do on land.
 - Fixed the incompatibility introduced by Bannerlord 1.5.2 changing the damage-model interface, which previously prevented GreyWarden from compiling and loading.
 - Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
