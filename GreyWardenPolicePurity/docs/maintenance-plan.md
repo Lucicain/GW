@@ -1,5 +1,44 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 正式发布 v1.5-r1（GitHub）
+
+- 用户实机验收通过后决定发版，版本号 v1.5-r1，从已发布的 v1.4-r9 直接跨过从未正式发布的 r10、r11。
+
+### 玩家 README
+
+- 两份 README 的更新日志重写为恰好两条正式条目：`v1.5-r1`（对比基准 v1.4-r9）与 `v1.4-r9`；r10、r11 的开发日志按规则折叠进 v1.5-r1 单条，并且只写**最终交付形态**，不写开发过程中的反复（例如"双刀改回玩家专属"→"重新加入双刃卫士"这类来回不出现在玩家日志里）。
+- 修复条目只保留 v1.4-r9 玩家真正会遇到的问题。双刀功能相对 r9 是全新的，其开发期内部缺陷（首版资源加载顺序、左手剑不可见、地面拾取退出、锻造订单抽中双刀模板、双刀动作导致预览异常、落水崩溃）一律不列入玩家日志——r9 玩家从未见过这些。
+- 顶部版本横幅由"当前开发版本适配 1.5.2 测试版"改为"本版本适配 Bannerlord 1.5.2"。
+- 开发者视角用词扫描（补丁/回调/哈希/DLL/诊断/反编译/构建/监听/字段/源码/行内代码/加粗）中英文均为 0 命中。
+- 注意事项：本轮改写脚本第一次用 `s.index('## ', ...)` 定位日志区段结尾，命中了 `'#### '` 内部的 `'## '` 子串，导致只替换了一小段、r10 条目残留。已改为按行首 `'\n## '` 定位。以后改 Markdown 区段一律锚定行首。
+
+### 版本号
+
+- `_Module/SubModule.xml` 由 `v1.4.11` 改为 `v1.5.1`，沿用既有惯例（标签 `v1.4-r9` 对应版本 `v1.4.9`）。
+
+### 玩家 DLL（无监控）
+
+- 先静态确认全模组仅有 3 个文件写入点：`GwpAiDiagnostics.cs:56`、`GwpAiDiagnostics.cs:574`、`GwpDualBladeActionSetPatch.cs:53`，逐个用预处理指令栈判定，**三个全部位于 `#if GWP_DIAGNOSTICS` 内**。
+- 玩家 DLL 独立构建于 `build-check\release-player-v1.5-r1\`，参数 `-c Release -t:Rebuild -p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false -p:OutputPath=<staging>`，0 errors、40 条既有 nullable warnings。产物 `775168` 字节、SHA-256 `841DF9D63A7F0925E9F10666D41C1073152C7A583178745357FD05E9079FAE0C`。
+- **live 诊断版 DLL 未被覆盖**：构建前后实机客户端 DLL 的 SHA-256 均为 `EE5795633A0A3C1AF50BA72FC1764CA70B37D135604A0A8D0F24D95CF1B06D8D`。
+- 无监控验证改用 `System.Reflection.Metadata` 直接读元数据，比反编译更直接且可复现：遍历全部 `MemberReference`，解析其 `Parent` 类型名。**玩家 DLL 对 `File` / `StreamWriter` / `Directory` 的引用数为 0**，且 UTF-16 字面量中不含 `GreyWarden-DualBlade-Trace`、`GreyWarden-AI-Diagnostics`。同一脚本跑诊断版 DLL 作为对照，命中 `Directory.CreateDirectory`、`File.AppendAllText`、`File.WriteAllText` 与 `GreyWarden-DualBlade-Trace`——对照成立，说明检测本身有效。
+
+### 打包
+
+- staging：`build-check\release-stage-v1.5-r1\`，只有一个顶层 `GreyWarden\` 目录，38 个正常客户端文件，358.5 MB。
+- 内容来源：仓库 `_Module` 的 `AssetPackages`/`GUI`/`ModuleData`/`ModuleSounds` + 两份 README + `SubModule.xml`；`bin\Win64_Shipping_Client` 只放独立构建的玩家 DLL 与 live 的 `0Harmony.dll`；`Shaders` 取自 live 的编译缓存。
+- 剔除：`Assets`、`AssetSources`、`RuntimeDataCache`、`docs`、`tools`、`obj`、`*.pdb`、`*.ps1`、`*.log`、压缩包。实际清理掉 `Shaders\D3D11\shader_compile_report.log` 一个文件。
+- 相比 r9 的 27 个文件，本次 38 个，多出的是双刀带来的 ModuleData（`action_sets`/`action_types`/`combat_parameters`/`crafting_templates`/`full_movement_sets`/`movement_sets`/`item_holsters`/`item_usage_sets`/`weapon_descriptions`/`gwp_crafting_pieces`）与 `gwp_dual_wield_animations.tpac`。
+- 包：`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.5-r1.zip`，`351355800` 字节，SHA-256 `AC6050185133A79F4A1F0B61D837751645CE1D1B39D0FBA16DE8C4A36E6B271F`；同名 `.zip.sha256` 内容为该哈希加包名。
+- 解包复验于 `build-check\verify-package-v1.5-r1\`：顶层只有 `GreyWarden`，38 个文件，禁入文件与目录 0，30 个 XML/XSLT/mbproj 解析失败 0，包内玩家 DLL 与独立构建哈希一致、再次元数据扫描仍为零 System.IO 引用与零日志字面量，包内两份 README 与 `SubModule.xml` 与仓库逐字节一致。
+
+### 目录位置
+
+- 玩家 DLL 独立构建：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-player-v1.5-r1\`
+- 正式 staging：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\release-stage-v1.5-r1\`
+- 解包复验：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\verify-package-v1.5-r1\`
+- 三者均为可重建的临时产物，确认发布无误后可整体删除 `build-check\`。
+
 ## 2026-08-31 灰袍家族页两按钮合并为「灰袍事务」，并加入玩家声望（待实机验收）
 
 - 起因：玩家反馈「有什么内置的可以看到声望的页面吗，有的时候忘记了自己声望，不清楚是多少」；作者同时指出家族页两个按钮功能重复，要求核查。

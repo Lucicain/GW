@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-The current development build supports the Bannerlord 1.5.2 beta. Use the matching GreyWarden release for older game versions.
+This release supports Bannerlord 1.5.2. Use the matching GreyWarden release for older game versions.
 Chinese: README.md
 
 ## Main features
@@ -24,63 +24,53 @@ Existing campaigns remain supported. Finish any old bounty already in progress b
 
 ## Changelog
 
-### 2026-08-30 v1.4-r11 (development)
-
-Compared with v1.4-r10:
-
-#### Added and adjusted
-
-- The Grey Warden clan page's two buttons, war details and case ledger, are now one: Grey Warden affairs. The two used to show the same case information twice; standing wars now head the list, each naming only the faction and the ground for the war, with the case details left to that case's own row.
-- Grey Warden affairs now shows Your standing: the current value, the band it falls in (good standing / nothing on record / under suspicion / wanted), and, while wanted, what a provost patrol and a Grey Warden lord each charge to settle it. Standing used to appear only as a toast at the moment it changed.
-- The family roll (size, adoption cooldown, last adoption) moved out of the war details and into Grey Warden affairs, beside the judicial treasury and your standing.
-- The current development build supports Bannerlord 1.5.2 beta while retaining the existing campaign, combat, and paired-blade gameplay.
-- The separate Grey Warden Twinblade Guard is back: it is equipped with a pair of blades and no bow, upgrades from light infantry, and sits at the same tier as heavy infantry.
-- Twinblade Guards genuinely dual wield in battle, matching the player's animations, with the off-hand blade dealing damage and triggering the Warden knockdown at their troop tier. Archers stay purely ranged.
-- AI-controlled Grey Warden commanders dual wield as well, through the same mechanism as the guards.
-- Custom Battle places the Grey Warden commander first while preserving every native commander entry, with full Warden troop and equipment registration.
-- The paired blades are once again usable by the player character only, which is the form this mod has always had working. Grey Warden archers return to being ordinary ranged troops with the noble long bow, piercing arrows, and the Grey Warden arming sword.
-- Everything that let soldiers use the paired blades has been removed, including the dual-blade action resources added for them. That work was what left character models missing or badly posed in the encyclopedia and the Custom Battle preview, and it reached native troops as well.
-- The paired blades keep the same appearance as the Grey Warden arming sword, using GreyWarden's own item definitions without loading ROT or other external-mod resources.
-
-#### Fixed
-
-- Fixed losing reputation for a raid you did not commit. While a village was being raided, anyone whose destination was that village - collecting taxes, running a duty, simply waiting there - was treated as the raider and charged the reputation loss and a crime record. Only the party that actually raids is held responsible now.
-- Fixed staying wanted after the fine was paid. With standing back at zero or above, Grey Wardens no longer stop the player to demand a 0 denar fine, and a pursuit left over from a settled case is now retired automatically.
-- Fixed the crash when a dual-blade character entered water, covering the player, Twinblade Guards and AI Grey Warden lords alike. Dual-blade characters now swim and dive normally, keep both blades through the transition, and fight exactly as they do on land.
-- Fixed the incompatibility introduced by Bannerlord 1.5.2 changing the damage-model interface, which previously prevented GreyWarden from compiling and loading.
-- Fixed crashes during Custom Battle screen initialization and troop preview, restoring stable entry.
-- Fixed invalidated paired-blade templates and shared weapon handling interfering with encyclopedia and Custom Battle previews; both previews now use the Warden's real body, armour, mount, and paired-blade equipment instead of display-only sword-and-shield replacements.
-- When NavalDLC owns the Custom Battle screen, its separate character catalogue is covered as well; the Grey Warden commander remains first while native commander choices are preserved.
-
-### 2026-08-28 v1.4-r10
+### 2026-08-31 v1.5-r1
 
 Compared with v1.4-r9:
 
 #### Added and adjusted
 
-- Personally defeating the forces of a criminal with an open case now builds Warden standing, counted from personal kills like bandit suppression and rescue work, opening an extra early-game path to rise.
-- All Warden weapons, armor, shields, and harnesses use Bannerlord's native non-merchandise setting. They are neither generated as normal town stock nor included in native equipment loot; no extra script restricts owning or selling them.
-- Warden lord parties no longer receive ships for free; naval vessels are now purchased through the native economy, removing the treasury growth caused by granting ships and later selling surplus.
-- Once a case closes, the Wardens immediately restore neutrality with factions that no longer justify war, so Wardens who just fought alongside the player will not immediately turn and attack them afterwards.
-- Warden heavy infantry retain sword-and-shield equipment as a separate final-tier unit. Archers now carry both a bow and the paired blades; no separate Twinblade troop is added.
-- Heavy infantry no longer carry the extra small mace, and the dedicated Custom Battle commander uses the native sword-and-shield loadout.
-- Players and AI share the same paired-blade attacks, four-direction melee blocks, and movement transitions without requiring ROT. A left-hand swing can trigger the Warden knockdown rule even when the target is defending. Players receive a pair when joining or rejoining the Wardens.
-- When archers use the paired blades, left- and right-hand swings, overhead and downward cuts, and thrusts can all trigger the Warden knockdown rule. Kicks and shield bashes retain their separate native-compatible checks.
-- The paired blades do not appear in smithing or town crafting orders and cannot be player-crafted. Players formally obtain their pair when joining or rejoining the Wardens.
-- Dual-blade actions now load as an independent resource assigned only to players and AI that enter battle with the complete pair; encyclopedia, Custom Battle, and ordinary hero displays load only the native human actions.
-- AI dual wielding no longer patches global Agent or weapon-data methods. Qualification data is written only to the existing off-hand weapon of a real battle AI after that agent finishes spawning, keeping encyclopedia and Custom Battle display characters outside the path.
+- Supports Bannerlord 1.5.2, including NavalDLC sea battles and its custom battle entry.
+- New troop: the Warden Twinblade Guard, who carries a pair of Warden dual blades and no bow, upgrades from light infantry, and stands at the same tier as heavy infantry. Warden archers remain purely ranged.
+- Twinblade Guards and AI-controlled Warden lords genuinely fight with both blades. The off-hand blade deals its own damage and can trigger the Warden knockdown according to troop tier.
+- The player receives a pair of dual blades on joining or rejoining the Wardens. Four-way blocking, attack animations, and movement transitions are shared with the AI and need no other mod; a connecting off-hand swing can trigger the Warden knockdown even against a defending opponent.
+- Dual blades can be picked up from the ground, but never appear in the smithing screen or in town smithing orders and cannot be crafted.
+- Personally defeating the party of an offender with an open case now builds Warden standing, counted by the troops you down yourself, the same way bandit clearing and rescues do. Early standing has one more route.
+- The two buttons on the Warden clan page are now one: Grey Warden affairs. Standing wars and their grounds, the case and duty pool, the judicial treasury, your standing, and the family roll all live on one page. Standing is no longer a message that flashes past when it changes, and while wanted the page lists what a provost patrol and a Warden lord each charge to settle it.
+- Custom battle lists the Warden commander first while keeping the native commander options, and lord previews use each character's own appearance and equipment.
+- Warden weapons, armour, shields, and horse harnesses now use the native non-merchandise rule, so they never restock in town markets and never enter ordinary equipment loot.
+- Standing Warden parties no longer receive ships for free. Sea-battle ships are bought through the native economy, so the treasury no longer inflates from selling gifted ships.
+- Wardens return to neutrality with a faction as soon as no enforcement reason remains, and no longer turn on the player straight after a battle in which the player helped them take an offender from their own realm.
+- Warden heavy infantry keep sword and shield as a separate final tier and no longer carry an extra mallet.
 
 #### Fixed
 
-- Fixed severe-wanted players being approached by a Warden lord without entering the enforcement conversation; the fine, atonement, or refusal choices now open normally with repeat-contact protection. Accepting atonement or payment now fully closes the meeting instead of reopening the same dialogue.
-- Fixed pickets travelling to the player's old position during a pursuit; they now follow the player's live position and initiate the meeting once they are close enough.
-- Player warrants now enter the Warden lord's native decision auction at normal enforcement priority; when selected, the lord follows the player's live position instead of travelling to an old coordinate first.
-- Fixed GreyWarden failing to load and closing the game at startup after upgrading to Bannerlord 1.4.8 because of changed game interfaces.
-- Fixed the incomplete dual-wield resource load order that prevented the game from starting while action files were being read.
-- Fixed the left blade being generated as an ordinary main-hand weapon, which left it invisible and disabled attacks and blocks after drawing the pair.
-- Fixed new Sandbox campaigns closing during creation when a town crafting order selected the dual-blade-only template.
-- Fixed the game closing when the paired blades were picked up from the ground. Either blade may now be collected first; both enter their required slots and are drawn safely once the pair is complete.
-- Fixed encyclopedia and Custom Battle character previews disappearing or entering broken poses after ground pickup support was added, while retaining both pickup orders.
+- Fixed losing standing for a raid you did not commit. While a village was being raided, anyone whose destination was that village — collecting taxes, running a duty, simply waiting there — was treated as the raider and charged the standing loss and a crime record. Only the party that actually raids is held responsible now.
+- Fixed staying wanted after the fine was paid. With standing back at zero or above, Wardens no longer stop the player to demand a 0 denar fine, and a pursuit left over from a settled case is retired automatically.
+- Fixed Warden lords reaching the player during a serious warrant without opening the enforcement conversation. The options to pay, atone, or resist now appear properly, and accepting judgment or paying ends the meeting cleanly.
+- Fixed provost patrols travelling to the player's former position. Patrols now follow the player's live position and open the meeting once in range.
+- Fixed GreyWarden failing to load and erroring on startup after the game was updated to a newer version.
+- Fixed custom battle crashing to desktop during screen setup and troop preview.
+
+### 2026-08-05 v1.4-r9
+
+Compared with v1.4-r8:
+
+#### Added and adjusted
+
+- Bounty notices now offer a nearest, harder, and easier contract. Payment is fixed by the difficulty assessed when the contract is accepted rather than headcount.
+- The player now leads an accepted bounty operation. Warden parties escort the player, declare war when the player approaches the target, and may still detach fast cavalry to intercept a quicker offender.
+- Any Warden lord can settle a defeated target. If payment remains unclaimed for five days, a settlement party seeks out the player, pays directly, and returns to nearby quarters.
+- Bounties now share one forty-five-day limit. Escort duty ends when the target falls, and contract and settlement-party state continue across saves.
+- The Training Warden transfers elite troops in proportion to her roster. GreyWarden no longer blocks native achievements when used on its own.
+
+#### Fixed
+
+- Fixed missing encyclopedia buttons, squeezed native page content, and broken settlement links. Warden commands are now added directly to the native hero and clan pages.
+- Fixed campaigns failing to start when GreyWarden was the only enabled mod because a runtime component was missing.
+- Fixed Wardens continuing their own pursuit, failing to declare war promptly, or losing interceptor support after the player accepted an assisted bounty.
+- Fixed expired bounties, payment timers, escort duties, and war state being cleaned up incorrectly.
+- Fixed rescued troops and returning interceptors causing overcapacity or the loss of elite soldiers.
 
 ## Contact
 
