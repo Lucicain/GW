@@ -1,5 +1,29 @@
 # GreyWarden Maintenance Plan
 
+## 2026-08-31 live 模组残留维护计划文件：核对方向缺了一半
+
+- 用户发现 live 游戏模组里有 `docs\maintenance-plan.md`，指出维护计划属于工作目录、不该出现在模组里，并怀疑职责划分出了问题。核查结论：用户是对的，而且问题出在核对流程，不是某一次手滑。
+
+### 事实
+
+- live 模组存在 `docs\maintenance-plan.md`，`873284` 字节、最后修改 `2026-08-27`；仓库权威副本为 `1175934` 字节、已入 git。live 那份是陈旧孤本，删除无损失。
+- csproj 的 `CopyModuleData` 只拷 `_Module\**`，而 `_Module` 下**没有** `docs`；全文件搜索确认 csproj 无任何 `docs` 引用。故它不是当前构建产生的，是 8 月 27 日前后某次操作留下、此后一直无人清理的残留。
+- **两个已发行玩家包均干净**：`v1.5-r1` 与 `v1.4-r10` 内均无 `docs/`、无 `maintenance`、无 `.pdb`。打包脚本本就显式剔除 `docs`，玩家侧从未受影响。
+- 对 live 做了一次完整审计：相对仓库 `_Module` 多出 8 个文件，其中 7 个是 AGENTS.md 明确允许的 `bin\`（构建产物）与 `Shaders\`（引擎生成），唯一违规项就是这个 `docs\maintenance-plan.md`。已删除。
+
+### 根本原因是核对只做了单向
+
+- AGENTS.md 的规则本身没问题，已写明「生成的 `bin` 与 `Shaders` 目录**只**允许存在于 live 模组」。
+- 但此前每次部署后的核对都是**单向**的：只验证「仓库每个文件在 live 存在且哈希一致」，从不反向验证「live 有没有仓库以外的东西」。单向核对在结构上就不可能发现这类残留。
+- 叠加放大因素：构建的 `Copy` 只增不删（必须如此，否则会抹掉编辑器侧 `Assets`），所以任何一次进入 live 的文件会永久留存，直到有人手工清除。
+
+### 处置
+
+- 新增 `tools\Verify-LiveModule.ps1`：**双向**核对。仓库侧排除 `Assets` / `AssetSources` / `RuntimeDataCache` / `obj`，live 侧只放行 `bin\` 与 `Shaders\`，其余一律报为 stray；有任何缺失/差异/残留即以退出码 1 失败并提示不得采信实机测试结果。
+- 已做正反两次自检：当前 live 通过（36 个仓库文件、43 个 live 文件、三类问题均为 0）；人为放入 `docs\probe.md` 后能准确报出 `STRAY IN LIVE: 1`，移除后恢复通过。
+- 编写时踩到一次路径锚点错误：排除正则写成 `\\(Assets|...)\\`，而相对路径开头没有分隔符，导致顶层 `Assets\` 未被排除、误报 12 个 missing。已改为 `^(Assets|...)\\`。**这是本项目第二次栽在同类锚点问题上**（前一次是 Markdown 区段用 `'## '` 匹配命中了 `'#### '` 内部）。凡是按前缀/行首匹配，一律显式锚定。
+- 后续每次部署后应运行该脚本，替代此前手写的单向哈希比对。是否把它写进 AGENTS.md 的强制步骤，待用户确认。
+
 ## 2026-08-31 1.4.8 无法加载：根因与双包发布（v1.5-r1 / v1.4-r10）
 
 - 用户把 Steam 安装回滚到 1.4.8 后测试 v1.5-r1，游戏启动即报 `GreyWarden could not be loaded correctly` / `submodule could not be loaded correctly due to a dependency conflict`（`rgl_log_3412.txt`，`Build Version v1.4.8.119303`）。
