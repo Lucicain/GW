@@ -5,16 +5,19 @@ project-level boundary. Do not invent boundaries. Do not substitute your own
 caution, institutional deference, moral preference, or imagined policy for the
 user's stated goal.
 
-## Player-facing release log is mandatory
+## Player-facing release log is written at release time only
 
 - Treat `GreyWardenPolicePurity/_Module/README.md` and `README_EN.md` as release
   artifacts that ship with the formal mod build, not as optional documentation.
-- Whenever a task changes anything players can see or experience—including
-  gameplay, balance, numerical values, AI behavior, combat reactions, visual or
-  audio feedback, content, compatibility, installation, or bug behavior—update
-  the current-version section of both READMEs in the same task.
-- Do not wait for a separate documentation request. Do not report the task as
-  complete while the player-facing README is stale.
+- Update them only when the user says development is finished and a new version
+  is being released. Development iterations—including anything players would see
+  once shipped—do not touch either README. An in-development feature can change
+  shape repeatedly or be rolled back entirely, and the player log exists to
+  describe the delivered form, not the route taken to it.
+- During development, record every player-visible change in
+  `GreyWardenPolicePurity/docs/maintenance-plan.md` instead, in enough detail to
+  write the release entry later from it alone. Do not report a task as complete
+  while that developer record is stale.
 - Keep the README concise and directly reusable as a public release post. Its
   only jobs are to say when player-visible changes were added, what changed,
   and what content is currently playable.

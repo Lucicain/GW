@@ -32,7 +32,6 @@ namespace GreyWardenPolicePurity
         // the NPC blade alone, leaving the player's item untouched.
         public const string DualBladeOffhandAiItemId = "gwdualbladeoffhandai";
 
-        public const string TwinbladeTroopId = "gwtwinblade";
         public const string DualBladeMainhandItemId = "gwdualblademainhand";
         public const string DualBladeOffhandCraftingTemplateId =
             "GwpOneHandedSwordDualOffhand";
