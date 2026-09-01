@@ -41,7 +41,7 @@
 
 ### 检查点与回滚
 
-- 检查点提交：见本条下方"提交哈希"一行（由本轮提交补入）。内容包含完整可复现实现、`AGENTS.md` 的玩家日志规则改写，以及本维护记录。
+- 检查点提交：**`089ea00`**（`checkpoint: user confirms the archer's dual blades and their orders`）。内容包含完整可复现实现、`AGENTS.md` 的玩家日志规则改写，以及本维护记录。用户验收原文："完美解决了。"
 - 回滚路径：`25bc243`（本轮开发前，"双刃卫士 + 纯远程弓箭手"形态）、`checkpoint/npc-dual-blade`（`90d73cb`，NPC 双刀首个验证基线）。
 
 ### 尚未处理
