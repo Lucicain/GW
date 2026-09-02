@@ -252,25 +252,23 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // Mastery belongs to the deliberate alternative-attack action,
+            // not to whichever native or fallback contact later resolves it.
+            // Award exactly once when the action is accepted into this shared
+            // AI/player resolver, even if no nearby target is available.
+            AddMeleeMastery(attacker);
+
             Agent? fallbackTarget = GwpAlternativeAttackControl
                 .GetNearestEnemyTarget(attacker);
+            if (fallbackTarget == null)
+                return;
 
-            // Establish the per-action record even when no fallback target is
-            // available. In particular, the fallback search excludes the main
-            // player and mounted enemies; returning before this insert used to
-            // let one AI animation award mastery again on every input frame.
             _pendingActions.Add(
                 attacker.Index,
                 new PendingAlternativeAttack(
                     attacker,
                     Mission.CurrentTime + NativeHitObservationWindowSeconds,
                     fallbackTarget));
-
-            // Mastery belongs to the deliberate alternative-attack action,
-            // not to whichever native or fallback contact later resolves it.
-            // The record above is already in place before UpdateAgentStats can
-            // re-enter any managed combat path.
-            AddMeleeMastery(attacker);
         }
 
         private void AddMeleeMastery(Agent attacker)

@@ -88,7 +88,10 @@ namespace GreyWardenPolicePurity
             NativeModel.GetMaxCameraZoom(agent);
 
         public override int GetEffectiveSkill(Agent agent, SkillObject skill) =>
-            NativeModel.GetEffectiveSkill(agent, skill);
+            ApplyBattleMastery(
+                agent,
+                skill,
+                NativeModel.GetEffectiveSkill(agent, skill));
 
         public override int GetEffectiveSkillForWeapon(
             Agent agent,
@@ -166,9 +169,6 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch]
     internal static class GwpBattleMasteryEffectiveSkillPatch
     {
-        [ThreadStatic]
-        private static int _callDepth;
-
         private static IEnumerable<MethodBase> TargetMethods()
         {
             Type?[] candidateTypes =
@@ -197,37 +197,13 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        [HarmonyPrefix]
-        private static void Prefix(out bool __state)
-        {
-            __state = _callDepth == 0;
-            _callDepth++;
-        }
-
-        [HarmonyPostfix]
         private static void Postfix(
             Agent agent,
             SkillObject skill,
-            bool __state,
             ref int __result) =>
-            __result = __state
-                ? GwpAgentStatCalculateModel.ApplyBattleMastery(
-                    agent,
-                    skill,
-                    __result)
-                : __result;
-
-        [HarmonyFinalizer]
-        private static Exception? Finalizer(Exception? __exception)
-        {
-            // The base implementation is called from the Sandbox/Naval
-            // overrides, all of which are patched. Keep the nesting depth
-            // balanced on success and exception, and apply the accumulated
-            // mastery only to the outermost result.
-            if (_callDepth > 0)
-                _callDepth--;
-
-            return __exception;
-        }
+            __result = GwpAgentStatCalculateModel.ApplyBattleMastery(
+                agent,
+                skill,
+                __result);
     }
 }

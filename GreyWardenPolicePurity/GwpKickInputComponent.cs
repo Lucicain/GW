@@ -32,7 +32,6 @@ namespace GreyWardenPolicePurity
         private float _nextKickTime;
         private float _requestKickUntil;
         private float _nextTargetProbeTime;
-        private bool _alternativeAttackObserved;
         internal GwpKickInputComponent(Agent agent) : base(agent) { }
 
         public override void Initialize()
@@ -91,28 +90,14 @@ namespace GreyWardenPolicePurity
 
         private void QueueAcceptedAlternativeAttack()
         {
-            bool isPerforming = IsPerformingAlternativeAttack(Agent);
-            if (!isPerforming)
-            {
-                _alternativeAttackObserved = false;
+            if (!IsPerformingAlternativeAttack(Agent))
                 return;
-            }
-
-            // OnAIInputSet is called throughout the same native animation and
-            // this method is deliberately reached both before and after input
-            // injection. Observe the rising edge once instead of relying on a
-            // fallback-target entry to deduplicate repeated frames: the target
-            // may be the main player or a mounted agent, both of which are
-            // intentionally absent from the fallback resolver.
-            if (_alternativeAttackObserved)
-                return;
-
-            _alternativeAttackObserved = true;
 
             // Register only an action the native engine has genuinely begun.
             // The mission behavior observes its real hit first, then gives
             // the nearest enemy one shared fallback control decision only
-            // when the native action missed.
+            // when the native action missed. Its per-action state deduplicates the AI's
+            // repeated input callback frames.
             GwpAlternativeAttackControlBehavior.BeginAction(Agent);
         }
 

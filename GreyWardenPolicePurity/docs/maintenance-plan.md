@@ -1,5 +1,73 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 按用户指示回退成长修复；order-voice 诊断随之退休
+
+### 决定与范围
+
+- 用户判断主角下令时的呼喊消失来自成长修复，并明确不再做实机对照，直接要求回退到成长修复之前。
+- 回退按“只退代码、不退知识与工具”执行：
+  - `GwpAgentStatCalculateModel.cs`、`GwpAlternativeAttackControlBehavior.cs`、`GwpKickInputComponent.cs` 三个文件由 `git checkout e963c62 --` 恢复成**成长硬化之前**的内容；
+  - `b8007a3` / `509fe97` 带来的 1.4.8 世代兼容工具（`tools\Verify-GameCompat.ps1`、`tools\Invoke-ModuleLoadPreflight.ps1`）与全部维护记录保留，它们与成长无关；
+  - 上一轮临时加的 `GwpBattleMastery.Enabled` 开关随三个文件一起消失，不再存在。
+- **回退后的实际状态需要说清楚**：成长系统本身仍在（踢击/盾击 `+50`、每箭 `+10`、封顶 `1000`），回到的是它**未经硬化**的旧形态。也就是说 2026-09-03 审计记录的两个偏差重新存在：同一 bonus 在 Sandbox → base 链路上会被重复应用两到三次；AI 在没有后备目标时同一动作可能反复记账。这是用户在“回到成长修复之前”与“保留成长修复”之间的明确选择，不是遗漏。
+
+### 诊断退休
+
+- `GwpOrderVoiceDiagnostics.cs` 及其两个补丁类已整文件删除，`Documents\Mount and Blade II Bannerlord\GreyWarden-OrderVoice.log` 一并删除。
+- **须记录的操作失误**：删除日志时该文件确实存在（`1,675` 字节，`03:20` 写入），说明用户已经跑过一局并留下了数据，而我在删除前没有先读它，证据就此丢失。诊断日志属于“删除前必须先看”的一类，以后退休任何诊断都要先读取并把结论写进本文件，再删数据。
+- 上一轮对原生喊话链路的分析结论仍然有效并保留在下一节：喊话的四道闸门、`Owner` 只在布阵时绑定一次、以及模组侧逐条排除的清单。这些不因回退而失效，是下次再查这个问题的起点。
+
+### 构建与部署
+
+- 回退后重新构建部署：`0` errors、`40` 条既有 nullable warnings。仓库 `obj/Debug`、live 客户端、live 编辑器三份 DLL 均为 `846,336` 字节，SHA-256 `81D0655EF15A751FF0ACCEF10482A40093B6B94C546C0B1DB19BB7973EB6FC36`。
+- 相对含成长硬化的 `846,848` 字节（`8DD90AEF…7472`）少 `512` 字节，正是被移走的深度守卫与上升沿锁；补丁类数量也从 `41`（含两个诊断）回到 `39`，与 `b8007a3` 时的 39 个一致。这两项是回退干净的二进制侧证据。
+- `Verify-GameCompat`：缺失类型 0、缺失成员 0，`TYPES_OK=424`，`39` 个补丁类全部绑定、`PATCH_FAIL=0`，`PREFLIGHT=PASS`。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、多余 0。
+- 未改玩家 README，未制作正式 ZIP。
+
+## 2026-09-03 玩家下令时没有喊话：原生链路定位与模组侧排除（结论保留，诊断已退休）
+
+### 原生链路与它的全部闸门（1.4.8 反编译）
+
+- 喊话本身是 `OrderController.PlayOrderGestures` 里的 `Owner.MakeVoice(SkinVoiceManager.VoiceType.<按命令类型>)`，`MakeVoice` 直通原生 `MBAPI.IMBAgent.MakeVoice`，没有任何托管中间层。
+- 调用它需要同时满足：
+  1. `AfterSetOrder` 末尾的 `Owner != null && AreGesturesEnabled()`；
+  2. `AreGesturesEnabled()` = `_gesturesEnabled`（构造即 `true`，只在一处方法内临时置 `false` 后立刻还原）`&& Mission.IsOrderGesturesEnabled() && !GameNetwork.IsClientOrReplay`；
+  3. `Mission.IsOrderGesturesEnabled()` 遍历 `AreOrderGesturesEnabled_AdditionalCondition`，全程序集只有 `DeploymentMissionController` 与 `HideoutPhasedMissionController` 订阅，都只在布阵/匪巢阶段返回 `false`；
+  4. `PlayOrderGestures` 内 `if (!LoadingWindow.IsLoadingWindowActive)` —— **喊话在这个 if 里面**。
+- 对比之下，命令**手势动画**在该 if **外面**，而且额外要求 `_selectedFormations.Count > 0 && Owner.Controller != AgentControllerType.AI`。所以“命令照常生效、只有喊话没了”在原生里只可能来自上面 1、2、4 三条，或者 `MakeVoice` 被调用了但引擎没有可播的声音。
+- 一个结构性事实值得单独记住：`Owner` 只在 `AssignPlayerRoleInTeamMissionController.OnTeamDeployed` 里赋值一次，取 `Mission.InitialPlayerAgent`，**之后不会跟随玩家实际控制的 Agent 改变**。因此一旦玩家的初始 Agent 被替换或死亡，命令仍然全部可用，喊话却会永久静音——与用户描述的症状完全一致。
+
+### 模组侧本轮排除的内容（逐条有依据，不是印象）
+
+- 全量 grep 模组源码：没有任何代码引用 `OrderController`、`AreOrderGesturesEnabled_AdditionalCondition`、`SetGesturesEnabled`、`LoadingWindow`。`MakeVoice` 只有两处调用（增援号角失败时的 `Charge`、盾击的 `Pain`），都是**播放**而非抑制。
+- 41 个 Harmony 补丁类（含本轮新增的 2 个诊断）的目标全部列出核对，没有一个落在命令、手势、语音、声音或 Agent 构建路径上。
+- 模组不发布 `voice_definitions.xml`、`skins.xml`、`monsters.xml`，因此不参与 `CreateProcessedVoiceDefinitionsXMLForNative` 的合并。
+- 引擎数据 XML 与原版的 id 冲突为 0：`action_types` 84、`movement_sets` 8、`full_movement_sets` 1、`item_usage_sets` 4、`item_holsters` 1 个**定义**均为新 id；差集里出现的 `swim_unarmed`/`dive_unarmed`/`onehanded_swing_cantblock`/`1h_with_hand_shield`/`back_sword_1` 经逐行核对全部是**引用**（`base_set`、`require_left_hand_usage_root_set`、`group_name`），不覆盖原版定义。
+- `action_sets.xslt` 是恒等模板 + `copy-of`，只向 `as_human_warrior` / `as_human_female_warrior` 追加双刀动作，不删改任何原有条目；仓库内 `action_sets.xml` 是空根 `<action_sets />`，合并时不贡献子节点。
+- **一条中途险些误判的线索须记录**：模组 `spnpccharacters.xml` 的 111 个角色全都没有 `voice=` 属性，一度被怀疑是“兵种没有嗓音”。核对原版 `SandBoxCore/ModuleData/spnpccharacters.xml` 后否定：原版 549 个 `NPCCharacter` 同样是 `0` 个 `voice=`，1.4.8 根本不在角色 XML 上定义嗓音。以后不要凭“模组缺某属性”下结论，先确认原版有没有这个属性。
+- 模组的声音 API 面很小且无泄漏：盾击命中/破盾走 `Mission.MakeSound`（一次性），只有增援号角用 `SoundEvent.CreateEvent`，且只在增援到达时创建。没有逐次命中创建声音实例导致 FMOD 通道耗尽的路径。
+- 模组不移除任何原生 MissionBehavior，`OnMissionBehaviorInitialize` 只做 `AddMissionBehavior`。
+- 结论：**静态分析没有找到模组直接压制喊话的代码路径**，因此不做“猜一个改一个”的修改。
+
+### 仍待判定的可能与环境变量
+
+- 最贴合症状的仍是 `Owner` 失配（初始玩家 Agent 已死亡/被替换，或其 `Controller` 已变成 AI），其次是 `MakeVoice` 被调到但该 Agent 没有可用嗓音定义。
+- 环境不是干净的对照：本机 `Modules` 下同时装有 `RTSCamera`、`Coop`、`Expelliarmus`、`SinfulTavern`、`FastMode`、`xxFemaleHead`，其中 RTSCamera 直接接管命令与镜头，自由镜头下玩家 Agent 与控制关系会改变。而且游戏刚从 1.5.2 回滚到 1.4.8，这些模组并未同步更换版本。**停用 GreyWarden 单独启动一局**是成本最低、能一次分开“模组 vs 环境”的对照。
+
+### 曾用的专项诊断（已删除）
+
+- 新增 `GwpOrderVoiceDiagnostics.cs`，整文件包在 `#if GWP_DIAGNOSTICS` 内，日志写到 `Documents\Mount and Blade II Bannerlord\GreyWarden-OrderVoice.log`，每次会话上限 `80` 行（下令是玩家主动行为、频率极低，不存在此前箭雨那种逐帧 I/O 峰值）。
+- 它在 `OrderController.AfterSetOrder` 前后加钩子，并在 `PlayOrderGestures` 入口打标记，每次下令写一行：`order`、`owner`（索引或 null）、`ownerActive`、`ownerIsMain`、`ownerController`、`voiceDef`、`mainAgent`、`gesturesField`、`missionGestures`、`loadingWindow`、`selected`、`gesturesReached`。
+- 读法直接对应上面四道闸门：`gesturesReached=False` 说明卡在闸门 1/2，此时看 `owner`/`gesturesField`/`missionGestures` 哪个为假；`gesturesReached=True` 且 `loadingWindow=True` 说明卡在闸门 4；两者都正常而仍然没声音，则 `MakeVoice` 确实被调用了，问题在该 Agent 的嗓音或引擎侧，`voiceDef` 为空即可坐实。`ownerIsMain=False` 直接坐实 `Owner` 失配。
+- 已退休：用户决定不再实机对照并要求回退成长修复，该文件、两个补丁类与日志已在同一轮删除。上面的四道闸门、`Owner` 绑定时机和排除清单是这次调查真正的产出，重开此问题时从这里接着查，诊断可以按同样的字段重建。
+
+### 构建与部署
+
+- `dotnet build ... --no-restore -t:Rebuild -p:DeployToLiveModule=true`：`0` errors、`40` 条既有 nullable warnings（开发中一次 `CS0104` 来自 `TaleWorlds.Engine.Path` 与 `System.IO.Path` 同名，已改为全限定 `LoadingWindow`）。
+- 仓库 `obj/Debug`、live 客户端、live 编辑器三份 DLL 均为 `850,944` 字节，SHA-256 `0A9664934C83F26121BB688AD10668E69F577E9ED2873B465750C4F3542E5D71`。
+- `Verify-GameCompat`：缺失类型 0、缺失成员 0，`TYPES_OK=431`，`41` 个补丁类全部绑定、`PATCH_FAIL=0`，其中新增的 `GwpOrderVoiceAfterSetOrderPatch` 与 `GwpOrderVoiceGesturePatch` 各 `1` 个目标——这同时证明 1.4.8 的 `AfterSetOrder` / `PlayOrderGestures` 形状与上面的反编译一致。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、多余 0。
+- 未改玩家 README，未制作正式 ZIP，本轮改动保留在工作区未提交。
+
 ## 2026-09-03 回到 1.4.8 正式版：live 模组无法加载的根因、修复与常备版本兼容检查
 
 ### 症状与根因
@@ -42,6 +110,8 @@
 - 但**这些只证明能加载、能绑定，不等于实机行为已验证**。成长隐患修复、弓箭手 10% 击倒 / 5% 穿盾、双刀友军穿透这几项仍是待用户在 1.4.8 实机验收的候选，之前的离线验证是在 1.5.2 上做的。
 
 ## 2026-09-03 战斗内成长隐患修复；穿盾后击倒链复核（待用户实机验收）
+
+> 本节描述的成长硬化已按用户指示于同日回退，见文件开头的回退记录。以下内容作为该方案的完整设计与验证留档，重做时可直接复用。
 
 ### 本地回滚点
 
