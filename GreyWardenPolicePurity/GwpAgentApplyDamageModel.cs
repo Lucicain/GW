@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -10,7 +11,8 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// Preserves the active game mode's complete damage model and changes only
     /// the native knockdown decision for Grey Warden kicks, shield bashes, and
-    /// all melee attacks made with the Grey Warden paired blades.
+    /// all melee attacks made with the Grey Warden paired blades, plus the two
+    /// explicitly requested hit effects on Grey Warden archer arrows.
     /// This decision is evaluated once when an eligible blow connects. There
     /// is no post-rise input lock or forced animation.
     /// </summary>
@@ -44,6 +46,27 @@ namespace GreyWardenPolicePurity
             WeaponComponentData attackerWeapon,
             in Blow blow)
         {
+            if (GwpArcherArrowHitState.ShouldForceKnockdown(
+                    attackerAgent,
+                    victimAgent,
+                    in collisionData,
+                    in blow))
+            {
+                return true;
+            }
+
+            // A paired-blade thrust earns its knockdown roll whether the point
+            // went in or was turned aside. The blow cannot carry the reaction
+            // when a guard has eaten the damage, so it is handed to the control
+            // contact instead, on the next tick.
+            if (blow.StrikeType == StrikeType.Thrust
+                && blow.AttackType != AgentAttackType.Kick
+                && blow.AttackType != AgentAttackType.Bash
+                && IsDualBladeAttack(attackerAgent, in collisionData, attackerWeapon))
+            {
+                GwpDualBladeThrustControl.Mark(attackerAgent, victimAgent);
+            }
+
             float chance = GetGreyWardenKnockdownChance(
                 attackerAgent,
                 victimAgent,
@@ -268,14 +291,61 @@ namespace GreyWardenPolicePurity
                 in collisionData,
                 baseDamage);
 
+        private const float ArcherArrowKnockdownChance = 0.10f;
+        private const float ArcherArrowShieldIgnoreChance = 0.05f;
+
         public override void DecideMissileWeaponFlags(
             Agent attackerAgent,
             in MissionWeapon missileWeapon,
-            ref WeaponFlags missileWeaponFlags) =>
+            ref WeaponFlags missileWeaponFlags)
+        {
             NativeModel.DecideMissileWeaponFlags(
                 attackerAgent,
                 in missileWeapon,
                 ref missileWeaponFlags);
+
+            if (!IsGreyWardenArcherArrow(attackerAgent, in missileWeapon))
+                return;
+
+            // These are independent per-impact rolls. Body contact can earn
+            // the 10% knockdown; raised-shield contact can earn the 5% pass.
+            // A single arrow that first passes a shield and then reaches the
+            // body can therefore receive both effects, as requested.
+            GwpArcherArrowHitState.RollForArcherArrow(
+                ArcherArrowKnockdownChance,
+                ArcherArrowShieldIgnoreChance);
+
+            // Keep the native marker as well as the callback routing. Native
+            // normally puts an armour threshold behind this flag; the paired
+            // callback patches remove only that threshold for the selected 5%
+            // hit and leave the arrow alive to reach the body behind the shield.
+            if (GwpArcherArrowHitState.ShieldPassGranted)
+                missileWeaponFlags |= WeaponFlags.CanPenetrateShield;
+        }
+
+        private static bool IsGreyWardenArcherArrow(
+            Agent? attackerAgent,
+            in MissionWeapon missileWeapon)
+        {
+            if (!string.Equals(
+                    attackerAgent?.Character?.StringId,
+                    GwpIds.ArcherId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                WeaponComponentData? usage = missileWeapon.CurrentUsageItem;
+                return usage != null
+                    && usage.WeaponClass == WeaponClass.Arrow;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         public override void CalculateDefendedBlowStunMultipliers(
             Agent attackerAgent,
@@ -515,6 +585,102 @@ namespace GreyWardenPolicePurity
             actionType >= Agent.ActionCodeType.AlternativeAttackAllBegin
             && actionType < Agent.ActionCodeType.AlternativeAttackAllEnd;
 
+        /// <summary>
+        /// How far a paired-blade swing carries after it connects.
+        ///
+        /// Native keeps momentum in a swing only for a weapon whose class is a
+        /// two-handed axe or mace - CanHitMultipleTargets is computed from the
+        /// weapon class, not a flag on the item, so there is nothing to set on
+        /// a sword. What can be done instead is to answer the question the
+        /// engine actually asks: how much of the swing is left. So the paired
+        /// blades get native's own answer, by native's own formula - what is
+        /// left after armour, halved, and dropped to nothing below a quarter -
+        /// applied to a weapon native would have given zero.
+        ///
+        /// The cap is this mod's: one further body and no more. A swing that
+        /// has already carried into a second target has its momentum ended, so
+        /// the pair cuts a path two deep in a press rather than mowing down a
+        /// file. Same swing is judged by time, because the whole exchange
+        /// happens inside a few frames.
+        ///
+        /// Every one of native's own refusals is kept: a blow that did no
+        /// damage, was stopped by a shield, came from a thrust, a couched
+        /// lance, a horse charge or a crush-through carries nothing, exactly as
+        /// it would for anyone else.
+        /// </summary>
+        private readonly ConditionalWeakTable<Agent, StrongBox<float>>
+            _lastCleaveTimes = new ConditionalWeakTable<Agent, StrongBox<float>>();
+
+        private const float SameSwingSeconds = 0.5f;
+
+        private float ApplyDualBladeCleave(
+            float nativeMomentum,
+            float originalMomentum,
+            in Blow blow,
+            in AttackCollisionData collisionData,
+            Agent attacker,
+            in MissionWeapon attackerWeapon,
+            bool isCrushThrough)
+        {
+            if (isCrushThrough
+                || attacker == null
+                || !IsDualBladeAttack(
+                    attacker, in collisionData, attackerWeapon.CurrentUsageItem))
+            {
+                return nativeMomentum;
+            }
+
+            try
+            {
+                if (!CarriesOn(in blow, in collisionData, attacker, in attackerWeapon))
+                    return nativeMomentum;
+
+                Mission? mission = attacker.Mission;
+                if (mission == null)
+                    return nativeMomentum;
+
+                float carried = originalMomentum
+                    * (1f - blow.AbsorbedByArmor / (float)blow.InflictedDamage)
+                    * 0.5f;
+                if (carried < 0.25f)
+                    return nativeMomentum;
+
+                float now = mission.CurrentTime;
+                StrongBox<float> last = _lastCleaveTimes.GetValue(
+                    attacker, _ => new StrongBox<float>(float.MinValue));
+
+                // Already carried through one body this swing.
+                if (now - last.Value < SameSwingSeconds)
+                    return 0f;
+
+                last.Value = now;
+                return carried;
+            }
+            catch
+            {
+                return nativeMomentum;
+            }
+        }
+
+        /// <summary>
+        /// Native's own conditions for a swing having anything left to give.
+        /// </summary>
+        private static bool CarriesOn(
+            in Blow blow,
+            in AttackCollisionData collisionData,
+            Agent attacker,
+            in MissionWeapon attackerWeapon) =>
+            blow.InflictedDamage > 0
+            && blow.StrikeType != StrikeType.Thrust
+            && collisionData.IsColliderAgent
+            && !collisionData.AttackBlockedWithShield
+            && !collisionData.CollidedWithShieldOnBack
+            && !collisionData.IsHorseCharge
+            && !attacker.IsDoingPassiveAttack
+            && !attackerWeapon.IsEmpty
+            && !MissionCombatMechanicsHelper.HitWithAnotherBone(
+                in collisionData, attacker, in attackerWeapon);
+
         public override float CalculateRemainingMomentum(
             float originalMomentum,
             in Blow blow,
@@ -523,20 +689,40 @@ namespace GreyWardenPolicePurity
             Agent victim,
             in MissionWeapon attackerWeapon,
             bool isCrushThrough) =>
-            NativeModel.CalculateRemainingMomentum(
+            ApplyDualBladeCleave(
+                NativeModel.CalculateRemainingMomentum(
+                    originalMomentum,
+                    in blow,
+                    in collisionData,
+                    attacker,
+                    victim,
+                    in attackerWeapon,
+                    isCrushThrough),
                 originalMomentum,
                 in blow,
                 in collisionData,
                 attacker,
-                victim,
                 in attackerWeapon,
                 isCrushThrough);
 
         public override bool DecideAgentShrugOffBlow(
             Agent victimAgent,
             in AttackCollisionData collisionData,
-            in Blow blow) =>
-            NativeModel.DecideAgentShrugOffBlow(victimAgent, in collisionData, in blow);
+            in Blow blow)
+        {
+            if (GwpArcherArrowHitState.ShouldForceKnockdown(
+                    victimAgent,
+                    in collisionData,
+                    in blow))
+            {
+                return false;
+            }
+
+            return NativeModel.DecideAgentShrugOffBlow(
+                victimAgent,
+                in collisionData,
+                in blow);
+        }
 
         public override bool DecideAgentDismountedByBlow(
             Agent attackerAgent,
@@ -558,6 +744,17 @@ namespace GreyWardenPolicePurity
             WeaponComponentData attackerWeapon,
             in Blow blow)
         {
+            if (GwpArcherArrowHitState.ShouldForceKnockdown(
+                    attackerAgent,
+                    victimAgent,
+                    in collisionData,
+                    in blow))
+            {
+                // Do not combine the selected fall with native knockback; the
+                // victim should drop at the arrow contact, not be launched.
+                return false;
+            }
+
             // Vanilla marks every alternative attack as KnockBack. When our
             // separate probability roll also adds KnockDown, both flags are
             // applied to the same blow and the victim can be launched too far.

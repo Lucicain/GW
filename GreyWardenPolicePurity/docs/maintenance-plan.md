@@ -1,5 +1,699 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 战斗内临时成长机制审计（只读审计，无行为改动）
+
+- 用户要求盘点当前会让士兵在战斗中获得成长的机制。代码中只有一套 `GwpAlternativeAttackControlBehavior` + `GwpAgentStatCalculateModel` 的 mission-local mastery 系统，玩家观感上有三种触发、底层则是两条按单个 `Agent.Index` 保存的计数：
+  1. 一次被共享解析器接受的踢击动作，近战熟练加 `50`；
+  2. 一次被共享解析器接受的盾击动作，同样走近战熟练并加 `50`；
+  3. 每实际发射一支 RelevantSkill 为 Bow 的飞行物，弓术熟练加 `10`，无论命中还是射失。
+- 近战熟练同时加到有效 `OneHanded` 与 `Athletics`，弓术熟练只加到有效 `Bow`；每次读取后的有效技能封顶 `1000`。资格沿用 `GwpKickBehavior.IsEligibleGreyWarden`，覆盖 `gw*` 普通兵、灰袍领主和自定义战斗指挥官，而非仅弓箭手。近战动作在骑乘状态下不登记；射箭路径没有骑乘排除。
+- 这些值不写 `CharacterObject`、Hero 技能、`TroopRoster` 经验或存档。Agent 被删除时删掉对应键，Mission 行为结束时清空，因此增益仅属于当场的那个士兵。练兵官每六小时给花名册发经验、调兵订单训练前置兵、原版战后士兵经验、领主固定技能平衡，以及本轮新加的箭矢击倒/无视盾牌都不是这套“战斗内成长”。
+
+### 审计发现的两个现存偏差
+
+- **同一成长值在战役技能路径被重复应用。** `GwpBattleMasteryEffectiveSkillPatch.TargetMethods()` 当前实际返回基类 `AgentStatCalculateModel.GetEffectiveSkill`、Sandbox 覆盖以及两个 Naval 覆盖。当前 Bannerlord 1.5.2 的 `SandboxAgentStatCalculateModel.GetEffectiveSkill` 开头又直接调用被补丁覆盖的基类方法；其自身返回时再跑一次 postfix。随后本模组外层 `GwpAgentStatCalculateModel.GetEffectiveSkill` 还会第三次调用 `ApplyBattleMastery`。离线 PatchInfo 复核为 base postfix=1、Sandbox postfix=1、外层 wrapper postfix=0（但 wrapper 方法体自己加一次）。因此 Campaign 中 `UpdateAgentStats` 委托进 Sandbox 的属性重算路径通常会把累计 bonus 加两次，而直接经当前 wrapper 查询有效技能会加三次；配置中的“每次 `+50` / `+10`”并未始终只生效一次，且不同调用方看到的数值可能不一致。
+- **AI 的单动作去重在无后备目标时失效。** `QueueAction` 先调用 `AddMeleeMastery`，之后才找两米内后备目标；找不到就直接返回，不写入用来去重的 `_pendingActions`。玩家另有 `_playerActionObserved` 边沿锁，不受此问题影响；AI 只靠 `_pendingActions`。而后备目标搜索明确排除主玩家和骑乘目标，所以 AI 对玩家、骑手出踢击/盾击，或目标在这一刻不合格时，同一动作持续帧可能多次获得 `+50`，甚至快速冲到上限。
+- 次要浪费：bonus 字典自身要累计到 `1000` 才停止调用 `UpdateAgentStats`，但“原始技能 + bonus”往往更早达到有效技能上限；达到有效上限后仍可能继续做若干次无玩家可见收益的属性重算。
+
+- 本轮只检查源码、当前 1.5.2 游戏 IL 和部署 DLL 的 Harmony 目标，没有修改成长代码、数值、live 模组或玩家 README。若下一步修复，正确边界应是：每个动作/箭只登记一次、每条有效技能读取链只应用一次 bonus，同时保留当前每 Agent、仅本场、封顶 `1000` 的设计。
+
+## 2026-09-03 性能回退收口；弓箭手 10% 击倒 / 5% 真正无视盾牌（待用户实机验收）
+
+### 一、卡顿定位与修复
+
+- 用户在加入“双刀穿过友军”候选后反馈偶发掉帧、卡顿。检查 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Faults.log`：文件为 `38,810` 字节、`218` 行，其中 `DUAL_FRIEND_PASS` `80` 行（两次启动各达到会话上限 40），`WARDEN_ARROW` `138` 行；后者有 `7` 次 `granted=True`、`131` 次 `False`。两种记录都会在密集战斗里成批出现，最快相邻写入低于 1 ms。
+- 日志没有支持“友军碰撞无限循环”这个假设：同一攻击者、受击者和骨骼的最高重复数只有 4；一刀穿过数名密集友军会自然产生数条记录。真正危险的是这两条健康路径每次命中都在战斗线程同步执行 `File.AppendAllText`，箭雨与近战群聚时会形成短促 I/O 峰值，足以解释用户看到的偶发顿挫。
+- 已完整删除 `DUAL_FRIEND_PASS` 与 `WARDEN_ARROW` 的调用、字符串拼接、计数器和上限逻辑；不只是提高上限或改为少写。保留的 `GwpFaultTrace` 均仍位于异常/失败路径，健康战斗不再因这两项功能写文件。
+- 双刀友军穿透的热路径同时改为先读取本次碰撞的武器槽，并只在物品 ID 是双刀主刀或副刀时才继续调用 `Agent.IsFriendOf` 与完整双刀装备判定。普通近战接触不会再额外执行一次 managed/native 队伍关系查询。
+- 上述日志中的箭矢证据也结束了上一轮穿盾调查：`138/138` 次均为 `class=Arrow; item=piercing_arrows; isArrow=True`，所以箭矢识别没有失败；有 7 次获得原生穿盾标志却仍不明显，证实问题在原版后续盾甲阈值。证据写入本节后，旧日志按诊断生命周期规则删除，不再留存积累数据。
+
+### 二、弓箭手箭矢强化
+
+- 资格严格收窄为角色 ID `gwarcher` 发射的 `WeaponClass.Arrow`，并且目标必须是敌人。领主、玩家、其他灰袍兵种、弩矢和投掷物不继承这两项效果；这是按“弓箭手”兵种实现，不再沿用旧版“所有灰袍身份”的范围。
+- 每次箭矢直接命中敌人身体时独立掷一次 `10%`：成功后 `DecideAgentKnockedDownByBlow` 强制返回击倒，同时让该次 blow 的 `ShrugOff=False`、`KnockedBack=False`，避免原版耸肩或击退反应盖过倒地。盾挡、武器格挡和背盾碰撞不掷身体击倒。
+- 每次箭矢撞上敌人当前举起的盾时独立掷一次 `5%`。成功后仍加上原生 `WeaponFlags.CanPenetrateShield`，但不再停在这个“允许尝试”的标志：`Mission.HandleMissileCollisionReaction` 的本次参数被改成 `PassThrough`，`Mission.MissileHitCallback` 的返回值同步改成 `false`（箭未停止）。因此这 5% **不比较盾牌护甲、不比较箭伤、不要求盾碎，任何盾都不能截停它**；未命中的 95% 完整走原版。盾仍会收到原版这次接触的伤害/音效结算，区别是箭会继续飞向盾后目标。
+- 两项概率互相独立。一支箭若先触发 5% 穿盾，继续命中盾后身体时才进行该身体命中的 10% 击倒判定。
+- 实现用 `[ThreadStatic]` 保存单次同步 `MissileHitCallback` 的极小状态，回调结束或异常时立即清空；没有逐箭集合、每帧轮询、额外实体扫描或文件 I/O。性能开销只发生在实际箭矢碰撞时。
+
+### 实现与验证
+
+- 新增 `GwpArcherArrowEffects.cs`：`GwpArcherArrowMissileHitPatch` 包住命中作用域并修正“箭是否停止”的返回值；`GwpArcherArrowShieldPassPatch` 改写最终盾牌碰撞路由。`GwpAgentApplyDamageModel` 负责兵种/箭矢资格、两次概率判定和击倒反应；旧 `1/30` 原生标志方案由用户本轮指定的 `5%` 真正无视盾牌取代。
+- 当前安装游戏 Bannerlord `1.5.2`。Debug 构建成功，`0` errors、`40` 条既有 nullable warnings。开发中两次编译错误分别来自嵌套枚举命名空间与缺少 `TaleWorlds.Core` 引用，均在部署前修正；最终产物没有新增编译警告。
+- Windows PowerShell 5.1 离线调用 `Harmony.CreateClassProcessor().Patch()`，已成功生成 `Mission.MissileHitCallback_Patch1`、`Mission.HandleMissileCollisionReaction_Patch1` 和包含性能修复的 `Mission.MeleeHitCallback_Patch1`。成品 ILSpy 反编译确认 `0.10f` / `0.05f` 常量、`gwarcher + Arrow` 资格、三种击倒反应，以及 `PassThrough` + `missileStopped=false` 均存在于部署 DLL。
+- 对部署 DLL 做了无游戏启动的反射路径测试：人为置入一次已获选盾牌命中后，`ForceShieldPass` 把 `Stick` 改成 `PassThrough`，`Complete` 把 `missileStopped=True` 改成 `False`，并在退出时清空整个命中状态；三项断言全部通过。
+- 对当前游戏 DLL 的反编译再次确认：原生 `CanPenetrateShield` 之后确实还有 `InflictedDamage > ShieldPenetrationOffset + ShieldPenetrationFactor × 盾甲`；而 `HandleMissileCollisionReaction(PassThrough)` 不移除飞行物，调用方最终以 `reaction != PassThrough` 决定返回值。新补丁覆盖的正是这两处，因此不是“提高穿盾资格”，而是所选命中的真正无条件盾牌穿越。
+- 仓库 `obj/Debug`、live 普通客户端与 live 编辑器 DLL 均为 `846,336` 字节，SHA-256 `8A45095736030F084EFA5BC1E1F79BE3C349753E2EBF4C21B63B207E06FAF99B`。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、非 `bin/Shaders` 多余文件 0。旧 `GreyWarden-Faults.log` 已确认不存在；未制作正式 ZIP，未改玩家 README。
+- 实机验收仍需用户完成：① `gwarcher` 连续命中裸露敌人，观察约 10% 的实际倒地且不远距离抛飞；② 对举盾敌人密集射击，观察约 5% 的箭不论盾牌强度都穿过盾并能命中后方；③ 其他射手与 95% 未触发箭保持原版；④ 战斗中确认先前偶发卡顿不再出现。未得到实机确认前不建立稳定功能检查点。
+
+## 2026-09-02 双刀友军穿透（待用户实机验收）
+
+- 用户最终明确范围：**只要当前实际使用这套完整双刀，就获得穿透队友的机制**。不按兵种、角色或控制器筛选，因此玩家、灰袍 AI，以及任何其他成功装备并挥舞完整双刀的战斗者都适用；换成别的武器、只剩单刀或攻击骨骼不属于当前双刀时立即恢复原版。
+
+### 原生 1.5.2 已有的半套规则
+
+反编译当前安装的 Bannerlord 1.5.2 `Mission.MeleeHitCallback` 后发现，TaleWorlds 已在友军分支中加入一条很窄的长兵器例外：仅限**突刺**，且碰撞点既处于武器内侧 80% 又短于攻击者手臂长度时，原版返回 `ContinueChecking`。这能忽略非常贴身的内杆碰撞，但挥砍、刀身外段及其他队友遮挡仍会进入友伤取消分支，清零伤害、给攻击者友伤硬直并结束攻击，所以不能完整解决双刀卡刀。
+
+### 实现
+
+- 在已有的 `Mission.MeleeHitCallback` Harmony 网关前置中先调用 `GwpDualBladeFriendlyPassThrough.ShouldContinue`。资格同时要求：非飞行物、非踢腿/盾击、受击者为友军、碰撞携带合法武器槽，并通过既有 `GwpAgentApplyDamageModel.IsDualBladeAttack`。后者会核对装备槽中的完整主副双刀、当前实际持握的手，以及 `AttackBoneIndex`，不会把同一角色携带的弓、骑枪或其他武器一起放行。
+- 命中合格队友时，在**进入原版回调主体之前**把 `colReaction` 设为原生的 `MeleeCollisionReaction.ContinueChecking`。原版看到这个结果便跳过友军伤害、友伤攻击者硬直、零伤 blow、剩余动量扣减和本次友军命中事件；同一次攻击保持活动，继续检查队友后方的敌人。后置再次固定返回值，避免同一回调内的其他处理改回终止反应。
+- 这条路径没有伪造 `Blow`、没有重入 `RegisterBlow`、没有改写 `AttackCollisionData`，与 2026-08-30 已删除并导致 Native 崩溃的防御旁路完全不同；它只提前给出引擎本身已使用的“忽略本次接触”枚举。
+- 开发构建暂留 `DUAL_FRIEND_PASS` 事件追踪，全会话上限 40 行，记录攻击者控制器、受击队友、挥砍/突刺、攻击骨骼和原碰撞结果。它要回答的是实机里玩家与 AI 是否都真正进入放行路径，以及是否对同一队友发生异常高频重复接触；用户确认后随本功能一起退役。
+
+### 验证与验收
+
+- 当前安装游戏为 Bannerlord **1.5.2**。Release 构建成功，`0` errors、`40` 条既有 nullable warnings；离线 `Harmony.CreateClassProcessor(GwpPassiveHeldShieldMeleePatch).Patch()` 成功绑定当前 `Mission.MeleeHitCallback`。成品反编译确认装备判定位于回调前置，合格分支前后均返回 `ContinueChecking`。
+- live 普通客户端 DLL、编辑器 DLL 与仓库 `obj/Release` DLL 均为 `801792` 字节，SHA-256 `AEE3BC50FF37C2F60330027667BB0B13772F91223E942EC47FFBE54990B30633`。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、非 bin/Shaders 多余文件 0。未制作正式 ZIP，未改玩家 README。
+- 实机验收：让双刀 AI 在密集友军后挥砍和突刺，确认刀不会停在队友身上且能命中后方敌人；玩家拿完整双刀重复同样测试；友军不得掉血或产生受击反应，攻击者不得吃友伤硬直；换弓、骑枪或普通武器后必须保持原版；同时观察是否出现同一队友处无限空转、卡动作或 Native 崩溃。
+
+## 2026-09-02 突刺击倒改走控制接触；穿盾未生效，加一条定位追踪
+
+- 用户两项：**突刺无论是否被挡，都做一次 80% 的击倒判定**（弓箭手命中本就是 80%）；以及**穿盾没感觉到效果**。
+
+### 一、突刺击倒：不再指望 blow 自己带
+
+前几轮已实证：被挡的突刺只有 0~9 伤害，而**引擎不会让这么小的 blow 带动击倒**，标志再干净也没用。所以这次不再走 blow，改走本模组**已经在用的**那条路——`GwpAlternativeAttackControl` 的一点伤害控制接触，踢腿与盾击的击倒一直靠它执行，稳定多年。
+
+- **触发**：`DecideAgentKnockedDownByBlow` 里，凡是双刀**突刺**造成的 blow（命中或被挡都算，踢腿/盾击除外），登记一次 `(攻击者 → 受害者)`。
+- **执行**：`GwpDualBladeAiBehavior.OnMissionTick` 开头 `Deliver()`，对登记项调用 `GwpAlternativeAttackControl.Apply`。该方法内部自己取 `GetGreyWardenKnockdownChance`（弓箭手 0.80、领主更高）掷骰，成功给 `KnockDown`、失败给 `KnockBack`，与踢腿完全同一套。
+- **为什么从 tick 执行而不是在模型里直接注册**：在伤害模型内部调 `RegisterBlow` 等于在一次 blow 的处理过程中重入战斗管线；踢腿那条路径当初就是从 `MissionBehavior` 发起的，本轮沿用同一形态。
+- **一次突刺只给一次**：按攻击者做 0.5 秒去重，避免同一刀的两次接触各触发一次。
+
+### 二、穿盾：先分清是"没进来"还是"被原生阈值挡掉"
+
+用户反馈没感觉到效果，而这有两种完全不同的成因：
+
+1. 这些箭**根本没被认出来**——命中回调里 `missileWeapon.CurrentUsageItem.WeaponClass` 可能不是 `Arrow`（例如报的是发射武器），那么 `IsGreyWardenArrow` 永远为假，标志一次都没加上；
+2. 加上了，但**原生自己的穿盾判定**把它挡了回去（`箭伤害 > ShieldPenetrationOffset + ShieldPenetrationFactor × 盾牌护甲` 才穿）。
+
+新增 `WARDEN_ARROW` 追踪（全会话上限 40 行）：每支灰袍飞行物命中时记 `class=`、`item=`、`isArrow=`、`granted=`。判读：
+
+- 全是 `isArrow=False` → 成因 1，改判定条件即可；
+- 有 `granted=True` 却仍不穿 → 成因 2，要穿就必须绕过原生阈值（那一步就不再是纯原生机制，需用户同意）；
+- 一条 `WARDEN_ARROW` 都没有 → 连 `DecideMissileWeaponFlags` 都没被调用到，问题在更上游。
+
+### 验收
+
+1. 双刀突刺**被格挡时**是否也会把人打倒（约 80%）。
+2. 命中时的表现是否与此前一致，不出现双重击倒。
+3. 踢腿、盾击的击倒不得受影响（共用同一 `Apply`，本轮只多了一个调用方）。
+4. 射几轮箭后把 `WARDEN_ARROW` 的行发回，用来定位穿盾。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 弓箭加强：灰袍的箭 1/30 概率穿盾（待用户实机验收）
+
+- 用户指定：灰袍射手射出的箭有 **1/30** 概率无视盾牌。
+
+### 用的是原生自己的穿盾机制
+
+`AgentApplyDamageModel.DecideMissileWeaponFlags(attacker, missileWeapon, ref flags)` 是原生在 **`Mission.MissileHitCallback` 里、箭命中的那一刻**交出该次命中武器标志的入口（`Mission.cs:5726`）。加上 `WeaponFlags.CanPenetrateShield` 后，引擎走的是它自己的穿盾判定（`Mission.cs:5774`）：
+
+```csharp
+if (missileWeaponFlags.HasAnyFlag(WeaponFlags.CanPenetrateShield)) {
+    if (!collisionData.IsShieldBroken) {
+        if (collisionData.InflictedDamage >
+            ShieldPenetrationOffset + ShieldPenetrationFactor * 盾牌当前护甲)
+            → 穿过去
+    }
+}
+```
+
+即：**这个标志给的是"允许尝试穿盾"，不是"必定穿盾"** —— 箭的伤害仍要高于盾牌护甲换算出的阈值。这是原生给标枪之类武器用的同一条规则，本模组没有改动它，只决定哪些箭有资格去试。贵族长弓 + 穿甲箭的伤害通常能过阈值，但对重盾未必每次都过，实机会看到"命中盾牌但没穿"的情况，那是原生判定而非本机制失效。
+
+### 实现
+
+- 位置：`GwpAgentApplyDamageModel.DecideMissileWeaponFlags`（本模组已接管的模型，**零新增补丁**）。
+- 资格：攻击者为灰袍（`GwpKickBehavior.IsEligibleGreyWarden`，涵盖灰袍兵种、领主与自定义战斗武将），且飞行物为 `Arrow` 或 `Bolt`——不波及投掷武器与其他兵种。
+- 概率：`MBRandom.RandomFloat < 1f/30f`。该回调每支命中的箭调用一次，因此就是"每三十支箭里有一支获得资格"。
+- 未改任何数值：伤害、护甲、技能均未触碰，只是给箭加上原生已有的一个标志。
+
+### 验收
+
+1. 灰袍弓箭手对**举盾**的敌人射击，是否偶尔（约三十分之一）把箭送进盾后。
+2. 其他兵种、其他势力的弓箭手不得出现穿盾。
+3. 玩家自己用灰袍身份射箭时同样适用（资格按灰袍身份判定，不区分玩家与 AI）。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 按用户指示回退：只留"砍穿一人"，突刺相关全部撤销
+
+- 用户决定：**回到满意的稳定点，保留砍穿，突刺不要任何新东西**（破防、击倒改造等一律不要）。
+
+### 先记两条这轮查实的硬事实（它们否定了"左右手交替刺击"这个方案）
+
+用户提出过一个替代设计：第一次点击出左手刺、第二次出右手刺，两者各自结算。查完资产与 API 后确认**做不出来**，原因有二，均为客观限制：
+
+1. **动画资产里只有一个突刺动作。** 全模组 `act_gwd*` 中的突刺仅 `act_gwd_release_thrust_1h`，另有 `_left_stance`（镜像）与 `_balanced`（平衡）变体——**没有"只出左手"与"只出右手"两个独立剪辑**。两刺是同一个动画剪辑内的连续动作，XML 层无法拆分，拆分需要新的动画资产。
+2. **姿态无法由代码切换。** `Agent.GetIsLeftStance()` 只有 getter，`IMBAgent` 接口中不存在对应 setter。因此"用左右姿态交替出手"同样不可行。
+
+唯一未尝试的杠杆是后置 `Mission.MeleeHitCallback`（被格挡分支不经过本模组接管的模型，而该回调按引用交出 `colReaction` 与剩余动量）。用户选择不再继续，故未实施。
+
+### 回退内容
+
+`GwpAgentApplyDamageModel.cs`、`GwpDualBladeAiBehavior.cs`、`GwpDualBladeNpcItemSetup.cs` 三个文件回到检查点 `c7cd1d7`，随后**只重新加回砍穿**。撤销清单：
+
+- 双刀突刺 50% 破防（`DecideCrushedThrough` 的双刀分支、`RollThrustCrushThrough`、`ThrustRoll` 缓存）；
+- `DecideAgentShrugOffBlow` 的双刀豁免；
+- 格挡硬直改动（攻击方 15% / 防御方 250%）；
+- 补刺注入（`GwpDualBladeRiposte` 及其在两个输入组件与 `OnMissionTick` 的调用）；
+- 第一次接触续攻（`ContinueChecking`）与突刺动量；
+- 全部 `THRUST_*` / `SWING_KNOCKDOWN` 追踪。
+
+**保留**：`CalculateRemainingMomentum` 的双刀砍穿（原生公式算动量，同一刀只穿一人），以及此前所有已验收的功能。`GwpFaultTrace` 调用点回到基线的 7 个，全部是失败路径；日志文件已删除。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+- 与检查点 `c7cd1d7` 的差异现在只有一处：`GwpAgentApplyDamageModel.CalculateRemainingMomentum` 的砍穿分支。
+
+### 本轮留下的可复用结论（下次动双刀前先看这几条）
+
+1. 低伤害（0~9）的 blow 带不动击倒，与 `BlowFlags` 无关——`flags=KnockDown` 在场也不会演出击倒。
+2. 强制突刺 `SlicedThrough` 会导致刀尖在同一具身体上反复空转（每 5 毫秒一次、全 0 伤害）。
+3. 双刀突刺动画的第二下**没有攻击窗口**；引擎的攻击在第一次接触即结束。
+4. 被**武器格挡**的攻击不进入 `DecideWeaponCollisionReaction`（`Mission.MeleeHitCallback` 的 `flag2` 分支），模型层改不到；盾挡则可以。
+5. `CanHitMultipleTargets` 由武器类别算出，不是可写标志；砍穿只能从 `CalculateRemainingMomentum` 做。
+6. 原生"背刺"只是一个伤害倍率，没有任何特殊机制。
+
+## 2026-09-01 需求澄清（关键）：不是"再发一次攻击"，而是**同一次攻击里的左右两刀各自结算**
+
+- 用户纠正了我方持续几轮的误解，原话：**"应该是左手刀被挡之后，右手刀要做刺击动画……我想让这两次攻击分别计算，分别可以被挡，可以出伤害。敌人在防御时发起一次刺击，会结算两次刺击伤害。"**
+- 上一轮"注入第二次攻击"的做法据此**整体删除**（`GwpDualBladeRiposte` 及其在两个输入组件与 `OnMissionTick` 中的全部调用点）。它建立在错误模型上：把动画里的第二刀当成需要另外触发的第二次攻击。
+
+### 正确的模型（日志早已给出线索，之前没读懂）
+
+**每一条突刺记录的 `bone=20`** —— 那是本模组自己认定的左手攻击骨骼（`GwpDualWieldCollisionPatch` 的 bone-20 例外正是为此写的）。也就是说：
+
+- 一次突刺动画里，**左刀先刺、右刀后刺，两下都在同一次攻击里挥出**；
+- 原生在**第一次接触**时结束该次攻击，右刀因此永远不产生碰撞；
+- 所以要的不是"第二次攻击"，而是"**别在第一次接触时结束这次攻击**"。
+
+### 实现
+
+`DecideWeaponCollisionReaction`：双刀突刺的**第一次接触**返回 `MeleeCollisionReaction.ContinueChecking`（原生自己用于"这一击不该结束攻击"的答案），让右刀的碰撞随后独立进入正常流程——独立的格挡判定、独立的伤害、独立的击倒判定。**其后的接触一律交还原生**，攻击就此结束，因此一次突刺恰好结算两次，不会更多。
+
+`CalculateRemainingMomentum`：同样只对**第一次接触**给出动量（沿用原生挥砍公式），否则右刀会以 0 动量落空——上一轮"第二刺没伤害"正是这个原因。
+
+两处共用一个按时间的接触计数：`> 0.35 秒` 视为新的一次突刺，`≤ 0.05 秒` 视为同一次接触的重复询问（动量与碰撞反应在同一帧被先后问到），介于两者之间即为同一次攻击的第二下。
+
+**为什么不会重演上一轮的空转**：上一轮把**每一次**接触都强制成 `SlicedThrough`，于是刀尖在同一具身体里反复穿过（日志抓到每 5 毫秒一条、连续十余条、全部 0 伤害）。现在只有第一次接触被放行，第二次就交还原生并终止，天然封顶两下。
+
+### 验收
+
+1. 对**举盾/格挡**的敌人发起一次双刀突刺，是否结算**两次**（两次格挡判定或两次伤害）。
+2. 对**无防御**的敌人突刺，是否吃到两次伤害。
+3. 是否只有两下——**不得**出现连续多次的无伤害碰撞（那是上一轮空转的特征）。
+4. 第二下若打实，击倒是否随之触发。
+5. 挥砍穿透一人、盾击、其他兵种不得变化。
+6. 日志 `THRUST_CONTINUE` 每次突刺应当只出现一行（记录原生原本要给的反应、伤害、骨骼）。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 第二刺扩到玩家、并改为"命中也要补"（待用户实机验收）
+
+- 用户修正需求两点：**玩家也要有**第二刺的动画与伤害结算（"玩家点击攻击没用，就算点得快也得看动画"）；以及**没被挡时第二刀同样要打出**，目的是让敌人快速吃两次伤害。
+
+### 玩家为什么也能做到
+
+`Agent.MovementFlags` 是**公开可写属性**（`get`/`set` 直通 `MBAPI.IMBAgent.Get/SetMovementFlags`），而攻击本身就是这个标志位里的 `AttackDown` 等位。玩家的攻击与 AI 的攻击**走的是同一条通道**，区别只是谁去写它：AI 经 `OnAIInputSet` 按引用交出，玩家由输入控制器每帧写入。因此本模组可以在同一帧之后追加那一位，第二刺就由引擎按正常攻击流程执行——动画、伤害、击倒判定一应俱全。
+
+这也正面回答了用户的观察：**点得再快也没用**，因为下一次攻击何时能开始由动画决定；补刺必须从"第一刺出自的同一处"发出，而不是从鼠标点击发出。
+
+### 本轮改动
+
+- `Mark` 去掉 `IsAIControlled` 限制，玩家同样登记。
+- 触发点由"仅被格挡"扩大为**任何双刀突刺的接触**：`DecideAgentKnockedDownByBlow`（命中）与 `CalculateDefendedBlowStunMultipliers`（被挡）各调用一次。
+- 新增 `ApplyDirectly`：`GwpDualBladeAiBehavior.OnMissionTick` 每帧检查 `Mission.MainAgent`，若玩家正握着双刀且欠着一次补刺，就直接写 `MovementFlags`。AI 仍走两个输入组件的 `Apply`。
+- 边界不变：窗口 0.5 秒、同一 agent 冷却 1.5 秒、一旦进入 `ReadyMelee`/`ReleaseMelee` 立刻清除标记。因此**一次交锋只补一刀**，不会形成连锁。
+
+### 需要在实机上盯的两件事
+
+1. **玩家的操作感**：补刺是替玩家发出的攻击输入。若出现"我不想打的时候它自己刺出去"，就说明窗口（0.5 秒）太长或触发太宽，应先缩窗口而不是取消机制。
+2. **伤害节奏**：一次突刺现在会造成两次伤害判定，实际输出接近翻倍。用户此前的要求是不加数值，而这一条虽然是机制，效果上等同于显著提高突刺输出——若实测过强，优先手段是延长冷却（1.5 秒）而不是改伤害。
+
+### 验收
+
+1. 玩家拿双刀突刺，**命中**之后是否自动接出第二刺，且第二刺**有伤害**。
+2. 被格挡之后是否同样接出第二刺。
+3. AI（武将、弓箭手）是否表现一致。
+4. 是否出现不受控的连续攻击（预期没有：0.5 秒窗口 + 1.5 秒冷却 + 出手即清）。
+5. 挥砍、穿透一人、盾击、其他兵种不得变化。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 用户问"能不能强制播放动画"：能，但没有伤害；改为给 AI 注入一次**真正的**补刺
+
+- 用户提问：能不能强制播放动画，让第一刺被挡后第二刺按动画继续，并且计算伤害？
+
+### 技术边界（问得很准，值得写清楚）
+
+**动画与攻击在引擎里是两回事。** 动画可以强制播放（`Agent.SetActionChannel`），但伤害来自引擎的**攻击状态**及其碰撞窗口，而那个窗口在第一次接触时就关闭了。强制播动画得到的是一次挥空气：看得见第二刺，没有任何判定。这一点与上一轮的空转实验互为印证——碰撞层怎么改都造不出第二个攻击窗口。
+
+**因此"有伤害的第二刺"必须是第二次攻击。** 而对 AI 来说，这是可以请求的：
+
+```
+Agent.MovementControlFlag: AttackLeft=0x40, AttackRight=0x80, AttackUp=0x100, AttackDown=0x200
+Agent.AttackDirectionToMovementFlag(UsageDirection)
+```
+
+攻击本身就是一个**移动控制标志位**，而 `AgentComponent.OnAIInputSet` 正是按引用交出 `movementFlag` 的地方——本模组已经在用同一个回调管弓箭手的收刀。所以可以在第一刺被挡下的瞬间，给该 agent 的后续输入帧补上一次突刺。
+
+### 实现：`GwpDualBladeRiposte`
+
+- **触发**：`CalculateDefendedBlowStunMultipliers` 判定攻击方是双刀持有者时（即这一击被格挡/挡下），标记该 agent。
+- **注入**：两个输入组件（弓箭手的 `FightGrip`、纯双刀的 `PairKeeper`）在 `OnAIInputSet` 里调用 `Apply`，在窗口内把 `AttackDown`（双刀突刺就是 attack_down）加进 `movementFlag`。
+- **边界**：窗口 0.5 秒；同一 agent 两次补刺至少间隔 1.5 秒；一旦该 agent 已经进入 `ReadyMelee`/`ReleaseMelee`（说明攻击已经出去了）立即清除标记，不会连点。
+- **玩家不在其中**，也不应在其中：玩家的攻击由玩家自己发出；给玩家的等价物是同一轮的硬直差（攻击方 15%、防御方 250%），第二次点击几乎无延迟且打在僵直的敌人身上。
+
+补出的这一刺是一次**普通攻击**：完整伤害判定、完整击倒判定，因此击倒会由它自然带出——这正是此前几轮反复证明"低伤害的破防那一击带不动击倒"之后，唯一还站得住的路径。
+
+### 验收
+
+1. AI 双刀（武将、弓箭手近战时）第一刺被挡下后，是否会**自动补出第二刺**。
+2. 补出的那一刺是否造成正常伤害，并可触发击倒。
+3. 是否会连点/抽搐（预期不会：0.5 秒窗口 + 1.5 秒冷却 + 已出手即清除）。
+4. 玩家自己拿双刀时，被挡之后第二次攻击是否明显更快、对方明显更僵。
+5. 其他兵种、其他武器不得出现任何自动攻击。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 定论：动画的第二刺**不是**第二次攻击；强制穿透会造成空转，已撤回，改用"守方大硬直"制造真正的第二击
+
+- 用户实测：三条问题依旧。日志这次直接抓到了原因，而且抓到了我方一个必须立刻撤掉的副作用。
+
+### 抓到的副作用（先撤）
+
+```
+23:00:51.317 THRUST_REACTION native=Bounced; forced=SlicedThrough; damage=0
+23:00:51.320 （每 5 毫秒一条，连续十余条，全部 damage=0）
+```
+
+强制突刺 `SlicedThrough` 之后，刀尖在同一个人身上**反复空转**：穿过去、再碰上、再穿过去，每次 0 伤害。用户看到的"第二刺没伤害"就是这堆空转碰撞。**已撤回**：突刺恢复原生反应（刺入 `Stuck`、被挡 `Bounced`），突刺动量也一并恢复为原生的 0。
+
+### 由此得到的定论（写死，不要再试）
+
+**双刀突刺动画里的第二下不是第二次攻击。** 引擎的攻击在第一次接触时结束，动画后半段没有攻击判定窗口。碰撞反应、动量、硬直都造不出第二个攻击窗口——前两者已实测失败，后者只影响恢复速度。
+
+连同此前两条，双刀突刺这条线上的三个否定结论现在都有实证：
+1. 低伤害（0~9）带不动击倒，与 `BlowFlags` 无关（日志见 `flags=KnockDown` 却无反应）；
+2. 强制碰撞反应会导致空转，不产生第二次伤害；
+3. 动画的第二刺没有攻击窗口。
+
+### 改用能达到同样效果的机制：把"开口"做出来
+
+第二刺真正的价值是"对方还没恢复，我已经又刺出去了"。既然动画给不了，就用原生**本来就在计算的两个硬直**做出来——`CalculateDefendedBlowStunMultipliers` 同时给出攻击方与防御方的硬直，我们两边都改：
+
+- **攻击方（双刀）只保留 15%** —— 刀被拨开，人几乎不僵，立刻可以再出手；
+- **防御方吃 2.5 倍** —— 挡下双刀的代价是长时间僵直。
+
+于是"第一刺被挡 → 对方僵直 → 立刻刺出**真正的第二刀**"。这第二刀是一次完整的攻击：完整伤害、完整击倒判定，因此**击倒会自然而然地由它带出**（未被挡的突刺一直都能击倒，日志里是 21~36 伤害）。
+
+原生的 `StunPeriodMax` 上限仍然生效，所以这个硬直不可能超过游戏允许任何武器造成的最大值。
+
+### 验收
+
+1. 双刀被格挡/被盾挡之后，**对方是否明显僵住**，己方是否能立刻接第二次攻击。
+2. 这第二次攻击打实之后，**击倒是否触发**。
+3. 突刺是否恢复正常手感（不再有空转、不再有一堆无伤害碰撞）。
+4. 挥砍穿透一人、灰袍盾击、其他兵种是否均无变化。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 第二刺已经出来了但空砍：突刺缺动量；被格挡中断与破防击倒确认为本模型层无解
+
+- 用户实测三条：**被挡住无法触发第二刺**；**造成伤害后第二刺没伤害**；**破防仍无法击倒**。
+
+### 日志（`THRUST_REACTION` 19 行）
+
+```
+native=Stuck;   forced=SlicedThrough; damage=27; shieldBlocked=False; flags=KnockDown
+native=Bounced; forced=SlicedThrough; damage=8;  shieldBlocked=True;  flags=KnockDown, NonTipThrust
+native=Stuck;   forced=SlicedThrough; damage=3;  shieldBlocked=False; flags=KnockDown, CrushThrough
+```
+
+三条读数：
+
+1. **碰撞反应改写确实在生效**，命中（`Stuck`）与盾挡（`Bounced`）两条路径都被改成了 `SlicedThrough`。用户能看到第二刺出现，就是这一步的功劳。
+2. **`flags` 里明确带着 `KnockDown`** —— 引擎收到了击倒标志**却依然不演**。至此"低伤害带不动击倒"从推断变成实证：与标志无关，与我们的判定无关。
+3. 被盾挡的那些 `shieldBlocked=True` 也进了这条路径，说明**盾挡有被处理，武器格挡（parry）才是没进来的那一类**。
+
+### 本轮修复：第二刺空砍
+
+成因是上一轮留下的口子：`CarriesOn` 沿用了原生"突刺不留动量"的条件（`blow.StrikeType != Thrust`）。于是第二刺虽然打出来了，却带着 **0 动量**，自然没有伤害。
+
+现在双刀突刺按与挥砍相同的原生公式保留动量（`原动量 × (1 − 护甲吸收/伤害) × 0.5`，低于 0.25 归零），且**不受"只穿透一人"的上限约束**——那个上限是给挥砍防横扫用的，而突刺的第二下是同一次攻击的一部分，边界由动画本身决定。挥砍的上限逻辑原样不动。
+
+### 两条本模型层无解的，明确记录下来
+
+- **被武器格挡（parry）后接第二刺**：`Mission.MeleeHitCallback` 中 `flag2` 为真的分支**根本不会调用 `DecideWeaponCollisionReaction`**，我们改不到；而攻击者硬直降到 15% 也不足以续上——被格挡时引擎会把攻击者切进 `BlockedMelee` 状态并直接终止攻击动作，这属于引擎的攻击状态机，模型层没有入口。**要做只能后置 `Mission.MeleeHitCallback`**（`Mission.*` 属安全目标，但该方法早年出过 native 崩溃，须当独立实验对待）。盾挡不受此限，已经可以接第二刺。
+- **破防击倒**：已实证与标志无关，是伤害量的问题（破防那一刺只有 3~6，格挡吃掉了其余）。**正确的形态应当是"第一刺破防、第二刺打实、击倒由第二刺带出"** —— 未被挡的突刺（18~41 伤害）一直都能正常击倒。若用户仍要"破防那一刺本身就击倒"，唯一的办法是提高那一刺的伤害，属于数值调整，需用户明确同意后再做。
+
+### 验收
+
+1. 命中后的第二刺是否**有伤害**了。
+2. 第二刺打实后是否顺带触发击倒。
+3. 盾挡之后能否接第二刺（武器格挡预期仍然不能）。
+4. 挥砍的"穿透一人"是否仍然只穿一人、没有变成横扫。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 结论：低伤害带不动击倒；改做用户指出的正解——让双刀突刺的**第二刀**打完
+
+- 用户观察（本轮最有价值的一条）：**双刀突刺的动画本来就是两刺**，但现在无论命中还是被挡，刺出第一下之后角色就回到等待指令的状态，第二刀永远不出；击倒也仍然没有。
+
+### 先把击倒这条线结掉
+
+放宽 shrug 豁免后，日志里 `ShrugOff` **已彻底消失**：被挡的突刺是 `NonTipThrust; damage=0~9; knockdown=True`，破防的是 `CrushThrough; damage=3~6; knockdown=True`，**两组都没有击倒**。同一份日志里未被挡的突刺是 21~27 伤害。
+
+因此上一轮列出的两个嫌疑中，**①成立：引擎不会让一次只有 0~9 点伤害的攻击带动击倒**，与标志位无关（标志已经完全干净了）。**继续在 `BlowFlags` 上做文章没有意义，这条写死。**
+
+而这也说明用户指出的方向才是正解：**第二刀若能打进去，伤害自然够，击倒本来就会触发**——未被挡的突刺一直都在正常击倒。
+
+### 为什么第二刀出不来（两个打断点，都在我们已接管的模型里）
+
+1. **被格挡时的攻击者硬直**：`CalculateDefendedBlowStunMultipliers` 决定挡下瞬间攻击方吃多少硬直，这一下把攻击动作直接终止，人回到防御姿态。
+2. **命中时的碰撞反应**：`DecideWeaponCollisionReaction` 对刺入的点返回 `Stuck`、对被盾挡开的返回 `Bounced`，两者都结束攻击——**这就是"命中也只刺一次"的原因**。
+
+### 本轮改动（两处，均零补丁）
+
+- **攻击者硬直**：双刀持有者被格挡时只保留原生硬直的 **15%**。刀被拨开、另一把已经跟上，正是动画表现的样子。防御方的硬直**完全不变**，其他武器不受影响。
+- **碰撞反应**：双刀**突刺**命中后，若原生给出的是会终止攻击的反应（`Stuck`/`Bounced`/`Staggered`），改为原生自己也在用的 `SlicedThrough`（"武器继续走"），让两刺动画完整播完。致命一击、挥砍、其他武器、以及本来就会继续的反应一律不动。
+- 新增追踪 `THRUST_REACTION`（记录原生原本给的反应与伤害），用来确认这一步真的在改写、以及改写的是哪一类。
+
+### 验收
+
+1. 双刀突刺**命中**后是否会接着刺出第二刀。
+2. 双刀突刺**被格挡**后是否也能接上第二刀（而不是被打断回防御姿态）。
+3. 第二刀若打实，是否顺带把击倒带出来（预期如此：未被挡的突刺一直都能击倒）。
+4. 挥砍、穿透一人、灰袍盾击、其他兵种均不得变化。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+## 2026-09-01 破防仍不击倒：`ShrugOff` 已解除，问题收敛到"伤害太小"或"破防反应盖过击倒"
+
+### 上一轮修复确实生效了
+
+破防那些行的 `flags` 由 `CrushThrough, ShrugOff` 变成了 **`CrushThrough`** —— shrug 已经解除，`knockdown=True`（8 次里 7 次），判定链自始至终没有问题。**但人依然没倒。**
+
+### 同一份日志给出的关键对照
+
+| 情形 | damage | flags |
+|---|---|---|
+| 突刺**未被挡** | **18～41** | `None` |
+| 突刺**破防**（挡住后打穿） | **3～6** | `CrushThrough` |
+| 突刺被挡、未破防 | 0 | `ShrugOff` / `NonTipThrust` |
+| 挥砍（对照，正常击倒） | 21～62 | `None` |
+
+**破防那一击的伤害只有正常突刺的十分之一**——格挡吃掉了绝大部分。于是只剩两个嫌疑，且都由这个数字指向：
+
+- **① 伤害太小，带不动击倒**：引擎在消化 `BlowFlags.KnockDown` 时可能另有下限，3~6 点过不去；
+- **② 破防反应盖过击倒**：被打穿的一方播放的是"守势被破"的踉跄，覆盖了击倒动画。
+
+### 本轮做法：一次实验把两者分开
+
+把 shrug 豁免由"破防的突刺"**放宽到全部双刀突刺**（用 `blow.OwnerId` 反查攻击者判定）。这样：
+
+- **被挡但未破防的突刺**（0 伤害）也会带着击倒标志进入引擎；
+- 判读因此变得干净：
+  - 未破防的倒了、破防的没倒 → **是 ②**，破防反应挡了路，下一步应当去掉破防、只留"格挡被击倒"；
+  - 两者都没倒 → **是 ①**，0~6 点伤害带不动击倒，下一步应改为只在能造成实际伤害的命中上做文章；
+  - 两者都倒了 → 问题本来就出在 shrug，功能达成。
+- 日志里 `flags=` 天然把两组分开（`CrushThrough` vs `ShrugOff`/`NonTipThrust` 消失后的 `None`），不需要额外字段。
+
+### 另外值得用户注意的一点
+
+日志显示**未被格挡的双刀突刺本来就在正常触发击倒**（18~41 伤害、`knockdown=True`、无 shrug）。所以"突刺击倒"这件事只在**打到格挡上**时失灵。用户实机时可以顺带确认这一条，它决定了后续是"修破防"还是"修全部突刺"。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。追踪保留。
+
+### 验收
+
+1. 对**正在格挡**的敌人突刺：破防的那些是否击倒？未破防的那些是否击倒？（两组分别看）
+2. 对**没有格挡**的敌人突刺：是否照常击倒（这一条日志显示本来就该正常）。
+3. 挥砍击倒、穿透一人不得退化。
+
+## 2026-09-01 破防不击倒的真因：blow 被判 `ShrugOff`，击倒标志挂在一次引擎已决定无视的攻击上
+
+- 追踪一次命中，且答案不是此前列出的 A 或 B 两种可能。
+
+### 读数（50 行，`agent=1` 为 AI 武将，对手 `agent=0`）
+
+```
+突刺 THRUST_KNOCKDOWN | reached=True; knockdown=True; collider=True; shieldBlocked=False;
+                        bone=20; damage=0~3; flags=CrushThrough, ShrugOff
+挥砍 SWING_KNOCKDOWN   | reached=True; knockdown=True; collider=True;
+                        bone=27; damage=35;   flags=None            ← 正常击倒
+```
+
+三条结论：
+
+1. **判定链完全正常。** `reached=True`（进了我们的分支）、`collider=True`（不是可能 A）、`knockdown=True`（我们确实说了要击倒）。可能 A 与 B 都排除。
+2. **每一条突刺都带 `ShrugOff`。** `Mission.CreateMeleeBlow` 的顺序是：先设 `CrushThrough`（5545）→ 再问 `DecideAgentShrugOffBlow`（5555）→ 最后问击倒（5575）。被判 shrug off 的 blow 引擎不产生任何反应，**于是击倒标志被挂在一次已经决定无视的攻击上**。
+3. **成因写在旁边的字段里：`damage=0~3`。** 双刀突刺的伤害远低于硬直阈值（对照组挥砍是 35），`DecideAgentShrugOffBlow` 因此判定"无视这一击"。`bone=20` 另外说明双刀的突刺是**左手**动作。
+
+### 修复
+
+覆写 `DecideAgentShrugOffBlow`：**突刺 + `BlowFlags.CrushThrough` 的 blow 一律不许被 shrug off**，其余全部交给原生。
+
+判据为什么是安全的：**原生与 Sandbox 两套模型的 `DecideCrushedThrough` 都要求"挥砍 + 上劈"**（`strikeType != Swing` 直接 return false）。因此"突刺且破防"这个组合在游戏里**只可能出自本模组的规则**，这条例外不可能误伤任何其他攻击，也不需要解析攻击者是谁。
+
+被挡下但**没有**破防的普通突刺仍然毫无反应——它本来就被挡住了，这是对的。
+
+### 顺带记录一条设计事实
+
+双刀突刺本身几乎不造成伤害（0~3），命中也带 `NonTipThrust`。因此"突刺破防"在玩法上是一个**控制手段**而非输出手段：它的收益是破防之后的击倒，不是伤害。若日后想让它也有伤害，那是武器数据/动作层的问题，与本轮机制无关。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+- 追踪暂时保留：下一轮要确认的正是 `flags=` 里 `ShrugOff` 消失、`KnockDown` 出现。确认后与穿透、破防一并退役。
+
+### 验收
+
+1. 突刺破防后是否真的把人打倒。
+2. 日志中破防那条 `THRUST_KNOCKDOWN` 的 `flags=` 应当变为 `CrushThrough, KnockDown`（不再含 `ShrugOff`）。
+3. 普通被挡下的突刺仍然没有反应（预期不变）。
+4. 挥砍击倒、穿透一人、灰袍盾击破防均不得退化。
+
+## 2026-09-01 破防生效但不触发击倒：加一条精确追踪，先分清"没被问到"还是"问了但被无视"
+
+- 用户实测：**突刺确实破防了**，但这类命中**触发不了已有的灰袍击倒**。
+
+### 读原生代码能确定的两件事
+
+1. **击倒判定不是原生的那条路。** 原生自己的击倒（`MissionCombatMechanicsHelper.DecideWeaponKnockDown`）要求武器带 `CanKnockDown`、且近战必须是**挥砍 + 甜点区**，突刺一律不通过。但本模组的击倒走的是另一条：`Mission.CreateMeleeBlow` 里对**任何**命中人形且无坐骑的 blow 都会问 `DecideAgentKnockedDownByBlow`（`Mission.cs:5575`），而这个方法正是我们覆写的。所以理论上突刺**应该**被问到。
+2. **破防与击倒在标志位上并不互斥。** `CreateMeleeBlow` 里 `BlowFlags.CrushThrough` 与随后设置的 `BlowFlags.KnockDown` 可以同时存在，托管层没有任何抑制。
+
+### 因此只剩两个可能，且必须用数据分开
+
+| 可能 | 特征 | 对应解法 |
+|---|---|---|
+| **A. 根本没被问到** | 破防那一击的 `collisionData.IsColliderAgent` 为假（碰撞体是盾/武器而非人），整个 `if (IsColliderAgent)` 块被跳过，我们的判定从未运行 | 击倒必须挂到另一处（例如破防成立时自行施加），不能指望这条 blow |
+| **B. 问了、也答了 true，但引擎没演出来** | 追踪显示 `reached=True; knockdown=True`，画面却无击倒 | 破防的守势破坏反应覆盖了击倒动画，属引擎行为，需要换一种表现或改用其他反应 |
+
+### 本轮加入的追踪（`#if GWP_DIAGNOSTICS`，全会话上限 80 行）
+
+- `THRUST_CRUSH`：我们批准一次破防时写一行（`crushed=`、防御方、防具类别、攻击能量）。
+- `THRUST_KNOCKDOWN` / `SWING_KNOCKDOWN`：双刀持有者的每次击倒询问写一行，字段直接对应上面两种可能：
+  `reached=`（是否进了我们的分支）、`chance=`、`cached=`、`knockdown=`（最终决定）、`collider=`（`IsColliderAgent`）、`shieldBlocked=`、`bone=`、`damage=`、`flags=`（blow 的完整标志位）。
+- 挥砍那一行是**对照组**：它是已知能正常击倒的情形，两者字段一比就知道差在哪。
+
+### 用户实机要做的事
+
+拿双刀对着**正在格挡/举盾**的敌人突刺若干次（若干次破防即可），然后把 `THRUST_CRUSH` 与 `THRUST_KNOCKDOWN` 这些行发回。判读：
+
+- 有 `THRUST_CRUSH` 但**没有**对应的 `THRUST_KNOCKDOWN` → 可能 A；
+- 有 `THRUST_KNOCKDOWN` 且 `reached=True; knockdown=True` 而画面无击倒 → 可能 B；
+- 有 `THRUST_KNOCKDOWN` 但 `reached=False` → 我们的资格判定（`IsDualBladeAttack`）在突刺上不成立，`bone=` 会指出原因。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。本轮**未改动任何行为**，只加观测。
+
+## 2026-09-01 双刀突刺 50% 破防（待用户实机验收）
+
+- 用户指定：**突刺给一个破防效果，50% 概率**。
+
+### 原生的破防长什么样
+
+`CustomAgentApplyDamageModel.DecideCrushedThrough`：
+```csharp
+if (weapon == null || isPassiveUsage || !weapon.WeaponFlags.HasAnyFlag(CanCrushThrough)
+    || strikeType != StrikeType.Swing || attackDirection != AttackUp) return false;
+float num = 58f; if (defendItem != null && defendItem.IsShield) num *= 1.2f;
+return totalAttackEnergy > num;
+```
+即：**只有上劈、只有带 `CanCrushThrough` 的重武器、还要够能量**。任何剑都不可能满足，突刺更是第一行就被挡掉。所以"双刀突刺破防"必然是本模组自己的规则，不存在可以复用的原生条件——这一点与背刺不同，值得记下来。
+
+### 实现
+
+`GwpAgentApplyDamageModel.DecideCrushedThrough` 新增第二个特例（该方法本就有灰袍盾击的特例，本次是并列的一条）：
+
+- 条件：`strikeType == Thrust`、非被动攻击（骑枪不算）、受害者是人形敌人、攻击者**携带并正握着**双刀（主手主刀或副手副刀，携带但拿着别的武器不算）。
+- 判定：`MBRandom.RandomFloat < 0.5`。
+- **同一次交锋只掷一次**：引擎可能对同一接触重复询问，因此按 `(攻击者 → 受害者, 0.25 秒窗口)` 缓存结果——重复询问不构成"再赌一次"的机会。这与既有击倒判定缓存同一次 blow 的做法一致。
+- 其余情形一律原样交给原生模型。
+
+### 生效范围
+
+与穿透一样是**装备判定**，不看角色 id：灰袍弓箭手、AI 武将、以及玩家自己拿双刀时都适用。
+
+### 平衡说明（用户已知并要求）
+
+破防意味着**挡住了也照样被打进**，对盾墙与格挡型敌人是直接克制。用户明确要的就是这个强度（原话"这样弓箭手就很强了"），不加任何数值，只加这条规则。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+### 验收
+
+1. 对**正在格挡/举盾**的敌人用双刀突刺，是否约一半能破防打进并打出守势破坏的反应。
+2. 挥砍的表现不变（破防只挂在突刺上）。
+3. 灰袍盾击原有的破防特例是否照常（本次是并列新增，未改动它）。
+4. 穿透一人是否仍正常。
+
+## 2026-09-01 背刺机制取消：原生背刺本身只是一个伤害倍率，没有特殊机制
+
+- 用户看过实现后取消该项："背刺效果结果只是提高了击倒概率吗？真没意思……那就算了，不要背刺机制。"
+
+### 原生背刺到底是什么（据此判断，值得写死）
+
+`MissionCombatMechanicsHelper.ComputeBlowDamage` 里，`CanWeaponDealSneakAttack` 为真时只做一件事：
+
+```csharp
+float sneakAttackMultiplier = AgentStatCalculateModel.GetSneakAttackMultiplier(attacker, weapon);
+num3 *= sneakAttackMultiplier;   // 1.5 + 盗贼技能×0.002，匕首另有加成
+```
+
+**没有击倒、没有硬直、没有处决、没有任何特殊反应——只有一个伤害倍率。** 而且它对**任何近战武器**都成立（`weapon.IsMeleeWeapon`），双刀本来就在吃这个倍率，不需要我们做任何事。
+
+因此本模组能在"背刺"这个名义下加的东西，只能是自己发明的效果（上一版做的是"背后命中必定击倒"），它并不来自原生机制。用户判断这不值得，予以取消。
+
+### 处置
+
+- 完整删除 `IsBehind` 与 `BehindCosine`，`GetGreyWardenKnockdownChance` 恢复为取消前的形态（击倒仍按兵种档位，与本轮之前逐字节相同）。
+- **保留穿透一人**（`CalculateRemainingMomentum` 的双刀分支），未受影响。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+### 剩余可选杠杆（用户如需再考虑）
+
+仍在零补丁安全区内、且是真机制而非数值的两条：`DecideCrushedThrough`（双刀破防，直接克制盾墙）与 `CalculateDefendedBlowStunMultipliers`（格挡成功后给攻击者更长硬直＝反击窗口）。卡刀需要 `Mission.MeleeHitCallback` 后置，仍待评估。
+
+## 2026-09-01 弓箭手机制加强第一轮：双刀"穿透一人"与"背刺必倒"（背刺已于下一条取消）
+
+- 用户选定：**只做两项** —— 允许穿透多一个人、加一个背刺效果；**不动步兵**；卡刀问题**暂不处理**（先看劈穿够不够）。
+
+### 一、穿透一人（劈砍不在第一个人身上停下）
+
+调研中一个关键更正：**`CanHitMultipleTargets` 不是物品标志，而是从武器类别算出来的属性**——
+```csharp
+public bool CanHitMultipleTargets => WeaponClass == TwoHandedAxe || WeaponClass == TwoHandedMace;
+```
+所以"给双刀加个 flag"这条路不存在（第一版实现就是这么写的，编译即失败，已撤回）。社区劈穿模组正是绕开它，而绕法有两种：patch 这个 getter（属 `WeaponComponentData` 的 per-call 补丁，与本模组已确证有毒的 `MissionWeapon` per-call 同类，**不采用**），或者直接回答引擎真正问的那个问题——**这一刀还剩多少动量**。
+
+因此实现落在 `CalculateRemainingMomentum`（本模组已接管的模型，零新增补丁）：
+
+- 对双刀挥砍，用**原生自己的公式**算出它本会给双手斧的动量：`原动量 × (1 − 护甲吸收/造成伤害) × 0.5`，低于 `0.25` 归零。
+- **原生的每一条拒绝理由全部保留**：无伤害、被盾挡下、背后盾挡、突刺、马匹冲撞、被动攻击（骑枪）、`HitWithAnotherBone`、破防穿透，一律照旧返回原生值。
+- **上限是本模组自己的**：同一刀内只允许穿透一次。第二次接触直接返回 0，因此双刀在人堆里能砍开两人纵深，而不是横扫一列。同一刀以时间判定（0.5 秒窗口），因为整个接触过程只有几帧。
+
+### 二、背刺必倒
+
+`GetGreyWardenKnockdownChance` 新增一条：双刀命中且**从受害者背后**打进时，击倒概率由兵种档位（0.80）提升为 **1.0**。
+
+- "背后"用**受害者的视线方向**而非移动方向判定（原生背刺用的是移动方向，但一个边退边打的士兵仍然面对着你），夹角余弦阈值 `-0.35`，即以背心为中心约三分之一圈；打在侧肩不算。
+- 只对双刀生效，踢腿/盾击/其他武器完全不变；对骑手、非人形、友军一律不触发（沿用既有前置条件）。
+- 这一条的用意正是用户反馈的痛点：击倒难触发不是概率问题，而是**混战中够不着人**；那么真正绕到背后的那一刀就该算数。
+
+### 三、没有做的事
+
+- **不改任何数值**：伤害、护甲、技能、兵种概率表一律未动（1.0 是位置条件下的结果，不是把 0.80 调高）。
+- **不碰步兵**：盾击、被动大盾、踢腿保持原样。
+- **不处理卡刀**：需要后置 `Mission.MeleeHitCallback`，按用户指示留到看过劈穿效果之后再评估。
+- **未加诊断**：两项机制的效果在画面上直接可见（一刀带倒两人、背后一刀必倒），没有需要靠日志回答的问题。若手感不对再按事件驱动加观测量。
+
+### 验证
+
+- Release 0 errors、40 条既有 nullable warnings；`Verify-LiveModule` 仓库 36 / live 43，差异 0；仍无任何 Harmony 补丁。
+
+### 验收
+
+1. 双刀在密集队形中挥砍，是否能一刀伤到第二个人，且**不会**出现横扫一整排。
+2. 绕到敌人背后用双刀命中，是否必定击倒。
+3. 正面作战的手感是否与之前一致（原生拒绝条件都保留了，预期无变化）。
+4. 踢腿、盾击、步兵三件套、玩家自己的双刀是否均无变化。
+
+## 2026-09-01 调研：弓箭手机制加强的可用杠杆清单（不改数值）
+
+- 用户反馈平衡问题：步兵"盾击 + 被动大盾 + 踢腿"三件套过强；弓箭手只有射术、踢腿、双刀击倒，而**双刀击倒实战很难触发**——混战中被队友卡刀，且必须命中才判定。用户明确：**不加强数值，愿意加强机制**。
+
+### 一、我们已经接管的模型里有哪些杠杆（零新增补丁）
+
+`AgentApplyDamageModel` 是抽象类，本模组已整体覆写（`GwpAgentApplyDamageModel`）。除已用的 `DecideAgentKnockedDownByBlow` 外，以下方法都是**纯机制**开关，改它们不触碰任何 Harmony 目标：
+
+| 方法 | 机制含义 | 对弓箭手的价值 |
+|---|---|---|
+| `DecideWeaponCollisionReaction` → `MeleeCollisionReaction.SlicedThrough` | 一次挥砍**劈穿多人**继续飞行 | **最高**。原生已对双手斧/锤硬编码此行为；社区 `SliceThrough`/`Keehu's Slicer` 正是改这里。直接解决"混战砍不到人" |
+| `DecideCrushedThrough` | 破防：连格挡一起打穿 | 高。可让副刀在主刀被挡后破防，把"必须命中"变成"能打穿盾" |
+| `CalculateDefendedBlowStunMultipliers` | 攻/防双方的**格挡硬直**倍率 | 高。双刀格挡成功后给攻击者更长硬直＝反击窗口，纯机制无伤害 |
+| `CanWeaponDealSneakAttack` | 背刺判定（对未警戒/背向目标） | 中。原生实现即"未警戒或背对"，主题贴合 |
+| `DecideAgentShrugOffBlow` | 无视轻击硬直 | 中。让双刀持有者不被小伤打断连击 |
+| `CanWeaponIgnoreFriendlyFireChecks` | 仅影响**能否打到友军盾牌**（`Mission.CanGiveDamageToAgentShield`），**不解决卡刀** | 低（已核实） |
+| `GetKnockDownPenetration` / `CanWeaponKnockDown` | 击倒的穿透阈值/资格 | 中。属数值边缘，用户已排除加数值 |
+
+### 二、"被队友卡刀"的确切成因（已定位到原生代码）
+
+`Mission.MeleeHitCallback` → `CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase(attacker, victim)`：
+```
+attacker.Controller == AgentControllerType.AI  →  友军相撞一律 “取消伤害并阻断攻击”
+→ collisionData.AttackerStunPeriod = StunPeriodAttackerFriendlyFire（攻击者被硬直）
+→ 挥砍就此中断
+```
+关键细节：该分支（`flag2 == true`）**根本不会调用 `DecideWeaponCollisionReaction`**，所以卡刀**无法**从我们已接管的模型里解决。要改只能后置 `Mission.MeleeHitCallback` 把 `colReaction` 改成 `ContinueChecking`（"穿过友军但不伤害友军"）。`Mission.*` 属本模组已确认的**安全补丁目标**，但该方法早年曾因伪造 `Blow`/`AttackCollisionData` 并回调 `RegisterBlow` 引发 native 崩溃——**仅改一个 out 枚举**远比当年温和，风险仍需按一次独立实验对待。
+
+### 三、社区实践参考
+
+- `SliceThrough`、`Keehu's Slicer` 主要通过 `DecideWeaponCollisionReaction` 实现劈穿；`Keehu's Slicer` 明确宣称“不碰伤害与动量计算，行为全交给原生”，与本模组的分工原则一致。后续源码核对发现 `Xorberax's Cut Through Everyone` 不止改这个模型入口，还同时后置 `Mission.MeleeHitCallback`；详见下一条社区调研。
+- `Organized Frontline`、`Realistic Combat Adjustments`：从**站位与推挤**方向缓解"友军挡路"，属兵种 AI 层，与武器机制正交。
+
+### 四、尚未决定
+
+具体采用哪几条由用户选择。记录本清单的意义在于：**这些杠杆的存在与安全边界已经核实过，后续实现不必重新调研。**
+
+## 2026-09-02 社区调研：长武器近战被友军阻断的现成方案
+
+- 用户要求查社区是否已有模组解决“长武器在近战被队友挡住攻击”。结论是**已有多种实现**，但分成两类：一类让武器碰到友军后继续检查后方目标；另一类通过队形间距、攻击抑制或推挤来减少友军进入武器轨迹。
+- 独立模组 [Slice Through Allies](https://www.nexusmods.com/mountandblade2bannerlord/mods/5871) 最直接，但只让**玩家**的近战攻击穿过友军；主文件面向 1.1.5–1.2.10，社区反馈到 1.2.12 尚能工作、1.3.0/War Sails 已出现失效或启动崩溃，因此不能作为 1.4.8 的现成依赖。
+- [Warbandlord](https://www.nexusmods.com/mountandblade2bannerlord/mods/3961) 内置 `Slice Through Allies`：双手斧/锤的上挥可越过友军肩臂，突刺按攻击方向与友军身体夹角决定是否继续；其更新记录明确把该机制用于改善长枪兵和双手武器兵的密集队形威胁。社区也有长枪方阵不再频繁戳中友军的实战反馈，但它是整套战斗大改，且当前主文件标为 Bannerlord 1.4.7，不适合仅为这一点直接并入 1.4.8 配置。
+- [Realistic Battle Mod](https://www.nexusmods.com/mountandblade2bannerlord/mods/791) 明确宣称长矛在紧密队形中不会卡在友军身上，旧更新记录还专门处理了长矛、长枪、骑枪被身后友军或友军盾墙“吸住”的问题。这是最贴近 AI 长武器队形的先例之一，但同样会整体改写战斗、护甲和 AI；当前主文件也只标到 1.4.7。
+- [Xorberax's Legacy](https://www.nexusmods.com/mountandblade2bannerlord/mods/3462) 的当前主文件明确支持 Bannerlord 1.4.8；其中 `Cut Through Everyone` 可关闭 `Friendly Unit Block Cut Through`，再关闭 `Only Player Can Cut Through`，让 AI 也能越过友军。其[公开源码](https://github.com/gnalvesteffer/mount-and-blade-bannerlord-mods/blob/master/XorberaxCutThroughEveryone/src/CutThroughEveryone/CutThroughEveryonePatch.cs)证明实现同时后置 `Mission.DecideWeaponCollisionReaction` 与 `Mission.MeleeHitCallback`：前者把合格碰撞改为 `SlicedThrough`，后者按剩余动量恢复继续命中的状态。这直接印证本项目对原生友军阻断分支的反编译结论——只改现有 `GwpAgentApplyDamageModel.DecideWeaponCollisionReaction` 不够，必须覆盖绕过该模型的 `MeleeHitCallback` 路径。
+- [Battlefield Breaker](https://www.nexusmods.com/mountandblade2bannerlord/mods/11427) 也有 `Slice Through Allies` 开关，并加入推开友军、穿行队形等功能；作者只正式测试到 1.3.15，对 1.4.8 仅表示大概率可用，且它主要服务玩家移动/挥击，不是针对 AI 长武器的窄修复。
+- [Organized Frontline](https://www.nexusmods.com/mountandblade2bannerlord/mods/9058) 走另一条路线：按武器长度保持间距，后排与敌人之间存在友军时抑制出手。它能减少无效挥刺，却不是“穿过友军继续命中”。`Realistic Weapon Collision` 则让武器更容易反弹或卡住，方向相反，不应当作本问题的解决方案。
+- 对 GreyWarden 的可复用决策：**借鉴 Xorberax 的双入口做法，而不是依赖整包模组**。若实施，应只对指定 GreyWarden AI/指定长武器生效；友军仍不受伤、不触发友伤硬直，同时让原攻击继续检查后方敌人。这样既命中根因，也避免 RBM、Warbandlord 或 Xorberax 整体战斗改写与本项目自定义伤害模型叠加。
+
 ## 2026-09-01 用户验收通过：弓箭手双刀功能完成；诊断退役、建立检查点
 
 - 用户实机确认：**"完美解决了。"** 非冲锋指令下换弓已是一次动作，停射进双刀、交手保持双刀、冲锋表现均正常。
