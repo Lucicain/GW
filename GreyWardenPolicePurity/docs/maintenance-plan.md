@@ -28,6 +28,13 @@
   - **不要用 ScriptBlock 版 `AssemblyResolve` 处理程序**。CLR 会在已有管线内重入调用它，直接把 runspace 打死，报 `An error occurred while creating the pipeline`，看起来像脚本语法错误。改为一次性预加载全部依赖。
   - **预加载时必须跳过 `Modules\GreyWarden`**。否则先加载的是 live 那份同名程序集，之后对 staging DLL 的 `LoadFrom` 会按标识返回**已加载的那一份**，于是一份健康的新 DLL 会被报成有加载器异常。本轮最初就被这个假阳性误导过一次。
 
+### 本轮固定点
+
+- 用户要求在本轮结束时固定 Git。提交 `b8007a3`（`fix: make the live module load on 1.4.8 again, and keep it checkable`），父提交为 `e963c62`，只在本地 `main`，未推送远端。
+- 该提交内容：成长隐患修复的三个源文件、本维护记录、以及新增的 `tools\Verify-GameCompat.ps1` 与 `tools\Invoke-ModuleLoadPreflight.ps1`。加载修复本身不在源码里——它是“对着已安装的 1.4.8 重建并部署”，产物哈希见上。
+- 性质说明：按用户“测试版就开发到目前程度”的决定，这是一个**固定点**，不是已通过实机验收的稳定功能检查点。1.4.8 能否加载已用离线预检证实；成长、弓箭手箭矢、双刀友军穿透的实机表现仍待用户在 1.4.8 确认。确认后再按规则补记验收结果。
+- 回滚路径：`b8007a3` → `e963c62`（成长修改前）→ `c7cd1d7` → `e04544a`（世代拆分，即标签 `v1.4-r10`，用户已在 1.4.8 实测通过）。
+
 ### 1.4.8 下对最近几轮功能的复核
 
 - 反编译当前 1.4.8 的 `Mission.HandleMissileCollisionReaction` 确认：`switch` 同样没有 `PassThrough` 分支，且 `flag = collisionReaction != MissileCollisionReaction.PassThrough` 只用于客户端移除。即“选中的 5% 穿盾箭不会被移除、可继续命中盾后身体”这一前提在 1.4.8 与 1.5.2 上一致。
