@@ -1,5 +1,30 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 预览错位归因确定；live 临时回到 v1.4-r10 做呼喊二分
+
+### 上一轮回退给出的确定结论
+
+- 用户实机反馈：**人物预览恢复正常，主角下令仍然没有呼喊**。
+- 因此本日两个症状归属已经分开、且都有实证：
+  - **预览错位来自成长硬化**。回退只动了 `GwpAgentStatCalculateModel.cs` / `GwpAlternativeAttackControlBehavior.cs` / `GwpKickInputComponent.cs` 三个文件，预览就正常了。最可能的机制是那轮给**基类** `AgentStatCalculateModel.GetEffectiveSkill` 加了 prefix/finalizer 包装，而该基类方法在任务之外的角色预览/tableau 路径上同样会被调用，于是包装影响到了预览用的 Agent 属性。重做成长硬化时必须把补丁限制在任务内、并且只作用于合格的灰袍，不能再裸挂基类方法。
+  - **呼喊消失与成长无关**，成长硬化已完全移除而症状仍在。
+- 附带确认：`GwpAgentStatCalculateModel.cs`、`GwpAlternativeAttackControlBehavior.cs`、`GwpKickInputComponent.cs` 在 `v1.4-r10` 与当前 `0e17c60` 之间**逐字节相同**，也就是说成长系统（未硬化形态）在 r10 里同样存在。它不是 r10→HEAD 的差异项。
+
+### 本轮动作：live 临时切到 v1.4-r10
+
+- 用户要求回到 1.4.8 r10 试。`v1.4-r10` 是**附注标签**，`git rev-parse` 给出的是标签对象 `ce8ce23`，其目标提交才是 `e04544a`；核对时要解引用，不要把标签对象 SHA 当提交 SHA。
+- **没有动 `main`**。用 `git worktree add <scratchpad>\r10 v1.4-r10` 建独立工作树，在其中构建并部署到 live，仓库分支仍停在 `0e17c60`。要回到当前版本只需在仓库根重新执行一次带 `-p:DeployToLiveModule=true` 的常规构建。
+- live DLL：`839,168` 字节，SHA-256 `6D0001085B7E27EF04311AC786A7434FC1D00418EF2B800D2D6E116E7C0F69D1`，客户端与编辑器一致。`Verify-GameCompat`：缺失类型 0、缺失成员 0、`TYPES_OK=413`、`PATCH_OK=37`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`。
+- live 数据已确认为 r10 形态：`spnpccharacters.xml` 中 `gwtwinblade` 重新出现。
+- **`Verify-LiveModule` 的一个假阳性须记录**：拿 worktree 的 `_Module` 作基准时，它把 `gwp_black_gold_shield.tpac` 与 `gwp_inherited_legacy_assets.tpac` 报成 live 多余文件。原因是这两个 tpac 在 `.gitignore` 里，属于只存本地的资源包，全新 worktree 不会检出它们。live 实际是完整的（三个 tpac 都在）。以后拿 worktree 做基准时要记得 gitignore 的本地资源不参与比对。
+
+### r10 → HEAD 的差异面，即下一步的二分范围
+
+- 代码 8 个文件：`GwpDualBladeAiBehavior.cs`（新增 910 行，并由 `SubModule` 注册为 MissionBehavior）、`GwpArcherArrowEffects.cs`（新增）、`GwpAgentApplyDamageModel.cs`、`GwpShieldBashGuardPatch.cs`、`GwpDualBladeActionSetPatch.cs`、`GwpDualBladeNpcItemSetup.cs`、`GwpIds.cs`、`SubModule.cs`。
+- 数据 2 个文件：`spnpccharacters.xml`、中文字符串（都只是移除 `gwtwinblade`）。
+- 已先排除一条：`GwpDualBladeAiBehavior` 在第 185 行以 `!agent.IsAIControlled` 把主角挡在外面，不直接作用于玩家 Agent。
+- 若 r10 下呼喊恢复，剩余最值得先查的是能影响主角动作集/装备状态的 `GwpDualBladeActionSetPatch` 与 `GwpAgentApplyDamageModel`；若 r10 下呼喊仍然没有，则问题比 r10 更早，与本轮全部未验收改动无关，应转向环境（RTSCamera 等其他模组、1.5.2→1.4.8 回滚后的音频资源）与存档本身。
+
 ## 2026-09-03 按用户指示回退成长修复；order-voice 诊断随之退休
 
 ### 决定与范围
