@@ -1,5 +1,64 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 回到 1.4.8 正式版：live 模组无法加载的根因、修复与常备版本兼容检查
+
+### 症状与根因
+
+- 用户把游戏从 1.5.2 测试版退回 `1.4.8` 正式版，并决定测试版分支就开发到当前程度为止。回退后 live 模组无法加载。
+- 根因不是源码问题，而是 **live 里那份 DLL 是在 1.5.2 还装着的时候编译的**。离线加载复现给出确切的加载器报错，与 8-31 那轮同类：
+  `Method 'CalculatePassiveAttackDamage' in type 'GreyWardenPolicePurity.GwpAgentApplyDamageModel' ... does not have an implementation.`
+  该 DLL 在 1.4.8 下 `GetTypes()` 只能加载 `423/424` 个类型；缺的正是 `GwpAgentApplyDamageModel`，即模组的伤害模型整体装不进去。
+- 元数据引用差集给出比上次更完整的画面：旧 DLL 相对当前 1.4.8 缺 `1` 个类型 `TaleWorlds.Core.BattleEnvironment`，另有 `3` 处**成员形参个数**在两代之间不同——`HeroDeveloper::InitializeHeroDeveloper/1`、`CustomBattleCombatant::.ctor/4`、`Mission::SpawnAgent/4`。这三处即使类型能加载也会在运行期抛 `MissingMethodException`，属于此前只查“缺失类型”时会漏掉的一类断层。
+
+### 修复：源码无需改动，重建即可
+
+- `csproj` 的 `GwpDetectTargetGame` 工作正常：本轮构建打印 `GreyWarden: installed game v1.4.8 -> GwpTargetGame=148`，编译器命令行确认**没有**定义 `GWP_GAME_150_OR_LATER`，因此 `GwpAgentApplyDamageModel` 编译的是 `BasicCharacterObject` 那一版重写。反射比对确认重写与 1.4.8 基类逐项一致（含 `AttackCollisionData&` 的 `modreq:InAttribute`），且 `newslot=False`，即真正占用了抽象槽。
+- 上述 3 处形参个数差异同样由“对着已安装游戏编译”自动解决——它们是重载解析问题，不需要条件编译。**一个游戏世代对应一次重建**这条既有结论仍然成立且已够用。
+- 执行 `dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj --no-restore -t:Rebuild -p:DeployToLiveModule=true`：`0` errors、`40` 条既有 nullable warnings。仓库 `obj/Debug`、live 普通客户端、live 编辑器三份 DLL 均为 `846,848` 字节，SHA-256 `8DD90AEFC9D043BFA47D0EE9A8952C5486D49785AE6C9F7969287226EDAE7472`。
+- 重建后复检：`GetTypes()` 为 `TYPES_OK=424`（`0` 加载器异常），成员解析失败 `0`，`39` 个 Harmony 补丁类全部绑定成功、`PATCH_FAIL=0`；引用差集 `401` 个 TypeRef / `1223` 个 MemberRef 全部命中，缺失类型 `0`、缺失成员 `0`。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、非 `bin/Shaders` 多余文件 0。
+- 本轮未制作正式 ZIP，未改玩家 README，未改 `SubModule.xml` 的版本值。
+
+### 新增常备工具：`tools\Verify-GameCompat.ps1`
+
+- 用法：`pwsh tools\Verify-GameCompat.ps1`（默认检查 live 普通客户端 DLL；`-ModuleDll` 可指向 staging 产物）。**每次切换游戏版本后、每次实机测试前都应先跑它**，它无需启动 Bannerlord 就能复现“could not be loaded correctly”。
+- 它做两件互补的事，缺一不可：
+  1. **引用差集**（脚本本体，pwsh 7 + `System.Reflection.Metadata`）：把模组对游戏程序集的全部 TypeRef/MemberRef 与已安装游戏定义的类型/成员做差集。这一半才能抓到 `SpawnAgent/4` 这类“类型在、重载不在”的运行期断层。成员按“名字 + 形参个数”匹配；解析形参类型需要实现泛型接口 `ISignatureTypeProvider<,>`，PowerShell 类表达不了，因此直接从签名 blob 头读取形参个数。
+  2. **加载与 Harmony 预检**（`tools\Invoke-ModuleLoadPreflight.ps1`，由前者自动以 Windows PowerShell 5.1 启动）：真正 `LoadFrom` 该 DLL 并对每个补丁类跑 `PatchClassProcessor.Patch()`。模组与游戏都是 net472，pwsh 7 载不进去，所以这一半必须留在 5.1。
+- 两个踩过的坑已写进脚本注释，避免下次重犯：
+  - **不要用 ScriptBlock 版 `AssemblyResolve` 处理程序**。CLR 会在已有管线内重入调用它，直接把 runspace 打死，报 `An error occurred while creating the pipeline`，看起来像脚本语法错误。改为一次性预加载全部依赖。
+  - **预加载时必须跳过 `Modules\GreyWarden`**。否则先加载的是 live 那份同名程序集，之后对 staging DLL 的 `LoadFrom` 会按标识返回**已加载的那一份**，于是一份健康的新 DLL 会被报成有加载器异常。本轮最初就被这个假阳性误导过一次。
+
+### 1.4.8 下对最近几轮功能的复核
+
+- 反编译当前 1.4.8 的 `Mission.HandleMissileCollisionReaction` 确认：`switch` 同样没有 `PassThrough` 分支，且 `flag = collisionReaction != MissileCollisionReaction.PassThrough` 只用于客户端移除。即“选中的 5% 穿盾箭不会被移除、可继续命中盾后身体”这一前提在 1.4.8 与 1.5.2 上一致。
+- 补丁绑定数与 1.5.2 时相同：成长补丁 `4` 个目标，`GwpArcherArrowMissileHitPatch` / `GwpArcherArrowShieldPassPatch` 各 `1` 个目标。
+- 但**这些只证明能加载、能绑定，不等于实机行为已验证**。成长隐患修复、弓箭手 10% 击倒 / 5% 穿盾、双刀友军穿透这几项仍是待用户在 1.4.8 实机验收的候选，之前的离线验证是在 1.5.2 上做的。
+
+## 2026-09-03 战斗内成长隐患修复；穿盾后击倒链复核（待用户实机验收）
+
+### 本地回滚点
+
+- 按用户要求，修改成长机制前先在本地 `main` 建立 WIP 回滚提交 `e963c62`（`checkpoint: preserve combat updates before mastery hardening`），父提交为 `c7cd1d7`。它完整保存本轮修复前的双刀友军穿透、性能收口和弓箭手箭矢效果候选；没有推送远端，也没有制作发布包。需要回到修改前时，先保存当前候选，再执行 `git switch --detach e963c62` 检出该快照。
+- 下述成长修复仍作为待实机验收的工作区改动保留；按“稳定功能需用户确认后再建检查点”的规则，本轮不把未经游戏验证的候选冒充稳定提交。
+
+### 成长机制的两个实质隐患已修复
+
+- **同一 bonus 现在每条技能读取链只加一次。** `GwpAgentStatCalculateModel.GetEffectiveSkill` 改为纯委托，不再自行第三次调用 `ApplyBattleMastery`。覆盖基类、Sandbox 和两个 Naval 实现的 Harmony 补丁增加 `[ThreadStatic]` 调用深度：最外层 prefix 记为本次拥有者，嵌套的 Sandbox → base 调用不加值，只在最外层 postfix 对最终原生结果应用一次 bonus；finalizer 在正常返回与异常路径都会归还深度。因此 Campaign、Custom Battle 和 Naval 路径不再出现一次成长被加两遍或三遍、不同调用方读数不一致的问题。
+- **AI 的一次动作现在只能登记一次成长。** `GwpKickInputComponent` 给原生替代攻击动画增加上升沿锁：同一踢击/盾击持续多少个 `OnAIInputSet` 帧都只调用一次 `BeginAction`，动画真正退出后才重新解锁。共享解析器同时改为即使没有后备目标也先写 `_pendingActions`，并且先建立动作记录、再加 `+50` 和重算属性；主玩家、骑乘目标、瞬时无合格目标以及属性重算重入都不再留下重复记账窗口。
+- 数值与作用域没有借修复改变：踢击/盾击仍各给近战 `+50`，每支实际发射的弓箭仍给弓术 `+10`，仍按单个 `Agent.Index`、仅当前 Mission 保存，有效技能仍封顶 `1000`。审计里提到的字典会继续把 bonus 存到固定 `1000`，这是每 Agent 最多 20 次近战动作或 100 支箭的严格有界工作，不是逐帧循环；没有为省掉少量后期重算而用某一瞬间的原生技能值提前冻结成长，以免临时技能修正变化后丢失应得 bonus。
+
+### 穿盾箭命中身体能否击倒：能，但必须发生第二次身体碰撞
+
+- 盾牌碰撞与人体碰撞是两个独立的 `Mission.MissileHitCallback`。第一次举盾碰撞只掷 `5%` 无视盾牌，不掷击倒；命中后若获选，补丁把盾碰撞路由为 `PassThrough` 并让回调返回“箭未停止”。当前 1.5.2 的 `HandleMissileCollisionReaction` 对 `PassThrough` 不移除飞行物，`Mission.Missile.PassThroughEntity` 只把刚命中的实体设为忽略对象并把速度保留为 `80%`，因此箭仍可继续碰到盾后的 Agent 身体。
+- 如果继续飞行的箭确实碰到敌人身体，引擎会进入一次新的回调。`Begin` 先清空上一碰撞状态，再把这次标为 body contact；`DecideMissileWeaponFlags` 随后独立掷新的 `10%`。原生 body 分支再创建 missile blow，并依次询问 `DecideAgentShrugOffBlow`、`DecideAgentKnockedBackByBlow`、`DecideAgentKnockedDownByBlow`；获选时本模组分别返回 `false / false / true`，所以该 blow 可以携带真正的 `KnockDown` 后再 `RegisterBlow`。
+- 结论：**穿盾后打在未骑乘的人体上，有可能触发击倒；条件概率仍是 10%。** 若从所有撞上举盾的箭算，同时抽中 5% 穿盾与 10% 身体击倒的名义概率是 `0.5%`，实际还要乘上穿盾后的箭确实碰到人体的几何概率。盾牌接触本身不会提前消耗或复用 10% 骰子。骑手仍是原生例外：命中骑乘中的人时引擎只询问下马，不进入 KnockBack/KnockDown 分支，所以当前不会把骑手直接击倒；命中坐骑则只走受惊抬前蹄分支。
+
+### 验证与部署
+
+- 当前安装 Bannerlord `1.5.2`。Debug 构建成功，`0` errors、`40` 条既有 nullable warnings。Windows PowerShell 5.1 离线逐类绑定成功：成长补丁 `4` 个目标、`MissileHitCallback` 补丁 `1` 个目标、`HandleMissileCollisionReaction` 补丁 `1` 个目标；深度守卫反射断言得到 `outer=True`、`inner=False`、嵌套深度 `2 → 0`。
+- 部署 DLL 的 ILSpy 结果确认：外层 stat wrapper 只委托原生模型；成长 postfix 只在 outer state 调用一次 `ApplyBattleMastery`；箭矢仍以 `0.10f / 0.05f` 分开掷骰，身体获选状态贯穿原生三项反应询问。当前游戏 DLL 的 body/shield 两条分支和 `PassThrough` 不移除飞行物的实现也已重新核对。
+- 仓库 `obj/Debug`、live 普通客户端与 live 编辑器 DLL 均为 `846,848` 字节，SHA-256 `16BCC6966EF85973D1EB826B3347E8DCD90FA95CD02BBA276449FF091E256F84`。`Verify-LiveModule`：仓库 36 / live 43，缺失 0、差异 0、非 `bin/Shaders` 多余文件 0。未改玩家 README，未制作正式 ZIP。
+
 ## 2026-09-03 战斗内临时成长机制审计（只读审计，无行为改动）
 
 - 用户要求盘点当前会让士兵在战斗中获得成长的机制。代码中只有一套 `GwpAlternativeAttackControlBehavior` + `GwpAgentStatCalculateModel` 的 mission-local mastery 系统，玩家观感上有三种触发、底层则是两条按单个 `Agent.Index` 保存的计数：
