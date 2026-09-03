@@ -1,5 +1,35 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 呼喊二分收敛到 e963c62；再拆一半，先关弓箭手箭矢补丁
+
+### 二分结果
+
+- `v1.4-r10`（`e04544a`）有呼喊；`089ea00` **也有呼喊**（用户实测）；`e963c62` 没有。
+- 因此元凶就在 `089ea00 → e963c62` 这一步，即提交 `e963c62` 本身，共四个文件、四项功能：
+  1. 弓箭手箭矢 `10%` 击倒 / `5%` 穿盾（`GwpArcherArrowEffects.cs` 新增两个补丁类 + `GwpAgentApplyDamageModel` 的资格与三项反应改写）
+  2. 双刀友军穿透（`GwpShieldBashGuardPatch` 里 `GwpDualBladeFriendlyPassThrough` + `MeleeHitCallback` 前后置）
+  3. 双刀顺劈动量（`GwpAgentApplyDamageModel.ApplyDualBladeCleave`）
+  4. 双刀刺击击倒控制（`GwpDualBladeAiBehavior` 里 `GwpDualBladeThrustControl`，由 `OnMissionTick` 投递）
+- 逐份读过这四处 diff，**没有一处直接触及原生喊话链路**（`Owner.MakeVoice` 及其四道闸门）。因此不猜，继续二分。
+
+### 用户提供的关键时序
+
+- 追问“呼喊是一开战就没有，还是打了一阵才没有”，用户答：**一开战就没有**（还没接触任何人）。
+- 这一条把 2、3、4 三项直接排除：它们全都要先发生一次真实的近战接触才会执行任何代码。
+- 唯一在开战瞬间就活跃的是第 1 项：弓箭手一开打就在放箭，`Mission.MissileHitCallback` 立即开始被调用，`GwpArcherArrowHitState.Begin()` 随每次飞行物命中进入。而 `Mission.HandleMissileCollisionReaction` 的前置补丁同样从第一波箭雨起就在链路上。
+
+### 本轮部署：e963c62 减去弓箭手箭矢那一半
+
+- 在 `…\scratchpad\e963` 工作树（`e963c62`）里，只给 `GwpArcherArrowMissileHitPatch` 与 `GwpArcherArrowShieldPassPatch` 各加一行 `private static bool Prepare() => false;`，其余一字未动。
+- 这样关得很干净：两个补丁不再生成，`GwpArcherArrowHitState` 永远不会 `Begin()`，于是 `_active` 恒为 `false`，`RollForArcherArrow`、`ShieldPassGranted`、`ShouldForceKnockdown` 全部短路，`GwpAgentApplyDamageModel` 里那几处箭矢分支自动变成纯委托。双刀三项完全保留。
+- 沿用上一轮学到的规则：停用补丁类一律用 `Prepare()`，不要让 `TargetMethods()` 返回空集合。
+- 部署验证：DLL `846,848` 字节，SHA-256 `B47FB003A8BF62CEE668693915A54D91A7DC72EF68ECB5BAD2F7D5476CCF5EE3`；`GAME COMPAT: PASS`、`TYPES_OK=424`、`PATCH_OK=39`、`PATCH_FAIL=0`，其中两个箭矢补丁类均为 `targets=0`。
+
+### 判读
+
+- **呼喊回来** → 元凶是弓箭手箭矢那两个补丁。它们挂在 `Mission.MissileHitCallback`（一个 `[MBCallback]` 原生回调，且带 `out` 参数，本模组还给它加了 finalizer）与 `Mission.HandleMissileCollisionReaction` 上，届时按“补丁包装本身 vs 补丁逻辑”继续细分，重点怀疑对原生回调加 finalizer 包装。
+- **呼喊仍然没有** → 说明“这三项需要先有战斗接触”这个推断在某处不成立，回头逐项排查双刀三项，并重新审视 `GwpDualBladeThrustControl.Deliver()` 这个每 tick 都跑的入口（含 `Queue` 静态 `List` 在标记线程与 tick 线程之间无锁共享的竞态）。
+
 ## 2026-09-03 呼喊在 v1.4-r10 恢复：二分范围锁定；窗口掉全屏与模组无关
 
 ### r10 实测结果与由此确定的二分区间
