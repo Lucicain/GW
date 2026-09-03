@@ -1,5 +1,34 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-03 呼喊在 v1.4-r10 恢复：二分范围锁定；窗口掉全屏与模组无关
+
+### r10 实测结果与由此确定的二分区间
+
+- 用户在 live 切到 `v1.4-r10` 后实测：**声音恢复**。
+- 失败侧要说准：上一轮回退后 `git diff --name-only e963c62 HEAD` 只剩 `maintenance-plan.md` 与两个 `tools` 脚本，**HEAD 的代码与 `e963c62` 逐字节相同**。所以用户测到没有呼喊的那个版本，实质就是 `e963c62`。
+- 因此区间是 `e04544a`（好） → `e963c62`（坏），中间 7 个提交，其中带代码的只有三个：
+  - `f820298` 退休双刀诊断（`GwpDualBladeActionSetPatch` / `GwpDualBladeGuardBehavior` / `GwpDualBladeNpcItemSetup` / `SubModule`）
+  - `089ea00` 弓箭手双刀（用户当时确认过"双刀与它们的命令"，含 `GwpDualBladeAiBehavior` 新增 910 行并注册为 MissionBehavior）
+  - `e963c62` 弓箭手箭矢效果 + 双刀友军穿透 + 盾击补充（`GwpArcherArrowEffects` 新增、`GwpAgentApplyDamageModel`、`GwpShieldBashGuardPatch`、`GwpDualBladeAiBehavior`）
+- 本轮已把中点 `089ea00` 部署到 live：DLL `841,216` 字节，SHA-256 `C943140ADE61C61BC43A29C7764082C16B3F53EBFB82FE7334A9E4CC69D48AF9`，`GAME COMPAT: PASS`、`TYPES_OK=416`、`PATCH_OK=37`、`PATCH_FAIL=0`；live `spnpccharacters.xml` 中 `gwtwinblade` 计数为 `0`，与该提交一致。
+- 判读：`089ea00` 有呼喊 → 元凶在 `e963c62`（四个文件，范围很小，且从未实机验收）；`089ea00` 没呼喊 → 元凶在 `f820298`/`089ea00`，重点看 `GwpDualBladeActionSetPatch` 与 `SubModule` 的行为注册。
+
+### 切换版本的工作方式
+
+- 全部用 `git worktree` 在 scratchpad 建独立检出后构建部署，`main` 始终停在最新提交，不做 reset。当前存在两个工作树：`…\scratchpad\r10`（v1.4-r10）与 `…\scratchpad\c089`（089ea00）。
+- 回到任意版本只需在对应工作树跑一次带 `-p:DeployToLiveModule=true` 的构建；回到最新版本则在仓库根跑同样的命令。二分结束后用 `git worktree remove` 清理。
+
+### 窗口随时掉出全屏：证据指向硬件与显示模式，不是模组
+
+- 用户反馈设置全屏后会黑屏并被拉回窗口化。取证结果：
+  - 本机是**笔记本**（`Win32_SystemEnclosure.ChassisTypes = 10`），单一内置面板 BOE，**原生模式 2560×1600 @ 240 Hz**。
+  - 混合显卡：显示由 `Intel(R) Graphics` 输出，渲染 GPU 是 `NVIDIA GeForce RTX 5070 Ti Laptop GPU`。
+  - `Documents\Mount and Blade II Bannerlord\Configs\engine_config.txt`（`12:04:58` 写入，即用户那局结束时）为 `display_width = 2560`、`display_height = **1440**`、`display_mode = 0`、`display_refresh_rate = 240`。
+  - 系统日志：**没有任何显卡驱动重置/TDR 事件**（无 `nvlddmkm`、无 Display 4101）；游戏时段（约 `11:56`–`12:05`）内也**没有**待机/唤醒事件，Modern Standby 的 `Lid` 事件都发生在更早的 `10:43` 及以前。
+- 结论：游戏请求的是 `2560×1440`，而面板原生是 `2560×1600`（16:10），独占全屏要走一次真实 modeset；在 Optimus 式混合显卡笔记本上显示面板归 iGPU 所有，独占全屏本就脆弱，任何焦点/显示状态变化都会把它踢回窗口。配置里最终存下的 `display_mode = 0` 正是被踢回后游戏自己写回的结果。
+- 模组侧没有任何显示/窗口代码，`e04544a` 与 `e963c62` 的差异全部是玩法代码与两个数据文件，不可能影响 modeset。因此这条与本次二分无关，**不要把它算进二分变量**。
+- 建议（属于用户的设置，未代为修改）：在游戏 选项→视频 里把分辨率改成 `2560×1600`，显示模式选**无边框窗口**而不是全屏。无边框不做 modeset，也不会被焦点变化踢出。
+
 ## 2026-09-03 预览错位归因确定；live 临时回到 v1.4-r10 做呼喊二分
 
 ### 上一轮回退给出的确定结论
