@@ -1,6 +1,8 @@
 # GreyWarden Maintenance Plan
 
-## 2026-09-11 双刀友军穿透按用户决定彻底删除（已部署，待实机）
+## 2026-09-11 双刀友军穿透按用户决定彻底删除（已获用户验收）
+
+- 用户实机反馈："完美,验收成功"。同时验收的还有上一节的双刀攻击受击霸体。已建立稳定检查点 `7ba10a4`（`checkpoint: accept dual-blade attack armor and the removal of friendly pass-through`），内容为受击霸体实现、穿透彻底删除与本文件记录，对应已部署的 live DLL `991D16DB9615F7BE94CA2E9D8EFCEC5483FB5E7EA8F6FF6F429CA5FE50EEDBD2`。后续改动若要回到这一验收点，从该提交重建并部署即可。本轮两项功能均无 `GWP_DIAGNOSTICS` 追踪需要退休（受击霸体自始未加诊断，旧 `DUAL_FRIEND_PASS` 随穿透功能一并删除）。
 
 - 用户决定：双刀友军穿透不再保留，对**所有**使用者一律恢复原版友军阻断，不是只对灰袍射手关闭。玩家、灰袍 AI 与任何装备完整双刀的战斗者都回到原生行为。
 - 修复前存在源码/live/文档三方不一致，本轮的直接起因是用户反馈"穿透友军没有实现"：
