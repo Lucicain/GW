@@ -34,7 +34,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Pieces>
       <Piece id="gwp_vlandian_blade_3_dual"
              Type="Blade"
-             scale_factor="100" />
+             scale_factor="50" />
       <Piece id="vlandian_guard_8"
              Type="Guard"
              scale_factor="100" />
@@ -55,7 +55,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Pieces>
       <Piece id="gwp_vlandian_blade_3_dual"
              Type="Blade"
-             scale_factor="100" />
+             scale_factor="50" />
       <Piece id="vlandian_guard_8"
              Type="Guard"
              scale_factor="100" />
@@ -76,7 +76,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Pieces>
       <Piece id="vlandian_blade_3"
              Type="Blade"
-             scale_factor="100" />
+             scale_factor="70" />
       <Piece id="vlandian_guard_8"
              Type="Guard"
              scale_factor="100" />

@@ -1,5 +1,18 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 双刀刀刃缩短（副刀 50%、主刀 70%，已获用户验收）
+
+- 用户实机反馈："完美"，机制与观感通过；随后提出副刀 50% 偏短，调为 60%（见上一节）。本节记录的 50%/70% 版本已建立检查点，可随时回到该形态。
+
+- 用户要求：左手（副手）刀刃缩短一半，右手（主手）刀缩短为七成，目的是减少挥砍被队友/敌人卡刀。
+- 实现走原生打造件缩放，纯数据改动，没有新增代码、没有改网格资源：`_Module/ModuleData/items.xml` 中三个 `CraftedItem` 的 **Blade** 件加 `scale_factor`——`gwdualbladeoffhand`、`gwdualbladeoffhandai` 为 `50`，`gwdualblademainhand` 为 `70`。护手/握把/配重仍为 `100`，只缩短刀身本身。
+- 为什么不改件定义本身：主刀的刀身件是原生 `vlandian_blade_3`，`gwonehandedsword` 与 `gwtwohandedsword` 同样引用它；改 `gwp_crafting_pieces.xml` 或原生件的 `length` 会连带改掉那两把剑。`scale_factor` 写在 `CraftedItem` 的 `<Piece>` 上，只作用于该件实例，两把单/双手剑的刀身仍是 `100`，已核对未受影响。
+- 原生机制核对（反编译 `TaleWorlds.Core`）：`ItemObject.Deserialize` 读取 `<Piece scale_factor>` 后调用 `WeaponDesignElement.SetScale(百分比)`；`WeaponDesignElement` 以该百分比缩放 `ScaledLength`、`ScaledBladeLength`、`ScaledWeight`、`ScaledCenterOfMass` 与前后接件偏移，原生自己也用同一入口做打造界面的缩放滑条和随机武器 90%–110% 缩放。两个自定义模板都带 `piece_type_to_scale_holster_with="Blade"`，刀鞘显示会跟着缩短。`StatsData` 只有 `max_value` 上限、没有下限，因此缩短不会触发模板夹取。
+- 连带影响（预期内，不是回归）：武器长度/触及距离下降，重量与重心随刀身变化，打造派生的挥砍与突刺数值会随之改变；这正是"缩短以避免卡刀"的代价。模组代码没有任何地方依赖双刀长度，已 grep 确认。
+- 部署与验证：`items.xml` `[xml]` 解析通过，6 个 `CraftedItem` 齐全，刀身缩放实测为 `gwdualbladeoffhand=50`、`gwdualbladeoffhandai=50`、`gwdualblademainhand=70`、`gwonehandedsword=100`、`gwtwohandedsword=100`。Bannerlord 进程为 0 时复制到 live，仓库/live `items.xml` SHA-256 同为 `E729753088AA81299299B77AE48D6E21EEBA18424D41A9039E939E24A5E06BA0`；`Verify-LiveModule.ps1` 仓库 36 / live 43，缺失 0、差异 0、多余 0。本轮无代码改动，未重建 DLL，live DLL 仍为已验收的 `991D16DB…50EEDBD2`；玩家 README 未编辑，未制作 ZIP。
+- 回滚：把这三处 `scale_factor` 改回 `100` 并重新复制 `items.xml` 即可，或 `git checkout -- GreyWardenPolicePurity/_Module/ModuleData/items.xml` 后重新部署。上一稳定检查点仍为 `7ba10a4`。
+- 待实机：重进游戏后确认两把刀的模型与刀鞘确实变短、比例是否符合预期（50%/70% 为数值缩放，最终观感需要实测）；确认卡刀情况改善；确认缩短后的触及距离与伤害手感可以接受；确认自定义战斗预览与背负刀鞘位置没有穿模。数据改动需要重启游戏生效。
+
 ## 2026-09-11 双刀友军穿透按用户决定彻底删除（已获用户验收）
 
 - 用户实机反馈："完美,验收成功"。同时验收的还有上一节的双刀攻击受击霸体。已建立稳定检查点 `7ba10a4`（`checkpoint: accept dual-blade attack armor and the removal of friendly pass-through`），内容为受击霸体实现、穿透彻底删除与本文件记录，对应已部署的 live DLL `991D16DB9615F7BE94CA2E9D8EFCEC5483FB5E7EA8F6FF6F429CA5FE50EEDBD2`。后续改动若要回到这一验收点，从该提交重建并部署即可。本轮两项功能均无 `GWP_DIAGNOSTICS` 追踪需要退休（受击霸体自始未加诊断，旧 `DUAL_FRIEND_PASS` 随穿透功能一并删除）。
