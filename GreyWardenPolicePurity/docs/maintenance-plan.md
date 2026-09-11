@@ -4,6 +4,7 @@
 
 ### 当前接受状态与回退
 
+- 本轮本地检查点：`c149b618aa54cc7b82186f530aa7c56d34613e71`，包含用户确认的呼喊恢复状态、构建隔离修正、取证工具与维护记录。输入法问题仍待复现定位；此检查点不表示它已修复。要重新构建这份源码，使用该提交的独立工作树并补齐本地 tpac；先隔离构建/兼容预检，再明确部署。不要用整树 reset 覆盖后续工作。
 - 用户明确反馈：当前关闭箭矢补丁的实机版本“主角呼喊恢复了”。这确认问题收敛到两个箭矢补丁这一组，但尚不能区分具体补丁、包装方式或补丁逻辑。没有据此宣称其他战斗增强全部验收。
 - 将实机候选的两个 `Prepare() => false` 原样落实到 main 的 `GwpArcherArrowEffects.cs`。箭矢击倒/穿盾增强暂不生效，双刀已验收实现保留。旧 `089ea00` 仍是完整双刀/指令的用户确认点；本轮只建立呼喊恢复检查点，不恢复已回退的成长硬化。
 - 已将用户实测 DLL 备份到 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\accepted-order-voice-20260911\GreyWardenPolicePurity.dll`，SHA-256 `B47FB003A8BF62CEE668693915A54D91A7DC72EF68ECB5BAD2F7D5476CCF5EE3`。live 继续使用此 DLL。紧急恢复时先退出游戏，再将该文件复制到 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll` 并核对该哈希；若需编辑器测试，也复制到对应 `Win64_Shipping_wEditor` 目录。不要恢复缺失工作树或重新启用箭矢补丁来“回到最新”。
