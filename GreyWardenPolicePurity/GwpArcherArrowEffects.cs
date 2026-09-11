@@ -144,6 +144,10 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch(typeof(Mission), "MissileHitCallback")]
     internal static class GwpArcherArrowMissileHitPatch
     {
+        // The 2026-09-11 live A/B test restored order voices with both
+        // arrow patches disabled. Keep that accepted state until isolated.
+        private static bool Prepare() => false;
+
         [HarmonyPrefix]
         private static void BeforeMissileHit(
             ref AttackCollisionData collisionData,
@@ -175,6 +179,8 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch(typeof(Mission), nameof(Mission.HandleMissileCollisionReaction))]
     internal static class GwpArcherArrowShieldPassPatch
     {
+        private static bool Prepare() => false;
+
         [HarmonyPrefix]
         private static void BeforeHandleMissileReaction(
             ref Mission.MissileCollisionReaction collisionReaction,

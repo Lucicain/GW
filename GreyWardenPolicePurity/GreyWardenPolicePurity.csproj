@@ -23,8 +23,10 @@
     <DeployToLiveModule Condition="'$(DeployToLiveModule)' == ''">true</DeployToLiveModule>
     <GameBinariesFolder Condition="Exists('$(GameFolder)\bin\Win64_Shipping_Client\Bannerlord.exe')">Win64_Shipping_Client</GameBinariesFolder>
     <GameBinariesFolder Condition="Exists('$(GameFolder)\bin\Gaming.Desktop.x64_Shipping_Client\Bannerlord.exe')">Gaming.Desktop.x64_Shipping_Client</GameBinariesFolder>
-    <!-- 编译输出直接落到 GreyWarden 模组的 bin 目录 -->
-    <OutputPath>$(GameFolder)\Modules\GreyWarden\bin\$(GameBinariesFolder)\</OutputPath>
+    <!-- A non-deploying build must isolate the DLL as well as module data.
+         An explicit command-line OutputPath still takes precedence. -->
+    <OutputPath Condition="'$(DeployToLiveModule)' == 'true'">$(GameFolder)\Modules\GreyWarden\bin\$(GameBinariesFolder)\</OutputPath>
+    <OutputPath Condition="'$(DeployToLiveModule)' != 'true'">$(MSBuildProjectDirectory)\bin\$(Configuration)\isolated\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 

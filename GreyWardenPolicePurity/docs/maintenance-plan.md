@@ -1,5 +1,56 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 呼喊恢复获用户确认；微软拼音触发窗口化/卡画面另案取证
+
+### 当前接受状态与回退
+
+- 用户明确反馈：当前关闭箭矢补丁的实机版本“主角呼喊恢复了”。这确认问题收敛到两个箭矢补丁这一组，但尚不能区分具体补丁、包装方式或补丁逻辑。没有据此宣称其他战斗增强全部验收。
+- 将实机候选的两个 `Prepare() => false` 原样落实到 main 的 `GwpArcherArrowEffects.cs`。箭矢击倒/穿盾增强暂不生效，双刀已验收实现保留。旧 `089ea00` 仍是完整双刀/指令的用户确认点；本轮只建立呼喊恢复检查点，不恢复已回退的成长硬化。
+- 已将用户实测 DLL 备份到 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\accepted-order-voice-20260911\GreyWardenPolicePurity.dll`，SHA-256 `B47FB003A8BF62CEE668693915A54D91A7DC72EF68ECB5BAD2F7D5476CCF5EE3`。live 继续使用此 DLL。紧急恢复时先退出游戏，再将该文件复制到 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\bin\Win64_Shipping_Client\GreyWardenPolicePurity.dll` 并核对该哈希；若需编辑器测试，也复制到对应 `Win64_Shipping_wEditor` 目录。不要恢复缺失工作树或重新启用箭矢补丁来“回到最新”。
+
+### 已实施的低风险构建整理
+
+- `DeployToLiveModule=false` 现在将默认 DLL 输出切至仓库 `GreyWardenPolicePurity\bin\<Configuration>\isolated`；`true` 仍输出 live，命令行显式 `OutputPath` 仍优先。未更改运行机制或存档结构。
+- `dotnet msbuild ... -getProperty:OutputPath,DeployToLiveModule` 验证两种分支；`dotnet build ... --no-restore -t:Rebuild -p:DeployToLiveModule=false` 成功，0 错误、40 条既有警告。隔离 DLL SHA-256 `BF82EC77DC87071FB99B2EB30996BE853F077EFBDDA41C5B47CE5379EC70E8AD`，与旧候选哈希不同，不能混称同一二进制；源码的运行改动与用户实测候选一致，都是两个 `Prepare` 停用。
+- 隔离 DLL 的兼容检查通过：`TYPES_OK=424`、`MEMBER_FAIL_COUNT=0`、`PATCH_OK=39`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`。构建后确认 live 仍为用户实测 `B47FB003…F5EE3`，证明关闭部署没有覆盖实机 DLL。
+- 21 份仅换行不同的 live 资源已按仓库逐份复制，复制前均检查 CRLF 归一化文本相同，未改内容。随后双向哈希校验：仓库36/live43，缺失0、差异0、多余0。玩家 README 内容未编辑，且与 live 一致；未制作 ZIP。
+
+### 输入法问题：实证与尚未证明的原因
+
+- 用户描述：微软拼音处于中文或英文模式均会触发，必须切换到独立英文键盘；进入战斗场景后游戏转为窗口化并卡画面。这与呼喊恢复可以同时发生，不能以恢复呼喊作为输入法问题已解决的证据。
+- 本轮读取 `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_22688.txt`、`rgl_log_errors_22688.txt`、`watchdog_log_22688.txt`。18:18:58 起多次 `OnGameWindowFocusChange: False/True`，当时 `TopScreen: MissionScreen`；18:19:54–57 有多次 `set_resize_event: 2560-1600`。错误日志没有对应托管异常，进程最终走清理退出；清理末尾 `ERC6135` 不能据此当作此前卡画面的根因。
+- 当前 `engine_config.txt` 已是 2560×1600/240Hz，最终 `display_mode=0`。因此旧记录中以 2560×1440 不匹配解释全屏丢失的结论不足以解释本次复现，应降为旧环境线索；同样，源码没有窗口代码不能证明 Harmony/原生交互绝无间接影响。
+- watchdog 给出的本次加载集合含原版/NavalDLC、SinfulTavern、GreyWarden，没有证据证明本局启用了 RTSCamera。不要直接套用更早“已安装模组”清单作为本次运行事实。
+- 源码无 Windows 输入法或焦点 API。两个灰袍 UI 弹层有焦点设置/释放，但本次不能证明其曾打开或导致此问题；战斗 `GwpKickInputComponent`/双刀输入是 AI 控制标志，不等于操作 Windows 键盘。暂不加入强制切换键盘、全局禁用输入法或强制全屏补丁。
+
+### 进行中的只读窗口取证
+
+- 新增 `tools\Watch-BattleWindow.ps1`，最多运行15分钟（可参数化），等待 Bannerlord 启动，游戏退出即结束；每200ms采样，仅状态变化落盘。记录时间、前台进程名/PID、游戏窗口句柄/尺寸/样式、两端键盘布局ID、最小化和响应状态；不记录按键、输入内容、窗口标题或剪贴板，也不修改焦点/输入法/显示配置。
+- 输出：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\battle-window.jsonl`；启动错误：同目录 `battle-window-stderr.txt`。问题是“失焦时是否为输入法进程接管前台，还是游戏窗口先自行改变”。短于200ms的焦点切换可能漏采，线程键盘布局不等于微软拼音内部中英文状态，不可把未捕获事件当排除证据。
+- 脚本语法检查通过；受限 shell 的前台窗口探测返回空，不能声称完整桌面取证已验证。已提权启动隐藏 PowerShell 取证进程9496，开始时间 `2026-09-11T08:28:06Z`（本地18:28），日志 start 行已写入，等待用户复现。机器没有常见的 `C:\Program Files\PowerShell\7\pwsh.exe`，第一次启动失败，实际应使用 `Get-Command pwsh` 返回的运行时路径。后续手动重跑：`pwsh -NoProfile -File tools\Watch-BattleWindow.ps1 -Minutes 15`，应从正常交互桌面终端启动。
+- 本轮未声称输入法已修好。先保存接受状态，再根据取证做最小修复；大文件拆分、成长系统变更和其他实验暂不叠加。
+
+## 2026-09-11 项目进度与复杂度复核（未改玩法、未构建部署）
+
+### 当前状态导航
+
+- 审计起点：`main` / `b93015cb829cf275ee61abc760415fb9918ea0fa`，工作树干净。最近正式发布记录仍为 2026-08-31 的 `v1.4-r10` / `v1.5-r1`；项目文件版本为开发中的 `1.4.11`。旧 Phase 1–5 是已经完成的历史整理计划，不代表当前战斗增强已验收。
+- 已确认基线：`089ea00b83df94c4d991f80274446f9d0c2a94cb` 的弓箭手双刀与指令已获用户验收，后续二分也确认此提交有呼喊。`e963c62` 的箭矢效果、友军穿透、顺劈与突刺控制仍不能视为已完成验收；呼喊回归尚无最终结论。成长硬化已按用户要求回退，旧版重复叠加/重复记账问题仍是已知保留项，不应在整理中擅自恢复失败修复。
+- 本机游戏读取为 `v1.4.8`。live 客户端 DLL 为 `846848` 字节，SHA-256 `B47FB003A8BF62CEE668693915A54D91A7DC72EF68ECB5BAD2F7D5476CCF5EE3`，精确匹配上一节“e963c62 关闭两个箭矢补丁”候选，而非当前 main 的普通构建。此次不覆盖它，保留二分状态。
+- `Verify-LiveModule.ps1` 检查仓库 36 / live 43 个文件：缺失 0、多余 0、哈希差异 21；21 项逐项经 CRLF→LF 归一化后文本完全一致。它们是换行差异，不能当作 21 处玩法漂移，但严格字节镜像仍未通过。该脚本允许 live 独有的 `bin`，因此本次 DLL 身份另用哈希核对；资源检查本身不能证明 DLL 对应当前源码。两份玩家 README 未报差异。
+- `git worktree list --porcelain` 中 r10/c089/e963 三个临时工作树均被标为 `prunable: gitdir file points to non-existent location`。登记路径共同前缀为 `C:\Users\lucif\AppData\Local\Temp\claude\C--Users-lucif-source-repos-GreyWardenPolicePurity\3dac0920-c79c-4191-932c-803c37d4f472\scratchpad`。不能再直接按旧记录进入这些目录构建；复现应从各自提交重新建立工作树，并为 e963 候选重加两个 `Prepare() => false`，同时补齐下述本地资源。此次未清理登记或删除任何文件。
+
+### 收束优先级（建议，尚未实施）
+
+- 本轮对现有 live DLL 重跑 `Verify-GameCompat.ps1`：401 个类型引用、1223 个成员引用均无缺失；`TYPES_OK=424`、`MEMBER_FAIL_COUNT=0`、`PATCH_OK=39`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`、`GAME COMPAT: PASS`。此结果仅证明当前 1.4.8 加载/补丁兼容，不证明呼喊或其他玩法已通过实机验收。文档改动经 `git diff --check` 无空白错误。
+
+1. 先完成呼喊二分，确定接受的开发基线，再做行为重构。发布版本、源码版本、live 候选分别记录提交、游戏版本、诊断开关、临时差异与 DLL 哈希，避免把候选误当 main。
+2. 修正构建隔离：`csproj` 的 `OutputPath` 无条件指向 live，`DeployToLiveModule=false` 只控制两个复制 target，单独传此开关仍可能写入 live DLL。应让隔离构建默认输出仓库 staging，并把构建、兼容预检、镜像验证组合成明确入口；正式包继续单独 staging。此为静态配置结论，未用危险构建作验证。
+3. 当前根层有 95 个 C# 文件，共 37102 行；维护文档本轮添加前为 14163 行。保留完整历史，在文档顶部维护当前状态与开放问题导航。代码按 Combat、Campaign、UI、Infrastructure 分区后，再逐个拆职责；不要只增加 partial 文件便宣称消除了耦合。
+4. 优先拆解 `GreyWardenFieldSparringMissionController`（2571 行）、`PoliceEnforcementBehavior.Assistance`（2425 行）、`GwpShieldBashGuardPatch`（1520 行）。盾牌文件同时包含被动盾碰撞、破盾队列、粒子补丁和双刀友军穿透，可先按现有类型边界拆开。`GwpRuntimeState` 仍是静态池薄封装，后续生命周期整理需保留已发布存档键与类型 ID。
+5. 性能先测量再改：双刀 AI 当前每帧遍历已登记弓箭手，已有注册集合与失效清理，不能仅凭行数宣称性能差。可量测不同兵力下切换状态检查的耗时，再考虑降低非即时决策频率。突刺控制静态队列缺少显式任务结束清理，且有静默 catch，值得审查生命周期；尚无实测证据证明跨线程执行或由它造成呼喊问题。
+6. 新检出可复现性仍依赖两份被忽略的本地 tpac：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\_Module\AssetPackages\gwp_black_gold_shield.tpac`（37594977 字节）和同目录 `gwp_inherited_legacy_assets.tpac`（332944246 字节）。均实际存在；应把既有恢复知识接入资源清单/校验步骤，避免新 worktree 缺资源。此次不移动或删除资源与取证材料。
+
 ## 2026-09-03 呼喊二分收敛到 e963c62；再拆一半，先关弓箭手箭矢补丁
 
 ### 二分结果
