@@ -1,5 +1,32 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 输入法问题收尾与23108原生转储解析
+
+- 用户授权解除访问限制后，已读取 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.23108.dmp`（116027776字节）。本机调试器：`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2606.22001.0_x64__8wekyb3d8bbwe\amd64\cdb.exe`。`.ecxr; r; kv; .loadby sos clr; !clrstack` 显示线程105/OS 0x68d8发生 `cmp qword ptr [rax+40h],0`，rax=0。异常栈只有原生路径，SOS未给出该线程托管方法；主线程仅在WotsMainDotNet等待。不能把export最近符号 `create_game_application+...` 当作真实函数名称。
+- `.fnent` 确定故障函数RVA范围0x5c8ed0–0x5cbb26。函数入口从[r8+28h]读取有符号索引，负值分支将rbx置0并保存到[rbp+0D8h]；故障时该缓存值为0，而[r15+34h]==2分支没有判空即访问+0x40。现场[r15+28h]=0xffffffff。缺少私有符号与足够堆内存，尚不能命名该内部结构或将值2直接当作托管AgentAttackType，也不能确认其来自突刺合成命中。
+- 调试输出留在 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\crash-23108-analysis.txt`、`crash-23108-threads.txt`、`crash-23108-function.txt`、`crash-23108-contact.txt`；分析命令可用 `cdb -y . -z <上述dmp> -c ".ecxr; .fnent @rip; uf @rip; q"` 重现无网络符号依赖的指令分析。调查未结束，保留原始dmp与输出。
+- 输入法窗口问题已获用户确认解决：本轮退休 `tools\Watch-BattleWindow.ps1`，确认进程9496/26132已不存在，删除仓库`.codex_tmp`中的两个空洞窗口轨迹及stderr。记录保留其两次均未识别Launcher进程的失败，不继续用它为战斗崩溃采样。显示设置备份及截图仍在上一节的input-window-20260911目录；无边框配置已证实保持为1。此次不涉及玩家README或模组DLL。
+
+## 2026-09-11 无边框方案获确认；自由射击状态下近战接触原生崩溃（未修复）
+
+- 用户确认“弹窗问题解决了”，随后明确新故障是在允许射击状态下近战接触时发生，不知道根因。因此仅记录触发环境，不把允许射击或日志末尾的FireAtWill认定为根因。本次退出后 `display_mode=1` 保持，显示配置方案已获用户确认；当前模组DLL未改，不能因呼喊恢复就称整个候选稳定。
+- 本次游戏PID23108，日志 `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_23108.txt` 末尾18:44:05为FireAtWill指令正常完成。watchdog记载 `Crash occurred. Asking for dump.`，随后用户取消游戏自带转储生成。Windows Application Error于18:44:25记录 `TaleWorlds.Native.dll+0x5c92ed`、`0xc0000005`，故障进程名 `TaleWorlds.MountAndBlade.Launcher.exe`、PID十六进制0x5A44=23108。这解释了前两轮窗口取证只匹配Bannerlord/Bannerlord.Native却一直waiting；“能访问桌面”不等于“识别了游戏进程”，此前工具未完成端到端验证。
+- 已通过获准的提权只读列举确认Windows另有转储：`C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.23108.dmp`。普通沙箱访问该目录时没有返回文件，不能将其报告为转储不存在。随后定位调试器/读取转储元数据的提权请求被自动审批拒绝，明确原因是审批用量上限（不是文件内容风险判定），因此未继续绕过该拒绝或声称已读出调用栈。
+- 历史相似例：2026-08-30、游戏1.5.2的 `Native+0x720e18` 接战崩溃曾伴随 `GwpDualBladeDefenceBypassPatch` 在MeleeHitCallback内调用RegisterBlow，最终删除该合成接触路径。另有入水崩溃 `+0x586f0b` 已解决。跨引擎版本偏移不能直接比较，本次不是已证明的旧根因复发。
+- 静态diff：`089ea00→c149b61` 的 `GwpDualBladeAiBehavior.cs` 只增加 `GwpDualBladeThrustControl` 和每tick的Deliver调用；原弓刀切换/射击指令/双刀保持实现未改。新控制路径在伤害模型的突刺判定里Mark，随后tick调用 `GwpAlternativeAttackControl.Apply`，构造武器槽-1的踢/盾击控制接触并RegisterBlow。其原踢击用途被复用于双刀突刺，值得优先审查，但尚无堆栈或A/B证据认定它是本次原因。友军ContinueChecking和顺劈动量同属稳定点之后新增的近战路径，亦未排除。
+- 下一步优先解析已有23108转储，再决定最小修复；若转储无法给出可用栈，最小A/B应只停用突刺额外控制接触，保留稳定的换弓/双持、普通伤害、踢击盾击以及其他变量。此次没有实施猜测性回退或将候选部署到live。已确认显示方案的Git收尾和窗口取证退休尚未完成，不能把整体整理报告为完成。
+
+## 2026-09-11 输入法截图复核；恢复无边框全屏启动配置（待实机验证）
+
+- 用户截图1显示左上角拼音组词串与中文候选栏，且游戏有标题栏；因此截图瞬间处于中文组词状态，不能描述为已确认英文直通状态，也不能据此否定用户进入前选过英文模式。截图2显示战斗暂停菜单，仅凭静态图无法区分失焦暂停和渲染卡死。原图已复制留证：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\input-window-20260911\ime-candidate.png`、同目录 `battle-pause.png`。
+- 本次进程21956的 `rgl_log_21956.txt`：18:32:10进入MissionScreen，18:32:17窗口resize后失焦，18:32:29重新聚焦，18:32:31再次resize/失焦，18:32:39起清理退出。尚未锁定是何进程或按键导致失焦。原窗口取证只有start行，没有捕获游戏；不能把这次缺失当作阴性结果。
+- 修正 `Watch-BattleWindow.ps1`：识别 `Bannerlord` 和 `Bannerlord.Native`，允许显式 `-GameProcessId`，优先有窗口的进程；增加等待心跳、watcher/game会话号、实际进程名、桌面可访问标记和异常记录。不能确定第一次没抓到完全由进程名造成，也可能涉及后台执行生命周期。语法检查与 `git diff --check` 通过。
+- 第二次改用持续执行会话运行取证（exec session `95283`），而非脱离的Start-Process；实际watcher PID26132，开始 `2026-09-11T08:38:48.9976166Z`，持续15分钟。`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\battle-window-second.jsonl` 已确认 `session=1`、`foregroundAvailable=true` 且持续输出waiting。尚无游戏采样，不宣称完整取证通过；会在游戏退出/超时结束。
+- “每次启动窗口化”的已知配置侧原因：退出后 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\Configs\engine_config.txt` 保存 `display_mode = 0`。从本机 `Modules\Native\ModuleData\global_strings.xml` 的 `str_options_type_DisplayMode_0/1/2` 核实为Windowed/Borderless Fullscreen/Fullscreen；不能依赖网上混用的值。
+- 游戏退出后已仅将 `display_mode = 0` 改为 `1`（无边框全屏）。保持2560×1600、240Hz及其他所有字节；按单行替换反向比较验证没有其他差异。新配置SHA-256 `303934D8FFDC5B478F3A9F676154A8313E90543F99147690D9E2C04075556BC4`。这是本地显示设置恢复，不是模组玩法修改，也不是输入法根因修复；下次启动/再次退出是否保持仍待实测。
+- 修改前完整配置备份：`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\input-window-20260911\engine_config.before.txt`。回退显示设置应退出游戏，把当前配置中的 `display_mode = 1` 改回 `0`；若其他设置也需完整回退，才将备份复制覆盖到上述Configs路径，避免覆盖之后新调的无关设置。本次没有修改输入法注册表、键盘布局、模组DLL或玩家README。
+- 微软官方说明确认Shift默认可切换中英文，且提供旧版微软拼音兼容选项（https://support.microsoft.com/en-us/windows/hardware/input-devices/microsoft-simplified-chinese-ime）。这里只作为待验证机制，不把Shift误触或新版IME兼容问题当作已证实根因，不自动更改系统级输入偏好。
+
 ## 2026-09-11 呼喊恢复获用户确认；微软拼音触发窗口化/卡画面另案取证
 
 ### 当前接受状态与回退
