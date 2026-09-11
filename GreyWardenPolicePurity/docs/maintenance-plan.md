@@ -1,9 +1,36 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 双刀友军穿透按用户决定彻底删除（已部署，待实机）
+
+- 用户决定：双刀友军穿透不再保留，对**所有**使用者一律恢复原版友军阻断，不是只对灰袍射手关闭。玩家、灰袍 AI 与任何装备完整双刀的战斗者都回到原生行为。
+- 修复前存在源码/live/文档三方不一致，本轮的直接起因是用户反馈"穿透友军没有实现"：
+  - 源码：`GwpShieldBashGuardPatch.cs` 于 19:17:31 删除了 `GwpDualBladeFriendlyPassThrough` 整类，以及 `Mission.MeleeHitCallback` 前置/后置里的 `ContinueChecking` 分支与 `ShieldInterceptionKind.DualBladeFriendlyPassThrough`。全仓库 grep 无 `FriendlyPassThrough`/`ContinueChecking` 残留，`GwpAgentApplyDamageModel.DecideWeaponCollisionReaction` 只转发原生。
+  - live：客户端 DLL 写入时间为 19:12:31，早于该次删除。对 `51D5CF86…A59E4` 反编译 `GwpDualBladeFriendlyPassThrough.ShouldContinue`，确认其仍然存在，且开头即 `StringId == "gwarcher"` 早退。因此实机当时的真实行为是"射手不穿友军、玩家与其他双刀角色仍穿友军"。
+  - `GreyWardenPolicePurity\bin\Debug\isolated` 中另有一份 19:17:33 的隔离构建（845824 字节），包含删除结果但从未部署。
+  - 文档：下方两节的"上一轮射手取消穿友军的改动保留……其他双刀角色不变，未全局删除穿友军功能"只对当时的 live 二进制成立，对源码不成立，已在本节更正。
+- 结论性质的教训：源码删除之后没有重建部署，违反 AGENTS.md 的 live 镜像要求；此后不得在源码与 live 存在差异时开始实机测试。本轮不改源码，只重建并部署，使源码、live、文档三方一致。
+- 机制记录（保留以免将来重复走弯路）：原生 1.4.8 `Mission.MeleeHitCallback` 的主体包在 `if (colReaction != MeleeCollisionReaction.ContinueChecking)` 之内（`mission.txt:5305`），所以旧实现在前置把 `colReaction` 设为 `ContinueChecking` 能够跳过友伤取消、攻击者友伤硬直、`CreateMeleeBlow`/`RegisterBlow` 与动量扣减，原生自身在替代攻击命中手臂时用的也是同一枚举。该路径在 1.4.8 上机制成立，但从 2026-09-02 加入起始终未获实机验收，现按用户决定整体删除，不是因为被证伪。若将来要恢复，可从 `e963c62` 取回该类与两处 `MeleeHitCallback` 分支。
+- 构建与部署：`dotnet build GreyWardenPolicePurity\GreyWardenPolicePurity.csproj --no-restore -t:Rebuild -p:DeployToLiveModule=false`，0 errors、40 条既有 nullable warnings。隔离产物 845824 字节、SHA-256 `991D16DB9615F7BE94CA2E9D8EFCEC5483FB5E7EA8F6FF6F429CA5FE50EEDBD2`，PDB SHA-256 `5AEB25CBEA75E7CD437A66183853235BDF3B1D7E956152DBF46B83B7C24AA39D`。覆盖前先把 live 客户端的 `51D5CF86…A59E4` DLL 与 PDB 备份到 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\before-passthrough-removal\`；退出游戏后把该备份复制回客户端/编辑器 `bin` 即可回到"射手不穿、其他人穿"的上一版二进制。部署时 Bannerlord 进程数为 0，DLL 与 PDB 已复制到 `Win64_Shipping_Client` 与 `Win64_Shipping_wEditor`，三份（staging/客户端/编辑器）哈希逐一相同。
+- 验证：`Verify-GameCompat.ps1` 对新隔离 DLL 为 401 个类型引用、1222 个成员引用无缺失，`TYPES_OK=421`（较上一轮 422 少一个，正是被删除的穿透类）、`MEMBER_FAIL_COUNT=0`、`PATCH_OK=39`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`、`GAME COMPAT: PASS`。`Verify-LiveModule.ps1` 仓库 36 / live 43，缺失 0、差异 0、多余 0。对已部署 DLL 反编译 `GwpPassiveHeldShieldMeleePatch` 确认只剩 `AlternativeAttackForcedPassive` 与 `PassiveHeld` 两种拦截，无 `ContinueChecking`，元数据中也已无 `GwpDualBladeFriendlyPassThrough`。玩家 README 未编辑，未制作 ZIP。
+- 行为变化提示：玩家手持完整双刀在上一版 live 上是可以穿过友军的，本次部署后恢复原版阻断，这是预期内的手感变化，不是回归。
+- 待实机：双刀砍到队友时恢复原版停刀/友伤硬直表现；上一条的攻击受击霸体功能同时仍待验收。两项都未获实机确认，本轮不创建稳定提交，最后确认的稳定检查点仍为 `6a7878a`。
+
+## 2026-09-11 双刀攻击受击霸体（已部署，待实机验收）
+
+- 用户要求双刀使用者攻击时不能被打断，但可以死亡。新增 `GwpDualBladeAttackArmor`：实际主手为灰袍主刀、副手为配对副刀、角色有效且在Mission中，动作通道0或1处于ReadyMelee/ReleaseMelee时生效；覆盖玩家与AI，不限射手。包括蓄力与出刀，不把ParriedMelee/BlockedMelee、格挡、换弓、踢击和待机当成双刀攻击。
+- 复用既有 `AgentApplyDamageModel`：生效时ShrugOff返回true，KnockBack/KnockDown/Dismount返回false。引擎CreateMeleeBlow在伤害结算之后询问这些反应，Agent.HandleBlow的扣血/Die路径未改。没有减伤、回血、Immortal或防死逻辑，也不新建原生回调补丁、不恢复已删除的突刺额外命中。
+- 现有两处模组控制接触绕过模型，故在它们已有RegisterBlow前仅对霸体目标清除KnockBack/KnockDown/CanDismount、加入ShrugOff并清零DefenderStunPeriod，保持原伤害与接触参数。这不增加任何合成命中。对方格挡造成的武器碰撞/弹刀仍走原生，该功能是受击霸体而非无视敌人格挡。
+- 上一轮射手取消穿友军的改动保留（**此句已被本文件顶部 2026-09-11「双刀友军穿透按用户决定彻底删除」一节更正**：写下时源码已整类删除穿透，而当时 live 仍是射手排除版；现已按用户决定对所有人删除并重新部署）。最后用户确认稳定检查点仍为 `6a7878a`；本次和上一轮削弱未额外获实机确认，不创建稳定提交。本次部署前DLL备份到 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\before-attack-armor\GreyWardenPolicePurity.dll`，对应上一轮削弱 `D50EDFB4…C8B88A4`。退出游戏后可将该备份复制到live客户端/编辑器bin的同名DLL并校验；源码撤销本功能需删除新helper，并撤销模型和两处控制接触调用，保留射手拒绝穿友军的条件。
+- 隔离Rebuild 0错误/40既有警告；最终兼容预检TYPES_OK=422、MEMBER_FAIL_COUNT=0、PATCH_OK=39/PATCH_FAIL=0、PREFLIGHT=PASS。已部署诊断启用DLL与PDB到客户端/编辑器，逐份与staging哈希相同；DLL SHA-256 `51D5CFF86E5F5BD7879028356F9EF452513BE43B0AAFDA0C81A40DD63E9A59E4`。资源镜像36/43，缺失/差异/多余均0，玩家README一致未编辑，未制作ZIP。
+- 待实机：玩家/AI双刀蓄力与出刀受箭矢或近战伤害时持续攻击；空闲/换弓时恢复正常受击；攻击中血量归零仍死亡；验证灰袍踢击对攻击中的双刀目标不打断。此为实现和离线验证结果，不保证原生最终动画效果未经实测就符合全部需求。
+
 ## 2026-09-11 用户确认近战崩溃候选通过；射手停止追加强化
 
+- 已建立稳定检查点 `6a7878a2e9f068c4f42d75ce46498a9690a1e438`，对应用户确认无报错的去突刺控制版本。后续削弱可从该点恢复 `GwpShieldBashGuardPatch.cs` 后重新构建部署回退，不覆盖无关改动。
+- 本轮削弱：在 `GwpDualBladeFriendlyPassThrough.ShouldContinue` 内按 `attacker.Character.StringId == GwpIds.ArcherId` 提前拒绝，灰袍射手双刀恢复原版友军碰撞；其他双刀角色不变，未全局删除穿友军功能（**该范围已被本文件顶部 2026-09-11「双刀友军穿透按用户决定彻底删除」一节取代：穿透其后对所有使用者删除**）。无新增功能。隔离构建0错误/40既有警告，兼容预检 `TYPES_OK=421`、`PATCH_OK=39`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`。已复制诊断启用DLL/PDB到客户端/编辑器并逐份哈希校验，资源双向镜像36/43、缺失/差异/多余均0；玩家README未编辑，未制作ZIP。削弱本身待用户实机确认，不冒充已验收检查点。
+- 当前射手能力清单：贵族长弓/穿刺箭、专属装备；近战双刀双手伤害及四向格挡/弓刀切换；对合格徒步人类敌人的双刀/踢击击倒概率配置为80%（不是每次碰撞保证触发，仍受原生命中/反应路径影响）；横砍剩余动量顺劈继续，可在满足原生条件时穿过一名敌人；近距离AI踢击及战斗内成长继续。成长基础规则为发箭每次弓熟练加10、踢/盾击动作单手与跑动加50，临时有效技能目标上限1000；此前回退后重复应用/记账隐患仍保留，不能把这些配置增量说成实测精确增幅。射手基础弓140、单手130、跑动130。箭矢10%击倒/5%穿盾已停用，突刺补控制已删除，本次再移除射手穿友军。
 - 用户实机反馈：“好了，没有报错弹出了，那么现在这个版本就是好的了”。确认的是已部署 `E4F2AADE…5DB59EC`、移除突刺额外控制接触后的版本。将完整源码与本记录建立本地稳定检查点，再处理下一项削弱。此次结果支持删除该路径解决这次复现，不将原生内部字段的推断升级为已证实引擎根因。
-- 用户决定不再新增射手强化，并要求射手不再具有穿透友军功能。范围按灰袍弓箭手 `gwarcher` 执行，其他角色双刀保持原行为；友军穿透与穿过敌人的顺劈是不同功能，后者没有获要求取消。玩家README等正式发布时更新。
+- 用户决定不再新增射手强化，并要求射手不再具有穿透友军功能。范围按灰袍弓箭手 `gwarcher` 执行，其他角色双刀保持原行为（**后续用户决定改为对所有人删除，见顶部节**）；友军穿透与穿过敌人的顺劈是不同功能，后者没有获要求取消。玩家README等正式发布时更新。
 
 ## 2026-09-11 近战崩溃单变量候选：移除突刺额外控制接触（已部署，待实机）
 

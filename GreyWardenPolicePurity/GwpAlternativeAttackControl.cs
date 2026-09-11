@@ -161,6 +161,7 @@ namespace GreyWardenPolicePurity
                     VictimAgentCurVelocity: target.Velocity,
                     GroundNormal: Vec3.Up);
 
+            GwpDualBladeAttackArmor.ApplyToControlContact(target, ref controlBlow);
             target.RegisterBlow(controlBlow, in controlCollision);
         }
 

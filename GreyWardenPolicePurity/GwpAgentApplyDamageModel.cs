@@ -46,6 +46,9 @@ namespace GreyWardenPolicePurity
             WeaponComponentData attackerWeapon,
             in Blow blow)
         {
+            if (GwpDualBladeAttackArmor.IsActive(victimAgent))
+                return false;
+
             if (GwpArcherArrowHitState.ShouldForceKnockdown(
                     attackerAgent,
                     victimAgent,
@@ -698,6 +701,10 @@ namespace GreyWardenPolicePurity
             in AttackCollisionData collisionData,
             in Blow blow)
         {
+            // ShrugOff changes the reaction, not damage or the death path.
+            if (GwpDualBladeAttackArmor.IsActive(victimAgent))
+                return true;
+
             if (GwpArcherArrowHitState.ShouldForceKnockdown(
                     victimAgent,
                     in collisionData,
@@ -718,7 +725,8 @@ namespace GreyWardenPolicePurity
             in AttackCollisionData collisionData,
             WeaponComponentData attackerWeapon,
             in Blow blow) =>
-            NativeModel.DecideAgentDismountedByBlow(
+            !GwpDualBladeAttackArmor.IsActive(victimAgent)
+            && NativeModel.DecideAgentDismountedByBlow(
                 attackerAgent,
                 victimAgent,
                 in collisionData,
@@ -732,6 +740,9 @@ namespace GreyWardenPolicePurity
             WeaponComponentData attackerWeapon,
             in Blow blow)
         {
+            if (GwpDualBladeAttackArmor.IsActive(victimAgent))
+                return false;
+
             if (GwpArcherArrowHitState.ShouldForceKnockdown(
                     attackerAgent,
                     victimAgent,

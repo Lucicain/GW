@@ -692,6 +692,7 @@ namespace GreyWardenPolicePurity
 
             try
             {
+                GwpDualBladeAttackArmor.ApplyToControlContact(victim, ref reactionBlow);
                 victim.RegisterBlow(reactionBlow, in reactionCollision);
             }
             finally
@@ -1157,74 +1158,12 @@ namespace GreyWardenPolicePurity
 
     }
 
-    /// <summary>
-    /// Lets the authored paired blades ignore a friendly body or friendly
-    /// shield without changing who is allowed to use them. Qualification is
-    /// entirely equipment based: player, Warden AI, or any other combatant
-    /// currently wielding the complete pair receives the same behaviour.
-    /// </summary>
-    internal static class GwpDualBladeFriendlyPassThrough
-    {
-        internal static bool ShouldContinue(
-            Agent? attacker,
-            Agent? victim,
-            in AttackCollisionData collisionData)
-        {
-            if (attacker == null
-                || victim == null
-                || collisionData.IsMissile
-                || collisionData.IsAlternativeAttack)
-            {
-                return false;
-            }
-
-            try
-            {
-                int slot = collisionData.AffectorWeaponSlotOrMissileIndex;
-                if (slot < (int)EquipmentIndex.WeaponItemBeginSlot
-                    || slot >= (int)EquipmentIndex.NumAllWeaponSlots)
-                {
-                    return false;
-                }
-
-                MissionWeapon attackerWeapon =
-                    attacker.Equipment[(EquipmentIndex)slot];
-                string? itemId = attackerWeapon.Item?.StringId;
-                if (attackerWeapon.IsEmpty
-                    || (!GwpDualBladeLoadout.IsOffHandBladeId(itemId)
-                        && !string.Equals(
-                            itemId,
-                            GwpIds.DualBladeMainhandItemId,
-                            StringComparison.OrdinalIgnoreCase)))
-                {
-                    return false;
-                }
-
-                // This patch sits on every melee contact in the battle. Test
-                // the affector item before IsFriendOf so ordinary weapons do
-                // not pay for an extra managed-to-native team query.
-                return attacker.IsFriendOf(victim)
-                    && GwpAgentApplyDamageModel.IsDualBladeAttack(
-                        attacker,
-                        in collisionData,
-                        attackerWeapon.CurrentUsageItem);
-            }
-            catch
-            {
-                // A collision can arrive while native equipment is changing.
-                // Falling back to the stock reaction is always safe.
-                return false;
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(Mission), "MeleeHitCallback")]
     internal static class GwpPassiveHeldShieldMeleePatch
     {
         private enum ShieldInterceptionKind
         {
             None,
-            DualBladeFriendlyPassThrough,
             AlternativeAttackForcedPassive,
             PassiveHeld
         }
@@ -1238,22 +1177,6 @@ namespace GreyWardenPolicePurity
             out ShieldInterceptionKind __state)
         {
             __state = ShieldInterceptionKind.None;
-            if (GwpDualBladeFriendlyPassThrough.ShouldContinue(
-                    attacker,
-                    victim,
-                    in collisionData))
-            {
-                // ContinueChecking is the native no-contact answer. Setting it
-                // before Mission.MeleeHitCallback makes the stock callback skip
-                // friendly damage, friendly-fire attacker stun, blow creation,
-                // and momentum reduction while keeping the same attack alive
-                // to look for an enemy behind this ally.
-                __state = ShieldInterceptionKind
-                    .DualBladeFriendlyPassThrough;
-                colReaction = MeleeCollisionReaction.ContinueChecking;
-                return;
-            }
-
             if (GwpPassiveHeldShieldCollision
                 .TryConvertAlternativeAttackForcedPassiveGuard(
                     attacker,
@@ -1297,16 +1220,6 @@ namespace GreyWardenPolicePurity
             ref MeleeCollisionReaction colReaction,
             ShieldInterceptionKind __state)
         {
-            if (__state == ShieldInterceptionKind
-                .DualBladeFriendlyPassThrough)
-            {
-                // Keep the result explicit after every other part of the
-                // callback. The prefix made the stock method leave momentum
-                // and damage untouched; this is only the returned reaction.
-                colReaction = MeleeCollisionReaction.ContinueChecking;
-                return;
-            }
-
             if (victim == null || collisionData.IsMissile)
             {
                 if (__state != ShieldInterceptionKind.None)
