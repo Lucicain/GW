@@ -1,5 +1,62 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 副刀改为 60%；突刺命中收尾改为左手剪辑（均已获用户验收）
+
+### 一、副刀缩放 50% → 60%
+
+- 用户实机反馈 50% 偏短，调为六成，主刀维持七成。`items.xml` 中 `gwdualbladeoffhand` 与 `gwdualbladeoffhandai` 的 Blade 件 `scale_factor` 由 `50` 改为 `60`，`gwdualblademainhand` 仍为 `70`，其余件仍为 `100`。
+- 已部署：XML 解析通过，实测刀身缩放为副刀 60 / 主刀 70 / 两把非双刀剑 100；Bannerlord 进程为 0 时复制，仓库与 live `items.xml` SHA-256 同为 `02452C7FDC8153EF990F69DC71863A9CE92E0EBE77324B1D2D1C4C4C953117D7`，`Verify-LiveModule` 缺失/差异/多余均 0。无代码改动，live DLL 仍为 `991D16DB…50EEDBD2`。数据改动需重启游戏生效。
+- 50%/70% 那一版已获用户验收并建立检查点 `75d04e2`，本次调整在其之上。
+
+### 二、突刺命中造成伤害后播右手收刀的原因（静态取证，结论明确）
+
+- 现象：双刀下刺命中并造成伤害后，收尾动作固定是原版右手单手剑的动作，而不是左手双刀动作。
+- 直接原因在 `_Module/ModuleData/item_usage_sets.xml`。两个双刀突刺用法（`dual_shield_swing_thrust` 与 `dual_shield_thrust`，`style="attack_down"`）的各阶段动作是：
+  | 阶段 | 配置的 action | 实际动画 | 手 |
+  | --- | --- | --- | --- |
+  | ready | `act_gwd_ready_thrust_1h` | `ready_dual_thrust_1h` | 左（自制） |
+  | quick_release | `act_gwd_quick_release_thrust_1h` | `quick_release_dual_thrust_1h` | 左（自制） |
+  | release | `act_gwd_release_thrust_1h` | `release_dual_thrust_1h` | 左（自制） |
+  | quick_blocked | `act_gwd_quick_blocked_thrust_1h` | `quick_dual_blocked_thrust_1h` | 左（自制） |
+  | blocked | `act_gwd_blocked_thrust_1h` | **`blocked_thrust_1h`（原生）** | 右 |
+  | stuck | **`act_stuck_thrust_1h`（原生 action）** | `stuck_thrust_1h` | 右 |
+  | quick_stuck | **`act_stuck_quick_thrust_1h`（原生 action）** | `stuck_quick_thrust_1h` | 右 |
+- 引擎在突刺真正扎进目标躯体、造成伤害那一刻切到 **stuck** 阶段，而该阶段在用法里直接指向原生右手 action，所以"造成伤害之后必定右手收刀"。被格挡走 blocked 阶段，同样落在原生右手动画上（只有 quick_blocked 有自制左手版）。两个 `act_gwd_stuck_*` 别名虽然存在于 `action_sets.xslt`，但它们映射的仍是原生 `stuck_thrust_1h` / `stuck_quick_thrust_1h` 片段，改用别名不会改变任何表现。
+- 根因是**素材缺口**而不是逻辑错误：`_Module/AssetPackages/gwp_dual_wield_animations.tpac` 中按名字检索 `stuck` 的片段数为 **0**。自制双刀突刺片段只有 `ready_dual_thrust_1h`、`quick_release_dual_thrust_1h(_balanced)`、`release_dual_thrust_1h(_balanced)`、`quick_dual_blocked_thrust_1h(_balanced)`。原生 `Native/ModuleData/action_sets.xml` 中名字含 `dual` 的动画为 0 条，所有双刀动画都是本模组自带的，因此没有现成的左手 stuck 片段可指。
+- 顺带记录：双刀横砍的 `release`（慢/完整挥砍）阶段同样指向原生 `act_release_slashleft_1h` / `release_slashleft_1h`，自制片段只覆盖了 `quick_release`。也就是说"自制动画只覆盖起手与快速出手、收尾阶段回落到原生"是双刀动画的普遍形态，不止突刺。
+- 可选修法（本轮未实施，等用户决定）：
+  1. **零素材成本近似**：把两个突刺用法的 `stuck_action` / `quick_stuck_action` 改指 `act_gwd_blocked_thrust_1h` / `act_gwd_quick_blocked_thrust_1h`，并把 `act_gwd_blocked_thrust_1h` 的映射从原生 `blocked_thrust_1h` 换成自制 `quick_dual_blocked_thrust_1h_balanced`。这样命中后至少是左手动作。风险：blocked 片段表达的是"被弹开"，用作"从躯体里抽刀"时机与力度未必贴合，需实机看观感；纯数据改动，可随时改回。
+  2. **正解**：在 `gwp_dual_wield_animations.tpac` 里补一条左手 stuck 突刺片段（仓库已有 `.codex_tmp/TpacTool-src`），再让 `act_gwd_stuck_thrust_1h` / `act_gwd_stuck_quick_thrust_1h` 指向它。工作量属于资源制作，不是配置改动。
+- 本节为静态数据与素材取证，没有在实机上加诊断验证 stuck 阶段的触发时刻；结论基于用法表配置、XSLT 映射与 tpac 片段清单三者一致。
+
+### 三、用户实测补充与左架（left stance）回落发现
+
+- 用户实测补充：左手挥砍有伤害也有动作；**左手下刺命中时必定播右手收刀**；但左手刺本身是有收回动作的——按一次下刺，可能看到"左手刺→收回→右手刺→收回"，也可能整段都是右手刺两次，比例不明。
+- 这两条与上面的取证一致，并补上了缺的一半解释：
+  1. **左手那个"收回"是 `release_dual_thrust_1h` 剪辑自带的后半段**，不是独立的收刀动作。2026-09-01 的定论已经写过：全模组只有一个突刺剪辑，两刺在同一剪辑内，XML 层拆不开。刺空时剪辑能播完，所以看得到左手收回；**刺中躯体时引擎在接触帧离开该剪辑、切到 stuck 阶段**，而 stuck 指向原生右手 action，于是永远看不到左手那半段收回。这正是"有左手收刀动作，但命中时必然右手"的原因。
+  2. **整段都是右手的那种情况，最可能是左架回落**。`dual_shield_swing_thrust` 的 `attack_down` 有四行用法，按顺序为：需要空左手的原生行、骑马行、`is_left_stance="True"` 的原生行、以及我们的 `require_left_hand_usage_root_set="dual_shield"` 行。**第三行既不要求空左手、也不要求副刀根用法集，只要处于左架就能匹配，而且排在我们那行之前**；我们的双刀行没有任何左架对应行。因此左架下整条突刺链（ready/release/blocked/stuck）全部走原生右手动画。挥砍同理：`dual_shield_swing` 里我们的 `attack_left` 行同样没有左架版本。
+- 素材侧佐证：`gwp_dual_wield_animations.tpac` 里**没有任何左架攻击剪辑**，带 `left_stance` 的自制剪辑只有站立/行走/奔跑三类移动动画。`action_sets.xslt` 中那一整批 `act_gwd_*_left_stance` 动作类型虽然存在，但映射的全是原生右手剪辑（如 `ready_thrust_1h_left_stance`、`release_thrust_1h_left_stance`），所以即使让用法指向这些别名也不会变成左手。也就是说左架分支当初是用原生动画占位的。
+- 尚未证实的一环：没有在实机上记录过"出现整段右手突刺时该 agent 的 `IsLeftStance`"。左架回落是与配置和素材清单三者自洽的最强候选，但要坐实需要一条临时诊断（在突刺释放时记录 `IsLeftStance`、选中的 action code 与武器槽），或用户自己观察横向移动/换架时是否必定右手。不要在取证前把它当成已证实根因。
+- 不需要新素材就能试的两项（纯数据，均未实施）：
+  1. **补左架双刀行**：给两个突刺用法（以及挥砍用法）各加一行 `is_left_stance="True"`、`require_left_hand_usage_root_set="dual_shield"` 的用法，动作仍指现有自制右架剪辑。风险是剪辑按右架制作，左架下的下盘/胯部姿态可能别扭，需实机看；随时可删。
+  2. **让命中收尾至少是左手**：把 `stuck_action` / `quick_stuck_action` 从原生改指 `act_gwd_blocked_thrust_1h` / `act_gwd_quick_blocked_thrust_1h`，并把 `act_gwd_blocked_thrust_1h` 的映射由原生 `blocked_thrust_1h` 改为自制 `quick_dual_blocked_thrust_1h_balanced`。代价是 blocked 剪辑表达的是"被弹开"，且 stuck 阶段时长与剪辑长度相关，手感可能变快或变短。
+- 真正的正解仍是补一条左手 stuck 突刺剪辑（以及左架剪辑），属于资源制作。tpac 里另有三条未被引用的剪辑 `release_dual_thrust_1h2`、`quick_release_dual_thrust_1h2`、`release_dual_thrust_1h_balanced2`，以及疑似制作期命名的 `thrust_right_new` / `thrust_right_new1`，尚未确认它们的内容；若其中某条是单手短促刺，可能可以直接用作 stuck，值得在动手做新资源前先用 TpacTool 看一眼。
+
+### 四、按用户选择实施 B：突刺命中收尾改用自制左手剪辑（已获用户验收）
+
+- 用户实机反馈："非常好，目前感觉没问题了"。副刀 60% 与本项 stuck 剪辑改动一并通过，已建立检查点 `__HASH__`。A（补左架双刀用法行）仍按用户决定不做；被格挡仍走原生右手、挥砍 release 阶段仍回落原生，均为已知且被接受的现状。
+
+- 用户决定：只做 B（让命中后的收尾是左手），A（补左架双刀用法行）明确不做。
+- 改动仅两个文件、共四行，纯数据：
+  - `action_sets.xslt`：`act_gwd_stuck_thrust_1h` 与 `act_gwd_stuck_quick_thrust_1h` 的 `animation` 由原生 `stuck_thrust_1h` / `stuck_quick_thrust_1h` 改为自制 `quick_dual_blocked_thrust_1h`。两个动作类型本来就已在 `action_types.xml` 第 12/13 行声明（`actt_release_melee`、`as_attack_release`），本次没有新增动作类型。
+  - `item_usage_sets.xml`：两条双刀突刺用法行（`dual_shield_swing_thrust` 与 `dual_shield_thrust` 的 `attack_down` gwd 行，文件第 76、81 行）的 `stuck_action` / `quick_stuck_action` 由原生 `act_stuck_thrust_1h` / `act_stuck_quick_thrust_1h` 改指上述两个 `act_gwd_stuck_*` 别名。
+- 没有动的部分：`blocked_action` 仍是 `act_gwd_blocked_thrust_1h`→原生 `blocked_thrust_1h`（被格挡时依旧是右手），左架那三行原生用法保持原样，挥砍全部保持原样，其余物品与武器不受影响。之所以走"改别名映射 + 用法指别名"而不是直接把用法指向 `act_gwd_quick_blocked_thrust_1h`，是为了让 blocked 与 stuck 两个阶段仍然各自独立可调。
+- 选 `quick_dual_blocked_thrust_1h` 而不是 `_balanced` 变体：原生的 `act_stuck_thrust_1h` / `act_stuck_quick_thrust_1h` 都没有 `_balanced` 对应类型，引擎不会去找 `act_gwd_stuck_thrust_1h_balanced`，因此两档统一用非 balanced 剪辑最简单。若实机觉得节奏不对，可先把其中一档换成 `quick_dual_blocked_thrust_1h_balanced` 再看。
+- 部署：`action_sets.xslt` 与 `item_usage_sets.xml` 均通过 `[xml]` 解析；Bannerlord 进程为 0 时复制到 live，仓库/live SHA-256 分别为 `EC71AF0476F1645D038D4C35D081D1A4DBCC7C46F7BCCE3112222FF5CB4C5D0B` 与 `7362D26B5ACE581FCBEFF0C89218C768AE0BAD7C4A22DAD2C8401CE54C347AA7`，逐份一致；`Verify-LiveModule` 缺失/差异/多余均 0。无代码改动，live DLL 仍为 `991D16DB…50EEDBD2`。需重启游戏生效。
+- 过程中的一次自查：用 `WriteAllLines` 改 `item_usage_sets.xml` 时给该文件加上了原本没有的 UTF-8 BOM，已改回无 BOM，最终 diff 只有两行用法。下次改这类文件仍应先确认原文件的 BOM 与换行形态（`items.xml` 有 BOM、`item_usage_sets.xml` 无 BOM，两者都是 LF）。
+- 待实机：突刺命中造成伤害后，收尾是否变成左手动作；抽刀节奏是否别扭（blocked 剪辑表达的是"被弹开"，stuck 阶段时长与剪辑长度相关）；被格挡时仍为右手属预期，未在本轮处理；确认没有出现动作卡住或不播的情况。回滚：`git checkout -- GreyWardenPolicePurity/_Module/ModuleData/action_sets.xslt GreyWardenPolicePurity/_Module/ModuleData/item_usage_sets.xml` 后重新复制这两个文件到 live。
+
+
 ## 2026-09-11 双刀刀刃缩短（副刀 50%、主刀 70%，已获用户验收）
 
 - 用户实机反馈："完美"，机制与观感通过；随后提出副刀 50% 偏短，调为 60%（见上一节）。本节记录的 50%/70% 版本已建立检查点，可随时回到该形态。

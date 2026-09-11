@@ -16,8 +16,8 @@
       <action type="act_gwd_quick_blocked_thrust_1h_balanced" animation="quick_dual_blocked_thrust_1h_balanced" />
       <action type="act_gwd_blocked_thrust_1h" animation="blocked_thrust_1h" />
       <action type="act_gwd_blocked_thrust_1h_balanced" animation="blocked_thrust_1h_balanced" />
-      <action type="act_gwd_stuck_thrust_1h" animation="stuck_thrust_1h" />
-      <action type="act_gwd_stuck_quick_thrust_1h" animation="stuck_quick_thrust_1h" />
+      <action type="act_gwd_stuck_thrust_1h" animation="quick_dual_blocked_thrust_1h" />
+      <action type="act_gwd_stuck_quick_thrust_1h" animation="quick_dual_blocked_thrust_1h" />
       <action type="act_gwd_ready_thrust_1h_left_stance" animation="ready_thrust_1h_left_stance" />
       <action type="act_gwd_quick_release_thrust_1h_left_stance" animation="quick_release_thrust_1h_left_stance" />
       <action type="act_gwd_quick_release_thrust_1h_balanced_left_stance" animation="quick_release_thrust_1h_balanced_left_stance" />
