@@ -1,5 +1,20 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 用户确认近战崩溃候选通过；射手停止追加强化
+
+- 用户实机反馈：“好了，没有报错弹出了，那么现在这个版本就是好的了”。确认的是已部署 `E4F2AADE…5DB59EC`、移除突刺额外控制接触后的版本。将完整源码与本记录建立本地稳定检查点，再处理下一项削弱。此次结果支持删除该路径解决这次复现，不将原生内部字段的推断升级为已证实引擎根因。
+- 用户决定不再新增射手强化，并要求射手不再具有穿透友军功能。范围按灰袍弓箭手 `gwarcher` 执行，其他角色双刀保持原行为；友军穿透与穿过敌人的顺劈是不同功能，后者没有获要求取消。玩家README等正式发布时更新。
+
+## 2026-09-11 近战崩溃单变量候选：移除突刺额外控制接触（已部署，待实机）
+
+- 输入法/窗口问题的用户确认与诊断退休已保存为本地提交 `cb898f4885d563641b2a974e574582d403e5cf7d`。该提交仅收尾显示问题并记录崩溃证据，不代表近战崩溃修复。此前呼喊检查点仍为 `c149b61`。
+- 根据23108转储只能证实原生内部负索引/空指针消费、不能唯一确定来源的限制，采用单变量实机对照：`GwpDualBladeAiBehavior.cs` 由 `git restore --source=089ea00 -- <file>` 恢复，与该用户确认点diff为空；仅删除其中后加的突刺控制类/队列与tick投递（87行）。`GwpAgentApplyDamageModel.cs` 只删除突刺Mark入口12行。总计删除99行，未新增战斗补丁、未更改已确认的弓刀切换与指令逻辑。
+- 玩家可见候选变化：双刀突刺不再另行补一次踢/盾击式控制命中；真实双刀伤害及原伤害模型判断继续，踢击/盾击自己的控制功能未改。箭矢两个补丁继续关闭，呼喊恢复状态保留；友军穿透与顺劈继续保留作为固定变量。候选未获验收，不创建“稳定修复”提交。
+- 隔离Rebuild：0 errors/40既有nullable warnings；`Verify-GameCompat` 对隔离DLL通过，`TYPES_OK=421`（删除控制类及其辅助类型）、`MEMBER_FAIL_COUNT=0`、`PATCH_OK=39`、`PATCH_FAIL=0`、`PREFLIGHT=PASS`。
+- 游戏进程退出后，将隔离的诊断启用DLL及匹配PDB复制到live客户端/编辑器bin。两端DLL与staging的SHA-256均为 `E4F2AADEB7BD2C6809FA2F528AE8E0A1EC8546D22E54725D4A8DE5D4A5DB59EC`。`Verify-LiveModule` 仓库36/live43，缺失0、差异0、多余0；两份README保持一致且内容未编辑。未制作ZIP。
+- 回到测试前的源码只需从 `cb898f4` 恢复上述两个文件；live已接受的呼喊候选备份仍是 `.codex_tmp\accepted-order-voice-20260911\GreyWardenPolicePurity.dll`（B47FB003…F5EE3），具体绝对路径/复制程序见下文，保留不删除。不要把该旧候选称为无近战崩溃的版本。
+- 下一轮请在允许射击状态下让相同弓箭手接战。若崩溃，比较新dump是否仍为Native+0x5c92ed；若稳定，只能初步支持移除控制接触有作用，还应验证换弓/指令/双刀攻击/呼喊后再建立稳定检查点。当前任务停在待实机结果，不宣称根因已完全确定或崩溃已修好。
+
 ## 2026-09-11 输入法问题收尾与23108原生转储解析
 
 - 用户授权解除访问限制后，已读取 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.23108.dmp`（116027776字节）。本机调试器：`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2606.22001.0_x64__8wekyb3d8bbwe\amd64\cdb.exe`。`.ecxr; r; kv; .loadby sos clr; !clrstack` 显示线程105/OS 0x68d8发生 `cmp qword ptr [rax+40h],0`，rax=0。异常栈只有原生路径，SOS未给出该线程托管方法；主线程仅在WotsMainDotNet等待。不能把export最近符号 `create_game_application+...` 当作真实函数名称。

@@ -80,91 +80,6 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// The knockdown a paired-blade thrust earns, whether or not it was
-    /// stopped.
-    ///
-    /// The blow itself cannot carry it. A thrust that a guard turns aside
-    /// lands 0 to 9 damage, and the live log settled what the engine does with
-    /// a knockdown flag on a blow that small: nothing. Flags were clean -
-    /// ShrugOff lifted, KnockDown set, the decision reached and answered - and
-    /// still nobody went down.
-    ///
-    /// So the reaction is delivered the way this mod already delivers the one
-    /// behind a kick or a shield bash: GwpAlternativeAttackControl's one-point
-    /// control contact, which is a real blow the engine cannot ignore. That
-    /// path has been carrying the Grey Warden knockdown for a long time.
-    ///
-    /// The model marks the pair; the mission tick delivers it. Registering a
-    /// blow from inside the damage model would be re-entering the combat
-    /// pipeline in the middle of a blow, which is exactly what the kick
-    /// behaviour avoids by doing it from a tick.
-    /// </summary>
-    internal static class GwpDualBladeThrustControl
-    {
-        /// <summary>One knockdown per thrust, not one per contact.</summary>
-        private const float CooldownSeconds = 0.5f;
-
-        private sealed class Pending
-        {
-            internal Agent Attacker = null!;
-            internal Agent Victim = null!;
-        }
-
-        private static readonly List<Pending> Queue = new List<Pending>();
-
-        private static readonly ConditionalWeakTable<Agent, StrongBox<float>> LastControl =
-            new ConditionalWeakTable<Agent, StrongBox<float>>();
-
-        internal static void Mark(Agent? attacker, Agent? victim)
-        {
-            if (attacker == null || victim == null)
-                return;
-
-            try
-            {
-                Mission? mission = attacker.Mission;
-                if (mission == null)
-                    return;
-
-                float now = mission.CurrentTime;
-                StrongBox<float> last = LastControl.GetValue(
-                    attacker, _ => new StrongBox<float>(float.MinValue));
-                if (now - last.Value < CooldownSeconds)
-                    return;
-
-                last.Value = now;
-                Queue.Add(new Pending { Attacker = attacker, Victim = victim });
-            }
-            catch
-            {
-                // A knockdown is never worth an exception.
-            }
-        }
-
-        internal static void Deliver()
-        {
-            if (Queue.Count == 0)
-                return;
-
-            for (int i = 0; i < Queue.Count; i++)
-            {
-                Pending pending = Queue[i];
-                try
-                {
-                    if (pending.Attacker.IsActive() && pending.Victim.IsActive())
-                        GwpAlternativeAttackControl.Apply(pending.Attacker, pending.Victim);
-                }
-                catch
-                {
-                    // Same.
-                }
-            }
-
-            Queue.Clear();
-        }
-    }
-
-    /// <summary>
     /// Registry of AI agents that dual wield. Qualification is decided once,
     /// when the agent is built, and read back later by a simple lookup - the
     /// input callback must not go poking at an agent's equipment while the
@@ -379,8 +294,6 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
-            GwpDualBladeThrustControl.Deliver();
-
             for (int i = _switchers.Count - 1; i >= 0; i--)
             {
                 GwpDualBladeAgentState state = _switchers[i];

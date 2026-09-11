@@ -55,18 +55,6 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
-            // A paired-blade thrust earns its knockdown roll whether the point
-            // went in or was turned aside. The blow cannot carry the reaction
-            // when a guard has eaten the damage, so it is handed to the control
-            // contact instead, on the next tick.
-            if (blow.StrikeType == StrikeType.Thrust
-                && blow.AttackType != AgentAttackType.Kick
-                && blow.AttackType != AgentAttackType.Bash
-                && IsDualBladeAttack(attackerAgent, in collisionData, attackerWeapon))
-            {
-                GwpDualBladeThrustControl.Mark(attackerAgent, victimAgent);
-            }
-
             float chance = GetGreyWardenKnockdownChance(
                 attackerAgent,
                 victimAgent,
