@@ -1,5 +1,14 @@
 # GreyWarden Maintenance Plan
 
+## 2026-09-11 卫生清理（按用户指示执行，不推送 GitHub）
+
+- 用户指示"可以做清理，但不推 GitHub"。本轮只做仓库与诊断数据卫生，未改任何玩法、未构建、未部署，live 模组与 DLL 保持已验收状态 `991D16DB…50EEDBD2`。
+- Git：`git worktree prune` 清掉三个早已失效的登记（`c089`/`e963`/`r10`，均指向不存在的旧 scratchpad 路径），现在只剩主工作树。删除两个 2026-08-30 的失败实验 stash（`failed-npc-dual-input`、`failed-direction2-shield-offhand`，对应提交 `8f3f9f3`、`54aa30d`，结论已在本文件早期条目中）。删除两个已并入 `main` 的检查点分支 `checkpoint/dual-blade-water-fix`（`7c15a64`）与 `checkpoint/game-generation-split`（`ed28a25`）——删除前用 `git branch --merged main` 确认两者都可从 `main` 到达，提交本身没有丢。
+- 诊断日志：删除 `Documents\Mount and Blade II Bannerlord\GreyWarden-DualBlade-Trace.log`（19395 字节，末次写入 2026-09-03）与 `Configs\gwp_resupply_trace.log`（112552 字节，2026-03-06 起）。**这两份是孤儿日志**：当前源码里已经没有写它们的代码，现存诊断只写 `GreyWarden-AI-Diagnostics.log` 与 `GreyWarden-Faults.log`。同时删除只剩两行会话头的 `GreyWarden-AI-Diagnostics.log`（196 字节），其生产者仍在，下次运行会重建。
+- 崩溃转储：删除 `C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.23108.dmp`（116027776 字节，SHA-256 `9340DA83DC36B8DD9D205A384C3BE506431862F937ED745F314E8042D89E97C4`）。该案已闭环：转储已解析到函数级、结论写入本文件，修复（删除突刺额外控制接触）已获用户验收。`.codex_tmp` 中的 `crash-23108-analysis/threads/function/contact.txt` 四份文本分析**保留**，它们才是不可再生的取证结论。
+- `.codex_tmp`：只删除 26 个可再生的构建/兼容日志（`*.log`，合计约 1 MB），目录仍为 441 MB。**没有动**受本文件既有保留规则保护的内容：`published-assets`、`pre-six-lod-package`（盾牌资源回滚点，带哈希记录）、`TpacTool-src`（带两处未提交 diff，`tpac-diagnose` 依赖它）、crash 分析文本、monitor 原始日志与 UI 截图。以 `decompile*`/`*-il*`/`*-build*` 命名的反编译与探针输出（约 66 MB）同样按既有规则"先归档文本证据再删生成目录"处理，本轮不盲删。
+- 未做：**没有推送 GitHub**，本地仍领先 `origin/main` 若干提交，属用户明确指示。
+
 ## 2026-09-11 副刀改为 60%；突刺命中收尾改为左手剪辑（均已获用户验收）
 
 ### 一、副刀缩放 50% → 60%
