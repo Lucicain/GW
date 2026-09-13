@@ -729,6 +729,68 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
+        /// A fine settled in the field leaves the offender's own purse. The arresting
+        /// Warden keeps a stated share as expenses and the rest reaches the judicial
+        /// treasury, which is the police clan leader's wallet. Returns what was actually
+        /// collected: a payer who is short pays what he has, and the caller decides what
+        /// happens to a man who cannot pay at all.
+        /// </summary>
+        internal static int CollectFieldFine(Hero? payer, int requested)
+        {
+            if (payer == null || requested <= 0 || Hero.MainHero == null) return 0;
+
+            int amount = Math.Min(payer.Gold, requested);
+            if (amount <= 0) return 0;
+
+            GiveGoldAction.ApplyBetweenCharacters(payer, Hero.MainHero, amount,
+                disableNotification: true);
+            return amount;
+        }
+
+        /// <summary>
+        /// The counterpart: a fine the player hands in leaves his purse and reaches the
+        /// judicial treasury. Anything he never hands in simply stays with him, which is
+        /// the whole design - the order has to be able to be robbed by its own.
+        /// </summary>
+        internal static int DepositFieldFine(int amount)
+        {
+            if (amount <= 0 || Hero.MainHero == null) return 0;
+
+            int paid = Math.Min(Hero.MainHero.Gold, amount);
+            if (paid <= 0) return 0;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer != null && !treasurer.IsDead && treasurer != Hero.MainHero)
+                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, treasurer, paid,
+                    disableNotification: true);
+            else
+                Hero.MainHero.ChangeHeroGold(-paid);
+
+            return paid;
+        }
+
+        /// <summary>
+        /// A case closed by taking the man brings in no fine, so the expenses come out of
+        /// the judicial treasury. It pays what it can and no more - an empty treasury pays
+        /// nothing, which is itself information for the player.
+        /// </summary>
+        internal static int PayFromJudicialTreasury(int amount)
+        {
+            if (amount <= 0 || Hero.MainHero == null) return 0;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer == null || treasurer.IsDead || treasurer == Hero.MainHero)
+                return 0;
+
+            int paid = Math.Min(Math.Max(0, treasurer.Gold), amount);
+            if (paid <= 0) return 0;
+
+            GiveGoldAction.ApplyBetweenCharacters(treasurer, Hero.MainHero, paid,
+                disableNotification: true);
+            return paid;
+        }
+
+        /// <summary>
         /// 罚没物离开玩家背包后视为由灰袍统一拍卖，估值直接归司法公库。
         /// </summary>
         internal static void CreditSuccessfulCaseCompletion() =>

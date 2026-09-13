@@ -62,6 +62,7 @@ namespace GreyWardenPolicePurity
         private bool _pendingPostBoutRuleViolation;
         private bool _postBoutConversationQueued;
         private bool _postBoutConversationActive;
+        private bool _postBoutWasEnforcement;
 
         public override void RegisterEvents()
         {
@@ -84,6 +85,14 @@ namespace GreyWardenPolicePurity
         {
             ClearPendingSparring();
             ClearPostBoutConversation();
+            starter.AddDialogLine("gwp_case_duel_post_win", "start", "gwp_case_duel_post_reply",
+                GwpText.Get("{=gwp_case_duel_post_win}You won. As agreed, I have handed over what I can pay toward the fine."),
+                () => _postBoutWasEnforcement && IsFieldPostBoutWinConversation(), null, 280);
+            starter.AddDialogLine("gwp_case_duel_post_loss", "start", "gwp_case_duel_post_reply",
+                GwpText.Get("{=gwp_case_duel_post_loss}You lost. As agreed, you collect no fine from me today."),
+                () => _postBoutWasEnforcement && (IsFieldPostBoutLossConversation() || IsFieldPostBoutRuleViolationConversation()), null, 280);
+            starter.AddPlayerLine("gwp_case_duel_post_reply", "gwp_case_duel_post_reply", "close_window",
+                GwpText.Get("{=gwp_case_duel_post_reply}I will report the outcome to the Grey Wardens."), null, null, 280);
 
             starter.AddPlayerLine(
                 "gwp_sparring_challenge",
@@ -217,6 +226,32 @@ namespace GreyWardenPolicePurity
                 ?? opponent.PartyBelongedTo;
             return opponentParty?.IsActive == true
                 && opponentParty != MobileParty.MainParty;
+        }
+
+        /// <summary>
+        /// 野战执法专用的入口：罪犯要求单挑定输赢时，直接借用这套已经成熟的野外
+        /// 切磋流程，不再另起一套战斗场景。调用方负责先结束自己的对话状态。
+        /// </summary>
+        internal static bool RequestFieldDuel(Hero? opponent)
+        {
+            GreyWardenSparringBehavior? behavior = _activeBehavior;
+            if (behavior == null || opponent == null || opponent.IsDead || opponent.IsPrisoner)
+                return false;
+
+            MobileParty? opponentParty = MobileParty.ConversationParty ?? opponent.PartyBelongedTo;
+            if (opponentParty?.IsActive != true || opponentParty == MobileParty.MainParty)
+                return false;
+
+            behavior._pendingOpponent = opponent;
+            behavior._pendingOpponentParty = opponentParty;
+            behavior._pendingSettlement = null;
+            behavior._pendingArena = null;
+            behavior._pendingKind = PendingSparringKind.Field;
+
+            // 与地图部队的对话本身处在一次遭遇里。先干净地退出遭遇，否则关掉对话
+            // 之后遭遇菜单会把它当成一次真正的进攻。
+            GwpCommon.TryFinishPlayerEncounter();
+            return true;
         }
 
         private void QueueSparring()
@@ -395,6 +430,11 @@ namespace GreyWardenPolicePurity
             if (behavior == null)
                 return;
 
+            // 执法单挑借用的是同一条切磋管线。胜负一出就交回执法那边结算，
+            // 之后再照常走切磋自己的赛后对话。
+            behavior._postBoutWasEnforcement = GwpFieldArrestBehavior.IsEnforcementDuelPending(opponent);
+            GwpFieldArrestBehavior.OnEnforcementDuelFinished(opponent, playerWon && !ruleViolation);
+
             behavior._pendingPostBoutOpponent = opponent;
             behavior._pendingPostBoutSettlement = null;
             behavior._pendingPostBoutConversationScene = string.Empty;
@@ -508,6 +548,7 @@ namespace GreyWardenPolicePurity
             catch (Exception exception)
             {
                 Debug.Print("[GreyWarden Sparring] field launch failed: " + exception);
+                GwpFieldArrestBehavior.CancelPendingEnforcementDuel(opponent);
                 MBInformationManager.AddQuickInformation(
                     new TextObject(
                         GwpText.Get(
@@ -849,6 +890,7 @@ namespace GreyWardenPolicePurity
 
         private void ClearPostBoutConversation()
         {
+            _postBoutWasEnforcement = false;
             _pendingPostBoutOpponent = null;
             _pendingPostBoutSettlement = null;
             _pendingPostBoutConversationScene = string.Empty;

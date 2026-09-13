@@ -183,6 +183,17 @@ namespace GreyWardenPolicePurity
                 "; currentSettlement=" + Safe(hero.CurrentSettlement?.StringId));
         }
 
+        /// <summary>
+        /// 野战执法的定向追踪。它要回答三个问题：这名罪犯是按什么算出他的选择的、
+        /// 玩家每一句说辞落在哪里、最后钱和案子怎么了结。功能验收后随之退休。
+        /// </summary>
+        internal static void WriteFieldArrest(string stage, string details) =>
+            Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
+                " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
+                " | FIELD_ARREST" +
+                " | stage=" + Safe(stage) +
+                " | " + Safe(details));
+
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage)
         {
             if (mapEvent == null) return;
@@ -609,6 +620,7 @@ namespace GreyWardenPolicePurity
         internal static void WriteHeroLifecycle(Hero? hero, string action, string details) { }
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
         internal static void WritePlayerJusticeState(string action, string details) { }
+        internal static void WriteFieldArrest(string stage, string details) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
         internal static bool ShouldTraceObservedParty(MobileParty? party) => false;
         internal static void RefreshObservedPartyCache() { }

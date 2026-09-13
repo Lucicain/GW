@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -66,6 +66,17 @@ namespace GreyWardenPolicePurity
         /// <summary>登记一次由灰袍实际实施的抓捕，并返回本次新增的本人威慑。</summary>
         public static float RegisterPoliceArrest(Hero leader, GwpCrimeCategory category)
         {
+            // Only actual Warden custody clears the offender record.
+            PartyBase? captor = leader?.PartyBelongedToAsPrisoner;
+            Clan? wardens = PoliceStats.GetPoliceClan();
+            bool inWardenCustody = leader?.IsPrisoner == true && captor != null && wardens != null
+                && (captor.MobileParty?.ActualClan == wardens || captor.Settlement?.OwnerClan == wardens);
+            if (inWardenCustody)
+            {
+                // Financial report audits run independently of later arrests.
+                ClearRecordOnArrest(leader);
+            }
+
             if (!CanTrack(leader)) return 0f;
 
             HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
@@ -117,6 +128,31 @@ namespace GreyWardenPolicePurity
             record.LastEnforcementHours = MathF.Max(record.LastEnforcementHours,
                 record.CaravanLastEnforcementHours);
             return actualGain;
+        }
+
+        /// <summary>
+        /// 被警察拿下之后，他欠灰袍的账就算付清了——案件从案件池消失，名下的负
+        /// 声望清零。唯独累计犯罪次数保留，那是履历不是欠款；震慑由另一套系统
+        /// 负责，不在此处触碰。
+        /// </summary>
+        private static void ClearRecordOnArrest(Hero? leader)
+        {
+            if (leader == null || string.IsNullOrWhiteSpace(leader.StringId)) return;
+
+            try
+            {
+                HeroCrimeStats history = CrimePool.GetOrCreateHistory(leader);
+                history.NegativeStanding = 0;
+                history.CrimeKillProgress = 0;
+
+                CrimeRecord? crime = CrimePool.GetRecord(leader);
+                if (crime?.HasOpenCase == true)
+                    CrimePool.CloseCaseSettledInField(crime);
+            }
+            catch
+            {
+                // 清账失败只影响罚金数额，不能连累抓捕本身的结算。
+            }
         }
 
         public static float RegisterSharedFamilyDeterrence(Hero leader, float penaltyGain,

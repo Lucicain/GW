@@ -32,4 +32,34 @@ namespace GreyWardenPolicePurity
             return GwpCrimeCategory.Unknown;
         }
     }
+
+    /// <summary>
+    /// One base charge per deed. The intake ledger adds it the moment a crime is reported,
+    /// so an offender who burns two villages before anyone reaches him owes two charges.
+    /// </summary>
+    internal static class GwpFieldArrestPricing
+    {
+        internal static int BaseChargeFor(GwpCrimeCategory category) =>
+            category == GwpCrimeCategory.CaravanAttack
+                ? GwpTuning.FieldArrest.BaseChargeCaravanAttack
+                : GwpTuning.FieldArrest.BaseChargeVillageViolence;
+
+        /// <summary>
+        /// The whole bill for one open case: every deed it already covers, plus the
+        /// offender's own standing at the Wardens' standard rate.
+        /// </summary>
+        internal static int AssessFine(CrimeRecord crime)
+        {
+            int baseCharge = crime.AccruedBaseFine > 0
+                ? crime.AccruedBaseFine
+                : BaseChargeFor(crime.CrimeCategory);
+
+            TaleWorlds.CampaignSystem.Hero? offender = crime.OffenderHero;
+            int standing = offender == null
+                ? 0
+                : System.Math.Max(0, CrimePool.GetHistory(offender)?.NegativeStanding ?? 0);
+
+            return baseCharge + standing * GwpTuning.Enforcement.FinePerPoint;
+        }
+    }
 }

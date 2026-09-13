@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -77,7 +77,7 @@ namespace GreyWardenPolicePurity
             }
 
             public override TextObject Title =>
-                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_002}Grey Warden bounty: {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
+                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_002}Grey Warden commission: {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
             public override bool IsRemainingTimeHidden => _readyForTurnInLogWritten;
 
             /// <summary>
@@ -99,14 +99,20 @@ namespace GreyWardenPolicePurity
                 try { AddLog(text, false); } catch { }
             }
 
+            internal void CancelCommission()
+            {
+                CompleteQuestWithCancel();
+            }
+
             internal void SucceedQuest()
             {
                 try
                 {
-                    AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}You defeated the bounty target and successfully claimed the bounty.")), false);
-                    CompleteQuestWithSuccess();
+                    AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}Your report and delivery have been recorded and the commission is concluded.")), false);
                 }
-                catch { }
+                catch (Exception ex) { GwpAiDiagnostics.WriteFieldArrest("QUEST_RECEIPT_LOG_FAILED", ex.ToString()); }
+                // A journal rendering problem must not prevent native completion.
+                CompleteQuestWithSuccess();
             }
 
             internal void MarkReadyForTurnIn()
@@ -116,7 +122,7 @@ namespace GreyWardenPolicePurity
 
                 _readyForTurnInLogWritten = true;
                 WriteLog(GwpText.Get(
-                    "{=gwp_bounty_ready_for_turnin}The quarry has been defeated. Report to any Grey Warden lord to receive the bounty. If the warrant remains unsettled for five days, a Warden settlement party will come to you."));
+                    "{=gwp_bounty_ready_for_turnin}The field operation has ended. Deliver the fines or the assigned prisoner to a Grey Warden lord. After five days, a settlement party will come for your report."));
             }
 
             internal void TimeOutQuest()

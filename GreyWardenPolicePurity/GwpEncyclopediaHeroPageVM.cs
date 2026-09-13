@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Encyclopedia.Pages;
@@ -50,6 +51,7 @@ namespace GreyWardenPolicePurity
             DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero);
             Settlement? locationSettlement = GwpAiDeterrenceState.GetTrackingSettlement(_hero);
             string description = BuildDeterrenceDescription(
+                _hero,
                 details,
                 suppression,
                 locationSettlement);
@@ -88,6 +90,7 @@ namespace GreyWardenPolicePurity
         }
 
         private static string BuildDeterrenceDescription(
+            Hero hero,
             GwpAiDeterrenceState.DeterrenceDetails details,
             DesireSuppressionDetails suppression,
             Settlement? locationSettlement)
@@ -103,6 +106,7 @@ namespace GreyWardenPolicePurity
                 {
                     GwpText.Get("{=gwp_det_ui_record}Recorded crimes: {VAR_1} | Arrested by Grey Wardens: {VAR_2}",
                         "VAR_1", details.TotalCrimeCount, "VAR_2", details.TotalArrestCount),
+                    BuildLedgerBlock(hero),
                     string.Empty,
                     GwpText.Get("{=gwp_det_ui_village_heading}Harm against villagers"),
                     GwpText.Get("{=gwp_det_ui_villager_desire}Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%)",
@@ -130,6 +134,73 @@ namespace GreyWardenPolicePurity
                         "{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}",
                         "VAR_1", locationText)
                 });
+        }
+
+        /// <summary>
+        /// 这个人此刻欠灰袍多少，以及为什么欠这么多。账分两段，口径完全不同：
+        /// **案底**按件累加——做下这件事本身就有；**声望罚款**只按杀掉的人命折算，
+        /// 每十条人命一点、每点 300。被警察拿下会把两段一并抹平；缴款则要等办案的
+        /// 人把钱交回灰袍之后才抵。
+        /// </summary>
+        private static string BuildLedgerBlock(Hero? hero)
+        {
+            if (hero == null) return string.Empty;
+
+            HeroCrimeStats? history = CrimePool.GetHistory(hero);
+            int standing = Math.Max(0, history?.NegativeStanding ?? 0);
+            int lives = Math.Max(0, history?.UnredeemedLives ?? 0);
+
+            MobileParty? party = hero.PartyBelongedTo;
+            CrimeRecord? crime = party == null ? null : CrimePool.GetByOffenderId(party.StringId);
+            bool openCase = crime?.HasOpenCase == true;
+
+            int pending = GwpFieldReportLedger.Instance?.PendingAssessedFor(hero.StringId) ?? 0;
+            if (standing <= 0 && !openCase && pending <= 0)
+                return GwpText.Get("{=gwp_det_ui_ledger_clean}Grey Warden account: nothing outstanding.");
+
+            var lines = new List<string>
+            {
+                string.Empty,
+                GwpText.Get("{=gwp_det_ui_ledger_heading}Grey Warden account")
+            };
+
+            if (openCase)
+            {
+                int baseCharge = crime!.AccruedBaseFine > 0
+                    ? crime.AccruedBaseFine
+                    : GwpFieldArrestPricing.BaseChargeFor(crime.CrimeCategory);
+
+                lines.Add(GwpText.Get(
+                    "{=gwp_det_ui_ledger_case}Open case: {VAR_1} deed(s), {VAR_2} dead on this case alone.",
+                    "VAR_1", crime.IncidentCount.ToString(),
+                    "VAR_2", Math.Max(0, crime.CivilianCasualties).ToString()));
+                lines.Add(GwpText.Get(
+                    "{=gwp_det_ui_ledger_charge}Charge on the record, one per deed: {VAR_1} denars.",
+                    "VAR_1", baseCharge.ToString()));
+            }
+
+            if (pending > 0)
+                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Awaiting the hunter's report: assessed {VAR_1}, collected {VAR_2} denars. This payment has not yet reduced the record.",
+                    "VAR_1", pending, "VAR_2", GwpFieldReportLedger.Instance?.PendingCollectedFor(hero.StringId) ?? 0));
+
+            // 罚金收的是他名下全部没赎回的人命，不只是这件案子里的。两个数字过去
+            // 各说各话，账面上就成了"死了 40 个人，罚 5400"。这里按人命报数。
+            if (standing > 0)
+                lines.Add(GwpText.Get(
+                    "{=gwp_det_ui_ledger_standing_lives}Charge for the dead: {VAR_1} unatoned lives, {VAR_2} point(s) of standing at 300 each, {VAR_3} denars.",
+                    "VAR_1", lives.ToString(),
+                    "VAR_2", standing.ToString(),
+                    "VAR_3", (standing * GwpTuning.Enforcement.FinePerPoint).ToString()));
+
+            if (openCase)
+                lines.Add(GwpText.Get(
+                    "{=gwp_det_ui_ledger_total}Owed in full: {VAR_1} denars.",
+                    "VAR_1", GwpFieldArrestPricing.AssessFine(crime!).ToString()));
+            else if (standing > 0)
+                lines.Add(GwpText.Get(
+                    "{=gwp_det_ui_ledger_no_case}No case is open against him, but the charge for the dead stands until it is paid off or he is taken."));
+
+            return string.Join("\n", lines);
         }
 
         private static string BuildSourceLine(float personal, float transmitted)

@@ -28,6 +28,20 @@ namespace GreyWardenPolicePurity
         public Vec2 Location { get; set; }
         public string VictimName { get; set; } = string.Empty;
         public bool HasOpenCase { get; set; }
+        /// <summary>
+        /// Villagers and caravan guards this offender has actually killed under this
+        /// case. The fine is built on it, the same way the Wardens price the player's
+        /// own crimes by the bodies he leaves.
+        /// </summary>
+        public int CivilianCasualties { get; set; }
+        /// <summary>
+        /// Every separate deed under this still-open case, and the base charge they have
+        /// added up to. Two villages burned before anyone caught him is two base charges,
+        /// not one deed with a multiplier. An arrest closes the record, so what he does
+        /// afterwards starts a fresh count.
+        /// </summary>
+        public int IncidentCount { get; set; }
+        public int AccruedBaseFine { get; set; }
 
         public Hero? OffenderHero
         {
@@ -112,6 +126,45 @@ namespace GreyWardenPolicePurity
         public int SharedDeterrenceCount { get; set; }
         public float LastDeterrenceUpdatedHours { get; set; }
         public float LastEnforcementHours { get; set; }
+        /// <summary>
+        /// The offender's own negative standing, kept by exactly the rules the Wardens
+        /// apply to the player: every ten civilians killed costs a point, and every ten
+        /// bandits cut down earns one back. The remainders below are the same carried
+        /// progress the player's record keeps between fights.
+        /// </summary>
+        public int NegativeStanding { get; set; }
+        public int CrimeKillProgress { get; set; }
+        public int GoodDeedKillProgress { get; set; }
+
+        /// <summary>Ten dead civilians, one point of standing - the player's own rate.</summary>
+        /// <summary>
+        /// 负声望背后压着多少条没赎回的人命。十条一点，不满十条的余数留在进度里，
+        /// 所以两者要一起算。罚金按负声望收，对外报数就得报这个值——报案卷里那
+        /// 一件案子的死亡人数，会出现"说死了 40 个人却收 146 条人命的钱"。
+        /// </summary>
+        public int UnredeemedLives =>
+            Math.Max(0, NegativeStanding) * 10 + Math.Max(0, CrimeKillProgress);
+
+        public void AddCivilianCasualties(int casualties)
+        {
+            if (casualties <= 0) return;
+            int accumulated = CrimeKillProgress + casualties;
+            NegativeStanding += accumulated / 10;
+            CrimeKillProgress = accumulated % 10;
+        }
+
+        /// <summary>
+        /// The same door back the player has: cut down bandits, or save a caravan or a
+        /// village, and the record eases. It can never go below clean.
+        /// </summary>
+        public void AddRedeemingKills(int kills)
+        {
+            if (kills <= 0) return;
+            int accumulated = GoodDeedKillProgress + kills;
+            NegativeStanding = Math.Max(0, NegativeStanding - accumulated / 10);
+            GoodDeedKillProgress = accumulated % 10;
+        }
+
         public int CaravanArrestCount { get; set; }
         public float CaravanDirectDeterrencePoints { get; set; }
         public float CaravanSharedDeterrencePoints { get; set; }
@@ -382,6 +435,8 @@ namespace GreyWardenPolicePurity
             record.Location = location;
             record.VictimName = victimName ?? string.Empty;
             record.HasOpenCase = true;
+            record.IncidentCount++;
+            record.AccruedBaseFine += GwpFieldArrestPricing.BaseChargeFor(category);
             GetOrCreateHistory(leader).TotalCrimeCount++;
             TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             return true;
@@ -551,6 +606,26 @@ namespace GreyWardenPolicePurity
                     _ledger.Remove(crime.CrimeId);
                 }
             }
+        }
+
+        /// <summary>
+        /// A case the player settles face to face closes for everyone: the record leaves
+        /// the pool and any Grey Warden party still assigned to it is released, so no
+        /// patrol keeps chasing a man who has already paid.
+        /// </summary>
+        public static bool CloseCaseSettledInField(CrimeRecord? crime)
+        {
+            if (crime == null || string.Equals(crime.CrimeId, PlayerCrimeId, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            foreach (string key in _tasks
+                         .Where(kv => string.Equals(kv.Value.TargetCrimeId, crime.CrimeId, StringComparison.OrdinalIgnoreCase))
+                         .Select(kv => kv.Key)
+                         .ToList())
+                _tasks.Remove(key);
+
+            crime.HasOpenCase = false;
+            return _ledger.Remove(crime.CrimeId);
         }
 
         public static PoliceTask? GetTask(string policePartyId)
@@ -744,6 +819,9 @@ namespace GreyWardenPolicePurity
             int sharedCount = legacyHistory.SharedDeterrenceCount;
             float updated = legacyHistory.LastDeterrenceUpdatedHours;
             float enforced = legacyHistory.LastEnforcementHours;
+            int civilianCasualties = record.CivilianCasualties;
+            int incidentCount = record.IncidentCount;
+            int accruedBaseFine = record.AccruedBaseFine;
 
             store.SyncData($"gwp_l_{i}_id", ref id);
             store.SyncData($"gwp_l_{i}_type", ref type);
@@ -763,6 +841,10 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_l_{i}_sharedcount", ref sharedCount);
             store.SyncData($"gwp_l_{i}_updated", ref updated);
             store.SyncData($"gwp_l_{i}_enforced", ref enforced);
+            // 旧存档没有这个键，读取时保持 0，不影响加载。
+            store.SyncData($"gwp_l_{i}_civcas", ref civilianCasualties);
+            store.SyncData($"gwp_l_{i}_incidents", ref incidentCount);
+            store.SyncData($"gwp_l_{i}_basefine", ref accruedBaseFine);
 
             if (!saving)
             {
@@ -772,6 +854,9 @@ namespace GreyWardenPolicePurity
                     ? (GwpCrimeCategory)category
                     : GwpCrimeCategoryClassifier.FromCrimeType(type, id);
                 record.OffenderHeroId = hero;
+                record.CivilianCasualties = civilianCasualties;
+                record.IncidentCount = incidentCount;
+                record.AccruedBaseFine = accruedBaseFine;
                 record.OffenderPartyId = party;
                 record.Offender = id == PlayerCrimeId
                     ? MobileParty.MainParty
@@ -809,6 +894,9 @@ namespace GreyWardenPolicePurity
             int caravanSharedCount = history.CaravanSharedDeterrenceCount;
             float caravanUpdated = history.CaravanLastDeterrenceUpdatedHours;
             float caravanEnforced = history.CaravanLastEnforcementHours;
+            int negativeStanding = history.NegativeStanding;
+            int crimeProgress = history.CrimeKillProgress;
+            int deedProgress = history.GoodDeedKillProgress;
 
             store.SyncData($"gwp_h_{i}_hero", ref hero);
             store.SyncData($"gwp_h_{i}_crimes", ref crimes);
@@ -824,6 +912,10 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_h_{i}_caravan_sharedcount", ref caravanSharedCount);
             store.SyncData($"gwp_h_{i}_caravan_updated", ref caravanUpdated);
             store.SyncData($"gwp_h_{i}_caravan_enforced", ref caravanEnforced);
+            // 旧档没有这三个键，读出来是 0，等于"没有负声望记录"，可以安全加载。
+            store.SyncData($"gwp_h_{i}_negative", ref negativeStanding);
+            store.SyncData($"gwp_h_{i}_crimeprog", ref crimeProgress);
+            store.SyncData($"gwp_h_{i}_deedprog", ref deedProgress);
 
             if (!saving)
             {
@@ -841,6 +933,9 @@ namespace GreyWardenPolicePurity
                 history.CaravanSharedDeterrenceCount = Math.Max(0, caravanSharedCount);
                 history.CaravanLastDeterrenceUpdatedHours = caravanUpdated;
                 history.CaravanLastEnforcementHours = caravanEnforced;
+                history.NegativeStanding = Math.Max(0, negativeStanding);
+                history.CrimeKillProgress = Math.Max(0, crimeProgress);
+                history.GoodDeedKillProgress = Math.Max(0, deedProgress);
             }
         }
 

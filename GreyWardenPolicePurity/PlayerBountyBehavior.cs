@@ -50,6 +50,15 @@ namespace GreyWardenPolicePurity
         private int _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private bool _waitingForCollection = false;
         private int _activeBountyReward = 0;
+        // 代收但尚未上缴的罚金，以及对应案子的罪责点（决定领主给多少办案报酬）。
+        private int _pendingFieldFine = 0;
+        // 案子本身该罚多少（与实收可能不同：付不起的人被押走）。报酬上限按它算。
+        private int _pendingFieldFineAssessed = 0;
+        private int _pendingFieldFineSeverity = 0;
+        // 靠俘虏了结的案子：没有罚金进账，酬劳改由司法公库支付，上限用应缴罚金。
+        private int _pendingPrisonerAssessed = 0;
+        // 本次追捕中玩家部队的阵亡，用于计算领主的抚恤部分。
+        private int _bountyPlayerCasualties = 0;
         private double _activeBountyDeadlineHours = -1d;
         private double _bountyCollectionStartedHours = -1d;
         private string _bountyCollectionCourierReturnState = "";
@@ -82,6 +91,64 @@ namespace GreyWardenPolicePurity
         private bool IsWaitingForBountyCollection => CurrentBountyState == PlayerBountyFlowState.WaitingForCollection;
         private bool HasEscortPoliceParty => !string.IsNullOrEmpty(_escortPolicePartyId);
 
+        /// <summary>
+        /// 接单的第二、三道门槛：声望达标且穿着指挥官套装。
+        ///
+        /// [GWP_TEST_SCAFFOLD] 其中的 GWP_DIAGNOSTICS 分支是测试放行，让新档不必
+        /// 先攒声望、再凑装备就能跑整条任务链。功能定稿前必须删掉这个分支，恢复
+        /// 为无条件校验。玩家发行构建目前已经走的是 #else 一侧。
+        /// </summary>
+        private bool MeetsBountyEquipmentAndStanding()
+        {
+#if GWP_DIAGNOSTICS
+            return true;
+#else
+            return PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
+                   && IsWearingCommanderSet();
+#endif
+        }
+
+        /// <summary>
+        /// 新档一开局玩家就已经是灰袍的受托猎手，省掉等使者上门、接受招募这一段。
+        /// 只置身份标记，不发装备也不改声望——那两样各有各的获取途径，测试时该
+        /// 怎么拿还怎么拿。
+        ///
+        /// [GWP_TEST_SCAFFOLD] 测试脚手架，功能定稿后整段删除。整段包在
+        /// GWP_DIAGNOSTICS 内，玩家发行构建编译为空实现。
+        /// </summary>
+        private void OnNewGameCreatedForDebug(CampaignGameStarter starter)
+        {
+            _ = starter;
+#if GWP_DIAGNOSTICS
+            _recruitmentOffered = true;
+            _recruitmentAccepted = true;
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_debug_start}Debug build: you begin as a sworn Grey Warden hunter."),
+                Colors.Cyan));
+
+            GwpAiDiagnostics.WriteFieldArrest("DEBUG_START", "recruited=true");
+#endif
+        }
+
+        /// <summary>
+        /// 这名罪犯是不是玩家当前接下的那件案子的目标。别人犯了罪与玩家无关——
+        /// 只有灰袍把案子交到他手上，他才有立场上去拦人、宣告罪状、收罚金。
+        /// </summary>
+        internal bool IsActiveBountyTarget(Hero? offender)
+        {
+            if (!_recruitmentAccepted || offender == null || !IsTrackingBountyTarget) return false;
+
+            if (!string.IsNullOrWhiteSpace(_activeBountyTargetHeroId)
+                && string.Equals(_activeBountyTargetHeroId, offender.StringId,
+                    StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return !string.IsNullOrWhiteSpace(_activeBountyTargetId)
+                   && string.Equals(_activeBountyTargetId, offender.PartyBelongedTo?.StringId,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
         private void ClearActiveBountyTarget()
         {
             _activeBountyTargetId = null!;
@@ -89,6 +156,85 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetFactionId = null!;
             _activeBountyTargetHeroId = null!;
             _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
+        }
+
+        /// <summary>
+        /// A case settled face to face in the field, without a battle. If it is the bounty
+        /// the player is carrying, the warrant moves straight to its turn-in stage - the
+        /// pursuit is over, it simply ended in words. The fine travels with the player as
+        /// the order's money until he reports; whether he ever does is up to him.
+        /// </summary>
+        internal void NotifyCaseSettledInField(
+            Hero? offender,
+            int collectedFine,
+            int assessedFine,
+            int severityPoints)
+        {
+            if (!IsCommissionTarget(offender)) return;
+            _fieldCaseContract = true;
+            _assignedCaseFine = assessedFine;
+            _assignedCaseStanding = severityPoints;
+            _pendingFieldFineSeverity = Math.Max(_pendingFieldFineSeverity, severityPoints);
+
+            if (offender == null || !IsTrackingBountyTarget)
+                return;
+
+            bool isBountyTarget =
+                (!string.IsNullOrWhiteSpace(_activeBountyTargetHeroId) &&
+                 string.Equals(_activeBountyTargetHeroId, offender.StringId, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(_activeBountyTargetId) &&
+                    string.Equals(_activeBountyTargetId, offender.PartyBelongedTo?.StringId, StringComparison.OrdinalIgnoreCase));
+            if (!isBountyTarget)
+                return;
+
+            EnterBountyCollectionState();
+            _activeBountyDeadlineHours = -1d;
+            StopBountyEscortAfterTargetDefeat();
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+            ShowFieldSettlementNotice(collectedFine);
+        }
+
+        /// <summary>
+        /// 谈判结案和战场击败是两回事，通知也要分开：这里没有"被击败"，
+        /// 有的是一笔代收的罚金和一份待领的办案酬劳。
+        /// </summary>
+        private void ShowFieldSettlementNotice(int collectedFine)
+        {
+            InformationManager.ShowInquiry(
+                new InquiryData(
+                    GwpText.Get("{=gwp_field_settle_notice_title}Case settled on the road"),
+                    GwpText.Get(
+                        "{=gwp_field_settle_notice_body}The pursuit has ended. You must account for the commission and deliver the {VAR_1} denars collected as fines. Report to a Grey Warden lord; any shortfall must also be explained.",
+                        "VAR_1", collectedFine.ToString()),
+                    true,
+                    false,
+                    GwpText.Get("{=gwp_common_understood}Understood"),
+                    string.Empty,
+                    null,
+                    null,
+                    "event:/ui/notification/quest_finished"),
+                true);
+        }
+
+        /// <summary>
+        /// A case the player closed by taking the man himself. There is no fine to carry,
+        /// so the order pays the same expenses out of the judicial treasury instead, and
+        /// the prisoner is what has to reach a Warden lord.
+        /// </summary>
+        internal void NotifyCaseClosedByCapture(Hero? offender, int assessedFine, int standingPoints)
+        {
+            if (offender == null || !IsCommissionTarget(offender)
+                || !offender.IsPrisoner
+                || offender.PartyBelongedToAsPrisoner != MobileParty.MainParty?.Party) return;
+            _fieldCaseContract = true;
+            _pendingPrisonerHeroId = offender.StringId;
+            _pendingPrisonerAssessed = Math.Max(0, assessedFine);
+            _pendingFieldFineSeverity = Math.Max(0, standingPoints);
+
+            EnterBountyCollectionState();
+            _activeBountyDeadlineHours = -1d;
+            StopBountyEscortAfterTargetDefeat();
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
         }
 
         private void EnterBountyCollectionState()
@@ -112,6 +258,15 @@ namespace GreyWardenPolicePurity
             _bountyTargetEncounterStarted = false;
             ClearActiveBountyTarget();
             _activeQuest = null!;
+            _fieldCaseContract = false;
+            _assignedCaseFine = 0;
+            _assignedCaseStanding = 0;
+            _pendingPrisonerHeroId = string.Empty;
+            _pendingPrisonerAssessed = 0;
+            _pendingFieldFine = 0;
+            _pendingFieldFineAssessed = 0;
+            _pendingFieldFineSeverity = 0;
+            _bountyPlayerCasualties = 0;
         }
 
         private void EndBountyTaskState(bool tryRestorePeace)
@@ -147,13 +302,19 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+            CampaignEvents.TickEvent.AddNonSerializedListener(this, ReconcileCaseOnTick);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreatedForDebug);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
         }
 
         public override void SyncData(IDataStore dataStore)
         {
+            dataStore.SyncData("gwp_case_contract", ref _fieldCaseContract);
+            dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
+            dataStore.SyncData("gwp_case_assigned_standing", ref _assignedCaseStanding);
+            dataStore.SyncData("gwp_case_prisoner_id", ref _pendingPrisonerHeroId);
             // ── 招募状态（用 int 存 bool，兼容性更好）────────────────────────────────
             int offeredInt  = _recruitmentOffered  ? 1 : 0;
             int acceptedInt = _recruitmentAccepted ? 1 : 0;
@@ -174,6 +335,11 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_bounty_crime_category",   ref _activeBountyCrimeCategory);
             dataStore.SyncData("gwp_bounty_waiting",          ref waitingInt);
             dataStore.SyncData("gwp_bounty_reward",           ref _activeBountyReward);
+            dataStore.SyncData("gwp_field_fine_pending",      ref _pendingFieldFine);
+            dataStore.SyncData("gwp_field_fine_severity",     ref _pendingFieldFineSeverity);
+            dataStore.SyncData("gwp_field_fine_assessed",     ref _pendingFieldFineAssessed);
+            dataStore.SyncData("gwp_field_prisoner_assessed", ref _pendingPrisonerAssessed);
+            dataStore.SyncData("gwp_bounty_player_casualties", ref _bountyPlayerCasualties);
             dataStore.SyncData("gwp_bounty_escort_party_id",  ref _escortPolicePartyId); // 护送警察部队 ID
             dataStore.SyncData("gwp_bounty_deadline_hours", ref _activeBountyDeadlineHours);
             dataStore.SyncData("gwp_bounty_collection_started_hours", ref _bountyCollectionStartedHours);
@@ -586,6 +752,7 @@ namespace GreyWardenPolicePurity
         private void OnHourlyTick()
         {
             if (Hero.MainHero == null) return;
+            ReconcileAssignedCase();
 
             if (IsTrackingBountyTarget &&
                 _activeBountyDeadlineHours > 0d &&
@@ -628,8 +795,7 @@ namespace GreyWardenPolicePurity
 
             // ── 接任务三条件 ──────────────────────────────────────────────────────────
             if (!_recruitmentAccepted) return;                                        // 条件1：已接受招募
-            if (PlayerState.Reputation < GwpTuning.Bounty.RecruitmentReputationThreshold) return; // 条件2：声望足够
-            if (!IsWearingCommanderSet()) return;                                     // 条件3：穿戴套装
+            if (!MeetsBountyEquipmentAndStanding()) return;                           // 条件2、3：声望与套装
             // ─────────────────────────────────────────────────────────────────────────
 
             if ((CampaignTime.Now - _lastOfferTime).ToDays < GwpTuning.Bounty.OfferCooldownDays) return;
@@ -654,6 +820,14 @@ namespace GreyWardenPolicePurity
         {
             if (mapEvent == null) return;
             if (!IsTrackingBountyTarget) return;
+
+            bool targetInBattle = mapEvent.InvolvedParties.Any(p => p?.MobileParty?.StringId == _activeBountyTargetId);
+            if (!targetInBattle) return;
+            foreach (var side in new[] { mapEvent.AttackerSide, mapEvent.DefenderSide })
+                foreach (var party in side.Parties)
+                    if (party.Party == MobileParty.MainParty?.Party)
+                        _bountyPlayerCasualties += Math.Max(0, party.DiedInBattle.TotalManCount);
+
             if (!mapEvent.HasWinner || mapEvent.Winner == null) return;
 
             bool playerWon = false;
@@ -697,12 +871,9 @@ namespace GreyWardenPolicePurity
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
                 ?.RegisterPlayerCompletedCase(mapEvent, completedOffender, completedCategory);
 
-            EnterBountyCollectionState();
-            _activeBountyDeadlineHours = -1d;
-            StopBountyEscortAfterTargetDefeat();
-
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
-            ShowBountyCompletionNotice();
+            // Winning alone does not deliver the prisoner or collect a fine.
+            // Capture is reconciled after native prisoner selection, on return to the map.
+            ReconcileAssignedCase();
         }
 
         #endregion
@@ -714,7 +885,7 @@ namespace GreyWardenPolicePurity
         {
             if (!HasBountyTask) return;
 
-            if (_activeBountyReward <= 0 ||
+            if ((!_fieldCaseContract && _activeBountyReward <= 0) ||
                 (IsTrackingBountyTarget && _activeBountyDeadlineHours <= 0d))
             {
                 ClearBountyTaskState();

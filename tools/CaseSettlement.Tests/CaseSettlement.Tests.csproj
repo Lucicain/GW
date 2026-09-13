@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../GreyWardenPolicePurity/GwpCaseSettlementRules.cs" Link="Production/GwpCaseSettlementRules.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpFieldReportLedger.cs" Link="Production/GwpFieldReportLedger.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpFieldCollectionBarterable.cs" Link="Production/GwpFieldCollectionBarterable.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpFieldFineBarterable.cs" Link="Production/GwpFieldFineBarterable.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpTuning.cs" Link="Production/GwpTuning.cs" />
+  </ItemGroup>
+</Project>
