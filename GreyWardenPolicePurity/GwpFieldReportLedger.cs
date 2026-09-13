@@ -153,6 +153,7 @@ namespace GreyWardenPolicePurity
         internal bool HasPendingReports => _pending.Count > 0;
 
         internal int PendingAssessedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.Assessed);
+        internal int PendingReceivedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.CashReceived);
         internal int PendingCollectedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.Collected);
         internal int TotalAssessed => _pending.Sum(entry => entry.Assessed);
         internal int TotalCollected => _pending.Sum(entry => entry.Collected);

@@ -23,6 +23,8 @@ namespace GreyWardenPolicePurity
         private bool _casePaymentWithPrisoner;
         private int CaseAmountDue => Math.Max(_assignedCaseFine, Math.Max(_pendingPrisonerAssessed, Reports?.TotalAssessed ?? 0));
         private float _caseCheckElapsed;
+        private TaleWorlds.CampaignSystem.MapEvents.MapEvent? _caseBattleToReconcile;
+        private string _caseBattleHeroId = string.Empty;
         private string _cachedCaseHeroId = string.Empty;
         private Hero? _cachedCaseHero;
 
@@ -65,8 +67,24 @@ namespace GreyWardenPolicePurity
             if (_caseCheckElapsed < 1f) return;
             _caseCheckElapsed = 0f;
             if (Campaign.Current?.ConversationManager?.IsConversationInProgress == true
-                || MobileParty.MainParty?.MapEvent != null) return;
+                || MobileParty.MainParty?.MapEvent != null || PlayerEncounter.Current != null) return;
             ReconcileAssignedCase();
+            if (_caseBattleToReconcile != null)
+            {
+                var battle = _caseBattleToReconcile;
+                _caseBattleToReconcile = null;
+                Hero? target = CaseHero;
+                if (target == null || target.StringId != _caseBattleHeroId || !HasBountyTask) return;
+                if (target.IsPrisoner && target.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party)
+                    Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                        ?.RegisterPlayerCompletedCase(battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
+                else if (!target.IsDead)
+                {
+                    string message = GwpText.Get("{=gwp_case_capture_missed}The offender is not in your custody. The commission remains open: pursue him again or settle the fine with the Wardens. Any money already collected must still be reported.");
+                    _activeQuest?.WriteLog(message);
+                    InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
+                }
+            }
         }
 
         private void ReconcileAssignedCase()

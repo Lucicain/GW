@@ -108,11 +108,6 @@ namespace GreyWardenPolicePurity
                 roll -= candidate.Weight;
                 if (roll < 0)
                 {
-                    GwpAiDiagnostics.WriteFieldArrest("DESIRE_ROLL", "offender=" + offender.StringId
-                        + "; H=" + honor + "; C=" + calculating + "; V=" + valor + "; M=" + mercy + "; G=" + generosity
-                        + "; purse=" + offender.Gold + "; fine=" + fine
-                        + "; pool=" + string.Join(",", pool.Select(p => p.Desire + ":" + p.Weight))
-                        + "; selected=" + candidate.Desire);
                     return candidate.Desire;
                 }
             }

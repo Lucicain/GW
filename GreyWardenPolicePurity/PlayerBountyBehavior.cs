@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -819,61 +819,20 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
-            if (!IsTrackingBountyTarget) return;
-
-            bool targetInBattle = mapEvent.InvolvedParties.Any(p => p?.MobileParty?.StringId == _activeBountyTargetId);
-            if (!targetInBattle) return;
+            if (!HasBountyTask || CaseHero == null) return;
+            bool targetInBattle = mapEvent.InvolvedParties.Any(p => p?.MobileParty?.LeaderHero == CaseHero
+                || (!string.IsNullOrEmpty(_activeBountyTargetId) && p?.MobileParty?.StringId == _activeBountyTargetId));
+            bool playerInBattle = mapEvent.InvolvedParties.Any(p => p?.MobileParty == MobileParty.MainParty);
+            if (!targetInBattle || !playerInBattle) return;
+            _caseBattleToReconcile = mapEvent;
+            _caseBattleHeroId = _activeBountyTargetHeroId;
             foreach (var side in new[] { mapEvent.AttackerSide, mapEvent.DefenderSide })
                 foreach (var party in side.Parties)
                     if (party.Party == MobileParty.MainParty?.Party)
                         _bountyPlayerCasualties += Math.Max(0, party.DiedInBattle.TotalManCount);
 
-            if (!mapEvent.HasWinner || mapEvent.Winner == null) return;
-
-            bool playerWon = false;
-            foreach (var p in mapEvent.Winner.Parties)
-            {
-                if (p?.Party?.IsMobile == true && p.Party.MobileParty?.IsMainParty == true)
-                { playerWon = true; break; }
-            }
-            if (!playerWon) return;
-
-            MapEventSide loserSide = (mapEvent.Winner == mapEvent.AttackerSide)
-                ? mapEvent.DefenderSide : mapEvent.AttackerSide;
-            if (loserSide == null) return;
-
-            MobileParty? defeatedTarget = null;
-            foreach (var p in loserSide.Parties)
-            {
-                if (p?.Party?.IsMobile == true &&
-                    p.Party.MobileParty?.StringId == _activeBountyTargetId)
-                { defeatedTarget = p.Party.MobileParty; break; }
-            }
-            if (defeatedTarget == null) return;
-
-            CrimeRecord? completedCrime = CrimeState.GetByOffenderId(_activeBountyTargetId);
-            Hero? completedOffender = defeatedTarget.LeaderHero ?? completedCrime?.OffenderHero;
-            if (completedOffender == null && !string.IsNullOrWhiteSpace(_activeBountyTargetHeroId))
-            {
-                try
-                {
-                    completedOffender = Hero.FindFirst(hero =>
-                        string.Equals(hero.StringId, _activeBountyTargetHeroId,
-                            StringComparison.OrdinalIgnoreCase));
-                }
-                catch (ArgumentNullException) { }
-            }
-
-            GwpCrimeCategory completedCategory = (GwpCrimeCategory)_activeBountyCrimeCategory;
-            if (completedCategory == GwpCrimeCategory.Unknown)
-                completedCategory = completedCrime?.CrimeCategory ?? GwpCrimeCategory.Unknown;
-
-            Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterPlayerCompletedCase(mapEvent, completedOffender, completedCategory);
-
-            // Winning alone does not deliver the prisoner or collect a fine.
-            // Capture is reconciled after native prisoner selection, on return to the map.
-            ReconcileAssignedCase();
+            // Native prisoner selection has not completed at this event. Reconcile
+            // custody and deterrence together after the encounter returns to the map.
         }
 
         #endregion

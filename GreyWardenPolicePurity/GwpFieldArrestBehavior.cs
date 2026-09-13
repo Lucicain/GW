@@ -37,6 +37,8 @@ namespace GreyWardenPolicePurity
         private Hero? _offender;
         private MobileParty? _offenderParty;
         private int _fine;
+        private readonly GwpFieldDialogueVoice _voice = new GwpFieldDialogueVoice();
+        private bool HasReceivedCash => _offender != null && (GwpFieldReportLedger.Instance?.PendingReceivedFor(_offender.StringId) ?? 0) > 0;
         private GwpOffenderDesire _desire;
         private bool _enforcementAccepted;
         private bool _paymentAccepted;
@@ -103,12 +105,6 @@ namespace GreyWardenPolicePurity
                 null, DebugSeedConsequence);
 #endif
 
-            // 执法权的小福利：谈过之后（成败不论、缴清与否）随时可以翻脸拿人。
-            starter.AddPlayerLine(
-                "gwp_fa_seize", "hero_main_options", "gwp_fa_attack",
-                GwpText.Get("{=gwp_fieldarrest_seize}I am taking you into custody under the warrant."),
-                SeizeAvailableCondition, PrepareSeizure, 109);
-
             starter.AddDialogLine(
                 "gwp_fa_greeting", "gwp_fa_greeting", "gwp_fa_charge_options",
                 "{" + GwpTextKeys.FieldArrestOpening + "}", OpeningCondition, null);
@@ -128,21 +124,18 @@ namespace GreyWardenPolicePurity
 
             // ── 第一层：他认不认这次执法 ────────────────────────────────────────
             starter.AddDialogLine("gwp_fa_refuse", "gwp_fa_layer1_open", "gwp_fa_layer1_lost_options",
-                GwpText.Get("{=gwp_fa_refuse_strength}Look at your men, then look at mine. I will not discuss your warrant."),
-                () => _refusesToTalk, EndPersuasionConsequence, 110);
+                "{GWP_VOICE_REFUSE}", () => (_refusesToTalk) && SetVoice("refuse", "{=gwp_fa_refuse_strength}Look at your men, then look at mine. I will not discuss your warrant."), EndPersuasionConsequence, 110);
             starter.AddDialogLine(
                 "gwp_fa_layer1_open", "gwp_fa_layer1_open", "gwp_fa_layer1_next",
-                GwpText.Get("{=gwp_fa_hear_charge}I have heard the charge. First tell me why I should answer to you."), () => !_refusesToTalk, BeginLayerOneConsequence);
+                "{GWP_VOICE_HEAR}", () => (!_refusesToTalk) && SetVoice("hear", "{=gwp_fa_hear_charge}I have heard the charge. First tell me why I should answer to you."), BeginLayerOneConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_failed", "gwp_fa_layer1_next", "gwp_fa_layer1_lost",
-                GwpText.Get("{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."),
-                LayerFailedCondition, null);
+                "{GWP_VOICE_LOST1}", () => (LayerFailedCondition()) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), null);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_done", "gwp_fa_layer1_next", "gwp_fa_terms_request",
-                GwpText.Get("{=gwp_fa_l1_done}...Very well. I answer to the charge. The question is how."),
-                LayerSatisfiedCondition, EndLayerOneConsequence);
+                "{GWP_VOICE_DONE1}", () => (LayerSatisfiedCondition()) && SetVoice("done1", "{=gwp_fa_l1_done}...Very well. I answer to the charge. The question is how."), EndLayerOneConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_reservation", "gwp_fa_layer1_next", "gwp_fa_layer1_argument",
@@ -160,8 +153,7 @@ namespace GreyWardenPolicePurity
             // 悬在半空并把玩家弹回上一组选项。这一行保证永远有出口。
             starter.AddDialogLine(
                 "gwp_fa_layer1_stuck", "gwp_fa_layer1_next", "gwp_fa_layer1_lost",
-                GwpText.Get("{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."),
-                null, null);
+                "{GWP_VOICE_LOST1}", () => (true) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), null);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_lost", "gwp_fa_layer1_lost", "gwp_fa_layer1_lost_options",
@@ -194,13 +186,11 @@ namespace GreyWardenPolicePurity
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_failed", "gwp_fa_layer2_next", "gwp_fa_layer2_lost",
-                GwpText.Get("{=gwp_fa_l2_failed}No. I have told you how this will go."),
-                LayerFailedCondition, null);
+                "{GWP_VOICE_LOST2}", () => (LayerFailedCondition()) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), null);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_done", "gwp_fa_layer2_next", "gwp_fa_layer2_won",
-                GwpText.Get("{=gwp_fa_l2_done}...The full sum, then. Have it your way."),
-                LayerSatisfiedCondition, () => _paymentAccepted = _enforcementAccepted);
+                "{GWP_VOICE_DONE2}", () => (LayerSatisfiedCondition()) && SetVoice("done2", "{=gwp_fa_l2_done}...The full sum, then. Have it your way."), () => _paymentAccepted = _enforcementAccepted);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_reservation", "gwp_fa_layer2_next", "gwp_fa_layer2_argument",
@@ -216,8 +206,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_stuck", "gwp_fa_layer2_next", "gwp_fa_layer2_lost",
-                GwpText.Get("{=gwp_fa_l2_failed}No. I have told you how this will go."),
-                null, null);
+                "{GWP_VOICE_LOST2}", () => (true) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), null);
 
             // 两层都过：按规矩收钱，或者翻脸。
             starter.AddDialogLine(
@@ -275,7 +264,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddDialogLine(
                 "gwp_fa_attack", "gwp_fa_attack", "close_window",
-                GwpText.Get("{=gwp_fa_fight_reply}Then draw your weapon."), null, AttackConsequence);
+                "{GWP_FIELD_FIGHT_REPLY}", PrepareFightReply, AttackConsequence);
             foreach (string token in new[] { "gwp_fa_charge_options", "gwp_fa_terms_request", "gwp_fa_offer_options", "gwp_fa_empty_options",
                 "gwp_fa_layer1_argument", "gwp_fa_layer2_argument" })
             {
@@ -317,7 +306,7 @@ namespace GreyWardenPolicePurity
         {
             Hero? hero = Hero.OneToOneConversationHero;
             MobileParty? party = MobileParty.ConversationParty;
-            if (hero == null || hero == Hero.MainHero || party == null || !party.IsActive)
+            if (hero == null || hero == Hero.MainHero || party == null || party == MobileParty.MainParty || !party.IsActive)
                 return false;
 
             // 只在野外执法。城里那条路是另一套（向总督交涉）。
@@ -325,20 +314,13 @@ namespace GreyWardenPolicePurity
                 return false;
 
 
-            CrimeRecord? crime = CrimeState.GetByOffenderId(party.StringId);
-            if (crime?.HasOpenCase != true || crime.OffenderHero != hero)
-                return false;
-
-            // 别人犯的罪与玩家无关：必须是灰袍交到他手上的那件案子，才谈得上执法。
-            if (!IsAssignedCase(hero))
-                return false;
-
-            return true;
+            return Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.HasCommissionAuthority(hero) == true;
         }
 
         private void PrepareFieldArrest()
         {
             ClearState();
+            _voice.BeginEncounter();
             _offender = Hero.OneToOneConversationHero;
             _offenderParty = MobileParty.ConversationParty;
             _crime = CrimeState.GetByOffenderId(_offenderParty?.StringId);
@@ -348,8 +330,6 @@ namespace GreyWardenPolicePurity
             float ours = Math.Max(1f, MobileParty.MainParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
             float theirs = Math.Max(1f, _offenderParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
             _refusesToTalk = theirs >= ours * GwpTuning.FieldArrest.RefusalStrengthRatio;
-            GwpAiDiagnostics.WriteFieldArrest("ENCOUNTER_TERMS", "offender=" + _offender.StringId
-                + "; ours=" + ours + "; theirs=" + theirs + "; refuses=" + _refusesToTalk + "; desire=" + _desire);
         }
 
 #if GWP_DIAGNOSTICS
@@ -406,7 +386,7 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestDemand, GwpOffenderDesires.IsFullPayment(_desire) && (_offender?.Gold ?? 0) < EnsureFine()
                     ? GwpText.Create("{=gwp_case_purse_short}I accept the fine, but I only have {VAR_1} denars here. That is everything I can give you now.", "VAR_1", Math.Max(0, _offender?.Gold ?? 0))
-                    : GwpOffenderDesires.Line(_desire));
+                    : _voice.Alternate("demand_" + _desire, GwpOffenderDesires.Line(_desire)));
             MBTextManager.SetTextVariable("GWP_CASE_OFFER_AMOUNT", Math.Min(Math.Max(0, _offender?.Gold ?? 0),
                 EnsureFine() * GwpOffenderDesires.OfferedSharePercent(_desire) / 100));
             return true;
@@ -472,30 +452,20 @@ namespace GreyWardenPolicePurity
         {
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestOpening,
-                GwpFieldArrestLines.Opening(CurrentStandingTier(), HasBeenTakenBefore));
+                HasReceivedCash ? _voice.Line("paid") :
+                CurrentStandingTier() == WardenStandingTier.Ordinary && !HasBeenTakenBefore
+                    ? _voice.Line("open_" + GwpFieldArrestLines.Read(_offender))
+                    : GwpFieldArrestLines.Opening(CurrentStandingTier(), HasBeenTakenBefore));
             return true;
         }
 
         private bool ChargeCondition()
         {
-            if (_crime == null || _offender == null)
+            if (_crime?.HasOpenCase != true || _offender == null || !IsAssignedCase(_offender))
                 return false;
 
             if (_fine <= 0) return false;
 
-            GwpAiDiagnostics.WriteFieldArrest(
-                "CHARGE",
-                "offender=" + (_offender?.StringId ?? "-") +
-                "(" + (_offender?.Name?.ToString() ?? "-") + ")" +
-                "; category=" + _crime.CrimeCategory +
-                "; incidents=" + _crime.IncidentCount +
-                "; caseCasualties=" + _crime.CivilianCasualties +
-                "; baseCharge=" + CalculateBaseFine(_crime) +
-                "; unredeemedLives=" + UnredeemedLives(_offender) +
-                "; standingPoints=" + GetNegativeStanding(_crime) +
-                "; standingCharge=" + GetNegativeStanding(_crime) * GwpTuning.Enforcement.FinePerPoint +
-                "; deedProgress=" + (CrimePool.GetHistory(_offender)?.GoodDeedKillProgress ?? 0) +
-                "; fine=" + _fine);
 
             GwpFieldArrestLines.Temperament temper = GwpFieldArrestLines.Read(_offender);
             MBTextManager.SetTextVariable(
@@ -814,6 +784,7 @@ namespace GreyWardenPolicePurity
             var option = _pendingArgument;
             _pendingArgument = null;
             _lastResult = outcome.Item2;
+            _voice.NextArgument();
             if (_lastResult == PersuasionOptionResult.CriticalFailure)
                 foreach (var reservation in _reservations) reservation.BlockAllOptions();
             else if (option.CanMoveToTheNextReservation &&
@@ -864,7 +835,7 @@ namespace GreyWardenPolicePurity
                 {
                     MBTextManager.SetTextVariable(
                         "PERSUASION_REACTION",
-                        PersuasionHelper.GetDefaultPersuasionOptionReaction(result));
+                        _voice.Line("success_" + GwpFieldArrestLines.Read(_offender)));
                 }
             }
             catch
@@ -885,24 +856,6 @@ namespace GreyWardenPolicePurity
         /// 谈过之后（无论哪一层、成败如何，也包括缴清之后）玩家仍握着执法权，
         /// 随时可以回头拿人。这是执法权给玩家的余地，代价将来再算。
         /// </summary>
-        private bool SeizeAvailableCondition()
-        {
-            var hero = Hero.OneToOneConversationHero;
-            var party = MobileParty.ConversationParty;
-            return hero != null && party?.IsActive == true && party != MobileParty.MainParty
-                && party.CurrentSettlement == null && MobileParty.MainParty?.CurrentSettlement == null
-                && Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.HasCommissionAuthority(hero) == true;
-        }
-
-        private void PrepareSeizure()
-        {
-            PrepareFieldArrest();
-            // A previously paid case may have no open crime, but the assigned
-            // offender can still be seized until the commission is handed in.
-            _offender = Hero.OneToOneConversationHero;
-            _offenderParty = MobileParty.ConversationParty;
-        }
-
         private void DismissConsequence()
         {
             EndPersuasionConsequence();
@@ -1214,6 +1167,19 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>抗拒执法，或者玩家自己决定动手。</summary>
+        private bool SetVoice(string key, string original)
+        {
+            MBTextManager.SetTextVariable("GWP_VOICE_" + key.ToUpperInvariant(), _voice.Alternate(key, GwpText.Create(original)));
+            return true;
+        }
+
+        private bool PrepareFightReply()
+        {
+            MBTextManager.SetTextVariable("GWP_FIELD_FIGHT_REPLY",
+                _voice.Line((HasReceivedCash ? "betray_" : "fight_") + GwpFieldArrestLines.Read(_offender)));
+            return true;
+        }
+
         private void AttackConsequence()
         {
             EndPersuasionConsequence();
