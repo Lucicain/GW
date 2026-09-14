@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.BarterSystem.Barterables;
@@ -19,13 +20,15 @@ namespace GreyWardenPolicePurity
         private readonly Hero _payer, _receiver;
         private readonly PartyBase _from, _to;
         private readonly int _limit;
+        private readonly int _autoTarget;
+        internal static readonly ConditionalWeakTable<BarterData, GwpAssetPayment> Sessions = new ConditionalWeakTable<BarterData, GwpAssetPayment>();
         internal readonly List<Barterable> Entries = new List<Barterable>();
         internal bool Applied { get; private set; }
         internal int Paid { get; private set; }
         internal int Available { get; }
-        internal GwpAssetPayment(Hero payer, Hero receiver, PartyBase from, PartyBase to, int limit)
+        internal GwpAssetPayment(Hero payer, Hero receiver, PartyBase from, PartyBase to, int limit, int autoTarget = -1)
         {
-            _payer = payer; _receiver = receiver; _from = from; _to = to; _limit = Math.Max(0, limit);
+            _payer = payer; _receiver = receiver; _from = from; _to = to; _limit = Math.Max(0, limit); _autoTarget = autoTarget < 0 ? _limit : Math.Max(0, autoTarget);
             Entries.Add(new Money(this, payer, from, true));
             Entries.Add(new Money(this, receiver, to, false));
             AddGoods(payer, receiver, from, to, true);
@@ -45,7 +48,7 @@ namespace GreyWardenPolicePurity
         private long Net => Entries.Where(e => e.IsOffered).Sum(e =>
             e is Money m ? (long)m.CurrentAmount * (m.Incoming ? 1 : -1)
             : e is Goods g ? (long)e.CurrentAmount * g.Value * (g.Incoming ? 1 : -1) : 0);
-        private bool Valid => Net >= 0 && Net <= _limit && Entries.All(e =>
+        internal bool Valid => Net >= 0 && Net <= _limit && Entries.All(e =>
             e.CurrentAmount >= 0 && (!e.IsOffered || e is Agreement || (e is Money m ? m.CurrentAmount <= m.OriginalOwner.Gold
             : e.CurrentAmount <= e.OriginalParty.ItemRoster.Where(x => x.EquipmentElement.Equals(((Goods)e).ItemRosterElement.EquipmentElement)).Sum(x => x.Amount))));
         private int ValueFor(IFaction faction, bool incoming, int value)
@@ -59,11 +62,12 @@ namespace GreyWardenPolicePurity
         internal bool IsAgreement(Barterable entry) => entry is Agreement;
         internal void PrepareCatalogue(BarterData data)
         {
+            Sessions.Remove(data); Sessions.Add(data, this);
             data.GetBarterables().Clear();
             foreach (var entry in Entries)
             {
-                int initial = entry is Agreement ? 1
-                    : entry == Entries[0] && _limit != int.MaxValue ? Math.Min(_limit, Math.Max(0, _payer.Gold)) : 0;
+                // Native VM keeps reusable catalogue entries only for initially unoffered assets.
+                int initial = entry is Agreement ? 1 : 0;
                 entry.SetIsOffered(initial > 0);
                 entry.CurrentAmount = initial;
                 if (entry is Money) data.AddBarterable<GoldBarterGroup>(entry);
@@ -71,12 +75,40 @@ namespace GreyWardenPolicePurity
                 else data.AddBarterable<OtherBarterGroup>(entry, true);
             }
         }
+        internal Dictionary<Barterable, int> SuggestedOffer()
+        {
+            var result = new Dictionary<Barterable, int>();
+            long remaining = Math.Min(_autoTarget, _limit);
+            foreach (var entry in Entries)
+            {
+                int value = entry is Money m && m.Incoming ? 1 : entry is Goods g && g.Incoming ? g.Value : 0;
+                if (value <= 0) continue;
+                int available = entry is Money ? Math.Max(0, _payer.Gold)
+                    : _from.ItemRoster.Where(x => x.EquipmentElement.Equals(((Goods)entry).ItemRosterElement.EquipmentElement)).Sum(x => x.Amount);
+                int amount = (int)Math.Min(Math.Min(entry.MaxAmount, available), remaining / value);
+                if (amount > 0) { result[entry] = amount; remaining -= (long)amount * value; }
+            }
+            if (remaining > 0)
+            {
+                var changeItem = Entries.OfType<Goods>().Where(g => g.Incoming && g.Value > remaining
+                    && g.Value - remaining <= Math.Max(0, _receiver.Gold)
+                    && (result.TryGetValue(g, out int count) ? count : 0) < Math.Min(g.MaxAmount,
+                        _from.ItemRoster.Where(x => x.EquipmentElement.Equals(g.ItemRosterElement.EquipmentElement)).Sum(x => x.Amount)))
+                    .OrderBy(g => g.Value).FirstOrDefault();
+                if (changeItem != null)
+                {
+                    result[changeItem] = (result.TryGetValue(changeItem, out int count) ? count : 0) + 1;
+                    result[Entries[1]] = (int)(changeItem.Value - remaining);
+                }
+            }
+            return result;
+        }
         private sealed class Agreement : Barterable
         {
             private readonly GwpAssetPayment _payment;
             internal Agreement(GwpAssetPayment payment) : base(payment._receiver, payment._to) { _payment = payment; }
             public override string StringID => "gwp_collection_agreement";
-            public override TextObject Name => GwpText.Create("{=gwp_collection_agreement}Agreed payment allowance ({VAR_1} denars)", "VAR_1", _payment._limit);
+            public override TextObject Name => GwpText.Create("{=gwp_collection_agreement}Honor our agreement");
             public override int GetUnitValueForFaction(IFaction faction)
             {
                 Hero other = _payment._payer == Hero.MainHero ? _payment._receiver : _payment._payer;
@@ -96,10 +128,11 @@ namespace GreyWardenPolicePurity
 #endif
                 return;
             }
-            Paid = (int)Net;
 #if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFieldArrest("ASSET_PAYMENT_APPLIED", "net=" + Paid + "; limit=" + _limit + "; offered=" + Entries.Count(e => e.IsOffered));
+            GwpAiDiagnostics.WriteFieldArrest("ASSET_PAYMENT_COMMIT", "net=" + Net + "; limit=" + _limit
+                + "; selected=" + string.Join(" | ", Entries.Where(e => e.IsOffered).Select(e => e.StringID + ":" + e.CurrentAmount + ":" + e.OriginalOwner?.StringId)));
 #endif
+            Paid = (int)Net;
             // Validation covers the entire selection before any transfer takes place.
             Applied = true;
             foreach (var entry in Entries.Where(e => e.IsOffered && e.CurrentAmount > 0))
