@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
+using System.Collections.Generic;
+using TaleWorlds.CampaignSystem.BarterSystem;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Conversation;
@@ -33,6 +35,9 @@ namespace GreyWardenPolicePurity
         private const int OpenGraceMilliseconds = 15000;
         private static GwpDispatchPurpose _pendingPurpose;
         private static bool _selectionQueued;
+        private static Action? _afterPayment;
+        private static BarterManager.BarterCloseEventDelegate? _paymentClosed;
+        private static TroopRoster? _reportSelection;
 
         /// <summary>
         /// 队伍界面的交谈按钮只提出请求。界面关闭要等原版自己走完，所以真正开对话
@@ -51,6 +56,14 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static void Pump()
         {
+            GwpDispatchBarterScreen.Tick();
+            if (_afterPayment != null && Campaign.Current?.ConversationManager.IsConversationInProgress == false)
+            {
+                Action next = _afterPayment;
+                _afterPayment = null;
+                next();
+                return;
+            }
             // 没有待办就彻底不做事。读档和过场期间这条路必须是完全惰性的。
             if (_requestedTroop == null && !_selectionQueued && _activeTroop == null) return;
 
@@ -132,6 +145,11 @@ namespace GreyWardenPolicePurity
         /// <summary>会话启动时清空全部静态状态。</summary>
         internal static void ResetRuntimeState()
         {
+            GwpDispatchBarterScreen.Reset();
+            _reportSelection = null;
+            if (_paymentClosed != null && Campaign.Current != null) Campaign.Current.BarterManager.Closed -= _paymentClosed;
+            _paymentClosed = null;
+            _afterPayment = null;
             _requestedTroop = null;
             _activeTroop = null;
             _selectionQueued = false;
@@ -273,7 +291,15 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            AskWhatToHandOver(members, prisoners);
+            // Keep the real soldiers in the main party until the final confirmation.
+            // The following roster is only a selection, never the sole owner of men.
+            var selection = TroopRoster.CreateDummyTroopRoster();
+            foreach (var entry in members.GetTroopRoster())
+                selection.AddToCounts(entry.Character, entry.Number, false, entry.WoundedNumber, entry.Xp);
+            ReturnSelection(members, prisoners);
+            _reportSelection = selection;
+            // Let the native party screen finish closing before opening another UI.
+            _afterPayment = () => AskWhatToHandOver(selection, TroopRoster.CreateDummyTroopRoster());
         }
 
         /// <summary>
@@ -282,25 +308,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static void AskWhatToHandOver(TroopRoster members, TroopRoster prisoners)
         {
-            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-            Hero? prisoner = bounty?.PendingCasePrisonerForDispatch;
-            if (prisoner == null)
-            {
-                AskHandInAmount(members, prisoners, string.Empty);
-                return;
-            }
-
-            InformationManager.ShowInquiry(new InquiryData(
-                GwpText.Get("{=gwp_dispatch_handover_title}What are we taking?"),
-                GwpText.Get(
-                    "{=gwp_dispatch_handover_body}We can take the money, or we can take {VAR_1} himself. Which is it?",
-                    "VAR_1", prisoner.Name?.ToString() ?? string.Empty),
-                true, true,
-                GwpText.Get("{=gwp_dispatch_handover_man}Take the prisoner."),
-                GwpText.Get("{=gwp_dispatch_handover_money}Take the money."),
-                () => Send(GwpDispatchPurpose.Report, members, prisoners, 0, false, prisoner.StringId),
-                () => AskHandInAmount(members, prisoners, string.Empty)),
-                true);
+            AskHandInAmount(members, prisoners, string.Empty);
         }
 
         /// <summary>
@@ -309,41 +317,66 @@ namespace GreyWardenPolicePurity
         private static void AskHandInAmount(TroopRoster members, TroopRoster prisoners,
             string prisonerHeroId)
         {
-            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-            int due = Math.Max(0, bounty?.CaseReportAmountDue ?? 0);
-            int wallet = Math.Max(0, Hero.MainHero?.Gold ?? 0);
-            int cap = Math.Min(due, wallet);
-
-            InformationManager.ShowTextInquiry(new TextInquiryData(
-                GwpText.Get("{=gwp_dispatch_amount_title}Money for the Wardens"),
-                GwpText.Get(
-                    "{=gwp_dispatch_amount_body}The account stands at {VAR_1} denars. How much do your men carry? You hold {VAR_2}.",
-                    "VAR_1", due, "VAR_2", wallet),
-                true, true,
-                GwpText.Get("{=gwp_common_confirm}Confirm"),
-                GwpText.Get("{=gwp_common_cancel}Cancel"),
-                input => AskTruthfulness(members, prisoners, prisonerHeroId, ClampAmount(input, cap)),
-                () => ReturnSelection(members, prisoners),
-                false,
-                input => new Tuple<bool, string>(
-                    int.TryParse(input, out int value) && value >= 0 && value <= cap,
-                    GwpText.Get("{=gwp_dispatch_amount_invalid}Enter a number you actually have.")),
-                string.Empty,
-                cap.ToString()),
-                true);
+            _afterPayment = () => OpenPayment(members, prisoners, prisonerHeroId);
         }
 
-        private static int ClampAmount(string? input, int cap) =>
-            int.TryParse(input, out int value) ? Math.Max(0, Math.Min(cap, value)) : 0;
+        private static void OpenPayment(TroopRoster members, TroopRoster prisoners,
+            string prisonerHeroId)
+        {
+            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            MobileParty? receiver = GwpWardenDispatchBehavior.FindReceiver(MobileParty.MainParty);
+            if (bounty == null || receiver?.LeaderHero == null)
+            {
+                members.Clear(); prisoners.Clear();
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_dispatch_no_receiver}There is no Grey Warden party abroad that your men could reach. Keep them with you for now.")));
+                return;
+            }
+            var payment = new GwpAssetPayment(Hero.MainHero, receiver.LeaderHero,
+                MobileParty.MainParty.Party, receiver.Party, int.MaxValue, bounty.CaseReportSuggestedPayment, true,
+                reportMode: true, autoReceipt: bounty.CaseReportReceipt, prisoner: bounty.PendingCasePrisonerForDispatch);
+            bounty.ShowUnknownCaseReceipt();
+            BarterManager manager = Campaign.Current!.BarterManager;
+            BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
+            BarterManager.BarterCloseEventDelegate? closed = null;
+            closed = () =>
+            {
+                manager.Closed -= closed;
+                _paymentClosed = null;
+                _afterPayment = () =>
+                {
+                    if (payment.Applied && payment.Valid)
+                        AskTruthfulness(members, prisoners, payment.SelectedPrisoner?.StringId ?? "", payment.Paid, payment.SelectedGold, payment.SelectedGoods);
+                    else { members.Clear(); prisoners.Clear(); }
+                };
+            };
+            _paymentClosed = closed;
+            manager.Closed += closed;
+            try
+            {
+                manager.BarterBegin = data => { payment.PrepareCatalogue(data); GwpDispatchBarterScreen.Open(data); };
+                manager.StartBarterOffer(Hero.MainHero, receiver.LeaderHero, MobileParty.MainParty.Party,
+                    receiver.Party, null, (entry, data, obj) => false, 0, false, payment.Entries);
+            }
+            catch (Exception ex)
+            {
+                manager.Closed -= closed;
+                _paymentClosed = null;
+                _afterPayment = null;
+                members.Clear(); prisoners.Clear();
+                GwpFaultTrace.Write("DISPATCH_PAYMENT_OPEN_FAILED", details: ex.ToString());
+            }
+            finally { manager.BarterBegin = original; }
+        }
 
         private static void AskTruthfulness(TroopRoster members, TroopRoster prisoners,
-            string prisonerHeroId, int amount)
+            string prisonerHeroId, int amount, int gold, List<ItemRosterElement> cargo)
         {
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             int due = Math.Max(0, bounty?.CaseReportAmountDue ?? 0);
-            if (amount >= due)
+            if (bounty?.CaseReportNeedsExplanation(amount, !string.IsNullOrEmpty(prisonerHeroId)) != true)
             {
-                Send(GwpDispatchPurpose.Report, members, prisoners, amount, false, prisonerHeroId);
+                Send(GwpDispatchPurpose.Report, members, prisoners, gold, false, prisonerHeroId, cargo);
                 return;
             }
 
@@ -353,19 +386,46 @@ namespace GreyWardenPolicePurity
                     "{=gwp_dispatch_word_body}They will hand over {VAR_1} of the {VAR_2} on the account. What account do they give of the rest?",
                     "VAR_1", amount, "VAR_2", due),
                 true, true,
-                GwpText.Get("{=gwp_dispatch_word_truth}The plain truth"),
-                GwpText.Get("{=gwp_dispatch_word_lie}[Lie] That was all he could pay"),
-                () => Send(GwpDispatchPurpose.Report, members, prisoners, amount, false, prisonerHeroId),
-                () => Send(GwpDispatchPurpose.Report, members, prisoners, amount, true, prisonerHeroId)),
+                GwpText.Get("{=gwp_dispatch_word_truth}Tell the truth"),
+                GwpText.Get("{=gwp_dispatch_word_lie}Lie"),
+                () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, false, prisonerHeroId, cargo),
+                () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, true, prisonerHeroId, cargo)),
                 true);
         }
 
         private static void Send(GwpDispatchPurpose purpose, TroopRoster members,
-            TroopRoster prisoners, int amount, bool lie, string prisonerHeroId)
+            TroopRoster prisoners, int amount, bool lie, string prisonerHeroId, List<ItemRosterElement>? cargo = null)
         {
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            if (dispatch?.Dispatch(members, prisoners, purpose, amount, lie, prisonerHeroId) == null)
+            if (purpose == GwpDispatchPurpose.Report)
+            {
+                if (!ReferenceEquals(_reportSelection, members)) return;
+                _reportSelection = null;
+                var available = MobileParty.MainParty.MemberRoster.GetTroopRoster();
+                if (members.GetTroopRoster().Any(e => !available.Any(a => a.Character == e.Character &&
+                    a.Number >= e.Number && a.WoundedNumber >= e.WoundedNumber &&
+                    a.Number - a.WoundedNumber >= e.Number - e.WoundedNumber)))
+                {
+                    members.Clear(); prisoners.Clear();
+                    InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                        "{=gwp_dispatch_pick_someone}Choose at least one man to send.")));
+                    return;
+                }
+                foreach (var entry in members.GetTroopRoster())
+                    MobileParty.MainParty.MemberRoster.AddToCounts(entry.Character, -entry.Number, false, -entry.WoundedNumber, -entry.Xp);
+            }
+            try
+            {
+                if (dispatch?.Dispatch(members, prisoners, purpose, amount, lie, prisonerHeroId, cargo) == null)
+                    ReturnSelection(members, prisoners);
+            }
+            catch (Exception error)
+            {
+                // Dispatch catches failures after creation and returns the real party.
+                // An exception here is a preflight failure, before ownership changed.
                 ReturnSelection(members, prisoners);
+                GwpFaultTrace.Write("DISPATCH_PREFLIGHT_FAILED", details: error.ToString());
+            }
         }
 
         /// <summary>取消或派不出去时，选中的人和俘虏原样还给主队，不能凭空消失。</summary>

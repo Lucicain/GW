@@ -1019,7 +1019,7 @@
   <string id="gwp_det_ui_ledger_heading" text="灰袍账目" />
   <string id="gwp_det_ui_ledger_case" text="未结案件：{VAR_1} 起；仅这件案子就死了 {VAR_2} 人。" />
   <string id="gwp_det_ui_ledger_charge" text="案底罚款（做下的事，按件累加）：{VAR_1} 第纳尔。" />
-  <string id="gwp_det_ui_ledger_standing_lives" text="声望罚款（按他名下所有没赎回的人命）：{VAR_1} 条人命 ＝ {VAR_2} 点 × 300 ＝ {VAR_3} 第纳尔。" />
+  <string id="gwp_det_ui_ledger_standing_lives" text="声望罚款（按他名下所有没赎回的人命）：{VAR_1} 条人命 ＝ {VAR_2} 点 × {VAR_4} ＝ {VAR_3} 第纳尔。" />
   <string id="gwp_det_ui_ledger_total" text="合计应缴：{VAR_1} 第纳尔。" />
   <string id="gwp_det_ui_ledger_no_case" text="目前没有正在追捕的案件；若有待交付的罚金，交账后才会抵扣欠款。剿匪赎过也可能减少负声望。" />
   <string id="gwp_debug_start" text="调试构建：你一开局就是宣誓的灰袍受托猎手。" />
@@ -1346,9 +1346,10 @@
   <string id="gwp_voice_resist_scorn_0" text="你自己头上还挂着案子，倒来收我的？拔刀吧。" />
   <string id="gwp_voice_resist_scorn_1" text="一个通缉犯跑来收罚金。我不向你交代。" />
   <string id="gwp_voice_resist_scorn_2" text="先把你自己的名字弄干净，再照单子念我的。" />
-  <string id="gwp_case_short_question" text="这比他交给你的少。说说是怎么回事。" />
-  <string id="gwp_case_short_truth" text="我会如实说明收了多少，以及没能交齐的原因。" />
-  <string id="gwp_case_short_lie" text="【撒谎】他只能拿出这些，我一点也没留下。" />
+  <string id="gwp_case_short_question" text="这宗案子还有需要交代的地方。说说经过。" />
+  <string id="gwp_receipt_unknown" text="这笔旧账没有保存收缴明细，请手动选择要上交的钱货。" />
+  <string id="gwp_case_short_truth" text="如实交代" />
+  <string id="gwp_case_short_lie" text="撒谎" />
   <string id="gwp_collection_agreement" text="履行约定" />
   <string id="gwp_request_case_support" text="我需要你们帮忙拿下那个人。跟我一起上。" />
   <string id="gwp_request_case_support_reply" text="那就走吧。我们跟着你，动起手来不会落在你后面。" />
@@ -1380,17 +1381,15 @@
   <string id="gwp_dispatch_handover" text="派出的队伍已经归队：交回 {VAR_1} 人（其中 {VAR_2} 名伤员）、{VAR_3} 名俘虏、{VAR_4} 件物资和 {VAR_5} 第纳尔。" />
   <string id="gwp_dispatch_report_done" text="你的人已经复命，委托结清；他们正带着 {VAR_1} 第纳尔回来。" />
   <string id="gwp_dispatch_handover_title" text="这趟带什么走？" />
-  <string id="gwp_dispatch_handover_body" text="钱我们可以带，{VAR_1}本人我们也可以押过去。您说哪一样？" />
+  <string id="gwp_dispatch_handover_body" text="钱和货物我们可以带，{VAR_1}本人我们也可以押过去。您说哪一样？" />
   <string id="gwp_dispatch_handover_man" text="把人押过去。" />
-  <string id="gwp_dispatch_handover_money" text="带钱过去。" />
+  <string id="gwp_dispatch_handover_money" text="带钱和货物过去。" />
   <string id="gwp_dispatch_prisoner_failed" text="你的人没能把他接过去。他还在你手上，只能你自己押着去交。" />
-  <string id="gwp_dispatch_amount_title" text="交给灰袍的钱" />
-  <string id="gwp_dispatch_amount_body" text="账上是 {VAR_1} 第纳尔。让他们带多少走？你手上有 {VAR_2}。" />
-  <string id="gwp_dispatch_amount_invalid" text="填一个你真拿得出来的数目。" />
+  <string id="gwp_dispatch_manifest_offer" text="装载 {VAR_1} / {VAR_2}" />
   <string id="gwp_dispatch_word_title" text="让他们怎么说" />
-  <string id="gwp_dispatch_word_body" text="他们会交上账面 {VAR_2} 中的 {VAR_1}。余下的那部分，让他们怎么交代？" />
-  <string id="gwp_dispatch_word_truth" text="照实说" />
-  <string id="gwp_dispatch_word_lie" text="[撒谎] 就说他只拿得出这么多" />
+  <string id="gwp_dispatch_word_body" text="案子应缴 {VAR_2}，这次钱货合计 {VAR_1}。办案经过，让他们怎么交代？" />
+  <string id="gwp_dispatch_word_truth" text="如实交代" />
+  <string id="gwp_dispatch_word_lie" text="撒谎" />
   <string id="gwp_common_confirm" text="确认" />
   <string id="gwp_common_cancel" text="取消" />
   <string id="gwp_dispatch_report_moot" text="你的人赶到时，这桩委托已经结清了。他们正把东西原样带回来。" />

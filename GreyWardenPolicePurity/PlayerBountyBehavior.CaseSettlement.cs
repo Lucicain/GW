@@ -21,6 +21,7 @@ namespace GreyWardenPolicePurity
         private GwpAssetPayment? _casePayment;
         private bool _casePaymentOpen;
         private int _caseSubmitted = -1;
+        private bool _caseSubmittedPrisoner;
         private int CaseAmountDue => Math.Max(_assignedCaseFine, Math.Max(_pendingPrisonerAssessed, Reports?.TotalAssessed ?? 0));
         private float _caseCheckElapsed;
         private TaleWorlds.CampaignSystem.MapEvents.MapEvent? _caseBattleToReconcile;
@@ -342,6 +343,11 @@ namespace GreyWardenPolicePurity
         internal bool CanDispatchCaseReport => HasBountyTask && CaseHero != null
             && (HasNothingLeftToSettle || CaseAmountDue > 0 || CanDeliverCasePrisoner());
         internal int CaseReportAmountDue => CaseAmountDue;
+        internal string CaseReportIdentity => CaseHero?.StringId ?? string.Empty;
+        internal int CaseReportSuggestedPayment => Reports?.PendingReceivedFor(CaseReportIdentity) ?? 0;
+        internal GwpCaseReceipt? CaseReportReceipt => Reports?.ReceiptFor(CaseReportIdentity);
+        internal bool CaseReportNeedsExplanation(int delivered, bool prisoner) =>
+            (!prisoner && delivered < CaseAmountDue) || Reports?.NeedsExplanation(CaseReportIdentity, delivered, prisoner) == true;
 
         /// <summary>
         /// 这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。
@@ -373,7 +379,7 @@ namespace GreyWardenPolicePurity
             if (prisonerDelivered && _pendingPrisonerAssessed > 0)
             {
                 int prisonerFee = CalculateCaseFee(_pendingPrisonerAssessed);
-                ledger.ResolveByPrisoner(_pendingPrisonerHeroId, Math.Max(0, deliveredCash));
+                ledger.ResolveByPrisoner(_pendingPrisonerHeroId, Math.Max(0, deliveredCash), !falseReport);
                 int paidPrisonerFee = PoliceResourceManager.WithdrawFromJudicialTreasury(prisonerFee);
                 GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_PRISONER",
                     "delivered=" + deliveredCash + "; fee=" + paidPrisonerFee
@@ -393,7 +399,7 @@ namespace GreyWardenPolicePurity
             }
             // 玩家代表灰袍。对方最后交得出多少不是他的过失，办案费按整案算，不按实收封顶。
             int fee = CalculateCaseFee(due);
-            ledger.DeclareAmount(deliveredCash, truthful: !falseReport);
+            ledger.DeclareAmount(deliveredCash, truthful: !falseReport, offenderId: CaseReportIdentity);
             int paidFee = PoliceResourceManager.WithdrawFromJudicialTreasury(fee);
             GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_CASH",
                 "due=" + due + "; delivered=" + deliveredCash + "; truthful=" + !falseReport
@@ -529,8 +535,8 @@ namespace GreyWardenPolicePurity
                 () => HasBountyTask && !HasNothingLeftToSettle && _caseSubmitted < 0, () => _caseSubmitted = 0);
             starter.AddPlayerLine("gwp_case_resume_report", "gwp_case_report_options", "gwp_case_short_question",
                 GwpText.Get("{=gwp_case_resume_report}About the shortfall in what I handed over..."), () => _caseSubmitted >= 0, null);
-            starter.AddPlayerLine("gwp_case_deliver_prisoner", "gwp_case_report_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_deliver_prisoner}The offender is here. Take him into your custody."), CanDeliverCasePrisoner, DeliverCasePrisoner);
+            starter.AddPlayerLine("gwp_case_deliver_prisoner", "gwp_case_report_options", "gwp_case_barter_open",
+                GwpText.Get("{=gwp_case_deliver_prisoner}The offender is here. Take him into your custody."), () => CanDeliverCasePrisoner() && _caseSubmitted < 0, null);
             starter.AddPlayerLine("gwp_case_legacy_reward", "gwp_case_report_options", "gwp_case_report_receipt",
                 GwpText.Get("{=gwp_case_legacy_reward}Settle the payment promised under the old warrant."),
                 () => IsWaitingForBountyCollection && !_fieldCaseContract && !HasFieldBusinessToSettle,
@@ -543,7 +549,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."),
                 // 新口径下要对的账是"从犯人手里拿到多少 vs 交上来多少"，不是整案应缴。
                 // 犯人穷、只交得出一部分，玩家如实全交，文书就没有什么好问的。
-                () => CasePaymentAccepted() && _casePayment!.Paid < (Reports?.TotalReceived ?? 0),
+                () => CasePaymentAccepted() && CaseReportNeedsExplanation(_casePayment!.Paid, _casePayment.SelectedPrisoner != null),
                 CommitCasePayment, 110);
             starter.AddDialogLine("gwp_case_barter_accepted", "gwp_case_barter_result", "gwp_case_receipt_ack",
                 GwpText.Get("{=gwp_case_barter_accepted}We have counted the payment. Your report will be entered."),
@@ -552,14 +558,14 @@ namespace GreyWardenPolicePurity
             // 不盘问就不会有"认不认"这道选择，也就不会有人因为随手点了那句而被记上一次谎。
             starter.AddDialogLine("gwp_case_nothing_concealed", "gwp_case_short_question", "gwp_case_report_receipt",
                 GwpText.Get("{=gwp_case_nothing_concealed}That is what he put in your hands, and all of it is here. Your report will be entered."),
-                () => (Reports?.TotalReceived ?? 0) <= Math.Max(0, _caseSubmitted),
+                () => !CaseReportNeedsExplanation(Math.Max(0, _caseSubmitted), _caseSubmittedPrisoner),
                 () => FinishSubmittedCase(false), 110);
             starter.AddDialogLine("gwp_case_short_question", "gwp_case_short_question", "gwp_case_short_options",
                 GwpText.Get("{=gwp_case_short_question}This is less than what he paid you. Tell me why."), null, null);
             starter.AddPlayerLine("gwp_case_short_truth", "gwp_case_short_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_short_truth}I will explain exactly what I received and why I did not bring the rest."), null, () => FinishSubmittedCase(false));
+                GwpText.Get("{=gwp_case_short_truth}Tell the truth"), null, () => FinishSubmittedCase(false));
             starter.AddPlayerLine("gwp_case_short_lie", "gwp_case_short_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_short_lie}[Lie] This was all he could pay. I kept nothing."), null, () => FinishSubmittedCase(true));
+                GwpText.Get("{=gwp_case_short_lie}Lie"), null, () => FinishSubmittedCase(true));
             starter.AddDialogLine("gwp_case_barter_cancelled", "gwp_case_barter_result", "gwp_case_report_options",
                 GwpText.Get("{=gwp_case_barter_cancelled}Nothing has been entered. We can count it again when you are ready."),
                 null, () => {
@@ -595,10 +601,12 @@ namespace GreyWardenPolicePurity
                 ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
                 ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party
                 ?? treasurer?.PartyBelongedTo?.Party;
-            if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask || CaseAmountDue <= 0) return;
+            if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask || (CaseAmountDue <= 0 && !CanDeliverCasePrisoner())) return;
             try
             {
-                _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseAmountDue);
+                _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseReportSuggestedPayment,
+                    reportMode: true, autoReceipt: CaseReportReceipt, prisoner: PendingCasePrisonerForDispatch);
+                ShowUnknownCaseReceipt();
                 _casePaymentOpen = true;
                 GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_OPEN", "assessed=" + CaseAmountDue + "; received=" + Reports?.TotalReceived);
                 BarterManager manager = Campaign.Current.BarterManager;
@@ -630,20 +638,26 @@ namespace GreyWardenPolicePurity
 
         private void CommitCasePayment()
         {
-            if (!_casePaymentOpen || _casePayment?.Applied != true || !Campaign.Current.BarterManager.LastBarterIsAccepted) return;
+            if (!_casePaymentOpen || _casePayment?.Applied != true) return;
             int paid = _casePayment?.Applied == true ? _casePayment.Paid : 0;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_ACCEPTED", "applied=" + (_casePayment?.Applied == true) + "; paid=" + paid);
             _casePaymentOpen = false;
+            _caseSubmittedPrisoner = _casePayment!.SelectedPrisoner != null;
             _casePayment = null;
             _caseSubmitted = Math.Max(0, _caseSubmitted) + paid;
         }
 
-        private bool CasePaymentAccepted() => _casePaymentOpen && _casePayment?.Applied == true
-            && Campaign.Current.BarterManager.LastBarterIsAccepted;
+        private bool CasePaymentAccepted() => _casePaymentOpen && _casePayment?.Applied == true;
         private void FinishSubmittedCase(bool lie)
         {
             if (_caseSubmitted < 0) return;
             int delivered = _caseSubmitted;
+            if (_caseSubmittedPrisoner)
+            {
+                Reports?.ResolveByPrisoner(_pendingPrisonerHeroId, delivered, !lie);
+                FinishCaseReport(PoliceResourceManager.PayFromJudicialTreasury(CalculateCaseFee(_pendingPrisonerAssessed)));
+                return;
+            }
             CompleteCashReport(delivered, lie);
             _caseSubmitted = -1;
         }
@@ -658,11 +672,11 @@ namespace GreyWardenPolicePurity
                 return;
             }
             int due = CaseAmountDue;
-            int received = ledger.TotalReceived;
+            int received = ledger.PendingReceivedFor(CaseReportIdentity);
             // 玩家代表灰袍办这宗案子。第二层谈成什么条件、对方最后只交得出多少，都不算他的
             // 过失——办案费按整案算，不按实收封顶，也不再有"差额扣声望"这回事。
             int fee = CalculateCaseFee(due);
-            ledger.DeclareAmount(delivered, truthful: !falseReport);
+            ledger.DeclareAmount(delivered, truthful: !falseReport, offenderId: CaseReportIdentity);
             GwpAiDiagnostics.WriteFieldArrest("REPORT_CASH", "due=" + due + "; delivered=" + delivered
                 + "; receivedFromOffender=" + received + "; truthful=" + !falseReport);
             int paidFee = PoliceResourceManager.PayFromJudicialTreasury(fee);
@@ -688,6 +702,13 @@ namespace GreyWardenPolicePurity
 
         private int CalculateCaseFee(int cap) => GwpCaseSettlementRules.Reward(cap,
             _bountyPlayerCasualties, Math.Max(_pendingFieldFineSeverity, _assignedCaseStanding));
+
+        internal void ShowUnknownCaseReceipt()
+        {
+            if (CaseReportReceipt == null && CaseReportSuggestedPayment > 0)
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_receipt_unknown}This old account has no itemized receipt. Select the property to hand in manually.")));
+        }
 
         /// <summary>
         /// 要押去交差的那个人。认的是 <see cref="_pendingPrisonerHeroId"/>——他被押下那一刻

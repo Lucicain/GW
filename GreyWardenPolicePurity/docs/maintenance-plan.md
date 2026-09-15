@@ -1,6 +1,389 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 装载确认实机通过：退休监控并建立局部 checkpoint
+
+- 用户明确确认“修好了”，范围为使者交易完成报错。23:25:44 实机监控完整经过确认、
+  Close、视图销毁、层移除及后续动作，23:25:45.0357378 创建 gwp_dispatch_777176，
+  2 人携带案件金币 1300 出发；23:26:58.4511504 已向领主交差并进入 Returning。
+  回程遭遇仍是独立未修问题，不把这次确认扩展成完整使者生命周期验收。
+- 同任务删除已完成装载路径的阶段/入口/补丁清单监控、选兵预览/视图可见/清单成功日志。
+  原监控类及仅为正常关闭打印的补丁退休；改为 GwpDispatchBarterFaultDiagnostics，仅在活动
+  装载窗口的人物标签实际异常时记录实参和完整栈。保留全局 first-chance 完整栈、原有失败
+  分支及仍在调查的出发/交差/返队监控。发行 README 不改，遵守开发期间不改发行物的规则。
+- 本地 checkpoint 纳入完整装载/钱货依赖：付款及收据、案件账本、现场收据采集、交差、
+  派遣货物与窗口/对话、相关本地化及入口测试。未确认的犯罪登记去重和定价变更不纳入；
+  对混合文件在 Git index 中单独保留旧定价函数，并剔除测试中的 7 项新定价断言，工作区
+  仍保持用户原有变更。该 checkpoint 不宣称自动原物/全部交差分支均已实机验收，只确保
+  已确认 UI 修复连同不可拆的当前支付依赖可以重建；既有返队问题明确保留待查。
+- Git index 的真实源码导出到仓库 `.codex_tmp/confirmed-dispatch-source` 单独验证（不部署）：
+  生产 Release 构建 0 警告/0 错误，剔除未确认定价用例后的 146 项测试通过；测试有 3 条
+  Campaign.Current 桩可空警告。输出为 `.codex_tmp/checkpoint-source-build.log` 和
+  checkpoint-source-tests.log。这是可再生的检查点核查目录，不是外移资产。
+
+## 2026-09-15 23:22 入口监控确认拦截缺口：直接处理 VM 确认/取消（候选待实机）
+
+- 用户重试，23:18:58 会话 MVID 为 `a7f43939-bccd-41ce-8279-21357ad42a80`。
+  23:19:42 HOOK_INVENTORY 确认 VM.ExecuteOffer、manager.ApplyAndFinalizePlayerBarter、
+  manager.CancelAndFinalizePlayerBarter 上均已挂本模组 Prefix。CATALOGUE_BOUND 与
+  23:19:47.7926175 VM_OFFER_ENTER 的 dataRef 都是 9599760，均 sessionFound=True、
+  selectionOnly=True、reportMode=True、applied=False、valid=True。
+  后续没有 MANAGER_APPLY_ENTER/CONFIRM_BEGIN，却在 23:19:47.7993016 记录 1300 金币
+  MANIFEST_SELECTED，并再次由原版 ApplyBarterOffer → OnBarterAccepted → 领主成交台词
+  → PersonaSoftspokenTag(argument=null) 抛错。到 PERSONA_THROW 时窗口仍未关闭。
+- 证据已排除“补丁没有安装”和“VM 会话丢失/模式识别失败”，确定 VM 入口执行但 manager
+  拦截未执行。运行时内联是合理解释，尚未检查机器码，故不声称已证明底层 JIT 原因。
+  本次修复不依赖该推断：直接使用已经实机证明能执行且能识别会话的 VM 入口。
+- GwpAssetOfferValidationPatch 同步界面数量、检查 Valid 后，对 SelectionOnly/ReportMode
+  直接调用既有 GwpDispatchSelectionPatch.Prefix 并返回 false，确认本模组收据后执行原有
+  Close/后续对话流程，阻止 VM 原方法进入原版 ApplyBarterOffer 和成交事件。下层 Prefix
+  保留作其它调用者的保护，改为 internal 以便直接调用。新增 GwpDispatchVmCancelPatch 在
+  VM.ExecuteCancel 入口直接调用既有取消处理，使装载取消同样不依赖下层方法拦截。
+  普通交易继续原路径；当面 ReportMode 沿用原有一次实转和有效对话继续逻辑。
+  本轮没有改窗口宿主、开始/关闭生命周期、人物标签或原版事件订阅者，没有恢复此前撤回的
+  大范围关闭候选。此版本中 MANAGER_APPLY_ENTER 也可能来自 VM 的直接调用，应结合上一个
+  VM_OFFER_ENTER 判断，不能再把这条名称本身当作引擎 manager detour 已生效的证明。
+- 测试项目链接真实 GwpAssetOfferValidationPatch 与真实 GwpAssetPayment，增加 16 项入口
+  断言，合计 153 项通过。测试直接调用生产 VM Prefix，不安装 manager Harmony 补丁：
+  验证确认返回 false 阻止原方法、显示金额同步后确认、预选不扣金币、当面实交扣钱、仅当面
+  继续对话、使者取消不确认、无效报价不关闭/不应用、无关交易确认及取消放行。引擎对象仍为
+  桩，测试不证明真实 Gauntlet 窗口释放、使者往返或全部 JIT 路径；测试有 3 条源自可空
+  Campaign.Current 桩声明的 CS8602 警告，生产构建为 0 警告/0 错误。
+- Release Rebuild 已部署；Verify-GameCompat 无缺失类型/成员，545 类型加载，55 Harmony
+  补丁绑定成功、0 失败；Verify-LiveModule 为 36 源文件/43 live 文件，无缺失/差异/多余，
+  两个 README 匹配，git diff --check 通过。obj/Release、live Client、live Editor DLL SHA256
+  均为 `49462DEAE93293BD5F95944F21E9B83E1C7E2D0F116FD1B829CC22B7D40DACD2`。
+  live DLL 反编译确认 VM 验证分支直接返回 GwpDispatchSelectionPatch.Prefix 的结果。
+- 证据仍在 Documents 的 GreyWarden-Faults.log 与 GreyWarden-AI-Diagnostics.log。
+  可再生验证输出为仓库 `.codex_tmp/dispatch-vm-entry-tests.log`、dispatch-vm-entry-build.log、
+  dispatch-vm-entry-compat.log、dispatch-vm-entry-live.cs。上一诊断 DLL 哈希为
+  `7750BBF6C085DE66E25EBF770F440EB47A4B7B3213F3EA14B2DA675E84B09E8E`；本次回退只需
+  撤销 VM 直接确认分支、VM 取消补丁及对应测试，不能整树还原覆盖之前未提交功能。
+  稳定 checkpoint 仍是 675004c，当前未提交未验收候选、未改发行 README、未制作 ZIP、
+  未移动资产、未启动用户游戏。现有诊断继续保留，用户确认成功后按规则退休并建 checkpoint。
+- 待实机：完整重启后，从派遣前存档完成选兵→装载→确认，核对正常关闭及 DISPATCH_SENT、
+  玩家人数/金币与使者货物；另试取消不扣兵钱货。当前是证据支持的针对性修复候选，
+  不能把编译、入口桩测试或补丁挂接成功写成实机修复验收。
+
+## 2026-09-15 23:17 使者确认报错复现：定位原版成交事件，继续补入口监控
+
+- 用户再次复现报错并要求按规则处理。本次会话 FAULT_WATCH_ARMED 为 23:08:26，MVID
+  `e3bf0fdf-bc5c-486c-b985-1a4b83db5359`。Faults 的 23:13:04 OPEN_BEGIN 至 OPEN_RETURN
+  均为 mission=null、conversation=False、character=null、handler=null；宿主是
+  NavalDLC.View.Map.NavalMapScreen，宿主/层均未终结。Closed 订阅顺序是本模组付款回调、
+  GwpDispatchBarterScreen.Close、原版 BarterVM.OnClosed。23:13:07.1647236 的 AI 日志
+  DISPATCH_MANIFEST_SELECTED 为净值 1300、单项金币 1300，随后没有 DISPATCH_SENT。
+- 23:13:07.1904667 的完整观察栈确定实际异常链：BarterVM.ExecuteOffer_Patch1 →
+  BarterManager.ApplyBarterOffer → CampaignEventDispatcher.OnBarterAccepted →
+  LordConversationsCampaignBehavior.OnBarterAccepted → ConversationManager.FindMatchingTextOrNull
+  → FindMatchingScore → IsTagApplicable → PersonaSoftspokenTag.IsApplicableTo。
+  23:13:07.1914735 的 PERSONA_THROW 明确记录实参 argument=null；此时窗口仍创建着、
+  closed=False、layerFinalized=False，没有 CONFIRM_BEGIN、NATIVE_CLOSE_ENTER 或释放阶段。
+  因此本次异常由独立装载错误进入原版成交对话事件触发，发生在 Close 之前；排除上一轮对
+  本次异常的残留 mission 模式切换/窗口释放猜测。19:23 的旧重复释放问题仍单独待查。
+- 新反编译本机原版代码确认：LordConversationsCampaignBehavior.OnBarterAccepted 在玩家
+  为 offerer 时，用 CharacterObject.OneToOneConversationCharacter 选择 str_barter_agreed；
+  未判断对话是否进行。BarterVM 构造函数直接保存传入 BarterData，ExecuteOffer 调用
+  ApplyAndFinalizePlayerBarter，ExecuteCancel 调用 CancelAndFinalizePlayerBarter；OnClosed
+  只撤销自己的 Closed 订阅。资料为仓库 `.codex_tmp/dispatch-current-barter-vm.cs` 和
+  `.codex_tmp/dispatch-lord-conversations.cs`，可从本机 1.4.8 对应类型重新生成。
+- 尚未确定的是“为何 selectionOnly 拦截没有阻止原版成交”：已有 CONFIRM_BEGIN 在 manager
+  补丁通过会话/模式检查之后，无法区分入口未执行与数据会话匹配失败。JIT 内联/补丁安装顺序
+  只能列作假设，不能由栈里缺少一个短方法就认定。未据此移动补丁、屏蔽标签、修改 Close，
+  也未把原版成交异常直接当作钱货已真实转移的证据。
+- 按用户规则继续补监控，本轮不改交易行为：CATALOGUE_BOUND 记录登记的 BarterData 引用
+  编号；VM_OFFER_ENTER、MANAGER_APPLY_ENTER、MANAGER_CANCEL_ENTER 均在会话查询返回前
+  记录同一对象编号、sessionFound、selectionOnly、reportMode、applied、valid。
+  OPEN_BEGIN 后 HOOK_INVENTORY 使用 Harmony.GetPatchInfo 记录当场 VM 确认、manager
+  确认/取消方法上实际安装的 Prefix owner/方法，区分未挂接、未进入和匹配失败。所有新增
+  代码仍在 GWP_DIAGNOSTICS 内、沿用现有每次打开 100 条上限，不新增日志文件。
+- 验证：Release Rebuild 0 警告/0 错误；1.4.8 兼容检查 450 类型/1365 成员无缺失，544 类型
+  加载，54 Harmony 补丁成功/0 失败；live mirror 36 源文件/43 live 文件无缺失/差异/多余，
+  README 一致；git diff --check 通过。obj/Release、live Client、live Editor DLL SHA256 均为
+  `7750BBF6C085DE66E25EBF770F440EB47A4B7B3213F3EA14B2DA675E84B09E8E`。
+  输出为 `.codex_tmp/dispatch-entry-diagnostics-build.log` 和
+  `.codex_tmp/dispatch-entry-diagnostics-compat.log`。没有修改发行 README、制作 ZIP、运行游戏
+  或提交未验证 checkpoint；未移动资产，现有故障调查日志保留。
+- 待下一次完全重启后的同路径复现，用入口编号/匹配及补丁清单确认拦截缺口，再做针对性
+  修复。当前证明了实际异常链，但不是使者派遣已修复。上轮增强关闭监控继续保留至本功能
+  实机确认，不以新证据否定仍未结案的独立窗口释放问题。
+
+## 2026-09-15 23:05 使者装载确认后闪退：加强监控，未修复验收
+
+- 用户明确故障是使者交易界面完成后闪退，并提醒“不确定问题应先加强监控”。旧日志两次
+  PersonaSoftspokenTag 空引用只有抛出点；20:06:45 清单与实收一致，但没有 DISPATCH_SENT。
+  尚不能证明本次致命退出发生在原版 Close、某个订阅者、场景模式切换或窗口释放中的哪一步。
+  19:23 的重复释放断言是另一项证据，不能与 20:06 的空引用混称一个已证实的根因。
+- 重新反编译本机 1.4.8：StartBarterOffer 修改 CurrentConversationIsFirst；BeginPlayerBarter
+  在 BarterBegin 委托后切 CampaignMission 到 Barter；Close 在 Closed 委托前切回 Conversation。
+  PersonaSoftspokenTag 对 character.IsHero 没有空值检查。ScreenBase.HandleFinalize 终结层
+  但保留层列表，RemoveLayer 无条件再次终结层，故 HasLayer 不证明层还活着。这些是静态事实，
+  尚缺本次实机完整调用链。
+- 本轮曾过早构建并部署一个候选：直接创建 BarterData、绕开全局开始/关闭、延后释放、由层
+  终结处理视图。用户纠正调查顺序后，已撤回本轮全部这些行为改动及新建但未执行的
+  DispatchBarter.Tests 三个文件。当前仍使用原有 StartBarterOffer、Close、Closed 回调及释放
+  顺序。短暂候选未实机验证、未提交 checkpoint；构建输出在 `.codex_tmp/dispatch-close-build.log`，
+  中间 DLL 已被下述诊断版覆盖，未采集其中间哈希。保留进入本轮前的所有未提交功能改动。
+- 新 GwpDispatchBarterDiagnostics、GwpDispatchNativeCloseDiagnostics、GwpDispatchPersonaDiagnostics
+  以及所有调用点仅在 GWP_DIAGNOSTICS 下存在。OPEN_BEGIN/VIEW_CREATE_BEGIN/END/OPEN_RETURN
+  记录打开；CONFIRM_BEGIN/END 记录清单确认；NATIVE_CLOSE_ENTER/RETURN/THROW 区分原版关闭
+  进入、返回与抛错；PAYMENT_CLOSED_CALLBACK、VIEW_CLOSE_ENTER、VIEW_DESTROY_BEGIN/END、
+  LAYER_REMOVE_BEGIN/END 定位回调和释放；PAYMENT_CONTINUATION 判断是否进入后续派遣。
+  取消、宿主切换、战役切换也有边界记录，不按帧打印。
+- 每条记录包含前一阶段、CampaignMission 类型/模式、对话状态及人物 ID、对话 Handler、栈顶
+  屏幕、宿主/层终结状态与归属、Closed 订阅方法顺序。Persona 抛错时另记实际 character 参数、
+  IsHero、HeroObject、完整异常及观察者调用栈。监控覆盖窗口活动期与最近边界后 5 秒，每次
+  打开最多 100 条。两个 Harmony Finalizer 只观察，不修改结果、跳过原版或吞掉异常。
+- GwpRuntimeFaultWatch 的 first-chance 加上 Environment.StackTrace，补足异常尚未展开时
+  Exception.ToString 只有最内层抛出点的问题；保留原有每会话 80 条和签名去重。新记录仍写到
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Faults.log`，
+  与同目录 GreyWarden-AI-Diagnostics.log 的 MANIFEST_SELECTED/SENT 对时。故障未结案，旧有效
+  日志暂留；实机确认恢复后退休相应健康路径监控，保留静默失败路径。
+- 诊断启用 Release Rebuild：0 警告/0 错误。Verify-GameCompat：450 类型引用、1365 成员引用
+  无缺失，544 类型加载，54 Harmony 补丁挂接、0 失败。Verify-LiveModule：36 源文件/43 live
+  文件，无缺失/差异/多余文件，两个 README 一致。obj/Release、live Client、live Editor DLL
+  SHA256 均为 `44F2BE52243106FED4643B4148B29195441B8ECD1FB7E9FD2ABAFD0D9304B464`。
+  实机 DLL 反编译确认清单后仍调用原版 Close，新增阶段监控已进入产物。
+- 额外以 DiagnosticsAudit 配置、DeployToLiveModule=false、GwpDiagnosticsEnabled=false
+  构建到 `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\dispatch-observer-nondiag`，
+  0 警告/0 错误，反编译确认三个新增观察类型均不存在；该 DLL SHA256 为
+  `C2292D6150F05749BEE61442F93867A26A848BFAE8B4FE08ED68764443F78F45`，未复制进游戏。
+  只是编译排除检查，不是玩家包。未改发行 README、未打 ZIP、未提交未验收候选。
+- 可再生材料在仓库 `.codex_tmp`：dispatch-barter-manager.cs、dispatch-conversation-view.cs、
+  dispatch-screen-layer.cs、dispatch-screen-base.cs、dispatch-gauntlet-layer.cs、
+  dispatch-mission-conversation.cs 来自本机原版类型；dispatch-close-live-patch.cs 来自 live DLL；
+  dispatch-close-diagnostics-build.log、dispatch-close-diagnostics-compat.log、
+  dispatch-close-diagnostics-disabled.log 为验证输出。没有把资产移到仓库/live 之外。
+  稳定 checkpoint 仍是 675004c，禁止为撤销本轮而整树还原；只删除新增诊断文件、新增 #if 监控
+  块和 runtime observerStack 字段即可撤回本轮监控，不能覆盖进入本轮前的钱货/罪案改动。
+- 下一步：完全退出再重启游戏，从派遣前存档复现一次选兵→装载→完成，再依据新阶段与完整
+  调用栈确定实际失败点并针对性修复。当前仅诊断版已部署，不宣称闪退已修复或实机通过。
+
+## 2026-09-15 实收原物自动交差实现（已部署，待用户实机验证）
+
+### 20:06 用户报告弹错：监控核查，未改运行代码
+
+- 本次 Faults 最新记录 20:06:45.149 为 FIRST_CHANCE_OBSERVED：System.NullReferenceException，抛出位置 PersonaSoftspokenTag.IsApplicableTo(CharacterObject)。19:58:05 上一游戏进程也出现同类异常。当前 first-chance 只留下抛出点，不含完整调用链，不能宣称已证明具体哪个关闭回调或其它补丁造成，亦不能仅凭 first-chance 判定致命崩溃。
+- AI 日志链：20:06:20 收缴得巴娜 lord_1_39，14 金币、帝国马 3、阿塞莱马 3、硬木 9、陶器/工具/亚麻/骡各 1，总值 2600；REPORT_PENDING/SETTLED_COLLECTION 完成。20:06:42.063 意向选兵 10、主队仍 11；42.188 原版装载界面打开；45.141 DISPATCH_MANIFEST_SELECTED 的每种物品、数量、单价和 14 金币与实收完全一致。8 毫秒后上述异常。没有后续 DISPATCH_SENT，不能当作已派出或已交差；选择记录不是实际转移证据。
+- 同时发现历史 19:23 ENGINE_ASSERT：Screen layer is already finalized，栈在 GwpDispatchBarterScreen.Close/ScreenBase.RemoveLayer。这是另一条已记录的窗口释放问题，不与 20:06 空引用混称同一异常。
+- 对当前安装 DLL 只读反编译核对：BarterVM.ExecuteOffer 调用 BarterManager.ApplyAndFinalizePlayerBarter；本模组 selectionOnly patch 在 ConfirmSelection 后调用 manager.Close；原版 Close 可能将 CampaignMission 切回 Conversation，并调用 Closed 委托。PersonaSoftspokenTag 在 character.IsHero 上没有 null 检查，英雄则继续 GetPersona。现有证据把调查范围缩到确认后的窗口/对话生命周期，但未捕获具体传入对象及全栈。后续修复应检查实际对话上下文与关闭订阅者，不能直接屏蔽所有原版标签异常。
+- 核查日志绝对路径：C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Faults.log 和 GreyWarden-AI-Diagnostics.log；原版 C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_errors_26476.txt 没有该次异常详情。此次只检查并记录，无新 DLL 部署，不声称修复完成。
+
+- 用户授权落实上一轮方案。此次变更为开发候选，不是正式发布，不更新两个玩家 README、不打包、不把未验证候选提交为稳定 checkpoint。上一个已确认 checkpoint 为 `675004c`；需要回退时先保全当前工作树，从该提交提取相关功能文件做局部恢复，禁止整树 reset。上一轮原版装载界面候选 DLL SHA256 为 `19530C8F1AB4EE79AC860D04C0264C14E41419FC977ED07BBCEB6EBC19AF6840`，本轮修改前工作树还包含罪案计数、罚金和使者修复，不能混为本轮新改动。
+- 根因：旧 PendingReport.CashReceived 实为钱货合计价值，交易完成后没有持久化原物清单；默认 SuggestedOffer 为金币优先凑数，无法凭它恢复货物来源。新 GwpCaseReceipt 按案记录净金币（扣除找零）、物品 ID、修饰词 ID、实际有向数量和收取时单价。普通收罚及索贿交易在清掉临时 payment 前提取同一份已接受收据；非交易现金收款直接记录现金；无收款处置不杜撰货物。
+- 新存档键 `gwp_report_asset_receipts` 与旧账行平行保存，保留既有 received/assessed/collected 等键及旧存档回退。按犯人 ID 汇总多次实收，交差与销账限定当前案件。旧档有实收总值但无清单时，自动报价不猜金币，不拿当前库存冒充原物，并提示手选；要验证自动原物，必须在新 DLL 加载后重新完成一次收缴。
+- 当面交差与使者装载共用 ReportMode：单向显示玩家可交财物，自动报价只选择本案收据数量及当下仍持有的对应物品（含修饰词）、本案可交的英雄俘虏。缺货不自动花玩家自有金币补差，也不会选择别的修饰词替代。允许玩家自行增减、补交自有财物、空手交差；本案俘虏进入原版俘虏分组，不能用无关俘虏替案。现金找零保留净额，若净现金为负则不自动从公库取钱；仍选原物，玩家可手动减少交付。
+- 交付沿用收据中对应物品的记录单价（同物品多条记录取首个正向记录单价；正常同版本 EquipmentElement.ItemValue 不随交易城镇变化），使者装载时再把同价写入既有 CargoState，运输损失只按实际剩余数量折抵。报告时不向灰袍反向索取金币或物品。原收缴交易的双向找零与金币优先凑罚款功能不改变。
+- 当面交差使用自己的确认结果，不依赖原版 LastBarterIsAccepted；正常原版窗口继续原对话，零交付可确认。交俘虏先执行并核实真实 custody，不以赎金虚增现金。新增 `gwp_case_submitted_prisoner` 保存已提交、待解释的拘押结果，避免交人之后短款对话/存读档丢状态。派遣仍只预选，最终确认才扣兵、转钱货和俘虏，不恢复上一轮“选兵后人悬空”的旧方案。
+- 应罚少收、实收少交或存在过度执法记录时提供简短“如实交代 / 撒谎”；贫困差额不成为私留差额。修正 RememberReportHonesty：truthful=true 即诚实陈述，不再把如实承认私留记成撒谎；私留金额仍排审计。交人也记录说法并审计此前实收未交部分；完整交钱货或交人均不清除独立过度执法审计。没有把全部战利品自动登记成合法收罚，也没有扩大犯罪来源认定。
+- 验证：Release Rebuild 0 警告/0 错误；生产源码测试 137 项通过（新增净现金找零、钱货组合、修饰词、跨次收缴/存读档、案件隔离、缺货不补现金、旧账手选、锁定单价、俘虏预选不转移、当面实转一次、零交付、承认私留仍查账且不记谎等）。测试使用简化引擎对象，不能代替实机 UI/事件回归。
+- Verify-ContentKeys：29 XML、1400 本地化键、1176 引用，重复/缺失均 0。Verify-LiveModule：36 源文件、43 live 文件，无缺失/差异/多余文件，包含 README 匹配；git diff --check 通过。Verify-GameCompat：446 类型、1359 成员引用无缺失，540 类型加载、52 Harmony patch 成功、0 失败。
+- 本轮部署：正常诊断启用 DLL 已写入 live Client 与 Editor；obj/Release 及两处 live DLL SHA256 均为 `5006620481E9E12E931121BF81C31841EB20B7E00B40EBD16BFC079EBD067827`。中文 XML 修改后立即镜像并校验 SHA256 均为 `717234212438B072D449BEE9D03A072451653A4404B9FE05CBC9012CC92DA391`。未移动资产、未清理尚有效诊断日志、未制作玩家 ZIP。
+- 待实机：完全退出并重启游戏加载新 DLL；新做一宗钱货混收，存读档后分别测试当面/使者自动报价、减货少交后的两个说法、本案俘虏与钱货并交、取消装载不扣兵钱货、使者往返真实交付。当前未把编译/桩测试描述成实机通过。
+
+## 2026-09-15 新档“两项罪行、90 人伤亡”调查（未改玩法）
+
+### 19:13 用户报告使者选兵后消失：货物派遣候选回归，未修
+
+#### 用户确认交易界面可用后提出实收原物自动选择：设计核查，未实现
+
+- 用户截图显示原版装载界面能打开，自动报价选 1200 现金，没有按本案原来收得的钱货组合选择。
+  用户要求先核对预设、提出修改方案，故本轮不改代码，不把该反馈等同完整派遣送达验收。
+- 根因：PendingReport 只有 Assessed/Collected/CashReceived/BaseCharge/OffenderWasBroke 等金额字段，
+  没有持久化本案金币、物品 ID/词缀/数量与收得估值、俘虏来源；CashReceived 在钱货成交路径中
+  实际接收的是折合净值而非独立现金。GwpAssetPayment.SuggestedOffer 按金币优先遍历资产凑总值。
+  不是修改原版交易接受欲望就能恢复具体收获，必须从向犯人收缴时建立本案明细收据。
+- 拟议：本案合法收缴时保存净金币（扣找零）、逐项物品与收得估值、案件目标拘押结果；
+  支持分次收缴及存读档。交差自动报价按实收清单选择仍持有数量，不自动改用玩家现金补货物，
+  不选其它案件所得/原有全部库存。允许玩家手动替换或补钱货，也允许少交或零交。
+  案件俘虏应进入同一交差选择流程，但作为交人结案，不按普通货物估值冒充缴清现金；
+  交人不能抹掉此前实收钱货的上缴义务，无关战俘不自动替本案犯人结案。
+- 拟议区分应罚、实际所得、实际上交、陈述四项：犯人真穷未收到的差额不算私留；
+  实收大于实交才产生财产差额；如实承认不等于免罚，也不该算谎报。
+  当前 DeclareAmount 的 RememberReportHonesty(truthful && concealed <= 0) 混淆承认私留与撒谎。
+  过度执法沿用独立事实记录和审查，不用补足钱货消除过度执法；当前“收钱后再打”机制不等于
+  对所有战斗已实现完整来源识别，不把全部战利品自动当作合法罚金。
+- 用户此次期待士兵对短款给如实/撒谎说明机会；现有历史曾明确全额上交实收即免盘问，
+  新方案需区分“应罚未收齐”的说明与“实收未交齐”的说明，不能重新把真穷误记贪腐。
+  旧存档无原物收据只能显示明细未知、保留手动交付，不从现有库存猜测原来收了什么。
+
+#### 用户授权后的修复候选（已部署，待实机）
+
+- 新 GwpDispatchBarterScreen 独立拥有 GauntletLayer 和原版 GauntletMapConversationBarterView，
+  继续加载原版 BarterScreen/BarterVM；不再依靠已销毁对话的 BarterBegin 订阅者。
+  宿主负责焦点、输入限制、确认/取消/重置及批量快捷键、关闭释放、地图暂停；换宿主取消，
+  换战役只清旧视图，不向新战役发送旧回调。StartBarterOffer 临时挂入此宿主后恢复原订阅。
+- 交差选兵关闭时先复制“意向名单”，立即把原选兵 roster 中的人数/伤员/经验退回主队并清空。
+  后续交易和说法选择只持有意向，取消/打开失败只清意向，不能再次返兵造成复制。
+  正式 Send 校验主队实际人数、健康/伤员数量再扣兵，随后调用 Dispatch；失败原样归还。
+  单次意向引用令牌防重复确认；读档只丢意向，真实兵在主队可正常保存。求援直接出发流程保留。
+  Dispatch 已建队后的异常沿用真实队伍返回/返程恢复；补调用前预检异常退还，不补造未知人数。
+- 诊断新增 DISPATCH_SELECTION_PREVIEW（退还后主队/意向人数）、DISPATCH_BARTER_VISIBLE
+  （原版交易视图已创建），保留 MANIFEST_SELECTED/SENT/FAILED 链。旧错误流程中已经
+  保存退出而丢失的临时兵没有可靠数量来源，本补丁不假造恢复；测试应使用派遣前存档。
+- 当前没有实际游戏界面验收，不再把生产账本测试当作原版界面验证。110 项既有回归通过；
+  最终编译零警告/零错误；游戏 1.4.8 接口预检 444 类型/1357 成员无缺失，533 类型加载，
+  52 补丁绑定成功。live mirror 36 源文件/43 live 文件一致（含 README），diff --check 通过。
+  obj/live client/live editor SHA256 一致：
+  `19530C8F1AB4EE79AC860D04C0264C14E41419FC977ED07BBCEB6EBC19AF6840`。
+  未改发行 README、未打包、未提交待验收候选。新增文件及 GwpWardenDispatchDialogue
+  是本次回退范围，不能整体清除此前犯罪和钱货交差改动。
+
+- 当前日志 19:12:40、19:13:19 两次 DISPATCH_PRISONER_GATE；没有 DISPATCH_MANIFEST_SELECTED、
+  DISPATCH_SENT、DISPATCH_LOST，故障日志最后只有 19:03:50 ARMED，没有本次异常。
+  证据支持卡在选兵后的支付准备，而不是已经出发且遇袭；不能据空日志判定实际人数。
+- 已核实原版 SandBox.GauntletUI 的 GauntletMapConversationView：初始化对话才订阅
+  BarterBegin/CreateBarterView，FinalizeConversation 就移除订阅和交易视图。
+  新 OpenPayment 却在对话结束、分兵之后调用 StartBarterOffer，并用 original?.Invoke 静默允许
+  没有任何视图订阅者。于是引擎准备了交易数据但没有显示界面，既无确认也无关闭回调。
+  选兵界面已从主队扣兵，兵只由闭包里的临时 roster 持有，真实使者直到 Send 才创建，
+  因而地图无队伍且主队少兵。这是本轮改接交易界面引入的缺陷；编译和数据测试未覆盖 UI 生命周期。
+- 当前等待清单没有入档；若保存后退出，不能保证这些临时兵可恢复。不要继续重复派遣；
+  优先保留派遣前存档，不能靠凭空加固定人数或自动加载存档补救。
+- 修复方向：提供正确生命周期的原版 BarterScreen 宿主，或在有效对话内发起交易；
+  pending 兵员必须有持久/可取消的归属，未建真实队伍前不能仅藏在闭包里。
+  本次用户问原因，当前只诊断、记录，未改代码或部署，也未宣称已修。
+
+### 后续用户授权修复及降价：已部署候选
+
+- 用户要求修漏算/重复登记，案件基础统一 1000、每点负声望罚款 100；按保留负声望系统理解。
+  改 Enforcement.FinePerPoint=100、VillageViolence/CaravanAttack 基础均 1000。
+  案卷基础费统一使用 max(1, IncidentCount)*1000，旧未结案 AccruedBaseFine 不再维持旧单价；
+  案卷显示与现场报价共用这一入口，新登记同步保存累计基础费。已收款/已承诺结算不重写。
+  此处是领主案件定价，未改巡逻队独立的 Patrol.FinePerPoint=200 等其它玩法。
+- 村庄所属独立民兵列入 CivilianDied，用 DiedInBattle 实际阵亡，与户数损失和村民/商队死亡
+  分别计账。不纳入城镇民兵、领主援军，不把伤员/逃散当死亡，不改户数一比一系数。
+- 删除静态 OnCrimeDetected 及执法行为订阅，监控直接调用 CrimePool.TryAdd；不再跨档残留实例。
+  同一 MapEvent 的开始/结束用 ConditionalWeakTable 的引用身份分别只处理一次，避免重复事件
+  将伤亡或罪名再加一遍；诊断 eventRef 改 RuntimeHelpers.GetHashCode，不再调用恒为零的覆盖方法。
+- 连续袭村按村庄+袭击队伍保留起点，民兵战结束后的再次 BeingRaided 不新登记、不覆盖户数起点。
+  更换袭击者重建起点；队伍离开目标且不在对应战斗时按小时清理，VillageLooted 消费该记录。
+  去掉原 72 小时失效线，连续长劫掠不因过时再次入罪；实际战斗攻方优先于 AI 意图枚举。
+  新存档键 gwp_crime_raid_receipts 保存起点记录，避免跨存读档丢失；旧存档缺键为空，
+  不能自动还原旧版正在进行劫掠的起点、旧重复次数或漏记死亡，未猜测性修改历史罪责。
+- 开发监控 CRIME_INTAKE 记录实际登记数，CRIME_RAID_CONTINUED 记录两阶段共用账据。
+  未清旧日志；未退休未验收的犯罪/派遣诊断。未改发行 README、未打包、未提交候选。
+- 新定价测试增加 7 项，合计 110 项通过；新增 tools/Verify-CrimeReceipts.ps1 用 Windows
+  PowerShell 5.1 和实际游戏程序集验证快照三字段 JSON 往返、同战斗复用账据、不同战斗分离、
+  静态事件已移除。它不模拟真实战役，连续袭村/中断重来/读档仍需实机验收。
+- 最终默认诊断版重建 0 警告/0 错误；1.4.8 预检 439 类型/1344 成员无缺失，529 类型加载，
+  52 补丁挂接成功；29 XML、1399 中文条目、1179 使用键无重复/缺失。
+  live mirror 36 源文件/43 live 文件无差异或残留，README 一致；git diff --check 通过。
+  obj/client/editor 三份 DLL SHA256：
+  `7C5E365677A1754F4A02C571AED1B4D33EEA106455E5F1C03B633BBFCA5ECEBA`。
+  中文 XML SHA256 `ABD509A1B1F66CBA14C46B23C614D84D3CA9A3CFB2B13DADF3CB811BAFDBFA2C`。
+  本轮修改在 675004c 后的工作树，叠加尚待验收的货物派遣；回退须按本节文件逐项比较，不能整体清树。
+
+### 用户明确口径后的继续核查
+
+- 用户明确户数损失与民兵死亡都要算。本轮要求继续查接口、解释现行惩罚公式，不取消户数折算。
+  此前建议取消该项不符合用户意图；保留一户一点的现行系数，未作新的代码变更或部署。
+- 原版 RaidEventComponent.CreateRaidEvent 把 Settlement.MilitiaPartyComponent.MobileParty
+  独立挂到 DefenderSide。MapEventParty.DiedInBattle.TotalManCount 是实际阵亡数，
+  WoundedInBattle 是伤员，RoutedInBattle 是逃散；不能拿战前人数减战后人数全当死亡。
+  OnTroopKilled 删除 roster 人员并增加 DiedInBattle，不修改 Hearth。
+  RaidEventComponent.Update 在掠夺阶段另扣 Village.Hearth；这两条原版计算没有相互抵扣。
+  按用户口径应分别计入，不把户数损失再假装成民兵死亡名单。
+- 实际日志：18:39:43 亦剌塔儿袭击庞斯，民兵开战 106，阵亡 79、受伤 27，civilian=False；
+  同场村民阵亡 28 被记入。现实现漏民兵 79，并不是无法获得 API。村庄民兵应限所属村庄，
+  不借修复扩大到城镇民兵、领主援军或所有同阵营士兵。
+- 两次登记还有比静态订阅更直接的原版路径：RaidEventComponent.OnInitialize 设置 BeingRaided；
+  抵抗战 OnBeforeFinalize 在村庄未毁时设置 Normal；OnFinalize 对有抵抗的 AI 部队再次
+  SetMoveRaidSettlement，后续掠夺重新触发 BeingRaided。我们的 OnVillageBeingRaided 每次
+  都先发 OnCrimeDetected，TryAdd 无条件增加次数及基础费；快照防覆盖不等于罪名去重。
+  因此同一次袭村的“打民兵→烧村”存在确定可达的双计路径，符合本次两项的症状。
+  缺当时入案日志，仍不能宣称已逐条还原阿丽真的两次登记；静态订阅风险也仍独立存在。
+- 现行领主犯罪罚款：AccruedBaseFine + max(0, NegativeStanding)*300。
+  每次村庄/村民案件登记加 1200，每次商队案件登记加 1800；混合案件逐项相加。
+  AddCivilianCasualties：旧 CrimeKillProgress 加本次人命，每满 10 加一点负声望，余数保留。
+  户数人命=round(max(0, 起始户数-结束户数))*1，普通村民/商队战死另加；民兵目前漏算。
+  多队战斗按现有结束时人数分摊，整除零头归最大队；不是每队各记全部死者。
+  剿匪每满 10 抵一点负声望；实缴先抵基础费，余款每 300 抵一点，因此历史案件人数不一定
+  等于当前计费的未赎人命。领主财力/兵力/被捕次数不直接进入这条基础罚款公式。
+  阿丽真账面两次村庄登记与 90 人对应 2*1200+9*300=5100；若同一袭村只计一次则是 3900，
+  此例不包含尚未证实的民兵漏记人数，不据此直接改旧档金额。
+
+- 用户新档反馈，不代表货物派遣已实机验收。当前 AI 日志 session 18:37:09，
+  build `7d499a20-3b6f-4c41-9839-223e8a038c60`；保留 Documents 原日志。
+- 精确命中：18:39:45.782，campaignHour 2185940.64，lord_6_10 阿丽真，
+  CASUALTIES_RAID：castle_village_EN7_1，hearthStart=225.2，hearthEnd=135.5557，
+  raidStartedHours=2185882.30586028，hearthLost=90，lives=90，caseTotal=90，standing=9。
+  即 round(225.2-135.5557)*VillagersPerHearthPoint(1)，是模组推算，不是原版 90 名真实阵亡。
+  本次明确不能用“多场真实战斗累计”或旧档污染解释这 90 人。
+- 原版 RaidEventComponent.Update 在掠夺阶段按 settlement damage * 0.5 * hearth
+  扣炉火并折战利品，该计算没有报告同等数量死亡。
+- 18:39:51 阿丽真报价 5100；两次入账的原始犯罪事件没有日志，暂不能证明是两次独立
+  行为或重复回调。独立风险：OnCrimeDetected 是静态事件，PoliceEnforcementBehavior.RegisterEvents
+  每次订阅实例方法，项目没有取消订阅；同进程换档可能留下旧实例，再次执行 CrimePool.TryAdd。
+  TryAdd 每次增加 IncidentCount/AccruedBaseFine/TotalCrimeCount，没有事件去重。
+  原版村庄事件只在 VillageState 转入 BeingRaided 时发出，停掠后再进入也能重发。
+  这些是源码风险，不冒称其中某项就是本次两罪的已证实原因。
+- 新监控 eventRef 全为 0：MapEvent.GetHashCode 不能作为可靠事件标识，后续应改为真实引用
+  标识或独立序号，不拿这个字段证明重复。埃迪德等四队开战兵力 368 对商队 31，
+  20 死/11 伤，分配 8+4+4+4，没有四家各记 20；独立民兵队在 Raid 明细里 civilian=False，
+  其死者不计此项。此前口头“村庄守军都计入”不准确，实际匹配村庄队伍本体及村民/商队。
+- 本轮只诊断与记录，没有改系数或清罪责。是否取消炉火折人命、保留烧村罪名及基础罚款，
+  待用户确认玩法口径。没有新的构建部署。
+
 ## 2026-09-15 用户确认暂未发现问题：本地检查点
+
+已建立 `675004c`（此前修复的完整实现、维护记录、测试工具）；编译 0 警告/0 错误、80 项测试通过。
+新交差候选不进入该检查点。需回退新候选时，以此提交为基线比较本节列出的文件，逐项还原，
+重建诊断版并验证 live mirror；不要整体 reset 其它工作或把 player-audit DLL 部署到 live。
+
+### 本轮：货物派遣与原版交易界面（候选，待实机）
+
+- 用户当前需求：追查雇佣兵大量罪行；派人交差能交货抵款、用原版交易与自动报价、允许少交；
+  “如实交代/撒谎”按钮缩短。不是发行，不改玩家 README、不建 ZIP、不推送。
+- 监控证据路径：`C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  及同目录 `.log.previous`。18:09:47，campaignHour 2187015.95，暗影之子的赛斯
+  `CharacterObject_1825/beni_zilal` 此战分到 23/23，案件累计 181，负声望 12。
+  18:12:04 资产交易净值 14400：犯人给 7015 金，玩家找零 492，货物抵 7877，净现金 6523。
+  18:04:07 的哈塞德 `CharacterObject_1824` 为 27/27、累计 184；实收 6417 中现金 4813、货物 1604。
+  保留日志只覆盖后段，不足以逐笔验证累计 181/184 的全部历史，不能声称累计数绝无旧版本污染。
+- 当前源码：只数对方村民/商队/村庄队伍 DiedInBattle，不含同阵营普通领主的阵亡；
+  按己方参战移动队伍当前人数分摊（不是英雄个人击杀计数，也不以当前战力给历史罪责封顶）。
+  村庄炉火损失另按现有系数折人命；剿匪赎罪会降低负声望，案件累计死者不会随之减少。
+  本轮不擅自重置旧罪责、不改犯罪和罚金规则。
+- 新 `CASUALTIES_SOURCE` 为下一次核对提供 eventRef、战斗类型/阵营、村庄、己方全部参与者、
+  受害队伍、开战健康人数、当前人数、死伤、贡献、具体分摊额；劫村补起止炉火、开始小时和队伍 ID。
+  eventRef 只用于同一进程的关联，不是跨读档永久事件 ID。异常记 CRIME_*_CASUALTIES_FAILED，
+  不再无声吞掉。诊断条件编译保留；没有为了此次调查清空现存日志。
+- 当面交差原已支持 GwpAssetPayment 钱货交易，缺口在使者旧 TextInquiry。
+  `GwpWardenDispatchDialogue` 改为原版 BarterVM 装载清单，分兵/询问/交易关闭后推迟到下一次 UI 心跳。
+  新 GwpAssetPayment.SelectionOnly 只选玩家钱货，不提前扣款、不转给远方领主；取消原样还兵。
+  专用 finalize/cancel 只关闭清单，不触发原版赠礼关系、经验或交易冷却；不影响其它交易。
+  确认之前与正式发车之前分别核验数量。原版空交易会禁用确认，专用 SendOffer 补丁使零上缴可选。
+- 自动报价按实际从犯人处收到的总价值推荐（无实收账时沿用案件金额），当面流程同步该口径；
+  罚金和酬劳仍按原案件口径。不够仍可少交。先金币后货物；货物不可拆且使者未到达不能远程找零，
+  最后一件可略超额，原版按钮明确显示“装载 当前总值 / 建议值”，玩家可以移除或调整。
+  交易中的贵重物品不再只记 item_barterable，还记 item ID、词缀 ID 和单价，方便下轮追账。
+- `GwpDispatchCargo.cs`：货物真实进入使者 ItemRoster，占重、可在战败中丢失；清单保存 item/词缀/数量/
+  出发估值，Base64 隔离 dispatch 存档分隔符；只按到达时仍持有的指定数量计账，战利品不冒充上缴物。
+  案件加 CaseHeroId 绑定，新委托不会收下上一委托仍在路上的钱货；旧派遣记录保持旧兼容路径。
+  退单/无法送达则实物随队归还；被毁仍损失实物，不制造替代品。
+- 上缴粮食/牲畜不当盘缠：在原版 DailyTickParty 吃粮/繁殖期间临时隔离清单数量，Harmony finalizer
+  无论成功失败都复原，异常不吞。补给/饥饿检查排除指定货物；出发先预留货物，再分玩家剩余口粮。
+  未保证足额旅行粮食和全部异常场景，新机制仍需游戏走完整趟验收。
+- 到达按现金+实到货物估值走原 DeclareAmount/查账/酬劳逻辑；实际货物转入收件灰袍队伍，
+  货物不变成凭空金币。补上旧使者交现款只从队伍扣除却未记入收件队伍的对应现金入账。
+  谎报规则未改变，只缩短当面/派遣两处中英文按钮，移除已失效的三个金额输入框中文键。
+- 修改文件：GwpAssetPayment、GwpAssetOfferValidationPatch、GwpDispatchCargo、GwpWardenDispatch、
+  GwpWardenDispatchBehavior、GwpWardenDispatchDialogue、PlayerBountyBehavior.CaseSettlement、
+  PoliceCrimeMonitorEnhanced、CNs 字符串、CaseSettlement.Tests。本节是新机制回退范围。
+- 已验证：103 项生产逻辑测试（引擎参与者替身，不覆盖真实原版 UI/战役顺序），包括零上缴、
+  清单不扣财产、不可拆货物、旧记录、词缀/固定估值、粮食隔离、异常复原、战损只记实到；
+  隔离编译 0 警告/0 错误；1.4.8 接口预检 439 类型/1343 成员无缺失，525 类型加载成功，
+  52 个补丁类挂接成功。中文 XML 已即时镜像，SHA256
+  `4CB22C5FDF2942BB7C92E167E868D9EE405F88415000033A64F9E22BF8F4355E`。
+  原版交易开关、自动报价、少交说法、钱货送达/归队须用户实机确认。
+- 最终验证与部署：诊断关闭的隔离 `bin/Release/player-audit/` 重建 0 警告/0 错误，仅用于审计，
+  未部署、未打包；随后默认诊断开启重建并部署 client/editor，均 0 警告/0 错误。
+  obj、live client、live editor 三份 DLL SHA256 一致：
+  `313DFFF0B21E47F56AFB1D2BEF35458D479DCC56B4AE0BA52B026C8DA30689FC`。
+  最终 live 接口预检 439 类型/1343 成员无缺失，527 类型加载、52 补丁类绑定成功；
+  103 项生产逻辑测试通过。29 XML/1399 中文条目/1179 使用键，无重复/缺键。
+  live mirror 对照 36 源文件/43 live 文件，无缺失、差异或越界残留，两份 README 也一致。
+  `git diff --check` 通过。当前候选保持未提交，等新流程实机确认后再做检查点；没有宣称实机通过。
 
 用户反馈“目前没发现什么bug了”。以上一轮完整修复建立本地检查点，再开始货物交差改动。
 这不是全部极端分支已验证的声明。当前日志有两次使者归队交割，故障日志没有新异常。

@@ -22,6 +22,7 @@ namespace GreyWardenPolicePurity
             /// <summary>玩家实际收到手的数目。犯人的案底按这个数抵，不按玩家报的数。</summary>
             public int Collected;
             public int CashReceived;
+            internal GwpCaseReceipt? Receipt;
             /// <summary>应缴里属于"做下的事"的那一段；余下的才抵负声望。</summary>
             public int BaseCharge;
             /// <summary>Collection-time evidence for legitimate inability to pay.</summary>
@@ -79,6 +80,7 @@ namespace GreyWardenPolicePurity
             List<int>? assessed = null;
             List<int>? collected = null;
             List<int>? received = null;
+            List<string>? receipts = null;
             List<double>? auditHours = null;
             List<int>? baseCharges = null;
             List<int>? broke = null;
@@ -95,6 +97,7 @@ namespace GreyWardenPolicePurity
                 assessed = _pending.Select(entry => entry.Assessed).ToList();
                 collected = _pending.Select(entry => entry.Collected).ToList();
                 received = _pending.Select(entry => entry.CashReceived).ToList();
+                receipts = _pending.Select(entry => entry.Receipt?.Encode() ?? "").ToList();
                 baseCharges = _pending.Select(entry => entry.BaseCharge).ToList();
                 broke = _pending.Select(entry => entry.OffenderWasBroke ? 1 : 0).ToList();
                 povertyIds = _pendingAuditGaps.Keys.ToList();
@@ -112,6 +115,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_report_assessed", ref assessed);
             dataStore.SyncData("gwp_report_collected", ref collected);
             dataStore.SyncData("gwp_report_received", ref received);
+            dataStore.SyncData("gwp_report_asset_receipts", ref receipts);
             dataStore.SyncData("gwp_report_audit_due", ref auditHours);
             dataStore.SyncData("gwp_report_basecharge", ref baseCharges);
             dataStore.SyncData("gwp_report_broke", ref broke);
@@ -142,6 +146,7 @@ namespace GreyWardenPolicePurity
                         Assessed = assessed[i],
                         Collected = collected[i],
                         CashReceived = received != null && i < received.Count ? received[i] : collected[i],
+                        Receipt = receipts != null && i < receipts.Count ? GwpCaseReceipt.Decode(receipts[i]) : null,
                         BaseCharge = baseCharges != null && i < baseCharges.Count ? baseCharges[i] : 0,
                         OffenderWasBroke = broke[i] != 0
                     });
@@ -182,7 +187,7 @@ namespace GreyWardenPolicePurity
         #region 记账
 
         internal void RecordSettlement(
-            Hero? offender, int assessed, int collected, int baseCharge, bool offenderWasBroke, int? receivedCash = null)
+            Hero? offender, int assessed, int collected, int baseCharge, bool offenderWasBroke, int? receivedCash = null, GwpCaseReceipt? receipt = null)
         {
             if (offender == null || assessed <= 0) return;
 
@@ -192,6 +197,7 @@ namespace GreyWardenPolicePurity
                 Assessed = assessed,
                 Collected = collected,
                 CashReceived = Math.Max(0, receivedCash ?? collected),
+                Receipt = receipt,
                 BaseCharge = baseCharge,
                 OffenderWasBroke = offenderWasBroke
             });
@@ -206,8 +212,9 @@ namespace GreyWardenPolicePurity
                 "; assessed=" + assessed + "; collected=" + collected + "; broke=" + offenderWasBroke);
         }
 
-        internal void ResolveByPrisoner(string offenderId, int deliveredCash = 0)
+        internal void ResolveByPrisoner(string offenderId, int deliveredCash = 0, bool truthful = true)
         {
+            RememberReportHonesty(truthful);
             int received = _pending.Where(r => r.OffenderId == offenderId).Sum(r => r.CashReceived);
             QueueAudit(offenderId, Math.Max(0, received - deliveredCash));
             _pending.RemoveAll(report => report.OffenderId == offenderId);
@@ -216,6 +223,16 @@ namespace GreyWardenPolicePurity
         }
 
         internal bool HasPendingReports => _pending.Count > 0;
+        internal GwpCaseReceipt? ReceiptFor(string id)
+        {
+            var reports = _pending.Where(e => e.OffenderId == id).ToList();
+            if (reports.Any(e => e.Receipt == null && e.CashReceived > 0)) return null;
+            var result = new GwpCaseReceipt();
+            foreach (var report in reports) if (report.Receipt != null) result.Add(report.Receipt);
+            return result;
+        }
+        internal bool NeedsExplanation(string id, int delivered, bool prisoner) =>
+            delivered < PendingReceivedFor(id) || (!prisoner && delivered < PendingAssessedFor(id)) || _excessEnforcement.ContainsKey(id);
 
         internal int PendingAssessedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.Assessed);
         internal int PendingReceivedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.CashReceived);
@@ -240,15 +257,16 @@ namespace GreyWardenPolicePurity
         /// </summary>
         /// <param name="declared">实际交到灰袍手上的数目。</param>
         /// <param name="truthful">他嘴上说的是不是实话。只影响今后被查的概率，不改本次判定。</param>
-        internal int DeclareAmount(int declared, bool truthful = true)
+        internal int DeclareAmount(int declared, bool truthful = true, string? offenderId = null)
         {
-            int received = TotalReceived;
+            var reports = _pending.Where(r => offenderId == null || r.OffenderId == offenderId).ToList();
+            int received = reports.Sum(r => r.CashReceived);
             int handedOver = Math.Max(0, declared);
             int concealed = Math.Max(0, received - handedOver);
 
-            RememberReportHonesty(truthful && concealed <= 0);
-            if (concealed > 0 && _pending.Count > 0)
-                QueueAudit(_pending[0].OffenderId, concealed);
+            RememberReportHonesty(truthful);
+            if (concealed > 0 && reports.Count > 0)
+                QueueAudit(reports[0].OffenderId, concealed);
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "REPORT_DECLARED",
@@ -256,8 +274,7 @@ namespace GreyWardenPolicePurity
                 "; handedOver=" + handedOver + "; concealed=" + concealed +
                 "; truthful=" + truthful + "; recentLies=" + RecentLieCount);
 
-            foreach (var report in _pending) _betrayalHours.Remove(report.OffenderId);
-            _pending.Clear();
+            foreach (var report in reports) { _betrayalHours.Remove(report.OffenderId); _pending.Remove(report); }
             AuditAtHandIn();
             return 0;
         }
@@ -388,7 +405,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 犯人自己的账：他实际交出去的钱先抵"做下的事"那一段，余下的每 300 抵一点负声望。
+        /// 犯人自己的账：实缴先抵基础罚款，余款按 Enforcement.FinePerPoint 抵负声望。
         /// 结算当场就清，与玩家事后交多少无关——犯人已经当众交代过了。
         /// </summary>
         private static void ClearOffenderRecord(Hero offender, int collected, int baseCharge)

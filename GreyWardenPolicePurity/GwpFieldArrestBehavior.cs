@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -968,10 +968,11 @@ namespace GreyWardenPolicePurity
         {
             if (_collection?.Applied != true) return;
             int paid = _collection.Paid;
+            var receipt = _collection.Receipt;
             _collection = null;
-            if (!_collectionFull && _desire == GwpOffenderDesire.BribeTheWarden) { BribeConsequence(paid); return; }
+            if (!_collectionFull && _desire == GwpOffenderDesire.BribeTheWarden) { BribeConsequence(paid, receipt); return; }
             if (!_collectionFull && _desire == GwpOffenderDesire.DeedsOnly) PunishOwnMen();
-            Settle(paid, "SETTLED_COLLECTION", paid, _collectionWasBroke);
+            Settle(paid, "SETTLED_COLLECTION", paid, _collectionWasBroke, receipt);
         }
 
         /// <summary>谈崩之后玩家选择照他的方案办。</summary>
@@ -1000,7 +1001,7 @@ namespace GreyWardenPolicePurity
         /// 收钱、抵账、销案。缴足的把案底一并抹平，缴不足的把差额留在他名下——
         /// 案子销了，人并不干净。
         /// </summary>
-        private void Settle(int demanded, string stage, int? prepaid = null, bool? wasBroke = null)
+        private void Settle(int demanded, string stage, int? prepaid = null, bool? wasBroke = null, GwpCaseReceipt? receipt = null)
         {
             if (_crime == null || _offender == null) return;
 
@@ -1017,7 +1018,7 @@ namespace GreyWardenPolicePurity
             // 玩家手上这笔钱要不要如实上交，是玩家与灰袍之间的另一本账。
             GwpFieldReportLedger.Instance?.RecordSettlement(
                 _offender, owed, collected, CalculateBaseFine(_crime),
-                wasBroke ?? _offender.Gold < owed - collected);
+                wasBroke ?? _offender.Gold < owed - collected, receipt: receipt ?? (prepaid == null ? new GwpCaseReceipt { Gold = collected } : null));
 
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                 ?.NotifyCaseSettledInField(_offender, collected, owed, standingBefore);
@@ -1098,7 +1099,7 @@ namespace GreyWardenPolicePurity
         /// 荣誉低的兑现方式：塞一点私钱把案子抹掉。钱直接进玩家自己的口袋，不入
         /// 司法公库，案子销掉，但他名下的案底一点没少——公库没收到钱，人就没赎。
         /// </summary>
-        private void BribeConsequence(int? prepaid = null)
+        private void BribeConsequence(int? prepaid = null, GwpCaseReceipt? receipt = null)
         {
             if (_crime == null || _offender == null) return;
 
@@ -1109,7 +1110,7 @@ namespace GreyWardenPolicePurity
 
             LeaveEncounterPeacefully();
             GwpFieldReportLedger.Instance?.RecordSettlement(
-                _offender, owed, 0, CalculateBaseFine(_crime), false, taken);
+                _offender, owed, 0, CalculateBaseFine(_crime), false, taken, receipt ?? (prepaid == null ? new GwpCaseReceipt { Gold = taken } : null));
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                 ?.NotifyCaseSettledInField(_offender, 0, owed, GetNegativeStanding(_crime));
             RegisterFieldEnforcement(_offender, _crime);

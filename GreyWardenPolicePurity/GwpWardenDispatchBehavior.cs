@@ -52,6 +52,10 @@ namespace GreyWardenPolicePurity
         internal bool HasActiveDispatch(GwpDispatchPurpose purpose) =>
             _dispatches.Any(d => d.Purpose == purpose && FindParty(d.PartyId) != null);
 
+        internal string CargoFor(MobileParty party) => _dispatches.FirstOrDefault(d => d.PartyId == party.StringId)?.CargoState ?? string.Empty;
+
+        private int UsableFood(MobileParty party) => GwpDispatchCargo.Food(party, CargoFor(party));
+
         public override void RegisterEvents()
         {
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
@@ -149,7 +153,7 @@ namespace GreyWardenPolicePurity
             GwpDispatchPurpose purpose,
             int carriedCaseGold,
             bool reportLie,
-            string prisonerHeroId)
+            string prisonerHeroId, List<ItemRosterElement>? cargo = null)
         {
             MobileParty player = MobileParty.MainParty;
             if (player?.IsActive != true || detachment.TotalManCount <= 0) return null;
@@ -165,8 +169,11 @@ namespace GreyWardenPolicePurity
             }
 
             carriedCaseGold = Math.Max(0, carriedCaseGold);
+            cargo = cargo ?? new List<ItemRosterElement>();
+            if (cargo.Any(e => e.Amount <= 0 || player.ItemRoster.Where(x => x.EquipmentElement.Equals(e.EquipmentElement)).Sum(x => x.Amount) < e.Amount)) return null;
+            int reservedFood = cargo.Where(e => e.EquipmentElement.Item.IsFood).Sum(e => e.Amount);
             if (carriedCaseGold > Hero.MainHero.Gold ||
-                !CanProvision(detachment.TotalManCount, player, carriedCaseGold))
+                !CanProvision(detachment.TotalManCount, player, carriedCaseGold, reservedFood))
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_no_rations}You have neither food nor coin to send with them. Lay in provisions before you send anyone out."),
@@ -234,8 +241,6 @@ namespace GreyWardenPolicePurity
                     party.PartyTradeGold += carriedCaseGold;
                     caseGoldTransferred = carriedCaseGold;
                 }
-                TakeRationsFromPlayer(party, player);
-
                 var record = new GwpDispatchRecord
                 {
                     PartyId = party.StringId,
@@ -243,6 +248,8 @@ namespace GreyWardenPolicePurity
                     Phase = GwpDispatchPhase.Outbound,
                     ReceiverPartyId = receiver.StringId,
                     CaseGoldFloor = Math.Max(0, carriedCaseGold),
+                    CaseHeroId = purpose == GwpDispatchPurpose.Report
+                        ? Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportIdentity ?? string.Empty : string.Empty,
                     ReportLie = reportLie,
                     PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == party.Party
                         ? prisonerHeroId ?? string.Empty
@@ -251,6 +258,17 @@ namespace GreyWardenPolicePurity
                 };
                 ResetProgress(record, party, receiver);
                 _dispatches.Add(record);
+                var loaded = new List<GwpDispatchCargo.Entry>();
+                foreach (var item in cargo)
+                {
+                    player.ItemRoster.AddToCounts(item.EquipmentElement, -item.Amount);
+                    party.ItemRoster.AddToCounts(item.EquipmentElement, item.Amount);
+                    loaded.Add(new GwpDispatchCargo.Entry { Item = item.EquipmentElement,
+                        Amount = item.Amount, Price = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportReceipt?.PriceFor(item.EquipmentElement)
+                            ?? Math.Max(1, item.EquipmentElement.ItemValue) });
+                    record.CargoState = GwpDispatchCargo.Encode(loaded);
+                }
+                TakeRationsFromPlayer(party, player);
                 TrackOnMap(party);
                 SendTo(party, receiver);
 
@@ -361,9 +379,9 @@ namespace GreyWardenPolicePurity
         /// 粮和钱都拿不出来就别让他们出门。饿着肚子上路只有一个结局：半路散了，
         /// 玩家的人、钱、要交的人一起没。宁可当场退回，让玩家先去备点东西。
         /// </summary>
-        private static bool CanProvision(int men, MobileParty player, int reservedGold)
+        private static bool CanProvision(int men, MobileParty player, int reservedGold, int reservedFood = 0)
         {
-            if (AvailableFood(player) > 0) return true;
+            if (AvailableFood(player) > reservedFood) return true;
             int purse = TravelPurseFor(men, RationsWantedFor(men));
             return purse > 0 && Hero.MainHero.Gold - reservedGold >= purse;
         }
@@ -465,7 +483,7 @@ namespace GreyWardenPolicePurity
             if (party.MapEvent != null) return "battle";
             int men = party.MemberRoster.TotalManCount;
             if (men > 0 && party.MemberRoster.TotalWoundedRegulars * 2 >= men) return "mauled";
-            if (party.ItemRoster.TotalFood <= 0f) return "starving";
+            if (GwpDispatchCargo.Food(party, Instance?.CargoFor(party) ?? string.Empty) <= 0) return "starving";
             return string.Empty;
         }
 
@@ -495,7 +513,7 @@ namespace GreyWardenPolicePurity
         /// 最近的、而且**走得到**的灰袍领主队伍。走不到的一概不选：宁可当场告诉玩家
         /// 没人可送，也不要派一支队伍出去钉在原地。
         /// </summary>
-        private static MobileParty? FindReceiver(MobileParty from, MobileParty? courier = null)
+        internal static MobileParty? FindReceiver(MobileParty from, MobileParty? courier = null)
         {
             Clan? wardens = PoliceStats.GetPoliceClan();
             if (wardens == null) return null;
@@ -560,7 +578,7 @@ namespace GreyWardenPolicePurity
             double now = CampaignTime.Now.ToHours;
             if (now < record.NextTownBusinessHours) return false;
             bool hasPrisoners = party.PrisonRoster.TotalManCount > 0;
-            bool hungry = GwpDispatchSupplyRules.NeedsFood(party.ItemRoster.TotalFood, DailyFood(party));
+            bool hungry = GwpDispatchSupplyRules.NeedsFood(UsableFood(party), DailyFood(party));
             // 缺粮就该进城，不该先问"买得起吗"。买不起还有卖俘虏、卖战利品这条路，
             // 原来那个"余额大于零才算缺粮"的条件把断粮的队伍直接钉在野外。
             if (!hasPrisoners && !hungry && record.SupplyTownId.Length == 0) return false;
@@ -617,12 +635,12 @@ namespace GreyWardenPolicePurity
         /// 进城之后按原版市价真实买粮。原版 PartiesBuyFoodCampaignBehavior 硬性要求领主
         /// 英雄，无领主队走不到那条路，这一段由我们补。只花受保护额之上的钱。
         /// </summary>
-        private static void BuyFoodIfNeeded(GwpDispatchRecord record, MobileParty party)
+        private void BuyFoodIfNeeded(GwpDispatchRecord record, MobileParty party)
         {
             Settlement? settlement = party.CurrentSettlement;
             if (settlement?.ItemRoster == null || settlement.Town == null) return;
             float daily = DailyFood(party);
-            if (party.ItemRoster.TotalFood >= GwpDispatchSupplyRules.TargetFood(daily)) return;
+            if (UsableFood(party) >= GwpDispatchSupplyRules.TargetFood(daily)) return;
 
             int spendable = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
             if (spendable <= 0) return;
@@ -634,7 +652,7 @@ namespace GreyWardenPolicePurity
                 int price = settlement.Town.GetItemPrice(element.EquipmentElement, party, false);
                 if (price <= 0 || price > spendable) continue;
                 int affordable = GwpDispatchSupplyRules.PurchaseCount(
-                    party.ItemRoster.TotalFood, daily, element.Amount, spendable, price);
+                    UsableFood(party), daily, element.Amount, spendable, price);
                 if (affordable <= 0) continue;
                 try
                 {
@@ -661,7 +679,7 @@ namespace GreyWardenPolicePurity
                 {
                     GwpFaultTrace.Write("DISPATCH_BUY_FOOD_FAILED", details: party.StringId + " | " + exception);
                 }
-                if (party.ItemRoster.TotalFood >= GwpDispatchSupplyRules.TargetFood(daily)) break;
+                if (UsableFood(party) >= GwpDispatchSupplyRules.TargetFood(daily)) break;
             }
         }
 
@@ -788,7 +806,8 @@ namespace GreyWardenPolicePurity
             }
 
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-            if (bounty?.CanDispatchCaseReport != true)
+            if (bounty?.CanDispatchCaseReport != true ||
+                (record.CaseHeroId.Length > 0 && record.CaseHeroId != bounty.CaseReportIdentity))
             {
                 // 玩家已经自己交过差，或案子已经不在了。钱、人、俘虏原样带回，
                 // 绝不在这里"交"给一个不存在的委托。
@@ -821,8 +840,10 @@ namespace GreyWardenPolicePurity
                 }
             }
 
+            int deliveredGoods = GwpDispatchCargo.Value(party, record.CargoState);
+            int deliveredValue = (int)Math.Min(int.MaxValue, (long)deliveredCash + deliveredGoods);
             int fee = bounty.CompleteDispatchedCaseReport(
-                deliveredCash, record.ReportLie, prisonerDelivered, receiver.Party);
+                deliveredValue, record.ReportLie, prisonerDelivered, receiver.Party);
             if (fee < 0)
             {
                 // 交接没有成立，账不能当作已缴，钱一分不动。
@@ -833,6 +854,15 @@ namespace GreyWardenPolicePurity
             }
 
             party.PartyTradeGold = Math.Max(0, party.PartyTradeGold - deliveredCash);
+            if (deliveredCash > 0) receiver.PartyTradeGold += deliveredCash;
+            foreach (var item in GwpDispatchCargo.Decode(record.CargoState))
+            {
+                int count = GwpDispatchCargo.Available(party, item);
+                if (count <= 0) continue;
+                party.ItemRoster.AddToCounts(item.Item, -count);
+                receiver.ItemRoster.AddToCounts(item.Item, count);
+            }
+            record.CargoState = string.Empty;
             // 办案费交到使者手上带回来，并且同样受保护：他们买粮只能花路上挣的，
             // 不许动玩家托付的钱，也不许动要带回去的酬劳。路上被打光才会一起没。
             if (fee > 0) party.PartyTradeGold += fee;
@@ -840,6 +870,7 @@ namespace GreyWardenPolicePurity
 
             GwpAiDiagnostics.WriteAction(party, "DISPATCH_REPORT_DELIVERED",
                 "receiver=" + receiver.StringId + "; cash=" + deliveredCash +
+                "; goodsValue=" + deliveredGoods + "; credited=" + deliveredValue +
                 "; prisoner=" + prisonerDelivered + "; lie=" + record.ReportLie + "; fee=" + fee);
             BeginReturn(record, party, "report_delivered");
         }

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using GreyWardenPolicePurity;
@@ -218,7 +218,185 @@ internal static class Program
         Equal(600, commit.Paid, "committing twice does not double the receipt");
         Equal(purseBefore - 200, Hero.MainHero.Gold, "committing twice does not move money twice");
 
+        // Courier selection uses the actual native-barter payment implementation,
+        // but does not transfer to the remote lord or take his money as change.
+        var selection = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, int.MaxValue, 850, true);
+        Equal(true, selection.Entries.All(e => e.OriginalOwner == Hero.MainHero), "courier only offers player assets");
+        int plannedGoldBefore = Hero.MainHero.Gold;
+        int plannedGoodsBefore = payFrom.ItemRoster.Sum(e => e.Amount);
+        foreach (var offer in selection.SuggestedOffer())
+        {
+            offer.Key.CurrentAmount = offer.Value;
+            offer.Key.SetIsOffered(true);
+        }
+        selection.ConfirmSelection();
+        Equal(true, selection.Applied, "courier accepts a mixed manifest");
+        Equal(true, selection.Paid >= 850, "indivisible cargo rounds up without remote change");
+        Equal(plannedGoldBefore, Hero.MainHero.Gold, "selection does not debit gold before departure");
+        Equal(plannedGoodsBefore, payFrom.ItemRoster.Sum(e => e.Amount), "selection does not teleport goods");
+        Equal(plannedGoldBefore, selection.SelectedGold, "manifest carries the chosen gold");
+        Equal(true, selection.SelectedGoods.Count > 0, "manifest includes actual goods");
+        var zero = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, int.MaxValue, 850, true);
+        zero.ConfirmSelection();
+        Equal(true, zero.Applied, "zero hand-in remains a valid deliberate choice");
+        Equal(0, zero.Paid, "zero hand-in credits nothing");
+        var cargoRecord = new GwpDispatchRecord { PartyId = "courier", CargoState = "aXRlbQkxCTEwMA==" };
+        Equal(cargoRecord.CargoState, GwpDispatchRecord.Deserialize(cargoRecord.Serialize())!.CargoState, "cargo survives dispatch serialization");
+        Equal(string.Empty, GwpDispatchRecord.Deserialize("old|0|0|receiver|500|0||1")!.CargoState, "old dispatch saves have no cargo");
+
+        var foodItem = new ItemObject { StringId = "cargo_grain", Value = 20, IsFood = true };
+        var modifier = new ItemModifier { StringId = "fine" };
+        TaleWorlds.ObjectSystem.MBObjectManager.Instance.Objects[foodItem.StringId] = foodItem;
+        TaleWorlds.ObjectSystem.MBObjectManager.Instance.Objects[modifier.StringId] = modifier;
+        var courier = new TaleWorlds.CampaignSystem.Party.MobileParty();
+        var equipment = new EquipmentElement(foodItem, modifier);
+        courier.ItemRoster.AddToCounts(equipment, 12);
+        string manifest = GwpDispatchCargo.Encode(new[] { new GwpDispatchCargo.Entry { Item = equipment, Amount = 10, Price = 20 } });
+        Equal(false, manifest.Contains('|') || manifest.Contains(';'), "manifest cannot break outer save delimiters");
+        var restored = GwpDispatchCargo.Decode(manifest);
+        Equal(1, restored.Count, "manifest restores every stack");
+        Equal(modifier, restored[0].Item.ItemModifier, "manifest preserves item modifiers");
+        Equal(2, GwpDispatchCargo.Food(courier, manifest), "ten cargo grain leave two usable rations");
+        Equal(200, GwpDispatchCargo.Value(courier, manifest), "only the designated cargo is credited");
+        foodItem.Value = 99;
+        Equal(200, GwpDispatchCargo.Value(courier, manifest), "shipment keeps agreed valuation");
+        GwpWardenDispatchBehavior.Instance.CargoState = manifest;
+        var prefix = typeof(GwpDispatchCargoFoodPatch).GetMethod("Prefix", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        var finalizer = typeof(GwpDispatchCargoFoodPatch).GetMethod("Finalizer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        object?[] call = { courier, null };
+        prefix.Invoke(null, call);
+        Equal(2, courier.ItemRoster.TotalFood, "native feeding only sees the rations");
+        courier.ItemRoster.AddToCounts(equipment, -1);
+        var nativeFailure = new InvalidOperationException("test native failure");
+        Equal(nativeFailure, finalizer.Invoke(null, new[] { courier, call[1], nativeFailure }), "native exception is not swallowed");
+        Equal(11, courier.ItemRoster.TotalFood, "cargo returns even after feeding fails");
+        courier.ItemRoster.AddToCounts(equipment, -8);
+        Equal(60, GwpDispatchCargo.Value(courier, manifest), "lost cargo is never credited or recreated");
+        Equal(0, GwpDispatchCargo.Food(courier, manifest), "remaining cargo is not considered provisions");
+        Equal(0, GwpDispatchCargo.Decode("").Count, "old saves need no manifest migration");
+
+        TestItemizedReports();
+        TestBarterVmEntry();
         Console.WriteLine("PASS: " + checks + " production settlement/collection assertions (engine actors stubbed).");
+    }
+
+    private static void TestBarterVmEntry()
+    {
+        // Invoke production VM prefixes directly: no manager Harmony patch is
+        // installed in this harness, matching the observed bypass condition.
+        var offer = typeof(GwpAssetOfferValidationPatch).GetMethod("Prefix",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        var cancel = typeof(GwpDispatchVmCancelPatch).GetMethod("Prefix",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        Campaign.Current = new Campaign();
+        Hero.MainHero = new Hero("vm_player", 2000);
+        var receiver = new Hero("vm_receiver", 0);
+        var from = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        var to = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        foreach (bool selectionOnly in new[] { true, false })
+        {
+            var payment = new GwpAssetPayment(Hero.MainHero, receiver, from, to, int.MaxValue,
+                1300, selectionOnly, true);
+            var data = new TaleWorlds.CampaignSystem.BarterSystem.BarterData();
+            payment.PrepareCatalogue(data);
+            var money = payment.Entries[0]; money.SetIsOffered(true);
+            var vm = new TaleWorlds.CampaignSystem.ViewModelCollection.Barter.BarterVM();
+            vm.RightOfferList.Add(new() { Barterable = money, CurrentOfferedAmount = 1300 });
+            int before = Hero.MainHero.Gold;
+            Campaign.Current.ConversationManager.IsConversationInProgress = !selectionOnly;
+            Equal(false, (bool)offer.Invoke(null, new object[] { vm, data })!, "VM owns report commit without manager detour");
+            Equal(true, payment.Applied, "VM confirms the recognized payment");
+            Equal(1300, payment.Paid, "VM synchronizes displayed amount before confirming");
+            Equal(before - (selectionOnly ? 0 : 1300), Hero.MainHero.Gold, "preview preserves cash; personal report transfers cash");
+        }
+        Equal(1, Campaign.Current.ConversationManager.Continuations, "only personal report continues conversation");
+        var pending = new GwpAssetPayment(Hero.MainHero, receiver, from, to, int.MaxValue, 0, true, true);
+        var pendingData = new TaleWorlds.CampaignSystem.BarterSystem.BarterData(); pending.PrepareCatalogue(pendingData);
+        Equal(false, (bool)cancel.Invoke(null, new object[] { pendingData })!, "VM owns dispatch cancel without native cancel");
+        Equal(false, pending.Applied, "cancel does not confirm assets");
+        var invalidVm = new TaleWorlds.CampaignSystem.ViewModelCollection.Barter.BarterVM();
+        pending.Entries[0].SetIsOffered(true);
+        invalidVm.RightOfferList.Add(new() { Barterable = pending.Entries[0], CurrentOfferedAmount = 9999 });
+        int closes = Campaign.Current.BarterManager.Closes;
+        Equal(false, (bool)offer.Invoke(null, new object[] { invalidVm, pendingData })!, "invalid preview cannot enter native commit");
+        Equal(closes, Campaign.Current.BarterManager.Closes, "invalid preview stays open");
+        Equal(false, pending.Applied, "invalid preview is unapplied");
+        var unrelated = new TaleWorlds.CampaignSystem.BarterSystem.BarterData();
+        Equal(true, (bool)offer.Invoke(null, new object[] { invalidVm, unrelated })!, "unrelated offer passes through");
+        Equal(true, (bool)cancel.Invoke(null, new object[] { unrelated })!, "unrelated cancel passes through");
+    }
+
+    private static void TestItemizedReports()
+    {
+        Hero.MainHero = new Hero("receipt_player", 9000);
+        var offender = new Hero("receipt_offender", 300);
+        var other = new Hero("receipt_other", 0);
+        var receiver = new Hero("receipt_clerk", 2000);
+        var from = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        var to = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        var horse = new ItemObject { StringId = "receipt_horse", Value = 100 };
+        var modifier = new ItemModifier { StringId = "receipt_modifier" };
+        var equipment = new EquipmentElement(horse, modifier);
+        from.ItemRoster.AddToCounts(equipment, 4);
+        var collect = new GwpAssetPayment(offender, Hero.MainHero, from, to, 1000);
+        collect.Entries[0].SetIsOffered(true); collect.Entries[0].CurrentAmount = 200;
+        collect.Entries[1].SetIsOffered(true); collect.Entries[1].CurrentAmount = 20;
+        var goods = collect.Entries.OfType<TaleWorlds.CampaignSystem.BarterSystem.Barterables.ItemBarterable>().First();
+        goods.SetIsOffered(true); goods.CurrentAmount = 2;
+        goods.Apply();
+        Equal(180, collect.Receipt!.Gold, "receipt records net cash after change");
+        Equal(2, collect.Receipt.Items.Single().Amount, "receipt records actual item count");
+        Equal(modifier.StringId, collect.Receipt.Items.Single().Modifier, "receipt keeps modifier identity");
+        var ledger = new GwpFieldReportLedger();
+        ledger.RecordSettlement(offender, 1000, 380, 1000, true, receipt: collect.Receipt);
+        ledger.RecordSettlement(offender, 1000, 20, 1000, true, receipt: new GwpCaseReceipt { Gold = 20 });
+        ledger.RecordSettlement(other, 1000, 900, 1000, false, receipt: new GwpCaseReceipt { Gold = 900 });
+        var saved = new MemoryStore(true); ledger.SyncData(saved);
+        var loaded = new GwpFieldReportLedger(); loaded.SyncData(saved.Load());
+        var receipt = loaded.ReceiptFor(offender.StringId)!;
+        Equal(200, receipt.Gold, "multiple collection cash survives save load");
+        Equal(2, receipt.Items.Single().Amount, "items survive save load without duplication");
+        Equal(400, loaded.PendingReceivedFor(offender.StringId), "case totals exclude other case");
+        to.ItemRoster.AddToCounts(equipment, -1);
+        to.ItemRoster.AddToCounts(new EquipmentElement(horse), 10);
+        horse.Value = 300;
+        var prisoner = new Hero("receipt_prisoner", 0) { IsPrisoner = true, PartyBelongedToAsPrisoner = to };
+        var report = new GwpAssetPayment(Hero.MainHero, receiver, to, from, int.MaxValue, 400, true, true, receipt, prisoner);
+        foreach (var pair in report.SuggestedOffer()) { pair.Key.SetIsOffered(true); pair.Key.CurrentAmount = pair.Value; }
+        Equal(200, report.SelectedGold, "auto selects receipt cash not player's entire purse");
+        Equal(1, report.SelectedGoods.Sum(e => e.Amount), "missing goods are not replaced by cash or different modifiers");
+        Equal(prisoner, report.SelectedPrisoner, "auto selects case prisoner alongside money and goods");
+        Equal(300, report.OfferedValue, "receipt valuation stays fixed; prisoner has no cash credit");
+        int before = Hero.MainHero.Gold;
+        report.ConfirmSelection();
+        Equal(before, Hero.MainHero.Gold, "courier preview still does not take money");
+        Equal(to, prisoner.PartyBelongedToAsPrisoner, "courier preview does not move prisoner");
+        var personal = new GwpAssetPayment(Hero.MainHero, receiver, to, from, int.MaxValue, 400, false, true, receipt, prisoner);
+        foreach (var pair in personal.SuggestedOffer()) { pair.Key.SetIsOffered(true); pair.Key.CurrentAmount = pair.Value; }
+        personal.ConfirmSelection(); personal.ConfirmSelection();
+        Equal(before - 200, Hero.MainHero.Gold, "personal hand-in transfers exact cash once");
+        Equal(from, prisoner.PartyBelongedToAsPrisoner, "personal hand-in transfers actual custody");
+        Equal(300, personal.Paid, "personal and courier credit the same assets");
+        loaded.DeclareAmount(300, true, offender.StringId);
+        Equal(0, loaded.RecentLieCount, "admitting withheld assets is not recorded as a lie");
+        Equal(100, loaded.PendingAuditGap, "admitted withholding is still audited");
+        Equal(900, loaded.PendingReceivedFor(other.StringId), "hand-in never clears another case receipt");
+        Equal(true, loaded.ReceiptFor(other.StringId) != null, "other case retains itemization");
+        var legacy = new GwpFieldReportLedger();
+        legacy.RecordSettlement(offender, 1000, 400, 1000, true);
+        Equal<GwpCaseReceipt?>(null, legacy.ReceiptFor(offender.StringId), "legacy totals do not invent original cash");
+        var manual = new GwpAssetPayment(Hero.MainHero, receiver, to, from, int.MaxValue, 400, true, true, null);
+        Equal(0, manual.SuggestedOffer().Count, "unknown receipt auto selects no arbitrary assets");
+        manual.ConfirmSelection();
+        Equal(true, manual.Applied, "zero hand-in remains confirmable");
+        var honestPrisoner = new GwpFieldReportLedger();
+        honestPrisoner.RecordSettlement(offender, 1000, 400, 1000, true);
+        Equal(true, honestPrisoner.NeedsExplanation(offender.StringId, 400, false), "poverty can be explained without theft");
+        honestPrisoner.ResolveByPrisoner(offender.StringId, 100, true);
+        Equal(300, honestPrisoner.PendingAuditGap, "prisoner does not erase previously collected assets");
+        Equal(0, honestPrisoner.RecentLieCount, "truthful prisoner shortfall is not a lie");
+        Equal<GwpCaseReceipt?>(null, GwpCaseReceipt.Decode(""), "missing receipt remains distinct from empty receipt");
+        Equal(0, GwpCaseReceipt.Decode(new GwpCaseReceipt().Encode())!.Gold, "known empty receipt roundtrips");
     }
 }
 

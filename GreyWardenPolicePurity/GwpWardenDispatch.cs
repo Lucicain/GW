@@ -35,6 +35,8 @@ namespace GreyWardenPolicePurity
         internal string ReceiverPartyId = string.Empty;
         /// <summary>随队的案件款。这笔钱不许拿去买粮或发工资。</summary>
         internal int CaseGoldFloor;
+        internal string CargoState = string.Empty;
+        internal string CaseHeroId = string.Empty;
         /// <summary>玩家出发前就定好的说法，士兵不替他改口。</summary>
         internal bool ReportLie;
         internal string PrisonerHeroId = string.Empty;
@@ -55,7 +57,7 @@ namespace GreyWardenPolicePurity
             CaseGoldFloor.ToString(), ReportLie ? "1" : "0", PrisonerHeroId,
             DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture), CargoState, CaseHeroId);
 
         internal static GwpDispatchRecord? Deserialize(string? line)
         {
@@ -65,6 +67,8 @@ namespace GreyWardenPolicePurity
             return new GwpDispatchRecord
             {
                 PartyId = parts[0],
+                CargoState = parts.Length > 10 ? parts[10] : string.Empty,
+                CaseHeroId = parts.Length > 11 ? parts[11] : string.Empty,
                 Purpose = (GwpDispatchPurpose)ParseInt(parts[1]),
                 Phase = (GwpDispatchPhase)ParseInt(parts[2]),
                 ReceiverPartyId = parts[3] ?? string.Empty,

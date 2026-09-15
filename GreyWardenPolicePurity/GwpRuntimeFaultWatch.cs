@@ -58,7 +58,8 @@ namespace GreyWardenPolicePurity
                 // Observe native/other-mod managed exceptions too: a deferred
                 // engine callback need not contain our namespace on its stack.
                 GwpFaultTrace.Write(ours ? "FIRST_CHANCE_MOD" : "FIRST_CHANCE_OBSERVED",
-                    details: exception.ToString().Replace(Environment.NewLine, " | "));
+                    details: exception.ToString().Replace(Environment.NewLine, " | ")
+                        + " | observerStack=" + Environment.StackTrace.Replace(Environment.NewLine, " | "));
             }
             catch
             {

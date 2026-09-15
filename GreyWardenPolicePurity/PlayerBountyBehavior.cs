@@ -260,6 +260,7 @@ namespace GreyWardenPolicePurity
             _assignedCaseFine = 0;
             _assignedCaseStanding = 0;
             _caseSubmitted = -1;
+            _caseSubmittedPrisoner = false;
             _pendingPrisonerHeroId = string.Empty;
             _pendingPrisonerAssessed = 0;
             _pendingFieldFine = 0;
@@ -331,6 +332,7 @@ namespace GreyWardenPolicePurity
             // Support is stored once, inside gwp_case_outcome_state. The old
             // standalone bool is read only by the migration path.
             dataStore.SyncData("gwp_case_submitted_value", ref _caseSubmitted);
+            dataStore.SyncData("gwp_case_submitted_prisoner", ref _caseSubmittedPrisoner);
             dataStore.SyncData("gwp_case_contract", ref _fieldCaseContract);
             dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
             dataStore.SyncData("gwp_case_assigned_standing", ref _assignedCaseStanding);

@@ -5,7 +5,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../GreyWardenPolicePurity/GwpAssetOfferValidationPatch.cs" Link="Production/GwpAssetOfferValidationPatch.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpCaseReceipt.cs" Link="Production/GwpCaseReceipt.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpDispatchSupplyRules.cs" Link="Production/GwpDispatchSupplyRules.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpCrimeCategory.cs" Link="Production/GwpCrimeCategory.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpDispatchCargo.cs" Link="Production/GwpDispatchCargo.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpWardenDispatch.cs" Link="Production/GwpWardenDispatch.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpLegacySave.cs" Link="Production/GwpLegacySave.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpAssetPayment.cs" Link="Production/GwpAssetPayment.cs" />

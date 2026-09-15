@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -26,15 +26,31 @@ namespace GreyWardenPolicePurity
         internal bool Applied { get; private set; }
         internal int Paid { get; private set; }
         internal int Available { get; }
-        internal GwpAssetPayment(Hero payer, Hero receiver, PartyBase from, PartyBase to, int limit, int autoTarget = -1)
+        internal bool SelectionOnly { get; }
+        internal bool ReportMode { get; }
+        private readonly GwpCaseReceipt? _autoReceipt;
+        internal GwpCaseReceipt? Receipt { get; private set; }
+        internal Hero? SelectedPrisoner => Entries.OfType<Prisoner>().FirstOrDefault(p => p.IsOffered && p.CurrentAmount == 1)?.Hero;
+        internal int OfferedValue => (int)Math.Max(0, Math.Min(int.MaxValue, Net));
+        internal int SuggestedTarget => _autoTarget;
+        internal int SelectedGold => Entries.OfType<Money>().Where(m => m.Incoming && m.IsOffered).Sum(m => m.CurrentAmount);
+        internal List<ItemRosterElement> SelectedGoods => Entries.OfType<Goods>()
+            .Where(g => g.Incoming && g.IsOffered && g.CurrentAmount > 0)
+            .Select(g => new ItemRosterElement(g.ItemRosterElement.EquipmentElement, g.CurrentAmount)).ToList();
+        internal void ConfirmSelection() { if (SelectionOnly || ReportMode) Apply(); }
+        internal GwpAssetPayment(Hero payer, Hero receiver, PartyBase from, PartyBase to, int limit, int autoTarget = -1, bool selectionOnly = false,
+            bool reportMode = false, GwpCaseReceipt? autoReceipt = null, Hero? prisoner = null)
         {
+            SelectionOnly = selectionOnly;
+            ReportMode = reportMode; _autoReceipt = autoReceipt;
             _payer = payer; _receiver = receiver; _from = from; _to = to; _limit = Math.Max(0, limit); _autoTarget = autoTarget < 0 ? _limit : Math.Max(0, autoTarget);
             Entries.Add(new Money(this, payer, from, true));
-            Entries.Add(new Money(this, receiver, to, false));
+            if (!selectionOnly && !reportMode) Entries.Add(new Money(this, receiver, to, false));
             AddGoods(payer, receiver, from, to, true);
-            AddGoods(receiver, payer, to, from, false);
+            if (!selectionOnly && !reportMode) AddGoods(receiver, payer, to, from, false);
+            if (reportMode && prisoner != null) Entries.Add(new Prisoner(this, prisoner));
             Available = Wealth(payer, from);
-            if (limit != int.MaxValue) Entries.Add(new Agreement(this));
+            if (!selectionOnly && limit != int.MaxValue) Entries.Add(new Agreement(this));
         }
         internal static int Wealth(Hero hero, PartyBase party) => (int)Math.Min(int.MaxValue,
             Math.Max(0, (long)hero.Gold) + party.ItemRoster.Sum(e => (long)Math.Max(0, e.Amount) * Price(e)));
@@ -50,6 +66,7 @@ namespace GreyWardenPolicePurity
             : e is Goods g ? (long)e.CurrentAmount * g.Value * (g.Incoming ? 1 : -1) : 0);
         internal bool Valid => Net >= 0 && Net <= _limit && Entries.All(e =>
             e.CurrentAmount >= 0 && (!e.IsOffered || e is Agreement || (e is Money m ? m.CurrentAmount <= m.OriginalOwner.Gold
+            : e is Prisoner p ? e.CurrentAmount <= 1 && p.Hero.IsPrisoner && p.Hero.PartyBelongedToAsPrisoner == _from
             : e.CurrentAmount <= e.OriginalParty.ItemRoster.Where(x => x.EquipmentElement.Equals(((Goods)e).ItemRosterElement.EquipmentElement)).Sum(x => x.Amount))));
         private int ValueFor(IFaction faction, bool incoming, int value)
         {
@@ -72,12 +89,28 @@ namespace GreyWardenPolicePurity
                 entry.CurrentAmount = initial;
                 if (entry is Money) data.AddBarterable<GoldBarterGroup>(entry);
                 else if (entry is Goods) data.AddBarterable<ItemBarterGroup>(entry);
+                else if (entry is Prisoner) data.AddBarterable<PrisonerBarterGroup>(entry);
                 else data.AddBarterable<OtherBarterGroup>(entry, true);
             }
         }
         internal Dictionary<Barterable, int> SuggestedOffer()
         {
             var result = new Dictionary<Barterable, int>();
+            if (ReportMode)
+            {
+                foreach (var entry in Entries)
+                {
+                    int wanted = entry is Money ? Math.Max(0, _autoReceipt?.Gold ?? 0)
+                        : entry is Goods g ? Math.Max(0, _autoReceipt?.Items.Where(i => i.Matches(g.ItemRosterElement.EquipmentElement)).Sum(i => i.Amount) ?? 0)
+                        : entry is Prisoner ? 1 : 0;
+                    int available = entry is Money ? Math.Max(0, _payer.Gold)
+                        : entry is Goods goods ? _from.ItemRoster.Where(x => x.EquipmentElement.Equals(goods.ItemRosterElement.EquipmentElement)).Sum(x => x.Amount)
+                        : entry is Prisoner p && p.Hero.IsPrisoner && p.Hero.PartyBelongedToAsPrisoner == _from ? 1 : 0;
+                    int amount = Math.Min(wanted, Math.Min(entry.MaxAmount, available));
+                    if (amount > 0) result[entry] = amount;
+                }
+                return result;
+            }
             long remaining = Math.Min(_autoTarget, _limit);
             foreach (var entry in Entries)
             {
@@ -91,14 +124,15 @@ namespace GreyWardenPolicePurity
             if (remaining > 0)
             {
                 var changeItem = Entries.OfType<Goods>().Where(g => g.Incoming && g.Value > remaining
-                    && g.Value - remaining <= Math.Max(0, _receiver.Gold)
+                    && (SelectionOnly ? (long)_autoTarget - remaining + g.Value <= _limit
+                        : g.Value - remaining <= Math.Max(0, _receiver.Gold))
                     && (result.TryGetValue(g, out int count) ? count : 0) < Math.Min(g.MaxAmount,
                         _from.ItemRoster.Where(x => x.EquipmentElement.Equals(g.ItemRosterElement.EquipmentElement)).Sum(x => x.Amount)))
                     .OrderBy(g => g.Value).FirstOrDefault();
                 if (changeItem != null)
                 {
                     result[changeItem] = (result.TryGetValue(changeItem, out int count) ? count : 0) + 1;
-                    result[Entries[1]] = (int)(changeItem.Value - remaining);
+                    if (!SelectionOnly) result[Entries[1]] = (int)(changeItem.Value - remaining);
                 }
             }
             return result;
@@ -129,18 +163,45 @@ namespace GreyWardenPolicePurity
                 return;
             }
 #if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFieldArrest("ASSET_PAYMENT_COMMIT", "net=" + Net + "; limit=" + _limit
-                + "; selected=" + string.Join(" | ", Entries.Where(e => e.IsOffered).Select(e => e.StringID + ":" + e.CurrentAmount + ":" + e.OriginalOwner?.StringId)));
+            if (!SelectionOnly) GwpAiDiagnostics.WriteFieldArrest("ASSET_PAYMENT_COMMIT", "net=" + Net + "; limit=" + _limit
+                + "; selected=" + string.Join(" | ", Entries.Where(e => e.IsOffered).Select(e => e.StringID + ":" + e.CurrentAmount + ":" + e.OriginalOwner?.StringId
+                    + (e is Goods g ? ":item=" + g.ItemRosterElement.EquipmentElement.Item.StringId
+                        + ":modifier=" + g.ItemRosterElement.EquipmentElement.ItemModifier?.StringId + ":unitValue=" + g.Value : ""))));
 #endif
             Paid = (int)Net;
+            Receipt = new GwpCaseReceipt { Gold = Entries.OfType<Money>().Where(m => m.IsOffered).Sum(m => m.CurrentAmount * (m.Incoming ? 1 : -1)) };
+            foreach (var g in Entries.OfType<Goods>().Where(g => g.IsOffered && g.CurrentAmount > 0))
+                Receipt.Items.Add(new GwpCaseReceipt.Item { Id = g.ItemRosterElement.EquipmentElement.Item.StringId,
+                    Modifier = g.ItemRosterElement.EquipmentElement.ItemModifier?.StringId ?? "",
+                    Amount = g.CurrentAmount * (g.Incoming ? 1 : -1), Price = g.Value });
+            // Verify custody before accepting a prisoner resolution or moving its money.
+            if (!SelectionOnly)
+                foreach (var prisoner in Entries.OfType<Prisoner>().Where(p => p.IsOffered && p.CurrentAmount == 1))
+                    prisoner.Transfer();
             // Validation covers the entire selection before any transfer takes place.
             Applied = true;
+            // A courier manifest is an instruction, not a remote transfer.
+            if (SelectionOnly) return;
             foreach (var entry in Entries.Where(e => e.IsOffered && e.CurrentAmount > 0))
             {
                 if (entry is Money m)
                     GiveGoldAction.ApplyBetweenCharacters(m.OriginalOwner, m.Incoming ? _receiver : _payer,
                         m.CurrentAmount, disableNotification: true);
                 else if (entry is Goods goods) goods.Transfer();
+            }
+        }
+        private sealed class Prisoner : TransferPrisonerBarterable
+        {
+            private readonly GwpAssetPayment _payment;
+            internal Hero Hero { get; }
+            internal Prisoner(GwpAssetPayment payment, Hero hero) : base(hero, payment._payer, payment._from, payment._receiver, payment._to)
+            { _payment = payment; Hero = hero; }
+            public override int GetUnitValueForFaction(IFaction faction) => 0;
+            public override void Apply() => _payment.Apply();
+            internal void Transfer()
+            {
+                TransferPrisonerAction.Apply(Hero.CharacterObject, _payment._from, _payment._to);
+                if (Hero.PartyBelongedToAsPrisoner != _payment._to) throw new InvalidOperationException("Case prisoner custody transfer failed: " + Hero.StringId);
             }
         }
         private sealed class Money : GoldBarterable
@@ -163,8 +224,8 @@ namespace GreyWardenPolicePurity
             internal bool Incoming { get; }
             internal int Value { get; }
             internal Goods(GwpAssetPayment payment, Hero owner, Hero other, PartyBase from, PartyBase to,
-                ItemRosterElement item, bool incoming) : base(owner, other, from, to, item, Price(item))
-            { _payment = payment; Incoming = incoming; Value = Price(item); }
+                ItemRosterElement item, bool incoming) : base(owner, other, from, to, item, payment._autoReceipt?.PriceFor(item.EquipmentElement) ?? Price(item))
+            { _payment = payment; Incoming = incoming; Value = payment._autoReceipt?.PriceFor(item.EquipmentElement) ?? Price(item); }
             public override TextObject Name => GwpText.Create("{=gwp_asset_value}{VAR_1} ({VAR_2} denars each)",
                 "VAR_1", base.Name, "VAR_2", Value);
             public override int GetUnitValueForFaction(IFaction faction) => _payment.ValueFor(faction, Incoming, Value);
