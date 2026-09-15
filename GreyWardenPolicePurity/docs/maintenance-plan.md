@@ -1,5 +1,55 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 查"前科怎么这么多人命"：两处多记（已部署，待验收）
+
+用户问最近这宗案子的犯人为什么前科上死了那么多人。实机日志里那名犯人是 `lord_1_40`：
+
+```
+RECORD_CLEARED  offender=lord_1_40; paid=15300; baseCharge=7200; standingBefore=27; standingCleared=27
+```
+
+`baseCharge 7200 ÷ BaseChargeVillageViolence(1200)` = **六宗**侵害村民的案子；
+负声望 `27` 点 × `FinePerPoint(300)` = `8100`，两段合起来正是 `15300`。
+`UnredeemedLives = 27 × 10` ≈ **270 条人命**——数字本身没算错，问题在于这 270 条是怎么攒的。
+
+负声望**只进不退**：没有随时间衰减这回事，只有砍匪（`AddRedeemingKills`）和交钱能减。
+所以一个开局就在烧村的领主，账会一路累到玩家接手为止。这是设计，不改。
+但在此之上查出两处**确实多记**：
+
+### 一、战斗伤亡按"整边"记，把正规军算成了平民
+
+`AccumulateCasualties` 取的是 `otherSide.TroopCasualties`——**整边**的伤亡。判定平民却用
+`Any(...)`：那一边只要站着一支村民队、一支商队或村庄本身，另一边的领主部队、援军、
+驻军死多少，全部按"平民人命"记到攻方账上。一场有领主护着商队的仗，对面死的几十个正规兵
+就这样变成几十条人命、上万第纳尔。
+
+原版每支参战队伍各自记着 `MapEventParty.DiedInBattle`，改为**只数平民队伍自己的死者**
+（`CountDead(side, CivilianDied)`），剿匪赎罪同理只数匪徒自己的死者。
+诊断行也改成 `killed=N/M civilians`，一眼看得出数的是谁。
+
+> 这一条与更早那次"攻城被记成灭村"是同一个病根的两半：上次删掉了不加区分的
+> `IsSettlement`，但没动"整边伤亡"这个取数口径。
+
+### 二、劫掠起点会被下一个人继承
+
+`_raidHearthAtStart` 只按村庄 id 存一份起点，且**只在劫掠正常结束时删除**。劫掠被打断时
+`OnVillageLooted` 不会触发，起点就留在那里；下一个来烧同一个村子的人一结算，
+`hearthLost` 算的是**从上一次起点到现在**的人口差——中间几天的自然涨落全算进去，
+而且记的还是**上一个人**的名字（`snapshot.RaiderPartyId`）。
+
+起点加上时间戳，超过 `RaidSnapshotValidHours = 72` 小时一律作废；并把"谁在烧"的校验
+提到折算人命之前，免得先算出一个数再发现记不到人头上。
+
+### 关于量级本身
+
+`VillagersPerHearthPoint` 已经是 `1`（早先从 `20` 降下来的）。一次劫掠仍会让村庄掉
+一两百点人口，因此**一次完整劫掠 ≈ 一两百条人命 ≈ 十几二十点负声望 ≈ 三千到六千第纳尔**。
+六宗案子攒到 `270` 条，与这个量级是对得上的。若之后觉得罚金偏高，该调的是
+`VillagersPerHearthPoint` 或 `FinePerPoint`，不是再去动统计口径。
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；`Verify-LiveModule.ps1` 三项全 `0`。
+
+
 ## 2026-09-15 使者改盯最近的人、回程不再撞出遭遇；宽限期两条路；玩家执法留前科（已部署，待验收）
 
 ### 一、使者每小时重新盯最近的灰袍

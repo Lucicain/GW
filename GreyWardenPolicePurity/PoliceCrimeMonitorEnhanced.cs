@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -38,17 +38,22 @@ namespace GreyWardenPolicePurity
 
         private readonly struct RaidSnapshot
         {
-            internal RaidSnapshot(string raiderPartyId, float hearth)
+            internal RaidSnapshot(string raiderPartyId, float hearth, double startedHours)
             {
                 RaiderPartyId = raiderPartyId;
                 Hearth = hearth;
+                StartedHours = startedHours;
             }
 
             internal string RaiderPartyId { get; }
             internal float Hearth { get; }
+            internal double StartedHours { get; }
         }
 
         // 一次劫掠的起点人口。只在本次游戏会话内有效；存档中断的劫掠不补算，宁可少算不错算。
+        /// <summary>一次劫掠的起点最多作数这么久，过期的不再往任何人账上算。</summary>
+        private const double RaidSnapshotValidHours = 72d;
+
         private readonly Dictionary<string, RaidSnapshot> _raidHearthAtStart =
             new Dictionary<string, RaidSnapshot>(StringComparer.OrdinalIgnoreCase);
 
@@ -67,15 +72,20 @@ namespace GreyWardenPolicePurity
                     return;
                 _raidHearthAtStart.Remove(village.Settlement.StringId);
 
-                int hearthLost = (int)Math.Round(Math.Max(0f, snapshot.Hearth - village.Hearth));
-                int lives = hearthLost * GwpTuning.FieldArrest.VillagersPerHearthPoint;
-                if (lives <= 0) return;
+                // 起点只在同一次劫掠里作数。一次被打断的劫掠不会走到这里，起点却留了下来，
+                // 于是下一个来烧这个村子的人接手了上一次的基准：账上多出来的是这中间几天
+                // 人口的自然涨落，记的还是上一个人的名字。超过这么久的起点一律作废。
+                if (CampaignTime.Now.ToHours - snapshot.StartedHours > RaidSnapshotValidHours) return;
 
                 MobileParty? raider = MobileParty.All.FirstOrDefault(party =>
                     string.Equals(party.StringId, snapshot.RaiderPartyId, StringComparison.OrdinalIgnoreCase));
                 Hero? leader = raider?.LeaderHero;
                 if (raider == null || leader == null) return;
                 if (!IsChargeableOffender(raider, leader)) return;
+
+                int hearthLost = (int)Math.Round(Math.Max(0f, snapshot.Hearth - village.Hearth));
+                int lives = hearthLost * GwpTuning.FieldArrest.VillagersPerHearthPoint;
+                if (lives <= 0) return;
 
                 CrimePool.GetOrCreateHistory(leader).AddCivilianCasualties(lives);
 
@@ -130,23 +140,21 @@ namespace GreyWardenPolicePurity
                 offenderSide == BattleSideEnum.Attacker ? BattleSideEnum.Defender : BattleSideEnum.Attacker);
             if (side == null || otherSide == null) return;
 
-            int losses = Math.Max(0, otherSide.TroopCasualties);
-            if (losses <= 0) return;
-
-            // 村民、商队、村庄自己——这三样才是平民。此前这里还有一条不加区分的
-            // IsSettlement，城堡与城市的守军也照样成立，于是每一场攻城都被记成
-            // 灭村：攻方按守军全部阵亡人数背上人命，一次几百条。攻城是战争行为，
-            // 灰袍管不着，也不该管。
-            bool otherIsCivilian = otherSide.Parties.Any(party =>
-                party?.Party?.MobileParty?.IsVillager == true ||
-                party?.Party?.MobileParty?.IsCaravan == true ||
-                party?.Party?.Settlement?.IsVillage == true);
-            bool otherIsBandit = otherSide.Parties.Any(party =>
-                party?.Party?.MobileParty?.IsBandit == true ||
-                party?.Party?.MobileParty?.ActualClan?.IsBanditFaction == true);
+            // 只数平民自己的死者，不数他们那一边的全部死者。
+            //
+            // 此前这里取的是 otherSide.TroopCasualties——**整边**的伤亡——只要那一边
+            // 站着一支村民队、一支商队或村庄本身，另一边的领主部队、援军、驻军死多少，
+            // 全部按"平民人命"记到攻方账上。一场有领主护着商队的仗，对面死的几十个
+            // 正规兵就这样变成了几十条人命、上万第纳尔的罚金。这是这些人"杀了好多人"
+            // 的主要来源之一。原版每支参战队伍各自记着 DiedInBattle，按队伍数就是了。
+            int civilianDead = CountDead(otherSide, CivilianDied);
+            int banditDead = CountDead(otherSide, BanditDied);
 
             // 领主之间互殴既不算罪，也不算功；只有对平民下手或替人剿匪才动标准。
-            if (!otherIsCivilian && !otherIsBandit) return;
+            if (civilianDead <= 0 && banditDead <= 0) return;
+
+            bool otherIsCivilian = civilianDead > 0;
+            int losses = otherIsCivilian ? civilianDead : banditDead;
 
             foreach (KeyValuePair<MobileParty, int> assignment in ApportionLosses(side, losses))
             {
@@ -167,7 +175,7 @@ namespace GreyWardenPolicePurity
                     GwpAiDiagnostics.WriteFieldArrest(
                         "CASUALTIES_BATTLE",
                         "offender=" + DescribeOffender(leader) +
-                        "; killed=" + share + "/" + losses +
+                        "; killed=" + share + "/" + losses + " civilians" +
                         "; caseTotal=" + (record?.CivilianCasualties ?? 0) +
                         "; standing=" + CrimePool.GetOrCreateHistory(leader).NegativeStanding);
                 }
@@ -177,6 +185,27 @@ namespace GreyWardenPolicePurity
                     CrimePool.GetOrCreateHistory(leader).AddRedeemingKills(share);
                 }
             }
+        }
+
+        private static bool CivilianDied(MapEventParty party) =>
+            party?.Party?.MobileParty?.IsVillager == true ||
+            party?.Party?.MobileParty?.IsCaravan == true ||
+            party?.Party?.Settlement?.IsVillage == true;
+
+        private static bool BanditDied(MapEventParty party) =>
+            party?.Party?.MobileParty?.IsBandit == true ||
+            party?.Party?.MobileParty?.ActualClan?.IsBanditFaction == true;
+
+        /// <summary>这一边符合条件的队伍里，实际死了多少人。</summary>
+        private static int CountDead(MapEventSide side, Func<MapEventParty, bool> matches)
+        {
+            int dead = 0;
+            foreach (MapEventParty party in side.Parties)
+            {
+                if (party == null || !matches(party)) continue;
+                dead += party.DiedInBattle?.TotalManCount ?? 0;
+            }
+            return Math.Max(0, dead);
         }
 
         /// <summary>
@@ -341,7 +370,7 @@ namespace GreyWardenPolicePurity
             // 最后只算到最后一跳的损失。所以第一跳之后不再改写。
             if (!_raidHearthAtStart.ContainsKey(village.Settlement.StringId))
                 _raidHearthAtStart[village.Settlement.StringId] =
-                    new RaidSnapshot(offender.StringId, village.Hearth);
+                    new RaidSnapshot(offender.StringId, village.Hearth, CampaignTime.Now.ToHours);
         }
 
         /// <summary>
