@@ -1,5 +1,50 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 使者交不了俘虏、出门就断粮、改道来回跳（已部署，待验收）
+
+三件都在实机日志里坐实了：
+
+```
+DISPATCH_SENT  purpose=Report; men=2; prisoners=0; caseGold=15600
+DISPATCH_IN_TROUBLE  trouble=starving; men=2; wounded=0; food=0.0     ← 出发一秒后
+DISPATCH_RETARGET  from=gw_leader_0_party_1; to=gw_leader_1_party_1; distance=82.3
+DISPATCH_RETARGET  from=gw_leader_1_party_1; to=gw_leader_0_party_1; distance=78.0
+DISPATCH_RETARGET  from=gw_leader_0_party_1; to=gw_leader_5_party_1; distance=74.5   ← 同一秒内
+```
+
+### 一、押着的人选不动：判据挂错了字段
+
+`IsDeliverableCasePrisoner` 写的是 `hero == CaseHero`。对方选择投降之后，委托转入待交付
+状态，追捕目标那几个字段随之清掉，`CaseHero` 就对不上了——于是分兵界面里那名俘虏
+根本选不动（日志里 `prisoners=0`），玩家只能自己押着他跑一趟。
+
+改判 `_pendingPrisonerHeroId`，也就是**他被押下那一刻记下来的人**。
+`CanDeliverCasePrisoner()` 本来就在核对这个字段与实际关押方，这里不该再叠一条更脆的条件。
+
+### 二、出门就断粮：他们身上只有一分钱不许动的案件款
+
+`TakeRationsFromPlayer` 只从玩家背包里拿粮。玩家自己没带粮时，使者就空着肚子上路。
+而他们身上唯一的钱是玩家托付的案件款，`CaseGoldFloor` 一个子儿都不许动，于是
+`BuyFoodIfNeeded` 里的可用余额**永远是 0**——原版进城买粮的欲望就算跑赢了，到了城里
+也买不起。用户问"断粮之后欲望系统不应该让他们去补充粮食吗"，欲望没问题，是**买不起**。
+
+- 口粮带不满时按缺口折一笔**盘缠**（`TravelPursePerMan = 120`/人）从玩家身上出，
+  与案件款分开记，路上花剩的照样带回来。
+- `TryHandleTownBusiness` 的缺粮判据删掉"余额大于零"这个前置条件——**缺粮就该进城**，
+  买不起还有卖俘虏、卖战利品这条路；原来那条件把断粮的队伍直接钉在野外。
+- 粮和钱都给不出时，出发当场明说一句，不让玩家蒙在鼓里。
+- 新增 `DISPATCH_RATIONS` 诊断：人数、实带口粮、缺口、盘缠、玩家余额。
+
+### 三、改道来回跳
+
+上一轮改成"每小时重选最近的"之后，几个灰袍挤在差不多远的地方时，"最近的那个"每小时
+换一次，队伍在原地反复改道，还每次重置进度、把卡住检测也一并废掉。
+加 `RetargetHysteresis = 25`：新目标要明显更近才值得改，否则认准手上这个走完。
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；语言 XML 解析通过；
+`Verify-LiveModule.ps1` 三项全 `0`。
+
+
 ## 2026-09-15 查"前科怎么这么多人命"：两处多记（已部署，待验收）
 
 用户问最近这宗案子的犯人为什么前科上死了那么多人。实机日志里那名犯人是 `lord_1_40`：

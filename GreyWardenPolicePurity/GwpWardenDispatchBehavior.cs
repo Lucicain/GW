@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -34,6 +34,10 @@ namespace GreyWardenPolicePurity
         private const float StallProgressEpsilon = 1f;
         /// <summary>回程最后这一段路上，这支队伍不再被任何人撞上。</summary>
         private const float FinalApproachDistance = 15f;
+        /// <summary>路上的盘缠：每人这么多第纳尔，与案件款分开，专供买粮。</summary>
+        private const int TravelPursePerMan = 120;
+        /// <summary>新目标要比手上这个近这么多，才值得改道；否则来回跳。</summary>
+        private const float RetargetHysteresis = 25f;
         /// <summary>主动性设定的保持时长；每小时续期一次，覆盖两次续期之间的间隔。</summary>
         private const float CourierInitiativeHours = 6f;
 
@@ -242,7 +246,35 @@ namespace GreyWardenPolicePurity
                 party.ItemRoster.AddToCounts(element.EquipmentElement, taken);
                 wanted -= taken;
             }
+
+            // 带不够就给盘缠，让他们自己路上买。
+            //
+            // 这是"出门就断粮"的真正原因：他们身上唯一的钱是玩家托付的案件款，
+            // 而那笔钱一个子儿都不许动（CaseGoldFloor），于是 BuyFoodIfNeeded 里
+            // 可用余额永远是 0——原版进城买粮的欲望就算跑赢了，到了城里也买不起。
+            // 盘缠与案件款分开记，路上花剩的照样带回来。
+            int purse = TravelPurseFor(men, wanted);
+            if (purse > 0 && Hero.MainHero.Gold >= purse)
+            {
+                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, purse, true);
+                party.PartyTradeGold += purse;
+            }
+
+            GwpAiDiagnostics.WriteAction(party, "DISPATCH_RATIONS",
+                "men=" + men + "; food=" + party.ItemRoster.TotalFood.ToString(
+                    "0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                "; shortBy=" + wanted + "; purse=" + purse +
+                "; playerGold=" + Hero.MainHero.Gold);
+
+            if (party.ItemRoster.TotalFood <= 0f && purse <= 0)
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_dispatch_no_rations}Your men set out with nothing to eat and no coin to buy any. They will have to live off what they find."),
+                    Colors.Yellow));
         }
+
+        /// <summary>带不满的口粮折成盘缠；至少够买几天的粮。</summary>
+        private static int TravelPurseFor(int men, int shortBy) =>
+            shortBy <= 0 ? 0 : Math.Max(TravelPursePerMan, shortBy * TravelPursePerMan / Math.Max(1, men));
 
         /// <summary>
         /// 派出去的人和灰袍领主用同一套下注方式：巡逻类候选由欲望系统统一压到最低，
@@ -424,10 +456,11 @@ namespace GreyWardenPolicePurity
             if (!string.IsNullOrEmpty(record.PrisonerHeroId)) return false;
 
             bool hasPrisoners = party.PrisonRoster.TotalManCount > 0;
-            bool needsFood = party.ItemRoster.TotalFood <
-                party.MemberRoster.TotalManCount * 1.5f &&
-                party.PartyTradeGold - record.CaseGoldFloor > 0;
-            if (!hasPrisoners && !needsFood) return false;
+            bool hungry = party.ItemRoster.TotalFood <
+                          party.MemberRoster.TotalManCount * 1.5f;
+            // 缺粮就该进城，不该先问"买得起吗"。买不起还有卖俘虏、卖战利品这条路，
+            // 原来那个"余额大于零才算缺粮"的条件把断粮的队伍直接钉在野外。
+            if (!hasPrisoners && !hungry) return false;
 
             Settlement? town = FindTradeTown(party);
             if (town == null) return false;
@@ -509,12 +542,24 @@ namespace GreyWardenPolicePurity
             if (!string.Equals(receiver.StringId, record.ReceiverPartyId,
                     StringComparison.OrdinalIgnoreCase))
             {
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETARGET",
-                    "from=" + (record.ReceiverPartyId ?? "-") + "; to=" + receiver.StringId +
-                    "; distance=" + party.GetPosition2D.Distance(receiver.GetPosition2D)
-                        .ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
-                record.ReceiverPartyId = receiver.StringId;
-                ResetProgress(record, party, receiver);
+                // 几个灰袍挤在差不多远的地方时，"最近的那个"每小时都会换一次，队伍就
+                // 在原地来回改道。新目标要明显更近才值得改，否则认准手上这个走完。
+                MobileParty? current = FindParty(record.ReceiverPartyId);
+                float here = party.GetPosition2D.Distance(receiver.GetPosition2D);
+                bool worthIt = current?.IsActive != true || current.LeaderHero == null ||
+                               !CanReach(party, current) ||
+                               here < party.GetPosition2D.Distance(current.GetPosition2D)
+                                   - RetargetHysteresis;
+                if (worthIt)
+                {
+                    GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETARGET",
+                        "from=" + (record.ReceiverPartyId ?? "-") + "; to=" + receiver.StringId +
+                        "; distance=" + here.ToString(
+                            "0.0", System.Globalization.CultureInfo.InvariantCulture));
+                    record.ReceiverPartyId = receiver.StringId;
+                    ResetProgress(record, party, receiver);
+                }
+                else receiver = current!;
             }
 
             float distance = party.GetPosition2D.Distance(receiver.GetPosition2D);

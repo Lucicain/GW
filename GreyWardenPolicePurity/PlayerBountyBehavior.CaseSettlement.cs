@@ -335,9 +335,17 @@ namespace GreyWardenPolicePurity
             && (HasNothingLeftToSettle || CaseAmountDue > 0 || CanDeliverCasePrisoner());
         internal int CaseReportAmountDue => CaseAmountDue;
 
-        /// <summary>这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。</summary>
+        /// <summary>
+        /// 这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。
+        ///
+        /// 判的是 <see cref="_pendingPrisonerHeroId"/>——**被押下的那一刻记下来的人**，
+        /// 而不是 <c>CaseHero</c>。对方选择投降之后，委托会转入待交付状态，追捕目标那几个
+        /// 字段随之清掉；再拿 <c>CaseHero</c> 去比，人就对不上了，于是分兵界面里那名俘虏
+        /// 根本选不动，玩家只能自己押着他跑一趟。
+        /// </summary>
         internal bool IsDeliverableCasePrisoner(Hero? hero) =>
-            hero != null && CanDeliverCasePrisoner() && hero == CaseHero;
+            hero != null && CanDeliverCasePrisoner() &&
+            string.Equals(hero.StringId, _pendingPrisonerHeroId, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// 派出去的队伍替玩家交了差。判定口径和玩家亲自去完全一样：足额或交人算完美，
