@@ -496,7 +496,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void GrowPlayerBountyAssistanceStrength(
             MobileParty leader, LordAssistanceGroup group, Army? army) =>
-            GwpLoadFaultWatch.Guard("PLAYER_BOUNTY_SUPPORT_GROWTH",
+            GwpRuntimeFaultWatch.Guard("PLAYER_BOUNTY_SUPPORT_GROWTH",
                 () => AdvancePlayerBountyAssistanceStrength(leader, group, army));
 
         private void AdvancePlayerBountyAssistanceStrength(
@@ -1937,9 +1937,10 @@ namespace GreyWardenPolicePurity
                     !group.SpeedDetachedPartyIds.Contains(partyId!, StringComparer.OrdinalIgnoreCase))
                     continue;
                 _instance.RemoveAssistanceMember(group, partyId!);
-                GwpAiDiagnostics.WriteAction(FindActiveParty(partyId!),
-                    "ASSISTANCE_MEMBER_RELEASED",
-                    "leader=" + group.LeaderPartyId + "; reason=" + reason);
+                MobileParty? releasedParty = FindActiveParty(partyId!);
+                if (releasedParty != null)
+                    GwpAiDiagnostics.WriteAction(releasedParty, "ASSISTANCE_MEMBER_RELEASED",
+                        "leader=" + group.LeaderPartyId + "; reason=" + reason);
             }
 
             MobileParty? party = FindActiveParty(partyId!);
@@ -2050,7 +2051,7 @@ namespace GreyWardenPolicePurity
                     group.MemberPartyIds.Contains(party.StringId,
                         StringComparer.OrdinalIgnoreCase))?.LeaderPartyId;
             if (!string.IsNullOrWhiteSpace(leaderId))
-                ReleaseAssistanceGroup(leaderId, "player_request_priority");
+                ReleaseAssistanceGroup(leaderId!, "player_request_priority");
         }
 
         private bool IsAssistanceMember(string partyId) =>

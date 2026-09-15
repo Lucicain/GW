@@ -60,7 +60,7 @@ namespace GreyWardenPolicePurity
 
 
         public override void SyncData(IDataStore dataStore) =>
-            GwpLoadFaultWatch.Guard("FIELD_REPORT_SYNC", () => SyncLedgerData(dataStore));
+            GwpRuntimeFaultWatch.Guard("FIELD_REPORT_SYNC", () => SyncLedgerData(dataStore));
 
         private void SyncLedgerData(IDataStore dataStore)
         {

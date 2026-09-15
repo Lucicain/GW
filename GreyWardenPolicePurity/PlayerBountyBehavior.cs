@@ -328,7 +328,8 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            dataStore.SyncData("gwp_case_support_requested", ref _supportRequested);
+            // Support is stored once, inside gwp_case_outcome_state. The old
+            // standalone bool is read only by the migration path.
             dataStore.SyncData("gwp_case_submitted_value", ref _caseSubmitted);
             dataStore.SyncData("gwp_case_contract", ref _fieldCaseContract);
             dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
@@ -454,6 +455,8 @@ namespace GreyWardenPolicePurity
 
         private void SpawnRecruitmentPatrol()
         {
+            MobileParty? recruitmentPlayer = MobileParty.MainParty;
+            if (recruitmentPlayer == null) return;
             ReconcileRecruitmentPatrolState();
             if (GetActiveRecruitmentPatrols().Count > 0) return;
 
@@ -495,7 +498,7 @@ namespace GreyWardenPolicePurity
                 // 永远等不到邀请。沿用其他一次性灰袍队的二十日口粮规则。
                 PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
 
-                GreyWardenPartyDesireBehavior.RequestApproach(patrol, MobileParty.MainParty, 8f);
+                GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
 
                 _recruitmentPatrolId = patrolId;
                 _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用

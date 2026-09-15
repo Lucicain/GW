@@ -21,7 +21,7 @@ namespace GreyWardenPolicePurity
 
         internal string? BuildActiveBountyWarReasonDetails(IFaction? targetFaction)
         {
-            if (!HasActiveBountyWarForFaction(targetFaction))
+            if (targetFaction == null || !HasActiveBountyWarForFaction(targetFaction))
                 return null;
 
             string escortPartyName = GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_001}Unspecified escort unit");

@@ -138,7 +138,7 @@ namespace GreyWardenPolicePurity
                 {
                     string? detail = bountyBehavior.BuildActiveBountyWarReasonDetails(faction);
                     if (!string.IsNullOrWhiteSpace(detail))
-                        AddFactionReason(buckets, faction, detail);
+                        AddFactionReason(buckets, faction, detail!);
                 }
             }
 
@@ -150,7 +150,7 @@ namespace GreyWardenPolicePurity
                 {
                     string? detail = patrolBehavior.BuildPatrolWarReasonDetails(playerFaction);
                     if (!string.IsNullOrWhiteSpace(detail))
-                        AddFactionReason(buckets, playerFaction, detail);
+                        AddFactionReason(buckets, playerFaction, detail!);
                 }
             }
 
@@ -272,7 +272,7 @@ namespace GreyWardenPolicePurity
             string policePartyName = ResolvePartyName(task.PolicePartyId, GwpText.Get("{=gwp_gwppolicewarreasonservice_023}Unrecorded enforcement party"));
             string offenderName = offender?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_024}Unknown Target");
             string actionType = GetActionType(task, offender);
-            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_025}Undocumented") : GwpText.CrimeType(crime.CrimeType);
+            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_025}Undocumented") : GwpText.CrimeType(crime!.CrimeType);
             string stage = DescribeTaskStage(task);
 
             // Names the case rather than restating it.  The long form used to

@@ -15,7 +15,7 @@ namespace GreyWardenPolicePurity
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            GwpLoadFaultWatch.Arm();
+            GwpRuntimeFaultWatch.Arm();
 
             // Self-contained library patch; no separate Harmony module or
             // launcher dependency is required.
@@ -71,7 +71,7 @@ namespace GreyWardenPolicePurity
             GreyWardenSparringBehavior.OnApplicationTick();
             // 战役心跳跟着时间流走，地图暂停时不一定推进。派遣的对话与分兵界面必须
             // 在玩家点完按钮的下一帧就弹出来，所以挂在与时间无关的应用心跳上。
-            GwpLoadFaultWatch.Guard("DISPATCH_PUMP", GwpWardenDispatchDialogue.Pump);
+            GwpRuntimeFaultWatch.Guard("DISPATCH_PUMP", GwpWardenDispatchDialogue.Pump);
         }
 
         private static void RegisterCampaignComponents(CampaignGameStarter starter)

@@ -6,12 +6,12 @@ namespace GreyWardenPolicePurity
 {
     internal static class GwpText
     {
-        public static string Get(string template, params object[] variables)
+        public static string Get(string template, params object?[] variables)
         {
             return Create(template, variables).ToString();
         }
 
-        public static TextObject Create(string template, params object[] variables)
+        public static TextObject Create(string template, params object?[] variables)
         {
             var text = new TextObject(template);
             for (int i = 0; i + 1 < variables.Length; i += 2)
@@ -53,7 +53,7 @@ namespace GreyWardenPolicePurity
                     return value ?? string.Empty;
             }
         }
-        private static void Set(TextObject text, string name, object value)
+        private static void Set(TextObject text, string name, object? value)
         {
             switch (value)
             {

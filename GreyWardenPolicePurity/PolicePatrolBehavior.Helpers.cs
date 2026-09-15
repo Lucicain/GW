@@ -276,7 +276,7 @@ namespace GreyWardenPolicePurity
             if (patrolPartyMobile == null || !patrolPartyMobile.IsActive || MobileParty.MainParty == null)
                 return false;
 
-            Hero barterHero = Hero.OneToOneConversationHero ?? GetPatrolBarterHero();
+            Hero? barterHero = Hero.OneToOneConversationHero ?? GetPatrolBarterHero();
             if (barterHero == null)
                 return false;
 

@@ -92,7 +92,7 @@ namespace GreyWardenPolicePurity
                 ClearRecordOnArrest(leader);
             }
 
-            if (!CanTrack(leader)) return 0f;
+            if (leader == null || !CanTrack(leader)) return 0f;
 
             HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
             return category == GwpCrimeCategory.CaravanAttack

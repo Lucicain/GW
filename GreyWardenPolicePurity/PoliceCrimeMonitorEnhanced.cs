@@ -349,7 +349,7 @@ namespace GreyWardenPolicePurity
             if (village == null) return;
 
             Vec2 location = village.Settlement.Position.ToVec2();
-            MobileParty offender = FindRaidingParty(village);
+            MobileParty? offender = FindRaidingParty(village);
 
             if (offender == null) return;
             if (GwpCommon.ShouldIgnoreCrimeTracking(offender)) return;

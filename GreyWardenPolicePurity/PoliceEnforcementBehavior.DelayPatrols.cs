@@ -152,6 +152,12 @@ namespace GreyWardenPolicePurity
 
             _delayPatrolStates.Clear();
             if (patrolIds == null) return;
+            sourceTaskIds ??= new List<string>();
+            targetPartyIds ??= new List<string>();
+            warTargetIds ??= new List<string>();
+            returnSettlementIds ??= new List<string>();
+            returningFlags ??= new List<int>();
+            immediateInterceptorFlags ??= new List<int>();
 
             int count = patrolIds.Count;
             for (int i = 0; i < count; i++)
@@ -162,13 +168,13 @@ namespace GreyWardenPolicePurity
                 _delayPatrolStates[patrolId] = new DelayPatrolState
                 {
                     PatrolPartyId = patrolId,
-                    SourceTaskPolicePartyId = i < (sourceTaskIds?.Count ?? 0) ? sourceTaskIds[i] : string.Empty,
-                    TargetPartyId = i < (targetPartyIds?.Count ?? 0) ? targetPartyIds[i] : string.Empty,
-                    WarTargetId = i < (warTargetIds?.Count ?? 0) ? warTargetIds[i] : string.Empty,
-                    ReturnSettlementId = i < (returnSettlementIds?.Count ?? 0) ? returnSettlementIds[i] : string.Empty,
-                    Returning = i < (returningFlags?.Count ?? 0) && returningFlags[i] != 0,
+                    SourceTaskPolicePartyId = i < sourceTaskIds.Count ? sourceTaskIds[i] : string.Empty,
+                    TargetPartyId = i < targetPartyIds.Count ? targetPartyIds[i] : string.Empty,
+                    WarTargetId = i < warTargetIds.Count ? warTargetIds[i] : string.Empty,
+                    ReturnSettlementId = i < returnSettlementIds.Count ? returnSettlementIds[i] : string.Empty,
+                    Returning = i < returningFlags.Count && returningFlags[i] != 0,
                     IsImmediateInterceptor =
-                        i < (immediateInterceptorFlags?.Count ?? 0) &&
+                        i < immediateInterceptorFlags.Count &&
                         immediateInterceptorFlags[i] != 0
                 };
             }
@@ -194,8 +200,8 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                MobileParty nearestOffender = FindNearestTrackedOffender(patrol);
-                Settlement returnSettlement = GwpCommon.FindNearestTown(patrol);
+                MobileParty? nearestOffender = FindNearestTrackedOffender(patrol);
+                Settlement? returnSettlement = GwpCommon.FindNearestTown(patrol);
 
                 _delayPatrolStates[patrol.StringId] = new DelayPatrolState
                 {
@@ -209,11 +215,11 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static MobileParty FindNearestTrackedOffender(MobileParty patrol)
+        private static MobileParty? FindNearestTrackedOffender(MobileParty patrol)
         {
             if (patrol == null) return null;
 
-            MobileParty best = null;
+            MobileParty? best = null;
             float bestDist = float.MaxValue;
 
             foreach (MobileParty offender in CrimeState.GetAllTrackedOffenders(includePlayer: false))
@@ -760,14 +766,14 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return false;
 
-            MobileParty sourcePoliceParty = null;
+            MobileParty? sourcePoliceParty = null;
             if (!string.IsNullOrEmpty(sourceTaskPolicePartyId))
             {
                 sourcePoliceParty = MobileParty.All.FirstOrDefault(p =>
                     p.StringId == sourceTaskPolicePartyId && p.IsActive);
             }
 
-            Settlement spawnSettlement = sourcePoliceParty != null
+            Settlement? spawnSettlement = sourcePoliceParty != null
                 ? GwpCommon.FindNearestTown(sourcePoliceParty.GetPosition2D)
                 : GwpCommon.FindNearestTown(targetParty.GetPosition2D);
             if (spawnSettlement == null) return false;
@@ -891,7 +897,7 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
-                    Settlement returnSettlement = Settlement.FindFirst(s => s.StringId == state.ReturnSettlementId)
+                    Settlement? returnSettlement = Settlement.FindFirst(s => s.StringId == state.ReturnSettlementId)
                                                   ?? GwpCommon.FindNearestTown(patrol);
                     if (returnSettlement == null)
                     {
@@ -1132,8 +1138,8 @@ namespace GreyWardenPolicePurity
 
             foreach (var involved in mapEvent.InvolvedParties)
             {
-                MobileParty party = involved?.MobileParty;
-                if (!GwpCommon.IsEnforcementDelayPatrolParty(party)) continue;
+                MobileParty? party = involved?.MobileParty;
+                if (party == null || !GwpCommon.IsEnforcementDelayPatrolParty(party)) continue;
 
                 if (_delayPatrolStates.TryGetValue(party.StringId, out DelayPatrolState? state) &&
                     !string.IsNullOrEmpty(state.WarTargetId))
@@ -1270,7 +1276,7 @@ namespace GreyWardenPolicePurity
             if (policeClan == null)
                 return;
 
-            IFaction? targetFaction = ResolveWarTargetFaction(warTargetId);
+            IFaction? targetFaction = ResolveWarTargetFaction(warTargetId!);
             if (targetFaction == null)
                 return;
 
@@ -1281,8 +1287,8 @@ namespace GreyWardenPolicePurity
                 return;
 
             GwpCommon.TrySetNeutral(policeClan, targetFaction);
-            MarkDelayPatrolsReturningForTarget(warTargetId);
-            _warTargetSeenStreak.Remove(warTargetId);
+            MarkDelayPatrolsReturningForTarget(warTargetId!);
+            _warTargetSeenStreak.Remove(warTargetId!);
         }
 
         private static IFaction? ResolveWarTargetFaction(string warTargetId)
@@ -1390,7 +1396,7 @@ namespace GreyWardenPolicePurity
             }
 
             // 最近警察若有旧案，先清掉战争追踪并交回犯罪池（由 CrimePool 内部处理）
-            PoliceTask nearestTask = CrimeState.GetTask(nearestId);
+            PoliceTask? nearestTask = CrimeState.GetTask(nearestId);
             if (nearestTask != null && nearestTask.TargetCrime?.Offender?.IsMainParty != true)
             {
                 ClearTaskWarTracking(nearestId, true);

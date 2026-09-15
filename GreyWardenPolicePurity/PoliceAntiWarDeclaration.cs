@@ -113,7 +113,7 @@ namespace GreyWardenPolicePurity
                 !patrolInvolved &&
                 policeWasExecutingPlayerTask)
             {
-                IFaction playerFaction = Hero.MainHero?.MapFaction;
+                IFaction? playerFaction = Hero.MainHero?.MapFaction;
                 GwpCommon.TrySetNeutral(policeClan, playerFaction);
             }
 

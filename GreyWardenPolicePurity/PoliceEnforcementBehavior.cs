@@ -376,7 +376,7 @@ namespace GreyWardenPolicePurity
                 if (string.IsNullOrWhiteSpace(policeId))
                     return;
 
-                PoliceTask? task = CrimeState.GetTask(policeId);
+                PoliceTask? task = CrimeState.GetTask(policeId!);
                 if (task == null || task.WarDeclared || task.IsEscortingPlayer ||
                     task.FlowState != PoliceTaskFlowState.Pursuit ||
                     task.TargetCrime?.Offender?.IsMainParty != true)
@@ -959,7 +959,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void UpdatePlayerBountyEscortCase(MobileParty police,
             PoliceTask task, bool playerEncounterStarted) =>
-            GwpLoadFaultWatch.Guard("PLAYER_BOUNTY_ESCORT_UPDATE",
+            GwpRuntimeFaultWatch.Guard("PLAYER_BOUNTY_ESCORT_UPDATE",
                 () => AdvancePlayerBountyEscortCase(police, task, playerEncounterStarted));
 
         private void AdvancePlayerBountyEscortCase(MobileParty police,

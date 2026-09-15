@@ -204,7 +204,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            return _instance._adoptionOrigins.TryGetValue(heroId, out villageName);
+            return _instance._adoptionOrigins.TryGetValue(heroId!, out villageName);
         }
 
         internal static bool TryGetAdoptionStatus(out AdoptionStatusInfo info)
@@ -548,7 +548,7 @@ namespace GreyWardenPolicePurity
             hero.HeroDeveloper?.InitializeHeroDeveloper();
             EquipInitialChildGear(hero);
 
-            string villageName = village.Name?.ToString();
+            string? villageName = village.Name?.ToString();
             if (string.IsNullOrWhiteSpace(villageName))
             {
                 villageName = fallbackVillageName;

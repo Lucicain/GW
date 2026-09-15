@@ -1,5 +1,79 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 用户确认暂未发现问题：本地检查点
+
+用户反馈“目前没发现什么bug了”。以上一轮完整修复建立本地检查点，再开始货物交差改动。
+这不是全部极端分支已验证的声明。当前日志有两次使者归队交割，故障日志没有新异常。
+停用补给正常路径的 RATIONS、SUPPLY_FINISHED、TOWN_BUSINESS、BOUGHT_FOOD 跟踪，保留失败日志。
+罪行来源仍在调查，当前及 previous AI 日志仍是有效证据，不清除。不改发行 README。
+
+## 2026-09-15 集中修复补给、交割、旧键、监控与警告（用户暂未发现问题）
+
+用户授权集中修复并保留全部玩法。起点干净工作树 `d1d218b`；已验收组件回滚点仍为
+`39a81fe`，`77f4741` 仍是 WIP。本轮不是发行，不改两份玩家 README、不生成 ZIP、不推送。
+
+### 标记问题与最终处理
+
+- **B1 补给循环：已修候选。** 发粮十二天、缺粮人数乘 1.5、停止买粮人数乘 2，单位冲突。
+  新 `GwpDispatchSupplyRules` 统一按原版每日消耗（含俘虏/技能）计，低于三天才补，补至
+  十二天并取整；两人 food=1.8/daily=0.1 不再判缺粮。进城处理后主动离城恢复差事欲望；
+  没钱/没货同样离城，24 游戏小时后再试。途中补给最多占 24 小时，并暂停收件人停滞判断。
+  城镇筛选增加导航条件。冷却 NextTownBusinessHours 入档，旧八/九字段派遣记录兼容。
+- **B1a 买粮扣钱：已修候选。** 原版 SellItemsAction 对非商队按 LeaderHero 结算，
+  无领主使者不能用它正确扣 PartyTradeGold。现按原版 EquipmentElement 实时市价逐件
+  搬移真实库存、扣使者盘缠、增加城镇金币，沿用税率/治安佣金规则。数量受粮食缺口、
+  市场库存与可用盘缠三项限制；不动 CaseGoldFloor。发车先预留案件款再给盘缠，防止
+  同一笔玩家余额重复承诺。建队已成功后再出异常，保留真实队伍返程，不再返回 null
+  导致调用者又把选兵副本还给玩家。实际市价与资源转移仍待游戏验收。
+- **B2 返程弹窗：旧根因没有堆栈，不冒认已证实。** 修掉源码可确认的风险：旧逻辑在
+  MapEventStarted 分发中直接交割销毁，而且同场打土匪也会误触。现只标记玩家与返程
+  使者互为双方的遭遇，之后 Tick 结束遭遇、待双方脱离 MapEvent 再交割。先去视觉追踪
+  再清任务占用，之后逐项转回兵员/伤员/经验/俘虏/物资，转过的当场从使者扣除；英雄
+  转移失败不再伪造 roster 后清真实拘押关系。新增 Rejoined 持久阶段：资产交完后若
+  销毁失败只重试清理，不重复交割。送出的目标 ID 清掉，不再永久阻止回程补给；仍押着
+  本案目标时保留原来的不进城保护。返程弹窗是否消失待用户复测。
+- **B3 旧支持键：已修。** 主 SyncData 以 bool 写 gwp_case_support_requested，迁移却
+  按 int 读，与旧日志 InvalidCastException 完全对应。删除重复读写，以
+  gwp_case_outcome_state 为唯一新存储；GwpLegacySave 按历史 bool/int 两种表示兼容，
+  玩家无监控构建也能迁移，不再依靠吞异常把已申请支援变成 false。全库其他静态重复
+  SyncData 键均为同文件保存/读取分支，未查出另一同类冲突。
+- **B4 编译警告：41 → 0。** 修可空返回与局部变量、对象缺失判断、旧存档缺失列表的
+  空集合默认值；net472 的 IsNullOrWhiteSpace 无流注解处仅在已验证非空后使用 !。
+  没有关闭 Nullable、NoWarn 或删除玩法分支。基线记录在
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\warnings-audit.log`。
+- **B5 监控更新。** GwpLoadFaultWatch 更名 GwpRuntimeFaultWatch，取消十分钟超时，
+  覆盖整个会话；首次托管异常按签名去重，每会话至多 80 种，明确区分观察与致命错误，
+  UNHANDLED/明确 Guard 失败不受该上限。新增仅诊断构建存在的原版 FailedAssert 观察
+  （40 种去重，记录参数/栈，不拦弹窗）。解追踪、买粮、返还英雄、销毁失败分别入故障日志。
+  AI 日志 8 MiB 滚动到原路径加 `.previous`，仅留前一段；故障日志独立。会话头增加
+  ModuleVersionId，便于区分同版本 DLL。AI/任务/军团/经济有效监控均保留。
+- **B6 键审计：通过。** 新工具 tools/Verify-ContentKeys.ps1 检查 29 XML/XSLT、
+  1401 中文词条和 1183 静态/野外谈判生成键，缺失与重复均 0。Cb0k9KM8/JAKoFNgt
+  为原版键，{=!} 是不本地化标记；四种全额付款欲望跳过第二层，因此对应未生成的键
+  不是缺词。无静态引用不等于废键，不批量删除词条；原有语言资源未改。
+
+### 验证与证据
+
+- 原 60 项结算断言保留，新增供给/限购/旧 bool-int 存档/旧派遣记录与冷却保存恢复
+  20 项，总计 PASS:80，引擎角色 stub 不替代真实游戏交割验证。
+- 诊断启用与关闭的 Release Rebuild 均 0 warnings、0 errors。关闭诊断审计 DLL 在
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\bin\Release\player-audit\GreyWardenPolicePurity.dll`，
+  非发行物、不部署游戏；ilspycmd 确认 Arm/StartSession/故障 Write 为空，Guard 只调 action。
+- 当前游戏 1.4.8 隔离兼容检查：438 类型/1337 成员引用无缺失，511 类型可加载，
+  47 补丁类绑定，PATCH_FAIL=0。本轮未测试另一游戏版本。
+- 返程原弹窗尚待复验，原日志保留证据而未删除或迁移：
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-AI-Diagnostics.log`
+  （4915318 字节，末条 17:00:48），同目录 GreyWarden-Faults.log（3674 字节，
+  凌晨旧键异常后仅 ARMED）及 GreyWarden-Faults.prev.log。没有从无日志推断没有故障。
+- 用户实机重点：两人两份粮不循环进城；缺粮买完或失败均离城且实际扣盘缠；押人/送钱
+  各返程一次，资源正确归还、不误触战斗交割；旧档已申请支援不丢。
+- 最终普通 Release Rebuild 已部署诊断启用 DLL，0 警告、0 错误；仓库 obj、实机客户端
+  与编辑器三份 SHA-256 均为
+  `98170808022C0574656339C1AB292235133779E70D66F78361E692F8BCB193A4`。
+  Verify-LiveModule 检查仓库 36 文件/实机 43 文件，缺失/差异/多余全 0（含两份 README）。
+  对最终 live DLL 重跑兼容预检：512 类型可加载，47 补丁成功、0 失败，438 类型与
+  1337 成员引用无缺失。git diff --check 通过；尚未启动游戏或宣称实机验收通过。
+
 ## 2026-09-15 押人改为直接转交，不再走分兵界面（已部署，待验收）
 
 上一条的补丁方向仍然不对。放开 `IsTroopRosterTransferable` 只解决了"能不能拖"，

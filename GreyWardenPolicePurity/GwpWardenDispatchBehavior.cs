@@ -27,7 +27,6 @@ namespace GreyWardenPolicePurity
         // 原版护送会把队伍带到目标身边但不会重叠，判定距离要留出这段站位余量。
         private const float HandoverDistance = 3f;
         private const float DeliveryDistance = 3f;
-        private const int StartingFoodDays = 12;
         /// <summary>多久没真的靠近过收件人就算走不动了。</summary>
         private const float StallPatienceHours = 12f;
         /// <summary>小于这个数的靠近算噪声，不算进展。</summary>
@@ -61,10 +60,30 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnPartyDestroyed);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
             CampaignEvents.ConversationEnded.AddNonSerializedListener(this, OnConversationEnded);
+            CampaignEvents.TickEvent.AddNonSerializedListener(this, CompletePendingHandovers);
+        }
+
+        private void CompletePendingHandovers(float dt)
+        {
+            foreach (GwpDispatchRecord record in _dispatches.Where(d => d.HandoverPending).ToList())
+            {
+                MobileParty? party = FindParty(record.PartyId);
+                if (party == null) { _dispatches.Remove(record); continue; }
+                if (party.MapEvent != null)
+                {
+                    GwpCommon.TryFinishPlayerEncounter();
+                    continue;
+                }
+                if (MobileParty.MainParty?.MapEvent != null) continue;
+                record.HandoverPending = false;
+                if (MobileParty.MainParty?.IsActive == true)
+                    GwpRuntimeFaultWatch.Guard("DISPATCH_DEFERRED_HANDOVER", () =>
+                        HandBackEverything(record, party, MobileParty.MainParty));
+            }
         }
 
         public override void SyncData(IDataStore dataStore) =>
-            GwpLoadFaultWatch.Guard("DISPATCH_SYNC", () => SyncDispatchData(dataStore));
+            GwpRuntimeFaultWatch.Guard("DISPATCH_SYNC", () => SyncDispatchData(dataStore));
 
         private void SyncDispatchData(IDataStore dataStore)
         {
@@ -81,7 +100,7 @@ namespace GreyWardenPolicePurity
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter) =>
-            GwpLoadFaultWatch.Guard("DISPATCH_SESSION_LAUNCH", () => StartDispatchSession(starter));
+            GwpRuntimeFaultWatch.Guard("DISPATCH_SESSION_LAUNCH", () => StartDispatchSession(starter));
 
         private void StartDispatchSession(CampaignGameStarter starter)
         {
@@ -93,7 +112,7 @@ namespace GreyWardenPolicePurity
             {
                 MobileParty? party = FindParty(record.PartyId);
                 if (party == null) { _dispatches.Remove(record); continue; }
-                TrackOnMap(party);
+                if (record.Phase != GwpDispatchPhase.Rejoined) TrackOnMap(party);
             }
         }
 
@@ -109,6 +128,7 @@ namespace GreyWardenPolicePurity
                 string.Equals(d.PartyId, party?.StringId, StringComparison.OrdinalIgnoreCase));
             if (record == null) return;
             _dispatches.Remove(record);
+            if (record.Phase == GwpDispatchPhase.Rejoined) return;
             GwpAiDiagnostics.WriteAction(party, "DISPATCH_LOST",
                 "purpose=" + record.Purpose + "; phase=" + record.Phase +
                 "; caseGold=" + record.CaseGoldFloor +
@@ -144,7 +164,9 @@ namespace GreyWardenPolicePurity
                 return null;
             }
 
-            if (!CanProvision(detachment.TotalManCount, player))
+            carriedCaseGold = Math.Max(0, carriedCaseGold);
+            if (carriedCaseGold > Hero.MainHero.Gold ||
+                !CanProvision(detachment.TotalManCount, player, carriedCaseGold))
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_no_rations}You have neither food nor coin to send with them. Lay in provisions before you send anyone out."),
@@ -163,6 +185,8 @@ namespace GreyWardenPolicePurity
                 ? null
                 : Hero.FindFirst(h => h.StringId == prisonerHeroId);
 
+            MobileParty? createdParty = null;
+            int caseGoldTransferred = 0;
             try
             {
                 MobileParty party = CustomPartyComponent.CreateCustomPartyWithTroopRoster(
@@ -179,6 +203,7 @@ namespace GreyWardenPolicePurity
                     0f,
                     false);
 
+                createdParty = party;
                 party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
                 party.ActualClan = Clan.PlayerClan;
                 KeepCourierDisposition(party);
@@ -203,12 +228,13 @@ namespace GreyWardenPolicePurity
                             "{=gwp_dispatch_prisoner_failed}Your men could not take custody of him. Keep him with you and deliver him yourself."),
                             Colors.Red));
                 }
-                TakeRationsFromPlayer(party, player);
                 if (carriedCaseGold > 0)
                 {
                     GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, carriedCaseGold, true);
                     party.PartyTradeGold += carriedCaseGold;
+                    caseGoldTransferred = carriedCaseGold;
                 }
+                TakeRationsFromPlayer(party, player);
 
                 var record = new GwpDispatchRecord
                 {
@@ -241,6 +267,27 @@ namespace GreyWardenPolicePurity
             catch (Exception ex)
             {
                 GwpAiDiagnostics.WriteFieldArrest("DISPATCH_FAILED", ex.ToString());
+                GwpFaultTrace.Write("DISPATCH_CREATE_FAILED", details: ex.ToString());
+                // Once the real party exists, the caller must not return the
+                // dummy selection as well. Bring back its actual remaining cargo.
+                if (createdParty?.IsActive == true)
+                {
+                    GwpDispatchRecord? recovery = _dispatches.FirstOrDefault(d => d.PartyId == createdParty.StringId);
+                    if (recovery == null)
+                    {
+                        recovery = new GwpDispatchRecord
+                        {
+                            PartyId = createdParty.StringId, Purpose = purpose,
+                            CaseGoldFloor = caseGoldTransferred,
+                            PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == createdParty.Party
+                                ? prisonerHeroId : string.Empty,
+                            DispatchedHours = CampaignTime.Now.ToHours
+                        };
+                        _dispatches.Add(recovery);
+                    }
+                    recovery.Phase = GwpDispatchPhase.Returning;
+                    return createdParty;
+                }
                 return null;
             }
         }
@@ -257,7 +304,7 @@ namespace GreyWardenPolicePurity
         private static void TakeRationsFromPlayer(MobileParty party, MobileParty player)
         {
             int men = Math.Max(1, party.MemberRoster.TotalManCount);
-            int wanted = Math.Max(1, (int)Math.Ceiling(men / 20f * StartingFoodDays));
+            int wanted = GwpDispatchSupplyRules.TargetFood(DailyFood(party));
             foreach (ItemRosterElement element in player.ItemRoster.ToList())
             {
                 if (wanted <= 0) break;
@@ -282,11 +329,6 @@ namespace GreyWardenPolicePurity
                 party.PartyTradeGold += purse;
             }
 
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_RATIONS",
-                "men=" + men + "; food=" + party.ItemRoster.TotalFood.ToString(
-                    "0.0", System.Globalization.CultureInfo.InvariantCulture) +
-                "; shortBy=" + wanted + "; purse=" + purse +
-                "; playerGold=" + Hero.MainHero.Gold);
         }
 
         /// <summary>带不满的口粮折成盘缠；至少够买几天的粮。</summary>
@@ -295,7 +337,15 @@ namespace GreyWardenPolicePurity
 
         /// <summary>一支这么大的队伍出这趟门要带多少口粮。</summary>
         private static int RationsWantedFor(int men) =>
-            Math.Max(1, (int)Math.Ceiling(Math.Max(1, men) / 20f * StartingFoodDays));
+            GwpDispatchSupplyRules.TargetFood(Math.Max(1, men) /
+                (float)Campaign.Current.Models.MobilePartyFoodConsumptionModel.NumberOfMenOnMapToEatOneFood);
+
+        private static float DailyFood(MobileParty party)
+        {
+            var model = Campaign.Current.Models.MobilePartyFoodConsumptionModel;
+            return Math.Max(0.01f, -model.CalculateDailyFoodConsumptionf(party,
+                model.CalculateDailyBaseFoodConsumptionf(party)).ResultNumber);
+        }
 
         /// <summary>玩家手上能匀出来的口粮。</summary>
         private static int AvailableFood(MobileParty player)
@@ -311,11 +361,11 @@ namespace GreyWardenPolicePurity
         /// 粮和钱都拿不出来就别让他们出门。饿着肚子上路只有一个结局：半路散了，
         /// 玩家的人、钱、要交的人一起没。宁可当场退回，让玩家先去备点东西。
         /// </summary>
-        private static bool CanProvision(int men, MobileParty player)
+        private static bool CanProvision(int men, MobileParty player, int reservedGold)
         {
             if (AvailableFood(player) > 0) return true;
             int purse = TravelPurseFor(men, RationsWantedFor(men));
-            return purse > 0 && Hero.MainHero.Gold >= purse;
+            return purse > 0 && Hero.MainHero.Gold - reservedGold >= purse;
         }
 
         /// <summary>
@@ -372,10 +422,13 @@ namespace GreyWardenPolicePurity
         {
             try
             {
-                if (party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(false);
                 Campaign.Current?.VisualTrackerManager?.RemoveTrackedObject(party, true);
+                if (party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(false);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                GwpFaultTrace.Write("DISPATCH_UNTRACK_FAILED", details: party.StringId + " | " + exception);
+            }
         }
 
         /// <summary>
@@ -462,7 +515,7 @@ namespace GreyWardenPolicePurity
         #region 行程
 
         private void OnHourlyTick() =>
-            GwpLoadFaultWatch.Guard("DISPATCH_HOURLY", AdvanceDispatches);
+            GwpRuntimeFaultWatch.Guard("DISPATCH_HOURLY", AdvanceDispatches);
 
         private void AdvanceDispatches()
         {
@@ -471,7 +524,13 @@ namespace GreyWardenPolicePurity
                 MobileParty? party = FindParty(record.PartyId);
                 if (party == null) { _dispatches.Remove(record); continue; }
 
-                TrackOnMap(party);
+                if (record.Phase == GwpDispatchPhase.Rejoined)
+                {
+                    if (DestroyDispatchParty(party)) _dispatches.Remove(record);
+                    continue;
+                }
+
+                if (record.Phase != GwpDispatchPhase.Rejoined) TrackOnMap(party);
                 WarnIfInTrouble(record, party);
                 if (party.MapEvent != null) continue;
                 KeepCourierDisposition(party);
@@ -495,29 +554,48 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool TryHandleTownBusiness(GwpDispatchRecord record, MobileParty party)
         {
-            if (!string.IsNullOrEmpty(record.PrisonerHeroId)) return false;
-
+            if (!string.IsNullOrEmpty(record.PrisonerHeroId) &&
+                party.PrisonRoster.GetTroopRoster().Any(e =>
+                    e.Character?.HeroObject?.StringId == record.PrisonerHeroId)) return false;
+            double now = CampaignTime.Now.ToHours;
+            if (now < record.NextTownBusinessHours) return false;
             bool hasPrisoners = party.PrisonRoster.TotalManCount > 0;
-            bool hungry = party.ItemRoster.TotalFood <
-                          party.MemberRoster.TotalManCount * 1.5f;
+            bool hungry = GwpDispatchSupplyRules.NeedsFood(party.ItemRoster.TotalFood, DailyFood(party));
             // 缺粮就该进城，不该先问"买得起吗"。买不起还有卖俘虏、卖战利品这条路，
             // 原来那个"余额大于零才算缺粮"的条件把断粮的队伍直接钉在野外。
-            if (!hasPrisoners && !hungry) return false;
+            if (!hasPrisoners && !hungry && record.SupplyTownId.Length == 0) return false;
 
-            Settlement? town = FindTradeTown(party);
+            Settlement? town = party.CurrentSettlement?.IsTown == true
+                ? party.CurrentSettlement : FindTradeTown(party);
             if (town == null) return false;
 
             if (party.CurrentSettlement == town)
             {
                 BuyFoodIfNeeded(record, party);
-                return true;
+                record.NextTownBusinessHours = now + GwpDispatchSupplyRules.RetryHours;
+                record.SupplyTownId = string.Empty;
+                // Give the ordinary mission intent back immediately, including
+                // when the market is empty or the travel purse cannot buy food.
+                GreyWardenPartyDesireBehavior.ClearIntent(party);
+                LeaveSettlementAction.ApplyForParty(party);
+                record.LastProgressHours = now;
+                record.LastDistance = float.MaxValue;
+                return false;
             }
-
+            if (record.SupplyTownId.Length == 0)
+            {
+                record.SupplyTownId = town.StringId;
+                record.SupplyStartedHours = now;
+            }
+            if (now - record.SupplyStartedHours >= 24d)
+            {
+                record.SupplyTownId = string.Empty;
+                record.NextTownBusinessHours = now + GwpDispatchSupplyRules.RetryHours;
+                return false;
+            }
+            record.LastProgressHours = now;
+            record.LastDistance = float.MaxValue;
             GreyWardenPartyDesireBehavior.RequestVisit(party, town);
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_TOWN_BUSINESS",
-                "town=" + town.StringId + "; prisoners=" + party.PrisonRoster.TotalManCount +
-                "; food=" + party.ItemRoster.TotalFood.ToString(
-                    "0.0", System.Globalization.CultureInfo.InvariantCulture));
             return true;
         }
 
@@ -529,6 +607,7 @@ namespace GreyWardenPolicePurity
                 .Where(settlement => settlement.IsTown &&
                                      settlement.SiegeEvent == null &&
                                      settlement.MapFaction != null &&
+                                     NavigationHelper.IsPositionValidForNavigationType(settlement.Position, party.NavigationCapability) &&
                                      (ours == null || !settlement.MapFaction.IsAtWarWith(ours)))
                 .OrderBy(settlement => settlement.GetPosition2D.Distance(party.GetPosition2D))
                 .FirstOrDefault();
@@ -541,8 +620,9 @@ namespace GreyWardenPolicePurity
         private static void BuyFoodIfNeeded(GwpDispatchRecord record, MobileParty party)
         {
             Settlement? settlement = party.CurrentSettlement;
-            if (settlement?.ItemRoster == null) return;
-            if (party.ItemRoster.TotalFood > party.MemberRoster.TotalManCount * 2f) return;
+            if (settlement?.ItemRoster == null || settlement.Town == null) return;
+            float daily = DailyFood(party);
+            if (party.ItemRoster.TotalFood >= GwpDispatchSupplyRules.TargetFood(daily)) return;
 
             int spendable = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
             if (spendable <= 0) return;
@@ -551,22 +631,37 @@ namespace GreyWardenPolicePurity
             {
                 ItemObject? item = element.EquipmentElement.Item;
                 if (item?.IsFood != true || element.Amount <= 0) continue;
-                int price = settlement.Town != null
-                    ? settlement.Town.GetItemPrice(item, party, false)
-                    : Math.Max(1, item.Value);
+                int price = settlement.Town.GetItemPrice(element.EquipmentElement, party, false);
                 if (price <= 0 || price > spendable) continue;
-                int affordable = Math.Min(element.Amount, spendable / price);
+                int affordable = GwpDispatchSupplyRules.PurchaseCount(
+                    party.ItemRoster.TotalFood, daily, element.Amount, spendable, price);
                 if (affordable <= 0) continue;
                 try
                 {
-                    SellItemsAction.Apply(settlement.Party, party.Party,
-                        element, affordable, settlement);
+                    // SellItemsAction bills LeaderHero for every non-caravan.
+                    // This detail has none. Settle each unit against its own
+                    // purse and the actual town inventory at the native price.
+                    for (int unit = 0; unit < affordable; unit++)
+                    {
+                        int currentPrice = settlement.Town.GetItemPrice(element.EquipmentElement, party, false);
+                        int available = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
+                        if (currentPrice <= 0 || currentPrice > available) break;
+                        settlement.ItemRoster.AddToCounts(element.EquipmentElement, -1);
+                        party.ItemRoster.AddToCounts(element.EquipmentElement, 1);
+                        party.PartyTradeGold -= currentPrice;
+                        int tax = MBRandom.RoundRandomized(currentPrice *
+                            Campaign.Current.Models.SettlementTaxModel.GetTownTaxRatio(settlement.Town));
+                        settlement.SettlementComponent.ChangeGold(currentPrice - tax);
+                        settlement.Town.TradeTaxAccumulated += (int)Campaign.Current.Models.SettlementTaxModel
+                            .GetTownCommissionChangeBasedOnSecurity(settlement.Town, tax);
+                    }
                     spendable = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
-                    GwpAiDiagnostics.WriteAction(party, "DISPATCH_BOUGHT_FOOD",
-                        "item=" + item.StringId + "; amount=" + affordable + "; price=" + price);
                 }
-                catch { }
-                if (party.ItemRoster.TotalFood > party.MemberRoster.TotalManCount * 2f) break;
+                catch (Exception exception)
+                {
+                    GwpFaultTrace.Write("DISPATCH_BUY_FOOD_FAILED", details: party.StringId + " | " + exception);
+                }
+                if (party.ItemRoster.TotalFood >= GwpDispatchSupplyRules.TargetFood(daily)) break;
             }
         }
 
@@ -607,8 +702,8 @@ namespace GreyWardenPolicePurity
             float distance = party.GetPosition2D.Distance(receiver.GetPosition2D);
             if (distance > DeliveryDistance)
             {
-                if (!HasStalled(record, party, receiver, distance) &&
-                    !TryHandleTownBusiness(record, party))
+                if (!TryHandleTownBusiness(record, party) &&
+                    !HasStalled(record, party, receiver, distance))
                     SendTo(party, receiver);
                 return;
             }
@@ -717,6 +812,7 @@ namespace GreyWardenPolicePurity
                     {
                         TransferPrisonerAction.Apply(prisoner.CharacterObject, party.Party, receiver.Party);
                         prisonerDelivered = prisoner.PartyBelongedToAsPrisoner == receiver.Party;
+                        if (prisonerDelivered) record.PrisonerHeroId = string.Empty;
                     }
                     catch (Exception ex)
                     {
@@ -751,6 +847,7 @@ namespace GreyWardenPolicePurity
         private void BeginReturn(GwpDispatchRecord record, MobileParty party, string reason)
         {
             record.Phase = GwpDispatchPhase.Returning;
+            record.SupplyTownId = string.Empty;
             SendTo(party, MobileParty.MainParty);
             GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETURNING", "reason=" + reason);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
@@ -800,14 +897,17 @@ namespace GreyWardenPolicePurity
             foreach (GwpDispatchRecord record in _dispatches.ToList())
             {
                 MobileParty? party = FindParty(record.PartyId);
-                if (party == null ||
+                if (party == null || record.Phase != GwpDispatchPhase.Returning ||
                     !mapEvent.InvolvedParties.Any(p => p.MobileParty == party)) continue;
+
+                // A shared battle against bandits is not a courier handover.
+                if (!((attackerParty == party.Party && defenderParty == player.Party) ||
+                      (defenderParty == party.Party && attackerParty == player.Party))) continue;
 
                 GwpAiDiagnostics.WriteAction(party, "DISPATCH_MET_PLAYER_IN_ENCOUNTER",
                     "phase=" + record.Phase + "; purpose=" + record.Purpose);
                 KeepOutOfPlayerWay(party);
-                GwpCommon.TryFinishPlayerEncounter();
-                HandBackEverything(record, party, player);
+                record.HandoverPending = true;
             }
         }
 
@@ -816,6 +916,9 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void HandBackEverything(GwpDispatchRecord record, MobileParty party, MobileParty player)
         {
+            if (!_dispatches.Contains(record) || !party.IsActive || party.MapEvent != null ||
+                player.MapEvent != null || record.Phase == GwpDispatchPhase.Rejoined) return;
+            UntrackOnMap(party);
             int men = party.MemberRoster.TotalManCount;
             int wounded = party.MemberRoster.TotalWoundedRegulars;
             int prisoners = party.PrisonRoster.TotalManCount;
@@ -829,6 +932,8 @@ namespace GreyWardenPolicePurity
                     element.Character.IsHero) continue;
                 player.MemberRoster.AddToCounts(element.Character, element.Number,
                     false, element.WoundedNumber, element.Xp);
+                party.MemberRoster.AddToCounts(element.Character, -element.Number,
+                    false, -element.WoundedNumber, -element.Xp);
             }
             foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
             {
@@ -840,15 +945,23 @@ namespace GreyWardenPolicePurity
                         TransferPrisonerAction.Apply(element.Character, party.Party, player.Party);
                         continue;
                     }
-                    catch { }
+                    catch (Exception exception)
+                    {
+                        GwpFaultTrace.Write("DISPATCH_RETURN_PRISONER_FAILED",
+                            details: party.StringId + " | " + exception);
+                        return;
+                    }
                 }
                 player.PrisonRoster.AddToCounts(element.Character, element.Number,
                     false, element.WoundedNumber);
+                party.PrisonRoster.AddToCounts(element.Character, -element.Number,
+                    false, -element.WoundedNumber);
             }
             foreach (ItemRosterElement element in party.ItemRoster.ToList())
             {
                 if (element.EquipmentElement.Item == null || element.Amount <= 0) continue;
                 player.ItemRoster.AddToCounts(element.EquipmentElement, element.Amount);
+                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
                 items += element.Amount;
             }
             if (gold > 0) GiveGoldAction.ApplyBetweenCharacters(null, Hero.MainHero, gold, true);
@@ -857,11 +970,11 @@ namespace GreyWardenPolicePurity
             party.PrisonRoster.Clear();
             party.ItemRoster.Clear();
             party.PartyTradeGold = 0;
-            _dispatches.Remove(record);
+            record.Phase = GwpDispatchPhase.Rejoined;
             GwpAiDiagnostics.WriteAction(party, "DISPATCH_HANDOVER",
                 "men=" + men + "; wounded=" + wounded + "; prisoners=" + prisoners +
                 "; gold=" + gold + "; items=" + items);
-            DestroyDispatchParty(party);
+            if (DestroyDispatchParty(party)) _dispatches.Remove(record);
 
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_dispatch_handover}Your detachment has rejoined you: {VAR_1} men ({VAR_2} wounded), {VAR_3} prisoners, {VAR_4} items and {VAR_5} denars returned to your party.",
@@ -869,15 +982,19 @@ namespace GreyWardenPolicePurity
                 Colors.Green));
         }
 
-        private static void DestroyDispatchParty(MobileParty party)
+        private static bool DestroyDispatchParty(MobileParty party)
         {
             try
             {
                 UntrackOnMap(party);
                 GreyWardenPartyDesireBehavior.ClearIntent(party);
-                DestroyPartyAction.Apply(null, party);
+                if (party.IsActive) DestroyPartyAction.Apply(null, party);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                GwpFaultTrace.Write("DISPATCH_DESTROY_FAILED", details: party.StringId + " | " + exception);
+            }
+            return !party.IsActive;
         }
 
         #endregion
@@ -890,7 +1007,7 @@ namespace GreyWardenPolicePurity
         /// 当地真实买入，买不起就饿着，不凭空变粮也不凭空变钱。
         /// </summary>
         private void OnDailyTick() =>
-            GwpLoadFaultWatch.Guard("DISPATCH_DAILY", UpkeepDispatches);
+            GwpRuntimeFaultWatch.Guard("DISPATCH_DAILY", UpkeepDispatches);
 
         private void UpkeepDispatches()
         {

@@ -16,6 +16,27 @@ internal static class Program
 
     private static void Main()
     {
+        Equal(false, GwpDispatchSupplyRules.NeedsFood(1.8f, 0.1f), "two couriers with eighteen days do not seek a town");
+        Equal(true, GwpDispatchSupplyRules.NeedsFood(0.2f, 0.1f), "two days triggers refill");
+        Equal(2, GwpDispatchSupplyRules.TargetFood(0.1f), "two couriers receive rounded twelve-day supply");
+        Equal(0, GwpDispatchSupplyRules.PurchaseCount(2f, 0.1f, 100, 6000, 10), "full supply does not spend protected or spare cash");
+        Equal(2, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 240, 10), "buy only missing food rather than the entire purse");
+        Equal(0, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 0, 10), "protected-only purse cannot buy");
+        Equal(1, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 1, 240, 10), "limited town stock");
+        Equal(1, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 15, 10), "limited travel purse");
+        foreach (object savedFlag in new object[] { true, false, 1, 0 })
+        {
+            var legacy = new MemoryStore(false, new Dictionary<string, object?> { ["flag"] = savedFlag });
+            bool expected = savedFlag is bool b ? b : (int)savedFlag != 0;
+            Equal(expected, GwpLegacySave.ReadFlag(legacy, "flag", true), "legacy bool-first supports " + savedFlag.GetType());
+            Equal(expected, GwpLegacySave.ReadFlag(legacy, "flag", false), "legacy int-first supports " + savedFlag.GetType());
+        }
+        Equal(false, GwpLegacySave.ReadFlag(new MemoryStore(false), "missing", true), "missing legacy support defaults false");
+        var oldDispatch = GwpDispatchRecord.Deserialize("courier|0|1|receiver|6000|0||100");
+        Equal(6000, oldDispatch!.CaseGoldFloor, "old courier preserves protected money");
+        Equal(0d, oldDispatch.NextTownBusinessHours, "old courier defaults supply retry");
+        oldDispatch.NextTownBusinessHours = 124;
+        Equal(124d, GwpDispatchRecord.Deserialize(oldDispatch.Serialize())!.NextTownBusinessHours, "supply cooldown survives save/load");
         Hero.MainHero = new Hero("player", 8000);
         Hero offender = new Hero("offender", 600);
         Hero clerk = new Hero("clerk", 10000);

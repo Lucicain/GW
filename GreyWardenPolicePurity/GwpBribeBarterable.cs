@@ -55,7 +55,7 @@ namespace GreyWardenPolicePurity
         }
 
         public override void CheckBarterLink(Barterable linkedBarterable) { }
-        public override ImageIdentifier GetVisualIdentifier() => null;
+        public override ImageIdentifier? GetVisualIdentifier() => null;
     }
 }
 

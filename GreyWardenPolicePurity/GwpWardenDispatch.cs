@@ -19,7 +19,8 @@ namespace GreyWardenPolicePurity
     internal enum GwpDispatchPhase
     {
         Outbound = 0,
-        Returning = 1
+        Returning = 1,
+        Rejoined = 2
     }
 
     /// <summary>
@@ -44,12 +45,17 @@ namespace GreyWardenPolicePurity
         /// <summary>上一次记下的与收件人的距离，以及记下它的时刻。用来发现"走不动了"。</summary>
         internal float LastDistance = float.MaxValue;
         internal double LastProgressHours;
+        internal double NextTownBusinessHours;
+        internal string SupplyTownId = string.Empty;
+        internal double SupplyStartedHours = 0d;
+        internal bool HandoverPending = false;
 
         internal string Serialize() => string.Join("|",
             PartyId, ((int)Purpose).ToString(), ((int)Phase).ToString(), ReceiverPartyId,
             CaseGoldFloor.ToString(), ReportLie ? "1" : "0", PrisonerHeroId,
             DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 
         internal static GwpDispatchRecord? Deserialize(string? line)
         {
@@ -70,7 +76,10 @@ namespace GreyWardenPolicePurity
                     System.Globalization.CultureInfo.InvariantCulture, out double hours) ? hours : 0d,
                 LastProgressHours = parts.Length > 8 && double.TryParse(parts[8],
                     System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double progress) ? progress : 0d
+                    System.Globalization.CultureInfo.InvariantCulture, out double progress) ? progress : 0d,
+                NextTownBusinessHours = parts.Length > 9 && double.TryParse(parts[9],
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double retry) ? retry : 0d
             };
         }
 

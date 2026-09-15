@@ -121,7 +121,7 @@ namespace GreyWardenPolicePurity
             if (defender.PartyComponent is VillagerPartyComponent)
             {
                 string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_001}Villager");
-                IFaction victimFaction = defender.ActualClan?.MapFaction;
+                IFaction? victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
                 PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_002}Attack villager"), location, victimName, victimFaction);
                 return;
@@ -130,7 +130,7 @@ namespace GreyWardenPolicePurity
             if (defender.PartyComponent is CaravanPartyComponent)
             {
                 string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_003}Caravan");
-                IFaction victimFaction = defender.ActualClan?.MapFaction;
+                IFaction? victimFaction = defender.ActualClan?.MapFaction;
                 // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
                 PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_004}Attack caravan"), location, victimName, victimFaction);
             }
@@ -879,7 +879,7 @@ namespace GreyWardenPolicePurity
             foreach (MapEventParty party in side.Parties)
             {
                 MobileParty? mobileParty = party?.Party?.MobileParty;
-                if (!IsPoliceEncounterParty(mobileParty))
+                if (party == null || !IsPoliceEncounterParty(mobileParty))
                     continue;
 
                 total += CountRosterMembers(party.DiedInBattle);

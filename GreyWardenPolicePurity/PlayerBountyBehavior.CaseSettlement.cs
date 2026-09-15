@@ -207,7 +207,7 @@ namespace GreyWardenPolicePurity
         }
 
         private void SyncCaseOutcomeData(IDataStore dataStore) =>
-            GwpLoadFaultWatch.Guard("BOUNTY_CASE_OUTCOME_SYNC", () => SyncCaseOutcomeFields(dataStore));
+            GwpRuntimeFaultWatch.Guard("BOUNTY_CASE_OUTCOME_SYNC", () => SyncCaseOutcomeFields(dataStore));
 
         /// <summary>
         /// 本案结果整体存成一个字符串。原来的五个独立键里有一个在读档时抛
@@ -263,13 +263,13 @@ namespace GreyWardenPolicePurity
             _caseTargetDefeated = ReadLegacyFlag(dataStore, "gwp_case_target_defeated");
             _casePeacefullyResolved = ReadLegacyFlag(dataStore, "gwp_case_peacefully_resolved");
             _supportRequested = ReadLegacyFlag(dataStore, "gwp_case_support_requested");
-            GwpLoadFaultWatch.Guard("LEGACY_gwp_case_cash_from_target", () =>
+            GwpRuntimeFaultWatch.Guard("LEGACY_gwp_case_cash_from_target", () =>
             {
                 int cash = 0;
                 dataStore.SyncData("gwp_case_cash_from_target", ref cash);
                 _caseCashCollectedFromTarget = Math.Max(0, cash);
             });
-            GwpLoadFaultWatch.Guard("LEGACY_gwp_case_deterrence_key", () =>
+            GwpRuntimeFaultWatch.Guard("LEGACY_gwp_case_deterrence_key", () =>
             {
                 string key = string.Empty;
                 dataStore.SyncData("gwp_case_deterrence_key", ref key);
@@ -279,9 +279,17 @@ namespace GreyWardenPolicePurity
 
         private static bool ReadLegacyFlag(IDataStore dataStore, string key)
         {
-            int value = 0;
-            GwpLoadFaultWatch.Guard("LEGACY_" + key, () => dataStore.SyncData(key, ref value));
-            return value != 0;
+            // The support key was a bool; the other flags were integers.
+            // Accept both historical representations in player builds too.
+            try
+            {
+                return GwpLegacySave.ReadFlag(dataStore, key, key == "gwp_case_support_requested");
+            }
+            catch (InvalidCastException exception)
+            {
+                GwpFaultTrace.Write("INVALID_LEGACY_FLAG", details: key + " | " + exception);
+                return false;
+            }
         }
 
         /// <summary>

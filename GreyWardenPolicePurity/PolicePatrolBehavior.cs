@@ -325,7 +325,7 @@ namespace GreyWardenPolicePurity
 
         private bool PatrolNegotiateBarterCondition()
         {
-            Hero barterHero = GetPatrolBarterHero();
+            Hero? barterHero = GetPatrolBarterHero();
             MBTextManager.SetTextVariable("GWP_PATROL_NEGOTIATE_TEXT",
                 GwpText.Get("{=gwp_policepatrolbehavior_017}Negotiate passage ({VAR_1} denars sought; standing unchanged)", "VAR_1", _dialogBribeAmount));
             return barterHero != null && _dialogPatrol != null && _dialogPatrol.IsActive;

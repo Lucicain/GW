@@ -111,7 +111,7 @@ namespace GreyWardenPolicePurity
 
                 if (_batchesDone < totalBatches && _batchTimer >= BatchInterval * _batchesDone)
                 {
-                    Agent firstAgent = SpawnBatch();
+                    Agent? firstAgent = SpawnBatch();
 
                     if (_batchesDone == 0 && firstAgent != null)
                         PlayArrivalHorn(firstAgent);
@@ -284,7 +284,7 @@ namespace GreyWardenPolicePurity
         {
             if (character == null || count <= 0) return firstAgentOut;
 
-            PartyBase party = MobileParty.MainParty?.Party;
+            PartyBase? party = MobileParty.MainParty?.Party;
             if (party == null) return firstAgentOut;
 
             Formation formation = team.GetFormation(formationClass);

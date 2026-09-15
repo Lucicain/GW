@@ -308,7 +308,7 @@ namespace GreyWardenPolicePurity
         public static CrimeRecord? GetRecordByKey(string? key)
         {
             if (string.IsNullOrWhiteSpace(key)) return null;
-            _ledger.TryGetValue(key, out CrimeRecord? record);
+            _ledger.TryGetValue(key!, out CrimeRecord? record);
             return record;
         }
 
@@ -673,7 +673,7 @@ namespace GreyWardenPolicePurity
 
             string? oldPlayerTask = GetPlayerTaskPolicePartyId();
             if (!string.IsNullOrWhiteSpace(oldPlayerTask))
-                _tasks.Remove(oldPlayerTask);
+                _tasks.Remove(oldPlayerTask!);
 
             if (_tasks.TryGetValue(policePartyId, out PoliceTask? displaced))
             {

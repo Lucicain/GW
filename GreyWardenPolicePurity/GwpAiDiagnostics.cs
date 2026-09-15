@@ -48,6 +48,7 @@ namespace GreyWardenPolicePurity
 
         internal static void StartSession()
         {
+            GwpRuntimeFaultWatch.StartSession();
             lock (Sync)
             {
                 try
@@ -56,6 +57,7 @@ namespace GreyWardenPolicePurity
                     File.WriteAllText(LogPath,
                         $"# GreyWarden AI diagnostics | session={DateTime.Now:O} | " +
                         $"assembly={typeof(GwpAiDiagnostics).Assembly.GetName().Version} | " +
+                        $"build={typeof(GwpAiDiagnostics).Module.ModuleVersionId} | " +
                         "scope=all_grey_warden_lord_parties_and_all_leaderless_grey_warden_parties_and_active_case_targets\r\n",
                         Encoding.UTF8);
                     InitiativeByPartyId.Clear();
@@ -585,6 +587,14 @@ namespace GreyWardenPolicePurity
                 try
                 {
                     if (!_sessionStarted) StartSession();
+                    // Bound the active trace and retain the preceding segment.
+                    // Keep failure logs separate so busy AI cannot evict them.
+                    if (File.Exists(LogPath) && new FileInfo(LogPath).Length >= 8 * 1024 * 1024)
+                    {
+                        string previous = LogPath + ".previous";
+                        if (File.Exists(previous)) File.Delete(previous);
+                        File.Move(LogPath, previous);
+                    }
                     File.AppendAllText(LogPath, line + "\r\n", Encoding.UTF8);
                 }
                 catch { }
