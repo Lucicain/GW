@@ -43,6 +43,8 @@ namespace GreyWardenPolicePurity
             public float DaysSinceLastEnforcement { get; init; }
             /// <summary>这个人到底有没有被灰袍处置过——押走的、当场罚的都算。</summary>
             public bool HasEnforcementRecord { get; init; }
+            /// <summary>当场办结、没有被押走的次数。</summary>
+            public int FieldEnforcementCount { get; init; }
             public string MapStatus { get; init; }
             public string MapLocation { get; init; }
         }
@@ -111,7 +113,11 @@ namespace GreyWardenPolicePurity
             int totalArrests = countAsArrest
                 ? CrimePool.RecordArrest(leader)
                 : record.TotalArrestCount;
-            int arrestCount = Math.Max(1, totalArrests - record.CaravanArrestCount);
+            // 玩家当场办成的不算"被押走"，但要记一次前科，下一次起步更重。
+            if (!countAsArrest) record.FieldEnforcementCount++;
+            int villageRecord = Math.Max(0, totalArrests - record.CaravanArrestCount) +
+                Math.Max(0, record.FieldEnforcementCount - record.CaravanFieldEnforcementCount);
+            int arrestCount = Math.Max(1, villageRecord);
             float desiredGain = MathF.Min((float)arrestCount, GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
             float previousDirect = record.DirectDeterrencePoints;
             record.DirectDeterrencePoints = MathF.Min(
@@ -134,9 +140,10 @@ namespace GreyWardenPolicePurity
         {
             UpdateCaravanDecay(record, leader, updateRecord: true);
             if (countAsArrest) CrimePool.RecordArrest(leader);
-            int arrestCount = countAsArrest
-                ? ++record.CaravanArrestCount
-                : Math.Max(1, record.CaravanArrestCount);
+            else { record.FieldEnforcementCount++; record.CaravanFieldEnforcementCount++; }
+            if (countAsArrest) record.CaravanArrestCount++;
+            int arrestCount = Math.Max(1,
+                record.CaravanArrestCount + record.CaravanFieldEnforcementCount);
             float desiredGain = MathF.Min((float)arrestCount,
                 GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
             float previousDirect = record.CaravanDirectDeterrencePoints;
@@ -333,7 +340,9 @@ namespace GreyWardenPolicePurity
                 // 执法"只能看有没有执法时间戳，不能看拘捕次数，否则玩家罚过的人页面上
                 // 永远写着"无记录"。
                 HasEnforcementRecord = record.LastEnforcementHours > 0f ||
-                                       record.CaravanLastEnforcementHours > 0f,
+                                       record.CaravanLastEnforcementHours > 0f ||
+                                       record.FieldEnforcementCount > 0,
+                FieldEnforcementCount = record.FieldEnforcementCount,
                 SharedDeterrenceCount = record.SharedDeterrenceCount +
                                          record.CaravanSharedDeterrenceCount,
                 RaidScoreMultiplier = GetCrimeDesireMultiplier(hero,
@@ -690,12 +699,14 @@ namespace GreyWardenPolicePurity
         {
             int villageArrests = Math.Max(
                 0,
-                record.TotalArrestCount - record.CaravanArrestCount);
+                record.TotalArrestCount - record.CaravanArrestCount) +
+                Math.Max(0, record.FieldEnforcementCount - record.CaravanFieldEnforcementCount);
             return GetRecoveryFloor(villageArrests);
         }
 
         private static float GetCaravanRecoveryFloor(HeroCrimeStats record) =>
-            GetRecoveryFloor(Math.Max(0, record.CaravanArrestCount));
+            GetRecoveryFloor(Math.Max(0,
+                record.CaravanArrestCount + record.CaravanFieldEnforcementCount));
 
         /// <summary>
         /// 每次被捕新增与本分类累计被捕次数相同的震慑；恢复下限随每次被捕

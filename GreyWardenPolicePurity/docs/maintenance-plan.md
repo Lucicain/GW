@@ -1,5 +1,70 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 使者改盯最近的人、回程不再撞出遭遇；宽限期两条路；玩家执法留前科（已部署，待验收）
+
+### 一、使者每小时重新盯最近的灰袍
+
+原来出发时选定一个收件人就一路认死。灰袍一直在动，出发时最近的那个可能越跑越远，
+半路遇见另一个更近的也视而不见。`AdvanceOutbound` 改为**每小时重新选最近的、而且走得到的
+那一个**，换人时写 `DISPATCH_RETARGET`。支援差事不受影响：谁最后真的被送到，就由谁接手，
+这一条没变。
+
+### 二、使者回来交割不再弹出遭遇战
+
+原版把"能不能被撞上"挂在 `PartyBase.CanPartyInteract` → `MobileParty.ShouldBeIgnored` 上。
+自己人回来会合却走原版遭遇流程，玩家被丢进一个只能投降的界面。
+
+- 回程最后 `FinalApproachDistance = 15` 这一段，每小时 `IgnoreByOtherPartiesTill(+2h)`，
+  交割由我们自己在会合时完成。**只在最后这一段**——外面那一路照样会被劫匪堵，风险照旧。
+- 兜底：新增 `OnMapEventStarted`。万一两次巡检之间还是走到了一起，当场交割、
+  `TryFinishPlayerEncounter()` 关掉遭遇，并写一条 `DISPATCH_MET_PLAYER_IN_ENCOUNTER`。
+
+### 三、宽限期内只有两条路
+
+`GraceCollectionAvailable()` 原来只看 `HasGrace`，不看日子到没到，所以我们自己答应的三天
+形同虚设。现在拆成 `GraceExpired` 与 `GraceStillRunning`：
+
+- **没到期**：只留【强制执行】与【那我就等到说好的那天再来】两项；"现在先收一点"
+  和重新问罪都不出现。
+- **到期后**：恢复收款入口。
+
+顺带删掉他嘴里那句"还剩 {VAR_1} **小时**"——这是赤裸的机制读数。改成
+"说好的日子还没到。到那天之前，我这儿拿不出什么给你。"
+
+### 四、求援答复不再念胜算
+
+`gwp_request_case_support_reply` 原文"等现场的胜算在我们这边，就动手"，把战力比较的判定
+直接说了出来。改为"那就走吧。我们跟着你，动起手来不会落在你后面。"灰袍的判断照旧，
+只是不再由 NPC 念出来。
+
+### 五、玩家野外办成的案子留下前科
+
+用户点出的因果是对的：**震慑会随时间消退，前科不会**；有前科的人第二次再犯，起步的震慑
+与恢复下限都该更重。但 `RegisterPlayerEnforcementSuccess` 走的是 `countAsArrest: false`，
+于是两条升级阶梯都不前进——
+
+```
+村庄： arrestCount = max(1, TotalArrestCount - CaravanArrestCount)     // 不变
+商队： arrestCount = max(1, CaravanArrestCount)                        // 不变
+```
+
+玩家罚过多少次都按"第一次"给震慑，等它退干净，这个人就又是白身。
+
+新增 `HeroCrimeStats.FieldEnforcementCount` 与 `CaravanFieldEnforcementCount`
+（存档键 `gwp_h_{i}_fieldenf` / `gwp_h_{i}_caravan_fieldenf`，旧档读出 `0` 即"无野外前科"）。
+玩家当场办结时递增，**不动"被灰袍抓获"那一栏**——他确实没被押走。升级阶梯与
+`GetVillageRecoveryFloor` / `GetCaravanRecoveryFloor` 都改用"被捕次数 + 野外前科次数"，
+所以第二次遇上玩家，震慑起步更高、退得也更浅。
+
+### 六、文本
+
+补 `gwp_fa_grace_wait` 中文；`gwp_request_case_support_reply`、`gwp_grace_return_early`
+重写。整个工程仍只剩 `Cb0k9KM8`、`JAKoFNgt` 两条原版引擎自带键无我方译文。
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；`Verify-LiveModule.ps1` 三项全 `0`；
+语言 XML 解析通过。
+
+
 ## 2026-09-15 使者钉死在出发点的真正原因；文本全量体检（已部署，待验收）
 
 ### 一、使者一步不挪：引擎对"跟着某支队伍走"有一道静默硬闸

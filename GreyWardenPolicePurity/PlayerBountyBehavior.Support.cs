@@ -167,7 +167,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_request_case_support}I need your help taking the offender. Take the field with me."),
                 () => CanRequestCaseSupport && IsOrdinaryGreyWardenLordConversation(), null, 110);
             starter.AddDialogLine("gwp_request_case_support_reply", "gwp_request_case_support_reply", "lord_talk_speak_diplomacy_2",
-                GwpText.Get("{=gwp_request_case_support_reply}Then we march with you. We will strike when the odds on the field are ours."), null,
+                GwpText.Get("{=gwp_request_case_support_reply}Then let us ride. We stay at your shoulder, and we will not be behind you when it starts."), null,
                 () => GrantCaseSupport("player_in_person", MobileParty.ConversationParty));
         }
     }

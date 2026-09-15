@@ -12,6 +12,7 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using Helpers;
+using TaleWorlds.CampaignSystem.MapEvents;
 
 namespace GreyWardenPolicePurity
 {
@@ -31,6 +32,8 @@ namespace GreyWardenPolicePurity
         private const float StallPatienceHours = 12f;
         /// <summary>小于这个数的靠近算噪声，不算进展。</summary>
         private const float StallProgressEpsilon = 1f;
+        /// <summary>回程最后这一段路上，这支队伍不再被任何人撞上。</summary>
+        private const float FinalApproachDistance = 15f;
         /// <summary>主动性设定的保持时长；每小时续期一次，覆盖两次续期之间的间隔。</summary>
         private const float CourierInitiativeHours = 6f;
 
@@ -52,6 +55,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnPartyDestroyed);
+            CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
             CampaignEvents.ConversationEnded.AddNonSerializedListener(this, OnConversationEnded);
         }
 
@@ -493,18 +497,22 @@ namespace GreyWardenPolicePurity
 
         private void AdvanceOutbound(GwpDispatchRecord record, MobileParty party)
         {
-            MobileParty? receiver = FindParty(record.ReceiverPartyId);
-            if (receiver?.IsActive != true || receiver.LeaderHero == null ||
-                !CanReach(party, receiver))
+            // 送信的人不认死一个收件人。灰袍一直在动，谁这会儿最近就找谁——
+            // 出发时选的那个跑远了，半路上遇见另一个更近的，当然是给他。
+            MobileParty? receiver = FindReceiver(party, party);
+            if (receiver == null)
             {
-                // 收件人失活，或者上了船、跑到我们过不去的地方：换一个走得到的；
-                // 一个都没有就带着东西回来，不把玩家的人和钱丢在路上。
-                receiver = FindReceiver(party, party);
-                if (receiver == null)
-                {
-                    BeginReturn(record, party, "no_receiver");
-                    return;
-                }
+                // 一个走得到的灰袍都没有：带着东西回来，不把玩家的人和钱丢在路上。
+                BeginReturn(record, party, "no_receiver");
+                return;
+            }
+            if (!string.Equals(receiver.StringId, record.ReceiverPartyId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETARGET",
+                    "from=" + (record.ReceiverPartyId ?? "-") + "; to=" + receiver.StringId +
+                    "; distance=" + party.GetPosition2D.Distance(receiver.GetPosition2D)
+                        .ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
                 record.ReceiverPartyId = receiver.StringId;
                 ResetProgress(record, party, receiver);
             }
@@ -667,12 +675,53 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? player = MobileParty.MainParty;
             if (player?.IsActive != true) return;
-            if (party.GetPosition2D.Distance(player.GetPosition2D) > HandoverDistance)
+            float distance = party.GetPosition2D.Distance(player.GetPosition2D);
+
+            // 自己人回来交割，不该弹出一场遭遇。原版把"能不能被撞上"挂在
+            // PartyBase.CanPartyInteract → MobileParty.ShouldBeIgnored 上，所以最后这一段
+            // 路把这支队伍设成不可交互，交割由我们自己在会合时完成。
+            // 只在最后一段路这么做：外面那一路照样会被劫匪堵、照样有风险。
+            if (distance <= FinalApproachDistance) KeepOutOfPlayerWay(party);
+
+            if (distance > HandoverDistance)
             {
                 if (!TryHandleTownBusiness(record, party)) SendTo(party, player);
                 return;
             }
             HandBackEverything(record, party, player);
+        }
+
+        private static void KeepOutOfPlayerWay(MobileParty party)
+        {
+            try { party.IgnoreByOtherPartiesTill(CampaignTime.HoursFromNow(2f)); }
+            catch { }
+        }
+
+        /// <summary>
+        /// 兜底：万一还是撞上了（两次巡检之间走到了一起），当场把东西交了、把遭遇关掉，
+        /// 别把玩家丢进一个只能投降的战斗界面。
+        /// </summary>
+        private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty,
+            PartyBase defenderParty)
+        {
+            _ = attackerParty;
+            _ = defenderParty;
+            MobileParty? player = MobileParty.MainParty;
+            if (player?.IsActive != true || _dispatches.Count == 0) return;
+            if (!mapEvent.InvolvedParties.Any(p => p.MobileParty?.IsMainParty == true)) return;
+
+            foreach (GwpDispatchRecord record in _dispatches.ToList())
+            {
+                MobileParty? party = FindParty(record.PartyId);
+                if (party == null ||
+                    !mapEvent.InvolvedParties.Any(p => p.MobileParty == party)) continue;
+
+                GwpAiDiagnostics.WriteAction(party, "DISPATCH_MET_PLAYER_IN_ENCOUNTER",
+                    "phase=" + record.Phase + "; purpose=" + record.Purpose);
+                KeepOutOfPlayerWay(party);
+                GwpCommon.TryFinishPlayerEncounter();
+                HandBackEverything(record, party, player);
+            }
         }
 
         /// <summary>

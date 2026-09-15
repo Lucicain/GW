@@ -121,7 +121,8 @@ namespace GreyWardenPolicePurity
 
             starter.AddPlayerLine(
                 "gwp_fa_charge", "gwp_fa_charge_options", "gwp_fa_layer1_open",
-                "{" + GwpTextKeys.FieldArrestCharge + "}", ChargeCondition, null);
+                "{" + GwpTextKeys.FieldArrestCharge + "}",
+                () => ChargeCondition() && !GraceStillRunning, null);
 
             starter.AddPlayerLine("gwp_duel_return_collect", "gwp_fa_charge_options", "gwp_fa_settled",
                 GwpText.Get("{=gwp_duel_inspect_property}Show me your property. We will settle the fine now."),
@@ -129,9 +130,13 @@ namespace GreyWardenPolicePurity
             starter.AddPlayerLine("gwp_grace_collect", "gwp_fa_charge_options", "gwp_fa_settled",
                 GwpText.Get("{=gwp_grace_collect}Show me what you can pay now."), GraceCollectionAvailable, PrepareGraceCollection);
 
+            starter.AddPlayerLine("gwp_fa_grace_wait", "gwp_fa_charge_options", "gwp_fa_dismissed",
+                GwpText.Get("{=gwp_fa_grace_wait}Then I will come back on the day we named."),
+                () => GraceStillRunning, null, 110);
             starter.AddPlayerLine(
                 "gwp_fa_walk_away", "gwp_fa_charge_options", "gwp_fa_dismissed",
-                GwpText.Get("{=gwp_fieldarrest_walk_away}Never mind. Go on your way."), null, null);
+                GwpText.Get("{=gwp_fieldarrest_walk_away}Never mind. Go on your way."),
+                () => !GraceStillRunning, null);
 
             starter.AddDialogLine(
                 "gwp_fa_dismissed", "gwp_fa_dismissed", "close_window",
@@ -487,9 +492,8 @@ namespace GreyWardenPolicePurity
             }
             if (HasGrace)
             {
-                double remaining = Math.Max(0, _graceDueHours - CampaignTime.Now.ToHours);
-                MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestOpening, remaining > 0
-                    ? GwpText.Create("{=gwp_grace_return_early}You gave me time. There are still {VAR_1} hours left. Have you come for what I have already?", "VAR_1", (int)Math.Ceiling(remaining))
+                MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestOpening, GraceStillRunning
+                    ? GwpText.Create("{=gwp_grace_return_early}You gave me until the day we named. It has not come yet. I have nothing ready for you before then.")
                     : GwpText.Create("{=gwp_grace_return_due}The time we agreed is up. Let us see what I can pay now."));
                 return true;
             }

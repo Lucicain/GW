@@ -1265,7 +1265,8 @@
   <string id="gwp_voice_grace_alt" text="我需要三天把钱凑起来。我求的是宽限，不是免掉罚金。" />
   <string id="gwp_grace_granted" text="你给了{VAR_1}三天筹措罚金。委托尚未完成，届时仍须收钱或拿人。" />
   <string id="gwp_grace_due" text="你给{VAR_1}的宽限已经到期。可以前去收钱或拿人。" />
-  <string id="gwp_grace_return_early" text="你答应给我时间的，还剩{VAR_1}小时。现在就要看我凑到了多少吗？" />
+  <string id="gwp_fa_grace_wait" text="那我就等到说好的那天再来。" />
+  <string id="gwp_grace_return_early" text="说好的日子还没到。到那天之前，我这儿拿不出什么给你。" />
   <string id="gwp_grace_return_due" text="说好的日子到了。你看看我现在能拿出多少吧。" />
   <string id="gwp_grace_collect" text="把现在能交的钱拿出来看看。" />
   <string id="gwp_terms_requestgrace_lead" text="灰袍等的是罚金，不是再拖几天。先把你眼下能交的拿出来。" />
@@ -1350,7 +1351,7 @@
   <string id="gwp_case_short_lie" text="【撒谎】他只能拿出这些，我一点也没留下。" />
   <string id="gwp_collection_agreement" text="履行约定" />
   <string id="gwp_request_case_support" text="我需要你们帮忙拿下那个人。跟我一起上。" />
-  <string id="gwp_request_case_support_reply" text="那我们就跟着你走。等现场的胜算在我们这边，就动手。" />
+  <string id="gwp_request_case_support_reply" text="那就走吧。我们跟着你，动起手来不会落在你后面。" />
   <string id="gwp_support_requested_log" text="你已请灰袍与你一同出阵，对付这名罪犯。" />
   <string id="gwp_offer_changed" text="这些已经超出我们说好的数目，或有财物无法交付。请重新调整。" />
   <string id="gwp_case_defeat_recorded" text="你在野外击溃了{VAR_1}。回去复命吧。" />

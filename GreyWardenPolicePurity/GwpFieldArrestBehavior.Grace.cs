@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -50,7 +50,16 @@ namespace GreyWardenPolicePurity
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
         }
 
-        private bool GraceCollectionAvailable() => HasGrace;
+        /// <summary>说好的日子到了没有。没到就别开口要钱。</summary>
+        private bool GraceExpired => HasGrace && CampaignTime.Now.ToHours >= _graceDueHours;
+
+        /// <summary>
+        /// 宽限还没到期时，玩家手里只该有两条路：现在就强办，或者等日子到了再说。
+        /// "现在先收一点"这种中间选项不给——那是我们自己答应过的期限。
+        /// </summary>
+        internal bool GraceStillRunning => HasGrace && !GraceExpired;
+
+        private bool GraceCollectionAvailable() => GraceExpired;
         private void PrepareGraceCollection()
         {
             _enforcementAccepted = true;

@@ -168,6 +168,14 @@ namespace GreyWardenPolicePurity
         }
 
         public int CaravanArrestCount { get; set; }
+
+        /// <summary>
+        /// 玩家在野外办成的案子。他没有被押走，所以不算"被灰袍抓获"，但**这仍然是一次
+        /// 前科**：震慑本身会随时间消退，前科不会。第二次再犯，起步的震慑与恢复下限都要
+        /// 按这份履历算，否则玩家罚过的人等震慑退干净就又是白身。
+        /// </summary>
+        public int FieldEnforcementCount { get; set; }
+        public int CaravanFieldEnforcementCount { get; set; }
         public float CaravanDirectDeterrencePoints { get; set; }
         public float CaravanSharedDeterrencePoints { get; set; }
         public int CaravanSharedDeterrenceCount { get; set; }
@@ -817,7 +825,9 @@ namespace GreyWardenPolicePurity
              history.SharedDeterrenceCount > 0 || history.CaravanArrestCount > 0 ||
              history.CaravanDirectDeterrencePoints > 0f ||
              history.CaravanSharedDeterrencePoints > 0f ||
-             history.CaravanSharedDeterrenceCount > 0);
+             history.CaravanSharedDeterrenceCount > 0 ||
+             history.FieldEnforcementCount > 0 ||
+             history.CaravanFieldEnforcementCount > 0);
 
         private static void SyncRecord(
             IDataStore store,
@@ -922,6 +932,8 @@ namespace GreyWardenPolicePurity
             int negativeStanding = history.NegativeStanding;
             int crimeProgress = history.CrimeKillProgress;
             int deedProgress = history.GoodDeedKillProgress;
+            int fieldEnforcements = history.FieldEnforcementCount;
+            int caravanFieldEnforcements = history.CaravanFieldEnforcementCount;
 
             store.SyncData($"gwp_h_{i}_hero", ref hero);
             store.SyncData($"gwp_h_{i}_crimes", ref crimes);
@@ -941,6 +953,9 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_h_{i}_negative", ref negativeStanding);
             store.SyncData($"gwp_h_{i}_crimeprog", ref crimeProgress);
             store.SyncData($"gwp_h_{i}_deedprog", ref deedProgress);
+            // 同样是新键：旧档读出 0，等于"没有野外前科"，可以安全加载。
+            store.SyncData($"gwp_h_{i}_fieldenf", ref fieldEnforcements);
+            store.SyncData($"gwp_h_{i}_caravan_fieldenf", ref caravanFieldEnforcements);
 
             if (!saving)
             {
@@ -961,6 +976,8 @@ namespace GreyWardenPolicePurity
                 history.NegativeStanding = Math.Max(0, negativeStanding);
                 history.CrimeKillProgress = Math.Max(0, crimeProgress);
                 history.GoodDeedKillProgress = Math.Max(0, deedProgress);
+                history.FieldEnforcementCount = Math.Max(0, fieldEnforcements);
+                history.CaravanFieldEnforcementCount = Math.Max(0, caravanFieldEnforcements);
             }
         }
 
@@ -982,6 +999,10 @@ namespace GreyWardenPolicePurity
             current.LastEnforcementHours = MathF.Max(current.LastEnforcementHours, legacy.LastEnforcementHours);
             current.CaravanArrestCount = Math.Max(current.CaravanArrestCount,
                 legacy.CaravanArrestCount);
+            current.FieldEnforcementCount = Math.Max(current.FieldEnforcementCount,
+                legacy.FieldEnforcementCount);
+            current.CaravanFieldEnforcementCount = Math.Max(
+                current.CaravanFieldEnforcementCount, legacy.CaravanFieldEnforcementCount);
             current.CaravanDirectDeterrencePoints = MathF.Max(
                 current.CaravanDirectDeterrencePoints, legacy.CaravanDirectDeterrencePoints);
             current.CaravanSharedDeterrencePoints = MathF.Max(
