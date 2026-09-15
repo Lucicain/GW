@@ -205,15 +205,22 @@ namespace GreyWardenPolicePurity
             RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
 
         /// <summary>
-        /// 玩家执法成功但没有把人拿下：击溃其部队，或对方缴清罚金、兑现谈成的处置。
-        /// 震慑、同族转述与同场目击照旧，但不加被捕次数——没有人被押走。
+        /// 玩家把惩戒落到了这个人身上——缴清罚金、兑现谈成的处置、被打垮或被押走。
+        /// 惩戒既然落地，就和灰袍自己办的一样算一次抓获，走完全相同的登记路径：
+        /// 履历、震慑、同族转述、同场目击。玩家这条线不另设规则。
         /// 和平了结没有战场，因此不编造目击者。
         /// </summary>
         internal void RegisterPlayerEnforcementSuccess(
             MapEvent? mapEvent,
             Hero? offender,
             GwpCrimeCategory category) =>
-            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: false);
+            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
+
+        /// <summary>同一个人在这么多小时内的重复登记，视为同一次惩戒。</summary>
+        private const double SamePunishmentHours = 1d;
+
+        private readonly Dictionary<string, double> _lastPlayerEnforcementHours =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
         private void RegisterPlayerEnforcementOutcome(
             MapEvent? mapEvent,
@@ -224,6 +231,14 @@ namespace GreyWardenPolicePurity
             if (offender == null || offender == Hero.MainHero ||
                 string.IsNullOrWhiteSpace(offender.StringId))
                 return;
+
+            // 一次惩戒只记一次。投降被俘那条路上，野外结算和原版俘虏事件会先后打进来，
+            // 说的却是同一件事。
+            double now = CampaignTime.Now.ToHours;
+            if (_lastPlayerEnforcementHours.TryGetValue(offender.StringId, out double last) &&
+                now - last < SamePunishmentHours)
+                return;
+            _lastPlayerEnforcementHours[offender.StringId] = now;
 
             category = category == GwpCrimeCategory.CaravanAttack
                 ? GwpCrimeCategory.CaravanAttack

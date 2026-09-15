@@ -37,24 +37,24 @@
 直接说了出来。改为"那就走吧。我们跟着你，动起手来不会落在你后面。"灰袍的判断照旧，
 只是不再由 NPC 念出来。
 
-### 五、玩家野外办成的案子留下前科
+### 五、玩家的惩戒就是一次抓获，不另立规则
 
-用户点出的因果是对的：**震慑会随时间消退，前科不会**；有前科的人第二次再犯，起步的震慑
-与恢复下限都该更重。但 `RegisterPlayerEnforcementSuccess` 走的是 `countAsArrest: false`，
-于是两条升级阶梯都不前进——
+**订正上一轮的做法。** 我先是新加了 `FieldEnforcementCount` 一套计数器，想把"当场罚过"
+与"被押走"分开记。用户否掉了：惩戒既然已经落到那个人身上，就直接按抓获算，
+玩家这条线不需要任何额外开发。
 
-```
-村庄： arrestCount = max(1, TotalArrestCount - CaravanArrestCount)     // 不变
-商队： arrestCount = max(1, CaravanArrestCount)                        // 不变
-```
+所以 `RegisterPlayerEnforcementSuccess` 改为 `countAsArrest: true`，与灰袍自己办案走
+**完全同一条**登记路径：履历、震慑、同族转述、同场目击。新加的两个计数器、存档键
+（`gwp_h_{i}_fieldenf` 等）、`DeterrenceDetails.HasEnforcementRecord`
+与 `FormatLastEnforcement` 的特判全部撤回——被捕次数一进位，页面那行"最近一次执法"
+自然就有了，不必再补判据。
 
-玩家罚过多少次都按"第一次"给震慑，等它退干净，这个人就又是白身。
+顺带确认了一件要紧事：清账走的是 `inWardenCustody`（人确实在灰袍手里），与
+`countAsArrest` 无关，所以这次改动**不会**把犯人的负声望清零，野外结算的抵扣规则不受影响。
 
-新增 `HeroCrimeStats.FieldEnforcementCount` 与 `CaravanFieldEnforcementCount`
-（存档键 `gwp_h_{i}_fieldenf` / `gwp_h_{i}_caravan_fieldenf`，旧档读出 `0` 即"无野外前科"）。
-玩家当场办结时递增，**不动"被灰袍抓获"那一栏**——他确实没被押走。升级阶梯与
-`GetVillageRecoveryFloor` / `GetCaravanRecoveryFloor` 都改用"被捕次数 + 野外前科次数"，
-所以第二次遇上玩家，震慑起步更高、退得也更浅。
+唯一保留的一点防护是去重：投降被俘那条路上，野外结算与原版俘虏事件会先后打进来，
+说的却是同一件事。`_lastPlayerEnforcementHours` 按 `SamePunishmentHours = 1` 小时压掉重复，
+一次惩戒只记一次。
 
 ### 六、文本
 

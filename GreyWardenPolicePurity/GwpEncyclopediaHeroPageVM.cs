@@ -74,9 +74,7 @@ namespace GreyWardenPolicePurity
 
         private static string FormatLastEnforcement(GwpAiDeterrenceState.DeterrenceDetails details)
         {
-            if (!details.HasEntry || (!details.HasEnforcementRecord &&
-                                      details.TotalArrestCount <= 0 &&
-                                      details.SharedDeterrenceCount <= 0))
+            if (!details.HasEntry || (details.TotalArrestCount <= 0 && details.SharedDeterrenceCount <= 0))
                 return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_005}No record");
 
             if (details.DaysSinceLastEnforcement < (1f / CampaignTime.HoursInDay))
