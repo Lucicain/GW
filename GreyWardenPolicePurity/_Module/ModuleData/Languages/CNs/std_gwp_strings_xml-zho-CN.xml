@@ -426,7 +426,7 @@
   <string id="gwp_policecrimemonitorenhanced_009" text="村庄={VAR_1}" />
   <string id="gwp_policecrimemonitorenhanced_010" text="劫掠村庄" />
   <string id="gwp_policeenforcementbehavior_001" text="赎罪任务超时，声望 -5。" />
-  <string id="gwp_policeenforcementbehavior_002" text="赎罪目标已失踪，判定任务失败，声望 -5。" />
+  <string id="gwp_policeenforcementbehavior_002" text="你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。" />
   <string id="gwp_policeenforcementbehavior_003" text="赎罪目标已击败：{VAR_1}。请前往族长或任意灰袍警察交付任务。" />
   <string id="gwp_policeenforcementbehavior_004" text="赎罪任务失败，声望 -5。" />
   <string id="gwp_policeenforcementbehavior_005" text="罚款不足" />
@@ -445,9 +445,9 @@
   <string id="gwp_policeenforcementbehavior_atonementquest_008" text="探子初报：目标最后在 {VAR_1} 附近活动。完成后向族长或任意灰袍警察交任务。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_009" text="未知位置" />
   <string id="gwp_policeenforcementbehavior_atonementquest_010" text="探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_011" text="读档恢复：继续追踪赎罪目标。" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_012" text="读档恢复：继续追踪赎罪目标。" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_013" text="读档恢复：继续追踪赎罪目标。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_011" text="赎罪的目标仍然在逃。继续追下去。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_012" text="赎罪的目标仍然在逃。继续追下去。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_013" text="赎罪的目标仍然在逃。继续追下去。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_014" text="关于赎罪任务（提交后恢复最多 {VAR_1} 点声望）" />
   <string id="gwp_policeenforcementbehavior_atonementquest_015" text="核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_016" text="赎罪任务已交付：声望 +{VAR_1}（当前 {VAR_2}）" />
@@ -701,7 +701,7 @@
   <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
   <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />
   <string id="gwp_gwpcasearchivescreen_004" text="关闭" />
-  <string id="gwp_gwpcasearchivescreen_005" text="任务池：普通案件 {VAR_1}/100 | 其他任务 {VAR_2}（无上限） | 已分配：{VAR_3} | 等待：{VAR_4}" />
+  <string id="gwp_gwpcasearchivescreen_005" text="在册卷宗：罪案 {VAR_1} 宗，其他事务 {VAR_2} 宗 | 已有人办：{VAR_3} | 尚无人办：{VAR_4}" />
   <string id="gwp_gwpcasearchivescreen_006" text="未结案" />
   <string id="gwp_gwpcasearchivescreen_008" text="{VAR_1} — {VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_009" text="最近案发：{VAR_1} | 立案时间：{VAR_2}" />
@@ -796,7 +796,7 @@
   <string id="gwp_issue_resolution_complete" text="{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。" />
   <string id="gwp_issue_ledger_header" text="请愿任务 — {VAR_1}" />
   <string id="gwp_issue_ledger_assignment" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
-  <string id="gwp_issue_ledger_waiting" text="受领人：正在无上限请愿任务池中等待" />
+  <string id="gwp_issue_ledger_waiting" text="受领人：尚无；这份陈情还搁在架上" />
   <string id="gwp_issue_ledger_review" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2} | 剩余审理：{VAR_3}小时" />
   <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
   <string id="gwp_issue_stage_travel" text="前往任务发布人" />
@@ -1060,7 +1060,7 @@
   <string id="gwp_fa_payment_terms_charm" text="你已经认了这件事。把它妥善了结，我们也就不必为此交战。" />
   <string id="gwp_fa_payment_terms_rogue" text="你少交的钱，要我回去担责。我不会替你背这笔账。" />
   <string id="gwp_fa_payment_terms_trade" text="缴清后，我交账时能替你抵清这笔欠款。只交一部分，余下的还记在你名下。" />
-  <string id="gwp_case_pending_encyclopedia" text="待受托人交付：应缴 {VAR_1}、已代收 {VAR_2} 第纳尔。这笔款项尚未抵扣欠款。" />
+  <string id="gwp_case_pending_encyclopedia" text="应缴 {VAR_1} 第纳尔，已交 {VAR_2}。他交出来的那部分已经抵在他名下，余下的仍然欠着。" />
   <string id="gwp_case_duel_post_win" text="你赢了，我认。照约定，看看我的财物，把罚金结清吧。" />
   <string id="gwp_case_duel_post_loss" text="你输了。按约定，今天你不能向我收这笔罚金。" />
   <string id="gwp_case_duel_post_reply" text="我会把结果向灰袍回报。" />
@@ -1294,6 +1294,57 @@
   <string id="gwp_case_pay_zero" text="我这次没有钱物可以上缴。" />
   <string id="gwp_case_resume_report" text="刚才交的钱物还差一些，我来说明原因。" />
   <string id="gwp_case_nothing_concealed" text="他交到你手上的就是这些，一分不少地都在这儿了。你的汇报会照实登记。" />
+  <string id="gwp_case_report_kept_result" text="这 {VAR_1} 第纳尔已经登记。你的办案费是 {VAR_2} 第纳尔。委托就此结清。" />
+  <string id="gwp_voice_submit_upright_0" text="这笔罚是公道的。拿去吧，记上一笔：我是站着交的。" />
+  <string id="gwp_voice_submit_upright_1" text="我欠的账我不争。点吧。" />
+  <string id="gwp_voice_submit_upright_2" text="那就是欠着的，欠着的我就还。给。" />
+  <string id="gwp_voice_submit_cold_0" text="比另一条路便宜。就这一个理由，你我都清楚。" />
+  <string id="gwp_voice_submit_cold_1" text="这个数比麻烦小。拿走。" />
+  <string id="gwp_voice_submit_cold_2" text="我算过了。这一栏是你赢。点你的钱去。" />
+  <string id="gwp_voice_submit_soft_0" text="拿去吧。什么也换不回来，但还是拿去吧。" />
+  <string id="gwp_voice_submit_soft_1" text="要是这样能给他们一个了断，那就拿去。" />
+  <string id="gwp_voice_submit_soft_2" text="给。与其留在我手里，不如给他们。" />
+  <string id="gwp_voice_submit_tight_0" text="一个子儿不少。但愿你们那个修会点钱噎着。" />
+  <string id="gwp_voice_submit_tight_1" text="在这儿。点两遍，也不会少一个子儿。" />
+  <string id="gwp_voice_submit_tight_2" text="拿了就快走。这事多拖一刻我就多亏一刻。" />
+  <string id="gwp_voice_submit_fierce_0" text="行，给钱。别当成我怕了你。" />
+  <string id="gwp_voice_submit_fierce_1" text="拿你的钱。你我之间什么也没了结。" />
+  <string id="gwp_voice_submit_fierce_2" text="给，你也别再说了。" />
+  <string id="gwp_voice_submit_plain_0" text="在这儿。点清楚，然后走。" />
+  <string id="gwp_voice_submit_plain_1" text="好吧。你报的那个数，一分不多。" />
+  <string id="gwp_voice_submit_plain_2" text="拿去。这事我不想再有麻烦。" />
+  <string id="gwp_voice_plead_cold_0" text="你开的这个数我拿不出来。军饷、草料、换马——你指给我看它藏在哪一栏。" />
+  <string id="gwp_voice_plead_cold_1" text="这个数超出我的能耐。你要是不信，账本可以给你看。" />
+  <string id="gwp_voice_plead_cold_2" text="你要的东西不在我钱袋里。这就是个算术问题。" />
+  <string id="gwp_voice_plead_tight_0" text="我不是什么富人，你们卷宗上怎么写是你们的事。这钱你在我身上找不到。" />
+  <string id="gwp_voice_plead_tight_1" text="你愿意搜就搜。这儿没有那么多。" />
+  <string id="gwp_voice_plead_tight_2" text="有人把我的家底跟你说岔了。我付不出。" />
+  <string id="gwp_voice_plead_upright_0" text="我不会答应我付不出的东西。这个数我够不着。" />
+  <string id="gwp_voice_plead_upright_1" text="有的话我就付了。我没有。" />
+  <string id="gwp_voice_plead_soft_0" text="我得先让手下的人吃上饭，才轮到你的钱。已经没剩下什么了。" />
+  <string id="gwp_voice_plead_soft_1" text="别拿这些人还要用的东西。这个数我凑不出。" />
+  <string id="gwp_voice_plead_fierce_0" text="我没有这笔钱，也不打算装作有。" />
+  <string id="gwp_voice_plead_fierce_1" text="按我有的要，别按我没有的要。" />
+  <string id="gwp_voice_plead_plain_0" text="那个数？我身上没带。你想翻辎重就翻。" />
+  <string id="gwp_voice_plead_plain_1" text="这个数我凑不出来。今天不行，就凭我手上这点更不行。" />
+  <string id="gwp_voice_resist_upright_0" text="我不认的罪，我不会掏钱。你们要办就办吧。" />
+  <string id="gwp_voice_resist_upright_1" text="把我带到有资格裁断这件事的人跟前。在那之前，不行。" />
+  <string id="gwp_voice_resist_fierce_0" text="我从来没花钱买过平安。拔刀。" />
+  <string id="gwp_voice_resist_fierce_1" text="我站着的时候，你从我身上拿不走任何东西。来吧。" />
+  <string id="gwp_voice_resist_fierce_2" text="话说够了。让刀来分。" />
+  <string id="gwp_voice_resist_cold_0" text="你那一列我数过，我这一列我也数过。不行。" />
+  <string id="gwp_voice_resist_cold_1" text="这个胜算还不够你张这个口。我的答复是不。" />
+  <string id="gwp_voice_resist_cold_2" text="不。你愿意的话，可以试试这个答复。" />
+  <string id="gwp_voice_resist_tight_0" text="一个第纳尔你也别想拿到。一个都没有。" />
+  <string id="gwp_voice_resist_tight_1" text="要我交那个数，我宁可流血。你试试。" />
+  <string id="gwp_voice_resist_tight_2" text="一个子儿也没有。有本事从我尸首上摸。" />
+  <string id="gwp_voice_resist_soft_0" text="我的人还要用的东西，我不能给你。我不给。" />
+  <string id="gwp_voice_resist_soft_1" text="走到这一步我也难过，但我的答复是不。" />
+  <string id="gwp_voice_resist_plain_0" text="不。有本事就来拿。" />
+  <string id="gwp_voice_resist_plain_1" text="我的答复是不。你该怎么办就怎么办。" />
+  <string id="gwp_voice_resist_scorn_0" text="你自己头上还挂着案子，倒来收我的？拔刀吧。" />
+  <string id="gwp_voice_resist_scorn_1" text="一个通缉犯跑来收罚金。我不向你交代。" />
+  <string id="gwp_voice_resist_scorn_2" text="先把你自己的名字弄干净，再照单子念我的。" />
   <string id="gwp_case_short_question" text="这比他交给你的少。说说是怎么回事。" />
   <string id="gwp_case_short_truth" text="我会如实说明收了多少，以及没能交齐的原因。" />
   <string id="gwp_case_short_lie" text="【撒谎】他只能拿出这些，我一点也没留下。" />

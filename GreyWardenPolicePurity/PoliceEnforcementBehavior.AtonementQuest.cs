@@ -205,7 +205,7 @@ namespace GreyWardenPolicePurity
                     if (IsAtonementWaitingForTurnInState)
                         existing.MarkReadyForTurnIn();
                     else
-                        existing.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_011}Load recovery: Continue to track the atonement target."));
+                        existing.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_011}The atonement target is still at large. Continue the hunt."));
                     return;
                 }
             }
@@ -217,7 +217,7 @@ namespace GreyWardenPolicePurity
                 if (IsAtonementWaitingForTurnInState)
                     _atonementQuest.MarkReadyForTurnIn();
                 else
-                    _atonementQuest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_012}Load recovery: Continue to track the atonement target."));
+                    _atonementQuest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_012}The atonement target is still at large. Continue the hunt."));
             }
         }
 
@@ -231,7 +231,7 @@ namespace GreyWardenPolicePurity
             if (IsAtonementWaitingForTurnInState)
                 quest.MarkReadyForTurnIn();
             else
-                quest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_013}Load recovery: Continue to track the atonement target."));
+                quest.WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_013}The atonement target is still at large. Continue the hunt."));
         }
 
         private bool EnforcementAtonementTurnInCondition()

@@ -1,5 +1,76 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 使者钉死在出发点的真正原因；文本全量体检（已部署，待验收）
+
+### 一、使者一步不挪：引擎对"跟着某支队伍走"有一道静默硬闸
+
+实机日志里那支送信队看上去一切正常：`dutyIntent=Rush`、`default=EngageParty`、
+`targetParty=gw_leader_5_party_1`、`baseSpeed=5.16`、`aiDisabled=False`。但连续十五个
+游戏小时，`position` 一个数字都没变过——**它从出生那一刻起就没动过**。距离从 `286`
+掉到 `276`，全是收件人自己走过来的。
+
+反编译 `MobileParty.GetTargetCampaignPosition` 找到了原因：
+
+```
+PartyMoveMode == 2（跟队走）
+  → 目的地 = 目标队伍本帧的位置
+  → 若 NavigationHelper.IsPositionValidForNavigationType(目标位置, 本队 NavigationCapability) 为假：
+        目的地 = 自己当前位置        // 静默改写
+        Ai.DefaultBehaviorNeedsUpdate = true
+```
+
+**目标所在的位置若不合本队的通行方式，引擎既不报错也不改行为，直接把本帧目的地换成
+自己脚下。** 灰袍领主是会上船出海的（`PoliceResourceManager.GivePoliceShips`），一支
+没有船的送信队盯上一个在海上的收件人，就会永远钉死在原地，而日志里每一项状态都是对的。
+
+顺带确认的两件事：`MobileParty` 构造函数里 `HasLandNavigationCapability` 默认为 `true`
+（`ldc.i4.1; stfld`），所以陆路能力不是问题；全量扫描 152 个程序集，真正调用
+`SetLandNavigationAccess` 的只有 `PatrolPartyComponent.CreatePatrolParty` 与
+`CaravanPartyComponent.InitializeCaravanOnCreation`，加上 `MobileParty.OnLoad` 从存档恢复。
+
+修法三层：
+
+1. `CanReach(courier, target)` 直接用公开的 `NavigationHelper.IsPositionValidForNavigationType`
+   判断走不走得到，`FindReceiver` 只在走得到的灰袍领主里选。**宁可当场告诉玩家没人可送，
+   也不派一支队伍出去钉死。**
+2. `AdvanceOutbound` 每小时复核收件人：失活、上船、跑到过不去的地方，就换一个走得到的。
+3. 兜底 `HasStalled`：`StallPatienceHours = 12` 小时内没有真的靠近过（`StallProgressEpsilon = 1`），
+   先换人送；换不出来就 `BeginReturn`，把人和钱原样带回玩家身边。卡住时会写一条
+   `DISPATCH_STALLED`，带上 `moveMode`／`moveTarget`／`navigation`／`receiverAtSea`，
+   下次再出问题不必再从头查。
+
+### 二、罪犯页面"最近一次执法：无记录"
+
+`FormatLastEnforcement` 判的是 `TotalArrestCount <= 0 && SharedDeterrenceCount <= 0`。
+玩家在野外办成的案子按设计**算执法但不算拘捕**（`countAsArrest: false`），于是欲望压制
+明明生效了（页面上"压制来源：本人 1"），"最近一次执法"却写着"无记录"。新增
+`DeterrenceDetails.HasEnforcementRecord`（`LastEnforcementHours > 0 || CaravanLastEnforcementHours > 0`）
+作为判据。
+
+### 三、文本全量体检
+
+- **缺中文 51 条**：上一轮新写的 `submit_/plead_/resist_` 三套性格台词池（50 条）与
+  `gwp_case_report_kept_result` 从来没进过本地化文件，实机全是英文。已补齐。
+  现在整个工程只剩 `Cb0k9KM8`、`JAKoFNgt` 两条原版引擎自带的键没有我方译文，属正常。
+- **提示词泄露 7 条**（按 `欲望/压制/判定/读档/任务池/系统` 等开发词汇全库扫描后逐条甄别）：
+  - `..._atonementquest_011/012/013` 任务日志写着"读档恢复：继续追踪赎罪目标"→ 改为
+    "赎罪的目标仍然在逃。继续追下去。"
+  - `gwp_policeenforcementbehavior_002` "判定任务失败，声望 -5" → 改为不含裁定术语与裸数字的说法。
+  - `gwp_gwpcasearchivescreen_005` "任务池：普通案件 5/100 | 其他任务（无上限）" → 改为
+    "在册卷宗：罪案 N 宗，其他事务 M 宗 | 已有人办 | 尚无人办"。
+  - `gwp_issue_ledger_waiting` "正在无上限请愿任务池中等待" → "尚无；这份陈情还搁在架上"。
+  - `gwp_case_pending_encyclopedia` "这笔款项尚未抵扣欠款" —— 新口径下**这句话本身就是错的**，
+    犯人的账在野外结算当场就清。改为"他交出来的那部分已经抵在他名下，余下的仍然欠着"。
+- `gwp_policepatrolbehavior_024`（"PlayerEncounter.Finish(false) 已调用"）与
+  `..._helpers_003`（"候选数量=…, returning=…"）确实是赤裸的实现细节，但走
+  `DebugLog`，而 `DebugPatrol = false` 恒不显示，本轮未动。
+
+> 扫描留下的结论：本地化文件里约 250 个 id 查不到静态引用，其中绝大多数是运行时按
+> `"gwp_terms_" + 欲望 + "_" + 技能` 这类拼出来的键。**永远不要按"孤儿 id"批量清理。**
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；`Verify-LiveModule.ps1` 三项全 `0`。
+
+
 ## 2026-09-15 上缴口径重写：只查私留，不罚差额（已部署，待验收）
 
 用户重新定义了玩家与灰袍之间这本账：玩家代表灰袍办案，第二层谈成什么条件、对方最后交得出

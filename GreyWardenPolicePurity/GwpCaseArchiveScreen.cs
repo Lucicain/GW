@@ -341,7 +341,7 @@ namespace GreyWardenPolicePurity
                 Cases.Add(new GwpCaseArchiveItemVM(task));
 
             Summary = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_005}Task pool: ordinary cases {VAR_1}/100 | Other tasks {VAR_2} (uncapped) | Assigned: {VAR_3} | Waiting: {VAR_4}",
+                "{=gwp_gwpcasearchivescreen_005}Open files: {VAR_1} criminal cases, {VAR_2} other matters | In hand: {VAR_3} | Unassigned: {VAR_4}",
                 "VAR_1", assignedCases.Count + unassignedCases.Count,
                 "VAR_2", assistanceTasks.Count + reliefTasks.Count +
                     reconstructionTasks.Count + issueTasks.Count +
@@ -607,7 +607,7 @@ namespace GreyWardenPolicePurity
                     "VAR_1", assignee,
                     "VAR_2", GreyWardenFamilyBehavior.GetDutyTitle(party?.LeaderHero),
                     "VAR_3", DescribeIssueDutyStage(issue.Stage))
-                : GwpText.Get("{=gwp_issue_ledger_waiting}Assignee: waiting in the uncapped petition pool");
+                : GwpText.Get("{=gwp_issue_ledger_waiting}Assigned to: no one yet; the petition is still on the shelf");
             DetailsText = issue.Stage == GreyWardenIssueResolutionBehavior.IssueDutyStage.ReviewingPetition
                 ? GwpText.Get("{=gwp_issue_ledger_review}Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2} | Remaining review: {VAR_3} hours",
                     "VAR_1", issue.OwnerName, "VAR_2", issue.SettlementName,

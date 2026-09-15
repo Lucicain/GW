@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -74,7 +74,9 @@ namespace GreyWardenPolicePurity
 
         private static string FormatLastEnforcement(GwpAiDeterrenceState.DeterrenceDetails details)
         {
-            if (!details.HasEntry || (details.TotalArrestCount <= 0 && details.SharedDeterrenceCount <= 0))
+            if (!details.HasEntry || (!details.HasEnforcementRecord &&
+                                      details.TotalArrestCount <= 0 &&
+                                      details.SharedDeterrenceCount <= 0))
                 return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_005}No record");
 
             if (details.DaysSinceLastEnforcement < (1f / CampaignTime.HoursInDay))
@@ -180,7 +182,7 @@ namespace GreyWardenPolicePurity
             }
 
             if (pending > 0)
-                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Awaiting the hunter's report: assessed {VAR_1}, collected {VAR_2} denars. This payment has not yet reduced the record.",
+                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Assessed {VAR_1} denars; {VAR_2} paid. What he handed over already counts against his name; the rest is still owed.",
                     "VAR_1", pending, "VAR_2", GwpFieldReportLedger.Instance?.PendingCollectedFor(hero.StringId) ?? 0));
 
             // 罚金收的是他名下全部没赎回的人命，不只是这件案子里的。两个数字过去

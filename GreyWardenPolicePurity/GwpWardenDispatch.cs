@@ -41,10 +41,15 @@ namespace GreyWardenPolicePurity
         /// <summary>上一次已经报过的险情。同一种情况不重复通知。（运行时，不入存档）</summary>
         internal string LastWarning = string.Empty;
 
+        /// <summary>上一次记下的与收件人的距离，以及记下它的时刻。用来发现"走不动了"。</summary>
+        internal float LastDistance = float.MaxValue;
+        internal double LastProgressHours;
+
         internal string Serialize() => string.Join("|",
             PartyId, ((int)Purpose).ToString(), ((int)Phase).ToString(), ReceiverPartyId,
             CaseGoldFloor.ToString(), ReportLie ? "1" : "0", PrisonerHeroId,
-            DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 
         internal static GwpDispatchRecord? Deserialize(string? line)
         {
@@ -62,7 +67,10 @@ namespace GreyWardenPolicePurity
                 PrisonerHeroId = parts[6] ?? string.Empty,
                 DispatchedHours = double.TryParse(parts[7],
                     System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double hours) ? hours : 0d
+                    System.Globalization.CultureInfo.InvariantCulture, out double hours) ? hours : 0d,
+                LastProgressHours = parts.Length > 8 && double.TryParse(parts[8],
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double progress) ? progress : 0d
             };
         }
 

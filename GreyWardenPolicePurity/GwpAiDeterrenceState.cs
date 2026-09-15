@@ -41,6 +41,8 @@ namespace GreyWardenPolicePurity
             public float CaravanRecoveryDaysRemaining { get; init; }
             public bool RecoveryPaused { get; init; }
             public float DaysSinceLastEnforcement { get; init; }
+            /// <summary>这个人到底有没有被灰袍处置过——押走的、当场罚的都算。</summary>
+            public bool HasEnforcementRecord { get; init; }
             public string MapStatus { get; init; }
             public string MapLocation { get; init; }
         }
@@ -327,6 +329,11 @@ namespace GreyWardenPolicePurity
                 TotalCrimeCount = record.TotalCrimeCount,
                 TotalArrestCount = record.TotalArrestCount,
                 EnforcementCount = record.TotalArrestCount,
+                // 玩家在野外办成的案子算一次执法，但不算一次"被灰袍押走"。因此"最近一次
+                // 执法"只能看有没有执法时间戳，不能看拘捕次数，否则玩家罚过的人页面上
+                // 永远写着"无记录"。
+                HasEnforcementRecord = record.LastEnforcementHours > 0f ||
+                                       record.CaravanLastEnforcementHours > 0f,
                 SharedDeterrenceCount = record.SharedDeterrenceCount +
                                          record.CaravanSharedDeterrenceCount,
                 RaidScoreMultiplier = GetCrimeDesireMultiplier(hero,

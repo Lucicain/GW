@@ -11,6 +11,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
+using Helpers;
 
 namespace GreyWardenPolicePurity
 {
@@ -26,6 +27,10 @@ namespace GreyWardenPolicePurity
         private const float HandoverDistance = 3f;
         private const float DeliveryDistance = 3f;
         private const int StartingFoodDays = 12;
+        /// <summary>多久没真的靠近过收件人就算走不动了。</summary>
+        private const float StallPatienceHours = 12f;
+        /// <summary>小于这个数的靠近算噪声，不算进展。</summary>
+        private const float StallProgressEpsilon = 1f;
         /// <summary>主动性设定的保持时长；每小时续期一次，覆盖两次续期之间的间隔。</summary>
         private const float CourierInitiativeHours = 6f;
 
@@ -122,7 +127,7 @@ namespace GreyWardenPolicePurity
             if (player?.IsActive != true || detachment.TotalManCount <= 0) return null;
             Settlement? home = player.CurrentSettlement ??
                 GwpCommon.FindNearestTown(player.GetPosition2D);
-            MobileParty? receiver = home == null ? null : FindReceiver(player);
+            MobileParty? receiver = home == null ? null : FindReceiver(player, player);
             if (receiver == null)
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
@@ -188,6 +193,7 @@ namespace GreyWardenPolicePurity
                     PrisonerHeroId = prisonerHeroId ?? string.Empty,
                     DispatchedHours = CampaignTime.Now.ToHours
                 };
+                ResetProgress(record, party, receiver);
                 _dispatches.Add(record);
                 TrackOnMap(party);
                 SendTo(party, receiver);
@@ -332,16 +338,44 @@ namespace GreyWardenPolicePurity
             return string.Empty;
         }
 
-        private static MobileParty? FindReceiver(MobileParty player)
+        /// <summary>
+        /// 送信的队伍能不能真的走到那个人跟前。
+        ///
+        /// 这一条不是保险，是必需的。引擎在 <c>MobileParty.GetTargetCampaignPosition</c> 里，
+        /// 对"跟着某支队伍走"这种走法有一道硬闸：目标所在的位置若不合本队的通行方式
+        /// （<c>NavigationHelper.IsPositionValidForNavigationType</c>），它不报错、不改行为，
+        /// 而是把本帧的目的地直接换成**自己脚下**。表现就是队伍停在原地一步不挪，欲望、
+        /// 目标、速度在日志里却全是对的。灰袍领主是会上船出海的（见
+        /// <c>PoliceResourceManager.GivePoliceShips</c>），一支没有船的送信队盯上一个在海上的
+        /// 收件人，就会这样永远钉死在出发点。
+        /// </summary>
+        private static bool CanReach(MobileParty courier, MobileParty target)
+        {
+            if (courier?.IsActive != true || target?.IsActive != true) return false;
+            try
+            {
+                return NavigationHelper.IsPositionValidForNavigationType(
+                    target.Position, courier.NavigationCapability);
+            }
+            catch { return !target.IsCurrentlyAtSea; }
+        }
+
+        /// <summary>
+        /// 最近的、而且**走得到**的灰袍领主队伍。走不到的一概不选：宁可当场告诉玩家
+        /// 没人可送，也不要派一支队伍出去钉在原地。
+        /// </summary>
+        private static MobileParty? FindReceiver(MobileParty from, MobileParty? courier = null)
         {
             Clan? wardens = PoliceStats.GetPoliceClan();
             if (wardens == null) return null;
+            MobileParty traveller = courier ?? from;
             return MobileParty.All
                 .Where(p => p?.IsActive == true && p.LeaderHero != null &&
                             p.MapFaction != null &&
                             string.Equals(p.ActualClan?.StringId, wardens.StringId,
-                                StringComparison.OrdinalIgnoreCase))
-                .OrderBy(p => p.GetPosition2D.Distance(player.GetPosition2D))
+                                StringComparison.OrdinalIgnoreCase) &&
+                            CanReach(traveller, p))
+                .OrderBy(p => p.GetPosition2D.Distance(from.GetPosition2D))
                 .FirstOrDefault();
         }
 
@@ -460,25 +494,91 @@ namespace GreyWardenPolicePurity
         private void AdvanceOutbound(GwpDispatchRecord record, MobileParty party)
         {
             MobileParty? receiver = FindParty(record.ReceiverPartyId);
-            if (receiver?.IsActive != true || receiver.LeaderHero == null)
+            if (receiver?.IsActive != true || receiver.LeaderHero == null ||
+                !CanReach(party, receiver))
             {
-                // 收件人失活：重新找一个；一个都没有就带着东西回来，不把资产丢在路上。
-                receiver = FindReceiver(party);
+                // 收件人失活，或者上了船、跑到我们过不去的地方：换一个走得到的；
+                // 一个都没有就带着东西回来，不把玩家的人和钱丢在路上。
+                receiver = FindReceiver(party, party);
                 if (receiver == null)
                 {
                     BeginReturn(record, party, "no_receiver");
                     return;
                 }
                 record.ReceiverPartyId = receiver.StringId;
+                ResetProgress(record, party, receiver);
             }
 
-            if (party.GetPosition2D.Distance(receiver.GetPosition2D) > DeliveryDistance)
+            float distance = party.GetPosition2D.Distance(receiver.GetPosition2D);
+            if (distance > DeliveryDistance)
             {
-                if (!TryHandleTownBusiness(record, party)) SendTo(party, receiver);
+                if (!HasStalled(record, party, receiver, distance) &&
+                    !TryHandleTownBusiness(record, party))
+                    SendTo(party, receiver);
                 return;
             }
 
             DeliverTo(record, party, receiver);
+        }
+
+        private static void ResetProgress(GwpDispatchRecord record, MobileParty party,
+            MobileParty receiver)
+        {
+            record.LastDistance = party.GetPosition2D.Distance(receiver.GetPosition2D);
+            record.LastProgressHours = CampaignTime.Now.ToHours;
+        }
+
+        /// <summary>
+        /// 走不动了就别硬等。只要这么久都没有真的靠近过收件人，就换一个人送；
+        /// 连换都换不出来，就把队伍连人带钱带回玩家身边——办不成事不要紧，东西不能丢。
+        /// </summary>
+        private bool HasStalled(GwpDispatchRecord record, MobileParty party,
+            MobileParty receiver, float distance)
+        {
+            if (distance < record.LastDistance - StallProgressEpsilon)
+            {
+                record.LastDistance = distance;
+                record.LastProgressHours = CampaignTime.Now.ToHours;
+                return false;
+            }
+            if (record.LastProgressHours <= 0d)
+            {
+                ResetProgress(record, party, receiver);
+                return false;
+            }
+            if (CampaignTime.Now.ToHours - record.LastProgressHours < StallPatienceHours)
+                return false;
+
+            GwpAiDiagnostics.WriteAction(party, "DISPATCH_STALLED",
+                "receiver=" + receiver.StringId +
+                "; distance=" + distance.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                "; hoursWithoutProgress=" +
+                (CampaignTime.Now.ToHours - record.LastProgressHours).ToString(
+                    "0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                "; canReach=" + CanReach(party, receiver) +
+                "; moveMode=" + party.PartyMoveMode +
+                "; moveTarget=" + (party.MoveTargetParty?.StringId ?? "-") +
+                "; navigation=" + party.NavigationCapability +
+                "; receiverAtSea=" + receiver.IsCurrentlyAtSea);
+
+            MobileParty? other = MobileParty.All
+                .Where(p => p != receiver && p?.IsActive == true && p.LeaderHero != null &&
+                            string.Equals(p.ActualClan?.StringId,
+                                PoliceStats.GetPoliceClan()?.StringId,
+                                StringComparison.OrdinalIgnoreCase) &&
+                            CanReach(party, p))
+                .OrderBy(p => p.GetPosition2D.Distance(party.GetPosition2D))
+                .FirstOrDefault();
+            if (other != null)
+            {
+                record.ReceiverPartyId = other.StringId;
+                ResetProgress(record, party, other);
+                SendTo(party, other);
+                return true;
+            }
+
+            BeginReturn(record, party, "stalled");
+            return true;
         }
 
         private void DeliverTo(GwpDispatchRecord record, MobileParty party, MobileParty receiver)

@@ -224,7 +224,7 @@ namespace GreyWardenPolicePurity
                 p.StringId == _atonementTargetPartyId && p.IsActive);
             if (target == null)
             {
-                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_002}The atonement target has disappeared, the contract has failed, and the reputation is -5."));
+                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_002}Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name."));
                 return;
             }
 
