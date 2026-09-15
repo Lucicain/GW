@@ -156,16 +156,12 @@ namespace GreyWardenPolicePurity
                 return null;
             }
 
-            // 英雄俘虏不能直接塞进新队的名册：他本人的关押归属是另一套状态。
-            // 先让他回到主队，建好队伍之后再走原版的转移。
-            var heroPrisoners = prisoners.GetTroopRoster()
-                .Where(entry => entry.Character?.IsHero == true && entry.Number > 0)
-                .Select(entry => entry.Character).ToList();
-            foreach (CharacterObject hero in heroPrisoners)
-            {
-                prisoners.AddToCounts(hero, -1);
-                player.PrisonRoster.AddToCounts(hero, 1);
-            }
+            // 要押走的那个人不经过分兵界面——原版那个界面把"俘虏"整栏写死成不可转移，
+            // 玩家既看不到也拖不动。改为玩家在出发前单独答一句"押人还是交钱"，
+            // 这里建好队伍之后走原版的转移直接把他交过去。
+            Hero? casePrisoner = string.IsNullOrEmpty(prisonerHeroId)
+                ? null
+                : Hero.FindFirst(h => h.StringId == prisonerHeroId);
 
             try
             {
@@ -186,14 +182,26 @@ namespace GreyWardenPolicePurity
                 party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
                 party.ActualClan = Clan.PlayerClan;
                 KeepCourierDisposition(party);
-                foreach (CharacterObject hero in heroPrisoners)
+                bool prisonerLoaded = false;
+                if (casePrisoner != null)
                 {
-                    try { TransferPrisonerAction.Apply(hero, player.Party, party.Party); }
+                    try
+                    {
+                        TransferPrisonerAction.Apply(
+                            casePrisoner.CharacterObject, player.Party, party.Party);
+                        prisonerLoaded = casePrisoner.PartyBelongedToAsPrisoner == party.Party;
+                    }
                     catch (Exception transferError)
                     {
                         GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_LOAD_FAILED",
                             transferError.ToString());
                     }
+                    GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_LOADED",
+                        "hero=" + (casePrisoner.StringId ?? "-") + "; loaded=" + prisonerLoaded);
+                    if (!prisonerLoaded)
+                        InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                            "{=gwp_dispatch_prisoner_failed}Your men could not take custody of him. Keep him with you and deliver him yourself."),
+                            Colors.Red));
                 }
                 TakeRationsFromPlayer(party, player);
                 if (carriedCaseGold > 0)
@@ -210,7 +218,9 @@ namespace GreyWardenPolicePurity
                     ReceiverPartyId = receiver.StringId,
                     CaseGoldFloor = Math.Max(0, carriedCaseGold),
                     ReportLie = reportLie,
-                    PrisonerHeroId = prisonerHeroId ?? string.Empty,
+                    PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == party.Party
+                        ? prisonerHeroId ?? string.Empty
+                        : string.Empty,
                     DispatchedHours = CampaignTime.Now.ToHours
                 };
                 ResetProgress(record, party, receiver);

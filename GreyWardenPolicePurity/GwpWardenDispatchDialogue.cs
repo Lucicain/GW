@@ -132,7 +132,6 @@ namespace GreyWardenPolicePurity
         /// <summary>会话启动时清空全部静态状态。</summary>
         internal static void ResetRuntimeState()
         {
-            _prisonerHandoverOpen = false;
             _requestedTroop = null;
             _activeTroop = null;
             _selectionQueued = false;
@@ -197,29 +196,17 @@ namespace GreyWardenPolicePurity
             _selectionQueued = true;
         }
 
-        /// <summary>
-        /// 送信差事的分兵界面正开着。只在这段时间里放开"俘虏那一栏可以动"，
-        /// 见 <see cref="GwpDispatchPrisonerTransferPatch"/>。
-        /// </summary>
-        private static bool _prisonerHandoverOpen;
-
-        internal static bool IsPrisonerHandoverOpen => _prisonerHandoverOpen;
-
         private static void OpenTroopSelection()
         {
             GwpDispatchPurpose purpose = _pendingPurpose;
             var detachment = TroopRoster.CreateDummyTroopRoster();
             var prisoners = TroopRoster.CreateDummyTroopRoster();
 
-            // 打开分兵界面时把"那个人能不能交"的每一项条件都记下来。俘虏在界面里选不动
-            // 的时候，这一行直接说明卡在哪一条，不必再靠猜。
+            // 这个界面只用来点人。押人的事在界面关掉之后单问一句，见 AskWhatToHandOver。
             if (purpose == GwpDispatchPurpose.Report)
-            {
-                _prisonerHandoverOpen = true;
                 GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_GATE",
                     Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                         ?.DescribeCasePrisonerGate() ?? "no bounty behaviour");
-            }
 
             try
             {
@@ -257,9 +244,10 @@ namespace GreyWardenPolicePurity
             CharacterObject character, PartyScreenLogic.TroopType type)
         {
             if (character == null) return false;
-            if (character.IsHero)
-                return type == PartyScreenLogic.TroopType.Prisoner &&
-                       purpose == GwpDispatchPurpose.Report && IsCasePrisoner(character);
+            // 这里只点人。原版这个分兵界面把"俘虏"整栏写死成不可转移
+            // （OpenScreenWithDummyRoster 里 PrisonerTransferState = NotTransferable），
+            // 玩家根本看不到、也拖不动俘虏。押人改为界面关掉之后单问一句，直接转交。
+            if (character.IsHero) return false;
             return type == PartyScreenLogic.TroopType.Member && GwpCommon.IsGreyWardenTroop(character);
         }
 
@@ -273,24 +261,46 @@ namespace GreyWardenPolicePurity
         private static void OnSelectionClosed(GwpDispatchPurpose purpose,
             TroopRoster members, TroopRoster prisoners, bool fromCancel)
         {
-            _prisonerHandoverOpen = false;
             if (fromCancel || members == null || members.TotalManCount <= 0)
             {
                 ReturnSelection(members, prisoners);
                 return;
             }
 
-            string prisonerHeroId = prisoners?.GetTroopRoster()
-                .Select(entry => entry.Character?.HeroObject)
-                .FirstOrDefault(hero => hero != null)?.StringId ?? string.Empty;
-
             if (purpose == GwpDispatchPurpose.Support)
             {
-                Send(purpose, members, prisoners, 0, false, prisonerHeroId);
+                Send(purpose, members, prisoners, 0, false, string.Empty);
                 return;
             }
 
-            AskHandInAmount(members, prisoners, prisonerHeroId);
+            AskWhatToHandOver(members, prisoners);
+        }
+
+        /// <summary>
+        /// 手下问一句：这趟是交钱，还是把人押过去。押人就直接把他转到这支队伍名下，
+        /// 不经过分兵界面——那个界面根本不让动俘虏。
+        /// </summary>
+        private static void AskWhatToHandOver(TroopRoster members, TroopRoster prisoners)
+        {
+            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            Hero? prisoner = bounty?.PendingCasePrisonerForDispatch;
+            if (prisoner == null)
+            {
+                AskHandInAmount(members, prisoners, string.Empty);
+                return;
+            }
+
+            InformationManager.ShowInquiry(new InquiryData(
+                GwpText.Get("{=gwp_dispatch_handover_title}What are we taking?"),
+                GwpText.Get(
+                    "{=gwp_dispatch_handover_body}We can take the money, or we can take {VAR_1} himself. Which is it?",
+                    "VAR_1", prisoner.Name?.ToString() ?? string.Empty),
+                true, true,
+                GwpText.Get("{=gwp_dispatch_handover_man}Take the prisoner."),
+                GwpText.Get("{=gwp_dispatch_handover_money}Take the money."),
+                () => Send(GwpDispatchPurpose.Report, members, prisoners, 0, false, prisoner.StringId),
+                () => AskHandInAmount(members, prisoners, string.Empty)),
+                true);
         }
 
         /// <summary>

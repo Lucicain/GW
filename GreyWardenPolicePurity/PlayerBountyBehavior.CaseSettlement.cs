@@ -691,6 +691,13 @@ namespace GreyWardenPolicePurity
                 ? null
                 : Hero.FindFirst(h => h.StringId == _pendingPrisonerHeroId);
 
+        /// <summary>
+        /// 现在就能交给派出去的队伍带走的那个人；不能交时为 <c>null</c>。
+        /// 押人不走分兵界面，由派遣流程直接转交，所以这里给出的是本人而不是判据。
+        /// </summary>
+        internal Hero? PendingCasePrisonerForDispatch =>
+            CanDeliverCasePrisoner() ? PendingCasePrisoner : null;
+
         private bool CanDeliverCasePrisoner()
         {
             Hero? prisoner = PendingCasePrisoner;

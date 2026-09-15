@@ -1,5 +1,32 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 押人改为直接转交，不再走分兵界面（已部署，待验收）
+
+上一条的补丁方向仍然不对。放开 `IsTroopRosterTransferable` 只解决了"能不能拖"，
+但用户实机反馈是**分兵界面里根本看不到俘虏这一栏**——那个界面就没打算展示它。
+用户给的方案更直接，也更像这套机制本来该有的样子：
+
+> 士兵问一下是交钱还是交人，交人就直接转移俘虏到选定的使者部队里。
+
+照此重做：
+
+- 分兵界面只用来点人。`IsSendable` 里英雄一律 `false`，不再试图在那里处理俘虏。
+- 界面关掉之后，若本案的人正押在玩家手上，弹一句
+  **「这趟带什么走？」**——【把人押过去。】／【带钱过去。】
+  选带钱就走原来的金额与说法两问；选押人就直接发车，金额记 `0`。
+- `Dispatch` 拿到 `prisonerHeroId` 之后，建好队伍当场
+  `TransferPrisonerAction.Apply(他, 玩家, 使者)`，并**核对他确实落在了使者名下**才把
+  `PrisonerHeroId` 写进差事记录；没接过去就当场告诉玩家"他还在你手上"，
+  差事照走但不冒认押着人。诊断 `DISPATCH_PRISONER_LOADED` 记下结果。
+- 删除上一轮新增的 `GwpDispatchPrisonerTransferPatch`：既然不走分兵界面，这个补丁
+  没有存在意义，留着只是多一处动原版的地方。
+- `PlayerBountyBehavior.PendingCasePrisonerForDispatch` 对外给出"现在就能交走的那个人"，
+  判据仍是 `CanDeliverCasePrisoner()`。
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；语言 XML 解析通过；
+`Verify-LiveModule.ps1` 三项全 `0`。
+
+
 ## 2026-09-15 俘虏交不出去的真正原因：原版把整栏俘虏锁死了（已部署，待验收）
 
 **订正前两轮的判断。** 我先后怀疑过 `IsDeliverableCasePrisoner` 拿 `CaseHero` 比对、

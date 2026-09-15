@@ -1379,6 +1379,11 @@
   <string id="gwp_dispatch_support_moot" text="你的骑手把话带到了，但这事已经用不上了。" />
   <string id="gwp_dispatch_handover" text="派出的队伍已经归队：交回 {VAR_1} 人（其中 {VAR_2} 名伤员）、{VAR_3} 名俘虏、{VAR_4} 件物资和 {VAR_5} 第纳尔。" />
   <string id="gwp_dispatch_report_done" text="你的人已经复命，委托结清；他们正带着 {VAR_1} 第纳尔回来。" />
+  <string id="gwp_dispatch_handover_title" text="这趟带什么走？" />
+  <string id="gwp_dispatch_handover_body" text="钱我们可以带，{VAR_1}本人我们也可以押过去。您说哪一样？" />
+  <string id="gwp_dispatch_handover_man" text="把人押过去。" />
+  <string id="gwp_dispatch_handover_money" text="带钱过去。" />
+  <string id="gwp_dispatch_prisoner_failed" text="你的人没能把他接过去。他还在你手上，只能你自己押着去交。" />
   <string id="gwp_dispatch_amount_title" text="交给灰袍的钱" />
   <string id="gwp_dispatch_amount_body" text="账上是 {VAR_1} 第纳尔。让他们带多少走？你手上有 {VAR_2}。" />
   <string id="gwp_dispatch_amount_invalid" text="填一个你真拿得出来的数目。" />
