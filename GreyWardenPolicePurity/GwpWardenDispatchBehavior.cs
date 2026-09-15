@@ -144,6 +144,18 @@ namespace GreyWardenPolicePurity
                 return null;
             }
 
+            if (!CanProvision(detachment.TotalManCount, player))
+            {
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_dispatch_no_rations}You have neither food nor coin to send with them. Lay in provisions before you send anyone out."),
+                    Colors.Yellow));
+                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_REFUSED_NO_PROVISIONS",
+                    "men=" + detachment.TotalManCount +
+                    "; playerFood=" + AvailableFood(player) +
+                    "; playerGold=" + Hero.MainHero.Gold);
+                return null;
+            }
+
             // 英雄俘虏不能直接塞进新队的名册：他本人的关押归属是另一套状态。
             // 先让他回到主队，建好队伍之后再走原版的转移。
             var heroPrisoners = prisoners.GetTroopRoster()
@@ -265,16 +277,36 @@ namespace GreyWardenPolicePurity
                     "0.0", System.Globalization.CultureInfo.InvariantCulture) +
                 "; shortBy=" + wanted + "; purse=" + purse +
                 "; playerGold=" + Hero.MainHero.Gold);
-
-            if (party.ItemRoster.TotalFood <= 0f && purse <= 0)
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_rations}Your men set out with nothing to eat and no coin to buy any. They will have to live off what they find."),
-                    Colors.Yellow));
         }
 
         /// <summary>带不满的口粮折成盘缠；至少够买几天的粮。</summary>
         private static int TravelPurseFor(int men, int shortBy) =>
             shortBy <= 0 ? 0 : Math.Max(TravelPursePerMan, shortBy * TravelPursePerMan / Math.Max(1, men));
+
+        /// <summary>一支这么大的队伍出这趟门要带多少口粮。</summary>
+        private static int RationsWantedFor(int men) =>
+            Math.Max(1, (int)Math.Ceiling(Math.Max(1, men) / 20f * StartingFoodDays));
+
+        /// <summary>玩家手上能匀出来的口粮。</summary>
+        private static int AvailableFood(MobileParty player)
+        {
+            int total = 0;
+            foreach (ItemRosterElement element in player.ItemRoster)
+                if (element.EquipmentElement.Item?.IsFood == true && element.Amount > 0)
+                    total += element.Amount;
+            return total;
+        }
+
+        /// <summary>
+        /// 粮和钱都拿不出来就别让他们出门。饿着肚子上路只有一个结局：半路散了，
+        /// 玩家的人、钱、要交的人一起没。宁可当场退回，让玩家先去备点东西。
+        /// </summary>
+        private static bool CanProvision(int men, MobileParty player)
+        {
+            if (AvailableFood(player) > 0) return true;
+            int purse = TravelPurseFor(men, RationsWantedFor(men));
+            return purse > 0 && Hero.MainHero.Gold >= purse;
+        }
 
         /// <summary>
         /// 派出去的人和灰袍领主用同一套下注方式：巡逻类候选由欲望系统统一压到最低，
