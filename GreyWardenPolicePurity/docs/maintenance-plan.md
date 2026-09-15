@@ -1,5 +1,52 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 用户集中回归通过：返程检查点与监控退休
+
+- 用户反馈大量复测以往 bug，当前未发现问题，剩余反馈为灰袍领主交差菜单的过时入口。
+  据此确认上一轮 BeginReturn 立即 AdvanceReturn 的返程修复；旧菜单清理属于下一项开发。
+- 删除使者出发、返程、交割、改道、送达、正常任务失效、粮饷/损失提示等诊断打印，保留
+  实际玩家提示。使者移出 GwpAiDiagnostics 正常状态/欲望定期采样范围；意外与玩家开战
+  改写 Faults 静默故障分支，保留创建/转俘/跟踪等 catch 错误。删除分兵旧俘虏门槛监控及
+  仅为其服务的 DescribeCasePrisonerGate。交差正常打开/接受/取消/完成日志同步退休，异常保留。
+- 不按“功能名字”整组屏蔽错误：正常返回时无诊断输出，只有 catch 或自家使者误开战等
+  不应发生的分支仍可记录。正常交差逻辑与待清理菜单此时未改。生产重建 0 警告/0 错误。
+- 本次检查点只包含返程修复与上述诊断退休；此前未提交的犯罪登记/定价仍单独留在工作区，
+  不把用户概括性测试结论扩写成每项犯罪边界都经过独立验收。发行 README 按规则不改。
+
+## 2026-09-15 贴身跟随使者返程误开战：时序缺口修复候选
+
+- 已先建立装载修复 checkpoint `32689fa0fcb1f548d630f8ffa15d16240c465622`。回滚装载功能
+  应从该提交提取相关文件；返程实验尚未确认，不能将其并入该稳定检查点。
+- 用户报告贴近使者，交差后返队会出现只有投降的战斗界面。最新日志给出确定时序：
+  23:26:58.4511504，gwp_dispatch_777176 交差完成进入 Returning，玩家距离 1.07，双方
+  都无 MapEvent；23:27:00.2144047，距离 0.49，使者作为 attacker、player_party 作为
+  defender 建立 FieldBattle，双方同为 player_faction、atWar=False，触发
+  DISPATCH_MET_PLAYER_IN_ENCOUNTER，但没有 DISPATCH_HANDOVER。使者 2 人、1.80 粮、
+  760 金币仍在自己队中；仅从日志不能称这些财物已返还。
+- 代码核查：BeginReturn 只切阶段并 RequestRush(player)，AdvanceReturn 才设置近距
+  IgnoreByOtherPartiesTill 和会合交割；后者原本要等下一次 HourlyTick。BeginReturn 由本次
+  Outbound 小时分支调用，不会自动再走 Returning 分支。于是玩家已经在 HandoverDistance=3
+  内，仍被先安排追赶，下一次小时更新前就碰出敌对遭遇。现有 MapEventStarted 兜底只设置
+  HandoverPending；CompletePendingHandovers 依赖战役 Tick 及通用 TryFinishPlayerEncounter，
+  这次没有交割结果，尚不能认定是 Tick 停止还是 Finish 未生效。未猜测性改这条恢复分支。
+- 本轮只修已证实的转返程缺口：BeginReturn 改为当场调用现有 AdvanceReturn。已在会合
+  范围内且双方无战斗时立即按原有清点流程返还并解散；近但尚未到达时先设置禁止交互再追随；
+  远处仍正常回程。没有扩大保护距离、取消远途被袭风险或直接篡改战斗结果。返回阶段诊断
+  补记 playerDistance，保留 HANDOVER/ENCOUNTER 证据链以便实机确认。当前是修复候选。
+- 本机 PlayerEncounter 的 Finish 会退出菜单并调用 FinalizeBattle，不等同无条件清除所有
+  外部 MapEvent。可再生反编译在 `.codex_tmp/dispatch-return-player-encounter.cs`，来自本机
+  1.4.8 TaleWorlds.CampaignSystem.dll。后续若仍出现旧遭遇卡住，针对实际恢复调用补监控，
+  不以这份静态代码冒充现场调用证据。
+- 候选部署验证：Release Rebuild 0 警告/0 错误，542 类型加载、54 Harmony 补丁成功、
+  0 失败，接口无缺失；既有 153 项账本/付款/入口桩回归通过（不覆盖原版地图时序）。
+  live mirror 36 源文件/43 live 文件无缺失/差异/多余，README 一致，diff --check 通过。
+  obj/Release、live Client、live Editor DLL SHA256 均为
+  `F350180798FCF57C50939AD755616DEC13A58D0BBE0AA0D2B1E713991D1D1C59`。
+  核查输出在 `.codex_tmp/dispatch-return-transition-build.log`、
+  dispatch-return-transition-compat.log、dispatch-return-transition-tests.log。
+  返回候选未提交为稳定 checkpoint，待用户重启并从使者接触领主前的存档贴身跟随复测。
+  已经形成的旧战斗是否可以恢复尚未验证，不宣称此改动可以自动修复旧遭遇状态。
+
 ## 2026-09-15 装载确认实机通过：退休监控并建立局部 checkpoint
 
 - 用户明确确认“修好了”，范围为使者交易完成报错。23:25:44 实机监控完整经过确认、
@@ -10,6 +57,13 @@
   原监控类及仅为正常关闭打印的补丁退休；改为 GwpDispatchBarterFaultDiagnostics，仅在活动
   装载窗口的人物标签实际异常时记录实参和完整栈。保留全局 first-chance 完整栈、原有失败
   分支及仍在调查的出发/交差/返队监控。发行 README 不改，遵守开发期间不改发行物的规则。
+- 退休数据同步清理：共享 Faults 日志只移除已归档的 DISPATCH_BARTER_TRACE 记录及已结案
+  PersonaSoftspokenTag 异常块；当前 AI 日志移除已退休的 MANIFEST_SELECTED/SELECTION_PREVIEW/
+  BARTER_VISIBLE 成功行。保留无关故障、19:23 旧重复释放断言及新返队遭遇证据，不删除整份
+  共用日志。删除已结案的十个临时反编译：`.codex_tmp/dispatch-` 前缀下的 barter-manager.cs、
+  conversation-view.cs、screen-layer.cs、screen-base.cs、gauntlet-layer.cs、mission-conversation.cs、
+  close-live-patch.cs、current-barter-vm.cs、lord-conversations.cs、vm-entry-live.cs。
+  原始类型/程序集及结论已记录在上文，可按需重建；保留新返队 PlayerEncounter 核查输出。
 - 本地 checkpoint 纳入完整装载/钱货依赖：付款及收据、案件账本、现场收据采集、交差、
   派遣货物与窗口/对话、相关本地化及入口测试。未确认的犯罪登记去重和定价变更不纳入；
   对混合文件在 Git index 中单独保留旧定价函数，并剔除测试中的 7 项新定价断言，工作区

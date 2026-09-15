@@ -220,11 +220,7 @@ namespace GreyWardenPolicePurity
             var detachment = TroopRoster.CreateDummyTroopRoster();
             var prisoners = TroopRoster.CreateDummyTroopRoster();
 
-            // 这个界面只用来点人。押人的事在界面关掉之后单问一句，见 AskWhatToHandOver。
-            if (purpose == GwpDispatchPurpose.Report)
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_GATE",
-                    Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                        ?.DescribeCasePrisonerGate() ?? "no bounty behaviour");
+            // Soldiers are selected here; assets and prisoners use the barter screen.
 
             try
             {

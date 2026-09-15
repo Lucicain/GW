@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -133,10 +133,6 @@ namespace GreyWardenPolicePurity
             if (record == null) return;
             _dispatches.Remove(record);
             if (record.Phase == GwpDispatchPhase.Rejoined) return;
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_LOST",
-                "purpose=" + record.Purpose + "; phase=" + record.Phase +
-                "; caseGold=" + record.CaseGoldFloor +
-                "; destroyer=" + (destroyer?.MobileParty?.StringId ?? destroyer?.Settlement?.StringId ?? "-"));
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_dispatch_lost}The detachment you sent has been destroyed. Whatever it carried is gone with it."),
                 Colors.Red));
@@ -178,10 +174,6 @@ namespace GreyWardenPolicePurity
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_no_rations}You have neither food nor coin to send with them. Lay in provisions before you send anyone out."),
                     Colors.Yellow));
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_REFUSED_NO_PROVISIONS",
-                    "men=" + detachment.TotalManCount +
-                    "; playerFood=" + AvailableFood(player) +
-                    "; playerGold=" + Hero.MainHero.Gold);
                 return null;
             }
 
@@ -228,8 +220,6 @@ namespace GreyWardenPolicePurity
                         GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_LOAD_FAILED",
                             transferError.ToString());
                     }
-                    GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_LOADED",
-                        "hero=" + (casePrisoner.StringId ?? "-") + "; loaded=" + prisonerLoaded);
                     if (!prisonerLoaded)
                         InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                             "{=gwp_dispatch_prisoner_failed}Your men could not take custody of him. Keep him with you and deliver him yourself."),
@@ -271,12 +261,6 @@ namespace GreyWardenPolicePurity
                 TakeRationsFromPlayer(party, player);
                 TrackOnMap(party);
                 SendTo(party, receiver);
-
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_SENT",
-                    "purpose=" + purpose + "; men=" + party.MemberRoster.TotalManCount +
-                    "; prisoners=" + party.PrisonRoster.TotalManCount +
-                    "; caseGold=" + carriedCaseGold + "; lie=" + reportLie +
-                    "; receiver=" + receiver.StringId);
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_sent}Your detachment has set out to find {VAR_1}.",
                     "VAR_1", receiver.Name.ToString()), Colors.Cyan));
@@ -459,12 +443,6 @@ namespace GreyWardenPolicePurity
             if (string.Equals(record.LastWarning, trouble, StringComparison.Ordinal)) return;
             record.LastWarning = trouble;
             if (trouble.Length == 0) return;
-
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_IN_TROUBLE",
-                "trouble=" + trouble + "; men=" + party.MemberRoster.TotalManCount +
-                "; wounded=" + party.MemberRoster.TotalWoundedRegulars +
-                "; food=" + party.ItemRoster.TotalFood.ToString(
-                    "0.0", System.Globalization.CultureInfo.InvariantCulture));
 
             string text = trouble switch
             {
@@ -707,10 +685,6 @@ namespace GreyWardenPolicePurity
                                    - RetargetHysteresis;
                 if (worthIt)
                 {
-                    GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETARGET",
-                        "from=" + (record.ReceiverPartyId ?? "-") + "; to=" + receiver.StringId +
-                        "; distance=" + here.ToString(
-                            "0.0", System.Globalization.CultureInfo.InvariantCulture));
                     record.ReceiverPartyId = receiver.StringId;
                     ResetProgress(record, party, receiver);
                 }
@@ -757,18 +731,6 @@ namespace GreyWardenPolicePurity
             if (CampaignTime.Now.ToHours - record.LastProgressHours < StallPatienceHours)
                 return false;
 
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_STALLED",
-                "receiver=" + receiver.StringId +
-                "; distance=" + distance.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
-                "; hoursWithoutProgress=" +
-                (CampaignTime.Now.ToHours - record.LastProgressHours).ToString(
-                    "0.0", System.Globalization.CultureInfo.InvariantCulture) +
-                "; canReach=" + CanReach(party, receiver) +
-                "; moveMode=" + party.PartyMoveMode +
-                "; moveTarget=" + (party.MoveTargetParty?.StringId ?? "-") +
-                "; navigation=" + party.NavigationCapability +
-                "; receiverAtSea=" + receiver.IsCurrentlyAtSea);
-
             MobileParty? other = MobileParty.All
                 .Where(p => p != receiver && p?.IsActive == true && p.LeaderHero != null &&
                             string.Equals(p.ActualClan?.StringId,
@@ -795,8 +757,6 @@ namespace GreyWardenPolicePurity
             {
                 bool granted = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                     ?.GrantCaseSupport("courier_delivered", receiver) == true;
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_SUPPORT_DELIVERED",
-                    "receiver=" + receiver.StringId + "; granted=" + granted);
                 if (!granted)
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                         "{=gwp_dispatch_support_moot}Your riders delivered the request, but the matter no longer stands."),
@@ -811,8 +771,6 @@ namespace GreyWardenPolicePurity
             {
                 // 玩家已经自己交过差，或案子已经不在了。钱、人、俘虏原样带回，
                 // 绝不在这里"交"给一个不存在的委托。
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_REPORT_MOOT",
-                    "receiver=" + receiver.StringId + "; carried=" + party.PartyTradeGold);
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_report_moot}Your men arrived to find the commission already closed. They are bringing everything back."),
                     Colors.Yellow));
@@ -847,8 +805,6 @@ namespace GreyWardenPolicePurity
             if (fee < 0)
             {
                 // 交接没有成立，账不能当作已缴，钱一分不动。
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_REPORT_REFUSED",
-                    "receiver=" + receiver.StringId + "; carried=" + party.PartyTradeGold);
                 BeginReturn(record, party, "report_refused");
                 return;
             }
@@ -867,11 +823,6 @@ namespace GreyWardenPolicePurity
             // 不许动玩家托付的钱，也不许动要带回去的酬劳。路上被打光才会一起没。
             if (fee > 0) party.PartyTradeGold += fee;
             record.CaseGoldFloor = Math.Max(0, fee);
-
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_REPORT_DELIVERED",
-                "receiver=" + receiver.StringId + "; cash=" + deliveredCash +
-                "; goodsValue=" + deliveredGoods + "; credited=" + deliveredValue +
-                "; prisoner=" + prisonerDelivered + "; lie=" + record.ReportLie + "; fee=" + fee);
             BeginReturn(record, party, "report_delivered");
         }
 
@@ -879,11 +830,14 @@ namespace GreyWardenPolicePurity
         {
             record.Phase = GwpDispatchPhase.Returning;
             record.SupplyTownId = string.Empty;
-            SendTo(party, MobileParty.MainParty);
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_RETURNING", "reason=" + reason);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_dispatch_returning}Your detachment has done its errand and is on its way back."),
                 Colors.Cyan));
+            // The player may already be beside the recipient. Apply the return
+            // proximity guard / handover now, before issuing a Rush to the player.
+            // Waiting for the next hourly update lets native EngageParty start
+            // a battle with our own detachment in the meantime.
+            AdvanceReturn(record, party);
         }
 
         private void AdvanceReturn(GwpDispatchRecord record, MobileParty party)
@@ -935,7 +889,7 @@ namespace GreyWardenPolicePurity
                 if (!((attackerParty == party.Party && defenderParty == player.Party) ||
                       (defenderParty == party.Party && attackerParty == player.Party))) continue;
 
-                GwpAiDiagnostics.WriteAction(party, "DISPATCH_MET_PLAYER_IN_ENCOUNTER",
+                GwpFaultTrace.Write("DISPATCH_MET_PLAYER_IN_ENCOUNTER", details:
                     "phase=" + record.Phase + "; purpose=" + record.Purpose);
                 KeepOutOfPlayerWay(party);
                 record.HandoverPending = true;
@@ -1002,9 +956,6 @@ namespace GreyWardenPolicePurity
             party.ItemRoster.Clear();
             party.PartyTradeGold = 0;
             record.Phase = GwpDispatchPhase.Rejoined;
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_HANDOVER",
-                "men=" + men + "; wounded=" + wounded + "; prisoners=" + prisoners +
-                "; gold=" + gold + "; items=" + items);
             if (DestroyDispatchParty(party)) _dispatches.Remove(record);
 
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
@@ -1060,8 +1011,6 @@ namespace GreyWardenPolicePurity
             if (paid > 0) GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, paid, true);
             if (paid >= wage) return;
             party.RecentEventsMorale -= 1f;
-            GwpAiDiagnostics.WriteAction(party, "DISPATCH_WAGES_SHORT",
-                "wage=" + wage + "; paid=" + paid);
         }
 
         #endregion

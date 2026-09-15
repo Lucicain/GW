@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -282,7 +282,7 @@ namespace GreyWardenPolicePurity
             if (party.LeaderHero != null) return false;
             // 玩家派出去的灰袍队伍归玩家家族，不在上面任何一类里。它出问题时必须查得到，
             // 所以单独纳入追踪范围。
-            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return true;
+            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
             return GwpCommon.IsPatrolParty(party) ||
                    GwpCommon.IsEnforcementDelayPatrolParty(party) ||
                    string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
