@@ -1,5 +1,41 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 俘虏交不出去的真正原因：原版把整栏俘虏锁死了（已部署，待验收）
+
+**订正前两轮的判断。** 我先后怀疑过 `IsDeliverableCasePrisoner` 拿 `CaseHero` 比对、
+又怀疑 `CanDeliverCasePrisoner` 里的同一处，都不是。反编译
+`Helpers.PartyScreenHelper.OpenScreenWithDummyRoster` 才看清：
+
+```
+012C  ldc.i4.1
+012D  stfld PartyScreenLogicInitializationData::MemberTransferState     // 成员 = Transferable
+0134  ldc.i4.0
+0135  stfld PartyScreenLogicInitializationData::PrisonerTransferState   // 俘虏 = NotTransferable
+```
+
+**这个界面把"俘虏"整栏写死成不可转移。** 而 `PartyScreenLogic.IsTroopTransferable`
+第一句就是 `IsTroopRosterTransferable(troopType)`——这一关过不去就直接返回 `false`，
+**我们自己那个 `IsSendable` 判据根本没有机会被调用**。所以无论判据怎么改，界面里那个人
+都拖不动，日志里永远是 `prisoners=0`。方向错在：一直盯着判据，而问题在判据之前。
+
+新增 `GwpDispatchPrisonerTransferPatch`：对 `IsTroopRosterTransferable` 打后置补丁，
+**只在派遣队伍的分兵界面开着时**（`GwpWardenDispatchDialogue.IsPrisonerHandoverOpen`）
+放开俘虏那一栏。具体哪一个人能动仍然由 `IsSendable` 说了算，也就是只有本案目标；
+原版其他场合的分兵界面一概不受影响。同时确认 `ValidateCommand` 里没有俘虏容量限制，
+`LeftPartyPrisonersSizeLimit = 0` 不会拦住这次转移。
+
+顺带把两处确实该改的也改了（它们不是本次症状的成因，但写法是错的）：
+
+- `CanDeliverCasePrisoner` / `DeliverCasePrisoner` 改为从 `_pendingPrisonerHeroId` 解析
+  那个人（新增 `PendingCasePrisoner`），不再走 `CaseHero`——后者是"正在追捕的目标"，
+  对方投降后委托转入待交付阶段，那个字段的含义已经不是这个人了。
+- 新增 `DISPATCH_PRISONER_GATE` 诊断：打开分兵界面时把 `assessed`、`pendingId`、
+  `found`、`isPrisoner`、`heldByMain`、`caseHero`、`canDispatch` 全部记下来，
+  下次再交不出去，一行就能定位。
+
+`Release -t:Rebuild` 通过并已部署；测试 `PASS: 60`；`Verify-LiveModule.ps1` 三项全 `0`。
+
+
 ## 2026-09-15 使者交不了俘虏、出门就断粮、改道来回跳（已部署，待验收）
 
 三件都在实机日志里坐实了：

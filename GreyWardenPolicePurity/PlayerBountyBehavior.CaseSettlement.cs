@@ -681,19 +681,43 @@ namespace GreyWardenPolicePurity
         private int CalculateCaseFee(int cap) => GwpCaseSettlementRules.Reward(cap,
             _bountyPlayerCasualties, Math.Max(_pendingFieldFineSeverity, _assignedCaseStanding));
 
+        /// <summary>
+        /// 要押去交差的那个人。认的是 <see cref="_pendingPrisonerHeroId"/>——他被押下那一刻
+        /// 记下来的名字。**不要再走 <c>CaseHero</c>**：那是"正在追捕的目标"，对方一投降，
+        /// 委托就转入待交付阶段，追捕目标随之作废，人就查不出来了。
+        /// </summary>
+        private Hero? PendingCasePrisoner =>
+            string.IsNullOrEmpty(_pendingPrisonerHeroId)
+                ? null
+                : Hero.FindFirst(h => h.StringId == _pendingPrisonerHeroId);
+
         private bool CanDeliverCasePrisoner()
         {
-            Hero? prisoner = CaseHero;
-            return _pendingPrisonerAssessed > 0 && prisoner != null
-                && prisoner.StringId == _pendingPrisonerHeroId && prisoner.IsPrisoner
+            Hero? prisoner = PendingCasePrisoner;
+            return _pendingPrisonerAssessed > 0 && prisoner != null && prisoner.IsPrisoner
                 && prisoner.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party;
+        }
+
+        /// <summary>这名俘虏为什么交不出去。分兵界面打不开那个人时，照这条去查。</summary>
+        internal string DescribeCasePrisonerGate()
+        {
+            Hero? prisoner = PendingCasePrisoner;
+            return "assessed=" + _pendingPrisonerAssessed +
+                   "; pendingId=" + (string.IsNullOrEmpty(_pendingPrisonerHeroId) ? "-" : _pendingPrisonerHeroId) +
+                   "; found=" + (prisoner != null) +
+                   "; isPrisoner=" + (prisoner?.IsPrisoner == true) +
+                   "; heldBy=" + (prisoner?.PartyBelongedToAsPrisoner?.Name?.ToString() ?? "-") +
+                   "; heldByMain=" + (prisoner?.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party) +
+                   "; caseHero=" + (CaseHero?.StringId ?? "-") +
+                   "; hasBountyTask=" + HasBountyTask +
+                   "; canDispatch=" + CanDispatchCaseReport;
         }
 
         private void DeliverCasePrisoner()
         {
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
             if (!CanDeliverCasePrisoner()) return;
-            Hero prisoner = CaseHero!;
+            Hero prisoner = PendingCasePrisoner!;
             PartyBase? receiver = MobileParty.ConversationParty?.Party
                 ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
                 ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party;
