@@ -51,6 +51,29 @@
 `Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
 差异 `0`、多余 `0`。
 
+### 六、盘问门槛改挂实收；清掉结算队残留文案
+
+改口径时漏掉了上缴对话的门槛：`gwp_case_barter_short` 判的是 `Paid < CaseAmountDue`，
+拿**整案应缴**去比。犯人穷、只交得出一部分，玩家如实全交，文书照样会追问"这比罚金少"，
+把人推进认／赖二选一；随手点了【撒谎】那句就会被 `RememberReportHonesty` 真记一次谎，
+抬高他此后每一次的被查概率——尽管他什么都没昧下。现改为 `Paid < Reports.TotalReceived`。
+
+同一类问题在"我什么都没有"（`gwp_case_pay_zero`）与"回头再说差额"
+（`gwp_case_resume_report`）两条路上也存在，它们无条件进 `gwp_case_short_question`。
+新增高优先级出口 `gwp_case_nothing_concealed`：没昧下从犯人那里拿到的钱就直接登记，
+根本不出现那道选择。盘问的抬头也从"这比罚金少"改成"这比他交给你的少"。
+
+结算队残留：`gwp_bounty_ready_for_turnin` 与 `gwp_case_captive_ready` 两条**仍在用**的
+提示还写着"五天后会有结算队前来找你"／"交给灰袍领主或结算队"，已改为"交给任意灰袍领主，
+亲自送或派自己的人送都行"。另删掉七条已无调用点的旧结算队对话词条
+（`gwp_bounty_turnin_player`、`gwp_bounty_turnin_lord`、`gwp_bounty_complete_notice_title`、
+`gwp_bounty_complete_notice_body`、`gwp_bounty_courier_player`、
+`gwp_bounty_courier_response`、`gwp_bounty_courier_payment_received`），
+以及三处已失实的结算队注释。`RetireLegacyCollectionCouriers` 保留，老存档还要靠它清人。
+
+> 注意：本地化文件里有约 250 个 id 查不到静态引用，但其中绝大多数是运行时按
+> `"gwp_terms_" + 欲望 + "_" + 技能` 这类拼出来的键。**不要按"孤儿 id"批量清理**。
+
 ### 六、快照提交 `77f4741`（**不是检查点**）
 
 用户因为上面那次误删而要求先提交保底，于是这一代整体以 `wip:` 提交为 `77f4741`。

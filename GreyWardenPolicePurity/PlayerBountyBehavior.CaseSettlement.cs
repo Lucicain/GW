@@ -435,7 +435,7 @@ namespace GreyWardenPolicePurity
                     history.CrimeKillProgress = 0;
                     CrimePool.CloseCaseSettledInField(crime);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to a Grey Warden lord or settlement party to receive your expenses."), Colors.Green));
+                        GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to any Grey Warden lord, in person or by your own men, to have your expenses settled."), Colors.Green));
                 }
                 return;
             }
@@ -525,12 +525,21 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_case_barter_count}Put the money here. Let us count it."), null, OpenCasePayment);
             starter.AddDialogLine("gwp_case_barter_short", "gwp_case_barter_result", "gwp_case_short_options",
                 GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."),
-                () => CasePaymentAccepted() && _casePayment!.Paid < CaseAmountDue, CommitCasePayment, 110);
+                // 新口径下要对的账是"从犯人手里拿到多少 vs 交上来多少"，不是整案应缴。
+                // 犯人穷、只交得出一部分，玩家如实全交，文书就没有什么好问的。
+                () => CasePaymentAccepted() && _casePayment!.Paid < (Reports?.TotalReceived ?? 0),
+                CommitCasePayment, 110);
             starter.AddDialogLine("gwp_case_barter_accepted", "gwp_case_barter_result", "gwp_case_receipt_ack",
                 GwpText.Get("{=gwp_case_barter_accepted}We have counted the payment. Your report will be entered."),
                 CasePaymentAccepted, () => { CommitCasePayment(); FinishSubmittedCase(false); });
+            // 同理：交空手也好，回头补交也好，只要没昧下从犯人那里拿到的钱，就不该被盘问。
+            // 不盘问就不会有"认不认"这道选择，也就不会有人因为随手点了那句而被记上一次谎。
+            starter.AddDialogLine("gwp_case_nothing_concealed", "gwp_case_short_question", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_nothing_concealed}That is what he put in your hands, and all of it is here. Your report will be entered."),
+                () => (Reports?.TotalReceived ?? 0) <= Math.Max(0, _caseSubmitted),
+                () => FinishSubmittedCase(false), 110);
             starter.AddDialogLine("gwp_case_short_question", "gwp_case_short_question", "gwp_case_short_options",
-                GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."), null, null);
+                GwpText.Get("{=gwp_case_short_question}This is less than what he paid you. Tell me why."), null, null);
             starter.AddPlayerLine("gwp_case_short_truth", "gwp_case_short_options", "gwp_case_report_receipt",
                 GwpText.Get("{=gwp_case_short_truth}I will explain exactly what I received and why I did not bring the rest."), null, () => FinishSubmittedCase(false));
             starter.AddPlayerLine("gwp_case_short_lie", "gwp_case_short_options", "gwp_case_report_receipt",

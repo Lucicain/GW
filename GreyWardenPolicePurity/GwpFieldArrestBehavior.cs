@@ -1009,8 +1009,8 @@ namespace GreyWardenPolicePurity
 
             LeaveEncounterPeacefully();
 
-            // 他的账在这里一分都不清。钱还在玩家手上，灰袍还没见到；等玩家上交
-            // 给领主或结算队，账才按他实际交了多少去抵。
+            // 犯人的账在这里就清，按他**实际交了多少**抵负声望——他已经当众交代过了。
+            // 玩家手上这笔钱要不要如实上交，是玩家与灰袍之间的另一本账。
             GwpFieldReportLedger.Instance?.RecordSettlement(
                 _offender, owed, collected, CalculateBaseFine(_crime),
                 wasBroke ?? _offender.Gold < owed - collected);

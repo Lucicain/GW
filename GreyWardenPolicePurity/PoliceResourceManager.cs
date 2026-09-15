@@ -430,7 +430,7 @@ namespace GreyWardenPolicePurity
         /// R10 起常驻领主队不再免费获得船只：原版 NavalDLC 的购船决策会让领主在
         /// 有资金和可用船坞时自行购买（监控日志已有 ApplyByTrade 实购记录），
         /// 免费生成后再按人数波动出售多余船会形成重复造钱。无英雄的临时纠察队
-        /// 和悬赏结算队仍免费配船，它们不进入家族公库，也不参与余船出售。
+        /// 仍免费配船，它们不进入家族公库，也不参与余船出售。
         /// </summary>
         internal static void GivePoliceShips(MobileParty party)
         {

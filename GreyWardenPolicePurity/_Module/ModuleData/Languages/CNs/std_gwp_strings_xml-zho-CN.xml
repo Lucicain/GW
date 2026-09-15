@@ -373,11 +373,7 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_035" text="击败目标后，向任意灰袍领主报告，即可领取约 {VAR_1} 第纳尔赏金。" />
   <string id="gwp_bounty_contract_timed_out" text="悬赏契约已到期。追捕结束，协办灰袍已返回原有职责。" />
   <string id="gwp_bounty_contract_timed_out_log" text="悬赏契约到期时目标仍未被击败，任务失败。" />
-  <string id="gwp_bounty_ready_for_turnin" text="外勤处理已结束。请将代收罚金或受托追捕的俘虏交给任意灰袍领主；五天后仍未交付，会有结算队前来找你。" />
-  <string id="gwp_bounty_turnin_player" text="悬赏目标已经落败。我来结清这份通缉令，并领取约定的赏金。" />
-  <string id="gwp_bounty_turnin_lord" text="报告已经核实，通缉令就此结案。收下约定的 {VAR_1} 第纳尔赏金。" />
-  <string id="gwp_bounty_complete_notice_title" text="悬赏目标已被击败" />
-  <string id="gwp_bounty_complete_notice_body" text="追捕已经结束，协办灰袍已返回原有职责。你可以向任意灰袍领主领取 {VAR_1} 第纳尔；五天仍未结案时，灰袍结算队会主动前来找你。" />
+  <string id="gwp_bounty_ready_for_turnin" text="外勤处理已结束。请将代收罚金或受托追捕的俘虏交给任意灰袍领主；你也可以派自己的人送去。" />
   <string id="gwp_bounty_notification_description" text="新的悬赏契约可供挑选。" />
   <string id="gwp_bounty_notification_title" text="灰袍悬赏契约" />
   <string id="gwp_bounty_choice_nearest" text="最近" />
@@ -401,9 +397,6 @@
   <string id="gwp_bounty_quest_target" text="目标：{VAR_1}。评估难度：{VAR_2}。&#10;" />
   <string id="gwp_bounty_quest_reward" text="在 45 天内收取卷宗应缴的 {VAR_1} 第纳尔罚金，或俘虏目标。将钱或人交给灰袍领主后，按实际交付结算办案酬劳。" />
   <string id="gwp_bounty_contract_accepted" text="已接受委托：{VAR_1}。难度：{VAR_2}；卷宗应缴罚金：{VAR_3} 第纳尔。" />
-  <string id="gwp_bounty_courier_player" text="那就结清通缉令吧。我领取约定的赏金。" />
-  <string id="gwp_bounty_courier_response" text="通缉令已经结清。这是契约中登记的报酬。我们会返回最近的定居点复命。" />
-  <string id="gwp_bounty_courier_payment_received" text="已从灰袍结算队领取赏金：{VAR_1} 第纳尔" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_036" text="已接受悬赏任务：追击 {VAR_1}" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_037" text="（{VAR_1} 人），赏金约 {VAR_2} 第纳尔" />
   <string id="gwp_playerbountybehavior_encyclopedia_001" text="未指定护送部队" />
@@ -1035,7 +1028,7 @@
   <string id="gwp_fa_debug_victim" text="附近的村民" />
   <string id="gwp_fa_debug_seeded" text="【调试】{VAR_1} 现在背着一件村庄暴力案，死 {VAR_2} 人。" />
   <string id="gwp_case_payment" text="向灰袍司法公库上缴罚金" />
-  <string id="gwp_case_captive_ready" text="受托追捕的目标已成为你的俘虏。将他交给灰袍领主或结算队，才能领取办案酬劳。" />
+  <string id="gwp_case_captive_ready" text="受托追捕的目标已成为你的俘虏。将他交给任意灰袍领主，亲自送或派自己的人送都行，才能结算办案酬劳。" />
   <string id="gwp_case_closed_elsewhere" text="{VAR_1}已经不在你能追到的地方了。委托到此为止。去找任意灰袍领主复命，或者派个人去。" />
   <string id="gwp_case_report_open" text="我来交代上次受托办的案子。" />
   <string id="gwp_case_deliver_money" text="罚金带来了，我们点一下。" />
@@ -1300,7 +1293,8 @@
   <string id="gwp_case_pay_any" text="我来上缴钱物，清点一下吧。" />
   <string id="gwp_case_pay_zero" text="我这次没有钱物可以上缴。" />
   <string id="gwp_case_resume_report" text="刚才交的钱物还差一些，我来说明原因。" />
-  <string id="gwp_case_short_question" text="这些还不够。剩下的为什么没交上来？" />
+  <string id="gwp_case_nothing_concealed" text="他交到你手上的就是这些，一分不少地都在这儿了。你的汇报会照实登记。" />
+  <string id="gwp_case_short_question" text="这比他交给你的少。说说是怎么回事。" />
   <string id="gwp_case_short_truth" text="我会如实说明收了多少，以及没能交齐的原因。" />
   <string id="gwp_case_short_lie" text="【撒谎】他只能拿出这些，我一点也没留下。" />
   <string id="gwp_collection_agreement" text="履行约定" />

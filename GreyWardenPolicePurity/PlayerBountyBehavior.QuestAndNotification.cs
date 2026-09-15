@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -122,7 +122,7 @@ namespace GreyWardenPolicePurity
 
                 _readyForTurnInLogWritten = true;
                 WriteLog(GwpText.Get(
-                    "{=gwp_bounty_ready_for_turnin}The field operation has ended. Deliver the fines or the assigned prisoner to a Grey Warden lord. After five days, a settlement party will come for your report."));
+                    "{=gwp_bounty_ready_for_turnin}The field operation has ended. Deliver the fines or the assigned prisoner to any Grey Warden lord, in person or by your own men."));
             }
 
             internal void TimeOutQuest()

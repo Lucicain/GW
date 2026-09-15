@@ -812,8 +812,6 @@ namespace GreyWardenPolicePurity
             // 维护悬赏护送部队（每小时刷新跟随命令）
             UpdateEscortPatrol();
 
-            // 完成后五日仍未交付时，由无领主灰袍结算队主动寻找玩家。
-
             // 声望达标且尚未招募过 → 生成招募使者
             if (!_recruitmentOffered &&
                 !_recruitmentAccepted &&
