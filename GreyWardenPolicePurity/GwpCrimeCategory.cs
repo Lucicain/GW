@@ -39,6 +39,8 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpFieldArrestPricing
     {
+        internal static int BaseChargeFor(CrimeRecord crime) =>
+            (int)Math.Min(int.MaxValue, (long)Math.Max(1, crime.IncidentCount) * GwpTuning.FieldArrest.BaseChargeVillageViolence);
         internal static int BaseChargeFor(GwpCrimeCategory category) =>
             category == GwpCrimeCategory.CaravanAttack
                 ? GwpTuning.FieldArrest.BaseChargeCaravanAttack
@@ -50,9 +52,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static int AssessFine(CrimeRecord crime)
         {
-            int baseCharge = crime.AccruedBaseFine > 0
-                ? crime.AccruedBaseFine
-                : BaseChargeFor(crime.CrimeCategory);
+            int baseCharge = BaseChargeFor(crime);
 
             TaleWorlds.CampaignSystem.Hero? offender = crime.OffenderHero;
             int standing = offender == null

@@ -68,7 +68,12 @@ namespace GreyWardenPolicePurity
         [HarmonyPrefix]
         private static bool Prefix(PartyCharacterVM __instance)
         {
-            if (!GwpPartyScreenTroopTalk.IsDispatchableTroop(__instance)) return true;
+            if (!GwpPartyScreenTroopTalk.IsDispatchableTroop(__instance))
+            {
+                // A stale troop button must not open the native hero-only conversation.
+                CharacterObject? blockedTroop = __instance?.Troop.Character;
+                return blockedTroop == null || blockedTroop.IsHero || !GwpCommon.IsGreyWardenTroop(blockedTroop);
+            }
 
             CharacterObject? troop = __instance?.Troop.Character;
             try

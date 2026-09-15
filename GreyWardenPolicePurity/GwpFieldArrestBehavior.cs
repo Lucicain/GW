@@ -89,9 +89,6 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-#if GWP_DIAGNOSTICS
-            RegisterDesireTestDialogues(starter);
-#endif
             _pendingDuelOffenderId = string.Empty;
             _pendingDuelFine = 0;
             // ── 入口 ────────────────────────────────────────────────────────────
@@ -100,20 +97,6 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_fieldarrest_open}Stand where you are. I speak for the Grey Wardens."),
                 FieldArrestAvailableCondition, PrepareFieldArrest, 110);
 
-#if GWP_DIAGNOSTICS
-            // [GWP_TEST_SCAFFOLD] 手工造案的对话入口，定稿后整段删除。
-            // 调试用：新档的案件池是空的，等 AI 自己去抢一票要很久。这一条当场
-            // 给对面记一笔村庄暴力，连带人命，好把执法流程立刻跑起来。
-            starter.AddPlayerLine(
-                "gwp_fa_debug_seed", "hero_main_options", "gwp_fa_debug_seed_reply",
-                GwpText.Get("{=gwp_fa_debug_seed}[Debug] Enter a village-violence case against this lord."),
-                DebugSeedAvailableCondition, null, 108);
-
-            starter.AddDialogLine(
-                "gwp_fa_debug_seed_reply", "gwp_fa_debug_seed_reply", "close_window",
-                GwpText.Get("{=gwp_fa_debug_seed_reply}[Debug] The case is on the books."),
-                null, DebugSeedConsequence);
-#endif
 
             starter.AddDialogLine(
                 "gwp_fa_greeting", "gwp_fa_greeting", "gwp_fa_charge_options",
@@ -361,54 +344,6 @@ namespace GreyWardenPolicePurity
                 + "; resistance=" + resistance + "; refusalChance=" + refusalChance + "; refuses=" + _refusesToTalk);
         }
 
-#if GWP_DIAGNOSTICS
-        // [GWP_TEST_SCAFFOLD] 手工造案，测试用，定稿后整段删除。
-        private static bool DebugSeedAvailableCondition()
-        {
-            Hero? hero = Hero.OneToOneConversationHero;
-            MobileParty? party = MobileParty.ConversationParty;
-            return hero != null && hero != Hero.MainHero
-                   && party?.IsActive == true && party != MobileParty.MainParty
-                   && party.CurrentSettlement == null
-                   && CrimeState.GetByOffenderId(party.StringId)?.HasOpenCase != true;
-        }
-
-        /// <summary>
-        /// 造一件和真实链路完全一样的案子：走正规的案件登记入口累加案底罚款，
-        /// 再按平民人头喂负声望，好让罚金的两段都有真实数值可看。
-        /// </summary>
-        private static void DebugSeedConsequence()
-        {
-            Hero? hero = Hero.OneToOneConversationHero;
-            MobileParty? party = MobileParty.ConversationParty;
-            if (hero == null || party == null) return;
-
-            CrimeState.TryAdd(
-                GwpText.Get("{=gwp_policecrimemonitorenhanced_010}Raid Village"),
-                party,
-                party.GetPosition2D,
-                GwpText.Get("{=gwp_fa_debug_victim}[Debug] villagers"));
-
-            const int seededCasualties = 40;
-            CrimePool.GetOrCreateHistory(hero).AddCivilianCasualties(seededCasualties);
-
-            CrimeRecord? record = CrimeState.GetByOffenderId(party.StringId);
-            if (record?.HasOpenCase == true)
-                record.CivilianCasualties += seededCasualties;
-
-            GwpAiDiagnostics.WriteFieldArrest(
-                "DEBUG_SEED",
-                "offender=" + (hero.StringId ?? "-") +
-                "; casualties=" + seededCasualties +
-                "; standing=" + CrimePool.GetOrCreateHistory(hero).NegativeStanding);
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fa_debug_seeded}[Debug] {VAR_1} now carries a village-violence case with {VAR_2} dead.",
-                    "VAR_1", hero.Name?.ToString() ?? string.Empty,
-                    "VAR_2", seededCasualties.ToString()),
-                Colors.Cyan));
-        }
-#endif
 
         private int AvailableProperty => _offender == null || _offenderParty == null ? 0 : GwpAssetPayment.Wealth(_offender, _offenderParty.Party);
         private int BribeOffer => _offender == null || _offenderParty == null ? 0 : Math.Min(
@@ -570,9 +505,7 @@ namespace GreyWardenPolicePurity
         /// the first place.
         /// </summary>
         private static int CalculateBaseFine(CrimeRecord crime) =>
-            crime.AccruedBaseFine > 0
-                ? crime.AccruedBaseFine
-                : GwpFieldArrestPricing.BaseChargeFor(crime.CrimeCategory);
+            GwpFieldArrestPricing.BaseChargeFor(crime);
 
         /// <summary>
         /// 罚金收的是他名下所有没赎回的人命，不是这一件案子里的死亡人数。对外
@@ -1309,9 +1242,6 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void ClearState()
         {
-#if GWP_DIAGNOSTICS
-            _testDesireApplied = false;
-#endif
             _enforcementAccepted = false;
             _paymentAccepted = false;
             _lastArgumentTask = null;

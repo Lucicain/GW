@@ -1,4 +1,117 @@
-﻿# GreyWarden Maintenance Plan
+# GreyWarden Maintenance Plan
+
+## 2026-09-16 v1.4-r11 正式版收尾（本地包已核验，待 GitHub 发布）
+
+- 用户明确结束测试，授权调整贪腐调查、撤销全部测试玩法并发布 1.4 r11，更新 Git/GitHub。
+  随后补充士兵对话必须接受灰袍雇佣才启用，并恢复曾临时屏蔽的门槛。
+- 正式风险：最近十次汇报中谎报数 L，repeats=max(0,L-1)，原始风险
+  min(0.95,0.08+0.04*repeats^2)。声望 R>40 后按每点 1% 折减，最高折减 75%；
+  负声望每点另加 0.5 个百分点，最终夹到 2%—95%。中性声望第 1—6 次谎报分别
+  8/12/24/44/72/95%；80 声望为原风险的 60%，115 及以上为 25%。概率在到期调查时
+  读取当时声望与最近十次记录，不额外更改存档字段或对诚实汇报的定义。
+- 删除 ImmediateAuditTesting、AuditAtHandIn 和全部调用；本地和玩家版本均仅由 DailyTick
+  按既有七天期限调查，旧待调查到期时间继续保存。私留一般从交差入队算起；若已登记反水
+  时间则沿用该行为起点，不强行重置已发生行为的计时。过度执法同样恢复延迟概率调查。
+- 删除 DesireTest.cs、两处挂钩和 13 个测试文本；删除手工造案菜单与方法、新档自动受雇
+  事件/方法、接单门槛的诊断放行。恢复原有声望 20 + 指挥官装备要求，正式招募仍需声望
+  达标后使者邀请并由玩家接受。清理 5 个造案/自动入职文本和无引用的旧测试震慑文本。
+  保留正式成员存档标记，旧测试自动入职与真实加入共用该字段，不能凭猜测撤销所有旧档身份。
+- 士兵对话在按钮可用条件、OpenWithTroop、实际打开前及求援/交差条件上检查受雇身份。
+  未雇佣或已退出时不启用派遣；失效旧按钮也不能误走只接收英雄的原版对话。
+  沿用原先必须有可派遣差事的条件。已有在途使者按原退出/返队机制处理。
+- 此次发布纳入先前已记录、已部署的犯罪登记/定价修复和交差菜单清理；不是盲覆盖这些
+  工作区改动。既有稳定回滚点 e1129ff（返程）、32689fa（交易确认）；本次新曲线/入口
+  仅经自动验证，不冒称新增参数和菜单已通过实机验收。用户此前集中回归未再发现旧 bug。
+- 中英文 README 正式更新为 r11 相对 r10，仅保留 r11/r10 两条发布记录；1.5-r1 仍为旧包，
+  不声称此次发布支持 1.5。修正 SubModule.xml 遗留 v1.5.1 为 v1.4.11，与程序集 1.4.11 一致。
+- 已完成第一轮验证：168 项生产账本/交付断言通过，新增曲线、声望门槛、七天前/到期、存档
+  恢复、过度执法延迟和不重复处罚覆盖。测试桩编译有 3 处既有空引用警告，生产构建 0 警告/
+  0 错误；测试初稿 MBRandom 命名空间写错，编译发现后改为 Core，不涉及运行 DLL。
+  内容 29 XML/1373 中文键/1154 使用键，重复/缺失 0；犯罪账据验证通过。541 类型加载、
+  54 补丁挂接，成员/补丁失败 0。入口加固后会重建并重新核查。
+- 所有源码 runtime 文档/XML 修改已立即镜像 live 并比对哈希。发布 DLL 将在隔离目录
+  build-check/release-player-v1.4-r11 编译，禁止回写 live；不打包工具、PDB、日志或编辑器资源。
+
+### 最终构建与归档核验
+
+- 对外文本按 lucian-ai-rate-reducer 与 lucian-external-communication 技能做本地措辞核对，
+  以既有中英文发布日志的简明条目为语气依据，不加个人经历或宣传性承诺。最终 README 与
+  发布说明合并检测：Vanguard 70.1%、标记词占比 73.2%、DACTYL 63.0%；中文修复段两模型
+  分歧明显，不据这些分数声称作者身份或外部平台检测结果，不为降分改动事实。报告为
+  `D:\AI文本自查工具\检测报告\gwp-r11-final-reviewed_20260916_001310.json`；精确候选在
+  `.codex_tmp/r11-publication-text.txt`。目的地为用户指定的 GitHub Lucicain/GW，发布标题
+  `GreyWarden v1.4-r11 (Bannerlord 1.4.8)`，附本节已核验 ZIP/校验文件；用户已明确授权正式
+  发布并继续，不另行替用户发送社交平台消息。
+- 门槛加固后本地/隔离玩家构建均 0 警告、0 错误。本地 541 类型、54 补丁；玩家 533 类型、
+  51 补丁（诊断补丁未编译），两者成员/补丁失败均 0。反编译确认受雇条件和声望 20 + 套装
+  条件在实际 DLL 内；全程序集没有 ImmediateAuditTesting、AuditAtHandIn、DebugSeed、自动
+  入职方法或 gwp_test_ 菜单。仍关闭的弓箭强化候选不在此次发布说明中列为已上线。
+- 玩家 DLL SHA256 `A262A2FF4F1B348054D4FE839EFDAB038A3B8C1A999034917676EFE7C67307A5`；
+  live Client 与 Editor DLL 均为
+  `030A7BF7F55B85AA40AB25122D7FE228992451E5AC9327A69FBF183581E85071`，隔离构建未覆盖 live。
+- 最终 ZIP：`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden-v1.4-r11.zip`，
+  351434864 字节，SHA256 `5DC71DFB720BE4304F899D51AF78C6F4F516D10995FE62A0A200D067E4DB1628`。
+  同目录匹配 `.zip.sha256`；唯一顶层 GreyWarden/，38 文件。逐项解压流计算 SHA256 与源清单
+  比较全部一致；包内 DLL 与隔离构建一致；两份 README 都只保留 r11/r10，live/源码/包内一致。
+- 包内反编译 GwpAiDiagnostics 全部写入方法为空、LogPath 为空、ShouldTrace 返回 false；
+  GwpFaultTrace.Write 为空，RuntimeFaultWatch.Arm/StartSession 为空。整个玩家程序集未发现
+  File/Directory/StreamWriter 或 WriteAllText/AppendAllText 调用，无玩家日志写入能力。
+- 核验后删除 Modules 中旧 r10 和 1.5-r1 本地 ZIP/校验对，仅留 r11 一对；不删除 GitHub 旧版。
+  额外清理 previous AI 日志中的 3 条 DEBUG_SEED/DEBUG_START/DESIRE_SEQUENCE_TEST 旧记录，
+  当前日志无此类记录。仍在其他问题调查中的故障/案件证据不混同测试菜单删除。
+- 可复现文件均在仓库绝对根目录
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity`：隔离输出
+  `build-check/release-player-v1.4-r11/`（对象文件相邻 -obj/），包内 DLL 与完整清单在
+  `build-check/package-v1.4-r11/`。重建命令：dotnet build 项目 -c Release -t:Rebuild
+  -p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false，并明确 OutputPath 和
+  IntermediateOutputPath 指向以上隔离路径；不得用玩家 DLL 回盖 live。
+  `.codex_tmp/package-r11.py` 是本次归档重现脚本，发布说明在 `.codex_tmp/r11-release-notes.md`。
+  `.codex_tmp/r11-player-decompiled.cs`、r11-packaged-diagnostics.cs 为可再生 ILSpy 证据；
+  r11-player-compat.log、r11-final-live-compat.log 为最终加载检查。没有资产移出原位置。
+- 正式包仍依赖本地未纳入 Git 的盾与继承资源，来源为
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\_Module\AssetPackages\`：
+  gwp_black_gold_shield.tpac SHA256 `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`。
+  gwp_inherited_legacy_assets.tpac SHA256 `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`。
+  gwp_dual_wield_animations.tpac SHA256 `652634753C25CEFBD2547B8AC49D26A493C28C896225EF074665D9864E727F2B`。
+
+## 2026-09-15 灰袍领主交差旧入口清理（已部署，待菜单实机核对）
+
+- 用户指出现在交任务通过交易界面，领主菜单仍残留旧选项，要求检查类似过时入口；同时
+  再次要求严格退休已确认功能的正常监控。先完成返程/诊断检查点 `e1129ff`，再改菜单。
+  新菜单未实机确认，不提交为稳定检查点；回退本轮菜单从 e1129ff 提取 CaseSettlement.cs
+  与中文文本相关行，不能整树覆盖工作区中独立的犯罪登记/定价改动。
+- 检查注册的 gwp_case_report_options：旧 pay_zero 直接把 _caseSubmitted 设 0 并绕过交易；
+  deliver_prisoner 与 pay_any 打开相同交易，重复占位。删除这两个玩家行，统一为
+  “我来交差，请清点结账。”，未提交时可以打开交易，不再要求应缴金额大于 0，避免纯俘虏
+  或零交付时失去入口。普通案件的金币、物品、俘虏与空交均由原有 ReportMode 确认。
+- 另外合并 close_withdrawn 与 legacy_reward 两个独立按钮：同一个交差按钮进入后，由 NPC
+  条件分支处理确实没有钱人待交的撤销案件和旧存档已承诺报酬；保留既有金额、国库/旧承诺
+  支付路径，不把旧存档兼容逻辑直接删掉。这两种只结算报酬的情形无需空开财物交易。
+  普通案件仍走交易。resume_report 保留：它恢复已交财物但尚未解释的记录，不应删掉后让
+  玩家重复交款。说明/撒谎、取消返回和以后再来均仍有入口。
+- 删除无人调用的 DeliverCasePrisoner，防止遗留直接交人/结算实现继续保留两套路径。
+  核对全项目 C# 引用后移除 9 个确定废弃的中文键：gwp_case_pay_zero、
+  gwp_case_deliver_prisoner、gwp_case_legacy_reward、gwp_case_close_withdrawn、
+  gwp_case_transfer_failed，以及旧使者“带人还是钱”弹窗的 gwp_dispatch_handover_title/body/
+  man/money。补 gwp_case_settle_expenses，统一入口与清点文字。未依据“无字面引用”盲删
+  动态本地化键；旧赏金结算队的读档退休函数属于数据迁移，不是仍显示的菜单，保留。
+- 监控退休进一步清理：撤下仅供日志使用的返程 reason 参数；结算回执仍需 received，保留。
+  使者同时退出主动和被观察对象的常规 AI 采样；其意外遭遇与 catch 错误继续保留。
+  收尾时误删 received 被编译检查发现，已恢复；失败构建未部署 DLL。
+  清理共享 AI 当前日志 3 行、previous 日志 314 行，共 317 条已退休行；保留未结案的
+  意外遭遇/失败记录及其它功能诊断。没有为新菜单增加成功日志或新的常驻监控。
+- 部署与验证：中文 XML 修改后立即复制 live 并核验哈希。最终 Release 构建 0 警告/0 错误；
+  153 项已有付款/账本/入口测试通过（引擎桩，不是菜单实机验证）。内容校验 29 XML、1392
+  中文键、1172 引用，缺失/重复 0。注册接线核查 gwp_case_report_options 仅剩 pay_any、
+  resume_report、report_later 三行，前两者按是否已提交互斥，不重复交款。
+- 兼容检查 542 类型加载、54 Harmony 补丁成功、0 失败，无缺失接口；live mirror 36 源文件/
+  43 live 文件无缺失/差异/多余，README 一致，diff --check 通过。obj/Release、live Client、
+  live Editor DLL SHA256 均为
+  `AAB11760F73C465B9F87619DB029680993A7F550EA2C2F58D31DF7D6D290F2EC`。
+  输出在仓库 `.codex_tmp/report-menu-cleanup-build.log`、report-menu-cleanup-compat.log、
+  report-menu-cleanup-tests.log；没有外移资产、改玩家 README 或制作发布 ZIP。
+- 待实机核对领主对话：普通交钱货、纯俘虏、空交、取消再开、已提交短款继续说明；旧存档
+  已承诺报酬与空案结算保持单一入口。当前仅声明清理与构建部署完成，不虚报菜单实机通过。
 
 ## 2026-09-15 用户集中回归通过：返程检查点与监控退休
 

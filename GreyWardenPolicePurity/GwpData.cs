@@ -438,7 +438,7 @@ namespace GreyWardenPolicePurity
             record.VictimName = victimName ?? string.Empty;
             record.HasOpenCase = true;
             record.IncidentCount++;
-            record.AccruedBaseFine += GwpFieldArrestPricing.BaseChargeFor(category);
+            record.AccruedBaseFine = GwpFieldArrestPricing.BaseChargeFor(record);
             GetOrCreateHistory(leader).TotalCrimeCount++;
             TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             return true;

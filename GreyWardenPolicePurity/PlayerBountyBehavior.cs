@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -89,45 +89,10 @@ namespace GreyWardenPolicePurity
         private bool IsWaitingForBountyCollection => CurrentBountyState == PlayerBountyFlowState.WaitingForCollection;
         private bool HasEscortPoliceParty => !string.IsNullOrEmpty(_escortPolicePartyId);
 
-        /// <summary>
-        /// 接单的第二、三道门槛：声望达标且穿着指挥官套装。
-        ///
-        /// [GWP_TEST_SCAFFOLD] 其中的 GWP_DIAGNOSTICS 分支是测试放行，让新档不必
-        /// 先攒声望、再凑装备就能跑整条任务链。功能定稿前必须删掉这个分支，恢复
-        /// 为无条件校验。玩家发行构建目前已经走的是 #else 一侧。
-        /// </summary>
-        private bool MeetsBountyEquipmentAndStanding()
-        {
-#if GWP_DIAGNOSTICS
-            return true;
-#else
-            return PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
-                   && IsWearingCommanderSet();
-#endif
-        }
-
-        /// <summary>
-        /// 新档一开局玩家就已经是灰袍的受托猎手，省掉等使者上门、接受招募这一段。
-        /// 只置身份标记，不发装备也不改声望——那两样各有各的获取途径，测试时该
-        /// 怎么拿还怎么拿。
-        ///
-        /// [GWP_TEST_SCAFFOLD] 测试脚手架，功能定稿后整段删除。整段包在
-        /// GWP_DIAGNOSTICS 内，玩家发行构建编译为空实现。
-        /// </summary>
-        private void OnNewGameCreatedForDebug(CampaignGameStarter starter)
-        {
-            _ = starter;
-#if GWP_DIAGNOSTICS
-            _recruitmentOffered = true;
-            _recruitmentAccepted = true;
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_debug_start}Debug build: you begin as a sworn Grey Warden hunter."),
-                Colors.Cyan));
-
-            GwpAiDiagnostics.WriteFieldArrest("DEBUG_START", "recruited=true");
-#endif
-        }
+        /// <summary>接单需声望达标且穿着指挥官套装。</summary>
+        private bool MeetsBountyEquipmentAndStanding() =>
+            PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
+            && IsWearingCommanderSet();
 
         /// <summary>
         /// 这名罪犯是不是玩家当前接下的那件案子的目标。别人犯了罪与玩家无关——
@@ -323,7 +288,6 @@ namespace GreyWardenPolicePurity
             CampaignEvents.TickEvent.AddNonSerializedListener(this, ReconcileCaseOnTick);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
-            CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreatedForDebug);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
         }
 

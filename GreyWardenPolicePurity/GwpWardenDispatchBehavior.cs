@@ -669,7 +669,7 @@ namespace GreyWardenPolicePurity
             if (receiver == null)
             {
                 // 一个走得到的灰袍都没有：带着东西回来，不把玩家的人和钱丢在路上。
-                BeginReturn(record, party, "no_receiver");
+                BeginReturn(record, party);
                 return;
             }
             if (!string.Equals(receiver.StringId, record.ReceiverPartyId,
@@ -747,7 +747,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
-            BeginReturn(record, party, "stalled");
+            BeginReturn(record, party);
             return true;
         }
 
@@ -761,7 +761,7 @@ namespace GreyWardenPolicePurity
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                         "{=gwp_dispatch_support_moot}Your riders delivered the request, but the matter no longer stands."),
                         Colors.Yellow));
-                BeginReturn(record, party, "support_delivered");
+                BeginReturn(record, party);
                 return;
             }
 
@@ -774,7 +774,7 @@ namespace GreyWardenPolicePurity
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     "{=gwp_dispatch_report_moot}Your men arrived to find the commission already closed. They are bringing everything back."),
                     Colors.Yellow));
-                BeginReturn(record, party, "report_moot");
+                BeginReturn(record, party);
                 return;
             }
 
@@ -805,7 +805,7 @@ namespace GreyWardenPolicePurity
             if (fee < 0)
             {
                 // 交接没有成立，账不能当作已缴，钱一分不动。
-                BeginReturn(record, party, "report_refused");
+                BeginReturn(record, party);
                 return;
             }
 
@@ -823,10 +823,10 @@ namespace GreyWardenPolicePurity
             // 不许动玩家托付的钱，也不许动要带回去的酬劳。路上被打光才会一起没。
             if (fee > 0) party.PartyTradeGold += fee;
             record.CaseGoldFloor = Math.Max(0, fee);
-            BeginReturn(record, party, "report_delivered");
+            BeginReturn(record, party);
         }
 
-        private void BeginReturn(GwpDispatchRecord record, MobileParty party, string reason)
+        private void BeginReturn(GwpDispatchRecord record, MobileParty party)
         {
             record.Phase = GwpDispatchPhase.Returning;
             record.SupplyTownId = string.Empty;

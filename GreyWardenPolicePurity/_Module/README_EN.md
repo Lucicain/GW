@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-This release ships two packages with identical content and different game support: v1.5-r1 for Bannerlord 1.5.2 and v1.4-r10 for Bannerlord 1.4.8. Pick the one matching your game; the wrong one reports that the module cannot be loaded at startup.
+v1.4-r11 is for Bannerlord 1.4.8. Players on 1.5.2 should use the earlier v1.5-r1 package; the additions in this release have not been released for the 1.5 branch.
 Chinese: README.md
 
 ## Main features
@@ -14,6 +14,9 @@ Chinese: README.md
 - Wardens physically rendezvous to exchange and deliver troops, resolve local issues, rebuild raided villages, and manage case income, operating expenses, and naval ships.
 - The mod includes a Warden troop tree, black-and-gold equipment, dual blades, a dedicated shield, kicks, shield bashes, passive great-shield protection, and sparring with Warden lords.
 
+- A recruitment invitation becomes available at 20 Grey Warden standing. Accept it to use the dispatch conversation with Warden soldiers in your party. New contracts also require sufficient standing and the Warden commander set.
+- Player-led cases include negotiation, collecting money and goods, prisoner delivery, and soldiers dispatched for support or reports. Keeping case proceeds or using excessive force can lead to a later investigation.
+
 ## Installation and updating
 
 1. Delete the old Modules/GreyWarden folder.
@@ -23,6 +26,30 @@ Chinese: README.md
 Existing campaigns remain supported. Finish any old bounty already in progress before updating because it is not carried into the revised system. Replace the complete module rather than copying only part of it.
 
 ## Changelog
+
+### 2026-09-16 v1.4-r11 (Bannerlord 1.4.8)
+
+Compared with v1.4-r10:
+
+#### Added and adjusted
+
+- Reworked player-led cases. First convince the offender to accept enforcement, then negotiate the terms. Personality and circumstances shape payment, bargaining, concealed wealth, surrender, bribes, duels and requests for more time.
+- Fines can be paid with gold and goods. Reports use a trade screen for money, goods and the case prisoner. Auto Offer selects the assets actually collected for that case where available; players can adjust the offer.
+- Dispatch soldiers from your party to request support or deliver a report. Couriers carry real assets and prisoners to a Warden lord, then return to your party, buying supplies and avoiding danger on the way.
+- Warden support is assigned after the request arrives. Taking a case no longer grants an automatic escort. Defeating the target advances the case without requiring the player to capture the offender personally.
+- Expenses are settled for the case. Money the offender could not pay is not treated as theft by the player; keeping assets that were actually collected can trigger an investigation. Attacking someone after accepting their settlement may also be investigated.
+- Concealment is investigated after a delay. A first false report carries a low risk, but repeated recent lies raise it sharply. High Grey Warden standing reduces the chance of discovery.
+- Player enforcement adds to the offender's arrest history and deterrence. Fines accumulate by offence and civilian losses, with outstanding amounts shown in the encyclopedia.
+- Warden archers now carry dual blades for melee and switch between their bow and blades according to distance and firing orders.
+- Adjusted dual-blade length and resistance to interruption during attacks, removed attacks passing through allies, and improved recovery after a left-hand thrust connects.
+
+#### Fixed
+
+- Fixed crashes when confirming courier cargo, failed prisoner transfers, stalled departures, supply and retargeting problems, and returning couriers triggering a battle with only a surrender option when followed closely.
+- Fixed trade confirmation, cancellation and item transfers, and removed duplicate or obsolete report choices from Warden conversations.
+- Fixed duplicate charges during a single village raid, missing village militia deaths and professional troop casualties being counted as civilian losses.
+- Fixed case-state loading errors, Wardens pursuing the player after a case ended, and parts of the support handover.
+- Fixed missing battle command voices and crashes during dual-blade melee combat.
 
 ### 2026-08-31 v1.5-r1 (Bannerlord 1.5.2) / v1.4-r10 (Bannerlord 1.4.8)
 
@@ -51,26 +78,6 @@ Both packages carry the same content, and everything below applies to both. Comp
 - Fixed provost patrols travelling to the player's former position. Patrols now follow the player's live position and open the meeting once in range.
 - Fixed GreyWarden failing to load and erroring on startup after the game changed version. 1.5.2 and 1.4.8 now each have their own package.
 - Fixed custom battle crashing to desktop during screen setup and troop preview.
-
-### 2026-08-05 v1.4-r9
-
-Compared with v1.4-r8:
-
-#### Added and adjusted
-
-- Bounty notices now offer a nearest, harder, and easier contract. Payment is fixed by the difficulty assessed when the contract is accepted rather than headcount.
-- The player now leads an accepted bounty operation. Warden parties escort the player, declare war when the player approaches the target, and may still detach fast cavalry to intercept a quicker offender.
-- Any Warden lord can settle a defeated target. If payment remains unclaimed for five days, a settlement party seeks out the player, pays directly, and returns to nearby quarters.
-- Bounties now share one forty-five-day limit. Escort duty ends when the target falls, and contract and settlement-party state continue across saves.
-- The Training Warden transfers elite troops in proportion to her roster. GreyWarden no longer blocks native achievements when used on its own.
-
-#### Fixed
-
-- Fixed missing encyclopedia buttons, squeezed native page content, and broken settlement links. Warden commands are now added directly to the native hero and clan pages.
-- Fixed campaigns failing to start when GreyWarden was the only enabled mod because a runtime component was missing.
-- Fixed Wardens continuing their own pursuit, failing to declare war promptly, or losing interceptor support after the player accepted an assisted bounty.
-- Fixed expired bounties, payment timers, escort duties, and war state being cleaned up incorrectly.
-- Fixed rescued troops and returning interceptors causing overcapacity or the loss of elite soldiers.
 
 ## Contact
 

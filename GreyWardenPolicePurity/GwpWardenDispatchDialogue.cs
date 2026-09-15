@@ -45,7 +45,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static void OpenWithTroop(CharacterObject? troop)
         {
-            if (troop == null || troop.IsHero || MobileParty.MainParty?.IsActive != true) return;
+            if (!CanTalkToTroop(troop) || MobileParty.MainParty?.IsActive != true) return;
             _requestedTroop = troop;
             _requestedAtTicks = Environment.TickCount;
         }
@@ -157,6 +157,7 @@ namespace GreyWardenPolicePurity
 
         internal static bool CanTalkToTroop(CharacterObject? troop) =>
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop) &&
+            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true &&
             Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>() != null &&
             (ReportAvailable() || SupportAvailable());
 
@@ -189,7 +190,7 @@ namespace GreyWardenPolicePurity
         {
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            return bounty?.CanDispatchCaseReport == true &&
+            return bounty?.IsRecruitedByGreyWardens == true && bounty.CanDispatchCaseReport &&
                    dispatch?.HasActiveDispatch(GwpDispatchPurpose.Report) != true;
         }
 
@@ -199,7 +200,7 @@ namespace GreyWardenPolicePurity
         {
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            return bounty?.CanRequestCaseSupport == true &&
+            return bounty?.IsRecruitedByGreyWardens == true && bounty.CanRequestCaseSupport &&
                    dispatch?.HasActiveDispatch(GwpDispatchPurpose.Support) != true;
         }
 

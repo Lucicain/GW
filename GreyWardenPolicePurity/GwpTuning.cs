@@ -67,7 +67,7 @@
             /// case ledger has to quote the same figure, so both read it here.
             /// A provost patrol settles for less - see Patrol.FinePerPoint.
             /// </summary>
-            public const int FinePerPoint = 300;
+            public const int FinePerPoint = 100;
 
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
@@ -91,19 +91,15 @@
         internal static class FieldArrest
         {
             public const float RefusalStrengthRatio = 4f;
-            // Keep immediate guaranteed audits available until the user ends testing.
-#if GWP_DIAGNOSTICS
-            internal static bool ImmediateAuditTesting = true;
-#else
-            internal static bool ImmediateAuditTesting = false;
-#endif
             public const int ReportAuditDelayDays = 7;
-            public const float ReportAuditChance = 0.35f;
-            /// <summary>近十次委托里每有一次谎报，被查出来的概率加这么多。</summary>
-            public const float AuditChancePerRecentLie = 0.05f;
-            /// <summary>灰袍声望每高一点，被查的概率减这么多；声望为负不减反增。</summary>
-            public const float AuditChancePerStandingPoint = 0.02f;
-            public const float AuditChanceFloor = 0.05f;
+            public const float ReportAuditChance = 0.08f;
+            /// <summary>首次谎报保持低风险，此后按此前谎报次数的平方加速增长。</summary>
+            public const float AuditChancePerRepeatSquared = 0.04f;
+            public const int AuditTrustStanding = 40;
+            public const float AuditTrustReductionPerPoint = 0.01f;
+            public const float AuditMaximumTrustReduction = 0.75f;
+            public const float AuditChancePerNegativeStandingPoint = 0.005f;
+            public const float AuditChanceFloor = 0.02f;
             public const float AuditChanceCeiling = 0.95f;
             /// <summary>谎报记录只看最近这么多次委托。</summary>
             public const int RecentReportMemory = 10;
@@ -184,8 +180,8 @@
             /// the player's rules - see HeroCrimeStats.AddCivilianCasualties / AddRedeemingKills.
             /// Arrest history deliberately plays no part here; it drives deterrence instead.
             /// </summary>
-            public const int BaseChargeVillageViolence = 1200;
-            public const int BaseChargeCaravanAttack = 1800;
+            public const int BaseChargeVillageViolence = 1000;
+            public const int BaseChargeCaravanAttack = 1000;
 
             /// <summary>
             /// 村庄少掉一点人口就算一条人命。原先按一点二十人折算，实机日志里一次

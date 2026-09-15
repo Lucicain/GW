@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -16,8 +18,16 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PoliceCrimeMonitorEnhanced : CampaignBehaviorBase
     {
-        // 犯罪通知事件 - 供惩戒系统订阅
-        public static event Action<string, MobileParty, Vec2, string>? OnCrimeDetected;
+        // Session-owned intake; no static subscribers survive a campaign reload.
+        private static void RegisterCrime(string type, MobileParty offender, Vec2 position, string victim)
+        {
+            bool added = CrimePool.TryAdd(type, offender, position, victim);
+            GwpAiDiagnostics.WriteFieldArrest("CRIME_INTAKE", "offender=" + offender.StringId +
+                "; type=" + type + "; victim=" + victim + "; added=" + added +
+                "; count=" + (CrimePool.GetByOffenderId(offender.StringId)?.IncidentCount ?? 0));
+        }
+        private sealed class EventReceipt { internal bool Started; internal bool Ended; }
+        private readonly ConditionalWeakTable<MapEvent, EventReceipt> _events = new ConditionalWeakTable<MapEvent, EventReceipt>();
 
         public override void RegisterEvents()
         {
@@ -32,27 +42,45 @@ namespace GreyWardenPolicePurity
 
             // 劫掠结束时按村庄少掉的人口折算人命。
             CampaignEvents.VillageLooted.AddNonSerializedListener(this, OnVillageLooted);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, ExpireInterruptedRaids);
         }
 
-        public override void SyncData(IDataStore dataStore) { }
+        public override void SyncData(IDataStore dataStore)
+        {
+            string state = dataStore.IsSaving ? JsonConvert.SerializeObject(_raidHearthAtStart) : string.Empty;
+            dataStore.SyncData("gwp_crime_raid_receipts", ref state);
+            if (!dataStore.IsLoading) return;
+            _raidHearthAtStart.Clear();
+            if (string.IsNullOrEmpty(state)) return;
+            foreach (var entry in JsonConvert.DeserializeObject<Dictionary<string, RaidSnapshot>>(state)
+                ?? new Dictionary<string, RaidSnapshot>()) _raidHearthAtStart[entry.Key] = entry.Value;
+        }
+
+        private void ExpireInterruptedRaids()
+        {
+            foreach (var entry in _raidHearthAtStart.ToList())
+            {
+                MobileParty? raider = MobileParty.All.FirstOrDefault(p => p.StringId == entry.Value.RaiderPartyId);
+                if (raider?.IsActive != true ||
+                    (raider.TargetSettlement?.StringId != entry.Key && raider.MapEvent?.MapEventSettlement?.StringId != entry.Key))
+                    _raidHearthAtStart.Remove(entry.Key);
+            }
+        }
 
         private readonly struct RaidSnapshot
         {
-            internal RaidSnapshot(string raiderPartyId, float hearth, double startedHours)
+            [JsonConstructor]
+            public RaidSnapshot(string raiderPartyId, float hearth, double startedHours)
             {
                 RaiderPartyId = raiderPartyId;
                 Hearth = hearth;
                 StartedHours = startedHours;
             }
 
-            internal string RaiderPartyId { get; }
-            internal float Hearth { get; }
-            internal double StartedHours { get; }
+            public string RaiderPartyId { get; }
+            public float Hearth { get; }
+            public double StartedHours { get; }
         }
-
-        // 一次劫掠的起点人口。只在本次游戏会话内有效；存档中断的劫掠不补算，宁可少算不错算。
-        /// <summary>一次劫掠的起点最多作数这么久，过期的不再往任何人账上算。</summary>
-        private const double RaidSnapshotValidHours = 72d;
 
         private readonly Dictionary<string, RaidSnapshot> _raidHearthAtStart =
             new Dictionary<string, RaidSnapshot>(StringComparer.OrdinalIgnoreCase);
@@ -72,10 +100,8 @@ namespace GreyWardenPolicePurity
                     return;
                 _raidHearthAtStart.Remove(village.Settlement.StringId);
 
-                // 起点只在同一次劫掠里作数。一次被打断的劫掠不会走到这里，起点却留了下来，
-                // 于是下一个来烧这个村子的人接手了上一次的基准：账上多出来的是这中间几天
-                // 人口的自然涨落，记的还是上一个人的名字。超过这么久的起点一律作废。
-                if (CampaignTime.Now.ToHours - snapshot.StartedHours > RaidSnapshotValidHours) return;
+                // The receipt survives the militia/looting phase boundary and saves.
+                // Changing raider replaces it; hourly checks retire abandoned raids.
 
                 MobileParty? raider = MobileParty.All.FirstOrDefault(party =>
                     string.Equals(party.StringId, snapshot.RaiderPartyId, StringComparison.OrdinalIgnoreCase));
@@ -97,13 +123,16 @@ namespace GreyWardenPolicePurity
                     "CASUALTIES_RAID",
                     "offender=" + DescribeOffender(leader) +
                     "; village=" + village.Settlement.StringId +
+                    "; hearthStart=" + snapshot.Hearth + "; hearthEnd=" + village.Hearth +
+                    "; raidStartedHours=" + snapshot.StartedHours + "; raider=" + snapshot.RaiderPartyId +
                     "; hearthLost=" + hearthLost + "; lives=" + lives +
                     "; caseTotal=" + (record?.CivilianCasualties ?? 0) +
                     "; standing=" + CrimePool.GetOrCreateHistory(leader).NegativeStanding);
             }
-            catch
+            catch (Exception exception)
             {
                 // 人口折算失败只影响罚金，不能连累劫掠结算本身。
+                GwpFaultTrace.Write("CRIME_RAID_CASUALTIES_FAILED", details: exception.ToString());
             }
         }
 
@@ -115,6 +144,9 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEndedForCasualties(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
+            EventReceipt receipt = _events.GetOrCreateValue(mapEvent);
+            if (receipt.Ended) return;
+            receipt.Ended = true;
 
             try
             {
@@ -122,9 +154,10 @@ namespace GreyWardenPolicePurity
                 AccumulateCasualties(mapEvent, BattleSideEnum.Defender);
 
             }
-            catch
+            catch (Exception exception)
             {
                 // 伤亡计数失败只影响罚金数额，不能连累战斗结算。
+                GwpFaultTrace.Write("CRIME_BATTLE_CASUALTIES_FAILED", details: exception.ToString());
             }
         }
 
@@ -178,6 +211,16 @@ namespace GreyWardenPolicePurity
                         "; killed=" + share + "/" + losses + " civilians" +
                         "; caseTotal=" + (record?.CivilianCasualties ?? 0) +
                         "; standing=" + CrimePool.GetOrCreateHistory(leader).NegativeStanding);
+#if GWP_DIAGNOSTICS
+                    // This answers which victims died and how a small mercenary
+                    // party inherited its share. The share is not an individual kill counter.
+                    GwpAiDiagnostics.WriteFieldArrest("CASUALTIES_SOURCE",
+                        "offender=" + DescribeOffender(leader) + "; eventRef=" + RuntimeHelpers.GetHashCode(mapEvent) +
+                        "; type=" + mapEvent.EventType + "; side=" + offenderSide +
+                        "; settlement=" + (mapEvent.MapEventSettlement?.StringId ?? "-") +
+                        "; assigned=" + share + "; civilianDead=" + civilianDead + "; banditDead=" + banditDead +
+                        "; allies=" + DescribeBattleParties(side) + "; victims=" + DescribeBattleParties(otherSide));
+#endif
                 }
                 else if (mapEvent.Winner == side)
                 {
@@ -190,7 +233,17 @@ namespace GreyWardenPolicePurity
         private static bool CivilianDied(MapEventParty party) =>
             party?.Party?.MobileParty?.IsVillager == true ||
             party?.Party?.MobileParty?.IsCaravan == true ||
-            party?.Party?.Settlement?.IsVillage == true;
+            party?.Party?.Settlement?.IsVillage == true ||
+            (party?.Party?.MobileParty?.IsMilitia == true && party.Party.MobileParty.HomeSettlement?.IsVillage == true);
+
+#if GWP_DIAGNOSTICS
+        private static string DescribeBattleParties(MapEventSide side) => string.Join(" / ", side.Parties.Select(p =>
+            (p.Party?.MobileParty?.StringId ?? p.Party?.Settlement?.StringId ?? "-") +
+            "(" + p.Party?.Name + ")" + ":civilian=" + CivilianDied(p) +
+            ":start=" + p.HealthyManCountAtStart + ":remaining=" + (p.Party?.MemberRoster?.TotalManCount ?? 0) +
+            ":dead=" + (p.DiedInBattle?.TotalManCount ?? 0) + ":wounded=" + (p.WoundedInBattle?.TotalManCount ?? 0) +
+            ":contribution=" + p.ContributionToBattle));
+#endif
 
         private static bool BanditDied(MapEventParty party) =>
             party?.Party?.MobileParty?.IsBandit == true ||
@@ -296,6 +349,9 @@ namespace GreyWardenPolicePurity
         {
             if (mapEvent == null || attackerParty == null || defenderParty == null)
                 return;
+            EventReceipt receipt = _events.GetOrCreateValue(mapEvent);
+            if (receipt.Started) return;
+            receipt.Started = true;
 
             MobileParty attacker = attackerParty.MobileParty;
             MobileParty defender = defenderParty.MobileParty;
@@ -325,7 +381,7 @@ namespace GreyWardenPolicePurity
                 Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_002}Attack villager"), attacker, victimName, location);
 
                 // 触发事件通知惩戒系统
-                OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_003}Attack villager"), attacker, location, victimName);
+                RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_003}Attack villager"), attacker, location, victimName);
                 return;
             }
 
@@ -336,7 +392,7 @@ namespace GreyWardenPolicePurity
 
                 Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_005}Attack caravan"), attacker, victimName, location);
 
-                OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_006}Attack caravan"), attacker, location, victimName);
+                RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_006}Attack caravan"), attacker, location, victimName);
                 return;
             }
         }
@@ -358,19 +414,20 @@ namespace GreyWardenPolicePurity
             if (IsBanditParty(offender))
                 return;
 
+            string villageId = village.Settlement.StringId;
+            if (_raidHearthAtStart.TryGetValue(villageId, out RaidSnapshot previous) &&
+                previous.RaiderPartyId == offender.StringId)
+            {
+                GwpAiDiagnostics.WriteFieldArrest("CRIME_RAID_CONTINUED", "offender=" + offender.StringId + "; village=" + villageId);
+                return;
+            }
+            _raidHearthAtStart[villageId] = new RaidSnapshot(offender.StringId, village.Hearth, CampaignTime.Now.ToHours);
             string victimName = GwpText.Get("{=gwp_policecrimemonitorenhanced_007}{VAR_1} Villager", "VAR_1", village.Name);
 
             Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_008}Raid village (start)"), offender, victimName, location, GwpText.Get("{=gwp_policecrimemonitorenhanced_009}Village={VAR_1}", "VAR_1", village.Name));
 
-            OnCrimeDetected?.Invoke(GwpText.Get("{=gwp_policecrimemonitorenhanced_010}Raid Village"), offender, location, victimName);
+            RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_010}Raid Village"), offender, location, victimName);
 
-            // 劫掠不产生战场伤亡，但村子照样死人。没有尸体可数时按固定人头计入案卷。
-            // 烧村的人命账在劫掠结束时按村庄少掉的人口结算，这里只留一个起点。
-            // 该事件在一次劫掠里可能反复触发；若每次都覆盖，基准会一路往下挪，
-            // 最后只算到最后一跳的损失。所以第一跳之后不再改写。
-            if (!_raidHearthAtStart.ContainsKey(village.Settlement.StringId))
-                _raidHearthAtStart[village.Settlement.StringId] =
-                    new RaidSnapshot(offender.StringId, village.Hearth, CampaignTime.Now.ToHours);
         }
 
         /// <summary>
@@ -395,6 +452,8 @@ namespace GreyWardenPolicePurity
         {
             Settlement? target = village?.Settlement;
             if (target == null) return null;
+            MobileParty? actualRaider = target.Party?.MapEvent?.AttackerSide?.LeaderParty?.MobileParty;
+            if (actualRaider?.IsActive == true) return actualRaider;
 
             foreach (MobileParty p in MobileParty.All)
             {

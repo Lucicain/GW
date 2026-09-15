@@ -61,11 +61,9 @@ internal static class Program
         var cancelled = new GwpFieldCollectionBarterable(offender, party, 1200);
         Equal(false, cancelled.Applied, "opening or cancelling has no receipt");
 
-        GwpTuning.FieldArrest.ImmediateAuditTesting = false;
         // ================= 上缴与查账（2026-09-15 新口径） =================
         // 玩家代表灰袍办案：对方交得出多少不算他的过失，只要把收到的钱如实上缴就算办妥。
         // 唯一会出事的是私留——手里收了多少、交上来多少，差额就是昧下的钱，排进查账。
-        GwpTuning.FieldArrest.ImmediateAuditTesting = false;
         var ledger = new GwpFieldReportLedger();
 
         ledger.RecordSettlement(offender, 2400, 600, 1200, true);
@@ -96,16 +94,56 @@ internal static class Program
         var odds = new GwpFieldReportLedger();
         GwpRuntimeState.Player.Reputation = 0;
         float clean = odds.CurrentAuditChance();
-        Equal(true, clean > 0.34f && clean < 0.36f, "a clean record audits at the base chance");
+        Equal(true, clean > 0.079f && clean < 0.081f, "a clean record audits at the base chance");
         for (int i = 0; i < 4; i++) { odds.RecordSettlement(offender, 1000, 500, 0, false); odds.DeclareAmount(0, truthful: false); }
         Equal(4, odds.RecentLieCount, "recent lies are counted");
         Equal(true, odds.CurrentAuditChance() > clean, "recent lies raise the chance of being found out");
-        GwpRuntimeState.Player.Reputation = 20;
-        Equal(true, odds.CurrentAuditChance() < 0.55f, "standing buys some trust back");
+        Equal(true, Math.Abs(odds.CurrentAuditChance() - 0.44f) < 0.0001f, "four lies reach 44 percent");
+        GwpRuntimeState.Player.Reputation = 40;
+        Equal(true, Math.Abs(odds.CurrentAuditChance() - 0.44f) < 0.0001f, "trust threshold is continuous");
+        GwpRuntimeState.Player.Reputation = 80;
+        Equal(true, Math.Abs(odds.CurrentAuditChance() - 0.264f) < 0.0001f, "high standing suppresses risk by 40 percent");
         GwpRuntimeState.Player.Reputation = -50;
         Equal(true, odds.CurrentAuditChance() <= 0.95f, "the chance is capped");
         GwpRuntimeState.Player.Reputation = 500;
-        Equal(true, odds.CurrentAuditChance() >= 0.05f, "the chance has a floor");
+        Equal(true, odds.CurrentAuditChance() >= 0.02f, "the chance has a floor");
+        GwpRuntimeState.Player.Reputation = 0;
+
+        var curve = new GwpFieldReportLedger();
+        float[] expectedRisks = { 0.08f, 0.12f, 0.24f, 0.44f, 0.72f, 0.95f };
+        foreach (float risk in expectedRisks)
+        {
+            curve.RecordSettlement(offender, 1000, 500, 0, false);
+            curve.DeclareAmount(0, truthful: false);
+            Equal(true, Math.Abs(curve.CurrentAuditChance() - risk) < 0.0001f, "repeat risk curve " + risk);
+        }
+        GwpRuntimeState.Player.Reputation = 200;
+        Equal(true, Math.Abs(curve.CurrentAuditChance() - 0.2375f) < 0.0001f, "trust still matters for repeated offences");
+        GwpRuntimeState.Player.Reputation = 0;
+        CampaignTime.Now = new CampaignTime { ToHours = 1000 };
+        var delayed = new GwpFieldReportLedger();
+        delayed.RecordSettlement(offender, 1000, 500, 0, false);
+        delayed.DeclareAmount(0, truthful: false);
+        delayed.RecordExcessEnforcement(offender.StringId, 500);
+        Equal(500, delayed.PendingAuditGap, "hand-in never forces instant audit");
+        var delayedSave = new MemoryStore(true);
+        delayed.SyncData(delayedSave);
+        var loadedDelayed = new GwpFieldReportLedger();
+        loadedDelayed.SyncData(delayedSave.Load());
+        loadedDelayed.RegisterEvents();
+        TaleWorlds.Core.MBRandom.RandomFloat = 0;
+        CampaignTime.Now = new CampaignTime { ToHours = 1167 };
+        CampaignEvents.DailyTickEvent.Fire();
+        Equal(500, loadedDelayed.PendingAuditGap, "loaded audit waits the full seven days");
+        Equal(true, loadedDelayed.HasPendingExcessEnforcement(offender.StringId), "excess audit also waits");
+        CampaignTime.Now = new CampaignTime { ToHours = 1168 };
+        CampaignEvents.DailyTickEvent.Fire();
+        Equal(0, loadedDelayed.PendingAuditGap, "due audit resolves through daily event");
+        Equal(false, loadedDelayed.HasPendingExcessEnforcement(offender.StringId), "due excess audit resolves");
+        int afterAudit = GwpRuntimeState.Player.Reputation;
+        CampaignEvents.DailyTickEvent.Fire();
+        Equal(afterAudit, GwpRuntimeState.Player.Reputation, "resolved audit never penalizes twice");
+        CampaignTime.Now = new CampaignTime();
         GwpRuntimeState.Player.Reputation = 0;
 
         // 谎报记录只保留最近十次。
@@ -245,6 +283,22 @@ internal static class Program
         Equal(string.Empty, GwpDispatchRecord.Deserialize("old|0|0|receiver|500|0||1")!.CargoState, "old dispatch saves have no cargo");
 
         var foodItem = new ItemObject { StringId = "cargo_grain", Value = 20, IsFood = true };
+        var pricedHero = new Hero("pricing", 10);
+        CrimePool.GetOrCreateHistory(pricedHero).NegativeStanding = 9;
+        var pricedCase = new CrimeRecord { IncidentCount = 1, AccruedBaseFine = 1200,
+            CrimeCategory = GwpCrimeCategory.VillageViolence, OffenderHero = pricedHero };
+        Equal(1000, GwpFieldArrestPricing.BaseChargeFor(GwpCrimeCategory.VillageViolence), "village base is 1000");
+        Equal(1000, GwpFieldArrestPricing.BaseChargeFor(GwpCrimeCategory.CaravanAttack), "caravan base is 1000");
+        Equal(1900, GwpFieldArrestPricing.AssessFine(pricedCase), "one deed and nine standing cost 1900 including legacy base");
+        pricedCase.IncidentCount = 2;
+        Equal(2900, GwpFieldArrestPricing.AssessFine(pricedCase), "two deeds are not silently erased");
+        pricedCase.CrimeCategory = GwpCrimeCategory.CaravanAttack;
+        pricedCase.AccruedBaseFine = 3600;
+        Equal(2900, GwpFieldArrestPricing.AssessFine(pricedCase), "legacy caravan case uses same new price");
+        pricedCase.IncidentCount = 0;
+        Equal(1900, GwpFieldArrestPricing.AssessFine(pricedCase), "old zero-count case keeps one base charge");
+        CrimePool.GetOrCreateHistory(pricedHero).NegativeStanding = 0;
+        Equal(1000, GwpFieldArrestPricing.AssessFine(pricedCase), "clean standing adds no surcharge");
         var modifier = new ItemModifier { StringId = "fine" };
         TaleWorlds.ObjectSystem.MBObjectManager.Instance.Objects[foodItem.StringId] = foodItem;
         TaleWorlds.ObjectSystem.MBObjectManager.Instance.Objects[modifier.StringId] = modifier;

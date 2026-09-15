@@ -280,8 +280,7 @@ namespace GreyWardenPolicePurity
             if (party?.IsActive != true) return false;
             if (IsGreyWardenLordParty(party)) return true;
             if (party.LeaderHero != null) return false;
-            // 玩家派出去的灰袍队伍归玩家家族，不在上面任何一类里。它出问题时必须查得到，
-            // 所以单独纳入追踪范围。
+            // Courier flow is verified; failures have their own silent fault branches.
             if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
             return GwpCommon.IsPatrolParty(party) ||
                    GwpCommon.IsEnforcementDelayPatrolParty(party) ||
@@ -293,7 +292,7 @@ namespace GreyWardenPolicePurity
 
         internal static bool ShouldTraceObservedParty(MobileParty? party)
         {
-            if (party?.IsActive != true || ShouldTraceParty(party)) return false;
+            if (party?.IsActive != true || GwpWardenDispatchBehavior.IsDispatchParty(party) || ShouldTraceParty(party)) return false;
             EnsureObservedPartyCache();
             return ObservedPartyIds.Contains(party.StringId);
         }

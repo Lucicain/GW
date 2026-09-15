@@ -118,7 +118,6 @@ namespace GreyWardenPolicePurity
 
         public override void RegisterEvents()
         {
-            PoliceCrimeMonitorEnhanced.OnCrimeDetected += HandleCrimeDetected;
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
@@ -343,10 +342,6 @@ namespace GreyWardenPolicePurity
 
         #region 犯罪通知
 
-        private void HandleCrimeDetected(string crimeType, MobileParty offender, Vec2 location, string victimName)
-        {
-            CrimeState.TryAdd(crimeType, offender, location, victimName);
-        }
 
         #endregion
 

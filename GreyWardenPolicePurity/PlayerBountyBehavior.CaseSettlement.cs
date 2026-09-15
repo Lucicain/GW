@@ -519,26 +519,23 @@ namespace GreyWardenPolicePurity
             starter.AddDialogLine("gwp_case_report_ask", "gwp_case_report_ask", "gwp_case_report_options",
                 "{GWP_CASE_REPORT_SUMMARY}", PrepareCaseReportSummary, null);
             starter.AddPlayerLine("gwp_case_pay_any", "gwp_case_report_options", "gwp_case_barter_open",
-                GwpText.Get("{=gwp_case_pay_any}I will hand over money or goods. Let us count them."),
-                () => HasBountyTask && CaseAmountDue > 0 && _caseSubmitted < 0, null);
-            starter.AddPlayerLine("gwp_case_close_withdrawn", "gwp_case_report_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_close_withdrawn}He is beyond reach. Close the commission and settle my expenses."),
-                () => HasBountyTask && HasNothingLeftToSettle, CompleteWithdrawnCaseReport, 120);
-            starter.AddPlayerLine("gwp_case_pay_zero", "gwp_case_report_options", "gwp_case_short_question",
-                GwpText.Get("{=gwp_case_pay_zero}I have nothing to hand over."),
-                () => HasBountyTask && !HasNothingLeftToSettle && _caseSubmitted < 0, () => _caseSubmitted = 0);
+                GwpText.Get("{=gwp_case_pay_any}I am ready to submit my report. Let us settle the account."),
+                () => HasBountyTask && _caseSubmitted < 0, null);
             starter.AddPlayerLine("gwp_case_resume_report", "gwp_case_report_options", "gwp_case_short_question",
                 GwpText.Get("{=gwp_case_resume_report}About the shortfall in what I handed over..."), () => _caseSubmitted >= 0, null);
-            starter.AddPlayerLine("gwp_case_deliver_prisoner", "gwp_case_report_options", "gwp_case_barter_open",
-                GwpText.Get("{=gwp_case_deliver_prisoner}The offender is here. Take him into your custody."), () => CanDeliverCasePrisoner() && _caseSubmitted < 0, null);
-            starter.AddPlayerLine("gwp_case_legacy_reward", "gwp_case_report_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_legacy_reward}Settle the payment promised under the old warrant."),
-                () => IsWaitingForBountyCollection && !_fieldCaseContract && !HasFieldBusinessToSettle,
-                () => FinishCaseReport(_activeBountyReward));
             starter.AddPlayerLine("gwp_case_report_later", "gwp_case_report_options", "close_window",
                 GwpText.Get("{=gwp_case_report_later}I am not ready to hand it over yet."), null, LeaveCaseClerk);
+            // Financially empty / legacy contracts use the same report button;
+            // keep saved entitlements without exposing obsolete menu entries.
+            starter.AddDialogLine("gwp_case_settle_withdrawn", "gwp_case_barter_open", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_settle_expenses}The commission is closed. We will settle what you are owed."),
+                () => HasBountyTask && HasNothingLeftToSettle, CompleteWithdrawnCaseReport, 130);
+            starter.AddDialogLine("gwp_case_settle_legacy", "gwp_case_barter_open", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_settle_expenses}The commission is closed. We will settle what you are owed."),
+                () => IsWaitingForBountyCollection && !_fieldCaseContract && !HasFieldBusinessToSettle,
+                () => FinishCaseReport(_activeBountyReward), 120);
             starter.AddDialogLine("gwp_case_barter_open", "gwp_case_barter_open", "gwp_case_barter_result",
-                GwpText.Get("{=gwp_case_barter_count}Put the money here. Let us count it."), null, OpenCasePayment);
+                GwpText.Get("{=gwp_case_barter_count}Let us check what you have brought."), null, OpenCasePayment);
             starter.AddDialogLine("gwp_case_barter_short", "gwp_case_barter_result", "gwp_case_short_options",
                 GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."),
                 // 新口径下要对的账是"从犯人手里拿到多少 vs 交上来多少"，不是整案应缴。
@@ -594,7 +591,7 @@ namespace GreyWardenPolicePurity
                 ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
                 ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party
                 ?? treasurer?.PartyBelongedTo?.Party;
-            if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask || (CaseAmountDue <= 0 && !CanDeliverCasePrisoner())) return;
+            if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask) return;
             try
             {
                 _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseReportSuggestedPayment,
@@ -722,30 +719,6 @@ namespace GreyWardenPolicePurity
             return _pendingPrisonerAssessed > 0 && prisoner != null && prisoner.IsPrisoner
                 && prisoner.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party;
         }
-        private void DeliverCasePrisoner()
-        {
-            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
-            if (!CanDeliverCasePrisoner()) return;
-            Hero prisoner = PendingCasePrisoner!;
-            PartyBase? receiver = MobileParty.ConversationParty?.Party
-                ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
-                ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party;
-            if (receiver == null || receiver == MobileParty.MainParty.Party) return;
-            try
-            {
-                TransferPrisonerAction.Apply(prisoner.CharacterObject, MobileParty.MainParty.Party, receiver);
-                if (prisoner.PartyBelongedToAsPrisoner != receiver) return;
-                int fee = CalculateCaseFee(_pendingPrisonerAssessed);
-                Reports?.ResolveByPrisoner(prisoner.StringId, Math.Max(0, _caseSubmitted));
-                FinishCaseReport(PoliceResourceManager.PayFromJudicialTreasury(fee));
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("REPORT_PRISONER_FAILED", ex.ToString());
-                MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
-            }
-        }
-
         private void FinishCaseReport(int reward)
         {
             if (!HasBountyTask) return;

@@ -219,7 +219,6 @@ namespace GreyWardenPolicePurity
             QueueAudit(offenderId, Math.Max(0, received - deliveredCash));
             _pending.RemoveAll(report => report.OffenderId == offenderId);
             _betrayalHours.Remove(offenderId);
-            AuditAtHandIn();
         }
 
         internal bool HasPendingReports => _pending.Count > 0;
@@ -275,7 +274,6 @@ namespace GreyWardenPolicePurity
                 "; truthful=" + truthful + "; recentLies=" + RecentLieCount);
 
             foreach (var report in reports) { _betrayalHours.Remove(report.OffenderId); _pending.Remove(report); }
-            AuditAtHandIn();
             return 0;
         }
 
@@ -302,9 +300,16 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal float CurrentAuditChance()
         {
-            float chance = GwpTuning.FieldArrest.ReportAuditChance
-                + GwpTuning.FieldArrest.AuditChancePerRecentLie * RecentLieCount
-                - GwpTuning.FieldArrest.AuditChancePerStandingPoint * PlayerState.Reputation;
+            int repeats = Math.Max(0, RecentLieCount - 1);
+            float chance = Math.Min(GwpTuning.FieldArrest.AuditChanceCeiling,
+                GwpTuning.FieldArrest.ReportAuditChance
+                + GwpTuning.FieldArrest.AuditChancePerRepeatSquared * repeats * repeats);
+            int standing = PlayerState.Reputation;
+            float trust = Math.Min(GwpTuning.FieldArrest.AuditMaximumTrustReduction,
+                Math.Max(0f, (float)standing - GwpTuning.FieldArrest.AuditTrustStanding)
+                * GwpTuning.FieldArrest.AuditTrustReductionPerPoint);
+            chance = chance * (1f - trust)
+                + Math.Max(0f, -(float)standing) * GwpTuning.FieldArrest.AuditChancePerNegativeStandingPoint;
             return Math.Max(GwpTuning.FieldArrest.AuditChanceFloor,
                 Math.Min(GwpTuning.FieldArrest.AuditChanceCeiling, chance));
         }
@@ -317,13 +322,6 @@ namespace GreyWardenPolicePurity
             if (!_auditDueHours.ContainsKey(id))
                 _auditDueHours[id] = (_betrayalHours.TryGetValue(id, out double occurred) ? occurred : CampaignTime.Now.ToHours) + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_AUDIT_QUEUED", "offender=" + id + "; gap=" + gap + "; due=" + _auditDueHours[id]);
-        }
-
-        private void AuditAtHandIn()
-        {
-            if (!GwpTuning.FieldArrest.ImmediateAuditTesting) return;
-            foreach (string id in _pendingAuditGaps.Keys.ToList()) ResolveAudit(id, 0f);
-            foreach (string id in _excessEnforcement.Keys.ToList()) ResolveExcessAudit(id, 0f);
         }
 
         private void AuditDueReports()
@@ -350,7 +348,6 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteFieldArrest("EXCESS_ENFORCEMENT_QUEUED",
                 "offender=" + offenderId + "; alreadySettled=" + alreadySettled
                 + "; due=" + _excessDueHours[offenderId!]);
-            AuditAtHandIn();
         }
 
         internal bool HasPendingExcessEnforcement(string? offenderId) =>
