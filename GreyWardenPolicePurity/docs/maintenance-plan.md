@@ -1,6 +1,6 @@
 # GreyWarden Maintenance Plan
 
-## 2026-09-16 v1.4-r11 正式版收尾（本地包已核验，待 GitHub 发布）
+## 2026-09-16 v1.4-r11 正式发布完成
 
 - 用户明确结束测试，授权调整贪腐调查、撤销全部测试玩法并发布 1.4 r11，更新 Git/GitHub。
   随后补充士兵对话必须接受灰袍雇佣才启用，并恢复曾临时屏蔽的门槛。
@@ -34,6 +34,22 @@
 
 ### 最终构建与归档核验
 
+- GitHub 正式发布完成：<https://github.com/Lucicain/GW/releases/tag/v1.4-r11>，release ID
+  389206639，draft=false、prerelease=false。main 与 v1.4-r11 标签已推送，远端标签实指
+  71215faacaeb01717425b1b888b3167a3b2946a4。发布正文与本地 notes-file 逐字去尾空白比对一致，
+  两个附件 state=uploaded，远端大小及服务端 SHA256 均与本地一致；以 --latest 发布。
+- 正式提交后的复现 DLL 与包内 DLL 全程序集 ILSpy 反编译文本逐行完全相同，差异为构建
+  元数据而非玩法代码。复现副本存于仓库绝对根下 build-check/package-v1.4-r11/tag-rebuild.dll，
+  原发布 DLL 已从核验后的包内副本恢复到隔离 release-player 输出路径，哈希再次确认。
+  不使用复现副本覆盖 live 或正式附件。相关全量比较文本在 .codex_tmp/r11-rebuild-decompiled.cs。
+- 正式源提交为 `71215faacaeb01717425b1b888b3167a3b2946a4`，标签 v1.4-r11 指向此提交。
+  构建发生在提交前，程序集 FileVersion/AssemblyVersion 均 1.4.11.0；SDK 自动写入的
+  InformationalVersion 是 `1.4.11+e1129ff3650df656323c22395ec09a3cc9ea1750`（构建时 HEAD），
+  不是包内代码的最终提交。已尝试从正式提交以 SourceRevisionId 固定父提交重建，编译仍
+  0 警告/0 错误，但 SHA256 为 `4239E9D76296E9D22004C368AC3024B01C1D21DFE15B41456C257048C0D5FEA6`，
+  未复现包内字节。发现 SourceLink 元数据仍自动指向新的 71215fa；仅覆盖版本尾缀不够。
+  因此不承诺仅一项命令参数可复现原 DLL 哈希；发布源以正式标签为准，已核验的实际二进制
+  以 ZIP 和本节哈希为准。此验证副产物未部署 live，也未替换正在上传的正式 ZIP。
 - 对外文本按 lucian-ai-rate-reducer 与 lucian-external-communication 技能做本地措辞核对，
   以既有中英文发布日志的简明条目为语气依据，不加个人经历或宣传性承诺。最终 README 与
   发布说明合并检测：Vanguard 70.1%、标记词占比 73.2%、DACTYL 63.0%；中文修复段两模型
