@@ -164,34 +164,15 @@ namespace GreyWardenPolicePurity
                 CloseRecruitmentEncounterAndReturn,
                 100);
 
-            // ── 五日后主动找上玩家的无领主结算队 ──────────────────────────────────
-            starter.AddDialogLine(
-                "gwp_bounty_courier_returning_start",
-                "start",
-                "close_window",
-                GwpText.Get("{=gwp_bounty_courier_returning}The warrant has been settled. We are returning to quarters and have no further business with you."),
-                BountyCollectionCourierReturningDialogCondition,
-                BountyCollectionCourierReturningConsequence,
-                130);
-
-            starter.AddDialogLine(
-                "gwp_bounty_courier_start",
-                "start",
-                "gwp_bounty_courier_player",
-                "{GWP_BOUNTY_COURIER_GREETING}",
-                BountyCollectionCourierDialogCondition,
-                null,
-                120);
-
             RegisterCaseTurnInDialogues(starter);
+            RegisterSupportDialogue(starter);
 
             // ── 读档后悬赏任务恢复（兜底）─────────────────────────────────────────
             // 此时 SyncData 已完成，所有持久化字段均已正确加载，可以安全访问。
             ReconcileRecruitmentPatrolState();
             MigrateCaseSettlement();
             TryRestoreBountyQuestOnSessionStart();
-            _bountyCollectionCourierToResumeId = null!;
-            UpdateBountyCollectionCouriers();
+            RetireLegacyCollectionCouriers();
         }
 
         #endregion
@@ -476,8 +457,6 @@ namespace GreyWardenPolicePurity
             bool recruitInvolved = false;
             bool playerInvolved = false;
             bool bountyTargetInvolved = false;
-            bool bountyCollectionCourierInvolved = false;
-            MobileParty? bountyCollectionCourier = null;
             MobileParty? herald = null;
 
             foreach (PartyBase p in mapEvent.InvolvedParties)
@@ -492,11 +471,6 @@ namespace GreyWardenPolicePurity
                     string.Equals(p.MobileParty.StringId, _activeBountyTargetId,
                         StringComparison.OrdinalIgnoreCase))
                     bountyTargetInvolved = true;
-                if (IsBountyCollectionCourier(p.MobileParty))
-                {
-                    bountyCollectionCourierInvolved = true;
-                    bountyCollectionCourier = p.MobileParty;
-                }
             }
 
             if (playerInvolved && bountyTargetInvolved)
@@ -507,18 +481,6 @@ namespace GreyWardenPolicePurity
                     PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(
                         _escortPolicePartyId, true);
                 }
-            }
-
-            if (playerInvolved && bountyCollectionCourierInvolved &&
-                (IsWaitingForBountyCollection ||
-                 IsReturningBountyCollectionCourier(bountyCollectionCourier)))
-            {
-                if (PlayerEncounter.IsActive &&
-                    PlayerEncounter.EncounteredParty != null)
-                {
-                    try { PlayerEncounter.DoMeeting(); } catch { }
-                }
-                return;
             }
 
             if (!recruitInvolved || !playerInvolved)
@@ -556,36 +518,24 @@ namespace GreyWardenPolicePurity
 
         #region 赏金领取对话
 
-        private bool BountyCollectionCourierDialogCondition()
+        /// <summary>
+        /// 结算队已经退役：玩家现在可以找任意灰袍领主复命，也可以派自己的人去，不再需要
+        /// 灰袍主动找上门这道兜底。旧存档里可能还有一支停在路上，读档时一并解散。
+        /// </summary>
+        private static void RetireLegacyCollectionCouriers()
         {
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            if (!IsWaitingForBountyCollection ||
-                !IsBountyCollectionCourier(conversationParty))
-                return false;
-
-            MBTextManager.SetTextVariable(
-                "GWP_BOUNTY_COURIER_GREETING",
-                GwpText.Get(
-                    "{=gwp_bounty_courier_greeting}The Grey Wardens sent us to collect your report. We can take the fines or the assigned prisoner and settle your expenses here.",
-                    "VAR_1", _activeBountyReward));
-            return true;
-        }
-
-        private bool BountyCollectionCourierReturningDialogCondition()
-        {
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            return IsBountyCollectionCourier(conversationParty) &&
-                   IsReturningBountyCollectionCourier(conversationParty);
-        }
-
-        private void BountyCollectionCourierReturningConsequence()
-        {
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            if (conversationParty != null &&
-                IsReturningBountyCollectionCourier(conversationParty))
+            foreach (MobileParty party in MobileParty.All
+                         .Where(candidate => candidate?.IsActive == true &&
+                             candidate.StringId?.StartsWith("gwp_bounty_collect_",
+                                 StringComparison.Ordinal) == true)
+                         .ToList())
             {
-                ResumeBountyCollectionCourierEncounterAndReturn(
-                    conversationParty);
+                try
+                {
+                    GreyWardenPartyDesireBehavior.ClearIntent(party);
+                    DestroyPartyAction.Apply(null, party);
+                }
+                catch { }
             }
         }
 
@@ -917,18 +867,14 @@ namespace GreyWardenPolicePurity
                 FactionManager.IsAtWarAgainstFaction(playerFaction, targetFaction);
             _bountyTargetEncounterStarted = false;
 
-            _escortPolicePartyId = CrimeState.GetAssignedPolicePartyId(offender.StringId) ?? string.Empty;
-            if (!string.IsNullOrEmpty(_escortPolicePartyId))
-            {
-                CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
-                PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(
-                    _escortPolicePartyId);
-                PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(
-                    _escortPolicePartyId);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_032}The Grey Warden escort is ready and will follow your pursuit until the quarry falls."),
-                    Colors.Cyan));
-            }
+            // 接了案子，这宗案子就是玩家的。原来的承办灰袍就此撤出去办别的事，不再
+            // 跟着、也不再自行追捕；要人手，玩家派人去求援。
+            _escortPolicePartyId = string.Empty;
+            _supportRequested = false;
+            PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_bounty_case_is_yours}The case is yours now. If you need men, send someone to ask the Wardens for help."),
+                Colors.Cyan));
 
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
             if (policeLeader != null)

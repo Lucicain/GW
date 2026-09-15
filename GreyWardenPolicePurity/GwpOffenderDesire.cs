@@ -13,7 +13,7 @@ namespace GreyWardenPolicePurity
     /// This is the second layer only: whether he answers the warrant at all was decided
     /// before this, by his temper, the odds and the player's standing.
     ///
-    /// Each end of each personality trait wants one thing, and every one of those things
+    /// Personality and available money weight a shared set of proposals; each proposal
     /// lands on machinery the mod already has - a payment, a short payment, the stock
     /// haggling table, the sparring duel, or the prisoner path. None of them is an escape;
     /// he is not riding away from this either way.
@@ -38,92 +38,40 @@ namespace GreyWardenPolicePurity
         /// <summary>仁慈低：只认自己做下的事，死了几个人不关他事；顺手拿手下泄愤。</summary>
         DeedsOnly,
         /// <summary>慷慨低：上议价桌，最后只肯给七成。</summary>
-        HaggleDown
+        HaggleDown,
+        RequestGrace
     }
 
     internal static class GwpOffenderDesires
     {
-        private readonly struct Candidate
+        // One weighted pool of distinct tools; trait extremes do not own fixed outcomes.
+        internal static GwpOffenderDesire Roll(Hero offender, int fine, bool canGrace, bool hasTroops)
         {
-            internal Candidate(GwpOffenderDesire desire, int weight)
+            int[] weights = GwpNegotiationPolicy.Weights(
+                offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
+                offender.GetTraitLevel(DefaultTraits.Valor), offender.GetTraitLevel(DefaultTraits.Calculating),
+                offender.GetTraitLevel(DefaultTraits.Generosity), offender.PartyBelongedTo == null ? offender.Gold : GwpAssetPayment.Wealth(offender, offender.PartyBelongedTo.Party), fine, hasTroops, canGrace);
+            var choices = new[] { GwpOffenderDesire.PayInFull, GwpOffenderDesire.HaggleDown,
+                GwpOffenderDesire.CunningHalf, GwpOffenderDesire.SurrenderSelf, GwpOffenderDesire.DeedsOnly,
+                GwpOffenderDesire.BribeTheWarden, GwpOffenderDesire.DemandDuel, GwpOffenderDesire.RequestGrace };
+            int roll = MBRandom.RandomInt(weights.Sum());
+            for (int i = 0; i < choices.Length; i++)
             {
-                Desire = desire;
-                Weight = weight;
-            }
-
-            internal GwpOffenderDesire Desire { get; }
-            internal int Weight { get; }
-        }
-
-        /// <summary>
-        /// Ten trait extremes, eight ways to settle: paying in full is where the timid,
-        /// the merciful and the open-handed all arrive by different roads. The draw is
-        /// weighted by how strong the trait is, with a fixed weight for plain payment
-        /// beside them, so no lord is reduced to a single trick.
-        /// </summary>
-        internal static GwpOffenderDesire Roll(Hero offender, int fine)
-        {
-            var pool = new List<Candidate>
-            {
-                new Candidate(GwpOffenderDesire.PayInFull, GwpTuning.FieldArrest.PlainDemandWeight)
-            };
-
-            int honor = offender.GetTraitLevel(DefaultTraits.Honor);
-            int calculating = offender.GetTraitLevel(DefaultTraits.Calculating);
-            int valor = offender.GetTraitLevel(DefaultTraits.Valor);
-            int mercy = offender.GetTraitLevel(DefaultTraits.Mercy);
-            int generosity = offender.GetTraitLevel(DefaultTraits.Generosity);
-
-            Add(pool, GwpOffenderDesire.SurrenderSelf, honor);
-            Add(pool, GwpOffenderDesire.BribeTheWarden, -honor);
-            Add(pool, GwpOffenderDesire.CunningHalf, calculating);
-            Add(pool, GwpOffenderDesire.RashMost, -calculating);
-            Add(pool, GwpOffenderDesire.DemandDuel, valor);
-            Add(pool, GwpOffenderDesire.PayToAvoidBattle, -valor);
-            Add(pool, GwpOffenderDesire.PayForPeace, mercy);
-            Add(pool, GwpOffenderDesire.DeedsOnly, -mercy);
-            Add(pool, GwpOffenderDesire.PayGenerously, generosity);
-            Add(pool, GwpOffenderDesire.HaggleDown, -generosity);
-
-            // A neutral personality can still bargain without becoming corrupt or cruel.
-            if (honor == 0 && calculating == 0 && valor == 0 && mercy == 0 && generosity == 0)
-                pool.Add(new Candidate(GwpOffenderDesire.HaggleDown, 1));
-
-            // 掏不出全额的人提不起"少给一点"这种方案——他本来就给不出全额，
-            // 那种情形走的是既有的短款分支。
-            if (offender.Gold < fine || fine <= 0)
-                pool.RemoveAll(entry =>
-                    entry.Desire == GwpOffenderDesire.CunningHalf
-                    || entry.Desire == GwpOffenderDesire.RashMost
-                    || entry.Desire == GwpOffenderDesire.DeedsOnly
-                    || entry.Desire == GwpOffenderDesire.HaggleDown
-                    || entry.Desire == GwpOffenderDesire.BribeTheWarden);
-
-            int total = pool.Sum(entry => entry.Weight);
-            if (total <= 0) return GwpOffenderDesire.PayInFull;
-
-            int roll = MBRandom.RandomInt(total);
-            foreach (Candidate candidate in pool)
-            {
-                roll -= candidate.Weight;
+                roll -= weights[i];
                 if (roll < 0)
                 {
-                    return candidate.Desire;
+                    GwpAiDiagnostics.WriteFieldArrest("TOOLBOX_CHOICE", "offender=" + offender.StringId
+                        + "; gold=" + offender.Gold + "; fine=" + fine + "; weights=" + string.Join(",", weights)
+                        + "; result=" + choices[i]);
+                    return choices[i];
                 }
             }
-
             return GwpOffenderDesire.PayInFull;
         }
 
         internal static bool IsFullPayment(GwpOffenderDesire desire) => desire == GwpOffenderDesire.PayInFull
             || desire == GwpOffenderDesire.PayToAvoidBattle || desire == GwpOffenderDesire.PayForPeace
             || desire == GwpOffenderDesire.PayGenerously;
-
-        private static void Add(List<Candidate> pool, GwpOffenderDesire desire, int traitLevel)
-        {
-            if (traitLevel <= 0) return;
-            pool.Add(new Candidate(desire, traitLevel * GwpTuning.FieldArrest.DesireWeightPerTraitPoint));
-        }
 
         /// <summary>他打算交多少。全缴以外的方案都是打折，比例集中在调参里。</summary>
         internal static int OfferedSharePercent(GwpOffenderDesire desire) =>
@@ -145,6 +93,7 @@ namespace GreyWardenPolicePurity
         {
             int level = desire switch
             {
+                GwpOffenderDesire.RequestGrace => Math.Max(1, offender.GetTraitLevel(DefaultTraits.Calculating)),
                 GwpOffenderDesire.SurrenderSelf => offender.GetTraitLevel(DefaultTraits.Honor),
                 GwpOffenderDesire.BribeTheWarden => -offender.GetTraitLevel(DefaultTraits.Honor),
                 GwpOffenderDesire.CunningHalf => offender.GetTraitLevel(DefaultTraits.Calculating),
@@ -162,13 +111,14 @@ namespace GreyWardenPolicePurity
         internal static TextObject Line(GwpOffenderDesire desire) =>
             desire switch
             {
+                GwpOffenderDesire.RequestGrace => GwpText.Create("{=gwp_fa_desire_grace}Give me three days to raise the money. Come back then and I will answer for the payment."),
                 GwpOffenderDesire.PayToAvoidBattle => GwpText.Create("{=gwp_fa_desire_cautious}Keep your weapons lowered. I will pay what you ask; there need be no battle."),
                 GwpOffenderDesire.PayForPeace => GwpText.Create("{=gwp_fa_desire_merciful}Enough people have suffered. Take the full fine, and let there be no more bloodshed."),
                 GwpOffenderDesire.PayGenerously => GwpText.Create("{=gwp_fa_desire_generous}I can spare the silver. Take the full amount and see that this account is settled."),
                 GwpOffenderDesire.SurrenderSelf =>
                     GwpText.Create("{=gwp_fa_desire_surrender}That silver is my men's wages. Take me instead - I ride with you, and they go home."),
                 GwpOffenderDesire.BribeTheWarden =>
-                    GwpText.Create("{=gwp_fa_desire_bribe}Fifteen percent, for you alone. Let the Wardens hear whatever story you choose."),
+                    GwpText.Create("{=gwp_fa_desire_bribe}Property worth {GWP_BRIBE_AMOUNT} denars, for you alone. What you tell the Wardens is your affair."),
                 GwpOffenderDesire.CunningHalf =>
                     GwpText.Create("{=gwp_fa_desire_cunning}Half. That is what the baggage carries, and that is what you are getting."),
                 GwpOffenderDesire.RashMost =>
@@ -187,6 +137,7 @@ namespace GreyWardenPolicePurity
         internal static TextObject PlayerAcceptLine(GwpOffenderDesire desire) =>
             desire switch
             {
+                GwpOffenderDesire.RequestGrace => GwpText.Create("{=gwp_fa_accept_grace}Three days, once only. I will return for payment."),
                 GwpOffenderDesire.SurrenderSelf =>
                     GwpText.Create("{=gwp_fa_accept_surrender}Then ride with me. Your men can find their own way."),
                 GwpOffenderDesire.BribeTheWarden =>

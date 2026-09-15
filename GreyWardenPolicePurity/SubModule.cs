@@ -15,24 +15,31 @@ namespace GreyWardenPolicePurity
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
+            GwpLoadFaultWatch.Arm();
 
             // Self-contained library patch; no separate Harmony module or
             // launcher dependency is required.
             Harmony harmony = new(HarmonyId);
-            try
+            // Patch one class at a time. PatchAll aborts the whole assembly on the
+            // first failure, so a single patch whose target moved in a new game
+            // build would silently take every later patch down with it.
+            foreach (Type type in typeof(SubModule).Assembly.GetTypes())
             {
-                harmony.PatchAll(typeof(SubModule).Assembly);
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write(
-                    "SUBMODULE_PATCH_FAILED",
-                    details: exception.GetType().FullName + ":" + exception.Message);
-                // Never turn an optional combat enhancement into a startup
-                // failure if a future game build changes the private callback.
-                Debug.Print(
-                    "[GreyWarden Shield Bash Guard] patch failed: "
-                    + exception);
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception exception)
+                {
+                    GwpFaultTrace.Write(
+                        "SUBMODULE_PATCH_FAILED",
+                        details: type.FullName + " -> "
+                            + exception.GetType().FullName + ":" + exception.Message);
+                    // Never turn an optional enhancement into a startup failure if a
+                    // future game build changes the callback it hooks.
+                    Debug.Print("[GreyWarden] patch failed for " + type.FullName
+                        + ": " + exception);
+                }
             }
         }
 
@@ -62,6 +69,9 @@ namespace GreyWardenPolicePurity
             base.OnApplicationTick(dt);
             _ = dt;
             GreyWardenSparringBehavior.OnApplicationTick();
+            // 战役心跳跟着时间流走，地图暂停时不一定推进。派遣的对话与分兵界面必须
+            // 在玩家点完按钮的下一帧就弹出来，所以挂在与时间无关的应用心跳上。
+            GwpLoadFaultWatch.Guard("DISPATCH_PUMP", GwpWardenDispatchDialogue.Pump);
         }
 
         private static void RegisterCampaignComponents(CampaignGameStarter starter)
@@ -91,6 +101,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new PlayerBountyBehavior());
             starter.AddBehavior(new GwpFieldArrestBehavior());
             starter.AddBehavior(new GwpFieldReportLedger());
+            starter.AddBehavior(new GwpWardenDispatchBehavior());
             starter.AddBehavior(new GreyWardenVillageAdoptionBehavior());
             starter.AddBehavior(new GreyWardenVillageRewardBehavior());
             starter.AddBehavior(new GreyWardenLoreBehavior());

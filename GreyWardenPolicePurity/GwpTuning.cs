@@ -12,8 +12,6 @@
             public const int EasyReward = 10000;
             public const int StandardReward = 20000;
             public const int HardReward = 30000;
-            public const float CollectionCourierDelayDays = 5f;
-            public const int CollectionCourierPatrolSize = 10;
             public const int RecruitmentReputationThreshold = 20;
             public const int ReadmissionReputationStep = 20;
             public const int MaximumVoluntaryExits = 3;
@@ -93,7 +91,7 @@
         internal static class FieldArrest
         {
             public const float RefusalStrengthRatio = 4f;
-            // Temporary test setting; player builds retain the deferred policy.
+            // Keep immediate guaranteed audits available until the user ends testing.
 #if GWP_DIAGNOSTICS
             internal static bool ImmediateAuditTesting = true;
 #else
@@ -101,6 +99,14 @@
 #endif
             public const int ReportAuditDelayDays = 7;
             public const float ReportAuditChance = 0.35f;
+            /// <summary>近十次委托里每有一次谎报，被查出来的概率加这么多。</summary>
+            public const float AuditChancePerRecentLie = 0.05f;
+            /// <summary>灰袍声望每高一点，被查的概率减这么多；声望为负不减反增。</summary>
+            public const float AuditChancePerStandingPoint = 0.02f;
+            public const float AuditChanceFloor = 0.05f;
+            public const float AuditChanceCeiling = 0.95f;
+            /// <summary>谎报记录只看最近这么多次委托。</summary>
+            public const int RecentReportMemory = 10;
             /// <summary>
             /// The player's own Grey Warden standing gates nothing and scores nothing: he
             /// may be a respected hunter or a man working off his own record, and the
@@ -147,7 +153,7 @@
             /// 实力差最多能把第一层抗性推开多少。实力悬殊到极致也就 ±这个数，
             /// 免得它一个维度把性格与声望全压死。
             /// </summary>
-            public const float StrengthSwing = 30f;
+            public const float StrengthSwing = 45f;
             /// <summary>第一层抗性里每点性格特质的分量。</summary>
             public const float TraitResistStep = 7f;
             /// <summary>玩家声望档位对第一层抗性的摆动幅度。</summary>

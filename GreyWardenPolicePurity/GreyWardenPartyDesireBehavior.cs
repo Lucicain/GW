@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -17,7 +17,7 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed class GreyWardenPartyDesireBehavior : CampaignBehaviorBase
     {
-        private enum IntentKind { Approach, Pursue, Escort, Visit }
+        private enum IntentKind { Approach, Pursue, Escort, Visit, Rush }
 
         private sealed class Intent
         {
@@ -139,6 +139,20 @@ namespace GreyWardenPolicePurity
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
+        /// <summary>
+        /// 全速赶到某支部队跟前。护送会跟着对方的步子走，办差的人不该这么慢；这里下注的是
+        /// 原版用来直扑目标的 <see cref="AiBehavior.EngageParty"/>，由原版自己解算路径和速度。
+        /// 仍然只是竞价里的一个候选——补给、疗伤这些原版欲望照常可以压过它。
+        /// </summary>
+        internal static void RequestRush(MobileParty party, MobileParty target,
+            float priority = AssignedDutyScore, double validHours = 8d)
+        {
+            ReleaseDirectAttackLock(party);
+            SetIntent(party, new Intent { Kind = IntentKind.Rush, Party = target,
+                Priority = NormalizePriority(priority),
+                ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
+        }
+
         internal static void RequestEscort(MobileParty party, MobileParty target,
             float priority = AssignedDutyScore, double validHours = 8d)
         {
@@ -180,9 +194,25 @@ namespace GreyWardenPolicePurity
             catch { }
         }
 
+        /// <summary>
+        /// 这支队伍此刻的差事就是全速赶到那支部队跟前。动作桥接靠它判断要不要把
+        /// GoAroundParty 翻译成 EngageParty。
+        /// </summary>
+        internal static bool IsRushingTo(MobileParty? party, MobileParty? target)
+        {
+            if (party?.IsActive != true || target?.IsActive != true) return false;
+            return Intents.TryGetValue(party.StringId, out Intent? intent) &&
+                   intent.Kind == IntentKind.Rush &&
+                   intent.ExpiresAt >= CampaignTime.Now.ToHours &&
+                   intent.Party == target;
+        }
+
         internal static bool IsAuthorizedAttackTarget(MobileParty? party, MobileParty? target)
         {
             if (!IsManagedParty(party) || target?.IsActive != true) return true;
+            // 办差的队伍谁也不主动打，劫匪也不打。它是去送东西的，不是去清野的；
+            // 挨打时原版照样自卫，只是不会自己追上去。
+            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
             if (target.IsBandit) return true;
 
             if (PoliceEnforcementBehavior.IsAuthorizedAssistanceTarget(party, target))
@@ -349,6 +379,14 @@ namespace GreyWardenPolicePurity
 
             RemoveExpired();
             List<(AIBehaviorData, float)> rawScores = think.AIBehaviorScores.ToList();
+            foreach (var entry in rawScores)
+            {
+                if (entry.Item1.AiBehavior == AiBehavior.GoAroundParty && PlayerBountyBehavior.IsReservedTarget(entry.Item1.Party as MobileParty))
+                {
+                    AIBehaviorData candidate = entry.Item1;
+                    think.SetBehaviorScore(in candidate, 0f);
+                }
+            }
             Intent? intent = ResolveIntent(party);
             float originalPatrolCeiling = GetPatrolCeiling(rawScores);
             // 设计边界：只要本队当前存在任何有效任务意图，无论普通案件、
@@ -358,6 +396,12 @@ namespace GreyWardenPolicePurity
             int suppressedPatrolCount = intent == null
                 ? 0
                 : SuppressAssignedPatrolScores(think, rawScores);
+            // 无领主的派遣队会被原版每小时刷出一整排"进聚落"候选（实测每个聚落固定
+            // 1.6 分，村庄、城堡、城镇全都有），那是原版给无主部队安排的归并/解散出路，
+            // 不是补给欲望。它稳压 0.99 的差事分，于是使者一路钻进村里不走。
+            // 办差期间把这类候选一并压到最低；我们自己为"进城办事"下的访问候选不在此列。
+            if (intent != null && GwpWardenDispatchBehavior.IsDispatchParty(party))
+                suppressedPatrolCount += SuppressLeaderlessMergeScores(think, rawScores, intent);
             float patrolCeiling = GetPatrolCeiling(think.AIBehaviorScores);
             float dutyScore = intent == null
                 ? 0f
@@ -403,6 +447,17 @@ namespace GreyWardenPolicePurity
                     dutyScore);
                 dutyAdded = "PursueParty:" + intent.Party.StringId;
             }
+            else if (intent?.Kind == IntentKind.Rush && intent.Party?.IsActive == true)
+            {
+                // 原版 PartyHourlyAiTick 没有 EngageParty 的落地分支——它只为
+                // PatrolAroundPoint / EscortParty / GoAroundParty 等几种赢家调用
+                // SetPartyAiAction。直接下注 EngageParty 会赢了也不动，最后退回 Hold。
+                // 所以沿用本仓库既有做法：下注有落地分支的 GoAroundParty，再由
+                // GwpDutyEngageActionPatch 把这一次的动作翻译成原版 EngageParty。
+                AddDutyCandidate(think, Create(party, intent.Party, AiBehavior.GoAroundParty),
+                    dutyScore);
+                dutyAdded = "RushParty:" + intent.Party.StringId;
+            }
             else if (intent?.Kind == IntentKind.Escort && intent.Party?.IsActive == true)
             {
                 AddDutyCandidate(think, Create(party, intent.Party, AiBehavior.EscortParty),
@@ -431,6 +486,9 @@ namespace GreyWardenPolicePurity
 
         private static Intent? ResolveIntent(MobileParty party)
         {
+            if (PlayerBountyBehavior.AwaitingSupportRequest(CrimePool.GetTask(party.StringId)))
+                return new Intent { Kind = IntentKind.Escort, Party = MobileParty.MainParty,
+                    Priority = PlayerRequestScore, ExpiresAt = double.MaxValue };
             if (PoliceEnforcementBehavior.TryGetAssistanceDuty(
                     party, out MobileParty? assistanceTarget,
                     out AiBehavior assistanceBehavior,
@@ -452,7 +510,7 @@ namespace GreyWardenPolicePurity
 
             if (Intents.TryGetValue(party.StringId, out Intent? external) &&
                 external.ExpiresAt >= CampaignTime.Now.ToHours && IsValid(external))
-                return external;
+                return external.Kind == IntentKind.Pursue && PlayerBountyBehavior.IsReservedTarget(external.Party) ? null : external;
 
             PoliceTask? task = CrimePool.GetTask(party.StringId);
             if (task == null) return null;
@@ -464,7 +522,7 @@ namespace GreyWardenPolicePurity
             // 保存的旧 PartyId 可能已经失效；只按旧 ID 搜索会让“已有承办人”的
             // 案件暂时被当成无职责，原版巡逻欲望便会重新出现。
             MobileParty? criminal = task.TargetCrime?.Offender;
-            return criminal?.IsActive != true ? null : new Intent {
+            return criminal?.IsActive != true || PlayerBountyBehavior.IsReservedTarget(criminal) ? null : new Intent {
                 Kind = task.WarDeclared ? IntentKind.Pursue : IntentKind.Approach,
                 Party = criminal, Priority = AssignedDutyScore,
                 ExpiresAt = double.MaxValue };
@@ -504,6 +562,30 @@ namespace GreyWardenPolicePurity
             {
                 if (behavior.AiBehavior != AiBehavior.PatrolAroundPoint ||
                     score <= AssignedPatrolScoreCeiling)
+                    continue;
+
+                AIBehaviorData candidate = behavior;
+                think.SetBehaviorScore(in candidate, AssignedPatrolScoreCeiling);
+                changed++;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// 压掉原版给无主部队安排的"进聚落归并"候选。只对办差中的派遣队生效，且放过
+        /// 本队此刻真正要去的那个聚落——那是我们自己下的进城办事欲望。
+        /// </summary>
+        private static int SuppressLeaderlessMergeScores(PartyThinkParams think,
+            IEnumerable<(AIBehaviorData, float)> scores, Intent intent)
+        {
+            Settlement? allowed = intent.Kind == IntentKind.Visit ? intent.Settlement : null;
+            int changed = 0;
+            foreach ((AIBehaviorData behavior, float score) in scores)
+            {
+                if (behavior.AiBehavior != AiBehavior.GoToSettlement ||
+                    score <= AssignedPatrolScoreCeiling)
+                    continue;
+                if (allowed != null && ReferenceEquals(behavior.Party, allowed.Party))
                     continue;
 
                 AIBehaviorData candidate = behavior;

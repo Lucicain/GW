@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -574,6 +574,7 @@ namespace GreyWardenPolicePurity
             UpdateAtonementTask();
             EnsureDelayPatrolStateForActiveParties();
             ReconcileTaskWarStatesWithDiplomacy();
+            RetryPeaceAfterPlayerEnforcement();
             UpdateDelayPatrols();
             BreakInvalidShelteredBattles();
             CloseSettledPlayerHunt();
@@ -951,7 +952,17 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>
+        /// 玩家请来的支援。判定用的是和普通案件同一套：第一层决定要调多少灰袍，
+        /// 第二层比现场双方实际战力，我方严格占优才宣战。唯一不同的是行动目的——
+        /// 支援跟着玩家走，不自己去追人；并且玩家本人计入我方现场战力。
+        /// </summary>
         private void UpdatePlayerBountyEscortCase(MobileParty police,
+            PoliceTask task, bool playerEncounterStarted) =>
+            GwpLoadFaultWatch.Guard("PLAYER_BOUNTY_ESCORT_UPDATE",
+                () => AdvancePlayerBountyEscortCase(police, task, playerEncounterStarted));
+
+        private void AdvancePlayerBountyEscortCase(MobileParty police,
             PoliceTask task, bool playerEncounterStarted)
         {
             MobileParty? player = MobileParty.MainParty;
@@ -962,57 +973,164 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase))
                 return;
 
-            MobileParty movementTarget =
-                ResolveAssistanceMovementTarget(criminal);
-            float playerDistance = player.GetPosition2D.Distance(
-                movementTarget.GetPosition2D);
-            float declarationDistance = Math.Max(
-                GwpTuning.Enforcement.WarDistance,
-                GetNativeMaximumGoAroundDistance());
+            // 行动目的与宣战无关，任何阶段都是跟随玩家。
+            GreyWardenPartyDesireBehavior.RequestEscort(police, player, 8f);
 
-            if (!task.WarDeclared &&
-                (playerEncounterStarted || playerDistance <= declarationDistance))
+            if (PlayerBountyBehavior.AwaitingSupportRequest(task))
             {
-                float committedWardenStrength =
-                    GetNativePartyStrength(police);
-                if (_assistanceGroups.TryGetValue(police.StringId,
-                        out LordAssistanceGroup? group))
+                // 求援还没有送到，就不是灰袍的战争。此前误开的战要收回。
+                if (task.WarDeclared)
                 {
-                    committedWardenStrength =
-                        GetCommittedAssistanceStrength(police, group);
+                    task.WarDeclared = false;
+                    RestorePeaceAfterCaseEnd(task);
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
+                }
+                return;
+            }
+
+            if (!task.WarDeclared)
+            {
+                float warDistance = Math.Max(
+                    GwpTuning.Enforcement.WarDistance,
+                    GetNativeMaximumGoAroundDistance());
+                MobileParty movementTarget =
+                    ResolveAssistanceMovementTarget(criminal);
+                float wardenDistance = police.GetPosition2D.Distance(
+                    movementTarget.GetPosition2D);
+                float playerDistance = player.GetPosition2D.Distance(
+                    movementTarget.GetPosition2D);
+                bool committedReady = HasAssistanceEngagementStrengthAdvantage(
+                    police, criminal,
+                    out float committedStrength,
+                    out float committedTargetStrength);
+                // 和普通案件同一套：战力占优**并且**已经到了罪犯跟前才宣战。支援跟着玩家
+                // 走，玩家贴上去时它就在旁边，接触距离自然满足；隔着半张地图不该开战。
+                LocalStrengthDeclarationSnapshot? prediction = null;
+                bool localReady = false;
+                if (committedReady)
+                {
+                    localReady = TryGetNativeDeclarationCandidate(
+                        police, criminal, warDistance,
+                        out MobileParty _,
+                        out LocalStrengthDeclarationSnapshot candidate);
+                    prediction = candidate;
                 }
 
-                AssistanceThreatSnapshot enemy =
-                    GetNativeCombatStrengthSnapshot(police, criminal);
-                DeclareWar(task, criminal);
-                GwpAiDiagnostics.WriteAction(police,
-                    "PLAYER_BOUNTY_CONTACT_DECLARING_WAR",
-                    "trigger=" + (playerEncounterStarted
-                        ? "player_map_event"
-                        : "player_proximity") +
-                    "; player=" + player.StringId +
-                    "; target=" + criminal.StringId +
-                    "; movementTarget=" + movementTarget.StringId +
-                    "; playerDistance=" + playerDistance.ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; declarationDistance=" + declarationDistance.ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; playerStrength=" +
-                        GetNativeCombatGroupStrength(player).ToString(
+                if (localReady)
+                {
+                    DeclareWar(task, criminal);
+                    Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
+                        ?.NotifySupportWarDeclared(criminal);
+                    RefreshAssistanceDutyAfterWarDeclaration(police);
+                    GwpAiDiagnostics.WriteAction(police,
+                        "PLAYER_BOUNTY_SUPPORT_DECLARING_WAR",
+                        FormatLocalStrengthDeclarationDiagnostic(
+                            prediction!, committedStrength,
+                            committedTargetStrength) +
+                        "; playerEncounterStarted=" + playerEncounterStarted +
+                        "; playerDistance=" + playerDistance.ToString(
                             "0.00", CultureInfo.InvariantCulture) +
-                    "; committedWardenStrength=" +
-                        committedWardenStrength.ToString(
+                        "; wardenDistance=" + wardenDistance.ToString(
                             "0.00", CultureInfo.InvariantCulture) +
-                    "; enemyLocalStrength=" + enemy.Strength.ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; strengthGateIgnored=True");
-                RefreshAssistanceDutyAfterWarDeclaration(police);
+                        "; playerStrength=" +
+                            GetNativeCombatGroupStrength(player).ToString(
+                                "0.00", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    GwpAiDiagnostics.WriteAction(police,
+                        "PLAYER_BOUNTY_SUPPORT_WAITING_STRENGTH",
+                        "committedReady=" + committedReady +
+                        "; committedStrength=" + committedStrength.ToString(
+                            "0.00", CultureInfo.InvariantCulture) +
+                        "; committedTargetStrength=" +
+                            committedTargetStrength.ToString(
+                                "0.00", CultureInfo.InvariantCulture) +
+                        (prediction == null
+                            ? string.Empty
+                            : "; " + FormatLocalStrengthDeclarationDiagnostic(
+                                prediction, committedStrength,
+                                committedTargetStrength)) +
+                        "; playerEncounterStarted=" + playerEncounterStarted +
+                        "; playerDistance=" + playerDistance.ToString(
+                            "0.00", CultureInfo.InvariantCulture) +
+                        "; wardenDistance=" + wardenDistance.ToString(
+                            "0.00", CultureInfo.InvariantCulture) +
+                        "; playerStrength=" +
+                            GetNativeCombatGroupStrength(player).ToString(
+                                "0.00", CultureInfo.InvariantCulture));
+                }
             }
 
             if (task.WarDeclared)
             {
                 TrySpawnImmediateCaseInterceptor(
                     police, task, criminal, null);
+            }
+        }
+
+        /// <summary>
+        /// 把灰袍从这宗案子上撤下来：承办队伍撤职、协力解散、拦截队召回，并在没有其他
+        /// 合法战争理由时恢复和平。卷宗留着不销——玩家接案时他成为主理人，办成之后他
+        /// 可能还要继续追缴，而且始终欠一份汇报。
+        /// 两处调用：玩家接下这宗委托，以及玩家把这宗案子办成。
+        /// </summary>
+        /// <summary>撤案时可能还有别的合法理由撑着这场战争，逐小时重试直到不需要为止。</summary>
+        private static readonly Dictionary<IFaction, double> _peaceRetryTargets =
+            new Dictionary<IFaction, double>();
+
+        internal static void ReleaseWardensFromCase(string? offenderHeroId)
+        {
+            if (_instance == null || string.IsNullOrWhiteSpace(offenderHeroId)) return;
+
+            foreach (PoliceTask task in CrimeState.ReleaseTasksForOffender(offenderHeroId))
+            {
+                string policePartyId = task.PolicePartyId ?? string.Empty;
+                _instance.ReleaseAssistanceGroup(policePartyId, "player_enforcement_completed");
+                _instance.ClearTaskWarTracking(policePartyId, true);
+                MobileParty? police = FindActiveParty(policePartyId);
+                if (police != null)
+                {
+                    _instance.RestoreAi(police);
+                    GreyWardenPartyDesireBehavior.ClearIntent(police);
+                }
+                task.WarDeclared = false;
+                RestorePeaceAfterCaseEnd(task);
+                // 卷宗可能要等玩家汇报才销，这一刻的"仍有合法理由"未必是最终结论。
+                if (task.WarTarget != null)
+                    _peaceRetryTargets[task.WarTarget] =
+                        CampaignTime.Now.ToHours + 24 * 30;
+                GwpAiDiagnostics.WriteFieldArrest("CASE_RELEASED_TO_PLAYER",
+                    "offender=" + offenderHeroId + "; police=" + policePartyId +
+                    "; warTarget=" + (task.WarTarget?.StringId ?? "-"));
+            }
+            CrimeState.RefreshAccepting();
+        }
+
+        private static void RetryPeaceAfterPlayerEnforcement()
+        {
+            if (_peaceRetryTargets.Count == 0) return;
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) { _peaceRetryTargets.Clear(); return; }
+
+            foreach (var entry in _peaceRetryTargets.ToList())
+            {
+                IFaction target = entry.Key;
+                bool expired = CampaignTime.Now.ToHours > entry.Value;
+                if (!FactionManager.IsAtWarAgainstFaction(policeClan, target))
+                {
+                    _peaceRetryTargets.Remove(target);
+                    continue;
+                }
+                if (GwpPoliceWarReasonService.HasLegitimateWarReason(target))
+                {
+                    if (expired) _peaceRetryTargets.Remove(target);
+                    continue;
+                }
+                GwpCommon.TrySetNeutral(policeClan, target);
+                _peaceRetryTargets.Remove(target);
+                GwpAiDiagnostics.WriteFieldArrest("PEACE_RESTORED_AFTER_PLAYER_ENFORCEMENT",
+                    "target=" + target.StringId);
             }
         }
 

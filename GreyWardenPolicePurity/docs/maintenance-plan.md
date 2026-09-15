@@ -1,8 +1,994 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-15 上缴口径重写：只查私留，不罚差额（已部署，待验收）
+
+用户重新定义了玩家与灰袍之间这本账：玩家代表灰袍办案，第二层谈成什么条件、对方最后交得出
+多少，都不是他的过失；**只要把从犯人手里拿到的钱如实上缴，一律给过**，索贿也算——钱只要
+进了公库就不追究。会出事的只有两种：私留（少交从犯人那里拿到的钱）与出尔反尔（收了钱又打）。
+被查出来时按多收的钱扣声望。
+
+### 一、所有野外结局都构成惩戒
+
+用户定调"都要压制，因为玩家此时代表灰袍，依旧让他们当众出丑了"。因此
+`RegisterFieldEnforcement` 补齐到全部结局：收款/谈成（`Settle`）、投降被俘、**收受贿赂**、
+**单挑落败**。此前我把后两者排除在外，判断有误，已按用户口径改回。
+
+### 二、犯人的账当场就清
+
+`ClearOffenderRecords` 原本在玩家上缴时才执行，且按玩家申报的数目抵扣。现改为
+`ClearOffenderRecord(offender, collected, baseCharge)`，在 `RecordSettlement` 里当场执行，
+**按犯人实际交了多少**抵负声望。玩家之后交不交差、交多少，不再回头影响犯人已受的惩戒。
+
+### 三、上缴判定
+
+- `DeclareAmount(declared, truthful)` 重写：`concealed = 实收 - 实交`，**不再有任何"应缴
+  与申报之差"的当场扣分**。`ShortfallPenalty` 只在查账命中时用于折算私留金额。
+- `DeclareFalseAmount` 保留为 `DeclareAmount(declared, truthful:false)` 的别名，谎报只影响
+  今后被查的概率，不改本次判定。
+- 相应地，`CompleteCashReport` / `CompleteDispatchedCaseReport` 删除
+  `defeatExemption` / `LegitimatePovertyShortfall` 两条豁免分支——新口径下没有差额惩罚，
+  豁免也就无从谈起。办案费改为按整案 `CaseAmountDue` 计算，不再按实收封顶。
+
+### 四、被查出来的概率
+
+`CurrentAuditChance()` = 底数 `ReportAuditChance(0.35)`
++ `AuditChancePerRecentLie(0.05)` × 近十次委托的谎报次数
+− `AuditChancePerStandingPoint(0.02)` × 灰袍声望，夹在 `[0.05, 0.95]`。
+声望为负时反而更容易被盯上。谎报记录存在 `_recentReportHonesty`（存档键
+`gwp_report_recent_honesty`），只保留最近 `RecentReportMemory = 10` 条。
+结算时机沿用既有：正式构建 `7` 天后判定，`ImmediateAuditTesting` 下当场判定。
+私留与"收了钱又打"两条查账各判各的，都用同一个概率。
+
+### 五、测试
+
+**这一轮我在改写账本测试时误删了工作树里未提交的 `GwpAssetPayment` 覆盖**，已按生产代码
+重建：可用财富计算、自动报价不超上限、超限与超出持有量的选择不可提交且不转移任何东西、
+正常提交后钱与货各转一次且收据等于实际净额、重复提交不重复扣款。账本部分按新口径重写：
+如实全额上缴不罚、只对私留排查账、索贿全额上缴不罚、谎报计数与其存读档、概率随谎报上升
+随声望下降并被上下限夹住、只记最近十次。当前 `PASS: 60` 条断言（旧计数 `141` 中包含大量
+已随旧口径作废的差额惩罚用例）。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`。实机 DLL `1000960` 字节，SHA-256
+`D5C5C94C658152D3AFC55B48B6BA50E64F8BB878350761D751ACEDC5B9B4794D`。
+
+
+## 2026-09-15 玩家办案当场惩戒犯人；更正上一条关于压制范围的错误结论（已部署，待验收）
+
+### 更正：压制系统本来就是分开的三件事
+
+上一节写"现有收敛期只压劫掠聚落，不影响打村民与打商队"，**这个结论是错的**，我当时只看了
+`PoliceRaidDeterrenceModel` 就下判断。实际范围是：
+
+- `PoliceRaidDeterrenceModel` → **烧村**：覆写 `GetTargetScoreForFaction` 中
+  `Army.ArmyTypes.Raider` 的目标评分，乘 `GetVillagerAttackScoreMultiplier`。
+- `GwpCrimeDesireAuction.Apply` → **打流动人口**：对 `CaravanPartyComponent` 目标乘
+  `GetCaravanAttackScoreMultiplier`，对 `VillagerPartyComponent` 目标乘
+  `GetVillagerAttackScoreMultiplier`，两者分别计算。
+- `GwpEncyclopediaHeroPageVM` 把两个倍率都显示在英雄页上。
+
+也就是说"烧村欲望"与"打流动中立人口欲望"确实早就拆开了，灰袍的两类职责也对应这两套数字。
+用户的记忆是对的。
+
+### 玩家办案 = 当场惩戒，交差是另一本账
+
+用户定调：玩家接手的案子，只要**已经拿到罚款**（第二层谈成的方案里让掉多少都算）、
+**已被玩家击败**或**已被玩家俘获**，犯人就应当立刻吃到与灰袍领主办完案完全相同的震慑与
+欲望压制，并在英雄页上算好；玩家之后交不交差，是玩家与灰袍之间的账，与犯人已受的惩戒无关。
+
+- **收款／谈成**：上一节已把 `RegisterFieldEnforcement` 接进 `GwpFieldArrestBehavior.Settle(...)`。
+  复核确认所有涉及罚金的结局都经由 `Settle`——`SETTLED_COLLECTION`（含半数、七成、四成等
+  第二层让步）与 `SETTLED_EMPTY`（谈成但确实收不到钱）都在内。
+- **俘获**：`PoliceAIDeterrenceBehavior.OnHeroPrisonerTaken` 原来只认灰袍部队为捕获者，
+  玩家亲手押下一名背着未结案件的领主一次都不登记。现在同时接受主队捕获，走的是与灰袍
+  完全相同的那条链：记被捕次数、本人震慑、同族转述、同场目击者。
+  `GwpFieldArrestBehavior` 的投降结案点也补上 `RegisterFieldEnforcement`。
+  重复登记由既有的场次去重（`_captureBatches` / `_recentProcessedOffenders`）挡住。
+  注意 `RegisterPoliceArrest` 里的 `ClearRecordOnArrest` 仍然只在**真正落入灰袍羁押**时才
+  清零负声望——玩家手上的俘虏不清，交给灰袍时才由既有流程清。
+- **击败未俘**：已由 `PlayerBountyBehavior.RegisterCaseDeterrence(battle, target, countAsArrest:false)`
+  在战后对账时登记，保持不变。
+- **两处刻意不登记**：收受贿赂（`SETTLED_BRIBE`，犯人一分罚金没交，钱进了玩家口袋）与
+  单挑落败（罚金作废）。这两种情况犯人并未为罪行付出代价，不应获得"已受惩戒"的收敛期。
+  如需改口径请明示。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机 DLL `1002496` 字节，SHA-256
+`2B7767756C9CAEC9281AE33F0CB0060DB2E32BB50F756CFEB85A1E5A446C48E5`。
+
+
+## 2026-09-15 玩家野外执法计入灰袍执法；结局台词改为按性子取池（已部署，待验收）
+
+### 一、玩家收了罚金不算灰袍执法（真实缺陷，已修）
+
+`GwpAiDeterrenceState` 里"最近一次执法"的时间戳 `LastEnforcementHours` 只在
+`RegisterVillageViolenceArrest` / `RegisterCaravanArrest` 里写入，而这两条路此前只有两个入口：
+灰袍自己抓人，以及**玩家委托案**的结算。玩家在野外收了罚金、对方也兑现了处置的普通案件
+（没有委托）**一次都不会登记**——于是罪犯的收敛期根本不启动，表现就是"我明明罚过他了，
+他照样接着抢"。
+
+- `GwpFieldArrestBehavior.Settle(...)` 现在在关案之前调用新的
+  `RegisterFieldEnforcement(offender, crime)` → `PoliceAIDeterrenceBehavior.RegisterPlayerEnforcementSuccess`。
+  押走才算被捕，这条路不动拘捕履历，只记震慑与执法时间戳。诊断
+  `FIELD_ENFORCEMENT_REGISTERED`。
+- `PlayerBountyBehavior.NotifyCasePeacefullyResolved` 里原本的那次登记改为**只写去重键**，
+  不再重复登记：和平了结一律经由野外执法那条路，一次就够。
+
+### 二、压制口径的实际范围（查证结果，未改）
+
+`PoliceRaidDeterrenceModel` 只覆写 `GetTargetScoreForFaction` 中
+`missionType == Army.ArmyTypes.Raider` 的评分，并且要求 `mobileParty.LeaderHero != null`。
+也就是说现有收敛期**只压"劫掠聚落"这一件事**，并**不**影响打村民、打商队的决策。
+用户此前的疑问"有没有精确控制"，答案是：范围比"烧杀抢掠"窄，只管烧村子。是否要扩到
+村民与商队，等用户确认后再动。
+
+### 三、认罚／交不出钱／抗法的台词重复（已修）
+
+`GwpFieldDialogueVoice` 本来就有一套成熟的取词规则：按键取池、避免与上一次重样、整场缓存。
+但 `GwpFieldArrestLines.Submit/Plead/Resist` 完全没接进去——每种性子只有**一句写死**的台词，
+所以同一个人认罚两次必然一模一样。
+
+- 三种结局的台词池搬进 `GwpFieldDialogueVoice.Line`，键为
+  `submit_<性子>` / `plead_<性子>` / `resist_<性子>`，外加 `resist_undercharge`
+  （玩家自己背着案子时的轻蔑回应）。原有台词全部保留为池中一条，另补写到每池 2–3 条。
+- `GwpFieldArrestLines` 的三个方法收敛为只返回池名（`SubmitKey` / `PleadKey` / `ResistKey`），
+  取词与防重样统一交给 `_voice.Line`，与开场白、接受论点共用同一套规则。
+- 新台词一律只说人物自己的立场与处境，不出现规则解说、数值或系统提示。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机 DLL `1002496` 字节，SHA-256
+`2D3BFA63CFF9904AC086CD717247067CDDAE1D7646B20E23685D7252FA0967AC`。
+
+
+## 2026-09-15 使者钻进村里不走：原版给无主部队安排的归并候选（已部署，待验收）
+
+用户反馈使者老是去村庄呆着不动。这次监控日志给出了确切答案，不用再猜：
+
+```
+finalScores=[GoToSettlement@castle_village_K9_2=1.6000, GoToSettlement@castle_K9=1.6000,
+             ... 共 21 条，全部 1.6000 ...,
+             GoAroundParty@gw_leader_5_party_1=0.9900,      ← 我们的差事
+             PatrolAroundPoint@...=0.0300]                  ← 巡逻已压住
+```
+
+原版每小时给这支**无领主**部队刷出一整排"进聚落"候选，附近村庄、城堡、城镇各一条，
+分数固定 `1.6`——那是原版给无主部队安排的归并/解散出路（对应
+`AiVisitSettlementBehavior.CalculateMergeScoreForLeaderlessParty` 一类逻辑），不是补给欲望。
+`1.6 > 0.99`，所以每小时都赢，使者就近钻进村子不再走。巡逻压制只管
+`PatrolAroundPoint`，管不到它。
+
+- 新增 `SuppressLeaderlessMergeScores(think, rawScores, intent)`：办差期间把原版的
+  `GoToSettlement` 候选压到与巡逻同一个下限 `AssignedPatrolScoreCeiling`。
+  **只对派遣队生效**（`GwpWardenDispatchBehavior.IsDispatchParty`），灰袍领主队与其他
+  受管部队的访问、补给欲望一分不动。
+- 放过一个例外：本队此刻真正要去的那个聚落。"进城办事"是我们自己下的 `Visit` 意图，
+  压制时按 `intent.Settlement` 比对并跳过，否则连自己要去卖俘虏的城也会被压掉。
+- 压制计数并入既有的 `suppressedPatrolCount` 诊断字段，可在 `AUCTION` 行直接看到。
+
+这条与"不自己造欲望"的原则不冲突：被压的不是补给/疗伤这类正经欲望，而是原版试图把一支
+正在办差的队伍**就地解散**的出路。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `994816` 字节，
+SHA-256 均为 `74ED3C007EE939BEF11EB571EEE120056B1C6DCB8BD07A4605FFB364A109E2A8`。
+
+
+## 2026-09-15 临时队长方案作废并撤回（已部署，待验收）
+
+上一节给派遣队配临时队长的做法**已按用户实机反馈整条撤回**。它同时坏了四件事：
+
+1. **地图标记消失。** `MapTrackerProvider.CanAddMobileParty` 中，自定义部队走得通的那条路是
+   `LeaderHero == null && IsCurrentlyUsedByAQuest && CheckTracked`——**第一个条件就要求无领主**。
+   另一条路要求部队在 `Clan.PlayerClan.WarPartyComponents` 里，而 `CustomPartyComponent`
+   永远不在。也就是说**队长与标记在结构上互斥**，这条我上一轮漏看了。
+2. 多出一名可以对话的假英雄，并且占用玩家家族的位置。
+3. 原版进城欲望把队伍钉在村庄里不走。
+4. 连带撤掉的"不主动接战"让它一路追劫匪，不专心办事。
+
+### 撤回后的状态
+
+- 删除 `CommissionCourierCaptain` / `RetireCourierCaptain` 与存档字段 `CaptainHeroId`，
+  派遣队恢复为无领主部队，标记那三个条件重新成立。
+- 恢复 `KeepCourierDisposition`（`SetInitiative(0f, 1f, 6f)`）与
+  `IsAuthorizedAttackTarget` 中"派遣队不主动攻击任何目标"的前置：用户明确要求
+  "没有很专心的做事"要改掉，办差就该专心，挨打时原版自卫不受影响。
+- 恢复细适配 `TryHandleTownBusiness` / `FindTradeTown` / `BuyFoodIfNeeded`：只补
+  "决定进城"这一个欲望（原版 `GoToSettlement` 行为，`0.99` 分与其他原版欲望同场竞价），
+  进城后卖俘虏仍由原版 `PartiesSellPrisonerCampaignBehavior` 完成，买粮按原版市价。
+  押着本案目标时一律不进城这条硬边界保持不变。
+- `HandBackEverything` 跳过英雄成员的那条保留——虽然已无临时队长，留着仍是正确的防御。
+
+### 结论记录
+
+无领主自定义部队**无法**拿到原版 `AiVisitSettlementBehavior` 的整套欲望：满足它的唯一办法是
+给领主英雄，而那会同时废掉地图标记、凭空多出可交互英雄、并让队伍被原版访问欲望钉住。
+两者不可兼得，本项目选择"保留标记 + 专心办差 + 一条细适配补进城"。后续不要再尝试队长方案。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `994304` 字节，
+SHA-256 均为 `AF9845E6A4C2E2AB7CB8A68925AEAEDB7469F84DAE7E50096673F5ECD6B9E4AC`。
+
+
+## 2026-09-15 给派遣队配临时队长，欲望整段交还原版（已部署，待验收）
+
+用户明确表态："我要原版欲望发力"，"你自己做欲望这个方式我都不喜欢"，唯一硬要求是
+"别把我目标任务卖了"。对应选择是给派遣队**一个假的英雄身份**。
+
+### 为什么必须配队长
+
+`AiVisitSettlementBehavior.AiHourlyTick` 的入口（IL 逐分支确认）是
+`faction.IsMinorFaction || faction.IsKingdomFaction || (LeaderHero != null && LeaderHero.IsLord)`。
+派遣队是无领主的玩家家族队，三条都不满足，原版**一条进城办事的欲望都不会生成**。
+而且过了这道门之后，原版还会拿 `LeaderHero` 去算募兵评分
+（`GetApproximateVolunteersCanBeRecruitedDataFromSettlement(Hero, Settlement)`），
+硬把门打开给无领主队伍有空引用风险。所以补欲望是治标，配队长才是治本。
+
+### 本轮改动
+
+- 新增 `CommissionCourierCaptain(party, home)`：用
+  `HeroCreator.CreateSpecialHero(灰袍指挥官模板, home, Clan.PlayerClan, null, 30)` 造一名临时
+  队长，`SetNewOccupation(Occupation.Lord)` 让 `IsLord` 成立（原版那道门看的就是 Occupation），
+  `AddHeroToPartyAction.Apply` 入队后 `ChangePartyLeader`。诊断
+  `DISPATCH_CAPTAIN_COMMISSIONED`。
+- 新增 `RetireCourierCaptain(record)`：归队、覆灭、部队消失三条终止路径全部撤销这名队长
+  （`KillCharacterAction.ApplyByRemove`），不在世界里留人。队长 ID 写进
+  `GwpDispatchRecord.CaptainHeroId` 并入存档串，读档后仍能清理。
+- `HandBackEverything` 跳过英雄成员，临时队长不会被当兵员交还给玩家。
+- **删掉本轮之前所有自己写的欲望适配**：`TryHandleTownBusiness`、`FindTradeTown`、
+  `BuyFoodIfNeeded` 全部移除。进城、卖俘虏、买粮、募兵现在整段由原版自己算。
+- **删掉两处对原版的压制**：`IsAuthorizedAttackTarget` 里针对派遣队的"一律不主动攻击"，
+  以及 `KeepCourierDisposition` 的 `SetInitiative(0,1)`。有了队长之后原版短期主动性能按
+  真实队伍强度判断，之前那两处是在无领主导致原版失灵时的补丁，现在应当撤回。
+- 我们仍然保留的只有三件与欲望无关的事：`RequestRush` 这**一个** `0.99` 分的差事欲望
+  （巡逻压制由既有机制负责）、地图标记、险情通知。工资仍由 `PayDispatchWages` 从玩家
+  金币扣——`DefaultClanFinanceModel` 只遍历族长主队、商队、`WarPartyComponents` 与驻军，
+  自定义部队不在其中，因此不会与原版重复计费。
+
+### 唯一的硬边界仍然成立
+
+本案要押送的目标**不会被卖掉**：它是以英雄俘虏的身份通过
+`TransferPrisonerAction` 装车的，`HandBackEverything` 与送达流程都按英雄单独处理；
+原版 `PartiesSellPrisonerCampaignBehavior` 对英雄俘虏走的是赎金/移交路径而非贩卖，
+并且送达在先。下一轮实机需要重点确认这一条。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `993792` 字节，
+SHA-256 均为 `6E8931EB2B124EEC7DA153BAC765A23F203344BFF28AC1BF93A0457E37ED08AA`。
+
+
+## 2026-09-15 补上原版不肯给派遣队生成的"进城办事"欲望（已部署，待验收）
+
+用户指出派遣队的欲望系统不完整，要求参照原版领主：他们会卖俘虏、招兵、补给。
+
+### 门槛在哪（IL 逐分支确认）
+
+`AiVisitSettlementBehavior.AiHourlyTick` 的入口条件是
+`faction.IsMinorFaction || faction.IsKingdomFaction || (LeaderHero != null && LeaderHero.IsLord)`，
+三者取或；都不满足就直接 `ret`。派遣队是**无领主的玩家家族队**，玩家未立国时
+`Clan.PlayerClan` 既非小势力也非王国势力，因此原版**一条进城欲望都不会给它生成**——押着
+俘虏、粮见底，它也只会继续直走。这不是我们把欲望写错，是原版根本没覆盖这种部队。
+
+另一面：`PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` 只看
+`IsMainParty` / `IsFortification` / 势力与战争状态 / 俘虏名册，**没有领主门槛**。也就是说
+只要进得去城，原版自己就会把俘虏卖掉。所以缺的确实只有"进城"这一个欲望。
+
+### 下注方式改回与灰袍 NPC 一致
+
+用户同时纠正了下注级别：灰袍 NPC 的做法是**只把巡逻类候选压到最低，其余原版欲望一分不动，
+自己只加一个 `1` 分左右的任务欲望**（`AssignedDutyScore = 0.99`）。派遣队原先被我写成
+`PlayerRequestScore = 10`，那等于把补给、疗伤、卖货等原版欲望一起压死，正是"欲望系统没做好"
+的直接表现。
+
+现在 `SendTo` 与进城办事都改用默认的 `AssignedDutyScore`。巡逻压制由
+`SuppressAssignedPatrolScores` 负责——只要存在任务意图就生效，与分数无关（日志可见巡逻候选
+由 `~2` 压到 `0.03`），所以任务欲望在 `0.99` 上仍然稳稳压过巡逻；而真正该办的原版欲望
+一旦评分更高就会正常赢下这一小时，办完再回来赶路。
+
+### 本轮补法
+
+- 新增 `TryHandleTownBusiness(record, party)`：身上有俘虏、或者粮低于 1.5 天且有可花的钱时，
+  用 `GreyWardenPartyDesireBehavior.RequestVisit` 下一个原版 `GoToSettlement` 欲望，
+  按 `PlayerRequestScore` 竞价；办完事自动回到送信的行程。出发、途中、返程三处都会先问
+  这一步。诊断 `DISPATCH_TOWN_BUSINESS`。
+- 进城之后不再额外做事：卖俘虏交给原版，买粮由 `BuyFoodIfNeeded` 按原版市价真实买入
+  （原版 `PartiesBuyFoodCampaignBehavior.TryBuyingFood` 硬性要求领主英雄，无领主队走不到，
+  这一段仍由我们补）。买粮阈值从半天口粮放宽到两天，免得刚出城又见底。
+- 目标城镇由 `FindTradeTown` 选：最近的、不在围城中的、且与我方不处于交战的城镇。
+- **硬边界：身上押着本案目标时一律不进城。** 那个人是要押去交差的，不能让原版把他当普通
+  俘虏卖掉或赎走。这一条写在方法开头，先于所有其他判断。
+- 日常巡检里去掉了独立的买粮调用——买粮只发生在因"进城办事"真正进了城之后，不再在路过
+  某个聚落时顺手触发。
+- 招兵**没有**实现：原版募兵走 `RecruitmentCampaignBehavior` 的志愿兵池，需要领主英雄去谈。
+  在没有英雄的情况下自行生成兵员就是凭空造人，与本项目"真实资源"的原则冲突。派遣队的兵员
+  只来自玩家实分和战场存活，记录在此备查。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `994304` 字节，
+SHA-256 均为 `960137D3E3F05F7822913F2C4D1F91747A952B436B4DFD359BFB67CA35CB19F6`。
+
+
+## 2026-09-15 使者性子改成信使：不主动接战、遇险就躲（已部署，待验收）
+
+用户确认独立办案与求援两条链都正常，剩下三个现象都出在派遣队身上：走路偶现摇摆不定、
+爱打野怪、抓了俘虏之后只剩一个人还移速极慢，差点被野怪打死。
+
+三者同源：**短期主动性**。原版 `GetBestInitiativeBehavior` 每小时重新决定扑上去还是绕开，
+一支十来人的队伍拿默认值（`attackInitiative=1`、`avoidInitiative=1`）就会一路追野怪、
+走走停停；打完又押着俘虏，小队伍负重一高速度就掉到爬。长期欲望本身没问题——竞价里
+`RushParty` 是 `PlayerRequestScore = 10`，日志确认远高于巡逻候选的 `~2`，不存在被压过去的情况。
+
+- `GreyWardenPartyDesireBehavior.IsAuthorizedAttackTarget` 增加一条前置：派遣队对**任何**
+  目标都不授权主动攻击，野怪也不例外。原来 `if (target.IsBandit) return true;` 这条白名单是
+  给灰袍执法队用的，信使不该沿用。挨打时原版自卫不受影响。
+- 新增 `KeepCourierDisposition(party)`：`party.Ai.SetInitiative(0f, 1f, 6f)`——不主动接战、
+  遇险就躲，长期保持。在派出时、每次下达行动指令时、以及每小时巡检时续期，
+  `CourierInitiativeHours = 6` 足以覆盖两次续期之间的间隔。
+- 不再主动接战之后就不会再莫名其妙抓一堆野怪俘虏，移速被拖垮的情形随之消失。押送本案
+  目标那种**有意为之**的俘虏仍然会拖慢速度，这是玩家自己决定派几个人的取舍，不做干预；
+  真出事时"被堵上／伤亡过半／断粮"三条险情通知照常触发。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `993792` 字节，
+SHA-256 均为 `6EB1CC91EAE50970D456CA479C9F77E4198431190C5FFD6719BF405411C2CA7C`。
+
+
+## 2026-09-15 结算队退役（已部署，待验收）
+
+用户确认交互恢复正常，并指出结算队已经没有存在意义：现在玩家可以找任意灰袍领主复命，也可以
+派自己的人去送，不再需要"五天后灰袍主动找上门"这道兜底。按 AGENTS.md 的退役规则整套移除。
+
+- 删除 `PlayerBountyBehavior.CollectionCourier.cs` 整个文件（生成、行进、返回、编码存档的
+  返回状态串等全部逻辑）。
+- 移除两条 `start` 对话（`gwp_bounty_courier_start` / `gwp_bounty_courier_returning_start`）
+  与从 `gwp_bounty_courier_player` 进入结案流程的玩家行；结案入口 `IsCaseClerk` 收敛为
+  只认普通灰袍领主对话。
+- 移除 `OnMapEventStarted` 里结算队参战时强制 `PlayerEncounter.DoMeeting()` 的分支，以及
+  `ClearBountyTaskState(preservedCollectionCourier)` 的保留参数。
+- 存档字段 `gwp_bounty_collection_started_hours`、`gwp_bounty_collection_courier_return_state`
+  连同对应私有字段一并删除；`EnterBountyCollectionState` 不再记开始时刻。
+  `IsWaitingForBountyCollection`（待交差状态）本身保留——那是结案流程的正常阶段，与结算队无关。
+- 删除 `GwpIds.BountyCollectionCourierPrefix`、`GwpTuning.Bounty.CollectionCourierDelayDays`
+  与 `CollectionCourierPatrolSize`，以及四条只服务于结算队的中文本地化
+  （`gwp_bounty_courier_greeting`、`gwp_bounty_courier_returning`、
+  `gwp_bounty_collection_courier_name`、`gwp_bounty_collection_courier_dispatched`）。
+- 旧存档里可能还停着一支结算队（本轮监控日志里就有 `gwp_bounty_collect_94457` 在前往
+  `town_K3`）。新增 `RetireLegacyCollectionCouriers()`，在会话启动时按旧前缀清意图并解散，
+  不留孤儿部队。
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；实机语言 XML 解析通过；设置类测试 `PASS: 141`。DLL 由 `1001472` 降至
+`993280` 字节，客户端与编辑器 SHA-256 均为
+`42C4942C056525D18BDDF42B16F70FA5FA314A6299AD91669B65FA81B79AEBB4`。
+
+
+## 2026-09-15 点谁都没反应：派遣对话被开成空对话（已部署，待验收）
+
+用户报告点击任何人都无法交互、无法对话。`GreyWarden-Faults.log` 里没有任何异常，所以不是
+崩溃，是**对话状态卡死**：玩家被扔进了一场一句台词都没有的对话，出不来，此后一切交互失效。
+
+### 成因
+
+`GwpWardenDispatchDialogue` 的开场白挂在 `start` 上，条件是"这场对话是我方刚开起来的"，
+而那个判据写成了 `ConversationManager.OneToOneConversationCharacter == _activeTroop`。
+两处致命：
+
+1. `CampaignMapConversation.OpenConversation` 是**延迟启动**的。开完之后会有若干帧
+   `IsConversationInProgress` 仍为 `false`，而 `Pump()` 每帧都跑，并且在那个分支里执行
+   `_activeTroop = null`——**武装状态在对话真正开始之前就被自己清掉了**。
+2. 即使没被清掉，`OneToOneConversationCharacter` 对普通士兵未必会填。
+
+任一条成立，`start` 上就没有任何一条台词的条件为真。原版进了对话却找不到台词，界面与输入
+就此卡住，表现正是"点谁都没反应"。
+
+### 修法
+
+- 判据简化为 `_activeTroop != null`，不再比对 `OneToOneConversationCharacter`。武装状态只在
+  我方调用 `OpenConversation` 的那一刻置位。
+- 撤下武装改由原版 `CampaignEvents.ConversationEnded` 负责（`GwpWardenDispatchBehavior`
+  新增监听），不再由 `Pump()` 在启动窗口里抢着清。
+- `Pump()` 只保留"开了却始终没开起来"的兜底：`OpenGraceMilliseconds = 15000` 之内一律不动，
+  超时才 `Disarm()`（同时清掉待办请求）。
+- `QueueSelection` 不再自行清空 `_activeTroop`——那一步之后对话还要走完 `close_window`。
+- 新增 `ResetRuntimeState()`，在会话启动时清空全部静态状态：静态字段跨读档留在进程里，
+  上一局遗留的武装状态可能劫持新一局的第一场对话。
+- 对话结构本身复核：`gwp_dispatch_options` 下的"代交任务""求援"两条可能都不满足条件，但
+  "暂时没事，回岗位去吧"这一条的条件与开场白相同，因此只要开场白成立就必定有出口，不会
+  再出现有开场白却无选项的死局。
+
+### 旧存档坏键已确认
+
+本轮日志同时确认了之前那个 `InvalidCastException` 的具体键：
+`LEGACY_gwp_case_support_requested`——旧存档里这个键存的不是 `int`。逐键 `Guard` 已经把它
+隔离，其余字段正常读入；改用单一字符串 `gwp_case_outcome_state` 之后，新存档不再经过这条
+旧路径，最近两次会话的故障日志里已经没有该条目。
+
+### 验证
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告，已部署；`Verify-LiveModule.ps1` 缺失 `0`、
+差异 `0`、多余 `0`；设置类测试 `PASS: 141`。实机客户端与编辑器 DLL 均为 `1001472` 字节，
+SHA-256 均为 `1248A60C5CD959D1249CC35001842876D45F61FE8F09656529F63570FF503A96`。
+
+
+## 2026-09-15 读档崩溃的真凶找到了；支援主理人被别的案子占着（已部署，待验收）
+
+用户报告"找不到人、领主接了跟随办案之后欲望还是奇怪的东西而不是跟玩家"。本轮同时拿到了
+之前那次启动崩溃的**确切堆栈**，两件事其实是同一个根。
+
+### 一、崩溃与"求援读档就丢"的真凶
+
+`GreyWarden-Faults.log`（已归档为 `GreyWarden-Faults.prev.log`）三次记录同一条：
+
+```
+GUARDED_FAILURE | BOUNTY_CASE_OUTCOME_SYNC | System.InvalidCastException
+  at TaleWorlds.CampaignSystem.CampaignBehaviorDataStore.BehaviorSaveData.SyncData[T]
+  at PlayerBountyBehavior.SyncCaseOutcomeFields(...)
+```
+
+反编译 `BehaviorSaveData.SyncData<T>` 的 IL 确认其实现为
+`_records.TryGetValue(key, out obj)` 后 `unbox.any !!T`：键不存在时返回 `false` 不做转换，
+所以抛 `InvalidCastException` 只可能是**键存在但类型对不上**。上一轮加的
+`GwpLoadFaultWatch.Guard` 把它兜住了，游戏因此能进，但**异常之后的语句全部没有执行**——
+其中就包括 `_supportRequested = supportRequested != 0`。结果是每次读档求援状态都丢回
+`false`，`AwaitingSupportRequest` 又变成真，支援被悄悄取消。这也正是第一次启动即崩的根因。
+
+修法：本案结果不再用五个分键，整体存成一个字符串 `gwp_case_outcome_state`——一个键、
+一种类型，不会再出现"读到一半失败、后面的字段永远丢失"。旧存档的五个分键改为逐个读、
+逐个用 `Guard` 兜住，并把出问题的键名写成 `LEGACY_<键名>` 进故障日志，下次运行即可确认
+究竟是哪一个键、什么类型对不上。
+
+### 二、支援主理人身上挂着别人的案子
+
+监控 `GreyWarden-AI-Diagnostics.log` 的第一条 `PLAYER_BOUNTY_SUPPORT_WAITING_STRENGTH`
+（`campaignHour=2186152.93`）直接给出现场：求援指派到 `gw_leader_0_party_1`，而同一行
+`dutyIntent=Pursue:lord_1_51_party_1`、
+`assistance=armyMember:leader=gw_leader_1_party_1,speedDispersed=True,target=lord_1_51_party_1`
+——这名领主当时是**另一宗案子协力组的协办人且处于速度分散状态**。`BeginTask` 只顶掉他自己
+的承办任务，不会把他从别人的协力组里摘出来，于是他的欲望仍然指向原来那个罪犯。约四分钟后
+该组自行释放，日志里才变成 `dutyIntent=Escort:player_party`——与用户"刚开始很奇怪、后来
+才跟上"的描述完全吻合。
+
+- 新增 `PoliceEnforcementBehavior.ReleasePartyFromAssistance(partyId, reason)`：是组长就解散
+  自己那一组，是协办人就退出所在组、清掉速度分散记录并脱离军团，然后清意图、请求重新决策。
+  新增诊断 `ASSISTANCE_MEMBER_RELEASED`。
+- 新增 `IsCommittedToAssistance(party)`。`ResolveSupportResponder` 改为：使者见到的领主若
+  没被占用就用他；否则优先找一个真正空闲的合格灰袍领主；一个空的都没有，才回头抽调已被
+  占用的。`GrantCaseSupport` 在 `BeginTask` 之前先调用 `ReleasePartyFromAssistance`。
+
+### 三、战力够了却一直 WAITING：宣战不该再卡距离
+
+同一批日志里 `strengthReady=True`、`committedReady=True`，但始终 `WAITING`，因为
+`TryGetNativeDeclarationCandidate` 还要求**灰袍到罪犯**的距离达标（`distance=100.80`、
+后来 `46.86`）。支援的行动目的是跟着玩家，它根本不会自己贴上去，这个距离永远满足不了。
+
+用户定调："战力够本来就应该宣战打"，"我们只是改了主理人欲望而已"。因此支援通道只保留
+两层战力判定，不再有任何距离条件：第一层 `HasAssistanceEngagementStrengthAdvantage`，
+第二层 `EvaluateLocalDeclarationStrength(police, criminal, includePlayer: true)` 的
+`StrengthReady`。诊断新增 `playerDistance` / `wardenDistance` 作对照，但它们不参与判定。
+
+开发中曾短暂加过一版"玩家已接触且支援就在玩家身边才放行距离"的折中，已按用户意见整条撤销
+（连同 `PlayerSupportContactSlack` 常量）。同一轮还试着给罪犯加原版地图追踪并让情报播报
+距离方位，用户明确否定——支援就是普通案件机制，不要另造系统，一并撤销。
+
+### 四、委托情报静默：目标部队 ID 失效
+
+`UpdateIntelReport` 按接案时记下的**部队 StringId** 找罪犯，罪犯换队或重建部队后这个 ID
+就失效，`target == null` 之后直接 `return`，任务界面从此一片安静——即用户说的"找不到罪犯
+了，通知不给信息了"。现新增 `ResolveBountyTargetParty()`：以英雄本人的
+`PartyBelongedTo` 为准解析，失败才回退到旧 ID，解析成功时回写 `_activeBountyTargetId`。
+这与普通案件用 `TargetCrime.Offender`（同样跟着英雄走）的口径一致。另外目标确实解析不出来
+时改为写一条"探子跟丢了"的日志，不再静默返回。新增本地化 `gwp_bounty_intel_lost`。
+
+### 五、案子被别人了结：玩家这条路缺了普通案件的结案分支
+
+用户指出情报断掉多半是罪犯已经被别的势力拿下，并给出正确判据：按普通案件机制，这时案子
+本来就该撤销；NPC 的案子直接消失、他去接下一宗，而玩家忙了半天既没反馈、任务还没了——
+应该能去结个案、拿点辛苦费。
+
+- 普通案件由承办队每小时的 `IsTargetValid` / `IsOffenderPursuable` 自动结案。玩家接案后
+  **没有承办队**（本来就是设计），所以没人替他做这件事，卷宗会一直开着、目标却够不着。
+  `ReconcileAssignedCase` 现在按同一套判据替玩家判：`hero.IsDead || hero.IsPrisoner ||
+  crime == null || crime.Offender?.IsActive != true`（被玩家自己俘获的分支在此之前已返回，
+  所以走到这里的 `IsPrisoner` 必然是被别人拿下）。
+- 命中后走新的 `WithdrawCommissionClosedElsewhere`：销卷宗、撤灰袍、恢复和平、清零应缴与
+  待交俘虏，委托转入**交差状态**并 `MarkReadyForTurnIn`，同时写任务日志与提示。不再像以前
+  那样 `CancelCommission` 直接抹掉。
+- 结案只付辛苦费：新增 `GwpCaseSettlementRules.WithdrawnCaseCompensation(casualties)` =
+  `HandInBaseFee + 阵亡数 * HandInCompensationPerCasualty`，**不含**按罪责严重度给的那一段
+  （人不是他带回来的）。不查账、不扣声望、不记震慑、不编造缴款。
+- 交差入口：新增对话行 `gwp_case_close_withdrawn`（优先级 `120`），报告开场白也换成
+  "那个人够不着了，说一声就把辛苦费结给你"；`gwp_case_pay_zero` 在这种案子下不再出现。
+  派使者同样可以办：`CompleteDispatchedCaseReport` 增加撤案分支，`CanDispatchCaseReport`
+  放行撤案状态。
+- **顺带修掉一个重复付款，并按用户定调改了付法**：`PayFromJudicialTreasury` 直接把钱从
+  灰袍族长转给玩家本人，而派遣送达时又把返回值塞进使者的 `PartyTradeGold`，等于付了两次。
+  开发中曾改成"使者不带钱、公库直接结给玩家"，用户否定：派出去的部队本来就该承担资源
+  损失风险，使者代办时钱就应该在使者手上。最终新增
+  `PoliceResourceManager.WithdrawFromJudicialTreasury(amount)`——同样从族长支出，但不交给
+  玩家，返回值由使者携带；`CompleteDispatchedCaseReport` 的三条分支（交人、缴款、撤案）
+  全部改用它。使者在路上被打光，这笔酬劳跟着一起没。玩家亲自复命仍走
+  `PayFromJudicialTreasury` 当场入袋。`gwp_dispatch_report_done` 文案相应说明这份风险。
+- 新增/改写本地化：`gwp_case_closed_elsewhere`（改为带 `{VAR_1}` 的新文案）、
+  `gwp_case_withdrawn_result`、`gwp_case_report_withdrawn_summary`、
+  `gwp_case_close_withdrawn`、`gwp_bounty_intel_lost`、`gwp_dispatch_report_done`（改写）。
+- 存档：`_caseClosedElsewhere` 作为第五个字段并入 `gwp_case_outcome_state` 字符串。
+
+### 六、卷宗上的主理人写玩家；两条玩家路线的一致性复核
+
+用户要求：接案之后家族档案里这宗案子的主理人就该显示为玩家，玩家才清楚案子归谁；求援之后
+到场的那名灰袍在显示上是"支援"，不是主理人（内部仍由他的 `PoliceTask` 驱动行动，这一层
+不变）。同时明确现在玩家任务只有两种——纯独立办案、玩家支援办案——两条都不能有 bug。
+
+- `GwpCaseArchiveScreen.BuildAssignmentText` 先判 `IsCaseHeldByPlayer(record.OffenderHeroId)`：
+  命中就把主理人写成玩家本人；有支援任务时再补一段"支援：某某"。
+  `DescribeTaskStage` 的 `IsPlayerBountyEscort` 文案由"悬赏护卫"改为"支援受托的玩家"。
+  新增本地化 `gwp_case_owner_player`、`gwp_case_owner_player_supported`。
+- **复核中发现并修掉一个吞钱的洞**：上一版撤案时无条件 `_assignedCaseFine = 0` 并直接走
+  "只领辛苦费"，如果玩家此前已经从罪犯手里收过罚金，那笔钱就再也没有上缴入口了。现在
+  `_caseClosedElsewhere` 的定位改为**与击败同级的差额全免**，只有当确实一分钱、一个人都
+  没有（新判据 `HasNothingLeftToSettle = _caseClosedElsewhere && CaseAmountDue <= 0 &&
+  !HasFieldBusinessToSettle`）才走辛苦费那条路；收过钱就仍然正常上缴，差额全免、不扣分。
+  撤案对话行、报告开场白、`CanDispatchCaseReport` 与派遣分支全部改用这个判据。
+- `CanRequestCaseSupport` 增加 `!HasCompletedEnforcement`：案子已经办成之后不再提供求援
+  选项（使者与当面对话共用同一判据，`GrantCaseSupport` 改为直接复用它）。
+- 复核确认的既有正确行为，记录备查：委托超时走 `ClearBountyTaskState` →
+  `ReleaseEscortAi` → 把支援任务降级回普通案件，正是超时后案子应当回到灰袍池的预期；
+  正常交差时 `FinishCaseReport` 的 `CloseCaseSettledInField` 已先移除任务，`ReleaseEscortAi`
+  为空操作；灰袍侧的战争由执法成功/撤案时的 `ReleaseWardensFromCase` 加
+  `_peaceRetryTargets` 逐小时重试收尾。
+
+### 七、使者永远送不到：Approach 追的是快照点
+
+用户指出派出去的队伍拿到的是"去最近地点"的欲望，收件的灰袍一直在走，于是永远接不上。
+核对 `GreyWardenPartyDesireBehavior.ProcessFinalDesires` 确认属实：
+`IntentKind.Approach` 落成的是 `CreatePoint(intent.Party.Position, ...)`——目标**当时**位置的
+一个快照点，追一个移动中的领主必然追不上；`IntentKind.Escort` 才映射到原版
+`AiBehavior.EscortParty`，会持续跟住活动目标。
+
+- `GwpWardenDispatchBehavior` 的出发与途中两处 `RequestApproach(party, receiver, 8f)` 全部
+  改为 `RequestEscort`。返程本来就用的是 `RequestEscort(player)`，所以回程一直是正常的，
+  只有去程送不到。
+- 原版护送会把队伍带到目标身边但不会重叠，`DeliveryDistance` 与 `HandoverDistance` 由
+  `1.5` 放宽到 `3`（与 `Enforcement.WarDistance` 同量级），免得站位余量把送达判定卡死。
+
+### 八、使者改走原版接触指令；玩家可见文案去掉机制解说
+
+- 曾短暂改成在派遣行为里直接 `SetMoveEngageParty` 硬写移动（`DriveStraightAt`），**已按
+  用户意见整条撤销**。用户重申欲望系统不能绕开，派出去的人要和活着的 NPC 一样有原版欲望。
+  现在统一走 `SendTo(party, target)` → `GreyWardenPartyDesireBehavior.RequestEscort`，
+  并把下注级别从 `8f` 提到既有的 `PlayerRequestScore = 10f`——这正是仓库里其他"上门找玩家"
+  的灰袍队伍用的级别，差事因此不会被闲逛类欲望压过去，而补给、疗伤等原版欲望照常参与竞价。
+  目标是活动的，所以用护送而不是"去某个点"：后者追的是快照，永远接不上。
+- 用户指出通知里有"提示词泄露"——把内部规则当台词写给玩家看。按 AGENTS.md"从玩家视角写、
+  不写实现语言"重写了 15 条中文文案与对应的英文默认串：删掉"死了／被人拿下了／或是已经向
+  别人交代过了"这类内部分支枚举、"不会再因差额受罚""不记你任何过失""等现场战力足够时出手"
+  这类规则解说、"你可以在地图上跟着他们"这类界面提示，以及"这本来就是委托的全部用意"这种
+  设计者口吻。只留发生了什么和玩家该做什么。
+
+### 九、全地图旗帜标记与险情通知
+
+- 派遣队归玩家家族、由玩家本人持有，`CustomPartyComponent.Banner` 的取值经反编译确认是
+  `PartyOwner.ClanBanner`，因此地图旗号已经是玩家家族旗。
+- **"无论多远都看得见的那个标记"两次都没做对，第三次才落地。** 反编译
+  `SandBox.ViewModelCollection.Map.Tracker.MapTrackerProvider.CanAddMobileParty` 的 IL 得到
+  确切条件：该部队属于 `Clan.PlayerClan.WarPartyComponents`、或是玩家家族英雄的商队、或
+  `IsCurrentlyUsedByAQuest`、或已在 `VisualTrackerManager` 中。而且这些判定只在
+  `OnMobilePartyCreated` / `OnPartyQuestStatusChanged` 等事件上跑一次——建好队之后再调
+  `RegisterObject`，提供者根本不会重新评估，所以标记一直没出来。
+  `CustomPartyComponent` 不是 `WarPartyComponent`，进不了家族作战部队名单；
+  `MobileParty.IsCurrentlyUsedByAQuest` 的属性本身只读。
+  先试过 `QuestBase.AddTrackedObject(party)`——反编译
+  `QuestManager.AddTrackedObjectForQuest` 确认它只往自己的字典里塞一条，既不登记视觉追踪
+  也不派发事件，实机验证同样没有标记。最终用原版公开的
+  `MobileParty.SetPartyUsedByQuest(bool)`：反编译确认它翻转 `_isCurrentlyUsedByAQuest`
+  并派发 `OnMobilePartyQuestStatusChanged`，提供者随即 `AddIfEligible` 把这支队伍加进地图
+  标记集合。派出时置真，销毁/会合时置假并摘掉视觉追踪；每小时幂等复查。
+- 新增险情通知：每小时判定一次 `DescribeTrouble`——被卷入战斗、伤员过半、或已经断粮——
+  同一种险情只报一次（`GwpDispatchRecord.LastWarning`，运行时字段不入存档），不在同一趟路上
+  反复刷屏。诊断 `DISPATCH_IN_TROUBLE` 记录人数、伤员与余粮。新增本地化
+  `gwp_dispatch_trouble_battle` / `_mauled` / `_starving`。
+- 顺带修正：原来队伍一旦进入 `MapEvent` 就整条跳过，标记复查和险情判定都不会执行。现在
+  先做标记与险情，再按是否在战斗中决定要不要推进行程。
+
+### 十、口粮改为实分，随身的钱一律不许动
+
+用户指出派出时玩家并没有分粮，而这些人应该自己有补粮的欲望，并且会打劫匪；最要紧的是
+**不许他们动玩家交给他们的钱**。
+
+- 删除 `ProvisionStartingFood`——它是凭空生成粮食，和本项目"不凭空变粮"的原则自相矛盾。
+  改为 `TakeRationsFromPlayer`：从玩家自己的辎重里按人数实分约 `10` 天口粮，玩家没有就
+  带不走。之后靠 `BuyFoodIfNeeded` 在聚落按原版市价真实买入。
+- 钱的边界收紧为"只能花路上挣的"：`CaseGoldFloor` 原本只护着随身的案件款；现在送达之后
+  把它改设为带回去的办案酬劳，于是回程同样只能动打劫匪所得。玩家托付的钱和要带回去的
+  酬劳都碰不到，路上被打光才会一起没。
+- 打劫匪本来就成立：队伍归玩家家族、`avoidHostileActions` 为 `false`，遇到匪就打，战利品
+  进 `PartyTradeGold`，超出保护额的部分才可用于买粮。
+
+### 十一、护送太慢：改用原版直扑目标的 EngageParty
+
+实机确认护送仍然太慢——原版 `EscortParty` 是跟着被护送方的步子走，办差的人不该这么走。
+`AiBehavior` 枚举里本来就有 `EngageParty`，正是原版用来全速直扑一支部队的行为。
+
+- `GreyWardenPartyDesireBehavior` 新增 `IntentKind.Rush` 与 `RequestRush(...)`，在竞价里下注
+  `AiBehavior.EngageParty`。**仍然只是候选之一**：补给、疗伤等原版欲望照常可以压过它，
+  和用户"欲望系统不能绕开、派出去的人要像活的 NPC"的要求一致。派遣队的三处移动改用它。
+- 与之前那版被撤销的 `DriveStraightAt` 的区别：那一版是在派遣行为里直接调
+  `SetMoveEngageParty` 硬写移动、绕过竞价；这一版只是往竞价里多放一个候选行为，路径与速度
+  完全由原版解算。
+
+### 十二、Hold 与标记：两处都靠逐分支反编译才定死
+
+用户实机反馈：使者的长期欲望是 Hold（短期正常，仍会追着土匪打），标记依旧没有。两处都不是
+猜出来的，是把原版 IL 逐分支解开才确定的。
+
+- **Hold 的成因**：逐条解 `AiPartyThinkBehavior.PartyHourlyAiTick`，它只为
+  `PatrolAroundSettlement` / `PatrolAroundPoint` / `VisitSettlement` / `EscortParty` /
+  `RaidSettlement` / `BesiegeSettlement` / `DefendSettlement` / `GoAroundParty` /
+  `MoveToNearestLand` 这几种赢家调用 `SetPartyAiAction`——**没有 `EngageParty` 的落地分支**。
+  所以上一版直接下注 `EngageParty` 赢了也不会产生移动，最后退回 `Hold`。
+  改为沿用本仓库既有做法：`IntentKind.Rush` 下注有落地分支的 `GoAroundParty`，再由
+  `GwpPlayerEnforcementEngageActionPatch`（`SetPartyAiAction.GetActionForGoingAroundParty`
+  的前置补丁）把这一次的动作翻译成原版 `SetMoveEngageParty`；新增
+  `GreyWardenPartyDesireBehavior.IsRushingTo(owner, target)` 供桥接判定，诊断
+  `DUTY_RUSH_ENGAGE_WINNER`。竞价语义不变，补给等原版欲望照常可以压过它。
+- 顺带核对：`IsAuthorizedAttackTarget` 只被 `PoliceMobilePartyAIModel.ShouldConsiderAttacking`
+  用来决定短期主动性，不影响移动；`Rush` 不在授权攻击之列，所以使者不会去打接应的灰袍领主，
+  而 `target.IsBandit` 那条仍然放行——追着土匪打是原版行为，保持原样。
+- **标记的成因**：逐分支解 `MapTrackerProvider.CanAddMobileParty` 的 IL，接受条件实际是两路，
+  其中适用于自定义部队的那一路是三条**同时**成立：
+  `LeaderHero == null && IsCurrentlyUsedByAQuest && VisualTrackerManager.CheckTracked(party)`。
+  而在前半段的排除清单里，`IsCurrentlyUsedByAQuest` 反而是**排除项**（brtrue 直接跳到
+  return false），只对"玩家家族作战部队／家族英雄商队"那一路生效。上一版只置了任务占用、
+  把视觉追踪去掉了，于是三条缺一。现在两者都做，并且**顺序固定**：先
+  `RegisterObject`，再 `SetPartyUsedByQuest(true)`——后者派发
+  `OnMobilePartyQuestStatusChanged`，提供者正是在那一刻重新评估。
+- **补上缺失的可观测性**：`GwpAiDiagnostics.ShouldTraceParty` 原来只覆盖灰袍领主队、巡逻队、
+  延迟追截队和灰袍势力部队；派遣队归**玩家家族**，一条都不占，所以整份监控日志里连一条
+  `gwp_dispatch_*` 都没有，这轮只能靠用户口述定位。现已把
+  `GwpWardenDispatchBehavior.IsDispatchParty` 纳入追踪范围，下次可以直接从日志读
+  `dutyIntent` / `default` / `short` / `targetParty`。
+
+### 十三、接到支援就立刻宣战；接手的不是使者见到的那位
+
+用户实机反馈：旗帜标记已经出现；但支援领主一接到任务就宣战，而且接手的并不是使者去对话的
+那名领主。
+
+- **立刻宣战**：第十一节为了解决"战力够却一直 WAITING"，把宣战的距离条件整条去掉了，只剩
+  战力。当时之所以卡住，真因是第十二节查出来的两条（接手人被别的案子占着、`_supportRequested`
+  读档丢失），距离条件本身没有错。现在恢复成与普通案件完全一致的判定：
+  `HasAssistanceEngagementStrengthAdvantage` 之后仍走 `TryGetNativeDeclarationCandidate`，
+  战力占优**并且**已经进入接触距离才宣战。支援跟着玩家走，玩家贴上罪犯时它就在旁边，
+  接触距离自然满足；隔着半张地图不会开战。
+- **接手人必须是使者见到的那位**：`ResolveSupportResponder` 原来会优先挑一个"没被别的案子
+  占着"的领主，使者实际接洽的那位反而被跳过。按用户要求改为：使者真正见到的那名领主无条件
+  接手，他当时在忙什么都放下；只有他已经不在（阵亡、被俘、部队没了）时，才退而找离玩家最近
+  的合格灰袍领主。放下手上的事由既有的 `ReleasePartyFromAssistance`（退出协力组、脱离军团、
+  清旧意图）加 `CrimeState.BeginTask`（把他原本承办的案子重新放回案件池）共同完成。
+- 随之删除已无调用者的 `IsCommittedToAssistance`。
+
+### 十四、验证
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有警告（新代码零新增），已部署；
+`Verify-LiveModule.ps1` 缺失 `0`、差异 `0`、多余 `0`；实机语言 XML 解析通过；
+设置类测试 `PASS: 141`（新增撤案辛苦费四条断言）。实机客户端与编辑器 DLL 均为
+`1001472` 字节，SHA-256 均为
+`EEA5593F11879A6CBFF5BD34C10C54D41770C264AE66D7E16E5B666764B7BE05`。
+旧故障日志已改名归档为 `GreyWarden-Faults.prev.log`，下次运行的
+`GreyWarden-Faults.log` 内容全部属于这一次。
+
+
+## 2026-09-15 玩家接案即成为主理人；支援只由求援送达后指派（已部署，待验收）
+
+用户指出支援不需要申请就已经触发，原因是案件的**原始承办灰袍**在玩家接案后仍挂在案上。
+定调：玩家接手之后，这宗案子的主理人就是玩家，其他灰袍去办别的事；只有玩家求援、使者与
+最近的领主完成 NPC 之间的接触，支援才成立，此后沿用现有支援机制（主理人按自身与玩家战力
+判定）。求援队随后自己跑回来归队。
+
+- `AcceptBounty` 不再把原承办队标记成 `IsPlayerBountyEscort` 跟着玩家，而是调用
+  `PoliceEnforcementBehavior.ReleaseWardensFromCase(offenderHeroId)` 把灰袍整个撤下来：
+  承办撤职、协力解散、拦截队召回、恢复原版 AI、恢复和平。`_escortPolicePartyId` 与
+  `_supportRequested` 一并清空。玩家收到的提示改为"案子交给你了，需要人手就派人去求援"。
+- `ReleaseCaseAfterPlayerEnforcement` 更名 `ReleaseWardensFromCase`，诊断随之改为
+  `CASE_RELEASED_TO_PLAYER`。现在两处调用：玩家接案、玩家把案子办成。语义都是
+  "把灰袍从这宗案子上撤下来，但不销卷宗"。
+- 预留判据由"只差一份汇报"扩大为"玩家持有这宗委托"：
+  `PlayerBountyBehavior.IsCaseAwaitingPlayerReport` 更名 `IsCaseHeldByPlayer`，
+  `CrimeRecord.IsOffenderPursuable()` 据此排除。玩家接案到交差期间，灰袍不会再自行派人
+  承办这个罪犯，也不会把同一个人作为新委托发出。
+- **随之而来的坑并已修复**：玩家的案子现在没有承办队伍，而
+  `TrimOpenCasesToCapacity` 只保护"已分派"的卷宗，案件池满时会把它挤掉，
+  `ReconcileAssignedCase` 随后按"案子已不在"作废玩家的委托。现在该方法同样跳过
+  `IsCaseHeldByPlayer` 的卷宗。
+- `GrantCaseSupport(source, responder)` 现在真正**指派**支援主理人：优先用使者实际见到的
+  那名领主，不合适时改用离玩家最近的合格灰袍领主；`CrimeState.BeginTask` 接案后确认任务
+  确实落到该队（原版 `BeginTask` 在同案已有承办时会静默拒绝），再置
+  `IsPlayerBountyEscort`、写回 `_escortPolicePartyId`。指派失败会明确告知"眼下没有腾得出手
+  的灰袍领主"，并且不会把 `_supportRequested` 置真。诊断
+  `CASE_SUPPORT_GRANTED` / `CASE_SUPPORT_NO_RESPONDER` / `CASE_SUPPORT_ASSIGN_FAILED`。
+- 当面求援的对话条件从"正在与那支护送队交谈"改为"与任意普通灰袍领主交谈"——话到了领主
+  耳朵里就算送达，与派使者是同一件事。使者送达仍走
+  `GrantCaseSupport("courier_delivered", receiver)`，之后照常返回玩家处归队。
+- 中文本地化新增 `gwp_bounty_case_is_yours`、`gwp_support_no_responder`，
+  `gwp_support_granted_notice` 改为带 `{VAR_1}` 的领主名。
+
+`Release -t:Rebuild` 为 `0` 错误、`42` 条既有警告（较上一轮少一条，新代码零新增），已部署；
+`Verify-LiveModule.ps1` 缺失 `0`、差异 `0`、多余 `0`；实机语言 XML 解析通过；设置类测试
+`PASS: 137`。实机客户端与编辑器 DLL 均为 `994304` 字节，SHA-256 均为
+`F394F4A5B89757E0E2FD9C1E82EF11D8397D288BEA78128B89DDD9FBBD247629`。
+
+
+## 2026-09-15 读档崩溃已消失；界面延迟与"办完还被灰袍追打"三项修复（已部署，待验收）
+
+用户确认上一版已能进入游戏，对话系统正常。本轮处理他报告的三件事。崩溃本身没有留下
+`GreyWarden-Faults.log`，说明上一轮的隔离与去视图层依赖已经覆盖了病灶，但**没有拿到堆栈，
+因此无法指名根因**；`GwpLoadFaultWatch` 暂时保留，等后续几次实机都干净了再退役。
+
+### 一、点完派遣要在大地图上走一会儿界面才弹出来
+
+`GwpWardenDispatchDialogue.Pump()` 原来挂在 `CampaignEvents.TickEvent` 上，而战役心跳跟着
+时间流走，地图停住时不推进，所以必须先移动一段才轮得到。现改挂
+`SubModule.OnApplicationTick`——与时间控制无关，点完按钮下一帧就弹。同时给"已请求但还没能
+开口"的状态加了 `20` 秒过期，避免玩家在城里点了按钮、很久之后走到野外突然弹一个对话。
+`GwpWardenDispatchBehavior` 不再注册 `TickEvent`。
+
+### 二、任务已经办完，灰袍还跑去打那个犯人；一交差对方又不打了
+
+这是结构性缺口，不是偶发。玩家在野外把案子办成之后（缴款、谈成处置或直接打垮），
+**卷宗仍留在案件池里开着**，而 `StopBountyEscortAfterTargetDefeat` 只是把
+`IsPlayerBountyEscort` 标志清掉——承办的灰袍领主于是把同一宗案子当作**普通案件**继续办，
+按普通宣战流程去打这个犯人。等玩家回去交差，`FinishCaseReport` 才关案、任务才结束、和平
+才恢复，于是"一上交对方就不打了"。
+
+- 新增 `CrimePool.ReleaseTasksForOffender(offenderHeroId)`：把该罪犯名下的承办任务全部撤掉，
+  **但不销卷宗**。与 `CloseCaseSettledInField` 的区别就在这里——玩家可能还要继续向他追缴。
+- 新增 `PoliceEnforcementBehavior.ReleaseCaseAfterPlayerEnforcement(offenderHeroId)`：撤职、
+  解散协力组、召回拦截队、清战争追踪、恢复该领主的原版 AI，并尝试恢复和平。
+- `CrimeRecord.IsOffenderPursuable()` 增加一条：
+  `!PlayerBountyBehavior.IsCaseAwaitingPlayerReport(OffenderHeroId)`。玩家已经执法到位、
+  只差一份汇报的案子，在汇报之前不会被重新派给任何灰袍，也不会再作为新委托发出。
+- `PlayerBountyBehavior.NotifyCaseBattleOutcome`（首次判定击败）与
+  `NotifyCasePeacefullyResolved`（首次和平了结）都调用 `ReleaseWardensAfterEnforcement()`，
+  并顺带 `MakePeaceWithCriminalFaction()`：执法完成后这场因案而起的战争到此为止；玩家若还想
+  追缴罚金，和平反而是能开口的前提。接案前就存在的战争仍由既有标记排除在外。
+- 撤案的那一刻卷宗可能还开着，`HasLegitimateWarReason` 未必给出最终结论。因此新增
+  `_peaceRetryTargets` 与 `RetryPeaceAfterPlayerEnforcement()`，挂在执法行为的每小时循环里
+  逐小时重试恢复和平，直到成功、或对方另有合法战争理由且已超过 `30` 天上限。诊断
+  `CASE_RELEASED_AFTER_PLAYER_ENFORCEMENT` 与 `PEACE_RESTORED_AFTER_PLAYER_ENFORCEMENT`。
+
+### 三、验证
+
+`Release -t:Rebuild` 为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告（新增代码零新增警告），
+已自动部署；`Verify-LiveModule.ps1` 缺失 `0`、差异 `0`、多余 `0`；设置类测试 `PASS: 137`。
+实机客户端与编辑器 DLL 均为 `992768` 字节，SHA-256 均为
+`0F97079545E2DE4F27B4CC39EAA9B68947FEAD03ED5ED05DD90E08D271694E22`。
+
+
+## 2026-09-15 读档即崩溃：证据收集与失效隔离（已部署，待一次实机复现）
+
+用户报告上一版部署后无法进入游戏，启动即弹错。本轮**没有**定位到具体异常——崩溃转储被
+取消，游戏没有留下任何托管堆栈——因此本轮做的是让下一次运行必然留下证据，并让新代码即使
+出错也不会把整局游戏带下去。**问题尚未确认修复。**
+
+### 已排除的可能
+
+- `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_8008.txt`（`00:09:33` 止）
+  显示全部模块 XML 正常加载完毕，崩溃发生在战役对象建立之后；`watchdog_log_8008.txt` 记录
+  `Crash occurred. Asking for dump.` 与 `User canceled dump and report generation!`，
+  `crashes` 目录为空。
+- `GreyWarden-AI-Diagnostics.log` 最后一行是 `PLAYER_JUSTICE | CUSTOM_REPUTATION_RESET`，
+  来自 `PlayerBehaviorMonitor.SyncData` 到 `GwpRuntimeState.SyncPlayerBehaviorData`，说明
+  崩溃点在战役行为读档阶段或紧随其后。
+- 没有 `GreyWarden-Faults.log`，因此 `OnSubModuleLoad` 的 `PatchAll` 没有抛异常。
+- 离线复核：用游戏自身程序集解析上下文加载实机 DLL，`Assembly.GetTypes()` 返回 `494` 个
+  类型无 `ReflectionTypeLoadException`；逐个解析全部 `[HarmonyPatch]` 目标，唯一命中的
+  `GwpDualBladeCraftingTemplateVisibilityPatch` 属探针误报（目标是
+  `CraftingTemplate.All` 的属性 getter，`MethodType.Getter`）。故补丁目标全部可解析。
+  另注：在 PowerShell/.NET 10 宿主里实际执行 `CreateClassProcessor(...).Patch()` 会对
+  全部 `44` 个补丁类报 `HarmonyException`，这是宿主运行时不匹配造成的，不能用作实机结论。
+
+### 本轮改动
+
+- 新增 `GwpLoadFaultWatch`（仅 `GWP_DIAGNOSTICS`）。`SubModule.OnSubModuleLoad` 首行
+  `Arm()`，挂 `AppDomain.FirstChanceException` 与 `UnhandledException`，把任何经过本模组
+  的异常连同完整堆栈写进 `GreyWarden-Faults.log`。先用 `TargetSite.DeclaringType.Assembly`
+  这类便宜判据过滤，落空才扫描堆栈字符串；写满 `40` 条或挂钩超过 `600` 秒后自行摘钩，
+  不给正常游戏留下每异常一次的字符串开销。**这是临时脚手架，定位并经实机确认后随同退役。**
+- `SubModule` 的 `harmony.PatchAll(assembly)` 改为逐类 `CreateClassProcessor(type).Patch()`。
+  原写法在第一个失败的补丁类上整体中止，后面所有补丁（包括
+  `GwpFinalDesireAuctionPatch` 这类关键项）会被静默跳过；现在单个失败只记录
+  `SUBMODULE_PATCH_FAILED` 并写明是哪个类，其余照常生效。
+- 全部新增/改动的战役入口点套上 `GwpLoadFaultWatch.Guard`，失败只记录不上抛：
+  `GwpWardenDispatchBehavior` 的 SyncData/会话启动/心跳/小时/日常、
+  `GwpFieldReportLedger.SyncData`、`PlayerBountyBehavior` 的案件结果存档、
+  `PoliceEnforcementBehavior` 的玩家支援更新与支援增员。
+- `GwpWardenDispatchDialogue.Pump()` 去掉视图层依赖：不再引用 `SandBox.View.Map.MapScreen`
+  与 `ScreenManager`，改用 `Campaign.CurrentMenuContext` / `PlayerEncounter.Current` /
+  主队状态判断。并在最前面加了"没有待办就立刻返回"，读档与过场期间这条每秒四次的路径
+  完全惰性——原写法会在战役第一帧 JIT 时去解析视图程序集。
+- `GrowPlayerBountyAssistanceStrength` 在 `army?.LeaderParty == null` 时直接返回：
+  `TryAddAssistanceMember` 需要真实军团，速度分散状态下传入的 `army` 为 `null`。
+- 测试工程补入 `GwpLoadFaultWatch.cs`（`GwpFieldReportLedger` 现在引用它），`PASS: 137`。
+
+### 下一次实机要做的事
+
+运行一次（崩溃与否都可以），然后取
+`C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Faults.log`。
+本轮部署前该文件已删除，所以里面的内容全部属于这一次运行：`FAULT_WATCH_ARMED` 之后的
+`FIRST_CHANCE` / `UNHANDLED` / `GUARDED_FAILURE` / `SUBMODULE_PATCH_FAILED` 即为答案。
+
+构建 `0` 错误、`43` 条既有警告并已部署；`Verify-LiveModule.ps1` 缺失 `0`、差异 `0`、
+多余 `0`。实机客户端与编辑器 DLL 均为 `990720` 字节，SHA-256 均为
+`5E2C239AD6DAAE15C4EFE71FD9886CECC250D1315136B8ADB5820CF48AA18BB4`。
+
+
+## 2026-09-15 击败即执法成功、支援复用普通宣战、派遣通信兵（已部署，待实机验收）
+
+用户定调三条：击败本案目标本身就是惩戒目的，办案费照给；玩家支援案件复用普通案件的两层
+战力判定，只把玩家算成我方现场战力、行动目的改为跟随玩家，并在宣战时让玩家阵营一并对犯人
+宣战；同时新增从队内灰袍士兵派出通信兵的机制。过度执法定义为"已缴罚金或已兑现处置之后又被
+玩家击溃"，仍可领赏，只是可能被查出并扣灰袍声望。本轮三块全部实现并部署，尚未实机验收。
+
+### 一、案件结果与交任务（修补）
+
+- 根因确认：`PlayerBountyBehavior.CaseSettlement.cs` 的 `CompleteCashReport` 在账本没有
+  待缴记录时补造 `RecordSettlement(hero, due, 0, base, offenderWasBroke:false)`，随后
+  `DeclareAmount(0, truthful:true)` 的 `legitimateGap` 恒为 0，`ShortfallPenalty(due,0)`
+  按全额罚金扣声望；同时 `CalculateCaseFee(min(delivered,due))` 的 cap 为 0，办案费也是 0。
+  因此"打赢、人跑了、如实汇报"实际是扣声望且零报酬。
+- `PlayerBountyBehavior.cs` 新增 `RecordCaseBattleOutcome` 与 `FindMapEventSide`：在
+  `MapEventEnded` 用原版 `HasWinner`/`Winner` 与双方 `MapEventSide` 判定玩家方是否取胜、
+  本案目标是否在败方，登记持久字段 `_caseTargetDefeated`。此前该事件只暂存 `MapEvent`
+  引用并累计伤亡，不存档、不判胜负，所以"击败"这个状态在代码里根本不存在。
+- 新增持久字段与存档键：`gwp_case_target_defeated`、`gwp_case_peacefully_resolved`、
+  `gwp_case_cash_from_target`、`gwp_case_deterrence_key`、`gwp_case_support_requested`
+  （`_supportRequested` 此前完全没有存档，读档后求援状态会丢，一并修复）。
+- `GwpFieldReportLedger.DeclareAmount` 增加 `exemptShortfall` 形参，与既有
+  `LegitimatePovertyShortfall` 并列且都只在如实汇报时成立，二者相加后仍以实际差额封顶。
+  击败时 `exemptShortfall = CaseAmountDue`，差额归犯人自己的欠账，玩家不扣分。
+  `DeclareFalseAmount` 不受影响：撒谎私留照旧独立排查。
+- 办案费改为：存在合法豁免（真穷或已击败）时 cap 取 `CaseAmountDue` 而非实收额，按既有
+  `GwpCaseSettlementRules.Reward(cap, 伤亡, 严重度)` 正常发放，不再因为没收到钱而归零。
+- `HandleBountyTimeout` 在 `HasCompletedEnforcement` 时不再作废委托，改为转入待交差状态；
+  已经把人打垮或已经了结过的案子不会因为 45 天期限白干。
+- 震慑改为分层：`GwpAiDeterrenceState` 拆出
+  `RegisterEnforcementOutcome(hero, category, countAsArrest)`，`RegisterPoliceArrest` 与
+  新的 `RegisterEnforcementSuccess` 共用同一条路径，后者不调用 `CrimePool.RecordArrest`，
+  因此缴款、谈成处置、击溃都记震慑但不污染被捕次数。
+  `PoliceAIDeterrenceBehavior` 相应拆出 `RegisterPlayerEnforcementSuccess` 并允许
+  `mapEvent == null`（和平了结没有战场，只登记本人与同族，不虚构目击者）。
+  `PlayerBountyBehavior.RegisterCaseDeterrence` 以 `罪犯Id|任务Id` 去重，亲自交差、
+  派人送信都不会重复登记。
+- 过度执法（新增，此前零实现）：`_betrayalHours` 原本只把查账倒计时提前，本身不产生任何
+  惩罚，且只在野外谈判对话选"打"时触发；地图上直接撞过去开打完全不记录。现改为
+  `GwpFieldReportLedger` 独立的 `_excessEnforcement`/`_excessDueHours`（存档键
+  `gwp_report_excess_ids`/`_amounts`/`_due`），由 `NotifyCaseBattleOutcome` 在"已缴款或
+  已和平了结的人又被打垮"时登记，走既有 7 天/35% 或测试即时判定，按已缴额折算
+  `FinePerPoint` 扣声望，至少 1 点。领赏与结案不受影响，与少交、私留各判各的。
+
+### 二、玩家支援（按用户定调改回战力判定）
+
+- 撤销上一版 `UpdatePlayerBountyEscortCase` 里 `strengthGateIgnored=True` 的直接宣战。
+  现在与普通案件同一套：先 `HasAssistanceEngagementStrengthAdvantage`（已承诺战力 vs
+  敌方区域战力），再 `TryGetNativeDeclarationCandidate`（现场实际友方战力严格大于敌方，
+  距离 `max(Enforcement.WarDistance, 原版绕行最外圈)`）。新增诊断
+  `PLAYER_BOUNTY_SUPPORT_DECLARING_WAR` 与 `PLAYER_BOUNTY_SUPPORT_WAITING_STRENGTH`。
+- 玩家计入我方现场战力：`GetNativeFriendlyLocalStrength`/`EvaluateLocalDeclarationStrength`/
+  `CanNearbyFriendlyGroupJoinActor` 增加 `includePlayer`，由
+  `TryGetNativeDeclarationCandidate` 依 `task.IsPlayerBountyEscort` 传入。原实现硬性要求
+  `candidate.MapFaction == actor.MapFaction`，玩家因此永远被排除；现在玩家即使已经进入
+  `MapEvent` 也计入——援军本来就是要加入那一场。其余部队仍按原版同势力、无战斗判断。
+- 行动目的与宣战分离：`TryGetAssistanceDuty` 对玩家委托组一律 `EscortParty`（组长跟玩家、
+  组员跟组长），不再在授权后转 `GoAroundParty` 追罪犯；`PlayerBountyBehavior.UpdateEscortPatrol`
+  同步删掉 `_supportRequested` 后改 `RequestPursuit` 的分支，始终 `RequestEscort(player)`。
+- 求援成立即可组建协力：`GetAssistanceEvaluationTarget` 不再一律排除 `IsPlayerBountyEscort`，
+  改为"求援尚未送到才排除"；`MaintainAssistancePlayerBountyEscort` 新增
+  `GrowPlayerBountyAssistanceStrength`，按普通案件第一层继续征调灰袍。与普通案件的唯一差别是
+  全部合格力量仍不够时不调用 `FailAssistanceCase`——玩家的委托由玩家自己决定放不放弃，
+  只写 `PLAYER_BOUNTY_SUPPORT_FORCE_EXHAUSTED` 并保留案件。
+- 宣战时 `PlayerBountyBehavior.NotifySupportWarDeclared` 用 `DeclareWarAction.ApplyByDefault`
+  让玩家阵营一并对犯人宣战，并复用既有 `_activeBountyTargetFactionId` /
+  `_playerFactionWasAtWarWhenBountyAccepted` 记账，结案时由既有 `MakePeaceWithCriminalFaction`
+  恢复和平；接案前就已存在的战争仍标记为非本案造成，不会被结案调停掉。
+- `_supportRequested` 的入口改为 `GrantCaseSupport(source)`，当面开口与通信兵送达共用一条；
+  当面那条对话仍保留（正在和护送队交谈时顺手用），不再是唯一入口。
+
+### 三、通信兵派遣（新增）
+
+- 新文件：`GwpWardenDispatch.cs`（记录类型与序列化）、`GwpWardenDispatchBehavior.cs`
+  （生命周期）、`GwpWardenDispatchDialogue.cs`（对话与分兵）、
+  `GwpPartyScreenTroopTalkPatch.cs`（队伍界面交谈按钮）。已在 `SubModule.cs` 注册。
+- 入口：`PartyCharacterVM.UpdateTalkable` 后置补丁只为"自己队里、非英雄、灰袍兵种、且当前
+  确有差事可派"的行开交谈按钮；`PartyCharacterVM.ExecuteTalk` 前置补丁整条拦下（原版这条
+  路只处理英雄，普通士兵进去会空引用），先 `PartyScreenHelper.CloseScreen(true,false)`，
+  再把开对话推迟到 `TickEvent` 心跳，避开关屏同一帧。
+- 对话只在 `ConversationManager.OneToOneConversationCharacter` 确实是那名士兵时成立
+  （`IsOurConversation`），不会劫持别人的 `start` 节点。选完差事后同样推迟到心跳再开
+  原版分兵界面，不在对话收尾帧抢屏幕。
+- 分兵用原版 `Helpers.PartyScreenHelper.OpenScreenWithDummyRosterWithMainParty`，人数由玩家
+  决定，`IsTroopTransferableDelegate` 限制为灰袍兵种；俘虏一栏只放本案要押走的目标本人。
+  取消或派遣失败时 `ReturnSelection` 原样还回主队，不会凭空消失。
+- 队伍用原版 `CustomPartyComponent.CreateCustomPartyWithTroopRoster` 建立，
+  `ActualClan = Clan.PlayerClan`，真实行军、可被攻击、可全军覆没
+  （`MobilePartyDestroyed` 登记损失）。`VisualTrackerManager.RegisterObject` 接入原版地图
+  追踪。注意：地图可见与出现在家族部队列表是两回事，`CustomPartyComponent` 不进
+  `Clan.WarPartyComponents`，因此不在原版家族部队清单里。
+- 英雄俘虏不直接写名册：先退回主队，建队后走原版 `TransferPrisonerAction.Apply`，避免
+  `PartyBelongedToAsPrisoner` 与名册不一致。
+- 携带真实资产：上缴金额出发前由玩家在 `TextInquiry` 决定（上限为应缴额与自身现金的较小值），
+  当场从玩家扣除并计入 `PartyTradeGold`；差额时再由玩家选择如实还是撒谎，士兵不替他决定。
+  路上被打光则钱物一并损失。
+- 案件款有下限保护：`GwpDispatchRecord.CaseGoldFloor` 记录随队案件款，补给只花
+  `PartyTradeGold - CaseGoldFloor`，罚款不会被拿去买粮或发工资。
+- 工资由玩家承担：每日按原版 `MobileParty.TotalWage` 从玩家金币扣；付不起只掉士气，
+  不动案件款。原版 `PartiesBuyFoodCampaignBehavior.TryBuyingFood` 硬性要求
+  `LeaderHero != null`，无领主队不会自动买粮，因此只为此类派遣队补一段适配：进入聚落且
+  缺粮时按原版 `Town.GetItemPrice` 与 `SellItemsAction` 真实买入，买不起就饿着，不凭空变粮
+  也不凭空变钱。出发只给约 12 天启动粮。
+- 送达：求援送到即 `GrantCaseSupport("courier_delivered")`；复命走
+  `PlayerBountyBehavior.CompleteDispatchedCaseReport`，判定口径与玩家亲自交差完全一致
+  （足额或交人算完美，真穷与已击败豁免，撒谎照样查账），办案费交到使者手上带回。
+  收件人失活会就近改派，一个都没有则带着东西返回，不把资产丢在路上。
+- 返程会合后 `HandBackEverything` 交还存活兵员、伤员、俘虏、物资与剩余金币，并销毁派遣队。
+  诊断 `DISPATCH_SENT`/`DISPATCH_REPORT_DELIVERED`/`DISPATCH_SUPPORT_DELIVERED`/
+  `DISPATCH_RETURNING`/`DISPATCH_HANDOVER`/`DISPATCH_LOST`/`DISPATCH_BOUGHT_FOOD`/
+  `DISPATCH_WAGES_SHORT` 覆盖全程。
+
+### 四、验证与部署
+
+- `tools/CaseSettlement.Tests` 新增击败豁免与过度执法两组断言（含存读档往返），并在块首把
+  `ImmediateAuditTesting` 显式置回 `false`——该开关是可变静态字段，上一块测试把它置 `true`
+  后会影响后续用例。当前 `PASS: 137` 条断言。
+- 中文本地化 `std_gwp_strings_xml-zho-CN.xml` 新增 33 条，改写 3 条（求援相关措辞随机制
+  调整），XML 解析通过。
+- 隔离构建与正式开发构建均为 `0` 错误、`43` 条既有可空性/离线 NuGet 警告，已自动部署。
+  `tools/Verify-LiveModule.ps1` 报告 `36` 个仓库文件缺失 `0`、差异 `0`、多余 `0`。
+  实机客户端与编辑器 DLL 均为 `986624` 字节，SHA-256 均为
+  `F4FE731ED2AC9B97803D511D52C1BAF08254A308A5E93830E63A2F9B7FB62DCE`。
+  对实机 DLL 按 UTF-16 双字节对齐扫描确认 `PLAYER_BOUNTY_SUPPORT_DECLARING_WAR`、
+  `PLAYER_BOUNTY_SUPPORT_WAITING_STRENGTH`、`PLAYER_BOUNTY_SUPPORT_FORCE_EXHAUSTED`、
+  `EXCESS_ENFORCEMENT_QUEUED/RESOLVED`、`CASE_BATTLE_OUTCOME`、`CASE_SUPPORT_PLAYER_WAR`、
+  `DISPATCH_*` 与 `gwp_dispatch_state` 均已进入产物，旧的
+  `PLAYER_BOUNTY_CONTACT_DECLARING_WAR` 与 `strengthGateIgnored` 命中为 `0`。
+- 复核后补了三处：委托在使者途中已被玩家自己交掉时，`CompleteDispatchedCaseReport` 返回
+  `-1`，`DeliverTo` 不扣钱、不交俘虏，原样带回（`DISPATCH_REPORT_MOOT`/`DISPATCH_REFUSED`）；
+  找不到归属聚落时不再把 `null` 传进原版建队；分兵界面左侧上限由 `0` 改为主队实际人数。
+- 没有启动游戏，等待用户实机验收；未改玩家 README，未创建或改写正式 ZIP。
+- 已知待验证的风险点：`PartyCharacterVM` 两个补丁依赖当前 1.4.8 的 VM 结构；无领主
+  `CustomParty` 的原版寻路与遭遇表现；派遣队进城买粮的实际触发频率；玩家阵营宣战后原版
+  外交对其他势力的连带反应。
+
+
+## 2026-09-14 交任务完美条件与玩家支援宣战对照（只读）
+
+用户进一步确定：派遣携带真实钱财、粮食及俘虏；当前只做交任务与求援两个用途。完美交差=足额钱物或交俘虏；真实贫穷、已击败但未俘均豁免处罚，其他少交被发现及过度执法保留处罚。此完美交差口径与上一轮执法成功/震慑口径应分层记录，不再倒推没俘就是没成功，也不把用户的新豁免扩为所有未完成均免罚。尚未实现新派遣，仅记录调查。
+
+普通NPC任务UpdateTasks：主队/协办以罪犯实际移动主体为目的；有协办时先要求总承诺兵力大于敌方区域战力，再TryGetNativeDeclarationCandidate选择能代表战斗组的行动者，要求接近且实际当地友方战力严格大于敌方战力。普通默认Enforcement.WarDistance=3，有协办放宽至max(3,原版绕行距离)，不是PlayerWarDistance（该值针对罪犯为玩家）。双方军团/附着部队按实际移动主体/战斗组核算。宣战后不硬保证开打，原版欲望仍可逃跑或补给。
+
+玩家受托护送任务走UpdatePlayerBountyEscortCase，跳过普通宣战分支。当前在AwaitingSupportRequest前置门解除后，只看玩家到罪犯实际移动主体距离<=max(3,原版绕行距离)，或playerEncounterStarted，就DeclareWar；记录灰袍/玩家/敌方战力但不用于门槛，诊断明确strengthGateIgnored=True。同一TrySpawnImmediateCaseInterceptor供两类共用，但玩家通道只要求IsPlayerBountyEscort&&WarDeclared即可过分支准入；普通独立案件还要求有效本地战力/距离快照，有协办则检查编组/分散条件。随后共同判断目标理论速度快于来源、是否已有本案拦截、实际可拆兵等。故玩家请求不是普通案件仅换跟随目标，宣战门槛的确更直接。
+
+最新用户意图：士兵携求援请求抵达办理后本身就是启动支援，不需要另一个“是否允许宣战”领主对话。应撤回上一轮_ supportRequested相关二次许可界面（真实字段_supportRequested），改为支援状态/请求送达判定；支援队主移动欲望跟随玩家，自动接敌宣战及拦截继续保留。当前UpdateEscortPatrol已被上一轮改成_supportRequested后RequestPursuit罪犯，Assistance.TryGetAssistanceDuty同样授权后转GoAroundParty，应恢复支援跟随目的，不只删除按钮。派遣未送达不可提前触发，普通案件宣战规则不得随之全局放松；未申请的玩家受托案也不能恢复自动借承办队接近即宣战，须让案子归属与已成立支援分开。具体状态迁移/老存档与请求失败尚待实现。
+
+源码位置：PoliceEnforcementBehavior.cs UpdateTasks/UpdatePlayerBountyEscortCase；PoliceEnforcementBehavior.Assistance.cs HasAssistanceEngagementStrengthAdvantage/EvaluateLocalDeclarationStrength/TryGetNativeDeclarationCandidate/TryGetAssistanceDuty；PoliceEnforcementBehavior.DelayPatrols.cs TrySpawnImmediateCaseInterceptor；PlayerBountyBehavior.cs UpdateEscortPatrol。本轮无运行代码改动、无构建部署、无README改动、无ZIP。
+
+## 2026-09-14 设计纠正及队内士兵派遣调研（不改运行代码）
+
+用户明确纠正：执法目标一直是打败罪犯或令其缴罚款，不是必须俘虏。履行第二层谈成的欲望方案也属于成功，应计现有震慑。上一节将战胜逃脱只视进展、不视成功的建议作废。战胜本案目标应可成功报告，不能拿未收到的全额罚金处罚玩家；谈判判定通过与实际履约应分开，实际执行成功才登记，等待宽限尚未履行不能提前计次。成功与上缴/审计保持分离，私留所得不能借成功免除。用户本轮只要求调研，无源码修改、无部署、无发布或新增稳定checkpoint。
+
+目标交互：主队灰袍普通士兵的原版交谈按钮，两个派遣目的：代交任务/请求支援；原版分兵界面由玩家定人数，从真实主队扣人。派队归玩家势力，真实行军、遇敌、损失；发初始粮食，后续尽量原版欲望自行补给；工资玩家承担；完成后返回当前主队位置，剩余人员、粮食、物品、金钱及路上战利品全部归还；地图可追踪。
+
+已查源码：PoliceEnforcementBehavior.DelayPatrols使用CustomPartyComponent并ActualClan=灰袍，真实TransferHealthyTroops/TransferTroopBatches保留伤员/经验相关转移；返回函数只处理非英雄兵员及超编退役，不是完整资产回收。PoliceResourceManager.ProvisionTemporaryDutyParty明确PartyTradeGold=0、约20日启动粮、余粮随销毁丢弃，不能照搬到玩家派遣队。原版CustomPartyComponent可指定Clan/Owner/Leader，不继承WarPartyComponent；WarPartyComponent.OnInitialize才登记Clan.WarPartyComponents。DefaultClanFinanceModel工资遍历族长主队、商队、WarPartyComponents、驻军，故CustomParty改PlayerClan不自动进入家族工资。建议复用原版TotalWage及工资规则，单独接玩家家族财务且防双扣；无领主CustomParty+定向兼容优于为了账目假造英雄，但最终组件选型还需实际原版家族界面及保存预检。
+
+原版PartiesBuyFoodCampaignBehavior.TryBuyingFood硬性LeaderHero!=null；AiVisitSettlementBehavior还有势力/领主类型门槛，独立玩家Clan无领主尤其不能假设原版会生成访问补给欲望。可复用原版粮耗、食物选择/价格、SellItemsAction和真实市场库存，给仅此类派队补“缺粮访问友好市场/交易”适配；并非造免费粮。没有钱时卖可用战利品或申请运营资金/返回补给，不能保证原版凭空挣钱。携带的案件上缴财物不得被当普通战利品卖掉或花在工资上，需独立记录和选择规则；初始运营资金来源尚需设计，用户只明确启动粮与玩家付薪。
+
+原版ViewModelCollection.Party.PartyCharacterVM现版本反编译.codex_tmp/research-party-character.cs：IsTalkableCharacter要求isHero，CanTalk及PartyVM路径按Hero处理。需要限定玩家成员且为灰袍兵种开放按钮，并单独转非英雄对话，不能只置CanTalk=true导致HeroObject空引用。Helpers.PartyScreenHelper提供OpenScreenWithCondition/OpenScreenWithDummyRoster等原版双栏分兵API，可限制只选当前队伍灰袍士兵，数量玩家决定，不硬塞英雄。MobileParty实现ITrackableCampaignObject，销毁时VisualTrackerManager.RemoveTrackedObject；地图追踪可复用原版tracker，但CustomParty不自动出现在家族WarPartyComponents列表，地图可见与家族页面登记须分别测试，不能只设ActualClan就宣称等同家族部队。
+
+震慑：PoliceAIDeterrenceBehavior.RegisterPlayerCompletedCase要求非空MapEvent，当前缴款GwpFieldArrestBehavior与GwpFieldReportLedger没有调用该入口；底层GwpAiDeterrenceState.RegisterPoliceArrest调用CrimePool.RecordArrest并加分类被捕次数，直接套到谈判会污染履历。应提取执法成功事件，按案件及结果唯一ID防重，战胜/实际缴付/谈成方案兑现都登记；保留既有本人/同族增益及衰减，实际战斗才有同场目击者；缴款不能编造战场。返回交任务和信使送达不得再次记震慑，既有灰袍同场执法也需统一去重。
+
+建议派遣状态：准备(选人/待交资产/解释)→送达或求援→回程→会合清点，失败分支包含全灭/俘虏/任务已被其他途径交付/收件人失活/玩家被俘无主队/运输物丢失。援军应收请求后正常调派并行军，不是使者出发即远程开战；信使往返与真正援军两条职责分开。报告中的实话/谎话及交款额在出发前由玩家决定，士兵不替玩家随机决策；携带钱物被劫应区分战损与贪腐。返队超员/超载须原版管理界面处理，不能照现有拦截队退役丢兵。粮食与工资不能从整笔罚款暗扣。此次是代码支持的方案与待验证边界，尚未实现。
+
+
 ## 2026-09-14 玩家委托战胜未俘与缺失支援调查；物品交付实机通过
 
-用户确认上个物品交付问题解决。保存GwpAssetPayment、自动报价及交付验证补丁的已确认组件checkpoint；完整委托/追捕流程本次明确仍报坏，不作为整版稳定。当前不进行新运行代码实验，不改玩家README、不部署。组件存在于当前候选调用链中，提交不宣称未验收任务整体可用。
+用户确认上个物品交付问题解决。局部组件checkpoint `39a81fe`（父提交`4b107dc`）；本次已确认物品提交路径可按该提交对应三个资产源码文件恢复，完整调用方仍保留当前工作树，不整树回退。保存GwpAssetPayment、自动报价及交付验证补丁的已确认组件checkpoint；完整委托/追捕流程本次明确仍报坏，不作为整版稳定。当前不进行新运行代码实验，不改玩家README、不部署。组件存在于当前候选调用链中，提交不宣称未验收任务整体可用。
 
 只读调查：AcceptBounty直接复制案件目标、应缴罚金及负声望，期限45天，_escortPolicePartyId只读GetAssignedPolicePartyId。未分配承办的案件没有补派灰袍；Support.cs申请条件又要求HasEscortPoliceParty且正在与该队交谈。因此无承办案件/护送队丢失后的玩家没有申请支援入口。即使开挂打赢也不改变任务结果检测，不能依靠玩家强制克服系统缺口。
 

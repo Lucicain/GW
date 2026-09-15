@@ -401,12 +401,8 @@
   <string id="gwp_bounty_quest_target" text="目标：{VAR_1}。评估难度：{VAR_2}。&#10;" />
   <string id="gwp_bounty_quest_reward" text="在 45 天内收取卷宗应缴的 {VAR_1} 第纳尔罚金，或俘虏目标。将钱或人交给灰袍领主后，按实际交付结算办案酬劳。" />
   <string id="gwp_bounty_contract_accepted" text="已接受委托：{VAR_1}。难度：{VAR_2}；卷宗应缴罚金：{VAR_3} 第纳尔。" />
-  <string id="gwp_bounty_collection_courier_name" text="灰袍结算队" />
-  <string id="gwp_bounty_collection_courier_dispatched" text="目标落败已经五天。灰袍已从{VAR_1}派出结算队，正在前来与你会合并结清通缉令。" />
-  <string id="gwp_bounty_courier_greeting" text="灰袍派我们来收这份案子的报告。罚金或受托追捕的俘虏都可以交给我们，办案酬劳也在这里结算。" />
   <string id="gwp_bounty_courier_player" text="那就结清通缉令吧。我领取约定的赏金。" />
   <string id="gwp_bounty_courier_response" text="通缉令已经结清。这是契约中登记的报酬。我们会返回最近的定居点复命。" />
-  <string id="gwp_bounty_courier_returning" text="通缉令已经结清。我们正在返回驻地，与你没有其他事务。" />
   <string id="gwp_bounty_courier_payment_received" text="已从灰袍结算队领取赏金：{VAR_1} 第纳尔" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_036" text="已接受悬赏任务：追击 {VAR_1}" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_037" text="（{VAR_1} 人），赏金约 {VAR_2} 第纳尔" />
@@ -723,7 +719,7 @@
   <string id="gwp_gwpcasearchivescreen_015" text="{VAR_1}（{VAR_2}）" />
   <string id="gwp_gwpcasearchivescreen_016" text="追踪情况：{VAR_1} | 当前阶段：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_017" text="玩家" />
-  <string id="gwp_gwpcasearchivescreen_018" text="悬赏护卫" />
+  <string id="gwp_gwpcasearchivescreen_018" text="支援受托的玩家" />
   <string id="gwp_gwpcasearchivescreen_019" text="抓捕后护送" />
   <string id="gwp_gwpcasearchivescreen_020" text="准备出动" />
   <string id="gwp_gwpcasearchivescreen_021" text="战时追捕" />
@@ -902,7 +898,7 @@
   <string id="gwp_item_dual_offhand" text="灰袍双持剑（副手）" />
   <string id="gwp_item_dual_mainhand" text="灰袍双持剑（主手）" />
   <string id="gwp_fieldarrest_open" text="我受灰袍委托，为你名下的一件案子而来。" />
-  <string id="gwp_fieldarrest_charge" text="卷宗记载你曾{VAR_1}，受害方是{VAR_2}。这次应缴罚金 {VAR_3} 第纳尔，我受托来收这笔钱。" />
+  <string id="gwp_fieldarrest_charge" text="灰袍指控你曾{VAR_1}，受害方是{VAR_2}。应缴罚金 {VAR_3} 第纳尔，我受托来处理这件事。" />
   <string id="gwp_fieldarrest_walk_away" text="算了，你走吧。" />
   <string id="gwp_fieldarrest_victim_unknown" text="灰袍记录在案的受害人" />
   <string id="gwp_fieldarrest_crime_caravan" text="袭击灰袍保护的商队" />
@@ -919,10 +915,10 @@
   <string id="gwp_fieldarrest_msg_captured" text="{VAR_1} 落在你手里。案底与声望罚款一并结清；把俘虏交给灰袍领主。" />
   <string id="gwp_fieldarrest_seize" text="我要依照通缉令，抓你归案。" />
   <string id="gwp_fieldarrest_seize_reply" text="原来灰袍就这点分量。动手吧。" />
-  <string id="gwp_fa_open_under_charge" text="听说你自己也欠着灰袍的账。现在倒替他们办起案来了？说吧。" />
+  <string id="gwp_fa_open_under_charge" text="你替灰袍办事？说吧，找我什么事。" />
   <string id="gwp_fa_open_respected_known" text="又见面了。我知道你替灰袍办过不少事。这回为了什么？" />
   <string id="gwp_fa_open_respected" text="我听说过你。既然受灰袍委托，就把来意说清楚。" />
-  <string id="gwp_fa_open_known" text="灰袍以前已经抓过我一次。这回又是哪件事？" />
+  <string id="gwp_fa_open_known" text="灰袍又来了。上次的事，我可还记得。" />
   <string id="gwp_fa_open_plain" text="灰袍。找我什么事？" />
   <string id="gwp_fa_submit_upright" text="这件事我认，罚金也照数交。请把交款记清楚。" />
   <string id="gwp_fa_submit_cold" text="比另一条路便宜。就这一个理由，你我都清楚。" />
@@ -942,39 +938,39 @@
   <string id="gwp_fa_task_final" text="你没词了，灰袍。" />
   <string id="gwp_fa_task_later" text="这份案子，我不想再听你争辩了。" />
   <string id="gwp_fa_task_authority" text="你不是我的主君，也不是灰袍。你是他们雇来的人。" />
-  <string id="gwp_fa_arg_authority_lead" text="我持有灰袍的委托，这份案子明确由我来办。" />
+  <string id="gwp_fa_arg_authority_lead" text="灰袍派我来处理这件事。我说的话，就是她们的要求。" />
   <string id="gwp_fa_arg_authority_charm" text="我受谁雇用，不会改变受害者的损失。我们先把这件事说清楚。" />
   <string id="gwp_fa_arg_authority_rogue" text="灰袍把案子交给我，就不会因为你不认我而撤回去。" />
-  <string id="gwp_fa_arg_authority_trade" text="我是谁不重要。账是他们的，不清就一直开着。" />
-  <string id="gwp_fa_task_under_charge" text="你自己的名字还在灰袍那儿挂着呢。也配来念我的？" />
-  <string id="gwp_fa_arg_under_lead" text="我在还我的。你连还都没开始还。" />
-  <string id="gwp_fa_arg_under_charm" text="正因为我也为自己的事负责，才知道躲着不是办法。" />
-  <string id="gwp_fa_arg_under_rogue" text="自己背着债的人收起账来更狠，不会更软。你掂量掂量。" />
-  <string id="gwp_fa_arg_under_trade" text="我的案底不会让你的数目少一个子儿。" />
+  <string id="gwp_fa_arg_authority_trade" text="你认不认我，灰袍要求的赔偿都不会少。趁现在把事情解决，对你也省事。" />
+  <string id="gwp_fa_task_under_charge" text="你的名声也没比我好多少，倒来替灰袍教训我了？" />
+  <string id="gwp_fa_arg_under_lead" text="我做过什么，不妨另说。眼前这些事，你得向灰袍交代。" />
+  <string id="gwp_fa_arg_under_charm" text="那就别再添一个坏结果了。今天把事情解决，让大家都能回去。" />
+  <string id="gwp_fa_arg_under_rogue" text="正因为如此，我更不会空手回去。你最好想清楚。" />
+  <string id="gwp_fa_arg_under_trade" text="议论我值不了一枚第纳尔。你该付的钱不会因此减少。" />
   <string id="gwp_fa_task_price" text="这个数——哪儿来的？你说得像是天上掉下来的。" />
-  <string id="gwp_fa_arg_price_lead" text="数是卷宗定的，不是我定的。交完了再去跟卷宗理论。" />
+  <string id="gwp_fa_arg_price_lead" text="这是灰袍要求的罚金。我受托来执行，不是来随口开价的。" />
   <string id="gwp_fa_arg_price_charm" text="受害者已经承担了损失。别再为这件事添一场厮杀。" />
   <string id="gwp_fa_arg_price_rogue" text="这是便宜那条路。贵的那条正看着你。" />
-  <string id="gwp_fa_arg_price_trade" text="做下的事算一笔，杀掉的人算另一笔。两笔都写在卷宗上。" />
+  <string id="gwp_fa_arg_price_trade" text="损毁的财物、受害的人，都得有个交代。这个数不是只算你眼前这一次。" />
   <string id="gwp_fa_task_tally" text="为什么把几次事情合在一起，收我这么一大笔钱？" />
-  <string id="gwp_fa_arg_tally_lead" text="本来就是一笔账。你一直往上加，没人来给你结。" />
+  <string id="gwp_fa_arg_tally_lead" text="事情过去了，不等于责任也没了。灰袍要你一起承担。" />
   <string id="gwp_fa_arg_tally_charm" text="每一件里都有人。对你是隔了几个月，对他们不是。" />
   <string id="gwp_fa_arg_tally_rogue" text="想一件一件算，早点被逮住就是了。" />
-  <string id="gwp_fa_arg_tally_trade" text="把卷宗上的应缴数付清，我就能按全额交款回报。" />
+  <string id="gwp_fa_arg_tally_trade" text="今天一起付清，就不用为这些旧事反复停下队伍。" />
   <string id="gwp_fa_task_denial" text="那是我手下干的。我没下这个令，凭什么让我替他们的胃口付钱。" />
   <string id="gwp_fa_arg_denial_lead" text="那是你的兵。手下两个字就是这个意思。" />
   <string id="gwp_fa_arg_denial_charm" text="村里没一个人分得清是你的手还是他们的手。" />
-  <string id="gwp_fa_arg_denial_rogue" text="他们打着你的旗号行事。推给部下，案卷上也不会换个人名。" />
-  <string id="gwp_fa_arg_denial_trade" text="账跟着旗走。你先清了，再自己找他们要。" />
+  <string id="gwp_fa_arg_denial_rogue" text="他们打着你的旗号行事。推给部下，灰袍也还是会找你。" />
+  <string id="gwp_fa_arg_denial_trade" text="他们是你的部下。先把损失赔了，你回去怎么向他们追究，是你的事。" />
   <string id="gwp_fa_task_war" text="打着仗呢。拿敌方的东西不算犯罪，那叫干活。" />
   <string id="gwp_fa_arg_war_lead" text="你的仗轮不到赶车的头上。灰袍的律轮得到。" />
   <string id="gwp_fa_arg_war_charm" text="车夫和护卫。没有一个是替你守过阵线的。" />
   <string id="gwp_fa_arg_war_rogue" text="你愿意叫它打仗就叫吧。灰袍这边写的是一支商队和几具尸首。" />
   <string id="gwp_fa_arg_war_trade" text="仗会打完。账不会，除非有人付。" />
-  <string id="gwp_fa_task_consequence" text="我要是干脆不给呢？你骑马走人，在本子上写两笔。" />
-  <string id="gwp_fa_arg_consequence_lead" text="本子就是关键。它不会忘，也不会骑马走人。" />
+  <string id="gwp_fa_task_consequence" text="我要是干脆不交呢？你还能把我怎么样？" />
+  <string id="gwp_fa_arg_consequence_lead" text="我离开了，灰袍也不会就此罢手。今天总得有个交代。" />
   <string id="gwp_fa_arg_consequence_charm" text="那下一个穿灰的来就不是找你说话了，这对谁都不好。" />
-  <string id="gwp_fa_arg_consequence_rogue" text="那我就写下来。哪天有人在牢里念给你听。" />
+  <string id="gwp_fa_arg_consequence_rogue" text="你可以赌我拿不住你。下回灰袍来多少人，你可说了不算。" />
   <string id="gwp_fa_arg_consequence_trade" text="这笔欠款会一直留着，不会因为你拖延就消失。" />
   <string id="gwp_fa_task_record" text="你们抓过我一回了。以后就这么没完了是吗？" />
   <string id="gwp_fa_arg_record_lead" text="你不再给他们理由，就完了。这一半在你手上。" />
@@ -982,11 +978,11 @@
   <string id="gwp_fa_arg_record_rogue" text="被捕是什么结果，你已经经历过。还要再来一回吗？" />
   <string id="gwp_fa_arg_record_trade" text="先结清眼下这笔。以后再犯的事，另有新的账。" />
   <string id="gwp_fieldarrest_war_mediated" text="灰袍调停：案子已经了结，由此与{VAR_1}结下的战事就此停息。" />
-  <string id="gwp_fa_desire_bribe" text="罚金的一成半，归你个人。回去怎么对灰袍说，你自己决定。" />
+  <string id="gwp_fa_desire_bribe" text="我给你价值 {GWP_BRIBE_AMOUNT} 第纳尔的财物，归你自己。回去怎么说，你来想办法。" />
   <string id="gwp_fa_desire_duel" text="你我单挑。你赢了，我缴罚金；我赢了，你就不收这笔钱。" />
   <string id="gwp_fa_l1_failed" text="我不接受这份指控，你也休想凭几句话让我低头。" />
   <string id="gwp_fa_l1_done" text="好，我接受这次处置。接下来谈谈怎么了结。" />
-  <string id="gwp_fa_l1_lost" text="这份案卷我不认。你执意要办，就拔剑吧。" />
+  <string id="gwp_fa_l1_lost" text="我不接受灰袍这次处置。你执意动手，就拔剑吧。" />
   <string id="gwp_fa_take_by_force" text="我要强制执行通缉令，拿下你。" />
   <string id="gwp_fa_leave_it" text="那你走吧。这事没完。" />
   <string id="gwp_fa_l2_agreed" text="那就照数全缴，没别的话说。" />
@@ -1012,7 +1008,7 @@
   <string id="gwp_fa_accept_deeds" text="那就为你做下的事付钱。那些人命的账留着。" />
   <string id="gwp_fa_accept_haggle" text="七成就七成。剩下的差额，我回去交代。" />
   <string id="gwp_fieldarrest_msg_surrender" text="{VAR_1} 束手就擒。他的人会自己回去；把俘虏交给灰袍领主。" />
-  <string id="gwp_fieldarrest_msg_bribe" text="{VAR_1} 私下给了你 {VAR_2} 第纳尔。这笔钱不算正规罚金，回去仍要交代整份委托。" />
+  <string id="gwp_fieldarrest_msg_bribe" text="{VAR_1} 私下给了你价值 {VAR_2} 第纳尔的财物。这不算正规罚金，回去仍要交代整份委托。" />
   <string id="gwp_fieldarrest_msg_own_men" text="他把几个替罪的手下拖出来，当着你的面砍了。" />
   <string id="gwp_fieldarrest_reaction_fallback" text="……" />
   <string id="gwp_fieldarrest_msg_duel_lost" text="{VAR_1} 赢了单挑，你依约没有收钱。对方欠账仍在，这次委托的短缺仍需向灰袍交代。" />
@@ -1040,7 +1036,7 @@
   <string id="gwp_fa_debug_seeded" text="【调试】{VAR_1} 现在背着一件村庄暴力案，死 {VAR_2} 人。" />
   <string id="gwp_case_payment" text="向灰袍司法公库上缴罚金" />
   <string id="gwp_case_captive_ready" text="受托追捕的目标已成为你的俘虏。将他交给灰袍领主或结算队，才能领取办案酬劳。" />
-  <string id="gwp_case_closed_elsewhere" text="受托案件已不再处于追捕状态，委托撤回。本次不发报酬，也不扣声望。" />
+  <string id="gwp_case_closed_elsewhere" text="{VAR_1}已经不在你能追到的地方了。委托到此为止。去找任意灰袍领主复命，或者派个人去。" />
   <string id="gwp_case_report_open" text="我来交代上次受托办的案子。" />
   <string id="gwp_case_deliver_money" text="罚金带来了，我们点一下。" />
   <string id="gwp_case_deliver_prisoner" text="人就在我的队伍里，现在交给你们。" />
@@ -1049,7 +1045,7 @@
   <string id="gwp_case_missing_prisoner" text="俘虏已经不在我手里了。这笔酬劳我领不了。" />
   <string id="gwp_case_legacy_reward" text="请按先前那份委托的约定结清报酬。" />
   <string id="gwp_case_report_later" text="钱和人还没有准备好，我改日再来。" />
-  <string id="gwp_case_barter_accepted" text="钱点清了，你报的数目也记下了。" />
+  <string id="gwp_case_barter_accepted" text="钱物清点好了，这份委托可以结了。" />
   <string id="gwp_case_barter_cancelled" text="这次没有入账。你准备好了，我们再点。" />
   <string id="gwp_case_report_summary" text="卷宗上记着 {VAR_1} 第纳尔。你带来了罚金，还是把人押来了？钱若有短缺，也请说清缘由。" />
   <string id="gwp_case_transfer_failed" text="这里暂时无法接收俘虏。你先把人看好，交给另一支灰袍队伍。" />
@@ -1059,8 +1055,8 @@
   <string id="gwp_case_duel_failed" text="单挑未能开始，案件仍未结清。" />
   <string id="gwp_case_cash_with_prisoner" text="你之前还向他收过 {VAR_1} 第纳尔。把这笔钱补齐，和俘虏一起交来。" />
   <string id="gwp_case_cash_still_due" text="俘虏已经不在你手里，但先前收下的罚金仍要交代。" />
-  <string id="gwp_case_purse_short" text="罚金我认，可我现在只有 {VAR_1} 第纳尔。眼下能交给你的就是这些。" />
-  <string id="gwp_case_collect_amount" text="把 {VAR_1} 第纳尔交出来，实收和短缺的数目我都会回报。" />
+  <string id="gwp_case_purse_short" text="罚金我认，可我身边的钱和东西合起来只值 {VAR_1} 第纳尔。现在能交的就是这些。" />
+  <string id="gwp_case_collect_amount" text="拿出价值 {VAR_1} 第纳尔的财物。实收和短缺我会回报。" />
   <string id="gwp_fa_payment_budget" text="我还得发军饷、买粮草。交了这笔钱，我拿什么养这些人？" />
   <string id="gwp_fa_payment_budget_lead" text="他们由你统率，闯的祸也该由你负责。交清罚金，别再把他们卷进来。" />
   <string id="gwp_fa_payment_budget_charm" text="他们需要你平安带队回去。眼下还不必为这笔钱再死人。" />
@@ -1072,22 +1068,22 @@
   <string id="gwp_fa_payment_terms_rogue" text="你少交的钱，要我回去担责。我不会替你背这笔账。" />
   <string id="gwp_fa_payment_terms_trade" text="缴清后，我交账时能替你抵清这笔欠款。只交一部分，余下的还记在你名下。" />
   <string id="gwp_case_pending_encyclopedia" text="待受托人交付：应缴 {VAR_1}、已代收 {VAR_2} 第纳尔。这笔款项尚未抵扣欠款。" />
-  <string id="gwp_case_duel_post_win" text="你赢了。按约定，我已经把眼下能缴的罚金交给你。" />
+  <string id="gwp_case_duel_post_win" text="你赢了，我认。照约定，看看我的财物，把罚金结清吧。" />
   <string id="gwp_case_duel_post_loss" text="你输了。按约定，今天你不能向我收这笔罚金。" />
   <string id="gwp_case_duel_post_reply" text="我会把结果向灰袍回报。" />
-  <string id="gwp_case_barter_count" text="钱放在这里，我们点一下。" />
+  <string id="gwp_case_barter_count" text="把钱物放在这里，我们清点一下。" />
   <string id="gwp_case_report_acknowledge" text="把结清的账目给我吧。" />
-  <string id="gwp_fa_refuse_strength" text="先看看你带了多少人，再看看我的队伍。这份通缉令，我没兴趣谈。" />
+  <string id="gwp_fa_refuse_strength" text="灰袍这次的要求，我不接受。我们没什么好谈的。" />
   <string id="gwp_fa_hear_charge" text="指控我听见了。不过，你先说说，我为什么要接受你的处置？" />
   <string id="gwp_fa_request_terms" text="那就说吧，你打算怎么了结？" />
   <string id="gwp_fa_counter_offer" text="这个条件我不能接受。我们谈谈照数缴清的事。" />
-  <string id="gwp_fa_count_money" text="钱就在这里，你来点。" />
+  <string id="gwp_fa_count_money" text="钱和东西都在这里，你来挑。" />
   <string id="gwp_fa_collection_paid" text="钱点清了。今天就到这里。" />
-  <string id="gwp_fa_collection_empty" text="你自己看吧，钱袋里已经空了。" />
+  <string id="gwp_fa_collection_empty" text="你自己看吧，已经没有能交给你的钱和东西了。" />
   <string id="gwp_fa_accept_empty" text="我会如实回报你付不起钱，欠账仍记在你名下。" />
   <string id="gwp_fa_collection_cancel" text="钱还没交出去。你到底打算怎么办？" />
   <string id="gwp_fa_fight_reply" text="那就拔剑吧。" />
-  <string id="gwp_fa_accept_count" text="把钱袋拿出来，能付多少，我们当面点清。" />
+  <string id="gwp_fa_accept_count" text="把钱和东西拿出来，能抵多少，我们当面说清。" />
   <string id="gwp_terms_final_objection" text="就算照数交清，我放弃刚才的条件，又能换来什么？" />
   <string id="gwp_terms_final_lead" text="你仍带你的队伍。我来是为了结清这笔账，不是再打一仗。" />
   <string id="gwp_terms_final_charm" text="双方的人都能活着离开。这比继续争执要紧。" />
@@ -1112,7 +1108,7 @@
   <string id="gwp_terms_surrenderself_charm" text="不必把自己人丢下。交清罚金，你就能留在他们身边。" />
   <string id="gwp_terms_surrenderself_rogue" text="你放心把指挥权交给别人？钱可比你的位子容易找回来。" />
   <string id="gwp_terms_surrenderself_trade" text="被关押也会拖累家族和队伍。用现钱了结，损失更可控。" />
-  <string id="gwp_terms_bribethewarden_lead" text="我带的是通缉令，不是讨钱的碗。照卷宗上的数交。" />
+  <string id="gwp_terms_bribethewarden_lead" text="灰袍让我来收罚金，不是收你的好处。该交多少就交多少。" />
   <string id="gwp_terms_bribethewarden_charm" text="别把事情弄成这样。光明正大地交清，双方都能走。" />
   <string id="gwp_terms_bribethewarden_rogue" text="拿这点私钱换我背锅？贿金收回去，罚金拿出来。" />
   <string id="gwp_terms_bribethewarden_trade" text="私下给我的钱抵不了公库的账。该缴的总数并没变。" />
@@ -1227,18 +1223,135 @@
   <string id="gwp_voice_demand_payforpeace_alt" text="已经够多人受罪了。我把罚金付清，别再牵连别人。" />
   <string id="gwp_voice_demand_paygenerously_alt" text="这些钱我出得起，全部拿去，把账结清。" />
   <string id="gwp_voice_demand_surrenderself_alt" text="钱得留着养活这些人。你要交差，就带我一个走。" />
-  <string id="gwp_voice_demand_bribethewarden_alt" text="我给你罚金的一成半，归你自己。回去怎么说，凭你。" />
+  <string id="gwp_voice_demand_bribethewarden_alt" text="这份好处值 {GWP_BRIBE_AMOUNT} 第纳尔，比白跑一趟强。拿了，我们就把话说到这里。" />
   <string id="gwp_voice_demand_cunninghalf_alt" text="你要的数目我凑不齐。只有一半，你要就拿去。" />
   <string id="gwp_voice_demand_rashmost_alt" text="八成，拿去吧。剩下两成就别再费口舌了。" />
   <string id="gwp_voice_demand_demandduel_alt" text="我们两个来比一场。你赢，罚金照付；我赢，你空手走。" />
   <string id="gwp_voice_demand_deedsonly_alt" text="我只出四成。那几个办坏事的，我自己会杀给你看。" />
   <string id="gwp_voice_demand_haggledown_alt" text="七成已经够多了。这个价钱，你好好想想。" />
   <string id="gwp_voice_hear_alt" text="罪名我听见了。可我凭什么听你处置？" />
-  <string id="gwp_voice_refuse_alt" text="你带这点人就想让我低头？让开，我们没什么好谈的。" />
+  <string id="gwp_voice_refuse_alt" text="让我听你处置？不。让开。" />
   <string id="gwp_voice_done1_alt" text="行，这件案子我认。至于怎么了结，我们还得谈。" />
   <string id="gwp_voice_lost1_alt" text="你还没说出让我服气的理由。别再绕了。" />
   <string id="gwp_voice_done2_alt" text="好，按你说的数目来。别再加别的条件了。" />
   <string id="gwp_voice_lost2_alt" text="这一步我不让。刚才开的条件仍然算数。" />
   <string id="gwp_case_capture_missed" text="目标没有被你俘虏，委托仍未交结。你可以继续追捕，或向灰袍缴纳罚金结案；已经收取的钱仍须如实报账。" />
+  <string id="gwp_fa_task_authority_variant_1" text="灰袍管得着这件事，也不见得轮得到你来管我。" />
+  <string id="gwp_fa_task_authority_variant_2" text="你不过是替灰袍跑腿的。我凭什么听你的？" />
+  <string id="gwp_fa_task_under_charge_variant_1" text="你自己也没什么好名声，倒来教训我了？" />
+  <string id="gwp_fa_task_under_charge_variant_2" text="换个人来，我兴许还愿意听。你？先管好自己吧。" />
+  <string id="gwp_fa_task_price_variant_1" text="这么多钱？灰袍凭什么向我要这个数？" />
+  <string id="gwp_fa_task_price_variant_2" text="你开口就是这么大一笔，总得给我个说法吧。" />
+  <string id="gwp_fa_task_tally_variant_1" text="过去的事也要一起追究？你们到底想追到什么时候？" />
+  <string id="gwp_fa_task_tally_variant_2" text="那些事都隔了多久了，现在倒一起来找我？" />
+  <string id="gwp_fa_task_denial_variant_1" text="我的兵做了什么，你找他们去。我没叫他们这么干。" />
+  <string id="gwp_fa_task_denial_variant_2" text="部下惹的事，凭什么全要我来担？" />
+  <string id="gwp_fa_task_war_variant_1" text="打仗还不能拿敌人的东西？灰袍未免管得太宽了。" />
+  <string id="gwp_fa_task_war_variant_2" text="那是敌人的商队。我在打仗，不是在拦路抢劫。" />
+  <string id="gwp_fa_task_consequence_variant_1" text="我今天就是不交，你打算怎么办？" />
+  <string id="gwp_fa_task_consequence_variant_2" text="我带着人走我的路。灰袍还能一直追着我不成？" />
+  <string id="gwp_fa_task_record_variant_1" text="灰袍以前已经抓过我一次了，还不够吗？" />
+  <string id="gwp_fa_task_record_variant_2" text="又是灰袍。难道我往后走到哪里，你们都要跟着？" />
+  <string id="gwp_terms_final_objection_variant_1" text="我把条件全让了，对我又有什么好处？" />
+  <string id="gwp_terms_final_objection_variant_2" text="照你说的全部交清，我为什么要吃这个亏？" />
+  <string id="gwp_fa_open_under_charge_variant_1" text="你也替灰袍办事了？这倒新鲜。找我什么事？" />
+  <string id="gwp_fa_open_under_charge_variant_2" text="听过你的名声。先说吧，灰袍让你来干什么？" />
+  <string id="gwp_fa_open_respected_known_variant_1" text="是你。上次见到灰袍可不是什么好事，这回又怎么了？" />
+  <string id="gwp_fa_open_respected_known_variant_2" text="灰袍又找上我了？说吧，我听着。" />
+  <string id="gwp_fa_open_respected_variant_1" text="你的名声我听过。有什么事，直说吧。" />
+  <string id="gwp_fa_open_respected_variant_2" text="灰袍派你来，看来是有事要谈。说吧。" />
+  <string id="gwp_fa_open_known_variant_1" text="上次被你们带走的滋味，我可没忘。这回要做什么？" />
+  <string id="gwp_fa_open_known_variant_2" text="又拦我？灰袍这次有什么事？" />
+  <string id="gwp_test_desire_sequence" text="【测试】条件第 {VAR_1}/8 项：{VAR_2}。本次谈判保持此结果。" />
+  <string id="gwp_test_desire_open" text="【测试】跳过第一层，选择要测试的欲望。" />
+  <string id="gwp_test_desire_menu" text="【调试面板】选择本次要测试的欲望；后续按实际谈判和结算规则执行。" />
+  <string id="gwp_test_desire_next" text="【测试】按顺序测试下一种。" />
+  <string id="gwp_test_desire_back" text="【测试】返回正常对话。" />
+  <string id="gwp_fa_desire_grace" text="给我三天筹钱。到时候你再来，这笔罚金我会给你个交代。" />
+  <string id="gwp_fa_accept_grace" text="三天，只宽限这一次。我会回来收钱。" />
+  <string id="gwp_voice_grace_alt" text="我需要三天把钱凑起来。我求的是宽限，不是免掉罚金。" />
+  <string id="gwp_grace_granted" text="你给了{VAR_1}三天筹措罚金。委托尚未完成，届时仍须收钱或拿人。" />
+  <string id="gwp_grace_due" text="你给{VAR_1}的宽限已经到期。可以前去收钱或拿人。" />
+  <string id="gwp_grace_return_early" text="你答应给我时间的，还剩{VAR_1}小时。现在就要看我凑到了多少吗？" />
+  <string id="gwp_grace_return_due" text="说好的日子到了。你看看我现在能拿出多少吧。" />
+  <string id="gwp_grace_collect" text="把现在能交的钱拿出来看看。" />
+  <string id="gwp_terms_requestgrace_lead" text="灰袍等的是罚金，不是再拖几天。先把你眼下能交的拿出来。" />
+  <string id="gwp_terms_requestgrace_charm" text="今天能交多少就先解决多少，别让这件事一直压着你和部下。" />
+  <string id="gwp_terms_requestgrace_rogue" text="三天，够你走出多远？我更想先看看你现在的钱袋。" />
+  <string id="gwp_terms_requestgrace_trade" text="你我再跑一趟都要花钱。今天把能付的付了，少耽误些工夫。" />
+  <string id="gwp_rebuff_requestgrace_lead" text="我没说不交。我说的是筹钱需要时间。" />
+  <string id="gwp_rebuff_requestgrace_charm" text="我也想今天就了结，可你总得容我把钱凑来。" />
+  <string id="gwp_rebuff_requestgrace_rogue" text="你不信我，我也没办法。但催得再紧，钱也不会自己出现。" />
+  <string id="gwp_rebuff_requestgrace_trade" text="再跑一趟是麻烦，可现在让我凑齐，同样办不到。" />
+  <string id="gwp_test_tool_0" text="全額处理" />
+  <string id="gwp_test_tool_1" text="讲价" />
+  <string id="gwp_test_tool_2" text="隐瞒钱财" />
+  <string id="gwp_test_tool_3" text="自己投降" />
+  <string id="gwp_test_tool_4" text="牺牲部下" />
+  <string id="gwp_test_tool_5" text="行贿" />
+  <string id="gwp_test_tool_6" text="决斗" />
+  <string id="gwp_test_tool_7" text="请求三天宽限" />
+  <string id="gwp_asset_gold" text="第纳尔" />
+  <string id="gwp_asset_value" text="{VAR_1}（每件 {VAR_2} 第纳尔）" />
+  <string id="gwp_duel_payment_pending" text="你赢了单挑。退出单挑场景后，可以检查对方财产并收缴罚金。" />
+  <string id="gwp_duel_inspect_property" text="把你的财物拿出来，现在结清罚金。" />
+  <string id="gwp_duel_collect_later" text="我稍后再来收。" />
+  <string id="gwp_duel_return_collect" text="单挑是你赢了。照约定，我还欠着你这笔罚金。" />
+  <string id="gwp_case_pay_any" text="我来上缴钱物，清点一下吧。" />
+  <string id="gwp_case_pay_zero" text="我这次没有钱物可以上缴。" />
+  <string id="gwp_case_resume_report" text="刚才交的钱物还差一些，我来说明原因。" />
+  <string id="gwp_case_short_question" text="这些还不够。剩下的为什么没交上来？" />
+  <string id="gwp_case_short_truth" text="我会如实说明收了多少，以及没能交齐的原因。" />
+  <string id="gwp_case_short_lie" text="【撒谎】他只能拿出这些，我一点也没留下。" />
+  <string id="gwp_collection_agreement" text="履行约定" />
+  <string id="gwp_request_case_support" text="我需要你们帮忙拿下那个人。跟我一起上。" />
+  <string id="gwp_request_case_support_reply" text="那我们就跟着你走。等现场的胜算在我们这边，就动手。" />
+  <string id="gwp_support_requested_log" text="你已请灰袍与你一同出阵，对付这名罪犯。" />
+  <string id="gwp_offer_changed" text="这些已经超出我们说好的数目，或有财物无法交付。请重新调整。" />
+  <string id="gwp_case_defeat_recorded" text="你在野外击溃了{VAR_1}。回去复命吧。" />
+  <string id="gwp_case_truthful_defeat_result" text="你在野外把他打垮了。实收的 {VAR_1} 第纳尔已经入账，余款记在他名下。花销 {VAR_2} 第纳尔，委托结清。" />
+  <string id="gwp_bounty_contract_expired_but_done" text="追捕期限已过，但那个人已经受到处置。去向任意灰袍领主复命吧。" />
+  <string id="gwp_report_excess_found" text="有人查到，{VAR_1}已经为自己的罪付过代价，你之后还是把他打垮了。灰袍声望 {VAR_2}。" />
+  <string id="gwp_support_granted_notice" text="{VAR_1}接下了你的请求，正赶来与你会合。" />
+  <string id="gwp_support_player_war" text="灰袍向{VAR_1}宣战，你的旗号也站到了他们一边。" />
+  <string id="gwp_dispatch_talk_hint" text="派这些人去办事" />
+  <string id="gwp_dispatch_greeting" text="指挥官。您吩咐，我们就走。" />
+  <string id="gwp_dispatch_report" text="替我把这桩委托的账送到灰袍那里。" />
+  <string id="gwp_dispatch_support" text="去灰袍那里，请他们与我一同出阵。" />
+  <string id="gwp_dispatch_never_mind" text="暂时没事，回岗位去吧。" />
+  <string id="gwp_dispatch_confirm" text="那就请指挥官点出随我上路的人。" />
+  <string id="gwp_dispatch_screen_report" text="送信队" />
+  <string id="gwp_dispatch_screen_support" text="求援骑手" />
+  <string id="gwp_dispatch_pick_someone" text="至少要点一个人出来。" />
+  <string id="gwp_dispatch_name_report" text="灰袍送信队" />
+  <string id="gwp_dispatch_name_support" text="灰袍求援骑手" />
+  <string id="gwp_dispatch_no_receiver" text="外面没有你的人够得着的灰袍队伍。这些人暂时还是留在身边。" />
+  <string id="gwp_dispatch_sent" text="你派出的队伍已经动身去找{VAR_1}。" />
+  <string id="gwp_dispatch_lost" text="你派出去的那支队伍全军覆没了，带走的东西也没了。" />
+  <string id="gwp_dispatch_returning" text="你派出的队伍办完了差事，正在往回赶。" />
+  <string id="gwp_dispatch_support_moot" text="你的骑手把话带到了，但这事已经用不上了。" />
+  <string id="gwp_dispatch_handover" text="派出的队伍已经归队：交回 {VAR_1} 人（其中 {VAR_2} 名伤员）、{VAR_3} 名俘虏、{VAR_4} 件物资和 {VAR_5} 第纳尔。" />
+  <string id="gwp_dispatch_report_done" text="你的人已经复命，委托结清；他们正带着 {VAR_1} 第纳尔回来。" />
+  <string id="gwp_dispatch_amount_title" text="交给灰袍的钱" />
+  <string id="gwp_dispatch_amount_body" text="账上是 {VAR_1} 第纳尔。让他们带多少走？你手上有 {VAR_2}。" />
+  <string id="gwp_dispatch_amount_invalid" text="填一个你真拿得出来的数目。" />
+  <string id="gwp_dispatch_word_title" text="让他们怎么说" />
+  <string id="gwp_dispatch_word_body" text="他们会交上账面 {VAR_2} 中的 {VAR_1}。余下的那部分，让他们怎么交代？" />
+  <string id="gwp_dispatch_word_truth" text="照实说" />
+  <string id="gwp_dispatch_word_lie" text="[撒谎] 就说他只拿得出这么多" />
+  <string id="gwp_common_confirm" text="确认" />
+  <string id="gwp_common_cancel" text="取消" />
+  <string id="gwp_dispatch_report_moot" text="你的人赶到时，这桩委托已经结清了。他们正把东西原样带回来。" />
+  <string id="gwp_bounty_case_is_yours" text="这宗案子归你了。需要人手，派个人去向灰袍求援。" />
+  <string id="gwp_support_no_responder" text="眼下没有腾得出手的灰袍领主来接这个请求。" />
+  <string id="gwp_bounty_intel_lost" text="【侦情】探子跟丢了，这一次没有目击可报。" />
+  <string id="gwp_case_withdrawn_result" text="那个人早就够不着了。公库付你 {VAR_1} 第纳尔，算这趟的花销。委托结清。" />
+  <string id="gwp_case_report_withdrawn_summary" text="我们这边已经得到消息，那个人够不着了。你说一声，我把你的花销结了。" />
+  <string id="gwp_case_close_withdrawn" text="那个人已经够不着了。结了这桩委托，把我的花销结一下。" />
+  <string id="gwp_case_owner_player" text="追踪情况：{VAR_1} | 当前阶段：已交由玩家承办" />
+  <string id="gwp_case_owner_player_supported" text="追踪情况：{VAR_1} | 支援：{VAR_2} | 当前阶段：{VAR_3}" />
+  <string id="gwp_dispatch_trouble_battle" text="有消息传来：你派出去的人被堵上了，正在交战。" />
+  <string id="gwp_dispatch_trouble_mauled" text="有消息传来：你派出去的人伤亡过半。" />
+  <string id="gwp_dispatch_trouble_starving" text="有消息传来：你派出去的人已经断粮。" />
 </strings>
 </base>

@@ -554,9 +554,13 @@ namespace GreyWardenPolicePurity
                 villageName = fallbackVillageName;
             }
 
-            if (!string.IsNullOrWhiteSpace(hero.StringId) && !string.IsNullOrWhiteSpace(villageName))
+            // net472 的 string.IsNullOrWhiteSpace 没有 NotNullWhen 标注，可空流分析
+            // 传不过这道判断，因此这里显式取一个非空局部变量。
+            string? heroId = hero.StringId;
+            string? origin = villageName;
+            if (!string.IsNullOrWhiteSpace(heroId) && !string.IsNullOrWhiteSpace(origin))
             {
-                _adoptionOrigins[hero.StringId] = villageName;
+                _adoptionOrigins[heroId!] = origin!;
             }
 
             _lastAdoptionTimeHours = CampaignTime.Now.ToHours;

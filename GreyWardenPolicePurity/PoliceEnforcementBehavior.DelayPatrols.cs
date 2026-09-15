@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -416,6 +416,7 @@ namespace GreyWardenPolicePurity
             PoliceTask task, MobileParty targetParty,
             LocalStrengthDeclarationSnapshot? declaration)
         {
+            if (PlayerBountyBehavior.AwaitingSupportRequest(task) || PlayerBountyBehavior.IsReservedTarget(targetParty)) return;
             bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
@@ -864,6 +865,9 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
+                if (PlayerBountyBehavior.AwaitingSupportRequest(CrimeState.GetTask(state.SourceTaskPolicePartyId))
+                    || PlayerBountyBehavior.IsReservedTarget(MobileParty.All.FirstOrDefault(p => p.StringId == state.TargetPartyId)))
+                    state.Returning = true;
                 if (!state.Returning &&
                     !eligibleTargetIds.Contains(state.TargetPartyId) &&
                     !IsActivePlayerBountyInterceptor(state, policeClan))
@@ -938,7 +942,7 @@ namespace GreyWardenPolicePurity
             PoliceTask? task = CrimeState.GetTask(
                 state.SourceTaskPolicePartyId);
             MobileParty? offender = task?.TargetCrime?.Offender;
-            if (task?.IsPlayerBountyEscort != true || !task.WarDeclared ||
+            if (PlayerBountyBehavior.AwaitingSupportRequest(task) || task?.IsPlayerBountyEscort != true || !task.WarDeclared ||
                 task.TargetCrime?.HasOpenCase != true ||
                 offender?.IsActive != true || offender.IsMainParty ||
                 offender.Party == null ||

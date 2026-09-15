@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -775,6 +775,29 @@ namespace GreyWardenPolicePurity
 
         private static string BuildAssignmentText(CrimeRecord record, PoliceTask? task)
         {
+            // 玩家接了这宗案子，卷宗上的主理人就是玩家。求援之后到场的那名灰袍是支援，
+            // 不是主理人——虽然内部仍由他的任务驱动行动，档案上要按职责如实写。
+            if (PlayerBountyBehavior.IsCaseHeldByPlayer(record.OffenderHeroId))
+            {
+                string commissioner = Hero.MainHero?.Name?.ToString() ??
+                    GwpText.Get("{=gwp_gwpcasearchivescreen_017}Player");
+                MobileParty? supporter = task?.IsPlayerBountyEscort == true
+                    ? MobileParty.All.FirstOrDefault(candidate => string.Equals(
+                        candidate.StringId, task.PolicePartyId, StringComparison.OrdinalIgnoreCase))
+                    : null;
+                if (supporter == null)
+                    return GwpText.Get(
+                        "{=gwp_case_owner_player}Tracking: {VAR_1} | Stage: commissioned to the player",
+                        "VAR_1", commissioner);
+                string supporterName = supporter.LeaderHero?.Name?.ToString() ??
+                                       supporter.Name?.ToString() ??
+                                       GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                return GwpText.Get(
+                    "{=gwp_case_owner_player_supported}Tracking: {VAR_1} | Supporting: {VAR_2} | Stage: {VAR_3}",
+                    "VAR_1", commissioner, "VAR_2", supporterName,
+                    "VAR_3", DescribeTaskStage(task!));
+            }
+
             if (task == null)
                 return GwpText.Get("{=gwp_gwpcasearchivescreen_013}Tracking: unassigned");
 
@@ -807,7 +830,7 @@ namespace GreyWardenPolicePurity
         private static string DescribeTaskStage(PoliceTask task)
         {
             if (task.IsPlayerBountyEscort)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_018}bounty escort");
+                return GwpText.Get("{=gwp_gwpcasearchivescreen_018}supporting the commissioned player");
             if (task.IsEscortingPlayer)
                 return GwpText.Get("{=gwp_gwpcasearchivescreen_019}escort after arrest");
             if (task.IsPreparingDispatch)

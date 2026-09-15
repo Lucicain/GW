@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -107,7 +107,9 @@ namespace GreyWardenPolicePurity
 
         public bool IsOffenderValid() => Offender?.IsActive == true;
         public bool IsOffenderPursuable() =>
-            HasOpenCase && Offender?.IsActive == true && Offender.CurrentSettlement == null;
+            HasOpenCase && Offender?.IsActive == true && Offender.CurrentSettlement == null
+            // 玩家接手的案子由玩家承办，灰袍不再自行派人；支援另由求援送达后明确指派。
+            && !PlayerBountyBehavior.IsCaseHeldByPlayer(OffenderHeroId);
     }
 
     /// <summary>
@@ -464,7 +466,10 @@ namespace GreyWardenPolicePurity
 
             foreach (CrimeRecord record in openCases
                          .Where(record => record.CrimeId != PlayerCrimeId &&
-                                          !assignedCrimeIds.Contains(record.CrimeId))
+                                          !assignedCrimeIds.Contains(record.CrimeId) &&
+                                          // 玩家正在办的案子没有承办队伍，但绝不能被挤出案件池，
+                                          // 否则他的委托会凭空作废。
+                                          !PlayerBountyBehavior.IsCaseHeldByPlayer(record.OffenderHeroId))
                          .OrderBy(record => record.LastCrimeTime.ToHours)
                          .ThenBy(record => record.CrimeId, StringComparer.OrdinalIgnoreCase)
                          .Take(removeCount).ToList())
@@ -626,6 +631,26 @@ namespace GreyWardenPolicePurity
 
             crime.HasOpenCase = false;
             return _ledger.Remove(crime.CrimeId);
+        }
+
+        /// <summary>
+        /// 玩家已经把这个人办了，但还欠灰袍一份汇报。案子留在册上——玩家可能还要向他
+        /// 追缴罚金——但灰袍不再自己去追他。和关案不同：卷宗不销，只是没人承办。
+        /// </summary>
+        public static IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId)
+        {
+            var released = new List<PoliceTask>();
+            if (string.IsNullOrWhiteSpace(offenderHeroId)) return released;
+
+            foreach (var pair in _tasks
+                         .Where(kv => string.Equals(kv.Value.TargetCrime?.OffenderHeroId,
+                             offenderHeroId, StringComparison.OrdinalIgnoreCase))
+                         .ToList())
+            {
+                released.Add(pair.Value);
+                _tasks.Remove(pair.Key);
+            }
+            return released;
         }
 
         public static PoliceTask? GetTask(string policePartyId)

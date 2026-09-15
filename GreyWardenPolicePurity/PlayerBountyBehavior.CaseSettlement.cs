@@ -18,9 +18,9 @@ namespace GreyWardenPolicePurity
         private int _assignedCaseFine;
         private int _assignedCaseStanding;
         private string _pendingPrisonerHeroId = string.Empty;
-        private GwpFieldFineBarterable? _casePayment;
+        private GwpAssetPayment? _casePayment;
         private bool _casePaymentOpen;
-        private bool _casePaymentWithPrisoner;
+        private int _caseSubmitted = -1;
         private int CaseAmountDue => Math.Max(_assignedCaseFine, Math.Max(_pendingPrisonerAssessed, Reports?.TotalAssessed ?? 0));
         private float _caseCheckElapsed;
         private TaleWorlds.CampaignSystem.MapEvents.MapEvent? _caseBattleToReconcile;
@@ -28,16 +28,58 @@ namespace GreyWardenPolicePurity
         private string _cachedCaseHeroId = string.Empty;
         private Hero? _cachedCaseHero;
 
+        // ---- 本案办案结果。抓到人只是其中一种，不是唯一一种 ----
+        /// <summary>玩家参战、本案目标在败方：执法达成，哪怕人跑了。</summary>
+        private bool _caseTargetDefeated;
+        /// <summary>本案已经和平了结过——缴清罚金，或兑现了谈成的处置。</summary>
+        private bool _casePeacefullyResolved;
+        /// <summary>本案目标实际交到玩家手里的钱，用来判断之后再动手算不算过度执法。</summary>
+        private int _caseCashCollectedFromTarget;
+        /// <summary>同一宗案子的执法成功只登记一次震慑。</summary>
+        private string _caseDeterrenceRegisteredId = string.Empty;
+        /// <summary>案子在玩家手上被别人了结了：没有罚金可交、没有人可押，只剩一笔辛苦费。</summary>
+        private bool _caseClosedElsewhere;
+        internal bool IsCaseClosedElsewhere => _caseClosedElsewhere;
+        /// <summary>击败之后不再让期限把这宗案子作废，玩家仍可回去交差。</summary>
+        internal bool HasCompletedEnforcement => _caseTargetDefeated || _casePeacefullyResolved;
+
+        /// <summary>
+        /// 玩家接了这宗案子，他就是这宗案子的主理人。在他交差之前，灰袍不再自行派人
+        /// 承办这个罪犯——别人该去干别的事。只有玩家求援送达之后，才由
+        /// <see cref="AssignSupportResponder"/> 明确指派一名灰袍领主接手支援。
+        /// </summary>
+        internal static bool IsCaseHeldByPlayer(string? offenderHeroId)
+        {
+            if (string.IsNullOrWhiteSpace(offenderHeroId)) return false;
+            var current = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            return current != null && current.HasBountyTask
+                && string.Equals(current._activeBountyTargetHeroId, offenderHeroId,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>本案办成之后，把灰袍从这宗案子上撤下来，并解除护送关系。</summary>
+        private void ReleaseWardensAfterEnforcement()
+        {
+            PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
+            StopBountyEscortAfterTargetDefeat();
+            // 执法已经完成，这场因案件而起的战争也到此为止；玩家若还想追缴罚金，
+            // 和平反而是他能开口的前提。接案前就有的战争不在此列。
+            MakePeaceWithCriminalFaction();
+        }
+
         private GwpFieldReportLedger? Reports => GwpFieldReportLedger.Instance;
         private bool HasFieldBusinessToSettle => Reports?.HasPendingReports == true || _pendingPrisonerAssessed > 0;
-        private bool IsCaseClerk => IsOrdinaryGreyWardenLordConversation()
-            || IsBountyCollectionCourier(MobileParty.ConversationParty);
+        private bool IsCaseClerk => IsOrdinaryGreyWardenLordConversation();
         internal bool IsCommissionTarget(Hero? hero) => HasBountyTask && hero != null
             && hero.StringId == _activeBountyTargetHeroId;
+        internal int ExpectedCaseFee => CalculateCaseFee(CaseAmountDue);
+        internal bool CanOfferFieldGrace => IsTrackingBountyTarget && _activeBountyDeadlineHours - CampaignTime.Now.ToHours >= 72d;
+        internal void RecordFieldGrace(string message) => _activeQuest?.WriteLog(message);
         internal bool HasCommissionAuthority(Hero? hero) => _recruitmentAccepted && IsCommissionTarget(hero);
         internal void NotifyCaseCombatStarting(Hero? offender)
         {
             if (!IsCommissionTarget(offender)) return;
+            if (offender != null) Reports?.RecordBetrayal(offender.StringId);
             IFaction? ours = Hero.MainHero?.MapFaction;
             IFaction? theirs = offender?.MapFaction;
             // A war already under way before this encounter is not caused by this arrest.
@@ -76,8 +118,19 @@ namespace GreyWardenPolicePurity
                 Hero? target = CaseHero;
                 if (target == null || target.StringId != _caseBattleHeroId || !HasBountyTask) return;
                 if (target.IsPrisoner && target.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party)
-                    Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                        ?.RegisterPlayerCompletedCase(battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
+                {
+                    RegisterCaseDeterrence(battle, target, countAsArrest: true);
+                }
+                else if (_caseTargetDefeated)
+                {
+                    // 击溃他的部队本身就是惩戒的目的。人跑掉是结果的一种，不是失败。
+                    RegisterCaseDeterrence(battle, target, countAsArrest: false);
+                    string message = GwpText.Get("{=gwp_case_defeat_recorded}You broke {VAR_1} in the field. Go and make your report.",
+                        "VAR_1", target.Name.ToString());
+                    _activeQuest?.WriteLog(message);
+                    try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+                    InformationManager.DisplayMessage(new InformationMessage(message, Colors.Green));
+                }
                 else if (!target.IsDead)
                 {
                     string message = GwpText.Get("{=gwp_case_capture_missed}The offender is not in your custody. The commission remains open: pursue him again or settle the fine with the Wardens. Any money already collected must still be reported.");
@@ -85,6 +138,283 @@ namespace GreyWardenPolicePurity
                     InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
                 }
             }
+        }
+
+        /// <summary>
+        /// 记录一次本案的执法结果：战场上打垮、押走，或和平了结。同一宗案子只登记一次，
+        /// 之后亲自交差、派人送信都不会重复加分。押走才算一次被捕，其余不动拘捕履历。
+        /// </summary>
+        private void RegisterCaseDeterrence(
+            TaleWorlds.CampaignSystem.MapEvents.MapEvent? battle, Hero? target, bool countAsArrest)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(target.StringId)) return;
+            string key = target.StringId + "|" + (_activeQuest?.StringId ?? _activeBountyTargetId ?? string.Empty);
+            if (string.Equals(_caseDeterrenceRegisteredId, key, StringComparison.Ordinal)) return;
+            _caseDeterrenceRegisteredId = key;
+
+            var deterrence = Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>();
+            if (deterrence == null) return;
+            if (countAsArrest) deterrence.RegisterPlayerCompletedCase(
+                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
+            else deterrence.RegisterPlayerEnforcementSuccess(
+                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
+            GwpAiDiagnostics.WriteFieldArrest("CASE_DETERRENCE_REGISTERED",
+                "offender=" + target.StringId + "; countAsArrest=" + countAsArrest
+                + "; battle=" + (battle != null));
+        }
+
+        /// <summary>
+        /// 战斗结束后登记本案结果。打赢了就是打赢了，人有没有落到手里是另一件事。
+        /// 已经缴过罚金或兑现过处置的人再被打垮，另外记一笔过度执法待查。
+        /// </summary>
+        internal void NotifyCaseBattleOutcome(Hero? target, bool playerWon, bool targetOnLosingSide)
+        {
+            if (target == null || !IsCommissionTarget(target)) return;
+            if (!playerWon || !targetOnLosingSide)
+            {
+                GwpAiDiagnostics.WriteFieldArrest("CASE_BATTLE_OUTCOME",
+                    "offender=" + target.StringId + "; playerWon=" + playerWon
+                    + "; targetOnLosingSide=" + targetOnLosingSide + "; defeated=False");
+                return;
+            }
+
+            bool first = !_caseTargetDefeated;
+            _caseTargetDefeated = true;
+            if (first) ReleaseWardensAfterEnforcement();
+            int alreadySettled = Math.Max(_caseCashCollectedFromTarget,
+                Reports?.PendingReceivedFor(target.StringId) ?? 0);
+            if (_casePeacefullyResolved || alreadySettled > 0)
+                Reports?.RecordExcessEnforcement(target.StringId,
+                    Math.Max(alreadySettled, GwpTuning.Enforcement.FinePerPoint));
+            GwpAiDiagnostics.WriteFieldArrest("CASE_BATTLE_OUTCOME",
+                "offender=" + target.StringId + "; defeated=True; first=" + first
+                + "; alreadySettled=" + alreadySettled
+                + "; peacefullyResolved=" + _casePeacefullyResolved);
+        }
+
+        /// <summary>和平了结：缴清罚金，或兑现谈成的处置。执法成功，但没有人被押走。</summary>
+        internal void NotifyCasePeacefullyResolved(Hero? target, int collectedFine)
+        {
+            if (target == null || !IsCommissionTarget(target)) return;
+            bool firstResolution = !_casePeacefullyResolved;
+            _casePeacefullyResolved = true;
+            _caseCashCollectedFromTarget += Math.Max(0, collectedFine);
+            // 震慑由野外执法那一侧统一登记（GwpFieldArrestBehavior.RegisterFieldEnforcement），
+            // 那条路同时覆盖有委托和没委托的情形；这里再记一次就是重复。
+            _caseDeterrenceRegisteredId = target.StringId + "|" +
+                (_activeQuest?.StringId ?? _activeBountyTargetId ?? string.Empty);
+            if (firstResolution) ReleaseWardensAfterEnforcement();
+        }
+
+        private void SyncCaseOutcomeData(IDataStore dataStore) =>
+            GwpLoadFaultWatch.Guard("BOUNTY_CASE_OUTCOME_SYNC", () => SyncCaseOutcomeFields(dataStore));
+
+        /// <summary>
+        /// 本案结果整体存成一个字符串。原来的五个独立键里有一个在读档时抛
+        /// InvalidCastException（见 GreyWarden-Faults.log 的 BOUNTY_CASE_OUTCOME_SYNC），
+        /// 而它后面的 `_supportRequested` 因此永远没有被读回来——支援状态每次读档都丢，
+        /// 表现为"求援过了，灰袍却又不认"。一个键、一种类型，就不会再有这种半途失败。
+        /// </summary>
+        private string _caseOutcomeState = string.Empty;
+
+        private void SyncCaseOutcomeFields(IDataStore dataStore)
+        {
+            if (dataStore.IsSaving) _caseOutcomeState = SerializeCaseOutcome();
+            dataStore.SyncData("gwp_case_outcome_state", ref _caseOutcomeState);
+            if (!dataStore.IsLoading) return;
+
+            if (!string.IsNullOrEmpty(_caseOutcomeState))
+            {
+                DeserializeCaseOutcome(_caseOutcomeState!);
+                return;
+            }
+            ReadLegacyCaseOutcome(dataStore);
+        }
+
+        private string SerializeCaseOutcome() => string.Join(";",
+            _caseTargetDefeated ? "1" : "0",
+            _casePeacefullyResolved ? "1" : "0",
+            _supportRequested ? "1" : "0",
+            _caseCashCollectedFromTarget.ToString(
+                System.Globalization.CultureInfo.InvariantCulture),
+            _caseClosedElsewhere ? "1" : "0",
+            _caseDeterrenceRegisteredId ?? string.Empty);
+
+        private void DeserializeCaseOutcome(string state)
+        {
+            string[] parts = state.Split(new[] { ';' }, 6);
+            _caseTargetDefeated = parts.Length > 0 && parts[0] == "1";
+            _casePeacefullyResolved = parts.Length > 1 && parts[1] == "1";
+            _supportRequested = parts.Length > 2 && parts[2] == "1";
+            _caseCashCollectedFromTarget = parts.Length > 3 &&
+                int.TryParse(parts[3], System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out int cash)
+                ? Math.Max(0, cash) : 0;
+            _caseClosedElsewhere = parts.Length > 4 && parts[4] == "1";
+            _caseDeterrenceRegisteredId = parts.Length > 5 ? parts[5] ?? string.Empty : string.Empty;
+        }
+
+        /// <summary>
+        /// 旧存档里的五个分键。逐个读、逐个兜住：其中一个坏掉不能再把后面的一起带走，
+        /// 并且把出问题的键名写进故障日志，好确认到底是哪一个。
+        /// </summary>
+        private void ReadLegacyCaseOutcome(IDataStore dataStore)
+        {
+            _caseTargetDefeated = ReadLegacyFlag(dataStore, "gwp_case_target_defeated");
+            _casePeacefullyResolved = ReadLegacyFlag(dataStore, "gwp_case_peacefully_resolved");
+            _supportRequested = ReadLegacyFlag(dataStore, "gwp_case_support_requested");
+            GwpLoadFaultWatch.Guard("LEGACY_gwp_case_cash_from_target", () =>
+            {
+                int cash = 0;
+                dataStore.SyncData("gwp_case_cash_from_target", ref cash);
+                _caseCashCollectedFromTarget = Math.Max(0, cash);
+            });
+            GwpLoadFaultWatch.Guard("LEGACY_gwp_case_deterrence_key", () =>
+            {
+                string key = string.Empty;
+                dataStore.SyncData("gwp_case_deterrence_key", ref key);
+                _caseDeterrenceRegisteredId = key ?? string.Empty;
+            });
+        }
+
+        private static bool ReadLegacyFlag(IDataStore dataStore, string key)
+        {
+            int value = 0;
+            GwpLoadFaultWatch.Guard("LEGACY_" + key, () => dataStore.SyncData(key, ref value));
+            return value != 0;
+        }
+
+        /// <summary>
+        /// 案子在玩家手上被别人了结了。对 NPC 来说案子就此消失，他去接下一宗；玩家忙了
+        /// 半天不能只收到一句"委托取消"。委托转入交差状态，他可以亲自去、也可以派人去
+        /// 向灰袍复命，领一笔按实际出力算的辛苦费。不记震慑，不扣声望，不编造缴款。
+        /// </summary>
+        private void WithdrawCommissionClosedElsewhere(CrimeRecord? crime, Hero? hero)
+        {
+            _caseClosedElsewhere = true;
+            _pendingPrisonerAssessed = 0;
+            _pendingPrisonerHeroId = string.Empty;
+            // 已经从他手里收到过钱的话，那笔钱照样要上缴——人没了不等于账没了。
+            // 只有确实一分没收时，才把应缴清零，走"只领辛苦费"那条路。
+            if (Reports?.HasPendingReports != true) _assignedCaseFine = 0;
+            if (crime != null) CrimePool.CloseCaseSettledInField(crime);
+            PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
+            StopBountyEscortAfterTargetDefeat();
+            MakePeaceWithCriminalFaction();
+
+            EnterBountyCollectionState();
+            _activeBountyDeadlineHours = -1d;
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+
+            string message = GwpText.Get(
+                "{=gwp_case_closed_elsewhere}{VAR_1} is beyond your reach now. The commission is void. Report to any Grey Warden lord, or send a man.",
+                "VAR_1", hero?.Name?.ToString() ?? _activeBountyTargetName ?? string.Empty);
+            _activeQuest?.WriteLog(GwpText.Create(message));
+            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
+            GwpAiDiagnostics.WriteFieldArrest("CASE_WITHDRAWN_CLOSED_ELSEWHERE",
+                "offender=" + (_activeBountyTargetHeroId ?? "-") +
+                "; dead=" + (hero?.IsDead == true) + "; prisoner=" + (hero?.IsPrisoner == true) +
+                "; crimeGone=" + (crime == null) + "; casualties=" + _bountyPlayerCasualties);
+        }
+
+        /// <summary>
+        /// 案子被别人了结，而且玩家手上一分钱、一个人都没有。这时才只剩一笔辛苦费；
+        /// 收过钱就仍然要正常上缴，只是差额全免。
+        /// </summary>
+        private bool HasNothingLeftToSettle =>
+            _caseClosedElsewhere && CaseAmountDue <= 0 && !HasFieldBusinessToSettle;
+
+        /// <summary>白跑一趟的辛苦费：按底薪加实际阵亡算，不含按罪责严重度给的那一段。</summary>
+        private int WithdrawnCaseCompensation() =>
+            GwpCaseSettlementRules.WithdrawnCaseCompensation(_bountyPlayerCasualties);
+
+        #region 派人复命
+
+        /// <summary>还有帐要交、或者还有人要押走，才值得派一趟。</summary>
+        internal bool CanDispatchCaseReport => HasBountyTask && CaseHero != null
+            && (HasNothingLeftToSettle || CaseAmountDue > 0 || CanDeliverCasePrisoner());
+        internal int CaseReportAmountDue => CaseAmountDue;
+
+        /// <summary>这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。</summary>
+        internal bool IsDeliverableCasePrisoner(Hero? hero) =>
+            hero != null && CanDeliverCasePrisoner() && hero == CaseHero;
+
+        /// <summary>
+        /// 派出去的队伍替玩家交了差。判定口径和玩家亲自去完全一样：足额或交人算完美，
+        /// 真穷和已经打垮都不罚玩家，撒谎照样单独查账。办案费交到使者手上带回来。
+        /// </summary>
+        /// <returns>
+        /// 交到使者手上的办案费，由他带回来；委托已经不在（玩家自己交过、或案子被撤）
+        /// 时返回 -1。这笔钱不直接进玩家口袋——使者在路上出事就跟着没了。
+        /// </returns>
+        internal int CompleteDispatchedCaseReport(int deliveredCash, bool falseReport,
+            bool prisonerDelivered, PartyBase? receiver)
+        {
+            if (!HasBountyTask || CaseHero == null || Reports == null) return -1;
+            GwpFieldReportLedger ledger = Reports;
+            int due = CaseAmountDue;
+
+            if (prisonerDelivered && _pendingPrisonerAssessed > 0)
+            {
+                int prisonerFee = CalculateCaseFee(_pendingPrisonerAssessed);
+                ledger.ResolveByPrisoner(_pendingPrisonerHeroId, Math.Max(0, deliveredCash));
+                int paidPrisonerFee = PoliceResourceManager.WithdrawFromJudicialTreasury(prisonerFee);
+                GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_PRISONER",
+                    "delivered=" + deliveredCash + "; fee=" + paidPrisonerFee
+                    + "; receiver=" + (receiver?.Id.ToString() ?? "-"));
+                FinishDispatchedReport(paidPrisonerFee);
+                return paidPrisonerFee;
+            }
+
+            if (HasNothingLeftToSettle)
+            {
+                int compensation = PoliceResourceManager.WithdrawFromJudicialTreasury(
+                    WithdrawnCaseCompensation());
+                GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_WITHDRAWN_CASE",
+                    "offender=" + (_activeBountyTargetHeroId ?? "-") + "; compensation=" + compensation);
+                FinishDispatchedReport(compensation);
+                return compensation;
+            }
+            // 玩家代表灰袍。对方最后交得出多少不是他的过失，办案费按整案算，不按实收封顶。
+            int fee = CalculateCaseFee(due);
+            ledger.DeclareAmount(deliveredCash, truthful: !falseReport);
+            int paidFee = PoliceResourceManager.WithdrawFromJudicialTreasury(fee);
+            GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_CASH",
+                "due=" + due + "; delivered=" + deliveredCash + "; truthful=" + !falseReport
+                + "; fee=" + paidFee);
+            FinishDispatchedReport(paidFee);
+            return paidFee;
+        }
+
+        /// <summary>
+        /// 和当面交差走同一条收尾：关案、结束任务、恢复和平。差别只在酬劳不是
+        /// 当场进玩家口袋，而是由使者带回来。
+        /// </summary>
+        private void FinishDispatchedReport(int fee)
+        {
+            var openCrime = CrimePool.LedgerRecords.FirstOrDefault(r =>
+                r.HasOpenCase && r.OffenderHeroId == _activeBountyTargetHeroId);
+            if (openCrime != null) CrimePool.CloseCaseSettledInField(openCrime);
+            _activeQuest?.SucceedQuest();
+            MakePeaceWithCriminalFaction();
+            GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_COMPLETED",
+                "fee=" + fee + "; offender=" + _activeBountyTargetHeroId);
+            ClearBountyTaskState();
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                "{=gwp_dispatch_report_done}Your men have made the report. The commission is closed; they are bringing {VAR_1} denars home to you.",
+                "VAR_1", fee), Colors.Green));
+        }
+
+        #endregion
+
+        private void ClearCaseOutcomeState()
+        {
+            _caseTargetDefeated = false;
+            _casePeacefullyResolved = false;
+            _caseClosedElsewhere = false;
+            _caseOutcomeState = string.Empty;
+            _caseCashCollectedFromTarget = 0;
+            _caseDeterrenceRegisteredId = string.Empty;
         }
 
         private void ReconcileAssignedCase()
@@ -110,14 +440,15 @@ namespace GreyWardenPolicePurity
                 return;
             }
             if (!IsTrackingBountyTarget) return;
-            if (hero.IsDead || crime == null)
+
+            // 普通案件在承办队那边靠 IsTargetValid / IsOffenderPursuable 自动结案：罪犯
+            // 死了、被别人拿下了、部队没了，案子就消失，那名灰袍去接下一宗。玩家自己
+            // 承办，没有承办队替他做这件事，所以这里按同一套判据替他判。
+            bool offenderGone = hero.IsDead || hero.IsPrisoner || crime == null ||
+                crime.Offender?.IsActive != true;
+            if (offenderGone)
             {
-                // Other Wardens may settle this case while the player is travelling.
-                // Such a closure does not invent a payment or a prisoner for the player.
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_closed_elsewhere}The assigned case is no longer open. The commission is withdrawn without a payment or standing penalty."), Colors.Yellow));
-                _activeQuest?.CancelCommission();
-                EndBountyTaskState(tryRestorePeace: true);
+                WithdrawCommissionClosedElsewhere(crime, hero);
                 return;
             }
             if (hero.PartyBelongedTo?.IsActive == true)
@@ -169,28 +500,21 @@ namespace GreyWardenPolicePurity
             starter.AddPlayerLine("gwp_case_report_lord", "lord_talk_speak_diplomacy_2", "gwp_case_report_ask",
                 GwpText.Get("{=gwp_case_report_open}I have come to report on the commission."),
                 () => IsCaseClerk && HasBountyTask, null, 102);
-            starter.AddPlayerLine("gwp_case_report_courier", "gwp_bounty_courier_player", "gwp_case_report_ask",
-                GwpText.Get("{=gwp_case_report_open}I have come to report on the commission."), null, null);
             starter.AddDialogLine("gwp_case_report_ask", "gwp_case_report_ask", "gwp_case_report_options",
                 "{GWP_CASE_REPORT_SUMMARY}", PrepareCaseReportSummary, null);
-            starter.AddPlayerLine("gwp_case_pay_full", "gwp_case_report_options", "gwp_case_report_receipt",
-                "{GWP_CASE_FULL_PAYMENT}", PrepareFullPaymentOption, PayCaseInFull);
-            starter.AddPlayerLine("gwp_case_pay_truth", "gwp_case_report_options", "gwp_case_report_receipt",
-                "{GWP_CASE_TRUE_PAYMENT}", PrepareTruthfulPaymentOption, PayTruthfulShortfall);
-            starter.AddPlayerLine("gwp_case_pay_false", "gwp_case_report_options", "gwp_case_barter_open",
-                GwpText.Get("{=gwp_case_false_payment}[Lie] This is all I collected. Let me show you the account."),
-                () => HasBountyTask && CaseAmountDue > 0, () => _casePaymentWithPrisoner = false);
-            starter.AddPlayerLine("gwp_case_false_zero", "gwp_case_report_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_false_zero}[Lie] I collected nothing. Enter that in the account."),
-                () => HasBountyTask && CaseAmountDue > 0, () => CompleteCashReport(0, true));
+            starter.AddPlayerLine("gwp_case_pay_any", "gwp_case_report_options", "gwp_case_barter_open",
+                GwpText.Get("{=gwp_case_pay_any}I will hand over money or goods. Let us count them."),
+                () => HasBountyTask && CaseAmountDue > 0 && _caseSubmitted < 0, null);
+            starter.AddPlayerLine("gwp_case_close_withdrawn", "gwp_case_report_options", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_close_withdrawn}He is beyond reach. Close the commission and settle my expenses."),
+                () => HasBountyTask && HasNothingLeftToSettle, CompleteWithdrawnCaseReport, 120);
+            starter.AddPlayerLine("gwp_case_pay_zero", "gwp_case_report_options", "gwp_case_short_question",
+                GwpText.Get("{=gwp_case_pay_zero}I have nothing to hand over."),
+                () => HasBountyTask && !HasNothingLeftToSettle && _caseSubmitted < 0, () => _caseSubmitted = 0);
+            starter.AddPlayerLine("gwp_case_resume_report", "gwp_case_report_options", "gwp_case_short_question",
+                GwpText.Get("{=gwp_case_resume_report}About the shortfall in what I handed over..."), () => _caseSubmitted >= 0, null);
             starter.AddPlayerLine("gwp_case_deliver_prisoner", "gwp_case_report_options", "gwp_case_report_receipt",
-                "{GWP_CASE_PRISONER_PAYMENT}", PreparePrisonerPaymentOption, () => DeliverCasePrisoner(false));
-            starter.AddPlayerLine("gwp_case_prisoner_hide", "gwp_case_report_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_prisoner_hide}[Lie] Here is the prisoner. I took no money from him."),
-                () => CanDeliverCasePrisoner() && Reports?.TotalReceived > 0, () => DeliverCasePrisoner(true));
-            starter.AddPlayerLine("gwp_case_prisoner_partial", "gwp_case_report_options", "gwp_case_barter_open",
-                GwpText.Get("{=gwp_case_prisoner_partial}[Lie] Take the prisoner and the money I have listed here."),
-                () => CanDeliverCasePrisoner() && Reports?.TotalReceived > 0, () => _casePaymentWithPrisoner = true);
+                GwpText.Get("{=gwp_case_deliver_prisoner}The offender is here. Take him into your custody."), CanDeliverCasePrisoner, DeliverCasePrisoner);
             starter.AddPlayerLine("gwp_case_legacy_reward", "gwp_case_report_options", "gwp_case_report_receipt",
                 GwpText.Get("{=gwp_case_legacy_reward}Settle the payment promised under the old warrant."),
                 () => IsWaitingForBountyCollection && !_fieldCaseContract && !HasFieldBusinessToSettle,
@@ -199,10 +523,18 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_case_report_later}I am not ready to hand it over yet."), null, LeaveCaseClerk);
             starter.AddDialogLine("gwp_case_barter_open", "gwp_case_barter_open", "gwp_case_barter_result",
                 GwpText.Get("{=gwp_case_barter_count}Put the money here. Let us count it."), null, OpenCasePayment);
+            starter.AddDialogLine("gwp_case_barter_short", "gwp_case_barter_result", "gwp_case_short_options",
+                GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."),
+                () => CasePaymentAccepted() && _casePayment!.Paid < CaseAmountDue, CommitCasePayment, 110);
             starter.AddDialogLine("gwp_case_barter_accepted", "gwp_case_barter_result", "gwp_case_receipt_ack",
-                GwpText.Get("{=gwp_case_barter_accepted}We have counted the money. Your report will be entered."),
-                () => _casePaymentOpen && _casePayment?.Applied == true && Campaign.Current.BarterManager.LastBarterIsAccepted,
-                CommitCasePayment);
+                GwpText.Get("{=gwp_case_barter_accepted}We have counted the payment. Your report will be entered."),
+                CasePaymentAccepted, () => { CommitCasePayment(); FinishSubmittedCase(false); });
+            starter.AddDialogLine("gwp_case_short_question", "gwp_case_short_question", "gwp_case_short_options",
+                GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."), null, null);
+            starter.AddPlayerLine("gwp_case_short_truth", "gwp_case_short_options", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_short_truth}I will explain exactly what I received and why I did not bring the rest."), null, () => FinishSubmittedCase(false));
+            starter.AddPlayerLine("gwp_case_short_lie", "gwp_case_short_options", "gwp_case_report_receipt",
+                GwpText.Get("{=gwp_case_short_lie}[Lie] This was all he could pay. I kept nothing."), null, () => FinishSubmittedCase(true));
             starter.AddDialogLine("gwp_case_barter_cancelled", "gwp_case_barter_result", "gwp_case_report_options",
                 GwpText.Get("{=gwp_case_barter_cancelled}Nothing has been entered. We can count it again when you are ready."),
                 null, () => {
@@ -215,47 +547,14 @@ namespace GreyWardenPolicePurity
                 "{GWP_CASE_REPORT_RESULT}", null, LeaveCaseClerk);
         }
 
-        private bool PrepareFullPaymentOption()
-        {
-            MBTextManager.SetTextVariable("GWP_CASE_FULL_PAYMENT", GwpText.Get(
-                "{=gwp_case_full_payment}Here is the full {VAR_1} denars. Settle the account.", "VAR_1", CaseAmountDue));
-            return HasBountyTask && CaseAmountDue > 0 && Hero.MainHero.Gold >= CaseAmountDue;
-        }
-
-        private bool PrepareTruthfulPaymentOption()
-        {
-            int received = Reports?.TotalReceived ?? 0;
-            MBTextManager.SetTextVariable("GWP_CASE_TRUE_PAYMENT", GwpText.Get(
-                "{=gwp_case_true_payment}I collected {VAR_1} denars, and I am handing over all of it. I could not obtain the rest.", "VAR_1", received));
-            return Reports?.HasPendingReports == true && received < CaseAmountDue && !CanDeliverCasePrisoner()
-                && Hero.MainHero.Gold >= received;
-        }
-
-        private bool PreparePrisonerPaymentOption()
-        {
-            int cash = Reports?.TotalReceived ?? 0;
-            MBTextManager.SetTextVariable("GWP_CASE_PRISONER_PAYMENT", cash > 0
-                ? GwpText.Get("{=gwp_case_prisoner_cash}Here is the prisoner, and the {VAR_1} denars I already took from him.", "VAR_1", cash)
-                : GwpText.Get("{=gwp_case_deliver_prisoner}The offender is here. Take him into your custody."));
-            return CanDeliverCasePrisoner() && Hero.MainHero.Gold >= cash;
-        }
-
-        private void PayCaseInFull()
-        {
-            int due = CaseAmountDue;
-            if (!HasBountyTask || due <= 0 || Hero.MainHero.Gold < due) return;
-            if (PoliceResourceManager.DepositFieldFine(due) == due) CompleteCashReport(due, false);
-        }
-
-        private void PayTruthfulShortfall()
-        {
-            int cash = Reports?.TotalReceived ?? 0;
-            if (Reports?.HasPendingReports != true || Hero.MainHero.Gold < cash) return;
-            if (PoliceResourceManager.DepositFieldFine(cash) == cash) CompleteCashReport(cash, false);
-        }
-
         private bool PrepareCaseReportSummary()
         {
+            if (HasNothingLeftToSettle)
+            {
+                MBTextManager.SetTextVariable("GWP_CASE_REPORT_SUMMARY", GwpText.Get(
+                    "{=gwp_case_report_withdrawn_summary}We have word that the man is beyond reach. Say the word and I will settle your expenses."));
+                return true;
+            }
             int due = CaseAmountDue;
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_SUMMARY", GwpText.Get(
                 "{=gwp_case_report_summary}The account lists {VAR_1} denars. Have you brought the fines, or the prisoner? If any money is missing, tell me why.", "VAR_1", due > 0 ? due : _pendingPrisonerAssessed));
@@ -274,9 +573,9 @@ namespace GreyWardenPolicePurity
             if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask || CaseAmountDue <= 0) return;
             try
             {
-                _casePayment = new GwpFieldFineBarterable(treasurer, _casePaymentWithPrisoner ? Reports?.TotalReceived ?? 0 : CaseAmountDue);
+                _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseAmountDue);
                 _casePaymentOpen = true;
-                GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_OPEN", "assessed=" + CaseAmountDue + "; received=" + Reports?.TotalReceived + "; prisoner=" + _casePaymentWithPrisoner);
+                GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_OPEN", "assessed=" + CaseAmountDue + "; received=" + Reports?.TotalReceived);
                 BarterManager manager = Campaign.Current.BarterManager;
                 // The native context initializer selects entries; it does NOT filter
                 // the normal trading catalogue. Remove those entries before the VM
@@ -286,11 +585,11 @@ namespace GreyWardenPolicePurity
                 {
                     manager.BarterBegin = data =>
                     {
-                        data.GetBarterables().RemoveAll(entry => !ReferenceEquals(entry, _casePayment));
+                        _casePayment.PrepareCatalogue(data);
                         original?.Invoke(data);
                     };
                     manager.StartBarterOffer(Hero.MainHero, treasurer,
-                        MobileParty.MainParty.Party, clerk, null, CasePaymentContext, 0, false, new[] { _casePayment });
+                        MobileParty.MainParty.Party, clerk, null, CasePaymentContext, 0, false, _casePayment.Entries);
                 }
                 finally { manager.BarterBegin = original; }
             }
@@ -302,7 +601,7 @@ namespace GreyWardenPolicePurity
         }
 
         private bool CasePaymentContext(Barterable barterable, BarterData data, object obj) =>
-            ReferenceEquals(barterable, _casePayment);
+            false;
 
         private void CommitCasePayment()
         {
@@ -311,30 +610,55 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_ACCEPTED", "applied=" + (_casePayment?.Applied == true) + "; paid=" + paid);
             _casePaymentOpen = false;
             _casePayment = null;
-            if (_casePaymentWithPrisoner) DeliverCasePrisoner(true, paid);
-            else CompleteCashReport(paid, true);
+            _caseSubmitted = Math.Max(0, _caseSubmitted) + paid;
+        }
+
+        private bool CasePaymentAccepted() => _casePaymentOpen && _casePayment?.Applied == true
+            && Campaign.Current.BarterManager.LastBarterIsAccepted;
+        private void FinishSubmittedCase(bool lie)
+        {
+            if (_caseSubmitted < 0) return;
+            int delivered = _caseSubmitted;
+            CompleteCashReport(delivered, lie);
+            _caseSubmitted = -1;
         }
 
         private void CompleteCashReport(int delivered, bool falseReport)
         {
             if (!HasBountyTask || CaseHero == null || Reports == null) return;
             GwpFieldReportLedger ledger = Reports;
+            if (HasNothingLeftToSettle)
+            {
+                CompleteWithdrawnCaseReport();
+                return;
+            }
             int due = CaseAmountDue;
-            if (!ledger.HasPendingReports)
-                ledger.RecordSettlement(CaseHero, due, 0, Math.Max(0, due - _assignedCaseStanding * GwpTuning.Enforcement.FinePerPoint), false);
-            int legitimateGap = ledger.LegitimatePovertyShortfall;
-            int fee = CalculateCaseFee(Math.Min(Math.Max(0, delivered), due));
-            if (falseReport) ledger.DeclareFalseAmount(delivered);
-            else ledger.DeclareAmount(delivered, truthful: true);
-            GwpAiDiagnostics.WriteFieldArrest("REPORT_CASH", "due=" + due + "; delivered=" + delivered + "; falseReport=" + falseReport);
+            int received = ledger.TotalReceived;
+            // 玩家代表灰袍办这宗案子。第二层谈成什么条件、对方最后只交得出多少，都不算他的
+            // 过失——办案费按整案算，不按实收封顶，也不再有"差额扣声望"这回事。
+            int fee = CalculateCaseFee(due);
+            ledger.DeclareAmount(delivered, truthful: !falseReport);
+            GwpAiDiagnostics.WriteFieldArrest("REPORT_CASH", "due=" + due + "; delivered=" + delivered
+                + "; receivedFromOffender=" + received + "; truthful=" + !falseReport);
             int paidFee = PoliceResourceManager.PayFromJudicialTreasury(fee);
             FinishCaseReport(paidFee);
-            if (!falseReport && delivered < due)
-                MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                    legitimateGap >= due - delivered
-                        ? "{=gwp_case_truthful_poor_result}The {VAR_1} denars are entered. His unpaid debt remains against him; you are not penalized. Your expenses are {VAR_2} denars. The commission is concluded."
-                        : "{=gwp_case_truthful_gap_result}The {VAR_1} denars are entered. The unjustified shortfall is recorded against your commission. Your expenses are {VAR_2} denars. The commission is concluded.",
-                    "VAR_1", delivered, "VAR_2", paidFee));
+            if (delivered >= received) return;
+            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
+                "{=gwp_case_report_kept_result}The {VAR_1} denars are entered. Your expenses are {VAR_2} denars. The commission is concluded.",
+                "VAR_1", delivered, "VAR_2", paidFee));
+        }
+
+        /// <summary>白跑一趟的结案：只付辛苦费，不查账、不扣分、不动震慑。</summary>
+        private void CompleteWithdrawnCaseReport()
+        {
+            int paid = PoliceResourceManager.PayFromJudicialTreasury(WithdrawnCaseCompensation());
+            GwpAiDiagnostics.WriteFieldArrest("REPORT_WITHDRAWN_CASE",
+                "offender=" + (_activeBountyTargetHeroId ?? "-") +
+                "; casualties=" + _bountyPlayerCasualties + "; compensation=" + paid);
+            FinishCaseReport(paid);
+            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
+                "{=gwp_case_withdrawn_result}The man was already beyond reach. The treasury covers {VAR_1} denars for your trouble. The commission is closed.",
+                "VAR_1", paid));
         }
 
         private int CalculateCaseFee(int cap) => GwpCaseSettlementRules.Reward(cap,
@@ -348,55 +672,28 @@ namespace GreyWardenPolicePurity
                 && prisoner.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party;
         }
 
-        private void DeliverCasePrisoner(bool conceal, int prepaid = 0)
+        private void DeliverCasePrisoner()
         {
-            if (!CanDeliverCasePrisoner()) { RefundPrisonerPrepayment(prepaid); return; }
+            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
+            if (!CanDeliverCasePrisoner()) return;
             Hero prisoner = CaseHero!;
-            int cash = conceal ? 0 : Reports?.TotalReceived ?? 0;
-            if (Hero.MainHero.Gold < cash)
-            {
-                MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                    "{=gwp_case_cash_with_prisoner}You also collected {VAR_1} denars from this offender. Bring that money with the prisoner so both can be handed over together.", "VAR_1", cash));
-                return;
-            }
             PartyBase? receiver = MobileParty.ConversationParty?.Party
                 ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
                 ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party;
-            if (receiver == null || receiver == MobileParty.MainParty.Party)
-            {
-                RefundPrisonerPrepayment(prepaid);
-                MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
-                return;
-            }
+            if (receiver == null || receiver == MobileParty.MainParty.Party) return;
             try
             {
                 TransferPrisonerAction.Apply(prisoner.CharacterObject, MobileParty.MainParty.Party, receiver);
-                if (prisoner.PartyBelongedToAsPrisoner != receiver) { RefundPrisonerPrepayment(prepaid); return; }
-                PoliceResourceManager.DepositFieldFine(cash);
+                if (prisoner.PartyBelongedToAsPrisoner != receiver) return;
                 int fee = CalculateCaseFee(_pendingPrisonerAssessed);
-                // A paid-then-captured target may have both a cash report and a prisoner.
-                // Delivering the man replaces that report; it cannot pay twice.
-                Reports?.ResolveByPrisoner(prisoner.StringId, cash + prepaid);
+                Reports?.ResolveByPrisoner(prisoner.StringId, Math.Max(0, _caseSubmitted));
                 FinishCaseReport(PoliceResourceManager.PayFromJudicialTreasury(fee));
             }
             catch (Exception ex)
             {
-                if (prisoner.PartyBelongedToAsPrisoner == MobileParty.MainParty.Party)
-                    RefundPrisonerPrepayment(prepaid);
                 GwpAiDiagnostics.WriteFieldArrest("REPORT_PRISONER_FAILED", ex.ToString());
                 MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get("{=gwp_case_transfer_failed}We cannot take custody here. Keep the prisoner and report to another Warden party."));
             }
-        }
-
-        private void RefundPrisonerPrepayment(int amount)
-        {
-            if (amount > 0)
-            {
-                int refunded = PoliceResourceManager.PayFromJudicialTreasury(amount);
-                GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_REFUNDED", "paid=" + amount + "; refunded=" + refunded);
-            }
-            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                "{=gwp_case_transfer_retry}The delivery could not be completed; the money has been returned. Keep the prisoner and funds and report to another Warden lord."));
         }
 
         private void FinishCaseReport(int reward)
@@ -409,19 +706,15 @@ namespace GreyWardenPolicePurity
             if (!_fieldCaseContract && reward > 0) Hero.MainHero.ChangeHeroGold(reward);
             _activeQuest?.SucceedQuest();
             MakePeaceWithCriminalFaction();
-            MobileParty? courier = IsBountyCollectionCourier(MobileParty.ConversationParty) ? MobileParty.ConversationParty : null;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_COMPLETED", "reward=" + reward + "; offender=" + _activeBountyTargetHeroId);
-            ClearBountyTaskState(courier);
+            ClearBountyTaskState();
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
                 "{=gwp_case_report_complete}Your report is entered. The treasury has paid {VAR_1} denars in expenses. This commission is concluded.", "VAR_1", reward));
         }
 
         private void LeaveCaseClerk()
         {
-            MobileParty? courier = MobileParty.ConversationParty;
-            if (!IsWaitingForBountyCollection && IsBountyCollectionCourier(courier))
-                CloseBountyCollectionCourierEncounterAndReturn(courier);
-            else if (PlayerEncounter.Current != null) PlayerEncounter.LeaveEncounter = true;
+            if (PlayerEncounter.Current != null) PlayerEncounter.LeaveEncounter = true;
         }
     }
 }

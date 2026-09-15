@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox;
@@ -85,9 +85,14 @@ namespace GreyWardenPolicePurity
         {
             ClearPendingSparring();
             ClearPostBoutConversation();
-            starter.AddDialogLine("gwp_case_duel_post_win", "start", "gwp_case_duel_post_reply",
-                GwpText.Get("{=gwp_case_duel_post_win}You won. As agreed, I have handed over what I can pay toward the fine."),
+            starter.AddDialogLine("gwp_case_duel_post_win", "start", "gwp_case_duel_collect_options",
+                GwpText.Get("{=gwp_case_duel_post_win}You won. I accept it. Inspect my property and let us settle the fine as agreed."),
                 () => _postBoutWasEnforcement && IsFieldPostBoutWinConversation(), null, 280);
+            starter.AddPlayerLine("gwp_case_duel_collect", "gwp_case_duel_collect_options", "gwp_fa_settled",
+                GwpText.Get("{=gwp_duel_inspect_property}Show me your property. We will settle the fine now."), null,
+                () => Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>()?.PrepareDuelPropertyCollection());
+            starter.AddPlayerLine("gwp_case_duel_collect_later", "gwp_case_duel_collect_options", "close_window",
+                GwpText.Get("{=gwp_duel_collect_later}I will collect it later."), null, null);
             starter.AddDialogLine("gwp_case_duel_post_loss", "start", "gwp_case_duel_post_reply",
                 GwpText.Get("{=gwp_case_duel_post_loss}You lost. As agreed, you collect no fine from me today."),
                 () => _postBoutWasEnforcement && (IsFieldPostBoutLossConversation() || IsFieldPostBoutRuleViolationConversation()), null, 280);

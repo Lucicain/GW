@@ -1,7 +1,9 @@
-﻿using System;
+﻿using System.Linq;
+using System;
 using System.Collections.Generic;
 using GreyWardenPolicePurity;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core;
 
 internal static class Program
 {
@@ -38,97 +40,163 @@ internal static class Program
         var cancelled = new GwpFieldCollectionBarterable(offender, party, 1200);
         Equal(false, cancelled.Applied, "opening or cancelling has no receipt");
 
+        GwpTuning.FieldArrest.ImmediateAuditTesting = false;
+        // ================= 上缴与查账（2026-09-15 新口径） =================
+        // 玩家代表灰袍办案：对方交得出多少不算他的过失，只要把收到的钱如实上缴就算办妥。
+        // 唯一会出事的是私留——手里收了多少、交上来多少，差额就是昧下的钱，排进查账。
+        GwpTuning.FieldArrest.ImmediateAuditTesting = false;
         var ledger = new GwpFieldReportLedger();
-        CrimePool.GetOrCreateHistory(offender).NegativeStanding = 4;
-        ledger.RecordSettlement(offender, 2400, 600, 1200, true);
-        int before = GwpRuntimeState.Player.Reputation;
-        Equal(0, ledger.DeclareAmount(600, truthful: true), "truthful genuine poverty is exempt");
-        Equal(before, GwpRuntimeState.Player.Reputation, "poor offender does not penalize hunter");
-        Equal(4, CrimePool.GetOrCreateHistory(offender).NegativeStanding, "unpaid offender standing remains");
-        Equal(0, ledger.PendingAuditGap, "truthful short payment is not a false report");
-        Equal(false, ledger.HasPendingReports, "truthful poverty hand-in closes report");
-        ledger.RecordSettlement(offender, 2400, 300, 1200, true);
-        Equal(0, ledger.DeclareAmount(300, true), "discretionary collection from genuinely poor offender stays truthful");
-        ledger.RecordSettlement(offender, 2400, 600, 1200, true);
-        ledger.DeclareFalseAmount(300);
-        Equal(300, ledger.PendingAuditGap, "only concealed money audited for genuinely poor offender");
-        ledger.ResolveAudit(offender.StringId, 0f);
-        Equal(before - 1, GwpRuntimeState.Player.Reputation, "caught concealment costs exact difference standing");
-        ledger.ResolveAudit(offender.StringId, 0f);
-        Equal(before - 1, GwpRuntimeState.Player.Reputation, "same audit cannot charge twice");
-        ledger.RecordSettlement(offender, 2400, 1200, 1200, false);
-        Equal(4, ledger.DeclareAmount(1200, true), "rich offender's reduced deal is not poverty exemption");
-        ledger.RecordSettlement(offender, 2400, 600, 1200, true);
-        Equal(0, ledger.DeclareAmount(2400, true), "player may cover full fine from own money");
-        Equal(0, CrimePool.GetOrCreateHistory(offender).NegativeStanding, "top-up clears covered standing");
 
-        ledger.RecordSettlement(offender, 2400, 1200, 1200, false);
-        ledger.DeclareFalseAmount(600);
         ledger.RecordSettlement(offender, 2400, 600, 1200, true);
-        ledger.DeclareAmount(600, true);
-        Equal(1800, ledger.PendingAuditGap, "later truthful report cannot erase earlier false one");
-        var save = new MemoryStore(true); ledger.SyncData(save);
-        var loaded = new GwpFieldReportLedger(); loaded.SyncData(save.Load());
-        Equal(1800, loaded.PendingAuditGap, "audit gap survives save");
-        before = GwpRuntimeState.Player.Reputation;
-        loaded.RegisterEvents();
-        CampaignTime.Now = new CampaignTime { ToHours = 24 * 6 };
-        CampaignEvents.DailyTickEvent.Fire();
-        Equal(1800, loaded.PendingAuditGap, "audit does not run before scheduled day");
-        CampaignTime.Now = new CampaignTime { ToHours = 24 * 7 };
-        TaleWorlds.Core.MBRandom.RandomFloat = 0f;
-        CampaignEvents.DailyTickEvent.Fire();
-        Equal(before - 6, GwpRuntimeState.Player.Reputation, "scheduled discovery applies one difference penalty");
-        Equal(0, loaded.PendingAuditGap, "completed audit removed");
-        loaded.RecordSettlement(offender, 2400, 1200, 1200, false);
-        loaded.DeclareFalseAmount(0);
-        before = GwpRuntimeState.Player.Reputation;
-        loaded.ResolveAudit(offender.StringId, 0.99f);
-        Equal(before, GwpRuntimeState.Player.Reputation, "failed audit draw does not penalize");
-        Equal(0, loaded.PendingAuditGap, "single audit chance is not eventual guaranteed discovery");
+        Equal(0, ledger.DeclareAmount(600, truthful: true), "handing over everything collected is never penalised");
+        Equal(0, ledger.PendingAuditGap, "an honest full hand-in queues no audit");
+        Equal(false, ledger.HasPendingReports, "a hand-in closes the report");
+        Equal(0, ledger.RecentLieCount, "an honest hand-in is not remembered as a lie");
 
-        loaded.RecordSettlement(offender, 2400, 2400, 1200, false);
-        loaded.ResolveByPrisoner(offender.StringId, 0);
-        Equal(2400, loaded.PendingAuditGap, "prisoner cannot erase prior cash collection");
-        loaded.ResolveAudit(offender.StringId, 0.99f);
-        loaded.RecordSettlement(offender, 2400, 2400, 1200, false);
-        loaded.ResolveByPrisoner(offender.StringId, 2400);
-        Equal(0, loaded.PendingAuditGap, "prisoner and full received cash leave no concealed gap");
-        loaded.RecordSettlement(offender, 2400, 0, 1200, false, 360);
-        var receiptSave = new MemoryStore(true); loaded.SyncData(receiptSave);
-        var restored = new GwpFieldReportLedger(); restored.SyncData(receiptSave.Load());
-        Equal(360, restored.TotalReceived, "private bribe receipt survives save");
-        restored.ResolveByPrisoner(offender.StringId, 60);
-        Equal(300, restored.PendingAuditGap, "private money also accountable after prisoner delivery");
-        restored.ResolveByPrisoner(offender.StringId, 0);
-        Equal(300, restored.PendingAuditGap, "repeated prisoner receipt does not duplicate debt");
+        ledger.RecordSettlement(offender, 2400, 300, 1200, false);
+        Equal(0, ledger.DeclareAmount(300, truthful: true), "a small collection from a rich offender is still not the player's fault");
+        Equal(0, ledger.PendingAuditGap, "nothing was kept, so nothing is audited");
 
-        var deposit = new GwpFieldFineBarterable(clerk, 2400) { CurrentAmount = 1200 };
-        before = Hero.MainHero.Gold;
-        Equal(0, deposit.GetUnitValueForFaction(clerk.Clan), "fine does not produce native gift-overpay credit");
-        deposit.Apply(); deposit.Apply();
-        Equal(before - 1200, Hero.MainHero.Gold, "hand-in transfers once");
-        Equal(1200, deposit.Paid, "hand-in amount recorded exactly");
-        Hero.MainHero.Gold = 75;
-        var capped = new GwpFieldFineBarterable(clerk, 2400) { CurrentAmount = 2400 }; capped.Apply();
-        Equal(75, capped.Paid, "hand-in bounded by current wallet");
-        Equal(0, Hero.MainHero.Gold, "hand-in cannot overdraw wallet");
-        Equal(880, GwpCaseSettlementRules.Reward(2400, 0, 4), "existing expense scale retained");
-        Equal(600, GwpCaseSettlementRules.Reward(600, 30, 4), "expenses capped by delivered cash");
-        GwpTuning.FieldArrest.ImmediateAuditTesting = true;
-        var immediate = new GwpFieldReportLedger();
-        immediate.RecordSettlement(offender, 2400, 2400, 1200, false);
-        before = GwpRuntimeState.Player.Reputation;
-        immediate.DeclareFalseAmount(1071);
-        Equal(before - 4, GwpRuntimeState.Player.Reputation, "test audit immediately discovers 1329 concealed denars");
-        Equal(0, immediate.PendingAuditGap, "immediate audit cannot recur later");
-        immediate.RecordSettlement(offender, 2400, 600, 1200, true);
-        before = GwpRuntimeState.Player.Reputation;
-        immediate.DeclareAmount(600, true);
-        Equal(before, GwpRuntimeState.Player.Reputation, "immediate audit preserves genuine poverty exemption");
-        immediate.RecordSettlement(offender, 2400, 2400, 1200, false);
-        immediate.ResolveByPrisoner(offender.StringId, 0);
-        Equal(before - 8, GwpRuntimeState.Player.Reputation, "prisoner concealment also discovered at hand-in");
+        ledger.RecordSettlement(offender, 2400, 1000, 1200, false);
+        ledger.DeclareAmount(400, truthful: false);
+        Equal(600, ledger.PendingAuditGap, "only the money kept back is audited");
+        Equal(1, ledger.RecentLieCount, "a false report is remembered");
+
+        // 索贿照样放行：只要那笔钱如实进了公库。
+        var bribes = new GwpFieldReportLedger();
+        bribes.RecordSettlement(offender, 2400, 0, 1200, false, 900);
+        Equal(0, bribes.DeclareAmount(900, truthful: true), "a bribe handed over in full is not punished");
+        Equal(0, bribes.PendingAuditGap, "a fully surrendered bribe queues no audit");
+        bribes.RecordSettlement(offender, 2400, 0, 1200, false, 900);
+        bribes.DeclareAmount(300, truthful: false);
+        Equal(600, bribes.PendingAuditGap, "a bribe kept back is audited like any other concealment");
+
+        // 被查出来的概率：谎报越多越高，声望越高越低，并被上下限夹住。
+        var odds = new GwpFieldReportLedger();
+        GwpRuntimeState.Player.Reputation = 0;
+        float clean = odds.CurrentAuditChance();
+        Equal(true, clean > 0.34f && clean < 0.36f, "a clean record audits at the base chance");
+        for (int i = 0; i < 4; i++) { odds.RecordSettlement(offender, 1000, 500, 0, false); odds.DeclareAmount(0, truthful: false); }
+        Equal(4, odds.RecentLieCount, "recent lies are counted");
+        Equal(true, odds.CurrentAuditChance() > clean, "recent lies raise the chance of being found out");
+        GwpRuntimeState.Player.Reputation = 20;
+        Equal(true, odds.CurrentAuditChance() < 0.55f, "standing buys some trust back");
+        GwpRuntimeState.Player.Reputation = -50;
+        Equal(true, odds.CurrentAuditChance() <= 0.95f, "the chance is capped");
+        GwpRuntimeState.Player.Reputation = 500;
+        Equal(true, odds.CurrentAuditChance() >= 0.05f, "the chance has a floor");
+        GwpRuntimeState.Player.Reputation = 0;
+
+        // 谎报记录只保留最近十次。
+        var memory = new GwpFieldReportLedger();
+        for (int i = 0; i < 12; i++) { memory.RecordSettlement(offender, 1000, 500, 0, false); memory.DeclareAmount(500, truthful: true); }
+        Equal(0, memory.RecentLieCount, "an unbroken honest streak leaves no lies on record");
+        for (int i = 0; i < 12; i++) { memory.RecordSettlement(offender, 1000, 500, 0, false); memory.DeclareAmount(0, truthful: false); }
+        Equal(10, memory.RecentLieCount, "only the last ten reports are remembered");
+
+        // 收了钱又动手：独立查一次，与私留各判各的。
+        var excess = new GwpFieldReportLedger();
+        Equal(false, excess.HasPendingExcessEnforcement(offender.StringId), "no excess before any settlement");
+        excess.RecordExcessEnforcement(offender.StringId, 1200);
+        Equal(true, excess.HasPendingExcessEnforcement(offender.StringId), "breaking a man who already paid is recorded");
+        excess.ResolveExcessAudit(offender.StringId, 0.99f);
+        Equal(false, excess.HasPendingExcessEnforcement(offender.StringId), "an undiscovered review closes without a penalty");
+        excess.RecordExcessEnforcement(offender.StringId, 1200);
+        var excessSave = new MemoryStore(true); excess.SyncData(excessSave);
+        var excessLoaded = new GwpFieldReportLedger(); excessLoaded.SyncData(excessSave.Load());
+        Equal(true, excessLoaded.HasPendingExcessEnforcement(offender.StringId), "a pending review survives save and load");
+        excessLoaded.ResolveExcessAudit(offender.StringId, 0f);
+        Equal(false, excessLoaded.HasPendingExcessEnforcement(offender.StringId), "a discovered review settles once");
+        excessLoaded.RecordExcessEnforcement(offender.StringId, 0);
+        Equal(false, excessLoaded.HasPendingExcessEnforcement(offender.StringId), "nothing to answer for when nothing was paid");
+
+        // 谎报记录随存档往返。
+        var honesty = new GwpFieldReportLedger();
+        honesty.RecordSettlement(offender, 1000, 800, 0, false);
+        honesty.DeclareAmount(100, truthful: false);
+        var honestySave = new MemoryStore(true); honesty.SyncData(honestySave);
+        var honestyLoaded = new GwpFieldReportLedger(); honestyLoaded.SyncData(honestySave.Load());
+        Equal(1, honestyLoaded.RecentLieCount, "the lie record survives save and load");
+
+        // ---- 案子被别人了结：辛苦费仍按底薪加阵亡算 ----
+        Equal(400, GwpCaseSettlementRules.WithdrawnCaseCompensation(0),
+            "a withdrawn case still pays the base expense");
+        Equal(700, GwpCaseSettlementRules.WithdrawnCaseCompensation(5),
+            "casualties are compensated on a withdrawn case");
+        Equal(400, GwpCaseSettlementRules.WithdrawnCaseCompensation(-3),
+            "negative casualties cannot reduce the expense");
+        Equal(true, GwpCaseSettlementRules.WithdrawnCaseCompensation(3)
+            < GwpCaseSettlementRules.Reward(int.MaxValue, 3, 4),
+            "a withdrawn case pays less than bringing the man in");
+
+        // ================= 财物交付：GwpAssetPayment =================
+        // 2026-09-15 重写：上一轮改写账本测试时误删了这一段，按生产代码重建覆盖。
+        var payFrom = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        var payTo = new TaleWorlds.CampaignSystem.Party.PartyBase();
+        var horse = new ItemObject { Value = 400 };
+        var grain = new ItemObject { Value = 20 };
+        payFrom.ItemRoster.AddToCounts(new EquipmentElement { Item = horse }, 2);
+        payFrom.ItemRoster.AddToCounts(new EquipmentElement { Item = grain }, 10);
+        Hero.MainHero.Gold = 1000;
+        Hero clerkHero = new Hero("clerk2", 5000);
+
+        var pay = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, 2400, 2400);
+        Equal(1000 + 2 * 400 + 10 * 20, pay.Available, "available wealth counts purse plus goods at item value");
+        Equal(false, pay.Applied, "opening the table transfers nothing");
+        Equal(0, pay.Paid, "nothing is receipted before a commit");
+
+        var suggestion = pay.SuggestedOffer();
+        Equal(true, suggestion.Count > 0, "an auto offer is produced for a solvent payer");
+        int suggested = 0;
+        foreach (var entry in suggestion)
+        {
+            entry.Key.CurrentAmount = entry.Value;
+            entry.Key.SetIsOffered(true);
+            suggested += entry.Key is TaleWorlds.CampaignSystem.BarterSystem.Barterables.ItemBarterable item
+                ? entry.Value * Math.Max(1, item.ItemRosterElement.EquipmentElement.ItemValue)
+                : entry.Value;
+        }
+        Equal(true, suggested <= 2400, "the auto offer never exceeds the amount owed");
+        Equal(true, pay.Valid, "the auto offer is a valid selection");
+
+        // 超过上限的选择不能提交，也不能转走任何东西。
+        var over = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, 500, 500);
+        var overMoney = over.Entries[0];
+        overMoney.CurrentAmount = 900; overMoney.SetIsOffered(true);
+        Equal(false, over.Valid, "an offer above the ceiling is invalid");
+        int goldBefore = Hero.MainHero.Gold;
+        over.Entries.Last().Apply();
+        Equal(false, over.Applied, "an invalid selection cannot be committed");
+        Equal(goldBefore, Hero.MainHero.Gold, "a rejected selection moves no money");
+
+        // 付不出的钱不能选。
+        var broke = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, 100000, 100000);
+        var brokeMoney = broke.Entries[0];
+        brokeMoney.CurrentAmount = Hero.MainHero.Gold + 1; brokeMoney.SetIsOffered(true);
+        Equal(false, broke.Valid, "a payer cannot offer more gold than he holds");
+
+        // 正常提交：钱与货各转一次，收据等于实际净额。
+        var commit = new GwpAssetPayment(Hero.MainHero, clerkHero, payFrom, payTo, 2400, 2400);
+        var commitMoney = commit.Entries[0];
+        commitMoney.CurrentAmount = 200; commitMoney.SetIsOffered(true);
+        var commitHorse = commit.Entries.OfType<TaleWorlds.CampaignSystem.BarterSystem.Barterables.ItemBarterable>()
+            .First(e => e.ItemRosterElement.EquipmentElement.Item == horse);
+        commitHorse.CurrentAmount = 1; commitHorse.SetIsOffered(true);
+        Equal(true, commit.Valid, "money plus one horse is within the ceiling");
+        int purseBefore = Hero.MainHero.Gold;
+        int horsesBefore = payFrom.ItemRoster.Where(e => e.EquipmentElement.Item == horse).Sum(e => e.Amount);
+        commit.Entries.Last().Apply();
+        Equal(true, commit.Applied, "a valid selection commits");
+        Equal(600, commit.Paid, "the receipt equals the value actually handed over");
+        Equal(purseBefore - 200, Hero.MainHero.Gold, "the offered money leaves the payer once");
+        Equal(horsesBefore - 1, payFrom.ItemRoster.Where(e => e.EquipmentElement.Item == horse).Sum(e => e.Amount),
+            "the offered horse leaves the payer inventory once");
+        Equal(1, payTo.ItemRoster.Where(e => e.EquipmentElement.Item == horse).Sum(e => e.Amount),
+            "the offered horse reaches the receiver once");
+        commit.Entries.Last().Apply();
+        Equal(600, commit.Paid, "committing twice does not double the receipt");
+        Equal(purseBefore - 200, Hero.MainHero.Gold, "committing twice does not move money twice");
+
         Console.WriteLine("PASS: " + checks + " production settlement/collection assertions (engine actors stubbed).");
     }
 }

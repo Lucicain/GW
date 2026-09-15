@@ -60,8 +60,6 @@ namespace GreyWardenPolicePurity
         // 本次追捕中玩家部队的阵亡，用于计算领主的抚恤部分。
         private int _bountyPlayerCasualties = 0;
         private double _activeBountyDeadlineHours = -1d;
-        private double _bountyCollectionStartedHours = -1d;
-        private string _bountyCollectionCourierReturnState = "";
         private string _activeBountyPlayerFactionId = null!;
         private bool _playerFactionWasAtWarWhenBountyAccepted = false;
         private bool _bountyTargetEncounterStarted = false;
@@ -187,6 +185,7 @@ namespace GreyWardenPolicePurity
             if (!isBountyTarget)
                 return;
 
+            NotifyCasePeacefullyResolved(offender, collectedFine);
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
             StopBountyEscortAfterTargetDefeat();
@@ -241,18 +240,17 @@ namespace GreyWardenPolicePurity
         {
             _activeBountyTargetId = null!;
             _waitingForCollection = true;
-            _bountyCollectionStartedHours = CampaignTime.Now.ToHours;
         }
 
-        private void ClearBountyTaskState(MobileParty? preservedCollectionCourier = null)
+        private void ClearBountyTaskState()
         {
+            _supportRequested = false;
+            Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>()?.ClearFieldGrace();
             ReleaseEscortAi();
-            RecallBountyCollectionCouriers(preservedCollectionCourier);
             _escortPolicePartyId = null!;
             _waitingForCollection = false;
             _activeBountyReward = 0;
             _activeBountyDeadlineHours = -1d;
-            _bountyCollectionStartedHours = -1d;
             _activeBountyPlayerFactionId = null!;
             _playerFactionWasAtWarWhenBountyAccepted = false;
             _bountyTargetEncounterStarted = false;
@@ -261,12 +259,14 @@ namespace GreyWardenPolicePurity
             _fieldCaseContract = false;
             _assignedCaseFine = 0;
             _assignedCaseStanding = 0;
+            _caseSubmitted = -1;
             _pendingPrisonerHeroId = string.Empty;
             _pendingPrisonerAssessed = 0;
             _pendingFieldFine = 0;
             _pendingFieldFineAssessed = 0;
             _pendingFieldFineSeverity = 0;
             _bountyPlayerCasualties = 0;
+            ClearCaseOutcomeState();
         }
 
         private void EndBountyTaskState(bool tryRestorePeace)
@@ -279,6 +279,23 @@ namespace GreyWardenPolicePurity
         private void HandleBountyTimeout()
         {
             if (!HasBountyTask) return;
+
+            // 已经把人打垮或已经了结过的案子不因为期限作废——活已经干完了，
+            // 剩下的只是回去交差。期限只针对还没有任何结果的追捕。
+            if (HasCompletedEnforcement)
+            {
+                if (IsTrackingBountyTarget)
+                {
+                    EnterBountyCollectionState();
+                    _activeBountyDeadlineHours = -1d;
+                    StopBountyEscortAfterTargetDefeat();
+                    try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        GwpText.Get("{=gwp_bounty_contract_expired_but_done}The pursuit window has closed, but the man was already dealt with. Report to any Grey Warden lord."),
+                        Colors.Yellow));
+                }
+                return;
+            }
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_bounty_contract_timed_out}The bounty contract has expired. The pursuit is ended and any assigned Warden escort has been recalled."),
@@ -311,10 +328,13 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
+            dataStore.SyncData("gwp_case_support_requested", ref _supportRequested);
+            dataStore.SyncData("gwp_case_submitted_value", ref _caseSubmitted);
             dataStore.SyncData("gwp_case_contract", ref _fieldCaseContract);
             dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
             dataStore.SyncData("gwp_case_assigned_standing", ref _assignedCaseStanding);
             dataStore.SyncData("gwp_case_prisoner_id", ref _pendingPrisonerHeroId);
+            SyncCaseOutcomeData(dataStore);
             // ── 招募状态（用 int 存 bool，兼容性更好）────────────────────────────────
             int offeredInt  = _recruitmentOffered  ? 1 : 0;
             int acceptedInt = _recruitmentAccepted ? 1 : 0;
@@ -342,8 +362,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_bounty_player_casualties", ref _bountyPlayerCasualties);
             dataStore.SyncData("gwp_bounty_escort_party_id",  ref _escortPolicePartyId); // 护送警察部队 ID
             dataStore.SyncData("gwp_bounty_deadline_hours", ref _activeBountyDeadlineHours);
-            dataStore.SyncData("gwp_bounty_collection_started_hours", ref _bountyCollectionStartedHours);
-            dataStore.SyncData("gwp_bounty_collection_courier_return_state", ref _bountyCollectionCourierReturnState);
             dataStore.SyncData("gwp_bounty_player_faction_id", ref _activeBountyPlayerFactionId);
             dataStore.SyncData("gwp_bounty_player_was_at_war", ref playerWasAtWarInt);
             dataStore.SyncData("gwp_bounty_target_encounter_started", ref targetEncounterStartedInt);
@@ -362,9 +380,6 @@ namespace GreyWardenPolicePurity
                 _bountyTargetEncounterStarted = targetEncounterStartedInt != 0;
                 _activeBountyTargetName ??= "";
                 _activeBountyPlayerFactionId ??= "";
-                _bountyCollectionCourierReturnState ??= "";
-                if (!_waitingForCollection)
-                    _bountyCollectionStartedHours = -1d;
 
                 // 运行时状态读档时清零（不持久化）
                 _recruitmentPatrolId        = null!;
@@ -689,6 +704,8 @@ namespace GreyWardenPolicePurity
             if (player == null || !player.IsActive) return;
 
             // 跟随职责进入原版欲望拍卖；资源危急时允许先补给再回来。
+            // 求援成立与否只决定灰袍能否为这宗案子开战，不改变行动目的：
+            // 始终跟着玩家。罪犯由玩家去找，灰袍到场是为了和他一起打。
             GreyWardenPartyDesireBehavior.RequestEscort(escort, player, 8f);
         }
 
@@ -696,16 +713,40 @@ namespace GreyWardenPolicePurity
         /// 每2天向活跃任务日志追加一条侦察情报：护送警察的探子目击目标位置。
         /// 使用任务日志（不用 DisplayMessage），让玩家在任务界面自然获知敌人动向。
         /// </summary>
+        /// <summary>
+        /// 本案罪犯当前所在的部队。接案时记下的部队 ID 会随着他换队或重建部队失效，
+        /// 按 ID 找不到就以英雄本人为准重新解析并回写。普通案件用的是
+        /// <c>TargetCrime.Offender</c>，同样跟着英雄走，这里对齐它。
+        /// </summary>
+        private MobileParty? ResolveBountyTargetParty()
+        {
+            MobileParty? party = CaseHero?.PartyBelongedTo;
+            if (party?.IsActive != true && !string.IsNullOrEmpty(_activeBountyTargetId))
+                party = MobileParty.All.FirstOrDefault(candidate => candidate.IsActive &&
+                    string.Equals(candidate.StringId, _activeBountyTargetId,
+                        StringComparison.OrdinalIgnoreCase));
+            if (party?.IsActive != true) return null;
+            if (!string.Equals(_activeBountyTargetId, party.StringId, StringComparison.OrdinalIgnoreCase))
+                _activeBountyTargetId = party.StringId;
+            return party;
+        }
+
         private void UpdateIntelReport()
         {
             if (_activeQuest == null || !_activeQuest.IsOngoing) return;
             if ((CampaignTime.Now - _lastIntelReportTime).ToDays < GwpTuning.Bounty.IntelReportIntervalDays) return;
             _lastIntelReportTime = CampaignTime.Now;
 
-            // 目标当前位置
-            var target = MobileParty.All.FirstOrDefault(
-                p => p.StringId == _activeBountyTargetId && p.IsActive);
-            if (target == null) return;
+            MobileParty? target = ResolveBountyTargetParty();
+            if (target == null)
+            {
+                // 断了线也要说一句。原来是直接 return，任务界面一片安静，玩家只会以为
+                // 情报系统坏了。
+                _activeQuest.WriteLog(GwpText.Create(
+                    "{=gwp_bounty_intel_lost}[Investigation] The scouts have lost the trail. There is no sighting to report this time."));
+                return;
+            }
+
             Settlement? sightingSettlement = FindNearestSettlement(target.GetPosition2D);
             TextObject sightingLocation = sightingSettlement?.EncyclopediaLinkWithName ??
                                           GwpText.Create(
@@ -772,7 +813,6 @@ namespace GreyWardenPolicePurity
             UpdateEscortPatrol();
 
             // 完成后五日仍未交付时，由无领主灰袍结算队主动寻找玩家。
-            UpdateBountyCollectionCouriers();
 
             // 声望达标且尚未招募过 → 生成招募使者
             if (!_recruitmentOffered &&
@@ -831,8 +871,39 @@ namespace GreyWardenPolicePurity
                     if (party.Party == MobileParty.MainParty?.Party)
                         _bountyPlayerCasualties += Math.Max(0, party.DiedInBattle.TotalManCount);
 
+            RecordCaseBattleOutcome(mapEvent);
+
             // Native prisoner selection has not completed at this event. Reconcile
             // custody and deterrence together after the encounter returns to the map.
+        }
+
+        /// <summary>
+        /// 这一场谁赢了。灰袍惩戒罪犯本来就只有"把他打垮"这一招，所以玩家把本案
+        /// 目标打垮就是执法达成；人有没有被押走，是另一条账。
+        /// </summary>
+        private void RecordCaseBattleOutcome(MapEvent mapEvent)
+        {
+            if (!mapEvent.HasWinner || mapEvent.Winner == null) return;
+            MapEventSide? playerSide = FindMapEventSide(mapEvent, MobileParty.MainParty?.Party);
+            PartyBase? targetParty = CaseHero?.PartyBelongedTo?.Party
+                ?? MobileParty.All.FirstOrDefault(p =>
+                    !string.IsNullOrEmpty(_activeBountyTargetId) &&
+                    string.Equals(p.StringId, _activeBountyTargetId, StringComparison.OrdinalIgnoreCase))?.Party;
+            MapEventSide? targetSide = FindMapEventSide(mapEvent, targetParty);
+            if (playerSide == null || targetSide == null || playerSide == targetSide) return;
+
+            NotifyCaseBattleOutcome(CaseHero,
+                playerWon: mapEvent.Winner == playerSide,
+                targetOnLosingSide: mapEvent.Winner != targetSide);
+        }
+
+        private static MapEventSide? FindMapEventSide(MapEvent mapEvent, PartyBase? party)
+        {
+            if (party == null) return null;
+            foreach (MapEventSide side in new[] { mapEvent.AttackerSide, mapEvent.DefenderSide })
+                if (side != null && side.Parties.Any(entry => entry?.Party == party))
+                    return side;
+            return null;
         }
 
         #endregion

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.Conversation.MissionLogics;
@@ -14,6 +14,8 @@ namespace GreyWardenPolicePurity
 {
     internal sealed class GreyWardenFieldSparringMissionController : MissionLogic
     {
+        internal Agent? MarkerOpponent => _opponentAgent;
+
         private enum BoutPhase
         {
             NativeSpawning,
@@ -238,6 +240,7 @@ namespace GreyWardenPolicePurity
                          _opponent.CharacterObject))
             {
                 _opponentAgent = agent;
+                Mission.GetMissionBehavior<SandBox.Missions.MissionLogics.VisualTrackerMissionBehavior>()?.RegisterLocalOnlyObject(agent);
             }
 
             MakeAgentSafeForStaging(agent);
@@ -1347,12 +1350,8 @@ namespace GreyWardenPolicePurity
                     Agent.AIScriptedFrameFlags.NoAttack
                     | Agent.AIScriptedFrameFlags.DoNotRun
                     | Agent.AIScriptedFrameFlags.ConsiderRotation);
-                spectator.LookDirection = new Vec3(
-                    direction.x,
-                    direction.y,
-                    0f);
-                spectator.IsLookDirectionLocked = true;
-                spectator.SetMovementDirection(in direction);
+                // Let the native turn animation reach the requested facing.
+                spectator.IsLookDirectionLocked = false;
             }
 
             Debug.Print(
@@ -1592,6 +1591,8 @@ namespace GreyWardenPolicePurity
             FreezeSpectatorsForDuel();
             _playerAgent.DisableScriptedMovement();
             _opponentAgent.DisableScriptedMovement();
+            _opponentAgent.DisableScriptedCombatMovement();
+            _opponentAgent.SetScriptedFlags(Agent.AIScriptedFrameFlags.None);
             _playerAgent.MountAgent?.DisableScriptedMovement();
             _opponentAgent.MountAgent?.DisableScriptedMovement();
             _playerAgent.SetMaximumSpeedLimit(-1f, false);
@@ -1614,13 +1615,19 @@ namespace GreyWardenPolicePurity
             _opponentAgent.MountAgent?.SetMortalityState(
                 Agent.MortalityState.Mortal);
             _playerAgent.SetAutomaticTargetSelection(false);
-            _opponentAgent.SetAutomaticTargetSelection(false);
+            _opponentAgent.Controller = AgentControllerType.AI;
+            _opponentAgent.Formation = null;
+            _opponentAgent.SetLookAgent(null);
+            _opponentAgent.SetAutomaticTargetSelection(true);
             _playerAgent.SetTargetAgent(_opponentAgent);
             _opponentAgent.SetTargetAgent(_playerAgent);
             _opponentAgent.SetWatchState(Agent.WatchState.Alarmed);
             _playerAgent.WieldInitialWeapons();
             _opponentAgent.WieldInitialWeapons();
+            _opponentAgent.ForceAiBehaviorSelection();
 
+            GwpAiDiagnostics.WriteFieldArrest("DUEL_AI_START", "controller=" + _opponentAgent.Controller
+                + "; opponentTeam=" + _opponentAgent.Team?.TeamIndex + "; playerTeam=" + _playerAgent.Team?.TeamIndex);
             _phase = BoutPhase.Fighting;
             _phaseStartedAt = Mission.CurrentTime;
             MBInformationManager.AddQuickInformation(

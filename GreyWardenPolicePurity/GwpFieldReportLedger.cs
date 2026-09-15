@@ -28,6 +28,12 @@ namespace GreyWardenPolicePurity
             public bool OffenderWasBroke;
         }
 
+        private readonly Dictionary<string, double> _betrayalHours = new Dictionary<string, double>();
+        internal void RecordBetrayal(string id)
+        {
+            if (PendingReceivedFor(id) > 0 && !_betrayalHours.ContainsKey(id)) _betrayalHours[id] = CampaignTime.Now.ToHours;
+        }
+
         private readonly List<PendingReport> _pending = new List<PendingReport>();
 
         /// <summary>Outstanding audit gaps keyed by offender; legacy save identifiers are retained.</summary>
@@ -40,11 +46,35 @@ namespace GreyWardenPolicePurity
             Campaign.Current?.GetCampaignBehavior<GwpFieldReportLedger>();
 
         private readonly Dictionary<string, double> _auditDueHours = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>已经缴过罚金或兑现过处置，之后又被玩家打垮的人：每人记下当时已缴的数目。</summary>
+        private readonly Dictionary<string, int> _excessEnforcement =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, double> _excessDueHours =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>最近若干次委托的汇报是否属实，新的加在末尾。用来决定下次被查的概率。</summary>
+        private readonly List<int> _recentReportHonesty = new List<int>();
+
         public override void RegisterEvents() => CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, AuditDueReports);
 
 
-        public override void SyncData(IDataStore dataStore)
+        public override void SyncData(IDataStore dataStore) =>
+            GwpLoadFaultWatch.Guard("FIELD_REPORT_SYNC", () => SyncLedgerData(dataStore));
+
+        private void SyncLedgerData(IDataStore dataStore)
         {
+            List<string>? betrayalIds = dataStore.IsSaving ? _betrayalHours.Keys.ToList() : null;
+            List<double>? betrayalTimes = dataStore.IsSaving ? _betrayalHours.Values.ToList() : null;
+            dataStore.SyncData("gwp_betrayal_ids", ref betrayalIds);
+            dataStore.SyncData("gwp_betrayal_hours", ref betrayalTimes);
+            if (dataStore.IsLoading)
+            {
+                _betrayalHours.Clear();
+                if (betrayalIds != null && betrayalTimes != null)
+                    for (int i=0; i<Math.Min(betrayalIds.Count,betrayalTimes.Count); i++)
+                        _betrayalHours[betrayalIds[i]] = betrayalTimes[i];
+            }
             List<string>? ids = null;
             List<int>? assessed = null;
             List<int>? collected = null;
@@ -55,6 +85,9 @@ namespace GreyWardenPolicePurity
             List<string>? povertyIds = null;
             List<int>? povertyGaps = null;
             List<string>? povertyTrue = null;
+            List<string>? excessIds = null;
+            List<int>? excessAmounts = null;
+            List<double>? excessDue = null;
 
             if (dataStore.IsSaving)
             {
@@ -68,6 +101,11 @@ namespace GreyWardenPolicePurity
                 povertyGaps = _pendingAuditGaps.Values.ToList();
                 auditHours = povertyIds.Select(id => _auditDueHours.TryGetValue(id, out double due) ? due : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays).ToList();
                 povertyTrue = _legacyTruthfulClaims.ToList();
+                excessIds = _excessEnforcement.Keys.ToList();
+                excessAmounts = excessIds.Select(id => _excessEnforcement[id]).ToList();
+                excessDue = excessIds.Select(id => _excessDueHours.TryGetValue(id, out double due)
+                    ? due
+                    : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays).ToList();
             }
 
             dataStore.SyncData("gwp_report_ids", ref ids);
@@ -80,6 +118,16 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_report_poverty_ids", ref povertyIds);
             dataStore.SyncData("gwp_report_poverty_gaps", ref povertyGaps);
             dataStore.SyncData("gwp_report_poverty_true", ref povertyTrue);
+            dataStore.SyncData("gwp_report_excess_ids", ref excessIds);
+            dataStore.SyncData("gwp_report_excess_amounts", ref excessAmounts);
+            dataStore.SyncData("gwp_report_excess_due", ref excessDue);
+            List<int>? honesty = dataStore.IsSaving ? _recentReportHonesty.ToList() : null;
+            dataStore.SyncData("gwp_report_recent_honesty", ref honesty);
+            if (dataStore.IsLoading)
+            {
+                _recentReportHonesty.Clear();
+                if (honesty != null) _recentReportHonesty.AddRange(honesty);
+            }
 
             if (!dataStore.IsLoading) return;
 
@@ -110,6 +158,18 @@ namespace GreyWardenPolicePurity
                             ? auditHours[i] : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
                     }
 
+            _excessEnforcement.Clear();
+            _excessDueHours.Clear();
+            if (excessIds != null && excessAmounts != null)
+                for (int i = 0; i < Math.Min(excessIds.Count, excessAmounts.Count); i++)
+                    if (!string.IsNullOrWhiteSpace(excessIds[i]) && excessAmounts[i] > 0)
+                    {
+                        _excessEnforcement[excessIds[i]] = excessAmounts[i];
+                        _excessDueHours[excessIds[i]] = excessDue != null && i < excessDue.Count
+                            ? excessDue[i]
+                            : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
+                    }
+
             _legacyTruthfulClaims.Clear();
             if (povertyTrue != null)
                 foreach (string id in povertyTrue.Where(id => !string.IsNullOrWhiteSpace(id)))
@@ -136,6 +196,10 @@ namespace GreyWardenPolicePurity
                 OffenderWasBroke = offenderWasBroke
             });
 
+            // 犯人自己的账在这一刻就清，按他**实际交了多少**算。玩家之后交不交差、
+            // 交多少，是玩家与灰袍之间的事，不该再回头影响犯人已经受过的惩戒。
+            ClearOffenderRecord(offender, collected, baseCharge);
+
             GwpAiDiagnostics.WriteFieldArrest(
                 "REPORT_PENDING",
                 "offender=" + (offender.StringId ?? "-") +
@@ -147,6 +211,7 @@ namespace GreyWardenPolicePurity
             int received = _pending.Where(r => r.OffenderId == offenderId).Sum(r => r.CashReceived);
             QueueAudit(offenderId, Math.Max(0, received - deliveredCash));
             _pending.RemoveAll(report => report.OffenderId == offenderId);
+            _betrayalHours.Remove(offenderId);
             AuditAtHandIn();
         }
 
@@ -166,58 +231,65 @@ namespace GreyWardenPolicePurity
         #region 交代
 
         /// <summary>
-        /// 玩家报了一个数目，灰袍照单全收，并按差额扣声望。差额每 300 扣一点，
-        /// 向下取整——和灰袍给罪犯定价用的是同一把尺子。
+        /// 玩家来交差。他代表的就是灰袍，所以第二层谈成什么条件、对方最后只交得出多少，
+        /// 都不构成他的过失——**只要他把从犯人手里拿到的钱如实上缴，就算办妥**。
+        /// 索贿同理：钱只要进了公库，就不追究。
+        ///
+        /// 唯一会出事的是私留：手里收了多少、交上来多少，差额就是他昧下的钱。这笔账不当场
+        /// 结算，而是排进查账；查不查得出来，看他近来谎报的次数和自己的灰袍声望。
         /// </summary>
-        internal int DeclareAmount(int declared, bool truthful = false)
+        /// <param name="declared">实际交到灰袍手上的数目。</param>
+        /// <param name="truthful">他嘴上说的是不是实话。只影响今后被查的概率，不改本次判定。</param>
+        internal int DeclareAmount(int declared, bool truthful = true)
         {
-            int assessed = TotalAssessed;
-            int shortfall = Math.Max(0, assessed - Math.Max(0, declared));
-            int legitimateGap = truthful ? LegitimatePovertyShortfall : 0;
-            int penalty = GwpCaseSettlementRules.ShortfallPenalty(Math.Max(0, assessed - legitimateGap), declared);
+            int received = TotalReceived;
+            int handedOver = Math.Max(0, declared);
+            int concealed = Math.Max(0, received - handedOver);
 
-            if (penalty > 0)
-            {
-                PlayerState.ChangeReputation(-penalty);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_report_short}The ledger says {VAR_1}; you handed in {VAR_2}. Grey Warden standing {VAR_3}.",
-                        "VAR_1", assessed.ToString(), "VAR_2", declared.ToString(), "VAR_3", (-penalty).ToString()),
-                    Colors.Red));
-            }
+            RememberReportHonesty(truthful && concealed <= 0);
+            if (concealed > 0 && _pending.Count > 0)
+                QueueAudit(_pending[0].OffenderId, concealed);
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "REPORT_DECLARED",
-                "assessed=" + assessed + "; declared=" + declared +
-                "; shortfall=" + shortfall + "; legitimateGap=" + legitimateGap + "; standingPenalty=" + penalty);
+                "assessed=" + TotalAssessed + "; receivedFromOffender=" + received +
+                "; handedOver=" + handedOver + "; concealed=" + concealed +
+                "; truthful=" + truthful + "; recentLies=" + RecentLieCount);
 
-            int remaining = Math.Max(0, declared);
-            foreach (var report in _pending)
-            {
-                int credited = Math.Min(report.Assessed, remaining);
-                remaining -= credited;
-                report.Collected = Math.Max(report.Collected, credited);
-            }
-            ClearOffenderRecords();
+            foreach (var report in _pending) _betrayalHours.Remove(report.OffenderId);
             _pending.Clear();
             AuditAtHandIn();
-            return penalty;
+            return 0;
         }
 
-        // A false explanation is audited independently of later NPC arrests.
-        internal void DeclareFalseAmount(int declared)
+        /// <summary>
+        /// 保留给旧调用点：谎报就是"交上来的比收到的少，而且嘴上不认"。判定与
+        /// <see cref="DeclareAmount"/> 同一条，只是记一次谎。
+        /// </summary>
+        internal void DeclareFalseAmount(int declared) =>
+            DeclareAmount(declared, truthful: false);
+
+        /// <summary>近十次委托里谎报过几次。</summary>
+        internal int RecentLieCount => _recentReportHonesty.Count(entry => entry == 0);
+
+        private void RememberReportHonesty(bool honest)
         {
-            int remaining = Math.Max(0, declared);
-            foreach (var report in _pending)
-            {
-                int credited = Math.Min(report.Assessed, remaining);
-                remaining -= credited;
-                int legitimateGap = report.OffenderWasBroke ? Math.Max(0, report.Assessed - report.CashReceived) : 0;
-                QueueAudit(report.OffenderId, Math.Max(0, report.Assessed - credited - legitimateGap));
-                report.Collected = Math.Max(report.Collected, credited);
-            }
-            ClearOffenderRecords();
-            _pending.Clear();
-            AuditAtHandIn();
+            _recentReportHonesty.Add(honest ? 1 : 0);
+            while (_recentReportHonesty.Count > GwpTuning.FieldArrest.RecentReportMemory)
+                _recentReportHonesty.RemoveAt(0);
+        }
+
+        /// <summary>
+        /// 被查出来的概率：底数之上，近来谎报得越多越容易被查，灰袍声望越高越不容易被查。
+        /// 声望为负时反而更容易被盯上。
+        /// </summary>
+        internal float CurrentAuditChance()
+        {
+            float chance = GwpTuning.FieldArrest.ReportAuditChance
+                + GwpTuning.FieldArrest.AuditChancePerRecentLie * RecentLieCount
+                - GwpTuning.FieldArrest.AuditChancePerStandingPoint * PlayerState.Reputation;
+            return Math.Max(GwpTuning.FieldArrest.AuditChanceFloor,
+                Math.Min(GwpTuning.FieldArrest.AuditChanceCeiling, chance));
         }
 
         private void QueueAudit(string id, int gap)
@@ -226,7 +298,7 @@ namespace GreyWardenPolicePurity
             _pendingAuditGaps[id] = (_pendingAuditGaps.TryGetValue(id, out int old) ? old : 0) + gap;
             _legacyTruthfulClaims.Remove(id);
             if (!_auditDueHours.ContainsKey(id))
-                _auditDueHours[id] = CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
+                _auditDueHours[id] = (_betrayalHours.TryGetValue(id, out double occurred) ? occurred : CampaignTime.Now.ToHours) + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_AUDIT_QUEUED", "offender=" + id + "; gap=" + gap + "; due=" + _auditDueHours[id]);
         }
 
@@ -234,12 +306,65 @@ namespace GreyWardenPolicePurity
         {
             if (!GwpTuning.FieldArrest.ImmediateAuditTesting) return;
             foreach (string id in _pendingAuditGaps.Keys.ToList()) ResolveAudit(id, 0f);
+            foreach (string id in _excessEnforcement.Keys.ToList()) ResolveExcessAudit(id, 0f);
         }
 
         private void AuditDueReports()
         {
             foreach (string id in _auditDueHours.Where(p => p.Value <= CampaignTime.Now.ToHours).Select(p => p.Key).ToList())
                 ResolveAudit(id, MBRandom.RandomFloat);
+            foreach (string id in _excessDueHours.Where(p => p.Value <= CampaignTime.Now.ToHours).Select(p => p.Key).ToList())
+                ResolveExcessAudit(id, MBRandom.RandomFloat);
+        }
+
+        /// <summary>
+        /// 过度执法：这个人已经缴过罚金或兑现过谈成的处置，玩家之后还是把他的部队打垮了。
+        /// 赏照领、案照结，但这件事本身要独立查一次账；查不查得出来是另一回事。
+        /// </summary>
+        internal void RecordExcessEnforcement(string? offenderId, int alreadySettled)
+        {
+            if (string.IsNullOrWhiteSpace(offenderId) || alreadySettled <= 0) return;
+            int previous = _excessEnforcement.TryGetValue(offenderId!, out int old) ? old : 0;
+            if (alreadySettled <= previous) return;
+            _excessEnforcement[offenderId!] = alreadySettled;
+            if (!_excessDueHours.ContainsKey(offenderId!))
+                _excessDueHours[offenderId!] = CampaignTime.Now.ToHours
+                    + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
+            GwpAiDiagnostics.WriteFieldArrest("EXCESS_ENFORCEMENT_QUEUED",
+                "offender=" + offenderId + "; alreadySettled=" + alreadySettled
+                + "; due=" + _excessDueHours[offenderId!]);
+            AuditAtHandIn();
+        }
+
+        internal bool HasPendingExcessEnforcement(string? offenderId) =>
+            !string.IsNullOrWhiteSpace(offenderId) && _excessEnforcement.ContainsKey(offenderId!);
+
+        internal void ResolveExcessAudit(string id, float roll)
+        {
+            if (!_excessEnforcement.TryGetValue(id, out int settled)) return;
+            _excessEnforcement.Remove(id);
+            _excessDueHours.Remove(id);
+            float chance = CurrentAuditChance();
+            bool discovered = roll < chance;
+            int penalty = discovered
+                ? Math.Max(1, GwpCaseSettlementRules.ShortfallPenalty(settled, 0))
+                : 0;
+            GwpAiDiagnostics.WriteFieldArrest("EXCESS_ENFORCEMENT_RESOLVED",
+                "offender=" + id + "; alreadySettled=" + settled
+                + "; chance=" + chance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                + "; discovered=" + discovered + "; standingPenalty=" + penalty);
+            if (!discovered) return;
+            PlayerState.ChangeReputation(-penalty);
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                "{=gwp_report_excess_found}A review found that you broke {VAR_1} after he had already answered for his crime. Grey Warden standing {VAR_2}.",
+                "VAR_1", GetOffenderName(id), "VAR_2", -penalty), Colors.Red));
+        }
+
+        private static string GetOffenderName(string id)
+        {
+            Hero? offender = Hero.FindFirst(hero =>
+                string.Equals(hero.StringId, id, StringComparison.OrdinalIgnoreCase));
+            return offender?.Name?.ToString() ?? id;
         }
 
         internal void ResolveAudit(string id, float roll)
@@ -248,9 +373,12 @@ namespace GreyWardenPolicePurity
             _pendingAuditGaps.Remove(id);
             _auditDueHours.Remove(id);
             _legacyTruthfulClaims.Remove(id);
-            bool discovered = roll < GwpTuning.FieldArrest.ReportAuditChance;
+            float chance = CurrentAuditChance();
+            bool discovered = roll < chance;
             int penalty = discovered ? GwpCaseSettlementRules.ShortfallPenalty(gap, 0) : 0;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_AUDIT_RESOLVED", "offender=" + id + "; gap=" + gap
+                + "; chance=" + chance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                + "; roll=" + roll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
                 + "; discovered=" + discovered + "; standingPenalty=" + penalty);
             if (!discovered) return;
             PlayerState.ChangeReputation(-penalty);
@@ -260,32 +388,25 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 上交之后才轮到清犯人的账，而且**严格按他自己交了多少**算——玩家私吞
-        /// 也好、少报也好，那是玩家和灰袍之间的账，不该让犯人替他背，也不该让
-        /// 犯人白白得利。缴款先抵"做下的事"那一段，余下的每 300 抵一点负声望。
+        /// 犯人自己的账：他实际交出去的钱先抵"做下的事"那一段，余下的每 300 抵一点负声望。
+        /// 结算当场就清，与玩家事后交多少无关——犯人已经当众交代过了。
         /// </summary>
-        private void ClearOffenderRecords()
+        private static void ClearOffenderRecord(Hero offender, int collected, int baseCharge)
         {
-            foreach (PendingReport report in _pending)
-            {
-                Hero? offender = Hero.FindFirst(hero =>
-                    string.Equals(hero.StringId, report.OffenderId, StringComparison.OrdinalIgnoreCase));
-                if (offender == null) continue;
+            HeroCrimeStats history = CrimePool.GetOrCreateHistory(offender);
+            int before = Math.Max(0, history.NegativeStanding);
+            if (before <= 0) return;
 
-                HeroCrimeStats history = CrimePool.GetOrCreateHistory(offender);
-                int before = Math.Max(0, history.NegativeStanding);
-                if (before <= 0) continue;
+            int towardStanding = Math.Max(0, collected - Math.Max(0, baseCharge));
+            int cleared = Math.Min(before, towardStanding / GwpTuning.Enforcement.FinePerPoint);
+            if (cleared <= 0) return;
+            history.NegativeStanding = before - cleared;
 
-                int towardStanding = Math.Max(0, report.Collected - report.BaseCharge);
-                int cleared = Math.Min(before, towardStanding / GwpTuning.Enforcement.FinePerPoint);
-                history.NegativeStanding = before - cleared;
-
-                GwpAiDiagnostics.WriteFieldArrest(
-                    "RECORD_CLEARED",
-                    "offender=" + report.OffenderId +
-                    "; paid=" + report.Collected + "; baseCharge=" + report.BaseCharge +
-                    "; standingBefore=" + before + "; standingCleared=" + cleared);
-            }
+            GwpAiDiagnostics.WriteFieldArrest(
+                "RECORD_CLEARED",
+                "offender=" + (offender.StringId ?? "-") +
+                "; paid=" + collected + "; baseCharge=" + baseCharge +
+                "; standingBefore=" + before + "; standingCleared=" + cleared);
         }
 
         #endregion

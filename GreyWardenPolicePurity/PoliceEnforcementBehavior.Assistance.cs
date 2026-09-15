@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -369,6 +369,17 @@ namespace GreyWardenPolicePurity
                 if (!EnsureCommittedStrengthAdvantage(leader, task, offender,
                         newGroup, newArmy, initialTargetStrength))
                 {
+                    // A player commission is the player's to abandon, not ours.
+                    // Too weak today simply means no war is declared yet.
+                    if (task.IsPlayerBountyEscort)
+                    {
+                        GwpAiDiagnostics.WriteAction(leader,
+                            "PLAYER_BOUNTY_SUPPORT_FORCE_EXHAUSTED",
+                            FormatStrengthDiagnostic(leader, offender,
+                                GetCommittedAssistanceStrength(leader, newGroup),
+                                initialTargetStrength) + "; commissionKept=True");
+                        continue;
+                    }
                     FailAssistanceCase(leader, task, newGroup,
                         initialTargetStrength,
                         "no_remaining_eligible_force_at_assignment");
@@ -399,8 +410,14 @@ namespace GreyWardenPolicePurity
             MobileParty leader, PoliceTask? task)
         {
             if (task == null || task.PolicePartyId != leader.StringId ||
-                task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
+                task.IsEscortingPlayer ||
                 task.TargetCrime?.HasOpenCase != true)
+                return null;
+
+            // A player commission raises a force by the ordinary rules, but only
+            // once the request for help has actually been delivered.
+            if (task.IsPlayerBountyEscort &&
+                PlayerBountyBehavior.AwaitingSupportRequest(task))
                 return null;
 
             MobileParty? offender = task.TargetCrime.Offender;
@@ -456,6 +473,7 @@ namespace GreyWardenPolicePurity
             Army? army = group.DispersedForSpeed
                 ? null
                 : MaintainAssistanceArmy(leader, group);
+            GrowPlayerBountyAssistanceStrength(leader, group, army);
             if (!_playerBountyEscortGroups.Add(group.LeaderPartyId))
                 return;
 
@@ -469,6 +487,43 @@ namespace GreyWardenPolicePurity
                 "members=" + group.MemberPartyIds.Count +
                 "; speedDispersed=" + group.DispersedForSpeed +
                 "; armyActive=" + (army?.LeaderParty == leader));
+        }
+
+        /// <summary>
+        /// 求援送到之后，按普通案件那一套第一层判定继续征调灰袍，直到已承诺战力
+        /// 高于目标区域战力。与普通案件唯一的差别是：全部合格力量仍然不够时，
+        /// 不把玩家的委托作废——玩家的案子由玩家自己决定要不要继续。
+        /// </summary>
+        private void GrowPlayerBountyAssistanceStrength(
+            MobileParty leader, LordAssistanceGroup group, Army? army) =>
+            GwpLoadFaultWatch.Guard("PLAYER_BOUNTY_SUPPORT_GROWTH",
+                () => AdvancePlayerBountyAssistanceStrength(leader, group, army));
+
+        private void AdvancePlayerBountyAssistanceStrength(
+            MobileParty leader, LordAssistanceGroup group, Army? army)
+        {
+            PoliceTask? task = CrimeState.GetTask(leader.StringId);
+            if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task))
+                return;
+
+            MobileParty? offender = GetActiveAssistanceCaseTarget(group, task);
+            // 没有真实军团时不做增员：TryAddAssistanceMember 要往军团里塞人。
+            if (offender == null || army?.LeaderParty == null)
+                return;
+
+            group.TargetPartyId = offender.StringId;
+            float targetStrength =
+                GetNativeCombatStrengthSnapshot(leader, offender).Strength;
+            if (EnsureCommittedStrengthAdvantage(
+                    leader, task, offender, group, army, targetStrength))
+                return;
+
+            GwpAiDiagnostics.WriteAction(leader,
+                "PLAYER_BOUNTY_SUPPORT_FORCE_EXHAUSTED",
+                FormatStrengthDiagnostic(leader, offender,
+                    GetCommittedAssistanceStrength(leader, group),
+                    targetStrength) +
+                "; commissionKept=True");
         }
 
         private void ExitAssistancePlayerBountyEscort(
@@ -877,7 +932,8 @@ namespace GreyWardenPolicePurity
 
         private static float GetNativeFriendlyLocalStrength(
             MobileParty actor, MobileParty offender,
-            out string friendlyCombatGroups)
+            out string friendlyCombatGroups,
+            bool includePlayer = false)
         {
             MobileParty movementTarget =
                 ResolveAssistanceMovementTarget(offender);
@@ -927,7 +983,7 @@ namespace GreyWardenPolicePurity
                 string groupKey = GetCombatGroupKey(nearbyGroup);
                 if (countedGroups.Contains(groupKey) ||
                     !CanNearbyFriendlyGroupJoinActor(
-                        nearbyGroup, actor))
+                        nearbyGroup, actor, includePlayer))
                     continue;
 
                 float groupDistance =
@@ -995,27 +1051,34 @@ namespace GreyWardenPolicePurity
         }
 
         private static bool CanNearbyFriendlyGroupJoinActor(
-            MobileParty candidate, MobileParty actor)
+            MobileParty candidate, MobileParty actor, bool includePlayer = false)
         {
             if (candidate?.IsActive != true || candidate.Party == null ||
                 candidate.Party.NumberOfHealthyMembers <= 0 ||
                 candidate.AttachedTo != null ||
                 candidate.Position.IsOnLand != actor.Position.IsOnLand ||
-                candidate.MapEvent != null ||
                 candidate.IsGarrison || candidate.IsMilitia ||
                 candidate.CurrentSettlement?.SiegeEvent != null ||
                 candidate.BesiegerCamp?.LeaderParty != null &&
                 candidate.BesiegerCamp.LeaderParty != candidate)
                 return false;
 
-            return candidate.MapFaction != null &&
+            // The player who asked for this help is one of the parties that will
+            // actually fight. Being already engaged does not disqualify him - that
+            // is the very battle the Wardens are being brought in to join.
+            if (includePlayer && candidate.IsMainParty)
+                return true;
+
+            return candidate.MapEvent == null &&
+                   candidate.MapFaction != null &&
                    candidate.MapFaction == actor.MapFaction &&
                    candidate.Aggressiveness > 0.01f;
         }
 
         private static LocalStrengthDeclarationSnapshot
             EvaluateLocalDeclarationStrength(
-                MobileParty actor, MobileParty offender)
+                MobileParty actor, MobileParty offender,
+                bool includePlayer = false)
         {
             MobileParty movementTarget =
                 ResolveAssistanceMovementTarget(offender);
@@ -1023,7 +1086,8 @@ namespace GreyWardenPolicePurity
                 GetNativeCombatStrengthSnapshot(actor, offender);
             float friendlyStrength =
                 GetNativeFriendlyLocalStrength(
-                    actor, offender, out string friendlyCombatGroups);
+                    actor, offender, out string friendlyCombatGroups,
+                    includePlayer);
             float distance = actor.Position.ToVec2().Distance(
                 movementTarget.Position.ToVec2());
             bool strengthReady =
@@ -1855,6 +1919,37 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(owner);
         }
 
+        /// <summary>
+        /// 把一支灰袍队伍从它当前所有的协力职责里摘出来：组长就解散自己那一组，协办人就
+        /// 退出所在组并脱离军团。玩家的求援要指派谁，就得先让他从别人的案子上抽身，
+        /// 否则他的欲望仍旧指向原来那个目标，看上去就是"接了跟随却不跟玩家"。
+        /// </summary>
+        internal static void ReleasePartyFromAssistance(string? partyId, string reason)
+        {
+            if (_instance == null || string.IsNullOrWhiteSpace(partyId)) return;
+
+            if (_instance._assistanceGroups.ContainsKey(partyId!))
+                _instance.ReleaseAssistanceGroup(partyId!, reason);
+
+            foreach (LordAssistanceGroup group in _instance._assistanceGroups.Values.ToList())
+            {
+                if (!group.MemberPartyIds.Contains(partyId!, StringComparer.OrdinalIgnoreCase) &&
+                    !group.SpeedDetachedPartyIds.Contains(partyId!, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                _instance.RemoveAssistanceMember(group, partyId!);
+                GwpAiDiagnostics.WriteAction(FindActiveParty(partyId!),
+                    "ASSISTANCE_MEMBER_RELEASED",
+                    "leader=" + group.LeaderPartyId + "; reason=" + reason);
+            }
+
+            MobileParty? party = FindActiveParty(partyId!);
+            if (party == null) return;
+            try { if (party.Army != null && party.Army.LeaderParty != party) party.Army = null; }
+            catch { }
+            GreyWardenPartyDesireBehavior.ClearIntent(party);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
+        }
+
         private void RemoveAssistanceMember(LordAssistanceGroup group, string memberId)
         {
             group.MemberPartyIds.RemoveAll(id => string.Equals(id, memberId,
@@ -2006,6 +2101,10 @@ namespace GreyWardenPolicePurity
             playerBountyEscort = IsAssistancePlayerBountyEscort(group);
             if (playerBountyEscort)
             {
+                // Support always moves with the player, declared war or not. The
+                // player finds the offender; the Wardens are there to fight beside
+                // him when he does, not to run the pursuit themselves.
+
                 target = !isLeader && !speedDetached
                     ? FindActiveParty(group.LeaderPartyId)
                     : MobileParty.MainParty;
@@ -2104,6 +2203,10 @@ namespace GreyWardenPolicePurity
             out MobileParty actor,
             out LocalStrengthDeclarationSnapshot prediction)
         {
+            // On a player commission the player himself is part of the force that
+            // will engage, so he must count toward the local friendly strength.
+            bool includePlayer =
+                CrimeState.GetTask(leader.StringId)?.IsPlayerBountyEscort == true;
             var candidates = new List<MobileParty>();
             if (_assistanceGroups.TryGetValue(leader.StringId,
                     out LordAssistanceGroup? group) &&
@@ -2133,7 +2236,7 @@ namespace GreyWardenPolicePurity
             {
                 LocalStrengthDeclarationSnapshot current =
                     EvaluateLocalDeclarationStrength(
-                        candidate, offender);
+                        candidate, offender, includePlayer);
                 closestPrediction ??= current;
                 if (current.Distance > warDistance ||
                     !current.StrengthReady)
@@ -2147,7 +2250,7 @@ namespace GreyWardenPolicePurity
             actor = closestPrediction?.Actor ?? leader;
             prediction = closestPrediction ??
                          EvaluateLocalDeclarationStrength(
-                             leader, offender);
+                             leader, offender, includePlayer);
             return false;
         }
 

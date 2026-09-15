@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -774,6 +774,26 @@ namespace GreyWardenPolicePurity
         /// the judicial treasury. It pays what it can and no more - an empty treasury pays
         /// nothing, which is itself information for the player.
         /// </summary>
+        /// <summary>
+        /// 从司法公库支出，但不交到玩家本人手上——由派出去的使者带回来。路上出了事，
+        /// 这笔钱就跟着没了，这正是派人代办应该承担的风险。
+        /// </summary>
+        internal static int WithdrawFromJudicialTreasury(int amount)
+        {
+            if (amount <= 0) return 0;
+
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            if (treasurer == null || treasurer.IsDead || treasurer == Hero.MainHero)
+                return 0;
+
+            int paid = Math.Min(Math.Max(0, treasurer.Gold), amount);
+            if (paid <= 0) return 0;
+
+            GiveGoldAction.ApplyBetweenCharacters(treasurer, null, paid,
+                disableNotification: true);
+            return paid;
+        }
+
         internal static int PayFromJudicialTreasury(int amount)
         {
             if (amount <= 0 || Hero.MainHero == null) return 0;

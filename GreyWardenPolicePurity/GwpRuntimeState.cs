@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -96,6 +96,8 @@ namespace GreyWardenPolicePurity
             public PoliceTask? GetTask(string policePartyId) => CrimePool.GetTask(policePartyId);
             public void BeginTask(string policePartyId, CrimeRecord crime) => CrimePool.BeginTask(policePartyId, crime);
             public void EndTask(string policePartyId) => CrimePool.EndTask(policePartyId);
+            public IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId) =>
+                CrimePool.ReleaseTasksForOffender(offenderHeroId);
             public void ReopenCase(CrimeRecord? crime) => CrimePool.ReopenCase(crime);
             public void EndPlayerHunt() => CrimePool.EndPlayerHunt();
             public bool TryAdd(string crimeType, MobileParty offender, TaleWorlds.Library.Vec2 location, string victimName) =>

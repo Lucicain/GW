@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -104,10 +104,18 @@ namespace GreyWardenPolicePurity
             _lastDeterrenceFollowup = null;
         }
 
+        /// <summary>
+        /// 玩家受托办案时，他就是这宗案子的承办人。因此他亲手押下一个还背着未结案件的
+        /// 领主，和灰袍领主押下同一个人，对犯人来说是同一件事：一样记被捕、一样吃震慑、
+        /// 一样把消息传给同族和同场目击者。之后玩家交不交差、交多少，是玩家和灰袍之间
+        /// 的账，与犯人已经受到的惩戒无关。
+        /// </summary>
         private void OnHeroPrisonerTaken(PartyBase capturerParty, Hero prisoner)
         {
             MobileParty? policeParty = capturerParty?.MobileParty;
-            if (!IsPoliceParty(policeParty) || prisoner == null || prisoner == Hero.MainHero ||
+            bool capturedByPlayer = policeParty?.IsMainParty == true;
+            if ((!IsPoliceParty(policeParty) && !capturedByPlayer) ||
+                prisoner == null || prisoner == Hero.MainHero ||
                 string.IsNullOrWhiteSpace(prisoner.StringId))
                 return;
 
@@ -193,9 +201,27 @@ namespace GreyWardenPolicePurity
         internal void RegisterPlayerCompletedCase(
             MapEvent? mapEvent,
             Hero? offender,
-            GwpCrimeCategory category)
+            GwpCrimeCategory category) =>
+            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
+
+        /// <summary>
+        /// 玩家执法成功但没有把人拿下：击溃其部队，或对方缴清罚金、兑现谈成的处置。
+        /// 震慑、同族转述与同场目击照旧，但不加被捕次数——没有人被押走。
+        /// 和平了结没有战场，因此不编造目击者。
+        /// </summary>
+        internal void RegisterPlayerEnforcementSuccess(
+            MapEvent? mapEvent,
+            Hero? offender,
+            GwpCrimeCategory category) =>
+            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: false);
+
+        private void RegisterPlayerEnforcementOutcome(
+            MapEvent? mapEvent,
+            Hero? offender,
+            GwpCrimeCategory category,
+            bool countAsArrest)
         {
-            if (mapEvent == null || offender == null || offender == Hero.MainHero ||
+            if (offender == null || offender == Hero.MainHero ||
                 string.IsNullOrWhiteSpace(offender.StringId))
                 return;
 
@@ -203,12 +229,24 @@ namespace GreyWardenPolicePurity
                 ? GwpCrimeCategory.CaravanAttack
                 : GwpCrimeCategory.VillageViolence;
 
+            if (mapEvent == null)
+            {
+                // 缴款和谈成的处置没有战场，只登记本人与同族，不虚构目击者。
+                float peacefulGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
+                    offender, category, countAsArrest);
+                float peacefulShared = peacefulGain * 0.5f;
+                if (peacefulShared > GwpTuning.Deterrence.ForgetThreshold)
+                    ApplyClanShock(offender, peacefulShared, category);
+                return;
+            }
+
             if (_captureBatches.TryGetValue(mapEvent, out PoliceCaptureBatch? pendingBatch))
             {
                 if (!pendingBatch.OffenderIds.Add(offender.StringId))
                     return;
 
-                float pendingDirectGain = GwpAiDeterrenceState.RegisterPoliceArrest(offender, category);
+                float pendingDirectGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
+                    offender, category, countAsArrest);
                 float pendingSharedGain = pendingDirectGain * 0.5f;
                 if (pendingSharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                     return;
@@ -232,7 +270,8 @@ namespace GreyWardenPolicePurity
             if (!processed.Add(offender.StringId))
                 return;
 
-            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(offender, category);
+            float directGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
+                offender, category, countAsArrest);
             float sharedGain = directGain * 0.5f;
             if (sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;

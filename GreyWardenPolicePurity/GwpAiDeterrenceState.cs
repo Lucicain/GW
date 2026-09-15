@@ -64,7 +64,23 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>登记一次由灰袍实际实施的抓捕，并返回本次新增的本人威慑。</summary>
-        public static float RegisterPoliceArrest(Hero leader, GwpCrimeCategory category)
+        public static float RegisterPoliceArrest(Hero leader, GwpCrimeCategory category) =>
+            RegisterEnforcementOutcome(leader, category, countAsArrest: true);
+
+        /// <summary>
+        /// 执法成功但人没有被拿下——击溃其部队、缴清罚金，或兑现谈成的处置方案。
+        /// 震慑照记，被捕次数不动：那是拘捕履历，不是每次执法都该往上加的东西。
+        /// </summary>
+        public static float RegisterEnforcementSuccess(Hero leader, GwpCrimeCategory category) =>
+            RegisterEnforcementOutcome(leader, category, countAsArrest: false);
+
+        /// <summary>同一条登记路径，由调用方决定这次执法是否构成一次实际拘捕。</summary>
+        public static float RegisterEnforcementOutcomeFor(Hero leader, GwpCrimeCategory category,
+            bool countAsArrest) =>
+            RegisterEnforcementOutcome(leader, category, countAsArrest);
+
+        private static float RegisterEnforcementOutcome(Hero leader, GwpCrimeCategory category,
+            bool countAsArrest)
         {
             // Only actual Warden custody clears the offender record.
             PartyBase? captor = leader?.PartyBelongedToAsPrisoner;
@@ -81,15 +97,18 @@ namespace GreyWardenPolicePurity
 
             HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
             return category == GwpCrimeCategory.CaravanAttack
-                ? RegisterCaravanArrest(record, leader)
-                : RegisterVillageViolenceArrest(record, leader);
+                ? RegisterCaravanArrest(record, leader, countAsArrest)
+                : RegisterVillageViolenceArrest(record, leader, countAsArrest);
         }
 
-        private static float RegisterVillageViolenceArrest(HeroCrimeStats record, Hero leader)
+        private static float RegisterVillageViolenceArrest(HeroCrimeStats record, Hero leader,
+            bool countAsArrest)
         {
 
             UpdateDecay(record, leader, updateRecord: true);
-            int totalArrests = CrimePool.RecordArrest(leader);
+            int totalArrests = countAsArrest
+                ? CrimePool.RecordArrest(leader)
+                : record.TotalArrestCount;
             int arrestCount = Math.Max(1, totalArrests - record.CaravanArrestCount);
             float desiredGain = MathF.Min((float)arrestCount, GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
             float previousDirect = record.DirectDeterrencePoints;
@@ -108,11 +127,14 @@ namespace GreyWardenPolicePurity
             return actualGain;
         }
 
-        private static float RegisterCaravanArrest(HeroCrimeStats record, Hero leader)
+        private static float RegisterCaravanArrest(HeroCrimeStats record, Hero leader,
+            bool countAsArrest)
         {
             UpdateCaravanDecay(record, leader, updateRecord: true);
-            CrimePool.RecordArrest(leader);
-            int arrestCount = ++record.CaravanArrestCount;
+            if (countAsArrest) CrimePool.RecordArrest(leader);
+            int arrestCount = countAsArrest
+                ? ++record.CaravanArrestCount
+                : Math.Max(1, record.CaravanArrestCount);
             float desiredGain = MathF.Min((float)arrestCount,
                 GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
             float previousDirect = record.CaravanDirectDeterrencePoints;

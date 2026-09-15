@@ -67,13 +67,13 @@ namespace GreyWardenPolicePurity
             tier switch
             {
                 GwpFieldArrestBehavior.WardenStandingTier.UnderCharge =>
-                    GwpText.Create("{=gwp_fa_open_under_charge}The Wardens' warrant, carried by a man who is working off his own. Say your piece."),
+                    GwpText.Create("{=gwp_fa_open_under_charge}You work for the Wardens? Tell me what you want."),
                 GwpFieldArrestBehavior.WardenStandingTier.Respected when hasBeenTakenBefore =>
                     GwpText.Create("{=gwp_fa_open_respected_known}You again. Or your order, at least. What is it this time?"),
                 GwpFieldArrestBehavior.WardenStandingTier.Respected =>
                     GwpText.Create("{=gwp_fa_open_respected}I know the grey. Speak, and speak plainly."),
                 _ when hasBeenTakenBefore =>
-                    GwpText.Create("{=gwp_fa_open_known}The Wardens again. I have already paid you people once."),
+                    GwpText.Create("{=gwp_fa_open_known}The Wardens again. I remember the last time."),
                 _ =>
                     GwpText.Create("{=gwp_fa_open_plain}The Wardens. What do you want with me?")
             };
@@ -82,53 +82,19 @@ namespace GreyWardenPolicePurity
 
         #region 结局：认罚、赖账、抗法
 
-        internal static TextObject Submit(Temperament temper) =>
-            temper switch
-            {
-                Temperament.Upright =>
-                    GwpText.Create("{=gwp_fa_submit_upright}The charge is fair. Take it, and let it be written that I paid it standing."),
-                Temperament.Cold =>
-                    GwpText.Create("{=gwp_fa_submit_cold}Cheaper than the alternative. That is the only reason, and we both know it."),
-                Temperament.Soft =>
-                    GwpText.Create("{=gwp_fa_submit_soft}Take it. It buys nothing back, but take it."),
-                Temperament.Tight =>
-                    GwpText.Create("{=gwp_fa_submit_tight}Every coin of it. I hope your order chokes on the counting."),
-                Temperament.Fierce =>
-                    GwpText.Create("{=gwp_fa_submit_fierce}Fine. Money, then. Do not mistake it for fear."),
-                _ =>
-                    GwpText.Create("{=gwp_fa_submit_plain}Here. Count it, and be gone.")
-            };
+        // 认罚、交不出钱、抗法三种结局的台词池都挂在 GwpFieldDialogueVoice 上，
+        // 与开场白、接受论点等共用同一套"按性子取池、不连续重样、整场缓存"的取词规则。
+        // 这里只负责把性子翻成池名。
+        internal static string SubmitKey(Temperament temper) => "submit_" + temper;
 
-        internal static TextObject Plead(Temperament temper) =>
-            temper switch
-            {
-                Temperament.Cold =>
-                    GwpText.Create("{=gwp_fa_plead_cold}You have named a sum I cannot meet. Wages, feed, remounts - look at the column and tell me where it hides."),
-                Temperament.Tight =>
-                    GwpText.Create("{=gwp_fa_plead_tight}I am not a rich man, whatever your ledger says. You will not find it on me."),
-                _ =>
-                    GwpText.Create("{=gwp_fa_plead_plain}That sum? I do not carry it. Search the baggage if you like.")
-            };
+        internal static string PleadKey(Temperament temper) => "plead_" + temper;
 
-        internal static TextObject Resist(
+        internal static string ResistKey(
             Temperament temper,
-            GwpFieldArrestBehavior.WardenStandingTier tier)
-        {
-            if (tier == GwpFieldArrestBehavior.WardenStandingTier.UnderCharge)
-                return GwpText.Create("{=gwp_fa_resist_scorn}You are under your own charge and you come to collect mine? Draw.");
-
-            return temper switch
-            {
-                Temperament.Fierce =>
-                    GwpText.Create("{=gwp_fa_resist_fierce}I have never bought my way out of anything. Draw."),
-                Temperament.Cold =>
-                    GwpText.Create("{=gwp_fa_resist_cold}I have counted your column and I have counted mine. No."),
-                Temperament.Tight =>
-                    GwpText.Create("{=gwp_fa_resist_tight}You will not have a denar of it. Not one."),
-                _ =>
-                    GwpText.Create("{=gwp_fa_resist_plain}No. Come and take it, if you can.")
-            };
-        }
+            GwpFieldArrestBehavior.WardenStandingTier tier) =>
+            tier == GwpFieldArrestBehavior.WardenStandingTier.UnderCharge
+                ? "resist_undercharge"
+                : "resist_" + temper;
 
         #endregion
 
@@ -203,6 +169,11 @@ namespace GreyWardenPolicePurity
 
         private static string[] PaymentArguments(GwpOffenderDesire desire) => desire switch
         {
+            GwpOffenderDesire.RequestGrace => new[] {
+                "The Wardens expect payment, not another delay. Show me what you have now.",
+                "Let us settle what you can today. There is no need to leave this hanging over your people.",
+                "Three days to disappear? I would rather see the money you carry now.",
+                "Waiting costs both our parties. Pay what you can now and save another journey." },
             GwpOffenderDesire.SurrenderSelf => new[] {
                 "Your men also need their commander. Paying keeps you at their head.",
                 "You need not leave your people behind. Pay, and stay with them.",
@@ -257,6 +228,7 @@ namespace GreyWardenPolicePurity
 
         private static string PaymentRebuff(GwpOffenderDesire desire, string skill) => desire switch
         {
+            GwpOffenderDesire.RequestGrace => "I asked for time to raise it. Repeating the amount will not fill my purse today.",
             GwpOffenderDesire.SurrenderSelf => "My answer is still to go with you. That money stays with my men.",
             GwpOffenderDesire.BribeTheWarden => "You can put a brave face on it. I am offering you a private payment, not the full fine.",
             GwpOffenderDesire.CunningHalf => "You suspect another purse, but suspicion does not put more money on this table. Half is my offer.",
@@ -300,42 +272,42 @@ namespace GreyWardenPolicePurity
         private static PersuasionTask Authority(PersuasionArgumentStrength s) => Make(
             GwpText.Create("{=gwp_fa_task_authority}You are not my liege and you are not a Warden. You are a man they hired."),
             s,
-            GwpText.Create("{=gwp_fa_arg_authority_lead}I carry their warrant. Argue with the warrant, not with me."),
+            GwpText.Create("{=gwp_fa_arg_authority_lead}The Wardens sent me to deal with this. I am conveying their demand."),
             GwpText.Create("{=gwp_fa_arg_authority_charm}Hired or sworn, the dead are still dead and someone had to come."),
             GwpText.Create("{=gwp_fa_arg_authority_rogue}They hired me because they were tired of asking politely."),
-            GwpText.Create("{=gwp_fa_arg_authority_trade}Whoever I am, the account is theirs and it is open until it is paid."));
+            GwpText.Create("{=gwp_fa_arg_authority_trade}Whether you accept me or not, the Wardens will still demand payment. Settling now saves you trouble."));
 
         private static PersuasionTask AuthorityUnderCharge(PersuasionArgumentStrength s) => Make(
-            GwpText.Create("{=gwp_fa_task_under_charge}You are working off your own name with the grey. And you come to read me mine?"),
+            GwpText.Create("{=gwp_fa_task_under_charge}Your reputation is scarcely better than mine. Now you lecture me for the Wardens?"),
             s,
-            GwpText.Create("{=gwp_fa_arg_under_lead}I am working mine off. You have not started on yours."),
-            GwpText.Create("{=gwp_fa_arg_under_charm}Then you know exactly how the account feels. Close yours today."),
-            GwpText.Create("{=gwp_fa_arg_under_rogue}A man with his own debt collects harder, not softer. Think it through."),
-            GwpText.Create("{=gwp_fa_arg_under_trade}My record does not lower your sum by a single denar."));
+            GwpText.Create("{=gwp_fa_arg_under_lead}My conduct is a separate matter. You must answer to the Wardens for this."),
+            GwpText.Create("{=gwp_fa_arg_under_charm}Then let us avoid another bad outcome. Settle this today so everyone can go home."),
+            GwpText.Create("{=gwp_fa_arg_under_rogue}That gives me all the more reason not to return empty-handed. Think carefully."),
+            GwpText.Create("{=gwp_fa_arg_under_trade}Talking about me saves you not one denar. It does not reduce what you owe."));
 
         private static PersuasionTask Price(PersuasionArgumentStrength s) => Make(
             GwpText.Create("{=gwp_fa_task_price}And that number - where did it come from? You say it as if it fell from the sky."),
             s,
-            GwpText.Create("{=gwp_fa_arg_price_lead}The ledger set it, not I. Take that up with the ledger after it is paid."),
+            GwpText.Create("{=gwp_fa_arg_price_lead}This is the fine the Wardens demand. I was sent to enforce it, not invent a price."),
             GwpText.Create("{=gwp_fa_arg_price_charm}The victims have already borne the loss. Do not add another fight to it."),
             GwpText.Create("{=gwp_fa_arg_price_rogue}It is the cheap answer. You are looking at the expensive one."),
-            GwpText.Create("{=gwp_fa_arg_price_trade}So much for the deed, so much for what stands against your name. Both are written down."));
+            GwpText.Create("{=gwp_fa_arg_price_trade}The damage and the people harmed both need answering for. This sum covers more than this one encounter."));
 
         private static PersuasionTask Tally(PersuasionArgumentStrength s) => Make(
             GwpText.Create("{=gwp_fa_task_tally}You are charging me for things I did months apart, as if they were one crime."),
             s,
-            GwpText.Create("{=gwp_fa_arg_tally_lead}They are one account. You kept adding to it; nobody came to close it."),
+            GwpText.Create("{=gwp_fa_arg_tally_lead}Time passing does not remove your responsibility. The Wardens hold you answerable for all of it."),
             GwpText.Create("{=gwp_fa_arg_tally_charm}Each one had people in it. They were months apart for you, not for them."),
             GwpText.Create("{=gwp_fa_arg_tally_rogue}If you wanted them charged separately you should have been caught sooner."),
-            GwpText.Create("{=gwp_fa_arg_tally_trade}Settle the assessed sum now, and I can report a full payment."));
+            GwpText.Create("{=gwp_fa_arg_tally_trade}Settle these offences together today and spare your party repeated interruptions over them."));
 
         private static PersuasionTask Denial(PersuasionArgumentStrength s) => Make(
             GwpText.Create("{=gwp_fa_task_denial}My men did that. I did not give the order, and I will not pay for their appetite."),
             s,
             GwpText.Create("{=gwp_fa_arg_denial_lead}They are your men. That is what the word means."),
             GwpText.Create("{=gwp_fa_arg_denial_charm}Nobody in that village could tell your hand from theirs."),
-            GwpText.Create("{=gwp_fa_arg_denial_rogue}They marched under your banner. Blaming your men will not remove your name from the warrant."),
-            GwpText.Create("{=gwp_fa_arg_denial_trade}The account follows the banner. Settle it and recover it from them yourself."));
+            GwpText.Create("{=gwp_fa_arg_denial_rogue}They acted under your banner. Blame your men, and the Wardens will still come for you."),
+            GwpText.Create("{=gwp_fa_arg_denial_trade}They are your men. Pay for the harm first; how you recover it from them is your affair."));
 
         private static PersuasionTask WarExcuse(PersuasionArgumentStrength s) => Make(
             GwpText.Create("{=gwp_fa_task_war}There is a war on. Taking an enemy's goods is not a crime, it is the work."),
@@ -346,11 +318,11 @@ namespace GreyWardenPolicePurity
             GwpText.Create("{=gwp_fa_arg_war_trade}Wars end. Accounts do not, until someone pays them."));
 
         private static PersuasionTask Consequence(PersuasionArgumentStrength s) => Make(
-            GwpText.Create("{=gwp_fa_task_consequence}And if I simply do not pay? You ride off and write something in a book."),
+            GwpText.Create("{=gwp_fa_task_consequence}And if I simply refuse to pay? What can you do about it?"),
             s,
-            GwpText.Create("{=gwp_fa_arg_consequence_lead}The book is the point. It does not forget, and it does not ride off."),
+            GwpText.Create("{=gwp_fa_arg_consequence_lead}My departure would not make the Wardens drop this. We need an answer today."),
             GwpText.Create("{=gwp_fa_arg_consequence_charm}Then the next grey rider is not here to talk, and neither of us wants that."),
-            GwpText.Create("{=gwp_fa_arg_consequence_rogue}Then I write it down, and one day someone reads it back to you in a cell."),
+            GwpText.Create("{=gwp_fa_arg_consequence_rogue}You can wager that I cannot take you. You cannot choose how many Wardens come next time."),
             GwpText.Create("{=gwp_fa_arg_consequence_trade}The debt remains until it is settled. Waiting does not make it disappear."));
 
         private static PersuasionTask Record(PersuasionArgumentStrength s) => Make(

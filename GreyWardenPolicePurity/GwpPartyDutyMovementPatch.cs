@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -74,13 +74,17 @@ namespace GreyWardenPolicePurity
         private static bool Prefix(MobileParty owner, MobileParty mobileParty,
             MobileParty.NavigationType navigationType, bool isFromPort)
         {
-            if (!PoliceEnforcementBehavior.IsPlayerEnforcementApproach(
-                    owner, mobileParty))
+            bool playerWarrant = PoliceEnforcementBehavior.IsPlayerEnforcementApproach(
+                owner, mobileParty);
+            // 办差的队伍要的是全速赶到人跟前，而不是绕着走或跟着对方的步子。
+            bool rushingDuty = !playerWarrant &&
+                GreyWardenPartyDesireBehavior.IsRushingTo(owner, mobileParty);
+            if (!playerWarrant && !rushingDuty)
                 return true;
 
             owner.SetMoveEngageParty(mobileParty, navigationType);
             GwpAiDiagnostics.WriteAction(owner,
-                "PLAYER_ENFORCEMENT_ENGAGE_WINNER",
+                rushingDuty ? "DUTY_RUSH_ENGAGE_WINNER" : "PLAYER_ENFORCEMENT_ENGAGE_WINNER",
                 "target=" + mobileParty.StringId +
                 "; navigation=" + navigationType +
                 "; fromPort=" + isFromPort);
