@@ -13,6 +13,15 @@
   - **踩坑记录**：`Invoke-ModuleLoadPreflight.ps1` 必须用 **Windows PowerShell 5.1** 跑。用 `pwsh` 7 会得到 `PATCH_FAIL=52` 与 "BinaryFormatter serialization and deserialization have been removed"——那是 pwsh 7 的运行时差异，不是产品缺陷。`Verify-GameCompat.ps1` 自己会去调 `System32\WindowsPowerShell1.0\powershell.exe`，所以它报的 PASS 才是准的。反过来 `Verify-ContentKeys.ps1` 必须用 `pwsh`，5.1 会按错误编码解析 `language_data.xml` 而崩。
 - live 模块在打包后已重建回诊断版，开发环境不受发布影响。
 
+### 远端发布核验
+
+- 用户裁定覆盖已公开的 r11（该 release 的 zip `downloadCount=0`，确认无人下载过）。`main` 推送 `e4ad6ce..9b27b0f`；tag `v1.4-r11` 由 `71215fa` 强制移到 `9b27b0f`，远端 `git ls-remote` 已确认实指 `9b27b0f41857a7ff222150967210fc6b652c50ea`。旧 tag 指向的 `71215fa` 仍在历史里，需要回看旧发布点时按该提交哈希取。
+- 两个附件删除后重传，`state=uploaded`；`draft=false`、`prerelease=false`、`--latest`、`targetCommitish=main`。
+- **从 GitHub 重新下载后核验**（不是只比本地）：远端 zip `351446923` 字节、SHA-256 `9E6404335152F92997A8AAB0A127766CAA430DD6231397A03B62D7EB1409CDA9`，与本地逐字节一致；包内玩家 DLL SHA-256 `72A4529C25CDB94442459AA799E68C00803003B8ADD168170806BC0867DCB96B`，按 UTF-16LE 复查四条日志串**全部不存在**。
+- release 正文与本地 `build-check/package-v1.4-r11/release-notes.md` 逐行去尾空白比对一致（79 行）。正文由更新后的中英 README 的 r11 段落程序化抽取生成，不手写，避免与 README 漂移。
+- 归档在 `build-check/package-v1.4-r11/`：`manifest.json`（38 条逐项哈希）、玩家 DLL 副本、`release-notes.md`、`GreyWarden-v1.4-r11.zip.sha256`、`remote-body.txt`。
+- 正式发布页：<https://github.com/Lucicain/GW/releases/tag/v1.4-r11>
+
 ## 2026-09-16 练兵队速度在建队时一次定死；确立"从不做存档兼容"规则（已部署待验）
 
 - **规则（用户明确，已记入长期记忆 `no-save-compatibility`）：本项目从来不要求存档兼容。** 不要为了救旧档写每拍复校、`OnGameLoaded` 补正或一次性迁移——直接改写入点，旧档重开即可。已有的这类兼容代码（如 `GwpDispatchRecord.Deserialize` 的长度守卫）不必主动清理，但不要照着新增。一次性设定优于周期性维持。
