@@ -400,7 +400,16 @@ namespace GreyWardenPolicePurity
             // 1.6 分，村庄、城堡、城镇全都有），那是原版给无主部队安排的归并/解散出路，
             // 不是补给欲望。它稳压 0.99 的差事分，于是使者一路钻进村里不走。
             // 办差期间把这类候选一并压到最低；我们自己为"进城办事"下的访问候选不在此列。
-            if (intent != null && GwpWardenDispatchBehavior.IsDispatchParty(party))
+            // 原版 AiVisitSettlementBehavior 把真正的补给评分锁在
+            // `leaderHero != null && IsLordParty` 之后；无领主队能拿到的只有
+            // CalculateMergeScoreForDisbandingParty —— 归并/解散，不是补给。
+            // 这排候选稳压 0.99 的差事分，所以**每一支**无领主办差队都要压，
+            // 不只是使者。拦截队从前漏在门外，于是出去之后被原版拐进定居点，
+            // 到了那里又被我们自己的 CurrentSettlement 分支销毁，连人带马一起没。
+            if (intent != null && party.LeaderHero == null &&
+                (GwpWardenDispatchBehavior.IsDispatchParty(party) ||
+                 GwpCommon.IsEnforcementDelayPatrolParty(party) ||
+                 GwpCommon.IsTrainingCohortParty(party)))
                 suppressedPatrolCount += SuppressLeaderlessMergeScores(think, rawScores, intent);
             float patrolCeiling = GetPatrolCeiling(think.AIBehaviorScores);
             float dutyScore = intent == null
@@ -453,7 +462,7 @@ namespace GreyWardenPolicePurity
                 // PatrolAroundPoint / EscortParty / GoAroundParty 等几种赢家调用
                 // SetPartyAiAction。直接下注 EngageParty 会赢了也不动，最后退回 Hold。
                 // 所以沿用本仓库既有做法：下注有落地分支的 GoAroundParty，再由
-                // GwpDutyEngageActionPatch 把这一次的动作翻译成原版 EngageParty。
+                // GwpPlayerEnforcementEngageActionPatch 把这一次的动作翻译成原版 EngageParty。
                 AddDutyCandidate(think, Create(party, intent.Party, AiBehavior.GoAroundParty),
                     dutyScore);
                 dutyAdded = "RushParty:" + intent.Party.StringId;

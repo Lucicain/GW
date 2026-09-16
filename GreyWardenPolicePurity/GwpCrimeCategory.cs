@@ -39,6 +39,8 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpFieldArrestPricing
     {
+        internal static int StandingFine(int standing, int rate) =>
+            (int)Math.Min(GwpTuning.FieldArrest.MaximumCaseFine, Math.Abs((long)standing) * Math.Max(0, rate));
         internal static int BaseChargeFor(CrimeRecord crime) =>
             (int)Math.Min(int.MaxValue, (long)Math.Max(1, crime.IncidentCount) * GwpTuning.FieldArrest.BaseChargeVillageViolence);
         internal static int BaseChargeFor(GwpCrimeCategory category) =>
@@ -59,7 +61,8 @@ namespace GreyWardenPolicePurity
                 ? 0
                 : System.Math.Max(0, CrimePool.GetHistory(offender)?.NegativeStanding ?? 0);
 
-            return baseCharge + standing * GwpTuning.Enforcement.FinePerPoint;
+            return (int)Math.Min(GwpTuning.FieldArrest.MaximumCaseFine,
+                (long)baseCharge + (long)standing * GwpTuning.Enforcement.FinePerPoint);
         }
     }
 }

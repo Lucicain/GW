@@ -204,7 +204,7 @@ namespace GreyWardenPolicePurity
 
             // 犯人自己的账在这一刻就清，按他**实际交了多少**算。玩家之后交不交差、
             // 交多少，是玩家与灰袍之间的事，不该再回头影响犯人已经受过的惩戒。
-            ClearOffenderRecord(offender, collected, baseCharge);
+            ClearOffenderRecord(offender, collected, baseCharge, assessed);
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "REPORT_PENDING",
@@ -405,12 +405,17 @@ namespace GreyWardenPolicePurity
         /// 犯人自己的账：实缴先抵基础罚款，余款按 Enforcement.FinePerPoint 抵负声望。
         /// 结算当场就清，与玩家事后交多少无关——犯人已经当众交代过了。
         /// </summary>
-        private static void ClearOffenderRecord(Hero offender, int collected, int baseCharge)
+        private static void ClearOffenderRecord(Hero offender, int collected, int baseCharge, int assessed)
         {
             HeroCrimeStats history = CrimePool.GetOrCreateHistory(offender);
             int before = Math.Max(0, history.NegativeStanding);
             if (before <= 0) return;
 
+            if (assessed >= GwpTuning.FieldArrest.MaximumCaseFine && collected >= assessed)
+            {
+                history.NegativeStanding = 0;
+                return;
+            }
             int towardStanding = Math.Max(0, collected - Math.Max(0, baseCharge));
             int cleared = Math.Min(before, towardStanding / GwpTuning.Enforcement.FinePerPoint);
             if (cleared <= 0) return;

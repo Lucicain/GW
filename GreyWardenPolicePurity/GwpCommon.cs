@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
@@ -14,6 +14,7 @@ namespace GreyWardenPolicePurity
     {
         public const string PatrolIdPrefix = GwpIds.PatrolIdPrefix;
         public const string EnforcementDelayPatrolIdPrefix = GwpIds.EnforcementDelayPatrolIdPrefix;
+        public const string TrainingCohortIdPrefix = GwpIds.TrainingCohortIdPrefix;
         public const string HeavyInfantryId = GwpIds.HeavyInfantryId;
         public const string ArcherId = GwpIds.ArcherId;
         public const string KnightId = GwpIds.KnightId;
@@ -21,6 +22,12 @@ namespace GreyWardenPolicePurity
         public static bool IsPatrolParty(MobileParty? party)
         {
             return party?.StringId?.StartsWith(PatrolIdPrefix, StringComparison.Ordinal) == true;
+        }
+
+        public static bool IsTrainingCohortParty(MobileParty? party)
+        {
+            return party?.StringId?.StartsWith(TrainingCohortIdPrefix,
+                StringComparison.Ordinal) == true;
         }
 
         public static bool IsEnforcementDelayPatrolParty(MobileParty? party)

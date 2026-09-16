@@ -10,6 +10,8 @@ namespace GreyWardenPolicePurity
         public const string PatrolIdPrefix = "gwp_patrol_";
         public const string EnforcementDelayPatrolIdPrefix = "gwp_enf_delay_";
         public const string RecruitmentPatrolPrefix = "gwp_recruit_";
+        /// <summary>玩家练兵订单的随行练兵队。人和订单都在它名下，不占练兵官的名额。</summary>
+        public const string TrainingCohortIdPrefix = "gwp_cohort_";
 
         public const string HeavyInfantryId = "gwheavyinfantry";
         public const string ArcherId = "gwarcher";

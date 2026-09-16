@@ -96,6 +96,8 @@ namespace GreyWardenPolicePurity
             public PoliceTask? GetTask(string policePartyId) => CrimePool.GetTask(policePartyId);
             public void BeginTask(string policePartyId, CrimeRecord crime) => CrimePool.BeginTask(policePartyId, crime);
             public void EndTask(string policePartyId) => CrimePool.EndTask(policePartyId);
+            public bool RetargetTask(string policePartyId, CrimeRecord? newCrime) =>
+                CrimePool.RetargetTask(policePartyId, newCrime);
             public IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId) =>
                 CrimePool.ReleaseTasksForOffender(offenderHeroId);
             public void ReopenCase(CrimeRecord? crime) => CrimePool.ReopenCase(crime);

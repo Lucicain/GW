@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -39,6 +39,15 @@ namespace GreyWardenPolicePurity
         private const float RetargetHysteresis = 25f;
         /// <summary>主动性设定的保持时长；每小时续期一次，覆盖两次续期之间的间隔。</summary>
         private const float CourierInitiativeHours = 6f;
+        /// <summary>
+        /// 送信队的攻击倾向。原版 <c>CalculateInitiativeScoresForEnemy</c> 里
+        /// <c>num11</c> 对**非领主**敌人取的就是这个值，并直接乘进 attackScore；
+        /// 对领主敌人则恒为 1，不受此值影响。
+        /// 置 0 等于完全不打；这里给一个低值：贴身的弱敌照打，但不会为了追一个
+        /// 远处目标把差事丢下——超出约 2.5 格之后原版的 num5 不再给 100 倍加成，
+        /// 0.2 的乘数足以把追击分压到门槛之下。
+        /// </summary>
+        private const float CourierAttackInitiative = 0.2f;
 
         private readonly List<GwpDispatchRecord> _dispatches = new List<GwpDispatchRecord>();
         private string _dispatchState = string.Empty;
@@ -149,7 +158,8 @@ namespace GreyWardenPolicePurity
             GwpDispatchPurpose purpose,
             int carriedCaseGold,
             bool reportLie,
-            string prisonerHeroId, List<ItemRosterElement>? cargo = null)
+            string prisonerHeroId, List<ItemRosterElement>? cargo = null,
+            string orderTroopId = "", int orderCount = 0, int orderPrice = 0)
         {
             MobileParty player = MobileParty.MainParty;
             if (player?.IsActive != true || detachment.TotalManCount <= 0) return null;
@@ -238,6 +248,9 @@ namespace GreyWardenPolicePurity
                     Phase = GwpDispatchPhase.Outbound,
                     ReceiverPartyId = receiver.StringId,
                     CaseGoldFloor = Math.Max(0, carriedCaseGold),
+                    OrderTroopId = orderTroopId ?? string.Empty,
+                    OrderCount = Math.Max(0, orderCount),
+                    OrderPrice = Math.Max(0, orderPrice),
                     CaseHeroId = purpose == GwpDispatchPurpose.Report
                         ? Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportIdentity ?? string.Empty : string.Empty,
                     ReportLie = reportLie,
@@ -281,6 +294,9 @@ namespace GreyWardenPolicePurity
                         {
                             PartyId = createdParty.StringId, Purpose = purpose,
                             CaseGoldFloor = caseGoldTransferred,
+                            OrderTroopId = orderTroopId ?? string.Empty,
+                            OrderCount = Math.Max(0, orderCount),
+                            OrderPrice = Math.Max(0, orderPrice),
                             PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == createdParty.Party
                                 ? prisonerHeroId : string.Empty,
                             DispatchedHours = CampaignTime.Now.ToHours
@@ -338,7 +354,7 @@ namespace GreyWardenPolicePurity
             shortBy <= 0 ? 0 : Math.Max(TravelPursePerMan, shortBy * TravelPursePerMan / Math.Max(1, men));
 
         /// <summary>一支这么大的队伍出这趟门要带多少口粮。</summary>
-        private static int RationsWantedFor(int men) =>
+        internal static int RationsWantedFor(int men) =>
             GwpDispatchSupplyRules.TargetFood(Math.Max(1, men) /
                 (float)Campaign.Current.Models.MobilePartyFoodConsumptionModel.NumberOfMenOnMapToEatOneFood);
 
@@ -384,18 +400,28 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 送信队的性子：不主动接战、遇险就躲。原版短期主动性每小时都会重新决定要不要
-        /// 扑上去或者绕开，一支十来个人的队伍拿默认值就会一路追野怪、走走停停，看上去
-        /// 摇摆不定，还常常把自己打残。这里把它按信使该有的样子设定，长期保持。
+        /// 回程不再用"直扑"。`RequestRush` 落到原版的 <see cref="AiBehavior.EngageParty"/>，
+        /// 那是进攻性移动指令——目标是玩家时，原版 EncounterManager 会据此拉出一场遭遇，
+        /// 于是自己人回来交割却弹出"战斗还是投降"。改用跟随：只把队伍带到玩家身边，
+        /// 不带交战语义；真正的归队仍由 AdvanceReturn 的距离判断（HandoverDistance）完成。
+        /// 顺带把出程遗留的直攻锁解掉——RequestEscort 内部会 ReleaseDirectAttackLock。
         /// </summary>
+        private static void FollowTo(MobileParty party, MobileParty? target)
+        {
+            if (party?.IsActive != true || target?.IsActive != true || party == target) return;
+            KeepCourierDisposition(party);
+            GreyWardenPartyDesireBehavior.RequestEscort(party, target);
+        }
+
         /// <summary>
-        /// 办差的队伍要专心。原版短期主动性每小时重新决定扑上去还是绕开，路上看见劫匪
-        /// 就想追，走走停停还常把自己打残。这里按信使该有的样子设定：不主动接战、遇险
-        /// 就躲；挨打时原版照样自卫。
+        /// 办差的队伍要专心。原版短期主动性每小时都会重新决定扑上去还是绕开，一支十来个
+        /// 人的队伍拿默认值就会一路追野怪、走走停停，还常把自己打残。这里按信使该有的
+        /// 样子设定并长期保持：**侵略性很低但不是不打**——贴身的弱敌照样收拾，远处的
+        /// 目标不值得为它把差事丢下；遇险就躲，挨打时原版照样自卫。
         /// </summary>
         private static void KeepCourierDisposition(MobileParty party)
         {
-            try { party.Ai.SetInitiative(0f, 1f, CourierInitiativeHours); }
+            try { party.Ai.SetInitiative(CourierAttackInitiative, 1f, CourierInitiativeHours); }
             catch { }
         }
 
@@ -765,6 +791,45 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            if (record.Purpose == GwpDispatchPurpose.PeaceRequest)
+            {
+                int settled = PoliceAntiWarDeclaration.ApplyWardenMediation();
+                InformationManager.DisplayMessage(new InformationMessage(settled > 0
+                    ? GwpText.Get("{=gwp_dispatch_peace_done}Your riders carried the word. The quarrels you took up for the Wardens are closed.")
+                    : GwpText.Get("{=gwp_dispatch_peace_moot}Your riders arrived to find nothing left to settle."),
+                    settled > 0 ? Colors.Green : Colors.Yellow));
+                BeginReturn(record, party);
+                return;
+            }
+
+            if (record.Purpose == GwpDispatchPurpose.TroopOrder)
+            {
+                // 订金在出发时已从玩家手里扣走并随队带着，这里直接入库，不再向玩家收。
+                // 买兵的钱可多不可少：路上折损到不够订价，这一单就不立，钱原样带回。
+                int paid = Math.Min(record.OrderPrice, party.PartyTradeGold);
+                bool filed = paid >= record.OrderPrice &&
+                    GreyWardenTroopRequestBehavior.FileCourierOrder(
+                        record.OrderTroopId, record.OrderCount, record.OrderPrice);
+                if (filed)
+                {
+                    party.PartyTradeGold -= paid;
+                    record.CaseGoldFloor = Math.Max(0, record.CaseGoldFloor - paid);
+                    PoliceResourceManager.CreditJudicialTreasuryFromCourier(paid);
+                    GwpAiDiagnostics.WriteAction(receiver, "DISPATCH_TROOP_ORDER_FILED",
+                        "courier=" + party.StringId + "; troop=" + record.OrderTroopId +
+                        "; count=" + record.OrderCount + "; paid=" + paid);
+                }
+                else
+                {
+                    // 练兵长没了，或者玩家在这中间又下了一单。钱原样带回来。
+                    InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                        "{=gwp_dispatch_order_moot}Your riders delivered the order, but the Wardens cannot take it up. They are bringing the coin back."),
+                        Colors.Yellow));
+                }
+                BeginReturn(record, party);
+                return;
+            }
+
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             if (bounty?.CanDispatchCaseReport != true ||
                 (record.CaseHeroId.Length > 0 && record.CaseHeroId != bounty.CaseReportIdentity))
@@ -854,7 +919,7 @@ namespace GreyWardenPolicePurity
 
             if (distance > HandoverDistance)
             {
-                if (!TryHandleTownBusiness(record, party)) SendTo(party, player);
+                if (!TryHandleTownBusiness(record, party)) FollowTo(party, player);
                 return;
             }
             HandBackEverything(record, party, player);

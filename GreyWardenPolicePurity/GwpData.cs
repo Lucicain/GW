@@ -599,6 +599,21 @@ namespace GreyWardenPolicePurity
         /// 结束任务即从当前案件池删除案件。战败或承办人失效也直接结案；只有玩家
         /// 案件挤占、村庄救济调度等明确的行政移交路径才会先调用 ReopenCase。
         /// </summary>
+        /// <summary>
+        /// 给承办人换一个目标，旧案**不算了结**。EndTask 会把罪案从台账里删掉（等同破案），
+        /// 重定向绝不能走那条路：旧案必须留在台账里，退回未指派状态等人接手。
+        /// </summary>
+        public static bool RetargetTask(string policePartyId, CrimeRecord? newCrime)
+        {
+            if (newCrime == null || !newCrime.HasOpenCase ||
+                !_tasks.TryGetValue(policePartyId, out PoliceTask? task) ||
+                string.Equals(task.TargetCrimeId, newCrime.CrimeId, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            task.TargetCrime = newCrime;
+            return true;
+        }
+
         public static void EndTask(string policePartyId)
         {
             if (_tasks.TryGetValue(policePartyId, out PoliceTask? task))

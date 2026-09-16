@@ -59,6 +59,27 @@ namespace GreyWardenPolicePurity
             return top.Weight >= 1 ? top.Kind : Temperament.Plain;
         }
 
+        /// <summary>
+        /// 今天已经谈崩过一次，他不肯再谈。按性子给不同的回绝，措辞里不出现任何
+        /// 性格标签或数值——玩家只该看见这个人说话的样子。
+        /// </summary>
+        internal static TextObject Rebuffed(Temperament temperament) =>
+            temperament switch
+            {
+                Temperament.Upright =>
+                    GwpText.Create("{=gwp_fa_rebuff_upright}I gave you my answer today, and I do not give two. Come back tomorrow if you still want it."),
+                Temperament.Cold =>
+                    GwpText.Create("{=gwp_fa_rebuff_cold}Nothing has changed since we last spoke. Nothing will, before tomorrow."),
+                Temperament.Fierce =>
+                    GwpText.Create("{=gwp_fa_rebuff_fierce}We settled this once already. Press me again today and it will not be with words."),
+                Temperament.Soft =>
+                    GwpText.Create("{=gwp_fa_rebuff_soft}Please. We have been over it once today. Let it rest until morning."),
+                Temperament.Tight =>
+                    GwpText.Create("{=gwp_fa_rebuff_tight}You have had your talk out of me today. Talk is not free, and you have spent it."),
+                _ =>
+                    GwpText.Create("{=gwp_fa_rebuff_plain}We spoke about this today. My answer stands until tomorrow.")
+            };
+
         #region 开场：他先看你是谁
 
         internal static TextObject Opening(

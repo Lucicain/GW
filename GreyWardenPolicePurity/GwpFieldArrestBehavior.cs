@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -34,6 +34,11 @@ namespace GreyWardenPolicePurity
         // 谈崩之后要打的那支队伍。对话还开着时不能开打，先存在这里。
         private MobileParty? _pendingBattleParty;
         private CrimeRecord? _crime;
+        /// <summary>
+        /// 今天已经谈崩过的人：每项 "heroId|到期战役小时"。谈判失败后一整天之内
+        /// 不接受重谈，上一次的结果照旧作数，免得玩家原地反复摇骰子。
+        /// </summary>
+        private List<string> _negotiationCooldowns = new List<string>();
         private Hero? _offender;
         private MobileParty? _offenderParty;
         private int _fine;
@@ -79,6 +84,8 @@ namespace GreyWardenPolicePurity
         // Negotiation is encounter-local. Legacy persisted attempt locks are retired.
         public override void SyncData(IDataStore dataStore)
         {
+            dataStore.SyncData("gwp_negotiation_cooldowns", ref _negotiationCooldowns);
+            _negotiationCooldowns ??= new List<string>();
             dataStore.SyncData("gwp_duel_payment_hero", ref _duelPaymentHero);
             dataStore.SyncData("gwp_grace_hero", ref _graceHeroId);
             dataStore.SyncData("gwp_grace_due", ref _graceDueHours);
@@ -107,6 +114,23 @@ namespace GreyWardenPolicePurity
                 "{" + GwpTextKeys.FieldArrestCharge + "}",
                 () => ChargeCondition() && !GraceStillRunning, null);
 
+            starter.AddPlayerLine(
+                "gwp_fa_charge_cooled", "gwp_fa_charge_options", "gwp_fa_charge_cooled_reply",
+                GwpText.Get("{=gwp_fa_charge_cooled}Let us take up that charge again."),
+                () => _crime?.HasOpenCase == true && _offender != null &&
+                      IsAssignedCase(_offender) && !HasGrace &&
+                      NegotiationCooldownActive(_offender), null, 109);
+
+            starter.AddDialogLine(
+                "gwp_fa_charge_cooled_reply", "gwp_fa_charge_cooled_reply", "gwp_fa_charge_options",
+                "{GWP_FA_REBUFF}",
+                () =>
+                {
+                    MBTextManager.SetTextVariable("GWP_FA_REBUFF",
+                        GwpFieldArrestLines.Rebuffed(GwpFieldArrestLines.Read(_offender)));
+                    return true;
+                }, null);
+
             starter.AddPlayerLine("gwp_duel_return_collect", "gwp_fa_charge_options", "gwp_fa_settled",
                 GwpText.Get("{=gwp_duel_inspect_property}Show me your property. We will settle the fine now."),
                 () => _offender != null && _duelPaymentHero == _offender.StringId && IsAssignedCase(_offender), PrepareDuelPropertyCollection);
@@ -128,14 +152,14 @@ namespace GreyWardenPolicePurity
 
             // ── 第一层：他认不认这次执法 ────────────────────────────────────────
             starter.AddDialogLine("gwp_fa_refuse", "gwp_fa_layer1_open", "gwp_fa_layer1_lost_options",
-                "{GWP_VOICE_REFUSE}", () => (_refusesToTalk) && SetVoice("refuse", "{=gwp_fa_refuse_strength}I will not accept this demand. We have nothing to discuss."), EndPersuasionConsequence, 110);
+                "{GWP_VOICE_REFUSE}", () => (_refusesToTalk) && SetVoice("refuse", "{=gwp_fa_refuse_strength}I will not accept this demand. We have nothing to discuss."), () => { RecordNegotiationFailure(); EndPersuasionConsequence(); }, 110);
             starter.AddDialogLine(
                 "gwp_fa_layer1_open", "gwp_fa_layer1_open", "gwp_fa_layer1_next",
                 "{GWP_VOICE_HEAR}", () => (!_refusesToTalk) && SetVoice("hear", "{=gwp_fa_hear_charge}I have heard the charge. First tell me why I should answer to you."), BeginLayerOneConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_failed", "gwp_fa_layer1_next", "gwp_fa_layer1_lost",
-                "{GWP_VOICE_LOST1}", () => (LayerFailedCondition()) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), null);
+                "{GWP_VOICE_LOST1}", () => (LayerFailedCondition()) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), RecordNegotiationFailure);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_done", "gwp_fa_layer1_next", "gwp_fa_terms_request",
@@ -190,7 +214,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_failed", "gwp_fa_layer2_next", "gwp_fa_layer2_lost",
-                "{GWP_VOICE_LOST2}", () => (LayerFailedCondition()) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), null);
+                "{GWP_VOICE_LOST2}", () => (LayerFailedCondition()) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), RecordNegotiationFailure);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_done", "gwp_fa_layer2_next", "gwp_fa_layer2_won",
@@ -441,10 +465,49 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        private const double NegotiationCooldownHours = 24d;
+
+        private bool NegotiationCooldownActive(Hero? hero)
+        {
+            if (hero == null || _negotiationCooldowns.Count == 0) return false;
+            double now = CampaignTime.Now.ToHours;
+            string prefix = hero.StringId + "|";
+            foreach (string entry in _negotiationCooldowns.ToList())
+            {
+                int split = entry.IndexOf('|');
+                if (split <= 0 || !double.TryParse(entry.Substring(split + 1),
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out double until))
+                {
+                    _negotiationCooldowns.Remove(entry);
+                    continue;
+                }
+                if (until <= now) { _negotiationCooldowns.Remove(entry); continue; }
+                if (entry.StartsWith(prefix, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>谈崩了就记一天。重谈不是免费的，上一次的结果就是今天的结果。</summary>
+        private void RecordNegotiationFailure()
+        {
+            if (_offender == null) return;
+            double until = CampaignTime.Now.ToHours + NegotiationCooldownHours;
+            string prefix = _offender.StringId + "|";
+            _negotiationCooldowns.RemoveAll(entry =>
+                entry.StartsWith(prefix, StringComparison.Ordinal));
+            _negotiationCooldowns.Add(prefix + until.ToString("R",
+                System.Globalization.CultureInfo.InvariantCulture));
+            GwpAiDiagnostics.WriteFieldArrest("NEGOTIATION_COOLDOWN_SET",
+                "hero=" + _offender.StringId + "; untilHours=" + until.ToString("0.00",
+                    System.Globalization.CultureInfo.InvariantCulture));
+        }
+
         private bool ChargeCondition()
         {
             if (_crime?.HasOpenCase != true || _offender == null || !IsAssignedCase(_offender) || HasGrace || _duelPaymentHero == _offender.StringId)
                 return false;
+            if (NegotiationCooldownActive(_offender)) return false;
 
             if (_fine <= 0) return false;
 
@@ -521,8 +584,7 @@ namespace GreyWardenPolicePurity
         }
 
         private static int CalculateFine(CrimeRecord crime) =>
-            CalculateBaseFine(crime)
-            + GetNegativeStanding(crime) * GwpTuning.Enforcement.FinePerPoint;
+            GwpFieldArrestPricing.AssessFine(crime);
 
         #endregion
 

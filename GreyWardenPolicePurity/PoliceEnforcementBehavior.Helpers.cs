@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -146,7 +146,9 @@ namespace GreyWardenPolicePurity
                 if (playerFaction == null) return;
 
                 Clan policeClan = PoliceStats.GetPoliceClan();
-                GwpCommon.TrySetNeutral(policeClan, playerFaction);
+                // 玩家参与的讲和必须走 MakePeaceAction：裸的 SetNeutral 不会把定居点
+                // 标记为待重绘，灰袍的领地会在玩家地图上一直红着。
+                if (policeClan != null) MakePeaceAction.Apply(policeClan, playerFaction);
 
                 foreach (var victim in PlayerState.VictimFactions)
                 {
@@ -174,14 +176,15 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static void RestorePeaceAfterCaseEnd(PoliceTask? task)
         {
-            if (task?.WarTarget == null) return;
+            RestorePeaceWithoutEnforcementReason(task?.WarTarget);
+        }
 
+        private static void RestorePeaceWithoutEnforcementReason(IFaction? target)
+        {
+            if (target == null) return;
             Clan? policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return;
-            if (GwpPoliceWarReasonService.HasLegitimateWarReason(task.WarTarget))
-                return;
-
-            GwpCommon.TrySetNeutral(policeClan, task.WarTarget);
+            if (policeClan == null || GwpPoliceWarReasonService.HasLegitimateWarReason(target)) return;
+            GwpCommon.TrySetNeutral(policeClan, target);
         }
 
         private Settlement? FindNearestTown()

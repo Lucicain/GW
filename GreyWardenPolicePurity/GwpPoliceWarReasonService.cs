@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -161,7 +161,7 @@ namespace GreyWardenPolicePurity
                     AddFactionReason(
                         buckets,
                         faction,
-                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}A war is currently in progress, but there is no active wartime-pursuit case or other valid enforcement reason. The next two-day review will restore peace."));
+                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}No outstanding warrant remains. The Grey Wardens are arranging peace."));
                 }
             }
 

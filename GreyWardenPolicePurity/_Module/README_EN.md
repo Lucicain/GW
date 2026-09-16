@@ -40,11 +40,24 @@ Compared with v1.4-r10:
 - Expenses are settled for the case. Money the offender could not pay is not treated as theft by the player; keeping assets that were actually collected can trigger an investigation. Attacking someone after accepting their settlement may also be investigated.
 - Concealment is investigated after a delay. A first false report carries a low risk, but repeated recent lies raise it sharply. High Grey Warden standing reduces the chance of discovery.
 - Player enforcement adds to the offender's arrest history and deterrence. Fines accumulate by offence and civilian losses, with outstanding amounts shown in the encyclopedia.
+- Troop orders are paid in full when placed. Whether you order face to face or send a courier, payment goes through a trade screen and accepts gold and goods. You may pay more than the price; the surplus comes back at the end. There is no payment on delivery and no debt.
+- Send a courier to place a troop order. The courier carries the order and the payment to the Wardens and returns on its own; the trained soldiers are still delivered in person by a Warden lord.
+- The Wardens raise a separate escort party to hold the soldiers for your order, so it no longer takes up room in a lord's own party. The ordered troop type is trained first; when nothing can be promoted into it - for instance when you order the lowest tier - veterans are broken down and retrained instead, so those orders can still be filled.
+- With no order outstanding, Warden standing forces replenish with a cavalry-weighted mix, which offsets how quickly their horse is spent.
+- Wars you brought on yourself by helping the Wardens can be settled through their mediation: raise it with a Warden lord in person, or send a courier. One request settles every war of that kind at once. Only three situations qualify - you stopped a crime in progress, you fought alongside Wardens who were already engaged, or the case was yours to begin with. Wars from any other cause are not their concern.
+- A lord holding a case now always pursues the nearest offender of the kind he handles, so new cases are dealt with sooner. Lords on training, reconstruction, support and player duties are unaffected.
+- A target that cannot be caught is held up by a cavalry detachment first, and war is declared only once contact is made.
+- Couriers set out with enough food and travelling money for the road, and auto-trade no longer bargains away their rations. They rarely start trouble on the way, but will still defend themselves.
+- After a failed roadside negotiation, the offender will not reopen it for a day, and different temperaments turn you down differently.
 - Warden archers now carry dual blades for melee and switch between their bow and blades according to distance and firing orders.
 - Adjusted dual-blade length and resistance to interruption during attacks, removed attacks passing through allies, and improved recovery after a left-hand thrust connects.
 
 #### Fixed
 
+- Fixed settlements still showing as hostile on the map after the Wardens returned to neutral.
+- Fixed a lord delivering ordered troops milling about beside the player instead of handing them over.
+- Fixed Warden detachments sent out on errands being drawn into a settlement and disbanded, losing the men and their gear.
+- Fixed the troop handover text not matching how payment actually works.
 - Fixed crashes when confirming courier cargo, failed prisoner transfers, stalled departures, supply and retargeting problems, and returning couriers triggering a battle with only a surrender option when followed closely.
 - Fixed trade confirmation, cancellation and item transfers, and removed duplicate or obsolete report choices from Warden conversations.
 - Fixed duplicate charges during a single village raid, missing village militia deaths and professional troop casualties being counted as civilian losses.

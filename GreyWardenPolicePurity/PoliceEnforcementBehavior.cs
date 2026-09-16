@@ -43,6 +43,12 @@ namespace GreyWardenPolicePurity
         private int _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private int _atonementReputationReward = 0;
         private float _atonementDeadlineHours = 0f;
+        /// <summary>
+        /// 承办人上一次改追更近罪犯的时刻。只用于抑制来回换目标，不进存档：
+        /// 读档后重新开始计时最多多换一次，没有正确性风险。
+        /// </summary>
+        private readonly Dictionary<string, double> _lastRetargetHourByParty =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Vec2> _shelteredPoliceLastPositionByTaskId =
             new Dictionary<string, Vec2>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _shelteredPoliceStoppedHoursByTaskId =
@@ -522,10 +528,10 @@ namespace GreyWardenPolicePurity
 
                 // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
                 int rep = PlayerState.Reputation;
-                int fine = Math.Abs(rep) * 300;
+                int fine = GwpFieldArrestPricing.StandingFine(rep, 300);
                 int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
                 int recovered = 300 > 0 ? collected / 300 : 0;
-                int repAfter = Math.Min(0, rep + recovered);
+                int repAfter = collected >= fine ? 0 : Math.Min(0, rep + recovered);
 
                 // 步骤5：声望按实缴比例恢复（不再直接归零）
                 PlayerState.ResetReputation(repAfter);
@@ -574,6 +580,8 @@ namespace GreyWardenPolicePurity
             BreakInvalidShelteredBattles();
             CloseSettledPlayerHunt();
             CrimeState.Clean();
+            // 先让承办人改追更近的罪犯，被放开的旧案同一轮就能被别人接走。
+            RetargetOrdinaryCasesToNearest();
             AssignTasks();
             UpdateLordAssistance();
             UpdateTasks();
@@ -648,6 +656,71 @@ namespace GreyWardenPolicePurity
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D);
                 if (crime != null)
                     BeginTask(pp, crime);
+            }
+        }
+
+        /// <summary>
+        /// 办案领主的长期欲望始终指向最近的罪犯：眼皮底下冒出新案子时不必等旧案了结
+        /// 才动身。只在还没宣战的追捕阶段换目标——已经宣战、已经组起协力军团或已经派出
+        /// 拦截队的局面拆起来代价太大，交给原有流程走完。旧案不结案，退回台账等人接。
+        /// 其余差事（协力、重建、练兵、玩家委托、村庄救济）本来就不在承办任务里，
+        /// 不受距离影响。
+        /// </summary>
+        private void RetargetOrdinaryCasesToNearest()
+        {
+            double now = CampaignTime.Now.ToHours;
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values.ToList())
+            {
+                // Pursuit 之外的每一档都意味着案子已经升级或另有归属。
+                if (task.FlowState != PoliceTaskFlowState.Pursuit) continue;
+
+                MobileParty? owner = MobileParty.All.FirstOrDefault(party =>
+                    string.Equals(party.StringId, task.PolicePartyId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (owner?.IsActive != true || owner.MapEvent != null ||
+                    owner.Army != null || IsAssistanceOccupied(owner) ||
+                    _assistanceGroups.ContainsKey(owner.StringId))
+                    continue;
+                // 已经放出去的拦截队是冲着当前目标去的，换目标会把它甩在半路。
+                if (_delayPatrolStates.Values.Any(state => !state.Returning &&
+                        string.Equals(state.SourceTaskPolicePartyId, owner.StringId,
+                            StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                if (_lastRetargetHourByParty.TryGetValue(owner.StringId, out double last) &&
+                    now - last < GwpTuning.Enforcement.RetargetCooldownHours)
+                    continue;
+
+                MobileParty? current = task.TargetCrime?.Offender;
+                if (current?.IsActive != true) continue;
+
+                // 类型归属必须守住：有专职的领主只在自己这一类里改追，否则某一职位的
+                // 领主死绝之后，那一类罪案就再没有人专门负责了。
+                GwpCrimeCategory preferred = GetPreferredCrimeCategory(owner);
+                CrimeRecord? candidate = preferred == GwpCrimeCategory.Unknown
+                    ? CrimeState.GetNearest(owner.GetPosition2D)
+                    : CrimeState.GetNearest(owner.GetPosition2D,
+                        record => record.CrimeCategory == preferred);
+                if (candidate?.Offender?.IsActive != true) continue;
+
+                float currentDistance = owner.GetPosition2D.Distance(current.GetPosition2D);
+                float candidateDistance = owner.GetPosition2D.Distance(
+                    candidate.Offender.GetPosition2D);
+                if (candidateDistance >=
+                    currentDistance * GwpTuning.Enforcement.RetargetImprovementRatio)
+                    continue;
+
+                string previousId = task.TargetCrimeId;
+                if (!CrimeState.RetargetTask(owner.StringId, candidate)) continue;
+                _lastRetargetHourByParty[owner.StringId] = now;
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(owner);
+                GwpAiDiagnostics.WriteAction(owner, "CASE_RETARGETED_TO_NEAREST",
+                    "previousCase=" + previousId +
+                    "; previousOffender=" + current.StringId +
+                    "; previousDistance=" + currentDistance.ToString("0.00", CultureInfo.InvariantCulture) +
+                    "; newCase=" + candidate.CrimeId +
+                    "; newOffender=" + candidate.Offender.StringId +
+                    "; newDistance=" + candidateDistance.ToString("0.00", CultureInfo.InvariantCulture) +
+                    "; category=" + preferred);
             }
         }
 
@@ -1129,6 +1202,16 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        // Both long-term warrants and nearby interventions establish the same native
+        // faction hostility. Task ownership and tactical initiative remain separate.
+        private static bool EnsurePoliceFactionWar(Clan policeClan, IFaction target)
+        {
+            if (target == policeClan || target == policeClan.MapFaction) return false;
+            if (!FactionManager.IsAtWarAgainstFaction(policeClan, target))
+                FactionManager.DeclareWar(policeClan, target);
+            return FactionManager.IsAtWarAgainstFaction(policeClan, target);
+        }
+
         private void DeclareWar(PoliceTask task, MobileParty criminal)
         {
             try
@@ -1150,10 +1233,7 @@ namespace GreyWardenPolicePurity
 
                 task.WarTarget = target;
 
-                if (!FactionManager.IsAtWarAgainstFaction(policeClan, target))
-                {
-                    FactionManager.DeclareWar(policeClan, target);
-                }
+                EnsurePoliceFactionWar(policeClan, target);
             }
             catch { }
         }

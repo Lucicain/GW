@@ -39,7 +39,9 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
-                GwpCommon.TrySetNeutral(policeClan, playerFaction);
+                // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
+                try { MakePeaceAction.Apply(policeClan, playerFaction); }
+                catch { GwpCommon.TrySetNeutral(policeClan, playerFaction); }
             }
         }
 
@@ -55,7 +57,9 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
-                GwpCommon.TrySetNeutral(policeClan, playerFaction);
+                // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
+                try { MakePeaceAction.Apply(policeClan, playerFaction); }
+                catch { GwpCommon.TrySetNeutral(policeClan, playerFaction); }
             }
 
             foreach (var victim in PlayerBehaviorPool.VictimFactions)

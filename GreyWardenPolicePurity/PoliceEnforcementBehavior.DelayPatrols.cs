@@ -212,6 +212,17 @@ namespace GreyWardenPolicePurity
                     ReturnSettlementId = returnSettlement?.StringId ?? string.Empty,
                     Returning = nearestOffender == null
                 };
+
+                // 收养孤儿队一直是静默的，实机里分不清"它本来就归我们管"和"它脱管之后
+                // 才被捡回来"。脱管期间没人续意图，队伍会退回原版巡逻，还会靠净化把
+                // 缴获的外籍兵不断洗成灰袍兵，越滚越大。
+                GwpAiDiagnostics.WriteAction(patrol, "DELAY_PATROL_ORPHAN_ADOPTED",
+                    "members=" + patrol.MemberRoster.TotalManCount +
+                    "; prisoners=" + patrol.PrisonRoster.TotalManCount +
+                    "; nearestOffender=" + (nearestOffender?.StringId ?? "-") +
+                    "; returnSettlement=" + (returnSettlement?.StringId ?? "-") +
+                    "; returning=" + (nearestOffender == null) +
+                    "; defaultBehavior=" + patrol.DefaultBehavior);
             }
         }
 
@@ -419,10 +430,11 @@ namespace GreyWardenPolicePurity
         }
 
         private void TrySpawnImmediateCaseInterceptor(MobileParty sourceParty,
-            PoliceTask task, MobileParty targetParty,
+            PoliceTask? task, MobileParty targetParty,
             LocalStrengthDeclarationSnapshot? declaration)
         {
-            if (PlayerBountyBehavior.AwaitingSupportRequest(task) || PlayerBountyBehavior.IsReservedTarget(targetParty)) return;
+            if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task) ||
+                PlayerBountyBehavior.IsReservedTarget(targetParty)) return;
             bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
@@ -439,7 +451,7 @@ namespace GreyWardenPolicePurity
                 declaration.FriendlyLocalStrength >
                 declaration.EnemyLocalStrength;
             bool playerBountyDeclaration =
-                task.IsPlayerBountyEscort && task.WarDeclared;
+                task?.IsPlayerBountyEscort == true && task.WarDeclared;
             bool dispersedAssistance =
                 hasAssistanceGroup &&
                 assistanceGroup.DispersedForSpeed &&
@@ -453,14 +465,13 @@ namespace GreyWardenPolicePurity
             if (sourceParty?.IsActive != true || sourceParty.MapEvent != null ||
                 sourceParty.Army != null && !assembledAssistance ||
                 targetParty?.IsActive != true ||
-                targetParty.IsMainParty ||
-                (task.FlowState != PoliceTaskFlowState.WarPursuit &&
-                    !playerBountyDeclaration) ||
-                !string.Equals(task.PolicePartyId, sourceParty.StringId,
-                    StringComparison.OrdinalIgnoreCase) ||
+                targetParty.IsMainParty)
+                return;
+            if (task == null ||
+                (task.FlowState != PoliceTaskFlowState.WarPursuit && !playerBountyDeclaration) ||
+                !string.Equals(task.PolicePartyId, sourceParty.StringId, StringComparison.OrdinalIgnoreCase) ||
                 task.TargetCrime?.Offender != targetParty ||
-                (!ordinaryDeclaration && !playerBountyDeclaration &&
-                 !dispersedAssistance && !assembledAssistance))
+                (!ordinaryDeclaration && !playerBountyDeclaration && !dispersedAssistance && !assembledAssistance))
                 return;
 
             MobileParty movementTarget =
@@ -617,7 +628,7 @@ namespace GreyWardenPolicePurity
                     PatrolPartyId = patrolId,
                     SourceTaskPolicePartyId = sourceParty.StringId,
                     TargetPartyId = targetParty.StringId,
-                    WarTargetId = task.WarTarget?.StringId ?? string.Empty,
+                    WarTargetId = task?.WarTarget?.StringId ?? string.Empty,
                     ReturnSettlementId = returnSettlement.StringId,
                     Returning = false,
                     IsImmediateInterceptor = true

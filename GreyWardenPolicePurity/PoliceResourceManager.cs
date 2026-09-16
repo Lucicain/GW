@@ -131,7 +131,8 @@ namespace GreyWardenPolicePurity
             foreach (MobileParty party in MobileParty.All.Where(static party =>
                          party?.IsActive == true &&
                          (GwpCommon.IsPatrolParty(party) ||
-                          GwpCommon.IsEnforcementDelayPatrolParty(party))).ToList())
+                          GwpCommon.IsEnforcementDelayPatrolParty(party) ||
+                          GwpCommon.IsTrainingCohortParty(party))).ToList())
             {
                 ProvisionTemporaryDutyParty(party);
             }
@@ -863,6 +864,11 @@ namespace GreyWardenPolicePurity
             return Math.Max(GwpTuning.Reconstruction.MinimumCost,
                 Math.Min(GwpTuning.Reconstruction.MaximumCost, proportional));
         }
+
+        /// <summary>使者把玩家预付的订金送到之后，这笔钱直接入库——玩家的金币在
+        /// 出发时就已经扣走，这里不能再向玩家收一次。</summary>
+        internal static void CreditJudicialTreasuryFromCourier(int amount) =>
+            CreditJudicialTreasury(amount);
 
         private static void CreditJudicialTreasury(int amount)
         {

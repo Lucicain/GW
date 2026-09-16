@@ -54,6 +54,8 @@ namespace GreyWardenPolicePurity
                 try
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+                    ArchiveTrace(LogPath + ".previous");
+                    ArchiveTrace(LogPath);
                     File.WriteAllText(LogPath,
                         $"# GreyWarden AI diagnostics | session={DateTime.Now:O} | " +
                         $"assembly={typeof(GwpAiDiagnostics).Assembly.GetName().Version} | " +
@@ -579,6 +581,22 @@ namespace GreyWardenPolicePurity
                 ? "-"
                 : value!.Replace("|", "/").Replace("\r", " ").Replace("\n", " ");
 
+        // Keep recent verbose evidence bounded; explicitly preserved investigation files are exempt.
+        private static void ArchiveTrace(string path)
+        {
+            if (!File.Exists(path)) return;
+            string archiveDirectory = Path.Combine(Path.GetDirectoryName(LogPath)!, "GreyWarden-Diagnostics-Archive");
+            Directory.CreateDirectory(archiveDirectory);
+            string archivePath = Path.Combine(archiveDirectory,
+                Path.GetFileName(path) + "." + DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffffffZ", CultureInfo.InvariantCulture)
+                + "." + Guid.NewGuid().ToString("N") + ".log");
+            File.Move(path, archivePath);
+            foreach (FileInfo old in new DirectoryInfo(archiveDirectory)
+                .GetFiles(Path.GetFileName(path) + ".20*.log")
+                .OrderByDescending(x => x.Name, StringComparer.Ordinal).Skip(8))
+                old.Delete();
+        }
+
         private static void Append(string line)
         {
             lock (Sync)
@@ -586,13 +604,17 @@ namespace GreyWardenPolicePurity
                 try
                 {
                     if (!_sessionStarted) StartSession();
-                    // Bound the active trace and retain the preceding segment.
-                    // Keep failure logs separate so busy AI cannot evict them.
+                    // Case events have their own, slower-rotating budget so AI auctions cannot evict them.
+                    if (line.Contains(" | FIELD_ARREST") || line.Contains("action=MAP_EVENT_"))
+                    {
+                        string events = Path.Combine(Path.GetDirectoryName(LogPath)!, "GreyWarden-Case-Events.log");
+                        if (File.Exists(events) && new FileInfo(events).Length >= 2 * 1024 * 1024) ArchiveTrace(events);
+                        File.AppendAllText(events, line + "\r\n", Encoding.UTF8);
+                    }
                     if (File.Exists(LogPath) && new FileInfo(LogPath).Length >= 8 * 1024 * 1024)
                     {
-                        string previous = LogPath + ".previous";
-                        if (File.Exists(previous)) File.Delete(previous);
-                        File.Move(LogPath, previous);
+                        ArchiveTrace(LogPath + ".previous");
+                        ArchiveTrace(LogPath);
                     }
                     File.AppendAllText(LogPath, line + "\r\n", Encoding.UTF8);
                 }

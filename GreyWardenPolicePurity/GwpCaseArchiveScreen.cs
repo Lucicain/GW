@@ -419,8 +419,8 @@ namespace GreyWardenPolicePurity
                 return GwpText.Get(
                     "{=gwp_gwpcasearchivescreen_057}Your standing: {VAR_1} | Wanted — the lawful fine is {VAR_2} denars to a provost patrol, {VAR_3} to a Grey Warden lord",
                     "VAR_1", reputation,
-                    "VAR_2", Math.Abs(reputation) * GwpTuning.Patrol.FinePerPoint,
-                    "VAR_3", Math.Abs(reputation) * GwpTuning.Enforcement.FinePerPoint);
+                    "VAR_2", GwpFieldArrestPricing.StandingFine(reputation, GwpTuning.Patrol.FinePerPoint),
+                    "VAR_3", GwpFieldArrestPricing.StandingFine(reputation, GwpTuning.Enforcement.FinePerPoint));
             }
 
             string band = reputation > 0
@@ -715,12 +715,9 @@ namespace GreyWardenPolicePurity
             AssignmentText = GwpText.Get(
                 "{=gwp_player_troop_ledger_assignment}Trainer: {VAR_1} | Stage: {VAR_2}",
                 "VAR_1", trainerName,
-                "VAR_2", order.DeferredTasksRemaining > 0
-                    ? GwpText.Get(
-                        "{=gwp_player_troop_stage_deferred}Delivery postponed")
-                    : DescribePlayerTroopOrderStage(order.Stage));
+                "VAR_2", DescribePlayerTroopOrderStage(order.Stage));
             DetailsText = GwpText.Get(
-                "{=gwp_player_troop_ledger_detail}Task type: player troop order | Ready: {VAR_1}/{VAR_2} | Delivery price: {VAR_3} denars",
+                "{=gwp_player_troop_ledger_detail}Task type: player troop order | Ready: {VAR_1}/{VAR_2} | Paid on order: {VAR_3} denars",
                 "VAR_1", order.ReadyCount, "VAR_2", order.Count,
                 "VAR_3", order.Price);
         }

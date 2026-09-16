@@ -147,6 +147,9 @@ namespace GreyWardenPolicePurity
                 }
 
                 DeclareWarAction.ApplyByDefault(playerFaction, criminalFaction);
+                // 这一战是替灰袍办案打的，记进申请通道；结案时不再替玩家自动讲和。
+                PoliceAntiWarDeclaration.RecordMediationRequest(
+                    criminalFaction, "case_support_declaration");
                 GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_PLAYER_WAR",
                     "playerFaction=" + playerFaction.StringId +
                     "; criminalFaction=" + criminalFaction.StringId);

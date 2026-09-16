@@ -51,8 +51,8 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_accept_response",
                 "gwp_recruit_accept_response",
                 "close_window",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_002}Good. This raiment will mark you as our sworn agent. Once the wanted party is defeated, seek a Warden-lord and claim the bounty.")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_003}Remember this: should the pursuit kindle war, the Grey Wardens will mediate once the contract is settled."),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_002}Then take this harness. Wear it when you ride under our warrant, and bring the money or prisoner to a Warden-lord.")
+                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_003} If the pursuit brings war upon you, we will speak for you when the matter is settled."),
                 null,
                 null,
                 100);
@@ -187,11 +187,7 @@ namespace GreyWardenPolicePurity
             if (_recruitmentOffered || _recruitmentAccepted) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.RecruitGreeting,
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_009}Traveller, stay a moment. The Grey Wardens have marked your recent good service, and would set a charge before you.")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_010}As our sworn hunter, you may pursue wanted malefactors and receive a worthy bounty.")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_011}Be warned: a foreign realm may deem such pursuit an incursion and answer it with war.")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_012}Yet once the quarry is defeated and the bounty claimed, the Grey Wardens will mediate,")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_013}so that the war does not remain yours to bear. Will you take the oath?"));
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_009}The Grey Wardens have heard of your deeds. Will you hunt outlaws for us? There is pay for the work."));
             WriteRecruitmentTrace(conversationParty, "RECRUIT_DIALOG_OPENED",
                 "recruitment start line accepted");
             return true;
@@ -578,12 +574,10 @@ namespace GreyWardenPolicePurity
                 }
 
                 if (criminalFaction == null || criminalFaction == playerFaction) return;
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, criminalFaction))
-                {
-                    MakePeaceAction.Apply(playerFaction, criminalFaction);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_019}Grey Warden mediation: peace concluded with {VAR_1}", "VAR_1", criminalFaction.Name), Colors.Green));
-                }
+                // 结案不再替玩家自动讲和。这一战本来就是替灰袍办案打的，记进申请通道，
+                // 由玩家自己去找灰袍或派使者一并了结。
+                PoliceAntiWarDeclaration.RecordMediationRequest(
+                    criminalFaction, "bounty_case_closed");
             }
             catch { }
         }

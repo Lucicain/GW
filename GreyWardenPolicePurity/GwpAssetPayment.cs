@@ -38,9 +38,17 @@ namespace GreyWardenPolicePurity
             .Where(g => g.Incoming && g.IsOffered && g.CurrentAmount > 0)
             .Select(g => new ItemRosterElement(g.ItemRosterElement.EquipmentElement, g.CurrentAmount)).ToList();
         internal void ConfirmSelection() { if (SelectionOnly || ReportMode) Apply(); }
+        /// <summary>
+        /// 自动交易不许动用的口粮。送信队出发前要从玩家辎重里分走这么多粮，
+        /// 一键换货要是把粮食也换走，队伍就只能在出发关口被拦下来。留出这条底线，
+        /// 玩家仍可手动把粮食加进去——那属于他自己的选择，出发判断照旧会拦。
+        /// </summary>
+        private readonly int _rationsFloor;
+
         internal GwpAssetPayment(Hero payer, Hero receiver, PartyBase from, PartyBase to, int limit, int autoTarget = -1, bool selectionOnly = false,
-            bool reportMode = false, GwpCaseReceipt? autoReceipt = null, Hero? prisoner = null)
+            bool reportMode = false, GwpCaseReceipt? autoReceipt = null, Hero? prisoner = null, int rationsFloor = 0)
         {
+            _rationsFloor = Math.Max(0, rationsFloor);
             SelectionOnly = selectionOnly;
             ReportMode = reportMode; _autoReceipt = autoReceipt;
             _payer = payer; _receiver = receiver; _from = from; _to = to; _limit = Math.Max(0, limit); _autoTarget = autoTarget < 0 ? _limit : Math.Max(0, autoTarget);
@@ -98,6 +106,10 @@ namespace GreyWardenPolicePurity
             var result = new Dictionary<Barterable, int>();
             if (ReportMode)
             {
+                // 一键换货可以动的粮食上限：辎重里的粮总量减去出发要带的口粮。
+                int spareFood = Math.Max(0, _from.ItemRoster
+                    .Where(x => x.EquipmentElement.Item?.IsFood == true)
+                    .Sum(x => Math.Max(0, x.Amount)) - _rationsFloor);
                 foreach (var entry in Entries)
                 {
                     int wanted = entry is Money ? Math.Max(0, _autoReceipt?.Gold ?? 0)
@@ -107,6 +119,11 @@ namespace GreyWardenPolicePurity
                         : entry is Goods goods ? _from.ItemRoster.Where(x => x.EquipmentElement.Equals(goods.ItemRosterElement.EquipmentElement)).Sum(x => x.Amount)
                         : entry is Prisoner p && p.Hero.IsPrisoner && p.Hero.PartyBelongedToAsPrisoner == _from ? 1 : 0;
                     int amount = Math.Min(wanted, Math.Min(entry.MaxAmount, available));
+                    if (entry is Goods food && food.ItemRosterElement.EquipmentElement.Item?.IsFood == true)
+                    {
+                        amount = Math.Min(amount, spareFood);
+                        spareFood = Math.Max(0, spareFood - amount);
+                    }
                     if (amount > 0) result[entry] = amount;
                 }
                 return result;

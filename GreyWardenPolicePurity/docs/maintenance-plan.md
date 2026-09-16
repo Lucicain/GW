@@ -1,4 +1,475 @@
-# GreyWarden Maintenance Plan
+﻿# GreyWarden Maintenance Plan
+
+## 2026-09-16 v1.4-r11 重新打包发布（同版本号覆盖，玩家包无任何监控）
+
+- 用户裁定：本次构建才算最新版本；**版本号沿用 v1.4-r11**，因为此前那一版没有推给玩家。`SubModule.xml` 与程序集均已是 `v1.4.11` / `1.4.11.0`，无需改动。
+- **玩家包不含任何监控**，已实证而非假定。玩家 DLL 以 `-t:Rebuild -p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false -p:OutputPath=build-check/release-player-v1.4-r11/` 隔离编译，未回写 live。按 UTF-16LE（.NET 字符串在 PE 里的实际编码，ASCII grep 会全部假阴性）逐串核查包内 DLL：
+  - `GreyWarden-AI-Diagnostics.log`、`GreyWarden-Case-Events.log`、`GreyWarden-Faults.log`、`GreyWarden-Diagnostics-Archive`、以及拼日志路径用的 `Mount and Blade II Bannerlord` —— **全部 absent**；同一批串在 live 诊断 DLL 里全部 PRESENT，构成对照。
+  - `GwpAiDiagnostics.cs` 的 `#else` 分支（625–662 行）把 `WriteAction` 等全部编译成空方法体，因此调用点残留的动作名字面量（`COHORT_RAISED` 等）是惰性参数，没有任何写出路径。
+- 打包：38 个文件，根目录 `GreyWarden/`，与 r11 既有布局逐项一致。排除 `Shaders/D3D11/shader_compile_report.log`、Client `.pdb`、整个 `bin/Win64_Shipping_wEditor/`（live 43 个文件 − 5 = 38）。`Assets/`、`AssetSources/` 是素材源，本就不部署也不打包，只发 `AssetPackages/*.tpac`。
+- 覆盖前记录了旧包哈希 `5DC71DFB720BE4304F899D51AF78C6F4F516D10995FE62A0A200D067E4DB1628`，与 `build-check/package-v1.4-r11/manifest.json` 原记录一致，确认覆盖的正是那一件。新包 `GreyWarden-v1.4-r11.zip`，`351446923` 字节，SHA-256 `9E6404335152F92997A8AAB0A127766CAA430DD6231397A03B62D7EB1409CDA9`；包内玩家 DLL `1022464` 字节，SHA-256 `72A4529C25CDB94442459AA799E68C00803003B8ADD168170806BC0867DCB96B`（live 诊断 DLL 为 `1051648` 字节，两者相差约 29 KB）。逐项哈希写入 `build-check/package-v1.4-r11/manifest.json`，玩家 DLL 副本存同目录。
+- 玩家 README（中英）在 r11 段内补齐 r10 之后的全部内容：下单即付清与使者下单、随行练兵队与拆编重训、偏重骑兵的常备补充、助战战争的灰袍调停（三种情形）、承办人追最近同类罪犯、骑兵截击后才宣战、使者口粮闸门、谈判失败一天冷却；修复条补了讲和后标红、交付徘徊、临时队被带进定居点解散、交兵文案不符。措辞不含机制名与监控字样。
+- 五项验证全部通过：`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` `XML=29; LOCALIZED=1379; CHECKED_KEYS=1164; DUPLICATES=0; MISSING=0`；`Verify-CrimeReceipts` PASS；`Verify-GameCompat` PASS（内含 `PREFLIGHT=PASS`）；`Verify-LiveModule` "DIFFERENT IN LIVE: none / STRAY IN LIVE: none"；`Invoke-ModuleLoadPreflight` `PATCH_OK=54; PATCH_FAIL=0`。
+  - **踩坑记录**：`Invoke-ModuleLoadPreflight.ps1` 必须用 **Windows PowerShell 5.1** 跑。用 `pwsh` 7 会得到 `PATCH_FAIL=52` 与 "BinaryFormatter serialization and deserialization have been removed"——那是 pwsh 7 的运行时差异，不是产品缺陷。`Verify-GameCompat.ps1` 自己会去调 `System32\WindowsPowerShell1.0\powershell.exe`，所以它报的 PASS 才是准的。反过来 `Verify-ContentKeys.ps1` 必须用 `pwsh`，5.1 会按错误编码解析 `language_data.xml` 而崩。
+- live 模块在打包后已重建回诊断版，开发环境不受发布影响。
+
+## 2026-09-16 练兵队速度在建队时一次定死；确立"从不做存档兼容"规则（已部署待验）
+
+- **规则（用户明确，已记入长期记忆 `no-save-compatibility`）：本项目从来不要求存档兼容。** 不要为了救旧档写每拍复校、`OnGameLoaded` 补正或一次性迁移——直接改写入点，旧档重开即可。已有的这类兼容代码（如 `GwpDispatchRecord.Deserialize` 的长度守卫）不必主动清理，但不要照着新增。一次性设定优于周期性维持。
+- 据此撤掉上一版加的 `KeepCohortSpeed` 心跳。练兵队的固定速度改为**建队时算一次**：
+  `cohortSpeed = max(CohortSpeedFloor 5f, trainer.LastCalculatedBaseSpeed × CohortSpeedMargin 1.15f)`，
+  直接作为 `CreateCustomPartyWithPartyTemplate` 的 `customPartyBaseSpeed` 传入，此后不再碰。诊断 `PLAYER_TROOP_ORDER_COHORT_SPEED` 随心跳一并删除，改为把 `speed=` 与 `trainerBaseSpeed=` 并进 `COHORT_RAISED`。
+- 尺子对齐的依据不变：原版 `MobileParty` 先 `CalculateBaseSpeed` 存 `LastCalculatedBaseSpeed`，再 `CalculateFinalSpeed`；自定义队的固定速度替换发生在 `CalculateFinalSpeed` 开头、叠地形之前，因此拿它比练兵官的 `LastCalculatedBaseSpeed` 是同一把尺子。下限 `5f` 与高速追截队同值。
+- 副作用（按规则接受）：旧档里已存在的练兵队仍带着老的 `_customPartyBaseSpeed`（`[SaveableField(40)]`），不会被救回来。用户开新任务复测。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 均 0 警告 0 错误。实机 Client DLL `1051648` 字节，SHA-256 `5B5ECE4BC0183DEBD61F7BA7618CCD7D250F0868BD81CF40ED6FFBD802E3635C`。
+## 2026-09-16 实机两处：练兵队被固定速度钉死、交付接触每小时翻一次（已部署待验）
+
+- **练兵队走得太慢 = 建队时传了 `customPartyBaseSpeed = 2f`。** 原版 `DefaultPartySpeedCalculatingModel.CalculateFinalSpeed` 对自定义队是"非零就**整个替换**最终速度"——`finalSpeed = new ExplainedNumber(BaseSpeed)`，不是加成也不是下限，前面算出来的一切全丢。练兵队因此被钉在 2.0，而练兵官 `baseSpeed=3.64`，永远跟不住。诊断里的 `baseSpeed=3.89` 是 `LastCalculatedBaseSpeed`（替换之前的那个数），所以看上去毫无异常，这条日志不能用来判断自定义队的实际速度。改传 `0f`，走原版按名册算的正常速度。追截队传 `5f` 是它自己要当高速队，属于有意为之，不要跟着改。
+- **交付接触在"欲望"和"原版"之间每小时翻一次。** `MoveTrainerToPlayer` 近距离分支做的是 `ClearIntent` + `SetDoNotMakeNewDecisions(false)` + `SetMoveEngageParty`——交还原版的那一下正是毛病：原版当小时就把 `EngageParty` 改回 `PatrolAroundPoint`，下一小时我们又下一次 `Approach`，如此往复。实机读数（`gw_leader_0_party_1`，2188879→2188882）逐小时重复：`Approach:player_party/GoToPoint` → `none/EngageParty→player_party` → `none/PatrolAroundPoint→town_EN6`，兵早就练齐（`TARGET_LOCKED` 在 2188853.42）却始终送不到。
+  - 附带问题：`Approach` 下注的是目标**当时位置**的快照点（`CreatePoint(intent.Party.Position, …)`），玩家一动就追空。
+  - 改为全程 `RequestRush`。它留在欲望竞价里（原版盖不掉），落地时由 `GwpPlayerEnforcementEngageActionPatch` 经 `IsRushingTo` 翻成原版 `SetMoveEngageParty` 并写 `DUTY_RUSH_ENGAGE_WINNER`，持续跟着移动中的玩家。距离分支整段删除，`GwpTuning.TroopRequest.ContactDistance` 随之无人引用，一并清掉。
+  - 顺带修正两处注释里的过期类名：实际的补丁叫 `GwpPlayerEnforcementEngageActionPatch`，仓库里从来没有 `GwpDutyEngageActionPatch`。
+- **降级与练兵队本身实机验证通过**：订单 10 名 `gwnewrecruit`，`COHORT_RAISED`（`sizeLimit=20`）→ `COHORT_FED`（`moved=10; trainerMen=151`，练兵官留够 15 人）→ 三轮 `XP_GRANTED`（`trainable=0`，最低级兵确实无人可升，与设计一致）→ 两轮 `DOWNGRADED`（4 + 1）→ `ready=10` → `TARGET_LOCKED`。练兵队 `dutyIntent=Escort:gw_leader_0_party_1`、`default=EscortParty` 全程正常，没有被拐进定居点。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 均 0 警告 0 错误。实机 Client DLL `1051648` 字节，SHA-256 `BF169CE053555C21921EF32D9B8C752DAF35CFB8D89923ECF2E90C75259CD452`。
+
+## 2026-09-16 更正：2:1:1 升级取向一直是空转；订单改装进随行练兵队（已部署待验）
+
+### 更正：上一条的兵种配比从未生效
+
+- `PolicePartyTroopUpgradeModel.GetUpgradeChanceForTroopUpgrade` 对**任何**灰袍队里的**任何**灰袍兵、只要 `UpgradeTargets.Length > 1`，一律 `return 1f` —— 在原版 `DefaultPartyTroopUpgradeModel` 之前就抢答了。而 `PreferredUpgradeFormation` 的 9999 权重恰恰写在原版那一支里（`DefaultPartyTroopUpgradeModel.GetUpgradeChanceForTroopUpgrade` 第 143 行 `party.LeaderHero.PreferredUpgradeFormation != FormationClass.NumberOfAllFormations` 分支）。`gwrecruit` 是灰袍树里唯一的三岔口（`spnpccharacters.xml` 三个 `upgrade_target`），也正是配比唯一能作用的地方——于是 `SteerUpgradePreference` 写进去的取向**从来没有被读过**，`UPGRADE_PREFERENCE_STEERED` 日志照打，三条分支照旧均分。
+- 该模型自 `634a7d4`（v1.4-r8 发行）起未改动，是我做配比时漏查的既有代码。上一条里"原版轮盘约 99.98% 走该分支"的结论**不成立**，配比至今为零效果。
+- 修法：`GetUpgradeChanceForTroopUpgrade` 加判 `!HasSteeredPreference(party)`。领主有取向就把判定交还原版（9999 生效，配比真正起作用）；没有领主、或取向仍是 `NumberOfAllFormations` 时才拉平三条分支——后者正是本模型当初要解决的问题（无领主队会被原版按 `party.Id.GetHashCode()` 永久锁死在一条分支）。
+
+### 订单容器从练兵官主队改为随行练兵队
+
+- 用户提出：订单不该占练兵官的名额，应当"拉一支练兵队，跟着主队，收的人全部进练兵队"，欲望只给"跟随练兵官"，齐了照旧送给玩家。
+- 查证三条前提：
+  - **无领主队能练兵**。`PartyUpgraderCampaignBehavior.UpgradeReadyTroops` 只排除主队和失效队，不要求领主；`DailyTickParty` 对任何不在战斗中的队都触发。`AddXpToTroop` 同样无要求。
+  - **无领主队升级不花钱**。金币余额判定整句写在 `party.LeaderHero != null &&` 里，无领主直接跳过；`ApplyEffects` 先扣 `party.Owner`，其次 `party.LeaderHero`，都没有就不扣。使者队建队时传的是 `Hero.MainHero`，练兵队**不能照抄**，否则灰袍升级的钱会记到玩家头上——这里建队 owner 传 `null`。
+  - **唯一真障碍是名额**。`DefaultPartySizeLimitModel.CalculateMobilePartyMemberSizeLimit` 的领主/管家加成整段被 `LeaderHero != null && LeaderHero.Clan != null` 挡住，无领主自定义队只拿 20 裸底数；而订单上限 80（`EliteOrderLimit`），超编速度惩罚 `GetOverPartySizeEffect = limit/men - 1`，80 人塞进 20 就是 **-75% 速度**，练兵队根本跟不住练兵官。
+- 实现：新增 `GreyWardenTroopRequestBehavior.Cohort.cs`（partial）与 `GwpIds.TrainingCohortIdPrefix = "gwp_cohort_"` / `GwpCommon.IsTrainingCohortParty`。
+  - `AdvanceCohort` 挂在订单心跳：没有就拉队、有就续 `RequestEscort(cohort, trainer)`、口粮见底补 `ProvisionTemporaryDutyParty`，然后 `TopUpCohort` 把练兵官手里该归订单的人挪进来。攻击倾向 `SetInitiative(0.2f, 1f, 2f)`，与使者同档。
+  - `TopUpCohort` 上限就是订单人数（练兵队只装这一张订单），取用顺序：已是成品 → 能练上去的（低级在前）→ 只能拆编重训的下游老兵；练兵官手上恒留 `CohortTrainerFloor = 15` 人。
+  - 清点、锁升级、训练、降级、交付五处统一走 `ResolveOrderPool(trainer)`（有练兵队用练兵队，没有落回练兵官，行为与改动前一致）。`IsOrderedTroopUpgradeLocked` 的队伍比对同步改为订单容器。
+  - `ClearOrder` 一定 `DisbandCohort`：剩下的人原样还给练兵官再销毁队伍，交付/取消/清空三条路都覆盖。
+  - 新增 `GwpPartySizeLimitModel`，只为当前这支练兵队返回 `max(20, orderedCount)`，其余一律交回原版。
+  - 归并压制（`GreyWardenPartyDesireBehavior`）与旧档补粮（`PoliceResourceManager.OnSessionLaunched`）都补上练兵队，否则会重蹈拦截队"被原版拐进定居点解散"的覆辙。
+- 两个自己加的保护：
+  - **不立空队**。练兵官人数不足 `CohortTrainerFloor` 时先不建队——空队会被原版当无人队清掉，下一拍我们会把它误报成"折在路上"。
+  - **折损要吭声**。`_cohortPartyId` 还在但队伍没了 ⇒ 这批人在路上打光了。写 `PLAYER_TROOP_ORDER_COHORT_LOST`，给玩家一条黄字（`{=gwp_troop_order_cohort_lost}`，不含数字与机制名），然后重召。
+- 新存档键 1 个：`GWPP_PlayerTroopOrderCohortPartyId`。新文本键 2 个：`gwp_troop_order_cohort_name`、`gwp_troop_order_cohort_lost`（中文均已补）。新诊断：`COHORT_RAISED` / `COHORT_FED` / `COHORT_DISBANDED` / `COHORT_LOST` / `COHORT_FAILED`。
+- **已裁定：只腾名额，不放开差事**。用户明确"不占练兵npc位置"指的是名册名额，`TryReservePartyForPlayerRequest` 的练兵官占用照旧保留。因此订单期间练兵官仍不接案子，练兵队跟着他基本不进战斗，玩家已付款的兵处在最安全的状态；`COHORT_LOST` 是兜底而非常态路径。后续若要放开差事占用，必须同时解决"练兵队跟进战斗"的折损问题——用户此前否掉使者运兵腿 B 正是出于"路上有损失"的顾虑。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；`Verify-ContentKeys.ps1` `XML=29; LOCALIZED=1379; CHECKED_KEYS=1164; DUPLICATES=0; MISSING=0` PASS（该脚本须用 `pwsh` 跑，Windows PowerShell 5.1 会在读 `language_data.xml` 时按错误编码解析而报 XmlDocument 转换失败）。诊断开启与关闭两种 Release 均 0 警告 0 错误。实机 Client DLL `1051648` 字节，SHA-256 `19BD899CDA25464306467FEE345243B14F51E3A7202F5200EEAFE55B58FD9837`。
+
+## 2026-09-16 低级兵订单靠"拆编重训"兜底：训练优先，不够的缺口才降级（已部署待验）
+
+- 起因：用户问"练兵任务如果玩家要低级兵，但是警察没有空位，这要怎么办？"。查下来**空位不是真瓶颈**——`TransferHealthyBatches` 全程不看 `PartySizeLimit`，调拨不受满员影响；真正的死结是升级树单向：`TrainForOrderIfDue` 只给"能升到目标"的兵加经验，而最低级的 `gwnewrecruit` **没有任何上游**，喂再多经验也变不出人来。`_filedHour` 只用于显示，全流程**没有超时、退款或撤单**路径，而订金已改为下单即结清，于是一张卡死的低级兵订单会白扣玩家的钱并永久占住练兵长。
+- 用户裁定："订单兵种肯定是优先做训练的。然后没任务就常态训练 211。我们允许士兵进行降级。这样就解决了。"前两条本就已实现，本轮只落地**降级**。
+- 新增 `GreyWardenTroopRequestBehavior.DowngradeForOrderIfDue(trainer, target, trainableSupply)`，由 `TrainForOrderIfDue` 在发完经验后调用，因此与训练同一节拍（`PlayerOrderXpIntervalHours = 6f`），不会每小时拆一次编。
+- **训练永远优先**：`TrainForOrderIfDue` 顺手算出 `trainableSupply`（能升到目标的健康兵总数），`trainableSupply >= needed` 时降级直接跳过；只对 `needed − trainableSupply` 这段缺口动手。候选取"目标能升到它"的下游兵（`CanReachTarget(target, element.Character, …)`，方向与训练相反），按 `Tier` 升序即**先降最接近目标的那一级**，尽量少糟蹋已经练出来的本事。每个间隔上限 `GwpTuning.TroopRequest.PlayerOrderDowngradePerInterval = 4`。
+- 自限性：订最高级兵时下游集合为空，该方法自然空转；总人数不变，所以对满员队同样成立——这也是它能同时解掉"没有空位"那层顾虑的原因。
+- 配套修正 `GreyWardenTrainingBehavior.SteerUpgradePreference`：原先只要有订单就把 `PreferredUpgradeFormation` 钉到订单兵种的 `DefaultFormationClass`。订单是最低级兵时这一钉**反而把新兵往那条线上抽走**，正好吃掉订单要的人。现在加判 `HasTrainableCohort(party, ordered)`——队里没人能升成它就不钉，照常走 2:1:1，缺口交给拆编重训。`HasTrainableCohort` 与 `TrainForOrderIfDue` 用同一条谓词，两处口径一致。
+- 新增诊断 `PLAYER_TROOP_ORDER_DOWNGRADED`（`target` / `downgraded` / `trainable` / `stillNeeded` / `ready`）；`PLAYER_TROOP_ORDER_XP_GRANTED` 补记 `trainable=`，实机可直接分辨"训练供得上"与"只能拆编"。
+- 已知残留（本轮未动，供后续判断）：订单兵种的升级锁 `_isOrderedTroopUpgradeLocked` 仍要到**凑够数**才生效，凑数途中降下来的新兵仍可能被原版日结升级拉回去。按 16 人/天的降级速率对 4 人/6 小时的上限，实测应当跑赢日结升级；若实机出现拉锯，下一步是把该锁提前到订单进入 Training 阶段就上。
+- 无新存档键、无新文本键、无新 Harmony 补丁。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误（后者输出至隔离目录，未部署）。实机 Client DLL `1046528` 字节，SHA-256 `87C2324F8B936BFC2DFEAE1B9C049EB7C01FF5BBF2A61B8EE869666971BE9BB4`。按惯例未启动游戏，由用户行为验证。
+
+## 2026-09-16 追截队缴获兵一路查到闭环：现状即正确，改动已撤回（附两处自我更正）
+
+- 起点：用户截图一支「灰袍高速追截队」22 人（14 步 / 5 弓 / 3 骑）、带 22 名全伤俘虏、显示「前往达努斯提卡附近巡逻」，指出这些是**缴获兵且兵种未变**。
+- **实机跟踪到结局**：`h=2188775.27` 该队 `dutyIntent=Visit:town_ES5`、`default=GoToSettlement`、`currentSettlement=town_ES5`、`men=22` —— **带着 22 人进城**。这正是 `UpdateDelayPatrols` 返程分支的设计路径：`RequestVisit(patrol, returnSettlement, 8f)` → 进城后 `if (patrol.CurrentSettlement != null) TryDestroyDelayPatrolParty(patrol)`。缴获兵随队销毁。**现状即为正确行为，无需改动**（用户原判断："我感觉这支队伍本来就会去销毁的"）。
+- **成因（用户推断，与数据一致）**：追截队与主队一起打犯人，**被击败方释放的俘虏免费加入胜方**（原版战利品机制），人数超编且全部落到追截队名下；追截队随后把优质兵（骑兵）送回源领主（`IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 的 `returned=7`），剩下的缴获兵跟队进城销毁。
+- **自我更正之一**：曾判断该队「脱离 `_delayPatrolStates` 管理、无人续意图」。**不成立**——`DELAY_PATROL_ORPHAN_ADOPTED` 命中 0，29 条状态行里它始终在管理下。
+- **自我更正之二**：曾把悬浮文本「前往…附近巡逻」当作欲望失效的证据。**不成立**——同期状态行一直是 `default=GoToSettlement` / `dutyIntent=Visit:town_ES5`，是正常返程。该悬浮文本不可作为欲望判据，后续排查勿再据此下结论。
+- **已撤回的改动**：本轮一度把净化扩到无领主队、并让临时队「外籍兵一律移除不补新兵」。`PoliceResourceManager.cs` 已完整还原（`IsGreyWardenOwnedParty` 助手、两处入口筛选、`temporaryParty` 分支、`GivePoliceShips` 收紧、日志字段全部回退）；DLL 哈希回到改动前的 `AA3B6ED46F77E13E08DBD7381387FFB260C9F9AD585B4D3967AF92DDE95E9C83`，`git diff` 复核该文件仅剩本轮早先新增的 `CreditJudicialTreasuryFromCourier`。
+- **保留结论（供后续使用）**：净化的两处入口（`OnHourlyTickParty` / `OnMapEventEnded`）都要求 `party.LeaderHero?.Clan == PoliceClan`，因此使者、追截队、纠察队等无领主临时队**从不被 `PurifyParty` 处理**，缴获的外籍兵会原样留在队里直到随队销毁。原版 `PrisonerRecruitCampaignBehavior` 是纯玩家行为，不会把 NPC 队的俘虏转为成员。
+- **用户明确保留意向**：这批随队销毁的缴获兵"以后有好用处"。后续若要做退役队、俘虏改编或兵员回收，**不要先把这条路径设计掉**；当前的"进城随队销毁"是占位行为，不是终态。
+- 观察用诊断 `DELAY_PATROL_ORPHAN_ADOPTED` 保留在位。验证：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误。
+
+## 2026-09-16 支援宣战与结案讲和改走申请通道；补 POLICE_BATTLE_PEACE 痕迹
+
+- **监控读数**：`IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED`（h=2188760.13，troops=8，拦截队理论速度 5.08 > 目标 3.00）→ `IMMEDIATE_CASE_INTERCEPTOR_REJOINED`（h=2188762.12，distance=0.94，`returningWardens=7`、`returned=7`、`displacedToRetire=0`、`sourceMembersBefore=148 → After=155`）。**高速追击队已经能并回源领主**，上一条的归并候选压制修复生效；用户观察到的"去定居点"应出自更早的构建。
+- 附带隐患（未改，待用户决定）：该次 `partySizeLimit=155`、`availableSlotsBefore=7`，正好接住 7 人。源队伍满编时多出来的人会走 `displacedToRetire`，归队即损耗。用户已提出改为"退役队"方案，见下条待办。
+- **"自动和平"定位到真正的来源**：`MEDIATION_REQUEST_RECORDED` 命中 0，玩家状态一直 `policeWar=False`/`victimFactions=-`。原因是 `PlayerBountyBehavior.Support.cs:149` 用的是 `DeclareWarAction.ApplyByDefault`，**不带 `CausedByPlayerHostility`**，`PoliceAntiWarDeclaration.OnWarDeclared` 的 detail 过滤根本看不见它。玩家是被支援领主按任务逻辑捎带宣战的，随后 `PlayerBountyBehavior.MakePeaceWithCriminalFaction` 在结案时又替他自动讲和——两头都绕开了申请通道。
+- 修复：`PoliceAntiWarDeclaration` 新增 `RecordMediationRequest(faction, reason)` 供外部直接报账（发起方自己知道这一战的来由，不必依赖 detail）。支援宣战处登记 `reason=case_support_declaration`；`MakePeaceWithCriminalFaction` 的 `MakePeaceAction.Apply` 整段撤下，改为登记 `reason=bounty_case_closed`。**结案不再替玩家讲和**，一律由玩家去找灰袍或派使者一并了结。随之删除失效键 `gwp_playerbountybehavior_dialogueandnotification_019`。
+- 诊断补痕：`PoliceAntiWarDeclaration.OnBattleEnded` 的警察侧战后讲和一直没有任何日志，实机分不清"玩家没开战"与"开了又被收掉"。新增 `POLICE_BATTLE_PEACE`，记对方势力、玩家是否参战、是正规灰袍还是纠察队。
+- **待办（用户已提规格，尚未实施）——退役队**：追击队归队时源队伍满编的溢出人员，改为挑最弱的一批另立一支有 AI 的灰袍势力"退役队"；先去找玩家问是否收留（按灰袍士兵价收买），玩家不要再去最近定居点解散。需新建队伍类型、欲望接线、对话与购买流程，体量接近一个子系统。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；`Verify-ContentKeys.ps1` XML 29、本地化键 1377、使用键 1162、重复 0、缺失 0 PASS。Client DLL `1044480` 字节，SHA-256 `569A0E52245097B370D5981FDC637DE76E1FA421AA62C73F138595E4610B3EB1`。
+
+
+## 2026-09-16 和平机制全量普查；调停申请收敛为三种情形；同源标红再修 3 处
+
+- 用户要求先把既有和平机制摸清再定判据，并给出可申请调停的三种情形：制止**正在发生**的三类案件、看见灰袍在打过去帮忙、玩家自己承办的案子；其余不管。
+- **普查结果（讲和调用点共 21 处）**，按对象分三类：
+  - **警察氏族 ↔ 第三方**（不涉玩家地图配色，`TrySetNeutral` 合适）：`PoliceAntiVanillaWarBehavior:28`、`PoliceAntiWarDeclaration:294`、`PoliceEnforcementBehavior.Assistance:1212/1803`、`PoliceEnforcementBehavior:1198`、`DelayPatrols:316/1289`、`Helpers:63/110/185`。
+  - **玩家 ↔ 第三方**（必须 `MakePeaceAction`）：`PlayerBountyBehavior.DialogueAndNotification:579`、`AtonementQuest:287`、`PoliceEnforcementBehavior.Helpers:158`、`PolicePatrolBehavior.Helpers:73`、`PoliceAntiWarDeclaration:168` —— 均已正确。
+  - **警察氏族 ↔ 玩家**（同样涉玩家配色，原先全部用裸 `SetNeutral`）：`PoliceAntiWarDeclaration:281`、`PoliceEnforcementBehavior.Helpers:149`、`PolicePatrolBehavior.Helpers:42/58` —— **与用户报的标红同源**，本轮一并改为 `MakePeaceAction.Apply`。灰袍持有领地时，原先讲和后其领地会在玩家地图上一直红着。
+- 保留为裸 `SetNeutral` 的三处均是 `catch` 兜底（`AtonementQuest:294`、`PolicePatrolBehavior.Helpers:44/62`），`MakePeaceAction` 抛异常时至少解除交战状态，属有意设计。
+- **关于 `SetNeutral` 与俘虏的既有注记**：`PoliceEnforcementBehavior.cs:482` 记载「`FactionManager.SetNeutral` 内部会触发自动释放俘虏逻辑，必须先 `EndCaptivity` 再讲和」。该约束对 `MakePeaceAction` 同样成立（它内部就调 `SetNeutral`），而 `ExecutePunishment` 已经先 `EndCaptivity()` 再调 `MakePeaceWithPoliceAndVictims()`，顺序保障在调用方，故本轮替换不破坏该保护。
+- **判据收敛为三条，满足其一即记账**（`ResolvePlayerAssistWar`）：
+  1. `StoppedCrimeInProgress`：本场就是对村庄的劫掠（`mapEvent.IsRaid && MapEventSettlement.IsVillage`），或玩家这一侧站着正在挨打的 `IsVillager`/`IsCaravan` 队伍。**只看本场，不翻旧账**——上一版按 `GetByOffenderId(...).HasOpenCase` 判定会把多日前的旧案也算进来，与"正在发生"不符，已废止。
+  2. `wardenOnPlayerSide`：本场玩家这一侧有灰袍部队。
+  3. `playerHeldTheCase`：对面领主的案子由玩家承办（`PlayerBountyBehavior.IsCaseHeldByPlayer`）。上一版把悬赏战争整个排除在外，按用户要求改为纳入；若悬赏流程自己先讲和了，`LiveMediationFactions` 读取时会因"已不交战"自动销账，不会重复。
+- 诊断 `MEDIATION_REQUEST_RECORDED` 现记录三条判据各自的命中情况，便于下一轮实机核对。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误。复查确认玩家侧已无非兜底的裸 `SetNeutral`。Client DLL `1043968` 字节，SHA-256 `98E8CFA8761644A5407C319C6C7EAA24070ED0EBB200BD601958B9E5482F91A9`。
+
+
+## 2026-09-16 调停改为申请制：记账 + 灰袍出面一口气了结（并修掉定居点标红）
+
+- 用户实测两个问题：其一，中立之后**定居点仍然标红**，部队却确实和平了；其二，自动中立会在玩家做任务途中冷不丁讲和。要求改为申请制——因帮灰袍办事（办案、顺路撞见灰袍打架、撞见有人打村民打商队烧村）而结下的战争，事后可以派使者或直接跟灰袍说，一口气全部了结；不是这些原因的战争一概不管。
+- **标红根因已定位**：`MakePeaceAction.ApplyInternal` 在 `FactionManager.SetNeutral` 之后还做两件事——当交战一方是玩家势力时，对另一方所有可见 `Settlement` 与 `MobileParty` 调 `Party.SetVisualAsDirty()`，随后派发 `CampaignEventDispatcher.Instance.OnMakePeace`。而 `GwpCommon.TrySetNeutral` **只调 `SetNeutral`**，两件都没做。部队会因移动自行重绘，定居点是静态的、不主动重刷，于是一直红着。玩家侧的讲和全部改用 `MakePeaceAction.Apply`；警察氏族对第三方的讲和不涉及玩家地图配色，仍用 `TrySetNeutral`。
+- **改为申请制**：`ResolvePlayerAssistWar` 不再当场讲和，改为把势力记入持久化 `gwp_mediation_requests`（`PoliceAntiWarDeclaration` 新增 `_mediationRequests` 与 `_instance`），并给一条提示告诉玩家可以去找灰袍。合格口径放宽为两条、满足其一即可：**本场玩家这一侧有灰袍部队**，或**对面那位挂在我们案卷上**（`CrimeState.GetByOffenderId(...)?.HasOpenCase`，办案、打村民、打商队、烧村都会先入册）。不合格的一概不记：玩家别的缘由开的战、王国决议宣战、匪帮、以及玩家自己承接的悬赏（另有调停流程）。
+- **两条兑现入口，都是一口气结清全部**：`PoliceAntiWarDeclaration.ApplyWardenMediation()` 遍历 `LiveMediationFactions()`（读取时顺手剔除已消失的势力与玩家自行讲和的条目）逐个 `MakePeaceAction.Apply`，返回结清数量。入口一，直接对话灰袍领主：`GreyWardenTroopRequestBehavior` 在 `lord_talk_speak_diplomacy_2` 上新增 `{=gwp_warden_mediation_ask}`，回话按结果分"已了结"与"没有要了结的"两种。入口二，派使者：新增 `GwpDispatchPurpose.PeaceRequest = 3`（按 int 序列化，旧档无损），走 `Support` 同一条空手去空手回的路径，`DeliverTo` 抵达时调同一个 `ApplyWardenMediation`。
+- 文案不泄露提示词：新增 7 键全部只写人物说的话，不出现机制名、判据、数值或性格标签。删除已失效的 `gwp_warden_mediation_peace`（自动中立时期的提示，代码侧已无引用）。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；`Verify-ContentKeys.ps1` XML 29、本地化键 1378、使用键 1163、重复 0、缺失 0 PASS。产物反查：`ApplyWardenMediation`、`gwp_mediation_requests`、`gwp_dispatch_peace` 均已进入，旧的 `PLAYER_ASSIST_WAR_NEUTRALIZED` 归零；反编译确认玩家侧走 `MakePeaceAction.Apply`（第 195 行），警察氏族侧仍为 `TrySetNeutral`（第 334/341 行）。Client DLL `1043968` 字节，SHA-256 `16EDD7002D25CD0063B65239A6FFA19C78ED385182E663C3E0E514164291242A`。
+
+
+## 2026-09-16 交兵文案对齐新付款模型；野外谈判加一天冷却（按性格回绝）
+
+- **交兵文案与机制脱节已修**。付款改到下单之后，交付环节这三条仍在说"付款"：`{=gwp_player_troop_delivery_offer}`（"payable directly into the public treasury"）、`{=gwp_player_troop_delivery_accept}`（"Pay the agreed sum..."）、`{=gwp_player_troop_delivery_accepted}`（"The payment is entered..."）。已分别改为"下单那天就结清了，不欠什么"／"那就把他们交到我手上吧"／"人归你了"。`GwpCaseArchiveScreen` 的 `{=gwp_player_troop_ledger_detail}` 由 "Delivery price" 改为 "Paid on order"。中英两侧同步。
+- 顺带全仓扫了一遍付款相关文案：`GreyWardenPlayerRequestBehavior` 的封地请愿（五万第纳尔入公库）与 `GwpFieldArrestBehavior` 的 `{=gwp_fa_collection_cancel}` 语义仍然成立，未改。
+- **野外谈判一天冷却**。原先 `PrepareFieldArrest` 每次开对话都重掷 `_desire` 与 `_refusesToTalk`，谈崩后立刻再谈就是全新一局。新增持久化 `gwp_negotiation_cooldowns`（每项 `heroId|到期战役小时`）与 `NegotiationCooldownHours = 24d`；`RecordNegotiationFailure` 挂在三个谈崩落点——拒谈（`gwp_fa_refuse`，与既有 `EndPersuasionConsequence` 并列）、第一层失败（`gwp_fa_layer1_failed`）、第二层失败（`gwp_fa_l2_failed`）。`ChargeCondition` 增加 `!NegotiationCooldownActive(_offender)`，冷却期内押不上罪名，上一次的结果照旧作数。读取时顺手清理过期与格式损坏的条目。
+- **回绝台词按性格变化且不泄露提示词**。新增 `GwpFieldArrestLines.Rebuffed(Temperament)`，沿用既有 `Temperament`（`Upright/Cold/Fierce/Soft/Tight/Plain`，由 Honor/Calculating/Valor/Mercy/-Generosity 排序得出）。六条台词只体现说话的样子，不出现任何性格标签、特质名或数值。对话侧新增玩家行 `{=gwp_fa_charge_cooled}` 与按性格取词的回复 `{GWP_FA_REBUFF}`，回复后退回 `gwp_fa_charge_options`，玩家可以改做别的或走人。
+- **待办（用户第三问，仅调查未实施）**：任务类对话目前是固定文案，没有性格分支——`GreyWardenTroopRequestBehavior` 15 条、`GreyWardenPlayerRequestBehavior` 20 条、`GwpWardenDispatchDialogue` 9 条 `GwpText.Get("{=...}")` 全是定值。全仓只有 `GwpFieldArrestBehavior`/`GwpFieldArrestLines` 接了 `Temperament`。要让任务对话随性格变化，可复用同一套 `Temperament.Read(hero)`，为灰袍领主一侧另建台词表（罪犯那套是从对手视角写的，不能直接套用）。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；`Verify-ContentKeys.ps1` XML 29、本地化键 1372、使用键 1157、重复 0、缺失 0 PASS（新增 7 键）。Client DLL `1038336` 字节，SHA-256 `82298674CBA3BF87E256729161F2309948E2DF78D7406CFF4FD4EA3AD1113C6B`。
+
+
+## 2026-09-16 使者攻击倾向由 0 改为 0.2（低侵略性，而非完全不打）
+
+- 用户澄清：短期欲望不是要"完全不打"，只是侵略性要很低。原实现 `KeepCourierDisposition` 调 `party.Ai.SetInitiative(0f, 1f, 6f)`，攻击倾向为 0 即彻底不打。
+- 依据：原版 `MobilePartyAi.SetInitiative(float attackInitiative, float avoidInitiative, float hoursUntilReset)`；`DefaultMobilePartyAIModel.CalculateInitiativeScoresForEnemy` 中 `num11 = (enemyParty.IsLordParty && enemyParty.LeaderHero != null && enemyParty.LeaderHero.IsLord) ? 1f : mobileParty.Ai.AttackInitiative`，直接乘进 `attackScore`。**该值只对非领主敌人生效**（劫匪、逃兵、商队等）；对领主敌人恒取 1，不受此值影响。
+- 改动：新增常量 `CourierAttackInitiative = 0.2f` 并替换原先的 `0f`。效果——2.5 格内原版 `num5` 给 100 倍加成，0.2 的乘数仍足以越过 `> 1f` 门槛，所以**贴身的弱敌照样收拾**；超出 2.5 格后 `num5` 退回速度差决定的小值，乘 0.2 后基本压在门槛之下，因而**不会为了追远处目标把差事丢下**。避战倾向维持 1（满），遇险仍旧优先躲。
+- 顺带清理：`FollowTo` 上方堆了三段 `<summary>`，其中两段是早期重构遗留的重复块且内容已过时（"不主动接战"）。删去重复块，并把一段准确的说明移到 `KeepCourierDisposition` 自己头上。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；已反编译实机产物确认 `party.Ai.SetInitiative(0.2f, 1f, 6f)`。Client DLL `1035776` 字节，SHA-256 `66D9684EBAFACED8B7882FFB42A16BA61B1311EE5589D2AEA3EA7C1219F959D2`。
+
+
+## 2026-09-16 无领主队被原版拐进定居点销毁：归并候选压制漏掉了拦截队
+
+- 用户两问：其一，希望使者的补给交给原版欲望接手（原版还会去村里买），我方只做"压巡逻 + 加一个固定任务欲望"；其二，无领主的高速追击队出去之后不回来，疑似进定居点被销毁，看到的是步兵。
+- **补给交给原版：做不到，原版没给无领主队补给欲望。** 本机 1.4.8 反编译 `AiVisitSettlementBehavior`：第 150 行早退条件为 `... || (!mapFaction.IsMinorFaction && !mapFaction.IsKingdomFaction && (mobileParty.LeaderHero == null || !mobileParty.LeaderHero.IsLord)) || ...`；真正的补给评分（算 `Food`/`FoodChange`、按 `PartyFoodBuyingModel` 决定去城还是去村，第 162–272 行）整段锁在第 175 行 `if (leaderHero != null && mobileParty.IsLordParty)` 之后。无领主队唯一能拿到的是第 395 行 `CalculateMergeScoreForDisbandingParty` —— **归并/解散**出路，不是补给。因此 `GwpDispatchSupplyRules` + `TryHandleTownBusiness` 那套自建补给必须保留，本轮不动。
+- **"出去不回来"的根因已定位并修复。** 那排归并候选实测每个聚落固定 1.6 分，稳压 0.99 的差事分。`ProcessFinalDesires` 里的 `SuppressLeaderlessMergeScores` 却只在 `GwpWardenDispatchBehavior.IsDispatchParty(party)`（前缀 `gwp_wd_*`）时施加，**拦截队 `gwp_enf_delay_*` 从来不在保护范围内**。于是它被原版拐进定居点，随后又被我方 `UpdateDelayPatrols` 的 `if (patrol.CurrentSettlement != null) TryDestroyDelayPatrolParty` 分支销毁。修复：压制条件改为 `intent != null && party.LeaderHero == null && (IsDispatchParty || GwpCommon.IsEnforcementDelayPatrolParty)`。`SuppressLeaderlessMergeScores` 本就豁免意图自身的目标聚落，故"返程去指定城镇解散"与"护送回主人"两条正常路径都不受影响。
+- **用户看到的"步兵"是另一类队，不是骑兵队。** 两种无领主队必须分清：`FillDelayPatrolTroops` 造的**拖延纠察队**是 60% 重步 + 40% 弓手、由 `AddToCounts` **凭空生成**，销毁不损失任何东西；`TrySpawnImmediateCaseInterceptor` 造的**极速追截队**抽的是灰袍队里真的骑兵。
+- **骑兵去向澄清**：正常路径不丢。`UpdateDelayPatrols` 的 `state.Returning` 分支先调 `TryReturnImmediateInterceptorToSource`（护送回主人，进到 `MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy` 内并回），排在 `CurrentSettlement` 销毁分支之前。丢失只发生在两种情况：被原版拐进定居点（本轮已修），或源领主已无法继续带队（`CanContinueLeadingPoliceTask` 为假）而落到定居点销毁路径——后者未改动。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；已部署，Client DLL `1035776` 字节，SHA-256 `0F0E6F8712A016D1AC2D7DE1652BE9C55C9700DA846026D8E607CA3DC8738E09`。
+
+
+## 2026-09-16 使者归队偶发遭遇界面：回程由直扑改为跟随（实机复现已定位）
+
+- 用户实机报告：使者归队时偶现拉出战斗遭遇界面，只能选战斗或投降。该现象此前已被打过一轮补丁但未根除。
+- **实机证据**：`GreyWarden-Faults.log` 有 `2026-09-16T15:22:46 | DISPATCH_MET_PLAYER_IN_ENCOUNTER | phase=Returning; purpose=TroopOrder`，正是本轮新做的使者送单回程。既有兜底 `OnMapEventStarted` 触发并置 `HandoverPending`（东西没丢），但遭遇界面已经弹出，兜底只能事后补救。
+- **根因**：回程走 `SendTo` → `GreyWardenPartyDesireBehavior.RequestRush` → 原版 `AiBehavior.EngageParty`，而 `EngageParty` 是**进攻性移动指令**；目标为主队时原版 `EncounterManager` 会据此拉出 `PlayerEncounter`。既有的 `KeepOutOfPlayerWay`（`IgnoreByOtherPartiesTill`）只在 `distance <= FinalApproachDistance(15)` 时施加，且 `AdvanceReturn` 仅由 `OnHourlyTick` 驱动，无法覆盖"自己人直扑过来"这一由我方指令主动引发的遭遇。
+- **修复**：新增 `FollowTo(party, target)` = `KeepCourierDisposition` + `GreyWardenPartyDesireBehavior.RequestEscort`，回程改用它。`EscortParty` 只把队伍带到玩家身边，不含交战语义，原版不会据此发起遭遇；真正的归队仍由 `AdvanceReturn` 的 `HandoverDistance(3)` 距离判断完成——与用户"归队本来就该是距离判断"的判断一致。`RequestEscort` 内部会 `ReleaseDirectAttackLock`，顺带解掉出程可能遗留的直攻锁。
+- **未改动**：出程仍用 `SendTo`/Rush（目标是灰袍领主，同样存在该形态，但本轮未报此现象，不顺手改）；`KeepOutOfPlayerWay` 维持只在最后 15 格施加——那是有意的，外面那一路必须照样可能被劫匪堵上，风险要真实；`OnMapEventStarted` 兜底保留。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误。已反编译实机产物确认 `FollowTo` 进入产物（第 491 行）。Client DLL `1035776` 字节，SHA-256 `D951A8ECFDD12099FEB34D1BB94C5439C0FFF89E81DECA5771AB8D92A15029AF`。下一轮实机若仍复现，`DISPATCH_MET_PLAYER_IN_ENCOUNTER` 会再次落盘，可据此继续定位。
+
+
+## 2026-09-16 买兵款改入公库、可多不可少，并修掉交易层的 finalized 断言
+
+- 用户裁定三条：买兵的钱对方领主收到后**必进公共金库**；**使者的盘缠不上交易界面**（不直观但风险小，反正就是带够约 12 天的粮钱组合）；随队传递的买兵款**可多不可少**，多的最后退回，与盘缠同理。并指出这与案件复命的交易界面不同——复命允许玩家自行量度、可以少交甚至不交，买兵不行。
+- **当面下单改为 selectionOnly + 实扣 + 入库**。`OpenOrderPayment` 由原先的 `selectionOnly: false`（真交割到经手领主队伍）改为 `selectionOnly: true`：交易界面只负责让玩家挑用金币还是货物折价，`GwpAssetPayment.Apply` 因 `if (SelectionOnly) return;` 不做任何转移。随后新增的 `SettleOrderPayment` 负责结算——`payment.Paid < choice.Price` 直接拒单并提示 `{=gwp_player_troop_order_short}`；够价则先核对金币与每一项货物的库存（避免扣到一半中断），再 `GiveGoldAction` 扣金币、`ItemRoster.AddToCounts` 扣货物，最后 `PoliceResourceManager.CreditJudicialTreasuryFromCourier(payment.Paid)` 把折价总额记进公库，才 `FileTroopOrder(choice, alreadyCollected: true)`。因 `Valid => Net <= _limit`，超额本就不可能，配合下限检查即「可多不可少」。
+- **使者一路的可多不可少**：`DeliverTo` 的 `TroopOrder` 分支增加 `paid >= record.OrderPrice` 前置——路上折损到不够订价就不立案，钱原样 `BeginReturn` 带回。使者的盘缠与订金判断维持原状（`CanProvision` + `CaseGoldFloor` 保护），**不接交易界面**。
+- **既有补丁问题分析与修复**：实机 fault 日志长期存在 `ENGINE_ASSERT | Screen layer is already finalized`，栈为 `GwpDispatchBarterScreen.Close() → ScreenBase.RemoveLayer`。成因是宿主屏幕被弹出时引擎已把它的层一并终结，但 `_host.HasLayer(_layer)` 仍返回真，于是 `Close()` 对一个已终结的层再次 `RemoveLayer`，`ScreenLayer.HandleFinalize` 触发断言。该类的诊断串早已输出 `hostFinalized`/`layerFinalized` 两项，说明作者当时已怀疑此处。修复：`if (!_layer.IsFinalized && !_host.IsFinalized && _host.HasLayer(_layer)) _host.RemoveLayer(_layer);`。已反编译实机产物确认该判断进入产物（第 167 行）。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误；`Verify-ContentKeys.ps1` XML 29、本地化键 1365、使用键 1150、重复 0、缺失 0 PASS。产物反查 `SettleOrderPayment`、`CreditJudicialTreasuryFromCourier`、`gwp_player_troop_order_short` 均已进入。Client DLL `1035264` 字节，SHA-256 `9DCE240A43D7BEAB62CBBB8BB8E8ED2ACEE75006E8D617F26725D6100D75E9F3`。
+
+
+## 2026-09-16 当面下单接入原版交易界面（付款走 barter，与野外罚金同一套）
+
+- 用户要求：跟灰袍领主当面交谈也能直接下练兵订单，同样要给钱，并且用交易界面完成——只是当面下单不需要路上的粮食和盘缠。
+- **需先声明的事实**：上一条实现的「使者送单」并**没有**走交易界面，是简化成「按订价直接扣 `carriedCaseGold`，由 `Dispatch` 的出发判断兜底」。因此本轮之前两条路都没有交易界面。
+- 本轮实现的是**当面下单**这一路：新增 `OpenOrderPayment(choice)`，照 `GwpFieldArrestBehavior` 收罚金那套写——`new GwpAssetPayment(Hero.MainHero, lord, MainParty.Party, lordParty.Party, choice.Price, choice.Price)`，`manager.BarterBegin` 里 `PrepareCatalogue` 后转交原版，`StartBarterOffer(..., (item, data, obj) => payment.IsAgreement(item), 0, false, payment.Entries)`，在 `manager.Closed` 回调里判断 `payment.Applied && payment.Valid` 才 `FileTroopOrder(choice, alreadyCollected: true)`。关掉界面或谈不拢就当没下单。玩家可用金币或货物折价，界面自带的一键平衡照常可用。
+- 该路走 `selectionOnly: false`，即**真交割**：`GwpAssetPayment.Apply` 内部把选中的金币与货物实际转到该灰袍领主的队伍。注意这与旧的「款项计入公共金库」语义不同——旧文案 `{=gwp_player_troop_order_recorded}` 已随之改为「价钱当场结清」。若要把这笔收入改回 `PoliceResourceManager` 公共金库，需要改成 `selectionOnly: true` 再自行结算，本轮未做。
+- 使者送单那一路**维持现状**（按订价直接扣款、随队带走、抵达入库 `CreditJudicialTreasuryFromCourier`），尚未改为交易界面。若要统一体验，使者那一路应改成 `selectionOnly: true` 的清单式 barter（与案件复命同构，货钱由使者实际携带），届时路上的粮食与盘缠判断照旧适用。
+- 踩坑记录：`GreyWardenTroopRequestBehavior` 原先没有 `using TaleWorlds.CampaignSystem.BarterSystem`，缺它时 `BarterManager` 与其委托类型都解析不到。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误；`Verify-ContentKeys.ps1` XML 29、本地化键 1364、使用键 1149、重复 0、缺失 0 PASS。产物反查 `OpenOrderPayment`、`TROOP_ORDER_PAYMENT_OPEN_FAILED` 均已进入。Client DLL `1034240` 字节，SHA-256 `729EC5DBC9346FC1E9A36FAFB2E0C637969F28F3425716A6A735D709F89D21F6`。
+
+
+## 2026-09-16 使者送单（腿 A）落地；订金改为下单即结清，顺延与欠款机制整套移除
+
+- **腿 A 已实现**。`GwpDispatchPurpose` 新增 `TroopOrder = 2`（按 int 序列化，旧档只有 0/1，加值无损）。`GwpDispatchRecord` 追加 `OrderTroopId`/`OrderCount`/`OrderPrice` 三个字段，`Serialize` 追加在索引 12–14，`Deserialize` 按 `parts.Length > N` 守卫，旧档缺字段留空。
+- 流程：与队里灰袍士兵对话新增一条 `{=gwp_dispatch_troop_order}` → 原版分兵界面选护卫 → `GreyWardenTroopRequestBehavior.ShowCourierOrderInquiry` 让玩家挑兵种与数量（此刻**还没立案**）→ `SendTroopOrder` 把订金按 `carriedCaseGold` 口径随队带走（受 `CaseGoldFloor` 保护，路上不许买粮发饷）→ 使者抵达后 `DeliverTo` 的 `TroopOrder` 分支调用 `FileCourierOrder` 立案、把订金 `CreditJudicialTreasuryFromCourier` 入库、写 `DISPATCH_TROOP_ORDER_FILED`，随即 `BeginReturn` 空手返回。练兵长没了或玩家中途已另下一单时不立案，提示 `{=gwp_dispatch_order_moot}` 并把订金原样带回。
+- **使者不运兵**（用户决定）：练好的兵仍由灰袍领主亲送，交付侧 `MoveTrainerToPlayer`/`QueueFinishDeliveryEncounter`/`StopPlayerContact` 一行未动。`CanTalkToTroop` 扩到包含 `TroopOrderAvailable()`，否则只有订单可用时开不了对话。
+- **订金改为下单即结清**（用户指出旧的"最后结款"体验差）。`FileTroopOrder(choice, alreadyCollected)`：当面下单当场 `TryCollectPlayerRequestPayment`，付不起就不立案并提示 `{=gwp_player_troop_order_unaffordable}`；使者送单则出发时已随队扣走，`alreadyCollected: true`。`CompleteTroopDelivery` 不再收款。无参 `FileTroopOrder(choice)` 重载保留，供原版对话委托绑定（加可选参数会破坏 method group 转换，已踩过一次）。
+- **随之移除的整套机制**（因下单即结清而失去意义）：交付时"付不起就取消"一条对话线、`CancelTroopOrderForInsufficientFunds`、`IsInsufficientFundsDeliveryConversation`、`CanPayForDelivery`；"先欠着"两条对话线、`DeferDelivery`、`_deferredTasksRemaining`（字段、存档键 `GWPP_PlayerTroopOrderDeferredTasksRemaining`、`IsTrainerReservedForPlayerOrder`/`IsReadyDeliveryConversation`/`IsPendingAutomaticConversation`/快照里的全部引用）、`GreyWardenTroopRequestBehavior.NotifyOrdinaryDutyCompleted` 及其在 `GwpPlayerRequestDeferral` 的调用、`GwpCaseArchiveScreen` 的"交付顺延"显示分支。
+- **未动**：`GreyWardenPlayerRequestBehavior` 自己那套顺延（玩家委托，另一功能）及其 `NotifyOrdinaryDutyCompleted`；`GwpTuning.PlayerRequests.DeferredOrdinaryTasks` 仍被它使用，故常量保留。
+- **本轮清理**：删除空壳目录 `tools/DispatchBarter.Tests/`（无 csproj、仅历史文档提及）。删除 5 个确认死亡的本地化键（调用点本轮亲手移除）：`gwp_player_troop_delivery_insufficient`、`gwp_player_troop_delivery_defer`、`gwp_player_troop_delivery_deferred`、`gwp_player_troop_defer_complete`、`gwp_player_troop_stage_deferred`。
+- **未清理及原因**：粗扫显示 248 个本地化键在源码里搜不到，但 `Verify-ContentKeys.ps1` 头部写明「Unreferenced strings are not proof of dead content and are never deleted」，且 `gwp_terms_*`/`gwp_rebuff_*` 等是按技能后缀运行时拼装的，不能按字面引用判死——本轮不动。`GwpDispatchBarterFaultDiagnostics` 与 `GwpEngineAssertDiagnostics` 虽然外部引用为 0，但均为 Harmony 特性扫描发现的补丁，且前者守 barter persona 失败、后者正是抓到 `Screen layer is already finalized` 的那一个，**保留**。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误。`Verify-ContentKeys.ps1`：XML 29、本地化键 1364、使用键 1149、重复 0、缺失 0 PASS。产物反查：`gwp_dispatch_troop_order`、`DISPATCH_TROOP_ORDER_FILED`、`FileCourierOrder`、`gwp_player_troop_order_unaffordable` 均已进入；`DeferDelivery` 归零；`NotifyOrdinaryDutyCompleted` 仅剩 1 处（玩家委托那套，符合预期）。Client 与 Editor DLL 均 `1033216` 字节，SHA-256 均为 `0B73C4486E4B576D5D53934C02383098A4B6080341E49C706702C62225FB6911`。
+
+
+## 2026-09-16 使者接入练兵系统：范围裁定与出发粮草闸门（腿 A 主体尚未开工）
+
+- **范围裁定（用户决定）**：只做腿 A（使者送单），**腿 B 不做**——练好的兵仍由灰袍领主亲送。用户理由：使者是无领主队伍，欲望不好控，怕路上有损失。使者送完钱即自行返回，不在练兵长处停留。
+- **(8) 交易对手方换成使者队伍：判定为做不了。** 两个障碍叠加：其一，顺序倒置——现在是「从玩家队扣出人/俘虏 → 开交易（对手方=目标灰袍领主） → 问口径 → Send() → Dispatch() 才建队」，使者队在交易时根本不存在；其二也是硬伤，`BarterManager.StartBarterOffer(Hero offerer, Hero otherHero, ...)` 要求对手方是真的 `Hero`，而使者队无领主。除非给使者队安一个临时 Hero（会进英雄列表、百科、亲属系统），否则无解。用户接受该结论，并指出使者目标本就是 `FindReceiver` 按距离取的**最近灰袍**（`GwpWardenDispatchBehavior.cs:494`，`OrderBy(p => p.GetPosition2D.Distance(...))`），因此与目标领主交易在设定上成立。
+- **(9) 让使者对话画面进来：一并不做。** 它与 (8) 卡在同一个 `Hero` 约束上；单独做只能变成「与目标领主对话」，与现状无实质差别。附带记录：`GwpDispatchBarterScreen` 目前是在对话之外裸挂 `GauntletMapConversationBarterView`，实机 fault 日志里的 `Screen layer is already finalized`（`Close()` line 76 ← `Tick()` line 70）即出自这一处；若将来改走真正的对话可顺带消除该脆弱点。
+- **本轮已完成：出发粮草闸门的缺口 (6)。** 核查发现 (7) 早已实现——`GwpWardenDispatchBehavior.Dispatch` 在 `CanProvision` 失败时已弹黄字 `{=gwp_dispatch_no_rations}` 并拒绝发车。真正的缺口是一键换货会把路上口粮一并换走，玩家点完自动交易才在出发关口被拦，且不知道是这一下造成的。
+- 实现：`GwpAssetPayment` 新增 `rationsFloor` 构造参数与 `_rationsFloor` 字段；`SuggestedOffer()` 的 ReportMode 分支先算出「辎重粮总量 − 口粮底线」作为可换粮食上限，逐条 `Goods` 且 `Item.IsFood` 的建议量按该余量封顶并递减。`GwpWardenDispatchBehavior.RationsWantedFor` 由 private 改 internal；`GwpWardenDispatchDialogue` 构造 payment 时按 `members.TotalManCount` 传入底线。玩家仍可**手动**把粮食加进交易——那是他自己的选择，出发判断照旧会拦并给出警告。
+- **尚未开工（下一块）**：腿 A 主体，即新增 `GwpDispatchPurpose.TroopOrder`（按 int 序列化，加值对旧档无损）、送单对话入口、抵达时执行现有 `FileTroopOrder`（下单成立、扣款、进 `Training`）、以及空手走现有 Returning/Rejoined 返回。交付侧 `CompleteTroopDelivery`/`DeferDelivery`/`QueueFinishDeliveryEncounter`/`MoveTrainerToPlayer` 一行不动。
+- 需守住的既有保护（腿 A 不得破坏）：`IsTrainerReservedForPlayerOrder`、`IsOrderedTroopUpgradeLocked`、`DeferDelivery` + `_deferredTasksRemaining`、`CancelTroopOrderForInsufficientFunds`、`OnMapEventStarted`、`StopPlayerContact`。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误；已部署，Client DLL `1031680` 字节，SHA-256 `0312B5B8796CAA8782A5344CCF8714C7B0648A19228BCA083223A35E4D942BCC`。注：`tools/DispatchBarter.Tests/` 目录为空壳，无 csproj，无法运行。
+
+
+## 2026-09-16 灰袍兵种配比改由原版升级取向控制（骑:步:弓 = 2:1:1，已部署待验）
+
+- **更正上一条的"诊断缺口"结论**：`ASSISTANCE_ARMY_SPEED_FULL_DISPERSAL` **本来就记了**判据输入，是排查时 grep 大小写写错（`theoreticalLeaderSoloSpeedAtAssignment` 的 L 大写）才没匹配上。弥瑟该案实际读数：`speedTargetCachedBaseSpeed=2.42`、`speedTargetTheoreticalSpeed=3.71`、`theoreticalLeaderSoloSpeedAtAssignment=2.84`、`armyMaximumSpeed=1.57`。3.71 > 2.84 成立，分散判定正确，无需补日志。
+- 弥瑟"看着烧村不动"已定位为本地战力闸门按设计生效：`friendlyLocalStrength=204.53`（`friendlyLocalGroups` 只有他自己）vs `enemyLocalStrength=206.69`，差 2.16（约 1%），而 `committedStrength=427.52`。速度分散把援军拆开各自追、本地闸门又要求援军到场才宣战，目标够快时军团组不回来，两者形成僵持。本轮未调整该平衡，仅记录。
+- **本轮改动：兵种配比**。灰袍兵种树为 `gwnewrecruit → gwrecruit ─┬→ gwheavyinfantry(Infantry) ├→ gwarcher(Ranged) └→ gwknight(Cavalry)`，`gwrecruit` 是唯一分叉点（3 个 upgrade_target），因此原版 `DefaultPartyTroopUpgradeModel.GetUpgradeChanceForTroopUpgrade` 对它生效。
+- 此前全仓库从未写过 `Hero.PreferredUpgradeFormation`，原版因而走 else 分支：`(leader.RandomValue >> troop.Tier*3) ^ troop.StringId.GetDeterministicHashCode()) % UpgradeTargets.Length` —— **每个领主被自己的 RandomValue 永久锁死在一条分支**，一辈子只产一种兵。现场追截队只抽 `IsMounted` 骑兵，于是骑兵被持续消耗却只有个别领主能补，这是用户观察到"骑兵消耗很快"的直接原因。
+- 新增 `GreyWardenTrainingBehavior.SteerUpgradePreference(party)`，挂在既有 `OnHourlyTick`，对**每一支**有领主的灰袍部队生效（不限于当值练兵长）。按 `CharacterObject.DefaultFormationClass` 统计本队灰袍兵的骑/步/弓，折算 `count / share` 取最小者，写入 `leader.PreferredUpgradeFormation`。配比常量在 `GwpTuning.Training`：`CavalryShare = 2`、`InfantryShare = 1`、`ArcherShare = 1`。全队为空时先补骑兵；相等时按骑→步→弓优先。仅在取向发生变化时写一条 `UPGRADE_PREFERENCE_STEERED`（含前后取向与三类实际人数），不刷屏。
+- 该方案**零 Harmony 补丁、零公式覆盖、零新存档键**：`Hero.PreferredUpgradeFormation` 是原版 `[SaveableProperty(800)]`，由原版自行持久化；命中分支由原版 `CharacterHelper.SearchForFormationInTroopTree` 判定并获得 9999 权重，`PartyUpgraderCampaignBehavior.SelectPossibleUpgrade` 的轮盘随之约 99.98% 走该分支。
+- 已知副作用（可接受）：拦截队外派期间骑兵暂时不在本队名册内，会被短暂低估而更偏向补骑兵；分队归队后自动回正，且方向与需求一致。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误（后者输出至会话 scratchpad，未部署）。产物反查 `UPGRADE_PREFERENCE_STEERED` 命中 1。Client 与 Editor DLL 均 `1030656` 字节，SHA-256 均为 `8CFB3DA12E698945334650D328261953C5F6153BBB1CD10EBBD6ACBAC9DF7893`。
+
+## 2026-09-16 玩家助战引发的战争由灰袍出面调停（已部署，待实机验收）
+
+- 实机读数（case-events 覆盖 campaignHour 2187015.94→2188517.7，约 1502 小时／62 天）：`CASE_RETARGETED_TO_NEAREST` 4 次，四次全部是实际拉近——26.62→14.64、13.23→7.75、18.19→2.76（均 `category=VillageViolence`，`gw_leader_2`）、13.07→5.92（`category=Unknown`，`gw_leader_0` 无专职）。类型归属与 0.6 倍门槛都按预期生效。AI 日志中 `NEARBY_CRIME` 命中 0（case-events 里残留的 48 条是删除之前的历史行，该日志未到 2MB 轮转阈值）。08:00 之后无新故障。
+- 用户反馈的唯一问题：玩家出手帮灰袍打罪犯而引发的战争，灰袍不出面调停。定位为 `PoliceAntiWarDeclaration.OnBattleEnded` 的既有边界——战后只对**警察氏族**执行 `TrySetNeutral(policeClan, enemyFaction)`，玩家自己那一份战争从未被处理。`PlayerBountyBehavior.MakePeaceWithCriminalFaction` 里已有同名"灰袍调停"概念，但只覆盖玩家**承接**悬赏的流程，不覆盖玩家**助战**。
+- **用户否决了首版的延迟调停方案**（持久化欠账表 + 每小时检查 + 等灰袍先收兵），要求从简：玩家打完之后，如果这份宣战就是本场跟灰袍一起打出来的，当场中立掉，其余一概不管。已按此重做，首版的 `gwp_mediation_owed_faction_ids` 存档键、`HourlyTickEvent` 监听、`ResolveFaction` 与 `MEDIATION_OWED_RECORDED`/`MEDIATION_PEACE_APPLIED` 诊断全部撤回（产物反查两键均为 0 命中）。
+- 现行实现：`PoliceAntiWarDeclaration` 监听 `CampaignEvents.WarDeclared`，只把 `DeclareWarAction.DeclareWarDetail.CausedByPlayerHostility`（玩家亲手动手，排除王国决议等其余 detail）且对方非警察氏族、非匪帮的那一份记进**非持久化**字段 `_playerHostilityWarFromThisBattle`。是不是"跟灰袍一起打的这一仗"不在宣战时判定，避免依赖宣战与遭遇战的先后顺序。
+- 兑现在 `OnBattleEnded` 最前面的 `ResolvePlayerAssistWar`：无论本场是否成立都先把标记清空（不跨场次残留），然后要求三条同时成立——玩家仍与该势力交战、本场玩家这一侧有灰袍部队（`MapEventSide.Parties` + `IsPoliceParty`）、该势力在对面（`playerSide.OtherSide.Parties`）——才 `GwpCommon.TrySetNeutral(playerFaction, pending)` 并提示 `{=gwp_warden_mediation_peace}`。用 `TrySetNeutral` 而非 `MakePeaceAction.Apply`，与本文件对警察氏族的既有处理保持同一口径（用户原话即"中立掉"）。新增诊断 `PLAYER_ASSIST_WAR_NEUTRALIZED`。
+- **王国级中立是有意的**（用户确认）：玩家顺手帮灰袍执法把自己所属国家拖进战争，本来就该由灰袍负责收场，因此封臣／君主身份下 `Hero.MainHero.MapFaction` 解析为王国、中立掉整场王国战争，属设计意图而非副作用。
+- **玩家自己承接的悬赏不归这里管**（用户要求）：`ResolvePlayerAssistWar` 在判定通过前先查 `Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.HasActiveBountyWarForFaction(pending)`，命中则直接退出，交回 `PlayerBountyBehavior.MakePeaceWithCriminalFaction` 按结案流程处理，避免两套调停互相抢。
+- 其余语义边界：玩家开打前就已经与对方交战的情况不会触发 `WarDeclared`，因此不会被中立掉；玩家为别的缘由开的战、王国决议开的战同样不登记；警察在对面（灰袍执法玩家）时本场玩家这一侧没有灰袍，条件天然不成立。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；诊断开启与关闭两种 Release 编译均 0 警告 0 错误（后者输出到会话 scratchpad，未部署）；`Verify-ContentKeys.ps1` XML 29、本地化键 1365、使用键 1150、重复 0、缺失 0 PASS。产物反查：`PLAYER_ASSIST_WAR_NEUTRALIZED`、`gwp_warden_mediation_peace`、`CASE_RETARGETED_TO_NEAREST` 均已进入；首版撤回的 `gwp_mediation_owed_faction_ids`、`MEDIATION_PEACE_APPLIED` 与已删除的 `NearbyIntervention` 均为 0 命中。Client 与 Editor DLL 均 `1029632` 字节，SHA-256 均为 `B0D21A3C9698D9337D4B7203B66192A1FA9D5905455BCE02AC7BF96FC913B19B`。
+
+## 2026-09-16 撤销短期欲望介入，改为承办人长期欲望始终追最近的同类罪犯
+
+- 用户决定：短期欲望交还原版，本模组只动长期欲望；办案主办人的长期欲望始终指向最近的罪犯，其他差事（协力、重建、练兵、玩家委托、村庄救济）不受距离影响；罪案必须按类型归属，否则某一职位领主死绝后该类罪案无人专责。改灰袍特质／`Aggressiveness` 的方案被用户明确否决。
+- **已整套删除现场介入（NearbyCrime）**：`PoliceEnforcementBehavior.NearbyCrime.cs` 与 `tools/NearbyCrime.Tests/` 删除；三个 Harmony 补丁（`DefaultMobilePartyAIModel.GetBestInitiativeBehavior` postfix、`IsEnemy` postfix、`CalculateStanceScore` postfix）随文件一并移除，原版短期 AI 完全复原。接线清理点：`PoliceEnforcementBehavior.cs` 的 `SyncNearbyInterventions`/`TickNearbyInterventions`/`EndNearbyInterventionsAfterBattle`、`PoliceEnforcementBehavior.Dialogue.cs` 的 `RestoreNearbyInterventions`、`GwpPoliceWarReasonService.cs` 两处 `HasNearbyInterventionWar`、`GwpAiDiagnostics.cs` 的 `NEARBY_CRIME_` 事件日志分流。`PoliceEnforcementBehavior.DelayPatrols.cs` 回退 `IsNearbyIntervention` 字段、`gwp_enf_dp_nearby_flags` 存档键、`TrySpawnImmediateCaseInterceptor` 的 `nearbyIntervention` 形参及其全部分支（含 `WarTargetId` 取值、`NEARBY_CRIME_INTERCEPTOR_DEPLOYED` 日志名、`trigger=nearby_crime`、返程判定与 `IsActiveNearbyInterceptorSource`）。移除废弃本地化键 `gwp_nearby_crime_war`。存档键 `gwp_nearby_crime_actions`/`gwp_nearby_crime_wars`/`gwp_enf_dp_nearby_flags` 不再写入；旧档缺键时 `SyncData` 保留默认值，不影响读取。
+- **新增重定向**：`CrimePool.RetargetTask(policePartyId, newCrime)` 只改写 `task.TargetCrime`，**绝不走 `EndTask`**——后者会 `crime.HasOpenCase = false` 并 `_ledger.Remove(crime.CrimeId)`，等同把旧案当破案删掉。旧案保持开启且因不再被任何 `PoliceTask` 引用而自动回到 `GetUnassignedOpenCases`，同一轮即可被别人接手。
+- `PoliceEnforcementBehavior.RetargetOrdinaryCasesToNearest()` 在每小时 `AssignTasks()` **之前**运行，让腾出的旧案当轮就能重新指派。改追条件（按用户选择，只在未宣战的追捕阶段）：`FlowState == Pursuit`（因而排除 PlayerBountyEscort／EscortingPlayer／PreparingDispatch／WarPursuit）、承办人在编且不在 MapEvent、无 Army、非协力占用且不是协力组长、名下没有未返程的拦截队、当前目标仍有效。类型归属复用既有 `GetPreferredCrimeCategory`：有专职的领主只在本类罪案里改追，无专职的走任意类别——与 `AssignTasks` 两轮指派同一口径。
+- 防抖：`GwpTuning.Enforcement.RetargetImprovementRatio = 0.6f`（新目标必须近到当前距离的 0.6 倍以下）与 `RetargetCooldownHours = 6f`（同一承办人两次改追的最短间隔，内存态 `_lastRetargetHourByParty`，不进存档，读档后至多多换一次，无正确性风险）。新增诊断 `CASE_RETARGETED_TO_NEAREST`，记录新旧案件号、新旧罪犯、新旧距离与所用类别。
+- **测试覆盖缺口（需知悉）**：NearbyCrime 的 62 项断言随功能一并删除；本轮新增逻辑没有单元测试——没有任何测试工程编译 `GwpData.cs`，为它搭 MobileParty/Hero/Settlement/CampaignTime 等桩的成本与本次改动不相称。改以反编译实机产物核验关键不变量：`CrimePool.RetargetTask` 在产物中确为 `value.TargetCrime = newCrime; return true;`，不含 `_ledger.Remove` 或 `HasOpenCase = false`。
+- 验证与部署：`tools/CaseSettlement.Tests` 177 项通过；Release 0 警告 0 错误。`Verify-ContentKeys.ps1`：XML 29、本地化键 1364、使用键 1149、重复 0、缺失 0，PASS（较上轮各少 1，即删除的 `gwp_nearby_crime_war`）。产物反查确认 `NearbyIntervention`、`NEARBY_CRIME_DECLARED`、`gwp_nearby_crime_actions`、`gwp_enf_dp_nearby_flags` 全部为 0 命中。Client 与 Editor DLL 均 `1028096` 字节，SHA-256 均为 `3A6DE5D4E68F80FA87841F8458CC87242D3A66308C0225BE4C9EF733BFE691AC`。
+- **构建事实更正**：csproj 的 `DeployToLiveModule` 默认值就是 `true`（第 23 行），普通 `dotnet build` 即写入实机模块并同步 Editor 目录。此前记录中「只构建到 `bin/Release/isolated/`、没有部署 live」的说法不成立；`bin/Release/isolated/` 只有显式 `-p:DeployToLiveModule=false` 时才会产出，目前该目录内是 09-15 的陈旧产物。游戏运行期间构建会因 DLL 被占用而失败，需先退出游戏。
+
+## 2026-09-16 首轮实机读数：6 次 DECLARED 全部疑似搭车，补 warOwner 诊断
+
+- 首轮实机（case-events 覆盖 campaignHour 2187015.94→2187971.18）：`NEARBY_CRIME_NATIVE_FOLLOW` 10、`NEARBY_CRIME_DECLARED` 6、`NEARBY_CRIME_SLOW_PURSUIT_DETACH` 6、`NEARBY_CRIME_INTERCEPTOR_DEPLOYED` 1、`NEARBY_CRIME_PASSED_OVER` 19、`NEARBY_CRIME_RELEASED` 8，无 FAILURE。
+- **不能据此声称"短期欲望导致了宣战"。** 5 组目标的承办任务都在我方跟随的同一 campaign 小时或更早翻到 `WarPursuit`（弥瑟/lord_2_23 2187709.69 对 2187709.69；梵蒂/CharacterObject_1814 2187723.69 对 2187723.85；约珥/CharacterObject_1841 2187729.74 对 2187729.74；梵蒂/lord_1_4 2187749.87 对 2187749.87）。分数反解同样指向"已在交战 + 贴身"：`318 = 1.06 × 3(num3 封顶) × 100(num5) × 1.0(num12)` 精确吻合，`num12 = 1.0` 要求目标处于 MapEvent，`num5 = 100` 要求距离 < 2.5。6 次 `DECLARED` 的 `sourceDistance` 为 0.83–2.29，全部落在该圈内。
+- **诊断缺口（已修）**：日志的 `war=` 字段记的是 `PoliceTask.WarDeclared`（任务标志），不是 `FactionManager` 的真实交战状态，因此无法从日志判断这一战是我们打起来的还是搭了普通案件的车。`NEARBY_CRIME_DECLARED` 现增记 `warOwner=already_at_war|this_intervention`（在 `EnsurePoliceFactionWar` 之前取 `IsAtWarAgainstFaction`）与 `targetInBattle`。
+- **确实由新机制产生的两项事实**：其一，暮光（`gw_leader_5`）介入 `lord_2_23_party_1` 时 `task=-`，它手上没有这个案子（案子属于弥瑟），即"路过的灰袍接手别人的案件"已发生；其二，它派出的拦截队 `gwp_enf_delay_56550` 真的咬上了——2187709.23 目标还是 `FieldBattle:attacker`，2187710.23 变为 `FieldBattle:defender, attacker=gwp_enf_delay_56550`。
+- **中立罪犯这条线一次都没成功**。`NEARBY_CRIME_PASSED_OVER` 中 `lord_1_4_party_1` 连续十次 `EngageParty` 分数恒为 `0.9755918`，差 2.4% 过不了原版 `bestInitiativeBehaviorScore > 1f`；该串发生在 2187756.79–2187758.47，此时现场关系已于 2187753.86 释放、无活动 intervention，故这些 sighting 只可能来自 `IsEnemy`/`CalculateStanceScore` 的中立分支，可确认当时并未交战。反解 `0.9755918 ÷ 1.06 ÷ 0.8 = 1.1505 = num3` → localAdvantage ≈ 1.30：强 30% 仍不过线。
+- **原因定位到灰袍自身性格，且用户明确否决改特质**。`LordPartyComponent.OnMobilePartySetOnCreation` 建队时一次性算出 `Aggressiveness = 0.9 + 0.1 × Valor − 0.05 × Mercy`；日志中灰袍恒为 `0.800`（1350 采样无变化），同场其他领主为 0.850/0.900/0.950/1.000，灰袍是全场最低。0.800 对应 Valor 0 + Mercy 2 或 Valor −1。用户已明确不改特质，本轮不做任何数值调整。
+- 不改数值仍然存在的正反馈路径：目标进入 MapEvent 时 `num12` 自动由 0.8 抬到 `max(1, aggressiveness) = 1.0`；`num15` 在"目标所在战斗的对面有我方部队"时取 1.2——拦截队咬住目标会同时触发这两项，主队分数约 ×1.5。该链路已在代码中，本轮实机尚未走到。
+- 前一轮我预警的"打不过掉头跑"实测出现（`gw_leader_4` 对 `lord_1_4` 的 `FleeToPoint`），但分数仅 0.047–0.055，离采纳线差两个数量级——灰袍普遍强于罪犯，`num4` 被钳在 0.05。此前按"弱于对方"推算的发生率属高估；压制逻辑保留但不是主要矛盾。
+- 验证与部署：`tools/NearbyCrime.Tests` 62 项、`tools/CaseSettlement.Tests` 177 项继续通过；Release 0 警告 0 错误；已 `-p:DeployToLiveModule=true` 部署。下一轮实机只需看 `warOwner=` 即可定论中立线是否打通。
+
+## 2026-09-16 追不上先分兵、接触才宣战、打不过不逃跑（已部署，待实机验收）
+
+- 用户确认的目标路径：追不上的目标不要死等主队贴身，直接放拦截队把他钉进一场战斗；即便拦截队打输，目标也会进入战后混乱低速，原版的追击判断随之成立。本节在上一节「判据改台账」基础上继续。
+- 本机 1.4.8 反编译佐证（会话 scratchpad，未入库）：`DefaultPartySpeedCalculatingModel` 有 `DisorganizedEffect = -0.4f`，`if (mobileParty.IsDisorganized) result.AddFactor(-0.4f, _textDisorganized)`；`DefaultPartyImpairmentModel.BaseDisorganizedStateDuration = 6f`；`DisorganizedStateCampaignBehavior.OnMapEventEnd` 在「本场有实际伤亡且非藏身处战斗」时对**每一支参战部队**（含胜方）`SetDisorganized(true)`，仅主动撤退方（`RetreatingSide == involvedParty.Side`）豁免。打斗期间另有三项：目标带 MapEvent 时 `num5` 的「追不上移动目标」分支被整条跳过（`num5` 由 0 回到 1）、`num12` 至少为 1、`num15` 因「敌人所在战斗对面有我方部队」取 1.2；主队此时是按 `GetEncounterJoiningRadius = 3` 加入已有战斗，而非按 `NeededMaximumLandDistanceForEncounteringMobileParty = 0.5` 从头发起遭遇。
+- 改动一：`TickNearbyInterventions` 的未宣战分支新增 `TryDetachNearbySlowPursuit`，在宣战之前就尝试分兵。复用既有 `TrySpawnImmediateCaseInterceptor`，其自带的 `targetSpeed > sourceSpeed` 速度门本身就只在「主队追不上」时成立，无需另算；强弱沿用既有 `EvaluateLocalDeclarationStrength(...).StrengthReady`，不新写战力公式。每个现场关系每campaign小时最多尝试一次（`NearbyIntervention.NextDetachAttemptHour`，不持久化，读档后重试），已有分队则直接短路。
+- 改动二：拦截队改为可在未宣战状态下存续。`IsActiveNearbyInterceptorSource` 由「必须已宣战且处于交战」改为「已宣战按交战关系、未宣战按 `IsWantedOffender` 案卷有效性」。宣战判定不再只看主队距离：主队或任一拦截队进入 `WarDistance` 即可；拦截队先到而主队仍远时，不再要求原版为主队返回进攻（主队还追不上，原版当然不会返回进攻），改为按拦截队接触直接成立。这样战争窗口压到最短，避免隔着 9 格对一个王国宣战。
+- 改动三：压制由我们自己造成的逃跑。原版 `avoidScore` 里 `(num2 > 0.01f) ? 1f : 0f` 的 `num2` 就是 stance，对中立方恒为 0，所以原版永远不会躲一个没开战的领主；是我们的 `GwpNearbyCrimeStancePatch` 把它抬到 1 才打开了这道闸门。现在 `SelectNearbyIntervention` 遇到「原版返回逃跑行为 + 目标是我们的候选 + 与其并未真正开战」时把 `behavior` 置 `None`、`score` 置 0，让原版回落到长期差事。真正交战国造成的逃跑不受影响（`IsAtWarAgainstFaction` 为真则不介入）。边界推算：`localAdvantage ≥ 1` 时 `num4` 被钳到 0.05，avoidScore ≈ 0.19 不触发；`< 1` 且距离 ≲ 7.5 格（`num18 = 4 − length/num17`，`num17 ≈ 3.6 × 0.7 × (1+AvoidInitiative)/2`）时轻松过 1。灰袍 `SeeingRange` 白天基础 12、夜间 6（`DefaultMapVisibilityModel`），该区间完全落在候选范围内。
+- 诊断：新增 `NEARBY_CRIME_SLOW_PURSUIT_DETACH`（目标、是否已宣战、双方本地战力、是否真的派出）；`NEARBY_CRIME_DECLARED` 增加 `contact=source_party|interceptor`、`sourceDistance`、`interceptors`；释放原因新增 `weaker_than_offender_declined`。分队自身的 `NEARBY_CRIME_INTERCEPTOR_DEPLOYED` 沿用既有实现，含理论/当前速度与兵数。
+- 验证：`tools/NearbyCrime.Tests` 54 → **62 项**全通过（新增：宣战前分兵且此刻不宣战、拦截队接触触发宣战且不重复派队、本地战力不占优不分兵、中立方逃跑被压制且不动外交与分队、真正交战国的逃跑保持原样）。测试桩补 `CampaignTime`、`CrimePool`/`CrimeRecord`、`EvaluateLocalDeclarationStrength` 与会登记 DelayPatrolState 的分兵桩；`Load` 增加携带 DelayPatrolState 的参数，对应生产端该状态由 DelayPatrols 自有键持久化。旧断言 `load does not redeploy interceptor` 拆成两档：已宣战档读档不得重派，仅跟随档读档后照常可以分兵。`tools/CaseSettlement.Tests` 177 项继续通过；Release 0 警告 0 错误。
+- 部署：游戏进程已退出，已 `-p:DeployToLiveModule=true` 部署。Client 与 Editor DLL 均 `1039360` 字节，SHA-256 均为 `5CBF43102FE5E822B854D293982EF8B378F2A7B947422E9C7A9173CF90FB241E`；反查产物确认 `NEARBY_CRIME_SLOW_PURSUIT_DETACH`、`weaker_than_offender_declined`、`NEARBY_CRIME_PASSED_OVER`、`NEARBY_CRIME_DECLARED`、`target_no_longer_wanted_or_out_of_range` 均已进入。等待用户实机验收，不建立稳定 checkpoint、不发布 ZIP/README。
+
+## 2026-09-16 现场介入实机零命中：判据由「抓现行」改为「台账未结案」
+
+- 实机监控（`GreyWarden-Case-Events.log`，campaignHour 2187015.94→2187668.59，约 653 小时／27 天、155 件 `CRIME_INTAKE`）结果：`NEARBY_CRIME_NATIVE_FOLLOW` 2 次、`NEARBY_CRIME_RELEASED` 2 次（原因全部 `native_did_not_choose_attack`）、`NEARBY_CRIME_DECLARED` **0 次**、无 `NEARBY_CRIME_FAILURE`。两次命中目标是 `deserters_4174` 与 `looters_2411`，都是土匪，nativeScore 均 3.18；其中梵蒂在释放后 14 小时（2187619.38）才由原版自行发起并打赢该战。三类案件一次都没进入候选。
+- 根因：候选判据 `IsActiveCivilianAttack` 要求罪犯此刻正处在未结算 MapEvent 中且是攻击方队长。原版打劫匪自然，是因为劫匪恒为敌人、不需要抓现行；同一机制套到案件上时，一个通缉在身但正在赶路的领主永远进不了候选。两次命中的是原版本来就敌对的土匪，`IsEnemy`/`CalculateStanceScore` 两个 postfix 实际没有起作用。
+- 本机 1.4.8 反编译复核（`DefaultMobilePartyAIModel` / `MobilePartyAi` / `DefaultEncounterModel`，暂存于会话 scratchpad，未入库）确认原版不阻挡本设计：`ShouldPartyCheckInitiativeBehavior` 对有领主的灰袍部队恒 true（在聚落内也查）；候选枚举半径 `GetEncounterJoiningRadius(3) × 3 = 9`，候选循环硬截断 `3 × 2 × 3 = 18`；`IsEnemy` 即 `IsAtWarAgainstFaction`，可由 postfix 扩展；`ShouldConsiderAttacking` 只校验士气与海陆一致，不要求开战；`CalculateStanceScore` 中立返回 0，由 postfix 改 1；战力由 `num3 > num4`（`localAdvantage`）判定；追击可行性 `num5` 在 `length < NeededMaximumLandDistanceForEncounteringMobileParty(0.5) × 5 = 2.5` 时取 100，超出则要求我方基础速度更快，否则为 0；`MobilePartyAi` 仅在 `bestInitiativeBehaviorScore > 1f` 时替换本轮动作，长期 `DefaultBehavior` 不动。因此「灰袍路过（2.5 格内）就必定接手，打完回原任务」在原版规则内成立，而追一个同速领主由原版判定不可行——本轮尊重该判定，不另造追击公式。
+- 改动一（决定性）：新增 `IsWantedOffender`，判据改为 `CrimePool.GetByOffenderId(party.StringId)` 命中且 `IsOffenderPursuable()`，类别限 `CaravanAttack` / `VillageViolence`。现行犯仍然包含在内——罪案在发生当刻即入册。第三类 `PlayerCase` 的罪犯恒为玩家本人（台账固定键 `PLAYER_WANTED`），按 `IsMainParty` 排除，玩家通缉继续走既有对话／行贿／投降／宣战流程，未被本机制接管；此项为保守默认，若要改由用户决定。
+- 改动二：`IsNearbyCrimeCandidate` 重排为先做廉价判断（`CanIntervene`、海陆一致、非同阵营、`SeeingRange` 距离）再查台账，避免原版对视野内每支部队的 `IsEnemy` 询问都触发一次账本线性扫描；另保留「不插手玩家本人正在打的那一仗」。
+- 改动三：已与目标阵营开战时不再把原版 `EngageParty` 改写为 `EscortParty`。土匪与早已开战的王国由原版直接开打，改护送只会把一次本可立刻发生的攻击推迟一个小时（实机那 14 小时即此路径）。仍然登记现场关系，拦截队照常派出、战后照常结算；`TickNearbyInterventions` 的宣战复查相应接受 `EscortParty`（中立目标）或 `EngageParty`（已敌对目标）。
+- 改动四：追击途中案子了结（认罚、被捕、被他人结案）立即收兵停战，不再等目标跑出视野——`TickNearbyInterventions` 的 declared 分支加入 `!IsWantedOffender(target)`。
+- 诊断：`NEARBY_CRIME_RELEASED` 的 `native_did_not_choose_attack` 过去把三种原因合并成一个标签，实机那两条因此无法区分「罪案结束」与「原版改主意」。现拆为 `target_no_longer_wanted_or_out_of_range` / `native_chose_<behavior>` / `native_score_below_initiative`。新增 `NEARBY_CRIME_PASSED_OVER`（`wantedInRange` 列表 + 原版当轮 behavior/score），由 `_nearbySightings` 在原版枚举期间经 `IsNearbyCrimeCandidate` 记录、每小时消费清空，用来量化「明明有灰袍路过却没接手」卡在哪一步。该集合仅在 `GWP_DIAGNOSTICS` 下写入，发行构建恒空。
+- 验证：`tools/NearbyCrime.Tests` 由 43 项扩到 **54 项**全通过（新增：无进行中战斗的通缉犯仍是候选并能宣战派队、案子了结即停战、已敌对目标保留原版 `EngageParty` 且仍派拦截队、已结案／`Unknown` 类别／玩家本人均不合格）。旧断言 `past crime alone is not a native candidate` 编码的是被替换掉的语义，已改写为 `open case without a live battle is still a native candidate`。`tools/CaseSettlement.Tests` 177 项继续通过。Release 构建 0 警告／0 错误。
+- 未做：本轮只构建到 `bin/Release/isolated/`，**没有部署 live**——用户游戏当时正在运行，覆盖实机 DLL 不安全。需用户退出游戏后重新部署并重跑监控；在拿到 `NEARBY_CRIME_DECLARED` 的实机记录前，不建立稳定 checkpoint、不发布 ZIP/README。
+
+## 2026-09-16 按用户明确要求扩展原版短期 AI（当前有效候选）
+
+- 用户明确路径：用原版遇到劫匪的短期评估机制；足够则短期跟随，靠近自动宣战、结束跟随覆盖，原版自行选战；接入追截队；战斗结束或目标跑掉恢复和平；全过程不改长期欲望和原案件。本节替代下面早期的独立扫描、手工战力判断、固定 1.01 分，以及“仅现场宣战触发”的候选描述。当前仍未获实机确认，不建立稳定 checkpoint、不更新正式包/README。
+
+### 原版接入位置及执行链
+
+- 本机 1.4.8 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior` 自己进行空间搜索、寻路过滤、战斗双方判断、附近战斗组/区域兵力加权、速度/士气/侵略性、attackScore/avoidScore 竞争。本轮不复制这些公式，不另算一套敌我强弱，也不自行搜索或排序犯罪队伍。
+- 只扩展模型内部两个私有入口：`IsEnemy` 对合格灰袍领主视野内正在烧村/袭击村民/袭击商队的攻击方领队返回可评估；`CalculateStanceScore` 对同一候选把中立的 0 改为原版敌对立场 1。发现原版后者为 0 会将 attackScore 乘成 0，仅改候选过滤无法工作。两处仅影响 AI 模型判断，不补丁全局 FactionManager，也不提前建立战争。原版已敌对或同阵营结果不变。
+- 用户最后强调使用原版战力机制，现已撤销先前仅取本队强度与自定义敌方聚合比较的方案。现有附近友军如何影响判断由原版区域战力规则决定，但本功能不调援军、不组军团。仍限定独立带队灰袍、陆地、未参战/进城/被俘、可做 AI 决策；不接管玩家犯罪遭遇或玩家已参与的战斗。
+- 当原版最终选择该犯罪目标为 EngageParty 且原版分数 > 1，保存原目标，临时只把该轮行为转为原版 EscortParty。目标与分数均保留，不写入新的常数分。`MobilePartyAi.GetFollowBehavior` 使用传入目标位置，长期 DefaultBehavior、TargetParty 与 GreyWarden Intent 不改。
+- 距离进入现有 WarDistance=3 后，在 Tick 中再调用原版 GetBestInitiativeBehavior 核实其仍选择同一目标；若原版转为逃跑、其他目标或分数不足，退出/重新跟随原版新选择。确认后调用共用 EnsurePoliceFactionWar，跟随阶段结束；后续 postfix 不改该领主的任何原版行为/目标/分数。不能保证原版在所有现场必然选战，保留它的攻逃判断。
+- follow/declared 两阶段均保存到已有 nearby 状态字段的第 4 列；兼容此前 3 列为 declared。只持久化现场关系，不新增 PoliceTask，不赋任务或清原案。原有 NPC 目标失活/羁押等结案仍由原机制处理。
+
+### 追截队复用与退出
+
+- 扩展原 `TrySpawnImmediateCaseInterceptor` 的独立 nearbyIntervention 调用路径，允许不传长期 task，校验当前现场宣战关系。复用骑兵筛选、实际兵员转移、速度比较、失败回滚、直攻追击、归队和容量处理。nearby 路径不使用协力军团兵员，只从当前本队抽人。
+- 完整保留原派队条件：目标理论速度高于主队才分兵，3–8 名健康骑兵，分队理论速度须高于目标；否则不派，已转移则回滚。此为加快追截机制，不能宣传绝对追上所有敌人。源队/目标已有活动追截队时不重复拆队，不因原案件与现场两种用途生成两支重复队。
+- DelayPatrolState 新增持久化 IsNearbyIntervention（缺省 false，旧档按原队伍处理）。现场队用现场关系判断存续，不因原任务是另一个案件而立刻返程；原任务清理不会直接标记现场队返回。现场追截队胜利不调用旧追截队的批量原案件清理/发经费入口；长期案件和真实抓俘仍按原来的事件回调自动处理。
+- 战争阶段只保留本次交战关系及现场追截队维护，不再覆盖主队短期欲望。战斗结束（主队或本次追截队与目标同场）、目标失活/失去战力、离开主队及其追截队视野、进入无战斗的定居点、海陆分离、源领主被俘/失活、外交已经结束等会退出现场关系。
+- MapEventEnded 用部队 ID 识别追截队，已战败失活的分队也能触发退出。退出立即取消本次分队直攻、安排跟随源队返程；沿用既有归队/解散。未触碰主队原 Intent 或 PoliceTask。清理自建临时战争；同势力若仍有原长期案件等独立战争理由，保留原战争，避免破坏用户要求不动的原任务。
+
+### 验证、诊断与部署
+
+- 新 `tools/NearbyCrime.Tests` 直接编译生产 NearbyCrime.cs，43 项断言通过：三种犯罪的原版结果接入、原分数不膨胀、未到距离不宣战、宣战前原版转逃跑撤销、宣战后输出不变、只请求现场分队且不传 task、存读档保留阶段/不重复派队、目标脱离和平、失活追截队战后退出、原有战争/其他案件战争保留、模型过滤和立场扩展仅作用合格犯罪目标。引擎搜索/数学评分/地图战斗及实际分兵均为 stub/spy；这些测试只证明接入与生命周期，不能冒称真实原版战斗模拟。测试初次编译把 IFaction 传给 Clan 构造器，修正测试对象后通过。
+- 原结算测试 177 项继续通过；ContentKeys 29 XML、1365 本地化键、1150 使用键，缺失/重复 0。生产有/无诊断构建均 0 警告/0 错误；无诊断 DLL 仅 `.codex_tmp/nearby-no-diagnostics/`，不部署。最终 live 用正常诊断构建。
+- 1.4.8 兼容预检 types=555、成员失败 0、Harmony 57/57，新增 IsEnemy/CalculateStanceScore 私有入口绑定成功；记录 `.codex_tmp/nearby-native-selection-compat.log`。最终少量退出条件/日志名称调整后重新构建与 43 项流程测试均通过。
+- 最终 live Client/Editor DLL SHA256 均 `4E0FFA7487AA997B350DC86E517DFAEF71D5827858CF6B398DFA9959B7FFA883`。live 全量镜像 36/43 无缺失、差异或意外文件（含两份正式 README）。git diff --check 通过。
+- 新功能定向事件：NEARBY_CRIME_NATIVE_FOLLOW（原分数/目标）、NEARBY_CRIME_DECLARED（距离）、NEARBY_CRIME_INTERCEPTOR_DEPLOYED（真实兵数/速度）、NEARBY_CRIME_RELEASED（退出原因）。写入已有独立案件事件日志；不新增每 Tick 成功刷屏。验收后按规则退休成功路径，故障记录保留。
+- 尚需重启游戏实测原版真正评估中立犯罪、跟随是否及时进入宣战距离、随后接战和高速分队追截、战败/逃脱后和平与归队、期间原任务持续存在。失败时先用上述定向证据定位，不再跳过用户指定的原版评估机制另写强制进攻规则。
+
+## 2026-09-16 用户追问现有自动清案；撤回尚未验证的额外收尾
+
+- 用户指出目标队伍消失本来会结束案件，并要求说明当前“短期欲望”实际操作。实查 UpdateTasks 的 !task.IsTargetValid / criminal==null / !criminal.IsActive 分支会 ClearTaskWarTracking、EndTask、RestorePeaceAfterCaseEnd；此机制针对已分配任务。CrimePool.Clean 仅清承办部队/目标引用无效的任务及死亡英雄案卷，不能据此声称所有未分配案卷都会因部队失活自动删除。实际羁押另走既有 CloseCaseSettledInField。
+- 前一条请求后曾尝试新增 CompleteNearbyCrimeBattle、案卷/相关承办任务快照和共用 FinishSuccessfulNpcTask，以补现场战后经费、支援与追截队清理；该候选只编译成功并自动部署，未实机验证。用户追问后停止这条扩展，逐项撤回其全部代码及事件接线，恢复原 NPC 战后结束机制，未保留重复结案/发款入口。未覆盖此前罚金、文字、诊断或现场宣战改动。
+- 当前行为的准确名称应是“现场犯罪宣战触发”：原版 initiative 检查时只读其结果，发现附近三类正在犯罪队伍，独立本队战力严格占优则记现场目标；Tick 复查后共用长期宣战入口，原版短期 AI 自己选战。没有新进攻评分、没有强制 EngageParty、没有长期目标改写。故只保证触发条件成立后尝试建立敌对，不能声称必定攻击选中的罪犯。现场结束清理自建临时战争，但不代表案卷必然成功结案。
+- 撤回后 Release 0 警告/0 错误；live 全量镜像 36/43 无缺失、差异或意外文件；Client/Editor SHA256 均 `36BF480D125A3AD5B2B7A564F6FADDFBEC739F6AA936F118BB12FEFC654E9DE1`。原有事件处理逻辑已恢复；后续需先根据实机证据区分已分配/未分配、羁押/队伍消失，再决定是否补缺口，不继续无证据扩写结案链。仍未发布或创建稳定 checkpoint。
+
+## 2026-09-16 完整复核长期宣战至结案，现场制止交还原版选战
+
+- 用户再次要求检查长期抓捕整条路径，而非仅合并宣战 API。本节覆盖下方此前候选的“强制 EngageParty、最低分 1.01”描述；该候选未获实机确认，现已撤销该强制选战实现。
+- 实查：UpdateTasks 保留长期追踪欲望；靠近且 TryGetNativeDeclarationCandidate 实际区域战力占优后 DeclareWar；原版短期 AI 决定进攻/逃跑/继续原动作。现有长期逻辑另有援军及追截队调度，现场动作不调用它们。TryGetNativeDeclarationCandidate 会包含支援组候选和友方现场兵力，不能整段照抄为“仅凭本队”判定；现场继续复用敌方战斗组计算，我方只算本队。
+- 已删除 NearbyCrime 对原版输出 behavior/target/score 的全部赋值，以及原生进攻不满足自定义判断时清零输出的逻辑；Harmony postfix 参数改为按值读取，不再 ref 写回。现场功能只发现三类活动犯罪、判断本队能否介入、暂存现场目标，在 Tick 复查并共用 EnsurePoliceFactionWar 宣战。宣战后完全由原版短期 AI 选战。仅“占优且宣战”不能声称原版一定进攻，原版仍可逃跑或执行其他动作。
+- 结案须区分：OnMapEventEnded 对长期 task 检查承办人与本案目标同场、胜方、目标是否真正失去战斗能力；普通胜利/承办方失败均可能 EndTask。EndTask 以 policePartyId 删除其承办案件，不能拿它处理另一个现场目标。
+- 真实抓捕已有公共链：OnHeroPrisonerTaken → RegisterPoliceArrest → RegisterEnforcementOutcome → 实际灰袍羁押检查 → ClearRecordOnArrest → CloseCaseSettledInField。现场抓到有案底的人同样走此链，清负声望/人命余数、关该罪犯的案卷、释放对应承办任务、记被捕和震慑，不必伪造长期任务或重复调用。若现场罪犯正是原任务对象，原任务正常结案；若不是，不碰原任务。仅逼退或犯罪停止不伪造被捕，也不清该人的案底。办案经费仍属于既有承办案件战果流程，不新增现场重复发款。
+- 停战也已抽出共用 RestorePeaceWithoutEnforcementReason；原 RestorePeaceAfterCaseEnd 与现场临时战争退出均调用它。有其他案件、悬赏、纠察或现场交战理由则保留战争。现场记录只管理自建战争的生命周期，不保存/暂停/恢复长期 Intent。
+- 定向诊断 ENGAGE 改为 NEARBY_CRIME_NATIVE_ENGAGE：仅观察原版实际返回该目标的进攻且分数 > 1，一次记录；不再将本插件写入的动作当作原版选择证据。用户实机确认前保留。
+- Release 0 警告/0 错误；1.4.8 成员校验 0 失败、55/55 Harmony、types 547，输出 `.codex_tmp/nearby-native-combat-compat.log`。live 36/43 文件完整镜像；Client/Editor SHA256 均 `D1AD4E9317430A490E9FFE9CC469CDBECC53071F3F695F086915DDF26C1D1E9A`。结构检查 NearbyCrime 无 ref 输出、SetMove、EndTask、ClearIntent 或组军调用；git diff --check 通过。尚待实机验证，不发布或建立稳定 checkpoint。
+
+## 2026-09-16 复核原版长期/短期关系，合并宣战入口
+
+- 用户指出长期与短期欲望本来不冲突，要求核实原版以及未宣战目标的处理。复核本地反编译 `MobilePartyAi.GetBehaviors`：先取 DefaultBehavior/TargetParty/TargetPosition；短期评分 > 1 时替换本轮动作与目标；未改 DefaultBehavior 或长期 Intent。因此没有“暂停/恢复长期任务”的自建机制；前述恢复是原版回落到默认动作，不是重新分配案件。
+- 复核 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior`：原版候选先被 IsEnemy 筛选，给中立犯罪者增加分数不能单独解决未宣战问题。现有长期抓捕是范围内战力占优后 DeclareWar，再让原版短期选择进攻；还附带任务 WarDeclared/WarTarget、援军和追截队处理。
+- 当前现场制止明确用“发现活动犯罪→本队战力严格占优→Tick 确立敌对→短期 EngageParty”路径；未创建暂停/恢复长期任务逻辑。现场欲望最低分 1.01 是本次新增的短期制止优先级，不能描述成完全照搬原版自然进攻分数。保留逃跑优先和现场失效退出。
+- 将长期与现场的 FactionManager.DeclareWar 调用合并到 `PoliceEnforcementBehavior.EnsurePoliceFactionWar`：统一自身阵营排除、已交战不重复宣战、宣战后核实实际敌对关系。长任务仍保存自己的案卷战争状态；短期保存现场临时战争归属，避免污染原案，也不因套用长任务包装而启动援军/追截队。未改其他已部署功能。
+- Release 构建 0 警告/0 错误；1.4.8 兼容 types=547、55/55 Harmony、成员失败 0，记录 `.codex_tmp/nearby-shared-war-compat.log`。live 镜像 36/43 无缺失、差异或意外文件；Client/Editor DLL SHA256 同为 `B0FC55ACFF15DDAFF0F794955FA9FFB238CD9F3C81FDFA4B54A07B4F7DDD9448`。用户尚未确认实机行为，继续保留新功能定向诊断，不发布正式版或将候选标成稳定 checkpoint。
+
+## 2026-09-16 现场短期制止、罚金封顶及文本清理（开发候选，待实机验收）
+
+- 用户在调查后明确要求直接实现：灰袍领主用本队现有战力制止附近正在烧村、袭击村民、袭击商队的犯罪；不为短期动作叫援军，不能制止就继续长期任务；罚款封顶 20000；检查报价、招募、百科中的说明式文案；允许按容量管理监控。
+- 基线为正式 r11：tag `71215faacaeb01717425b1b888b3167a3b2946a4`，发布记录提交 `e4ad6ce29b03e6f041bdfe4a97e096beffce5265`。当前新功能没有实机确认，不作稳定 checkpoint，不发布新 ZIP/GitHub Release。需回退时以 r11 对应文件为基线，先保存当前 diff 和新增 NearbyCrime 文件，逐项还原本节列出的实现，再重建和校验 live；不得硬重置其他改动。
+
+### 短期行为与原流程的接线
+
+- 新增 `PoliceEnforcementBehavior.NearbyCrime.cs`，Harmony postfix 接 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior`。原版 `MobilePartyAi.GetBehaviors` 只有 score > 1 才采纳，初稿 1 分无效，已改最低 1.01。原版 `RaidEventComponent` 在 MapEvent 中进入 BeingRaided，故烧村通过活动 Raid MapEvent 判断。
+- 候选须是活动事件攻击方领队：村庄劫掠，或防守方领队为村民/商队。范围为 min(本队 SeeingRange, 原版加入半径×3)，使用空间查询和原版路径可达判断，不把玩家 IsVisible 当 NPC 视野。排除已结束事件、同阵营、双方同阵营、受害方也与灰袍敌对的事件。
+- 仅独立带队、在陆地、未进城、未参战、未被俘、无军团且可做原版 AI 决策的灰袍领主参与；保留原版逃跑优先。不接管玩家参战现场和玩家犯罪遭遇，避免绕开既有玩家执法对话。海战与军团内领主不在此次短期介入范围。
+- 我方只算本队 GetNativePartyStrength；敌方复用现有 GetNativeCombatStrengthSnapshot，包含现场攻击方和附近实际可加入的敌方战斗组，去重并按距离衰减。严格本队强于敌方才出手，不计承诺援军和友方附近部队。也不借原版友军优势选择自己打不过的现场犯罪。
+- 不创建/转移 PoliceTask，不修改长期 Intent，不调用援军集结、军团创建、追截队派出流程。候选在评分时暂存，外交在 campaign Tick 确认后执行。行为只覆盖原版短期 EngageParty 输出，原案件归属保留；案件战斗结束逻辑已有 WasTaskOffenderInEvent 校验，不会因为旁边战斗误结原案。
+- 自己新建的临时战争独立跟踪；战力不足、犯罪结束、目标离开视野、阵营变化或本队不能行动时释放；本队正在与该阵营交战时保留到战斗结束；没有其他有效执法理由后议和。已存在的战争不冒认为本功能创建。接入 HasLegitimateWarReason 和百科战事原因，避免两日清理提前停战。
+- 用两份 List<string> 保存 actor/target/faction ID 与临时战争归属，在 OnSessionLaunched 恢复对象，避免在 SyncData 早期访问未就绪对象。读档后重新检查现场条件。新功能异常有 GWP_DIAGNOSTICS 故障记录，正常玩家构建不写日志。
+
+### 罚金与文案
+
+- NPC 合并案件基础费+负声望费总计最多 20000，采用 long 中间计算防溢出；现场报价与委托/百科均用 AssessFine。缴满封顶账单时清掉该次负声望欠账，不能继续追讨被封掉的部分；未缴满仍按实缴抵扣。历史犯罪次数不删，多份实际报告相加不再重复封顶，防止上缴账目失真。
+- 玩家领主执法、纠察队罚款、战败押送收费同步最多 20000；百科对玩家的两类罚款报价用同一函数。押送实缴达到封顶账单则恢复至零，部分实缴沿用原抵扣。贪腐查账的声望惩罚不是第纳尔罚金，未套金钱上限；旧已实际收款报告不追溯改数。
+- 招募开场缩短为邀请与酬劳，接受后只说甲胄身份、把钱或人交差、战事调停，修正旧“击败就领赏”的残留说法。纠察队的“报价通过/底线”改为角色口吻。百科去掉分项罚款算式，保留案数、死亡、人命欠账和实际总额；待报告款项改为应缴/实缴，避免声称所有差额仍属犯人欠账。清掉无调用的“读档恢复（兜底）”、旧招募拼接说明等中文键，英文同步。保留原有供玩家查看的威慑数值，不将所有数值说明误判为提示词泄露。
+- 本次是开发候选，仅更新本维护文档；两份玩家 README 保持正式 r11/r10。
+
+### 监控容量与证据
+
+- 用户后续授权容量管理，本节替代下方早先“无限归档”策略：AI 单文件 8 MiB，每类自动归档保留最新 8 份；新 `GreyWarden-Case-Events.log` 单文件 2 MiB，同样保留最新 8 份。案件入账、现场执法、短期制止选择/执行/退出与相关战斗事件额外写入独立案件日志，不会被高频 AI 拍卖挤掉。旧证据不会因此凭空恢复。
+- 新功能定向记录 SELECTED、ENGAGE、RELEASED 和 TOO_STRONG（每名领主每游戏小时最多一次不足提示），携带目标和当前强弱，用于验证“看见但没管”与“选择后没动”。这些成功路径在用户实机确认后按规则退休；异常支路保留。
+- 日志根目录 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\`；自动归档 `GreyWarden-Diagnostics-Archive\`。仅自动时间戳文件按容量轮转；此前 `.preserved-GUID.log` 四份证据和仓库 `.codex_tmp/crime-contact-20260916/` 快照不自动删除。可直接读取，不需移回 live。文件保存位置与下方既有事故记录一致。
+- 提取生产 ArchiveTrace 在隔离目录 `.codex_tmp/retention-check-<GUID>/` 验证 12 次轮转：只留最新 8 份、最新内容正确、preserved 文件不删。源码提取 `.codex_tmp/ArchiveRetentionCheck.cs` 为可重建验证产物，无需移回游戏。
+
+### 验证与部署
+
+- 结算测试 177 项通过（真实结算/计价代码，游戏对象为 stub）；新增封顶前/等于/超过上限、极大案底防溢出、玩家负数绝对值边界、部分缴款、基础费本身超上限时缴满清账、多报告合计测试。测试工程原有 3 项 nullable 警告，生产构建 0 警告/0 错误。
+- 普通 diagnostics-enabled Release 与独立 diagnostics-disabled 编译均成功。后者只到 `.codex_tmp/nearby-no-diagnostics/` 以验证条件编译；没有打玩家包，也没有部署该 DLL。随后重建诊断版并部署 live Client/Editor。
+- 首次编译用错 InvolvedParties 元素类型（PartyBase 没有 Party 属性），已改为直接 MapFaction；最终 1.4.8 兼容预检 types=547、成员失败=0、Harmony 55/55 通过，输出 `.codex_tmp/nearby-crime-compat.log`。最初犯罪收据检查碰上并发 Rebuild 暂时删除输出 DLL，构建结束后顺序重试通过，不是运行期故障。
+- ContentKeys：29 XML、1365 本地化键、1150 使用键、重复/缺失均 0。CrimeReceipts 校验通过；不是实机烧村模拟。git diff --check 通过。
+- 最终本地 Client/Editor DLL SHA256 `73ADA17B452472290AACF4F5D6ACC222AC64F4D73850E816F4E0FFD84F88B7C5`；中文 XML 源/live SHA256 `C6747875735732A4E7424F0AE655A21CD4AF6E2B34D1D898D628DE93A6F96D78`。最终 live 全量镜像校验通过：源文件 36、live 43，缺失/差异/意外文件均无（含中英文 README 哈希一致）。
+- 尚待重启游戏后实机验证：三类犯罪分别遇到较强/较弱目标；制止结束及目标离开后原任务继续；介入途中和战斗中存读档；缴满 20000 后案账；招募/报价/百科实际显示。尚不能声称这部分实机已验收。
+
+## 2026-09-16 罚款封顶与现场犯罪短期介入调查（未实施）
+
+- 用户要求先调查：罚款过高，希望封顶；灰袍保留长期任务，同时用短期欲望制止视野内
+  正在烧村、袭村民、袭商队且区域战力占优的罪犯。日志允许适当容量管理，关键调查证据
+  需保留；本轮未再改保留策略，未实施新玩法或更新正式包。
+- 实查现有罚款：每次事件基础 1000 + 负声望每点 100，NPC AssessFine 无玩法封顶。
+  脱赤八案、负声望 20 对应约 10000。建议先讨论 NPC 单次结案账单 10000 封顶，历史
+  罪数/人命不裁剪。不能只改显示：GwpFieldArrestBehavior.CalculateFine 仍有独立计算，
+  须与 AssessFine、百科、领主执法报价统一；实缴抵账、差额调查、案件报酬须核对，避免
+  达封顶缴清仍反复索取被封顶部分。玩家罚款、贪腐声望扣罚是否同封顶尚未获明确范围。
+- 本机 1.4.8 DefaultMobilePartyAIModel.GetBestInitiativeBehavior 已反编译到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\nearby-crime-ai-model.cs`。
+  原版搜附近队伍，陆地默认半径为 EncounterJoiningRadius*3；IsEnemy 先过滤非敌对队。
+  因此该半径不能冒称 NPC 实际视野，也不能简单改 score 就可靠攻击中立犯罪者。
+  现有 GwpInitiativeDiagnosticsPatch 仅观察 out 行为、目标、分数，没有改短期决策。
+- 可行方向：用正在发生的 MapEvent（攻击方打村民/商队）及 BeingRaided 村庄建立候选，
+  只检查灰袍领主附近现场，不按历史罪名远距离追；对现场可达/感知的判据还需核对原版
+  spotting 模型，不能使用以玩家为观察者的 IsVisible。当犯罪结束或目标离开范围，短期
+  介入失效，恢复原长期任务，不改原案归属、不把现场新案抢成长期任务。
+- 复用 Assistance 的区域战力基础：GetNativeFriendlyLocalStrength、敌方 combat-group
+  聚合和去重；适配正在交战双方及能实际加入的援军。建议严格我方>敌方才选现场介入，
+  保留逃跑优先；正在参战/被俘/附属军团队不单独改目标，避免把远处承诺援军算进即战力。
+- 最重要的接线工作：短期评分要无副作用；选择生效时才做执法外交/加入受害方，战后
+  清理此次临时战争理由但保留其它合法战争/原任务，并复用惩戒、俘虏和结案去重。
+  不能对全局 IsEnemy 返回值开口子，不能在每次候选评分时宣战。普通任务已选定也允许
+  暂时现场救援；玩家专属案件仍需尊重既有委托主理规则，不擅自扩展为抢玩家案件。
+- 候选验证需覆盖三类现场、中立目标、已有战争、弱于敌方、增援入场、犯罪已结束、
+  原任务恢复、多人介入去重和读档清状态。新增诊断只记候选选择/放弃及战力理由等状态
+  变化，避免逐帧或逐候选输出。监控分层建议：高频 AI 样本限量，案件入账与战结算轻量
+  时间线长留，调查快照固定保存；该存储调整尚未执行。
+
+## 2026-09-16 监控历史保留修正
+
+- 用户明确要求监控不能丢，追問脱赤前六案为何缺失。代码确认两条自动丢失路径：Append
+  达 8 MiB 后删除旧 .previous，仅留当前与上一段；StartSession 用 WriteAllText 覆盖当前。
+  前六案可能曾被记录，但现存日志无法证明其每次内容；未找到可恢复的额外历史副本。
+- 改为 ArchiveTrace：文件达到 8 MiB、开始新会话时，将当前与遗留 previous 移入
+  `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Diagnostics-Archive\`，
+  文件名含 UTC 时间和 GUID，不覆盖同名历史，不设自动删除上限。归档失败则不覆盖源文件。
+  功能仍在 GWP_DIAGNOSTICS 内，正式 r11 玩家包未更换。已结案诊断仍按用户确认后人工退休，
+  未结案历史不得因轮转清理。没有重新启用测试玩法。
+- 修改前将 Documents 中当前/previous AI 及 Faults/prev 四份文件复制到以上归档目录，
+  后缀 preserved-GUID.log；源文件未移动，避免运行中的旧 DLL 丢失更多现存证据。之前
+  .codex_tmp/crime-contact-20260916 快照继续保留。归档文件直接读取即可，无需移动回原路径。
+- 生产 Release 重建 0 警告/0 错误，自动部署本地；live mirror 36/43 文件无差异，README
+  一致。提取实际生产 ArchiveTrace 方法运行文件测试：三次同路径轮转与一份旧 previous
+  的四组内容全部保持原哈希，重复处理不存在文件不报错。测试位于仓库 .codex_tmp/
+  archive-retention-GUID 目录，可由生产方法重建，不涉及游戏存档或已发布 ZIP。
+- 正在运行的游戏仍加载旧 DLL；需要完全退出重启后，新归档策略才生效。不声称已恢复
+  旧轮转删除的历史，也不将本次自动验证冒称长时间实机归档验收。
+
+## 2026-09-16 当前接触罪犯的伤亡与追捕调查（待确认姓名）
+
+- 用户称当前接触人物罪行/人命很多且似乎从未被捕，要求从监控核查。现有当前/previous
+  AI 日志有犯罪入案、战斗死者来源、烧村户数折算和执法队行动；此次窗口没有对话对象、
+  TALK_WILLINGNESS 或接案记录，不能据最近一名犯罪者推定用户面前的人。已询问姓名。
+- 只读检查并保全滚动日志副本到
+  `C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\crime-contact-20260916\`：
+  GreyWarden-AI-Diagnostics.log、GreyWarden-AI-Diagnostics.log.previous、GreyWarden-Faults.log。
+  原日志未移动、未删除，副本无需移回；继续调查读取副本，实时新记录仍取 Documents 原路径。
+- 已确认日志中的人命账有不同来源，不能直接称全部为本人亲手击杀。例如德泰尔
+  lord_4_1 在 00:46:23、campaignHour 2187010.58 于杜恩袭村，72 人来自民兵阵亡 55 +
+  村民阵亡 17，伤员 24+10 未计死亡，caseTotal=353。此前在韦农·埃蒂尔民兵阵亡 36。
+  另如贾瓦勒的贾伊姆 00:43:48 记录 hearth 245.2456→176.0141，折算 69，属于户数口径，
+  不冒称这是 69 名引擎实际战死者。以上人物尚未与用户当前接触者对应。
+- 追捕不是全局停摆：样本包含追蒙楚格 lord_6_1 的协力宣战记录，以及多名小家族目标。
+  00:43:41、campaignHour 2186928.12，约珥追 CharacterObject_1822 时被
+  southern_pirates_1831 击败，日志 TASK_FAILED_OWNER_CANNOT_LEAD_AFTER_BATTLE，领队为空，
+  任务失败。此证据仅说明一个追捕中断案例，不说明用户目标的完整经历。
+- 源码 AssignTasks 先按职责再为其它空闲领主分配最近可受理案件；村庄重建、地方请求、
+  练兵、玩家请求、协力占用、已有案件和补给不足均可能暂缓分配。现有普通状态中的
+  ordinaryCaseEligible 并非这一整套分配条件的逐项结果，不能把它为 true 直接解释为应接案。
+  姓名未确认前不改概率、罚款或追捕逻辑；缺失具体排除理由时应补目标定向诊断再实测。
+  本轮无构建/部署/发布变更，r11 正式包保持原样。
+
+### 喀拉库吉特家族定位与脱赤追捕证据
+
+- 用户补充雇佣兵家族“什么库吉特”、七八次犯罪、上百人，日志对应 karakhuzaits。
+  脱赤 CharacterObject_1850：count=8、caseTotal=222；撒撒尔 CharacterObject_1852：
+  count=8、caseTotal=121。身份描述本身不能唯一排除另一人，但当前最后一场玩家参与的
+  战斗目标明确是脱赤，因此高度吻合；没有凭空宣称已读取当前 UI 对话姓名。
+- 脱赤最新两案：00:42:11、hour 2186872.54 攻击帕亚木村民，第七案；00:42:54 战结算
+  实际村民阵亡 19、受伤 7，caseTotal 194。00:43:24、hour 2186910.77 攻击庞斯村民，
+  第八案；00:43:26 村民阵亡 28、受伤 2，caseTotal 222。两案都为不同 MapEvent 和不同
+  村民队，不是同一次阵亡反复累加；此前 175 的完整来源已超出当前滚动窗口，未强行补全。
+- 梵蒂在 00:41:03、hour 2186813 左右已持有脱赤任务，距离 186.01；追踪 182 个小时
+  状态样本，距离依次 175.47、142.86、52.25、35.57、10.65、0.49。至交战约 194 游戏
+  小时（八天）；这段追捕中脱赤仍主动攻击村民。00:44:46、hour 2187006.52 宣战并派
+  gwp_enf_delay_56263 八人追截队，理论速度本队 3.41、目标 4.39、追截 5.08。
+  2187007.00 追截队截住脱赤，2187009.32 战斗以 AttackerVictory 结束，参战名单包括
+  player_party、梵蒂、追截队和另一纠察支援队。不是没有接案或完全没有追捕。
+- 撒撒尔/岁罗赤在保全窗口没有匹配的 HOURLY_STATE 承办记录，不能推广成从未被追过。
+  当前 GetNearest 按距离优先、不按累计杀人数/案次数排序，是远案可能长时间排队的机制
+  因素；该人的实际被排除理由未被日志逐次记录，暂不改派单优先级或扩大追捕范围。
+- 战斗获胜不能证明最终俘虏归属或 TotalArrestCount 已更新。现有已退休的正常惩戒日志
+  无法读取这一场最终数字；源码实际灰袍拘押与玩家完成受托案各有入口，不能仅凭 UI 的
+  “从未被抓”声称计数存在 bug。需要精确人物及战后数字，或下一轮定向诊断验证。
+  本轮只读取证并更新本维护文件，未改正式包、玩法、README 或重新开启测试功能。
 
 ## 2026-09-16 v1.4-r11 正式发布完成
 

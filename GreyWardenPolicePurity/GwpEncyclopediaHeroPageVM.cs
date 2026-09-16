@@ -139,8 +139,8 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 这个人此刻欠灰袍多少，以及为什么欠这么多。账分两段，口径完全不同：
         /// **案底**按件累加——做下这件事本身就有；**声望罚款**只按杀掉的人命折算，
-        /// 每十条人命一点、每点按调参计费。被警察拿下会把两段一并抹平；缴款则要等办案的
-        /// 人把钱交回灰袍之后才抵。
+        /// 每十条人命一点、每点按调参计费，总额封顶。被警察拿下会把两段一并抹平；
+        /// 犯人缴款当场抵账，与玩家以后是否交差无关。
         /// </summary>
         private static string BuildLedgerBlock(Hero? hero)
         {
@@ -166,30 +166,22 @@ namespace GreyWardenPolicePurity
 
             if (openCase)
             {
-                int baseCharge = GwpFieldArrestPricing.BaseChargeFor(crime!);
-
                 lines.Add(GwpText.Get(
                     "{=gwp_det_ui_ledger_case}Open case: {VAR_1} deed(s), {VAR_2} dead on this case alone.",
                     "VAR_1", crime!.IncidentCount.ToString(),
                     "VAR_2", Math.Max(0, crime.CivilianCasualties).ToString()));
-                lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_charge}Charge on the record, one per deed: {VAR_1} denars.",
-                    "VAR_1", baseCharge.ToString()));
             }
 
             if (pending > 0)
-                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Assessed {VAR_1} denars; {VAR_2} paid. What he handed over already counts against his name; the rest is still owed.",
+                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Fine assessed: {VAR_1} denars. Paid by the offender: {VAR_2}.",
                     "VAR_1", pending, "VAR_2", GwpFieldReportLedger.Instance?.PendingCollectedFor(hero.StringId) ?? 0));
 
             // 罚金收的是他名下全部没赎回的人命，不只是这件案子里的。两个数字过去
             // 各说各话，账面上就成了"死了 40 个人，罚 5400"。这里按人命报数。
             if (standing > 0)
                 lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_standing_lives}Charge for the dead: {VAR_1} unatoned lives, {VAR_2} point(s) of standing at {VAR_4} each, {VAR_3} denars.",
-                    "VAR_1", lives.ToString(),
-                    "VAR_2", standing.ToString(),
-                    "VAR_3", (standing * GwpTuning.Enforcement.FinePerPoint).ToString(),
-                    "VAR_4", GwpTuning.Enforcement.FinePerPoint));
+                    "{=gwp_det_ui_ledger_standing_lives}Civilian lives still on his record: {VAR_1}.",
+                    "VAR_1", lives.ToString()));
 
             if (openCase)
                 lines.Add(GwpText.Get(

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -222,7 +222,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_success",
                 "gwp_patrol_barter_post",
                 "close_window",
-                GwpText.Get("{=gwp_policepatrolbehavior_007}Quotation approved. There will be no further investigation today."),
+                GwpText.Get("{=gwp_policepatrolbehavior_007}That will do. You may go."),
                 PatrolBarterSuccessfulCondition,
                 OnPatrolBarterAcceptedConsequence,
                 100);
@@ -231,7 +231,7 @@ namespace GreyWardenPolicePurity
                 "gwp_patrol_barter_post_failed",
                 "gwp_patrol_barter_post",
                 "close_window",
-                GwpText.Get("{=gwp_policepatrolbehavior_008}The quote did not reach the bottom line. Start enforcing the law!"),
+                GwpText.Get("{=gwp_policepatrolbehavior_008}That is not enough. Lay down your weapons!"),
                 () => !PatrolBarterSuccessfulCondition(),
                 OnPatrolBarterRejectedConsequence,
                 100);
@@ -276,7 +276,7 @@ namespace GreyWardenPolicePurity
             if (rep >= 0) return false;
 
             // 计算罚款并设对话变量
-            _dialogFine = Math.Abs(rep) * GwpTuning.Patrol.FinePerPoint;
+            _dialogFine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
             _dialogBribeAmount = _dialogFine / GwpTuning.Patrol.NegotiationDivisor;
             if (_dialogBribeAmount < 1) _dialogBribeAmount = 1;
             _dialogPatrol = conversationParty;
@@ -1032,10 +1032,10 @@ namespace GreyWardenPolicePurity
                 }
 
                 int rep = PlayerState.Reputation;
-                int fine = Math.Abs(rep) * GwpTuning.Patrol.FinePerPoint;
+                int fine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
                 int paid = CollectFine(fine);
                 int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
-                int repAfter = Math.Min(0, rep + recovered);
+                int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
                 PlayerState.ResetReputation(repAfter);
 
                 MakePeaceWithPoliceAndVictims();

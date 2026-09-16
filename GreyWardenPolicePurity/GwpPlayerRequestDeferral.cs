@@ -1,4 +1,4 @@
-using TaleWorlds.CampaignSystem.Party;
+﻿using TaleWorlds.CampaignSystem.Party;
 
 namespace GreyWardenPolicePurity
 {
@@ -12,9 +12,8 @@ namespace GreyWardenPolicePurity
         internal static void NotifyDutyCompleted(MobileParty? party,
             string duty)
         {
+            // 练兵订单已改为下单即结清，不再有顺延交付，因此不再参与这条通知。
             GreyWardenPlayerRequestBehavior.NotifyOrdinaryDutyCompleted(
-                party, duty);
-            GreyWardenTroopRequestBehavior.NotifyOrdinaryDutyCompleted(
                 party, duty);
         }
     }

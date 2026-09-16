@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <base type="string">
  <tags>
   <tag language="简体中文" />
@@ -100,7 +100,7 @@
   <string id="gwp_greywardentrooprequestbehavior_007" text="先算了。" />
   <string id="gwp_greywardentrooprequestbehavior_008" text="那就等你准备好再来开口。" />
   <string id="gwp_greywardentrooprequestbehavior_009" text="款项核清。灰袍会把人交给你，但别把她们当成寻常雇兵使唤。" />
-  <string id="gwp_greywardentrooprequestbehavior_010" text="你的报价还不够。若真要调人，就拿出更像样的数目。" />
+  <string id="gwp_greywardentrooprequestbehavior_010" text="这点钱还不够雇他们。再添些吧。" />
   <string id="gwp_greywardentrooprequestbehavior_011" text="这批人不是市井佣兵。按你现在的名声，这笔调拨要 {VAR_1} 金。若你愿意，现在就把款项放上谈判桌。" />
   <string id="gwp_greywardentrooprequestbehavior_012" text="这名灰袍领主已从自己的部队中调出 {VAR_1} 名{VAR_2}，交由你指挥。" />
   <string id="gwp_greywardentrooprequestbehavior_013" text="调拨{VAR_1}" />
@@ -173,9 +173,8 @@
   <string id="gwp_gwppolicewarreasonservice_004" text="未找到灰袍守卫家族，无法读取宣战原因。" />
   <string id="gwp_gwppolicewarreasonservice_005" text="当前正式宣战对象：{VAR_1} 个" />
   <string id="gwp_gwppolicewarreasonservice_006" text="灰袍守卫当前没有正式宣战对象。" />
-  <string id="gwp_gwppolicewarreasonservice_007" text="当前仍处于战争状态，但没有处于战时追捕阶段的案件或其他有效执法理由。下一次两日检查会恢复和平。" />
+  <string id="gwp_gwppolicewarreasonservice_007" text="追捕事由已了，灰袍正着手议和。" />
   <string id="gwp_gwppolicewarreasonservice_008" text="家族额外信息：" />
-  <string id="gwp_gwppolicewarreasonservice_009" text="收养系统状态：当前未初始化。" />
   <string id="gwp_gwppolicewarreasonservice_010" text="收养冷却：全家族共享；自上一次成功收留女童起需等待 {VAR_1} 个游戏年。" />
   <string id="gwp_gwppolicewarreasonservice_011" text="当前家族人数：{VAR_1}/{VAR_2}。" />
   <string id="gwp_gwppolicewarreasonservice_012" text="当前善后任务：{VAR_1}" />
@@ -313,8 +312,6 @@
   <string id="gwp_playerbountybehavior_006" text="读档恢复：继续追踪目标（{VAR_1}）。" />
   <string id="gwp_playerbountybehavior_007" text="读档恢复：目标已击败，前往领取赏金。" />
   <string id="gwp_playerbountybehavior_008" text="未知目标" />
-  <string id="gwp_playerbountybehavior_009" text="读档恢复（兜底）：继续追踪目标（{VAR_1}）。" />
-  <string id="gwp_playerbountybehavior_010" text="读档恢复（兜底）：目标已击败，前往领取赏金。" />
   <string id="gwp_playerbountybehavior_011" text="悬赏目标已消失（可能已被他人击败），任务自动取消" />
   <string id="gwp_playerbountybehavior_012" text="已识别黑袍指挥官装备，当前暂无悬赏任务可接" />
   <string id="gwp_playerbountybehavior_013" text="目标已击败！前往领取赏金 {VAR_1} 第纳尔。" />
@@ -326,18 +323,14 @@
   <string id="gwp_playerbountybehavior_019" text="读档恢复：目标已击败，向任意灰袍领主报告即可结案并领取赏金。" />
   <string id="gwp_playerbountybehavior_020" text="未知位置" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_001" text="我接受，愿为灰袍守卫效力。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="很好。这套装备能让我们认出你的身份。击败通缉犯后，前往我们首领处领取赏金。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_003" text="务必记住——追捕时引发的战争，灰袍会在任务结算后出面调停。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="那就收下这套甲胄，穿着它替我们办案。收来的罚金或捉到的罪犯，交给灰袍领主。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_003" text="若因此惹上战事，交差后我们会出面调停。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_004" text="不，我不感兴趣。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_005" text="随你。这名使者不会再来打扰；以后若改变主意，可以亲自找一位灰袍领主谈。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_006" text="我们的事务已了结，请继续前行。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_007" text="关于那个悬赏任务，我已击败目标，来结算赏金。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_008" text="关于那个悬赏任务，我已经完成了。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_009" text="旅行者，稍等。灰袍守卫注意到你近来的善行，我们想与你谈一笔生意。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_010" text="作为悬赏猎人，你可以协助我们追捕通缉犯，并获得丰厚赏金。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_011" text="但需提醒：追捕行动可能被当地国家视为入侵，引发战争。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_012" text="不过，任务完成并领取赏金后，灰袍守卫会出面调停，" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_013" text="确保你不会承担战争后果。你是否愿意加入？" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_009" text="灰袍听说了你的事迹。愿不愿意替我们追捕罪犯？办妥了，自有酬劳。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_014" text="你已成为灰袍悬赏猎人！黑袍指挥官套装已加入行李，穿戴后即可接受悬赏任务。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_015" text="你拒绝了灰袍守卫的招募。使者不会再次来访，但你以后可以找灰袍领主重新加入。" />
   <string id="gwp_membership_rejoin_player" text="我想再次申请成为灰袍受托猎手。" />
@@ -353,13 +346,30 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_016" text="出色的工作。任务已完成，这是约定的赏金：{VAR_1} 第纳尔。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_017" text="出色的工作。按照约定，这是你应得的赏金：{VAR_1} 第纳尔。希望我们还有合作的机会。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_018" text="已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_019" text="灰袍调停：已与 {VAR_1} 达成和平" />
+  <string id="gwp_dispatch_troop_order" text="把我的练兵订单和订金一起送到灰袍手里。" />
+  <string id="gwp_player_troop_order_unaffordable" text="你拿不出这笔订金，订单没有下成。" />
+  <string id="gwp_player_troop_order_short" text="这些还不够订价，订单没有下成。" />
+  <string id="gwp_fa_charge_cooled" text="这桩案子，我们再谈一次。" />
+  <string id="gwp_warden_mediation_owed" text="替灰袍打的这一仗结下了梁子。想了结，去跟灰袍说一声。" />
+  <string id="gwp_warden_mediation_ask" text="我替你们打的那些仗，把我卷进战争里了。出面替我说句话。" />
+  <string id="gwp_warden_mediation_done" text="这事交给我们。今天就把话递出去，你替我们挑起来的那几桩，都了了。" />
+  <string id="gwp_warden_mediation_moot" text="没有什么要我们去递的了。你替我们担下的那些，早就平了。" />
+  <string id="gwp_dispatch_peace" text="去灰袍那儿走一趟，把我替他们挑起来的那几桩梁子了了。" />
+  <string id="gwp_dispatch_peace_done" text="你的人把话带到了。你替灰袍担下的那几桩梁子，都了了。" />
+  <string id="gwp_dispatch_peace_moot" text="你的人赶到时，已经没有什么要了结的了。" />
+  <string id="gwp_fa_rebuff_upright" text="今天的话我已经给过你了，我不说第二遍。明天还想要，明天再来。" />
+  <string id="gwp_fa_rebuff_cold" text="上次谈完到现在什么都没变。到明天之前也不会变。" />
+  <string id="gwp_fa_rebuff_fierce" text="这事今天已经了断过一回。再逼我，就不是用嘴谈了。" />
+  <string id="gwp_fa_rebuff_soft" text="行行好。今天已经翻过一遍了，让它歇到天亮吧。" />
+  <string id="gwp_fa_rebuff_tight" text="今天的话你已经从我这儿讨走了。话也是要本钱的，你花完了。" />
+  <string id="gwp_fa_rebuff_plain" text="今天我们谈过这事了。我的答复到明天为止都一样。" />
+  <string id="gwp_dispatch_order_moot" text="你的人把订单送到了，但灰袍此刻接不下这一单。他们正把订金带回来。" />
+  <string id="gwp_player_troop_order_filed_prepaid" text="你的人已把订单和订金交到灰袍手里。练兵长会把兵训好，亲自给你送来。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_020" text="目标势力：{VAR_1}&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_021" text="犯罪类型：{VAR_1}" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_022" text="最后目击：{VAR_1} 附近" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_023" text="队伍规模：{VAR_1} 人&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_024" text="预计赏金：约 {VAR_1} 第纳尔&#10;" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_025" text="（按接任务时人数 × {VAR_1} 结算）&#10;&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_026" text="完成后前往警察家族领主处领取赏金。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_027" text="灰袍办案委托" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_028" text="接受任务" />
@@ -456,6 +466,8 @@
   <string id="gwp_policeenforcementbehavior_delaypatrols_003" text="累计犯罪" />
   <string id="gwp_policeenforcementbehavior_delaypatrols_004" text="声望已达 {VAR_1}" />
   <string id="gwp_policeenforcementbehavior_delaypatrols_005" text="灰袍高速追截队" />
+  <string id="gwp_troop_order_cohort_name" text="灰袍随行练兵队" />
+  <string id="gwp_troop_order_cohort_lost" text="灰袍捎来口信：替你备下的那批人折在路上了，他们正另召一批。" />
   <string id="gwp_policeenforcementbehavior_dialogue_001" text="按灰袍法令，先把正式罚金缴清。" />
   <string id="gwp_policeenforcementbehavior_dialogue_002" text="罚金确认。本轮案件结案，你可以离开了。" />
   <string id="gwp_policeenforcementbehavior_dialogue_003" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
@@ -482,8 +494,8 @@
   <string id="gwp_policepatrolbehavior_004" text="罚金确认。本轮案件到此结案。" />
   <string id="gwp_policepatrolbehavior_005" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
   <string id="gwp_policepatrolbehavior_006" text="可以，报出你的放行价码。" />
-  <string id="gwp_policepatrolbehavior_007" text="报价通过。今日暂不追究。" />
-  <string id="gwp_policepatrolbehavior_008" text="报价未达底线。开始执法！" />
+  <string id="gwp_policepatrolbehavior_007" text="够了。你可以走了。" />
+  <string id="gwp_policepatrolbehavior_008" text="这点钱可不够。放下武器！" />
   <string id="gwp_policepatrolbehavior_009" text="我拒绝执法。" />
   <string id="gwp_policepatrolbehavior_010" text="拒绝执法已记录。纠察队，执行抓捕！" />
   <string id="gwp_policepatrolbehavior_011" text="返程抑制中，拒绝再次进入纠察队对话" />
@@ -853,15 +865,12 @@
   <string id="gwp_fief_vote_reopened" text="灰袍在{VAR_1}的请愿已经完成。新的原版封地决议已经开启，你的家族必定进入候选名单。" />
   <string id="gwp_fief_appeal_refunded" text="新的投票开启前，封地请愿已经失效。五万第纳尔已全额退还。" />
   <string id="gwp_player_troop_order_file" text="我想让练兵官为我准备一批士兵。" />
-  <string id="gwp_player_troop_order_recorded" text="我会传达订单。现在无需付款；练兵官会训练真实士兵，完成后亲自送到你手中。" />
-  <string id="gwp_player_troop_delivery_offer" text="你的订单已经备好：{VAR_1}名{VAR_2}。约定价格为{VAR_3}第纳尔，款项将直接进入灰袍公库。" />
-  <string id="gwp_player_troop_delivery_accept" text="把约定款项交入公库，让这些士兵加入我的队伍。" />
-  <string id="gwp_player_troop_delivery_accepted" text="款项已经记入灰袍公库。这些士兵现在听从你的号令。" />
-  <string id="gwp_player_troop_delivery_defer" text="先让他们留在你那里。" />
-  <string id="gwp_player_troop_delivery_deferred" text="他们会继续留在我的队伍中。等你准备好后，我会再来找你。" />
+  <string id="gwp_player_troop_order_recorded" text="价钱当场结清，我这就把单子送出去。练兵长会把兵训好，亲自给你送来。" />
+  <string id="gwp_player_troop_delivery_offer" text="你要的兵已经齐了：{VAR_1} 名{VAR_2}。{VAR_3} 第纳尔在你下单那天就结清了，不欠什么。" />
+  <string id="gwp_player_troop_delivery_accept" text="那就把他们交到我手上吧。" />
+  <string id="gwp_player_troop_delivery_accepted" text="人归你了。从今往后他们听你的。" />
   <string id="gwp_player_troop_delivery_cancel" text="取消订单，士兵留给你。" />
   <string id="gwp_player_troop_delivery_cancelled" text="那么无需付款，他们会回到灰袍的日常勤务中。" />
-  <string id="gwp_player_troop_delivery_insufficient" text="你无法支付约定价格，这份调兵订单将直接取消。没有收取任何费用，士兵继续留在灰袍服役。" />
   <string id="gwp_player_troop_choice" text="{VAR_1}名{VAR_2} — {VAR_3}第纳尔" />
   <string id="gwp_player_troop_order_title" text="提交调兵订单" />
   <string id="gwp_player_troop_order_description" text="你在灰袍中的声望决定订单上限和可选兵种。" />
@@ -882,11 +891,9 @@
   <string id="gwp_fief_defer_complete" text="贵族事务协调官将回来继续处理你的封地请愿。" />
   <string id="gwp_player_troop_ledger_header" text="玩家调兵订单 — {VAR_1}名{VAR_2}" />
   <string id="gwp_player_troop_ledger_assignment" text="练兵官：{VAR_1} | 当前阶段：{VAR_2}" />
-  <string id="gwp_player_troop_ledger_detail" text="任务类型：玩家调兵订单 | 已备妥：{VAR_1}/{VAR_2} | 交付价格：{VAR_3}第纳尔" />
+  <string id="gwp_player_troop_ledger_detail" text="任务类型：玩家订兵 | 已备：{VAR_1}/{VAR_2} | 下单已付：{VAR_3} 第纳尔" />
   <string id="gwp_player_troop_stage_training" text="正在训练真实兵员" />
   <string id="gwp_player_troop_stage_delivery" text="正在前往玩家身边交付" />
-  <string id="gwp_player_troop_stage_deferred" text="交付已延期" />
-  <string id="gwp_player_troop_defer_complete" text="练兵官将带着备好的士兵回来找你。" />
   <string id="gwp_item_dual_offhand" text="灰袍双持剑（副手）" />
   <string id="gwp_item_dual_mainhand" text="灰袍双持剑（主手）" />
   <string id="gwp_fieldarrest_open" text="我受灰袍委托，为你名下的一件案子而来。" />
@@ -1017,8 +1024,7 @@
   <string id="gwp_det_ui_ledger_clean" text="灰袍账目：没有未清的账。" />
   <string id="gwp_det_ui_ledger_heading" text="灰袍账目" />
   <string id="gwp_det_ui_ledger_case" text="未结案件：{VAR_1} 起；仅这件案子就死了 {VAR_2} 人。" />
-  <string id="gwp_det_ui_ledger_charge" text="案底罚款（做下的事，按件累加）：{VAR_1} 第纳尔。" />
-  <string id="gwp_det_ui_ledger_standing_lives" text="声望罚款（按他名下所有没赎回的人命）：{VAR_1} 条人命 ＝ {VAR_2} 点 × {VAR_4} ＝ {VAR_3} 第纳尔。" />
+  <string id="gwp_det_ui_ledger_standing_lives" text="尚未赎清的人命：{VAR_1} 条。" />
   <string id="gwp_det_ui_ledger_total" text="合计应缴：{VAR_1} 第纳尔。" />
   <string id="gwp_det_ui_ledger_no_case" text="目前没有正在追捕的案件；若有待交付的罚金，交账后才会抵扣欠款。剿匪赎过也可能减少负声望。" />
   <string id="gwp_case_payment" text="向灰袍司法公库上缴罚金" />
@@ -1051,7 +1057,7 @@
   <string id="gwp_fa_payment_terms_charm" text="你已经认了这件事。把它妥善了结，我们也就不必为此交战。" />
   <string id="gwp_fa_payment_terms_rogue" text="你少交的钱，要我回去担责。我不会替你背这笔账。" />
   <string id="gwp_fa_payment_terms_trade" text="缴清后，我交账时能替你抵清这笔欠款。只交一部分，余下的还记在你名下。" />
-  <string id="gwp_case_pending_encyclopedia" text="应缴 {VAR_1} 第纳尔，已交 {VAR_2}。他交出来的那部分已经抵在他名下，余下的仍然欠着。" />
+  <string id="gwp_case_pending_encyclopedia" text="本次罚金：{VAR_1} 第纳尔。犯人已缴：{VAR_2} 第纳尔。" />
   <string id="gwp_case_duel_post_win" text="你赢了，我认。照约定，看看我的财物，把罚金结清吧。" />
   <string id="gwp_case_duel_post_loss" text="你输了。按约定，今天你不能向我收这笔罚金。" />
   <string id="gwp_case_duel_post_reply" text="我会把结果向灰袍回报。" />

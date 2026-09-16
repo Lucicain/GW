@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using SandBox.GauntletUI.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.BarterSystem;
@@ -90,7 +90,11 @@ namespace GreyWardenPolicePurity
             {
                 ScreenManager.TryLoseFocus(_layer);
                 _layer.InputRestrictions.ResetInputRestrictions();
-                if (_host.HasLayer(_layer)) _host.RemoveLayer(_layer);
+                // 宿主屏幕被弹出时，引擎已经把它的层一并终结，但 HasLayer 仍然为真。
+                // 这时再 RemoveLayer 会触发 ScreenBase 的 "Screen layer is already
+                // finalized" 断言（实机 fault 日志里那一条即出自此处）。
+                if (!_layer.IsFinalized && !_host.IsFinalized && _host.HasLayer(_layer))
+                    _host.RemoveLayer(_layer);
                 if (ReferenceEquals(_active, this)) _active = null;
             }
         }

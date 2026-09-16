@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Core;
 
 namespace GreyWardenPolicePurity
 {
@@ -34,17 +35,31 @@ namespace GreyWardenPolicePurity
             CharacterObject troop,
             int upgradeTargetIndex)
         {
+            // 领主已经被兵种配比指定了取向时，必须把判定交还原版——原版正是靠
+            // PreferredUpgradeFormation 把命中的那条分支抬到 9999。在这里抢答 1f
+            // 会把取向整个吞掉，配比就成了空转。
             if (IsGreyWardenParty(party) &&
                 GwpCommon.IsGreyWardenTroop(troop) &&
                 troop.UpgradeTargets.Length > 1 &&
                 upgradeTargetIndex >= 0 &&
-                upgradeTargetIndex < troop.UpgradeTargets.Length)
+                upgradeTargetIndex < troop.UpgradeTargets.Length &&
+                !HasSteeredPreference(party))
             {
+                // 没有取向可依据时（无领主队按 party.Id 哈希被原版永久锁死在一条
+                // 分支）才拉平三条分支，这正是本模型当初要解决的问题。
                 return 1f;
             }
 
             return base.GetUpgradeChanceForTroopUpgrade(
                 party, troop, upgradeTargetIndex);
+        }
+
+        private static bool HasSteeredPreference(PartyBase? party)
+        {
+            Hero? leader = party?.MobileParty?.LeaderHero;
+            return leader != null &&
+                   leader.PreferredUpgradeFormation !=
+                       FormationClass.NumberOfAllFormations;
         }
 
         private static bool IsGreyWardenParty(PartyBase? party)

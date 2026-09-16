@@ -37,7 +37,12 @@
             public const int EliteOrderLimit = 80;
             public const float PlayerOrderXpIntervalHours = 6f;
             public const int PlayerOrderXpPerTroop = 1000;
-            public const float ContactDistance = 3f;
+            /// <summary>
+            /// 每个训练间隔里最多把多少名老兵降回订单要的低级兵。升级树是单向的，
+            /// 最低级兵没有任何上游，光靠喂经验永远凑不出来；只能从下游降回去。
+            /// 一次只降几个，让它像"拆编重训"而不是瞬间变出人来。
+            /// </summary>
+            public const int PlayerOrderDowngradePerInterval = 4;
         }
 
         internal static class Training
@@ -46,6 +51,16 @@
             public const int ExperiencePerTroopPerInterval = 250;
             public const float ExchangeStayHours = 2f;
             public const float MovementIntentHours = 8f;
+
+            /// <summary>
+            /// 灰袍常备军的兵种配比：骑兵 : 步兵 : 弓手。骑兵翻倍是因为现场追截队
+            /// 只抽骑兵，消耗明显快于另外两种。
+            /// 实现上不改原版升级公式，只写 <see cref="TaleWorlds.CampaignSystem.Hero.PreferredUpgradeFormation"/>，
+            /// 由原版 GetUpgradeChanceForTroopUpgrade 把缺口最大的那条分支抬到 9999 权重。
+            /// </summary>
+            public const int CavalryShare = 2;
+            public const int InfantryShare = 1;
+            public const int ArcherShare = 1;
         }
 
         internal static class PlayerRequests
@@ -68,6 +83,17 @@
             /// A provost patrol settles for less - see Patrol.FinePerPoint.
             /// </summary>
             public const int FinePerPoint = 100;
+
+            /// <summary>
+            /// 办案领主改追更近罪犯的门槛：新目标必须近到当前目标距离的这个比例以下。
+            /// 留出余量是为了不让两个此消彼长的移动目标把承办人来回拉扯。
+            /// </summary>
+            public const float RetargetImprovementRatio = 0.6f;
+
+            /// <summary>
+            /// 同一名承办人两次改追之间的最短间隔，防止目标乱跑时反复换人。
+            /// </summary>
+            public const float RetargetCooldownHours = 6f;
 
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
@@ -92,6 +118,7 @@
         {
             public const float RefusalStrengthRatio = 4f;
             public const int ReportAuditDelayDays = 7;
+            public const int MaximumCaseFine = 20000;
             public const float ReportAuditChance = 0.08f;
             /// <summary>首次谎报保持低风险，此后按此前谎报次数的平方加速增长。</summary>
             public const float AuditChancePerRepeatSquared = 0.04f;

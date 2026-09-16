@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem.BarterSystem;
@@ -159,7 +159,7 @@ namespace GreyWardenPolicePurity
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop) &&
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true &&
             Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>() != null &&
-            (ReportAvailable() || SupportAvailable());
+            (ReportAvailable() || SupportAvailable() || TroopOrderAvailable() || PeaceRequestAvailable());
 
         internal static void Register(CampaignGameStarter starter)
         {
@@ -174,6 +174,14 @@ namespace GreyWardenPolicePurity
             starter.AddPlayerLine("gwp_dispatch_support", "gwp_dispatch_options", "gwp_dispatch_confirm",
                 GwpText.Get("{=gwp_dispatch_support}Ride to the Wardens and ask them to take the field with me."),
                 CanSendSupport, () => _pendingPurpose = GwpDispatchPurpose.Support);
+
+            starter.AddPlayerLine("gwp_dispatch_peace", "gwp_dispatch_options", "gwp_dispatch_confirm",
+                GwpText.Get("{=gwp_dispatch_peace}Ride to the Wardens and have them close the quarrels I took up for them."),
+                CanSendPeaceRequest, () => _pendingPurpose = GwpDispatchPurpose.PeaceRequest);
+
+            starter.AddPlayerLine("gwp_dispatch_troop_order", "gwp_dispatch_options", "gwp_dispatch_confirm",
+                GwpText.Get("{=gwp_dispatch_troop_order}Carry my order for troops to the Wardens, and the coin with it."),
+                CanSendTroopOrder, () => _pendingPurpose = GwpDispatchPurpose.TroopOrder);
 
             starter.AddPlayerLine("gwp_dispatch_never_mind", "gwp_dispatch_options", "close_window",
                 GwpText.Get("{=gwp_dispatch_never_mind}Nothing for now. Back to your post."),
@@ -202,6 +210,28 @@ namespace GreyWardenPolicePurity
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
             return bounty?.IsRecruitedByGreyWardens == true && bounty.CanRequestCaseSupport &&
                    dispatch?.HasActiveDispatch(GwpDispatchPurpose.Support) != true;
+        }
+
+        private static bool CanSendPeaceRequest() => IsOurConversation() && PeaceRequestAvailable();
+
+        private static bool PeaceRequestAvailable()
+        {
+            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
+            return bounty?.IsRecruitedByGreyWardens == true &&
+                   PoliceAntiWarDeclaration.HasMediationRequests() &&
+                   dispatch?.HasActiveDispatch(GwpDispatchPurpose.PeaceRequest) != true;
+        }
+
+        private static bool CanSendTroopOrder() => IsOurConversation() && TroopOrderAvailable();
+
+        private static bool TroopOrderAvailable()
+        {
+            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
+            return bounty?.IsRecruitedByGreyWardens == true &&
+                   GreyWardenTroopRequestBehavior.CanFileCourierOrder() &&
+                   dispatch?.HasActiveDispatch(GwpDispatchPurpose.TroopOrder) != true;
         }
 
         private static void Disarm()
@@ -282,9 +312,23 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if (purpose == GwpDispatchPurpose.Support)
+            if (purpose == GwpDispatchPurpose.Support ||
+                purpose == GwpDispatchPurpose.PeaceRequest)
             {
                 Send(purpose, members, prisoners, 0, false, string.Empty);
+                return;
+            }
+
+            if (purpose == GwpDispatchPurpose.TroopOrder)
+            {
+                // 兵和俘虏先还回主队，等玩家把单子定下来再由 Send 实扣。
+                var escort = TroopRoster.CreateDummyTroopRoster();
+                foreach (var entry in members.GetTroopRoster())
+                    escort.AddToCounts(entry.Character, entry.Number, false, entry.WoundedNumber, entry.Xp);
+                ReturnSelection(members, prisoners);
+                _reportSelection = escort;
+                _afterPayment = () => GreyWardenTroopRequestBehavior.ShowCourierOrderInquiry(
+                    (troopId, count, price) => SendTroopOrder(escort, troopId, count, price));
                 return;
             }
 
@@ -329,9 +373,13 @@ namespace GreyWardenPolicePurity
                     "{=gwp_dispatch_no_receiver}There is no Grey Warden party abroad that your men could reach. Keep them with you for now.")));
                 return;
             }
+            // 一键换货不许把路上的口粮也换出去，否则玩家点完自动交易就会在出发关口
+            // 被 gwp_dispatch_no_rations 拦下来，而他并不知道是这一下换掉的。
             var payment = new GwpAssetPayment(Hero.MainHero, receiver.LeaderHero,
                 MobileParty.MainParty.Party, receiver.Party, int.MaxValue, bounty.CaseReportSuggestedPayment, true,
-                reportMode: true, autoReceipt: bounty.CaseReportReceipt, prisoner: bounty.PendingCasePrisonerForDispatch);
+                reportMode: true, autoReceipt: bounty.CaseReportReceipt, prisoner: bounty.PendingCasePrisonerForDispatch,
+                rationsFloor: GwpWardenDispatchBehavior.RationsWantedFor(
+                    Math.Max(1, members.TotalManCount)));
             bounty.ShowUnknownCaseReceipt();
             BarterManager manager = Campaign.Current!.BarterManager;
             BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
@@ -388,6 +436,46 @@ namespace GreyWardenPolicePurity
                 () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, false, prisonerHeroId, cargo),
                 () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, true, prisonerHeroId, cargo)),
                 true);
+        }
+
+        /// <summary>
+        /// 订金按"案件款"的口径随队带走——那笔钱被 CaseGoldFloor 保护，路上不许拿去
+        /// 买粮或发饷。玩家金币不够、或者没粮没盘缠，Dispatch 的出发判断会照常拦下。
+        /// </summary>
+        private static void SendTroopOrder(TroopRoster escort, string troopId, int count, int price)
+        {
+            var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
+            if (dispatch == null || !ReferenceEquals(_reportSelection, escort))
+            {
+                ReturnSelection(escort, null);
+                return;
+            }
+            _reportSelection = null;
+
+            var available = MobileParty.MainParty.MemberRoster.GetTroopRoster();
+            if (escort.GetTroopRoster().Any(e => !available.Any(a => a.Character == e.Character &&
+                a.Number >= e.Number && a.Number - a.WoundedNumber >= e.Number - e.WoundedNumber)))
+            {
+                escort.Clear();
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_dispatch_pick_someone}Choose at least one man to send.")));
+                return;
+            }
+            foreach (var entry in escort.GetTroopRoster())
+                MobileParty.MainParty.MemberRoster.AddToCounts(entry.Character, -entry.Number, false, -entry.WoundedNumber, -entry.Xp);
+
+            try
+            {
+                MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
+                    GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
+                    troopId, count, price);
+                if (party == null) ReturnSelection(escort, null);
+            }
+            catch (Exception error)
+            {
+                ReturnSelection(escort, null);
+                GwpFaultTrace.Write("DISPATCH_TROOP_ORDER_PREFLIGHT_FAILED", details: error.ToString());
+            }
         }
 
         private static void Send(GwpDispatchPurpose purpose, TroopRoster members,
