@@ -431,7 +431,7 @@ namespace GreyWardenPolicePurity
                     DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_024}PlayerEncounter.Finish(false) has been called"));
                 }
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         #endregion
@@ -723,7 +723,7 @@ namespace GreyWardenPolicePurity
                         GwpText.Get("{=gwp_policepatrolbehavior_034}You refused the order. The provost patrol will take you by force."),
                         Colors.Yellow));
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 
@@ -997,13 +997,13 @@ namespace GreyWardenPolicePurity
                 float dist = escort.GetPosition2D.Distance(_patrolOriginSettlement.Position.ToVec2());
                 if (dist < 5f)
                 {
-                    try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch { }
+                    try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                     ExecutePunishment(_patrolOriginSettlement);
 
                     _playerCapturedByPatrol = false;
                     _escortPatrolId = null!;
 
-                    try { DestroyPartyAction.Apply(null, escort); } catch { }
+                    GwpCommon.TryDestroyParty(escort);
 
                     CleanDeadPatrols();
                     TryReleasePatrolMeetingSuppression();
@@ -1017,7 +1017,7 @@ namespace GreyWardenPolicePurity
             {
                 if (PlayerCaptivity.IsCaptive)
                 {
-                    try { PlayerCaptivity.EndCaptivity(); } catch { }
+                    try { PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
 
                 MobileParty mainParty = MobileParty.MainParty;
@@ -1028,7 +1028,7 @@ namespace GreyWardenPolicePurity
                         mainParty.Position = settlement.GatePosition;
                         mainParty.Party.SetVisualAsDirty();
                     }
-                    catch { }
+                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
 
                 int rep = PlayerState.Reputation;

@@ -1,5 +1,88 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-17 性能排查：按执行频率分层，只有两处真在每帧烧 CPU
+
+用户担心代码给 CPU 压力太大。**按频率排查而不是按代码量**，结论是绝大部分开销不存在，真问题只有两处。
+
+### 频率分层
+
+| 层 | 频率 | 挂载点 |
+|---|---|---|
+| 每帧 | ~60 次/秒 | `SubModule.OnApplicationTick`（`GreyWardenSparringBehavior` + `GwpWardenDispatchDialogue.Pump`）+ 4 个 `CampaignEvents.TickEvent`（`PoliceEnforcementBehavior`、`PolicePatrolBehavior`、`PlayerBountyBehavior`、`GwpWardenDispatchBehavior`） |
+| 每队伍每小时 | N 倍放大 | `GreyWardenPartyDesireBehavior`、`PoliceResourceManager`、`GreyWardenDesertersCampaignBehavior` |
+| 每小时 | 1 次/小时 | 9 个订阅 |
+| 每日 | 1 次/日 | 7 个订阅 |
+
+**每队伍心跳里没有任何全局遍历**——O(n²) 嫌疑排除。每小时/每日层即使做全表扫描也无关紧要（800 支队伍扫一遍，一小时一次）。
+
+### 真问题：两处每帧浪费
+
+**`PoliceEnforcementBehavior.MaintainShelteredCaseForcedAttacks`**（`Helpers.cs`）——挂在 `TickEvent` 上。而"罪犯躲进定居点被强制围攻"是罕见状态，绝大部分时间那张表是空的，却每帧都要：分配一份 `Keys` 副本；进循环后每个任务再做一次 `MobileParty.All` 全表扫描（带闭包 + 逐个 `OrdinalIgnoreCase` 字符串比较）、一个 `HashSet` 构造、两轮 LINQ。
+
+**`GwpWardenDispatchBehavior.CompletePendingHandovers`**——同样每帧，`_dispatches.Where(...).ToList()` 分配一个 LINQ 迭代器加一个 List，只为立刻发现列表是空的。
+
+两处都加了空集合早退。这不改变任何行为，只是把"没事可做时"的开销降到零。
+
+### 重要的反向结论：那 79 处线性扫描**不要动**
+
+全项目有 79 处 `MobileParty.All.FirstOrDefault/Any/Where`，其中 25 处是按 `StringId` 找队伍。直觉上该换成 `MBObjectManager.GetObject<MobileParty>(id)` 的 O(1) 查找——**但那样会静默失效**。
+
+反编译 `TaleWorlds.ObjectSystem` 确认：`ObjectTypeRecord<T>` 的索引是 `Dictionary<string, T> _registeredObjects`，**以注册那一刻的 `StringId` 为键**；`MBObjectBase.StringId` 只是个普通自动属性，改写它不会重建索引（原版自己的反注册代码都在防这种失配：`if (_registeredObjects.ContainsKey(obj.StringId) && _registeredObjects[obj.StringId] == obj)`）。
+
+而灰袍建队的模式恰恰是**先创建、再改写 `StringId`**（`patrol.StringId = patrolId;`）。所以引擎索引里存的是自动生成的旧 ID，按新 ID 查必然落空。
+
+**这些线性扫描是被迫的工作解法，不是疏忽。** 记在这里，免得日后有人（包括我）把它们"优化"掉。真要提速只能由 mod 自己维护一张 ID→队伍 的索引，在建队/销毁时更新——但那属于有成本的架构改动，而这些扫描目前都在每小时/每日/UI 层，并不值得。
+
+### 验证
+
+`GAME COMPAT: PASS`（`TYPES_OK=572`、`PATCH_OK=61 / PATCH_FAIL=0`）、`Verify-LiveModule` 一致、编译零警告。
+
+## 2026-09-17 代码健康：89 处静默吞异常改为留痕；抽出销毁队伍模板
+
+联机适配已停工并归档到 `coop-bridge` 分支（Coop 官方 mod 支持在其路线图 V3.0，0/2 未动；实测停在"玩家可见文本发去了无人的服务器窗口"和"野外抓捕瞄不到玩家"两处，剩下的不是补丁量而是要重做整个玩家可见层）。`main` 回到 r12，本轮只做单机侧的代码健康。
+
+### 先量化，再决定动哪里
+
+全量扫描 47,582 行 / 136 文件后，**否掉了性能优化这个方向**：
+
+- 92 处 `MobileParty.All` 全局遍历，但**没有一处落在每队伍心跳里**——不存在 O(n²)。
+- 57 处 `GetCampaignBehavior<T>()`（原版是线性扫描），集中在对话与 UI 路径，不在热循环。
+- 208 处 AI 诊断调用整体包在 `GWP_DIAGNOSTICS` 里，玩家包零开销。
+
+真正的问题是可维护性，而且有一处非常具体。
+
+### 89 处裸吞异常
+
+扫描结果：空 `catch` 共 93 处，其中**只有 4 处写了为什么吞，89 处什么都没有**。
+
+包住引擎调用的 catch-all 本身是合理防御——清理流程中途抛出去会把后面还没清的一并带停。问题是完全不留痕：故障只会表现为"某个功能莫名其妙不再工作"，而这正是最难查的一类。
+
+新增 `GwpFaultTrace.WriteQuiet(Exception, ...)`：
+
+- **按站点去重，每个位置每局只记一次。** 有些 catch 挂在每小时心跳上，持续失败会把日志刷爆；而 `GwpFaultTrace` 的价值恰恰在于它的类注释写的那句——健康的一局里这个文件是空的，里面出现的任何一行都值得读。去重保住了这条性质。
+- **调用点由编译器填**（`CallerFilePath`/`CallerMemberName`/`CallerLineNumber`），不手写标签——手写的标签迟早会和代码漂移。
+- 玩家包中整体编译掉，零成本。
+
+89 处全部改为 `catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }`。**行为不变**（照样吞），只是出事时留一条。跳过了诊断基础设施自身（`GwpFaultTrace`、`GwpRuntimeFaultWatch`）以免递归，也跳过了那 4 处已写明理由的。
+
+### 顺带修掉一个既有编码缺陷
+
+改动过程中撞出来的：`GwpBattleReinforcementBehavior.cs`、`GwpBribeBarterable.cs`、`PoliceAntiWarDeclaration.cs` **文件头是双 BOM**。第二个 BOM 会被当成正文，使第一行实际是 `﻿using System;`——按行匹配的工具（包括我自己的脚本）会因此失配。已归一化为单 BOM。这是仓库里潜伏已久的问题，与本轮改动无关。
+
+### 抽出销毁队伍模板
+
+`try { DestroyPartyAction.Apply(null, X); } catch { }` 在 6 个文件里重复 11 次，收拢为 `GwpCommon.TryDestroyParty(party)`。
+
+关键细节：辅助方法**必须把调用点信息透传下去**（三个 `Caller*` 参数默认值），否则 11 处的诊断会全部记成 `GwpCommon.cs` 自己那一行，等于没记。只做 null 检查，不加 `IsActive` 判断——那会改变行为。
+
+### 验证
+
+`GAME COMPAT: PASS`（`TYPES_OK=572` 与 r12 基线一致、`MEMBER_FAIL_COUNT=0`、`PATCH_OK=61 / PATCH_FAIL=0`）、`Verify-LiveModule` 一致、`Verify-ContentKeys` `MISSING=0`、编译零警告。改动 29 个文件、+164/−92。复扫确认裸吞 catch 归零。
+
+### 未做（有意）
+
+14 个超过 120 行的方法（最长 `TrySpawnImmediateCaseInterceptor` 261 行、`UpdateTasks` 221 行、`OnSessionLaunched` 211 行）**没有拆**。收益是主观的，风险是实在的：这些方法早退分支密集，拆错一条就是行为变化。建议等到确实要改那块功能时顺手拆，而不是为了好看单独动它。
+
 ## 2026-09-17 v1.4-r12 发布与远端核验
 
 - `main` 推送 `a7e3901..131abb0`；tag `v1.4-r12` 指向 `131abb0`；release 页 `draft=false`、`prerelease=false`、`targetCommitish=main`，两个附件 `state=uploaded`。

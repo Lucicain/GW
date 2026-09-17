@@ -504,7 +504,7 @@ namespace GreyWardenPolicePurity
                 PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
                 GameMenu.ActivateGameMenu("encounter");
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private void OnAfterGameMenuInitialized(MenuCallbackArgs args)
@@ -574,7 +574,7 @@ namespace GreyWardenPolicePurity
                 PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
                 GameMenu.ActivateGameMenu("encounter");
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private bool TryBuildForceJoinTexts(MapEvent battle, out string defendText, out string attackText)

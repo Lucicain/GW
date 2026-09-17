@@ -78,6 +78,11 @@ namespace GreyWardenPolicePurity
 
         private void CompletePendingHandovers(float dt)
         {
+            // 同样挂在每帧的 TickEvent 上。没有派遣在外时，下面那句
+            // Where(...).ToList() 每帧都要分配一个 LINQ 迭代器加一个 List，
+            // 只为了立刻发现列表是空的。
+            if (_dispatches.Count == 0) return;
+
             foreach (GwpDispatchRecord record in _dispatches.Where(d => d.HandoverPending).ToList())
             {
                 MobileParty? party = FindParty(record.PartyId);
@@ -422,7 +427,7 @@ namespace GreyWardenPolicePurity
         private static void KeepCourierDisposition(MobileParty party)
         {
             try { party.Ai.SetInitiative(CourierAttackInitiative, 1f, CourierInitiativeHours); }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private static void TrackOnMap(MobileParty party)
@@ -928,7 +933,7 @@ namespace GreyWardenPolicePurity
         private static void KeepOutOfPlayerWay(MobileParty party)
         {
             try { party.IgnoreByOtherPartiesTill(CampaignTime.HoursFromNow(2f)); }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         /// <summary>
@@ -1070,7 +1075,7 @@ namespace GreyWardenPolicePurity
         {
             int wage = 0;
             try { wage = Math.Max(0, party.TotalWage); }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             if (wage <= 0) return;
             int paid = Math.Min(wage, Hero.MainHero?.Gold ?? 0);
             if (paid > 0) GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, paid, true);

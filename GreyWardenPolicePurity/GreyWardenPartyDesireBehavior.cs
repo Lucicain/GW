@@ -202,7 +202,7 @@ namespace GreyWardenPolicePurity
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         /// <summary>
@@ -337,7 +337,7 @@ namespace GreyWardenPolicePurity
                 party.SetMoveEngageParty(target, navigation);
                 party.Ai.SetDoNotMakeNewDecisions(true);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private static void ReleaseDirectAttackLock(MobileParty? party)
@@ -352,7 +352,7 @@ namespace GreyWardenPolicePurity
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private static bool IsDisposableEnforcementParty(MobileParty? party)
@@ -391,7 +391,7 @@ namespace GreyWardenPolicePurity
                 if (party.Ai.DoNotMakeNewDecisions)
                     RequestImmediateRethink(party);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             GwpAiDiagnostics.WriteState(party, "HOURLY_STATE");
         }
 

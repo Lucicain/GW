@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -193,7 +193,7 @@ namespace GreyWardenPolicePurity
                     GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_APPLIED",
                         "faction=" + faction.StringId);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 _instance._mediationRequests.RemoveAll(id =>
                     string.Equals(id, faction.StringId, StringComparison.OrdinalIgnoreCase));
             }

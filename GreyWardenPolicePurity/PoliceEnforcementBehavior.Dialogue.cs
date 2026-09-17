@@ -414,7 +414,7 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You have refused the order. The Grey Wardens will take you by force."),
                     Colors.Red));
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             finally
             {
                 ResetDialogueState();
@@ -540,7 +540,7 @@ namespace GreyWardenPolicePurity
 
             if (!atWar && PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
             {
-                try { PlayerEncounter.DoMeeting(); } catch { }
+                try { PlayerEncounter.DoMeeting(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 

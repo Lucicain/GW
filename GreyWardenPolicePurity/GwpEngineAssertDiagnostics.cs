@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
                 }
                 GwpFaultTrace.Write("ENGINE_ASSERT", details: message + " | " + Environment.StackTrace);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
     }
 }

@@ -11,7 +11,7 @@ namespace GreyWardenPolicePurity
             {
                 bool flag = false;
                 try { store.SyncData(key, ref flag); return flag; }
-                catch (InvalidCastException) { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
             int value = 0;
             try { store.SyncData(key, ref value); return value != 0; }

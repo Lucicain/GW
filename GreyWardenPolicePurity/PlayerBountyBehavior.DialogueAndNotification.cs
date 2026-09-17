@@ -408,7 +408,7 @@ namespace GreyWardenPolicePurity
             // fines already collected or a prisoner already accepted for delivery.
             if (HasFieldBusinessToSettle) return;
 
-            try { _activeQuest?.FailQuestMembershipEnded(); } catch { }
+            try { _activeQuest?.FailQuestMembershipEnded(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             EndBountyTaskState(tryRestorePeace: true);
         }
 
@@ -558,7 +558,7 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.ClearIntent(party);
                     DestroyPartyAction.Apply(null, party);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 
@@ -606,7 +606,7 @@ namespace GreyWardenPolicePurity
                 PoliceAntiWarDeclaration.RecordMediationRequest(
                     criminalFaction, "bounty_case_closed");
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         #endregion
@@ -655,7 +655,7 @@ namespace GreyWardenPolicePurity
                 Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(
                     new BountyMapNotification());
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private static void TryRegisterNotificationType()
@@ -670,7 +670,7 @@ namespace GreyWardenPolicePurity
                     typeof(BountyMapNotification),
                     typeof(BountyMapNotificationItemVM));
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         internal bool CanInspectBountyOffers() =>

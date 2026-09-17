@@ -141,7 +141,7 @@ namespace GreyWardenPolicePurity
             {
                 GwpAiDiagnostics.WritePartyLifecycle(party,
                     "LEADERLESS_POLICE_LORD_PARTY_CLEANUP", string.Empty);
-                try { DestroyPartyAction.Apply(null, party); } catch { }
+                GwpCommon.TryDestroyParty(party);
             }
         }
 
@@ -449,7 +449,7 @@ namespace GreyWardenPolicePurity
 
                 party.SetNavalVisualAsDirty();
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private static void OnShipOwnerChanged(

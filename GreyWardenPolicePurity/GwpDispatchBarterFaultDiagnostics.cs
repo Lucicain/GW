@@ -19,7 +19,7 @@ namespace GreyWardenPolicePurity
                     "argument=" + (character?.StringId ?? "null") + "; " + GwpDispatchBarterScreen.DiagnosticsState
                     + "; exception=" + __exception + "; observerStack=" + Environment.StackTrace);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
     }
 }

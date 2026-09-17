@@ -74,11 +74,58 @@ namespace GreyWardenPolicePurity
                 // Diagnostics must never affect the game path.
             }
         }
+
+        private static readonly HashSet<string> QuietSitesSeen =
+            new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 记录一次**被静默吞掉**的异常。
+        ///
+        /// 包住引擎调用的 catch-all 本身是合理的防御——出事也不能把战役心跳带下去。
+        /// 但完全空的 <c>catch { }</c> 连痕迹都不留，故障只会表现为"某个功能莫名其妙
+        /// 不再工作"，排查时无从下手。
+        ///
+        /// **每个位置每局只记一次**：有些 catch 挂在每小时心跳上，一旦持续失败会把
+        /// 这个日志刷爆，而本文件的价值恰恰在于"健康的一局里它是空的，里面出现的
+        /// 任何一行都值得读"。去重保住了这条性质。
+        ///
+        /// 调用点信息由编译器填，不必在每处手写标签——手写的标签迟早会和代码漂移。
+        /// </summary>
+        internal static void WriteQuiet(
+            Exception? error,
+            [System.Runtime.CompilerServices.CallerFilePath] string? file = null,
+            [System.Runtime.CompilerServices.CallerMemberName] string? member = null,
+            [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+        {
+            try
+            {
+                string site = IOPath.GetFileName(file ?? "?") + ":" + line;
+                lock (QuietSitesSeen)
+                {
+                    if (!QuietSitesSeen.Add(site)) return;
+                }
+
+                Write("QUIET_FAILURE", details: site + " " + (member ?? "?")
+                    + " | " + (error?.ToString().Replace(Environment.NewLine, " | ") ?? "<null>"));
+            }
+            catch
+            {
+                // Diagnostics must never affect the game path.
+            }
+        }
 #else
         internal static void Write(
             string stage,
             Agent? agent = null,
             string? details = null)
+        {
+        }
+
+        internal static void WriteQuiet(
+            Exception? error,
+            [System.Runtime.CompilerServices.CallerFilePath] string? file = null,
+            [System.Runtime.CompilerServices.CallerMemberName] string? member = null,
+            [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
         {
         }
 #endif

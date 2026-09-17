@@ -96,7 +96,7 @@ namespace GreyWardenPolicePurity
 
             internal void WriteLog(TextObject text)
             {
-                try { AddLog(text, false); } catch { }
+                try { AddLog(text, false); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             internal void CancelCommission()
@@ -117,7 +117,7 @@ namespace GreyWardenPolicePurity
 
             internal void MarkReadyForTurnIn()
             {
-                try { ChangeQuestDueTime(CampaignTime.Never); } catch { }
+                try { ChangeQuestDueTime(CampaignTime.Never); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 if (_readyForTurnInLogWritten) return;
 
                 _readyForTurnInLogWritten = true;
@@ -132,7 +132,7 @@ namespace GreyWardenPolicePurity
                     CompleteQuestWithTimeOut(new TextObject(GwpText.Get(
                         "{=gwp_bounty_contract_timed_out_log}The bounty contract expired before the quarry was defeated.")));
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             protected override void OnTimedOut()
@@ -142,12 +142,12 @@ namespace GreyWardenPolicePurity
                     Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                         ?.OnBountyQuestTimedOut(this);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             internal void FailQuestMembershipEnded()
             {
-                try { CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn."))); } catch { }
+                try { CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn."))); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
         }

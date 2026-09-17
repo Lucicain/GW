@@ -154,7 +154,7 @@ namespace GreyWardenPolicePurity
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
             StopBountyEscortAfterTargetDefeat();
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             ShowFieldSettlementNotice(collectedFine);
         }
 
@@ -198,7 +198,7 @@ namespace GreyWardenPolicePurity
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
             StopBountyEscortAfterTargetDefeat();
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private void EnterBountyCollectionState()
@@ -255,7 +255,7 @@ namespace GreyWardenPolicePurity
                     EnterBountyCollectionState();
                     _activeBountyDeadlineHours = -1d;
                     StopBountyEscortAfterTargetDefeat();
-                    try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+                    try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                     InformationManager.DisplayMessage(new InformationMessage(
                         GwpText.Get("{=gwp_bounty_contract_expired_but_done}The pursuit window has closed, but the man was already dealt with. Report to any Grey Warden lord."),
                         Colors.Yellow));
@@ -407,7 +407,7 @@ namespace GreyWardenPolicePurity
         {
             if (patrol != null && patrol.IsActive)
             {
-                try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                GwpCommon.TryDestroyParty(patrol);
             }
 
             if (patrol != null && patrol.StringId == _recruitmentPatrolId)
@@ -751,7 +751,7 @@ namespace GreyWardenPolicePurity
                         _escortPolicePartyId);
                     escort.Ai.SetDoNotMakeNewDecisions(false);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 

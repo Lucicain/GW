@@ -57,7 +57,7 @@ namespace GreyWardenPolicePurity
                     var behavior = Campaign.Current?.GetCampaignBehavior<PoliceEnforcementBehavior>();
                     behavior?.OnAtonementQuestLoadedFromSave(this);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             internal void WriteLog(string text)
@@ -67,7 +67,7 @@ namespace GreyWardenPolicePurity
 
             internal void WriteLog(TextObject text)
             {
-                try { AddLog(text, false); } catch { }
+                try { AddLog(text, false); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             internal void MarkReadyForTurnIn()
@@ -82,12 +82,12 @@ namespace GreyWardenPolicePurity
                     WriteLog(GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_005}Atonement completed: reputation +{VAR_1}, current reputation {VAR_2}.", "VAR_1", gain, "VAR_2", currentReputation));
                     CompleteQuestWithSuccess();
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             internal void FailQuestWithReason(string reason)
             {
-                try { CompleteQuestWithFail(new TextObject(reason)); } catch { }
+                try { CompleteQuestWithFail(new TextObject(reason)); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 
@@ -174,7 +174,7 @@ namespace GreyWardenPolicePurity
                 "VAR_2", nearestSettlementName,
                 "VAR_3", currentSize);
 
-            try { _atonementQuest?.WriteLog(intelLog); } catch { }
+            try { _atonementQuest?.WriteLog(intelLog); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             InformationManager.DisplayMessage(new InformationMessage(intelMessage, Colors.Cyan));
         }
 
@@ -209,7 +209,7 @@ namespace GreyWardenPolicePurity
                     return;
                 }
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
             StartAtonementQuest();
             if (_atonementQuest != null && _atonementQuest.IsOngoing)
@@ -261,7 +261,7 @@ namespace GreyWardenPolicePurity
             PlayerState.ResetReputation(after);
             MakePeaceWithAtonementTargetFaction();
 
-            try { _atonementQuest?.SucceedQuestWithReputation(gain, after); } catch { }
+            try { _atonementQuest?.SucceedQuestWithReputation(gain, after); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_016}Atonement contract delivered: Reputation +{VAR_1} (currently {VAR_2})", "VAR_1", gain, "VAR_2", after),

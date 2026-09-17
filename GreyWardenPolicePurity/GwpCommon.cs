@@ -1,4 +1,6 @@
 ﻿using System;
+using TaleWorlds.CampaignSystem.Actions;
+using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
@@ -192,12 +194,34 @@ namespace GreyWardenPolicePurity
                 settlement?.GetPosition2D ?? fallbackPosition);
         }
 
+        /// <summary>
+        /// 销毁一支灰袍自己造出来的队伍（纠察队、派遣队、练兵队等）。
+        ///
+        /// 这些调用几乎都在清理流程里，而引擎在队伍正处于战斗、已被别处销毁、
+        /// 或正卡在某个动作中途时会抛。清理途中抛出去会把后面还没清的一起带停，
+        /// 所以照旧吞掉——但记一条，否则"队伍该消失却还在地图上"这类问题
+        /// 排查时完全无从下手。
+        ///
+        /// 调用点信息由编译器在**各个调用处**填好再透传给诊断，不能让它们
+        /// 全部记成本方法自己的位置——那样等于没记。
+        /// </summary>
+        public static void TryDestroyParty(
+            MobileParty? party,
+            [CallerFilePath] string? file = null,
+            [CallerMemberName] string? member = null,
+            [CallerLineNumber] int line = 0)
+        {
+            if (party == null) return;
+            try { DestroyPartyAction.Apply(null, party); }
+            catch (Exception error) { GwpFaultTrace.WriteQuiet(error, file, member, line); }
+        }
+
         public static void TrySetNeutral(IFaction? left, IFaction? right)
         {
             if (left == null || right == null) return;
             if (!FactionManager.IsAtWarAgainstFaction(left, right)) return;
 
-            try { FactionManager.SetNeutral(left, right); } catch { }
+            try { FactionManager.SetNeutral(left, right); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         public static void TrySetAggressiveAi(MobileParty? party)
@@ -208,7 +232,7 @@ namespace GreyWardenPolicePurity
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         public static void TryResetAi(MobileParty? party)
@@ -219,7 +243,7 @@ namespace GreyWardenPolicePurity
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         public static void TryFinishPlayerEncounter()
@@ -230,7 +254,7 @@ namespace GreyWardenPolicePurity
                 PlayerEncounter.LeaveEncounter = true;
                 PlayerEncounter.Finish(false);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
     }
 }

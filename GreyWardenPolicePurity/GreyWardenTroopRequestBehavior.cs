@@ -1225,7 +1225,7 @@ namespace GreyWardenPolicePurity
                 trainer.SetMoveModeHold();
                 trainer.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty,
@@ -1254,7 +1254,7 @@ namespace GreyWardenPolicePurity
                     "; price=" + _orderPrice +
                     "; retryAfterHour=" + _nextContactHour);
                 try { PlayerEncounter.DoMeeting(); }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 

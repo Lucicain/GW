@@ -135,7 +135,7 @@ namespace GreyWardenPolicePurity
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private void MakePeaceWithPoliceAndVictims()
@@ -159,12 +159,12 @@ namespace GreyWardenPolicePurity
                     {
                         MakePeaceAction.Apply(playerFaction, victim);
                     }
-                    catch { }
+                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
 
                 PlayerState.ClearVictimFactions();
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         /// <summary>
@@ -456,6 +456,14 @@ namespace GreyWardenPolicePurity
 
         private void MaintainShelteredCaseForcedAttacks()
         {
+            // 这个方法挂在 TickEvent 上，每秒跑约 60 次。而"有罪犯躲进定居点、
+            // 正被强制围攻"是罕见状态，绝大部分游戏时间这张表是空的。
+            //
+            // 不先判空的话，每一帧都要白白分配一个 Keys 的副本；进了循环之后更贵——
+            // 每个任务一次 MobileParty.All 全表扫描（带闭包和逐个字符串比较）、一个
+            // HashSet 构造、两轮 LINQ。空表时这些全是纯浪费。
+            if (_shelteredForcedPartyIdsByTaskId.Count == 0) return;
+
             foreach (string taskId in _shelteredForcedPartyIdsByTaskId.Keys.ToList())
             {
                 PoliceTask? task = CrimeState.GetTask(taskId);

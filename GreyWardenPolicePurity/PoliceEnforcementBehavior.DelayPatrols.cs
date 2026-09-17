@@ -1138,7 +1138,7 @@ namespace GreyWardenPolicePurity
         {
             if (patrol?.Army == null) return;
             try { patrol.Army = null; }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private void HandleDelayPatrolBattleEnded(MapEvent mapEvent)

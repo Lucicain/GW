@@ -79,7 +79,7 @@ namespace GreyWardenPolicePurity
                 cohort.Ai.SetInitiative(CohortAttackInitiative, 1f,
                     CohortInitiativeHours);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         /// <summary>
@@ -178,7 +178,7 @@ namespace GreyWardenPolicePurity
             catch (Exception error)
             {
                 if (cohort != null)
-                    try { DestroyPartyAction.Apply(null, cohort); } catch { }
+                    GwpCommon.TryDestroyParty(cohort);
                 GwpAiDiagnostics.WriteAction(trainer,
                     "PLAYER_TROOP_ORDER_COHORT_FAILED", error.ToString());
                 return null;
@@ -286,7 +286,7 @@ namespace GreyWardenPolicePurity
                 "reason=" + reason +
                 "; returned=" + returned +
                 "; trainer=" + (trainer?.StringId ?? "none"));
-            try { DestroyPartyAction.Apply(null, cohort); } catch { }
+            GwpCommon.TryDestroyParty(cohort);
         }
     }
 }

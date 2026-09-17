@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Helpers;
 using TaleWorlds.CampaignSystem;
@@ -47,7 +48,7 @@ namespace GreyWardenPolicePurity
 
             if (party.MemberRoster.TotalRegulars <= 0)
             {
-                try { DestroyPartyAction.Apply(null, party); } catch { }
+                GwpCommon.TryDestroyParty(party);
                 return;
             }
 

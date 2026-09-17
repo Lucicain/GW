@@ -274,7 +274,7 @@ namespace GreyWardenPolicePurity
                     "; mainDefaultBehavior=" + (mainParty?.DefaultBehavior.ToString() ?? "-") +
                     "; mainShortTermBehavior=" + (mainParty?.ShortTermBehavior.ToString() ?? "-"));
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         internal static bool ShouldTraceParty(MobileParty? party)
@@ -346,7 +346,7 @@ namespace GreyWardenPolicePurity
         private static string BuildPrefix(MobileParty party, string stage)
         {
             double campaignHours = 0d;
-            try { campaignHours = CampaignTime.Now.ToHours; } catch { }
+            try { campaignHours = CampaignTime.Now.ToHours; } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             Hero? leader = party.LeaderHero;
             if (leader != null && !string.IsNullOrWhiteSpace(leader.StringId) &&
                 !string.IsNullOrWhiteSpace(party.StringId))
@@ -618,7 +618,7 @@ namespace GreyWardenPolicePurity
                     }
                     File.AppendAllText(LogPath, line + "\r\n", Encoding.UTF8);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
     }

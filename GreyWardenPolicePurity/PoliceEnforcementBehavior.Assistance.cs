@@ -865,7 +865,7 @@ namespace GreyWardenPolicePurity
                     if (siegeStrength > 0f)
                         return siegeStrength;
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             Army? army = combatTarget.Army;
@@ -1323,7 +1323,7 @@ namespace GreyWardenPolicePurity
                     GwpAssistanceArmyDisbandGuardPatch
                         .ApplyAuthorizedObjectiveFinished(army);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
             RequestAssistanceTargetIntent(
                 leader, group, offender, 0.99f);
@@ -1388,7 +1388,7 @@ namespace GreyWardenPolicePurity
                     GwpAssistanceArmyDisbandGuardPatch
                         .ApplyAuthorizedObjectiveFinished(army);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
             army = null;
 
@@ -1510,7 +1510,7 @@ namespace GreyWardenPolicePurity
                     GwpAssistanceArmyDisbandGuardPatch
                         .ApplyAuthorizedObjectiveFinished(army);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
             RequestAssistanceTargetIntent(
                 leader, group, offender, 0.99f);
@@ -2013,7 +2013,7 @@ namespace GreyWardenPolicePurity
             MobileParty? party = FindActiveParty(partyId!);
             if (party == null) return;
             try { if (party.Army != null && party.Army.LeaderParty != party) party.Army = null; }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
         }
@@ -2203,7 +2203,7 @@ namespace GreyWardenPolicePurity
                     GwpAssistanceArmyDisbandGuardPatch
                         .ApplyAuthorizedObjectiveFinished(army);
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             foreach (string memberId in group.MemberPartyIds)

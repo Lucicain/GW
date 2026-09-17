@@ -129,7 +129,7 @@ namespace GreyWardenPolicePurity
                     string message = GwpText.Get("{=gwp_case_defeat_recorded}You broke {VAR_1} in the field. Go and make your report.",
                         "VAR_1", target.Name.ToString());
                     _activeQuest?.WriteLog(message);
-                    try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+                    try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                     InformationManager.DisplayMessage(new InformationMessage(message, Colors.Green));
                 }
                 else if (!target.IsDead)
@@ -313,7 +313,7 @@ namespace GreyWardenPolicePurity
 
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch { }
+            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
             string message = GwpText.Get(
                 "{=gwp_case_closed_elsewhere}{VAR_1} is beyond your reach now. The commission is void. Report to any Grey Warden lord, or send a man.",

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.CampaignSystem.Party;
@@ -268,7 +268,7 @@ namespace GreyWardenPolicePurity
                     return new MatrixFrame(rot, edgePos);
                 }
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
             return MatrixFrame.Identity;
         }
@@ -316,7 +316,7 @@ namespace GreyWardenPolicePurity
                         firstAgentOut ??= agent;
                     }
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             if (formation != null)

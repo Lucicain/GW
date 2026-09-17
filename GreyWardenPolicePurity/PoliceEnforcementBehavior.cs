@@ -297,7 +297,7 @@ namespace GreyWardenPolicePurity
                             string.Equals(hero.StringId, _atonementTargetHeroId,
                                 StringComparison.OrdinalIgnoreCase));
                     }
-                    catch (ArgumentNullException) { }
+                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
 
                 GwpCrimeCategory completedCategory = (GwpCrimeCategory)_atonementTargetCrimeCategory;
@@ -310,7 +310,7 @@ namespace GreyWardenPolicePurity
                 SetAtonementFlowState(AtonementFlowState.WaitingForTurnIn);
                 _atonementDeadlineHours = 0f;
 
-                try { _atonementQuest?.MarkReadyForTurnIn(); } catch { }
+                try { _atonementQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_policeenforcementbehavior_003}Atonement quarry defeated: {VAR_1}. Report to the Warden-General or any Grey Warden.", "VAR_1", _atonementTargetName),
                     Colors.Green));
@@ -324,7 +324,7 @@ namespace GreyWardenPolicePurity
         private void FailAtonementTask(string reason)
         {
             PlayerState.ChangeReputation(-5);
-            try { _atonementQuest?.FailQuestWithReason(reason); } catch { }
+            try { _atonementQuest?.FailQuestWithReason(reason); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             InformationManager.DisplayMessage(new InformationMessage(reason, Colors.Red));
             ClearAtonementTaskState();
         }
@@ -476,7 +476,7 @@ namespace GreyWardenPolicePurity
                     ExecutePunishment(castle, escortTask);
                 }
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         /// <summary>
@@ -509,7 +509,7 @@ namespace GreyWardenPolicePurity
                         MobileParty.MainParty.Position = teleportTarget.GatePosition;
                     }
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
                 // ★步骤2★ 强制清空花名册（防止 EndCaptivity 未完全清理，
                 //          后续补给进城时引擎再次处理"主英雄俘虏"导致崩溃）
@@ -521,7 +521,7 @@ namespace GreyWardenPolicePurity
                         policeParty.PrisonRoster.Clear();
                     }
                 }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
                 // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
                 MakePeaceWithPoliceAndVictims();
@@ -563,7 +563,7 @@ namespace GreyWardenPolicePurity
                 // 步骤8：安全调用 EndTask（EndPlayerHunt 已移除任务，此处幂等）
                 CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_closed");
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         #endregion
@@ -1298,7 +1298,7 @@ namespace GreyWardenPolicePurity
 
                 EnsurePoliceFactionWar(policeClan, target);
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         #endregion

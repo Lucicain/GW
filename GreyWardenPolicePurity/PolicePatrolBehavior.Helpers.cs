@@ -79,7 +79,7 @@ namespace GreyWardenPolicePurity
                             GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
                             Colors.Green));
                     }
-                    catch { }
+                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
                 else
                 {
@@ -91,7 +91,7 @@ namespace GreyWardenPolicePurity
                             GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
                             Colors.Green));
                     }
-                    catch { }
+                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 }
             }
 
@@ -108,7 +108,7 @@ namespace GreyWardenPolicePurity
                 // 进城后的纠察队不再参与地图执法，直接清理，避免“活体卡住”阻塞下一轮惩罚。
                 if (patrol.CurrentSettlement != null)
                 {
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                    GwpCommon.TryDestroyParty(patrol);
                     _returningPatrolIds.Remove(patrol.StringId);
                     continue;
                 }
@@ -122,7 +122,7 @@ namespace GreyWardenPolicePurity
                 }
                 else
                 {
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                    GwpCommon.TryDestroyParty(patrol);
                 }
             }
 
@@ -146,7 +146,7 @@ namespace GreyWardenPolicePurity
                 // 修复：返程途中若已进入定居点，直接销毁，避免“在城里永久存活”。
                 if (patrol.CurrentSettlement != null)
                 {
-                    try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                    GwpCommon.TryDestroyParty(patrol);
                     _returningPatrolIds.RemoveAt(i);
                     continue;
                 }
@@ -160,7 +160,7 @@ namespace GreyWardenPolicePurity
                     if (dist < 3f)
                     {
                         DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_004}The provost patrol reached {VAR_1}; disbanding: {VAR_2}", "VAR_1", target.Name, "VAR_2", id));
-                        try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                        GwpCommon.TryDestroyParty(patrol);
 
                         var stillAlive = MobileParty.All.FirstOrDefault(p => p.StringId == id);
                         if (stillAlive == null || !stillAlive.IsActive)
@@ -236,7 +236,7 @@ namespace GreyWardenPolicePurity
             {
                 if (patrol.CurrentSettlement == null) continue;
 
-                try { DestroyPartyAction.Apply(null, patrol); } catch { }
+                GwpCommon.TryDestroyParty(patrol);
                 _activePatrolIds.Remove(patrol.StringId);
                 _returningPatrolIds.Remove(patrol.StringId);
             }

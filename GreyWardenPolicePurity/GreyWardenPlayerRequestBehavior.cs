@@ -767,7 +767,7 @@ namespace GreyWardenPolicePurity
                     "; fee=" + GwpTuning.PlayerRequests.FiefAppealPrice +
                     "; retryAfterHour=" + _nextContactHour);
                 try { PlayerEncounter.DoMeeting(); }
-                catch { }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 
@@ -850,7 +850,7 @@ namespace GreyWardenPolicePurity
                 specialist.SetMoveModeHold();
                 specialist.Ai.RethinkAtNextHourlyTick = true;
             }
-            catch { }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         private bool IsActiveRequestValid()
