@@ -1,5 +1,16 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-17 v1.4-r12 发布与远端核验
+
+- `main` 推送 `a7e3901..131abb0`；tag `v1.4-r12` 指向 `131abb0`；release 页 `draft=false`、`prerelease=false`、`targetCommitish=main`，两个附件 `state=uploaded`。
+- 发布页：<https://github.com/Lucicain/GW/releases/tag/v1.4-r12>
+- 包体：39 个文件（较 r11 的 38 个多一个，即新增的 `gwp_game_strings.xml`），根目录 `GreyWarden/`。排除 `bin/Win64_Shipping_wEditor/`、Client `.pdb`、`shader_compile_report.log`、`Assets/`、`AssetSources/`（素材源本就不部署）。
+- **玩家包无监控，已实证而非假定。** 玩家 DLL 以 `-t:Rebuild -p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false -p:OutputPath=build-check/release-player-v1.4-r12/` 隔离编译，未回写 live。按 UTF-16LE 与 ASCII 双编码核查（r11 的教训：只用 ASCII grep 会全假阴性）：`GreyWarden-AI-Diagnostics`、`GreyWarden-Case-Events`、`GreyWarden-Faults`、`GreyWarden-Diagnostics-Archive`、`Mount and Blade II Bannerlord` **五条全部 absent**；同一批串在 live 诊断 DLL 里有三条 PRESENT，构成有效对照。
+- **从 GitHub 重新下载后核验**（不是只比本地）：远端 zip `351452586` 字节、SHA-256 `D325427F76627A3CEF67E03C83242EE7E86211A411D62E491509959F151CC0E7`，与本地逐字节一致；包内玩家 DLL SHA-256 `CEFABC755B1E0E412A689FF6DF5E6DF59BE3A88C7980D62BCA7494982A35E3DC`，重新解出后五条监控串仍全部 absent。
+- 归档在 `build-check/package-v1.4-r12/`：`manifest.json`（39 条逐项哈希）、玩家 DLL 副本、`release-notes.md`、`GreyWarden-v1.4-r12.zip.sha256`。
+- release 正文由中英 README 的 r12 段落程序化抽取，不手写，避免与 README 漂移。
+- live 模块在打包后已重建回诊断版，`Verify-LiveModule` 无差异，开发环境不受发布影响。
+
 ## 2026-09-17 发版前监控复核；修协力军团提示框空引用；v1.4-r12
 
 ### 监控复核结论
