@@ -15,6 +15,9 @@
             public const int RecruitmentReputationThreshold = 20;
             public const int ReadmissionReputationStep = 20;
             public const int MaximumVoluntaryExits = 3;
+            // 入会时随装备一并发下的灰袍新兵。灰袍兵种在此之前只能找练兵官讨，
+            // 新入会的玩家手上一个都没有。
+            public const int JoinRecruitCount = 5;
             public const int RecruitmentPatrolSize = 20;
             public const float RecruitmentContactDistance = 3f;
             public const float RecruitmentPursuitTimeoutDays = 5f;
@@ -97,6 +100,22 @@
 
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
+            // 协力组按目标现场战力动态缩编。入组门槛是"我方不占优"（committed <= target），
+            // 放人门槛要求放完之后仍然稳稳压住目标，两个数不一样才有回滞——否则一个
+            // 路过的领主来回走，协力组就会跟着反复拆装。
+            public const float AssistanceReleaseMargin = 1.5f;
+            // 放人还要求富余连续成立这么多轮小时维护。目标战力本来就会随
+            // 身边的人来去而抖，只看单轮就放人会变成反复拉人又反复放人。
+            public const int AssistanceSurplusConfirmTicks = 4;
+            // 刚拉来就被放走，地图上看是"来了又走"的抽搐。最短在编时长挡住这种来回。
+            public const float AssistanceMinimumMemberHours = 12f;
+            // 灰袍这一轮凑不出兵，案子退回台账而不是销案。冷却期避免下一小时
+            // 又被指派给同样凑不出兵的人，来回空转。
+            public const float AssistanceFailureCooldownHours = 72f;
+            // 接案门槛。案件难度按目标本队/军团的战力算（不含身边路过的人，
+            // 那一档由协力编成负责），超过全家族能凑出来的战力就不立案——
+            // 否则案子会被反复接起又反复因凑不出兵退回。留一成余量。
+            public const float CaseIntakeStrengthMargin = 0.9f;
             public const int ShelteredForceBattleIntervalHours = 6;
             public const float ShelteredForceBattleDistance = 1.5f;
             // 城外围堵点可直接触发既有驱逐流程，不要求军团贴到城门脚下。

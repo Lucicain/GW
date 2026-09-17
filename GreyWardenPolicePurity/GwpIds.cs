@@ -59,11 +59,21 @@ namespace GreyWardenPolicePurity
             };
 
         /// <summary>
-        /// 加入或重新加入灰袍时发给玩家的物品。双刀现在专属于
-        /// gwarcher，不再作为玩家入会装备发放。
+        /// 加入或重新加入灰袍时发给玩家的物品：全套指挥装（六件甲胄＋马具＋
+        /// 指挥官黑色大盾），外加一副双刀。盾只发指挥官那面，普通 `wlarge_shield`
+        /// 不在此列——发两面盾是多余的。
+        ///
+        /// 双刀曾一度改为 gwarcher 专属、不再发给玩家，现按用户要求恢复发放。
+        /// 发的是玩家版 `gwdualblademainhand` / `gwdualbladeoffhand`，**不是**
+        /// NPC 版 `gwdualbladeoffhandai`——后者带着原版副手资格标记，那是留给
+        /// NPC 的，混进玩家背包会让双持判定串味。
         /// </summary>
         public static readonly IReadOnlyCollection<string> MembershipGrantItemIds =
-            new HashSet<string>(CommanderSetItemIds, StringComparer.OrdinalIgnoreCase);
+            new HashSet<string>(CommanderSetItemIds, StringComparer.OrdinalIgnoreCase)
+            {
+                DualBladeMainhandItemId,
+                DualBladeOffhandItemId
+            };
 
         public static readonly IReadOnlyCollection<string> DualBladeCraftingTemplateIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)

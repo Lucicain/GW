@@ -1265,7 +1265,7 @@ namespace GreyWardenPolicePurity
                 }
 
                 ClearTaskWarTracking(kv.Key, true);
-                CrimeState.EndTask(kv.Key);
+                CrimeState.EndTask(kv.Key, "offender_settled_by_delay_patrol");
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
                 GwpPlayerRequestDeferral.NotifyDutyCompleted(policeParty,
                     "criminal_case");

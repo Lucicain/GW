@@ -50,7 +50,7 @@ namespace GreyWardenPolicePurity
                 IFaction? warTarget = task.WarTarget;
                 RestoreAi(police);
                 ClearTaskWarTracking(police.StringId, true);
-                CrimeState.EndTask(police.StringId);
+                CrimeState.EndTask(police.StringId, "released_for_forced_duty");
                 CrimeRecord? displacedCrime = task.TargetCrime;
                 if (displacedCrime?.Offender?.IsActive == true)
                     CrimeState.ReopenCase(displacedCrime);
@@ -99,7 +99,7 @@ namespace GreyWardenPolicePurity
                 IFaction? warTarget = task.WarTarget;
                 RestoreAi(police);
                 ClearTaskWarTracking(police.StringId, true);
-                CrimeState.EndTask(police.StringId);
+                CrimeState.EndTask(police.StringId, "released_for_forced_duty");
                 CrimeRecord? displacedCrime = task.TargetCrime;
                 if (displacedCrime?.Offender?.IsActive == true)
                     CrimeState.ReopenCase(displacedCrime);

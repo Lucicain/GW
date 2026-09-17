@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
@@ -8,8 +8,13 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// Replaces the six founding Grey Warden lords' old all-300 skill sheet
     /// with the same strong, specialized profiles used by native Empire lords.
-    /// It also rewrites existing saves once at load/session start, so the
-    /// balanced party-size skills are not limited to newly created campaigns.
+    ///
+    /// **只在开新档时写一次。** 以前还挂了 OnGameLoaded 与 OnSessionLaunched
+    /// 想顺带改写旧档，但 `SyncData` 是空的、没有任何"已应用"标记，于是变成
+    /// **每次读档都重写一遍 18 项技能并 `ClearPerks()`**。玩家一旦娶了灰袍家族的
+    /// NPC，配偶就进了玩家家族、角色页天天开着——每次进游戏 perk 全被清空、
+    /// 技能被打回模板值，表现就是"所有人物点数要重新点"。按本仓库既定规则
+    /// （从不做存档兼容）直接改写入点，不为旧档补正。
     /// </summary>
     public sealed class GreyWardenLeaderBalanceBehavior : CampaignBehaviorBase
     {
@@ -31,10 +36,6 @@ namespace GreyWardenPolicePurity
         {
             CampaignEvents.OnNewGameCreatedPartialFollowUpEvent
                 .AddNonSerializedListener(this, OnNewGameCreated);
-            CampaignEvents.OnGameLoadedEvent
-                .AddNonSerializedListener(this, OnGameLoaded);
-            CampaignEvents.OnSessionLaunchedEvent
-                .AddNonSerializedListener(this, OnSessionLaunched);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -47,12 +48,6 @@ namespace GreyWardenPolicePurity
                 ApplyProfiles();
         }
 
-        private void OnGameLoaded(CampaignGameStarter starter) =>
-            ApplyProfiles();
-
-        private void OnSessionLaunched(CampaignGameStarter starter) =>
-            ApplyProfiles();
-
         private static void ApplyProfiles()
         {
             if (Campaign.Current == null)
@@ -62,6 +57,11 @@ namespace GreyWardenPolicePurity
             {
                 Hero? hero = Hero.Find(entry.Key);
                 if (hero == null)
+                    continue;
+
+                // 已经嫁进玩家家族的人不再套模板：那是玩家自己的角色，技能与
+                // perk 归玩家养成。
+                if (hero.Clan != null && hero.Clan == Clan.PlayerClan)
                     continue;
 
                 entry.Value.Apply(hero);

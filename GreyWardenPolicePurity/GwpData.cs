@@ -614,12 +614,31 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        public static void EndTask(string policePartyId)
+        /// <summary>
+        /// 结束承办任务。注意这**同时销毁案卷**：`HasOpenCase` 置否并把记录移出台账，
+        /// 因此罚金、案底与继续追捕的依据一起消失，别的灰袍也接不走。调用方必须清楚
+        /// 自己要的是"销案"还是"换人"——只想换承办人用 <see cref="RetargetTask"/>。
+        ///
+        /// 以前这条路径完全静默，实机里案子凭空消失只能靠逐小时比对 task= 字段倒推。
+        /// 现在每次销案都留一行，reason 由调用方给。
+        /// </summary>
+        public static void EndTask(string policePartyId, string reason = "unspecified")
         {
             if (_tasks.TryGetValue(policePartyId, out PoliceTask? task))
             {
                 CrimeRecord? crime = task.TargetCrime;
                 _tasks.Remove(policePartyId);
+                GwpAiDiagnostics.WriteFieldArrest("CASE_CLOSED",
+                    "policeParty=" + policePartyId +
+                    "; crime=" + (crime?.CrimeId ?? task.TargetCrimeId ?? "-") +
+                    "; offender=" + (crime?.OffenderHeroId ?? "-") +
+                    "; offenderParty=" + (crime?.Offender?.StringId ?? "-") +
+                    "; offenderActive=" + (crime?.Offender?.IsActive.ToString() ?? "-") +
+                    "; offenderPrisoner=" +
+                        (crime?.OffenderHero?.IsPrisoner.ToString() ?? "-") +
+                    "; civilianCasualties=" + (crime?.CivilianCasualties.ToString() ?? "-") +
+                    "; warDeclared=" + task.WarDeclared +
+                    "; reason=" + reason);
                 if (crime != null && crime.CrimeId != PlayerCrimeId)
                 {
                     crime.HasOpenCase = false;
@@ -713,7 +732,7 @@ namespace GreyWardenPolicePurity
             {
                 // 承办部队已经消失或案卷目标无法恢复时视为执法失败。EndTask
                 // 会删除普通领主案件；玩家长期通缉记录则按其专门规则保留。
-                EndTask(policeId);
+                EndTask(policeId, "owner_party_or_crime_record_missing");
             }
 
             foreach (string crimeId in _ledger.Values.Where(record =>
@@ -1120,15 +1139,6 @@ namespace GreyWardenPolicePurity
             _records.Add(new PlayerRecord { Type = type, IsCrime = true, Time = CampaignTime.Now, Location = location, Detail = detail });
             if (victimFaction != null) _victimFactions.Add(victimFaction);
             // 不扣声望、不弹通知：声望扣除由 OnMapEventEnded 按击败人数缩放执行
-        }
-
-        public static void AddGoodDeed(string type, Vec2 location, string detail)
-        {
-            _records.Add(new PlayerRecord { Type = type, IsCrime = false, Time = CampaignTime.Now, Location = location, Detail = detail });
-            Reputation = Math.Min(Reputation + 1, MaxReputation);
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_004}The Grey Wardens have noticed your good deeds: {VAR_1} ({VAR_2}) | {VAR_3}", "VAR_1", type, "VAR_2", detail, "VAR_3", GetReputationDisplay()), Colors.Green));
         }
 
         public static string GetReputationDisplay() => GwpText.Get("{=gwp_gwpdata_005}Reputation: {VAR_1}", "VAR_1", Reputation);

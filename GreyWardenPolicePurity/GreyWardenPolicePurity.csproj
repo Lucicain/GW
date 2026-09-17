@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Bannerlord's module schema requires a numeric three-part version.
-         Formal release v1.4-r11 is represented internally as 1.4.11;
+         Formal release v1.4-r12 is represented internally as 1.4.12;
          this is the mod revision, not a Bannerlord version dependency gate. -->
-    <Version>1.4.11</Version>
+    <Version>1.4.12</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

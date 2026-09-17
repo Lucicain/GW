@@ -1,8 +1,8 @@
-# GreyWarden
+﻿# GreyWarden
 
 GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-v1.4-r11 is for Bannerlord 1.4.8. Players on 1.5.2 should use the earlier v1.5-r1 package; the additions in this release have not been released for the 1.5 branch.
+v1.4-r12 is for Bannerlord 1.4.8. Players on 1.5.2 should use the earlier v1.5-r1 package; the additions in this release have not been released for the 1.5 branch.
 Chinese: README.md
 
 ## Main features
@@ -26,6 +26,33 @@ Chinese: README.md
 Existing campaigns remain supported. Finish any old bounty already in progress before updating because it is not carried into the revised system. Replace the complete module rather than copying only part of it.
 
 ## Changelog
+
+### 2026-09-17 v1.4-r12 (Bannerlord 1.4.8)
+
+Compared to v1.4-r11:
+
+#### Added and changed
+
+- Grey Wardens now stay on a quarry's heels instead of riding to where it was seen earlier. A faster target is far harder to shake them off.
+- When a quarry hides in a town or castle, the Wardens hold the approaches instead of following it inside.
+- The Wardens size their response to the quarry's present strength: once the company around it scatters, the spare Wardens return to their own work. Town and castle garrisons no longer count as the quarry's friends.
+- Moving Wardens between companies no longer leaves them crawling in disarray for hours.
+- The Wardens now buy and sell ships on their own, so they are no longer stranded without hulls and blocked by water.
+- Idle Wardens spread their patrols across the map instead of clustering in one region, so they reach trouble sooner.
+- A short-handed Warden will not take a case he plainly cannot finish; it stays on the books until the house can spare the strength.
+- A case nobody can staff right now no longer vanishes. It returns to the books for someone else to pick up.
+- A criminal who changes allegiance does not void the hunt, and one who is broken by somebody else but survives will be called on again once he raises a new company.
+- Breaking a criminal's company teaches him the same lesson as taking him does.
+- Joining the Grey Wardens now also grants the full commander's gear, a pair of dual blades and five Grey Warden recruits.
+- Your Grey Warden standing can be read from the information bar at the bottom right of the map (shown when the bar is expanded).
+- Quarrels you took up on the Wardens' behalf can now be settled by asking any Grey Warden lord to speak for you, without first being one of them.
+
+#### Fixed
+
+- Marrying into the Grey Warden family reset every character's skills and perks each time the game was loaded.
+- The dual blades showed an error line in their description.
+- Hovering a Grey Warden company produced a tooltip error and showed nothing.
+- The Grey Warden joining gear handed out one shield too many.
 
 ### 2026-09-16 v1.4-r11 (Bannerlord 1.4.8)
 

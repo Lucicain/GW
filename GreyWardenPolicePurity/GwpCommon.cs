@@ -40,6 +40,17 @@ namespace GreyWardenPolicePurity
             return party?.IsPatrolParty == true;
         }
 
+        /// <summary>
+        /// 目标已经躲进定居点。此时不能用原版跟随去追：
+        /// <c>MobilePartyAi.GetFollowBehavior</c> 会把跟随转成 <c>GoToSettlement</c>
+        /// 并一路进城，承办人会在城里满足宣战距离，随后可能当场被守军俘虏。
+        /// 围堵与驱逐仍由 <c>HandleShelteredCriminal</c> 按既有流程负责。
+        /// </summary>
+        public static bool IsShelteredOffender(MobileParty? offender)
+        {
+            return offender?.IsActive == true && offender.CurrentSettlement != null;
+        }
+
         public static bool IsGreyWardenLord(Hero? hero)
         {
             return IsGreyWardenClanMember(hero)

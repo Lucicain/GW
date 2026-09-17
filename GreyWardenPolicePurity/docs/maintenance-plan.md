@@ -1,5 +1,697 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-17 发版前监控复核；修协力军团提示框空引用；v1.4-r12
+
+### 监控复核结论
+
+- `GUARDED_FAILURE` 4 条**全在 09-15**（旧档的 `LEGACY_gwp_case_support_requested` 类型不匹配），当日零条。
+- 唯一反复出现的是 `Failed to display tooltip of type: Army`（09-16 与 09-17 共数次，15 条堆栈帧全指向 `Army.GetLongTermBehaviorTextForAILeadedParty`）。已修，见下。
+- 本轮改动实机自证：`CASE_KEPT_OPEN_OWNER_RELEASED` 9 次、`CASE_CLOSED` 中 `assistance_strength_insufficient` **0 次**（同一批案子全部走了"退回台账"的新路）；`PatrolBeat` 12 次；`ARMY_EXIT_DISORGANIZED_SKIPPED` 12 次。
+
+### 修复：协力军团提示框空引用
+
+`Army.GetLongTermBehaviorTextForAILeadedParty` 的多个分支直接解引用 `AiBehaviorObject`（如 `PatrolAroundPoint` 那支的 `((Settlement)AiBehaviorObject).EncyclopediaLinkWithName`）。原版王国军团经 `Army.Gather` / `GatherArmyAction` 建立，该字段总有值；协力军团是 `new Army(null, leader, ArmyTypes.Patrolling)` 直接造的，从不走集结流程，该字段恒为 null，于是悬停即抛。
+
+`GwpAssistanceArmyTooltipPatch` 前置补丁只在**我们自己的军团且该字段确实为 null** 时接管，**返回 `TextObject.GetEmpty()`**——与原版方法末尾的收尾一致。
+
+**用户明确裁定：不给玩家任何说明文字。** 我最初写的是"灰袍协力军团，正在向 XXX 进发"，被指出属于提示词泄露——协力编成是监控里的沉默内容，玩家不需要也不应该看到。两条本地化键已一并删除，仓库内零残留。
+
+**同类待办（未改，本轮只记录）**：`gwp_gwpencyclopediaheropagevm_012/013/014` 与 `gwp_det_ui_*` 几条玩家可见文本里写着"欲望""原版的 X%（已压制 Y%）"，同样把内部机制写给了玩家。它们是既有内容、不是本轮引入，是否改由用户定。
+
+### 结案留痕补齐
+
+实机 `CASE_CLOSED` 里出现 4 条 `reason=unspecified`，正是加留痕要消灭的盲区。已把剩余 7 个未具名的 `EndTask` 调用点全部补名（`player_escort_finished`、`player_escort_closed`、`released_for_forced_duty`、`offender_settled_by_delay_patrol`、`helper_released_to_assistance`、`owner_party_or_crime_record_missing`）。现在仓库内**零个未具名调用点**。
+
+### v1.4-r12
+
+版本号 `SubModule.xml` 与 `csproj` 同步为 `v1.4.12` / `1.4.12`，`Verify-GameCompat` 读到 `MODULE=GreyWardenPolicePurity 1.4.12.0`。玩家 README（中英）补上 r12 段落，措辞不含机制名与监控字样。
+
+发版前五项验证：`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-CrimeReceipts` PASS；`Verify-GameCompat` PASS（`PATCH_OK=61; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。
+
+
+## 2026-09-17 调查：弥瑟"直接去送"——一场打了 14.75 小时的野战（未改代码）
+
+用户挂机后看到一名灰袍领主明显打不过还上去送。逐条对完日志，**不是判断失误送死，是被困在一场不结束的战斗里磨死的**。
+
+### 开战判定是对的
+
+`2187519.02` 的 `ASSISTANCE_DECLARATION_LOCAL_STRENGTH_READY`：
+
+```
+friendlyLocalStrength = 204.57   （弥瑟单独一支，@1.00）
+enemyLocalStrength    = 187.11
+committedStrength     = 492.40
+distance              = 0.85
+```
+
+**204.57 > 187.11，她当时确实占优**，现场战力闸门按设计工作。目标 `lord_6_2` 全程 ~95~102 战力 / 100 人，也不是什么庞然大物。
+
+### 真正致命的是战斗本身
+
+同一时刻部署了截击队 `gwp_enf_delay_90474`（`troops=8`，从她本队抽的）。战斗记录：
+
+```
+2187519.21  MAP_EVENT_STARTED  involved=gwp_enf_delay_90474, lord_6_2_party_1
+2187533.96  MAP_EVENT_ENDED    battleState=AttackerVictory
+                               involved=gwp_enf_delay_90474, gw_leader_2_party_1,
+                                        gwp_enf_delay_61914, lord_6_2_party_1
+```
+
+**一场野战打了 14.75 个战役小时**（两条记录之间没有任何其它 MAP_EVENT，确认是同一场，不是反复交战）。她在这 14.75 小时里的衰减：
+
+```
+战力 149.21 → 132 → 113 → 101 → 85 → 74 → 62 → 49 → 39 → 21 → 14 → 6.79
+人数  104 →  97 →  93 →  89 → 82 → 79 → 75 → 72 → 70 → 64 → 63 →  59
+伤兵   10 →  14 →  23 →  28 → 33 → 37 → 41 → 45 → 47 → 50 → 53 →  54
+```
+
+最后 59 人里 54 个是伤兵。`foodDays` 全程 20~47，不是饿的。
+
+### 她为什么不撤——是原版的门
+
+那 14.75 小时里**她一条 `AUCTION` 记录都没有**，欲望系统压根没为她跑过。原因在原版 `AiPartyThinkBehavior.PartyHourlyAiTick` 的闸门：
+
+```csharp
+if (mobileParty.Ai.HourCounter % num == 0 && mobileParty != MobileParty.MainParty
+    && (mobileParty.MapEvent == null || (...仅限突袭/攻城...)))
+```
+
+**只要 `MapEvent != null`，整个长期思考回合直接跳过。** 原版这么写没问题——正常的野战几分钟就结算完了，没必要在战斗中途重新决策。但这一场拖了近十五小时，她于是十五小时没有机会重新判断、没有机会脱离，眼睁睁被磨干。
+
+诊断行里 `rethink=True` 一直挂着，说明我们一直在请求重新思考——**但请求进不去那道门**。
+
+### 已排除的几个嫌疑
+
+- **不是我们反复投截击队**：那 20 小时窗口里 `IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED` 只有一条。第二支 `gwp_enf_delay_61914` 不是这一仗期间生成的。
+- **不是 `GwpBattleReinforcementBehavior` 在续命**：那是 `MissionBehavior`，只在玩家亲自参战的 Mission 里跑，AI 之间的模拟战事不经过它。
+- **不是饿死**：`foodDays` 20~47。
+
+### 仍未解释
+
+**为什么一场 AI 野战能打 14.75 小时。** 我方地图事件的"领队"是那支 8 人截击队（`defenderLeader=gwp_enf_delay_90474`），弥瑟是以增援身份进来的；是否因此让原版的模拟结算一直判不出胜负，还没有证据，需要进一步查原版 `MapEvent` 的模拟节奏与我们截击队的生命周期。
+
+### 可选方向（未实施，等用户裁定）
+
+1. **给承办人加一条"战斗超时脱离"**：小时维护里发现承办人身处同一 `MapEvent` 超过 N 小时且战力持续下降，就主动了结这场战斗（仓库已有 `BreakInvalidShelteredBattles` 这类打断机制可参照）。治标，但直接堵住"被磨死"。
+2. **截击队不当领队**：让截击队以增援身份加入承办人的战斗，而不是自己先开一场再让承办人来援。可能是 14.75 小时的根因，但需要先把根因坐实。
+3. **先补监控**：给 `MAP_EVENT_STARTED/ENDED` 之间加一条超时告警，把"战斗超过 N 小时"单独记一行，下次再出现就能直接看到是哪一方在拖。
+
+
+## 2026-09-17 入会装备实测两处修正：只发指挥官盾、补齐双刀的握持方式文本
+
+### 只发指挥官那面盾
+
+上一轮往 `MembershipGrantItemIds` 里同时放了 `BlackLargeShieldItemId`（指挥官黑盾，本来就在 `CommanderSetItemIds` 里）与 `LargeShieldItemId`，实机拿到两面盾。已去掉 `LargeShieldItemId`。
+
+### 双刀的"握持方式"那一行
+
+实机截图把成因指死了，是游戏自己打在悬浮框里的：
+
+```
+ERROR: Text with id str_weapon_usage doesn't exist! Variation: GwpOneHandedSwordDualOffhand
+```
+
+**不是 `item_usage_features` 里 `dual` 那个词的问题**（我一度怀疑是它）。游戏拿 **WeaponDescription 的 id 当 variation** 去查 `str_weapon_usage`，原版每个 WeaponDescription 都在 `native_strings.xml` / `module_strings.xml` 里配了一条：
+
+```xml
+<string id="str_weapon_usage.OneHandedSword" text="{=PiHpR4QL}One Handed" />
+```
+
+本模组自定义了 `GwpOneHandedSwordDualMainhand` / `GwpOneHandedSwordDualOffhand` 两个 WeaponDescription 却没配对应条目，于是那一行渲染成报错文本。悬浮框其余部分（组别：单手剑、挥击/戳击数值、长度、操控性）全部正常，也印证了问题只在这一条字符串。
+
+修复：新增 `_Module/ModuleData/gwp_game_strings.xml`，补上两条 `str_weapon_usage.*`，**文本直接复用原版的 `{=PiHpR4QL}`**——各语言的"单手"译文自动跟着走，不需要我们再翻一份。`SubModule.xml` 里按原版结构新增一个独立的 `<XmlNode>` 声明（不是往既有节点里塞第二个 `<XmlName>`，那不合 schema）。
+
+已核对：本模组只有这两个自定义 WeaponDescription，`crafting_templates.xml` 引用的也只有这两个，没有遗漏。
+
+**教训记一笔**：自定义 `WeaponDescription` 必须同时补 `str_weapon_usage.<id>`，否则悬浮框直接打报错。以后再加武器描述照此办理。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` `XML=30`（较上一版 +1，即新增的字符串文件已被收录）、`DUPLICATES=0; MISSING=0`；`Verify-LiveModule` 无差异。两个 XML 均通过结构解析。
+
+
+## 2026-09-17 清理确认为零调用的死代码
+
+逐个核过调用点，只删真正零引用的，共四处：
+
+| 删除 | 依据 |
+|---|---|
+| `PlayerBehaviorPool.AddGoodDeed` | 全仓库只有定义与 `GwpRuntimeState` 的转发，无任何实际调用。玩家的正向声望走的是 `PlayerBehaviorMonitor.cs:336` 的 `ChangeReputation`（`GoodDeedKillProgress` 每满 10 换 1 点），与这条无关 |
+| `GwpRuntimeState` 的 `AddGoodDeed` 转发 | 随上一条一起 |
+| `PoliceResourceManager.CancelResupply` | 零调用 |
+| `PoliceResourceManager.StartResupply` | 只在 `PoliceEnforcementBehavior.cs` 的一条注释里被提到，没有任何代码调用；该注释已改写，不再指名已删除的方法 |
+| `GwpMapBarReputation.Reset()` | 本轮自己新增时写了却从未调用，一并删掉 |
+
+连带删除孤立本地化键 `gwp_gwpdata_004`（"灰袍注意到了你的善举"），它只被 `AddGoodDeed` 使用。`Verify-ContentKeys` 由 `CHECKED_KEYS=1169 / LOCALIZED=1384` 变为 `1168 / 1383`，差值与删除数一致。
+
+**核过但保留的**：
+
+- `PoliceResourceManager.IsReady` —— 被 `CanAssignOrdinaryCaseNow` 调用，且方法体确实做了 null/IsActive 判定，不是空壳。
+- `PlayerBehaviorPool.GetReputationDisplay` —— 仍被 `AddCrime` 与门面使用。
+- `PoliceResourceManager.AddCrimeRecord` —— `PlayerBehaviorMonitor.cs:126` 在用。
+- `PoliceEnforcementBehavior.UpdateIdlePoliceDuties()` —— 空方法体、每小时被调一次，但它的注释是一条明确的设计边界记录（"空闲、补给、疗伤、交易和巡逻全部由原版欲望生成"）。这属于有意留下的占位，不按误留死代码处理；要不要清由用户定。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-CrimeReceipts` PASS；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。
+
+
+## 2026-09-17 灰袍调停不再要求先入会；入会发五名新兵
+
+### 更正：击杀加声望本来就通着
+
+我上一轮说"行善加分这条路从来没接上"——**错了**。`PlayerBehaviorPool.AddGoodDeed` 确实零调用，但击杀加声望走的是另一条：`PlayerBehaviorMonitor.cs:336` 调 `PlayerState.ChangeReputation(repGain)`，`GoodDeedKillProgress` 每满 10 换 1 点声望。用户说"机制已经实现"是对的，`AddGoodDeed` 只是一条无关的死代码。
+
+### 改动：调停对话去掉入会门槛
+
+用户反馈：帮灰袍制止正在发生的案件——而且那场仗是**本模组自己的入口把玩家强拉进去的**——结果打完就跟对方阵营宣战了，却没法找灰袍善后。
+
+查下来机制其实是齐的：
+
+- `PoliceAntiWarDeclaration` 的登记入口有三种，**第一种就是 `StoppedCrimeInProgress`**（另两种是"看见灰袍在打过去帮忙"和"玩家自己承办的案子"）。所以这类战争**已经**被记成了调停请求，`HasMediationRequests()` 为真。
+- 调停动作 `ApplyWardenMediation()` 也在，走原版 `MakePeaceAction`（不用裸的 `SetNeutral`，否则定居点不会被标记重绘，地图上一直红着）。
+
+真正卡住的是对话条件里的 `IsPlayerGreyWardenMember()`：入会邀请要 `RecruitmentReputationThreshold = 20` 才会派使者，没入会就永远看不到这句话。
+
+**去掉 `GreyWardenTroopRequestBehavior` 里普通灰袍领主那条调停对话的会员判定。** `HasMediationRequests()` 本身已经把范围锁死在"替灰袍打出来的战争"上，会员判定是多余的一道——这三种登记入口都是模组自己把玩家拉进去的，善后不该再要求他先够 20 声望入会。
+
+使者那条（`GwpWardenDispatchDialogue.PeaceRequestAvailable`）**未动**：派使者本身就是会员特权，且要占用一次派遣，与"随便找个灰袍领主说句话"不是一回事。
+
+### 改动：入会发五名新兵
+
+用户指出灰袍兵种此前唯一的获取途径是找练兵官下订单，刚入会的玩家手上一个都没有。
+
+`GiveStarterRecruits()` 在 `OnRecruitAcceptConsequence`（首次入会）与 `OnRejoinThroughLord`（重新入会）两处随 `GiveCommanderEquipment()` 一起发放 `GwpTuning.Bounty.JoinRecruitCount = 5` 名 `gwnewrecruit`。
+
+- 只发最低级兵，往上升仍然走原有的练兵与升级管线，不绕过任何现有门槛。
+- 重新入会同样发放：自愿退会次数有 `MaximumVoluntaryExits = 3` 封顶，来回刷的上限就是那么几批最低级新兵，不值得为此再加一套计数。
+- 新增本地化键 `gwp_join_recruits_granted`。
+
+### 改动：入会装备加双刀（承上一节）
+
+`MembershipGrantItemIds` 补上 `DualBladeMainhandItemId` / `DualBladeOffhandItemId` 与 `LargeShieldItemId`；不加 NPC 版 `gwdualbladeoffhandai`，那一件带原版副手资格标记，混进玩家背包会让双持判定串味。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` `CHECKED_KEYS=1169; MISSING=0`；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。构建期验证。
+
+
+## 2026-09-17 修复"每次读档点数重点"；巡区改为活的；入会装备加双刀
+
+### 缺陷：娶了灰袍 NPC 之后每次进游戏点数都要重新点
+
+**根因是 `GreyWardenLeaderBalanceBehavior`。** 它把六名创始灰袍的技能改成专精模板，却同时挂了三个入口：
+
+```
+OnNewGameCreatedPartialFollowUpEvent
+OnGameLoadedEvent          ← 每次读档
+OnSessionLaunchedEvent     ← 每次进战役
+```
+
+而 `SyncData` 是**空的**，没有任何"已应用"标记。类注释写的是"rewrites existing saves once at load"，实际是**每次都重写**：18 项 `SetSkillValue` 再加一记 **`hero.ClearPerks()`**。
+
+玩家一旦娶了灰袍家族的 NPC，配偶就进了玩家家族、角色页天天开着——于是每次进游戏 perk 全被清空、技能被打回模板值，表现就是"所有人物点数要重新点"。没结婚时看不见，因为那是个你从不打开的 NPC。
+
+**修复**（按既定规则"从不做存档兼容"，直接改写入点）：
+
+- 删掉 `OnGameLoaded` 与 `OnSessionLaunched` 两个入口，只保留开新档时写一次。
+- `ApplyProfiles` 增加一道跳过：`hero.Clan == Clan.PlayerClan` 的人不再套模板——嫁进来的是玩家自己的角色，技能与 perk 归玩家养成。
+- 类注释改写，把"每次读档都会重写"这件事记死，免得以后又有人照着加入口。
+
+### 巡区：从"开档钉死驻地"改成"每轮现算"
+
+上一版用 `HomeSettlement` 分驻，用户指出不成立：**灰袍是流动编制**，新人会加入、老人会老死，开档时钉死的驻地很快就不对了。已撤除 `AssignPatrolHomeSettlements`。
+
+改为在欲望层新增 `IntentKind.Beat`：手上没有任何差事时，`ResolvePatrolBeat` 按**当前在编名单**现算——在编灰袍领主按 StringId 定序，各取一个不同文化的城做巡区圆心，`index % beats.Count` 分配。人员一变，分配自己就重排，永远不会两个人守同一处。
+
+- 巡区候选下注的就是原版 `PatrolAroundPoint`，圆心由我们指定；`AiPartyThinkBehavior` 照常走 `GetActionForPatrollingAroundPoint`，`GwpLocationDutyRefreshPatch` 只截 Approach，不影响这一档。
+- 分值与普通差事同档 `0.99`：原版那排巡逻候选（实测 raw 最高 `2.9566`）被压到 `0.03`，所以赢的是巡区；而真正的补给／招兵需求（实测 `1.0~8.0`）照样压得过它，缺兵的人仍然先去补兵。
+- 副作用要记清楚：灰袍领主从此**几乎总是 `intent != null`**，也就是原版巡逻候选常年被压制。这是刻意的——原版那套按离家距离打分的巡逻不符合分片执勤的设定。
+
+### 入会装备：加回双刀
+
+`MembershipGrantItemIds` 原本只等于 `CommanderSetItemIds`（六件甲胄＋马具＋黑色大盾），注释写着"双刀现在专属于 gwarcher，不再作为玩家入会装备发放"。按用户要求恢复发放，并补上普通大盾：
+
+- 加 `DualBladeMainhandItemId` / `DualBladeOffhandItemId`（**玩家版**），以及 `LargeShieldItemId`。
+- **不加** `DualBladeOffhandAiItemId`：那一件带着原版副手资格标记，是留给 NPC 的，混进玩家背包会让双持判定串味。
+- 全套指挥装本来就在清单里，无需改动。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。构建期验证。技能重写的修复**对已经被写坏的旧档不追溯**——旧档里那六人的技能与 perk 停在最后一次被重写的状态。
+
+
+## 2026-09-17 澄清"接案"与"立案"；协力缩编加抗抖
+
+### 澄清：那道门槛在接案，不在立案
+
+用户指出"立案都要立案，只是警察挑案子时要算协力之后办不办得成"。**功能本来就在对的位置，是我上一节的措辞错了。**
+
+`IsCaseWithinReach` 只出现在 `AssignTasks` 的两处 `CrimeState.GetNearest(...)` 谓词里（`PoliceEnforcementBehavior.cs` 的两轮指派），`CrimePool` 的罪案记录入口一个字没改——罪案照常进台账，只是警察从池子里挑活干时，除了就近，还要先算一下叫上协力之后办不办得成。已把注释改写清楚，避免以后再被自己的措辞误导。
+
+**目标在军团里时算的就是整个军团**，这一点也确认过：`GetCaseIntakeTargetStrength` 先经 `ResolveAssistanceMovementTarget` 取到军团长，`GetNativeCombatGroupStrength` 对军团长返回 `army.EstimatedStrength`。所以"目标在军团、力量很大、接了没用"这种案子本来就会被这道谓词挡在指派之外，仍然留在台账上等条件变化。
+
+### 协力缩编：加一道抗抖，避免反复拉人放人
+
+用户要求协力机制不要太敏感。目标战力是**现场战斗群之和**，会随身边的人来去而抖，只看单轮就放人会变成"一个路过的领主走两步、协力组就拉一个放一个"。三处收紧：
+
+- `AssistanceReleaseMargin` `1.25 → 1.5`：放完之后要仍然稳压目标一半以上，回滞带更宽。
+- **新增 `AssistanceSurplusConfirmTicks = 4`**：富余必须**连续四轮**小时维护都成立才动手放人；中间任何一轮不成立就清零重来。这是真正的抗抖项——单次抖动进不了四连。
+- `AssistanceMinimumMemberHours` `6 → 12`：新入组的人保护期翻倍。
+- 放完一个即清零计数，下一个还要再等满四轮，不会一口气把组拆空。
+- 计数随 `ReleaseAssistanceGroup` 一起清理，诊断行补 `surplusTicks`。
+
+加人一侧不动（`committed <= target` 即可拉人），所以整体是**快进慢出**：宁可多带一个，也不要来回拆装。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。构建期验证。
+
+
+## 2026-09-17 原版长期欲望完整拆解；灰袍分驻六地；玩家任务不再豁免让位
+
+### 原版长期欲望：全部生产者与实测结果
+
+`AddBehaviorScore` 的调用点一共七处：`AiVisitSettlementBehavior`(1)、`AiPatrollingBehavior`(2)、`AiMilitaryBehavior`(1)、`AiEngagePartyBehavior`(1)、`AiArmyMemberBehavior`(2)、`AiLandBanditPatrollingBehavior`(1)、`AIMoveToNearestLandBehavior`(1)。
+
+实测灰袍领主拿到的**只有两类**（`finalScores` 原样）：`GoToSettlement`×N 与 `PatrolAroundPoint`×N，再加我们自己的差事候选。军事、军团成员、土匪、上岸那几条对无封地独立家族不产出。
+
+### "补兵到底有没有欲望"——有，但被伤兵因子压着
+
+`AiVisitSettlementBehavior` 的进城分：
+
+```
+num13 = 1.6                ← 进城基数
+      × num29  招兵因子（下限 0.16/0.25，需 !IsCastle && PartySizeRatio<1 && 有工资预算）
+      × num17  伤兵因子（伤比 ≤0.2 → 1.0；更高 → MBMath.Map 最高 ×5，仅 IsFortification）
+      × num20  伤比 ≤0.2 → **0.16**；>0.2 → 1.0；缺粮时再大幅追加
+      × num16  距离因子（≤1）
+```
+
+其中 `CalculatePartyParameters` 返回 `(PartySizeRatio, 编制上限, TotalWounded, TotalManCount)`，
+`num18 = TotalWounded / TotalManCount` 是**伤兵比例**，`item = PartySizeRatio` 是兵员占比。
+
+**结论**：招兵欲望确实存在，但只要伤兵比例 ≤20%，`num20 = 0.16` 就把整个进城分先砍掉 84%。只有被打惨了（`num18 > 0.2`），`num20` 跳到 1.0、`num17` 开始放大到最高 ×5，进城分才冲得上去。原版的设计意图是"人少不急，伤多才回城、顺便补兵"——与用户实机观察"基本上要被打得很惨才会去补兵"完全一致。
+
+### 因此"差事分固定压到 0.8"不成立
+
+实测那名健康灰袍的 `finalScores`：差事 `0.9900`，其后最高的进城候选是 `GoToSettlement@castle_village_ES5_2 = 0.5994`。**0.8 仍然稳压 0.5994，等于没改。** 真要让健康但缺兵的队伍进城，得压到 `0.55` 左右。
+
+但固定压到 0.55 有个结构性问题：**进城候选不是需求驱动的，它常驻**——每个可达定居点都有一个，`0.5994` 只代表"附近有个村子值得去"，不代表"我需要补给"。一旦差事分长期低于它，灰袍就会从"一直办案"变成"一直逛村子"。所以按需判定（`ApplyReinforcementRelief`）不能换成固定值，本轮维持按需，等用户看过这组数字再定。
+
+### 更正：上一节"健康但缺兵→进城欲望依然很低"是错的，让位机制已撤除
+
+用户追问"健康但士兵远远不够上限，进城欲望依然很低吗"，据此实测复核，**结论相反**。
+
+我上一节引的 `0.5994` 取自 `gw_leader_5`，而它当时 `sizeRatio=0.845`、`wounded=0`——**一支几乎满编且毫发无伤的队伍，进城分低是理所当然的**，这个样本根本不能用来说明"缺兵"。
+
+拿真正缺兵的 `gw_leader_1`（`men=95`、`sizeRatio=0.642`）对照，同一份日志里它的 `finalScores` 是：
+
+```
+GoToSettlement@town_EW6              = 4.2862   ← 进城
+GoToSettlement@castle_EW8            = 1.3552
+GoToSettlement@castle_village_EW8_2  = 1.1268
+GoToSettlement@castle_B5             = 1.1006
+GoToSettlement@castle_EN6            = 1.0451
+GoToSettlement@castle_village_EN6_2  = 1.0150
+EscortParty（我们的差事）             = 0.9900   ← 排到第 7
+```
+
+**兵员掉到 0.642，进城欲望就是 4.29，我们的 0.99 排第七——他本来就已经在去补兵的路上。**
+
+公式上也说得通：`num = FindPartySizeNormalLimit / max(0.1, PartySizeRatio)`，是个**绝对量级**（150/0.642 ≈ 231），再乘 `Math.Max(1, Math.Min(2, num)) = 2`，得 ~462；只要附近有可招募的志愿兵（`num26 > 0`），这一项就压过伤兵因子那个 `0.16` 好几个数量级。伤兵因子（`num20`、`num17`）只在**不缺兵**的时候决定他要不要回城，缺兵时根本轮不到它当主项。
+
+因此：
+
+- `ApplyReinforcementRelief` / `NeedsReinforcement` / `DutyReliefParties` / 三个 `DutyRelief*` 常量**全部撤除**。原版已经在做这件事，我们插一手只会帮倒忙——`relieved = min(dutyScore, bestNative*0.9)` 在"不缺兵、附近也没什么可做"时反而会把 0.99 压低，让他无端去逛村子。
+- **"差事分固定压到 0.8"同样不需要**：真正需要补给时原版给的是 1.0~8.0，0.99 本来就压不住；不需要时压低只会制造乱逛。
+
+### 调查：为什么灰袍只拿得到两类长期欲望
+
+不是"不能拥有"，逐条查过：
+
+- **`AiMilitaryBehavior`——结构性关闭。** 方法第一行守卫：
+  `if (... || (mobileParty.MapFaction != Clan.PlayerClan.MapFaction && !mobileParty.MapFaction.IsKingdomFaction) || ...) return;`
+  灰袍是**独立无封地家族，不是王国**，`IsKingdomFaction` 为假，整条军事欲望（围城、守城、突袭、组军团）直接返回。这是"独立执法家族"这个设定的必然结果，不是缺陷。
+- **`AiEngagePartyBehavior`——条件性，宣战后就有。** 它产出的正是 `GoAroundParty`；本仓库还专门为受玩家保护的目标把这类候选置零，说明灰袍确实拿得到。
+- **`AiArmyMemberBehavior`——在别人军团里当成员时才产出。**
+- **`AiLandBanditPatrollingBehavior`——土匪专用。**
+- **`AIMoveToNearestLandBehavior`——在海上时才产出。**
+
+所以取样时只看到 `GoToSettlement` 与 `PatrolAroundPoint`，是因为那一刻灰袍未宣战、不在军团、不在海上；唯一永远拿不到的只有军事那一类。
+
+### 改动：玩家任务不再豁免让位
+
+按用户裁定去掉了 `dutyScore > AssignedDutyScore` 的豁免。**但让位机制本身随后整体撤除**（见上一节），所以这条改动实际已无载体，仅作决策记录保留：玩家任务不享受特殊照顾这一口径若将来再涉及，按此执行。
+
+### 改动：六名灰袍分驻六地（方案 A）
+
+`AiPatrollingBehavior` 的防御性巡逻分里有
+`num3 = avgTownDistance * 5f / max(distance(HomeSettlement, settlement), avgTownDistance)`
+——**巡逻分与离家距离成反比**，离家一个平均城距的城拿 ×5，五个城距外只有 ×1，基数 `1.44 + num`。
+实测六名灰袍的 `leaderHomeSettlement` **全是同一个 `village_EN5_1`（328 个样本无一例外）**，所以闲下来时六个人一起绕出生点转。
+
+`GreyWardenFamilyBehavior.AssignPatrolHomeSettlements` 在 `OnNewGameCreatedPartialFollowUp(index 0)` 按文化各取一城（文化内按 StringId 定序，保证可复现），逐个写 `BornSettlement` + `UpdateHomeSettlement`，写 `PATROL_HOME_ASSIGNED`。此后去哪巡逻仍完全由原版决定，我们只是把"家"摆对，不新增任何运行期逻辑。按既定规则**只在开新档时写一次，不为旧档补正**。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。均为构建期验证。分驻只对新开的档生效。
+
+
+## 2026-09-17 兵员不足时差事让位；城堡守军不再计入目标战力；巡逻"恋家"定位
+
+### 改动：兵员不足时把差事分让下去，让他先补兵
+
+用户要求"通过降低任务欲望值，让他们有机会去招兵和补给"，并明确巡逻压制要保留。
+
+- `ApplyReinforcementRelief` 在 `ProcessFinalDesires` 算出 `dutyScore` 之后介入：兵员不足时把差事分压到**原版最佳非巡逻候选**的九成（`DutyReliefScoreFactor`），于是原版自己那个进城候选排到前面。
+- **只管兵员，不管粮和伤**。实测原版给灰袍的候选里，缺粮／重伤那种真正的维护需求能升到 1~19.6，本来就压得过 0.99，不需要帮忙；而"人少"走的是普通进城候选（实测 0.35~0.85），永远排不过 0.99——所以只要手里有差事，他一辈子不会自己去补兵。问题纯粹出在排序上。
+- **让位期间巡逻照压不误**：`SuppressAssignedPatrolScores` 只看 intent 在不在、不看分数，所以他不会借机跑去巡逻，只会去最近那个值得去的定居点。案子也不收走，补完继续办。
+- 回滞：掉到 `DutyReliefManpowerRatio(0.5)` 以下开始让位，回到 `DutyReliefRecoveryRatio(0.7)` 以上才算补够，中间是缓冲带，不在边界横跳。状态只活在本次运行内。
+- 玩家委托（10）与玩家执法（1.0）不参与让位——`dutyScore > AssignedDutyScore` 直接返回。那是玩家的事，不该被补给打断。
+- 首次进入让位写一行 `DUTY_YIELDED_FOR_REINFORCEMENT`。
+
+### 调查：巡逻为什么总在出生点周围（尚未改）
+
+`AiPatrollingBehavior` 的防御性巡逻打分里有一段乘数：
+
+```csharp
+float num2 = GetDistance(mobileParty.HomeSettlement, settlement);
+if (num2 < avgTownDistance) num2 = avgTownDistance;
+float num3 = avgTownDistance * 5f / num2;
+CalculateDefensivePatrollingScoreForSettlement(settlement, p, scoreAdjustment * num3, false);
+```
+
+**巡逻分与"离家距离"成反比**：离家一个平均城距的城拿到 `×5`，离家五个平均城距的只有 `×1`，基数是 `1.44 + num`。灰袍领主的 `HomeSettlement` 实测是 `village_EN5_1`，六个人于是全都绕着 EN5 转——这就是用户说的"总爱去出生点周围巡逻"。
+
+三条可选路子，尚未实施，等用户裁定：
+
+1. **改家**：按职位把六名领主的 `HomeSettlement` 分散到各地，此后完全由原版驱动，等于六个警察分驻六个片区。最省事，但 `HomeSettlement` 还牵扯退休去向等原版行为。
+2. **抹平恋家**：无职责时把巡逻候选压平到同一分值，让原版自己的防御威胁项（而不是离家距离）决定去哪。**注意这会首次改动"无职责"状态**——目前无职责时我们既不加候选也不压分数。
+3. **按案发地巡逻**：无职责时自己下一个指向最近未结案件的巡逻候选，让闲下来的灰袍往案发密集处漂。
+
+实测补充：六名领主 ~328 个样本里 `dutyIntent=none` 只有 5 次（1.5%），所以这一档的实际占比很低，投入产出要一起考虑。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。均为构建期验证。待实机观察：`DUTY_YIELDED_FOR_REINFORCEMENT` 出现之后他是否真的进城补兵、补到 0.7 之后是否正常回到办案，以及会不会出现"一路让位一路不办案"。
+
+
+## 2026-09-17 接案门槛：难度上限与兵员下限；声望移到影响力旁；守军与点击两项调查
+
+### 根因定位：城堡守军被算进目标战力，导致案子被判"整族都打不过"
+
+用户补充了关键上下文（案子发生在一座城堡、犯人被拉出来后仗没打完就跑了），据此重查 `lord_2_20_1` 那宗，`targetCombatGroups` 把话说死了：
+
+```
+lord_2_20_1_party_1                       : 132.37   ← 犯人本队
+garrison_party_castle_S6_clan_sturgia_8_1 : 327.88   ← 城堡守军
+militias_of_..._castle_S6_...             : 246.30   ← 城堡民兵
+────────────────────────────────────────────────────
+targetStrength                            = 706.55
+maximumStrength（全家族能凑出来）          = 682.70
+```
+
+**犯人本人只占 132.37，守军加民兵 574.18 占了 81%。** 706.55 > 682.70 于是判定整个灰袍家族都打不过。
+
+因果链完整为：截击队在城堡门口咬住目标 → 战斗开始 → 守军民兵被算进目标战力 → 超过全族上限 → `FailAssistanceCase` → 撤案并 `TrySetNeutral` 讲和 → **那场正在打的仗失去交战依据** → 无结果结束，人走掉。用户看到的"没打完就结束让它跑了"就是最后两步。
+
+**为什么守军会被算进去**：`CanNearbyCombatGroupJoinTarget` 里那句 `candidate.IsGarrison || candidate.IsMilitia` 的排除写在**战斗分支之后**。目标一旦身处未结算的 `MapEvent`，函数在更早的分支就 `return mapEvent.CanPartyJoinBattle(...)` 了——而原版对城墙边上的守军是放行的。也就是说：无战斗时守军不算，一旦打起来守军就算，两条路口径相反。这是遗漏，不是有意为之。
+
+**修复**：把守军／民兵／围城的排除提到战斗分支**之前**，两条路同一口径。真正已经在场上参战的守军不会被漏掉——它们由 `GetNativeCombatStrengthSnapshot` 的 `mapEvent.PartiesOnSide` 那一段直接计入；这里排除的只是"尚未参战、仅理论上可以参战"的那一类。
+
+上一轮新加的两道保险各自也都会挡住这条链的下游：`FailAssistanceCase` 现在遇到目标正在打仗直接 return；案子退回台账而不销毁。但**根因是这里**，不修的话同样的城堡场景还会反复判失败。
+
+### 调查（上一轮）：周围势力怎么算、守军算不算
+
+用户问接案难度里的"周围势力"怎么算、守军算不算。**守军和民兵本来就不算**，无需改动：
+
+- `CanNearbyCombatGroupJoinTarget` 在无战斗的常规分支里直接排除 `candidate.IsGarrison || candidate.IsMilitia`，另外还排除已在别的 `MapEvent` 里的、被围城的、以及非围城主的围城营。
+- `GetNativeCombatGroupStrength` 只取围城营总和／军团战力／本队战力三者之一，**任何情况下都不含定居点守军**。
+- 唯一会把守军算进去的场合是目标已经在打一场仗（`mapEvent.IsFinalized == false`），此时走 `mapEvent.CanPartyJoinBattle`——那是真的已经在场上的部队，算进去是对的。
+
+### 改动：接案两道门槛
+
+上一轮把"凑不出兵"从销案改成退回台账之后，用户指出新问题：案子不撤，就会被反复接起、反复退回。两道门槛都设在**接案这一步**，不影响已经在办的案子。
+
+- **难度上限**（`IsCaseWithinReach`）：目标战力超过全家族能凑出来的战力就不立案。
+  - 能凑多少：`GetMaximumMusterableStrength` = 承办人自己 + 所有还能被拉进协力组的灰袍领主（复用既有 `GetAvailableAssistanceCandidates` 的资格判定）。
+  - 案子多难：`GetCaseIntakeTargetStrength` 用 `GetNativeCombatGroupStrength`，**刻意不含身边路过的人**——那一档是临场变量，由协力编成随时增减去应对；接案这一步问的是"这个人是不是根本不在我们量级上"。
+  - 留一成余量：`CaseIntakeStrengthMargin = 0.9`。
+- **兵员下限：写了又撤，因为用户指出它不成立。** 记录在案免得以后再走一遍：
+  - 我原先的说法"没案子时不再压制进城候选、原版欲望会带他去招兵"是**错的**。`SuppressAssignedPatrolScores` 只改 `AiBehavior.PatrolAroundPoint` 一种；`SuppressLeaderlessMergeScores` 只对无英雄队生效。**进城候选从来没有被压制过。**
+  - 实机 AUCTION 读数（`gw_leader_5`，`intent=Escort`）：`finalScores` 里 `EscortParty=0.9900`，其后 `GoToSettlement@castle_village_ES5_2=0.5994`、`village_ES2_3=0.5696` …… 一路到 `0.0306`，全是**原版原值**；被改的只有 `PatrolAroundPoint`，从 `rawScores` 的 `2.9566` 压到 `0.0300`。所以领主不去补兵不是因为被压制，纯粹是 0.599 排不过 0.99。
+  - 更关键的是"没案子"这个前提不成立。六名领主 ~328 个样本里 `dutyIntent=none` 只出现 **5 次（1.5%）**：`gw_leader_0/3/4` 几乎全程 `Visit`，`1/5` 几乎全程 `Escort`，`2` 在 `Approach/Escort/Pursue` 之间轮转。**他们随时都在办事的路上。**
+  - 而且就算真闲下来也不会去招兵：没有职责时我们既不加候选也不压巡逻，原版巡逻候选是 `2.9566`，直接盖过 `GoToSettlement` 的 `0.5994`——他会去巡逻，不是去补兵。
+  - 结论：接案设兵员门槛**只会让弱队既不接案也不补兵**，净增一个卡死状态。已撤除 `HasManpowerForNewCase` 与 `CaseIntakeManpowerRatio`。
+  - 真要解决"几十个人也敢接案"，需要的是一条**显式的招兵职责**：兵员低于阈值时下一个指向定居点、分数高于巡逻（即 > ~3.0）的候选，补满后释放。那是新功能，不是阈值调整，等用户裁定。
+
+### 改动：声望图标移到原版影响力旁边
+
+按用户要求从 `PrimaryInfoItems` 移到 `SecondaryInfoItems`，插在 `influence` 之后。
+
+**代价记录在案**：`SecondaryInfoItems` 那一排只在信息条展开（`IsInfoBarExtended`）时显示，`PrimaryInfoItems`（第纳尔所在）才是常驻。用户在"挨着影响力"与"常驻可见"之间选了前者。
+
+### 调查：能不能最小开发让它可点
+
+- **让原版那一项可点：不行。** `MapBar.xml` 两排的 `ItemTemplate` 外层是 `HintWidget`，而 `HintWidget : TaleWorlds.GauntletUI.BaseTypes.Widget`；反射确认 `Widget` 只有 `EventFire` 与各类 `PropertyChanged`，**没有任何 click 事件**，点击是 `ButtonWidget` 独有的。模板也只绑了 `Command.HoverBegin/HoverEnd`。所以金币、影响力自己也点不动。要改只能整份覆盖 SandBox 的 `MapBar.xml`。
+- **可行的最小方案：我们自己的一层。** 本仓库已有现成套路——`GwpCaseArchiveScreen.Open()` 就是 `new GauntletLayer(...)` + `AddLayer` + `LoadMovie("GwpCaseArchive", vm)`，`_Module/GUI/Prefabs/` 下已有两个自有预制件。照此加一个常驻的小层：一个 `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，`IsFocusLayer = false`、不设 `InputRestrictions`，不挡地图操作。**不覆盖任何原版文件**，规模约一个预制件加一个行为。
+- 代价：那是我们自己的控件，不在原版信息条内部，位置与配色要手调到看着像原生；且我无法自行核对观感。**本轮未做，等用户点头。**
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。均为构建期验证。待实机观察：会不会因为两道门槛出现"案子堆在台账上没人接"，`CaseIntakeManpowerRatio` 与 `CaseIntakeStrengthMargin` 是两个待调的旋钮。
+
+
+## 2026-09-17 凑不出兵不再销案；灰袍脱离军团不吃混乱；地图条点击可行性调查
+
+### 新的 CASE_CLOSED 留痕当场抓到一宗
+
+上一轮刚加的结案留痕第一次实机就命中：
+
+```
+campaignHour=2193399.82  MAP_EVENT_STARTED  attacker=gwp_enf_delay_23326  defender=lord_2_20_1_party_1
+campaignHour=2193400.78  CASE_CLOSED  policeParty=gw_leader_2_party_1; crime=lord_2_20_1;
+                         offenderActive=True; offenderPrisoner=False;
+                         civilianCasualties=497; warDeclared=True;
+                         reason=assistance_strength_insufficient
+```
+
+截击队刚咬上去一小时，小时维护判定协力凑不出兵，`FailAssistanceCase` 直接 `EndTask` —— 一宗 **497 名平民**的案子连卷宗一起销毁，人还活着、也没被俘。这正是上一轮"第三方打掉不销案"没覆盖到的第四条路。
+
+### 改动：凑不出兵是"没人承办"，不是"案件了结"
+
+- `FailAssistanceCase` 改走 `RetireTaskKeepingCaseIfOffenderAlive`：撤承办、**保留案卷**，人真死了才销案。与"被别的势力打掉"同一口径——按用户既定规则，人没被抓、部队没被打完就不算了结。
+- **目标正在打的时候不判失败**：`offenderParty.MapEvent != null || leader.MapEvent != null` 直接 return。那一仗的结果才是答案，中途撤案会把已经咬上去的截击队和承办人一起拆散——上面那条实机记录就是这么发生的。
+- 防空转：新增 `_caseStrengthCooldownHours` + `GwpTuning.Enforcement.AssistanceFailureCooldownHours(72)`。退回台账的案子 72 小时内不再被指派，否则下一小时又落到同样凑不出兵的人手上来回空转。`AssignTasks` 两轮指派都带上这个谓词。冷却只活在本次运行内，读档后最多多试一次，无害。
+
+### 改动：灰袍脱离军团不再吃混乱减速
+
+新增 `GwpArmyExitDisorganizedPatch`。
+
+- 原版 `DisorganizedStateCampaignBehavior.OnPartyRemovedFromArmy` 对**每一支**脱离军团的队伍无条件 `SetDisorganized(true)`，代价是 `-40%` 速度、`6` 小时（`DefaultPartySpeedCalculatingModel` 的 `AddFactor(-0.4f)` 与 `DefaultPartyImpairmentModel.GetDisorganizedStateDuration` 的 `6f`）。
+- 那条规则是为王国军团写的：集结一次、打一仗、散伙。灰袍协力军团完全不是这个节奏——按目标现场战力随时拉人放人，还会因目标太快而整组速度分散，每次进出都吃一记 40%，办案的人就永远在减速里爬，玩家在地图上还看不出缘由。
+- **只跳过"脱离军团"这一个入口**。同一个行为类里战斗结束、突围、菜单进攻那几条照常生效——打完仗该乱还是乱。
+- 不走 `PartyImpairmentModel.CanGetDisorganized` 的模型覆盖：那是全局开关，会把战后混乱一起关掉，超出用户要求。
+- 事件签名只给 `MobileParty`、不给它离开的那个 Army，所以无法再细分成"只有脱离灰袍军团才跳过"。灰袍是无封地独立家族、不加入王国军团，实际等价。写 `ARMY_EXIT_DISORGANIZED_SKIPPED` 备查。
+
+### 调查：地图条声望图标点击打开事务界面 —— 做不到，除非覆盖原版预制件
+
+用户希望把灰袍声望挪到原版影响力旁边，并且点击打开灰袍事务界面、把百科页那个按钮丢掉。查下来两件事都有代价：
+
+- **点击做不到。** 原版 `MapBar.xml` 两排信息的 `ItemTemplate` 外层是 `HintWidget`，而 `HintWidget : TaleWorlds.GauntletUI.BaseTypes.Widget` —— 反射确认 `Widget` **没有任何 click 事件**（只有 `EventFire` 与各类 PropertyChanged），点击事件是 `ButtonWidget` 才有的。模板里也只绑了 `Command.HoverBegin/HoverEnd`。所以除非在本模组里整份覆盖 SandBox 的 `MapBar.xml`（219 行）把 `HintWidget` 换成按钮，否则那一排任何一项都点不动——金币和影响力同样点不动。整份覆盖会在游戏更新改动该文件时失效，并与任何改地图条的模组冲突。
+- **"挪到影响力旁边"会让它更难看见。** 影响力在 `SecondaryInfoItems`，那一排只在信息条展开（`IsInfoBarExtended`）时才显示；金币在 `PrimaryInfoItems`，常驻。当前实现挂在金币后面正是为了常驻可见。
+- 因此本轮**未改 UI**，等用户在"常驻但不可点"与"整份覆盖预制件换取可点"之间裁定。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-GameCompat` PASS（`PATCH_OK=60; PATCH_FAIL=0`，较上一版 +1 即新的混乱补丁）；`Verify-LiveModule` 无差异。均为构建期验证。待实机观察：`CASE_CLOSED` 里 `assistance_strength_insufficient` 应当消失、改为出现 `CASE_KEPT_OPEN_OWNER_RELEASED`；`ARMY_EXIT_DISORGANIZED_SKIPPED` 是否按预期出现在拉人放人前后。
+
+
+## 2026-09-17 案件三条规则落地：震慑口径、案件跟人不跟势力、第三方打掉不销案（已部署待验）
+
+用户裁定（本节三条改动全部据此）：
+
+1. 部队被打光、人被抓，**都算案件了结，都要上震慑**。
+2. 雇佣兵转移阵营导致战斗脱离——**案件跟着人走，不跟着势力走**。
+3. 人不是灰袍打掉的、是别的势力打掉的（逃亡或被别人俘虏）——**这个人依然被通缉**，等他重新建队，灰袍照样找他麻烦。
+
+### 改动一：打光部队但没拿到人，也要上震慑
+
+改之前只有 `PoliceAIDeterrenceBehavior.OnHeroPrisonerTaken`（必须真进灰袍俘虏名单）会上震慑，而结案判据 `WasTaskOffenderActuallyDefeatedInEvent` 只看 `NumberOfHealthyMembers <= 0`。两者口径不一致，于是"打光部队但人跑了"= 结案 + 零震慑 + 照发办案经费。
+
+- `PoliceAIDeterrenceBehavior` 新增 `RegisterWardenBrokeOffenderParty`，转调既有的 `RegisterPlayerEnforcementOutcome`（那个私有方法名字里带 Player，内容与承办方无关：本人震慑、同族转述、同场目击）。
+- `countAsArrest: false`——震慑照上，但**不计入"被捕次数"**，因为人确实没拿下。被捕次数是履历，不能靠打光部队刷。
+- 调用点在"灰袍打赢且目标已被打垮"那一支，`RegisterDefeatDeterrenceIfNotCaptured` 里先排除 `IsPrisoner`：人真被拿下时 `OnHeroPrisonerTaken` 已经登记过，避免同一次惩戒记两遍。私有方法自带的 `SamePunishmentHours=1` 去重是第二道保险。
+
+### 改动二：案件跟着人走，不跟着势力走
+
+实机根因：岁罗赤（`CharacterObject_1853`，小家族 karakhuzaits）在被追途中并进诺德领主 `lord_7_14` 的军团，`MapFaction` 变成诺德。`DeclareWar` 记的是**当时**的 `criminalClan.MapFaction`，而 `ReconcileTaskWarStatesWithDiplomacy` 复查用的是**现在**的——两者对不上，就被当成"已经和平"直接撤销战争，原版 initiative 当场失去 `IsEnemy` 资格，`battleState=None`，仗打一半散场。
+
+- 现在复查发现阵营对不上时，**先对他当前的势力重新宣战**（`DeclareWar(task, offender)` 会自己按当前 `ActualClan.MapFaction` 取目标并刷新 `task.WarTarget`），成功就写 `CASE_WAR_RETARGETED_TO_CURRENT_FACTION` 并保持案件在 `WarPursuit`；只有重新宣战也不成立时才走原来的撤销路径。
+- 不会来回翻：`GwpPoliceWarReasonService.TaskMatchesFaction` 本来就同时认 `task.WarTarget` 和**实时**的 `offender.ActualClan.MapFaction`，所以重新宣战之后 `HasLegitimateWarReason` 立刻成立，各条战后讲和路径不会把它收掉。这次只是把 `Reconcile` 补齐到和 WarReasonService 同一口径。
+- 玩家目标、土匪、以及案卷已关的任务都不走这条。
+
+### 改动三：不是灰袍打掉的，案卷不销
+
+`CrimePool.EndTask` 会连案卷一起销（`HasOpenCase=false` + `_ledger.Remove`）。而 `UpdateTasks` 里"目标部队失活"这条路径**任何原因**都会走到——被别的势力打掉、被别人俘虏、独自逃亡——于是罪犯借第三方之手免费洗白。
+
+- 新增 `RetireTaskKeepingCaseIfOffenderAlive`：人还活着就只撤承办任务（`CrimeState.ReleaseTasksForOffender`，卷宗保留），解散协力组，写 `CASE_KEPT_OPEN_OWNER_RELEASED`（带 `offenderPrisoner` / `offenderFugitive`）；人真死了才 `EndTask`。
+- 之所以不用另写"重新通缉"逻辑：`CrimeRecord.Offender` 本来就是**按英雄解析**的（`hero.PartyBelongedTo` 优先，其次才是旧 PartyId），`IsOffenderPursuable()` 要求 `Offender?.IsActive == true`。所以他一天没队伍就一天不被指派，重新拉起队伍的当轮就自动重新变成可追捕案件，`AssignTasks` 照常派人。**这条规则靠既有数据结构成立，没有新增状态机。**
+- 两个落点：`criminal == null`（`offender_party_missing`）与 `!criminal.IsActive`（`offender_party_inactive`）。灰袍自己打赢那条路不受影响——`OnMapEventEnded` 当场就以 `offender_defeated_in_battle` 结案，轮不到下一次小时维护。
+
+### 协力组随目标战力动态缩编
+
+新增 `TryShrinkAssistanceGroup`，挂在 `UpdateLordAssistance` 既有组分支里、`targetStrength` 算出之后。
+
+- 起因：`targetStrength` 是**现场战斗群之和**（内圈 `joiningRadius` 全额、外圈到 `threatRadius` 按距离衰减），一个路过的领主就能把目标战力抬高一倍。实机两例：岁罗赤本人 112.43 而弥瑟 231.47，是被旁边的 `CharacterObject_1850`(180.17) 抬到 292.60；额速儿本人 98.51 而弥瑟 183.07，被 `lord_6_15`(172.39) 抬到 270.90。旧实现编成只增不减（原注释 `It never shrinks when the target weakens`），路人走了就变成五百打一百。
+- **回滞是刻意的**：入组看 `committed <= target`，放人要求放完之后仍然 `committed > target * AssistanceReleaseMargin(1.25)`。两个门槛之间留一档，路人来回走才不会让协力组跟着拆装。
+- 每轮最多放一个；`AssistanceMinimumMemberHours(6)` 挡住"来了又走"；正在 `MapEvent` 里的人不抽（等于把他从战斗里拔出来）；组长在打仗时整组不缩编。
+- 选**离目标最远**的那个放——他对接下来这一仗贡献最小，被硬拖过半张地图的观感也最差。放人动作与既有 `ReleaseAssistanceGroup` 的逐人处理一致，并写 `ASSISTANCE_MEMBER_RELEASED_SURPLUS`。
+
+### 结案全程留痕
+
+以前 `EndTask` 完全静默，实机里案子凭空消失只能靠逐小时比对 `task=` 字段倒推（本轮定位岁罗赤/额速儿两案就是这么做的）。
+
+- `CrimePool.EndTask` 增加 `reason` 参数（默认 `unspecified`），每次销案写一行 `CASE_CLOSED`，带 `crime` / `offender` / `offenderActive` / `offenderPrisoner` / `civilianCasualties` / `warDeclared` / `reason`。
+- 具名理由：`dispatch_target_invalid`、`target_invalid`、`offender_defeated_in_battle`、`case_owner_defeated_in_battle`、`owner_party_gone_after_battle`、`assistance_strength_insufficient`、`*_offender_gone`，以及 `FailTaskBecauseOwnerCannotLead` 透传的既有 reason。
+- `EndTask` 的注释补上它**同时销毁案卷**这件事——调用方必须清楚自己要的是"销案"还是"换承办人"（后者用 `RetargetTask`），这次改动三正是踩在这个区别上。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` PASS；`Verify-CrimeReceipts` PASS；`Verify-GameCompat` PASS（`PATCH_OK=59; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。**均为构建期验证。** 待实机观察：`CASE_CLOSED` 的 reason 分布、`CASE_KEPT_OPEN_OWNER_RELEASED` 之后该犯人重新建队能否被重新指派、`CASE_WAR_RETARGETED_TO_CURRENT_FACTION` 会不会对大王国造成不想要的连锁开战、`ASSISTANCE_MEMBER_RELEASED_SURPLUS` 会不会抖动。
+
+## 2026-09-17 调查记录：协力为何为弱目标叫人、仗为何打一半散场
+
+### 实机起点
+
+用户观察：弥瑟给"喀拉库吉特的岁罗赤"（`CharacterObject_1853`）叫了协力，但那人没那么强；而且架没打完案子就结束了。
+
+- **叫协力的原因**：`ourStrength=231.47`，而 `targetStrength=292.60` —— 但 `targetCombatGroups=CharacterObject_1853_party_1:112.43, CharacterObject_1850_party_1:180.17`。**岁罗赤本人只有 112.43，弥瑟是他的两倍多**；抬高战力的是当时站在 3~6 格内的另一名同族。同一批日志里 `lord_6_8`（额速儿）那次一模一样：本人 98.51、弥瑟 183.07，`lord_6_15`(172.39) 在旁边 → 270.90。
+- **仗打一半散场的原因**：`MAP_EVENT_ENDED` 显示 `eventFinalized=True; battleState=None`，`involved` 只剩守方，`offenderState= faction=nord, armyLeader=lord_7_14_party_1, atWar=False`。**岁罗赤在被追的过程中进了诺德领主的军团，`MapFaction` 跟着变成诺德**，而灰袍与诺德无战争；`ReconcileTaskWarStatesWithDiplomacy` 按当前阵营复查后写下 `CASE_WAR_STATE_RESET; reason=actual_diplomacy_is_peace`，战争一撤，原版 initiative 失去 `IsEnemy` 资格，灰袍退出战斗。`DeclareWar` 记的是当时的 `criminalClan.MapFaction`，复查用的是现在的——两者对不上，战争就被当成"已经和平"收掉。**本轮未改这条**，记录在案。
+
+### 查清：打赢但没俘虏到人，会发生什么
+
+用户问的是"部队被打光但人没抓到，案子会不会了结、会不会上震慑"。结论是**案子会彻底销案，震慑一点都不会上**。
+
+- 结案判据 `PoliceEnforcementBehavior.WasTaskOffenderActuallyDefeatedInEvent` 最后一行就是
+  `return involved.IsActive != true || involved.Party == null || involved.Party.NumberOfHealthyMembers <= 0;`
+  —— **只看对方还有没有可战人员，完全不看有没有把人拿下。**
+- `CrimePool.EndTask` 不只是结束任务，它同时 `crime.HasOpenCase = false; _ledger.Remove(crime.CrimeId)`：**案卷从台账消失**，罚金、案底与继续追捕的依据一起没，别的灰袍也接不走。
+- 震慑只有两个入口：`PoliceAIDeterrenceBehavior.OnHeroPrisonerTaken`（必须真进俘虏名单，且俘虏方是灰袍或玩家）与玩家外勤结算的 `RegisterEnforcementOutcomeFor`。部队打光但人跑掉，两个都不触发。
+- `GwpAiDeterrenceState.RegisterEnforcementOutcome` 里那条 `inWardenCustody` 硬条件（注释写着 "Only actual Warden custody clears the offender record"）本身是对的，但**轮不到它执行**——案子在更早的 `EndTask` 已经销了。
+- 而 `PoliceResourceManager.CreditSuccessfulCaseCompletion()` 照发办案经费。
+- **净效果：把罪犯部队打光 = 灰袍拿钱、罪犯免费洗白**，重新招兵后既无案底也无震慑。等用户裁定怎么改。
+
+### 改动一：协力组随目标战力动态缩编
+
+新增 `TryShrinkAssistanceGroup`，挂在 `UpdateLordAssistance` 既有组分支里、`targetStrength` 算出之后。
+
+- 目标战力本来就是**每轮重算**的现场战斗群之和，以前只用来判"够不够"，编成一旦定下只增不减（旧注释：`It never shrinks when the target weakens`）。现在按当前战力回收多余协办人。
+- **回滞是刻意的**：入组看 `committed <= target`，放人要求放完之后仍然 `committed > target * AssistanceReleaseMargin(1.25)`。两个门槛之间留一档，路人来回走才不会让协力组跟着拆装。
+- 每轮最多放一个；`AssistanceMinimumMemberHours(6)` 的最短在编时长挡住"来了又走"；正在 `MapEvent` 里的人不抽走（等于把他从战斗里拔出来）；组长在打仗时整组不缩编。
+- 选谁：**放离目标最远的那个**——他对接下来这一仗贡献最小，被硬拖过半张地图的观感也最差。
+- 放人动作与既有 `ReleaseAssistanceGroup` 的逐人处理一致：脱离军团、`RemoveAssistanceMember`、`ClearIntent`、`RequestImmediateRethink`，并写 `ASSISTANCE_MEMBER_RELEASED_SURPLUS`（带 before/after 战力、放走者战力、距离、剩余人数）。
+
+### 改动二：结案全程留痕
+
+以前 `EndTask` 这条路径**完全静默**，实机里案子凭空消失只能靠逐小时比对 `task=` 字段倒推（本轮定位岁罗赤/额速儿两案就是这么做的）。
+
+- `CrimePool.EndTask` 增加 `reason` 参数（默认 `unspecified`），每次销案写一行 `CASE_CLOSED`，带 `crime` / `offender` / `offenderActive` / `offenderPrisoner` / `civilianCasualties` / `warDeclared` / `reason`。
+- 已给出具名理由的落点：`dispatch_target_invalid`、`target_invalid`、`crime_record_gone`、`offender_party_inactive`、`owner_party_gone_after_battle`、`offender_defeated_in_battle`、`case_owner_defeated_in_battle`、`assistance_strength_insufficient`，以及 `FailTaskBecauseOwnerCannotLead` 透传的既有 reason。
+- `EndTask` 的 XML 注释补上它**同时销毁案卷**这件事——调用方必须清楚自己要的是"销案"还是"换承办人"（后者用 `RetargetTask`）。
+
+### 验证
+
+Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项；`Verify-ContentKeys` `CHECKED_KEYS=1168; MISSING=0`；`Verify-CrimeReceipts` PASS；`Verify-GameCompat` PASS（`PATCH_OK=59; PATCH_FAIL=0`）；`Verify-LiveModule` 无差异。**均为构建期验证**；待实机观察 `ASSISTANCE_MEMBER_RELEASED_SURPLUS` 是否出现、会不会抖动，以及 `CASE_CLOSED` 的 reason 分布。
+
+
+## 2026-09-17 玩家灰袍声望进原版右下角信息条（已部署待验）
+
+用户要求把玩家的灰袍声望显示在原版地图右下角第纳尔那一排，用原版图标换个颜色。
+
+- **不改任何 GUI 预制件。** `SandBox/GUI/Prefabs/Map/MapBar.xml` 的 `MapInfoBarWidget`（`HorizontalAlignment="Right" VerticalAlignment="Bottom"`，就是右下角那块）两排信息完全数据驱动：`TopInfoBar` 绑 `{PrimaryInfoItems}`、`BottomInfoBar` 绑 `{SecondaryInfoItems}`，每项按同一个 ItemTemplate 渲染，图标取 `IconBrush="MapBar.Right.Icons"` 中名为 `@VisualId` 的层。所以只需往列表里加一个 `MapInfoItemVM`、往笔刷里加一层图标。
+- **挂载点**：`MapInfoVM.CreateItems`（`protected virtual`）后置补丁。它每次都会 `Clear()` 再重建两排，所以补丁必须每次重新插入，不能只插一次。插在 index 1，即原版第一项 `gold` 的紧后面。数值由 `MapInfoVM.UpdatePlayerInfo(bool)` 后置补丁刷新，`RefreshValues()` 走 forced、`Refresh()` 走非 forced，与原版金币/影响力同一节奏。
+- **换色是查过实现的，不是试出来的。** `IconBrushWidget.UpdateIcon` 在 `UseStylesFromSourceIcon`（MapBar 预制件里就是 true）时对自己每一层执行 `layer.FillFrom(sourceLayer)`，而 `BrushLayer.FillFrom` 把 `Color` 一并复制。所以只要克隆原版 `influence` 层、改 `Color` 再 `AddLayer` 进同一个笔刷即可。注意 `FillFrom` **连 `Name` 一起复制**，改名必须放在它之后。
+- **只加一层，不整体覆盖笔刷。** 同名笔刷文件会整个替换原版那 12 层，游戏更新改了别的图标就跟着炸；运行时 `UIResourceManager.BrushFactory.GetBrush("MapBar.Right.Icons").AddLayer(...)` 只多一层 `gwp_warden_reputation`，其余原样。取不到笔刷或取不到源图层时静默放弃，只记一条 `MAPBAR_REPUTATION_ICON_FAILED`，不影响开局。
+- 颜色取冷银蓝 `Color(0.50f, 0.68f, 0.82f)`——金币图标偏暖黄，同一排里必须用冷色才分得开。要换色改 `ReputationIconColor` 一行。
+- 数值取 `PlayerBehaviorPool.Reputation`（范围 −100~+100）。`HasWarning` 只在 `IsWanted`（`≤ −11`）时为真，届时原版把数字染成 `WarningMapBarTextColor`；口径与既有"通缉已解除"一致，单纯负分不报警。
+- 悬浮提示三条：标题、说明、以及被通缉时的额外一行。新增三个本地化键 `gwp_mapbar_reputation_title` / `_hint` / `_wanted`。
+- 验证：Release 0 警告 0 错误；`Verify-ContentKeys` `CHECKED_KEYS=1168; DUPLICATES=0; MISSING=0`；`Verify-GameCompat` PASS，`PATCH_OK=57; PATCH_FAIL=0`（较上一版 +2）。**尚未实机确认图标颜色与位置。**
+
+## 2026-09-17 灰袍为什么"船不够、不下海"：调查结论，未改代码
+
+用户反馈灰袍船只总是不够、而且没有下海的欲望，怀疑是欲望问题。**两件事是同一件事，而且都不是欲望问题。**
+
+### 下海与否是二元的，卡在"有没有船"
+
+- 购船完全不经过大地图欲望竞价，走 `NavalDLC.ShipTradeCampaignBehavior.DailyTickClan`，一个家族级每日掷骰。
+- 海路 vs 陆路的比较在 `Helpers.AiHelper.CalculateShipDistanceAmplifier`：它给海路距离乘一个系数。本模组的 `PoliceShipDamageModel.GetEstimatedSafeSailDuration` 对灰袍返回 `float.MaxValue`，于是 `num4 > 4f` 恒成立，基础系数直接拿到最优的 **0.35**（海路按 35% 距离计）。
+- 该函数确实还有一档载员惩罚：`num7 = 完好船只总载员 / 总兵数`，`num7 ≤ 0.6` 时系数 `× 3.5`。但 `0.35 × 3.5 = 1.225`——**即便最差档，海路也只按 122.5% 距离计，仍然有竞争力。** 所以"载员不够"不是不下海的原因。
+- **真正的悬崖只有一个**：`NavalDLCPartyNavigationModel.HasNavalNavigationCapability` 在 `Ships.Count <= 0`（且非主队、未附着于有船的队）时直接返回 false，`NavigationCapability` 于是拿不到 `Naval` 位。**0 条船 = 海路根本不存在**，不是权重低。
+- **实机佐证**：`desiredNavigation` 按队统计，`gw_leader_0/1/2/5` 一律 `All`(=`Default|Naval`=3)，`gw_leader_3`(圣铎)、`gw_leader_4`(晨曦) 一律 `Default`，各约 70 个样本零交叉。即六名领主里有两名结构性地上不了船。
+
+### 船为什么补不上：原版船只经济是按"有封地"设计的
+
+- `GetTownToBuyShipFrom` 先在 `clan.MapFaction.Fiefs` 里找；灰袍是 6 级**无封地**独立家族（见 14515 行既有记录），这一步永远落空，只能走"任意非敌对城镇"的兜底，而兜底自带 `MBRandom.RandomFloat < 0.2f`。叠上 `ConsiderPurchasingShip` 外层的 `0.5`，**每天只有 10% 的机会去看一眼**，且 `ConsiderPurchasingShip` 一天**全家族只买一条**。
+- `GetTownToSellShip` 更彻底：`clan.MapFaction.Fiefs` **没有任何兜底**。这正是本仓库当初必须手写 `SellSurplusPoliceShips` 的原因（该方法的注释已写明）。
+- `ConsiderSwappingShipsBetweenClanParties`（75%/天）会把家族现有的船在各队之间重新分配。船总数本来就少，摊到六个队，人人 0~1 条——**摊薄恰恰把更多队推到"0 条"那个悬崖下**。
+- 宣战再收窄一层：购船兜底要求 `!town.MapFaction.IsAtWarWith(clan)`，灰袍办案期间经常在跟王国交战。
+- 另外两把尺子不一致：原版对领主队的理想船数**就是 3**（`NavalDLCShipLimitModel.GetIdealShipNumber` 对 `IsLordParty` 直接返回 3），且 `NavalDLCShipDistributionModel.GetScoreForPartyShipComposition` 对超过 3 条的部分按 `2/(count-ideal+1)` 打折，所以原版**永远不会主动买第 4 条**；而 `PoliceResourceManager.GetRequiredShipCount` 用的是 `ceil(兵数/50)`，158 人算出 4。
+- 载员参考：`sturgia_heavy_ship` `total_crew_capacity=96`、`skeletal=36`。三条重船 288 载员带 158 人绰绰有余。
+
+### 改动：不新建系统，把原版的买卖打通（已部署待验）
+
+用户明确要求"让原版买卖船只发挥作用，我们不做开发"，因此**不做**免费补船、不做公库直购。只解开"无封地"造成的两处空转，买什么、卖什么、什么价、划不划算全部仍由原版判断。
+
+新增 `GwpLandlessShipTradePatch.cs`：
+
+- `GetTownToBuyShipFrom` 后置补丁：结果为 null 时，按原版 `CanClanBuyShipFromTown` 的同款条件（未被围攻、`AvailableShips.Count > 0`）加非敌对，随机挑一座城，等于去掉那个只对无封地家族生效的 `0.2` 掷骰。**`TryPurchasingShipFromTown` 一个字没碰**——预算闸门 `< clan.Gold * 0.2`、`ShipDistributionModel` 组合评分、换船逻辑、`ClanShipOwnershipModel` 的家族理想船数全部原样。
+- `GetTownToSellShip` 后置补丁：同样在 null 时给一座非敌对、船坞已建成的城。判定按建筑 id `building_shipyard` + `CurrentLevel > 0`，因为 `Town.GetShipyard()` 是 NavalDLC 的扩展方法而本模组不引用该程序集——这与被删掉的手写卖船用的是同一条件。
+- **接管有前提**：`ShouldSubstituteTown` 还要求 `clan.MapFaction.Fiefs.Count == 0`。灰袍哪天真拿到封地，原版那条路自己就通，补丁必须让开，不能变成永久绕过。
+- 随机挑而不是挑最近：原版兜底用的就是 `GetRandomElementWithPredicate`，挑最近会让同一座城的存货被反复扫空。
+- **不引用 NavalDLC 程序集**。目标方法按名字在运行时解析（`AppDomain` 扫 `NavalDLC.CampaignBehaviors.ShipTradeCampaignBehavior`），Harmony 的 `Prepare()` 找不到就整类跳过，没装 DLC 不受影响。这与既有 `PoliceShipModelSupport.CreateFallbackModel` 的做法一致。
+
+同时**删除**了手写的卖船整块：`SellSurplusPoliceShips`、`CanSellSurplusShip`、`FindNearestNonHostileShipyard`、常量 `ShipyardBuildingTypeId`，以及 `OnDailyTick` 里的调用点（净删约 4.7 KB）。卖船交还原版 `ConsiderSellingShips`，它自带 `GetTotalNumberOfWarShipsInClan > GetIdealShipNumberForClan` 闸门和组合评分。
+
+- **`TroopsPerShip` / `GetRequiredShipCount` 保留**，因为 `GivePoliceShips` 还要用：领主队自 R10 起不免费配船，但无英雄的临时队（使者、拦截队、练兵队）仍然免费配，而原版对它们的 `GetIdealShipNumber` 会落到 `Debug.FailedAssert` 再退回 `DefaultPartyShipLimitModel` 的 **0**，不能拿来当尺子。
+- 两把尺子因此不会打架：原版的买卖三处（`CanPartyTradeShip`、`ConsiderSellingShips`、`ConsiderSwappingShipsBetweenClanParties`）都要求 `party.LeaderHero != null`，无英雄的临时队被天然排除在原版船只经济之外。
+
+### 验证
+
+- Release 0 警告 0 错误；`CaseSettlement.Tests` 177 项通过；`Verify-ContentKeys` `CHECKED_KEYS=1168; MISSING=0`；`Verify-CrimeReceipts` PASS；`Verify-LiveModule` 无差异。
+- `Verify-GameCompat` PASS，`PATCH_OK=59; PATCH_FAIL=0`（较上一版 +2）。该预检会遍历 `Modules` 下**全部**模块目录预加载，NavalDLC 在内，所以这两个按名字解析的补丁确实绑上了，不是被 `Prepare()` 跳过。
+- 另以反射对实机 v1.4.8 核对：`NavalDLC.CampaignBehaviors.ShipTradeCampaignBehavior` 的 `GetTownToBuyShipFrom(Clan)` 与 `GetTownToSellShip(Clan)` 均存在，返回 `Town`。
+- **以上是构建期验证。** 待实机观察：`gw_leader_3`(圣铎)、`gw_leader_4`(晨曦) 的 `desiredNavigation` 能否从 `Default` 翻成 `All`；家族船只总数是否停在 `WarPartyComponents.Count * 3` 附近而不是无限涨。
+
+## 2026-09-17 未宣战追捕改用原版跟随；解除灰袍跟随的速度封顶（已部署待验）
+
+实机起点：胡尔（`CharacterObject_1808`）案。约珥（`gw_leader_1`）是承办人兼协力组长，梵蒂（`gw_leader_0`）是被拉进来的协办人，两人都处于速度分散状态，`taskFlow=Pursuit`、`war=False`。战力闸门早就过了（`committedStrength=669.58` vs `targetStrength=505.41`），卡住的是距离：`contactDistance` 四十小时从 `86.57` 收到 `54.07`，每小时只收 0.8。
+
+### 三个此前没有摊开的原版事实
+
+- **`GoAroundParty` 不走向目标，走向目标外的一个环。** `MobilePartyAi.GetGoAroundPartyBehavior` 用 `GetEncounterJoiningRadius(3.0) × 1.15 = 3.45` 作 `defendRadius`，落点取 `defendRadius² × 0.5 × (num/5)`，`num` 从 5 起、找到第一个可通行点即停——正常就是最外圈 **5.95**。返回的行为是 `GoToPoint`，所以监控里一直是 `default=GoAroundParty; short=GoToPoint`。走到环上这支队伍就站住了。
+- **`Approach` 的定点每 6 小时才刷新一次。** `AiPartyThinkBehavior.PartyHourlyAiTick` 对普通领主队取 `num = 6`，只有 `HourCounter % 6 == 0` 才重新拍卖；只有军团长、军团内未附着、换乘中或被置了 `RethinkAtNextHourlyTick` 的队伍才降到 1。实测约珥的重拍间隔就是 `6.09 / 9.07 / 1.03 / 5.03 / 6.06 / 6.07 / 6.07 / 4.03 / 6.05 / 6.08 / 6.06`。而 `Approach` 下注的是 `CreatePoint(intent.Party.Position, …)`——拍卖那一刻的快照。目标速度 4.0 跑满一轮就是 24 格，承办人一直在走向对方六小时前的位置。
+- **未宣战期间三样救场工具全被挡在门外。** 原版 initiative 要 `IsEnemy` 才把短期行为转成 `EngageParty`（`DefaultMobilePartyAIModel.GetBestInitiativeBehavior`）；极速追查队要 `FlowState == WarPursuit`（`PoliceEnforcementBehavior.DelayPatrols.cs` 的 `TrySpawnImmediateCaseInterceptor`）；驱逐躲城目标要 `task.WarDeclared`（`HandleShelteredCriminal`）。而进入 `WarPursuit` 的唯一钥匙是贴到宣战距离——正是这三样工具本来要解决的事。
+
+### 改动
+
+- **未宣战、独自行动的追捕一律改用原版 `EscortParty`。** 覆盖两条路：`ResolveIntent` 末尾的普通承办（新增 `ResolveUndeclaredPursuitKind`），以及 `TryGetAssistanceDuty` 里尚未组成军团或已因速度分散脱离军团的协力队（新增 `IsUndeclaredSoloAssistancePursuit`，条件是 `party.Army == null` 且本案未宣战）。`GetFollowBehavior` 由 `MobilePartyAi.Tick` 的短期周期刷新（`AiCheckInterval 0.25 × 0.6~0.7 ≈ 0.16` 小时），直接指向目标真实位置，比定点新约 37 倍。
+- **跟随不会提前开战，这是查过的不是假定的。** `EncounterManager.HandleEncounterForMobileParty` 对「`AiBehaviorInteractable` 是移动部队 + `ShortTermBehavior == GoToPoint`」直接 return；`IsCurrentlyEngagingParty` 的定义就是 `ShortTermBehavior == AiBehavior.EngageParty`。所以遭遇只认 `EngageParty`，跟随中立目标合法。反过来也确认了 `RequestRush`（落到 `EngageParty`）**绝不能**用在未宣战阶段：`EncounterManager.StartPartyEncounter` 只判 `attackerParty.MapFaction == defenderParty.MapFaction`，不同阵营直接 `StartBattleAction.Apply`，没有敌对检查。
+- **目标进了定居点就退回定点。** `GetFollowBehavior` 会把跟随转成 `GoToSettlement` 一路跟进城，承办人会在城里满足宣战距离并可能当场被守军俘虏。新增 `GwpCommon.IsShelteredOffender`，两条路径都在此退回 `Approach`，城外围堵与驱逐仍由既有 `HandleShelteredCriminal` 负责。用户裁定：宣战距离保持 `WarDistance = 3`，不下调到 0，进城由追击队与支援兜底。
+- **宣战距离跟着实际移动行为走，且与职责判据共用同一个函数。** `UpdateTasks` 里 `max(WarDistance, GetNativeMaximumGoAroundDistance())` 的放宽改为直接取反 `IsUndeclaredSoloAssistancePursuit`——还在跑 `GoAroundParty` 的（军团整体行军，或目标已躲进定居点而退回环外围堵）才放宽到环外，已拆开单独跟随的用 3。**第一版写成 `pp.Army != null` 是错的**：那样一来「独自行动 + 目标躲城」会退回 `GoAroundParty`（对定居点用 `SettlementDefendingWaitingPositionRadius = 3`，环在 4.5）却只给 3 的门槛，`4.5 > 3` 永远不成立，驱逐流程再也跑不起来。两处共用一个判据才不会再出现这种错配。玩家委托护送（`UpdatePlayerBountyEscortCase`）那条的 `max(3, 5.95)` **未动**——那条是玩家带路、距离由玩家决定，收紧会推迟玩家一侧的开战。
+- **解除灰袍跟随的速度封顶（`GwpEscortSpeedCapPatch`）。** `MobileParty.CalculateSpeed` 的护送分支只做一件事：`_lastCalculatedSpeed > TargetParty._lastCalculatedSpeed` 时把自己降到对方速度。它**只有封顶没有提速**——这才是 `maintenance-plan` 早先「护送太慢，跟着被护送方的步子走」那条结论的真身。对追比自己慢的目标是致命的：接手时差多远就永远差多远。`CalculateSpeed` 的 Harmony 前置补丁改调私有 `CalculateSpeedForPartyUnified`，按用户裁定覆盖**灰袍自用的每一种跟随**（练兵队跟教官、协办人跟组长、拦截队归队、承办人跟罪犯）。判定顺序按热路径排布：`DefaultBehavior != EscortParty` → `Army != null` → `TargetParty == null` → `GreyWardenPartyDesireBehavior.ShouldUncapEscortSpeed` 的 `HashSet` 查表。集合由 `ProcessFinalDesires` 每轮维护，补丁另外要求当前确实是 `EscortParty`，残留条目不会误伤。原版军团阵型速度分支排在护送分支之前，不受影响。
+- **大地图文字**：新增 `gwp_location_duty_pursuing`「正在追捕{TARGET_PARTY}。」。否则原版会把追捕读成「正在跟随 胡尔的部队」，像是在给通缉犯护航。为此 `Intent` 增加 `PursuesOffender` 标记，`TryGetAssistanceDuty` 增加 `out bool offenderPursuit`（两个调用点同步）。该标记只用于文字，不参与任何 AI 判定。
+
+### 验证
+
+- Release 构建 0 警告 0 错误；`tools/CaseSettlement.Tests` 177 项通过。
+- `Verify-ContentKeys`：`XML=29; LOCALIZED=1380; CHECKED_KEYS=1165; DUPLICATES=0; MISSING=0`。
+- `Verify-GameCompat` PASS，内含 `PREFLIGHT=PASS`、`PATCH_OK=55; PATCH_FAIL=0`（较上一版 +1，即新的速度补丁已绑定）。
+- 另以反射对实机 v1.4.8 的 `TaleWorlds.CampaignSystem.dll` 直接核对：`MobileParty.CalculateSpeed` 与 `MobileParty.CalculateSpeedForPartyUnified` 均存在，`Single`、0 参数。委托解析失败时补丁静默退回原版封顶，不抛异常。
+- **以上是构建期验证，不是实机结果。** 待观察：`contactDistance` 的收敛速率、目标进城后是否稳定退回定点围堵、解除封顶后协办人向组长集结与拦截队归队是否出现顿挫。
+
+
 ## 2026-09-16 v1.4-r11 重新打包发布（同版本号覆盖，玩家包无任何监控）
 
 - 用户裁定：本次构建才算最新版本；**版本号沿用 v1.4-r11**，因为此前那一版没有推给玩家。`SubModule.xml` 与程序集均已是 `v1.4.11` / `1.4.11.0`，无需改动。

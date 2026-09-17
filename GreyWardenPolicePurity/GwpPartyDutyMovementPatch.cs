@@ -154,8 +154,23 @@ namespace GreyWardenPolicePurity
         private static void Postfix(MobileParty __instance, ref TextObject __result)
         {
             if (__instance?.IsActive != true ||
-                __instance.DefaultBehavior != AiBehavior.GoToPoint ||
-                MobileParty.IsFleeBehavior(__instance.ShortTermBehavior) ||
+                MobileParty.IsFleeBehavior(__instance.ShortTermBehavior))
+                return;
+
+            // 未宣战追捕现在走原版跟随，原版会把它读成"正在跟随 XXX"——对着一个
+            // 通缉犯像是在给他护航。目标躲进定居点时才退回定点，那一档保留原措辞。
+            if (__instance.DefaultBehavior == AiBehavior.EscortParty &&
+                GreyWardenPartyDesireBehavior.TryGetPursuitEscortTarget(
+                    __instance, out MobileParty? quarry) && quarry != null)
+            {
+                var pursuit = new TextObject(
+                    "{=gwp_location_duty_pursuing}Pursuing {TARGET_PARTY}.");
+                pursuit.SetTextVariable("TARGET_PARTY", quarry.Name);
+                __result = pursuit;
+                return;
+            }
+
+            if (__instance.DefaultBehavior != AiBehavior.GoToPoint ||
                 !GreyWardenPartyDesireBehavior.TryGetLocationApproachTarget(
                     __instance, out MobileParty? target) || target == null)
                 return;

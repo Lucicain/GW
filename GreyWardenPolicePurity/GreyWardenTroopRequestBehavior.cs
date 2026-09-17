@@ -232,7 +232,11 @@ namespace GreyWardenPolicePurity
                 "lord_talk_speak_diplomacy_2",
                 "gwp_warden_mediation_reply",
                 GwpText.Get("{=gwp_warden_mediation_ask}The fighting I did on your account has left me at war. Speak for me."),
-                () => IsOrdinaryGreyWardenLordConversation() && IsPlayerGreyWardenMember() &&
+                // 不要求玩家已经入会。`HasMediationRequests()` 本身已经把范围锁死在
+                // "替灰袍打出来的战争"上——登记入口只有三种：制止正在发生的案件、
+                // 看见灰袍在打过去帮忙、玩家自己承办的案子。这三种都是本模组自己
+                // 把玩家拉进去的，善后就不该再要求他先够 20 声望入会。
+                () => IsOrdinaryGreyWardenLordConversation() &&
                       PoliceAntiWarDeclaration.HasMediationRequests(),
                 ApplyWardenMediationFromConversation,
                 216);

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+	物品悬浮框里"组别"上面那一行握持方式，游戏是拿 WeaponDescription 的 id 当
+	variation 去查 str_weapon_usage 的。自定义的 WeaponDescription 不补这两条，
+	实机就会在悬浮框里打出：
+		ERROR: Text with id str_weapon_usage doesn't exist! Variation: GwpOneHandedSwordDualOffhand
+
+	文本直接复用原版的 {=PiHpR4QL}，各语言的"单手"译文自动跟着走，不需要我们
+	再翻译一份。
+-->
+<strings>
+	<string
+		id="str_weapon_usage.GwpOneHandedSwordDualMainhand"
+		text="{=PiHpR4QL}One Handed" />
+	<string
+		id="str_weapon_usage.GwpOneHandedSwordDualOffhand"
+		text="{=PiHpR4QL}One Handed" />
+</strings>

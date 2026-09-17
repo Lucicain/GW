@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
 	<!-- Formal release v1.4-r11. The module schema requires three numeric parts;
 	     this value is the mod revision and is not a Bannerlord version gate. -->
-	<Version value="v1.4.11"/>
+	<Version value="v1.4.12"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>
@@ -135,6 +135,15 @@
 		</XmlNode>
 		<XmlNode>
 			<XmlName id="GameText" path="comment_strings" />
+			<IncludedGameTypes>
+				<GameType value="Campaign"/>
+				<GameType value="CampaignStoryMode"/>
+				<GameType value="CustomGame"/>
+				<GameType value="EditorGame"/>
+			</IncludedGameTypes>
+		</XmlNode>
+		<XmlNode>
+			<XmlName id="GameText" path="gwp_game_strings" />
 			<IncludedGameTypes>
 				<GameType value="Campaign"/>
 				<GameType value="CampaignStoryMode"/>

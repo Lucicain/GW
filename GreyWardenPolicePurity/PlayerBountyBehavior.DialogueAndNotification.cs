@@ -203,6 +203,7 @@ namespace GreyWardenPolicePurity
             WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_COMMITTED",
                 "membership state committed on player choice");
             GiveCommanderEquipment();
+            GiveStarterRecruits();
             CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
@@ -390,6 +391,7 @@ namespace GreyWardenPolicePurity
             _recruitmentOffered = true;
             DestroyRecruitmentPatrol();
             GiveCommanderEquipment();
+            GiveStarterRecruits();
         }
 
         private void OnLeaveThroughLord()
@@ -414,6 +416,31 @@ namespace GreyWardenPolicePurity
         /// 将黑袍指挥官全套装备、黑曜指挥官盾和双刀加入玩家行李。
         /// 同时输出调试信息，方便确认每件装备是否成功找到。
         /// </summary>
+        /// <summary>
+        /// 入会时发下一小批灰袍新兵。
+        ///
+        /// 灰袍兵种之前唯一的获取途径是找练兵官下订单，刚入会的玩家
+        /// 手上一个都没有。这里只给最低级的 `gwnewrecruit`，往上升仍然走
+        /// 原有的练兵与升级管线，不绕过任何现有门槛。
+        ///
+        /// 重新入会同样发放：自愿退会次数有 `MaximumVoluntaryExits` 封顶，
+        /// 来回刷的上限就是那么几批最低级新兵，不值得为此再加一套计数。
+        /// </summary>
+        private static void GiveStarterRecruits()
+        {
+            var roster = MobileParty.MainParty?.MemberRoster;
+            if (roster == null) return;
+
+            CharacterObject? recruit = CharacterObject.Find(GwpIds.NewRecruitId);
+            if (recruit == null) return;
+
+            roster.AddToCounts(recruit, GwpTuning.Bounty.JoinRecruitCount);
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_join_recruits_granted}{VAR_1} Grey Warden recruits have joined your party.",
+                    "VAR_1", GwpTuning.Bounty.JoinRecruitCount),
+                Colors.Green));
+        }
+
         private static void GiveCommanderEquipment()
         {
             var roster = MobileParty.MainParty?.ItemRoster;

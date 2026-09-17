@@ -61,6 +61,12 @@ namespace GreyWardenPolicePurity
 
         private readonly Dictionary<string, LordAssistanceGroup> _assistanceGroups =
             new Dictionary<string, LordAssistanceGroup>(StringComparer.OrdinalIgnoreCase);
+        // 协力组连续多少轮被判定为战力富余。放人要求连续成立，见 TryShrinkAssistanceGroup。
+        private readonly Dictionary<string, int> _assistanceSurplusTicks =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        // 凑不出兵而退回台账的案子，在这里记一个时刻做冷却。
+        private readonly Dictionary<string, double> _caseStrengthCooldownHours =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, double> _assistanceAssignedHours =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _playerBountyEscortGroups =
@@ -246,6 +252,9 @@ namespace GreyWardenPolicePurity
                     float targetMovementSpeed =
                         GetTheoreticalBaseSpeed(movementTarget);
                     float targetStrength = targetThreat.Strength;
+                    // 目标战力是现场战斗群的和，会随旁边的人来去而变。编成必须
+                    // 跟着变，否则路人一走就变成五百打一百。
+                    TryShrinkAssistanceGroup(leader, group, targetStrength);
                     float committedStrength =
                         GetCommittedAssistanceStrength(leader, group);
                     if (group.DispersedForSpeed)
@@ -886,6 +895,24 @@ namespace GreyWardenPolicePurity
                 combatTarget.Position.IsOnLand)
                 return false;
 
+            // 守军和民兵守在墙里，不会跟着通缉犯满地图跑，所以不计入"办这个案子
+            // 要多少兵"。这一条**必须排在战斗分支之前**：原版
+            // MapEvent.CanPartyJoinBattle 对城墙边上的守军是放行的，一旦截击队在
+            // 城堡门口咬住目标，守军和民兵就会被算进目标战力。
+            //
+            // 实机代价（castle_S6）：犯人本队 132.37，守军 327.88，民兵 246.30，
+            // 合计 706.55，超过全家族能凑出来的 682.70，于是判定"整个灰袍都打不过"
+            // 撤案、讲和，那场已经打起来的仗随之失去交战依据，人就走了。
+            //
+            // 真的已经在场上参战的守军不会被漏掉：它们由
+            // GetNativeCombatStrengthSnapshot 的 mapEvent.PartiesOnSide 那一段直接
+            // 计入。这里排除的只是"还没参战、只是理论上可以参战"的那一类。
+            if (candidate.IsGarrison || candidate.IsMilitia ||
+                candidate.CurrentSettlement?.SiegeEvent != null ||
+                candidate.BesiegerCamp?.LeaderParty != null &&
+                candidate.BesiegerCamp.LeaderParty != candidate)
+                return false;
+
             if (mapEvent?.IsFinalized == false &&
                 targetSide != BattleSideEnum.None)
             {
@@ -901,11 +928,6 @@ namespace GreyWardenPolicePurity
             }
 
             if (candidate.MapEvent != null)
-                return false;
-            if (candidate.IsGarrison || candidate.IsMilitia ||
-                candidate.CurrentSettlement?.SiegeEvent != null ||
-                candidate.BesiegerCamp?.LeaderParty != null &&
-                candidate.BesiegerCamp.LeaderParty != candidate)
                 return false;
 
             IFaction? targetFaction = combatTarget.MapFaction;
@@ -1040,7 +1062,7 @@ namespace GreyWardenPolicePurity
                 return true;
 
             if (TryGetAssistanceDuty(candidate,
-                    out MobileParty? dutyTarget, out _, out _) &&
+                    out MobileParty? dutyTarget, out _, out _, out _) &&
                 dutyTarget?.IsActive == true)
             {
                 return ResolveAssistanceMovementTarget(dutyTarget) ==
@@ -1174,9 +1196,25 @@ namespace GreyWardenPolicePurity
                    string.Join(",", threat.CombatGroups);
         }
 
+        /// <summary>
+        /// 灰袍凑不出足够兵力办这宗案子。
+        ///
+        /// 这**不是**案件了结：人没被抓，部队也没被打完，只是我们这一轮不够强。
+        /// 所以案卷必须留在台账上（`ReleaseTasksForOffender` 撤承办、不销卷），
+        /// 等我方变强或目标身边的人散了再重新指派；以前这里直接 `EndTask`，
+        /// 连案卷一起销毁——实机抓到过一宗 `civilianCasualties=497` 的案子就是
+        /// 这么凭空消失的。
+        ///
+        /// 另外：目标正在打的时候不判失败。那一仗的结果才是答案，中途撤案会把
+        /// 已经咬上去的截击队和承办人一起拆散。
+        /// </summary>
         private void FailAssistanceCase(MobileParty leader, PoliceTask task,
             LordAssistanceGroup? group, float targetStrength, string reason)
         {
+            MobileParty? offenderParty = task.TargetCrime?.Offender;
+            if (offenderParty?.MapEvent != null || leader.MapEvent != null)
+                return;
+
             IFaction? warTarget = task.WarTarget ??
                 task.TargetCrime?.Offender?.ActualClan?.MapFaction;
             float committedStrength = group == null
@@ -1203,7 +1241,9 @@ namespace GreyWardenPolicePurity
             RestoreAi(leader);
             ClearTaskWarTracking(leader.StringId, true);
             GreyWardenPartyDesireBehavior.ClearIntent(leader);
-            CrimeState.EndTask(leader.StringId);
+            RetireTaskKeepingCaseIfOffenderAlive(leader.StringId, task,
+                "assistance_strength_insufficient");
+            MarkCaseStrengthCooldown(task.TargetCrimeId);
             CrimeState.RefreshAccepting();
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (policeClan != null && warTarget != null &&
@@ -1763,6 +1803,33 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        /// <summary>
+        /// 全家族此刻最多能凑出来的战力：承办人自己，加上所有还能被拉进协力组的
+        /// 灰袍领主。用于接案门槛——超过这个数的案子接了也办不成，只会被反复接起
+        /// 又反复因凑不出兵退回台账。
+        /// </summary>
+        internal static float GetMaximumMusterableStrength(MobileParty? leader)
+        {
+            if (_instance == null || leader?.IsActive != true) return 0f;
+            return GetNativePartyStrength(leader) +
+                   _instance.GetAvailableAssistanceCandidates(leader)
+                       .Sum(GetNativePartyStrength);
+        }
+
+        /// <summary>
+        /// 这宗案子的目标本身有多强。**刻意不含身边路过的人**：那一档是临场变量，
+        /// 由协力编成随时增减去应对；接案这一步问的是"这个人是不是根本不在我们
+        /// 量级上"。
+        /// </summary>
+        internal static float GetCaseIntakeTargetStrength(CrimeRecord? crime)
+        {
+            MobileParty? offender = crime?.Offender;
+            return offender?.IsActive == true
+                ? GetNativeCombatGroupStrength(
+                    ResolveAssistanceMovementTarget(offender))
+                : 0f;
+        }
+
         private bool IsAvailableAssistanceCandidate(MobileParty? candidate, MobileParty leader)
         {
             if (!IsGreyWardenLordParty(candidate) || candidate == leader ||
@@ -1793,7 +1860,7 @@ namespace GreyWardenPolicePurity
                 IFaction? oldWarTarget = oldTask.WarTarget;
                 RestoreAi(helper);
                 ClearTaskWarTracking(helper.StringId, true);
-                CrimeState.EndTask(helper.StringId);
+                CrimeState.EndTask(helper.StringId, "helper_released_to_assistance");
                 if (oldCrime?.Offender?.IsActive == true)
                     CrimeState.ReopenCase(oldCrime);
 
@@ -1912,7 +1979,7 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.ClearIntent(owner);
             }
             ClearTaskWarTracking(ownerId, true);
-            CrimeState.EndTask(ownerId);
+            CrimeState.EndTask(ownerId, reason);
             CrimeState.RefreshAccepting();
             RestorePeaceAfterCaseEnd(task);
             if (owner?.IsActive == true)
@@ -1949,6 +2016,133 @@ namespace GreyWardenPolicePurity
             catch { }
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
+        }
+
+        /// <summary>
+        /// 按目标当前的现场战力回收多余协办人。
+        ///
+        /// `GetNativeCombatStrengthSnapshot` 算的是"真打起来现场会来多少人"：以目标为
+        /// 圆心，内圈 `joiningRadius` 全额计入、外圈到 `threatRadius` 按距离衰减。所以一个
+        /// 路过的领主就能把目标战力抬高一倍，协力组因此成立。以前这个编成一旦定下就
+        /// 只增不减（"never shrinks when the target weakens"），那个人走了之后就会出现
+        /// 五百打一百、还把好几名灰袍从别的案子上拖住的局面。
+        ///
+        /// 回滞是刻意的：入组看 `committed &lt;= target`，放人要求放完之后仍然
+        /// `committed &gt; target * AssistanceReleaseMargin`。两个门槛之间留一档，
+        /// 路人来回走才不会让协力组跟着拆装。每轮最多放一个，且有最短在编时长。
+        /// </summary>
+        private void TryShrinkAssistanceGroup(MobileParty leader,
+            LordAssistanceGroup group, float targetStrength)
+        {
+            if (group.MemberPartyIds.Count == 0 || leader?.IsActive != true ||
+                leader.MapEvent != null || targetStrength <= 0f)
+                return;
+
+            float committed = GetCommittedAssistanceStrength(leader, group);
+            float keepAbove =
+                targetStrength * GwpTuning.Enforcement.AssistanceReleaseMargin;
+            if (committed <= keepAbove)
+            {
+                _assistanceSurplusTicks.Remove(leader.StringId);
+                return;
+            }
+
+            // 目标战力是现场战斗群之和，会随身边的人来去而抖。只看单轮就放人，会
+            // 变成一个路过的领主走两步、协力组就拉一个放一个。要求富余连续成立
+            // 若干轮才动手，抖动自然被滤掉。
+            _assistanceSurplusTicks.TryGetValue(leader.StringId, out int surplusTicks);
+            surplusTicks++;
+            _assistanceSurplusTicks[leader.StringId] = surplusTicks;
+            if (surplusTicks < GwpTuning.Enforcement.AssistanceSurplusConfirmTicks)
+                return;
+
+            double now = CampaignTime.Now.ToHours;
+            MobileParty? offender = FindActiveParty(group.TargetPartyId);
+            MobileParty? movementTarget = offender == null
+                ? null
+                : ResolveAssistanceMovementTarget(offender);
+
+            MobileParty? release = null;
+            float releaseStrength = 0f;
+            float releaseDistance = float.MinValue;
+
+            foreach (string memberId in group.MemberPartyIds
+                         .Distinct(StringComparer.OrdinalIgnoreCase).ToList())
+            {
+                MobileParty? member = FindActiveParty(memberId);
+                // 正在打的人不能抽走，抽走等于把他从战斗里拔出来。
+                if (!IsGreyWardenLordParty(member) || member!.MapEvent != null)
+                    continue;
+                if (_assistanceAssignedHours.TryGetValue(memberId, out double joined) &&
+                    now - joined < GwpTuning.Enforcement.AssistanceMinimumMemberHours)
+                    continue;
+
+                float strength = GetNativePartyStrength(member);
+                if (committed - strength <= keepAbove) continue;
+
+                // 放最远的那个：他对接下来这一仗贡献最小，被硬拖过半张地图的
+                // 观感也最差。
+                float distance = movementTarget == null
+                    ? 0f
+                    : member.GetPosition2D.Distance(movementTarget.GetPosition2D);
+                if (release != null && distance <= releaseDistance) continue;
+                release = member;
+                releaseStrength = strength;
+                releaseDistance = distance;
+            }
+
+            if (release == null) return;
+
+            // 放完一个就把计数清零：下一个还要再等满一轮确认，不会一口气拆空。
+            _assistanceSurplusTicks.Remove(leader.StringId);
+
+            Army? army = leader.Army;
+            if (army != null && release.Army == army)
+                release.Army = null;
+            RemoveAssistanceMember(group, release.StringId);
+            GreyWardenPartyDesireBehavior.ClearIntent(release);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(release);
+            GwpAiDiagnostics.WriteAction(release, "ASSISTANCE_MEMBER_RELEASED_SURPLUS",
+                "leader=" + leader.StringId +
+                "; target=" + (movementTarget?.StringId ?? group.TargetPartyId) +
+                "; targetStrength=" + targetStrength.ToString(
+                    "0.00", CultureInfo.InvariantCulture) +
+                "; committedBefore=" + committed.ToString(
+                    "0.00", CultureInfo.InvariantCulture) +
+                "; releasedStrength=" + releaseStrength.ToString(
+                    "0.00", CultureInfo.InvariantCulture) +
+                "; committedAfter=" +
+                    GetCommittedAssistanceStrength(leader, group).ToString(
+                        "0.00", CultureInfo.InvariantCulture) +
+                "; keepAbove=" + keepAbove.ToString(
+                    "0.00", CultureInfo.InvariantCulture) +
+                "; distanceToTarget=" + releaseDistance.ToString(
+                    "0.00", CultureInfo.InvariantCulture) +
+                "; remainingMembers=" + group.MemberPartyIds.Count +
+                "; surplusTicks=" + GwpTuning.Enforcement.AssistanceSurplusConfirmTicks);
+            CrimeState.RefreshAccepting();
+        }
+
+        /// <summary>
+        /// 凑不出兵的案子退回台账之后，下一小时很可能又被指派给同样凑不出兵的人。
+        /// 冷却期让它先在台账上躺一阵，等我方变强、或目标身边那几个人散了再说。
+        /// 只活在本次运行内：读档后最多多试一次，无害。
+        /// </summary>
+        private void MarkCaseStrengthCooldown(string? crimeId)
+        {
+            if (string.IsNullOrWhiteSpace(crimeId)) return;
+            _caseStrengthCooldownHours[crimeId!] = CampaignTime.Now.ToHours;
+        }
+
+        internal static bool IsCaseUnderStrengthCooldown(CrimeRecord? crime)
+        {
+            if (_instance == null || crime == null ||
+                string.IsNullOrWhiteSpace(crime.CrimeId))
+                return false;
+            return _instance._caseStrengthCooldownHours.TryGetValue(
+                       crime.CrimeId, out double failedAt) &&
+                   CampaignTime.Now.ToHours - failedAt <
+                       GwpTuning.Enforcement.AssistanceFailureCooldownHours;
         }
 
         private void RemoveAssistanceMember(LordAssistanceGroup group, string memberId)
@@ -1992,6 +2186,7 @@ namespace GreyWardenPolicePurity
             if (leader?.IsActive == true)
                 RestoreAi(leader);
             _playerBountyEscortGroups.Remove(leaderId);
+            _assistanceSurplusTicks.Remove(leaderId);
             _assistanceGroups.Remove(leaderId);
             Army? army = leader?.Army;
             if (army == null || army.LeaderParty != leader)
@@ -2077,11 +2272,12 @@ namespace GreyWardenPolicePurity
 
         internal static bool TryGetAssistanceDuty(MobileParty? party,
             out MobileParty? target, out AiBehavior behavior,
-            out bool playerBountyEscort)
+            out bool playerBountyEscort, out bool offenderPursuit)
         {
             target = null;
             behavior = AiBehavior.None;
             playerBountyEscort = false;
+            offenderPursuit = false;
             if (_instance == null || party?.IsActive != true)
                 return false;
 
@@ -2129,8 +2325,32 @@ namespace GreyWardenPolicePurity
             // short-term implementation first seeks the farthest valid point in
             // the native outer ring, while initiative remains free to engage or
             // flee after diplomacy changes.
-            behavior = AiBehavior.GoAroundParty;
+            //
+            // 那个环实测就是 `EncounterJoiningRadius(3.0) * 1.15` 的平方半径，
+            // 即 5.95 —— 走到环上这支队伍就站住了，够不着 WarDistance 的宣战判定。
+            // 所以未宣战、且本队正独自行动（尚未组成军团，或已因速度分散脱离军团）
+            // 时改用原版跟随：它直接指向目标真实位置，同样不含交战语义。已经以军团
+            // 整体行军的组长仍走 GoAroundParty（宣战判定另有配套的环距离），宣战后
+            // 也一律换回 GoAroundParty，接战交还原版 initiative。
+            offenderPursuit = true;
+            behavior = IsUndeclaredSoloAssistancePursuit(party, group, target)
+                ? AiBehavior.EscortParty
+                : AiBehavior.GoAroundParty;
             return target != null && target != party;
+        }
+
+        /// <summary>
+        /// 本队此刻正独自追一个尚未宣战的目标：没有军团阵型要维持，目标也没有
+        /// 躲进定居点。这是唯一允许用原版跟随代替 <see cref="AiBehavior.GoAroundParty"/>
+        /// 的局面——跟随会一路跟进聚落，承办人会在城里满足宣战距离并可能当场被俘，
+        /// 所以目标进城后必须退回既有的环外围堵与驱逐流程。
+        /// </summary>
+        private static bool IsUndeclaredSoloAssistancePursuit(MobileParty party,
+            LordAssistanceGroup group, MobileParty? movementTarget)
+        {
+            return party.Army == null &&
+                   CrimeState.GetTask(group.LeaderPartyId)?.WarDeclared != true &&
+                   !GwpCommon.IsShelteredOffender(movementTarget);
         }
 
         private float GetAssistanceContactDistance(MobileParty leader,

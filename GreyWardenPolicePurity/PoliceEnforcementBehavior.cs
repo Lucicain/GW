@@ -541,7 +541,7 @@ namespace GreyWardenPolicePurity
                 }
                 else
                 {
-                    CrimeState.EndTask(escortTask.PolicePartyId);
+                    CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_finished");
                     CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_policeenforcementbehavior_005}Insufficient fine"), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get("{=gwp_policeenforcementbehavior_006}Escort fine unpaid"));
                 }
 
@@ -561,7 +561,7 @@ namespace GreyWardenPolicePurity
                 }
 
                 // 步骤8：安全调用 EndTask（EndPlayerHunt 已移除任务，此处幂等）
-                CrimeState.EndTask(escortTask.PolicePartyId);
+                CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_closed");
             }
             catch { }
         }
@@ -641,8 +641,11 @@ namespace GreyWardenPolicePurity
                 if (preferred == GwpCrimeCategory.Unknown)
                     continue;
 
+                float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
-                    candidate => candidate.CrimeCategory == preferred);
+                    candidate => candidate.CrimeCategory == preferred &&
+                        !IsCaseUnderStrengthCooldown(candidate) &&
+                        IsCaseWithinReach(candidate, musterable));
                 if (crime == null) continue;
                 BeginTask(pp, crime);
                 available.Remove(pp);
@@ -653,7 +656,10 @@ namespace GreyWardenPolicePurity
                 if (!CrimeState.IsDispatchReady)
                     break;
 
-                CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D);
+                float musterable = GetMaximumMusterableStrength(pp);
+                CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
+                    candidate => !IsCaseUnderStrengthCooldown(candidate) &&
+                        IsCaseWithinReach(candidate, musterable));
                 if (crime != null)
                     BeginTask(pp, crime);
             }
@@ -741,6 +747,28 @@ namespace GreyWardenPolicePurity
             return PoliceResourceManager.IsReady(pp);
         }
 
+        /// <summary>
+        /// 这宗案子在不在全家族的量级之内。
+        ///
+        /// **这道门槛只管接案，不管立案。** 罪案照常进台账（`CrimePool` 的记录
+        /// 入口一个字没动），只是警察从池子里挑活干的时候，除了就近，还要
+        /// 先算一下叫上协力之后办不办得成。目标躲在一支军团里、力量远超全族
+        /// 的，接了也是白接。
+        ///
+        /// 目标在军团里时算的就是整个军团：`GetCaseIntakeTargetStrength` 先经
+        /// `ResolveAssistanceMovementTarget` 取到军团长，`GetNativeCombatGroupStrength`
+        /// 对军团长返回 `army.EstimatedStrength`。
+        /// </summary>
+        private static bool IsCaseWithinReach(CrimeRecord? crime, float musterableStrength)
+        {
+            if (crime == null) return false;
+            if (musterableStrength <= 0f) return true;
+            float targetStrength = GetCaseIntakeTargetStrength(crime);
+            return targetStrength <= 0f ||
+                   targetStrength <=
+                       musterableStrength * GwpTuning.Enforcement.CaseIntakeStrengthMargin;
+        }
+
         private static GwpCrimeCategory GetPreferredCrimeCategory(MobileParty party)
         {
             if (!GreyWardenFamilyBehavior.TryGetDuty(party?.LeaderHero,
@@ -773,13 +801,36 @@ namespace GreyWardenPolicePurity
                     FactionManager.IsAtWarAgainstFaction(policeClan, currentTarget))
                     continue;
 
+                MobileParty? police = MobileParty.All.FirstOrDefault(candidate =>
+                    candidate.IsActive && string.Equals(candidate.StringId,
+                        task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
+
+                // 案件跟着人走，不跟着势力走。通缉犯签个雇佣合同或并进别人的军团，
+                // MapFaction 就换了，旧的战争目标随之对不上号——以前到这里会直接
+                // 撤销战争，原版 initiative 当场失去 IsEnemy 资格，仗打一半散场。
+                // 现在改为对他**当前**的势力重新宣战，执法不因他换东家而作废。
+                if (offender?.IsActive == true && !offender.IsMainParty &&
+                    currentTarget != null && task.TargetCrime?.HasOpenCase == true)
+                {
+                    IFaction? previousTarget = task.WarTarget;
+                    DeclareWar(task, offender);
+                    if (task.WarDeclared && FactionManager.IsAtWarAgainstFaction(
+                            policeClan, task.WarTarget ?? currentTarget))
+                    {
+                        if (police != null)
+                            GwpAiDiagnostics.WriteAction(police,
+                                "CASE_WAR_RETARGETED_TO_CURRENT_FACTION",
+                                "offender=" + offender.StringId +
+                                "; previousTarget=" + (previousTarget?.StringId ?? "-") +
+                                "; currentTarget=" + currentTarget.StringId);
+                        continue;
+                    }
+                }
+
                 task.WarDeclared = false;
                 task.WarTarget = null;
                 ClearTaskWarTracking(task.PolicePartyId, true);
 
-                MobileParty? police = MobileParty.All.FirstOrDefault(candidate =>
-                    candidate.IsActive && string.Equals(candidate.StringId,
-                        task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
                 if (police != null)
                 {
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
@@ -858,7 +909,7 @@ namespace GreyWardenPolicePurity
                     if (!task.IsTargetValid())
                     {
                         RestoreAi(pp);
-                        CrimeState.EndTask(kvp.Key);
+                        CrimeState.EndTask(kvp.Key, "dispatch_target_invalid");
                         RestorePeaceAfterCaseEnd(task);
                         continue;
                     }
@@ -871,7 +922,7 @@ namespace GreyWardenPolicePurity
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    CrimeState.EndTask(kvp.Key, "target_invalid");
                     RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
@@ -881,7 +932,8 @@ namespace GreyWardenPolicePurity
                 if (criminal == null)
                 {
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    RetireTaskKeepingCaseIfOffenderAlive(kvp.Key, task,
+                        "offender_party_missing");
                     CrimeState.RefreshAccepting();
                     RestorePeaceAfterCaseEnd(task);
                     continue;
@@ -898,7 +950,10 @@ namespace GreyWardenPolicePurity
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    // 这条路径是"他的部队没了，而且不是我们在战斗里打没的"——
+                    // 被别的势力打掉、被俘、逃亡都会走到这里。案子必须留在册上。
+                    RetireTaskKeepingCaseIfOffenderAlive(kvp.Key, task,
+                        "offender_party_inactive");
                     RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
@@ -918,8 +973,16 @@ namespace GreyWardenPolicePurity
                 float warDist = criminal.IsMainParty
                     ? GwpTuning.Enforcement.PlayerWarDistance
                     : GwpTuning.Enforcement.WarDistance;
+                // 宣战距离必须跟着本队**实际在跑的那个移动行为**走，判据与
+                // TryGetAssistanceDuty 同一个，不能各写一份。还在用原版
+                // GoAroundParty 的（军团整体行军，或目标已躲进定居点而退回环外
+                // 围堵）会停在平方半环上，判定放不到环外就永远不成立；已经拆开
+                // 单独跟随的队伍直接贴到目标身上，沿用 WarDistance，避免隔着
+                // 大半个环就对一个王国开战。
                 if (!criminal.IsMainParty &&
-                    _assistanceGroups.ContainsKey(pp.StringId))
+                    _assistanceGroups.TryGetValue(pp.StringId,
+                        out LordAssistanceGroup? ringGroup) &&
+                    !IsUndeclaredSoloAssistancePursuit(pp, ringGroup, movementTarget))
                 {
                     warDist = Math.Max(
                         warDist, GetNativeMaximumGoAroundDistance());
@@ -1263,7 +1326,7 @@ namespace GreyWardenPolicePurity
                     MobileParty? offender = task.TargetCrime?.Offender;
                     if (offender == null || !InEvent(offender, mapEvent)) continue;
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    CrimeState.EndTask(kvp.Key, "owner_party_gone_after_battle");
                     CrimeState.RefreshAccepting();
                     RestorePeaceAfterCaseEnd(task);
                     continue;
@@ -1295,7 +1358,7 @@ namespace GreyWardenPolicePurity
                     // ★关键修复★：不能用 CrimePool.IsPlayerCrime() 判断——
                     // 玩家被击败后 MainParty.IsActive == false，
                     // IsPlayerCrime 内部调用 IsOffenderValid() → Offender.IsActive → false，
-                    // 导致误判为非玩家犯罪，走错路径（StartResupply → 进城补给 → 崩溃）。
+                    // 导致误判为非玩家犯罪，走错补给分支并崩溃。
                     // 改用 Offender.IsMainParty 直接判断，不依赖 IsActive。
                     if (playerOffender)
                     {
@@ -1317,9 +1380,15 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
+                    // 部队被打光与人被抓一样算案件了结，所以两条路都要上震慑。
+                    // 人被灰袍拿下时 OnHeroPrisonerTaken 已经登记过，这里只补
+                    // "打光了但人跑掉"那一种，避免同一次惩戒记两遍。
+                    RegisterDefeatDeterrenceIfNotCaptured(task, mapEvent);
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    // 这就是"打赢即结案"的落点。WasTaskOffenderActuallyDefeatedInEvent
+                    // 只看对方还有没有可战人员，不看有没有把人拿下。
+                    CrimeState.EndTask(kvp.Key, "offender_defeated_in_battle");
                     RestorePeaceAfterCaseEnd(task);
                     GwpPlayerRequestDeferral.NotifyDutyCompleted(pp,
                         "criminal_case");
@@ -1329,7 +1398,7 @@ namespace GreyWardenPolicePurity
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key);
+                    CrimeState.EndTask(kvp.Key, "case_owner_defeated_in_battle");
                     RestorePeaceAfterCaseEnd(task);
                     ReleaseAssistanceGroup(pp.StringId, "case_leader_defeated");
                 }
@@ -1364,6 +1433,57 @@ namespace GreyWardenPolicePurity
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 他的部队没了，但人还活着——被别的势力打掉、被别人俘虏、或者独自逃亡。
+        /// 这不是灰袍办成的案子，所以**案卷不销**：只把承办任务撤下来，让这支灰袍
+        /// 去接别的活。<c>CrimeRecord.Offender</c> 是按英雄解析的（`hero.PartyBelongedTo`
+        /// 优先），所以他哪天重新拉起队伍，这份案卷自己就会重新变成可追捕状态，
+        /// 灰袍照样上门。只有人真的死了才销案，那由 <c>CrimePool.Clean</c> 负责。
+        /// </summary>
+        private void RetireTaskKeepingCaseIfOffenderAlive(string policePartyId,
+            PoliceTask task, string reason)
+        {
+            Hero? offenderHero = task.TargetCrime?.OffenderHero;
+            if (offenderHero?.IsAlive != true ||
+                string.IsNullOrWhiteSpace(offenderHero.StringId))
+            {
+                CrimeState.EndTask(policePartyId, reason + "_offender_gone");
+                return;
+            }
+
+            ReleaseAssistanceGroup(policePartyId, reason);
+            CrimeState.ReleaseTasksForOffender(offenderHero.StringId);
+            GwpAiDiagnostics.WriteFieldArrest("CASE_KEPT_OPEN_OWNER_RELEASED",
+                "policeParty=" + policePartyId +
+                "; crime=" + (task.TargetCrimeId ?? "-") +
+                "; offender=" + offenderHero.StringId +
+                "; offenderPrisoner=" + offenderHero.IsPrisoner +
+                "; offenderFugitive=" + offenderHero.IsFugitive +
+                "; reason=" + reason);
+            RestorePeaceAfterCaseEnd(task);
+        }
+
+        /// <summary>
+        /// 打光了对方部队但人没落到灰袍手里时补一次震慑。人被灰袍拿下的那一种由
+        /// <c>PoliceAIDeterrenceBehavior.OnHeroPrisonerTaken</c> 负责，这里跳过，
+        /// 免得同一次惩戒记两遍。
+        /// </summary>
+        private static void RegisterDefeatDeterrenceIfNotCaptured(
+            PoliceTask task, MapEvent? mapEvent)
+        {
+            CrimeRecord? crime = task?.TargetCrime;
+            Hero? offenderHero = crime?.OffenderHero;
+            if (offenderHero == null || offenderHero == Hero.MainHero ||
+                !offenderHero.IsAlive || offenderHero.IsPrisoner)
+                return;
+
+            Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                ?.RegisterWardenBrokeOffenderParty(mapEvent, offenderHero,
+                    crime!.CrimeCategory == GwpCrimeCategory.CaravanAttack
+                        ? GwpCrimeCategory.CaravanAttack
+                        : GwpCrimeCategory.VillageViolence);
         }
 
         private static bool WasTaskOffenderActuallyDefeatedInEvent(

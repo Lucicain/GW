@@ -216,6 +216,18 @@ namespace GreyWardenPolicePurity
             GwpCrimeCategory category) =>
             RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
 
+        /// <summary>
+        /// 灰袍把罪犯部队打光，但人没落到灰袍手里（逃亡，或被别人收走）。按裁定，
+        /// 部队被打光与人被抓一样算案件了结，所以震慑照上；只是没真把人拿下，
+        /// 因此不计入"被捕次数"。登记路径与玩家那条完全相同：本人震慑、同族转述、
+        /// 同场目击——下面那个私有方法名字里带 Player，实际内容与承办方无关。
+        /// </summary>
+        internal void RegisterWardenBrokeOffenderParty(
+            MapEvent? mapEvent,
+            Hero? offender,
+            GwpCrimeCategory category) =>
+            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: false);
+
         /// <summary>同一个人在这么多小时内的重复登记，视为同一次惩戒。</summary>
         private const double SamePunishmentHours = 1d;
 

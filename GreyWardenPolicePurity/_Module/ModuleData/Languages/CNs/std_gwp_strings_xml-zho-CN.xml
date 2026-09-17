@@ -145,7 +145,6 @@
   <string id="gwp_gwpdata_001" text="你已被灰袍守卫列入通缉名单！" />
   <string id="gwp_gwpdata_002" text="通缉已解除，灰袍守卫不再追捕你" />
   <string id="gwp_gwpdata_003" text="灰袍守卫已记录你的罪行：{VAR_1}（{VAR_2}）| {VAR_3}" />
-  <string id="gwp_gwpdata_004" text="灰袍守卫注意到你的善行：{VAR_1}（{VAR_2}）| {VAR_3}" />
   <string id="gwp_gwpdata_005" text="声望：{VAR_1}" />
   <string id="gwp_gwpencyclopediaclanpagevm_001" text="关闭" />
   <string id="gwp_gwpencyclopediaclanpagevm_002" text="宣战详情" />
@@ -788,6 +787,11 @@
   <string id="gwp_gwpcasearchivescreen_074" text="开战依据" />
   <string id="gwp_gwpcasearchivescreen_075" text="依据全部消失后即恢复和平。" />
   <string id="gwp_location_duty_travelling" text="正在前往{TARGET_PARTY}最后出现的位置。" />
+  <string id="gwp_location_duty_pursuing" text="正在追捕{TARGET_PARTY}。" />
+  <string id="gwp_mapbar_reputation_title" text="灰袍声望" />
+  <string id="gwp_mapbar_reputation_hint" text="灰袍守卫对你的评价。犯罪扣分，行善加分。" />
+  <string id="gwp_mapbar_reputation_wanted" text="你已被通缉。灰袍领主会对你立案。" />
+  <string id="gwp_join_recruits_granted" text="{VAR_1} 名灰袍新兵加入了你的队伍。" />
   <string id="gwp_gwpencyclopediaheropagevm_020" text="村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
   <string id="gwp_gwpencyclopediaheropagevm_021" text="商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
   <string id="gwp_duty_training" text="灰袍练兵者" />

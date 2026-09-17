@@ -95,7 +95,8 @@ namespace GreyWardenPolicePurity
             public bool HasTask(string policePartyId) => CrimePool.HasTask(policePartyId);
             public PoliceTask? GetTask(string policePartyId) => CrimePool.GetTask(policePartyId);
             public void BeginTask(string policePartyId, CrimeRecord crime) => CrimePool.BeginTask(policePartyId, crime);
-            public void EndTask(string policePartyId) => CrimePool.EndTask(policePartyId);
+            public void EndTask(string policePartyId, string reason = "unspecified") =>
+                CrimePool.EndTask(policePartyId, reason);
             public bool RetargetTask(string policePartyId, CrimeRecord? newCrime) =>
                 CrimePool.RetargetTask(policePartyId, newCrime);
             public IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId) =>
@@ -141,8 +142,6 @@ namespace GreyWardenPolicePurity
                 PlayerBehaviorPool.AddCrime(type, location, detail, victimFaction);
             public void AddCrimeRecord(string type, TaleWorlds.Library.Vec2 location, string detail, IFaction? victimFaction = null) =>
                 PlayerBehaviorPool.AddCrimeRecord(type, location, detail, victimFaction);
-            public void AddGoodDeed(string type, TaleWorlds.Library.Vec2 location, string detail) =>
-                PlayerBehaviorPool.AddGoodDeed(type, location, detail);
             public string GetReputationDisplay() => PlayerBehaviorPool.GetReputationDisplay();
             public void SetAtonementTaskActive(bool active) => PlayerBehaviorPool.SetAtonementTaskActive(active);
             public void AddVictimFactionOnLoad(IFaction faction) => PlayerBehaviorPool.AddVictimFactionOnLoad(faction);
