@@ -66,6 +66,13 @@ namespace GreyWardenPolicePurity
         internal int LastFiringOrder = -1;
         internal bool RangedRequested;
         internal int RangedRequestedTicks;
+        internal bool RangedWieldPending;
+        internal EquipmentIndex LastMain = EquipmentIndex.None;
+        internal EquipmentIndex LastOff = EquipmentIndex.None;
+        internal int StableHandTicks;
+#if GWP_DIAGNOSTICS
+        internal bool ReportedInvalidAction;
+#endif
 
 
         internal Step CurrentStep;
@@ -93,6 +100,9 @@ namespace GreyWardenPolicePurity
     {
         private static readonly ConditionalWeakTable<Agent, GwpDualBladeAgentState> Registered =
             new ConditionalWeakTable<Agent, GwpDualBladeAgentState>();
+
+        internal static GwpDualBladeAgentState? Find(Agent agent) =>
+            Registered.TryGetValue(agent, out GwpDualBladeAgentState? state) ? state : null;
 
         internal static GwpDualBladeAgentState? TryRegister(Agent? agent)
         {
@@ -219,18 +229,12 @@ namespace GreyWardenPolicePurity
     /// out. That is recorded in the maintenance history as a lesson about the
     /// approach, not about the tuning.
     ///
-    /// Native soldiers obey their orders. An archer carrying the pair is a
-    /// native archer, so it obeys them too - as long as nothing intercepts what
-    /// it is trying to do. Nothing here does any more. The only intervention
-    /// left is the one the feature actually requires: while the agent is in a
-    /// melee exchange and holding the main blade alone, the off-hand blade is
-    /// drawn to go with it.
-    ///
-    /// The evidence that this is safe is that native never asks for the off
-    /// hand mid-fight. Every one of the 2809 lone off-hand sheaths captured in
-    /// the live logs arrived with Walk or Run set and no attack in progress -
-    /// an archer on the move, heading back to its bow. Not one came from an
-    /// agent trading blows.
+    /// Native still chooses between the bow and blades. The cavalry-contact
+    /// trace exposed one exception to immediate switching: Wield2+Sheath1
+    /// during WeaponBash removes the off hand before native contact uses it.
+    /// GwpDualBladeActionGate keeps the current hands until that action ends,
+    /// and prevents a new kick request while a weapon switch is pending.
+    /// This behavior also draws the missing off-hand blade in melee stance.
     ///
     /// A mission behaviour and an agent component rather than Harmony patches:
     /// character previews break whenever a per-call patch is installed on Agent
@@ -312,9 +316,15 @@ namespace GreyWardenPolicePurity
             Agent agent = state.Agent;
             EquipmentIndex main = agent.GetPrimaryWieldedItemIndex();
             EquipmentIndex off = agent.GetOffhandWieldedItemIndex();
+            // Let a completed draw survive a tick before requesting a bash.
+            state.StableHandTicks = main == state.LastMain && off == state.LastOff
+                ? System.Math.Min(2, state.StableHandTicks + 1) : 0;
+            state.LastMain = main;
+            state.LastOff = off;
 
             TrackMelee(state, agent);
-            TrackFiringOrder(state, agent, main);
+            bool canChangeWeapons = GwpDualBladeActionGate.CanChangeWeapons(agent);
+            TrackFiringOrder(state, agent, main, canChangeWeapons);
 
             // An archer deploys holding its bow, not the pair. Native's spawn
             // wield takes the first two slots and so hands it the blades, which
@@ -339,9 +349,11 @@ namespace GreyWardenPolicePurity
                 }
                 else if (main == EquipmentIndex.Weapon1
                     && off == EquipmentIndex.WeaponItemBeginSlot
+                    && canChangeWeapons
                     && state.OpeningWieldWaitTicks % OpeningWieldRetryTicks == 0)
                 {
                     state.OpeningWieldAttempts++;
+                    state.StableHandTicks = 0;
                     agent.TryToWieldWeaponInSlot(
                         state.RangedSlot,
                         Agent.WeaponWieldActionType.InstantAfterPickUp,
@@ -405,8 +417,8 @@ namespace GreyWardenPolicePurity
             // in another. Whether the agent should be in melee at all, when it
             // should raise its bow, and whether it obeys the player are not
             // questions this behaviour has any business answering; native
-            // answers them, by wielding what it wants, and a wield is never
-            // touched here.
+            // answers them. Only an active kick/bash temporarily reserves the
+            // weapons it needs for contact.
             //
             // Keeping the pair together once it is up is prevention, not
             // repair: the component drops the lone sheath that would break it.
@@ -420,7 +432,7 @@ namespace GreyWardenPolicePurity
             }
 
             // Never take a weapon out of an agent's hand mid-swing.
-            if (!IsIdle(agent))
+            if (!canChangeWeapons || !IsIdle(agent))
                 return;
 
             switch (state.CurrentStep)
@@ -434,6 +446,7 @@ namespace GreyWardenPolicePurity
 
                     state.Sequences++;
                     state.StepFrames = 0;
+                    state.StableHandTicks = 0;
 
                     // The off hand only takes once the main hand is free.
                     if (main != EquipmentIndex.None)
@@ -454,6 +467,7 @@ namespace GreyWardenPolicePurity
                     }
 
                     state.StepFrames = 0;
+                    state.StableHandTicks = 0;
                     agent.TryToWieldWeaponInSlot(
                         EquipmentIndex.WeaponItemBeginSlot,
                         Agent.WeaponWieldActionType.Instant,
@@ -470,6 +484,7 @@ namespace GreyWardenPolicePurity
                     }
 
                     state.StepFrames = 0;
+                    state.StableHandTicks = 0;
                     agent.TryToWieldWeaponInSlot(
                         EquipmentIndex.Weapon1,
                         Agent.WeaponWieldActionType.Instant,
@@ -494,6 +509,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void Abandon(GwpDualBladeAgentState state)
         {
+            state.StableHandTicks = 0;
             state.Agent.TryToWieldWeaponInSlot(
                 EquipmentIndex.Weapon1,
                 Agent.WeaponWieldActionType.Instant,
@@ -526,7 +542,8 @@ namespace GreyWardenPolicePurity
         private static void TrackFiringOrder(
             GwpDualBladeAgentState state,
             Agent agent,
-            EquipmentIndex main)
+            EquipmentIndex main,
+            bool canChangeWeapons)
         {
             int firing;
             try
@@ -548,6 +565,7 @@ namespace GreyWardenPolicePurity
             {
                 state.RangedRequested = true;
                 state.RangedRequestedTicks = 0;
+                state.RangedWieldPending = true;
                 // Inside a formation native does this in two steps - lower the
                 // off hand on one decision, raise the bow on a later one - and
                 // both are visible, which is the double weapon-change the
@@ -555,19 +573,12 @@ namespace GreyWardenPolicePurity
                 // the agent is loose and asks for the wield and the sheath in
                 // the same frame, so it happens in one movement.
                 //
-                // The order is explicit and unambiguous, so the bow goes into
-                // the agent's hand at once, by the same call that hands every
+                // Once an active kick/bash ends, the bow goes into
+                // the agent's hand by the same call that hands every
                 // archer its bow on deployment - and that call makes exactly
                 // this transition, from the pair to the bow. Native keeps the
                 // decision: if it wants melee after all, its own wield says so
                 // a moment later and nothing here stands in the way.
-                if (main == EquipmentIndex.Weapon1 && HasAmmo(state))
-                {
-                    agent.TryToWieldWeaponInSlot(
-                        state.RangedSlot,
-                        Agent.WeaponWieldActionType.WithAnimation,
-                        isWieldedOnSpawn: false);
-                }
             }
 
             state.LastFiringOrder = firing;
@@ -585,6 +596,18 @@ namespace GreyWardenPolicePurity
                 || ++state.RangedRequestedTicks >= MaxRangedRequestTicks)
             {
                 state.RangedRequested = false;
+                state.RangedWieldPending = false;
+                return;
+            }
+
+            // Preserve the order until the active kick/bash releases its hands.
+            if (state.RangedWieldPending && canChangeWeapons
+                && main == EquipmentIndex.Weapon1)
+            {
+                state.RangedWieldPending = false;
+                state.StableHandTicks = 0;
+                agent.TryToWieldWeaponInSlot(state.RangedSlot,
+                    Agent.WeaponWieldActionType.WithAnimation, isWieldedOnSpawn: false);
             }
         }
 

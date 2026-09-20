@@ -1,10 +1,101 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-21 用户实战确认骑兵冲阵修复，退休诊断并建立检查点
+
+- 用户确认“修好了，打了一把没报错了”，允许回到音乐。保留弓/双刀切换与踢盾击互斥实现，按项目规则先建立独立本地Git检查点，不把未验收的音乐策略一并提交。正式发布README不更新；检查点沿用已有两份发布日志。
+- 测试进程39616，MVID=e72d0e18-7dce-4522-80bc-5f57e6ae3942，对应上一节814267B2…C82D8140。最新完整音乐场次02:57:34至03:10:07进入原生结果收尾，任务日志03:11:02正常SESSION_END。保留的两段接触日志（前面已滚动，不能当全局统计）共有992次CHARGE_ENTER/992次CHARGE_EXIT、2次SESSION_END，无STATE空副手WeaponBash(31)；最新场次没有ARCHER_CONTACT_TRACE_FAILED或paired=False冲突记录。结合用户实测，确认本轮互斥修复有效，不将一次验收表述为排除所有未来边缘情况。
+- 删除只为日志存在的GwpArcherContactTrace及行为/两类Harmony补丁，撤掉SubModule注册和AI、Kick内全部相关调用。GwpDualBladeActionGate仅保留alternative且!paired的异常分支，改名DUAL_BLADE_INVALID_ACTION/ReportedInvalidAction；不再记录正常拦截换武器。所有诊断仍在GWP_DIAGNOSTICS内。两份Documents接触日志、Faults中旧正常冲突行及本轮已闭合的27640/28308/30988 WER、仓库对应一次性崩溃分析产物退休；不删除其他未归属调查的转储或音乐监控。
+- 18项AI/输入回归通过，清理后构建0警告0错误；预检462类型/1403成员无缺失，584类型/61 Harmony类加载通过。Verify-LiveModule 65仓库/72live无缺失、差异、散落，README一致。obj/live客户端/live编辑器DLL SHA256均为`9D4873E9D17C0E20BEECE1D90AB2C40292114E136D5BBAF72B92D89526B80280`。清理仅移除健康路径监控，未调整战斗或音乐参数；未开游戏或发声。
+- 下节所有旧诊断路径为历史取证出处；退休后的日志、WER及一次性分析输出不再可读。需要重新调查时应从新复现取证，不把保留路径写成仍可用文件。互斥前DLL/PDB回退备份仍在下节指定目录，但正常基线改为本次已确认实现。
+
+## 2026-09-21 27640复现：盾击中收副手，互斥候选已部署（待实战复测）
+
+- 用户再次确认骑兵冲入弓兵群即弹错。当前最新WER为`C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.27640.dmp`，115752047字节、02:15:51；连续两条反馈不能算两份新转储。测试DLL为下节只读诊断版6D4D274B…C584B596。
+- CDB确认Native基址0x7FF9DD0A0000，仍在+0x5EA885读空地址+0xF8，调用返回点+0x5C931E/+0x5EC96B/+0x5C6250。r15描述符+0x28=1（主手槽），+0x34=2（前轮反汇编已确认WeaponBash分支），+0x3C=1（动作通道）；另一手对象为null。Native Agent指针0x56874A09910，WER缺该对象堆页，**不能把它精确指认为下面595或650号射手**。
+- 原始Documents接触日志4435行、1733739字节，保留；固定证据副本`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\music-rebuild\archer-contact-27640.log`。同目录crash-27640.txt、crash-27640-agent.txt及dump-27640*.txt为调试结果/命令。转储未删，调查未闭合。
+- **650号明确时序**：seq3997/t111.891主1副0、DefendShield，目标骑兵88/坐骑89；seq4007/t111.913模组追加Kick至112.263，seq4014进入动作31；seq4037/t111.951原生发出Wield2+Sheath1，seq4038模组仍追加Kick；seq4052同任务时间变为主1副-1，动作31继续；seq4408/t112.276仍空副手盾击，日志结束112.297。595号也有同类冲突，之后被骑兵130击中转受击动作。旧AI注释“没有观察到交战中收副手”已被反证，已更新。
+- `KickAllEnd`是枚举值31与WeaponBash同值导致ToString输出的别名，**不代表动作已结束**。日志证明原生换弓与模组踢击窗口重叠，随后副手缺失；转储也位于盾击缺武器路径。这支持定向候选，尚非实战修复确认，也不证明冲撞伤害/击倒计算本身错误。
+
+### 候选与诊断修补
+
+- 新GwpDualBladeActionGate限已登记且带远程备选的双刀AI。踢/盾击动作进行中暂时过滤Wield0–3、Sheath0/1和替代武器切换，结束后恢复原生换武器；尚未接受的Kick遇到换武器则让换武器优先，清除Kick与请求窗口。持弓、补刀序列中、未完成开场持弓、待射击命令或双手未稳定一个任务tick时不开始新Kick。移动标志和其他普通士兵不变。
+- AI直接进行的出生换弓、补刀/回退、射击命令换弓也检查活动动作、原生Kick和模组请求窗口。RangedWieldPending保留射击命令至可执行时只调用一次；已持弓、停火、无弹药、近期近战、超时仍取消。取消条件现在优先于强制换弓，避免旧行为先换弓再取消；复测应包含近战后恢复射击和停火/允许射击。
+- 修复监控缺口：上一版对马匹读取人类武器，02:15:31.809在Snapshot触发被catch捕获的NRE，丢掉CHARGE_ENTER/EXIT。之后游戏继续约3.5秒才原生崩溃，**该捕获异常不是已证实的Native根因，缺CHARGE行也不能说明没马撞**。现在马匹只记身份/地址/骑手；单个actor快照失败不会丢整个接触事件和另一侧数据。
+- 每次打开/滚动日志自动TRACE_OPEN写PID/MVID；任务SESSION改用AfterStart，因为新增行为错过OnAfterMissionCreated。动作附数值并将31显示为WeaponBash，actor加只读Agent._pointer供下次直接匹配WER；gate-after独立去重，回答保护是否真正拦截换武器；一次性DUAL_BLADE_ACTION_CONFLICT记录被拦冲突。监控全部仍在GWP_DIAGNOSTICS内，确认成功后退休健康路径。音乐、冲撞伤害、霸体、物品/动作资源未改，旧额外突刺接触未恢复。
+
+### 验证与回退
+
+- tools/DualBladeTests实际AI/输入源码加内存桩18项通过：含650时序重放、动作中保留武器、结束恢复换弓、尚未接受Kick与换武器冲突、请求窗口不补刀、空手不Kick、击退不补刀、延期射击一次执行和普通士兵不变。桩不模拟原生物理，不能代替骑兵冲阵实测。
+- 诊断开/关构建均0警告0错误；预检463类型/1408成员引用无缺失、589类型加载、63 Harmony类绑定通过。实际writer测试通过即时落盘、16MiB滚动、续写和关闭。关诊断产物在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\cavalry-gate-disabled-20260921\`，ILSpy确认三类接触监控不存在、功能ActionGate仍存在；未部署此产物。
+- 已显式GwpDiagnosticsEnabled=true、DeployToLiveModule=true构建到live客户端和编辑器；预检诊断DLL SHA256=`814267B2E6C3D089E3BED1F3DE4C27CDF6C779DA610EDA50146CEB82C82D8140`。部署前无游戏进程；最终镜像核验记录在下条。未启动游戏/音频、未改玩家README或建ZIP、未创建未经实机确认的稳定checkpoint。
+- 最终Verify-LiveModule通过：65仓库/72live文件，缺失、差异、散落文件均无，包含两份玩家README一致。隔离预检DLL、obj产物、live客户端/编辑器DLL四份SHA256均为814267B2…C82D8140。
+- 部署前DLL/PDB保存在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\before-cavalry-gate-20260921\`，DLL为6D4D274B…C584B596。紧急回退：退出游戏，复制此DLL/PDB到live的bin/Win64_Shipping_Client及bin/Win64_Shipping_wEditor并核验。源码回退基线仍是`6a7878a2e9f068c4f42d75ce46498a9690a1e438`：仅恢复该提交的GwpDualBladeAiBehavior.cs和GwpKickInputComponent.cs，移出GwpDualBladeActionGate.cs与tools/DualBladeTests，再普通开发构建；也会移除这两文件内输入/持握诊断调用，但保留独立接触监控。不得reset全仓库或覆盖音乐。下节停放候选仍保留，不可整份覆盖本轮诊断修补。
+
+## 2026-09-21 射手对骑兵复现：盾击空武器证据、加强监控（诊断版已部署，未修复）
+
+### 新证据与当前结论
+
+- 用户确认以前主要测步战，新复现为灰袍射手对骑兵、骑兵冲入人群时弹错；未看清持弓/拔刀先后，“几乎同时发生”。用户随后明确要求依项目规则适当加强监控。按AGENTS.md“Widen the trace, add the fields the next test needs”，最终部署只扩充诊断，不部署下面的时序互斥候选。音乐仍为上一节的战况映射候选，冲撞、击倒、伤害、弓刀切换和踢击规则均未改变。
+- 新WER原件：`C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.28308.dmp`，115722681字节，文件时间2026-09-20 18:58:52。rgl为`C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_28308.txt`及同PID errors文件。原件仍保留，本问题未闭合，不退休转储。
+- 本次线程OS0x5220，Native基址0x7FFA027C0000，RIP0x7FFA02D892ED，即**Native+0x5C92ED**，`cmp qword ptr [rax+40h],0`、rax=0，读取0x40。与9月11日23108是同一指令。栈中的0x5EC96B、0x5C6250也与30988相同。r15+0x28为0xFFFFFFFF、r15+0x34为2、r15+0x3C为1；此WER不含Agent堆页，不能据它重新恢复角色ID，灰袍射手身份的堆证据仍来自前次30988。
+- 本轮从本机Native二进制追到结构的**生产方**，补齐上一节未知字段的依据：0x687BC0分支扫描两个动作通道的ActionCodeType 28–31，随后尾调用0x689040；0x6890A3检查动作类型0x1F（当前托管枚举WeaponBash=31），0x689128–0x68912F将该条件转为2，0x6891D0写到输出结构+0x34。0x6891BC把选出的武器槽写到+0x28，再尾调用0x5C8ED0。故本次的2可以定位为**WeaponBash盾击判定分支**，不是把任意私有值2猜成AgentAttackType。
+- 0x5C8F9C读取武器槽，负数使缓存武器对象为null；0x5C92DB的盾击分支没有判空即在0x5C92ED读取+0x40。若这里有武器碰撞对象，则0x5C9305取另一手对象并调用0x5EA810；前次30988就在该调用内+0x5EA885读空+0xF8。因此两次是同一盾击分支上的两个缺失武器对象位置。**确定的是盾击接触与当前武器不一致；尚未确定是谁在何时收掉武器，也未证明马撞/击倒本身有错误。** 不能把用户的场景关联替代事件时序。
+- 本机Native SHA256=`2A5E0E0B15513EBB7052D747A621B82C50EE834553EBA283B33BBBC33766E12A`。分析输出在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\music-rebuild\`：crash-28308.txt、crash-28308-contact.txt、native-contact-callers.txt、native-contact-setup.txt、native-alternative-contact.txt，以及dump-28308*.txt调试命令。Native反汇编可用Python pefile+capstone从相应RVA读取再生；不把相邻export名称当真实函数名。
+
+### 未部署的尝试与回退点
+
+- 曾实现“踢/盾击请求窗口与换刀互斥、射击命令延迟到动作结束”的候选，真实AI/输入源码加内存桩的14项检查通过，隔离编译0错误。它只是对已发现状态矛盾的一种处理假设，没有实机时序证据，**从未复制到live**。用户要求加强监控后已撤出活动源码和测试项目，保留原行为来取证，不把它称作修复。
+- 候选完整保存在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\cavalry-action-gate-candidate-20260921\`：GwpDualBladeAiBehavior.cs、GwpKickInputComponent.cs、GwpDualBladeActionGate.cs、DualBladeTests.csproj、GameStubs.cs、Program.cs和隔离DLL（SHA256=`6B54D4633F3139EF0B9E181A5C5DFC835753CC50A7860FB7B0DD7D7215E40E22`）。恢复实验时将前三个文件复制回GreyWardenPolicePurity源码目录、后三个测试文件复制到tools/DualBladeTests，并先隔离构建/测试；这会覆盖本轮在前两文件中的诊断调用，应先保留当前文件。撤出时恢复当前诊断版前两文件、移出ActionGate与该测试项目再构建；不要把实验DLL直接部署冒充诊断版。
+- 当前诊断前的live DLL/PDB备份在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\.codex_tmp\before-cavalry-trace-20260921\`，DLL SHA256=`E35977CB86B6C83D6F50D53E031F8EC5736596D7A1F01B7B77F3DE9BDAC6582E`。撤销本轮诊断的源码步骤：移出GwpArcherContactTrace.cs，撤掉GwpDualBladeAiBehavior/GwpKickInputComponent/SubModule内本轮新增的GWP_DIAGNOSTICS块，保留音乐工作树，再普通开发构建并核验镜像。紧急二进制回退须先退出游戏，将备份DLL/PDB分别复制到live客户端/编辑器bin并核验hash；随后同步源码，不能以二进制回退替代长期源码一致性。
+
+### 每组监控要回答的问题
+
+- 新日志名为`C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-ArcherContact.log`，因为它覆盖射手换武器与接触链，不把范围错写成已确认的“马撞崩溃”。按16MiB滚动为`GreyWarden-ArcherContact.previous.log`，最多当前/前一段约32MiB（单行可能略超阈值），不逐帧无条件写入。同步AutoFlush保留最后一条进入记录，日志不弹屏、不播音。
+- SESSION记录进程PID、DLL MVID、任务时间；所有行有墙钟、序号和托管线程编号。STATE仅在主副手、补刀阶段/轮次、射击请求或近战/受击动作变化时输出，略过纯射箭/装填动作反复变化。字段含角色/Agent编号、实际主副手槽与Item ID、动作通道。回答“出问题的射手当时拿了什么、是否正在补副手、是否被击退”。
+- WEAPON_BEFORE/AFTER围住原有6类调用：出生换弓、补刀收主手、补副手、补主手、失败退回主手、射击命令换弓。记录调用原因、补刀状态以及调用前后持握/动作/输入标志；不改变调用或返回值。回答“是否由我们直接改变持握、发生在盾击开始之前还是之后”。
+- INPUT分别记录native-before、mod-after追加Kick、grip-after保持双刀时的输入；每个阶段独立去重，mod-after另区分新的0.35秒请求窗口，避免before=0/after=Kick每帧交替刷日志。记录请求截止时间、动作类型/索引、实际武器、AI目标编号/角色/坐骑或骑手编号/距离平方。回答“Kick/换刀由原生还是模组提出、请求窗口是否重叠、当时目标是否骑兵”。
+- CHARGE_ENTER/EXIT是Mission.ChargeDamageCallback的只读前后观察；MELEE_ENTER是Mission.MeleeHitCallback只读前置，均不跳过原函数、不写ref实参。HIT和REGISTERED_BLOW通过MissionBehavior记录实际命中，包含IsHorseCharge、IsAlternativeAttack、攻击类型、BlowFlags、伤害、碰撞结果、武器槽、骨骼、冲撞速度/坠落速度。CHARGE_EXIT的Blow是原参数副本，**最终反应标志以REGISTERED_BLOW为准**。回答“马撞回调是否已经发生、是否完成、随后是否出现盾击、击倒/击退标志究竟来自哪个命中”；原生在碰撞回调前崩溃时无MELEE_ENTER也有判读价值，不能把缺日志自动解读为没有发生任何接触。
+- 所有读取先限定灰袍射手及已构建/活跃Agent；不新增全局Agent/MissionWeapon补丁，不访问未完成预览。日志失败被捕获，仅一次写ARCHER_CONTACT_TRACE_FAILED到既有Faults。**整个helper/behavior/两类Harmony诊断及全部调用均在#if GWP_DIAGNOSTICS内**。调查闭合并获用户实机确认后，删除这些仅为日志存在的类/调用及Documents下两份日志；当前保留是为尚未解释的故障取证。
+
+### 验证与部署
+
+- 去掉新增GWP_DIAGNOSTICS块后，GwpDualBladeAiBehavior.cs与GwpKickInputComponent.cs和HEAD逐token一致，验证原行为没有被候选遗留改动。SubModule仅增加诊断behavior注册。没有修改马撞、击倒、霸体、物品或动作资源。
+- diagnostics-enabled隔离/正式开发构建均0 warnings/0 errors；兼容性核对463类型/1408成员、588类型可加载、63 Harmony类全部绑定。增量两类正是只读冲撞/近战入口诊断；无新玩法补丁。Verify-LiveModule：65仓库/72live文件，无缺失/差异/散落文件，玩家README与仓库相同且未编辑。
+- live客户端和编辑器DLL均为`6D4D274B2C59C0B4F556FD8BA3C6787C80F534BF3FF4E6F161059DF7C584B596`，与已预检的隔离产物一致。部署前无游戏进程。无发布ZIP，未启动游戏或音频，不将兼容性预检当作骑兵实战验证。
+- 日志writer用实际诊断DLL反射测试，临时改路径到仓库build-check，验证即时可读、16MiB滚动、滚动后继续写入和释放；通过，临时两份日志已删除，未污染Documents。复现脚本`build-check/music-rebuild/test-trace-writer.ps1`，Windows PowerShell 5.1运行。build/check结果同目录cavalry-trace-*.txt。
+- 另以`-p:GwpDiagnosticsEnabled=false -p:DeployToLiveModule=false -p:OutputPath=C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/cavalry-trace-disabled-20260921/`构建，ILSpy类型表确认无GwpArcherContact/GwpArcherChargeTrace/GwpArcherMeleeTrace。该验证产物留在上述隔离目录、**从未部署到live**；正式开发构建随后显式恢复GwpDiagnosticsEnabled=true。
+
+## 2026-09-20 骑兵接触人群时崩溃：30988转储与旧双刀故障对照（未修复）
+
+- 用户描述双方刚接战、敌方骑兵冲入人群时弹错，随后怀疑弓转双刀并要求复查历史。本轮仅调查和记录，没有修改/部署战斗或音乐实现。游戏v1.4.8.119303，PID30988，候选DLL为上节策略记录的`E35977CB…BDAC6582E`，日志MVID=`75790ea3-c4b4-4bb2-bb18-f0e86eafed82`。
+- 原游戏转储`C:\ProgramData\Mount and Blade II Bannerlord\crashes\2026-09-20_07.26.38\dump.dmp`已成功读取，但调查后续该crashes目录已不存在，未由本任务移动或删除。现存另一份WER转储`C:\Users\lucif\AppData\Local\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.30988.dmp`为115723665字节，缺少先前Agent堆页，不能混用为同一份完整堆证据，保留不删。
+- 已提取证据保留在`C:\Users\lucif\source\repos\GreyWardenPolicePurity\build-check\music-rebuild\`：crash-172638.txt（异常栈）、crash-threads.txt（指令/线程表）、crash-focused.txt（选定托管线程）、crash-heap.txt、crash-agents.txt、crash-found.txt、crash-loadout.txt、crash-weapons.txt（Agent/角色/装备）。find-crash-agent.py通过Memory64/MemoryList地址映射匹配Agent._pointer；仍引用已不存在的原游戏转储，没有该原件就不能重跑堆查询。调试器为`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2606.22001.0_x64__8wekyb3d8bbwe\amd64\cdb.exe`；使用`-y C:/Windows/Microsoft.NET/Framework64/v4.0.30319`及逐行-cf命令文件，避免网络符号等待。
+- 直接故障：原生线程OS0x6290在`TaleWorlds.Native.dll+0x5EA885`发生0xC0000005，`mov r10,[rdx+0F8h]`、rdx=0，读取0xF8。故障函数范围0x5EA810–0x5EADD0，空值来自`[Agent+0xAD8]`所指对象的0xEE8+index*8表，index=1。**未证实该表含义，不能把1直接称作副手槽。** 栈中返回点为0x5C931E、0x5EC96B、0x5C6250。无崩溃线程有效托管栈，不把最近导出名create_game_application当真实私有函数名。
+- 原生指针`0x40C977F00F0`的RTTI为Agent，匹配托管对象`0x23F346F4C00`的_pointer，Index1279；角色StringId=`gwarcher`、名称`{=gwp_troop_archer}Grey Warden Archer`。证实正在处理灰袍弓箭手，未证实他是攻击者/受击者或正在切刀。主副手槽指针的目标页缺失；已导出装备槽0/1数据但未完成Item ID解引用，不以默认装备冒充实际持握。
+- 音乐线程OS0x90E4当时在`Thread.SleepInternal -> GwpMusicOutput.Run`等待。另一个线程在Agent.OnWeaponAmountChange/UpdateAgentProperties，不能拼成崩溃线程的调用链。17:25:36有伤害后medium；17:26:26末次样本为30次伤害、0阵亡、tension=.127、medium，未出现high/redraw/outro或音乐托管异常。当前证据指向原生Agent处理，尚不能绝对排除所有间接影响。
+- **最接近历史是9月11日PID23108允许射击时接近战崩溃**：旧故障Native+0x5C92ED在0x5C8ED0–0x5CBB26函数内读取空对象+0x40；本次调用者0x5C931E在同一RVA函数范围，表明原生路径重叠，实际故障指令不同，不称为完全相同根因。原证据见本文件“输入法问题收尾与23108原生转储解析”及`.codex_tmp\crash-23108-*.txt`。
+- 当时删除GwpDualBladeThrustControl、突刺Mark/tick投递的额外踢/盾击控制接触99行后，用户确认不再弹错，checkpoint=`6a7878a2e9f068c4f42d75ce46498a9690a1e438`。弓刀切换未改。**本轮git diff 6a7878a -- GreyWardenPolicePurity/GwpDualBladeAiBehavior.cs为空，旧突刺控制类没有回来**，不能把已删除代码再删一次冒充修复。随后友军穿透整体删除/攻击霸体验收点7ba10a4继续保持；此次未回退任何已确认功能。
+- 区分其他旧案：8月27–29副手统计代理Native+0x73DDF8复制空对象；8月31落水是movement set缺swimming/diving，数据修复已验收。当前GwpDualBladeNpcItemSetup仍保留已验收的一次性NPC副手HasHitPoints/CanBlockRanged资格设置，不能仅凭标志存在就等同于旧全局MissionWeapon补丁回归。
+- 后续定位需要该弓箭手弓转剑/补副手序列、实际主副手及攻击/受击动作时序，或包含缺失原生页的转储。现有证据支持优先调查双刀接战路径，尚不足以认定“切换瞬间就是根因”。本轮未新增未经验证的战斗补丁，未构建、未改玩家README或创建ZIP。
+
 ## 2026-09-20 用户确认PCM移植听感，战况映射继续优化
 
+- **已确认播放器本地checkpoint：`9a8ea3d43c0fb2ab54286b2f4ce3a43af3c32f31`**，提交包含完整源码、26PCM、乐谱/manifest、生成与测试工具、维护历史；正式发布README按规则未改（checkpoint继承现有发布日志）。在此之后才改映射。若新策略实战不合适，仅回退`GwpMusicBattlePolicy.cs`和`GwpSyndicateMusicBehavior.cs`须一起回退，因为接口已改变；若完整回到确认版，应从该commit恢复这两个文件、GwpMusicOutput.cs、GwpMusicScore.cs和tools/MusicTests/Program.cs并普通开发构建，再核验live与兼容性；不reset整个工作树，不碰用户其他工作。完整回退会恢复旧播放日志，需再次退休，不能误把日志恢复当成必要声音改动。
 - 用户实战反馈“效果很好”，确认播放器与衔接可用；同时指出双方同步损耗导致比例长期不变，要求改机制。先为当前完整实现建立本地checkpoint，再改战况策略；不将尚未调整的战况映射称为最终定稿。玩家README依正式发布规则保持原样。
 - 本次测试对应live DLL `36C819873717C3C4CF28BD82403E6E97E07F5F3624043FDEAC4359D3388D6073`。17:10:05接管，17:10:35.596布阵结束双方战力495.28/495.28→medium；17:14:25.749变为141.99/101.84（敌我比0.717）才降low；17:14:30.211无战斗员/预备兵收尾。约230秒没有换档，未触发high，日志无本场增援。已有采样只记录变档，不能宣称知道全程伤害/伤亡速率，也不能据此确定短期比例变化。
 - 播放器选段/接缝健康日志在本任务退休；保留异常路径。新的短期监控只覆盖尚在调整的战况判定，记录实际伤害、伤亡、压力与目标档位，用于下次实战解释为何换档或不换档。
+
+### 新策略候选：交战强度为主，比例只作压力修正（已部署）
+
+- 原生`Mission.OnAgentHit`会同时调用行为的OnAgentHit与OnScoreHit，本轮只用OnScoreHit的damagedHp，避免重复。仅统计敌对两侧对人类造成的有效非格挡伤害，忽略同侧误伤、坐骑、零伤害和无攻击方；伤害折算为受击者CharacterPowerCached×min(1,damagedHp/HealthLimit)。因此它衡量实际掉血，不用刀剑音效数量或碰撞次数冒充战况。没有伤害的格挡交锋暂不计入；这是已知口径，后续可由日志/用户反馈决定是否扩展。
+- OnAgentRemoved只统计Killed/Unconscious，按Agent去重；逃跑/移除不当作阵亡。每个0.5秒决策将伤害与伤亡归入20秒窗口，窗口长度固定、数据量随采样频率而非每击次数增长。OnAgentBuild在初始阶段之后为新入场人类累加已部署总战力，援军不清空已有交战记录。
+- `force=当前两侧活跃战力+窗口内伤亡战力`（下限1），避免最后一个兵使一次轻伤被放大；`exchange=clamp(max(damage20/(force*.10), losses20/(force*.06)))`，伤害与死亡取max而非相加，避免致死伤重复加权。`attrition=clamp(累计真实伤亡/(初始+后续已部署战力)/.5)`，`pressure=clamp((敌/我-1)/.75)`；持续交战时`tension=.7*exchange+.2*attrition+.1*pressure`。均势比例为1仍能由实际厮杀进入high。此为骑砍候选设计参数，不是从原版GWENT提取的规则，也未凭这次不完整日志宣称已校准阈值。
+- 无有效接触时起始low；最近12秒有有效伤害/伤亡才可medium/high，高档进入阈值.55、保留阈值.40。升中稳定2秒，升高稳定3秒，降档稳定6秒；low最少保持2秒，中/高最少12秒。无接触后tension归0，累计伤亡不会把音乐锁在高档；纯等待不会随计时器爬到高潮。保持时间用于防抖，不是固定低中高流程。
+- 战力采样、布阵、增援Redraw、收尾Outro仍沿用已确认版。PCM、音量和35条音乐过渡规则无修改。GwpMusicScore仅将测试观察回调设为可选，生产不传回调；删除Output的Notices队列与任务中的播放器日志排空，停止成功选曲的永久叙述。异常仍进入既有故障路径。
+- 当前未验收策略诊断名为`SYNDICATE_BATTLE_DYNAMICS`，每10任务秒及变档、增援、收尾时写一行：ours/enemy/ratio、累计hits/casualties、damage20/losses20、exchange/attrition/pressure/quiet/tension/tier/reason。所有新诊断字段、写入/计数调用都在`#if GWP_DIAGNOSTICS`；不逐击刷日志。读取并记录结论后从Documents下既有GreyWarden-Faults.log清除84条已退休SYNDICATE_MUSIC/V2健康行，保留其余2862行，不删除其他功能或失败记录。
+- 新策略模拟覆盖：均势同步伤亡、300秒无接触、被压制但未交战、补员维持人数不变、交火强度回落、脱离接触、单箭干扰、按百分比在不同战斗规模一致、防抖。均势示例双方由500同步减少，持续每0.5秒总损失1.5战力，2秒medium、18秒high、停战约18秒回low；这是构造模拟而非实战日志重放，不证明真实战场一定在这些秒数换档。
+- 最新MusicTests 181216个采样/逻辑断言通过（数量含大量逐采样断言），35条规则仍与未修改实验室一致；实际设备测试零音量。普通开发构建0 warnings/0 errors，客户端/编辑器DLL均为`E35977CB86B6C83D6F50D53E031F8EC5736596D7A1F01B7B77F3DE9BDAC6582E`。Verify-LiveModule：65仓库/72live文件，无差异/散落文件；Verify-GameCompat：462类型/1403成员引用全匹配、583类型可加载、61Harmony类全通过。没有新发布ZIP；当前策略待下一场实战确认，未冒称稳定。
+- 可重生的验证输出在仓库忽略目录`build-check/music-rebuild/{tests.txt,battle-policy.txt,lab-parity.json,dynamics-compat.txt}`。生成与重跑步骤同前节MusicTests/CompareLab说明，测试源码已保留在tools/MusicTests/Program.cs；不再创建平行问题记录。新的策略改动保持工作树候选状态，已确认音频基线有上述独立checkpoint。
 
 ## 2026-09-20 音乐移植重建：实验室PCM调度，已部署待实战听验
 

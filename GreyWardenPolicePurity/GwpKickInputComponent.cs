@@ -34,6 +34,8 @@ namespace GreyWardenPolicePurity
         private float _nextTargetProbeTime;
         internal GwpKickInputComponent(Agent agent) : base(agent) { }
 
+        internal bool HasPendingKick(float now) => now <= _requestKickUntil && _requestKickUntil > 0f;
+
         public override void Initialize()
         {
             base.Initialize();
@@ -64,7 +66,14 @@ namespace GreyWardenPolicePurity
             ref Vec2 inputVector)
         {
             float now = Agent.Mission.CurrentTime;
+            bool canRequestKick = GwpDualBladeActionGate.FilterArcherInput(Agent, ref eventFlag);
             QueueAcceptedAlternativeAttack();
+
+            if (!canRequestKick)
+            {
+                _requestKickUntil = 0f;
+                return;
+            }
 
             if (!CanSupplyKickInput(now))
                 return;

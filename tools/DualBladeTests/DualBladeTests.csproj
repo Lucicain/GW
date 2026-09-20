@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);GWP_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../GreyWardenPolicePurity/GwpDualBladeAiBehavior.cs" Link="GwpDualBladeAiBehavior.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpDualBladeActionGate.cs" Link="GwpDualBladeActionGate.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpKickInputComponent.cs" Link="GwpKickInputComponent.cs" />
+  </ItemGroup>
+</Project>
