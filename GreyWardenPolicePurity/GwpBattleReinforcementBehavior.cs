@@ -47,6 +47,8 @@ namespace GreyWardenPolicePurity
         private int   _batchesDone     = 0;
         private int   _totalTroopCount = 0;
         private bool  _isSpawning      = false;
+        private bool  _musicArrivalNotified;
+        internal bool HasPendingReinforcementSpawn => _isSpawning;
         private SoundEvent? _hornSound  = null!;
         private float       _hornStopAt = -1f;
         private int         _hornPlayed = 0;
@@ -112,6 +114,14 @@ namespace GreyWardenPolicePurity
                 if (_batchesDone < totalBatches && _batchTimer >= BatchInterval * _batchesDone)
                 {
                     Agent? firstAgent = SpawnBatch();
+
+                    // These manually spawned Grey Wardens do not raise the native spawner's event.
+                    if (firstAgent != null && !_musicArrivalNotified)
+                    {
+                        _musicArrivalNotified = true;
+                        Mission.GetMissionBehavior<GwpSyndicateMusicBehavior>()?
+                            .NotifyReinforcementArrival(firstAgent.Team.Side, 1);
+                    }
 
                     if (_batchesDone == 0 && firstAgent != null)
                         PlayArrivalHorn(firstAgent);

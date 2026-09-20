@@ -1,0 +1,162 @@
+{
+  "format": "stereo float32 little endian, 48000 Hz",
+  "gain": 1,
+  "segments": {
+    "1027535983": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\1027535983.flac",
+      "sourceSha256": "c764efc58fe3ecacedcd007e4cec94775cb546fc488c7db5d82d928a41114769",
+      "pcmSha256": "6aba0fb5cfb7eed0d830faaa2025ecdccfadeda4a8a03326ca1d38f322c84432",
+      "frames": 2215385
+    },
+    "1068393325": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\1068393325.flac",
+      "sourceSha256": "88bd6af9281b5ae75a1b5796e984b61fe9464c77587c283ec2770c6499b5f3d2",
+      "pcmSha256": "49a8a4a4f07d5e32992facaf71a3a62f3e5cc586d8f0bd56b56551b41d3b849b",
+      "frames": 2363077
+    },
+    "108295660": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\108295660.flac",
+      "sourceSha256": "0c3ca0571231db00bdc8dc7d0e6cb8c39bf1288d6d4bf0b62834542829497d2c",
+      "pcmSha256": "ae421e2fc7676967128c090924f02f9ebfee3ff0620c1f688a74f1b21c065460",
+      "frames": 2067692
+    },
+    "180536621": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\180536621.flac",
+      "sourceSha256": "e11b56686161be135924af6c59fbd2fdf5df43c2d764319d12366eaccdf76e53",
+      "pcmSha256": "41903615a3c40c4219623ba85557564c6a91e904801db1bff40b0c68397a65a9",
+      "frames": 2215385
+    },
+    "234147462": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\234147462.flac",
+      "sourceSha256": "46b50144cb96b5db0c1c1e869512b7a7bda2393aee386dc697e4bee98ab8f3e0",
+      "pcmSha256": "7a969a083155b169434caaf5b7617fb0297f05db65519322335703fb922017ad",
+      "frames": 923077
+    },
+    "317591648": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\317591648.flac",
+      "sourceSha256": "087c452e40790c3a2c2008c52e6d706cacd57c5a08ea0976e3faf7203b597dbb",
+      "pcmSha256": "5796d29c184f129711da1d9c97c1127a0ca3bc4071a65519163dd96016464aad",
+      "frames": 1846154
+    },
+    "320232109": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\320232109.flac",
+      "sourceSha256": "ba11ad838886fc736cc55ca075950c977cc3c0cd411d311bd5993dbfd6b94f9d",
+      "pcmSha256": "4c725069adaad7cfa32a59bdfea9de3accda7e62f3f7cff0e84ad69d1bdb19b7",
+      "frames": 2067692
+    },
+    "354672081": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\354672081.flac",
+      "sourceSha256": "c505d17c5ce015df5b1af40aa2d0d22ddbe86583f7b0585fe35673865b6e152a",
+      "pcmSha256": "880622a1895d493a5c51b0b5fc2df076e5413216b6cdd103d219f71338e4bc44",
+      "frames": 2215385
+    },
+    "454183078": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\454183078.flac",
+      "sourceSha256": "60650f41ac40c3ac235c7824c277ba8561268f4e792f75c53c47d7633faffa20",
+      "pcmSha256": "955bbb287e3116fc54dc0e1fcee00ccff4d97684e6cf45f96aa1640367c486dc",
+      "frames": 2215385
+    },
+    "538337271": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\538337271.flac",
+      "sourceSha256": "9d7640f6042f7e72031939dde2be7fa888102e651d3f356f3faecc1434848805",
+      "pcmSha256": "abbc0b03cf2eda3f0569d860cd55e277bf83589ba8406a4b430893829258815d",
+      "frames": 2067693
+    },
+    "540505083": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\540505083.flac",
+      "sourceSha256": "cfa913cbf93686ff62b304177d099d21d5e70796d4c2690b2f1e7c00a98af8fb",
+      "pcmSha256": "a0b80c8a169e99b12659031c802455b41a6983bf7902725b043e0fe778217a16",
+      "frames": 2843078
+    },
+    "594083338": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\594083338.flac",
+      "sourceSha256": "c832f68e3becc25c838107793985bb25b8d37779c2143846035d542704381136",
+      "pcmSha256": "270e34546f9ed8091655b7c11a40e446cf2fe8256f4333b8d9e9613c330e1d96",
+      "frames": 2363077
+    },
+    "647197112": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\647197112.flac",
+      "sourceSha256": "699c36bbdfa1bc6edf49a0b111c6f48ec998e0ed8aae750cf8b1a05e4b712be4",
+      "pcmSha256": "bae88575239908c520f3cf76453e8648ff5ee6b63476de4d70d5820a07b73654",
+      "frames": 1846154
+    },
+    "70771610": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\70771610.flac",
+      "sourceSha256": "099a1be2a44b35ebbd1bec06c120c571218e1c29b57692070c3adb4f62cf7751",
+      "pcmSha256": "d04ca77ed9da27a016f0954d872e30c200f0735083322209f3b64d64500caa09",
+      "frames": 2658462
+    },
+    "74054711": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\74054711.flac",
+      "sourceSha256": "fb0b3fcdbc0ff7389772ecbef4d038f2d728b5506f9ce08e7753b1fe3894188c",
+      "pcmSha256": "a803cb2ca8c29fc13d86eb6ccdc158e22fde6d2589098b072bcd36638da073ea",
+      "frames": 3433846
+    },
+    "749858897": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\749858897.flac",
+      "sourceSha256": "065b1d18cc775d63d19312cc5b1c5c20e4118eb0e833f9988a1f86fd5badd4d6",
+      "pcmSha256": "1d74e848403d861d06019f58a4f7ee3dbc45cfcc0bc8fe3cb2555b98e18b0627",
+      "frames": 923077
+    },
+    "752763494": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\752763494.flac",
+      "sourceSha256": "e2260d689872fbaf7fcffc80e8ff36de18f5cf907ae2e9141c7ce0b2199ea7f4",
+      "pcmSha256": "b70784848649dcf837b3fb103e83a16bc74d2a1587115fdeea11aefa6843c1ef",
+      "frames": 1643077
+    },
+    "79311538": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\79311538.flac",
+      "sourceSha256": "bbbbd936c4527cb8fac77f238d81a23a99fc9bf3656bdb9c753dd649bd109f9e",
+      "pcmSha256": "fe8a65668575eb064f76ca8662338a4d06d593242b2dea11bafce565b367c6c0",
+      "frames": 2067693
+    },
+    "806478350": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\806478350.flac",
+      "sourceSha256": "065b1d18cc775d63d19312cc5b1c5c20e4118eb0e833f9988a1f86fd5badd4d6",
+      "pcmSha256": "1d74e848403d861d06019f58a4f7ee3dbc45cfcc0bc8fe3cb2555b98e18b0627",
+      "frames": 923077
+    },
+    "870378512": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\870378512.flac",
+      "sourceSha256": "d5429de1ef28c51c934396f364cbe4b932fb4de0ee5e3d530f3494c77620a5bc",
+      "pcmSha256": "17965515c55db23d5202d7cf744ef161aa295468a0901bc36069ab35c345af7a",
+      "frames": 2658462
+    },
+    "871517664": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\871517664.flac",
+      "sourceSha256": "ca7e5fa654ff625c337eda6c5991fbbd838fab361271f09500ecb311ccc50d8e",
+      "pcmSha256": "7720bc56a11b934e14ce8127aa8aaa1919c96a3a3234d7ec155da430ed30a909",
+      "frames": 514157
+    },
+    "898636363": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\898636363.flac",
+      "sourceSha256": "2f79b3783ff35c383c73e568c673b24655fb6c59a39e6e0c6b08413939849ffb",
+      "pcmSha256": "0c442d8b111e1ce6e56116a86fb2161c5d14dec9a829f77aec630d2ac035486e",
+      "frames": 516923
+    },
+    "90352537": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\90352537.flac",
+      "sourceSha256": "8827ef48e978abea8582c2f7d7bbb135e884f557ff7843c33f26ce3f8592ce23",
+      "pcmSha256": "9ae4e3807a8e2c9226b1e2d846ff0a7f18ccf8bb9a6081c4a20c9fed23ffb355",
+      "frames": 2363077
+    },
+    "913877518": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\913877518.flac",
+      "sourceSha256": "6a35ea8c489291682b3c814fa5470deeefe4b209feda09ef4243e2c18a3a6790",
+      "pcmSha256": "53fcdd04c968c70bae6d74307d7a48b9792eb15516ff965af6345bc56981a073",
+      "frames": 504954
+    },
+    "918341078": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\918341078.flac",
+      "sourceSha256": "5e6d70b0762814ee42f6974dc6c95d0dca608d5b287d0c009c41ab7aba6ce67b",
+      "pcmSha256": "d4fa79c2e5b334111ad3fe8d6bb4262415a9363eb62f7ed81680370b8c6197d9",
+      "frames": 2843077
+    },
+    "921221728": {
+      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\921221728.flac",
+      "sourceSha256": "0740bd2437690a4465e03419ff1804693ce6441999a45ccccb3d741d01a831ac",
+      "pcmSha256": "87ff49280838a748e61c8fd4c38623223bef34afcd0bae31aeb92bb117b59e0b",
+      "frames": 2363077
+    }
+  }
+}

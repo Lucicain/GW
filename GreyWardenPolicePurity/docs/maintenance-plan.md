@@ -1,5 +1,148 @@
 ﻿# GreyWarden Maintenance Plan
 
+## 2026-09-20 用户确认PCM移植听感，战况映射继续优化
+
+- 用户实战反馈“效果很好”，确认播放器与衔接可用；同时指出双方同步损耗导致比例长期不变，要求改机制。先为当前完整实现建立本地checkpoint，再改战况策略；不将尚未调整的战况映射称为最终定稿。玩家README依正式发布规则保持原样。
+- 本次测试对应live DLL `36C819873717C3C4CF28BD82403E6E97E07F5F3624043FDEAC4359D3388D6073`。17:10:05接管，17:10:35.596布阵结束双方战力495.28/495.28→medium；17:14:25.749变为141.99/101.84（敌我比0.717）才降low；17:14:30.211无战斗员/预备兵收尾。约230秒没有换档，未触发high，日志无本场增援。已有采样只记录变档，不能宣称知道全程伤害/伤亡速率，也不能据此确定短期比例变化。
+- 播放器选段/接缝健康日志在本任务退休；保留异常路径。新的短期监控只覆盖尚在调整的战况判定，记录实际伤害、伤亡、压力与目标档位，用于下次实战解释为何换档或不换档。
+
+## 2026-09-20 音乐移植重建：实验室PCM调度，已部署待实战听验
+
+用户否定旧移植，要求布阵开场、双边战力驱动低中高、双方援军换牌、清场收尾，过渡不能省略。本节取代下面复核及文末PSAI两节的“当前实现”，旧记录保留为失败历史。没有实机确认，不创建稳定checkpoint。本轮未发布、未创建ZIP、未改玩家README，未启动游戏或网站声音。测试输出设备时全程零音量。
+
+### 原因与新实现
+
+- 本机v1.4.8反编译确认Engine.Music与SoundEvent托管接口无seek。旧PSAI同主题只改强度、段末才选曲，临时叠桥不能实现SameTime。此前申请引擎音乐通道池失败结论仍有效，新实现不调用GetFreeMusicChannelIndex。
+- 新增GwpMusicScore.cs直接运行实验室乐谱并混合PCM、GwpMusicOutput.cs负责Windows输出、GwpMusicBattlePolicy.cs负责可升可降战力档位，重写GwpSyndicateMusicBehavior.cs负责游戏适配。SubModule添加应用心跳，任务暂停时也能处理声音暂停。去掉GwpTuning.Music旧参数、project.mbproj的soundtrack声明，旧PSAI资产移出活动目录。
+- 输出使用系统winmm，不新增第三方DLL。原生音频接口证据在仓库忽略目录build-check/music-rebuild下的Music/SoundEvent/Spawn/Mission/MissionState/Agent/NativeOptions等反编译文件，可用ilspycmd再生，不进发行物。
+- 官方资料：https://moddocs.bannerlord.com/playing-sounds/ 、https://moddocs.bannerlord.com/audio-modding/audio-modding-overview/ 、https://learn.microsoft.com/en-us/windows/win32/api/mmeapi/nf-mmeapi-waveoutopen 、https://learn.microsoft.com/en-us/windows/win32/multimedia/stopping-pausing-and-restarting-playback 。微软新开发推荐WASAPI，本轮选WinMM是减少依赖的实现取舍，不声称骑砍官方推荐这种结构。另检索过作者Custom Music页 https://www.nexusmods.com/mountandblade2bannerlord/mods/11816 ，未发现可直接证明SameTime能力的实现，不声称用了未找到的开源代码。
+
+### 音源、规则、游戏状态
+
+- tools/Export-SyndicateMusic.py从`D:\GwentSyndicate\辛迪加全卡档案\music-lab\segments`导出26个48kHz双声道float32 PCM，共386.5 MiB，放_Module/Music/Lab，立即同步live并核验hash。输入为实验室已按剪辑与静态轨音量处理的FLAC，不再增益/归一/限幅/有损转码，撤掉旧+9dB与alimiter资产。重生：仓库根执行`python tools/Export-SyndicateMusic.py`，需ffmpeg，可传lab/live参数。
+- score.json直接保留主主题6种状态、26乐段、35条规则；本轮不移植失落主题/预览。manifest.json记录源FLAC绝对路径与SHA256、PCM SHA256/帧数、gain=1。score SHA256为`588AF2CEFF4BA6ADCEB082D672145CEF25A019EC9B605BCC0722C3D3AEB5B2A3`。
+- 逆序匹配规则，具体乐段覆盖列表通则。低中选择原配对并从同一源位置播放，2秒交叉淡化；高档、换牌、开场按拍点/小节/标记与桥A/B规则。桥核心为0，前后声音叠在接缝，不能等10秒。自然出点保留post-exit，中途截断不跳播尾音；目的pre-entry提前播放，余量不足与实验室一样等下一段。三档shuffle；Intro01一次后Intro02循环；Outro一次。
+- 音频线程按采样帧推进，4个20ms缓冲，不受游戏帧率/加速影响。按voice读文件，不常驻386MiB。全部26资产验证与设备打开成功后才停原音乐，失败释放并恢复MusicManager。源gain=1，仅乘现有游戏MasterVolume×MusicVolume；不加音量滑杆。跟随任务暂停（布阵继续Intro）和后台声音设置，任务退出幂等关闭/退订/恢复原音乐。
+- 输出使用Windows默认设备，尚不映射骑砍单独选的非默认SoundDevice。本机配置sound_device=0、master=1、music=.4956，未改设置。完整Wwise总线/RTPC未复现；保留实验室现有128点对数Log1近似和部分剪辑automation缺口，不能称作逐bit复原GWENT全部声音系统。
+- 布阵由IsDeploymentOver判断；结束后等双方实际战力均非0再选档，避免旧初始0兵力直接高档。每0.5任务秒汇总活跃人类CharacterPowerCached（原生Character.GetPower），同侧友军合并，排除坐骑/死人/逃跑者；档位取已入场战力，预备兵用来防止假收尾。
+- 骑砍映射参数（不是GWENT规则）：敌/我<.8低，>1.25高，其余中。低档保留至.88，高档保留至1.125，中档保留于.72..1.375。候选稳定4秒且当前档保持8秒后切换，允许升降。
+- 原生OnReinforcementsSpawned(BattleSideEnum,int)订阅任一侧实际增援，区别于初始生成。Redraw无次数上限，至少一个12.30769秒核心循环，再带A桥回最新战力档；连续到场合并，不逐兵重启。收尾可抢占未落地过渡。
+- 本模组GwpBattleReinforcementBehavior直接SpawnAgent，不经过原生增援事件，因此新增第一批成功出现agent后通知音乐一次，count=1仅表示已确认首人；只读HasPendingReinforcementSpawn防止援军还在生成就假收尾。没有改概率/数量/号角/生成规则。
+- MissionResult/MissionEnded触发Outro；或布阵后至少5秒，一侧无战斗员和预备兵持续3秒清场收尾（我方另考虑模组待生成援军）。Outro为终止态，之后不重启战斗音乐，退出任务立即停止。
+
+### 验证、部署与待验收
+
+- tools/MusicTests/MusicTests.csproj链接实际score/output/policy源码，180651个采样/逻辑断言通过：35规则、16低中配对方向、桥身份、26资产完整性、PCM逐采样零增益、15.025秒中途定位与混合、布阵循环、升降/滞回、连续增援、收尾抢占/释放、真实Windows设备零音量open/write/pause/resume/dispose。断言数含逐样本比较，不是18万种独立场景。
+- 重跑`dotnet build tools/MusicTests/MusicTests.csproj -c Release`，运行`tools/MusicTests/bin/Release/net472/MusicTests.exe GreyWardenPolicePurity/_Module/Music/Lab`，将stdout保存至build-check/music-rebuild/tests.txt。
+- `node tools/MusicTests/CompareLab.mjs`直接加载未修改的实验室engine.js，在无声AudioContext桩中核对35切换：接缝时间与桥ID全部一致，日志毫秒舍入容差1ms，没有启动网页声音。C#另验证中途offset与交叉混合采样。
+- 实现中修正了两个偏差：原先按最长而非实际目的段预留pre-entry会多等小节；SameTime源目的anchor相同，须单独维护控制接管时刻以免续接错曲。首轮构建Path类型重名已修正，最终构建0 warnings/0 errors。
+- 普通开发构建已部署Client和Editor，DLL SHA256均为`36C819873717C3C4CF28BD82403E6E97E07F5F3624043FDEAC4359D3388D6073`。诊断开启，无ZIP。Verify-LiveModule核对65个仓库文件无差异，live72文件仅多允许的bin产物，无散落旧音乐；两份玩家README也核验一致。
+- Verify-GameCompat：v1.4.8，97程序集、462类型引用、1402成员引用全匹配；实际加载583类型，0成员失败，61 Harmony类全部绑定。Verify-ContentKeys：30XML、1383条目、1168key，0重复/缺失。git diff --check通过。
+- 验收期只在#if GWP_DIAGNOSTICS内的SYNDICATE_MUSIC_V2记录规则/选段/接缝/增援，使用既有GreyWarden-Faults.log，不弹屏刷张力。用户确认实战后退休健康诊断并checkpoint。**本轮仍待用户实战听验，不能用静默测试冒称游戏已验收。**
+
+### 归档位置及回退操作
+
+- 旧失败候选完整快照：`D:\GwentSyndicate\research\bannerlord-port\rollback-20260920-psai`。含旧behavior/Tuning/SubModule/project.mbproj/DLL、Music/PC的26OGG及soundtrack.xml、hashes.json。旧DLL hash `519c09fe74def04767211eede2309b509bfe45a075126e66933092d36c0377c4`。这是调查回退点，不是用户认可版。
+- 批量删除曾被自动审批拒绝（仅blocked by policy），未执行；随后单独核对路径和备份hash，以可逆移动完成归档：原仓库PC在快照retired-repo-PC，原live PC在retired-live-PC；两XML在retired-repo-soundtrack.xml和retired-live-soundtrack.xml。旧音源没有删除。
+- 精确移回：关游戏，用PowerShell Move-Item -LiteralPath将retired-repo-PC移回`C:\Users\lucif\source\repos\GreyWardenPolicePurity\GreyWardenPolicePurity\_Module\Music\PC`，retired-live-PC移回`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden\Music\PC`；两XML各移回Music/soundtrack.xml。将快照旧behavior/Tuning/SubModule/project恢复原位置，撤掉reinforcement本轮10行增量；将新增Score/Output/Policy源码移入快照新建parked-renderer目录，将两侧Music/Lab分别移入快照repo-Lab/live-Lab。普通开发构建并重跑LiveModule/GameCompat。单恢复旧DLL而不恢复project/资产无效。
+- 本轮冻结证据：`D:\GwentSyndicate\research\bannerlord-port\lab-renderer-20260920`，含engine.js/data.json/manifest/tests.txt/lab-parity.json/timeline.txt/compat.txt。engine hash `C89C8F87217330DD516BD26B9B9B54DFF01E7907F0F9AD6BE28B13456FC91C58`，data hash `FB99F7C9406822920B02C3FEBF6050C0E2CBF8BFF82CB5174541E5517CB85CA1`。均为复制证据，无需移回；源FLAC仍在manifest绝对路径，未搬走。
+
+## 2026-09-20 当前音乐移植进度复核（只读代码与实机日志）
+
+- 用户要求对齐当前进度。当前已进入骑砍 PSAI 移植，具体演进记录在本文件末尾“推倒重来”“机制层重排”两节，不能只读文件头的网页实验室历史。现有 `GwpSyndicateMusicBehavior.cs` + SubModule 注册 + GwpTuning.Music + project.mbproj 声明 + Music/soundtrack.xml 为当前实现；自写 GwpMusicEngine/GwpMusicData 已退出当前代码。
+- 核对为5主题、26个OGG：开场2、低8、中8、高4、换牌1、收尾1、桥2。对仓库 `_Module/Music` 全部27文件及 ModuleData/project.mbproj 共28项与 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden` 做SHA256比较，全数一致。未在本轮构建、改音乐、播放或部署。
+- 当前live Client与Editor DLL哈希同为 `519c09fe74def04767211eede2309b509bfe45a075126e66933092d36c0377c4`，文件时间05:12:10；行为源时间05:12:07。日志 `C:\Users\lucif\Documents\Mount and Blade II Bannerlord\GreyWarden-Faults.log` 的最新一轮从05:13:43开始，文字格式与当前代码一致，但本轮未通过反编译逐方法证明DLL等于当前源码。
+- 最新一轮记录：05:13:43 开场“张力100%／兵力0%”；05:14:26“开打 高”；05:17:29换牌第一次；05:17:48收尾。证明这些状态路径执行过，不证明实际听到了正确音乐。开局0兵力导致直接高档的现象需要优先定位，原因尚未确认；当前 `_tier` 只升不降，所以早期错误高档会持续影响该场。不能用六种离线兵力模拟全部通过替代这条实机反证。
+- 当前PSAI方案会在原段末更新低中高的实际旋律，换挡当刻另叠桥；它不是GWENT的低中SameTime 2秒定向转换。换牌/收尾采用PSAI立即插入，亦不能直接称作完整复现GWENT下一拍/下一小节规则。
+- 音量方面GwpTuning注释写有抬到骑砍原版音乐水平；调查发现临时脚本 `C:\Users\lucif\AppData\Local\Temp\claude\C--Users-lucif-source-repos-GreyWardenPolicePurity\5bd76e6a-494f-4568-bf3d-a692575f006b\scratchpad\regain.py` 配置统一+9dB与alimiter。此为处理方案的证据，尚未对当前全部OGG复测证明实际增益。用户在本对话明确要求尽量还原原版、不自行猜音量；后续需对照素材处理历史处理这个偏差，不能仅凭 XML VolumeBoost=0 宣称没有增益。
+- 同一临时目录的 gen_soundtrack.py、regen_themes.py、verify_soundtrack.py、sim_tiers.py 保留生成/验证流程，父目录 export_music.py 为早期导出版本。旧脚本引用已删除 GwpMusicData 或旧中文OGG布局，不可直接重跑覆盖当前资产。文件仍在上述位置，本轮未移动。
+- Git基线仍为 e16ff95；音乐行为与Music目录未跟踪，Tuning/SubModule/project.mbproj/维护记录有未提交修改。目前是已部署的实机调试候选，未确认最终验收，不创建稳定检查点。
+
+## 2026-09-20 配乐验收后的音量差异定位
+
+- 用户确认音乐资源、流程与衔接符合预期，但牌局进度中的高潮与下方单独试听感觉不同。没有据此声称游戏运行时波形已一致；听感验收由用户进行，本轮未播放声音，也未刷新用户正在使用的浏览器页面。
+- 找到确定的页面差异：Engine master 默认 0.55，约 −5.1927 dB；下方原始源文件 HTML audio 默认 1.0，且不受上方旋钮控制。因此同页两入口额外相差约 5.2 dB。已统一牌局、游戏剪辑、核心及原始源文件的总音量；保留55%默认值，显示百分比/dB，从原始播放器调整音量也同步总控，不凭空提高默认播放音量。
+- 原件与游戏混音仍应保留不同的相对电平。四个高潮乐段分别使用 −10.5/−11/−11/−11 dB 静态增益；ffmpeg 对每段前5秒与相同源区间做 PCM 能量比测量，结果逐项与配置一致，见 `D:\GwentSyndicate\research\music-arrangement\high-volume-audit.json`。例如先前高潮01对原件试听共低约16.2 dB，其中11 dB属于原始配置，5.2 dB属于页面入口不一致。未把游戏增益删掉来强行追平原件。
+- 高潮有4个随机乐段，牌局衔接还会叠加前后尾音或过渡。新增“单独听当前乐段”，固定当前 Segment ID 从完整剪辑起点试听，用于排除随机选择与叠加差异；各乐段展示分轨静态增益。若用户比较的是下方“游戏剪辑／核心”而非“原始音频”，旧版这两个按钮本就共用 Engine 音量，不能用55%问题解释所有听感差异。
+- 本轮进一步发现19个唯一音轨有 AkClipAutomation，之前的 FLAC 渲染器未应用这些逐clip音量/淡入淡出包络；原始证据完整保存 `clip-automation-audit.json`。四个高潮音轨没有这类包络，不影响上述高潮单段增益结论，但其他片段/尾音的原版精确重建仍需补全。低中转换的浏览器 Log1 近似、Wwise总线/RTPC也仍非完整运行时还原。不要将“调度已验收”扩张为“混音已全量还原”。
+- 更新网站 `music-lab/index.html`、`app.js`；静态模块添加 volume2 版本参数，用户自行刷新后加载。改前源代码和data快照位于 `D:\GwentSyndicate\reconstruction\music-lab-before-volume-fix`；回滚时同名复制到网站 music-lab 目录，媒体不用移动。
+- `verify_volume.mjs` 以模拟 DOM/音频对象验证默认统一音量、总旋钮、原生播放器音量反向同步、静音和当前乐段ID，不访问音频设备；通过。原 `verify_lab.mjs` 全套调度检查仍通过，app.js语法通过。音乐文件与调度算法未改动。
+
+## 2026-09-20 辛迪加音乐机制、闪卡原版音效及动画重建准备
+
+用户选择“资源清单＋过渡试听页”，要求在现有网站验收；没有 Unity，明确选择“先准备重建工具与资源”。本轮不安装 Unity，未将未经渲染的场景称作已完成动画。用户最后要求停止声音、实验室由其验收；已在 Edge 点击停止，返回“尚未播放／停止全部试听”，后续只做静默检查。本轮未改骑砍 runtime、玩家 README、DLL 或正式包。
+
+### 来源与可复现资产位置
+
+- 原游戏：`D:\steam\steamapps\common\GWENT The Witcher Card Game`；Wwise 在 `Gwent_Data\StreamingAssets\audio`，Unity 在 `Gwent_Data\StreamingAssets\bundledassets`。初次误试不含 StreamingAssets 的路径失败，脚本已修正。
+- 音乐调查目录：`D:\GwentSyndicate\research\music-arrangement`。`source-manifest.json` 保存 PCK/BNK 哈希，`catalog.json` 保存音轨、剪辑、继承音量、拍号、列表和转换；`banks.xml` 为 wwiser 解析（多根 bank，解析需包一层 XML 根）。`arrangement.json`、`segments-compact.json` 保留转换与乐段数据。raw/decoded/render-manifest 保存原件、解码和生成哈希。
+- 本机 GameAssembly.dll SHA256：`85fa91d6f40f26066cd0db875da85a24fe9baf82252e334d47f63b2179498262`；元数据为 `Gwent_Data\il2cpp_data\Metadata\global-metadata.dat`。调查目录 `client\dump.cs`、`music-manager-disassembly.txt` 为 IL2CPP 符号与 GameplaySceneMusicManager 反汇编；`extract_gameplay_data.py` 从 shared/gameplay bundle 的 pathID `-8028231553967655240` 提取 `client\gameplay-music-data.json`，输入哈希在 `client\source-manifest.json`。
+- 工具持久保存在调查目录 tools：Il2CppDumper 6.7.46、wwiser 20260808、vgmstream；另使用 Python UnityPy/pefile/capstone、PATH ffmpeg/ffprobe。复现脚本包括 build_catalog.py、render_audio.py、build_lab_data.py、verify_lab.mjs。
+- 早期 lore/design 文件原在 `C:\Users\lucif\AppData\Local\Temp\claude\C--Users-lucif-source-repos-GreyWardenPolicePurity\5bd76e6a-494f-4568-bf3d-a692575f006b\scratchpad`。顶层 Markdown/Python/JSON 已复制到音乐调查目录 `previous-analysis`，含 codex/rewardbook/artbook、灰袍设定 v2–v6、v6 补充、六领袖等。vgmstream 另复制到 tools。原文件没有移出；旧分析不自动作为正确结论。
+
+以上是独立研究目录，不需搬入 `_Module`，后续直接使用绝对路径。
+
+### 已证实的原版音乐安排
+
+客户端事件枚举：None=0、Intro=1、Redraw=2、Low=3、Medium=4、High=5、Outro=6、Preview=7。`client\syndicate-music-events.json` 保存 vanityassets/music/36840470、36900470 的事件映射。
+
+| 本方手牌 | 第一局 | 第二局 | 第三局 |
+| --- | --- | --- | --- |
+| ≥7 | Low | Low | Medium |
+| 4–6 | Medium | Medium | High |
+| ≤3 | Medium | High | High |
+
+条件为本地底部玩家手牌严格 `<7`、`<4`，不是分差或敌方手牌。同局阶段只能前进，抽牌不会降强度，新局重置；初始手牌少可立即推进。首次换牌保持 Intro，之后局间换牌 Redraw；换牌期间手牌变化忽略。整场结束统一 Outro，不按胜负分不同尾曲。主题选哪一方受音乐玩家设置影响，不能说永远只取自己势力。可复查 RVA：Attach DF9AC0、CheckConditions DF9F80、GetMusicPlayer DFA170、Recheck DFB1C0、OnRoundStarted DFB060、UseRoundData DFB5F0、OnMulliganStarted DFAF90、OnGameEnded DFAEA0。
+
+- 当前主题 bank 2287957546 有 29 媒体条目；失落主题 bank 2961978553 有 6 个。共享通用 Outro WEM 362842405，去重共 **34 个源文件**。网站提供 **34 个游戏乐段**。music_general 32 条、music_main_menu 22 条已入调查，但未将它们全部归为辛迪加，也不宣称互联网原声全覆盖。
+- 实际继承父对象 157425423 的 **78 BPM、4/4**，一拍 0.76923 秒、小节 3.076923 秒、grid 12.30769 秒；子对象未覆盖的 120 默认字段不是实际速度。
+- Intro 列表 190678773：234147462 一次，随后 749858897 无限循环，核心各 12.30769 秒。Redraw 列表 1070212623 的 806478350 与第二开场段共享 WEM 64223851；旧 24 秒拼接不是原版待机循环。
+- Low 19337377 的 8 段、Medium 1008600724 的 8 段、High 14924526 的 4 段都采用 continuous random + shuffle、等权 50000、avoid repeat 1、无限循环，不是编号顺序拼接。Medium 每段两轨；六对共用基础 WEM，另两对基础 WEM 不同，不能概括成全部只增加一层。
+- 当前 Preview 384005032 约 **30.6575 秒**，旧 54 秒导出是整源文件。Outro 列表 1047329584 的 898636363 一次，完整 10.769 秒、核心 3.0769 秒。
+- 35 条原始转换保存在网站 data.json。19–26 为 Low 各段→Medium 指定 playlist item，27–34 反向；SameTime、2 秒 Log1，源 fade offset +2000 ms、目的 offset 0。Low/Medium↔High 下一小节加桥 B；三档→Redraw 下一拍加 B；Redraw→三档下一小节加 A；Intro→Low/Medium 下一 marker 无桥，Intro→High 下一 marker 加 A，Intro→Redraw 下一小节加 A，但第二开场段规则 5 覆盖规则 4，不加桥。三档→Outro 下一拍无桥；默认 ANY→ANY 下一拍。
+- 桥 A：Segment 913877518 / WEM 374177939；B：871517664 / 8758522。两者 entry=exit，**核心长度为 0**，完整约 10.520/10.712 秒是接缝的前后声音，不是等待十秒再播目的段。
+- 失落主题 Intro/Redraw/Low/Medium/High 都指向 1071125513 四段曲库，continue=1；random **非 shuffle**，avoid repeat 1，状态变更不中断。Outro 601463984 通用收尾，立即转换、无淡化。Preview 183064891 是 WEM 925921047 两次裁剪组成的 **30.5096 秒**，不是旧 3:08 整文件。
+- 生成 FLAC 使用 fPlayAt、begin/end trim、时间轴及继承静态音量，不对音乐使用闪卡响度标准。源乐段中途退出不能凭空跳到尾音。Wwise 官方 pre-entry/post-exit/fade offset 依据：<https://www.audiokinetic.com/en/library/edge/?id=setting_source_and_destination_properties&source=Help>。
+
+### 闪卡音效提取与统一响度
+
+`D:\GwentSyndicate\research\premium-cards` 保存 cards-complete、bank-catalog、premium-banks.xml、原始 BNK/WEM 和 loudness-report.json。网站 `extract_premium_audio.py` 根据 CardAudio.xml、事件/包 inclusion map 定位 PremiumCardPreview（type 6，区别于放置事件 type 3）；decode_premium_audio.py 读 DIDX/DATA 后用 vgmstream 解码。
+
+- 190 卡中 **186 卡**映射到 **180 个预览 bank/event**，共 **182 个独立声音**。202340、202354 各有双变体。4 个未映射预览事件：202577 军备宝箱、202788/202789/202790 三色突变诱发物。
+- **3 个原始静音**：180171517（202926 辛迪加克朗）、743599111（203238 爆炸物）、780813929（202563 萨沃拉的畏惧者），保留静音不添声。
+- 网站 `premium-audio` 保存原始解码 FLAC，`premium-audio-standard` 保存 **179 个**标准副本；不覆盖原件、旧视频或台词。默认卡面将旧视频静音，独立播放新声音，可切回“旧视频自带声音”。新声音与旧视频分别循环，尚未证明逐帧同步。台词依旧使用先前 gwent.one 中英文收集。
+- standardize_premium_audio.py 先测响度/真峰值，以固定增益 `min(-23-I, -1.1-TP)` 输出 48kHz/24bit FLAC，再复测与修正门限偏差。最初 two-pass loudnorm 有多个偏差，已改固定增益保留动态；580115672 从 −22.44 修正至 −22.92 LUFS。
+- 最终179个实测 **−23.53 至 −22.92 LUFS**，最高真峰值 **−1.10 dBTP**，SHA256 全部匹配。541273883 受真峰值上限保持 −23.53，不压缩强行增响。这些是统一试听母版；原版总线效果、随机音量未全量仿真，不是游戏最终混音录音。
+
+### 原始动画场景与渲染工具
+
+- 本机 bundle 版本是 **Unity 2022.3.62f2**，不是旧网络指南 2021.3.15。`D:\GwentSyndicate\reconstruction\source` 保存 **403 个**场景、高清 atlas、shader/VFX 依赖及 manifest 文件，约 300.5 MB；source-manifest.json 记录原始绝对位置、哈希和依赖。源副本没有从游戏目录移出，无 move-back 操作。
+- 网站 prepare_premium_rebuild.py 输出 reconstruction/capture-jobs.json 和 metadata：190 卡中 **177 ready_for_unity_render、13 scene_missing**。ready 只代表输入存在，不是渲染通过；镜头 FOV/距离/near/far、贴图路由和依赖已提取。
+- UnityProject/Assets/PremiumCapture.cs 直接载入 copied bundles 和原始 compiled shader，按元数据赋 atlas，启动 Animator/ParticleSystem、固定随机种子、捕获 PNG。Editor/CaptureBuild.cs、Build-Capture.ps1、Capture-One.ps1 提供 Windows D3D11 构建与单卡捕获；不启动或修改游戏。尚无 Unity 编译/运行证据，自定义 MonoBehaviour、材质、镜头、粒子、颜色空间都需实测。
+- 默认 **992×1424、60fps、20秒**是测试窗口，20秒不是已知循环周期。verify_sources.py 已通过403文件哈希与177卡引用检查。encode_candidate.py 要求显式帧区间，可配该卡音效及 offset，输出 candidates/卡号 与哈希侧车；不覆盖网站、不自动接受视频。Python语法与参数帮助通过，真实输入编码待渲染后验证。
+- 旧13缺片的已知 gwent.one WebM/MP4 URL 均404，记录 media-repair.json，不据此认定原版无动画。203209 殉教者与203201审判官 art/audio相同，已复用已存视频；**177 文件支持178卡播放**。剩余缺片和13缺独立场景是不同集合，资源页分别列出。
+- 网站改动前副本位于 `D:\GwentSyndicate\reconstruction\website-before-20260920`。需回滚时将其中 build.py/index.html/README.md/gains.json 同名复制回 `D:\GwentSyndicate\辛迪加全卡档案`；新增媒体/调查保留。reconstruction/README.md 为工具操作说明，调查结论以本维护文档为准。
+
+### 网站及验证
+
+首页新增“配乐实验室”“资源重建”、本机标准版/旧视频声音切换、独立音效按钮。media-status.html 逐卡试听原件/标准版并查缺失；music-lab 提供主题、手牌、局数、换牌及收尾控制，35规则、34乐段、34源文件。网站 README 已纠正“190视频全齐”等原说明；旧14轨保留并标为旧拼接。serve.py 对HTML/JS/CSS/JSON设no-cache，避免下次开发被一周缓存遮蔽。
+
+浏览器播放器的 Log1 是对数曲线近似，未仿真 Wwise RTPC、总线效果、全局场景切换。为保留完整 pre-entry 会等到有足够提前量的同步点；连续指令仲裁可能不同。页面已说明，不宣称 bit-exact 复刻运行时。
+
+- verify_lab.mjs通过：9个阈值边界、75轮shuffle及跨轮不重复、beta避免连播、16个定向低中转换、Intro特例、零核心过渡、拍/小节同步、核心试听精确offset、68个音频引用存在。
+- 34游戏剪辑 ffprobe 时长与原时间轴最大误差 **0.00000726秒**；179音效哈希无失败；403源文件校验无失败；JS/Python静态检查通过。
+- Edge 界面实测：Intro01→02重复；第一局10手牌Low，降6进入对应Medium同位置2秒fade；加回10不降档；Medium→High下一小节加B；High→Redraw下一拍加B。验证的是浏览器执行路径，不替代用户听感或原游戏AB验收。用户要求停止后已停止，听感验收留给用户。
+- 原8731服务已退出，重启本机后台静态服务（当次PID25492）；入口 `http://127.0.0.1:8731/`、`/music-lab/`、`/media-status.html`。停服后执行网站 serve.py 或打开档案.bat 重启。
+
+## 2026-09-20 项目状态纠正与辛迪加设定研究位置
+
+- 用户确认：退役队、灰袍任务对话性格分支、联机适配三项均处于搁置状态，不作为当前推进事项。联机工作保存在 `coop-bridge` 分支。
+- 用户确认，09-17 弥瑟被困于 14.75 战役小时野战的问题，最后查明是战斗中敌方支援导致。本次未重新取证，不补写未经核验的引擎细节；下方旧调查中“原因未明”仅代表当时状态，不再列为当前未决问题。
+- 当前方向：挖掘《巫师之昆特牌》辛迪加的设定，准备复刻到《骑马与砍杀 II：霸主》。研究资料独立保存在 `D:\GwentSyndicate`；本次在灰袍仓库的 Markdown、JSON、HTML 中未发现对应的辛迪加研究记录。
+- 资料网站位于 `D:\GwentSyndicate\辛迪加全卡档案`：`README.md` 为使用说明，`syn_cards.json` 与 `syn_cn_raw.json` / `syn_en_raw.json` 保存卡牌与中英设定文本，`build.py` 生成 `index.html`。运行该目录的 `打开档案.bat`，或在此目录执行 `python serve.py 8731`，访问 `http://127.0.0.1:8731/`。已具备帮派分类、原画、动态卡面、中英配音及配乐；这属于研究档案，不能据此宣称已在骑砍中实现势力。
+- 本次实际清点：190 条卡牌数据，其中 189 条有中英背景文本；`art` 189 文件、`art_hd` 189 文件、`video` 177 文件、中文配音 594 文件、英文配音 595 文件、配乐 14 文件。网站 README 中“190 张原画、190 个动态卡面”与磁盘实数不一致；本次只核对，不补抓或改动该独立项目。
+- 配乐研究位于 `D:\GwentSyndicate\辛迪加配乐`，其 `README.md` 记录 Wwise 出入点拼接、强度分层与切换、完整版及循环版处理，`manifest.json` 保存曲目清单。这些目录是独立研究资料，本次未移动，也不需要搬回 `_Module`；继续研究直接使用上述绝对路径。
+
 ## 2026-09-17 性能排查：按执行频率分层，只有两处真在每帧烧 CPU
 
 用户担心代码给 CPU 压力太大。**按频率排查而不是按代码量**，结论是绝大部分开销不存在，真问题只有两处。
@@ -18760,3 +18903,369 @@ irreplaceable backup; the editor workspace does not replace it.
   启动游戏，由用户进行行为验证；普通开发构建没有创建或改写正式 ZIP，本机唯一正式包仍为
   `GreyWarden-v1.4-r7.zip`，SHA-256 仍为
   `963AA367A2512126E5DBB92D04792A0075C3C1DE20DD7D40B61B6E2468ECE15A`。
+
+## 2026-09-20 开发：辛迪加分段配乐移植到战场
+
+- 把《巫师之昆特牌》辛迪加阵营的游戏进程配乐机制整套搬进战斗任务。原版那套只有五个
+  状态——开场、低／中／高强度、局间换牌、整场收尾——挡位由"第几局 × 手牌还剩多少"查表
+  决定，且**局内只升不降**，换牌时清零。战场上的对应关系取手牌 → 我方剩余兵力、换牌 →
+  双方脱离接触重整队形；局的边界本来就是换牌，所以不另设回合信号，换牌判定本身即回合
+  边界。骑砍原版 PSAI 的做法只作参照，没有沿用它的强度连续插值。
+- **前提门槛：场上没有灰袍就完全不碰音乐。** 判定三条取或——玩家氏族为 `gw`、
+  `PlayerBountyBehavior.IsRecruitedByGreyWardens`（玩家加入灰袍当雇佣兵后角色 id 并不以
+  `gw` 开头，这条专门覆盖他）、或场上任一 Agent 的 `Character.StringId` 以 `gw` 开头。
+  三条都不成立时行为直接释放引擎并退出，原版配乐照常播放。自定义战斗没有战役数据，靠
+  第三条生效，所以行为注册在 `SubModule.OnMissionBehaviorInitialize` 的 Campaign 判断
+  **之前**。
+- 关键发现：低强度 0N 与中强度 0N 是同一段音乐的两层——八组的时长、入点、出点完全一致，
+  中强度只是多一条叠加轨。因此低↔中不需要从片段中间切入，两者同时起播、只调叠加轨音量
+  即可，`TaleWorlds.Engine.Music` 没有 seek 也够用。这一条决定了整个播放层的形状。
+- 叠加轨的开关状态放在 `GwpMusicEngine` 而不是状态机手里。接缝处下一对乐段往往已经提前
+  排好，若由调用方拿着"当前这一对"的引用调音量，改到的只是正在放的那一对，等新的一对起
+  来又跳回去——低→中会出现最长七秒听不出变化的空窗。状态归引擎后，新排的乐段自然带上正确
+  音量。
+- 接缝算术两处修正：换曲子的落点要同时放得下目的段和过渡段的引子（`EarliestAnchor` 取两者
+  较大值，否则高强度 01 的 385 ms 引子配上过渡 B 的 1481 ms 会被迫立即起播，入点落不到小节
+  线上）；曲库续接的前瞻窗口从 `1500` 提到 `7000` ms，必须大于最长引子（低强度 02 为
+  6154 ms），否则那一段来不及提前起播。离线核算全部提前量非负，续接余量 `+846` ms。
+- 通道不够时不再直接丢掉新段——那会让旋律凭空断掉——而是回收当前音量最低的一条：它要么已
+  淡到接近静音，要么是最旧的尾音。叠加轨静音时不参与回收，否则要推上来只能重起。
+- 资源为 26 段 ogg（`-q:a 6 -ar 48000`，共 21 MB）放在 `_Module/Music/`，随既有
+  `CopyModuleData` 同步到 `Modules/GreyWarden/Music/`；编排数据由工具从 Wwise 导出后生成成
+  `GwpMusicData.cs`（net472 无内置 JSON，生成代码编译期可校验且没有解析风险）。阈值集中在
+  `GwpTuning.Music`。
+- 换牌判定用杀伤速率相对**本回合峰值**塌下来并持续 `LullSecondsForRedraw` 秒，不用绝对值，
+  这样 20 打 20 和 200 打 200 共用一套阈值；一边已经崩到 `RedrawMinOurRatio` 以下算决胜而
+  不是重整，不走换牌。
+- 验收期 `GwpTuning.Music.AnnounceGear` 为 `true`，每次换挡在屏幕打出回合、挡位、兵力与
+  触发原因；定稿后改回 `false`。
+- `dotnet build` 为 `0` 错误 `0` 警告并自动部署，实机 `Modules/GreyWarden/Music/` 确认 26 个
+  文件 21 MB。按用户要求没有启动游戏，由用户在自定义战斗中听感验收。
+
+## 2026-09-20 实机验收：布阵无声、响度偏低、原版未静音
+
+用户首次实机反馈三条：排兵布阵阶段没有音乐，进战斗后有了但太小，且原版音乐没被静掉。
+反编译实机 DLL 后确认前两条与第三条其实只有两个根因。
+
+- **PSAI 与我们抢的是同一个原生通道池。** `psai.net.AudioPlaybackLayerChannelStandalone`
+  的构造函数里就调 `Music.GetFreeMusicChannelIndex()` 抓一条，`Release()` 是空实现；
+  `psai.net.Logik.m_playbackChannels` 是 `new PlaybackChannel[9]`，也就是 PSAI 常驻占着
+  **9 条**。静音后它要走完 3 秒淡出、`ReleaseSegment()` → `Music.UnloadClip` 之后才真正
+  放开。我们在首帧静音的同一刻就排开场段，`Acquire` 拿到 `-1`，`Schedule` 静默落空且不
+  重试——于是布阵阶段一声没有，等 8 秒后换挡重排才突然响起来。
+  修法：`Add`／`Schedule`／`ScheduleLayered` 改为返回成败（基底没拿到通道就不单放叠加轨，
+  否则只剩一层伴奏）；引擎新增 `IsIdle`；状态机每帧跑 `KeepSounding`，发现一段都没在响
+  就隔 `RetrySeconds`（0.75 秒）重排当前挡位。`EnterRedraw` 拆成记账与 `PlayRedraw` 两半，
+  重排时不会再推进回合。排不出来的段不再打 `Announce`，日志不说谎。
+- **`DeactivateBattleMode()` 不是总闸。** 它只 `StopMusic` 一次并把 `CurrentMode` 置为
+  `Paused`，而 `MBMusicManager.Update()` 里的 `_activeMusicHandler.OnUpdated(dt)` 照常运行，
+  战斗一打响原版又自己起一个主题。真正的总闸是 `PauseMusicManagerSystem()`：它置位
+  `_systemPaused`，`Update()` 整段跳过处理器，没有东西能再起主题，而 `PsaiCore.Instance.Update()`
+  仍在跑，淡出得以走完、通道得以释放。收尾改用 `UnpauseMusicManagerSystem()` 对称恢复。
+- **响度偏低 = 素材问题，不是音量调用问题。** `PlaybackChannel.UpdateVolume` 传给
+  `Music.SetVolume` 的是 `MasterVolume * FadeOutVolume`，PSAI 常态就是 `1.0`，与我们的
+  `0.85` 同量级。实测差在素材：原版战斗音乐文件名里的 `_NNprc` 后缀就是它自己的强度分档，
+  拿总体中位数对比是错的口径。按档位对档位量出——低强度 `-28.5` vs 原版 20% 档 `-21.2`、
+  高强度 `-22.6` vs 100% 档 `-14.0`，三档平均差 **+9.5 dB**。
+  **不能逐文件归一化**：低／中／高之间的响度差正是辛迪加的强度分层，抹平了整套机制就没
+  意义。因此从 FLAC 源统一加 `+9 dB`，再用真峰值限幅 `-1.5 dBFS`（给 vorbis 过冲留余量）
+  兜住少数超顶瞬态。按 +9 dB 算，低强度与高强度的峰值落在 `-1.5` / `-1.6` dBFS，限幅器在
+  玩家听得最多的这两组上根本不启动，只碰到收尾段与中强度的个别瞬态。
+  重导后三档平均差 `+0.5 dB`，分层跨度仍是 `5.9 dB`（与处理前完全一致），全部真峰值
+  ≤ `-0.9 dBFS`。`MasterVolume` 随之回到 `1.0`。
+- `dotnet build` 为 `0` 错误 `0` 警告并自动部署；仓库与实机 `Music/` 各 26 个文件、
+  大小不一致 `0` 个，无残留临时文件。
+
+## 2026-09-20 实机验收二轮：接缝断断续续
+
+布阵阶段有声了，但整场音乐断断续续。机制本身没问题，问题全在播放层——五个成因，
+其中两个是重构时自己引入的，另外三个是没照着原版 PSAI 的做法来。
+
+- **淡出指令落到了刚排上的新段身上。** `ToLowOrMedium` 里 `FadeOutAllExcept(null, …)`
+  排在 `ScheduleLayered` **之后**，而 `keep` 传的是 `null`，意思是"谁都不保留"——包括
+  上面两行刚排上的那一对。于是每次换挡进低/中，新排的音乐一上来就开始淡向静音。这是
+  上一轮把 `FadeOutOld(引用)` 换成 `FadeOutAllExcept` 时引入的。改为"先淡旧的、再排
+  新的"，顺序本身保证不会误伤，`except` 参数一并取消，换成 `FadeOutAll(holdUntilMs, fadeMs)`。
+- **`FadeLead` 做的和它注释说的相反。** 它返回 `(过渡点 - 现在) + SeamFadeMs` 作为一条
+  线性斜坡的总长，结果旧段从下达指令那一刻就开始塌音量，而不是"撑到过渡点再淡"。改为
+  在 `Voice` 上加 `RampDelayMs`，`Tick` 先耗延迟再走斜坡。
+- **`Music.LoadClip` 是异步的。** PSAI 按 `s_audioLayerMaximumLatencyForBufferingSounds
+  = 200` 毫秒缓冲加 `s_audioLayerMaximumLatencyForPlayingbackPrebufferedSounds = 50`
+  毫秒起播延迟来算。我们的开场段引导量只有 80 毫秒、过渡段只有 60 毫秒，装载根本没完成。
+  新增 `MinLeadMs = 200 + 50 + 50 = 300`，所有排程点都按它算；`Add` 对引导量不足的请求
+  直接拒绝并返回 false，宁可让看门狗重排，也不出半截声音。
+- **`Music.PlayDelayed` 不该接大延迟。** 反编译确认 PSAI 在 `num > 250` 毫秒时**根本不
+  调用**它，而是挂自己的定时器等到临近，再用一个几十毫秒的小延迟下达起播；装载则在做
+  决定那一刻就完成。也就是说引擎被实际验证过的延迟只有几十毫秒这一档，而我们一次性甩
+  进去七秒——没人走过的路。改为同样的"装载提前、起播压后"：`Add` 只 `LoadClip`，`Tick`
+  在出声前 `PlayLatencyMs` 下达 `PlayDelayed`，传入值恒在 0–50 毫秒。
+- **时间基准用错。** PSAI 用 `Stopwatch`（墙钟），我们累加任务 `dt`。两者会越走越偏，
+  几十秒的乐段过后接缝就对不上。引擎改为自带 `Stopwatch`，`Tick()` 不再接收 `dt`。
+- 另外两处顺手修掉：`SetOverlay` 会把刚被判淡出的旧叠加轨的目标音量又拉回 1；`Inaudible`
+  排除了 overlay，导致已淡到零的旧叠加轨要占着通道直到片尾（最长 45 秒）。给 `Voice` 加
+  `Retired` 标记，换段时置位，两处一并解决。通道回收也改为分级牺牲：先回收已淡到零的尾音，
+  其次是退役的叠加轨，再次是出点之后的自然衰减，**正在放核心段落的绝不动**，没得回收就
+  返回 -1 交给看门狗。
+- 离线做了一版照着 C# 复刻时序的模拟（`sim2.py`），跑完整场并逐条断言：每次排程的引导量
+  ≥ 300 毫秒、淡出指令不落到新段、续接时新段入点正好落在旧段出点。三项全过，同时占用通道
+  峰值 `4` 条（PSAI 另外常驻 9 条）。`SeamLookaheadMs` 相应提到 `7500`，容得下最长入点
+  6154 毫秒再加引导量。
+- `dotnet build` 为 `0` 错误 `0` 警告并自动部署。仍未启动游戏，由用户听感验收。
+
+## 2026-09-20 读透原版音乐机制，静态穷尽排查
+
+用户指出前两轮都是"写完让他去试错"，要求把原版机制读透、把能在代码层判定的问题全部
+判定掉，真正只能实操的部分交给监控规则。本轮据此重做。
+
+### 原版机制（反编译 1.4.8 实机 DLL）
+
+- `MBMusicManager`（TaleWorlds.MountAndBlade）持有三个 `IMusicHandler`，
+  `CheckActiveHandler` 的优先级是 `battle ?? silenced ?? campaign`。`Update()` 里
+  `_activeMusicHandler.OnUpdated(dt)` 是一切主题的发起点，且整段包在 `if (!_systemPaused)`
+  里——`PauseMusicManagerSystem()` 才是总闸，`DeactivateBattleMode()` 只停一次且模式会被
+  处理器重新激活。全仓搜索确认：战斗中**没有任何代码**会调 `UnpauseMusicManagerSystem`，
+  它只出现在 `InitialState.OnActivate`（主菜单）与 `VideoPlaybackState.OnVideoFinished`。
+- 战斗侧的处理器是 `MusicBattleMissionView`（TaleWorlds.MountAndBlade.View，是 MissionView
+  不是 MissionBehavior）。它是**强度连续驱动**：`OnAgentRemoved` 按敌我加权调
+  `ChangeCurrentThemeIntensity`，玩家本人击杀再乘一个系数；冲锋令有 60 秒冷却的强度加成；
+  `CheckIntensityFall` 每帧把强度托到 `MusicParameters.MinIntensity` 之上；力量比越过
+  `BattleRatioTresholdOnIntensity` 时整体换主题。参数在 `Native/ModuleData/music_parameters.xml`。
+- 兵力口径取自 `DefaultBattleMissionAgentSpawnLogic` 的
+  `NumberOfActive/RemainingDefenderTroops`，布阵结束用 `IsDeploymentOver`
+  （= 不在布阵模式**且**初始生成完成）。
+- 音频底层：PSAI（`TaleWorlds.PSAI`）与我们共用 `TaleWorlds.Engine.Music` 的同一个原生
+  通道池。`Logik` 构造时 `new PlaybackChannel[9]`，每个 `PlaybackChannel` 的
+  `AudioPlaybackLayerChannelStandalone` 在构造函数里调一次
+  `Music.GetFreeMusicChannelIndex()`——**全程序仅此一处调用**——之后整局游戏在同一批
+  index 上反复 `LoadClip`/`UnloadClip`。
+
+### 根因：通道是单向分配，我们取了不还
+
+`Music` 类只有 `GetFreeMusicChannelIndex` 这一个取通道的入口，**没有归还的入口**；
+`UnloadClip` 只卸片段，通道仍归调用者。PSAI 的用法（9 条一次取够、终生持有）正是对这一
+语义的确证。而我们此前**每排一段乐段就取一条新通道**，一场仗要排几十段（低中成对就是
+两条，加过渡更多），池子几分钟被抽干，之后只返回 -1；换一场战斗只会更糟，因为上一场
+占掉的永远回不来。这就是"进战斗后更严重、越放越断"的来源。
+
+改为进程级通道池 `GwpMusicChannels`：一次取 6 条、终生持有，引擎在自己的槽位上复用。
+拿不到足够条数时按档降级——`< 5` 省掉过渡段，`< 4` 省掉叠加轨（低中无层次差但旋律连续），
+`< 2` 整体让位给原版。
+
+### 同轮静态查出并修掉的其他问题
+
+- **非战斗任务也会被接管。** 行为注册在所有任务上，城镇漫游／对话／竞技场里玩家同样是
+  灰袍成员，会把环境音乐掐掉换成战斗配乐。改为要求 `DefaultBattleMissionAgentSpawnLogic`
+  存在——原版的 `MusicBattleMissionView` 也正是只出现在带这套生成逻辑的任务里。已确认
+  自定义战斗模块同时含有这两个类型。
+- **兵力口径错误。** 原用 `Team.ActiveAgents` 只数场上活人；战斗规模有上限时场上人数被
+  补员一直顶在上限附近，比例永远接近 100%，**挡位根本升不上去**。改用原版同一口径：
+  活着的 + 尚未入场的增援，并以见过的峰值为基准。
+- **布阵判定不足。** `Mission.Mode == Deployment` 会在士兵还在陆续入场时就判定开打，
+  改用 `IsDeploymentOver`。
+- **在场判定只做一次。** 灰袍若排在后续入场批次会漏判。改为布阵期间逐帧重试，布阵结束
+  才下定论。
+- **静音可能恢复不了。** 只挂在 `OnEndMission` 上，异常拆卸路径会让玩家一路没有音乐直到
+  回主菜单（原版战斗中不会替我们解除静音）。改为幂等的 `Teardown()`，同时挂
+  `OnEndMission` / `OnRemoveBehavior` / `OnMissionStateFinalized`。
+
+### 验证（`sim3.py`）
+
+照 C# 复刻整条播放链路，在 2/3/4/5/6 条通道下各跑 12 分钟战斗，逐条断言：
+引导量 ≥ 300 毫秒、淡出指令不落到新段、续接入点对齐出点、槽位不超额且不泄漏、
+开场起播后无超过 250 毫秒的静音空档。**五档全部通过，泄漏 0，最长空档 0 毫秒。**
+
+并做了反向对照：把上一轮实机暴露的三个真 bug（淡出排在排程之后、引导量 60 毫秒、
+通道取了不还）逐个注回，断言分别报出 1056 毫秒空档、排程被全部拒绝、泄漏 2 条——
+确认这套断言不是空跑。
+
+### 唯一无法静态判定的量
+
+引擎原生通道池的总条数在原生层，托管侧读不到。代码已对 2–6 条全部验证可用，并在战斗
+开始时把实际拿到的条数与降级档位打到屏幕上、写进 `GwpFaultTrace`，不需要用户猜。
+
+`dotnet build` 为 `0` 错误 `0` 警告并自动部署。
+
+## 2026-09-20 监控定位：通道取早了，且把失败记死
+
+用户报"没有任何提示文本、声音也全没了"，并要求直接看监控而不是再试。日志一次定位：
+
+```
+04:46:12 | SYNDICATE_MUSIC | 取得音乐通道 0/6（原版 PSAI 另占 9 条，且同样不归还）
+```
+
+全程 **0 条**"通道耗尽 / 引导量不足"记录——不是用着用着没的，是**一开始就一条都没拿到**。
+`Capacity = 0` → `Available = false` → 行为压根没激活 → 没有播报、没有我方音乐。
+
+- **取通道的时机错了。** 上一版把通道池的获取放进 `GwpMusicEngine` 构造函数，而构造函数
+  在 `AfterStart()` 里跑；此时引擎的音乐系统尚未就绪，`GetFreeMusicChannelIndex()` 返回
+  -1。再往前一版是在 `OnMissionTick` 里按段获取的，日志显示那时拿得到（04:29 的一整轮
+  排程都成功了）。**而且把首次失败缓存在静态字段 `_tried` 里**，于是整个游戏会话再也不会
+  重试——这正是"什么都没有"的直接原因。
+  改为 `TopUp(nowMs)`：惰性、可重试、每秒最多试一次，条数变化时才写一行日志。
+- **结构性修正：确认自己发声之后才静音原版。** 这是"声音也全没了"这类症状的治本之策。
+  拿不到通道时若已经把原版停掉，结果就是彻底死寂。现在顺序反过来——`TakeOverWhenAudible`
+  等 `HasSounding` 为真才调 `PauseMusicManagerSystem`；宽限 `TakeoverGraceSeconds = 20`
+  秒仍拿不到就干净退出，播报"通道 N 条，不足以接管，交还原版配乐"，音乐完整还给原版。
+  无论哪条路径，玩家都有音乐、也都有一行说明。
+- **日志还抓到第二个真错。** `Clan.PlayerClan` 的取值器在自定义战斗里直接抛
+  `NullReferenceException`（`QUIET_FAILURE | GwpSyndicateMusicBehavior.cs:134`），把整个
+  try 块中断，后面的 `IsRecruitedByGreyWardens` 判定根本不执行。改为先判 `Campaign.Current`。
+- **自查抓到一个刚引入的错。** 节流写成 `nowMs - _lastTryMs < 1000` 且 `_lastTryMs` 初值
+  取 `int.MinValue`，`0 - int.MinValue` 整数溢出成负数，判断恒成立，`TopUp` 一次都不会执行
+  ——整个修复会变成空操作。改用"下次可试时刻"`_nextTryMs`，初值 0。
+- 重排空转时补记一行"一段都没在响，重排（通道 N 条）"，万一再出现空转，日志直接指名原因。
+
+验证：`sim3.py` 主链路回归（2/3/4/5/6 条通道 × 12 分钟，泄漏 0、最长空档 0 毫秒）；新增
+`sim4.py` 专测通道迟到，在"立刻可用／3 秒后／15 秒后／25 秒后／永远拿不到"五种时机下断言
+**不出现"我方无声且原版已被停掉"的死寂**，五种全部通过，并静态核对了静音顺序与节流无溢出。
+
+`dotnet build` 为 `0` 错误 `0` 警告并自动部署。
+
+## 2026-09-20 推倒重来：改走原版留给模组的 PSAI 音轨接口
+
+前四轮都失败。用户指出方向错了——辛迪加的资源与逻辑一直是清楚的，欠的是对原版机制的
+理解。查过社区与实机 DLL 后确认：**之前整条路走反了。**
+
+### 走反在哪
+
+`TaleWorlds.Engine.Music` 的 `GetFreeMusicChannelIndex` 是单向分配、没有归还入口，
+九条通道在游戏启动时就被 PSAI（`Logik` 构造函数里 `new PlaybackChannel[9]`）全部拿走。
+模组根本抢不到——实机日志的 `取得音乐通道 0/6` 就是这个事实。即便抢到，装载异步、起播
+延迟、墙钟时基、小节对齐、交叉淡化也全要重写一遍，前几轮的 bug 全出在这些重写上。
+
+### 原版给模组留的正规接口
+
+反编译得到的完整链路（1.4.8）：
+
+1. `Module.LoadSubModules` 先对**每个模组**跑 `XmlResource.GetMbprojxmls`，读
+   `<模组>/ModuleData/project.mbproj` 里的 `<base><file id=... /></base>`。
+2. 之后 View 子模组的 `OnSubModuleLoad` 调 `MBMusicManager.Create()`；其构造函数收集所有
+   声明了 `id="soln_soundtrack"` 的模组，`PsaiCore.LoadSoundtrackFromProjectFile` 逐个读
+   `<模组>/Music/soundtrack.xml` 并 `MergeProjects` 合并。
+3. `PsaiProject.ReconstructIds` 用 `int.Parse(ModuleIdPrefix + 本地 id)` **字符串拼接**出
+   全局 id（官方 NavalDLC 前缀 `1024`，主题 1 即 10241——这解释了之前观察到的 10240 偏移）。
+4. 播放时 `AudioPlaybackLayerChannelStandalone.LoadSegment` 走
+   `GetModuleFullPath(moduleId) + "Music/" + ConvertFilePathForPlatform(Path)`，
+   而 PC 平台的转换硬编码为 `<目录>/PC/<文件名去扩展名>.ogg`——**音频必须放在
+   `Music/PC/` 下，且只能是 ogg**。
+
+因为 `GetMbprojxmls` 对所有模组的遍历早于 `MBMusicManager.Create()`，模组自带音轨会被自动
+加载，**不需要 Harmony 补丁**。
+
+### PSAI 与 Wwise 结构同构，字段一一对应
+
+| 辛迪加（Wwise） | PSAI |
+| --- | --- |
+| 入点前引子 `entryMs` | `PreBeatLengthInSamples` |
+| 出点后尾音 `dur - exitMs` | `PostBeatLengthInSamples` |
+| 强度分层 低/中/高 | `Intensity` 0.25 / 0.55 / 0.90 |
+| 开场 / 收尾 | `IsUsableAtStart` / `IsUsableAtEnd` |
+| 过渡衔接段 | `IsAutomaticBridgeSegment` |
+| 局间换牌 | 独立的 `ThemeTypeInt=3`(action) 主题 |
+
+换牌用 action 类型主题是有讲究的：PSAI 在非 `basicMood` 主题放完后**自动回到上一个基本
+情绪**，正好是"换完牌继续打"的语义，不必手动切回。
+
+### 本轮实现
+
+- 生成 `_Module/Music/soundtrack.xml`：前缀 `9070`，战斗主题 `90701`（25 段：开场 2、
+  低 8、中 8、高 4、收尾 1、过渡 2），换牌主题 `90702`（1 段）。26 个 ogg 移入
+  `_Module/Music/PC/` 并改成 ASCII 名。`project.mbproj` 加入 `soln_soundtrack` 声明。
+- `GwpSyndicateMusicBehavior` 只剩两件事：判挡位、把挡位翻译成 PSAI 强度。
+  接管用 `PauseMusicManagerSystem()`（停原版处理器，`PsaiCore.Instance.Update()` 不受影响），
+  起自己的主题用 `StartTheme`，换挡用 `ChangeCurrentThemeIntensity`，收尾用
+  `StopMusic(immediately:false, 3f)` 让 PSAI 排上 `IsUsableAtEnd` 的那一段。
+- **删除 `GwpMusicEngine.cs` 与 `GwpMusicData.cs`**（约 700 行自写播放层）。产物中已不再
+  出现 `GetFreeMusicChannelIndex`。
+
+### 一个必须写对、且不能照抄官方的地方
+
+`BuildPsaiDotNetSoundtrackFromProject` 第 1104 行是
+`soundtrack.getThemeById(segment.ThemeId).m_segments.Add(segment)`，而主题字典的键是**加过
+前缀**的全局 id；`ReconstructIds` 并不改写 `segment.ThemeId`，`Group.Theme` 是自动属性也不
+传播，`AddSnippet_internal`（会传播的那处）只在编辑器路径跑。所以 `<ThemeId>` 必须直接写
+**全局值**。官方 NavalDLC 写的是未加前缀的 `1..10`，那是 TaleWorlds 自己的缺陷——照抄会让
+我们的段落被归档进原版同号主题，自己的主题空着，触发后没有任何声音。
+
+### 校验（`verify_soundtrack.py`，按 PSAI 的实际解析规则复刻）
+
+`project.mbproj` 声明 ✓；`ModuleIdPrefix` 与全局 id 推导 ✓；26 个段落 id 互不重复 ✓；
+代码常量 `[90701, 90702]` 与音轨一致 ✓；26 段音频按 PC 规则全部解析到 `Music/PC/` ✓；
+采样率／总长／引子尾音自洽 ✓；旧播放层已彻底移除 ✓。**全部通过。**
+
+（衔接段的引子+尾音等于总长是合法的：入点与出点重合、核心长度为零，PSAI 会让下一段紧接
+其引子起播、尾音自然叠上去。第一版断言写成了 `>=`，是断言错不是数据错。）
+
+`dotnet build` 为 `0` 错误 `0` 警告并自动部署。
+
+## 2026-09-20 机制层重排：用主题类型拿回切换时机
+
+素材已经能连续播放，剩下的是机制。用户反馈：低中高听不出切换、开场应落在准备界面、
+衔接要装上、一般打不出回合所以三档要在一回合内体现、换牌几乎触发不到、收尾感觉不对。
+
+### 听不出换挡的根因
+
+反编译确认 `TriggerMusicTheme` 在 `effectiveSegment.ThemeId == argTheme.id` 时**只改强度、
+不切段**；而 PSAI 只在当前段快放完时（`SegmentEndApproachingHandler`）才重新选段。我们的
+段落长 30 到 45 秒，于是"把强度从 0.25 推到 0.55"要等一整段才听得见。上一版把低中高塞进
+同一个主题靠强度换挡，方向就错了。
+
+`Theme.GetThemeInterruptionBehavior` 的矩阵给出正确用法：
+
+```
+  basicMood → basicMood        at_end_of_current_snippet
+  basicMood → action/dramatic  immediately
+  basicMood → highlightLayer   layer
+```
+
+### 重排为五个主题
+
+| 主题 | 全局 id | 类型 | 用途 |
+| --- | --- | --- | --- |
+| 开场 | 90701 | basicMood | 布阵/准备界面期间循环 |
+| 战斗 | 90702 | basicMood | 低 0.20 / 中 0.55 / 高 0.90 共 20 段 |
+| 换牌 | 90703 | action | 立即切入，放完 PSAI 自动回到基本情绪 |
+| 收尾 | 90704 | dramaticEvent | 立即切入 |
+| 衔接 | 90705 | highlightLayer | 换挡瞬间层叠一记 |
+
+- **开场**独立成主题，只在 `IsDeploymentOver` 为假时播；布阵一结束转战斗主题。两者都是
+  basicMood，PSAI 会等开场段落走完再换，乐句不会被腰斩。
+- **衔接**走 `startHighlight` → `PlaySegmentLayeredAndImmediately`，在换挡当刻叠在正放的
+  音乐上——玩家立刻听得到"变了"，而新挡位的旋律在下一个乐段边界自然接上。这正是辛迪加
+  过渡段的用法。
+- **收尾**改为立即切换的 dramaticEvent 主题。先前用 `StopMusic(排队收尾段)` 要等当前段
+  放完才响，结算画面往往已经过去了——这就是"收尾感觉不对"。
+
+### 张力口径：一个回合内走完三档
+
+放弃按回合查表（用户指出一般打不出回合）。张力取两者之高：
+
+- **牌见底的程度** `1 - min(我方剩余比例, 敌方剩余比例)`。昆特牌里一局的结束就是"谁先
+  没牌"，战场上的同构物是"谁先被打空"——无论碾压、惨败还是拉锯，总有一方会耗尽，所以
+  这个量在任何一场打到底的仗里都必然涨到头。
+- **我方压力** `(1 - 我方剩余比例) × 1.35`。打得越吃力升挡越早。
+
+第一版写成"双方合计消耗"，在 200v80 的压倒性胜利里只能涨到 0.37，卡在中档走不到高——
+改成取更吃紧的一方后六种形态全部走通。
+
+### 换牌改挂在真实会发生的事件上
+
+原先挂"双方脱离接触"，一般战斗根本不出现那种停顿。改用原版配乐自己的信号：双方力量比
+相对开局倾斜过阈值（对应 `MusicParameters.BattleRatioTresholdOnIntensity`），也就是战局
+易手的那一刻。最多两次、冷却 45 秒——两次换牌即三局，正好对应昆特牌的局数。
+
+### 验证
+
+`sim_tiers.py` 跑六种战斗形态（压倒性胜利／势均力敌／苦战获胜／惨败／小规模／围城守方）：
+
+```
+压倒性胜利 200v80    低@0 中@59 高@131   换牌 2 次
+势均力敌 150v150     低@0 中@62 高@138   换牌 2 次
+苦战获胜 120v180     低@0 中@56 高@124   换牌 2 次
+惨败 100v250         低@0 中@44 高@97    换牌 2 次
+小规模 20v20         低@0 中@62 高@138   换牌 2 次
+围城守方 300v500     低@0 中@70 高@154   换牌 2 次
+```
+
+六种形态均在一回合内走完低→中→高。`verify_soundtrack.py` 五主题全部通过。
+`dotnet build` 为 `0` 错误 `0` 警告并自动部署。

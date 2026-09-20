@@ -1,0 +1,6157 @@
+{
+  "segments": {
+    "1027535983": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 46153.84775641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 03",
+      "file": "1027535983.pcm",
+      "tracks": [
+        {
+          "id": "175176614",
+          "volumeDb": -12.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 418732445,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        },
+        {
+          "id": "447272123",
+          "volumeDb": -11.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 921209512,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        }
+      ],
+      "frames": 2215385
+    },
+    "1068393325": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 49230.76442307692,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 36923.0769230769,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 36923.0769230769,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 07",
+      "file": "1068393325.pcm",
+      "tracks": [
+        {
+          "id": "19164955",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 292877502,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        },
+        {
+          "id": "335935498",
+          "volumeDb": -9.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 852415559,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        }
+      ],
+      "frames": 2363077
+    },
+    "108295660": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 43076.91025641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 6153.84615384616,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 36923.0769230769,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 6153.84615384616,
+      "exitMs": 36923.0769230769,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 02",
+      "file": "108295660.pcm",
+      "tracks": [
+        {
+          "id": "59553035",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 97751954,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 46153.83333333333
+            }
+          ]
+        },
+        {
+          "id": "422785222",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 955326058,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 46153.83333333333
+            }
+          ]
+        }
+      ],
+      "frames": 2067692
+    },
+    "180536621": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 46153.84775641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 08",
+      "file": "180536621.pcm",
+      "tracks": [
+        {
+          "id": "609172805",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 503146664,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        }
+      ],
+      "frames": 2215385
+    },
+    "234147462": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 19230.76923076919,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.23076923077,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 13076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.23076923077,
+      "exitMs": 13076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "190678773",
+      "name": "开场 01",
+      "file": "234147462.pcm",
+      "tracks": [
+        {
+          "id": "1048264694",
+          "volumeDb": -7.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 73465677,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": -3076.9166666666665,
+              "fSrcDuration": 24615.375
+            }
+          ]
+        }
+      ],
+      "frames": 923077
+    },
+    "317591648": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 38461.53846153846,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 1538.46153846154,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 32307.6923076923,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 1538.46153846154,
+      "exitMs": 32307.6923076923,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 01",
+      "file": "317591648.pcm",
+      "tracks": [
+        {
+          "id": "664548142",
+          "volumeDb": -10.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 1035189104,
+              "fPlayAt": -1538.46153846154,
+              "fBeginTrimOffset": 1538.46153846154,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 40000.0
+            }
+          ]
+        },
+        {
+          "id": "895155532",
+          "volumeDb": -10.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 905191774,
+              "fPlayAt": -1538.46153846154,
+              "fBeginTrimOffset": 1538.46153846154,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 40000.0
+            }
+          ]
+        }
+      ],
+      "frames": 1846154
+    },
+    "320232109": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 43076.91025641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 6153.84615384616,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 36923.0769230769,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 6153.84615384616,
+      "exitMs": 36923.0769230769,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 02",
+      "file": "320232109.pcm",
+      "tracks": [
+        {
+          "id": "461761742",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 955326058,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 46153.83333333333
+            }
+          ]
+        }
+      ],
+      "frames": 2067692
+    },
+    "354672081": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 46153.84775641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 08",
+      "file": "354672081.pcm",
+      "tracks": [
+        {
+          "id": "75265170",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 503146664,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        },
+        {
+          "id": "641283499",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 259760128,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        }
+      ],
+      "frames": 2215385
+    },
+    "454183078": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 46153.84775641022,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 03",
+      "file": "454183078.pcm",
+      "tracks": [
+        {
+          "id": "163297031",
+          "volumeDb": -12.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 418732445,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 49230.77083333333
+            }
+          ]
+        }
+      ],
+      "frames": 2215385
+    },
+    "538337271": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 43076.93108974362,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 33076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 33076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 04",
+      "file": "538337271.pcm",
+      "tracks": [
+        {
+          "id": "1049447537",
+          "volumeDb": -13.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 646513025,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 46153.85416666667
+            }
+          ]
+        }
+      ],
+      "frames": 2067693
+    },
+    "540505083": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 59230.78685897439,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.230769230769,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 53076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.230769230769,
+      "exitMs": 53076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "14924526",
+      "name": "高强度 02",
+      "file": "540505083.pcm",
+      "tracks": [
+        {
+          "id": "732844109",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 1048037442,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 61538.47916666667
+            }
+          ]
+        }
+      ],
+      "frames": 2843078
+    },
+    "594083338": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 49230.76442307692,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 05",
+      "file": "594083338.pcm",
+      "tracks": [
+        {
+          "id": "786475065",
+          "volumeDb": -11.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 453151030,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        }
+      ],
+      "frames": 2363077
+    },
+    "647197112": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 38461.53846153846,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 1538.46153846154,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 32307.6923076923,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 1538.46153846154,
+      "exitMs": 32307.6923076923,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 01",
+      "file": "647197112.pcm",
+      "tracks": [
+        {
+          "id": "982972863",
+          "volumeDb": -10.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 1035189104,
+              "fPlayAt": -1538.46153846154,
+              "fBeginTrimOffset": 1538.46153846154,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 40000.0
+            }
+          ]
+        }
+      ],
+      "frames": 1846154
+    },
+    "70771610": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 55384.61858974362,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 46153.8461538462,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 46153.8461538462,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 06",
+      "file": "70771610.pcm",
+      "tracks": [
+        {
+          "id": "79621314",
+          "volumeDb": -10.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 591203401,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 58461.54166666667
+            }
+          ]
+        },
+        {
+          "id": "402193081",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 390865884,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 58461.54166666667
+            }
+          ]
+        }
+      ],
+      "frames": 2658462
+    },
+    "74054711": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 71538.45352564099,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.230769230769,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 62307.6923076923,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.230769230769,
+      "exitMs": 62307.6923076923,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "14924526",
+      "name": "高强度 04",
+      "file": "74054711.pcm",
+      "tracks": [
+        {
+          "id": "632215279",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 7077607,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 73846.14583333334
+            }
+          ]
+        }
+      ],
+      "frames": 3433846
+    },
+    "749858897": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 19230.76602564099,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.230769230768,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 13076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.230769230768,
+      "exitMs": 13076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "190678773",
+      "name": "开场 02",
+      "file": "749858897.pcm",
+      "tracks": [
+        {
+          "id": "772855401",
+          "volumeDb": -8.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 64223851,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 21538.458333333336
+            }
+          ]
+        }
+      ],
+      "frames": 923077
+    },
+    "752763494": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 34230.77564102561,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 384.615384615384,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 25000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 384.615384615384,
+      "exitMs": 25000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "14924526",
+      "name": "高强度 01",
+      "file": "752763494.pcm",
+      "tracks": [
+        {
+          "id": "1054840441",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 424194083,
+              "fPlayAt": -2692.30769230769,
+              "fBeginTrimOffset": 2692.30769230769,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 36923.08333333333
+            }
+          ]
+        }
+      ],
+      "frames": 1643077
+    },
+    "79311538": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 43076.93108974362,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 33076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 33076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 04",
+      "file": "79311538.pcm",
+      "tracks": [
+        {
+          "id": "735994078",
+          "volumeDb": -13.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 646513025,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 46153.85416666667
+            }
+          ]
+        },
+        {
+          "id": "1039434339",
+          "volumeDb": -10.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 248527993,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 46153.85416666667
+            }
+          ]
+        }
+      ],
+      "frames": 2067693
+    },
+    "806478350": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 19230.76602564099,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.230769230768,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 13076.9230769231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.230769230768,
+      "exitMs": 13076.9230769231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1070212623",
+      "name": "局间换牌 01",
+      "file": "806478350.pcm",
+      "tracks": [
+        {
+          "id": "1051736186",
+          "volumeDb": -8.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 64223851,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 21538.458333333336
+            }
+          ]
+        }
+      ],
+      "frames": 923077
+    },
+    "870378512": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 55384.61858974362,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 46153.8461538462,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 46153.8461538462,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 06",
+      "file": "870378512.pcm",
+      "tracks": [
+        {
+          "id": "139654716",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 785484562,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 58461.54166666667
+            }
+          ]
+        }
+      ],
+      "frames": 2658462
+    },
+    "871517664": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 10711.59674297253,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 1480.81148656231,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 1480.81148656231,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 1480.81148656231,
+      "exitMs": 1480.81148656231,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "157425423",
+      "name": "过渡 B · 强度／换牌衔接",
+      "file": "871517664.pcm",
+      "tracks": [
+        {
+          "id": "842520246",
+          "volumeDb": -12.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 8758522,
+              "fPlayAt": -1596.11159036077,
+              "fBeginTrimOffset": 1596.11159036077,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 12307.708333333334
+            }
+          ]
+        }
+      ],
+      "frames": 514157
+    },
+    "898636363": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 10769.230769230759,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 1538.46153846154,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 4615.38461538462,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 1538.46153846154,
+      "exitMs": 4615.38461538462,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1047329584",
+      "name": "整场收尾 01",
+      "file": "898636363.pcm",
+      "tracks": [
+        {
+          "id": "560163719",
+          "volumeDb": -5.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 107267554,
+              "fPlayAt": -1538.46153846154,
+              "fBeginTrimOffset": 1538.46153846154,
+              "fEndTrimOffset": -3076.9375,
+              "fSrcDuration": 15384.625
+            }
+          ]
+        }
+      ],
+      "frames": 516923
+    },
+    "90352537": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 49230.76442307692,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 40000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 40000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "1008600724",
+      "name": "中强度 05",
+      "file": "90352537.pcm",
+      "tracks": [
+        {
+          "id": "679962255",
+          "volumeDb": -11.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 453151030,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        },
+        {
+          "id": "862891099",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 666802970,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        }
+      ],
+      "frames": 2363077
+    },
+    "913877518": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 10519.87455270032,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 1548.43617173814,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 1548.43617173814,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 1548.43617173814,
+      "exitMs": 1548.43617173814,
+      "meter": {
+        "tempo": 120.0,
+        "beats": 4,
+        "beatValue": 8,
+        "gridMs": 4000.0,
+        "source": "913877518"
+      },
+      "parent": "190678773",
+      "name": "过渡 A · 开场／换牌衔接",
+      "file": "913877518.pcm",
+      "tracks": [
+        {
+          "id": "736591528",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 374177939,
+              "fPlayAt": -4864.75044729968,
+              "fBeginTrimOffset": 4864.75044729968,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 15384.625
+            }
+          ]
+        }
+      ],
+      "frames": 504954
+    },
+    "918341078": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 59230.76602564099,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 769.230769230769,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 50000.0,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 769.230769230769,
+      "exitMs": 50000.0,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "14924526",
+      "name": "高强度 03",
+      "file": "918341078.pcm",
+      "tracks": [
+        {
+          "id": "913439924",
+          "volumeDb": -11.0,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 536815895,
+              "fPlayAt": -2307.69230769231,
+              "fBeginTrimOffset": 2307.69230769231,
+              "fEndTrimOffset": -0.0,
+              "fSrcDuration": 61538.45833333333
+            }
+          ]
+        }
+      ],
+      "frames": 2843077
+    },
+    "921221728": {
+      "bank": "music_syndicate-2287957546.bnk",
+      "durationMs": 49230.76442307692,
+      "markers": [
+        {
+          "id": 43573010,
+          "fPosition": 3076.92307692308,
+          "uStringSize": 0
+        },
+        {
+          "id": 1539036744,
+          "fPosition": 36923.0769230769,
+          "uStringSize": 0
+        }
+      ],
+      "entryMs": 3076.92307692308,
+      "exitMs": 36923.0769230769,
+      "meter": {
+        "tempo": 78.0,
+        "beats": 4,
+        "beatValue": 4,
+        "gridMs": 12307.692307692309,
+        "source": "157425423"
+      },
+      "parent": "19337377",
+      "name": "低强度 07",
+      "file": "921221728.pcm",
+      "tracks": [
+        {
+          "id": "212478512",
+          "volumeDb": -10.5,
+          "clips": [
+            {
+              "trackID": 0,
+              "sourceID": 453941465,
+              "fPlayAt": -3076.92307692308,
+              "fBeginTrimOffset": 3076.92307692308,
+              "fEndTrimOffset": 0.0,
+              "fSrcDuration": 52307.6875
+            }
+          ]
+        }
+      ],
+      "frames": 2363077
+    }
+  },
+  "playlists": {
+    "intro": {
+      "id": "190678773",
+      "name": "开场",
+      "mode": "sequence",
+      "loop": 1,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 234147462,
+          "playlistItemID": 874330784,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 749858897,
+          "playlistItemID": 145136534,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 0,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    },
+    "low": {
+      "id": "19337377",
+      "name": "低强度",
+      "mode": "shuffle",
+      "loop": 0,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 647197112,
+          "playlistItemID": 1004002249,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 320232109,
+          "playlistItemID": 903403040,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 454183078,
+          "playlistItemID": 190245971,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 538337271,
+          "playlistItemID": 74210308,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 594083338,
+          "playlistItemID": 638597545,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 870378512,
+          "playlistItemID": 643591489,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 921221728,
+          "playlistItemID": 488591697,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 180536621,
+          "playlistItemID": 1031021410,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    },
+    "medium": {
+      "id": "1008600724",
+      "name": "中强度",
+      "mode": "shuffle",
+      "loop": 0,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 317591648,
+          "playlistItemID": 686975174,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 108295660,
+          "playlistItemID": 227552571,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 1027535983,
+          "playlistItemID": 556783164,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 79311538,
+          "playlistItemID": 924242791,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 90352537,
+          "playlistItemID": 67697372,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 70771610,
+          "playlistItemID": 953501658,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 1068393325,
+          "playlistItemID": 765232756,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 354672081,
+          "playlistItemID": 165042745,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    },
+    "high": {
+      "id": "14924526",
+      "name": "高强度",
+      "mode": "shuffle",
+      "loop": 0,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 752763494,
+          "playlistItemID": 167718855,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 540505083,
+          "playlistItemID": 731101250,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 918341078,
+          "playlistItemID": 320832539,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        },
+        {
+          "SegmentID": 74054711,
+          "playlistItemID": 720116007,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    },
+    "redraw": {
+      "id": "1070212623",
+      "name": "局间换牌",
+      "mode": "sequence",
+      "loop": 1,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 806478350,
+          "playlistItemID": 218823069,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 0,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    },
+    "outro": {
+      "id": "1047329584",
+      "name": "整场收尾",
+      "mode": "sequence",
+      "loop": 1,
+      "avoidRepeat": 1,
+      "items": [
+        {
+          "SegmentID": 898636363,
+          "playlistItemID": 856129884,
+          "NumChildren": 0,
+          "eRSType": -1,
+          "Loop": 1,
+          "LoopMin": 0,
+          "LoopMax": 0,
+          "Weight": 50000,
+          "wAvoidRepeatCount": 0,
+          "bIsUsingWeight": 0,
+          "bIsShuffle": 0
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "index": 0,
+      "src": [
+        -1
+      ],
+      "dst": [
+        -1
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "-1"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "-1"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "src": [
+        190678773
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 4,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "190678773"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "4",
+          "valuefmt": "0x04 [NextMarker]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "src": [
+        190678773
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 4,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "190678773"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "4",
+          "valuefmt": "0x04 [NextMarker]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "src": [
+        190678773
+      ],
+      "dst": [
+        14924526
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 4,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 913877518,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "190678773"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "14924526"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "4",
+          "valuefmt": "0x04 [NextMarker]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "913877518"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "src": [
+        190678773
+      ],
+      "dst": [
+        1070212623
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 913877518,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "190678773"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1070212623"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "913877518"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "src": [
+        749858897
+      ],
+      "dst": [
+        1070212623
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "749858897"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1070212623"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "src": [
+        19337377
+      ],
+      "dst": [
+        1070212623
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "19337377"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1070212623"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "src": [
+        1008600724
+      ],
+      "dst": [
+        1070212623
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1008600724"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1070212623"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "src": [
+        14924526
+      ],
+      "dst": [
+        1070212623
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "14924526"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1070212623"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "src": [
+        1070212623
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 913877518,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1070212623"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "913877518"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "src": [
+        1070212623
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 913877518,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1070212623"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "913877518"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "src": [
+        1070212623
+      ],
+      "dst": [
+        14924526
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 913877518,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1070212623"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "14924526"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "913877518"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "src": [
+        19337377
+      ],
+      "dst": [
+        14924526
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "19337377"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "14924526"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "src": [
+        1008600724
+      ],
+      "dst": [
+        14924526
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1008600724"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "14924526"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "src": [
+        14924526
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "14924526"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "src": [
+        14924526
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 2,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "AkMusicTransitionObject": {
+        "segmentID": 871517664,
+        "bPlayPreEntry": 255,
+        "bPlayPostExit": 255
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "14924526"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "2",
+          "valuefmt": "0x02 [NextBar]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "1",
+          "valuefmt": "0x01"
+        },
+        {
+          "name": "segmentID",
+          "value": "871517664"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "src": [
+        19337377
+      ],
+      "dst": [
+        1047329584
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "19337377"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1047329584"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "src": [
+        1008600724
+      ],
+      "dst": [
+        1047329584
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1008600724"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1047329584"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "src": [
+        14924526
+      ],
+      "dst": [
+        1047329584
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "eSyncType": 3,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 255
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 0,
+        "eFadeCurve": 4,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 0,
+        "eEntryType": 0,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "14924526"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1047329584"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "eSyncType",
+          "value": "3",
+          "valuefmt": "0x03 [NextBeat]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "transitionTime",
+          "value": "0"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "4",
+          "valuefmt": "0x04 [Linear]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "0"
+        },
+        {
+          "name": "eEntryType",
+          "value": "0",
+          "valuefmt": "0x00 [EntryMarker]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "src": [
+        647197112
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 686975174,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "647197112"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "686975174"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "src": [
+        320232109
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 227552571,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "320232109"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "227552571"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "src": [
+        454183078
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 556783164,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "454183078"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "556783164"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "src": [
+        538337271
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 924242791,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "538337271"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "924242791"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "src": [
+        594083338
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 67697372,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "594083338"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "67697372"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "src": [
+        870378512
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 953501658,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "870378512"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "953501658"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 25,
+      "src": [
+        921221728
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 765232756,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "921221728"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "765232756"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 26,
+      "src": [
+        180536621
+      ],
+      "dst": [
+        1008600724
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 165042745,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "180536621"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "1008600724"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "165042745"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 27,
+      "src": [
+        317591648
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 1004002249,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "317591648"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "1004002249"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "src": [
+        108295660
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 903403040,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "108295660"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "903403040"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "src": [
+        1027535983
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 190245971,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1027535983"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "190245971"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 30,
+      "src": [
+        79311538
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 74210308,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "79311538"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "74210308"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 31,
+      "src": [
+        90352537
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 638597545,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "90352537"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "638597545"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 32,
+      "src": [
+        70771610
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 643591489,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "70771610"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "643591489"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 33,
+      "src": [
+        1068393325
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 488591697,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "1068393325"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "488591697"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    },
+    {
+      "index": 34,
+      "src": [
+        354672081
+      ],
+      "dst": [
+        19337377
+      ],
+      "AkMusicTransSrcRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 2000,
+        "eSyncType": 0,
+        "uCueFilterHash": 0,
+        "bPlayPostExit": 0
+      },
+      "AkMusicTransDstRule": {
+        "transitionTime": 2000,
+        "eFadeCurve": 2,
+        "iFadeOffset": 0,
+        "uCueFilterHash": 0,
+        "uJumpToID": 1031021410,
+        "eEntryType": 1,
+        "bPlayPreEntry": 255,
+        "bDestMatchSourceCueName": 0
+      },
+      "raw": [
+        {
+          "name": "uNumSrc",
+          "value": "1"
+        },
+        {
+          "name": "srcID",
+          "value": "354672081"
+        },
+        {
+          "name": "uNumDst",
+          "value": "1"
+        },
+        {
+          "name": "dstID",
+          "value": "19337377"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "2000"
+        },
+        {
+          "name": "eSyncType",
+          "value": "0",
+          "valuefmt": "0x00 [Immediate]"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "bPlayPostExit",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "transitionTime",
+          "value": "2000"
+        },
+        {
+          "name": "eFadeCurve",
+          "value": "2",
+          "valuefmt": "0x02 [Log1]"
+        },
+        {
+          "name": "iFadeOffset",
+          "value": "0"
+        },
+        {
+          "name": "uCueFilterHash",
+          "value": "0"
+        },
+        {
+          "name": "uJumpToID",
+          "value": "1031021410"
+        },
+        {
+          "name": "eEntryType",
+          "value": "1",
+          "valuefmt": "0x01 [SameTime]"
+        },
+        {
+          "name": "bPlayPreEntry",
+          "value": "255",
+          "valuefmt": "0xFF"
+        },
+        {
+          "name": "bDestMatchSourceCueName",
+          "value": "0",
+          "valuefmt": "0x00"
+        },
+        {
+          "name": "AllocTransObjectFlag",
+          "value": "0",
+          "valuefmt": "0x00"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "以本机 Wwise 配置还原乐段调度；不是游戏内录音。",
+    "源文件裁剪、时间轴、多轨静态音量来自 soundbank；部分音轨的逐剪辑音量与淡入淡出包络尚未应用，四个高潮音轨没有这类包络。",
+    "Log1 淡化曲线用浏览器对数曲线近似；未仿真 Wwise 总线效果、RTPC 和全局场景切换。",
+    "切换为保留完整 pre-entry 会等待足够提前量的下一同步点；极短间隔连续指令不保证与 Wwise 仲裁相同。"
+  ]
+}

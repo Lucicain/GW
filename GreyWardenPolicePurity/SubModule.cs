@@ -69,6 +69,7 @@ namespace GreyWardenPolicePurity
             base.OnApplicationTick(dt);
             _ = dt;
             GreyWardenSparringBehavior.OnApplicationTick();
+            GwpSyndicateMusicBehavior.Pump();
             // 战役心跳跟着时间流走，地图暂停时不一定推进。派遣的对话与分兵界面必须
             // 在玩家点完按钮的下一帧就弹出来，所以挂在与时间无关的应用心跳上。
             GwpRuntimeFaultWatch.Guard("DISPATCH_PUMP", GwpWardenDispatchDialogue.Pump);
@@ -140,6 +141,10 @@ namespace GreyWardenPolicePurity
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
             mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
+
+            // 辛迪加式战场配乐。自定义战斗也要，所以放在 Campaign 判断之前；
+            // 行为内部自己判断灰袍是否在场，不在场就完全不碰音乐。
+            mission.AddMissionBehavior(new GwpSyndicateMusicBehavior());
 
             // 战场增援依赖 Campaign 数据，自定义战斗中不注入。
             if (gameType is not Campaign) return;
