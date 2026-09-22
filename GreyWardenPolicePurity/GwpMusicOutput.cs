@@ -36,7 +36,6 @@ namespace GreyWardenPolicePurity
         [DllImport("winmm.dll")] private static extern uint waveOutReset(IntPtr handle);
         [DllImport("winmm.dll")] private static extern uint waveOutClose(IntPtr handle);
         private readonly ConcurrentQueue<string> _commands = new();
-        public readonly ConcurrentQueue<string> Notices = new();
         private readonly Thread _worker;
         private readonly GwpMusicScore _score;
         private IntPtr _device;
@@ -49,7 +48,7 @@ namespace GreyWardenPolicePurity
 
         public GwpMusicOutput(string directory)
         {
-            _score = new GwpMusicScore(directory, s => Notices.Enqueue(s));
+            _score = new GwpMusicScore(directory);
             var fmt = new Format { Tag = 3, Channels = 2, Rate = 48000, BytesPerSecond = 384000, Align = 8, Bits = 32 };
             try
             {

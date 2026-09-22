@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><DefineConstants>$(DefineConstants);GWP_DIAGNOSTICS</DefineConstants></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../GreyWardenPolicePurity/GwpBattleScenePolicy.cs" Link="GwpBattleScenePolicy.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpBattleSceneContext.cs" Link="GwpBattleSceneContext.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpBattleReinforcementBehavior.cs" Link="GwpBattleReinforcementBehavior.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpBattleSupportOrigin.cs" Link="GwpBattleSupportOrigin.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpWardenResolve.cs" Link="GwpWardenResolve.cs" />
+  </ItemGroup>
+</Project>

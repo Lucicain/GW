@@ -142,6 +142,7 @@
   <string id="gwp_gwpaideterrencestate_044" text="状态不明" />
   <string id="gwp_gwpbattlereinforcementbehavior_001" text="你在心中祈祷神明的眷顾。" />
   <string id="gwp_gwpbattlereinforcementbehavior_002" text="灰袍守卫增援到了！" />
+  <string id="gwp_battle_support_enemy" text="敌方的灰袍援军抵达战场！" />
   <string id="gwp_gwpdata_001" text="你已被灰袍守卫列入通缉名单！" />
   <string id="gwp_gwpdata_002" text="通缉已解除，灰袍守卫不再追捕你" />
   <string id="gwp_gwpdata_003" text="灰袍守卫已记录你的罪行：{VAR_1}（{VAR_2}）| {VAR_3}" />

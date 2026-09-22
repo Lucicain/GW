@@ -142,17 +142,14 @@ namespace GreyWardenPolicePurity
                 new GwpAlternativeAttackControlBehavior());
             mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
 
-            // 辛迪加式战场配乐。自定义战斗也要，所以放在 Campaign 判断之前；
-            // 行为内部自己判断灰袍是否在场，不在场就完全不碰音乐。
+            mission.AddMissionBehavior(new GwpBattleSceneContext());
             mission.AddMissionBehavior(new GwpSyndicateMusicBehavior());
 
-            // 战场增援依赖 Campaign 数据，自定义战斗中不注入。
-            if (gameType is not Campaign) return;
-
-            CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
-            CharacterObject archer = CharacterObject.Find(GwpIds.ArcherId);
-            CharacterObject cavalry = CharacterObject.Find(GwpIds.KnightId);
-            mission.AddMissionBehavior(new GwpBattleReinforcementBehavior(infantry, archer, cavalry));
+            BasicCharacterObject infantry = Game.Current!.ObjectManager.GetObject<BasicCharacterObject>(GwpIds.HeavyInfantryId);
+            BasicCharacterObject archer = Game.Current.ObjectManager.GetObject<BasicCharacterObject>(GwpIds.ArcherId);
+            BasicCharacterObject cavalry = Game.Current.ObjectManager.GetObject<BasicCharacterObject>(GwpIds.KnightId);
+            if (infantry != null && archer != null && cavalry != null)
+                mission.AddMissionBehavior(new GwpBattleReinforcementBehavior(infantry, archer, cavalry));
         }
     }
 }

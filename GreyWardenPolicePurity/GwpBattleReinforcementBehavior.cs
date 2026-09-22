@@ -1,7 +1,7 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.AgentOrigins;
-using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -9,358 +9,257 @@ using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
-    /// <summary>
-    /// 战场即时增援行为（MissionBehavior）。
-    ///
-    /// 触发方式（事件驱动，零轮询）：
-    ///   本场战斗共有两次增援判定机会：
-    ///     第一次：己方存活人数降至 ≤ 20 时触发判定。
-    ///       - 判定失败：提示"你在心中祈祷神明的眷顾"，等待第二次机会。
-    ///       - 判定成功：立即召唤增援，本场不再有第二次机会。
-    ///     第二次：仅剩玩家一人存活时触发判定。
-    ///       - 判定失败：静默（不显示提示）。
-    ///       - 判定成功：立即召唤增援。
-    ///   两次机会用完后不再响应后续阵亡事件。
-    ///
-    /// 概率：声望20=10%，声望100=50%（Reputation / 200，上限 50%）。
-    /// 资格门槛：必须仍是灰袍受托猎手，且声望不低于20。
-    ///
-    /// 增援构成：4成步兵、4成弓手、2成骑兵，共 20+声望 人，分批从边缘涌入。
-    /// </summary>
-    public class GwpBattleReinforcementBehavior : MissionBehavior
+    // One independent three-chance rescue per side, only in a player-present mission.
+    public sealed class GwpBattleReinforcementBehavior : MissionBehavior
     {
-        // ── 配置 ─────────────────────────────────────────────────────────────────
-        private const int   ReputationMinimum = 20;   // 最低声望门槛
-        private const int   AliveThreshold    = 20;   // 第一次判定：存活人数阈值（固定）
-        private const int   BatchSize         = 10;   // 每批生成人数
-        private const float BatchInterval     = 0.6f; // 批次间隔（秒）
-        private const float HornDuration      = 4.5f; // 每次号角播放时长（秒）
-        private const int   HornPlayCount     = 2;    // 号角播放次数
-        // 总增援人数：20 + 声望（声望20→40人，声望100→120人）
-
-        // ── 状态 ─────────────────────────────────────────────────────────────────
-        private bool  _firstCheckDone  = false; // 第一次判定（≤20人）是否已完成
-        private bool  _allChecksDone   = false; // 两次机会均已用完，不再响应阵亡事件
-        private bool  _isFieldBattle   = false;
-        private float _elapsedSeconds  = 0f;    // 仅用于号角续播计时
-        private float _batchTimer      = 0f;
-        private int   _batchesDone     = 0;
-        private int   _totalTroopCount = 0;
-        private bool  _isSpawning      = false;
-        private bool  _musicArrivalNotified;
-        internal bool HasPendingReinforcementSpawn => _isSpawning;
-        private SoundEvent? _hornSound  = null!;
-        private float       _hornStopAt = -1f;
-        private int         _hornPlayed = 0;
-
-        // ── 兵种（由 SubModule 注入，在 Campaign 层解析）─────────────────────────
-        private readonly CharacterObject _infantry;
-        private readonly CharacterObject _archer;
-        private readonly CharacterObject _cavalry;
-
-        public GwpBattleReinforcementBehavior(
-            CharacterObject infantry,
-            CharacterObject archer,
-            CharacterObject cavalry)
+        private sealed class SideSupport
         {
-            _infantry = infantry;
-            _archer   = archer;
-            _cavalry  = cavalry;
+            internal readonly GwpBattleSupportChecks Checks = new();
+            internal Team Team = null!;
+            internal IAgentOriginBase Owner = null!;
+            internal MatrixFrame Frame;
+            internal readonly Queue<int> Troops = new();
+            internal int Remaining => Troops.Count;
+            internal float NextBatch;
+            internal bool Notified;
         }
-
-        // ── MissionBehavior 接口 ─────────────────────────────────────────────────
-
+        private readonly SideSupport[] _sides = { new(), new() };
+        private readonly BasicCharacterObject _infantry, _archer, _cavalry;
+        private GwpBattleSceneContext? _context;
+        private readonly bool[] _sideChanged = new bool[2];
+        private bool _started, _disposed;
+        private float _time, _hornStopAt;
+        private int _hornPlayed;
+        private SoundEvent? _horn;
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
-
-        public override void OnBehaviorInitialize()
+        internal bool HasPendingReinforcementSpawn(BattleSideEnum side) =>
+            side != BattleSideEnum.None && _sides[(int)side].Remaining > 0;
+        internal bool HasLivingSupport(BattleSideEnum side)
         {
-            base.OnBehaviorInitialize();
+            if (_disposed) return false;
+            foreach (Agent agent in Mission.Agents)
+                if (agent.IsHuman && agent.IsActive() && !agent.IsRunningAway && agent.Team?.Side == side
+                    && agent.Origin is GwpBattleSupportOrigin) return true;
+            return false;
         }
 
-        public override void AfterStart()
-        {
-            _isFieldBattle = (Mission?.IsFieldBattle ?? false)
-                && Mission?.GetMissionBehavior<
-                    GreyWardenFieldSparringMissionController>() == null;
-        }
+        public GwpBattleReinforcementBehavior(BasicCharacterObject infantry,
+            BasicCharacterObject archer, BasicCharacterObject cavalry)
+        { _infantry = infantry; _archer = archer; _cavalry = cavalry; }
 
-        /// <summary>
-        /// Tick 仅处理号角续播与分批生成，不做任何触发条件检查。
-        /// </summary>
         public override void OnMissionTick(float dt)
         {
-            if (!_isFieldBattle) return;
-
-            _elapsedSeconds += dt;
-
-            // 号角到达预定时长后停止；未达到播放次数则续播
-            if (_hornSound != null && _hornStopAt > 0f && _elapsedSeconds >= _hornStopAt)
+            if (_disposed) return;
+            if (Mission.MissionEnded || Mission.MissionResult != null) { Stop(); return; }
+            _context ??= Mission.GetMissionBehavior<GwpBattleSceneContext>();
+            if (_context == null || !_context.TryCapture() || !_context.Spawn!.IsDeploymentOver) return;
+            _time += dt;
+            if (!_started)
             {
-                _hornSound.Stop();
-                _hornSound.Release();
-                _hornSound  = null!;
-                _hornStopAt = -1f;
-
-                if (_hornPlayed < HornPlayCount)
-                    StartHorn();
+                _started = true;
+                Evaluate(BattleSideEnum.Defender, null);
+                Evaluate(BattleSideEnum.Attacker, null);
             }
-
-            // 分批生成
-            if (_isSpawning)
+            if (_horn != null && _time >= _hornStopAt)
             {
-                _batchTimer += dt;
-                int totalBatches = Math.Max(_totalTroopCount / BatchSize, 1);
-
-                if (_batchesDone < totalBatches && _batchTimer >= BatchInterval * _batchesDone)
-                {
-                    Agent? firstAgent = SpawnBatch();
-
-                    // These manually spawned Grey Wardens do not raise the native spawner's event.
-                    if (firstAgent != null && !_musicArrivalNotified)
-                    {
-                        _musicArrivalNotified = true;
-                        Mission.GetMissionBehavior<GwpSyndicateMusicBehavior>()?
-                            .NotifyReinforcementArrival(firstAgent.Team.Side, 1);
-                    }
-
-                    if (_batchesDone == 0 && firstAgent != null)
-                        PlayArrivalHorn(firstAgent);
-
-                    _batchesDone++;
-
-                    if (_batchesDone >= totalBatches)
-                        _isSpawning = false;
-                }
+                StopHorn();
+                if (_hornPlayed < 2) StartHorn();
             }
-        }
-
-        // ── 事件驱动触发 ──────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// 每当己方成员阵亡时自动调用，依次处理两次判定机会。
-        /// </summary>
-        public override void OnAgentRemoved(
-            Agent affectedAgent,
-            Agent affectorAgent,
-            AgentState agentState,
-            KillingBlow blow)
-        {
-            if (_allChecksDone || !_isFieldBattle) return;
-
-            Mission m = Mission.Current;
-            if (m == null) return;
-
-            // 只关心己方战斗人员阵亡
-            if (affectedAgent?.Team != m.PlayerTeam) return;
-
-            // 已退出灰袍或声望不足时，不再获得组织战场支援。
-            if (!IsRecruitedByGreyWardens() ||
-                PlayerBehaviorPool.Reputation < ReputationMinimum) return;
-
-            if (!_firstCheckDone)
+            foreach (SideSupport side in _sides)
             {
-                // ── 第一次机会：存活人数降至 ≤ 20 ─────────────────────────────
-                if (GetAliveCount(m.PlayerTeam) > AliveThreshold) return;
-
-                _firstCheckDone = true;
-
-                float chance = Math.Min(PlayerBehaviorPool.Reputation / 200f, 0.5f);
-                if (MBRandom.RandomFloat < chance)
-                {
-                    // 判定成功，立即召援，本场不再有第二次机会
-                    _allChecksDone = true;
-                    TriggerReinforcement();
-                    return;
-                }
-
-                // 判定失败，提示祈祷，等待第二次机会
-                MBInformationManager.AddQuickInformation(
-                    new TaleWorlds.Localization.TextObject(GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray in your heart for God's favor.")),
-                    0);
+                if (side.Remaining <= 0 || _time < side.NextBatch) continue;
+                SpawnBatch(side);
+                side.NextBatch = _time + .6f;
             }
-            else
+            for (int i = 0; i < _sideChanged.Length; i++)
+                if (_sideChanged[i]) { _sideChanged[i] = false; Evaluate((BattleSideEnum)i, null); }
+        }
+
+        public override void OnAgentBuild(Agent agent, Banner banner)
+        {
+            // Native can finish supplying its last reserve without a casualty.
+            // Recheck after the spawn callback has updated reserve counters.
+            if (agent.IsHuman && agent.Team != null && agent.Team.Side != BattleSideEnum.None
+                && agent.Origin is not GwpBattleSupportOrigin) _sideChanged[(int)agent.Team.Side] = true;
+        }
+
+        public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent,
+            AgentState agentState, KillingBlow blow)
+        {
+            if (!_started || _disposed || Mission.MissionEnded || Mission.MissionResult != null
+                || affectedAgent?.Team == null || !affectedAgent.IsHuman) return;
+            Evaluate(affectedAgent.Team.Side, affectedAgent);
+        }
+
+        private void Evaluate(BattleSideEnum sideId, Agent? removed)
+        {
+            if (sideId == BattleSideEnum.None) return;
+            SideSupport side = _sides[(int)sideId];
+            if (side.Checks.Complete) return;
+            Agent? recipient = null;
+            bool playerEligible = IsEligiblePlayer();
+            int alive = 0;
+            foreach (Agent agent in Mission.Agents)
             {
-                // ── 第二次机会：仅剩玩家一人存活 ─────────────────────────────
-                if (!IsOnlyPlayerLeft(m)) return;
-
-                _allChecksDone = true;
-
-                float chance = Math.Min(PlayerBehaviorPool.Reputation / 200f, 0.5f);
-                if (MBRandom.RandomFloat < chance)
-                {
-                    TriggerReinforcement();
-                }
-                // 判定失败：静默，不显示任何提示
+                if (agent == removed || !agent.IsHuman || !agent.IsActive() || agent.IsRunningAway
+                    || agent.Team?.Side != sideId) continue;
+                alive++;
+                bool eligible = agent == Mission.MainAgent ? playerEligible
+                    : GwpCommon.IsGreyWardenAffiliatedCharacter(agent.Character);
+                if (eligible && agent.Origin != null && (recipient == null || agent == Mission.MainAgent)) recipient = agent;
             }
-        }
-
-        // ── 辅助 ──────────────────────────────────────────────────────────────────
-
-        private void TriggerReinforcement()
-        {
-            _isSpawning      = true;
-            _batchesDone     = 0;
-            _batchTimer      = 0f;
-            _totalTroopCount = 20 + PlayerBehaviorPool.Reputation;
-
-            MBInformationManager.AddQuickInformation(
-                new TaleWorlds.Localization.TextObject(GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_002}Grey Warden reinforcements have arrived!")),
-                0);
-        }
-
-        private static bool IsOnlyPlayerLeft(Mission m)
-        {
-            Agent mainAgent = m.MainAgent;
-            if (mainAgent == null || !mainAgent.IsActive()) return false;
-            // 阵亡事件触发时该 Agent 已被移出 ActiveAgents，存活数 ≤ 1 即仅剩玩家
-            return GetAliveCount(m.PlayerTeam) <= 1;
-        }
-
-        // ── 触发判断 ──────────────────────────────────────────────────────────────
-
-        private static int GetAliveCount(Team team)
-        {
-            int n = 0;
-            foreach (Agent a in team.ActiveAgents) if (a.IsActive()) n++;
-            return n;
-        }
-
-        private static bool IsRecruitedByGreyWardens()
-        {
-            PlayerBountyBehavior? behavior = Campaign.Current
-                ?.GetCampaignBehavior<PlayerBountyBehavior>();
-            return behavior?.IsRecruitedByGreyWardens == true;
-        }
-
-        // ── 分批生成 ──────────────────────────────────────────────────────────────
-
-        private Agent? SpawnBatch()
-        {
-            Mission mission = Mission.Current;
-            if (mission == null || mission.MissionEnded) return null;
-
-            Team playerTeam = mission.PlayerTeam;
-            if (playerTeam == null) return null;
-
-            MatrixFrame spawnFrame = GetReinforcementFrame(mission);
-
-            // 兵种比例：4 步兵 + 4 弓手 + 2 骑兵
-            int infantryCount = (int)(BatchSize * 0.4f); // 4
-            int archerCount   = (int)(BatchSize * 0.4f); // 4
-            int cavalryCount  = BatchSize - infantryCount - archerCount; // 2
-
-            Agent? firstSpawned = null!;
-            firstSpawned = SpawnTroops(_infantry, infantryCount, mission, playerTeam, spawnFrame, FormationClass.Infantry, ref firstSpawned);
-            SpawnTroops(_archer,   archerCount,  mission, playerTeam, spawnFrame, FormationClass.Ranged,   ref firstSpawned);
-            SpawnTroops(_cavalry,  cavalryCount, mission, playerTeam, spawnFrame, FormationClass.Cavalry,  ref firstSpawned);
-
-            return firstSpawned;
-        }
-
-        private static MatrixFrame GetReinforcementFrame(Mission mission)
-        {
-            try
+            int reserves = sideId == BattleSideEnum.Defender
+                ? _context!.Spawn!.NumberOfRemainingDefenderTroops
+                : _context!.Spawn!.NumberOfRemainingAttackerTroops;
+            int oldAttempts = side.Checks.Attempts;
+            // Player-side progression survives the player being incapacitated;
+            // a remaining Warden can receive that side's rescue on their behalf.
+            bool playerSide = sideId == Mission.PlayerTeam.Side && playerEligible;
+            int reputation = playerSide && Campaign.Current != null ? PlayerBehaviorPool.Reputation : 100;
+            int opening = _context!.OpeningCount(sideId);
+            bool success = side.Checks.Try(opening, alive, reserves, recipient != null, () => MBRandom.RandomFloat, reputation);
+#if GWP_DIAGNOSTICS
+            if (side.Checks.Attempts != oldAttempts || success)
+                GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
+                    $"side={sideId} opening={opening} alive={alive} reserves={reserves} attempts={side.Checks.Attempts} playerSide={playerSide} reputation={reputation} success={success}");
+#endif
+            if (!success)
             {
-                Agent mainAgent = mission.MainAgent;
-                if (mainAgent != null)
-                {
-                    Vec3 playerPos = mainAgent.Position;
-                    Vec2 edgePos2D = mission.GetClosestBoundaryPosition(playerPos.AsVec2);
-                    Vec3 edgePos   = edgePos2D.ToVec3(playerPos.Z);
-                    Vec2 facingDir = (playerPos.AsVec2 - edgePos2D);
-                    if (facingDir.LengthSquared > 0.01f) facingDir = facingDir.Normalized();
-                    else facingDir = Vec2.Forward;
-
-                    Mat3 rot = Mat3.Identity;
-                    rot.f = facingDir.ToVec3();
-                    rot.u = Vec3.Up;
-                    rot.s = Vec3.CrossProduct(rot.f, rot.u).NormalizedCopy();
-                    return new MatrixFrame(rot, edgePos);
-                }
+                if (oldAttempts == 0 && side.Checks.Attempts > 0 && recipient == Mission.MainAgent)
+                    MBInformationManager.AddQuickInformation(new TaleWorlds.Localization.TextObject(
+                        GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray in your heart for God's favor.")), 0);
+                return;
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-
-            return MatrixFrame.Identity;
+            side.Team = recipient!.Team;
+            side.Owner = recipient.Origin;
+            side.Frame = GetReinforcementFrame(recipient);
+            BattleSideEnum enemySide = sideId == BattleSideEnum.Defender ? BattleSideEnum.Attacker : BattleSideEnum.Defender;
+            float enemyPower = _context!.RemainingPower(enemySide);
+            float share = GwpBattleScenePolicy.PowerShare(playerSide, reputation);
+            float infantryPower = _infantry.GetPower(), archerPower = _archer.GetPower(), cavalryPower = _cavalry.GetPower();
+            float plannedPower = 0;
+            foreach (int kind in GwpBattleScenePolicy.Plan(enemyPower, share, infantryPower, archerPower, cavalryPower))
+            {
+                side.Troops.Enqueue(kind);
+                plannedPower += kind == 0 ? infantryPower : kind == 1 ? archerPower : cavalryPower;
+            }
+#if GWP_DIAGNOSTICS
+            GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
+                $"plan side={sideId} share={share:F3} enemyPower={enemyPower:F2} budget={enemyPower * share:F2} power={plannedPower:F2} count={side.Remaining}");
+#endif
+            side.NextBatch = _time;
+            // First batch is synchronous so a last-survivor rescue reaches the
+            // scene before the next simulation tick can end the battle.
+            SpawnBatch(side);
+            side.NextBatch = _time + .6f;
         }
 
-        private Agent? SpawnTroops(
-            CharacterObject character,
-            int count,
-            Mission mission,
-            Team team,
-            MatrixFrame baseFrame,
-            FormationClass formationClass,
-            ref Agent? firstAgentOut)
+        private bool IsEligiblePlayer()
         {
-            if (character == null || count <= 0) return firstAgentOut;
+            if (Mission.MainAgent == null) return false;
+            if (Campaign.Current == null)
+                return GwpCommon.IsGreyWardenAffiliatedCharacter(Mission.MainAgent.Character);
+            return Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true
+                && PlayerBehaviorPool.Reputation >= 20;
+        }
 
-            PartyBase? party = MobileParty.MainParty?.Party;
-            if (party == null) return firstAgentOut;
+        private MatrixFrame GetReinforcementFrame(Agent recipient)
+        {
+            Vec3 position = recipient.Position;
+            Vec2 edge = Mission.GetClosestBoundaryPosition(position.AsVec2);
+            Vec2 facing = position.AsVec2 - edge;
+            facing = facing.LengthSquared > .01f ? facing.Normalized() : Vec2.Forward;
+            Mat3 rotation = Mat3.Identity;
+            rotation.f = facing.ToVec3(); rotation.u = Vec3.Up;
+            rotation.s = Vec3.CrossProduct(rotation.f, rotation.u).NormalizedCopy();
+            // Keep the arrival inside the map rather than scattering half the
+            // batch outside the boundary, and use local ground elevation.
+            Vec2 arrival = edge + facing * 6f;
+            if (!Mission.IsPositionInsideBoundaries(arrival)) arrival = position.AsVec2;
+            return new MatrixFrame(rotation, arrival.ToVec3(position.Z));
+        }
 
-            Formation formation = team.GetFormation(formationClass);
-
+        private void SpawnBatch(SideSupport side)
+        {
+            if (Mission.MissionEnded || Mission.MissionResult != null) { side.Troops.Clear(); return; }
+            int count = Math.Min(10, side.Remaining), spawned = 0, attempted = 0;
+            Agent? first = null;
             for (int i = 0; i < count; i++)
             {
+                // Leave room for both rider and horse; resume when space opens.
+                if (_context!.Spawn!.NumberOfAgents + 2 > DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission) break;
+                int kind = side.Troops.Dequeue();
+                attempted++;
+                BasicCharacterObject troop = kind == 0 ? _infantry : kind == 1 ? _archer : _cavalry;
+                FormationClass formationClass = kind == 0 ? FormationClass.Infantry
+                    : kind == 1 ? FormationClass.Ranged : FormationClass.Cavalry;
                 try
                 {
-                    Vec2 offset = new Vec2(
-                        MBRandom.RandomFloatRanged(-1f, 1f),
-                        MBRandom.RandomFloatRanged(-1f, 1f));
-                    offset = offset.Normalized() * MBRandom.RandomFloatRanged(1f, 5f);
-
-                    Vec3 pos = baseFrame.origin + new Vec3(offset.X, offset.Y, 0f);
-                    Vec2 dir = baseFrame.rotation.f.AsVec2;
-                    if (dir.LengthSquared < 0.01f) dir = Vec2.Forward;
-
-                    var origin    = new PartyAgentOrigin(party, character, -1, new UniqueTroopDescriptor(), false);
-                    var buildData = new AgentBuildData(origin)
-                        .Team(team)
-                        .InitialPosition(in pos)
-                        .InitialDirection(in dir)
-                        .Formation(formation);
-
-                    Agent agent = mission.SpawnAgent(buildData);
-                    if (agent != null)
-                    {
-                        agent.SetWatchState(Agent.WatchState.Alarmed);
-                        firstAgentOut ??= agent;
-                    }
+                    Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
+                    if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
+                    Vec3 position = side.Frame.origin + new Vec3(offset.X, offset.Y, 0);
+                    if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = side.Frame.origin;
+                    position.z = Mission.Scene.GetGroundHeightAtPosition(position);
+                    Vec2 direction = side.Frame.rotation.f.AsVec2;
+                    var data = new AgentBuildData(new GwpBattleSupportOrigin(troop, side.Owner))
+                        .Team(side.Team).InitialPosition(in position).InitialDirection(in direction)
+                        .Formation(side.Team.GetFormation(formationClass));
+                    Agent agent = Mission.SpawnAgent(data);
+                    if (agent == null) continue;
+                    agent.SetWatchState(Agent.WatchState.Alarmed);
+                    first ??= agent; spawned++;
                 }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                catch (Exception error) { GwpFaultTrace.WriteQuiet(error); }
             }
-
-            if (formation != null)
-                formation.SetControlledByAI(true, false);
-
-            return firstAgentOut;
+            // Consume attempted slots, including failures: no infinite retry wave.
+            if (first != null && !side.Notified)
+            {
+                side.Notified = true;
+                Mission.GetMissionBehavior<GwpSyndicateMusicBehavior>()?.NotifyReinforcementArrival(side.Team.Side, spawned);
+                bool friendly = side.Team.Side == Mission.PlayerTeam.Side;
+                MBInformationManager.AddQuickInformation(new TaleWorlds.Localization.TextObject(GwpText.Get(friendly
+                    ? "{=gwp_gwpbattlereinforcementbehavior_002}Grey Warden reinforcements have arrived!"
+                    : "{=gwp_battle_support_enemy}Grey Warden reinforcements have joined the enemy!")), 0);
+                if (_horn == null) { _hornPlayed = 0; StartHorn(); }
+            }
+#if GWP_DIAGNOSTICS
+            if (attempted > 0)
+                GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
+                    $"arrival side={side.Team.Side} spawned={spawned} remaining={side.Remaining}");
+#endif
         }
 
-        // ── 号角 ──────────────────────────────────────────────────────────────────
-
-        private void PlayArrivalHorn(Agent agent)
+        private void StartHorn()
         {
-            if (StartHorn()) return;
-
-            if (agent != null && agent.IsActive())
-                agent.MakeVoice(SkinVoiceManager.VoiceType.Charge,
-                                SkinVoiceManager.CombatVoiceNetworkPredictionType.NoPrediction);
+            if (Mission.Scene == null) return;
+            int id = SoundEvent.GetEventIdFromString("gwp/support/horn");
+            if (id < 0) return;
+            _horn = SoundEvent.CreateEvent(id, Mission.Scene);
+            _hornStopAt = _time + 4.5f; _hornPlayed++; _horn.Play();
         }
-
-        /// <summary>
-        /// 创建并播放一次号角，记录停止时间，返回是否成功。
-        /// OnMissionTick 检测到停止时间到达后自动调用以续播下一次。
-        /// </summary>
-        private bool StartHorn()
+        private void StopHorn() { _horn?.Stop(); _horn?.Release(); _horn = null; }
+        private void Stop()
         {
-            if (Mission.Current?.Scene == null) return false;
-            int soundId = SoundEvent.GetEventIdFromString("gwp/support/horn");
-            if (soundId < 0) return false;
+            if (_disposed) return;
+            _disposed = true; StopHorn();
+            foreach (SideSupport side in _sides) side.Troops.Clear();
+        }
+        protected override void OnEndMission() { Stop(); base.OnEndMission(); }
+        public override void OnRemoveBehavior() { Stop(); base.OnRemoveBehavior(); }
+    }
 
-            _hornSound  = SoundEvent.CreateEvent(soundId, Mission.Current.Scene);
-            _hornStopAt = _elapsedSeconds + HornDuration;
-            _hornPlayed++;
-            _hornSound.Play();
-            return true;
+    // Manually spawned scene troops are intentionally absent from the native
+    // supplier's campaign roster counters. They must still be allowed to fight
+    // after its last original troop dies. Once they are gone native wins again.
+    [HarmonyPatch(typeof(DefaultBattleMissionAgentSpawnLogic), nameof(DefaultBattleMissionAgentSpawnLogic.IsSideDepleted))]
+    internal static class GwpBattleSupportDepletionPatch
+    {
+        [HarmonyPostfix]
+        internal static void After(DefaultBattleMissionAgentSpawnLogic __instance, BattleSideEnum side, ref bool __result)
+        {
+            if (!__result || __instance.Mission.MissionEnded || __instance.Mission.MissionResult != null) return;
+            if (__instance.Mission.GetMissionBehavior<GwpBattleReinforcementBehavior>()?.HasLivingSupport(side) == true)
+                __result = false;
         }
     }
 }

@@ -11,13 +11,14 @@ namespace GreyWardenPolicePurity
     internal sealed class GwpMusicScore : IDisposable
     {
         internal const int Rate = 48000;
+        private static readonly double[] FadeUp = BuildCurve(true), FadeDown = BuildCurve(false);
         private readonly JObject _data;
         private readonly string _directory;
         private readonly Random _random;
         private readonly List<Voice> _voices = new();
         private readonly Dictionary<string, List<string>> _bags = new();
         private readonly Dictionary<string, string> _last = new();
-        private readonly Action<string> _log;
+        private readonly Action<string>? _log;
         private long _frame, _pendingUntil, _retryAt, _redrawUntil;
         private string _state = "intro", _wanted = "intro";
         private bool _reinforcement;
@@ -66,7 +67,7 @@ namespace GreyWardenPolicePurity
             public void Dispose() => Stream.Dispose();
         }
 
-        public GwpMusicScore(string directory, Action<string> log, int? seed = null)
+        public GwpMusicScore(string directory, Action<string>? log = null, int? seed = null)
         {
             _directory = directory;
             _data = JObject.Parse(File.ReadAllText(Path.Combine(directory, "score.json")));
@@ -82,7 +83,7 @@ namespace GreyWardenPolicePurity
             }
             string id = Pick("intro");
             Add(id, Frames(.08) + Entry(id), "intro");
-            _log("start intro " + id);
+            _log?.Invoke("start intro " + id);
         }
 
         private JObject Playlist(string key) => (JObject)_data["playlists"]![key]!;
@@ -140,24 +141,52 @@ namespace GreyWardenPolicePurity
             return v;
         }
 
-        private Voice? Current() => _voices.Where(v => !v.Bridge && v.Start < v.Stop && v.End > _frame && v.Stop > _frame)
-            .Where(v => v.ControlAt <= _frame).OrderByDescending(v => v.ControlAt).FirstOrDefault()
-            ?? _voices.Where(v => !v.Bridge && v.Stop > _frame).OrderBy(v => v.ControlAt).FirstOrDefault();
+        private Voice? Current()
+        {
+            Voice? current = null, first = null;
+            foreach (Voice v in _voices)
+            {
+                if (v.Bridge || v.Stop <= _frame) continue;
+                if (first == null || v.ControlAt < first.ControlAt) first = v;
+                if (v.Start < v.Stop && v.End > _frame && v.ControlAt <= _frame
+                    && (current == null || v.ControlAt > current.ControlAt)) current = v;
+            }
+            return current ?? first;
+        }
+
+        private static double[] BuildCurve(bool up)
+        {
+            var curve = new double[128];
+            for (int i = 0; i < curve.Length; i++)
+                curve[i] = up ? Math.Log10(1 + 9 * i / 127.0) : Math.Log10(10 - 9 * i / 127.0);
+            return curve;
+        }
 
         internal static double Curve(bool up, double x)
         {
             x = Math.Max(0, Math.Min(1, x));
             double p = x * 127;
             int lo = (int)Math.Floor(p), hi = Math.Min(127, lo + 1);
-            double a = up ? Math.Log10(1 + 9 * lo / 127.0) : Math.Log10(10 - 9 * lo / 127.0);
-            double b = up ? Math.Log10(1 + 9 * hi / 127.0) : Math.Log10(10 - 9 * hi / 127.0);
+            double[] curve = up ? FadeUp : FadeDown;
+            double a = curve[lo], b = curve[hi];
             return a + (b - a) * (p - lo);
         }
 
         private void CancelFuture(Voice current)
         {
-            foreach (var v in _voices.Where(v => v != current && v.ControlAt > current.ControlAt && v.ControlAt > _frame).ToArray())
-            { v.Dispose(); _voices.Remove(v); }
+            for (int i = _voices.Count - 1; i >= 0; i--)
+            {
+                Voice v = _voices[i];
+                if (v == current || v.ControlAt <= current.ControlAt || v.ControlAt <= _frame) continue;
+                v.Dispose(); _voices.RemoveAt(i);
+            }
+        }
+
+        private bool HasSuccessor(Voice current)
+        {
+            foreach (Voice v in _voices)
+                if (!v.Bridge && v != current && v.ControlAt > current.ControlAt && v.Stop > _frame) return true;
+            return false;
         }
 
         internal static long Sync(long anchor, long earliest, int kind, double beat, int beats, long exit)
@@ -207,14 +236,19 @@ namespace GreyWardenPolicePurity
             }
             if (state == "redraw") { _reinforcement = false; _redrawUntil = next.Exit; }
             _state = state;
-            _log($"rule={rule["index"]} {c.State}/{c.Id}->{state}/{id} bridge={bridge ?? "none"} join={at / (double)Rate:F3} sameTime={sameTime}");
+            _log?.Invoke($"rule={rule["index"]} {c.State}/{c.Id}->{state}/{id} bridge={bridge ?? "none"} join={at / (double)Rate:F3} sameTime={sameTime}");
             return true;
         }
 
         public void Render(float[] output, int frames)
         {
             Array.Clear(output, 0, frames * 2);
-            foreach (var v in _voices.Where(v => Math.Min(v.End, v.Stop) <= _frame).ToArray()) { v.Dispose(); _voices.Remove(v); }
+            for (int i = _voices.Count - 1; i >= 0; i--)
+            {
+                Voice v = _voices[i];
+                if (Math.Min(v.End, v.Stop) > _frame) continue;
+                v.Dispose(); _voices.RemoveAt(i);
+            }
             Voice? current = Current();
             if (current != null && _state != "outro")
             {
@@ -227,11 +261,11 @@ namespace GreyWardenPolicePurity
                 { _reinforcement = false; _redrawUntil = Math.Max(_redrawUntil, current.Exit); }
                 current = Current();
                 if (current != null && _state != "outro" && current.State != "outro" && current.Exit - _frame <= Frames(8)
-                    && !_voices.Any(v => !v.Bridge && v != current && v.ControlAt > current.ControlAt && v.Stop > _frame))
+                    && !HasSuccessor(current))
                 {
                     string id = Pick(current.State);
                     Add(id, current.Exit, current.State);
-                    _log($"continue {current.State}/{id} join={current.Exit / (double)Rate:F3}");
+                    _log?.Invoke($"continue {current.State}/{id} join={current.Exit / (double)Rate:F3}");
                 }
             }
             foreach (var v in _voices) v.Mix(output, frames, _frame);

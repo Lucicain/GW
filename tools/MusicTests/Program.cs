@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
 using GreyWardenPolicePurity;
 
@@ -21,6 +22,7 @@ internal static class Program
     static void Main(string[] args)
     {
         string dir=Path.GetFullPath(args[0]); var data=JObject.Parse(File.ReadAllText(Path.Combine(dir,"score.json")));
+        if (args.Contains("--fingerprint")) { Fingerprint(dir); return; }
         var playlists=(JObject)data["playlists"]!; var segments=(JObject)data["segments"]!;
         // Verify every explicit transition and the fallback against the source bank manifest.
         foreach(JObject rule in (JArray)data["rules"]!)
@@ -97,10 +99,7 @@ internal static class Program
             s.Reinforcement();s.Want("low");Render(s,10);Assert(s.VoiceCount==0,"outro terminal");
         }
         File.WriteAllLines("build-check/music-rebuild/timeline.txt",timeline);
-        var p=new GwpMusicBattlePolicy();p.Initialize(.5f);Assert(p.Tier=="low","initial ratio");
-        for(int i=0;i<20;i++)p.Update(2,.5f);Assert(p.Tier=="high","can rise");
-        for(int i=0;i<20;i++)p.Update(.5f,.5f);Assert(p.Tier=="low","can fall");
-        for(int i=0;i<30;i++)p.Update(i%2==0?.81f:.79f,.5f);Assert(p.Tier=="low","hysteresis avoids thrashing");
+        BattlePolicyTests();
         // Real Windows device exercise: volume stays ZERO from before the first submitted buffer.
         using(var output=new GwpMusicOutput(dir))
         {
@@ -109,6 +108,119 @@ internal static class Program
             Assert(output.Failure==null,"muted device open/write/pause/resume");
         }
         Console.WriteLine($"PASS {Checks} assertions; 35 rules; PCM unity; dynamic events; real device MUTED lifecycle");
+    }
+
+    // Offline comparison of the complete PCM and transition schedule before
+    // and after renderer optimization; this never opens an audio device.
+    private static void Fingerprint(string dir)
+    {
+        using var hash = SHA256.Create();
+        var samples = new float[1920]; var bytes = new byte[7680];
+        var logs = new List<string>();
+        using var score = new GwpMusicScore(dir, logs.Add, 43);
+        for (int i = 0; i < 16000; i++)
+        {
+            if (i == 2000) score.Want("low");
+            if (i == 3200) score.Want("medium");
+            if (i == 3500) score.Want("low");
+            if (i == 4200) score.Want("high");
+            if (i == 5000 || i == 5150 || i == 5300) score.Reinforcement();
+            if (i == 6200) score.Want("medium");
+            if (i == 8000) score.Want("high");
+            if (i == 10000) score.Want("low");
+            if (i == 14000) score.Want("outro");
+            score.Render(samples, 960);
+            Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
+            hash.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+        }
+        hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        Console.WriteLine("PCM_SHA256=" + BitConverter.ToString(hash.Hash!).Replace("-", ""));
+        foreach (string line in logs) Console.WriteLine(line);
+    }
+
+    private static void BattlePolicyTests()
+    {
+        var lines = new List<string>();
+        void Note(GwpMusicBattlePolicy p, float t, string scenario) => lines.Add($"{scenario} t={t:F1} tier={p.Tier} damage20={p.Damage20:F2} losses20={p.Casualties20:F2} exchange={p.Exchange:F3} attrition={p.Attrition:F3} tension={p.Tension:F3}");
+        var p = new GwpMusicBattlePolicy(); p.Initialize(500, 500);
+        for(int i=0;i<600;i++) p.Update(500,500,.5f);
+        Assert(p.Tier=="low", "balanced waiting never climbs on a timer");
+        p.Initialize(50,1000);
+        for(int i=0;i<120;i++) p.Update(50,1000,.5f);
+        Assert(p.Tier=="low", "outnumbered but not fighting does not invent a climax");
+
+        // Regression for the user's match: both sides lose strength at exactly the
+        // same rate, ratio remains 1 throughout. This is a simulation, not a log replay.
+        p.Initialize(500,500); var seen = new HashSet<string>{p.Tier}; float side=500;
+        for(int i=1;i<=460;i++)
+        {
+            p.RecordDamage(1.5f); p.RecordCasualty(1.5f); side-=.75f;
+            if(p.Update(side,side,.5f)) { Note(p,i*.5f,"equal-losses"); seen.Add(p.Tier); }
+            Assert(p.Pressure==0,"symmetric regression keeps power ratio equal");
+        }
+        Assert(seen.Contains("medium")&&seen.Contains("high"),"equal losses produce contact and climax");
+        for(int i=0;i<60;i++) if(p.Update(side,side,.5f)) Note(p,230+i*.5f,"disengage");
+        Assert(p.Tier=="low"&&p.Tension==0,"accumulated casualties do not lock high after disengagement");
+
+        // Full-capacity reinforcement battles keep live counts constant. Recent
+        // damage/deaths still count; arriving fresh soldiers never reset tempo.
+        p.Initialize(500,500);
+        for(int i=0;i<100;i++)
+        { p.RecordDamage(2.5f);p.RecordCasualty(2);p.AddReinforcementPower(2);p.Update(500,500,.5f); }
+        Assert(p.Tier=="high","constant active counts with reinforcements still climax");
+        Note(p,50,"continuous-replacement");
+        for(int i=0;i<100;i++) {p.RecordDamage(.05f);p.Update(500,500,.5f);}
+        Assert(p.Tier=="medium","reduced but continuing contact drops high to medium");
+        for(int i=0;i<60;i++) p.Update(500,500,.5f);
+        Assert(p.Tier=="low","quiet can return to low");
+
+        p.Initialize(500,500);p.RecordDamage(1);
+        bool falseClimax=false;
+        for(int i=0;i<120;i++){p.Update(500,500,.5f);falseClimax|=p.Tier=="high";}
+        Assert(!falseClimax&&p.Tier=="low","one arrow does not generate a climax or permanent contact");
+
+        // The late-game failure: historical casualties and numerical pressure
+        // must not keep high alive when actual exchange has become weak.
+        p.Initialize(100,900);p.RecordCasualty(500);
+        for(int i=0;i<40;i++){p.RecordDamage(3);p.Update(100,900,.5f);}
+        Assert(p.Tier=="high"&&p.Attrition==1&&p.Pressure==1,"late-game regression begins at high with maximum historical pressure");
+        for(int i=0;i<100;i++){p.RecordDamage(.75f);p.Update(100,900,.5f);}
+        Assert(p.Tier=="medium"&&p.Exchange>.29f&&p.Exchange<.31f,"weak sustained fighting drops high despite maximum casualties and disadvantage");
+        Note(p,70,"late-game-weak-contact");
+        for(int i=0;i<60;i++){p.RecordDamage(3);p.Update(100,900,.5f);}
+        Assert(p.Tier=="high","renewed sustained fighting can climb again");
+
+        // A short burst remains in the old 20-second window. Waiting for the
+        // tier hold must not turn that old burst into a later climax.
+        p.Initialize(500,500);p.RecordDamage(100);falseClimax=false;
+        for(int i=0;i<40;i++)
+        {
+            if(i==16) p.RecordDamage(.01f); // fresh timestamp, negligible action
+            p.Update(500,500,.5f);falseClimax|=p.Tier=="high";
+        }
+        Assert(!falseClimax,"stale burst cannot rise late, even when one tiny new hit refreshes contact");
+        p.Initialize(500,500);
+        Assert(p.RecentExchange==0&&p.Damage20==0,"new battle clears both activity windows");
+
+        // Normalized power makes identical percentage exchanges scale across battle sizes.
+        var small=new GwpMusicBattlePolicy();var large=new GwpMusicBattlePolicy();
+        small.Initialize(50,50);large.Initialize(5000,5000);
+        for(int i=0;i<100;i++)
+        {
+            small.RecordDamage(.25f);large.RecordDamage(25);
+            small.Update(50,50,.5f);large.Update(5000,5000,.5f);
+            Assert(small.Tier==large.Tier&&Math.Abs(small.Tension-large.Tension)<1e-5,"battle size invariance");
+        }
+        // A held threshold cannot rapidly flip on alternating samples.
+        p.Initialize(500,500);int changes=0;float last=0;
+        for(int i=1;i<=180;i++)
+        {
+            p.RecordDamage(i%2==0?2f:.5f);
+            if(p.Update(500,500,.5f)) { if(changes>0) Assert(i*.5f-last>=12,"minimum audible tier hold");last=i*.5f;changes++; }
+        }
+        Assert(changes<8,"no rapid threshold oscillation");
+        File.WriteAllLines("build-check/music-rebuild/battle-policy.txt",lines);
+        foreach(string line in lines)Console.WriteLine("PASS "+line);
     }
 }
 
