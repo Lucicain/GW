@@ -185,6 +185,26 @@ def main() -> int:
         for n in mission_behaviors:
             w(f"- `{n}`")
         w("")
+    w("## 类型索引")
+    w("")
+    w("**文件名不预测内容。** `CrimePool` 在 `GwpData.cs`、`GwpFaultTrace` 在")
+    w("`GwpDualBladeActionSetPatch.cs`、`GwpPassiveShieldBreakBehavior` 在")
+    w("`GwpShieldBashGuardPatch.cs`。要找一个类型就查这张表，不要照名字猜文件。")
+    w("")
+    where = {}
+    for _, name, _, types, _ in rows:
+        for t in types:
+            where.setdefault(t, []).append(name)
+    surprising = 0
+    for t in sorted(where, key=str.lower):
+        homes = where[t]
+        odd = all(t not in Path(h).stem for h in homes)
+        surprising += odd
+        mark = " ←" if odd else ""
+        w(f"- `{t}` → {' , '.join(homes)}{mark}")
+    w("")
+    w(f"`←` 标出文件名里找不到该类型名的 {surprising} 个，它们靠 Glob 找不到。")
+    w("")
     w("## 文件索引")
     w("")
     for label in order:

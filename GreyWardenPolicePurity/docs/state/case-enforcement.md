@@ -2,6 +2,8 @@
 
 > 当前状态：已部署，v1.4-r12 已发布；部分条目待实机观察
 > 最后验收：`131abb0`（v1.4-r12），远端核验见 [`build-and-deploy.md`](build-and-deploy.md)
+> 已复核至：`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）
+> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：`CASE_CLOSED` 的 reason 分布、`CASE_KEPT_OPEN_OWNER_RELEASED` 之后重新建队
 > 能否被重新指派、`CASE_WAR_RETARGETED_TO_CURRENT_FACTION` 会否对大王国连锁开战、
 > `ASSISTANCE_MEMBER_RELEASED_SURPLUS` 会否抖动

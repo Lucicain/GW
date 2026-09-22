@@ -2,6 +2,7 @@
 
 > 当前状态：现行流程
 > 最后验收：`131abb0`（v1.4-r12，含远端下载核验）
+> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
 ## 两个开关决定一切
@@ -39,6 +40,8 @@
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
+| `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物 |
+| `Check-StateFreshness.py` | 报出哪些 state 文件描述的源码在验收后又改过 | 被点名的要更新或写 `已复核至` |
 
 脚本用 Windows PowerShell 5.1 运行。
 

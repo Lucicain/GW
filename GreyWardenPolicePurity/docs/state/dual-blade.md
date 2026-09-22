@@ -2,6 +2,8 @@
 
 > 当前状态：用户已实测确认（「打了一把没报错了」）
 > 最后验收：**`99f9426227284c7eba315b127e2a5fd422048bb1`**
+> 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `tools/DualBladeTests/**`
+> 已复核至：`417a17b`（只加了一处诊断计数，功能未变）
 > 待实测：无。改动双刀/踢盾击应以此提交为回退基线
 
 ## 已修复的崩溃
@@ -85,6 +87,9 @@ seq4408/t112.276  仍空副手盾击
 接触监控（`GwpArcherContactTrace` 及其两类 Harmony 补丁）已随验收**退休删除**。
 `GwpDualBladeActionGate` 仅保留 `alternative && !paired` 的异常分支，标签
 `DUAL_BLADE_INVALID_ACTION`，不再记录正常拦截。
+
+`GwpDualBladeAiBehavior` 在单独收刀被拦时调一次 `GwpBattleCommandTrace.NoteGripBlock`
+（`417a17b`，仅计数，在 `GWP_DIAGNOSTICS` 内）——踱步调查结束时随该监控一起退休。
 
 退休后的日志、WER 及一次性分析输出**不再可读**；需要重新调查时应从新复现取证，
 不要把已退休路径当成仍可用的文件。

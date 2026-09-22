@@ -131,6 +131,264 @@
 - `GwpSyndicateMusicBehavior`
 - `GwpBattleReinforcementBehavior`
 
+## 类型索引
+
+**文件名不预测内容。** `CrimePool` 在 `GwpData.cs`、`GwpFaultTrace` 在
+`GwpDualBladeActionSetPatch.cs`、`GwpPassiveShieldBreakBehavior` 在
+`GwpShieldBashGuardPatch.cs`。要找一个类型就查这张表，不要照名字猜文件。
+
+- `AssistanceTaskSnapshot` → PoliceEnforcementBehavior.Assistance.cs ←
+- `AtonementFlowState` → GwpFlowStates.cs ←
+- `AtonementQuest` → PoliceEnforcementBehavior.AtonementQuest.cs
+- `Bounty` → GwpTuning.cs ←
+- `BountyHunterQuest` → PlayerBountyBehavior.QuestAndNotification.cs ←
+- `BountyMapNotification` → PlayerBountyBehavior.QuestAndNotification.cs ←
+- `BountyMapNotificationItemVM` → PlayerBountyBehavior.QuestAndNotification.cs ←
+- `CrimePool` → GwpData.cs ←
+- `CrimeRecord` → GwpData.cs ←
+- `CrimeState` → GwpRuntimeState.cs ←
+- `Deterrence` → GwpTuning.cs ←
+- `DeterrenceSource` → GwpAiDeterrenceDialogueCatalog.cs ←
+- `DeterrenceTier` → GwpAiDeterrenceDialogueCatalog.cs ←
+- `DeterrenceVoice` → GwpAiDeterrenceDialogueCatalog.cs ←
+- `DutyKind` → GreyWardenFamilyBehavior.cs ←
+- `Enforcement` → GwpTuning.cs ←
+- `Entry` → GwpDispatchCargo.cs ←
+- `Family` → GwpTuning.cs ←
+- `FiefRequestStage` → GreyWardenPlayerRequestBehavior.cs ←
+- `FieldArrest` → GwpTuning.cs ←
+- `GreyWardenAdoptionLogEntry` → GreyWardenAdoptionLogEntry.cs
+- `GreyWardenDeserterFilterBehavior` → GreyWardenDeserterFilterBehavior.cs
+- `GreyWardenDesertersCampaignBehavior` → GreyWardenDesertersCampaignBehavior.cs
+- `GreyWardenDutyScheduler` → GreyWardenDutyScheduler.cs
+- `GreyWardenFamilyBehavior` → GreyWardenFamilyBehavior.cs
+- `GreyWardenFieldSparringMissionController` → GreyWardenFieldSparringMissionController.cs
+- `GreyWardenIssueResolutionBehavior` → GreyWardenIssueResolutionBehavior.cs
+- `GreyWardenLeaderBalanceBehavior` → GreyWardenLeaderBalanceBehavior.cs
+- `GreyWardenLoreBehavior` → GreyWardenLoreBehavior.cs
+- `GreyWardenNotableRelationActionPatch` → GreyWardenNotableRelationsBehavior.cs ←
+- `GreyWardenNotableRelationsBehavior` → GreyWardenNotableRelationsBehavior.cs
+- `GreyWardenNotableRelationWritePatch` → GreyWardenNotableRelationsBehavior.cs ←
+- `GreyWardenPartyDesireBehavior` → GreyWardenPartyDesireBehavior.cs
+- `GreyWardenPlayerRequestBehavior` → GreyWardenPlayerRequestBehavior.cs
+- `GreyWardenSafePartyAgentOrigin` → GreyWardenSafeTroopSupplier.cs ←
+- `GreyWardenSafeTroopSupplier` → GreyWardenSafeTroopSupplier.cs
+- `GreyWardenSparringBehavior` → GreyWardenSparringBehavior.cs
+- `GreyWardenTrainingBehavior` → GreyWardenTrainingBehavior.cs
+- `GreyWardenTroopRequestBehavior` → GreyWardenTroopRequestBehavior.Cohort.cs , GreyWardenTroopRequestBehavior.cs
+- `GreyWardenVillageAdoptionBehavior` → GreyWardenVillageAdoptionBehavior.cs
+- `GreyWardenVillageReconstructionBehavior` → GreyWardenVillageReconstructionBehavior.cs
+- `GreyWardenVillageRewardBehavior` → GreyWardenVillageRewardBehavior.cs
+- `GreyWardenVillageRewardSliderScreen` → GreyWardenVillageRewardSliderScreen.cs
+- `GreyWardenVillageRewardSliderVM` → GreyWardenVillageRewardSliderScreen.cs ←
+- `GwpAchievementActivityPatch` → GwpAchievementCompatibilityPatch.cs ←
+- `GwpAchievementCompatibility` → GwpAchievementCompatibilityPatch.cs
+- `GwpAdultCommanderLoadoutPatch` → GwpAdultCommanderLoadoutPatch.cs
+- `GwpAgentApplyDamageModel` → GwpAgentApplyDamageModel.cs
+- `GwpAgentStatCalculateModel` → GwpAgentStatCalculateModel.cs
+- `GwpAiDeterrenceDialogueCatalog` → GwpAiDeterrenceDialogueCatalog.cs
+- `GwpAiDeterrenceState` → GwpAiDeterrenceState.cs
+- `GwpAiDiagnostics` → GwpAiDiagnostics.cs , GwpAiDiagnostics.cs
+- `GwpAlternativeAttackControl` → GwpAlternativeAttackControl.cs
+- `GwpAlternativeAttackControlBehavior` → GwpAlternativeAttackControlBehavior.cs
+- `GwpArcherArrowHitState` → GwpArcherArrowEffects.cs ←
+- `GwpArcherArrowMissileHitPatch` → GwpArcherArrowEffects.cs ←
+- `GwpArcherArrowShieldPassPatch` → GwpArcherArrowEffects.cs ←
+- `GwpArmyExitDisorganizedPatch` → GwpArmyExitDisorganizedPatch.cs
+- `GwpAssetAcceptancePatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpAssetAutoOfferPatch` → GwpAssetAutoOfferPatch.cs
+- `GwpAssetOfferValidationPatch` → GwpAssetOfferValidationPatch.cs
+- `GwpAssetPayment` → GwpAssetPayment.cs
+- `GwpAssistanceArmyCohesionPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpAssistanceArmyDisbandGuardPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpAssistanceArmyEncounterBackgroundPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpAssistanceArmyNativeEngageDesirePatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpAssistanceArmyTooltipPatch` → GwpAssistanceArmyTooltipPatch.cs
+- `GwpBattleBehaviorScoreTrace` → GwpBattleCommandTrace.cs ←
+- `GwpBattleCommandTrace` → GwpBattleCommandTrace.cs
+- `GwpBattleMasteryEffectiveSkillPatch` → GwpAgentStatCalculateModel.cs ←
+- `GwpBattleReinforcementBehavior` → GwpBattleReinforcementBehavior.cs
+- `GwpBattleSceneContext` → GwpBattleSceneContext.cs
+- `GwpBattleScenePolicy` → GwpBattleScenePolicy.cs
+- `GwpBattleSupportChecks` → GwpBattleScenePolicy.cs ←
+- `GwpBattleSupportDepletionPatch` → GwpBattleReinforcementBehavior.cs ←
+- `GwpBattleSupportOrigin` → GwpBattleSupportOrigin.cs
+- `GwpBattleTacticScoreTrace` → GwpBattleCommandTrace.cs ←
+- `GwpBlackLordShieldWeaponDataPatch` → GwpBlackLordShieldBehavior.cs ←
+- `GwpBribeBarterable` → GwpBribeBarterable.cs
+- `GwpCaseArchiveItemVM` → GwpCaseArchiveScreen.cs ←
+- `GwpCaseArchiveScreen` → GwpCaseArchiveScreen.cs
+- `GwpCaseArchiveVM` → GwpCaseArchiveScreen.cs ←
+- `GwpCaseReceipt` → GwpCaseReceipt.cs
+- `GwpCaseSettlementEntryPatch` → GwpCaseSettlementEntryPatch.cs
+- `GwpCaseSettlementRules` → GwpCaseSettlementRules.cs
+- `GwpCommon` → GwpCommon.cs
+- `GwpCrimeCategory` → GwpCrimeCategory.cs
+- `GwpCrimeCategoryClassifier` → GwpCrimeCategory.cs ←
+- `GwpCrimeDesireAuction` → GwpCrimeDesireAuction.cs
+- `GwpCustomBattleCommanderListPatch` → GwpDualBladeActionSetPatch.cs ←
+- `GwpCustomBattleCommanderListSupport` → GwpDualBladeActionSetPatch.cs ←
+- `GwpDispatchBarterFaultDiagnostics` → GwpDispatchBarterFaultDiagnostics.cs
+- `GwpDispatchBarterScreen` → GwpDispatchBarterScreen.cs
+- `GwpDispatchCargo` → GwpDispatchCargo.cs
+- `GwpDispatchCargoFoodPatch` → GwpDispatchCargo.cs ←
+- `GwpDispatchOfferDisplayPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDispatchOfferLabelPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDispatchPhase` → GwpWardenDispatch.cs ←
+- `GwpDispatchPurpose` → GwpWardenDispatch.cs ←
+- `GwpDispatchRecord` → GwpWardenDispatch.cs ←
+- `GwpDispatchSelectionCancelPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDispatchSelectionPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDispatchSupplyRules` → GwpDispatchSupplyRules.cs
+- `GwpDispatchVmCancelPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDualBladeActionGate` → GwpDualBladeActionGate.cs
+- `GwpDualBladeAgents` → GwpDualBladeAiBehavior.cs ←
+- `GwpDualBladeAgentState` → GwpDualBladeAiBehavior.cs ←
+- `GwpDualBladeAiBehavior` → GwpDualBladeAiBehavior.cs
+- `GwpDualBladeAttackArmor` → GwpDualBladeAttackArmor.cs
+- `GwpDualBladeCraftingTemplateVisibilityPatch` → GwpDualBladeActionSetPatch.cs ←
+- `GwpDualBladeFightGripComponent` → GwpDualBladeAiBehavior.cs ←
+- `GwpDualBladeGroundPickup` → GwpDualBladeGroundPickupPatch.cs
+- `GwpDualBladeGroundPickupPatch` → GwpDualBladeGroundPickupPatch.cs
+- `GwpDualBladeLoadout` → GwpDualBladeActionSetPatch.cs ←
+- `GwpDualBladeNpcItemSetup` → GwpDualBladeNpcItemSetup.cs
+- `GwpDualBladePairKeeperComponent` → GwpDualBladeAiBehavior.cs ←
+- `GwpDualWieldCollisionPatch` → GwpDualWieldingPatch.cs ←
+- `GwpDualWieldDamageTypePatch` → GwpDualWieldingPatch.cs ←
+- `GwpDuelOpponentMarkerPatch` → GwpDuelOpponentMarkerPatch.cs
+- `GwpDumpIntegrityAchievementPatch` → GwpAchievementCompatibilityPatch.cs ←
+- `GwpEncyclopediaClanPageExtension` → GwpEncyclopediaClanPageVM.cs ←
+- `GwpEncyclopediaClanPageExtensionPatch` → GwpEncyclopediaClanPageVM.cs ←
+- `GwpEncyclopediaClanPageWidgetPatch` → GwpEncyclopediaClanPageVM.cs ←
+- `GwpEncyclopediaHeroPageExtension` → GwpEncyclopediaHeroPageVM.cs ←
+- `GwpEncyclopediaHeroPageExtensionPatch` → GwpEncyclopediaHeroPageVM.cs ←
+- `GwpEncyclopediaHeroPageWidgetPatch` → GwpEncyclopediaHeroPageVM.cs ←
+- `GwpEngineAssertDiagnostics` → GwpEngineAssertDiagnostics.cs
+- `GwpEscortSpeedCapPatch` → GwpEscortSpeedCapPatch.cs
+- `GwpFaultTrace` → GwpDualBladeActionSetPatch.cs ←
+- `GwpFiefPublicSupportPatch` → GwpFiefPublicSupportPatch.cs
+- `GwpFieldArrestBehavior` → GwpFieldArrestBehavior.cs , GwpFieldArrestBehavior.Grace.cs
+- `GwpFieldArrestHostility` → GwpFieldArrestBehavior.cs ←
+- `GwpFieldArrestLines` → GwpFieldArrestLines.cs
+- `GwpFieldArrestPricing` → GwpCrimeCategory.cs ←
+- `GwpFieldCollectionBarterable` → GwpFieldCollectionBarterable.cs
+- `GwpFieldDialogueVoice` → GwpFieldDialogueVoice.cs
+- `GwpFieldFineBarterable` → GwpFieldFineBarterable.cs
+- `GwpFieldReportLedger` → GwpFieldReportLedger.cs
+- `GwpFinalDesireAuctionPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpGauntletWidgetUtility` → GwpGauntletWidgetUtility.cs
+- `GwpIds` → GwpIds.cs
+- `GwpInitiativeDiagnosticsPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpKickBehavior` → GwpKickBehavior.cs
+- `GwpKickInputComponent` → GwpKickInputComponent.cs
+- `GwpLandlessShipPurchaseTownPatch` → GwpLandlessShipTradePatch.cs ←
+- `GwpLandlessShipSaleTownPatch` → GwpLandlessShipTradePatch.cs ←
+- `GwpLandlessShipTrade` → GwpLandlessShipTradePatch.cs
+- `GwpLeaderlessSupportArmyInfluencePatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpLeaderlessSupportConversationItemPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpLeaderlessSupportConversationMenuPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
+- `GwpLegacySave` → GwpLegacySave.cs
+- `GwpLinkedInquiryState` → GwpSingleQueryLinkPatch.cs ←
+- `GwpLocationDutyBehaviorTextPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpLocationDutyRefreshPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpMapBarReputation` → GwpMapBarReputationPatch.cs
+- `GwpMapInfoCreateItemsPatch` → GwpMapBarReputationPatch.cs ←
+- `GwpMapInfoUpdatePatch` → GwpMapBarReputationPatch.cs ←
+- `GwpMusicBattlePolicy` → GwpMusicBattlePolicy.cs
+- `GwpMusicOutput` → GwpMusicOutput.cs
+- `GwpMusicScore` → GwpMusicScore.cs
+- `GwpNavalCustomBattleCommanderListPatch` → GwpDualBladeActionSetPatch.cs ←
+- `GwpNegotiationChancePatch` → GwpNegotiationChancePatch.cs
+- `GwpNegotiationPolicy` → GwpNegotiationPolicy.cs
+- `GwpOffenderDesire` → GwpOffenderDesire.cs
+- `GwpOffenderDesires` → GwpOffenderDesire.cs ←
+- `GwpPartyCharacterExecuteTalkPatch` → GwpPartyScreenTroopTalkPatch.cs ←
+- `GwpPartyCharacterTalkablePatch` → GwpPartyScreenTroopTalkPatch.cs ←
+- `GwpPartyScreenTroopTalk` → GwpPartyScreenTroopTalkPatch.cs
+- `GwpPartySizeLimitModel` → GwpPartySizeLimitModel.cs
+- `GwpPartyThinkResolvedDiagnosticsPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpPassiveHeldShieldCollision` → GwpShieldBashGuardPatch.cs ←
+- `GwpPassiveHeldShieldMeleePatch` → GwpShieldBashGuardPatch.cs ←
+- `GwpPassiveHeldShieldParticlePatch` → GwpShieldBashGuardPatch.cs ←
+- `GwpPassiveShieldBreakBehavior` → GwpShieldBashGuardPatch.cs ←
+- `GwpPassiveShieldHitParticlePatch` → GwpShieldBashGuardPatch.cs ←
+- `GwpPassiveShieldRegisterBlowPatch` → GwpShieldBashGuardPatch.cs ←
+- `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
+- `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
+- `GwpRuntimeFaultWatch` → GwpRuntimeFaultWatch.cs
+- `GwpRuntimeState` → GwpRuntimeState.cs
+- `GwpSaveableTypeDefiner` → GwpSaveableTypeDefiner.cs
+- `GwpSettlementReconsiderationDecision` → GwpSettlementReconsiderationDecision.cs
+- `GwpSingleQueryPopupClearPatch` → GwpSingleQueryLinkPatch.cs ←
+- `GwpSingleQueryPopupWidgetPatch` → GwpSingleQueryLinkPatch.cs ←
+- `GwpSyndicateMusicBehavior` → GwpSyndicateMusicBehavior.cs
+- `GwpText` → GwpText.cs
+- `GwpTextKeys` → GwpTextKeys.cs
+- `GwpTuning` → GwpTuning.cs
+- `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
+- `GwpWardenDispatchDialogue` → GwpWardenDispatchDialogue.cs
+- `GwpWardenMoralePatch` → GwpWardenResolve.cs ←
+- `GwpWardenPanicPatch` → GwpWardenResolve.cs ←
+- `GwpWardenResolve` → GwpWardenResolve.cs
+- `GwpWardenRetreatBehaviorPatch` → GwpWardenResolve.cs ←
+- `GwpWardenRetreatPatch` → GwpWardenResolve.cs ←
+- `HeroCrimeStats` → GwpData.cs ←
+- `IssueDutyStage` → GreyWardenIssueResolutionBehavior.cs ←
+- `IssueResolution` → GwpTuning.cs ←
+- `IssueTaskSnapshot` → GreyWardenIssueResolutionBehavior.cs ←
+- `Item` → GwpCaseReceipt.cs ←
+- `Patrol` → GwpTuning.cs ←
+- `PendingReport` → GwpFieldReportLedger.cs ←
+- `PlayerBehaviorMonitor` → PlayerBehaviorMonitor.cs
+- `PlayerBehaviorPool` → GwpData.cs ←
+- `PlayerBountyBehavior` → PlayerBountyBehavior.CaseSettlement.cs , PlayerBountyBehavior.cs , PlayerBountyBehavior.DialogueAndNotification.cs , PlayerBountyBehavior.Encyclopedia.cs , PlayerBountyBehavior.QuestAndNotification.cs , PlayerBountyBehavior.Support.cs
+- `PlayerBountyFlowState` → GwpFlowStates.cs ←
+- `PlayerRecord` → GwpData.cs ←
+- `PlayerRequests` → GwpTuning.cs ←
+- `PlayerRequestTaskSnapshot` → GreyWardenPlayerRequestBehavior.cs ←
+- `PlayerState` → GwpRuntimeState.cs ←
+- `PlayerTroopOrderSnapshot` → GreyWardenTroopRequestBehavior.cs ←
+- `PlayerTroopOrderStage` → GreyWardenTroopRequestBehavior.cs ←
+- `PoliceAIDeterrenceBehavior` → PoliceAIDeterrenceBehavior.cs
+- `PoliceAntiRecruitmentModel` → PoliceAntiRecruitmentModel.cs
+- `PoliceAntiVanillaWarBehavior` → PoliceAntiVanillaWarBehavior.cs
+- `PoliceAntiWarDeclaration` → PoliceAntiWarDeclaration.cs
+- `PoliceClanTierModel` → PoliceClanTierModel.cs
+- `PoliceCrimeMonitorEnhanced` → PoliceCrimeMonitorEnhanced.cs
+- `PoliceEnforcementBehavior` → PoliceEnforcementBehavior.Assistance.cs , PoliceEnforcementBehavior.AtonementQuest.cs , PoliceEnforcementBehavior.cs , PoliceEnforcementBehavior.DelayPatrols.cs , PoliceEnforcementBehavior.Dialogue.cs , PoliceEnforcementBehavior.Helpers.cs , PoliceEnforcementBehavior.IdleDuties.cs
+- `PoliceHeroCreationModel` → PoliceHeroCreationModel.cs
+- `PoliceMarriageModel` → PoliceMarriageModel.cs
+- `PoliceMobilePartyAIModel` → PoliceMobilePartyAIModel.cs
+- `PolicePartyTroopUpgradeModel` → PolicePartyTroopUpgradeModel.cs
+- `PolicePatrolBehavior` → PolicePatrolBehavior.cs , PolicePatrolBehavior.Encyclopedia.cs , PolicePatrolBehavior.Helpers.cs
+- `PolicePrisonerImmunityBehavior` → PolicePrisonerImmunityBehavior.cs
+- `PoliceRaidDeterrenceModel` → PoliceRaidDeterrenceModel.cs
+- `PoliceResourceManager` → PoliceResourceManager.cs
+- `PoliceShipDamageModel` → PoliceShipModels.cs ←
+- `PoliceShipModelSupport` → PoliceShipModels.cs ←
+- `PoliceShipParametersModel` → PoliceShipModels.cs ←
+- `PoliceStats` → GwpData.cs ←
+- `PoliceTask` → GwpData.cs ←
+- `PoliceTaskFlowState` → GwpFlowStates.cs ←
+- `Reconstruction` → GwpTuning.cs ←
+- `ReconstructionStage` → GreyWardenVillageReconstructionBehavior.cs ←
+- `ReconstructionTaskSnapshot` → GreyWardenVillageReconstructionBehavior.cs ←
+- `ReliefStage` → GreyWardenVillageAdoptionBehavior.cs ←
+- `Step` → GwpDualBladeAiBehavior.cs ←
+- `SubModule` → SubModule.cs
+- `Temperament` → GwpFieldArrestLines.cs ←
+- `Training` → GwpTuning.cs ←
+- `TrainingTaskSnapshot` → GreyWardenTrainingBehavior.cs ←
+- `TrainingTaskStage` → GreyWardenTrainingBehavior.cs ←
+- `TroopRequest` → GwpTuning.cs ←
+- `VillageReliefTaskSnapshot` → GreyWardenVillageAdoptionBehavior.cs ←
+- `VillageReward` → GwpTuning.cs ←
+- `Voice` → GwpMusicScore.cs ←
+- `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
+
+`←` 标出文件名里找不到该类型名的 135 个，它们靠 Glob 找不到。
+
 ## 文件索引
 
 ### 音乐（4 个文件）

@@ -2,6 +2,7 @@
 
 > 当前状态：现行规则
 > 最后验收：不适用
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
 ## 原则
