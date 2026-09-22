@@ -14,6 +14,7 @@ Exit code 0 always: this is a report, not a gate.
 import re
 import subprocess
 import sys
+from fnmatch import fnmatch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -132,9 +133,59 @@ def main() -> int:
             print(f"  {name}  ({why})")
         print()
 
-    print(f"{len(stale)} 个可能过期 / {len(fresh)} 个一致 / {len(skipped)} 个未核对")
+    new_orphans = check_orphans(files)
+
+    print(f"{len(stale)} 个可能过期 / {len(fresh)} 个一致 / {len(skipped)} 个未核对"
+          f" / {len(new_orphans)} 个新增未归属")
     print("\n这只说明去哪里看，不说明文字对不对。")
     return 0
+
+
+def check_orphans(state_files: list) -> list:
+    """Source files no state file claims.
+
+    The freshness check above only sees code that some document already points
+    at. A brand-new subsystem is covered by nothing, so it is invisible there —
+    which is exactly how the old log started. The baseline holds the subsystems
+    known to be unextracted, so only genuinely new orphans surface.
+    """
+    covered = set()
+    for p in state_files:
+        cm = COVER_RE.search(p.read_text(encoding="utf-8"))
+        if cm:
+            covered.update(resolve(g) for g in GLOB_RE.findall(cm.group(1)))
+
+    sources = sorted(
+        str(q.relative_to(ROOT)).replace("\\", "/")
+        for q in (ROOT / MODULE).glob("*.cs"))
+    orphans = [s for s in sources
+               if not any(fnmatch(s, pat) for pat in covered)]
+
+    baseline_path = STATE / "uncovered-baseline.txt"
+    baseline = set()
+    if baseline_path.exists():
+        baseline = {ln.strip() for ln in
+                    baseline_path.read_text(encoding="utf-8").splitlines()
+                    if ln.strip() and not ln.startswith("#")}
+
+    new = [o for o in orphans if o not in baseline]
+    gone = sorted(baseline - set(orphans))
+
+    if new:
+        print("[!] 新增未归属源码 —— 没有任何 state 文件声明覆盖它：\n")
+        for o in new:
+            print(f"  {o}")
+        print("\n  新子系统就是这样开始漂移的。要么写一个 state 文件覆盖它，")
+        print("  要么确认它属于某个已有文件并扩展那个文件的 `覆盖源码`。")
+        print(f"  确实暂不提取的，加进 {baseline_path.relative_to(ROOT)}。\n")
+    if gone:
+        print(f"— 基线里有 {len(gone)} 个文件已被覆盖或删除，可以从基线移除：")
+        for o in gone[:8]:
+            print(f"  {o}")
+        if len(gone) > 8:
+            print(f"  … 另有 {len(gone) - 8} 个")
+        print()
+    return new
 
 
 if __name__ == "__main__":

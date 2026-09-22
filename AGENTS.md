@@ -16,8 +16,7 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   **它不是现行规则。** 不得从流水恢复任何已不在 `state/` 中的规则、阈值或实现方式。
 - 一个结论要么在 `state/` 里、要么不存在。在 `state/` 里找不到的规则，默认不成立。
 - 先读 `docs/state/README.md`。不要通读 journal——它有 2 MB，按需 grep 取证即可。
-- **每轮收尾用 `/wrap`**：更新对应 state 文件 + 往当月 journal 追加一条 + 报告
-  构建/测试/哈希。state 未更新就不算完成。
+- **每轮收尾用 `/wrap`**（或手工照「每轮收尾」那节走）。state 未更新就不算完成。
 - 改一个 `state/README.md` 里标为"尚未提取"的子系统时，顺手把它的当前状态抽成
   一个 state 文件，不要一边改一边继续只往流水里写。
 
@@ -73,6 +72,42 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   文件扫描时，派 `gwp-research`（只读，Sonnet + high effort）。
 - 一次改动收尾前的独立复核，派一个只看 diff 的 subagent，不要自己复核自己。
 - 范围明确、一两个文件就能答的问题**不要**派 —— 冷启动比直接读更贵。
+
+## 多 harness：这些规则对所有 agent 都成立
+
+这个仓库会被 Claude Code、Codex、Antigravity 和人轮流改动。**三家都读本文件**，
+所以真正的契约写在这里，工具专属的东西只是它的便利实现。
+
+新克隆之后先装 git 钩子（每个克隆一次，`core.hooksPath` 不随仓库走）：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`.githooks/pre-commit` 在任何人提交 `.cs` 改动时重建 `code-map.md` 并报新鲜度，
+不拦提交。Claude Code 另有 PostToolUse 钩子做同样的事，但那个只在 Claude 里生效，
+**git 那层才是对所有 harness 都成立的那层**。
+
+工具专属、其他 harness 不会自动加载、但内容对所有人有效的：
+
+- `.claude/rules/csharp-gotchas.md` —— 改 `.cs` 之前读一遍（裸 catch 要留痕、
+  辅助方法要透传调用点、双 BOM、不要清 `WeaponFlags` 掩码）
+- `.claude/rules/release-notes.md` —— 动玩家 README 之前读
+- `.claude/skills/wrap/SKILL.md` —— 收尾流程；没有这个 skill 的 harness 照第
+  「每轮收尾」节手工走一遍
+
+## 每轮收尾（不依赖任何 skill）
+
+1. `python tools/Check-StateFreshness.py` —— 被点名的文件要么更新、要么写
+   `已复核至` 并注明理由。**新增未归属源码**意味着这轮写了没人记录的代码，
+   必须处理。
+2. 原地改写对应的 `docs/state/*.md`，更新 `最后验收` / `覆盖源码` / `待实测`。
+   子系统在「尚未提取」里 → 新建 state 文件，并从
+   `docs/state/uncovered-baseline.txt` 删掉对应文件。
+3. 往 `docs/journal/<当月>.md` 追加一条：改了什么 / 为什么 / 证据 / 验证 /
+   哈希 / 回退 / 未做。
+4. 报告实际结果。失败就说失败并贴输出。
+5. 功能被用户确认了 → 同一轮退休它的诊断。
 
 ## 不做存档兼容
 
