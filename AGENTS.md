@@ -78,6 +78,10 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 这个仓库会被 Claude Code、Codex、Antigravity 和人轮流改动。**三家都读本文件**，
 所以真正的契约写在这里，工具专属的东西只是它的便利实现。
 
+**不要新建 `CLAUDE.md` 或 `GEMINI.md`。** 两者都会**顶掉**本文件：Claude Code 一旦
+发现 `CLAUDE.md` 就不再读 `AGENTS.md`；Antigravity 读两者但 `GEMINI.md` 优先。
+新建任何一个，这份契约就对那个工具静默失效了。要加规则就加在这里。
+
 新克隆之后先装 git 钩子（每个克隆一次，`core.hooksPath` 不随仓库走）：
 
 ```bash
