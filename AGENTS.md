@@ -54,6 +54,16 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - 写法与打包规则见 `.claude/rules/release-notes.md` 和
   `docs/reference/release-checklist.md`。
 
+## 调研用 subagent，主会话只收结论
+
+**用户已授权主动使用 subagent，不必每次先问。** 这条是为了让长对话不漂移：
+调研读的几十个文件留在子上下文里，主会话只拿 1000–2000 token 的结论。
+
+- 翻 `docs/journal/`（2.1 MB）、`.codex_tmp` 下的 v1.4.8 反编译、或跨多个 `.cs`
+  文件扫描时，派 `gwp-research`（只读，Sonnet + max effort）。
+- 一次改动收尾前的独立复核，派一个只看 diff 的 subagent，不要自己复核自己。
+- 范围明确、一两个文件就能答的问题**不要**派 —— 冷启动比直接读更贵。
+
 ## 不做存档兼容
 
 不要为救旧档写心跳、迁移或开局补正。直接改写入点。
