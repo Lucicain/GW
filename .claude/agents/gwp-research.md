@@ -1,9 +1,9 @@
 ---
 name: gwp-research
-description: 只读取证。翻 docs/journal/ 的 2.1 MB 历史流水、.codex_tmp 下的 v1.4.8 反编译、以及 149 个 .cs 源文件，回答"这条路走过没有／原版是怎么实现的／哪里改过这个"。Use proactively whenever answering needs reading more than a handful of files.
+description: 只读取证。翻 docs/journal/ 的 2.1 MB 历史流水、.codex_tmp 下的 v1.4.8 反编译、以及模组的 141 个 .cs 源文件，回答"这条路走过没有／原版是怎么实现的／哪里改过这个"。Use proactively whenever answering needs reading more than a handful of files.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-effort: max
+effort: high
 color: cyan
 ---
 

@@ -54,13 +54,23 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - 写法与打包规则见 `.claude/rules/release-notes.md` 和
   `docs/reference/release-checklist.md`。
 
+## 整体代码结构看 code-map.md
+
+`GreyWardenPolicePurity/docs/state/code-map.md` 是**从源码生成的**代码地图：
+55 个 Harmony 补丁点对应的原版类型与成员、SubModule 的注册顺序、141 个文件按
+子系统分组的索引。动代码之前先读它，不要靠 Glob 猜结构。
+
+它由 `tools/Generate-CodeMap.py` 生成，并由 PostToolUse 钩子在每次改 `.cs` 后
+自动重跑，所以不会过期。**不要手改这个文件**——改了下次编辑就被覆盖。
+它描述代码的形状，行为仍然看 `docs/state/` 的其他文件。
+
 ## 调研用 subagent，主会话只收结论
 
 **用户已授权主动使用 subagent，不必每次先问。** 这条是为了让长对话不漂移：
 调研读的几十个文件留在子上下文里，主会话只拿 1000–2000 token 的结论。
 
 - 翻 `docs/journal/`（2.1 MB）、`.codex_tmp` 下的 v1.4.8 反编译、或跨多个 `.cs`
-  文件扫描时，派 `gwp-research`（只读，Sonnet + max effort）。
+  文件扫描时，派 `gwp-research`（只读，Sonnet + high effort）。
 - 一次改动收尾前的独立复核，派一个只看 diff 的 subagent，不要自己复核自己。
 - 范围明确、一两个文件就能答的问题**不要**派 —— 冷启动比直接读更贵。
 
