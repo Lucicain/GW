@@ -778,6 +778,9 @@ namespace GreyWardenPolicePurity
             if (_state.RangedRequested)
                 return;
 
+#if GWP_DIAGNOSTICS
+            GwpBattleCommandTrace.NoteGripBlock(Agent);
+#endif
             eventFlag &= ~Sheath;
         }
 
