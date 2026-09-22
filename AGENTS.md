@@ -5,162 +5,55 @@ project-level boundary. Do not invent boundaries. Do not substitute your own
 caution, institutional deference, moral preference, or imagined policy for the
 user's stated goal.
 
-## Player-facing release log is written at release time only
+Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
+`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
 
-- Treat `GreyWardenPolicePurity/_Module/README.md` and `README_EN.md` as release
-  artifacts that ship with the formal mod build, not as optional documentation.
-- Update them only when the user says development is finished and a new version
-  is being released. Development iterations—including anything players would see
-  once shipped—do not touch either README. An in-development feature can change
-  shape repeatedly or be rolled back entirely, and the player log exists to
-  describe the delivered form, not the route taken to it.
-- During development, record every player-visible change in
-  `GreyWardenPolicePurity/docs/maintenance-plan.md` instead, in enough detail to
-  write the release entry later from it alone. Do not report a task as complete
-  while that developer record is stale.
-- Keep the README concise and directly reusable as a public release post. Its
-  only jobs are to say when player-visible changes were added, what changed,
-  and what content is currently playable.
-- Use a short bullet for each meaningful player-visible feature or outcome.
-  Keep enough bullets to distinguish materially different changes; do not
-  compress an entire update into one vague sentence merely for brevity. Group
-  related minor tuning together, and omit trigger counts, exact stat gains,
-  caps, formulas, implementation details, and inconsequential adjustment notes;
-  record those in `GreyWardenPolicePurity/docs/maintenance-plan.md` instead.
-- Organize each release under its date/version with short `新增与调整` and
-  `修复` lists. Do not add a `未改动` section. Mention an unchanged behavior
-  only when omitting it would make a changed mechanic materially misleading.
-- Keep exactly the two most recent formal release entries in both player
-  READMEs, newest first. For example, an `r5` package contains the `r5` and
-  `r4` player logs; when `r6` is published, retain `r6` and `r5` and remove
-  `r4`. Each entry states which immediately preceding release it compares
-  against. Fold development iterations for one upcoming release into that
-  release's single entry instead of adding separate development logs.
-- Summarize existing playable systems by feature, not as a complete manual.
-  Let players discover secondary behavior in play; do not fill the README with
-  internal reasoning, exhaustive formulas, long FAQs, test history, or every
-  edge case.
-- Write from the player's point of view. Include an exact gameplay value only
-  when omitting it would materially prevent a player from making a necessary
-  decision, not merely because the implementation has a precise value.
-- Avoid implementation-only language such as callbacks, patches, synthetic
-  blows, asset-pipeline steps, or private engine fields unless it is necessary
-  for players to understand the result.
-- Keep developer-only build, debugging, and asset-publishing procedures in
-  `GreyWardenPolicePurity/docs/maintenance-plan.md`, not in the player release
-  log.
-- After a build or deployment, verify that the README copied into the live mod
-  directory matches the repository version.
+## 开发记录：state 是唯一事实来源
 
-## Formal player packages must be clean
+- **`GreyWardenPolicePurity/docs/state/`** 记录每个子系统**现在**是什么样的。
+  结论被推翻就**原地改写**旧句子，不要追加"但是后来又改成…"。
+- **`GreyWardenPolicePurity/docs/journal/<YYYY-MM>.md`** 是只追加的历史流水。
+  **它不是现行规则。** 不得从流水恢复任何已不在 `state/` 中的规则、阈值或实现方式。
+- 一个结论要么在 `state/` 里、要么不存在。在 `state/` 里找不到的规则，默认不成立。
+- 先读 `docs/state/README.md`。不要通读 journal——它有 2 MB，按需 grep 取证即可。
+- **每轮收尾用 `/wrap`**：更新对应 state 文件 + 往当月 journal 追加一条 + 报告
+  构建/测试/哈希。state 未更新就不算完成。
+- 改一个 `state/README.md` 里标为"尚未提取"的子系统时，顺手把它的当前状态抽成
+  一个 state 文件，不要一边改一边继续只往流水里写。
 
-- In the game's parent `Modules` directory, keep exactly one local formal
-  GreyWarden package pair: the newest `GreyWarden-<version>.zip` and its
-  matching `.zip.sha256`. After the newest pair has been verified, delete all
-  older local GreyWarden ZIP/checksum pairs. This one-package local retention
-  rule is separate from the player READMEs, which still keep exactly the two
-  most recent release-log entries.
-- Ordinary development builds must not create release ZIPs. ZIP creation and
-  old-pair cleanup belong only to the formal release workflow.
-- Repository development tools and the live local test module may retain AI,
-  task, army, and economy diagnostics. Formal player ZIPs and GitHub Release
-  assets must use a separately built diagnostics-disabled DLL that cannot
-  create or write test logs on a player's computer.
-- Never replace the live local test DLL with the diagnostics-disabled player
-  DLL. Produce the player DLL in a separate staging directory with live-module
-  deployment disabled, then copy only that DLL into the formal package.
-- Do not include `tools`, PowerShell scripts, logs, diagnostic output,
-  developer notes, PDBs, editor binaries, `Assets`, `AssetSources`, or
-  `RuntimeDataCache` in a player ZIP. The archive must contain one top-level
-  `GreyWarden/` directory and only normal-client runtime content.
-- Before publication, inspect the final archive paths, compare the packaged DLL
-  hash with the diagnostics-disabled build, and verify by decompilation that
-  the packaged diagnostics implementation is inert.
+## 已确认的功能要建本地 Git 检查点
 
-## Developer maintenance history is mandatory
+- 用户在实机确认某个新功能或修复可用时，**在开始下一件有风险的事之前**建立一个
+  本地检查点提交。不要把已确认可用的实现只留在工作树里。
+- 检查点只含该功能的完整可复现实现 + 它的 state 更新。保留无关的用户改动。
+- **绝不**为了让工作树干净，把还在崩、没测过或用户明确说坏了的候选提交成检查点。
+- 替换或移除一个已确认的功能之前，先找出它的检查点提交并记下回退路径。
 
-- Treat `GreyWardenPolicePurity/docs/maintenance-plan.md` as the durable
-  developer source of truth. Keep it detailed even when the player README is
-  deliberately short.
-- Record important successful and failed approaches, observed symptoms, proven
-  or ruled-out causes, validation evidence, rollback points, hashes/versions,
-  and the exact location of irreplaceable or reproducible assets.
-- Whenever files or directories are parked outside the repository or live mod,
-  record their absolute current location and the exact move-back/move-out
-  procedure. Do not rely on chat history to remember an editor workspace.
-- Update the maintenance document in the same task when build, editor,
-  packaging, deployment, asset recovery, or diagnostic knowledge changes.
-- Reuse this canonical maintenance file rather than creating parallel notes or
-  additional problem-log files.
+## live 模块必须与工作目录一致
 
-## Diagnostics follow the feature, and retire with it
+- `_Module` 下的可部署文件改动后**立即**复制到 live 模块，并**比对哈希**，
+  不要假定复制成功。任何差异存在时不得开始或接受实机测试。
+- 这条与 Git 发布无关，工作树可以一直未提交。
+- 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端 live 模块。
+- 完整流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
 
-- Diagnostics are scaffolding for work in progress, not a permanent narration
-  of the mod. Every trace has a lifecycle: added while something is being
-  built or is misbehaving, removed once that work is confirmed.
-- When development stalls on a specific problem, strengthening diagnostics on
-  that feature is the correct move. Widen the trace, add the fields the next
-  test needs, and say in the maintenance history what question each new line
-  is meant to answer.
-- When the user confirms the feature works in the live game, retire its
-  diagnostics in the same task as the checkpoint. Do not leave a settled
-  feature reporting its own success on every tick.
-- Cut on healthy path versus failure path, not on subject. Remove the traces
-  that fire while things work; keep the ones inside a catch or a
-  "this should never happen" branch, because those stay silent in a healthy
-  game and are the only signal when a future game build breaks something.
-- A trace that is the entire body of a method or patch means that method or
-  patch exists only to log. Delete it with the trace.
-- Delete the data too. When a diagnostic system is retired, remove its log
-  files from the game's Documents folder, along with one-off crash dumps and
-  decompiler output whose investigation has closed. Currently effective
-  diagnostics may stay, but their accumulated backlog should not: once its
-  findings are recorded in the maintenance history, the old log has no
-  further use.
-- Name a diagnostic system for what it currently covers. If its scope changed,
-  rename the system and its log file rather than leaving a misleading name.
-- All diagnostics stay inside `#if GWP_DIAGNOSTICS`, so retiring a trace is
-  about developer signal-to-noise, never about what a player receives.
+## 诊断跟着功能走，也跟着功能退休
 
-## Stable features require local Git checkpoints
+- 全部诊断在 `#if GWP_DIAGNOSTICS` 内。卡在一个具体问题上时**加强**该功能的 trace；
+  用户确认功能可用时，在建立检查点的**同一个任务里**退休它。
+- 按健康路径 vs 失败路径切，不按主题切：删掉一切正常时会触发的，保留 `catch` 里和
+  "this should never happen" 分支里的。
+- 退休时连数据一起删：日志文件、一次性转储、已闭合调查的反编译输出。
+- 详细规则见 `docs/state/diagnostics.md`。
 
-- When the user confirms that a newly added or repaired feature works in the
-  live game, create a local Git checkpoint commit before beginning further
-  risky experimentation or unrelated feature work. Do not leave a confirmed
-  working implementation only in an uncommitted working tree.
-- A checkpoint must contain the complete, reproducible implementation of that
-  confirmed feature together with its player README and maintenance-history
-  updates. Record the commit hash and the user-confirmed test result in
-  `GreyWardenPolicePurity/docs/maintenance-plan.md`.
-- Never checkpoint a candidate that is still crashing, untested, or explicitly
-  reported broken merely to make the tree look clean. Preserve unrelated user
-  changes and include only files belonging to the confirmed checkpoint unless
-  inseparable dependencies are documented.
-- Before replacing or removing a previously confirmed feature, identify its
-  checkpoint commit and record the rollback path. If the current working tree
-  contains multiple uncommitted feature generations, establish the last known
-  working checkpoint before continuing whenever the history and files allow it.
+## 发布
 
-## Live test directory must mirror the working directory
+- `_Module/README.md` 与 `README_EN.md` 是**发布产物**，只在用户说开发完成、
+  要发新版本时更新。开发期一律不动，包括玩家能看见的改动。
+- **普通开发构建不得创建发布 ZIP。**
+- 写法与打包规则见 `.claude/rules/release-notes.md` 和
+  `docs/reference/release-checklist.md`。
 
-- The deployable runtime files under `GreyWardenPolicePurity/_Module` are the
-  development source of truth during active work. After changing any of them,
-  immediately copy the same version into the live game module at
-  `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
-- This live-mirror requirement is independent of Git publication. The working
-  tree may remain uncommitted until a formal upload, at which point the local
-  commit and GitHub are updated together.
-- After every deployment, compare file hashes rather than assuming the copy
-  succeeded. Do not begin or accept an in-game test while any deployable source
-  file differs from its live counterpart.
-- Editor-only `Assets`, `AssetSources`, and `RuntimeDataCache` are the explicit
-  exception: keep them out of the normal-client live module so the client loads
-  `AssetPackages`. Generated runtime-only `bin` and `Shaders` directories may
-  exist only in the live module.
-- The live module is the diagnostics-enabled local test installation. A formal
-  player package is a separate staged artifact and may intentionally contain a
-  different diagnostics-disabled DLL; package creation must not copy that DLL
-  back into the live module.
-- Record each material deployment, test result, failed approach, and diagnostic
-  conclusion in `GreyWardenPolicePurity/docs/maintenance-plan.md` during the
-  same task.
+## 不做存档兼容
+
+不要为救旧档写心跳、迁移或开局补正。直接改写入点。

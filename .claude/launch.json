@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "syndicate-archive",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["D:/GwentSyndicate/辛迪加全卡档案/serve.py", "8731"],
+      "port": 8731
+    }
+  ]
+}

@@ -1,7 +1,11 @@
 # IDE
 .vs/
 .vscode/
-.claude/
+
+# Claude Code project config is versioned (rules, skills, launch config).
+# Only machine-local overrides stay out.
+.claude/settings.local.json
+.claude/*.local.json
 
 # Build outputs
 **/bin/
