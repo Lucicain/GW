@@ -836,7 +836,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_bounty_contract_difficulty}Assessed difficulty: {VAR_1}", "VAR_1", GetDifficultyText(choice.Difficulty)),
                 GwpText.Get("{=gwp_bounty_contract_reward}Assessed fine: {VAR_1} denars. Once you deliver, we will review the case and your losses and settle your expenses.", "VAR_1", choice.Reward),
                 GwpText.Get("{=gwp_bounty_contract_deadline}The warrant remains active for 45 days."),
-                GwpText.Get("{=gwp_bounty_contract_turnin}Negotiate payment or take the offender prisoner, then report to any Grey Warden lord. Winning a battle alone does not complete delivery."));
+                GwpText.Get("{=gwp_bounty_contract_turnin}Break his army, collect the fine, or take him prisoner, then report to any Grey Warden lord. Bring him in alive and the Wardens also buy him from you at his ransom price."));
 
             InformationManager.ShowInquiry(
                 new InquiryData(

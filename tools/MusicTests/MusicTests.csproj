@@ -2,6 +2,7 @@
  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net472</TargetFramework><LangVersion>10</LangVersion><Nullable>enable</Nullable></PropertyGroup>
  <ItemGroup>
   <Compile Include="../../GreyWardenPolicePurity/GwpMusicScore.cs" Link="GwpMusicScore.cs" />
+  <Compile Include="../../GreyWardenPolicePurity/GwpFlacReader.cs" Link="GwpFlacReader.cs" />
   <Compile Include="../../GreyWardenPolicePurity/GwpMusicOutput.cs" Link="GwpMusicOutput.cs" />
   <Compile Include="../../GreyWardenPolicePurity/GwpMusicBattlePolicy.cs" Link="GwpMusicBattlePolicy.cs" />
   <Reference Include="Newtonsoft.Json"><HintPath>D:/steam/steamapps/common/Mount &amp; Blade II Bannerlord/bin/Win64_Shipping_Client/Newtonsoft.Json.dll</HintPath></Reference>

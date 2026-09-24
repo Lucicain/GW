@@ -47,27 +47,6 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     </Pieces>
   </CraftedItem>
 
-  <CraftedItem id="gwdualbladeoffhandai"
-               name="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)"
-               crafting_template="GwpOneHandedSwordDualOffhand"
-               culture="Culture.empire"
-               is_merchandise="false">
-    <Pieces>
-      <Piece id="gwp_vlandian_blade_3_dual"
-             Type="Blade"
-             scale_factor="60" />
-      <Piece id="vlandian_guard_8"
-             Type="Guard"
-             scale_factor="100" />
-      <Piece id="sturgian_grip_36"
-             Type="Handle"
-             scale_factor="100" />
-      <Piece id="empire_pommel_6"
-             Type="Pommel"
-             scale_factor="100" />
-    </Pieces>
-  </CraftedItem>
-
   <CraftedItem id="gwdualblademainhand"
                name="{=gwp_item_dual_mainhand}Grey Warden Dual Blade (Main Hand)"
                crafting_template="GwpOneHandedSwordDualMainhand"
@@ -122,9 +101,12 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
       <Piece id="spear_guard_13"
              Type="Guard"
              scale_factor="100" />
-      <Piece id="spear_handle_19"
+      <!-- spear_handle_23 is the only native shaft allowed for one-handed, two-handed,
+           couched and braced use (spear_handle_19 cannot brace on foot); scaled 84% it
+           keeps the former 210 cm (2026-09-24: user reverted the longer shaft). -->
+      <Piece id="spear_handle_23"
              Type="Handle"
-             scale_factor="100" />
+             scale_factor="84" />
       <Piece id="spear_pommel_9"
              Type="Pommel"
              scale_factor="100" />

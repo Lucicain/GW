@@ -32,7 +32,7 @@ namespace GreyWardenPolicePurity
                 && agent.GetOffhandWieldedItemIndex() == EquipmentIndex.Weapon0;
             bool allowKick = !alternative && !weaponChange && paired
                 && state.OpeningWieldDone && !state.SequenceRunning
-                && !state.RangedRequested && state.StableHandTicks > 0;
+                && state.StableHandTicks > 0;
 
             // An action already in progress keeps its weapons through contact.
             // A new simultaneous request yields to the weapon change instead.

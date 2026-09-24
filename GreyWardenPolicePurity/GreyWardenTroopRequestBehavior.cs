@@ -189,6 +189,25 @@ namespace GreyWardenPolicePurity
                    _instance.ResolveOrderPool(_instance.ResolveTrainerParty());
         }
 
+        /// <summary>
+        /// 随行练兵队这条升级分支是否通往订单兵种。练兵队没有领主，升级取向
+        /// 落不到它身上，原版会把新兵平均练向各条分支——练偏的人再多也凑不齐订单。
+        /// 返回 null：不是练兵队，或这个兵本来就练不成订单兵种，交还原有规则。
+        /// </summary>
+        internal static bool? CohortBranchServesOrder(PartyBase? party,
+            CharacterObject troop, CharacterObject branch)
+        {
+            if (_instance == null || party?.MobileParty == null ||
+                party.MobileParty != _instance.ResolveCohortParty())
+                return null;
+            CharacterObject? target = CharacterObject.Find(_instance._orderedTroopId);
+            if (target == null || !CanReachTarget(troop, target,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase)))
+                return null;
+            return CanReachTarget(branch, target,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+
         internal static IReadOnlyList<PlayerTroopOrderSnapshot> GetTaskSnapshots()
         {
             var result = new List<PlayerTroopOrderSnapshot>();
@@ -205,7 +224,7 @@ namespace GreyWardenPolicePurity
                 TroopName = troop?.Name?.ToString() ??
                             _instance._orderedTroopId,
                 Count = _instance._orderedCount,
-                ReadyCount = CountHealthy(trainer, troop),
+                ReadyCount = CountHealthy(_instance.ResolveOrderPool(trainer), troop),
                 Price = _instance._orderPrice,
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
@@ -770,10 +789,21 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
+        /// <summary>
+        /// 订单兵种已经到手的人数：练兵官身上的，加上已经拨进练兵队的。
+        /// 调货只补这之外的差额。
+        /// </summary>
+        private int CountOrderedOnHand(MobileParty trainer, CharacterObject target)
+        {
+            MobileParty? cohort = ResolveCohortParty();
+            return CountHealthy(trainer, target) +
+                   (cohort != null && cohort != trainer ? CountHealthy(cohort, target) : 0);
+        }
+
         private void AdvanceStockCollection(MobileParty trainer,
             CharacterObject target)
         {
-            if (CountHealthy(trainer, target) >= _orderedCount)
+            if (CountOrderedOnHand(trainer, target) >= _orderedCount)
                 return;
             if (CountHealthy(GetOutgoingBatches(trainer, target)) <= 0)
             {
@@ -903,7 +933,7 @@ namespace GreyWardenPolicePurity
             CharacterObject target)
         {
             int missing = Math.Max(0, _orderedCount -
-                CountHealthy(trainer, target));
+                CountOrderedOnHand(trainer, target));
             List<TroopRosterElement> outgoing =
                 GetOutgoingBatches(trainer, target);
             List<TroopRosterElement> incoming =

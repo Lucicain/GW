@@ -360,15 +360,9 @@ namespace GreyWardenPolicePurity
         internal static bool IsEligibleDualBladeUser(Agent? agent) =>
             agent?.Character != null && !agent.IsAIControlled;
 
-        /// <summary>
-        /// The player's blade and its visually identical NPC copy are the same
-        /// weapon as far as every combat rule is concerned; only the item id
-        /// differs, so the native qualification can be applied to one of them.
-        /// </summary>
+        /// <summary>One off-hand blade, shared by the player and every NPC.</summary>
         internal static bool IsOffHandBladeId(string? itemId) =>
             string.Equals(itemId, GwpIds.DualBladeOffhandItemId,
-                StringComparison.OrdinalIgnoreCase)
-            || string.Equals(itemId, GwpIds.DualBladeOffhandAiItemId,
                 StringComparison.OrdinalIgnoreCase);
 
         private static bool IsItem(ItemObject? item, string itemId) =>

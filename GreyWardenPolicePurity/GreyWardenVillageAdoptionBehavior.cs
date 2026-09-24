@@ -577,8 +577,9 @@ namespace GreyWardenPolicePurity
                 }
                 LogEntry.AddLogEntry(new GreyWardenAdoptionLogEntry(adoptedHero, villageName));
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 
@@ -598,8 +599,9 @@ namespace GreyWardenPolicePurity
                 EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, equipment);
                 hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 
@@ -816,8 +818,9 @@ namespace GreyWardenPolicePurity
                     }
                 }
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 

@@ -90,16 +90,18 @@ namespace GreyWardenPolicePurity
                 if (captorParty != null && captorParty.PrisonRoster.Contains(hero.CharacterObject))
                     captorParty.PrisonRoster.RemoveTroop(hero.CharacterObject);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
 
             try
             {
                 MakeHeroFugitiveAction.Apply(hero);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 

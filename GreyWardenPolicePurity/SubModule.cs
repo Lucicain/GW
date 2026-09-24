@@ -43,12 +43,13 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        // Item XMLs are not deserialized yet in OnGameStart, so the NPC
-        // blade's one-time setup waits until object initialization finishes.
+        // Item XMLs are not deserialized yet in OnGameStart, so the blades'
+        // setup waits until object initialization finishes - for every game,
+        // since each game reloads its items into a new object manager.
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
-            GwpDualBladeNpcItemSetup.Apply(game);
+            GwpDualBladeItemSetup.Apply(game);
         }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
@@ -137,9 +138,6 @@ namespace GreyWardenPolicePurity
             // mission behaviour rather than a patch: previews break on
             // per-call Agent and MissionWeapon patches, never on these.
             mission.AddMissionBehavior(new GwpDualBladeAiBehavior());
-#if GWP_DIAGNOSTICS
-            mission.AddMissionBehavior(new GwpBattleCommandTrace());
-#endif
             mission.AddMissionBehavior(new GwpKickBehavior());
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());

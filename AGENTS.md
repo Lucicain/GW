@@ -8,110 +8,81 @@ user's stated goal.
 Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
 
-## 开发记录：state 是唯一事实来源
+## 开工先读
 
-- **`GreyWardenPolicePurity/docs/state/`** 记录每个子系统**现在**是什么样的。
-  结论被推翻就**原地改写**旧句子，不要追加"但是后来又改成…"。
-- **`GreyWardenPolicePurity/docs/journal/<YYYY-MM>.md`** 是只追加的历史流水。
-  **它不是现行规则。** 不得从流水恢复任何已不在 `state/` 中的规则、阈值或实现方式。
-- 一个结论要么在 `state/` 里、要么不存在。在 `state/` 里找不到的规则，默认不成立。
-- 先读 `docs/state/README.md`。不要通读 journal——它有 2 MB，按需 grep 取证即可。
-- **每轮收尾用 `/wrap`**（或手工照「每轮收尾」那节走）。state 未更新就不算完成。
-- 改一个 `state/README.md` 里标为"尚未提取"的子系统时，顺手把它的当前状态抽成
-  一个 state 文件，不要一边改一边继续只往流水里写。
+- `GreyWardenPolicePurity/docs/state/README.md` —— 各子系统**现在**的样子，以及哪些还没提取。
+- `GreyWardenPolicePurity/docs/state/code-map.md` —— 从源码生成的代码地图：Harmony 补丁点、
+  SubModule 注册顺序、类型 → 文件索引。这个仓库里约一半的类型所在文件名不含类型名，
+  找类型查地图，不要靠文件名猜。不要手改它。
+- `docs/journal/` 有 2 MB，**不要通读**。先 `grep -n '^## ' docs/journal/2026-09.md`
+  看条目标题，再用 `sed -n '起,止p'` 只读需要的那段。
 
-## 已确认的功能要建本地 Git 检查点
+## 开发记录
 
-- 用户在实机确认某个新功能或修复可用时，**在开始下一件有风险的事之前**建立一个
-  本地检查点提交。不要把已确认可用的实现只留在工作树里。
-- 检查点只含该功能的完整可复现实现 + 它的 state 更新。保留无关的用户改动。
-- **绝不**为了让工作树干净，把还在崩、没测过或用户明确说坏了的候选提交成检查点。
-- 替换或移除一个已确认的功能之前，先找出它的检查点提交并记下回退路径。
+- `docs/state/` 是唯一事实来源。结论变了就**原地改写**，不要追加"后来又改成…"。
+  超过 250 行或堆出多个带日期的小节，说明过程写进来了——过程归 journal。
+- `docs/journal/<YYYY-MM>.md` 只追加，是历史，**不是规则**。不得从 journal 恢复任何
+  已不在 state 里的规则、阈值或实现。state 里找不到的规则，默认不成立。
+- 改到 `state/README.md` 里「尚未提取」的子系统时，顺手把它提取成 state 文件。
+  专项调查的过程写 journal，不要写成豁免核对的 state 文件。
+
+## 每轮收尾
+
+任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
+
+1. `python tools/Check-StateFreshness.py` —— 它会先按当前源码重建 code-map，再报：
+   state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免核对数。
+   点名项当轮处理，不要攒着。
+2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
+   提取了子系统就从 `docs/state/uncovered-baseline.txt` 删掉对应文件。
+3. 往当月 journal 追加一条：改了什么 / 为什么 / 证据 / 验证 / 哈希 / 回退 / 未做。
+4. 报告实际结果，失败就说失败并贴输出。
+5. 用户确认功能可用 → 同一轮退休它的诊断。
+6. 不提交（见下节）。
+
+## 提交与发版只由用户宣布
+
+- **不要自行提交或推送。** 开发中的改动一律留在工作树里。
+- 用户宣布某个功能开发结束 → 做**一次** `wip:` 提交，只含该功能和它的 state 更新。
+- 新版本只由用户宣布。宣布之前不打 tag、不建 Release、不出 ZIP、不改
+  `_Module/README.md` / `README_EN.md`；普通开发构建永远不出 ZIP。宣布后按
+  `.claude/rules/release-notes.md` 与 `docs/reference/release-checklist.md` 做。
+- 替换或移除已有功能前，先在 state 文件里记下回退路径（哪个提交、哪些文件）。
 
 ## live 模块必须与工作目录一致
 
-- `_Module` 下的可部署文件改动后**立即**复制到 live 模块，并**比对哈希**，
-  不要假定复制成功。任何差异存在时不得开始或接受实机测试。
-- 这条与 Git 发布无关，工作树可以一直未提交。
+- `_Module` 下的可部署文件改动后**立即**复制到 live 模块并**比对哈希**。
+  有任何差异时不得开始或接受实机测试。
 - 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端 live 模块。
-- 完整流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
+- 流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
 
 ## 诊断跟着功能走，也跟着功能退休
 
-- 全部诊断在 `#if GWP_DIAGNOSTICS` 内。卡在一个具体问题上时**加强**该功能的 trace；
-  用户确认功能可用时，在建立检查点的**同一个任务里**退休它。
-- 按健康路径 vs 失败路径切，不按主题切：删掉一切正常时会触发的，保留 `catch` 里和
-  "this should never happen" 分支里的。
-- 退休时连数据一起删：日志文件、一次性转储、已闭合调查的反编译输出。
-- 详细规则见 `docs/state/diagnostics.md`。
+- 全部诊断在 `#if GWP_DIAGNOSTICS` 内。卡在具体问题上时加强该功能的 trace；
+  用户确认功能可用时，同一轮退休它。
+- 按健康路径 vs 失败路径切：删掉一切正常时会触发的，保留 `catch` 里和
+  "this should never happen" 分支里的。退休时连日志、转储、已闭合调查的反编译输出一起删。
+- 详见 `docs/state/diagnostics.md`。
 
-## 发布
+## 改 `.cs` 之前
 
-- `_Module/README.md` 与 `README_EN.md` 是**发布产物**，只在用户说开发完成、
-  要发新版本时更新。开发期一律不动，包括玩家能看见的改动。
-- **普通开发构建不得创建发布 ZIP。**
-- 写法与打包规则见 `.claude/rules/release-notes.md` 和
-  `docs/reference/release-checklist.md`。
+读 `.claude/rules/csharp-gotchas.md`（Claude Code 自动加载，其他 harness 不会）。要点：
 
-## 整体代码结构看 code-map.md
+- `catch` 一律写 `catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }`，
+  不写空 `catch { }`
+- 收拢重复代码的辅助方法要透传 `Caller*` 参数
+- 不要为了分类清除 `WeaponFlags` 掩码
+- 不要为了打印再调一次原版评分方法（会改它的状态）
 
-`GreyWardenPolicePurity/docs/state/code-map.md` 是**从源码生成的**代码地图：
-55 个 Harmony 补丁点对应的原版类型与成员、SubModule 的注册顺序、141 个文件按
-子系统分组的索引。动代码之前先读它，不要靠 Glob 猜结构。
+## 指令文件与钩子
 
-它由 `tools/Generate-CodeMap.py` 生成，并由 PostToolUse 钩子在每次改 `.cs` 后
-自动重跑，所以不会过期。**不要手改这个文件**——改了下次编辑就被覆盖。
-它描述代码的形状，行为仍然看 `docs/state/` 的其他文件。
-
-## 调研用 subagent，主会话只收结论
-
-**用户已授权主动使用 subagent，不必每次先问。** 这条是为了让长对话不漂移：
-调研读的几十个文件留在子上下文里，主会话只拿 1000–2000 token 的结论。
-
-- 翻 `docs/journal/`（2.1 MB）、`.codex_tmp` 下的 v1.4.8 反编译、或跨多个 `.cs`
-  文件扫描时，派 `gwp-research`（只读，Sonnet + high effort）。
-- 一次改动收尾前的独立复核，派一个只看 diff 的 subagent，不要自己复核自己。
-- 范围明确、一两个文件就能答的问题**不要**派 —— 冷启动比直接读更贵。
-
-## 多 harness：这些规则对所有 agent 都成立
-
-这个仓库会被 Claude Code、Codex、Antigravity 和人轮流改动。**三家都读本文件**，
-所以真正的契约写在这里，工具专属的东西只是它的便利实现。
-
-**不要新建 `CLAUDE.md` 或 `GEMINI.md`。** 两者都会**顶掉**本文件：Claude Code 一旦
-发现 `CLAUDE.md` 就不再读 `AGENTS.md`；Antigravity 读两者但 `GEMINI.md` 优先。
-新建任何一个，这份契约就对那个工具静默失效了。要加规则就加在这里。
-
-新克隆之后先装 git 钩子（每个克隆一次，`core.hooksPath` 不随仓库走）：
-
-```bash
-git config core.hooksPath .githooks
-```
-
-`.githooks/pre-commit` 在任何人提交 `.cs` 改动时重建 `code-map.md` 并报新鲜度，
-不拦提交。Claude Code 另有 PostToolUse 钩子做同样的事，但那个只在 Claude 里生效，
-**git 那层才是对所有 harness 都成立的那层**。
-
-工具专属、其他 harness 不会自动加载、但内容对所有人有效的：
-
-- `.claude/rules/csharp-gotchas.md` —— 改 `.cs` 之前读一遍（裸 catch 要留痕、
-  辅助方法要透传调用点、双 BOM、不要清 `WeaponFlags` 掩码）
-- `.claude/rules/release-notes.md` —— 动玩家 README 之前读
-- `.claude/skills/wrap/SKILL.md` —— 收尾流程；没有这个 skill 的 harness 照第
-  「每轮收尾」节手工走一遍
-
-## 每轮收尾（不依赖任何 skill）
-
-1. `python tools/Check-StateFreshness.py` —— 被点名的文件要么更新、要么写
-   `已复核至` 并注明理由。**新增未归属源码**意味着这轮写了没人记录的代码，
-   必须处理。
-2. 原地改写对应的 `docs/state/*.md`，更新 `最后验收` / `覆盖源码` / `待实测`。
-   子系统在「尚未提取」里 → 新建 state 文件，并从
-   `docs/state/uncovered-baseline.txt` 删掉对应文件。
-3. 往 `docs/journal/<当月>.md` 追加一条：改了什么 / 为什么 / 证据 / 验证 /
-   哈希 / 回退 / 未做。
-4. 报告实际结果。失败就说失败并贴输出。
-5. 功能被用户确认了 → 同一轮退休它的诊断。
+- 本文件由 Claude Code、Codex、Antigravity 共同读取，**项目规则只写在这里**。
+- **仓库目录里**（本目录及其上级目录）不要新建 `CLAUDE.md`、`.claude/CLAUDE.md`、
+  `CLAUDE.local.md` 或 `GEMINI.md`：前三个会让 Claude Code 不再读本文件，`GEMINI.md`
+  在 Antigravity 里优先于本文件。用户主目录的 `~/.claude/CLAUDE.md` 不在此列——
+  它和本文件一起加载，用来放跨项目的个人习惯。
+- 新克隆后设一次 `git config core.hooksPath .githooks`。pre-commit 在提交时重建
+  code-map；平时靠收尾第 1 步刷新，所以不依赖提交。
 
 ## 不做存档兼容
 

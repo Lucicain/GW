@@ -7,6 +7,13 @@ namespace GreyWardenPolicePurity
     // nothing about combat tempo: actual hostile HP loss and casualties drive intensity.
     internal sealed class GwpMusicBattlePolicy
     {
+        // Pacing (2026-09-24, user: tiers climbed too fast). Saturation at 16% power damaged or
+        // 10% lost per 20 s; a first arrow is not a medium; high needs an established medium phase
+        // and, once reached, holds long enough not to flip with medium.
+        internal const float DamageScale = .16f, LossScale = .10f;
+        internal const float MediumEnter = .12f, HighEnter = .55f, HighKeep = .35f;
+        internal const float FirstClimb = 40, Reclimb = 20, HighHold = 30;
+        private bool _climbed;
         private readonly Queue<(float time, float damage, float losses)> _window = new();
         private readonly Queue<(float time, float damage, float losses)> _recent = new();
         private float _recentDamage, _recentLosses;
@@ -28,7 +35,7 @@ namespace GreyWardenPolicePurity
         private static float Unit(float n) => Math.Max(0, Math.Min(1, n));
         public void Initialize(float ours, float enemy)
         {
-            Tier = _candidate = "low"; _stable = _held = _time = 0;
+            Tier = _candidate = "low"; _stable = _held = _time = 0; _climbed = false;
             _lastContact = float.NegativeInfinity;
             _window.Clear(); _pendingDamage = _pendingLosses = _lost = 0;
             _recent.Clear(); _recentDamage = _recentLosses = RecentExchange = 0;
@@ -72,27 +79,33 @@ namespace GreyWardenPolicePurity
             // turning one small hit into a false whole-army damage spike.
             float force = Math.Max(1, ours + enemy + Casualties20);
             // Max, not sum: a lethal hit must not be counted twice as damage + death.
-            Exchange = Unit(Math.Max(Damage20 / (force * .10f), Casualties20 / (force * .06f)));
+            Exchange = Unit(Math.Max(Damage20 / (force * DamageScale), Casualties20 / (force * LossScale)));
             // The same per-second rate as the 20-second window, over five seconds.
-            RecentExchange = Unit(Math.Max(_recentDamage / (force * .025f), _recentLosses / (force * .015f)));
+            RecentExchange = Unit(Math.Max(_recentDamage / (force * DamageScale / 4), _recentLosses / (force * LossScale / 4)));
             Attrition = Unit(_lost / Math.Max(1, _deployed) / .5f);
             Pressure = Unit((enemy / Math.Max(.01f, ours) - 1) / .75f);
             bool fighting = QuietSeconds >= 0 && QuietSeconds <= 12;
             // Losses and disadvantage strengthen real fighting; neither supplies
             // a permanent intensity floor after the fighting has subsided.
             Tension = fighting ? Exchange * (.7f + .2f * Attrition + .1f * Pressure) : 0;
-            bool freshClimax = QuietSeconds >= 0 && QuietSeconds <= 2.5f && RecentExchange >= .55f;
-            bool high = Tension >= (Tier == "high" ? .40f : .55f) && (Tier == "high" || freshClimax);
-            string wanted = !fighting ? "low" : high ? "high" : "medium";
+            bool freshClimax = QuietSeconds >= 0 && QuietSeconds <= 2.5f && RecentExchange >= HighEnter;
+            // High is entered only from a medium phase that has lasted; the first climb waits longer.
+            bool established = Tier == "medium" && _held >= (_climbed ? Reclimb : FirstClimb);
+            bool high = Tier == "high" ? Tension >= HighKeep : Tension >= HighEnter && freshClimax && established;
+            bool contact = Tier != "low" || Tension >= MediumEnter;
+            string wanted = !fighting ? "low" : high ? "high" : contact ? "medium" : "low";
             Reason = !fighting ? "no-recent-contact" : high ? "intense-exchange"
-                : Tension >= .55f && !freshClimax ? "waiting-for-fresh-exchange" : "contact";
+                : !contact ? "light-contact"
+                : Tension >= HighEnter && !established ? "medium-not-established"
+                : Tension >= HighEnter && !freshClimax ? "waiting-for-fresh-exchange" : "contact";
             if (wanted != _candidate) { _candidate = wanted; _stable = dt; }
             else _stable += dt;
             int Rank(string state) => state == "high" ? 2 : state == "medium" ? 1 : 0;
             bool rising = Rank(wanted) > Rank(Tier);
-            float settle = rising ? (wanted == "high" ? 3 : 2) : 6;
-            float hold = Tier == "low" ? 2 : 12;
+            float settle = rising ? (wanted == "high" ? 6 : 4) : 6;
+            float hold = Tier == "low" ? 2 : Tier == "high" ? HighHold : 12;
             if (wanted == Tier || _stable < settle || _held < hold) return false;
+            if (wanted == "high") _climbed = true; else if (wanted == "low") _climbed = false;
             Tier = wanted; _stable = _held = 0; return true;
         }
     }

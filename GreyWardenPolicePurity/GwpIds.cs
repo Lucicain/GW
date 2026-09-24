@@ -28,11 +28,6 @@ namespace GreyWardenPolicePurity
         public const string GrainItemId = "grain";
         public const string DualBladeOffhandItemId = "gwdualbladeoffhand";
 
-        // Visually identical NPC copy of the off-hand blade. A separate
-        // id is what lets the native off-hand qualification be written to
-        // the NPC blade alone, leaving the player's item untouched.
-        public const string DualBladeOffhandAiItemId = "gwdualbladeoffhandai";
-
         public const string DualBladeMainhandItemId = "gwdualblademainhand";
         public const string DualBladeOffhandCraftingTemplateId =
             "GwpOneHandedSwordDualOffhand";
@@ -64,9 +59,7 @@ namespace GreyWardenPolicePurity
         /// 不在此列——发两面盾是多余的。
         ///
         /// 双刀曾一度改为 gwarcher 专属、不再发给玩家，现按用户要求恢复发放。
-        /// 发的是玩家版 `gwdualblademainhand` / `gwdualbladeoffhand`，**不是**
-        /// NPC 版 `gwdualbladeoffhandai`——后者带着原版副手资格标记，那是留给
-        /// NPC 的，混进玩家背包会让双持判定串味。
+        /// 发的是 `gwdualblademainhand` / `gwdualbladeoffhand`，与灰袍弓手用的是同一副。
         /// </summary>
         public static readonly IReadOnlyCollection<string> MembershipGrantItemIds =
             new HashSet<string>(CommanderSetItemIds, StringComparer.OrdinalIgnoreCase)

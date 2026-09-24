@@ -574,7 +574,7 @@ namespace GreyWardenPolicePurity
             {
                 // 即使本帧的移动命令因原版瞬时状态失败，也不能重新开放
                 // 其他欲望；下一帧会再次尝试写入唯一的进攻目标。
-                try { forceParty.Ai.SetDoNotMakeNewDecisions(true); } catch { }
+                try { forceParty.Ai.SetDoNotMakeNewDecisions(true); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 return false;
             }
         }

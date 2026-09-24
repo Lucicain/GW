@@ -4,7 +4,7 @@
 <!--New recruit: deliberately light equipment, with the archer mantle serving as the shared Warden badge.-->
   <NPCCharacter id="gwnewrecruit"
                 default_group="Infantry"
-                level="11"
+                level="16"
                 name="{=gwp_troop_new_recruit}Grey Warden Recruit"
                 occupation="Soldier"
                 is_basic_troop="true"
@@ -85,7 +85,7 @@
 <!--Recruit-->
   <NPCCharacter id="gwrecruit"
                 default_group="Infantry"
-                level="16"
+                level="21"
                 name="{=gwp_troop_light_infantry}Grey Warden Light Infantry"
                 occupation="Soldier"
                 is_female="true"
@@ -152,7 +152,7 @@
   <!--Heavy Infantry-->
   <NPCCharacter id="gwheavyinfantry"
                 default_group="Infantry"
-                level="26"
+                level="31"
                 name="{=gwp_troop_heavy_infantry}Grey Warden Heavy Infantry"
                 occupation="Soldier"
                 is_female="true"
@@ -181,6 +181,9 @@
     <upgrade_targets></upgrade_targets>
     <Equipments>
       <EquipmentRoster>
+        <!-- Calradic Mace (卡拉德杖), the Imperial Legionary's sidearm. -->
+        <equipment slot="Item0"
+                   id="empire_mace_3_t4" />
         <equipment slot="Item1"
                    id="gwonehandedsword" />
         <equipment slot="Item2"
@@ -210,7 +213,7 @@
   <!--Archer-->
   <NPCCharacter id="gwarcher"
                 default_group="Ranged"
-                level="26"
+                level="31"
                 name="{=gwp_troop_archer}Grey Warden Archer"
                 occupation="Soldier"
                 is_female="true"
@@ -240,7 +243,7 @@
     <Equipments>
       <EquipmentRoster>
         <equipment slot="Item0"
-                   id="gwdualbladeoffhandai" />
+                   id="gwdualbladeoffhand" />
         <equipment slot="Item1"
                    id="gwdualblademainhand" />
         <equipment slot="Item2"
@@ -268,7 +271,7 @@
   <!--Knight-->
   <NPCCharacter id="gwknight"
                 default_group="Cavalry"
-                level="26"
+                level="31"
                 name="{=gwp_troop_knight}Grey Warden Knight"
                 occupation="Soldier"
                 is_female="true"
@@ -300,10 +303,7 @@
                    id="gwlance" />
         <equipment slot="Item1"
                    id="gwtwohandedsword" />
-        <equipment slot="Item2"
-                   id="gwonehandedsword" />
-        <equipment slot="Item3"
-                   id="wlarge_shield" />
+        <!-- 2026-09-24: knights no longer carry the arming sword and great shield. -->
         <equipment slot="Head"
                    id="winfhelmethv" />
         <equipment slot="Cape"

@@ -402,7 +402,7 @@
   <string id="gwp_bounty_contract_difficulty" text="评估难度：{VAR_1}" />
   <string id="gwp_bounty_contract_reward" text="卷宗应缴罚金：{VAR_1} 第纳尔。交付后，我们会核实案情和你部下的伤亡，结算办案酬劳。" />
   <string id="gwp_bounty_contract_deadline" text="通缉令有效期为四十五天。" />
-  <string id="gwp_bounty_contract_turnin" text="交涉收取罚金，或将目标俘虏，再向任意灰袍领主交付。仅仅打赢一仗不能领取酬劳。" />
+  <string id="gwp_bounty_contract_turnin" text="击溃其部队、收取罚金或将其俘虏，之后向任意灰袍领主复命。若把人活着押来，灰袍另按赎金价向你收购。" />
   <string id="gwp_bounty_quest_target" text="目标：{VAR_1}。评估难度：{VAR_2}。&#10;" />
   <string id="gwp_bounty_quest_reward" text="在 45 天内收取卷宗应缴的 {VAR_1} 第纳尔罚金，或俘虏目标。将钱或人交给灰袍领主后，按实际交付结算办案酬劳。" />
   <string id="gwp_bounty_contract_accepted" text="已接受委托：{VAR_1}。难度：{VAR_2}；卷宗应缴罚金：{VAR_3} 第纳尔。" />
@@ -1361,6 +1361,7 @@
   <string id="gwp_dispatch_name_report" text="灰袍送信队" />
   <string id="gwp_dispatch_name_support" text="灰袍求援骑手" />
   <string id="gwp_dispatch_no_receiver" text="外面没有你的人够得着的灰袍队伍。这些人暂时还是留在身边。" />
+  <string id="gwp_dispatch_no_spare_ship" text="你在海上，没有多余的船可分。等靠岸之后他们才能出发。" />
   <string id="gwp_dispatch_no_rations" text="你既拿不出干粮，也拿不出买粮的钱。先备点东西，再派人出门。" />
   <string id="gwp_dispatch_sent" text="你派出的队伍已经动身去找{VAR_1}。" />
   <string id="gwp_dispatch_lost" text="你派出去的那支队伍全军覆没了，带走的东西也没了。" />

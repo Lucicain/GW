@@ -38,8 +38,6 @@ namespace GreyWardenPolicePurity
         /// <summary>Slot of that ranged weapon, for the opening wield.</summary>
         internal EquipmentIndex RangedSlot = EquipmentIndex.None;
 
-        /// <summary>Slot of its ammunition, read when reporting a stuck agent.</summary>
-        internal EquipmentIndex AmmoSlot = EquipmentIndex.None;
 
         /// <summary>Set once the agent has been handed its bow on spawn.</summary>
         internal bool OpeningWieldDone;
@@ -58,15 +56,6 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal int TicksSinceMelee = int.MaxValue;
 
-        /// <summary>
-        /// The firing order this agent was carrying last tick, so a change to
-        /// it can be seen, and whether the change was an instruction to start
-        /// shooting that has not been carried out yet.
-        /// </summary>
-        internal int LastFiringOrder = -1;
-        internal bool RangedRequested;
-        internal int RangedRequestedTicks;
-        internal bool RangedWieldPending;
         internal EquipmentIndex LastMain = EquipmentIndex.None;
         internal EquipmentIndex LastOff = EquipmentIndex.None;
         internal int StableHandTicks;
@@ -115,8 +104,7 @@ namespace GreyWardenPolicePurity
             }
 
             var state = new GwpDualBladeAgentState { Agent = agent };
-            state.RangedSlot = FindUsableRangedSlot(agent, out EquipmentIndex ammoSlot);
-            state.AmmoSlot = ammoSlot;
+            state.RangedSlot = FindUsableRangedSlot(agent);
             state.HasRangedAlternative = state.RangedSlot != EquipmentIndex.None;
             Registered.Add(agent, state);
             return state;
@@ -154,11 +142,8 @@ namespace GreyWardenPolicePurity
         /// a bow with an empty quiver is not a weapon choice, and handing an
         /// agent one on spawn would leave it holding nothing.
         /// </summary>
-        private static EquipmentIndex FindUsableRangedSlot(
-            Agent agent,
-            out EquipmentIndex ammoSlot)
+        private static EquipmentIndex FindUsableRangedSlot(Agent agent)
         {
-            ammoSlot = EquipmentIndex.None;
             try
             {
                 MissionEquipment? equipment = agent.Equipment;
@@ -189,7 +174,6 @@ namespace GreyWardenPolicePurity
                     else if (usage.IsAmmo && weapon.Amount > 0)
                     {
                         hasAmmo = true;
-                        ammoSlot = slot;
                     }
                 }
 
@@ -199,6 +183,58 @@ namespace GreyWardenPolicePurity
             {
                 // A half-built agent is simply treated as pair-only.
                 return EquipmentIndex.None;
+            }
+        }
+
+        /// <summary>
+        /// Native's AI weapon-mode scorer multiplies a two-handed weapon's score
+        /// by this while the off hand holds an item without CanBlockRanged
+        /// (TaleWorlds.Native 1.4.8, 0x1806b0910-0x1806b098a; constant at
+        /// 0x180b2af18). It is the banner bearer's rule - a man with a banner in
+        /// his left hand does not reach for a two-handed weapon - and the
+        /// off-hand blade meets it, so an archer holding the pair scores its bow
+        /// at a millionth and never goes back to it by itself.
+        /// </summary>
+        internal const float NativeOffhandTwoHandedPenalty = 1e-6f;
+
+        /// <summary>
+        /// Factor for AiWeaponFavorMultiplierRanged that cancels that penalty
+        /// exactly, so native weighs bow against blades by distance as it does
+        /// for any archer carrying a sword. The ranged favor is read in one
+        /// place only, that same mode decision (0x1806aed8c/aedf9/aee1e), so
+        /// nothing else moves. 1 whenever native's condition does not hold.
+        /// </summary>
+        internal static float RangedFavorScale(Agent agent)
+        {
+            try
+            {
+                GwpDualBladeAgentState? state = Find(agent);
+                if (state == null || !state.HasRangedAlternative)
+                    return 1f;
+
+                EquipmentIndex off = agent.GetOffhandWieldedItemIndex();
+                if (off == EquipmentIndex.None)
+                    return 1f;
+
+                WeaponComponentData? offUsage =
+                    agent.Equipment[off].CurrentUsageItem;
+                WeaponComponentData? rangedUsage =
+                    agent.Equipment[state.RangedSlot].CurrentUsageItem;
+                if (offUsage == null
+                    || rangedUsage == null
+                    || offUsage.WeaponFlags.HasAnyFlag(WeaponFlags.CanBlockRanged)
+                    || !rangedUsage.WeaponFlags.HasAnyFlag(
+                        WeaponFlags.NotUsableWithOneHand))
+                {
+                    return 1f;
+                }
+
+                return 1f / NativeOffhandTwoHandedPenalty;
+            }
+            catch (System.Exception gwpQuietFailure)
+            {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                return 1f;
             }
         }
 
@@ -229,12 +265,16 @@ namespace GreyWardenPolicePurity
     /// out. That is recorded in the maintenance history as a lesson about the
     /// approach, not about the tuning.
     ///
-    /// Native still chooses between the bow and blades. The cavalry-contact
-    /// trace exposed one exception to immediate switching: Wield2+Sheath1
-    /// during WeaponBash removes the off hand before native contact uses it.
-    /// GwpDualBladeActionGate keeps the current hands until that action ends,
-    /// and prevents a new kick request while a weapon switch is pending.
-    /// This behavior also draws the missing off-hand blade in melee stance.
+    /// Native chooses between the bow and blades, by distance, exactly as for
+    /// an archer with a sword; RangedFavorScale takes the banner bearer's
+    /// two-handed penalty back out of that choice. The pair is bound to the
+    /// main hand: the input component keeps the off hand from being cleaned up
+    /// on its own, and this behaviour draws the off-hand blade when native
+    /// draws the main one. The cavalry-contact trace exposed one exception to
+    /// immediate switching: Wield2+Sheath1 during WeaponBash removes the off
+    /// hand before native contact uses it. GwpDualBladeActionGate keeps the
+    /// current hands until that action ends, and prevents a new kick request
+    /// while a weapon switch is pending.
     ///
     /// A mission behaviour and an agent component rather than Harmony patches:
     /// character previews break whenever a per-call patch is installed on Agent
@@ -284,10 +324,10 @@ namespace GreyWardenPolicePurity
             {
                 _switchers.Add(state);
 
-                // The archer keeps every weapon decision it has, except that it
-                // may not put its off hand away in the middle of a fight.
+                // The archer keeps every weapon decision it has; the off-hand
+                // blade is bound to the main one.
                 if (agent.GetComponent<GwpDualBladeFightGripComponent>() == null)
-                    agent.AddComponent(new GwpDualBladeFightGripComponent(agent, state));
+                    agent.AddComponent(new GwpDualBladeFightGripComponent(agent));
                 return;
             }
 
@@ -319,12 +359,19 @@ namespace GreyWardenPolicePurity
             // Let a completed draw survive a tick before requesting a bash.
             state.StableHandTicks = main == state.LastMain && off == state.LastOff
                 ? System.Math.Min(2, state.StableHandTicks + 1) : 0;
+            bool offHandChanged = off != state.LastOff;
             state.LastMain = main;
             state.LastOff = off;
 
+            // Native recomputes driven properties on spawn, mount, ammo and
+            // usage changes, but not when a hand changes; the ranged favor
+            // follows the off hand, so it is refreshed here, through native's
+            // own public entry point.
+            if (offHandChanged)
+                agent.UpdateAgentStats();
+
             TrackMelee(state, agent);
             bool canChangeWeapons = GwpDualBladeActionGate.CanChangeWeapons(agent);
-            TrackFiringOrder(state, agent, main, canChangeWeapons);
 
             // An archer deploys holding its bow, not the pair. Native's spawn
             // wield takes the first two slots and so hands it the blades, which
@@ -373,14 +420,24 @@ namespace GreyWardenPolicePurity
                     return;
             }
 
+            // A refusal stands down for the rest of this melee spell only; the
+            // next time native takes the agent out of melee stance - the bow,
+            // empty hands - the budget starts again.
             if (state.CurrentStep == GwpDualBladeAgentState.Step.Disabled)
-                return;
+            {
+                if (main == EquipmentIndex.Weapon1
+                    || (main == EquipmentIndex.None
+                        && off == EquipmentIndex.WeaponItemBeginSlot))
+                {
+                    return;
+                }
 
-            // An order to start shooting is outstanding. Native is on its way
-            // to the bow and this behaviour keeps out of it entirely - no
-            // invariant, no redraw - until the bow is up, a fight starts, or
-            // the order is taken back.
-            if (state.RangedRequested)
+                state.CurrentStep = GwpDualBladeAgentState.Step.Settled;
+                state.Sequences = 0;
+            }
+
+            // Object usage is native's to arrange, hands included.
+            if (agent.IsUsingGameObject)
                 return;
 
             // Paired: nothing to do but watch for the fault.
@@ -519,107 +576,6 @@ namespace GreyWardenPolicePurity
             state.StepFrames = 0;
         }
 
-        /// <summary>
-        /// Watches the agent's own firing order for the moment it turns into
-        /// "shoot", and holds that as an outstanding instruction until it has
-        /// been carried out.
-        ///
-        /// This is the signal the whole thing turned on. Inside a formation -
-        /// standing, moving, advancing, falling back - native expresses its
-        /// switch to the bow as a lone off-hand sheath and nothing else, so the
-        /// invariant that holds the pair together in a fight was silently
-        /// swallowing the switch: the live log shows a formation on Move being
-        /// told to fire and still sitting at pair=199 a second and a half
-        /// later, four times running, while the same formation told to charge
-        /// had 131 bows up within the same interval. Under a charge the agents
-        /// leave the formation and ask with a wield and a sheath together,
-        /// which was never blocked - hence the difference the player could feel
-        /// but nothing in the weapon logic could see.
-        ///
-        /// A player's order and an AI commander's order are the same value in
-        /// the same field, so this reads both without caring which it was.
-        /// </summary>
-        private static void TrackFiringOrder(
-            GwpDualBladeAgentState state,
-            Agent agent,
-            EquipmentIndex main,
-            bool canChangeWeapons)
-        {
-            int firing;
-            try
-            {
-                firing = agent.GetFiringOrder();
-            }
-            catch
-            {
-                return;
-            }
-
-            bool mayShoot =
-                firing == (int)FiringOrder.RangedWeaponUsageOrderEnum.FireAtWill;
-
-            if (mayShoot
-                && state.LastFiringOrder
-                    == (int)FiringOrder.RangedWeaponUsageOrderEnum.HoldYourFire
-                && !state.RangedRequested)
-            {
-                state.RangedRequested = true;
-                state.RangedRequestedTicks = 0;
-                state.RangedWieldPending = true;
-                // Inside a formation native does this in two steps - lower the
-                // off hand on one decision, raise the bow on a later one - and
-                // both are visible, which is the double weapon-change the
-                // player sees on every order except a charge. Under a charge
-                // the agent is loose and asks for the wield and the sheath in
-                // the same frame, so it happens in one movement.
-                //
-                // Once an active kick/bash ends, the bow goes into
-                // the agent's hand by the same call that hands every
-                // archer its bow on deployment - and that call makes exactly
-                // this transition, from the pair to the bow. Native keeps the
-                // decision: if it wants melee after all, its own wield says so
-                // a moment later and nothing here stands in the way.
-            }
-
-            state.LastFiringOrder = firing;
-
-            if (!state.RangedRequested)
-                return;
-
-            // Carried out, overtaken by a fight, taken back, or long enough
-            // ago that native is plainly not acting on it - in which case the
-            // pair may as well be back in hand.
-            if (main == state.RangedSlot
-                || !mayShoot
-                || !HasAmmo(state)
-                || state.TicksSinceMelee <= MeleeTicksCancellingRangedOrder
-                || ++state.RangedRequestedTicks >= MaxRangedRequestTicks)
-            {
-                state.RangedRequested = false;
-                state.RangedWieldPending = false;
-                return;
-            }
-
-            // Preserve the order until the active kick/bash releases its hands.
-            if (state.RangedWieldPending && canChangeWeapons
-                && main == EquipmentIndex.Weapon1)
-            {
-                state.RangedWieldPending = false;
-                state.StableHandTicks = 0;
-                agent.TryToWieldWeaponInSlot(state.RangedSlot,
-                    Agent.WeaponWieldActionType.WithAnimation, isWieldedOnSpawn: false);
-            }
-        }
-
-        /// <summary>
-        /// An agent that is trading blows is not going to raise a bow whatever
-        /// the order says, and native will not try; the pair matters more.
-        /// </summary>
-        private const int MeleeTicksCancellingRangedOrder = 60;
-
-        /// <summary>Ten seconds; after that the order has plainly not taken.</summary>
-        private const int MaxRangedRequestTicks = 600;
-
         private static void TrackMelee(GwpDualBladeAgentState state, Agent agent)
         {
             if (IsMeleeCode(agent.GetCurrentActionType(0))
@@ -642,19 +598,6 @@ namespace GreyWardenPolicePurity
                 return mission != null
                     && mission.CurrentTime - agent.LastMeleeHitTime
                         < RecentMeleeHitSeconds;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool HasAmmo(GwpDualBladeAgentState state)
-        {
-            try
-            {
-                return state.AmmoSlot != EquipmentIndex.None
-                    && state.Agent.Equipment[state.AmmoSlot].Amount > 0;
             }
             catch
             {
@@ -685,30 +628,25 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// Holds the pair together while the main blade is in hand, and does
-    /// nothing else whatsoever.
+    /// Binds the off-hand blade to the main one, at the only boundary native
+    /// offers, and follows native's own rules for doing so (TaleWorlds.Native
+    /// 1.4.8, weapon selection 0x1806afec0 and its input writer 0x1805f4bf5):
     ///
-    /// Native asks for the off hand to be lowered about once every one and a
-    /// third seconds - its decision cycle - for any agent holding something
-    /// there that is not a shield, whatever that agent is doing. The blade
-    /// keeps MeleeWeapon so that it can deal damage, which means it can never
-    /// satisfy WeaponComponentData.IsShield, which means native will never stop
-    /// asking. A Twinblade Guard, which has no bow at all, gets exactly the
-    /// same request, so it is not native heading for a ranged weapon.
+    /// - native re-picks the off hand on every weapon decision and keeps only
+    ///   an item that is HeldInOffHand and CanBlockRanged; the blade is not
+    ///   CanBlockRanged (a weapon does not stop arrows), so native asks for it
+    ///   to be lowered on its own, every time. That is the only lone off-hand
+    ///   sheath native ever sends outside object use, so it is always dropped;
+    /// - a change of main weapon arrives in the same frame as the off-hand
+    ///   request (the bow as Wield2+Sheath1), and passes untouched, so the pair
+    ///   leaves together with native's decision to shoot;
+    /// - a lone main-hand sheath is native emptying the main hand; the off-hand
+    ///   blade goes with it;
+    /// - while the agent uses a game object native holds back main-hand changes
+    ///   and lowers the off hand first, so nothing is touched then.
     ///
-    /// So that one request is dropped, and only while the main blade is
-    /// actually in hand. Everything else is native's:
-    ///
-    /// - every wield, melee or ranged, passes untouched, at all times;
-    /// - a sheath that arrives together with a wield passes too, because that
-    ///   is the agent switching weapons and native lowers the off hand itself
-    ///   as part of raising a bow;
-    /// - once the main blade is no longer in hand there is no pair to hold, so
-    ///   nothing is dropped at all.
-    ///
-    /// When to fight, when to shoot, and whether to obey the player are
-    /// therefore decided entirely by native, exactly as they are for a soldier
-    /// carrying no dual blades at all.
+    /// Every wield passes. Drawing the off-hand blade when native draws the
+    /// main one - the moment native raises a shield - is GwpDualBladeAiBehavior's.
     /// </summary>
     internal sealed class GwpDualBladeFightGripComponent : AgentComponent
     {
@@ -716,14 +654,9 @@ namespace GreyWardenPolicePurity
             Agent.EventControlFlag.Sheath0
             | Agent.EventControlFlag.Sheath1;
 
-        private readonly GwpDualBladeAgentState _state;
-
-        internal GwpDualBladeFightGripComponent(
-            Agent agent,
-            GwpDualBladeAgentState state)
+        internal GwpDualBladeFightGripComponent(Agent agent)
             : base(agent)
         {
-            _state = state;
         }
 
         public override void Initialize()
@@ -747,41 +680,25 @@ namespace GreyWardenPolicePurity
             _ = movementFlag;
             _ = inputVector;
 
-            if ((eventFlag & Sheath) == Agent.EventControlFlag.None)
-                return;
-
-            // Part of a switch the agent is making, not a lone tidy-up.
-            if ((eventFlag & Wield) != Agent.EventControlFlag.None)
-                return;
-
-            // The invariant only applies while the pair is what the agent is
-            // holding.
-            if (Agent.GetPrimaryWieldedItemIndex() != EquipmentIndex.Weapon1
+            Agent.EventControlFlag sheath = eventFlag & Sheath;
+            if (sheath == Agent.EventControlFlag.None
+                || (eventFlag & Wield) != Agent.EventControlFlag.None
+                || Agent.IsUsingGameObject
+                || Agent.GetPrimaryWieldedItemIndex() != EquipmentIndex.Weapon1
                 || Agent.GetOffhandWieldedItemIndex()
                     != EquipmentIndex.WeaponItemBeginSlot)
             {
                 return;
             }
 
-            // The invariant stands aside for exactly one thing: an order to
-            // start shooting that has not been carried out yet. Inside a
-            // formation this lone sheath is the only way native has of
-            // beginning that switch, so swallowing it swallows the order.
-            //
-            // Granting it on a looser test - any time the agent was not
-            // fighting - was tried and was worse: pair rebuilds beyond the
-            // first went from 11 in a battle to 384, because native took the
-            // free hand without raising a bow and the redraw came back around.
-            // An outstanding order is a fact about the agent, not a guess about
-            // native's intentions, and it clears itself the moment the bow is
-            // up.
-            if (_state.RangedRequested)
+            if ((sheath & Agent.EventControlFlag.Sheath0)
+                != Agent.EventControlFlag.None)
+            {
+                eventFlag |= Agent.EventControlFlag.Sheath1;
                 return;
+            }
 
-#if GWP_DIAGNOSTICS
-            GwpBattleCommandTrace.NoteGripBlock(Agent);
-#endif
-            eventFlag &= ~Sheath;
+            eventFlag &= ~Agent.EventControlFlag.Sheath1;
         }
 
         private const Agent.EventControlFlag Wield =

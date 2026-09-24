@@ -767,9 +767,7 @@ namespace GreyWardenPolicePurity
 
                 patrol.MemberRoster.Clear();
                 FillPatrolTroops(patrol, repMagnitude);
-                PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
-                // 赋发船只（仅当导航DLC/可选海战 DLC 时，无DLC时默认忽略）
-                PoliceResourceManager.GivePoliceShips(patrol);
+                PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
                 // This is a disposable, leaderless enforcement party.  Pursuit
                 // uses the native EngageParty target directly and therefore
@@ -913,7 +911,7 @@ namespace GreyWardenPolicePurity
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 纠察队战斗处理异常：{ex.Message}", Colors.Red));
                 // ★ 修改：兜底恢复和平，确保即便异常后事件也不残留
-                try { MakePeaceWithPoliceAndVictims(); } catch { }
+                try { MakePeaceWithPoliceAndVictims(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
                 _playerRefused = false;
             }
         }
@@ -1050,7 +1048,7 @@ namespace GreyWardenPolicePurity
                 // InformationManager.DisplayMessage(new InformationMessage(
                 //     $"[GWP Error] 执行惩罚异常：{ex.Message}", Colors.Red));
                 // ★ 修改：兜底恢复和平，确保即便异常后事件也不残留
-                try { MakePeaceWithPoliceAndVictims(); } catch { }
+                try { MakePeaceWithPoliceAndVictims(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
         }
 

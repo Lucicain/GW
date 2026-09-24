@@ -74,7 +74,6 @@ namespace GreyWardenPolicePurity
         // expansion, while the thin depth axis receives a 20% expansion.
         private const float PassiveShieldFaceCoverageScale = 1.30f;
         private const float PassiveShieldDepthScale = 1.20f;
-        private const float PassiveShieldDurabilityMultiplier = 3f;
         private const int PassiveImpactDamage = 1;
         private const int BrokenShieldImpactDamage = 2;
         private const float PassiveImpactMagnitude = 4f;
@@ -977,15 +976,15 @@ namespace GreyWardenPolicePurity
                 return false;
 
             // After Mission.MeleeHitCallback, held-passive contacts already
-            // contain the engine's calculated shield damage. Back contacts
-            // contain the cancelled blow's damage; both become the baseline
-            // for the requested triple durability loss. Always lose at least
-            // three points so a valid passive interception is never free.
-            int baseDamage = MathF.Max(1, collisionData.InflictedDamage);
-            int durabilityDamage = MathF.Max(
-                3,
-                MathF.Round(
-                    baseDamage * PassiveShieldDurabilityMultiplier));
+            // contain the engine's calculated shield damage, through the damage
+            // model (heavy infantry already halved there). Back contacts contain
+            // the cancelled blow's damage, so heavy infantry halve it here. A
+            // passive interception costs what an active block would
+            // (2026-09-24: one durability rule, no triple loss); never free.
+            float baseDamage = MathF.Max(1, collisionData.InflictedDamage);
+            if (!heldPassiveBlock && GwpTroopCombat.IsHeavyInfantryShield(victim))
+                baseDamage *= GwpTroopCombat.HeavyShieldDamageMultiplier;
+            int durabilityDamage = MathF.Max(1, MathF.Round(baseDamage));
 
             int newHitPoints = MathF.Max(
                 0,

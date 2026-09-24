@@ -34,8 +34,11 @@ namespace GreyWardenPolicePurity
                 agentDrivenProperties,
                 agentBuildData);
 
-        public override void InitializeMissionEquipment(Agent agent) =>
+        public override void InitializeMissionEquipment(Agent agent)
+        {
             NativeModel.InitializeMissionEquipment(agent);
+            GwpTroopCombat.DoubleArcherQuivers(agent);
+        }
 
         public override void InitializeAgentStatsAfterDeploymentFinished(
             Agent agent) =>
@@ -47,8 +50,14 @@ namespace GreyWardenPolicePurity
 
         public override void UpdateAgentStats(
             Agent agent,
-            AgentDrivenProperties agentDrivenProperties) =>
+            AgentDrivenProperties agentDrivenProperties)
+        {
             NativeModel.UpdateAgentStats(agent, agentDrivenProperties);
+            // Native resets the favor to 1 on every update (SetAiRelatedProperties),
+            // so this never compounds. See GwpDualBladeAgents.RangedFavorScale.
+            agentDrivenProperties.AiWeaponFavorMultiplierRanged *=
+                GwpDualBladeAgents.RangedFavorScale(agent);
+        }
 
         public override float GetDifficultyModifier() =>
             NativeModel.GetDifficultyModifier();
@@ -87,11 +96,10 @@ namespace GreyWardenPolicePurity
         public override float GetMaxCameraZoom(Agent agent) =>
             NativeModel.GetMaxCameraZoom(agent);
 
+        // The battle mastery bonus is applied once, at the base raw read that every
+        // model chain ends in (GwpBattleMasteryEffectiveSkillPatch); never here.
         public override int GetEffectiveSkill(Agent agent, SkillObject skill) =>
-            ApplyBattleMastery(
-                agent,
-                skill,
-                NativeModel.GetEffectiveSkill(agent, skill));
+            NativeModel.GetEffectiveSkill(agent, skill);
 
         public override int GetEffectiveSkillForWeapon(
             Agent agent,
@@ -160,43 +168,18 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// Native campaign/custom-battle stat models call their own virtual
-    /// GetEffectiveSkill implementation while rebuilding driven properties.
-    /// Patch those concrete implementations as well as the shared base method
-    /// so movement, weapon handling, damage, accuracy, and AI all see the same
-    /// mission-local mastery value.
+    /// Adds the mission-local battle mastery to AgentStatCalculateModel.GetEffectiveSkill,
+    /// the base method that reads the character's raw skill. Every stat model reaches it
+    /// exactly once per read: Sandbox's override starts from base.GetEffectiveSkill and adds
+    /// perks on top, both Naval models and this mod's model delegate to their BaseModel, and
+    /// the Custom Battle model does not override it (v1.4.8). Patching only here is what
+    /// keeps one bonus from being added two or three times (2026-09-24): the Sandbox and
+    /// Naval overrides used to be patched too, on top of this mod's own wrapper adding it.
+    /// A postfix only, as before; no prefix or finalizer wraps the base method.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(AgentStatCalculateModel), nameof(AgentStatCalculateModel.GetEffectiveSkill))]
     internal static class GwpBattleMasteryEffectiveSkillPatch
     {
-        private static IEnumerable<MethodBase> TargetMethods()
-        {
-            Type?[] candidateTypes =
-            {
-                typeof(AgentStatCalculateModel),
-                AccessTools.TypeByName(
-                    "SandBox.GameComponents.SandboxAgentStatCalculateModel"),
-                AccessTools.TypeByName(
-                    "NavalDLC.GameComponents.NavalAgentStatCalculateModel"),
-                AccessTools.TypeByName(
-                    "NavalDLC.ComponentInterfaces.NavalCustomBattleAgentStatCalculateModel")
-            };
-
-            HashSet<MethodBase> uniqueMethods = new();
-            foreach (Type? type in candidateTypes)
-            {
-                if (type == null)
-                    continue;
-
-                MethodInfo? method = AccessTools.DeclaredMethod(
-                    type,
-                    nameof(AgentStatCalculateModel.GetEffectiveSkill),
-                    new[] { typeof(Agent), typeof(SkillObject) });
-                if (method != null && uniqueMethods.Add(method))
-                    yield return method;
-            }
-        }
-
         private static void Postfix(
             Agent agent,
             SkillObject skill,

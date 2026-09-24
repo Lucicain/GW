@@ -497,7 +497,7 @@ namespace GreyWardenPolicePurity
                 var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == escortTask.PolicePartyId);
 
                 // ★步骤1★ 先释放玩家（设 IsCaptive = false，移除玩家主英雄的俘虏状态）
-                try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch { }
+                try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 
                 // ★步骤1b★ 传送玩家到城堡大门（视觉效果：玩家被"押进"城堡）
                 // 必须在 EndCaptivity 之后、花名册清理之前，此时玩家党派已脱离俘虏链

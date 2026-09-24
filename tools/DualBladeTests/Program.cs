@@ -16,9 +16,9 @@ static class Program
     static (Agent agent, GwpDualBladeAiBehavior behavior, GwpDualBladeAgentState state, GwpKickInputComponent kick) Archer()
     {
         var agent = new Agent();
-        agent.Equipment[EquipmentIndex.Weapon0] = new MissionWeapon { Item = new ItemObject { StringId = "off" } };
+        agent.Equipment[EquipmentIndex.Weapon0] = new MissionWeapon { Item = new ItemObject { StringId = "off", PrimaryWeapon = new WeaponComponentData() } };
         agent.Equipment[EquipmentIndex.Weapon1] = new MissionWeapon { Item = new ItemObject { StringId = "main" } };
-        agent.Equipment[EquipmentIndex.Weapon2] = new MissionWeapon { Item = new ItemObject { PrimaryWeapon = new WeaponComponentData { WeaponFlags = WeaponFlags.RangedWeapon } } };
+        agent.Equipment[EquipmentIndex.Weapon2] = new MissionWeapon { Item = new ItemObject { PrimaryWeapon = new WeaponComponentData { WeaponFlags = WeaponFlags.RangedWeapon | WeaponFlags.NotUsableWithOneHand } } };
         agent.Equipment[EquipmentIndex.Weapon3] = new MissionWeapon { Amount = 20, Item = new ItemObject { PrimaryWeapon = new WeaponComponentData { IsAmmo = true } } };
         var behavior = new GwpDualBladeAiBehavior();
         behavior.OnAgentBuild(agent, new Banner());
@@ -36,6 +36,13 @@ static class Program
         var movement = Agent.MovementControlFlag.None;
         var vector = new Vec2();
         kick.OnAIInputSet(ref flags, ref movement, ref vector);
+        return flags;
+    }
+    static Agent.EventControlFlag Grip(Agent agent, Agent.EventControlFlag flags)
+    {
+        var movement = Agent.MovementControlFlag.None;
+        var vector = new Vec2();
+        agent.GetComponent<GwpDualBladeFightGripComponent>()!.OnAIInputSet(ref flags, ref movement, ref vector);
         return flags;
     }
     static void Main()
@@ -56,15 +63,13 @@ static class Program
 
         (a, behavior, state, kick) = Archer();
         a.Action1 = Agent.ActionCodeType.WeaponBash;
-        a.Firing = (int)FiringOrder.RangedWeaponUsageOrderEnum.FireAtWill;
-        behavior.OnMissionTick(.016f);
-        Check(a.Wields.Count == 0 && state.RangedWieldPending, "fire order waits through active bash");
         var flags = Input(kick, Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath0 | Agent.EventControlFlag.Kick | Agent.EventControlFlag.Run);
         Check(flags == Agent.EventControlFlag.Run, "active bash keeps weapons but preserves movement");
         a.Action1 = Agent.ActionCodeType.Idle;
+        Check(Input(kick, Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1)
+            == (Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1), "weapon switch passes once the bash ends");
+        a.Main = EquipmentIndex.Weapon2; a.Off = EquipmentIndex.None;
         behavior.OnMissionTick(.016f);
-        behavior.OnMissionTick(.016f);
-        Check(a.Wields.SequenceEqual(new[] { "wield:2" }), "deferred fire order executes exactly once");
         Check((Input(kick, Agent.EventControlFlag.Kick) & Agent.EventControlFlag.Kick) == 0, "bow cannot begin paired-blade bash");
 
         (a, behavior, state, kick) = Archer();
@@ -107,6 +112,46 @@ static class Program
         Check(Input(kick, Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1)
             == (Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1)
             && !kick.HasPendingKick(a.Mission.CurrentTime), "weapon switch cancels a pending but unaccepted bash");
+
+        // The off-hand blade is bound to the main one, by native's own rules.
+        (a, behavior, state, kick) = Archer();
+        Check(Grip(a, Agent.EventControlFlag.Sheath1 | Agent.EventControlFlag.Run) == Agent.EventControlFlag.Run,
+            "native's lone off-hand clean-up is dropped while paired");
+        Check(Grip(a, Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1)
+            == (Agent.EventControlFlag.Wield2 | Agent.EventControlFlag.Sheath1), "native's bow switch passes as one input");
+        Check(Grip(a, Agent.EventControlFlag.Sheath0) == (Agent.EventControlFlag.Sheath0 | Agent.EventControlFlag.Sheath1),
+            "a main-hand sheath takes the off-hand blade with it");
+        a.IsUsingGameObject = true;
+        Check(Grip(a, Agent.EventControlFlag.Sheath1) == Agent.EventControlFlag.Sheath1, "object use is left to native");
+        a.IsUsingGameObject = false;
+        a.Main = EquipmentIndex.Weapon2; a.Off = EquipmentIndex.None;
+        Check(Grip(a, Agent.EventControlFlag.Sheath0) == Agent.EventControlFlag.Sheath0, "no pair, nothing touched");
+
+        // Native draws the main blade from the bow: the off-hand blade follows.
+        behavior.OnMissionTick(.016f);
+        a.Wields.Clear();
+        a.Main = EquipmentIndex.Weapon1;
+        behavior.OnMissionTick(.016f);
+        behavior.OnMissionTick(.016f);
+        behavior.OnMissionTick(.016f);
+        behavior.OnMissionTick(.016f);
+        Check(a.Wields.SequenceEqual(new[] { "sheathe", "wield:0", "wield:1" }), "off-hand blade drawn when native draws the main one");
+
+        // Native's banner-bearer penalty on two-handed weapons is cancelled
+        // exactly while the blade is in the off hand, and only then.
+        (a, behavior, state, kick) = Archer();
+        Check(GwpDualBladeAgents.RangedFavorScale(a) == 1f / GwpDualBladeAgents.NativeOffhandTwoHandedPenalty,
+            "paired archer's ranged favor cancels native's 1e-6 penalty");
+        a.Equipment[EquipmentIndex.Weapon0].Item!.PrimaryWeapon!.WeaponFlags = WeaponFlags.CanBlockRanged;
+        Check(GwpDualBladeAgents.RangedFavorScale(a) == 1f, "a CanBlockRanged off hand is not penalised, so no compensation");
+        a.Equipment[EquipmentIndex.Weapon0].Item!.PrimaryWeapon!.WeaponFlags = WeaponFlags.None;
+        int updates = a.StatUpdates;
+        a.Main = EquipmentIndex.Weapon2; a.Off = EquipmentIndex.None;
+        behavior.OnMissionTick(.016f);
+        Check(GwpDualBladeAgents.RangedFavorScale(a) == 1f && a.StatUpdates == updates + 1,
+            "bow in hand: no compensation, stats refreshed on the off-hand change");
+        behavior.OnMissionTick(.016f);
+        Check(a.StatUpdates == updates + 1, "stats refreshed only when the off hand changes");
 
         var plain = new Agent { ImmediateEnemy = new Agent { Action0 = Agent.ActionCodeType.DefendShield } };
         Check((Input(new GwpKickInputComponent(plain)) & Agent.EventControlFlag.Kick) != 0, "ordinary soldier input unchanged");

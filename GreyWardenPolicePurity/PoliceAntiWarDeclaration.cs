@@ -35,6 +35,7 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnBattleEnded);
+            CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnBattleStarted);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
         }
 
@@ -65,7 +66,20 @@ namespace GreyWardenPolicePurity
             if (other == null || other == playerFaction || other == policeClan) return;
             if (other is Clan bandit && bandit.IsBanditFaction) return;
 
+            // 加入一场已在进行的仗再点“进攻”时，玩家这时已经站在战场一侧、双方都还在，
+            // 当场就能判定并记账——战后界面里马上找灰袍，申请就已经在了。
+            if (TryRecordAssistWar(MobileParty.MainParty?.MapEvent, other)) return;
             _playerHostilityWarFromThisBattle = other;
+        }
+
+        /// <summary>
+        /// 玩家主动在地图上开打：宣战在前、战斗在后。等玩家这场战斗开始、双方到齐时再判。
+        /// </summary>
+        private void OnBattleStarted(MapEvent mapEvent, PartyBase attacker, PartyBase defender)
+        {
+            if (_playerHostilityWarFromThisBattle == null || FindPlayerSide(mapEvent) == null) return;
+            if (TryRecordAssistWar(mapEvent, _playerHostilityWarFromThisBattle))
+                _playerHostilityWarFromThisBattle = null;
         }
 
         /// <summary>
@@ -90,30 +104,36 @@ namespace GreyWardenPolicePurity
             if (playerSide == null) return;
             if (!playerSide.OtherSide.Parties.Any(entry => entry.Party?.MapFaction == pending))
                 return;
+            TryRecordAssistWar(mapEvent, pending);
+        }
 
-            // 一、制止正在发生的三类案件
+        /// <summary>
+        /// 这一仗是不是替灰袍打的：一、制止正在发生的三类案件；二、玩家这一侧有灰袍部队；
+        /// 三、对面是玩家自己承办的案子。成立就记一笔等灰袍出面了结的战争。
+        /// </summary>
+        private bool TryRecordAssistWar(MapEvent? mapEvent, IFaction faction)
+        {
+            if (mapEvent == null) return false;
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            if (playerFaction == null || playerFaction == faction ||
+                !FactionManager.IsAtWarAgainstFaction(playerFaction, faction)) return false;
+            MapEventSide? playerSide = FindPlayerSide(mapEvent);
+            if (playerSide == null) return false;
+
             bool stoppedCrimeInProgress = StoppedCrimeInProgress(mapEvent, playerSide);
-            // 二、看见灰袍在打，过去帮忙
             bool wardenOnPlayerSide = playerSide.Parties.Any(entry =>
                 entry.Party?.IsMobile == true && IsPoliceParty(entry.Party.MobileParty));
-            // 三、玩家自己承办的案子
             bool playerHeldTheCase = playerSide.OtherSide.Parties.Any(entry =>
                 entry.Party?.MobileParty?.LeaderHero != null &&
                 PlayerBountyBehavior.IsCaseHeldByPlayer(
                     entry.Party.MobileParty.LeaderHero.StringId));
-            if (!stoppedCrimeInProgress && !wardenOnPlayerSide && !playerHeldTheCase) return;
+            if (!stoppedCrimeInProgress && !wardenOnPlayerSide && !playerHeldTheCase) return false;
 
-            if (_mediationRequests.Contains(pending.StringId, StringComparer.OrdinalIgnoreCase))
-                return;
-            _mediationRequests.Add(pending.StringId);
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_warden_mediation_owed}The Wardens will speak for you over {VAR_1} when you ask them to.",
-                    "VAR_1", pending.Name), Colors.Cyan));
-            GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_REQUEST_RECORDED",
-                "faction=" + pending.StringId +
-                "; stoppedCrimeInProgress=" + stoppedCrimeInProgress +
+            RecordMediationRequest(faction,
+                "stoppedCrimeInProgress=" + stoppedCrimeInProgress +
                 "; wardenOnPlayerSide=" + wardenOnPlayerSide +
                 "; playerHeldTheCase=" + playerHeldTheCase);
+            return true;
         }
 
         /// <summary>

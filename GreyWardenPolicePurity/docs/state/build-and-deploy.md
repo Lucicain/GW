@@ -41,7 +41,7 @@
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物 |
-| `Check-StateFreshness.py` | 报出哪些 state 文件描述的源码在验收后又改过 | 被点名的要更新或写 `已复核至` |
+| `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
 
 脚本用 Windows PowerShell 5.1 运行。
 
@@ -51,7 +51,7 @@
 |---|---|---|
 | `BattleSceneTests` | 138 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 18 | 双刀 AI 与踢/盾击互斥 |
-| `MusicTests` | 181221 断言 | 过渡规则、PCM 一致性、包络、静音设备生命周期。`--fingerprint` 用于确认渲染改动无音色变化 |
+| `MusicTests` | 58770640 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
 | `CaseSettlement.Tests` | 177 | 案件结算 |
 | `ChokePointTests` | — | 隘口候选已撤回，其 bin/obj 仅为被忽略的生成缓存，不参与构建或部署 |
 

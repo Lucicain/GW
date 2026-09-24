@@ -35,6 +35,13 @@ namespace GreyWardenPolicePurity
             CharacterObject troop,
             int upgradeTargetIndex)
         {
+            // 随行练兵队只替玩家订单练兵：通往订单兵种的分支独占。
+            if (upgradeTargetIndex >= 0 &&
+                upgradeTargetIndex < troop.UpgradeTargets.Length &&
+                GreyWardenTroopRequestBehavior.CohortBranchServesOrder(party,
+                    troop, troop.UpgradeTargets[upgradeTargetIndex]) is bool serves)
+                return serves ? 1f : 0f;
+
             // 领主已经被兵种配比指定了取向时，必须把判定交还原版——原版正是靠
             // PreferredUpgradeFormation 把命中的那条分支抬到 9999。在这里抢答 1f
             // 会把取向整个吞掉，配比就成了空转。

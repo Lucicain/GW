@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Naval;
 using TaleWorlds.CampaignSystem.Party;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -31,7 +32,7 @@ namespace GreyWardenPolicePurity
         private const int TemporaryDutyFoodDays = 20;
         internal const int SuccessfulCaseReward = 3000;
         // NavalDLC 可选依赖：运行时一次性检测（所有模块 DLL 加载后）
-        // 若 NavalDLC 未安装，GivePoliceShips 直接 return，不影响游玩
+        // 若 NavalDLC 未安装，借船与还船直接跳过，不影响游玩
         private static readonly bool _navalDlcLoaded =
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "NavalDLC");
 
@@ -69,8 +70,22 @@ namespace GreyWardenPolicePurity
             party.ItemRoster.AddToCounts(grain, grainCount);
         }
 
+        /// <summary>
+        /// 临时队出生时的一次性配给：口粮 + 向出借方借船。只在各创建点调用；
+        /// 断粮补给仍走 <see cref="ProvisionTemporaryDutyParty"/>，不会顺带借船。
+        /// 不指定出借方时，向最近的、在陆上、有空闲船的灰袍领主借。
+        /// </summary>
+        internal static void OutfitTemporaryDutyParty(MobileParty? party,
+            MobileParty? lender = null, int plannedMen = 0)
+        {
+            ProvisionTemporaryDutyParty(party);
+            if (party?.IsActive == true)
+                LendShips(party, lender ?? FindNearestShipLender(party), plannedMen);
+        }
+
         public override void RegisterEvents()
         {
+            _instance = this;
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
@@ -102,6 +117,19 @@ namespace GreyWardenPolicePurity
                 for (int i = 0; i < count; i++)
                     if (!string.IsNullOrEmpty(keys[i]))
                         _lastPurifyTime[keys[i]] = values[i];
+            }
+
+            List<string> borrowers = dataStore.IsSaving ? _shipLenders.Keys.ToList() : null!;
+            List<string> lenders = dataStore.IsSaving ? _shipLenders.Values.ToList() : null!;
+            dataStore.SyncData("GWPP_ShipLoanBorrowers", ref borrowers);
+            dataStore.SyncData("GWPP_ShipLoanLenders", ref lenders);
+            if (dataStore.IsLoading)
+            {
+                _shipLenders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (borrowers != null && lenders != null)
+                    for (int i = 0; i < Math.Min(borrowers.Count, lenders.Count); i++)
+                        if (!string.IsNullOrEmpty(borrowers[i]) && !string.IsNullOrEmpty(lenders[i]))
+                            _shipLenders[borrowers[i]] = lenders[i];
             }
         }
 
@@ -314,10 +342,6 @@ namespace GreyWardenPolicePurity
             if (clan == null) return;
             if (!string.Equals(clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase)) return;
 
-            // 领主队现在由原版自然创建，不再经过模组的 SpawnLordParty 入口；
-            // 在首次小时维护补齐同样的航海载具，之后调用保持幂等。
-            GivePoliceShips(party);
-
             double now = CampaignTime.Now.ToHours;
             if (_lastPurifyTime.TryGetValue(party.StringId, out double lastCheck) &&
                 now - lastCheck < PurifyIntervalHours) return;
@@ -420,34 +444,90 @@ namespace GreyWardenPolicePurity
         /// 只追加缺失的船，不删除现有船，也不重建整个舰队。
         /// 不安装任何升级件，也不挂船首像。
         /// 无 NavalDLC 时静默跳过，不报错。
-        /// R10 起常驻领主队不再免费获得船只：原版 NavalDLC 的购船决策会让领主在
-        /// 有资金和可用船坞时自行购买（监控日志已有 ApplyByTrade 实购记录），
-        /// 免费生成后再按人数波动出售多余船会形成重复造钱。无英雄的临时纠察队
-        /// 仍免费配船，它们不进入家族公库，也不参与余船出售。
+        /// 船都是真船：常驻领主靠原版 NavalDLC 自行购船与海战缴获；模组的无领主临时队
+        /// 只能向出借方借（领主借给灰袍临时队、玩家借给送信队），队伍销毁前原样退回。
+        /// 不凭空生成任何船——凭空的船一旦随队伍解散，原版会把它分给同家族领主或折成
+        /// 金币发给家族族长，等于造钱。
         /// </summary>
-        internal static void GivePoliceShips(MobileParty party)
+        private Dictionary<string, string> _shipLenders =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static PoliceResourceManager? _instance;
+
+        /// <summary>出借方至少给自己留一条船。</summary>
+        private static int SpareShipCount(MobileParty? lender) =>
+            lender?.IsActive == true ? Math.Max(0, lender.Ships.Count - 1) : 0;
+
+        /// <summary>
+        /// 出借方在海上又借不出船：从他身边出发的临时队没有船就出不了门，不派。
+        /// 在陆上借不到船照常派，只走陆路。
+        /// </summary>
+        internal static bool IsStrandedAtSea(MobileParty? lender) =>
+            _navalDlcLoaded && lender?.IsCurrentlyAtSea == true && SpareShipCount(lender) <= 0;
+
+        /// <summary>没有对应领主的临时队（纠察队、招募使者队）向谁借船。</summary>
+        internal static MobileParty? FindNearestShipLender(MobileParty borrower)
         {
-            if (!_navalDlcLoaded) return;
+            if (!_navalDlcLoaded || borrower == null) return null;
+            return MobileParty.All
+                .Where(p => IsPoliceLordParty(p) && p.IsActive && p.LeaderHero != null &&
+                            !p.IsCurrentlyAtSea && p.MapEvent == null && SpareShipCount(p) > 0)
+                .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 借船并登记出借方。只借空闲船里最便宜的几条，按计划人数每 50 人一条。
+        /// 借不到也照样登记，队伍路上缴获的船解散时同样交回出借方。
+        /// </summary>
+        internal static void LendShips(MobileParty? borrower, MobileParty? lender, int plannedMen = 0)
+        {
+            if (!_navalDlcLoaded || _instance == null) return;
             try
             {
-                if (party == null || !party.IsActive || party.Party == null) return;
-                if (party.IsLordParty) return;
+                if (borrower?.IsActive != true || lender?.IsActive != true ||
+                    lender == borrower) return;
+                _instance._shipLenders[borrower.StringId] = lender.StringId;
+                if (lender.MapEvent != null || borrower.Ships.Count > 0) return;
 
-                int requiredCount = GetRequiredShipCount(party);
-                ShipHull? hull = ResolvePreferredHeavyHull();
-                if (hull == null) return;
-
-                int existingCount = party.Ships?.Count() ?? 0;
-                int missingCount = requiredCount - existingCount;
-                if (missingCount <= 0) return;
-
-                for (int i = 0; i < missingCount; i++)
+                int wanted = Math.Min(SpareShipCount(lender),
+                    GetRequiredShipCount(borrower, plannedMen));
+                if (wanted <= 0) return;
+                foreach (Ship ship in lender.Ships
+                             .OrderBy(s => Campaign.Current.Models.ShipCostModel
+                                 .GetShipTradeValue(s, lender.Party, null))
+                             .Take(wanted).ToList())
                 {
-                    Ship ship = new Ship(hull);
-                    ChangeShipOwnerAction.ApplyByMobilePartyCreation(party.Party, ship);
+                    ChangeShipOwnerAction.ApplyByTransferring(borrower.Party, ship);
                 }
+                borrower.SetNavalVisualAsDirty();
+                lender.SetNavalVisualAsDirty();
+            }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+        }
 
-                party.SetNavalVisualAsDirty();
+        /// <summary>
+        /// 临时队销毁前把身上所有船交回出借方（<see cref="GwpShipLoanReturnPatch"/>），
+        /// 抢在原版“解散分船/折金币”之前。出借的灰袍领主已不在，就交给最近的灰袍领主。
+        /// </summary>
+        internal static void ReturnLentShips(MobileParty? borrower)
+        {
+            if (_instance == null || borrower == null ||
+                !_instance._shipLenders.TryGetValue(borrower.StringId, out string? lenderId))
+                return;
+            _instance._shipLenders.Remove(borrower.StringId);
+            try
+            {
+                if (borrower.Ships.Count == 0) return;
+                MobileParty? lender = MobileParty.All.FirstOrDefault(p => p.IsActive &&
+                    p != borrower && string.Equals(p.StringId, lenderId, StringComparison.OrdinalIgnoreCase));
+                lender ??= MobileParty.All
+                    .Where(p => p.IsActive && p != borrower && IsPoliceLordParty(p))
+                    .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
+                    .FirstOrDefault();
+                if (lender == null) return;
+                foreach (Ship ship in borrower.Ships.ToList())
+                    ChangeShipOwnerAction.ApplyByTransferring(lender.Party, ship);
+                lender.SetNavalVisualAsDirty();
             }
             catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
@@ -490,44 +570,11 @@ namespace GreyWardenPolicePurity
         }
 
 
-        private static int GetRequiredShipCount(MobileParty party)
+        private static int GetRequiredShipCount(MobileParty party, int plannedMen)
         {
-            int troopCount = Math.Max(1, party?.MemberRoster?.TotalManCount ?? 0);
+            int troopCount = Math.Max(1, Math.Max(plannedMen,
+                party?.MemberRoster?.TotalManCount ?? 0));
             return Math.Max(1, (troopCount + TroopsPerShip - 1) / TroopsPerShip);
-        }
-
-        private static ShipHull? ResolvePreferredHeavyHull()
-        {
-            List<ShipHull> hulls = Kingdom.All
-                .SelectMany(k => k.Culture.AvailableShipHulls)
-                .Where(h => h != null)
-                .GroupBy(h => h.StringId, StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .ToList();
-
-            string[] preferredIds =
-            {
-                "sturgia_heavy_ship",
-                "vlandia_heavy_ship",
-                "empire_heavy_ship",
-                "aserai_heavy_ship",
-                "ship_meditheavy_storyline"
-            };
-
-            foreach (string preferredId in preferredIds)
-            {
-                ShipHull? preferred = hulls.FirstOrDefault(h =>
-                    string.Equals(h.StringId, preferredId, StringComparison.OrdinalIgnoreCase));
-                if (preferred != null)
-                    return preferred;
-            }
-
-            ShipHull? fallbackHeavy = hulls.FirstOrDefault(h =>
-                string.Equals(h.Type.ToString(), "heavy", StringComparison.OrdinalIgnoreCase));
-            if (fallbackHeavy != null)
-                return fallbackHeavy;
-
-            return null;
         }
 
         #endregion
@@ -809,5 +856,20 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
         }
 
+    }
+
+    /// <summary>
+    /// 原版销毁队伍（战败、解散、模组自己拆队）都经过这里，而原版“解散分船/折金币”
+    /// 挂在它随后发出的事件上。先把借来的船交回出借方。
+    /// </summary>
+    [HarmonyPatch(typeof(DestroyPartyAction), "ApplyInternal")]
+    internal static class GwpShipLoanReturnPatch
+    {
+        [HarmonyPrefix]
+        private static void Before(MobileParty destroyedParty)
+        {
+            try { PoliceResourceManager.ReturnLentShips(destroyedParty); }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+        }
     }
 }

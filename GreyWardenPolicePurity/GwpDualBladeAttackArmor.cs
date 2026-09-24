@@ -2,7 +2,10 @@ using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
-    /// <summary>Reaction immunity while the actual pair is readied or striking.</summary>
+    /// <summary>
+    /// Reaction immunity while attacking: the archers' dual-blade pair readied or striking,
+    /// and (2026-09-24) Grey Warden knights striking or couching with the lance or greatsword.
+    /// </summary>
     internal static class GwpDualBladeAttackArmor
     {
         // Existing mod-created control contacts bypass the model callbacks.
@@ -18,8 +21,11 @@ namespace GreyWardenPolicePurity
 
         internal static bool IsActive(Agent? agent)
         {
-            if (agent == null || agent.Mission == null || !agent.IsActive()
-                || !agent.IsHuman || !GwpDualBladeLoadout.IsDualBladeCombatant(agent))
+            if (agent == null || agent.Mission == null || !agent.IsActive() || !agent.IsHuman)
+                return false;
+            if (GwpTroopCombat.IsKnightAttacking(agent))
+                return true;
+            if (!GwpDualBladeLoadout.IsDualBladeCombatant(agent))
                 return false;
 
             if (agent.WieldedWeapon.Item?.StringId != GwpIds.DualBladeMainhandItemId

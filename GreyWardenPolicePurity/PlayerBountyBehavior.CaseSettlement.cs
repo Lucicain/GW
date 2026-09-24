@@ -126,6 +126,13 @@ namespace GreyWardenPolicePurity
                 {
                     // 击溃他的部队本身就是惩戒的目的。人跑掉是结果的一种，不是失败。
                     RegisterCaseDeterrence(battle, target, countAsArrest: false);
+                    // 与期限到了但人已打垮的那条路一致：停止追踪，转入交差。
+                    if (IsTrackingBountyTarget)
+                    {
+                        EnterBountyCollectionState();
+                        _activeBountyDeadlineHours = -1d;
+                        StopBountyEscortAfterTargetDefeat();
+                    }
                     string message = GwpText.Get("{=gwp_case_defeat_recorded}You broke {VAR_1} in the field. Go and make your report.",
                         "VAR_1", target.Name.ToString());
                     _activeQuest?.WriteLog(message);
@@ -347,7 +354,9 @@ namespace GreyWardenPolicePurity
         internal int CaseReportSuggestedPayment => Reports?.PendingReceivedFor(CaseReportIdentity) ?? 0;
         internal GwpCaseReceipt? CaseReportReceipt => Reports?.ReceiptFor(CaseReportIdentity);
         internal bool CaseReportNeedsExplanation(int delivered, bool prisoner) =>
-            (!prisoner && delivered < CaseAmountDue) || Reports?.NeedsExplanation(CaseReportIdentity, delivered, prisoner) == true;
+            // 打垮了他就算办成：只有真从他手里收过的钱才需要交代去向。
+            (!prisoner && delivered < (_caseTargetDefeated ? CaseReportSuggestedPayment : CaseAmountDue))
+            || Reports?.NeedsExplanation(CaseReportIdentity, delivered, prisoner) == true;
 
         /// <summary>
         /// 这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。
@@ -378,7 +387,7 @@ namespace GreyWardenPolicePurity
 
             if (prisonerDelivered && _pendingPrisonerAssessed > 0)
             {
-                int prisonerFee = CalculateCaseFee(_pendingPrisonerAssessed);
+                int prisonerFee = PrisonerCaseFee();
                 ledger.ResolveByPrisoner(_pendingPrisonerHeroId, Math.Max(0, deliveredCash), !falseReport);
                 int paidPrisonerFee = PoliceResourceManager.WithdrawFromJudicialTreasury(prisonerFee);
                 FinishDispatchedReport(paidPrisonerFee);
@@ -462,7 +471,9 @@ namespace GreyWardenPolicePurity
             // 承办，没有承办队替他做这件事，所以这里按同一套判据替他判。
             bool offenderGone = hero.IsDead || hero.IsPrisoner || crime == null ||
                 crime.Offender?.IsActive != true;
-            if (offenderGone)
+            // 玩家已经在战场上打垮了他：部队被原版解散、人跑掉，是玩家自己的结果，
+            // 不是"被别人了结"。交给战后结算那条路（打垮即可交差）。
+            if (offenderGone && !_caseTargetDefeated)
             {
                 WithdrawCommissionClosedElsewhere(crime, hero);
                 return;
@@ -642,8 +653,9 @@ namespace GreyWardenPolicePurity
             int delivered = _caseSubmitted;
             if (_caseSubmittedPrisoner)
             {
+                int prisonerFee = PrisonerCaseFee();
                 Reports?.ResolveByPrisoner(_pendingPrisonerHeroId, delivered, !lie);
-                FinishCaseReport(PoliceResourceManager.PayFromJudicialTreasury(CalculateCaseFee(_pendingPrisonerAssessed)));
+                FinishCaseReport(PoliceResourceManager.PayFromJudicialTreasury(prisonerFee));
                 return;
             }
             CompleteCashReport(delivered, lie);
@@ -684,6 +696,24 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
                 "{=gwp_case_withdrawn_result}The man was already beyond reach. The treasury covers {VAR_1} denars for your trouble. The commission is closed.",
                 "VAR_1", paid));
+        }
+
+        /// <summary>
+        /// 押人交差：办案费照常，另外灰袍按原版赎金价把人收下。打垮对方就算办成，
+        /// 押来活人是锦上添花。
+        /// </summary>
+        private int PrisonerCaseFee()
+        {
+            int ransom = 0;
+            try
+            {
+                Hero? prisoner = PendingCasePrisoner;
+                if (prisoner?.CharacterObject != null)
+                    ransom = Math.Max(0, Campaign.Current.Models.RansomValueCalculationModel
+                        .PrisonerRansomValue(prisoner.CharacterObject, Hero.MainHero));
+            }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            return (int)Math.Min(int.MaxValue, (long)CalculateCaseFee(_pendingPrisonerAssessed) + ransom);
         }
 
         private int CalculateCaseFee(int cap) => GwpCaseSettlementRules.Reward(cap,

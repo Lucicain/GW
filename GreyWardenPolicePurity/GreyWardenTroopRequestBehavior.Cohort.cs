@@ -131,6 +131,8 @@ namespace GreyWardenPolicePurity
             Settlement? home = trainer.HomeSettlement ??
                                PoliceStats.GetPoliceClan()?.HomeSettlement;
             if (home == null) return null;
+            // 练兵队在练兵官身边出生；练兵官在海上又借不出船，就先不建。
+            if (PoliceResourceManager.IsStrandedAtSea(trainer)) return null;
 
             string cohortId;
             do
@@ -171,7 +173,8 @@ namespace GreyWardenPolicePurity
                 cohort.ActualClan = policeClan;
                 cohort.MemberRoster.Clear();
                 cohort.ItemRoster.Clear();
-                PoliceResourceManager.ProvisionTemporaryDutyParty(cohort);
+                // 船向练兵官借，按订单人数借：练兵队出生时是空的，之后才补到订单量。
+                PoliceResourceManager.OutfitTemporaryDutyParty(cohort, trainer, _orderedCount);
                 KeepCohortDisposition(cohort);
                 GreyWardenPartyDesireBehavior.RequestEscort(cohort, trainer);
             }
@@ -202,26 +205,36 @@ namespace GreyWardenPolicePurity
         /// 只装这张订单，不当第二个军营。取用顺序：已经是成品的先走，其次是能
         /// 练上去的（低级在前，最便宜），最后才是只能拆编重训的下游老兵。
         /// 练兵官手上始终留够 <see cref="CohortTrainerFloor"/> 人。
+        ///
+        /// 反方向也要通：练成别的分支的（无领主队升级不分偏好）、战后收进来的
+        /// 外来兵，永远成不了目标兵，却按总人数占着名额——完成只数目标兵，订单
+        /// 就再也凑不齐。这些人退回练兵官；外来兵到了有领主的队伍里由原有纯化处理。
         /// </summary>
         private void TopUpCohort(MobileParty trainer, MobileParty cohort,
             CharacterObject target)
         {
-            int room = _orderedCount - cohort.MemberRoster.TotalManCount;
-            if (room <= 0) return;
-            int spare = trainer.MemberRoster.TotalManCount - CohortTrainerFloor;
-            if (spare <= 0) return;
-
             var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            List<TroopRosterElement> pool = trainer.MemberRoster.GetTroopRoster()
+            bool Serves(CharacterObject? troop) =>
+                troop != null && !troop.IsHero &&
+                GwpCommon.IsGreyWardenTroop(troop) &&
+                (troop == target ||
+                 CanReachTarget(troop, target, new HashSet<string>(visited)) ||
+                 CanReachTarget(target, troop, new HashSet<string>(visited)));
+
+            List<TroopRosterElement> strays = cohort.MemberRoster.GetTroopRoster()
                 .Where(element => element.Character != null &&
-                    !element.Character.IsHero &&
-                    element.Number - element.WoundedNumber > 0 &&
-                    GwpCommon.IsGreyWardenTroop(element.Character) &&
-                    (element.Character == target ||
-                     CanReachTarget(element.Character, target,
-                         new HashSet<string>(visited)) ||
-                     CanReachTarget(target, element.Character,
-                         new HashSet<string>(visited))))
+                    !element.Character.IsHero && element.Number > 0 &&
+                    !Serves(element.Character))
+                .ToList();
+            int strayMen = strays.Sum(element => element.Number);
+
+            int room = _orderedCount -
+                (cohort.MemberRoster.TotalManCount - strayMen);
+            int spare = trainer.MemberRoster.TotalManCount - CohortTrainerFloor;
+
+            List<TroopRosterElement> pool = trainer.MemberRoster.GetTroopRoster()
+                .Where(element => element.Number - element.WoundedNumber > 0 &&
+                    Serves(element.Character))
                 .OrderBy(element => element.Character == target ? 0
                     : CanReachTarget(element.Character, target,
                         new HashSet<string>(visited)) ? 1 : 2)
@@ -244,12 +257,30 @@ namespace GreyWardenPolicePurity
                     insertAtFront: false, woundedCount: 0);
                 moved += take;
             }
-            if (moved <= 0) return;
+
+            // 队里还剩有用的人才退：空队会被原版当无人队清掉，下一拍就误报成
+            // "折在路上"。
+            int returned = 0;
+            if (strayMen > 0 && cohort.MemberRoster.TotalManCount > strayMen)
+            {
+                foreach (TroopRosterElement element in strays)
+                {
+                    cohort.MemberRoster.AddToCounts(element.Character,
+                        -element.Number, insertAtFront: false,
+                        woundedCount: -element.WoundedNumber);
+                    trainer.MemberRoster.AddToCounts(element.Character,
+                        element.Number, insertAtFront: false,
+                        woundedCount: element.WoundedNumber);
+                    returned += element.Number;
+                }
+            }
+            if (moved <= 0 && returned <= 0) return;
 
             GwpAiDiagnostics.WriteAction(trainer, "PLAYER_TROOP_ORDER_COHORT_FED",
                 "cohort=" + cohort.StringId +
                 "; target=" + target.StringId +
                 "; moved=" + moved +
+                "; returned=" + returned +
                 "; cohortMen=" + cohort.MemberRoster.TotalManCount +
                 "; ready=" + CountHealthy(cohort, target) +
                 "; trainerMen=" + trainer.MemberRoster.TotalManCount);

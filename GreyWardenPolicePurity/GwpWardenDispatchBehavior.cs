@@ -179,6 +179,14 @@ namespace GreyWardenPolicePurity
                 return null;
             }
 
+            if (PoliceResourceManager.IsStrandedAtSea(player))
+            {
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    "{=gwp_dispatch_no_spare_ship}You are at sea with no ship to spare. Your men cannot leave until you make landfall."),
+                    Colors.Yellow));
+                return null;
+            }
+
             carriedCaseGold = Math.Max(0, carriedCaseGold);
             cargo = cargo ?? new List<ItemRosterElement>();
             if (cargo.Any(e => e.Amount <= 0 || player.ItemRoster.Where(x => x.EquipmentElement.Equals(e.EquipmentElement)).Sum(x => x.Amount) < e.Amount)) return null;
@@ -221,6 +229,8 @@ namespace GreyWardenPolicePurity
                 party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
                 party.ActualClan = Clan.PlayerClan;
                 KeepCourierDisposition(party);
+                // 送信队自带货物口粮，不走灰袍临时队的口粮配给；船向玩家借。
+                PoliceResourceManager.LendShips(party, player);
                 bool prisonerLoaded = false;
                 if (casePrisoner != null)
                 {
@@ -504,7 +514,7 @@ namespace GreyWardenPolicePurity
         /// （<c>NavigationHelper.IsPositionValidForNavigationType</c>），它不报错、不改行为，
         /// 而是把本帧的目的地直接换成**自己脚下**。表现就是队伍停在原地一步不挪，欲望、
         /// 目标、速度在日志里却全是对的。灰袍领主是会上船出海的（见
-        /// <c>PoliceResourceManager.GivePoliceShips</c>），一支没有船的送信队盯上一个在海上的
+        /// <c>PoliceResourceManager.LendShips</c>），一支没有船的送信队盯上一个在海上的
         /// 收件人，就会这样永远钉死在出发点。
         /// </summary>
         private static bool CanReach(MobileParty courier, MobileParty target)

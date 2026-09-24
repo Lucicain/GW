@@ -11,7 +11,6 @@ namespace GreyWardenPolicePurity
     internal sealed class GwpMusicScore : IDisposable
     {
         internal const int Rate = 48000;
-        private static readonly double[] FadeUp = BuildCurve(true), FadeDown = BuildCurve(false);
         private readonly JObject _data;
         private readonly string _directory;
         private readonly Random _random;
@@ -19,12 +18,64 @@ namespace GreyWardenPolicePurity
         private readonly Dictionary<string, List<string>> _bags = new();
         private readonly Dictionary<string, string> _last = new();
         private readonly Action<string>? _log;
+        private readonly Dictionary<string, long[]> _offsets = new();
         private long _frame, _pendingUntil, _retryAt, _redrawUntil;
         private string _state = "intro", _wanted = "intro";
         private bool _reinforcement;
         public long Frame => _frame;
         public string State => _state;
         public int VoiceCount => _voices.Count;
+
+        // One source clip placed on a segment's timeline, with its track volume and clip automation.
+        internal sealed class Clip : IDisposable
+        {
+            public long PlayAt, Begin, End;
+            public double ZeroAt, Gain;
+            public Envelope[] Envelopes = Array.Empty<Envelope>();
+            public GwpFlacReader Reader = null!;
+            public void Mix(float[] output, int target, long position, int count, double[] fade)
+            {
+                long from = Math.Max(position, Begin), to = Math.Min(position + count, End);
+                for (long p = from; p < to;)
+                {
+                    long source = p - PlayAt, first = Reader.Seek(source);
+                    int index = checked((int)(source - first)), n = (int)Math.Min(to - p, Reader.Count - index);
+                    int k = checked((int)(p - position)), o = (target + k) * 2;
+                    for (int i = 0; i < n; i++, k++, o += 2)
+                    {
+                        double gain = fade[k] * Gain;
+                        foreach (Envelope e in Envelopes) gain *= e.At((p + i - ZeroAt) / Rate);
+                        output[o] += (float)(Reader.Left[index + i] / 32768.0 * gain);
+                        output[o + 1] += (float)(Reader.Right[index + i] / 32768.0 * gain);
+                    }
+                    p += n;
+                }
+            }
+            public void Dispose() => Reader.Dispose();
+        }
+
+        // Wwise clip automation: points are (seconds from clip start, value, curve to the next point).
+        // Volume automation stores linear gain minus one (Wwise ScalingFromLin_dB); fades store 0..1.
+        internal sealed class Envelope
+        {
+            public double[] Time = null!, Value = null!;
+            public int[] Shape = null!;
+            public bool Volume;
+            public double At(double seconds)
+            {
+                int last = Time.Length - 1;
+                double v;
+                if (seconds <= Time[0]) v = Value[0];
+                else if (seconds >= Time[last]) v = Value[last];
+                else
+                {
+                    int i = 0;
+                    while (seconds >= Time[i + 1]) i++;
+                    v = Interpolate((seconds - Time[i]) / (Time[i + 1] - Time[i]), Value[i], Value[i + 1], Shape[i]);
+                }
+                return Volume ? 1 + v : v;
+            }
+        }
 
         internal sealed class Voice : IDisposable
         {
@@ -33,38 +84,27 @@ namespace GreyWardenPolicePurity
             public bool Bridge;
             public long Anchor, ControlAt, Start, Offset, Exit, End, Stop = long.MaxValue;
             public long FadeIn, FadeOutAt = long.MaxValue, FadeOut;
-            public FileStream Stream = null!;
-            private byte[] _bytes = new byte[8192];
-            private float[] _samples = new float[2048];
+            public int FadeInShape = 4, FadeOutShape = 4;
+            public Clip[] Clips = Array.Empty<Clip>();
+            private double[] _fade = new double[1024];
             public void Mix(float[] output, int frames, long now)
             {
                 long begin = Math.Max(now, Start), end = Math.Min(now + frames, Math.Min(End, Stop));
                 if (end <= begin) return;
-                int count = checked((int)(end - begin)), size = count * 8;
-                if (_bytes.Length < size) { _bytes = new byte[size]; _samples = new float[count * 2]; }
-                Stream.Position = (Offset + begin - Start) * 8;
-                int read = 0;
-                while (read < size)
-                {
-                    int n = Stream.Read(_bytes, read, size - read);
-                    if (n == 0) throw new EndOfStreamException(Id);
-                    read += n;
-                }
-                Buffer.BlockCopy(_bytes, 0, _samples, 0, size);
-                int target = checked((int)(begin - now)) * 2;
+                int count = checked((int)(end - begin));
+                if (_fade.Length < count) _fade = new double[count];
                 for (int i = 0; i < count; i++)
                 {
                     long t = begin + i;
                     double gain = 1;
-                    // Intentionally identical to the accepted lab's sampled Log1 approximation.
-                    // This is an envelope, never a loudness normalization or added master gain.
-                    if (FadeIn > 0 && t < Start + FadeIn) gain *= Curve(true, (t - Start) / (double)FadeIn);
-                    if (t >= FadeOutAt) gain *= Curve(false, (t - FadeOutAt) / (double)FadeOut);
-                    output[target + i * 2] += (float)(_samples[i * 2] * gain);
-                    output[target + i * 2 + 1] += (float)(_samples[i * 2 + 1] * gain);
+                    // Transition fades use the rule's own Wwise curve; never a loudness normalization.
+                    if (FadeIn > 0 && t < Start + FadeIn) gain *= Fade(true, (t - Start) / (double)FadeIn, FadeInShape);
+                    if (t >= FadeOutAt) gain *= Fade(false, (t - FadeOutAt) / (double)FadeOut, FadeOutShape);
+                    _fade[i] = gain;
                 }
+                foreach (Clip c in Clips) c.Mix(output, checked((int)(begin - now)), Offset + begin - Start, count, _fade);
             }
-            public void Dispose() => Stream.Dispose();
+            public void Dispose() { foreach (Clip c in Clips) c.Dispose(); }
         }
 
         public GwpMusicScore(string directory, Action<string>? log = null, int? seed = null)
@@ -74,12 +114,13 @@ namespace GreyWardenPolicePurity
             _random = seed.HasValue ? new Random(seed.Value) : new Random();
             _log = log;
             // Validate every asset before taking over native music, including late-game bridges.
-            foreach (var p in ((JObject)_data["segments"]!).Properties())
+            foreach (var p in ((JObject)_data["sources"]!).Properties())
             {
-                var s = (JObject)p.Value;
-                var file = new FileInfo(Path.Combine(directory, (string)s["file"]!));
-                if (!file.Exists || file.Length != (long)s["frames"]! * 8)
+                var src = (JObject)p.Value;
+                var file = new FileInfo(Path.Combine(directory, (string)src["file"]!));
+                if (!file.Exists || file.Length != (long)src["bytes"]!)
                     throw new InvalidDataException("Missing/truncated music asset: " + file.FullName);
+                _offsets[p.Name] = src["offsets"]!.Select(x => (long)x).ToArray();
             }
             string id = Pick("intro");
             Add(id, Frames(.08) + Entry(id), "intro");
@@ -136,7 +177,7 @@ namespace GreyWardenPolicePurity
             v.ControlAt = position.HasValue ? v.Start : anchor;
             v.Exit = v.Anchor + Ms((double)s["exitMs"]!) - entry;
             v.End = v.Start + (long)s["frames"]! - v.Offset;
-            v.Stream = new FileStream(Path.Combine(_directory, (string)s["file"]!), FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+            v.Clips = Clips(s);
             _voices.Add(v);
             return v;
         }
@@ -154,22 +195,81 @@ namespace GreyWardenPolicePurity
             return current ?? first;
         }
 
-        private static double[] BuildCurve(bool up)
+        private Clip[] Clips(JObject segment)
         {
-            var curve = new double[128];
-            for (int i = 0; i < curve.Length; i++)
-                curve[i] = up ? Math.Log10(1 + 9 * i / 127.0) : Math.Log10(10 - 9 * i / 127.0);
-            return curve;
+            var clips = new List<Clip>();
+            long frames = (long)segment["frames"]!;
+            foreach (JObject track in (JArray)segment["tracks"]!)
+            {
+                double gain = Math.Pow(10, (double)track["volumeDb"]! / 20);
+                var list = (JArray)track["clips"]!;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    JToken c = list[i];
+                    double playAt = (double)c["fPlayAt"]!, begin = playAt + (double)c["fBeginTrimOffset"]!;
+                    string id = (string)c["sourceID"]!;
+                    var source = (JObject)_data["sources"]![id]!;
+                    int index = i;
+                    var clip = new Clip
+                    {
+                        PlayAt = Ms(playAt), Begin = Math.Max(0, Ms(begin)), ZeroAt = begin / 1000 * Rate, Gain = gain,
+                        Envelopes = track["automation"]!.Where(x => (int)x["clip"]! == index).Select(x => new Envelope
+                        {
+                            Volume = (string)x["type"]! == "volume",
+                            Time = x["points"]!.Select(q => (double)q[0]!).ToArray(),
+                            Value = x["points"]!.Select(q => (double)q[1]!).ToArray(),
+                            Shape = x["points"]!.Select(q => (int)q[2]!).ToArray(),
+                        }).ToArray(),
+                    };
+                    clip.End = Math.Min(frames, Math.Min(Ms(playAt + (double)c["fSrcDuration"]! + (double)c["fEndTrimOffset"]!),
+                        clip.PlayAt + (long)source["frames"]!));
+                    clip.Reader = new GwpFlacReader(Path.Combine(_directory, (string)source["file"]!), _offsets[id], (int)source["block"]!, (long)source["frames"]!);
+                    clips.Add(clip);
+                }
+            }
+            return clips.ToArray();
         }
 
-        internal static double Curve(bool up, double x)
+        // AkInterpolation::InterpolateNoCheck as the Wwise engine computes it (the engine's own
+        // polynomial approximations, recovered by wwiser). Constant (9) holds the starting value.
+        internal static double Interpolate(double t, double from, double to, int shape)
+        {
+            double a, b;
+            switch (shape)
+            {
+                case 0: return (1 - t) * (1 - t) * (1 - t) * (from - to) + to; // Log3
+                case 1: // Sine
+                    a = 1.5707964 * t * (1.5707964 * t);
+                    b = ((a * -0.00018363654 + 0.0083063254) * a + -0.16664828) * a + 0.9999966;
+                    return b * (1.5707964 * t) * (to - from) + from;
+                case 2: return (t - 3) * t * 0.5 * (from - to) + from; // Log1
+                case 3: // InvSCurve
+                    if (t > 0.5)
+                    {
+                        a = 3.1415927 - 3.1415927 * t;
+                        b = (a * a * -0.00009181827 + 0.0041531627) * (a * a) + -0.083324142;
+                        return (1 - (b * (a * a) + 0.4999983) * a) * (to - from) + from;
+                    }
+                    a = 3.1415927 * t * (3.1415927 * t);
+                    b = (a * -0.00009181827 + 0.0041531627) * a + -0.083324142;
+                    return (b * a + 0.4999983) * (3.1415927 * t) * (to - from) + from;
+                case 5: // SCurve
+                    a = 3.1415927 * t * (3.1415927 * t);
+                    return (((a * 0.00048483399 + -0.01961384) * a + 0.24767479) * a + 0.00069670216) * (to - from) + from;
+                case 6: return (t + 1) * t * 0.5 * (to - from) + from; // Exp1
+                case 7: // SineRecip
+                    a = 1.5707964 * t * (1.5707964 * t);
+                    return (((a * -0.0012712094 + 0.04148775) * a + -0.49991244) * a + 0.99999332) * (from - to) + to;
+                case 8: return t * t * t * (to - from) + from; // Exp3
+                case 9: return from;
+                default: return (to - from) * t + from; // Linear
+            }
+        }
+
+        internal static double Fade(bool up, double x, int shape)
         {
             x = Math.Max(0, Math.Min(1, x));
-            double p = x * 127;
-            int lo = (int)Math.Floor(p), hi = Math.Min(127, lo + 1);
-            double[] curve = up ? FadeUp : FadeDown;
-            double a = curve[lo], b = curve[hi];
-            return a + (b - a) * (p - lo);
+            return up ? Interpolate(x, 0, 1, shape) : Interpolate(x, 1, 0, shape);
         }
 
         private void CancelFuture(Voice current)
@@ -224,6 +324,7 @@ namespace GreyWardenPolicePurity
                 at = _frame + Frames(.025);
                 long position = at - c.Anchor + Entry(c.Id);
                 next = Add(id, 0, state, position: position, fade: Ms((double)dr["transitionTime"]!));
+                next.FadeInShape = (int)dr["eFadeCurve"]!; c.FadeOutShape = (int)sr["eFadeCurve"]!;
                 c.FadeOutAt = at; c.FadeOut = Ms((double)sr["transitionTime"]!); c.Stop = at + c.FadeOut;
                 _pendingUntil = at + Math.Max(c.FadeOut, next.FadeIn);
             }

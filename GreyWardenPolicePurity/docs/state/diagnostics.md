@@ -1,7 +1,7 @@
 # 诊断系统
 
 > 当前状态：现行规则
-> 最后验收：不适用
+> 最后验收：未建立检查点
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
@@ -32,7 +32,7 @@
 不应该留——findings 记进 state 之后，旧日志没有进一步用途。
 
 **按当前覆盖范围命名。** 范围变了就改系统名和日志文件名，不要留一个误导的名字。
-（例：`GwpRangedCommandTrace` 扩到双方所有编队后已改名 `GwpBattleCommandTrace`。）
+（例：`GwpRangedCommandTrace` 扩到双方所有编队后曾改名 `GwpBattleCommandTrace`，现已退休。）
 
 ## 日志文件
 
@@ -40,23 +40,22 @@
 
 | 文件 | 内容 |
 |---|---|
-| `GreyWarden-Faults.log` | 故障与静默吞异常留痕。**健康的一局里这个文件应当是空的**，里面出现的任何一行都值得读 |
+| `GreyWarden-Faults.log` | 故障与静默吞异常留痕。在役的 `BATTLE_SCENE_*`、`WARDEN_RESOLVE_BLOCK`、音乐档位诊断也写这里，它们退休后**健康的一局里这个文件应当是空的** |
 | `GreyWarden-AI-Diagnostics.log` | AI / 战场 / 欲望拍卖采样 |
 | `GreyWarden-Case-Events.log` | 案件生命周期事件 |
 | `GreyWarden-Diagnostics-Archive` | 滚动归档 |
-
-源码中共 317 个 trace 标签。
 
 ## 在役、待退休
 
 | 系统 | 覆盖 | 退休条件 |
 |---|---|---|
-| `GwpBattleCommandTrace`（`BATTLE_COMMAND_*`、`BATTLE_TACTIC_SCORE`、`BATTLE_WEAPON_CLASSIFY`） | 双方活跃人类编队的阵型/宽度/战术评分/武器分类 | 踱步问题结案后整体退休，见 [`battle-tactics.md`](battle-tactics.md) |
 | `WARDEN_RESOLVE_BLOCK` | 死战不退拦截了哪条原生逃跑路径 | 用户已确认功能正常 → **下次动这块代码时退休** |
 | `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` | 音乐资格分母、援军触发层/概率/预算/到场 | 用户已确认功能正常 → **下次动这块代码时退休** |
 | 音乐策略档位诊断（每 10 任务秒 / 变档输出，含 `recent5`、`waiting-for-fresh-exchange`） | 强度映射是否按预期升降 | 用户已确认音乐正常 → **下次动这块代码时退休** |
 
-已退休的：`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）。
+已退休的：`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
+`GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，
+日志行一并清除，结论见 [`battle-tactics.md`](battle-tactics.md)）。
 其日志、WER 与一次性分析输出**不再可读**；需要重新调查时从新复现取证，
 不要把已退休路径写成仍可用文件。
 
@@ -69,9 +68,10 @@
 - `WARDEN_RESOLVE_BLOCK` 每 Mission 每来源最多 8 条，由 `ConditionalWeakTable`
   随 Mission 回收
 - 容量等待不刷空批次日志
-- 战场采样 2 秒一次，不逐帧
+- 战场类采样按秒级间隔，不逐帧
 
 ## 不要为了打印而调用原版
 
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
+`NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。

@@ -39,8 +39,9 @@ catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
 - **调用点由编译器填**（`CallerFilePath` / `CallerMemberName` / `CallerLineNumber`），
   不手写标签——手写的标签迟早会和代码漂移。
 
-跳过了诊断基础设施自身（`GwpFaultTrace`、`GwpRuntimeFaultWatch`）以免递归，
-以及那 4 处已写明理由的。
+跳过了诊断基础设施自身（`GwpFaultTrace`、`GwpRuntimeFaultWatch`）以免递归。
+
+**2026-09-24 补扫：** 当时的扫描只认单行写法，漏了 10 处——6 处多行 `catch` / `{` / `}`，4 处单行 `catch { }`（其中所谓「写明理由」的注释只是步骤说明，并没有解释为什么可以不留痕）。全部改成同一模式，行为不变。现在源码中空 `catch` 为 0；诊断开/关两种构建均 0 警告 0 错误。
 
 **新写 catch-all 时照这个模式写。**
 

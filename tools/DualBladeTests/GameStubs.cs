@@ -16,7 +16,7 @@ namespace TaleWorlds.Library
 namespace TaleWorlds.Core
 {
     public enum EquipmentIndex { None = -1, Weapon0, WeaponItemBeginSlot = 0, Weapon1, Weapon2, Weapon3 }
-    [Flags] public enum WeaponFlags { None, RangedWeapon }
+    [Flags] public enum WeaponFlags : ulong { None = 0, RangedWeapon = 2, NotUsableWithOneHand = 0x10, CanBlockRanged = 0x10000000 }
     public static class FlagExtensions
     {
         public static bool HasAnyFlag(this WeaponFlags flags, WeaponFlags value) => (flags & value) != 0;
@@ -96,7 +96,7 @@ namespace TaleWorlds.MountAndBlade
         public Agent? MountAgent, ImmediateEnemy;
         public object? Team = new object();
         public Vec3 Position;
-        public int Index, Firing;
+        public int Index, Firing, StatUpdates;
         public float LastMeleeHitTime = -100;
         public EventControlFlag EventControlFlags;
         public EquipmentIndex Main = EquipmentIndex.Weapon1, Off = EquipmentIndex.Weapon0;
@@ -104,6 +104,7 @@ namespace TaleWorlds.MountAndBlade
         public List<string> Wields = new List<string>();
         private readonly List<AgentComponent> _components = new List<AgentComponent>();
         public bool IsActive() => true;
+        public void UpdateAgentStats() => StatUpdates++;
         public bool IsEnemyOf(Agent other) => other != this;
         public Agent? GetTargetAgent() => ImmediateEnemy;
         public EquipmentIndex GetPrimaryWieldedItemIndex() => Main;
@@ -135,5 +136,6 @@ namespace GreyWardenPolicePurity
     {
         internal static int Conflicts;
         internal static void Write(string stage, Agent agent, string details) { Conflicts++; }
+        internal static void WriteQuiet(Exception exception, string file = "", string member = "", int line = 0) { Conflicts++; }
     }
 }

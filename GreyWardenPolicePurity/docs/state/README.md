@@ -27,7 +27,7 @@
 > 待实测：<一句话；没有就写"无">
 ```
 
-`最后验收` 是**人在游戏里确认行为**的那次提交，重构不要动它。纯重构、加诊断这类
+`最后验收` 是**人在游戏里确认行为**时对应的提交，重构不要动它。提交只在用户宣布功能开发结束时做，所以大多数时候这里写「未建立检查点」——新鲜度检查会退而用本文件自己最后一次入库的提交做比较基准。纯重构、加诊断这类
 读过并确认无影响的改动写进 `已复核至`。
 
 ## 怎么知道 state 文件已经过期
@@ -36,8 +36,13 @@
 python tools/Check-StateFreshness.py
 ```
 
-比对每个文件的基线和它 `覆盖源码` 的 git 历史，报出「验收之后源码又改过」的文件。
-它**不判断文字对不对**，只说该去哪里看。`/wrap` 的第 0 步会跑它。
+报五类问题：覆盖的源码改了而本文件没跟着改（主要看工作树，因为提交很少）；
+没有任何 state 声明覆盖的新源码；改到了尚未提取的子系统文件；state 文件在堆积
+带日期的过程（超过 250 行或 3 个以上带日期的小节）；以及有多少文件声明了
+「不做自动核对」。它**不判断文字对不对**，只说该去哪里看。`/wrap` 的第 0 步会跑它。
+
+「不做自动核对」是出口，不是默认。专项调查的过程应进 journal，不要写成一个
+豁免核对的 state 文件。
 
 一个结论要么在这里、要么不存在。如果某条规则你在 state 里找不到，默认它**不成立**，
 不要去流水里翻。
@@ -46,10 +51,17 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
+| [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
+| [`temporary-parties.md`](temporary-parties.md) | 无领主临时队向领主/玩家借船与退还、口粮、兵员纯化 |
+| [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
+| [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差（其余悬赏流程未提取） |
+| [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回、已知缺口 |
+| [`training-feedback.md`](training-feedback.md) | 小周练兵交付反馈、存档导入及源码缺口；专项调查，未完成练兵全系统提取 |
 | [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
 | [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
 | [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
+| [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
 | [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类事实 |
 | [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：立案门槛、结案口径、协力编成、战争跟随 |
@@ -65,7 +77,7 @@ python tools/Check-StateFreshness.py
 - 巡逻与巡区（`PolicePatrolBehavior`、巡逻"恋家"定位）
 - 玩家悬赏与结案（`PlayerBountyBehavior`、`GwpCaseArchiveScreen`）
 - 使者送单与交兵（`GwpWardenDispatchBehavior`、barter 付款模型）
-- 练兵与随行训练队（`GreyWardenTrainingBehavior`、拆编重训）
+- 灰袍领主日常练兵与兵种配比取向（`GreyWardenTrainingBehavior`）；玩家订单与随行练兵队已提取到 [`troop-orders.md`](troop-orders.md)
 - 野外切磋（`GreyWardenFieldSparringMissionController`）
 - 家族、婚姻、村庄收养与重建
 - 船运贸易与经济

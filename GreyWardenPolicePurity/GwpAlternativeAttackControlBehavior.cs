@@ -25,6 +25,10 @@ namespace GreyWardenPolicePurity
 
         private const int MeleeMasteryPerAlternativeAction = 50;
         private const int BowMasteryPerArrow = 10;
+        // Total battle-mastery bonus per skill track. Each kick or bash still adds 50 and
+        // each arrow 10; the cap guards against the known double counting of one action
+        // (journal 2026-09-03), which could otherwise run the bonus toward 1000 (2026-09-24).
+        private const int MaxMasteryBonus = 500;
 
         private sealed class PendingAlternativeAttack
         {
@@ -141,6 +145,21 @@ namespace GreyWardenPolicePurity
                 in blow,
                 in attackCollisionData);
 
+            // Mastery is earned by a kick or bash that lands. The engine raises this
+            // event once per contact with damage: the native hit, or the one-point
+            // fallback contact this behavior injects when the native action missed,
+            // never both. The AI's kick input repeats every frame of the action, so it
+            // must never be what earns mastery (2026-09-24).
+            if (affectedAgent != null
+                && affectorAgent != null
+                && affectorAgent.IsHuman
+                && affectorAgent.IsEnemyOf(affectedAgent)
+                && IsAlternativeAttack(in attackCollisionData, in blow)
+                && GwpKickBehavior.IsEligibleGreyWarden(affectorAgent))
+            {
+                AddMeleeMastery(affectorAgent);
+            }
+
             if (affectedAgent == null
                 || affectorAgent == null
                 || !_pendingActions.TryGetValue(
@@ -252,12 +271,6 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // Mastery belongs to the deliberate alternative-attack action,
-            // not to whichever native or fallback contact later resolves it.
-            // Award exactly once when the action is accepted into this shared
-            // AI/player resolver, even if no nearby target is available.
-            AddMeleeMastery(attacker);
-
             Agent? fallbackTarget = GwpAlternativeAttackControl
                 .GetNearestEnemyTarget(attacker);
             if (fallbackTarget == null)
@@ -290,9 +303,7 @@ namespace GreyWardenPolicePurity
             int current = bonuses.TryGetValue(agentIndex, out int existing)
                 ? existing
                 : 0;
-            int updated = Math.Min(
-                GwpAgentStatCalculateModel.MasteredSkillValue,
-                current + amount);
+            int updated = Math.Min(MaxMasteryBonus, current + amount);
             if (updated == current)
                 return false;
 

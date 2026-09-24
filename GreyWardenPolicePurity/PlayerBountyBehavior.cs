@@ -462,7 +462,7 @@ namespace GreyWardenPolicePurity
                 // 招募使者没有英雄领队，原版不会替它进城采购。若生成时不主动
                 // 配粮，它会在下一个小时检查时因 TotalFood == 0 立刻掉头，玩家
                 // 永远等不到邀请。沿用其他一次性灰袍队的二十日口粮规则。
-                PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
+                PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
                 GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
 

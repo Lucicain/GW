@@ -1,162 +1,194 @@
 {
-  "format": "stereo float32 little endian, 48000 Hz",
-  "gain": 1,
-  "segments": {
-    "1027535983": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\1027535983.flac",
-      "sourceSha256": "c764efc58fe3ecacedcd007e4cec94775cb546fc488c7db5d82d928a41114769",
-      "pcmSha256": "6aba0fb5cfb7eed0d830faaa2025ecdccfadeda4a8a03326ca1d38f322c84432",
-      "frames": 2215385
-    },
-    "1068393325": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\1068393325.flac",
-      "sourceSha256": "88bd6af9281b5ae75a1b5796e984b61fe9464c77587c283ec2770c6499b5f3d2",
-      "pcmSha256": "49a8a4a4f07d5e32992facaf71a3a62f3e5cc586d8f0bd56b56551b41d3b849b",
-      "frames": 2363077
-    },
-    "108295660": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\108295660.flac",
-      "sourceSha256": "0c3ca0571231db00bdc8dc7d0e6cb8c39bf1288d6d4bf0b62834542829497d2c",
-      "pcmSha256": "ae421e2fc7676967128c090924f02f9ebfee3ff0620c1f688a74f1b21c065460",
-      "frames": 2067692
-    },
-    "180536621": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\180536621.flac",
-      "sourceSha256": "e11b56686161be135924af6c59fbd2fdf5df43c2d764319d12366eaccdf76e53",
-      "pcmSha256": "41903615a3c40c4219623ba85557564c6a91e904801db1bff40b0c68397a65a9",
-      "frames": 2215385
-    },
-    "234147462": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\234147462.flac",
-      "sourceSha256": "46b50144cb96b5db0c1c1e869512b7a7bda2393aee386dc697e4bee98ab8f3e0",
-      "pcmSha256": "7a969a083155b169434caaf5b7617fb0297f05db65519322335703fb922017ad",
-      "frames": 923077
-    },
-    "317591648": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\317591648.flac",
-      "sourceSha256": "087c452e40790c3a2c2008c52e6d706cacd57c5a08ea0976e3faf7203b597dbb",
-      "pcmSha256": "5796d29c184f129711da1d9c97c1127a0ca3bc4071a65519163dd96016464aad",
-      "frames": 1846154
-    },
-    "320232109": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\320232109.flac",
-      "sourceSha256": "ba11ad838886fc736cc55ca075950c977cc3c0cd411d311bd5993dbfd6b94f9d",
-      "pcmSha256": "4c725069adaad7cfa32a59bdfea9de3accda7e62f3f7cff0e84ad69d1bdb19b7",
-      "frames": 2067692
-    },
-    "354672081": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\354672081.flac",
-      "sourceSha256": "c505d17c5ce015df5b1af40aa2d0d22ddbe86583f7b0585fe35673865b6e152a",
-      "pcmSha256": "880622a1895d493a5c51b0b5fc2df076e5413216b6cdd103d219f71338e4bc44",
-      "frames": 2215385
-    },
-    "454183078": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\454183078.flac",
-      "sourceSha256": "60650f41ac40c3ac235c7824c277ba8561268f4e792f75c53c47d7633faffa20",
-      "pcmSha256": "955bbb287e3116fc54dc0e1fcee00ccff4d97684e6cf45f96aa1640367c486dc",
-      "frames": 2215385
-    },
-    "538337271": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\538337271.flac",
-      "sourceSha256": "9d7640f6042f7e72031939dde2be7fa888102e651d3f356f3faecc1434848805",
-      "pcmSha256": "abbc0b03cf2eda3f0569d860cd55e277bf83589ba8406a4b430893829258815d",
-      "frames": 2067693
-    },
-    "540505083": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\540505083.flac",
-      "sourceSha256": "cfa913cbf93686ff62b304177d099d21d5e70796d4c2690b2f1e7c00a98af8fb",
-      "pcmSha256": "a0b80c8a169e99b12659031c802455b41a6983bf7902725b043e0fe778217a16",
-      "frames": 2843078
-    },
-    "594083338": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\594083338.flac",
-      "sourceSha256": "c832f68e3becc25c838107793985bb25b8d37779c2143846035d542704381136",
-      "pcmSha256": "270e34546f9ed8091655b7c11a40e446cf2fe8256f4333b8d9e9613c330e1d96",
-      "frames": 2363077
-    },
-    "647197112": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\647197112.flac",
-      "sourceSha256": "699c36bbdfa1bc6edf49a0b111c6f48ec998e0ed8aae750cf8b1a05e4b712be4",
-      "pcmSha256": "bae88575239908c520f3cf76453e8648ff5ee6b63476de4d70d5820a07b73654",
-      "frames": 1846154
-    },
-    "70771610": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\70771610.flac",
-      "sourceSha256": "099a1be2a44b35ebbd1bec06c120c571218e1c29b57692070c3adb4f62cf7751",
-      "pcmSha256": "d04ca77ed9da27a016f0954d872e30c200f0735083322209f3b64d64500caa09",
-      "frames": 2658462
-    },
-    "74054711": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\74054711.flac",
-      "sourceSha256": "fb0b3fcdbc0ff7389772ecbef4d038f2d728b5506f9ce08e7753b1fe3894188c",
-      "pcmSha256": "a803cb2ca8c29fc13d86eb6ccdc158e22fde6d2589098b072bcd36638da073ea",
-      "frames": 3433846
-    },
-    "749858897": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\749858897.flac",
-      "sourceSha256": "065b1d18cc775d63d19312cc5b1c5c20e4118eb0e833f9988a1f86fd5badd4d6",
-      "pcmSha256": "1d74e848403d861d06019f58a4f7ee3dbc45cfcc0bc8fe3cb2555b98e18b0627",
-      "frames": 923077
-    },
-    "752763494": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\752763494.flac",
-      "sourceSha256": "e2260d689872fbaf7fcffc80e8ff36de18f5cf907ae2e9141c7ce0b2199ea7f4",
-      "pcmSha256": "b70784848649dcf837b3fb103e83a16bc74d2a1587115fdeea11aefa6843c1ef",
-      "frames": 1643077
-    },
-    "79311538": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\79311538.flac",
-      "sourceSha256": "bbbbd936c4527cb8fac77f238d81a23a99fc9bf3656bdb9c753dd649bd109f9e",
-      "pcmSha256": "fe8a65668575eb064f76ca8662338a4d06d593242b2dea11bafce565b367c6c0",
-      "frames": 2067693
-    },
-    "806478350": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\806478350.flac",
-      "sourceSha256": "065b1d18cc775d63d19312cc5b1c5c20e4118eb0e833f9988a1f86fd5badd4d6",
-      "pcmSha256": "1d74e848403d861d06019f58a4f7ee3dbc45cfcc0bc8fe3cb2555b98e18b0627",
-      "frames": 923077
-    },
-    "870378512": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\870378512.flac",
-      "sourceSha256": "d5429de1ef28c51c934396f364cbe4b932fb4de0ee5e3d530f3494c77620a5bc",
-      "pcmSha256": "17965515c55db23d5202d7cf744ef161aa295468a0901bc36069ab35c345af7a",
-      "frames": 2658462
-    },
-    "871517664": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\871517664.flac",
-      "sourceSha256": "ca7e5fa654ff625c337eda6c5991fbbd838fab361271f09500ecb311ccc50d8e",
-      "pcmSha256": "7720bc56a11b934e14ce8127aa8aaa1919c96a3a3234d7ec155da430ed30a909",
-      "frames": 514157
-    },
-    "898636363": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\898636363.flac",
-      "sourceSha256": "2f79b3783ff35c383c73e568c673b24655fb6c59a39e6e0c6b08413939849ffb",
-      "pcmSha256": "0c442d8b111e1ce6e56116a86fb2161c5d14dec9a829f77aec630d2ac035486e",
-      "frames": 516923
-    },
-    "90352537": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\90352537.flac",
-      "sourceSha256": "8827ef48e978abea8582c2f7d7bbb135e884f557ff7843c33f26ce3f8592ce23",
-      "pcmSha256": "9ae4e3807a8e2c9226b1e2d846ff0a7f18ccf8bb9a6081c4a20c9fed23ffb355",
-      "frames": 2363077
-    },
-    "913877518": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\913877518.flac",
-      "sourceSha256": "6a35ea8c489291682b3c814fa5470deeefe4b209feda09ef4243e2c18a3a6790",
-      "pcmSha256": "53fcdd04c968c70bae6d74307d7a48b9792eb15516ff965af6345bc56981a073",
-      "frames": 504954
-    },
-    "918341078": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\918341078.flac",
-      "sourceSha256": "5e6d70b0762814ee42f6974dc6c95d0dca608d5b287d0c009c41ab7aba6ce67b",
-      "pcmSha256": "d4fa79c2e5b334111ad3fe8d6bb4262415a9363eb62f7ed81680370b8c6197d9",
-      "frames": 2843077
-    },
-    "921221728": {
-      "source": "D:\\GwentSyndicate\\辛迪加全卡档案\\music-lab\\segments\\921221728.flac",
-      "sourceSha256": "0740bd2437690a4465e03419ff1804693ce6441999a45ccccb3d741d01a831ac",
-      "pcmSha256": "87ff49280838a748e61c8fd4c38623223bef34afcd0bae31aeb92bb117b59e0b",
-      "frames": 2363077
-    }
+ "format": "FLAC, 16-bit, 48000 Hz, stereo (lossless copy of the vgmstream decode of the original WEM)",
+ "sources": {
+  "1035189104": {
+   "wav": "decoded/1035189104.wav",
+   "wavSha256": "c21e3272de082e5fe8e6a3be93e99bb8361c72142b471afbd344de12accf8fcb",
+   "pcmSha256": "fd5c5ebd4c3eede0f3549906013ca0801dbef6ad83fd19f95eeb3b1e8e8081a4",
+   "flacSha256": "f84a06382fb66567c179ae98f734bd0a8acc49726604d419e56c61a190a59081",
+   "frames": 1920000
+  },
+  "1048037442": {
+   "wav": "decoded/1048037442.wav",
+   "wavSha256": "d0e2cf4838a5d429e326281ff669ee6b8e56bbca70ccca3aa743d9ca5774212d",
+   "pcmSha256": "060c672df5883a2129d53393ac5d72c4aa1c78c1f1c37c069ee9114d5bf45f67",
+   "flacSha256": "52090009456460eca6eb7c1cdd930adeef0eaf79278c09533f2e1b31cef39606",
+   "frames": 2953847
+  },
+  "107267554": {
+   "wav": "decoded/107267554.wav",
+   "wavSha256": "ef47e8476f6bb0515da7d2cdce17855793930154ae680b79f5060372d61f5f11",
+   "pcmSha256": "858d71d17e35b95d543bdb650cdcea86fa2f4105a9fb5114c8969653d471afb3",
+   "flacSha256": "9c9105d81941f9ab2ae73348b0d67b3f0701453feab1f64fb865658745434a0d",
+   "frames": 738462
+  },
+  "248527993": {
+   "wav": "decoded/248527993.wav",
+   "wavSha256": "ba084b1a2890b54967bfd4913f013bf9c75cb700fc6347c0eb197138ff808c8e",
+   "pcmSha256": "f79a47e7eed737d108c281300f8390c92fffe86faf3be5dc8245de28bd0060d9",
+   "flacSha256": "65fa10faa1bd068ebd0ba160b5666b1b4df808b6b14509661d97eac8eb4b4496",
+   "frames": 2215385
+  },
+  "259760128": {
+   "wav": "decoded/259760128.wav",
+   "wavSha256": "16db3460d2129ea6c7d4fcc41ac026f0b95878729a0ab764e5e4c9b28d3ef8fd",
+   "pcmSha256": "57aabe6df8dcc5404de11114aba3964d5e40b2c33583b8ad9dfaf9cdd7f0bf13",
+   "flacSha256": "f91a6fb5302ac8af78c19520c32814af34fabbb2321cc421dbea193794f6912e",
+   "frames": 2363077
+  },
+  "292877502": {
+   "wav": "decoded/292877502.wav",
+   "wavSha256": "ef7924f0c83fedfbf242c86eb92a411bca8d14d22d31370fa179733aa2c677c0",
+   "pcmSha256": "e72fac29991b92cbf1f7857e1939ed937f7ad4de7670931d1efc86defd6704a0",
+   "flacSha256": "f675c1237a0f1bf3b083bd9fc6942a9e84ce43c98df7b8c0fcbeb112cf9337ef",
+   "frames": 2510769
+  },
+  "374177939": {
+   "wav": "decoded/374177939.wav",
+   "wavSha256": "3b9a5062ddc199955df04c8488d0ec776b31c3f25146a94c88f9fbbf6e31a2fa",
+   "pcmSha256": "1d9c3741ea1cd57caf32cac0ffab34848ac4cbe0368dc7812ac431c39102529a",
+   "flacSha256": "6b666674d83aa069cafc0638cb5f88199edc2ac2d699c826a5b537077b390ecd",
+   "frames": 738462
+  },
+  "390865884": {
+   "wav": "decoded/390865884.wav",
+   "wavSha256": "9c89d93ed9e662cd5b3faee788a7880d73be5072f6dad3f76246bbd20c8632fc",
+   "pcmSha256": "b865f46688ea4be72508f38507a6e30976a5b4e295bdf754f7d3478fa5a4f6b0",
+   "flacSha256": "ee195f923055d06324d6dc99017b6f9d30d0c8056d56715921a2532c5e083276",
+   "frames": 2806154
+  },
+  "418732445": {
+   "wav": "decoded/418732445.wav",
+   "wavSha256": "1245e33ecb2b56d64f3956da8c199f283bcef5719dda196dc1a51a448281e268",
+   "pcmSha256": "4e1dbd837675b1db8e6fa5e073b40e652aff2cfdfbae0d9da3ffee7ab4b12891",
+   "flacSha256": "194fb02b014995b2c89172b2fcee23d64e1f2e4e49415fb17ca62008470e9b59",
+   "frames": 2363077
+  },
+  "424194083": {
+   "wav": "decoded/424194083.wav",
+   "wavSha256": "99b8bba4c8cffdfc6b1f93a6857abfd10cc84f04bdf5816f463e0a8239e66999",
+   "pcmSha256": "4e9bb7c5ed0db131e19b6b355866be6abc877dc9e44bc9086f39da65d75a3cca",
+   "flacSha256": "3b6b7f551d9b55a60a2bb8eac15c3575cdd74fa8c9cc55bb262f8c8ab24bc4be",
+   "frames": 1772308
+  },
+  "453151030": {
+   "wav": "decoded/453151030.wav",
+   "wavSha256": "3a0eca892f4d0d392f28682e9a489199f4e5db509a6461a389f5165adfde5032",
+   "pcmSha256": "06fbe8a58307211da47574b53293a56b27fa724743122aedbc93f6f1e9849610",
+   "flacSha256": "c0a8415826f9ac6970d03d4d9e17fc44c7d955d0bdbec70f49572c5cc67e4334",
+   "frames": 2510769
+  },
+  "453941465": {
+   "wav": "decoded/453941465.wav",
+   "wavSha256": "ef7924f0c83fedfbf242c86eb92a411bca8d14d22d31370fa179733aa2c677c0",
+   "pcmSha256": "e72fac29991b92cbf1f7857e1939ed937f7ad4de7670931d1efc86defd6704a0",
+   "flacSha256": "f675c1237a0f1bf3b083bd9fc6942a9e84ce43c98df7b8c0fcbeb112cf9337ef",
+   "frames": 2510769
+  },
+  "503146664": {
+   "wav": "decoded/503146664.wav",
+   "wavSha256": "35e5ed851dfa4e98180d69551f63f104f1a8e8a5950fa0e6cbb7cfe101376f61",
+   "pcmSha256": "c2ce5a0e52dafc21e7816598d32ef51793a1eaef27c5ad3535a6ebc79cdb745b",
+   "flacSha256": "19a5892bcf3a9468a0f4a308ca63a58c58b16398862dff82438a9e561a39ef72",
+   "frames": 2363077
+  },
+  "536815895": {
+   "wav": "decoded/536815895.wav",
+   "wavSha256": "749676e59369c6c7d12040612740cbd492ecadd487c432e774c859ef41e091a7",
+   "pcmSha256": "44e05f93990ed4454e14210de718fd314032da65d7268e0e087cbb9ef1bf8d27",
+   "flacSha256": "19d2651e4849d63d2d16f207fd502c0b11bcfd39ad4ecc1e1f35dcfad1e6c0c0",
+   "frames": 2953846
+  },
+  "591203401": {
+   "wav": "decoded/591203401.wav",
+   "wavSha256": "57c5b2c8f6038385ca5a09959c4b9426d9e2677f2804150021c2a0849479b656",
+   "pcmSha256": "b1de67d665db00976eb9337c0e5431f9e13de344663ac3ff91889bc4766d912c",
+   "flacSha256": "ed3eaa3e9d3777a867eb29e92a89dacdbd8a73b5ec6931580a489b9bf9e053df",
+   "frames": 2806154
+  },
+  "64223851": {
+   "wav": "decoded/64223851.wav",
+   "wavSha256": "3ef332e1c53a3153e398c3d29830f5c0ccc2e92d0d9163dba2ab0f967a023049",
+   "pcmSha256": "00aedc831b0a76cb9d681f100577afb963535238c6cd1981a07fb818e2a0172b",
+   "flacSha256": "240769bd2a6760ad162774308360c64b5b2a4290984b7fb6c72bd49a2a02041b",
+   "frames": 1033846
+  },
+  "646513025": {
+   "wav": "decoded/646513025.wav",
+   "wavSha256": "5379d5c42a07d5ddd8267d249b41b12dda8fb11732498c422250171842e041f0",
+   "pcmSha256": "ced6c2e5cbb9c97548674e828d60dc298c8eeca069f346ba85414e10e092c0e8",
+   "flacSha256": "016c8e533a19797fcea0cacb856c259962bdb392a471da07f6fa070786f5e0fe",
+   "frames": 2215385
+  },
+  "666802970": {
+   "wav": "decoded/666802970.wav",
+   "wavSha256": "99a0aa093a63208be9f435e13be604d3d9329028063d7ec8803ed1af76576426",
+   "pcmSha256": "e2efa392cb6e6413570cb46eb2609277e3a3eb38419b642bcf7812ef12984f0d",
+   "flacSha256": "cef82a0a678abbd4ba5a5d860406e59f39f11326d578a802dcdb2834bb45340e",
+   "frames": 2510769
+  },
+  "7077607": {
+   "wav": "decoded/7077607.wav",
+   "wavSha256": "69968d80bf619e038f369dcee6018c03dd5ff6115782506d7921fa3bc01bcdb6",
+   "pcmSha256": "e7e44af0fae390c2cb14082addac79a6c345da5bdd588909d65e66bd4837a79b",
+   "flacSha256": "3f45b6dec852ea93d32708deb44ac4cefd003093046bf20268b75aecedaca49a",
+   "frames": 3544615
+  },
+  "73465677": {
+   "wav": "decoded/73465677.wav",
+   "wavSha256": "0a6fdcd827515021b3c3fb0b7c2ec4ce32da4a9ab27855044d2aea2491e5b298",
+   "pcmSha256": "04e20053357ea092acd3a2143d63bfd23282943a12e5b7a587e498c674709cf5",
+   "flacSha256": "5af576136ba57a40213309816de1e42ed1065dc07794e89ced74684788dafc8b",
+   "frames": 1181538
+  },
+  "785484562": {
+   "wav": "decoded/785484562.wav",
+   "wavSha256": "9c89d93ed9e662cd5b3faee788a7880d73be5072f6dad3f76246bbd20c8632fc",
+   "pcmSha256": "b865f46688ea4be72508f38507a6e30976a5b4e295bdf754f7d3478fa5a4f6b0",
+   "flacSha256": "ee195f923055d06324d6dc99017b6f9d30d0c8056d56715921a2532c5e083276",
+   "frames": 2806154
+  },
+  "852415559": {
+   "wav": "decoded/852415559.wav",
+   "wavSha256": "09dccb341757e6d6ae3b80e4bff48e1810c908d0531d6df1bfd016f7345e6aca",
+   "pcmSha256": "5da2056b7ec5338f5edd8c5168a71bff28bba2fcf810b448e2f5d92d84e6b956",
+   "flacSha256": "677acf1fa8117d2332545d97a78f968e212f06e25aa1197d9819a4652d1e9f20",
+   "frames": 2510769
+  },
+  "8758522": {
+   "wav": "decoded/8758522.wav",
+   "wavSha256": "7d08f023e271e87825a8cd25e8e9afd29828ed11ffae32907a07288194e6988f",
+   "pcmSha256": "05fc7b2ed6eefdfd5d2842e539092b33caa692eb1114f54978ba250b156e4c9c",
+   "flacSha256": "ecf1cf56ecb26aa9ce0e30b03ba60f1e7fb3c302bead75db8627668853b7c5cb",
+   "frames": 590770
+  },
+  "905191774": {
+   "wav": "decoded/905191774.wav",
+   "wavSha256": "f467c1090612e6bfa4c1ebb104517bff31a3f5d0f48894b57c337fea89c1a40b",
+   "pcmSha256": "be14c5b4628ab30fd435459ad0faa1b458bedc627d6f32f747401ed61775455f",
+   "flacSha256": "26a6a5649b1b0f96c72ab238221c74bc33d2c54cda99863020ffdcc668d239f0",
+   "frames": 1920000
+  },
+  "921209512": {
+   "wav": "decoded/921209512.wav",
+   "wavSha256": "2805a34884232d099a677427de9873792f087eb40fd08416d513ded6a177e6b0",
+   "pcmSha256": "1ed5ee638c58fe31cf090f2a16d22f99100ccbbec4bec4084cfb10cb20dada85",
+   "flacSha256": "28981fa8ac03368d6e7e3cd01a741334f86ecdf15e0d7748a230c013cf3d5022",
+   "frames": 2363077
+  },
+  "955326058": {
+   "wav": "decoded/955326058.wav",
+   "wavSha256": "7908c930a327789445cf00fc45bcb50de1d2acc055b62b4551116df94bc19173",
+   "pcmSha256": "e1c598ac381fee4cdb2b1513a2872fc698170475a4960da625d7c4724bfd2553",
+   "flacSha256": "b84e274737ec595a231d34b2a7f05ba1dbde78423032999c7ac4bf7bed37aaa1",
+   "frames": 2215384
+  },
+  "97751954": {
+   "wav": "decoded/97751954.wav",
+   "wavSha256": "7873fe2a2ac8e1b38730f8c32395e21840b9626587dd0ad9bdd850196c369cbc",
+   "pcmSha256": "79e06c58abd50b8dbdf3445fce9b839abf9152200f3bb66cf168270dd4c91570",
+   "flacSha256": "7800a9d89de9eac0b19e24b35fb5afa0e0c5d9ac9472e1ce5de426ad3c5e4c21",
+   "frames": 2215384
   }
+ }
 }

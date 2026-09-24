@@ -49,14 +49,12 @@ namespace GreyWardenPolicePurity
             if (GwpDualBladeAttackArmor.IsActive(victimAgent))
                 return false;
 
-            if (GwpArcherArrowHitState.ShouldForceKnockdown(
-                    attackerAgent,
-                    victimAgent,
-                    in collisionData,
-                    in blow))
-            {
+            // A Grey Warden knight's horse charge: native's test with a lower damage threshold.
+            if (GwpTroopCombat.IsKnightCharge(attackerAgent, victimAgent, in collisionData))
+                return GwpTroopCombat.ChargeKnocksDown(victimAgent, in collisionData, in blow);
+
+            if (GwpTroopCombat.TakeKnockdown(victimAgent))
                 return true;
-            }
 
             float chance = GetGreyWardenKnockdownChance(
                 attackerAgent,
@@ -104,10 +102,17 @@ namespace GreyWardenPolicePurity
                 && blow.AttackType != AgentAttackType.Bash
                 && IsDualBladeAttack(attacker, in collisionData, attackerWeapon);
 
-            return (isAlternativeAttack || isDualBladeAttack)
-                ? GetGreyWardenKnockdownChance(attacker, victim)
+            if (isAlternativeAttack)
+                return GetGreyWardenKnockdownChance(attacker, victim);
+            return isDualBladeAttack
+                ? GetGreyWardenKnockdownChance(attacker, victim) * DualBladeKnockdownScale
                 : 0f;
         }
+
+        // A dual-blade slash or thrust knocks down at half the kick/bash rate
+        // (2026-09-24, user: archers too strong in melee once they use the bow
+        // properly).
+        private const float DualBladeKnockdownScale = 0.5f;
 
         internal static bool IsDualBladeAttack(
             Agent? attacker,
@@ -282,9 +287,6 @@ namespace GreyWardenPolicePurity
                 in collisionData,
                 baseDamage);
 
-        private const float ArcherArrowKnockdownChance = 0.10f;
-        private const float ArcherArrowShieldIgnoreChance = 0.05f;
-
         public override void DecideMissileWeaponFlags(
             Agent attackerAgent,
             in MissionWeapon missileWeapon,
@@ -294,24 +296,6 @@ namespace GreyWardenPolicePurity
                 attackerAgent,
                 in missileWeapon,
                 ref missileWeaponFlags);
-
-            if (!IsGreyWardenArcherArrow(attackerAgent, in missileWeapon))
-                return;
-
-            // These are independent per-impact rolls. Body contact can earn
-            // the 10% knockdown; raised-shield contact can earn the 5% pass.
-            // A single arrow that first passes a shield and then reaches the
-            // body can therefore receive both effects, as requested.
-            GwpArcherArrowHitState.RollForArcherArrow(
-                ArcherArrowKnockdownChance,
-                ArcherArrowShieldIgnoreChance);
-
-            // Keep the native marker as well as the callback routing. Native
-            // normally puts an armour threshold behind this flag; the paired
-            // callback patches remove only that threshold for the selected 5%
-            // hit and leave the arrow alive to reach the body behind the shield.
-            if (GwpArcherArrowHitState.ShieldPassGranted)
-                missileWeaponFlags |= WeaponFlags.CanPenetrateShield;
         }
 
         private static bool IsGreyWardenArcherArrow(
@@ -373,8 +357,13 @@ namespace GreyWardenPolicePurity
 
         public override float CalculateStaggerThresholdDamage(
             Agent defenderAgent,
-            in Blow blow) =>
-            NativeModel.CalculateStaggerThresholdDamage(defenderAgent, in blow);
+            in Blow blow)
+        {
+            float threshold = NativeModel.CalculateStaggerThresholdDamage(defenderAgent, in blow);
+            return GwpTroopCombat.IsKnightOrKnightHorse(defenderAgent)
+                ? threshold * GwpTroopCombat.KnightStaggerThresholdScale
+                : threshold;
+        }
 
         public override float CalculateAlternativeAttackDamage(
             in AttackInformation attackInformation,
@@ -440,8 +429,19 @@ namespace GreyWardenPolicePurity
 
         public override float CalculateShieldDamage(
             in AttackInformation attackInformation,
-            float baseDamage) =>
-            NativeModel.CalculateShieldDamage(in attackInformation, baseDamage);
+            float baseDamage)
+        {
+            float damage = NativeModel.CalculateShieldDamage(in attackInformation, baseDamage);
+            // Grey Warden heavy infantry shields last twice as long; they still break.
+            if (GwpTroopCombat.IsHeavyInfantryShield(attackInformation.VictimAgent))
+            {
+                damage *= GwpTroopCombat.HeavyShieldDamageMultiplier;
+            }
+            // Grey Warden archers' arrows wear shields down twice as fast.
+            if (!IsGreyWardenArcherArrow(attackInformation.AttackerAgent, in attackInformation.AttackerWeapon))
+                return damage;
+            return damage * GwpTroopCombat.ArcherShieldDamageMultiplier;
+        }
 
         public override float CalculateSailFireDamage(
             Agent attackerAgent,
@@ -529,6 +529,11 @@ namespace GreyWardenPolicePurity
                     attackerAgent,
                     defenderAgent,
                     defendItem))
+            {
+                return true;
+            }
+
+            if (GwpTroopCombat.KnightCrushesBlock(attackerAgent, defenderAgent, defendItem, isPassiveUsageHit))
             {
                 return true;
             }
@@ -703,15 +708,15 @@ namespace GreyWardenPolicePurity
         {
             // ShrugOff changes the reaction, not damage or the death path.
             if (GwpDualBladeAttackArmor.IsActive(victimAgent))
-                return true;
-
-            if (GwpArcherArrowHitState.ShouldForceKnockdown(
-                    victimAgent,
-                    in collisionData,
-                    in blow))
             {
-                return false;
+                GwpTroopCombat.Reset();
+                return true;
             }
+
+            // Archer and knight knockdown and knight dismount are rolled here, the
+            // first question native asks for a body hit; a granted effect is not shrugged off.
+            if (GwpTroopCombat.RollBodyHit(victimAgent, in collisionData, in blow))
+                return false;
 
             return NativeModel.DecideAgentShrugOffBlow(
                 victimAgent,
@@ -726,12 +731,13 @@ namespace GreyWardenPolicePurity
             WeaponComponentData attackerWeapon,
             in Blow blow) =>
             !GwpDualBladeAttackArmor.IsActive(victimAgent)
-            && NativeModel.DecideAgentDismountedByBlow(
-                attackerAgent,
-                victimAgent,
-                in collisionData,
-                attackerWeapon,
-                in blow);
+            && (GwpTroopCombat.TakeDismount(victimAgent)
+                || NativeModel.DecideAgentDismountedByBlow(
+                    attackerAgent,
+                    victimAgent,
+                    in collisionData,
+                    attackerWeapon,
+                    in blow));
 
         public override bool DecideAgentKnockedBackByBlow(
             Agent attackerAgent,
@@ -743,11 +749,11 @@ namespace GreyWardenPolicePurity
             if (GwpDualBladeAttackArmor.IsActive(victimAgent))
                 return false;
 
-            if (GwpArcherArrowHitState.ShouldForceKnockdown(
-                    attackerAgent,
-                    victimAgent,
-                    in collisionData,
-                    in blow))
+            // A Grey Warden knight's horse charge: native's test with a wider front.
+            if (GwpTroopCombat.IsKnightCharge(attackerAgent, victimAgent, in collisionData))
+                return GwpTroopCombat.ChargeKnocksBack(attackerAgent, victimAgent, in collisionData);
+
+            if (GwpTroopCombat.PendingKnockdown(victimAgent))
             {
                 // Do not combine the selected fall with native knockback; the
                 // victim should drop at the arrow contact, not be launched.
@@ -820,13 +826,21 @@ namespace GreyWardenPolicePurity
             Agent victimAgent,
             in AttackCollisionData collisionData,
             WeaponComponentData attackerWeapon,
-            in Blow blow) =>
-            NativeModel.DecideMountRearedByBlow(
-                attackerAgent,
-                victimAgent,
-                in collisionData,
-                attackerWeapon,
-                in blow);
+            in Blow blow)
+        {
+            // Native rules decide (a charging horse speared from the front rears);
+            // a Grey Warden knight's horse then only rears on half of those hits.
+            if (!NativeModel.DecideMountRearedByBlow(
+                    attackerAgent,
+                    victimAgent,
+                    in collisionData,
+                    attackerWeapon,
+                    in blow))
+            {
+                return false;
+            }
+            return GwpTroopCombat.KnightHorseRears(victimAgent);
+        }
 
         public override bool ShouldMissilePassThroughAfterShieldBreak(
             Agent attackerAgent,

@@ -539,6 +539,9 @@ namespace GreyWardenPolicePurity
                 ImmediateInterceptorMaximumSize, availableMounted);
             if (detachmentSize < ImmediateInterceptorMinimumSize)
                 return;
+            // 追截队在来源领主身边出生；他在海上又借不出船，就不派。
+            if (PoliceResourceManager.IsStrandedAtSea(sourceParty))
+                return;
 
             Clan? policeClan = PoliceStats.GetPoliceClan();
             Settlement? returnSettlement =
@@ -596,7 +599,7 @@ namespace GreyWardenPolicePurity
                     return;
                 }
 
-                PoliceResourceManager.ProvisionTemporaryDutyParty(interceptor);
+                PoliceResourceManager.OutfitTemporaryDutyParty(interceptor, sourceParty);
                 float interceptorCurrentSpeed =
                     Math.Max(0f, interceptor.Speed);
                 float interceptorSpeed =
@@ -819,7 +822,7 @@ namespace GreyWardenPolicePurity
                 patrol.ActualClan = policeClan;
                 patrol.MemberRoster.Clear();
                 FillDelayPatrolTroops(patrol);
-                PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
+                PoliceResourceManager.OutfitTemporaryDutyParty(patrol, sourcePoliceParty);
 
                 _delayPatrolStates[patrolId] = new DelayPatrolState
                 {

@@ -1294,8 +1294,9 @@ namespace GreyWardenPolicePurity
                 PlayerEncounter.LeaveEncounter = true;
                 PlayerEncounter.Finish(false);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 
