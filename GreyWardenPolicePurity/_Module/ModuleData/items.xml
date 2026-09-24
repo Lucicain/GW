@@ -89,6 +89,40 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     </Pieces>
   </CraftedItem>
   
+  <!-- Grey Warden knight's warhorse: native's Canterion Charger (t2_empire_horse) look,
+       made bigger and heavier. body_length is the agent scale (/100) and the collision mass
+       is weight x scale^3 + rider + gear: 505 at 1.18 is about 830, 1.28 times the
+       Canterion's 460 at 1.12 (646). 2026-09-25 halved the gain from 550 at 1.25 (1074).
+       charge_damage stays the Canterion's 26 (36 hit too hard, 2026-09-24). Health is the
+       Canterion's 200 + 10 (twice that was too much). -->
+  <Item id="gwwarhorse"
+        name="{=gwp_item_warhorse}Grey Warden Warhorse"
+        mesh="horse_brown"
+        subtype="horse"
+        item_category="war_horse"
+        culture="Culture.empire"
+        weight="505"
+        difficulty="35"
+        appearance="0"
+        is_merchandise="false"
+        Type="Horse">
+    <ItemComponent>
+      <Horse monster="Monster.gw_warhorse"
+             maneuver="60"
+             speed="50"
+             charge_damage="26"
+             body_length="118"
+             is_mountable="true"
+             extra_health="10"
+             skeleton_scale="empire_horse">
+        <AdditionalMeshes>
+          <Mesh name="horse_mane_2"
+                affected_by_cover="true" />
+        </AdditionalMeshes>
+      </Horse>
+    </ItemComponent>
+  </Item>
+
   <CraftedItem id="gwlance"
                name="{=gwp_item_lance}Grey Warden Lance"
                crafting_template="TwoHandedPolearm"
@@ -102,11 +136,12 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
              Type="Guard"
              scale_factor="100" />
       <!-- spear_handle_23 is the only native shaft allowed for one-handed, two-handed,
-           couched and braced use (spear_handle_19 cannot brace on foot); scaled 84% it
-           keeps the former 210 cm (2026-09-24: user reverted the longer shaft). -->
+           couched and braced use (spear_handle_19 cannot brace on foot). Full length
+           (2026-09-24: user asked for the longer lance again, with close fighting
+           handed to the two-handed sword by the AI melee favor). -->
       <Piece id="spear_handle_23"
              Type="Handle"
-             scale_factor="84" />
+             scale_factor="100" />
       <Piece id="spear_pommel_9"
              Type="Pommel"
              scale_factor="100" />

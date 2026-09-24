@@ -49,8 +49,8 @@ namespace GreyWardenPolicePurity
             if (GwpDualBladeAttackArmor.IsActive(victimAgent))
                 return false;
 
-            // A Grey Warden knight's horse charge: native's test with a lower damage threshold.
-            if (GwpTroopCombat.IsKnightCharge(attackerAgent, victimAgent, in collisionData))
+            // A Grey Warden warhorse's charge: native's test with a lower damage threshold.
+            if (GwpTroopCombat.IsWarhorseCharge(attackerAgent, victimAgent, in collisionData))
                 return GwpTroopCombat.ChargeKnocksDown(victimAgent, in collisionData, in blow);
 
             if (GwpTroopCombat.TakeKnockdown(victimAgent))
@@ -281,11 +281,20 @@ namespace GreyWardenPolicePurity
         public override float ApplyGeneralDamageModifiers(
             in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
-            float baseDamage) =>
-            NativeModel.ApplyGeneralDamageModifiers(
+            float baseDamage)
+        {
+            float nativeDamage = NativeModel.ApplyGeneralDamageModifiers(
                 in attackInformation,
                 in collisionData,
                 baseDamage);
+            float finalDamage = GwpTroopCombat.ApplyWarhorseDamageRules(
+                in attackInformation, in collisionData, nativeDamage);
+#if GWP_DIAGNOSTICS
+            GwpWarhorseDamageTrace.RecordCalculation(
+                in attackInformation, in collisionData, baseDamage, nativeDamage, finalDamage);
+#endif
+            return finalDamage;
+        }
 
         public override void DecideMissileWeaponFlags(
             Agent attackerAgent,
@@ -360,8 +369,8 @@ namespace GreyWardenPolicePurity
             in Blow blow)
         {
             float threshold = NativeModel.CalculateStaggerThresholdDamage(defenderAgent, in blow);
-            return GwpTroopCombat.IsKnightOrKnightHorse(defenderAgent)
-                ? threshold * GwpTroopCombat.KnightStaggerThresholdScale
+            return GwpTroopCombat.IsWarhorse(defenderAgent)
+                ? threshold * GwpTroopCombat.WarhorseStaggerThresholdScale
                 : threshold;
         }
 
@@ -749,8 +758,8 @@ namespace GreyWardenPolicePurity
             if (GwpDualBladeAttackArmor.IsActive(victimAgent))
                 return false;
 
-            // A Grey Warden knight's horse charge: native's test with a wider front.
-            if (GwpTroopCombat.IsKnightCharge(attackerAgent, victimAgent, in collisionData))
+            // A Grey Warden warhorse's charge: native's test with a wider front.
+            if (GwpTroopCombat.IsWarhorseCharge(attackerAgent, victimAgent, in collisionData))
                 return GwpTroopCombat.ChargeKnocksBack(attackerAgent, victimAgent, in collisionData);
 
             if (GwpTroopCombat.PendingKnockdown(victimAgent))
@@ -839,7 +848,7 @@ namespace GreyWardenPolicePurity
             {
                 return false;
             }
-            return GwpTroopCombat.KnightHorseRears(victimAgent);
+            return GwpTroopCombat.WarhorseRears(victimAgent);
         }
 
         public override bool ShouldMissilePassThroughAfterShieldBreak(

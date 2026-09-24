@@ -4,7 +4,7 @@
 > 源码改了就重新生成：`python tools/Generate-CodeMap.py`
 > 它描述代码**的形状**，不描述行为——行为看同目录其他 state 文件。
 
-141 个源文件、47,905 行、266 个公开类型、55 个 Harmony 补丁点（分布在 55 个补丁类里）。
+141 个源文件、48,181 行、267 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -30,7 +30,6 @@
 | `BarterVM` | `SendOffer` | Postfix | `GwpDispatchOfferDisplayPatch` | GwpAssetOfferValidationPatch.cs |
 | `CampaignEventDispatcher` | `AiHourlyTick` | Postfix | `GwpFinalDesireAuctionPatch` | GwpPartyDutyMovementPatch.cs |
 | `CharacterRelationManager` | `SetHeroRelation` | Prefix | `GreyWardenNotableRelationWritePatch` | GreyWardenNotableRelationsBehavior.cs |
-| `CommonAIComponent` | `Morale` (Setter) | Prefix | `GwpWardenMoralePatch` | GwpWardenResolve.cs |
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs |
 | `CraftingTemplate` | `All` (Getter) | Postfix | `GwpDualBladeCraftingTemplateVisibilityPatch` | GwpDualBladeActionSetPatch.cs |
@@ -123,6 +122,7 @@
 **任务行为**，按注册顺序（顺序影响生效时机）：
 
 - `GwpDualBladeAiBehavior`
+- `GwpWarhorseDamageTransferBehavior`
 - `GwpKickBehavior`
 - `GwpAlternativeAttackControlBehavior`
 - `GwpPassiveShieldBreakBehavior`
@@ -327,11 +327,12 @@
 - `GwpTuning` → GwpTuning.cs
 - `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
 - `GwpWardenDispatchDialogue` → GwpWardenDispatchDialogue.cs
-- `GwpWardenMoralePatch` → GwpWardenResolve.cs ←
 - `GwpWardenPanicPatch` → GwpWardenResolve.cs ←
 - `GwpWardenResolve` → GwpWardenResolve.cs
 - `GwpWardenRetreatBehaviorPatch` → GwpWardenResolve.cs ←
 - `GwpWardenRetreatPatch` → GwpWardenResolve.cs ←
+- `GwpWarhorseDamageTrace` → GwpTroopCombat.cs ←
+- `GwpWarhorseDamageTransferBehavior` → GwpTroopCombat.cs ←
 - `GwpWholePresetEquipmentPatch` → GwpTroopCombat.cs ←
 - `HeroCrimeStats` → GwpData.cs ←
 - `IssueDutyStage` → GreyWardenIssueResolutionBehavior.cs ←
@@ -387,7 +388,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 135 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 136 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -407,7 +408,7 @@
 
 ### 战场：死战不退（1 个文件）
 
-- `GwpWardenResolve.cs` — 96 行 · `GwpWardenResolve`，另含 4 个类型
+- `GwpWardenResolve.cs` — 64 行 · `GwpWardenResolve`，另含 3 个类型
 
 ### 战场：双刀/近战（11 个文件）
 
@@ -421,7 +422,7 @@
 - `GwpKickBehavior.cs` — 85 行 · `GwpKickBehavior` : MissionBehavior
 - `GwpDualBladeItemSetup.cs` — 72 行 · `GwpDualBladeItemSetup`
 - `GwpDualBladeActionGate.cs` — 61 行 · `GwpDualBladeActionGate`
-- `GwpDualBladeAttackArmor.cs` — 44 行 · `GwpDualBladeAttackArmor`
+- `GwpDualBladeAttackArmor.cs` — 42 行 · `GwpDualBladeAttackArmor`
 
 ### 诊断（4 个文件）
 
@@ -497,7 +498,7 @@
 
 ### 战斗数值模型（1 个文件）
 
-- `GwpAgentApplyDamageModel.cs` — 891 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
+- `GwpAgentApplyDamageModel.cs` — 900 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
 
 ### 大地图欲望与 AI（3 个文件）
 
@@ -518,24 +519,24 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 157 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 158 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（57 个文件）
 
+- `GwpTroopCombat.cs` — 573 行 · `GwpWarhorseDamageTrace` : MissionBehavior，另含 3 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 417 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 390 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpPoliceWarReasonService.cs` — 389 行 · `GwpPoliceWarReasonService`
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
-- `GwpTroopCombat.cs` — 270 行 · `GwpTroopCombat`，另含 1 个类型
 - `GwpAssetPayment.cs` — 254 行 · `GwpAssetPayment`
 - `GwpAssistanceArmyLifecyclePatch.cs` — 237 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenLoreBehavior.cs` — 217 行 · `GreyWardenLoreBehavior` : CampaignBehaviorBase
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
 - `GreyWardenLeaderBalanceBehavior.cs` — 193 行 · `GreyWardenLeaderBalanceBehavior` : CampaignBehaviorBase
-- `GwpAgentStatCalculateModel.cs` — 193 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GwpEncyclopediaClanPageVM.cs` — 193 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型
+- `GwpAgentStatCalculateModel.cs` — 190 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GreyWardenSafeTroopSupplier.cs` — 188 行 · `GreyWardenSafeTroopSupplier` : IMissionTroopSupplier，另含 1 个类型
 - `GwpPartyDutyMovementPatch.cs` — 185 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
 - `GwpLandlessShipTradePatch.cs` — 160 行 · `GwpLandlessShipTrade`，另含 2 个类型

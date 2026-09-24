@@ -34,11 +34,8 @@ namespace GreyWardenPolicePurity
                 agentDrivenProperties,
                 agentBuildData);
 
-        public override void InitializeMissionEquipment(Agent agent)
-        {
+        public override void InitializeMissionEquipment(Agent agent) =>
             NativeModel.InitializeMissionEquipment(agent);
-            GwpTroopCombat.DoubleArcherQuivers(agent);
-        }
 
         public override void InitializeAgentStatsAfterDeploymentFinished(
             Agent agent) =>

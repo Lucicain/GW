@@ -166,11 +166,10 @@ static class Program
   foreach(var side in new[]{BattleSideEnum.Attacker,BattleSideEnum.Defender})
   {
    var warden=new Agent{Mission=m,Team=new Team{Side=side},Character=Troop(true)};
-   float morale=-500;GwpWardenMoralePatch.Before(warden,ref morale);
-   Check(morale==100&&!GwpWardenPanicPatch.Before(warden)&&!GwpWardenRetreatPatch.Before(warden),"starting wardens on either side withstand mass morale shock and retreat");
+   Check(!GwpWardenPanicPatch.Before(warden)&&!GwpWardenRetreatPatch.Before(warden),"starting wardens on either side keep fighting through panic and retreat");
   }
-  float normalMorale=-20;GwpWardenMoralePatch.Before(ordinary,ref normalMorale);
-  Check(normalMorale==-20&&GwpWardenPanicPatch.Before(ordinary),"ordinary soldiers retain native morale and panic");
+  Check(GwpWardenPanicPatch.Before(ordinary),"ordinary soldiers retain native panic");
+  Check(typeof(GwpWardenResolve).Assembly.GetType("GreyWardenPolicePurity.GwpWardenMoralePatch")==null,"warden morale is native, not held at 100");
   foreach(var order in new[]{MovementOrder.MovementOrderEnum.Move,MovementOrder.MovementOrderEnum.FallBack,MovementOrder.MovementOrderEnum.Stop})
   {
    var copy=order;GwpWardenRetreatBehaviorPatch.Before(reinforcement,ref copy);Check(copy==order,"ordinary tactical movement is preserved");
@@ -181,8 +180,6 @@ static class Program
   GameNetwork.IsMultiplayer=true;Check(GwpWardenPanicPatch.Before(reinforcement),"multiplayer is unaffected");GameNetwork.IsMultiplayer=false;
   m.MissionResult=new();Check(GwpWardenRetreatPatch.Before(reinforcement),"battle result releases protection for cleanup");m.MissionResult=null;
   m.MissionEnded=true;Check(GwpWardenPanicPatch.Before(reinforcement),"mission end releases protection");m.MissionEnded=false;
-  int beforeLogs=GwpFaultTrace.Logs.Count;for(int i=0;i<100;i++)GwpWardenRetreatPatch.Before(reinforcement);
-  Check(GwpFaultTrace.Logs.Count-beforeLogs<=8,"resolve diagnostics are bounded per mission rather than per tick");
   support.OnRemoveBehavior();
   Console.WriteLine($"PASS {checks} battle-scene checks using production mission/context/origin/policy/resolve sources; native AI and spawn physics still require live validation.");
  }

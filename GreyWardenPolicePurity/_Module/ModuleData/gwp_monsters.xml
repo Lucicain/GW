@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Monsters>
+  <!-- The Grey Warden knight's warhorse. Everything is native's horse except
+       relative_speed_limit_for_charge 3.65 (native 4.3; 3.0 until 2026-09-25, gain halved):
+       the relative speed from which
+       native counts a collision as a charge, copied into the agent at spawn
+       (Agent_spawn_data, TaleWorlds.Native 0x1805cd567). Health is native's
+       (2026-09-24: the doubled 400 was too much). -->
+  <Monster id="gw_warhorse"
+           base_monster="horse"
+           relative_speed_limit_for_charge="3.65" />
+</Monsters>

@@ -318,7 +318,7 @@
       <EquipmentSet id="empire_troop_civilian_template_t3"
 				equipmentType="Civilian" />
       <equipment slot="Horse"
-                 id="Item.t2_empire_horse" />
+                 id="Item.gwwarhorse" />
       <equipment slot="HorseHarness"
                  id="wharness" />
     </Equipments>

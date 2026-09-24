@@ -3,8 +3,8 @@ using TaleWorlds.MountAndBlade;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Reaction immunity while attacking: the archers' dual-blade pair readied or striking,
-    /// and (2026-09-24) Grey Warden knights striking or couching with the lance or greatsword.
+    /// Reaction immunity while attacking: the dual-blade pair readied or striking. Grey Warden
+    /// knights had it too from 2026-09-24 until the user removed it on 2026-09-25.
     /// </summary>
     internal static class GwpDualBladeAttackArmor
     {
@@ -23,8 +23,6 @@ namespace GreyWardenPolicePurity
         {
             if (agent == null || agent.Mission == null || !agent.IsActive() || !agent.IsHuman)
                 return false;
-            if (GwpTroopCombat.IsKnightAttacking(agent))
-                return true;
             if (!GwpDualBladeLoadout.IsDualBladeCombatant(agent))
                 return false;
 

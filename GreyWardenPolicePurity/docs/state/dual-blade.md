@@ -100,8 +100,7 @@ seq4408/t112.276  仍空副手盾击
   - `DecideAgentShrugOffBlow` 为真，击退、击倒、打下马都为假；
   - 模组自己的踢和盾击接触也照此处理（`ApplyToControlContact`）。
   - 伤害照吃（2026-09-24 曾加减伤 50%，当日按用户要求去掉）。
-- 2026-09-24 起同一入口也覆盖灰袍骑士：用骑枪或双手剑出招、或架枪时。
-  判定在 `GwpTroopCombat.IsKnightAttacking`，行为见 [troop-combat.md](troop-combat.md)。
+- 只对双刀使用者生效。2026-09-24 至 25 曾同时覆盖灰袍骑士，已按用户要求删除。
 
 ## 灰袍通用战斗规则（踢、盾击、临时技能、大盾被动覆盖）
 

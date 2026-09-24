@@ -138,6 +138,7 @@ namespace GreyWardenPolicePurity
             // mission behaviour rather than a patch: previews break on
             // per-call Agent and MissionWeapon patches, never on these.
             mission.AddMissionBehavior(new GwpDualBladeAiBehavior());
+            mission.AddMissionBehavior(new GwpWarhorseDamageTransferBehavior());
             mission.AddMissionBehavior(new GwpKickBehavior());
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
