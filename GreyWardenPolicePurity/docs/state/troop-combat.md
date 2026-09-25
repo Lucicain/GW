@@ -1,12 +1,12 @@
 # 灰袍兵种：等级、装备与战斗加成
 
-> 当前状态：**已部署待实测**：2026-09-25 灰袍战马各项加强幅度减半（伤害分担不变）、弓手箭数恢复原版；同日删除骑士出招霸体与远程减半、骑手受伤马与骑手各担一半；此前基线提交 `6b4b1dd`
+> 当前状态：**已部署待实测**：2026-09-25 攻击加成从兵种改绑到灰袍武器（武器词条），新增 `gwmace`、`gwarrows`；同日战马加强减半、箭数恢复原版、删除骑士霸体与远程减半、骑手伤害与马各担一半；此前基线提交 `6b4b1dd`
 > 最后验收：未建立检查点
-> 已复核至：2026-09-25 当前战斗源码、装备数据、原版难度代码与本机配置；新 live DLL `3E719D24…4FA054`
-> 覆盖源码：`GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpAgentStatCalculateModel.cs`（兵种数据在 `_Module/ModuleData/spnpccharacters.xml`、`items.xml`、`gwp_monsters.xml`）
-> 待实测：伤害各担一半后骑兵与步兵、弓手的强弱；普通攻击不破盾、骑士本人小伤害反应回原版、任意骑手骑灰袍战马才享受转移、战马冲撞与抗控制；架枪必破武器招架的稳定性；骑兵与弓手、步兵强弱
+> 已复核至：2026-09-25 当前战斗源码、装备数据；新 live DLL `4954B739…034F96`
+> 覆盖源码：`GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpAgentStatCalculateModel.cs`（大盾被动耐久在 `GwpShieldBashGuardPatch.cs`，见 dual-blade.md；兵种数据在 `_Module/ModuleData/spnpccharacters.xml`、`items.xml`、`gwp_monsters.xml`）
+> 待实测：武器词条——步兵剑与杖的击倒/打下马/破防、双刀固定 40% 击倒、领主与玩家拿灰袍武器同样生效、新杖与新箭在预设里正常出现；伤害各担一半后骑兵与步兵、弓手的强弱；战马冲撞与抗控制；架枪必破武器招架的稳定性
 
-双刀、踢与盾击、替代攻击的击倒概率写在 [dual-blade.md](dual-blade.md)；本文件只写兵种本身。
+双刀、踢与盾击、替代攻击的击倒概率写在 [dual-blade.md](dual-blade.md)；本文件写兵种、装备与武器词条。
 
 ## 兵种与等级
 
@@ -14,8 +14,8 @@
 |---|---|---|---|
 | 灰袍新兵 | `gwnewrecruit` | 16（3 阶） | 三套预设，只差身甲 |
 | 灰袍轻步兵 | `gwrecruit` | 21（4 阶） | 两套：步兵甲无盾 / 弓手甲 + 大盾 + 披风 |
-| 灰袍重步兵 | `gwheavyinfantry` | 31（6 阶） | 卡拉德杖（原版 `empire_mace_3_t4`，Calradic Mace，帝国军团兵的副武器）、灰袍单手剑、灰袍大盾、重甲 |
-| 灰袍弓箭手 | `gwarcher` | 31（6 阶） | 双刀、贵族长弓、穿刺箭 |
+| 灰袍重步兵 | `gwheavyinfantry` | 31（6 阶） | 灰袍卡拉德杖 `gwmace`（原版 Calradic Mace 的复制品）、灰袍单手剑、灰袍大盾、重甲 |
+| 灰袍弓箭手 | `gwarcher` | 31（6 阶） | 双刀、贵族长弓、灰袍穿刺箭 `gwarrows` |
 | 灰袍骑士 | `gwknight` | 31（6 阶） | 灰袍骑枪（可骑乘架枪，也可步行架枪）、灰袍双手剑；2026-09-24 起不再配单手剑和大盾 |
 
 - 2026-09-24 用户：同阶碾压原版，所以各兵种等级标签整体升一阶（原 11/16/26）。
@@ -46,39 +46,42 @@
 全部经伤害模型或普通战斗事件实现，**不补丁任何原生命中回调**。
 踢与盾击的按阶击倒、越打越强的临时技能、大盾被动覆盖见 [dual-blade.md](dual-blade.md)。
 
+### 武器词条（`GwpWeaponTraits`，`GwpTroopCombat.cs`）
+
+2026-09-25 起攻击加成**绑在武器上，不绑兵种**（用户：统一度量衡，步兵也要有）：谁拿灰袍武器谁就有，
+包括领主、玩家、新兵；灰袍兵拿原版武器则没有。按物品 id 查表，数值沿用此前各兵种的值。
+
+| 物品 | 击倒步行者 | 打下马 | 被武器招架时破防 | 其他 |
+|---|---|---|---|---|
+| 灰袍单手剑 `gwonehandedsword`、灰袍卡拉德杖 `gwmace`、灰袍双手剑 `gwtwohandedsword` | 12.5% | 12.5% | 25% | |
+| 灰袍骑枪 `gwlance` | 12.5% | 12.5% | 25% | 架枪（骑乘或步行）：击倒 50%、打下马 25%、**必破**武器招架 |
+| 双刀主手、副刀 | 40% | 12.5% | 25% | |
+| 灰袍穿刺箭 `gwarrows` | 25% | — | — | 对盾伤害 × 2 |
+| 灰袍大盾 `wlarge_shield`、`wlarge_shield_black` | — | — | — | 自身受到的盾伤 × 0.5（耐久两倍） |
+
+- 物品来源：`gwmace` 是原版 `empire_mace_3_t4`（Calradic Mace）的复制品，`gwarrows` 是原版 `piercing_arrows`
+  的复制品（箭数 23），只改 id 和名字，好让词条不落到原版物品上。重步兵、弓箭手预设已换成这两件。
+- 近战取攻击者那一格武器（`AttackCollisionData.AffectorWeaponSlotOrMissileIndex`）；箭按投射物序号在
+  `Mission.MissilesList` 里找回物品。
+- 击倒与打下马在 `DecideAgentShrugOffBlow`（原版对一次身体命中问的第一个问题）里掷骰，中了不许硬抗。
+  - 目标没骑马 → 掷击倒：`DecideAgentKnockedDownByBlow` 返回真、击退返回假（原地倒）。
+  - 目标是骑手 → 掷打下马（有伤害且不致死）：`DecideAgentDismountedByBlow` 返回真。
+  - 替代攻击（踢、盾击）不走武器词条，走 dual-blade.md 的按阶规则。
+- 破防在 `DecideCrushedThrough`，只对敌人、只对武器招架，举盾照原版；是否架枪由原生参数 `isPassiveUsageHit` 标明。
+  ⚠️ 原生从不让被动攻击破防（只允许 `CanCrushThrough` 武器的上劈），这是本模组越出原生的一处。
+- 盾伤在 `CalculateShieldDamage`：先乘攻击武器的 `ShieldDamageMultiplier`，再乘被击中的盾的
+  `ShieldDamageTakenMultiplier`。灰袍箭打灰袍大盾等于原生。
+- 大盾被动覆盖挡下：`GwpShieldBashGuardPatch.ApplyPassiveShieldDurabilityDamage` 扣的就是这一次的盾伤；
+  手持时已经过伤害模型减半，背在背上时在那里按大盾词条减半。每次至少 1 点。
+- 没有掉盾效果（2026-09-24 用户要求整体删除）。
+
 ### 弓箭手（`gwarcher`）
 
-- **箭击倒 25%**：箭命中未骑乘的人、造成伤害时判定（2026-09-24 由 50% 降低）。
-  - 在 `DecideAgentShrugOffBlow`（原版对一次身体命中问的第一个问题）里掷骰，中了就不许硬抗；
-  - 随后 `DecideAgentKnockedDownByBlow` 返回真、`DecideAgentKnockedBackByBlow` 返回假（原地倒）。
-- **箭对盾两倍伤害**：`CalculateShieldDamage` 对灰袍弓手的箭把原生盾伤 × 2。
 - **箭数原版**：2026-09-24 至 25 曾把箭袋里的箭数 × 2，2026-09-25 按用户要求恢复原版（`DoubleArcherQuivers` 已删）。
 - **双刀出招不被打断，伤害全吃**（攻击护甲，见 dual-blade.md）。2026-09-24 曾加过减伤 50%，已按用户要求去掉。
 
-### 重步兵（`gwheavyinfantry`）
+### 骑士与灰袍战马
 
-- 配卡拉德杖（见上表）。
-- **大盾耐久两倍，主动、被动一个规则**：
-  - 主动格挡：`CalculateShieldDamage` 把原生盾伤 × 0.5。
-  - 被动覆盖挡下：`GwpShieldBashGuardPatch.ApplyPassiveShieldDurabilityDamage` 扣的就是这一次的盾伤。
-    手持时这个值已经过伤害模型减半；背在背上时在这里减半。
-  - 此前被动挡下扣 3 倍、每次至少 3 点，2026-09-24 用户要求统一，已删除；现在每次至少 1 点。
-  - 灰袍弓手的箭 × 2 后再减半，打重步兵的盾时等于原生。
-
-### 骑士（`gwknight`）
-
-| 效果 | 普通攻击 | 架枪（骑乘或步行，原生“被动攻击”） |
-|---|---|---|
-| 击倒步行的敌人 | 12.5% | 50% |
-| 打下马（敌方骑手，有伤害且不致死；骑士骑乘或步行都算） | 12.5% | 25% |
-| 突破格挡（只对敌人） | 被武器招架时 25%；举盾照原版 | 被武器招架**必破**；举盾照原版 |
-
-- 击倒与打下马在 `DecideAgentShrugOffBlow` 掷骰，中了不许硬抗。
-  - 击倒：`DecideAgentKnockedDownByBlow` 返回真、击退返回假。
-  - 打下马：`DecideAgentDismountedByBlow` 返回真。
-  - 踢和盾击走 dual-blade.md 的按阶规则，不参与。
-- 破防在 `DecideCrushedThrough`；是否架枪由原生参数 `isPassiveUsageHit` 标明。
-  ⚠️ 原生从不让被动攻击破防（只允许 `CanCrushThrough` 武器的上劈），这是本模组越出原生的一处。
 - **灰袍战马冲撞**：在原版冲撞规则内放宽，伤害不变（`GwpTroopCombat.IsWarhorseCharge`，只对有骑手的 `gw_warhorse` 撞步行的人，骑手身份不限）。
   - 原生冲撞走 `Mission.ChargeDamageCallback`，攻击者是马，只依次问击退、击倒。
   - 撞飞：原生要求正面系数 ≥ 0.7，这里放宽到 ≥ 0.6。
@@ -88,7 +91,6 @@
 - **没有出招霸体**：2026-09-24 至 25 骑士用骑枪或双手剑出招、架枪时不被打断、击退、击倒、打下马，2026-09-25 按用户要求删除（`IsKnightAttacking` 已删）。
 - **只有灰袍战马小伤害硬抗门槛 × 2**（2026-09-25 前为 × 3）：原生 `DamageInterruptAttackthreshold*`（砍/刺/钝均 5）→ 10，低于门槛不打断、不因受击反应减速（`CalculateStaggerThresholdDamage`）；骑士本人恢复原版门槛，也没有出招霸体。撞人本身的物理减速在引擎里。
 - **灰袍战马受惊人立少四分之一**：原生判定人立后，`gw_warhorse` 只有 75% 生效（`WarhorseRears`，2026-09-25 前为 50%），不看骑手兵种。
-- **没有掉盾效果**：骑士的击倒不会让对方丢盾（2026-09-24 用户要求整体删除，此前两种击倒曾为 25%→50%）。
 - 架枪命中后照原版收枪；“架枪不收枪”已删除。
 - **灰袍战马**（`gwwarhorse`，`items.xml`；物种 `gw_warhorse`，`gwp_monsters.xml`）：
   - 外观同原版 Canterion Charger（`t2_empire_horse`）；兵种预设只配给灰袍骑士，任何人实际骑上它都享受下述马相关规则；灰袍领主模板仍是原版马。
@@ -203,14 +205,8 @@
 
 ## 诊断
 
-在役：`GwpWarhorseDamageTrace` 仅编入 `GWP_DIAGNOSTICS`，写入 Documents 下的
-`Mount and Blade II Bannerlord/GreyWarden-Warhorse-Damage.log`。每场追加一个带 DLL build ID 的
-标记，每场最多 1000 行；超过 2 MB 时滚动为 `.previous`。只记录灰袍战马、其当前骑手，
-以及玩家发出或承受的命中。`calc` 给出攻击者/武器、受击者/坐骑、部位、护甲、难度、
-吸收量、原生修正前后和模组返回值；`queue`/`rounded-to-zero` 给出转移排队量；
-`hit` 给出实际命中后的血量；`applied`/`discard` 给出马的排队量和前后血量。
-要回答的问题：同一骑手有马/无马时原版实际伤害是否不同；低数值出现在护甲与难度
-阶段、模组取值/取整阶段，还是坐骑登记阶段。用户确认原因和行为后同轮退休。
+没有在役诊断。战马伤害调查用的 `GwpWarhorseDamageTrace` 在 2026-09-25 用户确认骑兵表现后删除
+（结论见 journal 2026-09-24/25 各条）；它的日志已一并删除。
 
 已退休（2026-09-24 用户认可平衡后，同一轮删除）：
 - 每场汇总 `GWP_TROOP_COMBAT`，统计击倒、冲撞撞倒、掉盾、打下马、破防、盾伤、攻击护甲减伤、箭袋翻倍、整套预设、马免人立；
@@ -220,6 +216,12 @@
 再调数值时按需加回，写法见 `docs/journal/2026-09.md` 同日各条。
 
 ## 回退
+
+- 武器词条（2026-09-25，未提交）之前：把 `.codex_tmp/weapon-traits-prechange-20260925/` 中的
+  `GwpTroopCombat.cs`、`GwpAgentApplyDamageModel.cs`、`GwpShieldBashGuardPatch.cs` 覆盖同名源码，
+  三个 XML 覆盖 `_Module/ModuleData/items.xml`、`spnpccharacters.xml`、
+  `Languages/CNs/std_gwp_strings_xml-zho-CN.xml`，重建并镜像。那时效果按兵种：弓手箭 25% 击倒与盾伤 × 2、
+  重步兵大盾 × 0.5、骑士表中各值、双刀击倒 = 踢击按阶概率 × 0.5；步兵普通攻击无加成。
 
 - 本次将骑乘效果从 `gwknight` 转到 `gw_warhorse` 前的未提交实现：基线提交 `6b4b1dd` 加 `.codex_tmp/horse-ownership-prechange-20260925/` 中的 `GwpTroopCombat.cs`、`GwpAgentApplyDamageModel.cs`、`SubModule.cs` 快照；分别覆盖同名源码、重建并镜像即可恢复旧归属。快照的 SHA-256 依次为 `D4837288…75344F6`、`7650EE18…AF08FEA`、`A6640C08…E62974ABF`。旧 state 头部与规则另存同目录 `troop-combat.md`，若回退也要原地恢复状态说明。
 

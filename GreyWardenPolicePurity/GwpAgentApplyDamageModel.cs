@@ -98,21 +98,12 @@ namespace GreyWardenPolicePurity
             bool isAlternativeAttack = collisionData.IsAlternativeAttack
                 || blow.AttackType == AgentAttackType.Kick
                 || blow.AttackType == AgentAttackType.Bash;
-            bool isDualBladeAttack = blow.AttackType != AgentAttackType.Kick
-                && blow.AttackType != AgentAttackType.Bash
-                && IsDualBladeAttack(attacker, in collisionData, attackerWeapon);
-
-            if (isAlternativeAttack)
-                return GetGreyWardenKnockdownChance(attacker, victim);
-            return isDualBladeAttack
-                ? GetGreyWardenKnockdownChance(attacker, victim) * DualBladeKnockdownScale
+            // Dual-blade slashes and thrusts are weapon attacks: GwpWeaponTraits.
+            return isAlternativeAttack
+                ? GetGreyWardenKnockdownChance(attacker, victim)
                 : 0f;
         }
 
-        // A dual-blade slash or thrust knocks down at half the kick/bash rate
-        // (2026-09-24, user: archers too strong in melee once they use the bow
-        // properly).
-        private const float DualBladeKnockdownScale = 0.5f;
 
         internal static bool IsDualBladeAttack(
             Agent? attacker,
@@ -281,20 +272,14 @@ namespace GreyWardenPolicePurity
         public override float ApplyGeneralDamageModifiers(
             in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
-            float baseDamage)
-        {
-            float nativeDamage = NativeModel.ApplyGeneralDamageModifiers(
+            float baseDamage) =>
+            GwpTroopCombat.ApplyWarhorseDamageRules(
                 in attackInformation,
                 in collisionData,
-                baseDamage);
-            float finalDamage = GwpTroopCombat.ApplyWarhorseDamageRules(
-                in attackInformation, in collisionData, nativeDamage);
-#if GWP_DIAGNOSTICS
-            GwpWarhorseDamageTrace.RecordCalculation(
-                in attackInformation, in collisionData, baseDamage, nativeDamage, finalDamage);
-#endif
-            return finalDamage;
-        }
+                NativeModel.ApplyGeneralDamageModifiers(
+                    in attackInformation,
+                    in collisionData,
+                    baseDamage));
 
         public override void DecideMissileWeaponFlags(
             Agent attackerAgent,
@@ -305,30 +290,6 @@ namespace GreyWardenPolicePurity
                 attackerAgent,
                 in missileWeapon,
                 ref missileWeaponFlags);
-        }
-
-        private static bool IsGreyWardenArcherArrow(
-            Agent? attackerAgent,
-            in MissionWeapon missileWeapon)
-        {
-            if (!string.Equals(
-                    attackerAgent?.Character?.StringId,
-                    GwpIds.ArcherId,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            try
-            {
-                WeaponComponentData? usage = missileWeapon.CurrentUsageItem;
-                return usage != null
-                    && usage.WeaponClass == WeaponClass.Arrow;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         public override void CalculateDefendedBlowStunMultipliers(
@@ -441,15 +402,15 @@ namespace GreyWardenPolicePurity
             float baseDamage)
         {
             float damage = NativeModel.CalculateShieldDamage(in attackInformation, baseDamage);
-            // Grey Warden heavy infantry shields last twice as long; they still break.
-            if (GwpTroopCombat.IsHeavyInfantryShield(attackInformation.VictimAgent))
-            {
-                damage *= GwpTroopCombat.HeavyShieldDamageMultiplier;
-            }
-            // Grey Warden archers' arrows wear shields down twice as fast.
-            if (!IsGreyWardenArcherArrow(attackInformation.AttackerAgent, in attackInformation.AttackerWeapon))
-                return damage;
-            return damage * GwpTroopCombat.ArcherShieldDamageMultiplier;
+            // The shield's and the weapon's own traits (GwpWeaponTraits): the Grey Warden
+            // great shield takes half, Grey Warden arrows do double.
+            GwpWeaponTrait? shield = GwpWeaponTraits.Of(attackInformation.VictimShield.Item);
+            if (shield != null)
+                damage *= shield.ShieldDamageTakenMultiplier;
+            GwpWeaponTrait? weapon = GwpWeaponTraits.Of(attackInformation.AttackerWeapon.Item);
+            if (weapon != null)
+                damage *= weapon.ShieldDamageMultiplier;
+            return damage;
         }
 
         public override float CalculateSailFireDamage(
@@ -542,7 +503,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
-            if (GwpTroopCombat.KnightCrushesBlock(attackerAgent, defenderAgent, defendItem, isPassiveUsageHit))
+            if (GwpTroopCombat.WeaponCrushesBlock(attackerAgent, defenderAgent, defendItem, isPassiveUsageHit))
             {
                 return true;
             }

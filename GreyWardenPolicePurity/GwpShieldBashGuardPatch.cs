@@ -74,12 +74,6 @@ namespace GreyWardenPolicePurity
         // expansion, while the thin depth axis receives a 20% expansion.
         private const float PassiveShieldFaceCoverageScale = 1.30f;
         private const float PassiveShieldDepthScale = 1.20f;
-        private const int PassiveImpactDamage = 1;
-        private const int BrokenShieldImpactDamage = 2;
-        private const float PassiveImpactMagnitude = 4f;
-        private const float BrokenShieldImpactMagnitude = 8f;
-        private const float PassiveImpactStunPeriod = 0.12f;
-        private const float BrokenShieldImpactStunPeriod = 0.25f;
         private static readonly List<PendingShieldBreak>
             PendingShieldBreaks = new();
 
@@ -507,203 +501,6 @@ namespace GreyWardenPolicePurity
                 effectGlobal);
         }
 
-        /// <summary>
-        /// Reuses Bannerlord's native alternative-attack victim reactions.
-        /// A normal passive block is presented to HandleBlowAux as the native
-        /// minimum ShrugOff response; the breaking hit is presented as a kick
-        /// and retains the vanilla short KnockBack reaction. Neither path ever
-        /// receives KnockDown.
-        /// </summary>
-        internal static void ApplyPassiveShieldImpactReaction(
-            Agent? attacker,
-            Agent victim,
-            in AttackCollisionData shieldCollision,
-            bool shieldBroken,
-            bool heldPassiveBlock,
-            bool preventHealthDamage = false)
-        {
-            if (attacker == null
-                || !attacker.IsActive()
-                || !victim.IsActive()
-                || !victim.IsHuman
-                || victim.MountAgent != null)
-            {
-                return;
-            }
-
-            int requestedDamage = shieldBroken
-                ? BrokenShieldImpactDamage
-                : PassiveImpactDamage;
-            int safeDamage = MathF.Min(
-                requestedDamage,
-                MathF.Max(0, MathF.Floor(victim.Health - 1f)));
-            if (safeDamage <= 0)
-                return;
-
-            // Prefer the exact movement direction of the weapon at the shield
-            // contact.  Fall back to attacker -> victim only when the native
-            // callback supplied no usable weapon direction.
-            Vec3 impactDirection = shieldCollision.WeaponBlowDir;
-            impactDirection.z = 0f;
-            if (impactDirection.LengthSquared < 0.0001f)
-            {
-                impactDirection = victim.Position - attacker.Position;
-                impactDirection.z = 0f;
-            }
-            if (impactDirection.LengthSquared < 0.0001f)
-                impactDirection = victim.LookDirection;
-            impactDirection.Normalize();
-
-            float magnitude = shieldBroken
-                ? BrokenShieldImpactMagnitude
-                : PassiveImpactMagnitude;
-            float stunPeriod = shieldBroken
-                ? BrokenShieldImpactStunPeriod
-                : PassiveImpactStunPeriod;
-            AgentAttackType reactionAttackType = shieldBroken
-                ? AgentAttackType.Kick
-                : AgentAttackType.Bash;
-            BlowFlags reactionFlags = shieldBroken
-                // The breaking blow deliberately keeps the stock kick's
-                // knock-back reaction.
-                ? BlowFlags.KnockBack
-                // The stock 1.4.7 damage pipeline marks a sub-stagger-threshold
-                // blow as ShrugOff before RegisterBlow. This synthetic visual
-                // blow enters RegisterBlow directly, so supply that native
-                // minimum-reaction flag here. All shield damage, durability,
-                // stun values, sound and break behavior remain unchanged.
-                : BlowFlags.ShrugOff;
-
-            // Bannerlord's real alternative-attack flow writes Bash/Kick into
-            // Blow.AttackType, marks the collision as IsAlternativeAttack and
-            // gives a landed hit the short KnockBack flag.  Reproduce only
-            // those victim-side inputs; do not touch the global damage model or
-            // any ordinary block/bash/kick collision.
-            Blow reactionBlow = new Blow(attacker.Index)
-            {
-                GlobalPosition = shieldCollision.CollisionGlobalPosition,
-                Direction = impactDirection,
-                SwingDirection = impactDirection,
-                InflictedDamage = safeDamage,
-                SelfInflictedDamage = 0,
-                BaseMagnitude = magnitude,
-                DefenderStunPeriod = stunPeriod,
-                AttackerStunPeriod = 0f,
-                AbsorbedByArmor = 0f,
-                MovementSpeedDamageModifier = 0f,
-                StrikeType = StrikeType.Swing,
-                AttackType = reactionAttackType,
-                BlowFlag = reactionFlags,
-                BoneIndex = 0,
-                VictimBodyPart = BoneBodyPartType.Abdomen,
-                DamageType = DamageTypes.Blunt,
-                NoIgnore = true,
-                DamageCalculated = true
-            };
-            if (!shieldBroken
-                && TryGetPassiveShieldSlot(
-                    victim,
-                    heldPassiveBlock,
-                    out EquipmentIndex shieldSlot))
-            {
-                MissionWeapon shield = victim.Equipment[shieldSlot];
-                int soundWeaponSlot =
-                    shieldCollision.AffectorWeaponSlotOrMissileIndex;
-                if (soundWeaponSlot < 0
-                    || soundWeaponSlot >= (int)EquipmentIndex.NumAllWeaponSlots)
-                {
-                    soundWeaponSlot = 0;
-                }
-                reactionBlow.WeaponRecord.FillAsMeleeBlow(
-                    shield.Item,
-                    shield.CurrentUsageItem,
-                    soundWeaponSlot,
-                    -1);
-            }
-            else
-            {
-                // An empty alternative-attack weapon is exactly how the stock
-                // CreateMeleeBlow path distinguishes Kick from Bash.
-                reactionBlow.WeaponRecord.FillAsMeleeBlow(
-                    null,
-                    null,
-                    -1,
-                    -1);
-            }
-
-            AttackCollisionData reactionCollision =
-                AttackCollisionData.GetAttackCollisionDataForDebugPurpose(
-                    _attackBlockedWithShield: false,
-                    _correctSideShieldBlock: false,
-                    _isAlternativeAttack: true,
-                    _isColliderAgent: true,
-                    _collidedWithShieldOnBack: false,
-                    _isMissile: false,
-                    _isMissileBlockedWithWeapon: false,
-                    _missileHasPhysics: false,
-                    _entityExists: false,
-                    _thrustTipHit: false,
-                    _missileGoneUnderWater: false,
-                    _missileGoneOutOfBorder: false,
-                    collisionResult: CombatCollisionResult.StrikeAgent,
-                    affectorWeaponSlotOrMissileIndex: -1,
-                    StrikeType: (int)StrikeType.Swing,
-                    DamageType: (int)DamageTypes.Blunt,
-                    CollisionBoneIndex: reactionBlow.BoneIndex,
-                    VictimHitBodyPart: BoneBodyPartType.Abdomen,
-                    AttackBoneIndex: attacker.Monster.MainHandItemBoneIndex,
-                    AttackDirection: shieldCollision.AttackDirection,
-                    PhysicsMaterialIndex: -1,
-                    CollisionHitResultFlags:
-                        CombatHitResultFlags.NormalHit,
-                    AttackProgress: 0.5f,
-                    CollisionDistanceOnWeapon: 1f,
-                    AttackerStunPeriod: 0f,
-                    DefenderStunPeriod: stunPeriod,
-                    MissileTotalDamage: 0f,
-                    MissileInitialSpeed: 0f,
-                    // This is deliberately not a horse-charge collision.
-                    ChargeVelocity: 0f,
-                    FallSpeed: 0f,
-                    WeaponRotUp: Vec3.Up,
-                    _weaponBlowDir: impactDirection,
-                    CollisionGlobalPosition:
-                        shieldCollision.CollisionGlobalPosition,
-                    MissileVelocity: Vec3.Zero,
-                    MissileStartingPosition: Vec3.Zero,
-                    VictimAgentCurVelocity: victim.Velocity,
-                    GroundNormal: Vec3.Up);
-            reactionCollision.BaseMagnitude = magnitude;
-            reactionCollision.InflictedDamage = safeDamage;
-            reactionCollision.AbsorbedByArmor = 0;
-
-            Agent.MortalityState originalMortality =
-                victim.CurrentMortalityState;
-            if (preventHealthDamage)
-            {
-                // Agent.HandleBlow still sends the native Bash/Kick reaction
-                // through HandleBlowAux when the blow has one point of damage,
-                // while Immortal makes its applied HP delta exactly zero.  This
-                // avoids the visible health loss and the double health-change
-                // events caused by subtracting and then restoring one point.
-                victim.SetMortalityState(Agent.MortalityState.Immortal);
-            }
-
-            try
-            {
-                GwpDualBladeAttackArmor.ApplyToControlContact(victim, ref reactionBlow);
-                victim.RegisterBlow(reactionBlow, in reactionCollision);
-            }
-            finally
-            {
-                if (preventHealthDamage)
-                    victim.SetMortalityState(originalMortality);
-            }
-            victim.MakeVoice(
-                SkinVoiceManager.VoiceType.Pain,
-                SkinVoiceManager.CombatVoiceNetworkPredictionType.NoPrediction);
-        }
-
         private static bool TryGetHeldGiantShield(
             Agent victim,
             out WeakGameEntity shieldEntity,
@@ -977,13 +774,14 @@ namespace GreyWardenPolicePurity
 
             // After Mission.MeleeHitCallback, held-passive contacts already
             // contain the engine's calculated shield damage, through the damage
-            // model (heavy infantry already halved there). Back contacts contain
-            // the cancelled blow's damage, so heavy infantry halve it here. A
+            // model (the shield's trait already applied there). Back contacts contain
+            // the cancelled blow's damage, so the shield's trait applies here. A
             // passive interception costs what an active block would
             // (2026-09-24: one durability rule, no triple loss); never free.
             float baseDamage = MathF.Max(1, collisionData.InflictedDamage);
-            if (!heldPassiveBlock && GwpTroopCombat.IsHeavyInfantryShield(victim))
-                baseDamage *= GwpTroopCombat.HeavyShieldDamageMultiplier;
+            GwpWeaponTrait? shieldTrait = GwpWeaponTraits.Of(shield.Item);
+            if (!heldPassiveBlock && shieldTrait != null)
+                baseDamage *= shieldTrait.ShieldDamageTakenMultiplier;
             int durabilityDamage = MathF.Max(1, MathF.Round(baseDamage));
 
             int newHitPoints = MathF.Max(
@@ -1235,25 +1033,16 @@ namespace GreyWardenPolicePurity
                 try
                 {
                     // The native callback began as a body wound, so it has no
-                    // stock held-shield durability event. Reuse the exact
-                    // passive path: base hit damage multiplied by three,
-                    // metal shield feedback, light flinch, and queued native
-                    // style break feedback. Immortal prevents the reaction
-                    // blow itself from costing the protected Warden health.
+                    // stock held-shield durability event: apply the shield
+                    // damage here. Nothing else - like a native shield block
+                    // the defender takes no health loss and no extra reaction
+                    // (2026-09-25).
                     colReaction = MeleeCollisionReaction.Bounced;
-                    bool shieldBroken = GwpPassiveHeldShieldCollision
+                    GwpPassiveHeldShieldCollision
                         .ApplyPassiveShieldDurabilityDamage(
                             victim,
                             ref collisionData,
                             heldPassiveBlock: true);
-                    GwpPassiveHeldShieldCollision
-                        .ApplyPassiveShieldImpactReaction(
-                            attacker,
-                            victim,
-                            in collisionData,
-                            shieldBroken,
-                            heldPassiveBlock: true,
-                            preventHealthDamage: true);
                 }
                 finally
                 {
@@ -1270,20 +1059,14 @@ namespace GreyWardenPolicePurity
                     // The native OnShieldDamaged callback is only emitted for
                     // a collision the unmanaged layer originally recognized
                     // as a shield. This interception began as a body hit, so
-                    // apply the already-calculated shield damage explicitly
-                    // and preserve the requested three-times durability loss.
+                    // apply the already-calculated shield damage explicitly.
+                    // The rest is native's block: no health loss, no extra
+                    // reaction on the defender (2026-09-25).
                     colReaction = MeleeCollisionReaction.Bounced;
-                    bool shieldBroken = GwpPassiveHeldShieldCollision
+                    GwpPassiveHeldShieldCollision
                         .ApplyPassiveShieldDurabilityDamage(
                             victim,
                             ref collisionData,
-                            heldPassiveBlock: true);
-                    GwpPassiveHeldShieldCollision
-                        .ApplyPassiveShieldImpactReaction(
-                            attacker,
-                            victim,
-                            in collisionData,
-                            shieldBroken,
                             heldPassiveBlock: true);
                 }
                 finally
@@ -1306,18 +1089,14 @@ namespace GreyWardenPolicePurity
             // A shield on the back is not the wielded VictimShield selected by
             // AttackInformation, so Bannerlord 1.4.7 has no corresponding
             // native durability callback for this contact. Keep only that
-            // established passive/back-shield durability path manual.
-            bool backShieldBroken = GwpPassiveHeldShieldCollision
+            // established passive/back-shield durability path manual; the body
+            // blow is cancelled (GwpPassiveShieldRegisterBlowPatch) and no
+            // extra reaction is added (2026-09-25).
+            GwpPassiveHeldShieldCollision
                 .ApplyPassiveShieldDurabilityDamage(
                     victim,
                     ref collisionData,
                     heldPassiveBlock: false);
-            GwpPassiveHeldShieldCollision.ApplyPassiveShieldImpactReaction(
-                attacker,
-                victim,
-                in collisionData,
-                backShieldBroken,
-                heldPassiveBlock: false);
         }
     }
 

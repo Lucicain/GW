@@ -1,10 +1,5 @@
 using System;
 using System.Linq;
-#if GWP_DIAGNOSTICS
-using System.Globalization;
-using System.IO;
-using System.Threading;
-#endif
 using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -12,156 +7,6 @@ using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
-#if GWP_DIAGNOSTICS
-    /// <summary>Bounded, mission-local evidence for the rider-to-horse damage investigation.</summary>
-    internal static class GwpWarhorseDamageTrace
-    {
-        private const int MaxLines = 1000;
-        private static readonly object Sync = new object();
-        private static int _lines;
-        private static int _nextId;
-
-        internal static string LogPath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "Mount and Blade II Bannerlord", "GreyWarden-Warhorse-Damage.log");
-
-        internal static void StartMission()
-        {
-            Interlocked.Exchange(ref _nextId, 0);
-            lock (Sync)
-            {
-                _lines = 0;
-                try
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
-                    if (File.Exists(LogPath) && new FileInfo(LogPath).Length > 2 * 1024 * 1024)
-                    {
-                        string previous = LogPath + ".previous";
-                        if (File.Exists(previous)) File.Delete(previous);
-                        File.Move(LogPath, previous);
-                    }
-                    File.AppendAllText(LogPath,
-                        "# mission | time=" + DateTime.Now.ToString("O")
-                        + " | build=" + typeof(GwpWarhorseDamageTrace).Module.ModuleVersionId
-                        + " | limit=" + MaxLines + Environment.NewLine);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-            }
-        }
-
-        internal static bool Wants(Agent? attacker, Agent? victim) =>
-            attacker?.IsMainAgent == true || victim?.IsMainAgent == true
-            || victim?.RiderAgent?.IsMainAgent == true
-            || GwpTroopCombat.IsWarhorseOrRider(victim);
-
-        internal static int BeginTransfer(Agent? attacker, Agent? rider)
-        {
-            try { return Wants(attacker, rider) ? Interlocked.Increment(ref _nextId) : 0; }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return 0; }
-        }
-
-        internal static string AgentName(Agent? agent) => agent == null
-            ? "-"
-            : agent.Index + ":" + ((agent.IsMount ? agent.Monster?.StringId : agent.Character?.StringId) ?? "-")
-                + (agent.IsMainAgent ? ":main" : string.Empty);
-
-        private static string Number(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
-
-        internal static void RecordCalculation(
-            in AttackInformation info, in AttackCollisionData collision,
-            float modelInput, float nativeDamage, float finalDamage)
-        {
-            try
-            {
-                Agent? victim = info.VictimAgent;
-                if (!collision.IsColliderAgent || !Wants(info.AttackerAgent, victim))
-                    return;
-                Write("calc", "attacker=" + AgentName(info.AttackerAgent)
-                    + " victim=" + AgentName(victim)
-                    + " mount=" + AgentName(victim?.MountAgent)
-                    + " rider=" + AgentName(victim?.RiderAgent)
-                    + " weapon=" + (info.AttackerWeapon.Item?.StringId ?? "-")
-                    + " part=" + collision.VictimHitBodyPart
-                    + " result=" + collision.CollisionResult
-                    + " missile=" + collision.IsMissile
-                    + " shield=" + collision.AttackBlockedWithShield
-                    + " backShield=" + collision.CollidedWithShieldOnBack
-                    + " weaponBlock=" + collision.MissileBlockedWithWeapon
-                    + " armor=" + Number(info.ArmorAmountFloat)
-                    + " difficulty=" + Number(info.CombatDifficultyMultiplier)
-                    + " boneMultiplier=" + Number(info.DamageMultiplierOfBone)
-                    + " magnitude=" + Number(collision.BaseMagnitude)
-                    + " speedModifier=" + Number(collision.MovementSpeedDamageModifier)
-                    + " absorbed=" + collision.AbsorbedByArmor
-                    + " preModel=" + collision.InflictedDamage
-                    + " modelInput=" + Number(modelInput)
-                    + " native=" + Number(nativeDamage)
-                    + " final=" + Number(finalDamage)
-                    + " victimHp=" + Number(victim?.Health ?? -1f));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-        }
-
-        internal static void RecordActual(Agent? victim, Agent? attacker, in Blow blow)
-        {
-            try
-            {
-                if (!Wants(attacker, victim)) return;
-                Write("hit", "attacker=" + AgentName(attacker)
-                    + " victim=" + AgentName(victim)
-                    + " rider=" + AgentName(victim?.RiderAgent)
-                    + " inflicted=" + blow.InflictedDamage
-                    + " absorbed=" + Number(blow.AbsorbedByArmor)
-                    + " hpAfter=" + Number(victim?.Health ?? -1f));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-        }
-
-        internal static void RecordQueue(
-            int id, Agent? attacker, Agent rider, Agent horse, float damage, int queued)
-        {
-            if (id == 0) return;
-            try
-            {
-                Write(queued > 0 ? "queue" : "rounded-to-zero",
-                    "id=" + id + " attacker=" + AgentName(attacker)
-                    + " rider=" + AgentName(rider) + " horse=" + AgentName(horse)
-                    + " nativeAfterRules=" + Number(damage) + " queued=" + queued
-                    + " horseHp=" + Number(horse.Health));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-        }
-
-        internal static void RecordTransfer(int id, string stage, Agent? horse, int queued, float before)
-        {
-            if (id == 0) return;
-            try
-            {
-                Write(stage, "id=" + id + " horse=" + AgentName(horse)
-                    + " queued=" + queued + " hpBefore=" + Number(before)
-                    + " hpAfter=" + Number(horse?.Health ?? -1f));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-        }
-
-        internal static void Write(string stage, string details)
-        {
-            lock (Sync)
-            {
-                if (_lines >= MaxLines) return;
-                try
-                {
-                    File.AppendAllText(LogPath,
-                        DateTime.Now.ToString("O") + " | " + stage + " | " + details
-                        + Environment.NewLine);
-                    _lines++;
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-            }
-        }
-    }
-#endif
-
     /// <summary>
     /// Applies, on the mission tick, the damage a Grey Warden warhorse's rider took and
     /// passed on to that horse. The hit being resolved when
@@ -172,9 +17,6 @@ namespace GreyWardenPolicePurity
         public GwpWarhorseDamageTransferBehavior()
         {
             GwpTroopCombat.ClearPendingHorseDamage();
-#if GWP_DIAGNOSTICS
-            GwpWarhorseDamageTrace.StartMission();
-#endif
         }
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
@@ -193,16 +35,110 @@ namespace GreyWardenPolicePurity
             base.OnEndMission();
             GwpTroopCombat.ClearPendingHorseDamage();
         }
+    }
 
-#if GWP_DIAGNOSTICS
-        public override void OnAgentHit(
-            Agent affectedAgent, Agent affectorAgent, in MissionWeapon affectorWeapon,
-            in Blow blow, in AttackCollisionData attackCollisionData)
+    /// <summary>
+    /// One Grey Warden weapon's combat effects. Chances are per body hit on an enemy.
+    /// </summary>
+    internal sealed class GwpWeaponTrait
+    {
+        // Knock an enemy on foot down; knock an enemy rider off his horse (non-lethal hit);
+        // break a weapon parry (never a shield).
+        internal float Knockdown;
+        internal float Dismount;
+        internal float ParryBreak;
+        // Couched or braced (native's passive attack): lance only.
+        internal float PassiveKnockdown;
+        internal float PassiveDismount;
+        internal bool PassiveAlwaysBreaksParry;
+        // Damage this weapon does to a shield, and damage this shield takes.
+        internal float ShieldDamageMultiplier = 1f;
+        internal float ShieldDamageTakenMultiplier = 1f;
+    }
+
+    /// <summary>
+    /// Grey Warden combat effects belong to the weapon, not to the troop (2026-09-25, user:
+    /// one measure for every soldier). Whoever wields the item - any troop, a lord, the
+    /// player - gets its effects. The values are the ones the troops had: the knight's
+    /// ordinary attack for every Grey Warden melee weapon, his couched lance, the archers'
+    /// dual blades and arrows, the heavy infantry's great shield. Kicks and shield bashes
+    /// are not weapon attacks and keep their per-troop rules (dual-blade.md); the warhorse
+    /// has its own (gw_warhorse).
+    /// </summary>
+    internal static class GwpWeaponTraits
+    {
+        internal const string OneHandedSwordItemId = "gwonehandedsword";
+        internal const string MaceItemId = "gwmace";
+        internal const string TwoHandedSwordItemId = "gwtwohandedsword";
+        internal const string LanceItemId = "gwlance";
+        internal const string ArrowsItemId = "gwarrows";
+
+        private static GwpWeaponTrait Melee() => new GwpWeaponTrait
         {
-            base.OnAgentHit(affectedAgent, affectorAgent, in affectorWeapon, in blow, in attackCollisionData);
-            GwpWarhorseDamageTrace.RecordActual(affectedAgent, affectorAgent, in blow);
+            Knockdown = 0.125f,
+            Dismount = 0.125f,
+            ParryBreak = 0.25f
+        };
+
+        private static readonly System.Collections.Generic.Dictionary<string, GwpWeaponTrait> ByItemId =
+            new System.Collections.Generic.Dictionary<string, GwpWeaponTrait>(StringComparer.OrdinalIgnoreCase)
+            {
+                [OneHandedSwordItemId] = Melee(),
+                [MaceItemId] = Melee(),
+                [TwoHandedSwordItemId] = Melee(),
+                [LanceItemId] = new GwpWeaponTrait
+                {
+                    Knockdown = 0.125f,
+                    Dismount = 0.125f,
+                    ParryBreak = 0.25f,
+                    PassiveKnockdown = 0.5f,
+                    PassiveDismount = 0.25f,
+                    PassiveAlwaysBreaksParry = true
+                },
+                // Either blade of the pair: the archers' former 40% (80% tier x 0.5).
+                [GwpIds.DualBladeMainhandItemId] = new GwpWeaponTrait { Knockdown = 0.4f, Dismount = 0.125f, ParryBreak = 0.25f },
+                [GwpIds.DualBladeOffhandItemId] = new GwpWeaponTrait { Knockdown = 0.4f, Dismount = 0.125f, ParryBreak = 0.25f },
+                // Arrows knock only men on foot down, as the archers' did.
+                [ArrowsItemId] = new GwpWeaponTrait { Knockdown = 0.25f, ShieldDamageMultiplier = 2f },
+                // Twice the durability; still breakable.
+                [GwpIds.LargeShieldItemId] = new GwpWeaponTrait { ShieldDamageTakenMultiplier = 0.5f },
+                [GwpIds.BlackLargeShieldItemId] = new GwpWeaponTrait { ShieldDamageTakenMultiplier = 0.5f },
+            };
+
+        internal static GwpWeaponTrait? Of(ItemObject? item) =>
+            item != null && ByItemId.TryGetValue(item.StringId, out GwpWeaponTrait trait) ? trait : null;
+
+        /// <summary>
+        /// The weapon behind a hit: the attacker's weapon slot for melee, the missile itself
+        /// (looked up by index, as native's MissileHitCallback does) for a missile.
+        /// </summary>
+        internal static GwpWeaponTrait? OfHit(Agent attacker, in AttackCollisionData collision)
+        {
+            try
+            {
+                int index = collision.AffectorWeaponSlotOrMissileIndex;
+                if (index < 0)
+                    return null;
+                if (!collision.IsMissile)
+                    return index < (int)EquipmentIndex.NumAllWeaponSlots
+                        ? Of(attacker.Equipment[(EquipmentIndex)index].Item)
+                        : null;
+                Mission? mission = attacker.Mission;
+                if (mission == null)
+                    return null;
+                foreach (Mission.Missile missile in mission.MissilesList)
+                {
+                    if (missile.Index == index)
+                        return Of(missile.Weapon.Item);
+                }
+                return null;
+            }
+            catch (Exception gwpQuietFailure)
+            {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                return null;
+            }
         }
-#endif
     }
 
     /// <summary>
@@ -213,13 +149,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpTroopCombat
     {
-        internal const float ArcherKnockdownChance = 0.25f;
-        internal const float ArcherShieldDamageMultiplier = 2f;
-        // Knight effects: every attack, and a couched or braced lance at the higher chance.
-        // Knockdown 12.5%/50%, dismount and block break 12.5%/25% (2026-09-24, cavalry too
-        // strong: every ordinary-attack chance halved, couched knockdown kept at 50%).
-        internal const float KnightChance = 0.125f;
-        internal const float KnightCouchChance = 0.5f;
         // A Grey Warden warhorse charging a man on foot, inside native's own charge rules
         // (2026-09-24, user: strengthen the native mechanism, not a new roll; damage unchanged):
         // knock-back from a frontal factor of 0.6 instead of 0.7, and the knock-down damage
@@ -227,14 +156,9 @@ namespace GreyWardenPolicePurity
         // gain halved, from 0.5 and x 0.5.)
         internal const float WarhorseChargeKnockBackFront = 0.6f;
         internal const float WarhorseChargeKnockDownThresholdScale = 0.75f;
-        internal const float KnightDismountChance = 0.125f;
-        internal const float KnightCouchDismountChance = 0.25f;
-        internal const float KnightCrushChance = 0.25f;
         // Only the warhorse shrugs off twice the native small-hit threshold (x 3 until
         // 2026-09-25). Its rider uses native's threshold, even while mounted.
         internal const float WarhorseStaggerThresholdScale = 2f;
-        // Heavy infantry shields take half damage: twice the durability, still breakable.
-        internal const float HeavyShieldDamageMultiplier = 0.5f;
         // Share of native rears a Grey Warden warhorse actually suffers (0.5 until 2026-09-25).
         internal const float WarhorseRearShare = 0.75f;
         // Share of a hit on the rider's body that the warhorse takes instead; the rider keeps
@@ -249,9 +173,6 @@ namespace GreyWardenPolicePurity
             internal int Damage;
             internal DamageTypes DamageType;
             internal Vec3 Direction;
-#if GWP_DIAGNOSTICS
-            internal int TraceId;
-#endif
         }
 
         private static readonly System.Collections.Generic.List<PendingHorseDamage> PendingHorseDamages =
@@ -286,25 +207,20 @@ namespace GreyWardenPolicePurity
             Agent? attacker = blow.OwnerId >= 0 ? Mission.Current?.FindAgentWithIndex(blow.OwnerId) : null;
             if (attacker == null || !attacker.IsEnemyOf(victim))
                 return false;
-            Agent? mount = victim.MountAgent;
-            if (collision.IsMissile)
-            {
-                if (mount == null && IsTroop(attacker, GwpIds.ArcherId))
-                    _knockdown = Roll(ArcherKnockdownChance);
-            }
             // Kicks and shield bashes keep their own knockdown rules (dual-blade.md).
-            else if (!collision.IsAlternativeAttack && IsTroop(attacker, GwpIds.KnightId))
-            {
-                bool couch = IsKnightCouch(attacker);
-                // Mounted or on foot alike; the user asked for no condition beyond the chance.
-                if (mount != null && mount.RiderAgent == victim)
-                    _dismount = victim.Health - collision.InflictedDamage >= 1f
-                        && Roll(couch ? KnightCouchDismountChance : KnightDismountChance);
-                else if (mount == null)
-                {
-                    _knockdown = Roll(couch ? KnightCouchChance : KnightChance);
-                }
-            }
+            if (collision.IsAlternativeAttack)
+                return false;
+            // The weapon that landed decides, whoever holds it (GwpWeaponTraits).
+            GwpWeaponTrait? trait = GwpWeaponTraits.OfHit(attacker, in collision);
+            if (trait == null)
+                return false;
+            bool passive = !collision.IsMissile && attacker.IsDoingPassiveAttack;
+            Agent? mount = victim.MountAgent;
+            if (mount != null && mount.RiderAgent == victim)
+                _dismount = victim.Health - collision.InflictedDamage >= 1f
+                    && Roll(passive ? trait.PassiveDismount : trait.Dismount);
+            else if (mount == null)
+                _knockdown = Roll(passive ? trait.PassiveKnockdown : trait.Knockdown);
             if (!_knockdown && !_dismount)
                 return false;
             _victim = victim;
@@ -371,9 +287,6 @@ namespace GreyWardenPolicePurity
             }
 
             int transferred = (int)Math.Round(damage * WarhorseRiderDamageShare);
-#if GWP_DIAGNOSTICS
-            int traceId = GwpWarhorseDamageTrace.BeginTransfer(info.AttackerAgent, victim);
-#endif
             if (transferred > 0)
             {
                 lock (PendingHorseDamages)
@@ -384,17 +297,10 @@ namespace GreyWardenPolicePurity
                         AttackerIndex = info.AttackerAgent?.Index ?? horse.Index,
                         Damage = transferred,
                         DamageType = (DamageTypes)collision.DamageType,
-                        Direction = collision.WeaponBlowDir,
-#if GWP_DIAGNOSTICS
-                        TraceId = traceId
-#endif
+                        Direction = collision.WeaponBlowDir
                     });
                 }
             }
-#if GWP_DIAGNOSTICS
-            GwpWarhorseDamageTrace.RecordQueue(
-                traceId, info.AttackerAgent, victim, horse, damage, transferred);
-#endif
             return Math.Max(0f, damage - Math.Max(0, transferred));
         }
 
@@ -424,16 +330,8 @@ namespace GreyWardenPolicePurity
             {
                 Agent horse = item.Horse;
                 if (horse == null || !horse.IsActive() || horse.Health <= 0f)
-                {
-#if GWP_DIAGNOSTICS
-                    GwpWarhorseDamageTrace.RecordTransfer(item.TraceId, "discard", horse, item.Damage, -1f);
-#endif
                     continue;
-                }
 
-#if GWP_DIAGNOSTICS
-                float horseHpBefore = horse.Health;
-#endif
                 Vec3 direction = item.Direction.LengthSquared > 0f ? item.Direction : horse.LookDirection;
                 Blow blow = new Blow(item.AttackerIndex);
                 blow.DamageType = item.DamageType;
@@ -456,10 +354,6 @@ namespace GreyWardenPolicePurity
                     CombatHitResultFlags.NormalHit, 0.5f, 1f, 0f, 0f, 0f, 0f, 0f, 0f,
                     Vec3.Up, blow.Direction, blow.GlobalPosition, Vec3.Zero, Vec3.Zero, horse.Velocity, Vec3.Up);
                 horse.RegisterBlow(blow, in collisionData);
-#if GWP_DIAGNOSTICS
-                GwpWarhorseDamageTrace.RecordTransfer(
-                    item.TraceId, "applied", horse, item.Damage, horseHpBefore);
-#endif
             }
         }
 
@@ -482,20 +376,22 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// Knight block break against an enemy: an active attack can break a weapon
-        /// parry, never a shield; a couched or braced lance always breaks a weapon
-        /// parry. Native itself never crushes a passive attack.
+        /// Block break by the attacker's weapon against an enemy: an active attack can break
+        /// a weapon parry at the weapon's chance, never a shield; a couched or braced lance
+        /// always breaks a weapon parry. Native itself never crushes a passive attack.
         /// </summary>
-        internal static bool KnightCrushesBlock(Agent? attacker, Agent? defender, WeaponComponentData? defendItem, bool isPassiveUsageHit)
+        internal static bool WeaponCrushesBlock(Agent? attacker, Agent? defender, WeaponComponentData? defendItem, bool isPassiveUsageHit)
         {
-            if (defendItem == null || defender == null || !IsTroop(attacker, GwpIds.KnightId) || !attacker!.IsEnemyOf(defender))
+            if (defendItem == null || defender == null || attacker == null || !attacker.IsEnemyOf(defender)
+                || defendItem.IsShield)
+            {
                 return false;
-            return !defendItem.IsShield && (isPassiveUsageHit || Roll(KnightCrushChance));
+            }
+            GwpWeaponTrait? trait = GwpWeaponTraits.Of(attacker.WieldedWeapon.Item);
+            if (trait == null)
+                return false;
+            return isPassiveUsageHit ? trait.PassiveAlwaysBreaksParry : Roll(trait.ParryBreak);
         }
-
-        // Couched on horseback or braced on foot: both are the lance's passive attack.
-        internal static bool IsKnightCouch(Agent? attacker) =>
-            attacker != null && attacker.IsDoingPassiveAttack && IsTroop(attacker, GwpIds.KnightId);
 
         /// <summary>Called only after native decided this mount rears.</summary>
         internal static bool WarhorseRears(Agent mount)
@@ -516,7 +412,6 @@ namespace GreyWardenPolicePurity
             || (agent?.MountAgent is Agent horse && IsWarhorse(horse)
                 && horse.IsActive() && horse.Health > 0f);
 
-        internal static bool IsHeavyInfantryShield(Agent? victim) => IsTroop(victim, GwpIds.HeavyInfantryId);
 
     }
 

@@ -69,6 +69,10 @@
   live 模块，否则客户端不加载 `AssetPackages`。生成的 `bin` 与 `Shaders` 可以只存在
   于 live 模块。
 - 单文件改动（如新增中文键）先单文件镜像并比 hash，再随构建全量同步。
+- 部署前确认游戏没开：进程名是 `TaleWorlds.MountAndBlade.Launcher`、`Watchdog`、`Bannerlord`
+  （按 `Bannerlord|TaleWorlds|Launcher|Watchdog` 匹配）。只查名字里带 `Bannerlord` 会漏掉启动器，
+  2026-09-25 就因此在游戏运行时构建，复制 DLL 被占用失败（MSB3027）。复制失败时 live 仍是旧 DLL，
+  校验脚本比的是旧文件，结果不能当作新版本的验证。
 
 ## 正式发布包
 

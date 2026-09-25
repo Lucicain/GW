@@ -44,10 +44,10 @@
 | `GreyWarden-Faults.log` | 故障与静默吞异常留痕。在役的 `BATTLE_SCENE_*`、音乐档位诊断也写这里，它们退休后**健康的一局里这个文件应当是空的** |
 | `GreyWarden-AI-Diagnostics.log` | AI / 战场 / 欲望拍卖采样 |
 | `GreyWarden-Case-Events.log` | 案件生命周期事件 |
-| `GreyWarden-Warhorse-Damage.log` | 灰袍战马伤害调查：原版命中数值、转移排队、坐骑实际扣血；按场标记，每场限 1000 行，超过 2 MB 滚动为 `.previous` |
 | `GreyWarden-Diagnostics-Archive` | 滚动归档 |
 
-旧 `GreyWarden-Knight-Damage.log` 已停止写入；本轮自动审批阻止删除 Documents 中的旧日志，待允许清理时删除。旧版的 25 次转移结论已写入 journal。
+骑兵伤害调查的 `GreyWarden-Knight-Damage.log`、`GreyWarden-Warhorse-Damage.log`（含 `.previous`）已于 2026-09-25 随诊断退休删除，
+不再可读；结论在 journal。
 
 ## 在役、待退休
 
@@ -55,9 +55,8 @@
 |---|---|---|
 | `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` | 音乐资格分母、援军触发层/概率/预算/到场 | 用户已确认功能正常 → **下次动这块代码时退休** |
 | 音乐策略档位诊断（每 10 任务秒 / 变档输出，含 `recent5`、`waiting-for-fresh-exchange`） | 强度映射是否按预期升降 | 用户已确认音乐正常 → **下次动这块代码时退休** |
-| `GwpWarhorseDamageTrace` | 记录骑灰袍战马者与马的命中数值、转移量和实际马血；并保留玩家其他命中作对照 | 新归属经实机验证且用户确认行为后，同轮删除专项记录与日志 |
 
-已退休的：`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
+已退休的：`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
 `GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，
 日志行一并清除，结论见 [`battle-tactics.md`](battle-tactics.md)）。
 其日志、WER 与一次性分析输出**不再可读**；需要重新调查时从新复现取证，

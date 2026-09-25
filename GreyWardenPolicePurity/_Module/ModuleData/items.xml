@@ -123,6 +123,65 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     </ItemComponent>
   </Item>
 
+  <!-- Grey Warden copies of two native items, so their weapon traits (GwpWeaponTraits)
+       stay on Grey Warden equipment: native's Calradic Mace (empire_mace_3_t4) and
+       Piercing Arrows (piercing_arrows), identical but for id and name (2026-09-25). -->
+  <CraftedItem id="gwmace"
+               name="{=gwp_item_mace}Grey Warden Calradic Mace"
+               crafting_template="Mace"
+               culture="Culture.empire"
+               modifier_group="mace"
+               is_merchandise="false">
+    <Pieces>
+      <Piece id="mace_head_8"
+             Type="Blade" />
+      <Piece id="mace_handle_10"
+             Type="Handle" />
+      <Piece id="spear_pommel_11"
+             Type="Pommel"
+             scale_factor="90" />
+    </Pieces>
+  </CraftedItem>
+
+  <Item id="gwarrows"
+        name="{=gwp_item_arrows}Grey Warden Piercing Arrows"
+        body_name="bo_capsule_arrow"
+        holster_body_name="bo_arrow_bl_a_quiver"
+        mesh="arrow_bl_a"
+        holster_mesh="arrow_bl_a_quiver"
+        holster_mesh_with_weapon="arrow_bl_a_quiver"
+        weight="0.041"
+        flying_mesh="arrow_bl_flying"
+        appearance="1"
+        is_merchandise="false"
+        Type="Arrows"
+        item_holsters="quiver_back_middle:quiver_bolts_2:quiver_bolts"
+        holster_position_shift="0.0,0.0,0.15">
+    <ItemComponent>
+      <Weapon weapon_class="Arrow"
+              stack_amount="23"
+              physics_material="missile"
+              thrust_speed="0"
+              speed_rating="0"
+              missile_speed="10"
+              weapon_length="97"
+              thrust_damage="4"
+              thrust_damage_type="Pierce"
+              item_usage="arrow_right"
+              passby_sound_code="event:/mission/combat/missile/passby"
+              rotation="0, -80, 25"
+              sticking_position="0,-0.97,0"
+              sticking_rotation="90,0,0"
+              center_of_mass="0,0,-0.13"
+              modifier_group="arrow">
+        <WeaponFlags Consumable="true"
+                     AmmoSticksWhenShot="true"
+                     AmmoBreaksOnBounceBack="true" />
+      </Weapon>
+    </ItemComponent>
+    <Flags />
+  </Item>
+
   <CraftedItem id="gwlance"
                name="{=gwp_item_lance}Grey Warden Lance"
                crafting_template="TwoHandedPolearm"
