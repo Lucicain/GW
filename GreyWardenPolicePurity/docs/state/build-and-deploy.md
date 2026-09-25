@@ -40,7 +40,7 @@
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
-| `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物 |
+| `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
 
 脚本用 Windows PowerShell 5.1 运行。
@@ -63,8 +63,8 @@
 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`。
 
 - 这条与 Git 发布无关，工作树可以一直未提交。
-- 每次部署后**比对哈希**，不要假定复制成功。
-- 任何可部署源文件与 live 对应文件有差异时，**不得开始或接受实机测试**。
+- 每次部署后**比对哈希**，不要假定复制成功。（依据：流程）
+- 任何可部署源文件与 live 对应文件有差异时，**不得开始或接受实机测试**。（依据：流程）
 - 例外：编辑器专用的 `Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端
   live 模块，否则客户端不加载 `AssetPackages`。生成的 `bin` 与 `Shaders` 可以只存在
   于 live 模块。

@@ -22,17 +22,26 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 - `docs/state/` 是唯一事实来源。结论变了就**原地改写**，不要追加"后来又改成…"。
   超过 250 行或堆出多个带日期的小节，说明过程写进来了——过程归 journal。
-- `docs/journal/<YYYY-MM>.md` 只追加，是历史，**不是规则**。不得从 journal 恢复任何
-  已不在 state 里的规则、阈值或实现。state 里找不到的规则，默认不成立。
+- `docs/journal/<YYYY-MM>.md` 只追加，记录**当时为什么这么想**，不代表那样想是对的。
+  它的用处是以后纠错时能追到某个思路从哪来、错在哪一步。**它不是规则**：不得从 journal
+  恢复任何已不在 state 里的规则、阈值或实现。state 里找不到的规则，默认不成立。
+- state 里的硬规则（「不要…」「不得…」）句末标依据：`用户裁定`、`设计`、`流程`、`C++反汇编`、
+  `C#反编译`、`实机诊断` 等。用户裁定只有用户能改；其余的，出现更强的调查方法时要复查。
 - 改到 `state/README.md` 里「尚未提取」的子系统时，顺手把它提取成 state 文件。
   专项调查的过程写 journal，不要写成豁免核对的 state 文件。
+
+## 原版行为不明时先查证
+
+不要靠猜测反复实测去试出原版机制，也不要让用户实测来回答本该从原版代码里查到的问题。
+先反编译（托管层）或反汇编（`TaleWorlds.Native.dll`），查实规则再改代码。
+工具、步骤和证据强弱见 `docs/reference/investigation-methods.md`。
 
 ## 每轮收尾
 
 任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
 
 1. `python tools/Check-StateFreshness.py` —— 它会先按当前源码重建 code-map，再报：
-   state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免核对数。
+   state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免核对数、硬规则缺依据。
    点名项当轮处理，不要攒着。
 2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
    提取了子系统就从 `docs/state/uncovered-baseline.txt` 删掉对应文件。

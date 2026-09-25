@@ -1,7 +1,7 @@
 """Report where docs/state has fallen behind the code, or started to rot.
 
 code-map.md cannot rot — it is generated. The behaviour files are hand-written,
-so they can, in four ways this script looks for:
+so they can, in five ways this script looks for:
 
 1. Covered source changed and the document did not follow.
    Commits are rare here (only when the user declares a feature finished), so
@@ -15,6 +15,10 @@ so they can, in four ways this script looks for:
    the subsystem, which is silent otherwise.
 4. A state file turning back into a log: dated sections piling up, or length
    past the point where it is still "the current conclusion".
+
+5. Hard rules ("不要…", "不得…") that do not say what evidence they rest on.
+   When a stronger investigation method arrives, the rules resting on weaker
+   ground are the ones to re-check — which is impossible if nobody wrote it down.
 
 It also counts the files that declared themselves exempt, so the escape hatch
 stays visible instead of quietly growing.
@@ -52,6 +56,8 @@ EXEMPT = ("不做自动核对", "不适用")
 # nearly every feature. Treating it as an unextracted subsystem is pure noise,
 # and a checker that is always noisy gets ignored.
 MAP_DESCRIBED = {f"{MODULE}/SubModule.cs"}
+# Constraints on future work. 不要求 ("does not require") is not a rule.
+HARD_RE = re.compile(r"不要(?!求)|不得|禁止|别再|推翻")
 MAX_LINES = 250          # past this a state file is usually carrying history
 MAX_DATED_HEADINGS = 2   # one "as of" date is fine; a run of them is a log
 
@@ -103,6 +109,7 @@ def main() -> int:
     print(f"HEAD = {git('rev-parse', '--short', 'HEAD')}\n")
 
     stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
+    unsourced = []   # hard rules with no 依据：tag
     hand_written = 0
 
     for p in files:
@@ -110,6 +117,13 @@ def main() -> int:
         if "自动生成" in text[:400]:
             continue
         hand_written += 1
+
+        # 5. hard rules that do not say what they rest on
+        for n, line in enumerate(text.splitlines(), 1):
+            if line.startswith(">") or line.startswith("|---"):
+                continue
+            if HARD_RE.search(line) and "依据：" not in line:
+                unsourced.append((p.name, n, line.strip()[:70]))
 
         # 4. is it turning back into a log?
         lines = text.count("\n") + 1
@@ -180,6 +194,17 @@ def main() -> int:
             print(f"  {name}  {'，'.join(bits)}")
         print()
 
+    if unsourced:
+        print(f"[!] {len(unsourced)} 条硬规则没有标依据 —— 有了更强的调查方法时，分不清该复查哪条：")
+        print()
+        for name, n, line in unsourced[:12]:
+            print(f"  {name}:{n}  {line}")
+        if len(unsourced) > 12:
+            print(f"  … 另有 {len(unsourced) - 12} 条")
+        print()
+        print("  依据写法见 docs/reference/investigation-methods.md 末节。")
+        print()
+
     orphans_new, baseline_touched = check_baseline()
 
     if fresh:
@@ -200,7 +225,7 @@ def main() -> int:
 
     print(f"{len(stale)} 个可能过期 / {len(bloated)} 个在堆积流水 / "
           f"{len(orphans_new)} 个新增未归属 / {len(baseline_touched)} 个未提取子系统文件被改动 / "
-          f"{len(exempt)} 个声明不核对")
+          f"{len(exempt)} 个声明不核对 / {len(unsourced)} 条硬规则缺依据")
     print("\n这只说明去哪里看，不说明文字对不对。")
     return 0
 

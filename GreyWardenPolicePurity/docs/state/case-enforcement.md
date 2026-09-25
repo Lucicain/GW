@@ -87,7 +87,7 @@
   路过的人** —— 那一档是临场变量，由协力编成随时增减应对
 - `CaseIntakeStrengthMargin = 0.9`（留一成余量）
 
-**兵员下限：已撤除，不要重新加上。** `HasManpowerForNewCase` 与
+**兵员下限：已撤除，不要重新加上**（依据：实机诊断 2026-09-17 的 AUCTION 读数；用户指出原推理不成立）。 `HasManpowerForNewCase` 与
 `CaseIntakeManpowerRatio` 已删除。原因记录在案：
 
 - 「没案子时原版欲望会带他去招兵」是**错的**。`SuppressAssignedPatrolScores` 只改
