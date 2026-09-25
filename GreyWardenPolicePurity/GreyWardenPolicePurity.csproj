@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <!-- Bannerlord's module schema requires a numeric three-part version.
-         Formal release v1.4-r12 is represented internally as 1.4.12;
+         Formal release v1.4-r13 is represented internally as 1.4.13;
          this is the mod revision, not a Bannerlord version dependency gate. -->
-    <Version>1.4.12</Version>
+    <Version>1.4.13</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
