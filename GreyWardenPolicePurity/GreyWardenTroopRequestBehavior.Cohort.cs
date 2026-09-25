@@ -83,8 +83,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 每个订单心跳都跑一次：没有就拉起来，有就续上跟随欲望、补口粮，
-        /// 然后把练兵官手里该归订单的人挪进来。
+        /// 练兵官可以被订单占用时才跑：没有练兵队就拉起来，然后照看一次。
         /// </summary>
         private MobileParty? AdvanceCohort(MobileParty trainer,
             CharacterObject target)
@@ -112,15 +111,25 @@ namespace GreyWardenPolicePurity
                     return null;
                 cohort = CreateCohort(trainer);
                 if (cohort == null) return null;
+                // 已有的练兵队由 TendCohort 在门禁之前照看；新立的这一拍补一次。
+                TendCohort(trainer, cohort, target);
             }
+            return cohort;
+        }
 
+        /// <summary>
+        /// 练兵队自己的照看：续跟随、压侵略性、和练兵官双向换兵。每小时都跑，
+        /// **不经过** <c>TryReservePartyForPlayerRequest</c>——练兵官在打仗、在军团里时
+        /// 那道门是关的，以前练兵队因此一连几天没人管，跟随和侵略性过期、战后收进来的
+        /// 外来兵也退不回去。任一方在战斗中时不动名册，等打完再换。
+        /// </summary>
+        private void TendCohort(MobileParty trainer, MobileParty cohort,
+            CharacterObject target)
+        {
             KeepCohortDisposition(cohort);
             GreyWardenPartyDesireBehavior.RequestEscort(cohort, trainer);
-            if (cohort.Food <= 0f)
-                PoliceResourceManager.ProvisionTemporaryDutyParty(cohort);
-
+            if (trainer.MapEvent != null || cohort.MapEvent != null) return;
             TopUpCohort(trainer, cohort, target);
-            return cohort;
         }
 
         private MobileParty? CreateCohort(MobileParty trainer)
@@ -296,7 +305,10 @@ namespace GreyWardenPolicePurity
             _cohortPartyId = string.Empty;
             if (cohort == null) return;
 
-            MobileParty? trainer = ResolveTrainerParty();
+            // 练兵官缺席（被俘、队伍被打散）时交给最近的灰袍领主，
+            // 不把人连同名册一起清掉。
+            MobileParty? trainer = ResolveTrainerParty() ??
+                GwpCommon.FindNearestGreyWardenLordParty(cohort);
             int returned = 0;
             if (trainer?.IsActive == true)
             {

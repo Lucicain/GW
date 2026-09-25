@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using HarmonyLib;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
@@ -47,39 +45,7 @@ namespace GreyWardenPolicePurity
         internal static int Available(MobileParty party, Entry entry) => Math.Max(0, Math.Min(entry.Amount,
             party.ItemRoster.Where(e => e.EquipmentElement.Equals(entry.Item)).Sum(e => e.Amount)));
 
-        internal static int Food(MobileParty party, string state) => Math.Max(0, party.ItemRoster.TotalFood -
-            Decode(state).Where(e => e.Item.Item.IsFood).Sum(e => Available(party, e)));
-
         internal static int Value(MobileParty party, string state) => (int)Math.Min(int.MaxValue,
             Decode(state).Sum(e => (long)Available(party, e) * e.Price));
-    }
-
-    // Cargo remains real inventory (weight and battle loot included). Only the native
-    // daily feeding/breeding operation sees the usable stores, restored even on failure.
-    [HarmonyPatch(typeof(FoodConsumptionBehavior), nameof(FoodConsumptionBehavior.DailyTickParty))]
-    internal static class GwpDispatchCargoFoodPatch
-    {
-        private static void Prefix(MobileParty party, out List<ItemRosterElement>? __state)
-        {
-            __state = null;
-            string? cargo = GwpWardenDispatchBehavior.Instance?.CargoFor(party);
-            if (string.IsNullOrEmpty(cargo)) return;
-            var entries = GwpDispatchCargo.Decode(cargo!);
-            __state = new List<ItemRosterElement>();
-            foreach (var entry in entries)
-            {
-                int count = GwpDispatchCargo.Available(party, entry);
-                if (count <= 0) continue;
-                party.ItemRoster.AddToCounts(entry.Item, -count);
-                __state.Add(new ItemRosterElement(entry.Item, count));
-            }
-        }
-
-        private static Exception? Finalizer(MobileParty party, List<ItemRosterElement>? __state, Exception? __exception)
-        {
-            if (__state != null)
-                foreach (var item in __state) party.ItemRoster.AddToCounts(item.EquipmentElement, item.Amount);
-            return __exception;
-        }
     }
 }

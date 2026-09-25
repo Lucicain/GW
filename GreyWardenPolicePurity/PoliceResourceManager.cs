@@ -49,12 +49,13 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 临时纠察队和追截支援队没有英雄领队，原版不会让它们进城买粮；它们也
-        /// 不是 WarPartyComponent，不会进入氏族军费结算。生成时明确清零独立钱袋，
-        /// 并按原版每二十人每日一份粮食的基础消耗携带二十日口粮。剩余口粮随
-        /// 一次性部队销毁，不进入灰袍家族库存或金库。
+        /// 临时办差队没有英雄领队，也不是 WarPartyComponent，不进氏族军费结算。
+        /// 生成时清零独立钱袋，按计划人数配二十日口粮。它们不吃饭
+        /// （<see cref="GwpLeaderlessFoodModel"/>），这份粮不会减少，只为让原版看到
+        /// 一支"粮够吃"的队伍：<c>AiPatrollingBehavior</c> 在粮食天数 ≤ 6 时不给巡逻候选。
+        /// 只在出生时配一次；剩余口粮随部队销毁，不进灰袍家族库存或金库。
         /// </summary>
-        internal static void ProvisionTemporaryDutyParty(MobileParty? party)
+        private static void ProvisionTemporaryDutyParty(MobileParty? party, int plannedMen)
         {
             if (party?.IsActive != true) return;
 
@@ -64,21 +65,20 @@ namespace GreyWardenPolicePurity
             ItemObject? grain = MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.GrainItemId);
             if (grain == null) return;
 
-            int men = Math.Max(1, party.MemberRoster.TotalManCount);
+            int men = Math.Max(1, Math.Max(plannedMen, party.MemberRoster.TotalManCount));
             int grainCount = Math.Max(1,
                 (int)Math.Ceiling(men / 20f * TemporaryDutyFoodDays));
             party.ItemRoster.AddToCounts(grain, grainCount);
         }
 
         /// <summary>
-        /// 临时队出生时的一次性配给：口粮 + 向出借方借船。只在各创建点调用；
-        /// 断粮补给仍走 <see cref="ProvisionTemporaryDutyParty"/>，不会顺带借船。
+        /// 临时队出生时的一次性配给：口粮 + 向出借方借船。只在各创建点调用。
         /// 不指定出借方时，向最近的、在陆上、有空闲船的灰袍领主借。
         /// </summary>
         internal static void OutfitTemporaryDutyParty(MobileParty? party,
             MobileParty? lender = null, int plannedMen = 0)
         {
-            ProvisionTemporaryDutyParty(party);
+            ProvisionTemporaryDutyParty(party, plannedMen);
             if (party?.IsActive == true)
                 LendShips(party, lender ?? FindNearestShipLender(party), plannedMen);
         }
@@ -147,16 +147,6 @@ namespace GreyWardenPolicePurity
             CleanupLeaderlessPoliceLordParties();
             EnsureAllAdultGreyWardensAreCombatants();
             RepairGeneratedAdultCommanderLoadouts();
-            // 旧存档中已存在的临时队伍可能由旧版本以零粮生成。只在完全无粮时
-            // 补发一次，不因重复读档刷新仍未吃完的口粮。
-            foreach (MobileParty party in MobileParty.All.Where(static party =>
-                         party?.IsActive == true &&
-                         (GwpCommon.IsPatrolParty(party) ||
-                          GwpCommon.IsEnforcementDelayPatrolParty(party) ||
-                          GwpCommon.IsTrainingCohortParty(party))).ToList())
-            {
-                ProvisionTemporaryDutyParty(party);
-            }
         }
 
         private static void CleanupLeaderlessPoliceLordParties()

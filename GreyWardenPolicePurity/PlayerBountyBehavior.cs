@@ -459,9 +459,7 @@ namespace GreyWardenPolicePurity
                 if (infantry != null)
                     patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
 
-                // 招募使者没有英雄领队，原版不会替它进城采购。若生成时不主动
-                // 配粮，它会在下一个小时检查时因 TotalFood == 0 立刻掉头，玩家
-                // 永远等不到邀请。沿用其他一次性灰袍队的二十日口粮规则。
+                // 招募使者不吃饭；出生口粮只让原版看到一支粮够吃的队伍。
                 PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
                 GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
@@ -505,11 +503,6 @@ namespace GreyWardenPolicePurity
                     DestroyRecruitmentPatrolParty(patrol);
                     continue;
                 }
-
-                // 旧存档中仍有健康成员但已经断粮的使者可直接恢复，不应把缺粮
-                // 当成放弃招募的理由。
-                if (isTrackedPatrol && !_recruitmentOffered && !_recruitmentAccepted)
-                    PoliceResourceManager.ProvisionTemporaryDutyParty(patrol);
 
                 bool chaseTimedOut = isTrackedPatrol &&
                     !_recruitmentOffered &&

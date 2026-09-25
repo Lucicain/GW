@@ -74,6 +74,7 @@ python tools/Check-StateFreshness.py
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队向领主/玩家借船与退还、口粮、兵员纯化 |
 | [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
 | [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差（其余悬赏流程未提取） |
+| [`dispatch.md`](dispatch.md) | 玩家送信队的地图行程：出发、找人、交付、交割、工资（对话与付款未提取） |
 | [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回、已知缺口 |
 | [`training-feedback.md`](training-feedback.md) | 小周练兵交付反馈、存档导入及源码缺口；专项调查，未完成练兵全系统提取 |
 | [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
@@ -95,7 +96,7 @@ python tools/Check-StateFreshness.py
 
 - 巡逻与巡区（`PolicePatrolBehavior`、巡逻"恋家"定位）
 - 玩家悬赏与结案（`PlayerBountyBehavior`、`GwpCaseArchiveScreen`）
-- 使者送单与交兵（`GwpWardenDispatchBehavior`、barter 付款模型）
+- 使者的对话入口与付款 barter（`GwpWardenDispatchDialogue`、`GwpAssetPayment`）；地图行程已提取到 [`dispatch.md`](dispatch.md)
 - 灰袍领主日常练兵与兵种配比取向（`GreyWardenTrainingBehavior`）；玩家订单与随行练兵队已提取到 [`troop-orders.md`](troop-orders.md)
 - 野外切磋（`GreyWardenFieldSparringMissionController`）
 - 家族、婚姻、村庄收养与重建

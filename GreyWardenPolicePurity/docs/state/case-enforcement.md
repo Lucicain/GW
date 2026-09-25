@@ -195,7 +195,16 @@ targetStrength = 706.55  >  maximumStrength = 682.70
   `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，
   `IsFocusLayer = false`、不设 `InputRestrictions`。不覆盖任何原版文件。
 
+## 立即追截队的人回哪里
+
+立即追截队（`TrySpawnImmediateCaseInterceptor`）的人是从来源领主名册里抽出来的。返程时
+先还来源领主；来源领主战败、被俘或队伍没了（`CanContinueLeadingPoliceTask` 为假），改交最近的
+灰袍领主（`GwpCommon.FindNearestGreyWardenLordParty`），并把接收人写回
+`DelayPatrolState.SourceTaskPolicePartyId`，之后不再换人。一个能接收的灰袍领主都没有时，
+才照旧进城销毁。超出接收方编制的人仍进城销毁。只有返程状态会改接收人，
+承办中的重定目标冷却（只看未返程的队）不受影响。
+
 ## 测试
 
-`tools/CaseSettlement.Tests` **177 项**；`tools/Verify-CrimeReceipts.ps1`。
+`tools/CaseSettlement.Tests` **164 项**（2026-09-25 删掉送信队口粮规则与货物口粮补丁的 13 项）；`tools/Verify-CrimeReceipts.ps1`。
 均为构建期验证。

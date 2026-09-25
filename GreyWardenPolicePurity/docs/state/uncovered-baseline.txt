@@ -47,8 +47,6 @@ GreyWardenPolicePurity/GwpCrimeCategory.cs
 GreyWardenPolicePurity/GwpCrimeDesireAuction.cs
 GreyWardenPolicePurity/GwpDispatchBarterFaultDiagnostics.cs
 GreyWardenPolicePurity/GwpDispatchBarterScreen.cs
-GreyWardenPolicePurity/GwpDispatchCargo.cs
-GreyWardenPolicePurity/GwpDispatchSupplyRules.cs
 GreyWardenPolicePurity/GwpDualWieldingPatch.cs
 GreyWardenPolicePurity/GwpDuelOpponentMarkerPatch.cs
 GreyWardenPolicePurity/GwpEncyclopediaClanPageVM.cs
@@ -82,8 +80,6 @@ GreyWardenPolicePurity/GwpSingleQueryLinkPatch.cs
 GreyWardenPolicePurity/GwpText.cs
 GreyWardenPolicePurity/GwpTextKeys.cs
 GreyWardenPolicePurity/GwpTuning.cs
-GreyWardenPolicePurity/GwpWardenDispatch.cs
-GreyWardenPolicePurity/GwpWardenDispatchBehavior.cs
 GreyWardenPolicePurity/GwpWardenDispatchDialogue.cs
 GreyWardenPolicePurity/PlayerBehaviorMonitor.cs
 GreyWardenPolicePurity/PlayerBountyBehavior.DialogueAndNotification.cs

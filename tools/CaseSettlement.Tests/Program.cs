@@ -16,14 +16,6 @@ internal static class Program
 
     private static void Main()
     {
-        Equal(false, GwpDispatchSupplyRules.NeedsFood(1.8f, 0.1f), "two couriers with eighteen days do not seek a town");
-        Equal(true, GwpDispatchSupplyRules.NeedsFood(0.2f, 0.1f), "two days triggers refill");
-        Equal(2, GwpDispatchSupplyRules.TargetFood(0.1f), "two couriers receive rounded twelve-day supply");
-        Equal(0, GwpDispatchSupplyRules.PurchaseCount(2f, 0.1f, 100, 6000, 10), "full supply does not spend protected or spare cash");
-        Equal(2, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 240, 10), "buy only missing food rather than the entire purse");
-        Equal(0, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 0, 10), "protected-only purse cannot buy");
-        Equal(1, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 1, 240, 10), "limited town stock");
-        Equal(1, GwpDispatchSupplyRules.PurchaseCount(0f, 0.1f, 100, 15, 10), "limited travel purse");
         foreach (object savedFlag in new object[] { true, false, 1, 0 })
         {
             var legacy = new MemoryStore(false, new Dictionary<string, object?> { ["flag"] = savedFlag });
@@ -328,23 +320,11 @@ internal static class Program
         var restored = GwpDispatchCargo.Decode(manifest);
         Equal(1, restored.Count, "manifest restores every stack");
         Equal(modifier, restored[0].Item.ItemModifier, "manifest preserves item modifiers");
-        Equal(2, GwpDispatchCargo.Food(courier, manifest), "ten cargo grain leave two usable rations");
         Equal(200, GwpDispatchCargo.Value(courier, manifest), "only the designated cargo is credited");
         foodItem.Value = 99;
         Equal(200, GwpDispatchCargo.Value(courier, manifest), "shipment keeps agreed valuation");
-        GwpWardenDispatchBehavior.Instance.CargoState = manifest;
-        var prefix = typeof(GwpDispatchCargoFoodPatch).GetMethod("Prefix", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-        var finalizer = typeof(GwpDispatchCargoFoodPatch).GetMethod("Finalizer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-        object?[] call = { courier, null };
-        prefix.Invoke(null, call);
-        Equal(2, courier.ItemRoster.TotalFood, "native feeding only sees the rations");
-        courier.ItemRoster.AddToCounts(equipment, -1);
-        var nativeFailure = new InvalidOperationException("test native failure");
-        Equal(nativeFailure, finalizer.Invoke(null, new[] { courier, call[1], nativeFailure }), "native exception is not swallowed");
-        Equal(11, courier.ItemRoster.TotalFood, "cargo returns even after feeding fails");
-        courier.ItemRoster.AddToCounts(equipment, -8);
+        courier.ItemRoster.AddToCounts(equipment, -9);
         Equal(60, GwpDispatchCargo.Value(courier, manifest), "lost cargo is never credited or recreated");
-        Equal(0, GwpDispatchCargo.Food(courier, manifest), "remaining cargo is not considered provisions");
         Equal(0, GwpDispatchCargo.Decode("").Count, "old saves need no manifest migration");
 
         TestItemizedReports();

@@ -29,8 +29,8 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 一支真正从玩家队里分出去的队伍。它带走的是真的人、真的钱、真的粮食和真的俘虏，
-    /// 路上会遇敌、会挨打、会花钱，办完事再把剩下的全部带回来。
+    /// 一支真正从玩家队里分出去的队伍。它带走的是真的人、真的钱和真的俘虏，
+    /// 路上会遇敌、会挨打、要发饷，办完事再把剩下的全部带回来。
     /// </summary>
     internal sealed class GwpDispatchRecord
     {
@@ -38,7 +38,7 @@ namespace GreyWardenPolicePurity
         internal GwpDispatchPurpose Purpose;
         internal GwpDispatchPhase Phase;
         internal string ReceiverPartyId = string.Empty;
-        /// <summary>随队的案件款。这笔钱不许拿去买粮或发工资。</summary>
+        /// <summary>随队的案件款。这笔钱不许拿去发工资。</summary>
         internal int CaseGoldFloor;
         internal string CargoState = string.Empty;
         internal string CaseHeroId = string.Empty;

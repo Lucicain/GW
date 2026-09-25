@@ -52,7 +52,7 @@
 | `BattleSceneTests` | 138 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 18 | 双刀 AI 与踢/盾击互斥 |
 | `MusicTests` | 58770640 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
-| `CaseSettlement.Tests` | 177 | 案件结算 |
+| `CaseSettlement.Tests` | 164 | 案件结算 |
 | `ChokePointTests` | — | 隘口候选已撤回，其 bin/obj 仅为被忽略的生成缓存，不参与构建或部署 |
 
 测试都是引擎边界桩：**不验证真实战场位置、AI 行军、原生物理或游戏内观感。**

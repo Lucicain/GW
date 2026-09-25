@@ -33,8 +33,8 @@ namespace GreyWardenPolicePurity
         private const float StallProgressEpsilon = 1f;
         /// <summary>回程最后这一段路上，这支队伍不再被任何人撞上。</summary>
         private const float FinalApproachDistance = 15f;
-        /// <summary>路上的盘缠：每人这么多第纳尔，与案件款分开，专供买粮。</summary>
-        private const int TravelPursePerMan = 120;
+        /// <summary>进城办事（卖俘虏）办完或放弃后，隔多久才再考虑进城。</summary>
+        private const double TownBusinessRetryHours = 24;
         /// <summary>新目标要比手上这个近这么多，才值得改道；否则来回跳。</summary>
         private const float RetargetHysteresis = 25f;
         /// <summary>主动性设定的保持时长；每小时续期一次，覆盖两次续期之间的间隔。</summary>
@@ -62,8 +62,6 @@ namespace GreyWardenPolicePurity
             _dispatches.Any(d => d.Purpose == purpose && FindParty(d.PartyId) != null);
 
         internal string CargoFor(MobileParty party) => _dispatches.FirstOrDefault(d => d.PartyId == party.StringId)?.CargoState ?? string.Empty;
-
-        private int UsableFood(MobileParty party) => GwpDispatchCargo.Food(party, CargoFor(party));
 
         public override void RegisterEvents()
         {
@@ -155,7 +153,7 @@ namespace GreyWardenPolicePurity
         #region 派遣
 
         /// <summary>
-        /// 真正把人分出去。兵员、俘虏、钱和启动粮都从玩家队里实扣，不是凭空造的。
+        /// 真正把人分出去。兵员、俘虏和钱都从玩家队里实扣，不是凭空造的。
         /// </summary>
         internal MobileParty? Dispatch(
             TroopRoster detachment,
@@ -190,15 +188,7 @@ namespace GreyWardenPolicePurity
             carriedCaseGold = Math.Max(0, carriedCaseGold);
             cargo = cargo ?? new List<ItemRosterElement>();
             if (cargo.Any(e => e.Amount <= 0 || player.ItemRoster.Where(x => x.EquipmentElement.Equals(e.EquipmentElement)).Sum(x => x.Amount) < e.Amount)) return null;
-            int reservedFood = cargo.Where(e => e.EquipmentElement.Item.IsFood).Sum(e => e.Amount);
-            if (carriedCaseGold > Hero.MainHero.Gold ||
-                !CanProvision(detachment.TotalManCount, player, carriedCaseGold, reservedFood))
-            {
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_rations}You have neither food nor coin to send with them. Lay in provisions before you send anyone out."),
-                    Colors.Yellow));
-                return null;
-            }
+            if (carriedCaseGold > Hero.MainHero.Gold) return null;
 
             // 要押走的那个人不经过分兵界面——原版那个界面把"俘虏"整栏写死成不可转移，
             // 玩家既看不到也拖不动。改为玩家在出发前单独答一句"押人还是交钱"，
@@ -229,7 +219,7 @@ namespace GreyWardenPolicePurity
                 party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
                 party.ActualClan = Clan.PlayerClan;
                 KeepCourierDisposition(party);
-                // 送信队自带货物口粮，不走灰袍临时队的口粮配给；船向玩家借。
+                // 送信队不吃饭（GwpLeaderlessFoodModel），不带口粮；船向玩家借。
                 PoliceResourceManager.LendShips(party, player);
                 bool prisonerLoaded = false;
                 if (casePrisoner != null)
@@ -286,7 +276,6 @@ namespace GreyWardenPolicePurity
                             ?? Math.Max(1, item.EquipmentElement.ItemValue) });
                     record.CargoState = GwpDispatchCargo.Encode(loaded);
                 }
-                TakeRationsFromPlayer(party, player);
                 TrackOnMap(party);
                 SendTo(party, receiver);
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
@@ -331,79 +320,8 @@ namespace GreyWardenPolicePurity
                 : "{=gwp_dispatch_name_support}Grey Warden request rider");
 
         /// <summary>
-        /// 出发的口粮从玩家自己的辎重里分，不凭空生成；玩家没有就带不走。之后靠他们
-        /// 自己在路上买——那笔钱只能是他们打劫匪挣来的，绝不动随身的案件款。
-        /// </summary>
-        private static void TakeRationsFromPlayer(MobileParty party, MobileParty player)
-        {
-            int men = Math.Max(1, party.MemberRoster.TotalManCount);
-            int wanted = GwpDispatchSupplyRules.TargetFood(DailyFood(party));
-            foreach (ItemRosterElement element in player.ItemRoster.ToList())
-            {
-                if (wanted <= 0) break;
-                ItemObject? item = element.EquipmentElement.Item;
-                if (item?.IsFood != true || element.Amount <= 0) continue;
-                int taken = Math.Min(element.Amount, wanted);
-                player.ItemRoster.AddToCounts(element.EquipmentElement, -taken);
-                party.ItemRoster.AddToCounts(element.EquipmentElement, taken);
-                wanted -= taken;
-            }
-
-            // 带不够就给盘缠，让他们自己路上买。
-            //
-            // 这是"出门就断粮"的真正原因：他们身上唯一的钱是玩家托付的案件款，
-            // 而那笔钱一个子儿都不许动（CaseGoldFloor），于是 BuyFoodIfNeeded 里
-            // 可用余额永远是 0——原版进城买粮的欲望就算跑赢了，到了城里也买不起。
-            // 盘缠与案件款分开记，路上花剩的照样带回来。
-            int purse = TravelPurseFor(men, wanted);
-            if (purse > 0 && Hero.MainHero.Gold >= purse)
-            {
-                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, purse, true);
-                party.PartyTradeGold += purse;
-            }
-
-        }
-
-        /// <summary>带不满的口粮折成盘缠；至少够买几天的粮。</summary>
-        private static int TravelPurseFor(int men, int shortBy) =>
-            shortBy <= 0 ? 0 : Math.Max(TravelPursePerMan, shortBy * TravelPursePerMan / Math.Max(1, men));
-
-        /// <summary>一支这么大的队伍出这趟门要带多少口粮。</summary>
-        internal static int RationsWantedFor(int men) =>
-            GwpDispatchSupplyRules.TargetFood(Math.Max(1, men) /
-                (float)Campaign.Current.Models.MobilePartyFoodConsumptionModel.NumberOfMenOnMapToEatOneFood);
-
-        private static float DailyFood(MobileParty party)
-        {
-            var model = Campaign.Current.Models.MobilePartyFoodConsumptionModel;
-            return Math.Max(0.01f, -model.CalculateDailyFoodConsumptionf(party,
-                model.CalculateDailyBaseFoodConsumptionf(party)).ResultNumber);
-        }
-
-        /// <summary>玩家手上能匀出来的口粮。</summary>
-        private static int AvailableFood(MobileParty player)
-        {
-            int total = 0;
-            foreach (ItemRosterElement element in player.ItemRoster)
-                if (element.EquipmentElement.Item?.IsFood == true && element.Amount > 0)
-                    total += element.Amount;
-            return total;
-        }
-
-        /// <summary>
-        /// 粮和钱都拿不出来就别让他们出门。饿着肚子上路只有一个结局：半路散了，
-        /// 玩家的人、钱、要交的人一起没。宁可当场退回，让玩家先去备点东西。
-        /// </summary>
-        private static bool CanProvision(int men, MobileParty player, int reservedGold, int reservedFood = 0)
-        {
-            if (AvailableFood(player) > reservedFood) return true;
-            int purse = TravelPurseFor(men, RationsWantedFor(men));
-            return purse > 0 && Hero.MainHero.Gold - reservedGold >= purse;
-        }
-
-        /// <summary>
         /// 派出去的人和灰袍领主用同一套下注方式：巡逻类候选由欲望系统统一压到最低，
-        /// 其余原版欲望一分不动，我们自己只加**一个**任务欲望。所以缺粮、疗伤、卖货这些
+        /// 其余原版欲望一分不动，我们自己只加**一个**任务欲望。所以疗伤、卖货这些
         /// 原版欲望真到了该办的时候，会正常压过这趟差事，办完再回来赶路。
         /// 行为选的是全速直扑目标那一档——护送会跟着对方的步子走，办差的人不该这么慢。
         /// </summary>
@@ -475,7 +393,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 派出去的人遇到险情要说一声：被人堵上了、伤亡过半、或者已经断粮。
+        /// 派出去的人遇到险情要说一声：被人堵上了、或者伤亡过半。
         /// 同一种险情只报一次，不在同一趟路上反复刷屏。
         /// </summary>
         private void WarnIfInTrouble(GwpDispatchRecord record, MobileParty party)
@@ -489,10 +407,8 @@ namespace GreyWardenPolicePurity
             {
                 "battle" => GwpText.Get(
                     "{=gwp_dispatch_trouble_battle}Word reaches you: the men you sent have been brought to battle."),
-                "mauled" => GwpText.Get(
-                    "{=gwp_dispatch_trouble_mauled}Word reaches you: the men you sent have been badly cut up."),
                 _ => GwpText.Get(
-                    "{=gwp_dispatch_trouble_starving}Word reaches you: the men you sent have run out of food.")
+                    "{=gwp_dispatch_trouble_mauled}Word reaches you: the men you sent have been badly cut up.")
             };
             InformationManager.DisplayMessage(new InformationMessage(text, Colors.Red));
         }
@@ -502,7 +418,6 @@ namespace GreyWardenPolicePurity
             if (party.MapEvent != null) return "battle";
             int men = party.MemberRoster.TotalManCount;
             if (men > 0 && party.MemberRoster.TotalWoundedRegulars * 2 >= men) return "mauled";
-            if (GwpDispatchCargo.Food(party, Instance?.CargoFor(party) ?? string.Empty) <= 0) return "starving";
             return string.Empty;
         }
 
@@ -597,10 +512,7 @@ namespace GreyWardenPolicePurity
             double now = CampaignTime.Now.ToHours;
             if (now < record.NextTownBusinessHours) return false;
             bool hasPrisoners = party.PrisonRoster.TotalManCount > 0;
-            bool hungry = GwpDispatchSupplyRules.NeedsFood(UsableFood(party), DailyFood(party));
-            // 缺粮就该进城，不该先问"买得起吗"。买不起还有卖俘虏、卖战利品这条路，
-            // 原来那个"余额大于零才算缺粮"的条件把断粮的队伍直接钉在野外。
-            if (!hasPrisoners && !hungry && record.SupplyTownId.Length == 0) return false;
+            if (!hasPrisoners && record.SupplyTownId.Length == 0) return false;
 
             Settlement? town = party.CurrentSettlement?.IsTown == true
                 ? party.CurrentSettlement : FindTradeTown(party);
@@ -608,8 +520,7 @@ namespace GreyWardenPolicePurity
 
             if (party.CurrentSettlement == town)
             {
-                BuyFoodIfNeeded(record, party);
-                record.NextTownBusinessHours = now + GwpDispatchSupplyRules.RetryHours;
+                record.NextTownBusinessHours = now + TownBusinessRetryHours;
                 record.SupplyTownId = string.Empty;
                 // Give the ordinary mission intent back immediately, including
                 // when the market is empty or the travel purse cannot buy food.
@@ -627,7 +538,7 @@ namespace GreyWardenPolicePurity
             if (now - record.SupplyStartedHours >= 24d)
             {
                 record.SupplyTownId = string.Empty;
-                record.NextTownBusinessHours = now + GwpDispatchSupplyRules.RetryHours;
+                record.NextTownBusinessHours = now + TownBusinessRetryHours;
                 return false;
             }
             record.LastProgressHours = now;
@@ -648,58 +559,6 @@ namespace GreyWardenPolicePurity
                                      (ours == null || !settlement.MapFaction.IsAtWarWith(ours)))
                 .OrderBy(settlement => settlement.GetPosition2D.Distance(party.GetPosition2D))
                 .FirstOrDefault();
-        }
-
-        /// <summary>
-        /// 进城之后按原版市价真实买粮。原版 PartiesBuyFoodCampaignBehavior 硬性要求领主
-        /// 英雄，无领主队走不到那条路，这一段由我们补。只花受保护额之上的钱。
-        /// </summary>
-        private void BuyFoodIfNeeded(GwpDispatchRecord record, MobileParty party)
-        {
-            Settlement? settlement = party.CurrentSettlement;
-            if (settlement?.ItemRoster == null || settlement.Town == null) return;
-            float daily = DailyFood(party);
-            if (UsableFood(party) >= GwpDispatchSupplyRules.TargetFood(daily)) return;
-
-            int spendable = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
-            if (spendable <= 0) return;
-
-            foreach (ItemRosterElement element in settlement.ItemRoster.ToList())
-            {
-                ItemObject? item = element.EquipmentElement.Item;
-                if (item?.IsFood != true || element.Amount <= 0) continue;
-                int price = settlement.Town.GetItemPrice(element.EquipmentElement, party, false);
-                if (price <= 0 || price > spendable) continue;
-                int affordable = GwpDispatchSupplyRules.PurchaseCount(
-                    UsableFood(party), daily, element.Amount, spendable, price);
-                if (affordable <= 0) continue;
-                try
-                {
-                    // SellItemsAction bills LeaderHero for every non-caravan.
-                    // This detail has none. Settle each unit against its own
-                    // purse and the actual town inventory at the native price.
-                    for (int unit = 0; unit < affordable; unit++)
-                    {
-                        int currentPrice = settlement.Town.GetItemPrice(element.EquipmentElement, party, false);
-                        int available = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
-                        if (currentPrice <= 0 || currentPrice > available) break;
-                        settlement.ItemRoster.AddToCounts(element.EquipmentElement, -1);
-                        party.ItemRoster.AddToCounts(element.EquipmentElement, 1);
-                        party.PartyTradeGold -= currentPrice;
-                        int tax = MBRandom.RoundRandomized(currentPrice *
-                            Campaign.Current.Models.SettlementTaxModel.GetTownTaxRatio(settlement.Town));
-                        settlement.SettlementComponent.ChangeGold(currentPrice - tax);
-                        settlement.Town.TradeTaxAccumulated += (int)Campaign.Current.Models.SettlementTaxModel
-                            .GetTownCommissionChangeBasedOnSecurity(settlement.Town, tax);
-                    }
-                    spendable = Math.Max(0, party.PartyTradeGold - record.CaseGoldFloor);
-                }
-                catch (Exception exception)
-                {
-                    GwpFaultTrace.Write("DISPATCH_BUY_FOOD_FAILED", details: party.StringId + " | " + exception);
-                }
-                if (UsableFood(party) >= GwpDispatchSupplyRules.TargetFood(daily)) break;
-            }
         }
 
         private void AdvanceOutbound(GwpDispatchRecord record, MobileParty party)
@@ -899,7 +758,7 @@ namespace GreyWardenPolicePurity
                 receiver.ItemRoster.AddToCounts(item.Item, count);
             }
             record.CargoState = string.Empty;
-            // 办案费交到使者手上带回来，并且同样受保护：他们买粮只能花路上挣的，
+            // 办案费交到使者手上带回来，并且同样受保护：
             // 不许动玩家托付的钱，也不许动要带回去的酬劳。路上被打光才会一起没。
             if (fee > 0) party.PartyTradeGold += fee;
             record.CaseGoldFloor = Math.Max(0, fee);
@@ -1061,12 +920,11 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 补给与工资
+        #region 工资
 
         /// <summary>
         /// 工资由玩家付——这是他自己的人。案件款不参与：那笔钱只能原样送到灰袍手里。
-        /// 领队是普通士兵，原版的自动买粮只认英雄领队，所以缺粮时按原版市场价在
-        /// 当地真实买入，买不起就饿着，不凭空变粮也不凭空变钱。
+        /// 送信队不吃饭（<see cref="GwpLeaderlessFoodModel"/>），没有口粮这一项。
         /// </summary>
         private void OnDailyTick() =>
             GwpRuntimeFaultWatch.Guard("DISPATCH_DAILY", UpkeepDispatches);

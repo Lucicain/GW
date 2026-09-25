@@ -995,7 +995,15 @@ namespace GreyWardenPolicePurity
                     state.SourceTaskPolicePartyId,
                     StringComparison.OrdinalIgnoreCase));
             if (!CanContinueLeadingPoliceTask(sourceParty))
-                return false;
+            {
+                // 来源领主战败、被俘或队伍没了：这批人是从领主身上抽出来的，
+                // 交给最近的灰袍领主，不进城销毁。接收人记下来，免得"最近的"
+                // 每小时换一个、队伍来回改道。
+                sourceParty = GwpCommon.FindNearestGreyWardenLordParty(interceptor);
+                if (!CanContinueLeadingPoliceTask(sourceParty))
+                    return false;
+                state.SourceTaskPolicePartyId = sourceParty!.StringId;
+            }
 
             if (interceptor.MapEvent != null || sourceParty!.MapEvent != null)
                 return true;

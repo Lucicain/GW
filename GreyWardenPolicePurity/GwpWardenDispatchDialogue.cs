@@ -373,13 +373,9 @@ namespace GreyWardenPolicePurity
                     "{=gwp_dispatch_no_receiver}There is no Grey Warden party abroad that your men could reach. Keep them with you for now.")));
                 return;
             }
-            // 一键换货不许把路上的口粮也换出去，否则玩家点完自动交易就会在出发关口
-            // 被 gwp_dispatch_no_rations 拦下来，而他并不知道是这一下换掉的。
             var payment = new GwpAssetPayment(Hero.MainHero, receiver.LeaderHero,
                 MobileParty.MainParty.Party, receiver.Party, int.MaxValue, bounty.CaseReportSuggestedPayment, true,
-                reportMode: true, autoReceipt: bounty.CaseReportReceipt, prisoner: bounty.PendingCasePrisonerForDispatch,
-                rationsFloor: GwpWardenDispatchBehavior.RationsWantedFor(
-                    Math.Max(1, members.TotalManCount)));
+                reportMode: true, autoReceipt: bounty.CaseReportReceipt, prisoner: bounty.PendingCasePrisonerForDispatch);
             bounty.ShowUnknownCaseReceipt();
             BarterManager manager = Campaign.Current!.BarterManager;
             BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
@@ -440,7 +436,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 订金按"案件款"的口径随队带走——那笔钱被 CaseGoldFloor 保护，路上不许拿去
-        /// 买粮或发饷。玩家金币不够、或者没粮没盘缠，Dispatch 的出发判断会照常拦下。
+        /// 发饷。玩家金币不够时，Dispatch 的出发判断会照常拦下。
         /// </summary>
         private static void SendTroopOrder(TroopRoster escort, string troopId, int count, int price)
         {

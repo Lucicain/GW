@@ -600,8 +600,15 @@ namespace GreyWardenPolicePurity
 
             MobileParty? trainer = ResolveTrainerParty();
             CharacterObject? target = CharacterObject.Find(_orderedTroopId);
-            if (trainer?.IsActive != true || target == null ||
-                !PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(
+            if (trainer?.IsActive != true || target == null)
+                return;
+
+            // 练兵队的照看不看练兵官能不能被订单占用，见 TendCohort。
+            MobileParty? existingCohort = ResolveCohortParty();
+            if (existingCohort != null)
+                TendCohort(trainer, existingCohort, target);
+
+            if (!PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(
                     trainer))
                 return;
 

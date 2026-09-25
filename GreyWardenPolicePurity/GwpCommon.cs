@@ -37,6 +37,40 @@ namespace GreyWardenPolicePurity
             return party?.StringId?.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) == true;
         }
 
+        /// <summary>
+        /// 我们自己建的无领主办差队：练兵队、纠察队、追截/延迟纠察队、招募使者、
+        /// 玩家送信队。它们拿不到原版给领主队的补给（进城买粮要求有领主英雄），
+        /// 所以一律不吃饭，见 <see cref="GwpLeaderlessFoodModel"/>。
+        /// </summary>
+        public static bool IsLeaderlessDutyParty(MobileParty? party)
+        {
+            string? id = party?.StringId;
+            if (string.IsNullOrEmpty(id) || party!.LeaderHero != null) return false;
+            return id!.StartsWith(TrainingCohortIdPrefix, StringComparison.Ordinal) ||
+                   id.StartsWith(PatrolIdPrefix, StringComparison.Ordinal) ||
+                   id.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) ||
+                   id.StartsWith(GwpIds.RecruitmentPatrolPrefix, StringComparison.Ordinal) ||
+                   id.StartsWith(GwpWardenDispatchBehavior.DispatchPartyPrefix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// 能接收回流兵员的最近灰袍领主队：活着、没被俘、不在战斗里。原主队没了时，
+        /// 从领主身上抽出去的人交给他，不在城里销毁。
+        /// </summary>
+        public static MobileParty? FindNearestGreyWardenLordParty(MobileParty from)
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return null;
+            return MobileParty.All
+                .Where(party => party?.IsActive == true && party.IsLordParty &&
+                    party.ActualClan == policeClan &&
+                    party.LeaderHero?.IsActive == true &&
+                    party.LeaderHero.IsPrisoner != true &&
+                    party.MapEvent == null)
+                .OrderBy(party => party.GetPosition2D.Distance(from.GetPosition2D))
+                .FirstOrDefault();
+        }
+
         public static bool ShouldIgnoreCrimeTracking(MobileParty? party)
         {
             return party?.IsPatrolParty == true;
