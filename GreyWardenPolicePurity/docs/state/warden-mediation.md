@@ -1,9 +1,9 @@
 # 灰袍出面调停与战后讲和
 
-> 当前状态：已部署待实测（宣战当刻登记调停申请）
+> 当前状态：已部署待实测（战后界面里应下的调停推迟到战斗收尾再讲和）
 > 最后验收：未建立检查点
 > 覆盖源码：`PoliceAntiWarDeclaration.cs`
-> 待实测：加入灰袍的仗、点“进攻”与对方开战后，战后界面里直接找灰袍领主，外交选项里应出现“我替你们打出来的仗，替我说句话”
+> 待实测：加入灰袍的仗、点“进攻”、俘虏败方领主后，战后界面里找灰袍选“替我说句话”，离开战后界面后地图上不应留下败方的 0 人队，也不应再崩溃。宣战当刻登记、战后界面出现选项已在实机日志里看到（2026-09-25 20:46，巴塔尼亚）
 
 ## 调停申请（替灰袍打出来的战争）
 
@@ -11,6 +11,24 @@
 与灰袍领主对话、外交分支（`lord_talk_speak_diplomacy_2`）里的
 `gwp_warden_mediation_ask` 在有申请时出现（不要求玩家入会），选后对每个仍在交战的
 势力调原版 `MakePeaceAction`。玩家自己已经讲和或势力消失的申请自动作废。
+
+### 战斗没收尾时只应下，收尾时再讲和
+
+玩家所在的战斗还没 finalize（战后界面里找灰袍，或送信队此时送到）时，
+`ApplyWardenMediation` 只记下这场战斗（`_mediationDeferredUntilBattleEnds`，不进存档），
+回话照常说"已了结"；这场战斗的 `MapEventEnded` 里再真正调 `MakePeaceAction`。
+此刻战斗已是 `WaitingRemoval`，原版不再动它。
+
+- **不要在玩家的战斗 finalize 之前改变任何立场**（依据：C#反编译 v1.4.8 2026-09-25；实机诊断 2026-09-25）。
+  任何立场变化（`MakePeaceAction`，连裸的 `FactionManager.SetNeutral` 也算，
+  `StanceLink.StanceType` 的 setter 都会派发 `OnMapEventContinuityNeedsUpdate`）都会触发原版
+  `PartyDiplomaticHandlerCampaignBehavior.CheckMapEvents`：未收尾的战斗里，进攻方中
+  不再与对面**每一支**队伍交战的（`MapEvent.CanPartyJoinBattle`）直接被 `MapEventSide = null`
+  摘出去。被摘的队伍跳过 `HandleMapEventEndForPartyInternal`，所以不会被销毁；进攻方摘空时
+  战斗当场 `FinalizeEvent`。实机后果：普林多尔的部队领主已被俘、0 人，被摘出后留在地图上，
+  玩家一碰就进原版会面对话，`GauntletMapConversationView.CreateConversationTableau` 空引用崩溃。
+- 其他灰袍自己的 `TrySetNeutral`（结案、撤案、纠察回收）在同样时机调用也会触发这条原版路径，
+  目前没有实机证据说明它们会在玩家的战斗里触发，未改。
 
 **只登记“替灰袍打的”战争**，满足其一：
 1. 制止正在发生的案件：本场是村庄劫掠，或玩家这一侧有村民队/商队；

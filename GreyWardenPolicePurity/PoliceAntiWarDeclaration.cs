@@ -30,6 +30,11 @@ namespace GreyWardenPolicePurity
         /// 等灰袍出面了结的势力。只有"替灰袍打的那几仗"才进这张表，玩家自己的战争不进。
         /// </summary>
         private List<string> _mediationRequests = new List<string>();
+
+        /// <summary>
+        /// 战后界面里已应下调停、等这一场战斗收尾再讲和。不进存档：战斗进行中不能存档。
+        /// </summary>
+        private MapEvent? _mediationDeferredUntilBattleEnds;
         private static PoliceAntiWarDeclaration? _instance;
 
         public override void RegisterEvents()
@@ -196,12 +201,33 @@ namespace GreyWardenPolicePurity
         /// 灰袍出面，把因为帮他们办事而结下的仇一口气了结。用原版 MakePeaceAction 而不是
         /// 裸的 FactionManager.SetNeutral——后者不会把定居点标记为待重绘，地图上会一直
         /// 红着；前者还会派发原版的和平事件。
+        ///
+        /// 玩家的战斗还没收尾（战后界面里找灰袍）时只应下、不讲和，等这场
+        /// <c>MapEventEnded</c> 再办。原因：任何立场变化都会让原版
+        /// <c>PartyDiplomaticHandlerCampaignBehavior.CheckMapEvents</c> 把未收尾战斗里
+        /// 进攻方中"不再与对面全体交战"的队伍直接 <c>MapEventSide = null</c> 摘出去，
+        /// 被摘的队伍跳过 <c>HandleMapEventEndForPartyInternal</c>，不会被销毁；领主已被俘
+        /// 的败方就成了地图上的 0 人队，玩家一碰就在会面对话里空引用崩溃。
+        /// （依据：C#反编译 2026-09-25；实机诊断 2026-09-25 20:46 普林多尔的部队）
         /// </summary>
         internal static int ApplyWardenMediation()
         {
             if (_instance == null) return 0;
             IFaction? playerFaction = Hero.MainHero?.MapFaction;
             if (playerFaction == null) return 0;
+
+            MapEvent? playerBattle = MobileParty.MainParty?.MapEvent;
+            if (playerBattle != null && !playerBattle.IsFinalized)
+            {
+                int pending = _instance.LiveMediationFactions().Count();
+                if (pending > 0)
+                {
+                    _instance._mediationDeferredUntilBattleEnds = playerBattle;
+                    GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_DEFERRED",
+                        "pending=" + pending);
+                }
+                return pending;
+            }
 
             int settled = 0;
             foreach (IFaction faction in _instance.LiveMediationFactions().ToList())
@@ -246,6 +272,14 @@ namespace GreyWardenPolicePurity
             if (mapEvent == null) return;
 
             ResolvePlayerAssistWar(mapEvent);
+
+            // 此刻本场已是 WaitingRemoval，原版 CheckMapEvents 不再碰它；败方队伍随后在
+            // HandleMapEventEnd 里照常销毁。
+            if (_mediationDeferredUntilBattleEnds == mapEvent)
+            {
+                _mediationDeferredUntilBattleEnds = null;
+                ApplyWardenMediation();
+            }
 
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
