@@ -145,6 +145,9 @@ def main() -> int:
     w("> **这个文件由 `tools/Generate-CodeMap.py` 生成，不要手改。**")
     w("> 源码改了就重新生成：`python tools/Generate-CodeMap.py`")
     w("> 它描述代码**的形状**，不描述行为——行为看同目录其他 state 文件。")
+    w(">")
+    w("> **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，")
+    w("> 用 grep 查某个类型或文件，不要整份读进上下文。**")
     w("")
     patch_classes = {p[3] for p in patches if p[3] != "?"}
     w(f"{len(files)} 个源文件、{total_loc:,} 行、"

@@ -11,9 +11,10 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 ## 开工先读
 
 - `GreyWardenPolicePurity/docs/state/README.md` —— 各子系统**现在**的样子，以及哪些还没提取。
-- `GreyWardenPolicePurity/docs/state/code-map.md` —— 从源码生成的代码地图：Harmony 补丁点、
-  SubModule 注册顺序、类型 → 文件索引。这个仓库里约一半的类型所在文件名不含类型名，
-  找类型查地图，不要靠文件名猜。不要手改它。
+- `GreyWardenPolicePurity/docs/state/code-map.md` —— 从源码生成的代码地图。**只通读前两节**
+  （Harmony 补丁点、SubModule 注册顺序，约 9 KB）；后面的类型索引和文件索引是查表用的，
+  `grep -n 'CrimePool' docs/state/code-map.md` 这样查，不要整份读。这个仓库里约一半的类型
+  所在文件名不含类型名，找类型查这张表，不要靠文件名猜。不要手改它。
 - `docs/journal/` 有 2 MB，**不要通读**。先 `grep -n '^## ' docs/journal/2026-09.md`
   看条目标题，再用 `sed -n '起,止p'` 只读需要的那段。
 
@@ -38,14 +39,14 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 3. 往当月 journal 追加一条：改了什么 / 为什么 / 证据 / 验证 / 哈希 / 回退 / 未做。
 4. 报告实际结果，失败就说失败并贴输出。
 5. 用户确认功能可用 → 同一轮退休它的诊断。
-6. 不提交（见下节）。
+6. 提交本轮（`wip:`，一个功能一个提交），不推送（见下节）。
 
-## 提交与发版只由用户宣布
+## 提交可以自己做，发版和推送等用户提
 
-- **不要自行提交或推送。** 开发中的改动一律留在工作树里。
-- 用户宣布某个功能开发结束 → 做**一次** `wip:` 提交，只含该功能和它的 state 更新。
-- 新版本只由用户宣布。宣布之前不打 tag、不建 Release、不出 ZIP、不改
-  `_Module/README.md` / `README_EN.md`；普通开发构建永远不出 ZIP。宣布后按
+- **提交自己做**：一个功能做完、或一轮收尾时，做 `wip:` 提交。**一个提交只含一个功能**
+  和它的 state 更新，不要把几件事打成一包——以后只想撤一个时才撤得开。
+- **推送、打 tag、建 Release、出 ZIP、改 `_Module/README.md` / `README_EN.md`**：
+  只在用户提出新版本时做。普通开发构建永远不出 ZIP。发版按
   `.claude/rules/release-notes.md` 与 `docs/reference/release-checklist.md` 做。
 - 替换或移除已有功能前，先在 state 文件里记下回退路径（哪个提交、哪些文件）。
 
