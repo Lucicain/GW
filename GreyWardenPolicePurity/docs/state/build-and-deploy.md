@@ -43,7 +43,7 @@
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
 
-脚本用 Windows PowerShell 5.1 运行。
+脚本默认用 Windows PowerShell 5.1 运行；`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 要用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。
 
 ## 测试工程（`tools/`）
 
