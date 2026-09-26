@@ -1,10 +1,10 @@
 # 诊断系统
 
-> 当前状态：现行规则；灰袍战马伤害转移专项诊断已随新归属更新，待实机验证
+> 当前状态：现行规则；2026-09-26 退休援军、开场资格与音乐档位的健康路径诊断
 > 最后验收：未建立检查点
-> 已复核至：2026-09-25 旧归属五场伤害日志与新归属源码
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs`（后两者仅骑兵专项监控）
-> 待实测：新归属下灰袍战马、骑手、普通马的伤害和控制对照，见 `troop-combat.md`
+> 已复核至：2026-09-26 工作树（`GwpBattleReinforcementBehavior.cs` `GwpBattleSceneContext.cs` `GwpSyndicateMusicBehavior.cs` 的诊断删除）
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
+> 待实测：无
 
 ## 原则
 
@@ -13,6 +13,14 @@
 
 全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 18 个文件带此守卫），
 所以退休一条 trace 只关乎开发者信噪比，**与玩家收到什么无关**。
+
+## 谁来管
+
+诊断的加、删、加强与日志清理由 agent 自己决定并执行，不等用户下指令，也不请用户
+去读日志。遇到难以解决的问题或体验问题时，agent 先加强相关诊断取证，并配合 C# 反编译
+与 `TaleWorlds.Native.dll` 反汇编查实原版规则（方法见
+[`../reference/investigation-methods.md`](../reference/investigation-methods.md)）。
+用户说"测过了没问题"时，agent 要自己读在役日志核对待观察项。（依据：用户裁定 2026-09-26）
 
 ## 加与删的判据
 
@@ -41,22 +49,22 @@
 
 | 文件 | 内容 |
 |---|---|
-| `GreyWarden-Faults.log` | 故障与静默吞异常留痕。在役的 `BATTLE_SCENE_*`、音乐档位诊断也写这里，它们退休后**健康的一局里这个文件应当是空的** |
-| `GreyWarden-AI-Diagnostics.log` | AI / 战场 / 欲望拍卖采样 |
+| `GreyWarden-Faults.log` | 故障与静默吞异常留痕，只追加不滚动。**健康的一局里只有 `FAULT_WATCH_ARMED` 一行** |
+| `GreyWarden-AI-Diagnostics.log` | AI / 欲望拍卖 / 协力编成 / 地图战斗采样，每局开新文件，旧的滚进归档 |
 | `GreyWarden-Case-Events.log` | 案件生命周期事件 |
 | `GreyWarden-Diagnostics-Archive` | 滚动归档 |
 
 骑兵伤害调查的 `GreyWarden-Knight-Damage.log`、`GreyWarden-Warhorse-Damage.log`（含 `.previous`）已于 2026-09-25 随诊断退休删除，
 不再可读；结论在 journal。
 
-## 在役、待退休
+## 在役
 
-| 系统 | 覆盖 | 退休条件 |
+| 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
-| `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` | 音乐资格分母、援军触发层/概率/预算/到场 | 用户已确认功能正常 → **下次动这块代码时退休** |
-| 音乐策略档位诊断（每 10 任务秒 / 变档输出，含 `recent5`、`waiting-for-fresh-exchange`） | 强度映射是否按预期升降 | 用户已确认音乐正常 → **下次动这块代码时退休** |
+| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 2026-09-25 调停 0 人队崩溃、2026-09-26 改追绕过冷却都靠它取证；覆盖的巡逻、练兵、协力等子系统多数尚未提取 | 对应子系统提取成 state 且无待观察项时，按主题拆掉健康路径 |
+| 失败路径：`GwpRuntimeFaultWatch`、`GwpEngineAssertDiagnostics`、`DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 不退休 |
 
-已退休的：`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
+已退休的：援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
 `GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，
 日志行一并清除，结论见 [`battle-tactics.md`](battle-tactics.md)）。
 其日志、WER 与一次性分析输出**不再可读**；需要重新调查时从新复现取证，

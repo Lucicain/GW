@@ -24,10 +24,6 @@ namespace GreyWardenPolicePurity
         private int _reinforcementCount;
         private BattleSideEnum _ourSide;
         private readonly HashSet<Agent> _countedCasualties = new();
-#if GWP_DIAGNOSTICS
-        private float _decisionTraceSeconds;
-        private int _damageEvents, _casualtyEvents;
-#endif
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
         private static readonly uint ProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
@@ -69,9 +65,6 @@ namespace GreyWardenPolicePurity
                     if (ours <= 0 || enemy <= 0) return;
                     _battle = true; _policy.Initialize(ours, enemy);
                     _output.Want(_policy.Tier);
-#if GWP_DIAGNOSTICS
-                    TraceDecision(ours, enemy, "deployment-complete");
-#endif
                     if (_reinforcementCount > 0) { _output.Reinforcement(); _reinforcementCount = 0; }
                 }
                 bool ourDefender = _ourSide == BattleSideEnum.Defender;
@@ -85,11 +78,6 @@ namespace GreyWardenPolicePurity
                 if (_elapsed >= 5 && _emptyTime >= 3) { EndMusic("no fighting force or reserves on one side"); return; }
                 bool changed = _policy.Update(ours, enemy, sample);
                 if (changed) _output.Want(_policy.Tier);
-#if GWP_DIAGNOSTICS
-                _decisionTraceSeconds += sample;
-                if (changed || _decisionTraceSeconds >= 10)
-                { _decisionTraceSeconds = 0; TraceDecision(ours, enemy, changed ? "tier-change" : "sample"); }
-#endif
             }
             catch (Exception e) { Fail(e); }
         }
@@ -113,18 +101,12 @@ namespace GreyWardenPolicePurity
                 || affectorAgent.Team.Side == BattleSideEnum.None || affectorAgent.Team.Side == affectedAgent.Team.Side) return;
             float fraction = Math.Min(1, damagedHp / Math.Max(1, affectedAgent.HealthLimit));
             _policy.RecordDamage(Math.Max(.01f, affectedAgent.CharacterPowerCached) * fraction);
-#if GWP_DIAGNOSTICS
-            _damageEvents++;
-#endif
         }
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
             if (!Tracks(affectedAgent) || (agentState != AgentState.Killed && agentState != AgentState.Unconscious)
                 || !_countedCasualties.Add(affectedAgent)) return;
             _policy.RecordCasualty(Math.Max(.01f, affectedAgent.CharacterPowerCached));
-#if GWP_DIAGNOSTICS
-            _casualtyEvents++;
-#endif
         }
         public override void OnAgentBuild(Agent agent, Banner banner)
         {
@@ -133,17 +115,11 @@ namespace GreyWardenPolicePurity
         internal void NotifyReinforcementArrival(BattleSideEnum side, int count)
         {
             if (_disposed || _outro || count <= 0) return;
-#if GWP_DIAGNOSTICS
-            GwpFaultTrace.Write("SYNDICATE_BATTLE_DYNAMICS", details: $"reinforcement side={side} count={count}");
-#endif
             if (!_battle) _reinforcementCount += count; else _output?.Reinforcement();
         }
         private void EndMusic(string reason)
         {
             _outro = true; _output?.Want("outro");
-#if GWP_DIAGNOSTICS
-            GwpFaultTrace.Write("SYNDICATE_BATTLE_DYNAMICS", details: "outro: " + reason);
-#endif
         }
         // Application ticks run even while the mission is paused/in menus.
         internal static void Pump() => _owner?.PumpInstance();
@@ -167,16 +143,6 @@ namespace GreyWardenPolicePurity
             catch (Exception e) { Fail(e); }
         }
         private void Fail(Exception e) { GwpFaultTrace.WriteQuiet(e); Teardown(); }
-#if GWP_DIAGNOSTICS
-        private void TraceDecision(float ours, float enemy, string trigger)
-        {
-            GwpFaultTrace.Write("SYNDICATE_BATTLE_DYNAMICS", details:
-                $"{trigger} t={_elapsed:F1} ours={ours:F2} enemy={enemy:F2} ratio={enemy / Math.Max(.01f, ours):F3} "
-                + $"hits={_damageEvents} casualties={_casualtyEvents} damage20={_policy.Damage20:F2} losses20={_policy.Casualties20:F2} "
-                + $"exchange={_policy.Exchange:F3} recent5={_policy.RecentExchange:F3} attrition={_policy.Attrition:F3} pressure={_policy.Pressure:F3} "
-                + $"quiet={_policy.QuietSeconds:F1} tension={_policy.Tension:F3} tier={_policy.Tier} reason={_policy.Reason}");
-        }
-#endif
         private void Teardown()
         {
             if (_disposed) return;

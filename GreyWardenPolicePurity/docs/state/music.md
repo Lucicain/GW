@@ -1,9 +1,10 @@
 # 辛迪加分段战场配乐
 
-> 当前状态：**已部署待实测**：原版片段实时混音（FLAC 无损，387 MB → 80.6 MB）已获用户认可；本轮加 +8 dB 输出增益与峰值限制器、放慢升档节奏
-> 最后验收：**`b68b43c`**（本地检查点，未发布；那时是预渲染整段 PCM）
+> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
+> 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
+> 已复核至：2026-09-26 工作树——退休音乐档位诊断 `SYNDICATE_BATTLE_DYNAMICS`，行为未变；`MusicTests` 不编译该文件
 > 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/Export-SyndicateMusic.py`
-> 待实测：用户已确认实时混音“效果不错”（2026-09-24）；待听 +8 dB 后与原版音乐的响度是否接近、有无被压扁感；升档节奏是否合适
+> 待实测：无
 
 **回退路径**：回到用户验收的 `b68b43c` 预渲染版时，从该提交取回
 `GreyWardenPolicePurity/GwpMusicScore.cs`、`GreyWardenPolicePurity/_Module/Music/Lab/`（26 个 `.pcm`

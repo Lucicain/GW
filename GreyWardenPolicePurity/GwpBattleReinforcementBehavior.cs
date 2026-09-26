@@ -118,11 +118,6 @@ namespace GreyWardenPolicePurity
             int reputation = playerSide && Campaign.Current != null ? PlayerBehaviorPool.Reputation : 100;
             int opening = _context!.OpeningCount(sideId);
             bool success = side.Checks.Try(opening, alive, reserves, recipient != null, () => MBRandom.RandomFloat, reputation);
-#if GWP_DIAGNOSTICS
-            if (side.Checks.Attempts != oldAttempts || success)
-                GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
-                    $"side={sideId} opening={opening} alive={alive} reserves={reserves} attempts={side.Checks.Attempts} playerSide={playerSide} reputation={reputation} success={success}");
-#endif
             if (!success)
             {
                 if (oldAttempts == 0 && side.Checks.Attempts > 0 && recipient == Mission.MainAgent)
@@ -137,16 +132,8 @@ namespace GreyWardenPolicePurity
             float enemyPower = _context!.RemainingPower(enemySide);
             float share = GwpBattleScenePolicy.PowerShare(playerSide, reputation);
             float infantryPower = _infantry.GetPower(), archerPower = _archer.GetPower(), cavalryPower = _cavalry.GetPower();
-            float plannedPower = 0;
             foreach (int kind in GwpBattleScenePolicy.Plan(enemyPower, share, infantryPower, archerPower, cavalryPower))
-            {
                 side.Troops.Enqueue(kind);
-                plannedPower += kind == 0 ? infantryPower : kind == 1 ? archerPower : cavalryPower;
-            }
-#if GWP_DIAGNOSTICS
-            GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
-                $"plan side={sideId} share={share:F3} enemyPower={enemyPower:F2} budget={enemyPower * share:F2} power={plannedPower:F2} count={side.Remaining}");
-#endif
             side.NextBatch = _time;
             // First batch is synchronous so a last-survivor rescue reaches the
             // scene before the next simulation tick can end the battle.
@@ -182,14 +169,13 @@ namespace GreyWardenPolicePurity
         private void SpawnBatch(SideSupport side)
         {
             if (Mission.MissionEnded || Mission.MissionResult != null) { side.Troops.Clear(); return; }
-            int count = Math.Min(10, side.Remaining), spawned = 0, attempted = 0;
+            int count = Math.Min(10, side.Remaining), spawned = 0;
             Agent? first = null;
             for (int i = 0; i < count; i++)
             {
                 // Leave room for both rider and horse; resume when space opens.
                 if (_context!.Spawn!.NumberOfAgents + 2 > DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission) break;
                 int kind = side.Troops.Dequeue();
-                attempted++;
                 BasicCharacterObject troop = kind == 0 ? _infantry : kind == 1 ? _archer : _cavalry;
                 FormationClass formationClass = kind == 0 ? FormationClass.Infantry
                     : kind == 1 ? FormationClass.Ranged : FormationClass.Cavalry;
@@ -222,11 +208,6 @@ namespace GreyWardenPolicePurity
                     : "{=gwp_battle_support_enemy}Grey Warden reinforcements have joined the enemy!")), 0);
                 if (_horn == null) { _hornPlayed = 0; StartHorn(); }
             }
-#if GWP_DIAGNOSTICS
-            if (attempted > 0)
-                GwpFaultTrace.Write("BATTLE_SCENE_SUPPORT", details:
-                    $"arrival side={side.Team.Side} spawned={spawned} remaining={side.Remaining}");
-#endif
         }
 
         private void StartHorn()

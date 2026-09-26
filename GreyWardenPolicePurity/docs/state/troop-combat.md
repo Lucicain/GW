@@ -1,10 +1,10 @@
 # 灰袍兵种：等级、装备与战斗加成
 
-> 当前状态：**已部署待实测**：2026-09-25 攻击加成从兵种改绑到灰袍武器（武器词条），新增 `gwmace`、`gwarrows`；同日战马加强减半、箭数恢复原版、删除骑士霸体与远程减半、骑手伤害与马各担一半；此前基线提交 `6b4b1dd`
-> 最后验收：未建立检查点
+> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
+> 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 已复核至：2026-09-25 当前战斗源码、装备数据；新 live DLL `4954B739…034F96`
 > 覆盖源码：`GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpAgentStatCalculateModel.cs`（大盾被动耐久在 `GwpShieldBashGuardPatch.cs`，见 dual-blade.md；兵种数据在 `_Module/ModuleData/spnpccharacters.xml`、`items.xml`、`gwp_monsters.xml`）
-> 待实测：武器词条——步兵剑与杖的击倒/打下马/破防、双刀固定 40% 击倒、领主与玩家拿灰袍武器同样生效、新杖与新箭在预设里正常出现；伤害各担一半后骑兵与步兵、弓手的强弱；战马冲撞与抗控制；架枪必破武器招架的稳定性
+> 待实测：无
 
 双刀、踢与盾击、替代攻击的击倒概率写在 [dual-blade.md](dual-blade.md)；本文件写兵种、装备与武器词条。
 

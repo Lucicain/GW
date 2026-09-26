@@ -33,10 +33,6 @@ namespace GreyWardenPolicePurity
                 MusicEligible = GwpBattleScenePolicy.MusicEligible(greyDefenders, defenders)
                     || GwpBattleScenePolicy.MusicEligible(greyAttackers, attackers);
                 Ready = true;
-#if GWP_DIAGNOSTICS
-                GwpFaultTrace.Write("BATTLE_SCENE_OPENING", details:
-                    $"defender={greyDefenders}/{defenders} attacker={greyAttackers}/{attackers} music={MusicEligible}");
-#endif
                 return true;
             }
             catch (Exception error) { GwpFaultTrace.WriteQuiet(error); return false; }

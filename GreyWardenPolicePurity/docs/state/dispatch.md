@@ -1,9 +1,9 @@
 # 玩家送信队（使者）
 
-> 当前状态：已部署待实测（送信队不吃饭、不带口粮与盘缠）
-> 最后验收：未建立检查点
+> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
+> 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs`
-> 待实测：出发不再要求带粮；长途送信回来不再饿伤；押着俘虏以外的情况不再拐进城
+> 待实测：无
 
 本文件只写送信队在地图上的这一趟：出发、找人、交付、回来交割、工资。对话入口
 （`GwpWardenDispatchDialogue.cs`）、分兵界面与付款 barter（`GwpAssetPayment.cs`、

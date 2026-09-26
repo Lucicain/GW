@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-141 个源文件、47,722 行、267 个公开类型、53 个 Harmony 补丁点（分布在 53 个补丁类里）。
+141 个源文件、47,669 行、267 个公开类型、53 个 Harmony 补丁点（分布在 53 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -398,14 +398,14 @@
 ### 音乐（4 个文件）
 
 - `GwpMusicScore.cs` — 378 行 · `GwpMusicScore` : IDisposable，另含 3 个类型
-- `GwpSyndicateMusicBehavior.cs` — 200 行 · `GwpSyndicateMusicBehavior` : MissionBehavior
 - `GwpMusicOutput.cs` — 176 行 · `GwpMusicOutput` : IDisposable，另含 1 个类型
+- `GwpSyndicateMusicBehavior.cs` — 166 行 · `GwpSyndicateMusicBehavior` : MissionBehavior
 - `GwpMusicBattlePolicy.cs` — 113 行 · `GwpMusicBattlePolicy`
 
 ### 战场援军（4 个文件）
 
-- `GwpBattleReinforcementBehavior.cs` — 266 行 · `GwpBattleReinforcementBehavior` : MissionBehavior，另含 1 个类型
-- `GwpBattleSceneContext.cs` — 81 行 · `GwpBattleSceneContext` : MissionBehavior
+- `GwpBattleReinforcementBehavior.cs` — 247 行 · `GwpBattleReinforcementBehavior` : MissionBehavior，另含 1 个类型
+- `GwpBattleSceneContext.cs` — 77 行 · `GwpBattleSceneContext` : MissionBehavior
 - `GwpBattleScenePolicy.cs` — 74 行 · `GwpBattleScenePolicy`，另含 1 个类型
 - `GwpBattleSupportOrigin.cs` — 37 行 · `GwpBattleSupportOrigin` : IAgentOriginBase
 
@@ -437,7 +437,7 @@
 ### 执法：案件与巡逻（29 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 2750 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1518 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.cs` — 1522 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1466 行 · `PoliceEnforcementBehavior`
 - `GwpFieldArrestBehavior.cs` — 1392 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PolicePatrolBehavior.cs` — 1071 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
