@@ -365,6 +365,7 @@ namespace GreyWardenPolicePurity
             string prisonerHeroId)
         {
             var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            bounty?.RegisterCaptureInCustody();
             MobileParty? receiver = GwpWardenDispatchBehavior.FindReceiver(MobileParty.MainParty);
             if (bounty == null || receiver?.LeaderHero == null)
             {

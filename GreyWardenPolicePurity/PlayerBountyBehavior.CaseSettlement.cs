@@ -447,24 +447,9 @@ namespace GreyWardenPolicePurity
             if (!HasBountyTask || _pendingPrisonerAssessed > 0) return;
             Hero? hero = CaseHero;
             if (hero == null) return;
-            CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == hero.StringId);
-            if (hero.IsPrisoner && hero.PartyBelongedToAsPrisoner == MobileParty.MainParty?.Party)
-            {
-                int fine = crime == null ? _assignedCaseFine : GwpFieldArrestPricing.AssessFine(crime);
-                int standing = Math.Max(0, CrimePool.GetHistory(hero)?.NegativeStanding ?? _assignedCaseStanding);
-                NotifyCaseClosedByCapture(hero, fine, standing);
-                if (IsWaitingForBountyCollection)
-                {
-                    HeroCrimeStats history = CrimePool.GetOrCreateHistory(hero);
-                    history.NegativeStanding = 0;
-                    history.CrimeKillProgress = 0;
-                    CrimePool.CloseCaseSettledInField(crime);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to any Grey Warden lord, in person or by your own men, to have your expenses settled."), Colors.Green));
-                }
-                return;
-            }
+            if (RegisterCaptureInCustody()) return;
             if (!IsTrackingBountyTarget) return;
+            CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == hero.StringId);
 
             // 普通案件在承办队那边靠 IsTargetValid / IsOffenderPursuable 自动结案：罪犯
             // 死了、被别人拿下了、部队没了，案子就消失，那名灰袍去接下一宗。玩家自己
@@ -480,6 +465,32 @@ namespace GreyWardenPolicePurity
             }
             if (hero.PartyBelongedTo?.IsActive == true)
                 _activeBountyTargetId = hero.PartyBelongedTo.StringId;
+        }
+
+        /// <summary>
+        /// 目标在玩家主队当俘虏、还没登记押人时，现在就登记。每秒核对在对话和战后遭遇里
+        /// 跳过，交差入口要先调这里，否则刚打完直接去交差时界面里没有这个人。
+        /// </summary>
+        internal bool RegisterCaptureInCustody()
+        {
+            if (!HasBountyTask || _pendingPrisonerAssessed > 0) return false;
+            Hero? hero = CaseHero;
+            if (hero == null || !hero.IsPrisoner || hero.PartyBelongedToAsPrisoner != MobileParty.MainParty?.Party)
+                return false;
+            CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == hero.StringId);
+            int fine = crime == null ? _assignedCaseFine : GwpFieldArrestPricing.AssessFine(crime);
+            int standing = Math.Max(0, CrimePool.GetHistory(hero)?.NegativeStanding ?? _assignedCaseStanding);
+            NotifyCaseClosedByCapture(hero, fine, standing);
+            if (IsWaitingForBountyCollection)
+            {
+                HeroCrimeStats history = CrimePool.GetOrCreateHistory(hero);
+                history.NegativeStanding = 0;
+                history.CrimeKillProgress = 0;
+                CrimePool.CloseCaseSettledInField(crime);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to any Grey Warden lord, in person or by your own men, to have your expenses settled."), Colors.Green));
+            }
+            return true;
         }
 
         private void MigrateCaseSettlement()
@@ -526,7 +537,7 @@ namespace GreyWardenPolicePurity
         {
             starter.AddPlayerLine("gwp_case_report_lord", "lord_talk_speak_diplomacy_2", "gwp_case_report_ask",
                 GwpText.Get("{=gwp_case_report_open}I have come to report on the commission."),
-                () => IsCaseClerk && HasBountyTask, null, 102);
+                () => IsCaseClerk && HasBountyTask, () => RegisterCaptureInCustody(), 102);
             starter.AddDialogLine("gwp_case_report_ask", "gwp_case_report_ask", "gwp_case_report_options",
                 "{GWP_CASE_REPORT_SUMMARY}", PrepareCaseReportSummary, null);
             starter.AddPlayerLine("gwp_case_pay_any", "gwp_case_report_options", "gwp_case_barter_open",
