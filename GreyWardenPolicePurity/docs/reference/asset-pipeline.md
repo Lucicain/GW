@@ -56,11 +56,22 @@ Do not concatenate the two TPAC files. They are independent valid packages.
 
 ### Editor workspace parking and restoration
 
-The editable resource directories are currently parked intact at:
+**Current state (2026-09-27): the live module is in development layout.** At the
+user's request, `Assets`, `AssetSources`, and `RuntimeDataCache` were moved from
+`_GreyWardenEditorWorkspace` into the live `GreyWarden` module, and
+`AssetSources/GreyWardenRebuild` (every model, texture, animation, and shield
+collision body parsed back out of the three mod TPACs, see "Full rebuild from
+TPAC" below) was copied beside `GreyWardenRecovery`. While this layout is in
+place the normal client loads the editable `Assets` tree, which currently holds
+only the black-and-gold shield, so inherited armour will be missing in game until
+the user has re-imported the rebuild sources in the Modding Kit. The user makes
+the release layout as a separate step. `_GreyWardenEditorWorkspace` is empty.
+
+When parked, the editable resource directories live at:
 
 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
 
-That directory is outside the live `GreyWarden` module and contains exactly the
+That directory is outside the live `GreyWarden` module and holds exactly the
 three editor-only directories needed to resume asset work:
 
 - `Assets`: editable generated TPAC metadata, including the current
@@ -227,13 +238,41 @@ irreplaceable backup; the editor workspace does not replace it.
 
 ## Legacy package recovery
 
-- Canonical recovery directory:
-  `C:\Users\lucif\Documents\GreyWarden旧资源恢复\pack0_2026-07-15`.
 - Package GUID: `cec987dc-80fc-47dd-9865-6fe9e9274db3`.
 - Inventory: 20 metameshes, 18 materials, 33 textures, and 2 physics shapes.
-- Models and textures were exported for reconstruction, and raw/external data
-  was retained. Common formats cannot recreate the original physics shapes, so
-  keep the inherited TPAC itself as the authoritative backup.
+- The July 2026 export directory `Documents\GreyWarden旧资源恢复\pack0_2026-07-15`
+  no longer exists (checked 2026-09-27). It is not needed: the TPAC below can be
+  re-exported at any time with `tools/tpac/tpac-export`.
+
+## Full rebuild from TPAC
+
+Tools and commands: `tools/tpac/README.md`. Output (both under the gitignored
+`_Module/AssetSources/`, so ordinary builds never copy them to the live module):
+
+- `GreyWardenRebuild/models`: 20 FBX, all six LODs and every submesh, with the
+  inherited material names. Armour is skinned to vanilla `human_skeleton`, the two
+  horse harnesses to `horse_skeleton`; `wlarge_shield` is static.
+- `GreyWardenRebuild/textures`: 33 PNG at 4096×4096 (22 were DXT1, 11 were BC5
+  normal maps). BC5 stores only X and Y, so the exporter rebuilds the blue (Z)
+  channel. The FBX files reference these as `../textures/<name>.png`.
+- `GreyWardenRebuild/animations`: the 4 dual-wield skeletal animations as FBX.
+- `GreyWardenRebuild/physics`: `bo_cap_wlarge_shield` (21 vertices / 36 faces,
+  physics material `metal`) and `bo_wlarge_shield` (11 / 8, `metal_shield`) as FBX.
+  Both are single convex manifolds, no capsules or spheres.
+- `_reference/<package>/manifest.json`: per material the shader flags, texture
+  slots (0 diffuse, 2 normal, 4 specular) and extra settings; per submesh the
+  material, flags, factor colours and cloth-simulation material (`heavy_leather`,
+  `medium_leather`, `horse_scale_armor`); the 64 dual-wield animation clips with
+  all their parameters. `_reference` also holds Collada copies and the raw
+  collision OBJ files.
+
+Checked: re-reading every FBX gives the same mesh count, face count, and material
+names as the package. Not carried over: the second UV set and tangents (the
+Modding Kit regenerates tangents), and the shader itself, which is a vanilla asset
+referenced by GUID; set it by hand from the flags in the manifest.
+
+Keep the inherited TPAC as the authoritative backup until the re-imported
+resources have been checked in game.
 - The inherited package is irreplaceable; the black-and-gold shield package is
   reproducible. Never delete or overwrite the inherited package during shield
   publication.

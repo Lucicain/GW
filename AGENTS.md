@@ -76,6 +76,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - 按健康路径 vs 失败路径切：删掉一切正常时会触发的，保留 `catch` 里和
   "this should never happen" 分支里的。退休时连日志、转储、已闭合调查的反编译输出一起删。
 - 详见 `docs/state/diagnostics.md`。
+- 清理本地 `.codex_tmp/` 之前先看 `docs/reference/local-scratch.md` 的保留清单：
+  那里有唯一副本的盾牌资产包和崩溃取证结论，删了就找不回来。
 
 ## 改 `.cs` 之前
 

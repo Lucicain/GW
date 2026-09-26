@@ -68,6 +68,9 @@
 - 例外：编辑器专用的 `Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端
   live 模块，否则客户端不加载 `AssetPackages`。生成的 `bin` 与 `Shaders` 可以只存在
   于 live 模块。
+- **当前（2026-09-27 起）live 是开发版布局**：用户要求把这三个目录放进 live，重新导入全部美术资源；
+  在用户用 Modding Kit 导入完之前，游戏里只有黑金盾、没有继承的盔甲，这是预期现象。
+  发行版布局由用户另做。详见 `../reference/asset-pipeline.md`。（依据：用户裁定）
 - 单文件改动（如新增中文键）先单文件镜像并比 hash，再随构建全量同步。
 - 部署前确认游戏没开：进程名是 `TaleWorlds.MountAndBlade.Launcher`、`Watchdog`、`Bannerlord`
   （按 `Bannerlord|TaleWorlds|Launcher|Watchdog` 匹配）。只查名字里带 `Bannerlord` 会漏掉启动器，

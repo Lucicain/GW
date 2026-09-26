@@ -42,3 +42,6 @@
 /missionweapon.cs.txt
 /navalcustombattle.cs.txt
 /weaponcomponent.cs.txt
+
+# Upstream TpacTool checkout for tools/tpac; only our patch is committed
+/tools/tpac/TpacTool-src/

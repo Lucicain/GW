@@ -1,0 +1,2 @@
+# Patches must keep LF or git apply rejects them after a CRLF checkout
+*.patch text eol=lf

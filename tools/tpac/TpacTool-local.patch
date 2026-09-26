@@ -1,0 +1,51 @@
+diff --git a/TpacTool.Lib/Data/ExternalLoader.cs b/TpacTool.Lib/Data/ExternalLoader.cs
+index abd594d..94cfe72 100644
+--- a/TpacTool.Lib/Data/ExternalLoader.cs
++++ b/TpacTool.Lib/Data/ExternalLoader.cs
+@@ -145,6 +145,14 @@ namespace TpacTool.Lib
+ 			return rawData;
+ 		}
+ 
++		public byte[] DebugGetRawData()
++		{
++			using (var stream = _file.OpenBinaryReader())
++			{
++				return GetRawData(stream);
++			}
++		}
++
+ 		protected internal override void SaveTo(BinaryWriter stream, 
+ 			out ulong actualSize, out ulong storageSize, out StorageFormat storageType)
+ 		{
+@@ -239,4 +247,4 @@ namespace TpacTool.Lib
+ 		}
+ #endif
+ 	}
+-}
+\ No newline at end of file
++}
+diff --git a/TpacTool.Lib/Package/AssetPackage.cs b/TpacTool.Lib/Package/AssetPackage.cs
+index 3884cd1..09f5955 100644
+--- a/TpacTool.Lib/Package/AssetPackage.cs
++++ b/TpacTool.Lib/Package/AssetPackage.cs
+@@ -141,9 +141,12 @@ namespace TpacTool.Lib
+ 				assetItem.Name = stream.ReadSizedString();
+ 
+ 				var metadataSize = stream.ReadUInt64();
++				var metadataStartDebug = stream.BaseStream.Position;
+ 				stream.RecordPosition();
+ 				assetItem.ReadMetadata(stream, (int)metadataSize);
+-				stream.AssertLength((long)metadataSize);
++				Console.Error.WriteLine($"TPACDBG name={assetItem.Name} type={assetItem.GetType().Name} metadata={metadataSize} consumed={stream.BaseStream.Position - metadataStartDebug}");
++				if (stream.BaseStream.Position != metadataStartDebug + (long)metadataSize)
++					stream.BaseStream.Position = metadataStartDebug + (long)metadataSize;
+ 				var unknownMetadataChecknum = stream.ReadInt64();
+ 
+ 				var dataSegmentNum = stream.ReadInt32();
+@@ -378,4 +381,4 @@ namespace TpacTool.Lib
+ 			public ulong Padding;
+ 		}
+ 	}
+-}
+\ No newline at end of file
++}

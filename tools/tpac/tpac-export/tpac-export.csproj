@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net6.0</TargetFramework><Nullable>disable</Nullable><PlatformTarget>x64</PlatformTarget></PropertyGroup>
+<ItemGroup>
+<ProjectReference Include="..\TpacTool-src\TpacTool.IO\TpacTool.IO.csproj" />
+<ProjectReference Include="..\TpacTool-src\TpacTool.IO.Assimp\TpacTool.IO.Assimp.csproj" />
+<PackageReference Include="System.Drawing.Common" Version="6.0.0" /></ItemGroup></Project>
