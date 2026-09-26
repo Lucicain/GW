@@ -2261,6 +2261,36 @@ namespace GreyWardenPolicePurity
             MobileParty.All.FirstOrDefault(party => party.IsActive &&
                 string.Equals(party.StringId, partyId, StringComparison.OrdinalIgnoreCase));
 
+        private static readonly System.Reflection.FieldInfo? ArmyHourlyTickField =
+            HarmonyLib.AccessTools.Field(typeof(Army), "_hourlyTickEvent");
+        private static readonly System.Reflection.MethodInfo? ArmyOnAfterLoad =
+            HarmonyLib.AccessTools.Method(typeof(Army), "OnAfterLoad");
+
+        /// <summary>
+        /// 原版读档只对王国军团调 <c>Army.OnAfterLoad</c>（<c>Campaign.InitializeCampaignObjectsOnAfterLoad</c>
+        /// 遍历 <c>kingdom.Armies</c>），由它重建不入档的两个定时事件。协力军团不属于任何王国，
+        /// 读档后没有定时事件：成员并不进军团，解散时 <c>DisperseInternal</c> 删除定时事件撞空引用。
+        /// 这里补上同一步。
+        /// </summary>
+        private void RestoreEnforcementArmyTicks()
+        {
+            if (ArmyHourlyTickField == null || ArmyOnAfterLoad == null) return;
+            foreach (MobileParty party in MobileParty.All)
+            {
+                Army? army = party.Army;
+                if (army == null || army.LeaderParty != party || army.Kingdom != null ||
+                    !string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+                try
+                {
+                    if (ArmyHourlyTickField.GetValue(army) == null)
+                        ArmyOnAfterLoad.Invoke(army, null);
+                }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            }
+        }
+
         internal static bool IsActiveAssistanceArmy(Army? army)
         {
             if (_instance == null || army?.LeaderParty == null || army.Kingdom != null)

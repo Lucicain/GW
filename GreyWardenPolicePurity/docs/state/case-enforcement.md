@@ -1,10 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：用户已实测确认（2026-09-26，含改追补门槛）
+> 当前状态：用户已实测确认（2026-09-26，含改追补门槛）；同日协力军团读档后补建定时事件，已部署待实测
 > 最后验收：`834291c`
 > 已复核至：`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）；2026-09-23 工作树新增测试桩 `tools/CaseSettlement.Tests/FaultTraceStub.cs` 修复测试编译（177 项通过），生产行为未变
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：无
+> 待实测：带着已组成的协力军团存档、读档，之后成员仍能并入军团，协力解散时 `GreyWarden-Faults.log` 不再出现 `Army.DisperseInternal` 空引用
 
 > ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
 > 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。
@@ -156,6 +156,18 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 - 正在 `MapEvent` 里的人不抽；组长在打仗时整组不缩编。
 - 选**离目标最远**的那个放 —— 他对接下来这一仗贡献最小。
 - 写 `ASSISTANCE_MEMBER_RELEASED_SURPLUS`。
+
+## 协力军团读档后补建定时事件
+
+协力军团是 `new Army(null, leader, Patrolling)`，不属于任何王国。原版 `Army` 的两个定时事件
+（每小时：士气/凝聚力/解散检查；每 0.1 小时：把赶到军团长身边的成员并入）标为 `[CachedData]`
+不入档，读档后由 `Army.OnAfterLoad` 重建，而原版只在 `Campaign.InitializeCampaignObjectsOnAfterLoad`
+里对 `kingdom.Armies` 调它。所以读档后协力军团没有定时事件：成员并不进去，解散时
+`DisperseInternal` 最后删除定时事件撞空引用（2026-09-26 两次读档后各出现一次，已被捕获）。
+
+`RestoreEnforcementArmyTicks`（`OnGameLoadFinishedEvent`）对灰袍家族领导的无王国军团、
+定时事件为空时调同一个 `OnAfterLoad`。每次读档都需要这一步，不是旧档补正。
+（依据：C#反编译 v1.4.8，2026-09-26；运行时反射确认字段与方法存在）
 
 ## 脱离军团不吃混乱
 

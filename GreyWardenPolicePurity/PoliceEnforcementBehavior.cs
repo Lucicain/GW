@@ -130,6 +130,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
+            CampaignEvents.OnGameLoadFinishedEvent.AddNonSerializedListener(this, RestoreEnforcementArmyTicks);
         }
 
         public override void SyncData(IDataStore dataStore)
