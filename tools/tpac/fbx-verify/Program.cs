@@ -4,8 +4,9 @@ class P { static void Main(string[] a) {
   var man = JsonDocument.Parse(File.ReadAllText(a[1])).RootElement.GetProperty("metameshes").EnumerateArray().ToDictionary(e=>e.GetProperty("name").GetString(), e=>e);
   using var ctx = new AssimpContext(); int bad=0;
   foreach (var f in Directory.GetFiles(a[0], "*.fbx").OrderBy(x=>x)) {
-    var sc = ctx.ImportFile(f, PostProcessSteps.JoinIdenticalVertices);
     string n = Path.GetFileNameWithoutExtension(f);
+    if (!man.ContainsKey(n)) { Console.WriteLine($"skip {n} (not a model in the manifest)"); continue; }
+    var sc = ctx.ImportFile(f, PostProcessSteps.JoinIdenticalVertices);
     var subs = man[n].GetProperty("submeshes").EnumerateArray().ToList();
     int expV = subs.Sum(s=>s.GetProperty("verts").GetInt32()), expF = subs.Sum(s=>s.GetProperty("faces").GetInt32());
     int gotV = sc.Meshes.Sum(m=>m.VertexCount), gotF = sc.Meshes.Sum(m=>m.FaceCount);

@@ -67,6 +67,16 @@ only the black-and-gold shield, so inherited armour will be missing in game unti
 the user has re-imported the rebuild sources in the Modding Kit. The user makes
 the release layout as a separate step. `_GreyWardenEditorWorkspace` is empty.
 
+In this layout the editor and client load `Modules/GreyWarden/Assets` and skip
+`AssetPackages` entirely (rgl log: `Loading packages $BASE/Modules/GreyWarden/Assets...`).
+The seven dual-wield animations that `action_sets.xslt` references then go
+missing, and the editor build turns each `Could not find animation` warning into a
+crash-report popup with an ~850 MB dump. A copy of
+`gwp_dual_wield_animations.tpac` therefore sits in
+`Assets/GreyWardenAnimations/` while the development layout is in use. When the
+Kit publishes, check whether it folds that copy into `pack0.tpac`; if it does,
+do not also restore the separate animation package beside it.
+
 When parked, the editable resource directories live at:
 
 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
@@ -249,16 +259,24 @@ irreplaceable backup; the editor workspace does not replace it.
 Tools and commands: `tools/tpac/README.md`. Output (both under the gitignored
 `_Module/AssetSources/`, so ordinary builds never copy them to the live module):
 
-- `GreyWardenRebuild/models`: 20 FBX, all six LODs and every submesh, with the
-  inherited material names. Armour is skinned to vanilla `human_skeleton`, the two
-  horse harnesses to `horse_skeleton`; `wlarge_shield` is static.
-- `GreyWardenRebuild/textures`: 33 PNG at 4096×4096 (22 were DXT1, 11 were BC5
-  normal maps). BC5 stores only X and Y, so the exporter rebuilds the blue (Z)
-  channel. The FBX files reference these as `../textures/<name>.png`.
-- `GreyWardenRebuild/animations`: the 4 dual-wield skeletal animations as FBX.
-- `GreyWardenRebuild/physics`: `bo_cap_wlarge_shield` (21 vertices / 36 faces,
-  physics material `metal`) and `bo_wlarge_shield` (11 / 8, `metal_shield`) as FBX.
-  Both are single convex manifolds, no capsules or spheres.
+- `GreyWardenRebuild/` holds the FBX and PNG side by side and the FBX reference
+  their textures by bare file name. Nested subfolders under `AssetSources` are
+  also fine for the Kit (user, 2026-09-27); the flat layout is just what the
+  rebuild happens to use. `Assets/GreyWardenRebuild/.gitkeep` was created to
+  mirror the shield's `Assets/GreyWardenRecovery/`; it is not known to be required.
+- The 20 models are in Modding Kit layout: one object per LOD named `<name>`,
+  `<name>.lod1` ... `<name>.lod5`, each carrying its material slots (the Kit
+  itself splits by material into `<name>.0`, `.1` ...). These are the names
+  `items.xml` references. Armour is skinned to vanilla `human_skeleton`, the two
+  horse harnesses to `horse_skeleton`; `wlarge_shield` is static. The raw
+  one-object-per-submesh export is kept in `_reference/raw-fbx`.
+- 33 PNG at 4096×4096 (22 were DXT1, 11 were BC5 normal maps). BC5 stores only X
+  and Y, so the exporter rebuilds the blue (Z) channel.
+- `bo_cap_wlarge_shield` (21 vertices / 36 faces, physics material `metal`) and
+  `bo_wlarge_shield` (11 / 8, `metal_shield`) as FBX. These are the names
+  `items.xml` uses for `body_name` / `shield_body_name`.
+- The 4 dual-wield skeletal animations are in `_reference/animations-fbx`, kept
+  out of `AssetSources` for now.
 - `_reference/<package>/manifest.json`: per material the shader flags, texture
   slots (0 diffuse, 2 normal, 4 specular) and extra settings; per submesh the
   material, flags, factor colours and cloth-simulation material (`heavy_leather`,

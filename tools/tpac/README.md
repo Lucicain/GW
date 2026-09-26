@@ -48,5 +48,22 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
 - 每个子网格的材质只填在两个槽之一，导出前把空槽补成另一个槽的值（只改内存，不写回 TPAC）。
 - FBX 里的贴图路径写成 `../textures/<名字>.png`，指向旁边的贴图目录；只写文件名的话 Blender 找不到贴图，材质显示成紫色。
 - BC5 法线贴图只存 X、Y，导出的 PNG 蓝色通道是 0；程序按 Z = √(1−X²−Y²) 补回蓝色通道，否则 Blender 里明暗全错。
+- **导出后还要过一遍 `modkit-fbx.py`**（用 Blender 后台跑）。`tpac-export` 出来的 FBX 是一个子网格一个物体
+  （`winfarmor.0`、`winfarmor.lod1.0` …），这些后缀是 Modding Kit 按材质拆分时自己生成的；它要的源文件是
+  每级 LOD 一个带多个材质槽的物体，命名 `<名字>`、`<名字>.lod1` … `.lod5`（与黑金盾当初导入成功的规则一致）。
+  脚本还把碰撞体 OBJ 转成 FBX，坐标轴按黑金盾的做法导出（Y 前、Z 上、不加末端骨骼）：
+
+  ```bash
+  B="D:/steam/steamapps/common/Blender/blender.exe"
+  R="$M/AssetSources/GreyWardenRebuild"
+  "$B" -b --factory-startup --python tools/tpac/modkit-fbx.py -- "$M/AssetSources/_reference/raw-fbx" "$R" --tex "$(cygpath -w "$R")"
+  "$B" -b --factory-startup --python tools/tpac/modkit-fbx.py -- "$M/AssetSources/_reference/gwp_inherited_legacy_assets/physics" "$R"
+  ```
+
+  **布局**：FBX 与 PNG 放在同一个文件夹，FBX 里贴图只记文件名。`AssetSources` 下分多级子文件夹也可以（用户 2026-09-27 确认），
+  现在用一层只是习惯。`tpac-export` 之后要：把 `GreyWardenRebuild/models/*.fbx` 挪到 `_reference/raw-fbx/`、
+  `textures/*.png` 挪到转换输出的文件夹、`animations/` 挪到 `_reference/animations-fbx/`，再跑上面两条。
+  FBX 里贴图只记文件名。
+  转换后的大盾与当初成功导入的 `GreyWardenRecovery/dun.fbx` 包围盒逐位相同，说明轴向和单位没变。
 - `fbx-verify` 只比网格数、面数、材质名；顶点数会比原包少 1%～5%，因为 FBX 只带第一套 UV、
   不带切线，Assimp 读回时把这些属性相同的顶点合并了。
