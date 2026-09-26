@@ -91,3 +91,18 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
   用 Assimp 读 FBX 比只能验骨骼旋转，根位移的单位它会看错。
 - 帧号、动画名（take 名 `human_skeleton_notused|<动作>`）与骨骼数必须与原包一致；片段按帧号引用动画。
 - 动画片段不在 FBX 里，要在 Kit 里照 `GreyWardenPolicePurity/docs/reference/dual-wield-clips.md` 逐个建。
+
+### 片段直接生成（`clip-gen`）
+
+Kit 里逐个填片段又慢又容易错（界面把 0.8980392 显示成 0.89、优先级易填错）。`clip-gen` 以 Kit 自己存过的一个片段包为外壳，
+把原包对应片段的全部字段（含 Flags、Clip usages、混合/后续动作）拷进去，ROT 动作名换成我们的 `act_gwd*`，
+动画源指向 Kit 导入后的骨骼动画 GUID（原版动画保持原 GUID），写成 `<名字>_anm.tpac`。
+
+```bash
+A="D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden/Assets/GreyWardenAnimations"
+dotnet tools/tpac/clip-gen/bin/Release/net6.0/clip-gen.dll   "$M/AssetPackages/gwp_dual_wield_animations.tpac" "$A/dual_stand_1h_anm.tpac" "$A" "$A"   "D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/Native/AssetPackages/animations.tpac" <片段名...>
+```
+
+- 原包只读元数据：ROT 的优化动画数据 TpacTool 解不开（`Frames not equal`），也用不到。
+- 与 Kit 自己写的文件相比只差三处：GUID、片段元数据版本（Kit 写 6，TpacTool 写 5）、元数据后的 8 字节校验和（TpacTool 写 0；
+  不是 xxHash/FNV/Murmur/City/CRC）。Kit 与引擎都接受：2026-09-27 放入生成的 `dual_stand_1h_left_stance` 后重启 Kit，它从「找不到动画」警告里消失。
