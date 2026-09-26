@@ -85,11 +85,33 @@ def convert_model(path):
         if len(objs) > 1:
             bpy.ops.object.join()
         joined = bpy.context.view_layer.objects.active
+        # tpac-export writes every vertex with its own position; the original cloth meshes
+        # share one position between the vertices on either side of a UV seam, and cloth
+        # simulation connects the mesh through those shared positions. Without the weld a
+        # cloth piece falls apart along its seams (2026-09-27). Only faces whose material
+        # ends in "clo" are welded: welding everything also merged hard edges and skin seams
+        # the original keeps apart, and only cloth depends on it.
+        before = len(joined.data.vertices)
+        cloth = {i for i, slot in enumerate(joined.material_slots) if slot.material and slot.material.name.endswith("clo")}
+        if cloth:
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_all(action="DESELECT")
+            bpy.ops.object.mode_set(mode="OBJECT")
+            for poly in joined.data.polygons:
+                poly.select = poly.material_index in cloth
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.remove_doubles(threshold=1e-6, use_unselected=False, use_sharp_edge_from_normals=True)
+            bpy.ops.object.mode_set(mode="OBJECT")
+        welded = before - len(joined.data.vertices)
         joined.name = base if lod == 0 else f"{base}.lod{lod}"
         joined.data.name = joined.name
         result.append(joined)
         mats = [s.material.name if s.material else "-" for s in joined.material_slots]
-        print(f"  {joined.name}: faces={len(joined.data.polygons)} materials={mats}")
+        per_mat = {}
+        for poly in joined.data.polygons:
+            per_mat.setdefault(poly.material_index, set()).update(poly.vertices)
+        print(f"  {joined.name}: faces={len(joined.data.polygons)} welded={welded} materials={mats} "
+              f"positions={[len(per_mat.get(i, ())) for i in range(len(mats))]}")
     dims = max((o.dimensions for o in result), key=lambda d: d.z)
     print(f"  size {dims.x:.3f} x {dims.y:.3f} x {dims.z:.3f}")
     out = os.path.join(out_dir, os.path.basename(path))

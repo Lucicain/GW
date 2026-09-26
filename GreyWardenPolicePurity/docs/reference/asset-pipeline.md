@@ -85,9 +85,16 @@ popups, each with a ~700 MB dump). TpacTool cannot write materials
 (`AssetItem.WriteMetadata` throws `NotImplementedException`), so the materials
 have to be made in the Kit. Once the 18 materials existed, re-importing the 22 FBX let the Kit bind each
 submesh to the material whose name matches the FBX material slot (19 of 20 models
-exact; `winfarmor.lod1.2` came out empty and is assigned by hand). Cloth
+exact; `winfarmor.lod1.2` came out empty and is assigned by hand). Cloth pieces must
+share positions across UV seams as the original does, or the simulation tears
+them apart; `modkit-fbx.py` welds exactly-coincident vertices on `*clo`
+materials only (see `tools/tpac/README.md`). Cloth
 simulation is not carried by the FBX: the eight LOD0 cloth submeshes listed in
-the journal (2026-09-27) have to be flagged again in the Meta Mesh Editor. The material recipe is `gwp_black`'s:
+the journal (2026-09-27) were flagged again in the Cloth Editor. The cloth
+presets, max distances and collision bodies now in use are the user's own
+choice and deliberately differ from the original package in places (both
+`winfarmorhv` pieces use horse_scale_armor; `wcomarmorhv` and `winfarmorhv` got
+`human_body`). Do not "restore" them to the original values. (依据：用户裁定 2026-09-27) The material recipe is `gwp_black`'s:
 same shader (`328d3572-…`), flags `use_specular`, `do_not_use_vertex_color_as_occlusion`,
 slots 0/2/4 = `_d`/`_n`/`_s`, plus the `skinning` vertex layout for every
 material except `wlargeshieldmat`.

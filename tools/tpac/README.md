@@ -69,5 +69,9 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
   `textures/*.png` 挪到转换输出的文件夹、`animations/` 挪到 `_reference/animations-fbx/`，再跑上面两条。
   FBX 里贴图只记文件名。
   转换后的大盾与当初成功导入的 `GreyWardenRecovery/dun.fbx` 包围盒逐位相同，说明轴向和单位没变。
+- **布料块要焊接位置点**：`tpac-export` 给每个顶点单独一个位置，原包的布料网格在 UV 接缝两侧共用位置点。
+  布料模拟靠共用位置点把网格连起来，不焊就会沿接缝散开、整片掉落（2026-09-27 用户在 Cloth Editor 里看到）。
+  `modkit-fbx.py` 只对材质名以 `clo` 结尾的面做精确重合（1e-6）焊接：48 个布料块的位置点数与原包逐个相同，
+  非布料部分不动（全焊会把原包故意分开的硬边和蒙皮接缝也合掉），法线、UV、布料权重（顶点色 alpha）、骨骼权重逐角核对无差异。
 - `fbx-verify` 只比网格数、面数、材质名；顶点数会比原包少 1%～5%，因为 FBX 只带第一套 UV、
   不带切线，Assimp 读回时把这些属性相同的顶点合并了。
