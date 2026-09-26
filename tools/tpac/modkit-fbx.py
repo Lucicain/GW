@@ -118,14 +118,32 @@ def convert_model(path):
     export(out, ([arm] if arm else []) + result)
 
 
+def physics_materials(in_dir):
+    """Physics material per shape from tpac-export's manifest (../manifest.json next to physics/)."""
+    import json
+    path = os.path.join(in_dir, os.pardir, "manifest.json")
+    if not os.path.exists(path):
+        return {}
+    shapes = json.load(open(path, encoding="utf-8")).get("physicsShapes", [])
+    return {s["Name"]: (s["manifolds"][0]["materials"] or [None])[0] for s in shapes if s.get("manifolds")}
+
+
 def convert_collision(path):
+    # The Kit turns an FBX node into a physics shape when its name starts with "bo_" and the
+    # import has "Import physics shapes" ticked; the physics material is the name of the FBX
+    # material on the mesh (rglFBX_body_importer, wEditor TaleWorlds.Native.dll, 2026-09-27).
+    # The collision OBJ carries no material, so give it one named after the original physics material.
     reset()
     bpy.ops.wm.obj_import(filepath=path, forward_axis="Y", up_axis="Z")
     obj = next(o for o in bpy.data.objects if o.type == "MESH")
     name = os.path.splitext(os.path.basename(path))[0].replace("_manifold0", "")
     obj.name = obj.data.name = name
+    phys = physics_materials(os.path.dirname(path)).get(name)
+    obj.data.materials.clear()
+    if phys:
+        obj.data.materials.append(bpy.data.materials.new(phys))
     d = obj.dimensions
-    print(f"  {name}: faces={len(obj.data.polygons)} size {d.x:.3f} x {d.y:.3f} x {d.z:.3f}")
+    print(f"  {name}: faces={len(obj.data.polygons)} physics_material={phys} size {d.x:.3f} x {d.y:.3f} x {d.z:.3f}")
     export(os.path.join(out_dir, name + ".fbx"), [obj])
 
 
