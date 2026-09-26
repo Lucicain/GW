@@ -1,12 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：已部署，v1.4-r12 已发布；部分条目待实机观察
-> 最后验收：`131abb0`（v1.4-r12），远端核验见 [`build-and-deploy.md`](build-and-deploy.md)
+> 当前状态：用户已实测确认（2026-09-26，含改追补门槛）
+> 最后验收：`834291c`
 > 已复核至：`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）；2026-09-23 工作树新增测试桩 `tools/CaseSettlement.Tests/FaultTraceStub.cs` 修复测试编译（177 项通过），生产行为未变
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：`CASE_CLOSED` 的 reason 分布、`CASE_KEPT_OPEN_OWNER_RELEASED` 之后重新建队
-> 能否被重新指派、`CASE_WAR_RETARGETED_TO_CURRENT_FACTION` 会否对大王国连锁开战、
-> `ASSISTANCE_MEMBER_RELEASED_SURPLUS` 会否抖动
+> 待实测：无
 
 > ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
 > 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。
@@ -74,6 +72,10 @@
   直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。
 - 防空转：`GwpTuning.Enforcement.AssistanceFailureCooldownHours = 72`，退回台账的案子
   72 小时内不再被指派。冷却只活在本次运行内（读档后最多多试一次，无害）。
+- 改追最近案件（`RetargetOrdinaryCasesToNearest`）等于接新案，候选同样要过冷却与
+  `IsCaseWithinReach`。2026-09-25 日志里 `lord_1_55` 凑不出兵退回 2 小时后就被同一领主
+  就近改追回来，当场再次凑不出兵。
+- 不要让改追绕过接案门槛。（依据：实机诊断 2026-09-25）
 
 ## 立案门槛
 
@@ -147,10 +149,10 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 只增不减，路人走了就变成五百打一百。
 
 - **回滞是刻意的**：入组看 `committed <= target`，放人要求放完之后仍然
-  `committed > target * AssistanceReleaseMargin(1.25)`。两个门槛之间留一档，
+  `committed > target * AssistanceReleaseMargin(1.5)`。两个门槛之间留一档，
   路人来回走才不会让协力组跟着拆装。
 - 每轮最多放一个。
-- `AssistanceMinimumMemberHours(6)` 挡住"来了又走"。
+- `AssistanceMinimumMemberHours(12)` 挡住"来了又走"。
 - 正在 `MapEvent` 里的人不抽；组长在打仗时整组不缩编。
 - 选**离目标最远**的那个放 —— 他对接下来这一仗贡献最小。
 - 写 `ASSISTANCE_MEMBER_RELEASED_SURPLUS`。
@@ -178,6 +180,19 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 `case_owner_defeated_in_battle`、`owner_party_gone_after_battle`、
 `assistance_strength_insufficient`、`*_offender_gone`，以及
 `FailTaskBecauseOwnerCannotLead` 透传的既有 reason。
+
+## 实机观察结论（2026-09-26 读 2026-09-17 至 09-25 诊断日志）
+
+- `CASE_CLOSED` reason：`helper_released_to_assistance` 67、`target_invalid` 16、
+  `released_for_forced_duty` 7、`offender_settled_by_delay_patrol` 3、
+  `offender_defeated_in_battle` 3、`owner_cannot_lead_after_map_event` 1。无 `unspecified`。
+- `CASE_KEPT_OPEN_OWNER_RELEASED` 36 次，全部是 `assistance_strength_insufficient`；
+  之后都会被重新指派，但 `lord_5_13` 在 54 小时里被两名领主轮流接了又放 10 次，远短于
+  72 小时冷却。9 月 25 日日志证实改追最近案件能绕过冷却（`lord_1_55`），已按上节修正；
+  9 月 20 日那段的 AI 日志已滚动丢失，无法逐条归因。
+- `CASE_WAR_RETARGETED_TO_CURRENT_FACTION`：日志期内没有触发，连锁开战无证据。
+- `ASSISTANCE_MEMBER_RELEASED_SURPLUS`：9 月 25 日一局 15 次，放人后 10–20 小时再入组的
+  占多数，是否算抖动取决于目标身边战力是否真的变了；未见同一小时内来回。
 
 ## 地图条声望图标
 

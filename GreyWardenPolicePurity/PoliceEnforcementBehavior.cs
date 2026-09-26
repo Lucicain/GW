@@ -701,11 +701,15 @@ namespace GreyWardenPolicePurity
 
                 // 类型归属必须守住：有专职的领主只在自己这一类里改追，否则某一职位的
                 // 领主死绝之后，那一类罪案就再没有人专门负责了。
+                // 改追等于接新案：接案的两道门槛（凑不出兵的冷却、难度上限）同样要过，
+                // 否则刚因凑不出兵退回台账的案子会被就近改追回来，接了又放。
                 GwpCrimeCategory preferred = GetPreferredCrimeCategory(owner);
-                CrimeRecord? candidate = preferred == GwpCrimeCategory.Unknown
-                    ? CrimeState.GetNearest(owner.GetPosition2D)
-                    : CrimeState.GetNearest(owner.GetPosition2D,
-                        record => record.CrimeCategory == preferred);
+                float musterable = GetMaximumMusterableStrength(owner);
+                CrimeRecord? candidate = CrimeState.GetNearest(owner.GetPosition2D,
+                    record => (preferred == GwpCrimeCategory.Unknown ||
+                            record.CrimeCategory == preferred) &&
+                        !IsCaseUnderStrengthCooldown(record) &&
+                        IsCaseWithinReach(record, musterable));
                 if (candidate?.Offender?.IsActive != true) continue;
 
                 float currentDistance = owner.GetPosition2D.Distance(current.GetPosition2D);
