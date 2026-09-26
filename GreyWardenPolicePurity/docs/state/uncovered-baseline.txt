@@ -54,8 +54,6 @@ GreyWardenPolicePurity/GwpEncyclopediaHeroPageVM.cs
 GreyWardenPolicePurity/GwpEscortSpeedCapPatch.cs
 GreyWardenPolicePurity/GwpFiefPublicSupportPatch.cs
 GreyWardenPolicePurity/GwpFieldArrestBehavior.Grace.cs
-GreyWardenPolicePurity/GwpFieldArrestBehavior.cs
-GreyWardenPolicePurity/GwpFieldArrestLines.cs
 GreyWardenPolicePurity/GwpFieldCollectionBarterable.cs
 GreyWardenPolicePurity/GwpFieldDialogueVoice.cs
 GreyWardenPolicePurity/GwpFieldFineBarterable.cs
@@ -67,7 +65,6 @@ GreyWardenPolicePurity/GwpLandlessShipTradePatch.cs
 GreyWardenPolicePurity/GwpLegacySave.cs
 GreyWardenPolicePurity/GwpMapBarReputationPatch.cs
 GreyWardenPolicePurity/GwpNegotiationChancePatch.cs
-GreyWardenPolicePurity/GwpNegotiationPolicy.cs
 GreyWardenPolicePurity/GwpOffenderDesire.cs
 GreyWardenPolicePurity/GwpPartyDutyMovementPatch.cs
 GreyWardenPolicePurity/GwpPartyScreenTroopTalkPatch.cs

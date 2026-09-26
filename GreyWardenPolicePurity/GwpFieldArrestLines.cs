@@ -67,17 +67,17 @@ namespace GreyWardenPolicePurity
             temperament switch
             {
                 Temperament.Upright =>
-                    GwpText.Create("{=gwp_fa_rebuff_upright}I gave you my answer today, and I do not give two. Come back tomorrow if you still want it."),
+                    GwpText.Create("{=gwp_fa_rebuff_upright}You have my answer. I do not give a man two."),
                 Temperament.Cold =>
-                    GwpText.Create("{=gwp_fa_rebuff_cold}Nothing has changed since we last spoke. Nothing will, before tomorrow."),
+                    GwpText.Create("{=gwp_fa_rebuff_cold}Nothing has changed since we last spoke."),
                 Temperament.Fierce =>
-                    GwpText.Create("{=gwp_fa_rebuff_fierce}We settled this once already. Press me again today and it will not be with words."),
+                    GwpText.Create("{=gwp_fa_rebuff_fierce}We settled this once already. Press me again and it will not be with words."),
                 Temperament.Soft =>
-                    GwpText.Create("{=gwp_fa_rebuff_soft}Please. We have been over it once today. Let it rest until morning."),
+                    GwpText.Create("{=gwp_fa_rebuff_soft}Please. We have been over it once already. Let it rest."),
                 Temperament.Tight =>
-                    GwpText.Create("{=gwp_fa_rebuff_tight}You have had your talk out of me today. Talk is not free, and you have spent it."),
+                    GwpText.Create("{=gwp_fa_rebuff_tight}You have had your talk out of me. Talk is not free, and you have spent it."),
                 _ =>
-                    GwpText.Create("{=gwp_fa_rebuff_plain}We spoke about this today. My answer stands until tomorrow.")
+                    GwpText.Create("{=gwp_fa_rebuff_plain}We have spoken about this. My answer stands.")
             };
 
         #region 开场：他先看你是谁

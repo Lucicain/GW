@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-141 个源文件、47,713 行、268 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
+141 个源文件、47,773 行、268 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -441,7 +441,7 @@
 - `PoliceEnforcementBehavior.Assistance.cs` — 2750 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceEnforcementBehavior.cs` — 1522 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1466 行 · `PoliceEnforcementBehavior`
-- `GwpFieldArrestBehavior.cs` — 1392 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFieldArrestBehavior.cs` — 1414 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PolicePatrolBehavior.cs` — 1071 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 910 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 733 行 · `GwpAiDeterrenceState`
@@ -470,10 +470,10 @@
 
 ### 执法：玩家悬赏（7 个文件）
 
-- `PlayerBountyBehavior.cs` — 972 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
+- `PlayerBountyBehavior.cs` — 979 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
 - `GwpCaseArchiveScreen.cs` — 954 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
 - `PlayerBountyBehavior.DialogueAndNotification.cs` — 942 行 · `PlayerBountyBehavior`
-- `PlayerBountyBehavior.CaseSettlement.cs` — 773 行 · `PlayerBountyBehavior`
+- `PlayerBountyBehavior.CaseSettlement.cs` — 801 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 205 行 · `PlayerBountyBehavior` : QuestBase，另含 3 个类型
 - `PlayerBountyBehavior.Support.cs` — 178 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.Encyclopedia.cs` — 49 行 · `PlayerBountyBehavior`
@@ -482,7 +482,7 @@
 
 - `GreyWardenTroopRequestBehavior.cs` — 1389 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpWardenDispatchBehavior.cs` — 963 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
-- `GwpWardenDispatchDialogue.cs` — 532 行 · `GwpWardenDispatchDialogue`
+- `GwpWardenDispatchDialogue.cs` — 535 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 336 行 · `GreyWardenTroopRequestBehavior`
 - `GwpWardenDispatch.cs` — 109 行 · `GwpDispatchPurpose`，另含 2 个类型
 - `GwpBribeBarterable.cs` — 62 行 · `GwpBribeBarterable` : Barterable

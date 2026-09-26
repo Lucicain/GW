@@ -73,6 +73,7 @@ python tools/Check-StateFreshness.py
 | [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队向领主/玩家借船与退还、口粮、兵员纯化 |
 | [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
+| [`field-arrest.md`](field-arrest.md) | 野外执法开口前：肯不肯谈、战力口径、谈崩冷却（说辞、定价、宽限、决斗未提取） |
 | [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差（其余悬赏流程未提取） |
 | [`dispatch.md`](dispatch.md) | 玩家送信队的地图行程：出发、找人、交付、交割、工资（对话与付款未提取） |
 | [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回、已知缺口 |

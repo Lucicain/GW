@@ -356,8 +356,8 @@ namespace GreyWardenPolicePurity
             _fine = CalculateFine(_crime);
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
                 CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true);
-            float ours = Math.Max(1f, MobileParty.MainParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
-            float theirs = Math.Max(1f, _offenderParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
+            float ours = Math.Max(1f, FieldStrength(MobileParty.MainParty));
+            float theirs = Math.Max(1f, FieldStrength(_offenderParty));
             int resistance = LayerOneResistance();
             double refusalChance = GwpNegotiationPolicy.RefusalChance(resistance,
                 _offender.GetTraitLevel(DefaultTraits.Honor), _offender.GetTraitLevel(DefaultTraits.Mercy),
@@ -488,6 +488,28 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
+        /// <summary>
+        /// 当场会一起上阵的战力：本队；已并入军团（是军团长或已挂靠军团长）时加上军团长
+        /// 和已挂靠的成员。不用原版 <c>GetTotalLandStrengthWithFollowers</c>：队伍在护送
+        /// 别人（原版去军团会合就是护送）时它算的是被护送的那支，还把没汇合的成员一起算进去。
+        /// </summary>
+        private static float FieldStrength(MobileParty? party)
+        {
+            if (party == null) return 0f;
+            MobileParty? leader = party.Army?.LeaderParty;
+            if (leader == null || (leader != party && party.AttachedTo != leader))
+                return PartyPower(party);
+            float total = PartyPower(leader);
+            foreach (MobileParty member in leader.Army!.Parties)
+                if (member != leader && member.AttachedTo == leader)
+                    total += PartyPower(member);
+            return total;
+        }
+
+        private static float PartyPower(MobileParty party) =>
+            Campaign.Current.Models.MilitaryPowerModel.GetPowerOfParty(party.Party,
+                BattleSideEnum.Attacker, TaleWorlds.CampaignSystem.MapEvents.MapEvent.PowerCalculationContext.PlainBattle);
+
         /// <summary>谈崩了就记一天。重谈不是免费的，上一次的结果就是今天的结果。</summary>
         private void RecordNegotiationFailure()
         {
@@ -598,8 +620,8 @@ namespace GreyWardenPolicePurity
         {
             if (_offender == null || _offenderParty == null) return 50;
 
-            float mine = Math.Max(1f, MobileParty.MainParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
-            float his = Math.Max(1f, _offenderParty.GetTotalLandStrengthWithFollowers());
+            float mine = Math.Max(1f, FieldStrength(MobileParty.MainParty));
+            float his = Math.Max(1f, FieldStrength(_offenderParty));
 
             // 打得过你的人不容易低头——但也仅此而已。此前这里直接把
             // his/(his+mine)*100 当成抗性主项，对方稍强就逼近 100，性格（最多
@@ -652,8 +674,8 @@ namespace GreyWardenPolicePurity
         private int LayerTwoResistance()
         {
             if (_offender == null) return 40;
-            float ours = Math.Max(1f, MobileParty.MainParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
-            float theirs = Math.Max(1f, _offenderParty?.GetTotalLandStrengthWithFollowers() ?? 1f);
+            float ours = Math.Max(1f, FieldStrength(MobileParty.MainParty));
+            float theirs = Math.Max(1f, FieldStrength(_offenderParty));
             float force = (theirs / (theirs + ours) - 0.5f) * 16f;
             float rhetoric = MBMath.ClampFloat((_offender.GetSkillValue(DefaultSkills.Charm)
                 - Hero.MainHero.GetSkillValue(DefaultSkills.Charm)) / 20f, -10f, 10f);
@@ -731,8 +753,8 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFieldArrest("NEGOTIATION_CHANCE_CONTEXT", "layer=" + layer + "; resistance=" + resistance
                 + "; wealth=" + OffenderWealth + "; fine=" + EnsureFine()
-                + "; ours=" + MobileParty.MainParty?.GetTotalLandStrengthWithFollowers()
-                + "; theirs=" + _offenderParty?.GetTotalLandStrengthWithFollowers());
+                + "; ours=" + FieldStrength(MobileParty.MainParty)
+                + "; theirs=" + FieldStrength(_offenderParty));
 #endif
             // 抗性低的人本来就快被说动了，给一点起手进度；抗性高的人从零开始。
             float ease = MBMath.ClampFloat((100 - resistance) / 100f, 0f, 1f);

@@ -360,12 +360,12 @@
   <string id="gwp_dispatch_peace" text="去灰袍那儿走一趟，把我替他们挑起来的那几桩梁子了了。" />
   <string id="gwp_dispatch_peace_done" text="你的人把话带到了。你替灰袍担下的那几桩梁子，都了了。" />
   <string id="gwp_dispatch_peace_moot" text="你的人赶到时，已经没有什么要了结的了。" />
-  <string id="gwp_fa_rebuff_upright" text="今天的话我已经给过你了，我不说第二遍。明天还想要，明天再来。" />
-  <string id="gwp_fa_rebuff_cold" text="上次谈完到现在什么都没变。到明天之前也不会变。" />
-  <string id="gwp_fa_rebuff_fierce" text="这事今天已经了断过一回。再逼我，就不是用嘴谈了。" />
-  <string id="gwp_fa_rebuff_soft" text="行行好。今天已经翻过一遍了，让它歇到天亮吧。" />
-  <string id="gwp_fa_rebuff_tight" text="今天的话你已经从我这儿讨走了。话也是要本钱的，你花完了。" />
-  <string id="gwp_fa_rebuff_plain" text="今天我们谈过这事了。我的答复到明天为止都一样。" />
+  <string id="gwp_fa_rebuff_upright" text="我的答复已经给过你了。一句话，我不说两遍。" />
+  <string id="gwp_fa_rebuff_cold" text="上回谈完到现在，什么都没变。" />
+  <string id="gwp_fa_rebuff_fierce" text="这事已经了断过一回。再逼我，就不是动嘴了。" />
+  <string id="gwp_fa_rebuff_soft" text="行行好，这事已经翻过一遍了，让它歇歇吧。" />
+  <string id="gwp_fa_rebuff_tight" text="你已经从我这儿讨过话了。话也是要本钱的，你花完了。" />
+  <string id="gwp_fa_rebuff_plain" text="这事我们谈过了。我的答复不变。" />
   <string id="gwp_dispatch_order_moot" text="你的人把订单送到了，但灰袍此刻接不下这一单。他们正把订金带回来。" />
   <string id="gwp_player_troop_order_filed_prepaid" text="你的人已把订单和订金交到灰袍手里。练兵长会把兵训好，亲自给你送来。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_020" text="目标势力：{VAR_1}&#10;" />
