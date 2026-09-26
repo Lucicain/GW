@@ -1,9 +1,9 @@
 # 无领主临时队：船只、口粮与兵员纯化
 
-> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
+> 当前状态：用户已实测确认（2026-09-26）；同日补解散入口还船前缀、还不回去的船改为销毁、玩家被俘仍还给玩家，已部署待实测
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs`
-> 待实测：无
+> 待实测：送信队在玩家被俘期间回来或被灭时，船回到玩家；其余情形在正常游戏里很难触发，由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
 
 ## 船：只借真船，销毁前退回（2026-09-24 起）
 
@@ -24,11 +24,30 @@
 | 送信队 `gwp_dispatch_` | 玩家 | 不派，提示“你在海上，没有多余的船可分” |
 
 - **借**：`PoliceResourceManager.LendShips`。出借方至少留一条船；只借空闲船里交易价最低的，
-  按计划人数每 50 人一条（练兵队按订单人数）。出借方正在打仗时不借。无论借到与否都登记
+  按计划人数每 50 人一条（练兵队按订单人数）。出借方正在打仗时不借。只要找到出借方，无论借到与否都登记
   出借方（存档键 `GWPP_ShipLoanBorrowers` / `GWPP_ShipLoanLenders`）。
-- **还**：`GwpShipLoanReturnPatch` 前缀挂在原版 `DestroyPartyAction.ApplyInternal`——模组拆队、
-  原版战后销毁、解散都经过它，而原版分船/折金币挂在它随后发出的事件上。登记过的临时队
-  身上**所有**船（借来的和路上缴获的）交回出借方；出借方已不在，交给最近的灰袍领主。
+- **还**：登记过的临时队身上**所有**船（借来的和路上缴获的）在销毁前交回出借方。出借方不能接收
+  （已不在、在海上交战中、正在解散）时，交给最近的、能接收的灰袍领主；接收条件与 NavalDLC
+  `CanSendShipToParty` 同一口径。出借方是玩家时，玩家被俘（主队不活跃）也照样还给玩家——
+  原版被俘不动主队的船。
+- **还不回去就销毁**：找不到接收方的船、以及没登记的无领主队（`GwpCommon.IsLeaderlessDutyParty`）
+  身上的船，在陆上由还船前缀 `DestroyShipAction.Apply` 销毁并写 `SHIP_LOAN_UNRETURNABLE_DESTROYED`；
+  在海上留给原版 `RemoveParty` 销毁（NavalDLC 在海上不分船、不折钱）。`DestroyShipAction.Apply`
+  不给任何补偿（只有 `ApplyByDiscard` 触发船匠特长），也不经过分船/折金币。
+- 不要让无领主队的船落进 NavalDLC 分船/折金币。（依据：用户裁定 2026-09-26；C#反编译 v1.4.8）
+- 海战战败：原版在战斗结算 `LootDefeatedPartyShips` 里先把败方的船分给赢家或毁掉（赢家可能分到
+  折价金币，这是赢家的战利品），之后才销毁队伍，还船前缀这时已经无船可还。陆上战败不缴获船，
+  船留在败方，由还船前缀交回——与原版领主陆上战败时船回流本家族一致。
+- **还船点有两个**。`GwpShipLoanReturnPatch` 挂 `DestroyPartyAction.ApplyInternal`：模组拆队
+  （全部走 `DestroyPartyAction.Apply`）和原版战后销毁都经过它，NavalDLC 分船/折金币挂在它随后
+  发出的 `MobilePartyDestroyed` 上。`GwpShipLoanReturnOnDisbandPatch` 挂
+  `DestroyPartyAction.ApplyForDisbanding`：这一路先发 `OnPartyDisbanded`（NavalDLC 同样在这里
+  分船/折金币）再进 `ApplyInternal`。
+- 不要只留 `ApplyInternal` 一个还船点，解散那一路会晚一步。（依据：C#反编译 v1.4.8，2026-09-26）
+- 原版走解散这一路的前提是队伍 `IsDisbanding`，进入目标城镇时由 `EnterSettlementAction` 触发。
+  会把无英雄队标成解散中的只有读档时"军团里无领队的成员"，灰袍临时队不进军团，所以目前是防线。
+- NavalDLC 折出的金币给 `ActualClan.Leader`：灰袍临时队进灰袍族长，送信队进玩家（玩家家族另乘
+  出售折扣并弹提示）。在海上被销毁时 NavalDLC 不分船也不折钱。
 - 海战战败时船按原版规则被赢家缴获（真船，正常损失）；不再有“战败销毁”补丁。
 - 有船即具备海上通行能力（NavalDLC `NavalPartyNavigationModel` 看 `Ships.Count`）；船数只影响
   海上航速（原版超载/缺员减速）。
