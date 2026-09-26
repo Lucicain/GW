@@ -36,7 +36,6 @@ GreyWardenPolicePurity/GwpAssetOfferValidationPatch.cs
 GreyWardenPolicePurity/GwpAssetPayment.cs
 GreyWardenPolicePurity/GwpAssistanceArmyLifecyclePatch.cs
 GreyWardenPolicePurity/GwpAssistanceArmyTooltipPatch.cs
-GreyWardenPolicePurity/GwpBlackLordShieldBehavior.cs
 GreyWardenPolicePurity/GwpBribeBarterable.cs
 GreyWardenPolicePurity/GwpCaseArchiveScreen.cs
 GreyWardenPolicePurity/GwpCaseReceipt.cs
