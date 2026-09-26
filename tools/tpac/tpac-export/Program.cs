@@ -18,7 +18,7 @@ class SiblingTextureFbx : TpacTool.IO.Assimp.FbxExporter
 {
     public override void Export(string path)
     {
-        foreach (var t in TexturePathMapping.Keys.ToList()) TexturePathMapping[t] = "../textures/" + Path.GetFileName(TexturePathMapping[t]);
+        foreach (var t in TexturePathMapping.Keys.ToList()) TexturePathMapping[t] = "../textures/" + Path.GetFileName(TexturePathMapping[t]).ToLowerInvariant();
         base.Export(path);
     }
 }
@@ -53,6 +53,18 @@ class P
             copy.UnlockBits(bd);
             copy.Save(png + ".tmp", System.Drawing.Imaging.ImageFormat.Png);
         }
+        File.Delete(png);
+        File.Move(png + ".tmp", png);
+    }
+
+    // DXT1 carries no real alpha, but the PNG comes out RGBA with alpha 255. The Modding Kit
+    // then imports it as DXT5 / B8G8R8A8_UNORM, and assigning such a texture to a material slot
+    // crashed the material editor (2026-09-27). Save plain RGB, as the shield textures were.
+    static void DropAlpha(string png)
+    {
+        using (var bmp = new System.Drawing.Bitmap(png))
+        using (var rgb = bmp.Clone(new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb))
+            rgb.Save(png + ".tmp", System.Drawing.Imaging.ImageFormat.Png);
         File.Delete(png);
         File.Move(png + ".tmp", png);
     }
@@ -149,8 +161,13 @@ class P
             foreach (var t in p.Items.OfType<Texture>())
             {
                 Directory.CreateDirectory(tdir);
-                TextureExporter.ExportToFile(Path.Combine(tdir, t.Name + ".png"), t);
-                if (t.Format.ToString() == "BC5") RebuildNormalZ(Path.Combine(tdir, t.Name + ".png"));
+                // Lower-case file names: the Kit names the texture after the file, and assigning a
+                // mixed-case texture (WInfMatObsh_d) to a material slot crashed the material editor
+                // (2026-09-27). Vanilla and the working shield use lower-case names only.
+                string png = Path.Combine(tdir, t.Name.ToLowerInvariant() + ".png");
+                TextureExporter.ExportToFile(png, t);
+                if (t.Format.ToString() == "BC5") RebuildNormalZ(png);
+                else if (t.Format.ToString() == "DXT1") DropAlpha(png);
                 texList.Add(new { t.Name, t.Guid, format = t.Format.ToString(), t.Width, t.Height, mips = t.MipmapCount });
             }
             manifest["textures"] = texList;

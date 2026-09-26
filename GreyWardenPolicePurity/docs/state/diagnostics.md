@@ -40,6 +40,10 @@
 一次性崩溃转储和调查已闭合的反编译输出。仍在生效的诊断可以留，但它积攒的旧日志
 不应该留——findings 记进 state 之后，旧日志没有进一步用途。
 
+**游戏的崩溃报告同样归 agent 管**：`C:\ProgramData\Mount and Blade II Bannerlord\crashes\` 下每份报告带
+700～850 MB 的转储（Modding Kit 的编辑器版本每条警告都会生成一份）。agent 自己读（转储用 WinDbg 的
+`cdbX64.exe`，见 `../reference/investigation-methods.md`），结论写进 journal 后直接删，不需要再问用户。（依据：用户裁定）
+
 **按当前覆盖范围命名。** 范围变了就改系统名和日志文件名，不要留一个误导的名字。（依据：流程）
 （例：`GwpRangedCommandTrace` 扩到双方所有编队后曾改名 `GwpBattleCommandTrace`，现已退休。）
 

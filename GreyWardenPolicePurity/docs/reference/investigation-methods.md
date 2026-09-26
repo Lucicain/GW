@@ -84,7 +84,7 @@ ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
 
 - WER 转储在 `%LOCALAPPDATA%\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.<pid>.dmp`。
 - 用 Windows SDK 的 cdb：`cdb -y . -z <dmp> -c ".ecxr; kb; q"`。
-  **本机当前没有安装 cdb**（Windows SDK → Debugging Tools for Windows）。
+  本机的 cdb 来自 WinDbg 商店版：`%LOCALAPPDATA%\Microsoft\WindowsApps\cdbX64.exe`（2026-09-27 确认可用）。
 - 转储常缺堆页：能看到崩在哪个函数和寄存器，但指针指向的对象可能读不出来，
   不要因此把它"精确指认"到某个士兵或物体。
 

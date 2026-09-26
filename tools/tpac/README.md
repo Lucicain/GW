@@ -47,6 +47,10 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
   否则模型的材质引用解析不出来，FBX 导出会失败。
 - 每个子网格的材质只填在两个槽之一，导出前把空槽补成另一个槽的值（只改内存，不写回 TPAC）。
 - FBX 里的贴图路径写成 `../textures/<名字>.png`，指向旁边的贴图目录；只写文件名的话 Blender 找不到贴图，材质显示成紫色。
+- 贴图文件名一律小写（Kit 用文件名当贴图名）。把大小写混合的贴图（`WInfMatObsh_d`）放进材质槽，材质编辑器会空指针崩溃；
+  改成小写重新导入后，用户在 Kit 里给材质槽选贴图不再崩溃（2026-09-27 实机确认）。原版 1862 个材质名与黑金盾贴图也都是全小写。
+- DXT1 贴图（`_d`、`_s`）导出成 RGB，不带 alpha。带全 255 的 alpha 时，Kit 会按 DXT5 / `B8G8R8A8_UNORM` 导入，
+  往材质槽里放这种贴图会让材质编辑器空指针崩溃（2026-09-27）；黑金盾的同类贴图是 DXT1 / `B8G8R8`。
 - BC5 法线贴图只存 X、Y，导出的 PNG 蓝色通道是 0；程序按 Z = √(1−X²−Y²) 补回蓝色通道，否则 Blender 里明暗全错。
 - **导出后还要过一遍 `modkit-fbx.py`**（用 Blender 后台跑）。`tpac-export` 出来的 FBX 是一个子网格一个物体
   （`winfarmor.0`、`winfarmor.lod1.0` …），这些后缀是 Modding Kit 按材质拆分时自己生成的；它要的源文件是

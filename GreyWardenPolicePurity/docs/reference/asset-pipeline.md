@@ -77,6 +77,21 @@ crash-report popup with an ~850 MB dump. A copy of
 Kit publishes, check whether it folds that copy into `pack0.tpac`; if it does,
 do not also restore the separate animation package beside it.
 
+A first default-settings import (2026-09-27) created the 22 `_geo.tpac` and 33
+`_tex.tpac` correctly (LODs, per-material split, skinning, BC5 normal maps all
+right) but no materials, and the editor build then raised
+`CONTENT WARNING: Unable to find material for mesh ...` once per mesh (about 200
+popups, each with a ~700 MB dump). TpacTool cannot write materials
+(`AssetItem.WriteMetadata` throws `NotImplementedException`), so the materials
+have to be made in the Kit. Once the 18 materials existed, re-importing the 22 FBX let the Kit bind each
+submesh to the material whose name matches the FBX material slot (19 of 20 models
+exact; `winfarmor.lod1.2` came out empty and is assigned by hand). Cloth
+simulation is not carried by the FBX: the eight LOD0 cloth submeshes listed in
+the journal (2026-09-27) have to be flagged again in the Meta Mesh Editor. The material recipe is `gwp_black`'s:
+same shader (`328d3572-…`), flags `use_specular`, `do_not_use_vertex_color_as_occlusion`,
+slots 0/2/4 = `_d`/`_n`/`_s`, plus the `skinning` vertex layout for every
+material except `wlargeshieldmat`.
+
 When parked, the editable resource directories live at:
 
 `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
@@ -271,7 +286,15 @@ Tools and commands: `tools/tpac/README.md`. Output (both under the gitignored
   horse harnesses to `horse_skeleton`; `wlarge_shield` is static. The raw
   one-object-per-submesh export is kept in `_reference/raw-fbx`.
 - 33 PNG at 4096×4096 (22 were DXT1, 11 were BC5 normal maps). BC5 stores only X
-  and Y, so the exporter rebuilds the blue (Z) channel.
+  and Y, so the exporter rebuilds the blue (Z) channel. The DXT1 ones are written
+  as plain RGB: an all-255 alpha made the Kit import them as DXT5 /
+  `B8G8R8A8_UNORM`, and putting such a texture into a material slot crashed the
+  material editor (see journal 2026-09-27). The shield's textures are DXT1 / `B8G8R8`.
+  Texture file names are written in lower case, since the Kit names the texture
+  after the file. Picking a mixed-case texture (`WInfMatObsh_d`) into a material
+  slot crashed the material editor; after renaming to lower case and re-importing,
+  the same action works (user, 2026-09-27). The alpha channel alone was not it.
+  Do not give Kit-imported textures or materials upper-case names. (依据：实机观察 2026-09-27；C++反汇编：wEditor `TaleWorlds.Native.dll` 0x907b50 按名字逐字节查表)
 - `bo_cap_wlarge_shield` (21 vertices / 36 faces, physics material `metal`) and
   `bo_wlarge_shield` (11 / 8, `metal_shield`) as FBX. These are the names
   `items.xml` uses for `body_name` / `shield_body_name`.
