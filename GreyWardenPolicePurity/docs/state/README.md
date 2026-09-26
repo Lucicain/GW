@@ -89,6 +89,7 @@ python tools/Check-StateFreshness.py
 | [`build-and-deploy.md`](build-and-deploy.md) | 构建开关、预检脚本、live 镜像、发布包 |
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
 | [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
+| [`firesworn.md`](firesworn.md) | 火誓者：传教、狂信者、烧人——底层机制已定，未实现 |
 
 ## 尚未提取（journal 仍是唯一记录）
 
