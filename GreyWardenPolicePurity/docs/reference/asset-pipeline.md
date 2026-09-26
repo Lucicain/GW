@@ -71,11 +71,15 @@ In this layout the editor and client load `Modules/GreyWarden/Assets` and skip
 `AssetPackages` entirely (rgl log: `Loading packages $BASE/Modules/GreyWarden/Assets...`).
 The seven dual-wield animations that `action_sets.xslt` references then go
 missing, and the editor build turns each `Could not find animation` warning into a
-crash-report popup with an ~850 MB dump. A copy of
-`gwp_dual_wield_animations.tpac` therefore sits in
-`Assets/GreyWardenAnimations/` while the development layout is in use. When the
-Kit publishes, check whether it folds that copy into `pack0.tpac`; if it does,
-do not also restore the separate animation package beside it.
+crash-report popup with an ~850 MB dump. For a while a copy of
+`gwp_dual_wield_animations.tpac` sat in `Assets/GreyWardenAnimations/` to stop
+that; it was removed on 2026-09-27 because the Kit crashes when that compiled
+copy is opened (it has no import records). The animations are being rebuilt as
+sources instead: four FBX in `AssetSources/GreyWardenAnimations/` plus the 24
+clips in `docs/reference/dual-wield-clips.md`. Until the clips exist the seven
+missing-animation warnings are expected. Once the Kit has published them, do not
+also ship the old `gwp_dual_wield_animations.tpac` beside the new package (same
+clip names).
 
 A first default-settings import (2026-09-27) created the 22 `_geo.tpac` and 33
 `_tex.tpac` correctly (LODs, per-material split, skinning, BC5 normal maps all

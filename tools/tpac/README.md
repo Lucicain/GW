@@ -75,3 +75,19 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
   非布料部分不动（全焊会把原包故意分开的硬边和蒙皮接缝也合掉），法线、UV、布料权重（顶点色 alpha）、骨骼权重逐角核对无差异。
 - `fbx-verify` 只比网格数、面数、材质名；顶点数会比原包少 1%～5%，因为 FBX 只带第一套 UV、
   不带切线，Assimp 读回时把这些属性相同的顶点合并了。
+
+## 动画
+
+`modkit-anim.py`（Blender 后台）把 `tpac-export` 写出的动画 FBX 转成 Kit 能导入的文件：只留骨架（原版 `human_skeleton`，28 根骨），
+骨架对象改名 `human_skeleton_notused`、动作按原 take 命名，导入时不做 Blender 默认的 1 帧偏移，逐帧烘焙、不简化，轴向同模型。
+
+```bash
+"$B" -b --factory-startup --python tools/tpac/modkit-anim.py -- "$M/AssetSources/_reference/animations-fbx" "$M/AssetSources/GreyWardenAnimations"
+```
+
+- 根位移不要缩放：FBX 单位是厘米，Blender 读写都是 5.95 这类数，Kit 导入时换算成米，正好等于原包的 0.0595。
+  曾经按 Assimp 的读数（它不管单位）乘了 0.01，结果 Kit 里根位移小了 100 倍。
+- **验收以 Kit 导入后的动画为准**：把 `Assets/GreyWardenAnimations/*_geo.tpac` 里的 `SkeletalAnimation` 与原包逐帧比（骨骼旋转、根位移）。
+  用 Assimp 读 FBX 比只能验骨骼旋转，根位移的单位它会看错。
+- 帧号、动画名（take 名 `human_skeleton_notused|<动作>`）与骨骼数必须与原包一致；片段按帧号引用动画。
+- 动画片段不在 FBX 里，要在 Kit 里照 `GreyWardenPolicePurity/docs/reference/dual-wield-clips.md` 逐个建。
