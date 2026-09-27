@@ -43,6 +43,10 @@ dotnet tools/tpac/fbx-verify/bin/Release/net6.0/fbx-verify.dll --obj2fbx \
 ```
 
 - 骨骼取自原版：人体 `human_skeleton` 在 `core_game.tpac`，马 `horse_skeleton` 在 `skeletons.tpac`。
+- Kit 给蒙皮编骨骼号时，按 FBX 自身骨骼层级的深度优先顺序编，不按名字去对原版骨架（依据：C++反汇编 2026-09-27）。
+  `human_skeleton` 的原版顺序就是层级顺序，不受影响；`horse_skeleton` 把 `horseneck1`（父骨骼 `horsespine3`）排在尾巴之后，
+  按真实层级导出，马甲脖子上的顶点会绑到左后腿上。`modkit-fbx.py` 的 `match_skeleton_order` 按原版顺序重建骨骼，
+  把 `horseneck1` 挂到 `horsepelvis` 下、排在尾巴后面，骨骼位置和权重不变。新增其他骨架时先比对它的原版顺序。
 - TpacTool 的 `AssetManager.AddPackage` 不建资产索引，所以程序自带一个按 GUID 查全部资产的解析器；
   否则模型的材质引用解析不出来，FBX 导出会失败。
 - 每个子网格的材质只填在两个槽之一，导出前把空槽补成另一个槽的值（只改内存，不写回 TPAC）。

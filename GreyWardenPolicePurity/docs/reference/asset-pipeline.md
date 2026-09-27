@@ -103,6 +103,13 @@ same shader (`328d3572-…`), flags `use_specular`, `do_not_use_vertex_color_as_
 slots 0/2/4 = `_d`/`_n`/`_s`, plus the `skinning` vertex layout for every
 material except `wlargeshieldmat`.
 
+Skinned FBX must list their bones depth-first in the vanilla skeleton's bone order: the Kit
+numbers skin bones by walking the FBX's own hierarchy and never maps names onto the vanilla
+skeleton, and there is no skeleton option in the import dialog. `horse_skeleton` needs the
+re-parenting that `modkit-fbx.py` does (see `tools/tpac/README.md`); the first rebuild of
+`wharness` / `wharnesscom` shipped without it and the neck plate followed the left hind leg in
+game. (依据：C++反汇编 2026-09-27)
+
 The user performs all Modding Kit/editor interaction. Do not control the editor
 for them.
 

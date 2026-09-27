@@ -56,9 +56,77 @@ def export(path, objects):
     )
 
 
+# Bone order of the vanilla skeletons (index = bone index in the game).
+# horse_skeleton: Native/AssetPackages/skeletons.tpac. human_skeleton needs no entry: its
+# order already is the depth-first order of its hierarchy.
+SKELETON_ORDER = {
+    "horse_skeleton": [
+        "horsepelvis", "horsespine1", "horsespine2", "horsespine3",
+        "horselleg1", "horselleg2", "horselleg3", "horselleg4", "horsellegankle", "horselfronthoof",
+        "horserleg1", "horserleg2", "horserleg3", "horserleg4", "horserlegankle", "horserfronthoof",
+        "horselfemur", "horseltibia", "horsellargecannon", "horselphalanx", "horselrearhoof",
+        "horserfemur", "horsertibia", "horserlargecannon", "horserphalanx", "horserrearthoof",
+        "horsetail1", "horsetail2", "horsetail3",
+        "horseneck1", "horseneck2", "horse_head",
+    ],
+}
+
+
+def match_skeleton_order(arm):
+    """Rebuild the armature so its depth-first bone order is the vanilla skeleton's order.
+
+    The Kit numbers skin bones by walking the FBX's own bone hierarchy depth-first
+    (rglFBX importer, wEditor TaleWorlds.Native.dll, 2026-09-27); it does not look the
+    names up in the vanilla skeleton. horse_skeleton lists horseneck1 (child of
+    horsespine3) after the tail, which no depth-first walk of the true hierarchy
+    produces, so every harness vertex on bones 16+ landed on the wrong bone in game
+    (the neck plate followed the left hind leg). Bones are re-created in the vanilla
+    order, each parented to its nearest ancestor still open on the depth-first path
+    (horseneck1 ends up under horsepelvis). Head, tail and roll are kept, and the mesh
+    stores only bone indices and weights, so nothing else changes.
+    """
+    order = SKELETON_ORDER.get(arm.name)
+    if not order:
+        return
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = arm.data.edit_bones
+    if sorted(b.name for b in eb) != sorted(order):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        raise SystemExit(f"{arm.name}: bones differ from the vanilla list")
+    saved = {b.name: (b.head.copy(), b.tail.copy(), b.roll, b.parent.name if b.parent else None) for b in eb}
+    for b in list(eb):
+        eb.remove(b)
+
+    def ancestors(name):
+        p = saved[name][3]
+        while p:
+            yield p
+            p = saved[p][3]
+
+    stack = []
+    for name in order:
+        anc = set(ancestors(name))
+        while stack and stack[-1] not in anc:
+            stack.pop()
+        nb = eb.new(name)
+        nb.head, nb.tail, nb.roll = saved[name][0], saved[name][1], saved[name][2]
+        nb.use_connect = False
+        if stack:
+            nb.parent = eb[stack[-1]]
+        if stack and stack[-1] != saved[name][3]:
+            print(f"  {name}: parent {saved[name][3]} -> {stack[-1]} (keeps vanilla bone order)")
+        stack.append(name)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
 def convert_model(path):
     reset()
     bpy.ops.import_scene.fbx(filepath=path)
+    for a in [o for o in bpy.data.objects if o.type == "ARMATURE"]:
+        match_skeleton_order(a)
     for img in bpy.data.images:
         if tex_dir and img.filepath:
             img.filepath = os.path.join(tex_dir, os.path.basename(img.filepath.replace("\\", "/")))
