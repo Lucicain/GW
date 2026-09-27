@@ -65,12 +65,11 @@
 - 这条与 Git 发布无关，工作树可以一直未提交。
 - 每次部署后**比对哈希**，不要假定复制成功。（依据：流程）
 - 任何可部署源文件与 live 对应文件有差异时，**不得开始或接受实机测试**。（依据：流程）
-- 例外：编辑器专用的 `Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端
-  live 模块，否则客户端不加载 `AssetPackages`。生成的 `bin` 与 `Shaders` 可以只存在
-  于 live 模块。
-- **当前（2026-09-27 起）live 是开发版布局**：用户要求把这三个目录放进 live，重新导入全部美术资源；
-  在用户用 Modding Kit 导入完之前，游戏里只有黑金盾、没有继承的盔甲，这是预期现象。
-  发行版布局由用户另做。详见 `../reference/asset-pipeline.md`。（依据：用户裁定）
+- 本机 live 一直是开发版布局：编辑器专用的 `Assets`、`AssetSources`、`RuntimeDataCache`
+  常驻 live 模块，随时能进 Modding Kit 继续改；发布后、实机测试前都不挪走。（依据：用户裁定）
+  这三个目录不属于 `_Module` 的镜像范围，`Verify-LiveModule` 忽略它们。此布局下客户端加载
+  `Assets` 而非 `AssetPackages`。发行版布局只存在于发布 ZIP 里（下节已排除这三个目录），
+  不靠改动 live 来做。生成的 `bin` 与 `Shaders` 可以只存在于 live 模块。详见 `../reference/asset-pipeline.md`。
 - 单文件改动（如新增中文键）先单文件镜像并比 hash，再随构建全量同步。
 - 部署前确认游戏没开：进程名是 `TaleWorlds.MountAndBlade.Launcher`、`Watchdog`、`Bannerlord`
   （按 `Bannerlord|TaleWorlds|Launcher|Watchdog` 匹配）。只查名字里带 `Bannerlord` 会漏掉启动器，

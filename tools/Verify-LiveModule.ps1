@@ -13,7 +13,8 @@
     Checking only "every repository file is present and identical in live"
     cannot catch that. This checks the reverse as well: live must contain
     nothing beyond the repository module plus the two generated directories
-    AGENTS.md allows there, bin and Shaders.
+    AGENTS.md allows there, bin and Shaders, and the Modding Kit's editor
+    directories, which the live module keeps permanently (development layout).
 
 .PARAMETER RepoModule
     The repository module directory. Defaults to the one beside this script.
@@ -32,12 +33,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Editor-side trees deliberately kept out of the normal-client module.
+# Editor-side trees: not part of the mirror in either direction. The live module
+# keeps its own Modding Kit copies permanently so asset work can resume at any
+# time (development layout); the release ZIP leaves them out.
 # Anchored at the start: these paths are relative, so they have no leading
 # separator to match against.
 $repoOnly = '^(Assets|AssetSources|RuntimeDataCache|obj)\\'
-# The only directories allowed to exist in live without a repository counterpart.
-$liveOnly = '^(bin|Shaders)\\'
+# Directories allowed to exist in live without a repository counterpart.
+$liveOnly = '^(bin|Shaders|Assets|AssetSources|RuntimeDataCache)\\'
 
 function Get-Rel([string]$root) {
     Get-ChildItem $root -Recurse -File |
@@ -70,7 +73,7 @@ Write-Host ''
 foreach ($group in @(
     @{ Name = 'MISSING FROM LIVE'; Items = $missing },
     @{ Name = 'DIFFERENT IN LIVE';  Items = $differing },
-    @{ Name = 'STRAY IN LIVE (not in the repository, and not bin/ or Shaders/)'; Items = $stray })) {
+    @{ Name = 'STRAY IN LIVE (not in the repository, and not bin/, Shaders/ or the editor directories)'; Items = $stray })) {
     if ($group.Items.Count -eq 0) {
         Write-Host ("{0}: none" -f $group.Name) -ForegroundColor Green
     } else {

@@ -63,7 +63,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 - `_Module` 下的可部署文件改动后**立即**复制到 live 模块并**比对哈希**。
   有任何差异时不得开始或接受实机测试。
-- 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不进普通客户端 live 模块。
+- 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不在镜像范围内；本机 live 一直保留它们（开发版布局），
+  发布或测试后都不挪走。发行版布局只在发布 ZIP 里做。
 - 流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
 
 ## 诊断跟着功能走，也跟着功能退休

@@ -24,62 +24,62 @@
 
 ### Required TPAC files
 
-- `AssetPackages/gwp_inherited_legacy_assets.tpac`
-  - Size: `332,944,246` bytes
-  - SHA-256: `957DD525945E3B18545242D44AC1B0C55F180060A2F917261286CB1D0CCEDE40`
-  - Contains the inherited armour, weapons, ordinary shield, materials,
-    textures, and the original shield physics shapes.
-- `AssetPackages/gwp_black_gold_shield.tpac`
-  - Size: `37,594,977` bytes
-  - SHA-256: `2A572A2FD5914EF7EE84920F765CA3919CFA64D54D74764F318D3F9AD466E33B`
-  - Contains `wlarge_shield_black_static`, `gwp_black`, and the three
-    black-and-gold textures.
-- Both files are intentionally ignored by Git because the inherited package is
-  larger than GitHub's normal file limit. A distributable is not complete until
-  both hashes pass.
+Since 2026-09-27 the module ships one package, published by the Modding Kit from
+the rebuilt editor sources:
 
-### Modding Kit publication order
+- `AssetPackages/pack0.tpac` — 371,237,229 bytes. 146 assets: 21 metameshes
+  (the 20 inherited armour/harness/shield models plus `wlarge_shield_black_static`),
+  19 materials, 36 textures, 2 physics shapes (`bo_cap_wlarge_shield`,
+  `bo_wlarge_shield`), 4 skeletal animations and 64 animation clips (dual wield).
+  Its asset names match the three packages it replaces one for one (texture
+  names are now lower case).
+- It is gitignored (over GitHub's file-size limit) and lives in
+  `_Module/AssetPackages/` for deployment. Do **not** put
+  `gwp_inherited_legacy_assets.tpac`, `gwp_black_gold_shield.tpac` or
+  `gwp_dual_wield_animations.tpac` back beside it: same asset names.
+  (依据：设计——同名资源冲突)
+- The three old packages are kept as the pre-rebuild rollback point in
+  `.codex_tmp/legacy-packages-before-rebuild-20260927/` (SHA-256 prefixes
+  `957DD525945E3B18`, `2A572A2FD5914EF7`, `652634753C25CEFB`); the inherited one
+  is the only original of the July 2024 armour and must not be deleted.
 
-The Modding Kit clears the live `AssetPackages` directory and writes only
-`pack0.tpac`. After every shield publication:
+### Local layout: the live module stays in development layout
 
-1. Ensure the Modding Kit has fully exited.
-2. Preserve the new `pack0.tpac` immediately.
-3. Rename it to `gwp_black_gold_shield.tpac`.
-4. Copy the renamed file to repository `_Module/AssetPackages`.
-5. Restore `gwp_inherited_legacy_assets.tpac` beside it.
-6. Verify both file sizes and hashes before launching the client.
-7. Move live `Assets`, `AssetSources`, and `RuntimeDataCache` intact to sibling
-   `_GreyWardenEditorWorkspace` before a client test.
+The live `GreyWarden` module on this machine always holds `Assets`,
+`AssetSources` and `RuntimeDataCache` beside `AssetPackages`, so the user can
+keep working in the Modding Kit at any time. Do not move them out after a publish
+or before a client test. (依据：用户裁定 2026-09-27)
 
-Do not concatenate the two TPAC files. They are independent valid packages.
+- With those directories present, the editor and the client load
+  `Modules/GreyWarden/Assets` and skip `AssetPackages` (rgl log:
+  `Loading packages $BASE/Modules/GreyWarden/Assets...`). Since the full rebuild,
+  `Assets` holds every mod asset, so in-game tests see what the Kit last saved.
+- `AssetPackages/pack0.tpac` is what the Kit last published. It is what players
+  load, so a Kit change that should ship needs a publish.
+- The release layout (no editor directories) exists only inside the release
+  ZIP, which already excludes them (`../state/build-and-deploy.md`). It is built
+  in staging when the user asks for a release, never by rearranging live.
+- `Verify-LiveModule.ps1` ignores the three editor directories, so it passes in
+  this layout.
 
-### Editor workspace parking and restoration
+On 2026-09-27 the agent parked the three directories in
+`Modules/_GreyWardenEditorWorkspace` after a publish, which left the user unable to
+edit; they were moved back the same day and that folder no longer exists.
 
-**Current state (2026-09-27): the live module is in development layout.** At the
-user's request, `Assets`, `AssetSources`, and `RuntimeDataCache` were moved from
-`_GreyWardenEditorWorkspace` into the live `GreyWarden` module, and
-`AssetSources/GreyWardenRebuild` (every model, texture, animation, and shield
-collision body parsed back out of the three mod TPACs, see "Full rebuild from
-TPAC" below) was copied beside `GreyWardenRecovery`. While this layout is in
-place the normal client loads the editable `Assets` tree, which currently holds
-only the black-and-gold shield, so inherited armour will be missing in game until
-the user has re-imported the rebuild sources in the Modding Kit. The user makes
-the release layout as a separate step. `_GreyWardenEditorWorkspace` is empty.
+### After a Modding Kit publish
 
-In this layout the editor and client load `Modules/GreyWarden/Assets` and skip
-`AssetPackages` entirely (rgl log: `Loading packages $BASE/Modules/GreyWarden/Assets...`).
-The seven dual-wield animations that `action_sets.xslt` references then go
-missing, and the editor build turns each `Could not find animation` warning into a
-crash-report popup with an ~850 MB dump. For a while a copy of
-`gwp_dual_wield_animations.tpac` sat in `Assets/GreyWardenAnimations/` to stop
-that; it was removed on 2026-09-27 because the Kit crashes when that compiled
-copy is opened (it has no import records). The animations are being rebuilt as
-sources instead: four FBX in `AssetSources/GreyWardenAnimations/` plus the 24
-clips in `docs/reference/dual-wield-clips.md`. Until the clips exist the seven
-missing-animation warnings are expected. Once the Kit has published them, do not
-also ship the old `gwp_dual_wield_animations.tpac` beside the new package (same
-clip names).
+The Kit clears the live `AssetPackages` directory and writes only `pack0.tpac`
+(it publishes every loaded module, see below). After a publish:
+
+1. Wait until the Kit has fully exited.
+2. Copy `pack0.tpac` to repository `_Module/AssetPackages/` (git-ignored) and
+   compare hashes with live.
+3. Do not put back the three pre-rebuild packages beside it: they hold the same
+   asset and clip names. They stay only as rollback in
+   `.codex_tmp/legacy-packages-before-rebuild-20260927/`, and
+   `gwp_inherited_legacy_assets.tpac` there is never deleted.
+
+### Material and cloth notes from the rebuild
 
 A first default-settings import (2026-09-27) created the 22 `_geo.tpac` and 33
 `_tex.tpac` correctly (LODs, per-material split, skinning, BC5 normal maps all
@@ -103,45 +103,8 @@ same shader (`328d3572-…`), flags `use_specular`, `do_not_use_vertex_color_as_
 slots 0/2/4 = `_d`/`_n`/`_s`, plus the `skinning` vertex layout for every
 material except `wlargeshieldmat`.
 
-When parked, the editable resource directories live at:
-
-`D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\_GreyWardenEditorWorkspace`
-
-That directory is outside the live `GreyWarden` module and holds exactly the
-three editor-only directories needed to resume asset work:
-
-- `Assets`: editable generated TPAC metadata, including the current
-  `GreyWardenRecovery/dun_geo.tpac`.
-- `AssetSources`: the six-LOD shield FBX and three source textures. The current
-  `GreyWardenRecovery/dun.fbx` is `218,316` bytes with SHA-256
-  `8FC25976E9A6E5B0663A6462EB6BB2F0F59E73C14AE899671A510825AB63B6AC`.
-- `RuntimeDataCache`: generated editor cache. It is movable with the workspace
-  but is not an authoritative backup and may be regenerated if necessary.
-
-To resume editing without opening or automating the editor on the user's behalf:
-
-1. Confirm the game and Modding Kit are fully closed.
-2. Move `Assets`, `AssetSources`, and `RuntimeDataCache` from
-   `_GreyWardenEditorWorkspace` back into the live module root:
-   `D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden`.
-3. Preserve both files in live `AssetPackages` before publishing; the Modding
-   Kit will clear that directory and create a new `pack0.tpac`.
-4. The user performs all Modding Kit/editor interaction. Do not control the
-   editor for them.
-
-Before normal-client testing or building a public archive:
-
-1. Fully close the Modding Kit.
-2. Move the same three directories back to
-   `_GreyWardenEditorWorkspace`; do not split their contents across locations.
-3. Confirm the live `GreyWarden` module has no `Assets`, `AssetSources`, or
-   `RuntimeDataCache` directory, otherwise the client can prefer editable
-   resources and ignore the complete runtime packages.
-4. Restore and verify both runtime TPAC files using the sizes and hashes above.
-
-Do not delete `_GreyWardenEditorWorkspace`. It is the current resumable editor
-state. The inherited `gwp_inherited_legacy_assets.tpac` remains the authoritative
-irreplaceable backup; the editor workspace does not replace it.
+The user performs all Modding Kit/editor interaction. Do not control the editor
+for them.
 
 ## Solved: black-and-gold shield shutdown failure
 
@@ -248,8 +211,8 @@ irreplaceable backup; the editor workspace does not replace it.
 | Symptom | Cause | Recovery |
 |---|---|---|
 | FBX import reports zero/one mesh or LOD0-LOD5 are not all present | Not all six intended mesh objects were selected when `Selected Objects` export was used, or `Import meshes` was disabled | Re-export with all six selected; confirm the unsuffixed base plus `.lod1`-`.lod5`, then require `Geometry(6) Model(6) Material(1)` before importing |
-| Only the black shield appears; inherited armour is missing | Client loaded live `GreyWarden/Assets` instead of `AssetPackages` | Exit the game and move `Assets`, `AssetSources`, and `RuntimeDataCache` to `_GreyWardenEditorWorkspace`; verify the next log says `Loading packages .../GreyWarden/AssetPackages` |
-| Publishing removes all inherited equipment | Modding Kit cleared `AssetPackages` and created only `pack0.tpac` | Rename the new package, then restore the verified inherited TPAC before testing |
+| Some mod assets are missing in game | Client loads live `GreyWarden/Assets` (development layout), and that asset has not been imported/saved in the Kit | Import or save it in the Kit; do not move the editor directories out of live |
+| Publishing leaves only `pack0.tpac` | Modding Kit clears `AssetPackages` on publish | Expected since the full rebuild: `pack0.tpac` holds every mod asset; copy it to the repo and compare hashes |
 | Ignore/Apply Ignores or editor shutdown starts faulting | Stale generated resource/editor-session state | Fully exit the editor and regenerate `dun_geo.tpac` from the preserved FBX in a fresh session |
 | Black shield is rotated/reversed | Wrong FBX forward-axis declaration or double Z-up conversion | Export positive Y forward/Z up and keep Bannerlord `Convert to Z-up` disabled |
 | Game exit seems clean but reliability is uncertain | Native failure was intermittent and WER can be delayed | Require actual shield rendering, complete client exit, then delayed Application/WER/dump checks |
