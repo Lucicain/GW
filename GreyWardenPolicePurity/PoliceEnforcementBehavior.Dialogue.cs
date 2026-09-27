@@ -49,6 +49,15 @@ namespace GreyWardenPolicePurity
                 null,
                 100);
 
+            starter.AddPlayerLine(
+                "gwp_enforcement_companion_pay",
+                "gwp_enforcement_options",
+                "close_window",
+                "{GWP_COMPANION_PAY_OPTION}",
+                CompanionPayCondition,
+                OnCompanionPayConsequence,
+                100);
+
             starter.AddDialogLine(
                 "gwp_enforcement_pay_barter_pre",
                 "gwp_enforcement_pay_barter_pre",
@@ -80,7 +89,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_post_failed",
                 "gwp_enforcement_pay_barter_post",
                 "gwp_enforcement_options",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_003}Your offer falls below the lawful fine. You may raise it or refuse the order."),
+                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_003}Your offer falls below the lawful fine. You may raise it or choose another response."),
                 () => !EnforcementBarterSuccessfulCondition(),
                 OnEnforcementPayRejectedConsequence,
                 100);
@@ -117,8 +126,17 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_options",
                 "gwp_enforcement_fight_response",
                 GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_006}I refuse the order. Let arms decide."),
+                () => _dialogTask?.TargetCrimeId == CrimePool.PlayerCrimeId,
                 null,
-                null,
+                100);
+
+            starter.AddPlayerLine(
+                "gwp_enforcement_companion_leave",
+                "gwp_enforcement_options",
+                "close_window",
+                GwpText.Get("{=gwp_enforcement_companion_leave}I cannot settle this companion's case now."),
+                () => _dialogTask?.TargetCrimeId != CrimePool.PlayerCrimeId,
+                QueueFinishEnforcementEncounter,
                 100);
 
             starter.AddDialogLine(
@@ -168,15 +186,19 @@ namespace GreyWardenPolicePurity
             if (task.TargetCrime?.Offender?.IsMainParty != true) return false;
             if (task.FlowState != PoliceTaskFlowState.Pursuit) return false;
 
+            CrimeRecord crime = task.TargetCrime!;
+            bool playerCase = crime.CrimeId == CrimePool.PlayerCrimeId;
             int rep = PlayerState.Reputation;
             // The fine follows standing, so at zero or better there is nothing
             // lawful left to demand.  The patrol dialogue has always refused to
             // open in that case; this one did not, which is how a task that
             // outlived a payment kept re-opening the warrant for 0 denars.
             // OnHourlyTick.CloseSettledPlayerHunt retires the task itself.
-            if (rep >= 0) return false;
+            if (playerCase && rep >= 0) return false;
 
-            _dialogFine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Enforcement.FinePerPoint);
+            _dialogFine = playerCase
+                ? GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Enforcement.FinePerPoint)
+                : GwpFieldArrestPricing.AssessFine(crime);
             _dialogPolice = conversationParty;
             _dialogTask = task;
             // Arm the same retry guard for a player-initiated encounter as for
@@ -189,16 +211,24 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "ENFORCEMENT_FINE_DIALOG_OPENED",
                 "police=" + conversationParty.StringId +
+                "; crime=" + crime.CrimeId +
+                "; accused=" + crime.OffenderHeroId +
                 "; taskState=" + task.FlowState +
                 "; fine=" + _dialogFine +
                 "; playerGold=" + playerGold);
             string payInfo = playerGold >= _dialogFine
                 ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_008}You carry {VAR_1} denars, enough to pay in full.", "VAR_1", playerGold)
-                : GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_009}You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment.", "VAR_1", playerGold);
+                : playerCase
+                    ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_009}You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment.", "VAR_1", playerGold)
+                    : GwpText.Get("{=gwp_enforcement_companion_insufficient}You carry {VAR_1} denars. Return when you can pay the fine in full.", "VAR_1", playerGold);
 
             MBTextManager.SetTextVariable(GwpTextKeys.EnforcementGreeting,
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_010}Stand! The Grey Wardens come under warrant. Your present standing is {VAR_1},", "VAR_1", Math.Abs(rep)) +
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_011}and the lawful fine in this case is {VAR_1} denars. {VAR_2}", "VAR_1", _dialogFine, "VAR_2", payInfo));
+                playerCase
+                    ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_010}Stand! The Grey Wardens come under warrant. Your present standing is {VAR_1},", "VAR_1", Math.Abs(rep)) +
+                      GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_011}and the lawful fine in this case is {VAR_1} denars. {VAR_2}", "VAR_1", _dialogFine, "VAR_2", payInfo)
+                    : GwpText.Get("{=gwp_enforcement_companion_charge}Stand! {VAR_1} travels with you under a Grey Warden warrant. The fine for {VAR_1}'s case is {VAR_2} denars. {VAR_3}",
+                        "VAR_1", crime.OffenderHero?.Name?.ToString() ?? crime.OffenderHeroId,
+                        "VAR_2", _dialogFine, "VAR_3", payInfo));
 
             return true;
         }
@@ -208,11 +238,73 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable(
                 GwpTextKeys.EnforcementPayText,
                 GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_012}Pay the lawful fine ({VAR_1} denars; clear the warrant)", "VAR_1", _dialogFine));
+            return _dialogTask?.TargetCrimeId == CrimePool.PlayerCrimeId;
+        }
+
+        private bool CompanionPayCondition()
+        {
+            if (_dialogTask?.TargetCrimeId == CrimePool.PlayerCrimeId ||
+                _dialogTask?.TargetCrime?.HasOpenCase != true ||
+                !PoliceResourceManager.CanCollectPlayerRequestPayment(_dialogFine))
+                return false;
+
+            MBTextManager.SetTextVariable("GWP_COMPANION_PAY_OPTION",
+                GwpText.Get("{=gwp_enforcement_companion_pay}Pay this companion's fine ({VAR_1} denars)",
+                    "VAR_1", _dialogFine));
             return true;
+        }
+
+        private void OnCompanionPayConsequence()
+        {
+            try
+            {
+                CrimeRecord? crime = _dialogTask?.TargetCrime;
+                Hero? accused = crime?.OffenderHero;
+                if (crime?.HasOpenCase != true || accused == null ||
+                    accused == Hero.MainHero ||
+                    !string.Equals(crime.CrimeId, accused.StringId, StringComparison.OrdinalIgnoreCase) ||
+                    crime.CrimeId == CrimePool.PlayerCrimeId ||
+                    crime.Offender?.IsMainParty != true ||
+                    !PoliceResourceManager.CanCollectPlayerRequestPayment(_dialogFine))
+                {
+                    QueueFinishEnforcementEncounter();
+                    return;
+                }
+
+                if (!PoliceResourceManager.TryCollectPlayerRequestPayment(_dialogFine))
+                {
+                    GwpAiDiagnostics.WritePlayerJusticeState("COMPANION_FINE_INCOMPLETE",
+                        "crime=" + crime.CrimeId + "; accused=" + accused.StringId +
+                        "; assessed=" + _dialogFine + "; paid=0");
+                    QueueFinishEnforcementEncounter();
+                    return;
+                }
+
+                HeroCrimeStats history = CrimePool.GetOrCreateHistory(accused);
+                history.NegativeStanding = 0;
+                CrimePool.CloseCaseSettledInField(crime);
+                Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                    ?.RegisterPlayerEnforcementSuccess(null, accused, crime.CrimeCategory);
+
+                GwpAiDiagnostics.WritePlayerJusticeState("COMPANION_FINE_SETTLED",
+                    "crime=" + crime.CrimeId + "; accused=" + accused.StringId +
+                    "; fine=" + _dialogFine + "; playerReputation=" + PlayerState.Reputation);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
+                        "VAR_1", accused.Name?.ToString() ?? accused.StringId,
+                        "VAR_2", _dialogFine), Colors.Yellow));
+                QueueFinishEnforcementEncounter();
+            }
+            catch (Exception gwpQuietFailure)
+            {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                QueueFinishEnforcementEncounter();
+            }
         }
 
         private bool EnforcementAtonementCondition()
         {
+            if (_dialogTask?.TargetCrimeId != CrimePool.PlayerCrimeId) return false;
             if (HasAtonementTask) return false;
             if (_dialogFine <= 0) return false;
             return Hero.MainHero.Gold < _dialogFine;
@@ -325,8 +417,9 @@ namespace GreyWardenPolicePurity
                 // EngageParty/TargetParty alive and can reopen the same warrant.
                 QueueFinishEnforcementEncounter();
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 // Even if a native economy/faction callback fails, the accepted
                 // outcome must still close the encounter instead of leaving the
                 // old EngageParty target available for another conversation.
@@ -460,8 +553,9 @@ namespace GreyWardenPolicePurity
                     new[] { fineBarter });
                 return true;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }

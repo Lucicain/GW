@@ -307,7 +307,7 @@ namespace GreyWardenPolicePurity
                         regularPoliceInvolved = true;
 
                     PoliceTask? task = CrimeState.GetTask(party.MobileParty.StringId);
-                    if (task?.TargetCrime?.Offender?.IsMainParty == true)
+                    if (task?.TargetCrimeId == CrimePool.PlayerCrimeId)
                         policeWasExecutingPlayerTask = true;
                 }
                 else if (party.MobileParty.IsMainParty)

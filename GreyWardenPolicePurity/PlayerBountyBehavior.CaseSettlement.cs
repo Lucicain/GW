@@ -522,7 +522,7 @@ namespace GreyWardenPolicePurity
             else if (IsTrackingBountyTarget)
             {
                 _fieldCaseContract = true;
-                CrimeRecord? crime = CrimeState.GetByOffenderId(_activeBountyTargetId);
+                CrimeRecord? crime = CrimePool.GetRecord(CaseHero);
                 if (crime != null)
                 {
                     _assignedCaseFine = GwpFieldArrestPricing.AssessFine(crime);

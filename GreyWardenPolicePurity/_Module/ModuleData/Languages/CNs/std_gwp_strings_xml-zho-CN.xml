@@ -473,7 +473,7 @@
   <string id="gwp_troop_order_cohort_lost" text="灰袍捎来口信：替你备下的那批人折在路上了，他们正另召一批。" />
   <string id="gwp_policeenforcementbehavior_dialogue_001" text="按灰袍法令，先把正式罚金缴清。" />
   <string id="gwp_policeenforcementbehavior_dialogue_002" text="罚金确认。本轮案件结案，你可以离开了。" />
-  <string id="gwp_policeenforcementbehavior_dialogue_003" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
+  <string id="gwp_policeenforcementbehavior_dialogue_003" text="你的出价低于正式罚金。你可以继续出价，或选择其他处理方式。" />
   <string id="gwp_policeenforcementbehavior_dialogue_004" text="我认罪认罚，请给我赎罪任务。" />
   <string id="gwp_policeenforcementbehavior_dialogue_005" text="当前无法分配赎罪任务。你可以继续缴纳罚金，或拒绝执法。" />
   <string id="gwp_policeenforcementbehavior_dialogue_006" text="拒绝执法，开战。" />
@@ -491,6 +491,11 @@
   <string id="gwp_policeenforcementbehavior_dialogue_018" text="缴纳正式罚金" />
   <string id="gwp_policeenforcementbehavior_dialogue_019" text="正式罚金已收 {VAR_1} 金，通缉已解除。" />
   <string id="gwp_policeenforcementbehavior_dialogue_020" text="你拒绝执法，灰袍守卫将强制抓捕。" />
+  <string id="gwp_enforcement_companion_charge" text="站住！与你同行的 {VAR_1} 有灰袍未结案件。本案罚金为 {VAR_2} 金。{VAR_3}" />
+  <string id="gwp_enforcement_companion_insufficient" text="你当前携带 {VAR_1} 金。凑齐罚金后可回来一次缴清。" />
+  <string id="gwp_enforcement_companion_pay" text="替这名同伴缴纳罚金（{VAR_1} 金）" />
+  <string id="gwp_enforcement_companion_paid" text="已收到 {VAR_1} 的罚金 {VAR_2} 金，本案结案。" />
+  <string id="gwp_enforcement_companion_leave" text="我现在无法替这名同伴结案。" />
   <string id="gwp_policepatrolbehavior_001" text="已下发返程命令，等待到达定居点后销毁" />
   <string id="gwp_policepatrolbehavior_002" text="已调度：返程至驻地后销毁纠察队" />
   <string id="gwp_policepatrolbehavior_003" text="按灰袍法令，先把正式罚金缴清。" />

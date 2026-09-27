@@ -145,13 +145,14 @@ namespace GreyWardenPolicePurity
         private static string BuildLedgerBlock(Hero? hero)
         {
             if (hero == null) return string.Empty;
+            if (hero == Hero.MainHero)
+                return PlayerBehaviorPool.GetReputationDisplay();
 
             HeroCrimeStats? history = CrimePool.GetHistory(hero);
             int standing = Math.Max(0, history?.NegativeStanding ?? 0);
             int lives = Math.Max(0, history?.UnredeemedLives ?? 0);
 
-            MobileParty? party = hero.PartyBelongedTo;
-            CrimeRecord? crime = party == null ? null : CrimePool.GetByOffenderId(party.StringId);
+            CrimeRecord? crime = CrimePool.GetRecord(hero);
             bool openCase = crime?.HasOpenCase == true;
 
             int pending = GwpFieldReportLedger.Instance?.PendingAssessedFor(hero.StringId) ?? 0;

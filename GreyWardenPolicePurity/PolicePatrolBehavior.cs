@@ -490,7 +490,7 @@ namespace GreyWardenPolicePurity
                     foreach (var pp in PoliceStats.GetAllPoliceParties())
                     {
                         var task = CrimeState.GetTask(pp.StringId);
-                        if (task != null && task.TargetCrime?.Offender?.IsMainParty == true)
+                        if (task?.TargetCrimeId == CrimePool.PlayerCrimeId)
                         {
                             GwpCommon.TryResetAi(pp);
                             GreyWardenPartyDesireBehavior.ClearIntent(pp);

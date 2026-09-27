@@ -374,25 +374,44 @@ namespace GreyWardenPolicePurity
                     Campaign.Current?.ConversationManager?.IsConversationInProgress == true)
                     return;
 
-                string? policeId = CrimeState.GetPlayerTaskPolicePartyId();
-                if (string.IsNullOrWhiteSpace(policeId))
-                    return;
-
-                PoliceTask? task = CrimeState.GetTask(policeId!);
-                if (task == null || task.WarDeclared || task.IsEscortingPlayer ||
-                    task.FlowState != PoliceTaskFlowState.Pursuit ||
-                    task.TargetCrime?.Offender?.IsMainParty != true)
-                    return;
-
                 Clan? policeClan = PoliceStats.GetPoliceClan();
-                MobileParty? police = MobileParty.All.FirstOrDefault(party =>
-                    party.IsActive && string.Equals(party.StringId, policeId,
-                        StringComparison.OrdinalIgnoreCase));
-                if (police == null || police.MapEvent != null ||
-                    police.ActualClan != policeClan)
+                if (policeClan == null)
                     return;
 
-                float distance = police.GetPosition2D.Distance(player.GetPosition2D);
+                // Several wanted companions can travel in the same main party.
+                // Contact is keyed by each case, but any nearby assignee may speak.
+                var assigneeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
+                {
+                    if (task.FlowState == PoliceTaskFlowState.Pursuit &&
+                        !task.WarDeclared && !task.IsEscortingPlayer &&
+                        task.TargetCrime?.Offender?.IsMainParty == true &&
+                        !string.IsNullOrWhiteSpace(task.PolicePartyId))
+                        assigneeIds.Add(task.PolicePartyId);
+                }
+                if (assigneeIds.Count == 0)
+                    return;
+
+                MobileParty? contact = null;
+                float closestDistance = float.MaxValue;
+                foreach (MobileParty party in MobileParty.All)
+                {
+                    if (!party.IsActive || party.MapEvent != null ||
+                        party.ActualClan != policeClan ||
+                        !assigneeIds.Contains(party.StringId))
+                        continue;
+
+                    float candidateDistance = party.GetPosition2D.Distance(player.GetPosition2D);
+                    if (candidateDistance >= closestDistance)
+                        continue;
+                    closestDistance = candidateDistance;
+                    contact = party;
+                }
+                if (contact == null)
+                    return;
+
+                MobileParty police = contact;
+                float distance = closestDistance;
                 if (distance > GwpTuning.Enforcement.WarDistance)
                     return;
 
@@ -914,7 +933,9 @@ namespace GreyWardenPolicePurity
                     if (!task.IsTargetValid())
                     {
                         RestoreAi(pp);
-                        CrimeState.EndTask(kvp.Key, "dispatch_target_invalid");
+                        ClearTaskWarTracking(kvp.Key, true);
+                        RetireTaskKeepingCaseIfOffenderAlive(kvp.Key, task,
+                            "dispatch_target_invalid");
                         RestorePeaceAfterCaseEnd(task);
                         continue;
                     }
@@ -927,7 +948,8 @@ namespace GreyWardenPolicePurity
                 {
                     RestoreAi(pp);
                     ClearTaskWarTracking(kvp.Key, true);
-                    CrimeState.EndTask(kvp.Key, "target_invalid");
+                    RetireTaskKeepingCaseIfOffenderAlive(kvp.Key, task,
+                        "target_invalid");
                     RestorePeaceAfterCaseEnd(task);
                     continue;
                 }
@@ -1341,7 +1363,7 @@ namespace GreyWardenPolicePurity
                 if (_ignoredInvalidShelteredBattlePartyIds.Remove(pp.StringId))
                     continue;
                 MobileParty? activeOffender = task.TargetCrime?.Offender;
-                bool playerOffender = task.TargetCrime?.Offender?.IsMainParty == true;
+                bool playerOffender = task.TargetCrimeId == CrimePool.PlayerCrimeId;
                 // 承办警察打赢一场无关战斗不能让手中的案件自动结案。目标可能在
                 // 战败结算时已经失活或失去 PartyBelongedTo，所以除了实时引用，
                 // 还要用案卷保存的部队/英雄 ID 在本场参战方中核验。

@@ -83,6 +83,11 @@ namespace GreyWardenPolicePurity
                     return _offender;
                 }
 
+                // A departed companion or captive must not leave the player's
+                // party cached as the target of somebody else's warrant.
+                if (hero != null)
+                    return null;
+
                 if (_offender?.IsActive == true)
                     return _offender;
 
@@ -97,7 +102,7 @@ namespace GreyWardenPolicePurity
                 _offender = value;
                 if (value == null) return;
                 OffenderPartyId = value.StringId ?? OffenderPartyId;
-                if (value.LeaderHero != null)
+                if (value.LeaderHero != null && string.IsNullOrWhiteSpace(OffenderHeroId))
                 {
                     _offenderHero = value.LeaderHero;
                     OffenderHeroId = value.LeaderHero.StringId ?? OffenderHeroId;
@@ -912,7 +917,10 @@ namespace GreyWardenPolicePurity
                 record.CrimeCategory = Enum.IsDefined(typeof(GwpCrimeCategory), category) && category != 0
                     ? (GwpCrimeCategory)category
                     : GwpCrimeCategoryClassifier.FromCrimeType(type, id);
-                record.OffenderHeroId = hero;
+                // Ordinary cases are keyed by the offender's hero ID. A party can
+                // later be led by somebody else (including the player), so the
+                // serialized party leader must never become the accused hero.
+                record.OffenderHeroId = id == PlayerCrimeId ? hero : id;
                 record.CivilianCasualties = civilianCasualties;
                 record.IncidentCount = incidentCount;
                 record.AccruedBaseFine = accruedBaseFine;
@@ -926,7 +934,7 @@ namespace GreyWardenPolicePurity
                 record.VictimName = victim;
                 record.HasOpenCase = open != 0;
 
-                legacyHistory.HeroId = hero;
+                legacyHistory.HeroId = record.OffenderHeroId;
                 legacyHistory.TotalCrimeCount = Math.Max(0, crimes);
                 legacyHistory.TotalArrestCount = Math.Max(0, arrests);
                 legacyHistory.DirectDeterrencePoints = MathF.Max(0f, direct);

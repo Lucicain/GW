@@ -49,7 +49,6 @@ GreyWardenPolicePurity/GwpDispatchBarterScreen.cs
 GreyWardenPolicePurity/GwpDualWieldingPatch.cs
 GreyWardenPolicePurity/GwpDuelOpponentMarkerPatch.cs
 GreyWardenPolicePurity/GwpEncyclopediaClanPageVM.cs
-GreyWardenPolicePurity/GwpEncyclopediaHeroPageVM.cs
 GreyWardenPolicePurity/GwpEscortSpeedCapPatch.cs
 GreyWardenPolicePurity/GwpFiefPublicSupportPatch.cs
 GreyWardenPolicePurity/GwpFieldArrestBehavior.Grace.cs
@@ -92,6 +91,5 @@ GreyWardenPolicePurity/PoliceMarriageModel.cs
 GreyWardenPolicePurity/PoliceMobilePartyAIModel.cs
 GreyWardenPolicePurity/PolicePatrolBehavior.Encyclopedia.cs
 GreyWardenPolicePurity/PolicePatrolBehavior.Helpers.cs
-GreyWardenPolicePurity/PolicePatrolBehavior.cs
 GreyWardenPolicePurity/PolicePrisonerImmunityBehavior.cs
 GreyWardenPolicePurity/PoliceRaidDeterrenceModel.cs

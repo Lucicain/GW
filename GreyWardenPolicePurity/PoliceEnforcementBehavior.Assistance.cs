@@ -1848,7 +1848,7 @@ namespace GreyWardenPolicePurity
             PoliceTask? task = CrimeState.GetTask(candidate.StringId);
             return task?.IsEscortingPlayer != true &&
                    task?.IsPlayerBountyEscort != true &&
-                   task?.TargetCrime?.Offender?.IsMainParty != true;
+                   task?.TargetCrimeId != CrimePool.PlayerCrimeId;
         }
 
         private void ReleaseCandidateCaseToPool(MobileParty helper)

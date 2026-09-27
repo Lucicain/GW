@@ -246,6 +246,19 @@ namespace GreyWardenPolicePurity
                     .Where(task => string.Equals(task.TargetCrimeId, CrimePool.PlayerCrimeId,
                         StringComparison.OrdinalIgnoreCase))
                     .Select(task => Safe(task.PolicePartyId) + ":" + task.FlowState));
+                // SyncData may emit a justice snapshot before Hero's global
+                // source collection exists. Use the saved party ID here;
+                // resolving Offender would touch Hero.FindFirst during load.
+                string mainPartyId = MobileParty.MainParty?.StringId ?? string.Empty;
+                string companionCases = string.Join(",", CrimePool.LedgerRecords
+                    .Where(crime => crime.CrimeId != CrimePool.PlayerCrimeId &&
+                        crime.HasOpenCase && !string.IsNullOrWhiteSpace(mainPartyId) &&
+                        string.Equals(crime.OffenderPartyId, mainPartyId,
+                            StringComparison.OrdinalIgnoreCase))
+                    .Select(crime => Safe(crime.CrimeId) + ":" +
+                        Safe(crime.OffenderHeroId) + ":" +
+                        Safe(CrimePool.ActiveTasks.Values.FirstOrDefault(task =>
+                            task.TargetCrimeId == crime.CrimeId)?.PolicePartyId)));
 
                 IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
                 Clan? policeClan = PoliceStats.GetPoliceClan();
@@ -266,6 +279,7 @@ namespace GreyWardenPolicePurity
                     "; playerCrimeOffenderValid=" + (playerCrime?.IsOffenderValid() == true) +
                     "; isPlayerHunted=" + CrimePool.IsPlayerHunted +
                     "; playerTasks=" + Safe(tasks) +
+                    "; companionCases=" + Safe(companionCases) +
                     "; policeWar=" + policeWar +
                     "; victimFactions=" + Safe(string.Join(",", PlayerBehaviorPool.VictimFactions
                         .Where(faction => faction != null)

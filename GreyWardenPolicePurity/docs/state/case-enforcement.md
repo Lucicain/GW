@@ -1,10 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：用户已实测确认（2026-09-26，含改追补门槛）；同日协力军团读档后补建定时事件，已部署待实测
+> 当前状态：原有案件行为已实测确认；用户已确认主队同伴旧案对应正确英雄 ID；代缴与展示仍待实测
 > 最后验收：`9d005bb`
-> 已复核至：`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）；2026-09-23 工作树新增测试桩 `tools/CaseSettlement.Tests/FaultTraceStub.cs` 修复测试编译（177 项通过），生产行为未变
-> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：带着已组成的协力军团存档、读档，之后成员仍能并入军团，协力解散时 `GreyWarden-Faults.log` 不再出现 `Army.DisperseInternal` 空引用
+> 已复核至：2026-09-27 工作树（主队 NPC 旧案回归审查、整笔代缴与承办队扫描）；`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）
+> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
+> 待实测：主队携带一个或多个有旧案 NPC 时逐案代缴、结案且不清玩家正声望；英雄页只显示本人案件；协力军团读档后成员仍可并入，解散无 `Army.DisperseInternal` 空引用
 
 > ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
 > 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。
@@ -15,6 +15,12 @@
 2. 雇佣兵转移阵营导致战斗脱离 —— **案件跟着人走，不跟着势力走**。
 3. 人不是灰袍打掉的（逃亡或被别人俘虏）—— **这个人依然被通缉**，等他重新建队，
    灰袍照样找他麻烦。
+
+## 主队中的 NPC 旧案
+
+- 案卷身份是 `CrimeId` / `OffenderHeroId` 对应的英雄，不是当前部队领袖。NPC 入玩家主队后，`Offender` 指向主队只用于地图追踪；读档和部队变化不得把嫌犯改写为玩家。嫌犯离队且暂时无所属部队时，撤承办任务并保留卷宗，等其重新建队。（依据：用户裁定 2026-09-27；存档字段与源码核查）
+- 灰袍可拦截带着有旧案 NPC 的主队；对话说出该 NPC 姓名，用 NPC 案件基础费与该 NPC 负声望定价。玩家持有足额金币且公库收款人有效时才可整笔代缴至司法公库；缴清后只结该 NPC 案、清其负声望、登记惩戒，玩家本人的声望及 `PLAYER_WANTED` 不动。金币不足时可离开，本案保留、接触受冷却限制。多案接触每帧至多遍历一次地图队伍，选最近的承办队。（依据：用户裁定 2026-09-27；设计；源码复核）
+- 玩家本人案件只能由 `PLAYER_WANTED` 标识。战败押送、玩家罚款、正声望撤玩家通缉、任务不可被玩家委托/协力征用以及新玩家通缉接管旧案，不能仅凭目标部队是主队来判定。接触与对话入口仍需按主队判断，才能拦截带着嫌犯的玩家。英雄百科页按英雄 ID 查案；玩家显示自己的灰袍声望，同队成员不共享犯罪数字。（依据：用户反馈与存档核查 2026-09-27；源码复核）
 
 ## 震慑口径
 

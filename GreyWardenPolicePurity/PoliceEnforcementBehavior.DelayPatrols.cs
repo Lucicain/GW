@@ -1419,7 +1419,7 @@ namespace GreyWardenPolicePurity
 
             // 最近警察若有旧案，先清掉战争追踪并交回犯罪池（由 CrimePool 内部处理）
             PoliceTask? nearestTask = CrimeState.GetTask(nearestId);
-            if (nearestTask != null && nearestTask.TargetCrime?.Offender?.IsMainParty != true)
+            if (nearestTask != null && nearestTask.TargetCrimeId != CrimePool.PlayerCrimeId)
             {
                 ClearTaskWarTracking(nearestId, true);
             }

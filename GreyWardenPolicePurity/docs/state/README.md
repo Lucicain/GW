@@ -87,6 +87,7 @@ python tools/Check-StateFreshness.py
 | [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类事实 |
 | [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：立案门槛、结案口径、协力编成、战争跟随 |
+| [`patrol.md`](patrol.md) | 玩家纠察队声望分档、正声望撤通缉与领主原版巡逻现状 |
 | [`build-and-deploy.md`](build-and-deploy.md) | 构建开关、预检脚本、live 镜像、发布包 |
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
 | [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
@@ -97,7 +98,6 @@ python tools/Check-StateFreshness.py
 下列子系统的当前状态**还没有从流水里抽出来**。改动它们之前，先读流水里最新的相关
 条目，并把结论补成一个 state 文件——不要一边改一边继续只往流水里写。
 
-- 巡逻与巡区（`PolicePatrolBehavior`、巡逻"恋家"定位）
 - 玩家悬赏与结案（`PlayerBountyBehavior`、`GwpCaseArchiveScreen`）
 - 使者的对话入口与付款 barter（`GwpWardenDispatchDialogue`、`GwpAssetPayment`）；地图行程已提取到 [`dispatch.md`](dispatch.md)
 - 灰袍领主日常练兵与兵种配比取向（`GreyWardenTrainingBehavior`）；玩家订单与随行练兵队已提取到 [`troop-orders.md`](troop-orders.md)

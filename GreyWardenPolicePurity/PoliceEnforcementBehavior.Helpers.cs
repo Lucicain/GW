@@ -44,7 +44,8 @@ namespace GreyWardenPolicePurity
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
             {
-                if (task.IsEscortingPlayer || task.IsPlayerBountyEscort || task.TargetCrime?.Offender?.IsMainParty == true)
+                if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
+                    task.TargetCrimeId == CrimePool.PlayerCrimeId)
                     return false;
 
                 IFaction? warTarget = task.WarTarget;
@@ -93,7 +94,7 @@ namespace GreyWardenPolicePurity
             if (task != null)
             {
                 if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
-                    task.TargetCrime?.Offender?.IsMainParty == true)
+                    task.TargetCrimeId == CrimePool.PlayerCrimeId)
                     return false;
 
                 IFaction? warTarget = task.WarTarget;
