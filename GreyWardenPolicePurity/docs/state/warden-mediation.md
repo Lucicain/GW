@@ -1,7 +1,7 @@
 # 灰袍出面调停与战后讲和
 
 > 当前状态：用户已实测确认（2026-09-26；诊断日志 15:12 先 `MEDIATION_PEACE_DEFERRED` 后 `MEDIATION_PEACE_APPLIED`，败方队伍战后未残留，故障日志干净）
-> 最后验收：`834291c`（含 `e2f2a58` 的推迟讲和）
+> 最后验收：`9d005bb`（含 `c447994` 的推迟讲和）
 > 覆盖源码：`PoliceAntiWarDeclaration.cs`
 > 待实测：无
 

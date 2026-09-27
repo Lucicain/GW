@@ -1,7 +1,7 @@
 # 案件生命周期与执法
 
 > 当前状态：用户已实测确认（2026-09-26，含改追补门槛）；同日协力军团读档后补建定时事件，已部署待实测
-> 最后验收：`834291c`
+> 最后验收：`9d005bb`
 > 已复核至：`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）；2026-09-23 工作树新增测试桩 `tools/CaseSettlement.Tests/FaultTraceStub.cs` 修复测试编译（177 项通过），生产行为未变
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：带着已组成的协力军团存档、读档，之后成员仍能并入军团，协力解散时 `GreyWarden-Faults.log` 不再出现 `Army.DisperseInternal` 空引用

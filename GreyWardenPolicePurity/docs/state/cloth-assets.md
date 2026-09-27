@@ -2,7 +2,7 @@
 
 > 当前状态：2026-09-27 已把 live 的六件服装/马甲、八块布料的设置按重建前原包核对；三件服装的差异已修正并部署，待实机验收
 > 最后验收：未建立检查点
-> 已复核至：`34cc6b0` 后的 live `Assets/GreyWardenRebuild/*_geo.tpac`
+> 已复核至：2026-09-27 原包设置恢复后的 live `Assets/GreyWardenRebuild/*_geo.tpac`
 > 覆盖源码：`tools/tpac/tpac-diagnose/Program.cs`
 > 待实测：弓箭手衣摆，以及轻步兵、重步兵、骑士和马披的布料观感；改动三件服装后尚未进游戏
 
