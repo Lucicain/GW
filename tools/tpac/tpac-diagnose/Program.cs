@@ -3,12 +3,23 @@ using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Globalization;
 using TpacTool.Lib;
 
 class P
 {
     static void Main(string[] args)
     {
+        if (args.Length == 5 && args[0] == "--verify-cloth")
+        {
+            VerifyCloth(args[1], args[2], args[3], args[4]);
+            return;
+        }
+        if (args.Length == 6 && args[0] == "--restore-cloth")
+        {
+            RestoreCloth(args[1], args[2], args[3], args[4], args[5]);
+            return;
+        }
         if (args.Length >= 3 && args[0] == "--extract-dual")
         {
             ExtractDual(args[1], args.Skip(2).ToArray());
@@ -68,10 +79,15 @@ class P
             }
             if (item is Metamesh meta)
             {
-                Console.WriteLine($"  meshes={meta.Meshes.Count} original={meta.Original}");
+                Console.WriteLine($"  meshes={meta.Meshes.Count} original={meta.Original} body={meta.UnknownString} clothMesh={meta.ClothMetamesh} clothString={meta.ClothString}");
                 foreach (var mesh in meta.Meshes.OrderBy(m => m.Lod))
                 {
                     Console.WriteLine($"  lod={mesh.Lod} name={mesh.Name} mat={mesh.Material.Guid} verts={mesh.VertexCount} faces={mesh.FaceCount} pos={mesh.PositionCount} complete={mesh.IsCompleteMesh} gen={mesh.UnknownUint1} u2={mesh.UnknownInt2} u3={mesh.UnknownInt3} f={mesh.UnknownFloat1} b={mesh.UnknownBool1},{mesh.UnknownBool2},{mesh.UnknownBool3} flags=[{string.Join(',', mesh.Flags ?? new System.Collections.Generic.List<string>())}] mflags=[{string.Join(',', mesh.MaterialFlags)}]");
+                    if (!string.IsNullOrEmpty(mesh.ClothingMaterial.Name) || (mesh.Flags != null && mesh.Flags.Contains("uses_cloth_simulation")))
+                    {
+                        var cloth = mesh.ClothingMaterial;
+                        Console.WriteLine($"    cloth preset={cloth.Name} bend={cloth.BendingStiffness:R} shear={cloth.ShearingStiffness:R} stretch={cloth.StretchingStiffness:R} anchor={cloth.AnchorStiffness:R} damping={cloth.Damping:R} gravity={cloth.Gravity:R} inertia={cloth.LinearInertia:R} drag={cloth.AirDragMultiplier:R} wind={cloth.Wind:R} maxvel={cloth.MaxLinearVelocity:R} velmult={cloth.LinearVelocityMultiplier:R}");
+                    }
                     try
                     {
                         var vs = mesh.VertexStream?.Data;
@@ -90,6 +106,8 @@ class P
                         var ed = mesh.EditData?.Data;
                         if (ed != null)
                         {
+                            if (!string.IsNullOrEmpty(mesh.ClothingMaterial.Name) || (mesh.Flags != null && mesh.Flags.Contains("uses_cloth_simulation")))
+                                Console.WriteLine($"    cloth-alpha=[{string.Join(',', ed.Vertices.GroupBy(v => v.Color.A).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}] second-alpha=[{string.Join(',', ed.Vertices.GroupBy(v => v.SecondColor.A).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}]");
                             int badPosRef = ed.Vertices.Count(v => v.PositionIndex >= ed.Positions.Length);
                             int badFaceRef = ed.Faces.Count(fa => fa.V0 < 0 || fa.V1 < 0 || fa.V2 < 0 || fa.V0 >= ed.Vertices.Length || fa.V1 >= ed.Vertices.Length || fa.V2 >= ed.Vertices.Length);
                             int degFace = ed.Faces.Count(fa => fa.V0 == fa.V1 || fa.V0 == fa.V2 || fa.V1 == fa.V2);
@@ -170,6 +188,70 @@ class P
     static bool Finite(Vector3 v) => Finite(v.X) && Finite(v.Y) && Finite(v.Z);
     static bool Finite(Vector4 v) => Finite(v.X) && Finite(v.Y) && Finite(v.Z) && Finite(v.W);
 
+    static void RestoreCloth(string originalPath, string originalName, string rebuiltPath, string rebuiltName, string outputPath)
+    {
+        var original = new AssetPackage(originalPath, true, false);
+        var rebuilt = new AssetPackage(rebuiltPath, true, false);
+        var oldMesh = original.Items.OfType<Metamesh>().Single(x => x.Name == originalName);
+        var newMesh = rebuilt.Items.OfType<Metamesh>().Single(x => x.Name == rebuiltName);
+        if (oldMesh.ClothMetamesh != Guid.Empty)
+            throw new NotSupportedException($"{originalName}: separate cloth simulation mesh is not copied by this command");
+        var oldCloth = oldMesh.Meshes.Where(x => x.Flags.Contains("uses_cloth_simulation")).ToArray();
+        if (oldCloth.Length == 0) throw new InvalidOperationException($"No original cloth meshes in {originalName}");
+        foreach (var source in oldCloth)
+        {
+            var candidates = newMesh.Meshes.Where(x => x.Lod == source.Lod && x.FaceCount == source.FaceCount && x.PositionCount == source.PositionCount).ToArray();
+            if (candidates.Length != 1) throw new InvalidOperationException($"Could not uniquely match {source.Name}: {candidates.Length} candidates");
+            var target = candidates[0];
+            target.Flags.Remove("uses_cloth_simulation");
+            target.Flags.Add("uses_cloth_simulation");
+            target.UnknownFloat1 = source.UnknownFloat1;
+            target.ClothingMaterial = source.ClothingMaterial;
+            Console.WriteLine($"restored {source.Name} -> {target.Name}: preset={source.ClothingMaterial.Name} distance={source.UnknownFloat1:R}");
+        }
+        newMesh.UnknownString = oldMesh.UnknownString;
+        newMesh.ClothMetamesh = oldMesh.ClothMetamesh;
+        newMesh.ClothUint = oldMesh.ClothUint;
+        newMesh.ClothString = oldMesh.ClothString;
+        rebuilt.Save(outputPath);
+        Console.WriteLine($"restored collision body={newMesh.UnknownString}; output={outputPath}");
+    }
+
+    static void VerifyCloth(string originalPath, string originalName, string rebuiltPath, string rebuiltName)
+    {
+        var original = new AssetPackage(originalPath, true, false);
+        var rebuilt = new AssetPackage(rebuiltPath, true, false);
+        var oldMesh = original.Items.OfType<Metamesh>().Single(x => x.Name == originalName);
+        var newMesh = rebuilt.Items.OfType<Metamesh>().Single(x => x.Name == rebuiltName);
+        if (oldMesh.UnknownString != newMesh.UnknownString || oldMesh.ClothMetamesh != newMesh.ClothMetamesh
+            || oldMesh.ClothUint != newMesh.ClothUint || oldMesh.ClothString != newMesh.ClothString)
+            throw new InvalidOperationException($"{originalName}: collision body or cloth mesh reference differs");
+        var oldCloth = oldMesh.Meshes.Where(x => x.Flags.Contains("uses_cloth_simulation")).ToArray();
+        var newCloth = newMesh.Meshes.Where(x => x.Flags.Contains("uses_cloth_simulation")).ToArray();
+        if (oldCloth.Length != newCloth.Length) throw new InvalidOperationException($"{originalName}: cloth submesh count differs");
+        foreach (var source in oldCloth)
+        {
+            var target = newCloth.Single(x => x.Lod == source.Lod && x.FaceCount == source.FaceCount && x.PositionCount == source.PositionCount);
+            if (source.UnknownFloat1 != target.UnknownFloat1) throw new InvalidOperationException($"{source.Name}: distance differs");
+            foreach (var property in typeof(ClothingMaterial).GetProperties())
+                if (!Equals(property.GetValue(source.ClothingMaterial), property.GetValue(target.ClothingMaterial)))
+                    throw new InvalidOperationException($"{source.Name}: {property.Name} differs");
+            var a = source.EditData.Data;
+            var b = target.EditData.Data;
+            var mapping = MatchPositions(a.Positions, b.Positions, 1e-5f);
+            if (mapping == null) throw new InvalidOperationException($"{source.Name}: positions differ");
+            var identity = Enumerable.Range(0, b.Positions.Length).ToArray();
+            if (MultisetDelta(a.Faces.Select(f => FaceIndexKey(a, f, mapping)), b.Faces.Select(f => FaceIndexKey(b, f, identity))) != "0/0")
+                throw new InvalidOperationException($"{source.Name}: triangle topology differs");
+            var alphaA = AlphaByPosition(a, mapping);
+            var alphaB = AlphaByPosition(b, identity);
+            if (alphaA.Count != alphaB.Count || alphaA.Any(pair => !alphaB.TryGetValue(pair.Key, out var value) || value != pair.Value))
+                throw new InvalidOperationException($"{source.Name}: cloth vertex alpha differs");
+            Console.WriteLine($"PASS {source.Name} -> {target.Name}: parameters, topology, alpha");
+        }
+        Console.WriteLine($"PASS {originalName}: collision body and {oldCloth.Length} cloth submeshes");
+    }
+
     static void Compare(string pathA, string nameA, string pathB, string nameB)
     {
         var pa = new AssetPackage(pathA, true, false);
@@ -178,12 +260,13 @@ class P
         var b = pb.Items.OfType<Metamesh>().Single(x => x.Name == nameB);
         foreach (var ma in a.Meshes.OrderBy(x => x.Lod))
         {
-            var mb = b.Meshes.SingleOrDefault(x => x.Lod == ma.Lod);
-            if (mb == null) { Console.WriteLine($"lod={ma.Lod} missing-in-B"); continue; }
+            var mb = b.Meshes.SingleOrDefault(x => x.Name == ma.Name && x.FaceCount == ma.FaceCount)
+                ?? b.Meshes.SingleOrDefault(x => x.Lod == ma.Lod && x.FaceCount == ma.FaceCount && x.PositionCount == ma.PositionCount);
+            if (mb == null) { Console.WriteLine($"mesh={ma.Name} missing-in-B"); continue; }
             var ea = ma.EditData.Data;
             var eb = mb.EditData.Data;
             int n = Math.Min(ea.Vertices.Length, eb.Vertices.Length);
-            int posMismatch = 0, normalMismatch = 0, uvMismatch = 0, tbnMismatch = 0;
+            int posMismatch = 0, normalMismatch = 0, uvMismatch = 0, tbnMismatch = 0, colorMismatch = 0;
             float maxPos = 0, maxNormal = 0, maxUv = 0, maxTbn = 0;
             for (int i = 0; i < n; i++)
             {
@@ -193,6 +276,7 @@ class P
                 float dn = MaxAbs(va.Normal - vb.Normal); maxNormal = Math.Max(maxNormal, dn); if (dn > 1e-5f) normalMismatch++;
                 float du = MaxAbs(va.Uv - vb.Uv); maxUv = Math.Max(maxUv, du); if (du > 1e-5f) uvMismatch++;
                 float dt = Math.Max(MaxAbs(va.Tangent - vb.Tangent), MaxAbs(va.Binormal - vb.Binormal)); maxTbn = Math.Max(maxTbn, dt); if (dt > 1e-5f) tbnMismatch++;
+                if (va.Color.A != vb.Color.A || va.SecondColor.A != vb.SecondColor.A) colorMismatch++;
             }
             int faceN = Math.Min(ea.Faces.Length, eb.Faces.Length);
             int faceMismatch = 0;
@@ -201,9 +285,95 @@ class P
                 var fa = ea.Faces[i]; var fb = eb.Faces[i];
                 if (fa.V0 != fb.V0 || fa.V1 != fb.V1 || fa.V2 != fb.V2) faceMismatch++;
             }
-            Console.WriteLine($"lod={ma.Lod} counts A={ea.Positions.Length}/{ea.Vertices.Length}/{ea.Faces.Length} B={eb.Positions.Length}/{eb.Vertices.Length}/{eb.Faces.Length} posMismatch={posMismatch}/{n} maxPos={maxPos:R} normalMismatch={normalMismatch} maxNormal={maxNormal:R} uvMismatch={uvMismatch} maxUv={maxUv:R} tbnMismatch={tbnMismatch} maxTbn={maxTbn:R} faceMismatch={faceMismatch}/{faceN}");
+            Console.WriteLine($"mesh={ma.Name} counts A={ea.Positions.Length}/{ea.Vertices.Length}/{ea.Faces.Length} B={eb.Positions.Length}/{eb.Vertices.Length}/{eb.Faces.Length} posMismatch={posMismatch}/{n} maxPos={maxPos:R} normalMismatch={normalMismatch} maxNormal={maxNormal:R} uvMismatch={uvMismatch} maxUv={maxUv:R} tbnMismatch={tbnMismatch} maxTbn={maxTbn:R} colorMismatch={colorMismatch} faceMismatch={faceMismatch}/{faceN}");
+            if (!string.IsNullOrEmpty(ma.ClothingMaterial.Name))
+            {
+                Console.WriteLine($"  cloth unordered position Aonly/Bonly={MultisetDelta(ea.Positions.Select(p => PositionKey(p)), eb.Positions.Select(p => PositionKey(p)))} alphaAtPosition Aonly/Bonly={MultisetDelta(ea.Vertices.Select(v => PositionKey(ea.Positions[v.PositionIndex]) + ':' + v.Color.A), eb.Vertices.Select(v => PositionKey(eb.Positions[v.PositionIndex]) + ':' + v.Color.A))} triangles Aonly/Bonly={MultisetDelta(ea.Faces.Select(f => FaceKey(ea, f)), eb.Faces.Select(f => FaceKey(eb, f)))}");
+                Console.WriteLine($"  cloth rounded-4 position Aonly/Bonly={MultisetDelta(ea.Positions.Select(p => PositionKey(p, 4)), eb.Positions.Select(p => PositionKey(p, 4)))} triangles Aonly/Bonly={MultisetDelta(ea.Faces.Select(f => FaceKey(ea, f, 4)), eb.Faces.Select(f => FaceKey(eb, f, 4)))} maxNearestPosition={MaxNearestPosition(ea.Positions, eb.Positions):R}");
+                var positionMap = MatchPositions(ea.Positions, eb.Positions, 1e-5f);
+                if (positionMap != null)
+                {
+                    var identity = Enumerable.Range(0, eb.Positions.Length).ToArray();
+                    var alphaA = AlphaByPosition(ea, positionMap);
+                    var alphaB = AlphaByPosition(eb, identity);
+                    var alphaDiff = alphaA.Keys.Union(alphaB.Keys).Count(k => !alphaA.TryGetValue(k, out var left) || !alphaB.TryGetValue(k, out var right) || left != right);
+                    Console.WriteLine($"  cloth mapped triangles Aonly/Bonly={MultisetDelta(ea.Faces.Select(f => FaceIndexKey(ea, f, positionMap)), eb.Faces.Select(f => FaceIndexKey(eb, f, identity)))} alphaPositionsDifferent={alphaDiff}");
+                }
+                else Console.WriteLine("  cloth positions could not be matched one-to-one within 1e-5");
+            }
         }
     }
+
+    static string PositionKey(Vector4 p) => PositionKey(p, 5);
+    static string PositionKey(Vector4 p, int decimals) => string.Join(',',
+        Math.Round(p.X, decimals).ToString("F" + decimals, CultureInfo.InvariantCulture),
+        Math.Round(p.Y, decimals).ToString("F" + decimals, CultureInfo.InvariantCulture),
+        Math.Round(p.Z, decimals).ToString("F" + decimals, CultureInfo.InvariantCulture));
+
+    static string FaceKey(MeshEditData data, MeshEditData.Face face, int decimals = 5)
+    {
+        var vertices = new[] { face.V0, face.V1, face.V2 }
+            .Select(i => PositionKey(data.Positions[data.Vertices[i].PositionIndex], decimals)).ToArray();
+        Array.Sort(vertices, StringComparer.Ordinal);
+        return string.Join('|', vertices);
+    }
+
+    static string MultisetDelta(IEnumerable<string> a, IEnumerable<string> b)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var key in a) counts[key] = counts.TryGetValue(key, out var count) ? count + 1 : 1;
+        foreach (var key in b) counts[key] = counts.TryGetValue(key, out var count) ? count - 1 : -1;
+        return $"{counts.Values.Where(v => v > 0).Sum()}/{-counts.Values.Where(v => v < 0).Sum()}";
+    }
+
+    static float MaxNearestPosition(Vector4[] a, Vector4[] b)
+    {
+        float largest = 0;
+        foreach (var p in a)
+        {
+            float nearest = float.MaxValue;
+            foreach (var q in b)
+            {
+                var delta = new Vector3(p.X - q.X, p.Y - q.Y, p.Z - q.Z);
+                nearest = Math.Min(nearest, delta.Length());
+            }
+            largest = Math.Max(largest, nearest);
+        }
+        return largest;
+    }
+
+    static int[] MatchPositions(Vector4[] a, Vector4[] b, float tolerance)
+    {
+        if (a.Length != b.Length) return null;
+        var result = new int[a.Length];
+        var used = new HashSet<int>();
+        for (int i = 0; i < a.Length; i++)
+        {
+            int nearestIndex = -1;
+            float nearest = float.MaxValue;
+            for (int j = 0; j < b.Length; j++)
+            {
+                var delta = new Vector3(a[i].X - b[j].X, a[i].Y - b[j].Y, a[i].Z - b[j].Z);
+                var distance = delta.Length();
+                if (distance < nearest) { nearest = distance; nearestIndex = j; }
+            }
+            if (nearest > tolerance || !used.Add(nearestIndex)) return null;
+            result[i] = nearestIndex;
+        }
+        return result;
+    }
+
+    static string FaceIndexKey(MeshEditData data, MeshEditData.Face face, int[] positionMap)
+    {
+        var indices = new[] { face.V0, face.V1, face.V2 }
+            .Select(i => positionMap[(int)data.Vertices[i].PositionIndex]).ToArray();
+        Array.Sort(indices);
+        return string.Join(',', indices);
+    }
+
+    static Dictionary<int, string> AlphaByPosition(MeshEditData data, int[] positionMap) =>
+        data.Vertices.GroupBy(v => positionMap[(int)v.PositionIndex])
+            .ToDictionary(g => g.Key, g => string.Join(',', g.Select(v => v.Color.A).Distinct().OrderBy(a => a)));
 
     static float MaxAbs(Vector2 v) => Math.Max(Math.Abs(v.X), Math.Abs(v.Y));
     static float MaxAbs(Vector4 v) => Math.Max(Math.Max(Math.Abs(v.X), Math.Abs(v.Y)), Math.Max(Math.Abs(v.Z), Math.Abs(v.W)));

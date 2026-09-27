@@ -32,6 +32,7 @@
 | `horse-ownership-prechange-20260925` | `troop-combat.md` 的回退说明（骑乘效果从 `gwknight` 转到 `gw_warhorse` 之前） |
 | `weapon-traits-prechange-20260925` | `troop-combat.md` 的回退说明（武器词条之前） |
 | `choke-spacing-candidate-not-deployed-20260921` | `battle-tactics.md` 的已隔离候选表 |
+| `cloth-restore-20260927/before/` | `cloth-assets.md` 的三件服装 live 布料设置修改前的唯一副本 |
 
 对应功能验收并提交后，这些二进制备份就被 git 历史取代了。那时先把 state 里的回退说明
 改成指向提交，再删目录。

@@ -83,6 +83,7 @@ python tools/Check-StateFreshness.py
 | [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
 | [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
+| [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置、待实机验收 |
 | [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类事实 |
 | [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：立案门槛、结案口径、协力编成、战争跟随 |
