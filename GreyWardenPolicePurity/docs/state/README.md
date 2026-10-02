@@ -82,6 +82,7 @@ python tools/Check-StateFreshness.py
 | [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
 | [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
+| [`map-bar-affairs.md`](map-bar-affairs.md) | 地图左下角导航栏的「灰袍事务」按钮：位置、入会门槛、运行时图标 |
 | [`warden-gear.md`](warden-gear.md) | 灰袍装备只由入会发放、发放时的原版品质、各物品品质组 |
 | [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
 | [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置、待实机验收 |

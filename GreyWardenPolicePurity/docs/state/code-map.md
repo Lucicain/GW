@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-140 个源文件、47,880 行、267 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
+141 个源文件、48,083 行、271 个公开类型、55 个 Harmony 补丁点（分布在 55 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -57,6 +57,7 @@
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs |
 | `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs |
 | `MapInfoVM` | `UpdatePlayerInfo` | Postfix | `GwpMapInfoUpdatePatch` | GwpMapBarReputationPatch.cs |
+| `MapNavigationHandler` | `OnCreateElements` | Postfix | `GwpAffairsNavigationPatch` | GwpAffairsNavigation.cs |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveHeldShieldParticlePatch` | GwpShieldBashGuardPatch.cs |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveShieldHitParticlePatch` | GwpShieldBashGuardPatch.cs |
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs |
@@ -189,6 +190,9 @@
 - `GwpAchievementActivityPatch` → GwpAchievementCompatibilityPatch.cs ←
 - `GwpAchievementCompatibility` → GwpAchievementCompatibilityPatch.cs
 - `GwpAdultCommanderLoadoutPatch` → GwpAdultCommanderLoadoutPatch.cs
+- `GwpAffairsIcon` → GwpAffairsNavigation.cs ←
+- `GwpAffairsNavigationElement` → GwpAffairsNavigation.cs ←
+- `GwpAffairsNavigationPatch` → GwpAffairsNavigation.cs ←
 - `GwpAgentApplyDamageModel` → GwpAgentApplyDamageModel.cs
 - `GwpAgentStatCalculateModel` → GwpAgentStatCalculateModel.cs
 - `GwpAiDeterrenceDialogueCatalog` → GwpAiDeterrenceDialogueCatalog.cs
@@ -326,6 +330,7 @@
 - `GwpSyndicateMusicBehavior` → GwpSyndicateMusicBehavior.cs
 - `GwpText` → GwpText.cs
 - `GwpTextKeys` → GwpTextKeys.cs
+- `GwpTextureSprite` → GwpAffairsNavigation.cs ←
 - `GwpTroopCombat` → GwpTroopCombat.cs
 - `GwpTuning` → GwpTuning.cs
 - `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
@@ -392,7 +397,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 136 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 140 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -470,7 +475,7 @@
 ### 执法：玩家悬赏（7 个文件）
 
 - `PlayerBountyBehavior.cs` — 972 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
-- `GwpCaseArchiveScreen.cs` — 954 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
+- `GwpCaseArchiveScreen.cs` — 956 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
 - `PlayerBountyBehavior.DialogueAndNotification.cs` — 946 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.CaseSettlement.cs` — 784 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 205 行 · `PlayerBountyBehavior` : QuestBase，另含 3 个类型
@@ -525,7 +530,7 @@
 
 - `SubModule.cs` — 159 行 · `SubModule` : MBSubModuleBase
 
-### 其他（56 个文件）
+### 其他（57 个文件）
 
 - `GwpTroopCombat.cs` — 468 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
@@ -538,6 +543,7 @@
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenLoreBehavior.cs` — 217 行 · `GreyWardenLoreBehavior` : CampaignBehaviorBase
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
+- `GwpAffairsNavigation.cs` — 201 行 · `GwpAffairsNavigationElement` : MapNavigationElementBase，另含 3 个类型
 - `GreyWardenLeaderBalanceBehavior.cs` — 193 行 · `GreyWardenLeaderBalanceBehavior` : CampaignBehaviorBase
 - `GwpEncyclopediaClanPageVM.cs` — 193 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型
 - `GwpAgentStatCalculateModel.cs` — 190 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型

@@ -716,6 +716,7 @@
   <string id="gwp_ai_det_core_personal_medium_impulsive" text="我让怒火替我选了道路，而灰袍决定了这条路在哪里结束。" />
   <string id="gwp_gwpencyclopediaclanpagevm_004" text="灰袍事务" />
   <string id="gwp_gwpencyclopediaclanpagevm_005" text="查看对外战争与开战依据、案件与差事总池、司法公库、你的声望，以及家族名册。" />
+  <string id="gwp_affairs_nav_need_membership" text="只有宣誓加入灰袍的悬赏猎人才能查看灰袍事务。" />
   <string id="gwp_gwpcasearchivescreen_001" text="灰袍事务" />
   <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
   <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />

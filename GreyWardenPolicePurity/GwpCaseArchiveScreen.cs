@@ -39,6 +39,8 @@ namespace GreyWardenPolicePurity
             overlay.Open();
         }
 
+        internal static bool IsOpen => _activeOverlay != null;
+
         public static void CloseActive()
         {
             _activeOverlay?.Close();
