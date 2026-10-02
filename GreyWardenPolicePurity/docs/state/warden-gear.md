@@ -1,9 +1,9 @@
 # 灰袍装备：来源与原版品质
 
-> 当前状态：入会发装按原版产出档掷品质、两面大盾改用战役 `shield` 品质组，已部署待实测
-> 最后验收：未建立检查点
+> 当前状态：入会发装带原版品质经用户实测确认（2026-10-02）；改为发最好的品质，已部署待实测
+> 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
 > 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml`
-> 待实测：入会或重新入会后，背包里的灰袍装备按件带上原版品质（多数无前缀，少数精良/大师/传奇）；大盾也可能带品质
+> 待实测：重新入会后，灰袍装备每件都是该组最好的品质（剑、甲、盾为传奇）
 
 本文件写"灰袍装备从哪来、带不带原版品质（`ItemModifier`，精良/大师/传奇等前缀）"。
 灰袍自己的武器效果（击倒、破防等，代码里叫 `GwpWeaponTraits`）是另一回事，见 [troop-combat.md](troop-combat.md)。
@@ -19,12 +19,9 @@
 ## 入会发装
 
 加入或重新加入时（`PlayerBountyBehavior.GiveCommanderEquipment`，发放清单 `GwpIds.MembershipGrantItemIds`：
-五件指挥甲胄、马具、黑色大盾、一副双刀），每件按原版作坊/店铺的**产出档**
-`ItemModifierGroup.GetRandomItemModifierProductionScoreBased()` 各掷一次品质（同 `WorkshopsCampaignBehavior`）。
-这是灰袍装备带上品质的唯一途径。
-
-原版产出档（`item_modifiers_groups.xml` / `item_modifiers.xml`，剑、锤、枪、箭、各类甲、盾同一组权重）：
-无前缀 75/107，第三档（平衡/精良/加厚等）15，大师/华贵 10，传奇 5，两档负面各 1。
+五件指挥甲胄、马具、黑色大盾、一副双刀），每件取所在品质组里最好的原版品质：`ItemQuality` 最高，
+同档取 `PriceMultiplier` 最高。各组最高都是传奇（剑、锤、枪 伤害+7 速度+3；板甲 护甲+12；链甲 +9；皮甲 +7；布甲 +5；盾 耐久+210）。
+这是灰袍装备带上品质的唯一途径；品质机制为日后复刻辛迪加设定铺垫。（依据：用户裁定 2026-10-02）
 
 已发出去的装备不补掷（不做存档兼容）。判断"穿没穿全套指挥装"、双刀配对、武器效果都按物品 id，不看品质。
 

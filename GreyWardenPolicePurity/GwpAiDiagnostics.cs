@@ -281,8 +281,8 @@ namespace GreyWardenPolicePurity
             if (party?.IsActive != true) return false;
             if (IsGreyWardenLordParty(party)) return true;
             if (party.LeaderHero != null) return false;
-            // 2026-10-02 用户反馈送信队欲望行为异常，重新纳入取证；查明后按健康路径退休。
-            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return true;
+            // Courier flow is verified (2026-10-02); failures have their own silent fault branches.
+            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
             return GwpCommon.IsPatrolParty(party) ||
                    GwpCommon.IsEnforcementDelayPatrolParty(party) ||
                    string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
@@ -539,7 +539,6 @@ namespace GreyWardenPolicePurity
             if (IsGreyWardenLordParty(party)) return "grey_warden_lord";
             if (GwpCommon.IsEnforcementDelayPatrolParty(party)) return "leaderless_delay_support";
             if (GwpCommon.IsPatrolParty(party)) return "leaderless_picket";
-            if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return "player_courier";
             if (party.LeaderHero == null) return "leaderless_grey_warden";
             return "other";
         }
