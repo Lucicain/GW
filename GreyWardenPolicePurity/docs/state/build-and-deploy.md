@@ -88,8 +88,10 @@
   再跑一次 `Verify-LiveModule`。
 - ZIP 内只有一个顶层 `GreyWarden/` 目录和普通客户端运行时内容。排除
   `tools`、PowerShell 脚本、日志、诊断输出、开发笔记、PDB、编辑器二进制、
-  `Assets`、`AssetSources`、`RuntimeDataCache`、`bin/Win64_Shipping_wEditor/`、
+  `Assets`、`AssetSources`、`RuntimeDataCache`、`DsAssetPackages`、`Shaders/`、`bin/Win64_Shipping_wEditor/`、
   Client `.pdb`、`shader_compile_report.log`。
+- `DsAssetPackages/pack0.tpac` 是 Kit 勾选专用服务器发布时生成的服务器资源包，玩家客户端不用；
+  复制进仓库 `_Module/DsAssetPackages/`（git 忽略）随 live 镜像，留给日后联机适配，不进客户端发布包。
 - 游戏父 `Modules` 目录只保留**最新一对** `GreyWarden-<version>.zip` + `.sha256`，
   验证后删除更旧的本地包对。
 

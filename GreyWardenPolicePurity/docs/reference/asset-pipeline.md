@@ -74,7 +74,11 @@ The Kit clears the live `AssetPackages` directory and writes only `pack0.tpac`
 1. Wait until the Kit has fully exited.
 2. Copy `pack0.tpac` to repository `_Module/AssetPackages/` (git-ignored) and
    compare hashes with live.
-3. Do not put back the three pre-rebuild packages beside it: they hold the same
+3. If the user also ticked the dedicated-server target, the Kit writes
+   `DsAssetPackages/pack0.tpac` too (about 1 MB on 2026-10-02). Copy it to repository
+   `_Module/DsAssetPackages/` (git-ignored) so the live mirror stays clean; it is kept for
+   future multiplayer work and is not part of the client release ZIP.
+4. Do not put back the three pre-rebuild packages beside it: they hold the same
    asset and clip names. They stay only as rollback in
    `.codex_tmp/legacy-packages-before-rebuild-20260927/`, and
    `gwp_inherited_legacy_assets.tpac` there is never deleted.
