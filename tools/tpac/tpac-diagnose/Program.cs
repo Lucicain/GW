@@ -25,6 +25,59 @@ class P
             ExtractDual(args[1], args.Skip(2).ToArray());
             return;
         }
+        if (args.Length == 5 && args[0] == "--dump-segment")
+        {
+            // args: package, item name, type guid, output file (all segments of that type, concatenated with an index file)
+            var pkg = new AssetPackage(args[1], true, false);
+            var type = Guid.Parse(args[3]);
+            int k = 0;
+            foreach (var item in pkg.Items.Where(i => i.Name == args[2]))
+            foreach (var seg in item.TypelessDataSegments.Where(x => x.TypeGuid == type))
+            {
+                var raw = seg.GetType().GetMethod("DebugGetRawData")?.Invoke(seg, null) as byte[];
+                var outPath = args[4] + "." + (k++) + ".bin";
+                System.IO.File.WriteAllBytes(outPath, raw ?? Array.Empty<byte>());
+                Console.WriteLine($"{outPath} owner={seg.OwnerGuid} bytes={raw?.Length}");
+            }
+            return;
+        }
+        if (args.Length == 3 && args[0] == "--segments")
+        {
+            var pkg = new AssetPackage(args[1], true, false);
+            foreach (var item in pkg.Items.Where(i => i.Name == args[2]))
+            {
+                Console.WriteLine($"{item.GetType().Name} {item.Name} version={item.Version} segments={item.TypelessDataSegments.Count}");
+                foreach (var seg in item.TypelessDataSegments)
+                {
+                    var props = string.Join(' ', seg.GetType().GetProperties().Where(p => p.PropertyType.IsValueType || p.PropertyType == typeof(string) || p.PropertyType == typeof(Guid))
+                        .Select(p => { try { return $"{p.Name}={p.GetValue(seg)}"; } catch { return p.Name + "=?"; } }));
+                    var data = seg.GetType().GetProperty("Data")?.GetValue(seg);
+                    var raw = seg.GetType().GetMethod("DebugGetRawData")?.Invoke(seg, null) as byte[];
+                    Console.WriteLine($"  {seg.GetType().Name} data={data?.GetType().Name ?? "null"} raw={raw?.Length} {props}");
+                }
+            }
+            return;
+        }
+        if (args.Length >= 2 && args[0] == "--cloth-alpha")
+        {
+            ClothAlpha(args[1], args.Length > 2 ? new Regex(args[2], RegexOptions.IgnoreCase) : null);
+            return;
+        }
+        if (args.Length == 3 && args[0] == "--compare-physics")
+        {
+            ComparePhysics(args[1], args[2]);
+            return;
+        }
+        if (args.Length == 4 && args[0] == "--compare-material")
+        {
+            CompareMaterials(args[1], args[2], new Regex(args[3], RegexOptions.IgnoreCase));
+            return;
+        }
+        if (args.Length >= 5 && args[0] == "--compare-skin")
+        {
+            CompareSkin(args[1], args[2], args[3], args[4]);
+            return;
+        }
         if (args.Length >= 5 && args[0] == "--compare")
         {
             Compare(args[1], args[2], args[3], args[4]);
@@ -303,6 +356,191 @@ class P
             }
         }
     }
+
+    // Skin weights per position, matched by nearest position (seams duplicate positions, so not one-to-one).
+    // Both packages use the vanilla skeleton order, so bone indices compare directly.
+    static void CompareSkin(string pathA, string nameA, string pathB, string nameB)
+    {
+        var pa = new AssetPackage(pathA, true, false);
+        var pb = new AssetPackage(pathB, true, false);
+        var a = pa.Items.OfType<Metamesh>().Single(x => x.Name == nameA);
+        var b = pb.Items.OfType<Metamesh>().Single(x => x.Name == nameB);
+        foreach (var ma in a.Meshes.OrderBy(x => x.Lod).ThenBy(x => x.Name))
+        {
+            bool cloth = ma.Flags.Contains("uses_cloth_simulation");
+            var mb = b.Meshes.Where(x => x.Lod == ma.Lod && x.Flags.Contains("uses_cloth_simulation") == cloth)
+                .OrderBy(x => Math.Abs(x.PositionCount - ma.PositionCount)).FirstOrDefault();
+            if (mb == null) { Console.WriteLine($"mesh={ma.Name} missing-in-B"); continue; }
+            var ea = ma.EditData.Data;
+            var eb = mb.EditData.Data;
+            int far = 0, setDiff = 0, weightDiff = 0;
+            float maxDist = 0, maxWeight = 0;
+            var patterns = new Dictionary<string, int>();
+            for (int i = 0; i < ea.Positions.Length; i++)
+            {
+                int j = -1; float best = float.MaxValue;
+                for (int k = 0; k < eb.Positions.Length; k++)
+                {
+                    var d = new Vector3(ea.Positions[i].X - eb.Positions[k].X, ea.Positions[i].Y - eb.Positions[k].Y, ea.Positions[i].Z - eb.Positions[k].Z).Length();
+                    if (d < best) { best = d; j = k; }
+                }
+                maxDist = Math.Max(maxDist, best);
+                if (best > 1e-4f) { far++; continue; }
+                var sa = Skin(ea.Bones[i]); var sb = Skin(eb.Bones[j]);
+                bool sameSet = sa.Keys.OrderBy(x => x).SequenceEqual(sb.Keys.OrderBy(x => x));
+                float diff = sa.Keys.Union(sb.Keys).Max(key => Math.Abs((sa.TryGetValue(key, out var x) ? x : 0) - (sb.TryGetValue(key, out var y) ? y : 0)));
+                maxWeight = Math.Max(maxWeight, diff);
+                if (!sameSet) setDiff++;
+                if (diff > 0.05f) weightDiff++;
+                if (!sameSet || diff > 0.05f)
+                {
+                    string key = Describe(sa) + " -> " + Describe(sb);
+                    patterns[key] = patterns.TryGetValue(key, out var c) ? c + 1 : 1;
+                }
+            }
+            if (cloth)
+            {
+                // Every vertex colour channel, grouped by position (seams keep several vertices per position).
+                Dictionary<string, string> Colors(MeshEditData e) => e.Vertices
+                    .GroupBy(v => PositionKey(e.Positions[v.PositionIndex], 4))
+                    .ToDictionary(g => g.Key, g => string.Join(';', g.Select(v =>
+                        $"{v.Color.R},{v.Color.G},{v.Color.B},{v.Color.A}/{v.SecondColor.R},{v.SecondColor.G},{v.SecondColor.B},{v.SecondColor.A}").Distinct().OrderBy(x => x)));
+                var ca = Colors(ea); var cb = Colors(eb);
+                var differing = ca.Where(kv => !cb.TryGetValue(kv.Key, out var other) || other != kv.Value).ToList();
+                Console.WriteLine($"  cloth colours: positions={ca.Count}/{cb.Count} differing={differing.Count}");
+                foreach (var kv in differing.Take(5))
+                    Console.WriteLine($"    {kv.Key}: A={kv.Value} B={(cb.TryGetValue(kv.Key, out var bv) ? bv : "-")}");
+                var sampleA = ea.Vertices.Select(v => $"{v.Color.R},{v.Color.G},{v.Color.B}/{v.SecondColor.R},{v.SecondColor.G},{v.SecondColor.B},{v.SecondColor.A}").Distinct().Take(4);
+                Console.WriteLine($"  sample RGB/second A: {string.Join(' ', sampleA)}");
+            }
+            // Co-located positions inside B (import splits positions at seams): do their skins agree?
+            int splitSeams = 0, splitDisagree = 0;
+            var groupsB = Enumerable.Range(0, eb.Positions.Length).GroupBy(k => PositionKey(eb.Positions[k], 4)).Where(g => g.Count() > 1);
+            foreach (var g in groupsB)
+            {
+                splitSeams++;
+                var skins = g.Select(k => Describe(Skin(eb.Bones[k]))).Distinct().ToList();
+                if (skins.Count > 1)
+                {
+                    splitDisagree++;
+                    if (splitDisagree <= 4) Console.WriteLine($"    B seam {g.Key}: {string.Join(" | ", skins)}");
+                }
+            }
+            var groupsA = Enumerable.Range(0, ea.Positions.Length).GroupBy(k => PositionKey(ea.Positions[k], 4)).Where(g => g.Count() > 1).ToList();
+            int aDisagree = groupsA.Count(g => g.Select(k => Describe(Skin(ea.Bones[k]))).Distinct().Count() > 1);
+            Console.WriteLine($"  seams: A co-located groups={groupsA.Count} disagreeing={aDisagree}; B co-located groups={splitSeams} disagreeing={splitDisagree}");
+            Console.WriteLine($"mesh={ma.Name} -> {mb.Name} cloth={cloth} posA={ea.Positions.Length} posB={eb.Positions.Length} unmatched={far} maxDist={maxDist:R} boneSetDiff={setDiff} weightDiff>0.05={weightDiff} maxWeightDiff={maxWeight:R}");
+            foreach (var pattern in patterns.OrderByDescending(x => x.Value).Take(6))
+                Console.WriteLine($"    {pattern.Value} x {pattern.Key}");
+        }
+    }
+
+    static void CompareMaterials(string pathA, string pathB, Regex filter)
+    {
+        var a = new AssetPackage(pathA, true, false).Items.OfType<Material>().Where(m => filter.IsMatch(m.Name)).ToList();
+        var b = new AssetPackage(pathB, true, false).Items.OfType<Material>().ToList();
+        string Describe(Material m)
+        {
+            var x = m.ExtraMaterialSettings;
+            string extra = x == null ? "-" : string.Join(' ', x.GetType().GetProperties().Select(p => $"{p.Name}={p.GetValue(x)}"));
+            return $"shader={m.Shader?.Guid} blend={m.BlendMode} alphaTest={m.AlphaTest} flags=[{string.Join(',', m.Flags)}] layout=[{string.Join(',', m.VertexLayoutFlags)}] shaderFlags=[{string.Join(',', m.ShaderMaterialFlags)}] textures=[{string.Join(',', m.Textures.Select(t => $"{t.Key}:{(t.Value.TryGetItem(out var tex) ? tex.Name : t.Value.Guid.ToString())}"))}] extra: {extra}";
+        }
+        foreach (var ma in a.OrderBy(m => m.Name))
+        {
+            var mb = b.FirstOrDefault(m => string.Equals(m.Name, ma.Name, StringComparison.OrdinalIgnoreCase));
+            string da = Describe(ma), db = mb == null ? "missing" : Describe(mb);
+            Console.WriteLine($"material={ma.Name} {(da == db ? "SAME" : "DIFFERENT")}");
+            if (da != db || Environment.GetEnvironmentVariable("GWP_SHOW_MATERIAL") == "1") { Console.WriteLine($"  A: {da}"); Console.WriteLine($"  B: {db}"); }
+        }
+    }
+
+    // Distribution of cloth vertex alpha (max-distance weight) on every LOD0 cloth submesh of a package.
+    static void ClothAlpha(string path, Regex? filter)
+    {
+        var package = new AssetPackage(path, true, false);
+        int meshes = 0, withGradient = 0;
+        foreach (var mm in package.Items.OfType<Metamesh>().Where(m => filter == null || filter.IsMatch(m.Name)))
+        foreach (var mesh in mm.Meshes.Where(x => x.Lod == 0 && x.Flags.Contains("uses_cloth_simulation")))
+        {
+            var e = mesh.EditData?.Data;
+            if (e == null) continue;
+            var alphas = e.Vertices.Select(v => (int)v.Color.A).ToArray();
+            int zero = alphas.Count(a => a == 0), full = alphas.Count(a => a == 255), mid = alphas.Length - zero - full;
+            meshes++; if (mid > 0) withGradient++;
+            Console.WriteLine($"{mesh.Name} preset={mesh.ClothingMaterial?.Name} verts={alphas.Length} alpha0={zero} alpha255={full} between={mid} distinct={alphas.Distinct().Count()}");
+        }
+        Console.WriteLine($"cloth submeshes={meshes} with intermediate alpha={withGradient}");
+    }
+
+    static void ComparePhysics(string pathA, string pathB)
+    {
+        PhysicsDescriptionData Data(PhysicsShape ps) => ps.TypelessDataSegments
+            .Select(d => d.GetType().GetProperty("Data")?.GetValue(d)).OfType<PhysicsDescriptionData>().FirstOrDefault();
+        string V(System.Numerics.Vector3 v) => $"{v.X:0.0000},{v.Y:0.0000},{v.Z:0.0000}";
+        List<string> Describe(PhysicsDescriptionData d)
+        {
+            var lines = new List<string>();
+            lines.AddRange(d.Capsules.Select(c => $"capsule r={c.Radius:0.0000} c={V(c.Center)} a={V(c.Axis)} mat={c.PhysicsMaterialName} flags={string.Join(',', c.Flags)}"));
+            lines.AddRange(d.Spheres.Select(x => $"sphere {string.Join(' ', x.GetType().GetProperties().Select(p => $"{p.Name}={p.GetValue(x)}"))}"));
+            foreach (var m in d.Manifolds)
+            {
+                var verts = m.Vertices.Select(V).OrderBy(x => x).ToList();
+                var faces = m.Faces.Select(f =>
+                {
+                    var idx = new[] { f.Index1, f.Index2, f.Index3, f.Index4 }.Where(i => i >= 0 && i < m.Vertices.Length).Select(i => V(m.Vertices[i])).OrderBy(x => x);
+                    return $"[{string.Join('|', idx)}] mat={(f.PhysicsMaterialIndex >= 0 && f.PhysicsMaterialIndex < m.UnknownPhysicsMaterials.Count ? m.UnknownPhysicsMaterials[f.PhysicsMaterialIndex] : f.PhysicsMaterialIndex.ToString())} flags={string.Join(',', f.Flags ?? new List<string>())}";
+                }).OrderBy(x => x).ToList();
+                lines.Add($"manifold verts={m.Vertices.Length} faces={m.Faces.Length} materials={string.Join(',', m.UnknownPhysicsMaterials)} uint={m.UnknownUint}");
+                if (Environment.GetEnvironmentVariable("GWP_RAW_PHYSICS") == "1")
+                {
+                    for (int i = 0; i < m.Vertices.Length; i++) Console.WriteLine($"    raw v{i} {V(m.Vertices[i])}");
+                    foreach (var f in m.Faces) Console.WriteLine($"    raw f {f.Index1},{f.Index2},{f.Index3},{f.Index4} mat={f.PhysicsMaterialIndex}");
+                }
+                lines.AddRange(verts.Select(x => "  v " + x));
+                lines.AddRange(faces.Select(x => "  f " + x));
+            }
+            return lines;
+        }
+        var a = new AssetPackage(pathA, true, false).Items.OfType<PhysicsShape>().ToList();
+        var b = new AssetPackage(pathB, true, false).Items.OfType<PhysicsShape>().ToList();
+        foreach (var sa in a.OrderBy(x => x.Name))
+        {
+            var sb = b.FirstOrDefault(x => x.Name == sa.Name);
+            var da = Data(sa); var db = sb == null ? null : Data(sb);
+            if (da == null || db == null) { Console.WriteLine($"physics={sa.Name} data A={(da != null)} B={(db != null)}"); continue; }
+            var la = Describe(da); var lb = Describe(db);
+            bool same = la.SequenceEqual(lb);
+            string Segs(PhysicsShape ps) => string.Join(",", ps.TypelessDataSegments.Select(d => { var v = d.GetType().GetProperty("Data")?.GetValue(d); return v == null ? "null" : v.GetType().Name; }));
+            Console.WriteLine($"  segments A=[{Segs(sa)}] B=[{Segs(sb!)}]");
+            foreach (var segA in sa.TypelessDataSegments)
+            {
+                var va = segA.GetType().GetProperty("Data")?.GetValue(segA);
+                if (va == null || va is PhysicsDescriptionData) continue;
+                var segB = sb!.TypelessDataSegments.FirstOrDefault(d => d.GetType().GetProperty("Data")?.GetValue(d)?.GetType() == va.GetType());
+                string Bytes(object loader) => loader.GetType().GetMethod("DebugGetRawData")?.Invoke(loader, null) is byte[] b
+                    ? b.Length + ":" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b)).Substring(0, 16) : "?";
+                Console.WriteLine($"  {va.GetType().Name}: A={Bytes(segA)} B={(segB == null ? "missing" : Bytes(segB))}");
+            }
+            Console.WriteLine($"physics={sa.Name} caps={da.Capsules.Count}/{db.Capsules.Count} spheres={da.Spheres.Count}/{db.Spheres.Count} manifolds={da.Manifolds.Count}/{db.Manifolds.Count} {(same ? "SAME" : "DIFFERENT")}");
+            if (!same)
+            {
+                foreach (var x in la.Except(lb).Take(12)) Console.WriteLine($"  A only: {x}");
+                foreach (var x in lb.Except(la).Take(12)) Console.WriteLine($"  B only: {x}");
+            }
+        }
+    }
+
+    static Dictionary<int, float> Skin(MeshEditData.Bone bone)
+    {
+        var result = new Dictionary<int, float>();
+        void Add(byte index, float weight) { if (weight > 1e-4f) result[index] = (result.TryGetValue(index, out var w) ? w : 0) + weight; }
+        Add(bone.B0, bone.W0); Add(bone.B1, bone.W1); Add(bone.B2, bone.W2); Add(bone.B3, bone.W3);
+        if (result.Count == 0) result[-1] = 1;
+        return result;
+    }
+
+    static string Describe(Dictionary<int, float> skin) =>
+        string.Join(' ', skin.OrderByDescending(x => x.Value).Select(x => $"{x.Key}:{x.Value:0.00}"));
 
     static string PositionKey(Vector4 p) => PositionKey(p, 5);
     static string PositionKey(Vector4 p, int decimals) => string.Join(',',
