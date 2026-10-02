@@ -25,6 +25,31 @@ class P
             ExtractDual(args[1], args.Skip(2).ToArray());
             return;
         }
+        if (args.Length == 4 && args[0] == "--cloth-settings")
+        {
+            // args: original package, rebuilt package, metamesh name - every cloth field side by side
+            var oa = new AssetPackage(args[1], true, false).Items.OfType<Metamesh>().Single(x => x.Name == args[3]);
+            var ob = new AssetPackage(args[2], true, false).Items.OfType<Metamesh>().Single(x => x.Name == args[3]);
+            Console.WriteLine($"{args[3]} body: {oa.UnknownString} -> {ob.UnknownString}");
+            var ca = oa.Meshes.Where(x => x.Flags.Contains("uses_cloth_simulation")).OrderBy(x => x.Lod).ThenBy(x => x.FaceCount).ToList();
+            var cb = ob.Meshes.Where(x => x.Flags.Contains("uses_cloth_simulation")).OrderBy(x => x.Lod).ThenBy(x => x.FaceCount).ToList();
+            for (int i = 0; i < Math.Max(ca.Count, cb.Count); i++)
+            {
+                var a = i < ca.Count ? ca[i] : null; var b = i < cb.Count ? cb[i] : null;
+                Console.WriteLine($"  {a?.Name} -> {b?.Name}  distance {a?.UnknownFloat1:R} -> {b?.UnknownFloat1:R}");
+                foreach (var prop in typeof(ClothingMaterial).GetProperties())
+                {
+                    var va = a == null ? null : prop.GetValue(a.ClothingMaterial); var vb = b == null ? null : prop.GetValue(b.ClothingMaterial);
+                    Console.WriteLine($"    {(Equals(va, vb) ? " " : "*")} {prop.Name,-28} {va} -> {vb}");
+                }
+            }
+            return;
+        }
+        if (args.Length == 4 && args[0] == "--cloth-gradient")
+        {
+            ClothGradient(args[1], args[2], args[3]);
+            return;
+        }
         if (args.Length == 5 && args[0] == "--dump-segment")
         {
             // args: package, item name, type guid, output file (all segments of that type, concatenated with an index file)
@@ -56,6 +81,12 @@ class P
                     Console.WriteLine($"  {seg.GetType().Name} data={data?.GetType().Name ?? "null"} raw={raw?.Length} {props}");
                 }
             }
+            return;
+        }
+        if (args.Length >= 3 && args[0] == "--dump-helpers")
+        {
+            // args: output folder, packages... - every metamesh with a cloth simulation mesh, LOD0 geometry of both as CSV
+            DumpHelpers(args[1], args.Skip(2).ToArray());
             return;
         }
         if (args.Length >= 2 && args[0] == "--cloth-alpha")
@@ -454,20 +485,89 @@ class P
         }
     }
 
+    // Vertical max-distance ramp on the LOD0 cloth submeshes: vertices already pinned (alpha 0) stay pinned; every
+    // other vertex gets alpha = (top - z) / (top - bottom) over the cloth's own height, so the top edge is 0 and the
+    // bottom edge 255. Only vertex colour alpha changes. The solver multiplies alpha/255 by the submesh max distance
+    // (Shaders/Sources/gpucloth_solver.rs).
+    static void ClothGradient(string path, string metameshName, string outputPath)
+    {
+        var package = new AssetPackage(path, true, false);
+        var metamesh = package.Items.OfType<Metamesh>().Single(x => x.Name == metameshName);
+        foreach (var mesh in metamesh.Meshes.Where(x => x.Lod == 0 && x.Flags.Contains("uses_cloth_simulation")))
+        {
+            var data = mesh.EditData.Data;
+            float top = data.Positions.Max(p => p.Z), bottom = data.Positions.Min(p => p.Z);
+            int pinned = 0, changed = 0;
+            var before = data.Vertices.Select(v => (int)v.Color.A).ToArray();
+            for (int i = 0; i < data.Vertices.Length; i++)
+            {
+                var vertex = data.Vertices[i];
+                if (vertex.Color.A == 0) { pinned++; continue; }
+                float z = data.Positions[vertex.PositionIndex].Z;
+                byte alpha = (byte)Math.Round(255f * Math.Clamp((top - z) / (top - bottom), 0f, 1f));
+                if (alpha != vertex.Color.A) changed++;
+                var color = vertex.Color;
+                color.A = alpha;
+                vertex.Color = color;
+                data.Vertices[i] = vertex;
+            }
+            var after = data.Vertices.Select(v => (int)v.Color.A).ToArray();
+            Console.WriteLine($"{mesh.Name}: z top={top:0.000} bottom={bottom:0.000} vertices={data.Vertices.Length} pinned kept={pinned} changed={changed}");
+            Console.WriteLine($"  before: 0={before.Count(a => a == 0)} 255={before.Count(a => a == 255)} between={before.Count(a => a > 0 && a < 255)}");
+            Console.WriteLine($"  after:  0={after.Count(a => a == 0)} 255={after.Count(a => a == 255)} between={after.Count(a => a > 0 && a < 255)} distinct={after.Distinct().Count()}");
+            mesh.EditData.Data = data;
+        }
+        package.Save(outputPath);
+        Console.WriteLine($"saved {outputPath}");
+    }
+
+    // Metameshes that simulate on a separate helper: write LOD0 render and helper geometry (position, alpha, material) to CSV.
+    static void DumpHelpers(string outputFolder, string[] paths)
+    {
+        var packages = paths.Select(x => new AssetPackage(x, true, false)).ToList();
+        var byGuid = new Dictionary<Guid, Metamesh>();
+        foreach (var mm in packages.SelectMany(x => x.Items.OfType<Metamesh>())) byGuid[mm.Guid] = mm;
+        System.IO.Directory.CreateDirectory(outputFolder);
+        foreach (var mm in byGuid.Values.Where(x => x.ClothMetamesh != Guid.Empty).OrderBy(x => x.Name))
+        {
+            byGuid.TryGetValue(mm.ClothMetamesh, out var helper);
+            var cloth = mm.Meshes.Where(x => x.Lod == 0 && x.Flags.Contains("uses_cloth_simulation")).ToList();
+            Console.WriteLine($"{mm.Name} -> {helper?.Name ?? mm.ClothMetamesh.ToString()} cloth={string.Join(',', cloth.Select(x => $"{x.Name}:{x.ClothingMaterial?.Name}:{x.UnknownFloat1:R}"))}");
+            if (helper == null) continue;
+            using var w = new System.IO.StreamWriter(System.IO.Path.Combine(outputFolder, mm.Name + ".csv"));
+            w.WriteLine("kind,part,x,y,z,alpha,a,b,c");
+            void Write(string part, Mesh mesh)
+            {
+                var e = mesh.EditData?.Data;
+                if (e == null) return;
+                foreach (var v in e.Vertices)
+                {
+                    var q = e.Positions[v.PositionIndex];
+                    w.WriteLine(string.Format(CultureInfo.InvariantCulture, "v,{0},{1},{2},{3},{4},,,", part, q.X, q.Y, q.Z, v.Color.A));
+                }
+                foreach (var f in e.Faces) w.WriteLine($"f,{part},,,,,{f.V0},{f.V1},{f.V2}");
+            }
+            foreach (var mesh in mm.Meshes.Where(x => x.Lod == 0))
+                Write((mesh.Flags.Contains("uses_cloth_simulation") ? "cloth:" : "body:") + mesh.Name, mesh);
+            foreach (var mesh in helper.Meshes.Where(x => x.Lod == 0))
+                Write("helper:" + mesh.Name, mesh);
+        }
+    }
+
     // Distribution of cloth vertex alpha (max-distance weight) on every LOD0 cloth submesh of a package.
     static void ClothAlpha(string path, Regex? filter)
     {
         var package = new AssetPackage(path, true, false);
         int meshes = 0, withGradient = 0;
         foreach (var mm in package.Items.OfType<Metamesh>().Where(m => filter == null || filter.IsMatch(m.Name)))
-        foreach (var mesh in mm.Meshes.Where(x => x.Lod == 0 && x.Flags.Contains("uses_cloth_simulation")))
+        foreach (var mesh in mm.Meshes.Where(x => x.Lod == 0 && (x.Flags.Contains("uses_cloth_simulation") || !string.IsNullOrEmpty(x.ClothingMaterial?.Name) || Environment.GetEnvironmentVariable("GWP_ALL_MESHES") == "1")))
         {
             var e = mesh.EditData?.Data;
             if (e == null) continue;
             var alphas = e.Vertices.Select(v => (int)v.Color.A).ToArray();
             int zero = alphas.Count(a => a == 0), full = alphas.Count(a => a == 255), mid = alphas.Length - zero - full;
             meshes++; if (mid > 0) withGradient++;
-            Console.WriteLine($"{mesh.Name} preset={mesh.ClothingMaterial?.Name} verts={alphas.Length} alpha0={zero} alpha255={full} between={mid} distinct={alphas.Distinct().Count()}");
+            Console.WriteLine($"{mesh.Name} flag={mesh.Flags.Contains("uses_cloth_simulation")} distance={mesh.UnknownFloat1:R} preset={mesh.ClothingMaterial?.Name} verts={alphas.Length} alpha0={zero} alpha255={full} between={mid} distinct={alphas.Distinct().Count()}");
         }
         Console.WriteLine($"cloth submeshes={meshes} with intermediate alpha={withGradient}");
     }

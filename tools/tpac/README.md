@@ -5,6 +5,7 @@
 
 布料核对：`diag.dll --compare <原包> <模型名> <Kit 的 _geo.tpac> <模型名>` 按位置点配对布料网格，比较三角面连接和每个位置点的顶点色 alpha，并显示最大位置偏差。
 `diag.dll --restore-cloth <原包> <模型名> <Kit 的 _geo.tpac> <模型名> <输出路径>` 只把原包布料子网格的模拟开关、预设全部参数、最大距离字段，以及模型碰撞体复制到**新文件**；先核对输出和原输入的几何数据，再自行替换 live 文件。此命令不修改 `pack0.tpac`，要由 Kit 重新发布后它才会包含修改。（依据：流程；2026-09-27 布料资源核对）
+`diag.dll --dump-helpers <输出目录> <包>...` 把所有挂了替身（Simulation mesh）的 Metamesh 的本体与替身 LOD0 位置、alpha、三角面写成 CSV，用来对照原版替身怎么做。
 `diag.dll --verify-cloth <原包> <模型名> <Kit 的 _geo.tpac> <模型名>` 精确核对碰撞体、布料引用、全部预设数值、模拟开关，并按空间位置核对三角面连接和顶点色 alpha；六件模型八块布料已通过。
 
 它依赖开源库 [TpacTool](https://github.com/szszss/TpacTool) 的 `TpacTool.Lib`，
