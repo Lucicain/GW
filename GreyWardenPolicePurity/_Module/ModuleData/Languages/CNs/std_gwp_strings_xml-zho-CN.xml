@@ -1375,6 +1375,7 @@
   <string id="gwp_dispatch_sent" text="你派出的队伍已经动身去找{VAR_1}。" />
   <string id="gwp_dispatch_lost" text="你派出去的那支队伍全军覆没了，带走的东西也没了。" />
   <string id="gwp_dispatch_returning" text="你派出的队伍办完了差事，正在往回赶。" />
+  <string id="gwp_dispatch_prisoners_sold" text="你派出的队伍在{VAR_2}卖掉了{VAR_1}名俘虏，{VAR_3}第纳尔已入你的钱袋。" />
   <string id="gwp_dispatch_support_moot" text="你的骑手把话带到了，但这事已经用不上了。" />
   <string id="gwp_dispatch_handover" text="派出的队伍已经归队：交回 {VAR_1} 人（其中 {VAR_2} 名伤员）、{VAR_3} 名俘虏、{VAR_4} 件物资和 {VAR_5} 第纳尔。" />
   <string id="gwp_dispatch_report_done" text="你的人已经复命，委托结清；他们正带着 {VAR_1} 第纳尔回来。" />

@@ -2,8 +2,8 @@
 
 > 当前状态：用户已实测确认（2026-09-26）；卖俘虏按路程选最近城经用户实测确认（2026-10-02）；"卖掉才回去送信"已部署待实测
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs`
-> 待实测：押着普通俘虏、路上躲敌耽搁超过一天，仍一直去城里卖，卖掉才转回送信；只押英雄俘虏时不进城
+> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs`
+> 待实测：押着普通俘虏、路上躲敌耽搁超过一天，仍一直去城里卖，卖掉才转回送信，并提示卖了多少钱；押着的英雄（含本案目标）一路不逃
 
 本文件只写送信队在地图上的这一趟：出发、找人、交付、回来交割、工资。对话入口
 （`GwpWardenDispatchDialogue.cs`）、分兵界面与付款 barter（`GwpAssetPayment.cs`、
@@ -36,6 +36,10 @@
   在进城那一刻卖掉。一旦去卖就一直去，卖掉才转回送信，不按时限放弃。（依据：用户裁定 2026-10-02）
 - 英雄俘虏不为之进城：原版只把英雄卖给与其交战的城，可能哪座都不收；他们随队回来交给玩家。（依据：C#反编译 v1.4.8）
 - 进过城还剩普通兵（这座城不收）时，离城并隔 24 小时再找。押着本案目标时一律不进城。
+- 卖俘虏的钱由原版直接给玩家，城不属玩家时原版不提示；我们在 `OnPrisonerSoldEvent` 里按原版赎金模型算出金额，
+  提示"在某城卖掉几名俘虏、多少第纳尔已入钱袋"。
+- 送信队押着的俘虏不逃跑：跳过原版 `PrisonerReleaseCampaignBehavior` 的 `DailyHeroTick`（英雄每日逃跑，
+  野外 2 人小队约 15%/天）与 `HourlyPartyTick`（超容量每小时 10%）。议和放人、队伍覆灭、赎回照原版。（依据：用户裁定 2026-10-02）
 - "最近"按原版 `SettlementHelper.FindNearestTownToMobileParty` 以本队通行方式量路程（城门或港口）。
   中心点地形因城而异，曾把附近的城整批筛掉，送信队掉头去 118 外的城，24 小时没到又折回，循环往复。
 - 不要用城镇中心点 `Settlement.Position` 判断城镇能否到达。（依据：C#反编译 v1.4.8 + 实机诊断 2026-10-02）

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-141 个源文件、48,077 行、271 个公开类型、55 个 Harmony 补丁点（分布在 55 个补丁类里）。
+142 个源文件、48,136 行、273 个公开类型、57 个 Harmony 补丁点（分布在 57 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -70,6 +70,8 @@
 | `PartyCharacterVM` | `ExecuteTalk` | Prefix | `GwpPartyCharacterExecuteTalkPatch` | GwpPartyScreenTroopTalkPatch.cs |
 | `PartyCharacterVM` | `UpdateTalkable` | Postfix | `GwpPartyCharacterTalkablePatch` | GwpPartyScreenTroopTalkPatch.cs |
 | `PersonaSoftspokenTag` | `IsApplicableTo` | Finalizer | `GwpDispatchBarterFaultDiagnostics` | GwpDispatchBarterFaultDiagnostics.cs |
+| `PrisonerReleaseCampaignBehavior` | `DailyHeroTick` | Prefix | `GwpDispatchHeroEscapePatch` | GwpDispatchPrisonerCustody.cs |
+| `PrisonerReleaseCampaignBehavior` | `HourlyPartyTick` | Prefix | `GwpDispatchOverflowEscapePatch` | GwpDispatchPrisonerCustody.cs |
 | `SetPartyAiAction` | `GetActionForGoingAroundParty` | Prefix | `GwpPlayerEnforcementEngageActionPatch` | GwpPartyDutyMovementPatch.cs |
 | `SetPartyAiAction` | `GetActionForPatrollingAroundPoint` | Prefix | `GwpLocationDutyRefreshPatch` | GwpPartyDutyMovementPatch.cs |
 | `SingleQueryPopUpVM` | `OnClearData` | Postfix | `GwpSingleQueryPopupClearPatch` | GwpSingleQueryLinkPatch.cs |
@@ -233,8 +235,10 @@
 - `GwpDispatchBarterFaultDiagnostics` → GwpDispatchBarterFaultDiagnostics.cs
 - `GwpDispatchBarterScreen` → GwpDispatchBarterScreen.cs
 - `GwpDispatchCargo` → GwpDispatchCargo.cs
+- `GwpDispatchHeroEscapePatch` → GwpDispatchPrisonerCustody.cs ←
 - `GwpDispatchOfferDisplayPatch` → GwpAssetOfferValidationPatch.cs ←
 - `GwpDispatchOfferLabelPatch` → GwpAssetOfferValidationPatch.cs ←
+- `GwpDispatchOverflowEscapePatch` → GwpDispatchPrisonerCustody.cs ←
 - `GwpDispatchPhase` → GwpWardenDispatch.cs ←
 - `GwpDispatchPurpose` → GwpWardenDispatch.cs ←
 - `GwpDispatchRecord` → GwpWardenDispatch.cs ←
@@ -397,7 +401,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 140 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 142 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -485,7 +489,7 @@
 ### 使者与交兵（6 个文件）
 
 - `GreyWardenTroopRequestBehavior.cs` — 1389 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpWardenDispatchBehavior.cs` — 957 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
+- `GwpWardenDispatchBehavior.cs` — 986 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
 - `GwpWardenDispatchDialogue.cs` — 533 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 336 行 · `GreyWardenTroopRequestBehavior`
 - `GwpWardenDispatch.cs` — 108 行 · `GwpDispatchPurpose`，另含 2 个类型
@@ -530,7 +534,7 @@
 
 - `SubModule.cs` — 159 行 · `SubModule` : MBSubModuleBase
 
-### 其他（57 个文件）
+### 其他（58 个文件）
 
 - `GwpTroopCombat.cs` — 468 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
@@ -584,6 +588,7 @@
 - `GwpCaseSettlementEntryPatch.cs` — 33 行 · `GwpCaseSettlementEntryPatch`
 - `GwpCaseSettlementRules.cs` — 31 行 · `GwpCaseSettlementRules`
 - `GwpPartySizeLimitModel.cs` — 31 行 · `GwpPartySizeLimitModel` : DefaultPartySizeLimitModel
+- `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
 - `GwpTextKeys.cs` — 28 行 · `GwpTextKeys`
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
 - `GwpLegacySave.cs` — 27 行 · `GwpLegacySave`

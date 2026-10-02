@@ -72,6 +72,35 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
             CampaignEvents.ConversationEnded.AddNonSerializedListener(this, OnConversationEnded);
             CampaignEvents.TickEvent.AddNonSerializedListener(this, CompletePendingHandovers);
+            CampaignEvents.OnPrisonerSoldEvent.AddNonSerializedListener(this, OnPrisonerSold);
+        }
+
+        /// <summary>
+        /// 送信队进城卖俘虏时告诉玩家卖了多少钱。原版 <c>SellPrisonersAction</c> 把钱直接给部队主人（玩家），
+        /// 城不属于玩家时不弹通知，卖几个劫匪只有几块钱，玩家看不出来。金额按原版同一个赎金模型算；
+        /// 原版把英雄"捐"给同势力要塞时整笔不给钱，这里照样不报。
+        /// </summary>
+        private static void OnPrisonerSold(PartyBase seller, PartyBase buyer, TroopRoster prisoners)
+        {
+            if (!IsDispatchParty(seller?.MobileParty) || prisoners == null) return;
+            int count = 0;
+            int gold = 0;
+            foreach (TroopRosterElement element in prisoners.GetTroopRoster())
+            {
+                CharacterObject? character = element.Character;
+                if (character == null || character.IsPlayerCharacter) continue;
+                if (character.IsHero && buyer != null && seller!.MapFaction == buyer.MapFaction &&
+                    buyer.MapFaction.IsAtWarWith(character.HeroObject.MapFaction)) return;
+                count += element.Number;
+                gold += element.Number * Campaign.Current.Models.RansomValueCalculationModel
+                    .PrisonerRansomValue(character, seller!.LeaderHero);
+            }
+            if (count <= 0 || gold <= 0) return;
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                "{=gwp_dispatch_prisoners_sold}Your detachment sold {VAR_1} prisoners in {VAR_2}; {VAR_3} denars went to your purse.",
+                "VAR_1", count,
+                "VAR_2", buyer?.Settlement?.Name?.ToString() ?? string.Empty,
+                "VAR_3", gold), Colors.Yellow));
         }
 
         private void CompletePendingHandovers(float dt)
