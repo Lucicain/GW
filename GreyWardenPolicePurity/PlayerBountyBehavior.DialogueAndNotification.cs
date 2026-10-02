@@ -464,7 +464,11 @@ namespace GreyWardenPolicePurity
 
                 if (item != null)
                 {
-                    roster.AddToCounts(new EquipmentElement(item), 1);
+                    // 每件按原版店铺/作坊的产出档掷一次词条（同 WorkshopsCampaignBehavior）。
+                    // 灰袍装备不进店铺、不进掉落，这是它唯一带上词条的地方。
+                    ItemModifier? modifier = item.ItemComponent?.ItemModifierGroup?
+                        .GetRandomItemModifierProductionScoreBased();
+                    roster.AddToCounts(new EquipmentElement(item, modifier), 1);
                 }
             }
         }

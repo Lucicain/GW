@@ -82,6 +82,7 @@ python tools/Check-StateFreshness.py
 | [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
 | [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
+| [`warden-gear.md`](warden-gear.md) | 灰袍装备只由入会发放、发放时的原版品质、各物品品质组 |
 | [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
 | [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置、待实机验收 |
 | [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类事实 |
@@ -105,4 +106,4 @@ python tools/Check-StateFreshness.py
 - 家族、婚姻、村庄收养与重建
 - 船运贸易与经济
 - 本地化与内容键（`Verify-ContentKeys` 覆盖的范围）
-- 灰袍分驻六地、入会装备与新兵发放
+- 灰袍分驻六地、入会新兵发放（入会装备已提取到 [`warden-gear.md`](warden-gear.md)）

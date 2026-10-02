@@ -555,7 +555,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
               weapon_length="140"
               center_of_mass="0, 0, 0"
               hit_points="550"
-              modifier_group="shield_metal">
+              modifier_group="shield">
         <WeaponFlags CanBlockRanged="true"
                      HasHitPoints="true" />
       </Weapon>
@@ -599,7 +599,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
               weapon_length="140"
               center_of_mass="0, 0, 0"
               hit_points="550"
-              modifier_group="shield_metal">
+              modifier_group="shield">
         <WeaponFlags CanBlockRanged="true"
                      HasHitPoints="true" />
       </Weapon>
