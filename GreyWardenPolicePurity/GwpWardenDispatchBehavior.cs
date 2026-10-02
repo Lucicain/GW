@@ -502,45 +502,37 @@ namespace GreyWardenPolicePurity
         /// 按 `0.99` 与其他原版欲望同场竞价。进城之后卖俘虏仍由原版
         /// <c>PartiesSellPrisonerCampaignBehavior</c> 自己完成。
         ///
+        /// 只为**普通兵俘虏**进城：原版进城那一刻把普通兵全卖掉，英雄俘虏只卖给与其交战的城，
+        /// 可能哪座城都不收，为他们进城会在城里打转，英雄俘虏随队回来交给玩家。
+        /// 一旦决定去卖，就一直去，卖掉才回去送信，中途不按时限放弃。（用户裁定 2026-10-02）
+        ///
         /// 硬边界：**押着本案目标时一律不进城**，那个人要押去交差，不能被当普通俘虏处置。
         /// </summary>
         private bool TryHandleTownBusiness(GwpDispatchRecord record, MobileParty party)
         {
-            if (!string.IsNullOrEmpty(record.PrisonerHeroId) &&
-                party.PrisonRoster.GetTroopRoster().Any(e =>
-                    e.Character?.HeroObject?.StringId == record.PrisonerHeroId)) return false;
             double now = CampaignTime.Now.ToHours;
-            if (now < record.NextTownBusinessHours) return false;
-            bool hasPrisoners = party.PrisonRoster.TotalManCount > 0;
-            if (!hasPrisoners && record.SupplyTownId.Length == 0) return false;
-
-            Settlement? town = party.CurrentSettlement?.IsTown == true
-                ? party.CurrentSettlement : FindTradeTown(party);
-            if (town == null) return false;
-
-            if (party.CurrentSettlement == town)
+            if (record.SupplyTownId.Length > 0 && party.CurrentSettlement?.IsTown == true)
             {
-                record.NextTownBusinessHours = now + TownBusinessRetryHours;
+                // 进城那一刻原版已经卖过。还剩普通兵说明这座城不收，隔一段再找，免得在城里打转。
+                if (party.PrisonRoster.TotalRegulars > 0)
+                    record.NextTownBusinessHours = now + TownBusinessRetryHours;
                 record.SupplyTownId = string.Empty;
-                // Give the ordinary mission intent back immediately, including
-                // when the market is empty or the travel purse cannot buy food.
                 GreyWardenPartyDesireBehavior.ClearIntent(party);
                 LeaveSettlementAction.ApplyForParty(party);
                 record.LastProgressHours = now;
                 record.LastDistance = float.MaxValue;
                 return false;
             }
-            if (record.SupplyTownId.Length == 0)
-            {
-                record.SupplyTownId = town.StringId;
-                record.SupplyStartedHours = now;
-            }
-            if (now - record.SupplyStartedHours >= 24d)
-            {
-                record.SupplyTownId = string.Empty;
-                record.NextTownBusinessHours = now + TownBusinessRetryHours;
-                return false;
-            }
+
+            if (!string.IsNullOrEmpty(record.PrisonerHeroId) &&
+                party.PrisonRoster.GetTroopRoster().Any(e =>
+                    e.Character?.HeroObject?.StringId == record.PrisonerHeroId)) return false;
+            if (party.PrisonRoster.TotalRegulars <= 0 || now < record.NextTownBusinessHours) return false;
+
+            Settlement? town = FindTradeTown(party);
+            if (town == null) return false;
+
+            record.SupplyTownId = town.StringId;
             record.LastProgressHours = now;
             record.LastDistance = float.MaxValue;
             GreyWardenPartyDesireBehavior.RequestVisit(party, town);

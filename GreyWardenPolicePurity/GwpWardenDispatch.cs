@@ -54,7 +54,6 @@ namespace GreyWardenPolicePurity
         internal double LastProgressHours;
         internal double NextTownBusinessHours;
         internal string SupplyTownId = string.Empty;
-        internal double SupplyStartedHours = 0d;
         internal bool HandoverPending = false;
 
         /// <summary>练兵订单随队带走的单据：兵种、数量、玩家已预付的订金。</summary>
