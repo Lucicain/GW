@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-140 个源文件、47,886 行、267 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
+140 个源文件、47,876 行、267 个公开类型、54 个 Harmony 补丁点（分布在 54 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -418,7 +418,7 @@
 
 - `GwpShieldBashGuardPatch.cs` — 1212 行 · `GwpPassiveHeldShieldCollision` : MissionBehavior，另含 5 个类型
 - `GwpDualBladeAiBehavior.cs` — 767 行 · `GwpDualBladeAgentState` : MissionBehavior，另含 5 个类型
-- `GwpDualBladeActionSetPatch.cs` — 377 行 · `GwpFaultTrace`，另含 5 个类型
+- `GwpDualBladeActionSetPatch.cs` — 367 行 · `GwpFaultTrace`，另含 5 个类型
 - `GwpAlternativeAttackControlBehavior.cs` — 358 行 · `GwpAlternativeAttackControlBehavior` : MissionBehavior
 - `GwpKickInputComponent.cs` — 216 行 · `GwpKickInputComponent` : AgentComponent
 - `GwpAlternativeAttackControl.cs` — 177 行 · `GwpAlternativeAttackControl`

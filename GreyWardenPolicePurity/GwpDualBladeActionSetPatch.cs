@@ -170,35 +170,25 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch]
     internal static class GwpNavalCustomBattleCommanderListPatch
     {
+        // Without the Naval custom-battle module loaded there is nothing to
+        // patch; returning false lets Harmony skip the class instead of
+        // failing on an empty target list.
+        private static bool Prepare() => ResolveGetter() != null;
+
         private static IEnumerable<MethodBase> TargetMethods()
         {
-            const string typeName =
-                "NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleData";
-            Type? type = AccessTools.TypeByName(typeName);
-            if (type == null)
-            {
-                try
-                {
-                    type = Assembly.Load(
-                            new AssemblyName("NavalDLC.CustomBattle"))
-                        .GetType(typeName, throwOnError: false);
-                }
-                catch
-                {
-                    // The optional DLC may not be installed or loaded yet.
-                }
-            }
-            if (type == null)
-            {
-                type = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(assembly => assembly.GetType(typeName, throwOnError: false))
-                    .FirstOrDefault(candidate => candidate != null);
-            }
-            MethodInfo? getter = type == null
-                ? null
-                : AccessTools.DeclaredMethod(type, "get_Characters");
+            MethodInfo? getter = ResolveGetter();
             if (getter != null)
                 yield return getter;
+        }
+
+        private static MethodInfo? ResolveGetter()
+        {
+            Type? type = AccessTools.TypeByName(
+                "NavalDLC.CustomBattle.CustomBattle.NavalCustomBattleData");
+            return type == null
+                ? null
+                : AccessTools.DeclaredMethod(type, "get_Characters");
         }
 
         [HarmonyPostfix]
