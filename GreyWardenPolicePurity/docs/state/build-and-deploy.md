@@ -90,8 +90,9 @@
   `tools`、PowerShell 脚本、日志、诊断输出、开发笔记、PDB、编辑器二进制、
   `Assets`、`AssetSources`、`RuntimeDataCache`、`DsAssetPackages`、`Shaders/`、`bin/Win64_Shipping_wEditor/`、
   Client `.pdb`、`shader_compile_report.log`。
-- `DsAssetPackages/pack0.tpac` 是 Kit 勾选专用服务器发布时生成的服务器资源包，玩家客户端不用；
-  复制进仓库 `_Module/DsAssetPackages/`（git 忽略）随 live 镜像，留给日后联机适配，不进客户端发布包。
+- `DsAssetPackages/` 是 Kit 勾选专用服务器发布时生成的服务器资源包，玩家客户端不用。发布后从 live 移到
+  `.codex_tmp/ds-asset-packages-<版本>/` 留给日后联机适配；不放进 `_Module`、不留在 live、不进客户端发布包。
+  开发版 live 不得留下发行版专有的东西。（依据：用户裁定 2026-10-02）
 - 游戏父 `Modules` 目录只保留**最新一对** `GreyWarden-<version>.zip` + `.sha256`，
   验证后删除更旧的本地包对。
 
