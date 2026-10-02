@@ -547,18 +547,20 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        /// <summary>能做买卖的最近城镇：不在围城中，且与我方不处于交战。</summary>
+        /// <summary>
+        /// 能做买卖的最近城镇：不在围城中，且与我方不处于交战。按原版
+        /// <c>SettlementHelper.FindNearestTownToMobileParty</c> 以本队通行方式量路程（城门或港口），
+        /// 走不到的城自然排在最后。不要拿城镇中心点 <c>Settlement.Position</c> 判断能否通行：
+        /// 中心点落在哪种地形因城而异，曾把附近的城整批筛掉，只剩远处一座。
+        /// </summary>
         private static Settlement? FindTradeTown(MobileParty party)
         {
             IFaction? ours = party.MapFaction;
-            return Settlement.All
-                .Where(settlement => settlement.IsTown &&
-                                     settlement.SiegeEvent == null &&
-                                     settlement.MapFaction != null &&
-                                     NavigationHelper.IsPositionValidForNavigationType(settlement.Position, party.NavigationCapability) &&
-                                     (ours == null || !settlement.MapFaction.IsAtWarWith(ours)))
-                .OrderBy(settlement => settlement.GetPosition2D.Distance(party.GetPosition2D))
-                .FirstOrDefault();
+            return SettlementHelper.FindNearestTownToMobileParty(party, party.NavigationCapability,
+                settlement => settlement.SiegeEvent == null &&
+                              settlement.MapFaction != null &&
+                              (ours == null || !settlement.MapFaction.IsAtWarWith(ours)))
+                ?.Settlement;
         }
 
         private void AdvanceOutbound(GwpDispatchRecord record, MobileParty party)
