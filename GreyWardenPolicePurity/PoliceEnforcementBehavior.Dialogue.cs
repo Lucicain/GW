@@ -286,9 +286,6 @@ namespace GreyWardenPolicePurity
                 Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
                     ?.RegisterPlayerEnforcementSuccess(null, accused, crime.CrimeCategory);
 
-                GwpAiDiagnostics.WritePlayerJusticeState("COMPANION_FINE_SETTLED",
-                    "crime=" + crime.CrimeId + "; accused=" + accused.StringId +
-                    "; fine=" + _dialogFine + "; playerReputation=" + PlayerState.Reputation);
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
                         "VAR_1", accused.Name?.ToString() ?? accused.StringId,

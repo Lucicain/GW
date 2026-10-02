@@ -1,10 +1,10 @@
 # 诊断系统
 
-> 当前状态：现行规则；主队 NPC 旧案的 `companionCases` 诊断已部署 live，待代缴实测后退休
+> 当前状态：现行规则
 > 最后验收：未建立检查点
-> 已复核至：2026-09-27 工作树（玩家司法快照按案 ID 标识同队 NPC 案；读档早期仅比对保存的队伍 ID，避免解析 Hero）
+> 已复核至：2026-10-02 工作树（退休主队 NPC 旧案诊断）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
-> 待实测：同队 NPC 案对话、缴款、结案后，`PLAYER_JUSTICE` 的 `companionCases` 逐案消失而 `customReputation` 不变
+> 待实测：无
 
 ## 原则
 
@@ -66,12 +66,9 @@
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 2026-09-25 调停 0 人队崩溃、2026-09-26 改追绕过冷却都靠它取证；覆盖的巡逻、练兵、协力等子系统多数尚未提取 | 对应子系统提取成 state 且无待观察项时，按主题拆掉健康路径 |
-| `PLAYER_JUSTICE` 的 `companionCases`、`COMPANION_FINE_SETTLED` | 识别同在主队的多名嫌犯、各自承办队与逐案结案，核对玩家声望未被误清 | 用户确认同队 NPC 逐案代缴与百科页显示正确后删除这两类健康路径字段和事件 |
 | 失败路径：`GwpRuntimeFaultWatch`、`GwpEngineAssertDiagnostics`、`DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 不退休 |
 
-`companionCases` 的读档快照只比较案卷保存的 `OffenderPartyId` 与主队 ID；`SyncData` 阶段不能为日志解析 `OffenderHero`，否则 `Hero.FindFirst` 的全局集合尚未建立，会触发 first-chance 异常。（依据：实机诊断 2026-09-27）
-
-已退休的：援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
+已退休的：`PLAYER_JUSTICE` 的 `companionCases` 字段与 `COMPANION_FINE_SETTLED`（2026-10-02 用户确认主队 NPC 旧案后删除；失败路径 `COMPANION_FINE_INCOMPLETE` 保留）；援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
 `GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，
 日志行一并清除，结论见 [`battle-tactics.md`](battle-tactics.md)）。
 其日志、WER 与一次性分析输出**不再可读**；需要重新调查时从新复现取证，

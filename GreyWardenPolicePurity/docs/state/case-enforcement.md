@@ -1,10 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：原有案件行为已实测确认；用户已确认主队同伴旧案对应正确英雄 ID；代缴与展示仍待实测
+> 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
 > 已复核至：2026-09-27 工作树（主队 NPC 旧案回归审查、整笔代缴与承办队扫描）；`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：主队携带一个或多个有旧案 NPC 时逐案代缴、结案且不清玩家正声望；英雄页只显示本人案件；协力军团读档后成员仍可并入，解散无 `Army.DisperseInternal` 空引用
+> 待实测：无
 
 > ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
 > 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。

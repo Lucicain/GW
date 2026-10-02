@@ -1,10 +1,10 @@
 # 重建资源的布料设置
 
-> 当前状态：2026-09-27 已把 live 的六件服装/马甲、八块布料的设置按重建前原包核对；三件服装的差异已修正并部署，待实机验收
-> 最后验收：未建立检查点
+> 当前状态：六件服装/马甲、八块布料按重建前原包设置；用户实测确认重建资源与马甲正常（2026-10-02）
+> 最后验收：2026-10-02 用户实测（live 开发版）
 > 已复核至：2026-09-27 原包设置恢复后的 live `Assets/GreyWardenRebuild/*_geo.tpac`
 > 覆盖源码：`tools/tpac/tpac-diagnose/Program.cs`
-> 待实测：弓箭手衣摆，以及轻步兵、重步兵、骑士和马披的布料观感；改动三件服装后尚未进游戏
+> 待实测：无
 
 本页所说的“原包”是 `.codex_tmp/legacy-packages-before-rebuild-20260927/gwp_inherited_legacy_assets.tpac`。本机客户端使用 live 模组的 `Assets` 开发版资源；`_Module/AssetPackages/pack0.tpac` 是上次 Kit 发布结果，**尚未包含本轮三件服装的修正**。再发布前应让 Kit 重新发布，并核对发布包。live 三份修改前的原件在 `.codex_tmp/cloth-restore-20260927/before/`，可逐文件回退。（依据：流程；2026-09-27 资产包离线核对）
 
