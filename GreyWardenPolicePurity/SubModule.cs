@@ -91,6 +91,8 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new PoliceShipDamageModel());
             starter.AddModel(new PoliceShipParametersModel());
             starter.AddModel(new GwpLeaderlessFoodModel());
+            starter.AddModel(new GwpFireswornMilitiaModel());
+            starter.AddModel(new GwpFireswornVolunteerModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
             starter.AddBehavior(new PoliceAntiVanillaWarBehavior());
@@ -118,6 +120,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenNotableRelationsBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());
             starter.AddBehavior(new GreyWardenSparringBehavior());
+            starter.AddBehavior(new GwpFireswornBehavior());
             // 行为只负责状态与事件；最终欲望过滤由 dispatcher postfix 在
             // 所有原版评分器完成后执行，不能依赖 MbEvent 的注册顺序。
             starter.AddBehavior(new GreyWardenPartyDesireBehavior());

@@ -39,7 +39,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 我们自己建的无领主办差队：练兵队、纠察队、追截/延迟纠察队、招募使者、
-        /// 玩家送信队。它们拿不到原版给领主队的补给（进城买粮要求有领主英雄），
+        /// 玩家送信队、永恒之火门徒。它们拿不到原版给领主队的补给（进城买粮要求有领主英雄），
         /// 所以一律不吃饭，见 <see cref="GwpLeaderlessFoodModel"/>。
         /// </summary>
         public static bool IsLeaderlessDutyParty(MobileParty? party)
@@ -50,7 +50,8 @@ namespace GreyWardenPolicePurity
                    id.StartsWith(PatrolIdPrefix, StringComparison.Ordinal) ||
                    id.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) ||
                    id.StartsWith(GwpIds.RecruitmentPatrolPrefix, StringComparison.Ordinal) ||
-                   id.StartsWith(GwpWardenDispatchBehavior.DispatchPartyPrefix, StringComparison.Ordinal);
+                   id.StartsWith(GwpWardenDispatchBehavior.DispatchPartyPrefix, StringComparison.Ordinal) ||
+                   id.StartsWith(GwpIds.DisciplePartyPrefix, StringComparison.Ordinal);
         }
 
         /// <summary>

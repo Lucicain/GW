@@ -1,6 +1,75 @@
 <!--You can add new or override old npc characters by adding nodes to this xml. For examples please refer to: SandBoxCore/ModuleData/spnpccharacters.xml, SandBox/ModuleData/lords.xml-->
 <NPCCharacters>
 
+<!--Firesworn Zealot: villagers sworn to the Eternal Fire. Tier one; upgrades into the recruit line.-->
+  <NPCCharacter id="gwzealot"
+                default_group="Infantry"
+                level="6"
+                name="{=gwp_troop_zealot}Firesworn Zealot"
+                occupation="Soldier"
+                is_basic_troop="true"
+                is_female="true"
+                culture="Culture.empire">
+    <face>
+      <face_key_template value="BodyProperty.townswoman_empire" />
+    </face>
+    <skills>
+      <skill id="Athletics"
+             value="20" />
+      <skill id="Riding"
+             value="5" />
+      <skill id="OneHanded"
+             value="20" />
+      <skill id="TwoHanded"
+             value="15" />
+      <skill id="Polearm"
+             value="25" />
+      <skill id="Bow"
+             value="5" />
+      <skill id="Crossbow"
+             value="5" />
+      <skill id="Throwing"
+             value="15" />
+    </skills>
+    <upgrade_targets>
+      <upgrade_target id="NPCCharacter.gwnewrecruit" />
+    </upgrade_targets>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="Item.peasant_pitchfork_2_t1" />
+        <equipment slot="Body"
+                   id="Item.ragged_robes" />
+        <equipment slot="Leg"
+                   id="Item.leather_shoes" />
+        <equipment slot="Head"
+                   id="Item.pilgrim_hood" />
+      </EquipmentRoster>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="Item.peasant_hatchet_1_t1" />
+        <equipment slot="Body"
+                   id="Item.monk_robe" />
+        <equipment slot="Leg"
+                   id="Item.leather_shoes" />
+        <equipment slot="Head"
+                   id="Item.female_hood" />
+      </EquipmentRoster>
+      <EquipmentRoster>
+        <equipment slot="Item0"
+                   id="Item.peasant_sickle_1_t1" />
+        <equipment slot="Body"
+                   id="Item.ragged_robes" />
+        <equipment slot="Leg"
+                   id="Item.leather_shoes" />
+        <equipment slot="Head"
+                   id="Item.hood" />
+      </EquipmentRoster>
+      <EquipmentSet id="empire_troop_civilian_template_t1"
+                    equipmentType="Civilian" />
+    </Equipments>
+  </NPCCharacter>
+
 <!--New recruit: deliberately light equipment, with the archer mantle serving as the shared Warden badge.-->
   <NPCCharacter id="gwnewrecruit"
                 default_group="Infantry"

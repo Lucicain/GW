@@ -313,5 +313,50 @@
             public const float ArrivalDistance = 2.5f;
             public const float LocalDevelopmentGain = 5f;
         }
+
+        /// <summary>
+        /// 火誓者第一批底层牌。用户只定了机制没定数值（state/firesworn.md「还没定」），
+        /// 这里是第一版试玩数值。
+        /// </summary>
+        internal static class Firesworn
+        {
+            public const float ArrivalDistance = 3f;
+
+            // 狂信者占户数的上限：永远到不了 100%（用户裁定），给以后其他势力留位置。
+            public const float ZealotHearthCap = 0.3f;
+            public const int ZealotMinimumCap = 20;
+
+            // 集会传教：照比武大会，一村两次至少隔 15 天。
+            public const float CongregationHours = 24f;
+            public const float CongregationVillageIntervalDays = 15f;
+            public const float CongregationHearthShare = 0.04f;
+            public const int CongregationMinimumGain = 5;
+            public const float LordCongregationCooldownDays = 5f;
+            public const int MaxConcurrentLordCongregations = 2;
+            public const float LordTravelTimeoutHours = 72f;
+
+            // 烈火责罚：数据上只扣钱（用户裁定）。
+            public const float DamnationLockHours = 6f;
+            public const float DamnationVillageIntervalDays = 7f;
+            public const int DamnationCostPerHead = 20;
+            public const int DamnationMinimumPrisoners = 3;
+            public const int DamnationMaximumPrisoners = 40;
+            public const int DamnationUnbelieverBase = 2;
+            public const float DamnationHearthPerUnbeliever = 200f;
+            public const float DamnationUnbelieverOnlyDailyChance = 0.2f;
+
+            // 永恒之火门徒：狂信者或祭司 power 到一定规模后出发去传教。
+            public const int DiscipleZealotThreshold = 40;
+            public const float DisciplePriestPowerThreshold = 150f;
+            public const float DiscipleIntervalDays = 10f;
+            public const int MaxActiveDisciples = 3;
+            public const int DiscipleSize = 10;
+            public const int DiscipleMinimumLeftBehind = 5;
+            public const float DiscipleTravelTimeoutHours = 96f;
+            public const float DiscipleTargetMaxDistance = 150f;
+
+            public const float PriestInitialPower = 50f;
+            public const int PriestStartingGold = 2000;
+        }
     }
 }

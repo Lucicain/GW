@@ -1399,5 +1399,26 @@
   <string id="gwp_dispatch_trouble_mauled" text="有消息传来：你派出去的人伤亡过半。" />
   <string id="gwp_dispatch_trouble_starving" text="有消息传来：你派出去的人已经断粮。" />
   <string id="gwp_case_settle_expenses" text="这桩委托已经了结，把该付你的报酬结清就行。" />
+  <string id="gwp_troop_zealot" text="火誓狂热者" />
+  <string id="gwp_fs_congregation_started" text="{HOST}在{VILLAGE}开始了永恒之火的集会传教。" />
+  <string id="gwp_fs_congregation_done" text="{VILLAGE}的集会传教结束了，村里现有狂信者{ZEALOTS}人。" />
+  <string id="gwp_fs_congregation_broken" text="{VILLAGE}的集会传教没办完就散了。" />
+  <string id="gwp_fs_damnation_done" text="{HOST}在{VILLAGE}举行了烈火责罚：烧了{BURNED}人，村里现有狂信者{ZEALOTS}人。" />
+  <string id="gwp_fs_disciple_party" text="永恒之火门徒" />
+  <string id="gwp_fs_disciple_left" text="永恒之火门徒离开{HOME}，前往{TARGET}传教。" />
+  <string id="gwp_fs_priest_name" text="永恒之火祭司{FIRSTNAME}" />
+  <string id="gwp_fs_priest_arrived" text="{PRIEST}在{VILLAGE}住了下来，照看永恒之火。" />
+  <string id="gwp_fs_ritual_congregation_title" text="集会传教" />
+  <string id="gwp_fs_ritual_damnation_title" text="烈火责罚" />
+  <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的村民围在广场上，挤在{HOST}身边。永恒之火的集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
+  <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚，烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
+  <string id="gwp_fs_village_option" text="永恒之火：狂信者{ZEALOTS}人（户数的{SHARE}%）" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}人向永恒之火立了誓（{SHARE}%；最多{CAP}人）。村里的民兵就是这些狂信者：他们抵抗劫掠，死了的不会自己补上，除非信仰再得新人。" />
+  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍可以在祭司那里招募狂信者。" />
+  <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
+  <string id="gwp_fs_village_info_title" text="永恒之火" />
+  <string id="gwp_fs_village_info_ok" text="关闭" />
+  <string id="gwp_fs_ritual_leave" text="离开……" />
+  <string id="gwp_fs_militia_change" text="永恒之火：民兵就是村里的狂信者" />
 </strings>
 </base>

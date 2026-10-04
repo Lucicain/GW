@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-142 个源文件、48,137 行、273 个公开类型、57 个 Harmony 补丁点（分布在 57 个补丁类里）。
+144 个源文件、49,332 行、281 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -67,9 +67,11 @@
 | `MissionNameMarkerVM` | `Tick` | Postfix | `GwpDuelOpponentMarkerPatch` | GwpDuelOpponentMarkerPatch.cs |
 | `MobileParty` | `CalculateSpeed` | Prefix | `GwpEscortSpeedCapPatch` | GwpEscortSpeedCapPatch.cs |
 | `MobileParty` | `GetBehaviorText` | Postfix | `GwpLocationDutyBehaviorTextPatch` | GwpPartyDutyMovementPatch.cs |
+| `NotablesCampaignBehavior` | `CheckAndMakeNotableDisappear` | Prefix | `GwpFireswornPriestStaysPatch` | GwpFireswornMenus.cs |
 | `PartyCharacterVM` | `ExecuteTalk` | Prefix | `GwpPartyCharacterExecuteTalkPatch` | GwpPartyScreenTroopTalkPatch.cs |
 | `PartyCharacterVM` | `UpdateTalkable` | Postfix | `GwpPartyCharacterTalkablePatch` | GwpPartyScreenTroopTalkPatch.cs |
 | `PersonaSoftspokenTag` | `IsApplicableTo` | Finalizer | `GwpDispatchBarterFaultDiagnostics` | GwpDispatchBarterFaultDiagnostics.cs |
+| `PlayerTownVisitCampaignBehavior` | `game_menu_village_on_init` | Postfix | `GwpFireswornVillageLockPatch` | GwpFireswornMenus.cs |
 | `PrisonerReleaseCampaignBehavior` | `DailyHeroTick` | Prefix | `GwpDispatchHeroEscapePatch` | GwpDispatchPrisonerCustody.cs |
 | `PrisonerReleaseCampaignBehavior` | `HourlyPartyTick` | Prefix | `GwpDispatchOverflowEscapePatch` | GwpDispatchPrisonerCustody.cs |
 | `SetPartyAiAction` | `GetActionForGoingAroundParty` | Prefix | `GwpPlayerEnforcementEngageActionPatch` | GwpPartyDutyMovementPatch.cs |
@@ -108,6 +110,7 @@
 - `GreyWardenNotableRelationsBehavior`
 - `GreyWardenTroopRequestBehavior`
 - `GreyWardenSparringBehavior`
+- `GwpFireswornBehavior`
 - `GreyWardenPartyDesireBehavior`
 
 **模型覆盖**：
@@ -125,6 +128,8 @@
 - `PoliceShipDamageModel`
 - `PoliceShipParametersModel`
 - `GwpLeaderlessFoodModel`
+- `GwpFireswornMilitiaModel`
+- `GwpFireswornVolunteerModel`
 
 **任务行为**，按注册顺序（顺序影响生效时机）：
 
@@ -165,6 +170,7 @@
 - `Family` → GwpTuning.cs ←
 - `FiefRequestStage` → GreyWardenPlayerRequestBehavior.cs ←
 - `FieldArrest` → GwpTuning.cs ←
+- `Firesworn` → GwpTuning.cs ←
 - `GreyWardenAdoptionLogEntry` → GreyWardenAdoptionLogEntry.cs
 - `GreyWardenDeserterFilterBehavior` → GreyWardenDeserterFilterBehavior.cs
 - `GreyWardenDesertersCampaignBehavior` → GreyWardenDesertersCampaignBehavior.cs
@@ -280,6 +286,12 @@
 - `GwpFieldFineBarterable` → GwpFieldFineBarterable.cs
 - `GwpFieldReportLedger` → GwpFieldReportLedger.cs
 - `GwpFinalDesireAuctionPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpFireswornBehavior` → GwpFireswornBehavior.cs
+- `GwpFireswornMenus` → GwpFireswornMenus.cs
+- `GwpFireswornMilitiaModel` → GwpFireswornMenus.cs ←
+- `GwpFireswornPriestStaysPatch` → GwpFireswornMenus.cs ←
+- `GwpFireswornVillageLockPatch` → GwpFireswornMenus.cs ←
+- `GwpFireswornVolunteerModel` → GwpFireswornMenus.cs ←
 - `GwpFlacReader` → GwpFlacReader.cs
 - `GwpGauntletWidgetUtility` → GwpGauntletWidgetUtility.cs
 - `GwpIds` → GwpIds.cs
@@ -389,6 +401,7 @@
 - `ReconstructionStage` → GreyWardenVillageReconstructionBehavior.cs ←
 - `ReconstructionTaskSnapshot` → GreyWardenVillageReconstructionBehavior.cs ←
 - `ReliefStage` → GreyWardenVillageAdoptionBehavior.cs ←
+- `RitualKind` → GwpFireswornBehavior.cs ←
 - `Step` → GwpDualBladeAiBehavior.cs ←
 - `SubModule` → SubModule.cs
 - `Temperament` → GwpFieldArrestLines.cs ←
@@ -401,7 +414,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 142 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 148 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -505,7 +518,7 @@
 
 - `GreyWardenVillageAdoptionBehavior.cs` — 922 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenFamilyBehavior.cs` — 624 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
-- `GreyWardenVillageReconstructionBehavior.cs` — 518 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GreyWardenVillageReconstructionBehavior.cs` — 519 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
 - `GreyWardenVillageRewardBehavior.cs` — 194 行 · `GreyWardenVillageRewardBehavior` : CampaignBehaviorBase
 
@@ -526,16 +539,17 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1193 行 · `CrimeRecord`，另含 6 个类型
-- `GwpTuning.cs` — 318 行 · `GwpTuning`，另含 12 个类型
-- `GwpCommon.cs` — 295 行 · `GwpCommon`
-- `GwpIds.cs` — 92 行 · `GwpIds`
+- `GwpTuning.cs` — 363 行 · `GwpTuning`，另含 13 个类型
+- `GwpCommon.cs` — 296 行 · `GwpCommon`
+- `GwpIds.cs` — 94 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 159 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 162 行 · `SubModule` : MBSubModuleBase
 
-### 其他（58 个文件）
+### 其他（60 个文件）
 
+- `GwpFireswornBehavior.cs` — 923 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GwpTroopCombat.cs` — 468 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
@@ -545,6 +559,7 @@
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAssistanceArmyLifecyclePatch.cs` — 237 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornMenus.cs` — 220 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 4 个类型
 - `GreyWardenLoreBehavior.cs` — 217 行 · `GreyWardenLoreBehavior` : CampaignBehaviorBase
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
 - `GwpAffairsNavigation.cs` — 201 行 · `GwpAffairsNavigationElement` : MapNavigationElementBase，另含 3 个类型
