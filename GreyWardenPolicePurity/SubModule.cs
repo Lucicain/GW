@@ -94,6 +94,8 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new GwpLeaderlessFoodModel());
             starter.AddModel(new GwpFireswornMilitiaModel());
             starter.AddModel(new GwpFireswornVolunteerModel());
+            starter.AddModel(new GwpWardenWageModel());
+            starter.AddModel(new GwpWardenPrisonerRecruitmentModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
             starter.AddBehavior(new PoliceAntiVanillaWarBehavior());

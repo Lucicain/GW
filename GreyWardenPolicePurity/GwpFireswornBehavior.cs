@@ -124,6 +124,8 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
+            CampaignEvents.OnNewGameCreatedPartialFollowUpEndEvent.AddNonSerializedListener(this, OnNewGameCreated);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -290,11 +292,35 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        internal static int ZealotCap(Settlement settlement)
+        /// <summary>狂信者上限就是户数，跟着户数变（用户裁定 2026-10-05）。</summary>
+        internal static int ZealotCap(Settlement settlement) => (int)settlement.Village.Hearth;
+
+        /// <summary>
+        /// 灰袍领主进这座村能直接招多少个最低级狂信者。代价是户数，照原版村民队补人的算法：
+        /// 招 n 人扣 (n+1)/2 户（C#反编译 v1.4.8 VillagerCampaignBehavior.AddVillagersToParty）。
+        /// 户数不往 <see cref="GwpTuning.Firesworn.DirectZealotHearthFloor"/> 以下扣。
+        /// </summary>
+        internal static int DirectZealotsAvailable(Settlement settlement)
         {
-            float hearth = settlement.Village?.Hearth ?? 0f;
-            return Math.Max(GwpTuning.Firesworn.ZealotMinimumCap,
-                (int)Math.Round(hearth * GwpTuning.Firesworn.ZealotHearthCap));
+            if (!IsPreachedVillage(settlement) || !IsVillageQuiet(settlement))
+                return 0;
+            float spareHearth = settlement.Village.Hearth - GwpTuning.Firesworn.DirectZealotHearthFloor;
+            return Math.Max(0, (int)(spareHearth * 2f));
+        }
+
+        /// <summary>
+        /// 给原版进村评分用：灰袍在这里能招到的兵 = 祭司格子里的兵 + 能直接招的狂信者，
+        /// 后者按领主部队的空位封顶。不是信众村就是 0。
+        /// </summary>
+        internal static int RecruitsAvailableToWardens(Settlement settlement, Hero hero)
+        {
+            if (!IsPreachedVillage(settlement) || _instance == null)
+                return 0;
+            Hero? priest = FindLivingPriest(_instance._villages[settlement.StringId]);
+            int priestSlots = priest?.VolunteerTypes.Count(troop => troop != null) ?? 0;
+            MobileParty? party = hero.PartyBelongedTo;
+            int freeSlots = party == null ? 0 : Math.Max(0, party.Party.PartySizeLimit - party.Party.NumberOfAllMembers);
+            return priestSlots + Math.Min(freeSlots, DirectZealotsAvailable(settlement));
         }
 
         // ---------------------------------------------------------------- 事件
@@ -319,9 +345,40 @@ namespace GreyWardenPolicePurity
             });
         }
 
+        /// <summary>
+        /// 开新档时灰袍的家乡村就是第一座信众村，有一位祭司。没有它，灰袍在第一次重建之前补不了兵：
+        /// 灰袍只能在信众村招兵（用户裁定）。
+        /// </summary>
+        private void OnNewGameCreated(CampaignGameStarter starter)
+        {
+            InstallPriest(PoliceStats.GetPoliceClan().InitialHomeSettlement);
+        }
+
+        /// <summary>
+        /// 灰袍领主进信众村：原版进门招兵（祭司格子）已经在进门前跑完
+        /// （RecruitmentCampaignBehavior.OnBeforeSettlementEntered），这里再用空位直接招最低级狂信者，扣户数。
+        /// </summary>
+        private void OnSettlementEntered(MobileParty? party, Settlement settlement, Hero? hero)
+        {
+            if (party?.IsLordParty != true || !GwpWardenRecruitment.IsWardenParty(party) ||
+                party.MapEvent != null || !IsPreachedVillage(settlement))
+                return;
+            int freeSlots = party.Party.PartySizeLimit - party.Party.NumberOfAllMembers;
+            int enlisted = Math.Min(freeSlots, DirectZealotsAvailable(settlement));
+            if (enlisted <= 0)
+                return;
+            party.MemberRoster.AddToCounts(CharacterObject.Find(GwpIds.ZealotId), enlisted);
+            settlement.Village.Hearth -= (enlisted + 1) / 2;
+            GwpAiDiagnostics.WriteAction(party, "FIRESWORN_ZEALOTS_ENLISTED",
+                "village=" + settlement.StringId + "; enlisted=" + enlisted +
+                "; hearthAfter=" + settlement.Village.Hearth.ToString("0.0") +
+                "; membersAfter=" + party.Party.NumberOfAllMembers + "/" + party.Party.PartySizeLimit);
+        }
+
         private void OnDailyTick()
         {
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIESTS", MaintainPriests);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_TRAINING", TrainPriestVolunteers);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_DISCIPLES", DispatchDisciples);
         }
 
@@ -852,6 +909,31 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>
+        /// 祭司能练出好的灰袍兵（用户裁定）。原版格子里的兵每天只按 log2(power/阶)×1% 升一级，
+        /// 而且到 4 阶就停（C#反编译 v1.4.8 RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement、
+        /// DefaultVolunteerModel.MaxVolunteerTier）。祭司格子里的灰袍兵另外每天按
+        /// 基础概率 + power 加成升一级，一直能升到兵线尽头。
+        /// </summary>
+        private void TrainPriestVolunteers()
+        {
+            foreach (FaithVillage row in _villages.Values)
+            {
+                Hero? priest = FindLivingPriest(row);
+                if (priest == null)
+                    continue;
+                float chance = GwpTuning.Firesworn.PriestTrainingDailyChance +
+                               priest.Power / GwpTuning.Firesworn.PriestTrainingPowerPerChance;
+                for (int i = 0; i < priest.VolunteerTypes.Length; i++)
+                {
+                    CharacterObject? troop = priest.VolunteerTypes[i];
+                    if (troop == null || troop.UpgradeTargets.Length == 0 || MBRandom.RandomFloat >= chance)
+                        continue;
+                    priest.VolunteerTypes[i] = troop.UpgradeTargets[MBRandom.RandomInt(troop.UpgradeTargets.Length)];
+                }
+            }
+        }
+
         private static Hero? FindLivingPriest(FaithVillage row)
         {
             if (string.IsNullOrEmpty(row.PriestId))
@@ -898,6 +980,8 @@ namespace GreyWardenPolicePurity
             int observed = MilitiaHeadcount(village);
             if (observed < row.Zealots)
                 row.Zealots = observed;
+            // 上限是户数；户数掉了（被直接招走、被劫），多出来的狂信者也跟着少。
+            row.Zealots = Math.Min(row.Zealots, ZealotCap(village));
             PushMilitia(row, village);
         }
 

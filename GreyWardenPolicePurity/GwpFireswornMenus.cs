@@ -4,7 +4,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Encounters;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -93,7 +92,7 @@ namespace GreyWardenPolicePurity
                 "ZEALOTS", zealots, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name,
                 "SHARE", HearthShare(village, zealots), "CAP", cap);
             body += "\n\n" + (priest != null
-                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. Wardens can recruit zealots from the priest.",
+                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. Warden lords recruit from her, and take the lowest zealots straight from the village's households.",
                     "PRIEST", priest.Name)
                 : GwpText.Get("{=gwp_fs_village_no_priest}No priest of the Eternal Fire lives here."));
             InformationManager.ShowInquiry(new InquiryData(
@@ -146,10 +145,8 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed class GwpFireswornMilitiaModel : SettlementMilitiaModel
     {
-        private SettlementMilitiaModel? _fallback;
-
-        private SettlementMilitiaModel Inner =>
-            BaseModel ?? (_fallback ??= new DefaultSettlementMilitiaModel());
+        // AddModel<T> 总会把已注册的模型设成 BaseModel（CampaignGameStarter.AddModel<T>）。
+        private SettlementMilitiaModel Inner => BaseModel;
 
         public override int MilitiaToSpawnAfterSiege(Town town) => Inner.MilitiaToSpawnAfterSiege(town);
 
@@ -166,50 +163,5 @@ namespace GreyWardenPolicePurity
         public override void CalculateMilitiaSpawnRate(Settlement settlement, out float meleeTroopRate,
             out float rangedTroopRate) =>
             Inner.CalculateMilitiaSpawnRate(settlement, out meleeTroopRate, out rangedTroopRate);
-    }
-
-    /// <summary>
-    /// 永恒之火祭司只产火誓狂热者（用户裁定），也只让灰袍招：灰袍领主与入会的玩家。
-    /// 其余要人照原版。
-    /// </summary>
-    public sealed class GwpFireswornVolunteerModel : VolunteerModel
-    {
-        private VolunteerModel? _fallback;
-
-        private VolunteerModel Inner => BaseModel ?? (_fallback ??= new DefaultVolunteerModel());
-
-        public override int MaxVolunteerTier => Inner.MaxVolunteerTier;
-
-        public override int MaximumIndexHeroCanRecruitFromHero(Hero buyerHero, Hero sellerHero,
-            int useValueAsRelation = -101)
-        {
-            if (GwpFireswornBehavior.IsFireswornPriest(sellerHero) && !MayRecruitZealots(buyerHero))
-                return 0;
-            return Inner.MaximumIndexHeroCanRecruitFromHero(buyerHero, sellerHero, useValueAsRelation);
-        }
-
-        public override int MaximumIndexGarrisonCanRecruitFromHero(Settlement settlement, Hero sellerHero) =>
-            GwpFireswornBehavior.IsFireswornPriest(sellerHero)
-                ? 0
-                : Inner.MaximumIndexGarrisonCanRecruitFromHero(settlement, sellerHero);
-
-        public override float GetDailyVolunteerProductionProbability(Hero hero, int index,
-            Settlement settlement) =>
-            Inner.GetDailyVolunteerProductionProbability(hero, index, settlement);
-
-        public override CharacterObject GetBasicVolunteer(Hero hero)
-        {
-            if (GwpFireswornBehavior.IsFireswornPriest(hero) &&
-                CharacterObject.Find(GwpIds.ZealotId) is CharacterObject zealot)
-                return zealot;
-            return Inner.GetBasicVolunteer(hero);
-        }
-
-        public override bool CanHaveRecruits(Hero hero) => Inner.CanHaveRecruits(hero);
-
-        private static bool MayRecruitZealots(Hero? buyer) =>
-            GwpCommon.IsGreyWardenClanMember(buyer) ||
-            (buyer == Hero.MainHero &&
-             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true);
     }
 }

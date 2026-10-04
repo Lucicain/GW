@@ -1,0 +1,157 @@
+using System;
+using HarmonyLib;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 灰袍只招狂信者（用户裁定 2026-10-05，docs/state/firesworn.md「下一版方向」）：
+    /// 兵只出自信众村——祭司的志愿兵格子，和村里直接招的最低级狂信者（见 <see cref="GwpFireswornBehavior"/>）。
+    /// 原版的另外三条补兵路（普通要人的志愿兵、城里的雇佣兵、招降俘虏）对灰袍领主全部关掉；
+    /// 战后收进队里的外来兵仍由纯化换成灰袍新兵（PoliceResourceManager）。
+    /// </summary>
+    internal static class GwpWardenRecruitment
+    {
+        internal static bool IsWardenBuyer(Hero? hero) => GwpCommon.IsGreyWardenClanMember(hero);
+
+        internal static bool IsWardenParty(MobileParty? party) =>
+            string.Equals(party?.ActualClan?.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 祭司的志愿兵格子：起码是灰袍新兵，出兵快（用户裁定）。只有灰袍家族成员能招；
+    /// 玩家现在只走练兵官（用户裁定）。灰袍领主不能从普通要人那里招兵。
+    /// </summary>
+    public sealed class GwpFireswornVolunteerModel : VolunteerModel
+    {
+        // AddModel<T> 总会把已注册的模型设成 BaseModel（CampaignGameStarter.AddModel<T>）。
+        private VolunteerModel Inner => BaseModel;
+
+        public override int MaxVolunteerTier => Inner.MaxVolunteerTier;
+
+        public override int MaximumIndexHeroCanRecruitFromHero(Hero buyerHero, Hero sellerHero,
+            int useValueAsRelation = -101)
+        {
+            bool priest = GwpFireswornBehavior.IsFireswornPriest(sellerHero);
+            if (priest != GwpWardenRecruitment.IsWardenBuyer(buyerHero))
+                return 0;
+            return Inner.MaximumIndexHeroCanRecruitFromHero(buyerHero, sellerHero, useValueAsRelation);
+        }
+
+        public override int MaximumIndexGarrisonCanRecruitFromHero(Settlement settlement, Hero sellerHero) =>
+            GwpFireswornBehavior.IsFireswornPriest(sellerHero)
+                ? 0
+                : Inner.MaximumIndexGarrisonCanRecruitFromHero(settlement, sellerHero);
+
+        // 原版每格每天 0.75×p^(格序+1)（p 在 0.7–0.9），一位要人一天补 2–3 个；祭司每天把 6 格补满。
+        public override float GetDailyVolunteerProductionProbability(Hero hero, int index,
+            Settlement settlement) =>
+            GwpFireswornBehavior.IsFireswornPriest(hero)
+                ? 1f
+                : Inner.GetDailyVolunteerProductionProbability(hero, index, settlement);
+
+        public override CharacterObject GetBasicVolunteer(Hero hero) =>
+            GwpFireswornBehavior.IsFireswornPriest(hero)
+                ? CharacterObject.Find(GwpIds.NewRecruitId)
+                : Inner.GetBasicVolunteer(hero);
+
+        public override bool CanHaveRecruits(Hero hero) => Inner.CanHaveRecruits(hero);
+    }
+
+    /// <summary>灰袍兵是信仰势力，不领饷（用户裁定）。其余兵、英雄照原版算。</summary>
+    public sealed class GwpWardenWageModel : PartyWageModel
+    {
+        private PartyWageModel Inner => BaseModel;
+
+        public override int MaxWagePaymentLimit => Inner.MaxWagePaymentLimit;
+
+        public override int GetCharacterWage(CharacterObject character) =>
+            GwpCommon.IsGreyWardenTroop(character) ? 0 : Inner.GetCharacterWage(character);
+
+        // 原版直接读 character.TroopWage 逐格累加，所以把灰袍兵从名册里拿掉再交给原版，
+        // 英雄工资和各项 perk 照原版。不挂 OwnerParty 的名册加英雄没有副作用（TroopRoster.AddToCountsAtIndex）。
+        public override ExplainedNumber GetTotalWage(MobileParty mobileParty, TroopRoster troopRoster,
+            bool includeDescriptions = false)
+        {
+            bool hasWardenTroops = false;
+            for (int i = 0; i < troopRoster.Count && !hasWardenTroops; i++)
+                hasWardenTroops = GwpCommon.IsGreyWardenTroop(troopRoster.GetCharacterAtIndex(i));
+            if (!hasWardenTroops)
+                return Inner.GetTotalWage(mobileParty, troopRoster, includeDescriptions);
+
+            TroopRoster paid = TroopRoster.CreateDummyTroopRoster();
+            for (int i = 0; i < troopRoster.Count; i++)
+            {
+                TroopRosterElement element = troopRoster.GetElementCopyAtIndex(i);
+                if (!GwpCommon.IsGreyWardenTroop(element.Character))
+                    paid.AddToCounts(element.Character, element.Number, false, element.WoundedNumber);
+            }
+            return Inner.GetTotalWage(mobileParty, paid, includeDescriptions);
+        }
+
+        public override ExplainedNumber GetTroopRecruitmentCost(CharacterObject troop, Hero buyerHero,
+            bool withoutItemCost = false) =>
+            Inner.GetTroopRecruitmentCost(troop, buyerHero, withoutItemCost);
+    }
+
+    /// <summary>灰袍领主不招降俘虏：俘虏送去信众村烧（用户裁定）。</summary>
+    public sealed class GwpWardenPrisonerRecruitmentModel : PrisonerRecruitmentCalculationModel
+    {
+        private PrisonerRecruitmentCalculationModel Inner => BaseModel;
+
+        public override int GetConformityNeededToRecruitPrisoner(CharacterObject character) =>
+            Inner.GetConformityNeededToRecruitPrisoner(character);
+
+        public override ExplainedNumber GetConformityChangePerHour(PartyBase party, CharacterObject character) =>
+            Inner.GetConformityChangePerHour(party, character);
+
+        public override int GetPrisonerRecruitmentMoraleEffect(PartyBase party, CharacterObject character,
+            int num) =>
+            Inner.GetPrisonerRecruitmentMoraleEffect(party, character, num);
+
+        public override bool IsPrisonerRecruitable(PartyBase party, CharacterObject character,
+            out int conformityNeeded) =>
+            Inner.IsPrisonerRecruitable(party, character, out conformityNeeded);
+
+        public override bool ShouldPartyRecruitPrisoners(PartyBase party) =>
+            !GwpWardenRecruitment.IsWardenParty(party.MobileParty) && Inner.ShouldPartyRecruitPrisoners(party);
+
+        public override int CalculateRecruitableNumber(PartyBase party, CharacterObject character) =>
+            Inner.CalculateRecruitableNumber(party, character);
+    }
+
+    /// <summary>
+    /// 灰袍领主不雇城里的雇佣兵。原版领主队在城镇、村子里每小时、以及进门时都走这里
+    /// （C#反编译 v1.4.8 RecruitmentCampaignBehavior.CheckRecruiting）。
+    /// </summary>
+    [HarmonyPatch(typeof(RecruitmentCampaignBehavior), "CheckRecruiting")]
+    internal static class GwpWardenNoMercenariesPatch
+    {
+        private static bool Prefix(MobileParty mobileParty) =>
+            !(mobileParty.IsLordParty && GwpWardenRecruitment.IsWardenParty(mobileParty));
+    }
+
+    /// <summary>
+    /// 原版估算「这里能招几个兵」时不看招不招得到，只数每位要人的前 4 格（C#反编译 v1.4.8
+    /// AiVisitSettlementBehavior.GetApproximateVolunteersCanBeRecruitedDataFromSettlement）。
+    /// 灰袍只在信众村招兵，所以别处一律算 0；信众村只数祭司的格子，再加上能直接招的狂信者，
+    /// 招兵的意愿就回到信众村（用户裁定）。灰袍兵不领饷，平均工资是 0：原版只在工资预算大于 0 时
+    /// 才用它做除数，结果是正无穷，不限人数。
+    /// </summary>
+    [HarmonyPatch(typeof(AiVisitSettlementBehavior), "GetApproximateVolunteersCanBeRecruitedDataFromSettlement")]
+    internal static class GwpWardenRecruitDesirePatch
+    {
+        private static void Postfix(Hero hero, Settlement settlement, ref (int, float) __result)
+        {
+            if (GwpWardenRecruitment.IsWardenBuyer(hero))
+                __result = (GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 0f);
+        }
+    }
+}

@@ -1414,7 +1414,7 @@
   <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：被拖上去的，是不肯低头的人。女人们围着火唱，男人们低着头往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
   <string id="gwp_fs_village_option" text="永恒之火：狂信者{ZEALOTS}人（户数的{SHARE}%）" />
   <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}个女人向永恒之火立了誓（{SHARE}%；最多{CAP}人）。火只从母亲传给女儿；村里的男人侍奉它，但不许碰它。村里的民兵就是这些狂信者：她们抵抗劫掠，死了的不会自己补上，除非信仰再得新人。" />
-  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍可以在祭司那里招募狂信者。" />
+  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍领主在她那里招兵，也会直接从村里的人家招走最低级的狂信者。" />
   <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
   <string id="gwp_fs_village_info_title" text="永恒之火" />
   <string id="gwp_fs_village_info_ok" text="关闭" />

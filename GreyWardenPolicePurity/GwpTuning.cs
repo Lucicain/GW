@@ -287,9 +287,12 @@
         {
             public const float ArrivalDistance = 3f;
 
-            // 狂信者占户数的上限：永远到不了 100%（用户裁定），给以后其他势力留位置。
-            public const float ZealotHearthCap = 0.3f;
-            public const int ZealotMinimumCap = 20;
+            // 直接招狂信者时户数不往这条线以下扣，免得一座信众村被招空。
+            public const float DirectZealotHearthFloor = 150f;
+
+            // 祭司格子里的灰袍兵每天升一级的概率 = 基础 + power / 这个数（power 50 约 7.5%，150 约 12.5%）。
+            public const float PriestTrainingDailyChance = 0.05f;
+            public const float PriestTrainingPowerPerChance = 2000f;
 
             // 集会传教：照比武大会，一村两次至少隔 15 天。
             public const float CongregationHours = 24f;
