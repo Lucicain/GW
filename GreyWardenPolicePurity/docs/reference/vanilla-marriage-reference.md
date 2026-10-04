@@ -1,5 +1,7 @@
 # Vanilla Marriage Reference
 
+> 2026-03 按当时安装的游戏版本反编译整理，未按 v1.4.8 复核。家族与婚姻子系统尚未提取成 state；用到这里的结论前先重新反编译核对。
+
 ## Purpose
 
 This note records the vanilla player marriage flow, the related API entry points, and the lowest-risk extension points for Grey Warden-specific romance content.

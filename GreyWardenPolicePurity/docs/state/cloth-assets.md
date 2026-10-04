@@ -12,7 +12,7 @@
 
 - 不要用 TPAC 工具写布料参数或布料子网格数据，`--restore-cloth` / `--cloth-gradient` 只作离线实验，不写进 live。（依据：实机诊断 2026-10-03）
   9-27 工具写回三件服装的原包设置后，工具自己读回无误，但用户在 Kit 里打开模拟、什么都不调直接保存，这些子网格的拉伸/弯曲/剪切刚度就成了 0.5：
-  `winfarmor`、`wcomarmorhv` 拉伸 0.8→0.5，`winfarmorhv` 三项 1→0.5；Kit 自己导入的原件（`.codex_tmp/cloth-restore-20260927/before/`）
+  `winfarmor`、`wcomarmorhv` 拉伸 0.8→0.5，`winfarmorhv` 三项 1→0.5；Kit 自己导入的原件
   与未经工具的 `warcharmor` 始终是正确值。工具直接写 TPAC 也不会更新 `RuntimeDataCache`，开发版会继续用旧缓存。
   顶点色等网格数据改源 FBX，再由 Kit 重导。（依据：实机诊断 2026-10-03；资源包读回对比）
 

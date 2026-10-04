@@ -104,7 +104,7 @@ python tools/Check-StateFreshness.py
 - 使者的对话入口与付款 barter（`GwpWardenDispatchDialogue`、`GwpAssetPayment`）；地图行程已提取到 [`dispatch.md`](dispatch.md)
 - 灰袍领主日常练兵与兵种配比取向（`GreyWardenTrainingBehavior`）；玩家订单与随行练兵队已提取到 [`troop-orders.md`](troop-orders.md)
 - 野外切磋（`GreyWardenFieldSparringMissionController`）
-- 家族、婚姻、村庄收养与重建
+- 家族、婚姻、村庄收养与重建（原版婚姻 API 笔记在 [`../reference/vanilla-marriage-reference.md`](../reference/vanilla-marriage-reference.md)，未按 v1.4.8 复核）
 - 船运贸易与经济
 - 本地化与内容键（`Verify-ContentKeys` 覆盖的范围）
 - 灰袍分驻六地、入会新兵发放（入会装备已提取到 [`warden-gear.md`](warden-gear.md)）

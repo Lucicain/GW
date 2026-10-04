@@ -217,13 +217,11 @@
 
 ## 回退
 
-- 武器词条（2026-09-25，未提交）之前：把 `.codex_tmp/weapon-traits-prechange-20260925/` 中的
-  `GwpTroopCombat.cs`、`GwpAgentApplyDamageModel.cs`、`GwpShieldBashGuardPatch.cs` 覆盖同名源码，
-  三个 XML 覆盖 `_Module/ModuleData/items.xml`、`spnpccharacters.xml`、
-  `Languages/CNs/std_gwp_strings_xml-zho-CN.xml`，重建并镜像。那时效果按兵种：弓手箭 25% 击倒与盾伤 × 2、
-  重步兵大盾 × 0.5、骑士表中各值、双刀击倒 = 踢击按阶概率 × 0.5；步兵普通攻击无加成。
+- 武器词条由提交 `7df782d` 引入（随 v1.4-r13 发布）。回退：把该提交改动的文件恢复到 `7ff6b76` 的版本，重建并镜像。
+  那时效果按兵种：弓手箭 25% 击倒与盾伤 × 2、重步兵大盾 × 0.5、骑士表中各值、双刀击倒 = 踢击按阶概率 × 0.5；步兵普通攻击无加成。
 
-- 本次将骑乘效果从 `gwknight` 转到 `gw_warhorse` 前的未提交实现：基线提交 `6b4b1dd` 加 `.codex_tmp/horse-ownership-prechange-20260925/` 中的 `GwpTroopCombat.cs`、`GwpAgentApplyDamageModel.cs`、`SubModule.cs` 快照；分别覆盖同名源码、重建并镜像即可恢复旧归属。快照的 SHA-256 依次为 `D4837288…75344F6`、`7650EE18…AF08FEA`、`A6640C08…E62974ABF`。旧 state 头部与规则另存同目录 `troop-combat.md`，若回退也要原地恢复状态说明。
+- 骑乘效果归 `gw_warhorse` 自提交 `760d64f` 起（随 v1.4-r13 发布）。更早挂在 `gwknight` 上的实现从未提交，
+  它的快照已于 2026-10-03 清理，不再能回退到那个归属。（依据：用户裁定 2026-10-03，老版本不回退）
 
 - 骑兵加强（2026-09-24，未提交）之前的状态即提交 `6b4b1dd`：撤回 `GwpTroopCombat.cs`、
   `GwpAgentApplyDamageModel.cs`、`GwpAgentStatCalculateModel.cs`、`items.xml`、`spnpccharacters.xml`、

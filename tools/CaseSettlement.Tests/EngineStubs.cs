@@ -27,7 +27,8 @@ namespace TaleWorlds.CampaignSystem
     public static class CampaignEvents { public static DailyEvent DailyTickEvent = new(); }
     public class Campaign
     {
-        public static Campaign? Current;
+        // The game assembly is nullable-oblivious; a nullable stub would flag production code the real build accepts.
+        public static Campaign Current = null!;
         public BarterSystem.BarterManager BarterManager = new();
         public ConversationManager ConversationManager = new();
         public T? GetCampaignBehavior<T>() where T : class => null;

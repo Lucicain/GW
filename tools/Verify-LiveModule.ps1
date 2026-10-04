@@ -27,11 +27,16 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$RepoModule = (Join-Path (Split-Path $PSScriptRoot -Parent) 'GreyWardenPolicePurity\_Module'),
+    [string]$RepoModule,
     [string]$LiveModule = 'D:\steam\steamapps\common\Mount & Blade II Bannerlord\Modules\GreyWarden'
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Windows PowerShell 5.1 leaves $PSScriptRoot empty inside param defaults, so resolve it here.
+if (-not $RepoModule) {
+    $RepoModule = Join-Path (Split-Path $PSScriptRoot -Parent) 'GreyWardenPolicePurity\_Module'
+}
 
 # Editor-side trees: not part of the mirror in either direction. The live module
 # keeps its own Modding Kit copies permanently so asset work can resume at any

@@ -43,14 +43,14 @@
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
 
-脚本默认用 Windows PowerShell 5.1 运行；`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 要用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。
+`Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1`、`Verify-CrimeReceipts.ps1` 两边都能跑。
 
 ## 测试工程（`tools/`）
 
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
 | `BattleSceneTests` | 138 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
-| `DualBladeTests` | 18 | 双刀 AI 与踢/盾击互斥 |
+| `DualBladeTests` | 27 | 双刀 AI 与踢/盾击互斥 |
 | `MusicTests` | 58770640 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
 | `CaseSettlement.Tests` | 164 | 案件结算 |
 | `ChokePointTests` | — | 隘口候选已撤回，其 bin/obj 仅为被忽略的生成缓存，不参与构建或部署 |
