@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-143 个源文件、47,530 行、279 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
+143 个源文件、47,581 行、279 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -515,7 +515,7 @@
 ### 家族与村庄（5 个文件）
 
 - `GreyWardenVillageAdoptionBehavior.cs` — 865 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GreyWardenFamilyBehavior.cs` — 615 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GreyWardenFamilyBehavior.cs` — 622 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenVillageReconstructionBehavior.cs` — 519 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
 - `GreyWardenVillageRewardBehavior.cs` — 194 行 · `GreyWardenVillageRewardBehavior` : CampaignBehaviorBase
@@ -547,7 +547,7 @@
 
 ### 其他（59 个文件）
 
-- `GwpFireswornBehavior.cs` — 934 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GwpFireswornBehavior.cs` — 978 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型

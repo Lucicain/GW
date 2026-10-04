@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 
 namespace GreyWardenPolicePurity
@@ -54,6 +56,34 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // 祭司的名池与灰袍家族成员的分开，祭司之间不重名（GreyWardenFamilyBehavior.PickUniqueName）。
+        private static readonly string[] PriestNames =
+        {
+            GwpText.Get("{=gwp_fs_priest_name_01}Aeledburh"),
+            GwpText.Get("{=gwp_fs_priest_name_02}Aeledflaed"),
+            GwpText.Get("{=gwp_fs_priest_name_03}Aeledwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_04}Brynehild"),
+            GwpText.Get("{=gwp_fs_priest_name_05}Brynegifu"),
+            GwpText.Get("{=gwp_fs_priest_name_06}Brynwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_07}Fyrburh"),
+            GwpText.Get("{=gwp_fs_priest_name_08}Fyrgyth"),
+            GwpText.Get("{=gwp_fs_priest_name_09}Fyrthryth"),
+            GwpText.Get("{=gwp_fs_priest_name_10}Ligburh"),
+            GwpText.Get("{=gwp_fs_priest_name_11}Ligflaed"),
+            GwpText.Get("{=gwp_fs_priest_name_12}Liggifu"),
+            GwpText.Get("{=gwp_fs_priest_name_13}Ligwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_14}Baelwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_15}Baelgyth"),
+            GwpText.Get("{=gwp_fs_priest_name_16}Baelhild"),
+            GwpText.Get("{=gwp_fs_priest_name_17}Ysleburh"),
+            GwpText.Get("{=gwp_fs_priest_name_18}Yslewyn"),
+            GwpText.Get("{=gwp_fs_priest_name_19}Gledburh"),
+            GwpText.Get("{=gwp_fs_priest_name_20}Gledwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_21}Swelhild"),
+            GwpText.Get("{=gwp_fs_priest_name_22}Brondgyth"),
+            GwpText.Get("{=gwp_fs_priest_name_23}Brondwyn"),
+            GwpText.Get("{=gwp_fs_priest_name_24}Heorthburh")
+        };
         // 只烧不信教者的那一掷每位领主每天一次。
         private readonly Dictionary<string, int> _unbelieverRollDay =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -739,19 +769,15 @@ namespace GreyWardenPolicePurity
             if (FindLivingPriest(row) != null)
                 return;
 
-            List<CharacterObject> templates = village.Culture?.NotableTemplates
-                .Where(character => character.Occupation == Occupation.Headman ||
-                                    character.Occupation == Occupation.RuralNotable)
-                .ToList() ?? new List<CharacterObject>();
-            if (templates.Count == 0)
-                return;
-            CharacterObject template = templates[MBRandom.RandomInt(templates.Count)];
+            // 教义是母系的，祭司只能是女人（用户裁定）。原版每个文化恰有一个女性传教者模板
+            // （spc_notable_<文化>_N，is_female），长相在她的捏脸范围里随机。
+            CharacterObject template = CharacterObject.All.First(character =>
+                character.IsTemplate && character.Occupation == Occupation.Preacher &&
+                character.IsFemale && character.Culture == village.Culture);
 
             Hero priest = HeroCreator.CreateSpecialHero(template, village, null, null,
                 MBRandom.RandomInt(35, 56));
             priest.SetNewOccupation(Occupation.Preacher);
-            priest.SetName(GwpText.Create("{=gwp_fs_priest_name}Eternal Fire Priest {FIRSTNAME}",
-                "FIRSTNAME", priest.FirstName), priest.FirstName);
             priest.BornSettlement = village;
             priest.UpdateHomeSettlement();
             if (!priest.IsActive)
@@ -764,32 +790,50 @@ namespace GreyWardenPolicePurity
                     GwpTuning.Firesworn.PriestStartingGold - priest.Gold, true);
             if (priest.Power < GwpTuning.Firesworn.PriestInitialPower)
                 priest.AddPower(GwpTuning.Firesworn.PriestInitialPower - priest.Power);
-            DressPriest(priest);
-
-            row.PriestId = priest.StringId;
-            _priestIds.Add(priest.StringId);
+            AnointPriest(row, priest, village);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_fs_priest_arrived}{PRIEST} has settled in {VILLAGE} to tend the Eternal Fire.",
                 "PRIEST", priest.Name, "VILLAGE", village.Name), Colors.Gray));
         }
 
+        /// <summary>
+        /// 让一位女性要人成为这座村子的祭司：取祭司名池里的名字、穿袍子、写教义、登记。
+        /// 原版模板自带的名字池很小，同文化的传教者经常重名，所以名字由我们给。
+        /// </summary>
+        private void AnointPriest(FaithVillage row, Hero priest, Settlement village)
+        {
+            HashSet<string> usedNames = new HashSet<string>(_villages.Values
+                .Select(FindLivingPriest)
+                .Where(hero => hero != null && hero != priest)
+                .Select(hero => hero!.FirstName.ToString()), StringComparer.Ordinal);
+            TextObject firstName = new TextObject(GreyWardenFamilyBehavior.PickUniqueName(
+                PriestNames, usedNames, MBRandom.RandomInt(PriestNames.Length)));
+            priest.SetName(GwpText.Create("{=gwp_fs_priest_name}Eternal Fire Priestess {FIRSTNAME}",
+                "FIRSTNAME", firstName), firstName);
+            priest.SetTraitLevel(DefaultTraits.Mercy, -1);
+            priest.EncyclopediaText = GwpText.Create(
+                "{=gwp_fs_priest_lore}{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith she preaches holds that the flame passes only from mother to daughter: women alone may tend it, and men may only feed it, with their labour, with their obedience, and, when they will not kneel, with themselves. Under her the women of the village swear themselves to the fire and take up the spear; its men carry wood to the pyre and keep their eyes lowered.",
+                "PRIEST", firstName, "VILLAGE", village.Name);
+            DressPriest(priest);
+            row.PriestId = priest.StringId;
+            _priestIds.Add(priest.StringId);
+        }
+
         private static void DressPriest(Hero priest)
         {
-            ItemObject? robe = MBObjectManager.Instance.GetObject<ItemObject>("monk_robe");
-            ItemObject? hood = MBObjectManager.Instance.GetObject<ItemObject>("pilgrim_hood");
-            foreach (Equipment? equipment in new[] { priest.CivilianEquipment, priest.BattleEquipment })
+            ItemObject robe = MBObjectManager.Instance.GetObject<ItemObject>("monk_robe");
+            ItemObject hood = MBObjectManager.Instance.GetObject<ItemObject>("pilgrim_hood");
+            foreach (Equipment equipment in new[] { priest.CivilianEquipment, priest.BattleEquipment })
             {
-                if (equipment == null)
-                    continue;
-                if (robe != null)
-                    equipment[EquipmentIndex.Body] = new EquipmentElement(robe);
-                if (hood != null)
-                    equipment[EquipmentIndex.Head] = new EquipmentElement(hood);
+                equipment[EquipmentIndex.Body] = new EquipmentElement(robe);
+                equipment[EquipmentIndex.Head] = new EquipmentElement(hood);
             }
         }
 
         /// <summary>
-        /// 祭司死了而原版按高 power 要人的规矩补了一位同职业的亲属时，接着当祭司；
+        /// 祭司死时 power 够高，原版会给村子补一位同职业的亲属（<c>NotablesCampaignBehavior.OnHeroKilled</c>
+        /// → <c>HeroCreator.CreateRelativeNotableHero</c>，模板从该文化的传教者里随机，男女都有）。
+        /// 补来的是女人就接任祭司；是男人就只是原版传教者，不接火（用户裁定：祭司不能是男的）。
         /// 没补就空着（「墓地」等火蜥蜴再做）。
         /// </summary>
         private void MaintainPriests()
@@ -798,13 +842,13 @@ namespace GreyWardenPolicePurity
             {
                 if (string.IsNullOrEmpty(row.PriestId) || FindLivingPriest(row) != null)
                     continue;
-                Settlement? village = Settlement.Find(row.VillageId);
-                Hero? successor = village?.Notables.FirstOrDefault(hero =>
-                    hero.IsPreacher && hero.IsAlive && !_priestIds.Contains(hero.StringId));
+                Settlement village = Settlement.Find(row.VillageId);
                 _priestIds.Remove(row.PriestId);
-                row.PriestId = successor?.StringId ?? string.Empty;
+                row.PriestId = string.Empty;
+                Hero? successor = village.Notables.FirstOrDefault(hero =>
+                    hero.IsPreacher && hero.IsFemale && hero.IsAlive && !_priestIds.Contains(hero.StringId));
                 if (successor != null)
-                    _priestIds.Add(successor.StringId);
+                    AnointPriest(row, successor, village);
             }
         }
 

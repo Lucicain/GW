@@ -52,7 +52,7 @@
                    id="Item.monk_robe" />
         <equipment slot="Leg"
                    id="Item.leather_shoes" />
-        <equipment slot="Head"
+        <equipment slot="Cape"
                    id="Item.female_hood" />
       </EquipmentRoster>
       <EquipmentRoster>
@@ -62,7 +62,7 @@
                    id="Item.ragged_robes" />
         <equipment slot="Leg"
                    id="Item.leather_shoes" />
-        <equipment slot="Head"
+        <equipment slot="Cape"
                    id="Item.hood" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t1"

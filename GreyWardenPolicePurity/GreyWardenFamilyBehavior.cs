@@ -495,31 +495,38 @@ namespace GreyWardenPolicePurity
 
         private static void AssignStableFemaleName(Hero hero, ISet<string> usedNames)
         {
-            int baseIndex = StableHash(hero.StringId) % GeneratedFemaleNames.Length;
-            for (int offset = 0; offset < GeneratedFemaleNames.Length; offset++)
+            SetHeroName(hero, PickUniqueName(GeneratedFemaleNames, usedNames, StableHash(hero.StringId)));
+        }
+
+        /// <summary>
+        /// 从名池里取一个 <paramref name="usedNames"/> 里没有的名字并登记进去：先按 seed 起点轮一圈，
+        /// 名池用完再给起点那个名字加序数后缀。灰袍家族成员和永恒之火祭司共用这套规矩。
+        /// </summary>
+        internal static string PickUniqueName(IReadOnlyList<string> pool, ISet<string> usedNames, int seed)
+        {
+            int baseIndex = seed % pool.Count;
+            for (int offset = 0; offset < pool.Count; offset++)
             {
-                string candidate = GeneratedFemaleNames[(baseIndex + offset) % GeneratedFemaleNames.Length];
+                string candidate = pool[(baseIndex + offset) % pool.Count];
                 if (usedNames.Add(candidate))
                 {
-                    SetHeroName(hero, candidate);
-                    return;
+                    return candidate;
                 }
             }
 
-            string fallbackBase = GeneratedFemaleNames[baseIndex];
+            string fallbackBase = pool[baseIndex];
             for (int i = 0; i < NameSuffixes.Length; i++)
             {
                 string candidate = fallbackBase + NameSuffixes[i];
                 if (usedNames.Add(candidate))
                 {
-                    SetHeroName(hero, candidate);
-                    return;
+                    return candidate;
                 }
             }
 
-            string finalCandidate = fallbackBase + StableHash(hero.StringId).ToString();
+            string finalCandidate = fallbackBase + seed.ToString();
             usedNames.Add(finalCandidate);
-            SetHeroName(hero, finalCandidate);
+            return finalCandidate;
         }
 
         private static void SetHeroName(Hero hero, string name)

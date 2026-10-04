@@ -1410,15 +1410,40 @@
   <string id="gwp_fs_priest_arrived" text="{PRIEST}在{VILLAGE}住了下来，照看永恒之火。" />
   <string id="gwp_fs_ritual_congregation_title" text="集会传教" />
   <string id="gwp_fs_ritual_damnation_title" text="烈火责罚" />
-  <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的村民围在广场上，挤在{HOST}身边。永恒之火的集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
-  <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚，烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
+  <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的女人们挤在广场中央、{HOST}身边，一个接一个向永恒之火立誓。男人们被赶到人群外圈，跪着听她们宣读火的戒律。集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
+  <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：被拖上去的，是不肯低头的人。女人们围着火唱，男人们低着头往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
   <string id="gwp_fs_village_option" text="永恒之火：狂信者{ZEALOTS}人（户数的{SHARE}%）" />
-  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}人向永恒之火立了誓（{SHARE}%；最多{CAP}人）。村里的民兵就是这些狂信者：他们抵抗劫掠，死了的不会自己补上，除非信仰再得新人。" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}个女人向永恒之火立了誓（{SHARE}%；最多{CAP}人）。火只从母亲传给女儿；村里的男人侍奉它，但不许碰它。村里的民兵就是这些狂信者：她们抵抗劫掠，死了的不会自己补上，除非信仰再得新人。" />
   <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍可以在祭司那里招募狂信者。" />
   <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
   <string id="gwp_fs_village_info_title" text="永恒之火" />
   <string id="gwp_fs_village_info_ok" text="关闭" />
   <string id="gwp_fs_ritual_leave" text="离开……" />
   <string id="gwp_fs_militia_change" text="永恒之火：民兵就是村里的狂信者" />
+  <string id="gwp_fs_priest_name_01" text="炽华" />
+  <string id="gwp_fs_priest_name_02" text="焰姝" />
+  <string id="gwp_fs_priest_name_03" text="灼音" />
+  <string id="gwp_fs_priest_name_04" text="焚心" />
+  <string id="gwp_fs_priest_name_05" text="烬言" />
+  <string id="gwp_fs_priest_name_06" text="燎歌" />
+  <string id="gwp_fs_priest_name_07" text="炎蘅" />
+  <string id="gwp_fs_priest_name_08" text="煌月" />
+  <string id="gwp_fs_priest_name_09" text="熹微" />
+  <string id="gwp_fs_priest_name_10" text="烛照" />
+  <string id="gwp_fs_priest_name_11" text="焰屏" />
+  <string id="gwp_fs_priest_name_12" text="炳曦" />
+  <string id="gwp_fs_priest_name_13" text="灿霞" />
+  <string id="gwp_fs_priest_name_14" text="焱英" />
+  <string id="gwp_fs_priest_name_15" text="燃犀" />
+  <string id="gwp_fs_priest_name_16" text="烨然" />
+  <string id="gwp_fs_priest_name_17" text="烬白" />
+  <string id="gwp_fs_priest_name_18" text="灰萤" />
+  <string id="gwp_fs_priest_name_19" text="赤绛" />
+  <string id="gwp_fs_priest_name_20" text="绛烛" />
+  <string id="gwp_fs_priest_name_21" text="炙霜" />
+  <string id="gwp_fs_priest_name_22" text="炬清" />
+  <string id="gwp_fs_priest_name_23" text="炬宁" />
+  <string id="gwp_fs_priest_name_24" text="薪传" />
+  <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。她传的教义说：火只从母亲传给女儿，只有女人能照看它；男人只能喂它——用他们的力气，用他们的顺从；不肯跪下的，就用他们自己。在她治下，村里的女人向火立誓、拿起长矛；男人给火堆挑柴，眼睛不许抬起来。" />
 </strings>
 </base>

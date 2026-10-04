@@ -50,9 +50,9 @@ namespace GreyWardenPolicePurity
                 : GwpText.Create("{=gwp_fs_ritual_congregation_title}Congregation");
             int hours = Math.Max(1, (int)Math.Ceiling(remaining));
             MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", damnation
-                ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire, and the smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
+                ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those dragged onto it are the ones who would not bow. The women sing around the flames while the men, heads down, feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
                     "VILLAGE", village!.Name, "HOST", host, "HOURS", hours)
-                : GwpText.Get("{=gwp_fs_ritual_congregation_text}The villagers of {VILLAGE} crowd the square around {HOST}. A Congregation of the Eternal Fire is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
+                : GwpText.Get("{=gwp_fs_ritual_congregation_text}The women of {VILLAGE} crowd the square around {HOST}, swearing themselves to the Eternal Fire one after another. The men have been pushed to the edge of the crowd, where they kneel and listen to the laws of the flame read out over them. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
                     "VILLAGE", village!.Name, "HOST", host, "HOURS", hours));
             PlaySound(damnation ? DamnationSound : CongregationSound);
         }
@@ -89,7 +89,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             string body = GwpText.Get(
-                "{=gwp_fs_village_info}{ZEALOTS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire ({SHARE}%; at most {CAP} can). The village militia are its zealots: they fight raiders, and the dead are not replaced unless the faith wins new believers.",
+                "{=gwp_fs_village_info}{ZEALOTS} women of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire ({SHARE}%; at most {CAP} can). The flame passes only from mother to daughter; the men of the village serve it and do not touch it. The village militia are these zealots: they fight raiders, and the dead are not replaced unless the faith wins new believers.",
                 "ZEALOTS", zealots, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name,
                 "SHARE", HearthShare(village, zealots), "CAP", cap);
             body += "\n\n" + (priest != null
