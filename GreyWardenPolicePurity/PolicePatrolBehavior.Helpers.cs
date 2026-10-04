@@ -41,7 +41,7 @@ namespace GreyWardenPolicePurity
             {
                 // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
                 try { MakePeaceAction.Apply(policeClan, playerFaction); }
-                catch { GwpCommon.TrySetNeutral(policeClan, playerFaction); }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); GwpCommon.TrySetNeutral(policeClan, playerFaction); }
             }
         }
 
@@ -59,7 +59,7 @@ namespace GreyWardenPolicePurity
             {
                 // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
                 try { MakePeaceAction.Apply(policeClan, playerFaction); }
-                catch { GwpCommon.TrySetNeutral(policeClan, playerFaction); }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); GwpCommon.TrySetNeutral(policeClan, playerFaction); }
             }
 
             foreach (var victim in PlayerBehaviorPool.VictimFactions)
@@ -313,8 +313,9 @@ namespace GreyWardenPolicePurity
                     new[] { patrolBribe });
                 return true;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }

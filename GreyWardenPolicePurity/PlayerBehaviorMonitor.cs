@@ -468,7 +468,7 @@ namespace GreyWardenPolicePurity
                 MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT", new TextObject(defendText));
                 return true;
             }
-            catch { return false; }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return false; }
         }
 
         /// <summary>
@@ -547,7 +547,7 @@ namespace GreyWardenPolicePurity
                 MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT", new TextObject(attackText));
                 return true;
             }
-            catch { return false; }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return false; }
         }
 
         /// <summary>

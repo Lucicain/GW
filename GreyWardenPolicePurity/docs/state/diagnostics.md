@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则
 > 最后验收：未建立检查点
-> 已复核至：2026-10-02 工作树（退休主队 NPC 旧案与送信队诊断）
+> 已复核至：2026-10-05 工作树（catch 留痕或补注释，行为未变，见 `code-health.md`）；2026-10-02 工作树（退休主队 NPC 旧案与送信队诊断）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 

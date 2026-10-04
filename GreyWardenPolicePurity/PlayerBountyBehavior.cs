@@ -473,10 +473,10 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
                     Colors.Cyan));
             }
-            catch (Exception ex)
+            catch (Exception gwpQuietFailure)
             {
-                // 生成招募使者失败（内部错误，静默忽略）
-                _ = ex;
+                // 生成失败时下一小时的资格检查会再派一支。
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 
@@ -917,7 +917,7 @@ namespace GreyWardenPolicePurity
                 else
                     _activeQuest.MarkReadyForTurnIn();
             }
-            catch { _activeQuest = null!; }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); _activeQuest = null!; }
         }
 
         #endregion

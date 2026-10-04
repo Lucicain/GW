@@ -2,6 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
+> 已复核至：2026-10-05 catch 留痕或补注释（行为未变，见 `code-health.md`）
 > 覆盖源码：`GwpCommon.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpLegacySave.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
 > 待实测：无
 

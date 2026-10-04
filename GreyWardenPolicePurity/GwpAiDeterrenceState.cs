@@ -170,9 +170,10 @@ namespace GreyWardenPolicePurity
                 if (crime?.HasOpenCase == true)
                     CrimePool.CloseCaseSettledInField(crime);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
                 // 清账失败只影响罚金数额，不能连累抓捕本身的结算。
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 

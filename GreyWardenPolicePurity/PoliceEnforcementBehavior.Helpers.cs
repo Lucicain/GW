@@ -272,8 +272,9 @@ namespace GreyWardenPolicePurity
                 {
                     policeParty.MapEvent.FinalizeEvent();
                 }
-                catch
+                catch (Exception gwpQuietFailure)
                 {
+                    GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                     _ignoredInvalidShelteredBattlePartyIds.Remove(policeParty.StringId);
                 }
             }
@@ -395,8 +396,9 @@ namespace GreyWardenPolicePurity
 
                 return defender.CurrentSettlement == null;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }

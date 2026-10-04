@@ -469,7 +469,7 @@ namespace GreyWardenPolicePurity
                 return NavigationHelper.IsPositionValidForNavigationType(
                     target.Position, courier.NavigationCapability);
             }
-            catch { return !target.IsCurrentlyAtSea; }
+            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return !target.IsCurrentlyAtSea; }
         }
 
         /// <summary>

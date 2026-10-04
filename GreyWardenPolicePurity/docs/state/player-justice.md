@@ -2,6 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
+> 已复核至：2026-10-05 catch 留痕或补注释（行为未变，见 `code-health.md`）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
 

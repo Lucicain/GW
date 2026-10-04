@@ -195,6 +195,8 @@ namespace GreyWardenPolicePurity
                 }
                 catch (ArgumentNullException)
                 {
+                    // Same as the offender lookup above: Hero's global collection is not
+                    // built yet during SyncData, and resolution retries lazily.
                     return null;
                 }
 
@@ -1100,7 +1102,7 @@ namespace GreyWardenPolicePurity
 
     /// <summary>
     /// 玩家行为池 - 记录玩家的犯罪和行善行为
-    /// 声望：正数=好人，0=中立，负数=坏人（≤-5触发警察追捕，-1~-4触发纠察队）
+    /// 声望：正数=好人，0=中立，负数=坏人（≤-11 通缉，由正式灰袍承办；-1~-10 派纠察队）
     /// </summary>
     public static class PlayerBehaviorPool
     {

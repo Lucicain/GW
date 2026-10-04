@@ -798,6 +798,7 @@ namespace GreyWardenPolicePurity
             }
             catch (ArgumentNullException)
             {
+                // Hero.FindFirst throws until Hero's global collection exists (during load).
                 return null;
             }
         }

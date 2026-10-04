@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-144 个源文件、49,332 行、281 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
+144 个源文件、49,353 行、281 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -439,8 +439,8 @@
 ### 战场：双刀/近战（11 个文件）
 
 - `GwpShieldBashGuardPatch.cs` — 1212 行 · `GwpPassiveHeldShieldCollision` : MissionBehavior，另含 5 个类型
-- `GwpDualBladeAiBehavior.cs` — 767 行 · `GwpDualBladeAgentState` : MissionBehavior，另含 5 个类型
-- `GwpDualBladeActionSetPatch.cs` — 367 行 · `GwpFaultTrace`，另含 5 个类型
+- `GwpDualBladeAiBehavior.cs` — 769 行 · `GwpDualBladeAgentState` : MissionBehavior，另含 5 个类型
+- `GwpDualBladeActionSetPatch.cs` — 369 行 · `GwpFaultTrace`，另含 5 个类型
 - `GwpAlternativeAttackControlBehavior.cs` — 358 行 · `GwpAlternativeAttackControlBehavior` : MissionBehavior
 - `GwpKickInputComponent.cs` — 216 行 · `GwpKickInputComponent` : AgentComponent
 - `GwpAlternativeAttackControl.cs` — 177 行 · `GwpAlternativeAttackControl`
@@ -452,29 +452,29 @@
 
 ### 诊断（4 个文件）
 
-- `GwpAiDiagnostics.cs` — 663 行 · `GwpAiDiagnostics`，另含 1 个类型
+- `GwpAiDiagnostics.cs` — 664 行 · `GwpAiDiagnostics`，另含 1 个类型
 - `GwpRuntimeFaultWatch.cs` — 107 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 38 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 27 行 · `GwpDispatchBarterFaultDiagnostics`
 
 ### 执法：案件与巡逻（29 个文件）
 
-- `PoliceEnforcementBehavior.Assistance.cs` — 2780 行 · `PoliceEnforcementBehavior`，另含 1 个类型
+- `PoliceEnforcementBehavior.Assistance.cs` — 2781 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceEnforcementBehavior.cs` — 1545 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1466 行 · `PoliceEnforcementBehavior`
-- `GwpFieldArrestBehavior.cs` — 1414 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `PolicePatrolBehavior.cs` — 1071 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1469 行 · `PoliceEnforcementBehavior`
+- `GwpFieldArrestBehavior.cs` — 1415 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `PolicePatrolBehavior.cs` — 1069 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 910 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
-- `GwpAiDeterrenceState.cs` — 733 行 · `GwpAiDeterrenceState`
+- `GwpAiDeterrenceState.cs` — 734 行 · `GwpAiDeterrenceState`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 641 行 · `PoliceEnforcementBehavior`
-- `PoliceEnforcementBehavior.Helpers.cs` — 595 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Helpers.cs` — 597 行 · `PoliceEnforcementBehavior`
 - `PoliceCrimeMonitorEnhanced.cs` — 475 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
 - `PoliceAIDeterrenceBehavior.cs` — 468 行 · `PoliceAIDeterrenceBehavior` : CampaignBehaviorBase
 - `PoliceAntiWarDeclaration.cs` — 412 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase
-- `PolicePatrolBehavior.Helpers.cs` — 398 行 · `PolicePatrolBehavior`
+- `PolicePatrolBehavior.Helpers.cs` — 399 行 · `PolicePatrolBehavior`
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
-- `PoliceEnforcementBehavior.AtonementQuest.cs` — 299 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
+- `PoliceEnforcementBehavior.AtonementQuest.cs` — 301 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
 - `PolicePrisonerImmunityBehavior.cs` — 141 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
 - `PoliceShipModels.cs` — 103 行 · `PoliceShipModelSupport` : CampaignShipDamageModel，另含 2 个类型
 - `PolicePartyTroopUpgradeModel.cs` — 81 行 · `PolicePartyTroopUpgradeModel` : DefaultPartyTroopUpgradeModel
@@ -512,7 +512,7 @@
 
 - `GreyWardenFieldSparringMissionController.cs` — 2579 行 · `GreyWardenFieldSparringMissionController` : MissionLogic
 - `GreyWardenSparringBehavior.cs` — 955 行 · `GreyWardenSparringBehavior` : CampaignBehaviorBase
-- `GreyWardenTrainingBehavior.cs` — 809 行 · `GreyWardenTrainingBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GreyWardenTrainingBehavior.cs` — 810 行 · `GreyWardenTrainingBehavior` : CampaignBehaviorBase，另含 2 个类型
 
 ### 家族与村庄（5 个文件）
 
@@ -524,7 +524,7 @@
 
 ### 战斗数值模型（1 个文件）
 
-- `GwpAgentApplyDamageModel.cs` — 861 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
+- `GwpAgentApplyDamageModel.cs` — 862 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
 
 ### 大地图欲望与 AI（3 个文件）
 
@@ -538,7 +538,7 @@
 
 ### 数据与共用（4 个文件）
 
-- `GwpData.cs` — 1193 行 · `CrimeRecord`，另含 6 个类型
+- `GwpData.cs` — 1195 行 · `CrimeRecord`，另含 6 个类型
 - `GwpTuning.cs` — 363 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 296 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
@@ -580,9 +580,9 @@
 - `GwpDualWieldingPatch.cs` — 100 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GreyWardenAdoptionLogEntry.cs` — 98 行 · `GreyWardenAdoptionLogEntry` : LogEntry
 - `GwpSingleQueryLinkPatch.cs` — 96 行 · `GwpLinkedInquiryState`，另含 2 个类型
-- `GwpPartyScreenTroopTalkPatch.cs` — 94 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
+- `GwpPartyScreenTroopTalkPatch.cs` — 95 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
-- `GwpAssistanceArmyTooltipPatch.cs` — 74 行 · `GwpAssistanceArmyTooltipPatch`
+- `GwpAssistanceArmyTooltipPatch.cs` — 75 行 · `GwpAssistanceArmyTooltipPatch`
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
 - `GwpText.cs` — 69 行 · `GwpText`
 - `GwpSaveableTypeDefiner.cs` — 65 行 · `GwpSaveableTypeDefiner` : SaveableTypeDefiner
@@ -604,8 +604,8 @@
 - `GwpCaseSettlementRules.cs` — 31 行 · `GwpCaseSettlementRules`
 - `GwpPartySizeLimitModel.cs` — 31 行 · `GwpPartySizeLimitModel` : DefaultPartySizeLimitModel
 - `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
+- `GwpLegacySave.cs` — 28 行 · `GwpLegacySave`
 - `GwpTextKeys.cs` — 28 行 · `GwpTextKeys`
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
-- `GwpLegacySave.cs` — 27 行 · `GwpLegacySave`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`
 - `GwpNegotiationChancePatch.cs` — 18 行 · `GwpNegotiationChancePatch`

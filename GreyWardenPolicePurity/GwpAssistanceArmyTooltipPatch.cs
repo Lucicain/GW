@@ -64,8 +64,9 @@ namespace GreyWardenPolicePurity
                 return string.Equals(army.LeaderParty.ActualClan?.StringId,
                     GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }

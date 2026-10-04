@@ -921,8 +921,9 @@ namespace GreyWardenPolicePurity
                     return mapEvent.CanPartyJoinBattle(
                         candidate.Party, targetSide);
                 }
-                catch
+                catch (Exception gwpQuietFailure)
                 {
+                    GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                     return false;
                 }
             }

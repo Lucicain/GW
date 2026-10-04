@@ -43,7 +43,7 @@ namespace GreyWardenPolicePurity
                     .Select(assembly =>
                     {
                         try { return assembly.GetType(ShipTradeBehaviorTypeName, false); }
-                        catch { return null; }
+                        catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return null; }
                     })
                     .FirstOrDefault(type => type != null);
 

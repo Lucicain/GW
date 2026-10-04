@@ -690,10 +690,9 @@ namespace GreyWardenPolicePurity
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception gwpQuietFailure)
             {
-                // InformationManager.DisplayMessage(new InformationMessage(
-                //     $"[GWP Error] 纠察队Tick异常：{ex.Message}", Colors.Red));
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 
@@ -781,10 +780,9 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_policepatrolbehavior_036}Picket has departed from {VAR_1} and is tracking you.", "VAR_1", _patrolOriginSettlement.Name),
                     Colors.Yellow));
             }
-            catch (Exception)
+            catch (Exception gwpQuietFailure)
             {
-                // InformationManager.DisplayMessage(new InformationMessage(
-                //     $"[GWP Error] 生成纠察队失败：{ex.Message}", Colors.Red));
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
             }
         }
 

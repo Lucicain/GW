@@ -17,6 +17,7 @@ namespace GreyWardenPolicePurity
             try { store.SyncData(key, ref value); return value != 0; }
             catch (InvalidCastException)
             {
+                // The key was written as a bool; this is the format probe, not a failure.
                 bool flag = false;
                 store.SyncData(key, ref flag);
                 return flag;

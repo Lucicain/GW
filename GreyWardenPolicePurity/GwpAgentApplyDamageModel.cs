@@ -622,8 +622,9 @@ namespace GreyWardenPolicePurity
                 last.Value = now;
                 return carried;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return nativeMomentum;
             }
         }

@@ -71,6 +71,7 @@ namespace GreyWardenPolicePurity
                 }
                 catch
                 {
+                    // Diagnostics must never affect the game path.
                     _sessionStarted = false;
                 }
             }

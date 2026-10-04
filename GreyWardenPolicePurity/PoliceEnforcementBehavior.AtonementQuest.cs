@@ -142,8 +142,9 @@ namespace GreyWardenPolicePurity
                         GwpText.Create("{=gwp_policeenforcementbehavior_atonementquest_008}First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden.", "VAR_1", targetSettlement));
                 }
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 _atonementQuest = null!;
             }
         }
@@ -289,8 +290,9 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_017}Atonement delivered, the Grey Wardens Mediation: Peace has been restored between you and {VAR_1}.", "VAR_1", targetFaction.Name),
                     Colors.Green));
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 GwpCommon.TrySetNeutral(playerFaction, targetFaction);
             }
         }

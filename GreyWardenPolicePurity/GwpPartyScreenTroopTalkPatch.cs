@@ -27,8 +27,9 @@ namespace GreyWardenPolicePurity
                        troop != null && !troop.IsHero &&
                        GwpWardenDispatchDialogue.CanTalkToTroop(troop);
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }

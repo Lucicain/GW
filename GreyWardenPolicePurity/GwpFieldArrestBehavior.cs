@@ -927,8 +927,9 @@ namespace GreyWardenPolicePurity
                         _voice.Line("success_" + GwpFieldArrestLines.Read(_offender)));
                 }
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 MBTextManager.SetTextVariable(
                     "PERSUASION_REACTION",
                     GwpText.Create("{=gwp_fieldarrest_reaction_fallback}..."));

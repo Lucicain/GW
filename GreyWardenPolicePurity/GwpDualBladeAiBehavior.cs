@@ -131,6 +131,7 @@ namespace GreyWardenPolicePurity
             }
             catch
             {
+                // Agent equipment and state can throw on half-built or departing agents; that is routine in a healthy mission, so this stays silent.
                 return false;
             }
         }
@@ -601,6 +602,7 @@ namespace GreyWardenPolicePurity
             }
             catch
             {
+                // Agent equipment and state can throw on half-built or departing agents; that is routine in a healthy mission, so this stays silent.
                 return false;
             }
         }

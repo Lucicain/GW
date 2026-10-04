@@ -930,7 +930,7 @@ namespace GreyWardenPolicePurity
                                 "{=gwp_bounty_quest_reward}Within 45 days, collect the assessed fine of {VAR_1} denars or capture the offender. Deliver the money or prisoner to a Grey Warden lord. Expenses depend on the actual delivery.",
                                 "VAR_1", _assignedCaseFine)));
                 }
-                catch { _activeQuest = null!; }
+                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); _activeQuest = null!; }
             }
 
             InformationManager.DisplayMessage(new InformationMessage(

@@ -378,8 +378,9 @@ namespace GreyWardenPolicePurity
                 DestroyPartyAction.Apply(null, patrol);
                 return true;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }
@@ -679,8 +680,9 @@ namespace GreyWardenPolicePurity
                     (declaration?.EnemyLocalStrength.ToString("0.00") ??
                      "n/a"));
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 _delayPatrolStates.Remove(patrolId);
                 if (interceptor?.IsActive == true)
                 {
@@ -841,8 +843,9 @@ namespace GreyWardenPolicePurity
 
                 return true;
             }
-            catch
+            catch (Exception gwpQuietFailure)
             {
+                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return false;
             }
         }
