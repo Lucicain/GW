@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
             string.Join("\n", Items.Select(e => string.Join("\t", e.Id, e.Modifier, e.Amount.ToString(CultureInfo.InvariantCulture), e.Price.ToString(CultureInfo.InvariantCulture))))));
         internal static GwpCaseReceipt? Decode(string? state)
         {
-            if (string.IsNullOrEmpty(state)) return null; // Unknown legacy receipt, not an empty receipt.
+            if (string.IsNullOrEmpty(state)) return null; // No receipt was recorded, which differs from an empty one.
             string[] parts = state!.Split(':');
             if (parts.Length != 2) throw new FormatException("Invalid case receipt");
             var receipt = new GwpCaseReceipt { Gold = int.Parse(parts[0], CultureInfo.InvariantCulture) };

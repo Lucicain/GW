@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -38,8 +37,6 @@ namespace GreyWardenPolicePurity
         private static GreyWardenVillageAdoptionBehavior? _instance;
         private static readonly HashSet<string> _activeReliefPartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private static readonly FieldInfo? CampaignMapNoticesField =
-            typeof(CampaignInformationManager).GetField("_mapNotices", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly List<PendingVillageRelief> _pendingReliefs = new List<PendingVillageRelief>();
         private readonly List<ActiveVillageRelief> _activeReliefs = new List<ActiveVillageRelief>();
@@ -187,7 +184,6 @@ namespace GreyWardenPolicePurity
                 _adoptionOrigins[heroId] = villageName;
             }
 
-            SanitizeLegacyAdoptionMapNotices();
             RebuildActiveReliefPartyIndex();
         }
 
@@ -769,33 +765,6 @@ namespace GreyWardenPolicePurity
             }
 
             RebuildActiveReliefPartyIndex();
-        }
-
-        // Older versions emitted ChildBornMapNotification for adopted girls.
-        // Those notices crash vanilla's newborn notification VM after a reload
-        // because adopted girls have no biological mother reference.
-        private static void SanitizeLegacyAdoptionMapNotices()
-        {
-            CampaignInformationManager? informationManager = Campaign.Current?.CampaignInformationManager;
-            if (informationManager == null || CampaignMapNoticesField == null)
-            {
-                return;
-            }
-
-            if (CampaignMapNoticesField.GetValue(informationManager) is not List<InformationData> mapNotices ||
-                mapNotices.Count == 0)
-            {
-                return;
-            }
-
-            for (int i = mapNotices.Count - 1; i >= 0; i--)
-            {
-                if (mapNotices[i] is ChildBornMapNotification childNotice &&
-                    (childNotice.NewbornHero == null || childNotice.NewbornHero.Mother == null))
-                {
-                    mapNotices.RemoveAt(i);
-                }
-            }
         }
 
         private static ActiveVillageRelief ChooseReliefToKeep(IEnumerable<ActiveVillageRelief> reliefs)

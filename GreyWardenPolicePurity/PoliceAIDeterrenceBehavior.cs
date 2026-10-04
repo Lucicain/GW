@@ -245,7 +245,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             // 一次惩戒只记一次。投降被俘那条路上，野外结算和原版俘虏事件会先后打进来，
-            // 说的却是同一件事。
+            // 说的却是同一件事。去重表不存档：两条事件在同一小时内先后到达，中间不会存档。
             double now = CampaignTime.Now.ToHours;
             if (_lastPlayerEnforcementHours.TryGetValue(offender.StringId, out double last) &&
                 now - last < SamePunishmentHours)

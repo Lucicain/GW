@@ -9,7 +9,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>Field receipts, honest hand-ins, and delayed audits of concealed money.
     /// Genuine inability to pay leaves the offender's debt, not a hunter penalty.
-    /// Legacy save keys are retained so in-flight receipts and audits survive updates.</summary>
+    /// Pending receipts and audits are saved, so a save/load inside one version picks them up again.</summary>
     public sealed class GwpFieldReportLedger : CampaignBehaviorBase
     {
         private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
@@ -37,11 +37,9 @@ namespace GreyWardenPolicePurity
 
         private readonly List<PendingReport> _pending = new List<PendingReport>();
 
-        /// <summary>Outstanding audit gaps keyed by offender; legacy save identifiers are retained.</summary>
+        /// <summary>Outstanding audit gaps keyed by offender (saved under the gwp_report_poverty_* keys).</summary>
         private readonly Dictionary<string, int> _pendingAuditGaps =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _legacyTruthfulClaims =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         internal static GwpFieldReportLedger? Instance =>
             Campaign.Current?.GetCampaignBehavior<GwpFieldReportLedger>();
@@ -86,7 +84,6 @@ namespace GreyWardenPolicePurity
             List<int>? broke = null;
             List<string>? povertyIds = null;
             List<int>? povertyGaps = null;
-            List<string>? povertyTrue = null;
             List<string>? excessIds = null;
             List<int>? excessAmounts = null;
             List<double>? excessDue = null;
@@ -103,7 +100,6 @@ namespace GreyWardenPolicePurity
                 povertyIds = _pendingAuditGaps.Keys.ToList();
                 povertyGaps = _pendingAuditGaps.Values.ToList();
                 auditHours = povertyIds.Select(id => _auditDueHours.TryGetValue(id, out double due) ? due : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays).ToList();
-                povertyTrue = _legacyTruthfulClaims.ToList();
                 excessIds = _excessEnforcement.Keys.ToList();
                 excessAmounts = excessIds.Select(id => _excessEnforcement[id]).ToList();
                 excessDue = excessIds.Select(id => _excessDueHours.TryGetValue(id, out double due)
@@ -121,7 +117,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_report_broke", ref broke);
             dataStore.SyncData("gwp_report_poverty_ids", ref povertyIds);
             dataStore.SyncData("gwp_report_poverty_gaps", ref povertyGaps);
-            dataStore.SyncData("gwp_report_poverty_true", ref povertyTrue);
             dataStore.SyncData("gwp_report_excess_ids", ref excessIds);
             dataStore.SyncData("gwp_report_excess_amounts", ref excessAmounts);
             dataStore.SyncData("gwp_report_excess_due", ref excessDue);
@@ -174,14 +169,6 @@ namespace GreyWardenPolicePurity
                             ? excessDue[i]
                             : CampaignTime.Now.ToHours + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
                     }
-
-            _legacyTruthfulClaims.Clear();
-            if (povertyTrue != null)
-                foreach (string id in povertyTrue.Where(id => !string.IsNullOrWhiteSpace(id)))
-                {
-                    _pendingAuditGaps.Remove(id);
-                    _auditDueHours.Remove(id);
-                }
         }
 
         #region 记账
@@ -308,7 +295,6 @@ namespace GreyWardenPolicePurity
         {
             if (gap <= 0) return;
             _pendingAuditGaps[id] = (_pendingAuditGaps.TryGetValue(id, out int old) ? old : 0) + gap;
-            _legacyTruthfulClaims.Remove(id);
             if (!_auditDueHours.ContainsKey(id))
                 _auditDueHours[id] = (_betrayalHours.TryGetValue(id, out double occurred) ? occurred : CampaignTime.Now.ToHours) + 24 * GwpTuning.FieldArrest.ReportAuditDelayDays;
             GwpAiDiagnostics.WriteFieldArrest("REPORT_AUDIT_QUEUED", "offender=" + id + "; gap=" + gap + "; due=" + _auditDueHours[id]);
@@ -376,7 +362,6 @@ namespace GreyWardenPolicePurity
             if (!_pendingAuditGaps.TryGetValue(id, out int gap)) return;
             _pendingAuditGaps.Remove(id);
             _auditDueHours.Remove(id);
-            _legacyTruthfulClaims.Remove(id);
             float chance = CurrentAuditChance();
             bool discovered = roll < chance;
             int penalty = discovered ? GwpCaseSettlementRules.ShortfallPenalty(gap, 0) : 0;

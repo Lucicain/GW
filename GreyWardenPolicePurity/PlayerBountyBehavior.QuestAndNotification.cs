@@ -39,13 +39,12 @@ namespace GreyWardenPolicePurity
             private bool _readyForTurnInLogWritten;
 
             /// <summary>
-            /// 正常构造器：接受悬赏任务时调用。
-            /// questGiver 须为警察领主；rewardGold 用于任务日志显示。
+            /// 正常构造器：接受悬赏任务时调用。questGiver 须为警察领主。
+            /// 任务不带固定报酬：办案费按罚金封顶，交差时才算（见 player-commission.md）。
             /// </summary>
-            public BountyHunterQuest(Hero questGiver, int rewardGold, string targetName)
+            public BountyHunterQuest(Hero questGiver, string targetName)
                 : this(
                     questGiver,
-                    rewardGold,
                     targetName,
                     CampaignTime.DaysFromNow(GwpTuning.Bounty.DeadlineDays))
             {
@@ -53,14 +52,13 @@ namespace GreyWardenPolicePurity
 
             internal BountyHunterQuest(
                 Hero questGiver,
-                int rewardGold,
                 string targetName,
                 CampaignTime dueTime)
                 : base(
                     GwpIds.BountyQuestPrefix + MBRandom.RandomInt(1000, 9999),
                     questGiver,
                     dueTime,
-                    rewardGold)
+                    0)
             {
                 _targetName = targetName ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_001}Unknown target");
                 _readyForTurnInLogWritten = false;

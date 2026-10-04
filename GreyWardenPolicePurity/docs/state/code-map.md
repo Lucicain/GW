@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-144 个源文件、47,779 行、281 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
+143 个源文件、47,530 行、279 个公开类型、59 个 Harmony 补丁点（分布在 59 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -305,7 +305,6 @@
 - `GwpLeaderlessSupportArmyInfluencePatch` → GwpAssistanceArmyLifecyclePatch.cs ←
 - `GwpLeaderlessSupportConversationItemPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
 - `GwpLeaderlessSupportConversationMenuPatch` → GwpAssistanceArmyLifecyclePatch.cs ←
-- `GwpLegacySave` → GwpLegacySave.cs
 - `GwpLinkedInquiryState` → GwpSingleQueryLinkPatch.cs ←
 - `GwpLocationDutyBehaviorTextPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpLocationDutyRefreshPatch` → GwpPartyDutyMovementPatch.cs ←
@@ -370,7 +369,6 @@
 - `PlayerBehaviorPool` → GwpData.cs ←
 - `PlayerBountyBehavior` → PlayerBountyBehavior.CaseSettlement.cs , PlayerBountyBehavior.cs , PlayerBountyBehavior.DialogueAndNotification.cs , PlayerBountyBehavior.Encyclopedia.cs , PlayerBountyBehavior.QuestAndNotification.cs , PlayerBountyBehavior.Support.cs
 - `PlayerBountyFlowState` → GwpFlowStates.cs ←
-- `PlayerRecord` → GwpData.cs ←
 - `PlayerRequests` → GwpTuning.cs ←
 - `PlayerRequestTaskSnapshot` → GreyWardenPlayerRequestBehavior.cs ←
 - `PlayerState` → GwpRuntimeState.cs ←
@@ -414,7 +412,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 148 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 147 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -459,8 +457,8 @@
 
 ### 执法：案件与巡逻（29 个文件）
 
-- `PoliceEnforcementBehavior.Assistance.cs` — 2457 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1508 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.Assistance.cs` — 2458 行 · `PoliceEnforcementBehavior`，另含 1 个类型
+- `PoliceEnforcementBehavior.cs` — 1543 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1386 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1376 行 · `PoliceEnforcementBehavior`
 - `PolicePatrolBehavior.cs` — 1022 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
@@ -470,7 +468,7 @@
 - `PoliceEnforcementBehavior.Helpers.cs` — 554 行 · `PoliceEnforcementBehavior`
 - `PoliceAIDeterrenceBehavior.cs` — 468 行 · `PoliceAIDeterrenceBehavior` : CampaignBehaviorBase
 - `PoliceCrimeMonitorEnhanced.cs` — 459 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
-- `PoliceAntiWarDeclaration.cs` — 409 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase
+- `PoliceAntiWarDeclaration.cs` — 410 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase
 - `PolicePatrolBehavior.Helpers.cs` — 371 行 · `PolicePatrolBehavior`
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
@@ -492,10 +490,10 @@
 ### 执法：玩家悬赏（7 个文件）
 
 - `GwpCaseArchiveScreen.cs` — 956 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
-- `PlayerBountyBehavior.cs` — 948 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
-- `PlayerBountyBehavior.DialogueAndNotification.cs` — 903 行 · `PlayerBountyBehavior`
-- `PlayerBountyBehavior.CaseSettlement.cs` — 761 行 · `PlayerBountyBehavior`
-- `PlayerBountyBehavior.QuestAndNotification.cs` — 189 行 · `PlayerBountyBehavior` : QuestBase，另含 3 个类型
+- `PlayerBountyBehavior.cs` — 933 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
+- `PlayerBountyBehavior.DialogueAndNotification.cs` — 882 行 · `PlayerBountyBehavior`
+- `PlayerBountyBehavior.CaseSettlement.cs` — 681 行 · `PlayerBountyBehavior`
+- `PlayerBountyBehavior.QuestAndNotification.cs` — 187 行 · `PlayerBountyBehavior` : QuestBase，另含 3 个类型
 - `PlayerBountyBehavior.Support.cs` — 170 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.Encyclopedia.cs` — 49 行 · `PlayerBountyBehavior`
 
@@ -505,7 +503,7 @@
 - `GwpWardenDispatchBehavior.cs` — 904 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
 - `GwpWardenDispatchDialogue.cs` — 485 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 321 行 · `GreyWardenTroopRequestBehavior`
-- `GwpWardenDispatch.cs` — 108 行 · `GwpDispatchPurpose`，另含 2 个类型
+- `GwpWardenDispatch.cs` — 101 行 · `GwpDispatchPurpose`，另含 2 个类型
 - `GwpBribeBarterable.cs` — 62 行 · `GwpBribeBarterable` : Barterable
 
 ### 练兵与切磋（3 个文件）
@@ -516,7 +514,7 @@
 
 ### 家族与村庄（5 个文件）
 
-- `GreyWardenVillageAdoptionBehavior.cs` — 896 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GreyWardenVillageAdoptionBehavior.cs` — 865 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenFamilyBehavior.cs` — 615 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenVillageReconstructionBehavior.cs` — 519 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
@@ -528,7 +526,7 @@
 
 ### 大地图欲望与 AI（3 个文件）
 
-- `PlayerBehaviorMonitor.cs` — 915 行 · `PlayerBehaviorMonitor` : CampaignBehaviorBase
+- `PlayerBehaviorMonitor.cs` — 900 行 · `PlayerBehaviorMonitor` : CampaignBehaviorBase
 - `GreyWardenPartyDesireBehavior.cs` — 822 行 · `GreyWardenPartyDesireBehavior` : CampaignBehaviorBase
 - `GwpArmyExitDisorganizedPatch.cs` — 76 行 · `GwpArmyExitDisorganizedPatch`
 
@@ -538,7 +536,7 @@
 
 ### 数据与共用（4 个文件）
 
-- `GwpData.cs` — 1189 行 · `CrimeRecord`，另含 6 个类型
+- `GwpData.cs` — 1107 行 · `CrimeRecord`，另含 5 个类型
 - `GwpTuning.cs` — 328 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 271 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
@@ -547,12 +545,12 @@
 
 - `SubModule.cs` — 163 行 · `SubModule` : MBSubModuleBase
 
-### 其他（60 个文件）
+### 其他（59 个文件）
 
-- `GwpFireswornBehavior.cs` — 923 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GwpFireswornBehavior.cs` — 934 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
-- `GwpFieldReportLedger.cs` — 425 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
+- `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 390 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpPoliceWarReasonService.cs` — 362 行 · `GwpPoliceWarReasonService`
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
@@ -604,7 +602,6 @@
 - `GwpCaseSettlementRules.cs` — 31 行 · `GwpCaseSettlementRules`
 - `GwpPartySizeLimitModel.cs` — 31 行 · `GwpPartySizeLimitModel` : DefaultPartySizeLimitModel
 - `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
-- `GwpLegacySave.cs` — 29 行 · `GwpLegacySave`
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
 - `GwpTextKeys.cs` — 22 行 · `GwpTextKeys`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`

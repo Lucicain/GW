@@ -140,8 +140,8 @@ namespace GreyWardenPolicePurity
             public void ChangeReputation(int delta) => PlayerBehaviorPool.ChangeReputation(delta);
             public void AddCrime(string type, TaleWorlds.Library.Vec2 location, string detail, IFaction? victimFaction = null) =>
                 PlayerBehaviorPool.AddCrime(type, location, detail, victimFaction);
-            public void AddCrimeRecord(string type, TaleWorlds.Library.Vec2 location, string detail, IFaction? victimFaction = null) =>
-                PlayerBehaviorPool.AddCrimeRecord(type, location, detail, victimFaction);
+            public void TrackVictimFaction(IFaction? victimFaction) =>
+                PlayerBehaviorPool.TrackVictimFaction(victimFaction);
             public string GetReputationDisplay() => PlayerBehaviorPool.GetReputationDisplay();
             public void SetAtonementTaskActive(bool active) => PlayerBehaviorPool.SetAtonementTaskActive(active);
             public void AddVictimFactionOnLoad(IFaction faction) => PlayerBehaviorPool.AddVictimFactionOnLoad(faction);

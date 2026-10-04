@@ -16,19 +16,17 @@ internal static class Program
 
     private static void Main()
     {
-        foreach (object savedFlag in new object[] { true, false, 1, 0 })
+        var savedCourier = new GwpDispatchRecord
         {
-            var legacy = new MemoryStore(false, new Dictionary<string, object?> { ["flag"] = savedFlag });
-            bool expected = savedFlag is bool b ? b : (int)savedFlag != 0;
-            Equal(expected, GwpLegacySave.ReadFlag(legacy, "flag", true), "legacy bool-first supports " + savedFlag.GetType());
-            Equal(expected, GwpLegacySave.ReadFlag(legacy, "flag", false), "legacy int-first supports " + savedFlag.GetType());
-        }
-        Equal(false, GwpLegacySave.ReadFlag(new MemoryStore(false), "missing", true), "missing legacy support defaults false");
-        var oldDispatch = GwpDispatchRecord.Deserialize("courier|0|1|receiver|6000|0||100");
-        Equal(6000, oldDispatch!.CaseGoldFloor, "old courier preserves protected money");
-        Equal(0d, oldDispatch.NextTownBusinessHours, "old courier defaults supply retry");
-        oldDispatch.NextTownBusinessHours = 124;
-        Equal(124d, GwpDispatchRecord.Deserialize(oldDispatch.Serialize())!.NextTownBusinessHours, "supply cooldown survives save/load");
+            PartyId = "courier", ReceiverPartyId = "receiver", CaseGoldFloor = 6000, PrisonerHeroId = "",
+            DispatchedHours = 100, LastProgressHours = 101.5, NextTownBusinessHours = 124, CargoState = "cargo",
+            CaseHeroId = "offender", OrderTroopId = "gwrecruit", OrderCount = 12, OrderPrice = 960
+        };
+        GwpDispatchRecord reloaded = GwpDispatchRecord.Deserialize(savedCourier.Serialize())!;
+        Equal(6000, reloaded.CaseGoldFloor, "courier keeps protected money across save/load");
+        Equal(124d, reloaded.NextTownBusinessHours, "supply cooldown survives save/load");
+        Equal(12, reloaded.OrderCount, "troop order count survives save/load");
+        Equal("offender", reloaded.CaseHeroId, "case hero survives save/load");
         Hero.MainHero = new Hero("player", 8000);
         Hero offender = new Hero("offender", 600);
         Hero clerk = new Hero("clerk", 10000);
@@ -272,7 +270,6 @@ internal static class Program
         Equal(0, zero.Paid, "zero hand-in credits nothing");
         var cargoRecord = new GwpDispatchRecord { PartyId = "courier", CargoState = "aXRlbQkxCTEwMA==" };
         Equal(cargoRecord.CargoState, GwpDispatchRecord.Deserialize(cargoRecord.Serialize())!.CargoState, "cargo survives dispatch serialization");
-        Equal(string.Empty, GwpDispatchRecord.Deserialize("old|0|0|receiver|500|0||1")!.CargoState, "old dispatch saves have no cargo");
 
         var foodItem = new ItemObject { StringId = "cargo_grain", Value = 20, IsFood = true };
         var pricedHero = new Hero("pricing", 10);

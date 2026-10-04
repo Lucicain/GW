@@ -49,11 +49,7 @@ namespace GreyWardenPolicePurity
         private string _activeBountyTargetHeroId = null!;
         private int _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private bool _waitingForCollection = false;
-        private int _activeBountyReward = 0;
-        // 代收但尚未上缴的罚金，以及对应案子的罪责点（决定领主给多少办案报酬）。
-        private int _pendingFieldFine = 0;
-        // 案子本身该罚多少（与实收可能不同：付不起的人被押走）。报酬上限按它算。
-        private int _pendingFieldFineAssessed = 0;
+        // 对应案子的罪责点（决定领主给多少办案报酬）。
         private int _pendingFieldFineSeverity = 0;
         // 靠俘虏了结的案子：没有罚金进账，酬劳改由司法公库支付，上限用应缴罚金。
         private int _pendingPrisonerAssessed = 0;
@@ -134,7 +130,6 @@ namespace GreyWardenPolicePurity
             int severityPoints)
         {
             if (!IsCommissionTarget(offender)) return;
-            _fieldCaseContract = true;
             _assignedCaseFine = assessedFine;
             _assignedCaseStanding = severityPoints;
             _pendingFieldFineSeverity = Math.Max(_pendingFieldFineSeverity, severityPoints);
@@ -190,7 +185,6 @@ namespace GreyWardenPolicePurity
             if (offender == null || !IsCommissionTarget(offender)
                 || !offender.IsPrisoner
                 || offender.PartyBelongedToAsPrisoner != MobileParty.MainParty?.Party) return;
-            _fieldCaseContract = true;
             _pendingPrisonerHeroId = offender.StringId;
             _pendingPrisonerAssessed = Math.Max(0, assessedFine);
             _pendingFieldFineSeverity = Math.Max(0, standingPoints);
@@ -214,22 +208,18 @@ namespace GreyWardenPolicePurity
             ReleaseEscortAi();
             _escortPolicePartyId = null!;
             _waitingForCollection = false;
-            _activeBountyReward = 0;
             _activeBountyDeadlineHours = -1d;
             _activeBountyPlayerFactionId = null!;
             _playerFactionWasAtWarWhenBountyAccepted = false;
             _bountyTargetEncounterStarted = false;
             ClearActiveBountyTarget();
             _activeQuest = null!;
-            _fieldCaseContract = false;
             _assignedCaseFine = 0;
             _assignedCaseStanding = 0;
             _caseSubmitted = -1;
             _caseSubmittedPrisoner = false;
             _pendingPrisonerHeroId = string.Empty;
             _pendingPrisonerAssessed = 0;
-            _pendingFieldFine = 0;
-            _pendingFieldFineAssessed = 0;
             _pendingFieldFineSeverity = 0;
             _bountyPlayerCasualties = 0;
             ClearCaseOutcomeState();
@@ -293,11 +283,11 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            // Support is stored once, inside gwp_case_outcome_state. The old
-            // standalone bool is read only by the migration path.
+            double lastOfferHours = _lastOfferTime.ToHours;
+            dataStore.SyncData("gwp_bounty_last_offer_hours", ref lastOfferHours);
+            if (dataStore.IsLoading) _lastOfferTime = CampaignTime.Hours((float)lastOfferHours);
             dataStore.SyncData("gwp_case_submitted_value", ref _caseSubmitted);
             dataStore.SyncData("gwp_case_submitted_prisoner", ref _caseSubmittedPrisoner);
-            dataStore.SyncData("gwp_case_contract", ref _fieldCaseContract);
             dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
             dataStore.SyncData("gwp_case_assigned_standing", ref _assignedCaseStanding);
             dataStore.SyncData("gwp_case_prisoner_id", ref _pendingPrisonerHeroId);
@@ -321,10 +311,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_bounty_target_hero_id",   ref _activeBountyTargetHeroId);
             dataStore.SyncData("gwp_bounty_crime_category",   ref _activeBountyCrimeCategory);
             dataStore.SyncData("gwp_bounty_waiting",          ref waitingInt);
-            dataStore.SyncData("gwp_bounty_reward",           ref _activeBountyReward);
-            dataStore.SyncData("gwp_field_fine_pending",      ref _pendingFieldFine);
             dataStore.SyncData("gwp_field_fine_severity",     ref _pendingFieldFineSeverity);
-            dataStore.SyncData("gwp_field_fine_assessed",     ref _pendingFieldFineAssessed);
             dataStore.SyncData("gwp_field_prisoner_assessed", ref _pendingPrisonerAssessed);
             dataStore.SyncData("gwp_bounty_player_casualties", ref _bountyPlayerCasualties);
             dataStore.SyncData("gwp_bounty_escort_party_id",  ref _escortPolicePartyId); // 护送警察部队 ID
@@ -855,8 +842,7 @@ namespace GreyWardenPolicePurity
         {
             if (!HasBountyTask) return;
 
-            if ((!_fieldCaseContract && _activeBountyReward <= 0) ||
-                (IsTrackingBountyTarget && _activeBountyDeadlineHours <= 0d))
+            if (IsTrackingBountyTarget && _activeBountyDeadlineHours <= 0d)
             {
                 ClearBountyTaskState();
                 return;
@@ -883,7 +869,6 @@ namespace GreyWardenPolicePurity
                     : CampaignTime.Never;
                 _activeQuest = new BountyHunterQuest(
                     policeLeader,
-                    _activeBountyReward,
                     _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target"),
                     dueTime);
                 _activeQuest.StartQuest();

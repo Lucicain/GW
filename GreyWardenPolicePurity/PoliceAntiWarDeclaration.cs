@@ -34,6 +34,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 战后界面里已应下调停、等这一场战斗收尾再讲和。不进存档：战斗进行中不能存档。
         /// </summary>
+        // 只在玩家自己的战斗里存在；遭遇进行中不能存档，所以不存。
         private MapEvent? _mediationDeferredUntilBattleEnds;
         private static PoliceAntiWarDeclaration? _instance;
 

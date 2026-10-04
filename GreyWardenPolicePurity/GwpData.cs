@@ -780,14 +780,7 @@ namespace GreyWardenPolicePurity
                 int count = records.Count;
                 dataStore.SyncData("gwp_ledger_count", ref count);
                 for (int i = 0; i < records.Count; i++)
-                {
-                    HeroCrimeStats history = string.IsNullOrWhiteSpace(records[i].OffenderHeroId)
-                        ? new HeroCrimeStats()
-                        : _history.TryGetValue(records[i].OffenderHeroId, out HeroCrimeStats? savedHistory)
-                            ? savedHistory
-                            : new HeroCrimeStats { HeroId = records[i].OffenderHeroId };
-                    SyncRecord(dataStore, i, records[i], history, saving: true);
-                }
+                    SyncRecord(dataStore, i, records[i], saving: true);
 
                 List<HeroCrimeStats> histories = _history.Values.Where(ShouldPersistHistory).ToList();
                 int historyCount = histories.Count;
@@ -812,9 +805,7 @@ namespace GreyWardenPolicePurity
                 for (int i = 0; i < count; i++)
                 {
                     CrimeRecord record = new CrimeRecord();
-                    var legacyHistory = new HeroCrimeStats();
-                    SyncRecord(dataStore, i, record, legacyHistory, saving: false);
-                    MergeLegacyHistory(legacyHistory);
+                    SyncRecord(dataStore, i, record, saving: false);
                     if (!string.IsNullOrWhiteSpace(record.CrimeId) && record.HasOpenCase)
                         _ledger[record.CrimeId] = record;
                 }
@@ -858,7 +849,6 @@ namespace GreyWardenPolicePurity
             IDataStore store,
             int i,
             CrimeRecord record,
-            HeroCrimeStats legacyHistory,
             bool saving)
         {
             string id = record.CrimeId ?? string.Empty;
@@ -871,14 +861,7 @@ namespace GreyWardenPolicePurity
             float x = record.Location.X;
             float y = record.Location.Y;
             string victim = record.VictimName ?? string.Empty;
-            int crimes = legacyHistory.TotalCrimeCount;
-            int arrests = legacyHistory.TotalArrestCount;
             int open = record.HasOpenCase ? 1 : 0;
-            float direct = legacyHistory.DirectDeterrencePoints;
-            float shared = legacyHistory.SharedDeterrencePoints;
-            int sharedCount = legacyHistory.SharedDeterrenceCount;
-            float updated = legacyHistory.LastDeterrenceUpdatedHours;
-            float enforced = legacyHistory.LastEnforcementHours;
             int civilianCasualties = record.CivilianCasualties;
             int incidentCount = record.IncidentCount;
             int accruedBaseFine = record.AccruedBaseFine;
@@ -893,15 +876,7 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_l_{i}_x", ref x);
             store.SyncData($"gwp_l_{i}_y", ref y);
             store.SyncData($"gwp_l_{i}_victim", ref victim);
-            store.SyncData($"gwp_l_{i}_crimes", ref crimes);
-            store.SyncData($"gwp_l_{i}_arrests", ref arrests);
             store.SyncData($"gwp_l_{i}_open", ref open);
-            store.SyncData($"gwp_l_{i}_direct", ref direct);
-            store.SyncData($"gwp_l_{i}_shared", ref shared);
-            store.SyncData($"gwp_l_{i}_sharedcount", ref sharedCount);
-            store.SyncData($"gwp_l_{i}_updated", ref updated);
-            store.SyncData($"gwp_l_{i}_enforced", ref enforced);
-            // 旧存档没有这个键，读取时保持 0，不影响加载。
             store.SyncData($"gwp_l_{i}_civcas", ref civilianCasualties);
             store.SyncData($"gwp_l_{i}_incidents", ref incidentCount);
             store.SyncData($"gwp_l_{i}_basefine", ref accruedBaseFine);
@@ -929,15 +904,6 @@ namespace GreyWardenPolicePurity
                 record.Location = new Vec2(x, y);
                 record.VictimName = victim;
                 record.HasOpenCase = open != 0;
-
-                legacyHistory.HeroId = record.OffenderHeroId;
-                legacyHistory.TotalCrimeCount = Math.Max(0, crimes);
-                legacyHistory.TotalArrestCount = Math.Max(0, arrests);
-                legacyHistory.DirectDeterrencePoints = MathF.Max(0f, direct);
-                legacyHistory.SharedDeterrencePoints = MathF.Max(0f, shared);
-                legacyHistory.SharedDeterrenceCount = Math.Max(0, sharedCount);
-                legacyHistory.LastDeterrenceUpdatedHours = updated;
-                legacyHistory.LastEnforcementHours = enforced;
             }
         }
 
@@ -975,7 +941,6 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_h_{i}_caravan_sharedcount", ref caravanSharedCount);
             store.SyncData($"gwp_h_{i}_caravan_updated", ref caravanUpdated);
             store.SyncData($"gwp_h_{i}_caravan_enforced", ref caravanEnforced);
-            // 旧档没有这三个键，读出来是 0，等于"没有负声望记录"，可以安全加载。
             store.SyncData($"gwp_h_{i}_negative", ref negativeStanding);
             store.SyncData($"gwp_h_{i}_crimeprog", ref crimeProgress);
             store.SyncData($"gwp_h_{i}_deedprog", ref deedProgress);
@@ -1000,37 +965,6 @@ namespace GreyWardenPolicePurity
                 history.CrimeKillProgress = Math.Max(0, crimeProgress);
                 history.GoodDeedKillProgress = Math.Max(0, deedProgress);
             }
-        }
-
-        private static void MergeLegacyHistory(HeroCrimeStats legacy)
-        {
-            if (!ShouldPersistHistory(legacy)) return;
-            if (!_history.TryGetValue(legacy.HeroId, out HeroCrimeStats? current))
-            {
-                _history[legacy.HeroId] = legacy;
-                return;
-            }
-
-            current.TotalCrimeCount = Math.Max(current.TotalCrimeCount, legacy.TotalCrimeCount);
-            current.TotalArrestCount = Math.Max(current.TotalArrestCount, legacy.TotalArrestCount);
-            current.DirectDeterrencePoints = MathF.Max(current.DirectDeterrencePoints, legacy.DirectDeterrencePoints);
-            current.SharedDeterrencePoints = MathF.Max(current.SharedDeterrencePoints, legacy.SharedDeterrencePoints);
-            current.SharedDeterrenceCount = Math.Max(current.SharedDeterrenceCount, legacy.SharedDeterrenceCount);
-            current.LastDeterrenceUpdatedHours = MathF.Max(current.LastDeterrenceUpdatedHours, legacy.LastDeterrenceUpdatedHours);
-            current.LastEnforcementHours = MathF.Max(current.LastEnforcementHours, legacy.LastEnforcementHours);
-            current.CaravanArrestCount = Math.Max(current.CaravanArrestCount,
-                legacy.CaravanArrestCount);
-            current.CaravanDirectDeterrencePoints = MathF.Max(
-                current.CaravanDirectDeterrencePoints, legacy.CaravanDirectDeterrencePoints);
-            current.CaravanSharedDeterrencePoints = MathF.Max(
-                current.CaravanSharedDeterrencePoints, legacy.CaravanSharedDeterrencePoints);
-            current.CaravanSharedDeterrenceCount = Math.Max(
-                current.CaravanSharedDeterrenceCount, legacy.CaravanSharedDeterrenceCount);
-            current.CaravanLastDeterrenceUpdatedHours = MathF.Max(
-                current.CaravanLastDeterrenceUpdatedHours,
-                legacy.CaravanLastDeterrenceUpdatedHours);
-            current.CaravanLastEnforcementHours = MathF.Max(
-                current.CaravanLastEnforcementHours, legacy.CaravanLastEnforcementHours);
         }
 
         private static void SyncTask(IDataStore store, int i, PoliceTask task, bool saving)
@@ -1085,22 +1019,12 @@ namespace GreyWardenPolicePurity
     }
 
     // ===================== 玩家行为数据 =====================
-    public class PlayerRecord
-    {
-        public string Type { get; set; } = string.Empty;
-        public bool IsCrime { get; set; }
-        public CampaignTime Time { get; set; }
-        public Vec2 Location { get; set; }
-        public string Detail { get; set; } = string.Empty;
-    }
-
     /// <summary>
-    /// 玩家行为池 - 记录玩家的犯罪和行善行为
+    /// 玩家行为池：玩家的灰袍声望与受害势力
     /// 声望：正数=好人，0=中立，负数=坏人（≤-11 通缉，由正式灰袍承办；-1~-10 派纠察队）
     /// </summary>
     public static class PlayerBehaviorPool
     {
-        private static readonly List<PlayerRecord> _records = new List<PlayerRecord>();
         private static readonly HashSet<IFaction> _victimFactions = new HashSet<IFaction>();
 
         public const int MaxReputation =  100; // 声望上限
@@ -1110,7 +1034,6 @@ namespace GreyWardenPolicePurity
         public static int GoodDeedKillProgress { get; private set; } = 0;
         public static bool IsWanted => Reputation <= -11;
         public static bool HasAtonementTask { get; private set; } = false;
-        public static IReadOnlyList<PlayerRecord> Records => _records;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
 
         public static void ClearVictimFactions() => _victimFactions.Clear();
@@ -1122,7 +1045,6 @@ namespace GreyWardenPolicePurity
 
         public static void AddCrime(string type, Vec2 location, string detail, IFaction? victimFaction = null)
         {
-            _records.Add(new PlayerRecord { Type = type, IsCrime = true, Time = CampaignTime.Now, Location = location, Detail = detail });
             Reputation = Math.Max(Reputation - 1, MinReputation);
 
             if (victimFaction != null) _victimFactions.Add(victimFaction);
@@ -1135,14 +1057,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 仅记录犯罪事件（历史记录 + 受害势力追踪），不扣声望、不弹通知、不触发警察追捕。
-        /// 用于"按战斗人数缩放扣声望"场景：调用方在战斗结束后（OnMapEventEnded）统一处理声望。
+        /// 只记受害势力，不扣声望、不弹通知、不触发追捕：声望由调用方在战斗结束后按击败人数结算。
         /// </summary>
-        public static void AddCrimeRecord(string type, Vec2 location, string detail, IFaction? victimFaction = null)
+        public static void TrackVictimFaction(IFaction? victimFaction)
         {
-            _records.Add(new PlayerRecord { Type = type, IsCrime = true, Time = CampaignTime.Now, Location = location, Detail = detail });
             if (victimFaction != null) _victimFactions.Add(victimFaction);
-            // 不扣声望、不弹通知：声望扣除由 OnMapEventEnded 按击败人数缩放执行
         }
 
         public static string GetReputationDisplay() => GwpText.Get("{=gwp_gwpdata_005}Reputation: {VAR_1}", "VAR_1", Reputation);
@@ -1181,7 +1100,6 @@ namespace GreyWardenPolicePurity
             Reputation = 0;
             GoodDeedKillProgress = 0;
             HasAtonementTask = false;
-            _records.Clear();
             _victimFactions.Clear();
         }
     }

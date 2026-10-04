@@ -239,5 +239,5 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 
 ## 测试
 
-`tools/CaseSettlement.Tests` **164 项**（2026-09-25 删掉送信队口粮规则与货物口粮补丁的 13 项）；`tools/Verify-CrimeReceipts.ps1`。
+`tools/CaseSettlement.Tests` **155 项**；`tools/Verify-CrimeReceipts.ps1`。
 均为构建期验证。

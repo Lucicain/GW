@@ -62,6 +62,7 @@ namespace GreyWardenPolicePurity
         private readonly Dictionary<string, LordAssistanceGroup> _assistanceGroups =
             new Dictionary<string, LordAssistanceGroup>(StringComparer.OrdinalIgnoreCase);
         // 协力组连续多少轮被判定为战力富余。放人要求连续成立，见 TryShrinkAssistanceGroup。
+        // 不存档：只是防抖计数，读档后从零数起，最多晚几个小时放人。
         private readonly Dictionary<string, int> _assistanceSurplusTicks =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         // 凑不出兵而退回台账的案子，在这里记一个时刻做冷却。

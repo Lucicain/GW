@@ -14,7 +14,6 @@ namespace GreyWardenPolicePurity
 {
     public partial class PlayerBountyBehavior
     {
-        private bool _fieldCaseContract;
         private int _assignedCaseFine;
         private int _assignedCaseStanding;
         private string _pendingPrisonerHeroId = string.Empty;
@@ -216,26 +215,15 @@ namespace GreyWardenPolicePurity
         private void SyncCaseOutcomeData(IDataStore dataStore) =>
             GwpRuntimeFaultWatch.Guard("BOUNTY_CASE_OUTCOME_SYNC", () => SyncCaseOutcomeFields(dataStore));
 
-        /// <summary>
-        /// 本案结果整体存成一个字符串。原来的五个独立键里有一个在读档时抛
-        /// InvalidCastException（见 GreyWarden-Faults.log 的 BOUNTY_CASE_OUTCOME_SYNC），
-        /// 而它后面的 `_supportRequested` 因此永远没有被读回来——支援状态每次读档都丢，
-        /// 表现为"求援过了，灰袍却又不认"。一个键、一种类型，就不会再有这种半途失败。
-        /// </summary>
+        /// <summary>本案结果整体存成一个字符串：一个键、一种类型，读档不会半途失败。</summary>
         private string _caseOutcomeState = string.Empty;
 
         private void SyncCaseOutcomeFields(IDataStore dataStore)
         {
             if (dataStore.IsSaving) _caseOutcomeState = SerializeCaseOutcome();
             dataStore.SyncData("gwp_case_outcome_state", ref _caseOutcomeState);
-            if (!dataStore.IsLoading) return;
-
-            if (!string.IsNullOrEmpty(_caseOutcomeState))
-            {
+            if (dataStore.IsLoading && !string.IsNullOrEmpty(_caseOutcomeState))
                 DeserializeCaseOutcome(_caseOutcomeState!);
-                return;
-            }
-            ReadLegacyCaseOutcome(dataStore);
         }
 
         private string SerializeCaseOutcome() => string.Join(";",
@@ -250,54 +238,12 @@ namespace GreyWardenPolicePurity
         private void DeserializeCaseOutcome(string state)
         {
             string[] parts = state.Split(new[] { ';' }, 6);
-            _caseTargetDefeated = parts.Length > 0 && parts[0] == "1";
-            _casePeacefullyResolved = parts.Length > 1 && parts[1] == "1";
-            _supportRequested = parts.Length > 2 && parts[2] == "1";
-            _caseCashCollectedFromTarget = parts.Length > 3 &&
-                int.TryParse(parts[3], System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out int cash)
-                ? Math.Max(0, cash) : 0;
-            _caseClosedElsewhere = parts.Length > 4 && parts[4] == "1";
-            _caseDeterrenceRegisteredId = parts.Length > 5 ? parts[5] ?? string.Empty : string.Empty;
-        }
-
-        /// <summary>
-        /// 旧存档里的五个分键。逐个读、逐个兜住：其中一个坏掉不能再把后面的一起带走，
-        /// 并且把出问题的键名写进故障日志，好确认到底是哪一个。
-        /// </summary>
-        private void ReadLegacyCaseOutcome(IDataStore dataStore)
-        {
-            _caseTargetDefeated = ReadLegacyFlag(dataStore, "gwp_case_target_defeated");
-            _casePeacefullyResolved = ReadLegacyFlag(dataStore, "gwp_case_peacefully_resolved");
-            _supportRequested = ReadLegacyFlag(dataStore, "gwp_case_support_requested");
-            GwpRuntimeFaultWatch.Guard("LEGACY_gwp_case_cash_from_target", () =>
-            {
-                int cash = 0;
-                dataStore.SyncData("gwp_case_cash_from_target", ref cash);
-                _caseCashCollectedFromTarget = Math.Max(0, cash);
-            });
-            GwpRuntimeFaultWatch.Guard("LEGACY_gwp_case_deterrence_key", () =>
-            {
-                string key = string.Empty;
-                dataStore.SyncData("gwp_case_deterrence_key", ref key);
-                _caseDeterrenceRegisteredId = key ?? string.Empty;
-            });
-        }
-
-        private static bool ReadLegacyFlag(IDataStore dataStore, string key)
-        {
-            // The support key was a bool; the other flags were integers.
-            // Accept both historical representations in player builds too.
-            try
-            {
-                return GwpLegacySave.ReadFlag(dataStore, key, key == "gwp_case_support_requested");
-            }
-            catch (InvalidCastException exception)
-            {
-                // 依据：实机诊断 2026-09-15（GUARDED_FAILURE 4 次：旧档 gwp_case_support_requested 存成了另一种类型）
-                GwpFaultTrace.Write("INVALID_LEGACY_FLAG", details: key + " | " + exception);
-                return false;
-            }
+            _caseTargetDefeated = parts[0] == "1";
+            _casePeacefullyResolved = parts[1] == "1";
+            _supportRequested = parts[2] == "1";
+            _caseCashCollectedFromTarget = int.Parse(parts[3], System.Globalization.CultureInfo.InvariantCulture);
+            _caseClosedElsewhere = parts[4] == "1";
+            _caseDeterrenceRegisteredId = parts[5];
         }
 
         /// <summary>
@@ -481,35 +427,20 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private void MigrateCaseSettlement()
+        /// <summary>
+        /// 读档后把仍在追踪的委托罚金按目标英雄的开放案重新核算（同队多名嫌犯时不会取错案），
+        /// 还有待交割事务的委托回到交差状态。
+        /// </summary>
+        private void RestoreCaseSettlementAfterLoad()
         {
-            // In the previous implementation the old reward action cleared the
-            // commission but left its report behind. Such orphan rows must never
-            // charge an already-completed commission again.
-            if (!HasBountyTask && Reports?.HasPendingReports == true)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("REPORT_MIGRATED", "retired orphan report from completed legacy commission");
-                Reports.DeclareAmount(Reports.TotalAssessed);
-            }
-            // Existing ledger rows are authoritative. Never import the same collected
-            // money a second time from the old aggregate counters.
-            if (Reports?.HasPendingReports != true && _pendingFieldFineAssessed > 0 && CaseHero != null)
-                Reports?.RecordSettlement(CaseHero, _pendingFieldFineAssessed, _pendingFieldFine,
-                    Math.Max(0, _pendingFieldFineAssessed - _pendingFieldFineSeverity * GwpTuning.Enforcement.FinePerPoint), false);
-            _pendingFieldFine = 0;
-            _pendingFieldFineAssessed = 0;
-            if (_pendingPrisonerAssessed > 0 && string.IsNullOrEmpty(_pendingPrisonerHeroId))
-                _pendingPrisonerHeroId = _activeBountyTargetHeroId ?? string.Empty;
             if (HasFieldBusinessToSettle)
             {
-                _fieldCaseContract = true;
                 if (!IsWaitingForBountyCollection) EnterBountyCollectionState();
                 _activeBountyDeadlineHours = -1d;
                 StopBountyEscortAfterTargetDefeat();
             }
             else if (IsTrackingBountyTarget)
             {
-                _fieldCaseContract = true;
                 CrimeRecord? crime = CrimePool.GetRecord(CaseHero);
                 if (crime != null)
                 {
@@ -517,8 +448,6 @@ namespace GreyWardenPolicePurity
                     _assignedCaseStanding = Math.Max(0, CrimePool.GetHistory(crime.OffenderHero)?.NegativeStanding ?? 0);
                 }
             }
-            // Completed stable-version contracts without a field ledger keep their
-            // already-promised fixed payment; newly accepted commissions do not.
         }
 
         private void RegisterCaseTurnInDialogues(CampaignGameStarter starter)
@@ -535,15 +464,9 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_case_resume_report}About the shortfall in what I handed over..."), () => _caseSubmitted >= 0, null);
             starter.AddPlayerLine("gwp_case_report_later", "gwp_case_report_options", "close_window",
                 GwpText.Get("{=gwp_case_report_later}I am not ready to hand it over yet."), null, LeaveCaseClerk);
-            // Financially empty / legacy contracts use the same report button;
-            // keep saved entitlements without exposing obsolete menu entries.
             starter.AddDialogLine("gwp_case_settle_withdrawn", "gwp_case_barter_open", "gwp_case_report_receipt",
                 GwpText.Get("{=gwp_case_settle_expenses}The commission is closed. We will settle what you are owed."),
                 () => HasBountyTask && HasNothingLeftToSettle, CompleteWithdrawnCaseReport, 130);
-            starter.AddDialogLine("gwp_case_settle_legacy", "gwp_case_barter_open", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_settle_expenses}The commission is closed. We will settle what you are owed."),
-                () => IsWaitingForBountyCollection && !_fieldCaseContract && !HasFieldBusinessToSettle,
-                () => FinishCaseReport(_activeBountyReward), 120);
             starter.AddDialogLine("gwp_case_barter_open", "gwp_case_barter_open", "gwp_case_barter_result",
                 GwpText.Get("{=gwp_case_barter_count}Let us check what you have brought."), null, OpenCasePayment);
             starter.AddDialogLine("gwp_case_barter_short", "gwp_case_barter_result", "gwp_case_short_options",
@@ -742,9 +665,6 @@ namespace GreyWardenPolicePurity
             if (!HasBountyTask) return;
             var openCrime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == _activeBountyTargetHeroId);
             if (openCrime != null) CrimePool.CloseCaseSettledInField(openCrime);
-            // Fixed legacy rewards have not been transferred; all new fees already
-            // came from the judicial treasury. Keep that distinction explicit.
-            if (!_fieldCaseContract && reward > 0) Hero.MainHero.ChangeHeroGold(reward);
             _activeQuest?.SucceedQuest();
             MakePeaceWithCriminalFaction();
             ClearBountyTaskState();

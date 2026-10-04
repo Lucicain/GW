@@ -39,6 +39,8 @@ namespace GreyWardenPolicePurity
         private const string LordHoursKey = "GWPP_FsLordLastCongregation";
         private const string DiscipleIdsKey = "GWPP_FsDiscipleIds";
         private const string DiscipleHomesKey = "GWPP_FsDiscipleHomes";
+        private const string UnbelieverRollIdsKey = "GWPP_FsUnbelieverRollIds";
+        private const string UnbelieverRollDaysKey = "GWPP_FsUnbelieverRollDays";
         private const double Never = -1000000d;
 
         private static GwpFireswornBehavior? _instance;
@@ -52,7 +54,7 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        // 只烧不信教者的那一掷每位领主每天一次；读档后重掷无妨，不存档。
+        // 只烧不信教者的那一掷每位领主每天一次。
         private readonly Dictionary<string, int> _unbelieverRollDay =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -102,8 +104,9 @@ namespace GreyWardenPolicePurity
             List<string>? ritualVillages = null, ritualHosts = null;
             List<int>? ritualKinds = null, ritualStarted = null;
             List<double>? ritualQueued = null, ritualEnds = null;
-            List<string>? lordIds = null, discipleIds = null, discipleHomes = null;
+            List<string>? lordIds = null, discipleIds = null, discipleHomes = null, rollIds = null;
             List<double>? lordHours = null;
+            List<int>? rollDays = null;
 
             if (dataStore.IsSaving)
             {
@@ -124,6 +127,8 @@ namespace GreyWardenPolicePurity
                 lordHours = lordIds.Select(id => _lordLastCongregation[id]).ToList();
                 discipleIds = _discipleHomes.Keys.ToList();
                 discipleHomes = discipleIds.Select(id => _discipleHomes[id]).ToList();
+                rollIds = _unbelieverRollDay.Keys.ToList();
+                rollDays = rollIds.Select(id => _unbelieverRollDay[id]).ToList();
             }
 
             dataStore.SyncData(VillageIdsKey, ref villageIds);
@@ -142,6 +147,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData(LordHoursKey, ref lordHours);
             dataStore.SyncData(DiscipleIdsKey, ref discipleIds);
             dataStore.SyncData(DiscipleHomesKey, ref discipleHomes);
+            dataStore.SyncData(UnbelieverRollIdsKey, ref rollIds);
+            dataStore.SyncData(UnbelieverRollDaysKey, ref rollDays);
 
             if (!dataStore.IsLoading)
                 return;
@@ -199,6 +206,10 @@ namespace GreyWardenPolicePurity
             for (int i = 0; i < discipleCount; i++)
                 if (!string.IsNullOrWhiteSpace(discipleIds![i]))
                     _discipleHomes[discipleIds[i]] = discipleHomes![i] ?? string.Empty;
+
+            _unbelieverRollDay.Clear();
+            for (int i = 0; i < rollIds!.Count; i++)
+                _unbelieverRollDay[rollIds[i]] = rollDays![i];
 
             RebuildPriestIndex();
         }

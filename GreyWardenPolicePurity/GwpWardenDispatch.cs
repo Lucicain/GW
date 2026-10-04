@@ -73,35 +73,28 @@ namespace GreyWardenPolicePurity
         {
             if (string.IsNullOrWhiteSpace(line)) return null;
             string[] parts = line!.Split('|');
-            if (parts.Length < 8 || string.IsNullOrWhiteSpace(parts[0])) return null;
+            var invariant = System.Globalization.CultureInfo.InvariantCulture;
             return new GwpDispatchRecord
             {
                 PartyId = parts[0],
-                CargoState = parts.Length > 10 ? parts[10] : string.Empty,
-                CaseHeroId = parts.Length > 11 ? parts[11] : string.Empty,
-                // 12 之后是后加的练兵订单字段；旧档没有，按缺省留空。
-                OrderTroopId = parts.Length > 12 ? parts[12] : string.Empty,
-                OrderCount = parts.Length > 13 ? ParseInt(parts[13]) : 0,
-                OrderPrice = parts.Length > 14 ? ParseInt(parts[14]) : 0,
                 Purpose = (GwpDispatchPurpose)ParseInt(parts[1]),
                 Phase = (GwpDispatchPhase)ParseInt(parts[2]),
-                ReceiverPartyId = parts[3] ?? string.Empty,
+                ReceiverPartyId = parts[3],
                 CaseGoldFloor = ParseInt(parts[4]),
                 ReportLie = parts[5] == "1",
-                PrisonerHeroId = parts[6] ?? string.Empty,
-                DispatchedHours = double.TryParse(parts[7],
-                    System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double hours) ? hours : 0d,
-                LastProgressHours = parts.Length > 8 && double.TryParse(parts[8],
-                    System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double progress) ? progress : 0d,
-                NextTownBusinessHours = parts.Length > 9 && double.TryParse(parts[9],
-                    System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double retry) ? retry : 0d
+                PrisonerHeroId = parts[6],
+                DispatchedHours = double.Parse(parts[7], invariant),
+                LastProgressHours = double.Parse(parts[8], invariant),
+                NextTownBusinessHours = double.Parse(parts[9], invariant),
+                CargoState = parts[10],
+                CaseHeroId = parts[11],
+                OrderTroopId = parts[12],
+                OrderCount = ParseInt(parts[13]),
+                OrderPrice = ParseInt(parts[14])
             };
         }
 
-        private static int ParseInt(string? value) =>
-            int.TryParse(value, out int parsed) ? parsed : 0;
+        private static int ParseInt(string value) =>
+            int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
     }
 }

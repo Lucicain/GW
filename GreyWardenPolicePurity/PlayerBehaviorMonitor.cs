@@ -71,7 +71,7 @@ namespace GreyWardenPolicePurity
         ///   SyncData 从存档文件读取并恢复数据（加载已有存档）。
         ///   本方法直接归零所有数据（开新档，无存档文件可读）。
         ///
-        /// PlayerBehaviorPool.ClearAll() → Reputation = 0, Records 清空, VictimFactions 清空
+        /// PlayerBehaviorPool.ClearAll() → Reputation = 0, VictimFactions 清空
         /// CrimePool.ClearAll()          → 待处理犯罪池清空, 活跃任务清空, IsAccepting = true
         /// </summary>
         private void OnNewGameCreated(CampaignGameStarter starter)
@@ -116,24 +116,10 @@ namespace GreyWardenPolicePurity
             // ── 犯罪检测（仅在玩家为攻击者时执行）──────────────────────────────────
             if (!attacker.IsMainParty) return;
 
-            Vec2 location = mapEvent.Position.ToVec2();
-
-            if (defender.PartyComponent is VillagerPartyComponent)
-            {
-                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_001}Villager");
-                IFaction? victimFaction = defender.ActualClan?.MapFaction;
-                // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_002}Attack villager"), location, victimName, victimFaction);
-                return;
-            }
-
-            if (defender.PartyComponent is CaravanPartyComponent)
-            {
-                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_003}Caravan");
-                IFaction? victimFaction = defender.ActualClan?.MapFaction;
-                // 仅记录犯罪事件，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
-                PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_004}Attack caravan"), location, victimName, victimFaction);
-            }
+            // 只记受害势力，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
+            if (defender.PartyComponent is VillagerPartyComponent ||
+                defender.PartyComponent is CaravanPartyComponent)
+                PlayerState.TrackVictimFaction(defender.ActualClan?.MapFaction);
         }
 
         /// <summary>
@@ -186,8 +172,7 @@ namespace GreyWardenPolicePurity
                 $"{PlayerState.GetReputationDisplay()} (-2)",
                 Colors.Red));
 
-            // 记录犯罪历史（供受害势力追踪等后续逻辑使用）
-            PlayerState.AddCrimeRecord(GwpText.Get("{=gwp_playerbehaviormonitor_008}Raid village"), location, village.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_009}Unknown Village"), victimFaction);
+            PlayerState.TrackVictimFaction(victimFaction);
         }
 
         private void OnForceVolunteers(BattleSideEnum side, ForceVolunteersEventComponent component)

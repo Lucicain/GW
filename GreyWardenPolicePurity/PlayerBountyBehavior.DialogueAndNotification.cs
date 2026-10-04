@@ -169,10 +169,9 @@ namespace GreyWardenPolicePurity
 
             // ── 读档后悬赏任务恢复（兜底）─────────────────────────────────────────
             // 此时 SyncData 已完成，所有持久化字段均已正确加载，可以安全访问。
+            RestoreCaseSettlementAfterLoad();
             ReconcileRecruitmentPatrolState();
-            MigrateCaseSettlement();
             TryRestoreBountyQuestOnSessionStart();
-            RetireLegacyCollectionCouriers();
         }
 
         #endregion
@@ -522,23 +521,6 @@ namespace GreyWardenPolicePurity
 
         #region 赏金领取对话
 
-        /// <summary>
-        /// 结算队已经退役：玩家现在可以找任意灰袍领主复命，也可以派自己的人去，不再需要
-        /// 灰袍主动找上门这道兜底。旧存档里可能还有一支停在路上，读档时一并解散。
-        /// </summary>
-        private static void RetireLegacyCollectionCouriers()
-        {
-            foreach (MobileParty party in MobileParty.All
-                         .Where(candidate => candidate?.IsActive == true &&
-                             candidate.StringId?.StartsWith("gwp_bounty_collect_",
-                                 StringComparison.Ordinal) == true)
-                         .ToList())
-            {
-                GreyWardenPartyDesireBehavior.ClearIntent(party);
-                DestroyPartyAction.Apply(null, party);
-            }
-        }
-
         /// <summary>Only mediate the saved commission faction pair, never a pre-existing war.</summary>
         private void MakePeaceWithCriminalFaction()
         {
@@ -835,8 +817,6 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
             _activeBountyCrimeCategory = (int)crime.CrimeCategory;
-            _activeBountyReward = 0;
-            _fieldCaseContract = true;
             _assignedCaseFine = choice.Reward;
             _assignedCaseStanding = Math.Max(0, CrimePool.GetHistory(crime.OffenderHero)?.NegativeStanding ?? 0);
             _bountyPlayerCasualties = 0;
@@ -867,7 +847,6 @@ namespace GreyWardenPolicePurity
             {
                 _activeQuest = new BountyHunterQuest(
                     policeLeader,
-                    _activeBountyReward,
                     offender.Name.ToString());
                 _activeQuest.StartQuest();
                 Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);

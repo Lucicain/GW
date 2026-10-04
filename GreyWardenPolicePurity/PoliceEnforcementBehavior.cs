@@ -153,6 +153,7 @@ namespace GreyWardenPolicePurity
             }
 
             CrimeState.SyncData(dataStore);
+            SyncCooldownsAndRetries(dataStore);
             dataStore.SyncData("gwp_enf_war_check_day_counter", ref _warStatusCheckDayCounter);
             dataStore.SyncData("gwp_enf_atone_active", ref _atonementActive);
             dataStore.SyncData("gwp_enf_atone_target_id", ref _atonementTargetPartyId);
@@ -1203,6 +1204,40 @@ namespace GreyWardenPolicePurity
         /// <summary>撤案时可能还有别的合法理由撑着这场战争，逐小时重试直到不需要为止。</summary>
         private static readonly Dictionary<IFaction, double> _peaceRetryTargets =
             new Dictionary<IFaction, double>();
+
+        /// <summary>
+        /// 凑不出兵的案件冷却与待重试的讲和都是进行中的状态，同一存档读回来要接得上。
+        /// </summary>
+        private void SyncCooldownsAndRetries(IDataStore dataStore)
+        {
+            List<string>? strengthIds = null, peaceIds = null;
+            List<double>? strengthHours = null, peaceHours = null;
+            if (dataStore.IsSaving)
+            {
+                strengthIds = _caseStrengthCooldownHours.Keys.ToList();
+                strengthHours = strengthIds.Select(id => _caseStrengthCooldownHours[id]).ToList();
+                List<IFaction> factions = _peaceRetryTargets.Keys.ToList();
+                peaceIds = factions.Select(faction => faction.StringId).ToList();
+                peaceHours = factions.Select(faction => _peaceRetryTargets[faction]).ToList();
+            }
+            dataStore.SyncData("gwp_enf_strength_cooldown_ids", ref strengthIds);
+            dataStore.SyncData("gwp_enf_strength_cooldown_hours", ref strengthHours);
+            dataStore.SyncData("gwp_enf_peace_retry_ids", ref peaceIds);
+            dataStore.SyncData("gwp_enf_peace_retry_hours", ref peaceHours);
+            if (!dataStore.IsLoading) return;
+
+            _caseStrengthCooldownHours.Clear();
+            for (int i = 0; i < strengthIds!.Count; i++)
+                _caseStrengthCooldownHours[strengthIds[i]] = strengthHours![i];
+            _peaceRetryTargets.Clear();
+            for (int i = 0; i < peaceIds!.Count; i++)
+            {
+                IFaction? faction = Campaign.Current.Factions.FirstOrDefault(candidate =>
+                    candidate.StringId == peaceIds[i]);
+                if (faction != null)
+                    _peaceRetryTargets[faction] = peaceHours![i];
+            }
+        }
 
         internal static void ReleaseWardensFromCase(string? offenderHeroId)
         {
