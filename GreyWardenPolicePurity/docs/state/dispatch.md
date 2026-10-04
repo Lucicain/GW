@@ -2,12 +2,10 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs`
+> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
 > 待实测：无
 
-本文件只写送信队在地图上的这一趟：出发、找人、交付、回来交割、工资。对话入口
-（`GwpWardenDispatchDialogue.cs`）、分兵界面与付款 barter（`GwpAssetPayment.cs`、
-`GwpDispatchBarterScreen.cs`）尚未提取。
+送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。
 
 ## 四种差事
 
@@ -57,3 +55,37 @@
 ## 工资
 
 每天由玩家付 `party.TotalWage`；付不起时队伍士气 −1。案件款不参与。
+
+## 开口：跟队里的灰袍兵说话
+
+- 原版队伍界面只有英雄有「交谈」按钮。这里只给「自己队里的灰袍兵」也开一个，接到派遣对话上（`GwpPartyScreenTroopTalkPatch`）。
+  原版 `ExecuteTalk` 只处理英雄，普通士兵走进去会空引用，所以命中灰袍兵时整条拦下。
+- 时序（`GwpWardenDispatchDialogue`，由派遣行为的心跳每 0.25 秒推进）：
+  1. 点按钮只登记请求；
+  2. 队伍界面关完之后，下一次心跳再开地图对话；
+  3. 对话结束之后，再开分兵界面。
+  
+  只在地图界面就绪、没有别的对话时才动。没有待办就完全不做事，读档期间这条路是惰性的。
+- 判断「这是不是我方开的对话」，只看我方是否武装着：开对话那一刻置位，对话结束或超时就撤下。
+  不能比对 `OneToOneConversationCharacter`：地图对话是延迟启动的，那个属性可能还没填，
+  判错会让玩家进到一场一句话都没有、出不来的对话。（依据：实机诊断）
+- 选人用原版分兵界面，只许选灰袍兵。被选的人在最终确认前仍留在主队，那份名单只是选择，取消就原样还回去。
+- 原版分兵界面写死了俘虏不可转移。所以界面关掉后再单问一句：交钱还是押人。
+  押人只能押本案目标本人，直接转到这支队伍名下。
+- 交多少、怎么说，出发前由玩家定死，士兵不替他临场决定。
+- 练兵订单的订金按案件款带走，受 `CaseGoldFloor` 保护，路上不许拿去发饷。
+
+## 付款与交割：原版交易界面（`GwpAssetPayment`）
+
+- 不做自制交易界面，借原版 `BarterScreen`，可以在对话之外打开（`GwpDispatchBarterScreen`）。
+  宿主屏幕被弹出时引擎已终结它的层，但 `HasLayer` 仍为真，不能再 `RemoveLayer`。
+- 钱和物共用一张收据、一个上限：
+  - 物品按 `ItemValue` 计价，表里列出单价；英雄身上穿着的装备不算。
+  - 家当（`Wealth`）= 金币 + 行李里全部物品的价值；野外执法判断「他付不付得起」也用这个数。
+- 一键配平（`GwpAssetAutoOfferPatch`）按上限从金币、物品依次填。复命模式按收据原样带：收了什么交什么。
+- 交易按钮由 `GwpAssetOfferValidationPatch` 把关：报价超过约定、或者含有已经不在手上的物品时，拒绝并提示。
+  只选人不付钱、或者复命时，直接按选择办完，不触发原版交易事件（不涨关系、不加交易经验、不进冷却）。
+  取消就关界面，什么都不动。
+- 失败路径诊断：`DISPATCH_BARTER_PERSONA_FAILED`（`GwpDispatchBarterFaultDiagnostics`，finalizer 挂在 `PersonaSoftspokenTag.IsApplicableTo`）。
+  健康时不出声，不退休。
+

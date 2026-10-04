@@ -66,45 +66,73 @@ python tools/Check-StateFreshness.py
 一个结论要么在这里、要么不存在。如果某条规则你在 state 里找不到，默认它**不成立**，
 不要去流水里翻。
 
-## 已提取的子系统
+## 子系统索引
+
+2026-10-05 起全部源码都有 state 覆盖（`uncovered-baseline.txt` 已清空）。新写的源码必须同轮写进某个 state 文件的 `覆盖源码`。
+
+### 总览与流程
 
 | 文件 | 覆盖范围 |
 |---|---|
 | [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
-| [`temporary-parties.md`](temporary-parties.md) | 无领主临时队向领主/玩家借船与退还、口粮、兵员纯化 |
-| [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
-| [`field-arrest.md`](field-arrest.md) | 野外执法开口前：肯不肯谈、战力口径、谈崩冷却（说辞、定价、宽限、决斗未提取） |
-| [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差（其余悬赏流程未提取） |
-| [`dispatch.md`](dispatch.md) | 玩家送信队的地图行程：出发、找人、交付、交割、工资（对话与付款未提取） |
-| [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回、已知缺口 |
-| [`training-feedback.md`](training-feedback.md) | 小周练兵交付反馈、存档导入及源码缺口；专项调查，未完成练兵全系统提取 |
-| [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
-| [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
-| [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
-| [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
-| [`map-bar-affairs.md`](map-bar-affairs.md) | 地图左下角导航栏的「灰袍事务」按钮：位置、入会门槛、运行时图标 |
-| [`warden-gear.md`](warden-gear.md) | 灰袍装备只由入会发放、发放时的原版品质、各物品品质组 |
-| [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
-| [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置、待实机验收 |
-| [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类事实 |
-| [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
-| [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：立案门槛、结案口径、协力编成、战争跟随 |
-| [`patrol.md`](patrol.md) | 玩家纠察队声望分档、正声望撤通缉与领主原版巡逻现状 |
 | [`build-and-deploy.md`](build-and-deploy.md) | 构建开关、预检脚本、live 镜像、发布包 |
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
 | [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
+| [`infrastructure.md`](infrastructure.md) | 身份判据、调参、文本与本地化、存档类型 |
+| [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
+
+### 执法：案件从立案到结案
+
+| 文件 | 覆盖范围 |
+|---|---|
+| [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、震慑、外交封锁、被俘豁免 |
+| [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：派单门槛、结案口径、协力编成、战争跟随 |
+| [`warden-ai.md`](warden-ai.md) | 灰袍谁拿到什么活、欲望竞价怎么落到原版动作、巡区、协力军团引擎补丁 |
+| [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
+| [`deserters.md`](deserters.md) | 战后逃兵：照搬原版，但灰袍兵不当逃兵 |
+
+### 玩家与灰袍
+
+| 文件 | 覆盖范围 |
+|---|---|
+| [`player-justice.md`](player-justice.md) | 玩家声望涨跌、通缉、入会退会、接悬赏、交差查账 |
+| [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差金额 |
+| [`field-arrest.md`](field-arrest.md) | 野外执法：肯不肯谈、两层谈判、对方的兑现方式、宽限、单挑、结案 |
+| [`patrol.md`](patrol.md) | 玩家纠察队：声望分档、罚金、收尾 |
+| [`dispatch.md`](dispatch.md) | 玩家送信队：开口、选人、付款交易界面、地图行程、交割、工资 |
+| [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回 |
+| [`player-requests.md`](player-requests.md) | 贵族事务：封地重议申诉 |
+| [`sparring.md`](sparring.md) | 与灰袍领主切磋（竞技场与野外） |
+| [`map-bar-affairs.md`](map-bar-affairs.md) | 地图导航栏的「灰袍事务」按钮 |
+| [`warden-gear.md`](warden-gear.md) | 灰袍装备只由入会发放、发放时的原版品质、各物品品质组 |
+
+### 灰袍家族与世界
+
+| 文件 | 覆盖范围 |
+|---|---|
+| [`family.md`](family.md) | 成员、六个本职与继承、婚姻、与要人的关系、成就兼容 |
+| [`village-relief.md`](village-relief.md) | 被焚村庄的善后与收养、重建、请愿、村民打赏 |
+| [`warden-training.md`](warden-training.md) | 灰袍领主日常练兵、换兵、兵种配比取向 |
+| [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
+| [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮、兵员纯化 |
 | [`firesworn.md`](firesworn.md) | 火誓者：狂信者、集会传教、烈火责罚、祭司与门徒——第一版已部署待实测，数值未定 |
 
-## 尚未提取（journal 仍是唯一记录）
+### 战斗
 
-下列子系统的当前状态**还没有从流水里抽出来**。改动它们之前，先读流水里最新的相关
-条目，并把结论补成一个 state 文件——不要一边改一边继续只往流水里写。
+| 文件 | 覆盖范围 |
+|---|---|
+| [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
+| [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类、左手砍击 |
+| [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
+| [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
+| [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
+| [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
+| [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置 |
 
-- 玩家悬赏与结案（`PlayerBountyBehavior`、`GwpCaseArchiveScreen`）
-- 使者的对话入口与付款 barter（`GwpWardenDispatchDialogue`、`GwpAssetPayment`）；地图行程已提取到 [`dispatch.md`](dispatch.md)
-- 灰袍领主日常练兵与兵种配比取向（`GreyWardenTrainingBehavior`）；玩家订单与随行练兵队已提取到 [`troop-orders.md`](troop-orders.md)
-- 野外切磋（`GreyWardenFieldSparringMissionController`）
-- 家族、婚姻、村庄收养与重建（原版婚姻 API 笔记在 [`../reference/vanilla-marriage-reference.md`](../reference/vanilla-marriage-reference.md)，未按 v1.4.8 复核）
-- 船运贸易与经济
-- 本地化与内容键（`Verify-ContentKeys` 覆盖的范围）
-- 灰袍分驻六地、入会新兵发放（入会装备已提取到 [`warden-gear.md`](warden-gear.md)）
+### 专项调查（已闭合）
+
+| 文件 | 覆盖范围 |
+|---|---|
+| [`training-feedback.md`](training-feedback.md) | 小周练兵交付反馈、存档导入及源码缺口 |
+
+原版婚姻 API 笔记在 [`../reference/vanilla-marriage-reference.md`](../reference/vanilla-marriage-reference.md)，未按 v1.4.8 复核。

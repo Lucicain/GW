@@ -1,13 +1,13 @@
-# 野外执法：肯不肯谈、战力口径、谈崩冷却
+# 野外执法：肯不肯谈、两层谈判、兑现方式与结案
 
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
 > 已复核至：`04ff2d6`（回绝台词改写，本文件「谈崩冷却」已写）
-> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs`
+> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
 > 待实测：无
 
-本文件只写**开口前的判定**：肯不肯谈、战力怎么算、谈崩后的冷却。两层说服的说辞、
-罚金定价、宽限、决斗与收缴尚未提取（仍只在 journal 里）。
+玩家在野外拦下自己承办的罪犯之后的全部流程。罚金定价见 [`crime-intake.md`](crime-intake.md)；
+交差、查账见 [`player-justice.md`](player-justice.md)。
 
 ## 入口
 
@@ -51,3 +51,77 @@
 
 `TALK_WILLINGNESS`（双方战力、抗性、拒谈概率）、`NEGOTIATION_CHANCE_CONTEXT`、
 `NEGOTIATION_COOLDOWN_SET`，写案件日志。
+
+## 两层谈判
+
+说服用原版 persuasion 那一套（和求爱同一套），口才、统御、诡计、交易都用得上。
+每层 4 条说辞（`ArgumentsPerReservation`）。
+
+- **第一层：认不认这次执法**。抗性就是上面的 `LayerOneResistance`。
+- **第二层：按正规方式全额缴，还是照他自己的打算办**。抗性 `LayerTwoResistance`（0–100）的组成：
+  - 基数 30；
+  - 加执着 × 12，执着按他的打算取对应性格的绝对强度（`GwpOffenderDesires.Insistence`）；
+  - 加肉痛 × 15，肉痛 = 罚金 / 他的家当，夹在 0–2；
+  - 加实力差 ±8；
+  - 加魅力差 ±10；
+  - 加名望与劣迹压力的一半。
+- 成功率：原版 `GetChances` 算出的值，按当前层的抗性重新换算（`GwpNegotiationChancePatch` → `AdjustNativeChances`），
+  大成功、大失败的占比不变。
+- 只有真的达到目标才算谈成；说辞用光却没到目标，算谈崩。（依据：实机诊断）
+  大失败会封掉剩下所有选项，结束整段对话。
+- 谈完之后，不论哪一层、谈没谈成、缴没缴清，玩家仍握着执法权，随时可以回头拿人。
+
+## 他打算怎么了结（`GwpOffenderDesire`）
+
+开口前按性格、家当和罚金给各方案加权，抽一个（`GwpNegotiationPolicy.Weights`）。
+性格极端只是更可能抽到某个方案，不会锁死结果。
+
+| 方案 | 主要来自 | 他肯给 |
+|---|---|---|
+| 照数全缴 | 勇武低、仁慈高、慷慨高 | 100% |
+| 讨价还价 | 慷慨低 | 70% |
+| 骗一道 | 算计高 | 50% |
+| 只认自己的事 | 仁慈低；还会杀自己 5 个兵泄愤 | 40% |
+| 塞私钱抹案 | 荣誉低；钱进玩家口袋、不进公库，案底一点不少 | 15% |
+| 人跟你走 | 荣誉高；钱留给部下，人当俘虏，部队照原版自行解散 | — |
+| 单挑 | 勇武高 | 他赢免罚，玩家赢全缴 |
+| 请宽限 | 有条件给宽限时 | 三天后再收 |
+
+- 第二层谈崩，玩家可以选「照他说的办」。打折的差额留在他的案底里：公库没收到钱，人就没赎。
+
+## 结案（`Settle`）
+
+- 收钱走原版交易界面：
+  - 他的钱袋全部可见，但交易按钮拒绝超过谈定数目的报价（`GwpFieldCollectionBarterable`）。
+  - 交到公库的罚金另用一个专门条目记实缴数（`GwpFieldFineBarterable`），普通买卖、赠礼、取消的报价都不能冒充罚金。
+- 结案时：
+  - 犯人这一侧的账当场按实缴清；
+  - 记一次灰袍执法（启动他的震慑收敛期，但不记被捕履历）；
+  - 销案，玩家声望 +2；
+  - 罚金跟着玩家走，交给任一灰袍领主才算交差。
+- 结案对话会主动结束遭遇，免得刚缴完罚金的人站在开战界面里。
+
+## 宽限（`GwpFieldArrestBehavior.Grace`）
+
+- 给 72 小时。到期前玩家只有两条路：现在就强办，或者等到期再来；不给「先收一点」。
+- 到期只提示一次，不会自动收钱。
+
+## 单挑
+
+- 交给野外切磋流程，见 [`sparring.md`](sparring.md)。等待结果的状态不跨存档，打到一半存档退出等于放弃。
+- 他赢：按他开出的条件免罚，案子销掉，案底照留。
+  玩家赢：离开决斗场景后，再找他检查财产收款。
+- 决斗场景里原版名牌按战役外交给领主着色；这里只把本场对手加上敌方标记，不在战役里宣战（`GwpDuelOpponentMarkerPatch`）。
+
+## 拒捕或玩家动手
+
+- 当场把遭遇转成战斗，不宣战，不把他的王国牵扯进来：灰袍管的是个人，不是国家。（依据：设计 2026-09-11）
+- 不能在对话的 consequence 里直接开战（那时对话任务还在跑，会被弹回遭遇界面）。
+  先记下要打谁，等对话真正关掉再开打。
+
+## 台词
+
+- 认罚、交不出钱、抗法、回绝等台词，每类有多句备选（`GwpFieldDialogueVoice`）。
+- 随机数用自己的 `System.Random`，不消耗玩法用的随机数。
+- 同一次遭遇里已经显示过的台词缓存起来，推进一条说辞时只刷新对应的回应。
+
