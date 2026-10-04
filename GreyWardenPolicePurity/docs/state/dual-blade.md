@@ -3,7 +3,7 @@
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs` `tools/DualBladeTests/**`
-> 已复核至：2026-10-05 catch 留痕或补注释（行为未变，见 `code-health.md`）；2026-10-02 工作树（同文件内海战自定义战斗指挥官补丁改为缺模块时跳过，双刀逻辑未动）
+> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-02 工作树（同文件内海战自定义战斗指挥官补丁改为缺模块时跳过，双刀逻辑未动）
 > 待实测：无
 
 ## 已修复的崩溃

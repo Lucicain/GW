@@ -334,18 +334,6 @@ namespace GreyWardenPolicePurity
             return fallback;
         }
 
-        private static string FormatElapsedSince(CampaignTime occurredTime)
-        {
-            float days = (float)(CampaignTime.Now - occurredTime).ToDays;
-            if (days < (1f / CampaignTime.HoursInDay))
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_039}Just now");
-
-            if (days < 1f)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_040}{VAR_1} hours ago", "VAR_1", GwpText.Format(days * CampaignTime.HoursInDay, "0.#"));
-
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_041}{VAR_1} days ago", "VAR_1", GwpText.Format(days, "0.##"));
-        }
-
         private static string FormatLocation(Vec2 position)
         {
             Settlement? nearestTown = GwpCommon.FindNearestTown(position);
@@ -353,21 +341,6 @@ namespace GreyWardenPolicePurity
                 return GwpText.Get("{=gwp_gwppolicewarreasonservice_042}Near {VAR_1} ({VAR_2}, {VAR_3})", "VAR_1", nearestTown.Name, "VAR_2", GwpText.Format(position.x, "0.0"), "VAR_3", GwpText.Format(position.y, "0.0"));
 
             return GwpText.Get("{=gwp_gwppolicewarreasonservice_043}wild ({VAR_1}, {VAR_2})", "VAR_1", GwpText.Format(position.x, "0.0"), "VAR_2", GwpText.Format(position.y, "0.0"));
-        }
-
-        private static string FormatRemainingDuration(double hours)
-        {
-            double clampedHours = Math.Max(0d, hours);
-            int days = (int)(clampedHours / CampaignTime.HoursInDay);
-            double hoursRemainder = clampedHours - days * CampaignTime.HoursInDay;
-
-            if (days <= 0)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_044}{VAR_1} hours", "VAR_1", GwpText.Format(hoursRemainder, "0.#"));
-
-            if (hoursRemainder < 0.05d)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_045}{VAR_1} days", "VAR_1", days);
-
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_046}{VAR_1} days {VAR_2} hours", "VAR_1", days, "VAR_2", GwpText.Format(hoursRemainder, "0.#"));
         }
 
         private static string FormatCampaignDate(double hours)

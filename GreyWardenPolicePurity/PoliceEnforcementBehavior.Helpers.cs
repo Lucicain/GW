@@ -131,41 +131,29 @@ namespace GreyWardenPolicePurity
         private void RestoreAi(MobileParty party)
         {
             if (party == null || !party.IsActive) return;
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.Ai.SetDoNotMakeNewDecisions(false);
+            party.Ai.RethinkAtNextHourlyTick = true;
         }
 
         private void MakePeaceWithPoliceAndVictims()
         {
-            try
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+            if (playerFaction == null) return;
+
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            // 玩家参与的讲和必须走 MakePeaceAction：裸的 SetNeutral 不会把定居点
+            // 标记为待重绘，灰袍的领地会在玩家地图上一直红着。
+            if (policeClan != null) MakePeaceAction.Apply(policeClan, playerFaction);
+
+            foreach (var victim in PlayerState.VictimFactions)
             {
-                IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-                if (playerFaction == null) return;
+                if (victim == null || victim == playerFaction) continue;
+                if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
 
-                Clan policeClan = PoliceStats.GetPoliceClan();
-                // 玩家参与的讲和必须走 MakePeaceAction：裸的 SetNeutral 不会把定居点
-                // 标记为待重绘，灰袍的领地会在玩家地图上一直红着。
-                if (policeClan != null) MakePeaceAction.Apply(policeClan, playerFaction);
-
-                foreach (var victim in PlayerState.VictimFactions)
-                {
-                    if (victim == null || victim == playerFaction) continue;
-                    if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
-
-                    try
-                    {
-                        MakePeaceAction.Apply(playerFaction, victim);
-                    }
-                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-                }
-
-                PlayerState.ClearVictimFactions();
+                MakePeaceAction.Apply(playerFaction, victim);
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            PlayerState.ClearVictimFactions();
         }
 
         /// <summary>
@@ -237,11 +225,6 @@ namespace GreyWardenPolicePurity
             return best;
         }
 
-        private void Reassign(CrimeRecord? crime)
-        {
-            CrimeState.ReopenCase(crime);
-        }
-
         private void ClearShelteredTargetTracking(string taskId)
         {
             if (string.IsNullOrEmpty(taskId)) return;
@@ -268,15 +251,7 @@ namespace GreyWardenPolicePurity
 
                 _ignoredInvalidShelteredBattlePartyIds.Add(policeParty.StringId);
 
-                try
-                {
-                    policeParty.MapEvent.FinalizeEvent();
-                }
-                catch (Exception gwpQuietFailure)
-                {
-                    GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                    _ignoredInvalidShelteredBattlePartyIds.Remove(policeParty.StringId);
-                }
+                policeParty.MapEvent.FinalizeEvent();
             }
         }
 
@@ -355,52 +330,44 @@ namespace GreyWardenPolicePurity
             if (attacker.CurrentSettlement != null) return false;
             if (string.Equals(attacker.StringId, defender.StringId, StringComparison.OrdinalIgnoreCase)) return false;
 
-            try
+            Settlement? defenderSettlement = defender.CurrentSettlement;
+            if (defenderSettlement != null)
             {
-                Settlement? defenderSettlement = defender.CurrentSettlement;
-                if (defenderSettlement != null)
+                MobileParty expelParty = defender;
+                MobileParty? armyLeader = defender.Army?.LeaderParty;
+
+                // 目标若属于军团，且军团领队也在同一座城里，
+                // 直接把领队整支拉出城，原版会递归带出附属军团成员。
+                if (armyLeader != null &&
+                    armyLeader.IsActive &&
+                    armyLeader.CurrentSettlement == defenderSettlement)
                 {
-                    MobileParty expelParty = defender;
-                    MobileParty? armyLeader = defender.Army?.LeaderParty;
-
-                    // 目标若属于军团，且军团领队也在同一座城里，
-                    // 直接把领队整支拉出城，原版会递归带出附属军团成员。
-                    if (armyLeader != null &&
-                        armyLeader.IsActive &&
-                        armyLeader.CurrentSettlement == defenderSettlement)
-                    {
-                        expelParty = armyLeader;
-                    }
-
-                    var forcedPartyIds = new HashSet<string>(
-                        expelParty.AttachedParties
-                            .Where(party => party?.IsActive == true)
-                            .Select(party => party.StringId),
-                        StringComparer.OrdinalIgnoreCase)
-                    {
-                        expelParty.StringId,
-                        defender.StringId
-                    };
-
-                    LeaveSettlementAction.ApplyForParty(expelParty);
-
-                    // 目标被逐出城后不再原地等待。直接命令目标（若属于军团则命令
-                    // 军团领队）进攻当前案件的承办领主。关闭原版新欲望决策，
-                    // 案件结束前只允许执行这一条进攻指令。
-                    if (!string.IsNullOrWhiteSpace(taskId))
-                    {
-                        UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
-                        TryForceShelteredCaseAttack(defender, attacker);
-                    }
+                    expelParty = armyLeader;
                 }
 
-                return defender.CurrentSettlement == null;
+                var forcedPartyIds = new HashSet<string>(
+                    expelParty.AttachedParties
+                        .Where(party => party?.IsActive == true)
+                        .Select(party => party.StringId),
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    expelParty.StringId,
+                    defender.StringId
+                };
+
+                LeaveSettlementAction.ApplyForParty(expelParty);
+
+                // 目标被逐出城后不再原地等待。直接命令目标（若属于军团则命令
+                // 军团领队）进攻当前案件的承办领主。关闭原版新欲望决策，
+                // 案件结束前只允许执行这一条进攻指令。
+                if (!string.IsNullOrWhiteSpace(taskId))
+                {
+                    UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
+                    TryForceShelteredCaseAttack(defender, attacker);
+                }
             }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+
+            return defender.CurrentSettlement == null;
         }
 
         internal static bool IsSettlementEntryBlockedByActiveCase(
@@ -565,21 +532,11 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            try
-            {
-                forceParty.Ai.SetDoNotMakeNewDecisions(false);
-                forceParty.SetMoveEngageParty(
-                    assignee, forceParty.NavigationCapability);
-                forceParty.Ai.SetDoNotMakeNewDecisions(true);
-                return true;
-            }
-            catch
-            {
-                // 即使本帧的移动命令因原版瞬时状态失败，也不能重新开放
-                // 其他欲望；下一帧会再次尝试写入唯一的进攻目标。
-                try { forceParty.Ai.SetDoNotMakeNewDecisions(true); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-                return false;
-            }
+            forceParty.Ai.SetDoNotMakeNewDecisions(false);
+            forceParty.SetMoveEngageParty(
+                assignee, forceParty.NavigationCapability);
+            forceParty.Ai.SetDoNotMakeNewDecisions(true);
+            return true;
         }
 
         private static bool IsShelteredForcedAttackTaskActive(PoliceTask? task)

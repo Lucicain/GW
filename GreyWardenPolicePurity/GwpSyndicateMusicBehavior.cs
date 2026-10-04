@@ -31,55 +31,51 @@ namespace GreyWardenPolicePurity
         public override void OnMissionTick(float dt)
         {
             if (_disposed) return;
-            try
+            if (!_checked)
             {
-                if (!_checked)
-                {
-                    if (Mission?.Agents == null || Mission.Agents.Count == 0 || Mission.PlayerTeam == null) return;
-                    var context = Mission.GetMissionBehavior<GwpBattleSceneContext>();
-                    if (context == null || !context.TryCapture()) return;
-                    _spawn = context.Spawn!;
-                    _checked = true;
-                    if (!context.MusicEligible) return;
-                    _ourSide = Mission.PlayerTeam.Side;
-                    if (_ourSide == BattleSideEnum.None || MBMusicManager.Current == null) return;
-                    string module = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(SubModule).Assembly.Location)!, "../.."));
-                    _owner?.Teardown();
-                    _output = new GwpMusicOutput(Path.Combine(module, "Music", "Lab"));
-                    MBMusicManager.Current.PauseMusicManagerSystem(); _nativePaused = true;
-                    psai.net.PsaiCore.Instance.StopMusic(true, 0f);
-                    _spawn.OnReinforcementsSpawned += NotifyReinforcementArrival;
-                    _owner = this;
-                    Pump();
-                }
-                if (_output == null || _outro) return;
-                if (Mission.MissionResult != null || Mission.MissionEnded) { EndMusic("native battle result"); return; }
-                if (!_spawn!.IsDeploymentOver) return;
-                _elapsed += dt; _sampleTime += dt;
-                if (_sampleTime < .5f) return;
-                float sample = _sampleTime; _sampleTime = 0;
-                ReadPower(out float ours, out float enemy);
-                if (!_battle)
-                {
-                    // Initial spawn counters may be zero. Never initialize from that transient state.
-                    if (ours <= 0 || enemy <= 0) return;
-                    _battle = true; _policy.Initialize(ours, enemy);
-                    _output.Want(_policy.Tier);
-                    if (_reinforcementCount > 0) { _output.Reinforcement(); _reinforcementCount = 0; }
-                }
-                bool ourDefender = _ourSide == BattleSideEnum.Defender;
-                int ourReserves = ourDefender ? _spawn.NumberOfRemainingDefenderTroops : _spawn.NumberOfRemainingAttackerTroops;
-                int enemyReserves = ourDefender ? _spawn.NumberOfRemainingAttackerTroops : _spawn.NumberOfRemainingDefenderTroops;
-                var support = Mission.GetMissionBehavior<GwpBattleReinforcementBehavior>();
-                BattleSideEnum enemySide = ourDefender ? BattleSideEnum.Attacker : BattleSideEnum.Defender;
-                bool ended = (ours <= 0 && ourReserves == 0 && support?.HasPendingReinforcementSpawn(_ourSide) != true)
-                    || (enemy <= 0 && enemyReserves == 0 && support?.HasPendingReinforcementSpawn(enemySide) != true);
-                _emptyTime = ended ? _emptyTime + sample : 0;
-                if (_elapsed >= 5 && _emptyTime >= 3) { EndMusic("no fighting force or reserves on one side"); return; }
-                bool changed = _policy.Update(ours, enemy, sample);
-                if (changed) _output.Want(_policy.Tier);
+                if (Mission?.Agents == null || Mission.Agents.Count == 0 || Mission.PlayerTeam == null) return;
+                var context = Mission.GetMissionBehavior<GwpBattleSceneContext>();
+                if (context == null || !context.TryCapture()) return;
+                _spawn = context.Spawn!;
+                _checked = true;
+                if (!context.MusicEligible) return;
+                _ourSide = Mission.PlayerTeam.Side;
+                if (_ourSide == BattleSideEnum.None || MBMusicManager.Current == null) return;
+                string module = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(SubModule).Assembly.Location)!, "../.."));
+                _owner?.Teardown();
+                _output = new GwpMusicOutput(Path.Combine(module, "Music", "Lab"));
+                MBMusicManager.Current.PauseMusicManagerSystem(); _nativePaused = true;
+                psai.net.PsaiCore.Instance.StopMusic(true, 0f);
+                _spawn.OnReinforcementsSpawned += NotifyReinforcementArrival;
+                _owner = this;
+                Pump();
             }
-            catch (Exception e) { Fail(e); }
+            if (_output == null || _outro) return;
+            if (Mission.MissionResult != null || Mission.MissionEnded) { EndMusic("native battle result"); return; }
+            if (!_spawn!.IsDeploymentOver) return;
+            _elapsed += dt; _sampleTime += dt;
+            if (_sampleTime < .5f) return;
+            float sample = _sampleTime; _sampleTime = 0;
+            ReadPower(out float ours, out float enemy);
+            if (!_battle)
+            {
+                // Initial spawn counters may be zero. Never initialize from that transient state.
+                if (ours <= 0 || enemy <= 0) return;
+                _battle = true; _policy.Initialize(ours, enemy);
+                _output.Want(_policy.Tier);
+                if (_reinforcementCount > 0) { _output.Reinforcement(); _reinforcementCount = 0; }
+            }
+            bool ourDefender = _ourSide == BattleSideEnum.Defender;
+            int ourReserves = ourDefender ? _spawn.NumberOfRemainingDefenderTroops : _spawn.NumberOfRemainingAttackerTroops;
+            int enemyReserves = ourDefender ? _spawn.NumberOfRemainingAttackerTroops : _spawn.NumberOfRemainingDefenderTroops;
+            var support = Mission.GetMissionBehavior<GwpBattleReinforcementBehavior>();
+            BattleSideEnum enemySide = ourDefender ? BattleSideEnum.Attacker : BattleSideEnum.Defender;
+            bool ended = (ours <= 0 && ourReserves == 0 && support?.HasPendingReinforcementSpawn(_ourSide) != true)
+                || (enemy <= 0 && enemyReserves == 0 && support?.HasPendingReinforcementSpawn(enemySide) != true);
+            _emptyTime = ended ? _emptyTime + sample : 0;
+            if (_elapsed >= 5 && _emptyTime >= 3) { EndMusic("no fighting force or reserves on one side"); return; }
+            bool changed = _policy.Update(ours, enemy, sample);
+            if (changed) _output.Want(_policy.Tier);
         }
         private void ReadPower(out float ours, out float enemy)
         {
@@ -140,7 +136,7 @@ namespace GreyWardenPolicePurity
                 _output.Volume = gain;
                 _output.Paused = MissionState.Current?.Paused == true && Mission.Mode != MissionMode.Deployment;
             }
-            catch (Exception e) { Fail(e); }
+            catch (Exception e) { /* 依据：实机诊断 2026-09-20（自定义战斗里 Clan.PlayerClan 抛 NullReferenceException） */ Fail(e); }
         }
         private void Fail(Exception e) { GwpFaultTrace.WriteQuiet(e); Teardown(); }
         private void Teardown()
@@ -151,7 +147,6 @@ namespace GreyWardenPolicePurity
             if (_spawn != null) _spawn.OnReinforcementsSpawned -= NotifyReinforcementArrival;
             if (_owner == this) _owner = null;
             try { _output?.Dispose(); }
-            catch (Exception e) { GwpFaultTrace.WriteQuiet(e); }
             finally
             {
                 _output = null;

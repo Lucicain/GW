@@ -34,7 +34,6 @@ namespace GreyWardenPolicePurity
 
         internal bool CanRequestCaseSupport =>
             IsTrackingBountyTarget && !_supportRequested && !HasCompletedEnforcement;
-        internal bool HasRequestedCaseSupport => _supportRequested;
 
         /// <summary>
         /// 求援成立。无论是玩家当面开口，还是派去的士兵把话带到，都是同一件事：
@@ -128,39 +127,32 @@ namespace GreyWardenPolicePurity
         internal void NotifySupportWarDeclared(MobileParty? criminal)
         {
             if (!HasBountyTask || criminal == null) return;
-            try
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            IFaction? criminalFaction = criminal.MapFaction;
+            if (playerFaction == null || criminalFaction == null ||
+                playerFaction == criminalFaction) return;
+
+            Clan? criminalClan = criminal.ActualClan;
+            if (criminalClan != null && criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
+
+            _bountyTargetEncounterStarted = true;
+            if (FactionManager.IsAtWarAgainstFaction(playerFaction, criminalFaction))
             {
-                IFaction? playerFaction = Hero.MainHero?.MapFaction;
-                IFaction? criminalFaction = criminal.MapFaction;
-                if (playerFaction == null || criminalFaction == null ||
-                    playerFaction == criminalFaction) return;
-
-                Clan? criminalClan = criminal.ActualClan;
-                if (criminalClan != null && criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
-
-                _bountyTargetEncounterStarted = true;
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, criminalFaction))
-                {
-                    // 接案之前就已经在打的战争不是这宗案子造成的，结案时也不该由它来收。
-                    _playerFactionWasAtWarWhenBountyAccepted = true;
-                    return;
-                }
-
-                DeclareWarAction.ApplyByDefault(playerFaction, criminalFaction);
-                // 这一战是替灰袍办案打的，记进申请通道；结案时不再替玩家自动讲和。
-                PoliceAntiWarDeclaration.RecordMediationRequest(
-                    criminalFaction, "case_support_declaration");
-                GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_PLAYER_WAR",
-                    "playerFaction=" + playerFaction.StringId +
-                    "; criminalFaction=" + criminalFaction.StringId);
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_support_player_war}The Wardens have declared against {VAR_1}, and your own banner now stands with them.",
-                    "VAR_1", criminalFaction.Name), Colors.Cyan));
+                // 接案之前就已经在打的战争不是这宗案子造成的，结案时也不该由它来收。
+                _playerFactionWasAtWarWhenBountyAccepted = true;
+                return;
             }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_PLAYER_WAR_FAILED", ex.ToString());
-            }
+
+            DeclareWarAction.ApplyByDefault(playerFaction, criminalFaction);
+            // 这一战是替灰袍办案打的，记进申请通道；结案时不再替玩家自动讲和。
+            PoliceAntiWarDeclaration.RecordMediationRequest(
+                criminalFaction, "case_support_declaration");
+            GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_PLAYER_WAR",
+                "playerFaction=" + playerFaction.StringId +
+                "; criminalFaction=" + criminalFaction.StringId);
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                "{=gwp_support_player_war}The Wardens have declared against {VAR_1}, and your own banner now stands with them.",
+                "VAR_1", criminalFaction.Name), Colors.Cyan));
         }
 
         private void RegisterSupportDialogue(CampaignGameStarter starter)

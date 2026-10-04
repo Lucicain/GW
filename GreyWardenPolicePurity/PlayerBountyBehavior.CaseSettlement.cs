@@ -40,7 +40,6 @@ namespace GreyWardenPolicePurity
         private string _caseDeterrenceRegisteredId = string.Empty;
         /// <summary>案子在玩家手上被别人了结了：没有罚金可交、没有人可押，只剩一笔辛苦费。</summary>
         private bool _caseClosedElsewhere;
-        internal bool IsCaseClosedElsewhere => _caseClosedElsewhere;
         /// <summary>击败之后不再让期限把这宗案子作废，玩家仍可回去交差。</summary>
         internal bool HasCompletedEnforcement => _caseTargetDefeated || _casePeacefullyResolved;
 
@@ -136,7 +135,7 @@ namespace GreyWardenPolicePurity
                     string message = GwpText.Get("{=gwp_case_defeat_recorded}You broke {VAR_1} in the field. Go and make your report.",
                         "VAR_1", target.Name.ToString());
                     _activeQuest?.WriteLog(message);
-                    try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    _activeQuest?.MarkReadyForTurnIn();
                     InformationManager.DisplayMessage(new InformationMessage(message, Colors.Green));
                 }
                 else if (!target.IsDead)
@@ -295,6 +294,7 @@ namespace GreyWardenPolicePurity
             }
             catch (InvalidCastException exception)
             {
+                // 依据：实机诊断 2026-09-15（GUARDED_FAILURE 4 次：旧档 gwp_case_support_requested 存成了另一种类型）
                 GwpFaultTrace.Write("INVALID_LEGACY_FLAG", details: key + " | " + exception);
                 return false;
             }
@@ -320,7 +320,7 @@ namespace GreyWardenPolicePurity
 
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            _activeQuest?.MarkReadyForTurnIn();
 
             string message = GwpText.Get(
                 "{=gwp_case_closed_elsewhere}{VAR_1} is beyond your reach now. The commission is void. Report to any Grey Warden lord, or send a man.",
@@ -357,18 +357,6 @@ namespace GreyWardenPolicePurity
             // 打垮了他就算办成：只有真从他手里收过的钱才需要交代去向。
             (!prisoner && delivered < (_caseTargetDefeated ? CaseReportSuggestedPayment : CaseAmountDue))
             || Reports?.NeedsExplanation(CaseReportIdentity, delivered, prisoner) == true;
-
-        /// <summary>
-        /// 这名俘虏就是本案要押走的人，可以交给派出去的队伍带走。
-        ///
-        /// 判的是 <see cref="_pendingPrisonerHeroId"/>——**被押下的那一刻记下来的人**，
-        /// 而不是 <c>CaseHero</c>。对方选择投降之后，委托会转入待交付状态，追捕目标那几个
-        /// 字段随之清掉；再拿 <c>CaseHero</c> 去比，人就对不上了，于是分兵界面里那名俘虏
-        /// 根本选不动，玩家只能自己押着他跑一趟。
-        /// </summary>
-        internal bool IsDeliverableCasePrisoner(Hero? hero) =>
-            hero != null && CanDeliverCasePrisoner() &&
-            string.Equals(hero.StringId, _pendingPrisonerHeroId, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// 派出去的队伍替玩家交了差。判定口径和玩家亲自去完全一样：足额或交人算完美，
@@ -614,34 +602,26 @@ namespace GreyWardenPolicePurity
                 ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party
                 ?? treasurer?.PartyBelongedTo?.Party;
             if (treasurer == null || treasurer.IsDead || clerk == null || !HasBountyTask) return;
+            _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseReportSuggestedPayment,
+                reportMode: true, autoReceipt: CaseReportReceipt, prisoner: PendingCasePrisonerForDispatch);
+            ShowUnknownCaseReceipt();
+            _casePaymentOpen = true;
+            BarterManager manager = Campaign.Current.BarterManager;
+            // The native context initializer selects entries; it does NOT filter
+            // the normal trading catalogue. Remove those entries before the VM
+            // is created so this table contains only this commission's payment.
+            BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
             try
             {
-                _casePayment = new GwpAssetPayment(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk, int.MaxValue, CaseReportSuggestedPayment,
-                    reportMode: true, autoReceipt: CaseReportReceipt, prisoner: PendingCasePrisonerForDispatch);
-                ShowUnknownCaseReceipt();
-                _casePaymentOpen = true;
-                BarterManager manager = Campaign.Current.BarterManager;
-                // The native context initializer selects entries; it does NOT filter
-                // the normal trading catalogue. Remove those entries before the VM
-                // is created so this table contains only this commission's payment.
-                BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
-                try
+                manager.BarterBegin = data =>
                 {
-                    manager.BarterBegin = data =>
-                    {
-                        _casePayment.PrepareCatalogue(data);
-                        original?.Invoke(data);
-                    };
-                    manager.StartBarterOffer(Hero.MainHero, treasurer,
-                        MobileParty.MainParty.Party, clerk, null, CasePaymentContext, 0, false, _casePayment.Entries);
-                }
-                finally { manager.BarterBegin = original; }
+                    _casePayment.PrepareCatalogue(data);
+                    original?.Invoke(data);
+                };
+                manager.StartBarterOffer(Hero.MainHero, treasurer,
+                    MobileParty.MainParty.Party, clerk, null, CasePaymentContext, 0, false, _casePayment.Entries);
             }
-            catch (Exception ex)
-            {
-                _casePaymentOpen = false;
-                GwpAiDiagnostics.WriteFieldArrest("REPORT_PAYMENT_FAILED", ex.ToString());
-            }
+            finally { manager.BarterBegin = original; }
         }
 
         private bool CasePaymentContext(Barterable barterable, BarterData data, object obj) =>
@@ -716,14 +696,11 @@ namespace GreyWardenPolicePurity
         private int PrisonerCaseFee()
         {
             int ransom = 0;
-            try
-            {
-                Hero? prisoner = PendingCasePrisoner;
-                if (prisoner?.CharacterObject != null)
-                    ransom = Math.Max(0, Campaign.Current.Models.RansomValueCalculationModel
-                        .PrisonerRansomValue(prisoner.CharacterObject, Hero.MainHero));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            Hero? prisoner = PendingCasePrisoner;
+            if (prisoner?.CharacterObject != null)
+                ransom = Math.Max(0, Campaign.Current.Models.RansomValueCalculationModel
+                    .PrisonerRansomValue(prisoner.CharacterObject, Hero.MainHero));
+
             return (int)Math.Min(int.MaxValue, (long)CalculateCaseFee(_pendingPrisonerAssessed) + ransom);
         }
 

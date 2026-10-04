@@ -259,11 +259,6 @@ namespace GreyWardenPolicePurity
             return result;
         }
 
-        internal static int GetTaskSnapshotCount() =>
-            _instance == null
-                ? 0
-                : _instance._activeReliefs.Count + _instance._pendingReliefs.Count;
-
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
             _pendingReliefs.Clear();
@@ -569,40 +564,26 @@ namespace GreyWardenPolicePurity
 
         private static void PublishAdoptionLogEntry(Hero adoptedHero, string villageName)
         {
-            try
+            if (adoptedHero == null)
             {
-                if (adoptedHero == null)
-                {
-                    return;
-                }
-                LogEntry.AddLogEntry(new GreyWardenAdoptionLogEntry(adoptedHero, villageName));
+                return;
             }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            LogEntry.AddLogEntry(new GreyWardenAdoptionLogEntry(adoptedHero, villageName));
         }
 
         private static void EquipInitialChildGear(Hero hero)
         {
-            try
-            {
-                Equipment? equipment = Campaign.Current.Models
-                    .EquipmentSelectionModel
-                    .GetEquipmentForInitialChildrenGeneration(hero);
+            Equipment? equipment = Campaign.Current.Models
+                .EquipmentSelectionModel
+                .GetEquipmentForInitialChildrenGeneration(hero);
 
-                if (equipment == null)
-                {
-                    return;
-                }
-
-                EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, equipment);
-                hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
-            }
-            catch (Exception gwpQuietFailure)
+            if (equipment == null)
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                return;
             }
+
+            EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, equipment);
+            hero.CheckInvalidEquipmentsAndReplaceIfNeeded();
         }
 
         private static bool IsLootedVillageSettlement(Settlement? settlement)
@@ -795,32 +776,25 @@ namespace GreyWardenPolicePurity
         // because adopted girls have no biological mother reference.
         private static void SanitizeLegacyAdoptionMapNotices()
         {
-            try
+            CampaignInformationManager? informationManager = Campaign.Current?.CampaignInformationManager;
+            if (informationManager == null || CampaignMapNoticesField == null)
             {
-                CampaignInformationManager? informationManager = Campaign.Current?.CampaignInformationManager;
-                if (informationManager == null || CampaignMapNoticesField == null)
-                {
-                    return;
-                }
-
-                if (CampaignMapNoticesField.GetValue(informationManager) is not List<InformationData> mapNotices ||
-                    mapNotices.Count == 0)
-                {
-                    return;
-                }
-
-                for (int i = mapNotices.Count - 1; i >= 0; i--)
-                {
-                    if (mapNotices[i] is ChildBornMapNotification childNotice &&
-                        (childNotice.NewbornHero == null || childNotice.NewbornHero.Mother == null))
-                    {
-                        mapNotices.RemoveAt(i);
-                    }
-                }
+                return;
             }
-            catch (Exception gwpQuietFailure)
+
+            if (CampaignMapNoticesField.GetValue(informationManager) is not List<InformationData> mapNotices ||
+                mapNotices.Count == 0)
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                return;
+            }
+
+            for (int i = mapNotices.Count - 1; i >= 0; i--)
+            {
+                if (mapNotices[i] is ChildBornMapNotification childNotice &&
+                    (childNotice.NewbornHero == null || childNotice.NewbornHero.Mother == null))
+                {
+                    mapNotices.RemoveAt(i);
+                }
             }
         }
 

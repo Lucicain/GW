@@ -472,27 +472,23 @@ namespace GreyWardenPolicePurity
         internal static void LendShips(MobileParty? borrower, MobileParty? lender, int plannedMen = 0)
         {
             if (!_navalDlcLoaded || _instance == null) return;
-            try
-            {
-                if (borrower?.IsActive != true || lender?.IsActive != true ||
-                    lender == borrower) return;
-                _instance._shipLenders[borrower.StringId] = lender.StringId;
-                if (lender.MapEvent != null || borrower.Ships.Count > 0) return;
+            if (borrower?.IsActive != true || lender?.IsActive != true ||
+                lender == borrower) return;
+            _instance._shipLenders[borrower.StringId] = lender.StringId;
+            if (lender.MapEvent != null || borrower.Ships.Count > 0) return;
 
-                int wanted = Math.Min(SpareShipCount(lender),
-                    GetRequiredShipCount(borrower, plannedMen));
-                if (wanted <= 0) return;
-                foreach (Ship ship in lender.Ships
-                             .OrderBy(s => Campaign.Current.Models.ShipCostModel
-                                 .GetShipTradeValue(s, lender.Party, null))
-                             .Take(wanted).ToList())
-                {
-                    ChangeShipOwnerAction.ApplyByTransferring(borrower.Party, ship);
-                }
-                borrower.SetNavalVisualAsDirty();
-                lender.SetNavalVisualAsDirty();
+            int wanted = Math.Min(SpareShipCount(lender),
+                GetRequiredShipCount(borrower, plannedMen));
+            if (wanted <= 0) return;
+            foreach (Ship ship in lender.Ships
+                         .OrderBy(s => Campaign.Current.Models.ShipCostModel
+                             .GetShipTradeValue(s, lender.Party, null))
+                         .Take(wanted).ToList())
+            {
+                ChangeShipOwnerAction.ApplyByTransferring(borrower.Party, ship);
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            borrower.SetNavalVisualAsDirty();
+            lender.SetNavalVisualAsDirty();
         }
 
         /// <summary>
@@ -506,43 +502,39 @@ namespace GreyWardenPolicePurity
             bool registered = _instance._shipLenders.TryGetValue(borrower.StringId, out lenderId);
             if (!registered && !GwpCommon.IsLeaderlessDutyParty(borrower)) return;
             _instance._shipLenders.Remove(borrower.StringId);
-            try
+            if (borrower.Ships.Count == 0) return;
+            MobileParty? receiver = null;
+            if (registered)
             {
-                if (borrower.Ships.Count == 0) return;
-                MobileParty? receiver = null;
-                if (registered)
-                {
-                    // 玩家被俘时主队不活跃，但船仍是玩家的（原版被俘不动主队的船）。
-                    MobileParty? main = MobileParty.MainParty;
-                    receiver = main != null && main != borrower &&
-                               string.Equals(main.StringId, lenderId, StringComparison.OrdinalIgnoreCase)
-                        ? main
-                        : MobileParty.All.FirstOrDefault(p => p != borrower &&
-                            string.Equals(p.StringId, lenderId, StringComparison.OrdinalIgnoreCase) &&
-                            CanReceiveReturnedShips(p));
-                    receiver ??= MobileParty.All
-                        .Where(p => p != borrower && IsPoliceLordParty(p) && CanReceiveReturnedShips(p))
-                        .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
-                        .FirstOrDefault();
-                }
-
-                if (receiver != null)
-                {
-                    foreach (Ship ship in borrower.Ships.ToList())
-                        ChangeShipOwnerAction.ApplyByTransferring(receiver.Party, ship);
-                    receiver.SetNavalVisualAsDirty();
-                    return;
-                }
-
-                // 还不回去的船不得留给 NavalDLC 分船/折金币。在海上原版不折钱，
-                // RemoveParty 会自己销毁剩下的船；在陆上这里先销毁。
-                if (borrower.IsCurrentlyAtSea) return;
-                foreach (Ship ship in borrower.Ships.ToList())
-                    DestroyShipAction.Apply(ship);
-                GwpAiDiagnostics.WriteAction(borrower, "SHIP_LOAN_UNRETURNABLE_DESTROYED",
-                    "lender=" + (lenderId ?? "-") + "; registered=" + registered);
+                // 玩家被俘时主队不活跃，但船仍是玩家的（原版被俘不动主队的船）。
+                MobileParty? main = MobileParty.MainParty;
+                receiver = main != null && main != borrower &&
+                           string.Equals(main.StringId, lenderId, StringComparison.OrdinalIgnoreCase)
+                    ? main
+                    : MobileParty.All.FirstOrDefault(p => p != borrower &&
+                        string.Equals(p.StringId, lenderId, StringComparison.OrdinalIgnoreCase) &&
+                        CanReceiveReturnedShips(p));
+                receiver ??= MobileParty.All
+                    .Where(p => p != borrower && IsPoliceLordParty(p) && CanReceiveReturnedShips(p))
+                    .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
+                    .FirstOrDefault();
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            if (receiver != null)
+            {
+                foreach (Ship ship in borrower.Ships.ToList())
+                    ChangeShipOwnerAction.ApplyByTransferring(receiver.Party, ship);
+                receiver.SetNavalVisualAsDirty();
+                return;
+            }
+
+            // 还不回去的船不得留给 NavalDLC 分船/折金币。在海上原版不折钱，
+            // RemoveParty 会自己销毁剩下的船；在陆上这里先销毁。
+            if (borrower.IsCurrentlyAtSea) return;
+            foreach (Ship ship in borrower.Ships.ToList())
+                DestroyShipAction.Apply(ship);
+            GwpAiDiagnostics.WriteAction(borrower, "SHIP_LOAN_UNRETURNABLE_DESTROYED",
+                "lender=" + (lenderId ?? "-") + "; registered=" + registered);
         }
 
         /// <summary>
@@ -709,28 +701,6 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// The counterpart: a fine the player hands in leaves his purse and reaches the
-        /// judicial treasury. Anything he never hands in simply stays with him, which is
-        /// the whole design - the order has to be able to be robbed by its own.
-        /// </summary>
-        internal static int DepositFieldFine(int amount)
-        {
-            if (amount <= 0 || Hero.MainHero == null) return 0;
-
-            int paid = Math.Min(Hero.MainHero.Gold, amount);
-            if (paid <= 0) return 0;
-
-            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
-            if (treasurer != null && !treasurer.IsDead && treasurer != Hero.MainHero)
-                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, treasurer, paid,
-                    disableNotification: true);
-            else
-                Hero.MainHero.ChangeHeroGold(-paid);
-
-            return paid;
-        }
-
-        /// <summary>
         /// A case closed by taking the man brings in no fine, so the expenses come out of
         /// the judicial treasury. It pays what it can and no more - an empty treasury pays
         /// nothing, which is itself information for the player.
@@ -867,14 +837,6 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        /// <summary>
-        /// 旧版兼容入口：不再发出移动命令，只让原版 AI 在下一次拍卖中重算。
-        /// </summary>
-        public static void ForceImmediateMoveToResupply(MobileParty police)
-        {
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
-        }
-
     }
 
     /// <summary>
@@ -887,8 +849,7 @@ namespace GreyWardenPolicePurity
         [HarmonyPrefix]
         private static void Before(MobileParty destroyedParty)
         {
-            try { PoliceResourceManager.ReturnLentShips(destroyedParty); }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            PoliceResourceManager.ReturnLentShips(destroyedParty);
         }
     }
 
@@ -902,8 +863,7 @@ namespace GreyWardenPolicePurity
         [HarmonyPrefix]
         private static void Before(MobileParty disbandedParty)
         {
-            try { PoliceResourceManager.ReturnLentShips(disbandedParty); }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            PoliceResourceManager.ReturnLentShips(disbandedParty);
         }
     }
 }

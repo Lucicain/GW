@@ -104,7 +104,6 @@ namespace GreyWardenPolicePurity
                     queued[next] = true; next = (next + 1) % 4;
                 }
             }
-            catch (Exception e) { Failure = e; }
             finally
             {
                 waveOutReset(_device);

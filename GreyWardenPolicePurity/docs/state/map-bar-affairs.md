@@ -2,6 +2,7 @@
 
 > 当前状态：用户实测确认（2026-10-02）
 > 最后验收：`a3dc3c9`（2026-10-02 用户确认）
+> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
 > 覆盖源码：`GwpAffairsNavigation.cs` `_Module/GUI/Icons/gwp_affairs.png` `tools/ui-icons/make_affairs_icon.py`
 > 待实测：无
 

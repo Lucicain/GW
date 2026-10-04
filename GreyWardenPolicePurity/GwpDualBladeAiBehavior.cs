@@ -145,46 +145,38 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static EquipmentIndex FindUsableRangedSlot(Agent agent)
         {
-            try
-            {
-                MissionEquipment? equipment = agent.Equipment;
-                if (equipment == null)
-                    return EquipmentIndex.None;
-
-                EquipmentIndex ranged = EquipmentIndex.None;
-                bool hasAmmo = false;
-
-                foreach (EquipmentIndex slot in new[]
-                {
-                    EquipmentIndex.Weapon2,
-                    EquipmentIndex.Weapon3
-                })
-                {
-                    MissionWeapon weapon = equipment[slot];
-                    WeaponComponentData? usage = weapon.IsEmpty
-                        ? null
-                        : weapon.Item?.PrimaryWeapon;
-                    if (usage == null)
-                        continue;
-
-                    if (usage.WeaponFlags.HasAnyFlag(WeaponFlags.RangedWeapon)
-                        && ranged == EquipmentIndex.None)
-                    {
-                        ranged = slot;
-                    }
-                    else if (usage.IsAmmo && weapon.Amount > 0)
-                    {
-                        hasAmmo = true;
-                    }
-                }
-
-                return hasAmmo ? ranged : EquipmentIndex.None;
-            }
-            catch
-            {
-                // A half-built agent is simply treated as pair-only.
+            MissionEquipment? equipment = agent.Equipment;
+            if (equipment == null)
                 return EquipmentIndex.None;
+
+            EquipmentIndex ranged = EquipmentIndex.None;
+            bool hasAmmo = false;
+
+            foreach (EquipmentIndex slot in new[]
+            {
+                EquipmentIndex.Weapon2,
+                EquipmentIndex.Weapon3
+            })
+            {
+                MissionWeapon weapon = equipment[slot];
+                WeaponComponentData? usage = weapon.IsEmpty
+                    ? null
+                    : weapon.Item?.PrimaryWeapon;
+                if (usage == null)
+                    continue;
+
+                if (usage.WeaponFlags.HasAnyFlag(WeaponFlags.RangedWeapon)
+                    && ranged == EquipmentIndex.None)
+                {
+                    ranged = slot;
+                }
+                else if (usage.IsAmmo && weapon.Amount > 0)
+                {
+                    hasAmmo = true;
+                }
             }
+
+            return hasAmmo ? ranged : EquipmentIndex.None;
         }
 
         /// <summary>
@@ -207,36 +199,28 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static float RangedFavorScale(Agent agent)
         {
-            try
+            GwpDualBladeAgentState? state = Find(agent);
+            if (state == null || !state.HasRangedAlternative)
+                return 1f;
+
+            EquipmentIndex off = agent.GetOffhandWieldedItemIndex();
+            if (off == EquipmentIndex.None)
+                return 1f;
+
+            WeaponComponentData? offUsage =
+                agent.Equipment[off].CurrentUsageItem;
+            WeaponComponentData? rangedUsage =
+                agent.Equipment[state.RangedSlot].CurrentUsageItem;
+            if (offUsage == null
+                || rangedUsage == null
+                || offUsage.WeaponFlags.HasAnyFlag(WeaponFlags.CanBlockRanged)
+                || !rangedUsage.WeaponFlags.HasAnyFlag(
+                    WeaponFlags.NotUsableWithOneHand))
             {
-                GwpDualBladeAgentState? state = Find(agent);
-                if (state == null || !state.HasRangedAlternative)
-                    return 1f;
-
-                EquipmentIndex off = agent.GetOffhandWieldedItemIndex();
-                if (off == EquipmentIndex.None)
-                    return 1f;
-
-                WeaponComponentData? offUsage =
-                    agent.Equipment[off].CurrentUsageItem;
-                WeaponComponentData? rangedUsage =
-                    agent.Equipment[state.RangedSlot].CurrentUsageItem;
-                if (offUsage == null
-                    || rangedUsage == null
-                    || offUsage.WeaponFlags.HasAnyFlag(WeaponFlags.CanBlockRanged)
-                    || !rangedUsage.WeaponFlags.HasAnyFlag(
-                        WeaponFlags.NotUsableWithOneHand))
-                {
-                    return 1f;
-                }
-
-                return 1f / NativeOffhandTwoHandedPenalty;
-            }
-            catch (System.Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
                 return 1f;
             }
+
+            return 1f / NativeOffhandTwoHandedPenalty;
         }
 
         private static bool IsMainBlade(string? itemId) =>

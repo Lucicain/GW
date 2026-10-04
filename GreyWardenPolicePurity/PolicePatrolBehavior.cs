@@ -423,15 +423,11 @@ namespace GreyWardenPolicePurity
             DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_023}The conversation ends and repatriation begins. active={VAR_1}, returning={VAR_2}", "VAR_1", _activePatrolIds.Count, "VAR_2", _returningPatrolIds.Count));
             FreezeAndScheduleDestroyAllPatrols();
 
-            try
+            if (PlayerEncounter.IsActive)
             {
-                if (PlayerEncounter.IsActive)
-                {
-                    GwpCommon.TryFinishPlayerEncounter();
-                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_024}PlayerEncounter.Finish(false) has been called"));
-                }
+                GwpCommon.TryFinishPlayerEncounter();
+                DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_024}PlayerEncounter.Finish(false) has been called"));
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
         }
 
         #endregion
@@ -454,7 +450,7 @@ namespace GreyWardenPolicePurity
 
             // 每隔天触发一次检测
             _dayCounter++;
-            
+
             if (_bribeProtectionDays > 0)
             {
                 _bribeProtectionDays--;
@@ -608,91 +604,84 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
-            try
+            CleanDeadPatrols();
+            CleanupPatrolsInsideSettlements();
+            UpdateReturningPatrols();
+            TryReleasePatrolMeetingSuppression();
+
+            if (_suppressPatrolMeetings)
             {
-                CleanDeadPatrols();
-                CleanupPatrolsInsideSettlements();
-                UpdateReturningPatrols();
-                TryReleasePatrolMeetingSuppression();
-
-                if (_suppressPatrolMeetings)
-                {
-                    return;
-                }
-
-                // === 押送状态：玩家被俘虏后正在被纠察队送回驻地点 ===
-                if (_playerCapturedByPatrol)
-                {
-                    UpdateEscort();
-                    return;
-                }
-
-                // 玩家拒绝且纠察队全部消失（未通过战斗解决）→ 额外扣分
-                if (_playerRefused && _activePatrolIds.Count == 0)
-                {
-                    PlayerState.ChangeReputation(-1);
-                    MakePeaceWithPoliceClan();
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_032}You refuse to enforce the law and the case is not completed, reputation -1. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
-                        Colors.Red));
-                    _playerRefused = false;
-                    return;
-                }
-
-                // 玩家拒绝后保留持续追踪欲望，直到战斗或案件结束
-                if (_playerRefused)
-                {
-                    MobileParty player = MobileParty.MainParty;
-                    if (player != null && player.IsActive)
-                    {
-                        foreach (string patrolId in _activePatrolIds.ToList())
-                        {
-                            var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
-                            if (patrol == null || !patrol.IsActive) continue;
-                            GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 9f);
-                        }
-                    }
-                    return;
-                }
-
-                int rep = PlayerState.Reputation;
-
-                // 只在 -1 到 -10 范围内工作
-                if (rep >= 0 || rep <= -11)
-                {
-                    if (_activePatrolIds.Count > 0)
-                        ReturnAllPatrols();
-                    return;
-                }
-
-                // 追击玩家。纠察队是无领主的一次性执法队，直接使用原版
-                // EngageParty 追踪实时玩家位置；不要先把玩家当前位置快照成
-                // GoToPoint，否则玩家移动后纠察队可能继续赶往旧位置而错过会面。
-                foreach (string patrolId in _activePatrolIds.ToList())
-                {
-                    var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
-                    if (patrol == null || !patrol.IsActive) continue;
-
-                    MobileParty player = MobileParty.MainParty;
-                    if (player == null || !player.IsActive) continue;
-
-                    float contactDistance = patrol.GetPosition2D.Distance(
-                        player.GetPosition2D);
-                    GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 8f);
-                    if (contactDistance <=
-                        GwpTuning.Bounty.RecruitmentContactDistance)
-                    {
-                        GwpAiDiagnostics.WriteAction(
-                            patrol,
-                            "PATROL_FORCE_MEETING_APPROACH",
-                            "distance=" + contactDistance.ToString("0.00") +
-                            "; using native EngageParty contact");
-                    }
-                }
+                return;
             }
-            catch (Exception gwpQuietFailure)
+
+            // === 押送状态：玩家被俘虏后正在被纠察队送回驻地点 ===
+            if (_playerCapturedByPatrol)
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                UpdateEscort();
+                return;
+            }
+
+            // 玩家拒绝且纠察队全部消失（未通过战斗解决）→ 额外扣分
+            if (_playerRefused && _activePatrolIds.Count == 0)
+            {
+                PlayerState.ChangeReputation(-1);
+                MakePeaceWithPoliceClan();
+                InformationManager.DisplayMessage(new InformationMessage(
+                    GwpText.Get("{=gwp_policepatrolbehavior_032}You refuse to enforce the law and the case is not completed, reputation -1. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
+                    Colors.Red));
+                _playerRefused = false;
+                return;
+            }
+
+            // 玩家拒绝后保留持续追踪欲望，直到战斗或案件结束
+            if (_playerRefused)
+            {
+                MobileParty player = MobileParty.MainParty;
+                if (player != null && player.IsActive)
+                {
+                    foreach (string patrolId in _activePatrolIds.ToList())
+                    {
+                        var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
+                        if (patrol == null || !patrol.IsActive) continue;
+                        GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 9f);
+                    }
+                }
+                return;
+            }
+
+            int rep = PlayerState.Reputation;
+
+            // 只在 -1 到 -10 范围内工作
+            if (rep >= 0 || rep <= -11)
+            {
+                if (_activePatrolIds.Count > 0)
+                    ReturnAllPatrols();
+                return;
+            }
+
+            // 追击玩家。纠察队是无领主的一次性执法队，直接使用原版
+            // EngageParty 追踪实时玩家位置；不要先把玩家当前位置快照成
+            // GoToPoint，否则玩家移动后纠察队可能继续赶往旧位置而错过会面。
+            foreach (string patrolId in _activePatrolIds.ToList())
+            {
+                var patrol = MobileParty.All.FirstOrDefault(p => p.StringId == patrolId);
+                if (patrol == null || !patrol.IsActive) continue;
+
+                MobileParty player = MobileParty.MainParty;
+                if (player == null || !player.IsActive) continue;
+
+                float contactDistance = patrol.GetPosition2D.Distance(
+                    player.GetPosition2D);
+                GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 8f);
+                if (contactDistance <=
+                    GwpTuning.Bounty.RecruitmentContactDistance)
+                {
+                    GwpAiDiagnostics.WriteAction(
+                        patrol,
+                        "PATROL_FORCE_MEETING_APPROACH",
+                        "distance=" + contactDistance.ToString("0.00") +
+                        "; using native EngageParty contact");
+                }
             }
         }
 
@@ -715,14 +704,10 @@ namespace GreyWardenPolicePurity
 
             if (!FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
-                try
-                {
-                    FactionManager.DeclareWar(policeClan, playerFaction);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_034}You refused the order. The provost patrol will take you by force."),
-                        Colors.Yellow));
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                FactionManager.DeclareWar(policeClan, playerFaction);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    GwpText.Get("{=gwp_policepatrolbehavior_034}You refused the order. The provost patrol will take you by force."),
+                    Colors.Yellow));
             }
         }
 
@@ -743,47 +728,40 @@ namespace GreyWardenPolicePurity
 
             string patrolId = GwpIds.PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
 
-            try
-            {
-                // 使用只有 owner 的重载（不传入 leader，避免族长被转移到纠察队）
-                // 对话系统用 MobileParty.ConversationParty 识别，不需要 leader hero
-                MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                    _patrolOriginSettlement.GatePosition,
-                    1f,
-                    _patrolOriginSettlement,
-                    new TextObject(GwpText.Get("{=gwp_policepatrolbehavior_035}Picket Patrol")),
-                    policeClan,
-                    policeClan.DefaultPartyTemplate,
-                    null,           // ★ 修复 Bug 1：原为 clanLeader，会导致族长成为纠察队 LeaderHero
-                                    //   → 族长执行领地迁移 → 执行领地报错 → 玩家加载报错
-                                    //   mod 自管犯罪状态（_playerCapturedByPatrol），不需要原生 owner
-                    "", "",
-                    5f,
-                    false);         // avoidHostileActions=false，让玩家可敌对并触发对话
+            // 使用只有 owner 的重载（不传入 leader，避免族长被转移到纠察队）
+            // 对话系统用 MobileParty.ConversationParty 识别，不需要 leader hero
+            MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                _patrolOriginSettlement.GatePosition,
+                1f,
+                _patrolOriginSettlement,
+                new TextObject(GwpText.Get("{=gwp_policepatrolbehavior_035}Picket Patrol")),
+                policeClan,
+                policeClan.DefaultPartyTemplate,
+                null,           // ★ 修复 Bug 1：原为 clanLeader，会导致族长成为纠察队 LeaderHero
+                                //   → 族长执行领地迁移 → 执行领地报错 → 玩家加载报错
+                                //   mod 自管犯罪状态（_playerCapturedByPatrol），不需要原生 owner
+                "", "",
+                5f,
+                false);         // avoidHostileActions=false，让玩家可敌对并触发对话
 
-                patrol.StringId = patrolId;
-                patrol.ActualClan = policeClan;
+            patrol.StringId = patrolId;
+            patrol.ActualClan = policeClan;
 
-                patrol.MemberRoster.Clear();
-                FillPatrolTroops(patrol, repMagnitude);
-                PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
+            patrol.MemberRoster.Clear();
+            FillPatrolTroops(patrol, repMagnitude);
+            PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
-                // This is a disposable, leaderless enforcement party.  Pursuit
-                // uses the native EngageParty target directly and therefore
-                // follows the moving player instead of the spawn-time position.
-                GreyWardenPartyDesireBehavior.RequestPursuit(
-                    patrol, MobileParty.MainParty, 8f);
+            // This is a disposable, leaderless enforcement party.  Pursuit
+            // uses the native EngageParty target directly and therefore
+            // follows the moving player instead of the spawn-time position.
+            GreyWardenPartyDesireBehavior.RequestPursuit(
+                patrol, MobileParty.MainParty, 8f);
 
-                _activePatrolIds.Add(patrolId);
+            _activePatrolIds.Add(patrolId);
 
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policepatrolbehavior_036}Picket has departed from {VAR_1} and is tracking you.", "VAR_1", _patrolOriginSettlement.Name),
-                    Colors.Yellow));
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_policepatrolbehavior_036}Picket has departed from {VAR_1} and is tracking you.", "VAR_1", _patrolOriginSettlement.Name),
+                Colors.Yellow));
         }
 
         private void FillPatrolTroops(MobileParty patrol, int repMagnitude)
@@ -820,98 +798,87 @@ namespace GreyWardenPolicePurity
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            try
+            if (mapEvent == null) return;
+
+            bool patrolInvolved = false;
+            bool playerInvolved = false;
+            MobileParty involvedPatrol = null!;
+
+            foreach (var p in mapEvent.InvolvedParties)
             {
-                if (mapEvent == null) return;
-
-                bool patrolInvolved = false;
-                bool playerInvolved = false;
-                MobileParty involvedPatrol = null!;
-
-                foreach (var p in mapEvent.InvolvedParties)
+                if (p?.MobileParty == null) continue;
+                if (IsPatrol(p.MobileParty))
                 {
-                    if (p?.MobileParty == null) continue;
-                    if (IsPatrol(p.MobileParty))
+                    patrolInvolved = true;
+                    involvedPatrol = p.MobileParty;
+                }
+                if (p.MobileParty.IsMainParty) playerInvolved = true;
+            }
+
+            if (!patrolInvolved || !playerInvolved) return;
+
+            // 投降/战败兜底：玩家已被俘则直接走押送惩罚
+            if (PlayerCaptivity.IsCaptive)
+            {
+                DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_037}MapEventEnded It is detected that the player has been captured and enters the escort process"));
+                OnPatrolVictory(involvedPatrol);
+                _playerRefused = false;
+                return;
+            }
+
+            // 只有已经宣战且玩家拒绝缴纳后才处理战斗结果
+            if (!_warDeclared || !_playerRefused) return;
+
+            bool patrolWon = false;
+            if (mapEvent.HasWinner && mapEvent.Winner != null)
+            {
+                foreach (var p in mapEvent.Winner.Parties)
+                {
+                    if (p?.Party?.IsMobile == true && IsPatrol(p.Party.MobileParty))
                     {
-                        patrolInvolved = true;
-                        involvedPatrol = p.MobileParty;
+                        patrolWon = true;
+                        break;
                     }
-                    if (p.MobileParty.IsMainParty) playerInvolved = true;
                 }
 
-                if (!patrolInvolved || !playerInvolved) return;
-
-                // 投降/战败兜底：玩家已被俘则直接走押送惩罚
-                if (PlayerCaptivity.IsCaptive)
+                if (!patrolWon)
                 {
-                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_037}MapEventEnded It is detected that the player has been captured and enters the escort process"));
-                    OnPatrolVictory(involvedPatrol);
-                    _playerRefused = false;
-                    return;
-                }
-
-                // 只有已经宣战且玩家拒绝缴纳后才处理战斗结果
-                if (!_warDeclared || !_playerRefused) return;
-
-                bool patrolWon = false;
-                if (mapEvent.HasWinner && mapEvent.Winner != null)
-                {
-                    foreach (var p in mapEvent.Winner.Parties)
+                    var loser = (mapEvent.Winner == mapEvent.AttackerSide)
+                        ? mapEvent.DefenderSide
+                        : mapEvent.AttackerSide;
+                    if (loser != null)
                     {
-                        if (p?.Party?.IsMobile == true && IsPatrol(p.Party.MobileParty))
+                        foreach (var p in loser.Parties)
                         {
-                            patrolWon = true;
-                            break;
-                        }
-                    }
-
-                    if (!patrolWon)
-                    {
-                        var loser = (mapEvent.Winner == mapEvent.AttackerSide)
-                            ? mapEvent.DefenderSide
-                            : mapEvent.AttackerSide;
-                        if (loser != null)
-                        {
-                            foreach (var p in loser.Parties)
+                            if (p?.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
                             {
-                                if (p?.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
-                                {
-                                    patrolWon = true;
-                                    break;
-                                }
+                                patrolWon = true;
+                                break;
                             }
                         }
                     }
                 }
-                else if (_warDeclared && _playerRefused)
-                {
-                    // 投降等收束路径可能没有 winner 信息，按纠察队执法成功处理
-                    patrolWon = true;
-                    DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_038}MapEventEnded No winner, the surrender path is processed as the picket victory"));
-                }
-
-                if (patrolWon)
-                {
-                    OnPatrolVictory(involvedPatrol);
-                }
-                else
-                {
-                    OnPlayerVictory();
-                    MakePeaceWithPoliceClan();
-                    CleanDeadPatrols();
-                    ReturnAllPatrols();
-                }
-
-                _playerRefused = false;
             }
-            catch (Exception)
+            else if (_warDeclared && _playerRefused)
             {
-                // InformationManager.DisplayMessage(new InformationMessage(
-                //     $"[GWP Error] 纠察队战斗处理异常：{ex.Message}", Colors.Red));
-                // ★ 修改：兜底恢复和平，确保即便异常后事件也不残留
-                try { MakePeaceWithPoliceAndVictims(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-                _playerRefused = false;
+                // 投降等收束路径可能没有 winner 信息，按纠察队执法成功处理
+                patrolWon = true;
+                DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_038}MapEventEnded No winner, the surrender path is processed as the picket victory"));
             }
+
+            if (patrolWon)
+            {
+                OnPatrolVictory(involvedPatrol);
+            }
+            else
+            {
+                OnPlayerVictory();
+                MakePeaceWithPoliceClan();
+                CleanDeadPatrols();
+                ReturnAllPatrols();
+            }
+
+            _playerRefused = false;
         }
 
         internal void OnPatrolVictory(MobileParty patrol)
@@ -993,7 +960,7 @@ namespace GreyWardenPolicePurity
                 float dist = escort.GetPosition2D.Distance(_patrolOriginSettlement.Position.ToVec2());
                 if (dist < 5f)
                 {
-                    try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity();
                     ExecutePunishment(_patrolOriginSettlement);
 
                     _playerCapturedByPatrol = false;
@@ -1009,45 +976,31 @@ namespace GreyWardenPolicePurity
 
         private void ExecutePunishment(Settlement settlement)
         {
-            try
+            if (PlayerCaptivity.IsCaptive)
             {
-                if (PlayerCaptivity.IsCaptive)
-                {
-                    try { PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-                }
-
-                MobileParty mainParty = MobileParty.MainParty;
-                if (mainParty != null && settlement != null)
-                {
-                    try
-                    {
-                        mainParty.Position = settlement.GatePosition;
-                        mainParty.Party.SetVisualAsDirty();
-                    }
-                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-                }
-
-                int rep = PlayerState.Reputation;
-                int fine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
-                int paid = CollectFine(fine);
-                int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
-                int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
-                PlayerState.ResetReputation(repAfter);
-
-                MakePeaceWithPoliceAndVictims();
-
-                string townName = settlement?.Name?.ToString() ?? GwpText.Get("{=gwp_policepatrolbehavior_040}The nearest town");
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policepatrolbehavior_041}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", townName, "VAR_2", fine, "VAR_3", paid, "VAR_4", repAfter),
-                    Colors.Yellow));
+                PlayerCaptivity.EndCaptivity();
             }
-            catch (Exception)
+
+            MobileParty mainParty = MobileParty.MainParty;
+            if (mainParty != null && settlement != null)
             {
-                // InformationManager.DisplayMessage(new InformationMessage(
-                //     $"[GWP Error] 执行惩罚异常：{ex.Message}", Colors.Red));
-                // ★ 修改：兜底恢复和平，确保即便异常后事件也不残留
-                try { MakePeaceWithPoliceAndVictims(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                mainParty.Position = settlement.GatePosition;
+                mainParty.Party.SetVisualAsDirty();
             }
+
+            int rep = PlayerState.Reputation;
+            int fine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
+            int paid = CollectFine(fine);
+            int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
+            int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
+            PlayerState.ResetReputation(repAfter);
+
+            MakePeaceWithPoliceAndVictims();
+
+            string townName = settlement?.Name?.ToString() ?? GwpText.Get("{=gwp_policepatrolbehavior_040}The nearest town");
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_policepatrolbehavior_041}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", townName, "VAR_2", fine, "VAR_3", paid, "VAR_4", repAfter),
+                Colors.Yellow));
         }
 
         #endregion

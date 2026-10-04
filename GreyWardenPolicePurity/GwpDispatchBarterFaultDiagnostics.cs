@@ -13,13 +13,9 @@ namespace GreyWardenPolicePurity
         private static void Finalizer(CharacterObject character, Exception __exception)
         {
             if (__exception == null || !GwpDispatchBarterScreen.DiagnosticsActive) return;
-            try
-            {
-                GwpFaultTrace.Write("DISPATCH_BARTER_PERSONA_FAILED", details:
-                    "argument=" + (character?.StringId ?? "null") + "; " + GwpDispatchBarterScreen.DiagnosticsState
-                    + "; exception=" + __exception + "; observerStack=" + Environment.StackTrace);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            GwpFaultTrace.Write("DISPATCH_BARTER_PERSONA_FAILED", details:
+                "argument=" + (character?.StringId ?? "null") + "; " + GwpDispatchBarterScreen.DiagnosticsState
+                + "; exception=" + __exception + "; observerStack=" + Environment.StackTrace);
         }
     }
 }

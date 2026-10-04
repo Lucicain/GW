@@ -25,56 +25,34 @@
 
 **担心 CPU 压力时，先按执行频率分层，不要按代码量猜。**（依据：流程；2026-09-17 全量扫描）
 
-## 静默吞异常一律留痕
+## 兜底必须兜住过东西
 
-包住引擎调用的 catch-all 本身是合理防御——清理流程中途抛出去会把后面还没清的一并
-带停。问题是不留痕：故障只表现为"某个功能莫名其妙不再工作"，是最难查的一类。
+用户裁定（2026-10-05）：兜底必须真的兜住过东西，没触发过的就是垃圾。没人用的常量、成员同理。
 
-原状：空 `catch` 共 93 处，**只有 4 处写了为什么吞，89 处什么都没有**。
-89 处全部改为：
+**现状（2026-10-05 清理后）**：全仓库 206 个 catch，删掉了 189 个没有触发记录的；38 个无人引用的成员、20 个无人引用的常量也删了。
+留下的 catch 只有两种：
 
-```csharp
-catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-```
+1. 清理后原样 `throw;` 的 5 个，不算兜底。
+2. 每个都带 `依据：` 的 12 个，写明它兜过的那次实际故障：
+   - 读档时 `Hero.FindFirst` 因英雄全局表未建好抛空引用（`GwpData` 两处、`GreyWardenTrainingBehavior`）；
+   - 旧存档 `gwp_case_support_requested` 类型不匹配（`GwpLegacySave` 两处、`CaseSettlement`、`GwpRuntimeFaultWatch.Guard`）；
+   - 自定义战斗里 `Clan.PlayerClan` 空引用（配乐）；
+   - 原版 `Army.DisperseInternal` 空引用（协力解散）；
+   - 野外执法拉不起战斗；
+   - 没装 NavalDLC 时补丁绑定失败（`SubModule`）；
+   - 首次异常处理器（CLR 语义：处理器里抛出的异常会顶替正在处理的原异常）。
 
-**行为不变**（照样吞），只是出事时留一条。
+依据来自 9-17 起给 89 个 catch 加留痕后三周的实机故障日志，以及 journal 里的实机记录。
+那三周里只有协力解散和配乐两处触发过。
 
-`GwpFaultTrace.WriteQuiet` 的两个关键设计：
+**以后**：
+- 不写「以防万一」的 catch，让异常暴露，读崩溃、修根因。故障实际发生过，才在那一处加 catch 并写依据。
+- `tools/Check-CodeHygiene.py` 检查两条：每个不重新抛出的 catch 都有 `依据：`；每个声明都有人引用。
+  预提交钩子遇到违规会拒绝提交，新鲜度检查也会点名。（依据：用户裁定 2026-10-05）
+- 删掉兜底的代价：原先被静默跳过的故障，现在会直接抛出。有的在战役心跳里，可能让游戏崩溃。
+  这正是要的，崩了就读崩溃报告、修根因。
 
-- **按站点去重，每个位置每局只记一次。** 保住 `GreyWarden-Faults.log`
-  "健康的一局里是空文件" 这条性质。
-- **调用点由编译器填**（`CallerFilePath` / `CallerMemberName` / `CallerLineNumber`），
-  不手写标签——手写的标签迟早会和代码漂移。
-
-跳过了诊断基础设施自身（`GwpFaultTrace`、`GwpRuntimeFaultWatch`）以免递归。
-
-**2026-09-24 补扫：** 当时的扫描只认单行写法，漏了 10 处——6 处多行 `catch` / `{` / `}`，4 处单行 `catch { }`（其中所谓「写明理由」的注释只是步骤说明，并没有解释为什么可以不留痕）。全部改成同一模式，行为不变。当时诊断开、关两种构建都是 0 警告 0 错误。
-
-**2026-10-05 复扫与清理：** 9-24 那次只数了空 `catch`，带兜底动作（`return false`、清状态、改中立）却不留痕的没算进去。
-这次按花括号截取整块来扫，一共 26 处不留痕，全部处理（`GwpFaultTrace.WriteQuiet` 后再执行原有兜底，行为不变）。
-这些兜底大多是「以防万一」写的，从没有证据表明触发过（用户 2026-10-05）。
-现在每处只要触发，故障日志里就有一行；长期不出声的，以后可以有依据地删掉。
-
-留着不留痕的只有下面几类，每处都必须在 catch 里写一句为什么：
-
-- 正常游玩中本来就会出现的异常：
-  - 读档时 `Hero.FindFirst` 会因英雄全局表还没建好而抛 `ArgumentNullException`（`GwpData`、`GreyWardenTrainingBehavior`）；
-  - 战斗中半建好或正在离场的 agent 读装备、读状态会抛（双刀 AI、双刀动作集、伤害模型）；
-  - 旧存档格式探测（`GwpLegacySave`）。
-- 诊断代码自身：诊断不能反过来影响游戏。
-- 切磋任务的失败路径：用 `Debug.Print` 写进引擎日志，并通过 `AbortMission` 收场。
-
-**新写 catch-all 时照这个模式写。**
-
-## 辅助方法必须透传调用点
-
-`GwpCommon.TryDestroyParty(party)` 收拢了 6 个文件里重复 11 次的
-`try { DestroyPartyAction.Apply(null, X); } catch { }`。
-
-关键：辅助方法**必须把调用点信息透传下去**（三个 `Caller*` 参数默认值），
-否则 11 处的诊断会全部记成 `GwpCommon.cs` 自己那一行，等于没记。
-
-只做 null 检查，**不加 `IsActive` 判断**——那会改变行为。
+`GwpFaultTrace.WriteQuiet` 仍按站点去重（每个位置每局一次），调用点由编译器填。
 
 ## 双 BOM 陷阱
 

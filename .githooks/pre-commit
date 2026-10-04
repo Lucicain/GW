@@ -6,8 +6,10 @@
 # Antigravity and a human in an editor do not fire that hook. Git does. This is
 # therefore the only layer where the guarantee actually holds for everyone.
 #
-# It never blocks a commit. It regenerates, stages the result, and reports.
-# A gate that stops work gets disabled; a report that is always right does not.
+# The map and the freshness report never block a commit: they regenerate,
+# stage and report. Code hygiene does block (user ruling 2026-10-05): a catch
+# with no recorded failure behind it, or a declaration nothing uses, is garbage,
+# and refusing it at commit time is the only place that holds for every agent.
 
 set -u
 
@@ -37,6 +39,11 @@ if git diff --cached --name-only --diff-filter=ACMR \
   "$python" tools/Check-StateFreshness.py 2>/dev/null \
     | sed -n '/\[!\]/,$p' | head -40
   echo ""
+
+  if ! "$python" tools/Check-CodeHygiene.py; then
+    echo "pre-commit: commit refused - fix the code hygiene findings above." >&2
+    exit 1
+  fi
 fi
 
 exit 0

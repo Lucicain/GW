@@ -292,13 +292,9 @@ namespace GreyWardenPolicePurity
                 Hero? completedOffender = completedTarget?.LeaderHero ?? completedCrime?.OffenderHero;
                 if (completedOffender == null && !string.IsNullOrWhiteSpace(_atonementTargetHeroId))
                 {
-                    try
-                    {
-                        completedOffender = Hero.FindFirst(hero =>
-                            string.Equals(hero.StringId, _atonementTargetHeroId,
-                                StringComparison.OrdinalIgnoreCase));
-                    }
-                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    completedOffender = Hero.FindFirst(hero =>
+                        string.Equals(hero.StringId, _atonementTargetHeroId,
+                            StringComparison.OrdinalIgnoreCase));
                 }
 
                 GwpCrimeCategory completedCategory = (GwpCrimeCategory)_atonementTargetCrimeCategory;
@@ -311,7 +307,7 @@ namespace GreyWardenPolicePurity
                 SetAtonementFlowState(AtonementFlowState.WaitingForTurnIn);
                 _atonementDeadlineHours = 0f;
 
-                try { _atonementQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                _atonementQuest?.MarkReadyForTurnIn();
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_policeenforcementbehavior_003}Atonement quarry defeated: {VAR_1}. Report to the Warden-General or any Grey Warden.", "VAR_1", _atonementTargetName),
                     Colors.Green));
@@ -325,7 +321,7 @@ namespace GreyWardenPolicePurity
         private void FailAtonementTask(string reason)
         {
             PlayerState.ChangeReputation(-5);
-            try { _atonementQuest?.FailQuestWithReason(reason); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            _atonementQuest?.FailQuestWithReason(reason);
             InformationManager.DisplayMessage(new InformationMessage(reason, Colors.Red));
             ClearAtonementTaskState();
         }
@@ -363,140 +359,123 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void MaintainPlayerEnforcementContact()
         {
-            try
+            if (CampaignTime.Now.ToHours < _nextPlayerEnforcementContactHour)
+                return;
+
+            MobileParty? player = MobileParty.MainParty;
+            if (player?.IsActive != true || player.MapEvent != null ||
+                PlayerEncounter.IsActive ||
+                Campaign.Current?.ConversationManager?.IsConversationInProgress == true)
+                return;
+
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null)
+                return;
+
+            // Several wanted companions can travel in the same main party.
+            // Contact is keyed by each case, but any nearby assignee may speak.
+            var assigneeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
             {
-                if (CampaignTime.Now.ToHours < _nextPlayerEnforcementContactHour)
-                    return;
-
-                MobileParty? player = MobileParty.MainParty;
-                if (player?.IsActive != true || player.MapEvent != null ||
-                    PlayerEncounter.IsActive ||
-                    Campaign.Current?.ConversationManager?.IsConversationInProgress == true)
-                    return;
-
-                Clan? policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan == null)
-                    return;
-
-                // Several wanted companions can travel in the same main party.
-                // Contact is keyed by each case, but any nearby assignee may speak.
-                var assigneeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
-                {
-                    if (task.FlowState == PoliceTaskFlowState.Pursuit &&
-                        !task.WarDeclared && !task.IsEscortingPlayer &&
-                        task.TargetCrime?.Offender?.IsMainParty == true &&
-                        !string.IsNullOrWhiteSpace(task.PolicePartyId))
-                        assigneeIds.Add(task.PolicePartyId);
-                }
-                if (assigneeIds.Count == 0)
-                    return;
-
-                MobileParty? contact = null;
-                float closestDistance = float.MaxValue;
-                foreach (MobileParty party in MobileParty.All)
-                {
-                    if (!party.IsActive || party.MapEvent != null ||
-                        party.ActualClan != policeClan ||
-                        !assigneeIds.Contains(party.StringId))
-                        continue;
-
-                    float candidateDistance = party.GetPosition2D.Distance(player.GetPosition2D);
-                    if (candidateDistance >= closestDistance)
-                        continue;
-                    closestDistance = candidateDistance;
-                    contact = party;
-                }
-                if (contact == null)
-                    return;
-
-                MobileParty police = contact;
-                float distance = closestDistance;
-                if (distance > GwpTuning.Enforcement.WarDistance)
-                    return;
-
-                // Reserve the cooldown before changing native AI state.  The
-                // command can synchronously raise encounter callbacks, and the
-                // reservation must already exist if that happens.
-                double now = CampaignTime.Now.ToHours;
-                _nextPlayerEnforcementContactHour = now +
-                    GwpTuning.PlayerRequests.DeferredContactHours;
-
-                GreyWardenPartyDesireBehavior.ClearIntent(police);
-                police.Ai.SetDoNotMakeNewDecisions(false);
-                police.SetMoveEngageParty(player, police.NavigationCapability);
-
-                GwpAiDiagnostics.WriteAction(police,
-                    "PLAYER_ENFORCEMENT_CONTACT_REQUESTED",
-                    "distance=" + distance.ToString("0.00", CultureInfo.InvariantCulture) +
-                    "; retryAfterHour=" + _nextPlayerEnforcementContactHour);
+                if (task.FlowState == PoliceTaskFlowState.Pursuit &&
+                    !task.WarDeclared && !task.IsEscortingPlayer &&
+                    task.TargetCrime?.Offender?.IsMainParty == true &&
+                    !string.IsNullOrWhiteSpace(task.PolicePartyId))
+                    assigneeIds.Add(task.PolicePartyId);
             }
-            catch (Exception exception)
+            if (assigneeIds.Count == 0)
+                return;
+
+            MobileParty? contact = null;
+            float closestDistance = float.MaxValue;
+            foreach (MobileParty party in MobileParty.All)
             {
-                // A transient native map state must not turn into a per-frame
-                // retry loop.  Retry on the next campaign hour instead.
-                _nextPlayerEnforcementContactHour = CampaignTime.Now.ToHours + 1d;
-                GwpAiDiagnostics.WritePlayerJusticeState(
-                    "PLAYER_ENFORCEMENT_CONTACT_FAILED",
-                    "retryAfterHour=" + _nextPlayerEnforcementContactHour +
-                    "; error=" + exception.GetType().Name);
+                if (!party.IsActive || party.MapEvent != null ||
+                    party.ActualClan != policeClan ||
+                    !assigneeIds.Contains(party.StringId))
+                    continue;
+
+                float candidateDistance = party.GetPosition2D.Distance(player.GetPosition2D);
+                if (candidateDistance >= closestDistance)
+                    continue;
+                closestDistance = candidateDistance;
+                contact = party;
             }
+            if (contact == null)
+                return;
+
+            MobileParty police = contact;
+            float distance = closestDistance;
+            if (distance > GwpTuning.Enforcement.WarDistance)
+                return;
+
+            // Reserve the cooldown before changing native AI state.  The
+            // command can synchronously raise encounter callbacks, and the
+            // reservation must already exist if that happens.
+            double now = CampaignTime.Now.ToHours;
+            _nextPlayerEnforcementContactHour = now +
+                GwpTuning.PlayerRequests.DeferredContactHours;
+
+            GreyWardenPartyDesireBehavior.ClearIntent(police);
+            police.Ai.SetDoNotMakeNewDecisions(false);
+            police.SetMoveEngageParty(player, police.NavigationCapability);
+
+            GwpAiDiagnostics.WriteAction(police,
+                "PLAYER_ENFORCEMENT_CONTACT_REQUESTED",
+                "distance=" + distance.ToString("0.00", CultureInfo.InvariantCulture) +
+                "; retryAfterHour=" + _nextPlayerEnforcementContactHour);
         }
 
         private void OnTick(float dt)
         {
-            try
+            MaintainPlayerEnforcementContact();
+            MaintainShelteredCaseForcedAttacks();
+
+            if (!PlayerCaptivity.IsCaptive) return;
+
+            // 确认玩家被警察俘虏
+            PartyBase captorParty = PlayerCaptivity.CaptorParty;
+            if (captorParty == null) return;
+
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
+
+            bool isCapturedByPolice = false;
+            if (captorParty.IsMobile && captorParty.MobileParty?.ActualClan == policeClan)
+                isCapturedByPolice = true;
+            if (captorParty.IsSettlement && captorParty.Settlement?.OwnerClan == policeClan)
+                isCapturedByPolice = true;
+
+            if (!isCapturedByPolice) return;
+
+            // 找到押送任务
+            var escortTask = CrimeState.ActiveTasks.Values.FirstOrDefault(t =>
+                t.IsEscortingPlayer &&
+                t.TargetCrime?.Offender?.IsMainParty == true);
+
+            if (escortTask == null) return;
+
+            var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == escortTask.PolicePartyId);
+            if (policeParty == null || !policeParty.IsActive) return;
+
+            // 紧急检测：若警察已进入任意定居点（引擎自动进城），立即执行惩罚。
+            // 必须在引擎的俘虏交付逻辑运行前清空花名册，否则崩溃。
+            if (policeParty.CurrentSettlement != null)
             {
-                MaintainPlayerEnforcementContact();
-                MaintainShelteredCaseForcedAttacks();
-
-                if (!PlayerCaptivity.IsCaptive) return;
-
-                // 确认玩家被警察俘虏
-                PartyBase captorParty = PlayerCaptivity.CaptorParty;
-                if (captorParty == null) return;
-
-                Clan policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan == null) return;
-
-                bool isCapturedByPolice = false;
-                if (captorParty.IsMobile && captorParty.MobileParty?.ActualClan == policeClan)
-                    isCapturedByPolice = true;
-                if (captorParty.IsSettlement && captorParty.Settlement?.OwnerClan == policeClan)
-                    isCapturedByPolice = true;
-
-                if (!isCapturedByPolice) return;
-
-                // 找到押送任务
-                var escortTask = CrimeState.ActiveTasks.Values.FirstOrDefault(t =>
-                    t.IsEscortingPlayer &&
-                    t.TargetCrime?.Offender?.IsMainParty == true);
-
-                if (escortTask == null) return;
-
-                var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == escortTask.PolicePartyId);
-                if (policeParty == null || !policeParty.IsActive) return;
-
-                // 紧急检测：若警察已进入任意定居点（引擎自动进城），立即执行惩罚。
-                // 必须在引擎的俘虏交付逻辑运行前清空花名册，否则崩溃。
-                if (policeParty.CurrentSettlement != null)
-                {
-                    ExecutePunishment(policeParty.CurrentSettlement, escortTask);
-                    return;
-                }
-
-                Settlement? castle = escortTask.EscortSettlement;
-                if (castle == null) return;
-
-                // 正常触发路径：警察通过混合寻路接近城堡，距离 < EscortPunishDistance 时执行惩罚。
-                // 近距离段用 GatePosition 直线导航，不触发自动入城，确保此距离判断先于入城发生。
-                float distToCastle = policeParty.GetPosition2D.Distance(castle.GetPosition2D);
-                if (distToCastle < GwpTuning.Enforcement.EscortPunishDistance)
-                {
-                    ExecutePunishment(castle, escortTask);
-                }
+                ExecutePunishment(policeParty.CurrentSettlement, escortTask);
+                return;
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            Settlement? castle = escortTask.EscortSettlement;
+            if (castle == null) return;
+
+            // 正常触发路径：警察通过混合寻路接近城堡，距离 < EscortPunishDistance 时执行惩罚。
+            // 近距离段用 GatePosition 直线导航，不触发自动入城，确保此距离判断先于入城发生。
+            float distToCastle = policeParty.GetPosition2D.Distance(castle.GetPosition2D);
+            if (distToCastle < GwpTuning.Enforcement.EscortPunishDistance)
+            {
+                ExecutePunishment(castle, escortTask);
+            }
         }
 
         /// <summary>
@@ -511,79 +490,67 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void ExecutePunishment(Settlement? castle, PoliceTask escortTask)
         {
-            try
+            // 提前获取警察部队引用（任务被移除后局部变量仍有效）
+            var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == escortTask.PolicePartyId);
+
+            // ★步骤1★ 先释放玩家（设 IsCaptive = false，移除玩家主英雄的俘虏状态）
+            if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity();
+
+            // ★步骤1b★ 传送玩家到城堡大门（视觉效果：玩家被"押进"城堡）
+            // 必须在 EndCaptivity 之后、花名册清理之前，此时玩家党派已脱离俘虏链
+            Settlement? teleportTarget = castle ?? escortTask.EscortSettlement ?? FindNearestCastle();
+            if (teleportTarget != null && MobileParty.MainParty != null)
             {
-                // 提前获取警察部队引用（任务被移除后局部变量仍有效）
-                var policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == escortTask.PolicePartyId);
-
-                // ★步骤1★ 先释放玩家（设 IsCaptive = false，移除玩家主英雄的俘虏状态）
-                try { if (PlayerCaptivity.IsCaptive) PlayerCaptivity.EndCaptivity(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-
-                // ★步骤1b★ 传送玩家到城堡大门（视觉效果：玩家被"押进"城堡）
-                // 必须在 EndCaptivity 之后、花名册清理之前，此时玩家党派已脱离俘虏链
-                try
-                {
-                    Settlement? teleportTarget = castle ?? escortTask.EscortSettlement ?? FindNearestCastle();
-                    if (teleportTarget != null && MobileParty.MainParty != null)
-                    {
-                        MobileParty.MainParty.Position = teleportTarget.GatePosition;
-                    }
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-
-                // ★步骤2★ 强制清空花名册（防止 EndCaptivity 未完全清理，
-                //          后续补给进城时引擎再次处理"主英雄俘虏"导致崩溃）
-                try
-                {
-                    if (policeParty != null && policeParty.IsActive
-                        && policeParty.PrisonRoster.TotalManCount > 0)
-                    {
-                        policeParty.PrisonRoster.Clear();
-                    }
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-
-                // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
-                MakePeaceWithPoliceAndVictims();
-
-                // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
-                int rep = PlayerState.Reputation;
-                int fine = GwpFieldArrestPricing.StandingFine(rep, 300);
-                int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
-                int recovered = 300 > 0 ? collected / 300 : 0;
-                int repAfter = collected >= fine ? 0 : Math.Min(0, rep + recovered);
-
-                // 步骤5：声望按实缴比例恢复（不再直接归零）
-                PlayerState.ResetReputation(repAfter);
-                if (repAfter > -11 || PlayerState.HasAtonementTask)
-                {
-                    CrimeState.EndPlayerHunt();
-                }
-                else
-                {
-                    CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_finished");
-                    CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_policeenforcementbehavior_005}Insufficient fine"), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get("{=gwp_policeenforcementbehavior_006}Escort fine unpaid"));
-                }
-
-                // 步骤6：显示消息
-                string castleName = castle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_007}Fortress");
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_008}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
-                    Colors.Yellow));
-
-                // 步骤7：恢复警察AI，开始补给
-                //（此时花名册已清空，进城补给时 ReleasePrisoners 不会遇到玩家俘虏）
-                if (policeParty != null && policeParty.IsActive)
-                {
-                    RestoreAi(policeParty);
-                    GreyWardenPartyDesireBehavior.ClearIntent(policeParty);
-                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(policeParty);
-                }
-
-                // 步骤8：安全调用 EndTask（EndPlayerHunt 已移除任务，此处幂等）
-                CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_closed");
+                MobileParty.MainParty.Position = teleportTarget.GatePosition;
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            // ★步骤2★ 强制清空花名册（防止 EndCaptivity 未完全清理，
+            //          后续补给进城时引擎再次处理"主英雄俘虏"导致崩溃）
+            if (policeParty != null && policeParty.IsActive
+                && policeParty.PrisonRoster.TotalManCount > 0)
+            {
+                policeParty.PrisonRoster.Clear();
+            }
+
+            // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
+            MakePeaceWithPoliceAndVictims();
+
+            // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
+            int rep = PlayerState.Reputation;
+            int fine = GwpFieldArrestPricing.StandingFine(rep, 300);
+            int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
+            int recovered = 300 > 0 ? collected / 300 : 0;
+            int repAfter = collected >= fine ? 0 : Math.Min(0, rep + recovered);
+
+            // 步骤5：声望按实缴比例恢复（不再直接归零）
+            PlayerState.ResetReputation(repAfter);
+            if (repAfter > -11 || PlayerState.HasAtonementTask)
+            {
+                CrimeState.EndPlayerHunt();
+            }
+            else
+            {
+                CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_finished");
+                CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_policeenforcementbehavior_005}Insufficient fine"), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get("{=gwp_policeenforcementbehavior_006}Escort fine unpaid"));
+            }
+
+            // 步骤6：显示消息
+            string castleName = castle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_007}Fortress");
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_policeenforcementbehavior_008}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
+                Colors.Yellow));
+
+            // 步骤7：恢复警察AI，开始补给
+            //（此时花名册已清空，进城补给时 ReleasePrisoners 不会遇到玩家俘虏）
+            if (policeParty != null && policeParty.IsActive)
+            {
+                RestoreAi(policeParty);
+                GreyWardenPartyDesireBehavior.ClearIntent(policeParty);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(policeParty);
+            }
+
+            // 步骤8：安全调用 EndTask（EndPlayerHunt 已移除任务，此处幂等）
+            CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_closed");
         }
 
         #endregion
@@ -1304,28 +1271,24 @@ namespace GreyWardenPolicePurity
 
         private void DeclareWar(PoliceTask task, MobileParty criminal)
         {
-            try
-            {
-                Clan policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan == null) return;
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null) return;
 
-                Clan criminalClan = criminal.ActualClan;
-                if (criminalClan == null) return;
+            Clan criminalClan = criminal.ActualClan;
+            if (criminalClan == null) return;
 
-                task.WarDeclared = true;
+            task.WarDeclared = true;
 
-                if (criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
+            if (criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
 
-                IFaction target = criminalClan.MapFaction;
-                if (target == null) return;
+            IFaction target = criminalClan.MapFaction;
+            if (target == null) return;
 
-                if (target == policeClan || target == policeClan.MapFaction) return;
+            if (target == policeClan || target == policeClan.MapFaction) return;
 
-                task.WarTarget = target;
+            task.WarTarget = target;
 
-                EnsurePoliceFactionWar(policeClan, target);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            EnsurePoliceFactionWar(policeClan, target);
         }
 
         #endregion

@@ -2,6 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
+> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
 > 覆盖源码：`GreyWardenSparringBehavior.cs` `GreyWardenFieldSparringMissionController.cs` `GreyWardenSafeTroopSupplier.cs`
 > 待实测：无
 
@@ -35,7 +36,6 @@
   - 骑战时玩家没有马：对方队里一名骑兵过来下马，把马借给玩家，再走回队列。
   - 步战时玩家 20 秒内不下马，判玩家输，对方会说一句「说好步战你却不下马」。
 - 胜负：任何一方被击倒即分出胜负，胜利表现用原版藏身处头目决斗的那套预设。
-- 失败时：开场景失败、地点不合适，对方会说一句「这里不适合比试」，然后作罢。
 - 野外出兵沿用原版自定义战斗的分配顺序，但换成战役里安全、不持久的 agent 来源（`GreyWardenSafeTroopSupplier`）。
   场景对话要求来源的参战方是 `PartyBase`，原版 `CustomBattleAgentOrigin` 给的是 `CustomBattleCombatant`，会转型失败。
   伤亡回调都是空操作，切磋不改动战役名册。

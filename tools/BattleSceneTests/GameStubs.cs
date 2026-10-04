@@ -124,13 +124,12 @@ namespace TaleWorlds.MountAndBlade
   public bool MissionEnded;public object? MissionResult;public Agent? MainAgent;public Team PlayerTeam=null!;
   public MissionMode Mode=MissionMode.Battle;
   public Scene Scene=new();public List<Agent> Agents=new();public List<MissionBehavior> Behaviors=new();
-  public List<Agent> Spawned=new();public bool FailSpawn;
+  public List<Agent> Spawned=new();
   public T? GetMissionBehavior<T>() where T:MissionBehavior=>Behaviors.OfType<T>().FirstOrDefault();
   public void Add(MissionBehavior b){b.Mission=this;Behaviors.Add(b);}
   public Vec2 GetClosestBoundaryPosition(Vec2 p)=>new(-100,0);public bool IsPositionInsideBoundaries(Vec2 p)=>true;
   public Agent SpawnAgent(AgentBuildData d)
   {
-   if(FailSpawn) throw new InvalidOperationException("injected spawn failure");
    var a=new Agent{Mission=this,Origin=d.Origin,Character=d.Origin.Troop,Team=d.Target,Position=d.Position};
    Agents.Add(a);Spawned.Add(a);foreach(var b in Behaviors)b.OnAgentBuild(a,new Banner());return a;
   }

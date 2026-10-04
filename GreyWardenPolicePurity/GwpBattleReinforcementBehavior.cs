@@ -179,23 +179,19 @@ namespace GreyWardenPolicePurity
                 BasicCharacterObject troop = kind == 0 ? _infantry : kind == 1 ? _archer : _cavalry;
                 FormationClass formationClass = kind == 0 ? FormationClass.Infantry
                     : kind == 1 ? FormationClass.Ranged : FormationClass.Cavalry;
-                try
-                {
-                    Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
-                    if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
-                    Vec3 position = side.Frame.origin + new Vec3(offset.X, offset.Y, 0);
-                    if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = side.Frame.origin;
-                    position.z = Mission.Scene.GetGroundHeightAtPosition(position);
-                    Vec2 direction = side.Frame.rotation.f.AsVec2;
-                    var data = new AgentBuildData(new GwpBattleSupportOrigin(troop, side.Owner))
-                        .Team(side.Team).InitialPosition(in position).InitialDirection(in direction)
-                        .Formation(side.Team.GetFormation(formationClass));
-                    Agent agent = Mission.SpawnAgent(data);
-                    if (agent == null) continue;
-                    agent.SetWatchState(Agent.WatchState.Alarmed);
-                    first ??= agent; spawned++;
-                }
-                catch (Exception error) { GwpFaultTrace.WriteQuiet(error); }
+                Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
+                if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
+                Vec3 position = side.Frame.origin + new Vec3(offset.X, offset.Y, 0);
+                if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = side.Frame.origin;
+                position.z = Mission.Scene.GetGroundHeightAtPosition(position);
+                Vec2 direction = side.Frame.rotation.f.AsVec2;
+                var data = new AgentBuildData(new GwpBattleSupportOrigin(troop, side.Owner))
+                    .Team(side.Team).InitialPosition(in position).InitialDirection(in direction)
+                    .Formation(side.Team.GetFormation(formationClass));
+                Agent agent = Mission.SpawnAgent(data);
+                if (agent == null) continue;
+                agent.SetWatchState(Agent.WatchState.Alarmed);
+                first ??= agent; spawned++;
             }
             // Consume attempted slots, including failures: no infinite retry wave.
             if (first != null && !side.Notified)

@@ -372,62 +372,9 @@ namespace GreyWardenPolicePurity
         private static bool TryDestroyDelayPatrolParty(MobileParty patrol)
         {
             if (patrol == null || !patrol.IsActive) return false;
-            try
-            {
-                DetachDelayPatrolFromArmy(patrol);
-                DestroyPartyAction.Apply(null, patrol);
-                return true;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
-        }
-
-        private int SpawnDelayPatrolsForOffenders(
-            IEnumerable<MobileParty> offenders,
-            string representativeTaskId,
-            string warTargetId)
-        {
-            int spawned = 0;
-            foreach (MobileParty offender in offenders)
-            {
-                if (offender == null || !offender.IsActive) continue;
-
-                bool alreadyTracked = _delayPatrolStates.Values.Any(s =>
-                    !s.Returning &&
-                    string.Equals(s.TargetPartyId, offender.StringId, StringComparison.OrdinalIgnoreCase));
-                if (alreadyTracked) continue;
-
-                string sourceTaskId = FindSourcePoliceTaskForOffender(offender, representativeTaskId, warTargetId);
-                if (SpawnSingleDelayPatrol(offender, sourceTaskId, warTargetId))
-                    spawned++;
-            }
-            return spawned;
-        }
-
-        private string FindSourcePoliceTaskForOffender(
-            MobileParty offender,
-            string representativeTaskId,
-            string warTargetId)
-        {
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
-            {
-                if (task.TargetCrime?.Offender?.StringId == offender.StringId)
-                    return task.PolicePartyId;
-            }
-
-            if (!string.IsNullOrEmpty(representativeTaskId))
-                return representativeTaskId;
-
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
-            {
-                if (task.WarTarget?.StringId == warTargetId && !string.IsNullOrEmpty(task.PolicePartyId))
-                    return task.PolicePartyId;
-            }
-
-            return string.Empty;
+            DetachDelayPatrolFromArmy(patrol);
+            DestroyPartyAction.Apply(null, patrol);
+            return true;
         }
 
         private void TrySpawnImmediateCaseInterceptor(MobileParty sourceParty,
@@ -564,133 +511,119 @@ namespace GreyWardenPolicePurity
             MobileParty? interceptor = null;
             var transferredBatches =
                 new List<ImmediateInterceptorTroopTransfer>();
-            try
+            interceptor =
+                CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                    sourceParty.Position,
+                    1f,
+                    returnSettlement,
+                    new TextObject(GwpText.Get(
+                        "{=gwp_policeenforcementbehavior_delaypatrols_005}Grey Warden pursuit detachment")),
+                    policeClan,
+                    policeClan.DefaultPartyTemplate,
+                    null,
+                    "",
+                    "",
+                    5f,
+                    false);
+            if (interceptor == null)
+                return;
+
+            interceptor.StringId = patrolId;
+            interceptor.ActualClan = policeClan;
+            interceptor.MemberRoster.Clear();
+            interceptor.ItemRoster.Clear();
+            int moved = TransferHealthyTroops(
+                interceptor.MemberRoster,
+                mountedBatches,
+                detachmentSize,
+                transferredBatches);
+            if (moved < ImmediateInterceptorMinimumSize)
             {
-                interceptor =
-                    CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                        sourceParty.Position,
-                        1f,
-                        returnSettlement,
-                        new TextObject(GwpText.Get(
-                            "{=gwp_policeenforcementbehavior_delaypatrols_005}Grey Warden pursuit detachment")),
-                        policeClan,
-                        policeClan.DefaultPartyTemplate,
-                        null,
-                        "",
-                        "",
-                        5f,
-                        false);
-                if (interceptor == null)
-                    return;
+                RollBackImmediateInterceptorTroops(
+                    interceptor.MemberRoster, transferredBatches);
+                TryDestroyDelayPatrolParty(interceptor);
+                return;
+            }
 
-                interceptor.StringId = patrolId;
-                interceptor.ActualClan = policeClan;
-                interceptor.MemberRoster.Clear();
-                interceptor.ItemRoster.Clear();
-                int moved = TransferHealthyTroops(
-                    interceptor.MemberRoster,
-                    mountedBatches,
-                    detachmentSize,
-                    transferredBatches);
-                if (moved < ImmediateInterceptorMinimumSize)
-                {
-                    RollBackImmediateInterceptorTroops(
-                        interceptor.MemberRoster, transferredBatches);
-                    TryDestroyDelayPatrolParty(interceptor);
-                    return;
-                }
-
-                PoliceResourceManager.OutfitTemporaryDutyParty(interceptor, sourceParty);
-                float interceptorCurrentSpeed =
-                    Math.Max(0f, interceptor.Speed);
-                float interceptorSpeed =
-                    GetTheoreticalBaseSpeed(interceptor);
-                if (interceptorSpeed <= targetSpeed)
-                {
-                    GwpAiDiagnostics.WriteAction(sourceParty,
-                        "IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW",
-                        "interceptor=" + patrolId +
-                        "; target=" + targetParty.StringId +
-                        "; movementTarget=" + movementTarget.StringId +
-                        "; troops=" + moved +
-                        "; interceptorTheoreticalSpeed=" +
-                        interceptorSpeed.ToString("0.00") +
-                        "; targetTheoreticalSpeed=" +
-                        targetSpeed.ToString("0.00") +
-                        "; interceptorCurrentSpeed=" +
-                        interceptorCurrentSpeed.ToString("0.00") +
-                        "; targetCurrentSpeed=" +
-                        targetCurrentSpeed.ToString("0.00"));
-                    RollBackImmediateInterceptorTroops(
-                        interceptor.MemberRoster, transferredBatches);
-                    TryDestroyDelayPatrolParty(interceptor);
-                    return;
-                }
-
-                _delayPatrolStates[patrolId] = new DelayPatrolState
-                {
-                    PatrolPartyId = patrolId,
-                    SourceTaskPolicePartyId = sourceParty.StringId,
-                    TargetPartyId = targetParty.StringId,
-                    WarTargetId = task?.WarTarget?.StringId ?? string.Empty,
-                    ReturnSettlementId = returnSettlement.StringId,
-                    Returning = false,
-                    IsImmediateInterceptor = true
-                };
-
-                GreyWardenPartyDesireBehavior.RequestPursuit(
-                    interceptor, targetParty, 8f);
+            PoliceResourceManager.OutfitTemporaryDutyParty(interceptor, sourceParty);
+            float interceptorCurrentSpeed =
+                Math.Max(0f, interceptor.Speed);
+            float interceptorSpeed =
+                GetTheoreticalBaseSpeed(interceptor);
+            if (interceptorSpeed <= targetSpeed)
+            {
                 GwpAiDiagnostics.WriteAction(sourceParty,
-                    "IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED",
+                    "IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW",
                     "interceptor=" + patrolId +
                     "; target=" + targetParty.StringId +
                     "; movementTarget=" + movementTarget.StringId +
                     "; troops=" + moved +
-                    "; troopSourceParties=" +
-                    transferredBatches.Select(batch =>
-                            batch.SourceParty.StringId)
-                        .Distinct(StringComparer.OrdinalIgnoreCase).Count() +
-                    "; sourceTheoreticalSpeed=" +
-                    sourceSpeed.ToString("0.00") +
-                    "; targetTheoreticalSpeed=" +
-                    targetSpeed.ToString("0.00") +
                     "; interceptorTheoreticalSpeed=" +
                     interceptorSpeed.ToString("0.00") +
-                    "; sourceCurrentSpeed=" +
-                    sourceCurrentSpeed.ToString("0.00") +
-                    "; targetCurrentSpeed=" +
-                    targetCurrentSpeed.ToString("0.00") +
+                    "; targetTheoreticalSpeed=" +
+                    targetSpeed.ToString("0.00") +
                     "; interceptorCurrentSpeed=" +
                     interceptorCurrentSpeed.ToString("0.00") +
-                    "; trigger=" + (playerBountyDeclaration
-                        ? assembledAssistance
-                            ? "player_bounty_assistance_army"
-                            : dispersedAssistance
-                                ? "player_bounty_speed_dispersed"
-                                : "player_bounty_owner"
-                        : assembledAssistance
-                            ? "assistance_army"
-                            : dispersedAssistance
-                                ? "assistance_speed_dispersed"
-                                : "ordinary_declaration") +
-                    "; friendlyLocalStrength=" +
-                    (declaration?.FriendlyLocalStrength.ToString("0.00") ??
-                     "n/a") +
-                    "; enemyLocalStrength=" +
-                    (declaration?.EnemyLocalStrength.ToString("0.00") ??
-                     "n/a"));
+                    "; targetCurrentSpeed=" +
+                    targetCurrentSpeed.ToString("0.00"));
+                RollBackImmediateInterceptorTroops(
+                    interceptor.MemberRoster, transferredBatches);
+                TryDestroyDelayPatrolParty(interceptor);
+                return;
             }
-            catch (Exception gwpQuietFailure)
+
+            _delayPatrolStates[patrolId] = new DelayPatrolState
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                _delayPatrolStates.Remove(patrolId);
-                if (interceptor?.IsActive == true)
-                {
-                    RollBackImmediateInterceptorTroops(
-                        interceptor.MemberRoster, transferredBatches);
-                    TryDestroyDelayPatrolParty(interceptor);
-                }
-            }
+                PatrolPartyId = patrolId,
+                SourceTaskPolicePartyId = sourceParty.StringId,
+                TargetPartyId = targetParty.StringId,
+                WarTargetId = task?.WarTarget?.StringId ?? string.Empty,
+                ReturnSettlementId = returnSettlement.StringId,
+                Returning = false,
+                IsImmediateInterceptor = true
+            };
+
+            GreyWardenPartyDesireBehavior.RequestPursuit(
+                interceptor, targetParty, 8f);
+            GwpAiDiagnostics.WriteAction(sourceParty,
+                "IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED",
+                "interceptor=" + patrolId +
+                "; target=" + targetParty.StringId +
+                "; movementTarget=" + movementTarget.StringId +
+                "; troops=" + moved +
+                "; troopSourceParties=" +
+                transferredBatches.Select(batch =>
+                        batch.SourceParty.StringId)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Count() +
+                "; sourceTheoreticalSpeed=" +
+                sourceSpeed.ToString("0.00") +
+                "; targetTheoreticalSpeed=" +
+                targetSpeed.ToString("0.00") +
+                "; interceptorTheoreticalSpeed=" +
+                interceptorSpeed.ToString("0.00") +
+                "; sourceCurrentSpeed=" +
+                sourceCurrentSpeed.ToString("0.00") +
+                "; targetCurrentSpeed=" +
+                targetCurrentSpeed.ToString("0.00") +
+                "; interceptorCurrentSpeed=" +
+                interceptorCurrentSpeed.ToString("0.00") +
+                "; trigger=" + (playerBountyDeclaration
+                    ? assembledAssistance
+                        ? "player_bounty_assistance_army"
+                        : dispersedAssistance
+                            ? "player_bounty_speed_dispersed"
+                            : "player_bounty_owner"
+                    : assembledAssistance
+                        ? "assistance_army"
+                        : dispersedAssistance
+                            ? "assistance_speed_dispersed"
+                            : "ordinary_declaration") +
+                "; friendlyLocalStrength=" +
+                (declaration?.FriendlyLocalStrength.ToString("0.00") ??
+                 "n/a") +
+                "; enemyLocalStrength=" +
+                (declaration?.EnemyLocalStrength.ToString("0.00") ??
+                 "n/a"));
         }
 
         private static int TransferHealthyTroops(TroopRoster destination,
@@ -804,50 +737,42 @@ namespace GreyWardenPolicePurity
                    MobileParty.All.Any(party => string.Equals(
                        party.StringId, patrolId, StringComparison.OrdinalIgnoreCase)));
 
-            try
+            MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                spawnSettlement.GatePosition,
+                1f,
+                spawnSettlement,
+                new TextObject(GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_001}Grey Warden provost relief party")),
+                policeClan,
+                policeClan.DefaultPartyTemplate,
+                null,
+                "",
+                "",
+                5f,
+                false);
+            if (patrol == null) return false;
+
+            patrol.StringId = patrolId;
+            patrol.ActualClan = policeClan;
+            patrol.MemberRoster.Clear();
+            FillDelayPatrolTroops(patrol);
+            PoliceResourceManager.OutfitTemporaryDutyParty(patrol, sourcePoliceParty);
+
+            _delayPatrolStates[patrolId] = new DelayPatrolState
             {
-                MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                    spawnSettlement.GatePosition,
-                    1f,
-                    spawnSettlement,
-                    new TextObject(GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_001}Grey Warden provost relief party")),
-                    policeClan,
-                    policeClan.DefaultPartyTemplate,
-                    null,
-                    "",
-                    "",
-                    5f,
-                    false);
-                if (patrol == null) return false;
+                PatrolPartyId = patrolId,
+                SourceTaskPolicePartyId = sourceTaskPolicePartyId ?? string.Empty,
+                TargetPartyId = targetParty.StringId,
+                WarTargetId = warTargetId ?? string.Empty,
+                ReturnSettlementId = spawnSettlement.StringId,
+                Returning = false
+            };
 
-                patrol.StringId = patrolId;
-                patrol.ActualClan = policeClan;
-                patrol.MemberRoster.Clear();
-                FillDelayPatrolTroops(patrol);
-                PoliceResourceManager.OutfitTemporaryDutyParty(patrol, sourcePoliceParty);
+            if (!TryAssignDelayPatrolToAssistanceArmy(patrol,
+                    _delayPatrolStates[patrolId]))
+                GreyWardenPartyDesireBehavior.RequestPursuit(
+                    patrol, targetParty, 8f);
 
-                _delayPatrolStates[patrolId] = new DelayPatrolState
-                {
-                    PatrolPartyId = patrolId,
-                    SourceTaskPolicePartyId = sourceTaskPolicePartyId ?? string.Empty,
-                    TargetPartyId = targetParty.StringId,
-                    WarTargetId = warTargetId ?? string.Empty,
-                    ReturnSettlementId = spawnSettlement.StringId,
-                    Returning = false
-                };
-
-                if (!TryAssignDelayPatrolToAssistanceArmy(patrol,
-                        _delayPatrolStates[patrolId]))
-                    GreyWardenPartyDesireBehavior.RequestPursuit(
-                        patrol, targetParty, 8f);
-
-                return true;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+            return true;
         }
 
         private static void FillDelayPatrolTroops(MobileParty patrol)
@@ -1126,22 +1051,11 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestEscort(patrol, leader, 8f);
             if (patrol.Army == null)
             {
-                try
-                {
-                    patrol.Army = army;
-                    GwpAiDiagnostics.WriteAction(patrol,
-                        "DELAY_SUPPORT_ARMY_JOINED",
-                        "leader=" + leader.StringId +
-                        "; target=" + state.TargetPartyId);
-                }
-                catch (Exception exception)
-                {
-                    GwpAiDiagnostics.WriteAction(patrol,
-                        "DELAY_SUPPORT_ARMY_JOIN_FAILED",
-                        "leader=" + leader.StringId +
-                        "; error=" + exception.GetType().Name);
-                    return false;
-                }
+                patrol.Army = army;
+                GwpAiDiagnostics.WriteAction(patrol,
+                    "DELAY_SUPPORT_ARMY_JOINED",
+                    "leader=" + leader.StringId +
+                    "; target=" + state.TargetPartyId);
             }
 
             TryMergeArmyMember(army, leader, patrol);
@@ -1151,8 +1065,7 @@ namespace GreyWardenPolicePurity
         private static void DetachDelayPatrolFromArmy(MobileParty patrol)
         {
             if (patrol?.Army == null) return;
-            try { patrol.Army = null; }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            patrol.Army = null;
         }
 
         private void HandleDelayPatrolBattleEnded(MapEvent mapEvent)
@@ -1341,12 +1254,6 @@ namespace GreyWardenPolicePurity
                 party.ActualClan?.StringId,
                 PoliceStats.PoliceClanId,
                 StringComparison.OrdinalIgnoreCase);
-        }
-
-        private void ClearDelayPatrolRuntimeState()
-        {
-            _warTargetSeenStreak.Clear();
-            _delayPatrolStates.Clear();
         }
 
         private void ClearTaskWarTracking(string policeTaskId, bool markDelayPatrolReturning)

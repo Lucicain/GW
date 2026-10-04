@@ -1,6 +1,5 @@
 ﻿using System;
 using TaleWorlds.CampaignSystem.Actions;
-using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
@@ -240,15 +239,10 @@ namespace GreyWardenPolicePurity
         /// 调用点信息由编译器在**各个调用处**填好再透传给诊断，不能让它们
         /// 全部记成本方法自己的位置——那样等于没记。
         /// </summary>
-        public static void TryDestroyParty(
-            MobileParty? party,
-            [CallerFilePath] string? file = null,
-            [CallerMemberName] string? member = null,
-            [CallerLineNumber] int line = 0)
+        public static void TryDestroyParty(MobileParty? party)
         {
             if (party == null) return;
-            try { DestroyPartyAction.Apply(null, party); }
-            catch (Exception error) { GwpFaultTrace.WriteQuiet(error, file, member, line); }
+            DestroyPartyAction.Apply(null, party);
         }
 
         public static void TrySetNeutral(IFaction? left, IFaction? right)
@@ -256,40 +250,21 @@ namespace GreyWardenPolicePurity
             if (left == null || right == null) return;
             if (!FactionManager.IsAtWarAgainstFaction(left, right)) return;
 
-            try { FactionManager.SetNeutral(left, right); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-        }
-
-        public static void TrySetAggressiveAi(MobileParty? party)
-        {
-            if (party == null || !party.IsActive) return;
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            FactionManager.SetNeutral(left, right);
         }
 
         public static void TryResetAi(MobileParty? party)
         {
             if (party == null || !party.IsActive) return;
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.Ai.SetDoNotMakeNewDecisions(false);
+            party.Ai.RethinkAtNextHourlyTick = true;
         }
 
         public static void TryFinishPlayerEncounter()
         {
-            try
-            {
-                if (!PlayerEncounter.IsActive) return;
-                PlayerEncounter.LeaveEncounter = true;
-                PlayerEncounter.Finish(false);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            if (!PlayerEncounter.IsActive) return;
+            PlayerEncounter.LeaveEncounter = true;
+            PlayerEncounter.Finish(false);
         }
     }
 }

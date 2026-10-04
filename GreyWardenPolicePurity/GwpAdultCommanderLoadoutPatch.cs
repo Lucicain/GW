@@ -23,19 +23,9 @@ namespace GreyWardenPolicePurity
         [HarmonyPostfix]
         private static void Postfix(Hero hero)
         {
-            try
-            {
-                PoliceResourceManager.EnsureCommanderLoadout(
-                    hero,
-                    "native_coming_of_age_postfix");
-            }
-            catch (Exception exception)
-            {
-                GwpAiDiagnostics.WriteHeroLifecycle(
-                    hero,
-                    "ADULT_COMMANDER_LOADOUT_FAILED",
-                    exception.GetType().Name + ": " + exception.Message);
-            }
+            PoliceResourceManager.EnsureCommanderLoadout(
+                hero,
+                "native_coming_of_age_postfix");
         }
     }
 }

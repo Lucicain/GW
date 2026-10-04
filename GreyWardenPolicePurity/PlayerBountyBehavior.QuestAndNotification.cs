@@ -96,28 +96,20 @@ namespace GreyWardenPolicePurity
 
             internal void WriteLog(TextObject text)
             {
-                try { AddLog(text, false); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-            }
-
-            internal void CancelCommission()
-            {
-                CompleteQuestWithCancel();
+                AddLog(text, false);
             }
 
             internal void SucceedQuest()
             {
-                try
-                {
-                    AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}Your report and delivery have been recorded and the commission is concluded.")), false);
-                }
-                catch (Exception ex) { GwpAiDiagnostics.WriteFieldArrest("QUEST_RECEIPT_LOG_FAILED", ex.ToString()); }
+                AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}Your report and delivery have been recorded and the commission is concluded.")), false);
+
                 // A journal rendering problem must not prevent native completion.
                 CompleteQuestWithSuccess();
             }
 
             internal void MarkReadyForTurnIn()
             {
-                try { ChangeQuestDueTime(CampaignTime.Never); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                ChangeQuestDueTime(CampaignTime.Never);
                 if (_readyForTurnInLogWritten) return;
 
                 _readyForTurnInLogWritten = true;
@@ -127,27 +119,19 @@ namespace GreyWardenPolicePurity
 
             internal void TimeOutQuest()
             {
-                try
-                {
-                    CompleteQuestWithTimeOut(new TextObject(GwpText.Get(
-                        "{=gwp_bounty_contract_timed_out_log}The bounty contract expired before the quarry was defeated.")));
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                CompleteQuestWithTimeOut(new TextObject(GwpText.Get(
+                    "{=gwp_bounty_contract_timed_out_log}The bounty contract expired before the quarry was defeated.")));
             }
 
             protected override void OnTimedOut()
             {
-                try
-                {
-                    Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                        ?.OnBountyQuestTimedOut(this);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
+                    ?.OnBountyQuestTimedOut(this);
             }
 
             internal void FailQuestMembershipEnded()
             {
-                try { CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn."))); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn.")));
             }
 
         }

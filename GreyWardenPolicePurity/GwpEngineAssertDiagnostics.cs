@@ -21,16 +21,12 @@ namespace GreyWardenPolicePurity
 
         private static void Prefix(object[] __args)
         {
-            try
+            string message = string.Join(" | ", __args);
+            lock (Seen)
             {
-                string message = string.Join(" | ", __args);
-                lock (Seen)
-                {
-                    if (Seen.Count >= 40 || !Seen.Add(message)) return;
-                }
-                GwpFaultTrace.Write("ENGINE_ASSERT", details: message + " | " + Environment.StackTrace);
+                if (Seen.Count >= 40 || !Seen.Add(message)) return;
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            GwpFaultTrace.Write("ENGINE_ASSERT", details: message + " | " + Environment.StackTrace);
         }
     }
 }

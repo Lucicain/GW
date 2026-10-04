@@ -31,6 +31,7 @@ namespace GreyWardenPolicePurity
                 }
                 catch (Exception exception)
                 {
+                    // 依据：实机诊断 2026-10-02（没装 NavalDLC 时海战补丁绑定失败）
                     GwpFaultTrace.Write(
                         "SUBMODULE_PATCH_FAILED",
                         details: type.FullName + " -> "

@@ -51,29 +51,21 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.StartSession();
             lock (Sync)
             {
-                try
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
-                    ArchiveTrace(LogPath + ".previous");
-                    ArchiveTrace(LogPath);
-                    File.WriteAllText(LogPath,
-                        $"# GreyWarden AI diagnostics | session={DateTime.Now:O} | " +
-                        $"assembly={typeof(GwpAiDiagnostics).Assembly.GetName().Version} | " +
-                        $"build={typeof(GwpAiDiagnostics).Module.ModuleVersionId} | " +
-                        "scope=all_grey_warden_lord_parties_and_all_leaderless_grey_warden_parties_and_active_case_targets\r\n",
-                        Encoding.UTF8);
-                    InitiativeByPartyId.Clear();
-                    ObservedPartyIds.Clear();
-                    ObservedCasesByPartyId.Clear();
-                    LastPartyByHeroId.Clear();
-                    _observedPartyCacheInitialized = false;
-                    _sessionStarted = true;
-                }
-                catch
-                {
-                    // Diagnostics must never affect the game path.
-                    _sessionStarted = false;
-                }
+                Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+                ArchiveTrace(LogPath + ".previous");
+                ArchiveTrace(LogPath);
+                File.WriteAllText(LogPath,
+                    $"# GreyWarden AI diagnostics | session={DateTime.Now:O} | " +
+                    $"assembly={typeof(GwpAiDiagnostics).Assembly.GetName().Version} | " +
+                    $"build={typeof(GwpAiDiagnostics).Module.ModuleVersionId} | " +
+                    "scope=all_grey_warden_lord_parties_and_all_leaderless_grey_warden_parties_and_active_case_targets\r\n",
+                    Encoding.UTF8);
+                InitiativeByPartyId.Clear();
+                ObservedPartyIds.Clear();
+                ObservedCasesByPartyId.Clear();
+                LastPartyByHeroId.Clear();
+                _observedPartyCacheInitialized = false;
+                _sessionStarted = true;
             }
         }
 
@@ -240,41 +232,37 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static void WritePlayerJusticeState(string action, string details)
         {
-            try
-            {
-                CrimeRecord? playerCrime = CrimePool.GetPlayerCrime();
-                string tasks = string.Join(",", CrimePool.ActiveTasks.Values
-                    .Where(task => string.Equals(task.TargetCrimeId, CrimePool.PlayerCrimeId,
-                        StringComparison.OrdinalIgnoreCase))
-                    .Select(task => Safe(task.PolicePartyId) + ":" + task.FlowState));
-                IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-                Clan? policeClan = PoliceStats.GetPoliceClan();
-                bool policeWar = playerFaction != null && policeClan != null &&
-                    FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction);
-                MobileParty? mainParty = MobileParty.MainParty;
+            CrimeRecord? playerCrime = CrimePool.GetPlayerCrime();
+            string tasks = string.Join(",", CrimePool.ActiveTasks.Values
+                .Where(task => string.Equals(task.TargetCrimeId, CrimePool.PlayerCrimeId,
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(task => Safe(task.PolicePartyId) + ":" + task.FlowState));
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            bool policeWar = playerFaction != null && policeClan != null &&
+                FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction);
+            MobileParty? mainParty = MobileParty.MainParty;
 
-                Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
-                    " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
-                    " | PLAYER_JUSTICE" +
-                    " | action=" + Safe(action) +
-                    " | " + Safe(details) +
-                    " | customReputation=" + PlayerBehaviorPool.Reputation +
-                    "; customWanted=" + PlayerBehaviorPool.IsWanted +
-                    "; clanRenown=" + (Clan.PlayerClan?.Renown.ToString("0.00", CultureInfo.InvariantCulture) ?? "-") +
-                    "; playerCrimeExists=" + (playerCrime != null) +
-                    "; playerCrimeOpen=" + (playerCrime?.HasOpenCase == true) +
-                    "; playerCrimeOffenderValid=" + (playerCrime?.IsOffenderValid() == true) +
-                    "; isPlayerHunted=" + CrimePool.IsPlayerHunted +
-                    "; playerTasks=" + Safe(tasks) +
-                    "; policeWar=" + policeWar +
-                    "; victimFactions=" + Safe(string.Join(",", PlayerBehaviorPool.VictimFactions
-                        .Where(faction => faction != null)
-                        .Select(faction => faction.StringId))) +
-                    "; mainTargetSettlement=" + Safe(mainParty?.TargetSettlement?.StringId) +
-                    "; mainDefaultBehavior=" + (mainParty?.DefaultBehavior.ToString() ?? "-") +
-                    "; mainShortTermBehavior=" + (mainParty?.ShortTermBehavior.ToString() ?? "-"));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
+                " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
+                " | PLAYER_JUSTICE" +
+                " | action=" + Safe(action) +
+                " | " + Safe(details) +
+                " | customReputation=" + PlayerBehaviorPool.Reputation +
+                "; customWanted=" + PlayerBehaviorPool.IsWanted +
+                "; clanRenown=" + (Clan.PlayerClan?.Renown.ToString("0.00", CultureInfo.InvariantCulture) ?? "-") +
+                "; playerCrimeExists=" + (playerCrime != null) +
+                "; playerCrimeOpen=" + (playerCrime?.HasOpenCase == true) +
+                "; playerCrimeOffenderValid=" + (playerCrime?.IsOffenderValid() == true) +
+                "; isPlayerHunted=" + CrimePool.IsPlayerHunted +
+                "; playerTasks=" + Safe(tasks) +
+                "; policeWar=" + policeWar +
+                "; victimFactions=" + Safe(string.Join(",", PlayerBehaviorPool.VictimFactions
+                    .Where(faction => faction != null)
+                    .Select(faction => faction.StringId))) +
+                "; mainTargetSettlement=" + Safe(mainParty?.TargetSettlement?.StringId) +
+                "; mainDefaultBehavior=" + (mainParty?.DefaultBehavior.ToString() ?? "-") +
+                "; mainShortTermBehavior=" + (mainParty?.ShortTermBehavior.ToString() ?? "-"));
         }
 
         internal static bool ShouldTraceParty(MobileParty? party)
@@ -346,7 +334,7 @@ namespace GreyWardenPolicePurity
         private static string BuildPrefix(MobileParty party, string stage)
         {
             double campaignHours = 0d;
-            try { campaignHours = CampaignTime.Now.ToHours; } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            campaignHours = CampaignTime.Now.ToHours;
             Hero? leader = party.LeaderHero;
             if (leader != null && !string.IsNullOrWhiteSpace(leader.StringId) &&
                 !string.IsNullOrWhiteSpace(party.StringId))
@@ -601,24 +589,20 @@ namespace GreyWardenPolicePurity
         {
             lock (Sync)
             {
-                try
+                if (!_sessionStarted) StartSession();
+                // Case events have their own, slower-rotating budget so AI auctions cannot evict them.
+                if (line.Contains(" | FIELD_ARREST") || line.Contains("action=MAP_EVENT_"))
                 {
-                    if (!_sessionStarted) StartSession();
-                    // Case events have their own, slower-rotating budget so AI auctions cannot evict them.
-                    if (line.Contains(" | FIELD_ARREST") || line.Contains("action=MAP_EVENT_"))
-                    {
-                        string events = Path.Combine(Path.GetDirectoryName(LogPath)!, "GreyWarden-Case-Events.log");
-                        if (File.Exists(events) && new FileInfo(events).Length >= 2 * 1024 * 1024) ArchiveTrace(events);
-                        File.AppendAllText(events, line + "\r\n", Encoding.UTF8);
-                    }
-                    if (File.Exists(LogPath) && new FileInfo(LogPath).Length >= 8 * 1024 * 1024)
-                    {
-                        ArchiveTrace(LogPath + ".previous");
-                        ArchiveTrace(LogPath);
-                    }
-                    File.AppendAllText(LogPath, line + "\r\n", Encoding.UTF8);
+                    string events = Path.Combine(Path.GetDirectoryName(LogPath)!, "GreyWarden-Case-Events.log");
+                    if (File.Exists(events) && new FileInfo(events).Length >= 2 * 1024 * 1024) ArchiveTrace(events);
+                    File.AppendAllText(events, line + "\r\n", Encoding.UTF8);
                 }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                if (File.Exists(LogPath) && new FileInfo(LogPath).Length >= 8 * 1024 * 1024)
+                {
+                    ArchiveTrace(LogPath + ".previous");
+                    ArchiveTrace(LogPath);
+                }
+                File.AppendAllText(LogPath, line + "\r\n", Encoding.UTF8);
             }
         }
     }

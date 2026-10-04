@@ -195,30 +195,23 @@ namespace GreyWardenPolicePurity
         public override void AfterStart()
         {
             base.AfterStart();
-            try
-            {
-                if (_spawnLogic == null)
-                    throw new InvalidOperationException(
-                        "native battle spawn logic is missing");
+            if (_spawnLogic == null)
+                throw new InvalidOperationException(
+                    "native battle spawn logic is missing");
 
-                // CustomBattleMissionSpawnHandler owns native initialization.
-                // This controller only disables later reinforcement waves and
-                // keeps the two native teams at peace until the duel begins.
-                _spawnLogic.SetReinforcementsSpawnEnabled(false);
-                Mission.FocusableObjectInformationProvider.AddInfoCallback(
-                    GetFocusableObjectInteractionInfoTexts);
-                _interactionInfoCallbackRegistered = true;
-                SetTeamsHostile(isHostile: false);
-                _phase = BoutPhase.NativeSpawning;
-                _phaseStartedAt = Mission.CurrentTime;
-                Debug.Print(
-                    "[GreyWarden Sparring] waiting for native field "
-                    + "deployment to finish");
-            }
-            catch (Exception exception)
-            {
-                AbortMission("initialize native field battle", exception);
-            }
+            // CustomBattleMissionSpawnHandler owns native initialization.
+            // This controller only disables later reinforcement waves and
+            // keeps the two native teams at peace until the duel begins.
+            _spawnLogic.SetReinforcementsSpawnEnabled(false);
+            Mission.FocusableObjectInformationProvider.AddInfoCallback(
+                GetFocusableObjectInteractionInfoTexts);
+            _interactionInfoCallbackRegistered = true;
+            SetTeamsHostile(isHostile: false);
+            _phase = BoutPhase.NativeSpawning;
+            _phaseStartedAt = Mission.CurrentTime;
+            Debug.Print(
+                "[GreyWarden Sparring] waiting for native field "
+                + "deployment to finish");
         }
 
         public override void OnAgentCreated(Agent agent)
@@ -363,42 +356,35 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            try
+            switch (_phase)
             {
-                switch (_phase)
-                {
-                    case BoutPhase.NativeSpawning:
-                        TickNativeSpawning();
-                        break;
-                    case BoutPhase.PreparingFormations:
-                        TickFormationPreparation();
-                        break;
-                    case BoutPhase.Marching:
-                        TickMarching();
-                        break;
-                    case BoutPhase.OpponentAdvancing:
-                        TickOpponentAdvance();
-                        break;
-                    case BoutPhase.AwaitingApproach:
-                        TickAwaitingApproach();
-                        break;
-                    case BoutPhase.Conversation:
-                        TickConversation();
-                        break;
-                    case BoutPhase.PreparingDuel:
-                        TickDuelPreparation();
-                        break;
-                    case BoutPhase.Fighting:
-                        TickDuel();
-                        break;
-                    case BoutPhase.VictoryPending:
-                        TickVictoryTransition();
-                        break;
-                }
-            }
-            catch (Exception exception)
-            {
-                AbortMission("tick phase " + _phase, exception);
+                case BoutPhase.NativeSpawning:
+                    TickNativeSpawning();
+                    break;
+                case BoutPhase.PreparingFormations:
+                    TickFormationPreparation();
+                    break;
+                case BoutPhase.Marching:
+                    TickMarching();
+                    break;
+                case BoutPhase.OpponentAdvancing:
+                    TickOpponentAdvance();
+                    break;
+                case BoutPhase.AwaitingApproach:
+                    TickAwaitingApproach();
+                    break;
+                case BoutPhase.Conversation:
+                    TickConversation();
+                    break;
+                case BoutPhase.PreparingDuel:
+                    TickDuelPreparation();
+                    break;
+                case BoutPhase.Fighting:
+                    TickDuel();
+                    break;
+                case BoutPhase.VictoryPending:
+                    TickVictoryTransition();
+                    break;
             }
         }
 
@@ -2230,38 +2216,28 @@ namespace GreyWardenPolicePurity
         {
             var points = new List<Vec2>();
             usesAuthorPath = false;
-            try
+            Path authorPath = Mission.GetInitialSpawnPath();
+            if (authorPath != null && authorPath.NumberOfPoints > 1)
             {
-                Path authorPath = Mission.GetInitialSpawnPath();
-                if (authorPath != null && authorPath.NumberOfPoints > 1)
+                var frames = new MatrixFrame[authorPath.NumberOfPoints];
+                authorPath.GetPoints(frames);
+                for (int index = 0;
+                    index < authorPath.NumberOfPoints;
+                    index++)
                 {
-                    var frames = new MatrixFrame[authorPath.NumberOfPoints];
-                    authorPath.GetPoints(frames);
-                    for (int index = 0;
-                        index < authorPath.NumberOfPoints;
-                        index++)
-                    {
-                        AddApproachPathPoint(
-                            points,
-                            frames[index].origin.AsVec2);
-                    }
-                    usesAuthorPath = points.Count > 1;
-                    if (usesAuthorPath)
-                    {
-                        Debug.Print(
-                            "[GreyWarden Sparring] map author spawn path "
-                            + $"loaded; nodes={points.Count}; "
-                            + $"engineLength={authorPath.GetTotalLength():0.0}; "
-                            + $"polylineLength={GetPolylineLength(points):0.0}");
-                    }
+                    AddApproachPathPoint(
+                        points,
+                        frames[index].origin.AsVec2);
                 }
-            }
-            catch (Exception exception)
-            {
-                Debug.Print(
-                    "[GreyWarden Sparring] map author spawn path was "
-                    + "unavailable; using the direct deployment axis: "
-                    + exception.Message);
+                usesAuthorPath = points.Count > 1;
+                if (usesAuthorPath)
+                {
+                    Debug.Print(
+                        "[GreyWarden Sparring] map author spawn path "
+                        + $"loaded; nodes={points.Count}; "
+                        + $"engineLength={authorPath.GetTotalLength():0.0}; "
+                        + $"polylineLength={GetPolylineLength(points):0.0}");
+                }
             }
 
             if (!usesAuthorPath)
@@ -2538,29 +2514,15 @@ namespace GreyWardenPolicePurity
             WorldPosition source,
             Vec2 desired)
         {
-            try
-            {
-                Vec3 reachable = Mission.Scene
-                    .GetLastPointOnNavigationMeshFromWorldPositionToDestination(
-                        ref source,
-                        desired);
-                return new WorldPosition(
-                    Mission.Scene,
-                    UIntPtr.Zero,
-                    reachable,
-                    hasValidZ: false);
-            }
-            catch (Exception exception)
-            {
-                Debug.Print(
-                    "[GreyWarden Sparring] navigation clamp failed: "
-                    + exception.Message);
-                return new WorldPosition(
-                    Mission.Scene,
-                    UIntPtr.Zero,
-                    new Vec3(desired, source.GetGroundVec3().z),
-                    hasValidZ: false);
-            }
+            Vec3 reachable = Mission.Scene
+                .GetLastPointOnNavigationMeshFromWorldPositionToDestination(
+                    ref source,
+                    desired);
+            return new WorldPosition(
+                Mission.Scene,
+                UIntPtr.Zero,
+                reachable,
+                hasValidZ: false);
         }
 
         private void AbortMission(string phase, Exception exception)

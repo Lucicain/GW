@@ -84,25 +84,11 @@ namespace GreyWardenPolicePurity
             if (!IsPoliceHero(hero) || !hero.IsAlive || hero.IsFugitive)
                 return;
 
-            try
-            {
-                PartyBase? captorParty = hero.PartyBelongedToAsPrisoner;
-                if (captorParty != null && captorParty.PrisonRoster.Contains(hero.CharacterObject))
-                    captorParty.PrisonRoster.RemoveTroop(hero.CharacterObject);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            PartyBase? captorParty = hero.PartyBelongedToAsPrisoner;
+            if (captorParty != null && captorParty.PrisonRoster.Contains(hero.CharacterObject))
+                captorParty.PrisonRoster.RemoveTroop(hero.CharacterObject);
 
-            try
-            {
-                MakeHeroFugitiveAction.Apply(hero);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            MakeHeroFugitiveAction.Apply(hero);
         }
 
         private static bool IsPoliceHero(Hero? hero)

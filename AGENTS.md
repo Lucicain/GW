@@ -82,19 +82,26 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   用户说"测过了"时，agent 自己读在役日志核对待观察项。
 - 全部诊断在 `#if GWP_DIAGNOSTICS` 内。卡在具体问题上时加强该功能的 trace；
   用户确认功能可用时，同一轮退休它。
-- 按健康路径 vs 失败路径切：删掉一切正常时会触发的，保留 `catch` 里和
-  "this should never happen" 分支里的。退休时连日志、转储、已闭合调查的反编译输出一起删。
+- 按健康路径 vs 失败路径切：删掉一切正常时会触发的，保留有依据的 `catch` 里的
+  （没有依据的 catch 本身就不该存在，见「兜底与死代码」）。退休时连日志、转储、已闭合调查的反编译输出一起删。
 - 详见 `docs/state/diagnostics.md`。
 - 清理本地 `.codex_tmp/` 之前先看 `docs/reference/local-scratch.md` 的保留清单：
   那里有唯一副本的盾牌资产包和崩溃取证结论，删了就找不回来。
+
+## 兜底与死代码
+
+用户裁定（2026-10-05）：兜底必须真的兜住过东西，没触发过的就是垃圾；没人用的常量、成员同理。
+
+- 不写「以防万一」的 try/catch。只有故障实际发生过，才在那一处加 catch，并在 catch 里写 `依据：`（方法、日期、抓到了什么）。
+- 改掉一套机制时，它的常量、文本键、辅助方法一起删，不留旧旋钮。
+- `python tools/Check-CodeHygiene.py` 检查这两条，预提交钩子遇到违规会拒绝提交。不要绕过钩子。
 
 ## 改 `.cs` 之前
 
 读 `.claude/rules/csharp-gotchas.md`（Claude Code 自动加载，其他 harness 不会）。要点：
 
-- `catch` 一律写 `catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }`，
-  不写空 `catch { }`
-- 收拢重复代码的辅助方法要透传 `Caller*` 参数
+- 不写没有依据的 `catch`（见上节）；有依据的写成 `catch (Exception gwpQuietFailure)`，
+  catch 里写 `依据：` 并调 `GwpFaultTrace.WriteQuiet`
 - 不要为了分类清除 `WeaponFlags` 掩码
 - 不要为了打印再调一次原版评分方法（会改它的状态）
 

@@ -25,19 +25,12 @@ namespace GreyWardenPolicePurity
         {
             if (_armed) return;
             _armed = true;
-            try
-            {
-                AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
-                AppDomain.CurrentDomain.UnhandledException += OnUnhandled;
-                GwpFaultTrace.Write("FAULT_WATCH_ARMED", details: "assembly="
-                    + typeof(GwpRuntimeFaultWatch).Assembly.GetName().Version
-                    + "; build=" + typeof(GwpRuntimeFaultWatch).Module.ModuleVersionId
-                    + "; scope=runtime; firstChance=observed_not_necessarily_fatal");
-            }
-            catch
-            {
-                // 诊断永远不能反过来影响游戏。
-            }
+            AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandled;
+            GwpFaultTrace.Write("FAULT_WATCH_ARMED", details: "assembly="
+                + typeof(GwpRuntimeFaultWatch).Assembly.GetName().Version
+                + "; build=" + typeof(GwpRuntimeFaultWatch).Module.ModuleVersionId
+                + "; scope=runtime; firstChance=observed_not_necessarily_fatal");
         }
 
         private static void OnFirstChance(object sender, FirstChanceExceptionEventArgs args)
@@ -63,6 +56,7 @@ namespace GreyWardenPolicePurity
             }
             catch
             {
+                // 依据：CLR 语义（首次异常处理器里抛出的异常会顶替正在处理的原异常）
                 // 诊断永远不能反过来影响游戏。
             }
             finally { _recording = false; }
@@ -89,6 +83,7 @@ namespace GreyWardenPolicePurity
             }
             catch (Exception exception)
             {
+                // 依据：实机诊断 2026-09-15（GUARDED_FAILURE 4 次：旧档 gwp_case_support_requested 存成了另一种类型）
                 GwpFaultTrace.Write("GUARDED_FAILURE",
                     details: stage + " | " + exception.ToString().Replace(Environment.NewLine, " | "));
             }

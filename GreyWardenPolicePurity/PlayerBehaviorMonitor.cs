@@ -455,20 +455,16 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool ForceJoinBattleCondition(MenuCallbackArgs args)
         {
-            try
-            {
-                args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
+            args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
 
-                MapEvent battle = PlayerEncounter.EncounteredBattle;
-                if (battle == null) return false;
+            MapEvent battle = PlayerEncounter.EncounteredBattle;
+            if (battle == null) return false;
 
-                if (!TryBuildForceJoinTexts(battle, out string defendText, out _))
-                    return false;
+            if (!TryBuildForceJoinTexts(battle, out string defendText, out _))
+                return false;
 
-                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT", new TextObject(defendText));
-                return true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return false; }
+            MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT", new TextObject(defendText));
+            return true;
         }
 
         /// <summary>
@@ -476,35 +472,31 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void ForceJoinBattleConsequence(MenuCallbackArgs args)
         {
-            try
+            MapEvent battle = PlayerEncounter.EncounteredBattle;
+            if (battle == null) return;
+
+            CaptureForcedJoinEncounterState(battle, BattleSideEnum.Defender);
+
+            // 记录攻击方战前人数（JoinBattle 后不再触发 OnMapEventStarted，需在此预先记录）
+            _pendingEnemyCount = 0;
+            foreach (var p in battle.AttackerSide.Parties)
+                if (p.Party?.IsMobile == true)
+                    _pendingEnemyCount += p.Party.NumberOfAllMembers;
+
+            CapturePlayerKillBaseline();
+
+            // 直接加入防守方的战斗阵营是正确的；问题仅在于原版仍沿用
+            // 村庄劫掠事件的 encounter 说明，把玩家写成了劫掠者。
+            // 在菜单完成原版初始化后覆盖说明文字，不改动任何战斗方。
+            if (battle.IsRaid)
             {
-                MapEvent battle = PlayerEncounter.EncounteredBattle;
-                if (battle == null) return;
-
-                CaptureForcedJoinEncounterState(battle, BattleSideEnum.Defender);
-
-                // 记录攻击方战前人数（JoinBattle 后不再触发 OnMapEventStarted，需在此预先记录）
-                _pendingEnemyCount = 0;
-                foreach (var p in battle.AttackerSide.Parties)
-                    if (p.Party?.IsMobile == true)
-                        _pendingEnemyCount += p.Party.NumberOfAllMembers;
-
-                CapturePlayerKillBaseline();
-
-                // 直接加入防守方的战斗阵营是正确的；问题仅在于原版仍沿用
-                // 村庄劫掠事件的 encounter 说明，把玩家写成了劫掠者。
-                // 在菜单完成原版初始化后覆盖说明文字，不改动任何战斗方。
-                if (battle.IsRaid)
-                {
-                    _pendingVillageDefenseEncounterText = true;
-                    _pendingVillageDefenseName = battle.MapEventSettlement?.Name?.ToString()
-                        ?? GwpText.Get("{=gwp_playerbehaviormonitor_050}the village");
-                }
-
-                PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
-                GameMenu.ActivateGameMenu("encounter");
+                _pendingVillageDefenseEncounterText = true;
+                _pendingVillageDefenseName = battle.MapEventSettlement?.Name?.ToString()
+                    ?? GwpText.Get("{=gwp_playerbehaviormonitor_050}the village");
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
+            GameMenu.ActivateGameMenu("encounter");
         }
 
         private void OnAfterGameMenuInitialized(MenuCallbackArgs args)
@@ -534,20 +526,16 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool ForceJoinAttackersCondition(MenuCallbackArgs args)
         {
-            try
-            {
-                args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
+            args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
 
-                MapEvent battle = PlayerEncounter.EncounteredBattle;
-                if (battle == null) return false;
+            MapEvent battle = PlayerEncounter.EncounteredBattle;
+            if (battle == null) return false;
 
-                if (!TryBuildForceJoinTexts(battle, out _, out string attackText))
-                    return false;
+            if (!TryBuildForceJoinTexts(battle, out _, out string attackText))
+                return false;
 
-                MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT", new TextObject(attackText));
-                return true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return false; }
+            MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT", new TextObject(attackText));
+            return true;
         }
 
         /// <summary>
@@ -555,26 +543,22 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void ForceJoinAttackersConsequence(MenuCallbackArgs args)
         {
-            try
-            {
-                MapEvent battle = PlayerEncounter.EncounteredBattle;
-                if (battle == null) return;
+            MapEvent battle = PlayerEncounter.EncounteredBattle;
+            if (battle == null) return;
 
-                CaptureForcedJoinEncounterState(battle, BattleSideEnum.Attacker);
+            CaptureForcedJoinEncounterState(battle, BattleSideEnum.Attacker);
 
-                // 记录防守方战前人数（供战后按人数缩放扣声望；JoinBattle 不触发 OnMapEventStarted）
-                _pendingEnemyCount = 0;
-                foreach (var p in battle.DefenderSide.Parties)
-                    if (p.Party?.IsMobile == true)
-                        _pendingEnemyCount += p.Party.NumberOfAllMembers;
+            // 记录防守方战前人数（供战后按人数缩放扣声望；JoinBattle 不触发 OnMapEventStarted）
+            _pendingEnemyCount = 0;
+            foreach (var p in battle.DefenderSide.Parties)
+                if (p.Party?.IsMobile == true)
+                    _pendingEnemyCount += p.Party.NumberOfAllMembers;
 
-                CapturePlayerKillBaseline();
+            CapturePlayerKillBaseline();
 
-                // 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
-                PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
-                GameMenu.ActivateGameMenu("encounter");
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            // 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
+            PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
+            GameMenu.ActivateGameMenu("encounter");
         }
 
         private bool TryBuildForceJoinTexts(MapEvent battle, out string defendText, out string attackText)

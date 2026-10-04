@@ -18,20 +18,12 @@ namespace GreyWardenPolicePurity
     {
         internal static bool IsDispatchableTroop(PartyCharacterVM? character)
         {
-            try
-            {
-                CharacterObject? troop = character?.Troop.Character;
-                return character != null &&
-                       character.Side == PartyScreenLogic.PartyRosterSide.Right &&
-                       character.Type == PartyScreenLogic.TroopType.Member &&
-                       troop != null && !troop.IsHero &&
-                       GwpWardenDispatchDialogue.CanTalkToTroop(troop);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+            CharacterObject? troop = character?.Troop.Character;
+            return character != null &&
+                   character.Side == PartyScreenLogic.PartyRosterSide.Right &&
+                   character.Type == PartyScreenLogic.TroopType.Member &&
+                   troop != null && !troop.IsHero &&
+                   GwpWardenDispatchDialogue.CanTalkToTroop(troop);
         }
     }
 
@@ -44,18 +36,11 @@ namespace GreyWardenPolicePurity
             if (__instance == null || __instance.IsTalkableCharacter) return;
             if (!GwpPartyScreenTroopTalk.IsDispatchableTroop(__instance)) return;
 
-            try
-            {
-                __instance.IsTalkableCharacter = true;
-                __instance.CanTalk = true;
-                if (__instance.TalkHint == null) return;
-                __instance.TalkHint.HintText = GwpText.Create(
-                    "{=gwp_dispatch_talk_hint}Send these men on an errand");
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_TALK_BUTTON_FAILED", ex.ToString());
-            }
+            __instance.IsTalkableCharacter = true;
+            __instance.CanTalk = true;
+            if (__instance.TalkHint == null) return;
+            __instance.TalkHint.HintText = GwpText.Create(
+                "{=gwp_dispatch_talk_hint}Send these men on an errand");
         }
     }
 
@@ -77,15 +62,7 @@ namespace GreyWardenPolicePurity
             }
 
             CharacterObject? troop = __instance?.Troop.Character;
-            try
-            {
-                PartyScreenHelper.CloseScreen(true, false);
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_SCREEN_CLOSE_FAILED", ex.ToString());
-                return false;
-            }
+            PartyScreenHelper.CloseScreen(true, false);
 
             GwpWardenDispatchDialogue.OpenWithTroop(troop);
             return false;

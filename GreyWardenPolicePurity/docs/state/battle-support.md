@@ -3,7 +3,7 @@
 > 当前状态：用户已实测满意（2026-09-23 确认支援部分）
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
 > 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
-> 已复核至：2026-09-26 工作树——退休健康路径诊断 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT`，行为未变，138 项测试通过
+> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-09-26 工作树——退休健康路径诊断 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT`，行为未变，138 项测试通过
 > 待实测：无（用户已确认）
 
 实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、
@@ -78,7 +78,7 @@
   不强塞最低人数。小预算下实际兵种比例可能偏离 4:4:2。
 - 人数不是敌军人数的百分比，也没有固定 40/120 人。
 - 每批最多 10 人，间隔 0.6 秒；首批在成功判定事件同步入场。
-- 容量不足保留队列；单个生成失败消耗该槽并记异常，**不无限重试**。
+- 容量不足保留队列，容量腾出后继续生成。生成本身不设兜底：原版 `SpawnAgent` 抛异常就直接抛出。（依据：用户裁定 2026-10-05）
 - 每方保存自己的 Team、接收者 Origin 与到场边界位置，援军从接收者附近边界内侧
   进入，按当前位置地面高度落地。敌方不借用 PlayerTeam / MobileParty.MainParty。
 
@@ -111,14 +111,14 @@ descriptor 和原生 traits（基于 `BasicBattleAgentOrigin`，跨战役/Custom
 ## 测试
 
 `tools/BattleSceneTests` 链接真实 context/policy/support/origin 源码，仅替换引擎
-边界，**138 项通过**。覆盖：
+边界，**137 项通过**。覆盖：
 
 - 大局 1000→200、小局 50→11 不误判、非整除阈值、小局仅一人
 - 预备兵阻止末层、三层失败不重掷、越级、成功终止
 - 玩家比例上下限与单调成长、NPC 常量、20/30/50% 预算不超额
 - 倒地玩家由 NPC 接应仍 50%、开场分母不被援军扩大
 - 敌友 Team/指挥/音乐到场、临时 Origin 不改名册
-- 容量延迟/失败不死循环、原生过早判负抑制及恢复
+- 容量延迟后恢复生成、原生过早判负抑制及恢复
 - 死战不退相关 18 项（见 [`warden-resolve.md`](warden-resolve.md)）
 
 桩不验证真实战场位置、AI 行军或原生物理。

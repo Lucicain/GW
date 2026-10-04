@@ -237,9 +237,6 @@ namespace GreyWardenPolicePurity
         internal int PendingReceivedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.CashReceived);
         internal int PendingCollectedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.Collected);
         internal int TotalAssessed => _pending.Sum(entry => entry.Assessed);
-        internal int TotalCollected => _pending.Sum(entry => entry.Collected);
-        internal int TotalReceived => _pending.Sum(entry => entry.CashReceived);
-        internal int LegitimatePovertyShortfall => _pending.Where(r => r.OffenderWasBroke).Sum(r => Math.Max(0, r.Assessed - r.CashReceived));
         internal int PendingAuditGap => _pendingAuditGaps.Values.Sum();
 
         #endregion
@@ -276,13 +273,6 @@ namespace GreyWardenPolicePurity
             foreach (var report in reports) { _betrayalHours.Remove(report.OffenderId); _pending.Remove(report); }
             return 0;
         }
-
-        /// <summary>
-        /// 保留给旧调用点：谎报就是"交上来的比收到的少，而且嘴上不认"。判定与
-        /// <see cref="DeclareAmount"/> 同一条，只是记一次谎。
-        /// </summary>
-        internal void DeclareFalseAmount(int declared) =>
-            DeclareAmount(declared, truthful: false);
 
         /// <summary>近十次委托里谎报过几次。</summary>
         internal int RecentLieCount => _recentReportHonesty.Count(entry => entry == 0);

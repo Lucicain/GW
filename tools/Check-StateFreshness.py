@@ -227,6 +227,12 @@ def main() -> int:
           f"{len(orphans_new)} 个新增未归属 / {len(baseline_touched)} 个未提取子系统文件被改动 / "
           f"{len(exempt)} 个声明不核对 / {len(unsourced)} 条硬规则缺依据")
     print("\n这只说明去哪里看，不说明文字对不对。")
+
+    # Code hygiene blocks commits (see the pre-commit hook); report it here too so a
+    # wrap round sees it before reaching the commit.
+    print()
+    sys.stdout.flush()
+    subprocess.run([sys.executable, str(ROOT / "tools" / "Check-CodeHygiene.py")])
     return 0
 
 

@@ -146,8 +146,6 @@ static class Program
   Check(m.Spawned.Count==0&&support.HasPendingReinforcementSpawn(BattleSideEnum.Defender),"capacity defers rather than drops budget");
   DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission=2000;support.OnMissionTick(1);
   Check(m.Spawned.Count>0,"deferred support resumes when capacity opens");support.OnRemoveBehavior();
-  (m,sp,c,support)=Battle(10,100);m.FailSpawn=true;MBRandom.Rolls.Enqueue(0);support.OnMissionTick(1);support.OnMissionTick(1);
-  Check(!support.HasPendingReinforcementSpawn(BattleSideEnum.Defender),"failed spawn attempts do not retry forever");support.OnRemoveBehavior();
   // The regression is a new recruit joining a formation already ordered to
   // retreat. Native calls Retreat immediately, without testing morale first.
   (m,sp,c,support)=Battle(10,100);MBRandom.Rolls.Enqueue(0);support.OnMissionTick(1);

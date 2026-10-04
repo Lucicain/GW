@@ -501,11 +501,6 @@ namespace GreyWardenPolicePurity
                     MobileParty.MainParty.Party, lordParty.Party, null,
                     (item, data, obj) => false, 0, false, payment.Entries);
             }
-            catch (Exception ex)
-            {
-                manager.Closed -= closed;
-                GwpFaultTrace.Write("TROOP_ORDER_PAYMENT_OPEN_FAILED", details: ex.ToString());
-            }
             finally { manager.BarterBegin = original; }
         }
 
@@ -1139,19 +1134,6 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool IsReadyDeliveryConversation()
-        {
-            if ((PlayerTroopOrderStage)_orderStage !=
-                    PlayerTroopOrderStage.Delivering ||
-                !GreyWardenFamilyBehavior.IsTrainingHero(
-                    Hero.OneToOneConversationHero))
-                return false;
-            CharacterObject? troop = CharacterObject.Find(_orderedTroopId);
-            return troop != null &&
-                   CountHealthy(ResolveOrderPool(ResolveTrainerParty()), troop)
-                       >= _orderedCount;
-        }
-
         private void CompleteTroopDelivery()
         {
             MobileParty? trainer = ResolveTrainerParty();
@@ -1256,13 +1238,9 @@ namespace GreyWardenPolicePurity
         {
             if (trainer?.IsActive != true) return;
             GreyWardenPartyDesireBehavior.ClearIntent(trainer);
-            try
-            {
-                trainer.Ai.SetDoNotMakeNewDecisions(false);
-                trainer.SetMoveModeHold();
-                trainer.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            trainer.Ai.SetDoNotMakeNewDecisions(false);
+            trainer.SetMoveModeHold();
+            trainer.Ai.RethinkAtNextHourlyTick = true;
         }
 
         private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty,
@@ -1290,8 +1268,7 @@ namespace GreyWardenPolicePurity
                     "; count=" + _orderedCount +
                     "; price=" + _orderPrice +
                     "; retryAfterHour=" + _nextContactHour);
-                try { PlayerEncounter.DoMeeting(); }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                PlayerEncounter.DoMeeting();
             }
         }
 

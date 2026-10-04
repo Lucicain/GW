@@ -256,47 +256,39 @@ namespace GreyWardenPolicePurity
 
         private void OnCompanionPayConsequence()
         {
-            try
+            CrimeRecord? crime = _dialogTask?.TargetCrime;
+            Hero? accused = crime?.OffenderHero;
+            if (crime?.HasOpenCase != true || accused == null ||
+                accused == Hero.MainHero ||
+                !string.Equals(crime.CrimeId, accused.StringId, StringComparison.OrdinalIgnoreCase) ||
+                crime.CrimeId == CrimePool.PlayerCrimeId ||
+                crime.Offender?.IsMainParty != true ||
+                !PoliceResourceManager.CanCollectPlayerRequestPayment(_dialogFine))
             {
-                CrimeRecord? crime = _dialogTask?.TargetCrime;
-                Hero? accused = crime?.OffenderHero;
-                if (crime?.HasOpenCase != true || accused == null ||
-                    accused == Hero.MainHero ||
-                    !string.Equals(crime.CrimeId, accused.StringId, StringComparison.OrdinalIgnoreCase) ||
-                    crime.CrimeId == CrimePool.PlayerCrimeId ||
-                    crime.Offender?.IsMainParty != true ||
-                    !PoliceResourceManager.CanCollectPlayerRequestPayment(_dialogFine))
-                {
-                    QueueFinishEnforcementEncounter();
-                    return;
-                }
-
-                if (!PoliceResourceManager.TryCollectPlayerRequestPayment(_dialogFine))
-                {
-                    GwpAiDiagnostics.WritePlayerJusticeState("COMPANION_FINE_INCOMPLETE",
-                        "crime=" + crime.CrimeId + "; accused=" + accused.StringId +
-                        "; assessed=" + _dialogFine + "; paid=0");
-                    QueueFinishEnforcementEncounter();
-                    return;
-                }
-
-                HeroCrimeStats history = CrimePool.GetOrCreateHistory(accused);
-                history.NegativeStanding = 0;
-                CrimePool.CloseCaseSettledInField(crime);
-                Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                    ?.RegisterPlayerEnforcementSuccess(null, accused, crime.CrimeCategory);
-
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
-                        "VAR_1", accused.Name?.ToString() ?? accused.StringId,
-                        "VAR_2", _dialogFine), Colors.Yellow));
                 QueueFinishEnforcementEncounter();
+                return;
             }
-            catch (Exception gwpQuietFailure)
+
+            if (!PoliceResourceManager.TryCollectPlayerRequestPayment(_dialogFine))
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                GwpAiDiagnostics.WritePlayerJusticeState("COMPANION_FINE_INCOMPLETE",
+                    "crime=" + crime.CrimeId + "; accused=" + accused.StringId +
+                    "; assessed=" + _dialogFine + "; paid=0");
                 QueueFinishEnforcementEncounter();
+                return;
             }
+
+            HeroCrimeStats history = CrimePool.GetOrCreateHistory(accused);
+            history.NegativeStanding = 0;
+            CrimePool.CloseCaseSettledInField(crime);
+            Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
+                ?.RegisterPlayerEnforcementSuccess(null, accused, crime.CrimeCategory);
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
+                    "VAR_1", accused.Name?.ToString() ?? accused.StringId,
+                    "VAR_2", _dialogFine), Colors.Yellow));
+            QueueFinishEnforcementEncounter();
         }
 
         private bool EnforcementAtonementCondition()
@@ -379,49 +371,38 @@ namespace GreyWardenPolicePurity
 
         private void OnEnforcementPayAcceptedConsequence()
         {
-            try
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "ENFORCEMENT_FINE_ACCEPTED_BEFORE_CLEAR",
+                "fine=" + _dialogFine +
+                "; police=" + (_dialogPolice?.StringId ?? "-"));
+            int paid = PoliceResourceManager.CollectFine(_dialogFine);
+
+            PlayerState.ResetReputation(0);
+            CrimeState.EndPlayerHunt();
+
+            if (_dialogPolice != null && _dialogPolice.IsActive)
             {
-                GwpAiDiagnostics.WritePlayerJusticeState(
-                    "ENFORCEMENT_FINE_ACCEPTED_BEFORE_CLEAR",
-                    "fine=" + _dialogFine +
-                    "; police=" + (_dialogPolice?.StringId ?? "-"));
-                int paid = PoliceResourceManager.CollectFine(_dialogFine);
-
-                PlayerState.ResetReputation(0);
-                CrimeState.EndPlayerHunt();
-
-                if (_dialogPolice != null && _dialogPolice.IsActive)
-                {
-                    GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
-                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
-                }
-
-                MakePeaceWithPoliceAndVictims();
-
-                GwpAiDiagnostics.WritePlayerJusticeState(
-                    "ENFORCEMENT_FINE_ACCEPTED_AFTER_CLEAR",
-                    "fine=" + _dialogFine +
-                    "; paid=" + paid +
-                    "; police=" + (_dialogPolice?.StringId ?? "-"));
-
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The lawful fine of {VAR_1} denars has been received. The warrant is lifted.", "VAR_1", paid),
-                    Colors.Yellow));
-
-                // The line's normal target is close_window.  Finish the native
-                // PlayerEncounter only after ConversationManager has actually
-                // closed the conversation; doing it from this consequence leaves
-                // EngageParty/TargetParty alive and can reopen the same warrant.
-                QueueFinishEnforcementEncounter();
+                GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
             }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                // Even if a native economy/faction callback fails, the accepted
-                // outcome must still close the encounter instead of leaving the
-                // old EngageParty target available for another conversation.
-                QueueFinishEnforcementEncounter();
-            }
+
+            MakePeaceWithPoliceAndVictims();
+
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "ENFORCEMENT_FINE_ACCEPTED_AFTER_CLEAR",
+                "fine=" + _dialogFine +
+                "; paid=" + paid +
+                "; police=" + (_dialogPolice?.StringId ?? "-"));
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The lawful fine of {VAR_1} denars has been received. The warrant is lifted.", "VAR_1", paid),
+                Colors.Yellow));
+
+            // The line's normal target is close_window.  Finish the native
+            // PlayerEncounter only after ConversationManager has actually
+            // closed the conversation; doing it from this consequence leaves
+            // EngageParty/TargetParty alive and can reopen the same warrant.
+            QueueFinishEnforcementEncounter();
         }
 
         private void QueueFinishEnforcementEncounter()
@@ -476,13 +457,6 @@ namespace GreyWardenPolicePurity
                     "police=" + (police?.StringId ?? "-") +
                     "; encounterActive=" + PlayerEncounter.IsActive);
             }
-            catch (Exception exception)
-            {
-                GwpAiDiagnostics.WritePlayerJusticeState(
-                    "ENFORCEMENT_CONTACT_FINISH_FAILED",
-                    "police=" + (police?.StringId ?? "-") +
-                    "; error=" + exception.GetType().Name);
-            }
             finally
             {
                 _enforcementEncounterFinishQueued = false;
@@ -504,7 +478,6 @@ namespace GreyWardenPolicePurity
                     GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You have refused the order. The Grey Wardens will take you by force."),
                     Colors.Red));
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             finally
             {
                 ResetDialogueState();
@@ -536,25 +509,17 @@ namespace GreyWardenPolicePurity
                 paymentAmount,
                 barterDisplayName);
 
-            try
-            {
-                Campaign.Current.BarterManager.StartBarterOffer(
-                    Hero.MainHero,
-                    barterHero,
-                    playerParty,
-                    policeParty,
-                    null,
-                    InitializeEnforcementBarterContext,
-                    0,
-                    false,
-                    new[] { fineBarter });
-                return true;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+            Campaign.Current.BarterManager.StartBarterOffer(
+                Hero.MainHero,
+                barterHero,
+                playerParty,
+                policeParty,
+                null,
+                InitializeEnforcementBarterContext,
+                0,
+                false,
+                new[] { fineBarter });
+            return true;
         }
 
         private bool InitializeEnforcementBarterContext(Barterable barterable, BarterData args, object obj)
@@ -631,7 +596,7 @@ namespace GreyWardenPolicePurity
 
             if (!atWar && PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
             {
-                try { PlayerEncounter.DoMeeting(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                PlayerEncounter.DoMeeting();
             }
         }
 

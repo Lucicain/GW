@@ -17,10 +17,8 @@ namespace GreyWardenPolicePurity
     /// While the source assistance task remains active, formation lifetime is
     /// owned by the enforcement system rather than Bannerlord's kingdom-army
     /// lifecycle. Native no-war, food, inactivity, cohesion and other automatic
-    /// dispersals are blocked. When a target outruns the formation, enforcement
-    /// detaches lord parties one at a time and keeps the remaining Army alive;
-    /// full dispersal is authorized only if every helper has already detached
-    /// without producing a faster catcher, or when the source task is released.
+    /// dispersals are blocked. The enforcement system disbands the Army itself,
+    /// through ApplyAuthorizedObjectiveFinished, when the source task is released.
     /// </summary>
     [HarmonyPatch]
     internal static class GwpAssistanceArmyDisbandGuardPatch

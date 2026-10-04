@@ -109,13 +109,9 @@ namespace GreyWardenPolicePurity
 
         private static void PlaySound(string eventName)
         {
-            try
-            {
-                int id = SoundEvent.GetEventIdFromString(eventName);
-                if (id >= 0)
-                    SoundEvent.PlaySound2D(id);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            int id = SoundEvent.GetEventIdFromString(eventName);
+            if (id >= 0)
+                SoundEvent.PlaySound2D(id);
         }
     }
 

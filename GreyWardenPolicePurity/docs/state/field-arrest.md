@@ -2,7 +2,7 @@
 
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
-> 已复核至：2026-10-05 catch 留痕或补注释（行为未变，见 `code-health.md`）；`04ff2d6`（回绝台词改写，本文件「谈崩冷却」已写）
+> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；`04ff2d6`（回绝台词改写，本文件「谈崩冷却」已写）
 > 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
 > 待实测：无
 

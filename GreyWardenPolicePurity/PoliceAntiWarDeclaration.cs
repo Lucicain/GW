@@ -232,14 +232,11 @@ namespace GreyWardenPolicePurity
             int settled = 0;
             foreach (IFaction faction in _instance.LiveMediationFactions().ToList())
             {
-                try
-                {
-                    MakePeaceAction.Apply(playerFaction, faction);
-                    settled++;
-                    GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_APPLIED",
-                        "faction=" + faction.StringId);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                MakePeaceAction.Apply(playerFaction, faction);
+                settled++;
+                GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_APPLIED",
+                    "faction=" + faction.StringId);
+
                 _instance._mediationRequests.RemoveAll(id =>
                     string.Equals(id, faction.StringId, StringComparison.OrdinalIgnoreCase));
             }

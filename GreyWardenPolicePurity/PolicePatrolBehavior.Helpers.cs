@@ -40,8 +40,7 @@ namespace GreyWardenPolicePurity
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
                 // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
-                try { MakePeaceAction.Apply(policeClan, playerFaction); }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); GwpCommon.TrySetNeutral(policeClan, playerFaction); }
+                MakePeaceAction.Apply(policeClan, playerFaction);
             }
         }
 
@@ -58,8 +57,7 @@ namespace GreyWardenPolicePurity
             if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
             {
                 // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
-                try { MakePeaceAction.Apply(policeClan, playerFaction); }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); GwpCommon.TrySetNeutral(policeClan, playerFaction); }
+                MakePeaceAction.Apply(policeClan, playerFaction);
             }
 
             foreach (var victim in PlayerBehaviorPool.VictimFactions)
@@ -72,26 +70,18 @@ namespace GreyWardenPolicePurity
                 if (FactionManager.IsAtWarAgainstFaction(playerFaction, victim))
                 {
                     // Formal war (rare) -> MakePeaceAction
-                    try
-                    {
-                        MakePeaceAction.Apply(playerFaction, victim);
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
-                            Colors.Green));
-                    }
-                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    MakePeaceAction.Apply(playerFaction, victim);
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
+                        Colors.Green));
                 }
                 else
                 {
                     // Crime-only state (common) -> clear criminal rating
-                    try
-                    {
-                        ChangeCrimeRatingAction.Apply(victim, -1000f, true);
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
-                            Colors.Green));
-                    }
-                    catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    ChangeCrimeRatingAction.Apply(victim, -1000f, true);
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
+                        Colors.Green));
                 }
             }
 
@@ -186,29 +176,19 @@ namespace GreyWardenPolicePurity
         {
             GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
 
-            try
-            {
-                // 与原版 PlayerEncounter 分离队伍时采用的保护一致：先给一个很短的
-                // 不攻击玩家窗口，再用原版返城命令立即清掉 TargetParty/EngageParty。
-                patrol.Ai.SetDoNotAttackMainParty(2);
-                patrol.Ai.SetDoNotMakeNewDecisions(false);
-                patrol.SetMoveGoToSettlement(
-                    target,
-                    patrol.NavigationCapability,
-                    false);
-                GwpAiDiagnostics.WriteAction(
-                    patrol,
-                    "PATROL_NATIVE_RETURN_APPLIED",
-                    "cleared native EngageParty and ordered immediate travel to " +
-                    target.StringId);
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteAction(
-                    patrol,
-                    "PATROL_NATIVE_RETURN_FAILED",
-                    ex.GetType().Name + ":" + ex.Message);
-            }
+            // 与原版 PlayerEncounter 分离队伍时采用的保护一致：先给一个很短的
+            // 不攻击玩家窗口，再用原版返城命令立即清掉 TargetParty/EngageParty。
+            patrol.Ai.SetDoNotAttackMainParty(2);
+            patrol.Ai.SetDoNotMakeNewDecisions(false);
+            patrol.SetMoveGoToSettlement(
+                target,
+                patrol.NavigationCapability,
+                false);
+            GwpAiDiagnostics.WriteAction(
+                patrol,
+                "PATROL_NATIVE_RETURN_APPLIED",
+                "cleared native EngageParty and ordered immediate travel to " +
+                target.StringId);
         }
 
         private void CleanDeadPatrols()
@@ -299,25 +279,17 @@ namespace GreyWardenPolicePurity
                 negotiationAmount,
                 barterDisplayName);
 
-            try
-            {
-                Campaign.Current.BarterManager.StartBarterOffer(
-                    Hero.MainHero,
-                    barterHero,
-                    playerParty,
-                    patrolParty,
-                    null,
-                    InitializePatrolBribeBarterContext,
-                    0,
-                    false,
-                    new[] { patrolBribe });
-                return true;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+            Campaign.Current.BarterManager.StartBarterOffer(
+                Hero.MainHero,
+                barterHero,
+                playerParty,
+                patrolParty,
+                null,
+                InitializePatrolBribeBarterContext,
+                0,
+                false,
+                new[] { patrolBribe });
+            return true;
         }
 
         private bool InitializePatrolBribeBarterContext(Barterable barterable, BarterData args, object obj)

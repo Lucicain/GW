@@ -228,119 +228,80 @@ namespace GreyWardenPolicePurity
 
             MobileParty? createdParty = null;
             int caseGoldTransferred = 0;
-            try
-            {
-                MobileParty party = CustomPartyComponent.CreateCustomPartyWithTroopRoster(
-                    player.Position,
-                    0.5f,
-                    home,
-                    BuildDispatchName(purpose),
-                    Clan.PlayerClan,
-                    detachment,
-                    prisoners,
-                    Hero.MainHero,
-                    string.Empty,
-                    string.Empty,
-                    0f,
-                    false);
+            MobileParty party = CustomPartyComponent.CreateCustomPartyWithTroopRoster(
+                player.Position,
+                0.5f,
+                home,
+                BuildDispatchName(purpose),
+                Clan.PlayerClan,
+                detachment,
+                prisoners,
+                Hero.MainHero,
+                string.Empty,
+                string.Empty,
+                0f,
+                false);
 
-                createdParty = party;
-                party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
-                party.ActualClan = Clan.PlayerClan;
-                KeepCourierDisposition(party);
-                // 送信队不吃饭（GwpLeaderlessFoodModel），不带口粮；船向玩家借。
-                PoliceResourceManager.LendShips(party, player);
-                bool prisonerLoaded = false;
-                if (casePrisoner != null)
-                {
-                    try
-                    {
-                        TransferPrisonerAction.Apply(
-                            casePrisoner.CharacterObject, player.Party, party.Party);
-                        prisonerLoaded = casePrisoner.PartyBelongedToAsPrisoner == party.Party;
-                    }
-                    catch (Exception transferError)
-                    {
-                        GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_LOAD_FAILED",
-                            transferError.ToString());
-                    }
-                    if (!prisonerLoaded)
-                        InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                            "{=gwp_dispatch_prisoner_failed}Your men could not take custody of him. Keep him with you and deliver him yourself."),
-                            Colors.Red));
-                }
-                if (carriedCaseGold > 0)
-                {
-                    GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, carriedCaseGold, true);
-                    party.PartyTradeGold += carriedCaseGold;
-                    caseGoldTransferred = carriedCaseGold;
-                }
-                var record = new GwpDispatchRecord
-                {
-                    PartyId = party.StringId,
-                    Purpose = purpose,
-                    Phase = GwpDispatchPhase.Outbound,
-                    ReceiverPartyId = receiver.StringId,
-                    CaseGoldFloor = Math.Max(0, carriedCaseGold),
-                    OrderTroopId = orderTroopId ?? string.Empty,
-                    OrderCount = Math.Max(0, orderCount),
-                    OrderPrice = Math.Max(0, orderPrice),
-                    CaseHeroId = purpose == GwpDispatchPurpose.Report
-                        ? Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportIdentity ?? string.Empty : string.Empty,
-                    ReportLie = reportLie,
-                    PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == party.Party
-                        ? prisonerHeroId ?? string.Empty
-                        : string.Empty,
-                    DispatchedHours = CampaignTime.Now.ToHours
-                };
-                ResetProgress(record, party, receiver);
-                _dispatches.Add(record);
-                var loaded = new List<GwpDispatchCargo.Entry>();
-                foreach (var item in cargo)
-                {
-                    player.ItemRoster.AddToCounts(item.EquipmentElement, -item.Amount);
-                    party.ItemRoster.AddToCounts(item.EquipmentElement, item.Amount);
-                    loaded.Add(new GwpDispatchCargo.Entry { Item = item.EquipmentElement,
-                        Amount = item.Amount, Price = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportReceipt?.PriceFor(item.EquipmentElement)
-                            ?? Math.Max(1, item.EquipmentElement.ItemValue) });
-                    record.CargoState = GwpDispatchCargo.Encode(loaded);
-                }
-                TrackOnMap(party);
-                SendTo(party, receiver);
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_sent}Your detachment has set out to find {VAR_1}.",
-                    "VAR_1", receiver.Name.ToString()), Colors.Cyan));
-                return party;
-            }
-            catch (Exception ex)
+            createdParty = party;
+            party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
+            party.ActualClan = Clan.PlayerClan;
+            KeepCourierDisposition(party);
+            // 送信队不吃饭（GwpLeaderlessFoodModel），不带口粮；船向玩家借。
+            PoliceResourceManager.LendShips(party, player);
+            bool prisonerLoaded = false;
+            if (casePrisoner != null)
             {
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_FAILED", ex.ToString());
-                GwpFaultTrace.Write("DISPATCH_CREATE_FAILED", details: ex.ToString());
-                // Once the real party exists, the caller must not return the
-                // dummy selection as well. Bring back its actual remaining cargo.
-                if (createdParty?.IsActive == true)
-                {
-                    GwpDispatchRecord? recovery = _dispatches.FirstOrDefault(d => d.PartyId == createdParty.StringId);
-                    if (recovery == null)
-                    {
-                        recovery = new GwpDispatchRecord
-                        {
-                            PartyId = createdParty.StringId, Purpose = purpose,
-                            CaseGoldFloor = caseGoldTransferred,
-                            OrderTroopId = orderTroopId ?? string.Empty,
-                            OrderCount = Math.Max(0, orderCount),
-                            OrderPrice = Math.Max(0, orderPrice),
-                            PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == createdParty.Party
-                                ? prisonerHeroId : string.Empty,
-                            DispatchedHours = CampaignTime.Now.ToHours
-                        };
-                        _dispatches.Add(recovery);
-                    }
-                    recovery.Phase = GwpDispatchPhase.Returning;
-                    return createdParty;
-                }
-                return null;
+                TransferPrisonerAction.Apply(
+                    casePrisoner.CharacterObject, player.Party, party.Party);
+                prisonerLoaded = casePrisoner.PartyBelongedToAsPrisoner == party.Party;
+
+                if (!prisonerLoaded)
+                    InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                        "{=gwp_dispatch_prisoner_failed}Your men could not take custody of him. Keep him with you and deliver him yourself."),
+                        Colors.Red));
             }
+            if (carriedCaseGold > 0)
+            {
+                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, carriedCaseGold, true);
+                party.PartyTradeGold += carriedCaseGold;
+                caseGoldTransferred = carriedCaseGold;
+            }
+            var record = new GwpDispatchRecord
+            {
+                PartyId = party.StringId,
+                Purpose = purpose,
+                Phase = GwpDispatchPhase.Outbound,
+                ReceiverPartyId = receiver.StringId,
+                CaseGoldFloor = Math.Max(0, carriedCaseGold),
+                OrderTroopId = orderTroopId ?? string.Empty,
+                OrderCount = Math.Max(0, orderCount),
+                OrderPrice = Math.Max(0, orderPrice),
+                CaseHeroId = purpose == GwpDispatchPurpose.Report
+                    ? Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportIdentity ?? string.Empty : string.Empty,
+                ReportLie = reportLie,
+                PrisonerHeroId = casePrisoner?.PartyBelongedToAsPrisoner == party.Party
+                    ? prisonerHeroId ?? string.Empty
+                    : string.Empty,
+                DispatchedHours = CampaignTime.Now.ToHours
+            };
+            ResetProgress(record, party, receiver);
+            _dispatches.Add(record);
+            var loaded = new List<GwpDispatchCargo.Entry>();
+            foreach (var item in cargo)
+            {
+                player.ItemRoster.AddToCounts(item.EquipmentElement, -item.Amount);
+                party.ItemRoster.AddToCounts(item.EquipmentElement, item.Amount);
+                loaded.Add(new GwpDispatchCargo.Entry { Item = item.EquipmentElement,
+                    Amount = item.Amount, Price = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportReceipt?.PriceFor(item.EquipmentElement)
+                        ?? Math.Max(1, item.EquipmentElement.ItemValue) });
+                record.CargoState = GwpDispatchCargo.Encode(loaded);
+            }
+            TrackOnMap(party);
+            SendTo(party, receiver);
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                "{=gwp_dispatch_sent}Your detachment has set out to find {VAR_1}.",
+                "VAR_1", receiver.Name.ToString()), Colors.Cyan));
+            return party;
         }
 
         private static TextObject BuildDispatchName(GwpDispatchPurpose purpose) =>
@@ -383,42 +344,27 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static void KeepCourierDisposition(MobileParty party)
         {
-            try { party.Ai.SetInitiative(CourierAttackInitiative, 1f, CourierInitiativeHours); }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.Ai.SetInitiative(CourierAttackInitiative, 1f, CourierInitiativeHours);
         }
 
         private static void TrackOnMap(MobileParty party)
         {
-            try
-            {
-                VisualTrackerManager? tracker = Campaign.Current?.VisualTrackerManager;
-                if (tracker == null) return;
-                if (party.IsCurrentlyUsedByAQuest && tracker.CheckTracked(party)) return;
+            VisualTrackerManager? tracker = Campaign.Current?.VisualTrackerManager;
+            if (tracker == null) return;
+            if (party.IsCurrentlyUsedByAQuest && tracker.CheckTracked(party)) return;
 
-                // MapTrackerProvider.CanAddMobileParty 的接受条件（反编译 IL 逐分支确认）是
-                // 三条同时成立：无英雄领队、IsCurrentlyUsedByAQuest、且已在视觉追踪里。
-                // 顺序要紧：先登记视觉追踪，再翻转任务占用——后者会派发
-                // OnMobilePartyQuestStatusChanged，提供者就在那一刻重新评估。
-                if (!tracker.CheckTracked(party)) tracker.RegisterObject(party);
-                if (!party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(true);
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_TRACK_FAILED", ex.ToString());
-            }
+            // MapTrackerProvider.CanAddMobileParty 的接受条件（反编译 IL 逐分支确认）是
+            // 三条同时成立：无英雄领队、IsCurrentlyUsedByAQuest、且已在视觉追踪里。
+            // 顺序要紧：先登记视觉追踪，再翻转任务占用——后者会派发
+            // OnMobilePartyQuestStatusChanged，提供者就在那一刻重新评估。
+            if (!tracker.CheckTracked(party)) tracker.RegisterObject(party);
+            if (!party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(true);
         }
 
         private static void UntrackOnMap(MobileParty party)
         {
-            try
-            {
-                Campaign.Current?.VisualTrackerManager?.RemoveTrackedObject(party, true);
-                if (party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(false);
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write("DISPATCH_UNTRACK_FAILED", details: party.StringId + " | " + exception);
-            }
+            Campaign.Current?.VisualTrackerManager?.RemoveTrackedObject(party, true);
+            if (party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(false);
         }
 
         /// <summary>
@@ -464,12 +410,8 @@ namespace GreyWardenPolicePurity
         private static bool CanReach(MobileParty courier, MobileParty target)
         {
             if (courier?.IsActive != true || target?.IsActive != true) return false;
-            try
-            {
-                return NavigationHelper.IsPositionValidForNavigationType(
-                    target.Position, courier.NavigationCapability);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return !target.IsCurrentlyAtSea; }
+            return NavigationHelper.IsPositionValidForNavigationType(
+                target.Position, courier.NavigationCapability);
         }
 
         /// <summary>
@@ -747,16 +689,9 @@ namespace GreyWardenPolicePurity
                 Hero? prisoner = Hero.FindFirst(h => h.StringId == record.PrisonerHeroId);
                 if (prisoner?.IsPrisoner == true && prisoner.PartyBelongedToAsPrisoner == party.Party)
                 {
-                    try
-                    {
-                        TransferPrisonerAction.Apply(prisoner.CharacterObject, party.Party, receiver.Party);
-                        prisonerDelivered = prisoner.PartyBelongedToAsPrisoner == receiver.Party;
-                        if (prisonerDelivered) record.PrisonerHeroId = string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        GwpAiDiagnostics.WriteFieldArrest("DISPATCH_PRISONER_FAILED", ex.ToString());
-                    }
+                    TransferPrisonerAction.Apply(prisoner.CharacterObject, party.Party, receiver.Party);
+                    prisonerDelivered = prisoner.PartyBelongedToAsPrisoner == receiver.Party;
+                    if (prisonerDelivered) record.PrisonerHeroId = string.Empty;
                 }
             }
 
@@ -824,8 +759,7 @@ namespace GreyWardenPolicePurity
 
         private static void KeepOutOfPlayerWay(MobileParty party)
         {
-            try { party.IgnoreByOtherPartiesTill(CampaignTime.HoursFromNow(2f)); }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.IgnoreByOtherPartiesTill(CampaignTime.HoursFromNow(2f));
         }
 
         /// <summary>
@@ -887,17 +821,8 @@ namespace GreyWardenPolicePurity
                 if (element.Character == null || element.Number <= 0) continue;
                 if (element.Character.IsHero && element.Character.HeroObject != null)
                 {
-                    try
-                    {
-                        TransferPrisonerAction.Apply(element.Character, party.Party, player.Party);
-                        continue;
-                    }
-                    catch (Exception exception)
-                    {
-                        GwpFaultTrace.Write("DISPATCH_RETURN_PRISONER_FAILED",
-                            details: party.StringId + " | " + exception);
-                        return;
-                    }
+                    TransferPrisonerAction.Apply(element.Character, party.Party, player.Party);
+                    continue;
                 }
                 player.PrisonRoster.AddToCounts(element.Character, element.Number,
                     false, element.WoundedNumber);
@@ -928,16 +853,10 @@ namespace GreyWardenPolicePurity
 
         private static bool DestroyDispatchParty(MobileParty party)
         {
-            try
-            {
-                UntrackOnMap(party);
-                GreyWardenPartyDesireBehavior.ClearIntent(party);
-                if (party.IsActive) DestroyPartyAction.Apply(null, party);
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write("DISPATCH_DESTROY_FAILED", details: party.StringId + " | " + exception);
-            }
+            UntrackOnMap(party);
+            GreyWardenPartyDesireBehavior.ClearIntent(party);
+            if (party.IsActive) DestroyPartyAction.Apply(null, party);
+
             return !party.IsActive;
         }
 
@@ -965,8 +884,7 @@ namespace GreyWardenPolicePurity
         private static void PayDispatchWages(MobileParty party)
         {
             int wage = 0;
-            try { wage = Math.Max(0, party.TotalWage); }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            wage = Math.Max(0, party.TotalWage);
             if (wage <= 0) return;
             int paid = Math.Min(wage, Hero.MainHero?.Gold ?? 0);
             if (paid > 0) GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, paid, true);

@@ -42,29 +42,20 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static bool EnsureIconLayer()
         {
-            try
-            {
-                Brush? brush = UIResourceManager.BrushFactory?.GetBrush(IconBrushName);
-                if (brush == null) return false;
-                if (brush.GetLayer(ReputationVisualId) != null) return true;
+            Brush? brush = UIResourceManager.BrushFactory?.GetBrush(IconBrushName);
+            if (brush == null) return false;
+            if (brush.GetLayer(ReputationVisualId) != null) return true;
 
-                BrushLayer? source = brush.GetLayer(SourceLayerName);
-                if (source == null) return false;
+            BrushLayer? source = brush.GetLayer(SourceLayerName);
+            if (source == null) return false;
 
-                var layer = new BrushLayer();
-                layer.FillFrom(source);
-                // FillFrom 连 Name 一起复制，改名必须放在它后面。
-                layer.Name = ReputationVisualId;
-                layer.Color = ReputationIconColor;
-                brush.AddLayer(layer);
-                return true;
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write("MAPBAR_REPUTATION_ICON_FAILED",
-                    details: exception.GetType().FullName + ":" + exception.Message);
-                return false;
-            }
+            var layer = new BrushLayer();
+            layer.FillFrom(source);
+            // FillFrom 连 Name 一起复制，改名必须放在它后面。
+            layer.Name = ReputationVisualId;
+            layer.Color = ReputationIconColor;
+            brush.AddLayer(layer);
+            return true;
         }
 
         private static List<TooltipProperty> BuildTooltip()

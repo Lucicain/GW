@@ -59,6 +59,7 @@ namespace GreyWardenPolicePurity
                 }
                 catch (ArgumentNullException)
                 {
+                    // 依据：实机诊断 2026-09-27、2026-10-02（读档时 Hero.FindFirst 因英雄全局表未建好抛 ArgumentNullException）
                     // CampaignBehavior.SyncData runs before Bannerlord has finished
                     // constructing Hero's global source collection. Resolution is lazy,
                     // so simply retry after the campaign session has launched.
@@ -195,6 +196,7 @@ namespace GreyWardenPolicePurity
                 }
                 catch (ArgumentNullException)
                 {
+                    // 依据：实机诊断 2026-09-27、2026-10-02（读档时 Hero.FindFirst 因英雄全局表未建好抛 ArgumentNullException）
                     // Same as the offender lookup above: Hero's global collection is not
                     // built yet during SyncData, and resolution retries lazily.
                     return null;
@@ -272,11 +274,6 @@ namespace GreyWardenPolicePurity
                 .Select(w => w.MobileParty)
                 .ToList();
         }
-
-        public static int PartyCount => GetAllPoliceParties().Count;
-        public static int MaxActiveTasks => PartyCount;
-        public static int PoliceClanMemberCount =>
-            GetPoliceClan()?.Heroes.Count(h => h != null && h.IsAlive) ?? 0;
 
         public static bool CanHandleOrdinaryCase(MobileParty? party) =>
             party?.IsActive == true && party.IsLordParty &&
@@ -757,9 +754,6 @@ namespace GreyWardenPolicePurity
                 .Where(p => p.MapFaction == faction)
                 .ToList();
         }
-
-        public static bool HasTrackedOffenderByFaction(IFaction? faction) =>
-            GetTrackedOffendersByFaction(faction).Count > 0;
 
         public static List<MobileParty> GetAllTrackedOffenders(bool includePlayer = false)
         {

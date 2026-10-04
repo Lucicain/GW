@@ -78,20 +78,16 @@ namespace GreyWardenPolicePurity
         private static void InsertAfterClan(MapNavigationHandler __instance,
             ref INavigationElement[] __result)
         {
-            try
-            {
-                if (__result == null ||
-                    __result.Any(element => element?.StringId == GwpAffairsNavigationElement.Id))
-                    return;
+            if (__result == null ||
+                __result.Any(element => element?.StringId == GwpAffairsNavigationElement.Id))
+                return;
 
-                GwpAffairsIcon.EnsureBrushLayers();
-                var elements = __result.ToList();
-                int clan = elements.FindIndex(element => element?.StringId == ClanElementId);
-                elements.Insert(clan >= 0 ? clan + 1 : elements.Count,
-                    new GwpAffairsNavigationElement(__instance));
-                __result = elements.ToArray();
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            GwpAffairsIcon.EnsureBrushLayers();
+            var elements = __result.ToList();
+            int clan = elements.FindIndex(element => element?.StringId == ClanElementId);
+            elements.Insert(clan >= 0 ? clan + 1 : elements.Count,
+                new GwpAffairsNavigationElement(__instance));
+            __result = elements.ToArray();
         }
     }
 

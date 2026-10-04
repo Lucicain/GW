@@ -67,12 +67,6 @@ namespace GreyWardenPolicePurity
         public static float RegisterPoliceArrest(Hero leader, GwpCrimeCategory category) =>
             RegisterEnforcementOutcome(leader, category, countAsArrest: true);
 
-        /// <summary>
-        /// 执法成功但人没有被灰袍押走。保留给仍然只想记震慑、不想动履历的调用方。
-        /// </summary>
-        public static float RegisterEnforcementSuccess(Hero leader, GwpCrimeCategory category) =>
-            RegisterEnforcementOutcome(leader, category, countAsArrest: false);
-
         /// <summary>同一条登记路径，由调用方决定这次执法是否构成一次实际拘捕。</summary>
         public static float RegisterEnforcementOutcomeFor(Hero leader, GwpCrimeCategory category,
             bool countAsArrest) =>
@@ -160,21 +154,13 @@ namespace GreyWardenPolicePurity
         {
             if (leader == null || string.IsNullOrWhiteSpace(leader.StringId)) return;
 
-            try
-            {
-                HeroCrimeStats history = CrimePool.GetOrCreateHistory(leader);
-                history.NegativeStanding = 0;
-                history.CrimeKillProgress = 0;
+            HeroCrimeStats history = CrimePool.GetOrCreateHistory(leader);
+            history.NegativeStanding = 0;
+            history.CrimeKillProgress = 0;
 
-                CrimeRecord? crime = CrimePool.GetRecord(leader);
-                if (crime?.HasOpenCase == true)
-                    CrimePool.CloseCaseSettledInField(crime);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                // 清账失败只影响罚金数额，不能连累抓捕本身的结算。
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            CrimeRecord? crime = CrimePool.GetRecord(leader);
+            if (crime?.HasOpenCase == true)
+                CrimePool.CloseCaseSettledInField(crime);
         }
 
         public static float RegisterSharedFamilyDeterrence(Hero leader, float penaltyGain,
@@ -225,9 +211,6 @@ namespace GreyWardenPolicePurity
             return record.CaravanDirectDeterrencePoints +
                    record.CaravanSharedDeterrencePoints;
         }
-
-        public static float GetRaidScoreMultiplier(MobileParty party) =>
-            GetCrimeDesireMultiplier(party, GwpCrimeCategory.VillageViolence);
 
         public static float GetCaravanAttackScoreMultiplier(MobileParty? party) =>
             GetCrimeDesireMultiplier(party, GwpCrimeCategory.CaravanAttack);

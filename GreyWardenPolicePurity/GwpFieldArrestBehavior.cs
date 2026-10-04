@@ -723,7 +723,7 @@ namespace GreyWardenPolicePurity
         private void EndLayerOneConsequence()
         {
             _enforcementAccepted = PersuasionSatisfiedCondition();
-            
+
             if (ConversationManager.GetPersuasionIsActive())
                 ConversationManager.EndPersuasion();
             _layer = NegotiationLayer.None;
@@ -879,7 +879,6 @@ namespace GreyWardenPolicePurity
             else if (option.CanMoveToTheNextReservation &&
                 (_lastResult == PersuasionOptionResult.Success || _lastResult == PersuasionOptionResult.CriticalSuccess))
                 _lastArgumentTask?.BlockAllOptions();
-            
         }
 
         /// <summary>
@@ -905,34 +904,24 @@ namespace GreyWardenPolicePurity
 
         private bool ArgumentReactionCondition()
         {
-            try
-            {
-                PersuasionOptionResult result = _lastResult;
-                PersuasionTask? task = _lastArgumentTask;
+            PersuasionOptionResult result = _lastResult;
+            PersuasionTask? task = _lastArgumentTask;
 
-                if (result == PersuasionOptionResult.CriticalFailure)
-                {
-                    MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpText.Create("{=gwp_fa_critical_rebuff}Enough. I will hear no more of this."));
-                }
-                else if ((result == PersuasionOptionResult.Failure
-                     || result == PersuasionOptionResult.Miss)
-                    && task?.ImmediateFailLine != null)
-                {
-                    MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpFieldArrestLines.ArgumentRebuff(_lastArgument!, _desire, _layer == NegotiationLayer.PayByTheBook));
-                }
-                else
-                {
-                    MBTextManager.SetTextVariable(
-                        "PERSUASION_REACTION",
-                        _voice.Line("success_" + GwpFieldArrestLines.Read(_offender)));
-                }
-            }
-            catch (Exception gwpQuietFailure)
+            if (result == PersuasionOptionResult.CriticalFailure)
             {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+                MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpText.Create("{=gwp_fa_critical_rebuff}Enough. I will hear no more of this."));
+            }
+            else if ((result == PersuasionOptionResult.Failure
+                 || result == PersuasionOptionResult.Miss)
+                && task?.ImmediateFailLine != null)
+            {
+                MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpFieldArrestLines.ArgumentRebuff(_lastArgument!, _desire, _layer == NegotiationLayer.PayByTheBook));
+            }
+            else
+            {
                 MBTextManager.SetTextVariable(
                     "PERSUASION_REACTION",
-                    GwpText.Create("{=gwp_fieldarrest_reaction_fallback}..."));
+                    _voice.Line("success_" + GwpFieldArrestLines.Read(_offender)));
             }
 
             return true;
@@ -974,11 +963,10 @@ namespace GreyWardenPolicePurity
                     _collection.PrepareCatalogue(data);
                     original?.Invoke(data);
                 };
-                
+
                 manager.StartBarterOffer(Hero.MainHero, _offender, MobileParty.MainParty.Party, _offenderParty.Party,
                     null, (item, data, obj) => _collection.IsAgreement(item), 0, false, _collection.Entries);
             }
-            catch (Exception ex) { GwpAiDiagnostics.WriteFieldArrest("COLLECTION_OPEN_FAILED", ex.ToString()); }
             finally { manager.BarterBegin = original; }
         }
 
@@ -1075,11 +1063,7 @@ namespace GreyWardenPolicePurity
             int assessed = EnsureFine();
             int standing = GetNegativeStanding(_crime);
 
-            try { TakePrisonerAction.Apply(MobileParty.MainParty.Party, _offender); }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("SURRENDER_FAILED", ex.ToString());
-            }
+            TakePrisonerAction.Apply(MobileParty.MainParty.Party, _offender);
             if (!_offender.IsPrisoner || _offender.PartyBelongedToAsPrisoner != MobileParty.MainParty.Party)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -1155,13 +1139,6 @@ namespace GreyWardenPolicePurity
         private static int _pendingDuelFine;
         internal static bool IsEnforcementDuelPending(Hero? hero) => hero != null
             && !string.IsNullOrEmpty(_pendingDuelOffenderId) && hero.StringId == _pendingDuelOffenderId;
-
-        internal static void CancelPendingEnforcementDuel(Hero? hero)
-        {
-            if (!IsEnforcementDuelPending(hero)) return;
-            _pendingDuelOffenderId = string.Empty;
-            _pendingDuelFine = 0;
-        }
 
         /// <summary>
         /// 切磋管线打完之后回到这里。他赢就照他开出的条件免罚，玩家赢就全额照缴。
@@ -1311,16 +1288,9 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static void LeaveEncounterPeacefully()
         {
-            try
-            {
-                if (PlayerEncounter.Current == null) return;
-                PlayerEncounter.LeaveEncounter = true;
-                PlayerEncounter.Finish(false);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            if (PlayerEncounter.Current == null) return;
+            PlayerEncounter.LeaveEncounter = true;
+            PlayerEncounter.Finish(false);
         }
 
         /// <summary>
@@ -1400,6 +1370,7 @@ namespace GreyWardenPolicePurity
             }
             catch (Exception exception)
             {
+                // 依据：实机诊断 2026-09-12（开不起战斗时这里曾静默吞掉，日志只剩两条 ATTACK）
                 // 拉不起战斗时保持原状：宁可让玩家自己动手，也不要在这里改变阵营关系。
                 // 但必须留下痕迹——上一轮就是因为这里静默吞掉，日志里只看得到两条
                 // ATTACK，看不出为什么没打起来。

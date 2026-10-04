@@ -45,33 +45,26 @@ namespace GreyWardenPolicePurity
             Agent? agent = null,
             string? details = null)
         {
-            try
+            string character = "-";
+            string agentId = "-";
+            if (agent != null)
             {
-                string character = "-";
-                string agentId = "-";
-                if (agent != null)
-                {
-                    agentId = agent.Index.ToString();
-                    character = agent.Character?.StringId ?? "-";
-                }
-
-                string line = DateTime.Now.ToString("O")
-                    + " | " + stage
-                    + " | agent=" + agentId
-                    + " | character=" + character
-                    + (string.IsNullOrEmpty(details)
-                        ? string.Empty
-                        : " | " + details)
-                    + Environment.NewLine;
-                lock (Sync)
-                {
-                    Directory.CreateDirectory(IOPath.GetDirectoryName(LogPath)!);
-                    File.AppendAllText(LogPath, line);
-                }
+                agentId = agent.Index.ToString();
+                character = agent.Character?.StringId ?? "-";
             }
-            catch
+
+            string line = DateTime.Now.ToString("O")
+                + " | " + stage
+                + " | agent=" + agentId
+                + " | character=" + character
+                + (string.IsNullOrEmpty(details)
+                    ? string.Empty
+                    : " | " + details)
+                + Environment.NewLine;
+            lock (Sync)
             {
-                // Diagnostics must never affect the game path.
+                Directory.CreateDirectory(IOPath.GetDirectoryName(LogPath)!);
+                File.AppendAllText(LogPath, line);
             }
         }
 
@@ -79,11 +72,10 @@ namespace GreyWardenPolicePurity
             new HashSet<string>(StringComparer.Ordinal);
 
         /// <summary>
-        /// 记录一次**被静默吞掉**的异常。
+        /// 记录一次被 catch 接住的异常。
         ///
-        /// 包住引擎调用的 catch-all 本身是合理的防御——出事也不能把战役心跳带下去。
-        /// 但完全空的 <c>catch { }</c> 连痕迹都不留，故障只会表现为"某个功能莫名其妙
-        /// 不再工作"，排查时无从下手。
+        /// 只给有依据的 catch 用：catch 里写明它兜住过的那次实际故障（方法、日期、抓到了什么）。
+        /// 没有记录的兜底不写，让异常暴露（用户裁定 2026-10-05，见 tools/Check-CodeHygiene.py）。
         ///
         /// **每个位置每局只记一次**：有些 catch 挂在每小时心跳上，一旦持续失败会把
         /// 这个日志刷爆，而本文件的价值恰恰在于"健康的一局里它是空的，里面出现的
@@ -97,21 +89,14 @@ namespace GreyWardenPolicePurity
             [System.Runtime.CompilerServices.CallerMemberName] string? member = null,
             [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
         {
-            try
+            string site = IOPath.GetFileName(file ?? "?") + ":" + line;
+            lock (QuietSitesSeen)
             {
-                string site = IOPath.GetFileName(file ?? "?") + ":" + line;
-                lock (QuietSitesSeen)
-                {
-                    if (!QuietSitesSeen.Add(site)) return;
-                }
+                if (!QuietSitesSeen.Add(site)) return;
+            }
 
-                Write("QUIET_FAILURE", details: site + " " + (member ?? "?")
-                    + " | " + (error?.ToString().Replace(Environment.NewLine, " | ") ?? "<null>"));
-            }
-            catch
-            {
-                // Diagnostics must never affect the game path.
-            }
+            Write("QUIET_FAILURE", details: site + " " + (member ?? "?")
+                + " | " + (error?.ToString().Replace(Environment.NewLine, " | ") ?? "<null>"));
         }
 #else
         internal static void Write(
@@ -216,32 +201,22 @@ namespace GreyWardenPolicePurity
             ref IEnumerable<BasicCharacterObject> result,
             string source)
         {
-            try
+            BasicCharacterObject? custom = Game.Current?.ObjectManager?
+                .GetObject<BasicCharacterObject>(GwpIds.CustomBattleCommanderId);
+            if (custom == null)
             {
-                BasicCharacterObject? custom = Game.Current?.ObjectManager?
-                    .GetObject<BasicCharacterObject>(GwpIds.CustomBattleCommanderId);
-                if (custom == null)
-                {
-                    return;
-                }
+                return;
+            }
 
-                List<BasicCharacterObject> characters = (result ?? Enumerable.Empty<BasicCharacterObject>())
-                    .Where(character => character != null
-                        && !string.Equals(
-                            character.StringId,
-                            custom.StringId,
-                            StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                characters.Insert(0, custom);
-                result = characters;
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write(
-                    "CUSTOM_BATTLE_COMMANDER_INSERT_FAILED",
-                    details: "source=" + source + "; "
-                        + exception.GetType().FullName + ": " + exception.Message);
-            }
+            List<BasicCharacterObject> characters = (result ?? Enumerable.Empty<BasicCharacterObject>())
+                .Where(character => character != null
+                    && !string.Equals(
+                        character.StringId,
+                        custom.StringId,
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            characters.Insert(0, custom);
+            result = characters;
         }
     }
 
@@ -290,36 +265,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpDualBladeLoadout
     {
-        internal static bool HasCompleteLoadout(Agent? agent)
-        {
-            if (agent == null || !IsEligibleDualBladeUser(agent))
-                return false;
-
-            try
-            {
-                Equipment? spawnEquipment = agent.SpawnEquipment;
-                if (spawnEquipment != null
-                    && IsOffHandBladeId(
-                        spawnEquipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
-                    && IsItem(spawnEquipment[EquipmentIndex.Weapon1].Item,
-                        GwpIds.DualBladeMainhandItemId))
-                {
-                    return true;
-                }
-
-                MissionEquipment? equipment = agent.Equipment;
-                return equipment != null
-                    && IsOffHandBladeId(
-                        equipment[EquipmentIndex.WeaponItemBeginSlot].Item?.StringId)
-                    && IsItem(equipment[EquipmentIndex.Weapon1],
-                        GwpIds.DualBladeMainhandItemId);
-            }
-            catch
-            {
-                // Agent equipment and state can throw on half-built or departing agents; that is routine in a healthy mission, so this stays silent.
-                return false;
-            }
-        }
 
         /// <summary>
         /// Anyone actually fighting with the pair, player or AI. The off-hand

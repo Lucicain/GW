@@ -320,35 +320,22 @@ namespace GreyWardenPolicePurity
             Location arena = _pendingArena;
             ClearPendingSparring();
 
-            try
-            {
-                string scene = arena.GetSceneName(
-                    settlement.Town.GetWallLevel());
-                CampaignMission.OpenArenaDuelMission(
-                    scene,
-                    arena,
-                    opponent.CharacterObject,
-                    requireCivilianEquipment: false,
-                    spawnBothSidesWithHorse: false,
-                    winner => OnTownBoutEnded(
-                        winner,
-                        opponent,
-                        settlement),
-                    customAgentHealth: 100f);
-                Debug.Print(
-                    "[GreyWarden Sparring] native town arena duel opened; "
-                    + $"scene={scene}; opponent={opponent.StringId}");
-            }
-            catch (Exception exception)
-            {
-                Debug.Print(
-                    "[GreyWarden Sparring] town arena launch failed: "
-                    + exception);
-                MBInformationManager.AddQuickInformation(
-                    new TextObject(
-                        GwpText.Get(
-                            "{=gwp_sparring_launch_failed}This isn't a good place to spar, so we'll stop here.")));
-            }
+            string scene = arena.GetSceneName(
+                settlement.Town.GetWallLevel());
+            CampaignMission.OpenArenaDuelMission(
+                scene,
+                arena,
+                opponent.CharacterObject,
+                requireCivilianEquipment: false,
+                spawnBothSidesWithHorse: false,
+                winner => OnTownBoutEnded(
+                    winner,
+                    opponent,
+                    settlement),
+                customAgentHealth: 100f);
+            Debug.Print(
+                "[GreyWarden Sparring] native town arena duel opened; "
+                + $"scene={scene}; opponent={opponent.StringId}");
         }
 
         internal static void OnApplicationTick()
@@ -492,25 +479,11 @@ namespace GreyWardenPolicePurity
                 ?? Settlement.CurrentSettlement;
             if (currentSettlement != null)
             {
-                try
-                {
-                    LeaveSettlementAction.ApplyForParty(
-                        mainParty);
-                    Debug.Print(
-                        "[GreyWarden Sparring] left settlement before field "
-                        + $"launch; settlement={currentSettlement.StringId}");
-                }
-                catch (Exception exception)
-                {
-                    Debug.Print(
-                        "[GreyWarden Sparring] could not leave settlement "
-                        + "before field launch: " + exception);
-                    MBInformationManager.AddQuickInformation(
-                        new TextObject(
-                            GwpText.Get(
-                                "{=gwp_sparring_launch_failed}This isn't a good place to spar, so we'll stop here.")));
-                    ClearPendingSparring();
-                }
+                LeaveSettlementAction.ApplyForParty(
+                    mainParty);
+                Debug.Print(
+                    "[GreyWarden Sparring] left settlement before field "
+                    + $"launch; settlement={currentSettlement.StringId}");
 
                 return;
             }
@@ -520,19 +493,10 @@ namespace GreyWardenPolicePurity
             if (PlayerEncounter.IsActive
                 || mainParty.MapEvent != null)
             {
-                try
+                if (PlayerEncounter.IsActive)
                 {
-                    if (PlayerEncounter.IsActive)
-                    {
-                        PlayerEncounter.LeaveEncounter = true;
-                        PlayerEncounter.Finish(false);
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Debug.Print(
-                        "[GreyWarden Sparring] encounter close before field "
-                        + "launch failed: " + exception);
+                    PlayerEncounter.LeaveEncounter = true;
+                    PlayerEncounter.Finish(false);
                 }
 
                 if (PlayerEncounter.IsActive
@@ -546,19 +510,7 @@ namespace GreyWardenPolicePurity
             MobileParty? opponentParty = _pendingOpponentParty;
             ClearPendingSparring();
 
-            try
-            {
-                OpenFieldSparringMission(opponent, opponentParty);
-            }
-            catch (Exception exception)
-            {
-                Debug.Print("[GreyWarden Sparring] field launch failed: " + exception);
-                GwpFieldArrestBehavior.CancelPendingEnforcementDuel(opponent);
-                MBInformationManager.AddQuickInformation(
-                    new TextObject(
-                        GwpText.Get(
-                            "{=gwp_sparring_launch_failed}This isn't a good place to spar, so we'll stop here.")));
-            }
+            OpenFieldSparringMission(opponent, opponentParty);
         }
 
         private static bool IsFieldStartConversation()
@@ -651,52 +603,40 @@ namespace GreyWardenPolicePurity
                 Campaign.Current.ConversationManager;
             conversationManager.ConversationEndOneShot +=
                 ClearPostBoutConversation;
-            try
-            {
-                bool isTownConversation = _pendingPostBoutKind
-                    == PostBoutConversationKind.Town;
-                ConversationCharacterData playerData =
-                    new ConversationCharacterData(
-                        CharacterObject.PlayerCharacter,
-                        MobileParty.MainParty.Party,
-                        noHorse: isTownConversation,
-                        spawnAfterFight: true,
-                        noBodyguards: true);
-                ConversationCharacterData opponentData =
-                    new ConversationCharacterData(
-                        opponent.CharacterObject,
-                        opponent.PartyBelongedTo?.Party,
-                        noHorse: isTownConversation,
-                        spawnAfterFight: true,
-                        noBodyguards: true);
+            bool isTownConversation = _pendingPostBoutKind
+                == PostBoutConversationKind.Town;
+            ConversationCharacterData playerData =
+                new ConversationCharacterData(
+                    CharacterObject.PlayerCharacter,
+                    MobileParty.MainParty.Party,
+                    noHorse: isTownConversation,
+                    spawnAfterFight: true,
+                    noBodyguards: true);
+            ConversationCharacterData opponentData =
+                new ConversationCharacterData(
+                    opponent.CharacterObject,
+                    opponent.PartyBelongedTo?.Party,
+                    noHorse: isTownConversation,
+                    spawnAfterFight: true,
+                    noBodyguards: true);
 
-                if (isTownConversation)
-                {
-                    CampaignMission.OpenConversationMission(
-                        playerData,
-                        opponentData,
-                        _pendingPostBoutConversationScene,
-                        string.Empty);
-                }
-                else
-                {
-                    CampaignMapConversation.OpenConversation(
-                        playerData,
-                        opponentData);
-                }
-                Debug.Print(
-                    "[GreyWarden Sparring] post-bout conversation opened; "
-                    + $"kind={_pendingPostBoutKind}");
-            }
-            catch (Exception exception)
+            if (isTownConversation)
             {
-                conversationManager.ConversationEndOneShot -=
-                    ClearPostBoutConversation;
-                Debug.Print(
-                    "[GreyWarden Sparring] post-bout map conversation "
-                    + "failed: " + exception);
-                ClearPostBoutConversation();
+                CampaignMission.OpenConversationMission(
+                    playerData,
+                    opponentData,
+                    _pendingPostBoutConversationScene,
+                    string.Empty);
             }
+            else
+            {
+                CampaignMapConversation.OpenConversation(
+                    playerData,
+                    opponentData);
+            }
+            Debug.Print(
+                "[GreyWarden Sparring] post-bout conversation opened; "
+                + $"kind={_pendingPostBoutKind}");
         }
 
         private void OnMapEventStarted(

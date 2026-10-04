@@ -94,46 +94,38 @@ namespace GreyWardenPolicePurity
         {
             if (village?.Settlement == null) return;
 
-            try
-            {
-                if (!_raidHearthAtStart.TryGetValue(village.Settlement.StringId, out RaidSnapshot snapshot))
-                    return;
-                _raidHearthAtStart.Remove(village.Settlement.StringId);
+            if (!_raidHearthAtStart.TryGetValue(village.Settlement.StringId, out RaidSnapshot snapshot))
+                return;
+            _raidHearthAtStart.Remove(village.Settlement.StringId);
 
-                // The receipt survives the militia/looting phase boundary and saves.
-                // Changing raider replaces it; hourly checks retire abandoned raids.
+            // The receipt survives the militia/looting phase boundary and saves.
+            // Changing raider replaces it; hourly checks retire abandoned raids.
 
-                MobileParty? raider = MobileParty.All.FirstOrDefault(party =>
-                    string.Equals(party.StringId, snapshot.RaiderPartyId, StringComparison.OrdinalIgnoreCase));
-                Hero? leader = raider?.LeaderHero;
-                if (raider == null || leader == null) return;
-                if (!IsChargeableOffender(raider, leader)) return;
+            MobileParty? raider = MobileParty.All.FirstOrDefault(party =>
+                string.Equals(party.StringId, snapshot.RaiderPartyId, StringComparison.OrdinalIgnoreCase));
+            Hero? leader = raider?.LeaderHero;
+            if (raider == null || leader == null) return;
+            if (!IsChargeableOffender(raider, leader)) return;
 
-                int hearthLost = (int)Math.Round(Math.Max(0f, snapshot.Hearth - village.Hearth));
-                int lives = hearthLost * GwpTuning.FieldArrest.VillagersPerHearthPoint;
-                if (lives <= 0) return;
+            int hearthLost = (int)Math.Round(Math.Max(0f, snapshot.Hearth - village.Hearth));
+            int lives = hearthLost * GwpTuning.FieldArrest.VillagersPerHearthPoint;
+            if (lives <= 0) return;
 
-                CrimePool.GetOrCreateHistory(leader).AddCivilianCasualties(lives);
+            CrimePool.GetOrCreateHistory(leader).AddCivilianCasualties(lives);
 
-                CrimeRecord? record = CrimePool.GetByOffenderId(snapshot.RaiderPartyId);
-                if (record?.HasOpenCase == true)
-                    record.CivilianCasualties += lives;
+            CrimeRecord? record = CrimePool.GetByOffenderId(snapshot.RaiderPartyId);
+            if (record?.HasOpenCase == true)
+                record.CivilianCasualties += lives;
 
-                GwpAiDiagnostics.WriteFieldArrest(
-                    "CASUALTIES_RAID",
-                    "offender=" + DescribeOffender(leader) +
-                    "; village=" + village.Settlement.StringId +
-                    "; hearthStart=" + snapshot.Hearth + "; hearthEnd=" + village.Hearth +
-                    "; raidStartedHours=" + snapshot.StartedHours + "; raider=" + snapshot.RaiderPartyId +
-                    "; hearthLost=" + hearthLost + "; lives=" + lives +
-                    "; caseTotal=" + (record?.CivilianCasualties ?? 0) +
-                    "; standing=" + CrimePool.GetOrCreateHistory(leader).NegativeStanding);
-            }
-            catch (Exception exception)
-            {
-                // 人口折算失败只影响罚金，不能连累劫掠结算本身。
-                GwpFaultTrace.Write("CRIME_RAID_CASUALTIES_FAILED", details: exception.ToString());
-            }
+            GwpAiDiagnostics.WriteFieldArrest(
+                "CASUALTIES_RAID",
+                "offender=" + DescribeOffender(leader) +
+                "; village=" + village.Settlement.StringId +
+                "; hearthStart=" + snapshot.Hearth + "; hearthEnd=" + village.Hearth +
+                "; raidStartedHours=" + snapshot.StartedHours + "; raider=" + snapshot.RaiderPartyId +
+                "; hearthLost=" + hearthLost + "; lives=" + lives +
+                "; caseTotal=" + (record?.CivilianCasualties ?? 0) +
+                "; standing=" + CrimePool.GetOrCreateHistory(leader).NegativeStanding);
         }
 
         /// <summary>
@@ -148,17 +140,9 @@ namespace GreyWardenPolicePurity
             if (receipt.Ended) return;
             receipt.Ended = true;
 
-            try
-            {
-                AccumulateCasualties(mapEvent, BattleSideEnum.Attacker);
-                AccumulateCasualties(mapEvent, BattleSideEnum.Defender);
+            AccumulateCasualties(mapEvent, BattleSideEnum.Attacker);
+            AccumulateCasualties(mapEvent, BattleSideEnum.Defender);
 
-            }
-            catch (Exception exception)
-            {
-                // 伤亡计数失败只影响罚金数额，不能连累战斗结算。
-                GwpFaultTrace.Write("CRIME_BATTLE_CASUALTIES_FAILED", details: exception.ToString());
-            }
         }
 
         /// <summary>

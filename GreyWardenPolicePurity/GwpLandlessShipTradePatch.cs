@@ -37,27 +37,16 @@ namespace GreyWardenPolicePurity
 
         internal static MethodBase? FindShipTradeMethod(string methodName)
         {
-            try
-            {
-                Type? behavior = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(assembly =>
-                    {
-                        try { return assembly.GetType(ShipTradeBehaviorTypeName, false); }
-                        catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); return null; }
-                    })
-                    .FirstOrDefault(type => type != null);
+            Type? behavior = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(assembly =>
+                {
+                    return assembly.GetType(ShipTradeBehaviorTypeName, false);
+                })
+                .FirstOrDefault(type => type != null);
 
-                return behavior == null
-                    ? null
-                    : AccessTools.Method(behavior, methodName, new[] { typeof(Clan) });
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write("LANDLESS_SHIP_TRADE_TARGET_FAILED",
-                    details: methodName + " -> " +
-                        exception.GetType().FullName + ":" + exception.Message);
-                return null;
-            }
+            return behavior == null
+                ? null
+                : AccessTools.Method(behavior, methodName, new[] { typeof(Clan) });
         }
 
         internal static bool IsPoliceClan(Clan? clan) =>

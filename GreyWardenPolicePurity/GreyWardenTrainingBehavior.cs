@@ -798,6 +798,7 @@ namespace GreyWardenPolicePurity
             }
             catch (ArgumentNullException)
             {
+                // 依据：实机诊断 2026-09-27、2026-10-02（读档时 Hero.FindFirst 因英雄全局表未建好抛 ArgumentNullException）
                 // Hero.FindFirst throws until Hero's global collection exists (during load).
                 return null;
             }

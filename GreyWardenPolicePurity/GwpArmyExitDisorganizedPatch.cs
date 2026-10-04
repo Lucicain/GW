@@ -40,20 +40,11 @@ namespace GreyWardenPolicePurity
 
         private static MethodBase? ResolveTarget()
         {
-            try
-            {
-                Type? behavior = AccessTools.TypeByName(BehaviorTypeName);
-                return behavior == null
-                    ? null
-                    : AccessTools.Method(behavior, "OnPartyRemovedFromArmy",
-                        new[] { typeof(MobileParty) });
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write("ARMY_EXIT_DISORGANIZED_TARGET_FAILED",
-                    details: exception.GetType().FullName + ":" + exception.Message);
-                return null;
-            }
+            Type? behavior = AccessTools.TypeByName(BehaviorTypeName);
+            return behavior == null
+                ? null
+                : AccessTools.Method(behavior, "OnPartyRemovedFromArmy",
+                    new[] { typeof(MobileParty) });
         }
 
         private static MethodBase TargetMethod() => _target!;

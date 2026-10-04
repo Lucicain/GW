@@ -154,7 +154,7 @@ namespace GreyWardenPolicePurity
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
             StopBountyEscortAfterTargetDefeat();
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            _activeQuest?.MarkReadyForTurnIn();
             ShowFieldSettlementNotice(collectedFine);
         }
 
@@ -198,7 +198,7 @@ namespace GreyWardenPolicePurity
             EnterBountyCollectionState();
             _activeBountyDeadlineHours = -1d;
             StopBountyEscortAfterTargetDefeat();
-            try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            _activeQuest?.MarkReadyForTurnIn();
         }
 
         private void EnterBountyCollectionState()
@@ -255,7 +255,7 @@ namespace GreyWardenPolicePurity
                     EnterBountyCollectionState();
                     _activeBountyDeadlineHours = -1d;
                     StopBountyEscortAfterTargetDefeat();
-                    try { _activeQuest?.MarkReadyForTurnIn(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                    _activeQuest?.MarkReadyForTurnIn();
                     InformationManager.DisplayMessage(new InformationMessage(
                         GwpText.Get("{=gwp_bounty_contract_expired_but_done}The pursuit window has closed, but the man was already dealt with. Report to any Grey Warden lord."),
                         Colors.Yellow));
@@ -437,47 +437,39 @@ namespace GreyWardenPolicePurity
 
             string patrolId = GwpIds.RecruitmentPatrolPrefix + MBRandom.RandomInt(10000, 99999);
 
-            try
-            {
-                MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                    spawnPoint.GatePosition,
-                    1f,
-                    spawnPoint,
-                    new TextObject(GwpText.Get("{=gwp_playerbountybehavior_001}Grey Warden herald")),
-                    policeClan,
-                    policeClan.DefaultPartyTemplate,
-                    clanLeader,
-                    "", "",
-                    5f,
-                    false);
+            MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                spawnPoint.GatePosition,
+                1f,
+                spawnPoint,
+                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_001}Grey Warden herald")),
+                policeClan,
+                policeClan.DefaultPartyTemplate,
+                clanLeader,
+                "", "",
+                5f,
+                false);
 
-                patrol.StringId = patrolId;
-                patrol.ActualClan = policeClan;
-                patrol.MemberRoster.Clear();
+            patrol.StringId = patrolId;
+            patrol.ActualClan = policeClan;
+            patrol.MemberRoster.Clear();
 
-                CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
-                if (infantry != null)
-                    patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
+            CharacterObject infantry = CharacterObject.Find(GwpIds.HeavyInfantryId);
+            if (infantry != null)
+                patrol.MemberRoster.AddToCounts(infantry, GwpTuning.Bounty.RecruitmentPatrolSize);
 
-                // 招募使者不吃饭；出生口粮只让原版看到一支粮够吃的队伍。
-                PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
+            // 招募使者不吃饭；出生口粮只让原版看到一支粮够吃的队伍。
+            PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
-                GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
+            GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
 
-                _recruitmentPatrolId = patrolId;
-                _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用
-                _recruitmentPatrolReturning = false;
-                _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
+            _recruitmentPatrolId = patrolId;
+            _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用
+            _recruitmentPatrolReturning = false;
+            _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
 
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
-                    Colors.Cyan));
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                // 生成失败时下一小时的资格检查会再派一支。
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-            }
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
+                Colors.Cyan));
         }
 
         private void UpdateRecruitmentPatrol()
@@ -592,23 +584,15 @@ namespace GreyWardenPolicePurity
                 // encounter can be created while both parties still overlap.
                 // The short do-not-attack window is the same native safeguard
                 // PlayerEncounter uses when separating parties after combat.
-                try
-                {
-                    patrol.Ai.SetDoNotAttackMainParty(2);
-                    patrol.Ai.SetDoNotMakeNewDecisions(false);
-                    patrol.SetMoveGoToSettlement(
-                        target,
-                        patrol.NavigationCapability,
-                        false);
-                    WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
-                        "cleared native EngageParty and ordered immediate travel to " +
-                        target.StringId);
-                }
-                catch (Exception ex)
-                {
-                    WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_FAILED",
-                        ex.GetType().Name + ":" + ex.Message);
-                }
+                patrol.Ai.SetDoNotAttackMainParty(2);
+                patrol.Ai.SetDoNotMakeNewDecisions(false);
+                patrol.SetMoveGoToSettlement(
+                    target,
+                    patrol.NavigationCapability,
+                    false);
+                WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
+                    "cleared native EngageParty and ordered immediate travel to " +
+                    target.StringId);
             }
         }
 
@@ -737,14 +721,10 @@ namespace GreyWardenPolicePurity
             var escort = MobileParty.All.FirstOrDefault(p => p.StringId == _escortPolicePartyId);
             if (escort != null && escort.IsActive)
             {
-                try
-                {
-                    CrimeState.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
-                    PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(
-                        _escortPolicePartyId);
-                    escort.Ai.SetDoNotMakeNewDecisions(false);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                CrimeState.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
+                PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(
+                    _escortPolicePartyId);
+                escort.Ai.SetDoNotMakeNewDecisions(false);
             }
         }
 
@@ -889,35 +869,31 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            try
+            _activeQuest = Campaign.Current?.QuestManager?.Quests
+                ?.OfType<BountyHunterQuest>()
+                ?.FirstOrDefault(quest => quest.IsOngoing)!;
+
+            if (_activeQuest == null)
             {
-                _activeQuest = Campaign.Current?.QuestManager?.Quests
-                    ?.OfType<BountyHunterQuest>()
-                    ?.FirstOrDefault(quest => quest.IsOngoing)!;
+                Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
+                if (policeLeader == null) return;
 
-                if (_activeQuest == null)
-                {
-                    Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
-                    if (policeLeader == null) return;
-
-                    CampaignTime dueTime = IsTrackingBountyTarget
-                        ? CampaignTime.Hours((float)_activeBountyDeadlineHours)
-                        : CampaignTime.Never;
-                    _activeQuest = new BountyHunterQuest(
-                        policeLeader,
-                        _activeBountyReward,
-                        _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target"),
-                        dueTime);
-                    _activeQuest.StartQuest();
-                }
-
-                if (IsTrackingBountyTarget)
-                    _activeQuest.ChangeQuestDueTime(
-                        CampaignTime.Hours((float)_activeBountyDeadlineHours));
-                else
-                    _activeQuest.MarkReadyForTurnIn();
+                CampaignTime dueTime = IsTrackingBountyTarget
+                    ? CampaignTime.Hours((float)_activeBountyDeadlineHours)
+                    : CampaignTime.Never;
+                _activeQuest = new BountyHunterQuest(
+                    policeLeader,
+                    _activeBountyReward,
+                    _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target"),
+                    dueTime);
+                _activeQuest.StartQuest();
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); _activeQuest = null!; }
+
+            if (IsTrackingBountyTarget)
+                _activeQuest.ChangeQuestDueTime(
+                    CampaignTime.Hours((float)_activeBountyDeadlineHours));
+            else
+                _activeQuest.MarkReadyForTurnIn();
         }
 
         #endregion

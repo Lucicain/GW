@@ -8,24 +8,30 @@ paths:
 
 都是实际踩过的，不是通用建议。完整背景见 `GreyWardenPolicePurity/docs/state/code-health.md`。
 
-## 新写 catch-all 照这个模式（依据：流程；2026-09-17 与 2026-09-24 两次补扫）
+## 不写没兜住过东西的兜底（依据：用户裁定 2026-10-05）
 
-```csharp
-catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-```
+兜底必须真的兜住过东西；从没触发过的兜底是垃圾。
 
-裸 `catch { }` 会让故障表现为"某个功能莫名其妙不再工作"，是最难查的一类。
-`WriteQuiet` 按站点去重（每个位置每局一次），调用点由编译器填
-（`CallerFilePath`/`CallerMemberName`/`CallerLineNumber`）——**不要手写标签**，
-手写的迟早和代码漂移。
+- 默认不写 try/catch：让异常暴露，读崩溃、修根因。
+- 只有某次故障**已经实际发生过**（实机日志、崩溃转储），才在那一处加 catch，并在 catch 里写明它兜过什么：
 
-诊断基础设施自身（`GwpFaultTrace`、`GwpRuntimeFaultWatch`）里不要调，会递归。
+  ```csharp
+  catch (Exception gwpQuietFailure)
+  {
+      // 依据：实机诊断 2026-09-26（原版 Army.DisperseInternal 抛 NullReferenceException）
+      GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+  }
+  ```
 
-## 写辅助方法要透传调用点（依据：流程）
+- 清理后原样 `throw;` 的 catch 不算兜底，可以写。
+- 「以防万一」「将来版本可能改名」「诊断不能影响游戏」都不是依据。
+- `tools/Check-CodeHygiene.py` 检查每个不重新抛出的 catch 都带 `依据：`，预提交钩子据此拒绝提交。
 
-把重复的 try/catch 收拢成辅助方法时，**必须带三个 `Caller*` 参数默认值透传下去**，
-否则所有调用点的诊断都会记成辅助方法自己那一行，等于没记。
-参考 `GwpCommon.TryDestroyParty`。
+## 没人用的常量和成员当场删（依据：用户裁定 2026-10-05）
+
+改掉一套机制时，把它的调参常量、文本键、辅助方法一起删掉。新代码要用数字，就用或改 `GwpTuning` 里的那一个，
+不要另写字面量、把旧旋钮留在那里和代码断开。`Check-CodeHygiene.py` 报出任何无人引用的声明，预提交钩子就拒绝提交。
+引擎按约定调用的成员（Harmony 钩子、Gauntlet 命令、存档自动生成、接口成员、interop 字段）不算，脚本里有白名单。
 
 ## 文件头可能是双 BOM（依据：实机观察 2026-09-17，三个文件）
 

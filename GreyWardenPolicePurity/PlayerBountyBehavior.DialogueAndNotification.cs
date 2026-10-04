@@ -262,23 +262,13 @@ namespace GreyWardenPolicePurity
             MobileParty? herald = ResolveCurrentRecruitmentPatrol();
             WriteRecruitmentTrace(herald, "RECRUIT_CONVERSATION_ENDED",
                 "conversation-end callback entered");
-            try
+            MobileParty? encountered = PlayerEncounter.IsActive
+                ? PlayerEncounter.EncounteredMobileParty
+                : null;
+            if (encountered != null && IsRecruitmentPatrol(encountered))
             {
-                MobileParty? encountered = PlayerEncounter.IsActive
-                    ? PlayerEncounter.EncounteredMobileParty
-                    : null;
-                if (encountered != null && IsRecruitmentPatrol(encountered))
-                {
-                    PlayerEncounter.LeaveEncounter = true;
-                    PlayerEncounter.Finish();
-                }
-            }
-            catch (Exception ex)
-            {
-                // The native encounter may already have finished itself. The
-                // returning flag and the command below remain valid either way.
-                WriteRecruitmentTrace(herald, "RECRUIT_ENCOUNTER_FINISH_FAILED",
-                    ex.GetType().Name + ":" + ex.Message);
+                PlayerEncounter.LeaveEncounter = true;
+                PlayerEncounter.Finish();
             }
 
             TriggerPatrolReturn();
@@ -306,26 +296,19 @@ namespace GreyWardenPolicePurity
         {
             if (herald == null) return;
 
-            try
-            {
-                string encounteredId = PlayerEncounter.IsActive
-                    ? PlayerEncounter.EncounteredMobileParty?.StringId ?? "-"
-                    : "-";
-                string conversationId = MobileParty.ConversationParty?.StringId ?? "-";
-                GwpAiDiagnostics.WriteAction(herald, action,
-                    details +
-                    "; offered=" + _recruitmentOffered +
-                    "; accepted=" + _recruitmentAccepted +
-                    "; returning=" + _recruitmentPatrolReturning +
-                    "; tracked=" + (_recruitmentPatrolId ?? "-") +
-                    "; encounterActive=" + PlayerEncounter.IsActive +
-                    "; encountered=" + encounteredId +
-                    "; conversation=" + conversationId);
-            }
-            catch
-            {
-                // Diagnostics must never interfere with the recruitment flow.
-            }
+            string encounteredId = PlayerEncounter.IsActive
+                ? PlayerEncounter.EncounteredMobileParty?.StringId ?? "-"
+                : "-";
+            string conversationId = MobileParty.ConversationParty?.StringId ?? "-";
+            GwpAiDiagnostics.WriteAction(herald, action,
+                details +
+                "; offered=" + _recruitmentOffered +
+                "; accepted=" + _recruitmentAccepted +
+                "; returning=" + _recruitmentPatrolReturning +
+                "; tracked=" + (_recruitmentPatrolId ?? "-") +
+                "; encounterActive=" + PlayerEncounter.IsActive +
+                "; encountered=" + encounteredId +
+                "; conversation=" + conversationId);
         }
 
         private bool CanRejoinThroughLord()
@@ -408,7 +391,7 @@ namespace GreyWardenPolicePurity
             // fines already collected or a prisoner already accepted for delivery.
             if (HasFieldBusinessToSettle) return;
 
-            try { _activeQuest?.FailQuestMembershipEnded(); } catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            _activeQuest?.FailQuestMembershipEnded();
             EndBountyTaskState(tryRestorePeace: true);
         }
 
@@ -531,15 +514,7 @@ namespace GreyWardenPolicePurity
             {
                 WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_REQUESTED",
                     "calling PlayerEncounter.DoMeeting");
-                try
-                {
-                    PlayerEncounter.DoMeeting();
-                }
-                catch (Exception ex)
-                {
-                    WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_FAILED",
-                        ex.GetType().Name + ":" + ex.Message);
-                }
+                PlayerEncounter.DoMeeting();
             }
         }
 
@@ -559,12 +534,8 @@ namespace GreyWardenPolicePurity
                                  StringComparison.Ordinal) == true)
                          .ToList())
             {
-                try
-                {
-                    GreyWardenPartyDesireBehavior.ClearIntent(party);
-                    DestroyPartyAction.Apply(null, party);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                GreyWardenPartyDesireBehavior.ClearIntent(party);
+                DestroyPartyAction.Apply(null, party);
             }
         }
 
@@ -576,43 +547,39 @@ namespace GreyWardenPolicePurity
             if (_playerFactionWasAtWarWhenBountyAccepted) return;
             if (!_bountyTargetEncounterStarted) return;
 
-            try
-            {
-                IFaction? playerFaction = Hero.MainHero?.MapFaction;
-                if (playerFaction == null) return;
-                if (!string.Equals(playerFaction.StringId, _activeBountyPlayerFactionId,
-                        StringComparison.OrdinalIgnoreCase))
-                    return;
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            if (playerFaction == null) return;
+            if (!string.Equals(playerFaction.StringId, _activeBountyPlayerFactionId,
+                    StringComparison.OrdinalIgnoreCase))
+                return;
 
-                IFaction? criminalFaction = null;
-                foreach (Kingdom kingdom in Kingdom.All)
+            IFaction? criminalFaction = null;
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom.StringId == _activeBountyTargetFactionId)
                 {
-                    if (kingdom.StringId == _activeBountyTargetFactionId)
+                    criminalFaction = kingdom;
+                    break;
+                }
+            }
+
+            if (criminalFaction == null)
+            {
+                foreach (Clan clan in Clan.All)
+                {
+                    if (clan.StringId == _activeBountyTargetFactionId)
                     {
-                        criminalFaction = kingdom;
+                        criminalFaction = clan;
                         break;
                     }
                 }
-
-                if (criminalFaction == null)
-                {
-                    foreach (Clan clan in Clan.All)
-                    {
-                        if (clan.StringId == _activeBountyTargetFactionId)
-                        {
-                            criminalFaction = clan;
-                            break;
-                        }
-                    }
-                }
-
-                if (criminalFaction == null || criminalFaction == playerFaction) return;
-                // 结案不再替玩家自动讲和。这一战本来就是替灰袍办案打的，记进申请通道，
-                // 由玩家自己去找灰袍或派使者一并了结。
-                PoliceAntiWarDeclaration.RecordMediationRequest(
-                    criminalFaction, "bounty_case_closed");
             }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+
+            if (criminalFaction == null || criminalFaction == playerFaction) return;
+            // 结案不再替玩家自动讲和。这一战本来就是替灰袍办案打的，记进申请通道，
+            // 由玩家自己去找灰袍或派使者一并了结。
+            PoliceAntiWarDeclaration.RecordMediationRequest(
+                criminalFaction, "bounty_case_closed");
         }
 
         #endregion
@@ -656,12 +623,8 @@ namespace GreyWardenPolicePurity
         private void OfferBountySelection()
         {
             TryRegisterNotificationType();
-            try
-            {
-                Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(
-                    new BountyMapNotification());
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(
+                new BountyMapNotification());
         }
 
         private static void TryRegisterNotificationType()
@@ -669,14 +632,10 @@ namespace GreyWardenPolicePurity
             if (_notificationTypeRegistered) return;
 
             _notificationTypeRegistered = true;
-            try
-            {
-                MapScreen? mapScreen = ScreenManager.TopScreen as MapScreen;
-                mapScreen?.MapNotificationView?.RegisterMapNotificationType(
-                    typeof(BountyMapNotification),
-                    typeof(BountyMapNotificationItemVM));
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            MapScreen? mapScreen = ScreenManager.TopScreen as MapScreen;
+            mapScreen?.MapNotificationView?.RegisterMapNotificationType(
+                typeof(BountyMapNotification),
+                typeof(BountyMapNotificationItemVM));
         }
 
         internal bool CanInspectBountyOffers() =>
@@ -906,31 +865,27 @@ namespace GreyWardenPolicePurity
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
             if (policeLeader != null)
             {
-                try
-                {
-                    _activeQuest = new BountyHunterQuest(
-                        policeLeader,
-                        _activeBountyReward,
-                        offender.Name.ToString());
-                    _activeQuest.StartQuest();
-                    Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
-                    TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
-                                              GwpText.Create("{=gwp_playerbountybehavior_020}unknown location");
-                    _activeQuest.WriteLog(
-                        GwpText.Create(
-                            "{=!}{VAR_1}{VAR_2}{VAR_3}",
-                            "VAR_1", GwpText.Create(
-                                "{=gwp_bounty_quest_target}Target: {VAR_1}. Assessed difficulty: {VAR_2}.\n",
-                                "VAR_1", offender.Name,
-                                "VAR_2", GetDifficultyText(choice.Difficulty)),
-                            "VAR_2", GwpText.Create(
-                                "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.\n",
-                                "VAR_1", lastSeenNear),
-                            "VAR_3", GwpText.Create(
-                                "{=gwp_bounty_quest_reward}Within 45 days, collect the assessed fine of {VAR_1} denars or capture the offender. Deliver the money or prisoner to a Grey Warden lord. Expenses depend on the actual delivery.",
-                                "VAR_1", _assignedCaseFine)));
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); _activeQuest = null!; }
+                _activeQuest = new BountyHunterQuest(
+                    policeLeader,
+                    _activeBountyReward,
+                    offender.Name.ToString());
+                _activeQuest.StartQuest();
+                Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
+                TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
+                                          GwpText.Create("{=gwp_playerbountybehavior_020}unknown location");
+                _activeQuest.WriteLog(
+                    GwpText.Create(
+                        "{=!}{VAR_1}{VAR_2}{VAR_3}",
+                        "VAR_1", GwpText.Create(
+                            "{=gwp_bounty_quest_target}Target: {VAR_1}. Assessed difficulty: {VAR_2}.\n",
+                            "VAR_1", offender.Name,
+                            "VAR_2", GetDifficultyText(choice.Difficulty)),
+                        "VAR_2", GwpText.Create(
+                            "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.\n",
+                            "VAR_1", lastSeenNear),
+                        "VAR_3", GwpText.Create(
+                            "{=gwp_bounty_quest_reward}Within 45 days, collect the assessed fine of {VAR_1} denars or capture the offender. Deliver the money or prisoner to a Grey Warden lord. Expenses depend on the actual delivery.",
+                            "VAR_1", _assignedCaseFine)));
             }
 
             InformationManager.DisplayMessage(new InformationMessage(

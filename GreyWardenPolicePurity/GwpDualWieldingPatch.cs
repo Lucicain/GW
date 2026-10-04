@@ -70,22 +70,15 @@ namespace GreyWardenPolicePurity
                 || !GwpDualBladeLoadout.IsDualBladeCombatant(attacker))
                 return;
 
-            try
+            MissionEquipment equipment = attacker.Equipment;
+            if (IsItem(
+                    equipment[EquipmentIndex.Weapon0],
+                    GwpIds.DualBladeOffhandItemId)
+                && IsItem(
+                    equipment[EquipmentIndex.Weapon1],
+                    GwpIds.DualBladeMainhandItemId))
             {
-                MissionEquipment equipment = attacker.Equipment;
-                if (IsItem(
-                        equipment[EquipmentIndex.Weapon0],
-                        GwpIds.DualBladeOffhandItemId)
-                    && IsItem(
-                        equipment[EquipmentIndex.Weapon1],
-                        GwpIds.DualBladeMainhandItemId))
-                {
-                    damageType = DamageTypes.Cut;
-                }
-            }
-            catch
-            {
-                // Keep native damage if equipment is being rebuilt.
+                damageType = DamageTypes.Cut;
             }
         }
 

@@ -24,18 +24,14 @@ namespace GreyWardenPolicePurity
             Spawn = Mission.GetMissionBehavior<DefaultBattleMissionAgentSpawnLogic>();
             if (Spawn == null || Spawn.GetTotalNumberOfTroopsForSide(BattleSideEnum.Defender) <= 0
                 || Spawn.GetTotalNumberOfTroopsForSide(BattleSideEnum.Attacker) <= 0) return false;
-            try
-            {
-                // The supplier's complete opening roster includes reserves and
-                // is available during deployment, before casualty callbacks.
-                Count(BattleSideEnum.Defender, out int defenders, out int greyDefenders);
-                Count(BattleSideEnum.Attacker, out int attackers, out int greyAttackers);
-                MusicEligible = GwpBattleScenePolicy.MusicEligible(greyDefenders, defenders)
-                    || GwpBattleScenePolicy.MusicEligible(greyAttackers, attackers);
-                Ready = true;
-                return true;
-            }
-            catch (Exception error) { GwpFaultTrace.WriteQuiet(error); return false; }
+            // The supplier's complete opening roster includes reserves and
+            // is available during deployment, before casualty callbacks.
+            Count(BattleSideEnum.Defender, out int defenders, out int greyDefenders);
+            Count(BattleSideEnum.Attacker, out int attackers, out int greyAttackers);
+            MusicEligible = GwpBattleScenePolicy.MusicEligible(greyDefenders, defenders)
+                || GwpBattleScenePolicy.MusicEligible(greyAttackers, attackers);
+            Ready = true;
+            return true;
         }
 
         private void Count(BattleSideEnum side, out int soldiers, out int wardens)

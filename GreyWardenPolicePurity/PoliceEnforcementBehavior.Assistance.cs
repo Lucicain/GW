@@ -571,41 +571,6 @@ namespace GreyWardenPolicePurity
                 _instance.ExitAssistancePlayerBountyEscort(leader, group);
         }
 
-        private string DescribeAssistanceValidity(MobileParty? leader, PoliceTask? task)
-        {
-            MobileParty? offender = task?.TargetCrime?.Offender;
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-            bool atWar = policeClan != null && offender?.MapFaction != null &&
-                FactionManager.IsAtWarAgainstFaction(policeClan, offender.MapFaction);
-            bool crimeMatches = leader != null &&
-                (!_assistanceGroups.TryGetValue(leader.StringId, out LordAssistanceGroup? group) ||
-                 string.Equals(group.CrimeId, task?.TargetCrimeId,
-                     StringComparison.OrdinalIgnoreCase));
-
-            return "leaderValid=" + IsGreyWardenLordParty(leader) +
-                   "; taskExists=" + (task != null) +
-                   "; taskOwnerMatches=" + (leader != null && task?.PolicePartyId == leader.StringId) +
-                   "; warDeclared=" + (task?.WarDeclared ?? false) +
-                   "; flow=" + (task?.FlowState.ToString() ?? "-") +
-                   "; escortingPlayer=" + (task?.IsEscortingPlayer ?? false) +
-                   "; bountyEscort=" + (task?.IsPlayerBountyEscort ?? false) +
-                   "; caseOpen=" + (task?.TargetCrime?.HasOpenCase ?? false) +
-                   "; playerTarget=" + (offender?.IsMainParty ?? false) +
-                   "; offenderExists=" + (offender != null) +
-                   "; offenderActive=" + (offender?.IsActive ?? false) +
-                   "; offenderHasParty=" + (offender?.Party != null) +
-                   "; offenderHealthy=" + (offender?.Party?.NumberOfHealthyMembers ?? -1) +
-                   "; offenderFaction=" + (offender?.MapFaction?.StringId ?? "-") +
-                   "; atWar=" + atWar +
-                   "; crimeMatches=" + crimeMatches +
-                   "; offenderArmyLeader=" + (offender?.Army?.LeaderParty?.StringId ?? "-") +
-                   "; offenderAttachedTo=" + (offender?.AttachedTo?.StringId ?? "-") +
-                   "; offenderSiegeLeader=" + (offender?.BesiegerCamp?.LeaderParty?.StringId ?? "-") +
-                   "; offenderSiegeSettlement=" + (offender?.BesiegedSettlement?.StringId ?? "-") +
-                   "; offenderMapEvent=" + (offender?.MapEvent?.EventType.ToString() ?? "-") +
-                   "; offenderMapEventFinalized=" + (offender?.MapEvent?.IsFinalized ?? false);
-        }
-
         private static float GetNativePartyStrength(MobileParty party)
         {
             return party?.Party == null
@@ -856,16 +821,12 @@ namespace GreyWardenPolicePurity
 
             if (combatTarget.BesiegerCamp != null)
             {
-                try
-                {
-                    float siegeStrength = combatTarget.BesiegerCamp
-                        .GetInvolvedPartiesForEventType()
-                        .Sum(party =>
-                            Math.Max(0f, party.EstimatedStrength));
-                    if (siegeStrength > 0f)
-                        return siegeStrength;
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                float siegeStrength = combatTarget.BesiegerCamp
+                    .GetInvolvedPartiesForEventType()
+                    .Sum(party =>
+                        Math.Max(0f, party.EstimatedStrength));
+                if (siegeStrength > 0f)
+                    return siegeStrength;
             }
 
             Army? army = combatTarget.Army;
@@ -916,16 +877,8 @@ namespace GreyWardenPolicePurity
             if (mapEvent?.IsFinalized == false &&
                 targetSide != BattleSideEnum.None)
             {
-                try
-                {
-                    return mapEvent.CanPartyJoinBattle(
-                        candidate.Party, targetSide);
-                }
-                catch (Exception gwpQuietFailure)
-                {
-                    GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                    return false;
-                }
+                return mapEvent.CanPartyJoinBattle(
+                    candidate.Party, targetSide);
             }
 
             if (candidate.MapEvent != null)
@@ -1319,12 +1272,8 @@ namespace GreyWardenPolicePurity
             AddSpeedDetachedParty(group, leader.StringId);
             if (army != null && IsArmyOwnedByGroup(army, group))
             {
-                try
-                {
-                    GwpAssistanceArmyDisbandGuardPatch
-                        .ApplyAuthorizedObjectiveFinished(army);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                GwpAssistanceArmyDisbandGuardPatch
+                    .ApplyAuthorizedObjectiveFinished(army);
             }
             RequestAssistanceTargetIntent(
                 leader, group, offender, 0.99f);
@@ -1384,12 +1333,8 @@ namespace GreyWardenPolicePurity
             AddSpeedDetachedParty(group, leader.StringId);
             if (army != null && IsArmyOwnedByGroup(army, group))
             {
-                try
-                {
-                    GwpAssistanceArmyDisbandGuardPatch
-                        .ApplyAuthorizedObjectiveFinished(army);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                GwpAssistanceArmyDisbandGuardPatch
+                    .ApplyAuthorizedObjectiveFinished(army);
             }
             army = null;
 
@@ -1412,258 +1357,6 @@ namespace GreyWardenPolicePurity
                     member!, group, offender, 0.99f);
             }
             return army;
-        }
-
-        private void AdvanceAssistanceSpeedDispersal(MobileParty leader,
-            LordAssistanceGroup group, MobileParty offender, Army? army,
-            float committedStrength, float targetStrength)
-        {
-            MobileParty speedTarget =
-                ResolveAssistanceMovementTarget(offender);
-            float targetSpeed = speedTarget.LastCalculatedBaseSpeed;
-            MobileParty? catcher = GetAssistanceSpeedCatcher(
-                leader, group, army, targetSpeed);
-            if (catcher != null)
-            {
-                if (catcher != leader)
-                    army = ConsolidateSpeedDispersalAroundCatcher(
-                        leader, group, offender, catcher, army,
-                        committedStrength, targetStrength);
-
-                if (!string.Equals(group.SpeedCatcherPartyId,
-                        catcher.StringId,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    group.SpeedCatcherPartyId = catcher.StringId;
-                    GwpAiDiagnostics.WriteAction(leader,
-                        "ASSISTANCE_SPEED_CATCHER_READY",
-                        FormatStrengthDiagnostic(leader, offender,
-                            committedStrength, targetStrength) +
-                        "; catcher=" + catcher.StringId +
-                        "; catcherSpeed=" +
-                        catcher.LastCalculatedBaseSpeed.ToString(
-                            "0.00", CultureInfo.InvariantCulture) +
-                        "; catcherArmy=" +
-                        (catcher.Army?.LeaderParty?.StringId ?? "-") +
-                        "; catcherAttachedTo=" +
-                        (catcher.AttachedTo?.StringId ?? "-") +
-                        "; speedTarget=" + speedTarget.StringId +
-                        "; speedTargetSpeed=" + targetSpeed.ToString(
-                            "0.00", CultureInfo.InvariantCulture) +
-                        "; detachedLords=" +
-                        group.SpeedDetachedPartyIds.Count);
-                }
-                return;
-            }
-
-            group.SpeedCatcherPartyId = string.Empty;
-            bool detachedPartyStillTransitioning =
-                group.SpeedDetachedPartyIds
-                    .Select(FindActiveParty)
-                    .Any(party => IsGreyWardenLordParty(party) &&
-                                  (party!.Army != null ||
-                                   party.AttachedTo != null));
-            if (detachedPartyStillTransitioning)
-                return;
-
-            MobileParty? nextMember = group.MemberPartyIds
-                .Where(memberId =>
-                    !IsSpeedDetached(group, memberId))
-                .Select(FindActiveParty)
-                .Where(member => IsGreyWardenLordParty(member) &&
-                                 army != null &&
-                                 member!.Army == army &&
-                                 member.AttachedTo == leader)
-                .OrderByDescending(member =>
-                    member!.LastCalculatedBaseSpeed)
-                .ThenBy(member => member!.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-            if (nextMember != null)
-            {
-                nextMember.Army = null;
-                AddSpeedDetachedParty(group, nextMember.StringId);
-                GreyWardenPartyDesireBehavior.ClearIntent(nextMember);
-                RequestAssistanceTargetIntent(
-                    nextMember, group, offender, 0.99f);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(
-                    nextMember);
-                WriteSpeedMemberDetachedDiagnostic(
-                    leader, group, offender, nextMember, speedTarget,
-                    army, committedStrength, targetStrength);
-                return;
-            }
-
-            bool hasUndetachedMember =
-                group.MemberPartyIds.Any(memberId =>
-                    !IsSpeedDetached(group, memberId) &&
-                    IsGreyWardenLordParty(
-                        FindActiveParty(memberId)));
-            if (hasUndetachedMember ||
-                IsSpeedDetached(group, leader.StringId))
-                return;
-
-            AddSpeedDetachedParty(group, leader.StringId);
-            if (army != null && IsArmyOwnedByGroup(army, group))
-            {
-                try
-                {
-                    GwpAssistanceArmyDisbandGuardPatch
-                        .ApplyAuthorizedObjectiveFinished(army);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
-            }
-            RequestAssistanceTargetIntent(
-                leader, group, offender, 0.99f);
-            SendDelayPatrolsAfterSpeedDispersal(group, offender);
-            WriteSpeedMemberDetachedDiagnostic(
-                leader, group, offender, leader, speedTarget, null,
-                committedStrength, targetStrength);
-        }
-
-        private static MobileParty? GetAssistanceSpeedCatcher(
-            MobileParty leader, LordAssistanceGroup group, Army? army,
-            float targetSpeed)
-        {
-            if (targetSpeed <= 0.01f)
-                return null;
-
-            MobileParty? detachedCatcher = group.SpeedDetachedPartyIds
-                .Select(FindActiveParty)
-                .Where(party => IsGreyWardenLordParty(party) &&
-                                party!.Army == null &&
-                                party.AttachedTo == null &&
-                                party!.LastCalculatedBaseSpeed > targetSpeed)
-                .OrderByDescending(party =>
-                    party!.LastCalculatedBaseSpeed)
-                .ThenBy(party => party!.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-            if (detachedCatcher != null)
-                return detachedCatcher;
-
-            return !IsSpeedDetached(group, leader.StringId) &&
-                   army?.LeaderParty == leader &&
-                   leader.LastCalculatedBaseSpeed > targetSpeed
-                ? leader
-                : null;
-        }
-
-        private Army? ConsolidateSpeedDispersalAroundCatcher(
-            MobileParty leader, LordAssistanceGroup group,
-            MobileParty offender, MobileParty catcher, Army? army,
-            float committedStrength, float targetStrength)
-        {
-            int priorDetachedCount =
-                group.SpeedDetachedPartyIds.Count;
-            group.SpeedDetachedPartyIds.RemoveAll(partyId =>
-                !string.Equals(partyId, catcher.StringId,
-                    StringComparison.OrdinalIgnoreCase));
-            AddSpeedDetachedParty(group, catcher.StringId);
-
-            army = CreateOrRecoverAssistanceArmy(leader);
-            int reassignedCount = 0;
-            if (army != null)
-            {
-                RequestAssistanceTargetIntent(
-                    leader, group, offender, 0.99f);
-                foreach (string memberId in
-                         group.MemberPartyIds.ToList())
-                {
-                    if (string.Equals(memberId, catcher.StringId,
-                            StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    MobileParty? member = FindActiveParty(memberId);
-                    if (!IsGreyWardenLordParty(member))
-                    {
-                        RemoveAssistanceMember(group, memberId);
-                        continue;
-                    }
-                    if (member!.Army != null &&
-                        member.Army != army)
-                    {
-                        RemoveAssistanceMember(group, memberId);
-                        continue;
-                    }
-
-                    GreyWardenPartyDesireBehavior.ClearIntent(member);
-                    if (member.Army == null)
-                    {
-                        member.Army = army;
-                        reassignedCount++;
-                    }
-                    TryMergeArmyMember(army, leader, member);
-                    GreyWardenPartyDesireBehavior
-                        .RequestImmediateRethink(member);
-                }
-            }
-
-            RequestAssistanceTargetIntent(
-                catcher, group, offender, 0.99f);
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(
-                catcher);
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(
-                leader);
-
-            if (priorDetachedCount !=
-                    group.SpeedDetachedPartyIds.Count ||
-                reassignedCount > 0)
-            {
-                MobileParty speedTarget =
-                    ResolveAssistanceMovementTarget(offender);
-                GwpAiDiagnostics.WriteAction(leader,
-                    "ASSISTANCE_SPEED_SPLIT_CONSOLIDATED",
-                    FormatStrengthDiagnostic(leader, offender,
-                        committedStrength, targetStrength) +
-                    "; catcher=" + catcher.StringId +
-                    "; catcherSpeed=" +
-                    catcher.LastCalculatedBaseSpeed.ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; speedTarget=" + speedTarget.StringId +
-                    "; speedTargetSpeed=" +
-                    speedTarget.LastCalculatedBaseSpeed.ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; priorDetached=" + priorDetachedCount +
-                    "; retainedDetached=" +
-                    group.SpeedDetachedPartyIds.Count +
-                    "; reassignedToArmy=" + reassignedCount +
-                    "; army=" +
-                    (army?.LeaderParty?.StringId ?? "-"));
-            }
-
-            return army;
-        }
-
-        private static void WriteSpeedMemberDetachedDiagnostic(
-            MobileParty leader, LordAssistanceGroup group,
-            MobileParty offender, MobileParty detached,
-            MobileParty speedTarget, Army? remainingArmy,
-            float committedStrength, float targetStrength)
-        {
-            GwpAiDiagnostics.WriteAction(leader,
-                "ASSISTANCE_SPEED_MEMBER_DETACHED",
-                FormatStrengthDiagnostic(leader, offender, committedStrength,
-                    targetStrength) +
-                "; detached=" + detached.StringId +
-                "; detachedSpeedNow=" +
-                detached.LastCalculatedBaseSpeed.ToString(
-                    "0.00", CultureInfo.InvariantCulture) +
-                "; detachedArmy=" +
-                (detached.Army?.LeaderParty?.StringId ?? "-") +
-                "; detachedAttachedTo=" +
-                (detached.AttachedTo?.StringId ?? "-") +
-                "; speedTarget=" + speedTarget.StringId +
-                "; speedTargetSpeed=" +
-                speedTarget.LastCalculatedBaseSpeed.ToString(
-                    "0.00", CultureInfo.InvariantCulture) +
-                "; remainingArmySpeed=" +
-                (remainingArmy?.LeaderParty?.LastCalculatedBaseSpeed ?? 0f)
-                    .ToString("0.00", CultureInfo.InvariantCulture) +
-                "; detachedLords=" +
-                group.SpeedDetachedPartyIds.Count +
-                "; totalLords=" +
-                (group.MemberPartyIds.Count + 1));
         }
 
         private static bool IsSpeedDetached(LordAssistanceGroup group,
@@ -1710,18 +1403,9 @@ namespace GreyWardenPolicePurity
             if (army != null)
                 return army.LeaderParty == leader && army.Kingdom == null ? army : null;
 
-            try
-            {
-                // This is Bannerlord's real Army object. A null Kingdom keeps the
-                // independent Grey Warden clan independent; no hidden faction is made.
-                return new Army(null, leader, Army.ArmyTypes.Patrolling);
-            }
-            catch (Exception exception)
-            {
-                GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_CREATE_FAILED",
-                    "error=" + exception.GetType().Name);
-                return null;
-            }
+            // This is Bannerlord's real Army object. A null Kingdom keeps the
+            // independent Grey Warden clan independent; no hidden faction is made.
+            return new Army(null, leader, Army.ArmyTypes.Patrolling);
         }
 
         private Army? MaintainAssistanceArmy(MobileParty leader,
@@ -2013,8 +1697,7 @@ namespace GreyWardenPolicePurity
 
             MobileParty? party = FindActiveParty(partyId!);
             if (party == null) return;
-            try { if (party.Army != null && party.Army.LeaderParty != party) party.Army = null; }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            if (party.Army != null && party.Army.LeaderParty != party) party.Army = null;
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
         }
@@ -2204,7 +1887,7 @@ namespace GreyWardenPolicePurity
                     GwpAssistanceArmyDisbandGuardPatch
                         .ApplyAuthorizedObjectiveFinished(army);
                 }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                catch (Exception gwpQuietFailure) { /* 依据：实机诊断 2026-09-26（原版 Army.DisperseInternal 抛 NullReferenceException） */ GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
             }
 
             foreach (string memberId in group.MemberPartyIds)
@@ -2283,12 +1966,8 @@ namespace GreyWardenPolicePurity
                     !string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
                         StringComparison.OrdinalIgnoreCase))
                     continue;
-                try
-                {
-                    if (ArmyHourlyTickField.GetValue(army) == null)
-                        ArmyOnAfterLoad.Invoke(army, null);
-                }
-                catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+                if (ArmyHourlyTickField.GetValue(army) == null)
+                    ArmyOnAfterLoad.Invoke(army, null);
             }
         }
 
@@ -2754,9 +2433,6 @@ namespace GreyWardenPolicePurity
             }
             return "none";
         }
-
-        internal static int GetActiveAssistanceTaskCount() =>
-            _instance?._assistanceGroups.Values.Sum(group => group.MemberPartyIds.Count) ?? 0;
 
         internal static IReadOnlyList<AssistanceTaskSnapshot> GetAssistanceTaskSnapshots()
         {

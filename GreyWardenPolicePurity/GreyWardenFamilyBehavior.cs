@@ -259,9 +259,6 @@ namespace GreyWardenPolicePurity
         internal static bool IsPlayerRequestsHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.PlayerRequests;
 
-        internal static bool IsPlayerRequestsParty(MobileParty? party) =>
-            IsPlayerRequestsHero(party?.LeaderHero);
-
         internal static Hero? GetLivingDutyHolder(DutyKind duty)
         {
             Clan? clan = PoliceStats.GetPoliceClan();
@@ -279,12 +276,6 @@ namespace GreyWardenPolicePurity
 
         internal static bool IsIssueResolutionParty(MobileParty? party) =>
             IsIssueResolutionHero(party?.LeaderHero);
-
-        internal static bool IsCaravanProtectionHero(Hero? hero) =>
-            TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.CaravanProtection;
-
-        internal static bool IsVillageProtectionHero(Hero? hero) =>
-            TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.VillageProtection;
 
         internal static bool IsReconstructionParty(MobileParty? party) =>
             IsReconstructionHero(party?.LeaderHero);

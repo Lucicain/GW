@@ -23,11 +23,7 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
-            try
-            {
-                GwpTroopCombat.ApplyPendingHorseDamage();
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            GwpTroopCombat.ApplyPendingHorseDamage();
         }
 
         protected override void OnEndMission()
@@ -114,30 +110,22 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static GwpWeaponTrait? OfHit(Agent attacker, in AttackCollisionData collision)
         {
-            try
-            {
-                int index = collision.AffectorWeaponSlotOrMissileIndex;
-                if (index < 0)
-                    return null;
-                if (!collision.IsMissile)
-                    return index < (int)EquipmentIndex.NumAllWeaponSlots
-                        ? Of(attacker.Equipment[(EquipmentIndex)index].Item)
-                        : null;
-                Mission? mission = attacker.Mission;
-                if (mission == null)
-                    return null;
-                foreach (Mission.Missile missile in mission.MissilesList)
-                {
-                    if (missile.Index == index)
-                        return Of(missile.Weapon.Item);
-                }
+            int index = collision.AffectorWeaponSlotOrMissileIndex;
+            if (index < 0)
                 return null;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+            if (!collision.IsMissile)
+                return index < (int)EquipmentIndex.NumAllWeaponSlots
+                    ? Of(attacker.Equipment[(EquipmentIndex)index].Item)
+                    : null;
+            Mission? mission = attacker.Mission;
+            if (mission == null)
                 return null;
+            foreach (Mission.Missile missile in mission.MissilesList)
+            {
+                if (missile.Index == index)
+                    return Of(missile.Weapon.Item);
             }
+            return null;
         }
     }
 
@@ -183,9 +171,6 @@ namespace GreyWardenPolicePurity
         [ThreadStatic] private static Agent? _victim;
         [ThreadStatic] private static bool _knockdown;
         [ThreadStatic] private static bool _dismount;
-
-        internal static bool IsTroop(Agent? agent, string troopId) =>
-            string.Equals(agent?.Character?.StringId, troopId, StringComparison.OrdinalIgnoreCase);
 
         private static bool Roll(float chance) => MBRandom.RandomFloat < chance;
 
@@ -433,35 +418,27 @@ namespace GreyWardenPolicePurity
         private static bool Before(BasicCharacterObject character, bool randomEquipmentModifier,
             Equipment.EquipmentType equipmentType, int seed, ref Equipment __result)
         {
-            try
-            {
-                if (equipmentType != Equipment.EquipmentType.Battle || character == null || character.IsHero
-                    || !Troops.Contains(character.StringId, StringComparer.OrdinalIgnoreCase))
-                    return true;
-                var presets = character.BattleEquipments.ToList();
-                if (presets.Count < 2)
-                    return true;
-                int chosen = seed == -1 ? MBRandom.RandomInt(presets.Count) : new Random(seed).Next() % presets.Count;
-                var equipment = new Equipment(Equipment.EquipmentType.Battle);
-                for (int i = 0; i < 12; i++)
-                {
-                    EquipmentElement element = presets[chosen].GetEquipmentFromSlot((EquipmentIndex)i);
-                    if (randomEquipmentModifier)
-                    {
-                        ItemModifier? modifier = element.Item?.ItemComponent?.ItemModifierGroup?.GetRandomItemModifierLootScoreBased();
-                        if (modifier != null)
-                            element.SetModifier(modifier);
-                    }
-                    equipment[i] = element;
-                }
-                __result = equipment;
-                return false;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+            if (equipmentType != Equipment.EquipmentType.Battle || character == null || character.IsHero
+                || !Troops.Contains(character.StringId, StringComparer.OrdinalIgnoreCase))
                 return true;
+            var presets = character.BattleEquipments.ToList();
+            if (presets.Count < 2)
+                return true;
+            int chosen = seed == -1 ? MBRandom.RandomInt(presets.Count) : new Random(seed).Next() % presets.Count;
+            var equipment = new Equipment(Equipment.EquipmentType.Battle);
+            for (int i = 0; i < 12; i++)
+            {
+                EquipmentElement element = presets[chosen].GetEquipmentFromSlot((EquipmentIndex)i);
+                if (randomEquipmentModifier)
+                {
+                    ItemModifier? modifier = element.Item?.ItemComponent?.ItemModifierGroup?.GetRandomItemModifierLootScoreBased();
+                    if (modifier != null)
+                        element.SetModifier(modifier);
+                }
+                equipment[i] = element;
             }
+            __result = equipment;
+            return false;
         }
     }
 }

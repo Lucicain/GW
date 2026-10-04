@@ -25,18 +25,8 @@ namespace GreyWardenPolicePurity
 
         private static Func<MobileParty, float>? ResolveUnifiedSpeed()
         {
-            try
-            {
-                return AccessTools.MethodDelegate<Func<MobileParty, float>>(
-                    AccessTools.Method(typeof(MobileParty), "CalculateSpeedForPartyUnified"));
-            }
-            catch (Exception exception)
-            {
-                // 未来版本改名就安静退回原版封顶，不能让速度计算抛异常。
-                GwpFaultTrace.Write("ESCORT_SPEED_UNCAP_UNAVAILABLE",
-                    details: exception.GetType().FullName + ":" + exception.Message);
-                return null;
-            }
+            return AccessTools.MethodDelegate<Func<MobileParty, float>>(
+                AccessTools.Method(typeof(MobileParty), "CalculateSpeedForPartyUnified"));
         }
 
         [HarmonyPrefix]

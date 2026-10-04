@@ -9,9 +9,6 @@
             public const float DeadlineDays = 45f;
             public const float EasyStrengthRatio = 0.75f;
             public const float HardStrengthRatio = 1.25f;
-            public const int EasyReward = 10000;
-            public const int StandardReward = 20000;
-            public const int HardReward = 30000;
             public const int RecruitmentReputationThreshold = 20;
             public const int ReadmissionReputationStep = 20;
             public const int MaximumVoluntaryExits = 3;
@@ -116,8 +113,6 @@
             // 那一档由协力编成负责），超过全家族能凑出来的战力就不立案——
             // 否则案子会被反复接起又反复因凑不出兵退回。留一成余量。
             public const float CaseIntakeStrengthMargin = 0.9f;
-            public const int ShelteredForceBattleIntervalHours = 6;
-            public const float ShelteredForceBattleDistance = 1.5f;
             // 城外围堵点可直接触发既有驱逐流程，不要求军团贴到城门脚下。
             public const float ShelteredGateDistance = 12f;
             public const int ShelteredGateHoldHours = 1;
@@ -135,7 +130,6 @@
         /// </summary>
         internal static class FieldArrest
         {
-            public const float RefusalStrengthRatio = 4f;
             public const int ReportAuditDelayDays = 7;
             public const int MaximumCaseFine = 20000;
             public const float ReportAuditChance = 0.08f;
@@ -158,24 +152,10 @@
             public const int RespectedStanding = 40;
 
             /// <summary>
-            /// Below this gap between his best and second-best option he is genuinely
-            /// torn, and that is the only case where argument can move him. Raise it and
-            /// more encounters open a negotiation; lower it and more resolve on the spot.
-            /// </summary>
-            public const float DecisionMargin = 0.25f;
-
-            /// <summary>
             /// Deterrence points that count as a man thoroughly taught. Only used to put
             /// the existing deterrence scale onto the 0-1 range this model reasons in.
             /// </summary>
             public const float DeterrenceReference = 60f;
-
-            /// <summary>
-            /// What a lying offender claims to be carrying, as a share of the fine. Low
-            /// enough to sound ruinous, high enough that believing him is a real choice
-            /// rather than an obvious swindle.
-            /// </summary>
-            public const int PleadedPursePercent = 35;
 
             /// <summary>
             /// 他自己那套兑现方式各自肯给多少。全缴以外都是打折，差额留在他名下的
@@ -202,19 +182,6 @@
             public const float StandingSwing = 12f;
             /// <summary>被灰袍抓过的经历能压下多少抗性。</summary>
             public const float DeterrenceSwing = 20f;
-            /// <summary>第二层里他每点执着增加的抗性。</summary>
-            public const float InsistenceStep = 12f;
-
-            /// <summary>
-            /// Weight of "he just argues the charge" in the demand draw, against each
-            /// trait point's own weight. Raise the plain weight and special demands get
-            /// rarer; raise the per-point weight and strong personalities push harder.
-            /// </summary>
-            public const int PlainDemandWeight = 1;
-            public const int DesireWeightPerTraitPoint = 3;
-
-            /// <summary>How much over the fine an eager payer offers.</summary>
-            public const int OverPayPercent = 125;
 
             /// <summary>At most this share of the persuasion goal can be granted before the first argument.</summary>
             public const float InitialProgressShare = 0.5f;
@@ -257,7 +224,6 @@
             /// </summary>
             public const int FinePerPoint = 200;
             public const int NegotiationDivisor = 4;
-            public const int RewardPerPointPerDay = 20;
             public const int PatrolSize = 10;
             public const float WarDistance = 15f;
         }
@@ -304,7 +270,6 @@
             public const float ActiveDialogueThreshold = 0.25f;
             public const float ForgetThreshold = 0.05f;
             public const float RecoveryFloorTolerance = 0.0001f;
-            public const float CleanupGraceDays = 3f;
         }
 
         internal static class IssueResolution

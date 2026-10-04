@@ -106,23 +106,15 @@ namespace GreyWardenPolicePurity
             _requestedTroop = null;
             if (!CanTalkToTroop(troop)) return;
 
-            try
-            {
-                _activeTroop = troop;
-                _openedAtTicks = Environment.TickCount;
-                ConversationCharacterData playerData = new ConversationCharacterData(
-                    CharacterObject.PlayerCharacter, PartyBase.MainParty,
-                    false, false, false, false, false, false);
-                ConversationCharacterData troopData = new ConversationCharacterData(
-                    troop, PartyBase.MainParty,
-                    false, false, false, false, false, false);
-                CampaignMapConversation.OpenConversation(playerData, troopData);
-            }
-            catch (Exception ex)
-            {
-                _activeTroop = null;
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_CONVERSATION_FAILED", ex.ToString());
-            }
+            _activeTroop = troop;
+            _openedAtTicks = Environment.TickCount;
+            ConversationCharacterData playerData = new ConversationCharacterData(
+                CharacterObject.PlayerCharacter, PartyBase.MainParty,
+                false, false, false, false, false, false);
+            ConversationCharacterData troopData = new ConversationCharacterData(
+                troop, PartyBase.MainParty,
+                false, false, false, false, false, false);
+            CampaignMapConversation.OpenConversation(playerData, troopData);
         }
 
         /// <summary>
@@ -253,28 +245,21 @@ namespace GreyWardenPolicePurity
 
             // Soldiers are selected here; assets and prisoners use the barter screen.
 
-            try
-            {
-                PartyScreenHelper.OpenScreenWithDummyRosterWithMainParty(
-                    detachment,
-                    prisoners,
-                    BuildScreenName(purpose),
-                    Math.Max(1, MobileParty.MainParty?.MemberRoster?.TotalManCount ?? 1),
-                    (left, leftPrison, right, rightPrison, leftLimit, rightLimit) =>
-                        new Tuple<bool, TextObject>(
-                            left.TotalManCount > 0,
-                            left.TotalManCount > 0
-                                ? new TextObject(string.Empty)
-                                : GwpText.Create("{=gwp_dispatch_pick_someone}Choose at least one man to send.")),
-                    (leftOwner, leftMembers, leftPrison, rightOwner, rightMembers, rightPrison, fromCancel) =>
-                        OnSelectionClosed(purpose, leftMembers, leftPrison, fromCancel),
-                    (character, type, side, leftOwnerParty) => IsSendable(purpose, character, type),
-                    () => true);
-            }
-            catch (Exception ex)
-            {
-                GwpAiDiagnostics.WriteFieldArrest("DISPATCH_SELECTION_FAILED", ex.ToString());
-            }
+            PartyScreenHelper.OpenScreenWithDummyRosterWithMainParty(
+                detachment,
+                prisoners,
+                BuildScreenName(purpose),
+                Math.Max(1, MobileParty.MainParty?.MemberRoster?.TotalManCount ?? 1),
+                (left, leftPrison, right, rightPrison, leftLimit, rightLimit) =>
+                    new Tuple<bool, TextObject>(
+                        left.TotalManCount > 0,
+                        left.TotalManCount > 0
+                            ? new TextObject(string.Empty)
+                            : GwpText.Create("{=gwp_dispatch_pick_someone}Choose at least one man to send.")),
+                (leftOwner, leftMembers, leftPrison, rightOwner, rightMembers, rightPrison, fromCancel) =>
+                    OnSelectionClosed(purpose, leftMembers, leftPrison, fromCancel),
+                (character, type, side, leftOwnerParty) => IsSendable(purpose, character, type),
+                () => true);
         }
 
         private static TextObject BuildScreenName(GwpDispatchPurpose purpose) =>
@@ -294,13 +279,6 @@ namespace GreyWardenPolicePurity
             // 玩家根本看不到、也拖不动俘虏。押人改为界面关掉之后单问一句，直接转交。
             if (character.IsHero) return false;
             return type == PartyScreenLogic.TroopType.Member && GwpCommon.IsGreyWardenTroop(character);
-        }
-
-        private static bool IsCasePrisoner(CharacterObject character)
-        {
-            Hero? hero = character?.HeroObject;
-            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-            return hero != null && bounty?.IsDeliverableCasePrisoner(hero) == true;
         }
 
         private static void OnSelectionClosed(GwpDispatchPurpose purpose,
@@ -400,14 +378,6 @@ namespace GreyWardenPolicePurity
                 manager.StartBarterOffer(Hero.MainHero, receiver.LeaderHero, MobileParty.MainParty.Party,
                     receiver.Party, null, (entry, data, obj) => false, 0, false, payment.Entries);
             }
-            catch (Exception ex)
-            {
-                manager.Closed -= closed;
-                _paymentClosed = null;
-                _afterPayment = null;
-                members.Clear(); prisoners.Clear();
-                GwpFaultTrace.Write("DISPATCH_PAYMENT_OPEN_FAILED", details: ex.ToString());
-            }
             finally { manager.BarterBegin = original; }
         }
 
@@ -461,18 +431,10 @@ namespace GreyWardenPolicePurity
             foreach (var entry in escort.GetTroopRoster())
                 MobileParty.MainParty.MemberRoster.AddToCounts(entry.Character, -entry.Number, false, -entry.WoundedNumber, -entry.Xp);
 
-            try
-            {
-                MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
-                    GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
-                    troopId, count, price);
-                if (party == null) ReturnSelection(escort, null);
-            }
-            catch (Exception error)
-            {
-                ReturnSelection(escort, null);
-                GwpFaultTrace.Write("DISPATCH_TROOP_ORDER_PREFLIGHT_FAILED", details: error.ToString());
-            }
+            MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
+                GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
+                troopId, count, price);
+            if (party == null) ReturnSelection(escort, null);
         }
 
         private static void Send(GwpDispatchPurpose purpose, TroopRoster members,
@@ -496,18 +458,8 @@ namespace GreyWardenPolicePurity
                 foreach (var entry in members.GetTroopRoster())
                     MobileParty.MainParty.MemberRoster.AddToCounts(entry.Character, -entry.Number, false, -entry.WoundedNumber, -entry.Xp);
             }
-            try
-            {
-                if (dispatch?.Dispatch(members, prisoners, purpose, amount, lie, prisonerHeroId, cargo) == null)
-                    ReturnSelection(members, prisoners);
-            }
-            catch (Exception error)
-            {
-                // Dispatch catches failures after creation and returns the real party.
-                // An exception here is a preflight failure, before ownership changed.
+            if (dispatch?.Dispatch(members, prisoners, purpose, amount, lie, prisonerHeroId, cargo) == null)
                 ReturnSelection(members, prisoners);
-                GwpFaultTrace.Write("DISPATCH_PREFLIGHT_FAILED", details: error.ToString());
-            }
         }
 
         /// <summary>取消或派不出去时，选中的人和俘虏原样还给主队，不能凭空消失。</summary>

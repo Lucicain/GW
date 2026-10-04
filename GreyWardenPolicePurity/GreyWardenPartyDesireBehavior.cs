@@ -195,14 +195,10 @@ namespace GreyWardenPolicePurity
 
             if (DirectAttackLocks.Contains(party.StringId)) return;
 
-            try
-            {
-                // 仅解除旧版本遗留冻结并要求原版重新拍卖；不清空原版短期战术，
-                // 不写入目的地，也不人为重置进攻/逃跑判断。
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            // 仅解除旧版本遗留冻结并要求原版重新拍卖；不清空原版短期战术，
+            // 不写入目的地，也不人为重置进攻/逃跑判断。
+            party.Ai.SetDoNotMakeNewDecisions(false);
+            party.Ai.RethinkAtNextHourlyTick = true;
         }
 
         /// <summary>
@@ -326,18 +322,14 @@ namespace GreyWardenPolicePurity
                 party.MapEvent != null)
                 return;
 
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                // 恢复欲望整理前无英雄支援队的完整战术配置：正常进攻主动性、
-                // 零逃避主动性，长期保持。它不产生任何战略欲望或强弱判断。
-                party.Ai.SetInitiative(1f, 0f, 999f);
-                ResolveNavigation(party, target,
-                    out MobileParty.NavigationType navigation, out _);
-                party.SetMoveEngageParty(target, navigation);
-                party.Ai.SetDoNotMakeNewDecisions(true);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.Ai.SetDoNotMakeNewDecisions(false);
+            // 恢复欲望整理前无英雄支援队的完整战术配置：正常进攻主动性、
+            // 零逃避主动性，长期保持。它不产生任何战略欲望或强弱判断。
+            party.Ai.SetInitiative(1f, 0f, 999f);
+            ResolveNavigation(party, target,
+                out MobileParty.NavigationType navigation, out _);
+            party.SetMoveEngageParty(target, navigation);
+            party.Ai.SetDoNotMakeNewDecisions(true);
         }
 
         private static void ReleaseDirectAttackLock(MobileParty? party)
@@ -347,12 +339,8 @@ namespace GreyWardenPolicePurity
             if (!DirectAttackLocks.Remove(party.StringId)) return;
             if (!party.IsActive) return;
 
-            try
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.Ai.RethinkAtNextHourlyTick = true;
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            party.Ai.SetDoNotMakeNewDecisions(false);
+            party.Ai.RethinkAtNextHourlyTick = true;
         }
 
         private static bool IsDisposableEnforcementParty(MobileParty? party)
@@ -385,13 +373,10 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            try
-            {
-                // 旧存档清锁只做一次；正常运行不再每小时强制重算或清空短期 AI。
-                if (party.Ai.DoNotMakeNewDecisions)
-                    RequestImmediateRethink(party);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            // 旧存档清锁只做一次；正常运行不再每小时强制重算或清空短期 AI。
+            if (party.Ai.DoNotMakeNewDecisions)
+                RequestImmediateRethink(party);
+
             GwpAiDiagnostics.WriteState(party, "HOURLY_STATE");
         }
 

@@ -28,43 +28,34 @@ namespace GreyWardenPolicePurity
             if (game?.ObjectManager == null)
                 return;
 
-            try
+            // Crafted items get no collision body - BladeData has no
+            // collision-body attribute - and a weapon dropped into water is
+            // handled as a world object with physics. Agents drowning in a
+            // naval battle crashed inside TaleWorlds.Native with an access
+            // violation, the last log line each time being a render request
+            // for a dual blade, which is a null physics body all over. ROT's
+            // plain blades declare a body explicitly for the same reason.
+            foreach (string bladeId in new[]
             {
-                // Crafted items get no collision body - BladeData has no
-                // collision-body attribute - and a weapon dropped into water is
-                // handled as a world object with physics. Agents drowning in a
-                // naval battle crashed inside TaleWorlds.Native with an access
-                // violation, the last log line each time being a render request
-                // for a dual blade, which is a null physics body all over. ROT's
-                // plain blades declare a body explicitly for the same reason.
-                foreach (string bladeId in new[]
+                GwpIds.DualBladeOffhandItemId,
+                GwpIds.DualBladeMainhandItemId
+            })
+            {
+                ItemObject? blade = game.ObjectManager
+                    .GetObject<ItemObject>(bladeId);
+                if (blade == null)
                 {
-                    GwpIds.DualBladeOffhandItemId,
-                    GwpIds.DualBladeMainhandItemId
-                })
-                {
-                    ItemObject? blade = game.ObjectManager
-                        .GetObject<ItemObject>(bladeId);
-                    if (blade == null)
-                    {
-                        GwpFaultTrace.Write(
-                            "DUAL_BLADE_ITEM_SETUP_MISSING",
-                            details: bladeId);
-                        continue;
-                    }
-
-                    if (!string.IsNullOrEmpty(blade.CollisionBodyName))
-                        continue;
-
-                    AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
-                        ?.SetValue(blade, blade.BodyName);
+                    GwpFaultTrace.Write(
+                        "DUAL_BLADE_ITEM_SETUP_MISSING",
+                        details: bladeId);
+                    continue;
                 }
-            }
-            catch (Exception exception)
-            {
-                GwpFaultTrace.Write(
-                    "DUAL_BLADE_ITEM_SETUP_FAILED",
-                    details: exception.GetType().Name + ": " + exception.Message);
+
+                if (!string.IsNullOrEmpty(blade.CollisionBodyName))
+                    continue;
+
+                AccessTools.Property(typeof(ItemObject), "CollisionBodyName")
+                    ?.SetValue(blade, blade.BodyName);
             }
         }
     }

@@ -120,39 +120,29 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            try
+            MissionEquipment equipment = attacker.Equipment;
+            if (!GwpDualBladeLoadout.IsOffHandBladeId(
+                    equipment[EquipmentIndex.Weapon0].Item?.StringId)
+                || !IsItem(
+                    equipment[EquipmentIndex.Weapon1],
+                    GwpIds.DualBladeMainhandItemId))
             {
-                MissionEquipment equipment = attacker.Equipment;
-                if (!GwpDualBladeLoadout.IsOffHandBladeId(
-                        equipment[EquipmentIndex.Weapon0].Item?.StringId)
-                    || !IsItem(
-                        equipment[EquipmentIndex.Weapon1],
-                        GwpIds.DualBladeMainhandItemId))
-                {
-                    return false;
-                }
-
-                // Bone 20 is the authored left-hand attachment used by the
-                // paired-blade action set. Every other melee attack bone is
-                // the main hand; checking the corresponding wielded item
-                // keeps an optional lance in Weapon2 from gaining the
-                // paired-blade knockdown effect.
-                bool isLeftHandAttack = collisionData.AttackBoneIndex == 20
-                    && GwpDualBladeLoadout.IsOffHandBladeId(
-                        attacker.WieldedOffhandWeapon.Item?.StringId);
-                bool isMainHandAttack = collisionData.AttackBoneIndex != 20
-                    && IsItem(
-                        attacker.WieldedWeapon,
-                        GwpIds.DualBladeMainhandItemId);
-                return isLeftHandAttack || isMainHandAttack;
-            }
-            catch
-            {
-                // A collision can arrive while native equipment is being
-                // rebuilt. Preserve the ordinary damage-model decision when
-                // the pair cannot be confirmed safely.
                 return false;
             }
+
+            // Bone 20 is the authored left-hand attachment used by the
+            // paired-blade action set. Every other melee attack bone is
+            // the main hand; checking the corresponding wielded item
+            // keeps an optional lance in Weapon2 from gaining the
+            // paired-blade knockdown effect.
+            bool isLeftHandAttack = collisionData.AttackBoneIndex == 20
+                && GwpDualBladeLoadout.IsOffHandBladeId(
+                    attacker.WieldedOffhandWeapon.Item?.StringId);
+            bool isMainHandAttack = collisionData.AttackBoneIndex != 20
+                && IsItem(
+                    attacker.WieldedWeapon,
+                    GwpIds.DualBladeMainhandItemId);
+            return isLeftHandAttack || isMainHandAttack;
         }
 
         private static bool IsItem(
@@ -596,37 +586,29 @@ namespace GreyWardenPolicePurity
                 return nativeMomentum;
             }
 
-            try
-            {
-                if (!CarriesOn(in blow, in collisionData, attacker, in attackerWeapon))
-                    return nativeMomentum;
-
-                Mission? mission = attacker.Mission;
-                if (mission == null)
-                    return nativeMomentum;
-
-                float carried = originalMomentum
-                    * (1f - blow.AbsorbedByArmor / (float)blow.InflictedDamage)
-                    * 0.5f;
-                if (carried < 0.25f)
-                    return nativeMomentum;
-
-                float now = mission.CurrentTime;
-                StrongBox<float> last = _lastCleaveTimes.GetValue(
-                    attacker, _ => new StrongBox<float>(float.MinValue));
-
-                // Already carried through one body this swing.
-                if (now - last.Value < SameSwingSeconds)
-                    return 0f;
-
-                last.Value = now;
-                return carried;
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
+            if (!CarriesOn(in blow, in collisionData, attacker, in attackerWeapon))
                 return nativeMomentum;
-            }
+
+            Mission? mission = attacker.Mission;
+            if (mission == null)
+                return nativeMomentum;
+
+            float carried = originalMomentum
+                * (1f - blow.AbsorbedByArmor / (float)blow.InflictedDamage)
+                * 0.5f;
+            if (carried < 0.25f)
+                return nativeMomentum;
+
+            float now = mission.CurrentTime;
+            StrongBox<float> last = _lastCleaveTimes.GetValue(
+                attacker, _ => new StrongBox<float>(float.MinValue));
+
+            // Already carried through one body this swing.
+            if (now - last.Value < SameSwingSeconds)
+                return 0f;
+
+            last.Value = now;
+            return carried;
         }
 
         /// <summary>

@@ -74,12 +74,8 @@ namespace GreyWardenPolicePurity
         private void KeepCohortDisposition(MobileParty? cohort)
         {
             if (cohort?.IsActive != true) return;
-            try
-            {
-                cohort.Ai.SetInitiative(CohortAttackInitiative, 1f,
-                    CohortInitiativeHours);
-            }
-            catch (Exception gwpQuietFailure) { GwpFaultTrace.WriteQuiet(gwpQuietFailure); }
+            cohort.Ai.SetInitiative(CohortAttackInitiative, 1f,
+                CohortInitiativeHours);
         }
 
         /// <summary>
@@ -159,42 +155,31 @@ namespace GreyWardenPolicePurity
                 trainer.LastCalculatedBaseSpeed * CohortSpeedMargin);
 
             MobileParty? cohort = null;
-            try
-            {
-                cohort = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                    trainer.Position,
-                    1f,
-                    home,
-                    new TextObject(GwpText.Get(
-                        "{=gwp_troop_order_cohort_name}Grey Warden training cohort")),
-                    policeClan,
-                    policeClan.DefaultPartyTemplate,
-                    // owner 必须留空：原版 ApplyEffects 会朝 party.Owner 收升级费，
-                    // 填人进去就是让他自掏腰包替订单买单。
-                    null,
-                    string.Empty,
-                    string.Empty,
-                    cohortSpeed,
-                    false);
-                if (cohort == null) return null;
+            cohort = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                trainer.Position,
+                1f,
+                home,
+                new TextObject(GwpText.Get(
+                    "{=gwp_troop_order_cohort_name}Grey Warden training cohort")),
+                policeClan,
+                policeClan.DefaultPartyTemplate,
+                // owner 必须留空：原版 ApplyEffects 会朝 party.Owner 收升级费，
+                // 填人进去就是让他自掏腰包替订单买单。
+                null,
+                string.Empty,
+                string.Empty,
+                cohortSpeed,
+                false);
+            if (cohort == null) return null;
 
-                cohort.StringId = cohortId;
-                cohort.ActualClan = policeClan;
-                cohort.MemberRoster.Clear();
-                cohort.ItemRoster.Clear();
-                // 船向练兵官借，按订单人数借：练兵队出生时是空的，之后才补到订单量。
-                PoliceResourceManager.OutfitTemporaryDutyParty(cohort, trainer, _orderedCount);
-                KeepCohortDisposition(cohort);
-                GreyWardenPartyDesireBehavior.RequestEscort(cohort, trainer);
-            }
-            catch (Exception error)
-            {
-                if (cohort != null)
-                    GwpCommon.TryDestroyParty(cohort);
-                GwpAiDiagnostics.WriteAction(trainer,
-                    "PLAYER_TROOP_ORDER_COHORT_FAILED", error.ToString());
-                return null;
-            }
+            cohort.StringId = cohortId;
+            cohort.ActualClan = policeClan;
+            cohort.MemberRoster.Clear();
+            cohort.ItemRoster.Clear();
+            // 船向练兵官借，按订单人数借：练兵队出生时是空的，之后才补到订单量。
+            PoliceResourceManager.OutfitTemporaryDutyParty(cohort, trainer, _orderedCount);
+            KeepCohortDisposition(cohort);
+            GreyWardenPartyDesireBehavior.RequestEscort(cohort, trainer);
 
             _cohortPartyId = cohortId;
             GwpAiDiagnostics.WriteAction(trainer,

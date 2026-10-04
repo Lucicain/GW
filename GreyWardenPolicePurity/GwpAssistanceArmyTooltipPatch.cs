@@ -55,20 +55,12 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static bool NeedsSafeText(Army? army)
         {
-            try
-            {
-                if (army?.LeaderParty?.IsActive != true) return false;
-                if (army.Kingdom != null) return false;
-                if (army.AiBehaviorObject != null) return false;
+            if (army?.LeaderParty?.IsActive != true) return false;
+            if (army.Kingdom != null) return false;
+            if (army.AiBehaviorObject != null) return false;
 
-                return string.Equals(army.LeaderParty.ActualClan?.StringId,
-                    GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-            }
-            catch (Exception gwpQuietFailure)
-            {
-                GwpFaultTrace.WriteQuiet(gwpQuietFailure);
-                return false;
-            }
+            return string.Equals(army.LeaderParty.ActualClan?.StringId,
+                GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
