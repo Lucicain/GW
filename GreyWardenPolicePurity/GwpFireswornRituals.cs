@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -41,7 +42,6 @@ namespace GreyWardenPolicePurity
                     CancelCongregation(ritual, "village_unrest");
                     continue;
                 }
-                GreyWardenPartyDesireBehavior.RequestVisit(host, village, GwpTuning.Firesworn.FaithPartyVisitScore);
                 if (now >= ritual.EndHour)
                     CompleteCongregation(ritual, host, village);
             }
@@ -60,6 +60,9 @@ namespace GreyWardenPolicePurity
                 EndHour = now + GwpTuning.Firesworn.CongregationHours
             });
             SetPhase(record, FaithPartyPhase.Working, village.StringId);
+            // 传教期间传教队进村待着，传完下达回家的意图时解冻出村。
+            Park(host, village);
+            NotifyPlayerNearby(village, _rituals[_rituals.Count - 1]);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_fs_congregation_started}{HOST} has opened a Congregation of the Eternal Fire in {VILLAGE}.",
                 "HOST", host.Name, "VILLAGE", village.Name), Colors.Gray));
@@ -214,6 +217,7 @@ namespace GreyWardenPolicePurity
                 QueuedHour = now,
                 EndHour = now + GwpTuning.Firesworn.DamnationLockHours
             });
+            NotifyPlayerNearby(village, _rituals[_rituals.Count - 1]);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_fs_damnation_done}{HOST} held a Damnation in {VILLAGE}: {BURNED} burned, and the village now counts {ZEALOTS} zealots.",
                 "HOST", RitualHostName(_rituals[_rituals.Count - 1], village), "VILLAGE", village.Name,
@@ -223,6 +227,19 @@ namespace GreyWardenPolicePurity
                 "; zealots=" + zealotsBefore + "->" + row.Zealots +
                 "; hearth=" + hearthBefore.ToString("0.0") + "->" + village.Village.Hearth.ToString("0.0") +
                 "; dungeonLeft=" + (_dungeons.TryGetValue(village.StringId, out TroopRoster? dungeon) ? dungeon.TotalManCount : 0));
+        }
+
+        /// <summary>仪式在玩家附近开始：弹出配图配音（用户裁定 2026-10-06）。玩家不在大地图上（战斗、过场）时不弹。</summary>
+        private void NotifyPlayerNearby(Settlement village, Ritual ritual)
+        {
+            if (Game.Current.GameStateManager.ActiveState is not MapState ||
+                MobileParty.MainParty.GetPosition2D.Distance(village.GetPosition2D) >
+                GwpTuning.Firesworn.RitualNoticeDistance)
+                return;
+            GwpAiDiagnostics.WriteFaith("RITUAL_POPUP_NEARBY", "village=" + village.StringId + "; kind=" + ritual.Kind);
+            GwpFireswornRitualPopup.Show(ritual.Kind, GwpFireswornMenus.RitualTitle(ritual.Kind).ToString(),
+                GwpFireswornMenus.RitualText(ritual.Kind, village, RitualHostName(ritual, village),
+                    ritual.EndHour - CampaignTime.Now.ToHours));
         }
 
         /// <summary>仪式画面里主持人的名字：烧人由祭司主持（没有祭司就写村名），传教写传教队。</summary>

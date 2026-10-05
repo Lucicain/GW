@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测（2026-10-05）；数值是试玩值，用户尚未定
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 新建
+> 已复核至：2026-10-06 修实机发现的三处：常驻队在家冻住待在村里、背包里的兵器护甲进村军械库、狂信者队一趟最多卖 3 座城；加每日异常检查和分析脚本；2026-10-05 新建
 > 覆盖源码：`GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 
@@ -40,6 +40,8 @@
 ## 传教队（`GwpFireswornParties.cs`）
 
 - 每座信众村一支，常驻在村里。第一次派出时建队，人没死光（被原版销毁）就一直在；队里的人不算村里的狂信者数。
+- 两支常驻队在家（以及传教队在目标村传教时）待在村子里面、看不见、AI 冻住（`Park`），照原版村民队在家的样子；下次出发下达新意图时解冻。
+  不冻住的话原版会把它拉出村、停在村口不动。（依据：实机诊断 2026-10-06：传教队回村 5 小时后出村，此后 56 小时在村口 Hold）
 - 每天一次检查。派出条件：
   - 有祭司；
   - 狂信者占户数 ≥ 15%；
@@ -60,6 +62,8 @@
   - 贸易城镇（`Village.TradeBound`）没被围、和灰袍不交战。
 - 出发前从村里的狂信者补到 8 人，把货仓整个装上车。
 - 到城里照原版村民队卖货（`SellGoodsForTradeAction`）：按城镇收购价、城镇金库买得起多少卖多少。
+  没卖掉的还值 2,000 以上，就去离这座城最近、金库还有 5,000 以上、不交战的城接着卖，一趟最多 3 座城。
+  （依据：实机诊断 2026-10-06：装车估值 32.7 万只卖出 9%，把城镇金库卖空）
 - 回村后，卖得的钱进公库，没卖掉的放回货仓。队伍半路被打掉，货和钱都丢了。
 - 货仓的来源：领主捐的东西、军械库多出来的装备、守村缴获。
 - 原版村民队的钱回村后算村子领主的税，不归灰袍。所以要用我们自己的队伍运货。（依据：C#反编译 v1.4.8 VillagerCampaignBehavior）
@@ -92,7 +96,8 @@
   - 被更要紧的活占了、村子出事、超过 120 小时，就取消。
 - 进了信众村即算办完，做这些事：
   1. 交俘虏；
-  2. 背包里除口粮外的东西都捐进货仓；
+  2. 背包里除口粮外的东西都捐给村子：狂信者能用的兵器、护甲进村军械库，其余进货仓。
+     部队每天把多出来的装备挪进背包，不分开的话俘虏装备会全被当货卖掉。（依据：实机诊断 2026-10-06：村军械库一周是空的）
   3. 军械库余量以外的捐进村军械库；
   4. 用空位直接招狂信者，见 `warden-recruitment.md`。
 - 灰袍领主在城里不卖普通俘虏，只照原版卖敌对英雄俘虏（`GwpWardenKeepPrisonersPatch`）；
@@ -159,6 +164,18 @@
 | 领主差事 | `ERRAND_STARTED`、`ERRAND_DONE`、`ERRAND_CANCELLED` |
 | 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
 | 保护费 | `PROTECTION_FEE` |
+| 仪式配图 | `RITUAL_MENU_SHOWN`、`RITUAL_POPUP_NEARBY` |
+| 祭司招兵 | `PRIEST_RECRUITED` |
+| 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`ERRAND_LONG`、`PRISONERS_PILING`、`LORD_UNDERSTRENGTH`、`NO_PRIEST`、`PRIEST_SLOTS_UNUSED`、`HEARTH_AT_FLOOR`、`ZEALOTS_OVER_CAP`、`DUNGEON_BACKLOG`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`TREASURY_LOW` |
+
+差事取消的 reason 写明是被哪类活占了（`claimed_by_army`、`claimed_by_training` 等）。
+
+**分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。它只取最近一次启动游戏以来的监控行，输出：
+- 总览、收支；
+- 每座信众村：户数、狂信者及其来源、地牢、军械库、货仓；
+- 每位领主：兵力、兵种、差事次数与占用时间、兵源与俘虏；
+- 常驻队、异常汇总；
+- 最后按阈值列出需要看的平衡问题：公库下降、卖货比例过低、户数掉太快、狂信者不涨、武装率低、差事取消多、差事占用时间过多、兵力过低。
 
 ## 待实测
 

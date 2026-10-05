@@ -163,7 +163,7 @@ namespace GreyWardenPolicePurity
                 new UiTexture(new EngineTexture(texture)), width, height);
         }
 
-        private static bool TryReadPngSize(byte[] png, out int width, out int height)
+        internal static bool TryReadPngSize(byte[] png, out int width, out int height)
         {
             width = height = 0;
             // 8 字节签名之后第一个块是 IHDR，宽高为大端 32 位整数。

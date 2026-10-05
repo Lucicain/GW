@@ -20,8 +20,8 @@ namespace GreyWardenPolicePurity
     internal static class GwpFireswornMenus
     {
         internal const string RitualMenuId = "gwp_firesworn_ritual";
-        private const string CongregationSound = "gwp/firesworn/congregation";
-        private const string DamnationSound = "gwp/firesworn/damnation";
+        internal const string CongregationSound = "gwp/firesworn/congregation";
+        internal const string DamnationSound = "gwp/firesworn/damnation";
 
         internal static void Register(CampaignGameStarter starter)
         {
@@ -30,6 +30,7 @@ namespace GreyWardenPolicePurity
                 LeaveCondition, LeaveConsequence, isLeave: true);
             starter.AddGameMenuOption("village", "gwp_fs_village_faith", "{GWP_FS_VILLAGE_OPTION}",
                 FaithOptionCondition, FaithOptionConsequence, isLeave: false, index: 5);
+            GwpFireswornArmoryView.Register(starter);
         }
 
         private static void RitualInit(MenuCallbackArgs args)
@@ -44,16 +45,27 @@ namespace GreyWardenPolicePurity
 
             bool damnation = kind == GwpFireswornBehavior.RitualKind.Damnation;
             args.MenuContext.SetBackgroundMeshName(damnation ? "wait_raiding_village" : "encounter_peasant");
-            args.MenuTitle = damnation
+            args.MenuTitle = RitualTitle(kind);
+            string text = RitualText(kind, village!, host, remaining);
+            MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", text);
+            GwpAiDiagnostics.WriteFaith("RITUAL_MENU_SHOWN", "village=" + village.StringId + "; kind=" + kind);
+            GwpFireswornRitualPopup.Show(kind, args.MenuTitle.ToString(), text);
+        }
+
+        internal static TextObject RitualTitle(GwpFireswornBehavior.RitualKind kind) =>
+            kind == GwpFireswornBehavior.RitualKind.Damnation
                 ? GwpText.Create("{=gwp_fs_ritual_damnation_title}Damnation")
                 : GwpText.Create("{=gwp_fs_ritual_congregation_title}Congregation");
-            int hours = Math.Max(1, (int)Math.Ceiling(remaining));
-            MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", damnation
+
+        internal static string RitualText(GwpFireswornBehavior.RitualKind kind, Settlement village, string host,
+            double remainingHours)
+        {
+            int hours = Math.Max(1, (int)Math.Ceiling(remainingHours));
+            return kind == GwpFireswornBehavior.RitualKind.Damnation
                 ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those dragged onto it are the ones who would not bow. The women sing around the flames while the men, heads down, feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
-                    "VILLAGE", village!.Name, "HOST", host, "HOURS", hours)
+                    "VILLAGE", village.Name, "HOST", host, "HOURS", hours)
                 : GwpText.Get("{=gwp_fs_ritual_congregation_text}The women of {VILLAGE} crowd the square around {HOST}, swearing themselves to the Eternal Fire one after another. The men have been pushed to the edge of the crowd, where they kneel and listen to the laws of the flame read out over them. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
-                    "VILLAGE", village!.Name, "HOST", host, "HOURS", hours));
-            PlaySound(damnation ? DamnationSound : CongregationSound);
+                    "VILLAGE", village.Name, "HOST", host, "HOURS", hours);
         }
 
         private static bool LeaveCondition(MenuCallbackArgs args)
@@ -108,13 +120,6 @@ namespace GreyWardenPolicePurity
         {
             float hearth = village.Village?.Hearth ?? 0f;
             return hearth > 0f ? (int)Math.Round(zealots * 100f / hearth) : 0;
-        }
-
-        private static void PlaySound(string eventName)
-        {
-            int id = SoundEvent.GetEventIdFromString(eventName);
-            if (id >= 0)
-                SoundEvent.PlaySound2D(id);
         }
     }
 

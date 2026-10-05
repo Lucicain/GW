@@ -134,6 +134,8 @@ namespace GreyWardenPolicePurity
             public FaithPartyPhase Phase;
             public string TargetId = string.Empty;
             public double PhaseHour;
+            // 狂信者队这一趟已经卖过几座城。
+            public int Stops;
         }
 
         /// <summary>灰袍领主去信众村交俘虏、捐东西、招兵的差事。</summary>
@@ -174,6 +176,7 @@ namespace GreyWardenPolicePurity
             List<string>? partyIds = null, partyHomes = null, partyTargets = null;
             List<int>? partyKinds = null, partyPhases = null;
             List<double>? partyHours = null;
+            List<int>? partyStops = null;
             List<string>? errandParties = null, errandVillages = null, errandReasons = null;
             List<double>? errandHours = null;
 
@@ -200,6 +203,7 @@ namespace GreyWardenPolicePurity
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
+                partyStops = parties.Select(party => party.Stops).ToList();
                 errandParties = _errands.Keys.ToList();
                 errandVillages = errandParties.Select(id => _errands[id].VillageId).ToList();
                 errandHours = errandParties.Select(id => _errands[id].StartHour).ToList();
@@ -225,6 +229,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyPhases", ref partyPhases);
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
+            dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
             dataStore.SyncData("GWPP_FsErrandParties", ref errandParties);
             dataStore.SyncData("GWPP_FsErrandVillages", ref errandVillages);
             dataStore.SyncData("GWPP_FsErrandHours", ref errandHours);
@@ -271,7 +276,8 @@ namespace GreyWardenPolicePurity
                     Kind = (FaithPartyKind)partyKinds![i],
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
-                    PhaseHour = partyHours![i]
+                    PhaseHour = partyHours![i],
+                    Stops = partyStops![i]
                 };
 
             _errands.Clear();
@@ -572,6 +578,8 @@ namespace GreyWardenPolicePurity
             if (party == null || settlement == null || !GwpWardenRecruitment.IsWardenParty(party) ||
                 !IsFireswornPriest(source))
                 return;
+            GwpAiDiagnostics.WriteFaith("PRIEST_RECRUITED",
+                "party=" + party.StringId + "; village=" + settlement.StringId + "; troop=" + troop.StringId + "; count=" + count);
             MoveKits(settlement.StringId, party.StringId, count, "priest_recruit");
         }
 

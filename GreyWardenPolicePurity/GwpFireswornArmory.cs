@@ -401,10 +401,49 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        // ---------------------------------------------------------------- 给玩家看（GwpFireswornArmoryView）
+
+        /// <summary>当前这座信众村排第一，再是别的信众村，最后是每支灰袍领主部队。</summary>
+        internal static IEnumerable<(string Id, string Title)> ArmoryHolders(Settlement current)
+        {
+            if (_instance == null)
+                yield break;
+            yield return (current.StringId, ArmoryHolderTitle(current.StringId));
+            foreach (string village in _instance._villages.Keys.Where(id => id != current.StringId))
+                yield return (village, ArmoryHolderTitle(village));
+            foreach (MobileParty lord in PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty))
+                yield return (lord.StringId, ArmoryHolderTitle(lord.StringId));
+        }
+
+        internal static string ArmoryHolderTitle(string holder)
+        {
+            int items = _instance!._armories.TryGetValue(holder, out ItemRoster? ledger) ? CountItems(ledger) : 0;
+            return _instance._villages.ContainsKey(holder)
+                ? GwpText.Get("{=gwp_fs_armory_village}Armory of {VILLAGE} ({ITEMS} pieces)",
+                    "VILLAGE", Settlement.Find(holder).Name, "ITEMS", items)
+                : GwpText.Get("{=gwp_fs_armory_party}Armory of {PARTY} ({ITEMS} pieces)",
+                    "PARTY", FindParty(holder)!.Name, "ITEMS", items);
+        }
+
+        internal static ItemRoster ArmoryLedger(string holder) =>
+            _instance!._armories.TryGetValue(holder, out ItemRoster? ledger) ? ledger : new ItemRoster();
+
+        internal static string ArmorySummary(string holder)
+        {
+            if (!_instance!._armories.ContainsKey(holder))
+                return GwpText.Get("{=gwp_fs_armory_empty}Nothing here yet.");
+            ArmoryPlan plan = _instance.PlanOf(holder);
+            return GwpText.Get("{=gwp_fs_armory_summary}Soldiers to arm: {MEN}. Given a weapon: {ARMED}. Average weapon tier {WEAPON}, average armour tier {ARMOR}. Kept back for new zealots: {FREE} pieces. Surplus to be sold: {SURPLUS} pieces.",
+                "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => !kit[KitMain].IsEmpty),
+                "WEAPON", plan.ZealotWeaponTier.ToString("0.0"), "ARMOR", plan.ZealotArmorTier.ToString("0.0"),
+                "FREE", CountItems(plan.Free), "SURPLUS", CountItems(plan.Surplus));
+        }
+
         // ---------------------------------------------------------------- 每日监控
 
         private void WriteDailySummary()
         {
+            WriteDailyAnomalies();
             foreach (FaithVillage row in _villages.Values)
             {
                 Settlement village = Settlement.Find(row.VillageId);
@@ -439,7 +478,8 @@ namespace GreyWardenPolicePurity
                     "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count) +
                     "; inventoryValue=" + NonFoodValue(lord.ItemRoster) +
                     "; errand=" + (_errands.TryGetValue(lord.StringId, out Errand? errand) ? errand.VillageId + ":" + errand.Reason : "-") +
-                    "; case=" + CrimePool.HasTask(lord.StringId) + "; wage=" + lord.TotalWage);
+                    "; case=" + CrimePool.HasTask(lord.StringId) + "; wage=" + lord.TotalWage +
+                    "; partyGold=" + lord.PartyTradeGold);
             }
             GwpAiDiagnostics.WriteFaith("DAILY_TOTALS",
                 "faithVillages=" + _villages.Count + "; zealots=" + _villages.Values.Sum(row => row.Zealots) +
@@ -448,6 +488,86 @@ namespace GreyWardenPolicePurity
                 "; treasury=" + PoliceResourceManager.GetJudicialTreasuryBalance() +
                 "; errands=" + _errands.Count + "; activeParties=" +
                 _faithParties.Values.Count(entry => entry.Phase != FaithPartyPhase.Home));
+        }
+
+        /// <summary>
+        /// 每天主动找问题（用户 2026-10-06：监控要能看平衡、主动找问题）。每一条是一个 stage=ANOMALY 行，
+        /// kind 说明是哪一类；tools/Analyze-Firesworn.py 按 kind 汇总。
+        /// </summary>
+        private void WriteDailyAnomalies()
+        {
+            double now = CampaignTime.Now.ToHours;
+            void Flag(string kind, string details) => GwpAiDiagnostics.WriteFaith("ANOMALY", "kind=" + kind + "; " + details);
+
+            foreach (FaithParty record in _faithParties.Values)
+            {
+                MobileParty party = FindParty(record.PartyId)!;
+                Settlement home = Settlement.Find(record.HomeId);
+                if (record.Phase == FaithPartyPhase.Home && party.CurrentSettlement != home)
+                    Flag("FAITH_PARTY_ADRIFT", "party=" + party.StringId + "; home=" + home.StringId +
+                        "; distance=" + party.GetPosition2D.Distance(home.GetPosition2D).ToString("0.0") +
+                        "; default=" + party.DefaultBehavior);
+                if (record.Phase != FaithPartyPhase.Home && now - record.PhaseHour > 72d)
+                    Flag("FAITH_PARTY_TRIP_LONG", "party=" + party.StringId + "; phase=" + record.Phase +
+                        "; target=" + record.TargetId + "; hours=" + (now - record.PhaseHour).ToString("0"));
+            }
+
+            foreach (KeyValuePair<string, Errand> pair in _errands)
+                if (now - pair.Value.StartHour > 72d)
+                    Flag("ERRAND_LONG", "party=" + pair.Key + "; village=" + pair.Value.VillageId +
+                        "; reason=" + pair.Value.Reason + "; hours=" + (now - pair.Value.StartHour).ToString("0"));
+
+            List<MobileParty> lords = PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty).ToList();
+            List<string> shortLords = lords
+                .Where(lord => lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandStrength)
+                .Select(lord => lord.StringId + ":" + lord.Party.NumberOfAllMembers + "/" + lord.Party.PartySizeLimit)
+                .ToList();
+            foreach (MobileParty lord in lords)
+            {
+                int prisoners = CountRegularPrisoners(lord);
+                if (prisoners >= lord.Party.PrisonerSizeLimit * GwpTuning.Firesworn.ErrandUrgentPrisonerShare &&
+                    !_errands.ContainsKey(lord.StringId))
+                    Flag("PRISONERS_PILING", "party=" + lord.StringId + "; prisoners=" + prisoners + "/" +
+                        lord.Party.PrisonerSizeLimit + "; claimedBy=" + (ClaimedByOtherDuty(lord) ?? "-") +
+                        "; case=" + CrimePool.HasTask(lord.StringId));
+                if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandUrgentStrength &&
+                    !_errands.ContainsKey(lord.StringId))
+                    Flag("LORD_UNDERSTRENGTH", "party=" + lord.StringId + "; members=" + lord.Party.NumberOfAllMembers +
+                        "/" + lord.Party.PartySizeLimit + "; claimedBy=" + (ClaimedByOtherDuty(lord) ?? "-") +
+                        "; recruitVillage=" + (NearestErrandVillage(lord, needRecruits: true)?.StringId ?? "-"));
+            }
+
+            foreach (FaithVillage row in _villages.Values)
+            {
+                Settlement village = Settlement.Find(row.VillageId);
+                Hero? priest = FindLivingPriest(row);
+                if (priest == null)
+                    Flag("NO_PRIEST", "village=" + row.VillageId + "; zealots=" + row.Zealots +
+                        "; share=" + (row.Zealots / Math.Max(1f, village.Village.Hearth)).ToString("0.00"));
+                else if (priest.VolunteerTypes.All(troop => troop != null) && shortLords.Count > 0)
+                    Flag("PRIEST_SLOTS_UNUSED", "village=" + row.VillageId + "; shortLords=" + string.Join(",", shortLords));
+                if (village.Village.Hearth < GwpTuning.Firesworn.DirectZealotHearthFloor + 10f)
+                    Flag("HEARTH_AT_FLOOR", "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0"));
+                if (row.Zealots > ZealotCap(village))
+                    Flag("ZEALOTS_OVER_CAP", "village=" + row.VillageId + "; zealots=" + row.Zealots + "; cap=" + ZealotCap(village));
+                if (_dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon) &&
+                    dungeon.TotalManCount > 2 * GwpTuning.Firesworn.DamnationMaximumPrisoners)
+                    Flag("DUNGEON_BACKLOG", "village=" + row.VillageId + "; dungeon=" + dungeon.TotalManCount);
+                ArmoryPlan plan = PlanOf(row.VillageId);
+                if (plan.Sets.Count > 0 && CountItems(ItemsOf(_armories, row.VillageId)) > plan.Sets.Count &&
+                    plan.Sets.Count(kit => !kit[KitMain].IsEmpty) < plan.Sets.Count / 10)
+                    Flag("ARMORY_UNARMED", "village=" + row.VillageId + "; armed=" +
+                        plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count +
+                        "; items=" + CountItems(ItemsOf(_armories, row.VillageId)) + "; surplus=" + CountItems(plan.Surplus));
+                if (_goods.TryGetValue(row.VillageId, out ItemRoster? goods) && goods.TotalValue > 50000)
+                    Flag("GOODS_BACKLOG", "village=" + row.VillageId + "; goodsValue=" + goods.TotalValue +
+                        "; town=" + village.Village.TradeBound?.StringId + "; townGold=" + village.Village.TradeBound?.Town.Gold);
+            }
+
+            int treasury = PoliceResourceManager.GetJudicialTreasuryBalance();
+            if (treasury < GwpTuning.Reconstruction.MinimumTreasuryReserve + GwpTuning.Reconstruction.MaximumCost)
+                Flag("TREASURY_LOW", "treasury=" + treasury + "; reconstructionNeeds=" +
+                    (GwpTuning.Reconstruction.MinimumTreasuryReserve + GwpTuning.Reconstruction.MinimumCost));
         }
 
         private static string DaysSince(double hour) =>

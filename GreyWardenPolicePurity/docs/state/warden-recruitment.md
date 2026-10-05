@@ -2,7 +2,7 @@
 
 > 当前状态：第一步已部署待实测（2026-10-05）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 加两个补丁：灰袍领主城里不卖普通俘虏、不卖背包东西；招兵连装备带走（见 `firesworn-economy.md`）；2026-10-05 新建
+> 已复核至：2026-10-06 雇佣兵补丁改挂 `ApplyRecruitMercenary`，修祭司招不到兵；2026-10-05 加两个补丁：灰袍领主城里不卖普通俘虏、不卖背包东西；招兵连装备带走（见 `firesworn-economy.md`）；2026-10-05 新建
 > 覆盖源码：`GwpWardenRecruitment.cs`
 > 待实测：见文末
 
@@ -36,7 +36,7 @@
 | 原版路子 | 怎么关 |
 |---|---|
 | 普通要人的志愿兵 | `GwpFireswornVolunteerModel.MaximumIndexHeroCanRecruitFromHero`：灰袍买非祭司、非灰袍买祭司，都返回 0 |
-| 城镇、村子里的雇佣兵 | 前置补丁 `RecruitmentCampaignBehavior.CheckRecruiting`，灰袍领主队跳过 |
+| 城镇、村子里的雇佣兵 | 前置补丁 `RecruitmentCampaignBehavior.ApplyRecruitMercenary`，灰袍领主队跳过。不能挡整个 `CheckRecruiting`：领主从要人那里招兵也在它里面（依据：C#反编译；实机诊断 2026-10-06：挡整段后祭司格子一周没人招） |
 | 招降俘虏 | `GwpWardenPrisonerRecruitmentModel.ShouldPartyRecruitPrisoners` 对灰袍部队返回 false |
 
 原版还有「小势力在野外凭空招兵」，只给 minor faction，灰袍不是，不受影响。（依据：C#反编译 v1.4.8）

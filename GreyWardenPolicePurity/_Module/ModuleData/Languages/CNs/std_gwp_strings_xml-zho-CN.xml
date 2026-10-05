@@ -1447,5 +1447,17 @@
   <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。她传的教义说：火只从母亲传给女儿，只有女人能照看它；男人只能喂它——用他们的力气，用他们的顺从；不肯跪下的，就用他们自己。在她治下，村里的女人向火立誓、拿起长矛；男人给火堆挑柴，眼睛不许抬起来。" />
   <string id="gwp_fs_village_stores" text="地牢：{PRISONERS}名俘虏等着上火堆。军械库：{ARMORY}件装备，给狂信者用。货仓：值{GOODS}第纳尔的东西，等狂信者运去城里卖。" />
   <string id="gwp_fs_caravan_party" text="{VILLAGE}的狂信者" />
+  <string id="gwp_fs_ritual_popup_close" text="关闭" />
+  <string id="gwp_fs_armory_option" text="永恒之火：军械库" />
+  <string id="gwp_fs_armory_holders_title" text="永恒之火的军械库" />
+  <string id="gwp_fs_armory_holders_text" text="每座信众村、每支灰袍领主的部队都有自己的军械库。狂信者和新兵穿的就是库里的东西，一个兵一套。选一个看看里面有什么。" />
+  <string id="gwp_fs_armory_open" text="打开" />
+  <string id="gwp_fs_armory_close" text="关闭" />
+  <string id="gwp_fs_armory_back" text="返回" />
+  <string id="gwp_fs_armory_item" text="{NAME} × {COUNT}" />
+  <string id="gwp_fs_armory_village" text="{VILLAGE}的军械库（{ITEMS}件）" />
+  <string id="gwp_fs_armory_party" text="{PARTY}的军械库（{ITEMS}件）" />
+  <string id="gwp_fs_armory_empty" text="库里还什么都没有。" />
+  <string id="gwp_fs_armory_summary" text="要武装的兵：{MEN}人，分到兵器的：{ARMED}人。兵器平均{WEAPON}阶，护甲平均{ARMOR}阶。给新狂信者留着的：{FREE}件。多出来要卖掉的：{SURPLUS}件。" />
 </strings>
 </base>

@@ -37,8 +37,12 @@ namespace GreyWardenPolicePurity
                 switch (record.Phase)
                 {
                     case FaithPartyPhase.Home:
-                        // 在家也一直续「去本村」：人已经在村里时原版就待着不动，不续的话意图过期后会被原版拉去别处。
-                        GreyWardenPartyDesireBehavior.RequestVisit(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
+                        if (party.CurrentSettlement == home && party.Ai.DoNotMakeNewDecisions)
+                            break;
+                        if (HasArrived(party, home))
+                            Park(party, home);
+                        else
+                            GreyWardenPartyDesireBehavior.RequestVisit(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
                         break;
 
                     case FaithPartyPhase.Outbound:
@@ -102,11 +106,28 @@ namespace GreyWardenPolicePurity
                 unsold += element.Amount;
             }
             SetPhase(record, FaithPartyPhase.Home, record.HomeId);
-            if (party.CurrentSettlement != home)
-                EnterSettlementAction.ApplyForParty(party, home);
+            Park(party, home);
             GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Disciples ? "DISCIPLES_HOME" : "CARAVAN_HOME",
                 "party=" + party.StringId + "; home=" + home.StringId + "; men=" + party.MemberRoster.TotalManCount +
                 "; proceedsToTreasury=" + proceeds + "; unsoldBack=" + unsold);
+        }
+
+        /// <summary>
+        /// 让常驻队待在村子里面、看不见、不动，照原版村民队在家的样子。
+        /// 不冻住的话，原版会把这种无领主的自定义队拉出村，停在村口不动（实机诊断 2026-10-06：
+        /// 传教队回村 5 小时后出村，此后 56 小时一直在村口 Hold，「去本村」的竞价赢了也不落地）。
+        /// 下次出发时下达新意图，<see cref="GreyWardenPartyDesireBehavior.RequestImmediateRethink"/> 会解冻。
+        /// </summary>
+        private static void Park(MobileParty party, Settlement settlement)
+        {
+            GreyWardenPartyDesireBehavior.ClearIntent(party);
+            if (party.CurrentSettlement != settlement)
+            {
+                if (party.CurrentSettlement != null)
+                    LeaveSettlementAction.ApplyForParty(party);
+                EnterSettlementAction.ApplyForParty(party, settlement);
+            }
+            party.Ai.SetDoNotMakeNewDecisions(true);
         }
 
         private static void SetPhase(FaithParty record, FaithPartyPhase phase, string targetId)
@@ -137,7 +158,7 @@ namespace GreyWardenPolicePurity
             party.ActualClan = police;
             party.MemberRoster.Clear();
             PoliceResourceManager.OutfitTemporaryDutyParty(party);
-            EnterSettlementAction.ApplyForParty(party, home);
+            Park(party, home);
             _faithParties[party.StringId] = new FaithParty
             {
                 PartyId = party.StringId,
@@ -255,7 +276,9 @@ namespace GreyWardenPolicePurity
                 }
                 goods.Clear();
                 row.LastCaravan = now;
-                SetPhase(_faithParties[party.StringId], FaithPartyPhase.Outbound, town.StringId);
+                FaithParty cart = _faithParties[party.StringId];
+                cart.Stops = 0;
+                SetPhase(cart, FaithPartyPhase.Outbound, town.StringId);
                 GreyWardenPartyDesireBehavior.RequestVisit(party, town, GwpTuning.Firesworn.FaithPartyVisitScore);
                 GwpAiDiagnostics.WriteFaith("CARAVAN_DISPATCHED",
                     "party=" + party.StringId + "; home=" + home.StringId + "; town=" + town.StringId +
@@ -286,10 +309,27 @@ namespace GreyWardenPolicePurity
                 sold += amount;
             }
             party.PartyTradeGold += proceeds;
-            SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
+            record.Stops++;
+            int unsoldValue = NonFoodValue(party.ItemRoster);
+            // 一座城的金库常常只有两三万，一车俘虏装备能值几十万（实机诊断 2026-10-06：装车估值 32.7 万只卖出 9%，
+            // 把城镇金库卖空）。卖不完就去附近还有钱的城接着卖，最多 3 座。
+            Settlement? next = unsoldValue >= GwpTuning.Firesworn.CaravanMinimumGoodsValue &&
+                               record.Stops < GwpTuning.Firesworn.CaravanMaxTowns
+                ? Town.AllTowns.Select(entry => entry.Settlement)
+                    .Where(settlement => settlement != town && !settlement.IsUnderSiege &&
+                        settlement.Town.Gold >= GwpTuning.Firesworn.CaravanMinimumTownGold &&
+                        !FactionManager.IsAtWarAgainstFaction(PoliceStats.GetPoliceClan(), settlement.MapFaction))
+                    .OrderBy(settlement => town.GetPosition2D.Distance(settlement.GetPosition2D))
+                    .FirstOrDefault()
+                : null;
+            if (next != null)
+                SetPhase(record, FaithPartyPhase.Outbound, next.StringId);
+            else
+                SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
             GwpAiDiagnostics.WriteFaith("CARAVAN_SOLD",
                 "party=" + party.StringId + "; town=" + town.StringId + "; sold=" + sold + "; proceeds=" + proceeds +
-                "; townGoldLeft=" + town.Town.Gold);
+                "; townGoldLeft=" + town.Town.Gold + "; unsoldValue=" + unsoldValue + "; stop=" + record.Stops +
+                "; next=" + (next?.StringId ?? "home"));
         }
     }
 }

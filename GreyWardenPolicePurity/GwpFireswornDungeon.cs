@@ -127,7 +127,12 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 进村交接
 
-        /// <summary>普通俘虏交进地牢；背包里除了口粮都捐给村子；军械库用不完的捐进村军械库。</summary>
+        /// <summary>
+        /// 普通俘虏交进地牢；背包里除了口粮都捐给村子：狂信者能用的兵器、护甲进村军械库，其余进货仓；
+        /// 部队军械库余量以外的捐进村军械库。部队每天把多出来的装备挪进背包（<see cref="RebalanceArmories"/>），
+        /// 所以背包里的兵器护甲不进军械库就会被当货卖掉（实机诊断 2026-10-06：村军械库一周都是空的，
+        /// 俘虏扒下的装备全被狂信者队拉去城里卖了）。
+        /// </summary>
         private void HandOver(MobileParty party, Settlement village)
         {
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
@@ -143,19 +148,30 @@ namespace GreyWardenPolicePurity
             _stripped.Remove(party.StringId);
 
             ItemRoster goods = ItemsOf(_goods, village.StringId);
-            int goodsCount = 0, goodsValue = 0;
+            ItemRoster villageArmory = ItemsOf(_armories, village.StringId);
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
+            int goodsCount = 0, goodsValue = 0, armoryItems = 0;
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
                 if (element.EquipmentElement.Item.IsFood)
                     continue;
-                goods.AddToCounts(element.EquipmentElement, element.Amount);
+                if (KitKind(element.EquipmentElement.Item, zealot) >= 0)
+                {
+                    villageArmory.AddToCounts(element.EquipmentElement, element.Amount);
+                    armoryItems += element.Amount;
+                }
+                else
+                {
+                    goods.AddToCounts(element.EquipmentElement, element.Amount);
+                    goodsCount += element.Amount;
+                    goodsValue += element.Amount * element.EquipmentElement.ItemValue;
+                }
                 party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
-                goodsCount += element.Amount;
-                goodsValue += element.Amount * element.EquipmentElement.ItemValue;
             }
+            _plans.Remove(village.StringId);
 
-            int armoryItems = DonateArmorySurplus(party.StringId, village.StringId);
+            armoryItems += DonateArmorySurplus(party.StringId, village.StringId);
             GwpAiDiagnostics.WriteFaith("HANDOVER",
                 "party=" + party.StringId + "; village=" + village.StringId + "; prisoners=" + prisoners +
                 "; dungeon=" + dungeon.TotalManCount + "; goods=" + goodsCount + "; goodsValue=" + goodsValue +
@@ -192,7 +208,7 @@ namespace GreyWardenPolicePurity
                 MobileParty? party = FindParty(pair.Key);
                 Settlement village = Settlement.Find(pair.Value.VillageId);
                 string? reason = party?.IsActive != true || party.LeaderHero?.IsActive != true ? "party_gone"
-                    : IsClaimedByOtherDuty(party) ? "claimed_by_other_duty"
+                    : ClaimedByOtherDuty(party!) is string duty ? "claimed_by_" + duty
                     : !IsErrandDestination(village) ? "village_unusable"
                     : now - pair.Value.StartHour > GwpTuning.Firesworn.ErrandTimeoutHours ? "timeout"
                     : null;
@@ -214,7 +230,7 @@ namespace GreyWardenPolicePurity
             {
                 if (_errands.ContainsKey(party.StringId) || !party.IsActive || !party.IsLordParty ||
                     party.LeaderHero?.IsActive != true || party.MapEvent != null || party.IsCurrentlyAtSea ||
-                    party.IsDisbanding || IsClaimedByOtherDuty(party))
+                    party.IsDisbanding || ClaimedByOtherDuty(party) != null)
                     continue;
                 // 缺兵只在有信众村招得到兵时才算：不然领主进了村招不到人，出来又要回去。
                 Settlement? recruitVillage = NearestErrandVillage(party, needRecruits: true);
@@ -288,15 +304,16 @@ namespace GreyWardenPolicePurity
         /// 比信众村差事更要紧的活：玩家相关、强制善后、重建、请愿、练兵、协力、军团。普通案件不在此列——
         /// 灰袍优先做和信众村相关的事（用户裁定）。
         /// </summary>
-        private static bool IsClaimedByOtherDuty(MobileParty party) =>
-            party.Army != null ||
-            PoliceEnforcementBehavior.IsPartyOccupiedByAssistance(party) ||
-            GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ||
-            GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ||
-            GreyWardenIssueResolutionBehavior.IsIssueDutyParty(party) ||
-            GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(party) ||
-            GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(party) ||
-            GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(party);
+        private static string? ClaimedByOtherDuty(MobileParty party) =>
+            party.Army != null ? "army"
+            : PoliceEnforcementBehavior.IsPartyOccupiedByAssistance(party) ? "assistance"
+            : GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ? "village_relief"
+            : GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ? "reconstruction"
+            : GreyWardenIssueResolutionBehavior.IsIssueDutyParty(party) ? "issue"
+            : GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(party) ? "training"
+            : GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(party) ? "player_request"
+            : GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(party) ? "player_troop_order"
+            : null;
 
         private void CompleteErrand(MobileParty party, Settlement village)
         {

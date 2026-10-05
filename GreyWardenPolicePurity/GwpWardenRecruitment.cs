@@ -129,14 +129,16 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 灰袍领主不雇城里的雇佣兵。原版领主队在城镇、村子里每小时、以及进门时都走这里
-    /// （C#反编译 v1.4.8 RecruitmentCampaignBehavior.CheckRecruiting）。
+    /// 灰袍领主不雇城里的雇佣兵。只挡真正雇人的那一步：原版领主从要人那里招志愿兵
+    /// （RecruitVolunteersFromNotable）也是在 CheckRecruiting 里面调的，整段挡掉祭司就招不到兵了
+    /// （C#反编译 v1.4.8 RecruitmentCampaignBehavior.CheckRecruiting；实机诊断 2026-10-06：
+    /// 祭司格子一周都是满的，灰袍领主进村一个都没招）。
     /// </summary>
-    [HarmonyPatch(typeof(RecruitmentCampaignBehavior), "CheckRecruiting")]
+    [HarmonyPatch(typeof(RecruitmentCampaignBehavior), "ApplyRecruitMercenary")]
     internal static class GwpWardenNoMercenariesPatch
     {
-        private static bool Prefix(MobileParty mobileParty) =>
-            !(mobileParty.IsLordParty && GwpWardenRecruitment.IsWardenParty(mobileParty));
+        private static bool Prefix(MobileParty side1Party) =>
+            !(side1Party.IsLordParty && GwpWardenRecruitment.IsWardenParty(side1Party));
     }
 
     /// <summary>

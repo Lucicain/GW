@@ -43,6 +43,7 @@
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
 | `Check-CodeHygiene.py` | 每个不重新抛出的 catch 都带 `依据：`；每个常量、字段、属性、方法都有人引用。预提交钩子据此拒绝提交 | `0 个 catch 缺依据 / 0 个声明无人引用` |
+| `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `firesworn-economy.md`「监控」） | 不是闸门，读结果 |
 
 `Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1`、`Verify-CrimeReceipts.ps1` 两边都能跑。两个 `.py` 检查用 python。
 

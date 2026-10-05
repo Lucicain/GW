@@ -1,4 +1,4 @@
-﻿namespace GreyWardenPolicePurity
+namespace GreyWardenPolicePurity
 {
     internal static class GwpTuning
     {
@@ -334,6 +334,9 @@
             public const int CaravanSize = 8;
             public const int CaravanMinimumGoodsValue = 2000;
             public const float CaravanIntervalDays = 3f;
+            // 一趟最多卖几座城；下一座城金库至少要有这么多钱才去。
+            public const int CaravanMaxTowns = 3;
+            public const int CaravanMinimumTownGold = 5000;
 
             // 两支常驻队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
             public const float FaithPartyVisitScore = 8f;
@@ -348,6 +351,9 @@
             public const int ErrandPrisoners = 15;
             public const float ErrandStrength = 0.85f;
             public const int ErrandGoodsValue = 4000;
+
+            // 玩家离仪式村子这么近时，仪式一开始就弹出配图配音。
+            public const float RitualNoticeDistance = 25f;
 
             // 案子发生在信众村这个距离内，算信众村的案子，优先派人。
             public const float FaithCaseRadius = 6f;
