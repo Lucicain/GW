@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
+> 已复核至：2026-10-05 派活顺序加入信众村差事、信众村案件优先，领主不再主持传教；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs`
 > 待实测：无
 
@@ -20,13 +20,15 @@
 2. **强制差事**：村庄被焚后的善后会把领主从普通案件上撤下来（见 `village-relief.md`）。
 3. **本职优先的活**：重建本职在有待重建的村子时、请愿本职在有待办请愿时，不接普通案件。
    练兵本职在练兵排队时不接新差事。
-4. **普通案件**（`PoliceEnforcementBehavior.AssignTasks`）分两轮：
-   - 第一轮：商队本职只接最近的商队案，护村本职只接最近的村庄案；
-   - 第二轮：所有还能接普通案件的领主，不分本职，接最近的任何案件。
+4. **信众村差事**：交俘虏、捐东西、缺兵补兵（竞价分 1.5）。紧急时连追捕阶段的普通案件也退回案件池；
+   差事期间不接普通案件。详见 `firesworn-economy.md`。灰袍领主不主持传教。（依据：用户裁定 2026-10-05：灰袍优先做和信众村相关的事）
+5. **普通案件**（`PoliceEnforcementBehavior.AssignTasks`）分三轮：
+   - 第一轮：信众村 6 距离内的案子，派给最近的空闲领主；
+   - 第二轮：商队本职只接最近的商队案，护村本职只接最近的村庄案；
+   - 第三轮：所有还能接普通案件的领主，不分本职，接最近的任何案件。
    
    案件池覆盖全大陆，打仗时几乎不空，所以六个人大部分时间都在办案。
-5. **帮忙的活**：别的本职闲下来，也去帮重建、请愿。条件是没有待派案件，也没有自己本职的活（`GreyWardenDutyScheduler.HasPreferredWork`）。
-6. **火誓者传教**：条件比上一条还严。第一版的条件见 `firesworn.md`。
+6. **帮忙的活**：别的本职闲下来，也去帮重建、请愿。条件是没有待派案件，也没有自己本职的活（`GreyWardenDutyScheduler.HasPreferredWork`）。
 7. **巡区**：什么都没有时去巡区。
 
 ## 欲望竞价（`GreyWardenPartyDesireBehavior`）

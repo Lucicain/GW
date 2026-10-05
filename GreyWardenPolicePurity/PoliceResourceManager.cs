@@ -179,25 +179,18 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 全大陆村庄按当前户数每日向司法公库缴纳保护费：每户 0.05 第纳尔。
+        /// 只有信众村按当前户数每日向司法公库缴纳保护费（用户裁定 2026-10-05：不再全图收钱）。
         /// 户数只作为计费基数，不因缴费发生变化。
         /// </summary>
         private static void CollectDailyVillageProtectionContributions()
         {
-            double exactContribution = 0d;
-
-            foreach (Village? village in Village.All)
-            {
-                if (village == null) continue;
-
-                float currentHearth = Math.Max(0f, village.Hearth);
-                exactContribution += currentHearth * 0.05d;
-            }
-
-            int totalContribution = Math.Max(
-                0,
-                (int)Math.Floor(exactContribution));
+            double exactContribution = Village.All
+                .Where(village => GwpFireswornBehavior.IsPreachedVillage(village.Settlement))
+                .Sum(village => (double)village.Hearth * GwpTuning.Firesworn.FaithProtectionPerHearth);
+            int totalContribution = (int)Math.Floor(exactContribution);
             CreditJudicialTreasury(totalContribution);
+            GwpAiDiagnostics.WriteFaith("PROTECTION_FEE", "amount=" + totalContribution +
+                "; treasuryAfter=" + GetJudicialTreasuryBalance());
         }
 
         private static void EnsureAllAdultGreyWardensAreCombatants()
@@ -781,6 +774,13 @@ namespace GreyWardenPolicePurity
                 return false;
             treasurer.ChangeHeroGold(-cost);
             return true;
+        }
+
+        /// <summary>烈火责罚每烧一人从公库付钱。调用方已按余额算好人数。</summary>
+        internal static void SpendJudicialTreasury(int amount)
+        {
+            if (amount > 0)
+                PoliceStats.GetPoliceClan().Leader.ChangeHeroGold(-amount);
         }
 
         internal static void RefundJudicialTreasury(int amount) =>

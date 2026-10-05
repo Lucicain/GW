@@ -1445,5 +1445,7 @@
   <string id="gwp_fs_priest_name_23" text="炬宁" />
   <string id="gwp_fs_priest_name_24" text="薪传" />
   <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。她传的教义说：火只从母亲传给女儿，只有女人能照看它；男人只能喂它——用他们的力气，用他们的顺从；不肯跪下的，就用他们自己。在她治下，村里的女人向火立誓、拿起长矛；男人给火堆挑柴，眼睛不许抬起来。" />
+  <string id="gwp_fs_village_stores" text="地牢：{PRISONERS}名俘虏等着上火堆。军械库：{ARMORY}件装备，给狂信者用。货仓：值{GOODS}第纳尔的东西，等狂信者运去城里卖。" />
+  <string id="gwp_fs_caravan_party" text="{VILLAGE}的狂信者" />
 </strings>
 </base>

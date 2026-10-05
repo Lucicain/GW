@@ -95,6 +95,10 @@ namespace GreyWardenPolicePurity
                 ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. Warden lords recruit from her, and take the lowest zealots straight from the village's households.",
                     "PRIEST", priest.Name)
                 : GwpText.Get("{=gwp_fs_village_no_priest}No priest of the Eternal Fire lives here."));
+            GwpFireswornBehavior.GetVillageStores(village, out int prisoners, out int armoryItems, out int goodsValue);
+            body += "\n\n" + GwpText.Get(
+                "{=gwp_fs_village_stores}Dungeon: {PRISONERS} prisoners awaiting the fire. Armory: {ARMORY} pieces to arm the zealots. Storehouse: goods worth {GOODS} denars, waiting for the zealots to carry them to market.",
+                "PRISONERS", prisoners, "ARMORY", armoryItems, "GOODS", goodsValue);
             InformationManager.ShowInquiry(new InquiryData(
                 GwpText.Get("{=gwp_fs_village_info_title}The Eternal Fire"), body,
                 true, false, GwpText.Get("{=gwp_fs_village_info_ok}Close"), string.Empty, null, null));

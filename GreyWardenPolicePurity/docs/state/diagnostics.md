@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-02 工作树（退休主队 NPC 旧案与送信队诊断）
+> 已复核至：2026-10-05 火誓者监控改成 `WriteFaith` 一路（`FIRESWORN` 行），覆盖信众村经济整套；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-02 工作树（退休主队 NPC 旧案与送信队诊断）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
@@ -66,7 +66,7 @@
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 2026-09-25 调停 0 人队崩溃、2026-09-26 改追绕过冷却都靠它取证；覆盖的巡逻、练兵、协力等子系统多数尚未提取 | 对应子系统提取成 state 且无待观察项时，按主题拆掉健康路径 |
-| `GwpAiDiagnostics` 的 `FIRESWORN_*` 行（传教指派、开始、完成、散会，烧人，门徒出发） | 火誓者第一版待实测：看领主有没有闲时去传教、门徒能否走到、人数怎么变 | 用户确认火誓者第一版可用后删 |
+| `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见 `firesworn-economy.md`「监控」） | 信众村经济整套待实测：看俘虏、地牢、烧人、两支常驻队、领主差事、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | 失败路径：`GwpRuntimeFaultWatch`、`GwpEngineAssertDiagnostics`、`DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 不退休 |
 
 已退休的：送信队的 AI 诊断（2026-10-02 为查卖俘虏折返临时纳入，用户确认修复后退出）；`PLAYER_JUSTICE` 的 `companionCases` 字段与 `COMPANION_FINE_SETTLED`（2026-10-02 用户确认主队 NPC 旧案后删除；失败路径 `COMPANION_FINE_INCOMPLETE` 保留）；援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；

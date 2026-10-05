@@ -2,7 +2,7 @@
 
 > 当前状态：第一步已部署待实测（2026-10-05）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 新建
+> 已复核至：2026-10-05 加两个补丁：灰袍领主城里不卖普通俘虏、不卖背包东西；招兵连装备带走（见 `firesworn-economy.md`）；2026-10-05 新建
 > 覆盖源码：`GwpWardenRecruitment.cs`
 > 待实测：见文末
 
@@ -57,6 +57,11 @@
 - 原版总工资是逐格读 `TroopWage` 累加的，所以只能拿掉人，不能事后减。
   不挂部队的名册加英雄没有副作用（`TroopRoster.AddToCountsAtIndex`）。（依据：C#反编译）
 - 玩家部队里的灰袍兵同样不领饷。
+
+## 灰袍领主不在城里卖俘虏和东西
+
+普通俘虏、背包里的东西留着交给信众村（`GwpWardenKeepPrisonersPatch`、`GwpWardenKeepLootPatch`，见 `firesworn-economy.md`）。
+缺兵时专程去信众村补兵的差事也在那里。
 
 ## 开局
 

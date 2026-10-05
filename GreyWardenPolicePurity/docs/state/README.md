@@ -116,7 +116,8 @@ python tools/Check-StateFreshness.py
 | [`warden-recruitment.md`](warden-recruitment.md) | 灰袍只在信众村招兵（祭司格子、直接招狂信者）、关掉原版补兵路、灰袍兵不领饷 |
 | [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮、兵员纯化 |
-| [`firesworn.md`](firesworn.md) | 火誓者：狂信者、集会传教、烈火责罚、祭司与门徒——第一版已部署待实测，数值未定 |
+| [`firesworn.md`](firesworn.md) | 火誓者：用户裁定、原版挂点、信众村、狂信者、祭司、仪式锁村 |
+| [`firesworn-economy.md`](firesworn-economy.md) | 信众村经济：地牢与烧人、传教队与狂信者队、领主信众村差事、军械库、守村收益、保护费——已部署待实测 |
 
 ### 战斗
 

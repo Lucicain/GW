@@ -72,6 +72,13 @@ namespace GreyWardenPolicePurity
             return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police);
         }
 
+        /// <summary>
+        /// 灰袍领主的信众村差事紧急时（俘虏快装满、兵快打光），普通案件让路：还在追捕阶段的普通案件退回案件池。
+        /// 已经宣战、组了协力、玩家相关的案子不动（灰袍优先做和信众村相关的事，用户裁定 2026-10-05）。
+        /// </summary>
+        internal static bool TryReleaseOrdinaryCaseForFaithErrand(MobileParty police) =>
+            _instance != null && _instance.ReleaseOrdinaryCaseForFaithErrand(police);
+
         internal static bool TryReservePartyForPlayerRequest(MobileParty? police)
         {
             return _instance != null && _instance.TryPreparePartyForPlayerRequest(police);
@@ -618,6 +625,22 @@ namespace GreyWardenPolicePurity
                 .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            // 信众村跟前的案子最先派：灰袍优先做和信众村相关的事（用户裁定 2026-10-05）。
+            foreach (MobileParty pp in available.ToList())
+            {
+                if (!CrimeState.IsDispatchReady)
+                    break;
+
+                float musterable = GetMaximumMusterableStrength(pp);
+                CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
+                    candidate => GwpFireswornBehavior.IsNearFaithVillage(candidate.Location) &&
+                        !IsCaseUnderStrengthCooldown(candidate) &&
+                        IsCaseWithinReach(candidate, musterable));
+                if (crime == null) continue;
+                BeginTask(pp, crime);
+                available.Remove(pp);
+            }
+
             // First pass preserves each office's own priority. The second pass lets every
             // idle office holder help with any ordinary case already admitted to the pool.
             foreach (MobileParty pp in available.ToList())
@@ -736,6 +759,7 @@ namespace GreyWardenPolicePurity
                 return false;
             if (IsAssistanceOccupied(pp)) return false;
             if (CrimeState.HasTask(pp.StringId)) return false;
+            if (GwpFireswornBehavior.IsOnFaithErrand(pp)) return false;
             return PoliceResourceManager.IsReady(pp);
         }
 

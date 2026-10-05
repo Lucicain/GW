@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
@@ -153,5 +154,42 @@ namespace GreyWardenPolicePurity
             if (GwpWardenRecruitment.IsWardenBuyer(hero))
                 __result = (GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 0f);
         }
+    }
+
+    /// <summary>
+    /// 灰袍领主的普通俘虏送去信众村烧，不在城里卖（用户裁定）。原版 AI 部队进入不交战的城堡、城镇就把普通俘虏和
+    /// 敌对英雄全部卖掉（C#反编译 v1.4.8 PartiesSellPrisonerCampaignBehavior.OnSettlementEntered）。
+    /// 灰袍领主照原版只卖英雄俘虏，普通俘虏留着。
+    /// </summary>
+    [HarmonyPatch(typeof(PartiesSellPrisonerCampaignBehavior), "OnSettlementEntered")]
+    internal static class GwpWardenKeepPrisonersPatch
+    {
+        private static bool Prefix(MobileParty mobileParty, Settlement settlement)
+        {
+            if (mobileParty == null || !mobileParty.IsLordParty || !GwpWardenRecruitment.IsWardenParty(mobileParty))
+                return true;
+            if (!settlement.IsFortification || mobileParty.IsDisbanding ||
+                mobileParty.MapFaction.IsAtWarWith(settlement.MapFaction))
+                return false;
+            TroopRoster heroes = TroopRoster.CreateDummyTroopRoster();
+            foreach (TroopRosterElement element in mobileParty.PrisonRoster.GetTroopRoster())
+                if (element.Character.IsHero && !element.Character.IsPlayerCharacter &&
+                    element.Character.HeroObject.MapFaction.IsAtWarWith(settlement.MapFaction))
+                    heroes.Add(element);
+            if (heroes.Count > 0)
+                SellPrisonersAction.ApplyForSelectedPrisoners(mobileParty.Party, settlement.Party, heroes);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 灰袍领主的东西捐给信众村，不在城里卖（用户裁定：领主给村子的一律算捐赠，由村子卖进城）。
+    /// 原版领主进城会把背包里非口粮的东西卖掉（C#反编译 v1.4.8 PartiesSellLootCampaignBehavior.OnSettlementEntered）。
+    /// </summary>
+    [HarmonyPatch(typeof(PartiesSellLootCampaignBehavior), nameof(PartiesSellLootCampaignBehavior.OnSettlementEntered))]
+    internal static class GwpWardenKeepLootPatch
+    {
+        private static bool Prefix(MobileParty mobileParty) =>
+            mobileParty == null || !mobileParty.IsLordParty || !GwpWardenRecruitment.IsWardenParty(mobileParty);
     }
 }

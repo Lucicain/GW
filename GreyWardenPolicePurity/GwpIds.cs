@@ -20,6 +20,7 @@ namespace GreyWardenPolicePurity
         public const string NewRecruitId = "gwnewrecruit";
         public const string ZealotId = "gwzealot";
         public const string DisciplePartyPrefix = "gwp_disciple_";
+        public const string ZealotCaravanPrefix = "gwp_zealotcart_";
         public const string LeaderCharacterIdPrefix = "gw_leader_";
         public const string CommanderTemplateCharacterId = "gw_leader_0";
         // Keep the native commander_2 entry intact; the Grey Warden commander

@@ -289,42 +289,80 @@
 
             // 直接招狂信者时户数不往这条线以下扣，免得一座信众村被招空。
             public const float DirectZealotHearthFloor = 150f;
+            // 一个人折多少户：照原版村民队，补 n 人扣 (n+1)/2 户（VillagerCampaignBehavior.AddVillagersToParty）。
+            public const float HearthPerPerson = 0.5f;
 
             // 祭司格子里的灰袍兵每天升一级的概率 = 基础 + power / 这个数（power 50 约 7.5%，150 约 12.5%）。
             public const float PriestTrainingDailyChance = 0.05f;
             public const float PriestTrainingPowerPerChance = 2000f;
+            // 没有祭司的信众村：狂信者占户数到这个比例，每周按这个概率来一位祭司。
+            public const float PriestZealotShare = 0.1f;
+            public const float PriestWeeklyChance = 0.5f;
+            public const float PriestInitialPower = 50f;
+            public const int PriestStartingGold = 2000;
 
             // 集会传教：照比武大会，一村两次至少隔 15 天。
             public const float CongregationHours = 24f;
             public const float CongregationVillageIntervalDays = 15f;
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
-            public const float LordCongregationCooldownDays = 5f;
-            public const int MaxConcurrentLordCongregations = 2;
-            public const float LordTravelTimeoutHours = 72f;
 
-            // 烈火责罚：数据上只扣钱（用户裁定）。
+            // 烈火责罚：每烧 1 人公库付钱（用户裁定：数据上只扣钱）。
+            // 地牢里有俘虏：够数、隔 5 天就烧，烧死的一半被火说服，成了狂信者、在村里落户。
+            // 没有俘虏：只在本村每季固定的一周里，隔 15 天、按概率烧不信教的人，每烧 1 人有 2 个看着的人信了。
             public const float DamnationLockHours = 6f;
-            public const float DamnationVillageIntervalDays = 7f;
             public const int DamnationCostPerHead = 20;
-            public const int DamnationMinimumPrisoners = 3;
+            public const int DamnationMinimumPrisoners = 5;
             public const int DamnationMaximumPrisoners = 40;
+            public const float DamnationPrisonerIntervalDays = 5f;
+            public const float DamnationPrisonerConvertShare = 0.5f;
+            public const float DamnationFestivalIntervalDays = 15f;
+            public const float DamnationFestivalDailyChance = 0.35f;
             public const int DamnationUnbelieverBase = 2;
             public const float DamnationHearthPerUnbeliever = 200f;
-            public const float DamnationUnbelieverOnlyDailyChance = 0.2f;
+            public const int DamnationWitnessConverts = 2;
 
-            // 永恒之火门徒：狂信者或祭司 power 到一定规模后出发去传教。
-            public const int DiscipleZealotThreshold = 40;
-            public const float DisciplePriestPowerThreshold = 150f;
+            // 传教队：有祭司、狂信者占户数到 15% 的村子，每 10 天派一次，全图同时最多 4 队在外。
+            public const float DiscipleZealotShare = 0.15f;
             public const float DiscipleIntervalDays = 10f;
-            public const int MaxActiveDisciples = 3;
+            public const int MaxActiveDisciples = 4;
             public const int DiscipleSize = 10;
             public const int DiscipleMinimumLeftBehind = 5;
-            public const float DiscipleTravelTimeoutHours = 96f;
             public const float DiscipleTargetMaxDistance = 150f;
 
-            public const float PriestInitialPower = 50f;
-            public const int PriestStartingGold = 2000;
+            // 狂信者队：货仓里的东西值 2,000 以上、隔 3 天出一次车。
+            public const int CaravanSize = 8;
+            public const int CaravanMinimumGoodsValue = 2000;
+            public const float CaravanIntervalDays = 3f;
+
+            // 两支常驻队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
+            public const float FaithPartyVisitScore = 8f;
+            public const float FaithPartyTravelTimeoutHours = 120f;
+
+            // 灰袍领主的信众村差事。竞价分压过原版普通进城（实测 0.35–0.85）和普通差事（0.99），
+            // 压不过缺粮、重伤（1–19.6）。俘虏到上限的 90% 或兵力不到 60% 时连普通案件也让路。
+            public const float ErrandScore = 1.5f;
+            public const float ErrandTimeoutHours = 120f;
+            public const float ErrandUrgentPrisonerShare = 0.9f;
+            public const float ErrandUrgentStrength = 0.6f;
+            public const int ErrandPrisoners = 15;
+            public const float ErrandStrength = 0.85f;
+            public const int ErrandGoodsValue = 4000;
+
+            // 案子发生在信众村这个距离内，算信众村的案子，优先派人。
+            public const float FaithCaseRadius = 6f;
+
+            // 信众村保护费：只收信众村（用户裁定：不再全图收），每户每天。
+            public const float FaithProtectionPerHearth = 1f;
+
+            // 军械库：分完以后给增长留的余量（村子至少 10 套，按狂信者的 25%，不超过离上限还差的人数）。
+            public const float ArmoryReserveShare = 0.25f;
+            public const int ArmoryVillageReserveMinimum = 10;
+            // 输了时死去的兵身上的东西，每件有这个概率归胜方，其余毁了。
+            public const float ArmoryLossLootShare = 0.33f;
+            // 自动结算：兵器每阶加 6% 伤害；护甲平均阶数每阶让挨的伤害除以 (1 + 8%)。
+            public const float ArmoryWeaponTierDamage = 0.06f;
+            public const float ArmoryArmorTierProtection = 0.08f;
         }
     }
 }

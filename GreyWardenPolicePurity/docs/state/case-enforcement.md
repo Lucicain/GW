@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-05 工作树（测试桩 `Campaign.Current` 改为与游戏一致的非可空声明，消除测试构建的 3 条 CS8602；164 项通过，生产代码未变）；2026-09-27 工作树（主队 NPC 旧案回归审查、整笔代缴与承办队扫描）；`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）
+> 已复核至：2026-10-05 派案先跑一轮信众村 6 距离内的案子；领主在信众村差事中不接普通案件；差事紧急时追捕阶段的普通案件退回案件池（`TryReleaseOrdinaryCaseForFaithErrand`，见 `firesworn-economy.md`）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-05 工作树（测试桩 `Campaign.Current` 改为与游戏一致的非可空声明，消除测试构建的 3 条 CS8602；164 项通过，生产代码未变）；2026-09-27 工作树（主队 NPC 旧案回归审查、整笔代缴与承办队扫描）；`e16ff95`（89 处裸吞异常改为留痕，行为未变，见 `code-health.md`）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：无
 
