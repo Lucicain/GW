@@ -105,7 +105,7 @@ namespace GreyWardenPolicePurity
                     || agent.Team?.Side != sideId) continue;
                 alive++;
                 bool eligible = agent == Mission.MainAgent ? playerEligible
-                    : GwpCommon.IsGreyWardenAffiliatedCharacter(agent.Character);
+                    : GwpCommon.IsGreyWardenSupportAgent(agent, playerEligible);
                 if (eligible && agent.Origin != null && (recipient == null || agent == Mission.MainAgent)) recipient = agent;
             }
             int reserves = sideId == BattleSideEnum.Defender

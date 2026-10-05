@@ -12,22 +12,17 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 信众村对灰袍等于城（用户裁定）：灰袍领主在那里交俘虏进地牢、捐东西、招兵。
-    /// 俘虏一被灰袍领主抓到就扒下装备进部队军械库，领主俘虏不扒（用户裁定：原版 AI 不会换装）。
+    /// 俘虏不扒装备：装备照原版尸体缴获进军械库（用户裁定 2026-10-06，见 <see cref="LootCasualtyIntoArmory"/>）。
     /// 灰袍领主有俘虏要交、缺兵、背包里有东西时，去最近的信众村办差；灰袍优先做和信众村相关的事（用户裁定），
     /// 俘虏快装满或者兵快打光时，普通案件也让路。
-    /// 信众村自己守赢也有收益（用户裁定）：俘获的敌兵进地牢（先扒装备进村军械库），背包里的东西进货仓，金币进公库。
+    /// 信众村自己守赢也有收益（用户裁定）：俘获的敌兵进地牢，背包里的东西进货仓，金币进公库。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
     {
-        // ---------------------------------------------------------------- 扒装备、守村收益
+        // ---------------------------------------------------------------- 守村收益
 
         private void SweepPrisonersAndSpoils()
         {
-            foreach (MobileParty lord in PoliceStats.GetAllPoliceParties()
-                         .Where(party => party.IsActive && party.IsLordParty && party.MapEvent == null)
-                         .ToList())
-                StripNewPrisoners(lord);
-
             foreach (FaithVillage row in _villages.Values)
             {
                 Settlement village = Settlement.Find(row.VillageId);
@@ -35,50 +30,6 @@ namespace GreyWardenPolicePurity
                 if (militia?.IsActive == true && militia.MapEvent == null)
                     CollectDefenceSpoils(militia, village);
             }
-        }
-
-        /// <summary>俘虏比上次多出来的那些，每人扒一整套战斗装备进部队军械库。英雄（领主）俘虏不扒。</summary>
-        private void StripNewPrisoners(MobileParty party)
-        {
-            Dictionary<string, int> stripped = StrippedOf(party.StringId);
-            int men = 0, items = 0;
-            HashSet<string> present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster())
-            {
-                if (element.Character.IsHero)
-                    continue;
-                string id = element.Character.StringId;
-                present.Add(id);
-                stripped.TryGetValue(id, out int done);
-                for (int i = done; i < element.Number; i++)
-                {
-                    items += StripInto(ItemsOf(_armories, party.StringId), element.Character);
-                    men++;
-                }
-                stripped[id] = element.Number;
-            }
-            foreach (string gone in stripped.Keys.Where(id => !present.Contains(id)).ToList())
-                stripped.Remove(gone);
-            if (men > 0)
-                GwpAiDiagnostics.WriteFaith("PRISONERS_STRIPPED",
-                    "party=" + party.StringId + "; men=" + men + "; items=" + items +
-                    "; prisoners=" + CountRegularPrisoners(party) + "/" + party.Party.PrisonerSizeLimit);
-        }
-
-        /// <summary>扒下一个兵的一整套战斗装备（按兵种随机一套）记进账本，马和马具也算，后面当货卖。</summary>
-        private static int StripInto(ItemRoster ledger, CharacterObject troop)
-        {
-            Equipment equipment = troop.RandomBattleEquipment;
-            int count = 0;
-            for (int slot = 0; slot < (int)EquipmentIndex.NumEquipmentSetSlots; slot++)
-            {
-                EquipmentElement element = equipment[slot];
-                if (element.IsEmpty || element.Item.NotMerchandise)
-                    continue;
-                ledger.AddToCounts(new EquipmentElement(element.Item), 1);
-                count++;
-            }
-            return count;
         }
 
         private static int CountRegularPrisoners(MobileParty party) =>
@@ -90,7 +41,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void CollectDefenceSpoils(MobileParty militia, Settlement village)
         {
-            int men = 0, items = 0, released = 0, goodsCount = 0;
+            int men = 0, released = 0, goodsCount = 0;
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
             foreach (TroopRosterElement element in militia.PrisonRoster.GetTroopRoster().ToList())
             {
@@ -101,8 +52,6 @@ namespace GreyWardenPolicePurity
                     released++;
                     continue;
                 }
-                for (int i = 0; i < element.Number; i++)
-                    items += StripInto(ItemsOf(_armories, village.StringId), element.Character);
                 dungeon.AddToCounts(element.Character, element.Number);
                 militia.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
                 men += element.Number;
@@ -120,7 +69,7 @@ namespace GreyWardenPolicePurity
             CreditTreasury(gold);
             if (men + released + goodsCount + gold > 0)
                 GwpAiDiagnostics.WriteFaith("DEFENCE_SPOILS",
-                    "village=" + village.StringId + "; prisoners=" + men + "; strippedItems=" + items +
+                    "village=" + village.StringId + "; prisoners=" + men +
                     "; lordsReleased=" + released + "; goods=" + goodsCount + "; goldToTreasury=" + gold +
                     "; dungeon=" + dungeon.TotalManCount);
         }
@@ -131,7 +80,7 @@ namespace GreyWardenPolicePurity
         /// 普通俘虏交进地牢；背包里除了口粮都捐给村子：狂信者能用的兵器、护甲进村军械库，其余进货仓；
         /// 部队军械库余量以外的捐进村军械库。部队每天把多出来的装备挪进背包（<see cref="RebalanceArmories"/>），
         /// 所以背包里的兵器护甲不进军械库就会被当货卖掉（实机诊断 2026-10-06：村军械库一周都是空的，
-        /// 俘虏扒下的装备全被狂信者队拉去城里卖了）。
+        /// 缴获的装备全被狂信者队拉去城里卖了）。
         /// </summary>
         private void HandOver(MobileParty party, Settlement village)
         {
@@ -145,7 +94,6 @@ namespace GreyWardenPolicePurity
                 party.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
                 prisoners += element.Number;
             }
-            _stripped.Remove(party.StringId);
 
             ItemRoster goods = ItemsOf(_goods, village.StringId);
             ItemRoster villageArmory = ItemsOf(_armories, village.StringId);

@@ -2,8 +2,8 @@
 
 > 当前状态：信众村经济整套已部署待实测（2026-10-05）；数值是试玩值，用户尚未定
 > 最后验收：未建立检查点
-> 已复核至：2026-10-06 配图配音弹窗（卡面原画 + 闪卡音效）；军械库查看菜单；2026-10-05 信众村经济整套（地牢、烧人、两支常驻队、领主差事、军械库、守村收益、只收信众村保护费），细节移到 `firesworn-economy.md`；2026-10-05 第一步：灰袍只在信众村招兵、不领饷、狂信者上限＝户数、家乡村开局即信众村（见 `warden-recruitment.md`）；2026-10-05 调研村庄守战分赃、AI 领主拾取、自动结算挂点；记下用户对军械库、工资、俘虏的裁定；2026-10-05 调研信众村当城、逐兵换装；2026-10-05 调研要人生成、志愿兵、村民队、领主进聚落与俘虏去向（只记查证，未改代码）；2026-10-05 祭司只出女性、自有名池、母系教义文本；狂信者兜帽改放披风位（原版 `hood`/`female_hood` 是肩部护甲，放头部位加载时报断言）；2026-10-05 存档：去掉跨版本旧格式读取，同版本进行中状态补存（见 `infrastructure.md`）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
-> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornRitualPopup.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Prefabs/GwpFireswornRitual.xml` `_Module/GUI/Images/**`
+> 已复核至：2026-10-06 配图改成直接替换仪式画面背景，去掉弹窗；配音改用地图场景声音事件；2026-10-06 配图配音弹窗（卡面原画 + 闪卡音效）；军械库查看菜单；2026-10-05 信众村经济整套（地牢、烧人、两支常驻队、领主差事、军械库、守村收益、只收信众村保护费），细节移到 `firesworn-economy.md`；2026-10-05 第一步：灰袍只在信众村招兵、不领饷、狂信者上限＝户数、家乡村开局即信众村（见 `warden-recruitment.md`）；2026-10-05 调研村庄守战分赃、AI 领主拾取、自动结算挂点；记下用户对军械库、工资、俘虏的裁定；2026-10-05 调研信众村当城、逐兵换装；2026-10-05 调研要人生成、志愿兵、村民队、领主进聚落与俘虏去向（只记查证，未改代码）；2026-10-05 祭司只出女性、自有名池、母系教义文本；狂信者兜帽改放披风位（原版 `hood`/`female_hood` 是肩部护甲，放头部位加载时报断言）；2026-10-05 存档：去掉跨版本旧格式读取，同版本进行中状态补存（见 `infrastructure.md`）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
+> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**`
 > 待实测：见 `firesworn-economy.md` 文末
 
 灰袍在世界观里对应昆特牌辛迪加的**火誓者**。这里记录用户已经定下的机制、查实的原版挂点、
@@ -171,10 +171,12 @@
     是女人就接任，改名、换袍、写教义；是男人就只是原版传教者。（依据：C#反编译；用户裁定）
 - **仪式锁村**：传教 24 小时、烧人后 6 小时，玩家进村只看到仪式画面（菜单背景：传教 `encounter_peasant`，烧人
   `wait_raiding_village`）。后置补丁 `game_menu_village_on_init` 跳菜单，不改村子状态。
-- **配图配音弹窗**（`GwpFireswornRitualPopup.cs`、`GUI/Prefabs/GwpFireswornRitual.xml`）：进正在办仪式的村子，或仪式在玩家
-  25 距离内开始（玩家在大地图上时），弹出卡面原画 + 仪式文字，放卡牌闪卡音效，并停住时间。原画是卡牌站
-  `art/202352.webp`、`art/202374.webp` 转成的 PNG（`GUI/Images/gwp_firesworn_{damnation,congregation}.png`），
-  运行时读入建贴图，做法同地图栏灰袍事务图标。
+- **配图配音**（`GwpFireswornArt.cs`）：仪式画面的背景图直接换成卡面原画（烈火责罚 202352、集会传教 202374，
+  卡牌站 `art/*.webp` 转成的 PNG，放在 `GUI/Images/`），不另弹窗（用户裁定 2026-10-06：做原版替换）。
+  原版菜单背景是按名字从全局精灵表取的精灵（Native `GameMenu.xml`：`GameMenuWidget Sprite="@Background"`）。
+  原画在运行时读成贴图，以 `gwp_firesworn_damnation` / `gwp_firesworn_congregation` 登记进 `UIResourceManager.SpriteData.Sprites`，
+  菜单背景设成这个名字。进仪式画面时放卡牌闪卡音效，用地图场景建声音事件播放（同战场援军号角）。
+  第一版用的是 `PlaySound2D`，用户没听到。（依据：反编译 TaleWorlds.TwoDimension.SpriteData；实机反馈 2026-10-06）
 - **看军械库**（`GwpFireswornArmoryView.cs`）：信众村菜单「永恒之火：军械库」，先列本村、别的信众村、每支灰袍领主部队的军械库，
   选一个列出里面每样东西（原版物品图标、件数）和配装概况。只看，不能拿。
 - **村庄菜单**：「永恒之火：狂信者 N 人（户数的 X%）」，点开看狂信者、祭司、地牢、军械库、货仓。

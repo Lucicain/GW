@@ -120,9 +120,20 @@ namespace GreyWardenPolicePurity
 
         public override float GetAITradePenalty() => Inner.GetAITradePenalty();
 
+        /// <summary>
+        /// 尸体缴获：原版民兵、驻军分不到。只有民兵守赢时，让信众村民兵来分。分到之后照原版玩家那样
+        /// 从尸体上拿东西进村军械库（<see cref="GwpFireswornBehavior.LootCasualtyIntoArmory"/>）。
+        /// </summary>
         public override MBReadOnlyList<KeyValuePair<MapEventParty, float>> GetLootCasualtyChances(
-            MBReadOnlyList<MapEventParty> winnerParties, PartyBase defeatedParty) =>
-            Inner.GetLootCasualtyChances(winnerParties, defeatedParty);
+            MBReadOnlyList<MapEventParty> winnerParties, PartyBase defeatedParty)
+        {
+            MBReadOnlyList<KeyValuePair<MapEventParty, float>> chances =
+                Inner.GetLootCasualtyChances(winnerParties, defeatedParty);
+            MapEventParty? militia = FaithMilitia(winnerParties);
+            if (chances.Count > 0 || militia == null)
+                return chances;
+            return new MBList<KeyValuePair<MapEventParty, float>> { new KeyValuePair<MapEventParty, float>(militia, 1f) };
+        }
 
         public override float CalculateShipDamageAfterDefeat(Ship ship) => Inner.CalculateShipDamageAfterDefeat(ship);
 

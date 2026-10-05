@@ -139,6 +139,10 @@ def main():
     for _, data in by_stage["ZEALOTS_ENLISTED"]:
         hearth_before, hearth_after = data["hearth"].split("->")
         gains[data["village"]]["招走扣户"] += num(hearth_after) - num(hearth_before)
+    for _, data in by_stage["ZEALOT_GROWTH"]:
+        gains[data["village"]]["祭司自然增长"] += num(data.get("gain"))
+    for _, data in by_stage["ARMORY_LOOT"]:
+        gains[data["holder"]]["缴获件数"] += num(data.get("items"))
     for village, rows in sorted(villages.items()):
         a, b = rows[0][1], rows[-1][1]
         span = max(1, day(rows[-1][0]) - day(rows[0][0]))
@@ -177,8 +181,9 @@ def main():
         recruits[data["party"]]["祭司:" + data["troop"]] += num(data.get("count"))
     for _, data in by_stage["ZEALOTS_ENLISTED"]:
         recruits[data["party"]]["狂信者"] += num(data.get("enlisted"))
-    for _, data in by_stage["PRISONERS_STRIPPED"]:
-        recruits[data["party"]]["扒俘虏"] += num(data.get("men"))
+    for _, data in by_stage["ARMORY_LOOT"]:
+        recruits[data["holder"]]["缴获尸体"] += num(data.get("bodies"))
+        recruits[data["holder"]]["缴获件数"] += num(data.get("items"))
     for _, data in by_stage["HANDOVER"]:
         recruits[data["party"]]["交俘虏"] += num(data.get("prisoners"))
     for party, rows in sorted(lords.items()):
@@ -207,6 +212,14 @@ def main():
                   "DISCIPLES_TURNED_BACK", "DISCIPLES_LOST", "CARAVAN_DISPATCHED", "CARAVAN_SOLD", "CARAVAN_HOME",
                   "CARAVAN_TURNED_BACK", "CARAVAN_LOST", "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN", "RITUAL_POPUP_NEARBY"):
         print(f"   {stage}: {len(by_stage[stage])}")
+    bad_sound = [data for _, data in by_stage["RITUAL_MENU_SHOWN"] if num(data.get("soundId"), 0) < 0]
+    if bad_sound:
+        issues.append(f"仪式配音没找到声音事件 {len(bad_sound)} 次（soundId < 0）")
+    loot = by_stage["ARMORY_LOOT"]
+    if loot:
+        bodies = sum(num(d.get("bodies")) for _, d in loot)
+        items = sum(num(d.get("items")) for _, d in loot)
+        print(f"   军械库缴获：{len(loot)} 场，{bodies:.0f} 具尸体，{items:.0f} 件（每具 {items / max(1, bodies):.2f} 件）")
     if by_stage["CONGREGATION_COMPLETED"] and days >= 10:
         per_day = len(by_stage["CONGREGATION_COMPLETED"]) / days
         print(f"   传教每天 {per_day:.2f} 次")

@@ -1,5 +1,7 @@
 ﻿using System;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Party;
@@ -101,6 +103,34 @@ namespace GreyWardenPolicePurity
                        hero.Clan.StringId,
                        GwpIds.PoliceClanId,
                        StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 战场上这个兵能不能替本方接灰袍援军：得是灰袍的人（灰袍兵种或灰袍家族英雄），而且出自灰袍的部队——
+        /// 灰袍家族的部队、信众村民兵。玩家自己部队里的灰袍兵只有玩家本人合资格（入会且声望够）时才算：
+        /// 玩家不是灰袍的人，就不该有灰袍援军（用户裁定 2026-10-06；实机：玩家攻击狂信者队被打倒后，
+        /// 自己部队里的灰袍兵替玩家这一方接到了援军）。自定义战斗没有战役，按兵种判断。
+        /// </summary>
+        public static bool IsGreyWardenSupportAgent(Agent agent, bool playerEligible)
+        {
+            if (!IsGreyWardenAffiliatedCharacter(agent.Character))
+                return false;
+            if (Campaign.Current == null)
+                return true;
+            PartyBase? party = agent.Origin switch
+            {
+                PartyAgentOrigin origin => origin.Party,
+                PartyGroupAgentOrigin origin => origin.Party,
+                SimpleAgentOrigin origin => origin.Party,
+                _ => null
+            };
+            MobileParty? mobile = party?.MobileParty;
+            if (mobile == null)
+                return false;
+            if (mobile.IsMainParty)
+                return playerEligible;
+            return string.Equals(mobile.ActualClan?.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase) ||
+                   (mobile.IsMilitia && GwpFireswornBehavior.IsPreachedVillage(mobile.HomeSettlement));
         }
 
         public static bool IsGreyWardenAffiliatedCharacter(

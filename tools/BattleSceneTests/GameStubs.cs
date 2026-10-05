@@ -159,7 +159,7 @@ namespace TaleWorlds.MountAndBlade
 namespace GreyWardenPolicePurity
 {
  using TaleWorlds.Core;using TaleWorlds.MountAndBlade;
- internal static class GwpCommon {public static bool IsGreyWardenAffiliatedCharacter(BasicCharacterObject c)=>c.StringId.StartsWith("gw");}
+ internal static class GwpCommon {public static bool IsGreyWardenAffiliatedCharacter(BasicCharacterObject c)=>c.StringId.StartsWith("gw");public static bool IsGreyWardenSupportAgent(Agent a,bool playerEligible)=>IsGreyWardenAffiliatedCharacter(a.Character);}
  internal static class GwpText {public static string Get(string s)=>s;}
  internal static class GwpFaultTrace {public static List<string> Logs=new();public static void Write(string s,string details)=>Logs.Add(s+" "+details);public static void Write(string s,Agent agent,string details)=>Logs.Add(s+" "+details);public static void WriteQuiet(Exception e)=>Logs.Add(e.Message);}
  internal static class PlayerBehaviorPool {public static int Reputation;}

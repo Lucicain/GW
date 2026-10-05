@@ -43,21 +43,17 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            bool damnation = kind == GwpFireswornBehavior.RitualKind.Damnation;
-            args.MenuContext.SetBackgroundMeshName(damnation ? "wait_raiding_village" : "encounter_peasant");
-            args.MenuTitle = RitualTitle(kind);
-            string text = RitualText(kind, village!, host, remaining);
-            MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", text);
-            GwpAiDiagnostics.WriteFaith("RITUAL_MENU_SHOWN", "village=" + village.StringId + "; kind=" + kind);
-            GwpFireswornRitualPopup.Show(kind, args.MenuTitle.ToString(), text);
-        }
-
-        internal static TextObject RitualTitle(GwpFireswornBehavior.RitualKind kind) =>
-            kind == GwpFireswornBehavior.RitualKind.Damnation
+            args.MenuContext.SetBackgroundMeshName(GwpFireswornArt.Background(kind));
+            args.MenuTitle = kind == GwpFireswornBehavior.RitualKind.Damnation
                 ? GwpText.Create("{=gwp_fs_ritual_damnation_title}Damnation")
                 : GwpText.Create("{=gwp_fs_ritual_congregation_title}Congregation");
+            MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", RitualText(kind, village!, host, remaining));
+            int soundId = GwpFireswornArt.PlaySound(kind);
+            GwpAiDiagnostics.WriteFaith("RITUAL_MENU_SHOWN", "village=" + village!.StringId + "; kind=" + kind +
+                "; background=" + GwpFireswornArt.Background(kind) + "; soundId=" + soundId);
+        }
 
-        internal static string RitualText(GwpFireswornBehavior.RitualKind kind, Settlement village, string host,
+        private static string RitualText(GwpFireswornBehavior.RitualKind kind, Settlement village, string host,
             double remainingHours)
         {
             int hours = Math.Max(1, (int)Math.Ceiling(remainingHours));

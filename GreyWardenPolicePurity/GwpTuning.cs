@@ -292,6 +292,11 @@ namespace GreyWardenPolicePurity
             // 一个人折多少户：照原版村民队，补 n 人扣 (n+1)/2 户（VillagerCampaignBehavior.AddVillagersToParty）。
             public const float HearthPerPerson = 0.5f;
 
+            // 有祭司的信众村每天自己长狂信者，数照原版村庄民兵每日增长（DefaultSettlementMilitiaModel）。
+            public const float ZealotGrowthBase = 0.5f;
+            public const float ZealotGrowthHearthDivisor = 400f;
+            public const float ZealotGrowthRetireShare = 0.025f;
+
             // 祭司格子里的灰袍兵每天升一级的概率 = 基础 + power / 这个数（power 50 约 7.5%，150 约 12.5%）。
             public const float PriestTrainingDailyChance = 0.05f;
             public const float PriestTrainingPowerPerChance = 2000f;
@@ -351,9 +356,6 @@ namespace GreyWardenPolicePurity
             public const int ErrandPrisoners = 15;
             public const float ErrandStrength = 0.85f;
             public const int ErrandGoodsValue = 4000;
-
-            // 玩家离仪式村子这么近时，仪式一开始就弹出配图配音。
-            public const float RitualNoticeDistance = 25f;
 
             // 案子发生在信众村这个距离内，算信众村的案子，优先派人。
             public const float FaithCaseRadius = 6f;

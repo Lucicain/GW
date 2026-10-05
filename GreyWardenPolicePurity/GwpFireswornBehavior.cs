@@ -47,9 +47,6 @@ namespace GreyWardenPolicePurity
         // 军械库账本：键是信众村或灰袍领主部队的 StringId。兵身上穿的也算在里面。
         private readonly Dictionary<string, ItemRoster> _armories =
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
-        // 每支灰袍领主部队已经扒过装备的俘虏数（按兵种）。俘虏多出来的才扒。
-        private readonly Dictionary<string, Dictionary<string, int>> _stripped =
-            new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Errand> _errands =
             new Dictionary<string, Errand>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
@@ -237,7 +234,6 @@ namespace GreyWardenPolicePurity
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
             SyncItemRosters(dataStore, "GWPP_FsArmory", _armories);
-            SyncStripped(dataStore);
 
             if (!dataStore.IsLoading)
                 return;
@@ -358,33 +354,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private void SyncStripped(IDataStore dataStore)
-        {
-            List<string>? parties = null, characters = null;
-            List<int>? counts = null;
-            if (dataStore.IsSaving)
-            {
-                parties = new List<string>();
-                characters = new List<string>();
-                counts = new List<int>();
-                foreach (KeyValuePair<string, Dictionary<string, int>> party in _stripped)
-                    foreach (KeyValuePair<string, int> entry in party.Value)
-                    {
-                        parties.Add(party.Key);
-                        characters.Add(entry.Key);
-                        counts.Add(entry.Value);
-                    }
-            }
-            dataStore.SyncData("GWPP_FsStrippedParties", ref parties);
-            dataStore.SyncData("GWPP_FsStrippedCharacters", ref characters);
-            dataStore.SyncData("GWPP_FsStrippedCounts", ref counts);
-            if (!dataStore.IsLoading)
-                return;
-            _stripped.Clear();
-            for (int i = 0; i < parties!.Count; i++)
-                StrippedOf(parties[i])[characters![i]] = counts![i];
-        }
-
         private static TroopRoster RosterOf(Dictionary<string, TroopRoster> rosters, string holder)
         {
             if (!rosters.TryGetValue(holder, out TroopRoster? roster))
@@ -403,16 +372,6 @@ namespace GreyWardenPolicePurity
                 rosters[holder] = roster;
             }
             return roster;
-        }
-
-        private Dictionary<string, int> StrippedOf(string partyId)
-        {
-            if (!_stripped.TryGetValue(partyId, out Dictionary<string, int>? counts))
-            {
-                counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                _stripped[partyId] = counts;
-            }
-            return counts;
         }
 
         // ---------------------------------------------------------------- 查询
@@ -549,6 +508,7 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIESTS", MaintainPriests);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_TRAINING", TrainPriestVolunteers);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SPAWN", SpawnPriestsByShare);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_ZEALOT_GROWTH", GrowZealots);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_DAMNATIONS", ScheduleDamnations);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_DISCIPLES", DispatchDisciples);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_CARAVANS", DispatchCaravans);
@@ -586,6 +546,7 @@ namespace GreyWardenPolicePurity
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             GwpRuntimeFaultWatch.Guard("FIRESWORN_BATTLE_LOSS", () => SettleBattleLosses(mapEvent));
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_BATTLE_LOOT", () => WriteBattleLoot(mapEvent));
         }
 
         private void OnMobilePartyDestroyed(MobileParty party, PartyBase? destroyer)
@@ -771,6 +732,33 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteFaith("PRIEST_SPAWNED",
                     "village=" + village.StringId + "; zealots=" + row.Zealots +
                     "; hearth=" + village.Village.Hearth.ToString("0") + "; share=" + share.ToString("0.00"));
+            }
+        }
+
+        /// <summary>
+        /// 有祭司的信众村每天自己长狂信者，照原版村庄民兵的每日增长（C#反编译 v1.4.8
+        /// DefaultSettlementMilitiaModel.CalculateMilitiaChange：0.5 + 户数/400 − 现有 × 2.5%）。
+        /// 信众村的民兵就是狂信者，原版增长已被 <see cref="GwpFireswornMilitiaModel"/> 归零，没有这一条的话，
+        /// 狂信者只能靠传教和烧人涨。只加不减（实机诊断 2026-10-06：家乡村狂信者 6 天从 39 掉到 31，
+        /// 常驻队补人一直在抽，没有任何回补）。
+        /// </summary>
+        private void GrowZealots()
+        {
+            foreach (FaithVillage row in _villages.Values)
+            {
+                Settlement village = Settlement.Find(row.VillageId);
+                if (FindLivingPriest(row) == null || !IsVillageQuiet(village))
+                    continue;
+                float change = GwpTuning.Firesworn.ZealotGrowthBase +
+                               village.Village.Hearth / GwpTuning.Firesworn.ZealotGrowthHearthDivisor -
+                               row.Zealots * GwpTuning.Firesworn.ZealotGrowthRetireShare;
+                int gain = change > 0f ? MBRandom.RoundRandomized(change) : 0;
+                if (gain <= 0 || row.Zealots >= ZealotCap(village))
+                    continue;
+                row.Zealots = Math.Min(ZealotCap(village), row.Zealots + gain);
+                PushMilitia(row, village);
+                GwpAiDiagnostics.WriteFaith("ZEALOT_GROWTH", "village=" + row.VillageId + "; gain=" + gain +
+                    "; zealots=" + row.Zealots + "; hearth=" + village.Village.Hearth.ToString("0"));
             }
         }
 

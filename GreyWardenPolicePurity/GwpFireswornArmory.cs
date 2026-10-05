@@ -274,6 +274,58 @@ namespace GreyWardenPolicePurity
             return moved;
         }
 
+        // ---------------------------------------------------------------- 缴获
+
+        // 这一场战斗每本账缴获了几具尸体、几件东西。战斗结束时写一行监控就清掉；只给监控用，不存档。
+        private readonly Dictionary<string, (int Bodies, int Items, int Value)> _lootThisBattle =
+            new Dictionary<string, (int, int, int)>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 军械库的进项照原版缴获（用户裁定 2026-10-06：不是把俘虏全扒下来，和玩家一样，打赢了从尸体上缴获一些）。
+        /// 原版 AI 赢家从尸体上只拿钱（7.25×等级² × 1/55），玩家才拿东西：每具尸体最多 RoundRandomized(玩家在胜方的贡献份额) 件，
+        /// 每件由 BattleRewardModel.GetLootedItemFromTroop 按尸体兵种的一套装备、按价值随机挑，同一类只拿一件
+        /// （C#反编译 v1.4.8 MapEvent.LootDefeatedPartyCasualties、LootCasualtyCharacter）。
+        /// 灰袍领主部队、信众村民兵照玩家这条路拿，东西进各自的军械库，不再拿那点钱。返回 true 表示已经处理，原版跳过。
+        /// </summary>
+        internal static bool LootCasualtyIntoArmory(CharacterObject casualty, MapEventParty winner)
+        {
+            if (_instance == null)
+                return false;
+            string? holder = _instance.HolderOf(winner.Party);
+            if (holder == null)
+                return false;
+            int total = winner.Party.MapEventSide.Parties.Sum(party => party.ContributionToBattle);
+            int tries = MBRandom.RoundRandomized(winner.ContributionToBattle / (float)Math.Max(1, total));
+            BattleRewardModel model = Campaign.Current.Models.BattleRewardModel;
+            float value = model.GetExpectedLootedItemValueFromCasualty(winner.Party.LeaderHero, casualty);
+            ItemRoster ledger = ItemsOf(_instance._armories, holder);
+            List<ItemObject.ItemTypeEnum> taken = new List<ItemObject.ItemTypeEnum>();
+            int items = 0, worth = 0;
+            for (int i = 0; i < tries; i++)
+            {
+                EquipmentElement item = model.GetLootedItemFromTroop(casualty, value);
+                if (item.Item == null || taken.Contains(item.Item.Type))
+                    continue;
+                taken.Add(item.Item.Type);
+                ledger.AddToCounts(item, 1);
+                items++;
+                worth += item.ItemValue;
+            }
+            _instance._lootThisBattle.TryGetValue(holder, out (int Bodies, int Items, int Value) sum);
+            _instance._lootThisBattle[holder] = (sum.Bodies + 1, sum.Items + items, sum.Value + worth);
+            _instance._plans.Remove(holder);
+            return true;
+        }
+
+        private void WriteBattleLoot(MapEvent mapEvent)
+        {
+            foreach (KeyValuePair<string, (int Bodies, int Items, int Value)> pair in _lootThisBattle)
+                GwpAiDiagnostics.WriteFaith("ARMORY_LOOT",
+                    "holder=" + pair.Key + "; bodies=" + pair.Value.Bodies + "; items=" + pair.Value.Items +
+                    "; value=" + pair.Value.Value + "; mapEvent=" + mapEvent.EventType);
+            _lootThisBattle.Clear();
+        }
+
         // ---------------------------------------------------------------- 输了、没了
 
         /// <summary>
@@ -337,7 +389,6 @@ namespace GreyWardenPolicePurity
                     "; cargoValue=" + party.ItemRoster.TotalValue + "; gold=" + party.PartyTradeGold);
             }
             _errands.Remove(party.StringId);
-            _stripped.Remove(party.StringId);
             _plans.Remove(party.StringId);
             if (!_armories.TryGetValue(party.StringId, out ItemRoster? ledger))
                 return;
@@ -519,7 +570,7 @@ namespace GreyWardenPolicePurity
 
             List<MobileParty> lords = PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty).ToList();
             List<string> shortLords = lords
-                .Where(lord => lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandStrength)
+                .Where(lord => lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandUrgentStrength)
                 .Select(lord => lord.StringId + ":" + lord.Party.NumberOfAllMembers + "/" + lord.Party.PartySizeLimit)
                 .ToList();
             foreach (MobileParty lord in lords)
@@ -572,6 +623,13 @@ namespace GreyWardenPolicePurity
 
         private static string DaysSince(double hour) =>
             hour <= Never ? "never" : ((CampaignTime.Now.ToHours - hour) / 24d).ToString("0.0");
+    }
+
+    [HarmonyPatch(typeof(MapEvent), "LootCasualtyCharacter")]
+    internal static class GwpArmoryCasualtyLootPatch
+    {
+        private static bool Prefix(CharacterObject casualtyCharacter, MapEventParty winnerParty) =>
+            !GwpFireswornBehavior.LootCasualtyIntoArmory(casualtyCharacter, winnerParty);
     }
 
     /// <summary>
