@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-142 个源文件、48,137 行、273 个公开类型、57 个 Harmony 补丁点（分布在 57 个补丁类里）。
+143 个源文件、48,208 行、275 个公开类型、57 个 Harmony 补丁点（分布在 57 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -219,6 +219,7 @@
 - `GwpBattleSupportChecks` → GwpBattleScenePolicy.cs ←
 - `GwpBattleSupportDepletionPatch` → GwpBattleReinforcementBehavior.cs ←
 - `GwpBattleSupportOrigin` → GwpBattleSupportOrigin.cs
+- `GwpBellumExileCandidatePatch` → GwpKingdomMembershipPatch.cs ←
 - `GwpBribeBarterable` → GwpBribeBarterable.cs
 - `GwpCaseArchiveItemVM` → GwpCaseArchiveScreen.cs ←
 - `GwpCaseArchiveScreen` → GwpCaseArchiveScreen.cs
@@ -286,6 +287,7 @@
 - `GwpInitiativeDiagnosticsPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpKickBehavior` → GwpKickBehavior.cs
 - `GwpKickInputComponent` → GwpKickInputComponent.cs
+- `GwpKingdomMembershipPatch` → GwpKingdomMembershipPatch.cs
 - `GwpLandlessShipPurchaseTownPatch` → GwpLandlessShipTradePatch.cs ←
 - `GwpLandlessShipSaleTownPatch` → GwpLandlessShipTradePatch.cs ←
 - `GwpLandlessShipTrade` → GwpLandlessShipTradePatch.cs
@@ -401,7 +403,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 142 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 143 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -534,7 +536,7 @@
 
 - `SubModule.cs` — 159 行 · `SubModule` : MBSubModuleBase
 
-### 其他（58 个文件）
+### 其他（59 个文件）
 
 - `GwpTroopCombat.cs` — 468 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
@@ -568,6 +570,7 @@
 - `GwpPartyScreenTroopTalkPatch.cs` — 94 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpAssistanceArmyTooltipPatch.cs` — 74 行 · `GwpAssistanceArmyTooltipPatch`
+- `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
 - `GwpText.cs` — 69 行 · `GwpText`
 - `GwpSaveableTypeDefiner.cs` — 65 行 · `GwpSaveableTypeDefiner` : SaveableTypeDefiner

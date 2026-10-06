@@ -1,9 +1,11 @@
 # 构建、校验与部署
 
-> 当前状态：现行流程
+> 当前状态：当前 live 使用本 v14 工作树；火誓者 main 暂存（用户裁定 2026-10-06）
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
+
+当前工作树、live DLL 哈希与切换前回退备份见 [入国调查](kingdom-membership.md)。live 的 Assets、AssetSources、RuntimeDataCache 保留开发布局，客户端实际加载 Assets；用户本轮明确保持此布局，美术不作为入国原因。代码以 v14 为基线，开发美术与 v14 玩家包有差异。（依据：用户裁定 2026-10-06；实机诊断）
 
 ## 两个开关决定一切
 

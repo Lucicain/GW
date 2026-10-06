@@ -70,6 +70,7 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
+| [`kingdom-membership.md`](kingdom-membership.md) | v14 玩家入国反馈、模组环境、独立工作树与回退路径 |
 | [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队向领主/玩家借船与退还、口粮、兵员纯化 |
 | [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
