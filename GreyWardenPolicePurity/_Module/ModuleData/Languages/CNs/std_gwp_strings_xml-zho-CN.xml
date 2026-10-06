@@ -1413,13 +1413,13 @@
   <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的女人们挤在广场中央、{HOST}身边，一个接一个向永恒之火立誓。男人们被赶到人群外圈，跪着听她们宣读火的戒律。集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
   <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：被拖上去的，是不肯低头的人。女人们围着火唱，男人们低着头往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
   <string id="gwp_fs_village_option" text="永恒之火：狂信者{ZEALOTS}人（户数的{SHARE}%）" />
-  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}个女人向永恒之火立了誓（{SHARE}%；最多{CAP}人）。火只从母亲传给女儿；村里的男人侍奉它，但不许碰它。村里的民兵就是这些狂信者：她们抵抗劫掠，死了的不会自己补上，除非信仰再得新人。" />
-  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍领主在她那里招兵，也会直接从村里的人家招走最低级的狂信者。" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}个女人向永恒之火立了誓。火只从母亲传给女儿；村里的男人侍奉它，却不许碰它。劫掠的人来了，拿起长矛的就是这些立了誓的女人。" />
+  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍要人上阵时，村里立了誓的女儿们就从她的火堆边跟着走。" />
   <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
   <string id="gwp_fs_village_info_title" text="永恒之火" />
   <string id="gwp_fs_village_info_ok" text="关闭" />
   <string id="gwp_fs_ritual_leave" text="离开……" />
-  <string id="gwp_fs_militia_change" text="永恒之火：民兵就是村里的狂信者" />
+  <string id="gwp_fs_militia_change" text="永恒之火：立了誓的女人充任民兵" />
   <string id="gwp_fs_priest_name_01" text="炽华" />
   <string id="gwp_fs_priest_name_02" text="焰姝" />
   <string id="gwp_fs_priest_name_03" text="灼音" />
@@ -1445,11 +1445,11 @@
   <string id="gwp_fs_priest_name_23" text="炬宁" />
   <string id="gwp_fs_priest_name_24" text="薪传" />
   <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。她传的教义说：火只从母亲传给女儿，只有女人能照看它；男人只能喂它——用他们的力气，用他们的顺从；不肯跪下的，就用他们自己。在她治下，村里的女人向火立誓、拿起长矛；男人给火堆挑柴，眼睛不许抬起来。" />
-  <string id="gwp_fs_village_stores" text="地牢：{PRISONERS}名俘虏等着上火堆。军械库：{ARMORY}件装备，给狂信者用。货仓：值{GOODS}第纳尔的东西，等狂信者运去城里卖。" />
+  <string id="gwp_fs_village_stores" text="地窖里关着{PRISONERS}个等着上火堆的人。库房里存着{ARMORY}件兵器甲胄，留给立了誓的人。还有值{GOODS}第纳尔的货，等着装车运去城里。" />
   <string id="gwp_fs_caravan_party" text="{VILLAGE}的狂信者" />
   <string id="gwp_fs_armory_option" text="永恒之火：军械库" />
   <string id="gwp_fs_armory_holders_title" text="永恒之火的军械库" />
-  <string id="gwp_fs_armory_holders_text" text="每座信众村、每支灰袍领主的部队都有自己的军械库。狂信者和新兵穿的就是库里的东西，一个兵一套。选一个看看里面有什么。" />
+  <string id="gwp_fs_armory_holders_text" text="永恒之火的兵器甲胄分存在好几处：每座立了誓的村子有自己的库房，每位灰袍领主也随队带着一份。立了誓的女人和灰袍的新兵上阵前，就从这里领。" />
   <string id="gwp_fs_armory_open" text="打开" />
   <string id="gwp_fs_armory_close" text="关闭" />
   <string id="gwp_fs_armory_back" text="返回" />
@@ -1457,6 +1457,23 @@
   <string id="gwp_fs_armory_village" text="{VILLAGE}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_party" text="{PARTY}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_empty" text="库里还什么都没有。" />
-  <string id="gwp_fs_armory_summary" text="要武装的兵：{MEN}人，分到兵器的：{ARMED}人。兵器平均{WEAPON}阶，护甲平均{ARMOR}阶。给新狂信者留着的：{FREE}件。多出来要卖掉的：{SURPLUS}件。" />
+  <string id="gwp_fs_armory_summary" text="从这里领装备的有{MEN}人，其中{ARMED}人领到了兵器。另有{FREE}件留给下一批立誓的人。{SURPLUS}件没人用得上，会拉去卖掉。" />
+  <string id="gwp_fs_party_pretalk" text="还有什么事？" />
+  <string id="gwp_fs_party_buy" text="你们车上是什么？我买了。" />
+  <string id="gwp_fs_party_offer" text="有{PRODUCTS}。全拿走一共{TOTAL_PRICE}{GOLD_ICON}，钱归永恒之火。" />
+  <string id="gwp_fs_party_buy_yes" text="成交，这是{TOTAL_PRICE}{GOLD_ICON}。" />
+  <string id="gwp_fs_party_buy_no" text="算了。" />
+  <string id="gwp_fs_party_threaten" text="把东西都交出来。" />
+  <string id="gwp_fs_party_refuse" text="火不会向你低头。想要我们的东西，就从我们身上踏过去。" />
+  <string id="gwp_fs_party_fight" text="那就这样。" />
+  <string id="gwp_fs_party_back_off" text="算了，走吧。" />
+  <string id="gwp_fs_party_leave" text="那你们走吧。" />
+  <string id="gwp_fs_party_greet_disciples_out" text="愿火照着你的路。我们是{HOME}的门徒，正要去{TARGET}传火。" />
+  <string id="gwp_fs_party_greet_disciples_back" text="该传的火都传到了。我们这就回{HOME}。" />
+  <string id="gwp_fs_party_greet_cart_out" text="我们是{HOME}立了誓的姐妹。车上是村里的货，要拉去{TARGET}，卖得的钱归永恒之火。" />
+  <string id="gwp_fs_party_greet_cart_back" text="货卖完了，我们回{HOME}去。" />
+  <string id="gwp_fs_party_products_separator" text="、" />
+  <string id="gwp_fs_party_product" text="{COUNT}件{ITEM}" />
+  <string id="gwp_fs_party_products_more" text="等" />
 </strings>
 </base>

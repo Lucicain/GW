@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；入国来源与自动换装候选取证随修复合入 main，已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：`a1d6479`（2026-10-07；在役范围、Guard 与仪式声音取证复核）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
@@ -12,7 +12,7 @@
 在某个东西正在建或正在出问题时加上，在那件事被确认之后删掉。
 
 全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 19 个文件带此守卫），
-所以退休一条 trace 只关乎开发者信噪比，**与玩家收到什么无关**。
+纯 trace 的退休只改变开发者日志；`GwpRuntimeFaultWatch.Guard` 额外吞异常，会造成开发与玩家版失败行为不同，这是待清理的例外，见 `code-health.md`。
 
 ## 谁来管
 
@@ -65,12 +65,13 @@
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
-| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 2026-09-25 调停 0 人队崩溃、2026-09-26 改追绕过冷却都靠它取证；覆盖的巡逻、练兵、协力等子系统多数尚未提取 | 对应子系统提取成 state 且无待观察项时，按主题拆掉健康路径 |
+| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见 `firesworn-economy.md`「监控」） | 信众村经济整套待实测：看俘虏、地牢、烧人、两支常驻队、领主差事、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `RITUAL_SOUND_START` / `RITUAL_SOUND_STOP`（`GwpFireswornSoundView`） | 记录原始帧数/采样率、提交增益、自然结束与菜单退出原因，取证一次播放与退出立即停止；配图已验收，贴图专项输出已退休 | 用户确认传教、烧人音效完整一次、原音调、退出停止后，同轮删除这两条健康 trace 及声音调查输出 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
-| 失败路径：`GwpRuntimeFaultWatch`、`GwpEngineAssertDiagnostics`、`DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 不退休 |
+| 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
+| `GwpRuntimeFaultWatch.Guard` | 旧档错误依据被扩用到 28 处回调，开发版额外吞异常 | 待逐站点清理，不能按「故障观察」永久保留；见 code-health.md |
 
 已退休的：送信队的 AI 诊断（2026-10-02 为查卖俘虏折返临时纳入，用户确认修复后退出）；`PLAYER_JUSTICE` 的 `companionCases` 字段与 `COMPANION_FINE_SETTLED`（2026-10-02 用户确认主队 NPC 旧案后删除；失败路径 `COMPANION_FINE_INCOMPLETE` 保留）；援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
 `GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，

@@ -58,7 +58,10 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 持有者与配装
 
-        /// <summary>这支部队用哪本账：灰袍领主部队用自己的，信众村民兵用村子的。其余没有。</summary>
+        /// <summary>
+        /// 这支部队用哪本账：灰袍领主部队用自己的；信众村民兵、本村的传教队和狂信者队用村子的
+        /// （用户反馈 2026-10-07：狂信者和传教士出门没有用军械库的装备）。其余没有。
+        /// </summary>
         private string? HolderOf(PartyBase? party)
         {
             MobileParty? mobile = party?.MobileParty;
@@ -66,6 +69,8 @@ namespace GreyWardenPolicePurity
                 return null;
             if (mobile.IsMilitia && IsPreachedVillage(mobile.HomeSettlement))
                 return mobile.HomeSettlement.StringId;
+            if (_faithParties.TryGetValue(mobile.StringId, out FaithParty? faithParty))
+                return faithParty.HomeId;
             return mobile.IsLordParty && GwpWardenRecruitment.IsWardenParty(mobile) ? mobile.StringId : null;
         }
 
@@ -84,10 +89,14 @@ namespace GreyWardenPolicePurity
             if (_villages.TryGetValue(holder, out FaithVillage? row))
             {
                 Settlement village = Settlement.Find(holder);
+                // 村子的账要武装民兵，也要武装本村出门的传教队、狂信者队（他们不算在村里的狂信者数里）。
+                int away = _faithParties.Values
+                    .Where(entry => string.Equals(entry.HomeId, holder, StringComparison.OrdinalIgnoreCase))
+                    .Sum(entry => FindParty(entry.PartyId)!.MemberRoster.TotalManCount);
                 int headroom = Math.Max(0, ZealotCap(village) - row.Zealots);
                 int reserve = Math.Min(headroom, Math.Max(GwpTuning.Firesworn.ArmoryVillageReserveMinimum,
                     (int)(row.Zealots * GwpTuning.Firesworn.ArmoryReserveShare)));
-                return BuildPlan(ledger, 0, row.Zealots, reserve);
+                return BuildPlan(ledger, 0, row.Zealots + away, reserve);
             }
             MobileParty party = FindParty(holder)!;
             int recruits = party.MemberRoster.GetTroopRoster()
@@ -484,9 +493,8 @@ namespace GreyWardenPolicePurity
             if (!_instance!._armories.ContainsKey(holder))
                 return GwpText.Get("{=gwp_fs_armory_empty}Nothing here yet.");
             ArmoryPlan plan = _instance.PlanOf(holder);
-            return GwpText.Get("{=gwp_fs_armory_summary}Soldiers to arm: {MEN}. Given a weapon: {ARMED}. Average weapon tier {WEAPON}, average armour tier {ARMOR}. Kept back for new zealots: {FREE} pieces. Surplus to be sold: {SURPLUS} pieces.",
+            return GwpText.Get("{=gwp_fs_armory_summary}{MEN} of the sworn draw from this store; {ARMED} of them have a weapon from it. {FREE} pieces are kept back for those who will swear next. {SURPLUS} pieces nobody needs, and they will be sold.",
                 "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => !kit[KitMain].IsEmpty),
-                "WEAPON", plan.ZealotWeaponTier.ToString("0.0"), "ARMOR", plan.ZealotArmorTier.ToString("0.0"),
                 "FREE", CountItems(plan.Free), "SURPLUS", CountItems(plan.Surplus));
         }
 
@@ -614,6 +622,14 @@ namespace GreyWardenPolicePurity
                     Flag("GOODS_BACKLOG", "village=" + row.VillageId + "; goodsValue=" + goods.TotalValue +
                         "; town=" + village.Village.TradeBound?.StringId + "; townGold=" + village.Village.TradeBound?.Town.Gold);
             }
+
+            // 用户反馈 2026-10-07「不同军械库之间数目不一」：账本里不该有数量不为正的条目，有就说明哪里扣多了。
+            foreach (KeyValuePair<string, ItemRoster> pair in _armories)
+                for (int i = 0; i < pair.Value.Count; i++)
+                    if (pair.Value.GetElementNumber(i) <= 0)
+                        Flag("ARMORY_NON_POSITIVE", "holder=" + pair.Key + "; item=" +
+                            pair.Value.GetElementCopyAtIndex(i).EquipmentElement.Item.StringId +
+                            "; amount=" + pair.Value.GetElementNumber(i));
 
             int treasury = PoliceResourceManager.GetJudicialTreasuryBalance();
             if (treasury < GwpTuning.Reconstruction.MinimumTreasuryReserve + GwpTuning.Reconstruction.MaximumCost)

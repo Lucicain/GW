@@ -90,21 +90,19 @@ namespace GreyWardenPolicePurity
         private static void FaithOptionConsequence(MenuCallbackArgs args)
         {
             Settlement? village = Settlement.CurrentSettlement;
-            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int zealots, out int cap,
-                    out Hero? priest))
+            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int zealots, out _, out Hero? priest))
                 return;
 
             string body = GwpText.Get(
-                "{=gwp_fs_village_info}{ZEALOTS} women of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire ({SHARE}%; at most {CAP} can). The flame passes only from mother to daughter; the men of the village serve it and do not touch it. The village militia are these zealots: they fight raiders, and the dead are not replaced unless the faith wins new believers.",
-                "ZEALOTS", zealots, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name,
-                "SHARE", HearthShare(village, zealots), "CAP", cap);
+                "{=gwp_fs_village_info}{ZEALOTS} women of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire. The flame passes only from mother to daughter; the men of the village serve it and may not touch it. When raiders come, it is these sworn women who take up the spear.",
+                "ZEALOTS", zealots, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
             body += "\n\n" + (priest != null
-                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. Warden lords recruit from her, and take the lowest zealots straight from the village's households.",
+                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn daughters of this village go with them from her hearth.",
                     "PRIEST", priest.Name)
                 : GwpText.Get("{=gwp_fs_village_no_priest}No priest of the Eternal Fire lives here."));
             GwpFireswornBehavior.GetVillageStores(village, out int prisoners, out int armoryItems, out int goodsValue);
             body += "\n\n" + GwpText.Get(
-                "{=gwp_fs_village_stores}Dungeon: {PRISONERS} prisoners awaiting the fire. Armory: {ARMORY} pieces to arm the zealots. Storehouse: goods worth {GOODS} denars, waiting for the zealots to carry them to market.",
+                "{=gwp_fs_village_stores}{PRISONERS} wretches wait in the cellar for the pyre. The storeroom holds {ARMORY} pieces of arms and armour for the sworn. Goods worth {GOODS} denars wait to be carted to market.",
                 "PRISONERS", prisoners, "ARMORY", armoryItems, "GOODS", goodsValue);
             InformationManager.ShowInquiry(new InquiryData(
                 GwpText.Get("{=gwp_fs_village_info_title}The Eternal Fire"), body,
@@ -158,7 +156,7 @@ namespace GreyWardenPolicePurity
             bool includeDescriptions = false) =>
             GwpFireswornBehavior.IsPreachedVillage(settlement)
                 ? new ExplainedNumber(0f, includeDescriptions,
-                    GwpText.Create("{=gwp_fs_militia_change}Eternal Fire: the militia are the village's zealots"))
+                    GwpText.Create("{=gwp_fs_militia_change}Eternal Fire: the sworn women stand as the militia"))
                 : Inner.CalculateMilitiaChange(settlement, includeDescriptions);
 
         public override ExplainedNumber CalculateVeteranMilitiaSpawnChance(Settlement settlement) =>

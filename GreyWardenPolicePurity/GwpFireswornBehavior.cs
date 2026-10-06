@@ -376,6 +376,21 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 查询
 
+        /// <summary>这是不是一支传教队或狂信者队；是的话，它是哪种、是不是在去的路上、家在哪、要去哪。</summary>
+        internal static bool TryDescribeFaithParty(MobileParty? party, out bool disciples, out bool outbound,
+            out Settlement? home, out Settlement? target)
+        {
+            disciples = outbound = false;
+            home = target = null;
+            if (party == null || _instance == null || !_instance._faithParties.TryGetValue(party.StringId, out FaithParty? record))
+                return false;
+            disciples = record.Kind == FaithPartyKind.Disciples;
+            outbound = record.Phase == FaithPartyPhase.Outbound || record.Phase == FaithPartyPhase.Working;
+            home = Settlement.Find(record.HomeId);
+            target = Settlement.Find(record.TargetId);
+            return true;
+        }
+
         internal static bool IsPreachedVillage(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null &&
             _instance._villages.ContainsKey(settlement.StringId);
@@ -475,6 +490,7 @@ namespace GreyWardenPolicePurity
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             GwpFireswornMenus.Register(starter);
+            GwpFireswornPartyDialogs.Register(starter);
             RebuildPriestIndex();
             foreach (FaithVillage row in _villages.Values.ToList())
                 ObserveAndPushMilitia(row);

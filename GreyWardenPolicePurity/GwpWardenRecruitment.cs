@@ -145,8 +145,11 @@ namespace GreyWardenPolicePurity
     /// 原版估算「这里能招几个兵」时不看招不招得到，只数每位要人的前 4 格（C#反编译 v1.4.8
     /// AiVisitSettlementBehavior.GetApproximateVolunteersCanBeRecruitedDataFromSettlement）。
     /// 灰袍只在信众村招兵，所以别处一律算 0；信众村只数祭司的格子，再加上能直接招的狂信者，
-    /// 招兵的意愿就回到信众村（用户裁定）。灰袍兵不领饷，平均工资是 0：原版只在工资预算大于 0 时
-    /// 才用它做除数，结果是正无穷，不限人数。
+    /// 招兵的意愿就回到信众村（用户裁定）。
+    /// 第二个值是平均工资，原版拿它去除工资预算，再用 MathF.Floor 转成整数，作为能养得起的人数上限
+    /// （AiVisitSettlementBehavior.AiHourlyTick）。灰袍兵不领饷，平均工资是 0 时得到正无穷，转整数成了
+    /// -2147483648，招兵意愿整个变成负数（C#反编译、运行时反射 2026-10-07）。所以报 1：不领饷，人数上限就是预算本身，
+    /// 招多少由兵源和空位决定。
     /// </summary>
     [HarmonyPatch(typeof(AiVisitSettlementBehavior), "GetApproximateVolunteersCanBeRecruitedDataFromSettlement")]
     internal static class GwpWardenRecruitDesirePatch
@@ -154,7 +157,7 @@ namespace GreyWardenPolicePurity
         private static void Postfix(Hero hero, Settlement settlement, ref (int, float) __result)
         {
             if (GwpWardenRecruitment.IsWardenBuyer(hero))
-                __result = (GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 0f);
+                __result = (GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 1f);
         }
     }
 

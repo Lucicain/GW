@@ -2,7 +2,7 @@
 
 > 当前状态：配图颜色经用户确认；仪式声音单次播放与退出即停已部署待实测；机制数值仍为试玩值
 > 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：`a1d6479`（2026-10-07；竞技场菜单生命周期、单次声音与 live 核对）
+> 已复核至：2026-10-07 玩家看到的火誓者文字（村庄说明、祭司、库房、军械库）改成游戏内口吻，去掉机制说明和阶数；登记常驻队对话
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：传教与烧人音效完整播放一次、原音调、关菜单立即停止；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 
@@ -199,6 +199,7 @@
 - **看军械库**（`GwpFireswornArmoryView.cs`）：信众村菜单「永恒之火：军械库」，先列本村、别的信众村、每支灰袍领主部队的军械库，
   选一个列出里面每样东西（原版物品图标、件数）和配装概况。只看，不能拿。
 - **村庄菜单**：「永恒之火：狂信者 N 人（户数的 X%）」，点开看狂信者、祭司、地牢、军械库、货仓。
+- **玩家看到的文字**用游戏内的口吻写，不写机制说明、阈值、阶数、「信众村」这种开发用语。（依据：用户反馈 2026-10-07：火誓者文本有明显的提示词泄露）
 
 ### 回退
 

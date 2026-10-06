@@ -36,7 +36,7 @@ namespace GreyWardenPolicePurity
                 .ToList();
             MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
                 GwpText.Get("{=gwp_fs_armory_holders_title}Armories of the Eternal Fire"),
-                GwpText.Get("{=gwp_fs_armory_holders_text}Every faith village and every Warden lord's company keeps its own armory. The zealots and new recruits wear what is in it, one kit to a soldier. Choose one to see what it holds."),
+                GwpText.Get("{=gwp_fs_armory_holders_text}The arms of the Eternal Fire are kept in many places: every sworn village has its storeroom, and every Warden lord carries her own store with her company. The sworn and the Wardens' young recruits arm themselves from it before a fight."),
                 holders, true, 1, 1,
                 GwpText.Get("{=gwp_fs_armory_open}Open"), GwpText.Get("{=gwp_fs_armory_close}Close"),
                 chosen => ShowContents((string)chosen[0].Identifier), null));

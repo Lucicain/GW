@@ -2,12 +2,12 @@
 
 > 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：`0b63c01`（2026-10-06）
+> 已复核至：`a1d6479`（2026-10-07，统一收尾与状态归属）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 
-> ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
-> 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。
+本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
+[`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
 
 ## 用户裁定的三条规则
 

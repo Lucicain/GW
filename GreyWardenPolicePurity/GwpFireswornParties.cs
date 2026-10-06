@@ -157,7 +157,9 @@ namespace GreyWardenPolicePurity
                              MBRandom.RandomInt(100000, 999999);
             party.ActualClan = police;
             party.MemberRoster.Clear();
-            PoliceResourceManager.OutfitTemporaryDutyParty(party);
+            // 不借船、不配口粮：两支常驻队只走陆路，不吃饭（GwpCommon.IsLeaderlessDutyParty）。
+            // 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
+            // （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
             Park(party, home);
             _faithParties[party.StringId] = new FaithParty
             {

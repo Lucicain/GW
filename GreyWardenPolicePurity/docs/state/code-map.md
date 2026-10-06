@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-158 个源文件、50,308 行、309 个公开类型、66 个 Harmony 补丁点（分布在 66 个补丁类里）。
+159 个源文件、50,475 行、310 个公开类型、66 个 Harmony 补丁点（分布在 66 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -308,6 +308,7 @@
 - `GwpFireswornBehavior` → GwpFireswornArmory.cs , GwpFireswornBehavior.cs , GwpFireswornDungeon.cs , GwpFireswornParties.cs , GwpFireswornRituals.cs
 - `GwpFireswornMenus` → GwpFireswornMenus.cs
 - `GwpFireswornMilitiaModel` → GwpFireswornMenus.cs ←
+- `GwpFireswornPartyDialogs` → GwpFireswornPartyDialogs.cs
 - `GwpFireswornPriestStaysPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornSoundMenuActivatePatch` → GwpFireswornSoundView.cs ←
 - `GwpFireswornSoundView` → GwpFireswornSoundView.cs
@@ -582,17 +583,17 @@
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（73 个文件）
+### 其他（74 个文件）
 
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
-- `GwpFireswornBehavior.cs` — 884 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
-- `GwpFireswornArmory.cs` — 747 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornBehavior.cs` — 900 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GwpFireswornArmory.cs` — 763 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 385 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpPoliceWarReasonService.cs` — 362 行 · `GwpPoliceWarReasonService`
-- `GwpFireswornParties.cs` — 336 行 · `GwpFireswornBehavior`
+- `GwpFireswornParties.cs` — 338 行 · `GwpFireswornBehavior`
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
 - `GwpFireswornDungeon.cs` — 272 行 · `GwpFireswornBehavior`
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
@@ -600,7 +601,7 @@
 - `GwpAssistanceArmyLifecyclePatch.cs` — 235 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
-- `GwpWardenRecruitment.cs` — 198 行 · `GwpWardenRecruitment` : VolunteerModel，另含 7 个类型
+- `GwpWardenRecruitment.cs` — 201 行 · `GwpWardenRecruitment` : VolunteerModel，另含 7 个类型
 - `GwpAffairsNavigation.cs` — 197 行 · `GwpAffairsNavigationElement` : MapNavigationElementBase，另含 3 个类型
 - `GreyWardenLeaderBalanceBehavior.cs` — 193 行 · `GreyWardenLeaderBalanceBehavior` : CampaignBehaviorBase
 - `GwpEncyclopediaClanPageVM.cs` — 193 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型
@@ -608,7 +609,7 @@
 - `GwpAgentStatCalculateModel.cs` — 190 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GreyWardenSafeTroopSupplier.cs` — 188 行 · `GreyWardenSafeTroopSupplier` : IMissionTroopSupplier，另含 1 个类型
 - `GwpPartyDutyMovementPatch.cs` — 185 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
-- `GwpFireswornMenus.cs` — 172 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
+- `GwpFireswornMenus.cs` — 170 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFaithBattleRewardModel.cs` — 161 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `GwpOffenderDesire.cs` — 160 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
@@ -617,6 +618,7 @@
 - `GwpFiefPublicSupportPatch.cs` — 145 行 · `GwpFiefPublicSupportPatch`
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
+- `GwpFireswornPartyDialogs.cs` — 132 行 · `GwpFireswornPartyDialogs`
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
 - `GwpRitualSoundOutput.cs` — 124 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
