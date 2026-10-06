@@ -1,12 +1,12 @@
 # 资产管线：打包布局、盾牌 LOD 流程、失败恢复表、旧包回收
 
-> 从 `maintenance-plan.md` 原样迁出的参考资料，正文未改。
+> 从 `maintenance-plan.md` 迁出；当前开发/玩家布局以 `../state/build-and-deploy.md` 为准。
 
 ## Release packaging and asset layout
 
 ### Player archive
 
-- Public artifact name: `GreyWarden-v1.4.7.zip` with a sibling SHA-256 file.
+- Public artifact name: `GreyWarden-<version>.zip` with a sibling SHA-256 file.
 - Create archives only during a formal GitHub push/release task. Ordinary
   `dotnet build` runs must compile and synchronize the live module without
   creating, refreshing, or copying any ZIP.
@@ -16,9 +16,9 @@
   `Modules\GreyWarden` directory and never inside repository `_Module`.
 - The ZIP must contain exactly one top-level `GreyWarden` directory.
 - Include only runtime data: `AssetPackages`, `bin/Win64_Shipping_Client`,
-  `GUI`, `ModuleData`, `ModuleSounds`, `Shaders`, `README.md`, and
+  `GUI`, `ModuleData`, `ModuleSounds`, `Music`, `README.md`, `README_EN.md`, and
   `SubModule.xml`.
-- Exclude `Assets`, `AssetSources`, `RuntimeDataCache`,
+- Exclude `Assets`, `AssetSources`, `RuntimeDataCache`, `DsAssetPackages`, `Shaders`,
   `bin/Win64_Shipping_wEditor`, PDB files, source FBX/PNG files, and diagnostic
   logs/dumps.
 
@@ -27,14 +27,17 @@
 Since 2026-09-27 the module ships one package, published by the Modding Kit from
 the rebuilt editor sources:
 
-- `AssetPackages/pack0.tpac` — 371,237,229 bytes. 146 assets: 21 metameshes
+- The current v14 `AssetPackages/pack0.tpac` is 371,238,167 bytes, SHA-256
+  `bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`.
+  146 assets: 21 metameshes
   (the 20 inherited armour/harness/shield models plus `wlarge_shield_black_static`),
   19 materials, 36 textures, 2 physics shapes (`bo_cap_wlarge_shield`,
   `bo_wlarge_shield`), 4 skeletal animations and 64 animation clips (dual wield).
   Its asset names match the three packages it replaces one for one (texture
   names are now lower case).
 - It is gitignored (over GitHub's file-size limit) and lives in
-  `_Module/AssetPackages/` for deployment. Do **not** put
+  `_Module/AssetPackages/` for player release staging, excluded from development
+  live deployment. Do **not** put
   `gwp_inherited_legacy_assets.tpac`, `gwp_black_gold_shield.tpac` or
   `gwp_dual_wield_animations.tpac` back beside it: same asset names.
   (依据：设计——同名资源冲突)
@@ -45,22 +48,26 @@ the rebuilt editor sources:
 
 ### Local layout: the live module stays in development layout
 
-The live `GreyWarden` module on this machine always holds `Assets`,
-`AssetSources` and `RuntimeDataCache` beside `AssetPackages`, so the user can
-keep working in the Modding Kit at any time. Do not move them out after a publish
-or before a client test. (依据：用户裁定 2026-09-27)
+The live `GreyWarden` module on this machine always holds populated `Assets`,
+`AssetSources` and `RuntimeDataCache`, with diagnostics in both Client/Editor DLLs.
+It contains no `AssetPackages` or `DsAssetPackages` directories. Ordinary builds
+exclude packed player/server resources and preserve editable art. Do not move
+editable directories out after a publish or before a client test.
+(依据：用户裁定 2026-10-07)
 
 - With those directories present, the editor and the client load
   `Modules/GreyWarden/Assets` and skip `AssetPackages` (rgl log:
   `Loading packages $BASE/Modules/GreyWarden/Assets...`). Since the full rebuild,
   `Assets` holds every mod asset, so in-game tests see what the Kit last saved.
-- `AssetPackages/pack0.tpac` is what the Kit last published. It is what players
-  load, so a Kit change that should ship needs a publish.
+- Repository `_Module/AssetPackages/pack0.tpac` is the retained player package.
+  It is what players load, so a Kit change that should ship needs a publish;
+  the player package can differ from current editable development art.
 - The release layout (no editor directories) exists only inside the release
   ZIP, which already excludes them (`../state/build-and-deploy.md`). It is built
   in staging when the user asks for a release, never by rearranging live.
-- `Verify-LiveModule.ps1` ignores the three editor directories, so it passes in
-  this layout.
+- `Verify-LiveModule.ps1` checks editable directories are nonempty, rejects packed
+  directories even when empty, and checks matching diagnostic Client/Editor DLLs.
+  Editable contents are excluded from the runtime mirror comparison.
 
 On 2026-09-27 the agent parked the three directories in
 `Modules/_GreyWardenEditorWorkspace` after a publish, which left the user unable to
@@ -73,7 +80,10 @@ The Kit clears the live `AssetPackages` directory and writes only `pack0.tpac`
 
 1. Wait until the Kit has fully exited.
 2. Copy `pack0.tpac` to repository `_Module/AssetPackages/` (git-ignored) and
-   compare hashes with live.
+   compare hashes with live. Preserve the previous player package as a rollback
+   before replacing it. Then move the published live `AssetPackages` directory
+   outside the module into a named `.codex_tmp/` backup, leaving all editable
+   art in place, and verify the development layout again.
 3. If the user also ticked the dedicated-server target, the Kit writes
    `DsAssetPackages/pack0.tpac` too (about 1 MB on 2026-10-02). Move it out of live to
    `.codex_tmp/ds-asset-packages-<version>/` for future multiplayer work. It does not belong

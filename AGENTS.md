@@ -81,7 +81,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - `_Module` 下的可部署文件改动后**立即**复制到 live 模块并**比对哈希**。
   有任何差异时不得开始或接受实机测试。
 - 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不在镜像范围内；本机 live 一直保留它们（开发版布局），
-  发布或测试后都不挪走。发行版布局只在发布 ZIP 里做。
+  发布或测试后都不挪走。`AssetPackages`、`DsAssetPackages` 也不向 live 镜像；开发版 live 不保留打包资源目录，
+  Client/Editor DLL 保留监控。玩家包使用打包美术、无监控，不含可编辑目录；发行版布局只在发布 ZIP 里做。（依据：用户裁定 2026-10-07）
 - 流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
 - 实机测试只由用户做：agent 不启动游戏、不操控游戏界面。交付时给构建、部署、哈希、离线测试结果
   和一份「进游戏看什么」。部署时 DLL 被占用说明用户在玩：保留工作树，等关游戏再部署。（依据：用户裁定 2026-09-25）

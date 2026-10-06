@@ -116,23 +116,23 @@
   </ItemGroup>
 
 
-  <!-- 每次 build 后自动将 _Module\ 内所有文件同步到游戏模组目录 -->
+  <Target Name="RequireLiveDiagnostics" BeforeTargets="PrepareForBuild" Condition="'$(DeployToLiveModule)' == 'true'">
+    <Error Condition="'$(GwpDiagnosticsEnabled)' != 'true'" Text="The live development module requires diagnostics. Build player binaries with DeployToLiveModule=false." />
+  </Target>
+
+  <!-- 每次 build 后同步开发版运行时文件；玩家打包美术不进入 live。 -->
   <Target Name="CopyModuleData" AfterTargets="Build" Condition="'$(DeployToLiveModule)' == 'true'">
     <ItemGroup>
-      <!-- Assets and AssetSources are editor working data. Preserve them so
-           the Modding Kit can reopen and republish the resources. They are
-           excluded from this ordinary build copy to avoid overwriting newer
-           editor-side work; the build must never delete them. In the current
-           engine build, a live folder named Assets makes the normal client load
-           that editable tree instead of AssetPackages, so game testing must use
-           a reversible folder-name switch or a separate runtime module. -->
+      <!-- Preserve the live editable Assets, AssetSources and RuntimeDataCache.
+           Ordinary builds must neither overwrite them nor copy the player-only
+           AssetPackages or dedicated-server DsAssetPackages into development live. -->
       <!-- Release ZIPs are created only by the formal GitHub release workflow
            and live beside the GreyWarden directory in the game's Modules
            folder. A normal build must never copy an archive into the module. -->
       <ModuleFiles Include="$(MSBuildProjectDirectory)\_Module\**"
-                   Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**;$(MSBuildProjectDirectory)\_Module\*.zip;$(MSBuildProjectDirectory)\_Module\*.zip.sha256;$(MSBuildProjectDirectory)\_Module\**\*.zip;$(MSBuildProjectDirectory)\_Module\**\*.zip.sha256" />
+                   Exclude="$(MSBuildProjectDirectory)\_Module\Assets\**;$(MSBuildProjectDirectory)\_Module\AssetSources\**;$(MSBuildProjectDirectory)\_Module\RuntimeDataCache\**;$(MSBuildProjectDirectory)\_Module\AssetPackages\**;$(MSBuildProjectDirectory)\_Module\DsAssetPackages\**;$(MSBuildProjectDirectory)\_Module\*.zip;$(MSBuildProjectDirectory)\_Module\*.zip.sha256;$(MSBuildProjectDirectory)\_Module\**\*.zip;$(MSBuildProjectDirectory)\_Module\**\*.zip.sha256" />
     </ItemGroup>
-    <Copy SourceFiles="@(ModuleFiles)" DestinationFiles="@(ModuleFiles->'$(GameFolder)\Modules\GreyWarden\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="@(ModuleFiles)" DestinationFiles="@(ModuleFiles->'$(GameFolder)\Modules\GreyWarden\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
     <Message Text="ModuleData synced → $(GameFolder)\Modules\GreyWarden\" Importance="high" />
   </Target>
 

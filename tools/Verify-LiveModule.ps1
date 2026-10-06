@@ -15,6 +15,8 @@
     nothing beyond the repository module plus the two generated directories
     AGENTS.md allows there, bin and Shaders, and the Modding Kit's editor
     directories, which the live module keeps permanently (development layout).
+    Player/server AssetPackages must be absent, editable trees must be populated,
+    and both Client/Editor assemblies must contain diagnostics and match.
 
 .PARAMETER RepoModule
     The repository module directory. Defaults to the one beside this script.
@@ -41,9 +43,10 @@ if (-not $RepoModule) {
 # Editor-side trees: not part of the mirror in either direction. The live module
 # keeps its own Modding Kit copies permanently so asset work can resume at any
 # time (development layout); the release ZIP leaves them out.
+# Repository player/server package staging is also excluded from development live.
 # Anchored at the start: these paths are relative, so they have no leading
 # separator to match against.
-$repoOnly = '^(Assets|AssetSources|RuntimeDataCache|obj)\\'
+$repoOnly = '^(Assets|AssetSources|RuntimeDataCache|AssetPackages|DsAssetPackages|obj)\\'
 # Directories allowed to exist in live without a repository counterpart.
 $liveOnly = '^(bin|Shaders|Assets|AssetSources|RuntimeDataCache)\\'
 
@@ -71,6 +74,45 @@ foreach ($rel in $repoFiles) {
 $repoSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$repoFiles, [StringComparer]::OrdinalIgnoreCase)
 $stray = @($liveFiles | Where-Object { -not $repoSet.Contains($_) -and $_ -notmatch $liveOnly })
 
+$layoutFailures = @()
+foreach ($name in @('AssetPackages', 'DsAssetPackages')) {
+    if (Test-Path -LiteralPath (Join-Path $LiveModule $name)) {
+        $layoutFailures += "Player/server package directory present: $name"
+    }
+}
+foreach ($name in @('Assets', 'AssetSources', 'RuntimeDataCache')) {
+    $path = Join-Path $LiveModule $name
+    if (-not (Test-Path -LiteralPath $path -PathType Container) -or
+        -not (Get-ChildItem -LiteralPath $path -Recurse -File | Select-Object -First 1)) {
+        $layoutFailures += "Editable development tree missing or empty: $name"
+    }
+}
+
+$markers = @('GreyWarden-AI-Diagnostics', 'GreyWarden-Case-Events', 'GreyWarden-Faults',
+    'GreyWarden-Diagnostics-Archive', 'Mount and Blade II Bannerlord')
+$binaryHashes = @()
+foreach ($platform in @('Win64_Shipping_Client', 'Win64_Shipping_wEditor')) {
+    $path = Join-Path $LiveModule "bin\$platform\GreyWardenPolicePurity.dll"
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        $layoutFailures += "Development assembly missing: $platform"
+        continue
+    }
+    $bytes = [IO.File]::ReadAllBytes($path)
+    $ascii = [Text.Encoding]::ASCII.GetString($bytes)
+    $unicode = [Text.Encoding]::Unicode.GetString($bytes)
+    # PE string heaps can start at either byte alignment; search both UTF-16LE views.
+    $unicodeOdd = [Text.Encoding]::Unicode.GetString($bytes, 1, $bytes.Length - 1)
+    foreach ($marker in $markers) {
+        if (-not $ascii.Contains($marker) -and -not $unicode.Contains($marker) -and -not $unicodeOdd.Contains($marker)) {
+            $layoutFailures += "Development diagnostic marker missing in ${platform}: $marker"
+        }
+    }
+    $binaryHashes += (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+}
+if ($binaryHashes.Count -eq 2 -and $binaryHashes[0] -ne $binaryHashes[1]) {
+    $layoutFailures += 'Client/Editor development assemblies differ'
+}
+
 Write-Host ("repository files checked : {0}" -f $repoFiles.Count)
 Write-Host ("live files seen          : {0}" -f $liveFiles.Count)
 Write-Host ''
@@ -78,7 +120,8 @@ Write-Host ''
 foreach ($group in @(
     @{ Name = 'MISSING FROM LIVE'; Items = $missing },
     @{ Name = 'DIFFERENT IN LIVE';  Items = $differing },
-    @{ Name = 'STRAY IN LIVE (not in the repository, and not bin/, Shaders/ or the editor directories)'; Items = $stray })) {
+    @{ Name = 'STRAY IN LIVE (not in the repository, and not bin/, Shaders/ or the editor directories)'; Items = $stray },
+    @{ Name = 'DEVELOPMENT LAYOUT / DIAGNOSTICS'; Items = $layoutFailures })) {
     if ($group.Items.Count -eq 0) {
         Write-Host ("{0}: none" -f $group.Name) -ForegroundColor Green
     } else {
@@ -87,11 +130,11 @@ foreach ($group in @(
     }
 }
 
-if ($missing.Count -or $differing.Count -or $stray.Count) {
+if ($missing.Count -or $differing.Count -or $stray.Count -or $layoutFailures.Count) {
     Write-Host ''
-    Write-Host 'Live module does NOT mirror the repository. Do not accept an in-game test result.' -ForegroundColor Red
+    Write-Host 'Live module does NOT match the development layout and runtime mirror. Do not accept an in-game test result.' -ForegroundColor Red
     exit 1
 }
 
 Write-Host ''
-Write-Host 'Live module mirrors the repository.' -ForegroundColor Green
+Write-Host 'Live development layout, diagnostics and runtime mirror verified.' -ForegroundColor Green

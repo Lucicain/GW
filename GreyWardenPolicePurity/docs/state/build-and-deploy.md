@@ -1,7 +1,8 @@
 # 构建、校验与部署
 
-> 当前状态：原 v14 同号整合包已上线并远端复核；live 回归合入修复的 main 火誓者开发版
+> 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
+> 已复核至：`98d9783`；2026-10-07 开发/玩家布局分离复核，构建与离线校验结果见正文
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
@@ -11,7 +12,9 @@
 
 当前 live 部署来源为主工作树 `C:/Users/lucif/source/repos/GreyWardenPolicePurity`，main 已合入入国入口保护、通用读档退出和自动装备候选保护，保留火誓者完整成果并已重新部署。部署前回退：原开发双端 DLL/PDB 与 runtime 在 `.codex_tmp/pre-v14-live-20261006/`；v14 整合包开发 DLL 在 `.codex_tmp/v14-before-main-resume-20261007/`。已恢复四个火誓者仪式图片/声音文件；Assets、AssetSources、RuntimeDataCache 共 339 文件部署前后逐项哈希相同，镜像以 main 为准。（依据：流程）
 
-主线部署验证：开发及隔离无诊断构建均 0 警告/0 错误；GameCompat/PREFLIGHT 开发 663 类型/79 补丁、无诊断 655/76，成员与补丁失败均 0；116 项修复回归 PASS；ContentKeys MISSING=0；live 70 个运行时文件无缺失/差异/散落。Client/Editor DLL SHA-256 均 `dfcfbef6ce33808b9159256c1ade71973b05c11f7914f5aab1ef73b4a9ad8c7c`，与主线隔离开发构建一致；RBM 等第三方文件及经济源码本轮未变。实机功能待验收清单仍由各子系统维护。
+主线部署验证：开发及隔离无诊断构建均 0 警告/0 错误；当前 live GameCompat/PREFLIGHT 663 类型/79 补丁、成员与补丁失败均 0；既有无诊断主线校验 655/76，116 项修复回归 PASS，ContentKeys MISSING=0。Client/Editor DLL SHA-256 均 `8ba222c1a650b894d2572525ae33140dc04c35ebfa8b90d4698bb191f2b796ff`；live 69 个 runtime 文件无缺失/差异/散落，无打包资源目录；339 个开发美术文件前后逐项哈希不变。五组监控串在双端开发 DLL 中均存在、已发布玩家 DLL 中均不存在，ASCII 与 UTF-16LE 两种字节对齐均核查。正向布局、空客户端包/服务器包目录、空编辑资源目录、玩家 DLL、双端 DLL 不一致和无监控 live 构建共 7 项检查通过；证据在 `.codex_tmp/live-layout-verification-20261007/`。玩法、RBM 等第三方文件及经济源码本轮未变。实机功能待验收清单仍由各子系统维护。
+
+布局回退：修正前源码存档 `98d9783`，部署目标与校验器分别为 `GreyWardenPolicePurity.csproj`、`tools/Verify-LiveModule.ps1`；原 live 玩家 `AssetPackages/pack0.tpac` 移至 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/live-player-assets-before-layout-fix-20261007/AssetPackages/`，SHA-256 `bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`。仓库 `_Module/AssetPackages` 与已发布玩家包保留，三类开发美术不移动。（依据：流程）
 
 `GreyWardenPolicePurity.csproj`：
 
@@ -42,7 +45,7 @@
 |---|---|---|
 | `Invoke-ModuleLoadPreflight.ps1` | 把构建产物对着已安装游戏加载，报出游戏启动时会撞上的类型加载与 Harmony 绑定失败 | 类型/成员引用无缺失；类型加载数与补丁绑定数与上一版一致或有已解释的增量 |
 | `Verify-GameCompat.ps1` | 检查 DLL 与当前安装的 Bannerlord 是否兼容，防止换游戏版本后静默产出游戏拒绝加载的模组 | `GAME COMPAT: PASS`、`MEMBER_FAIL_COUNT=0`、`PATCH_FAIL=0` |
-| `Verify-LiveModule.ps1` | **双向**比对 live 测试模块与仓库模块 | 无缺失、无差异、无散落文件；两份玩家 README 一致 |
+| `Verify-LiveModule.ps1` | **双向**比对开发 runtime，检查开发布局和双端监控 DLL | 无缺失/差异/散落；三类可编辑目录非空；无客户端/服务器打包目录；Client/Editor DLL 哈希一致且五组监控串存在；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
@@ -72,12 +75,16 @@
 
 - 这条与 Git 发布无关，工作树可以一直未提交。
 - 每次部署后**比对哈希**，不要假定复制成功。（依据：流程）
+- runtime 同步允许覆盖只读目标文件：现有 `ModuleData/sphpcustombattle.xslt` 在源和 live 均带 ReadOnly，未设置 `OverwriteReadOnlyFiles` 会使默认构建在已输出 Client DLL 后中断，Editor 尚未更新。（依据：实机诊断 2026-10-07 MSB3021；流程）
 - 任何可部署源文件与 live 对应文件有差异时，**不得开始或接受实机测试**。（依据：流程）
 - 本机 live 一直是开发版布局：编辑器专用的 `Assets`、`AssetSources`、`RuntimeDataCache`
   常驻 live 模块，随时能进 Modding Kit 继续改；发布后、实机测试前都不挪走。（依据：用户裁定）
-  这三个目录不属于 `_Module` 的镜像范围，`Verify-LiveModule` 忽略它们。此布局下客户端加载
-  `Assets` 而非 `AssetPackages`。发行版布局只存在于发布 ZIP 里（下节已排除这三个目录），
-  不靠改动 live 来做。生成的 `bin` 与 `Shaders` 可以只存在于 live 模块。详见 `../reference/asset-pipeline.md`。
+  这三个目录不属于 `_Module` 的镜像范围，校验只检查非空，不比对编辑中的内容。
+  `AssetPackages`、`DsAssetPackages` 同样不向开发 live 镜像，live 中连空目录也不保留；
+  用户版打包美术保存在仓库 `_Module/AssetPackages` 和发布 staging，开发版使用可编辑美术。
+  Client/Editor 都保留监控 DLL，构建拒绝 `DeployToLiveModule=true` 与 `GwpDiagnosticsEnabled=false` 的组合。
+  玩家版反之：打包美术、无监控、无可编辑目录。生成的 `bin` 与 `Shaders` 可以只存在于 live。
+  （依据：用户裁定 2026-10-07）详见 `../reference/asset-pipeline.md`。
 - 单文件改动（如新增中文键）先单文件镜像并比 hash，再随构建全量同步。
 - 部署前确认游戏没开：进程名是 `TaleWorlds.MountAndBlade.Launcher`、`Watchdog`、`Bannerlord`
   （按 `Bannerlord|TaleWorlds|Launcher|Watchdog` 匹配）。只查名字里带 `Bannerlord` 会漏掉启动器，
