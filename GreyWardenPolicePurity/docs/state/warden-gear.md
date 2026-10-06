@@ -1,10 +1,10 @@
 # 灰袍装备：来源与原版品质
 
-> 当前状态：入会发装带原版品质经用户实测确认（2026-10-02）；最佳品质发装与 v14 自动换装候选保护已部署待实测
+> 当前状态：便装模板摘盔已镜像，战斗头盔保留；入会品质已验收，最佳品质与自动换装保护待实测
 > 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
-> 已复核至：`fcf3187`；2026-10-07 v14 自动装备候选保护与离线回归工具合入 main
-> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1`
-> 待实测：重新入会后，灰袍装备每件都是该组最好的品质（剑、甲、盾为传奇）；v14 / RBM 环境灰袍进城后装备保持，普通领主自动换装与玩家手动换装照常
+> 已复核至：`515a2eb`（2026-10-07）
+> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1`
+> 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常
 
 本文件写"灰袍装备从哪来、带不带原版品质（`ItemModifier`，精良/大师/传奇等前缀）"。
 灰袍自己的武器效果（击倒、破防等，代码里叫 `GwpWeaponTraits`）是另一回事，见 [troop-combat.md](troop-combat.md)。
@@ -44,9 +44,21 @@
 
 撤回本功能的提交：`GiveCommanderEquipment` 恢复 `new EquipmentElement(item)`，两面大盾恢复 `shield_metal`。
 
+## 城堡便装摘盔
+
+灰袍领主便装摘掉头盔，其余甲胄保留，战斗仍戴盔；只改模板，不新增存档适配、读档补正或场景摘盔补丁。反馈截图 `C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/1f4cfb438e919396d0397636c1ec84c3.png` 是城堡全甲现象参考。（依据：用户裁定 2026-10-07）
+
+回退：取回源码存档 `515a2eb` 中的 `gw_equipment_sets.xml` 并镜像，可恢复原便装 Head。修改前 live 模板与双端 DLL/PDB 备份至 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/warden-civilian-head-before-20261007/`，DLL 保持原 SHA-256 `8ba222c1a650b894d2572525ae33140dc04c35ebfa8b90d4698bb191f2b796ff`。（依据：流程）
+
+原版 1.4.8 的 `HeroAgentSpawnCampaignBehavior.CreateLocationCharacterForHero` 给城镇/城堡领主设置 `UseCivilianEquipment=true`，带队领主在村庄才为 false；`MissionAgentHandler.SpawnLocationCharacter` 把该选择传入 AgentBuildData。`Mission.SpawnAgent` 将英雄设为 FixedEquipment，按该选择克隆 `FirstCivilianEquipment` 或 `FirstBattleEquipment`；本链不检查 `ItemFlags.Civilian`，也不调用自动换装的 `CharacterHelper.CanUseItem`。XML 的 `Equipment.DeserializeNode` 只检查物品是否适合槽位；`Hero.CheckInvalidEquipmentsAndReplaceIfNeeded` 处理 Trash、未就绪物品/品质，不过滤便装栏里的盔甲。便装栏是独立的装备集合，不保证其中是普通衣服。（依据：C#反编译当前安装 v1.4.8，2026-10-07）
+
+本模组 `gw_equipment_sets.xml` 的 `spc_gw_leader_0` 同时定义战斗套和 Civilian 套：战斗十槽含 `wcomhelmethv`，便装九槽无 Head，其余甲胄、武器和马具不变；六位创始领主在 `spspecialcharacters.xml` 同时引用这两套。生成/成年发装的 `PoliceResourceManager.EnsureCommanderLoadout` 也分别复制该模板的战斗和便装装备。五件指挥甲胄在 items.xml 中均为 `Civilian=false`，不改变 NPC 生成时直接取便装栏的行为。（依据：源码与 XML 核对）
+
+整套士兵预设补丁只处理非英雄 Battle 装备；火誓者军械库补丁跳过 AgentCivilianEquipment；自动换装候选保护不改场景装备选择。城堡穿着沿用模板，没有场景换装覆盖。已有英雄的便装已存档，不保证随 XML 更新而改变，不为此添加兼容逻辑。新模板与 live XML SHA-256 均为 `5702a7295b982ed45cee7ddb034979972fa59b9eef9c44b94445800d38368144`。（依据：C#反编译；用户裁定 2026-10-07）
+
 ## 灰袍 NPC 的自动换装候选
 
-用户要求压制灰袍的换装欲望，并明确“我们不动其他模组代码，这是底线”。本轮没有修改第三方文件、配置或方法，也没有对第三方方法挂补丁。（依据：用户裁定 2026-10-07）
+用户要求压制灰袍的换装欲望，并明确“我们不动其他模组代码，这是底线”。第三方文件、配置和方法保持原样，也没有对第三方方法挂补丁。（依据：用户裁定 2026-10-07）
 
 v14 修复及 main 均已包含 GwpWardenAutoEquipmentPatch，仅挂钩原版 Helpers.CharacterHelper.CanUseItem(BasicCharacterObject, EquipmentElement) 两参数布尔重载：CharacterObject.HeroObject 属于 gw 家族时返回 false，其余角色保留原版。带 out TextObject reason 的三参数重载不改，玩家装备界面的带原因判定保留。普通士兵没有灰袍 HeroObject，不受此限制。
 
@@ -58,4 +70,4 @@ v14 修复及 main 均已包含 GwpWardenAutoEquipmentPatch，仅挂钩原版 He
 
 验证：开发/无诊断隔离构建均 0 警告/0 错误；v14 GameCompat/PREFLIGHT 614 类型/71 补丁，合入 main 后开发 663/79，均 PASS、失败 0。Verify-WardenAutoEquipment.ps1 使用真实原版与当前 RBMCampaign.dll，只读调用实际候选搜索；有 RBM 23 / 无 RBM 11 断言 PASS，涵盖 gw/GW、普通英雄、普通士兵、BasicCharacterObject、手动装备重载及库存不变。测试未挂钩第三方方法。
 
-当前 live 部署来源与双端 DLL 哈希统一见 build-and-deploy.md。回退：删除 v14 工作树 GwpWardenAutoEquipmentPatch.cs 后重新构建部署，或恢复 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-auto-equipment-20261007/` 的两端 DLL/PDB（SHA-256 `7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`）；本轮前本地存档点 `7c91b2d`。尚待用户实际进城验证。
+当前 live 部署来源与双端 DLL 哈希统一见 build-and-deploy.md。回退：删除 GwpWardenAutoEquipmentPatch.cs 后重新构建部署，或恢复 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-auto-equipment-20261007/` 的两端 DLL/PDB（SHA-256 `7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`）；功能前本地存档点 `7c91b2d`。尚待用户实际进城验证。
