@@ -63,6 +63,8 @@ namespace GreyWardenPolicePurity
                         }
                         if (record.Kind == FaithPartyKind.Disciples)
                             StartCongregation(record, party, target);
+                        else if (target.IsVillage)
+                            DeliverKits(record, party, target);
                         else
                             SellCargo(record, party, target);
                         break;
@@ -84,8 +86,8 @@ namespace GreyWardenPolicePurity
             Clan police = PoliceStats.GetPoliceClan();
             if (FactionManager.IsAtWarAgainstFaction(police, target.MapFaction))
                 return false;
-            return record.Kind == FaithPartyKind.Disciples
-                ? IsCongregationTarget(target, police)
+            return record.Kind == FaithPartyKind.Disciples ? IsCongregationTarget(target, police)
+                : target.IsVillage ? IsPreachedVillage(target) && IsVillageQuiet(target)
                 : !target.IsUnderSiege;
         }
 
@@ -94,7 +96,8 @@ namespace GreyWardenPolicePurity
             int proceeds = party.PartyTradeGold;
             party.PartyTradeGold = 0;
             CreditTreasury(proceeds);
-            int unsold = 0;
+            // 没送出去的兵器护甲回本村军械库，没卖掉的别的东西回货仓。
+            int unsold = UnloadKits(party, home.StringId);
             ItemRoster goods = ItemsOf(_goods, home.StringId);
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
@@ -255,6 +258,8 @@ namespace GreyWardenPolicePurity
             double now = CampaignTime.Now.ToHours;
             foreach (FaithVillage row in _villages.Values.ToList())
             {
+                if (TryDispatchKitDelivery(row, now))
+                    continue;
                 if (!_goods.TryGetValue(row.VillageId, out ItemRoster? goods) ||
                     goods.TotalValue < GwpTuning.Firesworn.CaravanMinimumGoodsValue ||
                     now - row.LastCaravan < GwpTuning.Firesworn.CaravanIntervalDays * 24d ||
@@ -286,6 +291,50 @@ namespace GreyWardenPolicePurity
                     "party=" + party.StringId + "; home=" + home.StringId + "; town=" + town.StringId +
                     "; cargoValue=" + value + "; men=" + party.MemberRoster.TotalManCount);
             }
+        }
+
+        /// <summary>
+        /// 狂信者队先送装备、后卖货：本村军械库有多出来的兵器护甲，附近又有信众村的狂信者没拿到兵器，
+        /// 就把它们拉过去（用户裁定 2026-10-07：狂信者当商队，在军械库之间传递资源，保持平衡）。
+        /// 每一类最多装那座村缺的人数，卸进它的军械库后回家。
+        /// </summary>
+        private bool TryDispatchKitDelivery(FaithVillage row, double now)
+        {
+            if (now - row.LastCaravan < GwpTuning.Firesworn.CaravanIntervalDays * 24d ||
+                row.Zealots < GwpTuning.Firesworn.CaravanSize + GwpTuning.Firesworn.DiscipleMinimumLeftBehind)
+                return false;
+            Settlement home = Settlement.Find(row.VillageId);
+            Settlement? needy = IsVillageQuiet(home) ? NeediestVillage(home) : null;
+            if (needy == null)
+                return false;
+            int shortage = Shortage(needy.StringId);
+            ItemRoster cargo = ExportableKits(row.VillageId, shortage);
+            if (CountItems(cargo) < GwpTuning.Firesworn.CaravanDeliveryMinimumShortage)
+                return false;
+            MobileParty? party = ReadyFaithParty(row, home, FaithPartyKind.Caravan);
+            if (party == null)
+                return false;
+            TopUp(party, row, home, GwpTuning.Firesworn.CaravanSize);
+            int loaded = MoveAll(cargo, ItemsOf(_armories, row.VillageId), party.ItemRoster);
+            _plans.Remove(row.VillageId);
+            row.LastCaravan = now;
+            FaithParty cart = _faithParties[party.StringId];
+            cart.Stops = 0;
+            SetPhase(cart, FaithPartyPhase.Outbound, needy.StringId);
+            GreyWardenPartyDesireBehavior.RequestVisit(party, needy, GwpTuning.Firesworn.FaithPartyVisitScore);
+            GwpAiDiagnostics.WriteFaith("CARAVAN_KITS_DISPATCHED",
+                "party=" + party.StringId + "; home=" + home.StringId + "; to=" + needy.StringId +
+                "; shortage=" + shortage + "; items=" + loaded + "; value=" + cargo.TotalValue);
+            return true;
+        }
+
+        private void DeliverKits(FaithParty record, MobileParty party, Settlement village)
+        {
+            int delivered = UnloadKits(party, village.StringId);
+            SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
+            GwpAiDiagnostics.WriteFaith("CARAVAN_KITS_DELIVERED",
+                "party=" + party.StringId + "; to=" + village.StringId + "; items=" + delivered +
+                "; shortageAfter=" + Shortage(village.StringId));
         }
 
         /// <summary>

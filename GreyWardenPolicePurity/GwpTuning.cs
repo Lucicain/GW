@@ -339,6 +339,9 @@ namespace GreyWardenPolicePurity
             public const int CaravanSize = 8;
             public const int CaravanMinimumGoodsValue = 2000;
             public const float CaravanIntervalDays = 3f;
+            // 狂信者队送装备：只送到这个距离内、至少缺这么多套的信众村，至少装这么多件才出车。
+            public const float CaravanDeliveryMaxDistance = 300f;
+            public const int CaravanDeliveryMinimumShortage = 5;
             // 一趟最多卖几座城；下一座城金库至少要有这么多钱才去。
             public const int CaravanMaxTowns = 3;
             public const int CaravanMinimumTownGold = 5000;
@@ -347,15 +350,14 @@ namespace GreyWardenPolicePurity
             public const float FaithPartyVisitScore = 8f;
             public const float FaithPartyTravelTimeoutHours = 120f;
 
-            // 灰袍领主的信众村差事。竞价分压过原版普通进城（实测 0.35–0.85）和普通差事（0.99），
-            // 压不过缺粮、重伤（1–19.6）。俘虏到上限的 90% 或兵力不到 60% 时连普通案件也让路。
-            public const float ErrandScore = 1.5f;
-            public const float ErrandTimeoutHours = 120f;
-            public const float ErrandUrgentPrisonerShare = 0.9f;
-            public const float ErrandUrgentStrength = 0.6f;
-            public const int ErrandPrisoners = 15;
-            public const float ErrandStrength = 0.85f;
-            public const int ErrandGoodsValue = 4000;
+
+            // 信众村对灰袍按城算（GwpFaithVisitDesire）：原版进城分对信众村再乘这个数，
+            // 灰袍优先做和信众村相关的事（用户裁定 2026-10-05）。原版不缺什么时进城分约 0.26，乘 3 约 0.77，
+            // 压不过手上的差事（0.99）；俘虏、伤员、背包里的东西一多，就压过去了。
+            public const float FaithVillageVisitPriority = 3f;
+            // 每日异常检查用的线：领主俘虏到上限的 90%、兵力低于 60%。
+            public const float AnomalyPrisonerShare = 0.9f;
+            public const float AnomalyLowStrength = 0.6f;
 
             // 案子发生在信众村这个距离内，算信众村的案子，优先派人。
             public const float FaithCaseRadius = 6f;

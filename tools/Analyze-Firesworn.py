@@ -166,16 +166,7 @@ def main():
     lords = collections.defaultdict(list)
     for hour, data in by_stage["DAILY_LORD"]:
         lords[data["party"]].append((hour, data))
-    errands = collections.defaultdict(lambda: collections.Counter())
-    errand_hours = collections.defaultdict(float)
-    for _, data in by_stage["ERRAND_STARTED"]:
-        errands[data["party"]]["开始:" + data["reason"]] += 1
-    for _, data in by_stage["ERRAND_DONE"]:
-        errands[data["party"]]["办完"] += 1
-        errand_hours[data["party"]] += num(data.get("hours"))
-    for _, data in by_stage["ERRAND_CANCELLED"]:
-        errands[data["party"]]["取消:" + data["reason"]] += 1
-        errand_hours[data["party"]] += num(data.get("hours"))
+    visits = collections.Counter(data["party"] for _, data in by_stage["HANDOVER"])
     recruits = collections.defaultdict(collections.Counter)
     for _, data in by_stage["PRIEST_RECRUITED"]:
         recruits[data["party"]]["祭司:" + data["troop"]] += num(data.get("count"))
@@ -192,25 +183,20 @@ def main():
         print(f"   {party}: 兵 {a['members']}->{b['members']}（最低 {minimum:.0%}） 俘虏 {b['prisoners']}"
               f"  军械库 {b['armoryItems']} 武装 {b['armed']}  背包 {b['inventoryValue']}  钱 {b.get('partyGold', '?')}")
         print(f"      兵种 {b['troops']}")
-        if errands[party]:
-            print("      差事: " + "，".join(f"{k}×{v}" for k, v in errands[party].items()) +
-                  f"；差事累计 {errand_hours[party]:.0f} 小时（{errand_hours[party] / (days * 24):.0%} 的时间）")
+        print(f"      进信众村 {visits[party]} 次；最近一次意愿最高的信众村 {b.get('faithVisit', '-')}")
         if recruits[party]:
             print("      兵源与俘虏: " + "，".join(f"{k} {v:.0f}" for k, v in recruits[party].items()))
-        cancels = sum(v for k, v in errands[party].items() if k.startswith("取消"))
-        starts = sum(v for k, v in errands[party].items() if k.startswith("开始"))
-        if starts >= 3 and cancels / starts > 0.5:
-            issues.append(f"{party} 差事 {starts} 次里取消了 {cancels} 次，看取消原因")
+        if days >= 5 and visits[party] == 0:
+            issues.append(f"{party} {days:.0f} 天没进过信众村（看 faithVisit 分数和 PRISONERS_PILING）")
         if minimum < 0.6:
             issues.append(f"{party} 兵力最低到过 {minimum:.0%}")
-        if errand_hours[party] / (days * 24) > 0.35:
-            issues.append(f"{party} {errand_hours[party] / (days * 24):.0%} 的时间在跑信众村差事，可能挤掉了办案")
 
     # ------------------------------------------------------------ 常驻队
     print("\n== 常驻队")
     for stage in ("DISCIPLES_DISPATCHED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED", "DISCIPLES_HOME",
                   "DISCIPLES_TURNED_BACK", "DISCIPLES_LOST", "CARAVAN_DISPATCHED", "CARAVAN_SOLD", "CARAVAN_HOME",
-                  "CARAVAN_TURNED_BACK", "CARAVAN_LOST", "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN", "RITUAL_POPUP_NEARBY"):
+                  "CARAVAN_TURNED_BACK", "CARAVAN_LOST", "CARAVAN_KITS_DISPATCHED", "CARAVAN_KITS_DELIVERED",
+                  "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN", "RITUAL_POPUP_NEARBY"):
         print(f"   {stage}: {len(by_stage[stage])}")
     bad_sound = [data for _, data in by_stage["RITUAL_MENU_SHOWN"] if num(data.get("soundId"), 0) < 0]
     if bad_sound:

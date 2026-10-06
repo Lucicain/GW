@@ -72,13 +72,6 @@ namespace GreyWardenPolicePurity
             return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police);
         }
 
-        /// <summary>
-        /// 灰袍领主的信众村差事紧急时（俘虏快装满、兵快打光），普通案件让路：还在追捕阶段的普通案件退回案件池。
-        /// 已经宣战、组了协力、玩家相关的案子不动（灰袍优先做和信众村相关的事，用户裁定 2026-10-05）。
-        /// </summary>
-        internal static bool TryReleaseOrdinaryCaseForFaithErrand(MobileParty police) =>
-            _instance != null && _instance.ReleaseOrdinaryCaseForFaithErrand(police);
-
         internal static bool TryReservePartyForPlayerRequest(MobileParty? police)
         {
             return _instance != null && _instance.TryPreparePartyForPlayerRequest(police);

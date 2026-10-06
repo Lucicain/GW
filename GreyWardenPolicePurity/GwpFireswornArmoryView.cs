@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -12,34 +11,32 @@ using TaleWorlds.Library;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 看军械库里有什么（用户 2026-10-06：村子的、部队的都要看到）。在信众村的村庄菜单里多一项「军械库」，
-    /// 先列出本村和每支灰袍领主部队的军械库，选一个再列出里面的每样东西（带原版物品图标）。只看，不能拿。
+    /// 看军械库里有什么（用户 2026-10-06：村子的、部队的都要看到）。每个军械库只在它自己那里看：
+    /// 信众村的在这座村的村庄菜单里看；灰袍领主部队的，找这位领主说话时问她（入了会才问得到）。
+    /// 一个入口看遍所有军械库是不对的（用户裁定 2026-10-07）。只看，不能拿。
     /// </summary>
     internal static class GwpFireswornArmoryView
     {
         internal static void Register(CampaignGameStarter starter)
         {
             starter.AddGameMenuOption("village", "gwp_fs_village_armory",
-                "{=gwp_fs_armory_option}Eternal Fire: armories",
+                "{=gwp_fs_armory_option}Eternal Fire: storeroom",
                 args =>
                 {
                     args.optionLeaveType = GameMenuOption.LeaveType.Manage;
                     return GwpFireswornBehavior.IsPreachedVillage(Settlement.CurrentSettlement);
                 },
-                _ => ShowHolders(), isLeave: false, index: 6);
-        }
+                _ => ShowContents(Settlement.CurrentSettlement.StringId), isLeave: false, index: 6);
 
-        private static void ShowHolders()
-        {
-            List<InquiryElement> holders = GwpFireswornBehavior.ArmoryHolders(Settlement.CurrentSettlement)
-                .Select(holder => new InquiryElement(holder.Id, holder.Title, null))
-                .ToList();
-            MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                GwpText.Get("{=gwp_fs_armory_holders_title}Armories of the Eternal Fire"),
-                GwpText.Get("{=gwp_fs_armory_holders_text}The arms of the Eternal Fire are kept in many places: every sworn village has its storeroom, and every Warden lord carries her own store with her company. The sworn and the Wardens' young recruits arm themselves from it before a fight."),
-                holders, true, 1, 1,
-                GwpText.Get("{=gwp_fs_armory_open}Open"), GwpText.Get("{=gwp_fs_armory_close}Close"),
-                chosen => ShowContents((string)chosen[0].Identifier), null));
+            starter.AddPlayerLine("gwp_fs_lord_armory_ask", "lord_talk_speak_diplomacy_2", "gwp_fs_lord_armory_reply",
+                GwpText.Get("{=gwp_fs_lord_armory_ask}Show me the arms your company carries for the sworn."),
+                () => GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
+                      Hero.OneToOneConversationHero.PartyBelongedTo?.LeaderHero == Hero.OneToOneConversationHero &&
+                      Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>().IsRecruitedByGreyWardens,
+                null, 215);
+            starter.AddDialogLine("gwp_fs_lord_armory_reply", "gwp_fs_lord_armory_reply", "lord_pretalk",
+                GwpText.Get("{=gwp_fs_lord_armory_reply}Here. Everything we carry, and who wears it."),
+                null, () => ShowContents(Hero.OneToOneConversationHero.PartyBelongedTo.StringId), 215);
         }
 
         private static void ShowContents(string holder)
@@ -60,8 +57,7 @@ namespace GreyWardenPolicePurity
                 GwpFireswornBehavior.ArmoryHolderTitle(holder),
                 GwpFireswornBehavior.ArmorySummary(holder),
                 items, true, 0, 0,
-                GwpText.Get("{=gwp_fs_armory_back}Back"), GwpText.Get("{=gwp_fs_armory_close}Close"),
-                _ => ShowHolders(), null));
+                GwpText.Get("{=gwp_fs_armory_close}Close"), string.Empty, _ => { }, null));
         }
     }
 }

@@ -98,6 +98,7 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new GwpWardenPrisonerRecruitmentModel());
             starter.AddModel(new GwpFaithBattleRewardModel());
             starter.AddModel(new GwpFaithCombatSimulationModel());
+            starter.AddModel(new GwpFaithHealingModel());
             starter.AddBehavior(new PoliceCrimeMonitorEnhanced());
             starter.AddBehavior(new PoliceAntiWarDeclaration());
             starter.AddBehavior(new PoliceAntiVanillaWarBehavior());

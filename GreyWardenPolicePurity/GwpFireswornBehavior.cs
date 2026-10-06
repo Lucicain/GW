@@ -47,8 +47,6 @@ namespace GreyWardenPolicePurity
         // 军械库账本：键是信众村或灰袍领主部队的 StringId。兵身上穿的也算在里面。
         private readonly Dictionary<string, ItemRoster> _armories =
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Errand> _errands =
-            new Dictionary<string, Errand>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         // 祭司的名池与灰袍家族成员的分开，祭司之间不重名（GreyWardenFamilyBehavior.PickUniqueName）。
@@ -135,14 +133,6 @@ namespace GreyWardenPolicePurity
             public int Stops;
         }
 
-        /// <summary>灰袍领主去信众村交俘虏、捐东西、招兵的差事。</summary>
-        private sealed class Errand
-        {
-            public string VillageId = string.Empty;
-            public double StartHour;
-            public string Reason = string.Empty;
-        }
-
         public GwpFireswornBehavior()
         {
             _instance = this;
@@ -174,8 +164,6 @@ namespace GreyWardenPolicePurity
             List<int>? partyKinds = null, partyPhases = null;
             List<double>? partyHours = null;
             List<int>? partyStops = null;
-            List<string>? errandParties = null, errandVillages = null, errandReasons = null;
-            List<double>? errandHours = null;
 
             if (dataStore.IsSaving)
             {
@@ -201,10 +189,6 @@ namespace GreyWardenPolicePurity
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
                 partyStops = parties.Select(party => party.Stops).ToList();
-                errandParties = _errands.Keys.ToList();
-                errandVillages = errandParties.Select(id => _errands[id].VillageId).ToList();
-                errandHours = errandParties.Select(id => _errands[id].StartHour).ToList();
-                errandReasons = errandParties.Select(id => _errands[id].Reason).ToList();
             }
 
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
@@ -227,10 +211,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
             dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
-            dataStore.SyncData("GWPP_FsErrandParties", ref errandParties);
-            dataStore.SyncData("GWPP_FsErrandVillages", ref errandVillages);
-            dataStore.SyncData("GWPP_FsErrandHours", ref errandHours);
-            dataStore.SyncData("GWPP_FsErrandReasons", ref errandReasons);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
             SyncItemRosters(dataStore, "GWPP_FsArmory", _armories);
@@ -274,15 +254,6 @@ namespace GreyWardenPolicePurity
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
                     Stops = partyStops![i]
-                };
-
-            _errands.Clear();
-            for (int i = 0; i < errandParties!.Count; i++)
-                _errands[errandParties[i]] = new Errand
-                {
-                    VillageId = errandVillages![i],
-                    StartHour = errandHours![i],
-                    Reason = errandReasons![i]
                 };
 
             RebuildPriestIndex();
@@ -391,15 +362,15 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        internal static IEnumerable<Settlement> FaithVillages() =>
+            _instance == null ? Enumerable.Empty<Settlement>() : _instance._villages.Keys.Select(Settlement.Find).ToList();
+
         internal static bool IsPreachedVillage(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null &&
             _instance._villages.ContainsKey(settlement.StringId);
 
         internal static bool IsFireswornPriest(Hero? hero) =>
             hero != null && _instance != null && _instance._priestIds.Contains(hero.StringId);
-
-        internal static bool IsOnFaithErrand(MobileParty? party) =>
-            party != null && _instance != null && _instance._errands.ContainsKey(party.StringId);
 
         /// <summary>案子发生在某座信众村跟前：灰袍优先接这种案子（用户裁定）。</summary>
         internal static bool IsNearFaithVillage(Vec2 position) =>
@@ -510,7 +481,6 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_ERRANDS", TendErrands);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_MILITIA", () =>
             {
                 foreach (FaithVillage row in _villages.Values.ToList())
@@ -533,7 +503,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备，差事就此办完。原版进门招兵（祭司格子）
+        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备。什么时候来由原版进城意愿决定（GwpFaithVisitDesire）。原版进门招兵（祭司格子）
         /// 已经在进门前跑完（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
         /// 招到的人由 <see cref="OnTroopRecruited"/> 带走各自的那一套装备。
         /// </summary>
@@ -544,7 +514,6 @@ namespace GreyWardenPolicePurity
                 return;
             HandOver(party, settlement);
             EnlistZealots(party, settlement);
-            CompleteErrand(party, settlement);
         }
 
         private void OnTroopRecruited(Hero? recruiter, Settlement? settlement, Hero? source,
@@ -645,7 +614,7 @@ namespace GreyWardenPolicePurity
                 "FIRSTNAME", firstName), firstName);
             priest.SetTraitLevel(DefaultTraits.Mercy, -1);
             priest.EncyclopediaText = GwpText.Create(
-                "{=gwp_fs_priest_lore}{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith she preaches holds that the flame passes only from mother to daughter: women alone may tend it, and men may only feed it, with their labour, with their obedience, and, when they will not kneel, with themselves. Under her the women of the village swear themselves to the fire and take up the spear; its men carry wood to the pyre and keep their eyes lowered.",
+                "{=gwp_fs_priest_lore}{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith she preaches holds that the flame passes from mother to daughter, and that it is women who tend it and speak for it; anyone may come before it and ask for its light, and it does not ask where they were born. Under her the women of the village swear themselves to the fire and take up the spear to guard it.",
                 "PRIEST", firstName, "VILLAGE", village.Name);
             DressPriest(priest);
             row.PriestId = priest.StringId;

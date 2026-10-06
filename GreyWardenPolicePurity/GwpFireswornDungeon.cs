@@ -13,8 +13,7 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// 信众村对灰袍等于城（用户裁定）：灰袍领主在那里交俘虏进地牢、捐东西、招兵。
     /// 俘虏不扒装备：装备照原版尸体缴获进军械库（用户裁定 2026-10-06，见 <see cref="LootCasualtyIntoArmory"/>）。
-    /// 灰袍领主有俘虏要交、缺兵、背包里有东西时，去最近的信众村办差；灰袍优先做和信众村相关的事（用户裁定），
-    /// 俘虏快装满或者兵快打光时，普通案件也让路。
+    /// 领主什么时候进信众村，由原版的进城意愿决定，信众村对灰袍按城算（GwpFaithVisitDesire.cs）。
     /// 信众村自己守赢也有收益（用户裁定）：俘获的敌兵进地牢，背包里的东西进货仓，金币进公库。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
@@ -146,85 +145,6 @@ namespace GreyWardenPolicePurity
                 "; members=" + party.Party.NumberOfAllMembers + "/" + party.Party.PartySizeLimit);
         }
 
-        // ---------------------------------------------------------------- 灰袍领主的信众村差事
-
-        private void TendErrands()
-        {
-            double now = CampaignTime.Now.ToHours;
-            foreach (KeyValuePair<string, Errand> pair in _errands.ToList())
-            {
-                MobileParty? party = FindParty(pair.Key);
-                Settlement village = Settlement.Find(pair.Value.VillageId);
-                string? reason = party?.IsActive != true || party.LeaderHero?.IsActive != true ? "party_gone"
-                    : ClaimedByOtherDuty(party!) is string duty ? "claimed_by_" + duty
-                    : !IsErrandDestination(village) ? "village_unusable"
-                    : now - pair.Value.StartHour > GwpTuning.Firesworn.ErrandTimeoutHours ? "timeout"
-                    : null;
-                if (reason != null)
-                {
-                    _errands.Remove(pair.Key);
-                    if (party?.IsActive == true)
-                        GreyWardenPartyDesireBehavior.ClearIntent(party);
-                    GwpAiDiagnostics.WriteFaith("ERRAND_CANCELLED",
-                        "party=" + pair.Key + "; village=" + pair.Value.VillageId + "; reason=" + reason +
-                        "; hours=" + (now - pair.Value.StartHour).ToString("0"));
-                    continue;
-                }
-                if (party!.MapEvent == null)
-                    GreyWardenPartyDesireBehavior.RequestVisit(party, village, GwpTuning.Firesworn.ErrandScore);
-            }
-
-            foreach (MobileParty party in PoliceStats.GetAllPoliceParties().ToList())
-            {
-                if (_errands.ContainsKey(party.StringId) || !party.IsActive || !party.IsLordParty ||
-                    party.LeaderHero?.IsActive != true || party.MapEvent != null || party.IsCurrentlyAtSea ||
-                    party.IsDisbanding || ClaimedByOtherDuty(party) != null)
-                    continue;
-                // 缺兵只在有信众村招得到兵时才算：不然领主进了村招不到人，出来又要回去。
-                Settlement? recruitVillage = NearestErrandVillage(party, needRecruits: true);
-                string? need = ErrandNeed(party, recruitVillage != null, out bool urgent);
-                if (need == null)
-                    continue;
-                Settlement? village = need.StartsWith("troops", StringComparison.Ordinal)
-                    ? recruitVillage
-                    : NearestErrandVillage(party, needRecruits: false);
-                if (village == null)
-                    continue;
-                if (CrimePool.HasTask(party.StringId) &&
-                    !(urgent && PoliceEnforcementBehavior.TryReleaseOrdinaryCaseForFaithErrand(party)))
-                    continue;
-                _errands[party.StringId] = new Errand { VillageId = village.StringId, StartHour = now, Reason = need };
-                GreyWardenPartyDesireBehavior.RequestVisit(party, village, GwpTuning.Firesworn.ErrandScore);
-                GwpAiDiagnostics.WriteFaith("ERRAND_STARTED",
-                    "party=" + party.StringId + "; village=" + village.StringId + "; reason=" + need +
-                    "; urgent=" + urgent + "; prisoners=" + CountRegularPrisoners(party) + "/" + party.Party.PrisonerSizeLimit +
-                    "; members=" + party.Party.NumberOfAllMembers + "/" + party.Party.PartySizeLimit +
-                    "; distance=" + party.GetPosition2D.Distance(village.GetPosition2D).ToString("0"));
-            }
-        }
-
-        /// <summary>
-        /// 要不要去信众村，为什么。紧急（俘虏快装满、兵快打光）时连普通案件都让路；不紧急的只在手上没案子时去。
-        /// </summary>
-        private static string? ErrandNeed(MobileParty party, bool canRecruit, out bool urgent)
-        {
-            int prisoners = CountRegularPrisoners(party);
-            int prisonLimit = Math.Max(1, party.Party.PrisonerSizeLimit);
-            float strength = party.Party.NumberOfAllMembers / (float)Math.Max(1, party.Party.PartySizeLimit);
-            bool prisonersFull = prisoners >= prisonLimit * GwpTuning.Firesworn.ErrandUrgentPrisonerShare;
-            bool troopsLow = canRecruit && strength < GwpTuning.Firesworn.ErrandUrgentStrength;
-            urgent = prisonersFull || troopsLow;
-            if (prisonersFull)
-                return "prisoners_full";
-            if (troopsLow)
-                return "troops_low";
-            if (prisoners >= GwpTuning.Firesworn.ErrandPrisoners)
-                return "prisoners";
-            if (canRecruit && strength < GwpTuning.Firesworn.ErrandStrength)
-                return "troops";
-            return NonFoodValue(party.ItemRoster) >= GwpTuning.Firesworn.ErrandGoodsValue ? "goods" : null;
-        }
-
         private static int NonFoodValue(ItemRoster roster)
         {
             int value = 0;
@@ -235,37 +155,6 @@ namespace GreyWardenPolicePurity
                     value += element.Amount * element.EquipmentElement.ItemValue;
             }
             return value;
-        }
-
-        private Settlement? NearestErrandVillage(MobileParty party, bool needRecruits) =>
-            _villages.Keys.Select(Settlement.Find)
-                .Where(village => IsErrandDestination(village) &&
-                    (!needRecruits || RecruitsAvailableToWardens(village, party.LeaderHero) > 0))
-                .OrderBy(village => party.GetPosition2D.Distance(village.GetPosition2D))
-                .FirstOrDefault();
-
-        private bool IsErrandDestination(Settlement village) =>
-            IsPreachedVillage(village) && IsVillageQuiet(village) &&
-            !FactionManager.IsAtWarAgainstFaction(PoliceStats.GetPoliceClan(), village.MapFaction);
-
-        /// <summary>
-        /// 比信众村差事更要紧的活：玩家相关、强制善后、重建、请愿、练兵、协力、军团。普通案件不在此列——
-        /// 灰袍优先做和信众村相关的事（用户裁定）。
-        /// </summary>
-        private static string? ClaimedByOtherDuty(MobileParty party) =>
-            party.Army != null ? "army"
-            : GwpWardenDuties.BlockingDuty(party, WardenDuty.FaithErrand)?.ToString();
-
-        private void CompleteErrand(MobileParty party, Settlement village)
-        {
-            if (!_errands.TryGetValue(party.StringId, out Errand? errand))
-                return;
-            _errands.Remove(party.StringId);
-            GreyWardenPartyDesireBehavior.ClearIntent(party);
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
-            GwpAiDiagnostics.WriteFaith("ERRAND_DONE",
-                "party=" + party.StringId + "; village=" + village.StringId + "; planned=" + errand.VillageId +
-                "; reason=" + errand.Reason + "; hours=" + (CampaignTime.Now.ToHours - errand.StartHour).ToString("0"));
         }
     }
 }

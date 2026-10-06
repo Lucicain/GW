@@ -56,20 +56,6 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool ReleaseOrdinaryCaseForFaithErrand(MobileParty police)
-        {
-            PoliceTask? task = CrimeState.GetTask(police.StringId);
-            if (task == null)
-                return true;
-            if (task.FlowState != PoliceTaskFlowState.Pursuit || task.WarDeclared ||
-                task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
-                task.TargetCrimeId == CrimePool.PlayerCrimeId || IsAssistanceOccupied(police))
-                return false;
-
-            EndCaseTask(police.StringId, CaseTaskEnd.Released, "released_for_faith_errand");
-            return true;
-        }
-
         /// <summary>
         /// A filed player request outranks every autonomous Grey Warden duty.
         /// Never interrupt a live battle or an existing player-bounty escort;

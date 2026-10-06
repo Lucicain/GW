@@ -209,17 +209,93 @@ namespace GreyWardenPolicePurity
         private void RebalanceArmories()
         {
             RefreshArmoryPlans();
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
             foreach (KeyValuePair<string, ArmoryPlan> pair in _plans.ToList())
             {
                 if (pair.Value.Surplus.Count == 0)
                     continue;
                 bool village = _villages.ContainsKey(pair.Key);
+                // 别的信众村还有狂信者没拿到兵器时，兵器护甲留着由狂信者队送过去，只卖别的（用户裁定 2026-10-07：
+                // 狂信者当商队，在军械库之间传递资源，保持平衡）。
+                bool keepKits = village && NeediestVillage(Settlement.Find(pair.Key)) != null;
+                ItemRoster what = new ItemRoster();
+                for (int i = 0; i < pair.Value.Surplus.Count; i++)
+                {
+                    ItemRosterElement element = pair.Value.Surplus.GetElementCopyAtIndex(i);
+                    if (!keepKits || KitKind(element.EquipmentElement.Item, zealot) < 0)
+                        what.AddToCounts(element.EquipmentElement, element.Amount);
+                }
+                if (what.Count == 0)
+                    continue;
                 ItemRoster target = village ? ItemsOf(_goods, pair.Key) : FindParty(pair.Key)!.ItemRoster;
-                int moved = MoveAll(pair.Value.Surplus, ItemsOf(_armories, pair.Key), target);
+                int moved = MoveAll(what, ItemsOf(_armories, pair.Key), target);
                 GwpAiDiagnostics.WriteFaith(village ? "ARMORY_SURPLUS_TO_GOODS" : "ARMORY_SURPLUS_TO_INVENTORY",
-                    "holder=" + pair.Key + "; items=" + moved + "; value=" + pair.Value.Surplus.TotalValue);
+                    "holder=" + pair.Key + "; items=" + moved + "; value=" + what.TotalValue + "; keptForOtherVillages=" + keepKits);
             }
             RefreshArmoryPlans();
+        }
+
+        /// <summary>这座信众村还缺几套：配装里没拿到主兵器、或没拿到身甲的人数。</summary>
+        private int Shortage(string village)
+        {
+            ArmoryPlan plan = PlanOf(village);
+            return plan.Sets.Count(kit => kit[KitMain].IsEmpty || kit[KitBody].IsEmpty);
+        }
+
+        /// <summary>离 <paramref name="from"/> 不太远、最缺装备的另一座信众村；都不缺就是 null。</summary>
+        private Settlement? NeediestVillage(Settlement from)
+        {
+            Clan police = PoliceStats.GetPoliceClan();
+            return _villages.Keys.Where(id => id != from.StringId).Select(Settlement.Find)
+                .Where(village => IsVillageQuiet(village) &&
+                    !FactionManager.IsAtWarAgainstFaction(police, village.MapFaction) &&
+                    from.GetPosition2D.Distance(village.GetPosition2D) <= GwpTuning.Firesworn.CaravanDeliveryMaxDistance &&
+                    Shortage(village.StringId) >= GwpTuning.Firesworn.CaravanDeliveryMinimumShortage)
+                .OrderByDescending(village => Shortage(village.StringId))
+                .ThenBy(village => from.GetPosition2D.Distance(village.GetPosition2D))
+                .FirstOrDefault();
+        }
+
+        /// <summary>本村多出来的兵器护甲里，每一类最多拿 <paramref name="men"/> 件装上车。</summary>
+        private ItemRoster ExportableKits(string village, int men)
+        {
+            ArmoryPlan plan = PlanOf(village);
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
+            ItemRoster cargo = new ItemRoster();
+            int[] perKind = new int[KitSlots];
+            foreach (ItemRosterElement element in Enumerable.Range(0, plan.Surplus.Count)
+                         .Select(plan.Surplus.GetElementCopyAtIndex)
+                         .OrderByDescending(element => (int)element.EquipmentElement.Item.Tier))
+            {
+                int kind = KitKind(element.EquipmentElement.Item, zealot);
+                if (kind < 0)
+                    continue;
+                int take = Math.Min(element.Amount, men - perKind[kind]);
+                if (take <= 0)
+                    continue;
+                cargo.AddToCounts(element.EquipmentElement, take);
+                perKind[kind] += take;
+            }
+            return cargo;
+        }
+
+        /// <summary>狂信者队把车上的兵器护甲卸进这座村的军械库。</summary>
+        private int UnloadKits(MobileParty cart, string village)
+        {
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
+            ItemRoster ledger = ItemsOf(_armories, village);
+            int moved = 0;
+            for (int i = cart.ItemRoster.Count - 1; i >= 0; i--)
+            {
+                ItemRosterElement element = cart.ItemRoster.GetElementCopyAtIndex(i);
+                if (KitKind(element.EquipmentElement.Item, zealot) < 0)
+                    continue;
+                ledger.AddToCounts(element.EquipmentElement, element.Amount);
+                cart.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
+                moved += element.Amount;
+            }
+            _plans.Remove(village);
+            return moved;
         }
 
         /// <summary>把 <paramref name="what"/> 里列的东西从账本 <paramref name="from"/> 挪到 <paramref name="to"/>。</summary>
@@ -397,7 +473,6 @@ namespace GreyWardenPolicePurity
                     "party=" + party.StringId + "; home=" + record.HomeId + "; phase=" + record.Phase +
                     "; cargoValue=" + party.ItemRoster.TotalValue + "; gold=" + party.PartyTradeGold);
             }
-            _errands.Remove(party.StringId);
             _plans.Remove(party.StringId);
             if (!_armories.TryGetValue(party.StringId, out ItemRoster? ledger))
                 return;
@@ -463,18 +538,6 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 给玩家看（GwpFireswornArmoryView）
 
-        /// <summary>当前这座信众村排第一，再是别的信众村，最后是每支灰袍领主部队。</summary>
-        internal static IEnumerable<(string Id, string Title)> ArmoryHolders(Settlement current)
-        {
-            if (_instance == null)
-                yield break;
-            yield return (current.StringId, ArmoryHolderTitle(current.StringId));
-            foreach (string village in _instance._villages.Keys.Where(id => id != current.StringId))
-                yield return (village, ArmoryHolderTitle(village));
-            foreach (MobileParty lord in PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty))
-                yield return (lord.StringId, ArmoryHolderTitle(lord.StringId));
-        }
-
         internal static string ArmoryHolderTitle(string holder)
         {
             int items = _instance!._armories.TryGetValue(holder, out ItemRoster? ledger) ? CountItems(ledger) : 0;
@@ -536,7 +599,7 @@ namespace GreyWardenPolicePurity
                     "; armoryItems=" + (_armories.TryGetValue(lord.StringId, out ItemRoster? armory) ? CountItems(armory) : 0) +
                     "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count) +
                     "; inventoryValue=" + NonFoodValue(lord.ItemRoster) +
-                    "; errand=" + (_errands.TryGetValue(lord.StringId, out Errand? errand) ? errand.VillageId + ":" + errand.Reason : "-") +
+                    "; faithVisit=" + GwpFaithVisitDesire.Describe(lord) +
                     "; case=" + CrimePool.HasTask(lord.StringId) + "; wage=" + lord.TotalWage +
                     "; partyGold=" + lord.PartyTradeGold);
             }
@@ -545,7 +608,7 @@ namespace GreyWardenPolicePurity
                 "; priests=" + _villages.Values.Count(row => FindLivingPriest(row) != null) +
                 "; dungeon=" + _dungeons.Values.Sum(roster => roster.TotalManCount) +
                 "; treasury=" + PoliceResourceManager.GetJudicialTreasuryBalance() +
-                "; errands=" + _errands.Count + "; activeParties=" +
+                "; activeParties=" +
                 _faithParties.Values.Count(entry => entry.Phase != FaithPartyPhase.Home));
         }
 
@@ -571,29 +634,22 @@ namespace GreyWardenPolicePurity
                         "; target=" + record.TargetId + "; hours=" + (now - record.PhaseHour).ToString("0"));
             }
 
-            foreach (KeyValuePair<string, Errand> pair in _errands)
-                if (now - pair.Value.StartHour > 72d)
-                    Flag("ERRAND_LONG", "party=" + pair.Key + "; village=" + pair.Value.VillageId +
-                        "; reason=" + pair.Value.Reason + "; hours=" + (now - pair.Value.StartHour).ToString("0"));
-
             List<MobileParty> lords = PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty).ToList();
             List<string> shortLords = lords
-                .Where(lord => lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandUrgentStrength)
+                .Where(lord => lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.AnomalyLowStrength)
                 .Select(lord => lord.StringId + ":" + lord.Party.NumberOfAllMembers + "/" + lord.Party.PartySizeLimit)
                 .ToList();
             foreach (MobileParty lord in lords)
             {
                 int prisoners = CountRegularPrisoners(lord);
-                if (prisoners >= lord.Party.PrisonerSizeLimit * GwpTuning.Firesworn.ErrandUrgentPrisonerShare &&
-                    !_errands.ContainsKey(lord.StringId))
+                if (prisoners >= lord.Party.PrisonerSizeLimit * GwpTuning.Firesworn.AnomalyPrisonerShare)
                     Flag("PRISONERS_PILING", "party=" + lord.StringId + "; prisoners=" + prisoners + "/" +
-                        lord.Party.PrisonerSizeLimit + "; claimedBy=" + (ClaimedByOtherDuty(lord) ?? "-") +
-                        "; case=" + CrimePool.HasTask(lord.StringId));
-                if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.ErrandUrgentStrength &&
-                    !_errands.ContainsKey(lord.StringId))
+                        lord.Party.PrisonerSizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
+                        "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
+                if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.AnomalyLowStrength)
                     Flag("LORD_UNDERSTRENGTH", "party=" + lord.StringId + "; members=" + lord.Party.NumberOfAllMembers +
-                        "/" + lord.Party.PartySizeLimit + "; claimedBy=" + (ClaimedByOtherDuty(lord) ?? "-") +
-                        "; recruitVillage=" + (NearestErrandVillage(lord, needRecruits: true)?.StringId ?? "-"));
+                        "/" + lord.Party.PartySizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
+                        "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
             }
 
             foreach (FaithVillage row in _villages.Values)

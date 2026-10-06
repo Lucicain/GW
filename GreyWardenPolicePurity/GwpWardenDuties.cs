@@ -32,8 +32,6 @@ namespace GreyWardenPolicePurity
         Training,
         /// <summary>正在练兵，或练兵本职已练满在排队：不接新差事。</summary>
         TrainingQueue,
-        /// <summary>信众村差事。</summary>
-        FaithErrand,
         /// <summary>承办普通案件。</summary>
         OrdinaryCase,
     }
@@ -69,7 +67,6 @@ namespace GreyWardenPolicePurity
                 [WardenDuty.IssueReserve] = GreyWardenIssueResolutionBehavior.ShouldReserveFromOrdinaryCases,
                 [WardenDuty.Training] = GreyWardenTrainingBehavior.IsTrainingOccupied,
                 [WardenDuty.TrainingQueue] = GreyWardenTrainingBehavior.ShouldReserveFromNewDuties,
-                [WardenDuty.FaithErrand] = GwpFireswornBehavior.IsOnFaithErrand,
                 [WardenDuty.OrdinaryCase] = party =>
                     GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && task.TargetCrimeId != CrimePool.PlayerCrimeId &&
                     !task.IsEscortingPlayer && !task.IsPlayerBountyEscort,
@@ -77,7 +74,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 想接左边这种差事时，身上挂着右边任何一种就不行。没列出来的，是左边这种差事压得过的——
-        /// 由那一边的系统自己让路（取消或退回，例如信众村差事被占用就取消，普通案件被协力抽调就退回台账）。
+        /// 由那一边的系统自己让路（取消或退回，普通案件被协力抽调就退回台账）。
         /// 玩家贵族事务和练兵订单是指定的人，谁都压不过，所以不在左边。
         /// </summary>
         private static readonly Dictionary<WardenDuty, WardenDuty[]> BlockedBy =
@@ -114,17 +111,12 @@ namespace GreyWardenPolicePurity
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
                     WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.Training, WardenDuty.OrdinaryCase,
                 },
-                [WardenDuty.FaithErrand] = new[]
-                {
-                    WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.TrainingQueue,
-                },
                 [WardenDuty.OrdinaryCase] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
                     WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve, WardenDuty.TrainingQueue,
-                    WardenDuty.FaithErrand, WardenDuty.OrdinaryCase,
+                    WardenDuty.OrdinaryCase,
                 },
             };
 
