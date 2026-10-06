@@ -14,7 +14,7 @@
 - 工作树：`C:/Users/lucif/.codex/worktrees/v14-kingdom-join-fix/GreyWardenPolicePurity`。
 - 暂存的火誓者工作树：`C:/Users/lucif/source/repos/GreyWardenPolicePurity`，main 最新游戏代码存档 `0b63c01`。
 - 当前 live 从本工作树部署；两边的 state 结论不能混用。恢复火誓者时由 main 重新构建部署并比对镜像。（依据：流程）
-- v14 Client/Editor DLL SHA-256：`5d70be4e58c566a10a1c7b60e46944b366a35951ba560c5261d060a295b31c12`。
+- v14 Client/Editor DLL SHA-256：`babde02eef0b5ebcfc26d9d4aac86e04e743804e7e268fbbd5dbc50d8dda1c2b`。
 - 切换前 runtime 与 DLL 备份：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/pre-v14-live-20261006/`。live 的 Assets、AssetSources、RuntimeDataCache 保留开发资源；客户端实际加载 Assets，代码与运行时数据以 v14 为基线，美术不是 v14 玩家包。用户核对后明确保持开发布局，美术不作为本次入国调查原因。（依据：用户裁定 2026-10-06）
 - 入国修复前 DLL/PDB 回退副本：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-kingdom-fix-20261006/`，修复前 DLL SHA-256：`621d84aa097cbff0194b4b802e71d7818fbc4369d88c5632820640b569802e9f`。
 
@@ -96,4 +96,4 @@ SyncData 无状态：本行为只响应宣战和读档完成事件，没有进�
 
 开发诊断与无诊断隔离构建均 0 警告/0 错误；GameCompat PASS、MEMBER_FAIL_COUNT=0、PATCH_OK=71、PATCH_FAIL=0、PREFLIGHT PASS（614 类型；自动装备候选补丁新增 1 个类型）。真实游戏程序集和实际内战 DLL 离线回归 43 断言，无内战 39 断言，全通过。原有四类入国拦截与普通家族放行仍覆盖；新增真实 CampaignEvents 注册/派发测试，验证无家族/独立时跳过、普通/佣兵退出入口、重复事件不重复退出、日结/周结不做归属查询。离国动作边界用桩替代，实机确认南帝国成员退出、军团关联 4→0；佣兵与真实封地分支没有本次样本，未启动游戏。
 
-已部署开发诊断 DLL/PDB 到 Client/Editor；两端与隔离 DLL 哈希一致，live 镜像 66 个仓库文件无缺失/差异/散落。四份修复源码按 main 的现行卫生检查审计，0 个 catch 缺依据、0 个声明无人引用。未发布或推送。另存为新名字再读，核对仍独立且原案件能继续；用户已保存至第 50.83261 天，但尚无该次保存后再次加载的日志验收。
+已部署开发诊断 DLL/PDB 到 Client/Editor；两端与隔离 DLL 哈希一致，live 镜像 66 个仓库文件无缺失/差异/散落。四份修复源码按 main 的现行卫生检查审计，0 个 catch 缺依据、0 个声明无人引用。本轮整合进原 v1.4-r14 发布候选，远端替换进行中。另存为新名字再读，核对仍独立且原案件能继续；用户已保存至第 50.83261 天，但尚无该次保存后再次加载的日志验收。

@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26）；同日补的解散入口还船、还不回去的船销毁、玩家被俘仍还给玩家三条是防线，正常游戏难触发
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-07 核对 v14 反馈会话、原版补兵预算及装备入口、实际 RBMCampaign.dll；军饷与第三方配置不改，v14 原版装备候选保护见 warden-gear.md
+> 已复核至：2026-10-07 核对 v14 反馈会话、原版补兵预算及装备入口、实际 RBMCampaign.dll；核对零工资/声望方向仍受原版经济兵力目标与 RBM 独立维护/升级限制；源码和第三方配置不改
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs`
 > 待实测：v14 / RBM 自动换装候选保护见 warden-gear.md；军饷/补兵预算暂不处理（用户裁定 2026-10-07）；船只既有功能无新增待实测。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
 
@@ -114,6 +114,20 @@
 - 同一 DLL 的 LordEquipmentUpgrade 在 PartiesBuyHorseCampaignBehavior.OnSettlementEntered 后执行：符合条件的非玩家家族领主进非敌城镇可从城镇/背包按 Tierf 换更高阶装备，原装备退入背包，没有灰袍排除。实际配置 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Configs/RBM/config.xml` 中 RBMCampaign.Enabled=1、LordEquipmentUpgradeEnabled=1。因此有明确冲突入口；现有监控没有逐件换装记录，且 RBM 自身 SpoilsLoggingEnabled=0，不能断言用户看到的每次换装都由该入口造成。
 - 本模组现有 EnsureCommanderLoadout 只在成年和读档时修生成角色装备，不在城镇访问后重置六位创始成员；未观察到本会话 ADULT_COMMANDER_LOADOUT_APPLIED。没有证据指向新加入的离国流程改装备或删除兵员，原版离国本身不重置装备或名册。（依据：源码、C# 反编译、实机诊断 2026-10-07）
 
-灰袍自动换装候选保护已在 v14 部署，见 warden-gear.md。钱与军饷暂不处理，用户说明后续工资归零；没有把 main 的零军饷带回 v14。（依据：用户裁定 2026-10-07）
+灰袍自动换装候选保护已在 v14 部署，见 warden-gear.md。钱与军饷暂不处理，用户说明后续工资归零、改消耗灰袍声望；没有把 main 的零军饷带回 v14。（依据：用户裁定 2026-10-07）
 
 原版非玩家家族每日财务评估按族长金币 G 设置每队工资上限：普通家族 A=30000、B=90000，小势力家族 A=10000、B=30000。G≤A：200+400×(G/A)²；A<G≤B：600+600×(G-A)/(B-A)。这两档族长自己的队乘 1.5，再向下截成整数。G>B：直接 MaxWagePaymentLimit（原版 DefaultPartyWageModel 为 10000），该分支不再乘 1.5。可招兵预算仍为限额-当前日薪-5。本机 RBM 在该评估完成后将各非玩家队限额乘 10，因此原版 254 可成为日志里的 2540。不会按每位领主各自金币计算；工资归零后是否补满仍另受兵源、容量和 AI 选择影响。（依据：1.4.8 ClanVariablesCampaignBehavior / MobileParty、实际 RBMCampaign.dll C# 反编译 2026-10-07）
+
+## 零金币工资与声望消耗的后续适配
+
+后续灰袍士兵的金币工资归零，改为消耗灰袍声望；消费对象、时点、费率及余额不足时的规则本轮未指定。本轮只查证，不实现声望扣费，不把 main 搁置的经济代码部署到 v14。其他模组文件、配置和方法不改，也不挂钩第三方方法。（依据：用户裁定 2026-10-07）
+
+“工资归零后就不受原版/RBM 限制”不成立，已查实的限制分别如下：
+
+- **实际工资预算**：若最终 Campaign.Models.PartyWageModel 对灰袍各阶单兵返回 0，GetTotalWage 也不计这些兵，则加兵不再增长 TotalWage、升阶工资差也为 0。RBM TierBasedWageModel 只挂钩 DefaultPartyWageModel.GetCharacterWage；main 的 GwpWardenWageModel 灰袍分支直接返回 0，不调用 base/Inner，因而该分支不被 RBM 重算。普通兵、英雄仍有工资；混编队仍可能超过预算。当前 RBM 在 OnGameStart 只注册 WorkshopModel，没有替换 PartyWageModel。未来最终模型是否生效仍需运行时验收。
+- **AI 的经济兵力目标**：原版 PartyBaseHelper.FindPartySizeNormalLimit 按 `(PaymentLimit - 英雄工资项) / Campaign.AverageWage + 1` 算经济人数，再夹到队伍容量并返回比例。Campaign.AverageWage 来自各主文化默认队伍模板，灰袍工资归零不会让其他文化兵的平均工资归零。AiVisitSettlementBehavior 和 RBMRecruitBiasBehavior 都用该目标，仍可能提早降低补兵意愿。原版驻军补员的 CalculateMobilePartySizeLimitWithFoodAndWage 也用预算/全局平均工资，RBMGarrisonRefillBehavior 调用此方法。因此真实日薪为 0 不代表按族长金币推导的 AI 兵力目标自动等于满编。
+- **招兵现金门槛**：原版 CheckRecruiting 及 AI 访问评分仍检查 PartyTradeGold > `50+min(150,队伍人数)×20`，非族长队另要求家族金币 > `50+族长队实际工资+族长队人数×40`，并检查不挨饿、队伍空位、要人格子及关系、招募费用等。主线零工资包装保留 Inner.GetTroopRecruitmentCost；工资为 0 不等于完全无需现金招兵。直接由本模组生成狂信者的路径与原版要人格子路径要分别核对。
+- **RBM 另计的费用/条件**：实际 RBMCampaign.dll SHA-256 f0fe49608c5cca5b3186c2ac0387070ca329eaf4c0bf0fb1c7b0f8cda335e871。SpoilsPool.DailyMaintenanceCost = round(装备含坐骑价值×人数×TroopMaintenanceFraction)，不读取工资；MaintenanceFinanceLine 通过家族财务每日扣未由战利品覆盖的部分。当前比例 0.005，仍会消耗族长金币并间接压低原版预算。SpoilsUpgradePatches 在自己的升级流程里直接按装备差价/战利品、钱袋、单队日升级限额（默认无自定义限制）、附近补给城镇与经验决定能否升级，不只是读取我们 PartyTroopUpgradeModel 的报价；当前 TroopUpgradeCostMultiplier=1、RequireSupplyTown=1、SupplyRadius=30。RecruitPool 在志愿兵填格后按聚落兵源池删回超额新增格子，当前 rbmCampaignEnabled=1。仅改变工资不会去掉这些限制。
+- **零值边界**：RecruitmentCampaignBehavior 的雇佣兵批量、RecruitPrisonersCampaignBehavior 的 AI 招降、GarrisonRecruitmentCampaignBehavior 的自动补员有整数 `预算/单兵工资`，候选为零工资兵时会除零；并非每条路径当前都能碰到灰袍，实施时需按真实可达路径处理。原版 AI 的 `MathF.Floor(预算/平均候选工资)` 将正无穷转 int；真实 1.4.8 TaleWorlds.Library.dll / Windows .NET Framework 运行时反射结果为 -2147483648。因此主线现存的平均候选工资 0 不能用来表示“不限人数”，它可能产生负候选人数，需改成本模组明确的零成本计算。
+
+实现声望经济时须同步处理原版的经济兵力目标、招兵资格及零成本算术，并明确 RBM 独立维护/升级费用与本模组声望维护是否叠加；只改金钱工资不足以完成这套设计。所需修正放在本模组的模型或原版入口实现，遵守不改第三方代码的底线。容量、兵源、经验和正常战败损失仍需保留。（依据：用户裁定；C# 反编译、运行时反射 2026-10-07）

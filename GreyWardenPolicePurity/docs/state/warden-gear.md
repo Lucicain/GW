@@ -58,4 +58,4 @@
 
 验证：开发/无诊断隔离构建均 0 警告/0 错误；GameCompat/PREFLIGHT PASS，614 类型、71 补丁、失败 0。Verify-WardenAutoEquipment.ps1 使用真实原版与当前 RBMCampaign.dll，只读调用实际候选搜索；有 RBM 23 / 无 RBM 11 断言 PASS，涵盖 gw/GW、普通英雄、普通士兵、BasicCharacterObject、手动装备重载及库存不变。测试未挂钩第三方方法。
 
-当前 Client/Editor DLL SHA-256：`5d70be4e58c566a10a1c7b60e46944b366a35951ba560c5261d060a295b31c12`；66 个仓库运行时文件镜像无缺失/差异/散落。回退：删除 v14 工作树 GwpWardenAutoEquipmentPatch.cs 后重新构建部署，或恢复 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-auto-equipment-20261007/` 的两端 DLL/PDB（SHA-256 `7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`）；本轮前本地存档点 `7c91b2d`。尚待用户实际进城验证。
+当前 Client/Editor DLL SHA-256：`babde02eef0b5ebcfc26d9d4aac86e04e743804e7e268fbbd5dbc50d8dda1c2b`；66 个仓库运行时文件镜像无缺失/差异/散落。回退：删除 v14 工作树 GwpWardenAutoEquipmentPatch.cs 后重新构建部署，或恢复 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-auto-equipment-20261007/` 的两端 DLL/PDB（SHA-256 `7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`）；本轮前本地存档点 `7c91b2d`。尚待用户实际进城验证。

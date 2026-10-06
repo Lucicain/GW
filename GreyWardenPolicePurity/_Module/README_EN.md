@@ -1,4 +1,4 @@
-﻿# GreyWarden
+# GreyWarden
 
 GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
@@ -23,11 +23,11 @@ Chinese: README.md
 2. Extract the complete GreyWarden folder from the archive into the game's Modules directory.
 3. Enable GreyWarden in the launcher.
 
-Existing campaigns remain supported. Finish any old bounty already in progress before updating because it is not carried into the revised system. Replace the complete module rather than copying only part of it.
+Back up your saves before updating. Replace the complete module rather than copying only part of it.
 
 ## Changelog
 
-### 2026-10-02 v1.4-r14 (Bannerlord 1.4.8)
+### 2026-10-07 v1.4-r14 (Bannerlord 1.4.8)
 
 Compared to v1.4-r13:
 
@@ -41,6 +41,10 @@ Compared to v1.4-r13:
 - A contract target you stop on the way to join an army no longer refuses to talk on the strength of the whole army, and a refusal no longer names a specific day.
 
 #### Fixed
+
+- Grey Wardens remain independent instead of joining a kingdom, becoming mercenaries, or founding a kingdom.
+- When a save loads, Wardens who have joined another kingdom leave it and its armies, restoring their independence.
+- With RBM installed, Warden lords no longer automatically replace their equipment when entering a town.
 
 - Asking the Wardens to mediate from the post-battle screen could crash the game.
 - Warden lords sometimes took up and dropped the same case they lacked the strength for, over and over.

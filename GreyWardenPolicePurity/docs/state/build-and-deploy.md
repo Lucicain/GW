@@ -1,7 +1,7 @@
 # 构建、校验与部署
 
-> 当前状态：当前 live 使用本 v14 工作树的入国拦截与通用读档离国修复；火誓者 main 暂存（用户裁定 2026-10-06）
-> 最后验收：2026-10-07 v14 自动装备候选保护版；构建、GameCompat/PREFLIGHT、live 双端镜像通过
+> 当前状态：本轮修复整合进原 v1.4-r14；发布包已验证、远端替换进行中，完成后回归 main 火誓者开发（用户裁定 2026-10-07）
+> 最后验收：2026-10-07 v14 整合候选：开发/玩家构建、真实游戏 API、116 项修复回归与 live 镜像通过
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
@@ -127,3 +127,13 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 `_Module/README.md` 与 `README_EN.md` 是**发布产物**，只在用户说开发完成、要发新版本
 时更新。开发期一律不动。写法见 `.claude/rules/release-notes.md`。
+
+## 本次 v14 同号整合
+
+用户说明原 v14 尚未向玩家公布，要求直接整合到 v1.4-r14，不发布 v15；经济系统及第三方代码本轮均不修改。替换原发布页和下载包后，修复合入 main 并恢复火誓者开发。已推送的原 v14 提交及标签 ac66f86 保留，修复源码推送修复分支并合入 main；发布页同号替换下载资产。自动审批拒绝了移动已推送标签，未执行该动作。（依据：用户裁定 2026-10-07；流程）
+
+玩家包：434464792 字节，SHA-256 `c5d8e2f4652d9eb55ead640bdb615b51b42ec52b13b5473e0d215dcc0bdb8e0a`；玩家 DLL `99f3c068373ce0a9c227cf42fb0a6c69bd1bdd8a23c23cc8a6a4ce0e53a46e8f`。68 个文件逐项解压哈希通过，五组监控串 ASCII/UTF-16LE 全部 absent；live 开发 DLL 同组串均 present。原版/内战与无内战 43/39、RBM 与无 RBM 23/11 断言通过。
+
+玩家 TPAC 继续复用已验收 v14：`bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`；与旧玩家包逐字节相同。所有未改动文件来自原 v14 包，工作树换行差异先核对正文一致；包中排除三种开发美术目录、服务器资源、编辑器 DLL/PDB、工具及日志。旧包和侧车校验文件完整备份在 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/pre-refresh-v14-release-20261007/`，旧 manifest/玩家 DLL/发布正文在 `build-check/package-v1.4-r14-original/`，新证据在 `build-check/package-v1.4-r14/`。
+
+玩家中英说明只包含游戏体验变化；release 正文从对应 README 段落抽取，无提示词、内部流程或诊断说明。外发检查实际生成 Vanguard/MELD/Greyscope 报告；技能封装器仍读取已不存在的 DACTYL 字段，报 KeyError，不能称封装器通过，未为评分改坏游戏事实。
