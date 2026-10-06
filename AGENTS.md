@@ -46,9 +46,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
 
-1. `python tools/Check-StateFreshness.py` —— 重建 code-map 和 progress.md 的汇总，并指出可能过期的 state、
-   遗留的分支和临时文件等。它是工具，不是审核：点名项当轮处理，确实不该动的在报告里说明。
-   git 钩子只拦机械错误（journal 重复条目、代码卫生），不要用 `--no-verify` 绕过。
+1. `python tools/Check-StateFreshness.py`，让项目回到「项目的整洁标准」。点名项当轮处理，
+   确实不该动的在报告里说明。不要用 `--no-verify` 绕过 git 钩子。
 2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
    每项一行；`已复核至` 只留最新一次，经过写 journal。待实测只写在子系统自己的文件里，
    progress.md 的汇总是生成的。
@@ -58,22 +57,21 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 5. 用户确认功能可用 → 同一轮退休它的诊断。
 6. **收尾不等于提交。** 只有这件事到了下节说的稳定点才提交；没到就留在工作树里，下一轮接着做。
 
-## 自己产生的东西自己收
+## 项目的整洁标准
 
-项目要求的是收尾时留下的比开工时干净：分支、工作树、stash、临时脚本、备份、调查输出，谁开的谁在这件事
-结束时收掉；要长期留的写进 `docs/reference/local-scratch.md`。删备份前先把 state 里的回退改成提交号。
+整洁是项目的状态，不是某个 agent 的习惯。无论哪个 harness、什么时候接手，项目都应该是下面这样；
+一件事结束时，项目回到这个状态。（依据：用户裁定 2026-10-07）
 
-## 各 harness 的注意点
+- **事实只有一份。** 现在成立的写在 `docs/state/`，经过只在 journal。对话、harness 的记忆和配置里
+  不存项目知识，最多存一个指回仓库的指针。
+- **生成的东西与源头一致。** code-map、progress.md 的待实测与已知缺陷汇总都由脚本重建，不手写。
+- **journal 只追加，不重复。**
+- **没有无主的东西。** 分支、工作树、stash，以及 `.codex_tmp/`、`build-check/` 里的每一项，要么属于一件
+  还在进行的事、在 state 或 `docs/reference/local-scratch.md` 里写明，要么不存在。state 里的回退指向
+  提交号，不指向临时文件。
 
-上下文机制不同，各自容易乱的地方不同。下面是实际出过的问题，不是统一流程。
-
-- **Codex**：
-  - 一个会话做一件事。2026-10-06 一个会话里提了约 30 个请求，压缩 5 次，后半程 state 写成了流水；换话题就开新会话，靠 state 和 progress 接上。
-  - 改文档直接用 apply_patch，不写改文档的脚本。那一轮写了 15 个 `record-*.py`，同时改两个工作树，合并后 journal 重复了 10 条。
-  - 用 Codex 托管的工作树时，文档只在那个工作树里写；合并后删工作树和分支。
-  - 全局记忆对本项目关闭（`.codex/config.toml`），项目知识只在本仓库。
-- **Claude Code**：自动记忆按项目目录存，只放指回仓库的指针；收尾可用 `/wrap`；C# 陷阱在 `.claude/rules/` 自动加载。
-- **Antigravity**：只读本文件；仓库里不得出现 `GEMINI.md`（见下节）。
+`python tools/Check-StateFreshness.py` 报出项目哪里偏离这个标准。git 钩子只拦机械错误
+（journal 重复、代码卫生），其余由接手的人判断处理。
 
 ## 提交可以自己做，发版和推送等用户提
 
@@ -136,18 +134,19 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - 不要为了分类清除 `WeaponFlags` 掩码
 - 不要为了打印再调一次原版评分方法（会改它的状态）
 
-## 指令文件与钩子
+## 接入 harness
 
-- 本文件由 Claude Code、Codex、Antigravity 共同读取，**项目规则只写在这里**。
-- **仓库目录里**（本目录及其上级目录）不要新建 `CLAUDE.md`、`.claude/CLAUDE.md`、
-  `CLAUDE.local.md` 或 `GEMINI.md`：前三个会让 Claude Code 不再读本文件，`GEMINI.md`
-  在 Antigravity 里优先于本文件。用户主目录的 `~/.claude/CLAUDE.md` 不在此列——
-  它和本文件一起加载，用来放跨项目的个人习惯。
-- Claude Code 的自动记忆（`~/.claude/projects/<仓库>/memory/`）只有 Claude 看得到。项目规则、裁定、
-  资源位置写进本文件或 state；记忆里的 project/feedback 条目要有一行 `仓库位置：<相对路径>`，
-  收尾检查会点名没指回的。（依据：流程）
-- 新克隆后设一次 `git config core.hooksPath .githooks`。pre-commit 在提交时重建
-  code-map；平时靠收尾第 1 步刷新，所以不依赖提交。
+- 本文件是唯一入口，项目规则只写在这里。不为某个 harness 另写一份项目说明：**仓库目录里**
+  （本目录及其上级目录）不要新建 `CLAUDE.md`、`.claude/CLAUDE.md`、`CLAUDE.local.md` 或 `GEMINI.md`，
+  前三个会让 Claude Code 不再读本文件，`GEMINI.md` 在 Antigravity 里优先于本文件。用户主目录的
+  `~/.claude/CLAUDE.md` 不在此列，它放跨项目的个人习惯。
+- harness 自带的记忆、规则、技能只放个人习惯或指回仓库的指针。Codex 的全局记忆对本项目关闭
+  （`.codex/config.toml`）；Claude Code 项目记忆里的 project/feedback 条目要写 `仓库位置：<相对路径>`，
+  检查脚本会点名没写的。（依据：用户裁定 2026-10-07）
+- 新 harness 接进来时，确认三件事：它读本文件；它能跑 `tools/` 下的 Python 和 git 钩子；它自己的记忆
+  按上一条设好。各 harness 的便利功能（Claude Code 的 `/wrap`、`.claude/rules/`、code-map 刷新钩子）
+  只是加速，不是规则来源。
+- 新克隆后设一次 `git config core.hooksPath .githooks`。
 
 ## 跟用户说话
 
