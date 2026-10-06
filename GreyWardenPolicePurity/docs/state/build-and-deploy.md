@@ -1,7 +1,7 @@
 # 构建、校验与部署
 
 > 当前状态：当前 live 使用本 v14 工作树的入国拦截与通用读档离国修复；火誓者 main 暂存（用户裁定 2026-10-06）
-> 最后验收：2026-10-07 v14 退出诊断退休版；构建、GameCompat/PREFLIGHT、live 双端镜像通过
+> 最后验收：2026-10-07 v14 自动装备候选保护版；构建、GameCompat/PREFLIGHT、live 双端镜像通过
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
@@ -41,6 +41,7 @@
 | `Verify-LiveModule.ps1` | **双向**比对 live 测试模块与仓库模块 | 无缺失、无差异、无散落文件；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-KingdomMembership.ps1` | 真实程序集的入国拦截与读档离国事件回归；日结/周结不做归属查询 | 有内战 43 / 无内战 39 断言 PASS；实机已确认退出与军团脱离；另存再读待验收 |
+| `Verify-WardenAutoEquipment.ps1` | 原版装备候选资格及实际 RBM 背包/城镇候选验证，不改第三方代码 | 有 RBM 23 / 无 RBM 11 断言 PASS；进城保持装备待实机 |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |

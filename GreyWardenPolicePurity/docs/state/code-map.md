@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-143 个源文件、48,223 行、275 个公开类型、57 个 Harmony 补丁点（分布在 57 个补丁类里）。
+144 个源文件、48,271 行、276 个公开类型、58 个 Harmony 补丁点（分布在 58 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -32,6 +32,7 @@
 | `BarterVM` | `RefreshOfferLabel` | Postfix | `GwpDispatchOfferLabelPatch` | GwpAssetOfferValidationPatch.cs |
 | `BarterVM` | `SendOffer` | Postfix | `GwpDispatchOfferDisplayPatch` | GwpAssetOfferValidationPatch.cs |
 | `CampaignEventDispatcher` | `AiHourlyTick` | Postfix | `GwpFinalDesireAuctionPatch` | GwpPartyDutyMovementPatch.cs |
+| `CharacterHelper` | `CanUseItem` | Prefix | `GwpWardenAutoEquipmentPatch` | GwpWardenAutoEquipmentPatch.cs |
 | `CharacterRelationManager` | `SetHeroRelation` | Prefix | `GreyWardenNotableRelationWritePatch` | GreyWardenNotableRelationsBehavior.cs |
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs |
@@ -339,6 +340,7 @@
 - `GwpTextureSprite` → GwpAffairsNavigation.cs ←
 - `GwpTroopCombat` → GwpTroopCombat.cs
 - `GwpTuning` → GwpTuning.cs
+- `GwpWardenAutoEquipmentPatch` → GwpWardenAutoEquipmentPatch.cs
 - `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
 - `GwpWardenDispatchDialogue` → GwpWardenDispatchDialogue.cs
 - `GwpWardenPanicPatch` → GwpWardenResolve.cs ←
@@ -536,7 +538,7 @@
 
 - `SubModule.cs` — 159 行 · `SubModule` : MBSubModuleBase
 
-### 其他（59 个文件）
+### 其他（60 个文件）
 
 - `GwpTroopCombat.cs` — 468 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpFieldReportLedger.cs` — 435 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
@@ -579,6 +581,7 @@
 - `GwpNegotiationPolicy.cs` — 56 行 · `GwpNegotiationPolicy`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
 - `GwpCaseReceipt.cs` — 48 行 · `GwpCaseReceipt`，另含 1 个类型
+- `GwpWardenAutoEquipmentPatch.cs` — 48 行 · `GwpWardenAutoEquipmentPatch`
 - `GwpFieldCollectionBarterable.cs` — 47 行 · `GwpFieldCollectionBarterable` : Barterable
 - `GwpFieldFineBarterable.cs` — 44 行 · `GwpFieldFineBarterable` : Barterable
 - `GwpAdultCommanderLoadoutPatch.cs` — 42 行 · `GwpAdultCommanderLoadoutPatch`
