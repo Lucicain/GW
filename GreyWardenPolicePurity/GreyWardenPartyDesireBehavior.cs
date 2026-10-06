@@ -91,10 +91,11 @@ namespace GreyWardenPolicePurity
             DirectAttackRefreshPending.Clear();
             EscortSpeedUncapped.Clear();
             GwpAiDiagnostics.StartSession();
-            // 旧存档可能仍保留上一版本已经选中的巡逻目标。只要求原版在
-            // 下一次部分小时 AI tick 重新拍卖，不直接写入任何目的地。
+            // 意图和直扑锁都不进存档（读档时清空，由各差事每小时重新下达），可直扑锁下的冻结是原版状态、会进存档；
+            // 读档后不解开，锁已经没了的队伍就永远冻着。火誓者信众队在家的停驻冻结是它自己要的，不解。
             foreach (MobileParty party in MobileParty.All.Where(IsManagedParty))
-                RequestImmediateRethink(party);
+                if (!GwpFireswornBehavior.IsParkedFaithParty(party))
+                    RequestImmediateRethink(party);
         }
 
         private static void OnPartyDisbandStarted(MobileParty party) =>
@@ -195,7 +196,7 @@ namespace GreyWardenPolicePurity
 
             if (DirectAttackLocks.Contains(party.StringId)) return;
 
-            // 仅解除旧版本遗留冻结并要求原版重新拍卖；不清空原版短期战术，
+            // 解开停驻的冻结（火誓者常驻队出发时走这里）并要求原版重新拍卖；不清空原版短期战术，
             // 不写入目的地，也不人为重置进攻/逃跑判断。
             party.Ai.SetDoNotMakeNewDecisions(false);
             party.Ai.RethinkAtNextHourlyTick = true;
@@ -372,10 +373,6 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteState(party, "DIRECT_ATTACK_STATE");
                 return;
             }
-
-            // 旧存档清锁只做一次；正常运行不再每小时强制重算或清空短期 AI。
-            if (party.Ai.DoNotMakeNewDecisions)
-                RequestImmediateRethink(party);
 
             GwpAiDiagnostics.WriteState(party, "HOURLY_STATE");
         }

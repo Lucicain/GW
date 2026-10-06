@@ -127,6 +127,20 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>地图上的状态文字：正在村里施工就写重建哪座村、还剩几小时（用户裁定 2026-10-07：用状态文字，不弹消息）。</summary>
+        internal static bool TryDescribeActivity(MobileParty party, out TaleWorlds.Localization.TextObject text)
+        {
+            text = TaleWorlds.Localization.TextObject.GetEmpty();
+            ReconstructionTask? task = _instance?._tasks.FirstOrDefault(entry => entry.WorkStarted &&
+                string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
+            if (task == null)
+                return false;
+            text = GwpText.Create("{=gwp_status_rebuilding}Rebuilding {VILLAGE} ({HOURS} hours left).",
+                "VILLAGE", task.VillageName,
+                "HOURS", Math.Max(1, (int)Math.Ceiling(task.WorkEndHours - CampaignTime.Now.ToHours)));
+            return true;
+        }
+
         internal static bool IsReconstructionParty(MobileParty? party)
         {
             return party != null && _instance != null && _instance._tasks.Any(task =>

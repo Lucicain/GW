@@ -16,16 +16,15 @@ using TaleWorlds.ObjectSystem;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 火誓者：信众村、祭司、狂信者、地牢与烧人、传教队与狂信者队、军械库、灰袍领主的信众村差事
+    /// 火誓者：信众村、祭司、守村队、地牢与烧人、传教、信众队、军械库
     /// （docs/state/firesworn.md、firesworn-economy.md）。
     ///
-    /// 信众村在 <see cref="_villages"/> 里有一条记录；没有记录的村子一律走原版。
-    /// 信众村的民兵完全由狂信者取代：民兵队里只有 <c>gwzealot</c>，人数就是狂信者数，
-    /// 原版每日增减由 <see cref="GwpFireswornMilitiaModel"/> 归零，战斗减员从民兵队读回。
+    /// 有火誓者的村子在 <see cref="_villages"/> 里有一条记录；有了祭司才算信众村（用户裁定 2026-10-07）。
+    /// 守村队是村里的灰袍兵（<see cref="_guards"/>），和原版民兵站在同一支民兵队里：原版民兵照原版增长、参战，
+    /// 是烧人的原料；灰袍兵只靠重建、传教、烧人变多，战斗减员从民兵队读回。
     ///
-    /// 分文件：本文件是数据、存档、查询、事件分派、祭司与民兵；仪式见 GwpFireswornRituals.cs，
-    /// 传教队与狂信者队见 GwpFireswornParties.cs，地牢、捐赠、领主差事见 GwpFireswornDungeon.cs，
-    /// 军械库见 GwpFireswornArmory.cs。
+    /// 分文件：本文件是数据、存档、查询、事件分派、祭司、守村队；仪式见 GwpFireswornRituals.cs，
+    /// 信众队见 GwpFireswornParties.cs，地牢与领主进村交接见 GwpFireswornDungeon.cs，军械库见 GwpFireswornArmory.cs。
     /// </summary>
     public sealed partial class GwpFireswornBehavior : CampaignBehaviorBase
     {
@@ -38,13 +37,16 @@ namespace GreyWardenPolicePurity
         private readonly List<Ritual> _rituals = new List<Ritual>();
         private readonly Dictionary<string, FaithParty> _faithParties =
             new Dictionary<string, FaithParty>(StringComparer.OrdinalIgnoreCase);
+        // 守村队：每座有火誓者的村子里的灰袍兵，各等级都有。人数就是这座村的火誓者人数。
+        private readonly Dictionary<string, TroopRoster> _guards =
+            new Dictionary<string, TroopRoster>(StringComparer.OrdinalIgnoreCase);
         // 信众村地牢：灰袍领主交来的俘虏、守村俘获的敌兵，等着烧。
         private readonly Dictionary<string, TroopRoster> _dungeons =
             new Dictionary<string, TroopRoster>(StringComparer.OrdinalIgnoreCase);
-        // 信众村的货仓：领主捐的、军械库用不完的东西，由狂信者队运进城卖。
+        // 信众村的货仓：领主捐的、军械库用不完的东西，由信众队运进城卖。
         private readonly Dictionary<string, ItemRoster> _goods =
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
-        // 军械库账本：键是信众村或灰袍领主部队的 StringId。兵身上穿的也算在里面。
+        // 军械库账本：键是有火誓者的村子或灰袍领主部队的 StringId。兵身上穿的也算在里面。
         private readonly Dictionary<string, ItemRoster> _armories =
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
@@ -84,52 +86,44 @@ namespace GreyWardenPolicePurity
             Damnation = 1
         }
 
-        private enum FaithPartyKind
-        {
-            Disciples = 0,
-            Caravan = 1
-        }
-
         private enum FaithPartyPhase
         {
             Home = 0,
             Outbound = 1,
-            Working = 2,
-            Returning = 3
+            Returning = 2
         }
 
         private sealed class FaithVillage
         {
             public string VillageId = string.Empty;
-            public int Zealots;
             public double LastCongregation = Never;
             public double LastDamnation = Never;
-            public double LastDisciple = Never;
-            public double LastCaravan = Never;
+            public double LastMission = Never;
+            public double LastMarket = Never;
             public string PriestId = string.Empty;
         }
 
-        /// <summary>集会传教由传教队主持（HostPartyId）；烈火责罚由村子自己办，HostPartyId 为空。</summary>
+        /// <summary>集会传教由祭司在本村主持，烈火责罚由村子自己办；都锁村，玩家进村只看到仪式画面。</summary>
         private sealed class Ritual
         {
             public string VillageId = string.Empty;
             public RitualKind Kind;
-            public string HostPartyId = string.Empty;
-            public bool Started;
-            public double QueuedHour;
             public double EndHour;
         }
 
-        /// <summary>每个信众村常驻的传教队、狂信者队，照原版村民队：回村待着，人没死光不销毁。</summary>
+        /// <summary>
+        /// 每座信众村一支信众队（用户裁定 2026-10-07：传教队和狂信者队合成一支），照原版村民队常驻在村里。
+        /// 去城里卖货的回村；去别的村子传教、送兵器的，到了就并入那里，队伍没了（用户裁定 2026-10-07）。
+        /// 去哪儿由目标决定：目标是村子就是传教，是城就是卖货。
+        /// </summary>
         private sealed class FaithParty
         {
             public string PartyId = string.Empty;
             public string HomeId = string.Empty;
-            public FaithPartyKind Kind;
             public FaithPartyPhase Phase;
             public string TargetId = string.Empty;
             public double PhaseHour;
-            // 狂信者队这一趟已经卖过几座城。
+            // 这一趟已经卖过几座城。
             public int Stops;
         }
 
@@ -143,7 +137,9 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlement);
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
+            CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);
             CampaignEvents.OnTroopRecruitedEvent.AddNonSerializedListener(this, OnTroopRecruited);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnMobilePartyDestroyed);
@@ -155,36 +151,29 @@ namespace GreyWardenPolicePurity
         public override void SyncData(IDataStore dataStore)
         {
             List<string>? villageIds = null, priests = null;
-            List<int>? zealots = null;
-            List<double>? congregations = null, damnations = null, disciples = null, caravans = null;
-            List<string>? ritualVillages = null, ritualHosts = null;
-            List<int>? ritualKinds = null, ritualStarted = null;
-            List<double>? ritualQueued = null, ritualEnds = null;
+            List<double>? congregations = null, damnations = null, missions = null, markets = null;
+            List<string>? ritualVillages = null;
+            List<int>? ritualKinds = null;
+            List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null;
-            List<int>? partyKinds = null, partyPhases = null;
+            List<int>? partyPhases = null, partyStops = null;
             List<double>? partyHours = null;
-            List<int>? partyStops = null;
 
             if (dataStore.IsSaving)
             {
                 List<FaithVillage> rows = _villages.Values.ToList();
                 villageIds = rows.Select(row => row.VillageId).ToList();
-                zealots = rows.Select(row => row.Zealots).ToList();
                 congregations = rows.Select(row => row.LastCongregation).ToList();
                 damnations = rows.Select(row => row.LastDamnation).ToList();
-                disciples = rows.Select(row => row.LastDisciple).ToList();
-                caravans = rows.Select(row => row.LastCaravan).ToList();
+                missions = rows.Select(row => row.LastMission).ToList();
+                markets = rows.Select(row => row.LastMarket).ToList();
                 priests = rows.Select(row => row.PriestId).ToList();
                 ritualVillages = _rituals.Select(ritual => ritual.VillageId).ToList();
                 ritualKinds = _rituals.Select(ritual => (int)ritual.Kind).ToList();
-                ritualHosts = _rituals.Select(ritual => ritual.HostPartyId).ToList();
-                ritualStarted = _rituals.Select(ritual => ritual.Started ? 1 : 0).ToList();
-                ritualQueued = _rituals.Select(ritual => ritual.QueuedHour).ToList();
                 ritualEnds = _rituals.Select(ritual => ritual.EndHour).ToList();
                 List<FaithParty> parties = _faithParties.Values.ToList();
                 partyIds = parties.Select(party => party.PartyId).ToList();
                 partyHomes = parties.Select(party => party.HomeId).ToList();
-                partyKinds = parties.Select(party => (int)party.Kind).ToList();
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
@@ -192,25 +181,21 @@ namespace GreyWardenPolicePurity
             }
 
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
-            dataStore.SyncData("GWPP_FsVillageZealots", ref zealots);
             dataStore.SyncData("GWPP_FsVillageLastCongregation", ref congregations);
             dataStore.SyncData("GWPP_FsVillageLastDamnation", ref damnations);
-            dataStore.SyncData("GWPP_FsVillageLastDisciple", ref disciples);
-            dataStore.SyncData("GWPP_FsVillageLastCaravan", ref caravans);
+            dataStore.SyncData("GWPP_FsVillageLastMission", ref missions);
+            dataStore.SyncData("GWPP_FsVillageLastMarket", ref markets);
             dataStore.SyncData("GWPP_FsVillagePriest", ref priests);
             dataStore.SyncData("GWPP_FsRitualVillage", ref ritualVillages);
             dataStore.SyncData("GWPP_FsRitualKind", ref ritualKinds);
-            dataStore.SyncData("GWPP_FsRitualHost", ref ritualHosts);
-            dataStore.SyncData("GWPP_FsRitualStarted", ref ritualStarted);
-            dataStore.SyncData("GWPP_FsRitualQueued", ref ritualQueued);
             dataStore.SyncData("GWPP_FsRitualEnd", ref ritualEnds);
             dataStore.SyncData("GWPP_FsPartyIds", ref partyIds);
             dataStore.SyncData("GWPP_FsPartyHomes", ref partyHomes);
-            dataStore.SyncData("GWPP_FsPartyKinds", ref partyKinds);
             dataStore.SyncData("GWPP_FsPartyPhases", ref partyPhases);
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
             dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
+            SyncTroopRosters(dataStore, "GWPP_FsGuard", _guards);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
             SyncItemRosters(dataStore, "GWPP_FsArmory", _armories);
@@ -223,11 +208,10 @@ namespace GreyWardenPolicePurity
                 _villages[villageIds[i]] = new FaithVillage
                 {
                     VillageId = villageIds[i],
-                    Zealots = zealots![i],
                     LastCongregation = congregations![i],
                     LastDamnation = damnations![i],
-                    LastDisciple = disciples![i],
-                    LastCaravan = caravans![i],
+                    LastMission = missions![i],
+                    LastMarket = markets![i],
                     PriestId = priests![i]
                 };
 
@@ -237,9 +221,6 @@ namespace GreyWardenPolicePurity
                 {
                     VillageId = ritualVillages[i],
                     Kind = (RitualKind)ritualKinds![i],
-                    HostPartyId = ritualHosts![i],
-                    Started = ritualStarted![i] != 0,
-                    QueuedHour = ritualQueued![i],
                     EndHour = ritualEnds![i]
                 });
 
@@ -249,7 +230,6 @@ namespace GreyWardenPolicePurity
                 {
                     PartyId = partyIds[i],
                     HomeId = partyHomes![i],
-                    Kind = (FaithPartyKind)partyKinds![i],
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
@@ -347,45 +327,57 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 查询
 
-        /// <summary>这是不是一支传教队或狂信者队；是的话，它是哪种、是不是在去的路上、家在哪、要去哪。</summary>
-        internal static bool TryDescribeFaithParty(MobileParty? party, out bool disciples, out bool outbound,
+        /// <summary>这是不是一支信众队；是的话，是去传教还是去卖货、是不是在去的路上、家在哪、要去哪。</summary>
+        internal static bool TryDescribeFaithParty(MobileParty? party, out bool mission, out bool outbound,
             out Settlement? home, out Settlement? target)
         {
-            disciples = outbound = false;
+            mission = outbound = false;
             home = target = null;
             if (party == null || _instance == null || !_instance._faithParties.TryGetValue(party.StringId, out FaithParty? record))
                 return false;
-            disciples = record.Kind == FaithPartyKind.Disciples;
-            outbound = record.Phase == FaithPartyPhase.Outbound || record.Phase == FaithPartyPhase.Working;
             home = Settlement.Find(record.HomeId);
             target = Settlement.Find(record.TargetId);
+            outbound = record.Phase == FaithPartyPhase.Outbound;
+            mission = outbound && target.IsVillage;
             return true;
         }
 
+        /// <summary>这支信众队正在家里停驻（Park 冻住的）。</summary>
+        internal static bool IsParkedFaithParty(MobileParty party) =>
+            _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
+            record.Phase == FaithPartyPhase.Home && party.CurrentSettlement?.StringId == record.HomeId;
+
+        /// <summary>信众村：有祭司的村子（用户裁定 2026-10-07：生成要人以后才算信众）。</summary>
         internal static IEnumerable<Settlement> FaithVillages() =>
-            _instance == null ? Enumerable.Empty<Settlement>() : _instance._villages.Keys.Select(Settlement.Find).ToList();
+            _instance == null
+                ? Enumerable.Empty<Settlement>()
+                : _instance._villages.Values.Where(row => FindLivingPriest(row) != null)
+                    .Select(row => Settlement.Find(row.VillageId)).ToList();
 
         internal static bool IsPreachedVillage(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null &&
-            _instance._villages.ContainsKey(settlement.StringId);
+            _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) && FindLivingPriest(row) != null;
+
+        /// <summary>村里有没有火誓者（有守村队、有军械库），不管有没有祭司。</summary>
+        internal static bool HasFireswornGuard(Settlement? settlement) =>
+            settlement?.IsVillage == true && _instance != null && _instance._villages.ContainsKey(settlement.StringId);
 
         internal static bool IsFireswornPriest(Hero? hero) =>
             hero != null && _instance != null && _instance._priestIds.Contains(hero.StringId);
 
         /// <summary>案子发生在某座信众村跟前：灰袍优先接这种案子（用户裁定）。</summary>
         internal static bool IsNearFaithVillage(Vec2 position) =>
-            _instance != null && _instance._villages.Keys.Any(id =>
-                Settlement.Find(id).GetPosition2D.Distance(position) <= GwpTuning.Firesworn.FaithCaseRadius);
+            FaithVillages().Any(village => village.GetPosition2D.Distance(position) <= GwpTuning.Firesworn.FaithCaseRadius);
 
-        internal static bool TryGetVillageFaith(Settlement? settlement, out int zealots,
+        internal static bool TryGetVillageFaith(Settlement? settlement, out int sworn,
             out int cap, out Hero? priest)
         {
-            zealots = cap = 0;
+            sworn = cap = 0;
             priest = null;
             if (settlement?.IsVillage != true || _instance == null ||
                 !_instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row))
                 return false;
-            zealots = row.Zealots;
+            sworn = _instance.Sworn(row);
             cap = ZealotCap(settlement);
             priest = FindLivingPriest(row);
             return true;
@@ -406,7 +398,7 @@ namespace GreyWardenPolicePurity
                 goodsValue = goods.TotalValue;
         }
 
-        /// <summary>村子正在举办、已经开始的仪式。期间玩家进村只看到仪式画面。</summary>
+        /// <summary>村子正在办的仪式。期间玩家进村只看到仪式画面。</summary>
         internal static bool TryGetActiveRitual(Settlement? settlement, out RitualKind kind,
             out double remainingHours, out string hostName)
         {
@@ -415,17 +407,17 @@ namespace GreyWardenPolicePurity
             hostName = string.Empty;
             if (settlement?.IsVillage != true || _instance == null)
                 return false;
-            Ritual? ritual = _instance._rituals.FirstOrDefault(entry => entry.Started &&
+            Ritual? ritual = _instance._rituals.FirstOrDefault(entry =>
                 string.Equals(entry.VillageId, settlement.StringId, StringComparison.OrdinalIgnoreCase));
             if (ritual == null)
                 return false;
             kind = ritual.Kind;
             remainingHours = Math.Max(0d, ritual.EndHour - CampaignTime.Now.ToHours);
-            hostName = _instance.RitualHostName(ritual, settlement);
+            hostName = _instance.RitualHostName(settlement);
             return true;
         }
 
-        /// <summary>狂信者上限就是户数，跟着户数变（用户裁定 2026-10-05）。</summary>
+        /// <summary>火誓者人数上限就是户数，跟着户数变（用户裁定 2026-10-05）。</summary>
         internal static int ZealotCap(Settlement settlement) => (int)settlement.Village.Hearth;
 
         /// <summary>
@@ -464,16 +456,18 @@ namespace GreyWardenPolicePurity
             GwpFireswornPartyDialogs.Register(starter);
             RebuildPriestIndex();
             foreach (FaithVillage row in _villages.Values.ToList())
-                ObserveAndPushMilitia(row);
+                ObserveGuard(row);
         }
 
         /// <summary>
-        /// 开新档时灰袍的家乡村就是第一座信众村，有一位祭司。没有它，灰袍在第一次重建之前补不了兵：
-        /// 灰袍只能在信众村招兵（用户裁定）。
+        /// 开新档时灰袍的家乡村就是第一座信众村：照重建给 5% 的火誓者，再拉起一位祭司。
+        /// 没有它，灰袍在第一次重建之前补不了兵：灰袍只能在信众村招兵（用户裁定）。
         /// </summary>
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
-            InstallPriest(PoliceStats.GetPoliceClan().InitialHomeSettlement);
+            Settlement home = PoliceStats.GetPoliceClan().InitialHomeSettlement;
+            OnVillageRebuilt(home);
+            InstallPriest(home);
         }
 
         private void OnHourlyTick()
@@ -481,31 +475,50 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_MILITIA", () =>
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_GUARD", () =>
             {
                 foreach (FaithVillage row in _villages.Values.ToList())
-                    ObserveAndPushMilitia(row);
+                    ObserveGuard(row);
             });
             GwpRuntimeFaultWatch.Guard("FIRESWORN_ARMORY", RefreshArmoryPlans);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SLOTS", () =>
+            {
+                foreach (FaithVillage row in _villages.Values)
+                    ReconcilePriestSlots(row);
+            });
         }
 
         private void OnDailyTick()
         {
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIESTS", MaintainPriests);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_TRAINING", TrainPriestVolunteers);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SPAWN", SpawnPriestsByShare);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_ZEALOT_GROWTH", GrowZealots);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_POWER", () =>
+            {
+                foreach (FaithVillage row in _villages.Values)
+                    UpdatePriestPower(row);
+            });
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_CONGREGATIONS", ScheduleCongregations);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_DAMNATIONS", ScheduleDamnations);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_DISCIPLES", DispatchDisciples);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_CARAVANS", DispatchCaravans);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_FAITH_PARTIES", DispatchFaithParties);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_ARMORY_REBALANCE", RebalanceArmories);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SUMMARY", WriteDailySummary);
         }
 
         /// <summary>
-        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备。什么时候来由原版进城意愿决定（GwpFaithVisitDesire）。原版进门招兵（祭司格子）
-        /// 已经在进门前跑完（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
-        /// 招到的人由 <see cref="OnTroopRecruited"/> 带走各自的那一套装备。
+        /// 原版每天给要人补格子、升格子里的兵（RecruitmentCampaignBehavior.DailyTickSettlement），
+        /// 升出来的兵种守村队里可能没有；当天就照守村队重排，领主进村时格子里不会有凭空变出来的人。
+        /// 原版那一步若排在这之后，每小时的重排会补上。
+        /// </summary>
+        private void OnDailyTickSettlement(Settlement settlement)
+        {
+            if (settlement.IsVillage && _villages.TryGetValue(settlement.StringId, out FaithVillage? row))
+                ReconcilePriestSlots(row);
+        }
+
+        /// <summary>
+        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备。什么时候来由原版进城意愿决定（GwpFaithVisitDesire）。
+        /// 原版进门招兵（祭司格子）已经在进门前跑完（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
+        /// 招到的人由 <see cref="OnTroopRecruited"/> 从守村队带走，连同各自的那一套装备。
         /// </summary>
         private void OnSettlementEntered(MobileParty? party, Settlement settlement, Hero? hero)
         {
@@ -516,16 +529,30 @@ namespace GreyWardenPolicePurity
             EnlistZealots(party, settlement);
         }
 
+        private void OnSettlementLeft(MobileParty party, Settlement settlement) => _lastVisits.Remove(party.StringId);
+
+        /// <summary>
+        /// 祭司格子里的兵是守村队里的人（用户裁定 2026-10-07：从守村灰袍队里拉最精锐、配装最好的）。
+        /// 领主招走了，守村队就少这几个，他们身上那一套也一起带走（用户裁定：招兵连装备带走）。
+        /// </summary>
         private void OnTroopRecruited(Hero? recruiter, Settlement? settlement, Hero? source,
             CharacterObject troop, int count)
         {
             MobileParty? party = recruiter?.PartyBelongedTo;
             if (party == null || settlement == null || !GwpWardenRecruitment.IsWardenParty(party) ||
-                !IsFireswornPriest(source))
+                !IsFireswornPriest(source) || !_villages.TryGetValue(settlement.StringId, out FaithVillage? row))
                 return;
+            TroopRoster guard = GuardOf(row.VillageId);
+            int taken = Math.Min(count, guard.GetTroopCount(troop));
+            if (taken > 0)
+                guard.AddToCounts(troop, -taken);
+            int kits = MoveBestSets(row.VillageId, party.StringId, troop, taken);
+            PushGuard(row, settlement);
+            ReconcilePriestSlots(row);
+            RecordVisit(party, settlement, recruits: count);
             GwpAiDiagnostics.WriteFaith("PRIEST_RECRUITED",
-                "party=" + party.StringId + "; village=" + settlement.StringId + "; troop=" + troop.StringId + "; count=" + count);
-            MoveKits(settlement.StringId, party.StringId, count, "priest_recruit");
+                "party=" + party.StringId + "; village=" + settlement.StringId + "; troop=" + troop.StringId +
+                "; count=" + count + "; fromGuard=" + taken + "; kitItems=" + kits + "; guardLeft=" + guard.TotalManCount);
         }
 
         private void OnMapEventEnded(MapEvent mapEvent)
@@ -553,25 +580,95 @@ namespace GreyWardenPolicePurity
         private static void CreditTreasury(int amount) =>
             PoliceResourceManager.CreditJudicialTreasuryFromCourier(amount);
 
+        // ---------------------------------------------------------------- 领主在信众村做了什么（地图状态文字）
+
+        private sealed class VisitSummary
+        {
+            public string VillageId = string.Empty;
+            public int Prisoners;
+            public int Donated;
+            public int Recruits;
+        }
+
+        // 领主这一次进信众村交了几个俘虏、捐了几件东西、招了几个兵，只给地图状态文字用，离村就清掉。
+        // 不存档：读档后还在村里的领主显示通用的「在火堆边休整」，不影响任何行为。
+        private readonly Dictionary<string, VisitSummary> _lastVisits =
+            new Dictionary<string, VisitSummary>(StringComparer.OrdinalIgnoreCase);
+
+        private void RecordVisit(MobileParty party, Settlement village, int prisoners = 0, int donated = 0, int recruits = 0)
+        {
+            if (!_lastVisits.TryGetValue(party.StringId, out VisitSummary? visit) ||
+                !string.Equals(visit.VillageId, village.StringId, StringComparison.OrdinalIgnoreCase))
+            {
+                visit = new VisitSummary { VillageId = village.StringId };
+                _lastVisits[party.StringId] = visit;
+            }
+            visit.Prisoners += prisoners;
+            visit.Donated += donated;
+            visit.Recruits += recruits;
+        }
+
+        /// <summary>地图上的状态文字（用户裁定 2026-10-07：领主在村里做什么用状态文字显示，不弹消息）。</summary>
+        internal static bool TryDescribeActivity(MobileParty party, out TextObject text)
+        {
+            text = TextObject.GetEmpty();
+            if (_instance == null)
+                return false;
+            if (_instance._faithParties.TryGetValue(party.StringId, out FaithParty? record))
+            {
+                Settlement home = Settlement.Find(record.HomeId);
+                Settlement target = Settlement.Find(record.TargetId);
+                text = record.Phase == FaithPartyPhase.Outbound
+                    ? target.IsVillage
+                        ? GwpText.Create("{=gwp_fs_status_mission}Carrying the Eternal Fire to {TARGET}.", "TARGET", target.Name)
+                        : GwpText.Create("{=gwp_fs_status_market}Taking the goods of {HOME} to market in {TARGET}.",
+                            "HOME", home.Name, "TARGET", target.Name)
+                    : record.Phase == FaithPartyPhase.Returning
+                        ? GwpText.Create("{=gwp_fs_status_returning}Returning to {HOME}.", "HOME", home.Name)
+                        : GwpText.Create("{=gwp_fs_status_home}Keeping watch in {HOME}.", "HOME", home.Name);
+                return true;
+            }
+            Settlement? village = party.CurrentSettlement;
+            if (!party.IsLordParty || !GwpWardenRecruitment.IsWardenParty(party) || !IsPreachedVillage(village))
+                return false;
+            if (_instance._lastVisits.TryGetValue(party.StringId, out VisitSummary? visit) &&
+                (visit.Prisoners > 0 || visit.Donated > 0 || visit.Recruits > 0))
+                text = GwpText.Create("{=gwp_fs_status_visit}At the Eternal Fire in {VILLAGE}: handed over {PRISONERS} prisoners and {DONATED} pieces of gear, took {RECRUITS} sworn into the ranks.",
+                    "VILLAGE", village!.Name, "PRISONERS", visit.Prisoners, "DONATED", visit.Donated, "RECRUITS", visit.Recruits);
+            else if (party.MemberRoster.TotalWounded > 0)
+                text = GwpText.Create("{=gwp_fs_status_healing}Tending the wounded at the Eternal Fire in {VILLAGE}.",
+                    "VILLAGE", village!.Name);
+            else
+                text = GwpText.Create("{=gwp_fs_status_resting}Resting at the Eternal Fire in {VILLAGE}.", "VILLAGE", village!.Name);
+            return true;
+        }
+
         // ---------------------------------------------------------------- 祭司
 
         /// <summary>
-        /// 灰袍重建完一座村子时给它拉起一位永恒之火祭司（用户裁定：重建只负责拉起祭司）。
-        /// 重建过的村子同时算作信众村。祭司的志愿兵见 <see cref="GwpFireswornVolunteerModel"/>。
+        /// 灰袍重建完一座村子：把当地 5% 的人换成狂信者（用户裁定 2026-10-07：重建算传教，给火誓者人数）。
+        /// 重建不拉祭司，祭司按比例生成之后才算信众村（<see cref="SpawnPriestsByShare"/>）。
         /// </summary>
         internal static void OnVillageRebuilt(Settlement village)
         {
-            _instance?.InstallPriest(village);
+            if (_instance == null)
+                return;
+            FaithVillage row = _instance.EnsureVillage(village);
+            int before = _instance.Sworn(row);
+            int added = _instance.AddToGuard(row, village, CharacterObject.Find(GwpIds.ZealotId),
+                (int)Math.Round(village.Village.Hearth * GwpTuning.Firesworn.ReconstructionSwornShare));
+            GwpAiDiagnostics.WriteFaith("RECONSTRUCTION_SWORN",
+                "village=" + village.StringId + "; added=" + added + "; sworn=" + before + "->" + _instance.Sworn(row) +
+                "; hearth=" + village.Village.Hearth.ToString("0"));
         }
 
         private void InstallPriest(Settlement village)
         {
             FaithVillage row = EnsureVillage(village);
-            PushMilitia(row, village);
             if (FindLivingPriest(row) != null)
                 return;
 
-            // 教义是母系的，祭司只能是女人（用户裁定）。原版每个文化恰有一个女性传教者模板
+            // 祭司只能是女人（用户裁定）。原版每个文化恰有一个女性传教者模板
             // （spc_notable_<文化>_N，is_female），长相在她的捏脸范围里随机。
             CharacterObject template = CharacterObject.All.First(character =>
                 character.IsTemplate && character.Occupation == Occupation.Preacher &&
@@ -590,9 +687,9 @@ namespace GreyWardenPolicePurity
             if (priest.Gold < GwpTuning.Firesworn.PriestStartingGold)
                 GiveGoldAction.ApplyBetweenCharacters(null, priest,
                     GwpTuning.Firesworn.PriestStartingGold - priest.Gold, true);
-            if (priest.Power < GwpTuning.Firesworn.PriestInitialPower)
-                priest.AddPower(GwpTuning.Firesworn.PriestInitialPower - priest.Power);
             AnointPriest(row, priest, village);
+            UpdatePriestPower(row);
+            // 一座村子成了信众村，是重要的事，玩家随时都该知道（用户裁定 2026-10-07：灰色消息只给重要的事）。
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 "{=gwp_fs_priest_arrived}{PRIEST} has settled in {VILLAGE} to tend the Eternal Fire.",
                 "PRIEST", priest.Name, "VILLAGE", village.Name), Colors.Gray));
@@ -636,7 +733,7 @@ namespace GreyWardenPolicePurity
         /// 祭司死时 power 够高，原版会给村子补一位同职业的亲属（<c>NotablesCampaignBehavior.OnHeroKilled</c>
         /// → <c>HeroCreator.CreateRelativeNotableHero</c>，模板从该文化的传教者里随机，男女都有）。
         /// 补来的是女人就接任祭司；是男人就只是原版传教者，不接火（用户裁定：祭司不能是男的）。
-        /// 没补就空着（「墓地」等火蜥蜴再做）。
+        /// 没人接任，这座村就不再是信众村，等按比例再来一位。
         /// </summary>
         private void MaintainPriests()
         {
@@ -650,31 +747,9 @@ namespace GreyWardenPolicePurity
                 Hero? successor = village.Notables.FirstOrDefault(hero =>
                     hero.IsPreacher && hero.IsFemale && hero.IsAlive && !_priestIds.Contains(hero.StringId));
                 if (successor != null)
-                    AnointPriest(row, successor, village);
-            }
-        }
-
-        /// <summary>
-        /// 祭司能练出好的灰袍兵（用户裁定）。原版格子里的兵每天只按 log2(power/阶)×1% 升一级，
-        /// 而且到 4 阶就停（C#反编译 v1.4.8 RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement、
-        /// DefaultVolunteerModel.MaxVolunteerTier）。祭司格子里的灰袍兵另外每天按
-        /// 基础概率 + power 加成升一级，一直能升到兵线尽头。
-        /// </summary>
-        private void TrainPriestVolunteers()
-        {
-            foreach (FaithVillage row in _villages.Values)
-            {
-                Hero? priest = FindLivingPriest(row);
-                if (priest == null)
-                    continue;
-                float chance = GwpTuning.Firesworn.PriestTrainingDailyChance +
-                               priest.Power / GwpTuning.Firesworn.PriestTrainingPowerPerChance;
-                for (int i = 0; i < priest.VolunteerTypes.Length; i++)
                 {
-                    CharacterObject? troop = priest.VolunteerTypes[i];
-                    if (troop == null || troop.UpgradeTargets.Length == 0 || MBRandom.RandomFloat >= chance)
-                        continue;
-                    priest.VolunteerTypes[i] = troop.UpgradeTargets[MBRandom.RandomInt(troop.UpgradeTargets.Length)];
+                    AnointPriest(row, successor, village);
+                    UpdatePriestPower(row);
                 }
             }
         }
@@ -695,11 +770,11 @@ namespace GreyWardenPolicePurity
                     _priestIds.Add(row.PriestId);
         }
 
-
         /// <summary>
-        /// 祭司由要人系统按狂信者比例自动生成（用户裁定）。照原版补要人的节奏：每座村每 7 天查一次
+        /// 祭司由要人系统按火誓者比例自动生成（用户裁定）。照原版补要人的节奏：每座村每 7 天查一次
         /// （C#反编译 v1.4.8 NotablesCampaignBehavior.DailyTickSettlement → SettlementHelper.SpawnNotablesIfNeeded），
-        /// 哪一天查由村子决定。没有祭司、狂信者占户数到了门槛，就按概率来一位。每村只有一位祭司（用户裁定）。
+        /// 哪一天查由村子决定。没有祭司、火誓者占户数到了门槛，就按概率来一位。每村只有一位祭司（用户裁定）。
+        /// 祭司来了这座村才算信众村，解锁烧人和传教（用户裁定 2026-10-07）。
         /// </summary>
         private void SpawnPriestsByShare()
         {
@@ -709,42 +784,43 @@ namespace GreyWardenPolicePurity
                 if (StableDay(row.VillageId, 7) != dayOfWeek || FindLivingPriest(row) != null)
                     continue;
                 Settlement village = Settlement.Find(row.VillageId);
-                float share = row.Zealots / Math.Max(1f, village.Village.Hearth);
+                float share = SwornShare(row, village);
                 if (share < GwpTuning.Firesworn.PriestZealotShare ||
                     MBRandom.RandomFloat >= GwpTuning.Firesworn.PriestWeeklyChance)
                     continue;
                 InstallPriest(village);
                 GwpAiDiagnostics.WriteFaith("PRIEST_SPAWNED",
-                    "village=" + village.StringId + "; zealots=" + row.Zealots +
+                    "village=" + village.StringId + "; sworn=" + Sworn(row) +
                     "; hearth=" + village.Village.Hearth.ToString("0") + "; share=" + share.ToString("0.00"));
             }
         }
 
         /// <summary>
-        /// 有祭司的信众村每天自己长狂信者，照原版村庄民兵的每日增长（C#反编译 v1.4.8
-        /// DefaultSettlementMilitiaModel.CalculateMilitiaChange：0.5 + 户数/400 − 现有 × 2.5%）。
-        /// 信众村的民兵就是狂信者，原版增长已被 <see cref="GwpFireswornMilitiaModel"/> 归零，没有这一条的话，
-        /// 狂信者只能靠传教和烧人涨。只加不减（实机诊断 2026-10-06：家乡村狂信者 6 天从 39 掉到 31，
-        /// 常驻队补人一直在抽，没有任何回补）。
+        /// 祭司的势力按当地火誓者比例算：祭司占全村要人势力的份额等于火誓者占户数的份额，
+        /// 其他要人的势力照原版不动（用户裁定 2026-10-07）。所以 祭司 = 其他要人势力之和 × 比例 / (1 − 比例)。
+        /// 原版要人势力：普通 &lt; 100、有影响力 100–200、强大 &gt; 200，初始 50–400 随机，每天只变零点几
+        /// （C#反编译 v1.4.8 DefaultNotablePowerModel）。
         /// </summary>
-        private void GrowZealots()
+        private void UpdatePriestPower(FaithVillage row)
         {
-            foreach (FaithVillage row in _villages.Values)
-            {
-                Settlement village = Settlement.Find(row.VillageId);
-                if (FindLivingPriest(row) == null || !IsVillageQuiet(village))
-                    continue;
-                float change = GwpTuning.Firesworn.ZealotGrowthBase +
-                               village.Village.Hearth / GwpTuning.Firesworn.ZealotGrowthHearthDivisor -
-                               row.Zealots * GwpTuning.Firesworn.ZealotGrowthRetireShare;
-                int gain = change > 0f ? MBRandom.RoundRandomized(change) : 0;
-                if (gain <= 0 || row.Zealots >= ZealotCap(village))
-                    continue;
-                row.Zealots = Math.Min(ZealotCap(village), row.Zealots + gain);
-                PushMilitia(row, village);
-                GwpAiDiagnostics.WriteFaith("ZEALOT_GROWTH", "village=" + row.VillageId + "; gain=" + gain +
-                    "; zealots=" + row.Zealots + "; hearth=" + village.Village.Hearth.ToString("0"));
-            }
+            Hero? priest = FindLivingPriest(row);
+            if (priest == null)
+                return;
+            Settlement village = Settlement.Find(row.VillageId);
+            float share = Math.Min(GwpTuning.Firesworn.PriestShareCeiling, SwornShare(row, village));
+            float others = OtherNotables(village, priest).Sum(hero => hero.Power);
+            float target = others * share / (1f - share);
+            priest.AddPower(target - priest.Power);
+        }
+
+        private static IEnumerable<Hero> OtherNotables(Settlement village, Hero priest) =>
+            village.Notables.Where(hero => hero != priest && hero.IsAlive);
+
+        /// <summary>本地要人里势力最强的是灰袍宗教：祭司的势力高过村里每一位别的要人（用户裁定 2026-10-07）。</summary>
+        private static bool IsPriestStrongest(FaithVillage row, Settlement village)
+        {
+            Hero? priest = FindLivingPriest(row);
+            return priest != null && OtherNotables(village, priest).All(hero => hero.Power < priest.Power);
         }
 
         /// <summary>按村子 id 给一个固定的日子（0…period−1），各村错开，不在同一天扎堆。</summary>
@@ -759,24 +835,46 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        // ---------------------------------------------------------------- 民兵＝狂信者
+        // ---------------------------------------------------------------- 守村队
 
         private FaithVillage EnsureVillage(Settlement village)
         {
             if (_villages.TryGetValue(village.StringId, out FaithVillage? row))
                 return row;
-
-            // 第一次传教时，村里原有的民兵立誓成为狂信者（不超过上限）。
-            row = new FaithVillage
-            {
-                VillageId = village.StringId,
-                Zealots = Math.Min(ZealotCap(village), MilitiaHeadcount(village))
-            };
+            // 原有民兵不转化（用户裁定 2026-10-07）：火誓者只靠重建、传教、烧人来。
+            row = new FaithVillage { VillageId = village.StringId };
             _villages[village.StringId] = row;
             return row;
         }
 
-        private void ObserveAndPushMilitia(FaithVillage row)
+        private TroopRoster GuardOf(string villageId) => RosterOf(_guards, villageId);
+
+        private int Sworn(FaithVillage row) =>
+            _guards.TryGetValue(row.VillageId, out TroopRoster? guard) ? guard.TotalManCount : 0;
+
+        private float SwornShare(FaithVillage row, Settlement village) =>
+            Sworn(row) / Math.Max(1f, village.Village.Hearth);
+
+        /// <summary>往守村队里加人，总数不超过户数（用户裁定 2026-10-05：上限是户数）。返回实际加了几个。</summary>
+        private int AddToGuard(FaithVillage row, Settlement village, CharacterObject troop, int count)
+        {
+            int added = Math.Min(count, Math.Max(0, ZealotCap(village) - Sworn(row)));
+            if (added <= 0)
+                return 0;
+            GuardOf(row.VillageId).AddToCounts(troop, added);
+            PushGuard(row, village);
+            _plans.Remove(row.VillageId);
+            return added;
+        }
+
+        private static bool IsGuardTroop(CharacterObject? troop) =>
+            troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
+
+        /// <summary>
+        /// 每小时从民兵队读回守村队：战斗减员、被俘都是真死，民兵队里某种灰袍兵比记录少就照少的算；
+        /// 民兵队没了，守村队也没了。户数掉了，超出上限的从最低级的开始走。然后把民兵队补齐到记录。
+        /// </summary>
+        private void ObserveGuard(FaithVillage row)
         {
             Settlement? village = Settlement.Find(row.VillageId);
             if (village?.IsVillage != true)
@@ -784,68 +882,139 @@ namespace GreyWardenPolicePurity
             MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
             if (militia?.MapEvent != null)
                 return;
-
-            // 战斗减员、被俘都是真死（佚亡＝原版死亡）：民兵队比记录少就照少的算。
-            int observed = MilitiaHeadcount(village);
-            if (observed < row.Zealots)
-                row.Zealots = observed;
-            // 上限是户数；户数掉了（被直接招走、被劫），多出来的狂信者也跟着少。
-            row.Zealots = Math.Min(row.Zealots, ZealotCap(village));
-            PushMilitia(row, village);
+            TroopRoster guard = GuardOf(row.VillageId);
+            foreach (TroopRosterElement element in guard.GetTroopRoster().ToList())
+            {
+                int observed = militia?.IsActive == true ? militia.MemberRoster.GetTroopCount(element.Character) : 0;
+                if (observed < element.Number)
+                {
+                    guard.AddToCounts(element.Character, observed - element.Number);
+                    _plans.Remove(row.VillageId);
+                }
+            }
+            int over = guard.TotalManCount - ZealotCap(village);
+            foreach (TroopRosterElement element in guard.GetTroopRoster().OrderBy(entry => entry.Character.Tier).ToList())
+            {
+                if (over <= 0)
+                    break;
+                int take = Math.Min(over, element.Number);
+                guard.AddToCounts(element.Character, -take);
+                over -= take;
+            }
+            PushGuard(row, village);
         }
 
-        private static void PushMilitia(FaithVillage row, Settlement village)
+        /// <summary>
+        /// 把守村队放进民兵队，和原版民兵站在一起：原版民兵一个不动，灰袍兵按记录补齐、多的去掉。
+        /// 民兵队还没有时，借原版 setter 建队（它会按文化兵种填人），再把多填的原版兵拿掉。
+        /// </summary>
+        private void PushGuard(FaithVillage row, Settlement village)
         {
-            CharacterObject? zealot = CharacterObject.Find(GwpIds.ZealotId);
-            if (zealot == null)
-                return;
+            TroopRoster guard = GuardOf(row.VillageId);
             MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
             if (militia?.MapEvent != null)
                 return;
-
             if (militia?.IsActive != true)
             {
-                if (row.Zealots < 2)
+                if (guard.TotalManCount < 2)
                     return;
-                // 原版 setter 会建出民兵队并按文化兵种填人，下面再整队换成狂信者。
-                village.Militia = row.Zealots;
+                village.Militia += guard.TotalManCount;
                 militia = village.MilitiaPartyComponent?.MobileParty;
                 if (militia?.IsActive != true)
                     return;
+                RemoveVanillaMilitia(militia, guard.TotalManCount);
             }
 
             TroopRoster roster = militia.MemberRoster;
             foreach (TroopRosterElement element in roster.GetTroopRoster().ToList())
+                if (IsGuardTroop(element.Character) && guard.GetTroopCount(element.Character) == 0)
+                    roster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
+            foreach (TroopRosterElement element in guard.GetTroopRoster())
             {
-                if (element.Character == null || element.Character == zealot || element.Number <= 0)
-                    continue;
-                int number = element.Number;
-                int wounded = Math.Min(number, Math.Max(0, element.WoundedNumber));
-                roster.AddToCounts(element.Character, -number, false, -wounded);
-                roster.AddToCounts(zealot, number, false, wounded);
-            }
-
-            int difference = row.Zealots - roster.TotalManCount;
-            if (difference > 0)
-            {
-                roster.AddToCounts(zealot, difference);
-            }
-            else if (difference < 0)
-            {
-                TroopRosterElement zealots = roster.GetTroopRoster()
-                    .FirstOrDefault(element => element.Character == zealot);
-                int remove = Math.Min(-difference, Math.Max(0, zealots.Number));
-                int healthy = Math.Max(0, zealots.Number - zealots.WoundedNumber);
-                int woundedTaken = Math.Max(0, remove - healthy);
-                if (remove > 0)
-                    roster.AddToCounts(zealot, -remove, false, -woundedTaken);
+                int present = roster.GetTroopCount(element.Character);
+                if (present < element.Number)
+                {
+                    roster.AddToCounts(element.Character, element.Number - present);
+                }
+                else if (present > element.Number)
+                {
+                    int remove = present - element.Number;
+                    int index = roster.FindIndexOfTroop(element.Character);
+                    int healthy = roster.GetElementNumber(index) - roster.GetElementWoundedNumber(index);
+                    roster.AddToCounts(element.Character, -remove, false, -Math.Max(0, remove - healthy));
+                }
             }
         }
 
-        private static int MilitiaHeadcount(Settlement village)
+        /// <summary>按兵种比例从民兵队里拿掉 <paramref name="count"/> 个原版民兵，灰袍兵不动。</summary>
+        internal static void RemoveVanillaMilitia(MobileParty militia, int count)
         {
-            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
-            return militia?.IsActive == true ? militia.MemberRoster.TotalManCount : 0;
+            TroopRoster roster = militia.MemberRoster;
+            List<TroopRosterElement> vanilla = roster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)).ToList();
+            int total = vanilla.Sum(element => element.Number);
+            if (total <= 0 || count <= 0)
+                return;
+            float share = Math.Min(1f, count / (float)total);
+            int left = count;
+            foreach (TroopRosterElement element in vanilla)
+            {
+                int take = Math.Min(left, Math.Min(element.Number, MBRandom.RoundRandomized(element.Number * share)));
+                if (take <= 0)
+                    continue;
+                int healthy = element.Number - element.WoundedNumber;
+                roster.AddToCounts(element.Character, -take, false, -Math.Max(0, take - healthy));
+                left -= take;
+            }
+        }
+
+        /// <summary>民兵队里有多少是守村队的灰袍兵。</summary>
+        internal static int GuardHeadcount(Settlement? settlement) =>
+            settlement != null && _instance != null && _instance._guards.TryGetValue(settlement.StringId, out TroopRoster? guard)
+                ? guard.TotalManCount
+                : 0;
+
+        // ---------------------------------------------------------------- 祭司格子
+
+        /// <summary>
+        /// 祭司格子照原版：几个格子有人、什么时候补，由原版每天按概率决定（C#反编译 v1.4.8
+        /// RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement）。格子里是谁由守村队决定：
+        /// 有人的格子依次放守村队里最精锐的兵（等级高的在前，同兵种里配装好的先走），守村队没这么多人就空着；
+        /// 格子按原版的顺序从低到高排（用户裁定 2026-10-07）。原版自己往上升格子里的兵会凭空变出守村队里没有的人，
+        /// 所以每小时照守村队重排一次。
+        /// </summary>
+        private void ReconcilePriestSlots(FaithVillage row)
+        {
+            Hero? priest = FindLivingPriest(row);
+            if (priest == null)
+                return;
+            int filled = priest.VolunteerTypes.Count(troop => troop != null);
+            List<CharacterObject> best = EliteOfGuard(row, filled)
+                .OrderBy(troop => troop.Level + (troop.IsMounted ? 0.5f : 0f))
+                .ToList();
+            for (int i = 0; i < priest.VolunteerTypes.Length; i++)
+                priest.VolunteerTypes[i] = i < best.Count ? best[i] : null;
+        }
+
+        /// <summary>守村队里最精锐的 <paramref name="count"/> 个人（只看兵种，同兵种里谁配装好由军械库的顺序决定）。</summary>
+        private List<CharacterObject> EliteOfGuard(FaithVillage row, int count)
+        {
+            List<CharacterObject> elite = new List<CharacterObject>();
+            foreach (TroopRosterElement element in GuardOf(row.VillageId).GetTroopRoster()
+                         .OrderByDescending(entry => entry.Character.Tier)
+                         .ThenByDescending(entry => entry.Character.IsMounted))
+                for (int n = 0; n < element.Number && elite.Count < count; n++)
+                    elite.Add(element.Character);
+            return elite;
+        }
+
+        /// <summary>原版给空格子补人时问的「基础志愿兵」：祭司给守村队里最精锐的那个兵种，守村队空了就不补。</summary>
+        internal static CharacterObject? BestGuardTroop(Hero priest)
+        {
+            if (_instance == null)
+                return null;
+            FaithVillage? row = _instance._villages.Values.FirstOrDefault(entry =>
+                string.Equals(entry.PriestId, priest.StringId, StringComparison.OrdinalIgnoreCase));
+            return row == null ? null : _instance.EliteOfGuard(row, 1).FirstOrDefault();
         }
 
         // ---------------------------------------------------------------- 工具
@@ -854,9 +1023,9 @@ namespace GreyWardenPolicePurity
             settlement.Village?.VillageState == Village.VillageStates.Normal &&
             settlement.Party?.MapEvent == null;
 
-        private static bool HasArrived(MobileParty party, Settlement village) =>
-            party.CurrentSettlement == village ||
-            party.GetPosition2D.Distance(village.GetPosition2D) <= GwpTuning.Firesworn.ArrivalDistance;
+        private static bool HasArrived(MobileParty party, Settlement settlement) =>
+            party.CurrentSettlement == settlement ||
+            party.GetPosition2D.Distance(settlement.GetPosition2D) <= GwpTuning.Firesworn.ArrivalDistance;
 
         private static MobileParty? FindParty(string partyId) =>
             string.IsNullOrEmpty(partyId)
@@ -865,4 +1034,3 @@ namespace GreyWardenPolicePurity
                     string.Equals(party.StringId, partyId, StringComparison.OrdinalIgnoreCase));
     }
 }
-

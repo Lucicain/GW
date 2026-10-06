@@ -341,8 +341,9 @@ namespace GreyWardenPolicePurity
         /// 人的队伍拿默认值就会一路追野怪、走走停停，还常把自己打残。这里按信使该有的
         /// 样子设定并长期保持：**侵略性很低但不是不打**——贴身的弱敌照样收拾，远处的
         /// 目标不值得为它把差事丢下；遇险就躲，挨打时原版照样自卫。
+        /// 火誓者的信众队出门也用这一套（用户裁定 2026-10-07：无领主队可以打，但和送信队一样专注自己的事）。
         /// </summary>
-        private static void KeepCourierDisposition(MobileParty party)
+        internal static void KeepCourierDisposition(MobileParty party)
         {
             party.Ai.SetInitiative(CourierAttackInitiative, 1f, CourierInitiativeHours);
         }

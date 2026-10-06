@@ -52,8 +52,7 @@ namespace GreyWardenPolicePurity
                    id.StartsWith(EnforcementDelayPatrolIdPrefix, StringComparison.Ordinal) ||
                    id.StartsWith(GwpIds.RecruitmentPatrolPrefix, StringComparison.Ordinal) ||
                    id.StartsWith(GwpWardenDispatchBehavior.DispatchPartyPrefix, StringComparison.Ordinal) ||
-                   id.StartsWith(GwpIds.DisciplePartyPrefix, StringComparison.Ordinal) ||
-                   id.StartsWith(GwpIds.ZealotCaravanPrefix, StringComparison.Ordinal);
+                   id.StartsWith(GwpIds.FaithPartyPrefix, StringComparison.Ordinal);
         }
 
         /// <summary>

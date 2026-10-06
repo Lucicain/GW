@@ -157,6 +157,22 @@ namespace GreyWardenPolicePurity
                 MobileParty.IsFleeBehavior(__instance.ShortTermBehavior))
                 return;
 
+            // 灰袍在聚落里、在原地办的事写清楚，原版只会写「原地待命」「在某地等待」
+            // （C#反编译 v1.4.8 MobileParty.GetBehaviorText；用户裁定 2026-10-07：用状态文字，不弹消息）。
+            if (__instance.MapEvent == null &&
+                (GreyWardenVillageReconstructionBehavior.TryDescribeActivity(__instance, out TextObject activity) ||
+                 GreyWardenIssueResolutionBehavior.TryDescribeActivity(__instance, out activity) ||
+                 GwpFireswornBehavior.TryDescribeActivity(__instance, out activity)))
+            {
+                __result = activity;
+                return;
+            }
+            if (__instance.DefaultBehavior == AiBehavior.Hold && GreyWardenFamilyBehavior.IsTrainingParty(__instance))
+            {
+                __result = new TextObject("{=gwp_status_training}Drilling the Wardens' recruits.");
+                return;
+            }
+
             // 未宣战追捕现在走原版跟随，原版会把它读成"正在跟随 XXX"——对着一个
             // 通缉犯像是在给他护航。目标躲进定居点时才退回定点，那一档保留原措辞。
             if (__instance.DefaultBehavior == AiBehavior.EscortParty &&

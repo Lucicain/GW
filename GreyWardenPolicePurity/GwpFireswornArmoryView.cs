@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
                 args =>
                 {
                     args.optionLeaveType = GameMenuOption.LeaveType.Manage;
-                    return GwpFireswornBehavior.IsPreachedVillage(Settlement.CurrentSettlement);
+                    return GwpFireswornBehavior.HasFireswornGuard(Settlement.CurrentSettlement);
                 },
                 _ => ShowContents(Settlement.CurrentSettlement.StringId), isLeave: false, index: 6);
 

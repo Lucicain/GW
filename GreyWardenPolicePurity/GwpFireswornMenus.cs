@@ -5,6 +5,7 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -132,6 +133,22 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
+    /// 原版民兵减员按兵种比例从整支民兵队里扣（C#反编译 v1.4.8 Settlement.RemoveMilitiasFromParty），
+    /// 有守村队的村子只扣原版民兵：灰袍兵只靠战斗、烧人、招兵、出门减少。
+    /// </summary>
+    [HarmonyPatch(typeof(Settlement), "RemoveMilitiasFromParty")]
+    internal static class GwpFireswornGuardStaysPatch
+    {
+        private static bool Prefix(MobileParty militiaParty, int numberToRemove)
+        {
+            if (GwpFireswornBehavior.GuardHeadcount(militiaParty.HomeSettlement) == 0)
+                return true;
+            GwpFireswornBehavior.RemoveVanillaMilitia(militiaParty, numberToRemove);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// 原版每天按概率删掉 power 低的要人（C#反编译 v1.4.8
     /// NotablesCampaignBehavior.CheckAndMakeNotableDisappear）；永恒之火祭司不走这条。
     /// </summary>
@@ -142,8 +159,10 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 已传教村子的民兵就是狂信者：原版每日增减归零，人数只随传教、烧人、门徒与战斗变化
-    /// （用户裁定）。包在已注册的模型外面，其余村镇照原版。
+    /// 守村队的灰袍兵和原版民兵站在同一支民兵队里，原版民兵照原版增长（用户裁定 2026-10-07：民兵不直接转化，
+    /// 照原版增长、参战，是烧人的原料）。原版每日变化里的退役项按全队人数算（现有 × 2.5%，C#反编译 v1.4.8
+    /// DefaultSettlementMilitiaModel.CalculateMilitiaChangeInternal），把灰袍兵那一份加回来，原版民兵的增减就和没有灰袍兵时一样。
+    /// 包在已注册的模型外面，没有守村队的村镇照原版。
     /// </summary>
     public sealed class GwpFireswornMilitiaModel : SettlementMilitiaModel
     {
@@ -153,11 +172,16 @@ namespace GreyWardenPolicePurity
         public override int MilitiaToSpawnAfterSiege(Town town) => Inner.MilitiaToSpawnAfterSiege(town);
 
         public override ExplainedNumber CalculateMilitiaChange(Settlement settlement,
-            bool includeDescriptions = false) =>
-            GwpFireswornBehavior.IsPreachedVillage(settlement)
-                ? new ExplainedNumber(0f, includeDescriptions,
-                    GwpText.Create("{=gwp_fs_militia_change}Eternal Fire: the sworn women stand as the militia"))
-                : Inner.CalculateMilitiaChange(settlement, includeDescriptions);
+            bool includeDescriptions = false)
+        {
+            ExplainedNumber change = Inner.CalculateMilitiaChange(settlement, includeDescriptions);
+            int guard = GwpFireswornBehavior.GuardHeadcount(settlement);
+            // 原版村子不在正常状态时整项是 0，没有退役项可加回。
+            if (guard > 0 && settlement.Village?.VillageState == Village.VillageStates.Normal)
+                change.Add(guard * GwpTuning.Firesworn.VanillaMilitiaRetireShare,
+                    GwpText.Create("{=gwp_fs_militia_change}The Eternal Fire's sworn do not leave the militia"));
+            return change;
+        }
 
         public override ExplainedNumber CalculateVeteranMilitiaSpawnChance(Settlement settlement) =>
             Inner.CalculateVeteranMilitiaSpawnChance(settlement);

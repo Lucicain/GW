@@ -95,7 +95,7 @@ def main():
     print(f"== 总览：游戏内第 {first_day} 天到第 {last_day} 天，共 {days} 天，{len(events)} 行监控")
     if totals:
         a, b = totals[0][1], totals[-1][1]
-        for key in ("faithVillages", "zealots", "priests", "dungeon", "treasury"):
+        for key in ("faithVillages", "swornVillages", "sworn", "strongestPriests", "dungeon", "treasury"):
             print(f"   {key}: {a.get(key)} -> {b.get(key)}")
         treasury_rate = (num(b["treasury"]) - num(a["treasury"])) / max(1, day(totals[-1][0]) - day(totals[0][0]))
         print(f"   公库每天净变化约 {treasury_rate:+.0f}")
@@ -106,8 +106,8 @@ def main():
     income = collections.Counter()
     for hour, data in by_stage["PROTECTION_FEE"]:
         income["保护费"] += num(data.get("amount"))
-    for hour, data in by_stage["CARAVAN_HOME"]:
-        income["狂信者队卖货"] += num(data.get("proceedsToTreasury"))
+    for hour, data in by_stage["FAITH_PARTY_HOME"]:
+        income["信众队卖货"] += num(data.get("proceedsToTreasury"))
     for hour, data in by_stage["DEFENCE_SPOILS"]:
         income["守村金币"] += num(data.get("goldToTreasury"))
     spend = sum(num(data.get("cost")) for _, data in by_stage["DAMNATION"])
@@ -115,51 +115,61 @@ def main():
     for key, value in income.items():
         print(f"   {key}: {value:.0f}（每天 {value / days:.0f}）")
     print(f"   烈火责罚支出: {spend:.0f}")
-    cargo = sum(num(data.get("cargoValue")) for _, data in by_stage["CARAVAN_DISPATCHED"])
-    sold = sum(num(data.get("proceeds")) for _, data in by_stage["CARAVAN_SOLD"])
+    cargo = sum(num(data.get("cargoValue")) for _, data in by_stage["MARKET_DISPATCHED"])
+    sold = sum(num(data.get("proceeds")) for _, data in by_stage["MARKET_SOLD"])
     if cargo:
-        print(f"   狂信者队装车估值 {cargo:.0f}，实卖 {sold:.0f}（{sold / cargo:.0%}）")
+        print(f"   信众队装车估值 {cargo:.0f}，实卖 {sold:.0f}（{sold / cargo:.0%}）")
         if sold / cargo < 0.2:
-            issues.append(f"狂信者队只卖掉装车估值的 {sold / cargo:.0%}：城镇金库太少或货太贵，货仓会越堆越多")
-    low_gold = [data for _, data in by_stage["CARAVAN_SOLD"] if num(data.get("townGoldLeft")) < 1000]
+            issues.append(f"信众队只卖掉装车估值的 {sold / cargo:.0%}：城镇金库太少或货太贵，货仓会越堆越多")
+    low_gold = [data for _, data in by_stage["MARKET_SOLD"] if num(data.get("townGoldLeft")) < 1000]
     if low_gold:
         issues.append(f"{len(low_gold)} 次卖货把城镇金库卖空了：{', '.join(sorted({d['town'] for d in low_gold}))}")
 
     # ------------------------------------------------------------ 信众村
-    print("\n== 信众村（首日 -> 末日；增长来源）")
+    print("\n== 有火誓者的村子（首日 -> 末日；人数来源）")
     villages = collections.defaultdict(list)
     for hour, data in by_stage["DAILY_VILLAGE"]:
         villages[data["village"]].append((hour, data))
     gains = collections.defaultdict(collections.Counter)
+    for _, data in by_stage["RECONSTRUCTION_SWORN"]:
+        gains[data["village"]]["重建"] += num(data.get("added"))
     for _, data in by_stage["CONGREGATION_COMPLETED"]:
-        gains[data["village"]]["传教"] += num(data.get("gain"))
+        gains[data["village"]]["本村传教"] += num(data.get("gain"))
+    for _, data in by_stage["MISSION_JOINED"]:
+        gains[data["village"]]["外村来传教"] += num(data.get("joined"))
+    for _, data in by_stage["MISSION_DISPATCHED"]:
+        gains[data["home"]]["派出传教"] -= num(data.get("men"))
     for _, data in by_stage["DAMNATION"]:
-        before, after = data["zealots"].split("->")
-        gains[data["village"]]["烧人(" + data["mode"] + ")"] += num(after) - num(before)
+        gains[data["village"]]["烧人(" + data["mode"] + ")"] += num(data.get("addedToGuard"))
+    for _, data in by_stage["PRIEST_RECRUITED"]:
+        gains[data["village"]]["祭司格子招走"] -= num(data.get("fromGuard"))
     for _, data in by_stage["ZEALOTS_ENLISTED"]:
         hearth_before, hearth_after = data["hearth"].split("->")
-        gains[data["village"]]["招走扣户"] += num(hearth_after) - num(hearth_before)
-    for _, data in by_stage["ZEALOT_GROWTH"]:
-        gains[data["village"]]["祭司自然增长"] += num(data.get("gain"))
+        gains[data["village"]]["直接招狂信者扣户"] += num(hearth_after) - num(hearth_before)
     for _, data in by_stage["ARMORY_LOOT"]:
         gains[data["holder"]]["缴获件数"] += num(data.get("items"))
     for village, rows in sorted(villages.items()):
         a, b = rows[0][1], rows[-1][1]
         span = max(1, day(rows[-1][0]) - day(rows[0][0]))
         hearth_change = num(b["hearth"]) - num(a["hearth"])
-        zealot_change = num(b["zealots"]) - num(a["zealots"])
-        print(f"   {village}: 户 {a['hearth']}->{b['hearth']}  狂信者 {a['zealots']}->{b['zealots']}"
-              f"  祭司 {b['priest'] != '-'}  地牢 {b['dungeon']}  军械库 {b['armoryItems']} 件 武装 {b['armed']}"
-              f"  货仓 {b['goodsValue']}  常驻队 {b['parties']}")
+        sworn_change = num(b["sworn"]) - num(a["sworn"])
+        print(f"   {village}: 户 {a['hearth']}->{b['hearth']}  火誓者 {a['sworn']}->{b['sworn']}（{b['share']}）"
+              f"  原版民兵 {b['vanillaMilitia']}  祭司 {b['priest'] != '-'} 势力 {b['priestPower']} 其他 {b['othersPower']}"
+              f" 最强 {b['strongest']}")
+        print(f"      守村队 {b['guard'] or '-'}  格子 {b['priestSlots']}  地牢 {b['dungeon']}"
+              f"  军械库 {b['armoryItems']} 件（{b['armoryKinds']}） 武装 {b['armed']}  货仓 {b['goodsValue']}  信众队 {b['parties']}")
         if gains[village]:
             print("      来源: " + "，".join(f"{k} {v:+.0f}" for k, v in gains[village].items()))
         if hearth_change / span < -3:
-            issues.append(f"{village} 户数每天掉 {hearth_change / span:.1f}，招兵扣户太快")
-        if span >= 3 and zealot_change <= 0:
-            issues.append(f"{village} 狂信者 {span} 天没涨（{a['zealots']}->{b['zealots']}）")
+            issues.append(f"{village} 户数每天掉 {hearth_change / span:.1f}")
+        if b["priest"] != "-" and span >= 15 and sworn_change <= 0:
+            issues.append(f"{village} 有祭司，{span} 天火誓者没涨（{a['sworn']}->{b['sworn']}）")
         armed, total = (b["armed"].split("/") + ["0"])[:2]
         if num(total) >= 20 and num(armed) / num(total) < 0.25:
-            issues.append(f"{village} 只有 {b['armed']} 的狂信者拿到兵器")
+            issues.append(f"{village} 只有 {b['armed']} 的火誓者拿到兵器（{b['armoryKinds']}）")
+    newly = [d["village"] for _, d in by_stage["PRIEST_SPAWNED"]]
+    if newly:
+        print(f"   新信众村（来了祭司）：{', '.join(newly)}，平均每 {days / len(newly):.1f} 天一座")
 
     # ------------------------------------------------------------ 领主
     print("\n== 灰袍领主")
@@ -193,10 +203,10 @@ def main():
 
     # ------------------------------------------------------------ 常驻队
     print("\n== 常驻队")
-    for stage in ("DISCIPLES_DISPATCHED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED", "DISCIPLES_HOME",
-                  "DISCIPLES_TURNED_BACK", "DISCIPLES_LOST", "CARAVAN_DISPATCHED", "CARAVAN_SOLD", "CARAVAN_HOME",
-                  "CARAVAN_TURNED_BACK", "CARAVAN_LOST", "CARAVAN_KITS_DISPATCHED", "CARAVAN_KITS_DELIVERED",
-                  "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN", "RITUAL_POPUP_NEARBY"):
+    for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
+                  "MISSION_DISPATCHED", "MISSION_JOINED", "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
+                  "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
+                  "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):
         print(f"   {stage}: {len(by_stage[stage])}")
     bad_sound = [data for _, data in by_stage["RITUAL_MENU_SHOWN"] if num(data.get("soundId"), 0) < 0]
     if bad_sound:

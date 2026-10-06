@@ -27,8 +27,10 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 祭司的志愿兵格子：起码是灰袍新兵，出兵快（用户裁定）。只有灰袍家族成员能招；
-    /// 玩家现在只走练兵官（用户裁定）。灰袍领主不能从普通要人那里招兵。
+    /// 祭司的志愿兵格子：格子里是守村队里最精锐、配装最好的灰袍兵；格子数、什么时候补、怎么排都照原版
+    /// （用户裁定 2026-10-07）。原版给空格子补的「基础志愿兵」换成守村队里最精锐的兵种，守村队空了就不补；
+    /// 具体放谁由 GwpFireswornBehavior.ReconcilePriestSlots 每小时照守村队重排。
+    /// 只有灰袍家族成员能招；玩家现在只走练兵官（用户裁定）。灰袍领主不能从普通要人那里招兵。
     /// </summary>
     public sealed class GwpFireswornVolunteerModel : VolunteerModel
     {
@@ -51,16 +53,14 @@ namespace GreyWardenPolicePurity
                 ? 0
                 : Inner.MaximumIndexGarrisonCanRecruitFromHero(settlement, sellerHero);
 
-        // 原版每格每天 0.75×p^(格序+1)（p 在 0.7–0.9），一位要人一天补 2–3 个；祭司每天把 6 格补满。
         public override float GetDailyVolunteerProductionProbability(Hero hero, int index,
             Settlement settlement) =>
-            GwpFireswornBehavior.IsFireswornPriest(hero)
-                ? 1f
-                : Inner.GetDailyVolunteerProductionProbability(hero, index, settlement);
+            Inner.GetDailyVolunteerProductionProbability(hero, index, settlement);
 
+        // 返回 null 时原版那一格留空（RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement 直接赋值）。
         public override CharacterObject GetBasicVolunteer(Hero hero) =>
             GwpFireswornBehavior.IsFireswornPriest(hero)
-                ? CharacterObject.Find(GwpIds.NewRecruitId)
+                ? GwpFireswornBehavior.BestGuardTroop(hero)!
                 : Inner.GetBasicVolunteer(hero);
 
         public override bool CanHaveRecruits(Hero hero) => Inner.CanHaveRecruits(hero);

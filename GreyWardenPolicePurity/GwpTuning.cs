@@ -292,61 +292,56 @@ namespace GreyWardenPolicePurity
             // 一个人折多少户：照原版村民队，补 n 人扣 (n+1)/2 户（VillagerCampaignBehavior.AddVillagersToParty）。
             public const float HearthPerPerson = 0.5f;
 
-            // 有祭司的信众村每天自己长狂信者，数照原版村庄民兵每日增长（DefaultSettlementMilitiaModel）。
-            public const float ZealotGrowthBase = 0.5f;
-            public const float ZealotGrowthHearthDivisor = 400f;
-            public const float ZealotGrowthRetireShare = 0.025f;
+            // 原版村庄民兵每天的退役项：现有民兵 × 2.5%（C#反编译 v1.4.8 DefaultSettlementMilitiaModel）。
+            // 守村队的灰袍兵站在民兵队里，原版会把他们也算进去，信众村的民兵模型把这部分加回来。
+            public const float VanillaMilitiaRetireShare = 0.025f;
 
-            // 祭司格子里的灰袍兵每天升一级的概率 = 基础 + power / 这个数（power 50 约 7.5%，150 约 12.5%）。
-            public const float PriestTrainingDailyChance = 0.05f;
-            public const float PriestTrainingPowerPerChance = 2000f;
-            // 没有祭司的信众村：狂信者占户数到这个比例，每周按这个概率来一位祭司。
+            // 重建把当地 5% 的人换成狂信者（用户裁定 2026-10-07）。
+            public const float ReconstructionSwornShare = 0.05f;
+            // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;
             public const float PriestWeeklyChance = 0.5f;
-            public const float PriestInitialPower = 50f;
             public const int PriestStartingGold = 2000;
+            // 祭司势力 = 其他要人势力之和 × 比例 / (1 − 比例)；比例到这里封顶，免得除以零。
+            public const float PriestShareCeiling = 0.9f;
 
-            // 集会传教：照比武大会，一村两次至少隔 15 天。
+            // 集会传教：祭司在本村传，照比武大会，两次至少隔 15 天。
             public const float CongregationHours = 24f;
             public const float CongregationVillageIntervalDays = 15f;
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
 
-            // 烈火责罚：每烧 1 人公库付钱（用户裁定：数据上只扣钱）。
-            // 地牢里有俘虏：够数、隔 5 天就烧，烧死的一半被火说服，成了狂信者、在村里落户。
-            // 没有俘虏：只在本村每季固定的一周里，隔 15 天、按概率烧不信教的人，每烧 1 人有 2 个看着的人信了。
+            // 烈火责罚：每烧 1 人公库付钱（用户裁定：数据上只扣钱）。烧死两个同等级的人生成一个同等级的灰袍兵。
+            // 地牢里有俘虏：够数、隔 5 天就烧。
+            // 本地传教到头（祭司已是最强）以后：只在本村每季固定的一周里，隔 15 天、按概率烧原版民兵和村民。
             public const float DamnationLockHours = 6f;
             public const int DamnationCostPerHead = 20;
             public const int DamnationMinimumPrisoners = 5;
             public const int DamnationMaximumPrisoners = 40;
             public const float DamnationPrisonerIntervalDays = 5f;
-            public const float DamnationPrisonerConvertShare = 0.5f;
             public const float DamnationFestivalIntervalDays = 15f;
             public const float DamnationFestivalDailyChance = 0.35f;
             public const int DamnationUnbelieverBase = 2;
             public const float DamnationHearthPerUnbeliever = 200f;
-            public const int DamnationWitnessConverts = 2;
 
-            // 传教队：有祭司、狂信者占户数到 15% 的村子，每 10 天派一次，全图同时最多 4 队在外。
-            public const float DiscipleZealotShare = 0.15f;
-            public const float DiscipleIntervalDays = 10f;
-            public const int MaxActiveDisciples = 4;
-            public const int DiscipleSize = 10;
-            public const int DiscipleMinimumLeftBehind = 5;
-            public const float DiscipleTargetMaxDistance = 150f;
+            // 向外传教：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人，家里至少留 5 人。
+            // 先去 150 距离内火誓者比例、武装率两项加起来比家里低 0.2 以上的村子，没有就去最近的还没有火誓者的。
+            public const float MissionIntervalDays = 10f;
+            public const int MaxActiveMissions = 4;
+            public const int MissionSize = 10;
+            public const int MissionMinimumLeftBehind = 5;
+            public const float MissionMaxDistance = 150f;
+            public const float MissionMinimumNeed = 0.2f;
 
-            // 狂信者队：货仓里的东西值 2,000 以上、隔 3 天出一次车。
+            // 卖货：货仓里的东西值 2,000 以上、隔 3 天出一次车。
             public const int CaravanSize = 8;
             public const int CaravanMinimumGoodsValue = 2000;
             public const float CaravanIntervalDays = 3f;
-            // 狂信者队送装备：只送到这个距离内、至少缺这么多套的信众村，至少装这么多件才出车。
-            public const float CaravanDeliveryMaxDistance = 300f;
-            public const int CaravanDeliveryMinimumShortage = 5;
             // 一趟最多卖几座城；下一座城金库至少要有这么多钱才去。
             public const int CaravanMaxTowns = 3;
             public const int CaravanMinimumTownGold = 5000;
 
-            // 两支常驻队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
+            // 信众队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
             public const float FaithPartyVisitScore = 8f;
             public const float FaithPartyTravelTimeoutHours = 120f;
 

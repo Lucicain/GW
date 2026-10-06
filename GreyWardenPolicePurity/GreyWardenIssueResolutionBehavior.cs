@@ -98,6 +98,21 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>地图上的状态文字：正在聚落里办请愿就写在哪儿、还剩几小时（用户裁定 2026-10-07：用状态文字，不弹消息）。</summary>
+        internal static bool TryDescribeActivity(MobileParty party, out TaleWorlds.Localization.TextObject text)
+        {
+            text = TaleWorlds.Localization.TextObject.GetEmpty();
+            IssueAssignment? assignment = _instance?._assignments.FirstOrDefault(entry => entry.WorkEndHours > 0d &&
+                string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
+            Settlement? place = assignment == null ? null : Hero.Find(assignment.OwnerHeroId)?.CurrentSettlement;
+            if (assignment == null || place == null)
+                return false;
+            text = GwpText.Create("{=gwp_status_petition}Settling a petition in {SETTLEMENT} ({HOURS} hours left).",
+                "SETTLEMENT", place.Name,
+                "HOURS", Math.Max(1, (int)Math.Ceiling(assignment.WorkEndHours - CampaignTime.Now.ToHours)));
+            return true;
+        }
+
         internal static bool IsIssueDutyParty(MobileParty? party) =>
             party != null && _instance != null && _instance._assignments.Any(entry =>
                 string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
