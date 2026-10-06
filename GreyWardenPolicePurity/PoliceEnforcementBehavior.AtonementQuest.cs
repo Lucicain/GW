@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -83,28 +83,11 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private Hero? GetAtonementQuestGiver()
-        {
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return null;
-
-            Hero leader = policeClan.Leader;
-            if (leader != null && leader.IsActive && !leader.IsDead && !leader.IsChild && !leader.IsPrisoner)
-                return leader;
-
-            return policeClan.Heroes.FirstOrDefault(h =>
-                h != null &&
-                h.IsActive &&
-                !h.IsDead &&
-                !h.IsChild &&
-                !h.IsPrisoner);
-        }
-
         private void StartAtonementQuest()
         {
             if (_atonementQuest != null && _atonementQuest.IsOngoing) return;
 
-            Hero? questGiver = GetAtonementQuestGiver();
+            Hero? questGiver = GwpCommon.FindGreyWardenSpokesperson();
             if (questGiver == null) return;
 
             _atonementQuest = new AtonementQuest(questGiver, _atonementTargetName, _atonementReputationReward);
@@ -220,9 +203,7 @@ namespace GreyWardenPolicePurity
             if (!IsAtonementWaitingForTurnInState) return false;
 
             Hero conversationHero = Hero.OneToOneConversationHero;
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (conversationHero == null || policeClan == null) return false;
-            if (conversationHero.Clan != policeClan) return false;
+            if (!GwpCommon.IsGreyWardenClanMember(conversationHero)) return false;
             if (!conversationHero.IsActive || conversationHero.IsDead || conversationHero.IsChild) return false;
 
             MBTextManager.SetTextVariable(

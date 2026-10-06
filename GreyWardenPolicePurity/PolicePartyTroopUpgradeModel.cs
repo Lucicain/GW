@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
@@ -45,7 +45,7 @@ namespace GreyWardenPolicePurity
             // 领主已经被兵种配比指定了取向时，必须把判定交还原版——原版正是靠
             // PreferredUpgradeFormation 把命中的那条分支抬到 9999。在这里抢答 1f
             // 会把取向整个吞掉，配比就成了空转。
-            if (IsGreyWardenParty(party) &&
+            if (GwpCommon.IsGreyWardenClanParty(party?.MobileParty) &&
                 GwpCommon.IsGreyWardenTroop(troop) &&
                 troop.UpgradeTargets.Length > 1 &&
                 upgradeTargetIndex >= 0 &&
@@ -67,14 +67,6 @@ namespace GreyWardenPolicePurity
             return leader != null &&
                    leader.PreferredUpgradeFormation !=
                        FormationClass.NumberOfAllFormations;
-        }
-
-        private static bool IsGreyWardenParty(PartyBase? party)
-        {
-            return string.Equals(
-                party?.MobileParty?.ActualClan?.StringId,
-                PoliceStats.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
         }
     }
 }

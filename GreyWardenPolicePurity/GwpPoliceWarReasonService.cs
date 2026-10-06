@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,7 +27,7 @@ namespace GreyWardenPolicePurity
         public static bool SupportsClan(Clan? clan)
         {
             return clan != null &&
-                   string.Equals(clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+                   GwpCommon.IsGreyWardenClan(clan);
         }
 
         /// <summary>

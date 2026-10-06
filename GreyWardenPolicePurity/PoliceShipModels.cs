@@ -12,11 +12,7 @@ namespace GreyWardenPolicePurity
     {
         internal const float PoliceDesiredCampaignSpeed = 3.5f;
 
-        internal static bool IsPoliceParty(MobileParty? party) =>
-            party?.ActualClan != null
-            && string.Equals(party.ActualClan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-
-        internal static bool IsPoliceShip(Ship? ship) => IsPoliceParty(ship?.Owner?.MobileParty);
+        internal static bool IsPoliceShip(Ship? ship) => GwpCommon.IsGreyWardenClanParty(ship?.Owner?.MobileParty);
 
         internal static TModel CreateFallbackModel<TModel>(string navalTypeName, Func<TModel> defaultFactory)
             where TModel : class
@@ -42,12 +38,12 @@ namespace GreyWardenPolicePurity
                 static () => new DefaultCampaignShipDamageModel());
 
         public override float GetEstimatedSafeSailDuration(MobileParty mobileParty) =>
-            PoliceShipModelSupport.IsPoliceParty(mobileParty)
+            GwpCommon.IsGreyWardenClanParty(mobileParty)
                 ? float.MaxValue
                 : _fallback.GetEstimatedSafeSailDuration(mobileParty);
 
         public override int GetHourlyShipDamage(MobileParty owner, Ship ship) =>
-            PoliceShipModelSupport.IsPoliceParty(owner) || PoliceShipModelSupport.IsPoliceShip(ship)
+            GwpCommon.IsGreyWardenClanParty(owner) || PoliceShipModelSupport.IsPoliceShip(ship)
                 ? 0
                 : _fallback.GetHourlyShipDamage(owner, ship);
 

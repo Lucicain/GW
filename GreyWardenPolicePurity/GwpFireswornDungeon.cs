@@ -254,14 +254,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static string? ClaimedByOtherDuty(MobileParty party) =>
             party.Army != null ? "army"
-            : PoliceEnforcementBehavior.IsPartyOccupiedByAssistance(party) ? "assistance"
-            : GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ? "village_relief"
-            : GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ? "reconstruction"
-            : GreyWardenIssueResolutionBehavior.IsIssueDutyParty(party) ? "issue"
-            : GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(party) ? "training"
-            : GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(party) ? "player_request"
-            : GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(party) ? "player_troop_order"
-            : null;
+            : GwpWardenDuties.BlockingDuty(party, WardenDuty.FaithErrand)?.ToString();
 
         private void CompleteErrand(MobileParty party, Settlement village)
         {

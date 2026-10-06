@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -312,7 +312,7 @@ namespace GreyWardenPolicePurity
 
         private bool CanRejoinThroughLord()
         {
-            return IsOrdinaryGreyWardenLordConversation() &&
+            return GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
                    _recruitmentOffered &&
                    !_recruitmentAccepted &&
                    _voluntaryExitCount < GwpTuning.Bounty.MaximumVoluntaryExits &&
@@ -321,7 +321,7 @@ namespace GreyWardenPolicePurity
 
         private bool CanLeaveThroughLord()
         {
-            return IsOrdinaryGreyWardenLordConversation() && _recruitmentAccepted;
+            return GwpCommon.IsOrdinaryGreyWardenLordConversation() && _recruitmentAccepted;
         }
 
         private int GetRequiredReadmissionReputation()
@@ -350,21 +350,6 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(GwpTextKeys.MembershipLeavePrompt, prompt);
             return true;
-        }
-
-        private static bool IsOrdinaryGreyWardenLordConversation()
-        {
-            Hero? conversationHero = Hero.OneToOneConversationHero;
-            if (!GwpCommon.IsGreyWardenLord(conversationHero)) return false;
-
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            if (conversationParty == null) return true;
-            if (GwpCommon.IsPatrolParty(conversationParty) ||
-                GwpCommon.IsEnforcementDelayPatrolParty(conversationParty))
-                return false;
-
-            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
-            return task?.TargetCrime?.Offender?.IsMainParty != true;
         }
 
         private void OnRejoinThroughLord()
@@ -738,14 +723,14 @@ namespace GreyWardenPolicePurity
                 GwpFieldArrestPricing.AssessFine(crime)));
         }
 
+        // 与接案门槛同一个口径：目标所在战斗组，不算路过的人。
         private static float GetBountyStrength(CrimeRecord crime) =>
-            Math.Max(1f, crime.Offender?.Party.EstimatedStrength ?? 0f);
+            Math.Max(1f, GwpStrength.CaseTarget(crime));
 
         private static BountyDifficulty GetBountyDifficulty(CrimeRecord crime)
         {
-            float playerStrength = Math.Max(
-                1f,
-                MobileParty.MainParty?.Party.EstimatedStrength ?? 0f);
+            float playerStrength = Math.Max(1f,
+                MobileParty.MainParty == null ? 0f : GwpStrength.CombatGroup(MobileParty.MainParty));
             float ratio = GetBountyStrength(crime) / playerStrength;
             if (ratio <= GwpTuning.Bounty.EasyStrengthRatio)
                 return BountyDifficulty.Easy;

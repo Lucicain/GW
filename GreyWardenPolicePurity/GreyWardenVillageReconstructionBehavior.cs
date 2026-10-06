@@ -143,7 +143,7 @@ namespace GreyWardenPolicePurity
             if (IsReconstructionParty(party))
                 return true;
 
-            if (!GreyWardenFamilyBehavior.IsReconstructionParty(party))
+            if (!GreyWardenFamilyBehavior.IsReconstructionOfficeParty(party))
                 return false;
 
             return PoliceResourceManager.CanFundVillageReconstruction(out _, out _) &&
@@ -306,7 +306,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(police) ||
+                if (GwpWardenDuties.HoldsAny(police, WardenDuty.VillageRelief) ||
                     police.Army != null)
                 {
                     ReleasePartyForForcedDuty(police);
@@ -384,7 +384,7 @@ namespace GreyWardenPolicePurity
 
             foreach (MobileParty police in PoliceStats.GetAllPoliceParties()
                          .Where(IsCandidate)
-                         .OrderByDescending(GreyWardenFamilyBehavior.IsReconstructionParty)
+                         .OrderByDescending(GreyWardenFamilyBehavior.IsReconstructionOfficeParty)
                          .ThenBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
                          .ToList())
             {
@@ -415,12 +415,8 @@ namespace GreyWardenPolicePurity
         private static bool IsCandidate(MobileParty? police)
         {
             if (police?.IsActive != true || police.LeaderHero?.IsActive != true ||
-                GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(police) ||
-                IsReconstructionParty(police) || police.Army != null ||
-                GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(police) ||
-                GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(police) ||
-                GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(police) ||
-                GreyWardenIssueResolutionBehavior.IsIssueDutyParty(police) ||
+                police.Army != null ||
+                !GwpWardenDuties.IsFreeFor(police, WardenDuty.Reconstruction) ||
                 GwpCommon.IsPatrolParty(police) ||
                 GwpCommon.IsEnforcementDelayPatrolParty(police))
                 return false;
@@ -428,14 +424,14 @@ namespace GreyWardenPolicePurity
             if (police.MapEvent != null && !police.MapEvent.IsFinalized)
                 return false;
 
-            if (!GreyWardenFamilyBehavior.IsReconstructionParty(police) &&
+            if (!GreyWardenFamilyBehavior.IsReconstructionOfficeParty(police) &&
                 CrimePool.HasTask(police.StringId))
                 return false;
 
             // Reconstruction keeps its dedicated office, but cross-office helpers
             // first clear every pursuable criminal case. Burned villages remain in
             // this docket without expiring, whereas criminal cases are time-sensitive.
-            return GreyWardenFamilyBehavior.IsReconstructionParty(police) ||
+            return GreyWardenFamilyBehavior.IsReconstructionOfficeParty(police) ||
                    (!CrimePool.IsDispatchReady &&
                     !GreyWardenDutyScheduler.HasPreferredWork(police));
         }

@@ -156,7 +156,7 @@ namespace GreyWardenPolicePurity
 
         internal static void WriteHeroLifecycle(Hero? hero, string action, string details)
         {
-            if (!IsPoliceHero(hero)) return;
+            if (!GwpCommon.IsGreyWardenClanMember(hero)) return;
             string lastParty = LastPartyByHeroId.TryGetValue(hero!.StringId,
                 out string? partyId) ? partyId : "-";
             Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
@@ -279,16 +279,14 @@ namespace GreyWardenPolicePurity
         internal static bool ShouldTraceParty(MobileParty? party)
         {
             if (party?.IsActive != true) return false;
-            if (IsGreyWardenLordParty(party)) return true;
+            if (GwpCommon.IsGreyWardenLordParty(party)) return true;
             if (party.LeaderHero != null) return false;
             // Courier flow is verified (2026-10-02); failures have their own silent fault branches.
             if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
             return GwpCommon.IsPatrolParty(party) ||
                    GwpCommon.IsEnforcementDelayPatrolParty(party) ||
-                   string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(party.MapFaction?.StringId, PoliceStats.PoliceClanId,
-                       StringComparison.OrdinalIgnoreCase);
+                   GwpCommon.IsGreyWardenClanParty(party) ||
+                   GwpCommon.IsGreyWardenClan(party?.MapFaction as Clan);
         }
 
         internal static bool ShouldTraceObservedParty(MobileParty? party)
@@ -423,8 +421,8 @@ namespace GreyWardenPolicePurity
                 "; mapFaction=" + Safe(party.MapFaction?.StringId) +
                 "; factionMinor=" + (party.MapFaction?.IsMinorFaction ?? false) +
                 "; factionKingdom=" + (party.MapFaction?.IsKingdomFaction ?? false) +
-                "; estimatedStrength=" + party.Party.EstimatedStrength.ToString("0.00", CultureInfo.InvariantCulture) +
-                "; armyStrength=" + (party.Army?.EstimatedStrength ?? party.Party.EstimatedStrength)
+                "; estimatedStrength=" + GwpStrength.Party(party).ToString("0.00", CultureInfo.InvariantCulture) +
+                "; armyStrength=" + GwpStrength.CombatGroup(party.Army?.LeaderParty ?? party)
                     .ToString("0.00", CultureInfo.InvariantCulture) +
                 "; aggressiveness=" + party.Aggressiveness.ToString("0.000", CultureInfo.InvariantCulture) +
                 "; attackInitiative=" + party.Ai.AttackInitiative.ToString("0.000", CultureInfo.InvariantCulture) +
@@ -536,27 +534,17 @@ namespace GreyWardenPolicePurity
 
         private static string GetPartyKind(MobileParty party)
         {
-            if (IsGreyWardenLordParty(party)) return "grey_warden_lord";
+            if (GwpCommon.IsGreyWardenLordParty(party)) return "grey_warden_lord";
             if (GwpCommon.IsEnforcementDelayPatrolParty(party)) return "leaderless_delay_support";
             if (GwpCommon.IsPatrolParty(party)) return "leaderless_picket";
             if (party.LeaderHero == null) return "leaderless_grey_warden";
             return "other";
         }
 
-        private static bool IsGreyWardenLordParty(MobileParty party) =>
-            party.LeaderHero != null && party.IsLordParty &&
-            string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
-
-        private static bool IsPoliceHero(Hero? hero) =>
-            hero?.Clan != null && string.Equals(hero.Clan.StringId,
-                PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-
         private static bool IsPoliceRelatedParty(MobileParty? party) =>
             party != null && (ShouldTraceParty(party) ||
-                string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                    StringComparison.OrdinalIgnoreCase) ||
-                IsPoliceHero(party.LeaderHero));
+                GwpCommon.IsGreyWardenClanParty(party) ||
+                GwpCommon.IsGreyWardenClanMember(party.LeaderHero));
 
         private static string FormatScores(IEnumerable<(AIBehaviorData, float)> scores) =>
             "[" + string.Join(", ", scores

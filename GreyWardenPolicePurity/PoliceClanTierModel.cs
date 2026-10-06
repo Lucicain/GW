@@ -10,19 +10,11 @@ namespace GreyWardenPolicePurity
         public override int GetPartyLimitForTier(Clan clan, int clanTierToCheck)
         {
             int baseLimit = base.GetPartyLimitForTier(clan, clanTierToCheck);
-            if (!IsPoliceClan(clan))
+            if (!GwpCommon.IsGreyWardenClan(clan))
                 return baseLimit;
 
             int policeCommanderLimit = clan.Heroes.Count(IsPoliceCommander);
             return Math.Max(baseLimit, Math.Max(1, policeCommanderLimit));
-        }
-
-        private static bool IsPoliceClan(Clan? clan)
-        {
-            return string.Equals(
-                clan?.StringId,
-                PoliceStats.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsPoliceCommander(Hero? hero)

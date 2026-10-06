@@ -161,10 +161,107 @@ def unreferenced(files):
     return found
 
 
+# Each shared concept has one owner. Code elsewhere calls the owner instead of the raw
+# primitive, because a judgement written twice drifts apart: on 2026-10-07 there were
+# three strength formulas, eight private copies of "is this a Grey Warden", case state
+# changed from eleven files and eight hand-kept lists of who blocks which duty. A new
+# shared concept gets a row here when it gets an owner.
+DUTY_PREDICATES = {
+    "IsPartyReservedForPlayerRequest": "GreyWardenPlayerRequestBehavior*.cs",
+    "IsTrainerReservedForPlayerOrder": "GreyWardenTroopRequestBehavior*.cs",
+    "IsVillageReliefParty": "GreyWardenVillageAdoptionBehavior*.cs",
+    "IsPartyOccupiedByAssistance": "PoliceEnforcementBehavior*.cs",
+    "IsReconstructionParty": "GreyWardenVillageReconstructionBehavior*.cs",
+    "ShouldReserveFromOrdinaryCases": "GreyWardenVillageReconstructionBehavior*.cs|GreyWardenIssueResolutionBehavior*.cs",
+    "IsIssueDutyParty": "GreyWardenIssueResolutionBehavior*.cs",
+    "IsTrainingOccupied": "GreyWardenTrainingBehavior*.cs",
+    "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
+    "IsOnFaithErrand": "GwpFireswornBehavior*.cs",
+}
+OWNERS = [
+    ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTotalLandStrength\w*\s*\(",
+     "GwpStrength.cs", "GwpStrength"),
+    ("灰袍身份", r"\bPoliceClanId\b", "GwpCommon.cs|GwpIds.cs|GwpData.cs", "GwpCommon.IsGreyWarden*"),
+    ("案件状态", r"\b(?:CrimePool|CrimeState)\.(?:EndTask|ReleaseTask|CloseCase|ReopenCase)\s*\(",
+     "PoliceEnforcementBehavior*.cs|GwpData.cs|GwpRuntimeState.cs",
+     "PoliceEnforcementBehavior.CloseCase / ReleaseWardensFromCase"),
+] + [("差事占用", r"\b" + name + r"\b", owner + "|GwpWardenDuties.cs", "GwpWardenDuties")
+     for name, owner in DUTY_PREDICATES.items()]
+
+
+def owner_violations(files):
+    from fnmatch import fnmatch
+    found = []
+    for path in files:
+        name = os.path.basename(path)
+        s = read(path)
+        mask = code_mask(s)
+        for concept, pattern, owners, use in OWNERS:
+            if any(fnmatch(name, o) for o in owners.split("|")):
+                continue
+            for m in re.finditer(pattern, s):
+                if not mask[m.start()]:
+                    continue
+                line_start = s.rfind("\n", 0, m.start()) + 1
+                if re.search(r"\bbool\s+$", s[line_start:m.start()]):
+                    continue  # a same-named declaration of its own, not a call
+                found.append(f"{os.path.relpath(path, ROOT)}:{s.count(chr(10), 0, m.start()) + 1} "
+                             f"{concept}：{m.group(0).strip('.( ')} → 用 {use}")
+    return found
+
+
+METHOD = re.compile(
+    r"^[ \t]*(?:(?:public|internal|private|protected|static|override|sealed|virtual|async)\s+)+"
+    r"[\w\.<>\[\]?,]+\s+(\w+)\s*\([^)]*\)\s*(\{|=>)", re.M)
+
+
+def duplicate_bodies(files):
+    """Two methods with the same body: someone copied a judgement instead of calling it."""
+    seen = {}
+    found = []
+    for path in files:
+        s = read(path)
+        mask = code_mask(s)
+        for m in METHOD.finditer(s):
+            if not mask[m.start(1)]:
+                continue
+            if "override" in m.group(0):
+                continue  # each subclass answers the same engine event; matching bodies are expected
+            if m.group(2) == "{":
+                end = match_brace(s, mask, m.end() - 1)
+                body = s[m.end():end]
+            else:
+                end = s.find(";", m.end())
+                body = s[m.end():end]
+            # Drop comments but keep string literals: two methods that differ only in
+            # their text (dialogue lines, log names) are not copies.
+            norm = re.sub(r"\s+", "", re.sub(r"//[^\n]*|/\*.*?\*/", "", body, flags=re.S))
+            if len(norm) < 60:
+                continue  # one-line delegations and trivial guards are not copies worth chasing
+            where = f"{os.path.relpath(path, ROOT)}:{s.count(chr(10), 0, m.start()) + 1} {m.group(1)}"
+            if norm in seen:
+                found.append(f"{where} 与 {seen[norm]} 函数体相同")
+            else:
+                seen[norm] = where
+    return found
+
+
 def main():
     files = sorted(glob.glob(os.path.join(MOD, "*.cs")))
     catches = unproven_catches(files)
     dead = unreferenced(files)
+    owners = owner_violations(files)
+    copies = duplicate_bodies(files)
+    if owners:
+        print("[!] 绕过了共享概念的归属方（同一个判断写两份迟早分叉）：\n")
+        for o in owners:
+            print("  " + o)
+        print()
+    if copies:
+        print("[!] 函数体完全相同——调用已有的那一个，删掉这份：\n")
+        for c in copies:
+            print("  " + c)
+        print()
     if catches:
         print("[!] catch 没写依据（它兜住过的那次故障）。没有记录就删掉这个 catch，让异常暴露：\n")
         for c in catches:
@@ -175,8 +272,9 @@ def main():
         for d in dead:
             print("  " + d)
         print()
-    print(f"{len(catches)} 个 catch 缺依据 / {len(dead)} 个声明无人引用")
-    return 1 if catches or dead else 0
+    print(f"{len(catches)} 个 catch 缺依据 / {len(dead)} 个声明无人引用 / "
+          f"{len(owners)} 处绕过归属方 / {len(copies)} 个重复函数体")
+    return 1 if catches or dead or owners or copies else 0
 
 
 if __name__ == "__main__":

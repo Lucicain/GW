@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.MountAndBlade;
@@ -62,11 +62,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         public static MobileParty? FindNearestGreyWardenLordParty(MobileParty from)
         {
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return null;
             return MobileParty.All
-                .Where(party => party?.IsActive == true && party.IsLordParty &&
-                    party.ActualClan == policeClan &&
+                .Where(party => party?.IsActive == true && IsGreyWardenLordParty(party) &&
                     party.LeaderHero?.IsActive == true &&
                     party.LeaderHero.IsPrisoner != true &&
                     party.MapEvent == null)
@@ -90,6 +87,14 @@ namespace GreyWardenPolicePurity
             return offender?.IsActive == true && offender.CurrentSettlement != null;
         }
 
+        // ---- 谁算灰袍：各功能只调这里，不另写一份。---------------------------------
+
+        public static bool IsGreyWardenClan(Clan? clan)
+        {
+            return clan != null
+                   && string.Equals(clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+        }
+
         public static bool IsGreyWardenLord(Hero? hero)
         {
             return IsGreyWardenClanMember(hero)
@@ -98,11 +103,64 @@ namespace GreyWardenPolicePurity
 
         public static bool IsGreyWardenClanMember(Hero? hero)
         {
-            return hero?.Clan != null
-                   && string.Equals(
-                       hero.Clan.StringId,
-                       GwpIds.PoliceClanId,
-                       StringComparison.OrdinalIgnoreCase);
+            return IsGreyWardenClan(hero?.Clan);
+        }
+
+        /// <summary>归灰袍家族所有的部队（领主队，以及 ActualClan 设成灰袍的无领主办差队）。</summary>
+        public static bool IsGreyWardenClanParty(MobileParty? party)
+        {
+            return IsGreyWardenClan(party?.ActualClan);
+        }
+
+        public static bool IsGreyWardenLordParty(MobileParty? party)
+        {
+            return party?.IsLordParty == true && IsGreyWardenClanParty(party);
+        }
+
+        /// <summary>
+        /// 代表灰袍执法的部队：灰袍家族的部队，加上玩家纠察队——它是 CustomPartyComponent，
+        /// ActualClan 不是灰袍，只能按编号认。
+        /// </summary>
+        public static bool IsGreyWardenEnforcementParty(MobileParty? party)
+        {
+            return party != null
+                   && (IsGreyWardenClanParty(party) || IsPatrolParty(party) || IsEnforcementDelayPatrolParty(party));
+        }
+
+        /// <summary>玩家入了灰袍（招募时接受）。</summary>
+        public static bool IsPlayerGreyWardenMember()
+        {
+            return Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true;
+        }
+
+        /// <summary>
+        /// 当前对话是灰袍在对玩家执法：纠察队、延迟纠察队，或正在追捕玩家的承办人。
+        /// 这时只走执法对话，别的灰袍选项都不出。
+        /// </summary>
+        public static bool IsEnforcementConversation()
+        {
+            MobileParty? party = MobileParty.ConversationParty;
+            if (party == null) return false;
+            if (IsPatrolParty(party) || IsEnforcementDelayPatrolParty(party)) return true;
+            return GwpRuntimeState.Crime.GetTask(party.StringId)?.TargetCrime?.Offender?.IsMainParty == true;
+        }
+
+        /// <summary>
+        /// 代表灰袍出面的人：族长；族长出不了面（死、未成年、被俘）时取第一个能出面的成员。
+        /// 赎罪任务的委托人、执法交易的对手都用它。
+        /// </summary>
+        public static Hero? FindGreyWardenSpokesperson()
+        {
+            Clan? clan = PoliceStats.GetPoliceClan();
+            if (clan == null) return null;
+            static bool CanAppear(Hero? h) => h != null && h.IsActive && !h.IsDead && !h.IsChild && !h.IsPrisoner;
+            return CanAppear(clan.Leader) ? clan.Leader : clan.Heroes.FirstOrDefault(CanAppear);
+        }
+
+        /// <summary>和灰袍领主的普通对话：对方是灰袍领主，而且不是在对玩家执法。</summary>
+        public static bool IsOrdinaryGreyWardenLordConversation()
+        {
+            return IsGreyWardenLord(Hero.OneToOneConversationHero) && !IsEnforcementConversation();
         }
 
         /// <summary>

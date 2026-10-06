@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：`0b63c01`（2026-10-06）
+> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
 > 覆盖源码：`GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 
@@ -178,7 +178,7 @@
 | 祭司招兵 | `PRIEST_RECRUITED` |
 | 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`ERRAND_LONG`、`PRISONERS_PILING`、`LORD_UNDERSTRENGTH`、`NO_PRIEST`、`PRIEST_SLOTS_UNUSED`、`HEARTH_AT_FLOOR`、`ZEALOTS_OVER_CAP`、`DUNGEON_BACKLOG`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`TREASURY_LOW` |
 
-差事取消的 reason 写明是被哪类活占了（`claimed_by_army`、`claimed_by_training` 等）。
+差事取消的 reason 写明是被哪类活占了：`claimed_by_army`，或 `claimed_by_` 加 `WardenDuty` 名（如 `claimed_by_TrainingQueue`）。
 
 **分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。它只取最近一次启动游戏以来的监控行，输出：
 - 总览、收支；

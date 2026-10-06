@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -114,7 +114,7 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? policeParty = capturerParty?.MobileParty;
             bool capturedByPlayer = policeParty?.IsMainParty == true;
-            if ((!IsPoliceParty(policeParty) && !capturedByPlayer) ||
+            if ((!GwpCommon.IsGreyWardenEnforcementParty(policeParty) && !capturedByPlayer) ||
                 prisoner == null || prisoner == Hero.MainHero ||
                 string.IsNullOrWhiteSpace(prisoner.StringId))
                 return;
@@ -193,48 +193,21 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>
-        /// 玩家以灰袍受托人或赎罪执行人身份，亲自完成一宗已进入案件池的案件时，
-        /// 复用普通灰袍实际抓捕的完整震慑链：本人、同族与同场目击者。
-        /// 如果同场的灰袍护送队已经抓获该目标，则使用场次+英雄去重，不重复计入被捕和震慑。
-        /// </summary>
-        internal void RegisterPlayerCompletedCase(
-            MapEvent? mapEvent,
-            Hero? offender,
-            GwpCrimeCategory category) =>
-            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
-
-        /// <summary>
-        /// 玩家把惩戒落到了这个人身上——缴清罚金、兑现谈成的处置、被打垮或被押走。
-        /// 惩戒既然落地，就和灰袍自己办的一样算一次抓获，走完全相同的登记路径：
-        /// 履历、震慑、同族转述、同场目击。玩家这条线不另设规则。
-        /// 和平了结没有战场，因此不编造目击者。
-        /// </summary>
-        internal void RegisterPlayerEnforcementSuccess(
-            MapEvent? mapEvent,
-            Hero? offender,
-            GwpCrimeCategory category) =>
-            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: true);
-
-        /// <summary>
-        /// 灰袍把罪犯部队打光，但人没落到灰袍手里（逃亡，或被别人收走）。按裁定，
-        /// 部队被打光与人被抓一样算案件了结，所以震慑照上；只是没真把人拿下，
-        /// 因此不计入"被捕次数"。登记路径与玩家那条完全相同：本人震慑、同族转述、
-        /// 同场目击——下面那个私有方法名字里带 Player，实际内容与承办方无关。
-        /// </summary>
-        internal void RegisterWardenBrokeOffenderParty(
-            MapEvent? mapEvent,
-            Hero? offender,
-            GwpCrimeCategory category) =>
-            RegisterPlayerEnforcementOutcome(mapEvent, offender, category, countAsArrest: false);
-
         /// <summary>同一个人在这么多小时内的重复登记，视为同一次惩戒。</summary>
         private const double SamePunishmentHours = 1d;
 
         private readonly Dictionary<string, double> _lastPlayerEnforcementHours =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
-        private void RegisterPlayerEnforcementOutcome(
+        /// <summary>
+        /// 一次惩戒落到了这个人身上（灰袍办的、玩家办的都一样）：本人震慑、同族转述、同场目击，
+        /// 走同一条登记路径。和平了结没有战场，不编造目击者。
+        ///
+        /// <paramref name="countAsArrest"/>：人真的落到手里（被押走、交清罚金、兑现谈成的处置）
+        /// 才算一次被捕；只打垮部队、人跑掉，震慑照上但不计被捕——被捕次数是履历，不能靠打光
+        /// 部队刷。灰袍和玩家同一条规则。（依据：用户裁定 2026-09，见 case-enforcement.md「震慑口径」）
+        /// </summary>
+        internal void RegisterEnforcementOutcome(
             MapEvent? mapEvent,
             Hero? offender,
             GwpCrimeCategory category,
@@ -363,7 +336,7 @@ namespace GreyWardenPolicePurity
         }
 
         private static bool IsEligibleWitness(Hero? hero) =>
-            hero != null && hero != Hero.MainHero && hero.IsAlive && !IsPoliceHero(hero);
+            hero != null && hero != Hero.MainHero && hero.IsAlive && !GwpCommon.IsGreyWardenClanMember(hero);
 
         private static void ApplyClanShock(Hero offender, float sharedGain,
             GwpCrimeCategory category)
@@ -381,27 +354,13 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static bool IsPoliceParty(MobileParty? party)
-        {
-            if (party == null) return false;
-            if (party.ActualClan != null &&
-                string.Equals(party.ActualClan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party);
-        }
-
-        private static bool IsPoliceHero(Hero? hero) =>
-            hero?.Clan != null &&
-            string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-
         private static bool DeterrenceGreetingCondition()
         {
             if (IsPostBattleCaptureConversation())
                 return false;
 
             Hero? conversationHero = Hero.OneToOneConversationHero;
-            if (conversationHero == null || conversationHero == Hero.MainHero || IsPoliceHero(conversationHero))
+            if (conversationHero == null || conversationHero == Hero.MainHero || GwpCommon.IsGreyWardenClanMember(conversationHero))
                 return false;
 
             if (!TryGetDeterrenceGreeting(conversationHero, out TextObject intro, out TextObject followup))

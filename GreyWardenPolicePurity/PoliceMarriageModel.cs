@@ -15,7 +15,7 @@ namespace GreyWardenPolicePurity
             return hero != null
                 && hero.IsFemale
                 && hero.Clan != null
-                && string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+                && GwpCommon.IsGreyWardenClanMember(hero);
         }
 
         public override bool IsCoupleSuitableForMarriage(Hero firstHero, Hero secondHero)

@@ -68,7 +68,7 @@ namespace GreyWardenPolicePurity
 
         private GwpFieldReportLedger? Reports => GwpFieldReportLedger.Instance;
         private bool HasFieldBusinessToSettle => Reports?.HasPendingReports == true || _pendingPrisonerAssessed > 0;
-        private bool IsCaseClerk => IsOrdinaryGreyWardenLordConversation();
+        private bool IsCaseClerk => GwpCommon.IsOrdinaryGreyWardenLordConversation();
         internal bool IsCommissionTarget(Hero? hero) => HasBountyTask && hero != null
             && hero.StringId == _activeBountyTargetHeroId;
         internal int ExpectedCaseFee => CalculateCaseFee(CaseAmountDue);
@@ -160,10 +160,8 @@ namespace GreyWardenPolicePurity
 
             var deterrence = Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>();
             if (deterrence == null) return;
-            if (countAsArrest) deterrence.RegisterPlayerCompletedCase(
-                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
-            else deterrence.RegisterPlayerEnforcementSuccess(
-                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory);
+            deterrence.RegisterEnforcementOutcome(
+                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory, countAsArrest);
             GwpAiDiagnostics.WriteFieldArrest("CASE_DETERRENCE_REGISTERED",
                 "offender=" + target.StringId + "; countAsArrest=" + countAsArrest
                 + "; battle=" + (battle != null));
@@ -259,8 +257,8 @@ namespace GreyWardenPolicePurity
             // 已经从他手里收到过钱的话，那笔钱照样要上缴——人没了不等于账没了。
             // 只有确实一分没收时，才把应缴清零，走"只领辛苦费"那条路。
             if (Reports?.HasPendingReports != true) _assignedCaseFine = 0;
-            if (crime != null) CrimePool.CloseCaseSettledInField(crime);
-            PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
+            if (crime != null) PoliceEnforcementBehavior.CloseCase(crime, "commission_closed_elsewhere");
+            else PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
             StopBountyEscortAfterTargetDefeat();
             MakePeaceWithCriminalFaction();
 
@@ -353,7 +351,7 @@ namespace GreyWardenPolicePurity
         {
             var openCrime = CrimePool.LedgerRecords.FirstOrDefault(r =>
                 r.HasOpenCase && r.OffenderHeroId == _activeBountyTargetHeroId);
-            if (openCrime != null) CrimePool.CloseCaseSettledInField(openCrime);
+            if (openCrime != null) PoliceEnforcementBehavior.CloseCase(openCrime, "commission_reported_by_dispatch");
             _activeQuest?.SucceedQuest();
             MakePeaceWithCriminalFaction();
             GwpAiDiagnostics.WriteFieldArrest("REPORT_DISPATCHED_COMPLETED",
@@ -420,7 +418,7 @@ namespace GreyWardenPolicePurity
                 HeroCrimeStats history = CrimePool.GetOrCreateHistory(hero);
                 history.NegativeStanding = 0;
                 history.CrimeKillProgress = 0;
-                CrimePool.CloseCaseSettledInField(crime);
+                PoliceEnforcementBehavior.CloseCase(crime, "commission_offender_in_custody");
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to any Grey Warden lord, in person or by your own men, to have your expenses settled."), Colors.Green));
             }
@@ -664,7 +662,7 @@ namespace GreyWardenPolicePurity
         {
             if (!HasBountyTask) return;
             var openCrime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == _activeBountyTargetHeroId);
-            if (openCrime != null) CrimePool.CloseCaseSettledInField(openCrime);
+            if (openCrime != null) PoliceEnforcementBehavior.CloseCase(openCrime, "commission_reported");
             _activeQuest?.SucceedQuest();
             MakePeaceWithCriminalFaction();
             ClearBountyTaskState();

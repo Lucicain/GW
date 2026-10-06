@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
 
         private static void OnHeroPrisonerTaken(PartyBase capturer, Hero prisoner)
         {
-            if (!IsPoliceHero(prisoner))
+            if (!GwpCommon.IsGreyWardenClanMember(prisoner))
                 return;
 
             if (IsPlayerCapturer(capturer))
@@ -58,7 +58,7 @@ namespace GreyWardenPolicePurity
                 if (leader == null || string.IsNullOrWhiteSpace(leader.StringId))
                     continue;
 
-                if (!IsPoliceHero(leader))
+                if (!GwpCommon.IsGreyWardenClanMember(leader))
                     continue;
 
                 if (!processedHeroIds.Add(leader.StringId))
@@ -81,7 +81,7 @@ namespace GreyWardenPolicePurity
 
         private static void ForcePoliceHeroFugitive(Hero hero)
         {
-            if (!IsPoliceHero(hero) || !hero.IsAlive || hero.IsFugitive)
+            if (!GwpCommon.IsGreyWardenClanMember(hero) || !hero.IsAlive || hero.IsFugitive)
                 return;
 
             PartyBase? captorParty = hero.PartyBelongedToAsPrisoner;
@@ -89,12 +89,6 @@ namespace GreyWardenPolicePurity
                 captorParty.PrisonRoster.RemoveTroop(hero.CharacterObject);
 
             MakeHeroFugitiveAction.Apply(hero);
-        }
-
-        private static bool IsPoliceHero(Hero? hero)
-        {
-            return hero?.Clan != null &&
-                   string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsPlayerCapturer(PartyBase? capturer)

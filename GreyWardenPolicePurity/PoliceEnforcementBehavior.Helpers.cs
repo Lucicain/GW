@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -48,21 +48,7 @@ namespace GreyWardenPolicePurity
                     task.TargetCrimeId == CrimePool.PlayerCrimeId)
                     return false;
 
-                IFaction? warTarget = task.WarTarget;
-                RestoreAi(police);
-                ClearTaskWarTracking(police.StringId, true);
-                CrimeState.EndTask(police.StringId, "released_for_forced_duty");
-                CrimeRecord? displacedCrime = task.TargetCrime;
-                if (displacedCrime?.Offender?.IsActive == true)
-                    CrimeState.ReopenCase(displacedCrime);
-
-                Clan? policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan != null &&
-                    warTarget != null &&
-                    !GwpPoliceWarReasonService.HasLegitimateWarReason(warTarget))
-                {
-                    GwpCommon.TrySetNeutral(policeClan, warTarget);
-                }
+                EndCaseTask(police.StringId, CaseTaskEnd.Released, "released_for_forced_duty");
             }
 
             GreyWardenPartyDesireBehavior.ClearIntent(police);
@@ -80,13 +66,7 @@ namespace GreyWardenPolicePurity
                 task.TargetCrimeId == CrimePool.PlayerCrimeId || IsAssistanceOccupied(police))
                 return false;
 
-            RestoreAi(police);
-            ClearTaskWarTracking(police.StringId, true);
-            CrimeState.EndTask(police.StringId, "released_for_faith_errand");
-            CrimeRecord? displacedCrime = task.TargetCrime;
-            if (displacedCrime?.Offender?.IsActive == true)
-                CrimeState.ReopenCase(displacedCrime);
-            GreyWardenPartyDesireBehavior.ClearIntent(police);
+            EndCaseTask(police.StringId, CaseTaskEnd.Released, "released_for_faith_errand");
             return true;
         }
 
@@ -117,18 +97,7 @@ namespace GreyWardenPolicePurity
                     task.TargetCrimeId == CrimePool.PlayerCrimeId)
                     return false;
 
-                IFaction? warTarget = task.WarTarget;
-                RestoreAi(police);
-                ClearTaskWarTracking(police.StringId, true);
-                CrimeState.EndTask(police.StringId, "released_for_forced_duty");
-                CrimeRecord? displacedCrime = task.TargetCrime;
-                if (displacedCrime?.Offender?.IsActive == true)
-                    CrimeState.ReopenCase(displacedCrime);
-
-                Clan? policeClan = PoliceStats.GetPoliceClan();
-                if (policeClan != null && warTarget != null &&
-                    !GwpPoliceWarReasonService.HasLegitimateWarReason(warTarget))
-                    GwpCommon.TrySetNeutral(policeClan, warTarget);
+                EndCaseTask(police.StringId, CaseTaskEnd.Released, "released_for_forced_duty");
             }
 
             GreyWardenPartyDesireBehavior.ClearIntent(police);
@@ -146,13 +115,6 @@ namespace GreyWardenPolicePurity
                     return true;
             }
             return false;
-        }
-
-        private void RestoreAi(MobileParty party)
-        {
-            if (party == null || !party.IsActive) return;
-            party.Ai.SetDoNotMakeNewDecisions(false);
-            party.Ai.RethinkAtNextHourlyTick = true;
         }
 
         private void MakePeaceWithPoliceAndVictims()
@@ -503,7 +465,7 @@ namespace GreyWardenPolicePurity
                         string.Equals(party.StringId, releasedPartyId,
                             StringComparison.OrdinalIgnoreCase));
                     if (releasedParty != null)
-                        RestoreAi(releasedParty);
+                        GwpCommon.TryResetAi(releasedParty);
                 }
             }
 
@@ -520,7 +482,7 @@ namespace GreyWardenPolicePurity
             foreach (MobileParty party in MobileParty.All.Where(party =>
                          party.IsActive && forcedPartyIds.Contains(party.StringId)).ToList())
             {
-                RestoreAi(party);
+                GwpCommon.TryResetAi(party);
             }
 
             _shelteredForcedPartyIdsByTaskId.Remove(taskId);

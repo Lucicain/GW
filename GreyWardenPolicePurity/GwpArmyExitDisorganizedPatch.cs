@@ -68,8 +68,7 @@ namespace GreyWardenPolicePurity
                 GwpWardenDispatchBehavior.IsDispatchParty(party))
                 return true;
 
-            return string.Equals(party.ActualClan?.StringId, GwpIds.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
+            return GwpCommon.IsGreyWardenClanParty(party);
         }
     }
 }

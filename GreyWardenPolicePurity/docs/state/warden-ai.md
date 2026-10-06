@@ -3,15 +3,22 @@
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
 > 已复核至：`64e36ec`（2026-10-07）
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs`
-> 待实测：无
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs`
+> 待实测：请愿、重建不会再从正在协力的领主里挑人
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
 各本职见 [`family.md`](family.md)。
 
 ## 谁拿到活（派活顺序）
 
-各差事系统各自挑人，互相用「是否已被占用」的谓词避让。实际的优先次序：
+各差事系统各自挑人，但「谁挡得住谁」只写在 `GwpWardenDuties`：每种差事登记一个「谁正在做我」的判断
+（全部取自各系统已存档的状态），`BlockedBy` 表写明想接某种差事时哪些差事会挡住你；挑人时只问
+`IsFreeFor(部队, 差事)`。表里没列的，是这种差事压得过的，由那一边自己让路（取消或退回）。
+新加差事 = 登记一个判断 + 写一行。不得在别处直接调用其他系统的占用判断。（依据：设计 2026-10-07；归属检查拦截）
+
+以前 8 个挑人函数各抄一份清单，彼此有出入；统一时唯一的行为变化是请愿和重建不再从协力组里拉人。
+
+实际的优先次序：
 
 1. **玩家相关**（最高）：
    - 玩家委托与求援（欲望分 10，`PlayerRequestScore`）；

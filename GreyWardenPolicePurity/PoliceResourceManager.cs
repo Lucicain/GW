@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -86,8 +86,8 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             _instance = this;
-            CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
-            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, RepairCampaignState);
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, RepairCampaignState);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
@@ -135,14 +135,8 @@ namespace GreyWardenPolicePurity
 
         #region 每日资源与成年战斗员保障
 
-        private void OnGameLoaded(CampaignGameStarter starter)
-        {
-            CleanupLeaderlessPoliceLordParties();
-            EnsureAllAdultGreyWardensAreCombatants();
-            RepairGeneratedAdultCommanderLoadouts();
-        }
-
-        private void OnSessionLaunched(CampaignGameStarter starter)
+        // 读档和开局都跑一遍。
+        private void RepairCampaignState(CampaignGameStarter starter)
         {
             CleanupLeaderlessPoliceLordParties();
             EnsureAllAdultGreyWardensAreCombatants();
@@ -154,8 +148,7 @@ namespace GreyWardenPolicePurity
             foreach (MobileParty party in MobileParty.All.Where(static party =>
                          party?.IsActive == true && party.IsLordParty &&
                          party.LeaderHero == null &&
-                         string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                             StringComparison.OrdinalIgnoreCase)).ToList())
+                         GwpCommon.IsGreyWardenClanParty(party)).ToList())
             {
                 GwpAiDiagnostics.WritePartyLifecycle(party,
                     "LEADERLESS_POLICE_LORD_PARTY_CLEANUP", string.Empty);
@@ -208,14 +201,8 @@ namespace GreyWardenPolicePurity
 
         private void OnHeroComesOfAge(Hero hero)
         {
-            if (hero == null || !IsPoliceClanHero(hero)) return;
+            if (hero == null || !GwpCommon.IsGreyWardenClanMember(hero)) return;
             EnsureAdultGreyWardenIsCombatant(hero);
-        }
-
-        internal static bool IsPoliceClanHero(Hero? hero)
-        {
-            return hero?.Clan != null &&
-                   string.Equals(hero.Clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -225,7 +212,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         internal static bool EnsureCommanderLoadout(Hero? hero, string reason)
         {
-            if (hero == null || !IsPoliceClanHero(hero) || hero.IsDead ||
+            if (hero == null || !GwpCommon.IsGreyWardenClanMember(hero) || hero.IsDead ||
                 hero.IsChild || hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
                 return false;
 
@@ -286,7 +273,7 @@ namespace GreyWardenPolicePurity
 
         private static void EnsureAdultGreyWardenIsCombatant(Hero? hero)
         {
-            if (hero == null || !IsPoliceClanHero(hero) || hero.IsDead || hero.IsDisabled ||
+            if (hero == null || !GwpCommon.IsGreyWardenClanMember(hero) || hero.IsDead || hero.IsDisabled ||
                 hero.IsChild || hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge ||
                 !hero.IsNoncombatant)
                 return;
@@ -323,7 +310,7 @@ namespace GreyWardenPolicePurity
 
             var clan = party.LeaderHero?.Clan;
             if (clan == null) return;
-            if (!string.Equals(clan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase)) return;
+            if (!GwpCommon.IsGreyWardenClan(clan)) return;
 
             double now = CampaignTime.Now.ToHours;
             if (_lastPurifyTime.TryGetValue(party.StringId, out double lastCheck) &&
@@ -341,9 +328,7 @@ namespace GreyWardenPolicePurity
                 .Where(static involved => involved?.MobileParty?.IsActive == true)
                 .Select(static involved => involved.MobileParty)
                 .Where(static party => party.LeaderHero?.Clan != null &&
-                    string.Equals(party.LeaderHero.Clan.StringId,
-                        PoliceStats.PoliceClanId,
-                        StringComparison.OrdinalIgnoreCase))
+                    GwpCommon.IsGreyWardenClanMember(party.LeaderHero))
                 .Distinct()
                 .ToList())
             {
@@ -452,7 +437,7 @@ namespace GreyWardenPolicePurity
         {
             if (!_navalDlcLoaded || borrower == null) return null;
             return MobileParty.All
-                .Where(p => IsPoliceLordParty(p) && p.IsActive && p.LeaderHero != null &&
+                .Where(p => GwpCommon.IsGreyWardenLordParty(p) && p.IsActive && p.LeaderHero != null &&
                             !p.IsCurrentlyAtSea && p.MapEvent == null && SpareShipCount(p) > 0)
                 .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
                 .FirstOrDefault();
@@ -508,7 +493,7 @@ namespace GreyWardenPolicePurity
                         string.Equals(p.StringId, lenderId, StringComparison.OrdinalIgnoreCase) &&
                         CanReceiveReturnedShips(p));
                 receiver ??= MobileParty.All
-                    .Where(p => p != borrower && IsPoliceLordParty(p) && CanReceiveReturnedShips(p))
+                    .Where(p => p != borrower && GwpCommon.IsGreyWardenLordParty(p) && CanReceiveReturnedShips(p))
                     .OrderBy(p => p.GetPosition2D.DistanceSquared(borrower.GetPosition2D))
                     .FirstOrDefault();
             }
@@ -543,8 +528,8 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? oldParty = oldOwner?.MobileParty;
             MobileParty? newParty = ship?.Owner?.MobileParty;
-            bool oldPolice = IsPoliceLordParty(oldParty);
-            bool newPolice = IsPoliceLordParty(newParty);
+            bool oldPolice = GwpCommon.IsGreyWardenLordParty(oldParty);
+            bool newPolice = GwpCommon.IsGreyWardenLordParty(newParty);
             if (oldPolice == newPolice) return;
 
             MobileParty? party = newPolice ? newParty : oldParty;
@@ -558,12 +543,6 @@ namespace GreyWardenPolicePurity
                 "; oldOwner=" + DescribeShipOwner(oldOwner) +
                 "; newOwner=" + DescribeShipOwner(ship?.Owner));
         }
-
-        private static bool IsPoliceLordParty(MobileParty? party) =>
-            party?.IsLordParty == true &&
-            string.Equals(party.ActualClan?.StringId,
-                PoliceStats.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
 
         private static string DescribeShipOwner(PartyBase? owner)
         {

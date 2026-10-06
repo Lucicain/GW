@@ -23,7 +23,7 @@ namespace GreyWardenPolicePurity
         internal static bool IsWardenBuyer(Hero? hero) => GwpCommon.IsGreyWardenClanMember(hero);
 
         internal static bool IsWardenParty(MobileParty? party) =>
-            string.Equals(party?.ActualClan?.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+            GwpCommon.IsGreyWardenClanParty(party);
     }
 
     /// <summary>

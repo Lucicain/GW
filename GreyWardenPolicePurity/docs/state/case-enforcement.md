@@ -4,7 +4,7 @@
 > 最后验收：`9d005bb`
 > 已复核至：`0b63c01`（2026-10-06）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：无
+> 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 
 > ⚠️ 本文件只覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵等
 > 子系统尚未从流水提取，见 [`README.md`](README.md) 的"尚未提取"清单。
@@ -24,14 +24,13 @@
 
 ## 震慑口径
 
-- `PoliceAIDeterrenceBehavior.RegisterWardenBrokeOffenderParty` 转调既有的
-  `RegisterPlayerEnforcementOutcome`（方法名里的 Player 是历史遗留，内容与承办方
-  无关：本人震慑、同族转述、同场目击）。
-- **`countAsArrest: false`** —— 打光部队但没拿到人时震慑照上，但不计入"被捕次数"。
-  被捕次数是履历，不能靠打光部队刷。
+- 一次惩戒落到某人身上，不论灰袍办的还是玩家办的，都走同一个入口
+  `PoliceAIDeterrenceBehavior.RegisterEnforcementOutcome`：本人震慑、同族转述、同场目击。
+- **被捕次数**：人真的落到手里（被押走、交清罚金、兑现谈成的处置）才算一次被捕；只打光部队、
+  人跑掉，震慑照上但不计被捕——被捕次数是履历，不能靠打光部队刷。灰袍和玩家同一条规则，
+  调用方用 `countAsArrest` 明说。（依据：用户裁定 2026-09）
 - `RegisterDefeatDeterrenceIfNotCaptured` 先排除 `IsPrisoner`，避免与
-  `OnHeroPrisonerTaken` 重复登记；私有方法自带的 `SamePunishmentHours=1` 去重是
-  第二道保险。
+  `OnHeroPrisonerTaken` 重复登记；同一个人一小时内的重复登记（`SamePunishmentHours`）视为同一次。
 
 ## 战争跟着人走
 
@@ -47,33 +46,34 @@
   和实时的 `offender.ActualClan.MapFaction`。
 - 玩家目标、土匪、案卷已关的任务不走这条。
 
-## 结案 vs 换承办人
+## 案件生命周期：唯一入口
 
-`CrimePool.EndTask` 会**连案卷一起销毁**（`HasOpenCase=false` + `_ledger.Remove`）。
-调用方必须清楚自己要的是"销案"还是"换承办人"（后者用 `RetargetTask`）。
+承办任务怎么结束、案卷怎么销，只走 `PoliceEnforcementBehavior.CaseLifecycle.cs`。
+别的系统要结案调 `PoliceEnforcementBehavior.CloseCase`，玩家接手调 `ReleaseWardensFromCase`。
+不得在执法行为之外直接调 `EndTask` / `ReleaseTask` / `CloseCase` / `ReopenCase`。（依据：设计 2026-10-07；归属检查拦截）
 
-`RetireTaskKeepingCaseIfOffenderAlive`：人还活着就只撤承办任务
-（`CrimeState.ReleaseTasksForOffender`，卷宗保留），解散协力组，写
-`CASE_KEPT_OPEN_OWNER_RELEASED`（带 `offenderPrisoner` / `offenderFugitive`）；
-**人真死了才 `EndTask`**。
+`EndCaseTask(承办人, 结局, 原因)` 按固定顺序做全套善后：协力组（办成按办成收尾，否则解散）→
+恢复 AI、清意图 → 清宣战记录 → 台账 → 办成则记办案经费、通知差事完成 → 恢复和平 → 刷新 → 立即重新决策。
 
-走这条路的情形：
+| 结局 | 台账 | 什么时候 |
+|---|---|---|
+| `Solved` 办成 | 结案 | 灰袍打赢目标（`offender_defeated_in_battle`）、延迟纠察队打垮目标 |
+| `Closed` 结案不算办成 | 结案 | 承办人战败或不能再带队、承办部队消失、被别人了结（`CloseCase`） |
+| `Released` 撤人留案 | 留案，人死了才销 | 目标失效或暂时追不到、协力凑不出兵、行政改派（村庄善后、玩家委托、信众村差事、协力抽调、玩家通缉改派）、玩家接手 |
 
-- `criminal == null`（`offender_party_missing`）
-- `!criminal.IsActive`（`offender_party_inactive`）
-- 协力凑不出兵（原先直接销案，已改）
-
-**不需要另写"重新通缉"逻辑**：`CrimeRecord.Offender` 本来就按英雄解析
-（`hero.PartyBelongedTo` 优先），`IsOffenderPursuable()` 要求 `Offender?.IsActive`。
-他一天没队伍就一天不被指派，重新拉起队伍的当轮自动重新变成可追捕案件。
-**这条规则靠既有数据结构成立，没有新增状态机。**
-
-灰袍自己打赢那条不受影响 —— `OnMapEventEnded` 当场以 `offender_defeated_in_battle`
-结案。
+- 撤人留案只看**人还活不活着**（`CrimePool.ReleaseTask`），不看他的部队还在不在：部队被别人打散、
+  人还活着时案卷照留。以前行政改派看部队、目标失效看人，两套规则并存。
+- **不需要另写"重新通缉"逻辑**：`CrimeRecord.Offender` 按英雄解析（`hero.PartyBelongedTo` 优先），
+  `IsOffenderPursuable()` 要求 `Offender?.IsActive`。他一天没队伍就一天不被指派，重新拉起队伍的当轮
+  自动重新变成可追捕案件。
+- 外部结案（玩家当面了结、玩家押人、委托交差、被捕清账、同伴代缴）都经 `CloseCase`：正在承办的灰袍
+  先按 `Closed` 收尾，再销卷。以前直接删任务，承办人的协力组、宣战记录、AI 只能等两日扫除兜底。
+- 承办部队消失或案卷目标无法恢复的任务，每小时由 `CleanCaseLedger` 按 `Closed` 收尾；死人的案卷移出台账。
+- 押送被俘玩家结束那一段是玩家案件自己的流程（有防崩溃的步骤顺序），不走 `EndCaseTask`。
 
 ### 协力凑不出兵
 
-- `FailAssistanceCase` 走 `RetireTaskKeepingCaseIfOffenderAlive`，不再销案。
+- `FailAssistanceCase` 按 `Released` 撤人留案，不销案。
 - **目标正在打仗时不判失败**：`offenderParty.MapEvent != null || leader.MapEvent != null`
   直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。
 - 防空转：`GwpTuning.Enforcement.AssistanceFailureCooldownHours = 72`，退回台账的案子
@@ -91,8 +91,9 @@
 
 - `GetMaximumMusterableStrength` = 承办人自己 + 所有还能被拉进协力组的灰袍领主
   （复用 `GetAvailableAssistanceCandidates` 的资格判定）
-- `GetCaseIntakeTargetStrength` 用 `GetNativeCombatGroupStrength`，**刻意不含身边
-  路过的人** —— 那一档是临场变量，由协力编成随时增减应对
+- 目标战力用 `GwpStrength.CaseTarget`：他所在战斗组（攻城营、**已挂靠**的军团或本队），
+  **刻意不含身边路过的人** —— 那一档是临场变量，由协力编成随时增减应对。名义上属于某军团、
+  还在赶去会合的领主只算他本人（`GwpStrength.CombatGroupOf`，2026-10-07 起）。悬赏难度用同一个数。
 - `CaseIntakeStrengthMargin = 0.9`（留一成余量）
 
 **兵员下限：已撤除，不要重新加上**（依据：实机诊断 2026-09-17 的 AUCTION 读数；用户指出原推理不成立）。 `HasManpowerForNewCase` 与
@@ -124,10 +125,10 @@
 
 守军和民兵**不算**：
 
-- 无战斗时 `CanNearbyCombatGroupJoinTarget` 直接排除
+- 无战斗时 `GwpStrength` 的周边部队筛选直接排除
   `candidate.IsGarrison || candidate.IsMilitia`，另排除已在别的 `MapEvent` 里的、
   被围城的、非围城主的围城营。
-- `GetNativeCombatGroupStrength` 只取围城营总和 / 军团战力 / 本队战力三者之一，
+- `GwpStrength.CombatGroup` 只取围城营总和 / 军团战力 / 本队战力三者之一，
   **任何情况下都不含定居点守军**。
 - 唯一例外是目标已在打一场仗（`mapEvent.IsFinalized == false`），走
   `mapEvent.CanPartyJoinBattle` —— 那是真的已在场上的部队，算进去是对的。

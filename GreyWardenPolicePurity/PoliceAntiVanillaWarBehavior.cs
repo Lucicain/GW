@@ -63,8 +63,7 @@ namespace GreyWardenPolicePurity
 
         private static bool IsGreyWardenFaction(Clan policeClan, IFaction faction)
         {
-            return faction == policeClan ||
-                   string.Equals(faction.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+            return faction == policeClan || GwpCommon.IsGreyWardenClan(faction as Clan);
         }
 
         private static bool IsPlayerFaction(IFaction? playerFaction, IFaction faction)

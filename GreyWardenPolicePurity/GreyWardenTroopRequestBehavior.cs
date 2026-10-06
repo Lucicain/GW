@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -255,7 +255,7 @@ namespace GreyWardenPolicePurity
                 // "替灰袍打出来的战争"上——登记入口只有三种：制止正在发生的案件、
                 // 看见灰袍在打过去帮忙、玩家自己承办的案子。这三种都是本模组自己
                 // 把玩家拉进去的，善后就不该再要求他先够 20 声望入会。
-                () => IsOrdinaryGreyWardenLordConversation() &&
+                () => GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
                       PoliceAntiWarDeclaration.HasMediationRequests(),
                 ApplyWardenMediationFromConversation,
                 216);
@@ -349,8 +349,8 @@ namespace GreyWardenPolicePurity
 
         private bool CanFileTroopOrder()
         {
-            return IsOrdinaryGreyWardenLordConversation() &&
-                   IsPlayerGreyWardenMember() &&
+            return GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
+                   GwpCommon.IsPlayerGreyWardenMember() &&
                    GwpRuntimeState.Player.Reputation >=
                        GwpTuning.TroopRequest.MinimumReputation &&
                    (PlayerTroopOrderStage)_orderStage ==
@@ -1345,21 +1345,5 @@ namespace GreyWardenPolicePurity
                 kind.PricePerTroop * count * (100 - discount) / 100);
         }
 
-        private static bool IsPlayerGreyWardenMember()
-        {
-            PlayerBountyBehavior? behavior = Campaign.Current
-                ?.GetCampaignBehavior<PlayerBountyBehavior>();
-            return behavior?.IsRecruitedByGreyWardens == true;
-        }
-
-        private static bool IsOrdinaryGreyWardenLordConversation()
-        {
-            Hero? hero = Hero.OneToOneConversationHero;
-            if (!GwpCommon.IsGreyWardenLord(hero)) return false;
-            MobileParty? party = MobileParty.ConversationParty;
-            if (party == null) return true;
-            return !GwpCommon.IsPatrolParty(party) &&
-                   !GwpCommon.IsEnforcementDelayPatrolParty(party);
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -786,7 +786,7 @@ namespace GreyWardenPolicePurity
             foreach (var party in policeEventSide.Parties)
             {
                 MobileParty? policeParty = party?.Party?.MobileParty;
-                if (!IsPoliceEncounterParty(policeParty))
+                if (!GwpCommon.IsGreyWardenEnforcementParty(policeParty))
                     continue;
 
                 PoliceTask? task = policeParty?.StringId != null
@@ -804,20 +804,6 @@ namespace GreyWardenPolicePurity
             }
 
             return false;
-        }
-
-        private static bool IsPoliceEncounterParty(MobileParty? party)
-        {
-            if (party == null)
-                return false;
-
-            if (GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))
-                return true;
-
-            return string.Equals(
-                party.ActualClan?.StringId,
-                GwpIds.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
         }
 
         private void CapturePlayerKillBaseline()
@@ -848,7 +834,7 @@ namespace GreyWardenPolicePurity
             foreach (MapEventParty party in side.Parties)
             {
                 MobileParty? mobileParty = party?.Party?.MobileParty;
-                if (party == null || !IsPoliceEncounterParty(mobileParty))
+                if (party == null || !GwpCommon.IsGreyWardenEnforcementParty(mobileParty))
                     continue;
 
                 total += CountRosterMembers(party.DiedInBattle);

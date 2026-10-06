@@ -314,8 +314,8 @@ namespace GreyWardenPolicePurity
 
         private bool CanFileFiefAppeal()
         {
-            return IsOrdinaryGreyWardenLordConversation() &&
-                   IsPlayerGreyWardenMember() &&
+            return GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
+                   IsPlayerGreyWardenVassal() &&
                    (FiefRequestStage)_activeStage == FiefRequestStage.None &&
                    GetEligibleCaptures().Count > 0;
         }
@@ -732,7 +732,7 @@ namespace GreyWardenPolicePurity
             record.AwardedClanId = outcome.Clan.StringId;
             if (outcome.Clan == Clan.PlayerClan ||
                 !record.Flags.HasFlag(CaptureFlags.PlayerParticipated) ||
-                !IsPlayerGreyWardenMember())
+                !IsPlayerGreyWardenVassal())
                 return;
 
             record.Flags |= CaptureFlags.AutoRolled;
@@ -857,7 +857,7 @@ namespace GreyWardenPolicePurity
                    playerKingdom != null && settlement.MapFaction == playerKingdom &&
                    string.Equals(record.KingdomId, playerKingdom.StringId,
                        StringComparison.OrdinalIgnoreCase) &&
-                   IsPlayerGreyWardenMember() &&
+                   IsPlayerGreyWardenVassal() &&
                    settlement.OwnerClan != Clan.PlayerClan;
         }
 
@@ -982,23 +982,15 @@ namespace GreyWardenPolicePurity
             return Math.Max(0, Math.Min(100, reputation)) / 2;
         }
 
-        private static bool IsPlayerGreyWardenMember()
+        /// <summary>
+        /// 封地申诉的资格：入了灰袍，并且玩家家族是某个王国的正式封臣（不是佣兵）。
+        /// 只入灰袍不够——申诉要由玩家所在王国的决议来处理。
+        /// </summary>
+        private static bool IsPlayerGreyWardenVassal()
         {
-            PlayerBountyBehavior? behavior = Campaign.Current
-                ?.GetCampaignBehavior<PlayerBountyBehavior>();
-            return behavior?.IsRecruitedByGreyWardens == true &&
+            return GwpCommon.IsPlayerGreyWardenMember() &&
                    Clan.PlayerClan?.Kingdom != null &&
-                   Clan.PlayerClan.IsUnderMercenaryService == false;
-        }
-
-        private static bool IsOrdinaryGreyWardenLordConversation()
-        {
-            Hero? hero = Hero.OneToOneConversationHero;
-            if (!GwpCommon.IsGreyWardenLord(hero)) return false;
-            MobileParty? party = MobileParty.ConversationParty;
-            if (party == null) return true;
-            return !GwpCommon.IsPatrolParty(party) &&
-                   !GwpCommon.IsEnforcementDelayPatrolParty(party);
+                   !Clan.PlayerClan.IsUnderMercenaryService;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -91,7 +91,8 @@ namespace GreyWardenPolicePurity
             public void ResetForNewGame() => CrimePool.ClearAll();
             public void SyncData(IDataStore dataStore) => CrimePool.SyncData(dataStore);
             public void RefreshAccepting() => CrimePool.RefreshAccepting();
-            public void Clean() => CrimePool.Clean();
+            public List<string> StaleTaskOwnerIds() => CrimePool.StaleTaskOwnerIds();
+            public void RemoveDeadOffenderRecords() => CrimePool.RemoveDeadOffenderRecords();
             public bool HasTask(string policePartyId) => CrimePool.HasTask(policePartyId);
             public PoliceTask? GetTask(string policePartyId) => CrimePool.GetTask(policePartyId);
             public void BeginTask(string policePartyId, CrimeRecord crime) => CrimePool.BeginTask(policePartyId, crime);
@@ -99,8 +100,8 @@ namespace GreyWardenPolicePurity
                 CrimePool.EndTask(policePartyId, reason);
             public bool RetargetTask(string policePartyId, CrimeRecord? newCrime) =>
                 CrimePool.RetargetTask(policePartyId, newCrime);
-            public IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId) =>
-                CrimePool.ReleaseTasksForOffender(offenderHeroId);
+            public void ReleaseTask(string policePartyId, string reason) => CrimePool.ReleaseTask(policePartyId, reason);
+            public bool CloseCase(CrimeRecord? crime, string reason) => CrimePool.CloseCase(crime, reason);
             public void ReopenCase(CrimeRecord? crime) => CrimePool.ReopenCase(crime);
             public void EndPlayerHunt() => CrimePool.EndPlayerHunt();
             public bool TryAdd(string crimeType, MobileParty offender, TaleWorlds.Library.Vec2 location, string victimName) =>

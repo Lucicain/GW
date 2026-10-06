@@ -66,6 +66,9 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   不存项目知识，最多存一个指回仓库的指针。
 - **生成的东西与源头一致。** code-map、progress.md 的待实测与已知缺陷汇总都由脚本重建，不手写。
 - **journal 只追加，不重复。**
+- **共享的判断只有一处。** 战力、谁算灰袍、案件状态、差事占用各有一个归属方（`docs/state/code-health.md`
+  「共享概念的归属」）。新功能用到这些概念就调归属方，缺什么补在归属方里；出现新的共享概念，先给它一个归属。
+  同一个判断写两份迟早分叉，修补又只修出问题的那份。（依据：用户裁定 2026-10-07）
 - **没有无主的东西。** 分支、工作树、stash，以及 `.codex_tmp/`、`build-check/` 里的每一项，要么属于一件
   还在进行的事、在 state 或 `docs/reference/local-scratch.md` 里写明，要么不存在。state 里的回退指向
   提交号，不指向临时文件。

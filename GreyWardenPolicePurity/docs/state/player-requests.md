@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
 > 覆盖源码：`GreyWardenPlayerRequestBehavior.cs` `GwpSettlementReconsiderationDecision.cs` `GwpFiefPublicSupportPatch.cs`
 > 待实测：无
 

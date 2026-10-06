@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -305,10 +305,7 @@ namespace GreyWardenPolicePurity
                              StringComparer.OrdinalIgnoreCase)
                          .ToList())
             {
-                if (GreyWardenTroopRequestBehavior
-                    .IsTrainerReservedForPlayerOrder(trainer) ||
-                    GreyWardenPlayerRequestBehavior
-                    .IsPartyReservedForPlayerRequest(trainer))
+                if (GwpWardenDuties.HoldsAny(trainer, WardenDuty.PlayerTroopOrder, WardenDuty.PlayerRequest))
                     continue;
                 TrainPartyIfDue(trainer);
                 if (IsFullyTrained(trainer))
@@ -488,10 +485,8 @@ namespace GreyWardenPolicePurity
                 .Where(candidate => !GreyWardenFamilyBehavior.IsTrainingParty(candidate))
                 .Where(candidate => !IsTrainingOccupied(candidate))
                 .Where(IsStructurallyValidTrainingParty)
-                .Where(candidate => !GreyWardenTroopRequestBehavior
-                    .IsTrainerReservedForPlayerOrder(candidate))
-                .Where(candidate => !GreyWardenPlayerRequestBehavior
-                    .IsPartyReservedForPlayerRequest(candidate))
+                .Where(candidate => !GwpWardenDuties.HoldsAny(candidate,
+                    WardenDuty.PlayerTroopOrder, WardenDuty.PlayerRequest))
                 .Where(candidate => CountTrainableTroops(candidate) > 0)
                 .OrderBy(candidate => candidate.GetPosition2D.Distance(trainer.GetPosition2D))
                 .ThenBy(candidate => candidate.StringId, StringComparer.OrdinalIgnoreCase)
@@ -698,20 +693,9 @@ namespace GreyWardenPolicePurity
                 party.MapEvent is { IsFinalized: false })
                 return false;
 
-            if (!ignoreTrainingAssignment && IsTrainingOccupied(party)) return false;
-            if (GreyWardenTroopRequestBehavior
-                    .IsTrainerReservedForPlayerOrder(party) ||
-                GreyWardenPlayerRequestBehavior
-                    .IsPartyReservedForPlayerRequest(party))
-                return false;
-            if (CrimePool.HasTask(party.StringId) ||
-                PoliceEnforcementBehavior.IsPartyOccupiedByAssistance(party) ||
-                GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ||
-                GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ||
-                GreyWardenIssueResolutionBehavior.IsIssueDutyParty(party))
-                return false;
-
-            return true;
+            return ignoreTrainingAssignment
+                ? GwpWardenDuties.IsFreeFor(party, WardenDuty.Training, WardenDuty.Training)
+                : GwpWardenDuties.IsFreeFor(party, WardenDuty.Training);
         }
 
         private static bool IsStructurallyValidTrainingParty(MobileParty? party) =>

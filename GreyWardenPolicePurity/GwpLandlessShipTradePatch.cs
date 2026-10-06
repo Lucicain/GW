@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -49,17 +49,12 @@ namespace GreyWardenPolicePurity
                 : AccessTools.Method(behavior, methodName, new[] { typeof(Clan) });
         }
 
-        internal static bool IsPoliceClan(Clan? clan) =>
-            clan != null && !clan.IsEliminated &&
-            string.Equals(clan.StringId, GwpIds.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
-
         /// <summary>
         /// 只有真正无封地时才接管。灰袍哪天拿到了封地，原版那条路自己就通了，
         /// 这里必须让开，不能变成永久绕过。
         /// </summary>
         private static bool ShouldSubstituteTown(Clan? clan, Town? currentResult) =>
-            currentResult == null && IsPoliceClan(clan) &&
+            currentResult == null && GwpCommon.IsGreyWardenClan(clan) && !clan!.IsEliminated &&
             (clan!.MapFaction?.Fiefs == null || clan.MapFaction.Fiefs.Count == 0);
 
         private static bool IsHostile(Clan clan, Town town) =>

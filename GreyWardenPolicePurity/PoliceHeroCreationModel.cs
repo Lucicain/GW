@@ -23,8 +23,7 @@ namespace GreyWardenPolicePurity
             if (hero == null || hero.IsDead || hero.IsDisabled || hero.IsChild)
                 return false;
 
-            if (!string.Equals(hero.Clan?.StringId, PoliceStats.PoliceClanId,
-                    StringComparison.OrdinalIgnoreCase))
+            if (!GwpCommon.IsGreyWardenClanMember(hero))
                 return false;
 
             return hero.Age >= Campaign.Current.Models.AgeModel.HeroComesOfAge;

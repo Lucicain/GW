@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -128,7 +128,7 @@ namespace GreyWardenPolicePurity
 
             bool stoppedCrimeInProgress = StoppedCrimeInProgress(mapEvent, playerSide);
             bool wardenOnPlayerSide = playerSide.Parties.Any(entry =>
-                entry.Party?.IsMobile == true && IsPoliceParty(entry.Party.MobileParty));
+                entry.Party?.IsMobile == true && GwpCommon.IsGreyWardenEnforcementParty(entry.Party.MobileParty));
             bool playerHeldTheCase = playerSide.OtherSide.Parties.Any(entry =>
                 entry.Party?.MobileParty?.LeaderHero != null &&
                 PlayerBountyBehavior.IsCaseHeldByPlayer(
@@ -294,7 +294,7 @@ namespace GreyWardenPolicePurity
             {
                 if (party?.MobileParty == null) continue;
 
-                if (IsPoliceParty(party.MobileParty))
+                if (GwpCommon.IsGreyWardenEnforcementParty(party.MobileParty))
                 {
                     policeInvolved = true;
                     if (GwpCommon.IsPatrolParty(party.MobileParty))
@@ -338,7 +338,7 @@ namespace GreyWardenPolicePurity
             {
                 foreach (var p in mapEvent.Winner.Parties)
                 {
-                    if (p?.Party?.IsMobile == true && IsPoliceParty(p.Party.MobileParty))
+                    if (p?.Party?.IsMobile == true && GwpCommon.IsGreyWardenEnforcementParty(p.Party.MobileParty))
                     {
                         policeOnWinningSide = true;
                         break;
@@ -390,20 +390,5 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private bool IsPoliceParty(MobileParty party)
-        {
-            if (party == null) return false;
-
-            // 警察家族部队
-            if (party.ActualClan != null &&
-                string.Equals(party.ActualClan.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            // 纠察队（CustomPartyComponent，可能 ActualClan 未生效）
-            if (GwpCommon.IsPatrolParty(party))
-                return true;
-
-            return false;
-        }
     }
 }

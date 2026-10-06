@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -652,11 +652,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// A case the player settles face to face closes for everyone: the record leaves
-        /// the pool and any Grey Warden party still assigned to it is released, so no
-        /// patrol keeps chasing a man who has already paid.
+        /// 销掉一宗案卷。只由 <c>PoliceEnforcementBehavior.CloseCase</c> 调用：它先把正在
+        /// 承办这宗案子的灰袍按统一流程收尾（协力组、AI、宣战记录、和平），再到这里销卷。
+        /// 直接在别处销卷会把承办任务连同它的善后一起丢掉。
         /// </summary>
-        public static bool CloseCaseSettledInField(CrimeRecord? crime)
+        public static bool CloseCase(CrimeRecord? crime, string reason)
         {
             if (crime == null || string.Equals(crime.CrimeId, PlayerCrimeId, StringComparison.OrdinalIgnoreCase))
                 return false;
@@ -668,27 +668,44 @@ namespace GreyWardenPolicePurity
                 _tasks.Remove(key);
 
             crime.HasOpenCase = false;
-            return _ledger.Remove(crime.CrimeId);
+            bool removed = _ledger.Remove(crime.CrimeId);
+            if (removed)
+                GwpAiDiagnostics.WriteFieldArrest("CASE_CLOSED",
+                    "crime=" + crime.CrimeId + "; offender=" + (crime.OffenderHeroId ?? "-") + "; reason=" + reason);
+            return removed;
         }
 
         /// <summary>
-        /// 玩家已经把这个人办了，但还欠灰袍一份汇报。案子留在册上——玩家可能还要向他
-        /// 追缴罚金——但灰袍不再自己去追他。和关案不同：卷宗不销，只是没人承办。
+        /// 撤下承办人，案卷留在台账上等别人接——行政改派、目标暂时追不到、玩家接手都是这样。
+        /// 只有犯人已经死了才顺带销卷。以前这件事有两套规则：一处看他的部队还在不在、一处看
+        /// 人还活不活着；部队被别人打散而人还活着时，前一套会把案卷销掉。现在只看人。
         /// </summary>
-        public static IReadOnlyList<PoliceTask> ReleaseTasksForOffender(string? offenderHeroId)
+        public static void ReleaseTask(string policePartyId, string reason)
         {
-            var released = new List<PoliceTask>();
-            if (string.IsNullOrWhiteSpace(offenderHeroId)) return released;
-
-            foreach (var pair in _tasks
-                         .Where(kv => string.Equals(kv.Value.TargetCrime?.OffenderHeroId,
-                             offenderHeroId, StringComparison.OrdinalIgnoreCase))
-                         .ToList())
+            if (!_tasks.TryGetValue(policePartyId, out PoliceTask? task)) return;
+            CrimeRecord? crime = task.TargetCrime;
+            // 玩家通缉的记录有自己的规则，结束任务本来就不销它。
+            if (task.TargetCrimeId == PlayerCrimeId)
             {
-                released.Add(pair.Value);
-                _tasks.Remove(pair.Key);
+                EndTask(policePartyId, reason);
+                return;
             }
-            return released;
+            Hero? offender = crime?.OffenderHero;
+            if (crime == null || offender?.IsAlive != true)
+            {
+                EndTask(policePartyId, reason + "_offender_gone");
+                return;
+            }
+
+            _tasks.Remove(policePartyId);
+            ReopenCase(crime);
+            GwpAiDiagnostics.WriteFieldArrest("CASE_KEPT_OPEN_OWNER_RELEASED",
+                "policeParty=" + policePartyId +
+                "; crime=" + crime.CrimeId +
+                "; offender=" + offender.StringId +
+                "; offenderPrisoner=" + offender.IsPrisoner +
+                "; offenderFugitive=" + offender.IsFugitive +
+                "; reason=" + reason);
         }
 
         public static PoliceTask? GetTask(string policePartyId)
@@ -727,18 +744,19 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        public static void Clean()
-        {
-            foreach (string policeId in _tasks.Where(kv =>
-                         MobileParty.All.All(p => !string.Equals(p.StringId, kv.Key, StringComparison.OrdinalIgnoreCase)) ||
-                         kv.Value.TargetCrime == null)
-                     .Select(kv => kv.Key).ToList())
-            {
-                // 承办部队已经消失或案卷目标无法恢复时视为执法失败。EndTask
-                // 会删除普通领主案件；玩家长期通缉记录则按其专门规则保留。
-                EndTask(policeId, "owner_party_or_crime_record_missing");
-            }
+        /// <summary>
+        /// 承办部队已经消失、或案卷目标无法恢复的任务。由执法行为按「结案」统一收尾，
+        /// 这里只负责找出来。
+        /// </summary>
+        public static List<string> StaleTaskOwnerIds() =>
+            _tasks.Where(kv =>
+                    MobileParty.All.All(p => !string.Equals(p.StringId, kv.Key, StringComparison.OrdinalIgnoreCase)) ||
+                    kv.Value.TargetCrime == null)
+                .Select(kv => kv.Key).ToList();
 
+        /// <summary>犯人已经死了的案卷直接移出台账（玩家通缉另有规则，不动）。</summary>
+        public static void RemoveDeadOffenderRecords()
+        {
             foreach (string crimeId in _ledger.Values.Where(record =>
             {
                 Hero? hero = record.OffenderHero;

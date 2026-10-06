@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：无
 

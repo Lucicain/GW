@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -356,8 +356,7 @@ namespace GreyWardenPolicePurity
             _fine = CalculateFine(_crime);
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
                 CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true);
-            float ours = Math.Max(1f, FieldStrength(MobileParty.MainParty));
-            float theirs = Math.Max(1f, FieldStrength(_offenderParty));
+            (float ours, float theirs) = FieldBalance();
             int resistance = LayerOneResistance();
             double refusalChance = GwpNegotiationPolicy.RefusalChance(resistance,
                 _offender.GetTraitLevel(DefaultTraits.Honor), _offender.GetTraitLevel(DefaultTraits.Mercy),
@@ -489,26 +488,17 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 当场会一起上阵的战力：本队；已并入军团（是军团长或已挂靠军团长）时加上军团长
-        /// 和已挂靠的成员。不用原版 <c>GetTotalLandStrengthWithFollowers</c>：队伍在护送
-        /// 别人（原版去军团会合就是护送）时它算的是被护送的那支，还把没汇合的成员一起算进去。
+        /// 现场双方的战力：我方是玩家所在战斗组加身边肯一起打的友军，对方是他所在战斗组加身边
+        /// 会来帮他的部队。和灰袍现场宣战用的是同一个判断（<see cref="GwpStrength.Compare"/>），
+        /// 不另算一套。
         /// </summary>
-        private static float FieldStrength(MobileParty? party)
+        private (float ours, float theirs) FieldBalance()
         {
-            if (party == null) return 0f;
-            MobileParty? leader = party.Army?.LeaderParty;
-            if (leader == null || (leader != party && party.AttachedTo != leader))
-                return PartyPower(party);
-            float total = PartyPower(leader);
-            foreach (MobileParty member in leader.Army!.Parties)
-                if (member != leader && member.AttachedTo == leader)
-                    total += PartyPower(member);
-            return total;
+            if (_offenderParty?.IsActive != true || MobileParty.MainParty == null)
+                return (1f, 1f);
+            GwpStrength.LocalBalance balance = GwpStrength.Compare(MobileParty.MainParty, _offenderParty);
+            return (Math.Max(1f, balance.FriendlyLocalStrength), Math.Max(1f, balance.EnemyLocalStrength));
         }
-
-        private static float PartyPower(MobileParty party) =>
-            Campaign.Current.Models.MilitaryPowerModel.GetPowerOfParty(party.Party,
-                BattleSideEnum.Attacker, TaleWorlds.CampaignSystem.MapEvents.MapEvent.PowerCalculationContext.PlainBattle);
 
         /// <summary>谈崩了就记一天。重谈不是免费的，上一次的结果就是今天的结果。</summary>
         private void RecordNegotiationFailure()
@@ -570,8 +560,8 @@ namespace GreyWardenPolicePurity
         {
             if (offender == null) return;
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterPlayerEnforcementSuccess(null, offender,
-                    crime?.CrimeCategory ?? GwpCrimeCategory.VillageViolence);
+                ?.RegisterEnforcementOutcome(null, offender,
+                    crime?.CrimeCategory ?? GwpCrimeCategory.VillageViolence, countAsArrest: true);
             GwpAiDiagnostics.WriteFieldArrest("FIELD_ENFORCEMENT_REGISTERED",
                 "offender=" + (offender.StringId ?? "-") +
                 "; category=" + (crime?.CrimeCategory.ToString() ?? "-"));
@@ -620,8 +610,7 @@ namespace GreyWardenPolicePurity
         {
             if (_offender == null || _offenderParty == null) return 50;
 
-            float mine = Math.Max(1f, FieldStrength(MobileParty.MainParty));
-            float his = Math.Max(1f, FieldStrength(_offenderParty));
+            (float mine, float his) = FieldBalance();
 
             // 打得过你的人不容易低头——但也仅此而已。此前这里直接把
             // his/(his+mine)*100 当成抗性主项，对方稍强就逼近 100，性格（最多
@@ -674,8 +663,7 @@ namespace GreyWardenPolicePurity
         private int LayerTwoResistance()
         {
             if (_offender == null) return 40;
-            float ours = Math.Max(1f, FieldStrength(MobileParty.MainParty));
-            float theirs = Math.Max(1f, FieldStrength(_offenderParty));
+            (float ours, float theirs) = FieldBalance();
             float force = (theirs / (theirs + ours) - 0.5f) * 16f;
             float rhetoric = MBMath.ClampFloat((_offender.GetSkillValue(DefaultSkills.Charm)
                 - Hero.MainHero.GetSkillValue(DefaultSkills.Charm)) / 20f, -10f, 10f);
@@ -722,7 +710,7 @@ namespace GreyWardenPolicePurity
 
         private void EndLayerOneConsequence()
         {
-            _enforcementAccepted = PersuasionSatisfiedCondition();
+            _enforcementAccepted = LayerSatisfiedCondition();
 
             if (ConversationManager.GetPersuasionIsActive())
                 ConversationManager.EndPersuasion();
@@ -751,10 +739,11 @@ namespace GreyWardenPolicePurity
 
             _activeResistance = resistance;
 #if GWP_DIAGNOSTICS
+            (float diagOurs, float diagTheirs) = FieldBalance();
             GwpAiDiagnostics.WriteFieldArrest("NEGOTIATION_CHANCE_CONTEXT", "layer=" + layer + "; resistance=" + resistance
                 + "; wealth=" + OffenderWealth + "; fine=" + EnsureFine()
-                + "; ours=" + FieldStrength(MobileParty.MainParty)
-                + "; theirs=" + FieldStrength(_offenderParty));
+                + "; ours=" + diagOurs
+                + "; theirs=" + diagTheirs);
 #endif
             // 抗性低的人本来就快被说动了，给一点起手进度；抗性高的人从零开始。
             float ease = MBMath.ClampFloat((100 - resistance) / 100f, 0f, 1f);
@@ -885,10 +874,6 @@ namespace GreyWardenPolicePurity
         /// Only a met goal counts. Running out of arguments is not agreement - that was the
         /// bug that had beaten Wardens collecting fines anyway.
         /// </summary>
-        private bool PersuasionSatisfiedCondition() =>
-            ConversationManager.GetPersuasionIsActive()
-            && ConversationManager.GetPersuasionProgressSatisfied();
-
         /// <summary>
         /// The stock reaction line is empty unless someone fills PERSUASION_REACTION. A
         /// failed argument gets this reservation's own rebuff; a critical failure ends the
@@ -1030,7 +1015,7 @@ namespace GreyWardenPolicePurity
                 ?.NotifyCaseSettledInField(_offender, collected, owed, standingBefore);
 
             RegisterFieldEnforcement(_offender, _crime);
-            CrimePool.CloseCaseSettledInField(_crime);
+            PoliceEnforcementBehavior.CloseCase(_crime, "field_submitted");
             PlayerState.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
             GwpAiDiagnostics.WriteFieldArrest(
@@ -1081,7 +1066,7 @@ namespace GreyWardenPolicePurity
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                 ?.NotifyCaseClosedByCapture(_offender, assessed, standing);
             RegisterFieldEnforcement(_offender, _crime);
-            CrimePool.CloseCaseSettledInField(_crime);
+            PoliceEnforcementBehavior.CloseCase(_crime, "field_captured");
             PlayerState.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
             GwpAiDiagnostics.WriteFieldArrest(
@@ -1116,7 +1101,7 @@ namespace GreyWardenPolicePurity
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                 ?.NotifyCaseSettledInField(_offender, 0, owed, GetNegativeStanding(_crime));
             RegisterFieldEnforcement(_offender, _crime);
-            CrimePool.CloseCaseSettledInField(_crime);
+            PoliceEnforcementBehavior.CloseCase(_crime, "field_settled_short");
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "SETTLED_BRIBE",
@@ -1172,7 +1157,7 @@ namespace GreyWardenPolicePurity
                 Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                     ?.NotifyCaseSettledInField(opponent, 0, fine, GetNegativeStanding(crime));
                 RegisterFieldEnforcement(opponent, crime);
-                CrimePool.CloseCaseSettledInField(crime);
+                PoliceEnforcementBehavior.CloseCase(crime, "field_duel_lost");
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_fieldarrest_msg_duel_lost}{VAR_1} won the bout. The fine is waived, but the record against {VAR_1} stands.",
                         "VAR_1", opponent.Name?.ToString() ?? string.Empty),

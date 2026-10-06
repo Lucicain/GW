@@ -27,7 +27,7 @@ namespace GreyWardenPolicePurity
             EquipmentElement itemRosterElement, ref bool __result)
         {
             if (currentCharacter is not CharacterObject character ||
-                !PoliceResourceManager.IsPoliceClanHero(character.HeroObject))
+                !GwpCommon.IsGreyWardenClanMember(character.HeroObject))
                 return true;
 
 #if GWP_DIAGNOSTICS

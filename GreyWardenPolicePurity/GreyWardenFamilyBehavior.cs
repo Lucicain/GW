@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -219,7 +219,7 @@ namespace GreyWardenPolicePurity
             }
 
             HashSet<string> usedNames = new HashSet<string>(StringComparer.Ordinal);
-            foreach (Hero hero in policeClan.Heroes.Where(IsPoliceClanHero))
+            foreach (Hero hero in policeClan.Heroes.Where(GwpCommon.IsGreyWardenClanMember))
             {
                 if (hero?.Name == null || !IsCoreLeader(hero))
                 {
@@ -277,7 +277,7 @@ namespace GreyWardenPolicePurity
         internal static bool IsIssueResolutionParty(MobileParty? party) =>
             IsIssueResolutionHero(party?.LeaderHero);
 
-        internal static bool IsReconstructionParty(MobileParty? party) =>
+        internal static bool IsReconstructionOfficeParty(MobileParty? party) =>
             IsReconstructionHero(party?.LeaderHero);
 
         internal static bool HasLivingReconstructionHolder()
@@ -399,17 +399,11 @@ namespace GreyWardenPolicePurity
                    hero.Age >= Campaign.Current.Models.AgeModel.HeroComesOfAge;
         }
 
-        private static bool IsPoliceClanHero(Hero? hero)
-        {
-            return hero?.Clan != null &&
-                   string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
-        }
-
         private static bool IsCoreLeader(Hero hero) =>
             CoreLeaderIdSet.Contains(hero.StringId);
 
         internal static bool IsGeneratedPoliceHero(Hero? hero) =>
-            hero != null && IsPoliceClanHero(hero) && !IsCoreLeader(hero);
+            hero != null && GwpCommon.IsGreyWardenClanMember(hero) && !IsCoreLeader(hero);
 
         private static void EnsurePoliceHeroIsFemale(Hero hero)
         {

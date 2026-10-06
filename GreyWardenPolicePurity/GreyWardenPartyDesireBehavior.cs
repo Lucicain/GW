@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -603,8 +603,7 @@ namespace GreyWardenPolicePurity
         private static Intent? ResolvePatrolBeat(MobileParty party)
         {
             if (party.LeaderHero?.IsActive != true || !party.IsLordParty) return null;
-            if (!string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                    StringComparison.OrdinalIgnoreCase))
+            if (!GwpCommon.IsGreyWardenClanParty(party))
                 return null;
 
             List<MobileParty> wardens = PoliceStats.GetAllPoliceParties()
@@ -787,8 +786,7 @@ namespace GreyWardenPolicePurity
             if (party?.IsActive != true || party.IsMainParty) return false;
             return Intents.ContainsKey(party.StringId) || GwpCommon.IsPatrolParty(party) ||
                 GwpCommon.IsEnforcementDelayPatrolParty(party) ||
-                string.Equals(party.ActualClan?.StringId, PoliceStats.PoliceClanId,
-                    StringComparison.OrdinalIgnoreCase);
+                GwpCommon.IsGreyWardenClanParty(party);
         }
 
         internal static bool HasDirectAttackLock(MobileParty? party) =>

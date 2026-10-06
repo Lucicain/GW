@@ -220,7 +220,7 @@ namespace GreyWardenPolicePurity
                     Unassign(assignment, party, "assignee_invalid");
                     continue;
                 }
-                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ||
+                if (GwpWardenDuties.HoldsAny(party, WardenDuty.VillageRelief) ||
                     party.Army != null)
                 {
                     Unassign(assignment, party, "higher_priority_duty");
@@ -309,12 +309,7 @@ namespace GreyWardenPolicePurity
         {
             if (party?.IsActive != true || party.LeaderHero?.IsActive != true ||
                 party.Army != null || party.MapEvent is { IsFinalized: false } ||
-                IsIssueDutyParty(party) ||
-                GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(party) ||
-                GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(party) ||
-                GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(party) ||
-                GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(party) ||
-                GreyWardenVillageReconstructionBehavior.IsReconstructionParty(party) ||
+                !GwpWardenDuties.IsFreeFor(party, WardenDuty.Issue) ||
                 GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))
                 return false;
 

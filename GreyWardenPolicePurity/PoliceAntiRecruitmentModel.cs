@@ -11,12 +11,12 @@ namespace GreyWardenPolicePurity
     public class PoliceAntiRecruitmentModel : DefaultDiplomacyModel
     {
         internal static bool IsGwClan(Clan clan) =>
-            string.Equals(clan?.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+            GwpCommon.IsGreyWardenClan(clan);
 
         private static bool IsGwFaction(IFaction faction)
         {
             if (faction == null) return false;
-            if (string.Equals(faction.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase))
+            if (GwpCommon.IsGreyWardenClan(faction as Clan))
                 return true;
 
             Clan policeClan = PoliceStats.GetPoliceClan();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox;
@@ -218,7 +218,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            if (IsPoliceInteractionConversation())
+            if (GwpCommon.IsEnforcementConversation())
                 return false;
 
             if (Settlement.CurrentSettlement?.IsTown == true)
@@ -814,23 +814,6 @@ namespace GreyWardenPolicePurity
 
             combatant.SetGeneral(general.CharacterObject);
             return combatant;
-        }
-
-        private static bool IsPoliceInteractionConversation()
-        {
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            if (conversationParty == null)
-                return false;
-
-            if (GwpCommon.IsPatrolParty(conversationParty)
-                || GwpCommon.IsEnforcementDelayPatrolParty(conversationParty))
-            {
-                return true;
-            }
-
-            PoliceTask? task = GwpRuntimeState.Crime.GetTask(
-                conversationParty.StringId);
-            return task?.TargetCrime?.Offender?.IsMainParty == true;
         }
 
         private void ClearPostBoutConversation()

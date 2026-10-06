@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -297,7 +297,7 @@ namespace GreyWardenPolicePurity
                 MobileParty? assignedPolice = MobileParty.All.FirstOrDefault(p =>
                     p.IsActive && string.Equals(p.StringId, task.PolicePartyId,
                         StringComparison.OrdinalIgnoreCase));
-                if (assignedPolice == null || !IsGreyWardenPoliceParty(assignedPolice))
+                if (assignedPolice == null || !GwpCommon.IsGreyWardenEnforcementParty(assignedPolice))
                     continue;
                 if (offender?.IsActive != true || offender.IsMainParty ||
                     offender.Party == null || offender.Party.NumberOfHealthyMembers <= 0)
@@ -379,7 +379,7 @@ namespace GreyWardenPolicePurity
 
         private void TrySpawnImmediateCaseInterceptor(MobileParty sourceParty,
             PoliceTask? task, MobileParty targetParty,
-            LocalStrengthDeclarationSnapshot? declaration)
+            GwpStrength.LocalBalance? declaration)
         {
             if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task) ||
                 PlayerBountyBehavior.IsReservedTarget(targetParty)) return;
@@ -423,14 +423,14 @@ namespace GreyWardenPolicePurity
                 return;
 
             MobileParty movementTarget =
-                ResolveAssistanceMovementTarget(targetParty);
+                GwpStrength.CombatGroupOf(targetParty);
             // 与协力军团的速度分散判定保持同一口径：调用原版
             // PartySpeedCalculatingModel 推算具体部队在正常条件下的理论速度，
             // 排除战后混乱、天气和双方所处地形不同造成的瞬时噪声。
             float sourceCurrentSpeed = Math.Max(0f, sourceParty.Speed);
             float targetCurrentSpeed = Math.Max(0f, movementTarget.Speed);
-            float sourceSpeed = GetTheoreticalBaseSpeed(sourceParty);
-            float targetSpeed = GetTheoreticalBaseSpeed(movementTarget);
+            float sourceSpeed = GwpStrength.TheoreticalBaseSpeed(sourceParty);
+            float targetSpeed = GwpStrength.TheoreticalBaseSpeed(movementTarget);
             if (sourceSpeed <= 0.01f || targetSpeed <= sourceSpeed)
                 return;
 
@@ -549,7 +549,7 @@ namespace GreyWardenPolicePurity
             float interceptorCurrentSpeed =
                 Math.Max(0f, interceptor.Speed);
             float interceptorSpeed =
-                GetTheoreticalBaseSpeed(interceptor);
+                GwpStrength.TheoreticalBaseSpeed(interceptor);
             if (interceptorSpeed <= targetSpeed)
             {
                 GwpAiDiagnostics.WriteAction(sourceParty,
@@ -1141,7 +1141,7 @@ namespace GreyWardenPolicePurity
             {
                 MobileParty? losingParty = losingPartyEntry?.Party?.MobileParty;
                 if (losingParty == null || losingParty.IsMainParty) continue;
-                if (IsGreyWardenPoliceParty(losingParty)) continue;
+                if (GwpCommon.IsGreyWardenEnforcementParty(losingParty)) continue;
                 if (!IsPartyActuallyDefeated(losingParty)) continue;
 
                 ResolveTrackedOffenderDefeatByDelayPatrol(losingParty.StringId);
@@ -1182,21 +1182,7 @@ namespace GreyWardenPolicePurity
                 if (!string.Equals(task.TargetCrime?.Offender?.StringId, offenderId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                MobileParty? policeParty = MobileParty.All.FirstOrDefault(p =>
-                    p.StringId == task.PolicePartyId && p.IsActive);
-                if (policeParty != null)
-                {
-                    RestoreAi(policeParty);
-                    GreyWardenPartyDesireBehavior.ClearIntent(policeParty);
-                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(policeParty);
-                }
-
-                ClearTaskWarTracking(kv.Key, true);
-                CrimeState.EndTask(kv.Key, "offender_settled_by_delay_patrol");
-                PoliceResourceManager.CreditSuccessfulCaseCompletion();
-                GwpPlayerRequestDeferral.NotifyDutyCompleted(policeParty,
-                    "criminal_case");
-                CompleteAssistanceTasks(task.PolicePartyId);
+                EndCaseTask(kv.Key, CaseTaskEnd.Solved, "offender_settled_by_delay_patrol");
             }
 
             // 未分派案件同样已经进入总卷；支援队实际击败目标并移除该条目时
@@ -1242,18 +1228,6 @@ namespace GreyWardenPolicePurity
             Clan? clan = Clan.All.FirstOrDefault(c =>
                 string.Equals(c.StringId, warTargetId, StringComparison.OrdinalIgnoreCase));
             return clan;
-        }
-
-        private static bool IsGreyWardenPoliceParty(MobileParty? party)
-        {
-            if (party == null) return false;
-            if (GwpCommon.IsPatrolParty(party) || GwpCommon.IsEnforcementDelayPatrolParty(party))
-                return true;
-
-            return string.Equals(
-                party.ActualClan?.StringId,
-                PoliceStats.PoliceClanId,
-                StringComparison.OrdinalIgnoreCase);
         }
 
         private void ClearTaskWarTracking(string policeTaskId, bool markDelayPatrolReturning)
@@ -1317,22 +1291,12 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // 旧追捕方（若存在）恢复 AI，让其可继续常规执法
+            // 旧追捕方撤下，回去做常规执法；最近那位手上的普通案退回台账。
             if (!string.IsNullOrEmpty(currentPlayerPoliceId))
-            {
-                MobileParty oldPolice = MobileParty.All.FirstOrDefault(p =>
-                    p.StringId == currentPlayerPoliceId && p.IsActive);
-                if (oldPolice != null)
-                    RestoreAi(oldPolice);
-                ClearTaskWarTracking(currentPlayerPoliceId, true);
-            }
-
-            // 最近警察若有旧案，先清掉战争追踪并交回犯罪池（由 CrimePool 内部处理）
+                EndCaseTask(currentPlayerPoliceId, CaseTaskEnd.Released, "player_case_reassigned");
             PoliceTask? nearestTask = CrimeState.GetTask(nearestId);
             if (nearestTask != null && nearestTask.TargetCrimeId != CrimePool.PlayerCrimeId)
-            {
-                ClearTaskWarTracking(nearestId, true);
-            }
+                EndCaseTask(nearestId, CaseTaskEnd.Released, "displaced_by_player_case");
 
             if (!CrimeState.TryAssignPlayerCrimeToPolice(nearestId))
                 return;
@@ -1355,12 +1319,7 @@ namespace GreyWardenPolicePurity
                 if (!PoliceStats.CanHandleOrdinaryCase(police)) continue;
                 if (GwpCommon.IsPatrolParty(police)) continue;
                 if (GwpCommon.IsEnforcementDelayPatrolParty(police)) continue;
-                if (GreyWardenVillageAdoptionBehavior.IsVillageReliefParty(police)) continue;
-                if (_instance?.IsAssistanceOccupied(police) == true) continue;
-
-                PoliceTask? task = CrimeState.GetTask(police.StringId);
-                if (task?.IsEscortingPlayer == true || task?.IsPlayerBountyEscort == true)
-                    continue;
+                if (!GwpWardenDuties.IsFreeFor(police, WardenDuty.PlayerCase)) continue;
 
                 float distance = police.GetPosition2D.Distance(playerPos);
                 if (distance >= bestDistance) continue;

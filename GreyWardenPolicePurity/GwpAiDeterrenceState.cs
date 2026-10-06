@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -160,7 +160,7 @@ namespace GreyWardenPolicePurity
 
             CrimeRecord? crime = CrimePool.GetRecord(leader);
             if (crime?.HasOpenCase == true)
-                CrimePool.CloseCaseSettledInField(crime);
+                PoliceEnforcementBehavior.CloseCase(crime, "arrested_record_cleared");
         }
 
         public static float RegisterSharedFamilyDeterrence(Hero leader, float penaltyGain,
@@ -218,24 +218,18 @@ namespace GreyWardenPolicePurity
         public static float GetVillagerAttackScoreMultiplier(MobileParty? party) =>
             GetCrimeDesireMultiplier(party, GwpCrimeCategory.VillageViolence);
 
-        public static float GetCrimeDesireMultiplier(MobileParty? party)
-            => GetCrimeDesireMultiplier(party, GwpCrimeCategory.VillageViolence);
-
         public static float GetCrimeDesireMultiplier(MobileParty? party,
             GwpCrimeCategory category)
         {
             if (party == null) return 1f;
-            if (IsGreyWardenPoliceParty(party.ActualClan)) return 0f;
+            if (GwpCommon.IsGreyWardenClan(party.ActualClan)) return 0f;
             return GetCrimeDesireMultiplier(party.LeaderHero, category);
         }
-
-        public static float GetCrimeDesireMultiplier(Hero? hero)
-            => GetCrimeDesireMultiplier(hero, GwpCrimeCategory.VillageViolence);
 
         public static float GetCrimeDesireMultiplier(Hero? hero, GwpCrimeCategory category)
         {
             if (Campaign.Current == null || hero == null) return 1f;
-            if (IsGreyWardenPoliceHero(hero)) return 0f;
+            if (GwpCommon.IsGreyWardenClanMember(hero)) return 0f;
 
             float penalty = GetCurrentPenalty(hero, category);
             if (penalty <= GwpTuning.Deterrence.ForgetThreshold) return 1f;
@@ -373,7 +367,7 @@ namespace GreyWardenPolicePurity
                     ? DeterrenceTier.Medium
                     : DeterrenceTier.High;
             DeterrenceVoice voice = SelectWeightedVoice(hero);
-            bool playerIsWarden = IsPlayerGreyWarden();
+            bool playerIsWarden = GwpCommon.IsPlayerGreyWardenMember();
 
             string name = hero.Name?.ToString() ?? GwpText.Get("{=gwp_gwpaideterrencestate_003}This person");
             intro = GwpAiDeterrenceDialogueCatalog.GetIntro(source, tier);
@@ -456,19 +450,6 @@ namespace GreyWardenPolicePurity
             if (roll < weight) return true;
             roll -= weight;
             return false;
-        }
-
-        private static bool IsPlayerGreyWarden()
-        {
-            if (string.Equals(
-                    Clan.PlayerClan?.StringId,
-                    GwpIds.PoliceClanId,
-                    StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            PlayerBountyBehavior? bountyBehavior =
-                Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
-            return bountyBehavior?.IsRecruitedByGreyWardens == true;
         }
 
         public static void DailyCleanup()
@@ -688,13 +669,7 @@ namespace GreyWardenPolicePurity
 
         private static bool CanTrack(Hero? hero) =>
             Campaign.Current != null && hero != null && hero != Hero.MainHero &&
-            !string.IsNullOrWhiteSpace(hero.StringId) && !IsGreyWardenPoliceHero(hero);
-
-        private static bool IsGreyWardenPoliceHero(Hero? hero) =>
-            IsGreyWardenPoliceParty(hero?.Clan);
-
-        private static bool IsGreyWardenPoliceParty(Clan? clan) =>
-            string.Equals(clan?.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+            !string.IsNullOrWhiteSpace(hero.StringId) && !GwpCommon.IsGreyWardenClanMember(hero);
 
         private static string BuildTrackingLocation(Hero hero)
         {

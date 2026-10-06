@@ -695,10 +695,7 @@ namespace GreyWardenPolicePurity
 
             if (GwpCommon.IsPatrolParty(police)
                 || GwpCommon.IsEnforcementDelayPatrolParty(police)
-                || GreyWardenTrainingBehavior.ShouldReserveFromNewDuties(police)
-                || GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest(police)
-                || GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder(police)
-                || IsVillageReliefParty(police))
+                || !GwpWardenDuties.IsFreeFor(police, WardenDuty.VillageRelief))
             {
                 return false;
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -160,7 +160,7 @@ namespace GreyWardenPolicePurity
             // 当面开口和派人送信是同一件事：话到了灰袍领主耳朵里，支援才成立。
             starter.AddPlayerLine("gwp_request_case_support", "lord_talk_speak_diplomacy_2", "gwp_request_case_support_reply",
                 GwpText.Get("{=gwp_request_case_support}I need your help taking the offender. Take the field with me."),
-                () => CanRequestCaseSupport && IsOrdinaryGreyWardenLordConversation(), null, 110);
+                () => CanRequestCaseSupport && GwpCommon.IsOrdinaryGreyWardenLordConversation(), null, 110);
             starter.AddDialogLine("gwp_request_case_support_reply", "gwp_request_case_support_reply", "lord_talk_speak_diplomacy_2",
                 GwpText.Get("{=gwp_request_case_support_reply}Then let us ride. We stay at your shoulder, and we will not be behind you when it starts."), null,
                 () => GrantCaseSupport("player_in_person", MobileParty.ConversationParty));

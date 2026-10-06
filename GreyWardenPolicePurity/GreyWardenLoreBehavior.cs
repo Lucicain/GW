@@ -81,7 +81,7 @@ namespace GreyWardenPolicePurity
                 return false;
 
             Hero? conversationHero = Hero.OneToOneConversationHero;
-            if (!IsGreyWardenLord(conversationHero))
+            if (!GwpCommon.IsGreyWardenLord(conversationHero))
                 return false;
 
             if (GreyWardenTroopRequestBehavior
@@ -93,7 +93,7 @@ namespace GreyWardenPolicePurity
             if (!conversationHero.HasMet)
                 return false;
 
-            if (IsPoliceInteractionConversation())
+            if (GwpCommon.IsEnforcementConversation())
                 return false;
 
             if (!RollMetGreetingChance(conversationHero))
@@ -103,22 +103,6 @@ namespace GreyWardenPolicePurity
                 GwpTextKeys.GreyLordGreeting,
                 BuildMetGreeting(PlayerState.Reputation));
             return true;
-        }
-
-        private static bool IsPoliceInteractionConversation()
-        {
-            MobileParty? conversationParty = MobileParty.ConversationParty;
-            if (conversationParty == null)
-                return false;
-
-            if (GwpCommon.IsPatrolParty(conversationParty) ||
-                GwpCommon.IsEnforcementDelayPatrolParty(conversationParty))
-            {
-                return true;
-            }
-
-            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
-            return task?.TargetCrime?.Offender?.IsMainParty == true;
         }
 
         private static bool IsPostBattleCaptureConversation()
@@ -202,15 +186,5 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static bool IsGreyWardenLord(Hero? hero)
-        {
-            if (hero == null || hero.Clan == null)
-                return false;
-
-            if (!string.Equals(hero.Clan.StringId, GwpIds.PoliceClanId, System.StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return hero.Occupation == Occupation.Lord;
-        }
     }
 }

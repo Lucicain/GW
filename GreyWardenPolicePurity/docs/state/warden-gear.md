@@ -2,7 +2,7 @@
 
 > 当前状态：便装模板摘盔已镜像，战斗头盔保留；入会品质已验收，最佳品质与自动换装保护待实测
 > 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
-> 已复核至：`515a2eb`（2026-10-07）
+> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
 > 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1`
 > 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -59,8 +59,7 @@ namespace GreyWardenPolicePurity
             if (army.Kingdom != null) return false;
             if (army.AiBehaviorObject != null) return false;
 
-            return string.Equals(army.LeaderParty.ActualClan?.StringId,
-                GwpIds.PoliceClanId, StringComparison.OrdinalIgnoreCase);
+            return GwpCommon.IsGreyWardenClanParty(army.LeaderParty);
         }
     }
 }

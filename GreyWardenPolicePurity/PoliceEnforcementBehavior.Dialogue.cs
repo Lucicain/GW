@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.BarterSystem;
@@ -29,7 +29,7 @@ namespace GreyWardenPolicePurity
         {
             // Do not run this from SyncData: Hero.FindFirst's source collection is not
             // guaranteed to exist until campaign initialization has completed.
-            CrimeState.Clean();
+            CleanCaseLedger();
 
             starter.AddDialogLine(
                 "gwp_enforcement_start",
@@ -175,10 +175,7 @@ namespace GreyWardenPolicePurity
             MobileParty? conversationParty = MobileParty.ConversationParty;
             if (conversationParty == null) return false;
 
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return false;
-
-            if (conversationParty.ActualClan != policeClan) return false;
+            if (!GwpCommon.IsGreyWardenClanParty(conversationParty)) return false;
             if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
             PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
@@ -280,9 +277,9 @@ namespace GreyWardenPolicePurity
 
             HeroCrimeStats history = CrimePool.GetOrCreateHistory(accused);
             history.NegativeStanding = 0;
-            CrimePool.CloseCaseSettledInField(crime);
+            CloseCase(crime, "companion_fine_paid");
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterPlayerEnforcementSuccess(null, accused, crime.CrimeCategory);
+                ?.RegisterEnforcementOutcome(null, accused, crime.CrimeCategory, countAsArrest: true);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
@@ -491,7 +488,7 @@ namespace GreyWardenPolicePurity
 
             Hero? barterHero = Hero.OneToOneConversationHero
                                ?? policePartyMobile.LeaderHero
-                               ?? GetEnforcementBarterHero();
+                               ?? GwpCommon.FindGreyWardenSpokesperson();
             if (barterHero == null)
                 return false;
 
@@ -525,23 +522,6 @@ namespace GreyWardenPolicePurity
         private bool InitializeEnforcementBarterContext(Barterable barterable, BarterData args, object obj)
         {
             return barterable is GwpBribeBarterable;
-        }
-
-        private Hero? GetEnforcementBarterHero()
-        {
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null) return null;
-
-            Hero leader = policeClan.Leader;
-            if (leader != null && leader.IsActive && !leader.IsDead && !leader.IsChild)
-                return leader;
-
-            return policeClan.Heroes.FirstOrDefault(h =>
-                h != null &&
-                h.IsActive &&
-                !h.IsDead &&
-                !h.IsChild &&
-                !h.IsPrisoner);
         }
 
         private void ResetDialogueState()
@@ -583,7 +563,7 @@ namespace GreyWardenPolicePurity
                     task.TargetCrime?.Offender?.IsMainParty == true &&
                     !task.WarDeclared &&
                     !task.IsEscortingPlayer &&
-                    p.MobileParty.ActualClan == policeClan)
+                    GwpCommon.IsGreyWardenClanParty(p.MobileParty))
                 {
                     policeHasPlayerTask = true;
                 }

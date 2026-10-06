@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；入国来源与自动换装候选取证随修复合入 main，已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
