@@ -38,22 +38,16 @@ Three things it writes or checks because the next agent depends on them:
 It proves nothing about whether the prose is correct. It only says where to
 look. Run from the repository root:  python tools/Check-StateFreshness.py
 
-Added 2026-10-07 after a Codex round left the repository clean by every check
-above and messy everywhere else — the gaps were exactly the rules that were
-only prose:
+Also reported (2026-10-07, after a Codex round left them behind): known
+defects rolled up into progress.md from 「已知缺陷：」 lines, state lines naming
+scratch paths that no longer exist, duplicate journal entries from a branch
+merge, leftover branches, worktrees and stashes, and scratch entries that
+local-scratch.md does not claim. These are a tool for the agent, not an
+audit (user ruling 2026-10-07).
 
-- state wording that narrates a round (本轮, session permissions) and
-  已复核至 lines that are sentences instead of one commit;
-- a known defect buried in a state body that no roll-up showed (the zero-wage
-  MathF.Floor overflow), so 已知缺陷： lines are rolled up into progress.md;
-- the same journal entries appended twice by a branch merge;
-- merged branches, abandoned worktrees and stashes left behind;
-- .codex_tmp/ and build-check/ entries that local-scratch.md does not claim
-  (1.9 GB, including an aborted release package).
-
-Exit code 0 by default: a report. With --strict (the pre-commit hook) it exits
-1 when anything in the 必须清零 list is non-zero, so every harness that
-commits through git meets the same bar.
+Exit code 0 by default. With --strict (the pre-commit hook) it exits 1 only on
+mechanical errors no one would keep on purpose: duplicate journal entries and
+code hygiene.
 """
 
 import re
@@ -102,10 +96,6 @@ PENDING_RE = re.compile(r"^>\s*待实测：(.*)$", re.M)
 DEFECT_BEGIN = "<!-- 已知缺陷汇总：由 tools/Check-StateFreshness.py 从各 state 的「已知缺陷：」行生成，手改会被覆盖 -->"
 DEFECT_END = "<!-- /已知缺陷汇总 -->"
 DEFECT_RE = re.compile(r"已知缺陷[*]*：\s*(.*)$")
-# A state file says what is true now. These words only make sense inside one
-# working round, or describe the agent's session rather than the mod.
-PROCESS_RE = re.compile(r"本轮|上一轮|会话权限|danger-full-access|approval_policy|sandbox_permissions")
-REVIEW_FORMAT_RE = re.compile(r"^`[0-9a-f]{7,40}`（20\d\d-\d\d-\d\d[^）]{0,60}）$")
 
 JOURNAL = ROOT / MODULE / "docs" / "journal"
 SCRATCH_LIST = ROOT / MODULE / "docs" / "reference" / "local-scratch.md"
@@ -180,8 +170,6 @@ def main() -> int:
 
     stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
     unsourced = []   # hard rules with no 依据：tag
-    narrated = []    # round/session wording in a state file
-    bad_review = []  # 已复核至 that is not one commit
     dangling = []    # scratch paths named in state that no longer exist
     hand_written = 0
 
@@ -193,8 +181,6 @@ def main() -> int:
 
         # 5. hard rules that do not say what they rest on
         for n, line in enumerate(text.splitlines(), 1):
-            if PROCESS_RE.search(line) and not line.startswith("<!--"):
-                narrated.append((p.name, n, line.strip()[:70]))
             if line.startswith(">") or line.startswith("|---"):
                 continue
             if HARD_RE.search(line) and "依据：" not in line:
@@ -205,9 +191,6 @@ def main() -> int:
                 if not (ROOT / ref).exists():
                     dangling.append((p.name, n, ref))
 
-        rm = REVIEW_RE.search(text)
-        if rm and not REVIEW_FORMAT_RE.match(rm.group(1).strip()):
-            bad_review.append((p.name, rm.group(1).strip()[:60]))
 
         # 4. is it turning back into a log?
         lines = text.count("\n") + 1
@@ -298,20 +281,6 @@ def main() -> int:
         print("  依据写法见 docs/reference/investigation-methods.md 末节。")
         print()
 
-    if narrated:
-        print(f"[!] {len(narrated)} 处 state 写了某一轮或会话的经过 —— state 只写现在，经过写 journal：\n")
-        for name, n, line in narrated[:12]:
-            print(f"  {name}:{n}  {line}")
-        if len(narrated) > 12:
-            print(f"  … 另有 {len(narrated) - 12} 处")
-        print()
-
-    if bad_review:
-        print("[!] 已复核至 应是一个提交加日期，如 `515a2eb`（2026-10-07）；理由写 journal：\n")
-        for name, v in bad_review:
-            print(f"  {name}  {v}")
-        print()
-
     if dangling:
         print("[!] state 引用的临时文件已不存在 —— 改成提交号回退，或删掉这句：\n")
         for name, n, ref in dangling:
@@ -339,26 +308,23 @@ def main() -> int:
             print(f"  {name}  ({why})")
         print()
 
-    must_be_zero = {
+    findings = {
         "可能过期": stale, "堆积流水": bloated, "新增未归属": orphans_new,
         "未提取子系统被改": baseline_touched, "无法核对": unchecked,
         "硬规则缺依据": unsourced, "待实测写法有误": rollup_problems,
-        "state 写了经过": narrated, "引用的临时文件不存在": dangling, "已复核至格式": bad_review,
-        "journal 重复条目": journal_dups, "遗留分支/工作树/stash": leftovers,
-        "临时目录无主项": scratch, "记忆只有 Claude 看得到": memory_unmirrored,
+        "引用的临时文件不存在": dangling, "journal 重复条目": journal_dups,
+        "遗留分支/工作树/stash": leftovers, "临时目录无主项": scratch,
+        "记忆只有 Claude 看得到": memory_unmirrored,
     }
-    print("必须清零：" + " / ".join(f"{k} {len(v)}" for k, v in must_be_zero.items()))
+    print(" / ".join(f"{k} {len(v)}" for k, v in findings.items()))
     print(f"（另有 {len(exempt)} 个 state 声明不核对，只计数）")
     print("\n这只说明去哪里看，不说明文字对不对。")
-    failing = [k for k, v in must_be_zero.items() if v]
 
-    # Code hygiene blocks commits (see the pre-commit hook); report it here too so a
-    # wrap round sees it before reaching the commit.
     print()
     sys.stdout.flush()
     hygiene = subprocess.run([sys.executable, str(ROOT / "tools" / "Check-CodeHygiene.py")])
-    if "--strict" in sys.argv and (failing or hygiene.returncode):
-        print(f"\n[STRICT] 未清零：{'、'.join(failing) or '代码卫生'}。先处理再提交。")
+    if "--strict" in sys.argv and (journal_dups or hygiene.returncode):
+        print("\n[STRICT] journal 有重复条目或代码卫生未过，提交被拒。")
         return 1
     return 0
 

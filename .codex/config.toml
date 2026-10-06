@@ -1,0 +1,5 @@
+# Codex memories are one global store shared by every project. This project
+# keeps its knowledge in AGENTS.md and docs/state/, so it neither reads nor
+# feeds that store (user ruling 2026-10-07: projects do not share memory).
+[features]
+memories = false

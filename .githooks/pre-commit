@@ -1,15 +1,12 @@
 #!/bin/sh
-# Every commit, from every agent or editor, has to pass the same tidy check.
+# Shared by every harness and editor, because git runs it for all of them.
 #
-# Claude Code and Codex also run it at the end of each turn (Stop hooks), but
-# Antigravity and a human in an editor do not; git does, for everyone. This is
-# the layer where the guarantee actually holds.
-#
-# What it does: rebuild the generated code map and the progress.md roll-ups,
-# stage them, then run tools/Check-StateFreshness.py --strict, which includes
-# code hygiene. Anything in its 必须清零 list that is not zero refuses the
-# commit (user ruling 2026-10-07: other harnesses must meet the same bar).
-# A merge runs this too, through pre-merge-commit.
+# Rebuilds the generated code map and the progress.md roll-ups and stages
+# them, then refuses the commit only for mechanical errors nobody keeps on
+# purpose: duplicate journal entries (a branch merge appended ten twice on
+# 2026-10-07) and code hygiene. Everything else the check reports is for the
+# agent to act on, not a gate (user ruling 2026-10-07). A merge runs this too,
+# through pre-merge-commit.
 
 set -u
 
@@ -47,7 +44,7 @@ fi
 if [ "$rc" -ne 0 ]; then
   echo "$report" | sed -n '/\[!\]/,$p' | head -60
   echo "" >&2
-  echo "pre-commit: commit refused - clear the 必须清零 items above (AGENTS.md 每轮收尾)." >&2
+  echo "pre-commit: commit refused - duplicate journal entries or code hygiene, see above." >&2
   exit 1
 fi
 

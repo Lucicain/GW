@@ -32,8 +32,7 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   仓库外的素材（卡牌、配乐、美术源文件）写绝对路径和身份（如「过渡素材，之后替换」）。
   推翻旧裁定就原地改掉旧句子。不得只留在对话或某个 agent 的私有记忆里。
   agent 的权限、审批、工具设置是会话设置，不写进仓库。（依据：流程）
-- state 只写现在：不写「本轮」「这次」、调查经过、日志时刻和会话情况；`已复核至` 只写一个提交加日期。
-  发现了但没修的缺陷写成一行 `已知缺陷：…`，progress.md 会自动汇总。（依据：流程）
+- state 只写现在，经过写 journal。发现了但没修的缺陷写成一行 `已知缺陷：…`，progress.md 会自动汇总。
 - 改到 `state/README.md` 里「尚未提取」的子系统时，顺手把它提取成 state 文件。
   专项调查的过程写 journal，不要写成豁免核对的 state 文件。
 
@@ -47,10 +46,9 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
 
-1. `python tools/Check-StateFreshness.py` —— 它先重建 code-map 和 progress.md 的两份汇总，
-   最后一行「必须清零」**全部为 0 才算收尾**，点名项当轮处理。这不靠自觉：Claude Code 和 Codex
-   在每轮结束时由 Stop 钩子跑它，没清零就被推回来继续；pre-commit 与 pre-merge-commit 用 `--strict`
-   跑它，没清零就拒绝提交。不得用 `--no-verify` 绕过。（依据：用户裁定 2026-10-07）
+1. `python tools/Check-StateFreshness.py` —— 重建 code-map 和 progress.md 的汇总，并指出可能过期的 state、
+   遗留的分支和临时文件等。它是工具，不是审核：点名项当轮处理，确实不该动的在报告里说明。
+   git 钩子只拦机械错误（journal 重复条目、代码卫生），不要用 `--no-verify` 绕过。
 2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
    每项一行；`已复核至` 只留最新一次，经过写 journal。待实测只写在子系统自己的文件里，
    progress.md 的汇总是生成的。
@@ -60,13 +58,22 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 5. 用户确认功能可用 → 同一轮退休它的诊断。
 6. **收尾不等于提交。** 只有这件事到了下节说的稳定点才提交；没到就留在工作树里，下一轮接着做。
 
-## 分支、工作树与临时文件
+## 自己产生的东西自己收
 
-- 开了分支或工作树，state 和 journal 只在一边写，不要两边各写一份——合并时会重复。
-  合并后同一轮删掉分支（本地和远端）、工作树和 stash；还要留的，在 `docs/reference/local-scratch.md` 写明。
-- `.codex_tmp/`、`build-check/` 不进 git，顶层每一项都要在 `local-scratch.md` 登记，否则就是该删的。
-  一次性脚本用完即删；改文档直接编辑文件，不写改文档用的脚本。删备份之前，先把 state 里指向它的回退
-  改成提交号。（依据：流程）
+项目要求的是收尾时留下的比开工时干净：分支、工作树、stash、临时脚本、备份、调查输出，谁开的谁在这件事
+结束时收掉；要长期留的写进 `docs/reference/local-scratch.md`。删备份前先把 state 里的回退改成提交号。
+
+## 各 harness 的注意点
+
+上下文机制不同，各自容易乱的地方不同。下面是实际出过的问题，不是统一流程。
+
+- **Codex**：
+  - 一个会话做一件事。2026-10-06 一个会话里提了约 30 个请求，压缩 5 次，后半程 state 写成了流水；换话题就开新会话，靠 state 和 progress 接上。
+  - 改文档直接用 apply_patch，不写改文档的脚本。那一轮写了 15 个 `record-*.py`，同时改两个工作树，合并后 journal 重复了 10 条。
+  - 用 Codex 托管的工作树时，文档只在那个工作树里写；合并后删工作树和分支。
+  - 全局记忆对本项目关闭（`.codex/config.toml`），项目知识只在本仓库。
+- **Claude Code**：自动记忆按项目目录存，只放指回仓库的指针；收尾可用 `/wrap`；C# 陷阱在 `.claude/rules/` 自动加载。
+- **Antigravity**：只读本文件；仓库里不得出现 `GEMINI.md`（见下节）。
 
 ## 提交可以自己做，发版和推送等用户提
 
@@ -139,8 +146,6 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - Claude Code 的自动记忆（`~/.claude/projects/<仓库>/memory/`）只有 Claude 看得到。项目规则、裁定、
   资源位置写进本文件或 state；记忆里的 project/feedback 条目要有一行 `仓库位置：<相对路径>`，
   收尾检查会点名没指回的。（依据：流程）
-- Codex 的 Stop 钩子在 `.codex/hooks.json`，只在项目被信任、`[features] hooks` 未关时加载；
-  Claude Code 的在 `.claude/settings.json`。两边调同一个 `tools/hooks/stop-check.py`。
 - 新克隆后设一次 `git config core.hooksPath .githooks`。pre-commit 在提交时重建
   code-map；平时靠收尾第 1 步刷新，所以不依赖提交。
 
