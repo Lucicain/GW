@@ -1,0 +1,17 @@
+{
+  "description": "Run the GreyWarden tidy check before a turn ends; same script as the Claude Code Stop hook.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/hooks/stop-check.py",
+            "timeout": 120,
+            "statusMessage": "收尾检查"
+          }
+        ]
+      }
+    ]
+  }
+}

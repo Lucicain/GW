@@ -28,9 +28,12 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   恢复任何已不在 state 里的规则、阈值或实现。state 里找不到的规则，默认不成立。
 - state 里的硬规则（「不要…」「不得…」）句末标依据：`用户裁定`、`设计`、`流程`、`C++反汇编`、
   `C#反编译`、`实机诊断` 等。用户裁定只有用户能改；其余的，出现更强的调查方法时要复查。
-- 用户的新反馈、裁定和新给的资源，当轮写进对应 state：裁定标 `用户裁定 YYYY-MM-DD`；
+- 用户对模组和项目流程的新反馈、裁定和新给的资源，当轮写进对应 state：裁定标 `用户裁定 YYYY-MM-DD`；
   仓库外的素材（卡牌、配乐、美术源文件）写绝对路径和身份（如「过渡素材，之后替换」）。
-  推翻旧裁定就原地改掉旧句子。不得只留在对话或某个 agent 的私有记忆里。（依据：流程）
+  推翻旧裁定就原地改掉旧句子。不得只留在对话或某个 agent 的私有记忆里。
+  agent 的权限、审批、工具设置是会话设置，不写进仓库。（依据：流程）
+- state 只写现在：不写「本轮」「这次」、调查经过、日志时刻和会话情况；`已复核至` 只写一个提交加日期。
+  发现了但没修的缺陷写成一行 `已知缺陷：…`，progress.md 会自动汇总。（依据：流程）
 - 改到 `state/README.md` 里「尚未提取」的子系统时，顺手把它提取成 state 文件。
   专项调查的过程写 journal，不要写成豁免核对的 state 文件。
 
@@ -44,10 +47,10 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
 
-1. `python tools/Check-StateFreshness.py` —— 它先重建 code-map、按各 state 头部重新生成
-   progress.md 的「待实测汇总」，再报：state 过期、新增未归属源码、改到未提取子系统、
-   正文或头部堆积流水、覆盖路径已不存在、豁免核对数、硬规则缺依据、Claude 私有记忆没指回仓库。
-   点名项当轮处理，不要攒着。
+1. `python tools/Check-StateFreshness.py` —— 它先重建 code-map 和 progress.md 的两份汇总，
+   最后一行「必须清零」**全部为 0 才算收尾**，点名项当轮处理。这不靠自觉：Claude Code 和 Codex
+   在每轮结束时由 Stop 钩子跑它，没清零就被推回来继续；pre-commit 与 pre-merge-commit 用 `--strict`
+   跑它，没清零就拒绝提交。不得用 `--no-verify` 绕过。（依据：用户裁定 2026-10-07）
 2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
    每项一行；`已复核至` 只留最新一次，经过写 journal。待实测只写在子系统自己的文件里，
    progress.md 的汇总是生成的。
@@ -56,6 +59,14 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 4. 报告实际结果，失败就说失败并贴输出。
 5. 用户确认功能可用 → 同一轮退休它的诊断。
 6. **收尾不等于提交。** 只有这件事到了下节说的稳定点才提交；没到就留在工作树里，下一轮接着做。
+
+## 分支、工作树与临时文件
+
+- 开了分支或工作树，state 和 journal 只在一边写，不要两边各写一份——合并时会重复。
+  合并后同一轮删掉分支（本地和远端）、工作树和 stash；还要留的，在 `docs/reference/local-scratch.md` 写明。
+- `.codex_tmp/`、`build-check/` 不进 git，顶层每一项都要在 `local-scratch.md` 登记，否则就是该删的。
+  一次性脚本用完即删；改文档直接编辑文件，不写改文档用的脚本。删备份之前，先把 state 里指向它的回退
+  改成提交号。（依据：流程）
 
 ## 提交可以自己做，发版和推送等用户提
 
@@ -70,7 +81,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   反例（依据：用户裁定 2026-09-27）：09-27 一天 39 个提交，双刀动画流水线 50 分钟提交了 11 次，
   其中不少只改了 journal 的几行。
 - **推送、打 tag、建 Release、出 ZIP、改 `_Module/README.md` / `README_EN.md`**：
-  只在用户提出新版本时做。普通开发构建永远不出 ZIP。发版按
+  只在用户提出新版本时做。普通开发构建永远不出 ZIP。「上一版」是哪个提交，以
+  `docs/state/build-and-deploy.md`「已发布版本与下一版的对比基线」为准，不要只看 tag 名。发版按
   `.claude/rules/release-notes.md` 与 `docs/reference/release-checklist.md` 做。
 - 仓库 `Lucicain/GW` 是公开的，但玩家只看 Release 页：单独推送不产生玩家可见的东西。
   云端历史不删、不改写已推送的提交；本地 `.git` 可以瘦身。（依据：用户裁定）
@@ -127,6 +139,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - Claude Code 的自动记忆（`~/.claude/projects/<仓库>/memory/`）只有 Claude 看得到。项目规则、裁定、
   资源位置写进本文件或 state；记忆里的 project/feedback 条目要有一行 `仓库位置：<相对路径>`，
   收尾检查会点名没指回的。（依据：流程）
+- Codex 的 Stop 钩子在 `.codex/hooks.json`，只在项目被信任、`[features] hooks` 未关时加载；
+  Claude Code 的在 `.claude/settings.json`。两边调同一个 `tools/hooks/stop-check.py`。
 - 新克隆后设一次 `git config core.hooksPath .githooks`。pre-commit 在提交时重建
   code-map；平时靠收尾第 1 步刷新，所以不依赖提交。
 

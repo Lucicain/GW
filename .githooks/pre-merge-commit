@@ -1,0 +1,5 @@
+#!/bin/sh
+# A merge without conflicts commits without running pre-commit. On 2026-10-07
+# that let a branch merge append ten journal entries a second time. Run the
+# same check here.
+exec "$(git rev-parse --show-toplevel)/.githooks/pre-commit"

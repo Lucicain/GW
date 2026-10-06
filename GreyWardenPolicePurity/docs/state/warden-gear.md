@@ -58,9 +58,11 @@
 
 ## 灰袍 NPC 的自动换装候选
 
-用户要求压制灰袍的换装欲望，并明确“我们不动其他模组代码，这是底线”。第三方文件、配置和方法保持原样，也没有对第三方方法挂补丁。（依据：用户裁定 2026-10-07）
+灰袍 NPC 不应有换装欲望；不得改其他模组的代码、配置或方法，也不挂钩第三方方法。（依据：用户裁定 2026-10-07）
 
-v14 修复及 main 均已包含 GwpWardenAutoEquipmentPatch，仅挂钩原版 Helpers.CharacterHelper.CanUseItem(BasicCharacterObject, EquipmentElement) 两参数布尔重载：CharacterObject.HeroObject 属于 gw 家族时返回 false，其余角色保留原版。带 out TextObject reason 的三参数重载不改，玩家装备界面的带原因判定保留。普通士兵没有灰袍 HeroObject，不受此限制。
+`GwpWardenAutoEquipmentPatch`（v14 替换包与 main 都有）只挂钩原版 Helpers.CharacterHelper.CanUseItem(BasicCharacterObject, EquipmentElement) 两参数布尔重载：CharacterObject.HeroObject 属于 gw 家族时返回 false，其余角色保留原版。带 out TextObject reason 的三参数重载不改，玩家装备界面的带原因判定保留。普通士兵没有灰袍 HeroObject，不受此限制。
+
+冲突来源：RBM（RBMCampaign.dll）的 LordEquipmentUpgrade 在 PartiesBuyHorseCampaignBehavior.OnSettlementEntered 后执行：符合条件的非玩家家族领主进非敌城镇可从城镇/背包按 Tierf 换更高阶装备，原装备退入背包，没有灰袍排除。实际配置 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Configs/RBM/config.xml` 中 RBMCampaign.Enabled=1、LordEquipmentUpgradeEnabled=1。因此有明确冲突入口；现有监控没有逐件换装记录，且 RBM 自身 SpoilsLoggingEnabled=0，不能断言用户看到的每次换装都由该入口造成。
 
 实际 RBM 4.5.4 的 FindBestUsable / FindBestAffordable 在购买、从背包移走物品及退旧装备之前都询问该原版入口。两条路径因此没有灰袍可选候选，普通领主仍能选择高阶物品。这是本模组的原版资格限制，不依赖 RBM DLL，也不挂钩 RBM 的 IsManaged、UpgradeGear 或装备评分。
 
@@ -68,6 +70,6 @@ v14 修复及 main 均已包含 GwpWardenAutoEquipmentPatch，仅挂钩原版 He
 
 诊断仅 GWP_DIAGNOSTICS：WARDEN_AUTO_EQUIPMENT_REJECTED，每个英雄实例最多一条（弱引用表），记录候选和真实调用栈；确认灰袍进城后保持装备时同轮退休。弱引用去重仅用于诊断，不是进行中的玩法状态，因此不写存档。
 
-验证：开发/无诊断隔离构建均 0 警告/0 错误；v14 GameCompat/PREFLIGHT 614 类型/71 补丁，合入 main 后开发 663/79，均 PASS、失败 0。Verify-WardenAutoEquipment.ps1 使用真实原版与当前 RBMCampaign.dll，只读调用实际候选搜索；有 RBM 23 / 无 RBM 11 断言 PASS，涵盖 gw/GW、普通英雄、普通士兵、BasicCharacterObject、手动装备重载及库存不变。测试未挂钩第三方方法。
+离线回归 `tools/Verify-WardenAutoEquipment.ps1`：用真实原版和本机 RBMCampaign.dll 只读调用候选搜索，有 RBM 23 项、无 RBM 11 项断言，覆盖 gw/GW、普通英雄、普通士兵、手动装备重载与库存不变。
 
-当前 live 部署来源与双端 DLL 哈希统一见 build-and-deploy.md。回退：删除 GwpWardenAutoEquipmentPatch.cs 后重新构建部署，或恢复 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-auto-equipment-20261007/` 的两端 DLL/PDB（SHA-256 `7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`）；功能前本地存档点 `7c91b2d`。尚待用户实际进城验证。
+回退：撤 `4e39db2`。

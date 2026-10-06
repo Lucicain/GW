@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-09-26 工作树——退休音乐档位诊断 `SYNDICATE_BATTLE_DYNAMICS`，行为未变；`MusicTests` 不编译该文件
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/Export-SyndicateMusic.py`
 > 待实测：无
 

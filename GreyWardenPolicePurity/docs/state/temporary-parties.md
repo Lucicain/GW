@@ -2,9 +2,9 @@
 
 > 当前状态：用户已实测确认（2026-09-26）；同日补的解散入口还船、还不回去的船销毁、玩家被俘仍还给玩家三条是防线，正常游戏难触发
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-07 核对 v14 反馈会话、原版补兵预算及装备入口、实际 RBMCampaign.dll；核对零工资/声望方向仍受原版经济兵力目标与 RBM 独立维护/升级限制；源码和第三方配置不改
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs`
-> 待实测：v14 / RBM 自动换装候选保护见 warden-gear.md；军饷/补兵预算暂不处理（用户裁定 2026-10-07）；船只既有功能无新增待实测。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
+> 待实测：无。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
 
 ## 船：只借真船，销毁前退回（2026-09-24 起）
 
@@ -102,20 +102,3 @@
 有灰袍领主的队伍每 6 小时一次、以及参战结束后：非灰袍兵按空余编制换成灰袍新兵，
 超出编制的放走。无领主临时队不纯化——随行练兵队的外来兵由练兵队退回练兵官后在
 练兵官队里纯化，见 [troop-orders.md](troop-orders.md)。
-
-## v14 反馈环境中的兵力与装备
-
-用户 2026-10-07 反馈部队数量少、武将换装备。当前 live 为 v14 工作树，不能套用 main 的火誓者零军饷或信众村招兵规则；RBM 配置与工资保持不变；装备候选保护见 warden-gear.md。
-
-- AI 日志六位创始领主均出现，不能据此说开不了六支队伍。最近样本（00:36:58）弥瑟 34、约珥 41、圣铎 56、晨曦 16、暮光 105 人，包含伤员；梵蒂最后样本（00:36:04）8 人。梵蒂和暮光在 00:36:00～00:36:04 都记录战败/逃亡，因此这些样本不能证明六队在最后时刻都仍存活，兵力下降也不能全归因于预算。伤员分别另列，不从 men 重复扣除。
-- 原版 MobileParty.GetAvailableWageBudget = PaymentLimit - TotalWage - 5；AiVisitSettlementBehavior 只在可用预算 >0 时评估招兵，RecruitmentCampaignBehavior 同样以预算限制人数。晨曦 16 人日薪 3878、预算 2540；约珥 41 人日薪 3706、预算 2540；圣铎 56 人日薪 6212、预算 2540，均无招兵预算。公库仍有 35964，私人金币足不能解除工资预算门槛；食物约 8～15 天、unpaidWages=0，未从日志证实饥饿或欠薪逃兵。
-- 本机 RBMCampaign.dll（SHA-256 f0fe49608c5cca5b3186c2ac0387070ca329eaf4c0bf0fb1c7b0f8cda335e871）已反编译：TierBasedWageModel 对六阶步兵设日薪 240、骑兵 480；LordPartyWageLimit 在原版家族财务评估后将预算乘 10，仍可能跟不上灰袍高阶兵。原版预算按族长金币计算，需协调经济规则，不能只让私人的钱更多。
-- 原版 1.4.8 的 PartiesBuyHorseCampaignBehavior.OnSettlementEntered 只对队伍背包买卖马匹、出售非食物战利品，不修改领主 BattleEquipment。原版也不是任何情况下都不改装备：成年生成、同伴封为领主、无效装备修复，以及提交锻造订单时满足严格比较条件后替换订单领主的武器均有入口。没有日常进城购买高阶装备的机制；RBM 的同名事件后置补丁新增了它。（依据：C# 反编译 2026-10-07）
-- 同一 DLL 的 LordEquipmentUpgrade 在 PartiesBuyHorseCampaignBehavior.OnSettlementEntered 后执行：符合条件的非玩家家族领主进非敌城镇可从城镇/背包按 Tierf 换更高阶装备，原装备退入背包，没有灰袍排除。实际配置 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Configs/RBM/config.xml` 中 RBMCampaign.Enabled=1、LordEquipmentUpgradeEnabled=1。因此有明确冲突入口；现有监控没有逐件换装记录，且 RBM 自身 SpoilsLoggingEnabled=0，不能断言用户看到的每次换装都由该入口造成。
-- 本模组现有 EnsureCommanderLoadout 只在成年和读档时修生成角色装备，不在城镇访问后重置六位创始成员；未观察到本会话 ADULT_COMMANDER_LOADOUT_APPLIED。没有证据指向新加入的离国流程改装备或删除兵员，原版离国本身不重置装备或名册。（依据：源码、C# 反编译、实机诊断 2026-10-07）
-
-灰袍自动换装候选保护已在 v14 部署，见 warden-gear.md。钱与军饷暂不处理，用户说明后续工资归零、改消耗灰袍声望；没有把 main 的零军饷带回 v14。（依据：用户裁定 2026-10-07）
-
-原版非玩家家族每日财务评估按族长金币 G 设置每队工资上限：普通家族 A=30000、B=90000，小势力家族 A=10000、B=30000。G≤A：200+400×(G/A)²；A<G≤B：600+600×(G-A)/(B-A)。这两档族长自己的队乘 1.5，再向下截成整数。G>B：直接 MaxWagePaymentLimit（原版 DefaultPartyWageModel 为 10000），该分支不再乘 1.5。可招兵预算仍为限额-当前日薪-5。本机 RBM 在该评估完成后将各非玩家队限额乘 10，因此原版 254 可成为日志里的 2540。不会按每位领主各自金币计算；工资归零后是否补满仍另受兵源、容量和 AI 选择影响。（依据：1.4.8 ClanVariablesCampaignBehavior / MobileParty、实际 RBMCampaign.dll C# 反编译 2026-10-07）
-
-后续零工资并改消耗灰袍声望的适配调查见 warden-recruitment.md：原版/RBM 的经济兵力目标、现金门槛、独立装备维护/升级、兵源池及零工资除法并未自动解除。本轮没有修改玩法或第三方代码。（依据：用户裁定、C# 反编译、运行时反射 2026-10-07）

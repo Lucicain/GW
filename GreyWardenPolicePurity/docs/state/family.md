@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 取名逻辑抽成 `PickUniqueName`，供永恒之火祭司共用（行为不变）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs`
 > 待实测：无
 

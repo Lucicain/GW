@@ -227,7 +227,7 @@
   `GwpAgentApplyDamageModel.cs`、`GwpAgentStatCalculateModel.cs`、`items.xml`、`spnpccharacters.xml`、
   `SubModule.xml`、`SubModule.cs`、中文字符串的差异，并删除 `gwp_monsters.xml`。
 
-- 本轮以前的状态见提交 `d70aee3`：
+- 兵种第一轮加强之前的状态见提交 `d70aee3`：
   - 弓箭补丁在 `GwpArcherArrowEffects.cs`，两个补丁类 `Prepare() => false`；
   - 伤害模型里是 10% 击倒 / 5% 穿盾；
   - 骑士没有任何加成，重步兵会碎盾，没有整套预设；

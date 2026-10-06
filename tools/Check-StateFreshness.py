@@ -38,7 +38,22 @@ Three things it writes or checks because the next agent depends on them:
 It proves nothing about whether the prose is correct. It only says where to
 look. Run from the repository root:  python tools/Check-StateFreshness.py
 
-Exit code 0 always: this is a report, not a gate.
+Added 2026-10-07 after a Codex round left the repository clean by every check
+above and messy everywhere else — the gaps were exactly the rules that were
+only prose:
+
+- state wording that narrates a round (本轮, session permissions) and
+  已复核至 lines that are sentences instead of one commit;
+- a known defect buried in a state body that no roll-up showed (the zero-wage
+  MathF.Floor overflow), so 已知缺陷： lines are rolled up into progress.md;
+- the same journal entries appended twice by a branch merge;
+- merged branches, abandoned worktrees and stashes left behind;
+- .codex_tmp/ and build-check/ entries that local-scratch.md does not claim
+  (1.9 GB, including an aborted release package).
+
+Exit code 0 by default: a report. With --strict (the pre-commit hook) it exits
+1 when anything in the 必须清零 list is non-zero, so every harness that
+commits through git meets the same bar.
 """
 
 import re
@@ -83,6 +98,21 @@ ROLLUP_END = "<!-- /待实测汇总 -->"
 PENDING_SECTION_RE = re.compile(r"^## 待实测\s*\n(.*?)(?=^## |\Z)", re.M | re.S)
 STATUS_RE = re.compile(r"^>\s*当前状态：(.*)$", re.M)
 PENDING_RE = re.compile(r"^>\s*待实测：(.*)$", re.M)
+
+DEFECT_BEGIN = "<!-- 已知缺陷汇总：由 tools/Check-StateFreshness.py 从各 state 的「已知缺陷：」行生成，手改会被覆盖 -->"
+DEFECT_END = "<!-- /已知缺陷汇总 -->"
+DEFECT_RE = re.compile(r"已知缺陷[*]*：\s*(.*)$")
+# A state file says what is true now. These words only make sense inside one
+# working round, or describe the agent's session rather than the mod.
+PROCESS_RE = re.compile(r"本轮|上一轮|会话权限|danger-full-access|approval_policy|sandbox_permissions")
+REVIEW_FORMAT_RE = re.compile(r"^`[0-9a-f]{7,40}`（20\d\d-\d\d-\d\d[^）]{0,60}）$")
+
+JOURNAL = ROOT / MODULE / "docs" / "journal"
+SCRATCH_LIST = ROOT / MODULE / "docs" / "reference" / "local-scratch.md"
+SCRATCH_DIRS = (".codex_tmp", "build-check")
+# A state line naming a scratch path that is gone: someone deleted the backup
+# and left the rollback instruction pointing at nothing.
+SCRATCH_REF_RE = re.compile(r"(?:\.codex_tmp|build-check)/[A-Za-z0-9_.-]*[A-Za-z0-9_.](?![-<A-Za-z0-9_.])")
 
 MEMORY_DIR = (Path.home() / ".claude" / "projects"
               / re.sub(r"[:\\/]", "-", str(ROOT)) / "memory")
@@ -145,10 +175,14 @@ def main() -> int:
     files = sorted(p for p in STATE.glob("*.md") if p.name != "README.md")
     print(f"HEAD = {git('rev-parse', '--short', 'HEAD')}\n")
     rollup_problems = refresh_pending_rollup(files)
+    refresh_defect_rollup(files)
     memory_unmirrored = check_memory()
 
     stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
     unsourced = []   # hard rules with no 依据：tag
+    narrated = []    # round/session wording in a state file
+    bad_review = []  # 已复核至 that is not one commit
+    dangling = []    # scratch paths named in state that no longer exist
     hand_written = 0
 
     for p in files:
@@ -159,10 +193,21 @@ def main() -> int:
 
         # 5. hard rules that do not say what they rest on
         for n, line in enumerate(text.splitlines(), 1):
+            if PROCESS_RE.search(line) and not line.startswith("<!--"):
+                narrated.append((p.name, n, line.strip()[:70]))
             if line.startswith(">") or line.startswith("|---"):
                 continue
             if HARD_RE.search(line) and "依据：" not in line:
                 unsourced.append((p.name, n, line.strip()[:70]))
+
+        for n, line in enumerate(text.splitlines(), 1):
+            for ref in SCRATCH_REF_RE.findall(line):
+                if not (ROOT / ref).exists():
+                    dangling.append((p.name, n, ref))
+
+        rm = REVIEW_RE.search(text)
+        if rm and not REVIEW_FORMAT_RE.match(rm.group(1).strip()):
+            bad_review.append((p.name, rm.group(1).strip()[:60]))
 
         # 4. is it turning back into a log?
         lines = text.count("\n") + 1
@@ -253,7 +298,30 @@ def main() -> int:
         print("  依据写法见 docs/reference/investigation-methods.md 末节。")
         print()
 
+    if narrated:
+        print(f"[!] {len(narrated)} 处 state 写了某一轮或会话的经过 —— state 只写现在，经过写 journal：\n")
+        for name, n, line in narrated[:12]:
+            print(f"  {name}:{n}  {line}")
+        if len(narrated) > 12:
+            print(f"  … 另有 {len(narrated) - 12} 处")
+        print()
+
+    if bad_review:
+        print("[!] 已复核至 应是一个提交加日期，如 `515a2eb`（2026-10-07）；理由写 journal：\n")
+        for name, v in bad_review:
+            print(f"  {name}  {v}")
+        print()
+
+    if dangling:
+        print("[!] state 引用的临时文件已不存在 —— 改成提交号回退，或删掉这句：\n")
+        for name, n, ref in dangling:
+            print(f"  {name}:{n}  {ref}")
+        print()
+
     orphans_new, baseline_touched = check_baseline()
+    journal_dups = check_journal()
+    leftovers = check_leftovers()
+    scratch = check_scratch()
 
     if fresh:
         print("[OK] 一致：")
@@ -271,18 +339,131 @@ def main() -> int:
             print(f"  {name}  ({why})")
         print()
 
-    print(f"{len(stale)} 个可能过期 / {len(bloated)} 个在堆积流水 / "
-          f"{len(orphans_new)} 个新增未归属 / {len(baseline_touched)} 个未提取子系统文件被改动 / "
-          f"{len(exempt)} 个声明不核对 / {len(unchecked)} 个无法核对 / {len(unsourced)} 条硬规则缺依据 / "
-          f"{len(rollup_problems)} 个待实测写法有误 / {len(memory_unmirrored)} 条记忆只有 Claude 看得到")
+    must_be_zero = {
+        "可能过期": stale, "堆积流水": bloated, "新增未归属": orphans_new,
+        "未提取子系统被改": baseline_touched, "无法核对": unchecked,
+        "硬规则缺依据": unsourced, "待实测写法有误": rollup_problems,
+        "state 写了经过": narrated, "引用的临时文件不存在": dangling, "已复核至格式": bad_review,
+        "journal 重复条目": journal_dups, "遗留分支/工作树/stash": leftovers,
+        "临时目录无主项": scratch, "记忆只有 Claude 看得到": memory_unmirrored,
+    }
+    print("必须清零：" + " / ".join(f"{k} {len(v)}" for k, v in must_be_zero.items()))
+    print(f"（另有 {len(exempt)} 个 state 声明不核对，只计数）")
     print("\n这只说明去哪里看，不说明文字对不对。")
+    failing = [k for k, v in must_be_zero.items() if v]
 
     # Code hygiene blocks commits (see the pre-commit hook); report it here too so a
     # wrap round sees it before reaching the commit.
     print()
     sys.stdout.flush()
-    subprocess.run([sys.executable, str(ROOT / "tools" / "Check-CodeHygiene.py")])
+    hygiene = subprocess.run([sys.executable, str(ROOT / "tools" / "Check-CodeHygiene.py")])
+    if "--strict" in sys.argv and (failing or hygiene.returncode):
+        print(f"\n[STRICT] 未清零：{'、'.join(failing) or '代码卫生'}。先处理再提交。")
+        return 1
     return 0
+
+
+def replace_block(path: Path, begin: str, end: str, block: str, label: str) -> bool:
+    text = path.read_text(encoding="utf-8")
+    start, stop = text.find(begin), text.find(end)
+    if start < 0 or stop < start:
+        return False
+    new = text[:start] + block + text[stop + len(end):]
+    if new != text:
+        path.write_text(new, encoding="utf-8")
+        print(f"[更新] progress.md 的{label}已重新生成。\n")
+    return True
+
+
+def refresh_defect_rollup(files):
+    """Every 「已知缺陷：」 line in a state body, listed in progress.md."""
+    out = [DEFECT_BEGIN, ""]
+    for p in files:
+        if p == PROGRESS:
+            continue
+        for line in p.read_text(encoding="utf-8").splitlines():
+            m = DEFECT_RE.search(line)
+            if m and not line.startswith(">"):
+                out.append(f"- [{p.name}]({p.name})：{m.group(1).strip()}")
+    if len(out) == 2:
+        out.append("- 无")
+    out += ["", DEFECT_END]
+    if not replace_block(PROGRESS, DEFECT_BEGIN, DEFECT_END, "\n".join(out), "已知缺陷汇总"):
+        print("[!] progress.md 缺少已知缺陷汇总的起止标记，未生成\n")
+
+
+def check_journal():
+    """The same entry appended twice — a branch merge did this to ten entries."""
+    seen, dups = {}, []
+    for p in sorted(JOURNAL.glob("*.md")):
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if line.startswith("## "):
+                key = line.strip()
+                if key in seen:
+                    dups.append(f"{p.name}:{n} 与 {seen[key]} 标题相同：{key[3:60]}")
+                else:
+                    seen[key] = f"{p.name}:{n}"
+    if dups:
+        print("[!] journal 有重复条目（合并分支时两边都追加过）—— 留信息全的那条，删另一条：\n")
+        for d in dups[:12]:
+            print(f"  {d}")
+        if len(dups) > 12:
+            print(f"  … 另有 {len(dups) - 12} 条")
+        print()
+    return dups
+
+
+def check_leftovers():
+    """Branches, worktrees and stashes nobody documents.
+
+    A branch or worktree in active use is fine as long as a state or reference
+    file names it; once merged and no longer named, it is debris."""
+    docs = "".join(p.read_text(encoding="utf-8")
+                   for d in (STATE, SCRATCH_LIST.parent) for p in d.glob("*.md"))
+    found = []
+    for b in git("branch", "--format=%(refname:short)").splitlines():
+        if b and b != "main" and b not in docs:
+            merged = b in git("branch", "--merged", "main", "--format=%(refname:short)").split()
+            found.append(f"分支 {b}{'（已并入 main）' if merged else ''}")
+    main_tree = str(ROOT).replace("\\", "/").lower()
+    for line in git("worktree", "list", "--porcelain").splitlines():
+        if line.startswith("worktree "):
+            path = line[9:].strip()
+            if path.replace("\\", "/").lower() != main_tree and path not in docs:
+                found.append(f"工作树 {path}")
+    for s in git("stash", "list").splitlines():
+        found.append(f"stash {s[:70]}")
+    if found:
+        print("[!] 遗留的分支 / 工作树 / stash —— 合并完删掉；还在用就在 state 里写明它是什么：\n")
+        for f in found:
+            print(f"  {f}")
+        print()
+    return found
+
+
+def check_scratch():
+    """Top-level entries of the ignored scratch directories that local-scratch.md
+    does not claim. Nothing there is in git; an unclaimed entry is either junk
+    or the only copy of something, and only a listed one is safe to judge."""
+    listed = GLOB_RE.findall(SCRATCH_LIST.read_text(encoding="utf-8")) if SCRATCH_LIST.exists() else []
+    pats = [g.rstrip("/").split("/")[0] for g in listed]
+    found = []
+    for d in SCRATCH_DIRS:
+        base = ROOT / d
+        if not base.is_dir():
+            continue
+        for e in sorted(base.iterdir()):
+            if not any(fnmatch(e.name, pat) for pat in pats):
+                size = sum(f.stat().st_size for f in e.rglob("*") if f.is_file()) if e.is_dir() else e.stat().st_size
+                found.append(f"{d}/{e.name}  {size / 1048576:.1f} MB")
+    if found:
+        print("[!] 临时目录里有 local-scratch.md 没认领的项 —— 结论写进 state/journal 后删掉，要留就登记：\n")
+        for f in found[:20]:
+            print(f"  {f}")
+        if len(found) > 20:
+            print(f"  … 另有 {len(found) - 20} 项")
+        print()
+    return found
 
 
 def refresh_pending_rollup(files):
@@ -321,15 +502,8 @@ def refresh_pending_rollup(files):
     out += ["", ROLLUP_END]
     block = "\n".join(out)
 
-    text = PROGRESS.read_text(encoding="utf-8")
-    start, end = text.find(ROLLUP_BEGIN), text.find(ROLLUP_END)
-    if start < 0 or end < start:
+    if not replace_block(PROGRESS, ROLLUP_BEGIN, ROLLUP_END, block, "待实测汇总"):
         problems.append("progress.md 缺少待实测汇总的起止标记，未生成")
-    else:
-        new = text[:start] + block + text[end + len(ROLLUP_END):]
-        if new != text:
-            PROGRESS.write_text(new, encoding="utf-8")
-            print("[更新] progress.md 的待实测汇总已按各 state 头部重新生成。\n")
 
     if problems:
         print("[!] 待实测写法有误，汇总漏掉了它们：\n")

@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：2026-10-05 存档：去掉跨版本旧格式读取，同版本进行中状态补存（见 `infrastructure.md`）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
 > 待实测：无
 

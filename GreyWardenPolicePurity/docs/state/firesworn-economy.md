@@ -1,6 +1,6 @@
 # 信众村经济：地牢、烧人、传教队与狂信者队、领主差事、军械库
 
-> 当前状态：随火誓者主线恢复并已部署；原经济成果完整保留，本轮未调整经济系统（用户裁定 2026-10-07）
+> 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
 > 已复核至：`0b63c01`（2026-10-06）
 > 覆盖源码：`GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`

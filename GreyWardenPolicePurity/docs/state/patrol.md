@@ -2,7 +2,7 @@
 
 > 当前状态：主队 NPC 案与玩家本人通缉隔离经用户实测确认（2026-10-02）
 > 最后验收：`9fd8cea`（2026-10-02 用户确认）
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-09-27 工作树
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`PolicePatrolBehavior.cs` `PolicePatrolBehavior.Helpers.cs` `PolicePatrolBehavior.Encyclopedia.cs`
 > 待实测：无
 

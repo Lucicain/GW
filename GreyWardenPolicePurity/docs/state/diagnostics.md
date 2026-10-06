@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；入国来源与自动换装候选取证随修复合入 main，已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`fcf3187`；2026-10-07 v14 修复诊断合入，保留主线现行火誓者取证
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 

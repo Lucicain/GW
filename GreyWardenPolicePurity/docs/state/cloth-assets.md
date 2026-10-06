@@ -2,11 +2,11 @@
 
 > 当前状态：三件服装与弓箭手下摆按用户认可的手感定稿（2026-10-03，非原包值）；弓箭手不用替身，直接模拟，下摆为竖向渐变
 > 最后验收：2026-10-03 用户在 Kit 定稿三件服装与弓箭手布料（live `Assets`，缓存同步）
-> 已复核至：2026-10-02 r14 发布包 `pack0.tpac`（`bcaae1d2…`）与 live `Assets`：弓箭手衣服的布料、蒙皮、顶点色与材质
+> 已复核至：`64e36ec`（2026-10-07）
 > 覆盖源码：`tools/tpac/tpac-diagnose/Program.cs`
 > 待实测：弓箭手下摆定稿手感（用户进游戏体验）
 
-本页所说的“原包”是 `.codex_tmp/legacy-packages-before-rebuild-20260927/gwp_inherited_legacy_assets.tpac`。本机客户端使用 live 模组的 `Assets` 开发版资源；`_Module/AssetPackages/pack0.tpac` 是上次 Kit 发布结果，**尚未包含本轮三件服装的修正**。再发布前应让 Kit 重新发布，并核对发布包。live 三份修改前的原件在 `.codex_tmp/cloth-restore-20260927/before/`，可逐文件回退。（依据：流程；2026-09-27 资产包离线核对）
+本页所说的“原包”是 `.codex_tmp/legacy-packages-before-rebuild-20260927/gwp_inherited_legacy_assets.tpac`。本机客户端使用 live 模组的 `Assets` 开发版资源；`_Module/AssetPackages/pack0.tpac` 是上次 Kit 发布结果，**不含 2026-10-03 定稿的三件服装修正**。再发布前应让 Kit 重新发布，并核对发布包。（依据：流程；2026-09-27 资产包离线核对）
 
 ## 只在 Kit 里改布料参数
 

@@ -6,7 +6,9 @@
 清理它是 agent 的职责（见 AGENTS.md「诊断跟着功能走」）。**删任何东西之前先看本清单。**
 清单外的东西默认可以在结论写进 state 或 journal 之后删除；清单内的不删。
 
-2026-10-03 清理后：26 项、约 514 MB，只剩下表这些。用户裁定老版本不再回退（2026-10-03），其余中间产物已删。
+**登记规则**：顶层每一项都要被下面某张表的路径（可用 `*` 通配）认领。`Check-StateFreshness.py` 会列出没人认领的项和大小，收尾时要么删、要么登记，不留无主文件。一次性脚本不进这里：用完即删，反复用得上的迁进 `tools/`。（依据：流程）
+
+用户裁定老版本不再回退（2026-10-03）。
 
 ## 不删（不可再生）
 
@@ -17,9 +19,10 @@
 | `legacy-packages-before-rebuild-20260927/`（三个 `.tpac`） | 重建前的三个运行时资产包；继承包是 2024 年盔甲的唯一原件 | 重建资源的回滚点；`pack0.tpac` 出问题时放回这三个 | `957dd525945e3b18` 等，见 `asset-pipeline.md` |
 | `ds-asset-packages-v1.4-r14/pack0.tpac` | 2026-10-02 Kit 专用服务器发布产出的服务器资源包 | 日后联机适配要用；不在仓库与 live 里 | `87106276b84aa3a8` |
 | `pre-six-lod-package/gwp_black_gold_shield_single_stable.tpac` | 六级 LOD 之前的单 LOD 稳定版黑金盾 | 同上；六级 LOD 方案出问题时回到这里 | `1606cad209d02a33` |
-| `exit-crash-20260927-cdb.txt`、`exit-crash-20260928-*.txt`（6 份） | 客户端退出时原生崩溃的 cdb 取证 | 该崩溃仍在观察，原始转储已删 | — |
-| `crash-23108-analysis.txt` / `-contact.txt` / `-function.txt` / `-threads.txt` | 崩溃 23108 的 cdb 分析输出 | 原始转储已删，这几份是唯一的取证结论 | `0a4c7ec6…` `89eaf4fa…` `d4207048…` `4aae2707…` |
-| `latest-5000-monitor.txt`、`messenger-disabled.png`、`notification-encyclopedia.png`、`notification-issue.png` | 7 月的监控原始日志与 UI 截图 | 当时问题的原始证据 | — |
+| `exit-crash-2026092*-*.txt`（6 份） | 客户端退出时原生崩溃的 cdb 取证 | 该崩溃仍在观察，原始转储已删 | — |
+| `crash-23108-*.txt`（4 份） | 崩溃 23108 的 cdb 分析输出 | 原始转储已删，这几份是唯一的取证结论 | `0a4c7ec6…` `89eaf4fa…` `d4207048…` `4aae2707…` |
+| `latest-5000-monitor.txt`、`messenger-disabled.png`、`notification-*.png` | 7 月的监控原始日志与 UI 截图 | 当时问题的原始证据 | — |
+| `pre-refresh-v14-release-20261007/` | v1.4-r14 同号替换前公开过的原 ZIP、sha256 与原发布页元数据 | 玩家下载过的原包，无法从源码逐字节重建 | `779cc90b99c82f58` |
 
 （依据：流程——2026-09-11 起的既有保留规则，原写在 `maintenance-plan.md`，拆分后只剩 journal 里有；
 2026-09-26 移到这里，因为 journal 不算规则。）
@@ -42,6 +45,8 @@
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |
 | `cloth-gradient/warcharmor.original.fbx` | 写渐变之前的弓箭手源 FBX |
 | `dotnet-home/` | 构建用的 .NET CLI 主目录 |
+| `rbm-current-decompile/`、`rbm-campaign-current-decompile/` | 本机 RBM 反编译，灰袍声望工资实现时要核对它的独立维护与升级限制（`warden-recruitment.md`）；可重建 |
+| `bellumcivile-source/` | BellumCivile 1.4.0 公开源码，入国保护的依据（`kingdom-membership.md`）；可重新下载 |
 
 ## 新产生的中间产物
 
@@ -56,3 +61,10 @@
 | `TpacTool-src/` 的两处本地修改 | `tools/tpac/TpacTool-local.patch`（重建方法见 `tools/tpac/README.md`） |
 
 有反复用得上的脚本，照这样迁进 `tools/`，不要让方法只活在临时目录里。
+
+## 本地分支
+
+| 分支 | 是什么 | 处置 |
+|---|---|---|
+| `backup/pre-theme-squash-20260927` | 2026-09-27 压缩提交前的细粒度历史（main 之外 57 个提交，内容已在 main），只在本机 | 等用户决定删不删 |
+| `coop-bridge` | 联机适配停工时的归档（见 `code-health.md`） | 保留 |

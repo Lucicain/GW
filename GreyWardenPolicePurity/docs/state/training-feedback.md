@@ -104,4 +104,3 @@
 - 最小运行态证据：`_orderStage`、`_orderedTroopId`、`_orderedCount`、`_cohortPartyId`，
   练兵长与随行队各自目标健康数，以及下单/训练/交付相关日志。
 
-本轮仅完成存档复制、哈希校验和源码定位；未修代码、未迁移/补正旧档、未构建部署。
