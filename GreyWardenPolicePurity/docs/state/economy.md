@@ -3,7 +3,7 @@
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
 > 已复核至：2026-10-05 保护费只收信众村；新增卖货收入；烈火责罚每人 20 从公库付（`SpendJudicialTreasury`）；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
-> 覆盖源码：`GwpLandlessShipTradePatch.cs`（公库收支在 `PoliceResourceManager.cs`，该文件由 `temporary-parties.md` 声明覆盖）
+> 覆盖源码：`GwpLandlessShipTradePatch.cs` `PoliceResourceManager.cs`
 > 待实测：无
 
 ## 公库

@@ -23,6 +23,18 @@ so they can, in five ways this script looks for:
 It also counts the files that declared themselves exempt, so the escape hatch
 stays visible instead of quietly growing.
 
+Three things it writes or checks because the next agent depends on them:
+
+- It regenerates code-map.md first. Only Claude Code has the edit hook, so for
+  Codex and Antigravity this is the refresh AGENTS.md promises.
+- It regenerates the 待实测 roll-up in progress.md from every state file's
+  header. That page is the first one a new agent reads and it is exempt from
+  the drift check, so a hand-kept list fell behind within three days
+  (2026-10-05/06: three commits awaiting play were missing from it).
+- It reads the Claude Code memory directory for this repository, if present.
+  Only Claude sees it; a project rule kept only there is invisible to Codex and
+  Antigravity. Each project/feedback memory must point back with 仓库位置：.
+
 It proves nothing about whether the prose is correct. It only says where to
 look. Run from the repository root:  python tools/Check-StateFreshness.py
 
@@ -60,6 +72,22 @@ MAP_DESCRIBED = {f"{MODULE}/SubModule.cs"}
 HARD_RE = re.compile(r"不要(?!求)|不得|禁止|别再|推翻")
 MAX_LINES = 250          # past this a state file is usually carrying history
 MAX_DATED_HEADINGS = 2   # one "as of" date is fine; a run of them is a log
+# A header field is one line saying where things stand. 已复核至 grew into a
+# dated changelog in eight files (up to 1,287 characters) before this check.
+HEADER_RE = re.compile(r"^>\s*(当前状态|最后验收|已复核至|待实测)：(.*)$", re.M)
+MAX_HEADER_CHARS = 200
+
+PROGRESS = STATE / "progress.md"
+ROLLUP_BEGIN = "<!-- 待实测汇总：由 tools/Check-StateFreshness.py 从各 state 文件头部生成，手改会被覆盖 -->"
+ROLLUP_END = "<!-- /待实测汇总 -->"
+PENDING_SECTION_RE = re.compile(r"^## 待实测\s*\n(.*?)(?=^## |\Z)", re.M | re.S)
+STATUS_RE = re.compile(r"^>\s*当前状态：(.*)$", re.M)
+PENDING_RE = re.compile(r"^>\s*待实测：(.*)$", re.M)
+
+MEMORY_DIR = (Path.home() / ".claude" / "projects"
+              / re.sub(r"[:\\/]", "-", str(ROOT)) / "memory")
+MEMORY_TYPE_RE = re.compile(r"^\s*type:\s*(\w+)", re.M)
+MEMORY_POINTER_RE = re.compile(r"仓库位置：\s*`?([^`\s]+)`?")
 
 try:  # a GBK console cannot encode the report; never let that crash the check
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -74,8 +102,15 @@ def git(*args: str) -> str:
 
 
 def resolve(glob: str) -> str:
-    """Bare globs are relative to the module directory; explicit paths are not."""
-    return glob if "/" in glob else f"{MODULE}/{glob}"
+    """Bare globs and _Module/ paths live in the module directory; tools/ and
+    other explicit paths are relative to the repository root.
+
+    _Module/ used to resolve against the root, where nothing exists, so edits
+    to items.xml, the language files and the GUI images never marked their
+    state files stale (found 2026-10-06 by the missing-path check below)."""
+    if "/" not in glob or glob.startswith("_Module/"):
+        return f"{MODULE}/{glob}"
+    return glob
 
 
 def rel(p: Path) -> str:
@@ -105,8 +140,12 @@ def dirty(*paths: str) -> list:
 
 
 def main() -> int:
+    sys.stdout.flush()
+    subprocess.run([sys.executable, str(ROOT / "tools" / "Generate-CodeMap.py")])
     files = sorted(p for p in STATE.glob("*.md") if p.name != "README.md")
     print(f"HEAD = {git('rev-parse', '--short', 'HEAD')}\n")
+    rollup_problems = refresh_pending_rollup(files)
+    memory_unmirrored = check_memory()
 
     stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
     unsourced = []   # hard rules with no 依据：tag
@@ -128,8 +167,9 @@ def main() -> int:
         # 4. is it turning back into a log?
         lines = text.count("\n") + 1
         dated = [h for h in HEADING_RE.findall(text) if DATED_RE.search(h)]
-        if lines > MAX_LINES or len(dated) > MAX_DATED_HEADINGS:
-            bloated.append((p.name, lines, len(dated)))
+        long_fields = [f for f, v in HEADER_RE.findall(text) if len(v) > MAX_HEADER_CHARS]
+        if lines > MAX_LINES or len(dated) > MAX_DATED_HEADINGS or long_fields:
+            bloated.append((p.name, lines, len(dated), long_fields))
 
         cm = COVER_RE.search(text)
         if not cm:
@@ -142,6 +182,11 @@ def main() -> int:
         if not paths:
             unchecked.append((p.name, "覆盖源码 里没有可解析的路径"))
             continue
+        # A covered file that was deleted keeps "covering" nothing, and the
+        # prose about it stays behind (GwpLegacySave.cs, deleted in 1f7d49d).
+        for g in paths:
+            if not any(ROOT.glob(g)):
+                unchecked.append((p.name, f"覆盖源码 `{g}` 已不存在——文件被删或改名，正文可能还在描述它"))
 
         # 1a. working tree: source moved, document did not
         me = rel(p)
@@ -185,12 +230,15 @@ def main() -> int:
 
     if bloated:
         print("[!] state 文件在堆积流水 —— 应只写当前结论，过程移到 journal：\n")
-        for name, lines, nd in bloated:
+        for name, lines, nd, long_fields in bloated:
             bits = []
             if lines > MAX_LINES:
                 bits.append(f"{lines} 行（>{MAX_LINES}）")
             if nd > MAX_DATED_HEADINGS:
                 bits.append(f"{nd} 个带日期/时刻的小节")
+            if long_fields:
+                bits.append(f"头部 {'、'.join(long_fields)} 超过 {MAX_HEADER_CHARS} 字"
+                            "（只留最新一次，经过写 journal）")
             print(f"  {name}  {'，'.join(bits)}")
         print()
 
@@ -225,7 +273,8 @@ def main() -> int:
 
     print(f"{len(stale)} 个可能过期 / {len(bloated)} 个在堆积流水 / "
           f"{len(orphans_new)} 个新增未归属 / {len(baseline_touched)} 个未提取子系统文件被改动 / "
-          f"{len(exempt)} 个声明不核对 / {len(unsourced)} 条硬规则缺依据")
+          f"{len(exempt)} 个声明不核对 / {len(unchecked)} 个无法核对 / {len(unsourced)} 条硬规则缺依据 / "
+          f"{len(rollup_problems)} 个待实测写法有误 / {len(memory_unmirrored)} 条记忆只有 Claude 看得到")
     print("\n这只说明去哪里看，不说明文字对不对。")
 
     # Code hygiene blocks commits (see the pre-commit hook); report it here too so a
@@ -234,6 +283,87 @@ def main() -> int:
     sys.stdout.flush()
     subprocess.run([sys.executable, str(ROOT / "tools" / "Check-CodeHygiene.py")])
     return 0
+
+
+def refresh_pending_rollup(files):
+    """Rewrite the 待实测 block in progress.md from every state header."""
+    entries, problems = [], []
+    for p in files:
+        if p == PROGRESS:
+            continue
+        text = p.read_text(encoding="utf-8")
+        pm = PENDING_RE.search(text)
+        if not pm:
+            continue
+        pending = pm.group(1).strip()
+        if pending.startswith("无") or pending.startswith("<"):
+            continue
+        if re.match(r"见\s*`[^`]+\.md`", pending):
+            continue   # points at another state file, which lists it itself
+        sm = STATUS_RE.search(text)
+        status = sm.group(1).strip() if sm else ""
+        items = [pending]
+        if "见文末" in pending:
+            sec = PENDING_SECTION_RE.search(text)
+            if not sec:
+                problems.append(f"{p.name}：头部写「见文末」，但没有「## 待实测」一节")
+                continue
+            items = [ln.strip()[2:].strip() for ln in sec.group(1).splitlines()
+                     if ln.strip().startswith("- ")]
+        entries.append((p.name, status, items))
+
+    out = [ROLLUP_BEGIN, ""]
+    for name, status, items in entries:
+        out.append(f"- [{name}]({name})" + (f"（{status}）" if status else ""))
+        out.extend(f"  - {it}" for it in items)
+    if not entries:
+        out.append("- 无")
+    out += ["", ROLLUP_END]
+    block = "\n".join(out)
+
+    text = PROGRESS.read_text(encoding="utf-8")
+    start, end = text.find(ROLLUP_BEGIN), text.find(ROLLUP_END)
+    if start < 0 or end < start:
+        problems.append("progress.md 缺少待实测汇总的起止标记，未生成")
+    else:
+        new = text[:start] + block + text[end + len(ROLLUP_END):]
+        if new != text:
+            PROGRESS.write_text(new, encoding="utf-8")
+            print("[更新] progress.md 的待实测汇总已按各 state 头部重新生成。\n")
+
+    if problems:
+        print("[!] 待实测写法有误，汇总漏掉了它们：\n")
+        for line in problems:
+            print(f"  {line}")
+        print()
+    return problems
+
+
+def check_memory():
+    """Project rules kept only in Claude Code's private memory."""
+    if not MEMORY_DIR.is_dir():
+        return []
+    missing = []
+    for p in sorted(MEMORY_DIR.glob("*.md")):
+        if p.name == "MEMORY.md":
+            continue
+        text = p.read_text(encoding="utf-8")
+        tm = MEMORY_TYPE_RE.search(text)
+        if not tm or tm.group(1) not in ("project", "feedback"):
+            continue
+        ptr = MEMORY_POINTER_RE.search(text)
+        if not ptr:
+            missing.append(f"{p.name}（没写 仓库位置：）")
+        elif not (ROOT / ptr.group(1).split("#")[0]).exists():
+            missing.append(f"{p.name}（仓库位置 {ptr.group(1)} 不存在）")
+    if missing:
+        print("[!] Claude 私有记忆里的项目规则没指回仓库 —— Codex / Antigravity 看不到：\n")
+        for m in missing:
+            print(f"  {m}")
+        print(f"\n  目录：{MEMORY_DIR}")
+        print("  把规则写进 AGENTS.md 或对应 state 文件，记忆里加一行 `仓库位置：<相对路径>`，")
+        print("  或者干脆删掉这条记忆。\n")
+    return missing
 
 
 def check_baseline():

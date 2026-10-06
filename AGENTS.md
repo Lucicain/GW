@@ -15,7 +15,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   （Harmony 补丁点、SubModule 注册顺序，约 9 KB）；后面的类型索引和文件索引是查表用的，
   `grep -n 'CrimePool' docs/state/code-map.md` 这样查，不要整份读。这个仓库里约一半的类型
   所在文件名不含类型名，找类型查这张表，不要靠文件名猜。不要手改它。
-- `docs/journal/` 有 2 MB，**不要通读**。先 `grep -n '^## ' docs/journal/2026-09.md`
+- `GreyWardenPolicePurity/docs/state/progress.md` —— 进度、欠账，以及从各 state 头部生成的「待实测汇总」。
+- `docs/journal/` 超过 2 MB，**不要通读**。先 `grep -n '^## ' docs/journal/2026-09.md`
   看条目标题，再用 `sed -n '起,止p'` 只读需要的那段。
 
 ## 开发记录
@@ -27,6 +28,9 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   恢复任何已不在 state 里的规则、阈值或实现。state 里找不到的规则，默认不成立。
 - state 里的硬规则（「不要…」「不得…」）句末标依据：`用户裁定`、`设计`、`流程`、`C++反汇编`、
   `C#反编译`、`实机诊断` 等。用户裁定只有用户能改；其余的，出现更强的调查方法时要复查。
+- 用户的新反馈、裁定和新给的资源，当轮写进对应 state：裁定标 `用户裁定 YYYY-MM-DD`；
+  仓库外的素材（卡牌、配乐、美术源文件）写绝对路径和身份（如「过渡素材，之后替换」）。
+  推翻旧裁定就原地改掉旧句子。不得只留在对话或某个 agent 的私有记忆里。（依据：流程）
 - 改到 `state/README.md` 里「尚未提取」的子系统时，顺手把它提取成 state 文件。
   专项调查的过程写 journal，不要写成豁免核对的 state 文件。
 
@@ -40,10 +44,13 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 任何 harness 都照做（Claude Code 里可用 `/wrap`，内容相同）：
 
-1. `python tools/Check-StateFreshness.py` —— 它会先按当前源码重建 code-map，再报：
-   state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免核对数、硬规则缺依据。
+1. `python tools/Check-StateFreshness.py` —— 它先重建 code-map、按各 state 头部重新生成
+   progress.md 的「待实测汇总」，再报：state 过期、新增未归属源码、改到未提取子系统、
+   正文或头部堆积流水、覆盖路径已不存在、豁免核对数、硬规则缺依据、Claude 私有记忆没指回仓库。
    点名项当轮处理，不要攒着。
 2. 原地改写对应 state 文件的头部：`当前状态` / `最后验收` / `已复核至` / `覆盖源码` / `待实测`。
+   每项一行；`已复核至` 只留最新一次，经过写 journal。待实测只写在子系统自己的文件里，
+   progress.md 的汇总是生成的。
    提取了子系统就从 `docs/state/uncovered-baseline.txt` 删掉对应文件。
 3. 往当月 journal 追加一条：改了什么 / 为什么 / 证据 / 验证 / 哈希 / 回退 / 未做。
 4. 报告实际结果，失败就说失败并贴输出。
@@ -65,6 +72,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - **推送、打 tag、建 Release、出 ZIP、改 `_Module/README.md` / `README_EN.md`**：
   只在用户提出新版本时做。普通开发构建永远不出 ZIP。发版按
   `.claude/rules/release-notes.md` 与 `docs/reference/release-checklist.md` 做。
+- 仓库 `Lucicain/GW` 是公开的，但玩家只看 Release 页：单独推送不产生玩家可见的东西。
+  云端历史不删、不改写已推送的提交；本地 `.git` 可以瘦身。（依据：用户裁定）
 - 替换或移除已有功能前，先在 state 文件里记下回退路径（哪个提交、哪些文件）。
 
 ## live 模块必须与工作目录一致
@@ -74,6 +83,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - 例外：`Assets`、`AssetSources`、`RuntimeDataCache` 不在镜像范围内；本机 live 一直保留它们（开发版布局），
   发布或测试后都不挪走。发行版布局只在发布 ZIP 里做。
 - 流程、校验脚本与通过标准见 `docs/state/build-and-deploy.md`。
+- 实机测试只由用户做：agent 不启动游戏、不操控游戏界面。交付时给构建、部署、哈希、离线测试结果
+  和一份「进游戏看什么」。部署时 DLL 被占用说明用户在玩：保留工作树，等关游戏再部署。（依据：用户裁定 2026-09-25）
 
 ## 诊断跟着功能走，也跟着功能退休
 
@@ -112,8 +123,18 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   `CLAUDE.local.md` 或 `GEMINI.md`：前三个会让 Claude Code 不再读本文件，`GEMINI.md`
   在 Antigravity 里优先于本文件。用户主目录的 `~/.claude/CLAUDE.md` 不在此列——
   它和本文件一起加载，用来放跨项目的个人习惯。
+- Claude Code 的自动记忆（`~/.claude/projects/<仓库>/memory/`）只有 Claude 看得到。项目规则、裁定、
+  资源位置写进本文件或 state；记忆里的 project/feedback 条目要有一行 `仓库位置：<相对路径>`，
+  收尾检查会点名没指回的。（依据：流程）
 - 新克隆后设一次 `git config core.hooksPath .githooks`。pre-commit 在提交时重建
   code-map；平时靠收尾第 1 步刷新，所以不依赖提交。
+
+## 跟用户说话
+
+- 分清三种来源：用户说过的、原作（卡牌、游戏）原文、agent 的推断。只有用户明确说过的才能叫「你定的」。
+  （依据：用户裁定 2026-09-26）
+- 讲 git 用「存档 / 读档」：`git log --oneline` 看存档，`git show <hash>` 看内容，
+  `git checkout <hash> -- 文件` 取回单个文件，`git revert` 安全撤销；`reset --hard` 先警告会丢东西。
 
 ## 存档：版本之间不兼容，同一版本必须接得上
 

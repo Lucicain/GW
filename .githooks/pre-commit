@@ -21,7 +21,24 @@ python=$(command -v python || command -v python3) || {
   exit 0
 }
 
-# Only do the work when C# actually changed in this commit.
+# The 待实测 roll-up in progress.md is generated from the state headers, so a
+# commit that only edits state files must refresh it too. Stage it only when
+# progress.md had no unstaged edits of its own, so hand edits are never swept in.
+progress="GreyWardenPolicePurity/docs/state/progress.md"
+if git diff --cached --name-only --diff-filter=ACMR \
+   | grep -qE '^GreyWardenPolicePurity/docs/state/[^/]+\.md$'; then
+  if git diff --quiet -- "$progress"; then
+    "$python" tools/Check-StateFreshness.py >/dev/null 2>&1
+    if ! git diff --quiet -- "$progress"; then
+      git add "$progress"
+      echo "pre-commit: progress.md 待实测汇总 regenerated and staged"
+    fi
+  else
+    echo "pre-commit: progress.md has unstaged edits; run tools/Check-StateFreshness.py and stage it yourself" >&2
+  fi
+fi
+
+# Only do the rest when C# actually changed in this commit.
 if git diff --cached --name-only --diff-filter=ACMR \
    | grep -qE '^GreyWardenPolicePurity/[^/]+\.cs$'; then
 

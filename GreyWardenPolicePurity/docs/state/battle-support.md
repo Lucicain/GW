@@ -3,7 +3,7 @@
 > 当前状态：用户已实测满意（2026-09-23 确认支援部分）
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
 > 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
-> 已复核至：2026-10-06 援军资格要求灰袍 NPC 出自灰袍部队，玩家部队里的灰袍兵只在玩家本人合资格时算；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-09-26 工作树——退休健康路径诊断 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT`，行为未变，138 项测试通过
+> 已复核至：`0b63c01`（2026-10-06）
 > 待实测：无（用户已确认）
 
 实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、

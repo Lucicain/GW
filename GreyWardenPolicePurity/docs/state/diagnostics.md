@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 火誓者监控改成 `WriteFaith` 一路（`FIRESWORN` 行），覆盖信众村经济整套；2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）；2026-10-02 工作树（退休主队 NPC 旧案与送信队诊断）
+> 已复核至：`0b63c01`（2026-10-06）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 

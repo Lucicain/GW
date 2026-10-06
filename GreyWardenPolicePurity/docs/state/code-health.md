@@ -4,7 +4,7 @@
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
 > 已复核至：2026-10-05 全仓库 catch 复扫；2026-09-28 客户端退出转储 `18920` / `5744` 与正常退出日志 `49124`
 > 覆盖源码：跨文件，不做自动核对
-> 待实测：退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
+> 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 
 ## 客户端退出阶段的原生故障
 
@@ -35,7 +35,7 @@
 1. 清理后原样 `throw;` 的 5 个，不算兜底。
 2. 每个都带 `依据：` 的 12 个，写明它兜过的那次实际故障：
    - 读档时 `Hero.FindFirst` 因英雄全局表未建好抛空引用（`GwpData` 两处、`GreyWardenTrainingBehavior`）；
-   - 旧存档 `gwp_case_support_requested` 类型不匹配（`GwpLegacySave` 两处、`CaseSettlement`、`GwpRuntimeFaultWatch.Guard`）；
+   - 旧存档 `gwp_case_support_requested` 类型不匹配（`GwpRuntimeFaultWatch.Guard`；`GwpLegacySave` 与 `CaseSettlement` 里的同类 catch 已随 `1f7d49d` 去掉跨版本读取一起删除）；
    - 自定义战斗里 `Clan.PlayerClan` 空引用（配乐）；
    - 原版 `Army.DisperseInternal` 空引用（协力解散）；
    - 野外执法拉不起战斗；

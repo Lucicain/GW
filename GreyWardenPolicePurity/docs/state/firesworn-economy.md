@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测（2026-10-05）；数值是试玩值，用户尚未定
 > 最后验收：未建立检查点
-> 已复核至：2026-10-06 军械库进项改成原版尸体缴获（不再扒俘虏）；有祭司的信众村每天照原版民兵公式长狂信者；`PRIEST_SLOTS_UNUSED` 只在有领主兵力低于 60% 时报；2026-10-06 修实机发现的三处：常驻队在家冻住待在村里、背包里的兵器护甲进村军械库、狂信者队一趟最多卖 3 座城；加每日异常检查和分析脚本；2026-10-05 新建
+> 已复核至：`0b63c01`（2026-10-06）
 > 覆盖源码：`GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 

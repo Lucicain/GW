@@ -136,6 +136,10 @@ Tension  = Exchange × (0.7 + 0.2 × Attrition + 0.1 × Pressure)
 
 `_Module/Music/Lab/`：27 个 `<sourceID>.flac`（共 80.6 MB）、`score.json`、`manifest.json`。
 
+这批辛迪加配乐是**过渡素材**：用户确认可以随包分发（2026-09-25 发 r13 时），之后换成自制配乐，并计划做配音。
+发版时不必再为它的分发提醒。改音乐系统时让素材能整批替换，现有片段的 id 和时长只放在 `score.json`，
+不进 C# 逻辑。配音开工时另建 state 文件。（依据：用户裁定 2026-09-25）
+
 - `score.json`：乐段、音轨、片段、包络、播放列表、过渡规则，以及每个源片段的字节数、样本数、
   块长和帧偏移表。
 - `manifest.json`：每个源片段的 WAV、PCM、FLAC SHA-256；WAV 路径相对于研究目录，模组里不含本机路径。游戏运行时不读它，只供测试核对。
