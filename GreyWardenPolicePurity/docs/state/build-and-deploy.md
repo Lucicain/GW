@@ -1,7 +1,7 @@
 # 构建、校验与部署
 
 > 当前状态：当前 live 使用本 v14 工作树的入国拦截与通用读档离国修复；火誓者 main 暂存（用户裁定 2026-10-06）
-> 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
+> 最后验收：2026-10-07 v14 退出诊断退休版；构建、GameCompat/PREFLIGHT、live 双端镜像通过
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
@@ -40,7 +40,7 @@
 | `Verify-GameCompat.ps1` | 检查 DLL 与当前安装的 Bannerlord 是否兼容，防止换游戏版本后静默产出游戏拒绝加载的模组 | `GAME COMPAT: PASS`、`MEMBER_FAIL_COUNT=0`、`PATCH_FAIL=0` |
 | `Verify-LiveModule.ps1` | **双向**比对 live 测试模块与仓库模块 | 无缺失、无差异、无散落文件；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
-| `Verify-KingdomMembership.ps1` | 真实程序集的入国拦截与读档离国事件回归；日结/周结不做归属查询 | 有内战 43 / 无内战 39 断言 PASS；完整离国收尾待实机 |
+| `Verify-KingdomMembership.ps1` | 真实程序集的入国拦截与读档离国事件回归；日结/周结不做归属查询 | 有内战 43 / 无内战 39 断言 PASS；实机已确认退出与军团脱离；另存再读待验收 |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |

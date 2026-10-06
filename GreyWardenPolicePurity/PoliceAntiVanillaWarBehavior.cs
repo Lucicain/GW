@@ -1,7 +1,4 @@
 using System;
-#if GWP_DIAGNOSTICS
-using System.Linq;
-#endif
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 
@@ -25,24 +22,10 @@ namespace GreyWardenPolicePurity
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan?.Kingdom == null) return;
 
-#if GWP_DIAGNOSTICS
-            string oldKingdomId = policeClan.Kingdom.StringId;
-            GwpFaultTrace.Write("WARDEN_LOAD_LEAVE_STARTED", details:
-                "old=" + oldKingdomId + "; mercenary=" + policeClan.IsUnderMercenaryService
-                + "; fiefs=" + policeClan.Fiefs.Count
-                + "; armies=" + policeClan.WarPartyComponents.Count(p => p.MobileParty.Army != null));
-#endif
             if (policeClan.IsUnderMercenaryService)
                 ChangeKingdomAction.ApplyByLeaveKingdomAsMercenary(policeClan, false);
             else
                 ChangeKingdomAction.ApplyByLeaveKingdom(policeClan, false);
-#if GWP_DIAGNOSTICS
-            GwpFaultTrace.Write("WARDEN_LOAD_LEAVE_FINISHED", details:
-                "old=" + oldKingdomId + "; new=" + (policeClan.Kingdom?.StringId ?? "none")
-                + "; mercenary=" + policeClan.IsUnderMercenaryService
-                + "; fiefs=" + policeClan.Fiefs.Count
-                + "; armies=" + policeClan.WarPartyComponents.Count(p => p.MobileParty.Army != null));
-#endif
         }
 
         private void OnWarDeclared(

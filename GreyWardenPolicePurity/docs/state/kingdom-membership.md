@@ -1,10 +1,10 @@
 # 灰袍入国：v14 基线玩家反馈调查
 
-> 当前状态：入国拦截与通用读档离国已部署，反馈档退出及同版存读待实测
-> 最后验收：未建立检查点
-> 已复核至：`c7ca2e0`（2026-10-06）
+> 当前状态：用户确认读档离国可用，正常退出诊断已退休；RBM 补兵预算与领主换装冲突待处理
+> 最后验收：`9dc76be`（2026-10-07 用户确认读档退出可用）
+> 已复核至：`9dc76be`（2026-10-07）
 > 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1`
-> 待实测：反馈档载入后灰袍独立、南帝国成员移除及军团脱离；另存读档后保持独立，案件继续；新入国拦截
+> 待实测：另存读档后保持独立、案件继续及新入国拦截；补兵预算和领主换装见 temporary-parties.md
 
 ## 工作线
 
@@ -14,7 +14,7 @@
 - 工作树：`C:/Users/lucif/.codex/worktrees/v14-kingdom-join-fix/GreyWardenPolicePurity`。
 - 暂存的火誓者工作树：`C:/Users/lucif/source/repos/GreyWardenPolicePurity`，main 最新游戏代码存档 `0b63c01`。
 - 当前 live 从本工作树部署；两边的 state 结论不能混用。恢复火誓者时由 main 重新构建部署并比对镜像。（依据：流程）
-- v14 Client/Editor DLL SHA-256：`80d7a36658cc8122703cf6d625bb4ce7b68c3e983e68c2b80b6de5e5701fc3ad`。
+- v14 Client/Editor DLL SHA-256：`7e8b5c00180b6dddd890923b7da9ebb7f010f81c4cadaa943ca4474e7bd6008c`。
 - 切换前 runtime 与 DLL 备份：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/pre-v14-live-20261006/`。live 的 Assets、AssetSources、RuntimeDataCache 保留开发资源；客户端实际加载 Assets，代码与运行时数据以 v14 为基线，美术不是 v14 玩家包。用户核对后明确保持开发布局，美术不作为本次入国调查原因。（依据：用户裁定 2026-10-06）
 - 入国修复前 DLL/PDB 回退副本：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-kingdom-fix-20261006/`，修复前 DLL SHA-256：`621d84aa097cbff0194b4b802e71d7818fbc4369d88c5632820640b569802e9f`。
 
@@ -22,7 +22,7 @@
 
 - 原件：`C:/Users/lucif/Downloads/saveauto1.sav`。
 - 测试副本：`C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Game Saves/GW-kingdom-report-20261006.sav`，2026-10-06 已放好并告知用户。
-- 原件及导入时副本 SHA-256：`14be06c799b23d6a9a93c9227bdca77908335e2e989069e251354f11233afda5`。用户游玩后于 2026-10-06 23:20:10 保存测试副本；现副本 SHA-256：`cdb4c87004ec30298ad5547ee2438eb139ac004581ab860ff010204741fac349`，头部灰袍版本 r14、第 38.39868 天。
+- 原件及导入时副本 SHA-256：`14be06c799b23d6a9a93c9227bdca77908335e2e989069e251354f11233afda5`。用户游玩后于 2026-10-06 23:20:10 保存测试副本；该次副本 SHA-256 为 `cdb4c87004ec30298ad5547ee2438eb139ac004581ab860ff010204741fac349`。最新保存为 2026-10-07 00:37:15，SHA-256 `1861c61b69900ef714e2286d80c94991254f3d050671aac280b1512f4744ee4a`，头部灰袍版本 r14、第 50.83261 天。
 - 元数据：游戏 `v1.4.8.119303`，灰袍 `v1.4.12.0`（r12）；反馈口头称 r13，两种来源分开记录。角色“李”，第 38.09289 天。
 - agent 未改原件或测试副本；副本包含用户游玩后的保存。用户负责下载第三方模组，下载后核对实际 DLL 再安装。（依据：用户裁定 2026-10-06）
 
@@ -63,8 +63,10 @@
 - 灰袍王国归属只在读档完成时统一检查一次，有归属则走原版退出流程；不按存档身份做特例，不增加两日、日结、周结或心跳轮询。（依据：用户裁定 2026-10-06）
 - 读档检查位于已注册的 PoliceAntiVanillaWarBehavior.OnGameLoadFinished；该阶段原版对象、阵营、部队缓存已恢复。普通成员调用 ApplyByLeaveKingdom，佣兵调用 ApplyByLeaveKingdomAsMercenary，通知关闭。原版负责王国成员/英雄/部队缓存、军团脱离、债务/留国期限与佣兵状态、和平及事件；普通离国归还真实封地，不伪造原因绕过收尾。已经独立或无灰袍家族时不调用退出。
 - 两日检查原本只做执法支援与无正当理由战争清理（PoliceEnforcementBehavior.DelayPatrols），从未包含离国；本修复不改变这两项职责。（依据：源码核对）
-- 暂留 GWP_DIAGNOSTICS 下 WARDEN_LOAD_LEAVE_STARTED / FINISHED：记录旧/新王国、佣兵、封地及军团数，仅实际退出触发；用户确认后同轮退休。（依据：流程）
+- 用户确认读档退出可用；00:17:56、00:22:39 两次都从 empire_s 退出到 none，佣兵 false、封地 0，军团关联 4→0，后续灰袍日志 mapFaction=gw。正常退出的 STARTED / FINISHED trace 同轮退休，四条既有记录清理；入国来源 trace 未验收，仍在役。（依据：用户确认、实机诊断 2026-10-07）
 - 本次读档修复前 DLL/PDB 回退：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-load-independence-20261006/`；SHA-256 `0d098ec0f463ea801e01d96553f35aad1f4eb658bc47efdeecc50bc3ad6e76ab`。
+
+- 诊断退休前 DLL/PDB 备份：`C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/v14-before-exit-trace-retirement-20261007/`；SHA-256 `80d7a36658cc8122703cf6d625bb4ce7b68c3e983e68c2b80b6de5e5701fc3ad`。正常退出 trace 与四条已验收记录已清理，其余共享日志保留。
 
 ## 同一外交行为中的宣战监听
 
@@ -92,6 +94,6 @@ SyncData 无状态：本行为只响应宣战和读档完成事件，没有进�
 
 ## 验证与后续
 
-开发诊断与无诊断隔离构建均 0 警告/0 错误；GameCompat PASS、MEMBER_FAIL_COUNT=0、PATCH_OK=70、PATCH_FAIL=0、PREFLIGHT PASS（614 类型，诊断计数新增编译器闭包类型）。真实游戏程序集和实际内战 DLL 离线回归 43 断言，无内战 39 断言，全通过。原有四类入国拦截与普通家族放行仍覆盖；新增真实 CampaignEvents 注册/派发测试，验证无家族/独立时跳过、普通/佣兵退出入口、重复事件不重复退出、日结/周结不做归属查询。离国动作边界用桩替代，完整军团/外交/封地效果仍待用户实机；未启动游戏。
+开发诊断与无诊断隔离构建均 0 警告/0 错误；GameCompat PASS、MEMBER_FAIL_COUNT=0、PATCH_OK=70、PATCH_FAIL=0、PREFLIGHT PASS（613 类型；退出 trace 退休后移除其编译器闭包类型）。真实游戏程序集和实际内战 DLL 离线回归 43 断言，无内战 39 断言，全通过。原有四类入国拦截与普通家族放行仍覆盖；新增真实 CampaignEvents 注册/派发测试，验证无家族/独立时跳过、普通/佣兵退出入口、重复事件不重复退出、日结/周结不做归属查询。离国动作边界用桩替代，实机确认南帝国成员退出、军团关联 4→0；佣兵与真实封地分支没有本次样本，未启动游戏。
 
-已部署开发诊断 DLL/PDB 到 Client/Editor；两端与隔离 DLL 哈希一致，live 镜像 66 个仓库文件无缺失/差异/散落。三份改动源码按 main 的现行卫生检查审计，0 个 catch 缺依据、0 个声明无人引用。未发布或推送。进游戏载入 GW-kingdom-report-20261006，核对灰袍独立、南帝国成员移除、原军团脱离；另存为新名字再读，核对仍独立且原案件能继续。
+已部署开发诊断 DLL/PDB 到 Client/Editor；两端与隔离 DLL 哈希一致，live 镜像 66 个仓库文件无缺失/差异/散落。三份改动源码按 main 的现行卫生检查审计，0 个 catch 缺依据、0 个声明无人引用。未发布或推送。另存为新名字再读，核对仍独立且原案件能继续；用户已保存至第 50.83261 天，但尚无该次保存后再次加载的日志验收。
