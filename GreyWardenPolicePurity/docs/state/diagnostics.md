@@ -11,7 +11,7 @@
 诊断是**在建工程的脚手架**，不是模组的永久旁白。每条 trace 都有生命周期：
 在某个东西正在建或正在出问题时加上，在那件事被确认之后删掉。
 
-全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 18 个文件带此守卫），
+全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 19 个文件带此守卫），
 所以退休一条 trace 只关乎开发者信噪比，**与玩家收到什么无关**。
 
 ## 谁来管
@@ -67,6 +67,7 @@
 |---|---|---|
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 2026-09-25 调停 0 人队崩溃、2026-09-26 改追绕过冷却都靠它取证；覆盖的巡逻、练兵、协力等子系统多数尚未提取 | 对应子系统提取成 state 且无待观察项时，按主题拆掉健康路径 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见 `firesworn-economy.md`「监控」） | 信众村经济整套待实测：看俘虏、地牢、烧人、两支常驻队、领主差事、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
+| `RITUAL_SOUND_START` / `RITUAL_SOUND_STOP`（`GwpFireswornSoundView`） | 记录原始帧数/采样率、提交增益、自然结束与菜单退出原因，取证一次播放与退出立即停止；配图已验收，贴图专项输出已退休 | 用户确认传教、烧人音效完整一次、原音调、退出停止后，同轮删除这两条健康 trace 及声音调查输出 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 失败路径：`GwpRuntimeFaultWatch`、`GwpEngineAssertDiagnostics`、`DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 不退休 |

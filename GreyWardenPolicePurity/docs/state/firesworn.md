@@ -1,10 +1,10 @@
 # 火誓者：传教、狂信者、烧人
 
-> 当前状态：火誓者开发已恢复；main 合入 v14 修复且已部署，仪式美术及全部原成果保留，数值仍为试玩值（用户裁定 2026-10-07）
-> 最后验收：未建立检查点
-> 已复核至：`0b63c01`（2026-10-06）
-> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**`
-> 待实测：第一批底层牌第一版（2026-10-05 部署，数值是试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
+> 当前状态：配图颜色经用户确认；仪式声音单次播放与退出即停已部署待实测；机制数值仍为试玩值
+> 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
+> 已复核至：`a1d6479`（2026-10-07；竞技场菜单生命周期、单次声音与 live 核对）
+> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
+> 待实测：传教与烧人音效完整播放一次、原音调、关菜单立即停止；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 
 灰袍在世界观里对应昆特牌辛迪加的**火誓者**。这里记录用户已经定下的机制、查实的原版挂点、
 第一版怎么实现的，以及还没定的部分。卡牌资料在 `D:\lucigames\toys\syndicate-cards\app\data\cards.json`
@@ -68,10 +68,14 @@
 
 - 传教、烧人有配图和配音：用辛迪加的素材——卡面原画（烈火责罚 202352、集会传教 202374）和卡牌闪卡音效。（依据：用户裁定 2026-10-06，取代此前的「卡面原画不用，只作参考」）
   以后要像比武大会那样，能进去参与或闲逛。（依据：用户裁定）
+  原画源文件为 `D:\lucigames\toys\syndicate-cards\app\media\art\202352.webp` 与同目录 `202374.webp`，身份为当前辛迪加卡面素材。
+  配图颜色已由用户实测确认；声音只播放一次，关闭仪式界面必须立即停止，声音与辛迪加素材一致。
+  用户反馈旧环境音路径循环、音调偏高且退出后仍播放。（依据：用户裁定、实机观察 2026-10-07）
 - 以后自制美术时风格是黑灰色，不是红色。（依据：用户裁定）
 - 音效用闪卡音效，不用打出音效。烈火责罚 `463341571`，集会传教 `241188017`。（依据：用户裁定）
   原先的 −23 LUFS FLAC 目录已不存在；现从卡牌站 `D:\lucigames\toys\syndicate-cards\app\media\sfx\` 的 Opus 原件
-  转成 Vorbis，增益校到 −23.1 LUFS，放在 `_Module/ModuleSounds/gwp_firesworn_{damnation,congregation}.ogg`。
+  增益校到 −23.1 LUFS，当前部署为 48000 Hz 立体声 16 位 PCM WAV，放在
+  `_Module/ModuleSounds/gwp_firesworn_{damnation,congregation}.wav`；从现有校准后的 Vorbis 解码，未变速或移调。
 - 配音可以用，但灰袍是女性家族，男声台词要先由用户筛过。（依据：用户裁定）
 - 祭司、狂信者的装备原版凑不出来，要新做袍子和民兵装备；源资源重建见 `../reference/asset-pipeline.md`。
 
@@ -169,18 +173,37 @@
   - 原版删低 power 要人的那一步跳过祭司。
   - 祭司死时 power ≥ 100，原版补一位同职业亲属（`OnHeroKilled` → `CreateRelativeNotableHero`，男女都有）：
     是女人就接任，改名、换袍、写教义；是男人就只是原版传教者。（依据：C#反编译；用户裁定）
-- **仪式锁村**：传教 24 小时、烧人后 6 小时，玩家进村只看到仪式画面（菜单背景：传教 `encounter_peasant`，烧人
-  `wait_raiding_village`）。后置补丁 `game_menu_village_on_init` 跳菜单，不改村子状态。
+- **仪式锁村**：传教 24 小时、烧人后 6 小时，玩家进村只看到辛迪加卡面仪式画面。
+  后置补丁 `game_menu_village_on_init` 跳菜单，不改村子状态。
 - **配图配音**（`GwpFireswornArt.cs`）：仪式画面的背景图直接换成卡面原画（烈火责罚 202352、集会传教 202374，
   卡牌站 `art/*.webp` 转成的 PNG，放在 `GUI/Images/`），不另弹窗（用户裁定 2026-10-06：做原版替换）。
   原版菜单背景是按名字从全局精灵表取的精灵（Native `GameMenu.xml`：`GameMenuWidget Sprite="@Background"`）。
   原画在运行时读成贴图，以 `gwp_firesworn_damnation` / `gwp_firesworn_congregation` 登记进 `UIResourceManager.SpriteData.Sprites`，
-  菜单背景设成这个名字。进仪式画面时放卡牌闪卡音效，用地图场景建声音事件播放（同战场援军号角）。
-  第一版用的是 `PlaySound2D`，用户没听到。（依据：反编译 TaleWorlds.TwoDimension.SpriteData；实机反馈 2026-10-06）
+  菜单背景设成这个名字。PNG 必须是 RGBA（全不透明 Alpha），RGB 像素与卡面源图逐像素一致。
+  三通道 PNG 在 `Texture.CreateFromMemory` 路径被当作 BGR，红蓝互换；四通道路径正确转换。
+  v1.4.8 Native RVA `0x525850` → `0x2eeba0`：3 通道设格式 `0x2a` 并原样复制，
+  `0x2f01b0` 将它扩成格式 2，RGB 字节仍原样排列；4 通道在 `0x2eef70` 转 BGRA 后用格式 1。
+  （依据：C++反汇编、源图像素核对、用户截图 2026-10-07）
+  原版竞技场菜单 `PlayerTownVisitCampaignBehavior.game_menu_town_menu_arena_on_init` 分别设置 panel 音效与 arena 环境声。
+  `MenuViewContext` 以空 Scene 创建声音，`OnMenuCreate` / `OnDeactivate` 调 `StopAllSounds`，菜单切换/停用时释放声音。
+  我们的 `GwpFireswornSoundView` 接同一菜单视图生命周期，每次访问只开始一次；重复激活、刷新、播完后都不重播。
+  离开选项在离开聚落前停止；切换菜单、停用视图、销毁视图也立即停止。该播放标记只是界面状态，不存档。
+  `GwpRitualSoundOutput` 按 WAV 头部 48000 Hz 提交一个有限的 PCM 缓冲，无循环标记、无变速/移调调用，
+  自然播完释放设备，退出调用 `waveOutReset` 丢弃队列；主音量 × 音效音量在提交前乘入 PCM。
+  音频输出设备使用 Windows 默认设备（与 `GwpMusicOutput` 一致），不跟随骑砍的单独 SoundDevice 选择。
+  传教 555649 帧（11.576 秒）、烧人 624405 帧（13.008 秒）；PCM 与旧 Vorbis 解码逐字节一致。
+  原版 ui 模板限长 4 秒，mission_ambient_bed 是持续环境音；旧大地图声音既不随菜单释放，又持续循环，已删除。
+  用户反馈的音调偏高尚未精确归因，不能把现象写成随机音高已证实；新路径已完全移除该 FMOD 模板。
+  离线真实 WinMM 静音缓冲与菜单边界桩 27 项检查通过：完整帧数/采样率、无循环、自然结束、重复激活不重播、立即退出。
+  （依据：C#反编译 v1.4.8、Native 类别说明、用户实测、离线解码与静音设备检查 2026-10-07）
 - **看军械库**（`GwpFireswornArmoryView.cs`）：信众村菜单「永恒之火：军械库」，先列本村、别的信众村、每支灰袍领主部队的军械库，
   选一个列出里面每样东西（原版物品图标、件数）和配装概况。只看，不能拿。
 - **村庄菜单**：「永恒之火：狂信者 N 人（户数的 X%）」，点开看狂信者、祭司、地牢、军械库、货仓。
 
 ### 回退
+
+仪式媒体修复前存档为 `a1d6479`：取回 `GwpFireswornArt.cs`、`GwpFireswornMenus.cs`、
+`_Module/ModuleData/module_sounds.xml`、两张仪式 PNG 与两段 OGG，移除 `GwpFireswornSoundView.cs`、
+`GwpRitualSoundOutput.cs` 与两段 WAV，构建、同步 live 并比哈希；不涉及存档数据。
 
 撤 2026-10-05 的信众村经济提交即回到「第一步：只在信众村招兵」（`7d96d7b`）。不做存档兼容（依据：用户裁定），回退后开新档。

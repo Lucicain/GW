@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-156 个源文件、50,115 行、306 个公开类型、66 个 Harmony 补丁点（分布在 66 个补丁类里）。
+158 个源文件、50,308 行、309 个公开类型、66 个 Harmony 补丁点（分布在 66 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -309,6 +309,8 @@
 - `GwpFireswornMenus` → GwpFireswornMenus.cs
 - `GwpFireswornMilitiaModel` → GwpFireswornMenus.cs ←
 - `GwpFireswornPriestStaysPatch` → GwpFireswornMenus.cs ←
+- `GwpFireswornSoundMenuActivatePatch` → GwpFireswornSoundView.cs ←
+- `GwpFireswornSoundView` → GwpFireswornSoundView.cs
 - `GwpFireswornVillageLockPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornVolunteerModel` → GwpWardenRecruitment.cs ←
 - `GwpFlacReader` → GwpFlacReader.cs
@@ -354,6 +356,7 @@
 - `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
 - `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
+- `GwpRitualSoundOutput` → GwpRitualSoundOutput.cs
 - `GwpRuntimeFaultWatch` → GwpRuntimeFaultWatch.cs
 - `GwpRuntimeState` → GwpRuntimeState.cs
 - `GwpSaveableTypeDefiner` → GwpSaveableTypeDefiner.cs
@@ -445,7 +448,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 161 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 162 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -579,7 +582,7 @@
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（71 个文件）
+### 其他（73 个文件）
 
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornBehavior.cs` — 884 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
@@ -605,7 +608,7 @@
 - `GwpAgentStatCalculateModel.cs` — 190 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GreyWardenSafeTroopSupplier.cs` — 188 行 · `GreyWardenSafeTroopSupplier` : IMissionTroopSupplier，另含 1 个类型
 - `GwpPartyDutyMovementPatch.cs` — 185 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
-- `GwpFireswornMenus.cs` — 173 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
+- `GwpFireswornMenus.cs` — 172 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFaithBattleRewardModel.cs` — 161 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `GwpOffenderDesire.cs` — 160 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
@@ -615,16 +618,17 @@
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpRitualSoundOutput.cs` — 124 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`
 - `GreyWardenAdoptionLogEntry.cs` — 98 行 · `GreyWardenAdoptionLogEntry` : LogEntry
 - `GwpSingleQueryLinkPatch.cs` — 96 行 · `GwpLinkedInquiryState`，另含 2 个类型
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
+- `GwpFireswornSoundView.cs` — 87 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
-- `GwpFireswornArt.cs` — 69 行 · `GwpFireswornArt`
 - `GwpText.cs` — 69 行 · `GwpText`
 - `GwpFireswornArmoryView.cs` — 68 行 · `GwpFireswornArmoryView`
 - `GwpAssistanceArmyTooltipPatch.cs` — 66 行 · `GwpAssistanceArmyTooltipPatch`
@@ -632,6 +636,7 @@
 - `GreyWardenDeserterFilterBehavior.cs` — 59 行 · `GreyWardenDeserterFilterBehavior` : CampaignBehaviorBase
 - `GwpNegotiationPolicy.cs` — 56 行 · `GwpNegotiationPolicy`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
+- `GwpFireswornArt.cs` — 52 行 · `GwpFireswornArt`
 - `GwpEscortSpeedCapPatch.cs` — 50 行 · `GwpEscortSpeedCapPatch`
 - `GwpCaseReceipt.cs` — 48 行 · `GwpCaseReceipt`，另含 1 个类型
 - `GwpWardenAutoEquipmentPatch.cs` — 48 行 · `GwpWardenAutoEquipmentPatch`

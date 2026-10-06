@@ -20,8 +20,6 @@ namespace GreyWardenPolicePurity
     internal static class GwpFireswornMenus
     {
         internal const string RitualMenuId = "gwp_firesworn_ritual";
-        internal const string CongregationSound = "gwp/firesworn/congregation";
-        internal const string DamnationSound = "gwp/firesworn/damnation";
 
         internal static void Register(CampaignGameStarter starter)
         {
@@ -48,9 +46,8 @@ namespace GreyWardenPolicePurity
                 ? GwpText.Create("{=gwp_fs_ritual_damnation_title}Damnation")
                 : GwpText.Create("{=gwp_fs_ritual_congregation_title}Congregation");
             MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", RitualText(kind, village!, host, remaining));
-            int soundId = GwpFireswornArt.PlaySound(kind);
             GwpAiDiagnostics.WriteFaith("RITUAL_MENU_SHOWN", "village=" + village!.StringId + "; kind=" + kind +
-                "; background=" + GwpFireswornArt.Background(kind) + "; soundId=" + soundId);
+                "; background=" + GwpFireswornArt.Background(kind));
         }
 
         private static string RitualText(GwpFireswornBehavior.RitualKind kind, Settlement village, string host,
@@ -72,6 +69,8 @@ namespace GreyWardenPolicePurity
 
         private static void LeaveConsequence(MenuCallbackArgs args)
         {
+            (args.MenuContext.Handler as SandBox.View.Menu.MenuViewContext)?
+                .GetMenuView<GwpFireswornSoundView>()?.EndVisit();
             PlayerEncounter.LeaveSettlement();
             PlayerEncounter.Finish();
         }
