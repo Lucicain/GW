@@ -1,11 +1,17 @@
 # 构建、校验与部署
 
-> 当前状态：现行流程
+> 当前状态：原 v14 同号整合包已上线并远端复核；live 回归合入修复的 main 火誓者开发版
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
 ## 两个开关决定一切
+
+用户要求将本轮修复直接整合到尚未公布的原 v1.4-r14，同号更新发布页和下载包，不建立 v15；完成后回归 main 火誓者开发，现有经济源码本轮不调整，第三方代码不改。修复源码存档 `89a9972` 已推送；原 v14 标签和提交 `ac66f86` 保留，自动审批拒绝移动已推送标签后采用资产替换方案。（依据：用户裁定 2026-10-07；流程）
+
+当前 live 部署来源为主工作树 `C:/Users/lucif/source/repos/GreyWardenPolicePurity`，main 已合入入国入口保护、通用读档退出和自动装备候选保护，保留火誓者完整成果并已重新部署。部署前回退：原开发双端 DLL/PDB 与 runtime 在 `.codex_tmp/pre-v14-live-20261006/`；v14 整合包开发 DLL 在 `.codex_tmp/v14-before-main-resume-20261007/`。已恢复四个火誓者仪式图片/声音文件；Assets、AssetSources、RuntimeDataCache 共 339 文件部署前后逐项哈希相同，镜像以 main 为准。（依据：流程）
+
+主线部署验证：开发及隔离无诊断构建均 0 警告/0 错误；GameCompat/PREFLIGHT 开发 663 类型/79 补丁、无诊断 655/76，成员与补丁失败均 0；116 项修复回归 PASS；ContentKeys MISSING=0；live 70 个运行时文件无缺失/差异/散落。Client/Editor DLL SHA-256 均 `dfcfbef6ce33808b9159256c1ade71973b05c11f7914f5aab1ef73b4a9ad8c7c`，与主线隔离开发构建一致；RBM 等第三方文件及经济源码本轮未变。实机功能待验收清单仍由各子系统维护。
 
 `GreyWardenPolicePurity.csproj`：
 
@@ -126,3 +132,12 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 `_Module/README.md` 与 `README_EN.md` 是**发布产物**，只在用户说开发完成、要发新版本
 时更新。开发期一律不动。写法见 `.claude/rules/release-notes.md`。
+
+
+## v14 同号替换结果
+
+原发布页 https://github.com/Lucicain/GW/releases/tag/v1.4-r14 已替换下载包并重新上线，ZIP 434464792 字节，SHA-256 `c5d8e2f4652d9eb55ead640bdb615b51b42ec52b13b5473e0d215dcc0bdb8e0a`；玩家 DLL `99f3c068373ce0a9c227cf42fb0a6c69bd1bdd8a23c23cc8a6a4ce0e53a46e8f`，版本 1.4.14。远端重新下载后 68 文件逐项哈希及五组监控串 ASCII/UTF-16LE 全 absent，开发阳性对照全 present。玩家 GameCompat/PREFLIGHT 606 类型/68 补丁、失败 0；43+39+23+11=116 项离线修复回归通过。包中三类开发目录、服务器资源、工具、日志与 PDB 均排除。
+
+玩家美术继续使用原已验收 v14 TPAC，SHA-256 `bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`，与旧用户包完全相同；未改动的 runtime 文件也逐字节保持。中英玩家说明与发布正文只写游戏体验，正文从 README 自动抽取。旧 ZIP/sha256 保留 `.codex_tmp/pre-refresh-v14-release-20261007/`；原/新发布证据分别在 `build-check/package-v1.4-r14-original/`、`build-check/package-v1.4-r14/`。
+
+外发检查已生成本地 Vanguard/MELD/Greyscope 报告，技能封装器因旧 DACTYL 字段缺失报 KeyError，未称通过；内容另经人工事实与提示词泄漏核对。用户已切换完全访问，2026-10-07 确认 UI mode=full-access，随后会话权限更新为 danger-full-access / approval_policy=never，自动审批不再触发；agent 未修改用户配置或应用内部状态。后续本项目已授权操作直接完成，不重复询问。（依据：用户裁定 2026-10-07；会话权限）

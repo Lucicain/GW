@@ -2,13 +2,15 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-05 删除无依据的 catch 与无人引用的成员（失败不再静默跳过，正常路径不变；见 `code-health.md`）
+> 已复核至：`fcf3187`；2026-10-07 核对 v14 入国写入保护与读档退出合入，现有宣战及案件口径不变
 > 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
 > 待实测：无
 
 案件怎么进池、罚金怎么算、被惩戒的领主之后怎么收敛、灰袍与原版外交的边界。
 案件进池之后的派单、追捕、结案见 [`case-enforcement.md`](case-enforcement.md)；
 野外当面交涉见 [`field-arrest.md`](field-arrest.md)；玩家本人的罪行见 [`player-justice.md`](player-justice.md)。
+
+灰袍独立身份同时受四类原版入国动作入口保护；`PoliceAntiRecruitmentModel.IsGwClan` 供本模组补丁共用，判据不变。`PoliceAntiVanillaWarBehavior` 额外监听读档完成，有王国归属就走原版普通/佣兵退出动作；原宣战监听及合理战争判据不变。入口、实测与待验收项统一见 [灰袍入国](kingdom-membership.md)。（依据：用户裁定 2026-10-06、2026-10-07；C# 反编译）
 
 ## 立案：只有三个入口（`PoliceCrimeMonitorEnhanced`）
 

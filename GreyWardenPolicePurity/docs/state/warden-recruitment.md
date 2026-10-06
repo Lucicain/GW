@@ -1,8 +1,8 @@
 # 灰袍招兵：只在信众村招，不领饷
 
-> 当前状态：第一步已部署待实测（2026-10-05）
+> 当前状态：随火誓者主线恢复并已部署；信众村招兵与零金币工资原成果保留，本轮未调整经济（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：`0b63c01`（2026-10-06）
+> 已复核至：`0b63c01`；2026-10-07 核对后续声望工资方向、原版与实际 RBM 限制，未改源码
 > 覆盖源码：`GwpWardenRecruitment.cs`
 > 待实测：见文末
 
@@ -13,7 +13,7 @@
 
 - 灰袍领主不招原版兵，只招狂信者，兵只出自信众村。（依据：用户裁定 2026-10-05）
 - 纯化保留：战后收进队里的外来兵，仍按空位换成灰袍新兵。（依据：用户裁定 2026-10-05）
-- 灰袍兵是信仰势力，不领饷。（依据：用户裁定 2026-10-05）
+- 灰袍兵不领金币工资；后续改消耗灰袍声望，费率及扣费规则尚未指定。（依据：用户裁定 2026-10-05、2026-10-07）
 - 玩家招灰袍兵现在只走练兵官订单（`troop-orders.md`），不能在祭司那里招。
   以后可以在信众村招，门槛更高，例如声望 40 以上，具体数值未定。（依据：用户裁定 2026-10-05）
 
@@ -47,7 +47,7 @@
   （`AiVisitSettlementBehavior.GetApproximateVolunteersCanBeRecruitedDataFromSettlement`）。
 - 后置补丁对灰袍改成：不是信众村一律 0；信众村 = 祭司格子里的人 + 能直接招的狂信者（按部队空位封顶）。
   缺兵的灰袍领主因此只会被信众村吸引。（依据：C#反编译）
-- 平均工资返回 0。原版只在工资预算大于 0 时才拿它做除数，结果是正无穷，不限人数。
+- 当前源码把平均候选工资返回 0，存在明确适配缺陷：原版随后 MathF.Floor 将正无穷转为 int，真实 .NET Framework 运行时为 -2147483648，不能视为“不限人数”。未来零成本候选须显式按可用兵源/空位计算，本轮未调整该经济相关源码。（依据：C# 反编译、运行时反射 2026-10-07）
 
 ## 不领饷
 
@@ -78,3 +78,17 @@
 ## 回退
 
 撤这一提交即回到「原版征兵 + 纯化」。
+
+## 零金币工资与声望消耗的后续适配
+
+后续灰袍士兵的金币工资归零，改为消耗灰袍声望；消费对象、时点、费率及余额不足时的规则本轮未指定。本轮只查证，不实现声望扣费；原 v14 玩家包不含火誓者经济，恢复后的 main 保留其原有源码。其他模组文件、配置和方法不改，也不挂钩第三方方法。（依据：用户裁定 2026-10-07）
+
+“工资归零后就不受原版/RBM 限制”不成立，已查实的限制分别如下：
+
+- **实际工资预算**：若最终 Campaign.Models.PartyWageModel 对灰袍各阶单兵返回 0，GetTotalWage 也不计这些兵，则加兵不再增长 TotalWage、升阶工资差也为 0。RBM TierBasedWageModel 只挂钩 DefaultPartyWageModel.GetCharacterWage；main 的 GwpWardenWageModel 灰袍分支直接返回 0，不调用 base/Inner，因而该分支不被 RBM 重算。普通兵、英雄仍有工资；混编队仍可能超过预算。当前 RBM 在 OnGameStart 只注册 WorkshopModel，没有替换 PartyWageModel。未来最终模型是否生效仍需运行时验收。
+- **AI 的经济兵力目标**：原版 PartyBaseHelper.FindPartySizeNormalLimit 按 `(PaymentLimit - 英雄工资项) / Campaign.AverageWage + 1` 算经济人数，再夹到队伍容量并返回比例。Campaign.AverageWage 来自各主文化默认队伍模板，灰袍工资归零不会让其他文化兵的平均工资归零。AiVisitSettlementBehavior 和 RBMRecruitBiasBehavior 都用该目标，仍可能提早降低补兵意愿。原版驻军补员的 CalculateMobilePartySizeLimitWithFoodAndWage 也用预算/全局平均工资，RBMGarrisonRefillBehavior 调用此方法。因此真实日薪为 0 不代表按族长金币推导的 AI 兵力目标自动等于满编。
+- **招兵现金门槛**：原版 CheckRecruiting 及 AI 访问评分仍检查 PartyTradeGold > `50+min(150,队伍人数)×20`，非族长队另要求家族金币 > `50+族长队实际工资+族长队人数×40`，并检查不挨饿、队伍空位、要人格子及关系、招募费用等。主线零工资包装保留 Inner.GetTroopRecruitmentCost；工资为 0 不等于完全无需现金招兵。直接由本模组生成狂信者的路径与原版要人格子路径要分别核对。
+- **RBM 另计的费用/条件**：实际 RBMCampaign.dll SHA-256 f0fe49608c5cca5b3186c2ac0387070ca329eaf4c0bf0fb1c7b0f8cda335e871。SpoilsPool.DailyMaintenanceCost = round(装备含坐骑价值×人数×TroopMaintenanceFraction)，不读取工资；MaintenanceFinanceLine 通过家族财务每日扣未由战利品覆盖的部分。当前比例 0.005，仍会消耗族长金币并间接压低原版预算。SpoilsUpgradePatches 在自己的升级流程里直接按装备差价/战利品、钱袋、单队日升级限额（默认无自定义限制）、附近补给城镇与经验决定能否升级，不只是读取我们 PartyTroopUpgradeModel 的报价；当前 TroopUpgradeCostMultiplier=1、RequireSupplyTown=1、SupplyRadius=30。RecruitPool 在志愿兵填格后按聚落兵源池删回超额新增格子，当前 rbmCampaignEnabled=1。仅改变工资不会去掉这些限制。
+- **零值边界**：RecruitmentCampaignBehavior 的雇佣兵批量、RecruitPrisonersCampaignBehavior 的 AI 招降、GarrisonRecruitmentCampaignBehavior 的自动补员有整数 `预算/单兵工资`，候选为零工资兵时会除零；并非每条路径当前都能碰到灰袍，实施时需按真实可达路径处理。原版 AI 的 `MathF.Floor(预算/平均候选工资)` 将正无穷转 int；真实 1.4.8 TaleWorlds.Library.dll / Windows .NET Framework 运行时反射结果为 -2147483648。因此主线现存的平均候选工资 0 不能用来表示“不限人数”，它可能产生负候选人数，需改成本模组明确的零成本计算。
+
+实现声望经济时须同步处理原版的经济兵力目标、招兵资格及零成本算术，并明确 RBM 独立维护/升级费用与本模组声望维护是否叠加；只改金钱工资不足以完成这套设计。所需修正放在本模组的模型或原版入口实现，遵守不改第三方代码的底线。容量、兵源、经验和正常战败损失仍需保留。（依据：用户裁定；C# 反编译、运行时反射 2026-10-07）

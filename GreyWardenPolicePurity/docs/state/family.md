@@ -11,6 +11,8 @@
 
 ## 成员
 
+灰袍加入其他国家的反馈已在 v14 基线修复，并合入 main。四类入国入口和内战流亡候选已排除灰袍，读档完成后有王国归属则统一走原版退出；用户与日志确认南帝国归属退出及军团关联 4→0。来源、存档、核心模组与载入阻塞结论统一见 [灰袍入国](kingdom-membership.md)，不从日志过程恢复规则。灰袍不加入王国，只在读档完成时检查归属一次，无存档身份特例或周期轮询。（依据：用户裁定 2026-10-06、2026-10-07）
+
 - 六位创始领主 `gw_leader_0`…`gw_leader_5`，名字每次刷新时按本地化模板重写：
   Aethelflaed、Cyneburh、Mildthryth、Wynflaed、Eadgifu、Wulfhild。
 - 后继成员全是女性：生成时如果用了男性模板就换成女性模板和体型，名字从固定名池里取，带后缀以免重名。
@@ -60,3 +62,5 @@
 - 原版检测到非官方模组时会停用成就。如果唯一的原因是本模组，就恢复成就
   （`GwpAchievementCompatibility`：后置 `DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved`，
   前置 `AchievementsCampaignBehavior.CheckAchievementSystemActivity`）。
+
+装备反馈：当前 v14 / RBM 环境的领主自动换装入口与高军饷、低补兵预算已核对，见 temporary-parties.md；尚无具体装备槽位的实测因果记录。（依据：C# 反编译、实机诊断 2026-10-07）

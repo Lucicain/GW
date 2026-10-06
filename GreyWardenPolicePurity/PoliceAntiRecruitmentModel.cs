@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Localization;
@@ -10,7 +10,7 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PoliceAntiRecruitmentModel : DefaultDiplomacyModel
     {
-        private static bool IsGwClan(Clan clan) =>
+        internal static bool IsGwClan(Clan clan) =>
             string.Equals(clan?.StringId, PoliceStats.PoliceClanId, StringComparison.OrdinalIgnoreCase);
 
         private static bool IsGwFaction(IFaction faction)

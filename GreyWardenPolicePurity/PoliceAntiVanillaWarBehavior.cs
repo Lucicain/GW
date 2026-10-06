@@ -9,9 +9,24 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
+            CampaignEvents.OnGameLoadFinishedEvent.AddNonSerializedListener(this, OnGameLoadFinished);
         }
 
         public override void SyncData(IDataStore dataStore) { }
+
+        // 读档完成后恢复灰袍独立身份；不注册日结、周结或心跳轮询。
+        // 此时原版对象、阵营与部队缓存已恢复，离国动作负责成员、军团、外交及封地收尾。
+        // 依据：用户裁定 2026-10-06；1.4.8 Campaign / ChangeKingdomAction / Clan 反编译。
+        private void OnGameLoadFinished()
+        {
+            Clan policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan?.Kingdom == null) return;
+
+            if (policeClan.IsUnderMercenaryService)
+                ChangeKingdomAction.ApplyByLeaveKingdomAsMercenary(policeClan, false);
+            else
+                ChangeKingdomAction.ApplyByLeaveKingdom(policeClan, false);
+        }
 
         private void OnWarDeclared(
             IFaction faction1,

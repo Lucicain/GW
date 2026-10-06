@@ -1,6 +1,6 @@
 # 火誓者：传教、狂信者、烧人
 
-> 当前状态：信众村经济整套已部署待实测（2026-10-05）；数值是试玩值，用户尚未定
+> 当前状态：火誓者开发已恢复；main 合入 v14 修复且已部署，仪式美术及全部原成果保留，数值仍为试玩值（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
 > 已复核至：`0b63c01`（2026-10-06）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**`

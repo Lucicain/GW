@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-151 个源文件、49,682 行、296 个公开类型、65 个 Harmony 补丁点（分布在 65 个补丁类里）。
+153 个源文件、49,816 行、299 个公开类型、66 个 Harmony 补丁点（分布在 66 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -33,6 +33,7 @@
 | `BarterVM` | `RefreshOfferLabel` | Postfix | `GwpDispatchOfferLabelPatch` | GwpAssetOfferValidationPatch.cs |
 | `BarterVM` | `SendOffer` | Postfix | `GwpDispatchOfferDisplayPatch` | GwpAssetOfferValidationPatch.cs |
 | `CampaignEventDispatcher` | `AiHourlyTick` | Postfix | `GwpFinalDesireAuctionPatch` | GwpPartyDutyMovementPatch.cs |
+| `CharacterHelper` | `CanUseItem` | Prefix | `GwpWardenAutoEquipmentPatch` | GwpWardenAutoEquipmentPatch.cs |
 | `CharacterRelationManager` | `SetHeroRelation` | Prefix | `GreyWardenNotableRelationWritePatch` | GreyWardenNotableRelationsBehavior.cs |
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs |
@@ -237,6 +238,7 @@
 - `GwpBattleSupportChecks` → GwpBattleScenePolicy.cs ←
 - `GwpBattleSupportDepletionPatch` → GwpBattleReinforcementBehavior.cs ←
 - `GwpBattleSupportOrigin` → GwpBattleSupportOrigin.cs
+- `GwpBellumExileCandidatePatch` → GwpKingdomMembershipPatch.cs ←
 - `GwpBribeBarterable` → GwpBribeBarterable.cs
 - `GwpCaseArchiveItemVM` → GwpCaseArchiveScreen.cs ←
 - `GwpCaseArchiveScreen` → GwpCaseArchiveScreen.cs
@@ -314,6 +316,7 @@
 - `GwpInitiativeDiagnosticsPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpKickBehavior` → GwpKickBehavior.cs
 - `GwpKickInputComponent` → GwpKickInputComponent.cs
+- `GwpKingdomMembershipPatch` → GwpKingdomMembershipPatch.cs
 - `GwpLandlessShipPurchaseTownPatch` → GwpLandlessShipTradePatch.cs ←
 - `GwpLandlessShipSaleTownPatch` → GwpLandlessShipTradePatch.cs ←
 - `GwpLandlessShipTrade` → GwpLandlessShipTradePatch.cs
@@ -364,6 +367,7 @@
 - `GwpTextureSprite` → GwpAffairsNavigation.cs ←
 - `GwpTroopCombat` → GwpTroopCombat.cs
 - `GwpTuning` → GwpTuning.cs
+- `GwpWardenAutoEquipmentPatch` → GwpWardenAutoEquipmentPatch.cs
 - `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
 - `GwpWardenDispatchDialogue` → GwpWardenDispatchDialogue.cs
 - `GwpWardenKeepLootPatch` → GwpWardenRecruitment.cs ←
@@ -435,7 +439,7 @@
 - `Voice` → GwpMusicScore.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 156 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 157 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -499,10 +503,10 @@
 - `PolicePrisonerImmunityBehavior.cs` — 127 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
 - `PoliceShipModels.cs` — 103 行 · `PoliceShipModelSupport` : CampaignShipDamageModel，另含 2 个类型
 - `PolicePartyTroopUpgradeModel.cs` — 81 行 · `PolicePartyTroopUpgradeModel` : DefaultPartyTroopUpgradeModel
+- `PoliceAntiVanillaWarBehavior.cs` — 77 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.Grace.cs` — 71 行 · `GwpFieldArrestBehavior`
 - `PoliceMobilePartyAIModel.cs` — 71 行 · `PoliceMobilePartyAIModel` : DefaultMobilePartyAIModel
 - `PoliceAntiRecruitmentModel.cs` — 67 行 · `PoliceAntiRecruitmentModel` : DefaultDiplomacyModel
-- `PoliceAntiVanillaWarBehavior.cs` — 62 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
 - `PolicePatrolBehavior.Encyclopedia.cs` — 49 行 · `PolicePatrolBehavior`
 - `PoliceClanTierModel.cs` — 40 行 · `PoliceClanTierModel` : DefaultClanTierModel
 - `PoliceMarriageModel.cs` — 36 行 · `PoliceMarriageModel` : DefaultMarriageModel
@@ -568,7 +572,7 @@
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（67 个文件）
+### 其他（69 个文件）
 
 - `GwpFireswornBehavior.cs` — 884 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GwpFireswornArmory.cs` — 747 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
@@ -609,6 +613,7 @@
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
+- `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
 - `GwpFireswornArt.cs` — 69 行 · `GwpFireswornArt`
 - `GwpText.cs` — 69 行 · `GwpText`
@@ -620,6 +625,7 @@
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
 - `GwpEscortSpeedCapPatch.cs` — 50 行 · `GwpEscortSpeedCapPatch`
 - `GwpCaseReceipt.cs` — 48 行 · `GwpCaseReceipt`，另含 1 个类型
+- `GwpWardenAutoEquipmentPatch.cs` — 48 行 · `GwpWardenAutoEquipmentPatch`
 - `GwpFieldCollectionBarterable.cs` — 47 行 · `GwpFieldCollectionBarterable` : Barterable
 - `GwpFieldFineBarterable.cs` — 44 行 · `GwpFieldFineBarterable` : Barterable
 - `GwpLeaderlessFoodModel.cs` — 41 行 · `GwpLeaderlessFoodModel` : MobilePartyFoodConsumptionModel

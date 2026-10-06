@@ -81,6 +81,7 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
+| [`kingdom-membership.md`](kingdom-membership.md) | v14 入国保护、通用读档离国及外交宣战监听、反馈环境与回退路径 |
 | [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
 | [`build-and-deploy.md`](build-and-deploy.md) | 构建开关、预检脚本、live 镜像、发布包 |
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
