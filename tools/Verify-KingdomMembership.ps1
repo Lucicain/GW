@@ -76,4 +76,85 @@ foreach ($taskCase in 'OrdinaryJoin','WardenLeave') {
     Assert-Condition ($taskClan.DebtToKingdom -eq 0) ($taskCase + ': original action was blocked')
     Assert-Condition $taskExpectedBoundaryFailure ($taskCase + ': missing offline boundary failure')
 }
+# Exercise real CampaignEvents registration and dispatch. Only the absent
+# campaign lookup and the engine exit boundary are replaced; full exit state
+# (armies, diplomacy, fiefs) requires the user's live saved campaign.
+$taskProbeSource = @'
+using System.Reflection;
+using TaleWorlds.CampaignSystem;
+public static class WardenLoadProbe
+{
+    public static CampaignEvents Events = new CampaignEvents();
+    public static Clan LoadedClan;
+    public static int Queries;
+    public static int Exits;
+    public static string LastAction;
+    public static bool LastNotification;
+    public static bool EventsPrefix(ref CampaignEvents __result)
+    {
+        __result = Events;
+        return false;
+    }
+    public static bool ClanPrefix(ref Clan __result)
+    {
+        Queries++;
+        __result = LoadedClan;
+        return false;
+    }
+    public static bool ExitPrefix(Clan __0, bool showNotification, MethodBase __originalMethod)
+    {
+        Exits++;
+        LastAction = __originalMethod.Name;
+        LastNotification = showNotification;
+        typeof(Clan).GetField("_kingdom", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__0, null);
+        return false;
+    }
+}
+'@
+$taskRefs = @([TaleWorlds.CampaignSystem.Clan].Assembly.Location,
+    [TaleWorlds.ObjectSystem.MBObjectBase].Assembly.Location,
+    [TaleWorlds.Core.Game].Assembly.Location,
+    [TaleWorlds.Library.MBList[int]].Assembly.Location,
+    'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\Facades\netstandard.dll')
+$taskCompiler = New-Object CodeDom.Compiler.CompilerParameters
+$taskCompiler.CoreAssemblyFileName = [object].Assembly.Location
+$taskCompiler.ReferencedAssemblies.AddRange([string[]]$taskRefs)
+Add-Type -TypeDefinition $taskProbeSource -CompilerParameters $taskCompiler
+$taskProbe = [WardenLoadProbe]
+function Add-LoadProbe([Reflection.MethodBase]$Original, [string]$Prefix) {
+    $taskPrefix = New-Object HarmonyLib.HarmonyMethod($taskProbe.GetMethod($Prefix))
+    [void]$taskHarmony.Patch($Original, $taskPrefix, $null, $null, $null)
+}
+Add-LoadProbe ([HarmonyLib.AccessTools]::PropertyGetter([TaleWorlds.CampaignSystem.CampaignEvents], 'Instance')) 'EventsPrefix'
+Add-LoadProbe ([HarmonyLib.AccessTools]::Method($taskAssembly.GetType('GreyWardenPolicePurity.PoliceStats'), 'GetPoliceClan')) 'ClanPrefix'
+foreach ($taskAction in 'ApplyByLeaveKingdom','ApplyByLeaveKingdomAsMercenary') {
+    Add-LoadProbe ([HarmonyLib.AccessTools]::Method([TaleWorlds.CampaignSystem.Actions.ChangeKingdomAction], $taskAction)) 'ExitPrefix'
+}
+$taskBehavior = [Activator]::CreateInstance($taskAssembly.GetType('GreyWardenPolicePurity.PoliceAntiVanillaWarBehavior'))
+$taskBehavior.RegisterEvents()
+[WardenLoadProbe]::Events.OnGameLoadFinished()
+Assert-Condition ([WardenLoadProbe]::Queries -eq 1 -and [WardenLoadProbe]::Exits -eq 0) 'Absent Warden changed state on load'
+[WardenLoadProbe]::LoadedClan = New-TestClan 'gw'
+[WardenLoadProbe]::Events.OnGameLoadFinished()
+Assert-Condition ([WardenLoadProbe]::Exits -eq 0) 'Independent Warden entered exit flow'
+foreach ($taskMercenary in $false,$true) {
+    $taskClan = New-TestClan 'gw'
+    [TaleWorlds.CampaignSystem.Clan].GetField('_kingdom', 'Instance,NonPublic').SetValue($taskClan, $taskKingdom)
+    [TaleWorlds.CampaignSystem.Clan].GetProperty('IsUnderMercenaryService').GetSetMethod($true).Invoke($taskClan, @($taskMercenary)) | Out-Null
+    [WardenLoadProbe]::LoadedClan = $taskClan
+    $taskBefore = [WardenLoadProbe]::Exits
+    [WardenLoadProbe]::Events.OnGameLoadFinished()
+    $taskExpectedAction = if ($taskMercenary) { 'ApplyByLeaveKingdomAsMercenary' } else { 'ApplyByLeaveKingdom' }
+    Assert-Condition ([WardenLoadProbe]::Exits -eq $taskBefore + 1) 'Load did not invoke exactly one exit'
+    Assert-Condition ([WardenLoadProbe]::LastAction -eq $taskExpectedAction) 'Wrong native exit reason'
+    Assert-Condition (-not [WardenLoadProbe]::LastNotification) 'Load exit enabled native notification'
+    [WardenLoadProbe]::Events.OnGameLoadFinished()
+    Assert-Condition ([WardenLoadProbe]::Exits -eq $taskBefore + 1) 'Already independent Warden exited again'
+}
+$taskQueries = [WardenLoadProbe]::Queries
+[WardenLoadProbe]::Events.DailyTick()
+[WardenLoadProbe]::Events.DailyTick()
+[WardenLoadProbe]::Events.WeeklyTick()
+Assert-Condition ([WardenLoadProbe]::Queries -eq $taskQueries) 'Membership check registered a periodic listener'
+
 Write-Output ('KINGDOM_REGRESSION=PASS; ASSERTIONS=' + $taskChecks + '; WITHOUT_BELLUM=' + $WithoutBellum)
