@@ -115,7 +115,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 每一类装备按阶数、价值从好到差排好，第 i 个兵拿每一类的第 i 件（新兵排在狂信者前面，先挑）。
         /// 盾只给拿单手兵器的人。分完剩下的先留够余量，再多的就是多余。马、马具、披风、弓弩箭、
-        /// 女性不能用的、技能不够用的，都算多余（不配骑兵，肩部是灰袍印章，用户裁定）。
+        /// 男女有一方不能用的、技能不够用的，都算多余（不配骑兵，肩部是灰袍印章，用户裁定）。
         /// </summary>
         private static ArmoryPlan BuildPlan(ItemRoster ledger, int recruits, int zealots, int reserve)
         {
@@ -166,7 +166,8 @@ namespace GreyWardenPolicePurity
 
         private static int KitKind(ItemObject item, CharacterObject zealot)
         {
-            if (item.ItemFlags.HasAnyFlag(ItemFlags.NotUsableByFemale))
+            // 灰袍兵男女混编（GwpWardenTroopGenderPatch），只配男女都能用的。
+            if (item.ItemFlags.HasAnyFlag(ItemFlags.NotUsableByFemale | ItemFlags.NotUsableByMale))
                 return -1;
             int kind = item.ItemType switch
             {

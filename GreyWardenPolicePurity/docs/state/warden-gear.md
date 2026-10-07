@@ -2,9 +2,9 @@
 
 > 当前状态：便装模板摘盔已镜像，战斗头盔保留；入会品质已验收，最佳品质与自动换装保护待实测
 > 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
-> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1`
-> 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常
+> 已复核至：2026-10-07 灰袍兵战场上男女五五混编
+> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs`
+> 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常；战场上灰袍兵约一半是男的、男兵有胡子、同一个兵每场一样
 
 本文件写"灰袍装备从哪来、带不带原版品质（`ItemModifier`，精良/大师/传奇等前缀）"。
 灰袍自己的武器效果（击倒、破防等，代码里叫 `GwpWeaponTraits`）是另一回事，见 [troop-combat.md](troop-combat.md)。
@@ -73,3 +73,14 @@
 离线回归 `tools/Verify-WardenAutoEquipment.ps1`：用真实原版和本机 RBMCampaign.dll 只读调用候选搜索，有 RBM 23 项、无 RBM 11 项断言，覆盖 gw/GW、普通英雄、普通士兵、手动装备重载与库存不变。
 
 回退：撤 `4e39db2`。
+
+## 男女混编
+
+- 灰袍兵男女五五混编，只有灰袍领主是女性。（依据：用户裁定 2026-10-07：男性负责传教相关，女性负责大局统领）
+- 兵种定义（`spnpccharacters.xml`）仍是女性，所以头像、百科、部队名单、地图图标都显示女性；只在战场上每个兵分男女。
+- 原版生成兵时，`AgentBuildData` 指定了性别就用指定的，否则用兵种的 `is_female`；没指定长相就按兵种的脸型范围和兵种性别生成
+  （C#反编译 v1.4.8 `Mission.SpawnAgent`、`BasicCharacterObject.GetBodyProperties`）。
+  `GwpWardenTroopGenderPatch` 按兵的种子（原版定装备、长相用的同一个）分一半为男：指定性别为男，
+  长相照原版 `FaceGen.GetRandomBodyProperties`，用原版帝国士兵的男性脸型范围 `fighter_empire`（兵种自己的 `townswoman_empire` 是女性范围，没有胡子）。
+  排在军械库换装之后，按换好的装备算头发遮挡。不存档：每场按种子重算，同一个兵每场一样。
+- 自制盔甲每件只有一个模型，用户判断男女穿着效果一样，没另做。（依据：用户裁定 2026-10-07）

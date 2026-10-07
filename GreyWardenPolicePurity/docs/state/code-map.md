@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-164 个源文件、51,703 行、326 个公开类型、75 个 Harmony 补丁点（分布在 75 个补丁类里）。
+165 个源文件、51,746 行、327 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -73,6 +73,7 @@
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs |
 | `Mission` | `RegisterBlow` | Prefix | `GwpPassiveShieldRegisterBlowPatch` | GwpShieldBashGuardPatch.cs |
 | `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs |
+| `Mission` | `SpawnAgent` | Prefix | `GwpWardenTroopGenderPatch` | GwpWardenTroopGenderPatch.cs |
 | `MissionCombatMechanicsHelper` | `ComputeBlowDamage` | Prefix | `GwpDualWieldDamageTypePatch` | GwpDualWieldingPatch.cs |
 | `MissionCombatMechanicsHelper` | `IsCollisionBoneDifferentThanWeaponAttachBone` | Postfix | `GwpDualWieldCollisionPatch` | GwpDualWieldingPatch.cs |
 | `MissionNameMarkerVM` | `Tick` | Postfix | `GwpDuelOpponentMarkerPatch` | GwpDuelOpponentMarkerPatch.cs |
@@ -402,6 +403,7 @@
 - `GwpWardenResolve` → GwpWardenResolve.cs
 - `GwpWardenRetreatBehaviorPatch` → GwpWardenResolve.cs ←
 - `GwpWardenRetreatPatch` → GwpWardenResolve.cs ←
+- `GwpWardenTroopGenderPatch` → GwpWardenTroopGenderPatch.cs
 - `GwpWardenVisitCandidatesPatch` → GwpWardenVisitDesire.cs ←
 - `GwpWardenVisitDesire` → GwpWardenVisitDesire.cs , GwpWardenVisitDesire.Trace.cs , GwpWardenVisitDesire.Trace.cs
 - `GwpWardenVisitScorePatch` → GwpWardenVisitDesire.cs ←
@@ -606,11 +608,11 @@
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（79 个文件）
+### 其他（80 个文件）
 
-- `GwpFireswornBehavior.cs` — 1195 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornBehavior.cs` — 1196 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
-- `GwpFireswornArmory.cs` — 851 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornArmory.cs` — 852 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 495 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
@@ -672,6 +674,7 @@
 - `GwpFieldCollectionBarterable.cs` — 47 行 · `GwpFieldCollectionBarterable` : Barterable
 - `GwpFieldFineBarterable.cs` — 44 行 · `GwpFieldFineBarterable` : Barterable
 - `GwpLeaderlessFoodModel.cs` — 41 行 · `GwpLeaderlessFoodModel` : MobilePartyFoodConsumptionModel
+- `GwpWardenTroopGenderPatch.cs` — 41 行 · `GwpWardenTroopGenderPatch`
 - `GwpGauntletWidgetUtility.cs` — 39 行 · `GwpGauntletWidgetUtility`
 - `GwpAssetAutoOfferPatch.cs` — 36 行 · `GwpAssetAutoOfferPatch`
 - `GwpDamnationSmokePatch.cs` — 36 行 · `GwpDamnationSmokePatch`

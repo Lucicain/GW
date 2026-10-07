@@ -56,9 +56,9 @@ namespace GreyWardenPolicePurity
         {
             int hours = Math.Max(1, (int)Math.Ceiling(remainingHours));
             return kind == GwpFireswornBehavior.RitualKind.Damnation
-                ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those bound to it are the ones the flame has judged. The sworn women sing around the pyre while the villagers feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
+                ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those bound to it are the ones the flame has judged. The sworn sing around the pyre while the villagers feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
                     "VILLAGE", village.Name, "HOST", host, "HOURS", hours)
-                : GwpText.Get("{=gwp_fs_ritual_congregation_text}The square of {VILLAGE} is packed. {HOST} stands before the Eternal Fire reading out the laws of the flame, and the women who would swear step forward one by one and hold their hands over the fire to take the oath; the villagers around them speak the words with her. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
+                : GwpText.Get("{=gwp_fs_ritual_congregation_text}The square of {VILLAGE} is packed. {HOST} stands before the Eternal Fire reading out the laws of the flame, and those who would swear step forward one by one and hold their hands over the fire to take the oath; the villagers around them speak the words with him. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
                     "VILLAGE", village.Name, "HOST", host, "HOURS", hours);
         }
 
@@ -95,10 +95,10 @@ namespace GreyWardenPolicePurity
                 return;
 
             string body = GwpText.Get(
-                "{=gwp_fs_village_info}{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their daughters stand under arms. Women tend the flame, and the priestess and the sworn sisters keep its laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn women who take up the spear.",
+                "{=gwp_fs_village_info}{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their sons and daughters stand under arms. The priest and the sworn keep the flame's laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn men and women who take up the spear.",
                 "HOUSEHOLDS", households, "GUARD", guard, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
             body += "\n\n" + (priest != null
-                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn daughters of this village go with them from her hearth.",
+                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn sons and daughters of this village go with them from his hearth.",
                     "PRIEST", priest.Name)
                 : GwpText.Get("{=gwp_fs_village_no_priest}No priest of the Eternal Fire lives here."));
             GwpFireswornBehavior.GetVillageStores(village, out int prisoners, out int armoryItems, out int goodsValue);

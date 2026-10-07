@@ -65,13 +65,13 @@ namespace GreyWardenPolicePurity
                     out Settlement? home, out Settlement? target))
                 return false;
             TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Mission
-                ? GwpText.Create("{=gwp_fs_party_greet_mission}May the fire light your road. We are sworn sisters of {HOME}, and we go to {TARGET} to carry the fire there and stay.",
+                ? GwpText.Create("{=gwp_fs_party_greet_mission}May the fire light your road. We are the sworn of {HOME}, and we go to {TARGET} to carry the fire there and stay.",
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : kind == GwpFireswornBehavior.FaithPartyKind.Balance
-                ? GwpText.Create("{=gwp_fs_party_greet_balance}We are sworn sisters of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered.",
+                ? GwpText.Create("{=gwp_fs_party_greet_balance}We are the sworn of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered.",
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : outbound
-                    ? GwpText.Create("{=gwp_fs_party_greet_cart_out}We are the sworn sisters of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire.",
+                    ? GwpText.Create("{=gwp_fs_party_greet_cart_out}We are the sworn of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire.",
                         "HOME", home!.Name, "TARGET", target!.Name)
                     : GwpText.Create("{=gwp_fs_party_greet_cart_back}The goods are sold. We are going home to {HOME}.",
                         "HOME", home!.Name);
