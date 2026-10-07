@@ -2,7 +2,7 @@
 
 > 当前状态：传教、烧人、守村队按 2026-10-07 用户裁定重做，已部署待实测；配图颜色经用户确认；声音单次播放待实测；数值是试玩值
 > 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：2026-10-08 仪式声音的日志退休（菜单与地图），声音行为不变
+> 已复核至：2026-10-08 库房改成开发版调试功能，列军械库加货仓 / 背包
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：传教与烧人音效完整播放一次、关菜单立即停止；传教、烧人画面随机打出音效、不和地图声音叠；大地图上仪式期间村子放一遍闪卡音效、停一会儿再放、镜头远了听不到、仪式结束就停、音调正常；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 
@@ -234,8 +234,9 @@
   声音登记在 `module_sounds.xml`。不存档：读档后按正在进行的仪式重建。
   视图在 `MapScreen.OnInitialize` 后加（`GwpRitualMapSoundViewPatch`），每个游戏小时对一次账。（依据：C#反编译 v1.4.8）
   原版声音库里有一个代码没用上的 `event:/map/ambient/node/burning_village`（烧着的村子），用户选了闪卡音效，没用它。
-- **看军械库**（`GwpFireswornArmoryView.cs`）：信众村菜单「永恒之火：军械库」，先列本村、别的信众村、每支灰袍领主部队的军械库，
-  选一个列出里面每样东西（原版物品图标、件数）和配装概况。只看，不能拿。
+- **看库房**（`GwpFireswornArmoryView.cs`）：调试功能，只在开发版里有，玩家版没有（用户裁定 2026-10-08）。各看各的：
+  信众村在村庄菜单「永恒之火：库房」看，灰袍领主部队找领主说话时问（入了会才有）。列全部东西：军械库（配给立誓的人的兵器护甲），
+  加上村里的货仓、领主部队的背包，各段写件数和总值；每样东西有原版图标和件数，另有配装概况。只看，不能拿。（依据：用户裁定 2026-10-07、2026-10-08）
 - **村庄菜单**：「永恒之火：狂信者 N 人（户数的 X%）」，点开看狂信者、祭司、地牢、军械库、货仓。
 - **玩家看到的文字**用游戏内的口吻写，不写机制说明、阈值、阶数、「信众村」这种开发用语。（依据：用户反馈 2026-10-07：火誓者文本有明显的提示词泄露）
 

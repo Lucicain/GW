@@ -30,7 +30,9 @@ namespace GreyWardenPolicePurity
                 LeaveCondition, LeaveConsequence, isLeave: true);
             starter.AddGameMenuOption("village", "gwp_fs_village_faith", "{GWP_FS_VILLAGE_OPTION}",
                 FaithOptionCondition, FaithOptionConsequence, isLeave: false, index: 5);
+#if GWP_DIAGNOSTICS
             GwpFireswornArmoryView.Register(starter);
+#endif
         }
 
         private static void RitualInit(MenuCallbackArgs args)

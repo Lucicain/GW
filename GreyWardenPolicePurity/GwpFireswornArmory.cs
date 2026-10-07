@@ -547,8 +547,8 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        // ---------------------------------------------------------------- 给玩家看（GwpFireswornArmoryView）
-
+        // ---------------------------------------------------------------- 开发版看库房（GwpFireswornArmoryView）
+#if GWP_DIAGNOSTICS
         internal static string ArmoryHolderTitle(string holder)
         {
             int items = _instance!._armories.TryGetValue(holder, out ItemRoster? ledger) ? CountItems(ledger) : 0;
@@ -571,6 +571,13 @@ namespace GreyWardenPolicePurity
                 "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => !kit[KitMain].IsEmpty),
                 "FREE", CountItems(plan.Free), "SURPLUS", CountItems(plan.Surplus));
         }
+
+        /// <summary>库房里军械库以外的东西：信众村是货仓，灰袍领主部队是背包。</summary>
+        internal static ItemRoster StoreLedger(string holder) =>
+            _instance!._villages.ContainsKey(holder)
+                ? ItemsOf(_instance._goods, holder)
+                : FindParty(holder)?.ItemRoster ?? new ItemRoster();
+#endif
 
         // ---------------------------------------------------------------- 每日监控
 
