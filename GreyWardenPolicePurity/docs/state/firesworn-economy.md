@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 信众户与守村队分两本账；招兵、出村不扣户数；烧人两换一同时加信众户；没有烧村民
+> 已复核至：2026-10-07 守村队补兵和原版民兵分开：只看信众户，每户每天 5% 再出一个兵
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 
@@ -45,17 +45,17 @@
 | 传教队到别的村 | 那边带去几人加几户 | 那边并入 | 不变 |
 | 运械队押车的人到别的村 | 守村队满了的那几个带家人落户 | 那边并入 | 不变 |
 | 灰袍领主招兵（格子、直接招）、无领主队出村、战死 | 不变 | 减少，之后补回 | 不变 |
-| 补兵（挂民兵） | 不变 | 每天 + 原版民兵增长 × 火誓者比例，补到信众户为止 | 不变 |
+| 补兵 | 不变 | 兵已经离开的信众户，每户每天 5% 再出一个兵（试玩值），补到信众户为止 | 不变 |
 | 户数掉到比信众户少 | 压到户数 | 压到信众户 | — |
 
 有了祭司才算信众村：领主来交俘虏、招兵，能烧人、能传教。（依据：用户裁定 2026-10-07）
 
-- 每天的增长（用户裁定 2026-10-07：挂户数、挂民兵、灰袍所到之处，成长慢可以）：
+- 每天的增长（用户裁定 2026-10-07：挂户数、灰袍所到之处）：
   - 灰袍所到之处：灰袍领主这一天在哪座村里或村口，那座村多 2 户信众（试玩值），没有火誓者的村子就此有了守村队；
   - 挂户数：原版当天新增的户（不到 300 户 +4、不到 600 户 +1.2、再多 +0.2）里，按火誓者比例那部分是信众户；
-  - 挂民兵：守村队按原版民兵的长法补兵，原版民兵不动。
-
-  都和比例成正比。（依据：C#反编译 v1.4.8 DefaultSettlementProsperityModel、DefaultSettlementMilitiaModel）
+  - 补兵：守村队和原版民兵分开，只看信众户——兵已经离开的信众户每户每天按 5% 的概率再出一个兵，差得越多补得越快。
+    不挂原版民兵增长：原版民兵 0.5 + 户数/400 − 现有 × 2.5%，到了平衡点每天几乎是 0，守村队就跟着不补。
+    （依据：用户裁定 2026-10-07；C#反编译 v1.4.8 DefaultSettlementProsperityModel、DefaultSettlementMilitiaModel）
 - 村民只以户数存在，我们不扣户数：招兵、出村不扣（家还在），也没有「烧村民」。（依据：用户裁定 2026-10-07）
 - 守村队和原版民兵站在同一支民兵队里，一起守村。原版民兵照原版增长：
   - 原版每日变化里的退役项按全队人数算（现有 × 2.5%），信众村的民兵模型把灰袍兵那一份加回来；
@@ -182,7 +182,7 @@
 | 类别 | stage |
 |---|---|
 | 每日快照 | `DAILY_VILLAGE`（火誓者人数与比例、守村队构成、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
-| 火誓者来源 | `SWORN_GROWTH`（灰袍所到、挂户数、补兵）、`RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
+| 火誓者来源 | `SWORN_GROWTH`（灰袍所到、挂户数、补兵 regrown）、`RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
 | 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED` |

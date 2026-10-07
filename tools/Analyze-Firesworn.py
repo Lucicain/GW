@@ -153,7 +153,7 @@ def main():
     for _, data in by_stage["SWORN_GROWTH"]:
         gains[data["village"]]["灰袍所到"] += num(data.get("fromWardens"))
         gains[data["village"]]["挂户数"] += num(data.get("fromHearth"))
-        gains[data["village"]]["守村队补兵（挂民兵）"] += num(data.get("regrown"))
+        gains[data["village"]]["守村队补兵"] += num(data.get("regrown"))
     for _, data in by_stage["ARMORY_LOOT"]:
         gains[data["holder"]]["缴获件数"] += num(data.get("items"))
     for village, rows in sorted(villages.items()):

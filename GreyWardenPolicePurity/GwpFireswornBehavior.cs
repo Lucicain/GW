@@ -844,16 +844,18 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 火誓者每天怎么长（用户裁定 2026-10-07：前期只靠烧俘虏和本村传教太慢；挂户数、挂民兵；灰袍所到之处促进增长）：
+        /// 火誓者每天怎么长（用户裁定 2026-10-07：前期只靠烧俘虏和本村传教太慢；挂户数；灰袍所到之处促进增长）：
         /// <list type="bullet">
         /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村多两户信众、各出一个狂信者；
         /// 还没有火誓者的村子就此有了守村队（GwpTuning.Firesworn.WardenPresenceDailySworn，试玩值）。</item>
         /// <item>挂户数：原版这座村今天新增的户里，按火誓者比例那部分是信众户，各出一个狂信者
         /// （C#反编译 v1.4.8 DefaultSettlementProsperityModel.CalculateHearthChange：不到 300 户每天 +4、不到 600 户 +1.2、再多 +0.2）。</item>
-        /// <item>挂民兵：守村队按原版民兵的长法补兵——原版今天的民兵增长 × 火誓者比例，补到信众户数为止
-        /// （DefaultSettlementMilitiaModel：0.5 + 户数/400 − 现有 × 2.5%）。兵被招走、战死后就靠这一条补回；原版民兵不动。</item>
+        /// <item>补兵：守村队和原版民兵分开，只看信众户（用户裁定 2026-10-07）。兵已经离开、还没出下一个兵的信众户，
+        /// 每户每天按 GwpTuning.Firesworn.GuardRegrowDailyChance 的概率再出一个女儿，补到信众户数为止。
+        /// 不挂原版民兵增长：原版民兵 0.5 + 户数/400 − 现有 × 2.5%，民兵到了平衡点每天几乎是 0，守村队就跟着不补
+        /// （C#反编译 v1.4.8 DefaultSettlementMilitiaModel；用户反馈 2026-10-07：民兵满了，守村队还差很远）。</item>
         /// </list>
-        /// 都和比例成正比，比例低时慢（用户 2026-10-07：成长慢可以）。原版的户数、民兵模型只读结果，不改。
+        /// 原版的户数模型只读结果，不改。
         /// </summary>
         private void GrowSworn()
         {
@@ -881,10 +883,10 @@ namespace GreyWardenPolicePurity
                     float hearthGrowth = Campaign.Current.Models.SettlementProsperityModel.CalculateHearthChange(village.Village).ResultNumber;
                     if (hearthGrowth > 0f)
                         fromHearth = Convert(row, village, zealot, MBRandom.RoundRandomized(hearthGrowth * share));
-                    float militiaGrowth = Campaign.Current.Models.SettlementMilitiaModel.CalculateMilitiaChange(village).ResultNumber;
-                    if (militiaGrowth > 0f)
-                        regrown = AddToGuard(row, village, zealot, MBRandom.RoundRandomized(militiaGrowth * share));
                 }
+                if (IsVillageQuiet(village))
+                    regrown = AddToGuard(row, village, zealot,
+                        MBRandom.RoundRandomized(Math.Max(0, row.Households - Sworn(row)) * GwpTuning.Firesworn.GuardRegrowDailyChance));
                 presence.TryGetValue(row.VillageId, out int fromWardens);
                 if (fromHearth + regrown + fromWardens <= 0)
                     continue;

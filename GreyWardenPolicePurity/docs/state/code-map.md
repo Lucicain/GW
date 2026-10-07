@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-162 个源文件、51,388 行、324 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+162 个源文件、51,392 行、324 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -595,7 +595,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 381 行 · `GwpTuning`，另含 13 个类型
+- `GwpTuning.cs` — 383 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 359 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
@@ -605,7 +605,7 @@
 
 ### 其他（77 个文件）
 
-- `GwpFireswornBehavior.cs` — 1137 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornBehavior.cs` — 1139 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornArmory.cs` — 854 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 459 行 · `GwpFireswornBehavior`
