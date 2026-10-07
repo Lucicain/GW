@@ -101,7 +101,11 @@ namespace GreyWardenPolicePurity
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
-                if (element.EquipmentElement.Item.IsFood)
+                ItemObject item = element.EquipmentElement.Item;
+                // 照原版领主进城卖东西的规矩留下口粮和普通坐骑（无前缀、不是驮兽），其余交给村子
+                // （C#反编译 v1.4.8 PartiesSellLootCampaignBehavior.OnSettlementEntered）。坐骑多了行军快。
+                if (item.IsFood || item.ItemType == ItemObject.ItemTypeEnum.Horse && item.HorseComponent.IsRideable &&
+                    element.EquipmentElement.ItemModifier == null && !item.HorseComponent.IsPackAnimal)
                     continue;
                 if (KitKind(element.EquipmentElement.Item, zealot) >= 0)
                 {

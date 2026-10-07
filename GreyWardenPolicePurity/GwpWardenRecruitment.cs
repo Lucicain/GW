@@ -99,15 +99,4 @@ namespace GreyWardenPolicePurity
             bool withoutItemCost = false) =>
             Inner.GetTroopRecruitmentCost(troop, buyerHero, withoutItemCost);
     }
-
-    /// <summary>
-    /// 灰袍领主的东西捐给信众村，不在城里卖（用户裁定：领主给村子的一律算捐赠，由村子卖进城）。
-    /// 原版领主进城会把背包里非口粮的东西卖掉（C#反编译 v1.4.8 PartiesSellLootCampaignBehavior.OnSettlementEntered）。
-    /// </summary>
-    [HarmonyPatch(typeof(PartiesSellLootCampaignBehavior), nameof(PartiesSellLootCampaignBehavior.OnSettlementEntered))]
-    internal static class GwpWardenKeepLootPatch
-    {
-        private static bool Prefix(MobileParty mobileParty) =>
-            mobileParty == null || !mobileParty.IsLordParty || !GwpWardenRecruitment.IsWardenParty(mobileParty);
-    }
 }

@@ -23,8 +23,9 @@ namespace GreyWardenPolicePurity
     /// <item>候选：原版只给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（FillSettlementsToVisitWithDistancesAsDays）。
     /// 信众村像王国领主的本国聚落一样，只要在原版最远距离内都进候选。</item>
     /// <item>招兵数：原版数要人格子里的兵；信众村再加上能直接招的狂信者（正在这里或刚走到门口时不加）；平均工资至少报 1（<see cref="VolunteersFor"/>）。</item>
-    /// <item>打分（<see cref="Rescore"/>）：原版只给城堡城镇乘的俘虏、伤员、卖东西三项（合起来叫「需要」），对灰袍改到信众村上，
-    /// 「灰袍优先做信众村的事」的倍数放大的是需要高出 1 的那部分：1 + (需要 − 1) × 倍数。城堡城镇去掉俘虏项和卖东西项。</item>
+    /// <item>打分（<see cref="Rescore"/>）：原版只给城堡城镇乘的俘虏、伤员、卖东西三项（合起来叫「需要」），信众村也乘，
+    /// 「灰袍优先做信众村的事」的倍数放大的是需要高出 1 的那部分：1 + (需要 − 1) × 倍数。城堡城镇照原版不动：
+    /// 买卖、招兵、招降俘虏、卖俘虏都照原版，灰袍只是更偏好去信众村办（用户裁定 2026-10-08：不是大改，别破坏原版体验）。</item>
     /// <item>养伤：灰袍领主在信众村里按在城里算（<see cref="GwpFaithHealingModel"/>）。</item>
     /// </list>
     /// 原版底分不只是 1.6 × 0.16：导航方式对得上还要 × 1.5（num38），所以一位什么都不缺的灰袍领主看身边的信众村约 0.38；
@@ -107,6 +108,8 @@ namespace GreyWardenPolicePurity
             List<MobileParty> members = new List<MobileParty> { party };
             if (party.Army != null)
                 members.AddRange(party.AttachedParties);
+            int prisoners = members.Sum(member => member.PrisonRoster.TotalRegulars);
+            int prisonLimit = Math.Max(1, members.Sum(member => member.Party.PrisonerSizeLimit));
             int men = Math.Max(1, members.Sum(member => member.MemberRoster.TotalManCount));
             float wounded = members.Sum(member => member.MemberRoster.TotalWounded) / (float)men;
             float sell = (float)SellItemScore.Invoke(behavior, new object[] { party });
@@ -115,43 +118,34 @@ namespace GreyWardenPolicePurity
             Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
             // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
             float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
+            // 原版城堡城镇的俘虏项是整数除法、满了才乘 3；信众村连续算。
+            float prisonerTerm = 1f + 2f * Math.Min(1f, prisoners / (float)prisonLimit);
 
             string best = "-";
             float bestScore = 0f;
             foreach ((AIBehaviorData data, float score) in think.AIBehaviorScores.ToList())
             {
-                if (data.AiBehavior != AiBehavior.GoToSettlement || data.Party is not Settlement settlement || score <= 0f)
+                // 只改信众村；城堡、城镇和别的聚落照原版。
+                if (data.AiBehavior != AiBehavior.GoToSettlement || data.Party is not Settlement settlement || score <= 0f ||
+                    !GwpFireswornBehavior.IsPreachedVillage(settlement))
                     continue;
                 float factor;
-                if (GwpFireswornBehavior.IsPreachedVillage(settlement))
+                if (settlement == here)
                 {
-                    if (settlement == here)
-                    {
-                        // 已经在这座村：只有人还在村里、伤员多时留下养伤；刚走到村口的不再加分。
-                        bool healing = party.CurrentSettlement == settlement && woundTerm > 1f;
-                        factor = healing ? Amplified(woundTerm) : 1f;
-                    }
-                    else
-                    {
-                        // 倍数放大的是需要，不是底分；没事就是原版的闲逛分（用户裁定 2026-10-05：灰袍优先做信众村的事）。
-                        // 俘虏不算需要：灰袍照原版在城里卖俘虏，正好来信众村才交（用户裁定 2026-10-08）。
-                        float need = woundTerm * sell;
-                        factor = Amplified(need);
-                    }
-                }
-                else if (settlement.IsFortification)
-                {
-                    // 去掉原版给城镇的卖东西项：灰袍在城里不卖背包里的东西。俘虏项照原版留着：灰袍照原版在城里卖俘虏（用户裁定 2026-10-08）。
-                    if (!settlement.IsTown)
-                        continue;
-                    factor = 1f / sell;
+                    // 已经在这座村：只有人还在村里、伤员多时留下养伤；刚走到村口的不再加分。
+                    bool healing = party.CurrentSettlement == settlement && woundTerm > 1f;
+                    factor = healing ? Amplified(woundTerm) : 1f;
                 }
                 else
-                    continue;
+                {
+                    // 倍数放大的是需要，不是底分；没事就是原版的闲逛分（用户裁定 2026-10-05：灰袍优先做信众村的事）。
+                    float need = prisonerTerm * woundTerm * sell;
+                    factor = Amplified(need);
+                }
                 float rescored = score * factor;
                 if (factor != 1f)
                     think.SetBehaviorScore(in data, rescored);
-                if (GwpFireswornBehavior.IsPreachedVillage(settlement) && rescored > bestScore)
+                if (rescored > bestScore)
                 {
                     bestScore = rescored;
                     best = settlement.StringId + ":" + rescored.ToString("0.00");
