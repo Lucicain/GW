@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
@@ -85,6 +86,12 @@ namespace GreyWardenPolicePurity
             float wounded = members.Sum(member => member.MemberRoster.TotalWounded) / (float)men;
             float sell = (float)SellItemScore.Invoke(behavior, new object[] { party });
 
+            // 原版把「刚离开、还站在门口（距离 1 以内）」的聚落也当成「正在这里」（MobilePartyHelper
+            // .GetCurrentSettlementOfMobilePartyForAICalculation）；赢的目标就是「正在这里」的聚落时，原版什么也不做，部队原地待命
+            // （C#反编译 v1.4.8 AiPartyThinkBehavior.PartyHourlyAiTick）。所以刚办完交接走出村口的领主不能再给这座村加分，
+            // 否则它每小时都赢、每小时都不动（实机诊断 2026-10-07：开局四位领主在家乡村门口待命约 100 小时）。
+            // 还在村里面、伤员多时照样加，让她留下养伤。
+            Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
             string best = "-";
             float bestScore = 0f;
             foreach ((AIBehaviorData data, float score) in think.AIBehaviorScores.ToList())
@@ -92,11 +99,17 @@ namespace GreyWardenPolicePurity
                 if (data.AiBehavior != AiBehavior.GoToSettlement || data.Party is not Settlement settlement || score <= 0f)
                     continue;
                 float rescored;
-                if (GwpFireswornBehavior.IsPreachedVillage(settlement))
+                // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
+                float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
+                if (settlement == here && GwpFireswornBehavior.IsPreachedVillage(settlement))
+                {
+                    if (party.CurrentSettlement != settlement || woundTerm <= 1f)
+                        continue;
+                    rescored = score * woundTerm * GwpTuning.Firesworn.FaithVillageVisitPriority;
+                }
+                else if (GwpFireswornBehavior.IsPreachedVillage(settlement))
                 {
                     float prisonerTerm = 1f + 2f * Math.Min(1f, prisoners / (float)prisonLimit);
-                    // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
-                    float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
                     rescored = score * prisonerTerm * woundTerm * sell * GwpTuning.Firesworn.FaithVillageVisitPriority;
                     if (rescored > bestScore)
                     {

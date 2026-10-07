@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
@@ -714,6 +715,13 @@ namespace GreyWardenPolicePurity
                     Flag("PRISONERS_PILING", "party=" + lord.StringId + "; prisoners=" + prisoners + "/" +
                         lord.Party.PrisonerSizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
                         "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
+                // 赢的目标就是「正在这里」的聚落时原版原地待命；办重建、请愿、练兵的原地驻留不算。
+                Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
+                if (lord.DefaultBehavior == AiBehavior.Hold && lord.MapEvent == null && here != null &&
+                    !GwpWardenDuties.HoldsAny(lord, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.Training) &&
+                    !GreyWardenFamilyBehavior.IsTrainingParty(lord))
+                    Flag("LORD_HOLDING_AT_SETTLEMENT", "party=" + lord.StringId + "; settlement=" + here.StringId +
+                        "; inside=" + (lord.CurrentSettlement == here) + "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
                 if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.AnomalyLowStrength)
                     Flag("LORD_UNDERSTRENGTH", "party=" + lord.StringId + "; members=" + lord.Party.NumberOfAllMembers +
                         "/" + lord.Party.PartySizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +

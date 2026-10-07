@@ -2,8 +2,8 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 无领主队分成传教队、运械队、卖货队；出发带家里最好的几套；运械的货先进背包
-> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornPartyDialogs.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs` `GwpFaithVisitDesire.cs`
+> 已复核至：2026-10-07 修领主在信众村门口卡住（不给「正在这里」的村加分、招兵数报 0）；祭司格子给守村队留一半
+> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornPartyDialogs.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 
 信众村、祭司、狂信者本身见 [`firesworn.md`](firesworn.md)；灰袍招兵与工资见 [`warden-recruitment.md`](warden-recruitment.md)。
@@ -51,7 +51,8 @@
 - **最强**：祭司的势力高过村里每一位别的要人。原版要人势力普通 < 100、有影响力 100–200、强大 > 200，
   初始 50–400 随机，每天只变零点几（C#反编译 v1.4.8 DefaultNotablePowerModel）。比如两位各 150 的要人，比例过 1/3 祭司才最强。
 - **格子**：几格有人、什么时候补、怎么排都照原版（每格每天按原版概率补，按等级从低到高排）。
-  格子里放守村队里最精锐的兵：等级高的在前，同兵种里配装好的先走；守村队没这么多人，多的格子空着。
+  格子里放守村队里最精锐的兵：等级高的在前，同兵种里配装好的先走。守村队至少留一半（不少于 5 人）守村，格子只放多出来的，
+  不够就空着。（依据：实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，剩下 5 人里 4 人又进了格子）
   原版会自己升格子里的兵，升出来的守村队里可能没有，所以每天原版补完、以及每小时，都照守村队重排一次。（依据：用户裁定 2026-10-07；C#反编译 v1.4.8 RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement）
 - 领主从格子招走人，守村队就少这几个，他们那一套装备整套带走。
 
@@ -115,29 +116,11 @@
   按本村贸易城镇的买价，钱回村后进公库；可以威逼，狂信者不投降，回到遭遇菜单由玩家决定打不打；可以放行。
   以前原版对话只认村民队，这种队落到原版兜底那一句「我不能和你说话」。（依据：C#反编译 v1.4.8 VillagerCampaignBehavior；用户反馈 2026-10-07）
 
-## 灰袍领主什么时候进信众村（`GwpFaithVisitDesire.cs`）
+## 灰袍领主什么时候进信众村
 
-不另做差事，改原版进城意愿：信众村对灰袍等于城。（依据：用户裁定 2026-10-07，取代此前的「信众村差事」）
-只对灰袍领主改，原版领主和别的部队不受影响。原版规则见 C#反编译 v1.4.8 `AiVisitSettlementBehavior.AiHourlyTick`：
-
-- **候选**：原版给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（`FillSettlementsToVisitWithDistancesAsDays`）。
-  灰袍是独立家族，以前离得稍远的信众村根本不进候选。后置补丁把信众村加进去，只要在原版最远距离内。
-- **打分**：原版底分 1.6，没伤员时 × 0.16；俘虏、伤员、背包三项只给城堡城镇乘。灰袍改成：
-  - 信众村：× (1 + 2 × 俘虏/俘虏上限，封顶 1) × 伤员项 × 卖东西项 × 3（`FaithVillageVisitPriority`，灰袍优先做信众村的事）。
-    原版俘虏项是整数除法，俘虏不满等于没有；信众村按俘虏多少连续加。伤员项照原版：伤员超过两成按比例乘 1–5。
-  - 城堡、城镇：除掉原版的俘虏项和城镇的卖东西项——灰袍在城里不卖普通俘虏，也不卖背包里的东西。
-  - 买粮、招兵两项原版本来就给村子算；招兵数见 `warden-recruitment.md`。
-- **疗伤**（`GwpFaithHealingModel`）：灰袍领主在没被劫的信众村里按在城里算，普通兵每天多好 10 个、英雄多回 8 点。
-  （依据：C#反编译 v1.4.8 `DefaultPartyHealingModel`）
-- 这些分和灰袍的差事一起进欲望竞价（普通案件 0.99）；俘虏满、背包重时信众村的分会压过办案，办完回去接着办。
-  手上的案子不退回案件池。
-- 进了信众村（不管为什么进的）做这些事：
-  1. 交俘虏；
-  2. 背包里除口粮外的东西都捐给村子：狂信者能用的兵器、护甲进村军械库，其余进货仓。
-     部队每天把多出来的装备挪进背包，不分开的话俘虏装备会全被当货卖掉。（依据：实机诊断 2026-10-06：村军械库一周是空的）
-  3. 用空位直接招狂信者，见 `warden-recruitment.md`。
-- 灰袍领主在城里不卖普通俘虏，只照原版卖敌对英雄俘虏（`GwpWardenKeepPrisonersPatch`）；
-  也不卖背包里的东西（`GwpWardenKeepLootPatch`）。
+改原版进城意愿，信众村对灰袍等于城；候选、打分、养伤、村口不加分的规则在 [`warden-ai.md`](warden-ai.md)「进信众村」。
+进了信众村（不管为什么进的）：交俘虏；背包里除口粮外的东西都捐给村子（狂信者能用的兵器护甲进村军械库，其余进货仓）；
+用空位直接招狂信者（见 `warden-recruitment.md`）。灰袍领主在城里不卖普通俘虏、不卖背包里的东西。
 
 ## 地图上的状态文字
 
@@ -215,7 +198,7 @@
 | 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
 | 保护费 | `PROTECTION_FEE` |
 | 仪式画面 | `RITUAL_MENU_SHOWN` |
-| 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`PRISONERS_PILING`、`LORD_UNDERSTRENGTH`、`PRIEST_SLOTS_EMPTY`、`HEARTH_AT_FLOOR`、`DUNGEON_BACKLOG`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`ARMORY_NON_POSITIVE`、`TREASURY_LOW` |
+| 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`PRISONERS_PILING`、`LORD_HOLDING_AT_SETTLEMENT`、`LORD_UNDERSTRENGTH`、`PRIEST_SLOTS_EMPTY`、`HEARTH_AT_FLOOR`、`DUNGEON_BACKLOG`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`ARMORY_NON_POSITIVE`、`TREASURY_LOW` |
 
 **分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。只取最近一次启动游戏以来的监控行（含中途滚动归档的部分），
 输出总览与收支、每座有火誓者的村子（人数来源、守村队、祭司势力、军械库按类）、新信众村出现的速度、每位领主、无领主队与仪式、异常汇总，

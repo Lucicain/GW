@@ -304,6 +304,8 @@ namespace GreyWardenPolicePurity
             public const int PriestStartingGold = 2000;
             // 祭司势力 = 其他要人势力之和 × 比例 / (1 − 比例)；比例到这里封顶，免得除以零。
             public const float PriestShareCeiling = 0.9f;
+            // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
+            public const float GuardKeptFromPriestSlots = 0.5f;
 
             // 集会传教：祭司在本村传，照比武大会，两次至少隔 15 天。
             public const float CongregationHours = 24f;

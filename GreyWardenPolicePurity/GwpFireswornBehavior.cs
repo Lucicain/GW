@@ -998,6 +998,8 @@ namespace GreyWardenPolicePurity
         /// 祭司格子照原版：几个格子有人、什么时候补，由原版每天按概率决定（C#反编译 v1.4.8
         /// RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement）。格子里是谁由守村队决定：
         /// 有人的格子依次放守村队里最精锐的兵（等级高的在前，同兵种里配装好的先走），守村队没这么多人就空着；
+        /// 守村队至少留一半（不少于 5 人）守村，格子只能放多出来的（实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，
+        /// 剩下的 5 人里 4 人又进了格子）；
         /// 格子按原版的顺序从低到高排（用户裁定 2026-10-07）。原版自己往上升格子里的兵会凭空变出守村队里没有的人，
         /// 所以每小时照守村队重排一次。
         /// </summary>
@@ -1006,7 +1008,7 @@ namespace GreyWardenPolicePurity
             Hero? priest = FindLivingPriest(row);
             if (priest == null)
                 return;
-            int filled = priest.VolunteerTypes.Count(troop => troop != null);
+            int filled = Math.Min(priest.VolunteerTypes.Count(troop => troop != null), SpareGuard(row));
             List<CharacterObject> best = EliteOfGuard(row, filled)
                 .OrderBy(troop => troop.Level + (troop.IsMounted ? 0.5f : 0f))
                 .ToList();
@@ -1026,14 +1028,23 @@ namespace GreyWardenPolicePurity
             return elite;
         }
 
-        /// <summary>原版给空格子补人时问的「基础志愿兵」：祭司给守村队里最精锐的那个兵种，守村队空了就不补。</summary>
+        /// <summary>守村队里能让祭司格子拉走的人数：一半（不少于 5 人）留下守村。</summary>
+        private int SpareGuard(FaithVillage row)
+        {
+            int sworn = Sworn(row);
+            int keep = Math.Max(GwpTuning.Firesworn.MissionMinimumLeftBehind,
+                (int)Math.Ceiling(sworn * GwpTuning.Firesworn.GuardKeptFromPriestSlots));
+            return Math.Max(0, sworn - keep);
+        }
+
+        /// <summary>原版给空格子补人时问的「基础志愿兵」：祭司给守村队里最精锐的那个兵种，守村队没有多出来的人就不补。</summary>
         internal static CharacterObject? BestGuardTroop(Hero priest)
         {
             if (_instance == null)
                 return null;
             FaithVillage? row = _instance._villages.Values.FirstOrDefault(entry =>
                 string.Equals(entry.PriestId, priest.StringId, StringComparison.OrdinalIgnoreCase));
-            return row == null ? null : _instance.EliteOfGuard(row, 1).FirstOrDefault();
+            return row == null || _instance.SpareGuard(row) <= 0 ? null : _instance.EliteOfGuard(row, 1).FirstOrDefault();
         }
 
         // ---------------------------------------------------------------- 工具

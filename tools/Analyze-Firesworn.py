@@ -6,7 +6,7 @@
   python tools/Analyze-Firesworn.py              # 最近一次启动以来
   python tools/Analyze-Firesworn.py --all        # 全部日志
 
-输出：总览、每天的经济、每座信众村、每位灰袍领主、常驻队、异常（ANOMALY）汇总，
+输出：总览、每天的经济、每座有火誓者的村子、每位灰袍领主、无领主队与仪式、异常（ANOMALY）汇总，
 最后是按阈值主动找出的平衡问题。只读日志，不改任何东西。
 """
 import argparse
@@ -206,8 +206,8 @@ def main():
         if minimum < 0.6:
             issues.append(f"{party} 兵力最低到过 {minimum:.0%}")
 
-    # ------------------------------------------------------------ 常驻队
-    print("\n== 常驻队")
+    # ------------------------------------------------------------ 无领主队与仪式
+    print("\n== 无领主队与仪式")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
                   "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
                   "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",

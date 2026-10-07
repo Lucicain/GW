@@ -2,8 +2,8 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 删每小时解冻；读档解冻跳过火誓者卖货队；状态文字覆盖重建、请愿、练兵、信众村、无领主队
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs`
+> 已复核至：2026-10-07 进信众村的规则从 firesworn-economy.md 移来；修领主在信众村门口卡住；删每小时解冻；状态文字覆盖重建、请愿、练兵、信众村、无领主队
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpFaithVisitDesire.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
@@ -28,7 +28,7 @@
 3. **本职优先的活**：重建本职在有待重建的村子时、请愿本职在有待办请愿时，不接普通案件。
    练兵本职在练兵排队时不接新差事。
 4. **进信众村**：不是差事，是原版进城意愿——信众村对灰袍等于城，俘虏、伤员、背包都往信众村加分，再乘 3。
-   俘虏满、背包重时压过普通案件（0.99），进完村回去接着办。详见 `firesworn-economy.md`。灰袍领主不主持传教。
+   俘虏满、背包重时压过普通案件（0.99），进完村回去接着办。详见本文件「进信众村」。灰袍领主不主持传教。
    （依据：用户裁定 2026-10-05：灰袍优先做和信众村相关的事；2026-10-07：改原版意愿，不另搞差事）
 5. **普通案件**（`PoliceEnforcementBehavior.AssignTasks`）分三轮：
    - 第一轮：信众村 6 距离内的案子，派给最近的空闲领主；
@@ -74,6 +74,33 @@
 - 地图状态文字：重建施工、请愿驻留、练兵官原地操练、灰袍领主在信众村、火誓者的无领主队，都写成实际在做的事（`GwpLocationDutyBehaviorTextPatch`；
   用户裁定 2026-10-07：用状态文字，不弹灰色消息）。原版对进了聚落的部队只写「在某地等待」，原地办事只写「原地待命」，
   卖俘虏、招兵、养伤都不记日志条目（C#反编译 v1.4.8 MobileParty.GetBehaviorText）。
+
+## 进信众村（`GwpFaithVisitDesire.cs`）
+
+不另做差事，改原版进城意愿：信众村对灰袍等于城。（依据：用户裁定 2026-10-07，取代此前的「信众村差事」）
+只对灰袍领主改，原版领主和别的部队不受影响。原版规则见 C#反编译 v1.4.8 `AiVisitSettlementBehavior.AiHourlyTick`：
+
+- **候选**：原版给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（`FillSettlementsToVisitWithDistancesAsDays`）。
+  灰袍是独立家族，以前离得稍远的信众村根本不进候选。后置补丁把信众村加进去，只要在原版最远距离内。
+- **打分**：原版底分 1.6，没伤员时 × 0.16；俘虏、伤员、背包三项只给城堡城镇乘。灰袍改成：
+  - 信众村：× (1 + 2 × 俘虏/俘虏上限，封顶 1) × 伤员项 × 卖东西项 × 3（`FaithVillageVisitPriority`，灰袍优先做信众村的事）。
+    原版俘虏项是整数除法，俘虏不满等于没有；信众村按俘虏多少连续加。伤员项照原版：伤员超过两成按比例乘 1–5。
+  - 城堡、城镇：除掉原版的俘虏项和城镇的卖东西项——灰袍在城里不卖普通俘虏，也不卖背包里的东西。
+  - 买粮、招兵两项原版本来就给村子算；招兵数见 `warden-recruitment.md`。
+- **疗伤**（`GwpFaithHealingModel`）：灰袍领主在没被劫的信众村里按在城里算，普通兵每天多好 10 个、英雄多回 8 点。
+  （依据：C#反编译 v1.4.8 `DefaultPartyHealingModel`）
+- 刚办完交接走到村口、还在 1 距离内的领主，原版仍当她「在这座村」；赢的目标是「正在这里」的聚落时原版什么也不做、原地待命。
+  所以这座村对她不加分，招兵数也报 0（招兵只在进门那一刻）；还在村里面且伤员多时才加分留她养伤。
+  （依据：C#反编译 v1.4.8 AiPartyThinkBehavior、MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation；实机诊断 2026-10-07：开局四位领主在家乡村门口待命约 100 小时）
+- 这些分和灰袍的差事一起进欲望竞价（普通案件 0.99）；俘虏满、背包重时信众村的分会压过办案，办完回去接着办。
+  手上的案子不退回案件池。
+- 进了信众村（不管为什么进的）做这些事：
+  1. 交俘虏；
+  2. 背包里除口粮外的东西都捐给村子：狂信者能用的兵器、护甲进村军械库，其余进货仓。
+     部队每天把多出来的装备挪进背包，不分开的话俘虏装备会全被当货卖掉。（依据：实机诊断 2026-10-06：村军械库一周是空的）
+  3. 用空位直接招狂信者，见 `warden-recruitment.md`。
+- 灰袍领主在城里不卖普通俘虏，只照原版卖敌对英雄俘虏（`GwpWardenKeepPrisonersPatch`）；
+  也不卖背包里的东西（`GwpWardenKeepLootPatch`）。
 
 ## 巡区
 

@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using Helpers;
 
 namespace GreyWardenPolicePurity
 {
@@ -150,14 +151,21 @@ namespace GreyWardenPolicePurity
     /// （AiVisitSettlementBehavior.AiHourlyTick）。灰袍兵不领饷，平均工资是 0 时得到正无穷，转整数成了
     /// -2147483648，招兵意愿整个变成负数（C#反编译、运行时反射 2026-10-07）。所以报 1：不领饷，人数上限就是预算本身，
     /// 招多少由兵源和空位决定。
+    /// 领主正在这座信众村或刚走到村口时报 0：招兵只在进门那一刻（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
+    /// 站在村口再高的招兵分也招不到人，只会让原版每小时选「去这里」、而「已经在这里」就原地待命
+    /// （C#反编译 v1.4.8 AiPartyThinkBehavior、MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation；
+    /// 实机诊断 2026-10-07：开局缺兵的领主在家乡村门口卡住）。原版要人的格子招空了自然是 0，我们直接招的狂信者不会空，所以要另算。
     /// </summary>
     [HarmonyPatch(typeof(AiVisitSettlementBehavior), "GetApproximateVolunteersCanBeRecruitedDataFromSettlement")]
     internal static class GwpWardenRecruitDesirePatch
     {
         private static void Postfix(Hero hero, Settlement settlement, ref (int, float) __result)
         {
-            if (GwpWardenRecruitment.IsWardenBuyer(hero))
-                __result = (GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 1f);
+            if (!GwpWardenRecruitment.IsWardenBuyer(hero))
+                return;
+            MobileParty? party = hero.PartyBelongedTo;
+            bool here = party != null && MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party) == settlement;
+            __result = (here ? 0 : GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 1f);
         }
     }
 

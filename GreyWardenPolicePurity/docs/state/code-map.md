@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-160 个源文件、51,014 行、316 个公开类型、69 个 Harmony 补丁点（分布在 69 个补丁类里）。
+160 个源文件、51,056 行、316 个公开类型、69 个 Harmony 补丁点（分布在 69 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -585,7 +585,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 381 行 · `GwpTuning`，另含 13 个类型
+- `GwpTuning.cs` — 383 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 359 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
@@ -595,9 +595,9 @@
 
 ### 其他（75 个文件）
 
-- `GwpFireswornBehavior.cs` — 1056 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornBehavior.cs` — 1067 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
-- `GwpFireswornArmory.cs` — 883 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornArmory.cs` — 891 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 449 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
@@ -610,10 +610,10 @@
 - `GwpAssistanceArmyLifecyclePatch.cs` — 235 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
+- `GwpWardenRecruitment.cs` — 209 行 · `GwpWardenRecruitment` : VolunteerModel，另含 7 个类型
+- `GwpFaithVisitDesire.cs` — 207 行 · `GwpFaithVisitDesire` : PartyHealingModel，另含 3 个类型
 - `GwpPartyDutyMovementPatch.cs` — 201 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
-- `GwpWardenRecruitment.cs` — 201 行 · `GwpWardenRecruitment` : VolunteerModel，另含 7 个类型
 - `GwpAffairsNavigation.cs` — 197 行 · `GwpAffairsNavigationElement` : MapNavigationElementBase，另含 3 个类型
-- `GwpFaithVisitDesire.cs` — 194 行 · `GwpFaithVisitDesire` : PartyHealingModel，另含 3 个类型
 - `GwpFireswornMenus.cs` — 194 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 4 个类型
 - `GreyWardenLeaderBalanceBehavior.cs` — 193 行 · `GreyWardenLeaderBalanceBehavior` : CampaignBehaviorBase
 - `GwpEncyclopediaClanPageVM.cs` — 193 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型

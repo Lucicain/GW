@@ -2,7 +2,7 @@
 
 > 当前状态：传教、烧人、守村队按 2026-10-07 用户裁定重做，已部署待实测；配图颜色经用户确认；声音单次播放待实测；数值是试玩值
 > 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：2026-10-07 重定方向：祭司来了才算信众村、势力按比例、本村传到最强再向外传、烧人两换一、民兵不转化、狂信者改 2 级
+> 已复核至：2026-10-07 祭司格子给守村队留一半；无领主队分三种
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：传教与烧人音效完整播放一次、原音调、关菜单立即停止；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 
