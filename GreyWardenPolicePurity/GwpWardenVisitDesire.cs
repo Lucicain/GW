@@ -44,8 +44,6 @@ namespace GreyWardenPolicePurity
             AccessTools.Method(typeof(AiVisitSettlementBehavior), "GetBestNavigationDataForVisitingSettlement");
         private static readonly MethodInfo GetMaximumDistance =
             AccessTools.Method(typeof(AiVisitSettlementBehavior), "GetMaximumDistanceAsDays");
-        private static readonly MethodInfo SellItemScore =
-            AccessTools.Method(typeof(AiVisitSettlementBehavior), "CalculateSellItemScore");
 
         // 每位领主上一次打分时分最高的信众村，只给监控用；每小时重算，不存档。
         private static readonly Dictionary<string, string> LastBest = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -106,10 +104,29 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 打分
 
+        /// <summary>
+        /// 信众村的「卖东西」项：照原版 CalculateSellItemScore 的非坐骑那一半，1 + min(3, (价值 / ((人数 + 5) × 100))^0.33)，
+        /// 军团再开方；但只算到了村里会交出去的东西（<see cref="GwpFireswornBehavior.KeptOnHandover"/>）。
+        /// 原版这一项还有坐骑那一半（坐骑总值超过部队金币一成就加分），而交东西时留下了普通坐骑，用原版的分就永远交不干净、
+        /// 永远想回来（实机诊断 2026-10-08：gw_leader_2 跟人途中每六小时回一次家乡信众村，9 次，信众村 1.24 压过差事 0.99）。
+        /// </summary>
+        private static float HandoverTerm(MobileParty party)
+        {
+            float value = 0f;
+            for (int i = 0; i < party.ItemRoster.Count; i++)
+            {
+                ItemRosterElement element = party.ItemRoster[i];
+                if (!GwpFireswornBehavior.KeptOnHandover(element.EquipmentElement))
+                    value += element.Amount * element.EquipmentElement.Item.Value;
+            }
+            float term = 1f + Math.Min(3f, (float)Math.Pow(value / ((party.MemberRoster.TotalManCount + 5f) * 100f), 0.33f));
+            return party.Army != null ? (float)Math.Sqrt(term) : term;
+        }
+
         /// <summary>「灰袍优先做信众村的事」放大需要高出 1 的那部分。</summary>
         private static float Amplified(float need) => 1f + (need - 1f) * GwpTuning.Firesworn.FaithVillageVisitPriority;
 
-        internal static void Rescore(AiVisitSettlementBehavior behavior, MobileParty party, PartyThinkParams think)
+        internal static void Rescore(MobileParty party, PartyThinkParams think)
         {
             // 军团长照原版把挂靠部队一起算。
             List<MobileParty> members = new List<MobileParty> { party };
@@ -119,7 +136,7 @@ namespace GreyWardenPolicePurity
             int prisonLimit = Math.Max(1, members.Sum(member => member.Party.PrisonerSizeLimit));
             int men = Math.Max(1, members.Sum(member => member.MemberRoster.TotalManCount));
             float wounded = members.Sum(member => member.MemberRoster.TotalWounded) / (float)men;
-            float sell = (float)SellItemScore.Invoke(behavior, new object[] { party });
+            float sell = HandoverTerm(party);
             // 原版把「刚离开、还站在门口（距离 1 以内）」的聚落也当成「正在这里」；赢的目标就是「正在这里」时原版什么也不做，
             // 部队原地待命（MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation、AiPartyThinkBehavior.PartyHourlyAiTick）。
             Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
@@ -181,11 +198,11 @@ namespace GreyWardenPolicePurity
             GwpWardenVisitDesire.AppliesTo(mobileParty) &&
             !(mobileParty.Army != null && mobileParty.Army.LeaderParty != mobileParty);
 
-        private static void Postfix(AiVisitSettlementBehavior __instance, MobileParty mobileParty, PartyThinkParams p)
+        private static void Postfix(MobileParty mobileParty, PartyThinkParams p)
         {
             if (!Applies(mobileParty))
                 return;
-            GwpWardenVisitDesire.Rescore(__instance, mobileParty, p);
+            GwpWardenVisitDesire.Rescore(mobileParty, p);
         }
     }
 

@@ -81,6 +81,18 @@ namespace GreyWardenPolicePurity
         /// 所以背包里的兵器护甲不进军械库就会被当货卖掉（实机诊断 2026-10-06：村军械库一周都是空的，
         /// 缴获的装备全被狂信者队拉去城里卖了）。
         /// </summary>
+        /// <summary>
+        /// 灰袍领主进信众村交东西时自己留下的：口粮和普通坐骑（无前缀、不是驮兽），照原版领主进城卖东西的规矩，坐骑多了行军快
+        /// （C#反编译 v1.4.8 PartiesSellLootCampaignBehavior.OnSettlementEntered）。进信众村的意愿只算会交出去的东西
+        /// （GwpWardenVisitDesire.Rescore），两处用这一个判断。
+        /// </summary>
+        internal static bool KeptOnHandover(EquipmentElement element)
+        {
+            ItemObject item = element.Item;
+            return item.IsFood || item.ItemType == ItemObject.ItemTypeEnum.Horse && item.HorseComponent.IsRideable &&
+                   element.ItemModifier == null && !item.HorseComponent.IsPackAnimal;
+        }
+
         private void HandOver(MobileParty party, Settlement village)
         {
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
@@ -101,11 +113,7 @@ namespace GreyWardenPolicePurity
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
-                ItemObject item = element.EquipmentElement.Item;
-                // 照原版领主进城卖东西的规矩留下口粮和普通坐骑（无前缀、不是驮兽），其余交给村子
-                // （C#反编译 v1.4.8 PartiesSellLootCampaignBehavior.OnSettlementEntered）。坐骑多了行军快。
-                if (item.IsFood || item.ItemType == ItemObject.ItemTypeEnum.Horse && item.HorseComponent.IsRideable &&
-                    element.EquipmentElement.ItemModifier == null && !item.HorseComponent.IsPackAnimal)
+                if (KeptOnHandover(element.EquipmentElement))
                     continue;
                 if (KitKind(element.EquipmentElement.Item, zealot) >= 0)
                 {

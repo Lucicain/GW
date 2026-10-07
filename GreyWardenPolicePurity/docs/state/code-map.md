@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-165 个源文件、51,518 行、321 个公开类型、71 个 Harmony 补丁点（分布在 71 个补丁类里）。
+165 个源文件、51,543 行、321 个公开类型、71 个 Harmony 补丁点（分布在 71 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -612,7 +612,7 @@
 - `GwpPoliceWarReasonService.cs` — 362 行 · `GwpPoliceWarReasonService`
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
 - `GwpFireswornRituals.cs` — 295 行 · `GwpFireswornBehavior`
-- `GwpWardenVisitDesire.cs` — 255 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 4 个类型
+- `GwpWardenVisitDesire.cs` — 272 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 4 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAssistanceArmyLifecyclePatch.cs` — 235 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -625,7 +625,7 @@
 - `GwpAgentStatCalculateModel.cs` — 190 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GwpPartyDutyMovementPatch.cs` — 189 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
 - `GreyWardenSafeTroopSupplier.cs` — 188 行 · `GreyWardenSafeTroopSupplier` : IMissionTroopSupplier，另含 1 个类型
-- `GwpFireswornDungeon.cs` — 178 行 · `GwpFireswornBehavior`
+- `GwpFireswornDungeon.cs` — 186 行 · `GwpFireswornBehavior`
 - `GwpFaithBattleRewardModel.cs` — 167 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `GwpOffenderDesire.cs` — 160 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型

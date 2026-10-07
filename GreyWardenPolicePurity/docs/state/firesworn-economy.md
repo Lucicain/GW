@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 交东西照原版卖东西的规矩留口粮和普通坐骑；城里照原版卖
+> 已复核至：2026-10-08 交东西留下什么抽成 KeptOnHandover，进信众村的意愿也用它
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs` `GwpDamnationSmokePatch.cs`
 > 待实测：见文末
 
