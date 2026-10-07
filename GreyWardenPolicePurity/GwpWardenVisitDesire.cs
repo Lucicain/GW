@@ -88,13 +88,20 @@ namespace GreyWardenPolicePurity
         /// 站在村口的招兵分只会让原版每小时选「去这里」，而「已经在这里」就原地待命（AiPartyThinkBehavior.PartyHourlyAiTick）。
         /// 原版拿平均工资去除工资预算再 MathF.Floor 成人数上限；格子里全是不领饷的灰袍兵时平均是 0，得到 -2147483648，
         /// 招兵意愿整个变成负数（运行时反射 2026-10-07），所以至少报 1。
+        /// 灰袍偏好去信众村招兵（用户裁定 2026-10-08：买卖、招兵、卖俘虏照原版，只是偏好村子），所以信众村报的人数再乘
+        /// 「灰袍优先做信众村的事」的倍数。原版招兵分按能招到的人数做乘方，城里要人多（城里七八位，村里三位），不乘的话缺兵时总是城里赢
+        /// （C#反编译 v1.4.8 AiVisitSettlementBehavior.AiHourlyTick 的 num26–num31）。各要人出兵快慢和势力无关，只看格子和关系
+        /// （DefaultVolunteerModel）。
         /// </summary>
         internal static (int, float) VolunteersFor(Hero hero, Settlement settlement, (int Count, float Wage) vanilla)
         {
             MobileParty? party = hero.PartyBelongedTo;
             bool here = party != null && MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party) == settlement;
             int direct = here || party == null ? 0 : GwpFireswornBehavior.DirectZealotsFor(settlement, party);
-            return (vanilla.Count + direct, Math.Max(1f, vanilla.Wage));
+            int count = vanilla.Count + direct;
+            if (!here && GwpFireswornBehavior.IsPreachedVillage(settlement))
+                count = (int)(count * GwpTuning.Firesworn.FaithVillageVisitPriority);
+            return (count, Math.Max(1f, vanilla.Wage));
         }
 
         // ---------------------------------------------------------------- 打分

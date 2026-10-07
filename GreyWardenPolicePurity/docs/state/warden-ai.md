@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 城堡城镇照原版；信众村的需要放回俘虏项；灰袍照原版卖东西
+> 已复核至：2026-10-08 信众村报的招兵人数乘偏好倍数
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -89,7 +89,9 @@
 
 **灰袍改了什么**：
 - 候选：独立家族原版只看身边约 0.8 天路程以内的聚落，信众村只要在原版最远距离内都进候选。
-- 招兵数：照原版数要人格子；信众村再加上能直接招的狂信者（正在这座村或刚走到村口时不加），平均工资至少报 1。见 `warden-recruitment.md`。
+- 招兵数：照原版数要人格子；信众村再加上能直接招的狂信者，再乘偏好倍数 3（正在这座村或刚走到村口时都不加），平均工资至少报 1。见 `warden-recruitment.md`。
+  原版招兵分按能招到的人数做乘方，城里要人多（七八位，村里三位），不乘的话缺兵时总是城里赢；各要人出兵快慢和势力无关，只看格子和关系。
+  （依据：用户裁定 2026-10-08：招兵也偏好信众村；C#反编译 v1.4.8 AiVisitSettlementBehavior num26–num31、DefaultVolunteerModel）
 - 信众村：俘虏（1 + 2 × 俘虏/上限，连续算）× 伤员 × 卖东西，合起来叫「需要」；「灰袍优先做信众村的事」放大需要高出 1 的那部分：
   × (1 + (需要 − 1) × 3)。闲着、背包里只有一点东西约 0.59，压不过普通案件 0.99；俘虏半满约 1.96、伤员三成约 1.27，压得过。
   （依据：用户裁定 2026-10-05：灰袍优先做和信众村相关的事；实机诊断 2026-10-07：以前倍数乘在整个分上，0.38 × 3 = 1.15，领主没事也往信众村跑）
