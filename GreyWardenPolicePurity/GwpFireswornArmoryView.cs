@@ -30,11 +30,11 @@ namespace GreyWardenPolicePurity
                 },
                 _ => ShowContents(Settlement.CurrentSettlement.StringId), isLeave: false, index: 6);
 
+            // 调试用，任何灰袍领主都能直接问，不用入会、不用是带队的那位（用户 2026-10-08）。
             starter.AddPlayerLine("gwp_fs_lord_armory_ask", "lord_talk_speak_diplomacy_2", "gwp_fs_lord_armory_reply",
-                GwpText.Get("{=gwp_fs_lord_armory_ask}Show me the arms your company carries for the sworn."),
+                GwpText.Get("{=gwp_fs_lord_armory_ask}Show me your company's storeroom."),
                 () => GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
-                      Hero.OneToOneConversationHero.PartyBelongedTo?.LeaderHero == Hero.OneToOneConversationHero &&
-                      Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>().IsRecruitedByGreyWardens,
+                      Hero.OneToOneConversationHero.PartyBelongedTo != null,
                 null, 215);
             starter.AddDialogLine("gwp_fs_lord_armory_reply", "gwp_fs_lord_armory_reply", "lord_pretalk",
                 GwpText.Get("{=gwp_fs_lord_armory_reply}Here. Everything we carry, and who wears it."),

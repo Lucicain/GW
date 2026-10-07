@@ -1448,7 +1448,7 @@
   <string id="gwp_fs_armory_section_goods" text="货仓（要拉进城卖的）" />
   <string id="gwp_fs_armory_section_inventory" text="背包" />
   <string id="gwp_fs_armory_section" text="—— {TITLE}（{COUNT}件，值{VALUE}）——" />
-  <string id="gwp_fs_lord_armory_ask" text="让我看看你们队伍给立誓者备的兵器。" />
+  <string id="gwp_fs_lord_armory_ask" text="让我看看你们队伍的库房。" />
   <string id="gwp_fs_lord_armory_reply" text="都在这儿了，带着的东西、谁在穿，你看吧。" />
   <string id="gwp_fs_armory_item" text="{NAME} × {COUNT}" />
   <string id="gwp_fs_armory_village" text="{VILLAGE}的军械库（{ITEMS}件）" />
