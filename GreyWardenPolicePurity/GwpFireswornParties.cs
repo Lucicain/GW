@@ -291,6 +291,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 家里比附近有火誓者的村子人多或兵器好得够多，就派运械队：押车的人至少 5 个、人数差多少带多少（到了并入当地守村队），
         /// 背包里装上让两边武装率拉平所差的那几套（<see cref="LoadBalanceCargo"/>）。去差得最多的那座。照比武大会派（用户裁定 2026-10-07）。
+        /// 只送有祭司的信众村：运械是祭司来了才解锁的服务（用户裁定 2026-10-07）。
         /// </summary>
         private void TryDispatchBalance(FaithVillage row, Settlement home, double now)
         {
@@ -298,7 +299,7 @@ namespace GreyWardenPolicePurity
                 !IsFestivalDay(row, row.LastBalance, now))
                 return;
             (Settlement target, int men, int sets)? best = NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
-                .Where(settlement => _villages.ContainsKey(settlement.StringId))
+                .Where(IsPreachedVillage)
                 .Select(settlement =>
                 {
                     (int men, int sets) need = BalanceNeed(row, home, settlement);

@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 烧户改 1:1；烧人、运械队、传教队都照比武大会；烧完冒原版劫掠后的烟；运械队按人数差和武器差平衡
+> 已复核至：2026-10-07 烧人锁村改 24 小时
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs` `GwpDamnationSmokePatch.cs`
 > 待实测：见文末
 
@@ -120,7 +120,7 @@
       不给守村队加兵。这是到顶以后本村的长期道路；一场涨得不多，要多烧几场。
 
   （依据：用户裁定 2026-10-07）
-- 烧人后锁村 6 小时，主持人显示祭司。
+- 烧人锁村 24 小时，和集会传教一样，主持人显示祭司。（依据：用户裁定 2026-10-07）
 - 烧完村子在地图上冒烟 48 小时（试玩值），用原版村子被劫掠后的那股烟（`map_icon_village_plunder_fx`）；不改村子状态。
   （依据：用户裁定 2026-10-07；C#反编译 v1.4.8 SandBox.View SettlementVisual.RefreshPartyIcon）
 

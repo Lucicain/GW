@@ -317,8 +317,8 @@ namespace GreyWardenPolicePurity
             public const float FestivalDailyChance = 0.35f;
 
             // 烈火责罚：每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
-            // 烧完村子在地图上冒烟这么久（试玩值）。
-            public const float DamnationLockHours = 6f;
+            // 和集会传教一样锁村 24 小时（用户裁定 2026-10-07）。烧完村子在地图上冒烟这么久（试玩值）。
+            public const float DamnationLockHours = 24f;
             public const int DamnationCostPerHead = 20;
             public const float DamnationSmokeHours = 48f;
             // 本地传教到头以后烧原版民兵：一次最多 2 + 户数/200 个。

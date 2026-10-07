@@ -937,6 +937,11 @@ namespace GreyWardenPolicePurity
             now - last >= GwpTuning.Firesworn.FestivalIntervalDays * 24d &&
             MBRandom.RandomFloat < GwpTuning.Firesworn.FestivalDailyChance;
 
+        /// <summary>正在进行的仪式：村子 id 和哪一种（<see cref="GwpRitualMapSoundView"/> 用）。</summary>
+        internal static IEnumerable<KeyValuePair<string, RitualKind>> ActiveRituals() =>
+            _instance?._rituals.Select(ritual => new KeyValuePair<string, RitualKind>(ritual.VillageId, ritual.Kind)) ??
+            Enumerable.Empty<KeyValuePair<string, RitualKind>>();
+
         /// <summary>这座村刚烧过人，地图上还在冒烟（<see cref="GwpDamnationSmokePatch"/>）。</summary>
         internal static bool IsSmoking(Settlement settlement) =>
             _instance != null && _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) &&

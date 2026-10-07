@@ -3,5 +3,7 @@
   xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="module_sound">
   <module_sounds>
     <module_sound name="gwp/support/horn" is_2d="true" sound_category="mission_ambient_bed" path="horn.ogg" />
+    <module_sound name="gwp/firesworn/damnation" sound_category="campaign_node" path="gwp_firesworn_damnation.wav" />
+    <module_sound name="gwp/firesworn/congregation" sound_category="campaign_node" path="gwp_firesworn_congregation.wav" />
   </module_sounds>
 </base>
