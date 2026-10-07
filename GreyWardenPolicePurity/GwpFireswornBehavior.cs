@@ -495,6 +495,7 @@ namespace GreyWardenPolicePurity
         private void OnHourlyTick()
         {
             GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_SMOKE", ClearExpiredSmoke);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_GUARD", () =>
@@ -925,6 +926,22 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>按村子 id 给一个固定的日子（0…period−1），各村错开，不在同一天扎堆。</summary>
+        /// <summary>
+        /// 照比武大会开（用户裁定 2026-10-07）：本村每季固定的那一周、离上次同一件事（<paramref name="last"/>）至少 15 天，
+        /// 每天固定概率。原版比武大会每座城每天判一次，上次开赛不到 15 天不开，每季 3 周里只有本城那一周能开；
+        /// 原版的概率看在场的领主和英雄，这里用户定为固定概率（C#反编译 v1.4.8 TournamentCampaignBehavior.ConsiderStartOrEndTournament、
+        /// DefaultTournamentModel.GetTournamentStartChance）。烧人、运械队、传教队都走这里，每天调一次。
+        /// </summary>
+        private static bool IsFestivalDay(FaithVillage row, double last, double now) =>
+            CampaignTime.Now.GetDayOfSeason / CampaignTime.DaysInWeek == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
+            now - last >= GwpTuning.Firesworn.FestivalIntervalDays * 24d &&
+            MBRandom.RandomFloat < GwpTuning.Firesworn.FestivalDailyChance;
+
+        /// <summary>这座村刚烧过人，地图上还在冒烟（<see cref="GwpDamnationSmokePatch"/>）。</summary>
+        internal static bool IsSmoking(Settlement settlement) =>
+            _instance != null && _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) &&
+            CampaignTime.Now.ToHours - row.LastDamnation < GwpTuning.Firesworn.DamnationSmokeHours;
+
         private static int StableDay(string id, int period)
         {
             unchecked

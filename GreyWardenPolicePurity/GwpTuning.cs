@@ -311,31 +311,34 @@ namespace GreyWardenPolicePurity
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
 
-            // 烈火责罚照比武大会开（用户裁定 2026-10-07）：本村每季固定的一周里，离上次隔 15 天，每天固定概率（试玩值）。
-            // 每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
+            // 照比武大会开（用户裁定 2026-10-07）：烧人、运械队、传教队都只在本村每季固定的一周里，
+            // 离上次同一件事至少 15 天，每天固定概率（试玩值）。
+            public const float FestivalIntervalDays = 15f;
+            public const float FestivalDailyChance = 0.35f;
+
+            // 烈火责罚：每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
+            // 烧完村子在地图上冒烟这么久（试玩值）。
             public const float DamnationLockHours = 6f;
             public const int DamnationCostPerHead = 20;
-            public const float DamnationIntervalDays = 15f;
-            public const float DamnationDailyChance = 0.35f;
+            public const float DamnationSmokeHours = 48f;
             // 本地传教到头以后烧原版民兵：一次最多 2 + 户数/200 个。
             public const int DamnationMilitiaBase = 2;
             public const float DamnationHearthPerMilitia = 200f;
-            // 烧不信教的户（用户裁定 2026-10-07）：现有信众户每 3 户烧 1 户，烧 1 户换 3 户信教。
+            // 烧不信教的户（用户裁定 2026-10-07）：现有信众户每 3 户烧 1 户，烧 1 户换 1 户信教。
             public const int DamnationSwornPerBurnedHousehold = 3;
-            public const int DamnationHouseholdsSwornPerBurned = 3;
 
-            // 传教队：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
+            // 传教队：祭司已是本地最强的信众村照比武大会派，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
             // 先去 150 距离内火誓者比例比家里低 0.1 以上的村子，没有就去最近的还没有火誓者的。
-            public const float MissionIntervalDays = 10f;
             public const int MaxActiveMissions = 4;
             public const int MissionSize = 10;
             public const int MissionMinimumLeftBehind = 5;
             public const float MissionMaxDistance = 150f;
             public const float MissionMinimumShareGap = 0.1f;
 
-            // 运械队：隔 3 天看一次，300 距离内拿到主兵器的比例比家里低 0.2 以上、拉平要差 5 套以上的村子才去；5 人押车。
-            public const float BalanceIntervalDays = 3f;
+            // 运械队：照比武大会派，看 300 距离内有火誓者的村子，守村队人数（按户数比）拉平要差 5 人以上，
+            // 或拿到主兵器的比例比家里低 0.2 以上、拉平要差 5 套以上，才去；至少 5 人押车，人数差多少就多带多少人。
             public const int BalanceEscortSize = 5;
+            public const int BalanceMinimumMen = 5;
             public const float BalanceMaxDistance = 300f;
             public const float BalanceMinimumArmedGap = 0.2f;
             public const int BalanceMinimumSets = 5;

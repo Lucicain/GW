@@ -102,16 +102,24 @@ namespace GreyWardenPolicePurity
         private void ScheduleDamnations()
         {
             double now = CampaignTime.Now.ToHours;
-            int weekOfSeason = CampaignTime.Now.GetDayOfSeason / CampaignTime.DaysInWeek;
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 Settlement village = Settlement.Find(row.VillageId);
-                if (FindLivingPriest(row) == null || HasRitual(village) || !IsVillageQuiet(village))
-                    continue;
-                if (weekOfSeason == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
-                    now - row.LastDamnation >= GwpTuning.Firesworn.DamnationIntervalDays * 24d &&
-                    MBRandom.RandomFloat < GwpTuning.Firesworn.DamnationDailyChance)
+                if (FindLivingPriest(row) != null && !HasRitual(village) && IsVillageQuiet(village) &&
+                    IsFestivalDay(row, row.LastDamnation, now))
                     HoldDamnation(row, village);
+            }
+        }
+
+        /// <summary>冒烟满了时辰，让地图重画这座村的图标，烟就散了。</summary>
+        private void ClearExpiredSmoke()
+        {
+            double now = CampaignTime.Now.ToHours;
+            foreach (FaithVillage row in _villages.Values)
+            {
+                double since = now - row.LastDamnation;
+                if (since >= GwpTuning.Firesworn.DamnationSmokeHours && since < GwpTuning.Firesworn.DamnationSmokeHours + 1d)
+                    Settlement.Find(row.VillageId).Party.SetVisualAsDirty();
             }
         }
 
@@ -174,11 +182,11 @@ namespace GreyWardenPolicePurity
         /// <item>本村传教到头（祭司已是本地最强）以后才烧本村（用户裁定 2026-10-07）：
         /// <list type="bullet">
         /// <item>原版民兵，成对烧，一次最多 2 + 户数/200 个。这时信众村已不再出新民兵，烧掉旧的就是把守村队纯化，不是长期道路。</item>
-        /// <item>不信教的户：现有信众户每 3 户烧 1 户，不超过不信教的户数。烧死的那户从户数里去掉，换来 3 户信教；
-        /// 不给守村队加兵——那些人家本来没有兵，守村队靠补兵自己长。烧一户换多户，免得烧户变成自断人口。</item>
+        /// <item>不信教的户：现有信众户每 3 户烧 1 户，不超过不信教的户数。烧死的那户从户数里去掉，换来 1 户信教；
+        /// 不给守村队加兵——那些人家本来没有兵，守村队靠补兵自己长。一场涨得不多，要多烧几场（用户裁定 2026-10-07）。</item>
         /// </list></item>
         /// </list>
-        /// 烧多少户按烧之前的信众户算。
+        /// 烧多少户按烧之前的信众户算。烧完村子在地图上冒烟（<see cref="GwpDamnationSmokePatch"/>）。
         /// </summary>
         private void HoldDamnation(FaithVillage row, Settlement village)
         {
@@ -220,11 +228,11 @@ namespace GreyWardenPolicePurity
             {
                 village.Village.Hearth -= householdsBurned;
                 int sworn = row.Households;
-                row.Households = Math.Min(HouseholdCap(village),
-                    row.Households + householdsBurned * GwpTuning.Firesworn.DamnationHouseholdsSwornPerBurned);
+                row.Households = Math.Min(HouseholdCap(village), row.Households + householdsBurned);
                 householdsSworn = row.Households - sworn;
             }
             UpdatePriestPower(row);
+            village.Party.SetVisualAsDirty();
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
                 GwpText.Get("{=gwp_notice_damnation}Burned {PEOPLE} people and {HOMES} households; {RISEN} rose as Wardens, {SWORN} households took the oath",
                     "PEOPLE", prisonersBurned + militiaBurned, "HOMES", householdsBurned, "RISEN", risen, "SWORN", householdsSworn));

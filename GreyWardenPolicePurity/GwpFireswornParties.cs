@@ -178,7 +178,10 @@ namespace GreyWardenPolicePurity
             Travel(party, target);
         }
 
-        /// <summary>每天一次，只在信众村：祭司已是最强就看要不要派传教队；再看要不要派运械队、卖货队。三件事各有各的间隔。</summary>
+        /// <summary>
+        /// 每天一次，只在信众村：祭司已是最强就看要不要派传教队；再看要不要派运械队、卖货队。
+        /// 传教队、运械队照比武大会派（<see cref="IsFestivalDay"/>），卖货队隔几天看货值。
+        /// </summary>
         private void DispatchFaithParties()
         {
             double now = CampaignTime.Now.ToHours;
@@ -231,6 +234,7 @@ namespace GreyWardenPolicePurity
         /// 派传教队。祭司已是本地最强的信众村之间，派过的次数要拉平：派得比别人多的先不派，等别人追上来
         /// （用户裁定 2026-10-07：成为最强后不能自顾自不断往外送人）。新成为最强的村子从 0 算起，
         /// 名单是所有祭司最强的村子，暂时派不出队的也算——缺人靠运械队押车和守村队补兵补上。
+        /// 照比武大会派（用户裁定 2026-10-07）。
         /// </summary>
         private void TryDispatchMission(FaithVillage row, Settlement home, double now)
         {
@@ -238,9 +242,9 @@ namespace GreyWardenPolicePurity
                 row.MissionsSent > _villages.Values
                     .Where(other => IsPriestStrongest(other, Settlement.Find(other.VillageId)))
                     .Min(other => other.MissionsSent) ||
-                now - row.LastMission < GwpTuning.Firesworn.MissionIntervalDays * 24d ||
                 Sworn(row) < GwpTuning.Firesworn.MissionSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
-                _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions)
+                _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions ||
+                !IsFestivalDay(row, row.LastMission, now))
                 return;
             Settlement? target = MissionTarget(row, home);
             if (target == null)
@@ -259,46 +263,68 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 运械队
 
-        /// <summary>运械去哪儿：附近有火誓者的村子里，拿到主兵器的比例比家里低得够多的，挑差得最多的。</summary>
-        private Settlement? BalanceTarget(Settlement home)
+        /// <summary>
+        /// 运械队要补给目标村的人和兵器（用户裁定 2026-10-07：运械队算周围信众村之间的人数差和武器差来平衡）。
+        /// 两边都按大小拉平：人按户数比分两边守村队的总人数，兵器按两边要配的人数分拿到主兵器的总套数。
+        /// 兵器只在目标的武装率比家里低得够多时才算。
+        /// </summary>
+        private (int men, int sets) BalanceNeed(FaithVillage row, Settlement home, Settlement target)
         {
-            float homeArmed = ArmedShare(home.StringId);
-            return NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
-                .Where(settlement => _villages.ContainsKey(settlement.StringId) && PlanOf(settlement.StringId).Sets.Count > 0 &&
-                                     homeArmed - ArmedShare(settlement.StringId) >= GwpTuning.Firesworn.BalanceMinimumArmedGap)
-                .OrderBy(settlement => ArmedShare(settlement.StringId))
-                .FirstOrDefault();
+            FaithVillage other = _villages[target.StringId];
+            float hearths = home.Village.Hearth + target.Village.Hearth;
+            int men = hearths <= 0f ? 0
+                : (int)Math.Round((Sworn(row) + Sworn(other)) * target.Village.Hearth / hearths) - Sworn(other);
+            ArmoryPlan homePlan = PlanOf(home.StringId);
+            ArmoryPlan targetPlan = PlanOf(target.StringId);
+            int sets = 0;
+            if (targetPlan.Sets.Count > 0 &&
+                ArmedShare(home.StringId) - ArmedShare(target.StringId) >= GwpTuning.Firesworn.BalanceMinimumArmedGap)
+            {
+                int homeArmed = homePlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
+                int targetArmed = targetPlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
+                sets = (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
+                                       (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed;
+            }
+            return (Math.Max(0, men), Math.Max(0, sets));
         }
 
         /// <summary>
-        /// 家里武装率比附近的村子高得够多，就派运械队：押车的人带着自己那几套，背包里装上让两边武装率拉平所差的那几套
-        /// （<see cref="LoadBalanceCargo"/>）。差得不到最少套数就不派。
+        /// 家里比附近有火誓者的村子人多或兵器好得够多，就派运械队：押车的人至少 5 个、人数差多少带多少（到了并入当地守村队），
+        /// 背包里装上让两边武装率拉平所差的那几套（<see cref="LoadBalanceCargo"/>）。去差得最多的那座。照比武大会派（用户裁定 2026-10-07）。
         /// </summary>
         private void TryDispatchBalance(FaithVillage row, Settlement home, double now)
         {
-            if (now - row.LastBalance < GwpTuning.Firesworn.BalanceIntervalDays * 24d ||
-                Sworn(row) < GwpTuning.Firesworn.BalanceEscortSize + GwpTuning.Firesworn.MissionMinimumLeftBehind)
+            if (Sworn(row) < GwpTuning.Firesworn.BalanceEscortSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
+                !IsFestivalDay(row, row.LastBalance, now))
                 return;
-            Settlement? target = BalanceTarget(home);
-            if (target == null)
+            (Settlement target, int men, int sets)? best = NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
+                .Where(settlement => _villages.ContainsKey(settlement.StringId))
+                .Select(settlement =>
+                {
+                    (int men, int sets) need = BalanceNeed(row, home, settlement);
+                    return ((Settlement target, int men, int sets)?)(settlement, need.men, need.sets);
+                })
+                .Where(entry => entry!.Value.men >= GwpTuning.Firesworn.BalanceMinimumMen ||
+                                entry!.Value.sets >= GwpTuning.Firesworn.BalanceMinimumSets)
+                .OrderByDescending(entry => entry!.Value.men + entry!.Value.sets)
+                .FirstOrDefault();
+            if (best == null)
                 return;
-            ArmoryPlan homePlan = PlanOf(home.StringId);
-            ArmoryPlan targetPlan = PlanOf(target.StringId);
-            int homeArmed = homePlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
-            int targetArmed = targetPlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
-            int estimate = (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
-                                           (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed;
-            if (estimate < GwpTuning.Firesworn.BalanceMinimumSets)
-                return;
+            Settlement target = best.Value.target;
+            int escort = Math.Min(Math.Max(GwpTuning.Firesworn.BalanceEscortSize, best.Value.men),
+                Sworn(row) - GwpTuning.Firesworn.MissionMinimumLeftBehind);
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Balance);
-            int kits = ManParty(party, row, home, GwpTuning.Firesworn.BalanceEscortSize);
-            int sets = LoadBalanceCargo(home.StringId, target.StringId, party);
+            int kits = ManParty(party, row, home, escort);
+            int cargo = LoadBalanceCargo(home.StringId, target.StringId, party);
             row.LastBalance = now;
             Dispatch(_faithParties[party.StringId], party, target);
             GwpAiDiagnostics.WriteFaith("BALANCE_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
-                "; men=" + party.MemberRoster.TotalManCount + "; escortKitItems=" + kits + "; cargoSets=" + sets +
-                "; cargoValue=" + party.ItemRoster.TotalValue + "; homeArmed=" + ArmedShare(home.StringId).ToString("0.00") +
+                "; menNeed=" + best.Value.men + "; setNeed=" + best.Value.sets +
+                "; men=" + party.MemberRoster.TotalManCount + "; escortKitItems=" + kits + "; cargoSets=" + cargo +
+                "; cargoValue=" + party.ItemRoster.TotalValue + "; homeGuard=" + Sworn(row) +
+                "; targetGuard=" + Sworn(_villages[target.StringId]) +
+                "; homeArmed=" + ArmedShare(home.StringId).ToString("0.00") +
                 "; targetArmed=" + ArmedShare(target.StringId).ToString("0.00"));
         }
 
