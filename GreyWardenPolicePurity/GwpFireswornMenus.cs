@@ -149,20 +149,14 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 原版每天按概率删掉 power 低的要人（C#反编译 v1.4.8
-    /// NotablesCampaignBehavior.CheckAndMakeNotableDisappear）；永恒之火祭司不走这条。
-    /// </summary>
-    [HarmonyPatch(typeof(NotablesCampaignBehavior), "CheckAndMakeNotableDisappear")]
-    internal static class GwpFireswornPriestStaysPatch
-    {
-        private static bool Prefix(Hero notable) => !GwpFireswornBehavior.IsFireswornPriest(notable);
-    }
-
-    /// <summary>
-    /// 守村队的灰袍兵和原版民兵站在同一支民兵队里，原版民兵照原版增长（用户裁定 2026-10-07：民兵不直接转化，
-    /// 照原版增长、参战，是烧人的原料）。原版每日变化里的退役项按全队人数算（现有 × 2.5%，C#反编译 v1.4.8
-    /// DefaultSettlementMilitiaModel.CalculateMilitiaChangeInternal），把灰袍兵那一份加回来，原版民兵的增减就和没有灰袍兵时一样。
-    /// 包在已注册的模型外面，没有守村队的村镇照原版。
+    /// 民兵的每日增减（C#反编译 v1.4.8 DefaultSettlementMilitiaModel.CalculateMilitiaChangeInternal：0.5 + 户数/400 − 现有 × 2.5%，
+    /// 现有按整支民兵队算）。包在已注册的模型外面：
+    /// <list type="bullet">
+    /// <item>本村能烧自己人（祭司已是本地最强）起：不再出新的原版民兵，也不退役，守村交给守村队；旧民兵等着被烧掉、
+    /// 把守村队纯化（用户裁定 2026-10-07）。</item>
+    /// <item>有守村队、祭司还不是最强（或还没有祭司）的村子：原版民兵照原版增长，退役项里把灰袍兵那一份加回来，原版民兵的增减就和没有灰袍兵时一样。</item>
+    /// <item>别的村镇照原版。</item>
+    /// </list>
     /// </summary>
     public sealed class GwpFireswornMilitiaModel : SettlementMilitiaModel
     {
@@ -174,6 +168,9 @@ namespace GreyWardenPolicePurity
         public override ExplainedNumber CalculateMilitiaChange(Settlement settlement,
             bool includeDescriptions = false)
         {
+            if (GwpFireswornBehavior.CanBurnOwnPeople(settlement))
+                return new ExplainedNumber(0f, includeDescriptions,
+                    GwpText.Create("{=gwp_fs_militia_stopped}Eternal Fire: the sworn keep this village; no new militia is raised"));
             ExplainedNumber change = Inner.CalculateMilitiaChange(settlement, includeDescriptions);
             int guard = GwpFireswornBehavior.GuardHeadcount(settlement);
             // 原版村子不在正常状态时整项是 0，没有退役项可加回。

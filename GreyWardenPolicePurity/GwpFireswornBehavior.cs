@@ -120,6 +120,8 @@ namespace GreyWardenPolicePurity
             public string PriestId = string.Empty;
             // 信众户：信教的人家，不超过户数。
             public int Households;
+            // 派过几次传教队：祭司最强的信众村之间拉平（用户裁定 2026-10-07）。
+            public int MissionsSent;
         }
 
         /// <summary>集会传教由祭司在本村主持，烈火责罚由村子自己办；都锁村，玩家进村只看到仪式画面。</summary>
@@ -168,6 +170,7 @@ namespace GreyWardenPolicePurity
         {
             List<string>? villageIds = null, priests = null;
             List<int>? households = null;
+            List<int>? missionsSent = null;
             List<double>? congregations = null, damnations = null, missions = null, markets = null, balances = null;
             List<string>? ritualVillages = null;
             List<int>? ritualKinds = null;
@@ -187,6 +190,7 @@ namespace GreyWardenPolicePurity
                 balances = rows.Select(row => row.LastBalance).ToList();
                 priests = rows.Select(row => row.PriestId).ToList();
                 households = rows.Select(row => row.Households).ToList();
+                missionsSent = rows.Select(row => row.MissionsSent).ToList();
                 ritualVillages = _rituals.Select(ritual => ritual.VillageId).ToList();
                 ritualKinds = _rituals.Select(ritual => (int)ritual.Kind).ToList();
                 ritualEnds = _rituals.Select(ritual => ritual.EndHour).ToList();
@@ -208,6 +212,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsVillageLastBalance", ref balances);
             dataStore.SyncData("GWPP_FsVillagePriest", ref priests);
             dataStore.SyncData("GWPP_FsVillageHouseholds", ref households);
+            dataStore.SyncData("GWPP_FsVillageMissionsSent", ref missionsSent);
             dataStore.SyncData("GWPP_FsRitualVillage", ref ritualVillages);
             dataStore.SyncData("GWPP_FsRitualKind", ref ritualKinds);
             dataStore.SyncData("GWPP_FsRitualEnd", ref ritualEnds);
@@ -237,7 +242,8 @@ namespace GreyWardenPolicePurity
                     LastMarket = markets![i],
                     LastBalance = balances![i],
                     PriestId = priests![i],
-                    Households = households![i]
+                    Households = households![i],
+                    MissionsSent = missionsSent![i]
                 };
 
             _rituals.Clear();
@@ -821,20 +827,40 @@ namespace GreyWardenPolicePurity
         /// 原版要人势力：普通 &lt; 100、有影响力 100–200、强大 &gt; 200，初始 50–400 随机，每天只变零点几
         /// （C#反编译 v1.4.8 DefaultNotablePowerModel）。
         /// </summary>
+        /// <summary>
+        /// 祭司势力：全村要人势力总量不变，祭司拿火誓者比例那一份，其他要人按各自现有势力分剩下的（用户裁定 2026-10-07）。
+        /// 早先按「其他要人之和 × 比例 /（1 − 比例）」只抬祭司，比例接近 1 时祭司接近无穷大。
+        /// 其他要人会因此掉到 100 以下，原版每天按 (100 − 势力)/100 × 2% 的概率删掉他们（C#反编译 v1.4.8
+        /// DefaultNotablePowerModel、NotablesCampaignBehavior），用户裁定时知情。村里没有别的要人时不动。
+        /// </summary>
         private void UpdatePriestPower(FaithVillage row)
         {
             Hero? priest = FindLivingPriest(row);
             if (priest == null)
                 return;
             Settlement village = Settlement.Find(row.VillageId);
-            float share = Math.Min(GwpTuning.Firesworn.PriestShareCeiling, SwornShare(row, village));
-            float others = OtherNotables(village, priest).Sum(hero => hero.Power);
-            float target = others * share / (1f - share);
-            priest.AddPower(target - priest.Power);
+            List<Hero> others = OtherNotables(village, priest).ToList();
+            float othersPower = others.Sum(hero => hero.Power);
+            if (othersPower <= 0f)
+                return;
+            float total = othersPower + priest.Power;
+            float priestPower = total * SwornShare(row, village);
+            float scale = (total - priestPower) / othersPower;
+            foreach (Hero other in others)
+                other.AddPower(other.Power * scale - other.Power);
+            priest.AddPower(priestPower - priest.Power);
         }
 
         private static IEnumerable<Hero> OtherNotables(Settlement village, Hero priest) =>
             village.Notables.Where(hero => hero != priest && hero.IsAlive);
+
+        /// <summary>
+        /// 本村能烧自己人（原版民兵、不信教的户）：有祭司且祭司已是本地最强。从这时起信众村不再出新的原版民兵
+        /// （用户裁定 2026-10-07）。
+        /// </summary>
+        internal static bool CanBurnOwnPeople(Settlement? settlement) =>
+            settlement?.IsVillage == true && _instance != null &&
+            _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) && IsPriestStrongest(row, settlement);
 
         /// <summary>本地要人里势力最强的是灰袍宗教：祭司的势力高过村里每一位别的要人（用户裁定 2026-10-07）。</summary>
         private static bool IsPriestStrongest(FaithVillage row, Settlement village)

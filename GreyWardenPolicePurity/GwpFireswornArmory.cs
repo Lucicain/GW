@@ -700,9 +700,6 @@ namespace GreyWardenPolicePurity
                 if (priest != null && priest.VolunteerTypes.All(troop => troop == null) && Sworn(row) > 0 && shortLords.Count > 0)
                     Flag("PRIEST_SLOTS_EMPTY", "village=" + row.VillageId + "; guard=" + Composition(GuardOf(row.VillageId)) +
                         "; shortLords=" + string.Join(",", shortLords));
-                if (_dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon) &&
-                    dungeon.TotalManCount > 2 * GwpTuning.Firesworn.DamnationMaximumPrisoners)
-                    Flag("DUNGEON_BACKLOG", "village=" + row.VillageId + "; dungeon=" + dungeon.TotalManCount);
                 ArmoryPlan plan = PlanOf(row.VillageId);
                 if (plan.Sets.Count > 0 && CountItems(ItemsOf(_armories, row.VillageId)) > plan.Sets.Count &&
                     plan.Sets.Count(kit => !kit[KitMain].IsEmpty) < plan.Sets.Count / 10)

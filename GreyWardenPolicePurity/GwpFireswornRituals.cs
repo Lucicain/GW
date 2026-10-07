@@ -14,12 +14,13 @@ namespace GreyWardenPolicePurity
     /// <list type="bullet">
     /// <item>集会传教：祭司先在本村传，有边际效应，最多传到祭司是本地最强的要人（用户裁定 2026-10-07）。
     /// 向外传教由信众队去做（GwpFireswornParties.cs）。</item>
-    /// <item>烈火责罚：烧死两个同等级的人，生成一个同等级的灰袍兵进守村队，一户村民信教（用户裁定 2026-10-07，照辛迪加）。
-    /// 本地传教还没到头时只能烧俘虏；到头了（祭司已是最强）才烧村里的原版民兵这些韭菜。</item>
+    /// <item>烈火责罚：俘虏、原版民兵烧死两个同等级的人，另一个信教——生成一个同等级的灰袍兵进守村队，一户村民信教
+    /// （用户裁定 2026-10-07，照辛迪加）。本地传教还没到头时只能烧俘虏；到头了（祭司已是最强）才烧本村：
+    /// 原版民兵（纯化守村队）和不信教的户（长期道路）。</item>
     /// </list>
-    /// 频率参考比武大会（用户裁定）：比武大会每座城每季只有固定的一周能开、两次至少隔 15 天
-    /// （C#反编译 v1.4.8 TournamentCampaignBehavior）。烧韭菜也是每座信众村每季一个固定的周、至少隔 15 天；
-    /// 烧俘虏另算，隔 5 天就能烧。本地传教同一座村两次至少隔 15 天。
+    /// 烈火责罚照比武大会开（用户裁定 2026-10-07）：比武大会每座城每季只有固定的一周能开、两次至少隔 15 天
+    /// （C#反编译 v1.4.8 TournamentCampaignBehavior.ConsiderStartOrEndTournament、DefaultTournamentModel.GetTournamentStartChance）；
+    /// 原版每天的开赛概率看在场的人，这里用户定为固定概率。本地传教同一座村两次至少隔 15 天。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
     {
@@ -107,21 +108,10 @@ namespace GreyWardenPolicePurity
                 Settlement village = Settlement.Find(row.VillageId);
                 if (FindLivingPriest(row) == null || HasRitual(village) || !IsVillageQuiet(village))
                     continue;
-                double sinceLast = now - row.LastDamnation;
-                int prisoners = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
-                    ? dungeon.TotalManCount
-                    : 0;
-                if (prisoners >= GwpTuning.Firesworn.DamnationMinimumPrisoners &&
-                    sinceLast >= GwpTuning.Firesworn.DamnationPrisonerIntervalDays * 24d)
-                {
-                    BurnPrisoners(row, village, dungeon!);
-                    continue;
-                }
-                if (IsPriestStrongest(row, village) &&
-                    weekOfSeason == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
-                    sinceLast >= GwpTuning.Firesworn.DamnationFestivalIntervalDays * 24d &&
-                    MBRandom.RandomFloat < GwpTuning.Firesworn.DamnationFestivalDailyChance)
-                    BurnLeeks(row, village);
+                if (weekOfSeason == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
+                    now - row.LastDamnation >= GwpTuning.Firesworn.DamnationIntervalDays * 24d &&
+                    MBRandom.RandomFloat < GwpTuning.Firesworn.DamnationDailyChance)
+                    HoldDamnation(row, village);
             }
         }
 
@@ -177,64 +167,67 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>烧俘虏（用户裁定：俘虏是烧人的材料）。每烧 1 人从公库付钱（用户裁定：数据上只扣钱），公库不够就少烧。</summary>
-        private void BurnPrisoners(FaithVillage row, Settlement village, TroopRoster dungeon)
-        {
-            int limit = Math.Min(GwpTuning.Firesworn.DamnationMaximumPrisoners,
-                PoliceResourceManager.GetJudicialTreasuryBalance() / GwpTuning.Firesworn.DamnationCostPerHead);
-            Dictionary<CharacterObject, int> burned = new Dictionary<CharacterObject, int>();
-            Dictionary<CharacterObject, int> produced = PickPairs(dungeon.GetTroopRoster(), limit, burned);
-            if (burned.Count == 0)
-                return;
-            foreach (KeyValuePair<CharacterObject, int> pair in burned)
-            {
-                int index = dungeon.FindIndexOfTroop(pair.Key);
-                int healthy = dungeon.GetElementNumber(index) - dungeon.GetElementWoundedNumber(index);
-                dungeon.AddToCounts(pair.Key, -pair.Value, false, -Math.Max(0, pair.Value - healthy));
-            }
-            FinishDamnation(row, village, "prisoners", burned.Values.Sum(), produced);
-        }
-
         /// <summary>
-        /// 烧韭菜：本地传教到头以后，村里的原版民兵成了烧人的原料（用户裁定 2026-10-07）。
-        /// 村民只以户数存在，不单独烧（用户裁定 2026-10-07：没有「烧村民」）。一次 2 + 户数/200 人，成对烧。
+        /// 一场烈火责罚，每烧一个（人或户）公库付 GwpTuning.Firesworn.DamnationCostPerHead，不够就少烧（用户裁定）：
+        /// <list type="number">
+        /// <item>地牢里的俘虏，成对烧。</item>
+        /// <item>本村传教到头（祭司已是本地最强）以后才烧本村（用户裁定 2026-10-07）：
+        /// <list type="bullet">
+        /// <item>原版民兵，成对烧，一次最多 2 + 户数/200 个。这时信众村已不再出新民兵，烧掉旧的就是把守村队纯化，不是长期道路。</item>
+        /// <item>不信教的户：现有信众户每 3 户烧 1 户，不超过不信教的户数。烧死的那户从户数里去掉，换来 3 户信教；
+        /// 不给守村队加兵——那些人家本来没有兵，守村队靠补兵自己长。烧一户换多户，免得烧户变成自断人口。</item>
+        /// </list></item>
+        /// </list>
+        /// 烧多少户按烧之前的信众户算。
         /// </summary>
-        private void BurnLeeks(FaithVillage row, Settlement village)
+        private void HoldDamnation(FaithVillage row, Settlement village)
         {
-            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
-            if (militia?.IsActive != true)
-                return;
-            int limit = GwpTuning.Firesworn.DamnationMilitiaBase +
-                        (int)(village.Village.Hearth / GwpTuning.Firesworn.DamnationHearthPerMilitia);
-            limit = Math.Min(limit, PoliceResourceManager.GetJudicialTreasuryBalance() /
-                                    GwpTuning.Firesworn.DamnationCostPerHead);
-            Dictionary<CharacterObject, int> burned = new Dictionary<CharacterObject, int>();
-            Dictionary<CharacterObject, int> produced =
-                PickPairs(militia.MemberRoster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)), limit, burned);
-            if (burned.Count == 0)
-                return;
-            foreach (KeyValuePair<CharacterObject, int> pair in burned)
+            int budget = PoliceResourceManager.GetJudicialTreasuryBalance() / GwpTuning.Firesworn.DamnationCostPerHead;
+            Dictionary<CharacterObject, int> produced = new Dictionary<CharacterObject, int>();
+            int prisonersBurned = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
+                ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced)
+                : 0;
+            budget -= prisonersBurned;
+            int militiaBurned = 0;
+            int householdsBurned = 0;
+            if (IsPriestStrongest(row, village))
             {
-                TroopRoster roster = militia.MemberRoster;
-                int index = roster.FindIndexOfTroop(pair.Key);
-                int healthy = roster.GetElementNumber(index) - roster.GetElementWoundedNumber(index);
-                roster.AddToCounts(pair.Key, -pair.Value, false, -Math.Max(0, pair.Value - healthy));
+                MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+                int militiaLimit = GwpTuning.Firesworn.DamnationMilitiaBase +
+                                   (int)(village.Village.Hearth / GwpTuning.Firesworn.DamnationHearthPerMilitia);
+                if (militia?.IsActive == true)
+                    militiaBurned = BurnPairs(militia.MemberRoster,
+                        militia.MemberRoster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)),
+                        Math.Min(budget, militiaLimit), produced);
+                budget -= militiaBurned;
+                int unbelievers = Math.Max(0, HouseholdCap(village) - row.Households);
+                householdsBurned = Math.Min(budget,
+                    Math.Min(unbelievers, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
             }
-            FinishDamnation(row, village, "militia", burned.Values.Sum(), produced);
-        }
+            if (prisonersBurned + militiaBurned + householdsBurned <= 0)
+                return;
 
-        private void FinishDamnation(FaithVillage row, Settlement village, string mode, int burned,
-            Dictionary<CharacterObject, int> produced)
-        {
-            int cost = burned * GwpTuning.Firesworn.DamnationCostPerHead;
+            int cost = (prisonersBurned + militiaBurned + householdsBurned) * GwpTuning.Firesworn.DamnationCostPerHead;
             PoliceResourceManager.SpendJudicialTreasury(cost);
             double now = CampaignTime.Now.ToHours;
             row.LastDamnation = now;
             int before = row.Households;
+            float hearthBefore = village.Village.Hearth;
             // 烧死一个，另一个信教加入守村队，一户村民信教（用户裁定 2026-10-07）。
-            int added = produced.Sum(pair => Convert(row, village, pair.Key, pair.Value));
+            int risen = produced.Sum(pair => Convert(row, village, pair.Key, pair.Value));
+            int householdsSworn = 0;
+            if (householdsBurned > 0)
+            {
+                village.Village.Hearth -= householdsBurned;
+                int sworn = row.Households;
+                row.Households = Math.Min(HouseholdCap(village),
+                    row.Households + householdsBurned * GwpTuning.Firesworn.DamnationHouseholdsSwornPerBurned);
+                householdsSworn = row.Households - sworn;
+            }
             UpdatePriestPower(row);
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
-                GwpText.Get("{=gwp_notice_damnation}Burned {BURNED}; {RISEN} rose as Wardens", "BURNED", burned, "RISEN", added));
+                GwpText.Get("{=gwp_notice_damnation}Burned {PEOPLE} people and {HOMES} households; {RISEN} rose as Wardens, {SWORN} households took the oath",
+                    "PEOPLE", prisonersBurned + militiaBurned, "HOMES", householdsBurned, "RISEN", risen, "SWORN", householdsSworn));
             _rituals.Add(new Ritual
             {
                 VillageId = village.StringId,
@@ -242,10 +235,31 @@ namespace GreyWardenPolicePurity
                 EndHour = now + GwpTuning.Firesworn.DamnationLockHours
             });
             GwpAiDiagnostics.WriteFaith("DAMNATION",
-                "village=" + village.StringId + "; mode=" + mode + "; burned=" + burned + "; cost=" + cost +
+                "village=" + village.StringId + "; prisonersBurned=" + prisonersBurned + "; militiaBurned=" + militiaBurned +
+                "; householdsBurned=" + householdsBurned + "; householdsSworn=" + householdsSworn + "; cost=" + cost +
                 "; produced=" + string.Join(",", produced.Select(pair => pair.Key.StringId + ":" + pair.Value)) +
-                "; addedToGuard=" + added + "; households=" + before + "->" + row.Households + "; guard=" + Sworn(row) +
-                "; dungeonLeft=" + (_dungeons.TryGetValue(village.StringId, out TroopRoster? dungeon) ? dungeon.TotalManCount : 0));
+                "; addedToGuard=" + risen + "; households=" + before + "->" + row.Households +
+                "; hearth=" + hearthBefore.ToString("0") + "->" + village.Village.Hearth.ToString("0") + "; guard=" + Sworn(row) +
+                "; dungeonLeft=" + (dungeon?.TotalManCount ?? 0));
+        }
+
+        /// <summary>从名单里成对烧（PickPairs），把烧掉的人从名单里拿掉，生成的灰袍兵记进 produced。返回烧了几个。</summary>
+        private static int BurnPairs(TroopRoster roster, IEnumerable<TroopRosterElement> pool, int limit,
+            Dictionary<CharacterObject, int> produced)
+        {
+            Dictionary<CharacterObject, int> burned = new Dictionary<CharacterObject, int>();
+            foreach (KeyValuePair<CharacterObject, int> pair in PickPairs(pool.ToList(), limit, burned))
+            {
+                produced.TryGetValue(pair.Key, out int already);
+                produced[pair.Key] = already + pair.Value;
+            }
+            foreach (KeyValuePair<CharacterObject, int> pair in burned)
+            {
+                int index = roster.FindIndexOfTroop(pair.Key);
+                int healthy = roster.GetElementNumber(index) - roster.GetElementWoundedNumber(index);
+                roster.AddToCounts(pair.Key, -pair.Value, false, -Math.Max(0, pair.Value - healthy));
+            }
+            return burned.Values.Sum();
         }
 
         /// <summary>仪式画面里主持人的名字：祭司，没有祭司就写村名。</summary>

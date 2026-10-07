@@ -1414,6 +1414,7 @@
   <string id="gwp_fs_village_info_ok" text="关闭" />
   <string id="gwp_fs_ritual_leave" text="离开……" />
   <string id="gwp_fs_militia_change" text="永恒之火立了誓的人不会离开民兵" />
+  <string id="gwp_fs_militia_stopped" text="永恒之火：这里由立了誓的人守着，不再募新民兵" />
   <string id="gwp_fs_priest_name_01" text="炽华" />
   <string id="gwp_fs_priest_name_02" text="焰姝" />
   <string id="gwp_fs_priest_name_03" text="灼音" />
@@ -1469,7 +1470,7 @@
   <string id="gwp_notice_prisoners" text="交出 {COUNT} 名俘虏" />
   <string id="gwp_notice_donated" text="捐出 {COUNT} 件东西" />
   <string id="gwp_notice_congregation" text="{COUNT} 人向永恒之火立誓" />
-  <string id="gwp_notice_damnation" text="烧死 {BURNED} 人，{RISEN} 名灰袍兵从火里站起" />
+  <string id="gwp_notice_damnation" text="烧死 {PEOPLE} 人、{HOMES} 户；{RISEN} 名灰袍兵从火里站起，{SWORN} 户立誓" />
   <string id="gwp_notice_mission" text="带来 {COUNT} 名立誓者，留在此地" />
   <string id="gwp_notice_balance" text="运来 {COUNT} 件兵器护甲" />
   <string id="gwp_notice_market" text="卖出 {COUNT} 件货物" />

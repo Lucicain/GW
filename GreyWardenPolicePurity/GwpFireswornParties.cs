@@ -227,9 +227,17 @@ namespace GreyWardenPolicePurity
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// 派传教队。祭司已是本地最强的信众村之间，派过的次数要拉平：派得比别人多的先不派，等别人追上来
+        /// （用户裁定 2026-10-07：成为最强后不能自顾自不断往外送人）。新成为最强的村子从 0 算起，
+        /// 名单是所有祭司最强的村子，暂时派不出队的也算——缺人靠运械队押车和守村队补兵补上。
+        /// </summary>
         private void TryDispatchMission(FaithVillage row, Settlement home, double now)
         {
             if (!IsPriestStrongest(row, home) ||
+                row.MissionsSent > _villages.Values
+                    .Where(other => IsPriestStrongest(other, Settlement.Find(other.VillageId)))
+                    .Min(other => other.MissionsSent) ||
                 now - row.LastMission < GwpTuning.Firesworn.MissionIntervalDays * 24d ||
                 Sworn(row) < GwpTuning.Firesworn.MissionSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
                 _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions)
@@ -240,11 +248,12 @@ namespace GreyWardenPolicePurity
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Mission);
             int kits = ManParty(party, row, home, GwpTuning.Firesworn.MissionSize);
             row.LastMission = now;
+            row.MissionsSent++;
             Dispatch(_faithParties[party.StringId], party, target);
             GwpAiDiagnostics.WriteFaith("MISSION_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
                 "; targetHasSworn=" + _villages.ContainsKey(target.StringId) + "; men=" + party.MemberRoster.TotalManCount +
-                "; kitItems=" + kits + "; homeSworn=" + Sworn(row) +
+                "; kitItems=" + kits + "; homeSworn=" + Sworn(row) + "; missionsSent=" + row.MissionsSent +
                 "; distance=" + home.GetPosition2D.Distance(target.GetPosition2D).ToString("0"));
         }
 

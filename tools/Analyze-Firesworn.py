@@ -145,7 +145,9 @@ def main():
     for _, data in by_stage["MISSION_DISPATCHED"]:
         gains[data["home"]]["派出传教"] -= num(data.get("men"))
     for _, data in by_stage["DAMNATION"]:
-        gains[data["village"]]["烧人(" + data["mode"] + ")"] += num(data.get("addedToGuard"))
+        gains[data["village"]]["烧人出兵"] += num(data.get("addedToGuard"))
+        gains[data["village"]]["烧户立誓的户"] += num(data.get("householdsSworn"))
+        gains[data["village"]]["烧掉的不信教户"] -= num(data.get("householdsBurned"))
     for _, data in by_stage["PRIEST_RECRUITED"]:
         gains[data["village"]]["祭司格子招走"] -= num(data.get("fromGuard"))
     for _, data in by_stage["ZEALOTS_ENLISTED"]:

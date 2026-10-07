@@ -302,8 +302,6 @@ namespace GreyWardenPolicePurity
             public const float PriestZealotShare = 0.1f;
             public const float PriestWeeklyChance = 0.5f;
             public const int PriestStartingGold = 2000;
-            // 祭司势力 = 其他要人势力之和 × 比例 / (1 − 比例)；比例到这里封顶，免得除以零。
-            public const float PriestShareCeiling = 0.9f;
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
             public const float GuardKeptFromPriestSlots = 0.5f;
 
@@ -313,18 +311,18 @@ namespace GreyWardenPolicePurity
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
 
-            // 烈火责罚：每烧 1 人公库付钱（用户裁定：数据上只扣钱）。烧死两个同等级的人生成一个同等级的灰袍兵。
-            // 地牢里有俘虏：够数、隔 5 天就烧。
-            // 本地传教到头（祭司已是最强）以后：只在本村每季固定的一周里，隔 15 天、按概率烧原版民兵和村民。
+            // 烈火责罚照比武大会开（用户裁定 2026-10-07）：本村每季固定的一周里，离上次隔 15 天，每天固定概率（试玩值）。
+            // 每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
             public const float DamnationLockHours = 6f;
             public const int DamnationCostPerHead = 20;
-            public const int DamnationMinimumPrisoners = 5;
-            public const int DamnationMaximumPrisoners = 40;
-            public const float DamnationPrisonerIntervalDays = 5f;
-            public const float DamnationFestivalIntervalDays = 15f;
-            public const float DamnationFestivalDailyChance = 0.35f;
+            public const float DamnationIntervalDays = 15f;
+            public const float DamnationDailyChance = 0.35f;
+            // 本地传教到头以后烧原版民兵：一次最多 2 + 户数/200 个。
             public const int DamnationMilitiaBase = 2;
             public const float DamnationHearthPerMilitia = 200f;
+            // 烧不信教的户（用户裁定 2026-10-07）：现有信众户每 3 户烧 1 户，烧 1 户换 3 户信教。
+            public const int DamnationSwornPerBurnedHousehold = 3;
+            public const int DamnationHouseholdsSwornPerBurned = 3;
 
             // 传教队：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
             // 先去 150 距离内火誓者比例比家里低 0.1 以上的村子，没有就去最近的还没有火誓者的。
