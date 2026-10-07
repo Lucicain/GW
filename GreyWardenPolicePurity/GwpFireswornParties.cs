@@ -51,6 +51,7 @@ namespace GreyWardenPolicePurity
                         break;
 
                     case FaithPartyPhase.Outbound when record.Kind == FaithPartyKind.Patrol:
+                        ReleaseHeroPrisoners(party);
                         if (now - record.PhaseHour >= GwpTuning.Firesworn.PatrolHours ||
                             party.MemberRoster.TotalHealthyCount < record.Men * GwpTuning.Firesworn.PatrolReturnHealthyShare ||
                             party.PrisonRoster.TotalManCount >= party.Party.PrisonerSizeLimit || !IsVillageQuiet(home))
@@ -84,6 +85,8 @@ namespace GreyWardenPolicePurity
                         break;
 
                     case FaithPartyPhase.Returning:
+                        if (record.Kind == FaithPartyKind.Patrol)
+                            ReleaseHeroPrisoners(party);
                         if (!HasArrived(party, home))
                         {
                             Travel(party, home);
@@ -112,6 +115,18 @@ namespace GreyWardenPolicePurity
         {
             party.Ai.SetInitiative(1f, 1f, GwpTuning.Firesworn.PatrolHours);
             GreyWardenPartyDesireBehavior.RequestBeat(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
+        }
+
+        /// <summary>
+        /// 巡逻队打赢抓到的英雄当场放走，只押普通俘虏回村（用户裁定 2026-10-08）。英雄从来不进地牢、不会被烧。
+        /// </summary>
+        private static void ReleaseHeroPrisoners(MobileParty party)
+        {
+            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().Where(element => element.Character.IsHero).ToList())
+            {
+                GwpAiDiagnostics.WriteFaith("PATROL_RELEASED_HERO", "party=" + party.StringId + "; hero=" + element.Character.StringId);
+                EndCaptivityAction.ApplyByReleasedAfterBattle(element.Character.HeroObject);
+            }
         }
 
         private static bool IsTripTargetValid(Settlement target) =>
@@ -407,13 +422,9 @@ namespace GreyWardenPolicePurity
                     joined += JoinGuard(row, village, element.Character, element.Number);
             int prisoners = 0;
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
+            ReleaseHeroPrisoners(party);
             foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
             {
-                if (element.Character.IsHero)
-                {
-                    EndCaptivityAction.ApplyByReleasedAfterBattle(element.Character.HeroObject);
-                    continue;
-                }
                 dungeon.AddToCounts(element.Character, element.Number);
                 party.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
                 prisoners += element.Number;

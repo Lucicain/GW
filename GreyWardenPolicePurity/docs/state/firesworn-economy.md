@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 守村队上限只管自己长；烧人、到村、巡逻回村可超；传教队到了开集会；俘虏照原版卖；祭司最强不补新要人
+> 已复核至：2026-10-08 灰袍兵种不能被俘（GwpFaithBattleRewardModel.CanTroopBeTakenPrisoner，规则见 deserters.md）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs` `GwpDamnationSmokePatch.cs`
 > 待实测：见文末
 

@@ -155,6 +155,12 @@ namespace GreyWardenPolicePurity
             MBReadOnlyList<MapEventParty> winnerParties) =>
             Inner.GetWinnerPartiesThatCanPlunderGoldFromShips(winnerParties);
 
-        public override bool CanTroopBeTakenPrisoner(CharacterObject troop) => Inner.CanTroopBeTakenPrisoner(troop);
+        /// <summary>
+        /// 灰袍兵种不能被俘（用户裁定 2026-10-08：免得被别的势力招去；以后做辛迪加堕落骑士时再说）。原版战后逐个兵问这一句，
+        /// 原版永远答能；答不能的兵不分给胜方，直接从败方名单里去掉，投降也一样（C#反编译 v1.4.8 MapEvent.CaptureDefeatedPartyMembers）。
+        /// 灰袍领主是英雄，不走这一句，照原版可以被俘。
+        /// </summary>
+        public override bool CanTroopBeTakenPrisoner(CharacterObject troop) =>
+            !GwpCommon.IsGreyWardenTroop(troop) && Inner.CanTroopBeTakenPrisoner(troop);
     }
 }
