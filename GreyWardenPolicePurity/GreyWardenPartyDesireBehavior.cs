@@ -183,6 +183,16 @@ namespace GreyWardenPolicePurity
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
+        /// <summary>围着某个聚落巡逻：下注原版的巡逻行为，圆心由我们指定（火誓者巡逻队用）。</summary>
+        internal static void RequestBeat(MobileParty party, Settlement center,
+            float priority = AssignedDutyScore, double validHours = 8d)
+        {
+            ReleaseDirectAttackLock(party);
+            SetIntent(party, new Intent { Kind = IntentKind.Beat, Settlement = center,
+                Priority = NormalizePriority(priority),
+                ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
+        }
+
         internal static void ClearIntent(MobileParty? party)
         {
             if (party == null) return;

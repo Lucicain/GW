@@ -107,8 +107,6 @@ namespace GreyWardenPolicePurity
             List<MobileParty> members = new List<MobileParty> { party };
             if (party.Army != null)
                 members.AddRange(party.AttachedParties);
-            int prisoners = members.Sum(member => member.PrisonRoster.TotalRegulars);
-            int prisonLimit = Math.Max(1, members.Sum(member => member.Party.PrisonerSizeLimit));
             int men = Math.Max(1, members.Sum(member => member.MemberRoster.TotalManCount));
             float wounded = members.Sum(member => member.MemberRoster.TotalWounded) / (float)men;
             float sell = (float)SellItemScore.Invoke(behavior, new object[] { party });
@@ -117,7 +115,6 @@ namespace GreyWardenPolicePurity
             Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
             // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
             float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
-            float prisonerTerm = 1f + 2f * Math.Min(1f, prisoners / (float)prisonLimit);
 
             string best = "-";
             float bestScore = 0f;
@@ -139,21 +136,22 @@ namespace GreyWardenPolicePurity
                     else
                     {
                         // 倍数放大的是需要，不是底分；没事就是原版的闲逛分（用户裁定 2026-10-05：灰袍优先做信众村的事）。
-                        float need = prisonerTerm * woundTerm * sell;
+                        // 俘虏不算需要：灰袍照原版在城里卖俘虏，正好来信众村才交（用户裁定 2026-10-08）。
+                        float need = woundTerm * sell;
                         factor = Amplified(need);
                         why = need > 1f
-                            ? "faith:prisoners" + prisonerTerm.ToString("0.00") + "*wound" + woundTerm.ToString("0.00") +
+                            ? "faith:wound" + woundTerm.ToString("0.00") +
                               "*sell" + sell.ToString("0.00") + "*priority" + GwpTuning.Firesworn.FaithVillageVisitPriority.ToString("0")
                             : "faith:none";
                     }
                 }
                 else if (settlement.IsFortification)
                 {
-                    // 去掉原版给城堡城镇的俘虏项（整数除法，满了才乘 3）和城镇的卖东西项：灰袍在城里不卖普通俘虏、不卖背包里的东西。
-                    float vanillaPrisonerTerm = 1f + 2f * (prisoners / prisonLimit);
-                    float vanillaSell = settlement.IsTown ? sell : 1f;
-                    factor = 1f / (vanillaPrisonerTerm * vanillaSell);
-                    why = "fort:/prisoners" + vanillaPrisonerTerm.ToString("0.00") + "/sell" + vanillaSell.ToString("0.00");
+                    // 去掉原版给城镇的卖东西项：灰袍在城里不卖背包里的东西。俘虏项照原版留着：灰袍照原版在城里卖俘虏（用户裁定 2026-10-08）。
+                    if (!settlement.IsTown)
+                        continue;
+                    factor = 1f / sell;
+                    why = "fort:/sell" + sell.ToString("0.00");
                 }
                 else
                     continue;

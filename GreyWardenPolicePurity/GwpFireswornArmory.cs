@@ -664,7 +664,8 @@ namespace GreyWardenPolicePurity
                     Flag("FAITH_PARTY_ADRIFT", "party=" + party.StringId + "; home=" + home.StringId +
                         "; distance=" + party.GetPosition2D.Distance(home.GetPosition2D).ToString("0.0") +
                         "; default=" + party.DefaultBehavior);
-                if (record.Phase != FaithPartyPhase.Home && now - record.PhaseHour > 72d)
+                if (record.Phase != FaithPartyPhase.Home &&
+                    now - record.PhaseHour > (record.Kind == FaithPartyKind.Patrol ? GwpTuning.Firesworn.PatrolHours : 0d) + 72d)
                     Flag("FAITH_PARTY_TRIP_LONG", "party=" + party.StringId + "; phase=" + record.Phase +
                         "; target=" + record.TargetId + "; hours=" + (now - record.PhaseHour).ToString("0"));
             }
@@ -676,11 +677,6 @@ namespace GreyWardenPolicePurity
                 .ToList();
             foreach (MobileParty lord in lords)
             {
-                int prisoners = CountRegularPrisoners(lord);
-                if (prisoners >= lord.Party.PrisonerSizeLimit * GwpTuning.Firesworn.AnomalyPrisonerShare)
-                    Flag("PRISONERS_PILING", "party=" + lord.StringId + "; prisoners=" + prisoners + "/" +
-                        lord.Party.PrisonerSizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
-                        "; faithVisit=" + GwpWardenVisitDesire.Describe(lord));
                 // 赢的目标就是「正在这里」的聚落时原版原地待命；办重建、请愿、练兵的原地驻留不算。
                 Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
                 if (lord.DefaultBehavior == AiBehavior.Hold && lord.MapEvent == null && here != null &&

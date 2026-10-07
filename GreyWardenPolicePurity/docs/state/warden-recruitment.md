@@ -2,7 +2,7 @@
 
 > 当前状态：已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 直接招狂信者不再扣户数（兵走了家还在）
+> 已复核至：2026-10-08 灰袍领主照原版卖俘虏
 > 覆盖源码：`GwpWardenRecruitment.cs`
 > 待实测：见文末
 
@@ -58,10 +58,10 @@
   不挂部队的名册加英雄没有副作用（`TroopRoster.AddToCountsAtIndex`）。（依据：C#反编译）
 - 玩家部队里的灰袍兵同样不领饷。
 
-## 灰袍领主不在城里卖俘虏和东西
+## 灰袍领主照原版卖俘虏，不在城里卖东西
 
-普通俘虏、背包里的东西留着交给信众村（`GwpWardenKeepPrisonersPatch`、`GwpWardenKeepLootPatch`，见 `firesworn-economy.md`）。
-俘虏也可能在路上被原版招降。灰袍领主什么时候进信众村见 `warden-ai.md`「进聚落的意愿」。
+俘虏照原版在城堡、城镇卖；正好进了信众村就把普通俘虏交进地牢。（依据：用户裁定 2026-10-08）
+背包里的东西留着交给信众村（`GwpWardenKeepLootPatch`，见 `firesworn-economy.md`）。俘虏也可能在路上被原版招降。灰袍领主什么时候进信众村见 `warden-ai.md`「进聚落的意愿」。
 
 ## 开局
 

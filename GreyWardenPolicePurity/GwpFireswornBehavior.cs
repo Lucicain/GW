@@ -99,7 +99,8 @@ namespace GreyWardenPolicePurity
         {
             Mission = 0,
             Market = 1,
-            Balance = 2
+            Balance = 2,
+            Patrol = 3
         }
 
         private enum FaithPartyPhase
@@ -143,6 +144,8 @@ namespace GreyWardenPolicePurity
             public double PhaseHour;
             // 这一趟已经卖过几座城。
             public int Stops;
+            // 巡逻队出门时几个人：打到只剩九成以下就回村。
+            public int Men;
         }
 
         public GwpFireswornBehavior()
@@ -176,7 +179,7 @@ namespace GreyWardenPolicePurity
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null;
-            List<int>? partyKinds = null, partyPhases = null, partyStops = null;
+            List<int>? partyKinds = null, partyPhases = null, partyStops = null, partyMen = null;
             List<double>? partyHours = null;
 
             if (dataStore.IsSaving)
@@ -202,6 +205,7 @@ namespace GreyWardenPolicePurity
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
                 partyStops = parties.Select(party => party.Stops).ToList();
+                partyMen = parties.Select(party => party.Men).ToList();
             }
 
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
@@ -223,6 +227,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
             dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
+            dataStore.SyncData("GWPP_FsPartyMen", ref partyMen);
             SyncTroopRosters(dataStore, "GWPP_FsGuard", _guards);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
@@ -265,7 +270,8 @@ namespace GreyWardenPolicePurity
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
-                    Stops = partyStops![i]
+                    Stops = partyStops![i],
+                    Men = partyMen![i]
                 };
 
             RebuildPriestIndex();
@@ -642,7 +648,9 @@ namespace GreyWardenPolicePurity
             {
                 Settlement home = Settlement.Find(record.HomeId);
                 Settlement target = Settlement.Find(record.TargetId);
-                text = record.Phase == FaithPartyPhase.Outbound
+                text = record.Phase == FaithPartyPhase.Outbound && record.Kind == FaithPartyKind.Patrol
+                    ? GwpText.Create("{=gwp_fs_status_patrol}Keeping watch around {HOME} for the Eternal Fire.", "HOME", home.Name)
+                    : record.Phase == FaithPartyPhase.Outbound
                     ? record.Kind == FaithPartyKind.Mission
                         ? GwpText.Create("{=gwp_fs_status_mission}Carrying the Eternal Fire to {TARGET}.", "TARGET", target.Name)
                         : record.Kind == FaithPartyKind.Balance
@@ -857,10 +865,10 @@ namespace GreyWardenPolicePurity
             village.Notables.Where(hero => hero != priest && hero.IsAlive);
 
         /// <summary>
-        /// 本村能烧自己人（原版民兵、不信教的户）：有祭司且祭司已是本地最强。从这时起信众村不再出新的原版民兵
-        /// （用户裁定 2026-10-07）。
+        /// 祭司已是本地最强（有祭司且势力高过村里每一位别的要人）。从这时起本村能烧自己人、不再出新的原版民兵
+        /// （用户裁定 2026-10-07），原版也不再给这座村补新的要人（用户裁定 2026-10-08）。
         /// </summary>
-        internal static bool CanBurnOwnPeople(Settlement? settlement) =>
+        internal static bool IsPriestStrongestAt(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null &&
             _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) && IsPriestStrongest(row, settlement);
 
@@ -982,7 +990,7 @@ namespace GreyWardenPolicePurity
         private TroopRoster GuardOf(string villageId) => RosterOf(_guards, villageId);
 
         /// <summary>
-        /// 守村队上限：两户信众出一个兵（用户裁定 2026-10-08：原来一户一个，比例到顶时守村队约等于户数，
+        /// 守村队自己长的上限：两户信众出一个兵（用户裁定 2026-10-08：原来一户一个，比例到顶时守村队约等于户数，
         /// 是原版民兵平衡点 20 + 户数/10 的约 5 倍；改成约 3 倍，仍和信众户挂钩。C#反编译 v1.4.8 DefaultSettlementMilitiaModel）。
         /// </summary>
         private static int GuardCap(FaithVillage row) => row.Households / GwpTuning.Firesworn.HouseholdsPerGuard;
@@ -1007,16 +1015,24 @@ namespace GreyWardenPolicePurity
             return AddToGuard(row, village, troop, count);
         }
 
-        /// <summary>往守村队里加人，不超过 <see cref="GuardCap"/>（两户出一个兵）。返回实际加了几个。</summary>
-        private int AddToGuard(FaithVillage row, Settlement village, CharacterObject troop, int count)
+        /// <summary>
+        /// 守村队自己长（补兵、挂户数、传教、重建、灰袍所到之处）：长到 <see cref="GuardCap"/> 为止。返回实际加了几个。
+        /// </summary>
+        private int AddToGuard(FaithVillage row, Settlement village, CharacterObject troop, int count) =>
+            JoinGuard(row, village, troop, Math.Min(count, Math.Max(0, GuardCap(row) - Sworn(row))));
+
+        /// <summary>
+        /// 人来了就收进守村队：烧人生出来的、传教队和运械队到了的、巡逻回来的，可以超过 <see cref="GuardCap"/>
+        /// （用户裁定 2026-10-08：超过上限只是不再自己长，超出的人分批出去巡逻）。返回加了几个。
+        /// </summary>
+        private int JoinGuard(FaithVillage row, Settlement village, CharacterObject troop, int count)
         {
-            int added = Math.Min(count, Math.Max(0, GuardCap(row) - Sworn(row)));
-            if (added <= 0)
+            if (count <= 0)
                 return 0;
-            GuardOf(row.VillageId).AddToCounts(troop, added);
+            GuardOf(row.VillageId).AddToCounts(troop, count);
             PushGuard(row, village);
             _plans.Remove(row.VillageId);
-            return added;
+            return count;
         }
 
         private static bool IsGuardTroop(CharacterObject? troop) =>
@@ -1030,7 +1046,7 @@ namespace GreyWardenPolicePurity
         /// 所以只要民兵队里的灰袍兵不比记录多，就整份照民兵队记——升了级的照升级后的记（用户反馈 2026-10-08：
         /// 原来只认「比记录少」，升级的兵被当成战死，升出来的又被当成多余删掉）。</item>
         /// <item>民兵队没了，守村队也没了（信众户还在，慢慢补回）。</item>
-        /// <item>户数掉了，信众户压到户数，守村队压到 <see cref="GuardCap"/>，多的从最低级的开始走。</item>
+        /// <item>户数掉了，信众户压到户数。守村队超过 <see cref="GuardCap"/> 不删，只是不再自己长、多的出去巡逻。</item>
         /// </list>
         /// 然后把民兵队补齐到记录。
         /// </summary>
@@ -1058,15 +1074,6 @@ namespace GreyWardenPolicePurity
                 _plans.Remove(row.VillageId);
             }
             row.Households = Math.Min(row.Households, HouseholdCap(village));
-            int over = guard.TotalManCount - GuardCap(row);
-            foreach (TroopRosterElement element in guard.GetTroopRoster().OrderBy(entry => entry.Character.Tier).ToList())
-            {
-                if (over <= 0)
-                    break;
-                int take = Math.Min(over, element.Number);
-                guard.AddToCounts(element.Character, -take);
-                over -= take;
-            }
             PushGuard(row, village);
         }
 

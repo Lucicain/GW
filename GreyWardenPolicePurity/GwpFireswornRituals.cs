@@ -35,12 +35,12 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
                 FaithVillage row = _villages[ritual.VillageId];
-                if (!IsVillageQuiet(village) || FindLivingPriest(row) == null)
+                // 集会开了就传完，村子被打了才散；传教队到了开的集会本来就没有祭司（用户裁定 2026-10-08）。
+                if (!IsVillageQuiet(village))
                 {
                     _rituals.Remove(ritual);
                     GwpAiDiagnostics.WriteFaith("CONGREGATION_CANCELLED",
-                        "village=" + village.StringId + "; quiet=" + IsVillageQuiet(village) +
-                        "; priest=" + (FindLivingPriest(row) != null));
+                        "village=" + village.StringId + "; quiet=False; priest=" + (FindLivingPriest(row) != null));
                     continue;
                 }
                 if (now >= ritual.EndHour)
@@ -59,16 +59,26 @@ namespace GreyWardenPolicePurity
                     IsPriestStrongest(row, village) || row.Households >= HouseholdCap(village) ||
                     !IsRitualDay(row.LastCongregation, now))
                     continue;
-                _rituals.Add(new Ritual
-                {
-                    VillageId = village.StringId,
-                    Kind = RitualKind.Congregation,
-                    EndHour = now + GwpTuning.Firesworn.CongregationHours
-                });
-                GwpAiDiagnostics.WriteFaith("CONGREGATION_STARTED",
-                    "village=" + village.StringId + "; households=" + row.Households + "; share=" + SwornShare(row, village).ToString("0.00") +
-                    "; priestPower=" + FindLivingPriest(row)!.Power.ToString("0"));
+                StartCongregation(row, village, "priest");
             }
+        }
+
+        /// <summary>
+        /// 开一场集会传教，24 小时，锁村。祭司在本村开，传教队到了别的村也开（用户裁定 2026-10-08：传教队来了直接进传教流程，
+        /// 和祭司本地传教一样）。没有祭司时主持人显示村名。
+        /// </summary>
+        private void StartCongregation(FaithVillage row, Settlement village, string host)
+        {
+            _rituals.Add(new Ritual
+            {
+                VillageId = village.StringId,
+                Kind = RitualKind.Congregation,
+                EndHour = CampaignTime.Now.ToHours + GwpTuning.Firesworn.CongregationHours
+            });
+            GwpAiDiagnostics.WriteFaith("CONGREGATION_STARTED",
+                "village=" + village.StringId + "; host=" + host + "; households=" + row.Households +
+                "; share=" + SwornShare(row, village).ToString("0.00") +
+                "; priestPower=" + (FindLivingPriest(row)?.Power.ToString("0") ?? "-"));
         }
 
         private void CompleteCongregation(Ritual ritual, FaithVillage row, Settlement village)
@@ -85,7 +95,7 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteFaith("CONGREGATION_COMPLETED",
                 "village=" + village.StringId + "; gain=" + gain + "; households=" + before + "->" + row.Households + "; guard=" + Sworn(row) +
                 "; hearth=" + village.Village.Hearth.ToString("0") +
-                "; priestPower=" + FindLivingPriest(row)!.Power.ToString("0") + "; strongest=" + IsPriestStrongest(row, village));
+                "; priestPower=" + (FindLivingPriest(row)?.Power.ToString("0") ?? "-") + "; strongest=" + IsPriestStrongest(row, village));
         }
 
         private bool HasRitual(Settlement settlement) => _rituals.Any(ritual =>
@@ -219,8 +229,14 @@ namespace GreyWardenPolicePurity
             row.LastDamnation = now;
             int before = row.Households;
             float hearthBefore = village.Village.Hearth;
-            // 烧死一个，另一个信教加入守村队，一户村民信教（用户裁定 2026-10-07）。
-            int risen = produced.Sum(pair => Convert(row, village, pair.Key, pair.Value));
+            // 烧死一个，另一个信教加入守村队，一户不信教的村民被感化（用户裁定 2026-10-07）。总户数不变；
+            // 生出来的兵可以超过守村队上限（用户裁定 2026-10-08）。
+            int risen = 0;
+            foreach (KeyValuePair<CharacterObject, int> pair in produced)
+            {
+                row.Households = Math.Min(HouseholdCap(village), row.Households + pair.Value);
+                risen += JoinGuard(row, village, pair.Key, pair.Value);
+            }
             int householdsSworn = 0;
             if (householdsBurned > 0)
             {

@@ -301,7 +301,14 @@ namespace GreyWardenPolicePurity
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;
             // 守村队：两户信众出一个兵（用户裁定 2026-10-08：约为原版民兵平衡点的 3 倍，仍和信众户挂钩）。
+            // 这是自己长的上限：烧人生出来的、别村来的、巡逻回来的可以超过它，超出的那部分分批出去巡逻。
             public const int HouseholdsPerGuard = 2;
+            // 巡逻队（用户裁定 2026-10-08）：守村队超出上限的人分批出门，在村子周围巡逻抓匪，照原版巡逻队
+            // （PatrolPartiesCampaignBehavior）：打到只剩九成以下、或出门满 5 天、或俘虏装满就回村。一队 10–25 人（试玩值）。
+            public const int PatrolMinimumSize = 10;
+            public const int PatrolMaximumSize = 25;
+            public const float PatrolHours = 120f;
+            public const float PatrolReturnHealthyShare = 0.9f;
             public const float PriestWeeklyChance = 0.5f;
             public const int PriestStartingGold = 2000;
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
@@ -365,7 +372,6 @@ namespace GreyWardenPolicePurity
             // 乘 3 就是 1.15，压过普通案件的 0.99，领主没事也往信众村跑（实机诊断 2026-10-07）。
             public const float FaithVillageVisitPriority = 3f;
             // 每日异常检查用的线：领主俘虏到上限的 90%、兵力低于 60%。
-            public const float AnomalyPrisonerShare = 0.9f;
             public const float AnomalyLowStrength = 0.6f;
 
             // 案子发生在信众村这个距离内，算信众村的案子，优先派人。

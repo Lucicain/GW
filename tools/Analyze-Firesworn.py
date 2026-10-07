@@ -144,6 +144,11 @@ def main():
         gains[data["home"]]["派出运械押车"] -= num(data.get("men"))
     for _, data in by_stage["MISSION_DISPATCHED"]:
         gains[data["home"]]["派出传教"] -= num(data.get("men"))
+    for _, data in by_stage["PATROL_DISPATCHED"]:
+        gains[data["home"]]["派出巡逻"] -= num(data.get("men"))
+    for _, data in by_stage["PATROL_RETURNED"]:
+        gains[data["village"]]["巡逻回村"] += num(data.get("joined"))
+        gains[data["village"]]["巡逻押回俘虏"] += num(data.get("prisoners"))
     for _, data in by_stage["DAMNATION"]:
         gains[data["village"]]["烧人出兵"] += num(data.get("addedToGuard"))
         gains[data["village"]]["烧户立誓的户"] += num(data.get("householdsSworn"))
@@ -208,7 +213,7 @@ def main():
         if recruits[party]:
             print("      兵源与俘虏: " + "，".join(f"{k} {v:.0f}" for k, v in recruits[party].items()))
         if days >= 5 and visits[party] == 0:
-            issues.append(f"{party} {days:.0f} 天没进过信众村（看 faithVisit 分数和 PRISONERS_PILING）")
+            issues.append(f"{party} {days:.0f} 天没进过信众村（看 faithVisit 分数）")
         if minimum < 0.6:
             issues.append(f"{party} 兵力最低到过 {minimum:.0%}")
 
@@ -216,6 +221,7 @@ def main():
     print("\n== 无领主队与仪式")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
                   "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
+                  "PATROL_DISPATCHED", "PATROL_RETURNED",
                   "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
                   "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
                   "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):
