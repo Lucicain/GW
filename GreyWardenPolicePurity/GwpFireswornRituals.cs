@@ -182,7 +182,6 @@ namespace GreyWardenPolicePurity
             return produced;
         }
 
-        /// <summary>烧俘虏（用户裁定：俘虏是烧人的材料）。每烧 1 人从公库付钱（用户裁定：数据上只扣钱），公库不够就少烧。</summary>
         /// <summary>
         /// 一场烈火责罚，每烧一个（人或户）公库付 GwpTuning.Firesworn.DamnationCostPerHead，不够就少烧（用户裁定）：
         /// <list type="number">
@@ -247,9 +246,16 @@ namespace GreyWardenPolicePurity
             }
             UpdatePriestPower(row);
             village.Party.SetVisualAsDirty();
+            // 聚落上那一条只说烧了多少、多少户立誓（用户 2026-10-08：写得太多）；立誓户数连烧俘虏感化的一起算。
+            List<string> burned = new List<string>();
+            if (prisonersBurned + militiaBurned > 0)
+                burned.Add(GwpText.Get("{=gwp_notice_burned_people}{COUNT} people", "COUNT", prisonersBurned + militiaBurned));
+            if (householdsBurned > 0)
+                burned.Add(GwpText.Get("{=gwp_notice_burned_homes}{COUNT} households", "COUNT", householdsBurned));
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
-                GwpText.Get("{=gwp_notice_damnation}Burned {PEOPLE} people and {HOMES} households; {RISEN} rose as Wardens, {SWORN} households took the oath",
-                    "PEOPLE", prisonersBurned + militiaBurned, "HOMES", householdsBurned, "RISEN", risen, "SWORN", householdsSworn));
+                GwpText.Get("{=gwp_notice_damnation}{BURNED} went to the pyre; {SWORN} households swore",
+                    "BURNED", string.Join(GwpText.Get("{=gwp_fs_party_products_separator}, "), burned),
+                    "SWORN", row.Households - before));
             _rituals.Add(new Ritual
             {
                 VillageId = village.StringId,

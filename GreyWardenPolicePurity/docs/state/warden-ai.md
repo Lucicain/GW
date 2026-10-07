@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 信众村的卖东西项只算会交出去的东西
+> 已复核至：2026-10-08 巡区意图（RequestBeat）按聚落认有效，修好火誓者巡逻队原地不动
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -52,7 +52,7 @@
   - 普通差事和巡区 0.99。原版普通进城候选实测 0.35–0.85；缺粮、重伤时 1–19.6，照样压得过差事分。（依据：实机诊断 1.4.7）
   - 玩家委托 10。
   - 承办 `PLAYER_WANTED` 1。
-- 意图种类：Approach、Pursue、Escort、Visit、Rush、Beat。由各差事系统每小时续期（`RequestVisit` 等）。
+- 意图种类：Approach、Pursue、Escort、Visit、Rush、Beat。由各差事系统每小时续期（`RequestVisit` 等）。Visit、Beat 认聚落，其余认部队，对象没了就算失效。
   意图只存在内存里：读档后由各系统重新下达，旧档残留的巡逻目标只会触发一次重新竞价。
 - 意图怎么落到原版动作上：
   - **追人，未宣战**：用原版跟随（Escort），由短期 AI 每约 0.16 小时刷新目标位置。

@@ -769,7 +769,9 @@ namespace GreyWardenPolicePurity
         private static bool IsSameIntent(Intent left, Intent right) =>
             left.Kind == right.Kind && left.Party == right.Party && left.Settlement == right.Settlement;
 
-        private static bool IsValid(Intent intent) => intent.Kind == IntentKind.Visit
+        // 进聚落和巡区认的是聚落，其余认的是部队。巡区漏了这一条时，RequestBeat 下的意图每小时被当成失效扔掉，
+        // 火誓者巡逻队出了村就原地 Hold（实机诊断 2026-10-08：两支巡逻队 20 小时 intent=none、default=Hold）。
+        private static bool IsValid(Intent intent) => intent.Kind is IntentKind.Visit or IntentKind.Beat
             ? intent.Settlement != null : intent.Party?.IsActive == true;
 
         private static void RemoveExpired()
