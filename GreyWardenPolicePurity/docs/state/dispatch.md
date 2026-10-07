@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：2026-10-07 送信队的主动性设定开放给火誓者信众队共用，送信队行为不变
+> 已复核至：2026-10-07 送信队的主动性设定开放给火誓者无领主队共用，送信队行为不变
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
 > 待实测：无
 
@@ -27,7 +27,7 @@
 ## 路上
 
 - 出程直扑（`RequestRush`）；回程跟随玩家（`RequestEscort`），不用直扑，否则原版会拉出一场遭遇。
-- 攻击倾向 0.2、6 小时，每小时续：贴身弱敌照打，不为远处目标丢下差事。火誓者信众队出门也用这一套（`KeepCourierDisposition`）。
+- 攻击倾向 0.2、6 小时，每小时续：贴身弱敌照打，不为远处目标丢下差事。火誓者的传教队、运械队、卖货队出门也用这一套（`KeepCourierDisposition`）。
 - 收件人每小时重选最近且**走得到**的灰袍领主；新目标要近 25 以上才改道。
   `CanReach` 必需：目标位置不合本队通行方式时，引擎把目的地换成自己脚下，队伍原地不动。
 - 12 小时没有真的靠近收件人就换一个；换不出来就带着东西回玩家身边。

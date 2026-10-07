@@ -324,14 +324,21 @@ namespace GreyWardenPolicePurity
             public const int DamnationUnbelieverBase = 2;
             public const float DamnationHearthPerUnbeliever = 200f;
 
-            // 向外传教：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人，家里至少留 5 人。
-            // 先去 150 距离内火誓者比例、武装率两项加起来比家里低 0.2 以上的村子，没有就去最近的还没有火誓者的。
+            // 传教队：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
+            // 先去 150 距离内火誓者比例比家里低 0.1 以上的村子，没有就去最近的还没有火誓者的。
             public const float MissionIntervalDays = 10f;
             public const int MaxActiveMissions = 4;
             public const int MissionSize = 10;
             public const int MissionMinimumLeftBehind = 5;
             public const float MissionMaxDistance = 150f;
-            public const float MissionMinimumNeed = 0.2f;
+            public const float MissionMinimumShareGap = 0.1f;
+
+            // 运械队：隔 3 天看一次，300 距离内拿到主兵器的比例比家里低 0.2 以上、拉平要差 5 套以上的村子才去；5 人押车。
+            public const float BalanceIntervalDays = 3f;
+            public const int BalanceEscortSize = 5;
+            public const float BalanceMaxDistance = 300f;
+            public const float BalanceMinimumArmedGap = 0.2f;
+            public const int BalanceMinimumSets = 5;
 
             // 卖货：货仓里的东西值 2,000 以上、隔 3 天出一次车。
             public const int CaravanSize = 8;
@@ -341,7 +348,7 @@ namespace GreyWardenPolicePurity
             public const int CaravanMaxTowns = 3;
             public const int CaravanMinimumTownGold = 5000;
 
-            // 信众队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
+            // 无领主队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
             public const float FaithPartyVisitScore = 8f;
             public const float FaithPartyTravelTimeoutHours = 120f;
 

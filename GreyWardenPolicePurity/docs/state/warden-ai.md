@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 删每小时解冻；读档解冻跳过火誓者信众队；状态文字覆盖重建、请愿、练兵、信众村
+> 已复核至：2026-10-07 删每小时解冻；读档解冻跳过火誓者卖货队；状态文字覆盖重建、请愿、练兵、信众村、无领主队
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人
 
@@ -68,11 +68,12 @@
 - 跟随不降速：原版护送分支只会把跟随方降到被跟随方的速度。灰袍登记过的跟随差事、并且当前确实是 EscortParty 时，解除这个封顶（`GwpEscortSpeedCapPatch`）。
   路径和交战语义不变；军团行军时不动。
 
-- 冻结（`DoNotMakeNewDecisions`）：只有直扑锁和火誓者信众队在家停驻会冻住灰袍的队。读档时对所有受管队伍解冻一遍——
-  意图和直扑锁不进存档（读档清空，由各差事每小时重下），冻结却是原版状态、会进存档；信众队在家的停驻除外。
-  以前每小时还解冻一次，那是 2026-07-19 为旧存档清锁写的，会盖掉信众队的停驻，已删。（依据：设计；C#反编译 v1.4.8 AiPartyThinkBehavior；实机诊断 2026-10-07）
-- 地图状态文字：重建施工、请愿驻留、练兵官原地操练、灰袍领主在信众村、火誓者信众队，都写成实际在做的事（`GwpLocationDutyBehaviorTextPatch`；
-  用户裁定 2026-10-07：用状态文字，不弹灰色消息）。
+- 冻结（`DoNotMakeNewDecisions`）：只有直扑锁和火誓者卖货队在家停驻会冻住灰袍的队。读档时对所有受管队伍解冻一遍——
+  意图和直扑锁不进存档（读档清空，由各差事每小时重下），冻结却是原版状态、会进存档；卖货队在家的停驻除外。
+  以前每小时还解冻一次，那是 2026-07-19 为旧存档清锁写的，会盖掉卖货队的停驻，已删。（依据：设计；C#反编译 v1.4.8 AiPartyThinkBehavior；实机诊断 2026-10-07）
+- 地图状态文字：重建施工、请愿驻留、练兵官原地操练、灰袍领主在信众村、火誓者的无领主队，都写成实际在做的事（`GwpLocationDutyBehaviorTextPatch`；
+  用户裁定 2026-10-07：用状态文字，不弹灰色消息）。原版对进了聚落的部队只写「在某地等待」，原地办事只写「原地待命」，
+  卖俘虏、招兵、养伤都不记日志条目（C#反编译 v1.4.8 MobileParty.GetBehaviorText）。
 
 ## 巡区
 

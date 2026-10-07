@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
     /// 是烧人的原料；灰袍兵只靠重建、传教、烧人变多，战斗减员从民兵队读回。
     ///
     /// 分文件：本文件是数据、存档、查询、事件分派、祭司、守村队；仪式见 GwpFireswornRituals.cs，
-    /// 信众队见 GwpFireswornParties.cs，地牢与领主进村交接见 GwpFireswornDungeon.cs，军械库见 GwpFireswornArmory.cs。
+    /// 传教队、卖货队、运械队见 GwpFireswornParties.cs，地牢与领主进村交接见 GwpFireswornDungeon.cs，军械库见 GwpFireswornArmory.cs。
     /// </summary>
     public sealed partial class GwpFireswornBehavior : CampaignBehaviorBase
     {
@@ -86,6 +86,17 @@ namespace GreyWardenPolicePurity
             Damnation = 1
         }
 
+        /// <summary>
+        /// 三种无领主队（用户裁定 2026-10-07）：传教队把人送过去，到了就并入当地、队伍没了；
+        /// 卖货队照原版村民队常驻，卖完回村；运械队把兵器运到缺的村子，到了也并入当地、队伍没了。
+        /// </summary>
+        internal enum FaithPartyKind
+        {
+            Mission = 0,
+            Market = 1,
+            Balance = 2
+        }
+
         private enum FaithPartyPhase
         {
             Home = 0,
@@ -100,6 +111,7 @@ namespace GreyWardenPolicePurity
             public double LastDamnation = Never;
             public double LastMission = Never;
             public double LastMarket = Never;
+            public double LastBalance = Never;
             public string PriestId = string.Empty;
         }
 
@@ -111,15 +123,12 @@ namespace GreyWardenPolicePurity
             public double EndHour;
         }
 
-        /// <summary>
-        /// 每座信众村一支信众队（用户裁定 2026-10-07：传教队和狂信者队合成一支），照原版村民队常驻在村里。
-        /// 去城里卖货的回村；去别的村子传教、送兵器的，到了就并入那里，队伍没了（用户裁定 2026-10-07）。
-        /// 去哪儿由目标决定：目标是村子就是传教，是城就是卖货。
-        /// </summary>
+        /// <summary>一支无领主队：哪一种、从哪来、在哪个阶段、去哪儿。传教队、运械队只有出发这一段。</summary>
         private sealed class FaithParty
         {
             public string PartyId = string.Empty;
             public string HomeId = string.Empty;
+            public FaithPartyKind Kind;
             public FaithPartyPhase Phase;
             public string TargetId = string.Empty;
             public double PhaseHour;
@@ -151,12 +160,12 @@ namespace GreyWardenPolicePurity
         public override void SyncData(IDataStore dataStore)
         {
             List<string>? villageIds = null, priests = null;
-            List<double>? congregations = null, damnations = null, missions = null, markets = null;
+            List<double>? congregations = null, damnations = null, missions = null, markets = null, balances = null;
             List<string>? ritualVillages = null;
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null;
-            List<int>? partyPhases = null, partyStops = null;
+            List<int>? partyKinds = null, partyPhases = null, partyStops = null;
             List<double>? partyHours = null;
 
             if (dataStore.IsSaving)
@@ -167,6 +176,7 @@ namespace GreyWardenPolicePurity
                 damnations = rows.Select(row => row.LastDamnation).ToList();
                 missions = rows.Select(row => row.LastMission).ToList();
                 markets = rows.Select(row => row.LastMarket).ToList();
+                balances = rows.Select(row => row.LastBalance).ToList();
                 priests = rows.Select(row => row.PriestId).ToList();
                 ritualVillages = _rituals.Select(ritual => ritual.VillageId).ToList();
                 ritualKinds = _rituals.Select(ritual => (int)ritual.Kind).ToList();
@@ -174,6 +184,7 @@ namespace GreyWardenPolicePurity
                 List<FaithParty> parties = _faithParties.Values.ToList();
                 partyIds = parties.Select(party => party.PartyId).ToList();
                 partyHomes = parties.Select(party => party.HomeId).ToList();
+                partyKinds = parties.Select(party => (int)party.Kind).ToList();
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
@@ -185,12 +196,14 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsVillageLastDamnation", ref damnations);
             dataStore.SyncData("GWPP_FsVillageLastMission", ref missions);
             dataStore.SyncData("GWPP_FsVillageLastMarket", ref markets);
+            dataStore.SyncData("GWPP_FsVillageLastBalance", ref balances);
             dataStore.SyncData("GWPP_FsVillagePriest", ref priests);
             dataStore.SyncData("GWPP_FsRitualVillage", ref ritualVillages);
             dataStore.SyncData("GWPP_FsRitualKind", ref ritualKinds);
             dataStore.SyncData("GWPP_FsRitualEnd", ref ritualEnds);
             dataStore.SyncData("GWPP_FsPartyIds", ref partyIds);
             dataStore.SyncData("GWPP_FsPartyHomes", ref partyHomes);
+            dataStore.SyncData("GWPP_FsPartyKinds", ref partyKinds);
             dataStore.SyncData("GWPP_FsPartyPhases", ref partyPhases);
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
@@ -212,6 +225,7 @@ namespace GreyWardenPolicePurity
                     LastDamnation = damnations![i],
                     LastMission = missions![i],
                     LastMarket = markets![i],
+                    LastBalance = balances![i],
                     PriestId = priests![i]
                 };
 
@@ -230,6 +244,7 @@ namespace GreyWardenPolicePurity
                 {
                     PartyId = partyIds[i],
                     HomeId = partyHomes![i],
+                    Kind = (FaithPartyKind)partyKinds![i],
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
@@ -327,22 +342,23 @@ namespace GreyWardenPolicePurity
 
         // ---------------------------------------------------------------- 查询
 
-        /// <summary>这是不是一支信众队；是的话，是去传教还是去卖货、是不是在去的路上、家在哪、要去哪。</summary>
-        internal static bool TryDescribeFaithParty(MobileParty? party, out bool mission, out bool outbound,
+        /// <summary>这是不是一支火誓者的无领主队；是的话，哪一种、是不是在去的路上、家在哪、要去哪。</summary>
+        internal static bool TryDescribeFaithParty(MobileParty? party, out FaithPartyKind kind, out bool outbound,
             out Settlement? home, out Settlement? target)
         {
-            mission = outbound = false;
+            kind = FaithPartyKind.Market;
+            outbound = false;
             home = target = null;
             if (party == null || _instance == null || !_instance._faithParties.TryGetValue(party.StringId, out FaithParty? record))
                 return false;
+            kind = record.Kind;
             home = Settlement.Find(record.HomeId);
             target = Settlement.Find(record.TargetId);
             outbound = record.Phase == FaithPartyPhase.Outbound;
-            mission = outbound && target.IsVillage;
             return true;
         }
 
-        /// <summary>这支信众队正在家里停驻（Park 冻住的）。</summary>
+        /// <summary>这支卖货队正在家里停驻（Park 冻住的）。</summary>
         internal static bool IsParkedFaithParty(MobileParty party) =>
             _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
             record.Phase == FaithPartyPhase.Home && party.CurrentSettlement?.StringId == record.HomeId;
@@ -563,7 +579,7 @@ namespace GreyWardenPolicePurity
 
         private void OnMobilePartyDestroyed(MobileParty party, PartyBase? destroyer)
         {
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTY_DESTROYED", () => OnPartyGone(party));
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTY_DESTROYED", () => OnPartyGone(party, destroyer));
         }
 
         private static int FreeSlots(MobileParty party) =>
@@ -619,10 +635,13 @@ namespace GreyWardenPolicePurity
                 Settlement home = Settlement.Find(record.HomeId);
                 Settlement target = Settlement.Find(record.TargetId);
                 text = record.Phase == FaithPartyPhase.Outbound
-                    ? target.IsVillage
+                    ? record.Kind == FaithPartyKind.Mission
                         ? GwpText.Create("{=gwp_fs_status_mission}Carrying the Eternal Fire to {TARGET}.", "TARGET", target.Name)
-                        : GwpText.Create("{=gwp_fs_status_market}Taking the goods of {HOME} to market in {TARGET}.",
-                            "HOME", home.Name, "TARGET", target.Name)
+                        : record.Kind == FaithPartyKind.Balance
+                            ? GwpText.Create("{=gwp_fs_status_balance}Carrying arms from {HOME} to the sworn of {TARGET}.",
+                                "HOME", home.Name, "TARGET", target.Name)
+                            : GwpText.Create("{=gwp_fs_status_market}Taking the goods of {HOME} to market in {TARGET}.",
+                                "HOME", home.Name, "TARGET", target.Name)
                     : record.Phase == FaithPartyPhase.Returning
                         ? GwpText.Create("{=gwp_fs_status_returning}Returning to {HOME}.", "HOME", home.Name)
                         : GwpText.Create("{=gwp_fs_status_home}Keeping watch in {HOME}.", "HOME", home.Name);

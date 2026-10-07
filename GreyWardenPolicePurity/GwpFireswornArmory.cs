@@ -59,8 +59,8 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 持有者与配装
 
         /// <summary>
-        /// 这支部队用哪本账：灰袍领主部队用自己的；有火誓者的村子的民兵（守村队在里面）、本村的信众队用村子的
-        /// （用户反馈 2026-10-07：狂信者和传教士出门没有用军械库的装备）。其余没有。
+        /// 这支部队用哪本账：灰袍领主部队、火誓者的无领主队用自己的；有火誓者的村子的民兵（守村队在里面）用村子的。
+        /// 无领主队出发时从家里的军械库拿最好的那几套装进自己的账（用户裁定 2026-10-07），路上打仗就穿这些。其余没有。
         /// </summary>
         private string? HolderOf(PartyBase? party)
         {
@@ -69,8 +69,8 @@ namespace GreyWardenPolicePurity
                 return null;
             if (mobile.IsMilitia && HasFireswornGuard(mobile.HomeSettlement))
                 return mobile.HomeSettlement.StringId;
-            if (_faithParties.TryGetValue(mobile.StringId, out FaithParty? faithParty))
-                return faithParty.HomeId;
+            if (_faithParties.ContainsKey(mobile.StringId))
+                return mobile.StringId;
             return mobile.IsLordParty && GwpWardenRecruitment.IsWardenParty(mobile) ? mobile.StringId : null;
         }
 
@@ -89,13 +89,10 @@ namespace GreyWardenPolicePurity
             if (_villages.TryGetValue(holder, out FaithVillage? row))
             {
                 Settlement village = Settlement.Find(holder);
-                // 村子的账武装守村队，也武装本村的信众队（出门的人不算在守村队里）。
-                List<TroopRoster> rosters = new List<TroopRoster> { GuardOf(holder) };
-                rosters.AddRange(_faithParties.Values
-                    .Where(entry => string.Equals(entry.HomeId, holder, StringComparison.OrdinalIgnoreCase))
-                    .Select(entry => FindParty(entry.PartyId)!.MemberRoster));
-                int villageRecruits = rosters.Sum(roster => CountOf(roster, GwpIds.NewRecruitId));
-                int villageZealots = rosters.Sum(roster => CountOf(roster, GwpIds.ZealotId));
+                // 村子的账武装守村队；出门的无领主队带着自己的账。
+                TroopRoster guard = GuardOf(holder);
+                int villageRecruits = CountOf(guard, GwpIds.NewRecruitId);
+                int villageZealots = CountOf(guard, GwpIds.ZealotId);
                 int headroom = Math.Max(0, ZealotCap(village) - Sworn(row));
                 int reserve = Math.Min(headroom, Math.Max(GwpTuning.Firesworn.ArmoryVillageReserveMinimum,
                     (int)(Sworn(row) * GwpTuning.Firesworn.ArmoryReserveShare)));
@@ -104,8 +101,11 @@ namespace GreyWardenPolicePurity
             MobileParty party = FindParty(holder)!;
             int recruits = CountOf(party.MemberRoster, GwpIds.NewRecruitId);
             int zealots = CountOf(party.MemberRoster, GwpIds.ZealotId);
-            return BuildPlan(ledger, recruits, zealots,
-                (int)Math.Ceiling((recruits + zealots) * GwpTuning.Firesworn.ArmoryReserveShare));
+            // 无领主队只带自己身上那几套，不留增长余量。
+            int partyReserve = _faithParties.ContainsKey(holder)
+                ? 0
+                : (int)Math.Ceiling((recruits + zealots) * GwpTuning.Firesworn.ArmoryReserveShare);
+            return BuildPlan(ledger, recruits, zealots, partyReserve);
         }
 
         private static int CountOf(TroopRoster roster, string troopId) =>
@@ -208,7 +208,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 每天一次：村子军械库多出来的进货仓，由信众队拉去卖；领主部队多出来的进部队原版仓库，
-        /// 到信众村时捐掉（用户裁定）。村与村之间的平衡由信众队向外传教时带兵器过去（<see cref="TransferMissionSets"/>）。
+        /// 到信众村时捐掉（用户裁定）。村与村之间的平衡由运械队把兵器运过去（<see cref="LoadBalanceCargo"/>）。
         /// </summary>
         private void RebalanceArmories()
         {
@@ -228,34 +228,73 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 向外传教的人到了：把家里军械库的兵器护甲匀一部分过去，让两边拿到主兵器的人的比例一样
-        /// （用户裁定 2026-10-07：信众队平衡各地的兵器和信众人数）。过去的人本来就算在家里的账上，
-        /// 所以按「家里少了这些人、那边多了这些人」算两边各该有几套，从家里拿到兵器的人里配装最差的那几套整套送过去。
-        /// 调用时这支队还记在家里。
+        /// 无领主队出发前从家里的军械库拿最好的那几套（用户裁定 2026-10-07：无领主队都拿自己武器库里最好的再出发）：
+        /// 家里的配装从好到差排好，前 <paramref name="men"/> 套整套挪进这支队的账。
         /// </summary>
-        private int TransferMissionSets(string homeId, string targetId, int travellers)
+        private int TakeBestSets(string homeId, MobileParty party)
         {
+            int men = CountOf(party.MemberRoster, GwpIds.NewRecruitId) + CountOf(party.MemberRoster, GwpIds.ZealotId);
             ArmoryPlan home = BuildPlanFor(homeId);
-            ArmoryPlan target = BuildPlanFor(targetId);
-            List<EquipmentElement[]> homeArmed = home.Sets.Where(kit => !kit[KitMain].IsEmpty).ToList();
-            int targetArmed = target.Sets.Count(kit => !kit[KitMain].IsEmpty);
-            int homeMen = home.Sets.Count - travellers;
-            int targetMen = target.Sets.Count + travellers;
-            if (homeMen + targetMen <= 0)
-                return 0;
-            int wanted = (int)Math.Round((homeArmed.Count + targetArmed) * targetMen / (float)(homeMen + targetMen));
-            int sets = Math.Max(0, Math.Min(homeArmed.Count, wanted - targetArmed));
-            ItemRoster moving = new ItemRoster();
-            foreach (EquipmentElement[] kit in homeArmed.Skip(homeArmed.Count - sets))
+            ItemRoster taken = new ItemRoster();
+            foreach (EquipmentElement[] kit in home.Sets.Take(men))
                 foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
-                    moving.AddToCounts(item, 1);
-            int moved = MoveAll(moving, ItemsOf(_armories, homeId), ItemsOf(_armories, targetId));
+                    taken.AddToCounts(item, 1);
+            int moved = MoveAll(taken, ItemsOf(_armories, homeId), ItemsOf(_armories, party.StringId));
             _plans.Remove(homeId);
-            _plans.Remove(targetId);
+            _plans.Remove(party.StringId);
             return moved;
         }
 
-        /// <summary>信众队把车上的兵器护甲卸进这座村的军械库。</summary>
+        /// <summary>
+        /// 运械队装车（用户裁定 2026-10-07：兵器先进无领主队的背包，到了再进目标军械库，路上会被抢）。
+        /// 押车的人已经带着自己那几套走了；按「家里少这些人、那边多这些人」算两边拿到主兵器的比例一样时
+        /// 那边还差几套，从家里拿到兵器的人里配装最差的那几套整套装进背包。返回装了几套。
+        /// </summary>
+        private int LoadBalanceCargo(string homeId, string targetId, MobileParty party)
+        {
+            ArmoryPlan home = BuildPlanFor(homeId);
+            ArmoryPlan target = BuildPlanFor(targetId);
+            ArmoryPlan escort = BuildPlanFor(party.StringId);
+            List<EquipmentElement[]> homeArmed = home.Sets.Where(kit => !kit[KitMain].IsEmpty).ToList();
+            int escortArmed = escort.Sets.Count(kit => !kit[KitMain].IsEmpty);
+            int targetArmed = target.Sets.Count(kit => !kit[KitMain].IsEmpty) + escortArmed;
+            int targetMen = target.Sets.Count + escort.Sets.Count;
+            int allMen = home.Sets.Count + targetMen;
+            if (allMen <= 0)
+                return 0;
+            int wanted = (int)Math.Round((homeArmed.Count + targetArmed) * targetMen / (float)allMen);
+            int sets = Math.Max(0, Math.Min(homeArmed.Count, wanted - targetArmed));
+            ItemRoster cargo = new ItemRoster();
+            foreach (EquipmentElement[] kit in homeArmed.Skip(homeArmed.Count - sets))
+                foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
+                    cargo.AddToCounts(item, 1);
+            MoveAll(cargo, ItemsOf(_armories, homeId), party.ItemRoster);
+            _plans.Remove(homeId);
+            return sets;
+        }
+
+        /// <summary>这座村的守村队里狂信者和新兵有几成拿到了主兵器。</summary>
+        private float ArmedShare(string villageId)
+        {
+            ArmoryPlan plan = PlanOf(villageId);
+            return plan.Sets.Count == 0 ? 0f : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) / (float)plan.Sets.Count;
+        }
+
+        /// <summary>把一支无领主队自己的账整本并进 <paramref name="toHolder"/>，这支队的账就没了。</summary>
+        private int ReturnPartyLedger(MobileParty party, string toHolder)
+        {
+            if (!_armories.TryGetValue(party.StringId, out ItemRoster? ledger))
+                return 0;
+            ItemRoster all = new ItemRoster();
+            all.Add(ledger);
+            int moved = MoveAll(all, ledger, ItemsOf(_armories, toHolder));
+            _armories.Remove(party.StringId);
+            _plans.Remove(party.StringId);
+            _plans.Remove(toHolder);
+            return moved;
+        }
+
+        /// <summary>无领主队把背包里的兵器护甲卸进这座村的军械库。</summary>
         private int UnloadKits(MobileParty cart, string village)
         {
             CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
@@ -462,18 +501,30 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 部队没了：灰袍领主部队的军械库整本回到最近的信众村（用户裁定）；信众队的记录清掉，身上的货跟着丢。
+        /// 部队没了：灰袍领主部队的军械库整本回到最近的信众村（用户裁定）。
+        /// 火誓者的无领主队被打掉，身上剩下的那几套（被俘的人的）归打掉它的那一方，路上遗失（用户裁定 2026-10-07）；
+        /// 背包里的货原版已经分给了胜方。并入村子时（<see cref="JoinVillage"/>）账已经先挪走了。
         /// </summary>
-        private void OnPartyGone(MobileParty party)
+        private void OnPartyGone(MobileParty party, PartyBase? destroyer)
         {
+            _plans.Remove(party.StringId);
             if (_faithParties.TryGetValue(party.StringId, out FaithParty? record))
             {
                 _faithParties.Remove(party.StringId);
+                int lost = 0;
+                if (_armories.TryGetValue(party.StringId, out ItemRoster? kits))
+                {
+                    lost = CountItems(kits);
+                    if (destroyer != null)
+                        destroyer.ItemRoster.Add(kits);
+                    _armories.Remove(party.StringId);
+                }
                 GwpAiDiagnostics.WriteFaith("FAITH_PARTY_LOST",
-                    "party=" + party.StringId + "; home=" + record.HomeId + "; phase=" + record.Phase +
-                    "; cargoValue=" + party.ItemRoster.TotalValue + "; gold=" + party.PartyTradeGold);
+                    "party=" + party.StringId + "; kind=" + record.Kind + "; home=" + record.HomeId + "; phase=" + record.Phase +
+                    "; target=" + record.TargetId + "; cargoValue=" + party.ItemRoster.TotalValue + "; gold=" + party.PartyTradeGold +
+                    "; kitsLeft=" + lost + "; destroyer=" + (destroyer?.Id ?? "-"));
+                return;
             }
-            _plans.Remove(party.StringId);
             if (!_armories.TryGetValue(party.StringId, out ItemRoster? ledger))
                 return;
             _armories.Remove(party.StringId);
@@ -482,17 +533,10 @@ namespace GreyWardenPolicePurity
                 .FirstOrDefault();
             if (village == null)
                 return;
-            ItemRoster target = ItemsOf(_armories, village.StringId);
-            int moved = 0;
-            for (int i = 0; i < ledger.Count; i++)
-            {
-                ItemRosterElement element = ledger.GetElementCopyAtIndex(i);
-                target.AddToCounts(element.EquipmentElement, element.Amount);
-                moved += element.Amount;
-            }
+            ItemsOf(_armories, village.StringId).Add(ledger);
             _plans.Remove(village.StringId);
             GwpAiDiagnostics.WriteFaith("ARMORY_RELOCATED",
-                "party=" + party.StringId + "; village=" + village.StringId + "; items=" + moved);
+                "party=" + party.StringId + "; village=" + village.StringId + "; items=" + CountItems(ledger));
         }
 
         // ---------------------------------------------------------------- 实战、自动结算
@@ -574,7 +618,7 @@ namespace GreyWardenPolicePurity
                 MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
                 string parties = string.Join(",", _faithParties.Values
                     .Where(entry => string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase))
-                    .Select(entry => entry.Phase + ":" + FindParty(entry.PartyId)!.MemberRoster.TotalManCount));
+                    .Select(entry => entry.Kind + ":" + entry.Phase + ":" + FindParty(entry.PartyId)!.MemberRoster.TotalManCount));
                 GwpAiDiagnostics.WriteFaith("DAILY_VILLAGE",
                     "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0") +
                     "; sworn=" + Sworn(row) + "; share=" + SwornShare(row, village).ToString("0.00") +

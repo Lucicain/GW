@@ -14,7 +14,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 在大地图上遇到信众队时的对话，照原版村民队（C#反编译 v1.4.8 VillagerCampaignBehavior
-    /// .AddVillageFarmerTradeAndLootDialogs）：打招呼说明来处和去向，运货进城时可以买它车上的货，可以威逼，可以放行。
+    /// .AddVillageFarmerTradeAndLootDialogs）：打招呼说明来处和去向，卖货队可以买它车上的货，可以威逼，可以放行。
     /// 原版对话只认村民队，这种队以前落到原版兜底那一句「我不能和你说话」
     /// （default_conversation_for_wrongly_created_heroes；用户反馈 2026-10-07）。
     /// 狂信者不向威逼低头，没有原版村民的交钱、投降两条路；威逼之后回到遭遇菜单，玩家自己决定打不打。
@@ -61,11 +61,14 @@ namespace GreyWardenPolicePurity
         private static bool GreetingCondition()
         {
             MobileParty? party = Encountered();
-            if (!GwpFireswornBehavior.TryDescribeFaithParty(party, out bool mission, out bool outbound,
+            if (!GwpFireswornBehavior.TryDescribeFaithParty(party, out GwpFireswornBehavior.FaithPartyKind kind, out bool outbound,
                     out Settlement? home, out Settlement? target))
                 return false;
-            TextObject greeting = mission
+            TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Mission
                 ? GwpText.Create("{=gwp_fs_party_greet_mission}May the fire light your road. We are sworn sisters of {HOME}, and we go to {TARGET} to carry the fire there and stay.",
+                    "HOME", home!.Name, "TARGET", target!.Name)
+                : kind == GwpFireswornBehavior.FaithPartyKind.Balance
+                ? GwpText.Create("{=gwp_fs_party_greet_balance}We are sworn sisters of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered.",
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : outbound
                     ? GwpText.Create("{=gwp_fs_party_greet_cart_out}We are the sworn sisters of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire.",
@@ -90,7 +93,8 @@ namespace GreyWardenPolicePurity
         private static bool BuyCondition()
         {
             MobileParty? party = Encountered();
-            if (!GwpFireswornBehavior.TryDescribeFaithParty(party, out bool mission, out _, out _, out _) || mission)
+            if (!GwpFireswornBehavior.TryDescribeFaithParty(party, out GwpFireswornBehavior.FaithPartyKind kind, out _, out _, out _) ||
+                kind != GwpFireswornBehavior.FaithPartyKind.Market)
                 return false;
             List<ItemRosterElement> goods = Goods(party!).ToList();
             int total = goods.Sum(element => Price(party!, element.EquipmentElement) * element.Amount);

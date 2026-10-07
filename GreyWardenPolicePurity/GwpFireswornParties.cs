@@ -9,19 +9,22 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 每座信众村一支信众队（用户裁定 2026-10-07：传教队和狂信者队合成一支，在村庄之间传递兵器和信众人数）：
+    /// 信众村的三种无领主队（用户裁定 2026-10-07）：
     /// <list type="bullet">
-    /// <item>向外传教：祭司已是本地最强的信众村，把狂信者连同兵器送到别的村子，到了就并入那里的守村队和军械库，
-    /// 这支队就没了（用户裁定 2026-10-07：进村相当于销毁，加入当地宗教）。先送已经有火誓者的村子——
-    /// 谁的火誓者比例、武装率比家里低得多就送谁——再送还没有火誓者的。</item>
-    /// <item>卖货：把村里货仓的东西运进城卖掉，钱带回来进灰袍公库（用户裁定：收益最后都进公库），卖完回村。</item>
+    /// <item>传教队：祭司已是本地最强的信众村，把狂信者跋山涉水送到别的村子，到了就并入那里的守村队，队伍没了。
+    /// 先送已经有火誓者、比例比家里低得多的村子，再送还没有火誓者的。只送人，不运货。</item>
+    /// <item>运械队：把家里的兵器护甲装进背包，运给武装率比家里低得多的村子，到了卸进那里的军械库、押车的人并入当地，队伍没了。
+    /// 背包里的东西路上被打掉就归胜方。</item>
+    /// <item>卖货队：照原版村民队常驻在村里，把货仓的东西运进城卖掉，钱带回来进灰袍公库，卖完回村。</item>
     /// </list>
-    /// 照原版村民队（C#反编译 v1.4.8 VillagerCampaignBehavior）：在家待在村子里、出发前从守村队补人。
+    /// 三种都出发前从守村队补人（先补最低级的），再从家里的军械库拿最好的那几套装进自己的账。
     /// 路上和送信队一样专注自己的事：贴身的弱敌照打，不为远处的目标丢下差事（用户裁定 2026-10-07）。
+    /// 传教队、运械队走不到（超时、目标出事）就回家，并入家里。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
     {
@@ -52,8 +55,8 @@ namespace GreyWardenPolicePurity
                             !IsTripTargetValid(target))
                         {
                             GwpAiDiagnostics.WriteFaith("FAITH_PARTY_TURNED_BACK",
-                                "party=" + party.StringId + "; home=" + record.HomeId + "; target=" + record.TargetId +
-                                "; hours=" + (now - record.PhaseHour).ToString("0"));
+                                "party=" + party.StringId + "; kind=" + record.Kind + "; home=" + record.HomeId +
+                                "; target=" + record.TargetId + "; hours=" + (now - record.PhaseHour).ToString("0"));
                             SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
                             break;
                         }
@@ -62,10 +65,10 @@ namespace GreyWardenPolicePurity
                             Travel(party, target);
                             break;
                         }
-                        if (target.IsVillage)
-                            JoinVillage(record, party, target);
-                        else
+                        if (record.Kind == FaithPartyKind.Market)
                             SellCargo(record, party, target);
+                        else
+                            JoinVillage(record, party, target);
                         break;
 
                     case FaithPartyPhase.Returning:
@@ -74,7 +77,10 @@ namespace GreyWardenPolicePurity
                             Travel(party, home);
                             break;
                         }
-                        ArriveHome(record, party, home);
+                        if (record.Kind == FaithPartyKind.Market)
+                            ArriveHome(record, party, home);
+                        else
+                            JoinVillage(record, party, home);
                         break;
                 }
             }
@@ -90,34 +96,10 @@ namespace GreyWardenPolicePurity
             !FactionManager.IsAtWarAgainstFaction(PoliceStats.GetPoliceClan(), target.MapFaction) &&
             (target.IsVillage ? IsVillageQuiet(target) : !target.IsUnderSiege);
 
-        private void ArriveHome(FaithParty record, MobileParty party, Settlement home)
-        {
-            int proceeds = party.PartyTradeGold;
-            party.PartyTradeGold = 0;
-            CreditTreasury(proceeds);
-            // 没送出去的兵器护甲回本村军械库，没卖掉的别的东西回货仓。
-            int unsold = UnloadKits(party, home.StringId);
-            ItemRoster goods = ItemsOf(_goods, home.StringId);
-            for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
-            {
-                ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
-                if (element.EquipmentElement.Item.IsFood)
-                    continue;
-                goods.AddToCounts(element.EquipmentElement, element.Amount);
-                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
-                unsold += element.Amount;
-            }
-            SetPhase(record, FaithPartyPhase.Home, record.HomeId);
-            Park(party, home);
-            GwpAiDiagnostics.WriteFaith("FAITH_PARTY_HOME",
-                "party=" + party.StringId + "; home=" + home.StringId + "; men=" + party.MemberRoster.TotalManCount +
-                "; proceedsToTreasury=" + proceeds + "; unsoldBack=" + unsold);
-        }
-
         /// <summary>
-        /// 让信众队待在村子里面、看不见、不动，照原版村民队在家的样子。
+        /// 让卖货队待在村子里面、看不见、不动，照原版村民队在家的样子。
         /// 不冻住的话，原版会把这种无领主的自定义队拉出村，停在村口不动（实机诊断 2026-10-06：
-        /// 传教队回村 5 小时后出村，此后 56 小时一直在村口 Hold，「去本村」的竞价赢了也不落地）。
+        /// 回村 5 小时后出村，此后 56 小时一直在村口 Hold，「去本村」的竞价赢了也不落地）。
         /// 下次出发时下达新意图，<see cref="GreyWardenPartyDesireBehavior.RequestImmediateRethink"/> 会解冻。
         /// </summary>
         private static void Park(MobileParty party, Settlement settlement)
@@ -139,41 +121,39 @@ namespace GreyWardenPolicePurity
             record.PhaseHour = CampaignTime.Now.ToHours;
         }
 
-        /// <summary>这座村子的信众队：在且在家就用它，没有就新建。不在家（出门或回程中）返回 null。</summary>
-        private MobileParty? ReadyFaithParty(FaithVillage row, Settlement home)
+        /// <summary>
+        /// 建一支无领主队。不借船、不配口粮：只走陆路，不吃饭（GwpCommon.IsLeaderlessDutyParty）。
+        /// 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
+        /// （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
+        /// </summary>
+        private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind)
         {
-            FaithParty? record = _faithParties.Values.FirstOrDefault(entry =>
-                string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase));
-            if (record != null)
-                return record.Phase == FaithPartyPhase.Home && FindParty(record.PartyId)!.CurrentSettlement == home
-                    ? FindParty(record.PartyId)
-                    : null;
-
             Clan police = PoliceStats.GetPoliceClan();
+            TextObject name = kind == FaithPartyKind.Mission
+                ? GwpText.Create("{=gwp_fs_mission_party}Disciples of the Eternal Fire")
+                : kind == FaithPartyKind.Balance
+                    ? GwpText.Create("{=gwp_fs_balance_party}Armsbearers of {VILLAGE}", "VILLAGE", home.Name)
+                    : GwpText.Create("{=gwp_fs_caravan_party}Zealots of {VILLAGE}", "VILLAGE", home.Name);
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                home.GatePosition, 1f, home, GwpText.Create("{=gwp_fs_caravan_party}Zealots of {VILLAGE}", "VILLAGE", home.Name),
-                police, police.DefaultPartyTemplate, police.Leader, "", "", 4f, false);
+                home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, police.Leader, "", "", 4f, false);
             party.StringId = GwpIds.FaithPartyPrefix + MBRandom.RandomInt(100000, 999999);
             party.ActualClan = police;
             party.MemberRoster.Clear();
-            // 不借船、不配口粮：信众队只走陆路，不吃饭（GwpCommon.IsLeaderlessDutyParty）。
-            // 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
-            // （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
-            Park(party, home);
             _faithParties[party.StringId] = new FaithParty
             {
                 PartyId = party.StringId,
                 HomeId = row.VillageId,
+                Kind = kind,
                 Phase = FaithPartyPhase.Home,
                 TargetId = row.VillageId,
                 PhaseHour = CampaignTime.Now.ToHours
             };
-            GwpAiDiagnostics.WriteFaith("FAITH_PARTY_FORMED", "party=" + party.StringId + "; home=" + home.StringId);
+            GwpAiDiagnostics.WriteFaith("FAITH_PARTY_FORMED", "party=" + party.StringId + "; kind=" + kind + "; home=" + home.StringId);
             return party;
         }
 
-        /// <summary>出发前从守村队补人，补到 <paramref name="size"/>；先补最低级的。</summary>
-        private void TopUp(MobileParty party, FaithVillage row, Settlement home, int size)
+        /// <summary>从守村队补人，补到 <paramref name="size"/>，先补最低级的；再从家里军械库拿最好的那几套。</summary>
+        private int ManParty(MobileParty party, FaithVillage row, Settlement home, int size)
         {
             TroopRoster guard = GuardOf(row.VillageId);
             int need = Math.Max(0, size - party.MemberRoster.TotalManCount);
@@ -189,9 +169,16 @@ namespace GreyWardenPolicePurity
             PushGuard(row, home);
             ReconcilePriestSlots(row);
             _plans.Remove(row.VillageId);
+            return TakeBestSets(row.VillageId, party);
         }
 
-        /// <summary>每天一次：祭司已是本地最强的信众村先看要不要向外传教，不传就看要不要卖货。</summary>
+        private void Dispatch(FaithParty record, MobileParty party, Settlement target)
+        {
+            SetPhase(record, FaithPartyPhase.Outbound, target.StringId);
+            Travel(party, target);
+        }
+
+        /// <summary>每天一次，只在信众村：祭司已是最强就看要不要派传教队；再看要不要派运械队、卖货队。三件事各有各的间隔。</summary>
         private void DispatchFaithParties()
         {
             double now = CampaignTime.Now.ToHours;
@@ -200,45 +187,39 @@ namespace GreyWardenPolicePurity
                 Settlement home = Settlement.Find(row.VillageId);
                 if (FindLivingPriest(row) == null || !IsVillageQuiet(home) || HasRitual(home))
                     continue;
-                if (!TryDispatchMission(row, home, now))
-                    TryDispatchMarket(row, home, now);
+                TryDispatchMission(row, home, now);
+                TryDispatchBalance(row, home, now);
+                TryDispatchMarket(row, home, now);
             }
         }
 
-        // ---------------------------------------------------------------- 向外传教
-
-        /// <summary>这座村的火誓者武装率：守村队、信众队里狂信者和新兵有几成拿到了主兵器。</summary>
-        private float ArmedShare(string villageId)
+        private List<Settlement> NearbyTargets(Settlement home, float maxDistance, FaithPartyKind kind)
         {
-            ArmoryPlan plan = PlanOf(villageId);
-            return plan.Sets.Count == 0 ? 0f : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) / (float)plan.Sets.Count;
+            Clan police = PoliceStats.GetPoliceClan();
+            return Village.All.Select(village => village.Settlement)
+                .Where(settlement => settlement != home && IsVillageQuiet(settlement) && !HasRitual(settlement) &&
+                    !FactionManager.IsAtWarAgainstFaction(police, settlement.MapFaction) &&
+                    home.GetPosition2D.Distance(settlement.GetPosition2D) <= maxDistance &&
+                    !_faithParties.Values.Any(entry => entry.Kind == kind && entry.Phase == FaithPartyPhase.Outbound &&
+                        string.Equals(entry.TargetId, settlement.StringId, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
         }
 
+        // ---------------------------------------------------------------- 传教队
+
         /// <summary>
-        /// 向外传教要去哪儿：先看附近已经有火誓者的村子，比家里缺得多（火誓者比例、武装率两项的差加起来够大）
-        /// 就去最缺的；都不缺就去最近的还没有火誓者的村子（用户裁定 2026-10-07：先传有狂信者的，再传其他）。
+        /// 传教去哪儿：先看附近已经有火誓者的村子，火誓者比例比家里低得够多就去差得最多的；
+        /// 都不缺就去最近的还没有火誓者的村子（用户裁定 2026-10-07：先传有狂信者的，再传其他）。
         /// </summary>
         private Settlement? MissionTarget(FaithVillage row, Settlement home)
         {
-            Clan police = PoliceStats.GetPoliceClan();
             float homeShare = SwornShare(row, home);
-            float homeArmed = ArmedShare(row.VillageId);
-            List<Settlement> nearby = Village.All.Select(village => village.Settlement)
-                .Where(settlement => settlement != home && IsVillageQuiet(settlement) && !HasRitual(settlement) &&
-                    !FactionManager.IsAtWarAgainstFaction(police, settlement.MapFaction) &&
-                    home.GetPosition2D.Distance(settlement.GetPosition2D) <= GwpTuning.Firesworn.MissionMaxDistance &&
-                    !_faithParties.Values.Any(entry => entry.Phase == FaithPartyPhase.Outbound &&
-                        string.Equals(entry.TargetId, settlement.StringId, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
-
+            List<Settlement> nearby = NearbyTargets(home, GwpTuning.Firesworn.MissionMaxDistance, FaithPartyKind.Mission);
             Settlement? needy = nearby
                 .Where(settlement => _villages.TryGetValue(settlement.StringId, out FaithVillage? other) &&
-                                     Sworn(other) < ZealotCap(settlement))
-                .Select(settlement => (settlement, need: homeShare - SwornShare(_villages[settlement.StringId], settlement) +
-                                                         homeArmed - ArmedShare(settlement.StringId)))
-                .Where(entry => entry.need >= GwpTuning.Firesworn.MissionMinimumNeed)
-                .OrderByDescending(entry => entry.need)
-                .Select(entry => entry.settlement)
+                                     Sworn(other) < ZealotCap(settlement) &&
+                                     homeShare - SwornShare(other, settlement) >= GwpTuning.Firesworn.MissionMinimumShareGap)
+                .OrderBy(settlement => SwornShare(_villages[settlement.StringId], settlement))
                 .FirstOrDefault();
             return needy ?? nearby
                 .Where(settlement => !_villages.ContainsKey(settlement.StringId))
@@ -246,43 +227,91 @@ namespace GreyWardenPolicePurity
                 .FirstOrDefault();
         }
 
-        private bool TryDispatchMission(FaithVillage row, Settlement home, double now)
+        private void TryDispatchMission(FaithVillage row, Settlement home, double now)
         {
             if (!IsPriestStrongest(row, home) ||
                 now - row.LastMission < GwpTuning.Firesworn.MissionIntervalDays * 24d ||
                 Sworn(row) < GwpTuning.Firesworn.MissionSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
-                _faithParties.Values.Count(entry => entry.Phase == FaithPartyPhase.Outbound &&
-                    Settlement.Find(entry.TargetId).IsVillage) >= GwpTuning.Firesworn.MaxActiveMissions)
-                return false;
+                _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions)
+                return;
             Settlement? target = MissionTarget(row, home);
             if (target == null)
-                return false;
-            MobileParty? party = ReadyFaithParty(row, home);
-            if (party == null)
-                return false;
-            TopUp(party, row, home, GwpTuning.Firesworn.MissionSize);
+                return;
+            MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Mission);
+            int kits = ManParty(party, row, home, GwpTuning.Firesworn.MissionSize);
             row.LastMission = now;
-            SetPhase(_faithParties[party.StringId], FaithPartyPhase.Outbound, target.StringId);
-            Travel(party, target);
+            Dispatch(_faithParties[party.StringId], party, target);
             GwpAiDiagnostics.WriteFaith("MISSION_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
                 "; targetHasSworn=" + _villages.ContainsKey(target.StringId) + "; men=" + party.MemberRoster.TotalManCount +
-                "; homeSworn=" + Sworn(row) + "; homeArmed=" + ArmedShare(row.VillageId).ToString("0.00") +
+                "; kitItems=" + kits + "; homeSworn=" + Sworn(row) +
                 "; distance=" + home.GetPosition2D.Distance(target.GetPosition2D).ToString("0"));
-            return true;
+        }
+
+        // ---------------------------------------------------------------- 运械队
+
+        /// <summary>运械去哪儿：附近有火誓者的村子里，拿到主兵器的比例比家里低得够多的，挑差得最多的。</summary>
+        private Settlement? BalanceTarget(Settlement home)
+        {
+            float homeArmed = ArmedShare(home.StringId);
+            return NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
+                .Where(settlement => _villages.ContainsKey(settlement.StringId) && PlanOf(settlement.StringId).Sets.Count > 0 &&
+                                     homeArmed - ArmedShare(settlement.StringId) >= GwpTuning.Firesworn.BalanceMinimumArmedGap)
+                .OrderBy(settlement => ArmedShare(settlement.StringId))
+                .FirstOrDefault();
         }
 
         /// <summary>
-        /// 到了：家里的兵器护甲匀一部分过来（<see cref="TransferMissionSets"/>），人并入当地守村队，
-        /// 这支队没了（用户裁定 2026-10-07）。当地还没有火誓者记录就建一条；有了祭司才算信众村。
+        /// 家里武装率比附近的村子高得够多，就派运械队：押车的人带着自己那几套，背包里装上让两边武装率拉平所差的那几套
+        /// （<see cref="LoadBalanceCargo"/>）。差得不到最少套数就不派。
+        /// </summary>
+        private void TryDispatchBalance(FaithVillage row, Settlement home, double now)
+        {
+            if (now - row.LastBalance < GwpTuning.Firesworn.BalanceIntervalDays * 24d ||
+                Sworn(row) < GwpTuning.Firesworn.BalanceEscortSize + GwpTuning.Firesworn.MissionMinimumLeftBehind)
+                return;
+            Settlement? target = BalanceTarget(home);
+            if (target == null)
+                return;
+            ArmoryPlan homePlan = PlanOf(home.StringId);
+            ArmoryPlan targetPlan = PlanOf(target.StringId);
+            int homeArmed = homePlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
+            int targetArmed = targetPlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
+            int estimate = (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
+                                           (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed;
+            if (estimate < GwpTuning.Firesworn.BalanceMinimumSets)
+                return;
+            MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Balance);
+            int kits = ManParty(party, row, home, GwpTuning.Firesworn.BalanceEscortSize);
+            int sets = LoadBalanceCargo(home.StringId, target.StringId, party);
+            row.LastBalance = now;
+            Dispatch(_faithParties[party.StringId], party, target);
+            GwpAiDiagnostics.WriteFaith("BALANCE_DISPATCHED",
+                "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
+                "; men=" + party.MemberRoster.TotalManCount + "; escortKitItems=" + kits + "; cargoSets=" + sets +
+                "; cargoValue=" + party.ItemRoster.TotalValue + "; homeArmed=" + ArmedShare(home.StringId).ToString("0.00") +
+                "; targetArmed=" + ArmedShare(target.StringId).ToString("0.00"));
+        }
+
+        // ---------------------------------------------------------------- 到了就并入
+
+        /// <summary>
+        /// 传教队、运械队到了：自己那几套和背包里的兵器护甲卸进当地军械库，人并入当地守村队，队伍没了
+        /// （用户裁定 2026-10-07：进村相当于销毁，加入当地宗教）。当地还没有火誓者记录就建一条；有了祭司才算信众村。
+        /// 走不到折回家时也是这样并入家里。
         /// </summary>
         private void JoinVillage(FaithParty record, MobileParty party, Settlement village)
         {
             FaithVillage row = EnsureVillage(village);
             int before = Sworn(row);
-            int travellers = party.MemberRoster.GetTroopRoster()
-                .Where(element => IsArmedTroop(element.Character)).Sum(element => element.Number);
-            int kits = TransferMissionSets(record.HomeId, village.StringId, travellers);
+            int kits = ReturnPartyLedger(party, village.StringId) + UnloadKits(party, village.StringId);
+            ItemRoster goods = ItemsOf(_goods, village.StringId);
+            for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
+            {
+                ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
+                goods.AddToCounts(element.EquipmentElement, element.Amount);
+                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
+            }
             int joined = 0;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
                 if (IsGuardTroop(element.Character))
@@ -292,13 +321,29 @@ namespace GreyWardenPolicePurity
             DestroyPartyAction.Apply(null, party);
             ReconcilePriestSlots(row);
             UpdatePriestPower(row);
-            GwpAiDiagnostics.WriteFaith("MISSION_JOINED",
+            GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Mission ? "MISSION_JOINED" : "BALANCE_DELIVERED",
                 "party=" + party.StringId + "; home=" + record.HomeId + "; village=" + village.StringId +
+                "; backHome=" + string.Equals(village.StringId, record.HomeId, StringComparison.OrdinalIgnoreCase) +
                 "; joined=" + joined + "; sworn=" + before + "->" + Sworn(row) + "; kitItems=" + kits +
-                "; share=" + SwornShare(row, village).ToString("0.00") + "; priest=" + (FindLivingPriest(row) != null));
+                "; share=" + SwornShare(row, village).ToString("0.00") + "; armed=" + ArmedShare(village.StringId).ToString("0.00") +
+                "; priest=" + (FindLivingPriest(row) != null));
         }
 
-        // ---------------------------------------------------------------- 卖货
+        // ---------------------------------------------------------------- 卖货队
+
+        /// <summary>这座村子的卖货队：在且在家就用它，没有就新建、停在村里。不在家（出门或回程中）返回 null。</summary>
+        private MobileParty? ReadyMarketParty(FaithVillage row, Settlement home)
+        {
+            FaithParty? record = _faithParties.Values.FirstOrDefault(entry => entry.Kind == FaithPartyKind.Market &&
+                string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase));
+            if (record != null)
+                return record.Phase == FaithPartyPhase.Home && FindParty(record.PartyId)!.CurrentSettlement == home
+                    ? FindParty(record.PartyId)
+                    : null;
+            MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Market);
+            Park(party, home);
+            return party;
+        }
 
         /// <summary>货仓里东西值够了、离上次出车够久，就把货运到本村的贸易城镇。</summary>
         private void TryDispatchMarket(FaithVillage row, Settlement home, double now)
@@ -313,25 +358,45 @@ namespace GreyWardenPolicePurity
             if (town == null || town.IsUnderSiege || FactionManager.IsAtWarAgainstFaction(police, town.MapFaction))
                 return;
 
-            MobileParty? party = ReadyFaithParty(row, home);
+            MobileParty? party = ReadyMarketParty(row, home);
             if (party == null)
                 return;
-            TopUp(party, row, home, GwpTuning.Firesworn.CaravanSize);
+            int kits = ManParty(party, row, home, GwpTuning.Firesworn.CaravanSize);
             int value = goods.TotalValue;
-            for (int i = goods.Count - 1; i >= 0; i--)
-            {
-                ItemRosterElement element = goods.GetElementCopyAtIndex(i);
-                party.ItemRoster.AddToCounts(element.EquipmentElement, element.Amount);
-            }
+            party.ItemRoster.Add(goods);
             goods.Clear();
             row.LastMarket = now;
             FaithParty cart = _faithParties[party.StringId];
             cart.Stops = 0;
-            SetPhase(cart, FaithPartyPhase.Outbound, town.StringId);
-            Travel(party, town);
+            Dispatch(cart, party, town);
             GwpAiDiagnostics.WriteFaith("MARKET_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; town=" + town.StringId +
-                "; cargoValue=" + value + "; men=" + party.MemberRoster.TotalManCount);
+                "; cargoValue=" + value + "; men=" + party.MemberRoster.TotalManCount + "; kitItems=" + kits);
+        }
+
+        /// <summary>卖货队回村：钱进公库，自己那几套还给村里的军械库，没卖掉的放回货仓，停在村里。</summary>
+        private void ArriveHome(FaithParty record, MobileParty party, Settlement home)
+        {
+            int proceeds = party.PartyTradeGold;
+            party.PartyTradeGold = 0;
+            CreditTreasury(proceeds);
+            int kits = ReturnPartyLedger(party, home.StringId) + UnloadKits(party, home.StringId);
+            ItemRoster goods = ItemsOf(_goods, home.StringId);
+            int unsold = 0;
+            for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
+            {
+                ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
+                if (element.EquipmentElement.Item.IsFood)
+                    continue;
+                goods.AddToCounts(element.EquipmentElement, element.Amount);
+                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
+                unsold += element.Amount;
+            }
+            SetPhase(record, FaithPartyPhase.Home, record.HomeId);
+            Park(party, home);
+            GwpAiDiagnostics.WriteFaith("FAITH_PARTY_HOME",
+                "party=" + party.StringId + "; home=" + home.StringId + "; men=" + party.MemberRoster.TotalManCount +
+                "; proceedsToTreasury=" + proceeds + "; kitItemsBack=" + kits + "; unsoldBack=" + unsold);
         }
 
         /// <summary>

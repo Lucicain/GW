@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-160 个源文件、50,875 行、315 个公开类型、69 个 Harmony 补丁点（分布在 69 个补丁类里）。
+160 个源文件、51,014 行、316 个公开类型、69 个 Harmony 补丁点（分布在 69 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -183,6 +183,7 @@
 - `Enforcement` → GwpTuning.cs ←
 - `Entry` → GwpDispatchCargo.cs ←
 - `Envelope` → GwpMusicScore.cs ←
+- `FaithPartyKind` → GwpFireswornBehavior.cs ←
 - `Family` → GwpTuning.cs ←
 - `FiefRequestStage` → GreyWardenPlayerRequestBehavior.cs ←
 - `FieldArrest` → GwpTuning.cs ←
@@ -458,7 +459,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 166 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 167 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -584,7 +585,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 374 行 · `GwpTuning`，另含 13 个类型
+- `GwpTuning.cs` — 381 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 359 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
@@ -594,14 +595,14 @@
 
 ### 其他（75 个文件）
 
+- `GwpFireswornBehavior.cs` — 1056 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
-- `GwpFireswornBehavior.cs` — 1037 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 1 个类型
-- `GwpFireswornArmory.cs` — 839 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornArmory.cs` — 883 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornParties.cs` — 449 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 400 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpFireswornParties.cs` — 384 行 · `GwpFireswornBehavior`
 - `GwpPoliceWarReasonService.cs` — 362 行 · `GwpPoliceWarReasonService`
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
 - `GwpFireswornRituals.cs` — 268 行 · `GwpFireswornBehavior`
@@ -628,8 +629,8 @@
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
 - `GwpWardenDuties.cs` — 140 行 · `WardenDuty`，另含 1 个类型
+- `GwpFireswornPartyDialogs.cs` — 133 行 · `GwpFireswornPartyDialogs`
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
-- `GwpFireswornPartyDialogs.cs` — 129 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualSoundOutput.cs` — 124 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`

@@ -137,6 +137,11 @@ def main():
         gains[data["village"]]["本村传教"] += num(data.get("gain"))
     for _, data in by_stage["MISSION_JOINED"]:
         gains[data["village"]]["外村来传教"] += num(data.get("joined"))
+    for _, data in by_stage["BALANCE_DELIVERED"]:
+        gains[data["village"]]["运械押车并入"] += num(data.get("joined"))
+        gains[data["village"]]["运来兵器件数"] += num(data.get("kitItems"))
+    for _, data in by_stage["BALANCE_DISPATCHED"]:
+        gains[data["home"]]["派出运械押车"] -= num(data.get("men"))
     for _, data in by_stage["MISSION_DISPATCHED"]:
         gains[data["home"]]["派出传教"] -= num(data.get("men"))
     for _, data in by_stage["DAMNATION"]:
@@ -204,7 +209,8 @@ def main():
     # ------------------------------------------------------------ 常驻队
     print("\n== 常驻队")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
-                  "MISSION_DISPATCHED", "MISSION_JOINED", "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
+                  "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
+                  "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
                   "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
                   "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):
         print(f"   {stage}: {len(by_stage[stage])}")
