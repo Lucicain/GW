@@ -261,6 +261,11 @@ namespace GreyWardenPolicePurity
 
                 string title = issue!.Title?.ToString() ?? string.Empty;
                 issue.CompleteIssueWithAiLord(party.LeaderHero);
+                // 原版只在办事的人身在聚落里时显示「解决了一个请愿」（SettlementNameplateNotificationsVM.OnIssueUpdated），
+                // 灰袍是在聚落门口驻留办完的，补上同一句。
+                if (party.CurrentSettlement != settlement)
+                    GwpSettlementNotices.Post(settlement, party.LeaderHero,
+                        GwpText.Get("{=gwp_notice_issue_solved}Solved an issue"));
                 ApplyLocalDevelopmentGain(settlement);
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
                 GwpPlayerRequestDeferral.NotifyDutyCompleted(party,

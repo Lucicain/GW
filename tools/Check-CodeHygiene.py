@@ -176,11 +176,11 @@ DUTY_PREDICATES = {
     "IsIssueDutyParty": "GreyWardenIssueResolutionBehavior*.cs",
     "IsTrainingOccupied": "GreyWardenTrainingBehavior*.cs",
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
-    "IsOnFaithErrand": "GwpFireswornBehavior*.cs",
 }
 OWNERS = [
     ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTotalLandStrength\w*\s*\(",
      "GwpStrength.cs", "GwpStrength"),
+    ("进聚落意愿", r"\[HarmonyPatch\(typeof\(AiVisitSettlementBehavior\)", "GwpWardenVisitDesire*.cs", "GwpWardenVisitDesire"),
     ("灰袍身份", r"\bPoliceClanId\b", "GwpCommon.cs|GwpIds.cs|GwpData.cs", "GwpCommon.IsGreyWarden*"),
     ("案件状态", r"\b(?:CrimePool|CrimeState)\.(?:EndTask|ReleaseTask|CloseCase|ReopenCase)\s*\(",
      "PoliceEnforcementBehavior*.cs|GwpData.cs|GwpRuntimeState.cs",

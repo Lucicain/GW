@@ -13,7 +13,7 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// 信众村对灰袍等于城（用户裁定）：灰袍领主在那里交俘虏进地牢、捐东西、招兵；做了什么显示在地图状态文字上。
     /// 俘虏不扒装备：装备照原版尸体缴获进军械库（用户裁定 2026-10-06，见 <see cref="LootCasualtyIntoArmory"/>）。
-    /// 领主什么时候进信众村，由原版的进城意愿决定，信众村对灰袍按城算（GwpFaithVisitDesire.cs）。
+    /// 领主什么时候进信众村，由原版的进城意愿决定，信众村对灰袍按城算（GwpWardenVisitDesire.cs）。
     /// 信众村自己守赢也有收益（用户裁定）：俘获的敌兵进地牢，背包里的东西进货仓，金币进公库。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
@@ -120,6 +120,12 @@ namespace GreyWardenPolicePurity
 
             armoryItems += DonateArmorySurplus(party.StringId, village.StringId);
             RecordVisit(party, village, prisoners: prisoners, donated: armoryItems + goodsCount);
+            if (prisoners > 0)
+                GwpSettlementNotices.Post(village, party.LeaderHero,
+                    GwpText.Get("{=gwp_notice_prisoners}Handed over {COUNT} prisoners", "COUNT", prisoners));
+            if (armoryItems + goodsCount > 0)
+                GwpSettlementNotices.Post(village, party.LeaderHero,
+                    GwpText.Get("{=gwp_notice_donated}Donated {COUNT} items", "COUNT", armoryItems + goodsCount));
             GwpAiDiagnostics.WriteFaith("HANDOVER",
                 "party=" + party.StringId + "; village=" + village.StringId + "; prisoners=" + prisoners +
                 "; dungeon=" + dungeon.TotalManCount + "; goods=" + goodsCount + "; goodsValue=" + goodsValue +
@@ -140,6 +146,7 @@ namespace GreyWardenPolicePurity
             settlement.Village.Hearth -= (enlisted + 1) / 2;
             int kits = MoveKits(settlement.StringId, party.StringId, enlisted, "direct_zealots");
             RecordVisit(party, settlement, recruits: enlisted);
+            GwpSettlementNotices.Post(settlement, party.LeaderHero, GwpSettlementNotices.RecruitText(enlisted));
             GwpAiDiagnostics.WriteFaith("ZEALOTS_ENLISTED",
                 "party=" + party.StringId + "; village=" + settlement.StringId + "; enlisted=" + enlisted +
                 "; kitItems=" + kits + "; hearth=" + hearthBefore.ToString("0.0") + "->" +

@@ -107,6 +107,13 @@ namespace GreyWardenPolicePurity
         internal static void WriteResolved(MobileParty party) =>
             WriteState(party, "RESOLVED");
 
+        /// <summary>灰袍领主这一小时为什么想去哪儿（GwpWardenVisitDesire.WriteDesireExplain 拼好的明细）。</summary>
+        internal static void WriteDesire(MobileParty party, string details)
+        {
+            if (!ShouldTraceParty(party)) return;
+            Append(BuildPrefix(party, "DESIRE") + " | " + details);
+        }
+
         internal static void WriteObservedAuction(MobileParty party,
             IReadOnlyCollection<(AIBehaviorData, float)> scores)
         {
@@ -626,6 +633,7 @@ namespace GreyWardenPolicePurity
             int nonPatrolAtOrBelowDutyCount,
             string dutyAdded) { }
         internal static void WriteResolved(MobileParty party) { }
+        internal static void WriteDesire(MobileParty party, string details) { }
         internal static void WriteObservedAuction(MobileParty party,
             IReadOnlyCollection<(AIBehaviorData, float)> scores) { }
         internal static void WriteObservedResolved(MobileParty party) { }

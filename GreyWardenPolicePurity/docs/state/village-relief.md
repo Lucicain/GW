@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 重建完成改为给 5% 狂信者、不拉祭司；重建施工、请愿驻留在地图上有状态文字
+> 已复核至：2026-10-07 重建完成、在门口办完的请愿在聚落名牌上有动态（GwpSettlementNotices）；重建给 5% 狂信者、不拉祭司
 > 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs`
 > 待实测：无
 

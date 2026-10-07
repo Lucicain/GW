@@ -650,7 +650,7 @@ namespace GreyWardenPolicePurity
                     "; armoryItems=" + (_armories.TryGetValue(lord.StringId, out ItemRoster? armory) ? CountItems(armory) : 0) +
                     "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count) +
                     "; inventoryValue=" + NonFoodValue(lord.ItemRoster) +
-                    "; faithVisit=" + GwpFaithVisitDesire.Describe(lord) +
+                    "; faithVisit=" + GwpWardenVisitDesire.Describe(lord) +
                     "; case=" + CrimePool.HasTask(lord.StringId) + "; wage=" + lord.TotalWage +
                     "; partyGold=" + lord.PartyTradeGold);
             }
@@ -714,18 +714,18 @@ namespace GreyWardenPolicePurity
                 if (prisoners >= lord.Party.PrisonerSizeLimit * GwpTuning.Firesworn.AnomalyPrisonerShare)
                     Flag("PRISONERS_PILING", "party=" + lord.StringId + "; prisoners=" + prisoners + "/" +
                         lord.Party.PrisonerSizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
-                        "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
+                        "; faithVisit=" + GwpWardenVisitDesire.Describe(lord));
                 // 赢的目标就是「正在这里」的聚落时原版原地待命；办重建、请愿、练兵的原地驻留不算。
                 Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
                 if (lord.DefaultBehavior == AiBehavior.Hold && lord.MapEvent == null && here != null &&
                     !GwpWardenDuties.HoldsAny(lord, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.Training) &&
                     !GreyWardenFamilyBehavior.IsTrainingParty(lord))
                     Flag("LORD_HOLDING_AT_SETTLEMENT", "party=" + lord.StringId + "; settlement=" + here.StringId +
-                        "; inside=" + (lord.CurrentSettlement == here) + "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
+                        "; inside=" + (lord.CurrentSettlement == here) + "; faithVisit=" + GwpWardenVisitDesire.Describe(lord));
                 if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.AnomalyLowStrength)
                     Flag("LORD_UNDERSTRENGTH", "party=" + lord.StringId + "; members=" + lord.Party.NumberOfAllMembers +
                         "/" + lord.Party.PartySizeLimit + "; case=" + CrimePool.HasTask(lord.StringId) +
-                        "; faithVisit=" + GwpFaithVisitDesire.Describe(lord));
+                        "; faithVisit=" + GwpWardenVisitDesire.Describe(lord));
             }
 
             foreach (FaithVillage row in _villages.Values)

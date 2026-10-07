@@ -505,6 +505,9 @@ namespace GreyWardenPolicePurity
                 originalPatrolCeiling, patrolCeiling, dutyScore,
                 suppressedPatrolCount, minimumPositiveNonPatrolScore,
                 nonPatrolAtOrBelowDutyCount, dutyAdded);
+#if GWP_DIAGNOSTICS
+            GwpWardenVisitDesire.WriteDesireExplain(party, think.AIBehaviorScores.ToList(), DescribeIntent(intent), dutyScore);
+#endif
         }
 
         /// <summary>

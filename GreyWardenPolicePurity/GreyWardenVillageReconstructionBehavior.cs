@@ -376,6 +376,8 @@ namespace GreyWardenPolicePurity
                             "VAR_1", police.LeaderHero?.Name?.ToString() ?? police.Name?.ToString() ?? string.Empty,
                             "VAR_2", village.Name?.ToString() ?? task.VillageName), Colors.Green));
                     GwpFireswornBehavior.OnVillageRebuilt(village);
+                    GwpSettlementNotices.Post(village, police.LeaderHero,
+                        GwpText.Get("{=gwp_notice_rebuilt}Rebuilt the village"));
                     GwpAiDiagnostics.WriteAction(police, "RECONSTRUCTION_COMPLETED",
                         "village=" + village.StringId + "; cost=" + cost +
                         "; grant=" + PoliceResourceManager.SuccessfulCaseReward +

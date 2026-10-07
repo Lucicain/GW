@@ -355,9 +355,9 @@ namespace GreyWardenPolicePurity
             public const float FaithPartyTravelTimeoutHours = 120f;
 
 
-            // 信众村对灰袍按城算（GwpFaithVisitDesire）：原版进城分对信众村再乘这个数，
-            // 灰袍优先做和信众村相关的事（用户裁定 2026-10-05）。原版不缺什么时进城分约 0.26，乘 3 约 0.77，
-            // 压不过手上的差事（0.99）；俘虏、伤员、背包里的东西一多，就压过去了。
+            // 信众村对灰袍按城算（GwpWardenVisitDesire）：俘虏、伤员、要捐的东西合起来的「需要」高出 1 的那部分乘这个数
+            // （用户裁定 2026-10-05：灰袍优先做和信众村相关的事）。不乘在底分上：原版闲逛分约 1.6 × 0.16 × 导航 1.5 = 0.38，
+            // 乘 3 就是 1.15，压过普通案件的 0.99，领主没事也往信众村跑（实机诊断 2026-10-07）。
             public const float FaithVillageVisitPriority = 3f;
             // 每日异常检查用的线：领主俘虏到上限的 90%、兵力低于 60%。
             public const float AnomalyPrisonerShare = 0.9f;

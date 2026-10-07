@@ -62,7 +62,7 @@
 ## 灰袍领主不在城里卖俘虏和东西
 
 普通俘虏、背包里的东西留着交给信众村（`GwpWardenKeepPrisonersPatch`、`GwpWardenKeepLootPatch`，见 `firesworn-economy.md`）。
-灰袍领主什么时候进信众村见 `warden-ai.md`「进信众村」。
+灰袍领主什么时候进信众村见 `warden-ai.md`「进聚落的意愿」。
 
 ## 开局
 

@@ -532,7 +532,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备。什么时候来由原版进城意愿决定（GwpFaithVisitDesire）。
+        /// 灰袍领主进信众村：交俘虏、捐东西、招兵、领装备。什么时候来由原版进城意愿决定（GwpWardenVisitDesire）。
         /// 原版进门招兵（祭司格子）已经在进门前跑完（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
         /// 招到的人由 <see cref="OnTroopRecruited"/> 从守村队带走，连同各自的那一套装备。
         /// </summary>

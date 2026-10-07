@@ -316,6 +316,9 @@ namespace GreyWardenPolicePurity
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
                 if (IsGuardTroop(element.Character))
                     joined += AddToGuard(row, village, element.Character, element.Number);
+            GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Mission
+                ? GwpText.Get("{=gwp_notice_mission}Brought {COUNT} sworn to stay", "COUNT", joined)
+                : GwpText.Get("{=gwp_notice_balance}Brought {COUNT} pieces of arms", "COUNT", kits));
             _faithParties.Remove(party.StringId);
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             DestroyPartyAction.Apply(null, party);
@@ -423,6 +426,8 @@ namespace GreyWardenPolicePurity
             }
             party.PartyTradeGold += proceeds;
             record.Stops++;
+            if (sold > 0)
+                GwpSettlementNotices.Post(town, party, GwpText.Get("{=gwp_notice_market}Sold {COUNT} goods", "COUNT", sold));
             int unsoldValue = NonFoodValue(party.ItemRoster);
             // 一座城的金库常常只有两三万，一车俘虏装备能值几十万（实机诊断 2026-10-06：装车估值 32.7 万只卖出 9%，
             // 把城镇金库卖空）。卖不完就去附近还有钱的城接着卖，最多 3 座。

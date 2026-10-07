@@ -81,6 +81,8 @@ namespace GreyWardenPolicePurity
                     (int)Math.Round(village.Village.Hearth * GwpTuning.Firesworn.CongregationHearthShare)));
             row.LastCongregation = CampaignTime.Now.ToHours;
             UpdatePriestPower(row);
+            GwpSettlementNotices.Post(village, FindLivingPriest(row),
+                GwpText.Get("{=gwp_notice_congregation}{COUNT} swore to the Eternal Fire", "COUNT", gain));
             GwpAiDiagnostics.WriteFaith("CONGREGATION_COMPLETED",
                 "village=" + village.StringId + "; gain=" + gain + "; sworn=" + before + "->" + Sworn(row) +
                 "; hearth=" + village.Village.Hearth.ToString("0") +
@@ -242,6 +244,8 @@ namespace GreyWardenPolicePurity
             int before = Sworn(row);
             int added = produced.Sum(pair => AddToGuard(row, village, pair.Key, pair.Value));
             UpdatePriestPower(row);
+            GwpSettlementNotices.Post(village, FindLivingPriest(row),
+                GwpText.Get("{=gwp_notice_damnation}Burned {BURNED}; {RISEN} rose as Wardens", "BURNED", burned, "RISEN", added));
             _rituals.Add(new Ritual
             {
                 VillageId = village.StringId,

@@ -1466,6 +1466,15 @@
   <string id="gwp_fs_mission_party" text="永恒之火门徒" />
   <string id="gwp_fs_balance_party" text="{VILLAGE}的运械队" />
   <string id="gwp_fs_status_balance" text="正把{HOME}的兵器运给{TARGET}立誓的人。" />
+  <string id="gwp_notice_prisoners" text="交出 {COUNT} 名俘虏" />
+  <string id="gwp_notice_donated" text="捐出 {COUNT} 件东西" />
+  <string id="gwp_notice_congregation" text="{COUNT} 人向永恒之火立誓" />
+  <string id="gwp_notice_damnation" text="烧死 {BURNED} 人，{RISEN} 名灰袍兵从火里站起" />
+  <string id="gwp_notice_mission" text="带来 {COUNT} 名立誓者，留在此地" />
+  <string id="gwp_notice_balance" text="运来 {COUNT} 件兵器护甲" />
+  <string id="gwp_notice_market" text="卖出 {COUNT} 件货物" />
+  <string id="gwp_notice_rebuilt" text="重建了这座村子" />
+  <string id="gwp_notice_issue_solved" text="解决了一个请愿" />
   <string id="gwp_fs_status_mission" text="正把永恒之火带往{TARGET}。" />
   <string id="gwp_fs_status_market" text="正把{HOME}的货运去{TARGET}的集市。" />
   <string id="gwp_fs_status_returning" text="正返回{HOME}。" />
