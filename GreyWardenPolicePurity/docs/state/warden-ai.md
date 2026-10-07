@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 进聚落意愿收归 GwpWardenVisitDesire；倍数只放大需要；DESIRE 监控逐因子对账；聚落名牌动态
+> 已复核至：2026-10-07 招兵数改为照原版数、信众村加直接招的狂信者；进聚落意愿收归 GwpWardenVisitDesire；DESIRE 监控；聚落名牌动态
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpWardenVisitDesire.Trace.cs` `GwpSettlementNotices.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；DESIRE 行原版分与重算分对得上（无 MISMATCH）；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -89,7 +89,7 @@
 
 **灰袍改了什么**：
 - 候选：独立家族原版只看身边约 0.8 天路程以内的聚落，信众村只要在原版最远距离内都进候选。
-- 招兵数：只有信众村有兵（祭司格子 + 能直接招的狂信者，平均工资报 1）；正在这座村或刚走到村口时报 0。见 `warden-recruitment.md`。
+- 招兵数：照原版数要人格子；信众村再加上能直接招的狂信者（正在这座村或刚走到村口时不加），平均工资至少报 1。见 `warden-recruitment.md`。
 - 信众村：俘虏（1 + 2 × 俘虏/上限，连续算）× 伤员 × 卖东西，合起来叫「需要」；「灰袍优先做信众村的事」放大需要高出 1 的那部分：
   × (1 + (需要 − 1) × 3)。闲着、背包里只有一点东西约 0.59，压不过普通案件 0.99；俘虏半满约 1.96、伤员三成约 1.27，压得过。
   （依据：用户裁定 2026-10-05：灰袍优先做和信众村相关的事；实机诊断 2026-10-07：以前倍数乘在整个分上，0.38 × 3 = 1.15，领主没事也往信众村跑）

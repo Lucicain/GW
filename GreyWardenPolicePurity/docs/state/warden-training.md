@@ -2,12 +2,12 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：2026-10-07 兵员来源改指 warden-recruitment.md（纯化已删）
 > 覆盖源码：`GreyWardenTrainingBehavior.cs`
 > 待实测：无
 
 灰袍自己的兵怎么练、怎么在领主之间流转。玩家下的练兵订单和随行练兵队见 [`troop-orders.md`](troop-orders.md)；
-兵员从哪来（原版征兵 + 纯化）见 [`temporary-parties.md`](temporary-parties.md) 的纯化一节。
+兵员从哪来见 [`warden-recruitment.md`](warden-recruitment.md)（原版招兵照常，纯化已删）。
 
 ## 练兵本职
 

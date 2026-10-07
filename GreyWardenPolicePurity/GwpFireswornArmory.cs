@@ -341,43 +341,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 招兵连装备带走（用户裁定）：从村军械库没分出去的那部分里，按每一类从好到差给每个新兵拿一件，
-        /// 挪进部队军械库。村里民兵身上的不动。
-        /// </summary>
-        private int MoveKits(string fromHolder, string toHolder, int men, string reason)
-        {
-            if (men <= 0 || !_armories.ContainsKey(fromHolder))
-                return 0;
-            ArmoryPlan plan = BuildPlanFor(fromHolder);
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
-            ItemRoster taken = new ItemRoster();
-            int[] perKind = new int[KitSlots];
-            List<ItemRosterElement> free = Enumerable.Range(0, plan.Free.Count)
-                .Select(plan.Free.GetElementCopyAtIndex)
-                .OrderByDescending(element => (int)element.EquipmentElement.Item.Tier)
-                .ThenByDescending(element => element.EquipmentElement.ItemValue)
-                .ToList();
-            foreach (ItemRosterElement element in free)
-            {
-                int kind = KitKind(element.EquipmentElement.Item, zealot);
-                int take = Math.Min(element.Amount, men - perKind[kind]);
-                if (take <= 0)
-                    continue;
-                taken.AddToCounts(element.EquipmentElement, take);
-                perKind[kind] += take;
-            }
-            int moved = MoveAll(taken, ItemsOf(_armories, fromHolder), ItemsOf(_armories, toHolder));
-            _plans.Remove(fromHolder);
-            _plans.Remove(toHolder);
-            if (moved > 0)
-                GwpAiDiagnostics.WriteFaith("KITS_MOVED",
-                    "from=" + fromHolder + "; to=" + toHolder + "; men=" + men + "; items=" + moved + "; reason=" + reason);
-            return moved;
-        }
-
-        /// <summary>
-        /// 祭司格子招走的是守村队里配装最好的人（用户裁定 2026-10-07）：这个兵种分到的套装按好坏排好，
-        /// 招走几个人就把最好的几套整套挪进部队军械库。
+        /// 从守村队招走的人带走他那一套（用户裁定：招兵连装备带走）：祭司格子拉的是配装最好的（用户裁定 2026-10-07），
+        /// 这个兵种分到的套装按好坏排好，招走几个人就把最好的几套整套挪进部队军械库。
         /// </summary>
         private int MoveBestSets(string fromHolder, string toHolder, CharacterObject troop, int men)
         {
@@ -396,7 +361,7 @@ namespace GreyWardenPolicePurity
             _plans.Remove(toHolder);
             if (moved > 0)
                 GwpAiDiagnostics.WriteFaith("KITS_MOVED",
-                    "from=" + fromHolder + "; to=" + toHolder + "; men=" + men + "; items=" + moved + "; reason=priest_recruit");
+                    "from=" + fromHolder + "; to=" + toHolder + "; troop=" + troop.StringId + "; men=" + men + "; items=" + moved);
             return moved;
         }
 

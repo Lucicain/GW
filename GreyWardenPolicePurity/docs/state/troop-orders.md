@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：2026-10-07 纯化删掉：练兵队退回的外来兵留在练兵官队里
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：无
 
@@ -31,7 +31,7 @@
   （低级优先） → 下游老兵”取健康兵。
 - **退回（2026-09-23 新增）**：练兵队里不是“有用的人”的——练成别的分支的灰袍、
   战后收进来的外来兵——整批（含伤员）退回练兵官。外来兵在有领主的练兵官队里由
-  `PoliceResourceManager` 纯化转成灰袍新兵，之后可再被补进练兵队。
+  留在练兵官队里（纯化已删，用户裁定 2026-10-07：灰袍照原版招原版兵），不会再被补进练兵队。
   只有补员后练兵队里仍有有用的人时才退，避免练兵队变空被原版清除。
   诊断 `PLAYER_TROOP_ORDER_COHORT_FED` 带 `moved` / `returned`。
 - 加经验：每 `PlayerOrderXpIntervalHours = 6` 小时，给练兵队里能升成目标的兵
@@ -47,7 +47,7 @@
 
 - 练兵队会跟练兵官一起打劫匪：`Aggressiveness` 是原版默认 1，敌方正和同阵营队伍交战时原版
   进攻分被抬高（依据：C#反编译 v1.4.8 `DefaultMobilePartyAIModel`）。用户接受参战，战后收进来的
-  外来兵由 `TendCohort` 退回练兵官纯化。欲望系统不改（用户裁定 2026-09-25）。
+  外来兵由 `TendCohort` 退回练兵官。欲望系统不改（用户裁定 2026-09-25）。
 
 原版跟随（依据：C#反编译 `MobilePartyAi.GetFollowBehavior`）：被跟随方在定居点里 → 跟进去；
 被跟随方失效 → 原地 `Hold`；被跟随方在海上而自己没船 → 停在岸边。原版不销毁城里的无领主

@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 调参：信众村倍数改为只放大需要；新增名牌动态的中文；祭司格子给守村队留的比例；无领主队 id 前缀 `gwp_faithparty_`
+> 已复核至：2026-10-07 调参加灰袍所到之处每日人数；纯化删掉（GwpCommon 灰袍兵判断的影响面去掉纯化）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上
 
@@ -21,7 +21,7 @@
   军团混乱豁免多认练兵队和送信队（`GwpArmyExitDisorganizedPatch`）。额外条件写在各自的名字里。
 - 灰袍家族 id `gw`。领主 `gw_leader_*`；`gw_leader_0` 兼作领主与收养女孩的模板。
 - 灰袍兵种：ID 以 `gw` 开头即算（`IsGreyWardenTroopId`），不区分大小写。
-  影响面：灰袍队纯化不动它、不当逃兵、算灰袍战场 NPC（触发援军、死战不退、配乐资格）、练兵加经验、派遣只许派这些兵。
+  影响面：不当逃兵、算灰袍战场 NPC（触发援军、死战不退、配乐资格）、练兵加经验、派遣只许派这些兵。
   新加以 `gw` 开头的兵种会自动获得以上全部待遇。
 - 「灰袍关联角色」= 灰袍兵种、自定义战斗灰袍指挥官、灰袍家族成员（`IsGreyWardenAffiliatedCharacter`）。
 - 无领主办差队按 ID 前缀认：练兵队 `gwp_cohort_`、纠察队 `gwp_patrol_`、追截/延迟纠察 `gwp_enf_delay_`、

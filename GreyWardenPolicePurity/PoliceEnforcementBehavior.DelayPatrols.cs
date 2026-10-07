@@ -50,44 +50,6 @@ namespace GreyWardenPolicePurity
             public int Count { get; set; }
         }
 
-        internal static int GetReservedImmediateInterceptorTroopCount(
-            MobileParty? sourceParty)
-        {
-            return _instance?.CountReservedImmediateInterceptorTroops(sourceParty) ?? 0;
-        }
-
-        private int CountReservedImmediateInterceptorTroops(
-            MobileParty? sourceParty)
-        {
-            if (sourceParty?.IsActive != true)
-                return 0;
-
-            int reserved = 0;
-            foreach (DelayPatrolState state in _delayPatrolStates.Values)
-            {
-                if (!state.IsImmediateInterceptor ||
-                    !string.Equals(state.SourceTaskPolicePartyId,
-                        sourceParty.StringId,
-                        StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                MobileParty? interceptor = MobileParty.All.FirstOrDefault(party =>
-                    party.IsActive && string.Equals(party.StringId,
-                        state.PatrolPartyId,
-                        StringComparison.OrdinalIgnoreCase));
-                if (interceptor == null)
-                    continue;
-
-                reserved += interceptor.MemberRoster.GetTroopRoster()
-                    .Where(static element => element.Character != null &&
-                        !element.Character.IsHero && element.Number > 0 &&
-                        GwpCommon.IsGreyWardenTroop(element.Character))
-                    .Sum(static element => element.Number);
-            }
-
-            return reserved;
-        }
-
         private void SyncWarTargetStreakData(IDataStore dataStore)
         {
             List<string> keys = null!;

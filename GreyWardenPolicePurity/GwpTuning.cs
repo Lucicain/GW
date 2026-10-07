@@ -297,6 +297,8 @@ namespace GreyWardenPolicePurity
             public const float VanillaMilitiaRetireShare = 0.025f;
 
             // 重建把当地 5% 的人换成狂信者（用户裁定 2026-10-07）。
+            // 灰袍所到之处：灰袍领主每在一座村里或村口待一天，那座村加这么多狂信者（试玩值）。
+            public const int WardenPresenceDailySworn = 2;
             public const float ReconstructionSwornShare = 0.05f;
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;

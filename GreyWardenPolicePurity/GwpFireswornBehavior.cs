@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -437,31 +438,19 @@ namespace GreyWardenPolicePurity
         internal static int ZealotCap(Settlement settlement) => (int)settlement.Village.Hearth;
 
         /// <summary>
-        /// 灰袍领主进这座村能直接招多少个最低级狂信者。代价是户数，照原版村民队补人的算法：
-        /// 招 n 人扣 (n+1)/2 户（C#反编译 v1.4.8 VillagerCampaignBehavior.AddVillagersToParty）。
-        /// 户数不往 <see cref="GwpTuning.Firesworn.DirectZealotHearthFloor"/> 以下扣。
+        /// 灰袍领主在这座信众村能直接招几个狂信者：只招守村队里现有的狂信者，不凭空从村民里变（用户裁定 2026-10-07）；
+        /// 守村队留够守村的（一半、不少于 5 人，<see cref="SpareGuard"/>），祭司格子里已经占下的人也算在能走的数里。按部队空位封顶。
         /// </summary>
-        internal static int DirectZealotsAvailable(Settlement settlement)
-        {
-            if (!IsPreachedVillage(settlement) || !IsVillageQuiet(settlement))
-                return 0;
-            float spareHearth = settlement.Village.Hearth - GwpTuning.Firesworn.DirectZealotHearthFloor;
-            return Math.Max(0, (int)(spareHearth * 2f));
-        }
+        internal static int DirectZealotsFor(Settlement settlement, MobileParty party) =>
+            _instance == null || !IsPreachedVillage(settlement) || !IsVillageQuiet(settlement)
+                ? 0
+                : Math.Min(FreeSlots(party), _instance.DirectZealotsAvailable(_instance._villages[settlement.StringId]));
 
-        /// <summary>
-        /// 给原版进村评分用：灰袍在这里能招到的兵 = 祭司格子里的兵 + 能直接招的狂信者，
-        /// 后者按领主部队的空位封顶。不是信众村就是 0。
-        /// </summary>
-        internal static int RecruitsAvailableToWardens(Settlement settlement, Hero hero)
+        private int DirectZealotsAvailable(FaithVillage row)
         {
-            if (!IsPreachedVillage(settlement) || _instance == null)
-                return 0;
-            Hero? priest = FindLivingPriest(_instance._villages[settlement.StringId]);
-            int priestSlots = priest?.VolunteerTypes.Count(troop => troop != null) ?? 0;
-            MobileParty? party = hero.PartyBelongedTo;
-            int freeSlots = party == null ? 0 : FreeSlots(party);
-            return priestSlots + Math.Min(freeSlots, DirectZealotsAvailable(settlement));
+            int inSlots = FindLivingPriest(row)?.VolunteerTypes.Count(troop => troop != null) ?? 0;
+            int zealots = GuardOf(row.VillageId).GetTroopCount(CharacterObject.Find(GwpIds.ZealotId));
+            return Math.Max(0, Math.Min(zealots, SpareGuard(row) - inSlots));
         }
 
         // ---------------------------------------------------------------- 事件分派
@@ -507,6 +496,7 @@ namespace GreyWardenPolicePurity
         private void OnDailyTick()
         {
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIESTS", MaintainPriests);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_SWORN_GROWTH", GrowSworn);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SPAWN", SpawnPriestsByShare);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_POWER", () =>
             {
@@ -840,6 +830,68 @@ namespace GreyWardenPolicePurity
         {
             Hero? priest = FindLivingPriest(row);
             return priest != null && OtherNotables(village, priest).All(hero => hero.Power < priest.Power);
+        }
+
+        /// <summary>
+        /// 火誓者每天怎么长（用户裁定 2026-10-07：前期只靠烧俘虏和本村传教太慢；挂户数、挂民兵；灰袍所到之处促进增长）：
+        /// <list type="bullet">
+        /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村加几个狂信者；
+        /// 还没有火誓者的村子就此有了守村队（GwpTuning.Firesworn.WardenPresenceDailySworn，试玩值）。</item>
+        /// <item>挂户数：原版这座村今天的户数增长里，按火誓者占的比例那部分算火誓者
+        /// （C#反编译 v1.4.8 DefaultSettlementProsperityModel.CalculateHearthChange：不到 300 户每天 +4、不到 600 户 +1.2、再多 +0.2）。</item>
+        /// <item>挂民兵：原版这座村今天新长的民兵里，按火誓者占的比例那部分直接立誓，从原版民兵里转进守村队
+        /// （DefaultSettlementMilitiaModel：0.5 + 户数/400 − 现有 × 2.5%）。</item>
+        /// </list>
+        /// 都和比例成正比，比例低时慢（用户 2026-10-07：成长慢）。原版的户数、民兵模型只读结果，不改。
+        /// </summary>
+        private void GrowSworn()
+        {
+            Clan police = PoliceStats.GetPoliceClan();
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
+            Dictionary<string, int> presence = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (MobileParty lord in PoliceStats.GetAllPoliceParties()
+                         .Where(party => party.IsActive && party.IsLordParty && party.MapEvent == null).ToList())
+            {
+                Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
+                if (here?.IsVillage != true || !IsVillageQuiet(here) || FactionManager.IsAtWarAgainstFaction(police, here.MapFaction))
+                    continue;
+                int added = AddToGuard(EnsureVillage(here), here, zealot, GwpTuning.Firesworn.WardenPresenceDailySworn);
+                presence.TryGetValue(here.StringId, out int already);
+                presence[here.StringId] = already + added;
+            }
+
+            foreach (FaithVillage row in _villages.Values.ToList())
+            {
+                Settlement village = Settlement.Find(row.VillageId);
+                float share = SwornShare(row, village);
+                int before = Sworn(row);
+                int fromHearth = 0, fromMilitia = 0;
+                if (share > 0f && IsVillageQuiet(village))
+                {
+                    float hearthGrowth = Campaign.Current.Models.SettlementProsperityModel.CalculateHearthChange(village.Village).ResultNumber;
+                    if (hearthGrowth > 0f)
+                        fromHearth = AddToGuard(row, village, zealot, MBRandom.RoundRandomized(hearthGrowth * share));
+                    float militiaGrowth = Campaign.Current.Models.SettlementMilitiaModel.CalculateMilitiaChange(village).ResultNumber;
+                    MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+                    int vanillaMilitia = militia?.IsActive == true ? militia.MemberRoster.TotalManCount - Sworn(row) : 0;
+                    int converts = militiaGrowth > 0f
+                        ? Math.Min(MBRandom.RoundRandomized(militiaGrowth * share), Math.Min(vanillaMilitia, ZealotCap(village) - Sworn(row)))
+                        : 0;
+                    if (converts > 0)
+                    {
+                        RemoveVanillaMilitia(militia!, converts);
+                        fromMilitia = AddToGuard(row, village, zealot, converts);
+                    }
+                }
+                presence.TryGetValue(row.VillageId, out int fromWardens);
+                if (fromHearth + fromMilitia + fromWardens <= 0)
+                    continue;
+                UpdatePriestPower(row);
+                GwpAiDiagnostics.WriteFaith("SWORN_GROWTH",
+                    "village=" + row.VillageId + "; fromWardens=" + fromWardens + "; fromHearth=" + fromHearth +
+                    "; fromMilitia=" + fromMilitia + "; sworn=" + (before - fromWardens) + "->" + Sworn(row) +
+                    "; share=" + SwornShare(row, village).ToString("0.000") + "; hearth=" + village.Village.Hearth.ToString("0"));
+            }
         }
 
         /// <summary>按村子 id 给一个固定的日子（0…period−1），各村错开，不在同一天扎堆。</summary>

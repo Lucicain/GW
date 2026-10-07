@@ -18,12 +18,12 @@ using static TaleWorlds.CampaignSystem.Party.MobileParty;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 警察资源管理 + 兵员纯化
+    /// 警察资源管理
     /// 1. 常驻领主资源完全交给原版经济和城镇访问欲望：不发钱、不造粮、不免费补兵
     ///    无英雄的临时纠察/支援队是一次性任务单位，只在生成时携带固定行军口粮，
     ///    不参与灰袍家族收支，也不会进城购买补给。
-    /// 2. 每6小时净化各警察部队兵种（原版招募的外族兵替换为灰袍新兵）
-    /// 3. 保留旧补给 API 仅用于存档/调用兼容；它只请求重新思考，不下移动命令
+    /// 2. 保留旧补给 API 仅用于存档/调用兼容；它只请求重新思考，不下移动命令
+    /// 兵员纯化已删（用户裁定 2026-10-07：灰袍照原版招原版兵，原版兵留在队里）。
     /// </summary>
     public class PoliceResourceManager : CampaignBehaviorBase
     {
@@ -36,10 +36,6 @@ namespace GreyWardenPolicePurity
         private static readonly bool _navalDlcLoaded =
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "NavalDLC");
 
-        // 每个部队的上次兵员净化时间（小时）
-        private Dictionary<string, double> _lastPurifyTime =
-            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private const double PurifyIntervalHours = 6.0;
         public static bool IsResupplying(MobileParty party) => false;
 
         public static bool IsReady(MobileParty party)
@@ -89,36 +85,12 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, RepairCampaignState);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, RepairCampaignState);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
-            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
             CampaignEvents.OnShipOwnerChangedEvent.AddNonSerializedListener(this, OnShipOwnerChanged);
         }
 
         public override void SyncData(IDataStore dataStore)
         {
-            if (dataStore.IsLoading)
-            {
-                _lastPurifyTime = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            List<string> keys = null!;
-            List<double> values = null!;
-            if (dataStore.IsSaving)
-            {
-                keys = new List<string>(_lastPurifyTime.Keys);
-                values = new List<double>(_lastPurifyTime.Values);
-            }
-            dataStore.SyncData("GWPP_PurifyKeys", ref keys);
-            dataStore.SyncData("GWPP_PurifyValues", ref values);
-            if (dataStore.IsLoading && keys != null && values != null)
-            {
-                int count = Math.Min(keys.Count, values.Count);
-                for (int i = 0; i < count; i++)
-                    if (!string.IsNullOrEmpty(keys[i]))
-                        _lastPurifyTime[keys[i]] = values[i];
-            }
-
             List<string> borrowers = dataStore.IsSaving ? _shipLenders.Keys.ToList() : null!;
             List<string> lenders = dataStore.IsSaving ? _shipLenders.Values.ToList() : null!;
             dataStore.SyncData("GWPP_ShipLoanBorrowers", ref borrowers);
@@ -299,107 +271,6 @@ namespace GreyWardenPolicePurity
 
         #region 补给流程
 
-
-        #endregion
-
-        #region 兵员纯化（每6小时）
-
-        private void OnHourlyTickParty(MobileParty party)
-        {
-            if (party == null || party.IsCaravan || party.IsMilitia || party.IsVillager) return;
-
-            var clan = party.LeaderHero?.Clan;
-            if (clan == null) return;
-            if (!GwpCommon.IsGreyWardenClan(clan)) return;
-
-            double now = CampaignTime.Now.ToHours;
-            if (_lastPurifyTime.TryGetValue(party.StringId, out double lastCheck) &&
-                now - lastCheck < PurifyIntervalHours) return;
-
-            _lastPurifyTime[party.StringId] = now;
-            PurifyParty(party);
-        }
-
-        private void OnMapEventEnded(MapEvent mapEvent)
-        {
-            if (mapEvent == null) return;
-
-            foreach (MobileParty party in mapEvent.InvolvedParties
-                .Where(static involved => involved?.MobileParty?.IsActive == true)
-                .Select(static involved => involved.MobileParty)
-                .Where(static party => party.LeaderHero?.Clan != null &&
-                    GwpCommon.IsGreyWardenClanMember(party.LeaderHero))
-                .Distinct()
-                .ToList())
-            {
-                _lastPurifyTime[party.StringId] = CampaignTime.Now.ToHours;
-                PurifyParty(party);
-            }
-        }
-
-        private void PurifyParty(MobileParty party)
-        {
-            var recruit = CharacterObject.Find(GwpIds.NewRecruitId);
-            if (recruit == null) return;
-
-            var roster = party.MemberRoster;
-            var toRemove = new List<TroopRosterElement>();
-
-            foreach (var element in roster.GetTroopRoster())
-            {
-                if (element.Character == null || element.Character.IsHero) continue;
-                if (IsIllegalTroop(element.Character))
-                    toRemove.Add(element);
-            }
-
-            if (toRemove.Count <= 0) return;
-
-            int foreignTotal = 0;
-            int foreignWounded = 0;
-            string foreignComposition = string.Join(",", toRemove
-                .OrderBy(static element => element.Character.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .Select(static element => element.Character.StringId + ":" +
-                    element.Number));
-            foreach (TroopRosterElement element in toRemove)
-            {
-                int number = Math.Max(0, element.Number);
-                int wounded = Math.Min(number, Math.Max(0, element.WoundedNumber));
-                if (number <= 0) continue;
-
-                roster.AddToCounts(element.Character, -number, false, -wounded);
-                foreignTotal += number;
-                foreignWounded += wounded;
-            }
-
-            int rawAvailableSlots = Math.Max(0,
-                party.Party.PartySizeLimit - party.Party.NumberOfAllMembers);
-            int interceptorReserve =
-                PoliceEnforcementBehavior
-                    .GetReservedImmediateInterceptorTroopCount(party);
-            int availableSlots = Math.Max(0,
-                rawAvailableSlots - interceptorReserve);
-            int converted = Math.Min(foreignTotal, availableSlots);
-            int convertedWounded = Math.Min(converted, foreignWounded);
-            if (converted > 0)
-                roster.AddToCounts(recruit, converted, false, convertedWounded);
-
-            GwpAiDiagnostics.WriteAction(party, "POLICE_ROSTER_PURIFIED",
-                "foreign=" + foreignTotal +
-                "; converted=" + converted +
-                "; released=" + (foreignTotal - converted) +
-                "; availableSlots=" + availableSlots +
-                "; rawAvailableSlots=" + rawAvailableSlots +
-                "; interceptorReserve=" + interceptorReserve +
-                "; partySizeLimit=" + party.Party.PartySizeLimit +
-                "; membersAfter=" + party.Party.NumberOfAllMembers +
-                "; foreignComposition=" + foreignComposition);
-        }
-
-        private static bool IsIllegalTroop(CharacterObject character)
-        {
-            return !GwpCommon.IsGreyWardenTroop(character);
-        }
 
         #endregion
 

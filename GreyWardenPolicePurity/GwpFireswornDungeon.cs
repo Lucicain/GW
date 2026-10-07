@@ -133,23 +133,30 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 灰袍领主用部队空位直接招最低级狂信者，不花钱，扣户数；每人从村军械库带走一套（用户裁定：招兵连装备带走）。
-        /// 祭司格子的兵已经在进门前招完。
+        /// 灰袍领主用部队空位直接招守村队里现有的狂信者（用户裁定 2026-10-07：不凭空变，不能招完），不花钱；
+        /// 他们离开村子，户数照原版村民队补人的算法扣：n 人扣 (n+1)/2 户（C#反编译 v1.4.8 VillagerCampaignBehavior.AddVillagersToParty）。
+        /// 每人带走他那一套装备（用户裁定：招兵连装备带走）。祭司格子的兵已经在进门前招完。
         /// </summary>
         private void EnlistZealots(MobileParty party, Settlement settlement)
         {
-            int enlisted = Math.Min(FreeSlots(party), DirectZealotsAvailable(settlement));
+            int enlisted = DirectZealotsFor(settlement, party);
             if (enlisted <= 0)
                 return;
-            party.MemberRoster.AddToCounts(CharacterObject.Find(GwpIds.ZealotId), enlisted);
+            FaithVillage row = _villages[settlement.StringId];
+            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
+            int kits = MoveBestSets(settlement.StringId, party.StringId, zealot, enlisted);
+            GuardOf(row.VillageId).AddToCounts(zealot, -enlisted);
+            party.MemberRoster.AddToCounts(zealot, enlisted);
             float hearthBefore = settlement.Village.Hearth;
             settlement.Village.Hearth -= (enlisted + 1) / 2;
-            int kits = MoveKits(settlement.StringId, party.StringId, enlisted, "direct_zealots");
+            PushGuard(row, settlement);
+            ReconcilePriestSlots(row);
+            UpdatePriestPower(row);
             RecordVisit(party, settlement, recruits: enlisted);
             GwpSettlementNotices.Post(settlement, party.LeaderHero, GwpSettlementNotices.RecruitText(enlisted));
             GwpAiDiagnostics.WriteFaith("ZEALOTS_ENLISTED",
                 "party=" + party.StringId + "; village=" + settlement.StringId + "; enlisted=" + enlisted +
-                "; kitItems=" + kits + "; hearth=" + hearthBefore.ToString("0.0") + "->" +
+                "; kitItems=" + kits + "; guardLeft=" + Sworn(row) + "; hearth=" + hearthBefore.ToString("0.0") + "->" +
                 settlement.Village.Hearth.ToString("0.0") +
                 "; members=" + party.Party.NumberOfAllMembers + "/" + party.Party.PartySizeLimit);
         }

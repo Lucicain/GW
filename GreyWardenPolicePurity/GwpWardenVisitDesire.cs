@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
     /// <list type="number">
     /// <item>候选：原版只给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（FillSettlementsToVisitWithDistancesAsDays）。
     /// 信众村像王国领主的本国聚落一样，只要在原版最远距离内都进候选。</item>
-    /// <item>招兵数：只有信众村有兵（祭司格子 + 能直接招的狂信者）；正在这里或刚走到门口时报 0；平均工资报 1（<see cref="VolunteersFor"/>）。</item>
+    /// <item>招兵数：原版数要人格子里的兵；信众村再加上能直接招的狂信者（正在这里或刚走到门口时不加）；平均工资至少报 1（<see cref="VolunteersFor"/>）。</item>
     /// <item>打分（<see cref="Rescore"/>）：原版只给城堡城镇乘的俘虏、伤员、卖东西三项（合起来叫「需要」），对灰袍改到信众村上，
     /// 「灰袍优先做信众村的事」的倍数放大的是需要高出 1 的那部分：1 + (需要 − 1) × 倍数。城堡城镇去掉俘虏项和卖东西项。</item>
     /// <item>养伤：灰袍领主在信众村里按在城里算（<see cref="GwpFaithHealingModel"/>）。</item>
@@ -80,19 +80,20 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 招兵数
 
         /// <summary>
-        /// 原版估算「这里能招几个兵」时不看招不招得到，只数每位要人的前 4 格（GetApproximateVolunteersCanBeRecruitedDataFromSettlement）。
-        /// 灰袍只在信众村招兵，所以别处一律 0；信众村 = 祭司格子 + 能直接招的狂信者（用户裁定：招兵意愿回到信众村）。
-        /// 正在这座村或刚走到村口时报 0：招兵只在进门那一刻（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
+        /// 原版估算「这里能招几个兵」时不看招不招得到，只数每位要人的前几格（同势力 4 格、否则 2 格），平均工资是整数除法
+        /// （C#反编译 v1.4.8 GetApproximateVolunteersCanBeRecruitedDataFromSettlement）。灰袍照原版去各处要人那里招兵（用户裁定 2026-10-07）；
+        /// 信众村再加上能直接招的狂信者（只招守村队里现有的、留够守村的）。
+        /// 正在这座村或刚走到村口时不加：招兵只在进门那一刻（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
         /// 站在村口的招兵分只会让原版每小时选「去这里」，而「已经在这里」就原地待命（AiPartyThinkBehavior.PartyHourlyAiTick）。
-        /// 原版要人的格子招空了自然是 0，我们直接招的狂信者不会空，所以要另算。
-        /// 第二个值是平均工资，原版拿它去除工资预算再 MathF.Floor 成人数上限；灰袍兵不领饷，报 0 会得到 -2147483648，
-        /// 招兵意愿整个变成负数（运行时反射 2026-10-07），所以报 1：人数上限就是预算本身，招多少由兵源和空位决定。
+        /// 原版拿平均工资去除工资预算再 MathF.Floor 成人数上限；格子里全是不领饷的灰袍兵时平均是 0，得到 -2147483648，
+        /// 招兵意愿整个变成负数（运行时反射 2026-10-07），所以至少报 1。
         /// </summary>
-        internal static (int, float) VolunteersFor(Hero hero, Settlement settlement)
+        internal static (int, float) VolunteersFor(Hero hero, Settlement settlement, (int Count, float Wage) vanilla)
         {
             MobileParty? party = hero.PartyBelongedTo;
             bool here = party != null && MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party) == settlement;
-            return (here ? 0 : GwpFireswornBehavior.RecruitsAvailableToWardens(settlement, hero), 1f);
+            int direct = here || party == null ? 0 : GwpFireswornBehavior.DirectZealotsFor(settlement, party);
+            return (vanilla.Count + direct, Math.Max(1f, vanilla.Wage));
         }
 
         // ---------------------------------------------------------------- 打分
@@ -212,7 +213,7 @@ namespace GreyWardenPolicePurity
         {
             if (!GwpWardenRecruitment.IsWardenBuyer(hero))
                 return;
-            __result = GwpWardenVisitDesire.VolunteersFor(hero, settlement);
+            __result = GwpWardenVisitDesire.VolunteersFor(hero, settlement, __result);
             GwpWardenVisitDesire.TraceVolunteers(settlement, __result);
         }
     }

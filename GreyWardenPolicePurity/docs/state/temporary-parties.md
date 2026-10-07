@@ -1,8 +1,8 @@
-# 无领主临时队：船只、口粮与兵员纯化
+# 无领主临时队：船只与口粮
 
 > 当前状态：用户已实测确认（2026-09-26）；同日补的解散入口还船、还不回去的船销毁、玩家被俘仍还给玩家三条是防线，正常游戏难触发
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：2026-10-07 兵员纯化删掉（PoliceResourceManager），本文件其余行为不变
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs`
 > 待实测：无。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
 
@@ -97,8 +97,4 @@
 - 原版饥饿规则备查：看 `RemainingFoodPercentage < 0`，只在每日进食时刷新；饥饿的移动队
   每天 25% 普通兵转伤。无领主自定义队不走原版逃兵。
 
-## 兵员纯化
-
-有灰袍领主的队伍每 6 小时一次、以及参战结束后：非灰袍兵按空余编制换成灰袍新兵，
-超出编制的放走。无领主临时队不纯化——随行练兵队的外来兵由练兵队退回练兵官后在
-练兵官队里纯化，见 [troop-orders.md](troop-orders.md)。
+兵员纯化已删（用户裁定 2026-10-07：灰袍照原版招原版兵），见 [warden-recruitment.md](warden-recruitment.md)。

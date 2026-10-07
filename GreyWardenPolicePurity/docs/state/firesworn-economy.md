@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 交俘虏、捐东西、直接招狂信者、传教、烧人、无领主队到达和卖货在聚落名牌上有动态；进聚落意愿见 warden-ai.md
+> 已复核至：2026-10-07 火誓者增长挂户数、挂民兵、灰袍所到之处；直接招狂信者改为只招守村队现有的
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornParties.cs` `GwpFireswornPartyDialogs.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：见文末
 
@@ -35,7 +35,12 @@
 
 - 有火誓者的村子在记录里有一条，村里的灰袍兵记在守村队里（各等级都有），人数就是这座村的火誓者人数，上限是户数。
   有了祭司才算信众村：领主来交俘虏、招兵，能烧人、能传教。（依据：用户裁定 2026-10-07）
-- 火誓者从哪来：重建（当地 5% 换成狂信者）、本村传教、外村来传教、烧人生成。原有民兵不转化。（依据：用户裁定 2026-10-07）
+- 火誓者从哪来：重建（当地 5% 换成狂信者）、本村传教、外村来传教、烧人生成，以及每天的增长（用户裁定 2026-10-07）：
+  - 灰袍所到之处：灰袍领主这一天在哪座村里或村口，那座村加 2 个狂信者（试玩值），没有火誓者的村子就此有了守村队；
+  - 挂户数：原版当天的户数增长（不到 300 户 +4、不到 600 户 +1.2、再多 +0.2）里，按火誓者比例那部分算火誓者；
+  - 挂民兵：原版当天新长的民兵里，按火誓者比例那部分从原版民兵转进守村队。
+
+  都和比例成正比，比例低时慢。原有民兵不整村转化。（依据：C#反编译 v1.4.8 DefaultSettlementProsperityModel、DefaultSettlementMilitiaModel）
 - 守村队和原版民兵站在同一支民兵队里，一起守村。原版民兵照原版增长：
   - 原版每日变化里的退役项按全队人数算（现有 × 2.5%），信众村的民兵模型把灰袍兵那一份加回来；
   - 原版减员按兵种比例从全队扣（`Settlement.RemoveMilitiasFromParty`），补丁让它只扣原版民兵。
@@ -52,7 +57,7 @@
   初始 50–400 随机，每天只变零点几（C#反编译 v1.4.8 DefaultNotablePowerModel）。比如两位各 150 的要人，比例过 1/3 祭司才最强。
 - **格子**：几格有人、什么时候补、怎么排都照原版（每格每天按原版概率补，按等级从低到高排）。
   格子里放守村队里最精锐的兵：等级高的在前，同兵种里配装好的先走。守村队至少留一半（不少于 5 人）守村，格子只放多出来的，
-  不够就空着。（依据：实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，剩下 5 人里 4 人又进了格子）
+  不够就空着；直接招狂信者也从这「多出来的」里扣（见 `warden-recruitment.md`）。（依据：实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，剩下 5 人里 4 人又进了格子）
   原版会自己升格子里的兵，升出来的守村队里可能没有，所以每天原版补完、以及每小时，都照守村队重排一次。（依据：用户裁定 2026-10-07；C#反编译 v1.4.8 RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement）
 - 领主从格子招走人，守村队就少这几个，他们那一套装备整套带走。
 
@@ -189,7 +194,7 @@
 | 类别 | stage |
 |---|---|
 | 每日快照 | `DAILY_VILLAGE`（火誓者人数与比例、守村队构成、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
-| 火誓者来源 | `RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
+| 火誓者来源 | `SWORN_GROWTH`（灰袍所到、挂户数、挂民兵）、`RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
 | 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED` |
