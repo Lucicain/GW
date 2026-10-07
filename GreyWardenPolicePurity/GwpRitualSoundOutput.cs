@@ -37,16 +37,12 @@ namespace GreyWardenPolicePurity
         private static readonly uint HeaderSize = (uint)Marshal.SizeOf(typeof(Header));
         private IntPtr _device, _header, _samples;
         private bool _prepared;
-        internal int FrameCount { get; }
-        internal uint SampleRate { get; }
         internal bool IsFinished => _header == IntPtr.Zero ||
             (Marshal.PtrToStructure<Header>(_header).Flags & 1) != 0;
 
         internal GwpRitualSoundOutput(string path, float gain)
         {
             byte[] samples = ReadPcm(path, out Format format);
-            FrameCount = samples.Length / format.Align;
-            SampleRate = format.Rate;
             gain = Math.Max(0, Math.Min(1, gain));
             for (int i = 0; i < samples.Length; i += 2)
             {

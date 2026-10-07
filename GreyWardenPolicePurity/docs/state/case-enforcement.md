@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：2026-10-07 删掉只给纯化用的「拦截队预留兵数」查询（PoliceEnforcementBehavior.DelayPatrols.cs），拦截队行为不变
+> 已复核至：2026-10-08 新增 WAR_PURSUIT_STALLED 诊断；记下追截队两条已知缺陷
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 
@@ -237,6 +237,11 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 `DelayPatrolState.SourceTaskPolicePartyId`，之后不再换人。一个能接收的灰袍领主都没有时，
 才照旧进城销毁。超出接收方编制的人仍进城销毁。只有返程状态会改接收人，
 承办中的重定目标冷却（只看未返程的队）不受影响。
+
+已知缺陷：追截队被目标掉头吃掉后马上再派，没有冷却；派之前比的是灰袍整支军团对罪犯，不是这几个人自己（实机诊断 2026-10-08：gw_leader_0 一天半里连派 8 支 8 人队追 lord_5_4，全被吃掉，约 55 人）。
+已知缺陷：来源超编时，归队的人照收，再从来源换出同样多的低阶灰袍兵进城销毁；追截队里不是灰袍兵的人（打完仗解救的等）也跟着进城销毁（实机诊断 2026-10-08：16 次归队里 5 次）。
+
+宣战追捕每满 24 小时记一条 `WAR_PURSUIT_STALLED`（见 diagnostics.md），用来查两天支援队为什么会触发。
 
 ## 测试
 

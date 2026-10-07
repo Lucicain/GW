@@ -82,7 +82,7 @@ namespace GreyWardenPolicePurity
         protected override void OnFinalize()
         {
             foreach (string villageId in _voices.Keys.ToList())
-                Stop(villageId, "map-screen-finalized");
+                Stop(villageId);
             base.OnFinalize();
         }
 
@@ -90,7 +90,7 @@ namespace GreyWardenPolicePurity
         {
             HashSet<string> active = new HashSet<string>(GwpFireswornBehavior.ActiveRituals().Select(entry => entry.Key));
             foreach (string villageId in _voices.Keys.Where(id => !active.Contains(id)).ToList())
-                Stop(villageId, "ritual-ended");
+                Stop(villageId);
             foreach (string villageId in active.Where(id => !_voices.ContainsKey(id)))
                 _voices[villageId] = new Voice();
         }
@@ -111,21 +111,12 @@ namespace GreyWardenPolicePurity
             voice.Sound = SoundEvent.CreateEvent(SoundEvent.GetEventIdFromString(name), MapScreen.MapScene);
             voice.Sound.PlayInPosition(new Vec3(position.X, position.Y, height + 2f));
             voice.Remaining = duration;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFaith("RITUAL_MAP_SOUND_PLAY", "village=" + villageId + "; sound=" + name +
-                "; seconds=" + duration.ToString("0.00"));
-#endif
         }
 
-        private void Stop(string villageId, string reason)
+        private void Stop(string villageId)
         {
             _voices[villageId].Sound?.Stop();
             _voices.Remove(villageId);
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFaith("RITUAL_MAP_SOUND_STOP", "village=" + villageId + "; reason=" + reason);
-#else
-            _ = reason;
-#endif
         }
     }
 

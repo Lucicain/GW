@@ -558,6 +558,9 @@ namespace GreyWardenPolicePurity
             ReconcileTaskWarStatesWithDiplomacy();
             RetryPeaceAfterPlayerEnforcement();
             UpdateDelayPatrols();
+#if GWP_DIAGNOSTICS
+            TraceStalledWarPursuits();
+#endif
             BreakInvalidShelteredBattles();
             CloseSettledPlayerHunt();
             CleanCaseLedger();

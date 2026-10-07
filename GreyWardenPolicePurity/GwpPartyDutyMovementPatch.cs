@@ -25,9 +25,6 @@ namespace GreyWardenPolicePurity
         private static void Postfix(MobileParty party, PartyThinkParams partyThinkParams)
         {
             GwpCrimeDesireAuction.Apply(party, partyThinkParams);
-            if (GwpAiDiagnostics.ShouldTraceObservedParty(party))
-                GwpAiDiagnostics.WriteObservedAuction(
-                    party, partyThinkParams.AIBehaviorScores.ToList());
             GreyWardenPartyDesireBehavior.ProcessFinalDesires(party, partyThinkParams);
         }
     }
@@ -97,7 +94,7 @@ namespace GreyWardenPolicePurity
     /// replaced by Bannerlord's ordinary hourly AI auction.
     /// </summary>
     [HarmonyPatch(typeof(AiPartyThinkBehavior), "PartyHourlyAiTick")]
-    internal static class GwpPartyThinkResolvedDiagnosticsPatch
+    internal static class GwpPartyThinkDirectAttackLockPatch
     {
         [HarmonyPrefix]
         private static bool Prefix(MobileParty mobileParty)
@@ -105,15 +102,6 @@ namespace GreyWardenPolicePurity
             // 无英雄临时执法队锁定敌对目标后跳过整个小时思考回合，
             // 避免欲望生成、强弱判断或空竞价解析覆盖首次 EngageParty。
             return !GreyWardenPartyDesireBehavior.HasDirectAttackLock(mobileParty);
-        }
-
-        [HarmonyPostfix]
-        private static void Postfix(MobileParty mobileParty)
-        {
-            if (GwpAiDiagnostics.ShouldTraceParty(mobileParty))
-                GwpAiDiagnostics.WriteResolved(mobileParty);
-            else if (GwpAiDiagnostics.ShouldTraceObservedParty(mobileParty))
-                GwpAiDiagnostics.WriteObservedResolved(mobileParty);
         }
     }
 

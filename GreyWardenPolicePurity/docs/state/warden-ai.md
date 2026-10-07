@@ -2,9 +2,9 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 俘虏照原版在城里卖，不再往信众村加分
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpWardenVisitDesire.Trace.cs` `GwpSettlementNotices.cs`
-> 待实测：请愿、重建不会再从正在协力的领主里挑人；DESIRE 行原版分与重算分对得上（无 MISMATCH）；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
+> 已复核至：2026-10-08 退休 DESIRE 对账（读到的原版分全是 0，对账失效）；直扑锁定补丁去掉记日志的后置、改名
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
+> 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
 各本职见 [`family.md`](family.md)。
@@ -63,7 +63,7 @@
   - **全速赶到某支部队跟前**（玩家通缉、Rush）：下注 `GoAroundParty`，再翻译成原版 `EngageParty`（`GwpPlayerEnforcementEngageActionPatch`）。
     原版竞价没有 EngageParty 的落地分支，直接下注会赢了也不动。
   - **无领主的一次性执法队锁定目标后**：跳过原版整个小时思考，只下一次 `EngageParty`；
-    战斗把追击打断时，只补发一次（`GwpPartyThinkResolvedDiagnosticsPatch`）。
+    战斗把追击打断时，只补发一次（`GwpPartyThinkDirectAttackLockPatch`）。
 - 灰袍短期 AI 只主动打承办的目标和野怪；办差的队伍谁都不主动打，只自卫（`IsAuthorizedAttackTarget`）。
 - 跟随不降速：原版护送分支只会把跟随方降到被跟随方的速度。灰袍登记过的跟随差事、并且当前确实是 EscortParty 时，解除这个封顶（`GwpEscortSpeedCapPatch`）。
   路径和交战语义不变；军团行军时不动。
@@ -103,15 +103,7 @@
 这些分和灰袍的差事一起进欲望竞价（普通案件 0.99），手上的案子不退回案件池。
 进了信众村（不管为什么进的）交俘虏、捐东西、直接招狂信者，见 `firesworn-economy.md`。
 
-**监控**：AI 日志每位灰袍领主每小时一行 `DESIRE`：
-- 分最高的几个进城候选：原版加进去的分、照原版公式逐个因子重算的分（对不上标 `MISMATCH`）和因子明细、灰袍改了什么（名字和倍数）、最后的分；
-- 差事分、谁赢、`outcome`——`NO_OP_HOLD_AT_CURRENT` 表示赢的就是「正在这里」的聚落，原版会原地待命；
-- 部队状态：编制比、伤员、粮、钱、俘虏、卖东西分。
-
-汇总用 `python tools/Analyze-Desire.py`：每位领主各种结果各几小时、在哪儿因为谁原地待命、赢下来的进城是哪几项因子和灰袍的哪一处改动推的、重算对不上几处。
-
-原版的辅助方法（部队参数、卖东西分、要人格子、做领主的分）不另外调用，只在原版自己调用时用后置补丁旁观返回值。每日异常另有
-`LORD_HOLDING_AT_SETTLEMENT`（领主在聚落门口待命，办重建、请愿、练兵的原地驻留不算）。
+**监控**：每日异常 `LORD_HOLDING_AT_SETTLEMENT`（领主在聚落门口待命，办重建、请愿、练兵的原地驻留不算）。
 
 **聚落名牌上的动态**（`GwpSettlementNotices.cs`）：原版领主在聚落做了事，名牌上会冒出一条「某某招募了几名士兵」「解决了一个请愿」
 （SandBox.ViewModelCollection `SettlementNameplateNotificationsVM` 听招兵、卖俘虏、卖东西、请愿等事件）。灰袍的这些事原版没有事件，

@@ -26,31 +26,24 @@ namespace GreyWardenPolicePurity
                 NativeOptions.GetConfig(NativeOptions.NativeOptionsType.MasterVolume) *
                 NativeOptions.GetConfig(NativeOptions.NativeOptionsType.SoundVolume);
             _output = new GwpRitualSoundOutput(GwpFireswornArt.SoundPath(MenuContext.CurrentBackgroundMeshName), gain);
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFaith("RITUAL_SOUND_START", "background=" + MenuContext.CurrentBackgroundMeshName +
-                "; frames=" + _output.FrameCount + "; rate=" + _output.SampleRate + "; gain=" + gain);
-#endif
         }
 
         internal void EndVisit()
         {
-            StopSound("menu-left");
+            StopSound();
             _started = false;
         }
 
-        private void StopSound(string reason)
+        private void StopSound()
         {
             if (_output == null)
                 return;
             _output.Dispose();
             _output = null;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteFaith("RITUAL_SOUND_STOP", "reason=" + reason);
-#endif
         }
 
         protected override void OnActivate() => ActivateMenu();
-        protected override void OnDeactivate() => StopSound("view-deactivated");
+        protected override void OnDeactivate() => StopSound();
 
         protected override void OnMenuContextUpdated(MenuContext newMenuContext) => ActivateMenu();
 
@@ -59,7 +52,7 @@ namespace GreyWardenPolicePurity
             if (MenuContext.GameMenu.StringId != GwpFireswornMenus.RitualMenuId)
                 EndVisit();
             else if (_output?.IsFinished == true)
-                StopSound("source-ended");
+                StopSound();
         }
 
         protected override void OnFinalize()

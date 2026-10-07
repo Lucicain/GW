@@ -26,8 +26,6 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, InitiativeSnapshot>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> ObservedPartyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Dictionary<string, string> ObservedCasesByPartyId =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> LastPartyByHeroId =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static bool _observedPartyCacheInitialized;
@@ -62,17 +60,10 @@ namespace GreyWardenPolicePurity
                     Encoding.UTF8);
                 InitiativeByPartyId.Clear();
                 ObservedPartyIds.Clear();
-                ObservedCasesByPartyId.Clear();
                 LastPartyByHeroId.Clear();
                 _observedPartyCacheInitialized = false;
                 _sessionStarted = true;
             }
-        }
-
-        internal static void WriteState(MobileParty party, string stage)
-        {
-            if (!ShouldTraceParty(party)) return;
-            Append(BuildPrefix(party, stage) + " | " + BuildPartyState(party));
         }
 
         internal static void WriteAuction(MobileParty party,
@@ -102,34 +93,6 @@ namespace GreyWardenPolicePurity
                 " | rawScores=" + FormatScores(rawScores) +
                 " | finalScores=" + FormatScores(finalScores);
             Append(line);
-        }
-
-        internal static void WriteResolved(MobileParty party) =>
-            WriteState(party, "RESOLVED");
-
-        /// <summary>灰袍领主这一小时为什么想去哪儿（GwpWardenVisitDesire.WriteDesireExplain 拼好的明细）。</summary>
-        internal static void WriteDesire(MobileParty party, string details)
-        {
-            if (!ShouldTraceParty(party)) return;
-            Append(BuildPrefix(party, "DESIRE") + " | " + details);
-        }
-
-        internal static void WriteObservedAuction(MobileParty party,
-            IReadOnlyCollection<(AIBehaviorData, float)> scores)
-        {
-            if (!ShouldTraceObservedParty(party)) return;
-            Append(BuildPrefix(party, "OBSERVED_AUCTION") +
-                " | observedForCases=" + DescribeObservedCases(party) +
-                " | " + BuildPartyState(party) +
-                " | rawScores=" + FormatScores(scores));
-        }
-
-        internal static void WriteObservedResolved(MobileParty party)
-        {
-            if (!ShouldTraceObservedParty(party)) return;
-            Append(BuildPrefix(party, "OBSERVED_RESOLVED") +
-                " | observedForCases=" + DescribeObservedCases(party) +
-                " | " + BuildPartyState(party));
         }
 
         internal static void CaptureInitiative(MobileParty party,
@@ -314,9 +277,6 @@ namespace GreyWardenPolicePurity
             if (_observedPartyCacheInitialized) return;
 
             ObservedPartyIds.Clear();
-            ObservedCasesByPartyId.Clear();
-            var descriptions = new Dictionary<string, List<string>>(
-                StringComparer.OrdinalIgnoreCase);
             foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 MobileParty? offender = task.TargetCrime?.Offender;
@@ -324,27 +284,17 @@ namespace GreyWardenPolicePurity
                 MobileParty combatLeader = offender.BesiegerCamp?.LeaderParty ??
                     offender.Army?.LeaderParty ?? offender.AttachedTo ?? offender;
 
-                AddObservedParty(offender, task, "offender", descriptions);
+                AddObservedParty(offender);
                 if (combatLeader != offender)
-                    AddObservedParty(combatLeader, task, "combatLeader", descriptions);
+                    AddObservedParty(combatLeader);
             }
-
-            foreach (KeyValuePair<string, List<string>> entry in descriptions)
-                ObservedCasesByPartyId[entry.Key] = Safe(string.Join(",", entry.Value));
             _observedPartyCacheInitialized = true;
         }
 
-        private static void AddObservedParty(MobileParty party, PoliceTask task,
-            string role, Dictionary<string, List<string>> descriptions)
+        private static void AddObservedParty(MobileParty party)
         {
             if (party.IsActive != true || string.IsNullOrWhiteSpace(party.StringId)) return;
             ObservedPartyIds.Add(party.StringId);
-            if (!descriptions.TryGetValue(party.StringId, out List<string>? cases))
-            {
-                cases = new List<string>();
-                descriptions[party.StringId] = cases;
-            }
-            cases.Add(task.PolicePartyId + ":" + task.TargetCrimeId + ":" + role);
         }
 
         private static string BuildPrefix(MobileParty party, string stage)
@@ -532,13 +482,6 @@ namespace GreyWardenPolicePurity
                    ",hour=" + snapshot.CampaignHour.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
-        private static string DescribeObservedCases(MobileParty party)
-        {
-            EnsureObservedPartyCache();
-            return ObservedCasesByPartyId.TryGetValue(party.StringId,
-                out string? description) ? description : "-";
-        }
-
         private static string GetPartyKind(MobileParty party)
         {
             if (GwpCommon.IsGreyWardenLordParty(party)) return "grey_warden_lord";
@@ -620,7 +563,6 @@ namespace GreyWardenPolicePurity
     {
         internal static string LogPath => string.Empty;
         internal static void StartSession() { }
-        internal static void WriteState(MobileParty party, string stage) { }
         internal static void WriteAuction(MobileParty party,
             IReadOnlyCollection<(AIBehaviorData, float)> rawScores,
             IReadOnlyCollection<(AIBehaviorData, float)> finalScores,
@@ -632,11 +574,6 @@ namespace GreyWardenPolicePurity
             float minimumPositiveNonPatrolScore,
             int nonPatrolAtOrBelowDutyCount,
             string dutyAdded) { }
-        internal static void WriteResolved(MobileParty party) { }
-        internal static void WriteDesire(MobileParty party, string details) { }
-        internal static void WriteObservedAuction(MobileParty party,
-            IReadOnlyCollection<(AIBehaviorData, float)> scores) { }
-        internal static void WriteObservedResolved(MobileParty party) { }
         internal static void CaptureInitiative(MobileParty party,
             AiBehavior behavior, MobileParty? target, float score,
             TaleWorlds.Library.Vec2 averageEnemyVector) { }

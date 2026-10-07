@@ -380,11 +380,8 @@ namespace GreyWardenPolicePurity
                 {
                     StartDirectAttack(party, directIntent.Party);
                 }
-                GwpAiDiagnostics.WriteState(party, "DIRECT_ATTACK_STATE");
                 return;
             }
-
-            GwpAiDiagnostics.WriteState(party, "HOURLY_STATE");
         }
 
         /// <summary>
@@ -515,9 +512,6 @@ namespace GreyWardenPolicePurity
                 originalPatrolCeiling, patrolCeiling, dutyScore,
                 suppressedPatrolCount, minimumPositiveNonPatrolScore,
                 nonPatrolAtOrBelowDutyCount, dutyAdded);
-#if GWP_DIAGNOSTICS
-            GwpWardenVisitDesire.WriteDesireExplain(party, think.AIBehaviorScores.ToList(), DescribeIntent(intent), dutyScore);
-#endif
         }
 
         /// <summary>

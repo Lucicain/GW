@@ -123,7 +123,6 @@ namespace GreyWardenPolicePurity
                 if (data.AiBehavior != AiBehavior.GoToSettlement || data.Party is not Settlement settlement || score <= 0f)
                     continue;
                 float factor;
-                string why;
                 if (GwpFireswornBehavior.IsPreachedVillage(settlement))
                 {
                     if (settlement == here)
@@ -131,7 +130,6 @@ namespace GreyWardenPolicePurity
                         // 已经在这座村：只有人还在村里、伤员多时留下养伤；刚走到村口的不再加分。
                         bool healing = party.CurrentSettlement == settlement && woundTerm > 1f;
                         factor = healing ? Amplified(woundTerm) : 1f;
-                        why = healing ? "here:heal" : "here:none";
                     }
                     else
                     {
@@ -139,10 +137,6 @@ namespace GreyWardenPolicePurity
                         // 俘虏不算需要：灰袍照原版在城里卖俘虏，正好来信众村才交（用户裁定 2026-10-08）。
                         float need = woundTerm * sell;
                         factor = Amplified(need);
-                        why = need > 1f
-                            ? "faith:wound" + woundTerm.ToString("0.00") +
-                              "*sell" + sell.ToString("0.00") + "*priority" + GwpTuning.Firesworn.FaithVillageVisitPriority.ToString("0")
-                            : "faith:none";
                     }
                 }
                 else if (settlement.IsFortification)
@@ -151,14 +145,12 @@ namespace GreyWardenPolicePurity
                     if (!settlement.IsTown)
                         continue;
                     factor = 1f / sell;
-                    why = "fort:/sell" + sell.ToString("0.00");
                 }
                 else
                     continue;
                 float rescored = score * factor;
                 if (factor != 1f)
                     think.SetBehaviorScore(in data, rescored);
-                RecordAdjustment(party, settlement, factor, why);
                 if (GwpFireswornBehavior.IsPreachedVillage(settlement) && rescored > bestScore)
                 {
                     bestScore = rescored;
@@ -178,7 +170,6 @@ namespace GreyWardenPolicePurity
             if (!GwpWardenVisitDesire.AppliesTo(mobileParty))
                 return;
             GwpWardenVisitDesire.AddFaithVillages(mobileParty, (IList)listToFill);
-            GwpWardenVisitDesire.TraceCandidates(mobileParty, (IList)listToFill);
         }
     }
 
@@ -189,18 +180,11 @@ namespace GreyWardenPolicePurity
             GwpWardenVisitDesire.AppliesTo(mobileParty) &&
             !(mobileParty.Army != null && mobileParty.Army.LeaderParty != mobileParty);
 
-        private static void Prefix(AiVisitSettlementBehavior __instance, MobileParty mobileParty)
-        {
-            if (Applies(mobileParty))
-                GwpWardenVisitDesire.BeginTrace(__instance, mobileParty);
-        }
-
         private static void Postfix(AiVisitSettlementBehavior __instance, MobileParty mobileParty, PartyThinkParams p)
         {
             if (!Applies(mobileParty))
                 return;
             GwpWardenVisitDesire.Rescore(__instance, mobileParty, p);
-            GwpWardenVisitDesire.EndTrace(mobileParty);
         }
     }
 
@@ -212,7 +196,6 @@ namespace GreyWardenPolicePurity
             if (!GwpWardenRecruitment.IsWardenBuyer(hero))
                 return;
             __result = GwpWardenVisitDesire.VolunteersFor(hero, settlement, __result);
-            GwpWardenVisitDesire.TraceVolunteers(settlement, __result);
         }
     }
 
