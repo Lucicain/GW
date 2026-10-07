@@ -300,6 +300,8 @@ namespace GreyWardenPolicePurity
             public const float ReconstructionSwornShare = 0.05f;
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;
+            // 守村队：两户信众出一个兵（用户裁定 2026-10-08：约为原版民兵平衡点的 3 倍，仍和信众户挂钩）。
+            public const int HouseholdsPerGuard = 2;
             public const float PriestWeeklyChance = 0.5f;
             public const int PriestStartingGold = 2000;
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
@@ -321,10 +323,9 @@ namespace GreyWardenPolicePurity
             public const float RitualMapSoundGapSeconds = 15f;
 
             // 烈火责罚：每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
-            // 和集会传教一样锁村 24 小时（用户裁定 2026-10-07）。烧完村子在地图上冒烟这么久（试玩值）。
+            // 和集会传教一样锁村 24 小时，这 24 小时里村子在地图上冒烟（用户裁定 2026-10-07）。
             public const float DamnationLockHours = 24f;
             public const int DamnationCostPerHead = 20;
-            public const float DamnationSmokeHours = 48f;
             // 本地传教到头以后烧原版民兵：一次最多 2 + 户数/200 个。
             public const int DamnationMilitiaBase = 2;
             public const float DamnationHearthPerMilitia = 200f;
@@ -332,12 +333,11 @@ namespace GreyWardenPolicePurity
             public const int DamnationSwornPerBurnedHousehold = 3;
 
             // 传教队：祭司已是本地最强的信众村照比武大会派，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
-            // 先去 150 距离内火誓者比例比家里低 0.1 以上的村子，没有就去最近的还没有火誓者的。
+            // 先去 150 距离内有火誓者、还没有祭司、比例不到来祭司门槛的村子里比例最高的，没有就去最近的还没有火誓者的。
             public const int MaxActiveMissions = 4;
             public const int MissionSize = 10;
             public const int MissionMinimumLeftBehind = 5;
             public const float MissionMaxDistance = 150f;
-            public const float MissionMinimumShareGap = 0.1f;
 
             // 运械队：照比武大会派，看 300 距离内有火誓者的村子，守村队人数（按户数比）拉平要差 5 人以上，
             // 或拿到主兵器的比例比家里低 0.2 以上、拉平要差 5 套以上，才去；至少 5 人押车，人数差多少就多带多少人。

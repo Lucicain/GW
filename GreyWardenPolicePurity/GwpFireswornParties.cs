@@ -152,12 +152,15 @@ namespace GreyWardenPolicePurity
             return party;
         }
 
-        /// <summary>从守村队补人，补到 <paramref name="size"/>，先补最低级的；再从家里军械库拿最好的那几套。</summary>
+        /// <summary>
+        /// 从守村队补人，补到 <paramref name="size"/>，先拉最高级的（用户裁定 2026-10-08：出门的队伍精锐度要高）；
+        /// 再从家里军械库拿最好的那几套。
+        /// </summary>
         private int ManParty(MobileParty party, FaithVillage row, Settlement home, int size)
         {
             TroopRoster guard = GuardOf(row.VillageId);
             int need = Math.Max(0, size - party.MemberRoster.TotalManCount);
-            foreach (TroopRosterElement element in guard.GetTroopRoster().OrderBy(entry => entry.Character.Tier).ToList())
+            foreach (TroopRosterElement element in guard.GetTroopRoster().OrderByDescending(entry => entry.Character.Tier).ToList())
             {
                 if (need <= 0)
                     break;
@@ -211,20 +214,20 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 传教队
 
         /// <summary>
-        /// 传教去哪儿：先看附近已经有火誓者的村子，火誓者比例比家里低得够多就去差得最多的；
-        /// 都不缺就去最近的还没有火誓者的村子（用户裁定 2026-10-07：先传有狂信者的，再传其他）。
+        /// 传教去哪儿（用户裁定 2026-10-08）：附近有火誓者、还没有祭司、比例还不到来祭司门槛的村子里，挑比例最高的，
+        /// 把它推过门槛再换下一座；都没有就去最近的还没有火誓者的村子。
+        /// 原来挑比例最低的：灰袍领主路过就留下两户信众，这种 1% 的村子到处都是，每次换一座，哪座都扶不起来（实机诊断 2026-10-08）。
         /// </summary>
-        private Settlement? MissionTarget(FaithVillage row, Settlement home)
+        private Settlement? MissionTarget(Settlement home)
         {
-            float homeShare = SwornShare(row, home);
             List<Settlement> nearby = NearbyTargets(home, GwpTuning.Firesworn.MissionMaxDistance, FaithPartyKind.Mission);
-            Settlement? needy = nearby
+            Settlement? growing = nearby
                 .Where(settlement => _villages.TryGetValue(settlement.StringId, out FaithVillage? other) &&
-                                     other.Households < HouseholdCap(settlement) &&
-                                     homeShare - SwornShare(other, settlement) >= GwpTuning.Firesworn.MissionMinimumShareGap)
-                .OrderBy(settlement => SwornShare(_villages[settlement.StringId], settlement))
+                                     FindLivingPriest(other) == null &&
+                                     SwornShare(other, settlement) < GwpTuning.Firesworn.PriestZealotShare)
+                .OrderByDescending(settlement => SwornShare(_villages[settlement.StringId], settlement))
                 .FirstOrDefault();
-            return needy ?? nearby
+            return growing ?? nearby
                 .Where(settlement => !_villages.ContainsKey(settlement.StringId))
                 .OrderBy(settlement => home.GetPosition2D.Distance(settlement.GetPosition2D))
                 .FirstOrDefault();
@@ -246,7 +249,7 @@ namespace GreyWardenPolicePurity
                 _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions ||
                 !IsFestivalDay(row, row.LastMission, now))
                 return;
-            Settlement? target = MissionTarget(row, home);
+            Settlement? target = MissionTarget(home);
             if (target == null)
                 return;
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Mission);

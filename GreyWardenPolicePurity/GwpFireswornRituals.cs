@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
             foreach (FaithVillage row in _villages.Values)
             {
                 double since = now - row.LastDamnation;
-                if (since >= GwpTuning.Firesworn.DamnationSmokeHours && since < GwpTuning.Firesworn.DamnationSmokeHours + 1d)
+                if (since >= GwpTuning.Firesworn.DamnationLockHours && since < GwpTuning.Firesworn.DamnationLockHours + 1d)
                     Settlement.Find(row.VillageId).Party.SetVisualAsDirty();
             }
         }

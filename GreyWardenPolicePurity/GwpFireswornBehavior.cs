@@ -21,10 +21,10 @@ namespace GreyWardenPolicePurity
     /// （docs/state/firesworn.md、firesworn-economy.md）。
     ///
     /// 有火誓者的村子在 <see cref="_villages"/> 里有一条记录；有了祭司才算信众村（用户裁定 2026-10-07）。
-    /// 两本账（用户裁定 2026-10-07：一户最多出一个火誓者，兵走了家还在）：
+    /// 两本账（用户裁定 2026-10-07：兵走了家还在；2026-10-08：两户出一个兵）：
     /// <list type="bullet">
     /// <item>信众户（<see cref="FaithVillage.Households"/>）：信教的人家，不超过户数。火誓者比例 = 信众户 ÷ 户数。</item>
-    /// <item>守村队（<see cref="_guards"/>）：信众户出的兵，不超过信众户。和原版民兵站在同一支民兵队里，
+    /// <item>守村队（<see cref="_guards"/>）：信众户出的兵，不超过 <see cref="GuardCap"/>。和原版民兵站在同一支民兵队里，
     /// 原版民兵照原版增长、参战，是烧人的原料。兵被招走、战死、出门，信众户和户数都不变，守村队慢慢补回。</item>
     /// </list>
     ///
@@ -451,7 +451,7 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        /// <summary>信众户上限就是户数，跟着户数变（用户裁定 2026-10-05；2026-10-07：一户最多出一个火誓者）。</summary>
+        /// <summary>信众户上限就是户数，跟着户数变（用户裁定 2026-10-05）。</summary>
         internal static int HouseholdCap(Settlement settlement) => (int)settlement.Village.Hearth;
 
         /// <summary>
@@ -914,7 +914,7 @@ namespace GreyWardenPolicePurity
                 }
                 if (IsVillageQuiet(village))
                     regrown = AddToGuard(row, village, zealot,
-                        MBRandom.RoundRandomized(Math.Max(0, row.Households - Sworn(row)) * GwpTuning.Firesworn.GuardRegrowDailyChance));
+                        MBRandom.RoundRandomized(Math.Max(0, GuardCap(row) - Sworn(row)) * GwpTuning.Firesworn.GuardRegrowDailyChance));
                 presence.TryGetValue(row.VillageId, out int fromWardens);
                 if (fromHearth + regrown + fromWardens <= 0)
                     continue;
@@ -951,10 +951,10 @@ namespace GreyWardenPolicePurity
             now - last >= GwpTuning.Firesworn.RitualIntervalDays * 24d &&
             MBRandom.RandomFloat < GwpTuning.Firesworn.RitualDailyChance;
 
-        /// <summary>这座村刚烧过人，地图上还在冒烟（<see cref="GwpDamnationSmokePatch"/>）。</summary>
+        /// <summary>这座村正在烧人，地图上冒烟，和烧人锁村一样长（用户裁定 2026-10-07）（<see cref="GwpDamnationSmokePatch"/>）。</summary>
         internal static bool IsSmoking(Settlement settlement) =>
             _instance != null && _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) &&
-            CampaignTime.Now.ToHours - row.LastDamnation < GwpTuning.Firesworn.DamnationSmokeHours;
+            CampaignTime.Now.ToHours - row.LastDamnation < GwpTuning.Firesworn.DamnationLockHours;
 
         private static int StableDay(string id, int period)
         {
@@ -981,6 +981,12 @@ namespace GreyWardenPolicePurity
 
         private TroopRoster GuardOf(string villageId) => RosterOf(_guards, villageId);
 
+        /// <summary>
+        /// 守村队上限：两户信众出一个兵（用户裁定 2026-10-08：原来一户一个，比例到顶时守村队约等于户数，
+        /// 是原版民兵平衡点 20 + 户数/10 的约 5 倍；改成约 3 倍，仍和信众户挂钩。C#反编译 v1.4.8 DefaultSettlementMilitiaModel）。
+        /// </summary>
+        private static int GuardCap(FaithVillage row) => row.Households / GwpTuning.Firesworn.HouseholdsPerGuard;
+
         /// <summary>守村队人数。</summary>
         private int Sworn(FaithVillage row) =>
             _guards.TryGetValue(row.VillageId, out TroopRoster? guard) ? guard.TotalManCount : 0;
@@ -990,8 +996,8 @@ namespace GreyWardenPolicePurity
             row.Households / Math.Max(1f, village.Village.Hearth);
 
         /// <summary>
-        /// 一户人家信教并出一个兵（用户裁定 2026-10-07：烧死一个、另一个信教加入、一户村民信教；传教、灰袍所到之处同理）：
-        /// 信众户 +1（不超过户数），守村队 +1（不超过信众户）。返回守村队实际多了几个。
+        /// 一户人家信教，带来的人进守村队（用户裁定 2026-10-07：烧死一个、另一个信教加入、一户村民信教；传教、灰袍所到之处同理）：
+        /// 信众户 +1（不超过户数），守村队 +1（不超过 <see cref="GuardCap"/>，满了的就只是信众）。返回守村队实际多了几个。
         /// </summary>
         private int Convert(FaithVillage row, Settlement village, CharacterObject troop, int count)
         {
@@ -1001,10 +1007,10 @@ namespace GreyWardenPolicePurity
             return AddToGuard(row, village, troop, count);
         }
 
-        /// <summary>往守村队里加人，不超过信众户（一户最多出一个兵）。返回实际加了几个。</summary>
+        /// <summary>往守村队里加人，不超过 <see cref="GuardCap"/>（两户出一个兵）。返回实际加了几个。</summary>
         private int AddToGuard(FaithVillage row, Settlement village, CharacterObject troop, int count)
         {
-            int added = Math.Min(count, Math.Max(0, row.Households - Sworn(row)));
+            int added = Math.Min(count, Math.Max(0, GuardCap(row) - Sworn(row)));
             if (added <= 0)
                 return 0;
             GuardOf(row.VillageId).AddToCounts(troop, added);
@@ -1017,9 +1023,16 @@ namespace GreyWardenPolicePurity
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
 
         /// <summary>
-        /// 每小时从民兵队读回守村队：战斗减员、被俘都是真死，民兵队里某种灰袍兵比记录少就照少的算；
-        /// 民兵队没了，守村队也没了（信众户还在，慢慢补回）。户数掉了，信众户压到户数，守村队压到信众户，
-        /// 多的从最低级的开始走。然后把民兵队补齐到记录。
+        /// 每小时从民兵队读回守村队：民兵队里的灰袍兵就是守村队现在的样子。
+        /// <list type="bullet">
+        /// <item>战斗减员、被俘都是真死；原版每天、每场战斗后也会给民兵队里攒够经验的兵升级（C#反编译 v1.4.8
+        /// PartyUpgraderCampaignBehavior.DailyTickParty / MapEventEnded，原版村庄民兵没有升级路线，我们的灰袍兵有）。
+        /// 所以只要民兵队里的灰袍兵不比记录多，就整份照民兵队记——升了级的照升级后的记（用户反馈 2026-10-08：
+        /// 原来只认「比记录少」，升级的兵被当成战死，升出来的又被当成多余删掉）。</item>
+        /// <item>民兵队没了，守村队也没了（信众户还在，慢慢补回）。</item>
+        /// <item>户数掉了，信众户压到户数，守村队压到 <see cref="GuardCap"/>，多的从最低级的开始走。</item>
+        /// </list>
+        /// 然后把民兵队补齐到记录。
         /// </summary>
         private void ObserveGuard(FaithVillage row)
         {
@@ -1030,17 +1043,22 @@ namespace GreyWardenPolicePurity
             if (militia?.MapEvent != null)
                 return;
             TroopRoster guard = GuardOf(row.VillageId);
-            foreach (TroopRosterElement element in guard.GetTroopRoster().ToList())
+            List<TroopRosterElement> observed = militia?.IsActive == true
+                ? militia.MemberRoster.GetTroopRoster().Where(element => IsGuardTroop(element.Character)).ToList()
+                : new List<TroopRosterElement>();
+            int observedTotal = observed.Sum(element => element.Number);
+            bool differs = observedTotal != guard.TotalManCount ||
+                           observed.Any(element => element.Number != guard.GetTroopCount(element.Character));
+            // 比记录多：刚加进记录的还没推进民兵队，下面 PushGuard 会补齐、去掉多的。
+            if (differs && observedTotal <= guard.TotalManCount)
             {
-                int observed = militia?.IsActive == true ? militia.MemberRoster.GetTroopCount(element.Character) : 0;
-                if (observed < element.Number)
-                {
-                    guard.AddToCounts(element.Character, observed - element.Number);
-                    _plans.Remove(row.VillageId);
-                }
+                guard.Clear();
+                foreach (TroopRosterElement element in observed)
+                    guard.AddToCounts(element.Character, element.Number);
+                _plans.Remove(row.VillageId);
             }
             row.Households = Math.Min(row.Households, HouseholdCap(village));
-            int over = guard.TotalManCount - row.Households;
+            int over = guard.TotalManCount - GuardCap(row);
             foreach (TroopRosterElement element in guard.GetTroopRoster().OrderBy(entry => entry.Character.Tier).ToList())
             {
                 if (over <= 0)
