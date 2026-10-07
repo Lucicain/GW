@@ -79,24 +79,24 @@ namespace GreyWardenPolicePurity
         private static bool FaithOptionCondition(MenuCallbackArgs args)
         {
             Settlement? village = Settlement.CurrentSettlement;
-            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int zealots, out _, out _))
+            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int households, out int guard, out _))
                 return false;
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
             MBTextManager.SetTextVariable("GWP_FS_VILLAGE_OPTION", GwpText.Get(
-                "{=gwp_fs_village_option}Eternal Fire: {ZEALOTS} zealots ({SHARE}% of hearths)",
-                "ZEALOTS", zealots, "SHARE", HearthShare(village!, zealots)));
+                "{=gwp_fs_village_option}Eternal Fire: {HOUSEHOLDS} sworn hearths ({SHARE}%), {GUARD} under arms",
+                "HOUSEHOLDS", households, "SHARE", HearthShare(village!, households), "GUARD", guard));
             return true;
         }
 
         private static void FaithOptionConsequence(MenuCallbackArgs args)
         {
             Settlement? village = Settlement.CurrentSettlement;
-            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int zealots, out _, out Hero? priest))
+            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int households, out int guard, out Hero? priest))
                 return;
 
             string body = GwpText.Get(
-                "{=gwp_fs_village_info}{ZEALOTS} women of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire. Women tend the flame, and the priestess and the sworn sisters keep its laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn women who take up the spear.",
-                "ZEALOTS", zealots, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
+                "{=gwp_fs_village_info}{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their daughters stand under arms. Women tend the flame, and the priestess and the sworn sisters keep its laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn women who take up the spear.",
+                "HOUSEHOLDS", households, "GUARD", guard, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
             body += "\n\n" + (priest != null
                 ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn daughters of this village go with them from her hearth.",
                     "PRIEST", priest.Name)
@@ -110,10 +110,10 @@ namespace GreyWardenPolicePurity
                 true, false, GwpText.Get("{=gwp_fs_village_info_ok}Close"), string.Empty, null, null));
         }
 
-        private static int HearthShare(Settlement village, int zealots)
+        private static int HearthShare(Settlement village, int households)
         {
             float hearth = village.Village?.Hearth ?? 0f;
-            return hearth > 0f ? (int)Math.Round(zealots * 100f / hearth) : 0;
+            return hearth > 0f ? (int)Math.Round(households * 100f / hearth) : 0;
         }
     }
 

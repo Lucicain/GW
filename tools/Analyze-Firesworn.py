@@ -95,7 +95,7 @@ def main():
     print(f"== 总览：游戏内第 {first_day} 天到第 {last_day} 天，共 {days} 天，{len(events)} 行监控")
     if totals:
         a, b = totals[0][1], totals[-1][1]
-        for key in ("faithVillages", "swornVillages", "sworn", "strongestPriests", "dungeon", "treasury"):
+        for key in ("faithVillages", "swornVillages", "households", "guard", "strongestPriests", "dungeon", "treasury"):
             print(f"   {key}: {a.get(key)} -> {b.get(key)}")
         treasury_rate = (num(b["treasury"]) - num(a["treasury"])) / max(1, day(totals[-1][0]) - day(totals[0][0]))
         print(f"   公库每天净变化约 {treasury_rate:+.0f}")
@@ -153,15 +153,16 @@ def main():
     for _, data in by_stage["SWORN_GROWTH"]:
         gains[data["village"]]["灰袍所到"] += num(data.get("fromWardens"))
         gains[data["village"]]["挂户数"] += num(data.get("fromHearth"))
-        gains[data["village"]]["挂民兵"] += num(data.get("fromMilitia"))
+        gains[data["village"]]["守村队补兵（挂民兵）"] += num(data.get("regrown"))
     for _, data in by_stage["ARMORY_LOOT"]:
         gains[data["holder"]]["缴获件数"] += num(data.get("items"))
     for village, rows in sorted(villages.items()):
         a, b = rows[0][1], rows[-1][1]
         span = max(1, day(rows[-1][0]) - day(rows[0][0]))
         hearth_change = num(b["hearth"]) - num(a["hearth"])
-        sworn_change = num(b["sworn"]) - num(a["sworn"])
-        print(f"   {village}: 户 {a['hearth']}->{b['hearth']}  火誓者 {a['sworn']}->{b['sworn']}（{b['share']}）"
+        sworn_change = num(b["households"]) - num(a["households"])
+        print(f"   {village}: 户 {a['hearth']}->{b['hearth']}  信众户 {a['households']}->{b['households']}（{b['share']}）"
+              f"  守村队 {a['guard']}->{b['guard']}"
               f"  原版民兵 {b['vanillaMilitia']}  祭司 {b['priest'] != '-'} 势力 {b['priestPower']} 其他 {b['othersPower']}"
               f" 最强 {b['strongest']}")
         print(f"      守村队 {b['guard'] or '-'}  格子 {b['priestSlots']}  地牢 {b['dungeon']}"
@@ -171,7 +172,7 @@ def main():
         if hearth_change / span < -3:
             issues.append(f"{village} 户数每天掉 {hearth_change / span:.1f}")
         if b["priest"] != "-" and span >= 15 and sworn_change <= 0:
-            issues.append(f"{village} 有祭司，{span} 天火誓者没涨（{a['sworn']}->{b['sworn']}）")
+            issues.append(f"{village} 有祭司，{span} 天信众户没涨（{a['households']}->{b['households']}）")
         armed, total = (b["armed"].split("/") + ["0"])[:2]
         if num(total) >= 20 and num(armed) / num(total) < 0.25:
             issues.append(f"{village} 只有 {b['armed']} 的火誓者拿到兵器（{b['armoryKinds']}）")

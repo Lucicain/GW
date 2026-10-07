@@ -1406,8 +1406,8 @@
   <string id="gwp_fs_ritual_damnation_title" text="烈火责罚" />
   <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的广场上挤满了人，{HOST}站在永恒之火前宣读火的戒律。要立誓的女人一个接一个走上前，把手伸到火上起誓；围着的乡亲跟着她念。集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
   <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：绑上火堆的，是火判了罪的人。立了誓的女人们围着火唱，乡亲们往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
-  <string id="gwp_fs_village_option" text="永恒之火：狂信者{ZEALOTS}人（户数的{SHARE}%）" />
-  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{ZEALOTS}个女人向永恒之火立了誓。照看火的是女人，火的规矩由祭司和立了誓的姐妹们守着；村里人照常种地过日子。劫掠的人来了，拿起长矛的就是这些立了誓的女人。" />
+  <string id="gwp_fs_village_option" text="永恒之火：{HOUSEHOLDS} 户信众（{SHARE}%），{GUARD} 人执兵" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{HOUSEHOLDS}户向永恒之火立了誓，她们家里有{GUARD}个女儿拿着兵器。照看火的是女人，火的规矩由祭司和立了誓的姐妹们守着；村里人照常种地过日子。劫掠的人来了，拿起长矛的就是这些立了誓的女人。" />
   <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍要人上阵时，村里立了誓的女儿们就从她的火堆边跟着走。" />
   <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
   <string id="gwp_fs_village_info_title" text="永恒之火" />

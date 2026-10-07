@@ -127,7 +127,8 @@ python tools/Check-StateFreshness.py
 | [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮 |
 | [`firesworn.md`](firesworn.md) | 火誓者：用户裁定、原版挂点、信众村、狂信者、祭司、仪式锁村 |
-| [`firesworn-economy.md`](firesworn-economy.md) | 信众村经济：守村队、祭司势力与格子、传教、地牢与烧人、传教队/运械队/卖货队、军械库、守村收益、保护费——已部署待实测 |
+| [`firesworn-economy.md`](firesworn-economy.md) | 信众村经济：信众户与守村队、祭司势力与格子、传教、地牢与烧人、军械库、守村收益、保护费——已部署待实测 |
+| [`firesworn-parties.md`](firesworn-parties.md) | 火誓者的无领主队：传教队、运械队、卖货队——已部署待实测 |
 
 ### 战斗
 

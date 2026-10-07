@@ -287,10 +287,6 @@ namespace GreyWardenPolicePurity
         {
             public const float ArrivalDistance = 3f;
 
-            // 直接招狂信者时户数不往这条线以下扣，免得一座信众村被招空。
-            public const float DirectZealotHearthFloor = 150f;
-            // 一个人折多少户：照原版村民队，补 n 人扣 (n+1)/2 户（VillagerCampaignBehavior.AddVillagersToParty）。
-            public const float HearthPerPerson = 0.5f;
 
             // 原版村庄民兵每天的退役项：现有民兵 × 2.5%（C#反编译 v1.4.8 DefaultSettlementMilitiaModel）。
             // 守村队的灰袍兵站在民兵队里，原版会把他们也算进去，信众村的民兵模型把这部分加回来。
@@ -325,8 +321,8 @@ namespace GreyWardenPolicePurity
             public const float DamnationPrisonerIntervalDays = 5f;
             public const float DamnationFestivalIntervalDays = 15f;
             public const float DamnationFestivalDailyChance = 0.35f;
-            public const int DamnationUnbelieverBase = 2;
-            public const float DamnationHearthPerUnbeliever = 200f;
+            public const int DamnationMilitiaBase = 2;
+            public const float DamnationHearthPerMilitia = 200f;
 
             // 传教队：祭司已是本地最强的信众村，每 10 天派一次，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
             // 先去 150 距离内火誓者比例比家里低 0.1 以上的村子，没有就去最近的还没有火誓者的。

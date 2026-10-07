@@ -94,7 +94,7 @@ namespace GreyWardenPolicePurity
                 TroopRoster guard = GuardOf(holder);
                 int villageRecruits = CountOf(guard, GwpIds.NewRecruitId);
                 int villageZealots = CountOf(guard, GwpIds.ZealotId);
-                int headroom = Math.Max(0, ZealotCap(village) - Sworn(row));
+                int headroom = Math.Max(0, row.Households - Sworn(row));
                 int reserve = Math.Min(headroom, Math.Max(GwpTuning.Firesworn.ArmoryVillageReserveMinimum,
                     (int)(Sworn(row) * GwpTuning.Firesworn.ArmoryReserveShare)));
                 return BuildPlan(ledger, villageRecruits, villageZealots, reserve);
@@ -587,7 +587,7 @@ namespace GreyWardenPolicePurity
                     .Select(entry => entry.Kind + ":" + entry.Phase + ":" + FindParty(entry.PartyId)!.MemberRoster.TotalManCount));
                 GwpAiDiagnostics.WriteFaith("DAILY_VILLAGE",
                     "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0") +
-                    "; sworn=" + Sworn(row) + "; share=" + SwornShare(row, village).ToString("0.00") +
+                    "; households=" + row.Households + "; guard=" + Sworn(row) + "; share=" + SwornShare(row, village).ToString("0.00") +
                     "; guard=" + Composition(GuardOf(row.VillageId)) +
                     "; vanillaMilitia=" + (militia?.IsActive == true ? militia.MemberRoster.TotalManCount - Sworn(row) : 0) +
                     "; priest=" + (priest?.StringId ?? "-") +
@@ -621,7 +621,7 @@ namespace GreyWardenPolicePurity
             }
             GwpAiDiagnostics.WriteFaith("DAILY_TOTALS",
                 "faithVillages=" + FaithVillages().Count() + "; swornVillages=" + _villages.Count +
-                "; sworn=" + _villages.Values.Sum(Sworn) +
+                "; households=" + _villages.Values.Sum(row => row.Households) + "; guard=" + _villages.Values.Sum(Sworn) +
                 "; strongestPriests=" + _villages.Values.Count(row => IsPriestStrongest(row, Settlement.Find(row.VillageId))) +
                 "; dungeon=" + _dungeons.Values.Sum(roster => roster.TotalManCount) +
                 "; treasury=" + PoliceResourceManager.GetJudicialTreasuryBalance() +
@@ -700,8 +700,6 @@ namespace GreyWardenPolicePurity
                 if (priest != null && priest.VolunteerTypes.All(troop => troop == null) && Sworn(row) > 0 && shortLords.Count > 0)
                     Flag("PRIEST_SLOTS_EMPTY", "village=" + row.VillageId + "; guard=" + Composition(GuardOf(row.VillageId)) +
                         "; shortLords=" + string.Join(",", shortLords));
-                if (priest != null && village.Village.Hearth < GwpTuning.Firesworn.DirectZealotHearthFloor + 10f)
-                    Flag("HEARTH_AT_FLOOR", "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0"));
                 if (_dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon) &&
                     dungeon.TotalManCount > 2 * GwpTuning.Firesworn.DamnationMaximumPrisoners)
                     Flag("DUNGEON_BACKLOG", "village=" + row.VillageId + "; dungeon=" + dungeon.TotalManCount);

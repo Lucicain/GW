@@ -217,7 +217,7 @@ namespace GreyWardenPolicePurity
             List<Settlement> nearby = NearbyTargets(home, GwpTuning.Firesworn.MissionMaxDistance, FaithPartyKind.Mission);
             Settlement? needy = nearby
                 .Where(settlement => _villages.TryGetValue(settlement.StringId, out FaithVillage? other) &&
-                                     Sworn(other) < ZealotCap(settlement) &&
+                                     other.Households < HouseholdCap(settlement) &&
                                      homeShare - SwornShare(other, settlement) >= GwpTuning.Firesworn.MissionMinimumShareGap)
                 .OrderBy(settlement => SwornShare(_villages[settlement.StringId], settlement))
                 .FirstOrDefault();
@@ -303,7 +303,7 @@ namespace GreyWardenPolicePurity
         private void JoinVillage(FaithParty record, MobileParty party, Settlement village)
         {
             FaithVillage row = EnsureVillage(village);
-            int before = Sworn(row);
+            int before = row.Households;
             int kits = ReturnPartyLedger(party, village.StringId) + UnloadKits(party, village.StringId);
             ItemRoster goods = ItemsOf(_goods, village.StringId);
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
@@ -312,10 +312,15 @@ namespace GreyWardenPolicePurity
                 goods.AddToCounts(element.EquipmentElement, element.Amount);
                 party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
             }
+            // 传教队带去几个人，那边就多几户信众，人并进守村队；运械队押车的人并进守村队，守村队满了的那几个带着家人落户。
             int joined = 0;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
-                if (IsGuardTroop(element.Character))
-                    joined += AddToGuard(row, village, element.Character, element.Number);
+            {
+                if (!IsGuardTroop(element.Character))
+                    continue;
+                int settled = record.Kind == FaithPartyKind.Mission ? 0 : AddToGuard(row, village, element.Character, element.Number);
+                joined += settled + Convert(row, village, element.Character, element.Number - settled);
+            }
             GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Mission
                 ? GwpText.Get("{=gwp_notice_mission}Brought {COUNT} sworn to stay", "COUNT", joined)
                 : GwpText.Get("{=gwp_notice_balance}Brought {COUNT} pieces of arms", "COUNT", kits));
@@ -327,7 +332,7 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Mission ? "MISSION_JOINED" : "BALANCE_DELIVERED",
                 "party=" + party.StringId + "; home=" + record.HomeId + "; village=" + village.StringId +
                 "; backHome=" + string.Equals(village.StringId, record.HomeId, StringComparison.OrdinalIgnoreCase) +
-                "; joined=" + joined + "; sworn=" + before + "->" + Sworn(row) + "; kitItems=" + kits +
+                "; joined=" + joined + "; households=" + before + "->" + row.Households + "; guard=" + Sworn(row) + "; kitItems=" + kits +
                 "; share=" + SwornShare(row, village).ToString("0.00") + "; armed=" + ArmedShare(village.StringId).ToString("0.00") +
                 "; priest=" + (FindLivingPriest(row) != null));
         }
