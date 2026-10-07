@@ -32,8 +32,11 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed partial class GwpFireswornBehavior
     {
-        private const int KitHead = 0, KitBody = 1, KitLeg = 2, KitGloves = 3, KitMain = 4, KitShield = 5, KitThrow = 6;
-        private const int KitSlots = 7;
+        internal const int KitHead = 0, KitBody = 1, KitLeg = 2, KitGloves = 3, KitMain = 4, KitShield = 5, KitThrow = 6,
+            KitRanged = 7, KitAmmo = 8;
+        private const int KitSlots = 9;
+        // 原版一个兵的武器格：EquipmentIndex.WeaponItemBeginSlot 到 NumAllWeaponSlots，共四格。
+        private const int WeaponSlots = (int)EquipmentIndex.NumAllWeaponSlots - (int)EquipmentIndex.WeaponItemBeginSlot;
 
         /// <summary>一个持有者此刻的配装结果。由账本和兵力推出，不存档。</summary>
         private sealed class ArmoryPlan
@@ -113,20 +116,23 @@ namespace GreyWardenPolicePurity
             roster.GetTroopRoster().Where(element => element.Character.StringId == troopId).Sum(element => element.Number);
 
         /// <summary>
-        /// 每一类装备按阶数、价值从好到差排好，第 i 个兵拿每一类的第 i 件（新兵排在狂信者前面，先挑）。
-        /// 盾只给拿单手兵器的人。分完剩下的先留够余量，再多的就是多余。马、马具、披风、弓弩箭、
-        /// 男女有一方不能用的、技能不够用的，都算多余（不配骑兵，肩部是灰袍印章，用户裁定）。
+        /// 每一类装备按阶数、价值从好到差排好，一个一个兵往下发（新兵排在狂信者前面，先挑）：护甲四件拿这一类最好的那件；
+        /// 主武器、远程、投掷拿自己技能够得着的最好的那件（原版物品的 Difficulty 对 RelevantSkill，按领装备的那个兵自己的技能算）；
+        /// 上战场时武器只有四格（<see cref="GwpArmorySpawnPatch"/>），主武器之后先发投掷，再发远程（要配上对应的弹药：弓配箭、弩配矢，
+        /// 没有就不发，占两格），最后是盾（只给拿单手兵器的，格子还有空才发）（用户裁定 2026-10-08）。新兵和狂信者都用不了的、马、马具、披风、男女有一方不能用的，都算多余卖掉。
+        /// 分完剩下的先留够余量，再多的就是多余。（用户裁定 2026-10-05：不配骑兵，肩部是灰袍印章；2026-10-08：弓弩箭矢进军械库，能用就用，不能用就卖，马不行）
         /// </summary>
         private static ArmoryPlan BuildPlan(ItemRoster ledger, int recruits, int zealots, int reserve)
         {
             ArmoryPlan plan = new ArmoryPlan { Recruits = recruits };
+            CharacterObject recruit = CharacterObject.Find(GwpIds.NewRecruitId);
             CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
             List<EquipmentElement>[] buckets = Enumerable.Range(0, KitSlots).Select(_ => new List<EquipmentElement>()).ToArray();
             for (int i = 0; i < ledger.Count; i++)
             {
                 ItemRosterElement element = ledger.GetElementCopyAtIndex(i);
-                int kind = KitKind(element.EquipmentElement.Item, zealot);
-                if (kind < 0)
+                int kind = KitKind(element.EquipmentElement.Item);
+                if (kind < 0 || !CanUse(recruit, element.EquipmentElement.Item) && !CanUse(zealot, element.EquipmentElement.Item))
                 {
                     plan.Surplus.AddToCounts(element.EquipmentElement, element.Amount);
                     continue;
@@ -135,41 +141,64 @@ namespace GreyWardenPolicePurity
                     buckets[kind].Add(element.EquipmentElement);
             }
             foreach (List<EquipmentElement> bucket in buckets)
-                bucket.Sort((a, b) => b.Item.Tier != a.Item.Tier
-                    ? ((int)b.Item.Tier).CompareTo((int)a.Item.Tier)
-                    : b.ItemValue.CompareTo(a.ItemValue));
+                bucket.Sort((x, y) => y.Item.Tier != x.Item.Tier
+                    ? ((int)y.Item.Tier).CompareTo((int)x.Item.Tier)
+                    : y.ItemValue.CompareTo(x.ItemValue));
 
             int men = recruits + zealots;
-            int shieldsUsed = 0;
             for (int i = 0; i < men; i++)
             {
+                CharacterObject troop = i < recruits ? recruit : zealot;
                 EquipmentElement[] kit = new EquipmentElement[KitSlots];
                 foreach (int kind in new[] { KitHead, KitBody, KitLeg, KitGloves, KitMain, KitThrow })
-                    if (i < buckets[kind].Count)
-                        kit[kind] = buckets[kind][i];
-                if (!kit[KitMain].IsEmpty && kit[KitMain].Item.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon &&
-                    shieldsUsed < buckets[KitShield].Count)
-                    kit[KitShield] = buckets[KitShield][shieldsUsed++];
+                    kit[kind] = Take(buckets[kind], item => CanUse(troop, item.Item));
+                EquipmentElement ranged = Take(buckets[KitRanged], item => CanUse(troop, item.Item) &&
+                    buckets[KitAmmo].Any(ammo => ammo.Item.ItemType == AmmoFor(item.Item)));
+                if (!ranged.IsEmpty)
+                {
+                    kit[KitRanged] = ranged;
+                    kit[KitAmmo] = Take(buckets[KitAmmo], ammo => ammo.Item.ItemType == AmmoFor(ranged.Item));
+                }
+                int weapons = new[] { KitMain, KitThrow, KitRanged, KitAmmo }.Count(kind => !kit[kind].IsEmpty);
+                if (weapons < WeaponSlots && !kit[KitMain].IsEmpty &&
+                    kit[KitMain].Item.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon)
+                    kit[KitShield] = Take(buckets[KitShield], item => CanUse(troop, item.Item));
                 plan.Sets.Add(kit);
             }
-            for (int kind = 0; kind < KitSlots; kind++)
-            {
-                int used = kind == KitShield ? shieldsUsed : Math.Min(men, buckets[kind].Count);
-                for (int i = used; i < buckets[kind].Count; i++)
-                    (i < used + reserve ? plan.Free : plan.Surplus).AddToCounts(buckets[kind][i], 1);
-            }
+            foreach (List<EquipmentElement> bucket in buckets)
+                for (int i = 0; i < bucket.Count; i++)
+                    (i < reserve ? plan.Free : plan.Surplus).AddToCounts(bucket[i], 1);
 
             Tiers(plan.Sets.Take(recruits), out plan.RecruitWeaponTier, out plan.RecruitArmorTier);
             Tiers(plan.Sets.Skip(recruits), out plan.ZealotWeaponTier, out plan.ZealotArmorTier);
             return plan;
         }
 
-        private static int KitKind(ItemObject item, CharacterObject zealot)
+        /// <summary>从排好的一类里拿走第一件合适的；没有就空着。</summary>
+        private static EquipmentElement Take(List<EquipmentElement> bucket, Func<EquipmentElement, bool> fits)
+        {
+            int index = bucket.FindIndex(item => fits(item));
+            if (index < 0)
+                return EquipmentElement.Invalid;
+            EquipmentElement taken = bucket[index];
+            bucket.RemoveAt(index);
+            return taken;
+        }
+
+        /// <summary>这个兵用得了这件东西：原版的门槛是物品的 Difficulty 对它的 RelevantSkill。</summary>
+        private static bool CanUse(CharacterObject troop, ItemObject item) =>
+            item.RelevantSkill == null || item.Difficulty <= troop.GetSkillValue(item.RelevantSkill);
+
+        private static ItemObject.ItemTypeEnum AmmoFor(ItemObject ranged) =>
+            ranged.ItemType == ItemObject.ItemTypeEnum.Crossbow ? ItemObject.ItemTypeEnum.Bolts : ItemObject.ItemTypeEnum.Arrows;
+
+        /// <summary>这件东西进军械库的哪一类；马、马具、披风和男女有一方不能用的不进（-1）。</summary>
+        private static int KitKind(ItemObject item)
         {
             // 灰袍兵男女混编（GwpWardenTroopGenderPatch），只配男女都能用的。
             if (item.ItemFlags.HasAnyFlag(ItemFlags.NotUsableByFemale | ItemFlags.NotUsableByMale))
                 return -1;
-            int kind = item.ItemType switch
+            return item.ItemType switch
             {
                 ItemObject.ItemTypeEnum.HeadArmor => KitHead,
                 ItemObject.ItemTypeEnum.BodyArmor => KitBody,
@@ -180,12 +209,12 @@ namespace GreyWardenPolicePurity
                 ItemObject.ItemTypeEnum.Polearm => KitMain,
                 ItemObject.ItemTypeEnum.Shield => KitShield,
                 ItemObject.ItemTypeEnum.Thrown => KitThrow,
+                ItemObject.ItemTypeEnum.Bow => KitRanged,
+                ItemObject.ItemTypeEnum.Crossbow => KitRanged,
+                ItemObject.ItemTypeEnum.Arrows => KitAmmo,
+                ItemObject.ItemTypeEnum.Bolts => KitAmmo,
                 _ => -1
             };
-            if (kind >= KitMain && item.RelevantSkill != null &&
-                item.Difficulty > zealot.GetSkillValue(item.RelevantSkill))
-                return -1;
-            return kind;
         }
 
         private static int TierOf(EquipmentElement element) => element.IsEmpty ? 0 : (int)element.Item.Tier + 1;
@@ -299,13 +328,12 @@ namespace GreyWardenPolicePurity
         /// <summary>无领主队把背包里的兵器护甲卸进这座村的军械库。</summary>
         private int UnloadKits(MobileParty cart, string village)
         {
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
             ItemRoster ledger = ItemsOf(_armories, village);
             int moved = 0;
             for (int i = cart.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = cart.ItemRoster.GetElementCopyAtIndex(i);
-                if (KitKind(element.EquipmentElement.Item, zealot) < 0)
+                if (KitKind(element.EquipmentElement.Item) < 0)
                     continue;
                 ledger.AddToCounts(element.EquipmentElement, element.Amount);
                 cart.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
@@ -643,12 +671,11 @@ namespace GreyWardenPolicePurity
         /// <summary>军械库里每一类有几件（用户反馈 2026-10-07：要能看出库里是兵器多还是护甲多）。</summary>
         private static string KindCounts(ItemRoster ledger)
         {
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
-            string[] names = { "head", "body", "leg", "gloves", "main", "shield", "throw" };
+            string[] names = { "head", "body", "leg", "gloves", "main", "shield", "throw", "ranged", "ammo" };
             int[] counts = new int[KitSlots + 1];
             for (int i = 0; i < ledger.Count; i++)
             {
-                int kind = KitKind(ledger.GetElementCopyAtIndex(i).EquipmentElement.Item, zealot);
+                int kind = KitKind(ledger.GetElementCopyAtIndex(i).EquipmentElement.Item);
                 counts[kind < 0 ? KitSlots : kind] += ledger.GetElementNumber(i);
             }
             return string.Join(",", names.Select((name, kind) => name + ":" + counts[kind])) + ",unusable:" + counts[KitSlots];
@@ -773,13 +800,20 @@ namespace GreyWardenPolicePurity
             for (int i = 0; i < armor.Length; i++)
                 if (!kit[i].IsEmpty)
                     equipment[armor[i]] = kit[i];
-            if (!kit[4].IsEmpty)
+            // 武器四格：主武器、投掷、远程、弹药、盾，按这个先后放（用户裁定 2026-10-08；配装时已经保证不超过四格）。分到一件武器就整组换掉。
+            EquipmentElement[] weapons = new[]
+            {
+                kit[GwpFireswornBehavior.KitMain], kit[GwpFireswornBehavior.KitThrow], kit[GwpFireswornBehavior.KitRanged],
+                kit[GwpFireswornBehavior.KitAmmo], kit[GwpFireswornBehavior.KitShield]
+            }.Where(entry => !entry.IsEmpty).ToArray();
+            if (weapons.Length > 0)
             {
                 for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumAllWeaponSlots; slot++)
                     equipment[slot] = EquipmentElement.Invalid;
                 EquipmentIndex next = EquipmentIndex.WeaponItemBeginSlot;
-                foreach (EquipmentElement weapon in new[] { kit[4], kit[5], kit[6] }.Where(entry => !entry.IsEmpty))
-                    equipment[next++] = weapon;
+                foreach (EquipmentElement weapon in weapons)
+                    if (next < EquipmentIndex.NumAllWeaponSlots)
+                        equipment[next++] = weapon;
             }
             equipment[EquipmentIndex.Cape] = CharacterObject.Find(GwpIds.NewRecruitId).FirstBattleEquipment[EquipmentIndex.Cape];
             equipment[EquipmentIndex.Horse] = EquipmentElement.Invalid;

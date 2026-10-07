@@ -108,14 +108,13 @@ namespace GreyWardenPolicePurity
 
             ItemRoster goods = ItemsOf(_goods, village.StringId);
             ItemRoster villageArmory = ItemsOf(_armories, village.StringId);
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
             int goodsCount = 0, goodsValue = 0, armoryItems = 0;
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
                 if (KeptOnHandover(element.EquipmentElement))
                     continue;
-                if (KitKind(element.EquipmentElement.Item, zealot) >= 0)
+                if (KitKind(element.EquipmentElement.Item) >= 0)
                 {
                     villageArmory.AddToCounts(element.EquipmentElement, element.Amount);
                     armoryItems += element.Amount;
