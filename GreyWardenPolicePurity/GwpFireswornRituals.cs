@@ -18,9 +18,7 @@ namespace GreyWardenPolicePurity
     /// （用户裁定 2026-10-07，照辛迪加）。本地传教还没到头时只能烧俘虏；到头了（祭司已是最强）才烧本村：
     /// 原版民兵（纯化守村队）和不信教的户（长期道路）。</item>
     /// </list>
-    /// 烈火责罚照比武大会开（用户裁定 2026-10-07）：比武大会每座城每季只有固定的一周能开、两次至少隔 15 天
-    /// （C#反编译 v1.4.8 TournamentCampaignBehavior.ConsiderStartOrEndTournament、DefaultTournamentModel.GetTournamentStartChance）；
-    /// 原版每天的开赛概率看在场的人，这里用户定为固定概率。本地传教同一座村两次至少隔 15 天。
+    /// 本村传教、烧人各算各的：离上次同一件事满 10 天后每天固定概率，比比武大会勤一点（用户裁定 2026-10-07，见 IsRitualDay）。
     /// </summary>
     public sealed partial class GwpFireswornBehavior
     {
@@ -59,7 +57,7 @@ namespace GreyWardenPolicePurity
                 Settlement village = Settlement.Find(row.VillageId);
                 if (FindLivingPriest(row) == null || !IsVillageQuiet(village) || HasRitual(village) ||
                     IsPriestStrongest(row, village) || row.Households >= HouseholdCap(village) ||
-                    now - row.LastCongregation < GwpTuning.Firesworn.CongregationVillageIntervalDays * 24d)
+                    !IsRitualDay(row.LastCongregation, now))
                     continue;
                 _rituals.Add(new Ritual
                 {
@@ -106,7 +104,7 @@ namespace GreyWardenPolicePurity
             {
                 Settlement village = Settlement.Find(row.VillageId);
                 if (FindLivingPriest(row) != null && !HasRitual(village) && IsVillageQuiet(village) &&
-                    IsFestivalDay(row, row.LastDamnation, now))
+                    IsRitualDay(row.LastDamnation, now))
                     HoldDamnation(row, village);
             }
         }

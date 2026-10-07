@@ -44,35 +44,7 @@ namespace GreyWardenPolicePurity
 
         internal GwpRitualSoundOutput(string path, float gain)
         {
-            using var reader = new BinaryReader(File.OpenRead(path));
-            if (reader.ReadUInt32() != 0x46464952)
-                throw new InvalidDataException("Ritual audio must be RIFF PCM.");
-            reader.ReadUInt32();
-            if (reader.ReadUInt32() != 0x45564157)
-                throw new InvalidDataException("Ritual audio must be WAVE PCM.");
-            Format format = default;
-            byte[] samples = Array.Empty<byte>();
-            while (reader.BaseStream.Position + 8 <= reader.BaseStream.Length)
-            {
-                uint chunk = reader.ReadUInt32();
-                int length = checked((int)reader.ReadUInt32());
-                long next = reader.BaseStream.Position + length + (length & 1);
-                if (chunk == 0x20746d66)
-                {
-                    format.Tag = reader.ReadUInt16();
-                    format.Channels = reader.ReadUInt16();
-                    format.Rate = reader.ReadUInt32();
-                    format.BytesPerSecond = reader.ReadUInt32();
-                    format.Align = reader.ReadUInt16();
-                    format.Bits = reader.ReadUInt16();
-                }
-                else if (chunk == 0x61746164)
-                    samples = reader.ReadBytes(length);
-                reader.BaseStream.Position = next;
-            }
-            if (format.Tag != 1 || format.Bits != 16 || format.Channels != 2 || format.Align != 4 ||
-                format.Rate != 48000 || samples.Length == 0 || samples.Length % format.Align != 0)
-                throw new InvalidDataException("Ritual audio must be 48000 Hz, stereo, 16-bit PCM.");
+            byte[] samples = ReadPcm(path, out Format format);
             FrameCount = samples.Length / format.Align;
             SampleRate = format.Rate;
             gain = Math.Max(0, Math.Min(1, gain));
@@ -98,6 +70,47 @@ namespace GreyWardenPolicePurity
                 Dispose();
                 throw;
             }
+        }
+
+        /// <summary>这段音频多长（秒）。大地图上的闪卡音效按它放完一遍就停（GwpRitualMapSoundView）。</summary>
+        internal static float DurationSeconds(string path)
+        {
+            byte[] samples = ReadPcm(path, out Format format);
+            return samples.Length / (float)format.BytesPerSecond;
+        }
+
+        private static byte[] ReadPcm(string path, out Format format)
+        {
+            using var reader = new BinaryReader(File.OpenRead(path));
+            if (reader.ReadUInt32() != 0x46464952)
+                throw new InvalidDataException("Ritual audio must be RIFF PCM.");
+            reader.ReadUInt32();
+            if (reader.ReadUInt32() != 0x45564157)
+                throw new InvalidDataException("Ritual audio must be WAVE PCM.");
+            format = default;
+            byte[] samples = Array.Empty<byte>();
+            while (reader.BaseStream.Position + 8 <= reader.BaseStream.Length)
+            {
+                uint chunk = reader.ReadUInt32();
+                int length = checked((int)reader.ReadUInt32());
+                long next = reader.BaseStream.Position + length + (length & 1);
+                if (chunk == 0x20746d66)
+                {
+                    format.Tag = reader.ReadUInt16();
+                    format.Channels = reader.ReadUInt16();
+                    format.Rate = reader.ReadUInt32();
+                    format.BytesPerSecond = reader.ReadUInt32();
+                    format.Align = reader.ReadUInt16();
+                    format.Bits = reader.ReadUInt16();
+                }
+                else if (chunk == 0x61746164)
+                    samples = reader.ReadBytes(length);
+                reader.BaseStream.Position = next;
+            }
+            if (format.Tag != 1 || format.Bits != 16 || format.Channels != 2 || format.Align != 4 ||
+                format.Rate != 48000 || samples.Length == 0 || samples.Length % format.Align != 0)
+                throw new InvalidDataException("Ritual audio must be 48000 Hz, stereo, 16-bit PCM.");
+            return samples;
         }
 
         public void Dispose()

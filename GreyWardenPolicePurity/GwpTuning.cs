@@ -307,14 +307,18 @@ namespace GreyWardenPolicePurity
 
             // 集会传教：祭司在本村传，照比武大会，两次至少隔 15 天。
             public const float CongregationHours = 24f;
-            public const float CongregationVillageIntervalDays = 15f;
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
 
-            // 照比武大会开（用户裁定 2026-10-07）：烧人、运械队、传教队都只在本村每季固定的一周里，
-            // 离上次同一件事至少 15 天，每天固定概率（试玩值）。
+            // 运械队、传教队照比武大会派（用户裁定 2026-10-07）：只在本村每季固定的一周里，离上次同一件事至少 15 天，每天固定概率（试玩值）。
             public const float FestivalIntervalDays = 15f;
             public const float FestivalDailyChance = 0.35f;
+            // 本村传教、烧人比比武大会勤一点，各算各的（用户裁定 2026-10-07：频率稍高、不共用间隔）：
+            // 不限本村那一周，离上次同一件事至少 10 天，每天固定概率（试玩值；平均约 13 天一次）。
+            public const float RitualIntervalDays = 10f;
+            public const float RitualDailyChance = 0.35f;
+            // 大地图上仪式的闪卡音效放完一遍，隔这么多秒（现实时间）再放（试玩值）。
+            public const float RitualMapSoundGapSeconds = 15f;
 
             // 烈火责罚：每烧 1 人或 1 户公库付钱（用户裁定：数据上只扣钱）。俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
             // 和集会传教一样锁村 24 小时（用户裁定 2026-10-07）。烧完村子在地图上冒烟这么久（试玩值）。

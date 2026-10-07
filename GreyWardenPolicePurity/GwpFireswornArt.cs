@@ -45,14 +45,17 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 点进仪式画面播随机一段「打出」音效（<c>{背景名}_play_N.wav</c>），地图上播闪卡音效（<see cref="GwpRitualMapSoundView"/>）
-        /// （用户裁定 2026-10-07）。传教的打出音效带人声台词，用户筛过之前没放进来，点进去还是闪卡音效。
+        /// （用户裁定 2026-10-07）。
         /// </summary>
         internal static string SoundPath(string background)
         {
-            string directory = Path.Combine(ModuleDirectory(), "ModuleSounds");
-            string[] plays = Directory.GetFiles(directory, background + "_play_*.wav");
-            return plays.Length > 0 ? plays[MBRandom.RandomInt(plays.Length)] : Path.Combine(directory, background + ".wav");
+            string[] plays = Directory.GetFiles(Path.Combine(ModuleDirectory(), "ModuleSounds"), background + "_play_*.wav");
+            return plays[MBRandom.RandomInt(plays.Length)];
         }
+
+        /// <summary>闪卡音效（大地图上放的那段）。</summary>
+        internal static string FlashSoundPath(string background) =>
+            Path.Combine(ModuleDirectory(), "ModuleSounds", background + ".wav");
 
         private static string ModuleDirectory() => Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(typeof(SubModule).Assembly.Location)!, "../.."));

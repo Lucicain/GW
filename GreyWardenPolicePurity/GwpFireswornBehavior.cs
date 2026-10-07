@@ -930,7 +930,7 @@ namespace GreyWardenPolicePurity
         /// 照比武大会开（用户裁定 2026-10-07）：本村每季固定的那一周、离上次同一件事（<paramref name="last"/>）至少 15 天，
         /// 每天固定概率。原版比武大会每座城每天判一次，上次开赛不到 15 天不开，每季 3 周里只有本城那一周能开；
         /// 原版的概率看在场的领主和英雄，这里用户定为固定概率（C#反编译 v1.4.8 TournamentCampaignBehavior.ConsiderStartOrEndTournament、
-        /// DefaultTournamentModel.GetTournamentStartChance）。烧人、运械队、传教队都走这里，每天调一次。
+        /// DefaultTournamentModel.GetTournamentStartChance）。运械队、传教队走这里，每天调一次；本村传教、烧人见 <see cref="IsRitualDay"/>。
         /// </summary>
         private static bool IsFestivalDay(FaithVillage row, double last, double now) =>
             CampaignTime.Now.GetDayOfSeason / CampaignTime.DaysInWeek == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
@@ -941,6 +941,14 @@ namespace GreyWardenPolicePurity
         internal static IEnumerable<KeyValuePair<string, RitualKind>> ActiveRituals() =>
             _instance?._rituals.Select(ritual => new KeyValuePair<string, RitualKind>(ritual.VillageId, ritual.Kind)) ??
             Enumerable.Empty<KeyValuePair<string, RitualKind>>();
+
+        /// <summary>
+        /// 本村传教、烧人：离上次同一件事至少 GwpTuning.Firesworn.RitualIntervalDays，每天固定概率；两件事各算各的，
+        /// 不限本村那一周，比比武大会勤一点（用户裁定 2026-10-07）。每天调一次。
+        /// </summary>
+        private static bool IsRitualDay(double last, double now) =>
+            now - last >= GwpTuning.Firesworn.RitualIntervalDays * 24d &&
+            MBRandom.RandomFloat < GwpTuning.Firesworn.RitualDailyChance;
 
         /// <summary>这座村刚烧过人，地图上还在冒烟（<see cref="GwpDamnationSmokePatch"/>）。</summary>
         internal static bool IsSmoking(Settlement settlement) =>
