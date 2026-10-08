@@ -43,7 +43,6 @@
 - [case-enforcement.md](case-enforcement.md)：追截队被目标掉头吃掉后马上再派，没有冷却；派之前比的是灰袍整支军团对罪犯，不是这几个人自己（实机诊断 2026-10-08：gw_leader_0 一天半里连派 8 支 8 人队追 lord_5_4，全被吃掉，约 55 人）。
 - [case-enforcement.md](case-enforcement.md)：来源超编时，归队的人照收，再从来源换出同样多的低阶灰袍兵进城销毁；追截队里不是灰袍兵的人（打完仗解救的等）也跟着进城销毁（实机诊断 2026-10-08：16 次归队里 5 次）。
 - [code-health.md](code-health.md)：`GwpRuntimeFaultWatch.Guard` 在开发版吞异常、玩家版直接执行，现有 28 处调用覆盖火誓者更新与战斗结算、派单、案件回执和会话回调；唯一 catch 依据仍是 2026-09-15 的旧档字段类型错误，不能证明这些路径都需要兜底。当前 `GreyWarden-Faults.log` 无 `GUARDED_FAILURE` 记录，未证明这些路径现在实际失败。诊断封装会改变两版的失败行为，后续清理应逐站点移除无依据吞异常；跨版本旧档读取已取消，不据此恢复兼容。（依据：源码与本机日志复核 2026-10-07；用户裁定 2026-10-05）
-- [warden-ai.md](warden-ai.md)：某支军团的军团长英雄文化读不出来（文化为空或特长列表为空），NavalDLC 每小时算军团凝聚力时 `PartyBaseHelper.HasFeat` 抛空引用、游戏崩溃；还没查到是哪支军团。现由 `GwpNavalArmyCohesionFaultPatch` 接住，凝聚力退回原版基础算法（少诺德那一项加成），故障日志记 `ARMY_COHESION_FEAT_FAULT`（军团长、领主英雄、文化、特长列表）。（实机诊断 2026-10-08）
 
 <!-- /已知缺陷汇总 -->
 

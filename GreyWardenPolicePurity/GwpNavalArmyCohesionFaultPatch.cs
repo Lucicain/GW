@@ -3,6 +3,7 @@ using System.Reflection;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
+using TaleWorlds.CampaignSystem.Party;
 
 namespace GreyWardenPolicePurity
 {
@@ -31,15 +32,20 @@ namespace GreyWardenPolicePurity
                 return __exception;
             // 依据：实机诊断 2026-10-08（NavalDLCArmyManagementCalculationModel.CalculateDailyCohesionChange → PartyBaseHelper.HasFeat
             // 抛 NullReferenceException，Army.HourlyTick 里没人接，游戏崩溃退出）。
-            Hero? leader = army.LeaderParty?.LeaderHero;
+            // 记录时每一步都防空：原版 PartyBase.Culture 直接读 MapFaction.Culture，部队没有所属势力时它自己就抛
+            // （实机诊断 2026-10-08：上一版这里读了 Party.Culture，记录前就又抛了一次，没拦住）。
+            MobileParty? leaderParty = army.LeaderParty;
+            Hero? leader = leaderParty?.LeaderHero;
+            IFaction? faction = leaderParty?.MapFaction;
             GwpFaultTrace.Write("ARMY_COHESION_FEAT_FAULT", details:
-                "army=" + (army.LeaderParty?.StringId ?? "null") + "; armyType=" + army.ArmyType +
-                "; kingdom=" + (army.Kingdom?.StringId ?? "null") + "; leaderHero=" + (leader?.StringId ?? "null") +
+                "army=" + (leaderParty?.StringId ?? "null") + "; partyActive=" + (leaderParty?.IsActive.ToString() ?? "-") +
+                "; armyType=" + army.ArmyType + "; kingdom=" + (army.Kingdom?.StringId ?? "null") +
+                "; actualClan=" + (leaderParty?.ActualClan?.StringId ?? "null") + "; mapFaction=" + (faction?.StringId ?? "null") +
+                "; factionCulture=" + (faction?.Culture?.StringId ?? "null") + "; leaderHero=" + (leader?.StringId ?? "null") +
                 "; heroState=" + (leader?.HeroState.ToString() ?? "-") + "; heroClan=" + (leader?.Clan?.StringId ?? "null") +
                 "; heroCulture=" + (leader == null ? "-" : leader.Culture?.StringId ?? "null") +
                 "; heroCultureFeats=" + (leader?.Culture == null ? "-" : leader.Culture.CultureFeats == null ? "null" : "ok") +
-                "; partyCulture=" + (army.LeaderParty?.Party.Culture?.StringId ?? "null") +
-                "; members=" + army.Parties.Count + "; exception=" + __exception.ToString().Replace(Environment.NewLine, " | "));
+                "; members=" + (army.Parties?.Count.ToString() ?? "null") + "; exception=" + __exception.ToString().Replace(Environment.NewLine, " | "));
             var baseModel = (ArmyManagementCalculationModel)AccessTools.Property(__instance.GetType(), "BaseModel").GetValue(__instance);
             __result = baseModel.CalculateDailyCohesionChange(army, includeDescriptions);
             return null;

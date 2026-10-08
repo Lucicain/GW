@@ -19,6 +19,11 @@ namespace GreyWardenPolicePurity
     /// lifecycle. Native no-war, food, inactivity, cohesion and other automatic
     /// dispersals are blocked. The enforcement system disbands the Army itself,
     /// through ApplyAuthorizedObjectiveFinished, when the source task is released.
+    /// 带头部队没了（被打光销毁、军团长死了）时不拦：原版在部队销毁时（MobileParty.OnRemoveParty → Army.OnRemovePartyInternal）
+    /// 解散军团，拦下以后部队接着被清空家族、移出全图名单，案件系统按编号再也找不到它，军团就成了没有带头部队的空壳；
+    /// 每小时算凝聚力时 NavalDLC 查军团长文化特长，读到空的所属势力，游戏闪退（C#反编译 v1.4.8 MobileParty.RemoveParty / OnRemoveParty、
+    /// Army.OnRemovePartyInternal、PartyBaseHelper.HasFeat、PartyBase.Culture；实机诊断 2026-10-08：gw_leader_2 带协力军团被俘、
+    /// 部队归零，53 秒后闪退）。
     /// </summary>
     [HarmonyPatch]
     internal static class GwpAssistanceArmyDisbandGuardPatch
@@ -36,7 +41,9 @@ namespace GreyWardenPolicePurity
             Army.ArmyDispersionReason reason)
         {
             if (_authorizedDepth > 0 ||
-                !PoliceEnforcementBehavior.IsActiveAssistanceArmy(army))
+                !PoliceEnforcementBehavior.IsActiveAssistanceArmy(army) ||
+                reason is Army.ArmyDispersionReason.LeaderPartyRemoved or Army.ArmyDispersionReason.ArmyLeaderIsDead ||
+                army?.LeaderParty?.IsActive != true)
                 return true;
 
             MobileParty? leader = army?.LeaderParty;
