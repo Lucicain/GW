@@ -2,7 +2,7 @@
 
 > 当前状态：传教、烧人、守村队按 2026-10-07 用户裁定重做，已部署待实测；配图颜色经用户确认；声音单次播放待实测；数值是试玩值
 > 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：2026-10-08 GwpFireswornBehavior.JoinGuard 改动，本文件规则不变
+> 已复核至：2026-10-08 地图仪式声音进菜单改成停掉（暂停会被原版整体恢复放出来）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：传教与烧人音效完整播放一次、关菜单立即停止；传教、烧人画面随机打出音效、不和地图声音叠；大地图上仪式期间村子放一遍闪卡音效、停一会儿再放、镜头远了听不到、仪式结束就停、音调正常；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 
@@ -97,7 +97,7 @@
 - 大地图上，仪式进行时那座村子放闪卡音效（烈火责罚 `463341571`，集会传教 `241188017`）；点进仪式画面随机放一段打出音效。（依据：用户裁定 2026-10-07，取代「只用闪卡、不用打出」）
   打出音效：烈火责罚 `58628604` `146933260` `594860666`（无人声）；集会传教 `827145150` `362102572` 带人声台词（卡牌站 `sound-rules.json` 标 voice），
   用户要求传教画面也随机放打出音效（2026-10-07）。
-- 大地图上的闪卡音效不无缝循环：放一遍，隔一会儿再放；点进任何菜单就暂停，免得和画面里的打出音效叠成回声。（依据：用户裁定、实机观察 2026-10-07）
+- 大地图上的闪卡音效不无缝循环：放一遍，隔一会儿再放；点进任何菜单就停掉、关了从头再放，免得和画面里的打出音效叠成回声。（依据：用户裁定、实机观察 2026-10-07、2026-10-08）
   响度：都校到 −23.1 LUFS。卡牌站里打出音效走的通道另加 +3 dB、闪卡 0 dB，原件打出 −23.3、闪卡 −20.2 LUFS，原作里两者一样响，所以校到同一值。
   原先的 −23 LUFS FLAC 目录已不存在；现从卡牌站 `D:\lucigames\toys\syndicate-cards\app\media\sfx\` 的 Opus 原件
   增益校到 −23.1 LUFS，当前部署为 48000 Hz 立体声 16 位 PCM WAV，放在
@@ -229,7 +229,7 @@
   （`SandBox.GauntletUI.Map.GauntletMapEventVisual`；原版 `event:/map/ambient/node/*` 可听距离 20）。
   我们在仪式进行时，在村子位置（地面高度 + 2）放闪卡音效。卡牌站里闪卡音效每次只放一遍（`card-audio.js`，规则里只有 Play），
   而登记的类别 `campaign_node` 会自己循环（Native 说明「persistent」；用户实测听到无缝重复），所以放满 WAV 时长就停，
-  隔 15 秒（现实时间，试玩值）仪式还在就再放。打开任何菜单（`MapState.AtMenu`）都暂停，关了接着放。
+  隔 15 秒（现实时间，试玩值）仪式还在就再放。打开任何菜单（`MapState.AtMenu`）就停掉，关了从头再放。是停不是暂停：原版地图界面每次激活、恢复都把场景声音整体恢复（`RestartAmbientSounds` → `ResumeSceneSounds`），菜单开着时也会（对话、背包回来），暂停的会被放出来。
   地图界面暂停、恢复时原版统一暂停、恢复地图场景的声音（`MapScreen.OnPause` / `OnResume`），地图界面销毁时视图全部停掉。
   声音登记在 `module_sounds.xml`。不存档：读档后按正在进行的仪式重建。
   视图在 `MapScreen.OnInitialize` 后加（`GwpRitualMapSoundViewPatch`），每个游戏小时对一次账。（依据：C#反编译 v1.4.8）

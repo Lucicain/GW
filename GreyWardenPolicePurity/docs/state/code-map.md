@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-166 个源文件、52,110 行、322 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
+166 个源文件、52,109 行、322 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -639,7 +639,7 @@
 - `GwpFireswornPartyDialogs.cs` — 136 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
-- `GwpRitualMapSoundView.cs` — 130 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
+- `GwpRitualMapSoundView.cs` — 129 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`
 - `GwpWardenRecruitment.cs` — 103 行 · `GwpWardenRecruitment` : VolunteerModel，另含 2 个类型

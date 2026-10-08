@@ -17,7 +17,9 @@ namespace GreyWardenPolicePurity
     /// <item>不无缝循环：卡牌站里闪卡音效每次触发只放一遍（syndicate-cards card-audio.js，规则里只有 Play、没有循环）。
     /// 登记的类别 campaign_node 会自己循环（Native module_sounds.xml「persistent」；用户实测 2026-10-07 听到无缝重复），
     /// 所以放满一遍的时长就停，隔 GwpTuning.Firesworn.RitualMapSoundGapSeconds 秒再放，仪式结束就不再放。（用户裁定 2026-10-07）</item>
-    /// <item>打开任何菜单（进村、遭遇）都暂停，关了接着放：进了仪式画面里面放的是打出音效，两边一起响会叠成回声（用户实测 2026-10-07）。</item>
+    /// <item>打开任何菜单（进村、遭遇）就停掉，关了从头再放：进了仪式画面里面放的是打出音效，两边一起响会叠成回声（用户实测 2026-10-07）。
+    /// 是停不是暂停：原版地图界面每次激活、恢复都把场景里的声音整体恢复（MapScreen.OnActivate / OnResume → RestartAmbientSounds →
+    /// ResumeSceneSounds），菜单还开着时也会（对话、背包界面回来），暂停的会被放出来，又叠在一起（用户实测 2026-10-08）。</item>
     /// <item>地图界面暂停、恢复时原版统一暂停、恢复地图场景的声音（MapScreen.OnPause / OnResume → PauseSceneSounds / ResumeSceneSounds），
     /// 地图界面销毁时这里全部停掉。</item>
     /// </list>
@@ -34,7 +36,6 @@ namespace GreyWardenPolicePurity
         private readonly Dictionary<string, Voice> _voices = new Dictionary<string, Voice>();
         private readonly Dictionary<GwpFireswornBehavior.RitualKind, float> _durations = new Dictionary<GwpFireswornBehavior.RitualKind, float>();
         private bool _synced;
-        private bool _paused;
 
         protected override void OnFrameTick(float dt)
         {
@@ -44,18 +45,16 @@ namespace GreyWardenPolicePurity
                 _synced = true;
                 Sync();
             }
-            bool menu = MapState.AtMenu;
-            if (menu != _paused)
+            if (MapState.AtMenu)
             {
-                _paused = menu;
                 foreach (Voice voice in _voices.Values)
-                    if (menu)
-                        voice.Sound?.Pause();
-                    else
-                        voice.Sound?.Resume();
-            }
-            if (_paused)
+                {
+                    voice.Sound?.Stop();
+                    voice.Sound = null;
+                    voice.Remaining = 0f;
+                }
                 return;
+            }
             foreach (KeyValuePair<string, Voice> entry in _voices.ToList())
             {
                 Voice voice = entry.Value;
