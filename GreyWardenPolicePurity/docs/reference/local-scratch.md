@@ -45,7 +45,7 @@
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |
 | `cloth-gradient/warcharmor.original.fbx` | 写渐变之前的弓箭手源 FBX |
 | `dotnet-home/` | 构建用的 .NET CLI 主目录 |
-| `ritual-media-20261007/` | 仪式声音生命周期与 Native 取证、真实 WinMM 静音离线测试壳；配图颜色已验收并移除贴图专项输出，声音确认后退休 |
+| `ritual-media-20261007/` | 声音已于 2026-10-08 验收，诊断已退休；调查输出与临时测试壳待清理，不再作为在役证据或回退点 |
 | `rbm-current-decompile/`、`rbm-campaign-current-decompile/` | 本机 RBM 反编译，灰袍声望工资实现时要核对它的独立维护与升级限制（`warden-recruitment.md`）；可重建 |
 | `bellumcivile-source/` | BellumCivile 1.4.0 公开源码，入国保护的依据（`kingdom-membership.md`）；可重新下载 |
 

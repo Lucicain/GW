@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-168 个源文件、52,218 行、324 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
+166 个源文件、52,121 行、322 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -322,7 +322,7 @@
 - `GwpFireswornNoNewNotablesPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornPartyDialogs` → GwpFireswornPartyDialogs.cs
 - `GwpFireswornSoundMenuActivatePatch` → GwpFireswornSoundView.cs ←
-- `GwpFireswornSoundView` → GwpFireswornSoundView.cs , GwpFireswornSoundView.Trace.cs
+- `GwpFireswornSoundView` → GwpFireswornSoundView.cs
 - `GwpFireswornVillageLockPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornVolunteerModel` → GwpWardenRecruitment.cs ←
 - `GwpFlacReader` → GwpFlacReader.cs
@@ -369,7 +369,7 @@
 - `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
 - `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
-- `GwpRitualMapSoundView` → GwpRitualMapSoundView.cs , GwpRitualMapSoundView.Trace.cs
+- `GwpRitualMapSoundView` → GwpRitualMapSoundView.cs
 - `GwpRitualMapSoundViewPatch` → GwpRitualMapSoundView.cs ←
 - `GwpRitualSoundOutput` → GwpRitualSoundOutput.cs
 - `GwpRuntimeFaultWatch` → GwpRuntimeFaultWatch.cs
@@ -601,7 +601,7 @@
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（82 个文件）
+### 其他（80 个文件）
 
 - `GwpFireswornBehavior.cs` — 1230 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1050 行 · `GwpStrength`，另含 2 个类型
@@ -632,11 +632,11 @@
 - `GwpOffenderDesire.cs` — 160 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
 - `GwpFieldDialogueVoice.cs` — 147 行 · `GwpFieldDialogueVoice`
-- `GwpRitualMapSoundView.cs` — 147 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpFiefPublicSupportPatch.cs` — 145 行 · `GwpFiefPublicSupportPatch`
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
 - `GwpWardenDuties.cs` — 140 行 · `WardenDuty`，另含 1 个类型
+- `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpFireswornPartyDialogs.cs` — 136 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
@@ -647,8 +647,8 @@
 - `GwpSingleQueryLinkPatch.cs` — 96 行 · `GwpLinkedInquiryState`，另含 2 个类型
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GwpSettlementNotices.cs` — 93 行 · `GwpSettlementNotices` : SettlementNotificationItemBaseVM，另含 3 个类型
-- `GwpFireswornSoundView.cs` — 90 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
 - `GwpFireswornArmoryView.cs` — 84 行 · `GwpFireswornArmoryView`
+- `GwpFireswornSoundView.cs` — 84 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
@@ -657,7 +657,6 @@
 - `GwpAssistanceArmyTooltipPatch.cs` — 66 行 · `GwpAssistanceArmyTooltipPatch`
 - `GwpSaveableTypeDefiner.cs` — 65 行 · `GwpSaveableTypeDefiner` : SaveableTypeDefiner
 - `GwpFireswornArt.cs` — 64 行 · `GwpFireswornArt`
-- `GwpRitualMapSoundView.Trace.cs` — 64 行 · `GwpRitualMapSoundView`
 - `GreyWardenDeserterFilterBehavior.cs` — 59 行 · `GreyWardenDeserterFilterBehavior` : CampaignBehaviorBase
 - `GwpNegotiationPolicy.cs` — 56 行 · `GwpNegotiationPolicy`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
@@ -684,4 +683,3 @@
 - `GwpTextKeys.cs` — 22 行 · `GwpTextKeys`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`
 - `GwpNegotiationChancePatch.cs` — 18 行 · `GwpNegotiationChancePatch`
-- `GwpFireswornSoundView.Trace.cs` — 17 行 · `GwpFireswornSoundView`

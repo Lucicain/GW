@@ -27,7 +27,7 @@ namespace GreyWardenPolicePurity
     /// </list>
     /// 声音只是界面，不存档：读档后按正在进行的仪式重新建。
     /// </summary>
-    public sealed partial class GwpRitualMapSoundView : MapView
+    public sealed class GwpRitualMapSoundView : MapView
     {
         private sealed class Voice
         {
@@ -39,15 +39,9 @@ namespace GreyWardenPolicePurity
         private readonly Dictionary<GwpFireswornBehavior.RitualKind, float> _durations = new Dictionary<GwpFireswornBehavior.RitualKind, float>();
         private bool _synced;
 
-        // 取证（GwpRitualMapSoundView.Trace.cs，只在开发版）：放、停、停后探测。
-        partial void TracePlay(string villageId, SoundEvent sound);
-        partial void TraceMenuStop(string villageId, SoundEvent sound);
-        partial void TraceTick(float dt);
-
         protected override void OnFrameTick(float dt)
         {
             base.OnFrameTick(dt);
-            TraceTick(dt);
             if (!_synced)
             {
                 _synced = true;
@@ -78,11 +72,8 @@ namespace GreyWardenPolicePurity
         /// <summary>停掉正在放的，关了菜单从头再放。</summary>
         internal void StopForMenu()
         {
-            foreach (KeyValuePair<string, Voice> entry in _voices)
+            foreach (Voice voice in _voices.Values)
             {
-                Voice voice = entry.Value;
-                if (voice.Sound != null)
-                    TraceMenuStop(entry.Key, voice.Sound);
                 voice.Sound?.Stop();
                 voice.Sound = null;
                 voice.Remaining = 0f;
@@ -127,7 +118,6 @@ namespace GreyWardenPolicePurity
             voice.Sound = SoundEvent.CreateEvent(SoundEvent.GetEventIdFromString(name), MapScreen.MapScene);
             voice.Sound.PlayInPosition(new Vec3(position.X, position.Y, height + 2f));
             voice.Remaining = duration;
-            TracePlay(villageId, voice.Sound);
         }
 
         private void Stop(string villageId)

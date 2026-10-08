@@ -1,10 +1,10 @@
 # 火誓者：传教、狂信者、烧人
 
-> 当前状态：火誓者整套已部署待实测，数值是试玩值；配图颜色已确认；地图与菜单双声音保留，菜单入口直接停地图声的小修复已部署待体验
-> 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：`4c0de6d` 加菜单入口停地图声（2026-10-08；双变体构建、31 项声音检查、live 镜像与兼容通过）
-> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpFireswornSoundView.Trace.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `GwpRitualMapSoundView.Trace.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
-> 待实测：重点反复移动后进入传教/烧人村：地图声停止，菜单随机音效只播一次且不重叠；离开菜单声即停，大地图继续闪卡音效、间隔与距离衰减正常；仪式结束停止；第一批底层牌（试玩值）与信众村经济各项见 `firesworn-economy.md`
+> 当前状态：火誓者机制仍待实测，数值是试玩值；仪式配图、双声音交接已由用户确认完全修复（2026-10-08），声音健康路径诊断退休
+> 最后验收：`774d2e2`（2026-10-08，仪式声音完全修复；不代表火誓者其余机制已验收）
+> 已复核至：`774d2e2`（2026-10-08）
+> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
+> 待实测：第一批底层牌（试玩值）与信众村经济各项见 `firesworn-economy.md`；仪式声音已验收，无需重复验收
 
 灰袍在世界观里对应昆特牌辛迪加的**火誓者**。这里记录用户已定机制、原版挂点、当前实现和待定部分。卡牌资料在 `D:\lucigames\toys\syndicate-cards\app\data\cards.json`（卡面文字、分类、关键词释义；PowerShell/Bash 控制台中文乱码时，用 Python 写成 UTF-8 文件再读）。不要凭记忆写卡面。（依据：流程）
 
@@ -189,7 +189,7 @@
 
 数值都在 `GwpTuning.Firesworn`，是试玩值，不是用户裁定。
 
-大地图闪卡与菜单随机打出两种声音都必须保留，行为不变，允许简化实现；本轮只在菜单入口交接播放，不改原生声音底层。（依据：用户裁定 2026-10-08）本轮回退点 `4c0de6d`：取回两个声音视图并移除新增 Trace 文件，恢复改动前行为。
+大地图闪卡与菜单随机打出两种声音都必须保留，行为不变，允许简化实现；只在菜单入口交接播放，不改原生声音底层。（依据：用户裁定 2026-10-08）声音修复回退点 `4c0de6d`：取回两个声音视图；若需恢复此次退休的诊断，从 `774d2e2` 取回两个视图及其 Trace 文件。
 
 - **狂信者 `gwzealot`**：2 阶步兵（等级 11，同原版村庄民兵），兵种定义是女性、战场上男女五五（见 `warden-gear.md`「男女混编」），原版袍子、农具，披风位是原版兜帽。升级接 `gwnewrecruit`。
   `gw` 前缀让它自动算灰袍兵种：它在战场上也算灰袍 NPC。
@@ -230,7 +230,7 @@
   我们在仪式进行时，在村子位置（地面高度 + 2）放闪卡音效。卡牌站里闪卡音效每次只放一遍（`card-audio.js`，规则里只有 Play），
   而登记的类别 `campaign_node` 会自己循环（Native 说明「persistent」；用户实测听到无缝重复），所以放满 WAV 时长就停，
   隔 15 秒（现实时间，试玩值）仪式还在就再放。打开任何菜单（`MapState.AtMenu`）就停掉，关了从头再放。是停不是暂停：原版地图界面每次激活、恢复都把场景声音整体恢复（`RestartAmbientSounds` → `ResumeSceneSounds`），菜单开着时也会（对话、背包回来），暂停的会被放出来。
-  原版菜单建立后地图帧更新可能不再执行，因此仪式菜单入口主动调用同一个 `StopForMenu`，不依赖下一帧发现 `AtMenu`；原版暂停/恢复仍由地图界面处理，销毁时全部停掉。现有取证保留至用户确认修复。
+  原版菜单建立后地图帧更新可能不再执行，因此仪式菜单入口主动调用同一个 `StopForMenu`，不依赖下一帧发现 `AtMenu`；原版暂停/恢复仍由地图界面处理，销毁时全部停掉。用户已确认完全修复，声音取证已退休（2026-10-08）。
   声音登记在 `module_sounds.xml`。不存档：读档后按正在进行的仪式重建。
   视图在 `MapScreen.OnInitialize` 后加（`GwpRitualMapSoundViewPatch`），每个游戏小时对一次账。（依据：C#反编译 v1.4.8）
   原版声音库里有一个代码没用上的 `event:/map/ambient/node/burning_village`（烧着的村子），用户选了闪卡音效，没用它。
