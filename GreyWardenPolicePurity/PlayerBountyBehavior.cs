@@ -431,7 +431,8 @@ namespace GreyWardenPolicePurity
                 new TextObject(GwpText.Get("{=gwp_playerbountybehavior_001}Grey Warden herald")),
                 policeClan,
                 policeClan.DefaultPartyTemplate,
-                clanLeader,
+                // 所有者留空，和纠察队一样：填族长的话这支队一打输，被俘豁免就让族长逃亡、销毁她带的部队（实机诊断 2026-10-08）。
+                null,
                 "", "",
                 5f,
                 false);
