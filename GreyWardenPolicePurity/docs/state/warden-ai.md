@@ -2,8 +2,8 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 IsAuthorizedAttackTarget 认火誓者巡逻队的直扑目标
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
+> 已复核至：2026-10-08 接住 NavalDLC 军团凝聚力的空引用崩溃并记录军团长文化
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpNavalArmyCohesionFaultPatch.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
@@ -137,3 +137,5 @@
 ## 玩家请求的顺延计数
 
 - 只有成功完成的普通差事，才计入玩家请求的顺延（`GwpPlayerRequestDeferral`）。取消、被挤掉、失效的不算。
+
+已知缺陷：某支军团的军团长英雄文化读不出来（文化为空或特长列表为空），NavalDLC 每小时算军团凝聚力时 `PartyBaseHelper.HasFeat` 抛空引用、游戏崩溃；还没查到是哪支军团。现由 `GwpNavalArmyCohesionFaultPatch` 接住，凝聚力退回原版基础算法（少诺德那一项加成），故障日志记 `ARMY_COHESION_FEAT_FAULT`（军团长、领主英雄、文化、特长列表）。（实机诊断 2026-10-08）

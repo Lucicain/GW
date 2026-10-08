@@ -558,15 +558,17 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 巡逻队
 
         /// <summary>
-        /// 每小时看一次，不等仪式、不要求祭司（用户裁定 2026-10-08：只要能派，派出的积极性要高）：先派巡逻队，再看要不要紧急出动。
+        /// 每小时看一次，不等仪式（用户裁定 2026-10-08：只要能派，派出的积极性要高）：先派巡逻队，再看要不要紧急出动。
         /// 以前跟着每天一次的派队走：巡逻队回村要等到第二天；烧人锁村 24 小时，每天这一刻差一点没解锁，烧完多出来的人隔两天才出门（实机诊断 2026-10-08）。
+        /// 只在有祭司的信众村派：额度按守村队上限算，只有一两户信众的村子上限是 1，整村原版民兵都被当成超额派出去
+        /// （实机诊断 2026-10-08：18 座村子出巡逻，village_ES6_1 守村队 1 人，一队 25 人全是原版民兵）。
         /// </summary>
         private void DispatchWatches()
         {
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 Settlement home = Settlement.Find(row.VillageId);
-                if (!IsVillageQuiet(home))
+                if (FindLivingPriest(row) == null || !IsVillageQuiet(home))
                     continue;
                 DispatchPatrols(row, home);
                 TryDispatchResponse(row, home);
