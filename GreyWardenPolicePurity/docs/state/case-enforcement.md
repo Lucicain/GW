@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：2026-10-08 新增 WAR_PURSUIT_STALLED 诊断；记下追截队两条已知缺陷
+> 已复核至：2026-10-08 承办人正在打仗时不新建协力组
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 
@@ -75,7 +75,8 @@
 
 - `FailAssistanceCase` 按 `Released` 撤人留案，不销案。
 - **目标正在打仗时不判失败**：`offenderParty.MapEvent != null || leader.MapEvent != null`
-  直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。
+  直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。所以承办人正在打仗时也不新建协力组：
+  协办的人加入不了这一仗，凑不够兵又不判失败，建出来的组和军团只剩承办人一个人挂着。（依据：实机诊断 2026-10-08：gw_leader_2 战斗中途建出 members=0 的协力军团）
 - 防空转：`GwpTuning.Enforcement.AssistanceFailureCooldownHours = 72`，退回台账的案子
   72 小时内不再被指派。冷却只活在本次运行内（读档后最多多试一次，无害）。
 - 改追最近案件（`RetargetOrdinaryCasesToNearest`）等于接新案，候选同样要过冷却与

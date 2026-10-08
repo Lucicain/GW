@@ -330,6 +330,11 @@ namespace GreyWardenPolicePurity
                     GetAssistanceEvaluationTarget(leader, task);
                 if (offender == null)
                     continue;
+                // 正在打仗时不新建协力组：协办的人加入不了这一仗；凑不够兵时 FailAssistanceCase 又因为在打仗不判失败、
+                // 直接返回，新建的组和军团就只剩军团长一个人挂着（实机诊断 2026-10-08：gw_leader_2 单独开打后
+                // 敌方援军陆续加入，战斗中途建出 members=0 的协力军团，她战败后成了空壳军团）。
+                if (leader.MapEvent != null)
+                    continue;
                 if (!TryCaptureAssistanceLeaderSoloSpeed(leader, task!))
                     continue;
 
