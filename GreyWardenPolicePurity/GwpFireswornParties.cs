@@ -56,7 +56,7 @@ namespace GreyWardenPolicePurity
                         if (now - record.PhaseHour >= GwpTuning.Firesworn.PatrolHours ||
                             party.MemberRoster.TotalHealthyCount < record.Men * GwpTuning.Firesworn.PatrolReturnHealthyShare ||
                             party.PrisonRoster.TotalManCount >= party.Party.PrisonerSizeLimit || !IsVillageQuiet(home) ||
-                            GuardShortfall(record.HomeId) > 0)
+                            PatrolExcess(record.HomeId) >= record.Men)
                         {
                             SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
                             break;
@@ -235,20 +235,34 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 留村的人比额度（上限的 2/3）少几个，扣掉已经在回村路上的巡逻队和出去紧急出动的人（他们很快回来）。
-        /// 大于 0 就叫巡逻队回村补上（用户裁定 2026-10-08：守军变少，巡逻队回来补上；不限制灰袍领主征召守村队）。
+        /// 在外巡逻的人比该派的 1/3 多几个（<see cref="PatrolShare"/>）。总数少了（比如灰袍领主直接招走了狂信者；不限制领主征召），
+        /// 多出来的够一整队就叫那一队回村补上，不够一队不叫，免得叫回来下个小时又派出去
+        /// （用户裁定 2026-10-08：守军变少，巡逻队回来补上）。
         /// </summary>
-        private int GuardShortfall(string villageId)
+        private int PatrolExcess(string villageId)
         {
             if (!_villages.TryGetValue(villageId, out FaithVillage? row))
                 return 0;
-            int coming = _faithParties.Values
-                .Where(entry => string.Equals(entry.HomeId, villageId, StringComparison.OrdinalIgnoreCase) &&
-                                (entry.Kind == FaithPartyKind.Patrol && entry.Phase == FaithPartyPhase.Returning ||
-                                 entry.Kind == FaithPartyKind.Response))
-                .Sum(entry => FindParty(entry.PartyId)?.MemberRoster.TotalManCount ?? 0);
-            return HomeQuota(row) - HomeDefenders(row, Settlement.Find(villageId)) - coming;
+            return MenOut(villageId, FaithPartyKind.Patrol, FaithPartyPhase.Outbound) - PatrolShare(row, Settlement.Find(villageId));
         }
+
+        /// <summary>这座村某种队在某个阶段的人数（阶段为空就是不分阶段）。</summary>
+        private int MenOut(string villageId, FaithPartyKind kind, FaithPartyPhase? phase = null) =>
+            _faithParties.Values
+                .Where(entry => entry.Kind == kind && (phase == null || entry.Phase == phase) &&
+                                string.Equals(entry.HomeId, villageId, StringComparison.OrdinalIgnoreCase))
+                .Sum(entry => FindParty(entry.PartyId)?.MemberRoster.TotalManCount ?? 0);
+
+        /// <summary>
+        /// 这座村的总兵力：在村的守村总数，加上在外巡逻（去的、回的）和紧急出动的人（用户裁定 2026-10-08：按现有人数三分来派）。
+        /// 在外的也要算进去，不然每小时拿剩下的再分三份，越派越多。
+        /// </summary>
+        private int VillageForce(FaithVillage row, Settlement home) =>
+            HomeDefenders(row, home) + MenOut(row.VillageId, FaithPartyKind.Patrol) + MenOut(row.VillageId, FaithPartyKind.Response);
+
+        /// <summary>总兵力的 1/3：在外巡逻的份，也是紧急出动的份、始终守村的份。</summary>
+        private int PatrolShare(FaithVillage row, Settlement home) =>
+            (int)Math.Ceiling(VillageForce(row, home) * GwpTuning.Firesworn.WatchShare);
 
         /// <summary>巡逻队和紧急出动的队：见敌照原版巡逻队估形势，回村一样交接。</summary>
         internal static bool IsWatch(FaithPartyKind kind) => kind == FaithPartyKind.Patrol || kind == FaithPartyKind.Response;
@@ -575,9 +589,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>留村的额度：上限的 2/3（用户裁定 2026-10-08）。</summary>
-        private static int HomeQuota(FaithVillage row) => (int)Math.Ceiling(GuardCap(row) * GwpTuning.Firesworn.HomeGuardShare);
-
         /// <summary>守村总数：守村队加村里没受伤的原版民兵（民兵正在打仗时不算，和 <see cref="DrawMen"/> 拉人的条件一致）。</summary>
         private int HomeDefenders(FaithVillage row, Settlement home)
         {
@@ -591,12 +602,13 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 守村总数超出留村额度的人分批出去巡逻，原版民兵先出门，一批 10–25 人，够一批就派
-        /// （用户裁定 2026-10-08：额度三分之二，派出三分之一和超额部分；杂种民兵优先挤出去当巡逻兵）。
+        /// 总兵力的 1/3 在外巡逻：在外的不够这个数就分批补派，原版民兵先出门，一批 10–25 人，够一批就派
+        /// （用户裁定 2026-10-08：按现有人数三分来派；杂种民兵优先挤出去当巡逻兵）。
+        /// 正在回村的巡逻队不算在外，它们回村以后下一批照派。
         /// </summary>
         private void DispatchPatrols(FaithVillage row, Settlement home)
         {
-            int spare = HomeDefenders(row, home) - HomeQuota(row);
+            int spare = PatrolShare(row, home) - MenOut(row.VillageId, FaithPartyKind.Patrol, FaithPartyPhase.Outbound);
             while (spare >= GwpTuning.Firesworn.PatrolMinimumSize)
             {
                 MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Patrol);
@@ -610,12 +622,12 @@ namespace GreyWardenPolicePurity
                     "party=" + party.StringId + "; home=" + home.StringId + "; men=" + record.Men +
                     "; militiaMen=" + party.MemberRoster.GetTroopRoster().Where(entry => !IsGuardTroop(entry.Character)).Sum(entry => entry.Number) +
                     "; kitItems=" + kits + "; guard=" + Sworn(row) + "; defenders=" + HomeDefenders(row, home) +
-                    "; quota=" + HomeQuota(row) + "; cap=" + GuardCap(row));
+                    "; force=" + VillageForce(row, home) + "; share=" + PatrolShare(row, home) + "; cap=" + GuardCap(row));
             }
         }
 
         /// <summary>
-        /// 坏人走到村口（<see cref="Intruder"/>）就紧急出动：从留村的人里拉上限的 1/3（原版民兵先出），村里始终留下上限的 1/3；
+        /// 坏人走到村口（<see cref="Intruder"/>）就紧急出动：从留村的人里拉总兵力的 1/3（原版民兵先出），村里始终留下总兵力的 1/3；
         /// 一次只出一队。走原版普通巡逻，围着本村转，见敌由原版自己判断打不打，不用巡逻队那套主动追击；
         /// 坏人离开村口那一圈就回家，抓没抓到都回（用户裁定 2026-10-08）。
         /// </summary>
@@ -627,8 +639,8 @@ namespace GreyWardenPolicePurity
             MobileParty? intruder = Intruder(home);
             if (intruder == null)
                 return;
-            int kept = (int)Math.Ceiling(GuardCap(row) * GwpTuning.Firesworn.ResponseShare);
-            int size = Math.Min(kept, HomeDefenders(row, home) - kept);
+            int third = PatrolShare(row, home);
+            int size = Math.Min(third, HomeDefenders(row, home) - third);
             if (size < GwpTuning.Firesworn.PatrolMinimumSize)
                 return;
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Response);
