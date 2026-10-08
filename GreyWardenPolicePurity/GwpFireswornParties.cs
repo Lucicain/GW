@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -114,10 +115,50 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void Patrol(FaithParty record, MobileParty party, Settlement home)
         {
+            party.Ai.SetInitiative(1f, 1f, GwpTuning.Firesworn.PatrolHours);
+            MobileParty? prey = PatrolPrey(party, home);
+            if (prey != null)
+            {
+                GreyWardenPartyDesireBehavior.RequestRush(party, prey, GwpTuning.Firesworn.FaithPartyVisitScore, 2d);
+                return;
+            }
             Settlement center = PatrolCenter(party, home);
             record.TargetId = center.StringId;
-            party.Ai.SetInitiative(1f, 1f, GwpTuning.Firesworn.PatrolHours);
             GreyWardenPartyDesireBehavior.RequestBeat(party, center, GwpTuning.Firesworn.FaithPartyVisitScore);
+        }
+
+        /// <summary>
+        /// 巡逻队要追的敌人：身边原版「追击敌军」那么大的范围内（C#反编译 v1.4.8 AiEngagePartyBehavior：遭遇距离 × 45），
+        /// 和灰袍交战、打得过（战力比它弱）的队，挑最近的。匪、逃兵、交战势力的领主和巡逻队都算；村民、商队、民兵、驻军不算，
+        /// 待在聚落里、正在打仗的不算。每小时重挑：跑出这个范围、离本村超过一个城距、或者打不过了就放下，回去巡逻。
+        /// 原版巡逻队只靠见敌时的那一下判断：身边约三倍遭遇半径内、比对方快才追，追出那一圈就不追了
+        /// （DefaultMobilePartyAIModel.GetBestInitiativeBehavior）；用户 2026-10-08：打得过就应该追，出了一定范围就不追了。
+        /// </summary>
+        private static MobileParty? PatrolPrey(MobileParty party, Settlement home)
+        {
+            float radius = Campaign.Current.Models.EncounterModel.NeededMaximumLandDistanceForEncounteringMobileParty * 45f;
+            float leash = Campaign.Current.GetAverageDistanceBetweenClosestTwoTownsWithNavigationType(MobileParty.NavigationType.Default);
+            float ours = GwpStrength.Party(party);
+            MobileParty? best = null;
+            float bestDistance = float.MaxValue;
+            LocatableSearchData<MobileParty> search = MobileParty.StartFindingLocatablesAroundPosition(party.Position.ToVec2(), radius);
+            for (MobileParty other = MobileParty.FindNextLocatable(ref search); other != null; other = MobileParty.FindNextLocatable(ref search))
+            {
+                if (!other.IsActive || other == party || other.CurrentSettlement != null || other.MapEvent != null ||
+                    other.IsCurrentlyAtSea || other.IsVillager || other.IsCaravan || other.IsMilitia || other.IsGarrison ||
+                    GwpStrength.CombatGroupOf(other) != other ||
+                    !FactionManager.IsAtWarAgainstFaction(party.MapFaction, other.MapFaction) ||
+                    home.GetPosition2D.Distance(other.Position.ToVec2()) > leash ||
+                    GwpStrength.CombatGroup(other) >= ours)
+                    continue;
+                float distance = party.Position.ToVec2().Distance(other.Position.ToVec2());
+                if (distance < bestDistance)
+                {
+                    best = other;
+                    bestDistance = distance;
+                }
+            }
+            return best;
         }
 
         /// <summary>
@@ -275,7 +316,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 每天一次，只在信众村：祭司已是最强就看要不要派传教队；再看要不要派运械队、卖货队。
-        /// 传教队、运械队照比武大会派（<see cref="IsFestivalDay"/>），卖货队隔几天看货值。守村队超上限就派巡逻队，正在办仪式也派。
+        /// 传教队、运械队照比武大会派（<see cref="IsFestivalDay"/>），卖货队隔几天看货值。巡逻队每小时看（<see cref="DispatchAllPatrols"/>）。
         /// </summary>
         private void DispatchFaithParties()
         {
@@ -291,8 +332,6 @@ namespace GreyWardenPolicePurity
                     TryDispatchBalance(row, home, now);
                     TryDispatchMarket(row, home, now);
                 }
-                // 巡逻队不等仪式：烧人锁村 24 小时，每天这一刻差一点没解锁，烧完多出来的人要隔两天才出门（实机诊断 2026-10-08）。
-                DispatchPatrols(row, home);
             }
         }
 
@@ -434,6 +473,20 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 守村队超出上限的人分批出去巡逻，一批 10–25 人，够一批就派（用户裁定 2026-10-08：多批次派出，在村子周围抓匪回来烧）。
         /// </summary>
+        /// <summary>
+        /// 每小时看一次，守村队超上限够一批就派，不等仪式、不要求祭司（用户裁定 2026-10-08：只要能派，派出的积极性要高）。
+        /// 以前跟着每天一次的派队走：巡逻队回村要等到第二天；烧人锁村 24 小时，每天这一刻差一点没解锁，烧完多出来的人隔两天才出门（实机诊断 2026-10-08）。
+        /// </summary>
+        private void DispatchAllPatrols()
+        {
+            foreach (FaithVillage row in _villages.Values.ToList())
+            {
+                Settlement home = Settlement.Find(row.VillageId);
+                if (IsVillageQuiet(home))
+                    DispatchPatrols(row, home);
+            }
+        }
+
         private void DispatchPatrols(FaithVillage row, Settlement home)
         {
             int spare = Sworn(row) - GuardCap(row);

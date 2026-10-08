@@ -626,13 +626,6 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        /// <summary>烈火责罚每烧一人从公库付钱。调用方已按余额算好人数。</summary>
-        internal static void SpendJudicialTreasury(int amount)
-        {
-            if (amount > 0)
-                PoliceStats.GetPoliceClan().Leader.ChangeHeroGold(-amount);
-        }
-
         internal static void RefundJudicialTreasury(int amount) =>
             CreditJudicialTreasury(amount);
 

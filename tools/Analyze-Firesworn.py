@@ -110,11 +110,9 @@ def main():
         income["信众队卖货"] += num(data.get("proceedsToTreasury"))
     for hour, data in by_stage["DEFENCE_SPOILS"]:
         income["守村金币"] += num(data.get("goldToTreasury"))
-    spend = sum(num(data.get("cost")) for _, data in by_stage["DAMNATION"])
     print("\n== 收支（这段时间合计）")
     for key, value in income.items():
         print(f"   {key}: {value:.0f}（每天 {value / days:.0f}）")
-    print(f"   烈火责罚支出: {spend:.0f}")
     cargo = sum(num(data.get("cargoValue")) for _, data in by_stage["MARKET_DISPATCHED"])
     sold = sum(num(data.get("proceeds")) for _, data in by_stage["MARKET_SOLD"])
     if cargo:

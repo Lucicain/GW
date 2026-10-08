@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 PoliceResourceManager 删掉兵员纯化，本文件的经济规则不变
+> 已复核至：2026-10-08 烧人不再从公库扣钱（删 SpendJudicialTreasury）
 > 覆盖源码：`GwpLandlessShipTradePatch.cs` `PoliceResourceManager.cs`
 > 待实测：无
 
@@ -32,7 +32,6 @@
 | 付给玩家的办案报酬、押人收购、撤案辛苦费 | 见 `player-commission.md`、`player-justice.md`；公库不够时付得出多少付多少 |
 | 封地申诉失效退款 | 50,000 |
 | 重建失败退款 | 当次经费 |
-| 烈火责罚 | 每烧 1 人 20（见 `firesworn-economy.md`） |
 
 - 每天检查一次：引擎把灰袍家族标记为已消灭时，把这个标记改回去。
 

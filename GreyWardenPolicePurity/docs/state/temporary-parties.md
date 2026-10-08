@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26）；同日补的解散入口还船、还不回去的船销毁、玩家被俘仍还给玩家三条是防线，正常游戏难触发
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-07 兵员纯化删掉（PoliceResourceManager），本文件其余行为不变
+> 已复核至：2026-10-08 PoliceResourceManager 删掉烧人扣钱，本文件行为不变
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs`
 > 待实测：无。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
 

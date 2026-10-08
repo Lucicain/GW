@@ -236,9 +236,11 @@ namespace GreyWardenPolicePurity
             if (PoliceEnforcementBehavior.IsAuthorizedAssistanceTarget(party, target))
                 return true;
 
+            // 火誓者巡逻队直扑的是它挑好的、打得过的交战方（GwpFireswornBehavior.PatrolPrey）。
             if (party != null && Intents.TryGetValue(party.StringId, out Intent? intent) &&
                 intent.ExpiresAt >= CampaignTime.Now.ToHours &&
-                (intent.Kind == IntentKind.Approach || intent.Kind == IntentKind.Pursue) &&
+                (intent.Kind == IntentKind.Approach || intent.Kind == IntentKind.Pursue ||
+                 intent.Kind == IntentKind.Rush && GwpFireswornBehavior.IsFaithPatrol(party)) &&
                 intent.Party == target)
                 return true;
 

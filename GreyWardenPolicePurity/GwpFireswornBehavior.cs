@@ -503,6 +503,7 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SMOKE", ClearExpiredSmoke);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PATROLS", DispatchAllPatrols);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_GUARD", () =>
             {

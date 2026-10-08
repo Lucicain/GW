@@ -183,8 +183,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 一场烈火责罚，每烧一个（人或户）公库付 GwpTuning.Firesworn.DamnationCostPerHead，不够就少烧（用户裁定）；
-        /// 一场最多烧守村队那么多（人和户一起算，用户裁定 2026-10-08：烧人太厉害）：
+        /// 一场烈火责罚，最多烧守村队那么多（人和户一起算，用户裁定 2026-10-08：烧人太厉害）；不花钱（用户裁定 2026-10-08）：
         /// <list type="number">
         /// <item>地牢里的俘虏，成对烧。</item>
         /// <item>本村传教到头（祭司已是本地最强）以后才烧本村（用户裁定 2026-10-07）：
@@ -199,7 +198,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void HoldDamnation(FaithVillage row, Settlement village)
         {
-            int budget = Math.Min(Sworn(row), PoliceResourceManager.GetJudicialTreasuryBalance() / GwpTuning.Firesworn.DamnationCostPerHead);
+            int budget = Sworn(row);
             Dictionary<CharacterObject, int> produced = new Dictionary<CharacterObject, int>();
             int prisonersBurned = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
                 ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced)
@@ -226,8 +225,6 @@ namespace GreyWardenPolicePurity
             if (prisonersBurned + militiaBurned + householdsBurned <= 0)
                 return;
 
-            int cost = (prisonersBurned + militiaBurned + householdsBurned) * GwpTuning.Firesworn.DamnationCostPerHead;
-            PoliceResourceManager.SpendJudicialTreasury(cost);
             double now = CampaignTime.Now.ToHours;
             row.LastDamnation = now;
             int before = row.Households;
@@ -268,7 +265,7 @@ namespace GreyWardenPolicePurity
             });
             GwpAiDiagnostics.WriteFaith("DAMNATION",
                 "village=" + village.StringId + "; prisonersBurned=" + prisonersBurned + "; militiaBurned=" + militiaBurned +
-                "; householdsBurned=" + householdsBurned + "; householdsSworn=" + householdsSworn + "; cost=" + cost +
+                "; householdsBurned=" + householdsBurned + "; householdsSworn=" + householdsSworn +
                 "; produced=" + string.Join(",", produced.Select(pair => pair.Key.StringId + ":" + pair.Value)) +
                 "; addedToGuard=" + risen + "; households=" + before + "->" + row.Households +
                 "; hearth=" + hearthBefore.ToString("0") + "->" + village.Village.Hearth.ToString("0") + "; guard=" + Sworn(row) +
