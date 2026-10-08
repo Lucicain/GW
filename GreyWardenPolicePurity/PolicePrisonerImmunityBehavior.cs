@@ -51,10 +51,11 @@ namespace GreyWardenPolicePurity
             {
                 PartyBase? partyBase = involvedParty?.Party;
                 MobileParty? mobileParty = partyBase?.MobileParty;
-                Hero? leader = mobileParty?.LeaderHero
-                               ?? partyBase?.LeaderHero
-                               ?? mobileParty?.Owner
-                               ?? partyBase?.Owner;
+                // 只看真正带队的英雄，不退到部队的所有者：火誓者无人队、纠察队等无领主队的所有者是灰袍族长，
+                // 以前它们一打输就把族长当成败将强制逃亡，原版 MakeHeroFugitiveAction 第一步就销毁她正带着的部队
+                // （C#反编译 v1.4.8 MakeHeroFugitiveAction.ApplyInternal；实机诊断 2026-10-08：每次 FAITH_PARTY_LOST 同一时刻
+                // gw_leader_0 HERO_BECAME_FUGITIVE，至少 6 次；她带着协力军团时留下空壳军团，下一个整点闪退）。
+                Hero? leader = mobileParty?.LeaderHero ?? partyBase?.LeaderHero;
                 if (leader == null || string.IsNullOrWhiteSpace(leader.StringId))
                     continue;
 

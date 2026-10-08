@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-167 个源文件、52,157 行、323 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
+167 个源文件、52,158 行、323 个公开类型、72 个 Harmony 补丁点（分布在 72 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -528,7 +528,7 @@
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
 - `PoliceEnforcementBehavior.AtonementQuest.cs` — 254 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
-- `PolicePrisonerImmunityBehavior.cs` — 121 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
+- `PolicePrisonerImmunityBehavior.cs` — 122 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.CaseLifecycle.cs` — 119 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceShipModels.cs` — 99 行 · `PoliceShipModelSupport` : CampaignShipDamageModel，另含 2 个类型
 - `PoliceEnforcementBehavior.WarPursuitTrace.cs` — 86 行 · `PoliceEnforcementBehavior`
