@@ -4,6 +4,8 @@ using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Map;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -38,6 +40,8 @@ namespace GreyWardenPolicePurity
                 MobileParty party = FindParty(record.PartyId)!;
                 Settlement home = Settlement.Find(record.HomeId);
                 if (party.MapEvent != null)
+                    continue;
+                if (IsWatch(record.Kind) && record.Phase != FaithPartyPhase.Home && DefendHome(party, home))
                     continue;
 
                 switch (record.Phase)
@@ -113,6 +117,22 @@ namespace GreyWardenPolicePurity
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// 本村正在挨打（比如被劫掠）：在外的巡逻队、紧急队都赶回去，能加入守方就直扑进攻方的带头那支（用户裁定 2026-10-08：
+        /// 强敌来烧村，在外的巡逻队都得回来帮忙）。原版只让和守方都不交战、和攻方都交战的队加入
+        /// （C#反编译 v1.4.8 MapEvent.CanPartyJoinBattle），灰袍和劫掠方没交战时加入不了，这时照常回村等着。
+        /// 返回这个小时是不是去帮忙了。
+        /// </summary>
+        private static bool DefendHome(MobileParty party, Settlement home)
+        {
+            MapEvent? battle = home.Party.MapEvent;
+            MobileParty? attacker = battle?.AttackerSide.LeaderParty?.MobileParty;
+            if (battle == null || attacker == null || !battle.CanPartyJoinBattle(party.Party, BattleSideEnum.Defender))
+                return false;
+            GreyWardenPartyDesireBehavior.RequestRush(party, attacker, GwpTuning.Firesworn.FaithPartyVisitScore, 2d);
+            return true;
         }
 
         private static void Travel(MobileParty party, Settlement destination)
@@ -415,6 +435,36 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
+        /// 照 <see cref="DrawMen"/> 拉人的先后（原版民兵里没受伤的，再守村队最高级的）估一队 <paramref name="size"/> 人的战力，不真拉人。
+        /// 照原版 DefaultMilitaryPowerModel.GetPowerOfParty：每个没受伤的兵按兵种战力（GetTroopPower，Estimated，无领主）加起来；
+        /// 士气打折在 40 以上不起作用（无人队约 48），不算。
+        /// </summary>
+        private float SquadStrength(FaithVillage row, Settlement home, int size)
+        {
+            MilitaryPowerModel model = Campaign.Current.Models.MilitaryPowerModel;
+            float strength = 0f;
+            int left = size;
+            MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
+            IEnumerable<(CharacterObject troop, int count)> pool =
+                (militia?.IsActive == true && militia.MapEvent == null
+                    ? militia.MemberRoster.GetTroopRoster()
+                        .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character))
+                        .Select(entry => (entry.Character, entry.Number - entry.WoundedNumber))
+                    : Enumerable.Empty<(CharacterObject, int)>())
+                .Concat(GuardOf(row.VillageId).GetTroopRoster().OrderByDescending(entry => entry.Character.Tier)
+                    .Select(entry => (entry.Character, entry.Number)));
+            foreach ((CharacterObject troop, int count) in pool)
+            {
+                int take = Math.Min(left, count);
+                if (take <= 0)
+                    continue;
+                strength += take * model.GetTroopPower(troop, BattleSideEnum.Defender, MapEvent.PowerCalculationContext.Estimated, 0f);
+                left -= take;
+            }
+            return strength;
+        }
+
+        /// <summary>
         /// 先补到 <paramref name="minimum"/> 人，比 <paramref name="danger"/> 弱就一个个加人，加到打得过或到 <paramref name="maximum"/> 为止，
         /// 家里守村队至少留 5 人；最后从家里军械库拿最好的那几套（装备只拿一次）。返回拿了几件。
         /// </summary>
@@ -667,8 +717,11 @@ namespace GreyWardenPolicePurity
                 int room = Math.Min(third - MenOut(row.VillageId, FaithPartyKind.Response), HomeDefenders(row, home) - third);
                 if (room < GwpTuning.Firesworn.PatrolMinimumSize)
                     return;
-                MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Response);
                 float danger = GwpStrength.CombatGroup(intruder);
+                // 不去送菜：能派的最大那一队都打不过就不出门（用户裁定 2026-10-08）。
+                if (SquadStrength(row, home, Math.Min(room, GwpTuning.Firesworn.PatrolMaximumSize)) <= danger)
+                    continue;
+                MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Response);
                 int kits = ManToBeat(party, row, home, GwpTuning.Firesworn.PatrolMinimumSize,
                     Math.Min(room, GwpTuning.Firesworn.PatrolMaximumSize), danger, true);
                 FaithParty record = _faithParties[party.StringId];
