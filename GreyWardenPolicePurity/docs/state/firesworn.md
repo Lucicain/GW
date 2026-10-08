@@ -2,7 +2,7 @@
 
 > 当前状态：传教、烧人、守村队按 2026-10-07 用户裁定重做，已部署待实测；配图颜色经用户确认；声音单次播放待实测；数值是试玩值
 > 最后验收：未建立检查点（配图颜色用户 2026-10-07 确认；声音未验收）
-> 已复核至：2026-10-08 GwpFireswornBehavior：无领主队加紧急出动一种（Response），每小时派巡逻改名 DispatchWatches
+> 已复核至：2026-10-08 GwpFireswornBehavior.JoinGuard 改动，本文件规则不变
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `GwpFireswornArmoryView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：传教与烧人音效完整播放一次、关菜单立即停止；传教、烧人画面随机打出音效、不和地图声音叠；大地图上仪式期间村子放一遍闪卡音效、停一会儿再放、镜头远了听不到、仪式结束就停、音调正常；第一批底层牌第一版（试玩值）；信众村经济各项见 `firesworn-economy.md` 文末
 

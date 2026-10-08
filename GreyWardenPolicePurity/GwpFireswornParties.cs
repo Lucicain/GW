@@ -41,8 +41,6 @@ namespace GreyWardenPolicePurity
                 Settlement home = Settlement.Find(record.HomeId);
                 if (party.MapEvent != null)
                     continue;
-                if (IsWatch(record.Kind) && record.Phase != FaithPartyPhase.Home && DefendHome(party, home))
-                    continue;
 
                 switch (record.Phase)
                 {
@@ -105,10 +103,8 @@ namespace GreyWardenPolicePurity
                     case FaithPartyPhase.Returning:
                         if (IsWatch(record.Kind))
                             ReleaseHeroPrisoners(party);
-                        // 村里正在打仗时先在村口等着，打完再并入：民兵队在战斗里时守村队推不进去（PushGuard），
-                        // 打完那一小时读回民兵队，会把刚并进记录的人当成战死抹掉（ObserveGuard）。
-                        if (!HasArrived(party, home) || home.Party.MapEvent != null ||
-                            home.MilitiaPartyComponent?.MobileParty?.MapEvent != null)
+                        // 村里正在打仗也直接并入，人加进正在打的民兵队（JoinGuard、LodgePrisonersAndStrangers）。
+                        if (!HasArrived(party, home))
                         {
                             Travel(party, home);
                             break;
@@ -120,22 +116,6 @@ namespace GreyWardenPolicePurity
                         break;
                 }
             }
-        }
-
-        /// <summary>
-        /// 本村正在挨打（比如被劫掠）：在外的巡逻队、紧急队都赶回去，能加入守方就直扑进攻方的带头那支（用户裁定 2026-10-08：
-        /// 强敌来烧村，在外的巡逻队都得回来帮忙）。原版只让和守方都不交战、和攻方都交战的队加入
-        /// （C#反编译 v1.4.8 MapEvent.CanPartyJoinBattle），灰袍和劫掠方没交战时加入不了，这时照常回村等着。
-        /// 返回这个小时是不是去帮忙了。
-        /// </summary>
-        private static bool DefendHome(MobileParty party, Settlement home)
-        {
-            MapEvent? battle = home.Party.MapEvent;
-            MobileParty? attacker = battle?.AttackerSide.LeaderParty?.MobileParty;
-            if (battle == null || attacker == null || !battle.CanPartyJoinBattle(party.Party, BattleSideEnum.Defender))
-                return false;
-            GreyWardenPartyDesireBehavior.RequestRush(party, attacker, GwpTuning.Firesworn.FaithPartyVisitScore, 2d);
-            return true;
         }
 
         private static void Travel(MobileParty party, Settlement destination)
@@ -848,7 +828,8 @@ namespace GreyWardenPolicePurity
         /// 出门打赢了，原版把败方押着的普通俘虏直接编进 AI 胜方的队伍（C#反编译 v1.4.8 MapEvent.LootDefeatedPartyPrisoners、
         /// MapEventParty.RosterToReceiveLootMembers），这些就是队里的非灰袍兵。以前回村只并灰袍兵，这些人随队伍一起销毁，
         /// 卖货队常驻就一直带着（实机诊断 2026-10-08：巡逻队打赢劫匪后 25→28 人，回村并入 25）。
-        /// 原版民兵人数就是民兵队名单上的人数（Settlement.Militia），直接加进名单不会被原版改回。村里正在打仗、没有民兵队时并不进去，人随队伍走。
+        /// 原版民兵人数就是民兵队名单上的人数（Settlement.Militia），直接加进名单不会被原版改回；民兵正在打仗也加，下一轮模拟就上场
+        /// （见 <see cref="JoinGuard"/>）。没有民兵队时并不进去，人随队伍走。
         /// （用户裁定 2026-10-08：出门的队回来全部并入守村总数，非灰袍的本来就可能被烧；抓的俘虏进地牢）
         /// </summary>
         private int LodgePrisonersAndStrangers(MobileParty party, Settlement village, out int militiaJoined)
@@ -864,7 +845,7 @@ namespace GreyWardenPolicePurity
             }
             militiaJoined = 0;
             MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
-            if (militia?.IsActive != true || militia.MapEvent != null)
+            if (militia?.IsActive != true)
                 return prisoners;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster()
                          .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character)).ToList())

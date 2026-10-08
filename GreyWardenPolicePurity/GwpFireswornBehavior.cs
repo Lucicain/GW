@@ -1032,7 +1032,14 @@ namespace GreyWardenPolicePurity
             if (count <= 0)
                 return 0;
             GuardOf(row.VillageId).AddToCounts(troop, count);
-            PushGuard(row, village);
+            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+            // 民兵队正在打仗（比如村子被劫掠）：PushGuard 不碰它，按记录补齐会把战死的人补回来；新来的人直接加进民兵队，
+            // 原版纯 AI 的战斗每一轮模拟前按名单重新排兵（C#反编译 v1.4.8 MapEventSide.MakeReadyForSimulation → MapEventParty.Update），
+            // 下一轮就上场；打完 ObserveGuard 照幸存的人记（用户裁定 2026-10-08：巡逻队回来直接并入守村队，人数加进去一起打）。
+            if (militia?.IsActive == true && militia.MapEvent != null)
+                militia.MemberRoster.AddToCounts(troop, count);
+            else
+                PushGuard(row, village);
             _plans.Remove(row.VillageId);
             return count;
         }

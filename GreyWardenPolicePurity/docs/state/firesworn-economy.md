@@ -2,7 +2,7 @@
 
 > 当前状态：整套已部署待实测；数值是试玩值，经济暂不调整（用户裁定 2026-10-07）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 守村总兵力按现有人数三分，上限只管自己长不长
+> 已复核至：2026-10-08 JoinGuard：民兵在打仗时新来的人直接加进民兵队（规则见 firesworn-parties.md）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornRituals.cs` `GwpFireswornDungeon.cs` `GwpFireswornArmory.cs` `GwpFaithBattleRewardModel.cs` `GwpDamnationSmokePatch.cs`
 > 待实测：见文末
 
