@@ -20,8 +20,9 @@ namespace GreyWardenPolicePurity
     /// 每一处改动有名字，监控按名字记下来（用户裁定 2026-10-07：要知道领主为什么产生这个欲望，深层机制统一）。
     /// 只对灰袍领主改，原版领主和别的部队不受影响。改动：
     /// <list type="number">
-    /// <item>候选：原版只给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（FillSettlementsToVisitWithDistancesAsDays）。
-    /// 信众村像王国领主的本国聚落一样，只要在原版最远距离内都进候选。</item>
+    /// <item>候选：原版只给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（FillSettlementsToVisitWithDistancesAsDays：
+    /// 直线 0.5 天 × 1.6 以内）。灰袍是独立家族，信众村和城镇一样，路过身边才进候选（用户裁定 2026-10-08：路过才去）。
+    /// 以前信众村全图都进候选，俘虏半满就压过差事，跟人途中跑 60–126 格、16–86 小时回信众村交俘虏（实机诊断 2026-10-08）。</item>
     /// <item>招兵数：原版数要人格子里的兵；信众村再加上能直接招的狂信者（正在这里或刚走到门口时不加）；平均工资至少报 1（<see cref="VolunteersFor"/>）。</item>
     /// <item>打分（<see cref="Rescore"/>）：原版只给城堡城镇乘的俘虏、伤员、卖东西三项（合起来叫「需要」），信众村也乘，
     /// 「灰袍优先做信众村的事」的倍数放大的是需要高出 1 的那部分：1 + (需要 − 1) × 倍数。城堡城镇照原版不动：
@@ -44,6 +45,8 @@ namespace GreyWardenPolicePurity
             AccessTools.Method(typeof(AiVisitSettlementBehavior), "GetBestNavigationDataForVisitingSettlement");
         private static readonly MethodInfo GetMaximumDistance =
             AccessTools.Method(typeof(AiVisitSettlementBehavior), "GetMaximumDistanceAsDays");
+        private static readonly MethodInfo NeutralRadiusDays =
+            AccessTools.PropertyGetter(typeof(AiVisitSettlementBehavior), "SearchForNeutralSettlementRadiusAsDays");
 
         // 每位领主上一次打分时分最高的信众村，只给监控用；每小时重算，不存档。
         private static readonly Dictionary<string, string> LastBest = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -60,9 +63,13 @@ namespace GreyWardenPolicePurity
         {
             HashSet<Settlement> present = new HashSet<Settlement>(
                 candidates.Cast<object>().Select(entry => (Settlement)NavigationSettlement.GetValue(entry)));
+            // 原版独立家族的搜索半径：0.5 天 × 领主平均速度 × 24 × 1.6，直线距离。
+            float radius = (float)NeutralRadiusDays.Invoke(null, null) * Campaign.Current.EstimatedAverageLordPartySpeed *
+                           CampaignTime.HoursInDay * 1.6f;
             foreach (Settlement village in GwpFireswornBehavior.FaithVillages())
             {
-                if (present.Contains(village) || !(bool)IsSuitable.Invoke(null, new object[] { party, village }))
+                if (present.Contains(village) || party.Position.ToVec2().Distance(village.GetPosition2D) > radius ||
+                    !(bool)IsSuitable.Invoke(null, new object[] { party, village }))
                     continue;
                 object?[] args = { party, village, null, null, null, null };
                 GetNavigation.Invoke(null, args);
@@ -142,7 +149,7 @@ namespace GreyWardenPolicePurity
             Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
             // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
             float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
-            // 原版城堡城镇的俘虏项是整数除法、满了才乘 3；信众村连续算。
+            // 原版城堡城镇的俘虏项是整数除法、满了才乘 3；信众村连续算，地牢满了（软上限）就不算。
             float prisonerTerm = 1f + 2f * Math.Min(1f, prisoners / (float)prisonLimit);
 
             string best = "-";
@@ -163,7 +170,7 @@ namespace GreyWardenPolicePurity
                 else
                 {
                     // 倍数放大的是需要，不是底分；没事就是原版的闲逛分（用户裁定 2026-10-05：灰袍优先做信众村的事）。
-                    float need = prisonerTerm * woundTerm * sell;
+                    float need = (GwpFireswornBehavior.PrisonerRoom(settlement) > 0 ? prisonerTerm : 1f) * woundTerm * sell;
                     factor = Amplified(need);
                 }
                 float rescored = score * factor;

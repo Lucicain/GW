@@ -183,13 +183,15 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 一场烈火责罚，每烧一个（人或户）公库付 GwpTuning.Firesworn.DamnationCostPerHead，不够就少烧（用户裁定）：
+        /// 一场烈火责罚，每烧一个（人或户）公库付 GwpTuning.Firesworn.DamnationCostPerHead，不够就少烧（用户裁定）；
+        /// 一场最多烧守村队那么多（人和户一起算，用户裁定 2026-10-08：烧人太厉害）：
         /// <list type="number">
         /// <item>地牢里的俘虏，成对烧。</item>
         /// <item>本村传教到头（祭司已是本地最强）以后才烧本村（用户裁定 2026-10-07）：
         /// <list type="bullet">
         /// <item>原版民兵，成对烧，一次最多 2 + 户数/200 个。这时信众村已不再出新民兵，烧掉旧的就是把守村队纯化，不是长期道路。</item>
-        /// <item>不信教的户：现有信众户每 3 户烧 1 户，不超过不信教的户数。烧死的那户从户数里去掉，换来 1 户信教；
+        /// <item>不信教的户：现有信众户每 3 户烧 1 户。烧死的那户从户数里去掉，换来 1 户信教，所以每烧 1 户用掉 2 户不信教的，
+        /// 先扣掉烧俘虏、民兵已经感化的；
         /// 不给守村队加兵——那些人家本来没有兵，守村队靠补兵自己长。一场涨得不多，要多烧几场（用户裁定 2026-10-07）。</item>
         /// </list></item>
         /// </list>
@@ -197,7 +199,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void HoldDamnation(FaithVillage row, Settlement village)
         {
-            int budget = PoliceResourceManager.GetJudicialTreasuryBalance() / GwpTuning.Firesworn.DamnationCostPerHead;
+            int budget = Math.Min(Sworn(row), PoliceResourceManager.GetJudicialTreasuryBalance() / GwpTuning.Firesworn.DamnationCostPerHead);
             Dictionary<CharacterObject, int> produced = new Dictionary<CharacterObject, int>();
             int prisonersBurned = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
                 ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced)
@@ -215,9 +217,11 @@ namespace GreyWardenPolicePurity
                         militia.MemberRoster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)),
                         Math.Min(budget, militiaLimit), produced);
                 budget -= militiaBurned;
-                int unbelievers = Math.Max(0, HouseholdCap(village) - row.Households);
+                // 以前没扣烧俘虏感化的户、也没算烧掉的那户本身，户数减了以后信众户被压到等于户数，一场就 100%
+                // （实机诊断 2026-10-08：烧 226 人、60 户，信众户 181→249 = 户数，日志里立誓户 −46）。
+                int unbelievers = Math.Max(0, HouseholdCap(village) - row.Households - produced.Values.Sum());
                 householdsBurned = Math.Min(budget,
-                    Math.Min(unbelievers, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
+                    Math.Min(unbelievers / 2, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
             }
             if (prisonersBurned + militiaBurned + householdsBurned <= 0)
                 return;

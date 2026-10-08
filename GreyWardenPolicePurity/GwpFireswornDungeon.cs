@@ -93,17 +93,29 @@ namespace GreyWardenPolicePurity
                    element.ItemModifier == null && !item.HorseComponent.IsPackAnimal;
         }
 
+        /// <summary>
+        /// 地牢还收得下几个：软上限是本村信众户数（用户裁定 2026-10-08）。满了领主就不交、也不再想来交，
+        /// 改去附近别的信众村或照原版进城卖（<see cref="GwpWardenVisitDesire.Rescore"/>）；巡逻队押回来的照收，超出的留着慢慢烧。
+        /// </summary>
+        internal static int PrisonerRoom(Settlement village) =>
+            _instance != null && _instance._villages.TryGetValue(village.StringId, out FaithVillage? row)
+                ? Math.Max(0, row.Households - RosterOf(_instance._dungeons, village.StringId).TotalManCount)
+                : 0;
+
         private void HandOver(MobileParty party, Settlement village)
         {
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
+            int room = PrisonerRoom(village);
             int prisoners = 0;
-            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
+            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster()
+                         .Where(entry => !entry.Character.IsHero).OrderByDescending(entry => entry.Character.Tier).ToList())
             {
-                if (element.Character.IsHero)
-                    continue;
-                dungeon.AddToCounts(element.Character, element.Number);
-                party.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
-                prisoners += element.Number;
+                int take = Math.Min(element.Number, room - prisoners);
+                if (take <= 0)
+                    break;
+                dungeon.AddToCounts(element.Character, take);
+                party.PrisonRoster.AddToCounts(element.Character, -take, false, -Math.Min(take, element.WoundedNumber));
+                prisoners += take;
             }
 
             ItemRoster goods = ItemsOf(_goods, village.StringId);

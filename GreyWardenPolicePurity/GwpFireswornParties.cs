@@ -54,12 +54,13 @@ namespace GreyWardenPolicePurity
                         ReleaseHeroPrisoners(party);
                         if (now - record.PhaseHour >= GwpTuning.Firesworn.PatrolHours ||
                             party.MemberRoster.TotalHealthyCount < record.Men * GwpTuning.Firesworn.PatrolReturnHealthyShare ||
-                            party.PrisonRoster.TotalManCount >= party.Party.PrisonerSizeLimit || !IsVillageQuiet(home))
+                            party.PrisonRoster.TotalManCount >= party.Party.PrisonerSizeLimit || !IsVillageQuiet(home) ||
+                            GuardShortfall(record.HomeId) > 0)
                         {
                             SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
                             break;
                         }
-                        Patrol(party, home);
+                        Patrol(record, party, home);
                         break;
 
                     case FaithPartyPhase.Outbound:
@@ -108,14 +109,66 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 巡逻：照原版巡逻队围着本村转（原版 PatrolPartiesCampaignBehavior 下注 PatrolAroundPoint，圆心是本城和属村），
-        /// 见了匪就打。主动性拉满，打不过就躲（原版 SetInitiative 第二项）。
+        /// 巡逻：照原版巡逻队下注 PatrolAroundPoint，见了匪就打。主动性拉满，打不过就躲（原版 SetInitiative 第二项）。
+        /// 巡区每小时重挑（<see cref="PatrolCenter"/>），挑中的记在 TargetId 里。
         /// </summary>
-        private static void Patrol(MobileParty party, Settlement home)
+        private void Patrol(FaithParty record, MobileParty party, Settlement home)
         {
+            Settlement center = PatrolCenter(party, home);
+            record.TargetId = center.StringId;
             party.Ai.SetInitiative(1f, 1f, GwpTuning.Firesworn.PatrolHours);
-            GreyWardenPartyDesireBehavior.RequestBeat(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
+            GreyWardenPartyDesireBehavior.RequestBeat(party, center, GwpTuning.Firesworn.FaithPartyVisitScore);
         }
+
+        /// <summary>
+        /// 巡区照原版巡逻队挑（C#反编译 v1.4.8 PatrolPartiesCampaignBehavior.AiHourlyTick、
+        /// DefaultTargetScoreCalculatingModel.CalculateDefensivePatrollingScoreForSettlement）：候选是本村、本村所属的城和那座城的各属村；
+        /// 分 = (1 + 附近威胁) × 随机 0.2–1.8 × 聚落系数（村 1.2、正被劫掠的村 1.5、城 0.9），已有别的巡逻队在那儿的按队数摊薄。
+        /// 附近威胁是敌对强度减四分之一友军强度，超过 1 开四次方。原版只在聚落和巡逻队同一势力时看威胁、随机数（小势力）每周换；
+        /// 信众村不属灰袍，这里直接看威胁，随机数每天换，五天里能把一片村子轮一遍。
+        /// 原来只围着本村 7 格以内转，100 小时只碰到 5 次匪，一仗没打（实机诊断 2026-10-08）。
+        /// </summary>
+        private Settlement PatrolCenter(MobileParty party, Settlement home)
+        {
+            Clan police = PoliceStats.GetPoliceClan();
+            Settlement town = home.Village.Bound;
+            return new[] { home, town }.Concat(town.BoundVillages.Select(village => village.Settlement)).Distinct()
+                .Where(settlement => settlement == home || !FactionManager.IsAtWarAgainstFaction(police, settlement.MapFaction))
+                .OrderByDescending(settlement => PatrolScore(party, settlement))
+                .First();
+        }
+
+        private float PatrolScore(MobileParty party, Settlement settlement)
+        {
+            float threat = Math.Max(0f, settlement.NearbyLandThreatIntensity - settlement.NearbyLandAllyIntensity * 0.25f);
+            float threatTerm = 1f + (threat > 1f ? (float)Math.Pow(Math.Min(10f, threat), 0.25f) : threat);
+            float place = !settlement.IsVillage ? 0.9f : settlement.IsUnderRaid ? 1.5f : 1.2f;
+            float roll = settlement.RandomFloatWithSeed((uint)CampaignTime.Now.ToDays, 0.2f, 1.8f);
+            int others = _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Patrol &&
+                entry.Phase == FaithPartyPhase.Outbound && entry.PartyId != party.StringId &&
+                string.Equals(entry.TargetId, settlement.StringId, StringComparison.OrdinalIgnoreCase));
+            return threatTerm * roll * place / (1 + others);
+        }
+
+        /// <summary>
+        /// 守村队比上限少几个，扣掉已经在回村路上的巡逻队。大于 0 就叫巡逻队回村补上（用户裁定 2026-10-08：守军变少，巡逻队回来补上），
+        /// 比如领主在村里直接招走了狂信者。
+        /// </summary>
+        private int GuardShortfall(string villageId)
+        {
+            if (!_villages.TryGetValue(villageId, out FaithVillage? row))
+                return 0;
+            int returning = _faithParties.Values
+                .Where(entry => entry.Kind == FaithPartyKind.Patrol && entry.Phase == FaithPartyPhase.Returning &&
+                                string.Equals(entry.HomeId, villageId, StringComparison.OrdinalIgnoreCase))
+                .Sum(entry => FindParty(entry.PartyId)?.MemberRoster.TotalManCount ?? 0);
+            return GuardCap(row) - Sworn(row) - returning;
+        }
+
+        /// <summary>这是一支火誓者巡逻队（<see cref="GwpFaithPatrolInitiativePatch"/> 用）。</summary>
+        internal static bool IsFaithPatrol(MobileParty party) =>
+            _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
+            record.Kind == FaithPartyKind.Patrol;
 
         /// <summary>
         /// 巡逻队打赢抓到的英雄当场放走，只押普通俘虏回村（用户裁定 2026-10-08）。英雄从来不进地牢、不会被烧。
@@ -222,7 +275,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 每天一次，只在信众村：祭司已是最强就看要不要派传教队；再看要不要派运械队、卖货队。
-        /// 传教队、运械队照比武大会派（<see cref="IsFestivalDay"/>），卖货队隔几天看货值。
+        /// 传教队、运械队照比武大会派（<see cref="IsFestivalDay"/>），卖货队隔几天看货值。守村队超上限就派巡逻队，正在办仪式也派。
         /// </summary>
         private void DispatchFaithParties()
         {
@@ -230,11 +283,15 @@ namespace GreyWardenPolicePurity
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 Settlement home = Settlement.Find(row.VillageId);
-                if (FindLivingPriest(row) == null || !IsVillageQuiet(home) || HasRitual(home))
+                if (!IsVillageQuiet(home))
                     continue;
-                TryDispatchMission(row, home, now);
-                TryDispatchBalance(row, home, now);
-                TryDispatchMarket(row, home, now);
+                if (FindLivingPriest(row) != null && !HasRitual(home))
+                {
+                    TryDispatchMission(row, home, now);
+                    TryDispatchBalance(row, home, now);
+                    TryDispatchMarket(row, home, now);
+                }
+                // 巡逻队不等仪式：烧人锁村 24 小时，每天这一刻差一点没解锁，烧完多出来的人要隔两天才出门（实机诊断 2026-10-08）。
                 DispatchPatrols(row, home);
             }
         }
@@ -387,7 +444,7 @@ namespace GreyWardenPolicePurity
                 FaithParty record = _faithParties[party.StringId];
                 record.Men = party.MemberRoster.TotalManCount;
                 SetPhase(record, FaithPartyPhase.Outbound, home.StringId);
-                Patrol(party, home);
+                Patrol(record, party, home);
                 spare -= record.Men;
                 GwpAiDiagnostics.WriteFaith("PATROL_DISPATCHED",
                     "party=" + party.StringId + "; home=" + home.StringId + "; men=" + record.Men + "; kitItems=" + kits +
