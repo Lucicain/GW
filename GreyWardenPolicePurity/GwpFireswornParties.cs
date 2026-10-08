@@ -105,7 +105,10 @@ namespace GreyWardenPolicePurity
                     case FaithPartyPhase.Returning:
                         if (IsWatch(record.Kind))
                             ReleaseHeroPrisoners(party);
-                        if (!HasArrived(party, home))
+                        // 村里正在打仗时先在村口等着，打完再并入：民兵队在战斗里时守村队推不进去（PushGuard），
+                        // 打完那一小时读回民兵队，会把刚并进记录的人当成战死抹掉（ObserveGuard）。
+                        if (!HasArrived(party, home) || home.Party.MapEvent != null ||
+                            home.MilitiaPartyComponent?.MobileParty?.MapEvent != null)
                         {
                             Travel(party, home);
                             break;
