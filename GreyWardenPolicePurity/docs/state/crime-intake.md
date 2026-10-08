@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 被俘豁免只认带队英雄，不再把无领主队的所有者（族长）当败将
+> 已复核至：2026-10-08 撤回「被俘豁免只认带队英雄」（无领主队改为建队时所有者留空，见 firesworn-parties.md）
 > 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
 > 待实测：无
 
@@ -84,4 +84,3 @@
 - 灰袍家族成员被俘，或在战败的一方，立即变成逃亡状态，不进俘虏营。
 - 例外：被玩家俘虏，或玩家在战胜的一方。（依据：设计）
 - 战败的灰袍要等遍历完参战名单后再处理，否则会改动正在遍历的名单。
-- 「战败的灰袍」只认真正带队的英雄，不认部队的所有者：无领主队（火誓者巡逻队、纠察队等）的所有者是灰袍族长，以前它们一打输就让族长逃亡，原版逃亡第一步销毁她正带的部队，族长平白消失。（依据：C#反编译 v1.4.8 MakeHeroFugitiveAction；实机诊断 2026-10-08：每次火誓者巡逻队被打掉，同一时刻 gw_leader_0 逃亡，至少 6 次）
