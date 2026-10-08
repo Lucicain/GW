@@ -4,8 +4,6 @@ using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Map;
-using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -420,14 +418,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 照 <see cref="DrawMen"/> 拉人的先后（原版民兵里没受伤的，再守村队最高级的）估一队 <paramref name="size"/> 人的战力，不真拉人。
-        /// 照原版 DefaultMilitaryPowerModel.GetPowerOfParty：每个没受伤的兵按兵种战力（GetTroopPower，Estimated，无领主）加起来；
-        /// 士气打折在 40 以上不起作用（无人队约 48），不算。
+        /// 照 <see cref="DrawMen"/> 的顺序选择一队 <paramref name="size"/> 人，不真拉人：健康原版民兵优先，再守村队最高级的。
+        /// 战力换算交给 GwpStrength.LeaderlessRoster；选兵策略留在本系统。
         /// </summary>
-        private float SquadStrength(FaithVillage row, Settlement home, int size)
+        private IEnumerable<(CharacterObject Troop, int Count)> SquadTroops(FaithVillage row, Settlement home, int size)
         {
-            MilitaryPowerModel model = Campaign.Current.Models.MilitaryPowerModel;
-            float strength = 0f;
             int left = size;
             MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
             IEnumerable<(CharacterObject troop, int count)> pool =
@@ -443,10 +438,9 @@ namespace GreyWardenPolicePurity
                 int take = Math.Min(left, count);
                 if (take <= 0)
                     continue;
-                strength += take * model.GetTroopPower(troop, BattleSideEnum.Defender, MapEvent.PowerCalculationContext.Estimated, 0f);
+                yield return (troop, take);
                 left -= take;
             }
-            return strength;
         }
 
         /// <summary>
@@ -704,7 +698,7 @@ namespace GreyWardenPolicePurity
                     return;
                 float danger = GwpStrength.CombatGroup(intruder);
                 // 不去送菜：能派的最大那一队都打不过就不出门（用户裁定 2026-10-08）。
-                if (SquadStrength(row, home, Math.Min(room, GwpTuning.Firesworn.PatrolMaximumSize)) <= danger)
+                if (GwpStrength.LeaderlessRoster(SquadTroops(row, home, Math.Min(room, GwpTuning.Firesworn.PatrolMaximumSize))) <= danger)
                     continue;
                 MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Response);
                 int kits = ManToBeat(party, row, home, GwpTuning.Firesworn.PatrolMinimumSize,

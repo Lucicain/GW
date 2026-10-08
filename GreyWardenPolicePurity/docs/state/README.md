@@ -41,15 +41,18 @@
 ```
 > 当前状态：<已部署待实测 / 用户已实测确认 / 调查中未改代码 / 已明确不做>
 > 最后验收：<commit hash 或"未建立检查点">
-> 已复核至：<可选；读过但确认不影响本文件的最新提交，一个哈希加日期>
+> 已复核至：`abcdef0`（YYYY-MM-DD）
 > 覆盖源码：<反引号包起来的文件名或 glob>
 > 待实测：<一句话；多条就写"见文末"并在文末列「## 待实测」；没有就写"无">
 ```
 
-`最后验收` 是**人在游戏里确认行为**时对应的提交，重构不要动它。提交只在用户宣布功能开发结束时做，所以大多数时候这里写「未建立检查点」——新鲜度检查会退而用本文件自己最后一次入库的提交做比较基准。纯重构、加诊断这类
-读过并确认无影响的改动写进 `已复核至`。
+`最后验收` 是**人在游戏里确认行为**时对应的提交，重构不要动它；未验收就写「未建立检查点」。
+`已复核至` 可选，只写实际核对过的源码提交与复核日期，不代表实机验收，也不冒充本轮未产生的提交。
+头部格式错误或提交不存在会得到提示，不增加提交硬闸。新鲜度检查同时参考该文件最近提交；它不能证明正文正确。
+提交时机只按仓库根目录 [AGENTS.md](../../../AGENTS.md)「提交可以自己做，发版和推送等用户提」，本页不另设规则。（依据：流程）
 
 头部每项一行，超过 200 字会被检查点名：`已复核至` 只留最新一次，历次经过写 journal。
+文档内容涉及多个职责时按归属拆分，不能通过拼长行或删有效规则保持在 250 行以内；同一行为的其他提及改成链接。（依据：用户裁定 2026-10-08）
 `待实测` 只写在子系统自己的文件里；`progress.md` 的「待实测汇总」由检查脚本从这些头部生成，不手写。
 
 ## 怎么知道 state 文件已经过期
@@ -126,9 +129,13 @@ python tools/Check-StateFreshness.py
 | [`warden-recruitment.md`](warden-recruitment.md) | 灰袍照原版招兵、信众村的祭司格子与直接招狂信者、灰袍兵不领饷 |
 | [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮 |
-| [`firesworn.md`](firesworn.md) | 火誓者：用户裁定、原版挂点、信众村、狂信者、祭司、仪式锁村 |
-| [`firesworn-economy.md`](firesworn-economy.md) | 信众村经济：信众户与守村队、祭司势力与格子、传教、地牢与烧人、军械库、守村收益、保护费——已部署待实测 |
-| [`firesworn-parties.md`](firesworn-parties.md) | 火誓者的无领主队：传教队、运械队、卖货队——已部署待实测 |
+| [`firesworn.md`](firesworn.md) | 火誓者设定、子系统入口、待定设计 |
+| [`firesworn-villages.md`](firesworn-villages.md) | 信众户、守村队、祭司、势力与志愿兵格子 |
+| [`firesworn-rituals.md`](firesworn-rituals.md) | 集会、烈火责罚、锁村、冒烟与存档 |
+| [`firesworn-media.md`](firesworn-media.md) | 已验收的仪式配图、地图声与菜单声、素材身份 |
+| [`firesworn-armory.md`](firesworn-armory.md) | 军械账本、配装、缴获、战损与开发版查看 |
+| [`firesworn-economy.md`](firesworn-economy.md) | 捐赠、地牢、货仓、守村收益、保护费与公库 |
+| [`firesworn-parties.md`](firesworn-parties.md) | 传教、运械、卖货、巡逻与紧急出动 |
 
 ### 战斗
 

@@ -2,8 +2,8 @@
 
 > 当前状态：机械卫生检查通过；人工复核发现通用 Guard 依据与覆盖范围不匹配；客户端偶发原生退出崩溃根因未定
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 已复核至：`774d2e2`（2026-10-08）
-> 覆盖源码：跨文件，不做自动核对
+> 已复核至：`a898237`（2026-10-08）
+> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs`
 > 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 
 ## 客户端退出阶段的原生故障
@@ -78,14 +78,12 @@
 
 ## 共享概念的归属
 
-已知缺陷：`GwpFireswornParties.SquadStrength` 在归属方之外调用 `GetTroopPower` 估算未组队士兵的地图战力，`Check-CodeHygiene.py` 的 OWNERS 没覆盖该调用。选兵顺序仍应归火誓者，通用战力换算应归 `GwpStrength`；本轮只核查，未改实现。（依据：源码复核 2026-10-08）
-
 同一个判断写两份迟早分叉（2026-10-07 查出：战力三种算法、「是不是灰袍」8 份私有副本、案件状态 11 个文件都能改、
 8 份手抄的差事避让清单；修补都只修了出问题的那一份）。现在每个共享概念只有一个归属方：
 
 | 概念 | 归属 | 别处直接用就会被拦的写法 |
 |---|---|---|
-| 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTotalLandStrength*` |
+| 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
 | 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool`/`CrimeState` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
 | 差事占用 | `GwpWardenDuties` | 其他系统的占用判断（`IsVillageReliefParty` 等） |
@@ -94,8 +92,9 @@
 `tools/Check-CodeHygiene.py` 机械检查这张表，并找函数体完全相同的两个方法（重写的引擎事件除外）；
 预提交钩子遇到就拒绝提交。出现新的共享概念时，给它一个归属，在脚本的 `OWNERS` 里加一行。（依据：用户裁定 2026-10-07）
 
-## 文档与流程复核
+## 接手与机械检查
 
-- 火誓者总览与经济文档各 249 行，经济文档最近 12 次改动均为 249 行；总览并非连续 12 次都为 249 行。问题不只是长度：经济正文写冒烟 24 小时，待实测仍写两天；总览/队伍正文仍残留「带家人落户」，与 10-08 只加守村队、不加信众户的规则冲突。应按村庄、仪式媒体、军械库归属拆分并消除重复，队伍已有独立文档。本轮未拆分。（依据：源码历史与 state 对照 2026-10-08）
-- 35 份实际含「已复核至」的文档中 18 份没有提交号（不计 README 模板）；检查器因此退回文档自己的最近提交，仍能机械核对，但失去人工声明的复核点。格式提示比新增提交硬闸更符合现行 AGENTS 的机械闸范围；此项仅建议，未恢复检查。（依据：脚本与头部统计 2026-10-08）
-- AGENTS 允许已构建、测试、部署的完整修复成为稳定点；README 仍写「只在用户宣布功能开发结束时提交」，与入口规则不一致。10-08 本轮前已有 31 次存档，包含不同功能，也包含同一问题几分钟内改后再撤；次数不能单独判违规。建议同一问题未定方案的试改合到稳定点，独立修复分开；未修改提交规则或已有历史。（依据：AGENTS 与存档历史复核 2026-10-08）
+- 战力归属包括尚未组队的士兵：`GwpStrength.LeaderlessRoster` 负责换算，火誓者只提供选出的兵种和数量；战力计算参数与整理前一致。
+- 火誓者按村庄、仪式、媒体、军械库、经济和队伍拆分，入口在 [firesworn.md](firesworn.md)。文档保留当前规则与验收项，旧说法只在 journal 追溯。
+- `Check-StateFreshness.py` 提示复核头部的格式、日期或提交不存在；不会新增提交硬闸。格式规范与提交稳定点只在 [AGENTS.md](../../../AGENTS.md) 定义。
+- `python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、复核头部、提示与硬闸的区别。机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）

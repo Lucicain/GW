@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 招兵使者建队时所有者留空（填族长会在它打输时让族长逃亡），其余规则不变
+> 已复核至：`8195141`（2026-10-08）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
 

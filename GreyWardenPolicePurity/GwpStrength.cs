@@ -107,6 +107,21 @@ namespace GreyWardenPolicePurity
             return offender?.IsActive == true ? CombatGroup(CombatGroupOf(offender)) : 0f;
         }
 
+        /// <summary>
+        /// 尚未建队、无领主的健康士兵估算。调用方决定兵源、顺序和人数，本入口只负责战力换算。
+        /// 保持原 SquadStrength 的 Estimated / Defender / 0f 参数；不计低士气折扣（出村队约 48）。
+        /// 已存在部队仍用 Party，避免绕过原版部队的其他修正。（依据：C#反编译、实机诊断 2026-10-08）
+        /// </summary>
+        internal static float LeaderlessRoster(IEnumerable<(CharacterObject Troop, int Count)> troops)
+        {
+            var model = Campaign.Current.Models.MilitaryPowerModel;
+            float strength = 0f;
+            foreach ((CharacterObject troop, int count) in troops)
+                strength += count * model.GetTroopPower(troop, BattleSideEnum.Defender,
+                    MapEvent.PowerCalculationContext.Estimated, 0f);
+            return strength;
+        }
+
         /// <summary>一支部队自己的战力：原版 <c>PartyBase.EstimatedStrength</c>。</summary>
 
         internal static float Party(MobileParty? party)
@@ -1046,4 +1061,3 @@ namespace GreyWardenPolicePurity
     }
 
 }
-

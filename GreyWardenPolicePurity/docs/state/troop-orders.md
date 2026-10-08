@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-07 纯化删掉：练兵队退回的外来兵留在练兵官队里
+> 已复核至：`01b0265`（2026-10-07）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：无
 

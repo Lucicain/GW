@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：2026-10-07 狂信者等级 6→11（2 阶，见 `firesworn.md`），不影响本文件
+> 已复核至：`75c1c7c`（2026-10-07）
 > 覆盖源码：`GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpAgentStatCalculateModel.cs` `_Module/ModuleData/spnpccharacters.xml` `_Module/ModuleData/items.xml` `_Module/ModuleData/gwp_monsters.xml`
 > 待实测：无
 

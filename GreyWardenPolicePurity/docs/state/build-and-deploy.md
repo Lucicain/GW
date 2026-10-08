@@ -2,13 +2,17 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`774d2e2`（2026-10-08）
+> 已复核至：`a898237`（2026-10-08）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
 > 待实测：无
 
 ## 当前开发部署
 
-当前 live 为 `774d2e2` 验收后的声音诊断退役版，播放行为不变。2026-10-08 开发/无诊断隔离构建均 0 警告/错误，Client/Editor SHA-256 均为 `3b10d8396f5ac486035986508158e28f818af5b24c83f121415348537e1434fd`。74 个仓库 runtime 文件无缺失、差异或散落，开发布局与诊断通过；GameCompat / Preflight 通过（717 类型、86 补丁，成员/绑定失败 0；少 1 类型为移除的声音 Probe）。声音离线检查 31 项通过，用户已确认实际听感完全修复，临时声音检查壳随调查退休；DLL 中两类声音诊断串已消失。ContentKeys 上轮 MISSING=0，本轮未改内容文件；案件/战斗/双刀测试未重跑。（依据：本轮构建、检查、哈希与用户验收 2026-10-08）
+当前 live 为 `a898237` 基础上的战力归属整理版：未组队估算改由 `GwpStrength` 统一提供，选兵与数值参数不变；声音保持已验收实现。2026-10-08 开发版与无诊断隔离构建均 0 警告/错误；Client/Editor SHA-256 同为 `47a110a26a074b63b9c65b0b7263f56535fbff06c103c1cc40933a1552a56437`。
+
+74 个仓库 runtime 文件无缺失、差异或散落，开发布局与诊断通过。GameCompat / Preflight 通过：718 类型、86 补丁，成员/绑定失败 0；比上个开发版多 1 个类型来自 `SquadTroops` 的编译器迭代器。ContentKeys 无缺失、无重复，检查器 6 项回归通过。机械新鲜度和代码卫生全零；文档拆分与复核头部整理不等于玩法验收。案件、战斗和双刀逻辑未动，专属测试本轮未重跑。（依据：构建、离线检查与哈希 2026-10-08）
+
+本轮进游戏只需顺路观察村口有敌人时的紧急出动是否仍正常；完整玩法待实测项见各子系统，声音无需重复专项验收。
 
 ## 两个开关决定一切
 
@@ -46,9 +50,9 @@
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
-| `Check-StateFreshness.py` | 报 state 过期、新增未归属源码、改到未提取子系统、state 堆积流水、豁免数 | 被点名的当轮处理 |
-| `Check-CodeHygiene.py` | 每个不重新抛出的 catch 都带 `依据：`；每个常量、字段、属性、方法都有人引用。预提交钩子据此拒绝提交 | `0 个 catch 缺依据 / 0 个声明无人引用` |
-| `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `firesworn-economy.md`「监控」） | 不是闸门，读结果 |
+| `Check-StateFreshness.py` | 报 state 过期、源码归属、state 堆积、复核头部格式/日期/提交存在性与遗留物；生成进度汇总 | 被点名的当轮处理 |
+| `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体；预提交硬闸 | 四项全零 |
+| `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `diagnostics.md`「火誓者监控字段」） | 不是闸门，读结果 |
 
 `Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1`、`Verify-CrimeReceipts.ps1` 两边都能跑。两个 `.py` 检查用 python。
 
@@ -56,6 +60,7 @@
 
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
+| `tests/test_project_checks.py` | 6 | 战力归属漏检、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
 | `BattleSceneTests` | 137 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 27 | 双刀 AI 与踢/盾击互斥 |
 | `MusicTests` | 58770640 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |

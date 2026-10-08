@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-07 重建完成、在门口办完的请愿在聚落名牌上有动态（GwpSettlementNotices）；重建给 5% 狂信者、不拉祭司
+> 已复核至：`83e9b39`（2026-10-07）
 > 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs`
 > 待实测：无
 
@@ -36,7 +36,7 @@
 - 到村后施工 24 小时，然后：
   - 扣经费，把村子血量补满，原版据此把村子恢复成正常状态；
   - 公库加 3,000；
-  - 把当地 5% 的人换成狂信者（重建算传教）；不拉祭司，比例够了才来祭司、成信众村（用户裁定 2026-10-07，见 `firesworn.md`）。
+  - 把当地 5% 的人换成狂信者（重建算传教）；不拉祭司，比例够了才来祭司、成信众村（用户裁定 2026-10-07，见 `firesworn-villages.md`）。
   
   原版状态没有切回正常时，经费退还。
 - 有待重建的村子时，重建本职不接普通案件；已经接了重建的人都保留着，不被普通案件抢走。

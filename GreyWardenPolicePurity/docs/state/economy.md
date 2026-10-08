@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 烧人不再从公库扣钱（删 SpendJudicialTreasury）
+> 已复核至：`8e32a10`（2026-10-08）
 > 覆盖源码：`GwpLandlessShipTradePatch.cs` `PoliceResourceManager.cs`
 > 待实测：无
 

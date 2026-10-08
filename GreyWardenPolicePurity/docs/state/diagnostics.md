@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；入国来源与自动换装候选取证随修复合入 main，已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`774d2e2`（2026-10-08）
+> 已复核至：`a898237`（2026-10-08）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
@@ -61,13 +61,35 @@
 骑兵伤害调查的 `GreyWarden-Knight-Damage.log`、`GreyWarden-Warhorse-Damage.log`（含 `.previous`）已于 2026-09-25 随诊断退休删除，
 不再可读；结论在 journal。
 
+## 火誓者监控字段
+
+`GreyWarden-AI-Diagnostics.log` 里所有 `| FIRESWORN |` 行，按 stage 分：
+
+| 类别 | stage |
+|---|---|
+| 每日快照 | `DAILY_VILLAGE`（火誓者人数与比例、守村队构成、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
+| 火誓者来源 | `SWORN_GROWTH`（灰袍所到、挂户数、补兵 regrown）、`RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
+| 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
+| 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
+| 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED` |
+| 无领主队 | `FAITH_PARTY_FORMED`、`BALANCE_DISPATCHED`、`BALANCE_DELIVERED`、`MARKET_DISPATCHED`、`MARKET_SOLD`、`FAITH_PARTY_HOME`、`FAITH_PARTY_TURNED_BACK`、`FAITH_PARTY_LOST` |
+| 领主进村意愿 | `DAILY_LORD` 和领主类异常里的 `faithVisit`：上一小时分最高的信众村和分数 |
+| 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
+| 保护费 | `PROTECTION_FEE` |
+| 仪式画面 | `RITUAL_MENU_SHOWN` |
+| 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`PRISONERS_PILING`、`LORD_HOLDING_AT_SETTLEMENT`、`LORD_UNDERSTRENGTH`、`PRIEST_SLOTS_EMPTY`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`ARMORY_NON_POSITIVE`、`TREASURY_LOW` |
+
+**分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。只取最近一次启动游戏以来的监控行（含中途滚动归档的部分），
+输出总览与收支、每座有火誓者的村子（人数来源、守村队、祭司势力、军械库按类）、新信众村出现的速度、每位领主、无领主队与仪式、异常汇总，
+最后按阈值列出需要看的平衡问题。
+
 ## 在役
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
-| `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见 `firesworn-economy.md`「监控」） | 信众村经济整套待实测：看俘虏、地牢、烧人、两支常驻队、领主进村、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
+| `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：看俘虏、地牢、烧人、各类无领主队、领主进村、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |

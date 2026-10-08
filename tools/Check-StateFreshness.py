@@ -4,8 +4,8 @@ code-map.md cannot rot — it is generated. The behaviour files are hand-written
 so they can, in five ways this script looks for:
 
 1. Covered source changed and the document did not follow.
-   Commits are rare here (only when the user declares a feature finished), so
-   most drift lives in the working tree: a covered source file is modified but
+   Check both work in progress and completed checkpoints. Working-tree drift
+   means a covered source file is modified but
    the state file is not. Committed drift is measured from the newest of the
    file's 已复核至 / 最后验收 commit and the last commit that touched the state
    file itself.
@@ -51,6 +51,7 @@ code hygiene.
 """
 
 import re
+from datetime import date
 import subprocess
 import sys
 from fnmatch import fnmatch
@@ -66,6 +67,7 @@ ACCEPT_RE = re.compile(r"^>\s*最后验收：(.*)$", re.M)
 # not move for a refactor. "已复核至" records a later commit whose changes were
 # read and found not to affect this document.
 REVIEW_RE = re.compile(r"^>\s*已复核至：(.*)$", re.M)
+REVIEW_VALUE_RE = re.compile(r"`([0-9a-f]{7,40})`（(\d{4}-\d{2}-\d{2})）")
 COVER_RE = re.compile(r"^>\s*覆盖源码：(.*)$", re.M)
 HASH_RE = re.compile(r"`([0-9a-f]{7,40})`")
 GLOB_RE = re.compile(r"`([^`]+)`")
@@ -159,6 +161,23 @@ def dirty(*paths: str) -> list:
     return [ln[3:] for ln in done.stdout.splitlines() if len(ln) > 3]
 
 
+def review_header_problem(text: str) -> str:
+    """Advisory only; missing optional headers are allowed, changelog prose is not."""
+    headers = REVIEW_RE.findall(text)
+    if not headers:
+        return ""
+    if len(headers) != 1:
+        return "已复核至只能有一行"
+    match = REVIEW_VALUE_RE.fullmatch(headers[0].strip())
+    if not match:
+        return "应为 `提交号`（YYYY-MM-DD），改动说明放正文或 journal"
+    try:
+        date.fromisoformat(match[2])
+    except ValueError:
+        return "复核日期无效"
+    return ""
+
+
 def main() -> int:
     sys.stdout.flush()
     subprocess.run([sys.executable, str(ROOT / "tools" / "Generate-CodeMap.py")])
@@ -171,6 +190,7 @@ def main() -> int:
     stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
     unsourced = []   # hard rules with no 依据：tag
     dangling = []    # scratch paths named in state that no longer exist
+    review_problems = []  # advisory, never a pre-commit gate
     hand_written = 0
 
     for p in files:
@@ -178,6 +198,14 @@ def main() -> int:
         if "自动生成" in text[:400]:
             continue
         hand_written += 1
+
+        problem = review_header_problem(text)
+        if problem:
+            review_problems.append((p.name, problem))
+        elif match := REVIEW_RE.search(text):
+            commit = HASH_RE.search(match[1])[1]
+            if not git("rev-parse", "--verify", f"{commit}^{{commit}}"):
+                review_problems.append((p.name, f"复核提交 {commit} 不存在"))
 
         # 5. hard rules that do not say what they rest on
         for n, line in enumerate(text.splitlines(), 1):
@@ -270,6 +298,12 @@ def main() -> int:
             print(f"  {name}  {'，'.join(bits)}")
         print()
 
+    if review_problems:
+        print("[!] 复核头部需整理（提示，不拦提交）：\n")
+        for name, problem in review_problems:
+            print(f"  {name}: {problem}")
+        print()
+
     if unsourced:
         print(f"[!] {len(unsourced)} 条硬规则没有标依据 —— 有了更强的调查方法时，分不清该复查哪条：")
         print()
@@ -311,7 +345,7 @@ def main() -> int:
     findings = {
         "可能过期": stale, "堆积流水": bloated, "新增未归属": orphans_new,
         "未提取子系统被改": baseline_touched, "无法核对": unchecked,
-        "硬规则缺依据": unsourced, "待实测写法有误": rollup_problems,
+        "硬规则缺依据": unsourced, "复核头部有误": review_problems, "待实测写法有误": rollup_problems,
         "引用的临时文件不存在": dangling, "journal 重复条目": journal_dups,
         "遗留分支/工作树/stash": leftovers, "临时目录无主项": scratch,
         "记忆只有 Claude 看得到": memory_unmirrored,

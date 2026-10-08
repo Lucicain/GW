@@ -5,7 +5,7 @@ User ruling 2026-10-05: a fallback must have actually caught something; one that
 fired is garbage. The same goes for constants and members nothing uses: they outlive the
 mechanism they were written for, and then mislead whoever reads them.
 
-Two checks over GreyWardenPolicePurity/*.cs:
+Checks over GreyWardenPolicePurity/*.cs:
 
 1. Every catch that does not rethrow carries "依据：" in its body, naming the recorded
    failure it caught (method, date, what). Without one, do not write the catch: let the
@@ -14,7 +14,10 @@ Two checks over GreyWardenPolicePurity/*.cs:
    declaration (in C#, the module XML/GUI files, or tools/). Members the engine calls
    by convention are excluded below, each with its reason.
 
-Exit status 1 when either check finds anything. The pre-commit hook blocks on it.
+3. Shared judgements are accessed through their owner (OWNERS below).
+4. Identical method bodies use one implementation, except engine overrides.
+
+Exit status 1 when any check finds anything. The pre-commit hook blocks on it.
 """
 import glob
 import os
@@ -108,7 +111,8 @@ def match_brace(s, mask, i):
 
 
 def read(path):
-    return open(path, encoding="utf-8-sig").read()
+    with open(path, encoding="utf-8-sig") as source:
+        return source.read()
 
 
 def unproven_catches(files):
@@ -178,7 +182,7 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
-    ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTotalLandStrength\w*\s*\(",
+    ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTroopPower\s*\(|\bGetTotalLandStrength\w*\s*\(",
      "GwpStrength.cs", "GwpStrength"),
     ("进聚落意愿", r"\[HarmonyPatch\(typeof\(AiVisitSettlementBehavior\)", "GwpWardenVisitDesire*.cs", "GwpWardenVisitDesire"),
     ("灰袍身份", r"\bPoliceClanId\b", "GwpCommon.cs|GwpIds.cs|GwpData.cs", "GwpCommon.IsGreyWarden*"),

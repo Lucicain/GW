@@ -18,13 +18,13 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 火誓者：信众村、祭司、守村队、地牢与烧人、传教、信众队、军械库
-    /// （docs/state/firesworn.md、firesworn-economy.md）。
+    /// （docs/state/firesworn.md 为入口，各分系统独立维护）。
     ///
     /// 有火誓者的村子在 <see cref="_villages"/> 里有一条记录；有了祭司才算信众村（用户裁定 2026-10-07）。
     /// 两本账（用户裁定 2026-10-07：兵走了家还在；2026-10-08：两户出一个兵）：
     /// <list type="bullet">
     /// <item>信众户（<see cref="FaithVillage.Households"/>）：信教的人家，不超过户数。火誓者比例 = 信众户 ÷ 户数。</item>
-    /// <item>守村队（<see cref="_guards"/>）：信众户出的兵，不超过 <see cref="GuardCap"/>。和原版民兵站在同一支民兵队里，
+    /// <item>守村队（<see cref="_guards"/>）：信众户出的兵，自己补兵不超过 <see cref="GuardCap"/>，外来并入和烧人产兵可超过。和原版民兵站在同一支民兵队里，
     /// 原版民兵照原版增长、参战，是烧人的原料。兵被招走、战死、出门，信众户和户数都不变，守村队慢慢补回。</item>
     /// </list>
     ///
@@ -884,7 +884,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 火誓者每天怎么长（用户裁定 2026-10-07：前期只靠烧俘虏和本村传教太慢；挂户数；灰袍所到之处促进增长）：
         /// <list type="bullet">
-        /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村多两户信众、各出一个狂信者；
+        /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村多两户信众、在守村队上限内补兵；
         /// 还没有火誓者的村子就此有了守村队（GwpTuning.Firesworn.WardenPresenceDailySworn，试玩值）。</item>
         /// <item>挂户数：原版这座村今天新增的户里，按火誓者比例那部分是信众户，各出一个狂信者
         /// （C#反编译 v1.4.8 DefaultSettlementProsperityModel.CalculateHearthChange：不到 300 户每天 +4、不到 600 户 +1.2、再多 +0.2）。</item>

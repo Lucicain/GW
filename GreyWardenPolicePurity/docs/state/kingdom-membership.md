@@ -2,7 +2,7 @@
 
 > 当前状态：入国拦截、读档离国已上线（v1.4-r14 同号替换包与 main 均含）；读档离国经用户确认可用
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：`58195c6`（2026-10-07）
 > 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1`
 > 待实测：另存读档后仍保持独立、原案件能继续；修复后不再出现新的入国
 

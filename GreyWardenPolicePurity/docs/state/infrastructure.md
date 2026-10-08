@@ -2,11 +2,13 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 GwpTuning：HomeGuardShare、ResponseShare 合成 WatchShare
+> 已复核至：`a898237`（2026-10-08）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
+
+未组队战力归属整理回退点为 `a898237`：`GwpStrength.cs`、`GwpFireswornParties.cs` 和 `tools/Check-CodeHygiene.py`。只迁移未组队士兵的估算入口，兵源、顺序、人数与估算参数不变。
 
 ## 身份判据（`GwpCommon`、`GwpIds`）
 
@@ -31,7 +33,7 @@
 ## 战力判断（`GwpStrength`）
 
 大地图上「谁比谁强」只在这里算：立案门槛、悬赏难度、派单、协力编成、现场宣战、野外执法都调它。
-（依据：设计 2026-10-07；归属检查拦截直接读 `EstimatedStrength` / `GetPowerOfParty`）
+（依据：设计 2026-10-07；归属检查拦截直接读 `EstimatedStrength` / `GetPowerOfParty` / `GetTroopPower` / `GetTotalLandStrength*`）
 
 - 口径照原版 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior`：单队用 `PartyBase.EstimatedStrength`；
   战斗组 = 攻城营总和 / 已挂靠的军团 / 本队；区域战力加加入半径内圈全额、外到两倍半径线性折算的
@@ -39,6 +41,7 @@
 - 名义上属于某军团、还在赶去会合的部队**不**算进那支军团，只算它自己——原版 `Army.EstimatedStrength`
   也只数军团长和已挂靠的成员。（依据：C#反编译 2026-10-07；实机诊断 2026-09-26）
 - `CaseTarget`（目标本身多强，不含路过的人）给立案门槛和悬赏难度；`Compare`（现场双方）给现场宣战和野外执法。
+- `LeaderlessRoster` 给尚未建队的无领主健康士兵估算战力；调用方只提供兵种、顺序与人数，本入口累加原版 `GetTroopPower`（Defender、Estimated、领主修正 0f）。已有部队仍用 `Party`，不绕过部队修正。
 - 战斗场景内的兵力（配乐、战场支援）按 Agent 算，是另一回事，不走这里。
 
 ## 调参（`GwpTuning`）

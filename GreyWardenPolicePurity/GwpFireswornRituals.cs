@@ -48,7 +48,7 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>每天一次：有祭司、祭司还不是本地最强、离上次传教够 15 天的信众村，祭司在本村开集会传教。</summary>
+        /// <summary>每天一次：有祭司、祭司还不是本地最强、离上次传教满仪式间隔（试玩值 10 天）的信众村，祭司在本村开集会传教。</summary>
         private void ScheduleCongregations()
         {
             double now = CampaignTime.Now.ToHours;
@@ -104,8 +104,8 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 烈火责罚
 
         /// <summary>
-        /// 每天一次，只在信众村（有祭司）。地牢里俘虏够数、离上次烧够 5 天就烧俘虏；
-        /// 祭司已是本地最强（本地传教到头）时，在本村每季固定的那一周里、离上次烧够 15 天，按概率烧韭菜。
+        /// 每天一次，只在信众村（有祭司）。烧人与集会各自计算仪式间隔（试玩值 10 天），满间隔后每天按概率举办；
+        /// 同一场先烧俘虏；祭司已是本地最强时，再烧原版民兵和不信教的户。
         /// </summary>
         private void ScheduleDamnations()
         {
