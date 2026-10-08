@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`58195c6`（2026-10-07；共享判断改调 GwpStrength / GwpCommon / GwpWardenDuties / 案件统一入口，本文件行为不变）
+> 已复核至：2026-10-08 GwpPartySizeLimitModel 也给火誓者无领主队抬编制上限
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs`
 > 待实测：无
 
@@ -24,6 +24,7 @@
 - 刚成年的灰袍最后一定穿灰袍领主套装。后置补丁挂在原版成年回调本身上，不依赖事件监听器的注册顺序（`GwpAdultCommanderLoadoutPatch`）。
 - 部队上限：家族可组建的部队数至少等于成年灰袍领主人数（`PoliceClanTierModel`）。
 - 无领主的随行练兵队按订单人数抬高编制上限。原版无领主队只有 20 人的底数，超编会大幅减速（`GwpPartySizeLimitModel`，见 `troop-orders.md`）。
+  火誓者的无领主队同样不低于现有人数（见 `firesworn-parties.md`）。
 
 ## 本职
 
