@@ -75,8 +75,7 @@
 
 - `FailAssistanceCase` 按 `Released` 撤人留案，不销案。
 - **目标正在打仗时不判失败**：`offenderParty.MapEvent != null || leader.MapEvent != null`
-  直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。所以承办人正在打仗时也不新建协力组：
-  协办的人加入不了这一仗，凑不够兵又不判失败，建出来的组和军团只剩承办人一个人挂着。（依据：实机诊断 2026-10-08：gw_leader_2 战斗中途建出 members=0 的协力军团）
+  直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。所以承办人正在打仗时也不新建协力组（协办的人加入不了这一仗，凑不够又不判失败，组和军团只剩承办人挂着；实机诊断 2026-10-08）。
 - 防空转：`GwpTuning.Enforcement.AssistanceFailureCooldownHours = 72`，退回台账的案子
   72 小时内不再被指派。冷却只活在本次运行内（读档后最多多试一次，无害）。
 - 改追最近案件（`RetargetOrdinaryCasesToNearest`）等于接新案，候选同样要过冷却与

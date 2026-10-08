@@ -2,8 +2,8 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：2026-10-08 协力军团带头部队没了时不再拦原版解散（闪退根因）
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpNavalArmyCohesionFaultPatch.cs`
+> 已复核至：2026-10-08 删除 GwpNavalArmyCohesionFaultPatch（空壳军团已从源头堵上，它一次没拦到过）
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
@@ -139,4 +139,3 @@
 - 只有成功完成的普通差事，才计入玩家请求的顺延（`GwpPlayerRequestDeferral`）。取消、被挤掉、失效的不算。
 
 - 协力军团的保护补丁拦原版的自动解散，但带头部队没了（`LeaderPartyRemoved`、`ArmyLeaderIsDead`，或带头部队已失效）时不拦：原版在部队销毁时解散军团，拦下以后部队被清空家族、移出全图名单，案件系统再也找不到它，留下没有带头部队的空壳军团，每小时算凝聚力时 NavalDLC 查军团长文化特长读到空的所属势力，游戏闪退。（依据：C#反编译 v1.4.8 MobileParty.RemoveParty / OnRemoveParty、Army.OnRemovePartyInternal、PartyBaseHelper.HasFeat、PartyBase.Culture；实机诊断 2026-10-08：两次闪退都在带协力军团的灰袍领主部队被打光后的下一个整点）
-- `GwpNavalArmyCohesionFaultPatch` 仍接住这个方法的空引用，记 `ARMY_COHESION_FEAT_FAULT`（读取全部防空），凝聚力退回原版算法。
