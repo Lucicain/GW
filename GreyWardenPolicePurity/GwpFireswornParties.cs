@@ -526,19 +526,11 @@ namespace GreyWardenPolicePurity
                 goods.AddToCounts(element.EquipmentElement, element.Amount);
                 party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
             }
+            int prisoners = LodgePrisonersAndStrangers(party, village, out int militiaJoined);
             int joined = 0;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
                 if (IsGuardTroop(element.Character))
                     joined += JoinGuard(row, village, element.Character, element.Number);
-            int prisoners = 0;
-            TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
-            ReleaseHeroPrisoners(party);
-            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
-            {
-                dungeon.AddToCounts(element.Character, element.Number);
-                party.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
-                prisoners += element.Number;
-            }
             bool backHome = string.Equals(village.StringId, record.HomeId, StringComparison.OrdinalIgnoreCase);
             bool preaching = record.Kind == FaithPartyKind.Mission && !backHome && IsVillageQuiet(village) && !HasRitual(village);
             if (preaching)
@@ -558,7 +550,8 @@ namespace GreyWardenPolicePurity
                 "party=" + party.StringId + "; home=" + record.HomeId + "; village=" + village.StringId +
                 "; backHome=" + backHome + "; preaching=" + preaching + "; prisoners=" + prisoners +
                 "; hours=" + (CampaignTime.Now.ToHours - record.PhaseHour).ToString("0") +
-                "; joined=" + joined + "; households=" + before + "->" + row.Households + "; guard=" + Sworn(row) + "; kitItems=" + kits +
+                "; joined=" + joined + "; militiaJoined=" + militiaJoined + "; households=" + before + "->" + row.Households +
+                "; guard=" + Sworn(row) + "; kitItems=" + kits +
                 "; share=" + SwornShare(row, village).ToString("0.00") + "; armed=" + ArmedShare(village.StringId).ToString("0.00") +
                 "; priest=" + (FindLivingPriest(row) != null));
         }
@@ -609,8 +602,43 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>卖货队回村：钱进公库，自己那几套还给村里的军械库，没卖掉的放回货仓，停在村里。</summary>
+        /// <summary>
+        /// 无领主队进村落脚时交人（传教队、运械队、巡逻队到了就并入，卖货队回家）：押着的普通俘虏进地牢，英雄当场放走；
+        /// 队里不是灰袍兵种的人并进这座村的原版民兵，和村里别的原版民兵一样，祭司最强以后会被烧。灰袍兵由调用方并进守村队。
+        /// 出门打赢了，原版把败方押着的普通俘虏直接编进 AI 胜方的队伍（C#反编译 v1.4.8 MapEvent.LootDefeatedPartyPrisoners、
+        /// MapEventParty.RosterToReceiveLootMembers），这些就是队里的非灰袍兵。以前回村只并灰袍兵，这些人随队伍一起销毁，
+        /// 卖货队常驻就一直带着（实机诊断 2026-10-08：巡逻队打赢劫匪后 25→28 人，回村并入 25）。
+        /// 原版民兵人数就是民兵队名单上的人数（Settlement.Militia），直接加进名单不会被原版改回。村里正在打仗、没有民兵队时并不进去，人随队伍走。
+        /// （用户裁定 2026-10-08：出门的队回来全部并入守村总数，非灰袍的本来就可能被烧；抓的俘虏进地牢）
+        /// </summary>
+        private int LodgePrisonersAndStrangers(MobileParty party, Settlement village, out int militiaJoined)
+        {
+            ReleaseHeroPrisoners(party);
+            TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
+            int prisoners = 0;
+            foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
+            {
+                dungeon.AddToCounts(element.Character, element.Number);
+                party.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
+                prisoners += element.Number;
+            }
+            militiaJoined = 0;
+            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+            if (militia?.IsActive != true || militia.MapEvent != null)
+                return prisoners;
+            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster()
+                         .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character)).ToList())
+            {
+                militia.MemberRoster.AddToCounts(element.Character, element.Number, false, element.WoundedNumber);
+                party.MemberRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
+                militiaJoined += element.Number;
+            }
+            return prisoners;
+        }
+
         private void ArriveHome(FaithParty record, MobileParty party, Settlement home)
         {
+            int prisoners = LodgePrisonersAndStrangers(party, home, out int militiaJoined);
             int proceeds = party.PartyTradeGold;
             party.PartyTradeGold = 0;
             CreditTreasury(proceeds);
@@ -630,6 +658,7 @@ namespace GreyWardenPolicePurity
             Park(party, home);
             GwpAiDiagnostics.WriteFaith("FAITH_PARTY_HOME",
                 "party=" + party.StringId + "; home=" + home.StringId + "; men=" + party.MemberRoster.TotalManCount +
+                "; prisoners=" + prisoners + "; militiaJoined=" + militiaJoined +
                 "; proceedsToTreasury=" + proceeds + "; kitItemsBack=" + kits + "; unsoldBack=" + unsold);
         }
 
