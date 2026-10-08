@@ -119,15 +119,23 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>冒烟满了时辰，让地图重画这座村的图标，烟就散了。</summary>
+        // 已经散过烟的村子。只管地图上重画一次，不存档：读档后每座村多重画一次，无害。
+        private readonly HashSet<string> _smokeCleared = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 冒烟满了时辰，让地图重画这座村的图标（原版重画先清掉所有特效），烟就散了；每次烧人以后只散一次。
+        /// 以前只在满 24 到 25 小时之间那次每小时检查里重画，检查时刻有零点零几小时的抖动，两次都可能错过，烟就一直不散
+        /// （实机诊断 2026-10-08：castle_village_EW6_1 2188118.63 烧人，每天的检查落在 .62–.65，38 小时后还在冒烟）。
+        /// </summary>
         private void ClearExpiredSmoke()
         {
-            double now = CampaignTime.Now.ToHours;
             foreach (FaithVillage row in _villages.Values)
             {
-                double since = now - row.LastDamnation;
-                if (since >= GwpTuning.Firesworn.DamnationLockHours && since < GwpTuning.Firesworn.DamnationLockHours + 1d)
-                    Settlement.Find(row.VillageId).Party.SetVisualAsDirty();
+                Settlement village = Settlement.Find(row.VillageId);
+                if (IsSmoking(village))
+                    _smokeCleared.Remove(row.VillageId);
+                else if (_smokeCleared.Add(row.VillageId))
+                    village.Party.SetVisualAsDirty();
             }
         }
 
