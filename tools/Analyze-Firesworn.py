@@ -144,6 +144,11 @@ def main():
         gains[data["home"]]["派出传教"] -= num(data.get("men"))
     for _, data in by_stage["PATROL_DISPATCHED"]:
         gains[data["home"]]["派出巡逻"] -= num(data.get("men"))
+    for _, data in by_stage["RESPONSE_DISPATCHED"]:
+        gains[data["home"]]["紧急出动"] -= num(data.get("men"))
+    for _, data in by_stage["RESPONSE_RETURNED"]:
+        gains[data["village"]]["紧急队回村"] += num(data.get("joined"))
+        gains[data["village"]]["紧急队押回俘虏"] += num(data.get("prisoners"))
     for _, data in by_stage["PATROL_RETURNED"]:
         gains[data["village"]]["巡逻回村"] += num(data.get("joined"))
         gains[data["village"]]["巡逻押回俘虏"] += num(data.get("prisoners"))
@@ -219,7 +224,7 @@ def main():
     print("\n== 无领主队与仪式")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
                   "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
-                  "PATROL_DISPATCHED", "PATROL_RETURNED",
+                  "PATROL_DISPATCHED", "PATROL_RETURNED", "RESPONSE_DISPATCHED", "RESPONSE_RETURNED",
                   "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
                   "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
                   "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):

@@ -100,7 +100,8 @@ namespace GreyWardenPolicePurity
             Mission = 0,
             Market = 1,
             Balance = 2,
-            Patrol = 3
+            Patrol = 3,
+            Response = 4
         }
 
         private enum FaithPartyPhase
@@ -503,7 +504,7 @@ namespace GreyWardenPolicePurity
             GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SMOKE", ClearExpiredSmoke);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PATROLS", DispatchAllPatrols);
+            GwpRuntimeFaultWatch.Guard("FIRESWORN_PATROLS", DispatchWatches);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
             GwpRuntimeFaultWatch.Guard("FIRESWORN_GUARD", () =>
             {
@@ -649,7 +650,7 @@ namespace GreyWardenPolicePurity
             {
                 Settlement home = Settlement.Find(record.HomeId);
                 Settlement target = Settlement.Find(record.TargetId);
-                text = record.Phase == FaithPartyPhase.Outbound && record.Kind == FaithPartyKind.Patrol
+                text = record.Phase == FaithPartyPhase.Outbound && IsWatch(record.Kind)
                     ? GwpText.Create("{=gwp_fs_status_patrol}Keeping watch around {HOME} for the Eternal Fire.", "HOME", home.Name)
                     : record.Phase == FaithPartyPhase.Outbound
                     ? record.Kind == FaithPartyKind.Mission

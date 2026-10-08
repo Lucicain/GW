@@ -67,7 +67,7 @@ namespace GreyWardenPolicePurity
             TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Mission
                 ? GwpText.Create("{=gwp_fs_party_greet_mission}May the fire light your road. We are the sworn of {HOME}, and we go to {TARGET} to carry the fire there and stay.",
                     "HOME", home!.Name, "TARGET", target!.Name)
-                : kind == GwpFireswornBehavior.FaithPartyKind.Patrol
+                : GwpFireswornBehavior.IsWatch(kind)
                 ? GwpText.Create("{=gwp_fs_party_greet_patrol}We are the sworn of {HOME}, keeping watch on its roads for the Eternal Fire. Outlaws we take back to the pyre.",
                     "HOME", home!.Name)
                 : kind == GwpFireswornBehavior.FaithPartyKind.Balance

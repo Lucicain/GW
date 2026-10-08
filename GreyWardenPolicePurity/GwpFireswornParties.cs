@@ -64,6 +64,17 @@ namespace GreyWardenPolicePurity
                         Patrol(record, party, home);
                         break;
 
+                    case FaithPartyPhase.Outbound when record.Kind == FaithPartyKind.Response:
+                        // 丢了索敌就回家，抓没抓到都一样（用户裁定 2026-10-08）。
+                        ReleaseHeroPrisoners(party);
+                        if (Intruder(home) == null || !IsVillageQuiet(home))
+                        {
+                            SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
+                            break;
+                        }
+                        GreyWardenPartyDesireBehavior.RequestBeat(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
+                        break;
+
                     case FaithPartyPhase.Outbound:
                         Settlement target = Settlement.Find(record.TargetId);
                         if (now - record.PhaseHour > GwpTuning.Firesworn.FaithPartyTravelTimeoutHours ||
@@ -87,7 +98,7 @@ namespace GreyWardenPolicePurity
                         break;
 
                     case FaithPartyPhase.Returning:
-                        if (record.Kind == FaithPartyKind.Patrol)
+                        if (IsWatch(record.Kind))
                             ReleaseHeroPrisoners(party);
                         if (!HasArrived(party, home))
                         {
@@ -136,30 +147,62 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private static MobileParty? PatrolPrey(MobileParty party, Settlement home)
         {
-            float radius = Campaign.Current.Models.EncounterModel.NeededMaximumLandDistanceForEncounteringMobileParty * 45f;
             float leash = Campaign.Current.GetAverageDistanceBetweenClosestTwoTownsWithNavigationType(MobileParty.NavigationType.Default);
             float ours = GwpStrength.Party(party);
-            MobileParty? best = null;
-            float bestDistance = float.MaxValue;
-            LocatableSearchData<MobileParty> search = MobileParty.StartFindingLocatablesAroundPosition(party.Position.ToVec2(), radius);
+            Vec2 position = party.Position.ToVec2();
+            return HostilesAround(position, EngageRadius)
+                .Where(other => home.GetPosition2D.Distance(other.Position.ToVec2()) <= leash && GwpStrength.CombatGroup(other) < ours)
+                .OrderBy(other => position.Distance(other.Position.ToVec2()))
+                .FirstOrDefault();
+        }
+
+        /// <summary>原版领主追击敌军看的范围：遭遇距离 × 45（C#反编译 v1.4.8 AiEngagePartyBehavior）。</summary>
+        private static float EngageRadius =>
+            Campaign.Current.Models.EncounterModel.NeededMaximumLandDistanceForEncounteringMobileParty * 45f;
+
+        /// <summary>
+        /// 身边和灰袍交战、能当敌人打的队：匪、逃兵、交战势力的领主和巡逻队；村民、商队、民兵、驻军不算，
+        /// 在聚落里、正在打仗、在海上的不算；挂在军团或攻城营里的只算带头那支。
+        /// </summary>
+        private static List<MobileParty> HostilesAround(Vec2 position, float radius)
+        {
+            Clan police = PoliceStats.GetPoliceClan();
+            List<MobileParty> found = new List<MobileParty>();
+            LocatableSearchData<MobileParty> search = MobileParty.StartFindingLocatablesAroundPosition(position, radius);
             for (MobileParty other = MobileParty.FindNextLocatable(ref search); other != null; other = MobileParty.FindNextLocatable(ref search))
             {
-                if (!other.IsActive || other == party || other.CurrentSettlement != null || other.MapEvent != null ||
-                    other.IsCurrentlyAtSea || other.IsVillager || other.IsCaravan || other.IsMilitia || other.IsGarrison ||
+                if (!other.IsActive || other.CurrentSettlement != null || other.MapEvent != null || other.IsCurrentlyAtSea ||
+                    other.IsVillager || other.IsCaravan || other.IsMilitia || other.IsGarrison ||
                     GwpStrength.CombatGroupOf(other) != other ||
-                    !FactionManager.IsAtWarAgainstFaction(party.MapFaction, other.MapFaction) ||
-                    home.GetPosition2D.Distance(other.Position.ToVec2()) > leash ||
-                    GwpStrength.CombatGroup(other) >= ours)
+                    !FactionManager.IsAtWarAgainstFaction(police, other.MapFaction) ||
+                    position.Distance(other.Position.ToVec2()) > radius)
                     continue;
-                float distance = party.Position.ToVec2().Distance(other.Position.ToVec2());
-                if (distance < bestDistance)
-                {
-                    best = other;
-                    bestDistance = distance;
-                }
+                found.Add(other);
             }
-            return best;
+            return found;
         }
+
+        /// <summary>
+        /// 走到村口的坏人：原版守聚落时查附近敌人的半径（DefaultMobilePartyAIModel.SettlementDefendingNearbyPartyCheckRadius，9）内
+        /// 最近的那支敌人（用户裁定 2026-10-08：坏人跳脸、离村子特别近，紧急出动）。
+        /// </summary>
+        private static MobileParty? Intruder(Settlement village)
+        {
+            Vec2 position = village.GetPosition2D;
+            return HostilesAround(position, Campaign.Current.Models.MobilePartyAIModel.SettlementDefendingNearbyPartyCheckRadius)
+                .OrderBy(other => position.Distance(other.Position.ToVec2()))
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 路上最强的敌人有多强：出发村和目的地附近（原版追击范围内）的敌人里战斗组最强的那个。
+        /// 卖货队、传教队按它补人（<see cref="ManEscort"/>）。
+        /// </summary>
+        private static float RoadDanger(Settlement home, Settlement target) =>
+            HostilesAround(home.GetPosition2D, EngageRadius).Concat(HostilesAround(target.GetPosition2D, EngageRadius))
+                .Select(GwpStrength.CombatGroup)
+                .DefaultIfEmpty(0f)
+                .Max();
 
         /// <summary>
         /// 巡区照原版巡逻队挑（C#反编译 v1.4.8 PatrolPartiesCampaignBehavior.AiHourlyTick、
@@ -192,24 +235,28 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 守村队比上限少几个，扣掉已经在回村路上的巡逻队。大于 0 就叫巡逻队回村补上（用户裁定 2026-10-08：守军变少，巡逻队回来补上），
-        /// 比如领主在村里直接招走了狂信者。
+        /// 留村的人比额度（上限的 2/3）少几个，扣掉已经在回村路上的巡逻队和出去紧急出动的人（他们很快回来）。
+        /// 大于 0 就叫巡逻队回村补上（用户裁定 2026-10-08：守军变少，巡逻队回来补上；不限制灰袍领主征召守村队）。
         /// </summary>
         private int GuardShortfall(string villageId)
         {
             if (!_villages.TryGetValue(villageId, out FaithVillage? row))
                 return 0;
-            int returning = _faithParties.Values
-                .Where(entry => entry.Kind == FaithPartyKind.Patrol && entry.Phase == FaithPartyPhase.Returning &&
-                                string.Equals(entry.HomeId, villageId, StringComparison.OrdinalIgnoreCase))
+            int coming = _faithParties.Values
+                .Where(entry => string.Equals(entry.HomeId, villageId, StringComparison.OrdinalIgnoreCase) &&
+                                (entry.Kind == FaithPartyKind.Patrol && entry.Phase == FaithPartyPhase.Returning ||
+                                 entry.Kind == FaithPartyKind.Response))
                 .Sum(entry => FindParty(entry.PartyId)?.MemberRoster.TotalManCount ?? 0);
-            return GuardCap(row) - Sworn(row) - returning;
+            return HomeQuota(row) - HomeDefenders(row, Settlement.Find(villageId)) - coming;
         }
 
-        /// <summary>这是一支火誓者巡逻队（<see cref="GwpFaithPatrolInitiativePatch"/> 用）。</summary>
+        /// <summary>巡逻队和紧急出动的队：见敌照原版巡逻队估形势，回村一样交接。</summary>
+        internal static bool IsWatch(FaithPartyKind kind) => kind == FaithPartyKind.Patrol || kind == FaithPartyKind.Response;
+
+        /// <summary>这是一支火誓者巡逻队或紧急队（<see cref="GwpFaithPatrolInitiativePatch"/> 用）。</summary>
         internal static bool IsFaithPatrol(MobileParty party) =>
             _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
-            record.Kind == FaithPartyKind.Patrol;
+            IsWatch(record.Kind);
 
         /// <summary>
         /// 巡逻队打赢抓到的英雄当场放走，只押普通俘虏回村（用户裁定 2026-10-08）。英雄从来不进地牢、不会被烧。
@@ -264,7 +311,7 @@ namespace GreyWardenPolicePurity
                 ? GwpText.Create("{=gwp_fs_mission_party}Disciples of the Eternal Fire")
                 : kind == FaithPartyKind.Balance
                     ? GwpText.Create("{=gwp_fs_balance_party}Armsbearers of {VILLAGE}", "VILLAGE", home.Name)
-                    : kind == FaithPartyKind.Patrol
+                    : IsWatch(kind)
                         ? GwpText.Create("{=gwp_fs_patrol_party}Fire Watch of {VILLAGE}", "VILLAGE", home.Name)
                         : GwpText.Create("{=gwp_fs_caravan_party}Zealots of {VILLAGE}", "VILLAGE", home.Name);
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
@@ -272,6 +319,10 @@ namespace GreyWardenPolicePurity
             party.StringId = GwpIds.FaithPartyPrefix + MBRandom.RandomInt(100000, 999999);
             party.ActualClan = police;
             party.MemberRoster.Clear();
+            // 打赢抢到的钱：原版只给有领主英雄、或开了交易账户的队（C#反编译 v1.4.8 MapEventParty.CommitGoldChanges），
+            // 没有账户就丢了。开个账户，落村时交给村子、进公库（用户裁定 2026-10-08：无人队上交缴获给村子，村子再给灰袍）。
+            // 原版拿这个账户花钱（买粮、雇人）都要求有领主英雄或是商队，开了不会乱花。
+            party.InitializePartyTrade(0);
             _faithParties[party.StringId] = new FaithParty
             {
                 PartyId = party.StringId,
@@ -285,14 +336,34 @@ namespace GreyWardenPolicePurity
             return party;
         }
 
-        /// <summary>
-        /// 从守村队补人，补到 <paramref name="size"/>，先拉最高级的（用户裁定 2026-10-08：出门的队伍精锐度要高）；
-        /// 再从家里军械库拿最好的那几套。
-        /// </summary>
-        private int ManParty(MobileParty party, FaithVillage row, Settlement home, int size)
+        /// <summary>补到 <paramref name="size"/> 人（<see cref="DrawMen"/>），再从家里军械库拿最好的那几套。返回拿了几件。</summary>
+        private int ManParty(MobileParty party, FaithVillage row, Settlement home, int size, bool militiaFirst = false)
         {
-            TroopRoster guard = GuardOf(row.VillageId);
+            DrawMen(party, row, home, size, militiaFirst);
+            _plans.Remove(row.VillageId);
+            return TakeBestSets(row.VillageId, party);
+        }
+
+        /// <summary>
+        /// 补人，补到 <paramref name="size"/>：巡逻、紧急出动先拉原版民兵（用户裁定 2026-10-08：杂种民兵优先挤出去当巡逻兵，村里纯化），
+        /// 再拉守村队最高级的（用户裁定 2026-10-08：出门的队伍精锐度要高）。原版民兵只拉没受伤的。
+        /// </summary>
+        private void DrawMen(MobileParty party, FaithVillage row, Settlement home, int size, bool militiaFirst)
+        {
             int need = Math.Max(0, size - party.MemberRoster.TotalManCount);
+            MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
+            if (militiaFirst && militia?.IsActive == true && militia.MapEvent == null)
+                foreach (TroopRosterElement element in militia.MemberRoster.GetTroopRoster()
+                             .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character)).ToList())
+                {
+                    int take = Math.Min(need, element.Number - element.WoundedNumber);
+                    if (take <= 0)
+                        continue;
+                    militia.MemberRoster.AddToCounts(element.Character, -take);
+                    party.MemberRoster.AddToCounts(element.Character, take);
+                    need -= take;
+                }
+            TroopRoster guard = GuardOf(row.VillageId);
             foreach (TroopRosterElement element in guard.GetTroopRoster().OrderByDescending(entry => entry.Character.Tier).ToList())
             {
                 if (need <= 0)
@@ -304,6 +375,21 @@ namespace GreyWardenPolicePurity
             }
             PushGuard(row, home);
             ReconcilePriestSlots(row);
+        }
+
+        /// <summary>
+        /// 卖货队、传教队补人：先补到原来的人数，路上最强的敌人（<see cref="RoadDanger"/>）比我们强就一个个加人，
+        /// 加到打得过为止；最多 25 人，家里守村队至少留 5 人（用户裁定 2026-10-08：这两种队人数固定，路上老挨打）。
+        /// 以前卖货队固定 8 人、传教队 10 人（实机诊断 2026-10-08：卖货队一趟被山贼打剩 3 人，下一趟被逃兵全灭）。
+        /// </summary>
+        private int ManEscort(MobileParty party, FaithVillage row, Settlement home, Settlement target, int baseSize, out float danger)
+        {
+            danger = RoadDanger(home, target);
+            int size = baseSize;
+            DrawMen(party, row, home, size, false);
+            while (GwpStrength.Party(party) <= danger && size < GwpTuning.Firesworn.PatrolMaximumSize &&
+                   Sworn(row) > GwpTuning.Firesworn.MissionMinimumLeftBehind)
+                DrawMen(party, row, home, ++size, false);
             _plans.Remove(row.VillageId);
             return TakeBestSets(row.VillageId, party);
         }
@@ -389,14 +475,15 @@ namespace GreyWardenPolicePurity
             if (target == null)
                 return;
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Mission);
-            int kits = ManParty(party, row, home, GwpTuning.Firesworn.MissionSize);
+            int kits = ManEscort(party, row, home, target, GwpTuning.Firesworn.MissionSize, out float danger);
             row.LastMission = now;
             row.MissionsSent++;
             Dispatch(_faithParties[party.StringId], party, target);
             GwpAiDiagnostics.WriteFaith("MISSION_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
                 "; targetHasSworn=" + _villages.ContainsKey(target.StringId) + "; men=" + party.MemberRoster.TotalManCount +
-                "; kitItems=" + kits + "; homeSworn=" + Sworn(row) + "; missionsSent=" + row.MissionsSent +
+                "; kitItems=" + kits + "; danger=" + danger.ToString("0") + "; strength=" + GwpStrength.Party(party).ToString("0") +
+                "; homeSworn=" + Sworn(row) + "; missionsSent=" + row.MissionsSent +
                 "; distance=" + home.GetPosition2D.Distance(target.GetPosition2D).ToString("0"));
         }
 
@@ -471,38 +558,88 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 巡逻队
 
         /// <summary>
-        /// 守村队超出上限的人分批出去巡逻，一批 10–25 人，够一批就派（用户裁定 2026-10-08：多批次派出，在村子周围抓匪回来烧）。
-        /// </summary>
-        /// <summary>
-        /// 每小时看一次，守村队超上限够一批就派，不等仪式、不要求祭司（用户裁定 2026-10-08：只要能派，派出的积极性要高）。
+        /// 每小时看一次，不等仪式、不要求祭司（用户裁定 2026-10-08：只要能派，派出的积极性要高）：先派巡逻队，再看要不要紧急出动。
         /// 以前跟着每天一次的派队走：巡逻队回村要等到第二天；烧人锁村 24 小时，每天这一刻差一点没解锁，烧完多出来的人隔两天才出门（实机诊断 2026-10-08）。
         /// </summary>
-        private void DispatchAllPatrols()
+        private void DispatchWatches()
         {
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 Settlement home = Settlement.Find(row.VillageId);
-                if (IsVillageQuiet(home))
-                    DispatchPatrols(row, home);
+                if (!IsVillageQuiet(home))
+                    continue;
+                DispatchPatrols(row, home);
+                TryDispatchResponse(row, home);
             }
         }
 
+        /// <summary>留村的额度：上限的 2/3（用户裁定 2026-10-08）。</summary>
+        private static int HomeQuota(FaithVillage row) => (int)Math.Ceiling(GuardCap(row) * GwpTuning.Firesworn.HomeGuardShare);
+
+        /// <summary>守村总数：守村队加村里没受伤的原版民兵（民兵正在打仗时不算，和 <see cref="DrawMen"/> 拉人的条件一致）。</summary>
+        private int HomeDefenders(FaithVillage row, Settlement home)
+        {
+            MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
+            int vanilla = militia?.IsActive == true && militia.MapEvent == null
+                ? militia.MemberRoster.GetTroopRoster()
+                    .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character))
+                    .Sum(entry => entry.Number - entry.WoundedNumber)
+                : 0;
+            return Sworn(row) + vanilla;
+        }
+
+        /// <summary>
+        /// 守村总数超出留村额度的人分批出去巡逻，原版民兵先出门，一批 10–25 人，够一批就派
+        /// （用户裁定 2026-10-08：额度三分之二，派出三分之一和超额部分；杂种民兵优先挤出去当巡逻兵）。
+        /// </summary>
         private void DispatchPatrols(FaithVillage row, Settlement home)
         {
-            int spare = Sworn(row) - GuardCap(row);
+            int spare = HomeDefenders(row, home) - HomeQuota(row);
             while (spare >= GwpTuning.Firesworn.PatrolMinimumSize)
             {
                 MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Patrol);
-                int kits = ManParty(party, row, home, Math.Min(spare, GwpTuning.Firesworn.PatrolMaximumSize));
+                int kits = ManParty(party, row, home, Math.Min(spare, GwpTuning.Firesworn.PatrolMaximumSize), true);
                 FaithParty record = _faithParties[party.StringId];
                 record.Men = party.MemberRoster.TotalManCount;
                 SetPhase(record, FaithPartyPhase.Outbound, home.StringId);
                 Patrol(record, party, home);
                 spare -= record.Men;
                 GwpAiDiagnostics.WriteFaith("PATROL_DISPATCHED",
-                    "party=" + party.StringId + "; home=" + home.StringId + "; men=" + record.Men + "; kitItems=" + kits +
-                    "; guard=" + Sworn(row) + "; cap=" + GuardCap(row));
+                    "party=" + party.StringId + "; home=" + home.StringId + "; men=" + record.Men +
+                    "; militiaMen=" + party.MemberRoster.GetTroopRoster().Where(entry => !IsGuardTroop(entry.Character)).Sum(entry => entry.Number) +
+                    "; kitItems=" + kits + "; guard=" + Sworn(row) + "; defenders=" + HomeDefenders(row, home) +
+                    "; quota=" + HomeQuota(row) + "; cap=" + GuardCap(row));
             }
+        }
+
+        /// <summary>
+        /// 坏人走到村口（<see cref="Intruder"/>）就紧急出动：从留村的人里拉上限的 1/3（原版民兵先出），村里始终留下上限的 1/3；
+        /// 一次只出一队。走原版普通巡逻，围着本村转，见敌由原版自己判断打不打，不用巡逻队那套主动追击；
+        /// 坏人离开村口那一圈就回家，抓没抓到都回（用户裁定 2026-10-08）。
+        /// </summary>
+        private void TryDispatchResponse(FaithVillage row, Settlement home)
+        {
+            if (_faithParties.Values.Any(entry => entry.Kind == FaithPartyKind.Response &&
+                    string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase)))
+                return;
+            MobileParty? intruder = Intruder(home);
+            if (intruder == null)
+                return;
+            int kept = (int)Math.Ceiling(GuardCap(row) * GwpTuning.Firesworn.ResponseShare);
+            int size = Math.Min(kept, HomeDefenders(row, home) - kept);
+            if (size < GwpTuning.Firesworn.PatrolMinimumSize)
+                return;
+            MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Response);
+            int kits = ManParty(party, row, home, size, true);
+            FaithParty record = _faithParties[party.StringId];
+            record.Men = party.MemberRoster.TotalManCount;
+            SetPhase(record, FaithPartyPhase.Outbound, home.StringId);
+            GreyWardenPartyDesireBehavior.RequestBeat(party, home, GwpTuning.Firesworn.FaithPartyVisitScore);
+            GwpAiDiagnostics.WriteFaith("RESPONSE_DISPATCHED",
+                "party=" + party.StringId + "; home=" + home.StringId + "; men=" + record.Men + "; kitItems=" + kits +
+                "; intruder=" + intruder.StringId + "; intruderStrength=" + GwpStrength.CombatGroup(intruder).ToString("0") +
+                "; strength=" + GwpStrength.Party(party).ToString("0") +
+                "; distance=" + home.GetPosition2D.Distance(intruder.Position.ToVec2()).ToString("0.0"));
         }
 
         // ---------------------------------------------------------------- 到了就并入
@@ -527,6 +664,9 @@ namespace GreyWardenPolicePurity
                 party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
             }
             int prisoners = LodgePrisonersAndStrangers(party, village, out int militiaJoined);
+            int gold = party.PartyTradeGold;
+            party.PartyTradeGold = 0;
+            CreditTreasury(gold);
             int joined = 0;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
                 if (IsGuardTroop(element.Character))
@@ -537,7 +677,7 @@ namespace GreyWardenPolicePurity
                 StartCongregation(row, village, "mission:" + record.HomeId);
             GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Mission
                 ? GwpText.Get("{=gwp_notice_mission}Brought {COUNT} sworn to stay", "COUNT", joined)
-                : record.Kind == FaithPartyKind.Patrol
+                : IsWatch(record.Kind)
                     ? GwpText.Get("{=gwp_notice_patrol}Back from the watch with {COUNT} prisoners", "COUNT", prisoners)
                     : GwpText.Get("{=gwp_notice_balance}Brought {COUNT} pieces of arms", "COUNT", kits));
             _faithParties.Remove(party.StringId);
@@ -546,9 +686,10 @@ namespace GreyWardenPolicePurity
             ReconcilePriestSlots(row);
             UpdatePriestPower(row);
             GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Mission ? "MISSION_JOINED"
-                    : record.Kind == FaithPartyKind.Patrol ? "PATROL_RETURNED" : "BALANCE_DELIVERED",
+                    : record.Kind == FaithPartyKind.Patrol ? "PATROL_RETURNED"
+                    : record.Kind == FaithPartyKind.Response ? "RESPONSE_RETURNED" : "BALANCE_DELIVERED",
                 "party=" + party.StringId + "; home=" + record.HomeId + "; village=" + village.StringId +
-                "; backHome=" + backHome + "; preaching=" + preaching + "; prisoners=" + prisoners +
+                "; backHome=" + backHome + "; preaching=" + preaching + "; prisoners=" + prisoners + "; gold=" + gold +
                 "; hours=" + (CampaignTime.Now.ToHours - record.PhaseHour).ToString("0") +
                 "; joined=" + joined + "; militiaJoined=" + militiaJoined + "; households=" + before + "->" + row.Households +
                 "; guard=" + Sworn(row) + "; kitItems=" + kits +
@@ -588,7 +729,7 @@ namespace GreyWardenPolicePurity
             MobileParty? party = ReadyMarketParty(row, home);
             if (party == null)
                 return;
-            int kits = ManParty(party, row, home, GwpTuning.Firesworn.CaravanSize);
+            int kits = ManEscort(party, row, home, town, GwpTuning.Firesworn.CaravanSize, out float danger);
             int value = goods.TotalValue;
             party.ItemRoster.Add(goods);
             goods.Clear();
@@ -598,7 +739,8 @@ namespace GreyWardenPolicePurity
             Dispatch(cart, party, town);
             GwpAiDiagnostics.WriteFaith("MARKET_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; town=" + town.StringId +
-                "; cargoValue=" + value + "; men=" + party.MemberRoster.TotalManCount + "; kitItems=" + kits);
+                "; cargoValue=" + value + "; men=" + party.MemberRoster.TotalManCount + "; kitItems=" + kits +
+                "; danger=" + danger.ToString("0") + "; strength=" + GwpStrength.Party(party).ToString("0"));
         }
 
         /// <summary>卖货队回村：钱进公库，自己那几套还给村里的军械库，没卖掉的放回货仓，停在村里。</summary>
