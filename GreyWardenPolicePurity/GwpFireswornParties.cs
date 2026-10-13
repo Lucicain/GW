@@ -368,7 +368,7 @@ namespace GreyWardenPolicePurity
             // 填族长的话，这支队一打输，被俘豁免就把族长当败将强制逃亡，原版逃亡先销毁她正带着的部队（实机诊断 2026-10-08）。
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
                 home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
-            party.StringId = GwpIds.FaithPartyPrefix + MBRandom.RandomInt(100000, 999999);
+            party.StringId = GwpPartyIdentity.Next(GwpIds.FaithPartyPrefix);
             party.ActualClan = police;
             // 原版只吸附领主、匪、原版巡逻队或显式许可的自定义队（C#反编译 v1.4.8 DefaultEncounterModel）。
             party.ShouldJoinPlayerBattles = IsWatch(kind);

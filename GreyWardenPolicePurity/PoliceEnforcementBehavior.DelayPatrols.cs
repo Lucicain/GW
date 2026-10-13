@@ -459,16 +459,7 @@ namespace GreyWardenPolicePurity
             if (policeClan == null || returnSettlement == null)
                 return;
 
-            string patrolId;
-            do
-            {
-                patrolId = GwpCommon.EnforcementDelayPatrolIdPrefix +
-                           MBRandom.RandomInt(10000, 99999);
-            }
-            while (_delayPatrolStates.ContainsKey(patrolId) ||
-                   MobileParty.All.Any(party => string.Equals(
-                       party.StringId, patrolId,
-                       StringComparison.OrdinalIgnoreCase)));
+            string patrolId = GwpPartyIdentity.Next(GwpCommon.EnforcementDelayPatrolIdPrefix);
 
             MobileParty? interceptor = null;
             var transferredBatches =
@@ -689,15 +680,7 @@ namespace GreyWardenPolicePurity
                 : GwpCommon.FindNearestTown(targetParty.GetPosition2D);
             if (spawnSettlement == null) return false;
 
-            string patrolId;
-            do
-            {
-                patrolId = GwpCommon.EnforcementDelayPatrolIdPrefix +
-                           MBRandom.RandomInt(10000, 99999);
-            }
-            while (_delayPatrolStates.ContainsKey(patrolId) ||
-                   MobileParty.All.Any(party => string.Equals(
-                       party.StringId, patrolId, StringComparison.OrdinalIgnoreCase)));
+            string patrolId = GwpPartyIdentity.Next(GwpCommon.EnforcementDelayPatrolIdPrefix);
 
             MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
                 spawnSettlement.GatePosition,

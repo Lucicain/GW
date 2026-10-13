@@ -2,7 +2,7 @@
 
 > 当前状态：主队 NPC 案与玩家本人通缉隔离经用户实测确认（2026-10-02）
 > 最后验收：`9fd8cea`（2026-10-02 用户确认）
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`8e800e7`（2026-10-14）
 > 覆盖源码：`PolicePatrolBehavior.cs` `PolicePatrolBehavior.Helpers.cs` `PolicePatrolBehavior.Encyclopedia.cs`
 > 待实测：无
 

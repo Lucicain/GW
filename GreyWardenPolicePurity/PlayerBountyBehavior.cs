@@ -422,7 +422,7 @@ namespace GreyWardenPolicePurity
             Hero clanLeader = policeClan.Leader;
             if (clanLeader == null) return;
 
-            string patrolId = GwpIds.RecruitmentPatrolPrefix + MBRandom.RandomInt(10000, 99999);
+            string patrolId = GwpPartyIdentity.Next(GwpIds.RecruitmentPatrolPrefix);
 
             MobileParty patrol = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
                 spawnPoint.GatePosition,

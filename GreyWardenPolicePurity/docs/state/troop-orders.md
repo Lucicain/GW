@@ -2,7 +2,7 @@
 
 > 当前状态：守村升级费用归属；已部署待实测，离线构建已核对
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`310e9ca`（2026-10-14）
+> 已复核至：`8e800e7`（2026-10-14）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：无
 

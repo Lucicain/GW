@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -243,7 +243,7 @@ namespace GreyWardenPolicePurity
                 false);
 
             createdParty = party;
-            party.StringId = DispatchPartyPrefix + MBRandom.RandomInt(100000, 999999);
+            party.StringId = GwpPartyIdentity.Next(DispatchPartyPrefix);
             party.ActualClan = Clan.PlayerClan;
             KeepCourierDisposition(party);
             // 送信队不吃饭（GwpLeaderlessFoodModel），不带口粮；船向玩家借。

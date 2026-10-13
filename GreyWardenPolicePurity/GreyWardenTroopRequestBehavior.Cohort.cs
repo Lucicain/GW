@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -139,14 +139,7 @@ namespace GreyWardenPolicePurity
             // 练兵队在练兵官身边出生；练兵官在海上又借不出船，就先不建。
             if (PoliceResourceManager.IsStrandedAtSea(trainer)) return null;
 
-            string cohortId;
-            do
-            {
-                cohortId = GwpCommon.TrainingCohortIdPrefix +
-                           MBRandom.RandomInt(10000, 99999);
-            }
-            while (MobileParty.All.Any(party => string.Equals(party.StringId,
-                cohortId, StringComparison.OrdinalIgnoreCase)));
+            string cohortId = GwpPartyIdentity.Next(GwpCommon.TrainingCohortIdPrefix);
 
             // 固定速度在这里一次定死，之后不再校。原版 CalculateFinalSpeed 对
             // 自定义队是"非零就整个替换最终速度"，替换发生在叠地形之前，所以拿它

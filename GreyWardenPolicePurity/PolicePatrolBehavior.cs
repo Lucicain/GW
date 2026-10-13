@@ -726,7 +726,7 @@ namespace GreyWardenPolicePurity
             Hero clanLeader = policeClan.Leader;
             if (clanLeader == null) return;
 
-            string patrolId = GwpIds.PatrolIdPrefix + MBRandom.RandomInt(10000, 99999);
+            string patrolId = GwpPartyIdentity.Next(GwpIds.PatrolIdPrefix);
 
             // 使用只有 owner 的重载（不传入 leader，避免族长被转移到纠察队）
             // 对话系统用 MobileParty.ConversationParty 识别，不需要 leader hero
