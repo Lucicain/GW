@@ -488,8 +488,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void GrowPlayerBountyAssistanceStrength(
             MobileParty leader, LordAssistanceGroup group, Army? army) =>
-            GwpRuntimeFaultWatch.Guard("PLAYER_BOUNTY_SUPPORT_GROWTH",
-                () => AdvancePlayerBountyAssistanceStrength(leader, group, army));
+            AdvancePlayerBountyAssistanceStrength(leader, group, army);
 
         private void AdvancePlayerBountyAssistanceStrength(
             MobileParty leader, LordAssistanceGroup group, Army? army)

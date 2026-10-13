@@ -1,12 +1,12 @@
 # 案件生命周期与执法
 
-> 当前状态：追截名册状态接续；已部署待实测，离线构建已核对
+> 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：`5ae8059`（2026-10-14）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 
-本文件覆盖**案件生命周期与协力编成**。兵员状态搬运与编号共用 [临时队](temporary-parties.md) 的入口。巡逻、悬赏、使者送单、练兵分别见
+本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
 
 ## 用户裁定的三条规则

@@ -211,7 +211,7 @@ namespace GreyWardenPolicePurity
         }
 
         private void SyncCaseOutcomeData(IDataStore dataStore) =>
-            GwpRuntimeFaultWatch.Guard("BOUNTY_CASE_OUTCOME_SYNC", () => SyncCaseOutcomeFields(dataStore));
+            SyncCaseOutcomeFields(dataStore);
 
         /// <summary>本案结果整体存成一个字符串：一个键、一种类型，读档不会半途失败。</summary>
         private string _caseOutcomeState = string.Empty;

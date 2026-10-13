@@ -74,20 +74,6 @@ namespace GreyWardenPolicePurity
                 details: exception.ToString().Replace(Environment.NewLine, " | "));
         }
 
-        /// <summary>把一段读档/启动阶段的代码包起来：出事只记录，不把整局游戏带下去。</summary>
-        internal static void Guard(string stage, Action action)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception exception)
-            {
-                // 依据：实机诊断 2026-09-15（GUARDED_FAILURE 4 次：旧档 gwp_case_support_requested 存成了另一种类型）
-                GwpFaultTrace.Write("GUARDED_FAILURE",
-                    details: stage + " | " + exception.ToString().Replace(Environment.NewLine, " | "));
-            }
-        }
 #else
         internal static void Arm()
         {
@@ -95,7 +81,6 @@ namespace GreyWardenPolicePurity
 
         internal static void StartSession() { }
 
-        internal static void Guard(string stage, Action action) => action();
 #endif
     }
 }

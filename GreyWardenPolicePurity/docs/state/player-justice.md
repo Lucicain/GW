@@ -2,13 +2,15 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`8e800e7`（2026-10-14）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
 纠察队见 [`patrol.md`](patrol.md)；NPC 罪犯的立案和罚金见 [`crime-intake.md`](crime-intake.md)。
+
+读档与回执业务直接执行，移除无依据的通用吞异常包装；故障观察器不改变结果判定。规则见 [代码健康](code-health.md)。（依据：源码复核2026-10-14）
 
 ## 声望（`PlayerBehaviorPool`，在 `GwpData.cs`）
 

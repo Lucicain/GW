@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`a898237`（2026-10-08）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上
 
@@ -47,6 +47,8 @@
 ## 调参（`GwpTuning`）
 
 数值集中在这里，按子系统分组。数值的含义写在各子系统的 state 文件里；改数值时同步改对应 state。
+
+火誓者补兵系数复用已查证的原版民兵退役系数乘用户选定的加速倍数；取消的烧民兵额外限额常量已删除。当前行为只在 [村庄](firesworn-villages.md) 与 [仪式](firesworn-rituals.md) 维护。（依据：源码复核、用户裁定2026-10-09）
 
 ## 文本与本地化
 

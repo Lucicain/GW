@@ -504,39 +504,30 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_RITUALS", UpdateRituals);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_SMOKE", ClearExpiredSmoke);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTIES", TendFaithParties);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PATROLS", DispatchWatches);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_SPOILS", SweepPrisonersAndSpoils);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_GUARD", () =>
-            {
-                foreach (FaithVillage row in _villages.Values.ToList())
-                    ObserveGuard(row);
-            });
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_ARMORY", RefreshArmoryPlans);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SLOTS", () =>
-            {
-                foreach (FaithVillage row in _villages.Values)
-                    ReconcilePriestSlots(row);
-            });
+            UpdateRituals();
+            ClearExpiredSmoke();
+            TendFaithParties();
+            DispatchWatches();
+            SweepPrisonersAndSpoils();
+            foreach (FaithVillage row in _villages.Values.ToList())
+                ObserveGuard(row);
+            RefreshArmoryPlans();
+            foreach (FaithVillage row in _villages.Values)
+                ReconcilePriestSlots(row);
         }
 
         private void OnDailyTick()
         {
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIESTS", MaintainPriests);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_SWORN_GROWTH", GrowSworn);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_SPAWN", SpawnPriestsByShare);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PRIEST_POWER", () =>
-            {
-                foreach (FaithVillage row in _villages.Values)
-                    UpdatePriestPower(row);
-            });
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_CONGREGATIONS", ScheduleCongregations);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_DAMNATIONS", ScheduleDamnations);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_FAITH_PARTIES", DispatchFaithParties);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_ARMORY_REBALANCE", RebalanceArmories);
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_SUMMARY", WriteDailySummary);
+            MaintainPriests();
+            GrowSworn();
+            SpawnPriestsByShare();
+            foreach (FaithVillage row in _villages.Values)
+                UpdatePriestPower(row);
+            ScheduleCongregations();
+            ScheduleDamnations();
+            DispatchFaithParties();
+            RebalanceArmories();
+            WriteDailySummary();
         }
 
         /// <summary>
@@ -592,13 +583,13 @@ namespace GreyWardenPolicePurity
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_BATTLE_LOSS", () => SettleBattleLosses(mapEvent));
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_BATTLE_LOOT", () => WriteBattleLoot(mapEvent));
+            SettleBattleLosses(mapEvent);
+            WriteBattleLoot(mapEvent);
         }
 
         private void OnMobilePartyDestroyed(MobileParty party, PartyBase? destroyer)
         {
-            GwpRuntimeFaultWatch.Guard("FIRESWORN_PARTY_DESTROYED", () => OnPartyGone(party, destroyer));
+            OnPartyGone(party, destroyer);
         }
 
         private static int FreeSlots(MobileParty party) =>

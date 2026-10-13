@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -122,13 +122,12 @@ namespace GreyWardenPolicePurity
                 if (MobileParty.MainParty?.MapEvent != null) continue;
                 record.HandoverPending = false;
                 if (MobileParty.MainParty?.IsActive == true)
-                    GwpRuntimeFaultWatch.Guard("DISPATCH_DEFERRED_HANDOVER", () =>
-                        HandBackEverything(record, party, MobileParty.MainParty));
+                    HandBackEverything(record, party, MobileParty.MainParty);
             }
         }
 
         public override void SyncData(IDataStore dataStore) =>
-            GwpRuntimeFaultWatch.Guard("DISPATCH_SYNC", () => SyncDispatchData(dataStore));
+            SyncDispatchData(dataStore);
 
         private void SyncDispatchData(IDataStore dataStore)
         {
@@ -145,7 +144,7 @@ namespace GreyWardenPolicePurity
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter) =>
-            GwpRuntimeFaultWatch.Guard("DISPATCH_SESSION_LAUNCH", () => StartDispatchSession(starter));
+            StartDispatchSession(starter);
 
         private void StartDispatchSession(CampaignGameStarter starter)
         {
@@ -439,7 +438,7 @@ namespace GreyWardenPolicePurity
         #region 行程
 
         private void OnHourlyTick() =>
-            GwpRuntimeFaultWatch.Guard("DISPATCH_HOURLY", AdvanceDispatches);
+            AdvanceDispatches();
 
         private void AdvanceDispatches()
         {
@@ -868,7 +867,7 @@ namespace GreyWardenPolicePurity
         /// 送信队不吃饭（<see cref="GwpLeaderlessFoodModel"/>），没有口粮这一项。
         /// </summary>
         private void OnDailyTick() =>
-            GwpRuntimeFaultWatch.Guard("DISPATCH_DAILY", UpkeepDispatches);
+            UpkeepDispatches();
 
         private void UpkeepDispatches()
         {

@@ -1,8 +1,8 @@
 # 代码健康
 
-> 当前状态：机械卫生检查通过；人工复核发现通用 Guard 依据与覆盖范围不匹配；客户端偶发原生退出崩溃根因未定
+> 当前状态：已确认的配装、紧急补兵、编号与调兵状态缺陷已修复；通用吞异常包装已移除；正常卡顿耗时尚未测定
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 已复核至：`a898237`（2026-10-08）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs`
 > 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 
@@ -14,26 +14,33 @@
 
 ## 性能：按频率排查，不按代码量
 
-全量扫描 47,582 行 / 136 文件后**否掉了性能优化这个方向**：
+2026-10-10 对当前 168 个源码文件重新盘点，发现 `MobileParty.All` 的 95 处文字出现（含注释，不等于运行次数）。当前存在嵌套扫描，不能沿用旧调查的「没有 O(n²)、否掉性能优化」结论。
 
-- 92 处 `MobileParty.All` 全局遍历，**没有一处落在每队伍心跳里** —— 不存在 O(n²)
-- 57 处 `GetCampaignBehavior<T>()`（原版是线性扫描），集中在对话与 UI 路径，
-  不在热循环
-- 208 处 AI 诊断调用整体包在 `GWP_DIAGNOSTICS` 里，**玩家包零开销**
+- 火誓者每小时 `TendFaithParties` 遍历全部登记队；每支外出巡逻的 `PatrolExcess` 又通过 `MenOut` / `VillageForce` 统计本村队伍，每条匹配记录的 `FindParty` 都线性遍历全部 `MobileParty.All`。设登记队 F、地图队 P，单轮维护含 F² 的记录扫描及 F×P 的查找成本，常数随各村分布变化。
+- 每小时 `DispatchWatches`、`RefreshArmoryPlans`，也复用上述线性查找。出队 `TakeBestSets` 已直接按出队名册配装，不再经过留守村的增长缺额查询。现行实现有复用入口，却没有复用同一轮查询结果。
+- 军械库 `BuildPlan` 把库存按每一件展开成列表，逐兵调用 `Take -> FindIndex + RemoveAt`；移走列表前项需要移动后续元素，库存大时也有二次方成本。已有小时级 `_plans` 缓存，不能说没有缓存；`TakeBestSets` 则直接重建计划，日结 `RebalanceArmories` 前后各重建全库。
+- 上次卡死的两份主线程快照已落在火誓者统计 / 军械库链上，但现场受零人派队无限增长污染。它证明这条链会放大失控，不能据此量化正常存档的卡顿占比，也不能证明历次卡顿都是同一原因。（依据：源码、实机诊断 2026-10-09；复核 2026-10-10）
 
-真正在每帧烧 CPU 的只有两处（音乐渲染已优化，见 [`music.md`](music.md)）。
+原版 v1.4.8 `CampaignObjectManager.Find<T>` 内部也是线性查表，不是换一个原版方法就能得到索引。后续先测同一小时各段实际耗时，再决定是否以单次处理范围内的快照合并重复查询；全局长期缓存另需证明创建、销毁和读档的一致性。附近敌人已用原版 `FindNextLocatable` 空间搜索，无依据改成另一套邻域查询没有收益。（依据：C#反编译 v1.4.8；源码复核 2026-10-10）
 
-**担心 CPU 压力时，先按执行频率分层，不要按代码量猜。**（依据：流程；2026-09-17 全量扫描）
+## 兵员转移与临时队编号
+
+共享规则与原版依据只在 [临时队](temporary-parties.md) 定义。练兵、订单、追截、送信归队与火誓者名册转移统一调用 `GwpTroopTransfer`，各自保留原选兵策略；建队统一调用 `GwpPartyIdentity`。实际 v1.4.8 名册与注册表回归 173 项断言通过，包含伤兵、经验余数、多来源回滚及改名后连续建队查重。没有新增存档字段。（依据：源码、C#反编译与实际游戏 DLL 离线执行 2026-10-14）
+
+## 循环可靠性复核
+
+循环按明确进展核对终止依据：协力增员后候选被差事占用排除，补护卫的人数上限递增，配乐队列会出队，位读取会前进或抛出越界，UI 沿父级前进；没有再确认一处与旧巡逻相同的零人数循环。临时队查重不再随机重试，候选后缀每次严格递增，受有限注册表条目数约束。
+
+现行巡逻空村回归 940 场景 / 7520 断言通过，证明已覆盖该派队边界；不能外推成全项目无缺陷。新确认的出队少领装备见 [军械库](firesworn-armory.md)，紧急补兵预检与执行不一致见 [队伍](firesworn-parties.md)。两项已修复，直接抽取生产方法、替换引擎边界的 48 项断言通过；调兵状态和编号另用实际游戏 DLL 验证。机械卫生全零只证明当前脚本的四种规则，没有证明上述语义和性能。（依据：源码、离线执行与运行时反射 2026-10-10）
 
 ## 兜底必须兜住过东西
 
 用户裁定（2026-10-05）：兜底必须真的兜住过东西，没触发过的就是垃圾。没人用的常量、成员同理。
 
-**现状（2026-10-07 复核）**：源码共 14 个 catch，其中 5 个原样 `throw;`，9 个带 `依据：` 注释。机械检查为零不证明注释能支持当前所有调用路径；下述 `Guard` 仍有实际欠账。
+**现状**：无依据的通用 `Guard` 与全部 30 处包装已移除；开发版和玩家版均直接执行业务回调，故障观察器只记录异常，不改变业务失败行为。其余 catch 的机械检查全零，实际依据仍逐站点复核。（依据：源码与日志复核 2026-10-14）
 
 带依据注释的站点包括：
    - 读档时 `Hero.FindFirst` 因英雄全局表未建好抛空引用（`GwpData` 两处、`GreyWardenTrainingBehavior`）；
-   - `GwpRuntimeFaultWatch.Guard` 引用旧档 `gwp_case_support_requested` 类型不匹配；这条证据不足以支持目前覆盖的全部回调，见下方已知缺陷；
    - 自定义战斗里 `Clan.PlayerClan` 空引用（配乐）；
    - 原版 `Army.DisperseInternal` 空引用（协力解散）；
    - 野外执法拉不起战斗；
@@ -42,7 +49,6 @@
 
 原有依据来自实机故障日志及 journal。当前范围需逐站点复核，不能把同一个旧档错误当作新回调的触发证据。
 
-- **已知缺陷**：`GwpRuntimeFaultWatch.Guard` 在开发版吞异常、玩家版直接执行，现有 28 处调用覆盖火誓者更新与战斗结算、派单、案件回执和会话回调；唯一 catch 依据仍是 2026-09-15 的旧档字段类型错误，不能证明这些路径都需要兜底。当前 `GreyWarden-Faults.log` 无 `GUARDED_FAILURE` 记录，未证明这些路径现在实际失败。诊断封装会改变两版的失败行为，后续清理应逐站点移除无依据吞异常；跨版本旧档读取已取消，不据此恢复兼容。（依据：源码与本机日志复核 2026-10-07；用户裁定 2026-10-05）
 
 **以后**：
 - 不写「以防万一」的 catch，让异常暴露，读崩溃、修根因。故障实际发生过，才在那一处加 catch 并写依据。
@@ -83,10 +89,15 @@
 
 | 概念 | 归属 | 别处直接用就会被拦的写法 |
 |---|---|---|
+| 兵员人数、伤兵与经验搬运 | `GwpTroopTransfer` | 各功能选兵后调用公共搬运入口；语义由实际游戏名册回归检查，不声称正则覆盖所有扣人加人代码 |
+| 临时队唯一编号 | `GwpPartyIdentity` | `FindNextUniqueStringId<MobileParty>`；查重与严格递增在本入口完成 |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
 | 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool`/`CrimeState` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
 | 差事占用 | `GwpWardenDuties` | 其他系统的占用判断（`IsVillageReliefParty` 等） |
+| 守村经验分配与容量 | `GwpFireswornBehavior.GrantGuardExperience`（`GwpFireswornExperience.cs`） | `CanTroopGainXp`；巡逻与烧人都调用同一入口 |
+| 守村灰袍升级付款人 | `GwpFireswornUpgradePayment` | 升级模型只选择当前兵种，原版Owner钩子只查询这一处；公库钱包仍由 `PoliceResourceManager` 定义 |
+| 巡逻/紧急队可派人数 | `GwpFireswornBehavior.WatchRoom`（`GwpFireswornParties.cs`） | `PatrolShare`、`HomeDefenders`、`MenOut`；本类额度与留守约束在同一入口取小，不把在途兵当作村内可抽兵 |
 | 灰袍领主进聚落的意愿（候选、招兵数、打分、各项改动的来由） | `GwpWardenVisitDesire` | 别处对 `AiVisitSettlementBehavior` 打补丁 |
 
 `tools/Check-CodeHygiene.py` 机械检查这张表，并找函数体完全相同的两个方法（重写的引擎事件除外）；

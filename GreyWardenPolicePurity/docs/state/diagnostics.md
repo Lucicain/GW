@@ -1,9 +1,9 @@
 # 诊断系统
 
-> 当前状态：卡死取证与日志BOM；已部署待实测，离线构建已核对
+> 当前状态：现行规则；巡逻卡死已由双次现场采样定位，分析器新增空队检查；已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`7d87c0b`（2026-10-14）
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
+> 已复核至：`2a2d075`（2026-10-14）
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `tools/Analyze-Firesworn.py`
 > 待实测：无
 
 ## 原则
@@ -12,7 +12,7 @@
 在某个东西正在建或正在出问题时加上，在那件事被确认之后删掉。
 
 全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 19 个文件带此守卫），
-纯 trace 的退休只改变开发者日志；`GwpRuntimeFaultWatch.Guard` 额外吞异常，会造成开发与玩家版失败行为不同，这是待清理的例外，见 `code-health.md`。
+纯 trace 的退休只改变开发者日志；通用 `Guard` 已移除，故障观察器不吞业务异常，开发与玩家版执行相同业务。军械库每日汇总及异常统计整段仅在诊断版编译，玩家版不执行这些遍历与字符串构造。（依据：源码复核2026-10-14）
 
 ## 谁来管
 
@@ -67,8 +67,10 @@
 
 | 类别 | stage |
 |---|---|
-| 每日快照 | `DAILY_VILLAGE`（火誓者人数与比例、守村队构成、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
-| 火誓者来源 | `SWORN_GROWTH`（灰袍所到、挂户数、补兵 regrown）、`RECONSTRUCTION_SWORN`、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么） |
+| 每日快照 | `DAILY_VILLAGE`（信众户与比例、在村守村兵构成、实体名册中灰袍各兵种经验 guardXp、本村灰袍总人数 population、上限 cap、缺额 headroom、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
+| 留守队经验 | `GUARD_EXPERIENCE`（来源 watch:队伍ID 或 damnation，earned/实际granted/容量不足unused）；`DAMNATION` 附 experience/experienceGranted。核对巡逻/紧急出动与烧人经验在村内累积、同版存读接续后退休，分配规则只在村庄与仪式state定义。分析器按来源汇总经验，不与新增兵数相加。 |
+| 守村升级付款 | `GUARD_UPGRADE_PAYMENT`（party/troop/payer、quoted与实际paid、付款后treasury），仅观察真实原版金币交易，报价不重复计算。核对灰袍兵由灰袍公库付款、杂兵不改归属后退休；巡逻支援沿用现有 ACTION/AUCTION 的 initiative 与地图战斗参战名单，不另设日志。 |
+| 火誓者来源 | `SWORN_GROWTH`（驻留/自然增长信众户 fromWardensHouseholds/fromHearthHouseholds、补兵 regrown、补前缺额 headroomBefore）、`RECONSTRUCTION_SWORN`（added为实际增户）、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`（gain为实际增户）、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么）；分析器将户、兵、人次分项标注，旧集会日志按households前后值求实际增户。 |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
 | 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED` |
@@ -81,21 +83,21 @@
 
 **分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。只取最近一次启动游戏以来的监控行（含中途滚动归档的部分），
 输出总览与收支、每座有火誓者的村子（人数来源、守村队、祭司势力、军械库按类）、新信众村出现的速度、每位领主、无领主队与仪式、异常汇总，
-最后按阈值列出需要看的平衡问题。
+最后列出需要看的问题，巡逻/紧急派队记录出现men=0时直接点名来源村与次数；当前、归档与启动标记都按UTF-8 BOM读取。
 
 ## 在役
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
-| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
+| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；队伍快照含原版 `shouldJoinPlayerBattles`，用于核对巡逻遭遇吸附许可；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
-| `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：看俘虏、地牢、烧人、各类无领主队、领主进村、军械库、收入之间配合得怎样；每日有村、领主、总量快照 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
+| `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
 | `GwpRuntimeFaultWatch.Guard` | 旧档错误依据被扩用到 28 处回调，开发版额外吞异常 | 待逐站点清理，不能按「故障观察」永久保留；见 code-health.md |
 
-已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录仍待清理，登记见 `../reference/local-scratch.md`。
+已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
 2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /
 `OBSERVED_AUCTION` / `OBSERVED_RESOLVED`、进聚落意愿对账 `DESIRE`（连同 `GwpWardenVisitDesire.Trace.cs` 和 `tools/Analyze-Desire.py`；
 3413 个候选读到的原版分全是 0，对账早已失效）、仪式声音 `RITUAL_SOUND_*` / `RITUAL_MAP_SOUND_*`。
@@ -119,13 +121,3 @@
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
-
-
-## 经验与人口监控
-
-补兵日志分别标信众户增量、士兵补入、总人口/上限/缺额；GUARD_EXPERIENCE 汇总实际发放与容量未用。军械库每日诊断遍历整体只在 GWP_DIAGNOSTICS 内，玩家版不做无用字符串和遍历。（依据：用户裁定与源码/离线复核 2026-10-14）
-
-
-## 卡死取证与日志BOM
-
-分析器识别空队派遣，UTF-8 BOM兼容启动标记/当前日志/归档。双次主线程采样指向火誓者失控派队链，现场记录按 local-scratch 保留，待实机确认后退休；正常卡顿占比尚未量化。（依据：用户裁定与源码/离线复核 2026-10-14）

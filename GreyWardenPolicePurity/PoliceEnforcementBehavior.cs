@@ -1071,8 +1071,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void UpdatePlayerBountyEscortCase(MobileParty police,
             PoliceTask task, bool playerEncounterStarted) =>
-            GwpRuntimeFaultWatch.Guard("PLAYER_BOUNTY_ESCORT_UPDATE",
-                () => AdvancePlayerBountyEscortCase(police, task, playerEncounterStarted));
+            AdvancePlayerBountyEscortCase(police, task, playerEncounterStarted);
 
         private void AdvancePlayerBountyEscortCase(MobileParty police,
             PoliceTask task, bool playerEncounterStarted)
