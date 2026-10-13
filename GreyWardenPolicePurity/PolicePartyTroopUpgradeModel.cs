@@ -23,6 +23,9 @@ namespace GreyWardenPolicePurity
         public override bool IsTroopUpgradeable(PartyBase party,
             CharacterObject character)
         {
+            if (!GwpFireswornUpgradePayment.SelectTroop(party, character))
+                return false;
+
             if (GreyWardenTroopRequestBehavior
                 .IsOrderedTroopUpgradeLocked(party, character))
                 return false;

@@ -1,9 +1,9 @@
 # 火誓者村庄：信众户、守村队与祭司
 
-> 当前状态：巡逻与烧死者经验供留守灰袍兵；已部署待实测，离线构建已核对
+> 当前状态：守村灰袍升级由灰袍公库付款；已部署待实测，离线构建已核对
 > 最后验收：未建立检查点
-> 已复核至：`bcad7f5`（2026-10-14）
-> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs`
+> 已复核至：`310e9ca`（2026-10-14）
+> 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs`
 > 待实测：见文末
 
 [总览](firesworn.md) · [仪式](firesworn-rituals.md) · [队伍](firesworn-parties.md) · [招兵入口](warden-recruitment.md)
@@ -95,3 +95,8 @@
 ## 巡逻与烧死者经验供留守灰袍兵
 
 巡逻/紧急队在原版 CommitXpGain 入口只改经验收款方，按未战死者及现行训练模型计算，结算后清除增量；参战队不吃本场经验。烧死者的一半按原版目标经验价值供村内成长。GrantGuardExperience 只向村内可升级灰袍兵按剩余容量分配，满级、杂兵和外出队不占份额；无容量部分不用，不新增经验库或待办。（依据：用户裁定与源码/离线复核 2026-10-14）
+
+
+## 守村灰袍升级由灰袍公库付款
+
+仅在原版同步 UpgradeReadyTroops 范围内为当前灰袍兵映射付款人，不改实体所有者、报价、供给或缴获门槛；混编杂兵仍走原规则。正常/异常/嵌套出口均还原上下文，第三方模块代码与配置未改。（依据：用户裁定与源码/离线复核 2026-10-14）
