@@ -41,7 +41,7 @@ def num(value, default=0.0):
 def last_launch():
     path = os.path.join(DOCS, "GreyWarden-Faults.log")
     stamp = None
-    with open(path, encoding="utf-8", errors="replace") as handle:
+    with open(path, encoding="utf-8-sig", errors="replace") as handle:
         for line in handle:
             if "| FAULT_WATCH_ARMED |" in line:
                 stamp = line.split(" | ", 1)[0]
@@ -58,7 +58,7 @@ def read_events(all_logs):
             continue
         if since and dt.datetime.fromtimestamp(os.path.getmtime(path)) < since.replace(tzinfo=None):
             continue
-        with open(path, encoding="utf-8", errors="replace") as handle:
+        with open(path, encoding="utf-8-sig", errors="replace") as handle:
             for line in handle:
                 match = LINE.match(line.rstrip("\n"))
                 if not match:
@@ -269,6 +269,12 @@ def main():
         sample = {k: v for k, v in rows[-1][1].items() if k != "kind"}
         print(f"   {kind} ×{len(rows)}（第 {day(rows[0][0])}–{day(rows[-1][0])} 天）最近一次: {sample}")
         issues.append(f"异常 {kind} 出现 {len(rows)} 次")
+
+    for stage in ("PATROL_DISPATCHED", "RESPONSE_DISPATCHED"):
+        empty = collections.Counter(data["home"] for _, data in by_stage[stage]
+                                    if "men" in data and num(data["men"]) == 0)
+        if empty:
+            issues.append(f"派出空队 {stage} 共{sum(empty.values())}次，来源{dict(empty)}；检查取兵与循环推进")
 
     print("\n== 需要看的问题")
     for issue in issues or ["没有发现"]:

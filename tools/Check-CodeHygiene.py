@@ -182,6 +182,7 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("巡逻可派人数", r"\b(?:PatrolShare|HomeDefenders|MenOut)\s*\(", "GwpFireswornParties.cs", "GwpFireswornBehavior.WatchRoom"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),
     ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTroopPower\s*\(|\bGetTotalLandStrength\w*\s*\(",
      "GwpStrength.cs", "GwpStrength"),

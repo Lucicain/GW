@@ -268,6 +268,16 @@ namespace GreyWardenPolicePurity
         private int PatrolShare(FaithVillage row, Settlement home) =>
             (int)Math.Ceiling(VillageForce(row, home) * GwpTuning.Firesworn.WatchShare);
 
+        /// <summary>
+        /// 巡逻/紧急队可派人数：本类在外额度和村内留足 1/3 后的可抽人数取小。
+        /// 返程队仍算总兵力，但不能当作村里能拉走的人（实机诊断 2026-10-09：村内 0、在外 33 时无限派空队）。
+        /// </summary>
+        private int WatchRoom(FaithVillage row, Settlement home, FaithPartyKind kind, FaithPartyPhase? phase = null)
+        {
+            int third = PatrolShare(row, home);
+            return Math.Min(third - MenOut(row.VillageId, kind, phase), HomeDefenders(row, home) - third);
+        }
+
         /// <summary>巡逻队和紧急出动的队：见敌照原版巡逻队估形势，回村一样交接。</summary>
         internal static bool IsWatch(FaithPartyKind kind) => kind == FaithPartyKind.Patrol || kind == FaithPartyKind.Response;
 
@@ -673,7 +683,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void DispatchPatrols(FaithVillage row, Settlement home)
         {
-            int spare = PatrolShare(row, home) - MenOut(row.VillageId, FaithPartyKind.Patrol, FaithPartyPhase.Outbound);
+            int spare = WatchRoom(row, home, FaithPartyKind.Patrol, FaithPartyPhase.Outbound);
             while (spare >= GwpTuning.Firesworn.PatrolMinimumSize)
             {
                 MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Patrol);
@@ -707,8 +717,7 @@ namespace GreyWardenPolicePurity
             {
                 if (watched.Contains(intruder.StringId))
                     continue;
-                int third = PatrolShare(row, home);
-                int room = Math.Min(third - MenOut(row.VillageId, FaithPartyKind.Response), HomeDefenders(row, home) - third);
+                int room = WatchRoom(row, home, FaithPartyKind.Response);
                 if (room < GwpTuning.Firesworn.PatrolMinimumSize)
                     return;
                 float danger = GwpStrength.CombatGroup(intruder);
@@ -727,7 +736,7 @@ namespace GreyWardenPolicePurity
                     "; intruder=" + intruder.StringId + "; intruderStrength=" + danger.ToString("0") +
                     "; strength=" + GwpStrength.Party(party).ToString("0") + "; speed=" + party.Speed.ToString("0.00") +
                     "; distance=" + home.GetPosition2D.Distance(intruder.Position.ToVec2()).ToString("0.0") +
-                    "; force=" + VillageForce(row, home) + "; share=" + third);
+                    "; force=" + VillageForce(row, home) + "; share=" + PatrolShare(row, home));
             }
         }
 
