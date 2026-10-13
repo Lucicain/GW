@@ -413,8 +413,8 @@ namespace GreyWardenPolicePurity
                     int take = Math.Min(need, element.Number - element.WoundedNumber);
                     if (take <= 0)
                         continue;
-                    militia.MemberRoster.AddToCounts(element.Character, -take);
-                    party.MemberRoster.AddToCounts(element.Character, take);
+                    GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster,
+                        element.Character, take, healthyOnly: true);
                     need -= take;
                 }
             TroopRoster guard = GuardOf(row.VillageId);
@@ -423,8 +423,12 @@ namespace GreyWardenPolicePurity
                 if (need <= 0)
                     break;
                 int take = Math.Min(need, element.Number);
+                // 自有记录只记人数，实际伤兵与经验仍由村内实体民兵持有。
+                if (militia?.IsActive == true && militia.MapEvent == null)
+                    GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster, element.Character, take);
+                else
+                    party.MemberRoster.AddToCounts(element.Character, take);
                 guard.AddToCounts(element.Character, -take);
-                party.MemberRoster.AddToCounts(element.Character, take);
                 need -= take;
             }
             PushGuard(row, home);
@@ -768,7 +772,9 @@ namespace GreyWardenPolicePurity
             int joined = 0;
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
                 if (IsGuardTroop(element.Character))
-                    joined += JoinGuard(row, village, element.Character, element.Number);
+                {
+                    joined += JoinGuard(row, village, element.Character, element.Number, party.MemberRoster);
+                }
             bool backHome = string.Equals(village.StringId, record.HomeId, StringComparison.OrdinalIgnoreCase);
             bool preaching = record.Kind == FaithPartyKind.Mission && !backHome && IsVillageQuiet(village) && !HasRitual(village);
             if (preaching)
@@ -870,9 +876,8 @@ namespace GreyWardenPolicePurity
             foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster()
                          .Where(entry => !entry.Character.IsHero && !IsGuardTroop(entry.Character)).ToList())
             {
-                militia.MemberRoster.AddToCounts(element.Character, element.Number, false, element.WoundedNumber);
-                party.MemberRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
-                militiaJoined += element.Number;
+                militiaJoined += GwpTroopTransfer.Move(party.MemberRoster, militia.MemberRoster,
+                    element.Character, element.Number).Number;
             }
             return prisoners;
         }

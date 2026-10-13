@@ -45,9 +45,11 @@ namespace GreyWardenPolicePurity
 
         private sealed class ImmediateInterceptorTroopTransfer
         {
+            // 只用于建队同步调用内的回滚；返回前已完成或撤销，没有跨存档进行中的状态。
             public MobileParty SourceParty { get; set; } = null!;
             public CharacterObject Character { get; set; } = null!;
             public int Count { get; set; }
+            public int Xp { get; set; }
         }
 
         private void SyncWarTargetStreakData(IDataStore dataStore)
@@ -590,22 +592,18 @@ namespace GreyWardenPolicePurity
                 if (moved >= requested)
                     break;
                 TroopRoster source = batch.SourceParty.MemberRoster;
-                TroopRosterElement current = source.GetTroopRoster()
-                    .FirstOrDefault(element =>
-                        element.Character == batch.Character);
-                int healthy = Math.Max(0,
-                    current.Number - current.WoundedNumber);
-                int take = Math.Min(healthy, requested - moved);
+                TroopRosterElement taken = GwpTroopTransfer.Move(source, destination,
+                    batch.Character, requested - moved, healthyOnly: true);
+                int take = taken.Number;
                 if (take <= 0)
                     continue;
 
-                source.AddToCounts(batch.Character, -take, false, 0);
-                destination.AddToCounts(batch.Character, take, false, 0);
                 transfers.Add(new ImmediateInterceptorTroopTransfer
                 {
                     SourceParty = batch.SourceParty,
                     Character = batch.Character,
-                    Count = take
+                    Count = take,
+                    Xp = taken.Xp
                 });
                 moved += take;
             }
@@ -626,10 +624,8 @@ namespace GreyWardenPolicePurity
                 if (returnCount <= 0)
                     continue;
 
-                interceptorRoster.AddToCounts(
-                    transfer.Character, -returnCount, false, 0);
-                transfer.SourceParty.MemberRoster.AddToCounts(
-                    transfer.Character, returnCount, false, 0);
+                GwpTroopTransfer.Move(interceptorRoster, transfer.SourceParty.MemberRoster,
+                    transfer.Character, returnCount, healthyOnly: true, exactXp: transfer.Xp);
             }
         }
 
@@ -640,28 +636,10 @@ namespace GreyWardenPolicePurity
                 .Where(element => element.Character != null &&
                     !element.Character.IsHero &&
                     element.Number > 0).ToList();
-            return TransferTroopBatches(source, destination, batches, requested);
+            return GwpTroopTransfer.MoveBatches(source, destination, batches, requested);
         }
 
-        private static int TransferTroopBatches(TroopRoster source,
-            TroopRoster destination, IEnumerable<TroopRosterElement> batches,
-            int requested)
-        {
-            int moved = 0;
-            foreach (TroopRosterElement batch in batches.ToList())
-            {
-                if (moved >= requested) break;
-                int count = Math.Min(batch.Number, requested - moved);
-                if (count <= 0) continue;
 
-                int healthy = Math.Max(0, batch.Number - batch.WoundedNumber);
-                int wounded = Math.Max(0, count - healthy);
-                source.AddToCounts(batch.Character, -count, false, -wounded);
-                destination.AddToCounts(batch.Character, count, false, wounded);
-                moved += count;
-            }
-            return moved;
-        }
 
         private bool SpawnSingleDelayPatrol(MobileParty targetParty, string sourceTaskPolicePartyId, string warTargetId)
         {
@@ -909,7 +887,7 @@ namespace GreyWardenPolicePurity
             int returningWardens = returningBatches.Sum(
                 static element => element.Number);
             TroopRoster returningBuffer = TroopRoster.CreateDummyTroopRoster();
-            int stagedReturning = TransferTroopBatches(
+            int stagedReturning = GwpTroopTransfer.MoveBatches(
                 interceptor.MemberRoster, returningBuffer,
                 returningBatches, returningWardens);
 
@@ -927,7 +905,7 @@ namespace GreyWardenPolicePurity
                     .ThenBy(static element => element.Character.StringId,
                         StringComparer.OrdinalIgnoreCase)
                     .ToList();
-            int displacedToRetire = TransferTroopBatches(
+            int displacedToRetire = GwpTroopTransfer.MoveBatches(
                 sourceParty.MemberRoster, interceptor.MemberRoster,
                 displacementBatches, displacementNeeded);
 

@@ -1093,26 +1093,8 @@ namespace GreyWardenPolicePurity
 
         private static int TransferHealthyBatches(TroopRoster source,
             TroopRoster destination, IEnumerable<TroopRosterElement> batches,
-            int requested)
-        {
-            int moved = 0;
-            foreach (TroopRosterElement batch in batches)
-            {
-                if (moved >= requested) break;
-                TroopRosterElement current = source.GetTroopRoster()
-                    .FirstOrDefault(element =>
-                        element.Character == batch.Character);
-                if (current.Character == null) continue;
-                int healthy = Math.Max(0,
-                    current.Number - current.WoundedNumber);
-                int take = Math.Min(healthy, requested - moved);
-                if (take <= 0) continue;
-                source.AddToCounts(batch.Character, -take, false, 0);
-                destination.AddToCounts(batch.Character, take, false, 0);
-                moved += take;
-            }
-            return moved;
-        }
+            int requested) =>
+            GwpTroopTransfer.MoveBatches(source, destination, batches, requested, healthyOnly: true);
 
         private bool PrepareDeliveryConversation()
         {

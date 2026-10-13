@@ -1046,19 +1046,35 @@ namespace GreyWardenPolicePurity
         /// 人来了就收进守村队：烧人生出来的、传教队和运械队到了的、巡逻回来的，可以超过 <see cref="GuardCap"/>
         /// （用户裁定 2026-10-08：超过上限只是不再自己长，超出的人分批出去巡逻）。返回加了几个。
         /// </summary>
-        private int JoinGuard(FaithVillage row, Settlement village, CharacterObject troop, int count)
+        private int JoinGuard(FaithVillage row, Settlement village, CharacterObject troop, int count,
+            TroopRoster? source = null)
         {
             if (count <= 0)
                 return 0;
-            GuardOf(row.VillageId).AddToCounts(troop, count);
             MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+            bool transferred = source != null && militia?.IsActive == true;
+            if (transferred)
+                count = GwpTroopTransfer.Move(source!, militia!.MemberRoster, troop, count).Number;
+            GuardOf(row.VillageId).AddToCounts(troop, count);
             // 民兵队正在打仗（比如村子被劫掠）：PushGuard 不碰它，按记录补齐会把战死的人补回来；新来的人直接加进民兵队，
             // 原版纯 AI 的战斗每一轮模拟前按名单重新排兵（C#反编译 v1.4.8 MapEventSide.MakeReadyForSimulation → MapEventParty.Update），
             // 下一轮就上场；打完 ObserveGuard 照幸存的人记（用户裁定 2026-10-08：巡逻队回来直接并入守村队，人数加进去一起打）。
-            if (militia?.IsActive == true && militia.MapEvent != null)
-                militia.MemberRoster.AddToCounts(troop, count);
-            else
-                PushGuard(row, village);
+            if (!transferred)
+            {
+                if (militia?.IsActive == true && militia.MapEvent != null)
+                    militia.MemberRoster.AddToCounts(troop, count);
+                else
+                {
+                    PushGuard(row, village);
+                    militia = village.MilitiaPartyComponent?.MobileParty;
+                    if (source != null && militia?.IsActive == true)
+                    {
+                        // 原版刚创建的民兵队由 PushGuard 填了人数；换入归队兵的真实状态。
+                        militia.MemberRoster.AddToCounts(troop, -count);
+                        GwpTroopTransfer.Move(source, militia.MemberRoster, troop, count);
+                    }
+                }
+            }
             _plans.Remove(row.VillageId);
             return count;
         }

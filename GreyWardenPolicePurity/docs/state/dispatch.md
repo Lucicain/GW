@@ -2,9 +2,9 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：`8e800e7`（2026-10-14）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
-> 待实测：无
+> 待实测：送信归队接续伤兵和累计经验；反复建队不重号
 
 送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。
 
@@ -13,6 +13,8 @@
 `GwpDispatchPurpose`：`Report`（带钱物、必要时押俘虏去复命）、`Support`（求援，送到才成立）、
 `TroopOrder`（带练兵订单和订金，送到才立单；练好的兵仍由练兵官亲自送）、`PeaceRequest`
 （请灰袍出面调停，空手去空手回）。阶段 `Outbound → Returning → Rejoined`，存档键 `gwp_dispatch_state`。
+
+建队编号与归队状态搬运使用 [临时队](temporary-parties.md) 定义的公共入口；送信阶段、交割与工资流程不变。（依据：源码复核2026-10-14）
 
 ## 出发
 

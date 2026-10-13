@@ -1,13 +1,15 @@
 # 玩家练兵订单与随行练兵队
 
-> 当前状态：守村升级费用归属；已部署待实测，离线构建已核对
+> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`8e800e7`（2026-10-14）
+> 已复核至：`2a2d075`（2026-10-14）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
-> 待实测：无
+> 待实测：调兵、练兵队归还及解散保留实际伤兵与经验；同版存读后接续
 
 本文件只写玩家向灰袍练兵官订兵这条线。灰袍领主日常练兵、兵种配比取向
-（`GreyWardenTrainingBehavior`）尚未提取，见 [README](README.md)。
+（`GreyWardenTrainingBehavior`）见[日常练兵](warden-training.md)。共用升级模型新增的守村灰袍付款选择只在信众村民兵升级范围生效，不改变订单锁定、交付或分支；费用归属见[村庄](firesworn-villages.md)。（依据：源码复核 2026-10-09）
+
+兵员搬运及建队编号规则只在 [临时队](temporary-parties.md) 定义，选兵与订单阶段沿用本页。
 
 ## 订单阶段
 
@@ -88,8 +90,3 @@
 
 见 [training-feedback.md](training-feedback.md)：订单 `gwheavyinfantry`×80 卡在 `Training`
 约 76 天，练兵队 71 重步兵 + 5 灰袍弓手 + 4 外来兵占满 80 个名额。
-
-
-## 守村升级费用归属
-
-仅信众村实体民兵中灰袍普通兵的升级费用归灰袍公库；金额与限制由现行升级器决定，不改变订单或领主升级。费用规则见 firesworn-villages.md。（依据：用户裁定与源码/离线复核 2026-10-14）

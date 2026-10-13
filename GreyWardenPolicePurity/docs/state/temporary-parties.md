@@ -1,10 +1,10 @@
 # 无领主临时队：船只与口粮
 
-> 当前状态：临时队编号统一归属；已部署待实测，离线构建已核对
+> 当前状态：原借船规则已验收；共享编号与调兵状态搬运已修复部署待实测
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`8e800e7`（2026-10-14）
-> 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs` `GwpPartyIdentity.cs`
-> 待实测：无。玩家被俘时送信队原地等、不会回来（见 [dispatch.md](dispatch.md)），只有它在这期间被打掉才会走"还给被俘玩家"；由诊断行 `SHIP_LOAN_UNRETURNABLE_DESTROYED` 兜底观察
+> 已复核至：`2a2d075`（2026-10-14）
+> 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs` `GwpPartyIdentity.cs` `GwpTroopTransfer.cs` `tools/Verify-PartyTransfers.ps1`
+> 待实测：练兵/订单/追截/送信归队保留伤兵及累计经验；反复建队不重号；同版存读接续
 
 ## 船：只借真船，销毁前退回（2026-09-24 起）
 
@@ -99,7 +99,11 @@
 
 兵员纯化已删（用户裁定 2026-10-07：灰袍照原版招原版兵），见 [warden-recruitment.md](warden-recruitment.md)。
 
+## 共享编号与兵员搬运
 
-## 临时队编号统一归属
+- `GwpPartyIdentity.Next` 统一用于火誓者、送信、纠察、招募使者、练兵与两处追截建队。先查询原版 `CampaignObjectManager.FindNextUniqueStringId<MobileParty>`，再核对候选是否实际存在；碰撞时严格递增后缀。原版工厂先以 `quest_party_template_1` 注册，再改 `StringId` 不更新最大后缀，因此原版返回值本身不足以证明改名后的唯一性。公共入口没有持久计数器、随机重试或旧档迁移。（依据：C#反编译 v1.4.8、实际注册表连续建队回归 2026-10-14）
+- `GwpTroopTransfer.Move` 在两份实体名册间搬指定兵种：健康兵先搬，`healthyOnly` 不搬伤兵；同时扣入对应伤兵与经验。部分搬运沿用原版 `PartyScreenLogic.TransferTroopToLeaderSlot` 的 `人数×整除后人均经验`，整批带走整个经验池及余数；`MoveBatches` 只协调批次，不另写搬运算法。选兵、额度、编制与经验发放仍由各功能定义。（依据：C#反编译 v1.4.8、实际名册状态守恒回归 2026-10-14）
+- 创建追截失败时，按同步调用中记录的来源、人数和精确经验归还；这份记录不跨存档，没有新增持久状态。巡逻新战斗经验供村内的用户裁定仍由 [村庄](firesworn-villages.md) 定义，搬运原有经验不改变该归属。（依据：设计、源码复核 2026-10-14）
+- 无实体民兵时，自有守村记录仍只记人数，其经验持有边界见 [村庄](firesworn-villages.md)，不新增另一份经验库。（依据：设计）
 
-GwpPartyIdentity 先用原版 FindNextUniqueStringId，再实际查重并严格递增候选。原版工厂注册后改名不更新最大后缀，不能只相信一次原版返回值。7处建队统一调用，不新增持久计数器或随机重试，原版有限注册表保证终止。（依据：用户裁定与源码/离线复核 2026-10-14）
+整理前源码基线为 `2a2d075`：相关调用文件见本页及练兵、订单、案件、送信、火誓者 state；取回基线对应调用文件并移除基线没有的两份公共入口，再构建部署。基线也会撤去尚未存档的其他相关开发，需按目标差异取回，不整批覆盖工作树。（依据：流程）

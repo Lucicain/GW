@@ -555,7 +555,7 @@ namespace GreyWardenPolicePurity
 
             int movedElites = TransferEliteTroopsProportionally(trainer.MemberRoster,
                 target.MemberRoster, elites, exchangeCount, out string movedComposition);
-            int movedTrainees = TransferFromBatches(target.MemberRoster,
+            int movedTrainees = GwpTroopTransfer.MoveBatches(target.MemberRoster,
                 trainer.MemberRoster, trainees, exchangeCount);
             GwpAiDiagnostics.WriteAction(trainer, "TRAINING_EXCHANGE_ROSTER",
                 "target=" + target.StringId + "; requested=" + exchangeCount +
@@ -613,10 +613,8 @@ namespace GreyWardenPolicePurity
                 int take = Math.Min(current.Number, planned);
                 if (take <= 0) continue;
 
-                int healthy = Math.Max(0, current.Number - current.WoundedNumber);
-                int wounded = Math.Max(0, take - healthy);
-                source.AddToCounts(batches[index].Character, -take, false, -wounded);
-                destination.AddToCounts(batches[index].Character, take, false, wounded);
+                take = GwpTroopTransfer.Move(source, destination,
+                    batches[index].Character, take).Number;
                 moved += take;
                 movedParts.Add(batches[index].Character.StringId + ":" + take);
             }
@@ -625,26 +623,7 @@ namespace GreyWardenPolicePurity
             return moved;
         }
 
-        private static int TransferFromBatches(TroopRoster source, TroopRoster destination,
-            IEnumerable<TroopRosterElement> batches, int requested)
-        {
-            int moved = 0;
-            foreach (TroopRosterElement batch in batches)
-            {
-                if (moved >= requested) break;
-                TroopRosterElement current = source.GetTroopRoster().FirstOrDefault(element =>
-                    element.Character == batch.Character);
-                int take = Math.Min(current.Number, requested - moved);
-                if (take <= 0) continue;
 
-                int healthy = Math.Max(0, current.Number - current.WoundedNumber);
-                int wounded = Math.Max(0, take - healthy);
-                source.AddToCounts(batch.Character, -take, false, -wounded);
-                destination.AddToCounts(batch.Character, take, false, wounded);
-                moved += take;
-            }
-            return moved;
-        }
 
         private void FinishAssignment(TrainingAssignment task, MobileParty trainer,
             MobileParty target, Settlement settlement, int exchanged)

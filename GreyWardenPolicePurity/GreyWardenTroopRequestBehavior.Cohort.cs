@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -238,11 +238,8 @@ namespace GreyWardenPolicePurity
                 int take = Math.Min(
                     Math.Max(0, element.Number - element.WoundedNumber), budget);
                 if (take <= 0) continue;
-                trainer.MemberRoster.AddToCounts(element.Character, -take,
-                    insertAtFront: false, woundedCount: 0);
-                cohort.MemberRoster.AddToCounts(element.Character, take,
-                    insertAtFront: false, woundedCount: 0);
-                moved += take;
+                moved += GwpTroopTransfer.Move(trainer.MemberRoster, cohort.MemberRoster,
+                    element.Character, take, healthyOnly: true).Number;
             }
 
             // 队里还剩有用的人才退：空队会被原版当无人队清掉，下一拍就误报成
@@ -252,13 +249,8 @@ namespace GreyWardenPolicePurity
             {
                 foreach (TroopRosterElement element in strays)
                 {
-                    cohort.MemberRoster.AddToCounts(element.Character,
-                        -element.Number, insertAtFront: false,
-                        woundedCount: -element.WoundedNumber);
-                    trainer.MemberRoster.AddToCounts(element.Character,
-                        element.Number, insertAtFront: false,
-                        woundedCount: element.WoundedNumber);
-                    returned += element.Number;
+                    returned += GwpTroopTransfer.Move(cohort.MemberRoster, trainer.MemberRoster,
+                        element.Character, element.Number).Number;
                 }
             }
             if (moved <= 0 && returned <= 0) return;
@@ -294,10 +286,8 @@ namespace GreyWardenPolicePurity
                          cohort.MemberRoster.GetTroopRoster().ToList())
                 {
                     if (element.Character == null || element.Number <= 0) continue;
-                    trainer.MemberRoster.AddToCounts(element.Character,
-                        element.Number, insertAtFront: false,
-                        woundedCount: element.WoundedNumber);
-                    returned += element.Number;
+                    returned += GwpTroopTransfer.Move(cohort.MemberRoster, trainer.MemberRoster,
+                        element.Character, element.Number).Number;
                 }
             }
             cohort.MemberRoster.Clear();

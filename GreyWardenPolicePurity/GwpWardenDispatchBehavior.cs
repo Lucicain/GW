@@ -812,10 +812,8 @@ namespace GreyWardenPolicePurity
                 // 临时队长随差事撤销，不会跟着回到玩家队里。
                 if (element.Character == null || element.Number <= 0 ||
                     element.Character.IsHero) continue;
-                player.MemberRoster.AddToCounts(element.Character, element.Number,
-                    false, element.WoundedNumber, element.Xp);
-                party.MemberRoster.AddToCounts(element.Character, -element.Number,
-                    false, -element.WoundedNumber, -element.Xp);
+                GwpTroopTransfer.Move(party.MemberRoster, player.MemberRoster,
+                    element.Character, element.Number);
             }
             foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster().ToList())
             {
