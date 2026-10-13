@@ -1,8 +1,8 @@
 # 诊断系统
 
-> 当前状态：现行规则；入国来源与自动换装候选取证随修复合入 main，已验收读档退出正常 trace 已退休
+> 当前状态：经验与人口监控；已部署待实测，离线构建已核对
 > 最后验收：未建立检查点
-> 已复核至：`a898237`（2026-10-08）
+> 已复核至：`bcad7f5`（2026-10-14）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs`
 > 待实测：无
 
@@ -119,3 +119,8 @@
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
+
+
+## 经验与人口监控
+
+补兵日志分别标信众户增量、士兵补入、总人口/上限/缺额；GUARD_EXPERIENCE 汇总实际发放与容量未用。军械库每日诊断遍历整体只在 GWP_DIAGNOSTICS 内，玩家版不做无用字符串和遍历。（依据：用户裁定与源码/离线复核 2026-10-14）

@@ -715,6 +715,7 @@ namespace GreyWardenPolicePurity
 
         private void WriteDailySummary()
         {
+#if GWP_DIAGNOSTICS
             WriteDailyAnomalies();
             foreach (FaithVillage row in _villages.Values)
             {
@@ -728,7 +729,11 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteFaith("DAILY_VILLAGE",
                     "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0") +
                     "; households=" + row.Households + "; guard=" + Sworn(row) + "; share=" + SwornShare(row, village).ToString("0.00") +
+                    "; population=" + GuardPopulation(row) + "; cap=" + GuardCap(row) + "; headroom=" + GuardHeadroom(row) +
                     "; guard=" + Composition(GuardOf(row.VillageId)) +
+                    "; guardXp=" + (militia?.IsActive == true ? string.Join(",", militia.MemberRoster.GetTroopRoster()
+                        .Where(troop => IsGuardTroop(troop.Character) && troop.Xp > 0)
+                        .Select(troop => troop.Character.StringId + ":" + troop.Xp)) : "") +
                     "; vanillaMilitia=" + (militia?.IsActive == true ? militia.MemberRoster.TotalManCount - Sworn(row) : 0) +
                     "; priest=" + (priest?.StringId ?? "-") +
                     "; priestPower=" + (priest?.Power.ToString("0") ?? "-") +
@@ -766,6 +771,7 @@ namespace GreyWardenPolicePurity
                 "; dungeon=" + _dungeons.Values.Sum(roster => roster.TotalManCount) +
                 "; treasury=" + PoliceResourceManager.GetJudicialTreasuryBalance() +
                 "; activeParties=" + _faithParties.Values.Count(entry => entry.Phase != FaithPartyPhase.Home));
+        #endif
         }
 
         private static string Composition(TroopRoster roster) =>
@@ -791,6 +797,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void WriteDailyAnomalies()
         {
+#if GWP_DIAGNOSTICS
             double now = CampaignTime.Now.ToHours;
             void Flag(string kind, string details) => GwpAiDiagnostics.WriteFaith("ANOMALY", "kind=" + kind + "; " + details);
 
@@ -858,6 +865,7 @@ namespace GreyWardenPolicePurity
             if (treasury < GwpTuning.Reconstruction.MinimumTreasuryReserve + GwpTuning.Reconstruction.MaximumCost)
                 Flag("TREASURY_LOW", "treasury=" + treasury + "; reconstructionNeeds=" +
                     (GwpTuning.Reconstruction.MinimumTreasuryReserve + GwpTuning.Reconstruction.MinimumCost));
+        #endif
         }
 
         private static string DaysSince(double hour) =>

@@ -207,9 +207,10 @@ namespace GreyWardenPolicePurity
         private void HoldDamnation(FaithVillage row, Settlement village)
         {
             int budget = Sworn(row);
+            int experience = 0;
             Dictionary<CharacterObject, int> produced = new Dictionary<CharacterObject, int>();
             int prisonersBurned = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
-                ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced)
+                ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced, ref experience)
                 : 0;
             budget -= prisonersBurned;
             int militiaBurned = 0;
@@ -220,7 +221,7 @@ namespace GreyWardenPolicePurity
                 if (militia?.IsActive == true)
                     militiaBurned = BurnPairs(militia.MemberRoster,
                         militia.MemberRoster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)),
-                        budget, produced);
+                        budget, produced, ref experience);
                 budget -= militiaBurned;
                 // 以前没扣烧俘虏感化的户、也没算烧掉的那户本身，户数减了以后信众户被压到等于户数，一场就 100%
                 // （实机诊断 2026-10-08：烧 226 人、60 户，信众户 181→249 = 户数，日志里立誓户 −46）。
@@ -251,6 +252,7 @@ namespace GreyWardenPolicePurity
                 row.Households = Math.Min(HouseholdCap(village), row.Households + householdsBurned);
                 householdsSworn = row.Households - sworn;
             }
+            int experienceGranted = GrantGuardExperience(row, experience, "damnation");
             UpdatePriestPower(row);
             village.Party.SetVisualAsDirty();
             // 聚落上那一条只说烧了多少、多少户立誓（用户 2026-10-08：写得太多）；立誓户数连烧俘虏感化的一起算。
@@ -274,13 +276,14 @@ namespace GreyWardenPolicePurity
                 "; householdsBurned=" + householdsBurned + "; householdsSworn=" + householdsSworn +
                 "; produced=" + string.Join(",", produced.Select(pair => pair.Key.StringId + ":" + pair.Value)) +
                 "; addedToGuard=" + risen + "; households=" + before + "->" + row.Households +
+                "; experience=" + experience + "; experienceGranted=" + experienceGranted +
                 "; hearth=" + hearthBefore.ToString("0") + "->" + village.Village.Hearth.ToString("0") + "; guard=" + Sworn(row) +
                 "; dungeonLeft=" + (dungeon?.TotalManCount ?? 0));
         }
 
         /// <summary>从名单里成对烧（PickPairs），把烧掉的人从名单里拿掉，生成的灰袍兵记进 produced。返回烧了几个。</summary>
         private static int BurnPairs(TroopRoster roster, IEnumerable<TroopRosterElement> pool, int limit,
-            Dictionary<CharacterObject, int> produced)
+            Dictionary<CharacterObject, int> produced, ref int experience)
         {
             Dictionary<CharacterObject, int> burned = new Dictionary<CharacterObject, int>();
             foreach (KeyValuePair<CharacterObject, int> pair in PickPairs(pool.ToList(), limit, burned))
@@ -288,6 +291,9 @@ namespace GreyWardenPolicePurity
                 produced.TryGetValue(pair.Key, out int already);
                 produced[pair.Key] = already + pair.Value;
             }
+            // 两人一死一转：死者取所处理兵种总经验价值的一半。用原版目标经验价值，
+            // 不是虚构一场攻击者、伤害或倍率，也不把转化者再算一次死亡（用户裁定 2026-10-09）。
+            experience += burned.Sum(pair => Campaign.Current.Models.PartyTrainingModel.GetXpReward(pair.Key) * pair.Value) / 2;
             foreach (KeyValuePair<CharacterObject, int> pair in burned)
             {
                 int index = roster.FindIndexOfTroop(pair.Key);

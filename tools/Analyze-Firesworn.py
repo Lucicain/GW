@@ -90,6 +90,17 @@ def main():
     days = max(1, last_day - first_day)
     issues = []
 
+    experience = collections.defaultdict(collections.Counter)
+    for _, stage, data in events:
+        if stage == "GUARD_EXPERIENCE":
+            source = data.get("source", "unknown").split(":", 1)[0]
+            for key in ("earned", "granted", "unused"):
+                experience[source][key] += num(data.get(key))
+    if experience:
+        print("== 村内守村队经验（经验点，不是新增兵数）")
+        for source, values in sorted(experience.items()):
+            print(f"   {source}: 获得{values['earned']:.0f}，实际发放{values['granted']:.0f}，容量不足未用{values['unused']:.0f}")
+
     # ------------------------------------------------------------ 总览
     totals = by_stage["DAILY_TOTALS"]
     print(f"== 总览：游戏内第 {first_day} 天到第 {last_day} 天，共 {days} 天，{len(events)} 行监控")
@@ -124,15 +135,17 @@ def main():
         issues.append(f"{len(low_gold)} 次卖货把城镇金库卖空了：{', '.join(sorted({d['town'] for d in low_gold}))}")
 
     # ------------------------------------------------------------ 信众村
-    print("\n== 有火誓者的村子（首日 -> 末日；人数来源）")
+    print("\n== 有火誓者的村子（首日 -> 末日；来源注明户、兵和人次，不相加）")
     villages = collections.defaultdict(list)
     for hour, data in by_stage["DAILY_VILLAGE"]:
         villages[data["village"]].append((hour, data))
     gains = collections.defaultdict(collections.Counter)
     for _, data in by_stage["RECONSTRUCTION_SWORN"]:
-        gains[data["village"]]["重建"] += num(data.get("added"))
+        before, after = str(data["households"]).split("->")
+        gains[data["village"]]["重建信众户"] += num(after) - num(before)
     for _, data in by_stage["CONGREGATION_COMPLETED"]:
-        gains[data["village"]]["本村传教"] += num(data.get("gain"))
+        before, after = str(data["households"]).split("->")
+        gains[data["village"]]["集会信众户"] += num(after) - num(before)
     for _, data in by_stage["MISSION_JOINED"]:
         gains[data["village"]]["外村来传教"] += num(data.get("joined"))
     for _, data in by_stage["BALANCE_DELIVERED"]:
@@ -161,8 +174,12 @@ def main():
     for _, data in by_stage["ZEALOTS_ENLISTED"]:
         gains[data["village"]]["直接招走"] -= num(data.get("enlisted"))
     for _, data in by_stage["SWORN_GROWTH"]:
-        gains[data["village"]]["灰袍所到"] += num(data.get("fromWardens"))
-        gains[data["village"]]["挂户数"] += num(data.get("fromHearth"))
+        for field, label in (("fromWardensHouseholds", "驻留信众户"),
+                             ("fromHearthHouseholds", "自然增长信众户"),
+                             ("fromWardens", "旧日志驻留产兵"),
+                             ("fromHearth", "旧日志自然增长产兵")):
+            if field in data:
+                gains[data["village"]][label] += num(data[field])
         gains[data["village"]]["守村队补兵"] += num(data.get("regrown"))
     for _, data in by_stage["ARMORY_LOOT"]:
         gains[data["holder"]]["缴获件数"] += num(data.get("items"))
@@ -253,7 +270,7 @@ def main():
         print(f"   {kind} ×{len(rows)}（第 {day(rows[0][0])}–{day(rows[-1][0])} 天）最近一次: {sample}")
         issues.append(f"异常 {kind} 出现 {len(rows)} 次")
 
-    print("\n== 需要看的平衡问题")
+    print("\n== 需要看的问题")
     for issue in issues or ["没有发现"]:
         print("   - " + issue)
 

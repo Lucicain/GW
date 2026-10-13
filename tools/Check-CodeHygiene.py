@@ -182,6 +182,7 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),
     ("战力", r"\.EstimatedStrength\b|\bGetPowerOfParty\s*\(|\bGetTroopPower\s*\(|\bGetTotalLandStrength\w*\s*\(",
      "GwpStrength.cs", "GwpStrength"),
     ("进聚落意愿", r"\[HarmonyPatch\(typeof\(AiVisitSettlementBehavior\)", "GwpWardenVisitDesire*.cs", "GwpWardenVisitDesire"),
