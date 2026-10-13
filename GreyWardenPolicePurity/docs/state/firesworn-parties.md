@@ -2,7 +2,7 @@
 
 > 当前状态：零人派队死循环、紧急增员条件与出队配装已修复部署；监控约17游戏日无新零人派队，遭遇吸附仍待实测
 > 最后验收：未建立检查点
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`GwpFireswornParties.cs` `GwpFireswornPartyDialogs.cs` `GwpFaithPatrolInitiativePatch.cs`
 > 待实测：见文末
 

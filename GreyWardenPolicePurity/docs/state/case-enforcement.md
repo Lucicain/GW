@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
 > 最后验收：`9d005bb`
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
 

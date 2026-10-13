@@ -2,9 +2,11 @@
 
 > 当前状态：主队 NPC 案与玩家本人通缉隔离经用户实测确认（2026-10-02）
 > 最后验收：`9fd8cea`（2026-10-02 用户确认）
-> 已复核至：`8e800e7`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`PolicePatrolBehavior.cs` `PolicePatrolBehavior.Helpers.cs` `PolicePatrolBehavior.Encyclopedia.cs`
 > 待实测：无
+
+建队编号统一使用 [临时队](temporary-parties.md) 的公共入口，追踪与退队规则不变。（依据：源码复核2026-10-14）
 
 ## 玩家声望驱动的纠察队
 

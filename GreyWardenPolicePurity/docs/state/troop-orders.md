@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：调兵、练兵队归还及解散保留实际伤兵与经验；同版存读后接续
 

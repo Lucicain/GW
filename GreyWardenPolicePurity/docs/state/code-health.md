@@ -2,7 +2,7 @@
 
 > 当前状态：已确认的配装、紧急补兵、编号与调兵状态缺陷已修复；通用吞异常包装已移除；正常卡顿耗时尚未测定
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs`
 > 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 

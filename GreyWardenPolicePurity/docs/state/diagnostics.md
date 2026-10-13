@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；巡逻卡死已由双次现场采样定位，分析器新增空队检查；已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `tools/Analyze-Firesworn.py`
 > 待实测：无
 

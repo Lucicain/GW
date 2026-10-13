@@ -2,7 +2,7 @@
 
 > 当前状态：总缺额补兵、经验供留守兵与灰袍承担守村灰袍升级费已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`2a2d075`（2026-10-14）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs`
 > 待实测：见文末
 
@@ -126,6 +126,4 @@
 
 ## 回退
 
-本次成长方式调整前为 `2a2d075`；取回 `GwpFireswornBehavior.cs`、`GwpFireswornRituals.cs`、`GwpFireswornArmory.cs`、`GwpTuning.cs` 与 `tools/Analyze-Firesworn.py`，移除该基线没有的 `GwpFireswornExperience.cs`，可恢复原成长、烧民兵限额和参战队自行吃经验，重新构建、部署并验哈希。没有新增存档字段。（依据：流程）
-
-付款归属可单独回退：从 `2a2d075` 取回 `PolicePartyTroopUpgradeModel.cs`，移除该基线没有的 `GwpFireswornUpgradePayment.cs`，重建部署；这会恢复守村灰袍由村主付款。（依据：流程）
+本批按事项存档：成长 `bcad7f5`、经验 `310e9ca`、付款 `bb3df4a`。需要回退时选对应 `git revert` 并检查后续依赖；不能从整批旧基线取回整个 Behavior 文件来单撤一项，否则会撤去其他已保留开发。完整索引在 [总览](firesworn.md)。（依据：流程）

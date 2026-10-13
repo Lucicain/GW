@@ -1,8 +1,8 @@
 # 火誓者仪式媒体：卡面与两种声音
 
-> 当前状态：仪式配图、双声音交接已由用户确认完全修复；声音健康路径诊断退休
+> 当前状态：仪式配图、双声音交接已由用户确认完全修复；声音健康路径诊断、日志与临时调查产物已清理
 > 最后验收：`774d2e2`（2026-10-08，仪式媒体）
-> 已复核至：`a898237`（2026-10-08）
+> 已复核至：`61ee7c9`（2026-10-14）
 > 覆盖源码：`GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：无
 
