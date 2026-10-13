@@ -293,9 +293,10 @@ namespace GreyWardenPolicePurity
             public const float VanillaMilitiaRetireShare = 0.025f;
 
             // 重建把当地 5% 的人换成狂信者（用户裁定 2026-10-07）。
-            // 守村队补兵：兵已经离开的信众户，每户每天按这个概率再出一个兵（试玩值；5% 约 20 天一个）。
-            public const float GuardRegrowDailyChance = 0.05f;
-            // 灰袍所到之处：灰袍领主每在一座村里或村口待一天，那座村加这么多狂信者（试玩值）。
+            // 守村队补兵：按两户一兵上限减在村与本村无人队灰袍兵的总缺额，每天补此比例（试玩值）。
+            // 用户裁定 2026-10-09：保留5%试玩值，明确为原版2.5%缺额速度的两倍。
+            public const float GuardRegrowDailyChance = VanillaMilitiaRetireShare * 2f;
+            // 灰袍所到之处：每支领主队在村里或村口待一天，增加这么多信众户，不即时产兵（试玩值）。
             public const int WardenPresenceDailySworn = 2;
             public const float ReconstructionSwornShare = 0.05f;
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
@@ -316,7 +317,7 @@ namespace GreyWardenPolicePurity
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
             public const float GuardKeptFromPriestSlots = 0.5f;
 
-            // 集会传教：祭司在本村传，照比武大会，两次至少隔 15 天。
+            // 集会传教：只增加信众户，按独立仪式冷却触发；士兵另按总缺额增长。
             public const float CongregationHours = 24f;
             public const float CongregationHearthShare = 0.04f;
             public const int CongregationMinimumGain = 5;
@@ -334,9 +335,6 @@ namespace GreyWardenPolicePurity
             // 烈火责罚：俘虏、原版民兵烧死两个同等级的人生成一个同等级的灰袍兵。
             // 和集会传教一样锁村 24 小时，这 24 小时里村子在地图上冒烟（用户裁定 2026-10-07）。
             public const float DamnationLockHours = 24f;
-            // 本地传教到头以后烧原版民兵：一次最多 2 + 户数/200 个。
-            public const int DamnationMilitiaBase = 2;
-            public const float DamnationHearthPerMilitia = 200f;
             // 烧不信教的户（用户裁定 2026-10-07）：现有信众户每 3 户烧 1 户，烧 1 户换 1 户信教。
             public const int DamnationSwornPerBurnedHousehold = 3;
 

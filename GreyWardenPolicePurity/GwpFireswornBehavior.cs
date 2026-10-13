@@ -496,6 +496,9 @@ namespace GreyWardenPolicePurity
         {
             Settlement home = PoliceStats.GetPoliceClan().InitialHomeSettlement;
             OnVillageRebuilt(home);
+            FaithVillage row = _villages[home.StringId];
+            // 新档的初始守村兵是开局配置；普通重建和传教不再即时产兵（用户裁定 2026-10-09）。
+            AddToGuard(row, home, CharacterObject.Find(GwpIds.ZealotId), GuardHeadroom(row));
             InstallPriest(home);
         }
 
@@ -683,7 +686,7 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 祭司
 
         /// <summary>
-        /// 灰袍重建完一座村子：当地 5% 的人家信教（用户裁定 2026-10-07：重建算传教，给火誓者人数），每户出一个狂信者。
+        /// 灰袍重建完一座村子：当地 5% 的人家信教，士兵按总缺额每日补入（用户裁定 2026-10-09）。
         /// 重建不拉祭司，祭司按比例生成之后才算信众村（<see cref="SpawnPriestsByShare"/>）。
         /// </summary>
         internal static void OnVillageRebuilt(Settlement village)
@@ -692,7 +695,7 @@ namespace GreyWardenPolicePurity
                 return;
             FaithVillage row = _instance.EnsureVillage(village);
             int before = row.Households;
-            int added = _instance.Convert(row, village, CharacterObject.Find(GwpIds.ZealotId),
+            int added = Convert(row, village,
                 (int)Math.Round(village.Village.Hearth * GwpTuning.Firesworn.ReconstructionSwornShare));
             GwpAiDiagnostics.WriteFaith("RECONSTRUCTION_SWORN",
                 "village=" + village.StringId + "; added=" + added + "; households=" + before + "->" + row.Households +
@@ -884,12 +887,11 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 火誓者每天怎么长（用户裁定 2026-10-07：前期只靠烧俘虏和本村传教太慢；挂户数；灰袍所到之处促进增长）：
         /// <list type="bullet">
-        /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村多两户信众、在守村队上限内补兵；
-        /// 还没有火誓者的村子就此有了守村队（GwpTuning.Firesworn.WardenPresenceDailySworn，试玩值）。</item>
-        /// <item>挂户数：原版这座村今天新增的户里，按火誓者比例那部分是信众户，各出一个狂信者
+        /// <item>灰袍所到之处：灰袍领主这一天在哪座村里或村口（原版「正在这里」），那座村多两户信众。</item>
+        /// <item>挂户数：原版这座村今天新增的户里，按火誓者比例那部分是信众户
         /// （C#反编译 v1.4.8 DefaultSettlementProsperityModel.CalculateHearthChange：不到 300 户每天 +4、不到 600 户 +1.2、再多 +0.2）。</item>
-        /// <item>补兵：守村队和原版民兵分开，只看信众户（用户裁定 2026-10-07）。兵已经离开、还没出下一个兵的信众户，
-        /// 每户每天按 GwpTuning.Firesworn.GuardRegrowDailyChance 的概率再出一个兵，补到信众户数为止。
+        /// <item>补兵：两户信众一个兵，当前人口包括本村所有无人队中的灰袍兵；只按总缺额每天5%补入狂信者，
+        /// 与信众户增长分开（用户裁定 2026-10-09）。
         /// 不挂原版民兵增长：原版民兵 0.5 + 户数/400 − 现有 × 2.5%，民兵到了平衡点每天几乎是 0，守村队就跟着不补
         /// （C#反编译 v1.4.8 DefaultSettlementMilitiaModel；用户反馈 2026-10-07：民兵满了，守村队还差很远）。</item>
         /// </list>
@@ -906,7 +908,7 @@ namespace GreyWardenPolicePurity
                 Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
                 if (here?.IsVillage != true || !IsVillageQuiet(here) || FactionManager.IsAtWarAgainstFaction(police, here.MapFaction))
                     continue;
-                int added = Convert(EnsureVillage(here), here, zealot, GwpTuning.Firesworn.WardenPresenceDailySworn);
+                int added = Convert(EnsureVillage(here), here, GwpTuning.Firesworn.WardenPresenceDailySworn);
                 presence.TryGetValue(here.StringId, out int already);
                 presence[here.StringId] = already + added;
             }
@@ -920,18 +922,20 @@ namespace GreyWardenPolicePurity
                 {
                     float hearthGrowth = Campaign.Current.Models.SettlementProsperityModel.CalculateHearthChange(village.Village).ResultNumber;
                     if (hearthGrowth > 0f)
-                        fromHearth = Convert(row, village, zealot, MBRandom.RoundRandomized(hearthGrowth * share));
+                        fromHearth = Convert(row, village, MBRandom.RoundRandomized(hearthGrowth * share));
                 }
+                int headroom = GuardHeadroom(row);
                 if (IsVillageQuiet(village))
                     regrown = AddToGuard(row, village, zealot,
-                        MBRandom.RoundRandomized(Math.Max(0, GuardCap(row) - Sworn(row)) * GwpTuning.Firesworn.GuardRegrowDailyChance));
+                        MBRandom.RoundRandomized(headroom * GwpTuning.Firesworn.GuardRegrowDailyChance));
                 presence.TryGetValue(row.VillageId, out int fromWardens);
                 if (fromHearth + regrown + fromWardens <= 0)
                     continue;
                 UpdatePriestPower(row);
                 GwpAiDiagnostics.WriteFaith("SWORN_GROWTH",
-                    "village=" + row.VillageId + "; fromWardens=" + fromWardens + "; fromHearth=" + fromHearth +
+                    "village=" + row.VillageId + "; fromWardensHouseholds=" + fromWardens + "; fromHearthHouseholds=" + fromHearth +
                     "; regrown=" + regrown + "; households=" + row.Households + "; guard=" + Sworn(row) +
+                    "; population=" + GuardPopulation(row) + "; cap=" + GuardCap(row) + "; headroomBefore=" + headroom +
                     "; share=" + SwornShare(row, village).ToString("0.000") + "; hearth=" + village.Village.Hearth.ToString("0"));
             }
         }
@@ -1001,27 +1005,42 @@ namespace GreyWardenPolicePurity
         private int Sworn(FaithVillage row) =>
             _guards.TryGetValue(row.VillageId, out TroopRoster? guard) ? guard.TotalManCount : 0;
 
+        /// <summary>
+        /// 本村现有灰袍兵：在村守村队，加本村所有无人队中的灰袍兵（含伤兵、返程和停在村内的卖货队）。
+        /// 出门不空出补兵名额；传教、运械到了别村并入后才转为那座村的兵。领主招走的不再算本村。
+        /// （用户裁定 2026-10-09：增长按包括外出无人队在内的总人数与上限的差值计算。）
+        /// </summary>
+        private int GuardPopulation(FaithVillage row) => Sworn(row) + _faithParties.Values
+            .Where(entry => string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => FindParty(entry.PartyId))
+            .Where(party => party?.IsActive == true)
+            .Sum(party => party!.MemberRoster.GetTroopRoster()
+                .Where(element => IsGuardTroop(element.Character)).Sum(element => element.Number));
+
+        private int GuardHeadroom(FaithVillage row) => Math.Max(0, GuardCap(row) - GuardPopulation(row));
+
         /// <summary>火誓者比例 = 信众户 ÷ 户数。祭司势力、来不来祭司、传教去哪儿都看它。</summary>
         private static float SwornShare(FaithVillage row, Settlement village) =>
             row.Households / Math.Max(1f, village.Village.Hearth);
 
         /// <summary>
-        /// 一户人家信教，带来的人进守村队（用户裁定 2026-10-07：烧死一个、另一个信教加入、一户村民信教；传教、灰袍所到之处同理）：
-        /// 信众户 +1（不超过户数），守村队 +1（不超过 <see cref="GuardCap"/>，满了的就只是信众）。返回守村队实际多了几个。
+        /// 信众户增长与士兵补入分开：这里只增加信众户，返回实际新增户数。
+        /// 士兵统一按总缺额每日补入（用户裁定 2026-10-09）。
         /// </summary>
-        private int Convert(FaithVillage row, Settlement village, CharacterObject troop, int count)
+        private static int Convert(FaithVillage row, Settlement village, int count)
         {
             if (count <= 0)
                 return 0;
-            row.Households = Math.Min(HouseholdCap(village), row.Households + count);
-            return AddToGuard(row, village, troop, count);
+            int before = row.Households;
+            row.Households = Math.Min(HouseholdCap(village), before + count);
+            return row.Households - before;
         }
 
         /// <summary>
-        /// 守村队自己长（补兵、挂户数、传教、重建、灰袍所到之处）：长到 <see cref="GuardCap"/> 为止。返回实际加了几个。
+        /// 按包括本村无人队在内的总缺额补兵，长到 <see cref="GuardCap"/> 为止。返回实际加了几个。
         /// </summary>
         private int AddToGuard(FaithVillage row, Settlement village, CharacterObject troop, int count) =>
-            JoinGuard(row, village, troop, Math.Min(count, Math.Max(0, GuardCap(row) - Sworn(row))));
+            JoinGuard(row, village, troop, Math.Min(count, GuardHeadroom(row)));
 
         /// <summary>
         /// 人来了就收进守村队：烧人生出来的、传教队和运械队到了的、巡逻回来的，可以超过 <see cref="GuardCap"/>

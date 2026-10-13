@@ -98,7 +98,7 @@ namespace GreyWardenPolicePurity
                 TroopRoster guard = GuardOf(holder);
                 int villageRecruits = CountOf(guard, GwpIds.NewRecruitId);
                 int villageZealots = CountOf(guard, GwpIds.ZealotId);
-                int headroom = Math.Max(0, GuardCap(row) - Sworn(row));
+                int headroom = GuardHeadroom(row);
                 int reserve = Math.Min(headroom, Math.Max(GwpTuning.Firesworn.ArmoryVillageReserveMinimum,
                     (int)(Sworn(row) * GwpTuning.Firesworn.ArmoryReserveShare)));
                 return BuildPlan(ledger, villageRecruits, villageZealots, reserve);

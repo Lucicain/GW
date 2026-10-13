@@ -85,7 +85,7 @@ namespace GreyWardenPolicePurity
         {
             _rituals.Remove(ritual);
             int before = row.Households;
-            int gain = Convert(row, village, CharacterObject.Find(GwpIds.ZealotId),
+            int gain = Convert(row, village,
                 Math.Max(GwpTuning.Firesworn.CongregationMinimumGain,
                     (int)Math.Round(village.Village.Hearth * GwpTuning.Firesworn.CongregationHearthShare)));
             row.LastCongregation = CampaignTime.Now.ToHours;
@@ -196,7 +196,7 @@ namespace GreyWardenPolicePurity
         /// <item>地牢里的俘虏，成对烧。</item>
         /// <item>本村传教到头（祭司已是本地最强）以后才烧本村（用户裁定 2026-10-07）：
         /// <list type="bullet">
-        /// <item>原版民兵，成对烧，一次最多 2 + 户数/200 个。这时信众村已不再出新民兵，烧掉旧的就是把守村队纯化，不是长期道路。</item>
+        /// <item>原版民兵，成对烧，只受本场剩余预算约束（用户裁定 2026-10-09：现有民兵是纯化目标）。</item>
         /// <item>不信教的户：现有信众户每 3 户烧 1 户。烧死的那户从户数里去掉，换来 1 户信教，所以每烧 1 户用掉 2 户不信教的，
         /// 先扣掉烧俘虏、民兵已经感化的；
         /// 不给守村队加兵——那些人家本来没有兵，守村队靠补兵自己长。一场涨得不多，要多烧几场（用户裁定 2026-10-07）。</item>
@@ -217,12 +217,10 @@ namespace GreyWardenPolicePurity
             if (IsPriestStrongest(row, village))
             {
                 MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
-                int militiaLimit = GwpTuning.Firesworn.DamnationMilitiaBase +
-                                   (int)(village.Village.Hearth / GwpTuning.Firesworn.DamnationHearthPerMilitia);
                 if (militia?.IsActive == true)
                     militiaBurned = BurnPairs(militia.MemberRoster,
                         militia.MemberRoster.GetTroopRoster().Where(element => !IsGuardTroop(element.Character)),
-                        Math.Min(budget, militiaLimit), produced);
+                        budget, produced);
                 budget -= militiaBurned;
                 // 以前没扣烧俘虏感化的户、也没算烧掉的那户本身，户数减了以后信众户被压到等于户数，一场就 100%
                 // （实机诊断 2026-10-08：烧 226 人、60 户，信众户 181→249 = 户数，日志里立誓户 −46）。

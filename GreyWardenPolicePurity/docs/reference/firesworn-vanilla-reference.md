@@ -2,6 +2,10 @@
 
 以下是原版行为与挂点资料，不是模组当前行为。模组规则从 [火誓者总览](../state/firesworn.md) 进入；游戏版本变化时复查原版结论。
 
+- 原版村庄每日民兵净增为 `0.5 + 户数/400 - Settlement.Militia×0.025`，村庄非正常状态时整项为0；城镇/城堡的建筑、政策、问题等额外项不走普通村庄这一分支。等价为 `(20 + 户数/10 - 现有民兵)×2.5%`，超过平衡点时可以负增长。（依据：C#反编译 v1.4.8 DefaultSettlementMilitiaModel.CalculateMilitiaChangeInternal，复核2026-10-09）
+- 实际加兵链为 `Campaign.DailyTickSettlement → Village.DailyTick → Settlement.Militia setter → TransferReadyMilitiasToMilitiaParty`。`Village.DailyTick` 先增加Hearth，再算MilitiaChange；民兵数量getter为本村民兵队总人数（含伤兵）加 `_readyMilitia` 小数，setter累积小数，在积累值大于1或小于-1时转成实际兵员。正增取floor，余数保留；不是每日随机舍掉小数。外出队伍不计入原版村民兵模型的人数。（依据：C#反编译 v1.4.8 Village、Settlement，复核2026-10-09）
+- 原版新增民兵默认近战/远程各50%，两类人数分别随机取整；逐兵按老兵概率生成普通或老兵民兵。老兵概率可受所属贸易城镇总督专长、文化等影响。`MBRandom.RoundRandomized` 是向下取整后按小数部分概率加1；火誓者继续用它对自有补兵取整，不共用原版民兵的小数账本。（依据：C#反编译 v1.4.8 DefaultSettlementMilitiaModel、Settlement.AddTroopToMilitiaParty、MBRandom，复核2026-10-09）
+
 - 招兵：兵出自要人的志愿兵格子，**每位要人固定 6 格**（`Hero.VolunteerTypes = new CharacterObject[6]`，招兵循环按 6 取模），
   兵种由 `VolunteerModel.GetBasicVolunteer` 决定。每天每格按概率补一个兵：0.75 × p^(格序+1)，p 在 0.7–0.9 之间，
   所以一位要人一天大约补 2–3 个兵。要多出兵，只能加要人或者把概率拉满。（依据：C#反编译）
