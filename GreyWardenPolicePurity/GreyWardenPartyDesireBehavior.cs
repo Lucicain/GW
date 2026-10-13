@@ -231,6 +231,9 @@ namespace GreyWardenPolicePurity
             // 办差的队伍谁也不主动打，劫匪也不打。它是去送东西的，不是去清野的；
             // 挨打时原版照样自卫，只是不会自己追上去。
             if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
+            // 巡逻的职责就是打共同敌人，不受办案目标白名单限制；参战仍须原版允许加入。
+            if (party != null && GwpFireswornBehavior.IsFaithPatrol(party))
+                return GwpFireswornBehavior.IsPatrolEnemy(party, target);
             if (target.IsBandit) return true;
 
             if (PoliceEnforcementBehavior.IsAuthorizedAssistanceTarget(party, target))

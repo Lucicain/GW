@@ -364,6 +364,7 @@ namespace GreyWardenPolicePurity
                 "; siege=" + DescribeSiege(party) +
                 "; isLordParty=" + party.IsLordParty +
                 "; isPatrolParty=" + party.IsPatrolParty +
+                "; shouldJoinPlayerBattles=" + party.ShouldJoinPlayerBattles +
                 "; isDisbanding=" + party.IsDisbanding +
                 "; leaderId=" + Safe(party.LeaderHero?.StringId) +
                 "; leaderState=" + (party.LeaderHero?.HeroState.ToString() ?? "-") +

@@ -16,6 +16,17 @@ namespace GreyWardenPolicePurity
         {
             if (!GwpFireswornBehavior.IsFaithPatrol(mobileParty))
                 return;
+            // 玩家和灰袍可能不同势力。原版只把同势力附近部队算作友军，漏掉正在共同作战的玩家。
+            // 只在确实能加入玩家这一侧时使用共享战力归属方，把玩家实际参战兵力算入。
+            if (enemyParty.MapEvent != null && enemyParty.MapEvent == MobileParty.MainParty.MapEvent &&
+                MobileParty.MainParty.Party.Side != TaleWorlds.Core.BattleSideEnum.None &&
+                enemyParty.Party.Side != MobileParty.MainParty.Party.Side &&
+                GwpFireswornBehavior.IsPatrolEnemy(mobileParty, enemyParty))
+            {
+                var balance = GwpStrength.Compare(mobileParty, enemyParty, includePlayer: true);
+                if (balance.EnemyLocalStrength > 0f)
+                    localAdvantage = balance.FriendlyLocalStrength / balance.EnemyLocalStrength;
+            }
             localAdvantage *= enemyParty.IsBandit ? 1.2f : enemyParty.IsLordParty ? 0.9f : enemyParty.IsPatrolParty ? 0.8f : 1f;
         }
     }

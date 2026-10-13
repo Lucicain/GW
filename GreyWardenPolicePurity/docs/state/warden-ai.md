@@ -1,8 +1,8 @@
 # 灰袍地图 AI：派活、欲望竞价与巡区
 
-> 当前状态：现行规则（2026-10-05 从源码提取）
+> 当前状态：巡逻共同敌人许可；已部署待实测，离线构建已核对
 > 最后验收：未建立检查点
-> 已复核至：`d0159ae`（2026-10-08）
+> 已复核至：`bb3df4a`（2026-10-14）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -139,3 +139,8 @@
 - 只有成功完成的普通差事，才计入玩家请求的顺延（`GwpPlayerRequestDeferral`）。取消、被挤掉、失效的不算。
 
 - 协力军团的保护补丁拦原版的自动解散，但带头部队没了（`LeaderPartyRemoved`、`ArmyLeaderIsDead`，或带头部队已失效）时不拦：原版在部队销毁时解散军团，拦下以后部队被清空家族、移出全图名单，案件系统再也找不到它，留下没有带头部队的空壳军团，每小时算凝聚力时 NavalDLC 查军团长文化特长读到空的所属势力，游戏闪退。（依据：C#反编译 v1.4.8 MobileParty.RemoveParty / OnRemoveParty、Army.OnRemovePartyInternal、PartyBaseHelper.HasFeat、PartyBase.Culture；实机诊断 2026-10-08：两次闪退都在带协力军团的灰袍领主部队被打光后的下一个整点）
+
+
+## 巡逻共同敌人许可
+
+只有火誓者巡逻/紧急队走 IsPatrolEnemy；领主、送信与案件差事保持原许可。正常地图主动性仍由原版判定，不强行宣战或加入。（依据：用户裁定与源码/离线复核 2026-10-14）

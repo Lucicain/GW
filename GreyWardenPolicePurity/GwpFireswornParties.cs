@@ -37,6 +37,8 @@ namespace GreyWardenPolicePurity
             {
                 MobileParty party = FindParty(record.PartyId)!;
                 Settlement home = Settlement.Find(record.HomeId);
+                // 参战许可随日常队伍行为维护；距离与外交仍由原版遭遇模型筛选。
+                party.ShouldJoinPlayerBattles = IsWatch(record.Kind);
                 if (party.MapEvent != null)
                     continue;
 
@@ -285,6 +287,17 @@ namespace GreyWardenPolicePurity
             _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
             IsWatch(record.Kind);
 
+        /// <summary>巡逻可主动打交战方的战斗部队；已开战时由原版核对双方全部参战者的外交。</summary>
+        internal static bool IsPatrolEnemy(MobileParty party, MobileParty target)
+        {
+            if (target.IsVillager || target.IsCaravan || target.IsMilitia || target.IsGarrison ||
+                !FactionManager.IsAtWarAgainstFaction(party.MapFaction, target.MapFaction))
+                return false;
+            var battle = target.MapEvent;
+            return battle == null || target.Party.Side != TaleWorlds.Core.BattleSideEnum.None &&
+                battle.CanPartyJoinBattle(party.Party, battle.GetOtherSide(target.Party.Side));
+        }
+
         /// <summary>
         /// 巡逻队打赢抓到的英雄当场放走，只押普通俘虏回村（用户裁定 2026-10-08）。英雄从来不进地牢、不会被烧。
         /// </summary>
@@ -347,6 +360,8 @@ namespace GreyWardenPolicePurity
                 home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
             party.StringId = GwpIds.FaithPartyPrefix + MBRandom.RandomInt(100000, 999999);
             party.ActualClan = police;
+            // 原版只吸附领主、匪、原版巡逻队或显式许可的自定义队（C#反编译 v1.4.8 DefaultEncounterModel）。
+            party.ShouldJoinPlayerBattles = IsWatch(kind);
             party.MemberRoster.Clear();
             // 打赢抢到的钱：原版只给有领主英雄、或开了交易账户的队（C#反编译 v1.4.8 MapEventParty.CommitGoldChanges），
             // 没有账户就丢了。开个账户，落村时交给村子、进公库（用户裁定 2026-10-08：无人队上交缴获给村子，村子再给灰袍）。
