@@ -481,7 +481,8 @@ namespace GreyWardenPolicePurity
             int size = minimum;
             DrawMen(party, row, home, size, militiaFirst);
             while (GwpStrength.Party(party) <= danger && size < maximum &&
-                   Sworn(row) > GwpTuning.Firesworn.MissionMinimumLeftBehind)
+                   (militiaFirst ? HomeDefenders(row, home) > 0 :
+                       Sworn(row) > GwpTuning.Firesworn.MissionMinimumLeftBehind))
                 DrawMen(party, row, home, ++size, militiaFirst);
             _plans.Remove(row.VillageId);
             return TakeBestSets(row.VillageId, party);

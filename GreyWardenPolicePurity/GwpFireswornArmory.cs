@@ -364,16 +364,28 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 无领主队出发前从家里的军械库拿最好的那几套（用户裁定 2026-10-07：无领主队都拿自己武器库里最好的再出发）：
-        /// 家里的配装从好到差排好，前 <paramref name="men"/> 套整套挪进这支队的账。
+        /// 按实际出队兵种重新配装，整套挪进这支队的账；已有装备只补缺额。
         /// </summary>
         private int TakeBestSets(string homeId, MobileParty party)
         {
-            int men = CountOf(party.MemberRoster, GwpIds.NewRecruitId) + CountOf(party.MemberRoster, GwpIds.ZealotId);
-            ArmoryPlan home = BuildPlanFor(homeId);
+            // 人已经从家里扣掉：按实际出队的两种兵配装，不能再用留守名单的套数。
+            // 常驻卖货队已携带的装备仍在自己的账里，只补这次尚未满足的配装。
+            ItemRoster available = new ItemRoster();
+            available.Add(ItemsOf(_armories, party.StringId));
+            available.Add(ItemsOf(_armories, homeId));
+            ArmoryPlan escort = BuildPlan(available,
+                CountOf(party.MemberRoster, GwpIds.NewRecruitId),
+                CountOf(party.MemberRoster, GwpIds.ZealotId), 0);
             ItemRoster taken = new ItemRoster();
-            foreach (EquipmentElement[] kit in home.Sets.Take(men))
+            foreach (EquipmentElement[] kit in escort.Sets)
                 foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
                     taken.AddToCounts(item, 1);
+            foreach (ItemRosterElement item in ItemsOf(_armories, party.StringId))
+            {
+                int owned = taken.Where(entry => entry.EquipmentElement.Equals(item.EquipmentElement)).Sum(entry => entry.Amount);
+                if (owned > 0)
+                    taken.AddToCounts(item.EquipmentElement, -Math.Min(owned, item.Amount));
+            }
             int moved = MoveAll(taken, ItemsOf(_armories, homeId), ItemsOf(_armories, party.StringId));
             _plans.Remove(homeId);
             _plans.Remove(party.StringId);
