@@ -494,9 +494,9 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 从名池里取一个 <paramref name="usedNames"/> 里没有的名字并登记进去：先按 seed 起点轮一圈，
-        /// 名池用完再给起点那个名字加序数后缀。灰袍家族成员和永恒之火祭司共用这套规矩。
+        /// 名池用完再给起点那个名字加序数后缀。
         /// </summary>
-        internal static string PickUniqueName(IReadOnlyList<string> pool, ISet<string> usedNames, int seed)
+        private static string PickUniqueName(IReadOnlyList<string> pool, ISet<string> usedNames, int seed)
         {
             int baseIndex = seed % pool.Count;
             for (int offset = 0; offset < pool.Count; offset++)

@@ -56,34 +56,6 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _priestIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        // 祭司的名池与灰袍家族成员的分开，祭司之间不重名（GreyWardenFamilyBehavior.PickUniqueName）。
-        private static readonly string[] PriestNames =
-        {
-            GwpText.Get("{=gwp_fs_priest_name_01}Aeldred"),
-            GwpText.Get("{=gwp_fs_priest_name_02}Aelfhere"),
-            GwpText.Get("{=gwp_fs_priest_name_03}Aelfwine"),
-            GwpText.Get("{=gwp_fs_priest_name_04}Brandulf"),
-            GwpText.Get("{=gwp_fs_priest_name_05}Brynmund"),
-            GwpText.Get("{=gwp_fs_priest_name_06}Brynwald"),
-            GwpText.Get("{=gwp_fs_priest_name_07}Fyrhelm"),
-            GwpText.Get("{=gwp_fs_priest_name_08}Fyrwulf"),
-            GwpText.Get("{=gwp_fs_priest_name_09}Fyrstan"),
-            GwpText.Get("{=gwp_fs_priest_name_10}Ligmund"),
-            GwpText.Get("{=gwp_fs_priest_name_11}Ligric"),
-            GwpText.Get("{=gwp_fs_priest_name_12}Ligwald"),
-            GwpText.Get("{=gwp_fs_priest_name_13}Baelric"),
-            GwpText.Get("{=gwp_fs_priest_name_14}Baelmund"),
-            GwpText.Get("{=gwp_fs_priest_name_15}Baelwulf"),
-            GwpText.Get("{=gwp_fs_priest_name_16}Yslemund"),
-            GwpText.Get("{=gwp_fs_priest_name_17}Yslewald"),
-            GwpText.Get("{=gwp_fs_priest_name_18}Gledric"),
-            GwpText.Get("{=gwp_fs_priest_name_19}Gledwine"),
-            GwpText.Get("{=gwp_fs_priest_name_20}Swelric"),
-            GwpText.Get("{=gwp_fs_priest_name_21}Brondmund"),
-            GwpText.Get("{=gwp_fs_priest_name_22}Brondwulf"),
-            GwpText.Get("{=gwp_fs_priest_name_23}Heorthwald"),
-            GwpText.Get("{=gwp_fs_priest_name_24}Heorthric")
-        };
 
         internal enum RitualKind
         {
@@ -718,17 +690,13 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 让一位男性要人成为这座村子的祭司：取祭司名池里的名字、穿袍子、写教义、登记。
-        /// 原版模板自带的名字池很小，同文化的传教者经常重名，所以名字由我们给。
+        /// 让一位男性要人成为这座村子的祭司：加祭司称号、穿袍子、写教义、登记。
+        /// 名字用原版建人时从本文化男名池取的那个（C#反编译 v1.4.8 NameGenerator.GenerateHeroFirstName：
+        /// 按全局使用次数和同村要人避开重名），不另设名池（用户裁定 2026-10-14：祭司重名带序号）。
         /// </summary>
         private void AnointPriest(FaithVillage row, Hero priest, Settlement village)
         {
-            HashSet<string> usedNames = new HashSet<string>(_villages.Values
-                .Select(FindLivingPriest)
-                .Where(hero => hero != null && hero != priest)
-                .Select(hero => hero!.FirstName.ToString()), StringComparer.Ordinal);
-            TextObject firstName = new TextObject(GreyWardenFamilyBehavior.PickUniqueName(
-                PriestNames, usedNames, MBRandom.RandomInt(PriestNames.Length)));
+            TextObject firstName = priest.FirstName;
             priest.SetName(GwpText.Create("{=gwp_fs_priest_name}Eternal Fire Priest {FIRSTNAME}",
                 "FIRSTNAME", firstName), firstName);
             priest.SetTraitLevel(DefaultTraits.Mercy, -1);
@@ -840,10 +808,13 @@ namespace GreyWardenPolicePurity
             if (othersPower <= 0f)
                 return;
             float total = othersPower + priest.Power;
-            float priestPower = total * SwornShare(row, village);
+            float share = Math.Min(SwornShare(row, village), GwpTuning.Firesworn.PriestMaxPowerShare);
+            float priestPower = total * share;
             float scale = (total - priestPower) / othersPower;
+            // 封顶一半时只剩一位别的要人会和祭司平手；封顶的祭司必须严格最强（用户裁定 2026-10-14）。
+            float ceiling = share >= GwpTuning.Firesworn.PriestMaxPowerShare ? priestPower - 1f : float.MaxValue;
             foreach (Hero other in others)
-                other.AddPower(other.Power * scale - other.Power);
+                other.AddPower(Math.Min(other.Power * scale, ceiling) - other.Power);
             priest.AddPower(priestPower - priest.Power);
         }
 
@@ -852,7 +823,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 祭司已是本地最强（有祭司且势力高过村里每一位别的要人）。从这时起本村能烧自己人、不再出新的原版民兵
-        /// （用户裁定 2026-10-07），原版也不再给这座村补新的要人（用户裁定 2026-10-08）。
+        /// （用户裁定 2026-10-07）。
         /// </summary>
         internal static bool IsPriestStrongestAt(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null &&

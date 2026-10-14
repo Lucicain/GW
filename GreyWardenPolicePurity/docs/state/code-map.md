@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-170 个源文件、51,915 行、330 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+170 个源文件、51,876 行、329 个公开类型、73 个 Harmony 补丁点（分布在 73 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -87,7 +87,6 @@
 | `SetPartyAiAction` | `GetActionForGoingAroundParty` | Prefix | `GwpPlayerEnforcementEngageActionPatch` | GwpPartyDutyMovementPatch.cs |
 | `SetPartyAiAction` | `GetActionForPatrollingAroundPoint` | Prefix | `GwpLocationDutyRefreshPatch` | GwpPartyDutyMovementPatch.cs |
 | `Settlement` | `RemoveMilitiasFromParty` | Prefix | `GwpFireswornGuardStaysPatch` | GwpFireswornMenus.cs |
-| `SettlementHelper` | `SpawnNotablesIfNeeded` | Prefix | `GwpFireswornNoNewNotablesPatch` | GwpFireswornMenus.cs |
 | `SettlementNameplateNotificationsVM` | `RegisterEvents` | Postfix | `GwpSettlementNoticesRegisterPatch` | GwpSettlementNotices.cs |
 | `SettlementNameplateNotificationsVM` | `UnloadEvents` | Postfix | `GwpSettlementNoticesUnloadPatch` | GwpSettlementNotices.cs |
 | `SettlementVisual` | `RefreshPartyIcon` | Postfix/Prefix | `GwpDamnationSmokePatch` | GwpDamnationSmokePatch.cs |
@@ -320,7 +319,6 @@
 - `GwpFireswornGuardStaysPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornMenus` → GwpFireswornMenus.cs
 - `GwpFireswornMilitiaModel` → GwpFireswornMenus.cs ←
-- `GwpFireswornNoNewNotablesPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornPartyDialogs` → GwpFireswornPartyDialogs.cs
 - `GwpFireswornSoundMenuActivatePatch` → GwpFireswornSoundView.cs ←
 - `GwpFireswornSoundView` → GwpFireswornSoundView.cs
@@ -475,7 +473,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 171 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 170 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -602,7 +600,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 387 行 · `GwpTuning`，另含 13 个类型
+- `GwpTuning.cs` — 389 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 352 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
@@ -612,7 +610,7 @@
 
 ### 其他（84 个文件）
 
-- `GwpFireswornBehavior.cs` — 1246 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornBehavior.cs` — 1217 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1049 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornArmory.cs` — 999 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 651 行 · `GwpFireswornBehavior`
@@ -628,9 +626,9 @@
 - `GwpAssistanceArmyLifecyclePatch.cs` — 242 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
-- `GwpFireswornMenus.cs` — 206 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 4 个类型
 - `GwpAffairsNavigation.cs` — 197 行 · `GwpAffairsNavigationElement` : MapNavigationElementBase，另含 3 个类型
 - `GwpFireswornDungeon.cs` — 197 行 · `GwpFireswornBehavior`
+- `GwpFireswornMenus.cs` — 194 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GreyWardenLeaderBalanceBehavior.cs` — 193 行 · `GreyWardenLeaderBalanceBehavior` : CampaignBehaviorBase
 - `GwpEncyclopediaClanPageVM.cs` — 193 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型
 - `GreyWardenLoreBehavior.cs` — 191 行 · `GreyWardenLoreBehavior` : CampaignBehaviorBase

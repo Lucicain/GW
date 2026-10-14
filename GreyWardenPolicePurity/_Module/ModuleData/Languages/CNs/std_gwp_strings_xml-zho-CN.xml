@@ -1415,30 +1415,6 @@
   <string id="gwp_fs_ritual_leave" text="离开……" />
   <string id="gwp_fs_militia_change" text="永恒之火立了誓的人不会离开民兵" />
   <string id="gwp_fs_militia_stopped" text="永恒之火：这里由立了誓的人守着，不再募新民兵" />
-  <string id="gwp_fs_priest_name_01" text="炽岳" />
-  <string id="gwp_fs_priest_name_02" text="焰锋" />
-  <string id="gwp_fs_priest_name_03" text="灼岩" />
-  <string id="gwp_fs_priest_name_04" text="焚岳" />
-  <string id="gwp_fs_priest_name_05" text="烬言" />
-  <string id="gwp_fs_priest_name_06" text="燎原" />
-  <string id="gwp_fs_priest_name_07" text="炎钧" />
-  <string id="gwp_fs_priest_name_08" text="煌烈" />
-  <string id="gwp_fs_priest_name_09" text="熹明" />
-  <string id="gwp_fs_priest_name_10" text="烛照" />
-  <string id="gwp_fs_priest_name_11" text="焰峰" />
-  <string id="gwp_fs_priest_name_12" text="炳辰" />
-  <string id="gwp_fs_priest_name_13" text="灿铭" />
-  <string id="gwp_fs_priest_name_14" text="焱刚" />
-  <string id="gwp_fs_priest_name_15" text="燃石" />
-  <string id="gwp_fs_priest_name_16" text="烨然" />
-  <string id="gwp_fs_priest_name_17" text="烬白" />
-  <string id="gwp_fs_priest_name_18" text="灰岩" />
-  <string id="gwp_fs_priest_name_19" text="赤炎" />
-  <string id="gwp_fs_priest_name_20" text="绛锋" />
-  <string id="gwp_fs_priest_name_21" text="炙铁" />
-  <string id="gwp_fs_priest_name_22" text="炬清" />
-  <string id="gwp_fs_priest_name_23" text="炬宁" />
-  <string id="gwp_fs_priest_name_24" text="薪传" />
   <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。他传的教义说：统领这把火的是灰袍的女人们，走村串户替它传话的是祭司；谁都可以到火前求它照亮，火不问出身。在他的照看下，村里的男男女女向火立誓、拿起长矛，守着这座村子。" />
   <string id="gwp_fs_village_stores" text="地窖里关着{PRISONERS}个等着上火堆的人。库房里存着{ARMORY}件兵器甲胄，留给立了誓的人。还有值{GOODS}第纳尔的货，等着装车运去城里。" />
   <string id="gwp_fs_caravan_party" text="{VILLAGE}的狂信者" />

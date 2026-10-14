@@ -152,18 +152,6 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 原版每座村每 7 天按缺额补一位要人（头人 1、乡绅 2；概率 = 缺额比例的 1.36 次方；C#反编译 v1.4.8
-    /// NotablesCampaignBehavior.DailyTickSettlement → SettlementHelper.SpawnNotablesIfNeeded）。
-    /// 祭司已是本地最强的村子不再补（用户裁定 2026-10-08：势力满了就别生成）：祭司按比例分走全村势力，补来的要人
-    /// 立刻被压到 100 以下，原版又按概率删掉，只是来了又走。
-    /// </summary>
-    [HarmonyPatch(typeof(SettlementHelper), nameof(SettlementHelper.SpawnNotablesIfNeeded))]
-    internal static class GwpFireswornNoNewNotablesPatch
-    {
-        private static bool Prefix(Settlement settlement) => !GwpFireswornBehavior.IsPriestStrongestAt(settlement);
-    }
-
-    /// <summary>
     /// 民兵的每日增减（C#反编译 v1.4.8 DefaultSettlementMilitiaModel.CalculateMilitiaChangeInternal：0.5 + 户数/400 − 现有 × 2.5%，
     /// 现有按整支民兵队算）。包在已注册的模型外面：
     /// <list type="bullet">
