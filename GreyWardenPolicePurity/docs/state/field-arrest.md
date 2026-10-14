@@ -22,6 +22,7 @@
   一律肯听；否则 `clamp((第一层抗性 − 45) / 65, 0, 0.8)`。
 - 概率 ≥ 0.55 就拒谈（有宽限约定时不拒）。拒谈直接进"动手或走人"。
 
+两层抗性的公式在 `GwpNegotiationPolicy`，[灰袍使者](case-envoy.md) 替灰袍领主谈时用同一套。
 第一层抗性 `LayerOneResistance`（0–100）= 基线 50 + 实力摆幅 + 性格 + 玩家分量 − 被抓过的教训
 + 名望差与劣迹压力 + 钱包压力 − 慷慨×4。实力摆幅 = `(他/(他+我) − 0.5) × 2 × 45`，
 所以实力比是最大的单项，口径错了会直接决定拒不拒谈。
@@ -56,7 +57,7 @@
 ## 两层谈判
 
 说服用原版 persuasion 那一套（和求爱同一套），口才、统御、诡计、交易都用得上。
-每层 4 条说辞（`ArgumentsPerReservation`）。
+每条要点最多 4 次说辞（`GwpTuning.FieldArrest.ArgumentsPerReservation`）。
 
 - **第一层：认不认这次执法**。抗性就是上面的 `LayerOneResistance`。
 - **第二层：按正规方式全额缴，还是照他自己的打算办**。抗性 `LayerTwoResistance`（0–100）的组成：

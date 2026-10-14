@@ -131,6 +131,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
             CampaignEvents.OnGameLoadFinishedEvent.AddNonSerializedListener(this, RestoreEnforcementArmyTicks);
+            CampaignEvents.TournamentFinished.AddNonSerializedListener(this, OnTournamentFinished);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -169,6 +170,7 @@ namespace GreyWardenPolicePurity
                 ref _nextPlayerEnforcementContactHour);
             SyncWarTargetStreakData(dataStore);
             SyncDelayPatrolStateData(dataStore);
+            SyncEnvoyData(dataStore);
             SyncAssistanceData(dataStore);
             dataStore.SyncData(ShelteredForcedTaskIdsKey,
                 ref shelteredForcedTaskIds);
@@ -558,6 +560,7 @@ namespace GreyWardenPolicePurity
             ReconcileTaskWarStatesWithDiplomacy();
             RetryPeaceAfterPlayerEnforcement();
             UpdateDelayPatrols();
+            TendEnvoyCases();
 #if GWP_DIAGNOSTICS
             TraceStalledWarPursuits();
 #endif
@@ -936,6 +939,13 @@ namespace GreyWardenPolicePurity
                     // 这条路径是"他的部队没了，而且不是我们在战斗里打没的"——
                     // 被别的势力打掉、被俘、逃亡都会走到这里。案子必须留在册上。
                     EndCaseTask(kvp.Key, CaseTaskEnd.Released, "offender_party_inactive");
+                    continue;
+                }
+
+                // 宣战前先派使者去谈；使者在路上、宽限中或约了比武时不宣战（用户裁定 2026-10-15）。
+                if (HoldWarForEnvoy(pp, task, criminal))
+                {
+                    ClearTaskWarTracking(kvp.Key, false);
                     continue;
                 }
 

@@ -1472,5 +1472,9 @@
   <string id="gwp_fs_party_product" text="{COUNT}件{ITEM}" />
   <string id="gwp_fs_party_products_more" text="等" />
   <string id="gwp_fs_healing_hearth" text="永恒之火的火堆边" />
+  <string id="gwp_envoy_party_name" text="灰袍使者" />
+  <string id="gwp_envoy_duel_called" text="{VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。" />
+  <string id="gwp_envoy_duel_warden_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。" />
+  <string id="gwp_envoy_duel_offender_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。" />
 </strings>
 </base>

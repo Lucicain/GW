@@ -310,7 +310,7 @@ namespace GreyWardenPolicePurity
         private void RegisterArgumentLines(
             CampaignGameStarter starter, string inputToken, string outputToken)
         {
-            for (int index = 0; index < ArgumentsPerReservation; index++)
+            for (int index = 0; index < GwpTuning.FieldArrest.ArgumentsPerReservation; index++)
             {
                 int captured = index;
                 starter.AddPlayerLine(
@@ -556,7 +556,7 @@ namespace GreyWardenPolicePurity
         /// 灰袍执法，必须记进震慑与"最近一次执法"的时间戳，否则罪犯的收敛期不会启动，
         /// 表现就是"我明明罚过他了，他照样接着抢"。押走才算被捕，这里不动拘捕履历。
         /// </summary>
-        private static void RegisterFieldEnforcement(Hero? offender, CrimeRecord? crime)
+        internal static void RegisterFieldEnforcement(Hero? offender, CrimeRecord? crime)
         {
             if (offender == null) return;
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
@@ -609,74 +609,23 @@ namespace GreyWardenPolicePurity
         private int LayerOneResistance()
         {
             if (_offender == null || _offenderParty == null) return 50;
-
             (float mine, float his) = FieldBalance();
-
-            // 打得过你的人不容易低头——但也仅此而已。此前这里直接把
-            // his/(his+mine)*100 当成抗性主项，对方稍强就逼近 100，性格（最多
-            // ±28）和声望（±12）在它面前完全没有意义，难度恒定 Hard、说辞恒定
-            // VeryHard。现在以势均力敌为基线，实力差只作一个有限摆幅，三个维度
-            // 才谈得上共同决定。
-            float edge = MBMath.ClampFloat(his / (his + mine), 0f, 1f) - 0.5f;
-            float odds = GwpTuning.FieldArrest.DecisionBaseline
-                         + edge * 2f * GwpTuning.FieldArrest.StrengthSwing;
-
-            int valor = _offender.GetTraitLevel(DefaultTraits.Valor);
-            int honor = _offender.GetTraitLevel(DefaultTraits.Honor);
-            int mercy = _offender.GetTraitLevel(DefaultTraits.Mercy);
-            int calculating = _offender.GetTraitLevel(DefaultTraits.Calculating);
-
-            // 勇武的人硬；讲荣誉、有恻隐、会算计的人肯听。
-            float temper = (valor - honor - mercy - calculating)
-                           * GwpTuning.FieldArrest.TraitResistStep;
-
-            // 你的分量：有威望的猎手压得住场，戴罪之身反而被顶。
-            float badge = CurrentStandingTier() switch
-            {
-                WardenStandingTier.Respected => -GwpTuning.FieldArrest.StandingSwing,
-                WardenStandingTier.UnderCharge => GwpTuning.FieldArrest.StandingSwing,
-                _ => 0f
-            };
-
-            // 被灰袍抓过的人知道这本账的分量。
-            float taught = MBMath.ClampFloat(
-                GwpAiDeterrenceState.GetCurrentPenalty(_offender, _crime?.CrimeCategory ?? GwpCrimeCategory.Unknown)
-                / Math.Max(1f, GwpTuning.FieldArrest.DeterrenceReference),
-                0f, 1.2f) * GwpTuning.FieldArrest.DeterrenceSwing;
-
-            return (int)MBMath.ClampFloat(odds + temper + badge - taught + OffenderStandingPressure() + GwpNegotiationPolicy.PurseResistance(OffenderWealth, EnsureFine()) - _offender.GetTraitLevel(DefaultTraits.Generosity) * 4f, 0f, 100f);
-        }
-
-        /// <summary>
-        /// 第二层：他咬着自己那套兑现方式不放的力度。特质越极端越难拉回正规全缴，
-        /// 罚金越让他肉痛越难。
-        /// </summary>
-        private float OffenderStandingPressure()
-        {
-            float fameGap = ((_offender?.Clan?.Renown ?? 0f) - (Hero.MainHero.Clan?.Renown ?? 0f)) / 150f;
-            var history = _offender == null ? null : CrimePool.GetHistory(_offender);
-            return MBMath.ClampFloat(fameGap, -8f, 8f)
-                + Math.Min(8f, (history?.NegativeStanding ?? 0) / 10f)
-                - Math.Min(10f, (history?.TotalArrestCount ?? 0) * 2f);
+            return GwpNegotiationPolicy.LayerOneResistance(_offender, _crime?.CrimeCategory ?? GwpCrimeCategory.Unknown,
+                mine, his, CurrentStandingTier(), Hero.MainHero.Clan?.Renown ?? 0f, OffenderWealth, EnsureFine());
         }
 
         private int LayerTwoResistance()
         {
             if (_offender == null) return 40;
             (float ours, float theirs) = FieldBalance();
-            float force = (theirs / (theirs + ours) - 0.5f) * 16f;
-            float rhetoric = MBMath.ClampFloat((_offender.GetSkillValue(DefaultSkills.Charm)
-                - Hero.MainHero.GetSkillValue(DefaultSkills.Charm)) / 20f, -10f, 10f);
-            float pain = MBMath.ClampFloat(EnsureFine() / (float)Math.Max(1, OffenderWealth), 0f, 2f);
-            return (int)MBMath.ClampFloat(30f + GwpOffenderDesires.Insistence(_offender, _desire) * 12f
-                + pain * 15f + force + rhetoric + OffenderStandingPressure() * 0.5f, 0f, 100f);
+            return GwpNegotiationPolicy.LayerTwoResistance(_offender, _desire, ours, theirs,
+                Hero.MainHero.GetSkillValue(DefaultSkills.Charm), Hero.MainHero.Clan?.Renown ?? 0f, OffenderWealth, EnsureFine());
         }
 
         #endregion
 
         #region 两轮谈判
 
-        private const int ArgumentsPerReservation = 4;
 
         private enum NegotiationLayer
         {
@@ -822,7 +771,7 @@ namespace GreyWardenPolicePurity
                     ? GwpText.Create("{=gwp_fa_retry_payment}I still stand by my terms. Have you another proposal?")
                     : GwpText.Create("{=gwp_fa_retry_authority}That is not enough for me to accept your authority. Have you another reason?"))
                 : task.SpokenLine ?? new TextObject(string.Empty));
-            for (int index = 0; index < ArgumentsPerReservation; index++)
+            for (int index = 0; index < GwpTuning.FieldArrest.ArgumentsPerReservation; index++)
             {
                 TextObject line = index < task.Options.Count
                     ? task.Options[index].Line
@@ -1210,20 +1159,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void PunishOwnMen()
         {
-            MobileParty? party = _offenderParty;
-            if (party?.MemberRoster == null) return;
-
-            int toKill = GwpTuning.FieldArrest.DeedsOnlyTroopsKilled;
-            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
-            {
-                if (toKill <= 0) break;
-                if (element.Character?.IsHero != false) continue;
-
-                int take = Math.Min(toKill, element.Number);
-                party.MemberRoster.AddToCounts(element.Character, -take);
-                toKill -= take;
-            }
-
+            if (GwpOffenderDesires.SacrificeOwnMen(_offenderParty) <= 0) return;
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_fieldarrest_msg_own_men}He has several of his own men put to death before you to bear the blame."),
                 Colors.Red));

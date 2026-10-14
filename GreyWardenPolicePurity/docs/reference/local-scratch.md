@@ -40,7 +40,7 @@
 
 | 路径 | 用途 |
 |---|---|
-| `mb148-decomp/`、`core148-decomp/`、`campaignsystem-full-decompile/` | v1.4.8 反编译，见 `investigation-methods.md`；可用 ilspycmd 重建 |
+| `mb148-decomp/`、`core148-decomp/`、`campaignsystem-full-decompile/`、`sandbox148-decomp/` | v1.4.8 反编译（sandbox148 只有比武任务逻辑 `TournamentBehavior`，灰袍使者比武名次读它，`case-envoy.md`），见 `investigation-methods.md`；可用 ilspycmd 重建 |
 | `check-native-persuasion-direct.ps1` | `investigation-methods.md` 引用的运行时反射先例 |
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |
 | `cloth-gradient/warcharmor.original.fbx` | 写渐变之前的弓箭手源 FBX |

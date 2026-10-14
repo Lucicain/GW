@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 
@@ -67,6 +69,22 @@ namespace GreyWardenPolicePurity
                 }
             }
             return GwpOffenderDesire.PayInFull;
+        }
+
+        /// <summary>仁慈低的附带动作：他不认那些死掉的村民，转手杀几个自己的兵出气。返回杀了几个。</summary>
+        internal static int SacrificeOwnMen(MobileParty? party)
+        {
+            if (party?.MemberRoster == null) return 0;
+            int toKill = GwpTuning.FieldArrest.DeedsOnlyTroopsKilled;
+            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
+            {
+                if (toKill <= 0) break;
+                if (element.Character?.IsHero != false) continue;
+                int take = Math.Min(toKill, element.Number);
+                party.MemberRoster.AddToCounts(element.Character, -take);
+                toKill -= take;
+            }
+            return GwpTuning.FieldArrest.DeedsOnlyTroopsKilled - toKill;
         }
 
         internal static bool IsFullPayment(GwpOffenderDesire desire) => desire == GwpOffenderDesire.PayInFull

@@ -56,6 +56,8 @@
 
 <!-- 待实测汇总：由 tools/Check-StateFreshness.py 从各 state 文件头部生成，手改会被覆盖 -->
 
+- [case-envoy.md](case-envoy.md)（首版已部署待实测）
+  - 接案后出现「灰袍使者」去追目标、期间不宣战；谈成销案、使者归队；谈崩照常宣战不再派；约比武有提示、两人进城等赛、出结果再提示；agent 核对 `ENVOY_*` 日志
 - [case-interceptors.md](case-interceptors.md)（归队改为并回主队、多余的人去信众村，已部署待实测）
   - 追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
 - [cloth-assets.md](cloth-assets.md)（三件服装与弓箭手下摆按用户认可的手感定稿（2026-10-03，非原包值）；弓箭手不用替身，直接模拟，下摆为竖向渐变）

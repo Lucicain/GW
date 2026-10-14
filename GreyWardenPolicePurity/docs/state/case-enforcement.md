@@ -4,7 +4,7 @@
 > 最后验收：`9d005bb`
 > 已复核至：`cf53ba5`（2026-10-14）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：无（追截队见 [立即追截队](case-interceptors.md)）
+> 待实测：无（追截队见 [立即追截队](case-interceptors.md)，宣战前的使者见 [灰袍使者](case-envoy.md)）
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。

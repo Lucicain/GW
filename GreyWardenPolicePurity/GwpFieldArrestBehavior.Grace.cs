@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
         {
             if (!CanOfferGrace || _offender == null) return;
             _graceHeroId = _offender.StringId;
-            _graceDueHours = CampaignTime.Now.ToHours + 72d;
+            _graceDueHours = CampaignTime.Now.ToHours + GwpTuning.FieldArrest.GraceHours;
             _graceNoticeShown = false;
             string message = GwpText.Get("{=gwp_grace_granted}You allowed {VAR_1} three days to raise the fine. The commission remains open; return to collect it or take the offender into custody.",
                 "VAR_1", _offender.Name.ToString());

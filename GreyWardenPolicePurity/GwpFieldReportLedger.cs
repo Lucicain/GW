@@ -376,10 +376,15 @@ namespace GreyWardenPolicePurity
                 "VAR_1", gap, "VAR_2", -penalty), Colors.Red));
         }
 
+        /// <summary>灰袍使者或竞技场约战收了钱：犯人的账照玩家当面结清的规矩清，不进玩家的待交账。</summary>
+        internal static void SettleWithWardens(Hero offender, int assessed, int collected, int baseCharge) =>
+            ClearOffenderRecord(offender, collected, baseCharge, assessed);
+
         /// <summary>
         /// 犯人自己的账：实缴先抵基础罚款，余款按 Enforcement.FinePerPoint 抵负声望。
         /// 结算当场就清，与玩家事后交多少无关——犯人已经当众交代过了。
         /// </summary>
+
         private static void ClearOffenderRecord(Hero offender, int collected, int baseCharge, int assessed)
         {
             HeroCrimeStats history = CrimePool.GetOrCreateHistory(offender);

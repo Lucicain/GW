@@ -41,6 +41,8 @@ namespace GreyWardenPolicePurity
             public string ReturnSettlementId { get; set; } = string.Empty;
             public bool Returning { get; set; }
             public bool IsImmediateInterceptor { get; set; }
+            // 灰袍使者（PoliceEnforcementBehavior.Envoy）：宣战前先去和目标谈，回主队的路与追截队相同。
+            public bool IsEnvoy { get; set; }
         }
 
         private sealed class ImmediateInterceptorTroopTransfer
@@ -89,6 +91,7 @@ namespace GreyWardenPolicePurity
             List<string> returnSettlementIds = null!;
             List<int> returningFlags = null!;
             List<int> immediateInterceptorFlags = null!;
+            List<int> envoyFlags = null!;
 
             if (dataStore.IsSaving)
             {
@@ -101,6 +104,7 @@ namespace GreyWardenPolicePurity
                 returningFlags = states.Select(s => s.Returning ? 1 : 0).ToList();
                 immediateInterceptorFlags = states.Select(s =>
                     s.IsImmediateInterceptor ? 1 : 0).ToList();
+                envoyFlags = states.Select(s => s.IsEnvoy ? 1 : 0).ToList();
             }
 
             dataStore.SyncData("gwp_enf_dp_ids", ref patrolIds);
@@ -111,6 +115,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_dp_return_flags", ref returningFlags);
             dataStore.SyncData("gwp_enf_dp_immediate_interceptors",
                 ref immediateInterceptorFlags);
+            dataStore.SyncData("gwp_enf_dp_envoys", ref envoyFlags);
 
             if (!dataStore.IsLoading) return;
 
@@ -122,6 +127,7 @@ namespace GreyWardenPolicePurity
             returnSettlementIds ??= new List<string>();
             returningFlags ??= new List<int>();
             immediateInterceptorFlags ??= new List<int>();
+            envoyFlags ??= new List<int>();
 
             int count = patrolIds.Count;
             for (int i = 0; i < count; i++)
@@ -139,7 +145,8 @@ namespace GreyWardenPolicePurity
                     Returning = i < returningFlags.Count && returningFlags[i] != 0,
                     IsImmediateInterceptor =
                         i < immediateInterceptorFlags.Count &&
-                        immediateInterceptorFlags[i] != 0
+                        immediateInterceptorFlags[i] != 0,
+                    IsEnvoy = i < envoyFlags.Count && envoyFlags[i] != 0
                 };
             }
         }
@@ -308,6 +315,8 @@ namespace GreyWardenPolicePurity
 
                 if (patrol.CurrentSettlement == null) continue;
                 if (IsActiveAssistanceArmy(patrol.Army)) continue;
+                // 目标躲在城里时使者进城去谈，不是卡住。
+                if (kv.Value.IsEnvoy && !kv.Value.Returning) continue;
 
                 if (TryDestroyDelayPatrolParty(patrol))
                     removed++;
@@ -413,87 +422,23 @@ namespace GreyWardenPolicePurity
                     .ToList()
                 : new List<MobileParty> { sourceParty };
             List<ImmediateInterceptorTroopTransfer> mountedBatches =
-                troopSourceParties
-                    .SelectMany(party =>
-                        party.MemberRoster.GetTroopRoster()
-                             .Where(element => element.Character != null &&
-                                 !element.Character.IsHero &&
-                                 GwpCommon.IsGreyWardenTroop(element.Character) &&
-                                 element.Character.IsMounted &&
-                                element.Number - element.WoundedNumber > 0)
-                            .Select(element =>
-                                new ImmediateInterceptorTroopTransfer
-                                {
-                                    SourceParty = party,
-                                    Character = element.Character
-                                }))
-                    .OrderByDescending(batch => batch.Character.Tier)
-                    .ThenBy(batch => batch.SourceParty == sourceParty ? 0 : 1)
-                    .ThenBy(batch => batch.SourceParty.StringId,
-                        StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(batch => batch.Character.StringId,
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-            int availableMounted = mountedBatches.Sum(element =>
-            {
-                TroopRosterElement current = element.SourceParty.MemberRoster
-                    .GetTroopRoster().FirstOrDefault(candidate =>
-                        candidate.Character == element.Character);
-                return Math.Max(
-                    0, current.Number - current.WoundedNumber);
-            });
+                MountedWardenBatches(sourceParty, troopSourceParties);
             int detachmentSize = Math.Min(
-                ImmediateInterceptorMaximumSize, availableMounted);
+                ImmediateInterceptorMaximumSize, HealthyTroopCount(mountedBatches));
             if (detachmentSize < ImmediateInterceptorMinimumSize)
                 return;
             // 追截队在来源领主身边出生；他在海上又借不出船，就不派。
             if (PoliceResourceManager.IsStrandedAtSea(sourceParty))
                 return;
 
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-            Settlement? returnSettlement =
-                GwpCommon.FindNearestTown(sourceParty.GetPosition2D);
-            if (policeClan == null || returnSettlement == null)
-                return;
-
-            string patrolId = GwpPartyIdentity.Next(GwpCommon.EnforcementDelayPatrolIdPrefix);
-
-            MobileParty? interceptor = null;
             var transferredBatches =
                 new List<ImmediateInterceptorTroopTransfer>();
-            interceptor =
-                CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                    sourceParty.Position,
-                    1f,
-                    returnSettlement,
-                    new TextObject(GwpText.Get(
-                        "{=gwp_policeenforcementbehavior_delaypatrols_005}Grey Warden pursuit detachment")),
-                    policeClan,
-                    policeClan.DefaultPartyTemplate,
-                    null,
-                    "",
-                    "",
-                    5f,
-                    false);
-            if (interceptor == null)
+            MobileParty? interceptor = CreateDetachment(sourceParty, mountedBatches, detachmentSize,
+                ImmediateInterceptorMinimumSize,
+                GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_005}Grey Warden pursuit detachment"),
+                transferredBatches, out int moved, out Settlement? returnSettlement);
+            if (interceptor == null || returnSettlement == null)
                 return;
-
-            interceptor.StringId = patrolId;
-            interceptor.ActualClan = policeClan;
-            interceptor.MemberRoster.Clear();
-            interceptor.ItemRoster.Clear();
-            int moved = TransferHealthyTroops(
-                interceptor.MemberRoster,
-                mountedBatches,
-                detachmentSize,
-                transferredBatches);
-            if (moved < ImmediateInterceptorMinimumSize)
-            {
-                RollBackImmediateInterceptorTroops(
-                    interceptor.MemberRoster, transferredBatches);
-                TryDestroyDelayPatrolParty(interceptor);
-                return;
-            }
 
             PoliceResourceManager.OutfitTemporaryDutyParty(interceptor, sourceParty);
             float interceptorCurrentSpeed =
@@ -504,7 +449,7 @@ namespace GreyWardenPolicePurity
             {
                 GwpAiDiagnostics.WriteAction(sourceParty,
                     "IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW",
-                    "interceptor=" + patrolId +
+                    "interceptor=" + interceptor.StringId +
                     "; target=" + targetParty.StringId +
                     "; movementTarget=" + movementTarget.StringId +
                     "; troops=" + moved +
@@ -522,9 +467,9 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            _delayPatrolStates[patrolId] = new DelayPatrolState
+            _delayPatrolStates[interceptor.StringId] = new DelayPatrolState
             {
-                PatrolPartyId = patrolId,
+                PatrolPartyId = interceptor.StringId,
                 SourceTaskPolicePartyId = sourceParty.StringId,
                 TargetPartyId = targetParty.StringId,
                 WarTargetId = task?.WarTarget?.StringId ?? string.Empty,
@@ -537,7 +482,7 @@ namespace GreyWardenPolicePurity
                 interceptor, targetParty, 8f);
             GwpAiDiagnostics.WriteAction(sourceParty,
                 "IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED",
-                "interceptor=" + patrolId +
+                "interceptor=" + interceptor.StringId +
                 "; target=" + targetParty.StringId +
                 "; movementTarget=" + movementTarget.StringId +
                 "; troops=" + moved +
@@ -574,6 +519,76 @@ namespace GreyWardenPolicePurity
                 "; enemyLocalStrength=" +
                 (declaration?.EnemyLocalStrength.ToString("0.00") ??
                  "n/a"));
+        }
+
+        /// <summary>名册里没受伤的灰袍骑兵，兵阶高的先出，同兵阶时来源领主自己的先出。追截队和使者共用。</summary>
+        private static List<ImmediateInterceptorTroopTransfer> MountedWardenBatches(MobileParty sourceParty,
+            IEnumerable<MobileParty> troopSourceParties) =>
+            troopSourceParties
+                .SelectMany(party =>
+                    party.MemberRoster.GetTroopRoster()
+                         .Where(element => element.Character != null &&
+                             !element.Character.IsHero &&
+                             GwpCommon.IsGreyWardenTroop(element.Character) &&
+                             element.Character.IsMounted &&
+                            element.Number - element.WoundedNumber > 0)
+                        .Select(element =>
+                            new ImmediateInterceptorTroopTransfer
+                            {
+                                SourceParty = party,
+                                Character = element.Character
+                            }))
+                .OrderByDescending(batch => batch.Character.Tier)
+                .ThenBy(batch => batch.SourceParty == sourceParty ? 0 : 1)
+                .ThenBy(batch => batch.SourceParty.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(batch => batch.Character.StringId,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        private static int HealthyTroopCount(IEnumerable<ImmediateInterceptorTroopTransfer> batches) =>
+            batches.Sum(element =>
+            {
+                TroopRosterElement current = element.SourceParty.MemberRoster
+                    .GetTroopRoster().FirstOrDefault(candidate =>
+                        candidate.Character == element.Character);
+                return Math.Max(
+                    0, current.Number - current.WoundedNumber);
+            });
+
+        /// <summary>
+        /// 从来源领主（及协力军团成员）名册里抽出一支无领主小队，在来源领主身边出生，返程目标先记最近的城。
+        /// 抽不够 <paramref name="minimum"/> 人就回滚、不建。追截队和使者共用。
+        /// </summary>
+        private static MobileParty? CreateDetachment(MobileParty sourceParty,
+            IEnumerable<ImmediateInterceptorTroopTransfer> batches, int size, int minimum, string name,
+            List<ImmediateInterceptorTroopTransfer> transferredBatches, out int moved, out Settlement? returnSettlement)
+        {
+            moved = 0;
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            returnSettlement = GwpCommon.FindNearestTown(sourceParty.GetPosition2D);
+            if (policeClan == null || returnSettlement == null)
+                return null;
+
+            MobileParty? detachment =
+                CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
+                    sourceParty.Position, 1f, returnSettlement, new TextObject(name),
+                    policeClan, policeClan.DefaultPartyTemplate, null, "", "", 5f, false);
+            if (detachment == null)
+                return null;
+
+            detachment.StringId = GwpPartyIdentity.Next(GwpCommon.EnforcementDelayPatrolIdPrefix);
+            detachment.ActualClan = policeClan;
+            detachment.MemberRoster.Clear();
+            detachment.ItemRoster.Clear();
+            moved = TransferHealthyTroops(detachment.MemberRoster, batches, size, transferredBatches);
+            if (moved < minimum)
+            {
+                RollBackImmediateInterceptorTroops(detachment.MemberRoster, transferredBatches);
+                TryDestroyDelayPatrolParty(detachment);
+                return null;
+            }
+            return detachment;
         }
 
         private static int TransferHealthyTroops(TroopRoster destination,
@@ -730,6 +745,10 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
+                // 在路上的使者由 TendEnvoyCases 照看；谈完转成返程后才走下面的回主队流程。
+                if (state.IsEnvoy && !state.Returning)
+                    continue;
+
                 if (PlayerBountyBehavior.AwaitingSupportRequest(CrimeState.GetTask(state.SourceTaskPolicePartyId))
                     || PlayerBountyBehavior.IsReservedTarget(MobileParty.All.FirstOrDefault(p => p.StringId == state.TargetPartyId)))
                     state.Returning = true;
@@ -832,7 +851,7 @@ namespace GreyWardenPolicePurity
         private bool TryReturnImmediateInterceptorToSource(
             MobileParty interceptor, DelayPatrolState state)
         {
-            if (!state.IsImmediateInterceptor)
+            if (!state.IsImmediateInterceptor && !state.IsEnvoy)
                 return false;
 
             MobileParty? sourceParty = MobileParty.All.FirstOrDefault(party =>
@@ -867,6 +886,13 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
+            // 使者收来的罚金随人带回，交进灰袍公库。
+            if (interceptor.PartyTradeGold > 0)
+            {
+                PoliceResourceManager.CreditJudicialTreasuryFromCourier(interceptor.PartyTradeGold);
+                interceptor.PartyTradeGold = 0;
+            }
+
             // 船当场交回主队；在海上还要靠船走，留到解散时再还（GwpShipLoanReturnPatch）。
             if (!interceptor.IsCurrentlyAtSea)
                 PoliceResourceManager.ReturnLentShips(interceptor);
@@ -892,6 +918,13 @@ namespace GreyWardenPolicePurity
                 interceptor.PrisonRoster.GetTroopRoster()
                     .Where(static element => element.Character != null && !element.Character.IsHero)
                     .ToList(), int.MaxValue);
+            // 使者带回来的投案者（GwpOffenderDesire.SurrenderSelf）。
+            foreach (TroopRosterElement captive in interceptor.PrisonRoster.GetTroopRoster()
+                         .Where(static element => element.Character?.IsHero == true).ToList())
+            {
+                TransferPrisonerAction.Apply(captive.Character, interceptor.Party, sourceParty.Party);
+                prisonersHandedOver++;
+            }
             int retiring = interceptor.MemberRoster.GetTroopRoster()
                 .Where(static element => element.Character != null &&
                     !element.Character.IsHero && element.Number > 0)
@@ -905,6 +938,7 @@ namespace GreyWardenPolicePurity
             else
             {
                 state.IsImmediateInterceptor = false;
+                state.IsEnvoy = false;
                 Settlement? settleAt = GwpFireswornBehavior.NearestFaithVillage(interceptor) ??
                     GwpCommon.FindNearestTown(interceptor);
                 if (settleAt != null)

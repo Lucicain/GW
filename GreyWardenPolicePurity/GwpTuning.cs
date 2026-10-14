@@ -77,6 +77,19 @@ namespace GreyWardenPolicePurity
         internal static class Enforcement
         {
             /// <summary>
+            /// 灰袍使者（用户裁定 2026-10-15）：宣战前从承办领主队里抽骑兵组成，先去和目标谈。人数、超时为试玩值。
+            /// </summary>
+            public const int EnvoySize = 5;
+            public const int EnvoyMinimumSize = 3;
+            public const double EnvoyTimeoutHours = 72d;
+            /// <summary>
+            /// 约到比武大会后最多等这么多天（试玩值）。到期两人都在城里就按原版结算把那场打完，有人没到就按原版比武评分比一次。
+            /// 原版新开的比武要满 10 天才可能自行结束（DefaultTournamentModel.GetTournamentEndChance），所以这里必须自己收尾。
+            /// </summary>
+            public const double TournamentDuelTimeoutDays = 5d;
+            /// <summary>"附近有比武"指离双方中点最近的这几座能进的城（用户裁定 2026-10-15：附近没有就在最近的城新开一场）。</summary>
+            public const int TournamentDuelNearbyTowns = 3;
+            /// <summary>
             /// The fine a Grey Warden lord levies per point of negative
             /// standing.  It was a literal in the enforcement dialogue; the
             /// case ledger has to quote the same figure, so both read it here.
@@ -168,6 +181,10 @@ namespace GreyWardenPolicePurity
             public const int HaggleSharePercent = 70;
             /// <summary>仁慈低的人拿自己手下出气，杀这么多个。</summary>
             public const int DeedsOnlyTroopsKilled = 5;
+            /// <summary>请宽限给的时间（玩家当面与灰袍使者相同）。</summary>
+            public const double GraceHours = 72d;
+            /// <summary>每条要点最多几次说辞（玩家当面与灰袍使者相同）。</summary>
+            public const int ArgumentsPerReservation = 4;
 
             /// <summary>势均力敌时第一层抗性的起点。性格、声望、震慑都从这里加减。</summary>
             public const float DecisionBaseline = 50f;
