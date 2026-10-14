@@ -3,8 +3,8 @@
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
 > 已复核至：`149e510`（2026-10-14）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs`
-> 待实测：无
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs`
+> 待实测：新档打开灰袍领主百科或对话，关系显示 100；与任意一位成年灰袍领主对话可选「做我的妻子吧」，当场成婚、她进玩家家族；求的是族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转；agent 核对 `WARDEN_MARRIED`
 
 灰袍是一个独立家族（`gw`，文化 empire，初始家乡 `village_EN5_1`），不加入王国（见 `crime-intake.md` 外交封锁）。
 新成员从村庄收养来，见 [`village-relief.md`](village-relief.md)；地图上谁去做什么，见 [`warden-ai.md`](warden-ai.md)。
@@ -46,6 +46,13 @@
 ## 婚姻
 
 - 灰袍女性只能嫁给玩家，不和任何 AI 家族成员结婚（`PoliceMarriageModel`）。（依据：设计）
+- 新档（角色创建结束）时玩家与灰袍的关系设为 100。原版两位英雄的关系落在双方族长之间，所以这就是玩家与每位灰袍领主的关系；之后照原版涨落。
+  （依据：用户裁定 2026-10-14；C#反编译 v1.4.8 DefaultDiplomacyModel.GetHeroesForEffectiveRelation）
+- 玩家能和任意一位成年灰袍领主结婚：领主对话主选项「做我的妻子吧」，当场照原版 `MarriageAction` 成婚，不走原版求爱说服和嫁妆谈判；
+  她按原版婚姻进玩家家族（队伍解散、成为流亡者，等玩家去接）。条件照原版婚姻模型（性别、未婚、不在战斗或军团里、未与他人求爱到高阶段）。
+  原版不让两位族长成婚，玩家永远是族长：求的是灰袍族长时只看其余条件，成婚前照原版 `ChangeClanLeaderAction` 把族长位子交给本家族另一位活着的成年灰袍领主
+  （创始领主按编号先），族长身上的钱也随之交过去——灰袍公库就是族长的钱（`PoliceResourceManager`）。没有人可以接位时不提供求婚。
+  （依据：用户裁定 2026-10-14：要能随便和任意一位灰袍领主结婚，以后给每人做故事线；C#反编译 v1.4.8 DefaultMarriageModel、MarriageAction、ChangeClanLeaderAction）
 
 ## 与要人的关系
 

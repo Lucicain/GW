@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-170 个源文件、51,933 行、330 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+171 个源文件、52,021 行、331 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -117,6 +117,7 @@
 - `GreyWardenVillageRewardBehavior`
 - `GreyWardenLoreBehavior`
 - `GreyWardenFamilyBehavior`
+- `GwpWardenMarriageBehavior`
 - `GreyWardenVillageReconstructionBehavior`
 - `GreyWardenIssueResolutionBehavior`
 - `GreyWardenTrainingBehavior`
@@ -402,6 +403,7 @@
 - `GwpWardenDispatchBehavior` → GwpWardenDispatchBehavior.cs
 - `GwpWardenDispatchDialogue` → GwpWardenDispatchDialogue.cs
 - `GwpWardenDuties` → GwpWardenDuties.cs
+- `GwpWardenMarriageBehavior` → GwpWardenMarriageBehavior.cs
 - `GwpWardenPanicPatch` → GwpWardenResolve.cs ←
 - `GwpWardenRecruitment` → GwpWardenRecruitment.cs
 - `GwpWardenResolve` → GwpWardenResolve.cs
@@ -608,9 +610,9 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 168 行 · `SubModule` : MBSubModuleBase
 
-### 其他（84 个文件）
+### 其他（85 个文件）
 
 - `GwpFireswornBehavior.cs` — 1217 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1049 行 · `GwpStrength`，另含 2 个类型
@@ -658,6 +660,7 @@
 - `GwpSingleQueryLinkPatch.cs` — 96 行 · `GwpLinkedInquiryState`，另含 2 个类型
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GwpSettlementNotices.cs` — 93 行 · `GwpSettlementNotices` : SettlementNotificationItemBaseVM，另含 3 个类型
+- `GwpWardenMarriageBehavior.cs` — 87 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpFireswornArmoryView.cs` — 84 行 · `GwpFireswornArmoryView`
 - `GwpFireswornSoundView.cs` — 84 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision

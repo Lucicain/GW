@@ -355,6 +355,8 @@
   <string id="gwp_fa_charge_cooled" text="这桩案子，我们再谈一次。" />
   <string id="gwp_warden_mediation_owed" text="替灰袍打的这一仗结下了梁子。想了结，去跟灰袍说一声。" />
   <string id="gwp_warden_hostility_relation_restored" text="你是替灰袍出的手，{RULER}不记这笔账。" />
+  <string id="gwp_warden_marry_ask" text="做我的妻子吧。" />
+  <string id="gwp_warden_marry_yes" text="那就这么定了。我是你的，你也是我的。" />
   <string id="gwp_warden_mediation_ask" text="我替你们打的那些仗，把我卷进战争里了。出面替我说句话。" />
   <string id="gwp_warden_mediation_done" text="这事交给我们。今天就把话递出去，你替我们挑起来的那几桩，都了了。" />
   <string id="gwp_warden_mediation_moot" text="没有什么要我们去递的了。你替我们担下的那些，早就平了。" />
