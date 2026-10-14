@@ -1269,7 +1269,10 @@ namespace GreyWardenPolicePurity
             settlement.Village?.VillageState == Village.VillageStates.Normal &&
             settlement.Party?.MapEvent == null;
 
-        private static bool HasArrived(MobileParty party, Settlement settlement) =>
+        /// <summary>
+        /// 到了这座聚落：在里面，或在村口附近。原版领主进村办完事马上出来、停在村口（实机诊断 2026-10-15），只认「在里面」永远等不到。
+        /// </summary>
+        internal static bool HasArrived(MobileParty party, Settlement settlement) =>
             party.CurrentSettlement == settlement ||
             party.GetPosition2D.Distance(settlement.GetPosition2D) <= GwpTuning.Firesworn.ArrivalDistance;
 

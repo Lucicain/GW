@@ -343,7 +343,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (!trainerReady || trainer.CurrentSettlement != village)
+                if (!trainerReady || !GwpFireswornBehavior.HasArrived(trainer, village))
                 {
                     if (task.StayStartHours > 0d)
                     {

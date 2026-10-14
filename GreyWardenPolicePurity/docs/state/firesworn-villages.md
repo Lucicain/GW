@@ -2,7 +2,7 @@
 
 > 当前状态：守村兵全部留村（巡逻与紧急出动已删）、总缺额补兵、烧人经验与灰袍承担守村灰袍升级费已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`9bd6ce3`（2026-10-14）
+> 已复核至：`49cf20c`（2026-10-15）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs`
 > 待实测：见文末
 
