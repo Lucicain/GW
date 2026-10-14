@@ -121,6 +121,9 @@ namespace GreyWardenPolicePurity
                 return false;
             if (_envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase))
                 return envoyCase.Stage != EnvoyStage.Failed;
+            // 承办人正在打仗，抽不出人：这一小时先不宣战，仗打完就派（实机诊断 2026-10-15）。
+            if (police.MapEvent != null)
+                return true;
             return TrySendEnvoy(police, crime, criminal, false);
         }
 
@@ -141,7 +144,6 @@ namespace GreyWardenPolicePurity
             if (policeClan == null) return "no_police_clan";
             if (criminal.LeaderHero == null) return "target_leaderless";
             if (police.MapEvent != null) return "warden_in_battle";
-            if (criminal.MapEvent != null) return "target_in_battle";
             if (police.Army != null && police.Army.LeaderParty != police) return "warden_army_member";
             if (!collectOnly && criminal.Army != null && criminal.Army.LeaderParty != criminal) return "target_army_member";
             if (PlayerBountyBehavior.IsReservedTarget(criminal)) return "player_target";
@@ -268,6 +270,8 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // 他正在打仗（多半是在烧村、抢商队，案子就是这么立的）：使者照派，在旁边等他打完再谈。
+            // 以前目标在打仗就不派，宣战判定照常进行，接案时正在作案的人几乎都直接开战了（实机诊断 2026-10-15）。
             if (envoy.MapEvent != null || target.MapEvent != null)
                 return;
             // 被人打过一仗后原版把它停在原地，要等下一轮拍卖才动（实机诊断 2026-10-15：停了约 11 小时）。
