@@ -388,7 +388,7 @@ namespace GreyWardenPolicePurity
             TrimOpenCasesToCapacity(MaxTaskPoolEntries);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_001}You have been put on the wanted list by the Grey Wardens!"), Colors.Red));
+                GwpText.Get("{=gwp_gwpdata_001}The Grey Wardens have declared you wanted."), Colors.Red));
             return true;
         }
 
@@ -403,7 +403,7 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WritePlayerJusticeState("PLAYER_HUNT_ENDED", string.Empty);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_002}The wanted order has been lifted, and the Grey Wardens are no longer hunting you."), Colors.Green));
+                GwpText.Get("{=gwp_gwpdata_002}The Grey Wardens no longer seek you."), Colors.Green));
         }
 
         public static CrimeRecord? GetPlayerCrime() => GetRecordByKey(PlayerCrimeId);
@@ -1068,7 +1068,7 @@ namespace GreyWardenPolicePurity
             if (victimFaction != null) _victimFactions.Add(victimFaction);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_003}The Grey Wardens have recorded your crimes: {VAR_1} ({VAR_2}) | {VAR_3}", "VAR_1", type, "VAR_2", detail, "VAR_3", GetReputationDisplay()), Colors.Red));
+                GwpText.Get("{=gwp_gwpdata_003}The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}).", "VAR_1", type, "VAR_2", detail), Colors.Red));
 
             if (IsWanted)
                 CrimePool.TryAddPlayerCrime(type, location, detail);

@@ -206,7 +206,7 @@ namespace GreyWardenPolicePurity
             CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_014}You are now a sworn hunter of the Grey Wardens. The black commander’s harness has been placed in your baggage; wear it to receive bounty contracts."),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_014}You are now a Grey Warden bounty hunter. The black commander's gear is in your baggage; wear it, and the Wardens will entrust bounties to you."),
                 Colors.Green));
         }
 
@@ -221,7 +221,7 @@ namespace GreyWardenPolicePurity
             CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You refused the Grey Wardens’ summons. The herald will not return, but you may reconsider by speaking to a Warden-lord."),
+                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You decline the Wardens. You may still ask a Warden lord to join them later."),
                 Colors.Yellow));
         }
 
@@ -792,7 +792,7 @@ namespace GreyWardenPolicePurity
             if (!crime.IsOffenderPursuable())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target is no longer available, and the bounty contract has been cancelled."), Colors.Red));
+                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target is gone. The bounty is withdrawn."), Colors.Red));
                 return;
             }
 
@@ -824,7 +824,7 @@ namespace GreyWardenPolicePurity
             _supportRequested = false;
             PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_bounty_case_is_yours}The case is yours now. If you need men, send someone to ask the Wardens for help."),
+                GwpText.Get("{=gwp_bounty_case_is_yours}The bounty is yours. If you need help, send word to the Wardens."),
                 Colors.Cyan));
 
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
@@ -854,7 +854,7 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(
-                    "{=gwp_bounty_contract_accepted}Commission accepted: {VAR_1}. Difficulty: {VAR_2}; assessed fine: {VAR_3} denars.",
+                    "{=gwp_bounty_contract_accepted}You take up the bounty on {VAR_1}. The fine is {VAR_3} denars.",
                     "VAR_1", offender.Name,
                     "VAR_2", GetDifficultyText(choice.Difficulty),
                     "VAR_3", _assignedCaseFine),

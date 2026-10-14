@@ -122,7 +122,7 @@ namespace GreyWardenPolicePurity
             {
                 if (oldAttempts == 0 && side.Checks.Attempts > 0 && recipient == Mission.MainAgent)
                     MBInformationManager.AddQuickInformation(new TaleWorlds.Localization.TextObject(
-                        GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray in your heart for God's favor.")), 0);
+                        GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray for help to come.")), 0);
                 return;
             }
             side.Team = recipient!.Team;

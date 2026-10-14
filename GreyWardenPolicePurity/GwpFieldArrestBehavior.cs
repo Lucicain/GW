@@ -1029,8 +1029,8 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(new InformationMessage(
                 collected >= owed
-                    ? GwpText.Get("{=gwp_fieldarrest_msg_fine}{VAR_1} paid {VAR_2}. The money belongs to the order and must be handed in to a Warden lord.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString())
-                    : GwpText.Get("{=gwp_fieldarrest_msg_partial}{VAR_1} paid {VAR_2} against an assessed {VAR_3}. The pursuit has ended. Report the payment; the record is adjusted only when you hand it in.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString(), "VAR_3", owed.ToString()),
+                    ? GwpText.Get("{=gwp_fieldarrest_msg_fine}{VAR_1} pays the fine of {VAR_2} denars in full. The money belongs to the Wardens and must be handed to a Warden lord.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString())
+                    : GwpText.Get("{=gwp_fieldarrest_msg_partial}{VAR_1} pays only {VAR_2} of the {VAR_3} denars owed. Hand what you collected to a Warden lord.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString(), "VAR_3", owed.ToString()),
                 Colors.Green));
 
             ClearState();
@@ -1052,7 +1052,7 @@ namespace GreyWardenPolicePurity
             if (!_offender.IsPrisoner || _offender.PartyBelongedToAsPrisoner != MobileParty.MainParty.Party)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_capture_failed}The offender has not entered your custody. The case remains open."), Colors.Red));
+                    GwpText.Get("{=gwp_case_capture_failed}The target was not taken. The case remains open."), Colors.Red));
                 LeaveEncounterPeacefully();
                 ClearState();
                 return;
@@ -1075,7 +1075,7 @@ namespace GreyWardenPolicePurity
                 "; assessed=" + assessed + "; standing=" + standing);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_surrender}{VAR_1} has given himself up. His men will make their own way home; hand the prisoner to a Grey Warden lord.",
+                GwpText.Get("{=gwp_fieldarrest_msg_surrender}{VAR_1} surrenders. Deliver him to a Warden lord.",
                     "VAR_1", _offender.Name?.ToString() ?? string.Empty),
                 Colors.Green));
 
@@ -1109,7 +1109,7 @@ namespace GreyWardenPolicePurity
                 "; owed=" + owed + "; bribe=" + taken + "; standingUntouched=" + GetNegativeStanding(_crime));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_bribe}{VAR_1} privately gave you property worth {VAR_2} denars. This is not a regular fine payment; the commission still needs reporting.",
+                GwpText.Get("{=gwp_fieldarrest_msg_bribe}{VAR_1} slips you goods worth {VAR_2} denars.",
                     "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", taken.ToString()),
                 Colors.Yellow));
 
@@ -1159,7 +1159,7 @@ namespace GreyWardenPolicePurity
                 RegisterFieldEnforcement(opponent, crime);
                 PoliceEnforcementBehavior.CloseCase(crime, "field_duel_lost");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_fieldarrest_msg_duel_lost}{VAR_1} won the bout. The fine is waived, but the record against {VAR_1} stands.",
+                    GwpText.Get("{=gwp_fieldarrest_msg_duel_lost}{VAR_1} wins the duel, and you let him go as agreed.",
                         "VAR_1", opponent.Name?.ToString() ?? string.Empty),
                     Colors.Yellow));
                 return;
@@ -1168,7 +1168,7 @@ namespace GreyWardenPolicePurity
             var behavior = Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>();
             if (behavior != null) behavior._duelPaymentHero = opponent.StringId ?? string.Empty;
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_duel_payment_pending}You won. Leave the duel scene, then inspect the offender's property to collect payment."), Colors.Green));
+                GwpText.Get("{=gwp_duel_payment_pending}You win the duel. You may now collect his fine."), Colors.Green));
         }
 
         private string _duelPaymentHero = string.Empty;
@@ -1199,7 +1199,7 @@ namespace GreyWardenPolicePurity
                 _pendingDuelFine = 0;
                 GwpAiDiagnostics.WriteFieldArrest("DUEL_REQUEST_FAILED", "offender=" + _offender.StringId);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_duel_failed}The duel could not begin. The case remains open."), Colors.Red));
+                    GwpText.Get("{=gwp_case_duel_failed}The duel could not begin."), Colors.Red));
                 LeaveEncounterPeacefully();
             }
             ClearState();
@@ -1225,7 +1225,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_own_men}He has the men he blames dragged out and cut down in front of you."),
+                GwpText.Get("{=gwp_fieldarrest_msg_own_men}He has several of his own men put to death before you to bear the blame."),
                 Colors.Red));
         }
 

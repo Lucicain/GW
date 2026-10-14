@@ -2,7 +2,7 @@
 
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`cf53ba5`（2026-10-14）
 > 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
 > 待实测：对方身边有同势力部队时，拒谈和抗性会比以前高（以前只看双方本队与已挂靠的军团）；赶去军团途中的弱目标不再被算成整支军团
 

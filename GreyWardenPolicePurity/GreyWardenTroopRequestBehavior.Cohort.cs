@@ -98,7 +98,7 @@ namespace GreyWardenPolicePurity
                         "; requested=" + _orderedCount);
                     _cohortPartyId = string.Empty;
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_troop_order_cohort_lost}Word comes from the Grey Wardens: the men set aside for you were lost on the road. They are calling up others."),
+                        GwpText.Get("{=gwp_troop_order_cohort_lost}The soldiers being trained for you were lost on the road. The Wardens are training another company."),
                         Colors.Yellow));
                 }
                 // 空队会被原版当无人队清掉，下一拍我们就会把它误报成"折在路上"。

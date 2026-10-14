@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_offer_changed}This offer exceeds our agreement or includes unavailable property. Please adjust it.")));
+                "{=gwp_offer_changed}What you hand over does not match the agreement. Adjust it and try again.")));
             return false;
         }
     }

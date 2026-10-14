@@ -310,12 +310,12 @@ namespace GreyWardenPolicePurity
 
                 _atonementQuest?.MarkReadyForTurnIn();
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_003}Atonement quarry defeated: {VAR_1}. Report to the Warden-General or any Grey Warden.", "VAR_1", _atonementTargetName),
+                    GwpText.Get("{=gwp_policeenforcementbehavior_003}You have defeated {VAR_1}. Report to any Warden lord to complete your atonement.", "VAR_1", _atonementTargetName),
                     Colors.Green));
             }
             else
             {
-                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_004}The atonement contract failed, reputation -5."));
+                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_004}Your atonement has failed."));
             }
         }
 
@@ -531,7 +531,7 @@ namespace GreyWardenPolicePurity
             // 步骤6：显示消息
             string castleName = castle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_007}Fortress");
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_008}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
+                GwpText.Get("{=gwp_policeenforcementbehavior_008}You are brought to {VAR_1} and released after paying {VAR_3} denars.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
                 Colors.Yellow));
 
             // 步骤7：恢复警察AI，开始补给
@@ -1351,7 +1351,7 @@ namespace GreyWardenPolicePurity
 
                         string castleName = targetCastle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_009}FORT");
                         InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_policeenforcementbehavior_010}You were defeated by {VAR_1}! Being escorted to {VAR_2}...", "VAR_1", pp.Name, "VAR_2", castleName),
+                            GwpText.Get("{=gwp_policeenforcementbehavior_010}You are defeated by {VAR_1} and taken to {VAR_2}.", "VAR_1", pp.Name, "VAR_2", castleName),
                             Colors.Yellow));
 
                         continue;

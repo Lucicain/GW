@@ -355,7 +355,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_018}If you refuse to enforce the law, the pickets will arrest you by force."),
+                GwpText.Get("{=gwp_policepatrolbehavior_018}You refuse to submit. The patrol will take you by force."),
                 Colors.Red));
         }
 
@@ -375,7 +375,7 @@ namespace GreyWardenPolicePurity
             GwpPeace.SettlePlayerCase();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_021}Release negotiations are reached: you get a 4-day protection period (reputation remains unchanged)."),
+                GwpText.Get("{=gwp_policepatrolbehavior_021}The patrol lets you pass."),
                 Colors.Yellow));
         }
 
@@ -397,7 +397,7 @@ namespace GreyWardenPolicePurity
                 "; returningPatrols=" + _returningPatrolIds.Count +
                 "; suppressMeetings=" + _suppressPatrolMeetings);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_022}The lawful fine is paid and the warrant lifted. The provost patrol will withdraw."),
+                GwpText.Get("{=gwp_policepatrolbehavior_022}The fine is paid and you are no longer wanted. The patrol withdraws."),
                 Colors.Green));
         }
 
@@ -454,11 +454,6 @@ namespace GreyWardenPolicePurity
             if (_bribeProtectionDays > 0)
             {
                 _bribeProtectionDays--;
-                if (_bribeProtectionDays == 0)
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_025}Your negotiated safe-conduct has expired. Provost patrols will resume their customary inspections."), Colors.Red));
-                }
             }
 
             if (_dayCounter < 2) return;
@@ -496,7 +491,7 @@ namespace GreyWardenPolicePurity
                     CrimeState.EndPlayerHunt();
                     GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_027}Current reputation is positive, existing wanted orders have been cancelled, and all pursuits have been withdrawn."),
+                        GwpText.Get("{=gwp_policepatrolbehavior_027}The Grey Wardens no longer seek you."),
                         Colors.Green));
                 }
             }
@@ -537,7 +532,7 @@ namespace GreyWardenPolicePurity
                 {
                     int mag = Math.Abs(reputation);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_028}Your standing is {VAR_1}. A provost patrol of about {VAR_2} has been dispatched.", "VAR_1", mag, "VAR_2", mag * GwpTuning.Patrol.PatrolSize),
+                        GwpText.Get("{=gwp_policepatrolbehavior_028}A Grey Warden patrol is coming for you.", "VAR_1", mag, "VAR_2", mag * GwpTuning.Patrol.PatrolSize),
                         Colors.Yellow));
                     SpawnPatrol(mag);
                     _warDeclared = false;
@@ -571,7 +566,7 @@ namespace GreyWardenPolicePurity
                         GwpText.Get("{=gwp_policepatrolbehavior_030}Reputation has reached {VAR_1}", "VAR_1", reputation));
 
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_031}Your standing has fallen into grave offence ({VAR_1}); Grey Warden officers have begun pursuit.", "VAR_1", Math.Abs(reputation)),
+                        GwpText.Get("{=gwp_policepatrolbehavior_031}The Grey Wardens have ordered your arrest.", "VAR_1", Math.Abs(reputation)),
                         Colors.Red));
                 }
             }
@@ -626,9 +621,6 @@ namespace GreyWardenPolicePurity
             {
                 PlayerState.ChangeReputation(-1);
                 GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policepatrolbehavior_032}You refuse to enforce the law and the case is not completed, reputation -1. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
-                    Colors.Red));
                 _playerRefused = false;
                 return;
             }
@@ -706,7 +698,7 @@ namespace GreyWardenPolicePurity
             {
                 FactionManager.DeclareWar(policeClan, playerFaction);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policepatrolbehavior_034}You refused the order. The provost patrol will take you by force."),
+                    GwpText.Get("{=gwp_policepatrolbehavior_034}You refuse to submit. The patrol will take you by force."),
                     Colors.Yellow));
             }
         }
@@ -760,7 +752,7 @@ namespace GreyWardenPolicePurity
             _activePatrolIds.Add(patrolId);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_036}Picket has departed from {VAR_1} and is tracking you.", "VAR_1", _patrolOriginSettlement.Name),
+                GwpText.Get("{=gwp_policepatrolbehavior_036}A Grey Warden patrol has set out from {VAR_1} after you.", "VAR_1", _patrolOriginSettlement.Name),
                 Colors.Yellow));
         }
 
@@ -908,7 +900,7 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_039}You were defeated by the picket and are being escorted to {VAR_1} for punishment...", "VAR_1", (_patrolOriginSettlement?.Name?.ToString() ?? GwpText.Get("{=gwp_common_garrison}garrison"))),
+                GwpText.Get("{=gwp_policepatrolbehavior_039}The patrol has defeated you. You are being taken to {VAR_1}.", "VAR_1", (_patrolOriginSettlement?.Name?.ToString() ?? GwpText.Get("{=gwp_common_garrison}garrison"))),
                 Colors.Yellow));
         }
 
@@ -999,7 +991,7 @@ namespace GreyWardenPolicePurity
 
             string townName = settlement?.Name?.ToString() ?? GwpText.Get("{=gwp_policepatrolbehavior_040}The nearest town");
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_041}You are delivered to {VAR_1}: {VAR_2} denars due, {VAR_3} paid; standing restored to {VAR_4} in proportion to payment.", "VAR_1", townName, "VAR_2", fine, "VAR_3", paid, "VAR_4", repAfter),
+                GwpText.Get("{=gwp_policepatrolbehavior_041}You are brought to {VAR_1} and released after paying {VAR_3} denars.", "VAR_1", townName, "VAR_2", fine, "VAR_3", paid, "VAR_4", repAfter),
                 Colors.Yellow));
         }
 
@@ -1011,7 +1003,7 @@ namespace GreyWardenPolicePurity
         {
             int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policepatrolbehavior_042}The provost patrol took {VAR_1} denars in coin against {VAR_2} due.", "VAR_1", collected, "VAR_2", fine),
+                GwpText.Get("{=gwp_policepatrolbehavior_042}The patrol collects a fine of {VAR_1} denars.", "VAR_1", collected, "VAR_2", fine),
                 Colors.Yellow));
             return collected;
         }

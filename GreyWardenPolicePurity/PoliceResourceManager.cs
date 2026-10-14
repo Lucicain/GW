@@ -451,7 +451,7 @@ namespace GreyWardenPolicePurity
                 {
                     CreditJudicialTreasury(itemsValue);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policeresourcemanager_001}Coin is insufficient; goods worth a further {VAR_1} denars have been confiscated.", "VAR_1", itemsValue), Colors.Yellow));
+                        GwpText.Get("{=gwp_policeresourcemanager_001}You lack the coin, so the Wardens take goods worth {VAR_1} denars.", "VAR_1", itemsValue), Colors.Yellow));
                 }
             }
 

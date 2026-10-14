@@ -226,7 +226,7 @@ namespace GreyWardenPolicePurity
             _atonementQuest?.SucceedQuestWithReputation(gain, after);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_016}Atonement contract delivered: Reputation +{VAR_1} (currently {VAR_2})", "VAR_1", gain, "VAR_2", after),
+                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_016}Your atonement is complete.", "VAR_1", gain, "VAR_2", after),
                 Colors.Green));
 
             ClearAtonementTaskState();
@@ -246,7 +246,7 @@ namespace GreyWardenPolicePurity
 
             GwpPeace.Make(playerFaction, targetFaction);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_017}Atonement delivered, the Grey Wardens Mediation: Peace has been restored between you and {VAR_1}.", "VAR_1", targetFaction.Name),
+                GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_017}Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}.", "VAR_1", targetFaction.Name),
                 Colors.Green));
         }
     }

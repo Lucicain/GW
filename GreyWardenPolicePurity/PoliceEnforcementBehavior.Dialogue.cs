@@ -282,7 +282,7 @@ namespace GreyWardenPolicePurity
                 ?.RegisterEnforcementOutcome(null, accused, crime.CrimeCategory, countAsArrest: true);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1}'s fine of {VAR_2} denars has been received. This case is closed.",
+                GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1} has paid the fine of {VAR_2} denars. The case is closed.",
                     "VAR_1", accused.Name?.ToString() ?? accused.StringId,
                     "VAR_2", _dialogFine), Colors.Yellow));
             QueueFinishEnforcementEncounter();
@@ -342,7 +342,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_016}failure will impose a further loss of 5 standing."));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_017}The charge of atonement is entered in your quest roll: defeat {VAR_1}, then report to the Warden-General or any Grey Warden within {VAR_2} days. Failure: -5 standing.", "VAR_1", _atonementTargetName, "VAR_2", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0")),
+                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_017}The Wardens charge you to defeat {VAR_1} within {VAR_2} days in atonement.", "VAR_1", _atonementTargetName, "VAR_2", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0")),
                 Colors.Yellow));
 
             return true;
@@ -392,7 +392,7 @@ namespace GreyWardenPolicePurity
                 "; police=" + (_dialogPolice?.StringId ?? "-"));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The lawful fine of {VAR_1} denars has been received. The warrant is lifted.", "VAR_1", paid),
+                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The fine of {VAR_1} denars is paid. You are no longer wanted.", "VAR_1", paid),
                 Colors.Yellow));
 
             // The line's normal target is close_window.  Finish the native
@@ -472,7 +472,7 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You have refused the order. The Grey Wardens will take you by force."),
+                    GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You refuse to submit. The Wardens will take you by force."),
                     Colors.Red));
             }
             finally

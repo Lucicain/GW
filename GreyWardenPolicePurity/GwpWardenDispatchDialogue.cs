@@ -255,7 +255,7 @@ namespace GreyWardenPolicePurity
                         left.TotalManCount > 0,
                         left.TotalManCount > 0
                             ? new TextObject(string.Empty)
-                            : GwpText.Create("{=gwp_dispatch_pick_someone}Choose at least one man to send.")),
+                            : GwpText.Create("{=gwp_dispatch_pick_someone}Choose at least one soldier.")),
                 (leftOwner, leftMembers, leftPrison, rightOwner, rightMembers, rightPrison, fromCancel) =>
                     OnSelectionClosed(purpose, leftMembers, leftPrison, fromCancel),
                 (character, type, side, leftOwnerParty) => IsSendable(purpose, character, type),
@@ -349,7 +349,7 @@ namespace GreyWardenPolicePurity
             {
                 members.Clear(); prisoners.Clear();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_receiver}There is no Grey Warden party abroad that your men could reach. Keep them with you for now.")));
+                    "{=gwp_dispatch_no_receiver}There is no Warden company within reach to receive them.")));
                 return;
             }
             var payment = new GwpAssetPayment(Hero.MainHero, receiver.LeaderHero,
@@ -425,7 +425,7 @@ namespace GreyWardenPolicePurity
             {
                 escort.Clear();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_pick_someone}Choose at least one man to send.")));
+                    "{=gwp_dispatch_pick_someone}Choose at least one soldier.")));
                 return;
             }
             foreach (var entry in escort.GetTroopRoster())
@@ -452,7 +452,7 @@ namespace GreyWardenPolicePurity
                 {
                     members.Clear(); prisoners.Clear();
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        "{=gwp_dispatch_pick_someone}Choose at least one man to send.")));
+                        "{=gwp_dispatch_pick_someone}Choose at least one soldier.")));
                     return;
                 }
                 foreach (var entry in members.GetTroopRoster())

@@ -139,7 +139,7 @@ namespace GreyWardenPolicePurity
                 }
                 else if (!target.IsDead)
                 {
-                    string message = GwpText.Get("{=gwp_case_capture_missed}The offender is not in your custody. The commission remains open: pursue him again or settle the fine with the Wardens. Any money already collected must still be reported.");
+                    string message = GwpText.Get("{=gwp_case_capture_missed}The target was not taken. The commission is not yet done.");
                     _activeQuest?.WriteLog(message);
                     InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
                 }
@@ -358,7 +358,7 @@ namespace GreyWardenPolicePurity
                 "fee=" + fee + "; offender=" + _activeBountyTargetHeroId);
             ClearBountyTaskState();
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_report_done}Your men have made the report. The commission is closed; they are bringing {VAR_1} denars home to you.",
+                "{=gwp_dispatch_report_done}The commission is settled. Your men are returning with {VAR_1} denars.",
                 "VAR_1", fee), Colors.Green));
         }
 
@@ -420,7 +420,7 @@ namespace GreyWardenPolicePurity
                 history.CrimeKillProgress = 0;
                 PoliceEnforcementBehavior.CloseCase(crime, "commission_offender_in_custody");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_captive_ready}The assigned offender is in your custody. Deliver him to any Grey Warden lord, in person or by your own men, to have your expenses settled."), Colors.Green));
+                    GwpText.Get("{=gwp_case_captive_ready}You hold the target captive. Deliver him to any Warden lord to collect the reward."), Colors.Green));
             }
             return true;
         }
@@ -632,7 +632,7 @@ namespace GreyWardenPolicePurity
         {
             if (CaseReportReceipt == null && CaseReportSuggestedPayment > 0)
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_receipt_unknown}This old account has no itemized receipt. Select the property to hand in manually.")));
+                    "{=gwp_receipt_unknown}Choose what to hand over.")));
         }
 
         /// <summary>

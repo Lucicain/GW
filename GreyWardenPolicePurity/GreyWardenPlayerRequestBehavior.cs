@@ -370,8 +370,8 @@ namespace GreyWardenPolicePurity
             _publicSupportPercent = 0;
             InformationManager.DisplayMessage(new InformationMessage(
                 automatic
-                    ? GwpText.Get("{=gwp_fief_auto_triggered}The Noble Affairs Liaison has taken up your denied fief claim and is coming to ask whether you want Grey Warden assistance.")
-                    : GwpText.Get("{=gwp_fief_request_filed}Your fief petition has been recorded. No money has been taken; the Noble Affairs Liaison is coming to meet you."),
+                    ? GwpText.Get("{=gwp_fief_auto_triggered}The Wardens' officer for noble affairs is on her way to see you.")
+                    : GwpText.Get("{=gwp_fief_request_filed}Your petition for a fief is filed. The Wardens' officer for noble affairs is on her way to you."),
                 Colors.Cyan));
         }
 
@@ -601,7 +601,7 @@ namespace GreyWardenPolicePurity
             _activeStage = (int)FiefRequestStage.AwaitingVote;
             GreyWardenPartyDesireBehavior.ClearIntent(coordinator);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fief_vote_reopened}The Grey Warden petition at {VAR_1} is complete. A new native fief decision has been opened, and your clan is guaranteed a nomination.",
+                GwpText.Get("{=gwp_fief_vote_reopened}The Wardens have petitioned over {VAR_1}. The realm will deliberate the fief again, and you are among the candidates.",
                     "VAR_1", settlement.Name),
                 Colors.Green));
             GwpAiDiagnostics.WriteAction(coordinator,
@@ -804,7 +804,7 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(
-                    "{=gwp_fief_defer_complete}The Noble Affairs Liaison will return to continue your fief petition."),
+                    "{=gwp_fief_defer_complete}The officer for noble affairs will return to take up your petition."),
                 Colors.Cyan));
         }
 
@@ -915,7 +915,7 @@ namespace GreyWardenPolicePurity
                 PoliceResourceManager.RefundPlayerRequestPayment(
                     GwpTuning.PlayerRequests.FiefAppealPrice);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_fief_appeal_refunded}The fief petition became invalid before the new vote opened. The full fifty thousand denars have been returned."),
+                    GwpText.Get("{=gwp_fief_appeal_refunded}Your petition could not be brought forward. The fee has been returned in full."),
                     Colors.Yellow));
             }
             MobileParty? coordinator = ResolveCoordinatorParty();

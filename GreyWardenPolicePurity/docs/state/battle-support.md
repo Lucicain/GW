@@ -3,7 +3,7 @@
 > 当前状态：用户已实测满意（2026-09-23 确认支援部分）
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
 > 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
-> 已复核至：`0b63c01`（2026-10-06）
+> 已复核至：`cf53ba5`（2026-10-14）
 > 待实测：无（用户已确认）
 
 实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、
@@ -107,7 +107,7 @@ descriptor 和原生 traits（基于 `BasicBattleAgentOrigin`，跨战役/Custom
 ## 提示与音乐
 
 - 两侧援军均在首批实际到场后各通知音乐一次，沿用 Redraw 完整过渡。
-- 敌方援军中文提示「敌方的灰袍援军抵达战场！」，友方沿用旧提示。
+- 敌方援军中文提示「敌方的灰袍援军抵达战场！」，友方提示「灰袍援军赶到了！」。
 - 号角同场共用；退出/结果出现时停止释放。未强制接管玩家编队 AI。
 
 ## 测试

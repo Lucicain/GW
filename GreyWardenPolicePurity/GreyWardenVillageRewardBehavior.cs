@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
             if (_storedReward <= 0)
             {
                 InformationManager.DisplayMessage(
-                    new InformationMessage(GwpText.Get("{=gwp_greywardenvillagerewardbehavior_002}There are currently no rewards raised by villagers to receive."), Colors.Yellow));
+                    new InformationMessage(GwpText.Get("{=gwp_greywardenvillagerewardbehavior_002}The villagers have gathered no reward yet."), Colors.Yellow));
                 return;
             }
 
@@ -148,7 +148,7 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(
                 new InformationMessage(
-                    GwpText.Get("{=gwp_greywardenvillagerewardbehavior_003}You received {VAR_1} dinars from villager rewards. {VAR_2} dinars remaining.", "VAR_1", amount, "VAR_2", _storedReward),
+                    GwpText.Get("{=gwp_greywardenvillagerewardbehavior_003}You collect the villagers' reward of {VAR_1} denars.", "VAR_1", amount, "VAR_2", _storedReward),
                     Colors.Green));
         }
 

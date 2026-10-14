@@ -168,8 +168,7 @@ namespace GreyWardenPolicePurity
                 CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_playerbehaviormonitor_005}Raid village"), location, village.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_006}Unknown village"));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_007}The Grey Wardens enter your offence upon the roll: raid upon {VAR_1} |", "VAR_1", village.Name) +
-                $"{PlayerState.GetReputationDisplay()} (-2)",
+                GwpText.Get("{=gwp_playerbehaviormonitor_007}The Grey Wardens record your raid on {VAR_1}.", "VAR_1", village.Name),
                 Colors.Red));
 
             PlayerState.TrackVictimFaction(victimFaction);
@@ -325,8 +324,7 @@ namespace GreyWardenPolicePurity
                                     : defenderIsVillager    ? GwpText.Get("{=gwp_playerbehaviormonitor_016}Rescue the Villagers")
                                     : GwpText.Get("{=gwp_playerbehaviormonitor_017}Defeat the robbers");
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbehaviormonitor_018}The Grey Wardens mark your good service: {VAR_1} ({VAR_2} personally defeated) |", "VAR_1", deedType, "VAR_2", playerKillCount) +
-                        $"{PlayerState.GetReputationDisplay()} (+{repGain})",
+                        GwpText.Get("{=gwp_playerbehaviormonitor_018}The Grey Wardens note your good deed: {VAR_1}.", "VAR_1", deedType, "VAR_2", playerKillCount),
                         Colors.Green));
                 }
             }
@@ -388,8 +386,7 @@ namespace GreyWardenPolicePurity
                                        : loserIsCaravan         ? GwpText.Get("{=gwp_playerbehaviormonitor_027}Raid a caravan")
                                        : GwpText.Get("{=gwp_playerbehaviormonitor_028}Kill villagers");
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbehaviormonitor_029}The Grey Wardens enter your offence upon the roll: {VAR_1} ({VAR_2} defeated) |", "VAR_1", badDeedType, "VAR_2", killCount) +
-                        $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
+                        GwpText.Get("{=gwp_playerbehaviormonitor_029}The Grey Wardens record your crime: {VAR_1}.", "VAR_1", badDeedType, "VAR_2", killCount),
                         Colors.Red));
                 }
             }
@@ -631,8 +628,7 @@ namespace GreyWardenPolicePurity
 
                 PlayerState.ChangeReputation(repGain);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbehaviormonitor_043}The Grey Wardens noticed your good deeds: Assisted in apprehending criminals (defeated {VAR_1} people personally) |", "VAR_1", playerKillCount) +
-                    $"{PlayerState.GetReputationDisplay()} (+{repGain})",
+                    GwpText.Get("{=gwp_playerbehaviormonitor_043}The Grey Wardens note that you helped bring an outlaw to justice.", "VAR_1", playerKillCount),
                     Colors.Green));
             }
             else
@@ -659,8 +655,7 @@ namespace GreyWardenPolicePurity
                 }
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbehaviormonitor_046}The Grey Wardens enter your offence upon the roll: obstruction of the law ({VAR_1} Wardens defeated) |", "VAR_1", policeCasualties) +
-                    $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
+                    GwpText.Get("{=gwp_playerbehaviormonitor_046}The Grey Wardens record that you obstructed them.", "VAR_1", policeCasualties),
                     Colors.Red));
             }
 
@@ -691,8 +686,7 @@ namespace GreyWardenPolicePurity
 
             string targetName = loserHadPatrol ? GwpText.Get("{=gwp_playerbehaviormonitor_047}Picket") : GwpText.Get("{=gwp_playerbehaviormonitor_048}Grey Wardens");
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_049}The Grey Wardens enter your offence upon the roll: defeated {VAR_1} ({VAR_2} troops) |", "VAR_1", targetName, "VAR_2", policeCasualties) +
-                $"{PlayerState.GetReputationDisplay()} (-{repLoss})",
+                GwpText.Get("{=gwp_playerbehaviormonitor_049}The Grey Wardens record your attack on {VAR_1}.", "VAR_1", targetName, "VAR_2", policeCasualties),
                 Colors.Red));
             return true;
         }
@@ -722,8 +716,7 @@ namespace GreyWardenPolicePurity
 
             PlayerState.ChangeReputation(repGain);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_054}The Grey Wardens mark your good service: defeated the forces of a wanted criminal ({VAR_1} personally defeated) |", "VAR_1", playerKillCount) +
-                $"{PlayerState.GetReputationDisplay()} (+{repGain})",
+                GwpText.Get("{=gwp_playerbehaviormonitor_054}The Grey Wardens note that you broke a wanted outlaw's band.", "VAR_1", playerKillCount),
                 Colors.Green));
             return true;
         }

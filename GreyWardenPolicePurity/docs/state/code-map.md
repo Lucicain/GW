@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-171 个源文件、51,972 行、331 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+171 个源文件、51,957 行、331 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -526,7 +526,7 @@
 - `PoliceEnforcementBehavior.cs` — 1456 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1371 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1231 行 · `PoliceEnforcementBehavior`
-- `PolicePatrolBehavior.cs` — 1022 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
+- `PolicePatrolBehavior.cs` — 1014 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 713 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 692 行 · `GwpAiDeterrenceState`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 586 行 · `PoliceEnforcementBehavior`
@@ -593,7 +593,7 @@
 
 ### 大地图欲望与 AI（3 个文件）
 
-- `PlayerBehaviorMonitor.cs` — 886 行 · `PlayerBehaviorMonitor` : CampaignBehaviorBase
+- `PlayerBehaviorMonitor.cs` — 879 行 · `PlayerBehaviorMonitor` : CampaignBehaviorBase
 - `GreyWardenPartyDesireBehavior.cs` — 816 行 · `GreyWardenPartyDesireBehavior` : CampaignBehaviorBase
 - `GwpArmyExitDisorganizedPatch.cs` — 75 行 · `GwpArmyExitDisorganizedPatch`
 

@@ -53,7 +53,7 @@ namespace GreyWardenPolicePurity
                     "source=" + source + "; lord=" + (lord?.StringId ?? "-")
                     + "; crimeOpen=" + (crime != null));
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_support_no_responder}No Grey Warden lord is free to answer the request just now."),
+                    "{=gwp_support_no_responder}No Warden lord can come just now."),
                     Colors.Yellow));
                 return false;
             }
@@ -70,7 +70,7 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_ASSIGN_FAILED",
                     "source=" + source + "; lord=" + lord.StringId + "; crime=" + crime.CrimeId);
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_support_no_responder}No Grey Warden lord is free to answer the request just now."),
+                    "{=gwp_support_no_responder}No Warden lord can come just now."),
                     Colors.Yellow));
                 return false;
             }
@@ -79,14 +79,14 @@ namespace GreyWardenPolicePurity
             _escortPolicePartyId = lord.StringId;
             _supportRequested = true;
             _activeQuest?.WriteLog(GwpText.Create(
-                "{=gwp_support_requested_log}You asked the Wardens to take the field beside you against the offender."));
+                "{=gwp_support_requested_log}You have asked the Wardens to ride with you."));
             GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_GRANTED",
                 "source=" + source + "; responder=" + lord.StringId + "; crime=" + crime.CrimeId);
             PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(_escortPolicePartyId);
             PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(_escortPolicePartyId);
             UpdateEscortPatrol();
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_support_granted_notice}{VAR_1} has taken up your request and is riding to join you.",
+                "{=gwp_support_granted_notice}{VAR_1} has agreed and is on her way to join you.",
                 "VAR_1", lord.Name.ToString()), Colors.Cyan));
             return true;
         }
@@ -151,7 +151,7 @@ namespace GreyWardenPolicePurity
                 "playerFaction=" + playerFaction.StringId +
                 "; criminalFaction=" + criminalFaction.StringId);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_support_player_war}The Wardens have declared against {VAR_1}, and your own banner now stands with them.",
+                "{=gwp_support_player_war}The Wardens declare war on {VAR_1}, and you stand with them.",
                 "VAR_1", criminalFaction.Name), Colors.Cyan));
         }
 

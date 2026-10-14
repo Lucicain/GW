@@ -247,14 +247,14 @@ namespace GreyWardenPolicePurity
                     StopBountyEscortAfterTargetDefeat();
                     _activeQuest?.MarkReadyForTurnIn();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_bounty_contract_expired_but_done}The pursuit window has closed, but the man was already dealt with. Report to any Grey Warden lord."),
+                        GwpText.Get("{=gwp_bounty_contract_expired_but_done}The time for the hunt has passed, but the target has been dealt with. Report to any Warden lord."),
                         Colors.Yellow));
                 }
                 return;
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_bounty_contract_timed_out}The bounty contract has expired. The pursuit is ended and any assigned Warden escort has been recalled."),
+                GwpText.Get("{=gwp_bounty_contract_timed_out}The bounty has expired. The hunt is over."),
                 Colors.Yellow));
             EndBountyTaskState(tryRestorePeace: true);
         }
@@ -456,7 +456,7 @@ namespace GreyWardenPolicePurity
             _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden herald is riding from {VAR_1} to meet you...", "VAR_1", spawnPoint.Name),
+                GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden envoy is coming from {VAR_1} to see you.", "VAR_1", spawnPoint.Name),
                 Colors.Cyan));
         }
 
@@ -624,7 +624,7 @@ namespace GreyWardenPolicePurity
                 _escortPolicePartyId = null!;
                 if (HasBountyTask)
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbountybehavior_003}The escorting Warden has been lost. The warrant remains active, and any Grey Warden lord can settle it once the quarry falls."), Colors.Yellow));
+                        GwpText.Get("{=gwp_playerbountybehavior_003}The Warden escort is gone, but the bounty still stands."), Colors.Yellow));
                 return;
             }
 
@@ -772,7 +772,7 @@ namespace GreyWardenPolicePurity
             if (CrimeState.GetAvailablePlayerBounties().Count == 0)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_012}The black-robed commander's equipment has been identified. There is currently no bounty contract available."),
+                    GwpText.Get("{=gwp_playerbountybehavior_012}There is no bounty to take up just now."),
                     Colors.White));
                 return;
             }

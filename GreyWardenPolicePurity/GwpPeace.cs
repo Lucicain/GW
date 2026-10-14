@@ -93,14 +93,14 @@ namespace GreyWardenPolicePurity
                 {
                     Make(playerFaction, victim);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
+                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}Through the Wardens' mediation, you are at peace with {VAR_1}.", "VAR_1", victim.Name),
                         Colors.Green));
                 }
                 else
                 {
                     ChangeCrimeRatingAction.Apply(victim, -1000f, true);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
+                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you.", "VAR_1", victim.Name),
                         Colors.Green));
                 }
             }

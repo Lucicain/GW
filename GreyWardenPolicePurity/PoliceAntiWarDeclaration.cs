@@ -199,7 +199,7 @@ namespace GreyWardenPolicePurity
 
             _instance._mediationRequests.Add(faction.StringId);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_warden_mediation_owed}The Wardens will speak for you over {VAR_1} when you ask them to.",
+                GwpText.Get("{=gwp_warden_mediation_owed}This war began when you fought for the Wardens. You may ask them to mediate.",
                     "VAR_1", faction.Name), Colors.Cyan));
             GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_REQUEST_RECORDED",
                 "faction=" + faction.StringId + "; reason=" + reason);

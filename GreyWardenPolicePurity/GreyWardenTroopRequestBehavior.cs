@@ -514,7 +514,7 @@ namespace GreyWardenPolicePurity
             if (payment.Paid < choice.Price)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_player_troop_order_short}That does not cover the price, so no order is placed."),
+                    GwpText.Get("{=gwp_player_troop_order_short}What you offered falls short of the price. The order was not placed."),
                     Colors.Yellow));
                 return;
             }
@@ -554,7 +554,7 @@ namespace GreyWardenPolicePurity
                 !PoliceResourceManager.TryCollectPlayerRequestPayment(choice.Price))
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_player_troop_order_unaffordable}You cannot put up the price, so no order is placed."),
+                    GwpText.Get("{=gwp_player_troop_order_unaffordable}You cannot pay the deposit. The order was not placed."),
                     Colors.Yellow));
                 return;
             }
@@ -582,8 +582,8 @@ namespace GreyWardenPolicePurity
                     "; price=" + _orderPrice);
             }
             InformationManager.DisplayMessage(new InformationMessage(alreadyCollected
-                ? GwpText.Get("{=gwp_player_troop_order_filed_prepaid}Your riders handed the order and the coin to the Wardens. The Training Warden will train the requested troops and bring them to you herself.")
-                : GwpText.Get("{=gwp_player_troop_order_filed}The Training Warden has your order and the price is paid into the public treasury. She will train the requested troops and bring them to you."),
+                ? GwpText.Get("{=gwp_player_troop_order_filed_prepaid}Your order and deposit are with the Wardens. The Training Warden will bring the soldiers to you herself.")
+                : GwpText.Get("{=gwp_player_troop_order_filed}The Training Warden has your order and will bring the soldiers to you once they are ready."),
                 Colors.Cyan));
         }
 
