@@ -27,6 +27,10 @@
 - **借**：`PoliceResourceManager.LendShips`。出借方至少留一条船；只借空闲船里交易价最低的，
   按计划人数每 50 人一条（练兵队按订单人数）。出借方正在打仗时不借。只要找到出借方，无论借到与否都登记
   出借方（存档键 `GWPP_ShipLoanBorrowers` / `GWPP_ShipLoanLenders`）。
+- 借到船时，临时队的锚点照抄出借方的锚点（船就泊在那里），下水时间按离那处锚点的远近算，和出借方自己下水一样。
+  新建队伍的锚点是无效的，NavalDLC 对无锚点的队伍下水一律算 48 小时。
+  （依据：C#反编译 `NavalDLCPartyTransitionModel.GetTransitionTimeForEmbarking`，原版 `RaftStateCampaignBehavior` 也这样复制锚点；
+  实机诊断 2026-10-15：使者在海边原地停了一天多）
 - **还**：登记过的临时队身上**所有**船（借来的和路上缴获的）在销毁前交回出借方。出借方不能接收
   （已不在、在海上交战中、正在解散）时，交给最近的、能接收的灰袍领主；接收条件与 NavalDLC
   `CanSendShipToParty` 同一口径。出借方是玩家时，玩家被俘（主队不活跃）也照样还给玩家——

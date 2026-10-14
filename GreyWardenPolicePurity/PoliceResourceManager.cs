@@ -336,6 +336,15 @@ namespace GreyWardenPolicePurity
             {
                 ChangeShipOwnerAction.ApplyByTransferring(borrower.Party, ship);
             }
+            // 借来的船就泊在出借方的锚点：新建的临时队锚点无效，NavalDLC 下水一律按 48 小时算
+            // （C#反编译 NavalDLCPartyTransitionModel.GetTransitionTimeForEmbarking；实机诊断 2026-10-15：
+            // 使者在海边停了一天多）。照原版 RaftStateCampaignBehavior 复制锚点的写法，下水时间就按
+            // 离那处锚点的远近算，与出借方自己下水一样。
+            if (lender.Anchor?.IsValid == true && borrower.Anchor != null)
+            {
+                borrower.Anchor.SetPosition(lender.Anchor.Position);
+                borrower.Anchor.SetLastUsedDisembarkPosition(lender.Anchor.GetLastUsedDisembarkPosition());
+            }
             borrower.SetNavalVisualAsDirty();
             lender.SetNavalVisualAsDirty();
         }
