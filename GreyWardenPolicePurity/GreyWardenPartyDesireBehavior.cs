@@ -183,16 +183,6 @@ namespace GreyWardenPolicePurity
                 ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
         }
 
-        /// <summary>围着某个聚落巡逻：下注原版的巡逻行为，圆心由我们指定（火誓者巡逻队用）。</summary>
-        internal static void RequestBeat(MobileParty party, Settlement center,
-            float priority = AssignedDutyScore, double validHours = 8d)
-        {
-            ReleaseDirectAttackLock(party);
-            SetIntent(party, new Intent { Kind = IntentKind.Beat, Settlement = center,
-                Priority = NormalizePriority(priority),
-                ExpiresAt = CampaignTime.Now.ToHours + Math.Max(2d, validHours) });
-        }
-
         internal static void ClearIntent(MobileParty? party)
         {
             if (party == null) return;
@@ -231,19 +221,14 @@ namespace GreyWardenPolicePurity
             // 办差的队伍谁也不主动打，劫匪也不打。它是去送东西的，不是去清野的；
             // 挨打时原版照样自卫，只是不会自己追上去。
             if (GwpWardenDispatchBehavior.IsDispatchParty(party)) return false;
-            // 巡逻的职责就是打共同敌人，不受办案目标白名单限制；参战仍须原版允许加入。
-            if (party != null && GwpFireswornBehavior.IsFaithPatrol(party))
-                return GwpFireswornBehavior.IsPatrolEnemy(party, target);
             if (target.IsBandit) return true;
 
             if (PoliceEnforcementBehavior.IsAuthorizedAssistanceTarget(party, target))
                 return true;
 
-            // 火誓者巡逻队直扑的是它挑好的、打得过的交战方（GwpFireswornBehavior.PatrolPrey）。
             if (party != null && Intents.TryGetValue(party.StringId, out Intent? intent) &&
                 intent.ExpiresAt >= CampaignTime.Now.ToHours &&
-                (intent.Kind == IntentKind.Approach || intent.Kind == IntentKind.Pursue ||
-                 intent.Kind == IntentKind.Rush && GwpFireswornBehavior.IsFaithPatrol(party)) &&
+                (intent.Kind == IntentKind.Approach || intent.Kind == IntentKind.Pursue) &&
                 intent.Party == target)
                 return true;
 

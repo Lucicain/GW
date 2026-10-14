@@ -135,7 +135,7 @@ python tools/Check-StateFreshness.py
 | [`firesworn-media.md`](firesworn-media.md) | 已验收的仪式配图、地图声与菜单声、素材身份 |
 | [`firesworn-armory.md`](firesworn-armory.md) | 军械账本、配装、缴获、战损与开发版查看 |
 | [`firesworn-economy.md`](firesworn-economy.md) | 捐赠、地牢、货仓、守村收益、保护费与公库 |
-| [`firesworn-parties.md`](firesworn-parties.md) | 传教、运械、卖货、巡逻与紧急出动 |
+| [`firesworn-parties.md`](firesworn-parties.md) | 传教、运械、卖货 |
 
 ### 战斗
 

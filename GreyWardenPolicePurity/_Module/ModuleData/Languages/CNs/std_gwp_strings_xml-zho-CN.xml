@@ -1483,10 +1483,6 @@
   <string id="gwp_notice_rebuilt" text="重建了这座村子" />
   <string id="gwp_notice_issue_solved" text="解决了一个请愿" />
   <string id="gwp_fs_status_mission" text="正把永恒之火带往{TARGET}。" />
-  <string id="gwp_fs_patrol_party" text="{VILLAGE}守火巡逻队" />
-  <string id="gwp_fs_status_patrol" text="为永恒之火在{HOME}周围巡逻。" />
-  <string id="gwp_fs_party_greet_patrol" text="我们是{HOME}立了誓的人，替永恒之火看守这一带的路。抓到的歹人押回去上火堆。" />
-  <string id="gwp_notice_patrol" text="巡逻归来，押回{COUNT}名俘虏" />
   <string id="gwp_fs_status_market" text="正把{HOME}的货运去{TARGET}的集市。" />
   <string id="gwp_fs_status_returning" text="正返回{HOME}。" />
   <string id="gwp_fs_status_home" text="在{HOME}守着火。" />

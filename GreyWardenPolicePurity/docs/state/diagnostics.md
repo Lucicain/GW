@@ -1,8 +1,8 @@
 # 诊断系统
 
-> 当前状态：现行规则；巡逻卡死已由双次现场采样定位，分析器新增空队检查；已验收读档退出正常 trace 已退休
+> 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
 > 最后验收：未建立检查点
-> 已复核至：`0614808`（2026-10-14）
+> 已复核至：`9bd6ce3`（2026-10-14）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py`
 > 待实测：无
 
@@ -68,8 +68,8 @@
 | 类别 | stage |
 |---|---|
 | 每日快照 | `DAILY_VILLAGE`（信众户与比例、在村守村兵构成、实体名册中灰袍各兵种经验 guardXp、本村灰袍总人数 population、上限 cap、缺额 headroom、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
-| 留守队经验 | `GUARD_EXPERIENCE`（来源 watch:队伍ID 或 damnation，earned/实际granted/容量不足unused）；`DAMNATION` 附 experience/experienceGranted。核对巡逻/紧急出动与烧人经验在村内累积、同版存读接续后退休，分配规则只在村庄与仪式state定义。分析器按来源汇总经验，不与新增兵数相加。 |
-| 守村升级付款 | `GUARD_UPGRADE_PAYMENT`（party/troop/payer、quoted与实际paid、付款后treasury），仅观察真实原版金币交易，报价不重复计算。核对灰袍兵由灰袍公库付款、杂兵不改归属后退休；巡逻支援沿用现有 ACTION/AUCTION 的 initiative 与地图战斗参战名单，不另设日志。 |
+| 留守队经验 | `GUARD_EXPERIENCE`（来源 damnation，earned/实际granted/容量不足unused）；`DAMNATION` 附 experience/experienceGranted。核对烧人经验在村内累积、同版存读接续后退休，分配规则只在村庄与仪式state定义。分析器按来源汇总经验，不与新增兵数相加。 |
+| 守村升级付款 | `GUARD_UPGRADE_PAYMENT`（party/troop/payer、quoted与实际paid、付款后treasury），仅观察真实原版金币交易，报价不重复计算。核对灰袍兵由灰袍公库付款、杂兵不改归属后退休。 |
 | 火誓者来源 | `SWORN_GROWTH`（驻留/自然增长信众户 fromWardensHouseholds/fromHearthHouseholds、补兵 regrown、补前缺额 headroomBefore）、`RECONSTRUCTION_SWORN`（added为实际增户）、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`（gain为实际增户）、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么）；分析器将户、兵、人次分项标注，旧集会日志按households前后值求实际增户。 |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
@@ -83,14 +83,14 @@
 
 **分析脚本**：`python tools/Analyze-Firesworn.py`（`--all` 读全部日志）。只取最近一次启动游戏以来的监控行（含中途滚动归档的部分），
 输出总览与收支、每座有火誓者的村子（人数来源、守村队、祭司势力、军械库按类）、新信众村出现的速度、每位领主、无领主队与仪式、异常汇总，
-最后列出需要看的问题，巡逻/紧急派队记录出现men=0时直接点名来源村与次数；当前、归档与启动标记都按UTF-8 BOM读取。
+最后列出需要看的问题；当前、归档与启动标记都按UTF-8 BOM读取。
 
 ## 在役
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
 | `PEACE_DEFERRED_UNTIL_PLAYER_BATTLE_END`（FIELD_ARREST 行） | 实际发生抓捕结案提前中立导致玩家战后遭遇空引用；仅首次加入等待队列时记录，不逐小时刷新 | 用户确认同场抓捕可走完战后界面并返回地图后退休；失败日志保留 |
-| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；队伍快照含原版 `shouldJoinPlayerBattles`，用于核对巡逻遭遇吸附许可；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
+| `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |

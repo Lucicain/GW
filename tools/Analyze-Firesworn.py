@@ -155,16 +155,6 @@ def main():
         gains[data["home"]]["派出运械押车"] -= num(data.get("men"))
     for _, data in by_stage["MISSION_DISPATCHED"]:
         gains[data["home"]]["派出传教"] -= num(data.get("men"))
-    for _, data in by_stage["PATROL_DISPATCHED"]:
-        gains[data["home"]]["派出巡逻"] -= num(data.get("men"))
-    for _, data in by_stage["RESPONSE_DISPATCHED"]:
-        gains[data["home"]]["紧急出动"] -= num(data.get("men"))
-    for _, data in by_stage["RESPONSE_RETURNED"]:
-        gains[data["village"]]["紧急队回村"] += num(data.get("joined"))
-        gains[data["village"]]["紧急队押回俘虏"] += num(data.get("prisoners"))
-    for _, data in by_stage["PATROL_RETURNED"]:
-        gains[data["village"]]["巡逻回村"] += num(data.get("joined"))
-        gains[data["village"]]["巡逻押回俘虏"] += num(data.get("prisoners"))
     for _, data in by_stage["DAMNATION"]:
         gains[data["village"]]["烧人出兵"] += num(data.get("addedToGuard"))
         gains[data["village"]]["烧户立誓的户"] += num(data.get("householdsSworn"))
@@ -241,7 +231,6 @@ def main():
     print("\n== 无领主队与仪式")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
                   "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
-                  "PATROL_DISPATCHED", "PATROL_RETURNED", "RESPONSE_DISPATCHED", "RESPONSE_RETURNED",
                   "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
                   "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
                   "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):
@@ -269,12 +258,6 @@ def main():
         sample = {k: v for k, v in rows[-1][1].items() if k != "kind"}
         print(f"   {kind} ×{len(rows)}（第 {day(rows[0][0])}–{day(rows[-1][0])} 天）最近一次: {sample}")
         issues.append(f"异常 {kind} 出现 {len(rows)} 次")
-
-    for stage in ("PATROL_DISPATCHED", "RESPONSE_DISPATCHED"):
-        empty = collections.Counter(data["home"] for _, data in by_stage[stage]
-                                    if "men" in data and num(data["men"]) == 0)
-        if empty:
-            issues.append(f"派出空队 {stage} 共{sum(empty.values())}次，来源{dict(empty)}；检查取兵与循环推进")
 
     print("\n== 需要看的问题")
     for issue in issues or ["没有发现"]:

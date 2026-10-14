@@ -64,7 +64,7 @@
     原版竞价没有 EngageParty 的落地分支，直接下注会赢了也不动。
   - **无领主的一次性执法队锁定目标后**：跳过原版整个小时思考，只下一次 `EngageParty`；
     战斗把追击打断时，只补发一次（`GwpPartyThinkDirectAttackLockPatch`）。
-- 灰袍领主短期 AI 只主动打承办的目标和野怪；送信队谁都不主动打，只自卫（`IsAuthorizedAttackTarget`）。火誓者巡逻/紧急队按自身职责允许主动攻击交战方战斗部队，并可支援合法加入侧，规则只在[火誓者队伍](firesworn-parties.md)定义。（依据：用户反馈；设计 2026-10-09）
+- 灰袍领主短期 AI 只主动打承办的目标和野怪；送信队谁都不主动打，只自卫（`IsAuthorizedAttackTarget`）。（依据：设计 2026-10-09）
 - 跟随不降速：原版护送分支只会把跟随方降到被跟随方的速度。灰袍登记过的跟随差事、并且当前确实是 EscortParty 时，解除这个封顶（`GwpEscortSpeedCapPatch`）。
   路径和交战语义不变；军团行军时不动。
 

@@ -22,11 +22,11 @@ class FireswornLogTests(unittest.TestCase):
             archive = path / "GreyWarden-Diagnostics-Archive"
             archive.mkdir()
             (archive / "GreyWarden-AI-Diagnostics.log.1").write_text(
-                "2020-01-01T00:00:00.0000000+11:00 | campaignHour=1 | FIRESWORN | stage=PATROL_DISPATCHED | home=v; men=10\n"
-                "2020-01-02T00:00:00.0000000+11:00 | campaignHour=2 | FIRESWORN | stage=PATROL_DISPATCHED | home=v; men=0\n",
+                "2020-01-01T00:00:00.0000000+11:00 | campaignHour=1 | FIRESWORN | stage=MISSION_DISPATCHED | home=v; men=10\n"
+                "2020-01-02T00:00:00.0000000+11:00 | campaignHour=2 | FIRESWORN | stage=MISSION_DISPATCHED | home=v; men=10\n",
                 encoding="utf-8-sig")
             (path / "GreyWarden-AI-Diagnostics.log").write_text(
-                "2020-01-02T01:00:00.0000000+11:00 | campaignHour=3 | FIRESWORN | stage=PATROL_DISPATCHED | home=v; men=0\n",
+                "2020-01-02T01:00:00.0000000+11:00 | campaignHour=3 | FIRESWORN | stage=MISSION_DISPATCHED | home=v; men=10\n",
                 encoding="utf-8-sig")
             with patch.object(analyzer, "DOCS", directory):
                 self.assertEqual([2, 3], [hour for hour, _, _ in analyzer.read_events(False)])

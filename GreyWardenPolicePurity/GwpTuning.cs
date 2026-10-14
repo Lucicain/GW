@@ -302,16 +302,10 @@ namespace GreyWardenPolicePurity
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;
             // 守村队：两户信众出一个兵（用户裁定 2026-10-08：约为原版民兵平衡点的 3 倍，仍和信众户挂钩）。
-            // 这是自己长的上限：烧人生出来的、别村来的、巡逻回来的可以超过它，超过的不删、只是不再自己长。
+            // 这是自己长的上限：烧人生出来的、别村来的可以超过它，超过的不删、只是不再自己长。
             public const int HouseholdsPerGuard = 2;
-            // 巡逻队（用户裁定 2026-10-08）：守村总数（守村队＋原版民兵＋在外巡逻、紧急出动的）按现有人数三分：1/3 分批出门巡逻抓匪，
-            // 1/3 留着坏人走到村口时紧急出动，1/3 始终守村。照原版巡逻队（PatrolPartiesCampaignBehavior）：打到只剩九成以下、
-            // 或出门满 5 天、或俘虏装满就回村。一队 10–25 人（试玩值）。
-            public const float WatchShare = 1f / 3f;
-            public const int PatrolMinimumSize = 10;
-            public const int PatrolMaximumSize = 25;
-            public const float PatrolHours = 120f;
-            public const float PatrolReturnHealthyShare = 0.9f;
+            // 卖货队、传教队按路上敌人加人的上限（试玩值）。
+            public const int EscortMaximumSize = 25;
             public const float PriestWeeklyChance = 0.5f;
             public const int PriestStartingGold = 2000;
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。

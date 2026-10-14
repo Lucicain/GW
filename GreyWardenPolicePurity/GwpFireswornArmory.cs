@@ -822,7 +822,7 @@ namespace GreyWardenPolicePurity
                         "; distance=" + party.GetPosition2D.Distance(home.GetPosition2D).ToString("0.0") +
                         "; default=" + party.DefaultBehavior);
                 if (record.Phase != FaithPartyPhase.Home &&
-                    now - record.PhaseHour > (record.Kind == FaithPartyKind.Patrol ? GwpTuning.Firesworn.PatrolHours : 0d) + 72d)
+                    now - record.PhaseHour > 72d)
                     Flag("FAITH_PARTY_TRIP_LONG", "party=" + party.StringId + "; phase=" + record.Phase +
                         "; target=" + record.TargetId + "; hours=" + (now - record.PhaseHour).ToString("0"));
             }

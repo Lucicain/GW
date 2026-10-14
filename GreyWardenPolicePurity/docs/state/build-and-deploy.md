@@ -8,9 +8,9 @@
 
 ## 当前开发部署
 
-当前 live 是 `0614808` 基线加讲和入口统一：所有讲和收归 `GwpPeace`，玩家战斗未 finalize 时推迟、收尾后再办，修复抓捕结案时的战后空引用；纠察队与灰袍押送两份「与灰袍及受害方讲和」合并为一份。收拢后的成长、经验、公库升级、参战、配装与调兵规则保持，村庄后台仍冻结新增。Client/Editor SHA-256 前缀同为 `DF9C2EED9F709F77`。（依据：构建与哈希 2026-10-14）
+当前 live 是 `9bd6ce3` 加删除火誓者巡逻队与紧急出动（守村兵全部留村，补丁类 90→88）；`9bd6ce3` 即讲和入口统一：所有讲和收归 `GwpPeace`，玩家战斗未 finalize 时推迟、收尾后再办，修复抓捕结案时的战后空引用；纠察队与灰袍押送两份「与灰袍及受害方讲和」合并为一份。收拢后的成长、经验、公库升级、参战、配装与调兵规则保持，村庄后台仍冻结新增。Client/Editor SHA-256 前缀同为 `B68057291C581AF4`。（依据：构建与哈希 2026-10-14）
 
-74 个仓库 runtime 文件、421 项 live，无缺失/差异/散落，开发布局与双端诊断通过；GameCompat/Preflight PASS，90 个补丁类绑定，未新增 Harmony 补丁。14 个 Python 用例全过：战后讲和以当前游戏 DLL 反编译的结果方法运行生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用；派队、配装/增员/归队、机械检查仍通过；ContentKeys MISSING=0。边界对象为桩，不冒充实机验收；真实名册/编号 173 断言与战场/双刀专项本轮未重跑。（依据：离线回归、预检与部署 2026-10-14）
+74 个仓库 runtime 文件、421 项 live，无缺失/差异/散落，开发布局与双端诊断通过；GameCompat/Preflight PASS，90 个补丁类绑定，未新增 Harmony 补丁。12 个 Python 用例全过（巡逻派队回归随功能删除）：战后讲和以当前游戏 DLL 反编译的结果方法运行生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用；派队、配装/增员/归队、机械检查仍通过；ContentKeys MISSING=0。边界对象为桩，不冒充实机验收；真实名册/编号 173 断言与战场/双刀专项本轮未重跑。（依据：离线回归、预检与部署 2026-10-14）
 
 用户本轮跟灰袍打仗后报错，日志在捕获目标结案后出现原版 DoApplyMapEventResults 空引用，watchdog 确认异常退出。修复需实机重打同场、进入战利品并正常返回地图，详见 [调停与战后讲和](warden-mediation.md)；agent 核对首次延后讲和 trace 与故障记录后退休该诊断。正常卡顿耗时占比尚未量测，第三方代码/配置未改。
 
@@ -62,10 +62,9 @@
 
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
-| `tests/test_project_checks.py` | 10 | 战力/守村经验容量/巡逻可派数归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
-| `tests/test_firesworn_dispatch.py` | 940组 / 7520断言 | 提取生产派队循环、在外人数与可派数方法，检查空村、返程、紧急队、留守份额、重复小时与兵力守恒；引擎边界为桩 |
+| `tests/test_project_checks.py` | 9 | 战力/讲和/守村经验容量归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
 | `tests/test_battle_peace.py` | 67断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
-| `tests/test_firesworn_outfitting.py` | 48断言 | 抽取实际配装、抽兵、紧急增员和归队方法，核对少领反例、混编/库存/品质、重复领装与归队不重复人数；引擎边界为桩 |
+| `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
 | `Verify-PartyTransfers.ps1` | 173断言 | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
 | `tests/test_firesworn_logs.py` | 1 | 带BOM的启动标记、当前日志、归档，以及启动前后过滤 |
 | `BattleSceneTests` | 137 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |

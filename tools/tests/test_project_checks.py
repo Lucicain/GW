@@ -44,16 +44,6 @@ class OwnershipTests(unittest.TestCase):
             self.assertEqual([], hygiene.owner_violations([str(owner)]))
             self.assertEqual(1, len(hygiene.owner_violations([str(caller)])))
 
-    def test_watch_allocation_has_one_owner(self):
-        with tempfile.TemporaryDirectory() as directory:
-            owner = Path(directory) / "GwpFireswornParties.cs"
-            caller = Path(directory) / "OtherBehavior.cs"
-            source = "var n = PatrolShare(row, home) - MenOut(id, kind);\n"
-            owner.write_text(source, encoding="utf-8")
-            caller.write_text(source, encoding="utf-8")
-            self.assertEqual([], hygiene.owner_violations([str(owner)]))
-            self.assertEqual(2, len(hygiene.owner_violations([str(caller)])))
-
     def test_guard_experience_capacity_has_one_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             owner = Path(directory) / "GwpFireswornExperience.cs"

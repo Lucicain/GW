@@ -1,4 +1,4 @@
-"""Execute production equipment allocation and emergency reinforcement methods.
+"""Execute production equipment allocation and escort reinforcement methods.
 
 Engine roster storage and the unchanged equipment scorer are boundaries.
 The two audit counterexamples must become successful operations, not exceptions.
@@ -85,7 +85,6 @@ class Regression {
     TroopRoster GuardOf(string id)=>guard;
     static bool IsGuardTroop(CharacterObject troop)=>troop.StringId!="militia";
     int Sworn(FaithVillage row)=>guard.TotalManCount;
-    int HomeDefenders(FaithVillage row,Settlement home)=>guard.TotalManCount+home.MilitiaPartyComponent.MobileParty.MemberRoster.TotalManCount;
     void PushGuard(FaithVillage row,Settlement home) { }
     void ReconcilePriestSlots(FaithVillage row) { }
     static int CountOf(TroopRoster roster,string id)=>roster.GetTroopRoster().Where(e=>e.Character.StringId==id).Sum(e=>e.Number);
@@ -125,13 +124,14 @@ class Regression {
         Check(!b._plans.ContainsKey("v")&&!b._plans.ContainsKey("p"),"both plans invalidated");
         Check(b.TakeBestSets("v",party)==0,"repeat must not overdraw the same kit");
     }
-    static void ResponseScenario(int militia,int grey,int maximum,int danger,bool militiaFirst,int expected) {
+    static void EscortScenario(int militia,int grey,int maximum,int danger,int expected) {
         var b=new Regression();var party=new MobileParty();var home=new Settlement();var row=new FaithVillage();
         home.MilitiaPartyComponent.MobileParty.MemberRoster.AddToCounts(Troop("militia"),militia);
         var sworn=Troop("zealot");b.guard.AddToCounts(sworn,grey);
         home.MilitiaPartyComponent.MobileParty.MemberRoster.AddToCounts(sworn,grey);
-        b.ManToBeat(party,row,home,10,maximum,danger,militiaFirst);
-        Check(party.MemberRoster.TotalManCount==expected,"actual emergency reinforcement");
+        b.ManToBeat(party,row,home,10,maximum,danger);
+        Check(party.MemberRoster.TotalManCount==expected,"escort grows until it beats the road danger");
+        Check(CountOf(party.MemberRoster,"militia")==0,"vanilla militia stays home");
         Check(party.MemberRoster.TotalManCount+home.MilitiaPartyComponent.MobileParty.MemberRoster.TotalManCount==militia+grey,"defenders conserved");
     }
     static int Main() {
@@ -155,11 +155,12 @@ class Regression {
         ItemsOf(b._armories,"p").AddToCounts(new EquipmentElement{Quality=1},1);
         Check(b.TakeBestSets("v",p)==1,"quality identity retained");
         Check(b.TakeBestSets("v",p)==0,"better weapon only once");
-        ResponseScenario(60,0,20,11,true,12);
-        ResponseScenario(60,0,20,100,true,20);
-        ResponseScenario(60,0,20,9,true,10);
-        ResponseScenario(15,0,20,100,true,15);
-        ResponseScenario(0,15,20,100,false,10);
+        EscortScenario(30,40,25,11,12);
+        EscortScenario(30,40,25,100,25);
+        EscortScenario(30,40,25,9,10);
+        // Five sworn always stay home.
+        EscortScenario(30,17,25,100,12);
+        EscortScenario(30,8,25,100,8);
         Console.WriteLine("OUTFITTING_ASSERTIONS="+checks+"; PASS");return 0;
     }
 }
@@ -181,7 +182,7 @@ class FireswornOutfittingTests(unittest.TestCase):
             result = subprocess.run(["dotnet", "run", "--project", directory, "-c", "Release", "-v", "quiet"],
                                     capture_output=True, text=True, timeout=60)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-            self.assertIn("OUTFITTING_ASSERTIONS=48; PASS", result.stdout)
+            self.assertIn("OUTFITTING_ASSERTIONS=53; PASS", result.stdout)
             print(result.stdout.strip())
 
 

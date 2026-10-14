@@ -99,9 +99,7 @@ namespace GreyWardenPolicePurity
         {
             Mission = 0,
             Market = 1,
-            Balance = 2,
-            Patrol = 3,
-            Response = 4
+            Balance = 2
         }
 
         private enum FaithPartyPhase
@@ -145,8 +143,6 @@ namespace GreyWardenPolicePurity
             public double PhaseHour;
             // 这一趟已经卖过几座城。
             public int Stops;
-            // 巡逻队出门时几个人：打到只剩九成以下就回村。
-            public int Men;
         }
 
         public GwpFireswornBehavior()
@@ -180,7 +176,7 @@ namespace GreyWardenPolicePurity
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null;
-            List<int>? partyKinds = null, partyPhases = null, partyStops = null, partyMen = null;
+            List<int>? partyKinds = null, partyPhases = null, partyStops = null;
             List<double>? partyHours = null;
 
             if (dataStore.IsSaving)
@@ -206,7 +202,6 @@ namespace GreyWardenPolicePurity
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
                 partyStops = parties.Select(party => party.Stops).ToList();
-                partyMen = parties.Select(party => party.Men).ToList();
             }
 
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
@@ -228,7 +223,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
             dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
-            dataStore.SyncData("GWPP_FsPartyMen", ref partyMen);
             SyncTroopRosters(dataStore, "GWPP_FsGuard", _guards);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
@@ -271,8 +265,7 @@ namespace GreyWardenPolicePurity
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
-                    Stops = partyStops![i],
-                    Men = partyMen![i]
+                    Stops = partyStops![i]
                 };
 
             RebuildPriestIndex();
@@ -507,7 +500,6 @@ namespace GreyWardenPolicePurity
             UpdateRituals();
             ClearExpiredSmoke();
             TendFaithParties();
-            DispatchWatches();
             SweepPrisonersAndSpoils();
             foreach (FaithVillage row in _villages.Values.ToList())
                 ObserveGuard(row);
@@ -644,9 +636,7 @@ namespace GreyWardenPolicePurity
             {
                 Settlement home = Settlement.Find(record.HomeId);
                 Settlement target = Settlement.Find(record.TargetId);
-                text = record.Phase == FaithPartyPhase.Outbound && IsWatch(record.Kind)
-                    ? GwpText.Create("{=gwp_fs_status_patrol}Keeping watch around {HOME} for the Eternal Fire.", "HOME", home.Name)
-                    : record.Phase == FaithPartyPhase.Outbound
+                text = record.Phase == FaithPartyPhase.Outbound
                     ? record.Kind == FaithPartyKind.Mission
                         ? GwpText.Create("{=gwp_fs_status_mission}Carrying the Eternal Fire to {TARGET}.", "TARGET", target.Name)
                         : record.Kind == FaithPartyKind.Balance
@@ -1034,8 +1024,8 @@ namespace GreyWardenPolicePurity
             JoinGuard(row, village, troop, Math.Min(count, GuardHeadroom(row)));
 
         /// <summary>
-        /// 人来了就收进守村队：烧人生出来的、传教队和运械队到了的、巡逻回来的，可以超过 <see cref="GuardCap"/>
-        /// （用户裁定 2026-10-08：超过上限只是不再自己长，超出的人分批出去巡逻）。返回加了几个。
+        /// 人来了就收进守村队：烧人生出来的、传教队和运械队到了的、出门折回的，可以超过 <see cref="GuardCap"/>
+        /// （用户裁定 2026-10-08：超过上限只是不再自己长）。返回加了几个。
         /// </summary>
         private int JoinGuard(FaithVillage row, Settlement village, CharacterObject troop, int count,
             TroopRoster? source = null)
@@ -1049,7 +1039,7 @@ namespace GreyWardenPolicePurity
             GuardOf(row.VillageId).AddToCounts(troop, count);
             // 民兵队正在打仗（比如村子被劫掠）：PushGuard 不碰它，按记录补齐会把战死的人补回来；新来的人直接加进民兵队，
             // 原版纯 AI 的战斗每一轮模拟前按名单重新排兵（C#反编译 v1.4.8 MapEventSide.MakeReadyForSimulation → MapEventParty.Update），
-            // 下一轮就上场；打完 ObserveGuard 照幸存的人记（用户裁定 2026-10-08：巡逻队回来直接并入守村队，人数加进去一起打）。
+            // 下一轮就上场；打完 ObserveGuard 照幸存的人记（用户裁定 2026-10-08：回来的人直接并入守村队，人数加进去一起打）。
             if (!transferred)
             {
                 if (militia?.IsActive == true && militia.MapEvent != null)
@@ -1081,7 +1071,7 @@ namespace GreyWardenPolicePurity
         /// 所以只要民兵队里的灰袍兵不比记录多，就整份照民兵队记——升了级的照升级后的记（用户反馈 2026-10-08：
         /// 原来只认「比记录少」，升级的兵被当成战死，升出来的又被当成多余删掉）。</item>
         /// <item>民兵队没了，守村队也没了（信众户还在，慢慢补回）。</item>
-        /// <item>户数掉了，信众户压到户数。守村队超过 <see cref="GuardCap"/> 不删，只是不再自己长、多的出去巡逻。</item>
+        /// <item>户数掉了，信众户压到户数。守村队超过 <see cref="GuardCap"/> 不删，只是不再自己长。</item>
         /// </list>
         /// 然后把民兵队补齐到记录。
         /// </summary>

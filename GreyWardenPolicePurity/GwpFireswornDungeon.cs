@@ -95,7 +95,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 地牢还收得下几个：软上限是本村信众户数（用户裁定 2026-10-08）。满了领主就不交、也不再想来交，
-        /// 改去附近别的信众村或照原版进城卖（<see cref="GwpWardenVisitDesire.Rescore"/>）；巡逻队押回来的照收，超出的留着慢慢烧。
+        /// 改去附近别的信众村或照原版进城卖（<see cref="GwpWardenVisitDesire.Rescore"/>）；无领主队押回来的照收，超出的留着慢慢烧。
         /// </summary>
         internal static int PrisonerRoom(Settlement village) =>
             _instance != null && _instance._villages.TryGetValue(village.StringId, out FaithVillage? row)
