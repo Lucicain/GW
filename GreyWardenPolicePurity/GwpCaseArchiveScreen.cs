@@ -624,36 +624,28 @@ namespace GreyWardenPolicePurity
             MobileParty? trainer = MobileParty.All.FirstOrDefault(candidate =>
                 string.Equals(candidate.StringId, training.TrainerPartyId,
                     StringComparison.OrdinalIgnoreCase));
-            MobileParty? target = MobileParty.All.FirstOrDefault(candidate =>
-                string.Equals(candidate.StringId, training.TargetPartyId,
-                    StringComparison.OrdinalIgnoreCase));
             string trainerName = trainer?.LeaderHero?.Name?.ToString() ??
                                  trainer?.Name?.ToString() ??
                                  GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
-            string targetName = target?.LeaderHero?.Name?.ToString() ??
-                                target?.Name?.ToString() ??
-                                GwpText.Get("{=gwp_training_unassigned_recipient}Not yet assigned");
-
             Header = GwpText.Get("{=gwp_training_ledger_header}Training exchange — {VAR_1}",
-                "VAR_1", targetName);
+                "VAR_1", training.SettlementName);
             TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
                 "VAR_1", FormatCampaignDate(training.QueuedTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_training_ledger_assignment}Trainer: {VAR_1} | Receiving lord: {VAR_2} | Stage: {VAR_3}",
-                "VAR_1", trainerName, "VAR_2", targetName,
-                "VAR_3", DescribeTrainingStage(training.Stage));
+                "{=gwp_training_ledger_assignment}Trainer: {VAR_1} | Stage: {VAR_2}",
+                "VAR_1", trainerName, "VAR_2", DescribeTrainingStage(training.Stage));
             DetailsText = training.Stage switch
             {
                 GreyWardenTrainingBehavior.TrainingTaskStage.QueuedForTrainer =>
                     GwpText.Get("{=gwp_training_ledger_queued}Task type: troop training exchange | Queued as the Training Warden's next duty"),
                 GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
-                    GwpText.Get("{=gwp_training_ledger_waiting}Task type: troop training exchange | Rendezvous: {VAR_1} | Waiting for current duties to finish",
+                    GwpText.Get("{=gwp_training_ledger_waiting}Task type: troop training exchange | Village: {VAR_1} | Waiting for current duties to finish",
                         "VAR_1", training.SettlementName),
                 GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
                     GwpText.Get("{=gwp_training_ledger_stay}Task type: troop training exchange | Settlement: {VAR_1} | Remaining stay: {VAR_2} hours",
                         "VAR_1", training.SettlementName,
                         "VAR_2", Math.Ceiling(training.RemainingHours)),
-                _ => GwpText.Get("{=gwp_training_ledger_travel}Task type: troop training exchange | Rendezvous: {VAR_1}",
+                _ => GwpText.Get("{=gwp_training_ledger_travel}Task type: troop training exchange | Village: {VAR_1}",
                     "VAR_1", training.SettlementName)
             };
         }
@@ -885,7 +877,7 @@ namespace GreyWardenPolicePurity
             GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
                 GwpText.Get("{=gwp_training_stage_waiting}waiting for current duties"),
             GreyWardenTrainingBehavior.TrainingTaskStage.TravelingToRendezvous =>
-                GwpText.Get("{=gwp_training_stage_travel}travelling to rendezvous"),
+                GwpText.Get("{=gwp_training_stage_travel}travelling to the village"),
             GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
                 GwpText.Get("{=gwp_training_stage_stay}two-hour troop exchange"),
             _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")

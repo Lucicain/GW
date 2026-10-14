@@ -11,19 +11,14 @@ using TaleWorlds.Library;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Training Wardens remain ordinary case-capable lords and periodically grant
-    /// experience to their Grey Warden regulars alongside that work.
-    /// Bannerlord's native party upgrader remains solely responsible for deciding
-    /// when, whether, and along which branch those troops advance. Once every regular
-    /// has reached the end of her troop branch, a training task is queued as the
-    /// Warden's next duty. When she finishes her current duty, the nearest non-training
-    /// Warden lord with trainees is reserved as the recipient; each party travels after
-    /// finishing its current duty, then they exchange troops after a two-hour meeting.
+    /// 练兵领主照常办案，顺带给自己队里的灰袍兵加经验，升不升、往哪条分支升交给原版升级器。
+    /// 队里全练到头后排一个练兵差事：办完手上的事，去最近的、守村队里有可升级灰袍兵的信众村待两小时，
+    /// 把满级老兵换给守村队，换回守村队里最弱的可升级兵接着练。不再和别的领主换兵，
+    /// 也不占用别的领主（用户裁定 2026-10-14：练兵领主总干扰办案的领主；守村队能被招募，练它更好）。
     /// </summary>
     public sealed class GreyWardenTrainingBehavior : CampaignBehaviorBase
     {
         private const string TrainerIdsKey = "GWPP_TrainingTrainerIds";
-        private const string TargetIdsKey = "GWPP_TrainingTargetIds";
         private const string SettlementIdsKey = "GWPP_TrainingSettlementIds";
         private const string QueuedHoursKey = "GWPP_TrainingQueuedHours";
         private const string StayStartHoursKey = "GWPP_TrainingStayStartHours";
@@ -47,7 +42,6 @@ namespace GreyWardenPolicePurity
         internal sealed class TrainingTaskSnapshot
         {
             public string TrainerPartyId { get; set; } = string.Empty;
-            public string TargetPartyId { get; set; } = string.Empty;
             public string SettlementName { get; set; } = string.Empty;
             public CampaignTime QueuedTime { get; set; }
             public TrainingTaskStage Stage { get; set; }
@@ -58,7 +52,7 @@ namespace GreyWardenPolicePurity
         private sealed class TrainingAssignment
         {
             public string TrainerHeroId { get; set; } = string.Empty;
-            public string TargetHeroId { get; set; } = string.Empty;
+            // 去换兵的信众村；空着表示还没选。
             public string SettlementId { get; set; } = string.Empty;
             public double QueuedTimeHours { get; set; }
             public double StayStartHours { get; set; }
@@ -77,7 +71,6 @@ namespace GreyWardenPolicePurity
         public override void SyncData(IDataStore dataStore)
         {
             List<string>? trainerIds = null;
-            List<string>? targetIds = null;
             List<string>? settlementIds = null;
             List<double>? queuedHours = null;
             List<double>? stayStartHours = null;
@@ -87,7 +80,6 @@ namespace GreyWardenPolicePurity
             if (dataStore.IsSaving)
             {
                 trainerIds = _assignments.Select(static x => x.TrainerHeroId).ToList();
-                targetIds = _assignments.Select(static x => x.TargetHeroId).ToList();
                 settlementIds = _assignments.Select(static x => x.SettlementId).ToList();
                 queuedHours = _assignments.Select(static x => x.QueuedTimeHours).ToList();
                 stayStartHours = _assignments.Select(static x => x.StayStartHours).ToList();
@@ -96,7 +88,6 @@ namespace GreyWardenPolicePurity
             }
 
             dataStore.SyncData(TrainerIdsKey, ref trainerIds);
-            dataStore.SyncData(TargetIdsKey, ref targetIds);
             dataStore.SyncData(SettlementIdsKey, ref settlementIds);
             dataStore.SyncData(QueuedHoursKey, ref queuedHours);
             dataStore.SyncData(StayStartHoursKey, ref stayStartHours);
@@ -109,7 +100,6 @@ namespace GreyWardenPolicePurity
             int assignmentCount = new[]
             {
                 trainerIds?.Count ?? 0,
-                targetIds?.Count ?? 0,
                 settlementIds?.Count ?? 0,
                 queuedHours?.Count ?? 0,
                 stayStartHours?.Count ?? 0
@@ -122,7 +112,6 @@ namespace GreyWardenPolicePurity
                 _assignments.Add(new TrainingAssignment
                 {
                     TrainerHeroId = trainerIds[i],
-                    TargetHeroId = targetIds![i],
                     SettlementId = settlementIds![i],
                     QueuedTimeHours = queuedHours![i],
                     StayStartHours = stayStartHours![i]
@@ -143,10 +132,7 @@ namespace GreyWardenPolicePurity
             string? heroId = party?.LeaderHero?.StringId;
             return !string.IsNullOrWhiteSpace(heroId) && _instance != null &&
                    _instance._assignments.Any(task =>
-                       string.Equals(task.TrainerHeroId, heroId,
-                           StringComparison.OrdinalIgnoreCase) ||
-                       string.Equals(task.TargetHeroId, heroId,
-                           StringComparison.OrdinalIgnoreCase));
+                       string.Equals(task.TrainerHeroId, heroId, StringComparison.OrdinalIgnoreCase));
         }
 
         internal static bool ShouldReserveFromNewDuties(MobileParty? party)
@@ -166,8 +152,7 @@ namespace GreyWardenPolicePurity
             if (string.IsNullOrWhiteSpace(heroId) || _instance == null) return;
 
             TrainingAssignment? assignment = _instance._assignments.FirstOrDefault(task =>
-                string.Equals(task.TrainerHeroId, heroId, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(task.TargetHeroId, heroId, StringComparison.OrdinalIgnoreCase));
+                string.Equals(task.TrainerHeroId, heroId, StringComparison.OrdinalIgnoreCase));
             if (assignment != null)
                 _instance.CancelAssignment(assignment, "forced_duty");
         }
@@ -180,23 +165,21 @@ namespace GreyWardenPolicePurity
             foreach (TrainingAssignment task in _instance._assignments)
             {
                 MobileParty? trainer = ResolveParty(task.TrainerHeroId);
-                MobileParty? target = ResolveParty(task.TargetHeroId);
                 Settlement? settlement = ResolveSettlement(task.SettlementId);
                 result.Add(new TrainingTaskSnapshot
                 {
                     TrainerPartyId = trainer?.StringId ?? string.Empty,
-                    TargetPartyId = target?.StringId ?? string.Empty,
                     SettlementName = settlement?.Name?.ToString() ??
                                      (string.IsNullOrWhiteSpace(task.SettlementId)
                                          ? GwpText.Get("{=gwp_training_ledger_pending_place}To be selected")
                                          : task.SettlementId),
                     QueuedTime = CampaignTime.Hours((float)task.QueuedTimeHours),
-                    Stage = GetTaskStage(task, trainer, target),
+                    Stage = GetTaskStage(task, trainer),
                     RemainingHours = task.StayStartHours > 0d
                         ? Math.Max(0d, task.StayStartHours +
                             GwpTuning.Training.ExchangeStayHours - CampaignTime.Now.ToHours)
                         : 0d,
-                    IsAssigned = target != null && settlement != null
+                    IsAssigned = settlement != null
                 });
             }
 
@@ -321,18 +304,10 @@ namespace GreyWardenPolicePurity
             foreach (TrainingAssignment task in _assignments.ToList())
             {
                 bool duplicate = !seenHeroes.Add(task.TrainerHeroId);
-                if (!string.IsNullOrWhiteSpace(task.TargetHeroId))
-                    duplicate |= !seenHeroes.Add(task.TargetHeroId);
-
-                bool targetInvalid = !string.IsNullOrWhiteSpace(task.TargetHeroId) &&
-                                     ResolveParty(task.TargetHeroId)?.IsActive != true;
                 bool settlementInvalid = !string.IsNullOrWhiteSpace(task.SettlementId) &&
                                          ResolveSettlement(task.SettlementId) == null;
-                if (duplicate || ResolveParty(task.TrainerHeroId)?.IsActive != true ||
-                    targetInvalid || settlementInvalid)
-                {
+                if (duplicate || ResolveParty(task.TrainerHeroId)?.IsActive != true || settlementInvalid)
                     CancelAssignment(task, duplicate ? "duplicate" : "invalid_after_load");
-                }
             }
         }
 
@@ -353,49 +328,32 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(task.TargetHeroId))
+                bool trainerReady = IsFreeForTrainingWork(trainer, ignoreTrainingAssignment: true);
+                if (string.IsNullOrWhiteSpace(task.SettlementId))
                 {
-                    if (!IsFreeForTrainingWork(trainer, ignoreTrainingAssignment: true))
-                        continue;
-
-                    TryAssignRecipient(task, trainer);
+                    if (trainerReady)
+                        TryAssignVillage(task, trainer);
                     continue;
                 }
 
-                MobileParty? target = ResolveParty(task.TargetHeroId);
-                Settlement? settlement = ResolveSettlement(task.SettlementId);
-                if (target?.IsActive != true || settlement == null ||
-                    GreyWardenFamilyBehavior.IsTrainingParty(target) ||
-                    CountTrainableTroops(target) <= 0)
+                Settlement? village = ResolveSettlement(task.SettlementId);
+                if (village == null || GwpFireswornBehavior.GuardTraineeCount(village) <= 0)
                 {
-                    RequeueRecipient(task, trainer,
-                        target?.IsActive == true
-                            ? "recipient_roster_or_role_changed"
-                            : "recipient_or_settlement_missing");
+                    RequeueVillage(task, trainer, "village_has_no_trainees");
                     continue;
                 }
 
-                bool trainerReady = IsFreeForTrainingWork(trainer,
-                    ignoreTrainingAssignment: true);
-                bool targetReady = IsFreeForTrainingWork(target,
-                    ignoreTrainingAssignment: true);
-                bool bothInside = trainerReady && targetReady &&
-                                  trainer.CurrentSettlement == settlement &&
-                                  target.CurrentSettlement == settlement;
-                if (!bothInside)
+                if (!trainerReady || trainer.CurrentSettlement != village)
                 {
                     if (task.StayStartHours > 0d)
                     {
                         task.StayStartHours = 0d;
                         GwpAiDiagnostics.WriteAction(trainer, "TRAINING_STAY_RESET",
-                            "target=" + target.StringId + "; settlement=" + settlement.StringId);
+                            "settlement=" + village.StringId);
                     }
 
                     if (trainerReady)
-                        GreyWardenPartyDesireBehavior.RequestVisit(trainer, settlement,
-                            validHours: GwpTuning.Training.MovementIntentHours);
-                    if (targetReady)
-                        GreyWardenPartyDesireBehavior.RequestVisit(target, settlement,
+                        GreyWardenPartyDesireBehavior.RequestVisit(trainer, village,
                             validHours: GwpTuning.Training.MovementIntentHours);
                     continue;
                 }
@@ -404,21 +362,18 @@ namespace GreyWardenPolicePurity
                 {
                     task.StayStartHours = CampaignTime.Now.ToHours;
                     GwpAiDiagnostics.WriteAction(trainer, "TRAINING_STAY_STARTED",
-                        "target=" + target.StringId + "; settlement=" + settlement.StringId +
-                        "; hours=" + GwpTuning.Training.ExchangeStayHours);
+                        "settlement=" + village.StringId + "; hours=" + GwpTuning.Training.ExchangeStayHours);
                 }
 
-                GreyWardenPartyDesireBehavior.RequestVisit(trainer, settlement,
-                    validHours: GwpTuning.Training.MovementIntentHours);
-                GreyWardenPartyDesireBehavior.RequestVisit(target, settlement,
+                GreyWardenPartyDesireBehavior.RequestVisit(trainer, village,
                     validHours: GwpTuning.Training.MovementIntentHours);
 
                 if (CampaignTime.Now.ToHours < task.StayStartHours +
                     GwpTuning.Training.ExchangeStayHours)
                     continue;
 
-                int exchanged = ExchangeTroops(trainer, target);
-                FinishAssignment(task, trainer, target, settlement, exchanged);
+                int exchanged = ExchangeTroops(trainer, village);
+                FinishAssignment(task, trainer, village, exchanged);
             }
         }
 
@@ -477,64 +432,38 @@ namespace GreyWardenPolicePurity
                 "; waitsForCurrentDuty=true");
         }
 
-        private void TryAssignRecipient(TrainingAssignment assignment,
-            MobileParty trainer)
+        private void TryAssignVillage(TrainingAssignment assignment, MobileParty trainer)
         {
-            MobileParty? target = PoliceStats.GetAllPoliceParties()
-                .Where(candidate => candidate != trainer)
-                .Where(candidate => !GreyWardenFamilyBehavior.IsTrainingParty(candidate))
-                .Where(candidate => !IsTrainingOccupied(candidate))
-                .Where(IsStructurallyValidTrainingParty)
-                .Where(candidate => !GwpWardenDuties.HoldsAny(candidate,
-                    WardenDuty.PlayerTroopOrder, WardenDuty.PlayerRequest))
-                .Where(candidate => CountTrainableTroops(candidate) > 0)
-                .OrderBy(candidate => candidate.GetPosition2D.Distance(trainer.GetPosition2D))
-                .ThenBy(candidate => candidate.StringId, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-            if (target?.LeaderHero == null || trainer.LeaderHero == null) return;
+            Settlement? village = GwpFireswornBehavior.NearestGuardToTrain(trainer);
+            if (village == null) return;
 
-            Settlement? rendezvous = FindRendezvousSettlement(trainer, target);
-            if (rendezvous == null) return;
-
-            assignment.TargetHeroId = target.LeaderHero.StringId;
-            assignment.SettlementId = rendezvous.StringId;
+            assignment.SettlementId = village.StringId;
             assignment.StayStartHours = 0d;
             GwpAiDiagnostics.WriteAction(trainer, "TRAINING_TASK_ASSIGNED",
-                "target=" + target.StringId + "; settlement=" + rendezvous.StringId +
-                "; elite=" + CountEliteTroops(trainer) +
-                "; targetTrainable=" + CountTrainableTroops(target) +
-                "; trainerReady=true; targetReady=" +
-                IsFreeForTrainingWork(target, ignoreTrainingAssignment: true));
+                "settlement=" + village.StringId + "; elite=" + CountEliteTroops(trainer) +
+                "; guardTrainees=" + GwpFireswornBehavior.GuardTraineeCount(village));
         }
 
-        private void RequeueRecipient(TrainingAssignment task, MobileParty trainer,
-            string reason)
+        private void RequeueVillage(TrainingAssignment task, MobileParty trainer, string reason)
         {
-            MobileParty? target = ResolveParty(task.TargetHeroId);
-            if (target?.IsActive == true)
-            {
-                GreyWardenPartyDesireBehavior.ClearIntent(target);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(target);
-            }
             GreyWardenPartyDesireBehavior.ClearIntent(trainer);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(trainer);
-            GwpAiDiagnostics.WriteAction(trainer, "TRAINING_RECIPIENT_REQUEUED",
-                "target=" + (target?.StringId ?? task.TargetHeroId) +
-                "; reason=" + reason);
-            task.TargetHeroId = string.Empty;
+            GwpAiDiagnostics.WriteAction(trainer, "TRAINING_VILLAGE_REQUEUED",
+                "settlement=" + task.SettlementId + "; reason=" + reason);
             task.SettlementId = string.Empty;
             task.StayStartHours = 0d;
         }
 
-        private static int ExchangeTroops(MobileParty trainer, MobileParty target)
+        /// <summary>
+        /// 一换一：守村队里最弱的可升级灰袍兵先跟她走（守村队那边的规矩在 GwpFireswornBehavior），
+        /// 再按各兵种比例把同样多的满级老兵交给守村队。守村队人数不变。
+        /// </summary>
+        private static int ExchangeTroops(MobileParty trainer, Settlement village)
         {
-            int exchangeCount = Math.Min(CountEliteTroops(trainer),
-                CountTrainableTroops(target));
-            if (exchangeCount <= 0) return 0;
+            int requested = CountEliteTroops(trainer);
+            if (requested <= 0) return 0;
 
             string trainerBefore = FormatGreyWardenRoster(trainer);
-            string targetBefore = FormatGreyWardenRoster(target);
-
             var elites = trainer.MemberRoster.GetTroopRoster()
                 .Where(static element => element.Character != null &&
                     !element.Character.IsHero && element.Number > 0 &&
@@ -543,34 +472,21 @@ namespace GreyWardenPolicePurity
                 .OrderBy(static element => element.Character.StringId,
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var trainees = target.MemberRoster.GetTroopRoster()
-                .Where(static element => element.Character != null &&
-                    !element.Character.IsHero && element.Number > 0 &&
-                    GwpCommon.IsGreyWardenTroop(element.Character) &&
-                    element.Character.UpgradeTargets.Length > 0)
-                .OrderBy(static element => element.Character.Tier)
-                .ThenBy(static element => element.Character.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            int movedElites = TransferEliteTroopsProportionally(trainer.MemberRoster,
-                target.MemberRoster, elites, exchangeCount, out string movedComposition);
-            int movedTrainees = GwpTroopTransfer.MoveBatches(target.MemberRoster,
-                trainer.MemberRoster, trainees, exchangeCount);
+            int movedTrainees = GwpFireswornBehavior.ReleaseGuardTrainees(village, trainer, requested);
+            int movedElites = TransferEliteTroopsProportionally(elites, movedTrainees,
+                (troop, count) => GwpFireswornBehavior.AdmitToGuard(village, trainer.MemberRoster, troop, count),
+                out string movedComposition);
             GwpAiDiagnostics.WriteAction(trainer, "TRAINING_EXCHANGE_ROSTER",
-                "target=" + target.StringId + "; requested=" + exchangeCount +
-                "; movedElite=" + movedElites + "; movedTrainee=" + movedTrainees +
+                "settlement=" + village.StringId + "; requested=" + requested +
+                "; movedTrainee=" + movedTrainees + "; movedElite=" + movedElites +
                 "; eliteComposition=" + movedComposition +
                 "; trainerBefore=" + trainerBefore +
-                "; trainerAfter=" + FormatGreyWardenRoster(trainer) +
-                "; targetBefore=" + targetBefore +
-                "; targetAfter=" + FormatGreyWardenRoster(target));
+                "; trainerAfter=" + FormatGreyWardenRoster(trainer));
             return Math.Min(movedElites, movedTrainees);
         }
 
-        private static int TransferEliteTroopsProportionally(TroopRoster source,
-            TroopRoster destination, IReadOnlyList<TroopRosterElement> batches,
-            int requested, out string composition)
+        private static int TransferEliteTroopsProportionally(IReadOnlyList<TroopRosterElement> batches,
+            int requested, Func<CharacterObject, int, int> move, out string composition)
         {
             int total = batches.Sum(static batch => Math.Max(0, batch.Number));
             if (requested <= 0 || total <= 0)
@@ -608,13 +524,8 @@ namespace GreyWardenPolicePurity
                 int planned = allocations[index];
                 if (planned <= 0) continue;
 
-                TroopRosterElement current = source.GetTroopRoster().FirstOrDefault(element =>
-                    element.Character == batches[index].Character);
-                int take = Math.Min(current.Number, planned);
+                int take = move(batches[index].Character, Math.Min(batches[index].Number, planned));
                 if (take <= 0) continue;
-
-                take = GwpTroopTransfer.Move(source, destination,
-                    batches[index].Character, take).Number;
                 moved += take;
                 movedParts.Add(batches[index].Character.StringId + ":" + take);
             }
@@ -626,42 +537,27 @@ namespace GreyWardenPolicePurity
 
 
         private void FinishAssignment(TrainingAssignment task, MobileParty trainer,
-            MobileParty target, Settlement settlement, int exchanged)
+            Settlement village, int exchanged)
         {
             _assignments.Remove(task);
             GreyWardenPartyDesireBehavior.ClearIntent(trainer);
-            GreyWardenPartyDesireBehavior.ClearIntent(target);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(trainer);
-            GreyWardenPartyDesireBehavior.RequestImmediateRethink(target);
-            GwpPlayerRequestDeferral.NotifyDutyCompleted(trainer,
-                "training_exchange");
-            GwpPlayerRequestDeferral.NotifyDutyCompleted(target,
-                "training_exchange");
+            GwpPlayerRequestDeferral.NotifyDutyCompleted(trainer, "training_exchange");
             GwpAiDiagnostics.WriteAction(trainer, "TRAINING_TASK_COMPLETED",
-                "target=" + target.StringId + "; settlement=" + settlement.StringId +
-                "; exchanged=" + exchanged + "; trainerTrainable=" +
-                CountTrainableTroops(trainer) + "; targetTrainable=" +
-                CountTrainableTroops(target));
+                "settlement=" + village.StringId + "; exchanged=" + exchanged +
+                "; trainerTrainable=" + CountTrainableTroops(trainer) +
+                "; guardTrainees=" + GwpFireswornBehavior.GuardTraineeCount(village));
         }
 
         private void CancelAssignment(TrainingAssignment task, string reason)
         {
             MobileParty? trainer = ResolveParty(task.TrainerHeroId);
-            MobileParty? target = ResolveParty(task.TargetHeroId);
             _assignments.Remove(task);
-            if (trainer?.IsActive == true)
-            {
-                GreyWardenPartyDesireBehavior.ClearIntent(trainer);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(trainer);
-                GwpAiDiagnostics.WriteAction(trainer, "TRAINING_TASK_CANCELLED",
-                    "target=" + (target?.StringId ?? task.TargetHeroId) +
-                    "; reason=" + reason);
-            }
-            if (target?.IsActive == true)
-            {
-                GreyWardenPartyDesireBehavior.ClearIntent(target);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(target);
-            }
+            if (trainer?.IsActive != true) return;
+            GreyWardenPartyDesireBehavior.ClearIntent(trainer);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(trainer);
+            GwpAiDiagnostics.WriteAction(trainer, "TRAINING_TASK_CANCELLED",
+                "settlement=" + task.SettlementId + "; reason=" + reason);
         }
 
         private static bool IsFreeForTrainingWork(MobileParty? party,
@@ -677,19 +573,13 @@ namespace GreyWardenPolicePurity
                 : GwpWardenDuties.IsFreeFor(party, WardenDuty.Training);
         }
 
-        private static bool IsStructurallyValidTrainingParty(MobileParty? party) =>
-            party?.IsActive == true && party.IsLordParty && !party.IsDisbanding &&
-            party.LeaderHero?.IsActive == true;
-
-        private static TrainingTaskStage GetTaskStage(TrainingAssignment task,
-            MobileParty? trainer, MobileParty? target)
+        private static TrainingTaskStage GetTaskStage(TrainingAssignment task, MobileParty? trainer)
         {
-            if (string.IsNullOrWhiteSpace(task.TargetHeroId))
+            if (string.IsNullOrWhiteSpace(task.SettlementId))
                 return TrainingTaskStage.QueuedForTrainer;
             if (task.StayStartHours > 0d)
                 return TrainingTaskStage.ExchangingAtSettlement;
-            if (!IsFreeForTrainingWork(trainer, ignoreTrainingAssignment: true) ||
-                !IsFreeForTrainingWork(target, ignoreTrainingAssignment: true))
+            if (!IsFreeForTrainingWork(trainer, ignoreTrainingAssignment: true))
                 return TrainingTaskStage.WaitingForCurrentDuties;
             return TrainingTaskStage.TravelingToRendezvous;
         }

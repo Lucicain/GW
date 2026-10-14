@@ -828,17 +828,16 @@
   <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
   <string id="gwp_issue_stage_travel" text="前往任务发布人" />
   <string id="gwp_issue_stage_review" text="驻留审理六小时" />
-  <string id="gwp_training_ledger_header" text="练兵换防 — {VAR_1}" />
-  <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 接受换防：{VAR_2} | 当前阶段：{VAR_3}" />
-  <string id="gwp_training_unassigned_recipient" text="尚未指定" />
+  <string id="gwp_training_ledger_header" text="练兵换兵 — {VAR_1}" />
+  <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 当前阶段：{VAR_2}" />
   <string id="gwp_training_ledger_pending_place" text="待选定" />
-  <string id="gwp_training_ledger_queued" text="任务类型：练兵换防 | 已列为练兵官的下一项任务" />
-  <string id="gwp_training_ledger_waiting" text="任务类型：练兵换防 | 会合地点：{VAR_1} | 等待双方完成当前任务" />
-  <string id="gwp_training_ledger_stay" text="任务类型：练兵换防 | 定居点：{VAR_1} | 剩余驻留：{VAR_2}小时" />
-  <string id="gwp_training_ledger_travel" text="任务类型：练兵换防 | 会合地点：{VAR_1}" />
+  <string id="gwp_training_ledger_queued" text="任务类型：练兵换兵 | 已列为练兵领主的下一项任务" />
+  <string id="gwp_training_ledger_waiting" text="任务类型：练兵换兵 | 信众村：{VAR_1} | 等待完成当前任务" />
+  <string id="gwp_training_ledger_stay" text="任务类型：练兵换兵 | 信众村：{VAR_1} | 剩余驻留：{VAR_2}小时" />
+  <string id="gwp_training_ledger_travel" text="任务类型：练兵换兵 | 信众村：{VAR_1}" />
   <string id="gwp_training_stage_queued" text="已列为下一项任务" />
-  <string id="gwp_training_stage_waiting" text="等待双方完成当前任务" />
-  <string id="gwp_training_stage_travel" text="前往会合地点" />
+  <string id="gwp_training_stage_waiting" text="等待完成当前任务" />
+  <string id="gwp_training_stage_travel" text="前往信众村" />
   <string id="gwp_training_stage_stay" text="驻留两小时并换兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
   <string id="gwp_det_ui_village_heading" text="【侵害村民】" />

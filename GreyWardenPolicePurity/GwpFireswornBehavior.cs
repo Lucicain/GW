@@ -1034,6 +1034,68 @@ namespace GreyWardenPolicePurity
         private static bool IsGuardTroop(CharacterObject? troop) =>
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
 
+        // ---- 练兵领主来换兵（用户裁定 2026-10-14：练兵领主练守村队，不再和领主换兵）。选兵口径在练兵那边，
+        // 守村队的进出只在这里。
+
+        /// <summary>守村队里还能升级的灰袍兵人数；村子不在能换兵的状态（民兵队不在或正打仗）时为 0。</summary>
+        internal static int GuardTraineeCount(Settlement village)
+        {
+            if (_instance == null || !_instance._villages.TryGetValue(village.StringId, out FaithVillage? row))
+                return 0;
+            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+            if (militia?.IsActive != true || militia.MapEvent != null)
+                return 0;
+            return _instance.GuardOf(row.VillageId).GetTroopRoster()
+                .Where(entry => entry.Character.UpgradeTargets.Length > 0).Sum(entry => entry.Number);
+        }
+
+        /// <summary>离这支队伍最近的、守村队里有可升级灰袍兵、能去的信众村。</summary>
+        internal static Settlement? NearestGuardToTrain(MobileParty party) =>
+            _instance?._villages.Keys.Select(Settlement.Find)
+                .Where(village => village != null && IsPreachedVillage(village) && IsTripTargetValid(village) &&
+                                  GuardTraineeCount(village) > 0)
+                .OrderBy(village => village.GetPosition2D.DistanceSquared(party.GetPosition2D))
+                .FirstOrDefault();
+
+        /// <summary>
+        /// 守村队里最弱的可升级灰袍兵（等级低的先）最多 <paramref name="count"/> 人跟这支队伍走，各带走自己那一套装备
+        /// （和领主在信众村招兵一样）。返回走了几个。
+        /// </summary>
+        internal static int ReleaseGuardTrainees(Settlement village, MobileParty party, int count)
+        {
+            if (_instance == null || count <= 0 || GuardTraineeCount(village) <= 0)
+                return 0;
+            FaithVillage row = _instance._villages[village.StringId];
+            MobileParty militia = village.MilitiaPartyComponent!.MobileParty;
+            TroopRoster guard = _instance.GuardOf(row.VillageId);
+            int moved = 0;
+            foreach (TroopRosterElement element in guard.GetTroopRoster()
+                         .Where(entry => entry.Character.UpgradeTargets.Length > 0)
+                         .OrderBy(entry => entry.Character.Tier).ToList())
+            {
+                if (moved >= count)
+                    break;
+                int take = GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster, element.Character,
+                    Math.Min(count - moved, element.Number)).Number;
+                guard.AddToCounts(element.Character, -take);
+                _instance.MoveBestSets(row.VillageId, party.StringId, element.Character, take);
+                moved += take;
+            }
+            _instance.PushGuard(row, village);
+            _instance.ReconcilePriestSlots(row);
+            return moved;
+        }
+
+        /// <summary>这支队伍的 <paramref name="count"/> 个 <paramref name="troop"/> 进守村队（可超过上限）。返回进了几个。</summary>
+        internal static int AdmitToGuard(Settlement village, TroopRoster from, CharacterObject troop, int count)
+        {
+            if (_instance == null || !_instance._villages.TryGetValue(village.StringId, out FaithVillage? row))
+                return 0;
+            int joined = _instance.JoinGuard(row, village, troop, count, from);
+            _instance.ReconcilePriestSlots(row);
+            return joined;
+        }
+
         /// <summary>
         /// 每小时从民兵队读回守村队：民兵队里的灰袍兵就是守村队现在的样子。
         /// <list type="bullet">
