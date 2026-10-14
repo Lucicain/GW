@@ -873,7 +873,11 @@ namespace GreyWardenPolicePurity
                 if (share > 0f && IsVillageQuiet(village))
                 {
                     float hearthGrowth = Campaign.Current.Models.SettlementProsperityModel.CalculateHearthChange(village.Village).ResultNumber;
-                    if (hearthGrowth > 0f)
+                    // 全村信教以后新增的户全是信众（用户裁定 2026-10-14）：最近这次长户之前已经满了的村子直接补满，
+                    // 不再按比例随机取整，免得户数每跨过一个整数就冒出一户不信教的。
+                    if (hearthGrowth > 0f && row.Households >= (int)(village.Village.Hearth - hearthGrowth))
+                        fromHearth = Convert(row, village, HouseholdCap(village) - row.Households);
+                    else if (hearthGrowth > 0f)
                         fromHearth = Convert(row, village, MBRandom.RoundRandomized(hearthGrowth * share));
                 }
                 int headroom = GuardHeadroom(row);

@@ -226,8 +226,9 @@ namespace GreyWardenPolicePurity
                 // 以前没扣烧俘虏感化的户、也没算烧掉的那户本身，户数减了以后信众户被压到等于户数，一场就 100%
                 // （实机诊断 2026-10-08：烧 226 人、60 户，信众户 181→249 = 户数，日志里立誓户 −46）。
                 int unbelievers = Math.Max(0, HouseholdCap(village) - row.Households - produced.Values.Sum());
+                // 每烧一户，非信众少两户（烧掉一户、感化一户），名额向上取整：只剩一户时也能烧，全村信教（用户裁定 2026-10-14）。
                 householdsBurned = Math.Min(budget,
-                    Math.Min(unbelievers / 2, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
+                    Math.Min((unbelievers + 1) / 2, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
             }
             if (prisonersBurned + militiaBurned + householdsBurned <= 0)
                 return;
