@@ -78,8 +78,8 @@
   直接 return。那一仗的结果才是答案，中途撤案会把已咬上去的截击队和承办人拆散。所以承办人正在打仗时也不新建协力组（协办的人加入不了这一仗，凑不够又不判失败，组和军团只剩承办人挂着；实机诊断 2026-10-08）。
 - 防空转：`GwpTuning.Enforcement.AssistanceFailureCooldownHours = 72`，退回台账的案子
   72 小时内不再被指派。冷却只活在本次运行内（读档后最多多试一次，无害）。
-- 改追最近案件（`RetargetOrdinaryCasesToNearest`）等于接新案，候选同样要过冷却与
-  `IsCaseWithinReach`。2026-09-25 日志里 `lord_1_55` 凑不出兵退回 2 小时后就被同一领主
+- 改追最近案件（`RetargetOrdinaryCasesToNearest`）等于接新案，和接案走同一道门 `CanPickUpCase`：
+  冷却、`IsCaseWithinReach`，以及 [灰袍使者](case-envoy.md) 给了宽限、等使者收钱的案子不接。2026-09-25 日志里 `lord_1_55` 凑不出兵退回 2 小时后就被同一领主
   就近改追回来，当场再次凑不出兵。
 - 不要让改追绕过接案门槛。（依据：实机诊断 2026-09-25）
 

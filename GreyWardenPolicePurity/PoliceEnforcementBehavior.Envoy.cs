@@ -28,7 +28,7 @@ namespace GreyWardenPolicePurity
             Travelling = 0,
             /// <summary>谈崩、使者没了或超时。这宗案子不再派使者，照常宣战。</summary>
             Failed = 1,
-            /// <summary>他求了宽限。到期再派一趟只收钱的使者。</summary>
+            /// <summary>他求了宽限。承办人当场放下案子去忙别的，到期由最近的灰袍领主派一趟只收钱的使者。</summary>
             Grace = 2,
             /// <summary>双方约在比武大会，留城等赛。</summary>
             Duel = 3,
@@ -112,7 +112,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// UpdateTasks 在宣战判定前调用。返回 true 表示这宗案子此刻不宣战：使者在路上、他在宽限期里，
-        /// 或者双方约了比武。没派过使者的案子在这里派。
+        /// 或者双方约了比武。没派过使者的案子在这里派。谈崩记在案子上，换了承办人也不再派。
         /// </summary>
         private bool HoldWarForEnvoy(MobileParty police, PoliceTask task, MobileParty criminal)
         {
@@ -120,14 +120,15 @@ namespace GreyWardenPolicePurity
             if (task.WarDeclared || criminal.IsMainParty || crime == null)
                 return false;
             if (_envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase))
-            {
-                // 宽限和谈崩记在案子上，不跟着人；换了承办人照样认。
-                if (envoyCase.Stage == EnvoyStage.Grace || envoyCase.Stage == EnvoyStage.Failed)
-                    envoyCase.WardenPartyId = police.StringId;
                 return envoyCase.Stage != EnvoyStage.Failed;
-            }
             return TrySendEnvoy(police, crime, criminal, false);
         }
+
+        /// <summary>他在宽限期里，或收钱的使者正在路上：这宗案子谁都不接（用户裁定 2026-10-15）。</summary>
+        private bool IsAwaitingEnvoyCollection(CrimeRecord crime) =>
+            _envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase) &&
+            (envoyCase.Stage == EnvoyStage.Grace ||
+             envoyCase.Stage == EnvoyStage.Travelling && envoyCase.CollectOnly);
 
         private bool TrySendEnvoy(MobileParty police, CrimeRecord crime, MobileParty criminal, bool collectOnly)
         {
@@ -227,10 +228,12 @@ namespace GreyWardenPolicePurity
             }
 
             // 承办人放下了这宗案子（改追别人、被调走）：使者回去，案子留给下一个人，不算谈崩。
+            // 宽限后去收钱的那趟本来就没有承办人。
             PoliceTask? task = TaskForCrime(crime);
             MobileParty? target = crime.Offender;
-            if (task == null || !string.Equals(task.PolicePartyId, envoyCase.WardenPartyId,
-                    StringComparison.OrdinalIgnoreCase) || target?.IsActive != true)
+            bool ownerLeft = !envoyCase.CollectOnly && (task == null ||
+                !string.Equals(task.PolicePartyId, envoyCase.WardenPartyId, StringComparison.OrdinalIgnoreCase));
+            if (ownerLeft || target?.IsActive != true)
             {
                 MarkDelayPatrolReturning(envoy.StringId);
                 ForgetEnvoyCase(envoyCase, "case_left_owner");
@@ -330,8 +333,12 @@ namespace GreyWardenPolicePurity
             switch (desire)
             {
                 case GwpOffenderDesire.RequestGrace:
+                    // 用户裁定 2026-10-15：给了宽限，承办人直接去接下一个差事，到期派使者收钱。
                     envoyCase.Stage = EnvoyStage.Grace;
                     envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.FieldArrest.GraceHours;
+                    PoliceTask? graceTask = TaskForCrime(crime);
+                    if (graceTask != null)
+                        EndCaseTask(graceTask.PolicePartyId, CaseTaskEnd.Released, "envoy_grace");
                     return;
                 case GwpOffenderDesire.DemandDuel:
                     StartDuel(envoyCase, police, target);
@@ -371,15 +378,25 @@ namespace GreyWardenPolicePurity
             ResolveEnvoyCase(envoyCase, crime, true, reason + "_" + collected);
         }
 
+        /// <summary>
+        /// 宽限到期：离他最近、派得出骑兵的灰袍领主派一趟只收钱的使者。这一小时谁都派不出（都没骑兵、他在海上等）
+        /// 就下一小时再试；过了到期后一个使者超时还派不出，算他食言，案子回台账照常追捕。
+        /// </summary>
         private void SendGraceCollector(EnvoyCase envoyCase, CrimeRecord crime)
         {
-            PoliceTask? task = TaskForCrime(crime);
-            MobileParty? police = task == null ? null : FindActiveParty(task.PolicePartyId);
             MobileParty? criminal = crime.Offender;
-            // 案子此刻没人承办就等下一个承办人来收。
-            if (police == null || criminal?.IsActive != true)
-                return;
-            if (!TrySendEnvoy(police, crime, criminal, true))
+            if (criminal?.IsActive == true)
+            {
+                foreach (MobileParty police in PoliceStats.GetAllPoliceParties()
+                             .Where(party => party?.IsActive == true && party.IsLordParty &&
+                                 CanContinueLeadingPoliceTask(party))
+                             .OrderBy(party => party.GetPosition2D.Distance(criminal.GetPosition2D)))
+                {
+                    if (TrySendEnvoy(police, crime, criminal, true))
+                        return;
+                }
+            }
+            if (CampaignTime.Now.ToHours >= envoyCase.DueHours + GwpTuning.Enforcement.EnvoyTimeoutHours)
                 FailEnvoy(envoyCase, "grace_collector_unavailable");
         }
 
@@ -608,9 +625,14 @@ namespace GreyWardenPolicePurity
             _envoyCases.Remove(envoyCase.CrimeId);
             PoliceTask? task = TaskForCrime(crime);
             if (task != null)
+            {
                 EndCaseTask(task.PolicePartyId, solved ? CaseTaskEnd.Solved : CaseTaskEnd.Closed, reason);
-            else
-                CloseCase(crime, reason);
+                return;
+            }
+            // 宽限后收钱那趟没有承办人，办成照样记一笔办案经费。
+            CloseCase(crime, reason);
+            if (solved)
+                PoliceResourceManager.CreditSuccessfulCaseCompletion();
         }
 
         /// <summary>谈崩：使者回去，这宗案子不再派（用户裁定 2026-10-15）。</summary>

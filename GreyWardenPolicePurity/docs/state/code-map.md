@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-172 个源文件、52,717 行、332 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+172 个源文件、52,744 行、332 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -523,13 +523,13 @@
 ### 执法：案件与巡逻（32 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 1896 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1466 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.cs` — 1471 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1307 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1265 行 · `PoliceEnforcementBehavior`
 - `PolicePatrolBehavior.cs` — 1014 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 713 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 692 行 · `GwpAiDeterrenceState`
-- `PoliceEnforcementBehavior.Envoy.cs` — 639 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Envoy.cs` — 661 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 586 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Helpers.cs` — 481 行 · `PoliceEnforcementBehavior`
 - `PoliceCrimeMonitorEnhanced.cs` — 459 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase

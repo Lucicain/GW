@@ -626,8 +626,7 @@ namespace GreyWardenPolicePurity
                 float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
                     candidate => GwpFireswornBehavior.IsNearFaithVillage(candidate.Location) &&
-                        !IsCaseUnderStrengthCooldown(candidate) &&
-                        IsCaseWithinReach(candidate, musterable));
+                        CanPickUpCase(candidate, musterable));
                 if (crime == null) continue;
                 BeginTask(pp, crime);
                 available.Remove(pp);
@@ -647,8 +646,7 @@ namespace GreyWardenPolicePurity
                 float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
                     candidate => candidate.CrimeCategory == preferred &&
-                        !IsCaseUnderStrengthCooldown(candidate) &&
-                        IsCaseWithinReach(candidate, musterable));
+                        CanPickUpCase(candidate, musterable));
                 if (crime == null) continue;
                 BeginTask(pp, crime);
                 available.Remove(pp);
@@ -661,8 +659,7 @@ namespace GreyWardenPolicePurity
 
                 float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
-                    candidate => !IsCaseUnderStrengthCooldown(candidate) &&
-                        IsCaseWithinReach(candidate, musterable));
+                    candidate => CanPickUpCase(candidate, musterable));
                 if (crime != null)
                     BeginTask(pp, crime);
             }
@@ -711,8 +708,7 @@ namespace GreyWardenPolicePurity
                 CrimeRecord? candidate = CrimeState.GetNearest(owner.GetPosition2D,
                     record => (preferred == GwpCrimeCategory.Unknown ||
                             record.CrimeCategory == preferred) &&
-                        !IsCaseUnderStrengthCooldown(record) &&
-                        IsCaseWithinReach(record, musterable));
+                        CanPickUpCase(record, musterable));
                 if (candidate?.Offender?.IsActive != true) continue;
 
                 float currentDistance = owner.GetPosition2D.Distance(current.GetPosition2D);
@@ -736,6 +732,15 @@ namespace GreyWardenPolicePurity
                     "; category=" + preferred);
             }
         }
+
+        /// <summary>
+        /// 台账上的案子此刻能不能接（接案和就近改追同一道门）：凑不出兵的冷却中、他在宽限期里等使者收钱、
+        /// 或者超出全族量级的，都不接。
+        /// </summary>
+        private bool CanPickUpCase(CrimeRecord candidate, float musterable) =>
+            !IsCaseUnderStrengthCooldown(candidate) &&
+            !IsAwaitingEnvoyCollection(candidate) &&
+            IsCaseWithinReach(candidate, musterable);
 
         private bool CanAssignOrdinaryCaseNow(MobileParty pp)
         {
