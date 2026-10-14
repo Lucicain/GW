@@ -100,6 +100,7 @@ python tools/Check-StateFreshness.py
 |---|---|
 | [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、震慑、外交封锁、被俘豁免 |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：派单门槛、结案口径、协力编成、战争跟随 |
+| [`case-interceptors.md`](case-interceptors.md) | 立即追截队：归队、船与多余的人去信众村 |
 | [`warden-ai.md`](warden-ai.md) | 灰袍谁拿到什么活、欲望竞价怎么落到原版动作、进信众村、巡区、协力军团引擎补丁 |
 | [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
 | [`deserters.md`](deserters.md) | 战后逃兵：照搬原版，但灰袍兵不当逃兵 |

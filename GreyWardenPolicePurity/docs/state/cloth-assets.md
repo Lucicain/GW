@@ -6,7 +6,7 @@
 > 覆盖源码：`tools/tpac/tpac-diagnose/Program.cs`
 > 待实测：弓箭手下摆定稿手感（用户进游戏体验）
 
-本页所说的“原包”是 `.codex_tmp/legacy-packages-before-rebuild-20260927/gwp_inherited_legacy_assets.tpac`。本机客户端使用 live 模组的 `Assets` 开发版资源；`_Module/AssetPackages/pack0.tpac` 是上次 Kit 发布结果，**不含 2026-10-03 定稿的三件服装修正**。再发布前应让 Kit 重新发布，并核对发布包。（依据：流程；2026-09-27 资产包离线核对）
+本页所说的“原包”是 `.codex_tmp/legacy-packages-before-rebuild-20260927/gwp_inherited_legacy_assets.tpac`。本机客户端使用 live 模组的 `Assets` 开发版资源；`_Module/AssetPackages/pack0.tpac` 是上次 Kit 发布结果（2026-10-02），**不含 2026-10-03 定稿的三件服装修正，也不含 2026-10-14 三顶头盔（`wcomhelmethv`、`winfhelmethv`、`winfhelmet`）的面罩下移**。再发布前应让 Kit 重新发布，并核对发布包。（依据：流程；2026-09-27 资产包离线核对）
 
 ## 只在 Kit 里改布料参数
 

@@ -453,23 +453,7 @@ namespace GreyWardenPolicePurity
             FaithVillage row = EnsureVillage(village);
             int before = row.Households;
             int kits = ReturnPartyLedger(party, village.StringId) + UnloadKits(party, village.StringId);
-            ItemRoster goods = ItemsOf(_goods, village.StringId);
-            for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
-            {
-                ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
-                goods.AddToCounts(element.EquipmentElement, element.Amount);
-                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
-            }
-            int prisoners = LodgePrisonersAndStrangers(party, village, out int militiaJoined);
-            int gold = party.PartyTradeGold;
-            party.PartyTradeGold = 0;
-            CreditTreasury(gold);
-            int joined = 0;
-            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
-                if (IsGuardTroop(element.Character))
-                {
-                    joined += JoinGuard(row, village, element.Character, element.Number, party.MemberRoster);
-                }
+            int joined = Absorb(row, party, village, out int prisoners, out int militiaJoined, out int gold);
             bool backHome = string.Equals(village.StringId, record.HomeId, StringComparison.OrdinalIgnoreCase);
             bool preaching = record.Kind == FaithPartyKind.Mission && !backHome && IsVillageQuiet(village) && !HasRitual(village);
             if (preaching)
@@ -490,6 +474,58 @@ namespace GreyWardenPolicePurity
                 "; guard=" + Sworn(row) + "; kitItems=" + kits +
                 "; share=" + SwornShare(row, village).ToString("0.00") + "; armed=" + ArmedShare(village.StringId).ToString("0.00") +
                 "; priest=" + (FindLivingPriest(row) != null));
+        }
+
+        /// <summary>
+        /// 一支队伍在村里落脚：背包进货仓，俘虏进地牢、非灰袍兵进原版民兵（<see cref="LodgePrisonersAndStrangers"/>），
+        /// 钱进公库，灰袍兵进守村队。返回进守村队的人数。队伍本身由调用方处理。
+        /// </summary>
+        private int Absorb(FaithVillage row, MobileParty party, Settlement village,
+            out int prisoners, out int militiaJoined, out int gold)
+        {
+            ItemRoster goods = ItemsOf(_goods, village.StringId);
+            for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
+            {
+                ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
+                goods.AddToCounts(element.EquipmentElement, element.Amount);
+                party.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
+            }
+            prisoners = LodgePrisonersAndStrangers(party, village, out militiaJoined);
+            gold = party.PartyTradeGold;
+            party.PartyTradeGold = 0;
+            CreditTreasury(gold);
+            int joined = 0;
+            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
+                if (IsGuardTroop(element.Character))
+                    joined += JoinGuard(row, village, element.Character, element.Number, party.MemberRoster);
+            return joined;
+        }
+
+        /// <summary>离这支队伍最近的、能去落脚的信众村（有祭司、安静、不与灰袍交战）；没有就是 null。</summary>
+        internal static Settlement? NearestFaithVillage(MobileParty party) =>
+            _instance?._villages.Keys.Select(Settlement.Find)
+                .Where(village => village != null && IsPreachedVillage(village) && IsTripTargetValid(village))
+                .OrderBy(village => village.GetPosition2D.DistanceSquared(party.GetPosition2D))
+                .FirstOrDefault();
+
+        /// <summary>
+        /// 灰袍别的临时队在信众村落脚、解散（用户裁定 2026-10-14：追截队主队装不下的人去最近的信众村加入守村队，不进城解散）。
+        /// 不是信众村就返回 false，由调用方照旧处理。
+        /// </summary>
+        internal static bool SettleInFaithVillage(MobileParty party, Settlement village)
+        {
+            if (_instance == null || !IsPreachedVillage(village))
+                return false;
+            FaithVillage row = _instance.EnsureVillage(village);
+            int joined = _instance.Absorb(row, party, village, out int prisoners, out int militiaJoined, out int gold);
+            GreyWardenPartyDesireBehavior.ClearIntent(party);
+            DestroyPartyAction.Apply(null, party);
+            _instance.ReconcilePriestSlots(row);
+            _instance.UpdatePriestPower(row);
+            GwpAiDiagnostics.WriteFaith("DETACHMENT_SETTLED",
+                "party=" + party.StringId + "; village=" + village.StringId + "; joined=" + joined +
+                "; militiaJoined=" + militiaJoined + "; prisoners=" + prisoners + "; gold=" + gold);
+            return true;
         }
 
         // ---------------------------------------------------------------- 卖货队

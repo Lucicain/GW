@@ -45,8 +45,6 @@
 
 <!-- 已知缺陷汇总：由 tools/Check-StateFreshness.py 从各 state 的「已知缺陷：」行生成，手改会被覆盖 -->
 
-- [case-enforcement.md](case-enforcement.md)：追截队被目标掉头吃掉后马上再派，没有冷却；派之前比的是灰袍整支军团对罪犯，不是这几个人自己（实机诊断 2026-10-08：gw_leader_0 一天半里连派 8 支 8 人队追 lord_5_4，全被吃掉，约 55 人）。
-- [case-enforcement.md](case-enforcement.md)：来源超编时，归队的人照收，再从来源换出同样多的低阶灰袍兵进城销毁；追截队里不是灰袍兵的人（打完仗解救的等）也跟着进城销毁（实机诊断 2026-10-08：16 次归队里 5 次）。
 - [firesworn-rituals.md](firesworn-rituals.md)：烧户名额按剩余非信众户数除以2向下取整，最后只剩一户非信众时名额为0，不能单靠烧户达到全村信教；本次移除民兵额外限额，没有改变这一尾数规则。（依据：源码复核2026-10-09；用户预期全村信教2026-10-09）
 - [firesworn-villages.md](firesworn-villages.md)：无实体且总守村兵不足2人时，原版尚不创建民兵队，自有记录仍只记人数，尚不能持有归队兵的剩余经验和伤情。（依据：源码复核、实际名册与生产归队回归2026-10-14）
 - [firesworn-villages.md](firesworn-villages.md)：自然增长仍按当前信众比例乘模型预计正增长、随机取整并截到当前整数户数，尚未保证达到100%后新增户严格全为信众；村庄户数每日结算与全局信众增长是不同事件，时序及取整可能留下非信众尾数。此次仅调整士兵增长，未修改该户数机制。（依据：C#反编译Village.DailyTick与源码复核2026-10-09）
@@ -60,8 +58,8 @@
 
 <!-- 待实测汇总：由 tools/Check-StateFreshness.py 从各 state 文件头部生成，手改会被覆盖 -->
 
-- [case-enforcement.md](case-enforcement.md)（原有案件行为已验收；抓捕结案过早讲和导致玩家战后崩溃，已修复待实测）
-  - 玩家参与灰袍抓捕后战后界面及返回地图正常；其余案件收手、本人接案及打垮未俘的验收见原规则
+- [case-interceptors.md](case-interceptors.md)（归队改为并回主队、多余的人去信众村，已部署待实测）
+  - 追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
 - [cloth-assets.md](cloth-assets.md)（三件服装与弓箭手下摆按用户认可的手感定稿（2026-10-03，非原包值）；弓箭手不用替身，直接模拟，下摆为竖向渐变）
   - 弓箭手下摆定稿手感（用户进游戏体验）
 - [code-health.md](code-health.md)（已确认的配装、紧急补兵、编号与调兵状态缺陷已修复；通用吞异常包装已移除；正常卡顿耗时尚未测定）

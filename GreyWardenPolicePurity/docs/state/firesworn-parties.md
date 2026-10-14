@@ -10,6 +10,7 @@
 
 信众村和守村队见 [村庄](firesworn-villages.md)，集会与烧人见 [仪式](firesworn-rituals.md)，装备见 [军械库](firesworn-armory.md)。数值都在 `GwpTuning.Firesworn`。
 
+追截队主队装不下的人也走同一段落村处理（`SettleInFaithVillage`，规则在 [立即追截队](case-interceptors.md)）。
 无领主队走原版经验结算，落村合并到实体名册时使用 [临时队](temporary-parties.md) 定义的兵员状态转移，包含伤兵与剩余经验。
 
 三种，只从信众村出发（用户裁定 2026-10-07、2026-10-08）。信众村不派巡逻队、不紧急出动，守村兵全部留在村里：

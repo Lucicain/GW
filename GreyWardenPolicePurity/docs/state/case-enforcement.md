@@ -1,10 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：原有案件行为已验收；抓捕结案过早讲和导致玩家战后崩溃，已修复待实测
+> 当前状态：原有案件行为已验收；抓捕结案后的战后崩溃已修复并经用户实测（2026-10-14）
 > 最后验收：`9d005bb`
 > 已复核至：`0614808`（2026-10-14）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：玩家参与灰袍抓捕后战后界面及返回地图正常；其余案件收手、本人接案及打垮未俘的验收见原规则
+> 待实测：无（追截队见 [立即追截队](case-interceptors.md)）
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
@@ -229,17 +229,9 @@ targetStrength = 706.55  >  maximumStrength = 682.70
   `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，
   `IsFocusLayer = false`、不设 `InputRestrictions`。不覆盖任何原版文件。
 
-## 立即追截队的人回哪里
+## 立即追截队
 
-立即追截队（`TrySpawnImmediateCaseInterceptor`）的人是从来源领主名册里抽出来的。返程时
-先还来源领主；来源领主战败、被俘或队伍没了（`CanContinueLeadingPoliceTask` 为假），改交最近的
-灰袍领主（`GwpCommon.FindNearestGreyWardenLordParty`），并把接收人写回
-`DelayPatrolState.SourceTaskPolicePartyId`，之后不再换人。一个能接收的灰袍领主都没有时，
-才照旧进城销毁。超出接收方编制的人仍进城销毁。只有返程状态会改接收人，
-承办中的重定目标冷却（只看未返程的队）不受影响。
-
-已知缺陷：追截队被目标掉头吃掉后马上再派，没有冷却；派之前比的是灰袍整支军团对罪犯，不是这几个人自己（实机诊断 2026-10-08：gw_leader_0 一天半里连派 8 支 8 人队追 lord_5_4，全被吃掉，约 55 人）。
-已知缺陷：来源超编时，归队的人照收，再从来源换出同样多的低阶灰袍兵进城销毁；追截队里不是灰袍兵的人（打完仗解救的等）也跟着进城销毁（实机诊断 2026-10-08：16 次归队里 5 次）。
+追截队归队、多余的人去哪里，见 [立即追截队](case-interceptors.md)。
 
 宣战追捕每满 24 小时记一条 `WAR_PURSUIT_STALLED`（见 diagnostics.md），用来查两天支援队为什么会触发。
 

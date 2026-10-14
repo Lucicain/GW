@@ -624,14 +624,13 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static int TransferNonHeroTroops(TroopRoster source,
-            TroopRoster destination, int requested)
+        /// <summary>返程到了：信众村就在村里落脚（GwpFireswornBehavior.SettleInFaithVillage），否则解散。</summary>
+        private static bool RetireReturningPatrol(MobileParty patrol, Settlement? settlement)
         {
-            List<TroopRosterElement> batches = source.GetTroopRoster()
-                .Where(element => element.Character != null &&
-                    !element.Character.IsHero &&
-                    element.Number > 0).ToList();
-            return GwpTroopTransfer.MoveBatches(source, destination, batches, requested);
+            DetachDelayPatrolFromArmy(patrol);
+            if (settlement != null && GwpFireswornBehavior.SettleInFaithVillage(patrol, settlement))
+                return true;
+            return TryDestroyDelayPatrolParty(patrol);
         }
 
 
@@ -752,7 +751,7 @@ namespace GreyWardenPolicePurity
 
                     if (patrol.CurrentSettlement != null)
                     {
-                        if (TryDestroyDelayPatrolParty(patrol))
+                        if (RetireReturningPatrol(patrol, patrol.CurrentSettlement))
                             _delayPatrolStates.Remove(kv.Key);
                         continue;
                     }
@@ -771,7 +770,7 @@ namespace GreyWardenPolicePurity
                     float dist = patrol.GetPosition2D.Distance(returnSettlement.GetPosition2D);
                     if (dist < 3f)
                     {
-                        TryDestroyDelayPatrolParty(patrol);
+                        RetireReturningPatrol(patrol, returnSettlement);
                         _delayPatrolStates.Remove(kv.Key);
                     }
                     continue;
@@ -868,48 +867,31 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
+            // 船当场交回主队；在海上还要靠船走，留到解散时再还（GwpShipLoanReturnPatch）。
+            if (!interceptor.IsCurrentlyAtSea)
+                PoliceResourceManager.ReturnLentShips(interceptor);
+
+            // 主队装得下的都回主队，灰袍兵先回；装不下的去最近的信众村加入守村队，
+            // 不从主队换人出来、不进城解散（用户裁定 2026-10-14）。
             int sourceMembersBefore = sourceParty.Party.NumberOfAllMembers;
             int availableSlotsBefore = Math.Max(0,
-                sourceParty.Party.PartySizeLimit -
-                sourceMembersBefore);
-
-            List<TroopRosterElement> returningBatches =
-                interceptor.MemberRoster.GetTroopRoster()
-                    .Where(static element => element.Character != null &&
-                        !element.Character.IsHero && element.Number > 0 &&
-                        GwpCommon.IsGreyWardenTroop(element.Character))
-                    .ToList();
-            int returningWardens = returningBatches.Sum(
-                static element => element.Number);
-            TroopRoster returningBuffer = TroopRoster.CreateDummyTroopRoster();
-            int stagedReturning = GwpTroopTransfer.MoveBatches(
-                interceptor.MemberRoster, returningBuffer,
-                returningBatches, returningWardens);
-
-            int displacementNeeded = Math.Max(0,
-                stagedReturning - availableSlotsBefore);
-            List<TroopRosterElement> displacementBatches =
-                sourceParty.MemberRoster.GetTroopRoster()
-                    .Where(static element => element.Character != null &&
-                        !element.Character.IsHero && element.Number > 0 &&
-                        GwpCommon.IsGreyWardenTroop(element.Character))
-                    .OrderBy(static element =>
-                        element.Character.UpgradeTargets.Length > 0 ? 0 : 1)
-                    .ThenBy(static element => element.Character.Tier)
-                    .ThenByDescending(static element => element.Number)
-                    .ThenBy(static element => element.Character.StringId,
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-            int displacedToRetire = GwpTroopTransfer.MoveBatches(
-                sourceParty.MemberRoster, interceptor.MemberRoster,
-                displacementBatches, displacementNeeded);
-
-            int returnCapacity = Math.Min(stagedReturning,
-                availableSlotsBefore + displacedToRetire);
-            int returned = TransferNonHeroTroops(
-                returningBuffer, sourceParty.MemberRoster, returnCapacity);
-            TransferNonHeroTroops(returningBuffer, interceptor.MemberRoster,
-                int.MaxValue);
+                sourceParty.Party.PartySizeLimit - sourceMembersBefore);
+            int returningWardens = interceptor.MemberRoster.GetTroopRoster()
+                .Where(static element => element.Character != null && !element.Character.IsHero &&
+                    GwpCommon.IsGreyWardenTroop(element.Character))
+                .Sum(static element => element.Number);
+            List<TroopRosterElement> returningBatches = interceptor.MemberRoster.GetTroopRoster()
+                .Where(static element => element.Character != null &&
+                    !element.Character.IsHero && element.Number > 0)
+                .OrderBy(static element => GwpCommon.IsGreyWardenTroop(element.Character) ? 0 : 1)
+                .ToList();
+            int returned = GwpTroopTransfer.MoveBatches(interceptor.MemberRoster,
+                sourceParty.MemberRoster, returningBatches, availableSlotsBefore);
+            int prisonersHandedOver = GwpTroopTransfer.MoveBatches(interceptor.PrisonRoster,
+                sourceParty.PrisonRoster,
+                interceptor.PrisonRoster.GetTroopRoster()
+                    .Where(static element => element.Character != null && !element.Character.IsHero)
+                    .ToList(), int.MaxValue);
             int retiring = interceptor.MemberRoster.GetTroopRoster()
                 .Where(static element => element.Character != null &&
                     !element.Character.IsHero && element.Number > 0)
@@ -923,22 +905,20 @@ namespace GreyWardenPolicePurity
             else
             {
                 state.IsImmediateInterceptor = false;
-                Settlement? returnSettlement = Settlement.FindFirst(settlement =>
-                    settlement.StringId == state.ReturnSettlementId) ??
+                Settlement? settleAt = GwpFireswornBehavior.NearestFaithVillage(interceptor) ??
                     GwpCommon.FindNearestTown(interceptor);
-                if (returnSettlement != null)
+                if (settleAt != null)
                 {
-                    state.ReturnSettlementId = returnSettlement.StringId;
-                    GreyWardenPartyDesireBehavior.RequestVisit(
-                        interceptor, returnSettlement, 8f);
+                    state.ReturnSettlementId = settleAt.StringId;
+                    GreyWardenPartyDesireBehavior.RequestVisit(interceptor, settleAt, 8f);
                 }
             }
             GwpAiDiagnostics.WriteAction(sourceParty,
                 "IMMEDIATE_CASE_INTERCEPTOR_REJOINED",
                 "interceptor=" + state.PatrolPartyId +
                 "; returningWardens=" + returningWardens +
-                "; displacedToRetire=" + displacedToRetire +
                 "; returned=" + returned +
+                "; prisoners=" + prisonersHandedOver +
                 "; retiring=" + retiring +
                 "; availableSlotsBefore=" + availableSlotsBefore +
                 "; sourceMembersBefore=" + sourceMembersBefore +
