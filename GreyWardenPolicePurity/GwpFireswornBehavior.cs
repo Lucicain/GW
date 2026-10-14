@@ -736,6 +736,13 @@ namespace GreyWardenPolicePurity
                 row.PriestId = string.Empty;
                 Hero? successor = village.Notables.FirstOrDefault(hero =>
                     hero.IsPreacher && !hero.IsFemale && hero.IsAlive && !_priestIds.Contains(hero.StringId));
+                // 这一带的信众村已经够数：不接任，这座村照原版回到普通村子（软上限，用户裁定 2026-10-15）。
+                if (successor != null && !FaithRegionHasRoom(village, GwpPatrolBeats.Assignments()))
+                {
+                    GwpAiDiagnostics.WriteFaith("PRIEST_SUCCESSION_HELD", "village=" + village.StringId +
+                        "; successor=" + successor.StringId);
+                    continue;
+                }
                 if (successor != null)
                 {
                     AnointPriest(row, successor, village);
@@ -769,6 +776,7 @@ namespace GreyWardenPolicePurity
         private void SpawnPriestsByShare()
         {
             int dayOfWeek = (int)CampaignTime.Now.ToDays % 7;
+            Dictionary<Settlement, int> beats = GwpPatrolBeats.Assignments();
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 if (StableDay(row.VillageId, 7) != dayOfWeek || FindLivingPriest(row) != null)
@@ -776,6 +784,7 @@ namespace GreyWardenPolicePurity
                 Settlement village = Settlement.Find(row.VillageId);
                 float share = SwornShare(row, village);
                 if (share < GwpTuning.Firesworn.PriestZealotShare ||
+                    !FaithRegionHasRoom(village, beats) ||
                     MBRandom.RandomFloat >= GwpTuning.Firesworn.PriestWeeklyChance)
                     continue;
                 InstallPriest(village);
@@ -797,6 +806,30 @@ namespace GreyWardenPolicePurity
         /// 其他要人会因此掉到 100 以下，原版每天按 (100 − 势力)/100 × 2% 的概率删掉他们（C#反编译 v1.4.8
         /// DefaultNotablePowerModel、NotablesCampaignBehavior），用户裁定时知情。村里没有别的要人时不动。
         /// </summary>
+        /// <summary>这座村归哪个巡区：离它最近的在用巡区圆心。</summary>
+        private static Settlement? FaithRegionOf(Settlement village, Dictionary<Settlement, int> beats) =>
+            beats.Keys.OrderBy(center => center.GetPosition2D.DistanceSquared(village.GetPosition2D)).FirstOrDefault();
+
+        /// <summary>
+        /// 这座村所在巡区的信众村（有活祭司的村）满了没有。每座巡区容纳 <c>FaithVillagesPerWarden</c> × 守它的领主数，
+        /// 合起来就是全图 3 × 在编领主数（用户裁定 2026-10-15：信众村尽量长在灰袍的巡逻点一带，全图上限是灰袍领主数的三倍）。
+        /// 软上限：只挡新来祭司和祭司接任，已有的信众村不拆，照原版退休、死亡后自然回到普通村子。
+        /// </summary>
+        private bool FaithRegionHasRoom(Settlement village, Dictionary<Settlement, int> beats) =>
+            FaithRegionLoad(village, beats) < 1f;
+
+        /// <summary>这座村所在巡区已用掉的比例（不算它自己）；没有巡区时为 1（满）。</summary>
+        private float FaithRegionLoad(Settlement village, Dictionary<Settlement, int> beats)
+        {
+            Settlement? region = FaithRegionOf(village, beats);
+            if (region == null) return 1f;
+            int sworn = _villages.Values.Count(row =>
+                !string.Equals(row.VillageId, village.StringId, StringComparison.OrdinalIgnoreCase) &&
+                FindLivingPriest(row) != null &&
+                FaithRegionOf(Settlement.Find(row.VillageId), beats) == region);
+            return sworn / (float)(beats[region] * GwpTuning.Firesworn.FaithVillagesPerWarden);
+        }
+
         private void UpdatePriestPower(FaithVillage row)
         {
             Hero? priest = FindLivingPriest(row);

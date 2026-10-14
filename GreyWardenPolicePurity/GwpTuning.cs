@@ -319,6 +319,10 @@ namespace GreyWardenPolicePurity
             public const float ReconstructionSwornShare = 0.05f;
             // 没有祭司的村子：火誓者占户数到这个比例，每周按这个概率来一位祭司。
             public const float PriestZealotShare = 0.1f;
+            /// <summary>
+            /// 每位在编灰袍领主的巡区容纳几座信众村，全图上限即灰袍领主数的这么多倍；软上限，只挡新来祭司和接任（用户裁定 2026-10-15）。
+            /// </summary>
+            public const int FaithVillagesPerWarden = 3;
             // 祭司最多拿全村要人势力的一半，其他要人留着给原版领主招兵（用户裁定 2026-10-14）。
             public const float PriestMaxPowerShare = 0.5f;
             // 守村队：两户信众出一个兵（用户裁定 2026-10-08：约为原版民兵平衡点的 3 倍，仍和信众户挂钩）。

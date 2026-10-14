@@ -321,21 +321,28 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 传教去哪儿（用户裁定 2026-10-08）：附近有火誓者、还没有祭司、比例还不到来祭司门槛的村子里，挑比例最高的，
-        /// 把它推过门槛再换下一座；都没有就去最近的还没有火誓者的村子。
+        /// 把它推过门槛再换下一座；都没有就去还没有火誓者的村子。
         /// 原来挑比例最低的：灰袍领主路过就留下两户信众，这种 1% 的村子到处都是，每次换一座，哪座都扶不起来（实机诊断 2026-10-08）。
+        /// 只去信众村还没满的巡区，先去最空的那片；新开的村子挑离巡区圆心最近的（用户裁定 2026-10-15：
+        /// 信众村和灰袍领主一样分散，尽量长在灰袍的巡逻点一带）。
         /// </summary>
         private Settlement? MissionTarget(Settlement home)
         {
-            List<Settlement> nearby = NearbyTargets(home, GwpTuning.Firesworn.MissionMaxDistance, FaithPartyKind.Mission);
+            Dictionary<Settlement, int> beats = GwpPatrolBeats.Assignments();
+            List<Settlement> nearby = NearbyTargets(home, GwpTuning.Firesworn.MissionMaxDistance, FaithPartyKind.Mission)
+                .Where(settlement => FaithRegionHasRoom(settlement, beats))
+                .ToList();
             Settlement? growing = nearby
                 .Where(settlement => _villages.TryGetValue(settlement.StringId, out FaithVillage? other) &&
                                      FindLivingPriest(other) == null &&
                                      SwornShare(other, settlement) < GwpTuning.Firesworn.PriestZealotShare)
-                .OrderByDescending(settlement => SwornShare(_villages[settlement.StringId], settlement))
+                .OrderBy(settlement => FaithRegionLoad(settlement, beats))
+                .ThenByDescending(settlement => SwornShare(_villages[settlement.StringId], settlement))
                 .FirstOrDefault();
             return growing ?? nearby
                 .Where(settlement => !_villages.ContainsKey(settlement.StringId))
-                .OrderBy(settlement => home.GetPosition2D.Distance(settlement.GetPosition2D))
+                .OrderBy(settlement => FaithRegionLoad(settlement, beats))
+                .ThenBy(settlement => FaithRegionOf(settlement, beats)!.GetPosition2D.Distance(settlement.GetPosition2D))
                 .FirstOrDefault();
         }
 

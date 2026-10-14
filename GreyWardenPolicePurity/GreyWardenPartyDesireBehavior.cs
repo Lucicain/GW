@@ -578,18 +578,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 手上什么差事都没有时的巡区。
-        ///
-        /// 原版 `AiPatrollingBehavior` 的防御性巡逻分里有
-        /// `avgTownDistance * 5f / max(distance(HomeSettlement, settlement), avgTownDistance)`
-        /// ——**巡逻分与离家距离成反比**，而灰袍六人的 `HomeSettlement` 是同一个，
-        /// 于是闲下来全挤在出生点附近，出了事要横穿半张地图。
-        ///
-        /// 这里不去改"家"（灰袍是流动编制：新人会加入、老人会老死，开档时钉死的
-        /// 驻地很快就不对了），而是**每次解析时按当前在编名单现算**：把在编的灰袍
-        /// 领主按 StringId 定序，各取一个不同文化的城做巡区圆心。人员一变，分配
-        /// 自己就重排，永远不会两个人守同一处。
-        ///
+        /// 手上什么差事都没有时的巡区（分配规则在 <see cref="GwpPatrolBeats"/>）。
         /// 巡区分值与普通差事同档（0.99）：原版那排巡逻候选会被压到执行阈值，所以
         /// 赢的是巡区；而真正的补给／招兵需求（实测 1.0~8.0）照样压得过它，缺兵的
         /// 人仍然先去补兵。
@@ -600,32 +589,13 @@ namespace GreyWardenPolicePurity
             if (!GwpCommon.IsGreyWardenClanParty(party))
                 return null;
 
-            List<MobileParty> wardens = PoliceStats.GetAllPoliceParties()
-                .Where(candidate => candidate?.IsActive == true &&
-                    candidate.IsLordParty && candidate.LeaderHero?.IsActive == true)
-                .OrderBy(candidate => candidate.StringId, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            int index = wardens.FindIndex(candidate =>
-                string.Equals(candidate.StringId, party.StringId,
-                    StringComparison.OrdinalIgnoreCase));
-            if (index < 0) return null;
-
-            List<Settlement> beats = Town.AllTowns
-                .Where(town => town?.Settlement != null && !town.IsCastle)
-                .GroupBy(town => town.Settlement.Culture?.StringId ?? string.Empty,
-                    StringComparer.OrdinalIgnoreCase)
-                .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group
-                    .OrderBy(town => town.Settlement.StringId,
-                        StringComparer.OrdinalIgnoreCase)
-                    .First().Settlement)
-                .ToList();
-            if (beats.Count == 0) return null;
+            Settlement? beat = GwpPatrolBeats.BeatOf(party);
+            if (beat == null) return null;
 
             return new Intent
             {
                 Kind = IntentKind.Beat,
-                Settlement = beats[index % beats.Count],
+                Settlement = beat,
                 Priority = AssignedDutyScore,
                 ExpiresAt = double.MaxValue
             };

@@ -3,7 +3,7 @@
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
 > 已复核至：`61ee7c9`（2026-10-14）
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs`
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
@@ -119,7 +119,8 @@
 
 - 没有任何差事时，每位灰袍领主各守一座不同文化的城，作为巡逻圆心。
   分配方法：领主按 StringId 排序；每种文化取 StringId 最小的那座非城堡城；按序号取模分配。
-  在编名单一变，分配跟着重排（`ResolvePatrolBeat`）。
+  在编名单一变，分配跟着重排（`GwpPatrolBeats`，欲望层 `ResolvePatrolBeat` 只取用它）。
+- 信众村也按这些巡区分散：每座巡区容纳 3 × 守它的领主数座信众村，见 [村庄](firesworn-villages.md)「信众村的数量与分布」。
 - 起因：原版防御巡逻分与离家距离成反比，而六位灰袍的家乡是同一个，闲下来都挤在出生点附近。（依据：C#反编译、实机诊断 2026-09-17）
   这里不改「家」，因为灰袍成员会新增、会老死。
 
