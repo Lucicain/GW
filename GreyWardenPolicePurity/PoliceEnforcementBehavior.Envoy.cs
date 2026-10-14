@@ -51,6 +51,11 @@ namespace GreyWardenPolicePurity
             /// <summary>宽限到期后的这一趟只收钱，不再谈。</summary>
             public bool CollectOnly;
             public bool WardenWon;
+            /// <summary>
+            /// 已经谈出了结果，但要动他名册（投案、杀自己的兵）而他正在打仗：使者跟着他，等他这仗打完再办。
+            /// −1 表示没有。打仗时改名册会和原版战斗结算对不上，所以等。
+            /// </summary>
+            public int PendingDesire = -1;
         }
 
         private readonly Dictionary<string, EnvoyCase> _envoyCases =
@@ -66,6 +71,7 @@ namespace GreyWardenPolicePurity
             List<int> stages = null!;
             List<int> flags = null!;
             List<double> dueHours = null!;
+            List<int> pending = null!;
             if (dataStore.IsSaving)
             {
                 List<EnvoyCase> cases = _envoyCases.Values.ToList();
@@ -77,6 +83,7 @@ namespace GreyWardenPolicePurity
                 stages = cases.Select(c => (int)c.Stage).ToList();
                 flags = cases.Select(c => (c.CollectOnly ? 1 : 0) | (c.WardenWon ? 2 : 0)).ToList();
                 dueHours = cases.Select(c => c.DueHours).ToList();
+                pending = cases.Select(c => c.PendingDesire).ToList();
             }
 
             dataStore.SyncData("gwp_enf_envoy_crimes", ref crimeIds);
@@ -87,6 +94,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_envoy_stages", ref stages);
             dataStore.SyncData("gwp_enf_envoy_flags", ref flags);
             dataStore.SyncData("gwp_enf_envoy_due", ref dueHours);
+            dataStore.SyncData("gwp_enf_envoy_pending", ref pending);
 
             if (!dataStore.IsLoading) return;
             _envoyCases.Clear();
@@ -105,7 +113,8 @@ namespace GreyWardenPolicePurity
                     Stage = stages != null && i < stages.Count ? (EnvoyStage)stages[i] : EnvoyStage.Failed,
                     CollectOnly = (flag & 1) != 0,
                     WardenWon = (flag & 2) != 0,
-                    DueHours = dueHours != null && i < dueHours.Count ? dueHours[i] : 0d
+                    DueHours = dueHours != null && i < dueHours.Count ? dueHours[i] : 0d,
+                    PendingDesire = pending != null && i < pending.Count ? pending[i] : -1
                 };
             }
         }
@@ -134,18 +143,17 @@ namespace GreyWardenPolicePurity
              envoyCase.Stage == EnvoyStage.Travelling && envoyCase.CollectOnly);
 
         /// <summary>
-        /// 此刻为什么派不出使者；派得出返回 null。他替别人的军团跑腿时作不了主（只收钱的那趟不必他作主）；
-        /// 已经和灰袍开战的势力，使者过去就是送死；出借方在海上只剩自己那条船时，临时队出不了门
-        /// （PoliceResourceManager.IsStrandedAtSea）。
+        /// 此刻为什么派不出使者；派得出返回 null。已经和灰袍开战的势力，使者过去就是送死；出借方在海上
+        /// 只剩自己那条船时，临时队出不了门（PoliceResourceManager.IsStrandedAtSea）。他在打仗、在别人军团里
+        /// 都照派照谈（用户裁定 2026-10-15）。
         /// </summary>
-        private static string? EnvoyBlocker(MobileParty police, MobileParty criminal, bool collectOnly)
+        private static string? EnvoyBlocker(MobileParty police, MobileParty criminal)
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return "no_police_clan";
             if (criminal.LeaderHero == null) return "target_leaderless";
             if (police.MapEvent != null) return "warden_in_battle";
             if (police.Army != null && police.Army.LeaderParty != police) return "warden_army_member";
-            if (!collectOnly && criminal.Army != null && criminal.Army.LeaderParty != criminal) return "target_army_member";
             if (PlayerBountyBehavior.IsReservedTarget(criminal)) return "player_target";
             if (FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction))
                 return "already_at_war:" + (criminal.MapFaction?.StringId ?? "-");
@@ -155,7 +163,7 @@ namespace GreyWardenPolicePurity
 
         private bool TrySendEnvoy(MobileParty police, CrimeRecord crime, MobileParty criminal, bool collectOnly)
         {
-            string? blocker = EnvoyBlocker(police, criminal, collectOnly);
+            string? blocker = EnvoyBlocker(police, criminal);
 #if GWP_DIAGNOSTICS
             TraceEnvoyBlocker(police, crime, blocker);
 #endif
@@ -270,9 +278,9 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // 他正在打仗（多半是在烧村、抢商队，案子就是这么立的）：使者照派，在旁边等他打完再谈。
-            // 以前目标在打仗就不派，宣战判定照常进行，接案时正在作案的人几乎都直接开战了（实机诊断 2026-10-15）。
-            if (envoy.MapEvent != null || target.MapEvent != null)
+            // 他正在打仗（多半是在烧村、抢商队，案子就是这么立的）也照谈（用户裁定 2026-10-15）；
+            // 只有使者自己被人拖进仗里时等它打完。
+            if (envoy.MapEvent != null)
                 return;
             // 被人打过一仗后原版把它停在原地，要等下一轮拍卖才动（实机诊断 2026-10-15：停了约 11 小时）。
             if (envoy.DefaultBehavior == AiBehavior.Hold)
@@ -298,8 +306,28 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            MarkDelayPatrolReturning(envoy.StringId);
-            Negotiate(envoyCase, crime, police, police.LeaderHero, envoy, target, offender);
+            if (envoyCase.PendingDesire >= 0)
+            {
+                if (target.MapEvent != null)
+                {
+                    GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
+                    return;
+                }
+                GwpOffenderDesire pendingDesire = (GwpOffenderDesire)envoyCase.PendingDesire;
+                envoyCase.PendingDesire = -1;
+                ApplyDesire(envoyCase, crime, police.LeaderHero, envoy, target, offender, pendingDesire,
+                    GwpFieldArrestPricing.AssessFine(crime));
+            }
+            else
+            {
+                Negotiate(envoyCase, crime, police, police.LeaderHero, envoy, target, offender);
+            }
+
+            // 谈出结果就回主队；等他打完仗再办的那种留在他身边。
+            if (envoyCase.PendingDesire < 0 || !_envoyCases.ContainsKey(envoyCase.CrimeId))
+                MarkDelayPatrolReturning(envoy.StringId);
+            else
+                GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
         }
 
         /// <summary>
@@ -319,9 +347,10 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // 用户裁定 2026-10-15：第一层看灰袍主队和目标队伍的实力，不看使者自己。
-            float ours = GwpStrength.Party(police);
-            float theirs = GwpStrength.Party(target);
+            // 用户裁定 2026-10-15：第一层实力至上，看灰袍主队和目标的实力，不看使者自己。两边都按实际一起
+            // 行动的那一组算（已挂靠的军团、攻城营），他在别人军团里时，他背后就是那支军团。
+            float ours = GwpStrength.CombatGroup(GwpStrength.CombatGroupOf(police));
+            float theirs = GwpStrength.CombatGroup(GwpStrength.CombatGroupOf(target));
             int wealth = GwpAssetPayment.Wealth(offender, target.Party);
             int charm = warden.GetSkillValue(DefaultSkills.Charm);
             float renown = warden.Clan?.Renown ?? 0f;
@@ -359,6 +388,23 @@ namespace GreyWardenPolicePurity
             }
 
             // 第二层没谈拢：照他自己的打算办。
+            ApplyDesire(envoyCase, crime, warden, envoy, target, offender, desire, fine);
+        }
+
+        /// <summary>第二层没谈拢，照他自己的打算办。要动他名册的结局在他打仗时先记下，打完再办。</summary>
+        private void ApplyDesire(EnvoyCase envoyCase, CrimeRecord crime, Hero warden, MobileParty envoy,
+            MobileParty target, Hero offender, GwpOffenderDesire desire, int fine)
+        {
+            if (target.MapEvent != null &&
+                (desire == GwpOffenderDesire.SurrenderSelf || desire == GwpOffenderDesire.DeedsOnly))
+            {
+                envoyCase.PendingDesire = (int)desire;
+                // 已经谈妥，只是等他打完：超时从这一刻重新算，免得谈妥的事被赶路的时限作废。
+                envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyTimeoutHours;
+                return;
+            }
+
+            MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
             switch (desire)
             {
                 case GwpOffenderDesire.RequestGrace:
@@ -370,6 +416,11 @@ namespace GreyWardenPolicePurity
                         EndCaseTask(graceTask.PolicePartyId, CaseTaskEnd.Released, "envoy_grace");
                     return;
                 case GwpOffenderDesire.DemandDuel:
+                    if (police == null)
+                    {
+                        FailEnvoy(envoyCase, "duel_warden_missing");
+                        return;
+                    }
                     StartDuel(envoyCase, police, target);
                     return;
                 case GwpOffenderDesire.SurrenderSelf:
@@ -408,8 +459,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 宽限到期：离他最近、派得出骑兵的灰袍领主派一趟只收钱的使者。这一小时谁都派不出（都没骑兵、他在海上等）
-        /// 就下一小时再试；过了到期后一个使者超时还派不出，算他食言，案子回台账照常追捕。
+        /// 宽限到期：离他最近的灰袍领主派一趟只收钱的使者。最近的派不了（正在打仗等）就换下一个，
+        /// 都派不了下一小时再试。
         /// </summary>
         private void SendGraceCollector(EnvoyCase envoyCase, CrimeRecord crime)
         {
@@ -631,6 +682,9 @@ namespace GreyWardenPolicePurity
                 return;
             }
             if (party.MapEvent != null) return;
+            // 他在别人军团里当成员：先离队去赴约，和原版成婚时离开军团同一个做法（MarriageAction）。
+            if (party.Army != null && party.Army.LeaderParty != party)
+                party.Army = null;
             if (party.CurrentSettlement != town && party.TargetSettlement != town)
             {
                 party.Ai.SetDoNotMakeNewDecisions(false);
