@@ -150,13 +150,19 @@ namespace GreyWardenPolicePurity
         /// 声望清零。唯独累计犯罪次数保留，那是履历不是欠款；震慑由另一套系统
         /// 负责，不在此处触碰。
         /// </summary>
+        /// <summary>人落到灰袍手里（或谈妥跟灰袍走）时清账：负声望与杀人进度归零，累计犯罪次数不动。</summary>
+        internal static void ClearArrestRecord(Hero hero)
+        {
+            HeroCrimeStats history = CrimePool.GetOrCreateHistory(hero);
+            history.NegativeStanding = 0;
+            history.CrimeKillProgress = 0;
+        }
+
         private static void ClearRecordOnArrest(Hero? leader)
         {
             if (leader == null || string.IsNullOrWhiteSpace(leader.StringId)) return;
 
-            HeroCrimeStats history = CrimePool.GetOrCreateHistory(leader);
-            history.NegativeStanding = 0;
-            history.CrimeKillProgress = 0;
+            ClearArrestRecord(leader);
 
             CrimeRecord? crime = CrimePool.GetRecord(leader);
             if (crime?.HasOpenCase == true)

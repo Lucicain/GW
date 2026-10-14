@@ -184,6 +184,8 @@ namespace GreyWardenPolicePurity
             public const double GraceHours = 72d;
             /// <summary>每条要点最多几次说辞（玩家当面与灰袍使者相同）。</summary>
             public const int ArgumentsPerReservation = 4;
+            /// <summary>第二层抗性：他打算对应的那项特质每一级加多少（性格至上，用户裁定 2026-10-15；数值为试玩值）。</summary>
+            public const float InsistenceStep = 20f;
 
             /// <summary>势均力敌时第一层抗性的起点。性格、声望、震慑都从这里加减。</summary>
             public const float DecisionBaseline = 50f;

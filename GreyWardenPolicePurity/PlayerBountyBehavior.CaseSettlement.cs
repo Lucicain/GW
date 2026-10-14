@@ -415,9 +415,7 @@ namespace GreyWardenPolicePurity
             NotifyCaseClosedByCapture(hero, fine, standing);
             if (IsWaitingForBountyCollection)
             {
-                HeroCrimeStats history = CrimePool.GetOrCreateHistory(hero);
-                history.NegativeStanding = 0;
-                history.CrimeKillProgress = 0;
+                GwpAiDeterrenceState.ClearArrestRecord(hero);
                 PoliceEnforcementBehavior.CloseCase(crime, "commission_offender_in_custody");
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_case_captive_ready}You hold the target captive. Deliver him to any Warden lord to collect the reward."), Colors.Green));

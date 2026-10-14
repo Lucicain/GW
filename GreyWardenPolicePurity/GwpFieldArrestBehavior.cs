@@ -610,15 +610,14 @@ namespace GreyWardenPolicePurity
         {
             if (_offender == null || _offenderParty == null) return 50;
             (float mine, float his) = FieldBalance();
-            return GwpNegotiationPolicy.LayerOneResistance(_offender, _crime?.CrimeCategory ?? GwpCrimeCategory.Unknown,
+            return GwpNegotiationResistance.LayerOneResistance(_offender, _crime?.CrimeCategory ?? GwpCrimeCategory.Unknown,
                 mine, his, CurrentStandingTier(), Hero.MainHero.Clan?.Renown ?? 0f, OffenderWealth, EnsureFine());
         }
 
         private int LayerTwoResistance()
         {
             if (_offender == null) return 40;
-            (float ours, float theirs) = FieldBalance();
-            return GwpNegotiationPolicy.LayerTwoResistance(_offender, _desire, ours, theirs,
+            return GwpNegotiationResistance.LayerTwoResistance(_offender, _desire,
                 Hero.MainHero.GetSkillValue(DefaultSkills.Charm), Hero.MainHero.Clan?.Renown ?? 0f, OffenderWealth, EnsureFine());
         }
 
@@ -1006,9 +1005,7 @@ namespace GreyWardenPolicePurity
                 ClearState();
                 return;
             }
-            HeroCrimeStats history = CrimePool.GetOrCreateHistory(_offender);
-            history.NegativeStanding = 0;
-            history.CrimeKillProgress = 0;
+            GwpAiDeterrenceState.ClearArrestRecord(_offender);
 
             LeaveEncounterPeacefully();
 

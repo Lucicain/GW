@@ -34,6 +34,8 @@ namespace GreyWardenPolicePurity
             Duel = 3,
             /// <summary>比武结果已出（在任务场景里得出），下一个小时结算。</summary>
             DuelDecided = 4,
+            /// <summary>案子已结，使者等他打完仗再押人或看他杀兵（<see cref="BeginAftermath"/>）。</summary>
+            Aftermath = 5,
         }
 
         /// <summary>一宗案子的使者进度，按案卷记。谈崩记录留到销案为止，所以同一宗案子不会再派。</summary>
@@ -51,10 +53,7 @@ namespace GreyWardenPolicePurity
             /// <summary>宽限到期后的这一趟只收钱，不再谈。</summary>
             public bool CollectOnly;
             public bool WardenWon;
-            /// <summary>
-            /// 已经谈出了结果，但要动他名册（投案、杀自己的兵）而他正在打仗：使者跟着他，等他这仗打完再办。
-            /// −1 表示没有。打仗时改名册会和原版战斗结算对不上，所以等。
-            /// </summary>
+            /// <summary>Aftermath 阶段等着办的那件事（投案或杀自己的兵）；−1 表示没有。</summary>
             public int PendingDesire = -1;
         }
 
@@ -220,6 +219,11 @@ namespace GreyWardenPolicePurity
         {
             foreach (EnvoyCase envoyCase in _envoyCases.Values.ToList())
             {
+                if (envoyCase.Stage == EnvoyStage.Aftermath)
+                {
+                    TendAftermath(envoyCase);
+                    continue;
+                }
                 CrimeRecord? crime = CrimePool.GetRecordByKey(envoyCase.CrimeId);
                 if (crime?.HasOpenCase != true)
                 {
@@ -286,15 +290,9 @@ namespace GreyWardenPolicePurity
             if (envoy.DefaultBehavior == AiBehavior.Hold)
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(envoy);
 
-            // 与追截队回主队同一个距离：原版军团成员算"走到一起"的距离（海上用海上的）。目标在城里时进城去谈。
-            float contactDistance = envoy.IsCurrentlyAtSea
-                ? Campaign.Current.Models.EncounterModel.MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
-                : Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
-            bool reached = target.CurrentSettlement != null && envoy.CurrentSettlement == target.CurrentSettlement ||
-                envoy.GetPosition2D.Distance(target.GetPosition2D) <= contactDistance;
-            if (!reached)
+            if (!EnvoyReached(envoy, target))
             {
-                GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
+                FollowTarget(envoy, target);
                 return;
             }
 
@@ -306,32 +304,40 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            if (envoyCase.PendingDesire >= 0)
-            {
-                if (target.MapEvent != null)
-                {
-                    GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
-                    return;
-                }
-                GwpOffenderDesire pendingDesire = (GwpOffenderDesire)envoyCase.PendingDesire;
-                envoyCase.PendingDesire = -1;
-                ApplyDesire(envoyCase, crime, police.LeaderHero, envoy, target, offender, pendingDesire,
-                    GwpFieldArrestPricing.AssessFine(crime));
-            }
+            Negotiate(envoyCase, crime, police, police.LeaderHero, envoy, target, offender);
+            // 谈出结果就回主队；等他打完仗再押人、看他杀兵的那种留在他身边（Aftermath）。
+            if (envoyCase.Stage == EnvoyStage.Aftermath && _envoyCases.ContainsKey(envoyCase.CrimeId))
+                FollowTarget(envoy, target);
             else
-            {
-                Negotiate(envoyCase, crime, police, police.LeaderHero, envoy, target, offender);
-            }
-
-            // 谈出结果就回主队；等他打完仗再办的那种留在他身边。
-            if (envoyCase.PendingDesire < 0 || !_envoyCases.ContainsKey(envoyCase.CrimeId))
                 MarkDelayPatrolReturning(envoy.StringId);
+        }
+
+        /// <summary>
+        /// 走到他跟前没有：与追截队回主队同一个距离，即原版军团成员算"走到一起"的距离（海上用海上的）。
+        /// 他在城里、村里时，使者进去或走到城下（与火誓者到达判定同一个 <c>HasArrived</c>）就进去谈。
+        /// </summary>
+        private static bool EnvoyReached(MobileParty envoy, MobileParty target)
+        {
+            if (target.CurrentSettlement != null)
+                return GwpFireswornBehavior.HasArrived(envoy, target.CurrentSettlement);
+            float contactDistance = envoy.IsCurrentlyAtSea
+                ? Campaign.Current.Models.EncounterModel.MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
+                : Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
+            return envoy.GetPosition2D.Distance(target.GetPosition2D) <= contactDistance;
+        }
+
+        /// <summary>他在定居点里就去那座定居点，否则跟着他走。</summary>
+        private static void FollowTarget(MobileParty envoy, MobileParty target)
+        {
+            if (target.CurrentSettlement != null)
+                GreyWardenPartyDesireBehavior.RequestVisit(envoy, target.CurrentSettlement, 8f);
             else
                 GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
         }
 
         /// <summary>
-        /// 使者当面谈。规则与玩家当面谈相同（GwpNegotiationPolicy），只是没有对话，按概率直接出结果。
+        /// 使者当面谈。第一层与玩家当面谈相同（GwpNegotiationPolicy），只是没有对话，按概率直接出结果。
+        /// 第二层不再把他拉回照数全缴：他抽到什么打算就照办，第二层只在交钱的打算上讨价还价（用户裁定 2026-10-15）。
         /// </summary>
         private void Negotiate(EnvoyCase envoyCase, CrimeRecord crime, MobileParty police, Hero warden,
             MobileParty envoy, MobileParty target, Hero offender)
@@ -354,57 +360,42 @@ namespace GreyWardenPolicePurity
             int wealth = GwpAssetPayment.Wealth(offender, target.Party);
             int charm = warden.GetSkillValue(DefaultSkills.Charm);
             float renown = warden.Clan?.Renown ?? 0f;
-            int layerOne = GwpNegotiationPolicy.LayerOneResistance(offender, crime.CrimeCategory, ours, theirs,
+            int layerOne = GwpNegotiationResistance.LayerOneResistance(offender, crime.CrimeCategory, ours, theirs,
                 GwpFieldArrestBehavior.WardenStandingTier.Ordinary, renown, wealth, fine);
             double refusal = GwpNegotiationPolicy.RefusalChance(layerOne,
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
                 offender.GetTraitLevel(DefaultTraits.Generosity), wealth, fine);
             GwpOffenderDesire desire = GwpOffenderDesires.Roll(offender, fine, true,
                 target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0));
-            int layerTwo = GwpNegotiationPolicy.LayerTwoResistance(offender, desire, ours, theirs,
-                charm, renown, wealth, fine);
             bool listens = refusal < 0.55d;
-            bool acknowledged = listens && GwpNegotiationPolicy.SimulatePersuasion(
-                GwpNegotiationPolicy.LayerOneReservations, layerOne, true, charm);
-            bool paysInFull = acknowledged && (GwpOffenderDesires.IsFullPayment(desire) ||
-                GwpNegotiationPolicy.SimulatePersuasion(GwpNegotiationPolicy.LayerTwoReservations, layerTwo, false, charm));
+            bool acknowledged = listens && GwpNegotiationResistance.SimulatePersuasion(
+                GwpNegotiationResistance.LayerOneReservations, layerOne, true, charm);
+
+            // 交钱的打算：第二层谈下来，他肯给的比例往全额挪一半；谈不下来按他说的数。别的打算不谈，照办。
+            int share = GwpOffenderDesires.OfferedSharePercent(desire);
+            bool bargains = acknowledged && share < 100 && desire != GwpOffenderDesire.BribeTheWarden;
+            int layerTwo = bargains
+                ? GwpNegotiationResistance.LayerTwoResistance(offender, desire, charm, renown, wealth, fine)
+                : -1;
+            bool bargained = bargains && GwpNegotiationResistance.SimulatePersuasion(
+                GwpNegotiationResistance.LayerTwoReservations, layerTwo, false, charm);
+            if (bargained)
+                share = (share + 100) / 2;
             GwpAiDiagnostics.WriteAction(police, "ENVOY_NEGOTIATED",
                 "envoy=" + envoy.StringId + "; offender=" + offender.StringId +
                 "; ours=" + ours.ToString("0") + "; theirs=" + theirs.ToString("0") +
                 "; fine=" + fine + "; wealth=" + wealth + "; gold=" + offender.Gold +
                 "; layerOne=" + layerOne + "; refusal=" + refusal.ToString("0.00") +
                 "; acknowledged=" + acknowledged + "; desire=" + desire + "; layerTwo=" + layerTwo +
-                "; paysInFull=" + paysInFull);
+                "; bargained=" + bargained + "; share=" + share +
+                "; inBattle=" + (target.MapEvent != null));
 
             if (!acknowledged)
             {
                 FailEnvoy(envoyCase, listens ? "envoy_layer_one_failed" : "envoy_refused");
                 return;
             }
-            if (paysInFull)
-            {
-                SettleThroughEnvoy(envoyCase, crime, envoy, offender, fine, "envoy_paid_in_full");
-                return;
-            }
 
-            // 第二层没谈拢：照他自己的打算办。
-            ApplyDesire(envoyCase, crime, warden, envoy, target, offender, desire, fine);
-        }
-
-        /// <summary>第二层没谈拢，照他自己的打算办。要动他名册的结局在他打仗时先记下，打完再办。</summary>
-        private void ApplyDesire(EnvoyCase envoyCase, CrimeRecord crime, Hero warden, MobileParty envoy,
-            MobileParty target, Hero offender, GwpOffenderDesire desire, int fine)
-        {
-            if (target.MapEvent != null &&
-                (desire == GwpOffenderDesire.SurrenderSelf || desire == GwpOffenderDesire.DeedsOnly))
-            {
-                envoyCase.PendingDesire = (int)desire;
-                // 已经谈妥，只是等他打完：超时从这一刻重新算，免得谈妥的事被赶路的时限作废。
-                envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyTimeoutHours;
-                return;
-            }
-
-            MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
             switch (desire)
             {
                 case GwpOffenderDesire.RequestGrace:
@@ -416,17 +407,18 @@ namespace GreyWardenPolicePurity
                         EndCaseTask(graceTask.PolicePartyId, CaseTaskEnd.Released, "envoy_grace");
                     return;
                 case GwpOffenderDesire.DemandDuel:
-                    if (police == null)
-                    {
-                        FailEnvoy(envoyCase, "duel_warden_missing");
-                        return;
-                    }
                     StartDuel(envoyCase, police, target);
                     return;
                 case GwpOffenderDesire.SurrenderSelf:
-                    // 交到灰袍手里的那一刻，原版抓捕事件会登记震慑、清案底、销案（GwpAiDeterrenceState）。
-                    TakePrisonerAction.Apply(envoy.Party, offender);
-                    ForgetEnvoyCase(envoyCase, "envoy_surrender");
+                    // 谈妥就结案：使者路上出事是灰袍的风险，不让他担（用户裁定 2026-10-15）。
+                    // 交到灰袍手里那一刻原版抓捕事件只认还开着的案子，所以震慑、清账在这里先做。
+                    GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                    GwpAiDeterrenceState.ClearArrestRecord(offender);
+                    ResolveEnvoyCase(envoyCase, crime, true, "envoy_surrender");
+                    if (target.MapEvent == null)
+                        TakePrisonerAction.Apply(envoy.Party, offender);
+                    else
+                        BeginAftermath(envoyCase, desire);
                     return;
                 case GwpOffenderDesire.BribeTheWarden:
                     // 用户裁定 2026-10-15：收私钱不算谈崩。钱进承办领主的口袋，案子销掉，案底一点不少。
@@ -437,12 +429,58 @@ namespace GreyWardenPolicePurity
                     GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
                     ResolveEnvoyCase(envoyCase, crime, false, "envoy_bribed");
                     return;
-                case GwpOffenderDesire.DeedsOnly:
-                    GwpOffenderDesires.SacrificeOwnMen(target);
-                    break;
             }
-            SettleThroughEnvoy(envoyCase, crime, envoy, offender,
-                fine * GwpOffenderDesires.OfferedSharePercent(desire) / 100, "envoy_paid_share");
+
+            SettleThroughEnvoy(envoyCase, crime, envoy, offender, fine * share / 100,
+                share >= 100 ? "envoy_paid_in_full" : "envoy_paid_share");
+            if (desire == GwpOffenderDesire.DeedsOnly)
+            {
+                if (target.MapEvent == null)
+                    GwpOffenderDesires.SacrificeOwnMen(target);
+                else
+                    BeginAftermath(envoyCase, desire);
+            }
+        }
+
+        /// <summary>
+        /// 案子已经结了，只剩要动他名册的那一步（押他走、看他杀兵）而他正在打仗：使者跟着他，打完再办。
+        /// 打仗时改名册会和原版战斗结算对不上。记录留在 <see cref="_envoyCases"/> 里，进存档。
+        /// </summary>
+        private void BeginAftermath(EnvoyCase envoyCase, GwpOffenderDesire desire)
+        {
+            envoyCase.Stage = EnvoyStage.Aftermath;
+            envoyCase.PendingDesire = (int)desire;
+            envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyTimeoutHours;
+            _envoyCases[envoyCase.CrimeId] = envoyCase;
+            // 结案时承办人的临时队都被转成返程（ClearTaskWarTracking），这一支还要留下。
+            if (_delayPatrolStates.TryGetValue(envoyCase.EnvoyPartyId, out DelayPatrolState? state))
+                state.Returning = false;
+        }
+
+        private void TendAftermath(EnvoyCase envoyCase)
+        {
+            MobileParty? envoy = FindActiveParty(envoyCase.EnvoyPartyId);
+            MobileParty? target = FindActiveParty(envoyCase.TargetPartyId);
+            Hero? offender = target?.LeaderHero;
+            if (envoy == null || target == null || offender == null ||
+                CampaignTime.Now.ToHours >= envoyCase.DueHours)
+            {
+                if (envoy != null) MarkDelayPatrolReturning(envoy.StringId);
+                ForgetEnvoyCase(envoyCase, "aftermath_lapsed");
+                return;
+            }
+            if (envoy.MapEvent != null || target.MapEvent != null || !EnvoyReached(envoy, target))
+            {
+                FollowTarget(envoy, target);
+                return;
+            }
+
+            if ((GwpOffenderDesire)envoyCase.PendingDesire == GwpOffenderDesire.SurrenderSelf)
+                TakePrisonerAction.Apply(envoy.Party, offender);
+            else
+                GwpOffenderDesires.SacrificeOwnMen(target);
+            MarkDelayPatrolReturning(envoy.StringId);
+            ForgetEnvoyCase(envoyCase, "aftermath_done");
         }
 
         /// <summary>他交钱了结。钱交给使者带回公库；他名下的账按实缴清，和玩家当面收钱一样。</summary>

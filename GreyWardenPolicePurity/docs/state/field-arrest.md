@@ -3,8 +3,8 @@
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
 > 已复核至：`cf53ba5`（2026-10-14）
-> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
-> 待实测：对方身边有同势力部队时，拒谈和抗性会比以前高（以前只看双方本队与已挂靠的军团）；赶去军团途中的弱目标不再被算成整支军团
+> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpNegotiationResistance.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
+> 待实测：对方的打算更看性格，有钱的领主不再多半照数全缴；第二层更难谈（实力差不再进第二层），性格越极端越难
 
 玩家在野外拦下自己承办的罪犯之后的全部流程。罚金定价见 [`crime-intake.md`](crime-intake.md)；
 交差、查账见 [`player-justice.md`](player-justice.md)。
@@ -22,7 +22,8 @@
   一律肯听；否则 `clamp((第一层抗性 − 45) / 65, 0, 0.8)`。
 - 概率 ≥ 0.55 就拒谈（有宽限约定时不拒）。拒谈直接进"动手或走人"。
 
-两层抗性的公式在 `GwpNegotiationPolicy`，[灰袍使者](case-envoy.md) 替灰袍领主谈时用同一套。
+两层抗性的公式在 `GwpNegotiationResistance`（读游戏人物）；不碰引擎的纯规则在 `GwpNegotiationPolicy`，
+它也编进 `tools/CaseSettlement.Tests`，不得引用引擎类型（依据：流程 2026-10-15，测试项目因此编不过）。[灰袍使者](case-envoy.md) 替灰袍领主谈时用同一套。
 第一层抗性 `LayerOneResistance`（0–100）= 基线 50 + 实力摆幅 + 性格 + 玩家分量 − 被抓过的教训
 + 名望差与劣迹压力 + 钱包压力 − 慷慨×4。实力摆幅 = `(他/(他+我) − 0.5) × 2 × 45`，
 所以实力比是最大的单项，口径错了会直接决定拒不拒谈。
@@ -60,11 +61,11 @@
 每条要点最多 4 次说辞（`GwpTuning.FieldArrest.ArgumentsPerReservation`）。
 
 - **第一层：认不认这次执法**。抗性就是上面的 `LayerOneResistance`。
-- **第二层：按正规方式全额缴，还是照他自己的打算办**。抗性 `LayerTwoResistance`（0–100）的组成：
+- **第二层：按正规方式全额缴，还是照他自己的打算办**。性格至上，实力差不进这一层（第一层已经看过）（用户裁定 2026-10-15）。
+  抗性 `LayerTwoResistance`（0–100）的组成：
   - 基数 30；
-  - 加执着 × 12，执着按他的打算取对应性格的绝对强度（`GwpOffenderDesires.Insistence`）；
+  - 加执着 × `InsistenceStep`（20，试玩值），执着按他的打算取对应性格的绝对强度（`GwpOffenderDesires.Insistence`）；
   - 加肉痛 × 15，肉痛 = 罚金 / 他的家当，夹在 0–2；
-  - 加实力差 ±8；
   - 加魅力差 ±10；
   - 加名望与劣迹压力的一半。
 - 成功率：原版 `GetChances` 算出的值，按当前层的抗性重新换算（`GwpNegotiationChancePatch` → `AdjustNativeChances`），
@@ -75,8 +76,10 @@
 
 ## 他打算怎么了结（`GwpOffenderDesire`）
 
-开口前按性格、家当和罚金给各方案加权，抽一个（`GwpNegotiationPolicy.Weights`）。
-性格极端只是更可能抽到某个方案，不会锁死结果。
+开口前按性格给各方案加权，抽一个（`GwpNegotiationPolicy.Weights`）。家当不给任何方案加权（用户裁定 2026-10-15：
+原版领主家当动辄是罚金的几十倍，「有钱就照数全缴」让性格几乎不起作用）；家当只用来排除做不到的方案：
+身无分文不会讨价还价、塞私钱、拿兵出气，交不起罚金的不会骗一道。性格极端只是更可能抽到某个方案，不会锁死结果。
+[灰袍使者](case-envoy.md) 抽到什么就照办，第二层只在交钱的方案上讨价还价。
 
 | 方案 | 主要来自 | 他肯给 |
 |---|---|---|
