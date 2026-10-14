@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -31,10 +32,22 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private List<string> _mediationRequests = new List<string>();
 
+        private sealed class RelationBeforeHostility
+        {
+            internal IFaction Faction = null!;
+            internal Hero Player = null!;
+            internal Hero Ruler = null!;
+            internal int Value;
+        }
+
         /// <summary>
-        /// 战后界面里已应下调停、等这一场战斗收尾再讲和。不进存档：战斗进行中不能存档。
+        /// 开战那一下之前玩家与对方统治者的关系。原版对没在交战的势力动手时先扣这对关系 10 点再宣战
+        /// （C#反编译 v1.4.8 BeHostileAction.ApplyEncounterHostileAction；关系落在双方族长，DefaultDiplomacyModel.GetHeroesForEffectiveRelation）。
+        /// 判定为替灰袍打的仗就原样还回去；之后杀领主、处决、调停照原版（用户裁定 2026-10-14）。
+        /// 动手到判定都在同一次遭遇里，遭遇中不能存档，所以不存。
         /// </summary>
-        // 只在玩家自己的战斗里存在；遭遇进行中不能存档，所以不存。
+        private RelationBeforeHostility? _relationBeforeHostility;
+
         private static PoliceAntiWarDeclaration? _instance;
 
         public override void RegisterEvents()
@@ -138,7 +151,41 @@ namespace GreyWardenPolicePurity
                 "stoppedCrimeInProgress=" + stoppedCrimeInProgress +
                 "; wardenOnPlayerSide=" + wardenOnPlayerSide +
                 "; playerHeldTheCase=" + playerHeldTheCase);
+            RestoreRelationLostToHostility(faction);
             return true;
+        }
+
+        internal static void RememberRelationBeforeHostility(PartyBase attacker, PartyBase defender)
+        {
+            if (_instance == null || attacker != PartyBase.MainParty) return;
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            IFaction? target = defender.MapFaction;
+            Hero? ruler = target?.Leader;
+            if (playerFaction == null || target == null || ruler == null || target == playerFaction ||
+                FactionManager.IsAtWarAgainstFaction(playerFaction, target)) return;
+            Campaign.Current.Models.DiplomacyModel.GetHeroesForEffectiveRelation(
+                Hero.MainHero, ruler, out Hero player, out Hero theirs);
+            _instance._relationBeforeHostility = new RelationBeforeHostility
+            {
+                Faction = target, Player = player, Ruler = theirs,
+                Value = CharacterRelationManager.GetHeroRelation(player, theirs)
+            };
+        }
+
+        private void RestoreRelationLostToHostility(IFaction faction)
+        {
+            RelationBeforeHostility? before = _relationBeforeHostility;
+            if (before == null || before.Faction != faction) return;
+            _relationBeforeHostility = null;
+            int now = CharacterRelationManager.GetHeroRelation(before.Player, before.Ruler);
+            if (now >= before.Value) return;
+            before.Player.SetPersonalRelation(before.Ruler, before.Value);
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get("{=gwp_warden_hostility_relation_restored}You struck on the Wardens' behalf; {RULER} holds no grudge for it.",
+                    "RULER", before.Ruler.Name), Colors.Cyan));
+            GwpAiDiagnostics.WritePlayerJusticeState("HOSTILITY_RELATION_RESTORED",
+                "faction=" + faction.StringId + "; ruler=" + before.Ruler.StringId +
+                "; relation=" + now + "->" + before.Value);
         }
 
         /// <summary>
@@ -247,6 +294,8 @@ namespace GreyWardenPolicePurity
             if (mapEvent == null) return;
 
             ResolvePlayerAssistWar(mapEvent);
+            if (FindPlayerSide(mapEvent) != null)
+                _relationBeforeHostility = null;
 
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
@@ -355,5 +404,13 @@ namespace GreyWardenPolicePurity
             }
         }
 
+    }
+
+    /// <summary>动手前记下玩家与对方统治者的关系（<see cref="PoliceAntiWarDeclaration.RememberRelationBeforeHostility"/>）。</summary>
+    [HarmonyPatch(typeof(BeHostileAction), nameof(BeHostileAction.ApplyEncounterHostileAction))]
+    internal static class GwpHostilityRelationPatch
+    {
+        private static void Prefix(PartyBase attackerParty, PartyBase defenderParty) =>
+            PoliceAntiWarDeclaration.RememberRelationBeforeHostility(attackerParty, defenderParty);
     }
 }

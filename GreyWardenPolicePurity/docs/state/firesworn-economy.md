@@ -2,7 +2,7 @@
 
 > 当前状态：已部署待实测；数值是试玩值
 > 最后验收：未建立检查点
-> 已复核至：`61ee7c9`（2026-10-14）
+> 已复核至：`149e510`（2026-10-14）
 > 覆盖源码：`GwpFireswornDungeon.cs` `GwpFaithBattleRewardModel.cs` `GwpFireswornBehavior.cs`
 > 待实测：见文末
 
