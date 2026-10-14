@@ -119,7 +119,6 @@ class Regression {
             Check(PlayerEncounter.Current==encounter,"encounter survives capture callback");
             Check(FactionManager.NeutralCalls==0 && FactionManager.War,"unfinished results keep diplomacy unchanged");
             Check(battle.AwardCount==1,"results commit once");
-            Check(GwpAiDiagnostics.Deferred==1,"one deferral for a repeated pair");
             var expected=winningSide==1?PlayerEncounterState.PlayerVictory:winningSide==0?PlayerEncounterState.PlayerTotalDefeat:PlayerEncounterState.End;
             Check(encounter.EncounterState==expected,"native outcome is preserved");
             GwpPeace.OnMapEventEnded();
@@ -130,8 +129,9 @@ class Regression {
             Check(FactionManager.NeutralCalls==1,"a later event end does not repeat diplomacy");
         }
 
+        Reset();var r=Start();GwpPeace.EndPoliceWar(Enemy);GwpPeace.Make(Enemy,PoliceStats.Police);Finalize(r);
+        Check(FactionManager.NeutralCalls==1,"reverse pair shares one pending entry");
         Reset();var b=Start();GwpPeace.EndPoliceWar(Enemy);GwpPeace.Make(Enemy,PoliceStats.Police);
-        Check(GwpAiDiagnostics.Deferred==1,"reverse pair shares one pending entry");
         GwpPoliceWarReasonService.Reason=true;Finalize(b);
         Check(FactionManager.War && FactionManager.NeutralCalls==0,"a reason that appears before the battle ends keeps the war");
 
@@ -145,7 +145,8 @@ class Regression {
         Check(MakePeaceAction.Calls==1 && FactionManager.NeutralCalls==0,"player peace uses the native peace action");
 
         Reset();Check(GwpPeace.Make(null,Enemy) && GwpPeace.EndPoliceWar(null),"null pair is a no-op");
-        FactionManager.War=false;Start();Check(GwpPeace.EndPoliceWar(Enemy) && GwpAiDiagnostics.Deferred==0,"already neutral completes without deferral");
+        FactionManager.War=false;var n=Start();Check(GwpPeace.EndPoliceWar(Enemy),"already neutral completes");
+        Finalize(n);Check(FactionManager.NeutralCalls==0,"already neutral queues nothing");
         Reset();Check(GwpPeace.EndPoliceWar(Enemy) && FactionManager.NeutralCalls==1,"no player battle applies immediately");
 
         Reset();PoliceEnforcementBehavior.Queue(Enemy,830);GwpPoliceWarReasonService.Reason=true;PoliceEnforcementBehavior.Retry();

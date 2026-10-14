@@ -49,13 +49,7 @@ namespace GreyWardenPolicePurity
             if (playerBattle is { IsFinalized: false })
             {
                 if (!_afterPlayerBattle.Any(p => SamePair(p, left, right)))
-                {
                     _afterPlayerBattle.Add(new Pending { Left = left, Right = right, PoliceWar = policeWar });
-#if GWP_DIAGNOSTICS
-                    GwpAiDiagnostics.WriteFieldArrest("PEACE_DEFERRED_UNTIL_PLAYER_BATTLE_END",
-                        "left=" + left.StringId + "; right=" + right.StringId);
-#endif
-                }
                 return true;
             }
 

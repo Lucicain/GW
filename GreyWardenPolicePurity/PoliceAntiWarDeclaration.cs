@@ -179,13 +179,8 @@ namespace GreyWardenPolicePurity
             _relationBeforeHostility = null;
             int now = CharacterRelationManager.GetHeroRelation(before.Player, before.Ruler);
             if (now >= before.Value) return;
+            // 只还关系、不提示：关系在界面上看得到（用户裁定 2026-10-14：提示不说关系）。
             before.Player.SetPersonalRelation(before.Ruler, before.Value);
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_warden_hostility_relation_restored}You struck on the Wardens' behalf; {RULER} holds no grudge for it.",
-                    "RULER", before.Ruler.Name), Colors.Cyan));
-            GwpAiDiagnostics.WritePlayerJusticeState("HOSTILITY_RELATION_RESTORED",
-                "faction=" + faction.StringId + "; ruler=" + before.Ruler.StringId +
-                "; relation=" + now + "->" + before.Value);
         }
 
         /// <summary>
