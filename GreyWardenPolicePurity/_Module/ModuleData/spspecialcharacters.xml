@@ -21,13 +21,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="2" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -37,6 +37,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="2" />
+			<Trait id="Honor" value="2" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet
@@ -51,14 +53,14 @@
 		id="gw_leader_1"
 		name="{=gwp_hero_yoer}Cyneburh"
 		is_female="true"
-		voice="softspoken"
+		voice="earnest"
 		default_group="Cavalry"
 		is_hero="true"
 		culture="Culture.empire"
 		skill_template="SkillSet.spc_phalanx_skills"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.1682" build="0.777" key="00008400858830026B73546496585B8777C8866295A09FB6846908688AC40807008C3603080150030000000000000000000000000000000000000000791C30C4" />
+			<BodyProperties version="4" age="22.01" weight="0.1682" build="0.777" key="00008400858830026B73546496585B8777C8866295A09FB6846908688AC40807008C3603080150030000000000000000000000000000000000000000511C30C0" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -67,13 +69,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="2" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="0" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -83,6 +85,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="2" />
+			<Trait id="Honor" value="1" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet
@@ -104,7 +108,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="20" weight="0.1134" build="0.2909" key="00006C0000B4200600566837095A80BCB4FB4410287AF9017F36991574BA330801A42614FA4375820000000000000000000000000000000000000000736410C3" />
+			<BodyProperties version="4" age="20" weight="0.1134" build="0.2909" key="00006C0000B4200600566837095A80BCB4FB4410287AF9017F36991574BA330801A42614FA4375820000000000000000000000000000000000000000416410C1" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -113,13 +117,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="2" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="0" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -129,6 +133,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="1" />
+			<Trait id="Honor" value="1" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet
@@ -142,7 +148,7 @@
 	<NPCCharacter
 		id="gw_leader_3"
 		name="{=gwp_hero_shengduo}Wynflaed"
-		voice="softspoken"
+		voice="ironic"
 		is_female="true"
 		skill_template="SkillSet.spc_quartermaster_skills"
 		default_group="Cavalry"
@@ -150,7 +156,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0020DC0D80B4300E03566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D4718600000000000000000000000000000000000000006B3C10C3" />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0020DC0D80B4300E03566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D471860000000000000000000000000000000000000000333C10C2" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -159,13 +165,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="2" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -175,6 +181,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="1" />
+			<Trait id="Honor" value="2" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet
@@ -188,7 +196,7 @@
 	<NPCCharacter
 		id="gw_leader_4"
 		name="{=gwp_hero_chenxi}Eadgifu"
-		voice="softspoken"
+		voice="earnest"
 		is_female="true"
 		skill_template="SkillSet.spc_politician_skills"
 		default_group="Cavalry"
@@ -196,7 +204,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0005140000B4300603566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D4718600000000000000000000000000000000000000006B3C10C3" />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0005140000B4300603566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D471860000000000000000000000000000000000000000493C10C4" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -205,13 +213,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="2" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="2" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="1" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -221,6 +229,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="1" />
+			<Trait id="Honor" value="1" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet
@@ -242,7 +252,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0008A00780B430022E566CD35896F0B946FF75A53BACA6123FD57857877E2B0502981624F973733A00000000000000000000000000000000000000006B3C10C3" />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0008A00780B430022E566CD35896F0B946FF75A53BACA6123FD57857877E2B0502981624F973733A00000000000000000000000000000000000000002D3C10C0" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -251,13 +261,13 @@
 		<Traits>
 			<Trait
 				id="Mercy"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Generosity"
-				value="12" />
+				value="1" />
 			<Trait
 				id="Calculating"
-				value="9" />
+				value="1" />
 			<Trait
 				id="Commander"
 				value="12" />
@@ -267,6 +277,8 @@
 			<Trait
 				id="KnightFightingSkills"
 				value="12" />
+			<Trait id="Valor" value="1" />
+			<Trait id="Honor" value="2" />
 		</Traits>
 		<Equipments>
 			<EquipmentSet

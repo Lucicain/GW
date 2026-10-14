@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-175 个源文件、54,218 行、335 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+176 个源文件、54,244 行、336 个公开类型、75 个 Harmony 补丁点（分布在 75 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -40,6 +40,7 @@
 | `CharacterRelationManager` | `SetHeroRelation` | Prefix | `GreyWardenNotableRelationWritePatch` | GreyWardenNotableRelationsBehavior.cs |
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs |
+| `ConversationTagHelper` | `EducatedClass` | Postfix | `GwpFounderVoiceRegisterPatch` | GwpFounderVoiceRegisterPatch.cs |
 | `CraftingTemplate` | `All` (Getter) | Postfix | `GwpDualBladeCraftingTemplateVisibilityPatch` | GwpDualBladeActionSetPatch.cs |
 | `CustomBattleData` | `get_Characters` | Finalizer/Postfix | `GwpCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs |
 | `DefaultArmyManagementCalculationModel` | `CalculateDailyCohesionChange` | Postfix | `GwpAssistanceArmyCohesionPatch` | GwpAssistanceArmyLifecyclePatch.cs |
@@ -331,6 +332,7 @@
 - `GwpFireswornVillageLockPatch` → GwpFireswornMenus.cs ←
 - `GwpFireswornVolunteerModel` → GwpWardenRecruitment.cs ←
 - `GwpFlacReader` → GwpFlacReader.cs
+- `GwpFounderVoiceRegisterPatch` → GwpFounderVoiceRegisterPatch.cs
 - `GwpGauntletWidgetUtility` → GwpGauntletWidgetUtility.cs
 - `GwpHostilityRelationPatch` → PoliceAntiWarDeclaration.cs ←
 - `GwpIds` → GwpIds.cs
@@ -616,7 +618,7 @@
 
 - `SubModule.cs` — 168 行 · `SubModule` : MBSubModuleBase
 
-### 其他（88 个文件）
+### 其他（89 个文件）
 
 - `GwpFireswornBehavior.cs` — 1319 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpTextCatalog.g.cs` — 1225 行 · `GwpTextCatalog`
@@ -702,6 +704,7 @@
 - `GwpCaseSettlementRules.cs` — 31 行 · `GwpCaseSettlementRules`
 - `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
+- `GwpFounderVoiceRegisterPatch.cs` — 26 行 · `GwpFounderVoiceRegisterPatch`
 - `GwpPartyIdentity.cs` — 23 行 · `GwpPartyIdentity`
 - `GwpTextKeys.cs` — 22 行 · `GwpTextKeys`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`
