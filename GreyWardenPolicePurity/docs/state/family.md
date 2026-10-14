@@ -1,10 +1,10 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
-> 最后验收：未建立检查点
+> 最后验收：`2e7eb6c`（直接求婚成婚，用户实测确认 2026-10-14）
 > 已复核至：`149e510`（2026-10-14）
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs`
-> 待实测：新档打开灰袍领主百科或对话，关系显示 100；与任意一位成年灰袍领主对话可选「做我的妻子吧」，当场成婚、她进玩家家族；求的是族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转；agent 核对 `WARDEN_MARRIED`
+> 待实测：求的是灰袍族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转
 
 灰袍是一个独立家族（`gw`，文化 empire，初始家乡 `village_EN5_1`），不加入王国（见 `crime-intake.md` 外交封锁）。
 新成员从村庄收养来，见 [`village-relief.md`](village-relief.md)；地图上谁去做什么，见 [`warden-ai.md`](warden-ai.md)。

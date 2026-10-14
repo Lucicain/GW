@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-171 个源文件、52,021 行、331 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
+171 个源文件、52,018 行、331 个公开类型、74 个 Harmony 补丁点（分布在 74 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -660,9 +660,9 @@
 - `GwpSingleQueryLinkPatch.cs` — 96 行 · `GwpLinkedInquiryState`，另含 2 个类型
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GwpSettlementNotices.cs` — 93 行 · `GwpSettlementNotices` : SettlementNotificationItemBaseVM，另含 3 个类型
-- `GwpWardenMarriageBehavior.cs` — 87 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpFireswornArmoryView.cs` — 84 行 · `GwpFireswornArmoryView`
 - `GwpFireswornSoundView.cs` — 84 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
+- `GwpWardenMarriageBehavior.cs` — 84 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型

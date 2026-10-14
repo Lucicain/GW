@@ -71,9 +71,6 @@ namespace GreyWardenPolicePurity
             if (warden.Clan.Leader == warden)
                 ChangeClanLeaderAction.ApplyWithSelectedNewLeader(warden.Clan, Successor(warden)!);
             MarriageAction.Apply(Hero.MainHero, warden);
-            GwpAiDiagnostics.WritePlayerJusticeState("WARDEN_MARRIED",
-                "warden=" + warden.StringId + "; married=" + (warden.Spouse == Hero.MainHero) +
-                "; wardenLeader=" + (PoliceStats.GetPoliceClan()?.Leader?.StringId ?? "-"));
         }
 
         /// <summary>接族长位子的人：本家族另一位活着的成年灰袍领主，创始领主按编号先。</summary>
