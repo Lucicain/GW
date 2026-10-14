@@ -1,8 +1,8 @@
 # GreyWarden
 
-GreyWarden adds an independent law-enforcement clan that handles real cases on Bannerlord's campaign map. Six Warden lords investigate crimes, pursue offenders, assemble assistance armies, aid settlements, and raise successors. The player may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
+GreyWarden adds an independent religious order descended from the Imperial priesthood. Its members regard protecting the common folk and pursuing raiders as duties of faith. Six Warden lords handle cases, aid villages, and raise successors on the campaign map, while village priests and congregations provide recruits and supplies. Players may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-v1.4-r14 is for Bannerlord 1.4.8. Players on 1.5.2 should use the earlier v1.5-r1 package; the additions in this release have not been released for the 1.5 branch.
+This local player build is v1.4-r15 (15 October 2026) for Bannerlord 1.4.8, provided for playtesting and feedback. The latest runtime art is included; art source files and editor directories are excluded. Players on 1.5.2 should use the earlier v1.5-r1 package.
 Chinese: README.md
 
 ## Main features
@@ -17,13 +17,35 @@ Chinese: README.md
 - A recruitment invitation becomes available at 20 Grey Warden standing. Accept it to use the dispatch conversation with Warden soldiers in your party. New contracts also require sufficient standing and the Warden commander set.
 - Player-led cases include negotiation, collecting money and goods, prisoner delivery, and soldiers dispatched for support or reports. Keeping case proceeds or using excessive force can lead to a later investigation.
 
+## Changes in this player build
+
+Compared with the formal v1.4-r14 replacement package dated 7 October 2026:
+
+- Warden priests preach in villages, gather believers to defend them, and hold congregations and burnings. Rituals have artwork, sound, and village smoke.
+- Congregations donate money and goods, receive prisoners and equipment, and maintain stores of arms. Village defenders can use captured weapons and armour.
+- Villages send out missions and armsbearers, while traders take surplus goods to towns. Players can meet these parties, speak with them, and buy their goods.
+- Warden lords visit villages for recruits, supplies, prisoner handovers, and care for the wounded. The training lord exchanges soldiers with village defenders.
+- Wardens can send an envoy to negotiate before pursuing a case. The accused may pay, ask for time, propose a duel, or submit to the envoy.
+- Players who meet the marriage requirements can propose directly to any adult Warden lord. If she leads the clan, another Warden takes over first.
+- The order, its priests, and its congregations now have consistent descriptions and dialogue, with revised village menus and map notices. Five founding lords have new appearances; the clan leader retains hers.
+- Updated helmet faceplate positions and clothing cloth assets.
+- Improved assistance armies, returning detachments, borrowed ships, and transfers of wounded troops and experience. Ongoing duties should resume after loading a save made with the same version.
+
+Useful feedback includes whether villages develop naturally, envoy negotiations are clear, the Wardens feel too strong or weak, and any wording that remains confusing. If something goes wrong, note what you were doing and the people and place involved.
+
+## Known issues
+
+- When a village has fewer than two defenders and no militia party yet, returning troops may lose their wound status and remaining experience.
+- Intermittent crashes when exiting the game remain unresolved. Whether this player package reproduces them is still unconfirmed.
+- Performance as village activity and armory stocks grow still needs observation.
+
 ## Installation and updating
 
 1. Delete the old Modules/GreyWarden folder.
 2. Extract the complete GreyWarden folder from the archive into the game's Modules directory.
 3. Enable GreyWarden in the launcher.
 
-Back up your saves before updating. Replace the complete module rather than copying only part of it.
+Start a new campaign for this version. Saves are not compatible across versions. Replace the complete module rather than copying only part of it.
 
 ## Changelog
 

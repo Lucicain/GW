@@ -1,27 +1,14 @@
-# 正式发布检查清单
+# 玩家包交付检查清单
 
-> 从 `maintenance-plan.md` 原样迁出的参考资料，正文未改。
+当前游戏版本、live布局和正式发布基线以[构建与部署](../state/build-and-deploy.md)为准。本次用户只要求本地ZIP和源码推送，不创建Release或tag。（依据：用户裁定2026-10-15）
 
-## Formal release checklist
+1. 读取 `.claude/rules/release-notes.md`，两份玩家说明相对上一正式玩家包描述变化，并同步到live。
+2. 隔离重建玩家DLL：`dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild -p:DeployToLiveModule=false -p:GwpDiagnosticsEnabled=false`。
+3. 对该DLL运行 `Verify-GameCompat.ps1`；检查诊断标记的ASCII、UTF-16LE均不存在。
+4. 用 `New-PlayerPackage.py` 创建只有一个GreyWarden顶层目录的ZIP；包括最新 `AssetPackages/pack0.tpac`，排除美术源、编辑器、工具、日志与PDB。
+5. 解压核对逐项哈希，确认玩家DLL等于隔离构建；在 `build-check/package-<version>/` 保留manifest及DLL证据。校验成功后，游戏Modules父目录只保留最新ZIP与校验文件。
+6. live重建开发监控DLL，Client/Editor一致；保留Assets、AssetSources、RuntimeDataCache，不保留AssetPackages和DsAssetPackages。运行 `Verify-LiveModule.ps1`。
+7. 完成适用离线回归、StateFreshness与开发记录；稳定点存档并按用户要求推送源码。
+8. 只有用户明确要求线上发布时才创建tag/Release并上传，随后重新下载校验。此次不执行。（依据：用户裁定2026-10-15）
 
-1. Build the diagnostics-enabled `Release` against Bannerlord `1.4.7` and keep
-   it in the live test module.
-2. Confirm the live module has no `Assets`, `AssetSources`, or
-   `RuntimeDataCache` directory.
-3. Confirm both runtime TPAC hashes above.
-4. Confirm both player READMEs describe functions/results only, retain exactly
-   the newest two formal versions, and match their live copies.
-5. Build a diagnostics-disabled player DLL into a separate staging directory
-   with live deployment disabled. Decompile it and confirm all diagnostic write
-   methods are inert and no test log can be created.
-6. Stage one top-level `GreyWarden` directory without `tools`, scripts, logs,
-   developer notes, editor binaries, PDBs, or source assets.
-7. Commit and push the release source and documentation to GitHub as part of
-   the same formal release task.
-8. Create the versioned ZIP and its `.sha256` file directly under the
-   game's `Modules` directory, never under `Modules\GreyWarden` or `_Module`.
-9. Inspect ZIP paths, verify the packaged DLL hash equals the separate player
-   build, and confirm no diagnostic/test content exists; then create/update the
-   GitHub release and upload the matching ZIP and checksum.
-10. Run at least one battle that renders the black shield, exit the client, and
-   check delayed Windows Application/WER/dump state.
+游戏内验收仅由用户进行，agent不启动或操控游戏。（依据：用户裁定2026-09-25）

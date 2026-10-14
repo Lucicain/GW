@@ -2,19 +2,27 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`0614808`（2026-10-14）
-> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1`
+> 已复核至：`1b9b4d0`（2026-10-15）
+> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
 ## 当前开发部署
 
-当前 live 是 `9bd6ce3` 加删除火誓者巡逻队与紧急出动（守村兵全部留村，补丁类 90→88）；`9bd6ce3` 即讲和入口统一：所有讲和收归 `GwpPeace`，玩家战斗未 finalize 时推迟、收尾后再办，修复抓捕结案时的战后空引用；纠察队与灰袍押送两份「与灰袍及受害方讲和」合并为一份。收拢后的成长、经验、公库升级、参战、配装与调兵规则保持，村庄后台仍冻结新增。Client/Editor SHA-256 前缀同为 `B68057291C581AF4`。（依据：构建与哈希 2026-10-14）
+当前交付为普通玩家版 v1.4-r15：关闭监控，包含最新Kit打包美术，排除Assets、AssetSources、RuntimeDataCache及编辑器文件。只生成本地ZIP并推送源码，不创建GitHub Release或tag；本机live继续保留开发监控与可编辑美术。（依据：用户裁定2026-10-15，取代本轮较早的带监控测试包要求）
 
-74 个仓库 runtime 文件、421 项 live，无缺失/差异/散落，开发布局与双端诊断通过；GameCompat/Preflight PASS，90 个补丁类绑定，未新增 Harmony 补丁。12 个 Python 用例全过（巡逻派队回归随功能删除）：战后讲和以当前游戏 DLL 反编译的结果方法运行生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用；派队、配装/增员/归队、机械检查仍通过；ContentKeys MISSING=0。边界对象为桩，不冒充实机验收；真实名册/编号 173 断言与战场/双刀专项本轮未重跑。（依据：离线回归、预检与部署 2026-10-14）
+测试包美术来自用户本轮Kit发布的 `D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden/AssetPackages/pack0.tpac`，现保存于 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/GreyWardenPolicePurity/_Module/AssetPackages/pack0.tpac`，身份为当前玩家包资源；370,972,860字节，SHA-256 `f7a323f5c2c91e58ad9eaccbf5d2cfee53654256564116daa0c53ea3cd737b42`。live已移除发布目录，继续保留可编辑美术。（依据：用户资源、复制与哈希 2026-10-15）
 
-用户本轮跟灰袍打仗后报错，日志在捕获目标结案后出现原版 DoApplyMapEventResults 空引用，watchdog 确认异常退出。修复需实机重打同场、进入战利品并正常返回地图，详见 [调停与战后讲和](warden-mediation.md)；agent 核对首次延后讲和 trace 与故障记录后退休该诊断。正常卡顿耗时占比尚未量测，第三方代码/配置未改。
+当前live为v1.4.15开发构建（源码基线 `1f84971` 加本轮文字、脸码）；DLL SHA-256 `bcba4f8d1ca875b93bd1a32534f0f11e9bcb7dbdd6d0efb38c8bc76444940b9f`。客户端与编辑器相同，GameCompat加载727类型、88补丁绑定通过。隔离玩家DLL关闭监控，加载711类型、84补丁绑定通过。（依据：构建与哈希2026-10-15）
 
-既有9项代码存档与冻结裁定保持原样；本轮是冻结范围内的现有缺陷修复。（依据：用户裁定2026-10-14）
+角色 XML 使用[家族外貌页](family.md)的社区预设分配，用户已确认；`ModuleData/spspecialcharacters.xml` 与 live 的 SHA-256 均为 `05a90cfc3254ccd95698efffbeec6ac5ae2c6248f1189a6b73037138f2c16502`。DLL 使用上述开发构建；LiveModule 与 ContentKeys 校验通过。（依据：部署与哈希 2026-10-15）
+
+## 当前本地玩家包
+
+`D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden-v1.4-r15.zip`，442,637,270字节；SHA-256 `a54856d944d0ce49b9f0d41d4772e6593bb8240bb06c563baa6814e3fac5121b`。同目录 `.zip.sha256` 配套，v14旧本地包对已在新包验证后删除；保留清单内的不可再生历史资产不在此清理范围。（依据：用户裁定、打包与哈希2026-10-15）
+
+玩家DLL SHA-256 `5cee66acdba0693c3ea1efa5e01c3b47cc2c35b276e43449b2a5db43b50bc0de`。隔离Rebuild为0警告0错误；77个包内文件逐项解压哈希通过，五组监控串ASCII/UTF-16LE均不存在，TPAC与本页最新资源哈希一致。证据归档 `build-check/package-v1.4-r15/`（manifest、玩家DLL、校验文件），归本次交付所有。（依据：离线验证2026-10-15）
+
+本地包为v14-refresh之后的当前开发内容，具体变动与已知问题见包内中英README；不等同于一个新建的线上正式Release。本机live使用上节监控DLL，镜像74项与开发布局均通过。Python16项（含讲和62、配装53断言）、案件155项、战斗137项、实际名册转移173项通过。（依据：本轮构建与回归2026-10-15）
 
 ## 两个开关决定一切
 
@@ -51,6 +59,7 @@
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
+| `New-PlayerPackage.py` | 从隔离玩家DLL和_Module生成本地ZIP及逐项manifest，ASCII/UTF-16检查无监控、逐项解压哈希 | `PLAYER PACKAGE: PASS`；不自动上传 |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 过期、源码归属、state 堆积、复核头部格式/日期/提交存在性与遗留物；生成进度汇总 | 被点名的当轮处理 |
 | `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体；预提交硬闸 | 四项全零 |
@@ -62,6 +71,7 @@
 
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
+| `tests/test_player_text.py` | 4 | 中英输出、只读陈旧检查、新键生成、换行等价、占位符丢失拒绝及新增内联文本拒绝 |
 | `tests/test_project_checks.py` | 9 | 战力/讲和/守村经验容量归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
 | `tests/test_battle_peace.py` | 62断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
 | `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
