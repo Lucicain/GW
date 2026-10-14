@@ -334,7 +334,7 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
             }
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
 
             MBTextManager.SetTextVariable(GwpTextKeys.EnforcementAtonementText,
                 GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_014}A charge of atonement has been issued: pursue {VAR_1} (strength when assigned: {VAR_2}).", "VAR_1", _atonementTargetName, "VAR_2", targetSizeSnapshot) +
@@ -383,7 +383,7 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
             }
 
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
 
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "ENFORCEMENT_FINE_ACCEPTED_AFTER_CLEAR",

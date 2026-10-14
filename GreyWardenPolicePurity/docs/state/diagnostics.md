@@ -2,8 +2,8 @@
 
 > 当前状态：现行规则；巡逻卡死已由双次现场采样定位，分析器新增空队检查；已验收读档退出正常 trace 已退休
 > 最后验收：未建立检查点
-> 已复核至：`61ee7c9`（2026-10-14）
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `tools/Analyze-Firesworn.py`
+> 已复核至：`0614808`（2026-10-14）
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py`
 > 待实测：无
 
 ## 原则
@@ -11,7 +11,7 @@
 诊断是**在建工程的脚手架**，不是模组的永久旁白。每条 trace 都有生命周期：
 在某个东西正在建或正在出问题时加上，在那件事被确认之后删掉。
 
-全部诊断在 `#if GWP_DIAGNOSTICS` 内（源码中 19 个文件带此守卫），
+全部诊断在 `#if GWP_DIAGNOSTICS` 内，
 纯 trace 的退休只改变开发者日志；通用 `Guard` 已移除，故障观察器不吞业务异常，开发与玩家版执行相同业务。军械库每日汇总及异常统计整段仅在诊断版编译，玩家版不执行这些遍历与字符串构造。（依据：源码复核2026-10-14）
 
 ## 谁来管
@@ -89,6 +89,7 @@
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
+| `PEACE_DEFERRED_UNTIL_PLAYER_BATTLE_END`（FIELD_ARREST 行） | 实际发生抓捕结案提前中立导致玩家战后遭遇空引用；仅首次加入等待队列时记录，不逐小时刷新 | 用户确认同场抓捕可走完战后界面并返回地图后退休；失败日志保留 |
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；队伍快照含原版 `shouldJoinPlayerBattles`，用于核对巡逻遭遇吸附许可；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |

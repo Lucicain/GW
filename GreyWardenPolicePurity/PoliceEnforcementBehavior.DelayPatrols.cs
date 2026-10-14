@@ -282,13 +282,8 @@ namespace GreyWardenPolicePurity
         {
             foreach (IFaction targetFaction in GwpPoliceWarReasonService.GetCurrentPoliceWarFactions(policeClan).ToList())
             {
-                if (targetFaction == null)
+                if (targetFaction == null || !GwpPeace.EndPoliceWar(targetFaction))
                     continue;
-
-                if (GwpPoliceWarReasonService.HasLegitimateWarReason(targetFaction))
-                    continue;
-
-                GwpCommon.TrySetNeutral(policeClan, targetFaction);
 
                 if (!string.IsNullOrEmpty(targetFaction.StringId))
                 {
@@ -1130,10 +1125,8 @@ namespace GreyWardenPolicePurity
             if (!FactionManager.IsAtWarAgainstFaction(policeClan, targetFaction))
                 return;
 
-            if (GwpPoliceWarReasonService.HasLegitimateWarReason(targetFaction))
+            if (!GwpPeace.EndPoliceWar(targetFaction))
                 return;
-
-            GwpCommon.TrySetNeutral(policeClan, targetFaction);
             MarkDelayPatrolsReturningForTarget(warTargetId!);
             _warTargetSeenStreak.Remove(warTargetId!);
         }

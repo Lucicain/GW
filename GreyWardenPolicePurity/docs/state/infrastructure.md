@@ -1,14 +1,16 @@
 # 公共底座：ID、调参、文本与本地化、存档类型
 
-> 当前状态：现行规则（2026-10-05 从源码提取）
+> 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`61ee7c9`（2026-10-14）
+> 已复核至：`0614808`（2026-10-14）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
 
 未组队战力归属整理回退点为 `a898237`：`GwpStrength.cs`、`GwpFireswornParties.cs` 和 `tools/Check-CodeHygiene.py`。只迁移未组队士兵的估算入口，兵源、顺序、人数与估算参数不变。
+
+讲和只走 `GwpPeace`，规则只在 [调停与战后讲和](warden-mediation.md) 定义。（依据：源码复核 2026-10-14）
 
 ## 身份判据（`GwpCommon`、`GwpIds`）
 

@@ -1,10 +1,10 @@
 # 案件生命周期与执法
 
-> 当前状态：原有案件行为已实测确认；主队 NPC 旧案经用户实测确认（2026-10-02）；协力军团读档后并队与解散经实机诊断确认（2026-09-27、09-28 两局读档会话）
+> 当前状态：原有案件行为已验收；抓捕结案过早讲和导致玩家战后崩溃，已修复待实测
 > 最后验收：`9d005bb`
-> 已复核至：`61ee7c9`（2026-10-14）
+> 已复核至：`0614808`（2026-10-14）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：玩家当面了结、押人或交差后，原本承办这宗案子的灰袍当场收手（不再等两日扫除）；赶去军团途中的目标按本人接案；悬赏「打垮未俘」不再计被捕次数（和灰袍一致）
+> 待实测：玩家参与灰袍抓捕后战后界面及返回地图正常；其余案件收手、本人接案及打垮未俘的验收见原规则
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
@@ -53,7 +53,7 @@
 不得在执法行为之外直接调 `EndTask` / `ReleaseTask` / `CloseCase` / `ReopenCase`。（依据：设计 2026-10-07；归属检查拦截）
 
 `EndCaseTask(承办人, 结局, 原因)` 按固定顺序做全套善后：协力组（办成按办成收尾，否则解散）→
-恢复 AI、清意图 → 清宣战记录 → 台账 → 办成则记办案经费、通知差事完成 → 恢复和平 → 刷新 → 立即重新决策。
+恢复 AI、清意图 → 清宣战记录 → 台账 → 办成则记办案经费、通知差事完成 → 恢复和平 → 刷新 → 立即重新决策。讲和时序由 [调停](warden-mediation.md) 的共享入口守卫，战斗尚未收尾时登记现有待办，案件仍当场结清。
 
 | 结局 | 台账 | 什么时候 |
 |---|---|---|

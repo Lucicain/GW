@@ -24,6 +24,16 @@ freshness = load("Check-StateFreshness")
 
 
 class OwnershipTests(unittest.TestCase):
+    def test_peace_has_one_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            owner = Path(directory) / "GwpPeace.cs"
+            caller = Path(directory) / "OtherBehavior.cs"
+            source = "FactionManager.SetNeutral(police, target);\nMakePeaceAction.Apply(player, target);\n"
+            owner.write_text(source, encoding="utf-8")
+            caller.write_text(source, encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(owner)]))
+            self.assertEqual(2, len(hygiene.owner_violations([str(caller)])))
+
     def test_party_identity_has_one_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             owner = Path(directory) / "GwpPartyIdentity.cs"

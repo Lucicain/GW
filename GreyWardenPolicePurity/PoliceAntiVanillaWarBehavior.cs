@@ -38,9 +38,7 @@ namespace GreyWardenPolicePurity
 
             IFaction? targetFaction = GetOtherFactionIfGreyWardenWar(policeClan, faction1, faction2);
             if (targetFaction == null) return;
-            if (GwpPoliceWarReasonService.HasLegitimateWarReason(targetFaction)) return;
-
-            GwpCommon.TrySetNeutral(policeClan, targetFaction);
+            GwpPeace.EndPoliceWar(targetFaction);
         }
 
         private static IFaction? GetOtherFactionIfGreyWardenWar(

@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`c322674`（2026-10-08）
+> 已复核至：`0614808`（2026-10-14）
 > 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
 > 待实测：无
 
@@ -72,7 +72,7 @@
 ## 外交封锁
 
 - 灰袍家族不加入王国、不当佣兵，原版外交 AI 也不会替灰袍主动宣战（`PoliceAntiRecruitmentModel`）。
-- 任何与灰袍之间的宣战，如果没有正当理由就立即改回中立（`PoliceAntiVanillaWarBehavior`）。玩家所在势力不受这条约束。
+- 任何与灰袍之间的宣战，如果没有正当理由就立即改回中立（`PoliceAntiVanillaWarBehavior` → `GwpPeace.EndPoliceWar`）。玩家所在势力不受这条约束。
 - 正当理由只有三种（`GwpPoliceWarReasonService.HasLegitimateWarReason`）：
   - 承办案件已进入战时追捕（`WarPursuit`）。只是在案件池里、已派单或还在跟踪都不算。（依据：设计）
   - 玩家悬赏宣战；

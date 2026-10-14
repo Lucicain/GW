@@ -28,66 +28,6 @@ namespace GreyWardenPolicePurity
             return GwpCommon.IsPatrolParty(party);
         }
 
-        /// <summary>
-        /// 与警察氏族恢复和平（解除战争状态，不影响通缉任务）
-        /// </summary>
-        private void MakePeaceWithPoliceClan()
-        {
-            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-            if (playerFaction == null) return;
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-            {
-                // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
-                MakePeaceAction.Apply(policeClan, playerFaction);
-            }
-        }
-
-        /// <summary>
-        /// 与警察氏族 + 受害方势力中的国家恢复和平（纠察队停止、缴纳罚金或被惩罚释放时）
-        /// 注意：只停止 VictimFactions 中的国家，其他正在交战的国家不受影响
-        /// </summary>
-        private void MakePeaceWithPoliceAndVictims()
-        {
-            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-            if (playerFaction == null) return;
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan != null && FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-            {
-                // 玩家参与的讲和必须走 MakePeaceAction，否则灰袍领地在地图上一直红着。
-                MakePeaceAction.Apply(policeClan, playerFaction);
-            }
-
-            foreach (var victim in PlayerBehaviorPool.VictimFactions)
-            {
-                if (victim == null || victim == playerFaction) continue;
-
-                // Fix: victim factions never formally at war (only crime rating)
-                // DeclareWarOnPlayer() only declares war between policeClan and playerFaction.
-                // IsAtWarAgainstFaction(playerFaction, victim) is always false -> old code skipped.
-                if (FactionManager.IsAtWarAgainstFaction(playerFaction, victim))
-                {
-                    // Formal war (rare) -> MakePeaceAction
-                    MakePeaceAction.Apply(playerFaction, victim);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_001}the Grey Wardens Intercession: Peace has been restored between you and {VAR_1}.", "VAR_1", victim.Name),
-                        Colors.Green));
-                }
-                else
-                {
-                    // Crime-only state (common) -> clear criminal rating
-                    ChangeCrimeRatingAction.Apply(victim, -1000f, true);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policepatrolbehavior_helpers_002}the Grey Wardens Mediation: Your crime rating has been cleared on {VAR_1}.", "VAR_1", victim.Name),
-                        Colors.Green));
-                }
-            }
-
-            PlayerBehaviorPool.ClearVictimFactions();
-        }
-
         private void ReturnAllPatrols()
         {
             var patrols = MobileParty.All.Where(IsPatrol).ToList();

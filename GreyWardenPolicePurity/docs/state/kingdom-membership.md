@@ -24,7 +24,7 @@
 
 ## 同一行为里的宣战监听
 
-`PoliceAntiVanillaWarBehavior` 还监听 `WarDeclared`：只认灰袍家族对象或 ID 为 gw 的一方。对方是玩家家族当前 MapFaction 时保留原行为；其他对手只有 `GwpPoliceWarReasonService` 判定有正当理由才保留战争，否则 `GwpCommon.TrySetNeutral`。这里不含入国或离国动作。
+`PoliceAntiVanillaWarBehavior` 还监听 `WarDeclared`：只认灰袍家族对象或 ID 为 gw 的一方。对方是玩家家族当前 MapFaction 时保留原行为；其他对手交给 `GwpPeace.EndPoliceWar`：有正当理由才保留战争。这里不含入国或离国动作。
 
 SyncData 无状态：本行为只响应宣战与读档完成事件，没有进行中的工作；归属与外交状态由原版存档负责。
 

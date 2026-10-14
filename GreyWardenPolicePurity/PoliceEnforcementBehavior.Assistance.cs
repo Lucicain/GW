@@ -706,7 +706,7 @@ namespace GreyWardenPolicePurity
             EndCaseTask(leader.StringId, CaseTaskEnd.Released, "assistance_strength_insufficient");
             MarkCaseStrengthCooldown(task.TargetCrimeId);
             // 任务上没记宣战对象时（宣战可能来自延迟纠察队），按目标所在势力再查一次。
-            RestorePeaceWithoutEnforcementReason(warTarget);
+            GwpPeace.EndPoliceWar(warTarget);
         }
 
         private static bool ShouldDisperseAssistanceArmyForSpeed(

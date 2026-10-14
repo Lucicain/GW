@@ -35,7 +35,6 @@ namespace GreyWardenPolicePurity
         /// 战后界面里已应下调停、等这一场战斗收尾再讲和。不进存档：战斗进行中不能存档。
         /// </summary>
         // 只在玩家自己的战斗里存在；遭遇进行中不能存档，所以不存。
-        private MapEvent? _mediationDeferredUntilBattleEnds;
         private static PoliceAntiWarDeclaration? _instance;
 
         public override void RegisterEvents()
@@ -199,17 +198,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 灰袍出面，把因为帮他们办事而结下的仇一口气了结。用原版 MakePeaceAction 而不是
-        /// 裸的 FactionManager.SetNeutral——后者不会把定居点标记为待重绘，地图上会一直
-        /// 红着；前者还会派发原版的和平事件。
-        ///
-        /// 玩家的战斗还没收尾（战后界面里找灰袍）时只应下、不讲和，等这场
-        /// <c>MapEventEnded</c> 再办。原因：任何立场变化都会让原版
-        /// <c>PartyDiplomaticHandlerCampaignBehavior.CheckMapEvents</c> 把未收尾战斗里
-        /// 进攻方中"不再与对面全体交战"的队伍直接 <c>MapEventSide = null</c> 摘出去，
-        /// 被摘的队伍跳过 <c>HandleMapEventEndForPartyInternal</c>，不会被销毁；领主已被俘
-        /// 的败方就成了地图上的 0 人队，玩家一碰就在会面对话里空引用崩溃。
-        /// （依据：C#反编译 2026-09-25；实机诊断 2026-09-25 20:46 普林多尔的部队）
+        /// 灰袍出面，把因为帮他们办事而结下的仇一口气了结。玩家战斗还没收尾（战后界面里找灰袍）时，
+        /// 回话照常说已了结，讲和由 <see cref="GwpPeace"/> 等这场战斗结束再办。
         /// </summary>
         internal static int ApplyWardenMediation()
         {
@@ -217,23 +207,10 @@ namespace GreyWardenPolicePurity
             IFaction? playerFaction = Hero.MainHero?.MapFaction;
             if (playerFaction == null) return 0;
 
-            MapEvent? playerBattle = MobileParty.MainParty?.MapEvent;
-            if (playerBattle != null && !playerBattle.IsFinalized)
-            {
-                int pending = _instance.LiveMediationFactions().Count();
-                if (pending > 0)
-                {
-                    _instance._mediationDeferredUntilBattleEnds = playerBattle;
-                    GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_DEFERRED",
-                        "pending=" + pending);
-                }
-                return pending;
-            }
-
             int settled = 0;
             foreach (IFaction faction in _instance.LiveMediationFactions().ToList())
             {
-                MakePeaceAction.Apply(playerFaction, faction);
+                GwpPeace.Make(playerFaction, faction);
                 settled++;
                 GwpAiDiagnostics.WritePlayerJusticeState("MEDIATION_PEACE_APPLIED",
                     "faction=" + faction.StringId);
@@ -270,14 +247,6 @@ namespace GreyWardenPolicePurity
             if (mapEvent == null) return;
 
             ResolvePlayerAssistWar(mapEvent);
-
-            // 此刻本场已是 WaitingRemoval，原版 CheckMapEvents 不再碰它；败方队伍随后在
-            // HandleMapEventEnd 里照常销毁。
-            if (_mediationDeferredUntilBattleEnds == mapEvent)
-            {
-                _mediationDeferredUntilBattleEnds = null;
-                ApplyWardenMediation();
-            }
 
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
@@ -357,17 +326,14 @@ namespace GreyWardenPolicePurity
             // ★ 功能 3：玩家打赢执法警察 → 主动与警察势力和平
             // 原代码只处理 policeInvolved && enemyFaction != null（警察打其他NPC），
             // 但警察自身是"敌人"时 enemyFaction 为 null，导致执法警察战败后持续宣战 → -4声望
-            // 纠察队由 PolicePatrolBehavior.OnPlayerVictory()+MakePeaceWithPoliceClan() 已处理，此处排除
+            // 纠察队由 PolicePatrolBehavior.OnPlayerVictory() 讲和，此处排除
             if (policeInvolved &&
                 playerInvolved &&
                 !policeOnWinningSide &&
                 !patrolInvolved &&
                 policeWasExecutingPlayerTask)
             {
-                IFaction? playerFaction = Hero.MainHero?.MapFaction;
-                // 玩家参与的讲和必须走 MakePeaceAction：裸的 SetNeutral 不会把定居点
-                // 标记为待重绘，灰袍的领地会在玩家地图上一直红着。
-                if (playerFaction != null) MakePeaceAction.Apply(policeClan, playerFaction);
+                GwpPeace.Make(policeClan, Hero.MainHero?.MapFaction);
             }
 
             if (policeInvolved && enemyFaction != null)
@@ -377,7 +343,7 @@ namespace GreyWardenPolicePurity
 
                 // 一次地图战斗结束不代表执法任务结束。仍有案件、玩家纠察或悬赏
                 // 理由时维持战争，避免目标撤退后立即和平并拆散追击。
-                if (GwpPoliceWarReasonService.HasLegitimateWarReason(enemyFaction))
+                if (!GwpPeace.EndPoliceWar(enemyFaction))
                     return;
 
                 // 战后讲和一直没有留痕，实机里分不清"玩家没开战"和"开了又被收掉"。
@@ -386,7 +352,6 @@ namespace GreyWardenPolicePurity
                     "; playerInvolved=" + playerInvolved +
                     "; regularPolice=" + regularPoliceInvolved +
                     "; delayPatrol=" + delayPatrolInvolved);
-                GwpCommon.TrySetNeutral(policeClan, enemyFaction);
             }
         }
 

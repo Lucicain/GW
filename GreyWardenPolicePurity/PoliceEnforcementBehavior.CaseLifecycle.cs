@@ -57,8 +57,9 @@ namespace GreyWardenPolicePurity
             }
 
             // 必须在台账变动之后：HasLegitimateWarReason 要先看到这宗案子已经不在了，
-            // 才不会把它当成继续打仗的理由。
-            RestorePeaceAfterCaseEnd(task);
+            // 才不会把它当成继续打仗的理由；同一势力的其他案件、悬赏、纠察理由仍保留战争。
+            // 结案后整国仍是敌人，承办领主会转身攻击刚协助缉捕的玩家。
+            GwpPeace.EndPoliceWar(task?.WarTarget);
             CrimeState.RefreshAccepting();
             if (police != null)
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);

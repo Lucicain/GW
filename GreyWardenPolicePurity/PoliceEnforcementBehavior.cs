@@ -475,7 +475,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 执行惩罚（距城堡3格内触发，或进入定居点时紧急触发）。
         ///
-        /// ★关键顺序★：先 EndCaptivity + 清空花名册，再 MakePeaceWithPoliceAndVictims。
+        /// ★关键顺序★：先 EndCaptivity + 清空花名册，再 GwpPeace.SettlePlayerCase。
         ///
         /// 原因：Bannerlord 的 FactionManager.SetNeutral 内部会触发自动释放俘虏逻辑。
         /// 若玩家仍在花名册中时 SetNeutral 被调用，引擎会尝试"释放"已被
@@ -507,7 +507,7 @@ namespace GreyWardenPolicePurity
             }
 
             // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
 
             // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
             int rep = PlayerState.Reputation;
@@ -1093,7 +1093,7 @@ namespace GreyWardenPolicePurity
                 if (task.WarDeclared)
                 {
                     task.WarDeclared = false;
-                    RestorePeaceAfterCaseEnd(task);
+                    GwpPeace.EndPoliceWar(task.WarTarget);
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
                 }
                 return;
@@ -1239,12 +1239,11 @@ namespace GreyWardenPolicePurity
                     _peaceRetryTargets.Remove(target);
                     continue;
                 }
-                if (GwpPoliceWarReasonService.HasLegitimateWarReason(target))
+                if (!GwpPeace.EndPoliceWar(target))
                 {
                     if (expired) _peaceRetryTargets.Remove(target);
                     continue;
                 }
-                GwpCommon.TrySetNeutral(policeClan, target);
                 _peaceRetryTargets.Remove(target);
                 GwpAiDiagnostics.WriteFieldArrest("PEACE_RESTORED_AFTER_PLAYER_ENFORCEMENT",
                     "target=" + target.StringId);
@@ -1294,6 +1293,7 @@ namespace GreyWardenPolicePurity
             HandleTaskOwnerMapEventEnded(mapEvent);
             HandleDelayPatrolBattleEnded(mapEvent);
             HandleAtonementMapEventEnded(mapEvent);
+            GwpPeace.OnMapEventEnded();
             if (!mapEvent.IsFieldBattle) return;
 
             foreach (var kvp in CrimeState.ActiveTasks.ToList())

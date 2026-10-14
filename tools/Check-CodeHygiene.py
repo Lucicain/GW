@@ -182,6 +182,7 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("讲和", r"\b(?:FactionManager\.SetNeutral|MakePeaceAction\.Apply)\s*\(", "GwpPeace.cs", "GwpPeace.Make / EndPoliceWar"),
     ("临时队唯一编号", r"\bFindNextUniqueStringId\s*<\s*MobileParty\s*>\s*\(", "GwpPartyIdentity.cs", "GwpPartyIdentity.Next"),
     ("巡逻可派人数", r"\b(?:PatrolShare|HomeDefenders|MenOut)\s*\(", "GwpFireswornParties.cs", "GwpFireswornBehavior.WatchRoom"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),

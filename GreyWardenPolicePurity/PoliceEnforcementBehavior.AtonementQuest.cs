@@ -244,7 +244,7 @@ namespace GreyWardenPolicePurity
             if (targetFaction == null || targetFaction == playerFaction) return;
             if (!FactionManager.IsAtWarAgainstFaction(playerFaction, targetFaction)) return;
 
-            MakePeaceAction.Apply(playerFaction, targetFaction);
+            GwpPeace.Make(playerFaction, targetFaction);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_policeenforcementbehavior_atonementquest_017}Atonement delivered, the Grey Wardens Mediation: Peace has been restored between you and {VAR_1}.", "VAR_1", targetFaction.Name),
                 Colors.Green));

@@ -2,7 +2,7 @@
 
 > 当前状态：零人派队死循环、紧急增员条件与出队配装已修复部署；监控约17游戏日无新零人派队，遭遇吸附仍待实测
 > 最后验收：未建立检查点
-> 已复核至：`61ee7c9`（2026-10-14）
+> 已复核至：`0614808`（2026-10-14）
 > 覆盖源码：`GwpFireswornParties.cs` `GwpFireswornPartyDialogs.cs` `GwpFaithPatrolInitiativePatch.cs`
 > 待实测：见文末
 
@@ -12,7 +12,7 @@
 
 信众村和守村队见 [村庄](firesworn-villages.md)，集会与烧人见 [仪式](firesworn-rituals.md)，装备见 [军械库](firesworn-armory.md)。数值都在 `GwpTuning.Firesworn`。
 
-巡逻和紧急出动经验供来源村留守灰袍兵的规则只在 [村庄](firesworn-villages.md)「战斗晋升与经验接续」定义；其他类型仍走原版经验结算，落村合并只带人数，不能视为完整的兵员状态转移。
+巡逻和紧急出动经验供来源村留守灰袍兵的规则只在 [村庄](firesworn-villages.md)「战斗晋升与经验接续」定义；其他类型仍走原版经验结算，落村合并到实体名册时使用 [临时队](temporary-parties.md) 定义的兵员状态转移，包含伤兵与剩余经验。
 
 四种，只从信众村出发（用户裁定 2026-10-07、2026-10-08）：
 

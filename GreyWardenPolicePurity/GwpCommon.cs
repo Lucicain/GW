@@ -333,13 +333,6 @@ namespace GreyWardenPolicePurity
             DestroyPartyAction.Apply(null, party);
         }
 
-        public static void TrySetNeutral(IFaction? left, IFaction? right)
-        {
-            if (left == null || right == null) return;
-            if (!FactionManager.IsAtWarAgainstFaction(left, right)) return;
-
-            FactionManager.SetNeutral(left, right);
-        }
 
         public static void TryResetAi(MobileParty? party)
         {

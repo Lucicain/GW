@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-170 个源文件、52,370 行、331 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
+171 个源文件、52,340 行、332 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -375,6 +375,7 @@
 - `GwpPassiveShieldBreakBehavior` → GwpShieldBashGuardPatch.cs ←
 - `GwpPassiveShieldHitParticlePatch` → GwpShieldBashGuardPatch.cs ←
 - `GwpPassiveShieldRegisterBlowPatch` → GwpShieldBashGuardPatch.cs ←
+- `GwpPeace` → GwpPeace.cs
 - `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
 - `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
@@ -526,25 +527,25 @@
 - `PoliceEnforcementBehavior.Assistance.cs` — 1896 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceEnforcementBehavior.cs` — 1456 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1371 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1258 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1251 行 · `PoliceEnforcementBehavior`
 - `PolicePatrolBehavior.cs` — 1022 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 713 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 692 行 · `GwpAiDeterrenceState`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 586 行 · `PoliceEnforcementBehavior`
-- `PoliceEnforcementBehavior.Helpers.cs` — 522 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Helpers.cs` — 481 行 · `PoliceEnforcementBehavior`
 - `PoliceCrimeMonitorEnhanced.cs` — 459 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
 - `PoliceAIDeterrenceBehavior.cs` — 427 行 · `PoliceAIDeterrenceBehavior` : CampaignBehaviorBase
-- `PoliceAntiWarDeclaration.cs` — 395 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase
-- `PolicePatrolBehavior.Helpers.cs` — 371 行 · `PolicePatrolBehavior`
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
+- `PoliceAntiWarDeclaration.cs` — 360 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
+- `PolicePatrolBehavior.Helpers.cs` — 311 行 · `PolicePatrolBehavior`
 - `PoliceEnforcementBehavior.AtonementQuest.cs` — 254 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
 - `PolicePrisonerImmunityBehavior.cs` — 121 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.CaseLifecycle.cs` — 119 行 · `PoliceEnforcementBehavior`，另含 1 个类型
+- `PoliceEnforcementBehavior.CaseLifecycle.cs` — 120 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceShipModels.cs` — 99 行 · `PoliceShipModelSupport` : CampaignShipDamageModel，另含 2 个类型
 - `PoliceEnforcementBehavior.WarPursuitTrace.cs` — 86 行 · `PoliceEnforcementBehavior`
-- `PoliceAntiVanillaWarBehavior.cs` — 76 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
 - `PolicePartyTroopUpgradeModel.cs` — 76 行 · `PolicePartyTroopUpgradeModel` : DefaultPartyTroopUpgradeModel
+- `PoliceAntiVanillaWarBehavior.cs` — 74 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.Grace.cs` — 71 行 · `GwpFieldArrestBehavior`
 - `PoliceMobilePartyAIModel.cs` — 71 行 · `PoliceMobilePartyAIModel` : DefaultMobilePartyAIModel
 - `PoliceAntiRecruitmentModel.cs` — 67 行 · `PoliceAntiRecruitmentModel` : DefaultDiplomacyModel
@@ -606,14 +607,14 @@
 
 - `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
 - `GwpTuning.cs` — 393 行 · `GwpTuning`，另含 13 个类型
-- `GwpCommon.cs` — 359 行 · `GwpCommon`
+- `GwpCommon.cs` — 352 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
 - `SubModule.cs` — 167 行 · `SubModule` : MBSubModuleBase
 
-### 其他（84 个文件）
+### 其他（85 个文件）
 
 - `GwpFireswornBehavior.cs` — 1256 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpStrength.cs` — 1064 行 · `GwpStrength`，另含 2 个类型
@@ -652,6 +653,7 @@
 - `GwpFireswornPartyDialogs.cs` — 136 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpPeace.cs` — 121 行 · `GwpPeace`
 - `GwpFireswornUpgradePayment.cs` — 107 行 · `GwpFireswornUpgradePayment`，另含 4 个类型
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`

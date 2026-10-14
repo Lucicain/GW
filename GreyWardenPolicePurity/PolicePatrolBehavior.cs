@@ -372,7 +372,7 @@ namespace GreyWardenPolicePurity
         private void OnPatrolBarterAcceptedConsequence()
         {
             _bribeProtectionDays = 4;
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
             EndDialogueAndDismissPatrols();
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get("{=gwp_policepatrolbehavior_021}Release negotiations are reached: you get a 4-day protection period (reputation remains unchanged)."),
@@ -388,7 +388,7 @@ namespace GreyWardenPolicePurity
                 "; activePatrols=" + _activePatrolIds.Count +
                 "; returningPatrols=" + _returningPatrolIds.Count);
             PlayerState.ResetReputation(0);
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
             EndDialogueAndDismissPatrols();
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "PATROL_FINE_ACCEPTED_AFTER_CLEAR",
@@ -444,7 +444,7 @@ namespace GreyWardenPolicePurity
                 "; returningPatrols=" + _returningPatrolIds.Count +
                 "; bribeProtectionDays=" + _bribeProtectionDays);
             // 玩家被俘虏不处理（正在纠察队押送中）——跳过所有检测
-            // 原因：每日检查调用 MakePeaceWithPoliceClan() 会解除战争状态，导致玩家意外被释放，
+            // 原因：每日检查里与灰袍讲和会解除战争状态，导致玩家意外被释放，
             //        且声望扣4分，会导致新的额外惩罚。
             if (PlayerCaptivity.IsCaptive) return;
 
@@ -494,7 +494,7 @@ namespace GreyWardenPolicePurity
                         }
                     }
                     CrimeState.EndPlayerHunt();
-                    MakePeaceWithPoliceClan();
+                    GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
                         GwpText.Get("{=gwp_policepatrolbehavior_027}Current reputation is positive, existing wanted orders have been cancelled, and all pursuits have been withdrawn."),
                         Colors.Green));
@@ -625,7 +625,7 @@ namespace GreyWardenPolicePurity
             if (_playerRefused && _activePatrolIds.Count == 0)
             {
                 PlayerState.ChangeReputation(-1);
-                MakePeaceWithPoliceClan();
+                GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get("{=gwp_policepatrolbehavior_032}You refuse to enforce the law and the case is not completed, reputation -1. Current reputation: {VAR_1}", "VAR_1", PlayerState.Reputation),
                     Colors.Red));
@@ -873,7 +873,7 @@ namespace GreyWardenPolicePurity
             else
             {
                 OnPlayerVictory();
-                MakePeaceWithPoliceClan();
+                GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                 CleanDeadPatrols();
                 ReturnAllPatrols();
             }
@@ -995,7 +995,7 @@ namespace GreyWardenPolicePurity
             int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
             PlayerState.ResetReputation(repAfter);
 
-            MakePeaceWithPoliceAndVictims();
+            GwpPeace.SettlePlayerCase();
 
             string townName = settlement?.Name?.ToString() ?? GwpText.Get("{=gwp_policepatrolbehavior_040}The nearest town");
             InformationManager.DisplayMessage(new InformationMessage(

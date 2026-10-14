@@ -103,47 +103,6 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        private void MakePeaceWithPoliceAndVictims()
-        {
-            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-            if (playerFaction == null) return;
-
-            Clan policeClan = PoliceStats.GetPoliceClan();
-            // 玩家参与的讲和必须走 MakePeaceAction：裸的 SetNeutral 不会把定居点
-            // 标记为待重绘，灰袍的领地会在玩家地图上一直红着。
-            if (policeClan != null) MakePeaceAction.Apply(policeClan, playerFaction);
-
-            foreach (var victim in PlayerState.VictimFactions)
-            {
-                if (victim == null || victim == playerFaction) continue;
-                if (!FactionManager.IsAtWarAgainstFaction(playerFaction, victim)) continue;
-
-                MakePeaceAction.Apply(playerFaction, victim);
-            }
-
-            PlayerState.ClearVictimFactions();
-        }
-
-        /// <summary>
-        /// 案件结案后恢复和平：仅当对 warTarget 不再存在任何合法执法理由时才
-        /// 与目标国家/势力中立。承办领主结案后仍把整国视为敌人，会立刻转身
-        /// 攻击刚协助灰袍缉捕本国罪犯的玩家，形成"打完马上又打玩家"的循环。
-        /// 必须在 CrimeState.EndTask 之后调用，HasLegitimateWarReason 才会看到
-        /// 案件已经关闭；其他仍针对同一势力的案件/悬赏/纠察理由会保留战争。
-        /// </summary>
-        internal static void RestorePeaceAfterCaseEnd(PoliceTask? task)
-        {
-            RestorePeaceWithoutEnforcementReason(task?.WarTarget);
-        }
-
-        private static void RestorePeaceWithoutEnforcementReason(IFaction? target)
-        {
-            if (target == null) return;
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-            if (policeClan == null || GwpPoliceWarReasonService.HasLegitimateWarReason(target)) return;
-            GwpCommon.TrySetNeutral(policeClan, target);
-        }
-
         private Settlement? FindNearestTown()
         {
             var player = MobileParty.MainParty;
