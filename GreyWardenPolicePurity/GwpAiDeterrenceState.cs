@@ -340,8 +340,8 @@ namespace GreyWardenPolicePurity
         {
             HasEntry = false,
             RaidScoreMultiplier = 1f,
-            MapStatus = GwpText.Get("{=gwp_gwpaideterrencestate_001}Unknown status"),
-            MapLocation = GwpText.Get("{=gwp_gwpaideterrencestate_002}Unknown location")
+            MapStatus = GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_001),
+            MapLocation = GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_002)
         };
 
         /// <summary>
@@ -375,7 +375,7 @@ namespace GreyWardenPolicePurity
             DeterrenceVoice voice = SelectWeightedVoice(hero);
             bool playerIsWarden = GwpCommon.IsPlayerGreyWardenMember();
 
-            string name = hero.Name?.ToString() ?? GwpText.Get("{=gwp_gwpaideterrencestate_003}This person");
+            string name = hero.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_003);
             intro = GwpAiDeterrenceDialogueCatalog.GetIntro(source, tier);
             intro.SetTextVariable("HERO_NAME", name);
             followup = new TextObject(GwpAiDeterrenceDialogueCatalog.GetResponse(
@@ -680,18 +680,18 @@ namespace GreyWardenPolicePurity
         private static string BuildTrackingLocation(Hero hero)
         {
             return GetTrackingSettlement(hero)?.Name?.ToString() ??
-                   GwpText.Get("{=gwp_gwpaideterrencestate_032}Unknown location");
+                   GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_032);
         }
 
         private static string BuildTrackingStatus(Hero hero)
         {
             if (hero.IsPrisoner)
-                return GwpText.Get("{=gwp_gwpaideterrencestate_036}is in a captive state");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_036);
             if (hero.PartyBelongedTo?.IsActive == true)
-                return GwpText.Get("{=gwp_gwpaideterrencestate_038}travelling with a party");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_038);
             if (hero.CurrentSettlement != null || hero.StayingInSettlement != null)
-                return GwpText.Get("{=gwp_gwpaideterrencestate_037}holding position with a party");
-            return GwpText.Get("{=gwp_gwpaideterrencestate_033}Unknown status");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_037);
+            return GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_033);
         }
     }
 }

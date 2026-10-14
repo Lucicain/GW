@@ -5,7 +5,7 @@
   <NPCCharacter id="gwzealot"
                 default_group="Infantry"
                 level="11"
-                name="{=gwp_troop_zealot}Firesworn Zealot"
+                name="{=gwp_troop_zealot}Grey Warden Zealot"
                 occupation="Soldier"
                 is_basic_troop="true"
                 is_female="true"

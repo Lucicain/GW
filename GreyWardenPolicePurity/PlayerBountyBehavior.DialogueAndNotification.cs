@@ -44,15 +44,15 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_accept",
                 "gwp_recruit_options",
                 "gwp_recruit_accept_response",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_001}I accept. I shall serve the Grey Wardens in this matter."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_001),
                 null, OnRecruitAcceptConsequence, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_accept_response",
                 "gwp_recruit_accept_response",
                 "close_window",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_002}Then take this harness. Wear it when you ride under our warrant, and bring the money or prisoner to a Warden-lord.")
-                + GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_003} If the pursuit brings war upon you, we will speak for you when the matter is settled."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_002)
+                + GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_003),
                 null,
                 null,
                 100);
@@ -61,14 +61,14 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_refuse",
                 "gwp_recruit_options",
                 "gwp_recruit_refuse_response",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_004}No. I have no interest."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_004),
                 null, OnRecruitRefuseConsequence, 100);
 
             starter.AddDialogLine(
                 "gwp_recruit_refuse_response",
                 "gwp_recruit_refuse_response",
                 "close_window",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_005}As you will. This herald will not trouble you again; if you later reconsider, speak to a Warden-lord."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_005),
                 null,
                 null,
                 100);
@@ -78,7 +78,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_rejoin",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_membership_rejoin_response",
-                GwpText.Get("{=gwp_membership_rejoin_player}I wish to petition for a place among the Grey Warden sworn hunters again."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_rejoin_player),
                 CanRejoinThroughLord,
                 null,
                 102);
@@ -87,7 +87,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_rejoin_response",
                 "gwp_membership_rejoin_response",
                 "lord_pretalk",
-                GwpText.Get("{=gwp_membership_rejoin_response}Your petition is accepted. You are again recognised as a sworn hunter; take a fresh commander's harness and answer our warrants faithfully."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_rejoin_response),
                 null,
                 OnRejoinThroughLord,
                 100);
@@ -96,7 +96,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_leave",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_membership_leave_prompt",
-                GwpText.Get("{=gwp_membership_leave_player}I wish to relinquish my place with the Grey Wardens."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_leave_player),
                 CanLeaveThroughLord,
                 null,
                 102);
@@ -114,7 +114,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_leave_confirm",
                 "gwp_membership_leave_options",
                 "gwp_membership_leave_done",
-                GwpText.Get("{=gwp_membership_leave_confirm}Yes. Remove my name from the roll."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_leave_confirm),
                 null,
                 null,
                 100);
@@ -123,7 +123,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_leave_done",
                 "gwp_membership_leave_done",
                 "lord_pretalk",
-                GwpText.Get("{=gwp_membership_leave_done}It is done. The equipment already entrusted to you remains yours, but it no longer grants any Grey Warden authority."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_leave_done),
                 null,
                 OnLeaveThroughLord,
                 100);
@@ -132,7 +132,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_leave_cancel",
                 "gwp_membership_leave_options",
                 "gwp_membership_leave_cancelled",
-                GwpText.Get("{=gwp_membership_leave_cancel}No. I will remain."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_leave_cancel),
                 null,
                 null,
                 100);
@@ -141,7 +141,7 @@ namespace GreyWardenPolicePurity
                 "gwp_membership_leave_cancelled",
                 "gwp_membership_leave_cancelled",
                 "lord_pretalk",
-                GwpText.Get("{=gwp_membership_leave_cancelled}Then your place on the roll remains unchanged."),
+                GwpText.Get(GwpTextCatalog.gwp_membership_leave_cancelled),
                 null,
                 null,
                 100);
@@ -153,7 +153,7 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_already_done",
                 "start",
                 "close_window",
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_006}Our business is concluded. Go on your way."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_006),
                 () =>
                 {
                     MobileParty? conv = MobileParty.ConversationParty;
@@ -186,7 +186,7 @@ namespace GreyWardenPolicePurity
             if (_recruitmentOffered || _recruitmentAccepted) return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.RecruitGreeting,
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_009}The Grey Wardens have heard of your deeds. Will you hunt outlaws for us? There is pay for the work."));
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_009));
             WriteRecruitmentTrace(conversationParty, "RECRUIT_DIALOG_OPENED",
                 "recruitment start line accepted");
             return true;
@@ -206,7 +206,7 @@ namespace GreyWardenPolicePurity
             CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_014}You are now a Grey Warden bounty hunter. The black commander's gear is in your baggage; wear it, and the Wardens will entrust bounties to you."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_014),
                 Colors.Green));
         }
 
@@ -221,7 +221,7 @@ namespace GreyWardenPolicePurity
             CloseRecruitmentEncounterAndReturn();
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_015}You decline the Wardens. You may still ask a Warden lord to join them later."),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_015),
                 Colors.Yellow));
         }
 
@@ -337,14 +337,14 @@ namespace GreyWardenPolicePurity
             if (nextExitCount >= GwpTuning.Bounty.MaximumVoluntaryExits)
             {
                 prompt = GwpText.Get(
-                    "{=gwp_membership_leave_prompt_final}If you withdraw this time, your name will be struck permanently and no Warden-lord will readmit you. Is this your final decision?");
+                    GwpTextCatalog.gwp_membership_leave_prompt_final);
             }
             else
             {
                 int nextThreshold = GwpTuning.Bounty.RecruitmentReputationThreshold +
                                     nextExitCount * GwpTuning.Bounty.ReadmissionReputationStep;
                 prompt = GwpText.Get(
-                    "{=gwp_membership_leave_prompt_higher}If you withdraw, your warrants, detachments, and battlefield relief end. Readmission will require {VAR_1} standing and a personal appeal to a Warden-lord. Is this your final decision?",
+                    GwpTextCatalog.gwp_membership_leave_prompt_higher,
                     "VAR_1", nextThreshold);
             }
 
@@ -403,7 +403,7 @@ namespace GreyWardenPolicePurity
 
             roster.AddToCounts(recruit, GwpTuning.Bounty.JoinRecruitCount);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_join_recruits_granted}{VAR_1} Grey Warden recruits have joined your party.",
+                GwpText.Get(GwpTextCatalog.gwp_join_recruits_granted,
                     "VAR_1", GwpTuning.Bounty.JoinRecruitCount),
                 Colors.Green));
         }
@@ -634,22 +634,22 @@ namespace GreyWardenPolicePurity
                 {
                     elements.Add(new InquiryElement(
                         null,
-                        GwpText.Get("{=gwp_bounty_choice_unavailable}{VAR_1}: no separate valid contract", "VAR_1", roleText),
+                        GwpText.Get(GwpTextCatalog.gwp_bounty_choice_unavailable, "VAR_1", roleText),
                         null,
                         false,
-                        GwpText.Get("{=gwp_bounty_choice_unavailable_hint}More open cases are needed for a separate choice.")));
+                        GwpText.Get(GwpTextCatalog.gwp_bounty_choice_unavailable_hint)));
                     continue;
                 }
 
                 MobileParty target = choice.Crime.Offender!;
                 string label = GwpText.Get(
-                    "{=gwp_bounty_choice_label}{VAR_1}: {VAR_2} — {VAR_3}; assessed fine {VAR_4} denars",
+                    GwpTextCatalog.gwp_bounty_choice_label,
                     "VAR_1", roleText,
                     "VAR_2", target.Name,
                     "VAR_3", GetDifficultyText(choice.Difficulty),
                     "VAR_4", choice.Reward);
                 string hint = GwpText.Get(
-                    "{=gwp_bounty_choice_hint}{VAR_1}; last sighted near {VAR_2}.",
+                    GwpTextCatalog.gwp_bounty_choice_hint,
                     "VAR_1", GwpText.CrimeType(choice.Crime.CrimeType),
                     "VAR_2", GetNearestSettlementName(target.GetPosition2D));
                 elements.Add(new InquiryElement(choice, label, null, true, hint));
@@ -657,14 +657,14 @@ namespace GreyWardenPolicePurity
 
             MBInformationManager.ShowMultiSelectionInquiry(
                 new MultiSelectionInquiryData(
-                    GwpText.Get("{=gwp_bounty_select_title}Select a Grey Warden bounty"),
-                    GwpText.Get("{=gwp_bounty_select_description}Choose a nearby, stronger or weaker offender. The amount shown is the assessed fine, not your personal payment."),
+                    GwpText.Get(GwpTextCatalog.gwp_bounty_select_title),
+                    GwpText.Get(GwpTextCatalog.gwp_bounty_select_description),
                     elements,
                     true,
                     1,
                     1,
-                    GwpText.Get("{=gwp_bounty_review_contract}Review contract"),
-                    GwpText.Get("{=gwp_cancel}Cancel"),
+                    GwpText.Get(GwpTextCatalog.gwp_bounty_review_contract),
+                    GwpText.Get(GwpTextCatalog.gwp_cancel),
                     selected =>
                     {
                         BountyOfferChoice? choice = selected.FirstOrDefault()?.Identifier
@@ -741,16 +741,16 @@ namespace GreyWardenPolicePurity
 
         private static string GetDifficultyText(BountyDifficulty difficulty) => difficulty switch
         {
-            BountyDifficulty.Easy => GwpText.Get("{=gwp_bounty_difficulty_easy}Easy"),
-            BountyDifficulty.Hard => GwpText.Get("{=gwp_bounty_difficulty_hard}Hard"),
-            _ => GwpText.Get("{=gwp_bounty_difficulty_standard}Standard")
+            BountyDifficulty.Easy => GwpText.Get(GwpTextCatalog.gwp_bounty_difficulty_easy),
+            BountyDifficulty.Hard => GwpText.Get(GwpTextCatalog.gwp_bounty_difficulty_hard),
+            _ => GwpText.Get(GwpTextCatalog.gwp_bounty_difficulty_standard)
         };
 
         private static string GetRoleText(BountyOfferRole role) => role switch
         {
-            BountyOfferRole.Harder => GwpText.Get("{=gwp_bounty_choice_harder}Harder"),
-            BountyOfferRole.Easier => GwpText.Get("{=gwp_bounty_choice_easier}Easier"),
-            _ => GwpText.Get("{=gwp_bounty_choice_nearest}Nearest")
+            BountyOfferRole.Harder => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_harder),
+            BountyOfferRole.Easier => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_easier),
+            _ => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_nearest)
         };
 
         private void ShowBountyInquiry(BountyOfferChoice choice)
@@ -762,22 +762,22 @@ namespace GreyWardenPolicePurity
             MobileParty target = crime.Offender!;
             string description = string.Join(
                 Environment.NewLine,
-                GwpText.Get("{=gwp_bounty_contract_target}Target: {VAR_1}", "VAR_1", target.Name),
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_021}Crime Type: {VAR_1}", "VAR_1", GwpText.CrimeType(crime.CrimeType)),
-                GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_022}Last sighting: {VAR_1} nearby", "VAR_1", GetNearestSettlementName(target.GetPosition2D)),
-                GwpText.Get("{=gwp_bounty_contract_difficulty}Assessed difficulty: {VAR_1}", "VAR_1", GetDifficultyText(choice.Difficulty)),
-                GwpText.Get("{=gwp_bounty_contract_reward}Assessed fine: {VAR_1} denars. Once you deliver, we will review the case and your losses and settle your expenses.", "VAR_1", choice.Reward),
-                GwpText.Get("{=gwp_bounty_contract_deadline}The warrant remains active for 45 days."),
-                GwpText.Get("{=gwp_bounty_contract_turnin}Break his army, collect the fine, or take him prisoner, then report to any Grey Warden lord. Bring him in alive and the Wardens also buy him from you at his ransom price."));
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_target, "VAR_1", target.Name),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_021, "VAR_1", GwpText.CrimeType(crime.CrimeType)),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_022, "VAR_1", GetNearestSettlementName(target.GetPosition2D)),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_difficulty, "VAR_1", GetDifficultyText(choice.Difficulty)),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_reward, "VAR_1", choice.Reward),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_deadline),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_turnin));
 
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_027}Grey Warden commission"),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_027),
                     description,
                     true,
                     true,
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_028}Accept the charge"),
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_029}Refuse"),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_028),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_029),
                     () => AcceptBounty(choice),
                     () => { },
                     "event:/ui/panels/quest_start"),
@@ -792,7 +792,7 @@ namespace GreyWardenPolicePurity
             if (!crime.IsOffenderPursuable())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_dialogueandnotification_030}The target is gone. The bounty is withdrawn."), Colors.Red));
+                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_030), Colors.Red));
                 return;
             }
 
@@ -824,7 +824,7 @@ namespace GreyWardenPolicePurity
             _supportRequested = false;
             PoliceEnforcementBehavior.ReleaseWardensFromCase(_activeBountyTargetHeroId);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_bounty_case_is_yours}The bounty is yours. If you need help, send word to the Wardens."),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_case_is_yours),
                 Colors.Cyan));
 
             Hero? policeLeader = PoliceStats.GetPoliceClan()?.Leader;
@@ -836,25 +836,25 @@ namespace GreyWardenPolicePurity
                 _activeQuest.StartQuest();
                 Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
                 TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
-                                          GwpText.Create("{=gwp_playerbountybehavior_020}unknown location");
+                                          GwpText.Create(GwpTextCatalog.gwp_playerbountybehavior_020);
                 _activeQuest.WriteLog(
                     GwpText.Create(
                         "{=!}{VAR_1}{VAR_2}{VAR_3}",
                         "VAR_1", GwpText.Create(
-                            "{=gwp_bounty_quest_target}Target: {VAR_1}. Assessed difficulty: {VAR_2}.\n",
+                            GwpTextCatalog.gwp_bounty_quest_target,
                             "VAR_1", offender.Name,
                             "VAR_2", GetDifficultyText(choice.Difficulty)),
                         "VAR_2", GwpText.Create(
-                            "{=gwp_playerbountybehavior_dialogueandnotification_034}Last sighted location: Near {VAR_1}.\n",
+                            GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_034,
                             "VAR_1", lastSeenNear),
                         "VAR_3", GwpText.Create(
-                            "{=gwp_bounty_quest_reward}Within 45 days, collect the assessed fine of {VAR_1} denars or capture the offender. Deliver the money or prisoner to a Grey Warden lord. Expenses depend on the actual delivery.",
+                            GwpTextCatalog.gwp_bounty_quest_reward,
                             "VAR_1", _assignedCaseFine)));
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(
-                    "{=gwp_bounty_contract_accepted}You take up the bounty on {VAR_1}. The fine is {VAR_3} denars.",
+                    GwpTextCatalog.gwp_bounty_contract_accepted,
                     "VAR_1", offender.Name,
                     "VAR_2", GetDifficultyText(choice.Difficulty),
                     "VAR_3", _assignedCaseFine),

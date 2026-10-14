@@ -41,7 +41,7 @@ namespace GreyWardenPolicePurity
         public override TextObject GetGeneralTitle()
         {
             var text = new TextObject(
-                "{=gwp_fief_reconsideration_title}Petition to reconsider {SETTLEMENT_NAME}");
+                GwpTextCatalog.gwp_fief_reconsideration_title);
             text.SetTextVariable("SETTLEMENT_NAME", Settlement.Name);
             return text;
         }
@@ -51,7 +51,7 @@ namespace GreyWardenPolicePurity
         public override TextObject GetSupportDescription()
         {
             var text = new TextObject(
-                "{=gwp_fief_reconsideration_support}The Grey Wardens have presented a popular petition. The council will reconsider who should hold {SETTLEMENT_NAME}.");
+                GwpTextCatalog.gwp_fief_reconsideration_support);
             text.SetTextVariable("SETTLEMENT_NAME", Settlement.Name);
             return text;
         }

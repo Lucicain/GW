@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
             AgreedLimit = Math.Max(0, Math.Min(_available, agreedLimit));
         }
         public override string StringID => "gwp_field_collection";
-        public override TextObject Name => GwpText.Create("{=gwp_field_collection_money}Money in the offender's purse");
+        public override TextObject Name => GwpText.Create(GwpTextCatalog.gwp_field_collection_money);
         public override int MaxAmount => _available;
         public override int GetUnitValueForFaction(IFaction faction) =>
             faction == _payer.Clan || faction == _payer.MapFaction

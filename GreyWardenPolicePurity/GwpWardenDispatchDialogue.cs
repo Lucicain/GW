@@ -156,31 +156,31 @@ namespace GreyWardenPolicePurity
         internal static void Register(CampaignGameStarter starter)
         {
             starter.AddDialogLine("gwp_dispatch_greeting", "start", "gwp_dispatch_options",
-                GwpText.Get("{=gwp_dispatch_greeting}Commander. Say the word and we ride."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_greeting),
                 IsOurConversation, null, 400);
 
             starter.AddPlayerLine("gwp_dispatch_report", "gwp_dispatch_options", "gwp_dispatch_confirm",
-                GwpText.Get("{=gwp_dispatch_report}Take our account of the commission to the Wardens for me."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_report),
                 CanSendReport, () => _pendingPurpose = GwpDispatchPurpose.Report);
 
             starter.AddPlayerLine("gwp_dispatch_support", "gwp_dispatch_options", "gwp_dispatch_confirm",
-                GwpText.Get("{=gwp_dispatch_support}Ride to the Wardens and ask them to take the field with me."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_support),
                 CanSendSupport, () => _pendingPurpose = GwpDispatchPurpose.Support);
 
             starter.AddPlayerLine("gwp_dispatch_peace", "gwp_dispatch_options", "gwp_dispatch_confirm",
-                GwpText.Get("{=gwp_dispatch_peace}Ride to the Wardens and have them close the quarrels I took up for them."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_peace),
                 CanSendPeaceRequest, () => _pendingPurpose = GwpDispatchPurpose.PeaceRequest);
 
             starter.AddPlayerLine("gwp_dispatch_troop_order", "gwp_dispatch_options", "gwp_dispatch_confirm",
-                GwpText.Get("{=gwp_dispatch_troop_order}Carry my order for troops to the Wardens, and the coin with it."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_troop_order),
                 CanSendTroopOrder, () => _pendingPurpose = GwpDispatchPurpose.TroopOrder);
 
             starter.AddPlayerLine("gwp_dispatch_never_mind", "gwp_dispatch_options", "close_window",
-                GwpText.Get("{=gwp_dispatch_never_mind}Nothing for now. Back to your post."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_never_mind),
                 IsOurConversation, null);
 
             starter.AddDialogLine("gwp_dispatch_confirm", "gwp_dispatch_confirm", "close_window",
-                GwpText.Get("{=gwp_dispatch_confirm}Then pick the men who ride with me, Commander."),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_confirm),
                 IsOurConversation, QueueSelection, 400);
         }
 
@@ -255,7 +255,7 @@ namespace GreyWardenPolicePurity
                         left.TotalManCount > 0,
                         left.TotalManCount > 0
                             ? new TextObject(string.Empty)
-                            : GwpText.Create("{=gwp_dispatch_pick_someone}Choose at least one soldier.")),
+                            : GwpText.Create(GwpTextCatalog.gwp_dispatch_pick_someone)),
                 (leftOwner, leftMembers, leftPrison, rightOwner, rightMembers, rightPrison, fromCancel) =>
                     OnSelectionClosed(purpose, leftMembers, leftPrison, fromCancel),
                 (character, type, side, leftOwnerParty) => IsSendable(purpose, character, type),
@@ -264,8 +264,8 @@ namespace GreyWardenPolicePurity
 
         private static TextObject BuildScreenName(GwpDispatchPurpose purpose) =>
             GwpText.Create(purpose == GwpDispatchPurpose.Report
-                ? "{=gwp_dispatch_screen_report}Courier detail"
-                : "{=gwp_dispatch_screen_support}Request rider");
+                ? GwpTextCatalog.gwp_dispatch_screen_report
+                : GwpTextCatalog.gwp_dispatch_screen_support);
 
         /// <summary>
         /// 只许派灰袍的兵；俘虏只许带本案目标本人，别的人犯不在这趟差事里。
@@ -349,7 +349,7 @@ namespace GreyWardenPolicePurity
             {
                 members.Clear(); prisoners.Clear();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_receiver}There is no Warden company within reach to receive them.")));
+                    GwpTextCatalog.gwp_dispatch_no_receiver)));
                 return;
             }
             var payment = new GwpAssetPayment(Hero.MainHero, receiver.LeaderHero,
@@ -393,13 +393,13 @@ namespace GreyWardenPolicePurity
             }
 
             InformationManager.ShowInquiry(new InquiryData(
-                GwpText.Get("{=gwp_dispatch_word_title}What your men are to say"),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_word_title),
                 GwpText.Get(
-                    "{=gwp_dispatch_word_body}They will hand over {VAR_1} of the {VAR_2} on the account. What account do they give of the rest?",
+                    GwpTextCatalog.gwp_dispatch_word_body,
                     "VAR_1", amount, "VAR_2", due),
                 true, true,
-                GwpText.Get("{=gwp_dispatch_word_truth}Tell the truth"),
-                GwpText.Get("{=gwp_dispatch_word_lie}Lie"),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_word_truth),
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_word_lie),
                 () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, false, prisonerHeroId, cargo),
                 () => Send(GwpDispatchPurpose.Report, members, prisoners, gold, true, prisonerHeroId, cargo)),
                 true);
@@ -425,7 +425,7 @@ namespace GreyWardenPolicePurity
             {
                 escort.Clear();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_pick_someone}Choose at least one soldier.")));
+                    GwpTextCatalog.gwp_dispatch_pick_someone)));
                 return;
             }
             foreach (var entry in escort.GetTroopRoster())
@@ -452,7 +452,7 @@ namespace GreyWardenPolicePurity
                 {
                     members.Clear(); prisoners.Clear();
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        "{=gwp_dispatch_pick_someone}Choose at least one soldier.")));
+                        GwpTextCatalog.gwp_dispatch_pick_someone)));
                     return;
                 }
                 foreach (var entry in members.GetTroopRoster())

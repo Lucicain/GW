@@ -131,7 +131,7 @@ namespace GreyWardenPolicePurity
                         _activeBountyDeadlineHours = -1d;
                         StopBountyEscortAfterTargetDefeat();
                     }
-                    string message = GwpText.Get("{=gwp_case_defeat_recorded}You broke {VAR_1} in the field. Go and make your report.",
+                    string message = GwpText.Get(GwpTextCatalog.gwp_case_defeat_recorded,
                         "VAR_1", target.Name.ToString());
                     _activeQuest?.WriteLog(message);
                     _activeQuest?.MarkReadyForTurnIn();
@@ -139,7 +139,7 @@ namespace GreyWardenPolicePurity
                 }
                 else if (!target.IsDead)
                 {
-                    string message = GwpText.Get("{=gwp_case_capture_missed}The target was not taken. The commission is not yet done.");
+                    string message = GwpText.Get(GwpTextCatalog.gwp_case_capture_missed);
                     _activeQuest?.WriteLog(message);
                     InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
                 }
@@ -267,7 +267,7 @@ namespace GreyWardenPolicePurity
             _activeQuest?.MarkReadyForTurnIn();
 
             string message = GwpText.Get(
-                "{=gwp_case_closed_elsewhere}{VAR_1} is beyond your reach now. The commission is void. Report to any Grey Warden lord, or send a man.",
+                GwpTextCatalog.gwp_case_closed_elsewhere,
                 "VAR_1", hero?.Name?.ToString() ?? _activeBountyTargetName ?? string.Empty);
             _activeQuest?.WriteLog(GwpText.Create(message));
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
@@ -358,7 +358,7 @@ namespace GreyWardenPolicePurity
                 "fee=" + fee + "; offender=" + _activeBountyTargetHeroId);
             ClearBountyTaskState();
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_report_done}The commission is settled. Your men are returning with {VAR_1} denars.",
+                GwpTextCatalog.gwp_dispatch_report_done,
                 "VAR_1", fee), Colors.Green));
         }
 
@@ -418,7 +418,7 @@ namespace GreyWardenPolicePurity
                 GwpAiDeterrenceState.ClearArrestRecord(hero);
                 PoliceEnforcementBehavior.CloseCase(crime, "commission_offender_in_custody");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_captive_ready}You hold the target captive. Deliver him to any Warden lord to collect the reward."), Colors.Green));
+                    GwpText.Get(GwpTextCatalog.gwp_case_captive_ready), Colors.Green));
             }
             return true;
         }
@@ -449,50 +449,50 @@ namespace GreyWardenPolicePurity
         private void RegisterCaseTurnInDialogues(CampaignGameStarter starter)
         {
             starter.AddPlayerLine("gwp_case_report_lord", "lord_talk_speak_diplomacy_2", "gwp_case_report_ask",
-                GwpText.Get("{=gwp_case_report_open}I have come to report on the commission."),
+                GwpText.Get(GwpTextCatalog.gwp_case_report_open),
                 () => IsCaseClerk && HasBountyTask, () => RegisterCaptureInCustody(), 102);
             starter.AddDialogLine("gwp_case_report_ask", "gwp_case_report_ask", "gwp_case_report_options",
                 "{GWP_CASE_REPORT_SUMMARY}", PrepareCaseReportSummary, null);
             starter.AddPlayerLine("gwp_case_pay_any", "gwp_case_report_options", "gwp_case_barter_open",
-                GwpText.Get("{=gwp_case_pay_any}I am ready to submit my report. Let us settle the account."),
+                GwpText.Get(GwpTextCatalog.gwp_case_pay_any),
                 () => HasBountyTask && _caseSubmitted < 0, null);
             starter.AddPlayerLine("gwp_case_resume_report", "gwp_case_report_options", "gwp_case_short_question",
-                GwpText.Get("{=gwp_case_resume_report}About the shortfall in what I handed over..."), () => _caseSubmitted >= 0, null);
+                GwpText.Get(GwpTextCatalog.gwp_case_resume_report), () => _caseSubmitted >= 0, null);
             starter.AddPlayerLine("gwp_case_report_later", "gwp_case_report_options", "close_window",
-                GwpText.Get("{=gwp_case_report_later}I am not ready to hand it over yet."), null, LeaveCaseClerk);
+                GwpText.Get(GwpTextCatalog.gwp_case_report_later), null, LeaveCaseClerk);
             starter.AddDialogLine("gwp_case_settle_withdrawn", "gwp_case_barter_open", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_settle_expenses}The commission is closed. We will settle what you are owed."),
+                GwpText.Get(GwpTextCatalog.gwp_case_settle_expenses),
                 () => HasBountyTask && HasNothingLeftToSettle, CompleteWithdrawnCaseReport, 130);
             starter.AddDialogLine("gwp_case_barter_open", "gwp_case_barter_open", "gwp_case_barter_result",
-                GwpText.Get("{=gwp_case_barter_count}Let us check what you have brought."), null, OpenCasePayment);
+                GwpText.Get(GwpTextCatalog.gwp_case_barter_count), null, OpenCasePayment);
             starter.AddDialogLine("gwp_case_barter_short", "gwp_case_barter_result", "gwp_case_short_options",
-                GwpText.Get("{=gwp_case_short_question}This is less than the fine. Tell me why."),
+                GwpText.Get(GwpTextCatalog.gwp_case_short_question),
                 // 新口径下要对的账是"从犯人手里拿到多少 vs 交上来多少"，不是整案应缴。
                 // 犯人穷、只交得出一部分，玩家如实全交，文书就没有什么好问的。
                 () => CasePaymentAccepted() && CaseReportNeedsExplanation(_casePayment!.Paid, _casePayment.SelectedPrisoner != null),
                 CommitCasePayment, 110);
             starter.AddDialogLine("gwp_case_barter_accepted", "gwp_case_barter_result", "gwp_case_receipt_ack",
-                GwpText.Get("{=gwp_case_barter_accepted}We have counted the payment. Your report will be entered."),
+                GwpText.Get(GwpTextCatalog.gwp_case_barter_accepted),
                 CasePaymentAccepted, () => { CommitCasePayment(); FinishSubmittedCase(false); });
             // 同理：交空手也好，回头补交也好，只要没昧下从犯人那里拿到的钱，就不该被盘问。
             // 不盘问就不会有"认不认"这道选择，也就不会有人因为随手点了那句而被记上一次谎。
             starter.AddDialogLine("gwp_case_nothing_concealed", "gwp_case_short_question", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_nothing_concealed}That is what he put in your hands, and all of it is here. Your report will be entered."),
+                GwpText.Get(GwpTextCatalog.gwp_case_nothing_concealed),
                 () => !CaseReportNeedsExplanation(Math.Max(0, _caseSubmitted), _caseSubmittedPrisoner),
                 () => FinishSubmittedCase(false), 110);
             starter.AddDialogLine("gwp_case_short_question", "gwp_case_short_question", "gwp_case_short_options",
-                GwpText.Get("{=gwp_case_short_question}This is less than what he paid you. Tell me why."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_case_short_question), null, null);
             starter.AddPlayerLine("gwp_case_short_truth", "gwp_case_short_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_short_truth}Tell the truth"), null, () => FinishSubmittedCase(false));
+                GwpText.Get(GwpTextCatalog.gwp_case_short_truth), null, () => FinishSubmittedCase(false));
             starter.AddPlayerLine("gwp_case_short_lie", "gwp_case_short_options", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_short_lie}Lie"), null, () => FinishSubmittedCase(true));
+                GwpText.Get(GwpTextCatalog.gwp_case_short_lie), null, () => FinishSubmittedCase(true));
             starter.AddDialogLine("gwp_case_barter_cancelled", "gwp_case_barter_result", "gwp_case_report_options",
-                GwpText.Get("{=gwp_case_barter_cancelled}Nothing has been entered. We can count it again when you are ready."),
+                GwpText.Get(GwpTextCatalog.gwp_case_barter_cancelled),
                 null, () => {
                     _casePaymentOpen = false; _casePayment = null;
                 });
             starter.AddPlayerLine("gwp_case_report_acknowledge", "gwp_case_receipt_ack", "gwp_case_report_receipt",
-                GwpText.Get("{=gwp_case_report_acknowledge}Let me have the account."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_case_report_acknowledge), null, null);
             starter.AddDialogLine("gwp_case_report_receipt", "gwp_case_report_receipt", "close_window",
                 "{GWP_CASE_REPORT_RESULT}", null, LeaveCaseClerk);
         }
@@ -502,12 +502,12 @@ namespace GreyWardenPolicePurity
             if (HasNothingLeftToSettle)
             {
                 MBTextManager.SetTextVariable("GWP_CASE_REPORT_SUMMARY", GwpText.Get(
-                    "{=gwp_case_report_withdrawn_summary}We have word that the man is beyond reach. Say the word and I will settle your expenses."));
+                    GwpTextCatalog.gwp_case_report_withdrawn_summary));
                 return true;
             }
             int due = CaseAmountDue;
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_SUMMARY", GwpText.Get(
-                "{=gwp_case_report_summary}The account lists {VAR_1} denars. Have you brought the fines, or the prisoner? If any money is missing, tell me why.", "VAR_1", due > 0 ? due : _pendingPrisonerAssessed));
+                GwpTextCatalog.gwp_case_report_summary, "VAR_1", due > 0 ? due : _pendingPrisonerAssessed));
             return true;
         }
 
@@ -591,7 +591,7 @@ namespace GreyWardenPolicePurity
             FinishCaseReport(paidFee);
             if (delivered >= received) return;
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                "{=gwp_case_report_kept_result}The {VAR_1} denars are entered. Your expenses are {VAR_2} denars. The commission is concluded.",
+                GwpTextCatalog.gwp_case_report_kept_result,
                 "VAR_1", delivered, "VAR_2", paidFee));
         }
 
@@ -604,7 +604,7 @@ namespace GreyWardenPolicePurity
                 "; casualties=" + _bountyPlayerCasualties + "; compensation=" + paid);
             FinishCaseReport(paid);
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                "{=gwp_case_withdrawn_result}The man was already beyond reach. The treasury covers {VAR_1} denars for your trouble. The commission is closed.",
+                GwpTextCatalog.gwp_case_withdrawn_result,
                 "VAR_1", paid));
         }
 
@@ -630,7 +630,7 @@ namespace GreyWardenPolicePurity
         {
             if (CaseReportReceipt == null && CaseReportSuggestedPayment > 0)
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_receipt_unknown}Choose what to hand over.")));
+                    GwpTextCatalog.gwp_receipt_unknown)));
         }
 
         /// <summary>
@@ -665,7 +665,7 @@ namespace GreyWardenPolicePurity
             MakePeaceWithCriminalFaction();
             ClearBountyTaskState();
             MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
-                "{=gwp_case_report_complete}Your report is entered. The treasury has paid {VAR_1} denars in expenses. This commission is concluded.", "VAR_1", reward));
+                GwpTextCatalog.gwp_case_report_complete, "VAR_1", reward));
         }
 
         private void LeaveCaseClerk()

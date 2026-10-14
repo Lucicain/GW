@@ -107,7 +107,7 @@ namespace GreyWardenPolicePurity
             Settlement? place = assignment == null ? null : Hero.Find(assignment.OwnerHeroId)?.CurrentSettlement;
             if (assignment == null || place == null)
                 return false;
-            text = GwpText.Create("{=gwp_status_petition}Settling a petition in {SETTLEMENT} ({HOURS} hours left).",
+            text = GwpText.Create(GwpTextCatalog.gwp_status_petition,
                 "SETTLEMENT", place.Name,
                 "HOURS", Math.Max(1, (int)Math.Ceiling(assignment.WorkEndHours - CampaignTime.Now.ToHours)));
             return true;
@@ -265,7 +265,7 @@ namespace GreyWardenPolicePurity
                 // 灰袍是在聚落门口驻留办完的，补上同一句。
                 if (party.CurrentSettlement != settlement)
                     GwpSettlementNotices.Post(settlement, party.LeaderHero,
-                        GwpText.Get("{=gwp_notice_issue_solved}Solved an issue"));
+                        GwpText.Get(GwpTextCatalog.gwp_notice_issue_solved));
                 ApplyLocalDevelopmentGain(settlement);
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
                 GwpPlayerRequestDeferral.NotifyDutyCompleted(party,

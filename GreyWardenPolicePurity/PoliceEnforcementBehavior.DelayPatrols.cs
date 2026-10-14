@@ -435,7 +435,7 @@ namespace GreyWardenPolicePurity
                 new List<ImmediateInterceptorTroopTransfer>();
             MobileParty? interceptor = CreateDetachment(sourceParty, mountedBatches, detachmentSize,
                 ImmediateInterceptorMinimumSize,
-                GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_005}Grey Warden pursuit detachment"),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_005),
                 transferredBatches, out int moved, out Settlement? returnSettlement);
             if (interceptor == null || returnSettlement == null)
                 return;
@@ -679,7 +679,7 @@ namespace GreyWardenPolicePurity
                 spawnSettlement.GatePosition,
                 1f,
                 spawnSettlement,
-                new TextObject(GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_001}Grey Warden provost relief party")),
+                new TextObject(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_001)),
                 policeClan,
                 policeClan.DefaultPartyTemplate,
                 null,
@@ -1211,9 +1211,9 @@ namespace GreyWardenPolicePurity
             if (!CrimeState.IsPlayerHunted)
             {
                 CrimeState.TryAddPlayerCrime(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_003}Accumulated crimes"),
+                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_003),
                     playerParty.GetPosition2D,
-                    GwpText.Get("{=gwp_policeenforcementbehavior_delaypatrols_004}Reputation has reached {VAR_1}", "VAR_1", PlayerState.Reputation));
+                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_004, "VAR_1", PlayerState.Reputation));
             }
 
             MobileParty nearestPolice = FindNearestPolicePartyForPlayerCase(playerParty.GetPosition2D);

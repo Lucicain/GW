@@ -697,9 +697,9 @@ namespace GreyWardenPolicePurity
         {
             int items = _instance!._armories.TryGetValue(holder, out ItemRoster? ledger) ? CountItems(ledger) : 0;
             return _instance._villages.ContainsKey(holder)
-                ? GwpText.Get("{=gwp_fs_armory_village}Armory of {VILLAGE} ({ITEMS} pieces)",
+                ? GwpText.Get(GwpTextCatalog.gwp_fs_armory_village,
                     "VILLAGE", Settlement.Find(holder).Name, "ITEMS", items)
-                : GwpText.Get("{=gwp_fs_armory_party}Armory of {PARTY} ({ITEMS} pieces)",
+                : GwpText.Get(GwpTextCatalog.gwp_fs_armory_party,
                     "PARTY", FindParty(holder)!.Name, "ITEMS", items);
         }
 
@@ -709,9 +709,9 @@ namespace GreyWardenPolicePurity
         internal static string ArmorySummary(string holder)
         {
             if (!_instance!._armories.ContainsKey(holder))
-                return GwpText.Get("{=gwp_fs_armory_empty}Nothing here yet.");
+                return GwpText.Get(GwpTextCatalog.gwp_fs_armory_empty);
             ArmoryPlan plan = _instance.PlanOf(holder);
-            return GwpText.Get("{=gwp_fs_armory_summary}{MEN} of the sworn draw from this store; {ARMED} of them have a weapon from it. {FREE} pieces are kept back for those who will swear next. {SURPLUS} pieces nobody needs, and they will be sold.",
+            return GwpText.Get(GwpTextCatalog.gwp_fs_armory_summary,
                 "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => !kit[KitMain].IsEmpty),
                 "FREE", CountItems(plan.Free), "SURPLUS", CountItems(plan.Surplus));
         }

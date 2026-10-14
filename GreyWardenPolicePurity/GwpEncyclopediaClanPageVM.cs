@@ -27,9 +27,9 @@ namespace GreyWardenPolicePurity
             // this button repeated the ledger's own case rows field for field,
             // so its content moved into the ledger and its button went away.
             CaseArchiveButtonText = GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_004}Grey Warden affairs");
+                GwpTextCatalog.gwp_gwpencyclopediaclanpagevm_004);
             CaseArchiveButtonHint = new HintViewModel(new TextObject(GwpText.Get(
-                "{=gwp_gwpencyclopediaclanpagevm_005}Standing wars and their grounds, the case and duty pool, the judicial treasury, your standing, and the family roll.")));
+                GwpTextCatalog.gwp_gwpencyclopediaclanpagevm_005)));
         }
 
         internal bool IsVisible => GwpPoliceWarReasonService.SupportsClan(_clan);

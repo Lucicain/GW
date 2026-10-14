@@ -46,65 +46,65 @@ namespace GreyWardenPolicePurity
         private static readonly Dictionary<string, string> CoreLeaderNameTemplates =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ["gw_leader_0"] = "{=gwp_hero_vandi}Aethelflaed",
-                ["gw_leader_1"] = "{=gwp_hero_yoer}Cyneburh",
-                ["gw_leader_2"] = "{=gwp_hero_mise}Mildthryth",
-                ["gw_leader_3"] = "{=gwp_hero_shengduo}Wynflaed",
-                ["gw_leader_4"] = "{=gwp_hero_chenxi}Eadgifu",
-                ["gw_leader_5"] = "{=gwp_hero_muguang}Wulfhild"
+                ["gw_leader_0"] = GwpTextCatalog.gwp_hero_vandi,
+                ["gw_leader_1"] = GwpTextCatalog.gwp_hero_yoer,
+                ["gw_leader_2"] = GwpTextCatalog.gwp_hero_mise,
+                ["gw_leader_3"] = GwpTextCatalog.gwp_hero_shengduo,
+                ["gw_leader_4"] = GwpTextCatalog.gwp_hero_chenxi,
+                ["gw_leader_5"] = GwpTextCatalog.gwp_hero_muguang
             };
 
         private static readonly string[] GeneratedFemaleNames =
         {
-            GwpText.Get("{=gwp_greywardenfamilybehavior_001}Aebbe"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_002}Aeffe"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_003}Eadgyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_004}Eadleofu"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_005}Eadwyn"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_006}Ealdgyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_007}Ealhburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_008}Ealhflaed"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_009}Ealhgyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_010}Ealhswith"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_011}Ealhthryth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_012}Ealhwaru"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_013}Ealhwyn"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_014}Eanburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_015}Eanflaed"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_016}Eanswith"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_017}Eormenburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_018}Eormenhild"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_019}Folcburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_020}Frithugyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_021}Frithuswith"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_022}Godgifu"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_023}Godwife"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_024}Heahburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_025}Heregyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_026}Hereswith"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_027}Leofcwen"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_028}Leofflaed"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_029}Leofgifu"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_030}Leofrun"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_031}Mildburh"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_032}Wulfflaed"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_033}Wulfgifu"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_034}Wulfgyth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_035}Wulfthryth"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_036}Wulfwyn")
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_001),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_002),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_003),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_004),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_005),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_006),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_007),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_008),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_009),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_010),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_011),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_012),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_013),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_014),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_015),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_016),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_017),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_018),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_019),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_020),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_021),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_022),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_023),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_024),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_025),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_026),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_027),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_028),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_029),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_030),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_031),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_032),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_033),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_034),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_035),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_036)
         };
 
         private static readonly string[] NameSuffixes =
         {
-            GwpText.Get("{=gwp_greywardenfamilybehavior_037} II"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_038} III"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_039} IV"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_040} V"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_041} VI"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_042} VII"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_043} VIII"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_044} IX"),
-            GwpText.Get("{=gwp_greywardenfamilybehavior_045} X")
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_037),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_038),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_039),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_040),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_041),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_042),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_043),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_044),
+            GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_045)
         };
 
         private static readonly HashSet<string> CoreLeaderIdSet =
@@ -301,17 +301,17 @@ namespace GreyWardenPolicePurity
         internal static string GetDutyTitle(Hero? hero)
         {
             if (!TryGetDuty(hero, out DutyKind kind))
-                return GwpText.Get("{=gwp_greywardenfamilybehavior_054}Grey Warden Lawkeeper");
+                return GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_054);
 
             return kind switch
             {
-                DutyKind.Training => GwpText.Get("{=gwp_duty_training}Training Warden"),
-                DutyKind.CaravanProtection => GwpText.Get("{=gwp_duty_caravan}Caravan Protection Warden"),
-                DutyKind.VillageProtection => GwpText.Get("{=gwp_duty_village}Village Protection Warden"),
-                DutyKind.IssueResolution => GwpText.Get("{=gwp_duty_issues}Petition Warden"),
-                DutyKind.Reconstruction => GwpText.Get("{=gwp_greywardenfamilybehavior_053}Village Reconstruction Warden"),
-                DutyKind.PlayerRequests => GwpText.Get("{=gwp_duty_player}Noble Affairs Liaison"),
-                _ => GwpText.Get("{=gwp_greywardenfamilybehavior_054}Grey Warden Lawkeeper")
+                DutyKind.Training => GwpText.Get(GwpTextCatalog.gwp_duty_training),
+                DutyKind.CaravanProtection => GwpText.Get(GwpTextCatalog.gwp_duty_caravan),
+                DutyKind.VillageProtection => GwpText.Get(GwpTextCatalog.gwp_duty_village),
+                DutyKind.IssueResolution => GwpText.Get(GwpTextCatalog.gwp_duty_issues),
+                DutyKind.Reconstruction => GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_053),
+                DutyKind.PlayerRequests => GwpText.Get(GwpTextCatalog.gwp_duty_player),
+                _ => GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_054)
             };
         }
 
@@ -531,41 +531,41 @@ namespace GreyWardenPolicePurity
 
         private static TextObject BuildGeneratedMemberEncyclopedia(Hero hero)
         {
-            string name = hero.Name?.ToString() ?? GwpText.Get("{=gwp_greywardenfamilybehavior_046}she");
+            string name = hero.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_046);
 
             if (GreyWardenVillageAdoptionBehavior.TryGetAdoptionOrigin(hero.StringId, out string villageName))
             {
                 if (hero.Age < 12f)
                 {
                     return new TextObject(
-                        GwpText.Get("{=gwp_greywardenfamilybehavior_047}After {VAR_2} was sacked and put to the torch, the Grey Wardens took the girl {VAR_1} into their inner ward. Though still young, she has grown accustomed to patrol calls, copied depositions, and the discipline of the order. To the Wardens she is no common kinswoman, but a sworn daughter carried forward from calamity.", "VAR_1", name, "VAR_2", villageName));
+                        GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_047, "VAR_1", name, "VAR_2", villageName));
                 }
 
                 if (hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
                 {
                     return new TextObject(
-                        GwpText.Get("{=gwp_greywardenfamilybehavior_048}The Grey Wardens adopted {VAR_1} in childhood, after {VAR_2} was burned. She now learns to read case rolls, copy testimony, discern offences, and observe the rites of the road. In her elders’ eyes, the orphan who survived the flames is becoming an heir trained within the inner ward.", "VAR_1", name, "VAR_2", villageName));
+                        GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_048, "VAR_1", name, "VAR_2", villageName));
                 }
 
                 return BuildAdultEncyclopedia(hero, name,
-                    GwpText.Get("{=gwp_adult_adopted_origin}When criminals sacked {VAR_2}, {VAR_1} lost the life she had known and was taken in by the Grey Wardens. {VAR_3}", "VAR_1", name, "VAR_2", villageName,
+                    GwpText.Get(GwpTextCatalog.gwp_adult_adopted_origin, "VAR_1", name, "VAR_2", villageName,
                         "VAR_3", GetDutyBiographyHint(hero)));
             }
 
             if (hero.Age < 12f)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greywardenfamilybehavior_050}{VAR_1} was born within the Grey Wardens’ inner ward. She has grown among patrol calls, old Imperial case rolls, and the order’s discipline, and her elders regard her as one of their young heirs. Such girls are not reared as the daughters of an ordinary noble house, but to keep the roads, record the cases, and bear the law.", "VAR_1", name));
+                    GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_050, "VAR_1", name));
             }
 
             if (hero.Age < Campaign.Current.Models.AgeModel.HeroComesOfAge)
             {
                 return new TextObject(
-                    GwpText.Get("{=gwp_greywardenfamilybehavior_051}{VAR_1} belongs to the Grey Wardens’ rising generation. She already studies case rolls, copied testimony, the signs of crime, and the rites of patrol. Outsiders call them daughters of the house; within the order, they are known as heirs still under instruction, who will one day wear the grey in earnest.", "VAR_1", name));
+                    GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_051, "VAR_1", name));
             }
 
             return BuildAdultEncyclopedia(hero, name,
-                GwpText.Get("{=gwp_adult_born_origin}{VAR_1} was raised amid the old Imperial law, family blood, and ordered discipline preserved by the Grey Wardens. {VAR_2}",
+                GwpText.Get(GwpTextCatalog.gwp_adult_born_origin,
                     "VAR_1", name, "VAR_2", GetDutyBiographyHint(hero)));
         }
 
@@ -579,17 +579,17 @@ namespace GreyWardenPolicePurity
         private static string GetDutyBiographyHint(Hero hero)
         {
             if (!TryGetDuty(hero, out DutyKind kind))
-                return GwpText.Get("{=gwp_bio_hint_law}She follows the case rolls wherever the order has need of another steady hand.");
+                return GwpText.Get(GwpTextCatalog.gwp_bio_hint_law);
 
             return kind switch
             {
-                DutyKind.Training => GwpText.Get("{=gwp_bio_hint_training}She spends long seasons in the drill yard, turning fresh levies into soldiers who can hold formation when the road turns bloody."),
-                DutyKind.CaravanProtection => GwpText.Get("{=gwp_bio_hint_caravan}She is most often seen at bridges, ferries, and merchant crossings, following those who prey upon caravans until the roads are safe again."),
-                DutyKind.VillageProtection => GwpText.Get("{=gwp_bio_hint_village}She rides where peasants have been attacked or fields put to the torch, and has made the protection of village life the measure of her service."),
-                DutyKind.IssueResolution => GwpText.Get("{=gwp_bio_hint_issues}She travels from village headmen to town merchants and even the harder figures of the alleys, hearing unresolved petitions and leaving fewer grievances behind her."),
-                DutyKind.Reconstruction => GwpText.Get("{=gwp_bio_hint_rebuild}She is repeatedly found among blackened roofs and abandoned wells, remaining after the fighting until ruined villages can receive their people once more."),
-                DutyKind.PlayerRequests => GwpText.Get("{=gwp_bio_hint_player}She receives petitions from nobles, carries them before the people, and coordinates the Grey Wardens' answer when ordinary law offers no practical remedy."),
-                _ => GwpText.Get("{=gwp_bio_hint_law}She follows the case rolls wherever the order has need of another steady hand.")
+                DutyKind.Training => GwpText.Get(GwpTextCatalog.gwp_bio_hint_training),
+                DutyKind.CaravanProtection => GwpText.Get(GwpTextCatalog.gwp_bio_hint_caravan),
+                DutyKind.VillageProtection => GwpText.Get(GwpTextCatalog.gwp_bio_hint_village),
+                DutyKind.IssueResolution => GwpText.Get(GwpTextCatalog.gwp_bio_hint_issues),
+                DutyKind.Reconstruction => GwpText.Get(GwpTextCatalog.gwp_bio_hint_rebuild),
+                DutyKind.PlayerRequests => GwpText.Get(GwpTextCatalog.gwp_bio_hint_player),
+                _ => GwpText.Get(GwpTextCatalog.gwp_bio_hint_law)
             };
         }
 

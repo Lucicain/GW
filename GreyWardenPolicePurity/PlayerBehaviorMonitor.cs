@@ -165,10 +165,10 @@ namespace GreyWardenPolicePurity
 
             // 若已进入通缉状态，立即触发警察追捕
             if (PlayerState.IsWanted)
-                CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_playerbehaviormonitor_005}Raid village"), location, village.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_006}Unknown village"));
+                CrimeState.TryAddPlayerCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_005), location, village.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_006));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_007}The Grey Wardens record your raid on {VAR_1}.", "VAR_1", village.Name),
+                GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_007, "VAR_1", village.Name),
                 Colors.Red));
 
             PlayerState.TrackVictimFaction(victimFaction);
@@ -190,8 +190,8 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime(GwpText.Get("{=gwp_playerbehaviormonitor_010}Forced Recruitment"), settlement.Position.ToVec2(),
-                settlement.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_011}Unknown Village"), settlement.MapFaction);
+            PlayerState.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_010), settlement.Position.ToVec2(),
+                settlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_011), settlement.MapFaction);
         }
 
         private void OnForceSupplies(BattleSideEnum side, ForceSuppliesEventComponent component)
@@ -210,8 +210,8 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime(GwpText.Get("{=gwp_playerbehaviormonitor_012}Forced Requisition of Supplies"), settlement.Position.ToVec2(),
-                settlement.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_013}Unknown Village"), settlement.MapFaction);
+            PlayerState.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_012), settlement.Position.ToVec2(),
+                settlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_013), settlement.MapFaction);
         }
 
         #endregion
@@ -319,12 +319,12 @@ namespace GreyWardenPolicePurity
                 {
                     PlayerState.ChangeReputation(repGain);
 
-                    string deedType = defenderIsVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_014}Protect the Village from Plunder")
-                                    : defenderIsCaravan     ? GwpText.Get("{=gwp_playerbehaviormonitor_015}Rescue the Caravan")
-                                    : defenderIsVillager    ? GwpText.Get("{=gwp_playerbehaviormonitor_016}Rescue the Villagers")
-                                    : GwpText.Get("{=gwp_playerbehaviormonitor_017}Defeat the robbers");
+                    string deedType = defenderIsVillageRaid ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
+                                    : defenderIsCaravan     ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_015)
+                                    : defenderIsVillager    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_016)
+                                    : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_017);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbehaviormonitor_018}The Grey Wardens note your good deed: {VAR_1}.", "VAR_1", deedType, "VAR_2", playerKillCount),
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_018, "VAR_1", deedType, "VAR_2", playerKillCount),
                         Colors.Green));
                 }
             }
@@ -372,21 +372,21 @@ namespace GreyWardenPolicePurity
                     // 若已进入通缉状态，触发警察追捕
                     if (PlayerState.IsWanted)
                     {
-                        string crimeType = playerRaidedVillage    ? GwpText.Get("{=gwp_playerbehaviormonitor_019}Raid the village")
-                                         : playerForcedVolunteers ? GwpText.Get("{=gwp_playerbehaviormonitor_020}Force recruits")
-                                         : playerForcedSupplies   ? GwpText.Get("{=gwp_playerbehaviormonitor_021}Force supplies")
-                                         : loserIsCaravan         ? GwpText.Get("{=gwp_playerbehaviormonitor_022}Raid the caravan")
-                                         : GwpText.Get("{=gwp_playerbehaviormonitor_023}Kill the villagers");
+                        string crimeType = playerRaidedVillage    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_019)
+                                         : playerForcedVolunteers ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_020)
+                                         : playerForcedSupplies   ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_021)
+                                         : loserIsCaravan         ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_022)
+                                         : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_023);
                         CrimeState.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
                     }
 
-                    string badDeedType = playerRaidedVillage    ? GwpText.Get("{=gwp_playerbehaviormonitor_024}Raid a village")
-                                       : playerForcedVolunteers ? GwpText.Get("{=gwp_playerbehaviormonitor_025}Force recruitment")
-                                       : playerForcedSupplies   ? GwpText.Get("{=gwp_playerbehaviormonitor_026}Forced supplies")
-                                       : loserIsCaravan         ? GwpText.Get("{=gwp_playerbehaviormonitor_027}Raid a caravan")
-                                       : GwpText.Get("{=gwp_playerbehaviormonitor_028}Kill villagers");
+                    string badDeedType = playerRaidedVillage    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_024)
+                                       : playerForcedVolunteers ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_025)
+                                       : playerForcedSupplies   ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_026)
+                                       : loserIsCaravan         ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_027)
+                                       : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_028);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbehaviormonitor_029}The Grey Wardens record your crime: {VAR_1}.", "VAR_1", badDeedType, "VAR_2", killCount),
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_029, "VAR_1", badDeedType, "VAR_2", killCount),
                         Colors.Red));
                 }
             }
@@ -474,7 +474,7 @@ namespace GreyWardenPolicePurity
             {
                 _pendingVillageDefenseEncounterText = true;
                 _pendingVillageDefenseName = battle.MapEventSettlement?.Name?.ToString()
-                    ?? GwpText.Get("{=gwp_playerbehaviormonitor_050}the village");
+                    ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_050);
             }
 
             PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
@@ -492,12 +492,12 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable(
                 "ENCOUNTER_TEXT",
                 new TextObject(GwpText.Get(
-                    "{=gwp_playerbehaviormonitor_051}You have come to {VAR_1} and joined its militia against the raiders. When you are ready, stand with the villagers and meet the enemy.",
+                    GwpTextCatalog.gwp_playerbehaviormonitor_051,
                     "VAR_1",
                     _pendingVillageDefenseName)));
             MBTextManager.SetTextVariable(
                 "ATTACK_TEXT",
-                new TextObject(GwpText.Get("{=gwp_playerbehaviormonitor_052}Stand with the militia and attack")));
+                new TextObject(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_052)));
 
             _pendingVillageDefenseEncounterText = false;
             _pendingVillageDefenseName = string.Empty;
@@ -572,15 +572,15 @@ namespace GreyWardenPolicePurity
             if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid)
                 return false;
 
-            string defendTarget = isVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_030}Village")
-                : defenderIsCaravan ? GwpText.Get("{=gwp_playerbehaviormonitor_031}Caravan")
-                : GwpText.Get("{=gwp_playerbehaviormonitor_032}Villager");
-            string attackAction = isVillageRaid ? GwpText.Get("{=gwp_playerbehaviormonitor_033}Participate in raiding village")
-                : defenderIsCaravan ? GwpText.Get("{=gwp_playerbehaviormonitor_034}Raid Caravan")
-                : GwpText.Get("{=gwp_playerbehaviormonitor_035}Attack villagers");
+            string defendTarget = isVillageRaid ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_030)
+                : defenderIsCaravan ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_031)
+                : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_032);
+            string attackAction = isVillageRaid ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_033)
+                : defenderIsCaravan ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_034)
+                : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_035);
 
-            defendText = GwpText.Get("{=gwp_playerbehaviormonitor_036}Join the defenders and protect {VAR_1}.", "VAR_1", defendTarget);
-            attackText = GwpText.Get("{=gwp_playerbehaviormonitor_037}joins the attacker, {VAR_1}.", "VAR_1", attackAction);
+            defendText = GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_036, "VAR_1", defendTarget);
+            attackText = GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_037, "VAR_1", attackAction);
             return true;
         }
 
@@ -592,15 +592,15 @@ namespace GreyWardenPolicePurity
             if (!TryGetPoliceCriminalEncounter(battle, out BattleSideEnum policeSide, out MobileParty? criminal))
                 return false;
 
-            string criminalName = criminal?.Name?.ToString() ?? GwpText.Get("{=gwp_playerbehaviormonitor_038}Prisoner");
+            string criminalName = criminal?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_038);
             bool policeDefends = policeSide == BattleSideEnum.Defender;
 
             defendText = policeDefends
-                ? GwpText.Get("{=gwp_playerbehaviormonitor_039}Join the Grey Wardens and help hunt down criminals.")
-                : GwpText.Get("{=gwp_playerbehaviormonitor_040}Join {VAR_1} against the Grey Wardens.", "VAR_1", criminalName);
+                ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_039)
+                : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_040, "VAR_1", criminalName);
             attackText = policeDefends
-                ? GwpText.Get("{=gwp_playerbehaviormonitor_041}Join {VAR_1} against the Grey Wardens.", "VAR_1", criminalName)
-                : GwpText.Get("{=gwp_playerbehaviormonitor_042}Join the Grey Wardens and help catch criminals.");
+                ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_041, "VAR_1", criminalName)
+                : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_042);
             return true;
         }
 
@@ -628,7 +628,7 @@ namespace GreyWardenPolicePurity
 
                 PlayerState.ChangeReputation(repGain);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbehaviormonitor_043}The Grey Wardens note that you helped bring an outlaw to justice.", "VAR_1", playerKillCount),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_043, "VAR_1", playerKillCount),
                     Colors.Green));
             }
             else
@@ -649,13 +649,13 @@ namespace GreyWardenPolicePurity
                 if (PlayerState.IsWanted)
                 {
                     CrimeState.TryAddPlayerCrime(
-                        GwpText.Get("{=gwp_playerbehaviormonitor_044}Obstructed enforcement"),
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_044),
                         mapEvent.Position.ToVec2(),
-                        GwpText.Get("{=gwp_playerbehaviormonitor_045}Helped criminals against the Grey Wardens"));
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_045));
                 }
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbehaviormonitor_046}The Grey Wardens record that you obstructed them.", "VAR_1", policeCasualties),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_046, "VAR_1", policeCasualties),
                     Colors.Red));
             }
 
@@ -684,9 +684,9 @@ namespace GreyWardenPolicePurity
 
             PlayerState.ChangeReputation(-repLoss);
 
-            string targetName = loserHadPatrol ? GwpText.Get("{=gwp_playerbehaviormonitor_047}Picket") : GwpText.Get("{=gwp_playerbehaviormonitor_048}Grey Wardens");
+            string targetName = loserHadPatrol ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_047) : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_048);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_049}The Grey Wardens record your attack on {VAR_1}.", "VAR_1", targetName, "VAR_2", policeCasualties),
+                GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_049, "VAR_1", targetName, "VAR_2", policeCasualties),
                 Colors.Red));
             return true;
         }
@@ -716,7 +716,7 @@ namespace GreyWardenPolicePurity
 
             PlayerState.ChangeReputation(repGain);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbehaviormonitor_054}The Grey Wardens note that you broke a wanted outlaw's band.", "VAR_1", playerKillCount),
+                GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_054, "VAR_1", playerKillCount),
                 Colors.Green));
             return true;
         }

@@ -2,7 +2,7 @@
 <strings>
 	<string
 		id="str_comment_special_clan_intro_gw.default"
-		text="{=gwp_clan_intro}We are the Grey Wardens, a constabulary house descended from the institutions of the old, undivided Empire. The Empire is broken, yet lawful succession endures. Dynasties may rise and fall; streets, villages, and roads must still be watched. Call us a clan or call us an order—it is all one to us. So long as the common folk cry out for justice, the Grey Wardens shall answer.">
+		text="{=gwp_clan_intro}We are the Grey Wardens, bound by Heaven&apos;s commandments to watch over these lands. The order answers to no lord. We pursue those who raid villages or attack travellers, whoever they serve.">
 		<tags>
 			<tag
 				tag_name="DefaultTag" />

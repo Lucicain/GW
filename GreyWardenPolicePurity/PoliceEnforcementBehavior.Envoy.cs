@@ -178,7 +178,7 @@ namespace GreyWardenPolicePurity
 
             var transferred = new List<ImmediateInterceptorTroopTransfer>();
             MobileParty? envoy = CreateDetachment(police, batches, size, 1,
-                GwpText.Get("{=gwp_envoy_party_name}Grey Warden envoy"),
+                GwpText.Get(GwpTextCatalog.gwp_envoy_party_name),
                 transferred, out int moved, out Settlement? returnSettlement);
             if (envoy == null || returnSettlement == null)
                 return false;
@@ -563,7 +563,7 @@ namespace GreyWardenPolicePurity
                 "offender=" + target.StringId + "; town=" + venue.Settlement.StringId +
                 "; existingTournament=" + existingTournament);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_envoy_duel_called}{VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}.",
+                GwpText.Get(GwpTextCatalog.gwp_envoy_duel_called,
                     "VAR_1", target.LeaderHero?.Name?.ToString() ?? string.Empty,
                     "VAR_2", police.LeaderHero?.Name?.ToString() ?? string.Empty,
                     "VAR_3", venue.Name?.ToString() ?? string.Empty),
@@ -692,7 +692,7 @@ namespace GreyWardenPolicePurity
                 GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
                 ResolveEnvoyCase(envoyCase, crime, true, "envoy_duel_won_" + collected);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_envoy_duel_warden_won}{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full.",
+                    GwpText.Get(GwpTextCatalog.gwp_envoy_duel_warden_won,
                         "VAR_1", wardenName, "VAR_2", offenderName, "VAR_3", townName),
                     Colors.Green));
                 return;
@@ -702,7 +702,7 @@ namespace GreyWardenPolicePurity
             GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
             ResolveEnvoyCase(envoyCase, crime, false, "envoy_duel_lost");
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_envoy_duel_offender_won}{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed.",
+                GwpText.Get(GwpTextCatalog.gwp_envoy_duel_offender_won,
                     "VAR_1", offenderName, "VAR_2", wardenName, "VAR_3", townName),
                 Colors.Yellow));
         }

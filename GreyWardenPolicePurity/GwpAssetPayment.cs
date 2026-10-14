@@ -148,7 +148,7 @@ namespace GreyWardenPolicePurity
             private readonly GwpAssetPayment _payment;
             internal Agreement(GwpAssetPayment payment) : base(payment._receiver, payment._to) { _payment = payment; }
             public override string StringID => "gwp_collection_agreement";
-            public override TextObject Name => GwpText.Create("{=gwp_collection_agreement}Honor our agreement");
+            public override TextObject Name => GwpText.Create(GwpTextCatalog.gwp_collection_agreement);
             public override int GetUnitValueForFaction(IFaction faction)
             {
                 Hero other = _payment._payer == Hero.MainHero ? _payment._receiver : _payment._payer;
@@ -219,7 +219,7 @@ namespace GreyWardenPolicePurity
             { _payment = payment; Incoming = incoming; _max = Math.Max(0, hero.Gold); }
             public override string StringID => Incoming ? "gwp_asset_gold_in" : "gwp_asset_gold_out";
             public override int MaxAmount => _max;
-            public override TextObject Name => GwpText.Create("{=gwp_asset_gold}Gold");
+            public override TextObject Name => GwpText.Create(GwpTextCatalog.gwp_asset_gold);
             public override int GetUnitValueForFaction(IFaction faction) => _payment.ValueFor(faction, Incoming, 1);
             public override ImageIdentifier GetVisualIdentifier() => null!;
             public override void Apply() => _payment.Apply();
@@ -232,7 +232,7 @@ namespace GreyWardenPolicePurity
             internal Goods(GwpAssetPayment payment, Hero owner, Hero other, PartyBase from, PartyBase to,
                 ItemRosterElement item, bool incoming) : base(owner, other, from, to, item, payment._autoReceipt?.PriceFor(item.EquipmentElement) ?? Price(item))
             { _payment = payment; Incoming = incoming; Value = payment._autoReceipt?.PriceFor(item.EquipmentElement) ?? Price(item); }
-            public override TextObject Name => GwpText.Create("{=gwp_asset_value}{VAR_1} ({VAR_2} denars each)",
+            public override TextObject Name => GwpText.Create(GwpTextCatalog.gwp_asset_value,
                 "VAR_1", base.Name, "VAR_2", Value);
             public override int GetUnitValueForFaction(IFaction faction) => _payment.ValueFor(faction, Incoming, Value);
             public override void Apply() => _payment.Apply();

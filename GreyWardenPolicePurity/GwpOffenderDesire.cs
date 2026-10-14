@@ -129,49 +129,49 @@ namespace GreyWardenPolicePurity
         internal static TextObject Line(GwpOffenderDesire desire) =>
             desire switch
             {
-                GwpOffenderDesire.RequestGrace => GwpText.Create("{=gwp_fa_desire_grace}Give me three days to raise the money. Come back then and I will answer for the payment."),
-                GwpOffenderDesire.PayToAvoidBattle => GwpText.Create("{=gwp_fa_desire_cautious}Keep your weapons lowered. I will pay what you ask; there need be no battle."),
-                GwpOffenderDesire.PayForPeace => GwpText.Create("{=gwp_fa_desire_merciful}Enough people have suffered. Take the full fine, and let there be no more bloodshed."),
-                GwpOffenderDesire.PayGenerously => GwpText.Create("{=gwp_fa_desire_generous}I can spare the silver. Take the full amount and see that this account is settled."),
+                GwpOffenderDesire.RequestGrace => GwpText.Create(GwpTextCatalog.gwp_fa_desire_grace),
+                GwpOffenderDesire.PayToAvoidBattle => GwpText.Create(GwpTextCatalog.gwp_fa_desire_cautious),
+                GwpOffenderDesire.PayForPeace => GwpText.Create(GwpTextCatalog.gwp_fa_desire_merciful),
+                GwpOffenderDesire.PayGenerously => GwpText.Create(GwpTextCatalog.gwp_fa_desire_generous),
                 GwpOffenderDesire.SurrenderSelf =>
-                    GwpText.Create("{=gwp_fa_desire_surrender}That silver is my men's wages. Take me instead - I ride with you, and they go home."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_surrender),
                 GwpOffenderDesire.BribeTheWarden =>
-                    GwpText.Create("{=gwp_fa_desire_bribe}Property worth {GWP_BRIBE_AMOUNT} denars, for you alone. What you tell the Wardens is your affair."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_bribe),
                 GwpOffenderDesire.CunningHalf =>
-                    GwpText.Create("{=gwp_fa_desire_cunning}Half. That is what the baggage carries, and that is what you are getting."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_cunning),
                 GwpOffenderDesire.RashMost =>
-                    GwpText.Create("{=gwp_fa_desire_rash}Take four fifths of the fine and let us finish this."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_rash),
                 GwpOffenderDesire.DemandDuel =>
-                    GwpText.Create("{=gwp_fa_desire_duel}Fight me alone. If you win, I pay the fine; if I win, you collect nothing."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_duel),
                 GwpOffenderDesire.DeedsOnly =>
-                    GwpText.Create("{=gwp_fa_desire_deeds}I will pay two fifths. The men I blame will answer to me with their lives."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_deeds),
                 GwpOffenderDesire.HaggleDown =>
-                    GwpText.Create("{=gwp_fa_desire_haggle}I will give you seven tenths of the fine. That is my offer."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_haggle),
                 _ =>
-                    GwpText.Create("{=gwp_fa_desire_payfull}Very well. The full sum, and we are finished here.")
+                    GwpText.Create(GwpTextCatalog.gwp_fa_desire_payfull)
             };
 
         /// <summary>玩家决定照他说的办时，玩家那句话。</summary>
         internal static TextObject PlayerAcceptLine(GwpOffenderDesire desire) =>
             desire switch
             {
-                GwpOffenderDesire.RequestGrace => GwpText.Create("{=gwp_fa_accept_grace}Three days, once only. I will return for payment."),
+                GwpOffenderDesire.RequestGrace => GwpText.Create(GwpTextCatalog.gwp_fa_accept_grace),
                 GwpOffenderDesire.SurrenderSelf =>
-                    GwpText.Create("{=gwp_fa_accept_surrender}Then ride with me. Your men can find their own way."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_surrender),
                 GwpOffenderDesire.BribeTheWarden =>
-                    GwpText.Create("{=gwp_fa_accept_bribe}Hand it over. This conversation did not happen."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_bribe),
                 GwpOffenderDesire.CunningHalf =>
-                    GwpText.Create("{=gwp_fa_accept_cunning}Half, then. The rest stays against your name."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_cunning),
                 GwpOffenderDesire.RashMost =>
-                    GwpText.Create("{=gwp_fa_accept_rash}Most of it will do. The remainder stays on the account."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_rash),
                 GwpOffenderDesire.DemandDuel =>
-                    GwpText.Create("{=gwp_fa_accept_duel}Draw, then. Let us settle it between us."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_duel),
                 GwpOffenderDesire.DeedsOnly =>
-                    GwpText.Create("{=gwp_fa_accept_deeds}Pay for the deed, then. The dead stay on your record."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_deeds),
                 GwpOffenderDesire.HaggleDown =>
-                    GwpText.Create("{=gwp_fa_accept_haggle}Seven tenths, then. I will have to account for the shortfall."),
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_haggle),
                 _ =>
-                    GwpText.Create("{=gwp_fa_accept_payfull}The full sum. Hand it over.")
+                    GwpText.Create(GwpTextCatalog.gwp_fa_accept_payfull)
             };
     }
 }

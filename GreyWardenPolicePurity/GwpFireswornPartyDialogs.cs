@@ -26,30 +26,30 @@ namespace GreyWardenPolicePurity
             starter.AddDialogLine("gwp_fs_party_greeting", "start", "gwp_fs_party_talk",
                 "{=!}{GWP_FS_PARTY_GREETING}", GreetingCondition, null, 200);
             starter.AddDialogLine("gwp_fs_party_pretalk", "gwp_fs_party_pretalk", "gwp_fs_party_talk",
-                GwpText.Get("{=gwp_fs_party_pretalk}Anything else?"), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_pretalk), null, null);
 
             starter.AddPlayerLine("gwp_fs_party_buy", "gwp_fs_party_talk", "gwp_fs_party_offer",
-                GwpText.Get("{=gwp_fs_party_buy}What are you carrying? I'll buy it."), BuyCondition, null);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_buy), BuyCondition, null);
             starter.AddDialogLine("gwp_fs_party_offer", "gwp_fs_party_offer", "gwp_fs_party_buy_decision",
-                GwpText.Get("{=gwp_fs_party_offer}We have {PRODUCTS}. All of it for {TOTAL_PRICE}{GOLD_ICON}, and the coin goes to the Eternal Fire."),
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_offer),
                 null, null);
             starter.AddPlayerLine("gwp_fs_party_buy_yes", "gwp_fs_party_buy_decision", "close_window",
-                GwpText.Get("{=gwp_fs_party_buy_yes}Done. Here is {TOTAL_PRICE}{GOLD_ICON}."), null, Buy);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_buy_yes), null, Buy);
             starter.AddPlayerLine("gwp_fs_party_buy_no", "gwp_fs_party_buy_decision", "gwp_fs_party_pretalk",
-                GwpText.Get("{=gwp_fs_party_buy_no}Never mind."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_buy_no), null, null);
 
             starter.AddPlayerLine("gwp_fs_party_threaten", "gwp_fs_party_talk", "gwp_fs_party_refuse",
-                GwpText.Get("{=gwp_fs_party_threaten}Hand over everything you have."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_threaten), null, null);
             starter.AddDialogLine("gwp_fs_party_refuse", "gwp_fs_party_refuse", "gwp_fs_party_fight_decision",
-                GwpText.Get("{=gwp_fs_party_refuse}The fire does not bow to you. If you want anything of ours, take it over our bodies."),
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_refuse),
                 null, null);
             starter.AddPlayerLine("gwp_fs_party_fight", "gwp_fs_party_fight_decision", "close_window",
-                GwpText.Get("{=gwp_fs_party_fight}So be it."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_fight), null, null);
             starter.AddPlayerLine("gwp_fs_party_back_off", "gwp_fs_party_fight_decision", "close_window",
-                GwpText.Get("{=gwp_fs_party_back_off}Never mind. Go on your way."), null, Leave);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_back_off), null, Leave);
 
             starter.AddPlayerLine("gwp_fs_party_leave", "gwp_fs_party_talk", "close_window",
-                GwpText.Get("{=gwp_fs_party_leave}Carry on, then."), null, Leave);
+                GwpText.Get(GwpTextCatalog.gwp_fs_party_leave), null, Leave);
         }
 
         private static MobileParty? Encountered() =>
@@ -65,15 +65,15 @@ namespace GreyWardenPolicePurity
                     out Settlement? home, out Settlement? target))
                 return false;
             TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Mission
-                ? GwpText.Create("{=gwp_fs_party_greet_mission}May the fire light your road. We are the sworn of {HOME}, and we go to {TARGET} to carry the fire there and stay.",
+                ? GwpText.Create(GwpTextCatalog.gwp_fs_party_greet_mission,
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : kind == GwpFireswornBehavior.FaithPartyKind.Balance
-                ? GwpText.Create("{=gwp_fs_party_greet_balance}We are the sworn of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered.",
+                ? GwpText.Create(GwpTextCatalog.gwp_fs_party_greet_balance,
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : outbound
-                    ? GwpText.Create("{=gwp_fs_party_greet_cart_out}We are the sworn of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire.",
+                    ? GwpText.Create(GwpTextCatalog.gwp_fs_party_greet_cart_out,
                         "HOME", home!.Name, "TARGET", target!.Name)
-                    : GwpText.Create("{=gwp_fs_party_greet_cart_back}The goods are sold. We are going home to {HOME}.",
+                    : GwpText.Create(GwpTextCatalog.gwp_fs_party_greet_cart_back,
                         "HOME", home!.Name);
             MBTextManager.SetTextVariable("GWP_FS_PARTY_GREETING", greeting);
             return true;
@@ -100,13 +100,13 @@ namespace GreyWardenPolicePurity
             int total = goods.Sum(element => Price(party!, element.EquipmentElement) * element.Amount);
             if (goods.Count == 0 || total <= 0 || Hero.MainHero.Gold < total)
                 return false;
-            string products = string.Join(GwpText.Get("{=gwp_fs_party_products_separator}, "), goods
+            string products = string.Join(GwpText.Get(GwpTextCatalog.gwp_fs_party_products_separator), goods
                 .OrderByDescending(element => element.Amount * element.EquipmentElement.ItemValue)
                 .Take(4)
-                .Select(element => GwpText.Get("{=gwp_fs_party_product}{COUNT} {ITEM}",
+                .Select(element => GwpText.Get(GwpTextCatalog.gwp_fs_party_product,
                     "COUNT", element.Amount, "ITEM", element.EquipmentElement.GetModifiedItemName())));
             if (goods.Count > 4)
-                products += GwpText.Get("{=gwp_fs_party_products_more} and more");
+                products += GwpText.Get(GwpTextCatalog.gwp_fs_party_products_more);
             MBTextManager.SetTextVariable("PRODUCTS", products);
             MBTextManager.SetTextVariable("TOTAL_PRICE", total);
             return true;

@@ -225,7 +225,7 @@ namespace GreyWardenPolicePurity
 
             if (CampaignTime.Now.ToHours >= _atonementDeadlineHours)
             {
-                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_001}The atonement contract times out, reputation -5."));
+                FailAtonementTask(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_001));
                 return;
             }
 
@@ -233,7 +233,7 @@ namespace GreyWardenPolicePurity
                 p.StringId == _atonementTargetPartyId && p.IsActive);
             if (target == null)
             {
-                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_002}Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name."));
+                FailAtonementTask(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_002));
                 return;
             }
 
@@ -312,12 +312,12 @@ namespace GreyWardenPolicePurity
 
                 _atonementQuest?.MarkReadyForTurnIn();
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_003}You have defeated {VAR_1}. Report to any Warden lord to complete your atonement.", "VAR_1", _atonementTargetName),
+                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_003, "VAR_1", _atonementTargetName),
                     Colors.Green));
             }
             else
             {
-                FailAtonementTask(GwpText.Get("{=gwp_policeenforcementbehavior_004}Your atonement has failed."));
+                FailAtonementTask(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_004));
             }
         }
 
@@ -527,13 +527,13 @@ namespace GreyWardenPolicePurity
             else
             {
                 CrimeState.EndTask(escortTask.PolicePartyId, "player_escort_finished");
-                CrimeState.TryAddPlayerCrime(GwpText.Get("{=gwp_policeenforcementbehavior_005}Insufficient fine"), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get("{=gwp_policeenforcementbehavior_006}Escort fine unpaid"));
+                CrimeState.TryAddPlayerCrime(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_005), MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero, GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_006));
             }
 
             // 步骤6：显示消息
-            string castleName = castle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_007}Fortress");
+            string castleName = castle?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_007);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_008}You are brought to {VAR_1} and released after paying {VAR_3} denars.", "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_008, "VAR_1", castleName, "VAR_2", fine, "VAR_3", collected, "VAR_4", repAfter),
                 Colors.Yellow));
 
             // 步骤7：恢复警察AI，开始补给
@@ -1364,9 +1364,9 @@ namespace GreyWardenPolicePurity
 
                         GreyWardenPartyDesireBehavior.RequestImmediateRethink(pp);
 
-                        string castleName = targetCastle?.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_009}FORT");
+                        string castleName = targetCastle?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_009);
                         InformationManager.DisplayMessage(new InformationMessage(
-                            GwpText.Get("{=gwp_policeenforcementbehavior_010}You are defeated by {VAR_1} and taken to {VAR_2}.", "VAR_1", pp.Name, "VAR_2", castleName),
+                            GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_010, "VAR_1", pp.Name, "VAR_2", castleName),
                             Colors.Yellow));
 
                         continue;

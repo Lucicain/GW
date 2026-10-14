@@ -91,7 +91,7 @@ namespace GreyWardenPolicePurity
             row.LastCongregation = CampaignTime.Now.ToHours;
             UpdatePriestPower(row);
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
-                GwpText.Get("{=gwp_notice_congregation}{COUNT} swore to the Eternal Fire", "COUNT", gain));
+                GwpText.Get(GwpTextCatalog.gwp_notice_congregation, "COUNT", gain));
             GwpAiDiagnostics.WriteFaith("CONGREGATION_COMPLETED",
                 "village=" + village.StringId + "; gain=" + gain + "; households=" + before + "->" + row.Households + "; guard=" + Sworn(row) +
                 "; hearth=" + village.Village.Hearth.ToString("0") +
@@ -259,12 +259,12 @@ namespace GreyWardenPolicePurity
             // 聚落上那一条只说烧了多少、多少户立誓（用户 2026-10-08：写得太多）；立誓户数连烧俘虏感化的一起算。
             List<string> burned = new List<string>();
             if (prisonersBurned + militiaBurned > 0)
-                burned.Add(GwpText.Get("{=gwp_notice_burned_people}{COUNT} people", "COUNT", prisonersBurned + militiaBurned));
+                burned.Add(GwpText.Get(GwpTextCatalog.gwp_notice_burned_people, "COUNT", prisonersBurned + militiaBurned));
             if (householdsBurned > 0)
-                burned.Add(GwpText.Get("{=gwp_notice_burned_homes}{COUNT} households", "COUNT", householdsBurned));
+                burned.Add(GwpText.Get(GwpTextCatalog.gwp_notice_burned_homes, "COUNT", householdsBurned));
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
-                GwpText.Get("{=gwp_notice_damnation}{BURNED} went to the pyre; {SWORN} households swore",
-                    "BURNED", string.Join(GwpText.Get("{=gwp_fs_party_products_separator}, "), burned),
+                GwpText.Get(GwpTextCatalog.gwp_notice_damnation,
+                    "BURNED", string.Join(GwpText.Get(GwpTextCatalog.gwp_fs_party_products_separator), burned),
                     "SWORN", row.Households - before));
             _rituals.Add(new Ritual
             {

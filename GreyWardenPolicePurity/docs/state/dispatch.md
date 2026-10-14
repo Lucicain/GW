@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：`cf53ba5`（2026-10-14）
+> 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
 > 待实测：送信归队接续伤兵和累计经验；反复建队不重号
 

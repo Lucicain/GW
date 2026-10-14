@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
             if (targetFaction == null || !HasActiveBountyWarForFaction(targetFaction))
                 return null;
 
-            string escortPartyName = GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_001}Unspecified escort unit");
+            string escortPartyName = GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_001);
             if (!string.IsNullOrEmpty(_escortPolicePartyId))
             {
                 MobileParty? escortParty = MobileParty.All.FirstOrDefault(p =>
@@ -35,14 +35,14 @@ namespace GreyWardenPolicePurity
                     escortPartyName = escortParty.Name?.ToString() ?? escortPartyName;
             }
 
-            string targetName = string.IsNullOrWhiteSpace(_activeBountyTargetName) ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_002}Unknown target") : _activeBountyTargetName;
+            string targetName = string.IsNullOrWhiteSpace(_activeBountyTargetName) ? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_002) : _activeBountyTargetName;
             string stage = IsTrackingBountyTarget
-                ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_003}The target is still escaping, and the Grey Wardens troops are escorting the player to pursue")
+                ? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_003)
                 : IsWaitingForBountyCollection
-                    ? GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_004}The target has been defeated, waiting for the player to receive the bounty and the Grey Wardens will deal with the aftermath")
-                    : GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_005}The bounty process is still in progress");
+                    ? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_004)
+                    : GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_005);
 
-            return GwpText.Get("{=gwp_playerbountybehavior_encyclopedia_006}Player bounty collaboration: The current target is {VAR_1}, and the hostile forces are {VAR_2}. Escort force: {VAR_3}; current stage: {VAR_4}.", "VAR_1", targetName, "VAR_2", targetFaction.Name, "VAR_3", escortPartyName, "VAR_4", stage);
+            return GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_encyclopedia_006, "VAR_1", targetName, "VAR_2", targetFaction.Name, "VAR_3", escortPartyName, "VAR_4", stage);
         }
     }
 }

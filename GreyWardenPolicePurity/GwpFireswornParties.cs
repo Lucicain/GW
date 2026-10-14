@@ -191,10 +191,10 @@ namespace GreyWardenPolicePurity
         {
             Clan police = PoliceStats.GetPoliceClan();
             TextObject name = kind == FaithPartyKind.Mission
-                ? GwpText.Create("{=gwp_fs_mission_party}Disciples of the Eternal Fire")
+                ? GwpText.Create(GwpTextCatalog.gwp_fs_mission_party)
                 : kind == FaithPartyKind.Balance
-                    ? GwpText.Create("{=gwp_fs_balance_party}Armsbearers of {VILLAGE}", "VILLAGE", home.Name)
-                    : GwpText.Create("{=gwp_fs_caravan_party}Zealots of {VILLAGE}", "VILLAGE", home.Name);
+                    ? GwpText.Create(GwpTextCatalog.gwp_fs_balance_party, "VILLAGE", home.Name)
+                    : GwpText.Create(GwpTextCatalog.gwp_fs_caravan_party, "VILLAGE", home.Name);
             // 所有者留空，和纠察队、追截队、练兵队一样（PolicePatrolBehavior 当年因为填了族长出过事）：
             // 填族长的话，这支队一打输，被俘豁免就把族长当败将强制逃亡，原版逃亡先销毁她正带着的部队（实机诊断 2026-10-08）。
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
@@ -466,8 +466,8 @@ namespace GreyWardenPolicePurity
             if (preaching)
                 StartCongregation(row, village, "mission:" + record.HomeId);
             GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Mission
-                ? GwpText.Get("{=gwp_notice_mission}Brought {COUNT} sworn to stay", "COUNT", joined)
-                : GwpText.Get("{=gwp_notice_balance}Brought {COUNT} pieces of arms", "COUNT", kits));
+                ? GwpText.Get(GwpTextCatalog.gwp_notice_mission, "COUNT", joined)
+                : GwpText.Get(GwpTextCatalog.gwp_notice_balance, "COUNT", kits));
             _faithParties.Remove(party.StringId);
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             DestroyPartyAction.Apply(null, party);
@@ -667,7 +667,7 @@ namespace GreyWardenPolicePurity
             party.PartyTradeGold += proceeds;
             record.Stops++;
             if (sold > 0)
-                GwpSettlementNotices.Post(town, party, GwpText.Get("{=gwp_notice_market}Sold {COUNT} goods", "COUNT", sold));
+                GwpSettlementNotices.Post(town, party, GwpText.Get(GwpTextCatalog.gwp_notice_market, "COUNT", sold));
             int unsoldValue = NonFoodValue(party.ItemRoster);
             // 一座城的金库常常只有两三万，一车俘虏装备能值几十万（实机诊断 2026-10-06：装车估值 32.7 万只卖出 9%，
             // 把城镇金库卖空）。卖不完就去附近还有钱的城接着卖，最多 3 座。

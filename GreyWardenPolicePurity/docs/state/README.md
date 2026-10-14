@@ -92,6 +92,7 @@ python tools/Check-StateFreshness.py
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
 | [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
 | [`infrastructure.md`](infrastructure.md) | 身份判据、调参、文本与本地化、存档类型 |
+| [`player-text.md`](player-text.md) | 玩家词句的独立中英文本入口、生成与核对 |
 | [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
 
 ### 执法：案件从立案到结案

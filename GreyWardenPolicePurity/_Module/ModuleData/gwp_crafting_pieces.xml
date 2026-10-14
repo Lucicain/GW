@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CraftingPieces>
   <CraftingPiece id="gwp_vlandian_blade_3_dual"
-                 name="{=gwp_item_dual_offhand}Grey Warden Dual Blade"
+                 name="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)"
                  tier="5"
                  piece_type="Blade"
                  mesh="vlandian_blade_3"

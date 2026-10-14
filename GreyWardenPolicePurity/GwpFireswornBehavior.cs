@@ -610,15 +610,15 @@ namespace GreyWardenPolicePurity
                 Settlement target = Settlement.Find(record.TargetId);
                 text = record.Phase == FaithPartyPhase.Outbound
                     ? record.Kind == FaithPartyKind.Mission
-                        ? GwpText.Create("{=gwp_fs_status_mission}Carrying the Eternal Fire to {TARGET}.", "TARGET", target.Name)
+                        ? GwpText.Create(GwpTextCatalog.gwp_fs_status_mission, "TARGET", target.Name)
                         : record.Kind == FaithPartyKind.Balance
-                            ? GwpText.Create("{=gwp_fs_status_balance}Carrying arms from {HOME} to the sworn of {TARGET}.",
+                            ? GwpText.Create(GwpTextCatalog.gwp_fs_status_balance,
                                 "HOME", home.Name, "TARGET", target.Name)
-                            : GwpText.Create("{=gwp_fs_status_market}Taking the goods of {HOME} to market in {TARGET}.",
+                            : GwpText.Create(GwpTextCatalog.gwp_fs_status_market,
                                 "HOME", home.Name, "TARGET", target.Name)
                     : record.Phase == FaithPartyPhase.Returning
-                        ? GwpText.Create("{=gwp_fs_status_returning}Returning to {HOME}.", "HOME", home.Name)
-                        : GwpText.Create("{=gwp_fs_status_home}Keeping watch in {HOME}.", "HOME", home.Name);
+                        ? GwpText.Create(GwpTextCatalog.gwp_fs_status_returning, "HOME", home.Name)
+                        : GwpText.Create(GwpTextCatalog.gwp_fs_status_home, "HOME", home.Name);
                 return true;
             }
             Settlement? village = party.CurrentSettlement;
@@ -626,13 +626,13 @@ namespace GreyWardenPolicePurity
                 return false;
             if (_instance._lastVisits.TryGetValue(party.StringId, out VisitSummary? visit) &&
                 (visit.Prisoners > 0 || visit.Donated > 0 || visit.Recruits > 0))
-                text = GwpText.Create("{=gwp_fs_status_visit}At the Eternal Fire in {VILLAGE}: handed over {PRISONERS} prisoners and {DONATED} pieces of gear, took {RECRUITS} sworn into the ranks.",
+                text = GwpText.Create(GwpTextCatalog.gwp_fs_status_visit,
                     "VILLAGE", village!.Name, "PRISONERS", visit.Prisoners, "DONATED", visit.Donated, "RECRUITS", visit.Recruits);
             else if (party.MemberRoster.TotalWounded > 0)
-                text = GwpText.Create("{=gwp_fs_status_healing}Tending the wounded at the Eternal Fire in {VILLAGE}.",
+                text = GwpText.Create(GwpTextCatalog.gwp_fs_status_healing,
                     "VILLAGE", village!.Name);
             else
-                text = GwpText.Create("{=gwp_fs_status_resting}Resting at the Eternal Fire in {VILLAGE}.", "VILLAGE", village!.Name);
+                text = GwpText.Create(GwpTextCatalog.gwp_fs_status_resting, "VILLAGE", village!.Name);
             return true;
         }
 
@@ -685,7 +685,7 @@ namespace GreyWardenPolicePurity
             UpdatePriestPower(row);
             // 一座村子成了信众村，是重要的事，玩家随时都该知道（用户裁定 2026-10-07：灰色消息只给重要的事）。
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_fs_priest_arrived}{PRIEST} has settled in {VILLAGE} to tend the Eternal Fire.",
+                GwpTextCatalog.gwp_fs_priest_arrived,
                 "PRIEST", priest.Name, "VILLAGE", village.Name), Colors.Gray));
         }
 
@@ -697,11 +697,11 @@ namespace GreyWardenPolicePurity
         private void AnointPriest(FaithVillage row, Hero priest, Settlement village)
         {
             TextObject firstName = priest.FirstName;
-            priest.SetName(GwpText.Create("{=gwp_fs_priest_name}Eternal Fire Priest {FIRSTNAME}",
+            priest.SetName(GwpText.Create(GwpTextCatalog.gwp_fs_priest_name,
                 "FIRSTNAME", firstName), firstName);
             priest.SetTraitLevel(DefaultTraits.Mercy, -1);
             priest.EncyclopediaText = GwpText.Create(
-                "{=gwp_fs_priest_lore}{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith he preaches holds that the women of the Grey Wardens lead the flame, and that its priests carry its word from village to village; anyone may come before it and ask for its light, and it does not ask where they were born. Under him the men and women of the village swear themselves to the fire and take up the spear to guard it.",
+                GwpTextCatalog.gwp_fs_priest_lore,
                 "PRIEST", firstName, "VILLAGE", village.Name);
             DressPriest(priest);
             row.PriestId = priest.StringId;

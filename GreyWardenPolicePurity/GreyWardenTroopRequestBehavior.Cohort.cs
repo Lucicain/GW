@@ -98,7 +98,7 @@ namespace GreyWardenPolicePurity
                         "; requested=" + _orderedCount);
                     _cohortPartyId = string.Empty;
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_troop_order_cohort_lost}The soldiers being trained for you were lost on the road. The Wardens are training another company."),
+                        GwpText.Get(GwpTextCatalog.gwp_troop_order_cohort_lost),
                         Colors.Yellow));
                 }
                 // 空队会被原版当无人队清掉，下一拍我们就会把它误报成"折在路上"。
@@ -153,7 +153,7 @@ namespace GreyWardenPolicePurity
                 1f,
                 home,
                 new TextObject(GwpText.Get(
-                    "{=gwp_troop_order_cohort_name}Grey Warden training cohort")),
+                    GwpTextCatalog.gwp_troop_order_cohort_name)),
                 policeClan,
                 policeClan.DefaultPartyTemplate,
                 // owner 必须留空：原版 ApplyEffects 会朝 party.Owner 收升级费，

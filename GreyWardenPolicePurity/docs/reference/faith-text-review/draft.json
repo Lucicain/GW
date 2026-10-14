@@ -1,0 +1,2192 @@
+{
+  "baseline": "1f84971",
+  "date": "2026-10-15",
+  "status": "用户2026-10-15批准并已应用；本文件保留审阅快照，当前维护入口PlayerText/strings.json",
+  "entries": [
+    {
+      "key": "gwp_clan_description",
+      "old_zh": "灰袍守卫起源于统一帝国时期的巡察警队。帝国覆灭后，这支以女性为主体的警察家族没有随旧秩序一同消失，而是以家族血脉、修会戒律与旧帝国法统维系自身。她们巡察道路，缉捕罪犯，调停私斗，也为仍愿守法之人留下赎罪与归正的门。对许多百姓而言，灰袍不是寻常贵族，更像一支身披灰袍、持戒而行的世俗修女警团。",
+      "sources": [
+        {
+          "file": "_Module/ModuleData/spclans.xml",
+          "line": 18,
+          "english": "The Grey Wardens trace their charge to the constabulary of the old, undivided Empire. When the Empire broke apart, this sisterhood of lawkeepers did not perish with the former order. Blood, rule, and the lawful tradition of the old Empire bound them together. They ride the roads, seize malefactors, settle private feuds, and leave a road back to lawful conduct for those willing to atone. To many common folk, the Grey Wardens are less a noble house than a secular order of grey-robed sisters sworn to keep the peace."
+        }
+      ],
+      "old_en": [
+        "The Grey Wardens trace their charge to the constabulary of the old, undivided Empire. When the Empire broke apart, this sisterhood of lawkeepers did not perish with the former order. Blood, rule, and the lawful tradition of the old Empire bound them together. They ride the roads, seize malefactors, settle private feuds, and leave a road back to lawful conduct for those willing to atone. To many common folk, the Grey Wardens are less a noble house than a secular order of grey-robed sisters sworn to keep the peace."
+      ],
+      "new_zh": "灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。",
+      "new_en": "The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven's commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment.",
+      "context": "家族百科总介绍；出身、政教分离与严苛惩戒为按用户方向拟写的模组设定，非原版事实。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_clan_intro",
+      "old_zh": "我们是灰袍守卫，承自统一帝国旧制的警察家族。帝国已崩，法统未绝；王朝可以更替，街巷、村庄与道路仍需有人巡察。世人把我们当作家族也好，当作修会也罢，于我们并无分别。只要百姓仍呼唤公道，灰袍便会回应。",
+      "sources": [
+        {
+          "file": "_Module/ModuleData/comment_strings.xml",
+          "line": 5,
+          "english": "We are the Grey Wardens, a constabulary house descended from the institutions of the old, undivided Empire. The Empire is broken, yet lawful succession endures. Dynasties may rise and fall; streets, villages, and roads must still be watched. Call us a clan or call us an order—it is all one to us. So long as the common folk cry out for justice, the Grey Wardens shall answer."
+        }
+      ],
+      "old_en": [
+        "We are the Grey Wardens, a constabulary house descended from the institutions of the old, undivided Empire. The Empire is broken, yet lawful succession endures. Dynasties may rise and fall; streets, villages, and roads must still be watched. Call us a clan or call us an order—it is all one to us. So long as the common folk cry out for justice, the Grey Wardens shall answer."
+      ],
+      "new_zh": "我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。",
+      "new_en": "We are the Grey Wardens, bound by Heaven's commandments to watch over these lands. The order answers to no lord. We pursue those who raid villages or attack travellers, whoever they serve.",
+      "context": "首次相识时的灰袍组织介绍，来自comment_strings.xml。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_clan_name",
+      "old_zh": "灰袍守卫",
+      "sources": [
+        {
+          "file": "_Module/ModuleData/spclans.xml",
+          "line": 15,
+          "english": "Grey Wardens"
+        }
+      ],
+      "old_en": [
+        "Grey Wardens"
+      ],
+      "new_zh": "灰袍守卫",
+      "new_en": "Grey Wardens",
+      "context": "家族百科与名牌的组织名，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_clan_short_name",
+      "old_zh": "灰袍",
+      "sources": [
+        {
+          "file": "_Module/ModuleData/spclans.xml",
+          "line": 16,
+          "english": "Grey Wardens"
+        }
+      ],
+      "old_en": [
+        "Grey Wardens"
+      ],
+      "new_zh": "灰袍",
+      "new_en": "Grey Wardens",
+      "context": "家族百科与名牌的组织名，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_enc_chenxi",
+      "old_zh": "{HERO_NAME}常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 30,
+          "english": "{HERO_NAME} is often sent where villages have suffered disaster, famine grips the marches, or war has left its deepest scars. She is skilled in relief, allotment, mediation, and the restoration of the simplest public order, and the common folk speak gently of her. Many first understand the Grey Wardens not when they see a criminal seized, but when they see ordinary lives set upright again amid the worst confusion."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} is often sent where villages have suffered disaster, famine grips the marches, or war has left its deepest scars. She is skilled in relief, allotment, mediation, and the restoration of the simplest public order, and the common folk speak gently of her. Many first understand the Grey Wardens not when they see a criminal seized, but when they see ordinary lives set upright again amid the worst confusion."
+      ],
+      "new_zh": "{HERO_NAME}负责战后的村庄重建。追兵离开以后，她往往还留在村里，安排人手修屋、清井，帮助流散的人家回来。她把这些劳作视作应尽的侍奉，与追捕劫掠者同样要紧。",
+      "new_en": "{HERO_NAME} oversees the rebuilding of villages after war. When the pursuit has moved on, she often remains to arrange repairs, clear wells, and help scattered families return. She regards this work as a duty of faith, as necessary as pursuing the raiders.",
+      "context": "创始领主晨曦的百科介绍，对应重建；修屋清井是重建的叙事描写，不新增工程功能。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_enc_mise",
+      "old_zh": "{HERO_NAME}最常驰往村民在路上遭袭、或田野上升起浓烟的地方。她记得那些被烧毁村庄的名字，并以普通家庭能否不再沦为战争战利品、安心劳作和出行为尺度衡量法律。那些以农民为猎物的人已经知道，一旦村庄受到威胁，她安静的态度便会立刻结束。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 28,
+          "english": "{HERO_NAME} rides most often where villagers have been struck on the road or where smoke rises above the fields. She remembers the names of burned hamlets and measures the law by whether ordinary families can work and travel without becoming spoils of war. Those who prey upon peasants have learned that her quiet manner ends the moment a village is threatened."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} rides most often where villagers have been struck on the road or where smoke rises above the fields. She remembers the names of burned hamlets and measures the law by whether ordinary families can work and travel without becoming spoils of war. Those who prey upon peasants have learned that her quiet manner ends the moment a village is threatened."
+      ],
+      "new_zh": "{HERO_NAME}负责村庄遇袭后的追捕。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路。接到劫掠的消息，她便召集人手出发；在她看来，是否入教都不能成为任人劫杀的理由。",
+      "new_en": "{HERO_NAME} pursues those who attack villages. She remembers the names of many burned settlements and knows the paths their people take when fleeing. News of a raid sends her gathering riders; she holds that no one's faith can excuse their being robbed or killed.",
+      "context": "创始领主弥瑟的百科介绍；拟稿中的保护不限信仰来自“保护平民”方向，不增添信仰筛选机制。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_enc_muguang",
+      "old_zh": "{HERO_NAME}尤其留意那些无法归入旧卷宗的请求，特别是由足以改变天下格局的旅人直接带给灰袍的请求。对于没有先例的事，她不会轻易许诺，却也很少只因旧日书记官从未设想过便驳回。六人之中，人们最常向她询问法律下一步应当变成什么。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 31,
+          "english": "{HERO_NAME} keeps an uncommon watch for petitions that do not fit the old rolls, especially those carried directly to the Grey Wardens by travellers whose deeds have altered the realm. She is slow to promise what precedent has not yet defined, yet rarely dismisses a request merely because no former clerk imagined it. Among the six, she is the one most often asked what the law should become next."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} keeps an uncommon watch for petitions that do not fit the old rolls, especially those carried directly to the Grey Wardens by travellers whose deeds have altered the realm. She is slow to promise what precedent has not yet defined, yet rarely dismisses a request merely because no former clerk imagined it. Among the six, she is the one most often asked what the law should become next."
+      ],
+      "new_zh": "{HERO_NAME}替修会接待贵族的申诉，尤其留意灰袍成员遭受的不公。她会先问清事情的经过，再召集有关的人公开议决。旧例不能解决的事，她也愿意带回修会商议。",
+      "new_en": "{HERO_NAME} receives appeals from nobles for the order, with particular concern for wrongs done to its members. She first hears what happened, then brings those concerned before a public decision. When precedent offers no answer, she takes the matter back to the order for discussion.",
+      "context": "创始领主暮光的百科介绍，对应贵族事务。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_enc_shengduo",
+      "old_zh": "{HERO_NAME}保存着旧日统一帝国传下的法令与判例，但她很少长久留在档案室。村庄首领、城镇商人、工匠，甚至巷道中更强硬的人物，都见过她前来听取尚未解决的请求，并留下来直到事由被撤回或得到解决。她认为，旧法律只有仍能平息当下的纠纷时，才证明自身价值。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 29,
+          "english": "{HERO_NAME} preserves the statutes and judgments inherited from the old, undivided Empire, but she seldom remains long beside the archive. Village headmen, town merchants, artisans, and even the harder figures of the alleys have seen her arrive, hear an unresolved petition, and stay until its cause is withdrawn or settled. She holds that an old law proves its worth only when it can still quiet a living grievance."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} preserves the statutes and judgments inherited from the old, undivided Empire, but she seldom remains long beside the archive. Village headmen, town merchants, artisans, and even the harder figures of the alleys have seen her arrive, hear an unresolved petition, and stay until its cause is withdrawn or settled. She holds that an old law proves its worth only when it can still quiet a living grievance."
+      ],
+      "new_zh": "{HERO_NAME}为修会听取各地请愿。村庄首领、商人和工匠都可能向她陈述争端，她也会走进巷道询问那些不愿见官的人。她随身带着旧帝国的法令，用它们辨明案情，再依修会的戒律主持调解。",
+      "new_en": "{HERO_NAME} hears petitions for the order. Village headmen, merchants, and artisans bring disputes before her, and she enters the alleys to question those unwilling to approach an official. She carries old Imperial statutes to help establish the facts, then mediates under the order's rule.",
+      "context": "创始领主圣铎的百科介绍，对应要人请愿。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_enc_vandi",
+      "old_zh": "{HERO_NAME}是现任灰袍统领，也是旧日统一帝国巡法体系最清晰的在世继承者之一。黎明前，人们常在操练场看见她纠正盾墙，或要求老兵向新兵说明纪律为何重于炫技。对外，她禁止灰袍追逐王冠与领地；对内，她坚持让每一位宣誓者都做好准备，在法律必须以武力守卫时稳住道路。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 26,
+          "english": "{HERO_NAME} is the present Warden-General and one of the clearest living heirs to the constabulary of the old, undivided Empire. She is often found in the drill yard before dawn, correcting a shield line or making veterans teach recruits why discipline matters more than display. Beyond their walls she forbids the Grey Wardens to seek crowns or widen estates; within, she insists that every sworn daughter be made ready to hold the road when law must be defended by force."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} is the present Warden-General and one of the clearest living heirs to the constabulary of the old, undivided Empire. She is often found in the drill yard before dawn, correcting a shield line or making veterans teach recruits why discipline matters more than display. Beyond their walls she forbids the Grey Wardens to seek crowns or widen estates; within, she insists that every sworn daughter be made ready to hold the road when law must be defended by force."
+      ],
+      "new_zh": "{HERO_NAME}是灰袍现任统领，负责训练修会的战士。她常在天亮前检阅新兵，要求老兵亲自纠正盾墙的空隙。她相信守护百姓是上天交给灰袍的职责，不许部下以修会之名争夺王位或扩张私产。",
+      "new_en": "{HERO_NAME} is the present Warden-General and oversees the training of the order's soldiers. Before dawn she often inspects recruits and has veterans close the gaps in their shield wall. She believes Heaven has charged the Wardens with protecting the common folk, and forbids them to use the order to pursue crowns or enlarge private estates.",
+      "context": "创始领主梵蒂的百科介绍，对应练兵本职。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_enc_yoer",
+      "old_zh": "{HERO_NAME}长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 27,
+          "english": "{HERO_NAME} has long kept watch over the post roads and countryside of the old Empire. She is most often found upon distant tracks, ferries, and the crossings of merchants, settling brigandage, blood-feuds, and unlawful tolls. Many traders and villagers remember the grey mantle before they learn her name. To them she embodies a plain and steadfast truth: the Empire has broken, yet someone still keeps the road."
+        }
+      ],
+      "old_en": [
+        "{HERO_NAME} has long kept watch over the post roads and countryside of the old Empire. She is most often found upon distant tracks, ferries, and the crossings of merchants, settling brigandage, blood-feuds, and unlawful tolls. Many traders and villagers remember the grey mantle before they learn her name. To them she embodies a plain and steadfast truth: the Empire has broken, yet someone still keeps the road."
+      ],
+      "new_zh": "{HERO_NAME}负责保护商路，常在桥梁、渡口和集市之间奔走。她追查商队遇袭与沿途勒索，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。",
+      "new_en": "{HERO_NAME} protects the trade roads, riding between bridges, ferries, and markets. She pursues attacks on caravans and unlawful tolls, refusing to dismiss them as ordinary wartime losses. Many who trade along these roads know her grey mantle.",
+      "context": "创始领主约珥的百科介绍，对应商队护卫。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_bad",
+      "old_zh": "你的记录里有些问题。不过只要你愿意改正，灰袍仍然会给你机会。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 169,
+          "english": "There are problems in your record. If you are willing to correct them, the Grey Wardens will still give you that chance."
+        }
+      ],
+      "old_en": [
+        "There are problems in your record. If you are willing to correct them, the Grey Wardens will still give you that chance."
+      ],
+      "new_zh": "你做过的事，我们有所耳闻。肯改过，就还有挽回的余地。",
+      "new_en": "We have heard something of your deeds. Make amends, and there is still a way back.",
+      "context": "已认识领主随机问候，玩家声望为负但未达通缉分支。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_good",
+      "old_zh": "你的记录不错。只要你继续遵守规矩、愿意帮助需要的人，我们就会把你当作值得信任的同伴。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 151,
+          "english": "Your record is good. Keep following the rules and helping people who need it, and we will treat you as someone we can trust."
+        }
+      ],
+      "old_en": [
+        "Your record is good. Keep following the rules and helping people who need it, and we will treat you as someone we can trust."
+      ],
+      "new_zh": "你为百姓做过些好事。有话请说。",
+      "new_en": "You have done some good for the common folk. Speak your mind.",
+      "context": "已认识领主随机问候，玩家声望5至19。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_high",
+      "old_zh": "我看过你的记录。你一直在帮助受害者，也没有给我们添麻烦。这样的表现，灰袍会记住。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 145,
+          "english": "I have read your record. You have consistently helped victims without causing trouble for us. The Grey Wardens remember that kind of work."
+        }
+      ],
+      "old_en": [
+        "I have read your record. You have consistently helped victims without causing trouble for us. The Grey Wardens remember that kind of work."
+      ],
+      "new_zh": "你帮过那些受害的人，灰袍记得这份情。",
+      "new_en": "You have helped those who suffered. The Wardens remember it.",
+      "context": "已认识领主随机问候，玩家声望20至39。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_neutral",
+      "old_zh": "我们会记录每个人做过的事，包括功劳和过错。目前你的记录没有问题，我愿意听你说。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 173,
+          "english": "We keep track of what people do, both the good and the bad. At the moment, your record gives me no reason to turn you away."
+        }
+      ],
+      "old_en": [
+        "We keep track of what people do, both the good and the bad. At the moment, your record gives me no reason to turn you away."
+      ],
+      "new_zh": "说吧，你找灰袍有什么事？",
+      "new_en": "What brings you to the Grey Wardens?",
+      "context": "已认识领主随机问候，玩家声望0至4。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_very_high",
+      "old_zh": "我听过不少关于你的好话。村民和商人都说你愿意帮忙，也守规矩。继续这样做，灰袍会放心把更重要的事情交给你。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 139,
+          "english": "I have heard a lot of good things about you. Villagers and merchants say you help when you can and respect the rules. Keep that up, and the Grey Wardens will trust you with more important work."
+        }
+      ],
+      "old_en": [
+        "I have heard a lot of good things about you. Villagers and merchants say you help when you can and respect the rules. Keep that up, and the Grey Wardens will trust you with more important work."
+      ],
+      "new_zh": "沿途的村民和商人都称赞过你。灰袍信得过肯为百姓办事的人。",
+      "new_en": "Villagers and merchants along the road have spoken well of you. The Wardens trust those who act for the common folk.",
+      "context": "已认识的灰袍领主随机问候，玩家灰袍声望至少40；阈值仅在此说明，不放进台词。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_very_low",
+      "old_zh": "你的问题已经很严重了。如果你继续违法，下次见面我们就会直接采取行动。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 157,
+          "english": "Your situation is already serious. If you keep breaking the law, the next Grey Warden you meet will take action instead of offering another warning."
+        }
+      ],
+      "old_en": [
+        "Your situation is already serious. If you keep breaking the law, the next Grey Warden you meet will take action instead of offering another warning."
+      ],
+      "new_zh": "你再劫掠百姓，灰袍就会来追捕你。",
+      "new_en": "Prey on the common folk again, and the Wardens will come for you.",
+      "context": "已认识领主随机问候，玩家声望不高于-40；不将阈值当作新的追捕机制。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greet_wanted",
+      "old_zh": "你涉及的案件还没有结束。我可以先听你解释，但这不代表事情已经过去。",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 163,
+          "english": "The case involving you is still open. I can hear your explanation, but that does not mean the matter is over."
+        }
+      ],
+      "old_en": [
+        "The case involving you is still open. I can hear your explanation, but that does not mean the matter is over."
+      ],
+      "new_zh": "你的案子还没有了结。先说说你的来意。",
+      "new_en": "Your case is not settled. Tell me why you have come.",
+      "context": "已认识领主随机问候，玩家声望-39至-11。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_grey_lord_followup",
+      "old_zh": "好，说吧。你找我有什么事？",
+      "sources": [
+        {
+          "file": "GreyWardenLoreBehavior.cs",
+          "line": 72,
+          "english": "All right. Tell me what you need."
+        }
+      ],
+      "old_en": [
+        "All right. Tell me what you need."
+      ],
+      "new_zh": "你有什么事？",
+      "new_en": "What do you need?",
+      "context": "上述随机问候后的衔接句；原逻辑可能与上一句重复，拟稿不改对话流。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_047",
+      "old_zh": "{VAR_1}是在{VAR_2}遭劫掠焚毁后，被灰袍守卫带回内院收养的女娃。她尚年幼，却已经在耳濡目染中听惯了巡路口令、案卷誊录与修会戒律。对灰袍而言，她不是寻常意义上的家族血亲，而是从灾厄中被接续下来的下一代誓女。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 541,
+          "english": "After {VAR_2} was sacked and put to the torch, the Grey Wardens took the girl {VAR_1} into their inner ward. Though still young, she has grown accustomed to patrol calls, copied depositions, and the discipline of the order. To the Wardens she is no common kinswoman, but a sworn daughter carried forward from calamity."
+        }
+      ],
+      "old_en": [
+        "After {VAR_2} was sacked and put to the torch, the Grey Wardens took the girl {VAR_1} into their inner ward. Though still young, she has grown accustomed to patrol calls, copied depositions, and the discipline of the order. To the Wardens she is no common kinswoman, but a sworn daughter carried forward from calamity."
+      ],
+      "new_zh": "{VAR_1}在{VAR_2}遭劫焚毁后被灰袍收养，如今住在修会内院。她还年幼，已熟悉巡察队出门时的口令，也跟着长辈学习戒律。",
+      "new_en": "The Grey Wardens took {VAR_1} in after {VAR_2} was sacked and burned. She now lives within the order's house. Still young, she knows the patrol calls and learns the commandments from her elders.",
+      "context": "收养女孩不足12岁时的百科介绍。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_048",
+      "old_zh": "{VAR_1}幼时曾在{VAR_2}遭焚后被灰袍守卫收养。如今的她已开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在长辈眼中，她正从劫后余生的孤女逐渐成长为灰袍内院受训的新一代后继者。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 547,
+          "english": "The Grey Wardens adopted {VAR_1} in childhood, after {VAR_2} was burned. She now learns to read case rolls, copy testimony, discern offences, and observe the rites of the road. In her elders’ eyes, the orphan who survived the flames is becoming an heir trained within the inner ward."
+        }
+      ],
+      "old_en": [
+        "The Grey Wardens adopted {VAR_1} in childhood, after {VAR_2} was burned. She now learns to read case rolls, copy testimony, discern offences, and observe the rites of the road. In her elders’ eyes, the orphan who survived the flames is becoming an heir trained within the inner ward."
+      ],
+      "new_zh": "{VAR_1}幼时在{VAR_2}被焚后由灰袍收养。她正在修会学习读写、辨认案情和遵守戒律，为成年后的职责做准备。",
+      "new_en": "The Wardens adopted {VAR_1} after {VAR_2} was burned in her childhood. She is learning to read, examine cases, and follow the order's rule in preparation for her adult duties.",
+      "context": "收养女孩年满12岁、尚未成年时的百科介绍。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_049",
+      "old_zh": "{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_050",
+      "old_zh": "{VAR_1}生于灰袍守卫的内院。她自幼在巡路口令、旧帝国案卷与修会戒律之间长大，被长辈视作灰袍下一代的幼年继承者。对灰袍而言，像她这样的女孩并不是寻常贵族家族的孩子，而是未来要学会守路、记案与持法而行的人。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 558,
+          "english": "{VAR_1} was born within the Grey Wardens’ inner ward. She has grown among patrol calls, old Imperial case rolls, and the order’s discipline, and her elders regard her as one of their young heirs. Such girls are not reared as the daughters of an ordinary noble house, but to keep the roads, record the cases, and bear the law."
+        }
+      ],
+      "old_en": [
+        "{VAR_1} was born within the Grey Wardens’ inner ward. She has grown among patrol calls, old Imperial case rolls, and the order’s discipline, and her elders regard her as one of their young heirs. Such girls are not reared as the daughters of an ordinary noble house, but to keep the roads, record the cases, and bear the law."
+      ],
+      "new_zh": "{VAR_1}生于灰袍修会。她从小听教士讲解戒律，也看着长辈们带兵出巡。修会将她与收养来的孩子一同抚育。",
+      "new_en": "{VAR_1} was born within the Grey Warden order. She has grown up hearing the priest explain its rule and watching her elders ride on patrol. The order raises her alongside the children it has taken in.",
+      "context": "非收养后继成员不足12岁时的百科介绍。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_051",
+      "old_zh": "{VAR_1}属于灰袍守卫的新生一代。她已经开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在灰袍长辈眼中，她迟早会披上真正的灰袍。外人常把她们当作家族子女，灰袍内部却更习惯把这一代视作仍在受训的后继者。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 564,
+          "english": "{VAR_1} belongs to the Grey Wardens’ rising generation. She already studies case rolls, copied testimony, the signs of crime, and the rites of patrol. Outsiders call them daughters of the house; within the order, they are known as heirs still under instruction, who will one day wear the grey in earnest."
+        }
+      ],
+      "old_en": [
+        "{VAR_1} belongs to the Grey Wardens’ rising generation. She already studies case rolls, copied testimony, the signs of crime, and the rites of patrol. Outsiders call them daughters of the house; within the order, they are known as heirs still under instruction, who will one day wear the grey in earnest."
+      ],
+      "new_zh": "{VAR_1}在灰袍修会长大，正在学习读写、辨认案情和巡察的规矩。长辈们期望她成年后能承担修会的职责。",
+      "new_en": "{VAR_1} has grown up in the Grey Warden order and is learning to read, examine cases, and observe the rules of patrol. Her elders expect her to take up the order's duties when she comes of age.",
+      "context": "非收养后继成员年满12岁、尚未成年时的百科介绍。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_greywardenfamilybehavior_052",
+      "old_zh": "{VAR_1}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "{VAR_1}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_gwppolicewarreasonservice_018",
+      "old_zh": "已记录 {VAR_1} 的善后请求，正在等待最近的警察接手。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "已记录 {VAR_1} 的善后请求，正在等待最近的警察接手。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_gwppolicewarreasonservice_019",
+      "old_zh": "最近的警察已被抽调，正在补给后前往 {VAR_1}。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "最近的警察已被抽调，正在补给后前往 {VAR_1}。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_gwppolicewarreasonservice_020",
+      "old_zh": "最近的警察正在赶往 {VAR_1} 进行善后。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "最近的警察正在赶往 {VAR_1} 进行善后。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_gwppolicewarreasonservice_021",
+      "old_zh": "警察正在 {VAR_1} 善后，剩余约 {VAR_2}。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "警察正在 {VAR_1} 善后，剩余约 {VAR_2}。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_playerbountybehavior_014",
+      "old_zh": "警察领主",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "警察领主",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_playerbountybehavior_015",
+      "old_zh": "找到你的护送警察对话，直接领取赏金",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "找到你的护送警察对话，直接领取赏金",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_playerbountybehavior_dialogueandnotification_018",
+      "old_zh": "已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_playerbountybehavior_dialogueandnotification_026",
+      "old_zh": "完成后前往警察家族领主处领取赏金。",
+      "sources": [],
+      "old_en": [],
+      "new_zh": "完成后前往警察家族领主处领取赏金。",
+      "new_en": null,
+      "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。",
+      "action": "未检出运行时引用，保留"
+    },
+    {
+      "key": "gwp_policeenforcementbehavior_atonementquest_004",
+      "old_zh": "目标已击败。前往族长或任意灰袍警察处交付赎罪任务。",
+      "sources": [
+        {
+          "file": "PoliceEnforcementBehavior.AtonementQuest.cs",
+          "line": 71,
+          "english": "The quarry is defeated. Report to the Warden-General or any Grey Warden to discharge the atonement."
+        }
+      ],
+      "old_en": [
+        "The quarry is defeated. Report to the Warden-General or any Grey Warden to discharge the atonement."
+      ],
+      "new_zh": "已击败目标。向任意灰袍领主交付赎罪任务。",
+      "new_en": "The target has been defeated. Report to any Grey Warden lord to complete your atonement.",
+      "context": "赎罪任务进度文字，原文仍用“灰袍警察”。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_policeenforcementbehavior_atonementquest_008",
+      "old_zh": "探子初报：目标最后在 {VAR_1} 附近活动。完成后向族长或任意灰袍警察交任务。",
+      "sources": [
+        {
+          "file": "PoliceEnforcementBehavior.AtonementQuest.cs",
+          "line": 115,
+          "english": "First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden."
+        }
+      ],
+      "old_en": [
+        "First report: the quarry was last seen near {VAR_1}. When the deed is done, report to the Warden-General or any Grey Warden."
+      ],
+      "new_zh": "探子回报：目标最后出现在{VAR_1}附近。完成后向任意灰袍领主交付赎罪任务。",
+      "new_en": "Scouts last reported the target near {VAR_1}. Once the task is done, report to any Grey Warden lord to complete your atonement.",
+      "context": "赎罪任务中的首次目标位置报告。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_adult_adopted_origin",
+      "old_zh": "{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。{VAR_3}",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 551,
+          "english": "When criminals sacked {VAR_2}, {VAR_1} lost the life she had known and was taken in by the Grey Wardens. {VAR_3}"
+        }
+      ],
+      "old_en": [
+        "When criminals sacked {VAR_2}, {VAR_1} lost the life she had known and was taken in by the Grey Wardens. {VAR_3}"
+      ],
+      "new_zh": "{VAR_1}幼时因{VAR_2}遭劫焚毁而被灰袍收养，成年后留在修会任职。{VAR_3}",
+      "new_en": "{VAR_1} was taken in by the Grey Wardens after {VAR_2} was sacked and burned in her childhood. She remained to serve the order as an adult. {VAR_3}",
+      "context": "收养成员成年后的百科开头，再拼接实际本职简介VAR_3。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_adult_born_origin",
+      "old_zh": "{VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。{VAR_2}",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 568,
+          "english": "{VAR_1} was raised amid the old Imperial law, family blood, and ordered discipline preserved by the Grey Wardens. {VAR_2}"
+        }
+      ],
+      "old_en": [
+        "{VAR_1} was raised amid the old Imperial law, family blood, and ordered discipline preserved by the Grey Wardens. {VAR_2}"
+      ],
+      "new_zh": "{VAR_1}在灰袍修会长大，从小受戒律约束，成年后承担修会的职责。{VAR_2}",
+      "new_en": "{VAR_1} grew up under the Grey Warden order's rule and took up its duties on reaching adulthood. {VAR_2}",
+      "context": "非收养成员成年后的百科开头，再拼接实际本职简介VAR_2。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_law",
+      "old_zh": "她跟随案件卷宗奔走，在组织需要另一双稳健的手时补上空缺。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 582,
+          "english": "She follows the case rolls wherever the order has need of another steady hand."
+        },
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 592,
+          "english": "She follows the case rolls wherever the order has need of another steady hand."
+        }
+      ],
+      "old_en": [
+        "She follows the case rolls wherever the order has need of another steady hand."
+      ],
+      "new_zh": "她随巡察队处理各地案件。",
+      "new_en": "She serves with the patrols, dealing with cases across the land.",
+      "context": "成年成员没有本职记录时的百科职责片段。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_training",
+      "old_zh": "她常年出入操练场，把新募之兵训练成即使道路染血也能稳住阵形的战士。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 586,
+          "english": "She spends long seasons in the drill yard, turning fresh levies into soldiers who can hold formation when the road turns bloody."
+        }
+      ],
+      "old_en": [
+        "She spends long seasons in the drill yard, turning fresh levies into soldiers who can hold formation when the road turns bloody."
+      ],
+      "new_zh": "她负责操练士兵，要求新兵先学会守住队列。",
+      "new_en": "She trains the soldiers, teaching new recruits to hold their ranks.",
+      "context": "成年成员承担练兵本职时的百科职责片段。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_caravan",
+      "old_zh": "她最常出现在桥梁、渡口与商旅交会处，追索袭击商队之人，直到道路重新安全。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 587,
+          "english": "She is most often seen at bridges, ferries, and merchant crossings, following those who prey upon caravans until the roads are safe again."
+        }
+      ],
+      "old_en": [
+        "She is most often seen at bridges, ferries, and merchant crossings, following those who prey upon caravans until the roads are safe again."
+      ],
+      "new_zh": "她巡察商路，追捕袭击商队的人。",
+      "new_en": "She patrols the trade roads and pursues those who attack caravans.",
+      "context": "成年成员承担商队护卫时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_village",
+      "old_zh": "她驰往农民遭袭或田地被焚之处，并以村庄生活能否得到守护衡量自己的职责。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 588,
+          "english": "She rides where peasants have been attacked or fields put to the torch, and has made the protection of village life the measure of her service."
+        }
+      ],
+      "old_en": [
+        "She rides where peasants have been attacked or fields put to the torch, and has made the protection of village life the measure of her service."
+      ],
+      "new_zh": "她负责村庄遇袭后的追捕，保护往来的村民。",
+      "new_en": "She pursues village raiders and protects villagers on the roads.",
+      "context": "成年成员承担护村本职时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_issues",
+      "old_zh": "她往来于村庄首领、城镇商人乃至巷道中的强硬人物之间，听取未决请求，离开时总会少下一桩纠纷。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 589,
+          "english": "She travels from village headmen to town merchants and even the harder figures of the alleys, hearing unresolved petitions and leaving fewer grievances behind her."
+        }
+      ],
+      "old_en": [
+        "She travels from village headmen to town merchants and even the harder figures of the alleys, hearing unresolved petitions and leaving fewer grievances behind her."
+      ],
+      "new_zh": "她往来于村庄和城镇，听取要人的请愿。",
+      "new_en": "She travels between villages and towns to hear the notables' petitions.",
+      "context": "成年成员承担要人事务时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_rebuild",
+      "old_zh": "人们屡次在焦黑屋顶与废弃水井之间看见她；战斗结束后她仍会留下，直到毁坏村庄能够重新接纳居民。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 590,
+          "english": "She is repeatedly found among blackened roofs and abandoned wells, remaining after the fighting until ruined villages can receive their people once more."
+        }
+      ],
+      "old_en": [
+        "She is repeatedly found among blackened roofs and abandoned wells, remaining after the fighting until ruined villages can receive their people once more."
+      ],
+      "new_zh": "她留在受灾村庄安排重建，帮助流散的居民回来。",
+      "new_en": "She oversees rebuilding in ruined villages and helps their scattered people return.",
+      "context": "成年成员承担重建本职时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_bio_hint_player",
+      "old_zh": "她负责协调贵族与民间的诉求，尤其善于为遭到不公对待的灰袍成员重新争取公开议决。",
+      "sources": [
+        {
+          "file": "GreyWardenFamilyBehavior.cs",
+          "line": 591,
+          "english": "She receives petitions from nobles, carries them before the people, and coordinates the Grey Wardens' answer when ordinary law offers no practical remedy."
+        }
+      ],
+      "old_en": [
+        "She receives petitions from nobles, carries them before the people, and coordinates the Grey Wardens' answer when ordinary law offers no practical remedy."
+      ],
+      "new_zh": "她受理贵族的申诉，为受到不公对待的灰袍成员请求公开议决。",
+      "new_en": "She receives appeals from nobles and seeks a public decision for Wardens who have suffered injustice.",
+      "context": "成年成员承担贵族事务时；英文对齐现有中文与职责。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_training_ledger_header",
+      "old_zh": "练兵换兵 — {VAR_1}",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 630,
+          "english": "Training exchange — {VAR_1}"
+        }
+      ],
+      "old_en": [
+        "Training exchange — {VAR_1}"
+      ],
+      "new_zh": "练兵换兵 — {VAR_1}",
+      "new_en": "Training exchange — {VAR_1}",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_ledger_assignment",
+      "old_zh": "练兵领主：{VAR_1} | 当前阶段：{VAR_2}",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 635,
+          "english": "Trainer: {VAR_1} | Stage: {VAR_2}"
+        }
+      ],
+      "old_en": [
+        "Trainer: {VAR_1} | Stage: {VAR_2}"
+      ],
+      "new_zh": "练兵领主：{VAR_1} | 当前阶段：{VAR_2}",
+      "new_en": "Trainer: {VAR_1} | Stage: {VAR_2}",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_ledger_pending_place",
+      "old_zh": "待选定",
+      "sources": [
+        {
+          "file": "GreyWardenTrainingBehavior.cs",
+          "line": 174,
+          "english": "To be selected"
+        }
+      ],
+      "old_en": [
+        "To be selected"
+      ],
+      "new_zh": "待选定",
+      "new_en": "To be selected",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_ledger_queued",
+      "old_zh": "任务类型：练兵换兵 | 已列为练兵领主的下一项任务",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 640,
+          "english": "Task type: troop training exchange | Queued as the Training Warden's next duty"
+        }
+      ],
+      "old_en": [
+        "Task type: troop training exchange | Queued as the Training Warden's next duty"
+      ],
+      "new_zh": "任务类型：练兵换兵 | 已列为练兵领主的下一项任务",
+      "new_en": "Task type: troop training exchange | Queued as the Training Warden's next duty",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_ledger_waiting",
+      "old_zh": "任务类型：练兵换兵 | 信众村：{VAR_1} | 等待完成当前任务",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 642,
+          "english": "Task type: troop training exchange | Village: {VAR_1} | Waiting for current duties to finish"
+        }
+      ],
+      "old_en": [
+        "Task type: troop training exchange | Village: {VAR_1} | Waiting for current duties to finish"
+      ],
+      "new_zh": "练兵换兵 | 目的地：{VAR_1} | 等待当前差事结束",
+      "new_en": "Troop training and exchange | Destination: {VAR_1} | Waiting for the current duty to end",
+      "context": "玩家事务台账：已选目标村但领主仍有当前差事。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_training_ledger_stay",
+      "old_zh": "任务类型：练兵换兵 | 信众村：{VAR_1} | 剩余驻留：{VAR_2}小时",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 645,
+          "english": "Task type: troop training exchange | Settlement: {VAR_1} | Remaining stay: {VAR_2} hours"
+        }
+      ],
+      "old_en": [
+        "Task type: troop training exchange | Settlement: {VAR_1} | Remaining stay: {VAR_2} hours"
+      ],
+      "new_zh": "练兵换兵 | 驻留地：{VAR_1} | 尚需{VAR_2}小时",
+      "new_en": "Troop training and exchange | Staying at: {VAR_1} | {VAR_2} hours remaining",
+      "context": "玩家事务台账：领主到村后的驻留阶段。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_training_ledger_travel",
+      "old_zh": "任务类型：练兵换兵 | 信众村：{VAR_1}",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 648,
+          "english": "Task type: troop training exchange | Village: {VAR_1}"
+        }
+      ],
+      "old_en": [
+        "Task type: troop training exchange | Village: {VAR_1}"
+      ],
+      "new_zh": "练兵换兵 | 正前往{VAR_1}",
+      "new_en": "Troop training and exchange | Travelling to {VAR_1}",
+      "context": "玩家事务台账：领主去目标村途中。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_training_stage_queued",
+      "old_zh": "已列为下一项任务",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 876,
+          "english": "queued as next duty"
+        }
+      ],
+      "old_en": [
+        "queued as next duty"
+      ],
+      "new_zh": "已列为下一项任务",
+      "new_en": "queued as next duty",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_stage_waiting",
+      "old_zh": "等待完成当前任务",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 878,
+          "english": "waiting for current duties"
+        }
+      ],
+      "old_en": [
+        "waiting for current duties"
+      ],
+      "new_zh": "等待完成当前任务",
+      "new_en": "waiting for current duties",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_training_stage_travel",
+      "old_zh": "前往信众村",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 880,
+          "english": "travelling to the village"
+        }
+      ],
+      "old_en": [
+        "travelling to the village"
+      ],
+      "new_zh": "前往换兵的村庄",
+      "new_en": "Travelling to the exchange village",
+      "context": "玩家事务台账中的当前阶段名称。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_training_stage_stay",
+      "old_zh": "驻留两小时并换兵",
+      "sources": [
+        {
+          "file": "GwpCaseArchiveScreen.cs",
+          "line": 882,
+          "english": "two-hour troop exchange"
+        }
+      ],
+      "old_en": [
+        "two-hour troop exchange"
+      ],
+      "new_zh": "驻留两小时并换兵",
+      "new_en": "two-hour troop exchange",
+      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_troop_zealot",
+      "old_zh": "火誓狂热者",
+      "sources": [
+        {
+          "file": "_Module/ModuleData/spnpccharacters.xml",
+          "line": 8,
+          "english": "Firesworn Zealot"
+        }
+      ],
+      "old_en": [
+        "Firesworn Zealot"
+      ],
+      "new_zh": "灰袍狂信者",
+      "new_en": "Grey Warden Zealot",
+      "context": "兵种树、名册、战场兵种名；现有二阶步兵。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_priest_name",
+      "old_zh": "永恒之火祭司{FIRSTNAME}",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 700,
+          "english": "Eternal Fire Priest {FIRSTNAME}"
+        }
+      ],
+      "old_en": [
+        "Eternal Fire Priest {FIRSTNAME}"
+      ],
+      "new_zh": "灰袍教士{FIRSTNAME}",
+      "new_en": "Grey Warden Priest {FIRSTNAME}",
+      "context": "村中教士姓名、名牌与百科链接。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_priest_arrived",
+      "old_zh": "{PRIEST}在{VILLAGE}住了下来，照看永恒之火。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 688,
+          "english": "{PRIEST} has settled in {VILLAGE} to tend the Eternal Fire."
+        }
+      ],
+      "old_en": [
+        "{PRIEST} has settled in {VILLAGE} to tend the Eternal Fire."
+      ],
+      "new_zh": "{PRIEST}已在{VILLAGE}定居传教。",
+      "new_en": "{PRIEST} has settled in {VILLAGE} to preach.",
+      "context": "新教士在村中落脚时的左下角灰色提示。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_ritual_congregation_title",
+      "old_zh": "集会传教",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 51,
+          "english": "Congregation"
+        }
+      ],
+      "old_en": [
+        "Congregation"
+      ],
+      "new_zh": "布道集会",
+      "new_en": "Congregation",
+      "context": "布道进行时进村，仪式菜单标题。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_ritual_damnation_title",
+      "old_zh": "烈火责罚",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 50,
+          "english": "Damnation"
+        }
+      ],
+      "old_en": [
+        "Damnation"
+      ],
+      "new_zh": "火刑",
+      "new_en": "Burning at the Stake",
+      "context": "火刑期间进村，仪式菜单标题。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_ritual_congregation_text",
+      "old_zh": "{VILLAGE}的广场上挤满了人，{HOST}站在永恒之火前宣读火的戒律。要立誓的人一个接一个走上前，把手伸到火上起誓；围着的乡亲跟着他念。集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 64,
+          "english": "The square of {VILLAGE} is packed. {HOST} stands before the Eternal Fire reading out the laws of the flame, and those who would swear step forward one by one and hold their hands over the fire to take the oath; the villagers around them speak the words with him. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours."
+        }
+      ],
+      "old_en": [
+        "The square of {VILLAGE} is packed. {HOST} stands before the Eternal Fire reading out the laws of the flame, and those who would swear step forward one by one and hold their hands over the fire to take the oath; the villagers around them speak the words with him. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours."
+      ],
+      "new_zh": "{VILLAGE}的村民聚在广场上听讲戒律，新入教的人正在宣誓。集会尚未结束，暂时无法办理村中事务。还需约{HOURS}小时。主持：{HOST}。",
+      "new_en": "The villagers of {VILLAGE} have gathered to hear the commandments, and new believers are taking their vows. Village business is suspended until the congregation ends, in about {HOURS} hours. Host: {HOST}.",
+      "context": "布道期间的锁村画面；HOST无教士时会回退成村名，故使用中性的“主持方”。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_ritual_damnation_text",
+      "old_zh": "{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：绑上火堆的，是火判了罪的人。立了誓的人围着火唱，乡亲们往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 62,
+          "english": "A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those bound to it are the ones the flame has judged. The sworn sing around the pyre while the villagers feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours."
+        }
+      ],
+      "old_en": [
+        "A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those bound to it are the ones the flame has judged. The sworn sing around the pyre while the villagers feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours."
+      ],
+      "new_zh": "{VILLAGE}的广场上正在执行火刑。人被绑在木架上，围观的教众齐声祷告，浓烟飘过屋顶。村中事务暂时停办，还需约{HOURS}小时。主持：{HOST}。",
+      "new_en": "People are bound to stakes in the square of {VILLAGE}, where a burning is under way. The gathered believers pray as smoke drifts over the roofs. Village business is suspended for about {HOURS} more hours. Host: {HOST}.",
+      "context": "火刑期间的锁村画面；不把火写成能裁定罪名的神，也不把实际被烧者一律称为罪犯。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_option",
+      "old_zh": "永恒之火：{HOUSEHOLDS} 户信众（{SHARE}%），{GUARD} 人执兵",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 89,
+          "english": "Eternal Fire: {HOUSEHOLDS} sworn hearths ({SHARE}%), {GUARD} under arms"
+        }
+      ],
+      "old_en": [
+        "Eternal Fire: {HOUSEHOLDS} sworn hearths ({SHARE}%), {GUARD} under arms"
+      ],
+      "new_zh": "灰袍教众：{HOUSEHOLDS}户（{SHARE}%），守村{GUARD}人",
+      "new_en": "Grey Warden faithful: {HOUSEHOLDS} households ({SHARE}%), {GUARD} defenders",
+      "context": "有灰袍教众记录时的村庄菜单入口。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_info",
+      "old_zh": "{VILLAGE}的{HEARTH}户人家里，有{HOUSEHOLDS}户向永恒之火立了誓，这些人家有{GUARD}个儿女拿着兵器。火的规矩由祭司和立了誓的人守着；村里人照常种地过日子。劫掠的人来了，拿起长矛的就是这些立了誓的男男女女。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 101,
+          "english": "{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their sons and daughters stand under arms. The priest and the sworn keep the flame's laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn men and women who take up the spear."
+        }
+      ],
+      "old_en": [
+        "{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their sons and daughters stand under arms. The priest and the sworn keep the flame's laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn men and women who take up the spear."
+      ],
+      "new_zh": "{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。",
+      "new_en": "Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens.",
+      "context": "点击村庄教众入口后的详情正文。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_priest",
+      "old_zh": "{PRIEST}在这里照看永恒之火。灰袍要人上阵时，村里立了誓的儿女们就从他的火堆边跟着走。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 104,
+          "english": "{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn sons and daughters of this village go with them from his hearth."
+        }
+      ],
+      "old_en": [
+        "{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn sons and daughters of this village go with them from his hearth."
+      ],
+      "new_zh": "{PRIEST}在此传教，并照管教众。灰袍来征募时，村中愿意从军的人由他引荐。",
+      "new_en": "{PRIEST} preaches here and tends to the faithful. When the Wardens recruit, he introduces villagers willing to serve.",
+      "context": "教众详情中存在在世教士的分支。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_no_priest",
+      "old_zh": "这里没有永恒之火的祭司。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 106,
+          "english": "No priest of the Eternal Fire lives here."
+        }
+      ],
+      "old_en": [
+        "No priest of the Eternal Fire lives here."
+      ],
+      "new_zh": "村中暂时没有灰袍教士。",
+      "new_en": "There is currently no Grey Warden priest in the village.",
+      "context": "教众详情中没有在世教士的分支。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_info_title",
+      "old_zh": "永恒之火",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 112,
+          "english": "The Eternal Fire"
+        }
+      ],
+      "old_en": [
+        "The Eternal Fire"
+      ],
+      "new_zh": "灰袍教众",
+      "new_en": "The Grey Warden Faithful",
+      "context": "村庄教众详情弹窗标题。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_info_ok",
+      "old_zh": "关闭",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 113,
+          "english": "Close"
+        }
+      ],
+      "old_en": [
+        "Close"
+      ],
+      "new_zh": "关闭",
+      "new_en": "Close",
+      "context": "村庄教众详情弹窗关闭按钮。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_ritual_leave",
+      "old_zh": "离开……",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 29,
+          "english": "Leave..."
+        }
+      ],
+      "old_en": [
+        "Leave..."
+      ],
+      "new_zh": "离开……",
+      "new_en": "Leave...",
+      "context": "仪式锁村画面的离开按钮。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_militia_change",
+      "old_zh": "永恒之火立了誓的人不会离开民兵",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 182,
+          "english": "The Eternal Fire's sworn do not leave the militia"
+        }
+      ],
+      "old_en": [
+        "The Eternal Fire's sworn do not leave the militia"
+      ],
+      "new_zh": "灰袍教众继续留守",
+      "new_en": "The Grey Warden faithful remain on watch",
+      "context": "民兵每日变化的说明条目：抵消灰袍守村兵对应的原版退役项。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_militia_stopped",
+      "old_zh": "永恒之火：这里由立了誓的人守着，不再募新民兵",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 176,
+          "english": "Eternal Fire: the sworn keep this village; no new militia is raised"
+        }
+      ],
+      "old_en": [
+        "Eternal Fire: the sworn keep this village; no new militia is raised"
+      ],
+      "new_zh": "灰袍教众负责守卫，停止征募新民兵",
+      "new_en": "The Grey Warden faithful guard the village; no new militia is raised",
+      "context": "教士势力已达本村最强时，民兵变化的说明条目。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_priest_lore",
+      "old_zh": "{PRIEST}在{VILLAGE}照看永恒之火。他传的教义说：统领这把火的是灰袍的女人们，走村串户替它传话的是祭司；谁都可以到火前求它照亮，火不问出身。在他的照看下，村里的男男女女向火立誓、拿起长矛，守着这座村子。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 704,
+          "english": "{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith he preaches holds that the women of the Grey Wardens lead the flame, and that its priests carry its word from village to village; anyone may come before it and ask for its light, and it does not ask where they were born. Under him the men and women of the village swear themselves to the fire and take up the spear to guard it."
+        }
+      ],
+      "old_en": [
+        "{PRIEST} keeps the Eternal Fire burning in {VILLAGE}. The faith he preaches holds that the women of the Grey Wardens lead the flame, and that its priests carry its word from village to village; anyone may come before it and ask for its light, and it does not ask where they were born. Under him the men and women of the village swear themselves to the fire and take up the spear to guard it."
+      ],
+      "new_zh": "{PRIEST}在{VILLAGE}传授灰袍的戒律。他教导村民敬畏上天，接济穷人，并服从修会的惩戒。灰袍的女统领掌管武装和巡察，他则召集教众、主持礼拜，为守村与从军的人备办衣食。",
+      "new_en": "{PRIEST} teaches the Grey Wardens' rule in {VILLAGE}. He urges villagers to revere Heaven, aid the poor, and submit to the order's discipline. The Wardens' women command its troops and patrols; he gathers the faithful, conducts worship, and helps provide for those who defend the village or join the ranks.",
+      "context": "村中灰袍教士的百科介绍；宗教与分工说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_village_stores",
+      "old_zh": "地窖里关着{PRISONERS}个等着上火堆的人。库房里存着{ARMORY}件兵器甲胄，留给立了誓的人。还有值{GOODS}第纳尔的货，等着装车运去城里。",
+      "sources": [
+        {
+          "file": "GwpFireswornMenus.cs",
+          "line": 109,
+          "english": "{PRISONERS} wretches wait in the cellar for the pyre. The storeroom holds {ARMORY} pieces of arms and armour for the sworn. Goods worth {GOODS} denars wait to be carted to market."
+        }
+      ],
+      "old_en": [
+        "{PRISONERS} wretches wait in the cellar for the pyre. The storeroom holds {ARMORY} pieces of arms and armour for the sworn. Goods worth {GOODS} denars wait to be carted to market."
+      ],
+      "new_zh": "地窖关押着{PRISONERS}人，等候火刑。库房存有{ARMORY}件兵器甲胄，另有价值{GOODS}第纳尔的货物待运往集市。",
+      "new_en": "The cellar holds {PRISONERS} people awaiting the stake. The stores contain {ARMORY} pieces of arms and armour, with goods worth {GOODS} denars awaiting transport to market.",
+      "context": "村庄教众详情最后一段，显示地牢、军械与货物。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_caravan_party",
+      "old_zh": "{VILLAGE}的狂信者",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 197,
+          "english": "Zealots of {VILLAGE}"
+        }
+      ],
+      "old_en": [
+        "Zealots of {VILLAGE}"
+      ],
+      "new_zh": "{VILLAGE}的教众货队",
+      "new_en": "Faithful Traders of {VILLAGE}",
+      "context": "卖货队的大地图队名。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_option",
+      "old_zh": "永恒之火：库房",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 25,
+          "english": "Eternal Fire: storeroom"
+        }
+      ],
+      "old_en": [
+        "Eternal Fire: storeroom"
+      ],
+      "new_zh": "查看教众库房",
+      "new_en": "Inspect the faithful's stores",
+      "context": "仅开发版：有守村队的村庄菜单库房入口。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_close",
+      "old_zh": "关闭",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 57,
+          "english": "Close"
+        }
+      ],
+      "old_en": [
+        "Close"
+      ],
+      "new_zh": "关闭",
+      "new_en": "Close",
+      "context": "仅开发版：库房明细关闭按钮。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_armory_section_arms",
+      "old_zh": "军械库（给立了誓的人配的兵器护甲）",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 47,
+          "english": "Arms for the sworn"
+        }
+      ],
+      "old_en": [
+        "Arms for the sworn"
+      ],
+      "new_zh": "军械",
+      "new_en": "Arms and Armour",
+      "context": "仅开发版：库房明细中的军械分组。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_section_goods",
+      "old_zh": "货仓（要拉进城卖的）",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 50,
+          "english": "Stores to sell"
+        }
+      ],
+      "old_en": [
+        "Stores to sell"
+      ],
+      "new_zh": "待售货物",
+      "new_en": "Goods for Sale",
+      "context": "仅开发版：村庄库房明细中的货仓分组。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_section_inventory",
+      "old_zh": "背包",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 51,
+          "english": "Baggage"
+        }
+      ],
+      "old_en": [
+        "Baggage"
+      ],
+      "new_zh": "随队物资",
+      "new_en": "Baggage",
+      "context": "仅开发版：领主库房明细中的背包分组。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_section",
+      "old_zh": "—— {TITLE}（{COUNT}件，值{VALUE}）——",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 69,
+          "english": "—— {TITLE} ({COUNT} pieces, worth {VALUE}) ——"
+        }
+      ],
+      "old_en": [
+        "—— {TITLE} ({COUNT} pieces, worth {VALUE}) ——"
+      ],
+      "new_zh": "{TITLE}（{COUNT}件，价值{VALUE}）",
+      "new_en": "{TITLE} ({COUNT} pieces, worth {VALUE})",
+      "context": "仅开发版：库房每个分组的数量与估值标题。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_lord_armory_ask",
+      "old_zh": "让我看看你们队伍的库房。",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 35,
+          "english": "Show me your company's storeroom."
+        }
+      ],
+      "old_en": [
+        "Show me your company's storeroom."
+      ],
+      "new_zh": "让我看看你们的随队物资。",
+      "new_en": "Let me see your company's stores.",
+      "context": "仅开发版：与带队灰袍领主正常交谈时查看物资的玩家选项。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_lord_armory_reply",
+      "old_zh": "都在这儿了，带着的东西、谁在穿，你看吧。",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 40,
+          "english": "Here. Everything we carry, and who wears it."
+        }
+      ],
+      "old_en": [
+        "Here. Everything we carry, and who wears it."
+      ],
+      "new_zh": "清单在这里。",
+      "new_en": "Here is the inventory.",
+      "context": "仅开发版：领主回复后打开库房明细。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_item",
+      "old_zh": "{NAME} × {COUNT}",
+      "sources": [
+        {
+          "file": "GwpFireswornArmoryView.cs",
+          "line": 77,
+          "english": "{NAME} × {COUNT}"
+        }
+      ],
+      "old_en": [
+        "{NAME} × {COUNT}"
+      ],
+      "new_zh": "{NAME} × {COUNT}",
+      "new_en": "{NAME} × {COUNT}",
+      "context": "仅开发版：库房物品逐项显示。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_armory_village",
+      "old_zh": "{VILLAGE}的军械库（{ITEMS}件）",
+      "sources": [
+        {
+          "file": "GwpFireswornArmory.cs",
+          "line": 700,
+          "english": "Armory of {VILLAGE} ({ITEMS} pieces)"
+        }
+      ],
+      "old_en": [
+        "Armory of {VILLAGE} ({ITEMS} pieces)"
+      ],
+      "new_zh": "{VILLAGE}的军械库（{ITEMS}件）",
+      "new_en": "Armory of {VILLAGE} ({ITEMS} pieces)",
+      "context": "仅开发版：村庄库房弹窗标题。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_armory_party",
+      "old_zh": "{PARTY}的军械库（{ITEMS}件）",
+      "sources": [
+        {
+          "file": "GwpFireswornArmory.cs",
+          "line": 702,
+          "english": "Armory of {PARTY} ({ITEMS} pieces)"
+        }
+      ],
+      "old_en": [
+        "Armory of {PARTY} ({ITEMS} pieces)"
+      ],
+      "new_zh": "{PARTY}的军械库（{ITEMS}件）",
+      "new_en": "Armory of {PARTY} ({ITEMS} pieces)",
+      "context": "仅开发版：领主部队库房弹窗标题。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_armory_empty",
+      "old_zh": "库里还什么都没有。",
+      "sources": [
+        {
+          "file": "GwpFireswornArmory.cs",
+          "line": 712,
+          "english": "Nothing here yet."
+        }
+      ],
+      "old_en": [
+        "Nothing here yet."
+      ],
+      "new_zh": "库房为空。",
+      "new_en": "The stores are empty.",
+      "context": "仅开发版：该持有者尚无军械账本时的说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_armory_summary",
+      "old_zh": "从这里领装备的有{MEN}人，其中{ARMED}人领到了兵器。另有{FREE}件留给下一批立誓的人。{SURPLUS}件没人用得上，会拉去卖掉。",
+      "sources": [
+        {
+          "file": "GwpFireswornArmory.cs",
+          "line": 714,
+          "english": "{MEN} of the sworn draw from this store; {ARMED} of them have a weapon from it. {FREE} pieces are kept back for those who will swear next. {SURPLUS} pieces nobody needs, and they will be sold."
+        }
+      ],
+      "old_en": [
+        "{MEN} of the sworn draw from this store; {ARMED} of them have a weapon from it. {FREE} pieces are kept back for those who will swear next. {SURPLUS} pieces nobody needs, and they will be sold."
+      ],
+      "new_zh": "这里为{MEN}人保管装备，其中{ARMED}人已配有兵器；另存{FREE}件备用装备，{SURPLUS}件余货将运往集市出售。",
+      "new_en": "These stores supply {MEN} people, of whom {ARMED} have weapons. Another {FREE} pieces are held in reserve, and {SURPLUS} surplus pieces will be sold at market.",
+      "context": "仅开发版：库房摘要。MEN为配装记录数，ARMED为其中配有主手兵器的记录数。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_pretalk",
+      "old_zh": "还有什么事？",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 29,
+          "english": "Anything else?"
+        }
+      ],
+      "old_en": [
+        "Anything else?"
+      ],
+      "new_zh": "还有什么事？",
+      "new_en": "Anything else?",
+      "context": "地图遇到教众队伍，买卖取消后回到主对话。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_party_buy",
+      "old_zh": "你们车上是什么？我买了。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 32,
+          "english": "What are you carrying? I'll buy it."
+        }
+      ],
+      "old_en": [
+        "What are you carrying? I'll buy it."
+      ],
+      "new_zh": "你们带了什么货？",
+      "new_en": "What goods are you carrying?",
+      "context": "只有卖货队有货、总价大于零且玩家付得起时显示的购买选项。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_offer",
+      "old_zh": "有{PRODUCTS}。全拿走一共{TOTAL_PRICE}{GOLD_ICON}，钱归永恒之火。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 34,
+          "english": "We have {PRODUCTS}. All of it for {TOTAL_PRICE}{GOLD_ICON}, and the coin goes to the Eternal Fire."
+        }
+      ],
+      "old_en": [
+        "We have {PRODUCTS}. All of it for {TOTAL_PRICE}{GOLD_ICON}, and the coin goes to the Eternal Fire."
+      ],
+      "new_zh": "有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。",
+      "new_en": "We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful.",
+      "context": "卖货队报价，不把钱说成归某团火所有。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_buy_yes",
+      "old_zh": "成交，这是{TOTAL_PRICE}{GOLD_ICON}。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 37,
+          "english": "Done. Here is {TOTAL_PRICE}{GOLD_ICON}."
+        }
+      ],
+      "old_en": [
+        "Done. Here is {TOTAL_PRICE}{GOLD_ICON}."
+      ],
+      "new_zh": "成交，这是{TOTAL_PRICE}{GOLD_ICON}。",
+      "new_en": "Agreed. Here is {TOTAL_PRICE}{GOLD_ICON}.",
+      "context": "玩家确认买下整批货物。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_buy_no",
+      "old_zh": "算了。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 39,
+          "english": "Never mind."
+        }
+      ],
+      "old_en": [
+        "Never mind."
+      ],
+      "new_zh": "算了。",
+      "new_en": "Never mind.",
+      "context": "玩家取消购买。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_party_threaten",
+      "old_zh": "把东西都交出来。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 42,
+          "english": "Hand over everything you have."
+        }
+      ],
+      "old_en": [
+        "Hand over everything you have."
+      ],
+      "new_zh": "把东西都交出来。",
+      "new_en": "Hand over everything you have.",
+      "context": "玩家威胁任意教众队伍。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_party_refuse",
+      "old_zh": "火不会向你低头。想要我们的东西，就从我们身上踏过去。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 44,
+          "english": "The fire does not bow to you. If you want anything of ours, take it over our bodies."
+        }
+      ],
+      "old_en": [
+        "The fire does not bow to you. If you want anything of ours, take it over our bodies."
+      ],
+      "new_zh": "我们不会交给你。要抢，就拔剑。",
+      "new_en": "We will not hand it over. Draw your sword if you mean to take it.",
+      "context": "教众拒绝玩家威胁；没有交钱或投降分支。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_fight",
+      "old_zh": "那就这样。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 47,
+          "english": "So be it."
+        }
+      ],
+      "old_en": [
+        "So be it."
+      ],
+      "new_zh": "那就没什么可谈的了。",
+      "new_en": "Then we have nothing more to discuss.",
+      "context": "威胁被拒后，玩家结束对话回到遭遇菜单；此项本身不直接发起战斗。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_back_off",
+      "old_zh": "算了，走吧。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 49,
+          "english": "Never mind. Go on your way."
+        }
+      ],
+      "old_en": [
+        "Never mind. Go on your way."
+      ],
+      "new_zh": "算了，你们走吧。",
+      "new_en": "Leave, then.",
+      "context": "玩家收回威胁并离开遭遇。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_leave",
+      "old_zh": "那你们走吧。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 52,
+          "english": "Carry on, then."
+        }
+      ],
+      "old_en": [
+        "Carry on, then."
+      ],
+      "new_zh": "你们继续赶路吧。",
+      "new_en": "Carry on your way.",
+      "context": "正常结束教众队伍对话并离开遭遇。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_greet_cart_out",
+      "old_zh": "我们是{HOME}立了誓的人。车上是村里的货，要拉去{TARGET}，卖得的钱归永恒之火。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 74,
+          "english": "We are the sworn of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire."
+        }
+      ],
+      "old_en": [
+        "We are the sworn of {HOME}. These are the village's goods, bound for {TARGET}; what they fetch belongs to the Eternal Fire."
+      ],
+      "new_zh": "我们从{HOME}来，要把这车货送到{TARGET}去卖，所得用来供养村里的教众。",
+      "new_en": "We come from {HOME}, taking these goods to sell in {TARGET}. The proceeds will support the faithful back home.",
+      "context": "地图遇到向集市出发的卖货队。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_greet_mission",
+      "old_zh": "愿火照亮你的路。我们是{HOME}立了誓的人，要去{TARGET}把火带过去，从此留在那里。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 68,
+          "english": "May the fire light your road. We are the sworn of {HOME}, and we go to {TARGET} to carry the fire there and stay."
+        }
+      ],
+      "old_en": [
+        "May the fire light your road. We are the sworn of {HOME}, and we go to {TARGET} to carry the fire there and stay."
+      ],
+      "new_zh": "我们从{HOME}来，要到{TARGET}传教，此后就在那里住下。",
+      "new_en": "We come from {HOME}, bound for {TARGET} to preach and settle there.",
+      "context": "地图遇到前往新村的传教队。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_greet_balance",
+      "old_zh": "我们是{HOME}立了誓的人。这些兵器是给{TARGET}立誓的人的，送到了我们就留在那里。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 71,
+          "english": "We are the sworn of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered."
+        }
+      ],
+      "old_en": [
+        "We are the sworn of {HOME}. These arms are for the sworn of {TARGET}, and we stay with them once they are delivered."
+      ],
+      "new_zh": "我们从{HOME}来，为{TARGET}的教众运送兵器。送到以后，我们也留在那里守村。",
+      "new_en": "We come from {HOME}, carrying arms for the faithful of {TARGET}. Once they are delivered, we will stay to help guard the village.",
+      "context": "地图遇到运械队；抵达后人也留下。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_mission_party",
+      "old_zh": "永恒之火门徒",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 194,
+          "english": "Disciples of the Eternal Fire"
+        }
+      ],
+      "old_en": [
+        "Disciples of the Eternal Fire"
+      ],
+      "new_zh": "灰袍传教队",
+      "new_en": "Grey Warden Mission",
+      "context": "传教队的大地图队名。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_balance_party",
+      "old_zh": "{VILLAGE}的运械队",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 196,
+          "english": "Armsbearers of {VILLAGE}"
+        }
+      ],
+      "old_en": [
+        "Armsbearers of {VILLAGE}"
+      ],
+      "new_zh": "{VILLAGE}的运械队",
+      "new_en": "Armsbearers of {VILLAGE}",
+      "context": "运械队的大地图队名。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_status_balance",
+      "old_zh": "正把{HOME}的兵器运给{TARGET}立誓的人。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 615,
+          "english": "Carrying arms from {HOME} to the sworn of {TARGET}."
+        }
+      ],
+      "old_en": [
+        "Carrying arms from {HOME} to the sworn of {TARGET}."
+      ],
+      "new_zh": "正从{HOME}运送兵器给{TARGET}的教众。",
+      "new_en": "Carrying arms from {HOME} to the faithful of {TARGET}.",
+      "context": "运械队出发阶段的部队行为说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_prisoners",
+      "old_zh": "交出 {COUNT} 名俘虏",
+      "sources": [
+        {
+          "file": "GwpFireswornDungeon.cs",
+          "line": 148,
+          "english": "Handed over {COUNT} prisoners"
+        }
+      ],
+      "old_en": [
+        "Handed over {COUNT} prisoners"
+      ],
+      "new_zh": "交付{COUNT}名俘虏",
+      "new_en": "Handed over {COUNT} prisoners",
+      "context": "领主向村庄地牢交人后，村庄名牌上的短通知。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_donated",
+      "old_zh": "捐出 {COUNT} 件东西",
+      "sources": [
+        {
+          "file": "GwpFireswornDungeon.cs",
+          "line": 151,
+          "english": "Donated {COUNT} items"
+        }
+      ],
+      "old_en": [
+        "Donated {COUNT} items"
+      ],
+      "new_zh": "捐赠{COUNT}件物资",
+      "new_en": "Donated {COUNT} items",
+      "context": "领主交物资后村庄名牌短通知；包含军械与货物，不全是装备。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_congregation",
+      "old_zh": "{COUNT} 人向永恒之火立誓",
+      "sources": [
+        {
+          "file": "GwpFireswornRituals.cs",
+          "line": 94,
+          "english": "{COUNT} swore to the Eternal Fire"
+        }
+      ],
+      "old_en": [
+        "{COUNT} swore to the Eternal Fire"
+      ],
+      "new_zh": "{COUNT}户加入灰袍教众",
+      "new_en": "{COUNT} households joined the Grey Warden faithful",
+      "context": "布道完成后的村庄名牌通知；COUNT来自信众新增户数，原中文“人”单位不符。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_damnation",
+      "old_zh": "{BURNED}上了火堆，{SWORN} 户立誓",
+      "sources": [
+        {
+          "file": "GwpFireswornRituals.cs",
+          "line": 266,
+          "english": "{BURNED} went to the pyre; {SWORN} households swore"
+        }
+      ],
+      "old_en": [
+        "{BURNED} went to the pyre; {SWORN} households swore"
+      ],
+      "new_zh": "{BURNED}遭火刑，另有{SWORN}户入教",
+      "new_en": "{BURNED} were burned at the stake; {SWORN} more households joined the faith",
+      "context": "火刑处理后的村庄名牌通知；BURNED由人数与户数片段组合。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_burned_people",
+      "old_zh": "{COUNT} 人",
+      "sources": [
+        {
+          "file": "GwpFireswornRituals.cs",
+          "line": 262,
+          "english": "{COUNT} people"
+        }
+      ],
+      "old_en": [
+        "{COUNT} people"
+      ],
+      "new_zh": "{COUNT}人",
+      "new_en": "{COUNT} people",
+      "context": "火刑通知中的俘虏与民兵人数片段。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_burned_homes",
+      "old_zh": "{COUNT} 户",
+      "sources": [
+        {
+          "file": "GwpFireswornRituals.cs",
+          "line": 264,
+          "english": "{COUNT} households"
+        }
+      ],
+      "old_en": [
+        "{COUNT} households"
+      ],
+      "new_zh": "{COUNT}户",
+      "new_en": "{COUNT} households",
+      "context": "火刑通知中的不信教户数片段，不改写成人数。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_mission",
+      "old_zh": "带来 {COUNT} 名立誓者，留在此地",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 469,
+          "english": "Brought {COUNT} sworn to stay"
+        }
+      ],
+      "old_en": [
+        "Brought {COUNT} sworn to stay"
+      ],
+      "new_zh": "{COUNT}名教众在此定居",
+      "new_en": "{COUNT} believers settled here",
+      "context": "传教队抵达后村庄名牌短通知；COUNT是实际留下的兵员人数。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_balance",
+      "old_zh": "运来 {COUNT} 件兵器护甲",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 470,
+          "english": "Brought {COUNT} pieces of arms"
+        }
+      ],
+      "old_en": [
+        "Brought {COUNT} pieces of arms"
+      ],
+      "new_zh": "运来{COUNT}件兵器甲胄",
+      "new_en": "Delivered {COUNT} pieces of arms and armour",
+      "context": "运械队抵达后的村庄名牌通知。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_market",
+      "old_zh": "卖出 {COUNT} 件货物",
+      "sources": [
+        {
+          "file": "GwpFireswornParties.cs",
+          "line": 670,
+          "english": "Sold {COUNT} goods"
+        }
+      ],
+      "old_en": [
+        "Sold {COUNT} goods"
+      ],
+      "new_zh": "售出{COUNT}件货物",
+      "new_en": "Sold {COUNT} goods",
+      "context": "卖货队在城镇卖货后的城镇名牌通知。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_rebuilt",
+      "old_zh": "重建了这座村子",
+      "sources": [
+        {
+          "file": "GreyWardenVillageReconstructionBehavior.cs",
+          "line": 380,
+          "english": "Rebuilt the village"
+        }
+      ],
+      "old_en": [
+        "Rebuilt the village"
+      ],
+      "new_zh": "重建了这座村子",
+      "new_en": "Rebuilt this village",
+      "context": "灰袍完成重建后的村庄名牌通知。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_notice_issue_solved",
+      "old_zh": "解决了一个请愿",
+      "sources": [
+        {
+          "file": "GreyWardenIssueResolutionBehavior.cs",
+          "line": 268,
+          "english": "Solved an issue"
+        }
+      ],
+      "old_en": [
+        "Solved an issue"
+      ],
+      "new_zh": "处理了一件请愿",
+      "new_en": "Resolved a petition",
+      "context": "灰袍完成要人事务后的聚落名牌通知。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_mission",
+      "old_zh": "正把永恒之火带往{TARGET}。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 613,
+          "english": "Carrying the Eternal Fire to {TARGET}."
+        }
+      ],
+      "old_en": [
+        "Carrying the Eternal Fire to {TARGET}."
+      ],
+      "new_zh": "正前往{TARGET}传教。",
+      "new_en": "Travelling to {TARGET} to preach.",
+      "context": "传教队出发阶段的部队行为说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_market",
+      "old_zh": "正把{HOME}的货运去{TARGET}的集市。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 617,
+          "english": "Taking the goods of {HOME} to market in {TARGET}."
+        }
+      ],
+      "old_en": [
+        "Taking the goods of {HOME} to market in {TARGET}."
+      ],
+      "new_zh": "正把{HOME}的货物运往{TARGET}集市。",
+      "new_en": "Taking goods from {HOME} to market in {TARGET}.",
+      "context": "卖货队出发阶段的部队行为说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_returning",
+      "old_zh": "正返回{HOME}。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 620,
+          "english": "Returning to {HOME}."
+        }
+      ],
+      "old_en": [
+        "Returning to {HOME}."
+      ],
+      "new_zh": "正返回{HOME}。",
+      "new_en": "Returning to {HOME}.",
+      "context": "卖货队返回阶段的部队行为说明。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_status_home",
+      "old_zh": "在{HOME}守着火。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 621,
+          "english": "Keeping watch in {HOME}."
+        }
+      ],
+      "old_en": [
+        "Keeping watch in {HOME}."
+      ],
+      "new_zh": "驻守{HOME}。",
+      "new_en": "Keeping watch in {HOME}.",
+      "context": "已登记教众队处于本村阶段的部队行为说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_visit",
+      "old_zh": "在{VILLAGE}的永恒之火旁：交出{PRISONERS}名俘虏、{DONATED}件装备，收了{RECRUITS}名立誓者入伍。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 629,
+          "english": "At the Eternal Fire in {VILLAGE}: handed over {PRISONERS} prisoners and {DONATED} pieces of gear, took {RECRUITS} sworn into the ranks."
+        }
+      ],
+      "old_en": [
+        "At the Eternal Fire in {VILLAGE}: handed over {PRISONERS} prisoners and {DONATED} pieces of gear, took {RECRUITS} sworn into the ranks."
+      ],
+      "new_zh": "在{VILLAGE}交付{PRISONERS}名俘虏、捐赠{DONATED}件物资，招募{RECRUITS}名教众。",
+      "new_en": "In {VILLAGE}: handed over {PRISONERS} prisoners, donated {DONATED} items, and recruited {RECRUITS} believers.",
+      "context": "灰袍领主在村庄停留且有本次交人、捐物或招兵记录时的行为说明。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_healing",
+      "old_zh": "在{VILLAGE}的永恒之火旁照料伤员。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 632,
+          "english": "Tending the wounded at the Eternal Fire in {VILLAGE}."
+        }
+      ],
+      "old_en": [
+        "Tending the wounded at the Eternal Fire in {VILLAGE}."
+      ],
+      "new_zh": "在{VILLAGE}照料伤员。",
+      "new_en": "Tending the wounded in {VILLAGE}.",
+      "context": "灰袍领主在教众村庄停留、无本次交割记录且有伤兵时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_status_resting",
+      "old_zh": "在{VILLAGE}的永恒之火旁休整。",
+      "sources": [
+        {
+          "file": "GwpFireswornBehavior.cs",
+          "line": 635,
+          "english": "Resting at the Eternal Fire in {VILLAGE}."
+        }
+      ],
+      "old_en": [
+        "Resting at the Eternal Fire in {VILLAGE}."
+      ],
+      "new_zh": "在{VILLAGE}休整。",
+      "new_en": "Resting in {VILLAGE}.",
+      "context": "灰袍领主在教众村庄停留、无本次交割记录且没有伤兵时。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_greet_cart_back",
+      "old_zh": "货卖完了，我们回{HOME}去。",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 76,
+          "english": "The goods are sold. We are going home to {HOME}."
+        }
+      ],
+      "old_en": [
+        "The goods are sold. We are going home to {HOME}."
+      ],
+      "new_zh": "我们在集市卖过货，正返回{HOME}。",
+      "new_en": "We have traded at market and are returning to {HOME}.",
+      "context": "地图遇到返村阶段的卖货队；返程可能仍有余货，故不再说全部售完。",
+      "action": "拟改"
+    },
+    {
+      "key": "gwp_fs_party_products_separator",
+      "old_zh": "、",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 103,
+          "english": ", "
+        },
+        {
+          "file": "GwpFireswornRituals.cs",
+          "line": 267,
+          "english": ", "
+        }
+      ],
+      "old_en": [
+        ", "
+      ],
+      "new_zh": "、",
+      "new_en": ", ",
+      "context": "货物列表与火刑人数/户数组合所用分隔符。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_party_product",
+      "old_zh": "{COUNT}件{ITEM}",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 106,
+          "english": "{COUNT} {ITEM}"
+        }
+      ],
+      "old_en": [
+        "{COUNT} {ITEM}"
+      ],
+      "new_zh": "{COUNT}件{ITEM}",
+      "new_en": "{COUNT} {ITEM}",
+      "context": "卖货队报价中的单个货物条目。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_party_products_more",
+      "old_zh": "等",
+      "sources": [
+        {
+          "file": "GwpFireswornPartyDialogs.cs",
+          "line": 109,
+          "english": " and more"
+        }
+      ],
+      "old_en": [
+        " and more"
+      ],
+      "new_zh": "等",
+      "new_en": " and more",
+      "context": "卖货报价超过四种货物时追加的省略片段。",
+      "action": "保留"
+    },
+    {
+      "key": "gwp_fs_healing_hearth",
+      "old_zh": "永恒之火的火堆边",
+      "sources": [
+        {
+          "file": "GwpWardenVisitDesire.cs",
+          "line": 248,
+          "english": "Hearth of the Eternal Fire"
+        },
+        {
+          "file": "GwpWardenVisitDesire.cs",
+          "line": 257,
+          "english": "Hearth of the Eternal Fire"
+        }
+      ],
+      "old_en": [
+        "Hearth of the Eternal Fire"
+      ],
+      "new_zh": "灰袍教众的照料",
+      "new_en": "Care from the Grey Warden faithful",
+      "context": "部队治疗速度的解释条目；这是加成来源，不是地图地点。",
+      "action": "拟改"
+    }
+  ]
+}

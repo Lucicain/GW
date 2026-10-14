@@ -28,7 +28,7 @@ namespace GreyWardenPolicePurity
             _graceHeroId = _offender.StringId;
             _graceDueHours = CampaignTime.Now.ToHours + GwpTuning.FieldArrest.GraceHours;
             _graceNoticeShown = false;
-            string message = GwpText.Get("{=gwp_grace_granted}You allowed {VAR_1} three days to raise the fine. The commission remains open; return to collect it or take the offender into custody.",
+            string message = GwpText.Get(GwpTextCatalog.gwp_grace_granted,
                 "VAR_1", _offender.Name.ToString());
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.RecordFieldGrace(message);
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
@@ -45,7 +45,7 @@ namespace GreyWardenPolicePurity
             Hero? target = Hero.FindFirst(h => h.StringId == _graceHeroId);
             if (target == null || bounty?.IsActiveBountyTarget(target) != true) { ClearFieldGrace(); return; }
             _graceNoticeShown = true;
-            string message = GwpText.Get("{=gwp_grace_due}The time you allowed {VAR_1} has expired. Seek payment or take him into custody; no payment has been received automatically.", "VAR_1", target.Name.ToString());
+            string message = GwpText.Get(GwpTextCatalog.gwp_grace_due, "VAR_1", target.Name.ToString());
             bounty.RecordFieldGrace(message);
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
         }

@@ -189,6 +189,7 @@ class BattlePeaceTests(unittest.TestCase):
                 '<DefineConstants>GWP_DIAGNOSTICS</DefineConstants><NoWarn>CS8602</NoWarn>'
                 '</PropertyGroup></Project>', encoding="utf-8")
             (path / "Program.cs").write_text(program, encoding="utf-8")
+            shutil.copyfile(ROOT / "GreyWardenPolicePurity/GwpTextCatalog.g.cs", path / "GwpTextCatalog.cs")
             result = subprocess.run(["dotnet", "run", "--project", directory, "-c", "Release", "-v", "quiet"],
                                     capture_output=True, text=True, timeout=120)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)

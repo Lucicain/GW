@@ -344,7 +344,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
 	<!--ComSet-->
   <Item id="wcomlegs"
-        name="{=gwp_item_commander_boots}Grey Warden Commander's Sabatons"
+        name="{=gwp_item_commander_boots}Grey Warden Commander&apos;s Sabatons"
         mesh="wcomlegs"
         culture="Culture.empire"
         is_merchandise="false"
@@ -360,7 +360,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomgloves"
-        name="{=gwp_item_commander_gloves}Grey Warden Commander's Gauntlets"
+        name="{=gwp_item_commander_gloves}Grey Warden Commander&apos;s Gauntlets"
         mesh="wcomgloves"
         culture="Culture.empire"
         is_merchandise="false"
@@ -376,7 +376,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomarmorhv"
-        name="{=gwp_item_commander_armor}Grey Warden Commander's Harness"
+        name="{=gwp_item_commander_armor}Grey Warden Commander&apos;s Harness"
         mesh="wcomarmorhv"
         culture="Culture.empire"
         is_merchandise="false"
@@ -395,7 +395,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomshoulder"
-        name="{=gwp_item_commander_shoulders}Grey Warden Commander's Mantle"
+        name="{=gwp_item_commander_shoulders}Grey Warden Commander&apos;s Mantle"
         mesh="wcomshoulder"
         culture="Culture.empire"
         is_merchandise="false"
@@ -411,7 +411,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     <Flags Civilian="false" />
   </Item>
   <Item id="wcomhelmethv"
-        name="{=gwp_item_commander_helmet}Grey Warden Commander's Winged Helm"
+        name="{=gwp_item_commander_helmet}Grey Warden Commander&apos;s Winged Helm"
         mesh="wcomhelmethv"
         culture="Culture.empire"
         is_merchandise="false"
@@ -570,7 +570,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
        the current-official-body A/B reproduced the same shutdown crash.
        Runtime mesh/material mutation remains disabled. -->
   <Item id="wlarge_shield_black"
-        name="{=gwp_item_obsidian_great_shield}Grey Warden Lord's Obsidian Great Shield"
+        name="{=gwp_item_obsidian_great_shield}Grey Warden Lord&apos;s Obsidian Great Shield"
         body_name="bo_cap_wlarge_shield"
         shield_body_name="bo_wlarge_shield"
         recalculate_body="false"
@@ -637,7 +637,7 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   
   <Item multiplayer_item="false"
         id="wharnesscom"
-        name="{=gwp_item_commander_horse_armor}Grey Warden Commander's Horse Armour"
+        name="{=gwp_item_commander_horse_armor}Grey Warden Commander&apos;s Horse Armour"
         mesh="wharnesscom"
         subtype="body_armor"
         is_merchandise="false"

@@ -460,7 +460,7 @@ namespace GreyWardenPolicePurity
                 {
                     CreditJudicialTreasury(itemsValue);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_policeresourcemanager_001}You lack the coin, so the Wardens take goods worth {VAR_1} denars.", "VAR_1", itemsValue), Colors.Yellow));
+                        GwpText.Get(GwpTextCatalog.gwp_policeresourcemanager_001, "VAR_1", itemsValue), Colors.Yellow));
                 }
             }
 

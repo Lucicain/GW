@@ -2,7 +2,7 @@
 
 > 当前状态：归队改为并回主队、多余的人去信众村，已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`c83fecb`（2026-10-14）
+> 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior.DelayPatrols.cs`
 > 待实测：追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
 

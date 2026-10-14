@@ -57,7 +57,7 @@ namespace GreyWardenPolicePurity
             }
 
             _activePatrolIds.Clear();
-            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_003}The return command has been issued, the number of candidates = {VAR_1}, returning = {VAR_2}", "VAR_1", patrols.Count, "VAR_2", _returningPatrolIds.Count));
+            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_helpers_003, "VAR_1", patrols.Count, "VAR_2", _returningPatrolIds.Count));
         }
 
         private void UpdateReturningPatrols()
@@ -89,7 +89,7 @@ namespace GreyWardenPolicePurity
                     float dist = patrol.GetPosition2D.Distance(target.Position.ToVec2());
                     if (dist < 3f)
                     {
-                        DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_004}The provost patrol reached {VAR_1}; disbanding: {VAR_2}", "VAR_1", target.Name, "VAR_2", id));
+                        DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_helpers_004, "VAR_1", target.Name, "VAR_2", id));
                         GwpCommon.TryDestroyParty(patrol);
 
                         var stillAlive = MobileParty.All.FirstOrDefault(p => p.StringId == id);
@@ -175,7 +175,7 @@ namespace GreyWardenPolicePurity
             if (hasWorldPatrol) return;
 
             _suppressPatrolMeetings = false;
-            DebugLog(GwpText.Get("{=gwp_policepatrolbehavior_helpers_005}The return destruction has been completed and the normal session has been restored."));
+            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_helpers_005));
         }
 
         private Hero? GetPatrolBarterHero()

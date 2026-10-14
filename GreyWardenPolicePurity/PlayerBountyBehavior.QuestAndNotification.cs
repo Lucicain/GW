@@ -60,7 +60,7 @@ namespace GreyWardenPolicePurity
                     dueTime,
                     0)
             {
-                _targetName = targetName ?? GwpText.Get("{=gwp_playerbountybehavior_questandnotification_001}Unknown target");
+                _targetName = targetName ?? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_questandnotification_001);
                 _readyForTurnInLogWritten = false;
             }
 
@@ -75,7 +75,7 @@ namespace GreyWardenPolicePurity
             }
 
             public override TextObject Title =>
-                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_002}Grey Warden commission: {VAR_1}", "VAR_1", _targetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target")));
+                new TextObject(GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_questandnotification_002, "VAR_1", _targetName ?? GwpText.Get(GwpTextCatalog.gwp_common_unknown_target)));
             public override bool IsRemainingTimeHidden => _readyForTurnInLogWritten;
 
             /// <summary>
@@ -99,7 +99,7 @@ namespace GreyWardenPolicePurity
 
             internal void SucceedQuest()
             {
-                AddLog(new TextObject(GwpText.Get("{=gwp_playerbountybehavior_questandnotification_003}Your report and delivery have been recorded and the commission is concluded.")), false);
+                AddLog(new TextObject(GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_questandnotification_003)), false);
 
                 // A journal rendering problem must not prevent native completion.
                 CompleteQuestWithSuccess();
@@ -112,13 +112,13 @@ namespace GreyWardenPolicePurity
 
                 _readyForTurnInLogWritten = true;
                 WriteLog(GwpText.Get(
-                    "{=gwp_bounty_ready_for_turnin}The field operation has ended. Deliver the fines or the assigned prisoner to any Grey Warden lord, in person or by your own men."));
+                    GwpTextCatalog.gwp_bounty_ready_for_turnin));
             }
 
             internal void TimeOutQuest()
             {
                 CompleteQuestWithTimeOut(new TextObject(GwpText.Get(
-                    "{=gwp_bounty_contract_timed_out_log}The bounty contract expired before the quarry was defeated.")));
+                    GwpTextCatalog.gwp_bounty_contract_timed_out_log)));
             }
 
             protected override void OnTimedOut()
@@ -129,7 +129,7 @@ namespace GreyWardenPolicePurity
 
             internal void FailQuestMembershipEnded()
             {
-                CompleteQuestWithCancel(new TextObject(GwpText.Get("{=gwp_bounty_membership_ended}You left the Grey Wardens, and the active bounty contract was withdrawn.")));
+                CompleteQuestWithCancel(new TextObject(GwpText.Get(GwpTextCatalog.gwp_bounty_membership_ended)));
             }
 
         }
@@ -146,11 +146,11 @@ namespace GreyWardenPolicePurity
         {
             internal BountyMapNotification()
                 : base(new TextObject(GwpText.Get(
-                    "{=gwp_bounty_notification_description}New bounty contracts are available."))) { }
+                    GwpTextCatalog.gwp_bounty_notification_description))) { }
 
             public override TextObject TitleText =>
                 new TextObject(GwpText.Get(
-                    "{=gwp_bounty_notification_title}Grey Warden bounty contracts"));
+                    GwpTextCatalog.gwp_bounty_notification_title));
             public override string SoundEventPath => "event:/ui/notification/quest_start";
 
             public override bool IsValid()

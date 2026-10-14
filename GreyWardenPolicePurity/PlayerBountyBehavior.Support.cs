@@ -53,7 +53,7 @@ namespace GreyWardenPolicePurity
                     "source=" + source + "; lord=" + (lord?.StringId ?? "-")
                     + "; crimeOpen=" + (crime != null));
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_support_no_responder}No Warden lord can come just now."),
+                    GwpTextCatalog.gwp_support_no_responder),
                     Colors.Yellow));
                 return false;
             }
@@ -70,7 +70,7 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_ASSIGN_FAILED",
                     "source=" + source + "; lord=" + lord.StringId + "; crime=" + crime.CrimeId);
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_support_no_responder}No Warden lord can come just now."),
+                    GwpTextCatalog.gwp_support_no_responder),
                     Colors.Yellow));
                 return false;
             }
@@ -79,14 +79,14 @@ namespace GreyWardenPolicePurity
             _escortPolicePartyId = lord.StringId;
             _supportRequested = true;
             _activeQuest?.WriteLog(GwpText.Create(
-                "{=gwp_support_requested_log}You have asked the Wardens to ride with you."));
+                GwpTextCatalog.gwp_support_requested_log));
             GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_GRANTED",
                 "source=" + source + "; responder=" + lord.StringId + "; crime=" + crime.CrimeId);
             PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(_escortPolicePartyId);
             PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(_escortPolicePartyId);
             UpdateEscortPatrol();
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_support_granted_notice}{VAR_1} has agreed and is on her way to join you.",
+                GwpTextCatalog.gwp_support_granted_notice,
                 "VAR_1", lord.Name.ToString()), Colors.Cyan));
             return true;
         }
@@ -151,7 +151,7 @@ namespace GreyWardenPolicePurity
                 "playerFaction=" + playerFaction.StringId +
                 "; criminalFaction=" + criminalFaction.StringId);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_support_player_war}The Wardens declare war on {VAR_1}, and you stand with them.",
+                GwpTextCatalog.gwp_support_player_war,
                 "VAR_1", criminalFaction.Name), Colors.Cyan));
         }
 
@@ -159,10 +159,10 @@ namespace GreyWardenPolicePurity
         {
             // 当面开口和派人送信是同一件事：话到了灰袍领主耳朵里，支援才成立。
             starter.AddPlayerLine("gwp_request_case_support", "lord_talk_speak_diplomacy_2", "gwp_request_case_support_reply",
-                GwpText.Get("{=gwp_request_case_support}I need your help taking the offender. Take the field with me."),
+                GwpText.Get(GwpTextCatalog.gwp_request_case_support),
                 () => CanRequestCaseSupport && GwpCommon.IsOrdinaryGreyWardenLordConversation(), null, 110);
             starter.AddDialogLine("gwp_request_case_support_reply", "gwp_request_case_support_reply", "lord_talk_speak_diplomacy_2",
-                GwpText.Get("{=gwp_request_case_support_reply}Then let us ride. We stay at your shoulder, and we will not be behind you when it starts."), null,
+                GwpText.Get(GwpTextCatalog.gwp_request_case_support_reply), null,
                 () => GrantCaseSupport("player_in_person", MobileParty.ConversationParty));
         }
     }

@@ -86,25 +86,25 @@ namespace GreyWardenPolicePurity
             ClearPendingSparring();
             ClearPostBoutConversation();
             starter.AddDialogLine("gwp_case_duel_post_win", "start", "gwp_case_duel_collect_options",
-                GwpText.Get("{=gwp_case_duel_post_win}You won. I accept it. Inspect my property and let us settle the fine as agreed."),
+                GwpText.Get(GwpTextCatalog.gwp_case_duel_post_win),
                 () => _postBoutWasEnforcement && IsFieldPostBoutWinConversation(), null, 280);
             starter.AddPlayerLine("gwp_case_duel_collect", "gwp_case_duel_collect_options", "gwp_fa_settled",
-                GwpText.Get("{=gwp_duel_inspect_property}Show me your property. We will settle the fine now."), null,
+                GwpText.Get(GwpTextCatalog.gwp_duel_inspect_property), null,
                 () => Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>()?.PrepareDuelPropertyCollection());
             starter.AddPlayerLine("gwp_case_duel_collect_later", "gwp_case_duel_collect_options", "close_window",
-                GwpText.Get("{=gwp_duel_collect_later}I will collect it later."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_duel_collect_later), null, null);
             starter.AddDialogLine("gwp_case_duel_post_loss", "start", "gwp_case_duel_post_reply",
-                GwpText.Get("{=gwp_case_duel_post_loss}You lost. As agreed, you collect no fine from me today."),
+                GwpText.Get(GwpTextCatalog.gwp_case_duel_post_loss),
                 () => _postBoutWasEnforcement && (IsFieldPostBoutLossConversation() || IsFieldPostBoutRuleViolationConversation()), null, 280);
             starter.AddPlayerLine("gwp_case_duel_post_reply", "gwp_case_duel_post_reply", "close_window",
-                GwpText.Get("{=gwp_case_duel_post_reply}I will report the outcome to the Grey Wardens."), null, null, 280);
+                GwpText.Get(GwpTextCatalog.gwp_case_duel_post_reply), null, null, 280);
 
             starter.AddPlayerLine(
                 "gwp_sparring_challenge",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_sparring_accept",
                 GwpText.Get(
-                    "{=gwp_sparring_challenge}Would you like to spar with me? I want to test my skill."),
+                    GwpTextCatalog.gwp_sparring_challenge),
                 CanChallengeConversationHero,
                 null,
                 115);
@@ -114,7 +114,7 @@ namespace GreyWardenPolicePurity
                 "gwp_sparring_accept",
                 "close_window",
                 GwpText.Get(
-                    "{=gwp_sparring_accept}Of course. Just a friendly match."),
+                    GwpTextCatalog.gwp_sparring_accept),
                 null,
                 QueueSparring,
                 115);
@@ -124,7 +124,7 @@ namespace GreyWardenPolicePurity
                 "start",
                 "gwp_sparring_field_style",
                 GwpText.Get(
-                    "{=gwp_sparring_field_centre}How do you want to fight?"),
+                    GwpTextCatalog.gwp_sparring_field_centre),
                 IsFieldStartConversation,
                 null,
                 200);
@@ -134,7 +134,7 @@ namespace GreyWardenPolicePurity
                 "gwp_sparring_field_style",
                 "close_window",
                 GwpText.Get(
-                    "{=gwp_sparring_field_mounted}Let's fight on horseback."),
+                    GwpTextCatalog.gwp_sparring_field_mounted),
                 CanChooseMountedFieldDuel,
                 BeginMountedFieldDuelAfterConversation,
                 200);
@@ -144,7 +144,7 @@ namespace GreyWardenPolicePurity
                 "gwp_sparring_field_style",
                 "close_window",
                 GwpText.Get(
-                    "{=gwp_sparring_field_foot}Let's fight on foot."),
+                    GwpTextCatalog.gwp_sparring_field_foot),
                 null,
                 BeginFootFieldDuelAfterConversation,
                 200);
@@ -154,7 +154,7 @@ namespace GreyWardenPolicePurity
                 "start",
                 "gwp_sparring_field_post_reply",
                 GwpText.Get(
-                    "{=gwp_sparring_field_post_win}You fought well and earned that win. Keep it up."),
+                    GwpTextCatalog.gwp_sparring_field_post_win),
                 IsFieldPostBoutWinConversation,
                 null,
                 250);
@@ -164,7 +164,7 @@ namespace GreyWardenPolicePurity
                 "start",
                 "gwp_sparring_field_post_rule_reply",
                 GwpText.Get(
-                    "{=gwp_sparring_field_post_rule_violation}We agreed to fight on foot, but you refused to dismount. The loss is yours."),
+                    GwpTextCatalog.gwp_sparring_field_post_rule_violation),
                 IsFieldPostBoutRuleViolationConversation,
                 null,
                 260);
@@ -174,7 +174,7 @@ namespace GreyWardenPolicePurity
                 "gwp_sparring_field_post_rule_reply",
                 "close_window",
                 GwpText.Get(
-                    "{=gwp_sparring_field_post_rule_reply}Understood."),
+                    GwpTextCatalog.gwp_sparring_field_post_rule_reply),
                 null,
                 null,
                 260);
@@ -184,7 +184,7 @@ namespace GreyWardenPolicePurity
                 "start",
                 "gwp_sparring_field_post_reply",
                 GwpText.Get(
-                    "{=gwp_sparring_field_post_loss}Don't be discouraged. You fought well, and you'll be stronger next time."),
+                    GwpTextCatalog.gwp_sparring_field_post_loss),
                 IsFieldPostBoutLossConversation,
                 null,
                 250);
@@ -194,7 +194,7 @@ namespace GreyWardenPolicePurity
                 "gwp_sparring_field_post_reply",
                 "close_window",
                 GwpText.Get(
-                    "{=gwp_sparring_field_post_reply}Thanks. Let's spar again sometime."),
+                    GwpTextCatalog.gwp_sparring_field_post_reply),
                 null,
                 null,
                 250);

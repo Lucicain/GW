@@ -224,7 +224,7 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_appeal_file",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_fief_appeal_file_response",
-                GwpText.Get("{=gwp_fief_appeal_file}I wish to file a petition for reconsideration of a fief."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_appeal_file),
                 CanFileFiefAppeal,
                 ShowFiefSelectionInquiry,
                 220);
@@ -233,14 +233,14 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_appeal_file_response",
                 "gwp_fief_appeal_file_response",
                 "lord_pretalk",
-                GwpText.Get("{=gwp_fief_appeal_recorded}I will enter the petition. The Noble Affairs Liaison will come to you personally before any fee is collected."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_appeal_recorded),
                 null, null, 220);
 
             starter.AddDialogLine(
                 "gwp_fief_payment_insufficient_start",
                 "start",
                 "gwp_fief_payment_choice",
-                GwpText.Get("{=gwp_fief_payment_insufficient}You do not have the required fifty thousand denars. You may set the petition aside or withdraw it without payment."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_insufficient),
                 IsInsufficientFundsPaymentConversation,
                 null,
                 1200);
@@ -249,7 +249,7 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_offer_start",
                 "start",
                 "gwp_fief_payment_choice",
-                GwpText.Get("{=gwp_fief_payment_offer}Your petition is in my hands. For fifty thousand denars paid into the Grey Warden public treasury, I will carry it to the people and reopen the fief decision."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_offer),
                 IsCoordinatorPaymentConversation,
                 null,
                 1100);
@@ -258,7 +258,7 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_offer",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_fief_payment_choice",
-                GwpText.Get("{=gwp_fief_payment_offer}Your petition is in my hands. For fifty thousand denars paid into the Grey Warden public treasury, I will carry it to the people and reopen the fief decision."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_offer),
                 IsCoordinatorPaymentConversation,
                 null,
                 300);
@@ -267,7 +267,7 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_accept",
                 "gwp_fief_payment_choice",
                 "gwp_fief_payment_accepted",
-                GwpText.Get("{=gwp_fief_payment_accept}Take the fifty thousand denars and proceed."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_accept),
                 CanPayFiefAppeal,
                 AcceptFiefAppealPayment,
                 300);
@@ -276,14 +276,14 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_accepted",
                 "gwp_fief_payment_accepted",
                 "close_window",
-                GwpText.Get("{=gwp_fief_payment_accepted}The sum is entered in the public treasury. I leave for the disputed fief at once."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_accepted),
                 null, null, 300);
 
             starter.AddPlayerLine(
                 "gwp_fief_payment_defer",
                 "gwp_fief_payment_choice",
                 "gwp_fief_payment_deferred",
-                GwpText.Get("{=gwp_fief_payment_defer}Set the petition aside for now."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_defer),
                 null,
                 DeferFiefAppealPayment,
                 290);
@@ -292,14 +292,14 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_deferred",
                 "gwp_fief_payment_deferred",
                 "close_window",
-                GwpText.Get("{=gwp_fief_payment_deferred}Very well. The petition will remain open. I will seek you out again when the time is right."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_deferred),
                 null, null, 290);
 
             starter.AddPlayerLine(
                 "gwp_fief_payment_withdraw",
                 "gwp_fief_payment_choice",
                 "gwp_fief_payment_withdrawn",
-                GwpText.Get("{=gwp_fief_payment_withdraw}Withdraw the petition."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_withdraw),
                 null,
                 WithdrawUnpaidFiefAppeal,
                 280);
@@ -308,7 +308,7 @@ namespace GreyWardenPolicePurity
                 "gwp_fief_payment_withdrawn",
                 "gwp_fief_payment_withdrawn",
                 "close_window",
-                GwpText.Get("{=gwp_fief_payment_withdrawn}Then no payment is due, and the petition is closed."),
+                GwpText.Get(GwpTextCatalog.gwp_fief_payment_withdrawn),
                 null, null, 280);
         }
 
@@ -328,17 +328,17 @@ namespace GreyWardenPolicePurity
                 Settlement? settlement = ResolveSettlement(record.SettlementId);
                 string label = settlement?.Name?.ToString() ?? record.SettlementId;
                 return new InquiryElement(record, label, null, true,
-                    GwpText.Get("{=gwp_fief_select_hint}Captured with your participation and awarded to another clan."));
+                    GwpText.Get(GwpTextCatalog.gwp_fief_select_hint));
             }).ToList();
             if (elements.Count == 0) return;
 
             MBInformationManager.ShowMultiSelectionInquiry(
                 new MultiSelectionInquiryData(
-                    GwpText.Get("{=gwp_fief_select_title}Select a fief petition"),
-                    GwpText.Get("{=gwp_fief_select_description}Choose the recently captured fief whose ownership should be reconsidered."),
+                    GwpText.Get(GwpTextCatalog.gwp_fief_select_title),
+                    GwpText.Get(GwpTextCatalog.gwp_fief_select_description),
                     elements, true, 1, 1,
-                    GwpText.Get("{=gwp_file_petition}File petition"),
-                    GwpText.Get("{=gwp_cancel}Cancel"),
+                    GwpText.Get(GwpTextCatalog.gwp_file_petition),
+                    GwpText.Get(GwpTextCatalog.gwp_cancel),
                     selected =>
                     {
                         CaptureRecord? record = selected.FirstOrDefault()?.Identifier
@@ -370,8 +370,8 @@ namespace GreyWardenPolicePurity
             _publicSupportPercent = 0;
             InformationManager.DisplayMessage(new InformationMessage(
                 automatic
-                    ? GwpText.Get("{=gwp_fief_auto_triggered}The Wardens' officer for noble affairs is on her way to see you.")
-                    : GwpText.Get("{=gwp_fief_request_filed}Your petition for a fief is filed. The Wardens' officer for noble affairs is on her way to you."),
+                    ? GwpText.Get(GwpTextCatalog.gwp_fief_auto_triggered)
+                    : GwpText.Get(GwpTextCatalog.gwp_fief_request_filed),
                 Colors.Cyan));
         }
 
@@ -601,7 +601,7 @@ namespace GreyWardenPolicePurity
             _activeStage = (int)FiefRequestStage.AwaitingVote;
             GreyWardenPartyDesireBehavior.ClearIntent(coordinator);
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fief_vote_reopened}The Wardens have petitioned over {VAR_1}. The realm will deliberate the fief again, and you are among the candidates.",
+                GwpText.Get(GwpTextCatalog.gwp_fief_vote_reopened,
                     "VAR_1", settlement.Name),
                 Colors.Green));
             GwpAiDiagnostics.WriteAction(coordinator,
@@ -804,7 +804,7 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(
-                    "{=gwp_fief_defer_complete}The officer for noble affairs will return to take up your petition."),
+                    GwpTextCatalog.gwp_fief_defer_complete),
                 Colors.Cyan));
         }
 
@@ -915,7 +915,7 @@ namespace GreyWardenPolicePurity
                 PoliceResourceManager.RefundPlayerRequestPayment(
                     GwpTuning.PlayerRequests.FiefAppealPrice);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_fief_appeal_refunded}Your petition could not be brought forward. The fee has been returned in full."),
+                    GwpText.Get(GwpTextCatalog.gwp_fief_appeal_refunded),
                     Colors.Yellow));
             }
             MobileParty? coordinator = ResolveCoordinatorParty();

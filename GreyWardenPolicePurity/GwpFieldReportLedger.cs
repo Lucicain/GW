@@ -346,7 +346,7 @@ namespace GreyWardenPolicePurity
             if (!discovered) return;
             PlayerState.ChangeReputation(-penalty);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_report_excess_found}{VAR_1} had already answered for his crimes, yet you struck him down. The Wardens have taken note.",
+                GwpTextCatalog.gwp_report_excess_found,
                 "VAR_1", GetOffenderName(id), "VAR_2", -penalty), Colors.Red));
         }
 
@@ -372,7 +372,7 @@ namespace GreyWardenPolicePurity
             if (!discovered) return;
             PlayerState.ChangeReputation(-penalty);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_report_audit_found}The Wardens find {VAR_1} denars missing from your accounts.",
+                GwpTextCatalog.gwp_report_audit_found,
                 "VAR_1", gap, "VAR_2", -penalty), Colors.Red));
         }
 

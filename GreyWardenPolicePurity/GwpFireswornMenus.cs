@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
         internal static void Register(CampaignGameStarter starter)
         {
             starter.AddGameMenu(RitualMenuId, "{GWP_FS_RITUAL_TEXT}", RitualInit);
-            starter.AddGameMenuOption(RitualMenuId, "gwp_fs_ritual_leave", "{=gwp_fs_ritual_leave}Leave...",
+            starter.AddGameMenuOption(RitualMenuId, "gwp_fs_ritual_leave", GwpTextCatalog.gwp_fs_ritual_leave,
                 LeaveCondition, LeaveConsequence, isLeave: true);
             starter.AddGameMenuOption("village", "gwp_fs_village_faith", "{GWP_FS_VILLAGE_OPTION}",
                 FaithOptionCondition, FaithOptionConsequence, isLeave: false, index: 5);
@@ -47,8 +47,8 @@ namespace GreyWardenPolicePurity
 
             args.MenuContext.SetBackgroundMeshName(GwpFireswornArt.Background(kind));
             args.MenuTitle = kind == GwpFireswornBehavior.RitualKind.Damnation
-                ? GwpText.Create("{=gwp_fs_ritual_damnation_title}Damnation")
-                : GwpText.Create("{=gwp_fs_ritual_congregation_title}Congregation");
+                ? GwpText.Create(GwpTextCatalog.gwp_fs_ritual_damnation_title)
+                : GwpText.Create(GwpTextCatalog.gwp_fs_ritual_congregation_title);
             MBTextManager.SetTextVariable("GWP_FS_RITUAL_TEXT", RitualText(kind, village!, host, remaining));
             GwpAiDiagnostics.WriteFaith("RITUAL_MENU_SHOWN", "village=" + village!.StringId + "; kind=" + kind +
                 "; background=" + GwpFireswornArt.Background(kind));
@@ -59,9 +59,9 @@ namespace GreyWardenPolicePurity
         {
             int hours = Math.Max(1, (int)Math.Ceiling(remainingHours));
             return kind == GwpFireswornBehavior.RitualKind.Damnation
-                ? GwpText.Get("{=gwp_fs_ritual_damnation_text}A pyre is burning in the square of {VILLAGE}. {HOST} is holding a Damnation of the Eternal Fire: those bound to it are the ones the flame has judged. The sworn sing around the pyre while the villagers feed it wood. The smoke stings your eyes. Nobody here will deal with you for about {HOURS} more hours.",
+                ? GwpText.Get(GwpTextCatalog.gwp_fs_ritual_damnation_text,
                     "VILLAGE", village.Name, "HOST", host, "HOURS", hours)
-                : GwpText.Get("{=gwp_fs_ritual_congregation_text}The square of {VILLAGE} is packed. {HOST} stands before the Eternal Fire reading out the laws of the flame, and those who would swear step forward one by one and hold their hands over the fire to take the oath; the villagers around them speak the words with him. A Congregation is under way, and nobody here has time for you. It will last about {HOURS} more hours.",
+                : GwpText.Get(GwpTextCatalog.gwp_fs_ritual_congregation_text,
                     "VILLAGE", village.Name, "HOST", host, "HOURS", hours);
         }
 
@@ -86,7 +86,7 @@ namespace GreyWardenPolicePurity
                 return false;
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
             MBTextManager.SetTextVariable("GWP_FS_VILLAGE_OPTION", GwpText.Get(
-                "{=gwp_fs_village_option}Eternal Fire: {HOUSEHOLDS} sworn hearths ({SHARE}%), {GUARD} under arms",
+                GwpTextCatalog.gwp_fs_village_option,
                 "HOUSEHOLDS", households, "SHARE", HearthShare(village!, households), "GUARD", guard));
             return true;
         }
@@ -98,19 +98,19 @@ namespace GreyWardenPolicePurity
                 return;
 
             string body = GwpText.Get(
-                "{=gwp_fs_village_info}{HOUSEHOLDS} of the {HEARTH} hearths of {VILLAGE} have sworn themselves to the Eternal Fire, and {GUARD} of their sons and daughters stand under arms. The priest and the sworn keep the flame's laws; the rest of the village works its fields as it always has. When raiders come, it is these sworn men and women who take up the spear.",
+                GwpTextCatalog.gwp_fs_village_info,
                 "HOUSEHOLDS", households, "GUARD", guard, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
             body += "\n\n" + (priest != null
-                ? GwpText.Get("{=gwp_fs_village_priest}{PRIEST} tends the Eternal Fire here. When the Wardens need fighters, the sworn sons and daughters of this village go with them from his hearth.",
+                ? GwpText.Get(GwpTextCatalog.gwp_fs_village_priest,
                     "PRIEST", priest.Name)
-                : GwpText.Get("{=gwp_fs_village_no_priest}No priest of the Eternal Fire lives here."));
+                : GwpText.Get(GwpTextCatalog.gwp_fs_village_no_priest));
             GwpFireswornBehavior.GetVillageStores(village, out int prisoners, out int armoryItems, out int goodsValue);
             body += "\n\n" + GwpText.Get(
-                "{=gwp_fs_village_stores}{PRISONERS} wretches wait in the cellar for the pyre. The storeroom holds {ARMORY} pieces of arms and armour for the sworn. Goods worth {GOODS} denars wait to be carted to market.",
+                GwpTextCatalog.gwp_fs_village_stores,
                 "PRISONERS", prisoners, "ARMORY", armoryItems, "GOODS", goodsValue);
             InformationManager.ShowInquiry(new InquiryData(
-                GwpText.Get("{=gwp_fs_village_info_title}The Eternal Fire"), body,
-                true, false, GwpText.Get("{=gwp_fs_village_info_ok}Close"), string.Empty, null, null));
+                GwpText.Get(GwpTextCatalog.gwp_fs_village_info_title), body,
+                true, false, GwpText.Get(GwpTextCatalog.gwp_fs_village_info_ok), string.Empty, null, null));
         }
 
         private static int HearthShare(Settlement village, int households)
@@ -173,13 +173,13 @@ namespace GreyWardenPolicePurity
         {
             if (GwpFireswornBehavior.IsPriestStrongestAt(settlement))
                 return new ExplainedNumber(0f, includeDescriptions,
-                    GwpText.Create("{=gwp_fs_militia_stopped}Eternal Fire: the sworn keep this village; no new militia is raised"));
+                    GwpText.Create(GwpTextCatalog.gwp_fs_militia_stopped));
             ExplainedNumber change = Inner.CalculateMilitiaChange(settlement, includeDescriptions);
             int guard = GwpFireswornBehavior.GuardHeadcount(settlement);
             // 原版村子不在正常状态时整项是 0，没有退役项可加回。
             if (guard > 0 && settlement.Village?.VillageState == Village.VillageStates.Normal)
                 change.Add(guard * GwpTuning.Firesworn.VanillaMilitiaRetireShare,
-                    GwpText.Create("{=gwp_fs_militia_change}The Eternal Fire's sworn do not leave the militia"));
+                    GwpText.Create(GwpTextCatalog.gwp_fs_militia_change));
             return change;
         }
 

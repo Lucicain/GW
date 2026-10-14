@@ -161,13 +161,13 @@ namespace GreyWardenPolicePurity
         {
             InformationManager.ShowInquiry(
                 new InquiryData(
-                    GwpText.Get("{=gwp_field_settle_notice_title}Case settled on the road"),
+                    GwpText.Get(GwpTextCatalog.gwp_field_settle_notice_title),
                     GwpText.Get(
-                        "{=gwp_field_settle_notice_body}The pursuit has ended. You must account for the commission and deliver the {VAR_1} denars collected as fines. Report to a Grey Warden lord; any shortfall must also be explained.",
+                        GwpTextCatalog.gwp_field_settle_notice_body,
                         "VAR_1", collectedFine.ToString()),
                     true,
                     false,
-                    GwpText.Get("{=gwp_common_understood}Understood"),
+                    GwpText.Get(GwpTextCatalog.gwp_common_understood),
                     string.Empty,
                     null,
                     null,
@@ -247,14 +247,14 @@ namespace GreyWardenPolicePurity
                     StopBountyEscortAfterTargetDefeat();
                     _activeQuest?.MarkReadyForTurnIn();
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_bounty_contract_expired_but_done}The time for the hunt has passed, but the target has been dealt with. Report to any Warden lord."),
+                        GwpText.Get(GwpTextCatalog.gwp_bounty_contract_expired_but_done),
                         Colors.Yellow));
                 }
                 return;
             }
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_bounty_contract_timed_out}The bounty has expired. The hunt is over."),
+                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_timed_out),
                 Colors.Yellow));
             EndBountyTaskState(tryRestorePeace: true);
         }
@@ -428,7 +428,7 @@ namespace GreyWardenPolicePurity
                 spawnPoint.GatePosition,
                 1f,
                 spawnPoint,
-                new TextObject(GwpText.Get("{=gwp_playerbountybehavior_001}Grey Warden herald")),
+                new TextObject(GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_001)),
                 policeClan,
                 policeClan.DefaultPartyTemplate,
                 // 所有者留空，和纠察队一样：填族长的话这支队一打输，被俘豁免就让族长逃亡、销毁她带的部队（实机诊断 2026-10-08）。
@@ -456,7 +456,7 @@ namespace GreyWardenPolicePurity
             _recruitmentPatrolDispatchHour = CampaignTime.Now.ToHours;
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_playerbountybehavior_002}A Grey Warden envoy is coming from {VAR_1} to see you.", "VAR_1", spawnPoint.Name),
+                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_002, "VAR_1", spawnPoint.Name),
                 Colors.Cyan));
         }
 
@@ -624,7 +624,7 @@ namespace GreyWardenPolicePurity
                 _escortPolicePartyId = null!;
                 if (HasBountyTask)
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_playerbountybehavior_003}The Warden escort is gone, but the bounty still stands."), Colors.Yellow));
+                        GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_003), Colors.Yellow));
                 return;
             }
 
@@ -677,17 +677,17 @@ namespace GreyWardenPolicePurity
                 // 断了线也要说一句。原来是直接 return，任务界面一片安静，玩家只会以为
                 // 情报系统坏了。
                 _activeQuest.WriteLog(GwpText.Create(
-                    "{=gwp_bounty_intel_lost}[Investigation] The scouts have lost the trail. There is no sighting to report this time."));
+                    GwpTextCatalog.gwp_bounty_intel_lost));
                 return;
             }
 
             Settlement? sightingSettlement = FindNearestSettlement(target.GetPosition2D);
             TextObject sightingLocation = sightingSettlement?.EncyclopediaLinkWithName ??
                                           GwpText.Create(
-                                              "{=gwp_playerbountybehavior_020}unknown location");
+                                              GwpTextCatalog.gwp_playerbountybehavior_020);
 
             // 情报来源：护送方名称；无护送方时用通用名称
-            string reporterName = GwpText.Get("{=gwp_playerbountybehavior_004}Grey Warden reconnaissance party");
+            string reporterName = GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_004);
             if (HasEscortPoliceParty)
             {
                 var escort = MobileParty.All.FirstOrDefault(
@@ -697,7 +697,7 @@ namespace GreyWardenPolicePurity
             }
 
             _activeQuest.WriteLog(
-                GwpText.Create("{=gwp_playerbountybehavior_005}[Investigation] The spies from {VAR_1} came to report: The target was sighted near {VAR_2}.", "VAR_1", reporterName, "VAR_2", sightingLocation));
+                GwpText.Create(GwpTextCatalog.gwp_playerbountybehavior_005, "VAR_1", reporterName, "VAR_2", sightingLocation));
         }
 
         /// <summary>
@@ -772,7 +772,7 @@ namespace GreyWardenPolicePurity
             if (CrimeState.GetAvailablePlayerBounties().Count == 0)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_playerbountybehavior_012}There is no bounty to take up just now."),
+                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_012),
                     Colors.White));
                 return;
             }
@@ -870,7 +870,7 @@ namespace GreyWardenPolicePurity
                     : CampaignTime.Never;
                 _activeQuest = new BountyHunterQuest(
                     policeLeader,
-                    _activeBountyTargetName ?? GwpText.Get("{=gwp_common_unknown_target}Unknown target"),
+                    _activeBountyTargetName ?? GwpText.Get(GwpTextCatalog.gwp_common_unknown_target),
                     dueTime);
                 _activeQuest.StartQuest();
             }
@@ -891,7 +891,7 @@ namespace GreyWardenPolicePurity
 
         private static string GetNearestSettlementName(Vec2 position) =>
             FindNearestSettlement(position)?.Name?.ToString() ??
-            GwpText.Get("{=gwp_playerbountybehavior_020}unknown location");
+            GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_020);
 
         private static Settlement FindNearestTown(Vec2 position)
         {

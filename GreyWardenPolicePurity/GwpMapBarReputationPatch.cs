@@ -64,17 +64,17 @@ namespace GreyWardenPolicePurity
             var properties = new List<TooltipProperty>
             {
                 new TooltipProperty(
-                    GwpText.Get("{=gwp_mapbar_reputation_title}Grey Warden Standing"),
+                    GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_title),
                     reputation.ToString(), 0, false, TooltipProperty.TooltipPropertyFlags.Title),
                 new TooltipProperty(string.Empty,
-                    GwpText.Get("{=gwp_mapbar_reputation_hint}How the Grey Wardens judge you. Crimes lower it, good deeds raise it."),
+                    GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_hint),
                     0, false, TooltipProperty.TooltipPropertyFlags.MultiLine)
             };
 
             if (PlayerBehaviorPool.IsWanted)
             {
                 properties.Add(new TooltipProperty(string.Empty,
-                    GwpText.Get("{=gwp_mapbar_reputation_wanted}You are wanted. Grey Warden lords will open a case against you."),
+                    GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_wanted),
                     0, false, TooltipProperty.TooltipPropertyFlags.MultiLine));
             }
 

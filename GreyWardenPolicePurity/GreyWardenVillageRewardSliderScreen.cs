@@ -239,16 +239,16 @@ namespace GreyWardenPolicePurity
 
         private void RefreshTexts()
         {
-            Title = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_001}Set the amount to be received");
-            Description = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_002}Drag the slider to select the villager reward to be received this time. You can currently claim up to {VAR_1} dinars.", "VAR_1", MaxAmount);
-            ConfirmText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_003}Confirm");
-            CancelText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_004}Cancel");
+            Title = GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardsliderscreen_001);
+            Description = GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardsliderscreen_002, "VAR_1", MaxAmount);
+            ConfirmText = GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardsliderscreen_003);
+            CancelText = GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardsliderscreen_004);
             RefreshSelectionText();
         }
 
         private void RefreshSelectionText()
         {
-            SelectionText = GwpText.Get("{=gwp_greywardenvillagerewardsliderscreen_005}{VAR_1} Dinar", "VAR_1", SelectedAmount);
+            SelectionText = GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardsliderscreen_005, "VAR_1", SelectedAmount);
         }
     }
 }

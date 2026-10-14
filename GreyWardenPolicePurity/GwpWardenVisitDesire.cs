@@ -245,7 +245,7 @@ namespace GreyWardenPolicePurity
         {
             ExplainedNumber healing = Inner.GetDailyHealingForRegulars(partyBase, isPrisoner, includeDescriptions);
             if (!isPrisoner && InFaithVillage(partyBase))
-                healing.Add(10f, GwpText.Create("{=gwp_fs_healing_hearth}Hearth of the Eternal Fire"));
+                healing.Add(10f, GwpText.Create(GwpTextCatalog.gwp_fs_healing_hearth));
             return healing;
         }
 
@@ -254,7 +254,7 @@ namespace GreyWardenPolicePurity
         {
             ExplainedNumber healing = Inner.GetDailyHealingHpForHeroes(partyBase, isPrisoners, includeDescriptions);
             if (!isPrisoners && InFaithVillage(partyBase))
-                healing.Add(8f, GwpText.Create("{=gwp_fs_healing_hearth}Hearth of the Eternal Fire"));
+                healing.Add(8f, GwpText.Create(GwpTextCatalog.gwp_fs_healing_hearth));
             return healing;
         }
 

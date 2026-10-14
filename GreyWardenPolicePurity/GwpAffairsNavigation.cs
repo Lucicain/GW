@@ -44,12 +44,12 @@ namespace GreyWardenPolicePurity
             if (Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                     ?.IsRecruitedByGreyWardens != true)
                 return new NavigationPermissionItem(false, GwpText.Create(
-                    "{=gwp_affairs_nav_need_membership}Only sworn hunters of the Grey Wardens can open their affairs."));
+                    GwpTextCatalog.gwp_affairs_nav_need_membership));
             return new NavigationPermissionItem(true, null);
         }
 
         protected override TextObject GetTooltip() =>
-            GwpText.Create("{=gwp_gwpencyclopediaclanpagevm_004}Grey Warden affairs");
+            GwpText.Create(GwpTextCatalog.gwp_gwpencyclopediaclanpagevm_004);
 
         protected override TextObject GetAlertTooltip() => TextObject.GetEmpty();
 

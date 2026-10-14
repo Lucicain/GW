@@ -105,7 +105,7 @@ namespace GreyWardenPolicePurity
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
             MBTextManager.SetTextVariable(
                 "GWP_VILLAGE_REWARD_OPTION",
-                GwpText.Get("{=gwp_greywardenvillagerewardbehavior_001}Receive rewards from villagers (you can receive {VAR_1} dinars)", "VAR_1", _storedReward));
+                GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardbehavior_001, "VAR_1", _storedReward));
             return true;
         }
 
@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
             if (_storedReward <= 0)
             {
                 InformationManager.DisplayMessage(
-                    new InformationMessage(GwpText.Get("{=gwp_greywardenvillagerewardbehavior_002}The villagers have gathered no reward yet."), Colors.Yellow));
+                    new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardbehavior_002), Colors.Yellow));
                 return;
             }
 
@@ -148,7 +148,7 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(
                 new InformationMessage(
-                    GwpText.Get("{=gwp_greywardenvillagerewardbehavior_003}You collect the villagers' reward of {VAR_1} denars.", "VAR_1", amount, "VAR_2", _storedReward),
+                    GwpText.Get(GwpTextCatalog.gwp_greywardenvillagerewardbehavior_003, "VAR_1", amount, "VAR_2", _storedReward),
                     Colors.Green));
         }
 

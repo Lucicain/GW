@@ -2,9 +2,9 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-	<!-- Formal release v1.4-r11. The module schema requires three numeric parts;
+	<!-- Local test v1.4-r15. The module schema requires three numeric parts;
 	     this value is the mod revision and is not a Bannerlord version gate. -->
-	<Version value="v1.4.14"/>
+	<Version value="v1.4.15"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>

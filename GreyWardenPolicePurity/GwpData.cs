@@ -388,7 +388,7 @@ namespace GreyWardenPolicePurity
             TrimOpenCasesToCapacity(MaxTaskPoolEntries);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_001}The Grey Wardens have declared you wanted."), Colors.Red));
+                GwpText.Get(GwpTextCatalog.gwp_gwpdata_001), Colors.Red));
             return true;
         }
 
@@ -403,7 +403,7 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WritePlayerJusticeState("PLAYER_HUNT_ENDED", string.Empty);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_002}The Grey Wardens no longer seek you."), Colors.Green));
+                GwpText.Get(GwpTextCatalog.gwp_gwpdata_002), Colors.Green));
         }
 
         public static CrimeRecord? GetPlayerCrime() => GetRecordByKey(PlayerCrimeId);
@@ -1068,7 +1068,7 @@ namespace GreyWardenPolicePurity
             if (victimFaction != null) _victimFactions.Add(victimFaction);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_gwpdata_003}The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}).", "VAR_1", type, "VAR_2", detail), Colors.Red));
+                GwpText.Get(GwpTextCatalog.gwp_gwpdata_003, "VAR_1", type, "VAR_2", detail), Colors.Red));
 
             if (IsWanted)
                 CrimePool.TryAddPlayerCrime(type, location, detail);
@@ -1082,7 +1082,7 @@ namespace GreyWardenPolicePurity
             if (victimFaction != null) _victimFactions.Add(victimFaction);
         }
 
-        public static string GetReputationDisplay() => GwpText.Get("{=gwp_gwpdata_005}Reputation: {VAR_1}", "VAR_1", Reputation);
+        public static string GetReputationDisplay() => GwpText.Get(GwpTextCatalog.gwp_gwpdata_005, "VAR_1", Reputation);
 
         public static void ResetReputation(int value)
         {

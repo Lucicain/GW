@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
             _ownerParty = ownerParty;
             _otherParty = otherParty;
             _name = new TextObject(string.IsNullOrWhiteSpace(displayName)
-                ? GwpText.Get("{=gwp_patrol_barter_name_cn}penalty clause")
+                ? GwpText.Get(GwpTextCatalog.gwp_patrol_barter_name_cn)
                 : displayName);
         }
 

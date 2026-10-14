@@ -359,24 +359,24 @@ namespace GreyWardenPolicePurity
             // 攻击村民
             if (defender.PartyComponent is VillagerPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_policecrimemonitorenhanced_001}Villager");
+                string victimName = defender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_001);
 
                 // 显示消息
-                Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_002}Attack villager"), attacker, victimName, location);
+                Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_002), attacker, victimName, location);
 
                 // 触发事件通知惩戒系统
-                RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_003}Attack villager"), attacker, location, victimName);
+                RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_003), attacker, location, victimName);
                 return;
             }
 
             // 攻击商队
             if (defender.PartyComponent is CaravanPartyComponent)
             {
-                string victimName = defender.Name?.ToString() ?? GwpText.Get("{=gwp_policecrimemonitorenhanced_004}Caravan");
+                string victimName = defender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_004);
 
-                Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_005}Attack caravan"), attacker, victimName, location);
+                Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_005), attacker, victimName, location);
 
-                RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_006}Attack caravan"), attacker, location, victimName);
+                RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_006), attacker, location, victimName);
                 return;
             }
         }
@@ -406,11 +406,11 @@ namespace GreyWardenPolicePurity
                 return;
             }
             _raidHearthAtStart[villageId] = new RaidSnapshot(offender.StringId, village.Hearth, CampaignTime.Now.ToHours);
-            string victimName = GwpText.Get("{=gwp_policecrimemonitorenhanced_007}{VAR_1} Villager", "VAR_1", village.Name);
+            string victimName = GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_007, "VAR_1", village.Name);
 
-            Report(GwpText.Get("{=gwp_policecrimemonitorenhanced_008}Raid village (start)"), offender, victimName, location, GwpText.Get("{=gwp_policecrimemonitorenhanced_009}Village={VAR_1}", "VAR_1", village.Name));
+            Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_008), offender, victimName, location, GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_009, "VAR_1", village.Name));
 
-            RegisterCrime(GwpText.Get("{=gwp_policecrimemonitorenhanced_010}Raid Village"), offender, location, victimName);
+            RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_010), offender, location, victimName);
 
         }
 

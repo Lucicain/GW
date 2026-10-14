@@ -15,5 +15,5 @@
 		name="{=gwp_clan_name}Grey Wardens"
 		short_name="{=gwp_clan_short_name}Grey Wardens"
 		tier="6"
-		text="{=gwp_clan_description}The Grey Wardens trace their charge to the constabulary of the old, undivided Empire. When the Empire broke apart, this sisterhood of lawkeepers did not perish with the former order. Blood, rule, and the lawful tradition of the old Empire bound them together. They ride the roads, seize malefactors, settle private feuds, and leave a road back to lawful conduct for those willing to atone. To many common folk, the Grey Wardens are less a noble house than a secular order of grey-robed sisters sworn to keep the peace." />
+		text="{=gwp_clan_description}The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven&apos;s commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment." />
 </Factions>

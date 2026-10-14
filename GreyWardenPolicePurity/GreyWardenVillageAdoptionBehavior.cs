@@ -351,7 +351,7 @@ namespace GreyWardenPolicePurity
             _pendingReliefs.Add(new PendingVillageRelief
             {
                 VillageSettlementId = villageSettlement.StringId,
-                VillageName = villageSettlement.Name?.ToString() ?? GwpText.Get("{=gwp_greywardenvillageadoptionbehavior_001}nameless village"),
+                VillageName = villageSettlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_greywardenvillageadoptionbehavior_001),
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
             CrimePool.TrimOpenCasesToCapacity(

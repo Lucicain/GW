@@ -97,7 +97,7 @@ namespace GreyWardenPolicePurity
             }
             if (count <= 0 || gold <= 0) return;
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_prisoners_sold}Your men sold {VAR_1} prisoners in {VAR_2} for {VAR_3} denars.",
+                GwpTextCatalog.gwp_dispatch_prisoners_sold,
                 "VAR_1", count,
                 "VAR_2", buyer?.Settlement?.Name?.ToString() ?? string.Empty,
                 "VAR_3", gold), Colors.Yellow));
@@ -174,7 +174,7 @@ namespace GreyWardenPolicePurity
             _dispatches.Remove(record);
             if (record.Phase == GwpDispatchPhase.Rejoined) return;
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_lost}The company you sent out was destroyed, and everything it carried is lost."),
+                GwpTextCatalog.gwp_dispatch_lost),
                 Colors.Red));
         }
 
@@ -200,7 +200,7 @@ namespace GreyWardenPolicePurity
             if (receiver == null)
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_receiver}There is no Warden company within reach to receive them."),
+                    GwpTextCatalog.gwp_dispatch_no_receiver),
                     Colors.Yellow));
                 return null;
             }
@@ -208,7 +208,7 @@ namespace GreyWardenPolicePurity
             if (PoliceResourceManager.IsStrandedAtSea(player))
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_no_spare_ship}You are at sea with no ship to spare. They can set out once you reach land."),
+                    GwpTextCatalog.gwp_dispatch_no_spare_ship),
                     Colors.Yellow));
                 return null;
             }
@@ -256,7 +256,7 @@ namespace GreyWardenPolicePurity
 
                 if (!prisonerLoaded)
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        "{=gwp_dispatch_prisoner_failed}The handover failed. The prisoner is still in your hands."),
+                        GwpTextCatalog.gwp_dispatch_prisoner_failed),
                         Colors.Red));
             }
             if (carriedCaseGold > 0)
@@ -298,15 +298,15 @@ namespace GreyWardenPolicePurity
             TrackOnMap(party);
             SendTo(party, receiver);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_sent}The company you sent has set out for {VAR_1}.",
+                GwpTextCatalog.gwp_dispatch_sent,
                 "VAR_1", receiver.Name.ToString()), Colors.Cyan));
             return party;
         }
 
         private static TextObject BuildDispatchName(GwpDispatchPurpose purpose) =>
             GwpText.Create(purpose == GwpDispatchPurpose.Report
-                ? "{=gwp_dispatch_name_report}Grey Warden courier detail"
-                : "{=gwp_dispatch_name_support}Grey Warden request rider");
+                ? GwpTextCatalog.gwp_dispatch_name_report
+                : GwpTextCatalog.gwp_dispatch_name_support);
 
         /// <summary>
         /// 派出去的人和灰袍领主用同一套下注方式：巡逻类候选由欲望系统统一压到最低，
@@ -381,9 +381,9 @@ namespace GreyWardenPolicePurity
             string text = trouble switch
             {
                 "battle" => GwpText.Get(
-                    "{=gwp_dispatch_trouble_battle}Word reaches you: the men you sent have been brought to battle."),
+                    GwpTextCatalog.gwp_dispatch_trouble_battle),
                 _ => GwpText.Get(
-                    "{=gwp_dispatch_trouble_mauled}Word reaches you: the men you sent have been badly cut up.")
+                    GwpTextCatalog.gwp_dispatch_trouble_mauled)
             };
             InformationManager.DisplayMessage(new InformationMessage(text, Colors.Red));
         }
@@ -624,7 +624,7 @@ namespace GreyWardenPolicePurity
                     ?.GrantCaseSupport("courier_delivered", receiver) == true;
                 if (!granted)
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        "{=gwp_dispatch_support_moot}The message was delivered, but help is no longer needed."),
+                        GwpTextCatalog.gwp_dispatch_support_moot),
                         Colors.Yellow));
                 BeginReturn(record, party);
                 return;
@@ -634,8 +634,8 @@ namespace GreyWardenPolicePurity
             {
                 int settled = PoliceAntiWarDeclaration.ApplyWardenMediation();
                 InformationManager.DisplayMessage(new InformationMessage(settled > 0
-                    ? GwpText.Get("{=gwp_dispatch_peace_done}The message was delivered. The Wardens have made peace on your behalf.")
-                    : GwpText.Get("{=gwp_dispatch_peace_moot}The message was delivered, but there is nothing left to mediate."),
+                    ? GwpText.Get(GwpTextCatalog.gwp_dispatch_peace_done)
+                    : GwpText.Get(GwpTextCatalog.gwp_dispatch_peace_moot),
                     settled > 0 ? Colors.Green : Colors.Yellow));
                 BeginReturn(record, party);
                 return;
@@ -662,7 +662,7 @@ namespace GreyWardenPolicePurity
                 {
                     // 练兵长没了，或者玩家在这中间又下了一单。钱原样带回来。
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        "{=gwp_dispatch_order_moot}The Wardens cannot take the order now. Your deposit is being returned."),
+                        GwpTextCatalog.gwp_dispatch_order_moot),
                         Colors.Yellow));
                 }
                 BeginReturn(record, party);
@@ -676,7 +676,7 @@ namespace GreyWardenPolicePurity
                 // 玩家已经自己交过差，或案子已经不在了。钱、人、俘虏原样带回，
                 // 绝不在这里"交"给一个不存在的委托。
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                    "{=gwp_dispatch_report_moot}The commission is already settled. What your men carried is coming back to you."),
+                    GwpTextCatalog.gwp_dispatch_report_moot),
                     Colors.Yellow));
                 BeginReturn(record, party);
                 return;
@@ -728,7 +728,7 @@ namespace GreyWardenPolicePurity
             record.Phase = GwpDispatchPhase.Returning;
             record.SupplyTownId = string.Empty;
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_returning}The company you sent has done its work and is returning."),
+                GwpTextCatalog.gwp_dispatch_returning),
                 Colors.Cyan));
             // The player may already be beside the recipient. Apply the return
             // proximity guard / handover now, before issuing a Rush to the player.
@@ -844,7 +844,7 @@ namespace GreyWardenPolicePurity
             if (DestroyDispatchParty(party)) _dispatches.Remove(record);
 
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_dispatch_handover}Your detachment has rejoined you: {VAR_1} men ({VAR_2} wounded), {VAR_3} prisoners, {VAR_4} items and {VAR_5} denars returned to your party.",
+                GwpTextCatalog.gwp_dispatch_handover,
                 "VAR_1", men, "VAR_2", wounded, "VAR_3", prisoners, "VAR_4", items, "VAR_5", gold),
                 Colors.Green));
         }

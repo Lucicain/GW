@@ -54,7 +54,7 @@ namespace GreyWardenPolicePurity
 
         public TextObject GetNotificationText()
         {
-            return BuildText("{=gwp_adoption_chat_notice}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}.");
+            return BuildText(GwpTextCatalog.gwp_adoption_chat_notice);
         }
 
         public virtual bool IsVisibleInEncyclopediaPageOf(MBObjectBase obj)
@@ -74,7 +74,7 @@ namespace GreyWardenPolicePurity
 
         public TextObject GetEncyclopediaText()
         {
-            return BuildText("{=gwp_adoption_log_entry}{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised.");
+            return BuildText(GwpTextCatalog.gwp_adoption_log_entry);
         }
 
         public override string ToString()
@@ -90,7 +90,7 @@ namespace GreyWardenPolicePurity
                 StringHelpers.SetCharacterProperties("HERO", AdoptedHero.CharacterObject, text);
             }
 
-            text.SetTextVariable("VILLAGE", string.IsNullOrWhiteSpace(_originVillageName) ? GwpText.Get("{=gwp_greywardenadoptionlogentry_003}Unknown Village") : _originVillageName);
+            text.SetTextVariable("VILLAGE", string.IsNullOrWhiteSpace(_originVillageName) ? GwpText.Get(GwpTextCatalog.gwp_greywardenadoptionlogentry_003) : _originVillageName);
             return text;
         }
     }

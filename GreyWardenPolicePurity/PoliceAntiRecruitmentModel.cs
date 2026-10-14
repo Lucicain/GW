@@ -50,7 +50,7 @@ namespace GreyWardenPolicePurity
             if (IsGwFaction(factionDeclaresWar) || IsGwClan(evaluatingClan))
             {
                 reason = includeReason
-                    ? new TextObject(GwpText.Get("{=gwp_policeantirecruitmentmodel_001}The Grey Wardens do not join wars of aggression declared by the realm’s ordinary diplomatic councils."))
+                    ? new TextObject(GwpText.Get(GwpTextCatalog.gwp_policeantirecruitmentmodel_001))
                     : TextObject.GetEmpty();
                 return float.MinValue;
             }

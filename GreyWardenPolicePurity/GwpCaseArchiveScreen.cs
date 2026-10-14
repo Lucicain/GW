@@ -98,10 +98,10 @@ namespace GreyWardenPolicePurity
         {
             _onClose = onClose;
             Cases = new MBBindingList<GwpCaseArchiveItemVM>();
-            Title = GwpText.Get("{=gwp_gwpcasearchivescreen_001}Grey Warden affairs");
-            EmptyText = GwpText.Get("{=gwp_gwpcasearchivescreen_002}There are currently no tasks in the pool.");
-            RefreshText = GwpText.Get("{=gwp_gwpcasearchivescreen_003}Refresh ledger");
-            CloseText = GwpText.Get("{=gwp_gwpcasearchivescreen_004}Close");
+            Title = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_001);
+            EmptyText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_002);
+            RefreshText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_003);
+            CloseText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_004);
             RefreshLedger();
         }
 
@@ -343,7 +343,7 @@ namespace GreyWardenPolicePurity
                 Cases.Add(new GwpCaseArchiveItemVM(task));
 
             Summary = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_005}Open files: {VAR_1} criminal cases, {VAR_2} other matters | In hand: {VAR_3} | Unassigned: {VAR_4}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_005,
                 "VAR_1", assignedCases.Count + unassignedCases.Count,
                 "VAR_2", assistanceTasks.Count + reliefTasks.Count +
                     reconstructionTasks.Count + issueTasks.Count +
@@ -360,7 +360,7 @@ namespace GreyWardenPolicePurity
                     issueTasks.Count(task => !task.IsAssigned) +
                     trainingTasks.Count(task => !task.IsAssigned));
             TreasuryText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_056}Judicial treasury: {VAR_1} denars",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_056,
                 "VAR_1", PoliceResourceManager.GetJudicialTreasuryBalance());
             ReputationText = BuildReputationText();
             FamilyText = BuildFamilyText();
@@ -370,21 +370,21 @@ namespace GreyWardenPolicePurity
         private static string BuildFamilyText()
         {
             if (!GreyWardenVillageAdoptionBehavior.TryGetAdoptionStatus(out var status))
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_062}Family: not yet established");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_062);
 
             string cooldown = status.IsCooldownReady
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_063}ready to take in a girl")
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_064}{VAR_1} until the next adoption",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_063)
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_064,
                     "VAR_1", FormatRemainingHours(status.RemainingCooldownHours));
 
             string last = status.HasRecordedAdoption
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_065}last adoption {VAR_1}",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_065,
                     "VAR_1", GwpCaseArchiveItemVM.FormatCampaignDate(
                         CampaignTime.Hours((float)status.LastAdoptionTimeHours)))
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_066}no adoption on record");
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_066);
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_067}Family: {VAR_1}/{VAR_2} | {VAR_3} | {VAR_4}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_067,
                 "VAR_1", status.LivingMembers,
                 "VAR_2", status.MaxMembers,
                 "VAR_3", cooldown,
@@ -394,12 +394,12 @@ namespace GreyWardenPolicePurity
         private static string FormatRemainingHours(double hours)
         {
             if (hours <= 0d)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_068}less than an hour");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_068);
 
             int days = (int)(hours / 24d);
             return days >= 1
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_069}about {VAR_1} days", "VAR_1", days)
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_070}about {VAR_1} hours",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_069, "VAR_1", days)
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_070,
                     "VAR_1", Math.Max(1, (int)Math.Ceiling(hours)));
         }
 
@@ -419,20 +419,20 @@ namespace GreyWardenPolicePurity
                 // both rather than a single number the player cannot match to
                 // whoever actually stops them.
                 return GwpText.Get(
-                    "{=gwp_gwpcasearchivescreen_057}Your standing: {VAR_1} | Wanted — the lawful fine is {VAR_2} denars to a provost patrol, {VAR_3} to a Grey Warden lord",
+                    GwpTextCatalog.gwp_gwpcasearchivescreen_057,
                     "VAR_1", reputation,
                     "VAR_2", GwpFieldArrestPricing.StandingFine(reputation, GwpTuning.Patrol.FinePerPoint),
                     "VAR_3", GwpFieldArrestPricing.StandingFine(reputation, GwpTuning.Enforcement.FinePerPoint));
             }
 
             string band = reputation > 0
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_058}in good standing")
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_058)
                 : reputation == 0
-                    ? GwpText.Get("{=gwp_gwpcasearchivescreen_059}nothing on record")
-                    : GwpText.Get("{=gwp_gwpcasearchivescreen_060}under suspicion, not yet wanted");
+                    ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_059)
+                    : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_060);
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_061}Your standing: {VAR_1} | {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_061,
                 "VAR_1", reputation,
                 "VAR_2", band);
         }
@@ -453,42 +453,42 @@ namespace GreyWardenPolicePurity
         internal GwpCaseArchiveItemVM(GwpPoliceWarReasonService.WarReasonEntry war)
         {
             Header = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_071}War — {VAR_1}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_071,
                 "VAR_1", war.Faction?.Name?.ToString()
-                    ?? GwpText.Get("{=gwp_gwpcasearchivescreen_072}Unnamed faction"));
+                    ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_072));
             TimeText = war.Total > 1
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_073}Ground {VAR_1} of {VAR_2}",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_073,
                     "VAR_1", war.Ordinal, "VAR_2", war.Total)
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_074}Ground for the war");
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_074);
             AssignmentText = war.Detail ?? string.Empty;
             DetailsText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_075}Peace returns once no ground remains.");
+                GwpTextCatalog.gwp_gwpcasearchivescreen_075);
         }
 
         public GwpCaseArchiveItemVM(CrimeRecord record, PoliceTask? task)
         {
             string offenderName = ResolveOffenderName(record);
-            string status = GwpText.Get("{=gwp_gwpcasearchivescreen_006}OPEN");
+            string status = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_006);
             Header = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_008}{VAR_1} — {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_008,
                 "VAR_1", offenderName,
                 "VAR_2", status);
 
             TimeText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_009}Last offence: {VAR_1} | Case opened: {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_009,
                 "VAR_1", FormatCampaignDate(record.LastCrimeTime),
                 "VAR_2", FormatCampaignDate(record.OccurredTime));
 
             AssignmentText = BuildAssignmentText(record, task);
 
             string crimeType = string.IsNullOrWhiteSpace(record.CrimeType)
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_010}Unrecorded")
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_010)
                 : GwpText.CrimeType(record.CrimeType);
             string victim = string.IsNullOrWhiteSpace(record.VictimName)
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_011}Unrecorded")
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_011)
                 : record.VictimName;
             DetailsText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_012}Offence: {VAR_1} | Victim: {VAR_2} | Location: {VAR_3}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_012,
                 "VAR_1", crimeType,
                 "VAR_2", victim,
                 "VAR_3", FormatLocation(record.Location));
@@ -508,29 +508,29 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string leaderName = leader?.LeaderHero?.Name?.ToString() ??
                                 leader?.Name?.ToString() ??
-                                GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
             string helperName = helper?.LeaderHero?.Name?.ToString() ??
                                 helper?.Name?.ToString() ??
-                                GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
             CrimeRecord? sourceCase = CrimePool.GetRecordByKey(assistance.CrimeId);
             string targetName = sourceCase != null
                 ? ResolveOffenderName(sourceCase)
                 : target?.LeaderHero?.Name?.ToString() ??
                   target?.Name?.ToString() ??
-                  GwpText.Get("{=gwp_gwpcasearchivescreen_048}Unknown target");
+                  GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_048);
             string crimeType = sourceCase == null || string.IsNullOrWhiteSpace(sourceCase.CrimeType)
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_010}Unrecorded")
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_010)
                 : GwpText.CrimeType(sourceCase.CrimeType);
 
-            Header = GwpText.Get("{=gwp_gwpcasearchivescreen_032}Assistance — {VAR_1}",
+            Header = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_032,
                 "VAR_1", targetName);
-            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_033}Assigned: {VAR_1}",
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_033,
                 "VAR_1", FormatCampaignDate(assistance.AssignedTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_034}Assignee: {VAR_1} | Supporting: {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_034,
                 "VAR_1", helperName, "VAR_2", leaderName);
             DetailsText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_035}Assistance reason: the lead Grey Warden's pursuit was blocked and requires a joint capture | Source case: {VAR_1} — {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_035,
                 "VAR_1", targetName, "VAR_2", crimeType);
         }
 
@@ -542,20 +542,20 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string assignee = party?.LeaderHero?.Name?.ToString() ??
                               party?.Name?.ToString() ??
-                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                              GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
 
-            Header = GwpText.Get("{=gwp_gwpcasearchivescreen_036}Village relief — {VAR_1}",
+            Header = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_036,
                 "VAR_1", relief.VillageName);
-            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(relief.QueuedTime));
             AssignmentText = relief.IsAssigned
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_038}Assignee: {VAR_1} | Stage: {VAR_2}",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_038,
                     "VAR_1", assignee, "VAR_2", DescribeReliefStage(relief.Stage))
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_039}Assignee: waiting for forced assignment");
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_039);
             DetailsText = relief.Stage == GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_040}Task type: forced adoption relief | Remaining: {VAR_1} hours",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_040,
                     "VAR_1", Math.Ceiling(relief.RemainingHours))
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_041}Task type: forced adoption relief");
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_041);
         }
 
         internal GwpCaseArchiveItemVM(
@@ -566,27 +566,27 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string assignee = party?.LeaderHero?.Name?.ToString() ??
                               party?.Name?.ToString() ??
-                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                              GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
 
-            Header = GwpText.Get("{=gwp_gwpcasearchivescreen_049}Village reconstruction — {VAR_1}",
+            Header = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_049,
                 "VAR_1", reconstruction.VillageName);
-            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(reconstruction.QueuedTime));
             AssignmentText = reconstruction.IsAssigned
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_050}Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_050,
                     "VAR_1", assignee,
                     "VAR_2", GreyWardenFamilyBehavior.GetDutyTitle(party?.LeaderHero),
                     "VAR_3", DescribeReconstructionStage(reconstruction.Stage))
                 : GreyWardenFamilyBehavior.HasLivingReconstructionHolder()
-                    ? GwpText.Get("{=gwp_gwpcasearchivescreen_051}Assignee: waiting for a reconstruction warden")
-                    : GwpText.Get("{=gwp_gwpcasearchivescreen_052}Assignee: reconstruction office has died out");
+                    ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_051)
+                    : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_052);
             DetailsText = reconstruction.Stage ==
                           GreyWardenVillageReconstructionBehavior.ReconstructionStage.Rebuilding
-                ? GwpText.Get("{=gwp_gwpcasearchivescreen_053}Task type: village reconstruction | Remaining: {VAR_1} hours | Estimated allocation: {VAR_2} | Treasury reserve: {VAR_3}",
+                ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_053,
                     "VAR_1", Math.Ceiling(reconstruction.RemainingHours),
                     "VAR_2", reconstruction.EstimatedCost,
                     "VAR_3", reconstruction.TreasuryReserve)
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_054}Task type: village reconstruction | Estimated allocation: {VAR_1} | Treasury reserve: {VAR_2}",
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_054,
                     "VAR_1", reconstruction.EstimatedCost,
                     "VAR_2", reconstruction.TreasuryReserve);
         }
@@ -599,22 +599,22 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string assignee = party?.LeaderHero?.Name?.ToString() ??
                               party?.Name?.ToString() ??
-                              GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
-            Header = GwpText.Get("{=gwp_issue_ledger_header}Petition — {VAR_1}",
+                              GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
+            Header = GwpText.Get(GwpTextCatalog.gwp_issue_ledger_header,
                 "VAR_1", issue.IssueTitle);
-            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(issue.QueuedTime));
             AssignmentText = issue.IsAssigned
-                ? GwpText.Get("{=gwp_issue_ledger_assignment}Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
+                ? GwpText.Get(GwpTextCatalog.gwp_issue_ledger_assignment,
                     "VAR_1", assignee,
                     "VAR_2", GreyWardenFamilyBehavior.GetDutyTitle(party?.LeaderHero),
                     "VAR_3", DescribeIssueDutyStage(issue.Stage))
-                : GwpText.Get("{=gwp_issue_ledger_waiting}Assigned to: no one yet; the petition is still on the shelf");
+                : GwpText.Get(GwpTextCatalog.gwp_issue_ledger_waiting);
             DetailsText = issue.Stage == GreyWardenIssueResolutionBehavior.IssueDutyStage.ReviewingPetition
-                ? GwpText.Get("{=gwp_issue_ledger_review}Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2} | Remaining review: {VAR_3} hours",
+                ? GwpText.Get(GwpTextCatalog.gwp_issue_ledger_review,
                     "VAR_1", issue.OwnerName, "VAR_2", issue.SettlementName,
                     "VAR_3", Math.Ceiling(issue.RemainingHours))
-                : GwpText.Get("{=gwp_issue_ledger_detail}Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2}",
+                : GwpText.Get(GwpTextCatalog.gwp_issue_ledger_detail,
                     "VAR_1", issue.OwnerName, "VAR_2", issue.SettlementName);
         }
 
@@ -626,26 +626,26 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string trainerName = trainer?.LeaderHero?.Name?.ToString() ??
                                  trainer?.Name?.ToString() ??
-                                 GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
-            Header = GwpText.Get("{=gwp_training_ledger_header}Training exchange — {VAR_1}",
+                                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
+            Header = GwpText.Get(GwpTextCatalog.gwp_training_ledger_header,
                 "VAR_1", training.SettlementName);
-            TimeText = GwpText.Get("{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(training.QueuedTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_training_ledger_assignment}Trainer: {VAR_1} | Stage: {VAR_2}",
+                GwpTextCatalog.gwp_training_ledger_assignment,
                 "VAR_1", trainerName, "VAR_2", DescribeTrainingStage(training.Stage));
             DetailsText = training.Stage switch
             {
                 GreyWardenTrainingBehavior.TrainingTaskStage.QueuedForTrainer =>
-                    GwpText.Get("{=gwp_training_ledger_queued}Task type: troop training exchange | Queued as the Training Warden's next duty"),
+                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_queued),
                 GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
-                    GwpText.Get("{=gwp_training_ledger_waiting}Task type: troop training exchange | Village: {VAR_1} | Waiting for current duties to finish",
+                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_waiting,
                         "VAR_1", training.SettlementName),
                 GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
-                    GwpText.Get("{=gwp_training_ledger_stay}Task type: troop training exchange | Settlement: {VAR_1} | Remaining stay: {VAR_2} hours",
+                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_stay,
                         "VAR_1", training.SettlementName,
                         "VAR_2", Math.Ceiling(training.RemainingHours)),
-                _ => GwpText.Get("{=gwp_training_ledger_travel}Task type: troop training exchange | Village: {VAR_1}",
+                _ => GwpText.Get(GwpTextCatalog.gwp_training_ledger_travel,
                     "VAR_1", training.SettlementName)
             };
         }
@@ -658,35 +658,35 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string assignee = coordinator?.LeaderHero?.Name?.ToString() ??
                               coordinator?.Name?.ToString() ??
-                              GwpText.Get("{=gwp_player_request_unknown_liaison}Unknown Noble Affairs Liaison");
+                              GwpText.Get(GwpTextCatalog.gwp_player_request_unknown_liaison);
 
             Header = GwpText.Get(
-                "{=gwp_player_request_ledger_header}Player fief appeal — {VAR_1}",
+                GwpTextCatalog.gwp_player_request_ledger_header,
                 "VAR_1", request.SettlementName);
             TimeText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(request.FiledTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_player_request_ledger_assignment}Liaison: {VAR_1} | Stage: {VAR_2}",
+                GwpTextCatalog.gwp_player_request_ledger_assignment,
                 "VAR_1", assignee,
                 "VAR_2", request.DeferredTasksRemaining > 0
                     ? GwpText.Get(
-                        "{=gwp_player_request_stage_deferred}Petition set aside")
+                        GwpTextCatalog.gwp_player_request_stage_deferred)
                     : DescribeFiefRequestStage(request.Stage));
             DetailsText = request.Stage ==
                           GreyWardenPlayerRequestBehavior.FiefRequestStage.LobbyingAtSettlement
                 ? GwpText.Get(
-                    "{=gwp_player_request_ledger_lobbying}Task type: player fief appeal | Fee: {VAR_1} | Public support: {VAR_2}% | Remaining stay: {VAR_3} hours",
+                    GwpTextCatalog.gwp_player_request_ledger_lobbying,
                     "VAR_1", request.FeePaid
-                        ? GwpText.Get("{=gwp_player_request_fee_paid}paid into public treasury")
-                        : GwpText.Get("{=gwp_player_request_fee_unpaid}not yet collected"),
+                        ? GwpText.Get(GwpTextCatalog.gwp_player_request_fee_paid)
+                        : GwpText.Get(GwpTextCatalog.gwp_player_request_fee_unpaid),
                     "VAR_2", request.PublicSupportPercent,
                     "VAR_3", Math.Ceiling(request.RemainingHours))
                 : GwpText.Get(
-                    "{=gwp_player_request_ledger_detail}Task type: player fief appeal | Fee: {VAR_1} | Public support: {VAR_2}%",
+                    GwpTextCatalog.gwp_player_request_ledger_detail,
                     "VAR_1", request.FeePaid
-                        ? GwpText.Get("{=gwp_player_request_fee_paid}paid into public treasury")
-                        : GwpText.Get("{=gwp_player_request_fee_unpaid}not yet collected"),
+                        ? GwpText.Get(GwpTextCatalog.gwp_player_request_fee_paid)
+                        : GwpText.Get(GwpTextCatalog.gwp_player_request_fee_unpaid),
                     "VAR_2", request.PublicSupportPercent);
         }
 
@@ -698,20 +698,20 @@ namespace GreyWardenPolicePurity
                     StringComparison.OrdinalIgnoreCase));
             string trainerName = trainer?.LeaderHero?.Name?.ToString() ??
                                  trainer?.Name?.ToString() ??
-                                 GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
 
             Header = GwpText.Get(
-                "{=gwp_player_troop_ledger_header}Player troop order — {VAR_1} × {VAR_2}",
+                GwpTextCatalog.gwp_player_troop_ledger_header,
                 "VAR_1", order.Count, "VAR_2", order.TroopName);
             TimeText = GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_037}Queued: {VAR_1}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_037,
                 "VAR_1", FormatCampaignDate(order.FiledTime));
             AssignmentText = GwpText.Get(
-                "{=gwp_player_troop_ledger_assignment}Trainer: {VAR_1} | Stage: {VAR_2}",
+                GwpTextCatalog.gwp_player_troop_ledger_assignment,
                 "VAR_1", trainerName,
                 "VAR_2", DescribePlayerTroopOrderStage(order.Stage));
             DetailsText = GwpText.Get(
-                "{=gwp_player_troop_ledger_detail}Task type: player troop order | Ready: {VAR_1}/{VAR_2} | Paid on order: {VAR_3} denars",
+                GwpTextCatalog.gwp_player_troop_ledger_detail,
                 "VAR_1", order.ReadyCount, "VAR_2", order.Count,
                 "VAR_3", order.Price);
         }
@@ -771,38 +771,38 @@ namespace GreyWardenPolicePurity
             if (PlayerBountyBehavior.IsCaseHeldByPlayer(record.OffenderHeroId))
             {
                 string commissioner = Hero.MainHero?.Name?.ToString() ??
-                    GwpText.Get("{=gwp_gwpcasearchivescreen_017}Player");
+                    GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_017);
                 MobileParty? supporter = task?.IsPlayerBountyEscort == true
                     ? MobileParty.All.FirstOrDefault(candidate => string.Equals(
                         candidate.StringId, task.PolicePartyId, StringComparison.OrdinalIgnoreCase))
                     : null;
                 if (supporter == null)
                     return GwpText.Get(
-                        "{=gwp_case_owner_player}Tracking: {VAR_1} | Stage: commissioned to the player",
+                        GwpTextCatalog.gwp_case_owner_player,
                         "VAR_1", commissioner);
                 string supporterName = supporter.LeaderHero?.Name?.ToString() ??
                                        supporter.Name?.ToString() ??
-                                       GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                                       GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
                 return GwpText.Get(
-                    "{=gwp_case_owner_player_supported}Tracking: {VAR_1} | Supporting: {VAR_2} | Stage: {VAR_3}",
+                    GwpTextCatalog.gwp_case_owner_player_supported,
                     "VAR_1", commissioner, "VAR_2", supporterName,
                     "VAR_3", DescribeTaskStage(task!));
             }
 
             if (task == null)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_013}Tracking: unassigned");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_013);
 
             MobileParty? party = MobileParty.All.FirstOrDefault(candidate =>
                 string.Equals(candidate.StringId, task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
             string partyName = party?.Name?.ToString() ??
-                               GwpText.Get("{=gwp_gwpcasearchivescreen_047}Unknown Grey Warden party");
+                               GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
             string? leaderName = party?.LeaderHero?.Name?.ToString();
             string assignee = string.IsNullOrWhiteSpace(leaderName)
                 ? partyName
-                : GwpText.Get("{=gwp_gwpcasearchivescreen_015}{VAR_1} ({VAR_2})", "VAR_1", leaderName!, "VAR_2", partyName);
+                : GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_015, "VAR_1", leaderName!, "VAR_2", partyName);
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_016}Tracking: {VAR_1} | Stage: {VAR_2}",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_016,
                 "VAR_1", assignee,
                 "VAR_2", DescribeTaskStage(task));
         }
@@ -810,116 +810,116 @@ namespace GreyWardenPolicePurity
         private static string ResolveOffenderName(CrimeRecord record)
         {
             if (string.Equals(record.CrimeId, CrimePool.PlayerCrimeId, StringComparison.OrdinalIgnoreCase))
-                return Hero.MainHero?.Name?.ToString() ?? GwpText.Get("{=gwp_gwpcasearchivescreen_017}Player");
+                return Hero.MainHero?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_017);
 
             return record.OffenderHero?.Name?.ToString()
                    ?? record.Offender?.LeaderHero?.Name?.ToString()
                    ?? record.Offender?.Name?.ToString()
-                   ?? GwpText.Get("{=gwp_gwpcasearchivescreen_048}Unknown target");
+                   ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_048);
         }
 
         private static string DescribeTaskStage(PoliceTask task)
         {
             if (task.IsPlayerBountyEscort)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_018}supporting the commissioned player");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_018);
             if (task.IsEscortingPlayer)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_019}escort after arrest");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_019);
             if (task.IsPreparingDispatch)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_020}preparing dispatch");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_020);
             if (task.WarDeclared)
-                return GwpText.Get("{=gwp_gwpcasearchivescreen_021}wartime pursuit");
-            return GwpText.Get("{=gwp_gwpcasearchivescreen_022}tracking target");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_021);
+            return GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_022);
         }
 
         private static string DescribeReliefStage(
             GreyWardenVillageAdoptionBehavior.ReliefStage stage) => stage switch
         {
             GreyWardenVillageAdoptionBehavior.ReliefStage.WaitingForAssignment =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_042}waiting for assignment"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
             GreyWardenVillageAdoptionBehavior.ReliefStage.AwaitingResupply =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_043}resupplying"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_043),
             GreyWardenVillageAdoptionBehavior.ReliefStage.TravelingToVillage =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_044}travelling to village"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_044),
             GreyWardenVillageAdoptionBehavior.ReliefStage.StayingInVillage =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_045}relief in progress"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_045),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         private static string DescribeReconstructionStage(
             GreyWardenVillageReconstructionBehavior.ReconstructionStage stage) => stage switch
         {
             GreyWardenVillageReconstructionBehavior.ReconstructionStage.WaitingForAssignment =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_042}waiting for assignment"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
             GreyWardenVillageReconstructionBehavior.ReconstructionStage.TravelingToVillage =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_044}travelling to village"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_044),
             GreyWardenVillageReconstructionBehavior.ReconstructionStage.Rebuilding =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_055}reconstruction in progress"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_055),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         private static string DescribeIssueDutyStage(
             GreyWardenIssueResolutionBehavior.IssueDutyStage stage) => stage switch
         {
             GreyWardenIssueResolutionBehavior.IssueDutyStage.WaitingForAssignment =>
-                GwpText.Get("{=gwp_gwpcasearchivescreen_042}waiting for assignment"),
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
             GreyWardenIssueResolutionBehavior.IssueDutyStage.TravelingToIssuer =>
-                GwpText.Get("{=gwp_issue_stage_travel}travelling to the issuer"),
+                GwpText.Get(GwpTextCatalog.gwp_issue_stage_travel),
             GreyWardenIssueResolutionBehavior.IssueDutyStage.ReviewingPetition =>
-                GwpText.Get("{=gwp_issue_stage_review}reviewing for six hours"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_issue_stage_review),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         private static string DescribeTrainingStage(
             GreyWardenTrainingBehavior.TrainingTaskStage stage) => stage switch
         {
             GreyWardenTrainingBehavior.TrainingTaskStage.QueuedForTrainer =>
-                GwpText.Get("{=gwp_training_stage_queued}queued as next duty"),
+                GwpText.Get(GwpTextCatalog.gwp_training_stage_queued),
             GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
-                GwpText.Get("{=gwp_training_stage_waiting}waiting for current duties"),
+                GwpText.Get(GwpTextCatalog.gwp_training_stage_waiting),
             GreyWardenTrainingBehavior.TrainingTaskStage.TravelingToRendezvous =>
-                GwpText.Get("{=gwp_training_stage_travel}travelling to the village"),
+                GwpText.Get(GwpTextCatalog.gwp_training_stage_travel),
             GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
-                GwpText.Get("{=gwp_training_stage_stay}two-hour troop exchange"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_training_stage_stay),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         private static string DescribeFiefRequestStage(
             GreyWardenPlayerRequestBehavior.FiefRequestStage stage) => stage switch
         {
             GreyWardenPlayerRequestBehavior.FiefRequestStage.SeekingPlayerForPayment =>
-                GwpText.Get("{=gwp_player_request_stage_payment}travelling to collect payment"),
+                GwpText.Get(GwpTextCatalog.gwp_player_request_stage_payment),
             GreyWardenPlayerRequestBehavior.FiefRequestStage.TravelingToSettlement =>
-                GwpText.Get("{=gwp_player_request_stage_travel}travelling to disputed fief"),
+                GwpText.Get(GwpTextCatalog.gwp_player_request_stage_travel),
             GreyWardenPlayerRequestBehavior.FiefRequestStage.LobbyingAtSettlement =>
-                GwpText.Get("{=gwp_player_request_stage_lobbying}organizing public petition"),
+                GwpText.Get(GwpTextCatalog.gwp_player_request_stage_lobbying),
             GreyWardenPlayerRequestBehavior.FiefRequestStage.AwaitingVote =>
-                GwpText.Get("{=gwp_player_request_stage_vote}new fief vote opened"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_player_request_stage_vote),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         private static string DescribePlayerTroopOrderStage(
             GreyWardenTroopRequestBehavior.PlayerTroopOrderStage stage) => stage switch
         {
             GreyWardenTroopRequestBehavior.PlayerTroopOrderStage.Training =>
-                GwpText.Get("{=gwp_player_troop_stage_training}training real troops"),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_stage_training),
             GreyWardenTroopRequestBehavior.PlayerTroopOrderStage.Delivering =>
-                GwpText.Get("{=gwp_player_troop_stage_delivery}travelling to deliver troops"),
-            _ => GwpText.Get("{=gwp_gwpcasearchivescreen_046}unknown")
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_stage_delivery),
+            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
         internal static string FormatCampaignDate(CampaignTime time)
         {
             string season = time.GetSeasonOfYear switch
             {
-                CampaignTime.Seasons.Spring => GwpText.Get("{=gwp_gwpcasearchivescreen_023}Spring"),
-                CampaignTime.Seasons.Summer => GwpText.Get("{=gwp_gwpcasearchivescreen_024}Summer"),
-                CampaignTime.Seasons.Autumn => GwpText.Get("{=gwp_gwpcasearchivescreen_025}Autumn"),
-                CampaignTime.Seasons.Winter => GwpText.Get("{=gwp_gwpcasearchivescreen_026}Winter"),
-                _ => GwpText.Get("{=gwp_gwpcasearchivescreen_027}Unknown season")
+                CampaignTime.Seasons.Spring => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_023),
+                CampaignTime.Seasons.Summer => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_024),
+                CampaignTime.Seasons.Autumn => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_025),
+                CampaignTime.Seasons.Winter => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_026),
+                _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_027)
             };
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_028}Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_028,
                 "VAR_1", time.GetYear,
                 "VAR_2", season,
                 "VAR_3", time.GetDayOfSeason + 1,
@@ -932,14 +932,14 @@ namespace GreyWardenPolicePurity
             if (nearestTown != null)
             {
                 return GwpText.Get(
-                    "{=gwp_gwpcasearchivescreen_029}near {VAR_1} ({VAR_2}, {VAR_3})",
-                    "VAR_1", nearestTown.Name?.ToString() ?? GwpText.Get("{=gwp_gwpcasearchivescreen_031}Unknown town"),
+                    GwpTextCatalog.gwp_gwpcasearchivescreen_029,
+                    "VAR_1", nearestTown.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_031),
                     "VAR_2", GwpText.Format(position.x, "0.0"),
                     "VAR_3", GwpText.Format(position.y, "0.0"));
             }
 
             return GwpText.Get(
-                "{=gwp_gwpcasearchivescreen_030}wilderness ({VAR_1}, {VAR_2})",
+                GwpTextCatalog.gwp_gwpcasearchivescreen_030,
                 "VAR_1", GwpText.Format(position.x, "0.0"),
                 "VAR_2", GwpText.Format(position.y, "0.0"));
         }

@@ -250,7 +250,7 @@ namespace GreyWardenPolicePurity
                 "gwp_warden_mediation_ask",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_warden_mediation_reply",
-                GwpText.Get("{=gwp_warden_mediation_ask}The fighting I did on your account has left me at war. Speak for me."),
+                GwpText.Get(GwpTextCatalog.gwp_warden_mediation_ask),
                 // 不要求玩家已经入会。`HasMediationRequests()` 本身已经把范围锁死在
                 // "替灰袍打出来的战争"上——登记入口只有三种：制止正在发生的案件、
                 // 看见灰袍在打过去帮忙、玩家自己承办的案子。这三种都是本模组自己
@@ -271,7 +271,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_order_file",
                 "lord_talk_speak_diplomacy_2",
                 "gwp_player_troop_order_file_response",
-                GwpText.Get("{=gwp_player_troop_order_file}I want the Training Warden to prepare soldiers for my command."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_file),
                 CanFileTroopOrder,
                 ShowTroopOrderInquiry,
                 215);
@@ -280,7 +280,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_order_file_response",
                 "gwp_player_troop_order_file_response",
                 "lord_pretalk",
-                GwpText.Get("{=gwp_player_troop_order_recorded}Settle the price with me now, and I will send the order. The Training Warden will train real troops and bring them to you when they are ready."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_recorded),
                 null, null, 215);
 
             starter.AddDialogLine(
@@ -305,7 +305,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_delivery_accept",
                 "gwp_player_troop_delivery_choice",
                 "gwp_player_troop_delivery_accepted",
-                GwpText.Get("{=gwp_player_troop_delivery_accept}Then place them under my command."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_accept),
                 PrepareDeliveryConversation,
                 CompleteTroopDelivery,
                 310);
@@ -314,7 +314,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_delivery_accepted",
                 "gwp_player_troop_delivery_accepted",
                 "close_window",
-                GwpText.Get("{=gwp_player_troop_delivery_accepted}They are yours. These soldiers now answer to you."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_accepted),
                 null, null, 310);
 
 
@@ -322,7 +322,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_delivery_cancel",
                 "gwp_player_troop_delivery_choice",
                 "gwp_player_troop_delivery_cancelled",
-                GwpText.Get("{=gwp_player_troop_delivery_cancel}Cancel the order. Keep the soldiers."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_cancel),
                 null,
                 CancelTroopOrder,
                 290);
@@ -331,7 +331,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_delivery_cancelled",
                 "gwp_player_troop_delivery_cancelled",
                 "close_window",
-                GwpText.Get("{=gwp_player_troop_delivery_cancelled}Then no payment is due. They return to ordinary Grey Warden service."),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_cancelled),
                 null, null, 290);
         }
 
@@ -343,8 +343,8 @@ namespace GreyWardenPolicePurity
         {
             int settled = PoliceAntiWarDeclaration.ApplyWardenMediation();
             MBTextManager.SetTextVariable("GWP_WARDEN_MEDIATION_RESULT", settled > 0
-                ? GwpText.Create("{=gwp_warden_mediation_done}Consider it carried. Word goes out today, and the quarrels you took up for us are closed.")
-                : GwpText.Create("{=gwp_warden_mediation_moot}There is nothing left for us to carry. Whatever you took up on our account is already settled."));
+                ? GwpText.Create(GwpTextCatalog.gwp_warden_mediation_done)
+                : GwpText.Create(GwpTextCatalog.gwp_warden_mediation_moot));
         }
 
         private bool CanFileTroopOrder()
@@ -396,7 +396,7 @@ namespace GreyWardenPolicePurity
                 CharacterObject? troop = CharacterObject.Find(
                     choice.Kind.TroopId);
                 string label = GwpText.Get(
-                    "{=gwp_player_troop_choice}{VAR_1} × {VAR_2} — {VAR_3} denars",
+                    GwpTextCatalog.gwp_player_troop_choice,
                     "VAR_1", choice.Count,
                     "VAR_2", troop?.Name?.ToString() ?? choice.Kind.TroopId,
                     "VAR_3", choice.Price);
@@ -407,11 +407,11 @@ namespace GreyWardenPolicePurity
 
             MBInformationManager.ShowMultiSelectionInquiry(
                 new MultiSelectionInquiryData(
-                    GwpText.Get("{=gwp_player_troop_order_title}Place a troop order"),
-                    GwpText.Get("{=gwp_player_troop_order_description}Your Grey Warden standing sets the maximum order and available branches."),
+                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_title),
+                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_description),
                     elements, true, 1, 1,
-                    GwpText.Get("{=gwp_player_troop_order_confirm}Send order"),
-                    GwpText.Get("{=gwp_cancel}Cancel"),
+                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_confirm),
+                    GwpText.Get(GwpTextCatalog.gwp_cancel),
                     selected =>
                     {
                         TroopOrderChoice? choice = selected.FirstOrDefault()
@@ -514,7 +514,7 @@ namespace GreyWardenPolicePurity
             if (payment.Paid < choice.Price)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_player_troop_order_short}What you offered falls short of the price. The order was not placed."),
+                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_short),
                     Colors.Yellow));
                 return;
             }
@@ -554,7 +554,7 @@ namespace GreyWardenPolicePurity
                 !PoliceResourceManager.TryCollectPlayerRequestPayment(choice.Price))
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_player_troop_order_unaffordable}You cannot pay the deposit. The order was not placed."),
+                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_unaffordable),
                     Colors.Yellow));
                 return;
             }
@@ -582,8 +582,8 @@ namespace GreyWardenPolicePurity
                     "; price=" + _orderPrice);
             }
             InformationManager.DisplayMessage(new InformationMessage(alreadyCollected
-                ? GwpText.Get("{=gwp_player_troop_order_filed_prepaid}Your order and deposit are with the Wardens. The Training Warden will bring the soldiers to you herself.")
-                : GwpText.Get("{=gwp_player_troop_order_filed}The Training Warden has your order and will bring the soldiers to you once they are ready."),
+                ? GwpText.Get(GwpTextCatalog.gwp_player_troop_order_filed_prepaid)
+                : GwpText.Get(GwpTextCatalog.gwp_player_troop_order_filed),
                 Colors.Cyan));
         }
 
@@ -1110,7 +1110,7 @@ namespace GreyWardenPolicePurity
                 return false;
 
             MBTextManager.SetTextVariable("GWP_PLAYER_TROOP_DELIVERY_OFFER",
-                GwpText.Get("{=gwp_player_troop_delivery_offer}Your order is ready: {VAR_1} {VAR_2}. The {VAR_3} denars were settled when you placed it; nothing further is owed.",
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_offer,
                     "VAR_1", _orderedCount, "VAR_2", troop.Name,
                     "VAR_3", _orderPrice));
             return true;

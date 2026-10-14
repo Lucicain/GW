@@ -6,8 +6,8 @@
  <strings>
   <string id="gwp_adoption_chat_notice" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。" />
   <string id="gwp_adoption_log_entry" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。" />
-  <string id="gwp_clan_description" text="灰袍守卫起源于统一帝国时期的巡察警队。帝国覆灭后，这支以女性为主体的警察家族没有随旧秩序一同消失，而是以家族血脉、修会戒律与旧帝国法统维系自身。她们巡察道路，缉捕罪犯，调停私斗，也为仍愿守法之人留下赎罪与归正的门。对许多百姓而言，灰袍不是寻常贵族，更像一支身披灰袍、持戒而行的世俗修女警团。" />
-  <string id="gwp_clan_intro" text="我们是灰袍守卫，承自统一帝国旧制的警察家族。帝国已崩，法统未绝；王朝可以更替，街巷、村庄与道路仍需有人巡察。世人把我们当作家族也好，当作修会也罢，于我们并无分别。只要百姓仍呼唤公道，灰袍便会回应。" />
+  <string id="gwp_clan_description" text="灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。" />
+  <string id="gwp_clan_intro" text="我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。" />
   <string id="gwp_clan_name" text="灰袍守卫" />
   <string id="gwp_clan_short_name" text="灰袍" />
   <string id="gwp_common_garrison" text="驻地点" />
@@ -24,20 +24,20 @@
   <string id="gwp_crime_raid_caravan" text="劫掠商队" />
   <string id="gwp_crime_raid_village" text="劫掠村庄" />
   <string id="gwp_custom_commander_yao" text="灰袍纠察官尧" />
-  <string id="gwp_enc_chenxi" text="{HERO_NAME}常被派往受灾村镇、饥荒边地和战后余波最重的地区。她擅长安抚、分配、调停和维持最基础的公共秩序，因此在百姓中的名声尤为温和。很多人第一次理解灰袍，并不是因为看见她们缉捕罪犯，而是因为看见她们在最混乱的时候，仍先替普通人把日子重新扶正。" />
-  <string id="gwp_enc_mise" text="{HERO_NAME}最常驰往村民在路上遭袭、或田野上升起浓烟的地方。她记得那些被烧毁村庄的名字，并以普通家庭能否不再沦为战争战利品、安心劳作和出行为尺度衡量法律。那些以农民为猎物的人已经知道，一旦村庄受到威胁，她安静的态度便会立刻结束。" />
-  <string id="gwp_enc_muguang" text="{HERO_NAME}尤其留意那些无法归入旧卷宗的请求，特别是由足以改变天下格局的旅人直接带给灰袍的请求。对于没有先例的事，她不会轻易许诺，却也很少只因旧日书记官从未设想过便驳回。六人之中，人们最常向她询问法律下一步应当变成什么。" />
-  <string id="gwp_enc_shengduo" text="{HERO_NAME}保存着旧日统一帝国传下的法令与判例，但她很少长久留在档案室。村庄首领、城镇商人、工匠，甚至巷道中更强硬的人物，都见过她前来听取尚未解决的请求，并留下来直到事由被撤回或得到解决。她认为，旧法律只有仍能平息当下的纠纷时，才证明自身价值。" />
-  <string id="gwp_enc_vandi" text="{HERO_NAME}是现任灰袍统领，也是旧日统一帝国巡法体系最清晰的在世继承者之一。黎明前，人们常在操练场看见她纠正盾墙，或要求老兵向新兵说明纪律为何重于炫技。对外，她禁止灰袍追逐王冠与领地；对内，她坚持让每一位宣誓者都做好准备，在法律必须以武力守卫时稳住道路。" />
-  <string id="gwp_enc_yoer" text="{HERO_NAME}长期负责旧帝国驿道与乡野巡察。她最常出现在边远道路、渡口与商旅往来的要冲，处理盗匪、私斗与沿途勒索。许多行商与村民先记住她的灰袍，再记住她的名字。对平民而言，她代表的是一种朴素却可靠的事实：帝国虽然已经崩塌，但仍有人在守路。" />
-  <string id="gwp_greet_bad" text="你的记录里有些问题。不过只要你愿意改正，灰袍仍然会给你机会。" />
-  <string id="gwp_greet_good" text="你的记录不错。只要你继续遵守规矩、愿意帮助需要的人，我们就会把你当作值得信任的同伴。" />
-  <string id="gwp_greet_high" text="我看过你的记录。你一直在帮助受害者，也没有给我们添麻烦。这样的表现，灰袍会记住。" />
-  <string id="gwp_greet_neutral" text="我们会记录每个人做过的事，包括功劳和过错。目前你的记录没有问题，我愿意听你说。" />
-  <string id="gwp_greet_very_high" text="我听过不少关于你的好话。村民和商人都说你愿意帮忙，也守规矩。继续这样做，灰袍会放心把更重要的事情交给你。" />
-  <string id="gwp_greet_very_low" text="你的问题已经很严重了。如果你继续违法，下次见面我们就会直接采取行动。" />
-  <string id="gwp_greet_wanted" text="你涉及的案件还没有结束。我可以先听你解释，但这不代表事情已经过去。" />
-  <string id="gwp_grey_lord_followup" text="好，说吧。你找我有什么事？" />
+  <string id="gwp_enc_chenxi" text="{HERO_NAME}负责战后的村庄重建。追兵离开以后，她往往还留在村里，安排人手修屋、清井，帮助流散的人家回来。她把这些劳作视作应尽的侍奉，与追捕劫掠者同样要紧。" />
+  <string id="gwp_enc_mise" text="{HERO_NAME}负责村庄遇袭后的追捕。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路。接到劫掠的消息，她便召集人手出发；在她看来，是否入教都不能成为任人劫杀的理由。" />
+  <string id="gwp_enc_muguang" text="{HERO_NAME}替修会接待贵族的申诉，尤其留意灰袍成员遭受的不公。她会先问清事情的经过，再召集有关的人公开议决。旧例不能解决的事，她也愿意带回修会商议。" />
+  <string id="gwp_enc_shengduo" text="{HERO_NAME}为修会听取各地请愿。村庄首领、商人和工匠都可能向她陈述争端，她也会走进巷道询问那些不愿见官的人。她随身带着旧帝国的法令，用它们辨明案情，再依修会的戒律主持调解。" />
+  <string id="gwp_enc_vandi" text="{HERO_NAME}是灰袍现任统领，负责训练修会的战士。她常在天亮前检阅新兵，要求老兵亲自纠正盾墙的空隙。她相信守护百姓是上天交给灰袍的职责，不许部下以修会之名争夺王位或扩张私产。" />
+  <string id="gwp_enc_yoer" text="{HERO_NAME}负责保护商路，常在桥梁、渡口和集市之间奔走。她追查商队遇袭与沿途勒索，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。" />
+  <string id="gwp_greet_bad" text="你做过的事，我们有所耳闻。肯改过，就还有挽回的余地。" />
+  <string id="gwp_greet_good" text="你为百姓做过些好事。有话请说。" />
+  <string id="gwp_greet_high" text="你帮过那些受害的人，灰袍记得这份情。" />
+  <string id="gwp_greet_neutral" text="说吧，你找灰袍有什么事？" />
+  <string id="gwp_greet_very_high" text="沿途的村民和商人都称赞过你。灰袍信得过肯为百姓办事的人。" />
+  <string id="gwp_greet_very_low" text="你再劫掠百姓，灰袍就会来追捕你。" />
+  <string id="gwp_greet_wanted" text="你的案子还没有了结。先说说你的来意。" />
+  <string id="gwp_grey_lord_followup" text="你有什么事？" />
   <string id="gwp_greywardenadoptionlogentry_003" text="未知村庄" />
   <string id="gwp_greywardenfamilybehavior_001" text="澄音" />
   <string id="gwp_greywardenfamilybehavior_002" text="祈安" />
@@ -85,11 +85,11 @@
   <string id="gwp_greywardenfamilybehavior_044" text="九" />
   <string id="gwp_greywardenfamilybehavior_045" text="十" />
   <string id="gwp_greywardenfamilybehavior_046" text="她" />
-  <string id="gwp_greywardenfamilybehavior_047" text="{VAR_1}是在{VAR_2}遭劫掠焚毁后，被灰袍守卫带回内院收养的女娃。她尚年幼，却已经在耳濡目染中听惯了巡路口令、案卷誊录与修会戒律。对灰袍而言，她不是寻常意义上的家族血亲，而是从灾厄中被接续下来的下一代誓女。" />
-  <string id="gwp_greywardenfamilybehavior_048" text="{VAR_1}幼时曾在{VAR_2}遭焚后被灰袍守卫收养。如今的她已开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在长辈眼中，她正从劫后余生的孤女逐渐成长为灰袍内院受训的新一代后继者。" />
+  <string id="gwp_greywardenfamilybehavior_047" text="{VAR_1}在{VAR_2}遭劫焚毁后被灰袍收养，如今住在修会内院。她还年幼，已熟悉巡察队出门时的口令，也跟着长辈学习戒律。" />
+  <string id="gwp_greywardenfamilybehavior_048" text="{VAR_1}幼时在{VAR_2}被焚后由灰袍收养。她正在修会学习读写、辨认案情和遵守戒律，为成年后的职责做准备。" />
   <string id="gwp_greywardenfamilybehavior_049" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。" />
-  <string id="gwp_greywardenfamilybehavior_050" text="{VAR_1}生于灰袍守卫的内院。她自幼在巡路口令、旧帝国案卷与修会戒律之间长大，被长辈视作灰袍下一代的幼年继承者。对灰袍而言，像她这样的女孩并不是寻常贵族家族的孩子，而是未来要学会守路、记案与持法而行的人。" />
-  <string id="gwp_greywardenfamilybehavior_051" text="{VAR_1}属于灰袍守卫的新生一代。她已经开始学习识卷、抄录口供、辨识罪案与巡路礼仪，在灰袍长辈眼中，她迟早会披上真正的灰袍。外人常把她们当作家族子女，灰袍内部却更习惯把这一代视作仍在受训的后继者。" />
+  <string id="gwp_greywardenfamilybehavior_050" text="{VAR_1}生于灰袍修会。她从小听教士讲解戒律，也看着长辈们带兵出巡。修会将她与收养来的孩子一同抚育。" />
+  <string id="gwp_greywardenfamilybehavior_051" text="{VAR_1}在灰袍修会长大，正在学习读写、辨认案情和巡察的规矩。长辈们期望她成年后能承担修会的职责。" />
   <string id="gwp_greywardenfamilybehavior_052" text="{VAR_1}成长于灰袍守卫所维系的旧帝国法统、家族血脉与修会戒律之中。她既是灰袍血脉的延续者，也是这支女性警察家族的新一代执法者。对许多百姓而言，她所代表的不是门第本身，而是灰袍仍会继续巡察道路、缉捕罪犯并守住秩序。" />
   <string id="gwp_greywardentrooprequestbehavior_001" text="少量灰袍新兵" />
   <string id="gwp_greywardentrooprequestbehavior_002" text="一队灰袍新兵" />
@@ -452,11 +452,11 @@
   <string id="gwp_policeenforcementbehavior_atonementquest_001" text="未知目标" />
   <string id="gwp_policeenforcementbehavior_atonementquest_002" text="未知目标" />
   <string id="gwp_policeenforcementbehavior_atonementquest_003" text="灰袍赎罪令：追捕 {VAR_1}" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_004" text="目标已击败。前往族长或任意灰袍警察处交付赎罪任务。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_004" text="已击败目标。向任意灰袍领主交付赎罪任务。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_005" text="赎罪完成：声望 +{VAR_1}，当前声望 {VAR_2}。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_006" text="未知位置" />
   <string id="gwp_policeenforcementbehavior_atonementquest_007" text="任务下达：在 {VAR_1} 天内击败 {VAR_2}（接案规模 {VAR_3} 人）。" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_008" text="探子初报：目标最后在 {VAR_1} 附近活动。完成后向族长或任意灰袍警察交任务。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_008" text="探子回报：目标最后出现在{VAR_1}附近。完成后向任意灰袍领主交付赎罪任务。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_009" text="未知位置" />
   <string id="gwp_policeenforcementbehavior_atonementquest_010" text="探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_011" text="赎罪的目标仍然在逃。继续追下去。" />
@@ -576,7 +576,8 @@
   <string id="gwp_sparring_field_post_reply" text="谢谢。下次再切磋。" />
   <string id="gwp_sparring_talk" text="交谈" />
   <string id="gwp_gwpencyclopediaheropagevm_018" text="家族震慑：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_019" text="当前总震慑：{VAR_1}" />  <string id="gwp_ai_det_audience_outsider_high_calculating" text="无论你以为烧毁村庄能得到多少，都先把此后多年的追捕算进去。" />
+  <string id="gwp_gwpencyclopediaheropagevm_019" text="当前总震慑：{VAR_1}" />
+  <string id="gwp_ai_det_audience_outsider_high_calculating" text="无论你以为烧毁村庄能得到多少，都先把此后多年的追捕算进去。" />
   <string id="gwp_ai_det_audience_outsider_high_cruel" text="你想烧什么都随你，但要明白，灰袍有办法让记忆活得比傲慢更久。" />
   <string id="gwp_ai_det_audience_outsider_high_honorable" text="我明白地告诫你：保护你权力之下的村庄，否则公正迟早也会找到你。" />
   <string id="gwp_ai_det_audience_outsider_high_merciful" text="先放过那些最早受苦的人，你也就不必亲自承受这份教训。" />
@@ -809,15 +810,15 @@
   <string id="gwp_duty_village" text="灰袍乡土巡法者" />
   <string id="gwp_duty_issues" text="灰袍请愿巡行者" />
   <string id="gwp_duty_player" text="贵族事务协调官" />
-  <string id="gwp_adult_adopted_origin" text="{VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。{VAR_3}" />
-  <string id="gwp_adult_born_origin" text="{VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。{VAR_2}" />
-  <string id="gwp_bio_hint_law" text="她跟随案件卷宗奔走，在组织需要另一双稳健的手时补上空缺。" />
-  <string id="gwp_bio_hint_training" text="她常年出入操练场，把新募之兵训练成即使道路染血也能稳住阵形的战士。" />
-  <string id="gwp_bio_hint_caravan" text="她最常出现在桥梁、渡口与商旅交会处，追索袭击商队之人，直到道路重新安全。" />
-  <string id="gwp_bio_hint_village" text="她驰往农民遭袭或田地被焚之处，并以村庄生活能否得到守护衡量自己的职责。" />
-  <string id="gwp_bio_hint_issues" text="她往来于村庄首领、城镇商人乃至巷道中的强硬人物之间，听取未决请求，离开时总会少下一桩纠纷。" />
-  <string id="gwp_bio_hint_rebuild" text="人们屡次在焦黑屋顶与废弃水井之间看见她；战斗结束后她仍会留下，直到毁坏村庄能够重新接纳居民。" />
-  <string id="gwp_bio_hint_player" text="她负责协调贵族与民间的诉求，尤其善于为遭到不公对待的灰袍成员重新争取公开议决。" />
+  <string id="gwp_adult_adopted_origin" text="{VAR_1}幼时因{VAR_2}遭劫焚毁而被灰袍收养，成年后留在修会任职。{VAR_3}" />
+  <string id="gwp_adult_born_origin" text="{VAR_1}在灰袍修会长大，从小受戒律约束，成年后承担修会的职责。{VAR_2}" />
+  <string id="gwp_bio_hint_law" text="她随巡察队处理各地案件。" />
+  <string id="gwp_bio_hint_training" text="她负责操练士兵，要求新兵先学会守住队列。" />
+  <string id="gwp_bio_hint_caravan" text="她巡察商路，追捕袭击商队的人。" />
+  <string id="gwp_bio_hint_village" text="她负责村庄遇袭后的追捕，保护往来的村民。" />
+  <string id="gwp_bio_hint_issues" text="她往来于村庄和城镇，听取要人的请愿。" />
+  <string id="gwp_bio_hint_rebuild" text="她留在受灾村庄安排重建，帮助流散的居民回来。" />
+  <string id="gwp_bio_hint_player" text="她受理贵族的申诉，为受到不公对待的灰袍成员请求公开议决。" />
   <string id="gwp_issue_resolution_complete" text="{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。" />
   <string id="gwp_issue_ledger_header" text="请愿任务 — {VAR_1}" />
   <string id="gwp_issue_ledger_assignment" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
@@ -830,12 +831,12 @@
   <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 当前阶段：{VAR_2}" />
   <string id="gwp_training_ledger_pending_place" text="待选定" />
   <string id="gwp_training_ledger_queued" text="任务类型：练兵换兵 | 已列为练兵领主的下一项任务" />
-  <string id="gwp_training_ledger_waiting" text="任务类型：练兵换兵 | 信众村：{VAR_1} | 等待完成当前任务" />
-  <string id="gwp_training_ledger_stay" text="任务类型：练兵换兵 | 信众村：{VAR_1} | 剩余驻留：{VAR_2}小时" />
-  <string id="gwp_training_ledger_travel" text="任务类型：练兵换兵 | 信众村：{VAR_1}" />
+  <string id="gwp_training_ledger_waiting" text="练兵换兵 | 目的地：{VAR_1} | 等待当前差事结束" />
+  <string id="gwp_training_ledger_stay" text="练兵换兵 | 驻留地：{VAR_1} | 尚需{VAR_2}小时" />
+  <string id="gwp_training_ledger_travel" text="练兵换兵 | 正前往{VAR_1}" />
   <string id="gwp_training_stage_queued" text="已列为下一项任务" />
   <string id="gwp_training_stage_waiting" text="等待完成当前任务" />
-  <string id="gwp_training_stage_travel" text="前往信众村" />
+  <string id="gwp_training_stage_travel" text="前往换兵的村庄" />
   <string id="gwp_training_stage_stay" text="驻留两小时并换兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
   <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
@@ -915,7 +916,6 @@
   <string id="gwp_fieldarrest_victim_unknown" text="灰袍记录在案的受害人" />
   <string id="gwp_fieldarrest_crime_caravan" text="袭击灰袍保护的商队" />
   <string id="gwp_fieldarrest_crime_village" text="对灰袍保护的村民动手" />
-
   <string id="gwp_fieldarrest_msg_fine" text="{VAR_1}缴清了 {VAR_2} 第纳尔罚金，须交给灰袍领主。" />
   <string id="gwp_fieldarrest_msg_refused" text="对方拒捕。动手拿人。" />
   <string id="gwp_field_fine_handed_in" text="已上缴罚金 {VAR_1} 第纳尔。" />
@@ -1398,80 +1398,80 @@
   <string id="gwp_dispatch_trouble_mauled" text="有消息传来：你派出去的人伤亡过半。" />
   <string id="gwp_dispatch_trouble_starving" text="有消息传来：你派出去的人已经断粮。" />
   <string id="gwp_case_settle_expenses" text="这桩委托已经了结，把该付你的报酬结清就行。" />
-  <string id="gwp_troop_zealot" text="火誓狂热者" />
-  <string id="gwp_fs_priest_name" text="永恒之火祭司{FIRSTNAME}" />
-  <string id="gwp_fs_priest_arrived" text="{PRIEST}在{VILLAGE}住了下来，照看永恒之火。" />
-  <string id="gwp_fs_ritual_congregation_title" text="集会传教" />
-  <string id="gwp_fs_ritual_damnation_title" text="烈火责罚" />
-  <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的广场上挤满了人，{HOST}站在永恒之火前宣读火的戒律。要立誓的人一个接一个走上前，把手伸到火上起誓；围着的乡亲跟着他念。集会传教正在进行，这里没人顾得上你。大约还要{HOURS}小时。" />
-  <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上燃着火堆。{HOST}正在举行永恒之火的烈火责罚：绑上火堆的，是火判了罪的人。立了誓的人围着火唱，乡亲们往火里添柴。烟呛得人睁不开眼。大约{HOURS}小时内，这里没人会搭理你。" />
-  <string id="gwp_fs_village_option" text="永恒之火：{HOUSEHOLDS} 户信众（{SHARE}%），{GUARD} 人执兵" />
-  <string id="gwp_fs_village_info" text="{VILLAGE}的{HEARTH}户人家里，有{HOUSEHOLDS}户向永恒之火立了誓，这些人家有{GUARD}个儿女拿着兵器。火的规矩由祭司和立了誓的人守着；村里人照常种地过日子。劫掠的人来了，拿起长矛的就是这些立了誓的男男女女。" />
-  <string id="gwp_fs_village_priest" text="{PRIEST}在这里照看永恒之火。灰袍要人上阵时，村里立了誓的儿女们就从他的火堆边跟着走。" />
-  <string id="gwp_fs_village_no_priest" text="这里没有永恒之火的祭司。" />
-  <string id="gwp_fs_village_info_title" text="永恒之火" />
+  <string id="gwp_troop_zealot" text="灰袍狂信者" />
+  <string id="gwp_fs_priest_name" text="灰袍教士{FIRSTNAME}" />
+  <string id="gwp_fs_priest_arrived" text="{PRIEST}已在{VILLAGE}定居传教。" />
+  <string id="gwp_fs_ritual_congregation_title" text="布道集会" />
+  <string id="gwp_fs_ritual_damnation_title" text="火刑" />
+  <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的村民聚在广场上听讲戒律，新入教的人正在宣誓。集会尚未结束，暂时无法办理村中事务。还需约{HOURS}小时。主持：{HOST}。" />
+  <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上正在执行火刑。人被绑在木架上，围观的教众齐声祷告，浓烟飘过屋顶。村中事务暂时停办，还需约{HOURS}小时。主持：{HOST}。" />
+  <string id="gwp_fs_village_option" text="灰袍教众：{HOUSEHOLDS}户（{SHARE}%），守村{GUARD}人" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。" />
+  <string id="gwp_fs_village_priest" text="{PRIEST}在此传教，并照管教众。灰袍来征募时，村中愿意从军的人由他引荐。" />
+  <string id="gwp_fs_village_no_priest" text="村中暂时没有灰袍教士。" />
+  <string id="gwp_fs_village_info_title" text="灰袍教众" />
   <string id="gwp_fs_village_info_ok" text="关闭" />
   <string id="gwp_fs_ritual_leave" text="离开……" />
-  <string id="gwp_fs_militia_change" text="永恒之火立了誓的人不会离开民兵" />
-  <string id="gwp_fs_militia_stopped" text="永恒之火：这里由立了誓的人守着，不再募新民兵" />
-  <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}照看永恒之火。他传的教义说：统领这把火的是灰袍的女人们，走村串户替它传话的是祭司；谁都可以到火前求它照亮，火不问出身。在他的照看下，村里的男男女女向火立誓、拿起长矛，守着这座村子。" />
-  <string id="gwp_fs_village_stores" text="地窖里关着{PRISONERS}个等着上火堆的人。库房里存着{ARMORY}件兵器甲胄，留给立了誓的人。还有值{GOODS}第纳尔的货，等着装车运去城里。" />
-  <string id="gwp_fs_caravan_party" text="{VILLAGE}的狂信者" />
-  <string id="gwp_fs_armory_option" text="永恒之火：库房" />
+  <string id="gwp_fs_militia_change" text="灰袍教众继续留守" />
+  <string id="gwp_fs_militia_stopped" text="灰袍教众负责守卫，停止征募新民兵" />
+  <string id="gwp_fs_priest_lore" text="{PRIEST}在{VILLAGE}传授灰袍的戒律。他教导村民敬畏上天，接济穷人，并服从修会的惩戒。灰袍的女统领掌管武装和巡察，他则召集教众、主持礼拜，为守村与从军的人备办衣食。" />
+  <string id="gwp_fs_village_stores" text="地窖关押着{PRISONERS}人，等候火刑。库房存有{ARMORY}件兵器甲胄，另有价值{GOODS}第纳尔的货物待运往集市。" />
+  <string id="gwp_fs_caravan_party" text="{VILLAGE}的教众货队" />
+  <string id="gwp_fs_armory_option" text="查看教众库房" />
   <string id="gwp_fs_armory_close" text="关闭" />
-  <string id="gwp_fs_armory_section_arms" text="军械库（给立了誓的人配的兵器护甲）" />
-  <string id="gwp_fs_armory_section_goods" text="货仓（要拉进城卖的）" />
-  <string id="gwp_fs_armory_section_inventory" text="背包" />
-  <string id="gwp_fs_armory_section" text="—— {TITLE}（{COUNT}件，值{VALUE}）——" />
-  <string id="gwp_fs_lord_armory_ask" text="让我看看你们队伍的库房。" />
-  <string id="gwp_fs_lord_armory_reply" text="都在这儿了，带着的东西、谁在穿，你看吧。" />
+  <string id="gwp_fs_armory_section_arms" text="军械" />
+  <string id="gwp_fs_armory_section_goods" text="待售货物" />
+  <string id="gwp_fs_armory_section_inventory" text="随队物资" />
+  <string id="gwp_fs_armory_section" text="{TITLE}（{COUNT}件，价值{VALUE}）" />
+  <string id="gwp_fs_lord_armory_ask" text="让我看看你们的随队物资。" />
+  <string id="gwp_fs_lord_armory_reply" text="清单在这里。" />
   <string id="gwp_fs_armory_item" text="{NAME} × {COUNT}" />
   <string id="gwp_fs_armory_village" text="{VILLAGE}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_party" text="{PARTY}的军械库（{ITEMS}件）" />
-  <string id="gwp_fs_armory_empty" text="库里还什么都没有。" />
-  <string id="gwp_fs_armory_summary" text="从这里领装备的有{MEN}人，其中{ARMED}人领到了兵器。另有{FREE}件留给下一批立誓的人。{SURPLUS}件没人用得上，会拉去卖掉。" />
+  <string id="gwp_fs_armory_empty" text="库房为空。" />
+  <string id="gwp_fs_armory_summary" text="这里为{MEN}人保管装备，其中{ARMED}人已配有兵器；另存{FREE}件备用装备，{SURPLUS}件余货将运往集市出售。" />
   <string id="gwp_fs_party_pretalk" text="还有什么事？" />
-  <string id="gwp_fs_party_buy" text="你们车上是什么？我买了。" />
-  <string id="gwp_fs_party_offer" text="有{PRODUCTS}。全拿走一共{TOTAL_PRICE}{GOLD_ICON}，钱归永恒之火。" />
+  <string id="gwp_fs_party_buy" text="你们带了什么货？" />
+  <string id="gwp_fs_party_offer" text="有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。" />
   <string id="gwp_fs_party_buy_yes" text="成交，这是{TOTAL_PRICE}{GOLD_ICON}。" />
   <string id="gwp_fs_party_buy_no" text="算了。" />
   <string id="gwp_fs_party_threaten" text="把东西都交出来。" />
-  <string id="gwp_fs_party_refuse" text="火不会向你低头。想要我们的东西，就从我们身上踏过去。" />
-  <string id="gwp_fs_party_fight" text="那就这样。" />
-  <string id="gwp_fs_party_back_off" text="算了，走吧。" />
-  <string id="gwp_fs_party_leave" text="那你们走吧。" />
-  <string id="gwp_fs_party_greet_cart_out" text="我们是{HOME}立了誓的人。车上是村里的货，要拉去{TARGET}，卖得的钱归永恒之火。" />
-  <string id="gwp_fs_party_greet_mission" text="愿火照亮你的路。我们是{HOME}立了誓的人，要去{TARGET}把火带过去，从此留在那里。" />
-  <string id="gwp_fs_party_greet_balance" text="我们是{HOME}立了誓的人。这些兵器是给{TARGET}立誓的人的，送到了我们就留在那里。" />
-  <string id="gwp_fs_mission_party" text="永恒之火门徒" />
+  <string id="gwp_fs_party_refuse" text="我们不会交给你。要抢，就拔剑。" />
+  <string id="gwp_fs_party_fight" text="那就没什么可谈的了。" />
+  <string id="gwp_fs_party_back_off" text="算了，你们走吧。" />
+  <string id="gwp_fs_party_leave" text="你们继续赶路吧。" />
+  <string id="gwp_fs_party_greet_cart_out" text="我们从{HOME}来，要把这车货送到{TARGET}去卖，所得用来供养村里的教众。" />
+  <string id="gwp_fs_party_greet_mission" text="我们从{HOME}来，要到{TARGET}传教，此后就在那里住下。" />
+  <string id="gwp_fs_party_greet_balance" text="我们从{HOME}来，为{TARGET}的教众运送兵器。送到以后，我们也留在那里守村。" />
+  <string id="gwp_fs_mission_party" text="灰袍传教队" />
   <string id="gwp_fs_balance_party" text="{VILLAGE}的运械队" />
-  <string id="gwp_fs_status_balance" text="正把{HOME}的兵器运给{TARGET}立誓的人。" />
-  <string id="gwp_notice_prisoners" text="交出 {COUNT} 名俘虏" />
-  <string id="gwp_notice_donated" text="捐出 {COUNT} 件东西" />
-  <string id="gwp_notice_congregation" text="{COUNT} 人向永恒之火立誓" />
-  <string id="gwp_notice_damnation" text="{BURNED}上了火堆，{SWORN} 户立誓" />
-  <string id="gwp_notice_burned_people" text="{COUNT} 人" />
-  <string id="gwp_notice_burned_homes" text="{COUNT} 户" />
-  <string id="gwp_notice_mission" text="带来 {COUNT} 名立誓者，留在此地" />
-  <string id="gwp_notice_balance" text="运来 {COUNT} 件兵器护甲" />
-  <string id="gwp_notice_market" text="卖出 {COUNT} 件货物" />
+  <string id="gwp_fs_status_balance" text="正从{HOME}运送兵器给{TARGET}的教众。" />
+  <string id="gwp_notice_prisoners" text="交付{COUNT}名俘虏" />
+  <string id="gwp_notice_donated" text="捐赠{COUNT}件物资" />
+  <string id="gwp_notice_congregation" text="{COUNT}户加入灰袍教众" />
+  <string id="gwp_notice_damnation" text="{BURNED}遭火刑，另有{SWORN}户入教" />
+  <string id="gwp_notice_burned_people" text="{COUNT}人" />
+  <string id="gwp_notice_burned_homes" text="{COUNT}户" />
+  <string id="gwp_notice_mission" text="{COUNT}名教众在此定居" />
+  <string id="gwp_notice_balance" text="运来{COUNT}件兵器甲胄" />
+  <string id="gwp_notice_market" text="售出{COUNT}件货物" />
   <string id="gwp_notice_rebuilt" text="重建了这座村子" />
-  <string id="gwp_notice_issue_solved" text="解决了一个请愿" />
-  <string id="gwp_fs_status_mission" text="正把永恒之火带往{TARGET}。" />
-  <string id="gwp_fs_status_market" text="正把{HOME}的货运去{TARGET}的集市。" />
+  <string id="gwp_notice_issue_solved" text="处理了一件请愿" />
+  <string id="gwp_fs_status_mission" text="正前往{TARGET}传教。" />
+  <string id="gwp_fs_status_market" text="正把{HOME}的货物运往{TARGET}集市。" />
   <string id="gwp_fs_status_returning" text="正返回{HOME}。" />
-  <string id="gwp_fs_status_home" text="在{HOME}守着火。" />
-  <string id="gwp_fs_status_visit" text="在{VILLAGE}的永恒之火旁：交出{PRISONERS}名俘虏、{DONATED}件装备，收了{RECRUITS}名立誓者入伍。" />
-  <string id="gwp_fs_status_healing" text="在{VILLAGE}的永恒之火旁照料伤员。" />
-  <string id="gwp_fs_status_resting" text="在{VILLAGE}的永恒之火旁休整。" />
+  <string id="gwp_fs_status_home" text="驻守{HOME}。" />
+  <string id="gwp_fs_status_visit" text="在{VILLAGE}交付{PRISONERS}名俘虏、捐赠{DONATED}件物资，招募{RECRUITS}名教众。" />
+  <string id="gwp_fs_status_healing" text="在{VILLAGE}照料伤员。" />
+  <string id="gwp_fs_status_resting" text="在{VILLAGE}休整。" />
   <string id="gwp_status_rebuilding" text="正在重建{VILLAGE}（还剩{HOURS}小时）。" />
   <string id="gwp_status_petition" text="正在{SETTLEMENT}处理请愿（还剩{HOURS}小时）。" />
   <string id="gwp_status_training" text="正在操练灰袍的新兵。" />
-  <string id="gwp_fs_party_greet_cart_back" text="货卖完了，我们回{HOME}去。" />
+  <string id="gwp_fs_party_greet_cart_back" text="我们在集市卖过货，正返回{HOME}。" />
   <string id="gwp_fs_party_products_separator" text="、" />
   <string id="gwp_fs_party_product" text="{COUNT}件{ITEM}" />
   <string id="gwp_fs_party_products_more" text="等" />
-  <string id="gwp_fs_healing_hearth" text="永恒之火的火堆边" />
+  <string id="gwp_fs_healing_hearth" text="灰袍教众的照料" />
   <string id="gwp_envoy_party_name" text="灰袍使者" />
   <string id="gwp_envoy_duel_called" text="{VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。" />
   <string id="gwp_envoy_duel_warden_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。" />

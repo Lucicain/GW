@@ -101,7 +101,7 @@ namespace GreyWardenPolicePurity
             // ── 入口 ────────────────────────────────────────────────────────────
             starter.AddPlayerLine(
                 "gwp_fa_open", "hero_main_options", "gwp_fa_greeting",
-                GwpText.Get("{=gwp_fieldarrest_open}Stand where you are. I speak for the Grey Wardens."),
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_open),
                 FieldArrestAvailableCondition, PrepareFieldArrest, 110);
 
 
@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddPlayerLine(
                 "gwp_fa_charge_cooled", "gwp_fa_charge_options", "gwp_fa_charge_cooled_reply",
-                GwpText.Get("{=gwp_fa_charge_cooled}Let us take up that charge again."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_charge_cooled),
                 () => _crime?.HasOpenCase == true && _offender != null &&
                       IsAssignedCase(_offender) && !HasGrace &&
                       NegotiationCooldownActive(_offender), null, 109);
@@ -132,38 +132,38 @@ namespace GreyWardenPolicePurity
                 }, null);
 
             starter.AddPlayerLine("gwp_duel_return_collect", "gwp_fa_charge_options", "gwp_fa_settled",
-                GwpText.Get("{=gwp_duel_inspect_property}Show me your property. We will settle the fine now."),
+                GwpText.Get(GwpTextCatalog.gwp_duel_inspect_property),
                 () => _offender != null && _duelPaymentHero == _offender.StringId && IsAssignedCase(_offender), PrepareDuelPropertyCollection);
             starter.AddPlayerLine("gwp_grace_collect", "gwp_fa_charge_options", "gwp_fa_settled",
-                GwpText.Get("{=gwp_grace_collect}Show me what you can pay now."), GraceCollectionAvailable, PrepareGraceCollection);
+                GwpText.Get(GwpTextCatalog.gwp_grace_collect), GraceCollectionAvailable, PrepareGraceCollection);
 
             starter.AddPlayerLine("gwp_fa_grace_wait", "gwp_fa_charge_options", "gwp_fa_dismissed",
-                GwpText.Get("{=gwp_fa_grace_wait}Then I will come back on the day we named."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_grace_wait),
                 () => GraceStillRunning, null, 110);
             starter.AddPlayerLine(
                 "gwp_fa_walk_away", "gwp_fa_charge_options", "gwp_fa_dismissed",
-                GwpText.Get("{=gwp_fieldarrest_walk_away}Never mind. Go on your way."),
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_walk_away),
                 () => !GraceStillRunning, null);
 
             starter.AddDialogLine(
                 "gwp_fa_dismissed", "gwp_fa_dismissed", "close_window",
-                GwpText.Get("{=gwp_fieldarrest_dismissed}Then stop wasting my daylight."),
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_dismissed),
                 null, DismissConsequence);
 
             // ── 第一层：他认不认这次执法 ────────────────────────────────────────
             starter.AddDialogLine("gwp_fa_refuse", "gwp_fa_layer1_open", "gwp_fa_layer1_lost_options",
-                "{GWP_VOICE_REFUSE}", () => (_refusesToTalk) && SetVoice("refuse", "{=gwp_fa_refuse_strength}I will not accept this demand. We have nothing to discuss."), () => { RecordNegotiationFailure(); EndPersuasionConsequence(); }, 110);
+                "{GWP_VOICE_REFUSE}", () => (_refusesToTalk) && SetVoice("refuse", GwpTextCatalog.gwp_fa_refuse_strength), () => { RecordNegotiationFailure(); EndPersuasionConsequence(); }, 110);
             starter.AddDialogLine(
                 "gwp_fa_layer1_open", "gwp_fa_layer1_open", "gwp_fa_layer1_next",
-                "{GWP_VOICE_HEAR}", () => (!_refusesToTalk) && SetVoice("hear", "{=gwp_fa_hear_charge}I have heard the charge. First tell me why I should answer to you."), BeginLayerOneConsequence);
+                "{GWP_VOICE_HEAR}", () => (!_refusesToTalk) && SetVoice("hear", GwpTextCatalog.gwp_fa_hear_charge), BeginLayerOneConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_failed", "gwp_fa_layer1_next", "gwp_fa_layer1_lost",
-                "{GWP_VOICE_LOST1}", () => (LayerFailedCondition()) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), RecordNegotiationFailure);
+                "{GWP_VOICE_LOST1}", () => (LayerFailedCondition()) && SetVoice("lost1", GwpTextCatalog.gwp_fa_l1_failed), RecordNegotiationFailure);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_done", "gwp_fa_layer1_next", "gwp_fa_terms_request",
-                "{GWP_VOICE_DONE1}", () => (LayerSatisfiedCondition()) && SetVoice("done1", "{=gwp_fa_l1_done}...Very well. I answer to the charge. The question is how."), EndLayerOneConsequence);
+                "{GWP_VOICE_DONE1}", () => (LayerSatisfiedCondition()) && SetVoice("done1", GwpTextCatalog.gwp_fa_l1_done), EndLayerOneConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_reservation", "gwp_fa_layer1_next", "gwp_fa_layer1_argument",
@@ -181,24 +181,24 @@ namespace GreyWardenPolicePurity
             // 悬在半空并把玩家弹回上一组选项。这一行保证永远有出口。
             starter.AddDialogLine(
                 "gwp_fa_layer1_stuck", "gwp_fa_layer1_next", "gwp_fa_layer1_lost",
-                "{GWP_VOICE_LOST1}", () => (true) && SetVoice("lost1", "{=gwp_fa_l1_failed}Enough. Your order has no claim on me, and neither do you."), null);
+                "{GWP_VOICE_LOST1}", () => (true) && SetVoice("lost1", GwpTextCatalog.gwp_fa_l1_failed), null);
 
             starter.AddDialogLine(
                 "gwp_fa_layer1_lost", "gwp_fa_layer1_lost", "gwp_fa_layer1_lost_options",
-                GwpText.Get("{=gwp_fa_l1_lost}I reject this demand from the Wardens. If you insist on force, draw."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_l1_lost),
                 null, EndPersuasionConsequence);
 
             // 第一层没过：还想执法就只剩动手。
             starter.AddPlayerLine(
                 "gwp_fa_layer1_lost_attack", "gwp_fa_layer1_lost_options", "gwp_fa_attack",
-                GwpText.Get("{=gwp_fa_take_by_force}I will enforce the warrant by force."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_take_by_force), null, null);
 
             starter.AddPlayerLine(
                 "gwp_fa_layer1_lost_leave", "gwp_fa_layer1_lost_options", "gwp_fa_dismissed",
-                GwpText.Get("{=gwp_fa_leave_it}Ride on, then. This is not finished."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_leave_it), null, null);
 
             starter.AddPlayerLine("gwp_fa_request_terms", "gwp_fa_terms_request", "gwp_fa_layer2_demand",
-                GwpText.Get("{=gwp_fa_request_terms}Then tell me how you propose to settle this."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_request_terms), null, null);
 
             // ── 第二层：他打算怎么兑现 ──────────────────────────────────────────
             starter.AddDialogLine(
@@ -207,18 +207,18 @@ namespace GreyWardenPolicePurity
             starter.AddPlayerLine("gwp_fa_offer_accept", "gwp_fa_offer_options", "gwp_fa_desire_done",
                 "{" + GwpTextKeys.FieldArrestAccept + "}", AcceptDesireCondition, null);
             starter.AddPlayerLine("gwp_fa_offer_negotiate", "gwp_fa_offer_options", "gwp_fa_payment_begin",
-                GwpText.Get("{=gwp_fa_counter_offer}Those terms will not do. Let us discuss the full fine."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_counter_offer),
                 () => !_paymentAccepted && !GwpOffenderDesires.IsFullPayment(_desire), null);
             starter.AddDialogLine("gwp_fa_payment_begin", "gwp_fa_payment_begin", "gwp_fa_layer2_next",
                 "{" + GwpTextKeys.FieldArrestDemand + "}", DemandCondition, BeginLayerTwoConsequence);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_failed", "gwp_fa_layer2_next", "gwp_fa_layer2_lost",
-                "{GWP_VOICE_LOST2}", () => (LayerFailedCondition()) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), RecordNegotiationFailure);
+                "{GWP_VOICE_LOST2}", () => (LayerFailedCondition()) && SetVoice("lost2", GwpTextCatalog.gwp_fa_l2_failed), RecordNegotiationFailure);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_done", "gwp_fa_layer2_next", "gwp_fa_layer2_won",
-                "{GWP_VOICE_DONE2}", () => (LayerSatisfiedCondition()) && SetVoice("done2", "{=gwp_fa_l2_done}...The full sum, then. Have it your way."), () => _paymentAccepted = _enforcementAccepted);
+                "{GWP_VOICE_DONE2}", () => (LayerSatisfiedCondition()) && SetVoice("done2", GwpTextCatalog.gwp_fa_l2_done), () => _paymentAccepted = _enforcementAccepted);
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_reservation", "gwp_fa_layer2_next", "gwp_fa_layer2_argument",
@@ -234,7 +234,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddDialogLine(
                 "gwp_fa_layer2_stuck", "gwp_fa_layer2_next", "gwp_fa_layer2_lost",
-                "{GWP_VOICE_LOST2}", () => (true) && SetVoice("lost2", "{=gwp_fa_l2_failed}No. I have told you how this will go."), null);
+                "{GWP_VOICE_LOST2}", () => (true) && SetVoice("lost2", GwpTextCatalog.gwp_fa_l2_failed), null);
 
             // 两层都过：按规矩收钱，或者翻脸。
             starter.AddDialogLine(
@@ -247,7 +247,7 @@ namespace GreyWardenPolicePurity
 
             starter.AddPlayerLine(
                 "gwp_fa_won_attack", "gwp_fa_layer2_won_options", "gwp_fa_attack",
-                GwpText.Get("{=gwp_fa_take_anyway}Keep your silver. I am taking you in."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_take_anyway), null, null);
 
             // 第二层没过：照他的办，或者翻脸。
             starter.AddDialogLine(
@@ -261,33 +261,33 @@ namespace GreyWardenPolicePurity
 
             starter.AddPlayerLine(
                 "gwp_fa_lost_attack", "gwp_fa_layer2_lost_options", "gwp_fa_attack",
-                GwpText.Get("{=gwp_fa_take_by_force}I will enforce the warrant by force."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_take_by_force), null, null);
 
             // ── 三个终局 ────────────────────────────────────────────────────────
             starter.AddDialogLine(
                 "gwp_fa_settled", "gwp_fa_settled", "gwp_fa_collection_result",
-                GwpText.Get("{=gwp_fa_count_money}Here are the money and goods. Choose what you will take."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_count_money),
                 null, () => OpenCollection(true));
 
             starter.AddDialogLine(
                 "gwp_fa_desire_done", "gwp_fa_desire_done", "close_window",
-                GwpText.Get("{=gwp_fa_desire_done_line}Then we understand each other."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_desire_done_line),
                 () => _desire == GwpOffenderDesire.SurrenderSelf || _desire == GwpOffenderDesire.DemandDuel || (_desire == GwpOffenderDesire.RequestGrace && CanOfferGrace), ExecuteDesireConsequence);
             starter.AddDialogLine("gwp_fa_desire_money", "gwp_fa_desire_done", "gwp_fa_collection_result",
-                GwpText.Get("{=gwp_fa_count_money}Here are the money and goods. Choose what you will take."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_count_money),
                 () => _desire != GwpOffenderDesire.SurrenderSelf && _desire != GwpOffenderDesire.DemandDuel && _desire != GwpOffenderDesire.RequestGrace,
                 () => OpenCollection(false));
             starter.AddDialogLine("gwp_fa_collection_paid", "gwp_fa_collection_result", "close_window",
-                GwpText.Get("{=gwp_fa_collection_paid}The money is counted. We are done here."),
+                GwpText.Get(GwpTextCatalog.gwp_fa_collection_paid),
                 () => _collection?.Applied == true && Campaign.Current.BarterManager.LastBarterIsAccepted, FinishCollection);
             starter.AddDialogLine("gwp_fa_collection_empty", "gwp_fa_collection_result", "gwp_fa_empty_options",
-                GwpText.Get("{=gwp_fa_collection_empty}See for yourself. There is no money or property left to give you."), () => _collectionEmpty, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_collection_empty), () => _collectionEmpty, null);
             starter.AddPlayerLine("gwp_fa_accept_empty", "gwp_fa_empty_options", "gwp_fa_empty_done",
-                GwpText.Get("{=gwp_fa_accept_empty}I will report that you could not pay. Your debt remains."), null, null);
+                GwpText.Get(GwpTextCatalog.gwp_fa_accept_empty), null, null);
             starter.AddDialogLine("gwp_fa_empty_done", "gwp_fa_empty_done", "close_window",
-                GwpText.Get("{=gwp_fa_desire_done_line}Then we understand each other."), null, () => Settle(0, "SETTLED_EMPTY"));
+                GwpText.Get(GwpTextCatalog.gwp_fa_desire_done_line), null, () => Settle(0, "SETTLED_EMPTY"));
             starter.AddDialogLine("gwp_fa_collection_cancel", "gwp_fa_collection_result", "gwp_fa_offer_options",
-                GwpText.Get("{=gwp_fa_collection_cancel}No payment has changed hands. What do you intend to do?"), null,
+                GwpText.Get(GwpTextCatalog.gwp_fa_collection_cancel), null,
                 () => GwpAiDiagnostics.WriteFieldArrest("COLLECTION_CANCELLED", "offender=" + _offender?.StringId));
 
             starter.AddDialogLine(
@@ -297,14 +297,14 @@ namespace GreyWardenPolicePurity
                 "gwp_fa_layer1_argument", "gwp_fa_layer2_argument" })
             {
                 starter.AddPlayerLine(token + "_force", token, "gwp_fa_attack",
-                    GwpText.Get("{=gwp_fa_take_by_force}I will enforce the warrant by force."), null, null);
+                    GwpText.Get(GwpTextCatalog.gwp_fa_take_by_force), null, null);
                 if (token != "gwp_fa_charge_options")
                     starter.AddPlayerLine(token + "_leave", token, "gwp_fa_dismissed",
-                        GwpText.Get("{=gwp_fa_leave_it}Ride on, then. This is not finished."), null, null);
+                        GwpText.Get(GwpTextCatalog.gwp_fa_leave_it), null, null);
             }
             foreach (string token in new[] { "gwp_fa_layer2_lost_options", "gwp_fa_layer2_won_options" })
                 starter.AddPlayerLine(token + "_leave", token, "gwp_fa_dismissed",
-                    GwpText.Get("{=gwp_fa_leave_it}Ride on, then. This is not finished."), null, null);
+                    GwpText.Get(GwpTextCatalog.gwp_fa_leave_it), null, null);
         }
 
         private void RegisterArgumentLines(
@@ -378,7 +378,7 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable("GWP_BRIBE_AMOUNT", BribeOffer);
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestDemand, GwpOffenderDesires.IsFullPayment(_desire) && AvailableProperty < EnsureFine()
-                    ? GwpText.Create("{=gwp_case_purse_short}I accept the fine, but my money and goods together are worth only {VAR_1} denars. That is what I can give now.", "VAR_1", AvailableProperty)
+                    ? GwpText.Create(GwpTextCatalog.gwp_case_purse_short, "VAR_1", AvailableProperty)
                     : _voice.Alternate("demand_" + _desire, GwpOffenderDesires.Line(_desire)));
             MBTextManager.SetTextVariable("GWP_CASE_OFFER_AMOUNT", Math.Min(AvailableProperty,
                 EnsureFine() * GwpOffenderDesires.OfferedSharePercent(_desire) / 100));
@@ -390,7 +390,7 @@ namespace GreyWardenPolicePurity
             if (_offender == null) return false;
             MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestSubmit,
                 AvailableProperty < EnsureFine()
-                    ? GwpText.Create("{=gwp_case_purse_short}I accept the fine, but my money and goods together are worth only {VAR_1} denars. That is what I can give now.", "VAR_1", AvailableProperty)
+                    ? GwpText.Create(GwpTextCatalog.gwp_case_purse_short, "VAR_1", AvailableProperty)
                     : _voice.Line(GwpFieldArrestLines.SubmitKey(GwpFieldArrestLines.Read(_offender))));
             return true;
         }
@@ -398,7 +398,7 @@ namespace GreyWardenPolicePurity
         private bool PrepareCollectCondition()
         {
             MBTextManager.SetTextVariable("GWP_CASE_COLLECT_AMOUNT", GwpText.Get(
-                "{=gwp_case_collect_amount}Present property worth {VAR_1} denars. I will report the payment and any shortfall.",
+                GwpTextCatalog.gwp_case_collect_amount,
                 "VAR_1", Math.Min(EnsureFine(), AvailableProperty)));
             return true;
         }
@@ -445,14 +445,14 @@ namespace GreyWardenPolicePurity
         {
             if (_offender != null && _duelPaymentHero == _offender.StringId)
             {
-                MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestOpening, GwpText.Create("{=gwp_duel_return_collect}You won our duel. I still owe you the payment we agreed."));
+                MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestOpening, GwpText.Create(GwpTextCatalog.gwp_duel_return_collect));
                 return true;
             }
             if (HasGrace)
             {
                 MBTextManager.SetTextVariable(GwpTextKeys.FieldArrestOpening, GraceStillRunning
-                    ? GwpText.Create("{=gwp_grace_return_early}You gave me until the day we named. It has not come yet. I have nothing ready for you before then.")
-                    : GwpText.Create("{=gwp_grace_return_due}The time we agreed is up. Let us see what I can pay now."));
+                    ? GwpText.Create(GwpTextCatalog.gwp_grace_return_early)
+                    : GwpText.Create(GwpTextCatalog.gwp_grace_return_due));
                 return true;
             }
             MBTextManager.SetTextVariable(
@@ -536,15 +536,15 @@ namespace GreyWardenPolicePurity
             // 整句在这里拼好再交给对话系统。对话文本在注册时就会被解析一次，
             // 那时案情变量还不存在，所以直接把 {GWP_CRIME} 之类写进句子会显示为空白。
             string victim = string.IsNullOrWhiteSpace(_crime.VictimName)
-                ? GwpText.Get("{=gwp_fieldarrest_victim_unknown}the Wardens' own record")
+                ? GwpText.Get(GwpTextCatalog.gwp_fieldarrest_victim_unknown)
                 : _crime.VictimName;
             if (victim.StartsWith("【调试】", StringComparison.Ordinal))
-                victim = GwpText.Get("{=gwp_field_villagers}local villagers");
+                victim = GwpText.Get(GwpTextCatalog.gwp_field_villagers);
 
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestCharge,
                 GwpText.Get(
-                    "{=gwp_fieldarrest_charge}The Grey Wardens charge you with {VAR_1}, against {VAR_2}. The fine is {VAR_3} denars. They sent me to settle this.",
+                    GwpTextCatalog.gwp_fieldarrest_charge,
                     "VAR_1", DescribeCrime(_crime.CrimeCategory).ToString(),
                     "VAR_2", victim,
                     "VAR_3", _fine.ToString()));
@@ -569,8 +569,8 @@ namespace GreyWardenPolicePurity
 
         private static TextObject DescribeCrime(GwpCrimeCategory category) =>
             category == GwpCrimeCategory.CaravanAttack
-                ? GwpText.Create("{=gwp_fieldarrest_crime_caravan}attacking a caravan under Warden protection")
-                : GwpText.Create("{=gwp_fieldarrest_crime_village}violence against villagers under Warden protection");
+                ? GwpText.Create(GwpTextCatalog.gwp_fieldarrest_crime_caravan)
+                : GwpText.Create(GwpTextCatalog.gwp_fieldarrest_crime_village);
 
         /// <summary>
         /// Two halves, exactly as the Wardens price the player: the deeds themselves, one
@@ -767,8 +767,8 @@ namespace GreyWardenPolicePurity
                 && (_lastResult == PersuasionOptionResult.Failure || _lastResult == PersuasionOptionResult.Miss);
             MBTextManager.SetTextVariable("GWP_ARREST_RESERVATION", retry
                 ? (_layer == NegotiationLayer.PayByTheBook
-                    ? GwpText.Create("{=gwp_fa_retry_payment}I still stand by my terms. Have you another proposal?")
-                    : GwpText.Create("{=gwp_fa_retry_authority}That is not enough for me to accept your authority. Have you another reason?"))
+                    ? GwpText.Create(GwpTextCatalog.gwp_fa_retry_payment)
+                    : GwpText.Create(GwpTextCatalog.gwp_fa_retry_authority))
                 : task.SpokenLine ?? new TextObject(string.Empty));
             for (int index = 0; index < GwpTuning.FieldArrest.ArgumentsPerReservation; index++)
             {
@@ -842,7 +842,7 @@ namespace GreyWardenPolicePurity
 
             if (result == PersuasionOptionResult.CriticalFailure)
             {
-                MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpText.Create("{=gwp_fa_critical_rebuff}Enough. I will hear no more of this."));
+                MBTextManager.SetTextVariable("PERSUASION_REACTION", GwpText.Create(GwpTextCatalog.gwp_fa_critical_rebuff));
             }
             else if ((result == PersuasionOptionResult.Failure
                  || result == PersuasionOptionResult.Miss)
@@ -977,8 +977,8 @@ namespace GreyWardenPolicePurity
 
             InformationManager.DisplayMessage(new InformationMessage(
                 collected >= owed
-                    ? GwpText.Get("{=gwp_fieldarrest_msg_fine}{VAR_1} pays the fine of {VAR_2} denars in full. The money belongs to the Wardens and must be handed to a Warden lord.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString())
-                    : GwpText.Get("{=gwp_fieldarrest_msg_partial}{VAR_1} pays only {VAR_2} of the {VAR_3} denars owed. Hand what you collected to a Warden lord.", "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString(), "VAR_3", owed.ToString()),
+                    ? GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_fine, "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString())
+                    : GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_partial, "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", collected.ToString(), "VAR_3", owed.ToString()),
                 Colors.Green));
 
             ClearState();
@@ -1000,7 +1000,7 @@ namespace GreyWardenPolicePurity
             if (!_offender.IsPrisoner || _offender.PartyBelongedToAsPrisoner != MobileParty.MainParty.Party)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_capture_failed}The target was not taken. The case remains open."), Colors.Red));
+                    GwpText.Get(GwpTextCatalog.gwp_case_capture_failed), Colors.Red));
                 LeaveEncounterPeacefully();
                 ClearState();
                 return;
@@ -1021,7 +1021,7 @@ namespace GreyWardenPolicePurity
                 "; assessed=" + assessed + "; standing=" + standing);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_surrender}{VAR_1} surrenders. Deliver him to a Warden lord.",
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_surrender,
                     "VAR_1", _offender.Name?.ToString() ?? string.Empty),
                 Colors.Green));
 
@@ -1055,7 +1055,7 @@ namespace GreyWardenPolicePurity
                 "; owed=" + owed + "; bribe=" + taken + "; standingUntouched=" + GetNegativeStanding(_crime));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_bribe}{VAR_1} slips you goods worth {VAR_2} denars.",
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_bribe,
                     "VAR_1", _offender.Name?.ToString() ?? string.Empty, "VAR_2", taken.ToString()),
                 Colors.Yellow));
 
@@ -1105,7 +1105,7 @@ namespace GreyWardenPolicePurity
                 RegisterFieldEnforcement(opponent, crime);
                 PoliceEnforcementBehavior.CloseCase(crime, "field_duel_lost");
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_fieldarrest_msg_duel_lost}{VAR_1} wins the duel, and you let him go as agreed.",
+                    GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_duel_lost,
                         "VAR_1", opponent.Name?.ToString() ?? string.Empty),
                     Colors.Yellow));
                 return;
@@ -1114,7 +1114,7 @@ namespace GreyWardenPolicePurity
             var behavior = Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>();
             if (behavior != null) behavior._duelPaymentHero = opponent.StringId ?? string.Empty;
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_duel_payment_pending}You win the duel. You may now collect his fine."), Colors.Green));
+                GwpText.Get(GwpTextCatalog.gwp_duel_payment_pending), Colors.Green));
         }
 
         private string _duelPaymentHero = string.Empty;
@@ -1145,7 +1145,7 @@ namespace GreyWardenPolicePurity
                 _pendingDuelFine = 0;
                 GwpAiDiagnostics.WriteFieldArrest("DUEL_REQUEST_FAILED", "offender=" + _offender.StringId);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_case_duel_failed}The duel could not begin."), Colors.Red));
+                    GwpText.Get(GwpTextCatalog.gwp_case_duel_failed), Colors.Red));
                 LeaveEncounterPeacefully();
             }
             ClearState();
@@ -1158,7 +1158,7 @@ namespace GreyWardenPolicePurity
         {
             if (GwpOffenderDesires.SacrificeOwnMen(_offenderParty) <= 0) return;
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_fieldarrest_msg_own_men}He has several of his own men put to death before you to bear the blame."),
+                GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_own_men),
                 Colors.Red));
         }
 
@@ -1195,7 +1195,7 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestAccept,
                 _paymentAccepted || GwpOffenderDesires.IsFullPayment(_desire)
-                    ? GwpText.Create("{=gwp_fa_accept_count}Show me the money and goods. We will agree what they cover.")
+                    ? GwpText.Create(GwpTextCatalog.gwp_fa_accept_count)
                     : GwpOffenderDesires.PlayerAcceptLine(_desire));
             return true;
         }

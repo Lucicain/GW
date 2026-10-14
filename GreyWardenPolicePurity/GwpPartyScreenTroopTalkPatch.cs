@@ -40,7 +40,7 @@ namespace GreyWardenPolicePurity
             __instance.CanTalk = true;
             if (__instance.TalkHint == null) return;
             __instance.TalkHint.HintText = GwpText.Create(
-                "{=gwp_dispatch_talk_hint}Send these men on an errand");
+                GwpTextCatalog.gwp_dispatch_talk_hint);
         }
     }
 

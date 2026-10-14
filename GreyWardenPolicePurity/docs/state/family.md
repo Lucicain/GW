@@ -1,7 +1,7 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
-> 当前状态：创始领主外貌用户已确认；其余规则现行
-> 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌工作树XML `05a90cfc3254ccd9…`（用户确认 2026-10-15）
+> 当前状态：创始领主外貌用户已确认；宗教介绍改稿已应用；其余规则现行
+> 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
 > 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml`
 > 待实测：见文末
@@ -77,6 +77,8 @@
   目的是让灰袍没有封地也能招兵、拜访、和要人交互。
 
 ## 对话与百科
+
+宗教背景与文本方向统一见 [火誓者总览](firesworn.md)「人物与玩家文本」；旧「世俗警察家族」文字已按获批改稿替换，当前词句见[玩家文字](player-text.md)，前后对照见[文本审阅记录](../reference/faith-text-review/README.md)。（依据：用户反馈 2026-10-15）
 
 - 已认识的灰袍领主见到玩家时，开场白按玩家灰袍声望变化（`GreyWardenLoreBehavior`），创始成员另有百科人物介绍。
 - 灰袍家族百科页（`GwpEncyclopediaClanPageVM`）有灰袍事务入口，不设门槛，见 `map-bar-affairs.md`。

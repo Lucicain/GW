@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../GreyWardenPolicePurity/GwpTextCatalog.g.cs" Link="Production/GwpTextCatalog.g.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpAssetOfferValidationPatch.cs" Link="Production/GwpAssetOfferValidationPatch.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpCaseReceipt.cs" Link="Production/GwpCaseReceipt.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpCrimeCategory.cs" Link="Production/GwpCrimeCategory.cs" />

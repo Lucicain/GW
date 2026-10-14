@@ -33,9 +33,9 @@ namespace GreyWardenPolicePurity
         internal GwpEncyclopediaHeroPageExtension(Hero? hero)
         {
             _hero = hero;
-            DeterrenceButtonText = GwpText.Get("{=gwp_gwpencyclopediaheropagevm_003}Record and deterrence");
+            DeterrenceButtonText = GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_003);
             DeterrenceButtonHint = new HintViewModel(new TextObject(
-                GwpText.Get("{=gwp_gwpencyclopediaheropagevm_004}View this character's permanent criminal record and current Grey Warden deterrence.")));
+                GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_004)));
         }
 
         public string DeterrenceButtonText { get; }
@@ -60,12 +60,12 @@ namespace GreyWardenPolicePurity
             InformationManager.ShowInquiry(
                 new InquiryData(
                     GwpText.Get(
-                        "{=gwp_gwpencyclopediaheropagevm_001}{VAR_1}: Grey Warden criminal record and deterrence",
+                        GwpTextCatalog.gwp_gwpencyclopediaheropagevm_001,
                         "VAR_1", _hero.Name),
                     description,
                     true,
                     false,
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_002}Close"),
+                    GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_002),
                     string.Empty,
                     GwpLinkedInquiryState.End,
                     null),
@@ -75,18 +75,18 @@ namespace GreyWardenPolicePurity
         private static string FormatLastEnforcement(GwpAiDeterrenceState.DeterrenceDetails details)
         {
             if (!details.HasEntry || (details.TotalArrestCount <= 0 && details.SharedDeterrenceCount <= 0))
-                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_005}No record");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_005);
 
             if (details.DaysSinceLastEnforcement < (1f / CampaignTime.HoursInDay))
-                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_006}Just");
+                return GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_006);
 
             if (details.DaysSinceLastEnforcement < 1f)
             {
                 float hours = details.DaysSinceLastEnforcement * CampaignTime.HoursInDay;
-                return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_007}{VAR_1} hours ago", "VAR_1", GwpText.Format(hours, "0.#"));
+                return GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_007, "VAR_1", GwpText.Format(hours, "0.#"));
             }
 
-            return GwpText.Get("{=gwp_gwpencyclopediaheropagevm_008}{VAR_1} days ago", "VAR_1", GwpText.Format(details.DaysSinceLastEnforcement, "0.##"));
+            return GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_008, "VAR_1", GwpText.Format(details.DaysSinceLastEnforcement, "0.##"));
         }
 
         private static string BuildDeterrenceDescription(
@@ -104,23 +104,23 @@ namespace GreyWardenPolicePurity
                 "\n",
                 new[]
                 {
-                    GwpText.Get("{=gwp_det_ui_record}Recorded crimes: {VAR_1} | Arrested by Grey Wardens: {VAR_2}",
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_record,
                         "VAR_1", details.TotalCrimeCount, "VAR_2", details.TotalArrestCount),
                     BuildLedgerBlock(hero),
                     string.Empty,
-                    GwpText.Get("{=gwp_det_ui_village_heading}Harm against villagers"),
-                    GwpText.Get("{=gwp_det_ui_villager_desire}Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%)",
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_village_heading),
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_villager_desire,
                         "VAR_1", FormatDesirePercent(suppression.VillageMultiplier),
                         "VAR_2", FormatSuppressionPercent(suppression.VillageMultiplier)),
-                    GwpText.Get("{=gwp_det_ui_raid_desire}Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers)",
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_raid_desire,
                         "VAR_1", FormatDesirePercent(suppression.VillageMultiplier)),
                     BuildSourceLine(details.VillageDirectPenalty, details.VillageSharedPenalty),
                     BuildRecoveryLine(details.VillageEffectivePenalty,
                         details.VillageRecoveryFloor,
                         details.VillageRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
-                    GwpText.Get("{=gwp_det_ui_caravan_heading}Harm against caravans"),
-                    GwpText.Get("{=gwp_det_ui_caravan_desire}Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%)",
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_caravan_heading),
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_caravan_desire,
                         "VAR_1", FormatDesirePercent(suppression.CaravanMultiplier),
                         "VAR_2", FormatSuppressionPercent(suppression.CaravanMultiplier)),
                     BuildSourceLine(details.CaravanDirectPenalty, details.CaravanSharedPenalty),
@@ -128,10 +128,10 @@ namespace GreyWardenPolicePurity
                         details.CaravanRecoveryFloor,
                         details.CaravanRecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_015}Latest enforcement: {VAR_1}", "VAR_1", FormatLastEnforcement(details)),
-                    GwpText.Get("{=gwp_gwpencyclopediaheropagevm_016}Map status: {VAR_1}", "VAR_1", details.MapStatus),
+                    GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_015, "VAR_1", FormatLastEnforcement(details)),
+                    GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_016, "VAR_1", details.MapStatus),
                     GwpText.Get(
-                        "{=gwp_gwpencyclopediaheropagevm_017}Location: {VAR_1}",
+                        GwpTextCatalog.gwp_gwpencyclopediaheropagevm_017,
                         "VAR_1", locationText)
                 });
         }
@@ -157,40 +157,40 @@ namespace GreyWardenPolicePurity
 
             int pending = GwpFieldReportLedger.Instance?.PendingAssessedFor(hero.StringId) ?? 0;
             if (standing <= 0 && !openCase && pending <= 0)
-                return GwpText.Get("{=gwp_det_ui_ledger_clean}Grey Warden account: nothing outstanding.");
+                return GwpText.Get(GwpTextCatalog.gwp_det_ui_ledger_clean);
 
             var lines = new List<string>
             {
                 string.Empty,
-                GwpText.Get("{=gwp_det_ui_ledger_heading}Grey Warden account")
+                GwpText.Get(GwpTextCatalog.gwp_det_ui_ledger_heading)
             };
 
             if (openCase)
             {
                 lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_case}Open case: {VAR_1} deed(s), {VAR_2} dead on this case alone.",
+                    GwpTextCatalog.gwp_det_ui_ledger_case,
                     "VAR_1", crime!.IncidentCount.ToString(),
                     "VAR_2", Math.Max(0, crime.CivilianCasualties).ToString()));
             }
 
             if (pending > 0)
-                lines.Add(GwpText.Get("{=gwp_case_pending_encyclopedia}Fine assessed: {VAR_1} denars. Paid by the offender: {VAR_2}.",
+                lines.Add(GwpText.Get(GwpTextCatalog.gwp_case_pending_encyclopedia,
                     "VAR_1", pending, "VAR_2", GwpFieldReportLedger.Instance?.PendingCollectedFor(hero.StringId) ?? 0));
 
             // 罚金收的是他名下全部没赎回的人命，不只是这件案子里的。两个数字过去
             // 各说各话，账面上就成了"死了 40 个人，罚 5400"。这里按人命报数。
             if (standing > 0)
                 lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_standing_lives}Civilian lives still on his record: {VAR_1}.",
+                    GwpTextCatalog.gwp_det_ui_ledger_standing_lives,
                     "VAR_1", lives.ToString()));
 
             if (openCase)
                 lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_total}Owed in full: {VAR_1} denars.",
+                    GwpTextCatalog.gwp_det_ui_ledger_total,
                     "VAR_1", GwpFieldArrestPricing.AssessFine(crime!).ToString()));
             else if (standing > 0)
                 lines.Add(GwpText.Get(
-                    "{=gwp_det_ui_ledger_no_case}No case is open against him, but the charge for the dead stands until it is paid off or he is taken."));
+                    GwpTextCatalog.gwp_det_ui_ledger_no_case));
 
             return string.Join("\n", lines);
         }
@@ -198,16 +198,16 @@ namespace GreyWardenPolicePurity
         private static string BuildSourceLine(float personal, float transmitted)
         {
             string leading = personal > transmitted + GwpTuning.Deterrence.ForgetThreshold
-                ? GwpText.Get("{=gwp_det_ui_source_personal}mainly personal experience")
+                ? GwpText.Get(GwpTextCatalog.gwp_det_ui_source_personal)
                 : transmitted > personal + GwpTuning.Deterrence.ForgetThreshold
-                    ? GwpText.Get("{=gwp_det_ui_source_transmitted}mainly warnings passed on by clan members or witnesses")
+                    ? GwpText.Get(GwpTextCatalog.gwp_det_ui_source_transmitted)
                     : personal <= GwpTuning.Deterrence.ForgetThreshold &&
                       transmitted <= GwpTuning.Deterrence.ForgetThreshold
-                        ? GwpText.Get("{=gwp_det_ui_source_none}no active deterrence")
-                        : GwpText.Get("{=gwp_det_ui_source_balanced}personal experience and passed-on warnings are similar");
+                        ? GwpText.Get(GwpTextCatalog.gwp_det_ui_source_none)
+                        : GwpText.Get(GwpTextCatalog.gwp_det_ui_source_balanced);
 
             return GwpText.Get(
-                "{=gwp_det_ui_source}Source of suppression: personal {VAR_1} | passed on {VAR_2} ({VAR_3})",
+                GwpTextCatalog.gwp_det_ui_source,
                 "VAR_1", GwpText.Format(personal, "0.##"),
                 "VAR_2", GwpText.Format(transmitted, "0.##"),
                 "VAR_3", leading);
@@ -225,42 +225,42 @@ namespace GreyWardenPolicePurity
                 if (currentPenalty <=
                     recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance)
                     return GwpText.Get(
-                        "{=gwp_det_ui_recovery_floor_complete}Minimum suppression: permanently fixed at level {VAR_1}",
+                        GwpTextCatalog.gwp_det_ui_recovery_floor_complete,
                         "VAR_1", floor);
 
                 string floorDuration = FormatRecoveryDuration(daysRemaining);
                 return recoveryPaused
                     ? GwpText.Get(
-                        "{=gwp_det_ui_recovery_floor_paused}Estimated recovery to the level-{VAR_1} minimum: recovery is currently paused; about {VAR_2} after it resumes",
+                        GwpTextCatalog.gwp_det_ui_recovery_floor_paused,
                         "VAR_1", floor, "VAR_2", floorDuration)
                     : GwpText.Get(
-                        "{=gwp_det_ui_recovery_floor_active}Estimated recovery to the level-{VAR_1} minimum: about {VAR_2}",
+                        GwpTextCatalog.gwp_det_ui_recovery_floor_active,
                         "VAR_1", floor, "VAR_2", floorDuration);
             }
 
             if (currentPenalty <= GwpTuning.Deterrence.ForgetThreshold)
                 return GwpText.Get(
-                    "{=gwp_det_ui_recovery_complete}Estimated return to normal: already restored");
+                    GwpTextCatalog.gwp_det_ui_recovery_complete);
 
             string duration = FormatRecoveryDuration(daysRemaining);
 
             return recoveryPaused
                 ? GwpText.Get(
-                    "{=gwp_det_ui_recovery_paused}Estimated return to normal: recovery is currently paused; about {VAR_1} after it resumes",
+                    GwpTextCatalog.gwp_det_ui_recovery_paused,
                     "VAR_1", duration)
                 : GwpText.Get(
-                    "{=gwp_det_ui_recovery_active}Estimated return to normal: about {VAR_1}",
+                    GwpTextCatalog.gwp_det_ui_recovery_active,
                     "VAR_1", duration);
         }
 
         private static string FormatRecoveryDuration(float daysRemaining) =>
             daysRemaining < 1f
                 ? GwpText.Get(
-                    "{=gwp_det_ui_recovery_hours}{VAR_1} hours",
+                    GwpTextCatalog.gwp_det_ui_recovery_hours,
                     "VAR_1", GwpText.Format(
                         daysRemaining * CampaignTime.HoursInDay, "0.#"))
                 : GwpText.Get(
-                    "{=gwp_det_ui_recovery_days}{VAR_1} days",
+                    GwpTextCatalog.gwp_det_ui_recovery_days,
                     "VAR_1", GwpText.Format(daysRemaining, "0.#"));
 
         private static string FormatDesirePercent(float multiplier) =>

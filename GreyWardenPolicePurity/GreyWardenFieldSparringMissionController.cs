@@ -340,7 +340,7 @@ namespace GreyWardenPolicePurity
                 focusableObjectInformation.SecondaryInteractionText
                     .SetTextVariable(
                         "ACTION",
-                        new TextObject("{=gwp_sparring_talk}Talk"));
+                        new TextObject(GwpTextCatalog.gwp_sparring_talk));
             }
 
             focusableObjectInformation.IsActive = true;
@@ -835,14 +835,14 @@ namespace GreyWardenPolicePurity
 
             string result = _ruleViolationLoss
                 ? GwpText.Get(
-                    "{=gwp_sparring_field_rule_loss}You did not dismount in time. You lose.")
+                    GwpTextCatalog.gwp_sparring_field_rule_loss)
                 : _playerWon
                     ? GwpText.Get(
-                        "{=gwp_sparring_field_win}{OPPONENT} gives up. You won.",
+                        GwpTextCatalog.gwp_sparring_field_win,
                         "OPPONENT",
                         _opponent.Name)
                     : GwpText.Get(
-                        "{=gwp_sparring_field_loss}You lost to {OPPONENT}.",
+                        GwpTextCatalog.gwp_sparring_field_loss,
                         "OPPONENT",
                         _opponent.Name);
             MBInformationManager.AddQuickInformation(new TextObject(result));
@@ -1619,7 +1619,7 @@ namespace GreyWardenPolicePurity
             MBInformationManager.AddQuickInformation(
                 new TextObject(
                     GwpText.Get(
-                        "{=gwp_sparring_begin}The match has started.")));
+                        GwpTextCatalog.gwp_sparring_begin)));
         }
 
         private void BeginNativeDismount(

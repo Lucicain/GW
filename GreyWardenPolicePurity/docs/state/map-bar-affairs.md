@@ -2,7 +2,7 @@
 
 > 当前状态：用户实测确认（2026-10-02）
 > 最后验收：`a3dc3c9`（2026-10-02 用户确认）
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`GwpAffairsNavigation.cs` `_Module/GUI/Icons/gwp_affairs.png` `tools/ui-icons/make_affairs_icon.py`
 > 待实测：无
 

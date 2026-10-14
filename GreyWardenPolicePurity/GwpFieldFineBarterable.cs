@@ -25,7 +25,7 @@ namespace GreyWardenPolicePurity
         }
 
         public override string StringID => "gwp_case_payment";
-        public override TextObject Name => GwpText.Create("{=gwp_case_payment}Case fines delivered to the judicial treasury");
+        public override TextObject Name => GwpText.Create(GwpTextCatalog.gwp_case_payment);
         public override int MaxAmount => _maximum;
         public override int GetUnitValueForFaction(IFaction faction) =>
             faction == _receiver.MapFaction || faction == _receiver.Clan ? 0 : -1;

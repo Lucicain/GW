@@ -161,7 +161,7 @@ namespace GreyWardenPolicePurity
                     AddFactionReason(
                         buckets,
                         faction,
-                        GwpText.Get("{=gwp_gwppolicewarreasonservice_007}No outstanding warrant remains. The Grey Wardens are arranging peace."));
+                        GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_007));
                 }
             }
 
@@ -269,10 +269,10 @@ namespace GreyWardenPolicePurity
             CrimeRecord? crime = task.TargetCrime;
             MobileParty? offender = crime?.Offender;
 
-            string policePartyName = ResolvePartyName(task.PolicePartyId, GwpText.Get("{=gwp_gwppolicewarreasonservice_023}Unrecorded enforcement party"));
-            string offenderName = offender?.Name?.ToString() ?? GwpText.Get("{=gwp_gwppolicewarreasonservice_024}Unknown Target");
+            string policePartyName = ResolvePartyName(task.PolicePartyId, GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_023));
+            string offenderName = offender?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_024);
             string actionType = GetActionType(task, offender);
-            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get("{=gwp_gwppolicewarreasonservice_025}Undocumented") : GwpText.CrimeType(crime!.CrimeType);
+            string crimeType = string.IsNullOrWhiteSpace(crime?.CrimeType) ? GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_025) : GwpText.CrimeType(crime!.CrimeType);
             string stage = DescribeTaskStage(task);
 
             // Names the case rather than restating it.  The long form used to
@@ -281,7 +281,7 @@ namespace GreyWardenPolicePurity
             // two clan-page buttons felt like the same screen twice.  Victim,
             // location and filing time are one row away in the same list.
             return GwpText.Get(
-                "{=gwp_gwppolicewarreasonservice_029}{VAR_1}: {VAR_2} is pursuing {VAR_3} over {VAR_4} — {VAR_5}",
+                GwpTextCatalog.gwp_gwppolicewarreasonservice_029,
                 "VAR_1", actionType,
                 "VAR_2", policePartyName,
                 "VAR_3", offenderName,
@@ -292,32 +292,32 @@ namespace GreyWardenPolicePurity
         private static string GetActionType(PoliceTask task, MobileParty? offender)
         {
             if (task.IsPlayerBountyEscort)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_030}Player bounty collaboration");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_030);
 
             if (offender?.IsMainParty == true)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_031}Player case enforcement");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_031);
 
             if (task.WarDeclared)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_032}Cross-faction pursuit");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_032);
 
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_033}Law enforcement contract");
+            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_033);
         }
 
         private static string DescribeTaskStage(PoliceTask task)
         {
             if (task.IsPlayerBountyEscort)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_034}A Grey Warden party is escorting the player in pursuit of the quarry");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_034);
 
             if (task.IsEscortingPlayer)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_035}The target has been defeated and is escorting the player");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_035);
 
             if (task.WarDeclared)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_036}Formal war declared; pursuit continues");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_036);
 
             if (task.TargetCrime != null)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_037}A case has been filed for tracking, but it has not been upgraded to a formal war.");
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_037);
 
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_038}Not recorded");
+            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_038);
         }
 
         private static string ResolvePartyName(string? partyId, string fallback)
@@ -338,9 +338,9 @@ namespace GreyWardenPolicePurity
         {
             Settlement? nearestTown = GwpCommon.FindNearestTown(position);
             if (nearestTown != null)
-                return GwpText.Get("{=gwp_gwppolicewarreasonservice_042}Near {VAR_1} ({VAR_2}, {VAR_3})", "VAR_1", nearestTown.Name, "VAR_2", GwpText.Format(position.x, "0.0"), "VAR_3", GwpText.Format(position.y, "0.0"));
+                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_042, "VAR_1", nearestTown.Name, "VAR_2", GwpText.Format(position.x, "0.0"), "VAR_3", GwpText.Format(position.y, "0.0"));
 
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_043}wild ({VAR_1}, {VAR_2})", "VAR_1", GwpText.Format(position.x, "0.0"), "VAR_2", GwpText.Format(position.y, "0.0"));
+            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_043, "VAR_1", GwpText.Format(position.x, "0.0"), "VAR_2", GwpText.Format(position.y, "0.0"));
         }
 
         private static string FormatCampaignDate(double hours)
@@ -348,14 +348,14 @@ namespace GreyWardenPolicePurity
             CampaignTime time = CampaignTime.Hours((float)hours);
             string season = time.GetSeasonOfYear switch
             {
-                CampaignTime.Seasons.Spring => GwpText.Get("{=gwp_gwppolicewarreasonservice_047}spring"),
-                CampaignTime.Seasons.Summer => GwpText.Get("{=gwp_gwppolicewarreasonservice_048}Summer"),
-                CampaignTime.Seasons.Autumn => GwpText.Get("{=gwp_gwppolicewarreasonservice_049}Autumn"),
-                CampaignTime.Seasons.Winter => GwpText.Get("{=gwp_gwppolicewarreasonservice_050}Winter"),
-                _ => GwpText.Get("{=gwp_gwppolicewarreasonservice_051}Unknown season")
+                CampaignTime.Seasons.Spring => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_047),
+                CampaignTime.Seasons.Summer => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_048),
+                CampaignTime.Seasons.Autumn => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_049),
+                CampaignTime.Seasons.Winter => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_050),
+                _ => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_051)
             };
 
-            return GwpText.Get("{=gwp_gwppolicewarreasonservice_052}Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00", "VAR_1", time.GetYear, "VAR_2", season, "VAR_3", time.GetDayOfSeason + 1, "VAR_4", time.GetHourOfDay);
+            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_052, "VAR_1", time.GetYear, "VAR_2", season, "VAR_3", time.GetDayOfSeason + 1, "VAR_4", time.GetHourOfDay);
         }
     }
 }

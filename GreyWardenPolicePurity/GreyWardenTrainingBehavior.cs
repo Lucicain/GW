@@ -171,7 +171,7 @@ namespace GreyWardenPolicePurity
                     TrainerPartyId = trainer?.StringId ?? string.Empty,
                     SettlementName = settlement?.Name?.ToString() ??
                                      (string.IsNullOrWhiteSpace(task.SettlementId)
-                                         ? GwpText.Get("{=gwp_training_ledger_pending_place}To be selected")
+                                         ? GwpText.Get(GwpTextCatalog.gwp_training_ledger_pending_place)
                                          : task.SettlementId),
                     QueuedTime = CampaignTime.Hours((float)task.QueuedTimeHours),
                     Stage = GetTaskStage(task, trainer),

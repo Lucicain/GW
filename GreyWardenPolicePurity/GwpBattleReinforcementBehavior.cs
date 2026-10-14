@@ -122,7 +122,7 @@ namespace GreyWardenPolicePurity
             {
                 if (oldAttempts == 0 && side.Checks.Attempts > 0 && recipient == Mission.MainAgent)
                     MBInformationManager.AddQuickInformation(new TaleWorlds.Localization.TextObject(
-                        GwpText.Get("{=gwp_gwpbattlereinforcementbehavior_001}You pray for help to come.")), 0);
+                        GwpText.Get(GwpTextCatalog.gwp_gwpbattlereinforcementbehavior_001)), 0);
                 return;
             }
             side.Team = recipient!.Team;
@@ -200,8 +200,8 @@ namespace GreyWardenPolicePurity
                 Mission.GetMissionBehavior<GwpSyndicateMusicBehavior>()?.NotifyReinforcementArrival(side.Team.Side, spawned);
                 bool friendly = side.Team.Side == Mission.PlayerTeam.Side;
                 MBInformationManager.AddQuickInformation(new TaleWorlds.Localization.TextObject(GwpText.Get(friendly
-                    ? "{=gwp_gwpbattlereinforcementbehavior_002}Grey Warden reinforcements have arrived!"
-                    : "{=gwp_battle_support_enemy}Grey Warden reinforcements have joined the enemy!")), 0);
+                    ? GwpTextCatalog.gwp_gwpbattlereinforcementbehavior_002
+                    : GwpTextCatalog.gwp_battle_support_enemy)), 0);
                 if (_horn == null) { _hornPlayed = 0; StartHorn(); }
             }
         }

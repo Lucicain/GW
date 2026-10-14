@@ -157,7 +157,7 @@ namespace GreyWardenPolicePurity
             }
             if (__instance.DefaultBehavior == AiBehavior.Hold && GreyWardenFamilyBehavior.IsTrainingParty(__instance))
             {
-                __result = new TextObject("{=gwp_status_training}Drilling the Wardens' recruits.");
+                __result = new TextObject(GwpTextCatalog.gwp_status_training);
                 return;
             }
 
@@ -168,7 +168,7 @@ namespace GreyWardenPolicePurity
                     __instance, out MobileParty? quarry) && quarry != null)
             {
                 var pursuit = new TextObject(
-                    "{=gwp_location_duty_pursuing}Pursuing {TARGET_PARTY}.");
+                    GwpTextCatalog.gwp_location_duty_pursuing);
                 pursuit.SetTextVariable("TARGET_PARTY", quarry.Name);
                 __result = pursuit;
                 return;
@@ -180,7 +180,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             var text = new TextObject(
-                "{=gwp_location_duty_travelling}Travelling toward the last known position of {TARGET_PARTY}.");
+                GwpTextCatalog.gwp_location_duty_travelling);
             text.SetTextVariable("TARGET_PARTY", target.Name);
             __result = text;
         }

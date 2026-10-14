@@ -37,10 +37,10 @@ namespace GreyWardenPolicePurity
         private static void AddDialogs(CampaignGameStarter starter)
         {
             starter.AddPlayerLine("gwp_warden_marry_ask", "hero_main_options", "gwp_warden_marry_yes",
-                GwpText.Get("{=gwp_warden_marry_ask}Be my wife."),
+                GwpText.Get(GwpTextCatalog.gwp_warden_marry_ask),
                 CanPropose, null, 120);
             starter.AddDialogLine("gwp_warden_marry_yes", "gwp_warden_marry_yes", "close_window",
-                GwpText.Get("{=gwp_warden_marry_yes}Then it is settled. I am yours, and you are mine."),
+                GwpText.Get(GwpTextCatalog.gwp_warden_marry_yes),
                 null, Marry, 120);
         }
 

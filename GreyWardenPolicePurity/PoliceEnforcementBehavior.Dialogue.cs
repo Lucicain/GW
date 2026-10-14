@@ -62,7 +62,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_pre",
                 "gwp_enforcement_pay_barter_pre",
                 "gwp_enforcement_pay_barter_screen",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_001}By Grey Warden ordinance, the lawful fine must first be paid."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_001),
                 null,
                 null,
                 100);
@@ -80,7 +80,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_post_success",
                 "gwp_enforcement_pay_barter_post",
                 "close_window",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_002}The fine is acknowledged. This case is closed; you may depart."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_002),
                 EnforcementBarterSuccessfulCondition,
                 OnEnforcementPayAcceptedConsequence,
                 100);
@@ -89,7 +89,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_pay_barter_post_failed",
                 "gwp_enforcement_pay_barter_post",
                 "gwp_enforcement_options",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_003}Your offer falls below the lawful fine. You may raise it or choose another response."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_003),
                 () => !EnforcementBarterSuccessfulCondition(),
                 OnEnforcementPayRejectedConsequence,
                 100);
@@ -98,7 +98,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_atonement",
                 "gwp_enforcement_options",
                 "gwp_enforcement_atonement_result",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_004}I confess the offence and accept judgment. Grant me a charge of atonement."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_004),
                 EnforcementAtonementCondition,
                 OnEnforcementAtonementConsequence,
                 100);
@@ -116,7 +116,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_atonement_failed",
                 "gwp_enforcement_atonement_result",
                 "gwp_enforcement_options",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_005}No charge of atonement can presently be assigned. You may pay the fine or refuse the order."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_005),
                 () => !_enforcementAtonementAssigned,
                 null,
                 100);
@@ -125,7 +125,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight",
                 "gwp_enforcement_options",
                 "gwp_enforcement_fight_response",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_006}I refuse the order. Let arms decide."),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_006),
                 () => _dialogTask?.TargetCrimeId == CrimePool.PlayerCrimeId,
                 null,
                 100);
@@ -134,7 +134,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_companion_leave",
                 "gwp_enforcement_options",
                 "close_window",
-                GwpText.Get("{=gwp_enforcement_companion_leave}I cannot settle this companion's case now."),
+                GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_leave),
                 () => _dialogTask?.TargetCrimeId != CrimePool.PlayerCrimeId,
                 QueueFinishEnforcementEncounter,
                 100);
@@ -143,7 +143,7 @@ namespace GreyWardenPolicePurity
                 "gwp_enforcement_fight_response",
                 "gwp_enforcement_fight_response",
                 "close_window",
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_007}Resistance is entered upon the roll. Grey Wardens—make the arrest!"),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_007),
                 null,
                 OnEnforcementFightConsequence,
                 100);
@@ -214,16 +214,16 @@ namespace GreyWardenPolicePurity
                 "; fine=" + _dialogFine +
                 "; playerGold=" + playerGold);
             string payInfo = playerGold >= _dialogFine
-                ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_008}You carry {VAR_1} denars, enough to pay in full.", "VAR_1", playerGold)
+                ? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_008, "VAR_1", playerGold)
                 : playerCase
-                    ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_009}You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment.", "VAR_1", playerGold)
-                    : GwpText.Get("{=gwp_enforcement_companion_insufficient}You carry {VAR_1} denars. Return when you can pay the fine in full.", "VAR_1", playerGold);
+                    ? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_009, "VAR_1", playerGold)
+                    : GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_insufficient, "VAR_1", playerGold);
 
             MBTextManager.SetTextVariable(GwpTextKeys.EnforcementGreeting,
                 playerCase
-                    ? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_010}Stand! The Grey Wardens come under warrant. Your present standing is {VAR_1},", "VAR_1", Math.Abs(rep)) +
-                      GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_011}and the lawful fine in this case is {VAR_1} denars. {VAR_2}", "VAR_1", _dialogFine, "VAR_2", payInfo)
-                    : GwpText.Get("{=gwp_enforcement_companion_charge}Stand! {VAR_1} travels with you under a Grey Warden warrant. The fine for {VAR_1}'s case is {VAR_2} denars. {VAR_3}",
+                    ? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_010, "VAR_1", Math.Abs(rep)) +
+                      GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_011, "VAR_1", _dialogFine, "VAR_2", payInfo)
+                    : GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_charge,
                         "VAR_1", crime.OffenderHero?.Name?.ToString() ?? crime.OffenderHeroId,
                         "VAR_2", _dialogFine, "VAR_3", payInfo));
 
@@ -234,7 +234,7 @@ namespace GreyWardenPolicePurity
         {
             MBTextManager.SetTextVariable(
                 GwpTextKeys.EnforcementPayText,
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_012}Pay the lawful fine ({VAR_1} denars; clear the warrant)", "VAR_1", _dialogFine));
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_012, "VAR_1", _dialogFine));
             return _dialogTask?.TargetCrimeId == CrimePool.PlayerCrimeId;
         }
 
@@ -246,7 +246,7 @@ namespace GreyWardenPolicePurity
                 return false;
 
             MBTextManager.SetTextVariable("GWP_COMPANION_PAY_OPTION",
-                GwpText.Get("{=gwp_enforcement_companion_pay}Pay this companion's fine ({VAR_1} denars)",
+                GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_pay,
                     "VAR_1", _dialogFine));
             return true;
         }
@@ -282,7 +282,7 @@ namespace GreyWardenPolicePurity
                 ?.RegisterEnforcementOutcome(null, accused, crime.CrimeCategory, countAsArrest: true);
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_enforcement_companion_paid}{VAR_1} has paid the fine of {VAR_2} denars. The case is closed.",
+                GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_paid,
                     "VAR_1", accused.Name?.ToString() ?? accused.StringId,
                     "VAR_2", _dialogFine), Colors.Yellow));
             QueueFinishEnforcementEncounter();
@@ -318,7 +318,7 @@ namespace GreyWardenPolicePurity
 
             SetAtonementFlowState(AtonementFlowState.Active);
             _atonementTargetPartyId = offender.StringId ?? string.Empty;
-            _atonementTargetName = offender.Name?.ToString() ?? GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_013}unknown quarry");
+            _atonementTargetName = offender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_013);
             _atonementTargetHeroId = targetCrime.OffenderHeroId ?? string.Empty;
             _atonementTargetCrimeCategory = (int)targetCrime.CrimeCategory;
             _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
@@ -337,12 +337,12 @@ namespace GreyWardenPolicePurity
             GwpPeace.SettlePlayerCase();
 
             MBTextManager.SetTextVariable(GwpTextKeys.EnforcementAtonementText,
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_014}A charge of atonement has been issued: pursue {VAR_1} (strength when assigned: {VAR_2}).", "VAR_1", _atonementTargetName, "VAR_2", targetSizeSnapshot) +
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_015}Fulfilment may restore up to {VAR_1} standing, but never above 0;", "VAR_1", _atonementReputationReward) +
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_016}failure will impose a further loss of 5 standing."));
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_014, "VAR_1", _atonementTargetName, "VAR_2", targetSizeSnapshot) +
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_015, "VAR_1", _atonementReputationReward) +
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_016));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_017}The Wardens charge you to defeat {VAR_1} within {VAR_2} days in atonement.", "VAR_1", _atonementTargetName, "VAR_2", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0")),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_017, "VAR_1", _atonementTargetName, "VAR_2", GwpText.Format(GwpTuning.Enforcement.AtonementDeadlineDays, "0")),
                 Colors.Yellow));
 
             return true;
@@ -358,7 +358,7 @@ namespace GreyWardenPolicePurity
         private void OnEnforcementPayBarterConsequence()
         {
             _enforcementBarterInProgress =
-                StartEnforcementPaymentBarter(_dialogPolice, _dialogFine, GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_018}Pay the lawful fine"));
+                StartEnforcementPaymentBarter(_dialogPolice, _dialogFine, GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_018));
         }
 
         private void OnEnforcementPayRejectedConsequence()
@@ -392,7 +392,7 @@ namespace GreyWardenPolicePurity
                 "; police=" + (_dialogPolice?.StringId ?? "-"));
 
             InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_019}The fine of {VAR_1} denars is paid. You are no longer wanted.", "VAR_1", paid),
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_019, "VAR_1", paid),
                 Colors.Yellow));
 
             // The line's normal target is close_window.  Finish the native
@@ -472,7 +472,7 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(_dialogPolice);
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get("{=gwp_policeenforcementbehavior_dialogue_020}You refuse to submit. The Wardens will take you by force."),
+                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_020),
                     Colors.Red));
             }
             finally

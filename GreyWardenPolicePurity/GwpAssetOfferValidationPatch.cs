@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
                 return true;
             }
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                "{=gwp_offer_changed}What you hand over does not match the agreement. Adjust it and try again.")));
+                GwpTextCatalog.gwp_offer_changed)));
             return false;
         }
     }
@@ -89,7 +89,7 @@ namespace GreyWardenPolicePurity
         }
 
         internal static void UpdateLabel(BarterVM vm, GwpAssetPayment payment) => vm.OfferLbl = GwpText.Get(
-            "{=gwp_dispatch_manifest_offer}Load {VAR_1} / {VAR_2}", "VAR_1", payment.OfferedValue, "VAR_2", payment.SuggestedTarget);
+            GwpTextCatalog.gwp_dispatch_manifest_offer, "VAR_1", payment.OfferedValue, "VAR_2", payment.SuggestedTarget);
     }
 
     [HarmonyPatch(typeof(BarterVM), "RefreshOfferLabel")]

@@ -2,8 +2,8 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`25cf8a0`（2026-10-15）
-> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `_Module/ModuleData/Languages/**` `tools/Verify-ContentKeys.ps1`
+> 已复核至：`1f84971`（2026-10-15）
+> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
@@ -54,8 +54,7 @@
 
 ## 文本与本地化
 
-- 代码里写英文原文并带键：`GwpText.Get("{=gwp_xxx}English text", "VAR", value)`。
-  中文在 `_Module/ModuleData/Languages/CNs/std_gwp_strings_xml-zho-CN.xml`。英文没有单独的语言文件，用代码里的原文。
+- 中英文词句、情境及生成规则只在[玩家文字](player-text.md)维护。行为代码用 `GwpText.Get(GwpTextCatalog.gwp_xxx, "VAR", value)`，英文默认文本由编译常量带入，中文由生成的原版语言XML提供。
 - 变量：TextObject 原样嵌入，int 按整数，float 保留两位，其余转成字符串（`GwpText.Set`）。
 - 对话里用的整句变量名集中在 `GwpTextKeys`。
 - 罪名在案卷里存的是写入时那门语言的文字，显示时由 `GwpText.CrimeType` 中英两种写法都认，再翻成当前语言。
@@ -72,7 +71,7 @@
 3. 书面、简短、陈述句，照原版提示的口气（「某某加入了你的队伍」）；不用口语和俚语（「梁子」「了了」「想怎么样就怎么样」「不记这笔账」）。
 4. 称呼统一：组织叫「灰袍」，领主叫「灰袍领主」，纠察队叫「灰袍纠察队」；不用「灰袍守卫」「灰袍警察」「练兵官」。
 
-火誓者的玩家文字另有不写开发用语的要求，见 [火誓者](firesworn.md)「人物与玩家文本」。
+宗教设定与统一方向见 [火誓者](firesworn.md)「人物与玩家文本」；获批改稿已应用，当前词句独立维护于[玩家文字](player-text.md)，开发标识保持原名。（依据：用户反馈与整理状态 2026-10-15）
 
 ## 存档
 

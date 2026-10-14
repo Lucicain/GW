@@ -135,7 +135,7 @@ namespace GreyWardenPolicePurity
                 string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
             if (task == null)
                 return false;
-            text = GwpText.Create("{=gwp_status_rebuilding}Rebuilding {VILLAGE} ({HOURS} hours left).",
+            text = GwpText.Create(GwpTextCatalog.gwp_status_rebuilding,
                 "VILLAGE", task.VillageName,
                 "HOURS", Math.Max(1, (int)Math.Ceiling(task.WorkEndHours - CampaignTime.Now.ToHours)));
             return true;
@@ -282,7 +282,7 @@ namespace GreyWardenPolicePurity
             {
                 VillageSettlementId = village.StringId,
                 VillageName = village.Name?.ToString() ??
-                              GwpText.Get("{=gwp_reconstruction_001}nameless village"),
+                              GwpText.Get(GwpTextCatalog.gwp_reconstruction_001),
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
         }
@@ -372,12 +372,12 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.ClearIntent(police);
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        GwpText.Get("{=gwp_reconstruction_002}{VAR_1} completed the reconstruction of {VAR_2}.",
+                        GwpText.Get(GwpTextCatalog.gwp_reconstruction_002,
                             "VAR_1", police.LeaderHero?.Name?.ToString() ?? police.Name?.ToString() ?? string.Empty,
                             "VAR_2", village.Name?.ToString() ?? task.VillageName), Colors.Green));
                     GwpFireswornBehavior.OnVillageRebuilt(village);
                     GwpSettlementNotices.Post(village, police.LeaderHero,
-                        GwpText.Get("{=gwp_notice_rebuilt}Rebuilt the village"));
+                        GwpText.Get(GwpTextCatalog.gwp_notice_rebuilt));
                     GwpAiDiagnostics.WriteAction(police, "RECONSTRUCTION_COMPLETED",
                         "village=" + village.StringId + "; cost=" + cost +
                         "; grant=" + PoliceResourceManager.SuccessfulCaseReward +

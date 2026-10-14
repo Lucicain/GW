@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <!-- Bannerlord's module schema requires a numeric three-part version.
-         Formal release v1.4-r14 is represented internally as 1.4.14;
+         Local player build v1.4-r15 is represented internally as 1.4.15;
          this is the mod revision, not a Bannerlord version dependency gate. -->
-    <Version>1.4.14</Version>
+    <Version>1.4.15</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -33,6 +33,9 @@
   <PropertyGroup Condition="'$(GwpDiagnosticsEnabled)' == 'true'">
     <DefineConstants>$(DefineConstants);GWP_DIAGNOSTICS</DefineConstants>
   </PropertyGroup>
+  <Target Name="VerifyPlayerTextSources" BeforeTargets="BeforeBuild">
+    <Exec Command="python &quot;$(MSBuildProjectDirectory)\..\tools\Generate-PlayerText.py&quot; --check" />
+  </Target>
 
   <!-- Which game generation this build targets. 1.5.0 changed the abstract
        AgentApplyDamageModel.CalculatePassiveAttackDamage from

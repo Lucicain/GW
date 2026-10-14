@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已验收；抓捕结案后的战后崩溃已修复并经用户实测（2026-10-14）
 > 最后验收：`9d005bb`
-> 已复核至：`25cf8a0`（2026-10-15）
+> 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：无（追截队见 [立即追截队](case-interceptors.md)，宣战前的使者见 [灰袍使者](case-envoy.md)）
 

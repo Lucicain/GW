@@ -30,25 +30,25 @@ namespace GreyWardenPolicePurity
             switch (value ?? string.Empty)
             {
                 case "攻击村民": case "Attack villager": case "Attack villagers":
-                    return Get("{=gwp_crime_attack_villagers}Attack upon villagers");
+                    return Get(GwpTextCatalog.gwp_crime_attack_villagers);
                 case "攻击商队": case "Attack caravan":
-                    return Get("{=gwp_crime_attack_caravan}Attack upon a caravan");
+                    return Get(GwpTextCatalog.gwp_crime_attack_caravan);
                 case "劫掠村庄": case "Raid village": case "Raid the village":
-                    return Get("{=gwp_crime_raid_village}Raid upon a village");
+                    return Get(GwpTextCatalog.gwp_crime_raid_village);
                 case "强迫募兵": case "Forced Recruitment": case "Force recruits":
-                    return Get("{=gwp_crime_forced_recruitment}Forced recruitment");
+                    return Get(GwpTextCatalog.gwp_crime_forced_recruitment);
                 case "强征给养": case "Forced Requisition of Supplies": case "Force supplies":
-                    return Get("{=gwp_crime_forced_supplies}Forced requisition of supplies");
+                    return Get(GwpTextCatalog.gwp_crime_forced_supplies);
                 case "劫掠商队": case "Raid the caravan": case "Raid Caravan":
-                    return Get("{=gwp_crime_raid_caravan}Raid upon a caravan");
+                    return Get(GwpTextCatalog.gwp_crime_raid_caravan);
                 case "杀害村民": case "Kill the villagers":
-                    return Get("{=gwp_crime_kill_villagers}Slaying of villagers");
+                    return Get(GwpTextCatalog.gwp_crime_kill_villagers);
                 case "参与劫掠村庄": case "Participate in raiding village":
-                    return Get("{=gwp_crime_join_village_raid}Participation in a village raid");
+                    return Get(GwpTextCatalog.gwp_crime_join_village_raid);
                 case "妨碍执法": case "Obstructed enforcement":
-                    return Get("{=gwp_crime_obstruct_law}Obstruction of the law");
+                    return Get(GwpTextCatalog.gwp_crime_obstruct_law);
                 case "帮助罪犯对抗灰袍守卫": case "Helped criminals against the Grey Wardens":
-                    return Get("{=gwp_crime_aid_criminals}Aiding malefactors against the Grey Wardens");
+                    return Get(GwpTextCatalog.gwp_crime_aid_criminals);
                 default:
                     return value ?? string.Empty;
             }

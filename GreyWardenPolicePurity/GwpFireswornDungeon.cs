@@ -145,10 +145,10 @@ namespace GreyWardenPolicePurity
             RecordVisit(party, village, prisoners: prisoners, donated: armoryItems + goodsCount);
             if (prisoners > 0)
                 GwpSettlementNotices.Post(village, party.LeaderHero,
-                    GwpText.Get("{=gwp_notice_prisoners}Handed over {COUNT} prisoners", "COUNT", prisoners));
+                    GwpText.Get(GwpTextCatalog.gwp_notice_prisoners, "COUNT", prisoners));
             if (armoryItems + goodsCount > 0)
                 GwpSettlementNotices.Post(village, party.LeaderHero,
-                    GwpText.Get("{=gwp_notice_donated}Donated {COUNT} items", "COUNT", armoryItems + goodsCount));
+                    GwpText.Get(GwpTextCatalog.gwp_notice_donated, "COUNT", armoryItems + goodsCount));
             GwpAiDiagnostics.WriteFaith("HANDOVER",
                 "party=" + party.StringId + "; village=" + village.StringId + "; prisoners=" + prisoners +
                 "; dungeon=" + dungeon.TotalManCount + "; goods=" + goodsCount + "; goodsValue=" + goodsValue +

@@ -39,8 +39,6 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 ## 原版行为不明时先查证
 
-当前村庄后台开发范围按 [火誓者总览](GreyWardenPolicePurity/docs/state/firesworn.md) 的冻结裁定执行，接手先核对该页。（依据：用户裁定 2026-10-14）
-
 不要靠猜测反复实测去试出原版机制，也不要让用户实测来回答本该从原版代码里查到的问题。
 先反编译（托管层）或反汇编（`TaleWorlds.Native.dll`），查实规则再改代码。
 工具、步骤和证据强弱见 `docs/reference/investigation-methods.md`。
