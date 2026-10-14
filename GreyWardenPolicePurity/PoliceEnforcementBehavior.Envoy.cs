@@ -133,26 +133,26 @@ namespace GreyWardenPolicePurity
         private bool TrySendEnvoy(MobileParty police, CrimeRecord crime, MobileParty criminal, bool collectOnly)
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();
-            // 他替别人的军团跑腿时作不了主；已经和灰袍开战的势力，使者过去就是送死。
+            // 他替别人的军团跑腿时作不了主（只收钱的那趟不必他作主）；已经和灰袍开战的势力，使者过去就是送死。
+            // 出借方在海上只剩自己那条船时，临时队出不了门（PoliceResourceManager.IsStrandedAtSea），换别人派。
             if (policeClan == null || criminal.LeaderHero == null ||
                 police.MapEvent != null || criminal.MapEvent != null ||
                 police.Army != null && police.Army.LeaderParty != police ||
-                criminal.Army != null && criminal.Army.LeaderParty != criminal ||
+                !collectOnly && criminal.Army != null && criminal.Army.LeaderParty != criminal ||
                 PlayerBountyBehavior.IsReservedTarget(criminal) ||
                 FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction) ||
-                criminal.IsCurrentlyAtSea || PoliceResourceManager.IsStrandedAtSea(police))
+                PoliceResourceManager.IsStrandedAtSea(police))
                 return false;
 
-            // 用户裁定 2026-10-15：使者按追截队的骑兵来排，只从承办领主自己队里抽。
+            // 用户裁定 2026-10-15：使者优先排骑兵，不够由别的兵补，只从承办领主自己队里抽；船由主队借。
             List<ImmediateInterceptorTroopTransfer> batches =
-                MountedWardenBatches(police, new[] { police });
+                DetachmentBatches(police, new[] { police }, false);
             int size = Math.Min(GwpTuning.Enforcement.EnvoySize, HealthyTroopCount(batches));
-            if (size < GwpTuning.Enforcement.EnvoyMinimumSize)
+            if (size <= 0)
                 return false;
 
             var transferred = new List<ImmediateInterceptorTroopTransfer>();
-            MobileParty? envoy = CreateDetachment(police, batches, size,
-                GwpTuning.Enforcement.EnvoyMinimumSize,
+            MobileParty? envoy = CreateDetachment(police, batches, size, 1,
                 GwpText.Get("{=gwp_envoy_party_name}Grey Warden envoy"),
                 transferred, out int moved, out Settlement? returnSettlement);
             if (envoy == null || returnSettlement == null)
@@ -251,10 +251,12 @@ namespace GreyWardenPolicePurity
             if (envoy.MapEvent != null || target.MapEvent != null)
                 return;
 
-            // 与追截队回主队同一个距离：原版军团成员算"走到一起"的距离。目标在城里时进城去谈。
+            // 与追截队回主队同一个距离：原版军团成员算"走到一起"的距离（海上用海上的）。目标在城里时进城去谈。
+            float contactDistance = envoy.IsCurrentlyAtSea
+                ? Campaign.Current.Models.EncounterModel.MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy
+                : Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
             bool reached = target.CurrentSettlement != null && envoy.CurrentSettlement == target.CurrentSettlement ||
-                envoy.GetPosition2D.Distance(target.GetPosition2D) <=
-                Campaign.Current.Models.EncounterModel.MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy;
+                envoy.GetPosition2D.Distance(target.GetPosition2D) <= contactDistance;
             if (!reached)
             {
                 GreyWardenPartyDesireBehavior.RequestEscort(envoy, target, 8f);
@@ -385,19 +387,24 @@ namespace GreyWardenPolicePurity
         private void SendGraceCollector(EnvoyCase envoyCase, CrimeRecord crime)
         {
             MobileParty? criminal = crime.Offender;
-            if (criminal?.IsActive == true)
+            if (criminal?.IsActive != true)
+                return;
+            // 宽限期里他的势力和灰袍打起来了：使者去不了，案子回台账照常追捕。
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            if (policeClan == null || FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction))
             {
-                foreach (MobileParty police in PoliceStats.GetAllPoliceParties()
-                             .Where(party => party?.IsActive == true && party.IsLordParty &&
-                                 CanContinueLeadingPoliceTask(party))
-                             .OrderBy(party => party.GetPosition2D.Distance(criminal.GetPosition2D)))
-                {
-                    if (TrySendEnvoy(police, crime, criminal, true))
-                        return;
-                }
+                FailEnvoy(envoyCase, "grace_collector_at_war");
+                return;
             }
-            if (CampaignTime.Now.ToHours >= envoyCase.DueHours + GwpTuning.Enforcement.EnvoyTimeoutHours)
-                FailEnvoy(envoyCase, "grace_collector_unavailable");
+            // 正在打仗、在军团里跟着走的领主这一小时派不了，就换下一个近的；都派不了下一小时再试。
+            foreach (MobileParty police in PoliceStats.GetAllPoliceParties()
+                         .Where(party => party?.IsActive == true && party.IsLordParty &&
+                             CanContinueLeadingPoliceTask(party))
+                         .OrderBy(party => party.GetPosition2D.Distance(criminal.GetPosition2D)))
+            {
+                if (TrySendEnvoy(police, crime, criminal, true))
+                    return;
+            }
         }
 
         #region 比武

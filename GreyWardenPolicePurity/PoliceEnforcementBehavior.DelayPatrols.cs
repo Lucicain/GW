@@ -422,7 +422,7 @@ namespace GreyWardenPolicePurity
                     .ToList()
                 : new List<MobileParty> { sourceParty };
             List<ImmediateInterceptorTroopTransfer> mountedBatches =
-                MountedWardenBatches(sourceParty, troopSourceParties);
+                DetachmentBatches(sourceParty, troopSourceParties, true);
             int detachmentSize = Math.Min(
                 ImmediateInterceptorMaximumSize, HealthyTroopCount(mountedBatches));
             if (detachmentSize < ImmediateInterceptorMinimumSize)
@@ -521,16 +521,20 @@ namespace GreyWardenPolicePurity
                  "n/a"));
         }
 
-        /// <summary>名册里没受伤的灰袍骑兵，兵阶高的先出，同兵阶时来源领主自己的先出。追截队和使者共用。</summary>
-        private static List<ImmediateInterceptorTroopTransfer> MountedWardenBatches(MobileParty sourceParty,
-            IEnumerable<MobileParty> troopSourceParties) =>
+        /// <summary>
+        /// 名册里没受伤的兵，按出队顺序排：骑兵先出，灰袍兵先出，兵阶高的先出，同兵阶时来源领主自己的先出。
+        /// 追截队要追得上人，只取灰袍骑兵（<paramref name="mountedWardensOnly"/>）；使者只是优先骑兵，
+        /// 不够就由别的兵补上（用户裁定 2026-10-15）。
+        /// </summary>
+        private static List<ImmediateInterceptorTroopTransfer> DetachmentBatches(MobileParty sourceParty,
+            IEnumerable<MobileParty> troopSourceParties, bool mountedWardensOnly) =>
             troopSourceParties
                 .SelectMany(party =>
                     party.MemberRoster.GetTroopRoster()
                          .Where(element => element.Character != null &&
                              !element.Character.IsHero &&
-                             GwpCommon.IsGreyWardenTroop(element.Character) &&
-                             element.Character.IsMounted &&
+                             (!mountedWardensOnly || GwpCommon.IsGreyWardenTroop(element.Character) &&
+                                 element.Character.IsMounted) &&
                             element.Number - element.WoundedNumber > 0)
                         .Select(element =>
                             new ImmediateInterceptorTroopTransfer
@@ -538,7 +542,9 @@ namespace GreyWardenPolicePurity
                                 SourceParty = party,
                                 Character = element.Character
                             }))
-                .OrderByDescending(batch => batch.Character.Tier)
+                .OrderByDescending(batch => batch.Character.IsMounted)
+                .ThenByDescending(batch => GwpCommon.IsGreyWardenTroop(batch.Character))
+                .ThenByDescending(batch => batch.Character.Tier)
                 .ThenBy(batch => batch.SourceParty == sourceParty ? 0 : 1)
                 .ThenBy(batch => batch.SourceParty.StringId,
                     StringComparer.OrdinalIgnoreCase)

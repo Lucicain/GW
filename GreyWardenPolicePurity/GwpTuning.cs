@@ -77,10 +77,9 @@ namespace GreyWardenPolicePurity
         internal static class Enforcement
         {
             /// <summary>
-            /// 灰袍使者（用户裁定 2026-10-15）：宣战前从承办领主队里抽骑兵组成，先去和目标谈。人数、超时为试玩值。
+            /// 灰袍使者（用户裁定 2026-10-15）：宣战前从承办领主队里抽人组成（骑兵优先），先去和目标谈。人数、超时为试玩值。
             /// </summary>
             public const int EnvoySize = 5;
-            public const int EnvoyMinimumSize = 3;
             public const double EnvoyTimeoutHours = 72d;
             /// <summary>
             /// 约到比武大会后最多等这么多天（试玩值）。到期两人都在城里就按原版结算把那场打完，有人没到就按原版比武评分比一次。
