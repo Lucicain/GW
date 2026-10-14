@@ -130,18 +130,34 @@ namespace GreyWardenPolicePurity
             (envoyCase.Stage == EnvoyStage.Grace ||
              envoyCase.Stage == EnvoyStage.Travelling && envoyCase.CollectOnly);
 
-        private bool TrySendEnvoy(MobileParty police, CrimeRecord crime, MobileParty criminal, bool collectOnly)
+        /// <summary>
+        /// 此刻为什么派不出使者；派得出返回 null。他替别人的军团跑腿时作不了主（只收钱的那趟不必他作主）；
+        /// 已经和灰袍开战的势力，使者过去就是送死；出借方在海上只剩自己那条船时，临时队出不了门
+        /// （PoliceResourceManager.IsStrandedAtSea）。
+        /// </summary>
+        private static string? EnvoyBlocker(MobileParty police, MobileParty criminal, bool collectOnly)
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();
-            // 他替别人的军团跑腿时作不了主（只收钱的那趟不必他作主）；已经和灰袍开战的势力，使者过去就是送死。
-            // 出借方在海上只剩自己那条船时，临时队出不了门（PoliceResourceManager.IsStrandedAtSea），换别人派。
-            if (policeClan == null || criminal.LeaderHero == null ||
-                police.MapEvent != null || criminal.MapEvent != null ||
-                police.Army != null && police.Army.LeaderParty != police ||
-                !collectOnly && criminal.Army != null && criminal.Army.LeaderParty != criminal ||
-                PlayerBountyBehavior.IsReservedTarget(criminal) ||
-                FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction) ||
-                PoliceResourceManager.IsStrandedAtSea(police))
+            if (policeClan == null) return "no_police_clan";
+            if (criminal.LeaderHero == null) return "target_leaderless";
+            if (police.MapEvent != null) return "warden_in_battle";
+            if (criminal.MapEvent != null) return "target_in_battle";
+            if (police.Army != null && police.Army.LeaderParty != police) return "warden_army_member";
+            if (!collectOnly && criminal.Army != null && criminal.Army.LeaderParty != criminal) return "target_army_member";
+            if (PlayerBountyBehavior.IsReservedTarget(criminal)) return "player_target";
+            if (FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction))
+                return "already_at_war:" + (criminal.MapFaction?.StringId ?? "-");
+            if (PoliceResourceManager.IsStrandedAtSea(police)) return "warden_stranded_at_sea";
+            return null;
+        }
+
+        private bool TrySendEnvoy(MobileParty police, CrimeRecord crime, MobileParty criminal, bool collectOnly)
+        {
+            string? blocker = EnvoyBlocker(police, criminal, collectOnly);
+#if GWP_DIAGNOSTICS
+            TraceEnvoyBlocker(police, crime, blocker);
+#endif
+            if (blocker != null)
                 return false;
 
             // 用户裁定 2026-10-15：使者优先排骑兵，不够由别的兵补，只从承办领主自己队里抽；船由主队借。
@@ -159,6 +175,10 @@ namespace GreyWardenPolicePurity
                 return false;
 
             PoliceResourceManager.OutfitTemporaryDutyParty(envoy, police);
+            // 使者是去谈的，不主动打任何人：原版的进攻评分乘以队伍的好斗度，置零就不会被路边的劫匪勾走
+            // （C#反编译 v1.4.8 DefaultMobilePartyAIModel；实机诊断 2026-10-15：使者全部的仗都是自己冲劫匪打起来的）。
+            // 好斗度是原版存档字段，读档后照旧；逃跑判断不动，碰上打不过的照样会躲。
+            envoy.Aggressiveness = 0f;
             _delayPatrolStates[envoy.StringId] = new DelayPatrolState
             {
                 PatrolPartyId = envoy.StringId,
@@ -250,6 +270,9 @@ namespace GreyWardenPolicePurity
 
             if (envoy.MapEvent != null || target.MapEvent != null)
                 return;
+            // 被人打过一仗后原版把它停在原地，要等下一轮拍卖才动（实机诊断 2026-10-15：停了约 11 小时）。
+            if (envoy.DefaultBehavior == AiBehavior.Hold)
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(envoy);
 
             // 与追截队回主队同一个距离：原版军团成员算"走到一起"的距离（海上用海上的）。目标在城里时进城去谈。
             float contactDistance = envoy.IsCurrentlyAtSea
@@ -654,6 +677,23 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteAction(police, "ENVOY_FAILED",
                     "crime=" + envoyCase.CrimeId + "; reason=" + reason);
         }
+
+#if GWP_DIAGNOSTICS
+        // 案子 → 上一次记下的派不出原因。只在原因变化时写一行，免得每小时刷屏；不进存档。
+        private readonly Dictionary<string, string> _envoyBlockerTrace =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private void TraceEnvoyBlocker(MobileParty police, CrimeRecord crime, string? blocker)
+        {
+            string key = crime.CrimeId;
+            string current = blocker ?? string.Empty;
+            if (_envoyBlockerTrace.TryGetValue(key, out string? last) && last == current) return;
+            _envoyBlockerTrace[key] = current;
+            if (blocker != null)
+                GwpAiDiagnostics.WriteAction(police, "ENVOY_NOT_SENT",
+                    "crime=" + crime.CrimeId + "; reason=" + blocker);
+        }
+#endif
 
         private void ForgetEnvoyCase(EnvoyCase envoyCase, string reason)
         {
