@@ -58,7 +58,7 @@
 		skill_template="SkillSet.spc_phalanx_skills"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.5" build="0.5"  key="0010A80FD214300A607785872055553583B98910388F1112E4B99A1E858AA0070077760307F13BA200000000000000000000000000000000000000003AF41003"  />
+			<BodyProperties version="4" age="22.01" weight="0.1682" build="0.777" key="00008400858830026B73546496585B8777C8866295A09FB6846908688AC40807008C3603080150030000000000000000000000000000000000000000791C30C4" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -104,7 +104,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="20" weight="0" build="0.5" key="0011DC0CC014300400766C9B0205F887A9D788F8979CF7098995777476FA06070CC706C20C7530810000A00000F150000000000000000000000000004F941003" />
+			<BodyProperties version="4" age="20" weight="0.1134" build="0.2909" key="00006C0000B4200600566837095A80BCB4FB4410287AF9017F36991574BA330801A42614FA4375820000000000000000000000000000000000000000736410C3" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -150,7 +150,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0463" build="0.0448" key="00057C0FC00020029673264B47856554EA72881968858A46D9A287747665557700811603083345370000000000000000000000000000000000000000210C2003" />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0020DC0D80B4300E03566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D4718600000000000000000000000000000000000000006B3C10C3" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -196,7 +196,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.5" build="0.5" key="0010A80FD214300A607785872055553583B98910388F1112E4B99A1E858AA0070077760307F13BA200000000000000000000000000000000000000003AF41003" />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0005140000B4300603566CD5585AF0C9A1FD76A03FAC97144375F52581FE055602981624F9D4718600000000000000000000000000000000000000006B3C10C3" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
@@ -242,7 +242,7 @@
 		culture="Culture.empire"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0417" build="0.1312"  key="0020600FD11420032488FC5B4A9C60C173EF7D8B5BACF3649BB4FFBD8BCD0C1A0062160306489336000000006A00003900000000000015040000000044DC0003"  />
+			<BodyProperties version="4" age="22.01" weight="0.0363" build="0.5185" key="0008A00780B430022E566CD35896F0B946FF75A53BACA6123FD57857877E2B0502981624F973733A00000000000000000000000000000000000000006B3C10C3" />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>
