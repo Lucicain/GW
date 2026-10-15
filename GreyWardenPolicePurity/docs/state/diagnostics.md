@@ -49,6 +49,8 @@
 **按当前覆盖范围命名。** 范围变了就改系统名和日志文件名，不要留一个误导的名字。（依据：流程）
 （例：`GwpRangedCommandTrace` 扩到双方所有编队后曾改名 `GwpBattleCommandTrace`，现已退休。）
 
+领主普通装备加成的 `COMBAT` 采样字段与退休条件见[lord-combat.md](lord-combat.md)，不使用案件时间戳，竞技场场景也可记录。
+
 ## 运兵在役诊断
 
 自主练兵旧排队/驻留/自队经验日志随机制删除。`TRAINING_TRANSPORT_DISPATCHED` 记录出队人货，`DELIVERED` 记录实际交付人数与落脚村；交换/归队日志随机制删除；阶段与退休条件只在 [运兵](warden-training.md) 定义。日志在诊断版编译，用户确认运兵可用时同轮退休健康路径记录。（依据：流程、源码复核 2026-10-15）

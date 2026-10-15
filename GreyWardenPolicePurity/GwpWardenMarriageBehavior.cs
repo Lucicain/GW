@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -8,17 +9,41 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// 玩家与灰袍领主的婚姻（用户裁定 2026-10-14：新档与每位灰袍领主关系 100，能和任意一位灰袍领主结婚；之后给每人做故事线）。
     /// 灰袍领主对话里直接求婚、当场成婚，不走原版求爱说服和嫁妆谈判。
+    /// 嫁出去的灰袍领主带走灰袍领主的战斗加成（用户裁定 2026-10-16：跟随，不要消灭），名单在这里记、进存档。
     /// </summary>
     public sealed class GwpWardenMarriageBehavior : CampaignBehaviorBase
     {
+        private static GwpWardenMarriageBehavior? _instance;
+        // 成婚那一刻还是灰袍领主的英雄 ID。婚后她进玩家家族，不再是灰袍家族成员，只能从这里认。
+        private List<string> _marriedWardenIds = new List<string>();
+
+        public GwpWardenMarriageBehavior() => _instance = this;
+
         public override void RegisterEvents()
         {
             CampaignEvents.OnCharacterCreationIsOverEvent.AddNonSerializedListener(this, OnCharacterCreationIsOver);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, AddDialogs);
+            CampaignEvents.BeforeHeroesMarried.AddNonSerializedListener(this, OnBeforeHeroesMarried);
         }
 
-        // 关系只在新档设一次，之后照原版涨落；求婚是即时动作，没有进行中的状态。
-        public override void SyncData(IDataStore dataStore) { }
+        // 关系只在新档设一次，之后照原版涨落；求婚是即时动作，没有进行中的状态。嫁出去的名单要存。
+        public override void SyncData(IDataStore dataStore) =>
+            dataStore.SyncData("gwp_married_warden_ids", ref _marriedWardenIds);
+
+        /// <summary>嫁出灰袍家族、仍保留灰袍领主战斗身份的英雄。</summary>
+        internal static bool IsMarriedWarden(Hero? hero) =>
+            hero != null && _instance != null && _instance._marriedWardenIds.Contains(hero.StringId);
+
+        /// <summary>
+        /// 原版在换家族之前发这个事件（C#反编译 v1.4.8 MarriageAction.ApplyInternal：OnBeforeHeroesMarried 早于
+        /// HandleClanChangeAfterMarriageForHero），此刻还能按家族认出灰袍领主。不管走对话求婚还是原版求爱都经过这里。
+        /// </summary>
+        private void OnBeforeHeroesMarried(Hero first, Hero second, bool showNotification)
+        {
+            foreach (Hero hero in new[] { first, second })
+                if (GwpCommon.IsGreyWardenLord(hero) && !_marriedWardenIds.Contains(hero.StringId))
+                    _marriedWardenIds.Add(hero.StringId);
+        }
 
         /// <summary>
         /// 原版两位英雄的关系落在双方族长之间（C#反编译 v1.4.8 DefaultDiplomacyModel.GetHeroesForEffectiveRelation），

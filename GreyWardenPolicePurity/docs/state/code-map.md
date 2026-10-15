@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-181 个源文件、54,359 行、342 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
+182 个源文件、54,689 行、344 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -159,6 +159,7 @@
 - `GwpWarhorseDamageTransferBehavior`
 - `GwpKickBehavior`
 - `GwpAlternativeAttackControlBehavior`
+- `GwpLordLastStandBehavior`
 - `GwpPassiveShieldBreakBehavior`
 - `GwpBattleSceneContext`
 - `GwpSyndicateMusicBehavior`
@@ -351,6 +352,7 @@
 - `GwpLinkedInquiryState` → GwpSingleQueryLinkPatch.cs ←
 - `GwpLocationDutyBehaviorTextPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpLocationDutyRefreshPatch` → GwpPartyDutyMovementPatch.cs ←
+- `GwpLordLastStandBehavior` → GwpLordLastStand.cs ←
 - `GwpMapBarReputation` → GwpMapBarReputationPatch.cs
 - `GwpMapInfoCreateItemsPatch` → GwpMapBarReputationPatch.cs ←
 - `GwpMapInfoUpdatePatch` → GwpMapBarReputationPatch.cs ←
@@ -434,6 +436,7 @@
 - `IssueTaskSnapshot` → GreyWardenIssueResolutionBehavior.cs ←
 - `Item` → GwpCaseReceipt.cs ←
 - `LocalBalance` → GwpStrength.cs ←
+- `LordCombat` → GwpTuning.cs ←
 - `Patrol` → GwpTuning.cs ←
 - `PaymentScope` → GwpFireswornUpgradePayment.cs ←
 - `PendingReport` → GwpFieldReportLedger.cs ←
@@ -486,7 +489,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 172 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 174 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -510,21 +513,21 @@
 
 ### 战场：双刀/近战（11 个文件）
 
-- `GwpShieldBashGuardPatch.cs` — 1212 行 · `GwpPassiveHeldShieldCollision` : MissionBehavior，另含 5 个类型
+- `GwpShieldBashGuardPatch.cs` — 1236 行 · `GwpPassiveHeldShieldCollision` : MissionBehavior，另含 5 个类型
 - `GwpDualBladeAiBehavior.cs` — 753 行 · `GwpDualBladeAgentState` : MissionBehavior，另含 5 个类型
-- `GwpAlternativeAttackControlBehavior.cs` — 358 行 · `GwpAlternativeAttackControlBehavior` : MissionBehavior
+- `GwpAlternativeAttackControlBehavior.cs` — 404 行 · `GwpAlternativeAttackControlBehavior` : MissionBehavior
 - `GwpDualBladeActionSetPatch.cs` — 314 行 · `GwpFaultTrace`，另含 5 个类型
 - `GwpKickInputComponent.cs` — 216 行 · `GwpKickInputComponent` : AgentComponent
 - `GwpAlternativeAttackControl.cs` — 177 行 · `GwpAlternativeAttackControl`
 - `GwpDualBladeGroundPickupPatch.cs` — 168 行 · `GwpDualBladeGroundPickup`，另含 1 个类型
-- `GwpKickBehavior.cs` — 85 行 · `GwpKickBehavior` : MissionBehavior
+- `GwpKickBehavior.cs` — 114 行 · `GwpKickBehavior` : MissionBehavior
 - `GwpDualBladeItemSetup.cs` — 63 行 · `GwpDualBladeItemSetup`
 - `GwpDualBladeActionGate.cs` — 61 行 · `GwpDualBladeActionGate`
 - `GwpDualBladeAttackArmor.cs` — 42 行 · `GwpDualBladeAttackArmor`
 
 ### 诊断（4 个文件）
 
-- `GwpAiDiagnostics.cs` — 593 行 · `GwpAiDiagnostics`，另含 1 个类型
+- `GwpAiDiagnostics.cs` — 597 行 · `GwpAiDiagnostics`，另含 1 个类型
 - `GwpRuntimeFaultWatch.cs` — 87 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 34 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 23 行 · `GwpDispatchBarterFaultDiagnostics`
@@ -600,7 +603,7 @@
 
 ### 战斗数值模型（1 个文件）
 
-- `GwpAgentApplyDamageModel.cs` — 844 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
+- `GwpAgentApplyDamageModel.cs` — 858 行 · `GwpAgentApplyDamageModel` : AgentApplyDamageModel
 
 ### 大地图欲望与 AI（3 个文件）
 
@@ -615,22 +618,22 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1124 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 411 行 · `GwpTuning`，另含 13 个类型
-- `GwpCommon.cs` — 352 行 · `GwpCommon`
+- `GwpTuning.cs` — 418 行 · `GwpTuning`，另含 14 个类型
+- `GwpCommon.cs` — 363 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 168 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 170 行 · `SubModule` : MBSubModuleBase
 
-### 其他（93 个文件）
+### 其他（94 个文件）
 
 - `GwpFireswornBehavior.cs` — 1304 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpTextCatalog.g.cs` — 1225 行 · `GwpTextCatalog`
 - `GwpStrength.cs` — 1049 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornArmory.cs` — 902 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 707 行 · `GwpFireswornBehavior`
-- `GwpTroopCombat.cs` — 445 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
+- `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 415 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 405 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -665,8 +668,10 @@
 - `GwpFireswornPartyDialogs.cs` — 135 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpLordLastStand.cs` — 129 行 · `GwpLordLastStandBehavior` : MissionBehavior
 - `GwpPeace.cs` — 115 行 · `GwpPeace`
 - `GwpNegotiationResistance.cs` — 112 行 · `GwpNegotiationResistance`
+- `GwpWardenMarriageBehavior.cs` — 109 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpFireswornUpgradePayment.cs` — 107 行 · `GwpFireswornUpgradePayment`，另含 4 个类型
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`
@@ -677,7 +682,6 @@
 - `GwpSettlementNotices.cs` — 93 行 · `GwpSettlementNotices` : SettlementNotificationItemBaseVM，另含 3 个类型
 - `GwpFireswornArmoryView.cs` — 84 行 · `GwpFireswornArmoryView`
 - `GwpFireswornSoundView.cs` — 84 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
-- `GwpWardenMarriageBehavior.cs` — 84 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型

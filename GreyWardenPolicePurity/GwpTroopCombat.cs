@@ -53,13 +53,9 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// Grey Warden combat effects belong to the weapon, not to the troop (2026-09-25, user:
-    /// one measure for every soldier). Whoever wields the item - any troop, a lord, the
-    /// player - gets its effects. The values are the ones the troops had: the knight's
-    /// ordinary attack for every Grey Warden melee weapon, his couched lance, the archers'
-    /// dual blades and arrows, the heavy infantry's great shield. Kicks and shield bashes
-    /// are not weapon attacks and keep their per-troop rules (dual-blade.md); the warhorse
-    /// has its own (gw_warhorse).
+    /// Item effects apply to every wielder. Grey Warden lords additionally inherit the
+    /// corresponding effects with ordinary equipment (user, 2026-10-16). Resolve once:
+    /// identity and an item's own effect never multiply or roll a second time.
     /// </summary>
     internal static class GwpWeaponTraits
     {
@@ -104,6 +100,43 @@ namespace GreyWardenPolicePurity
         internal static GwpWeaponTrait? Of(ItemObject? item) =>
             item != null && ByItemId.TryGetValue(item.StringId, out GwpWeaponTrait trait) ? trait : null;
 
+        internal static GwpWeaponTrait? OfAttack(Agent? attacker, ItemObject? item)
+        {
+            GwpWeaponTrait? own = Of(item);
+            if (item == null || !GwpCommon.IsGreyWardenLordAgent(attacker))
+                return own;
+
+            switch (item.ItemType)
+            {
+                case ItemObject.ItemTypeEnum.OneHandedWeapon:
+                case ItemObject.ItemTypeEnum.TwoHandedWeapon:
+                case ItemObject.ItemTypeEnum.Polearm:
+                    // Paired blades retain their own hit chance; ordinary weapons inherit
+                    // the lance's regular melee values and its actual passive-attack values.
+                    return string.Equals(item.StringId, GwpIds.DualBladeMainhandItemId, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(item.StringId, GwpIds.DualBladeOffhandItemId, StringComparison.OrdinalIgnoreCase)
+                        ? own : ByItemId[LanceItemId];
+                case ItemObject.ItemTypeEnum.Bow:
+                case ItemObject.ItemTypeEnum.Crossbow:
+                case ItemObject.ItemTypeEnum.Arrows:
+                case ItemObject.ItemTypeEnum.Bolts:
+                case ItemObject.ItemTypeEnum.Thrown:
+                    return ByItemId[ArrowsItemId];
+                default:
+                    return own;
+            }
+        }
+
+        internal static GwpWeaponTrait? OfShield(Agent? victim, ItemObject? item) =>
+            HasShieldEffects(victim, item)
+                ? ByItemId[GwpIds.LargeShieldItemId]
+                : Of(item);
+
+        internal static bool HasShieldEffects(Agent? victim, ItemObject? item) =>
+            item?.ItemType == ItemObject.ItemTypeEnum.Shield
+            && (GwpIds.IsGreyWardenLargeShieldItemId(item.StringId)
+                || GwpCommon.IsGreyWardenLordAgent(victim));
+
         /// <summary>
         /// The weapon behind a hit: the attacker's weapon slot for melee, the missile itself
         /// (looked up by index, as native's MissileHitCallback does) for a missile.
@@ -115,7 +148,7 @@ namespace GreyWardenPolicePurity
                 return null;
             if (!collision.IsMissile)
                 return index < (int)EquipmentIndex.NumAllWeaponSlots
-                    ? Of(attacker.Equipment[(EquipmentIndex)index].Item)
+                    ? OfAttack(attacker, attacker.Equipment[(EquipmentIndex)index].Item)
                     : null;
             Mission? mission = attacker.Mission;
             if (mission == null)
@@ -123,7 +156,7 @@ namespace GreyWardenPolicePurity
             foreach (Mission.Missile missile in mission.MissilesList)
             {
                 if (missile.Index == index)
-                    return Of(missile.Weapon.Item);
+                    return OfAttack(attacker, missile.Weapon.Item);
             }
             return null;
         }
@@ -144,7 +177,7 @@ namespace GreyWardenPolicePurity
         // gain halved, from 0.5 and x 0.5.)
         internal const float WarhorseChargeKnockBackFront = 0.6f;
         internal const float WarhorseChargeKnockDownThresholdScale = 0.75f;
-        // Only the warhorse shrugs off twice the native small-hit threshold (x 3 until
+        // Eligible mounts shrug off twice the native small-hit threshold (x 3 until
         // 2026-09-25). Its rider uses native's threshold, even while mounted.
         internal const float WarhorseStaggerThresholdScale = 2f;
         // Share of native rears a Grey Warden warhorse actually suffers (0.5 until 2026-09-25).
@@ -195,7 +228,7 @@ namespace GreyWardenPolicePurity
             // Kicks and shield bashes keep their own knockdown rules (dual-blade.md).
             if (collision.IsAlternativeAttack)
                 return false;
-            // The weapon that landed decides, whoever holds it (GwpWeaponTraits).
+            // Resolve the actual hit weapon plus the lord identity exception once.
             GwpWeaponTrait? trait = GwpWeaponTraits.OfHit(attacker, in collision);
             if (trait == null)
                 return false;
@@ -209,16 +242,21 @@ namespace GreyWardenPolicePurity
             if (!_knockdown && !_dismount)
                 return false;
             _victim = victim;
+#if GWP_DIAGNOSTICS
+            attacker.Mission?.GetMissionBehavior<GwpKickBehavior>()?.TraceLordCombat(
+                attacker, "BODY_CONTROL", "victim=" + victim.Index + "; missile=" + collision.IsMissile
+                + "; passive=" + passive + "; knockdown=" + _knockdown + "; dismount=" + _dismount);
+#endif
             return true;
         }
 
         /// <summary>
-        /// A Grey Warden warhorse carrying any rider and charging an enemy on foot. Native's ChargeDamageCallback
+        /// An eligible mount carrying a rider and charging an enemy on foot. Native's ChargeDamageCallback
         /// asks only knock-back and then knock-down, with the horse as the attacker; riders hit
         /// by a charge stay entirely native.
         /// </summary>
         internal static bool IsWarhorseCharge(Agent? horse, Agent victim, in AttackCollisionData collision) =>
-            collision.IsHorseCharge && IsWarhorse(horse) && horse!.RiderAgent != null
+            collision.IsHorseCharge && HasWarhorseEffects(horse) && horse!.RiderAgent != null
             && victim.IsHuman && victim.MountAgent == null;
 
         /// <summary>Native's charge knock-back test (MissionCombatMechanicsHelper) with the wider front.</summary>
@@ -372,7 +410,7 @@ namespace GreyWardenPolicePurity
             {
                 return false;
             }
-            GwpWeaponTrait? trait = GwpWeaponTraits.Of(attacker.WieldedWeapon.Item);
+            GwpWeaponTrait? trait = GwpWeaponTraits.OfAttack(attacker, attacker.WieldedWeapon.Item);
             if (trait == null)
                 return false;
             return isPassiveUsageHit ? trait.PassiveAlwaysBreaksParry : Roll(trait.ParryBreak);
@@ -381,20 +419,21 @@ namespace GreyWardenPolicePurity
         /// <summary>Called only after native decided this mount rears.</summary>
         internal static bool WarhorseRears(Agent mount)
         {
-            if (!IsWarhorse(mount) || Roll(WarhorseRearShare))
+            if (!HasWarhorseEffects(mount) || Roll(WarhorseRearShare))
                 return true;
             return false;
         }
 
-        /// <summary>The Grey Warden warhorse, identified by its monster rather than its rider.</summary>
-        internal static bool IsWarhorse(Agent? agent) =>
+        /// <summary>The authored warhorse, or an ordinary mount currently ridden by a Grey Warden lord.</summary>
+        internal static bool HasWarhorseEffects(Agent? agent) =>
             agent?.IsMount == true
-            && string.Equals(agent.Monster?.StringId, WarhorseMonsterId, StringComparison.OrdinalIgnoreCase);
+            && (string.Equals(agent.Monster?.StringId, WarhorseMonsterId, StringComparison.OrdinalIgnoreCase)
+                || GwpCommon.IsGreyWardenLordAgent(agent.RiderAgent));
 
         /// <summary>The warhorse or anyone currently riding it while it is alive.</summary>
         internal static bool IsWarhorseOrRider(Agent? agent) =>
-            IsWarhorse(agent)
-            || (agent?.MountAgent is Agent horse && IsWarhorse(horse)
+            HasWarhorseEffects(agent)
+            || (agent?.MountAgent is Agent horse && HasWarhorseEffects(horse)
                 && horse.IsActive() && horse.Health > 0f);
 
 

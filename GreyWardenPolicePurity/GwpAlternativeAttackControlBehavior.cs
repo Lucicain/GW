@@ -25,6 +25,8 @@ namespace GreyWardenPolicePurity
 
         private const int MeleeMasteryPerAlternativeAction = 50;
         private const int BowMasteryPerArrow = 10;
+        // 灰袍领主每击杀（含打晕）一个敌人：弓箭击杀记弓术，其余记单手与运动（用户裁定 2026-10-16）。
+        private const int MasteryPerLordKill = 50;
         // Total battle-mastery bonus per skill track. Each kick or bash still adds 50 and
         // each arrow 10; the cap guards against the known double counting of one action
         // (journal 2026-09-03), which could otherwise run the bonus toward 1000 (2026-09-24).
@@ -207,10 +209,50 @@ namespace GreyWardenPolicePurity
 
             if (AddMasteryBonus(
                     _bowMasteryBonusByAgentIndex,
-                    shooterAgent.Index,
+                    shooterAgent,
                     BowMasteryPerArrow))
             {
                 shooterAgent.UpdateAgentStats();
+            }
+        }
+
+        public override void OnAgentRemoved(
+            Agent affectedAgent,
+            Agent affectorAgent,
+            AgentState agentState,
+            KillingBlow blow)
+        {
+            base.OnAgentRemoved(affectedAgent, affectorAgent, agentState, blow);
+            if (affectedAgent == null
+                || !affectedAgent.IsHuman
+                || agentState != AgentState.Killed && agentState != AgentState.Unconscious)
+            {
+                return;
+            }
+
+            // 骑着的马冲撞算骑手的。
+            Agent? killer = affectorAgent?.IsMount == true
+                ? affectorAgent.RiderAgent
+                : affectorAgent;
+            if (killer == null
+                || !killer.IsHuman
+                || !killer.IsEnemyOf(affectedAgent)
+                || !GwpCommon.IsGreyWardenLordAgent(killer))
+            {
+                return;
+            }
+
+            // 箭只能由弓射出（原版 WeaponClass.Arrow），弩矢、投掷、近战和冲撞都走近战线。
+            bool bowKill = blow.IsMissile
+                && blow.WeaponClass == (int)WeaponClass.Arrow;
+            if (AddMasteryBonus(
+                    bowKill
+                        ? _bowMasteryBonusByAgentIndex
+                        : _meleeMasteryBonusByAgentIndex,
+                    killer,
+                    MasteryPerLordKill))
+            {
+                killer.UpdateAgentStats();
             }
         }
 
@@ -288,7 +330,7 @@ namespace GreyWardenPolicePurity
         {
             if (AddMasteryBonus(
                     _meleeMasteryBonusByAgentIndex,
-                    attacker.Index,
+                    attacker,
                     MeleeMasteryPerAlternativeAction))
             {
                 attacker.UpdateAgentStats();
@@ -297,9 +339,13 @@ namespace GreyWardenPolicePurity
 
         private static bool AddMasteryBonus(
             IDictionary<int, int> bonuses,
-            int agentIndex,
+            Agent agent,
             int amount)
         {
+            // 灰袍领主锁血期间，每一笔成长都乘倍数（用户裁定 2026-10-16）。
+            if (GwpLordLastStandBehavior.IsStanding(agent))
+                amount = (int)Math.Round(amount * GwpTuning.LordCombat.LastStandGrowthMultiplier);
+            int agentIndex = agent.Index;
             int current = bonuses.TryGetValue(agentIndex, out int existing)
                 ? existing
                 : 0;

@@ -1,9 +1,9 @@
 # 双刀 AI 与踢/盾击互斥
 
-> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
+> 当前状态：双刀和踢击旧规则已验收；普通盾的领主身份扩展见 lord-combat.md
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs` `tools/DualBladeTests/**`
-> 已复核至：`64e36ec`（2026-10-07）
+> 已复核至：`4f31993`（2026-10-16）
 > 待实测：无
 
 ## 已修复的崩溃
@@ -105,7 +105,13 @@ seq4408/t112.276  仍空副手盾击
   - 伤害照吃（2026-09-24 曾加减伤 50%，当日按用户要求去掉）。
 - 只对双刀使用者生效。2026-09-24 至 25 曾同时覆盖灰袍骑士，已按用户要求删除。
 
+## 双刀挥砍延续
+
+`GwpAgentApplyDamageModel.ApplyDualBladeCleave` 让实际使用双刀的挥砍在身体命中后按原版剩余动量公式继续，最多再中一个目标；余量按扣护甲后的比例再乘0.5，低于0.25不延续，同一挥击0.5秒内已延续一次则归零。刺击、盾挡、架枪、冲撞、破防和无伤害命中不走这条。仅单人目标时没有第二人可中；不是全灰袍通用范围伤害。副刀骨骼/伤害类型修正属于恢复正常切割命中，不是额外伤害倍率。（依据：生产伤害模型、GwpDualWieldingPatch源码复核2026-10-16）
+
 ## 灰袍通用战斗规则（踢、盾击、临时技能、大盾被动覆盖）
+
+本轮比武强度调查核对：SubModule对比赛场景仍注册踢击与临时成长，实战不因Tournament模式被排除；纯模拟/跳过不产生这些事件，解释归[使者约斗](case-envoy.md)。AI踢/盾击只在下马、近身1.2米、对方防御（或0.95米贴身时己方防御）等战术条件满足时尝试，冷却3秒并加按agent索引错峰；不保证每3秒命中。踢/盾击硬直属性设2倍；持盾盾击撞对方盾时另加0.5秒防御硬直并走原生破防，最终受引擎硬直上限约束。（依据：GwpKickBehavior/InputComponent/AgentApplyDamageModel、SubModule源码复核 2026-10-15）
 
 - **踢与盾击击倒**（`GwpAgentApplyDamageModel.GetGreyWardenKnockdownChance`）：
   - 按兵种而非等级：新兵 40%、轻步兵 60%、重步兵/弓手/骑士 80%、领主与自定义战斗指挥官 80%。
@@ -114,6 +120,9 @@ seq4408/t112.276  仍空副手盾击
     此前是这一档 × 0.5（`DualBladeKnockdownScale`，已删）。
 - **越打越强**（`GwpAlternativeAttackControlBehavior`，只在本场战斗有效）：
   - 踢或盾击**命中**一次，单手与运动 +50；每射一箭，弓术 +10。两条线各自累计上限 500（`MaxMasteryBonus`）。
+  - 灰袍领主（身份见 [lord-combat.md](lord-combat.md)）每杀死或打晕一个敌人再 +50：箭（原版 `WeaponClass.Arrow`）击杀记弓术，近战、投掷、弩矢、所骑坐骑冲撞记单手与运动；普通灰袍兵不记，友军和溃逃不算。记分点 `OnAgentRemoved`。锁血期间每一笔都乘 1.5，见 lord-combat。（依据：用户裁定 2026-10-16）
+  - 成长先检查射手/攻击者的灰袍身份；弓成长再查实际发射武器RelevantSkill是Bow，不要求灰袍弓或灰袍穿刺箭，弩不走弓成长。最终有效技能至多1000。（依据：OnAgentShootMissile/OnAgentHit、ApplyBattleMastery源码复核2026-10-16）
+  - 原生踢/盾击未命中时，接受动作后观察0.55秒，对开始时2米内最近的非玩家、下马敌人补一次1伤害控制接触，同样按击倒概率判；没有第二次叠加原生命中。候选排除主玩家，不能把此补控说成对玩家也自动命中。（依据：AlternativeAttackControl/Behavior源码复核2026-10-16）
   - 记分点：`OnAgentHit` 里有伤害的替代攻击命中。引擎每次命中只发一次；原生没踢中时模组补的 1 点
     补打也经过这里，两者互斥。弓术记在 `OnAgentShootMissile`，每箭一次。
   - 生效点：只有 `GwpBattleMasteryEffectiveSkillPatch`，它是基类 `AgentStatCalculateModel.GetEffectiveSkill`
@@ -122,9 +131,9 @@ seq4408/t112.276  仍空副手盾击
     - 加成曾在 AI 每帧重复的踢击输入上记；
     - 曾同时补丁 Sandbox、Naval 与外壳，一次读取加两到三次。
     没有用锁或去重。2026-09-03 带深度守卫、上升沿锁的旧修复已回退，不要恢复。（依据：C#反编译 2026-09-24：各模型链都恰好只经过一次 `GetEffectiveSkill` 后置补丁）
-- **灰袍大盾被动覆盖**（`GwpPassiveHeldShieldCollision`）：
-  - 手持大盾未举起时，打到盾形状（正面 × 1.3、厚度 × 1.2）的近战也算格挡。
-  - 踢或盾击动作中，任何近战身体命中都由盾挡下。
+- **盾被动覆盖**（`GwpPassiveHeldShieldCollision`；灰袍大盾以及[灰袍领主持用的普通盾](lord-combat.md)）：
+  - 手持盾未举起时，打到实际盾形状（正面 × 1.3、厚度 × 1.2）的近战也算格挡。
+  - 灰袍踢或盾击动作中，任何近战身体命中都由盾挡下；普通盾仅对灰袍领主扩展。
   - 盾没举起时打在盾上、踢或盾击中的强制格挡、盾背在背上被打中，三种情况都等同原版举盾格挡：
     碰撞改为"被盾挡住"并按原版公式算格挡硬直，身体不掉血、没有额外受击动作和痛叫，只扣盾耐久
     （与主动格挡同一规则，见 [troop-combat.md](troop-combat.md)）；盾碎时有碎盾音效和特效。

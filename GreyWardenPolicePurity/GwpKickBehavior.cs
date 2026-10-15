@@ -1,3 +1,4 @@
+using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -21,7 +22,35 @@ namespace GreyWardenPolicePurity
         {
             base.OnAgentBuild(agent, banner);
             ConfigureKickCapability(agent);
+#if GWP_DIAGNOSTICS
+            // 比武大会刷人时 OnAgentBuild 早于任务装备就绪，读 WieldedWeapon 会抛空引用
+            // （实机诊断 2026-10-16，TournamentFightMissionController.SpawnAgentWithRandomItems）。只读生成装备。
+            if (GwpCommon.IsGreyWardenLordAgent(agent))
+                TraceLordCombat(agent, "READY", "mode=" + Mission.Mode
+                    + "; weapons=" + string.Join(",", Enumerable.Range(0, 4)
+                        .Select(slot => agent.SpawnEquipment?[(EquipmentIndex)slot].Item?.StringId)
+                        .Where(id => id != null))
+                    + "; horse=" + agent.SpawnEquipment?[EquipmentIndex.Horse].Item?.StringId);
+#endif
         }
+
+#if GWP_DIAGNOSTICS
+        // Mission-local sampling only; no persistent campaign state. Retire on acceptance.
+        private readonly System.Collections.Generic.Dictionary<string, int> _lordCombatSamples = new();
+
+        internal void TraceLordCombat(Agent agent, string effect, string details)
+        {
+            if (!GwpCommon.IsGreyWardenLordAgent(agent))
+                return;
+            string key = agent.Index + ":" + effect;
+            _lordCombatSamples.TryGetValue(key, out int samples);
+            if (samples >= 3)
+                return;
+            _lordCombatSamples[key] = samples + 1;
+            GwpAiDiagnostics.WriteCombat("LORD_" + effect,
+                "hero=" + agent.Character.StringId + "; agent=" + agent.Index + "; " + details);
+        }
+#endif
 
         public override void OnAgentCreated(Agent agent)
         {

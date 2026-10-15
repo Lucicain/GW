@@ -10,8 +10,8 @@ using TaleWorlds.MountAndBlade;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Gives the hand-held Grey Warden giant shield the same passive coverage
-    /// shape that the engine uses while the item is carried on the back.
+    /// Gives Grey Warden shields, and ordinary shields held by Grey Warden lords,
+    /// passive coverage using each item's actual shield collision shape.
     ///
     /// The important distinction in Bannerlord's WeaponData is:
     ///   Item.BodyName          -> passive/back Shape
@@ -32,6 +32,10 @@ namespace GreyWardenPolicePurity
             "psys_game_metal_metal_coll";
         private const string MetalShieldBrokenSound =
             "event:/mission/combat/shield/metal_broken";
+        private const string MetalWeaponOnWoodShieldSound =
+            "event:/mission/combat/impact/metal_weapon/wood_shield";
+        private const string WoodShieldBrokenSound =
+            "event:/mission/combat/shield/broken";
         private const string ShieldBreakParticle =
             "psys_game_shield_break";
 
@@ -39,6 +43,9 @@ namespace GreyWardenPolicePurity
         private static int _metalHitParticleId = -1;
         private static int _shieldBreakSoundId = -1;
         private static int _shieldBreakParticleId = -1;
+        private static int _woodShieldHitSoundId = -1;
+        private static int _woodShieldBreakSoundId = -1;
+        private static int _emptyHitParticleId = -1;
         private static string? _loadedShieldCollisionBodyName;
         private static bool _shieldCollisionBoundsValid;
         private static BoundingBox _shieldCollisionBounds;
@@ -293,6 +300,12 @@ namespace GreyWardenPolicePurity
             converted.IsShieldBroken = collisionData.IsShieldBroken;
             converted.IsSneakAttack = collisionData.IsSneakAttack;
             collisionData = converted;
+#if GWP_DIAGNOSTICS
+            victim.Mission?.GetMissionBehavior<GwpKickBehavior>()?.TraceLordCombat(
+                victim, "PASSIVE_SHIELD", "shield=" + heldShield.Item?.StringId
+                + "; shape=" + heldShield.Item?.CollisionBodyName
+                + "; material=" + heldShieldUsage.PhysicsMaterial);
+#endif
             return true;
         }
 
@@ -309,7 +322,10 @@ namespace GreyWardenPolicePurity
             _processingSyntheticHeldShieldBlock = false;
         }
 
-        internal static void PlayNativeMetalShieldImpact(
+        private static bool IsWoodShield(in MissionWeapon shield) =>
+            string.Equals(shield.CurrentUsageItem?.PhysicsMaterial, "wood_shield", StringComparison.Ordinal);
+
+        internal static void PlayNativeShieldImpact(
             Agent attacker,
             Agent victim,
             Vec3 collisionPosition)
@@ -324,10 +340,14 @@ namespace GreyWardenPolicePurity
                     MetalWeaponOnMetalShieldSound);
             }
 
-            if (_shieldHitSoundId >= 0)
+            if (_woodShieldHitSoundId < 0)
+                _woodShieldHitSoundId = SoundEvent.GetEventIdFromString(MetalWeaponOnWoodShieldSound);
+            int soundId = IsWoodShield(victim.WieldedOffhandWeapon) ? _woodShieldHitSoundId : _shieldHitSoundId;
+
+            if (soundId >= 0)
             {
                 mission.MakeSound(
-                    _shieldHitSoundId,
+                    soundId,
                     collisionPosition,
                     soundCanBePredicted: false,
                     isReliable: true,
@@ -336,7 +356,8 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        internal static void SetNativeMetalShieldHitParticles(
+        internal static void SetNativeShieldHitParticles(
+            Agent victim,
             ref HitParticleResultData hitParticleResultData)
         {
             if (_metalHitParticleId < 0)
@@ -346,16 +367,19 @@ namespace GreyWardenPolicePurity
                         MetalOnMetalHitParticle);
             }
 
-            // This is the same HitParticleResultData replacement pattern used
-            // by Shields - They Block Things and RBM.  Supplying the stock
-            // metal/metal collision effect for every phase prevents the old
-            // body hit from leaking blood at any weapon penetration phase.
+            // Native collision_infos.xml uses the empty particle for metal on wood_shield.
+            if (_emptyHitParticleId < 0)
+                _emptyHitParticleId = ParticleSystemManager.GetRuntimeIdByName("psys_game_empty_particle");
+            int particleId = IsWoodShield(victim.WieldedOffhandWeapon) ? _emptyHitParticleId : _metalHitParticleId;
+
+            // Replace every penetration phase to prevent the cancelled body hit
+            // from leaking blood. Ordinary wooden shields keep native wood feedback.
             hitParticleResultData.StartHitParticleIndex =
-                _metalHitParticleId;
+                particleId;
             hitParticleResultData.ContinueHitParticleIndex =
-                _metalHitParticleId;
+                particleId;
             hitParticleResultData.EndHitParticleIndex =
-                _metalHitParticleId;
+                particleId;
         }
 
         private static GetDefendCollisionResultsDelegate?
@@ -425,8 +449,7 @@ namespace GreyWardenPolicePurity
                 MissionWeapon weapon = victim.Equipment[slot];
                 if (!weapon.IsEmpty
                     && weapon.Item != null
-                    && GwpIds.IsGreyWardenLargeShieldItemId(
-                        weapon.Item.StringId)
+                    && GwpWeaponTraits.HasShieldEffects(victim, weapon.Item)
                     && weapon.IsShield())
                 {
                     return true;
@@ -467,10 +490,14 @@ namespace GreyWardenPolicePurity
                         MetalShieldBrokenSound);
                 }
 
-                if (_shieldBreakSoundId >= 0)
+                if (_woodShieldBreakSoundId < 0)
+                    _woodShieldBreakSoundId = SoundEvent.GetEventIdFromString(WoodShieldBrokenSound);
+                int soundId = IsWoodShield(victim.Equipment[shieldSlot]) ? _woodShieldBreakSoundId : _shieldBreakSoundId;
+
+                if (soundId >= 0)
                 {
                     mission.MakeSound(
-                        _shieldBreakSoundId,
+                        soundId,
                         impactPosition,
                         soundCanBePredicted: false,
                         isReliable: true,
@@ -514,8 +541,7 @@ namespace GreyWardenPolicePurity
                 || shield.Item == null
                 || shield.CurrentUsageItem == null
                 || !shield.CurrentUsageItem.IsShield
-                || !GwpIds.IsGreyWardenLargeShieldItemId(
-                    shield.Item.StringId)
+                || !GwpWeaponTraits.HasShieldEffects(victim, shield.Item)
                 || string.IsNullOrEmpty(shield.Item.CollisionBodyName))
             {
                 return false;
@@ -531,8 +557,8 @@ namespace GreyWardenPolicePurity
             if (!shieldEntity.IsValid)
                 return false;
 
-            // CollisionBodyName is shield_body_name (bo_wlarge_shield), the
-            // same authored shield shape selected by the active-block path.
+            // Use this item's own shield_body_name, including ordinary tournament
+            // shields held by Grey Warden lords. No replacement giant-shield geometry.
             collisionBodyName = shield.Item.CollisionBodyName;
             return true;
         }
@@ -779,7 +805,7 @@ namespace GreyWardenPolicePurity
             // passive interception costs what an active block would
             // (2026-09-24: one durability rule, no triple loss); never free.
             float baseDamage = MathF.Max(1, collisionData.InflictedDamage);
-            GwpWeaponTrait? shieldTrait = GwpWeaponTraits.Of(shield.Item);
+            GwpWeaponTrait? shieldTrait = GwpWeaponTraits.OfShield(victim, shield.Item);
             if (!heldPassiveBlock && shieldTrait != null)
                 baseDamage *= shieldTrait.ShieldDamageTakenMultiplier;
             int durabilityDamage = MathF.Max(1, MathF.Round(baseDamage));
@@ -824,8 +850,7 @@ namespace GreyWardenPolicePurity
                 MissionWeapon weapon = agent.Equipment[pending.Slot];
                 if (weapon.IsEmpty
                     || weapon.Item == null
-                    || !GwpIds.IsGreyWardenLargeShieldItemId(
-                        weapon.Item.StringId)
+                    || !GwpWeaponTraits.HasShieldEffects(agent, weapon.Item)
                     || weapon.HitPoints > 1)
                 {
                     continue;
@@ -850,8 +875,7 @@ namespace GreyWardenPolicePurity
                 MissionWeapon held = victim.Equipment[heldSlot];
                 if (held.IsEmpty
                     || held.Item == null
-                    || !GwpIds.IsGreyWardenLargeShieldItemId(
-                        held.Item.StringId))
+                    || !GwpWeaponTraits.HasShieldEffects(victim, held.Item))
                 {
                     return false;
                 }
@@ -869,8 +893,7 @@ namespace GreyWardenPolicePurity
                 MissionWeapon weapon = victim.Equipment[slot];
                 if (!weapon.IsEmpty
                     && weapon.Item != null
-                    && GwpIds.IsGreyWardenLargeShieldItemId(
-                        weapon.Item.StringId)
+                    && GwpWeaponTraits.HasShieldEffects(victim, weapon.Item)
                     && weapon.IsShield())
                 {
                     shieldSlot = slot;
@@ -984,7 +1007,7 @@ namespace GreyWardenPolicePurity
                     .AlternativeAttackForcedPassive;
                 GwpPassiveHeldShieldCollision.BeginSyntheticHeldShieldBlock();
                 colReaction = MeleeCollisionReaction.Bounced;
-                GwpPassiveHeldShieldCollision.PlayNativeMetalShieldImpact(
+                GwpPassiveHeldShieldCollision.PlayNativeShieldImpact(
                     attacker,
                     victim,
                     collisionData.CollisionGlobalPosition);
@@ -1003,7 +1026,7 @@ namespace GreyWardenPolicePurity
             __state = ShieldInterceptionKind.PassiveHeld;
             GwpPassiveHeldShieldCollision.BeginSyntheticHeldShieldBlock();
             colReaction = MeleeCollisionReaction.Bounced;
-            GwpPassiveHeldShieldCollision.PlayNativeMetalShieldImpact(
+            GwpPassiveHeldShieldCollision.PlayNativeShieldImpact(
                 attacker,
                 victim,
                 collisionData.CollisionGlobalPosition);
@@ -1112,6 +1135,7 @@ namespace GreyWardenPolicePurity
     {
         [HarmonyPrefix]
         private static bool BeforeDecideAgentHitParticles(
+            Agent victim,
             ref HitParticleResultData hprd)
         {
             if (!GwpPassiveHeldShieldCollision
@@ -1121,7 +1145,7 @@ namespace GreyWardenPolicePurity
             }
 
             GwpPassiveHeldShieldCollision
-                .SetNativeMetalShieldHitParticles(ref hprd);
+                .SetNativeShieldHitParticles(victim, ref hprd);
             return false;
         }
     }

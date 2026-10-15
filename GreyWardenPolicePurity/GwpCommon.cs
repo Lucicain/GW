@@ -100,6 +100,17 @@ namespace GreyWardenPolicePurity
                    && hero!.Occupation == Occupation.Lord;
         }
 
+        /// <summary>
+        /// 战场上的灰袍领主：战役里是当前灰袍家族的领主英雄，或成婚时还是灰袍领主、嫁出去的英雄
+        /// （<see cref="GwpWardenMarriageBehavior.IsMarriedWarden"/>，用户裁定 2026-10-16：加成跟随她）；自定义战斗没有战役和英雄，
+        /// 灰袍指挥官 <see cref="GwpIds.CustomBattleCommanderId"/> 只注册成 BasicCharacterObject，按这个 ID 认
+        /// （实机 2026-10-16：自定义战斗里领主加成全部不生效）。
+        /// </summary>
+        public static bool IsGreyWardenLordAgent(Agent? agent) =>
+            agent?.Character is CharacterObject character
+                ? IsGreyWardenLord(character.HeroObject) || GwpWardenMarriageBehavior.IsMarriedWarden(character.HeroObject)
+                : string.Equals(agent?.Character?.StringId, GwpIds.CustomBattleCommanderId, StringComparison.Ordinal);
+
         public static bool IsGreyWardenClanMember(Hero? hero)
         {
             return IsGreyWardenClan(hero?.Clan);

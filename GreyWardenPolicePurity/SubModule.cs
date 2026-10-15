@@ -152,6 +152,8 @@ namespace GreyWardenPolicePurity
             mission.AddMissionBehavior(new GwpKickBehavior());
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
+            // 排在成长之后：原版按注册顺序回调 OnAgentRemoved，锁血期间那一下击杀要先按 1.5 倍记成长，再结束锁血。
+            mission.AddMissionBehavior(new GwpLordLastStandBehavior());
             mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
 
             mission.AddMissionBehavior(new GwpBattleSceneContext());

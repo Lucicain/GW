@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-16）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
@@ -13,6 +13,8 @@
 未组队战力归属整理回退点为 `a898237`：`GwpStrength.cs`、`GwpFireswornParties.cs` 和 `tools/Check-CodeHygiene.py`。只迁移未组队士兵的估算入口，兵源、顺序、人数与估算参数不变。
 
 讲和只走 `GwpPeace`，规则只在 [调停与战后讲和](warden-mediation.md) 定义。（依据：源码复核 2026-10-14）
+
+战斗场景的领主身份入口为 `GwpCommon.IsGreyWardenLordAgent`，转调同一英雄/家族判据；装备效果的例外与验收见[领主战斗](lord-combat.md)。
 
 ## 身份判据（`GwpCommon`、`GwpIds`）
 

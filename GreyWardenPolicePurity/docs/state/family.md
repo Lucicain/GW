@@ -2,7 +2,7 @@
 
 > 当前状态：六位创始领主声音与正面性格已区分并部署待试听；已选外貌保留
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 已复核至：`72d6712`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-16）
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
 > 待实测：见文末
 
@@ -44,6 +44,21 @@
 - 无领主的随行练兵队按订单人数抬高编制上限。原版无领主队只有 20 人的底数，超编会大幅减速（`GwpPartySizeLimitModel`，见 `troop-orders.md`）。
   火誓者的无领主队同样不低于现有人数（见 `firesworn-parties.md`）。
 
+## 初始战斗技能与比武评分
+
+以下是GreyWardenLeaderBalanceBehavior在新档写入的基线，不冒充当前存档已成长后的实时技能。这里没有全300或全1000的领主配置，文职专精也没有另设战斗保底。（依据：源码复核 2026-10-15；用户反馈比武偏弱后的调查）
+
+| 领主 | 单手 | 双手 | 长杆 | 运动 | 骑术 | 原版整场比武静态分 |
+|---|---:|---:|---:|---:|---:|---:|
+| 梵蒂/骑士专精 | 180 | 150 | 210 | 150 | 220 | 5.80 |
+| 约珥/方阵专精 | 150 | 80 | 200 | 180 | 100 | 4.80 |
+| 弥瑟/骑射专精 | 160 | 60 | 160 | 130 | 210 | 5.00 |
+| 圣铎/军需专精 | 140 | 80 | 100 | 130 | 110 | 3.80 |
+| 晨曦/政治专精 | 160 | 90 | 110 | 70 | 120 | 3.50 |
+| 暮光/外交专精 | 110 | 70 | 60 | 90 | 150 | 3.50 |
+
+Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之后的成长属于存档状态，不在读档时重置。比武各条结算路径及buff缺口只在[使者约斗](case-envoy.md)定义。本轮未调整技能、perk或比武胜率。（依据：源码复核 2026-10-15）
+
 ## 本职
 
 六个位子，开局按创始领主依次指定（`EnsureCoreDutyAssignments`）：
@@ -71,6 +86,7 @@
   原版不让两位族长成婚，玩家永远是族长：求的是灰袍族长时只看其余条件，成婚前照原版 `ChangeClanLeaderAction` 把族长位子交给本家族另一位活着的成年灰袍领主
   （创始领主按编号先），族长身上的钱也随之交过去——灰袍公库就是族长的钱（`PoliceResourceManager`）。没有人可以接位时不提供求婚。
   （依据：用户裁定 2026-10-14：要能随便和任意一位灰袍领主结婚，以后给每人做故事线；C#反编译 v1.4.8 DefaultMarriageModel、MarriageAction、ChangeClanLeaderAction）
+- 嫁出去的灰袍领主保留灰袍领主的战斗加成（含锁血），规则见 [灰袍领主的身份战斗加成](lord-combat.md)。名单由 `GwpWardenMarriageBehavior` 在原版 `BeforeHeroesMarried`（换家族之前）记下成婚时仍是灰袍领主的英雄，进存档；对话求婚和原版求爱都经过这一步。只管战斗身份，其他按灰袍家族判断的系统不认她。（依据：用户裁定 2026-10-16；C#反编译 v1.4.8 MarriageAction.ApplyInternal）
 
 ## 与要人的关系
 

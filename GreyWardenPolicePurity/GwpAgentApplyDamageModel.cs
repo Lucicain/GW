@@ -10,9 +10,10 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// Preserves the active game mode's complete damage model and changes only
-    /// the native knockdown decision for Grey Warden kicks, shield bashes, and
-    /// all melee attacks made with the Grey Warden paired blades, plus the two
-    /// explicitly requested hit effects on Grey Warden archer arrows.
+    /// the reactions and shield damage selected by Grey Warden weapon traits,
+    /// kicks, shield bashes and warhorse rules. Grey Warden lords inherit the
+    /// corresponding item effects with ordinary equipment as well, and a lethal
+    /// blow on a lord is capped by <see cref="GwpLordLastStandBehavior"/>.
     /// This decision is evaluated once when an eligible blow connects. There
     /// is no post-rise input lock or forced animation.
     /// </summary>
@@ -263,13 +264,16 @@ namespace GreyWardenPolicePurity
             in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
             float baseDamage) =>
-            GwpTroopCombat.ApplyWarhorseDamageRules(
+            GwpLordLastStandBehavior.LimitDamage(
                 in attackInformation,
                 in collisionData,
-                NativeModel.ApplyGeneralDamageModifiers(
+                GwpTroopCombat.ApplyWarhorseDamageRules(
                     in attackInformation,
                     in collisionData,
-                    baseDamage));
+                    NativeModel.ApplyGeneralDamageModifiers(
+                        in attackInformation,
+                        in collisionData,
+                        baseDamage)));
 
         public override void DecideMissileWeaponFlags(
             Agent attackerAgent,
@@ -320,7 +324,7 @@ namespace GreyWardenPolicePurity
             in Blow blow)
         {
             float threshold = NativeModel.CalculateStaggerThresholdDamage(defenderAgent, in blow);
-            return GwpTroopCombat.IsWarhorse(defenderAgent)
+            return GwpTroopCombat.HasWarhorseEffects(defenderAgent)
                 ? threshold * GwpTroopCombat.WarhorseStaggerThresholdScale
                 : threshold;
         }
@@ -392,14 +396,24 @@ namespace GreyWardenPolicePurity
             float baseDamage)
         {
             float damage = NativeModel.CalculateShieldDamage(in attackInformation, baseDamage);
-            // The shield's and the weapon's own traits (GwpWeaponTraits): the Grey Warden
-            // great shield takes half, Grey Warden arrows do double.
-            GwpWeaponTrait? shield = GwpWeaponTraits.Of(attackInformation.VictimShield.Item);
+            // Include lord identity at the same resolution point, without stacking it
+            // on an existing item trait. The native model's damage remains the baseline.
+            GwpWeaponTrait? shield = GwpWeaponTraits.OfShield(
+                attackInformation.VictimAgent, attackInformation.VictimShield.Item);
             if (shield != null)
                 damage *= shield.ShieldDamageTakenMultiplier;
-            GwpWeaponTrait? weapon = GwpWeaponTraits.Of(attackInformation.AttackerWeapon.Item);
+            GwpWeaponTrait? weapon = GwpWeaponTraits.OfAttack(
+                attackInformation.AttackerAgent, attackInformation.AttackerWeapon.Item);
             if (weapon != null)
                 damage *= weapon.ShieldDamageMultiplier;
+#if GWP_DIAGNOSTICS
+            Agent? victim = attackInformation.VictimAgent;
+            if (victim != null && shield != null)
+                victim.Mission?.GetMissionBehavior<GwpKickBehavior>()?.TraceLordCombat(
+                    victim, "SHIELD_DAMAGE", "shield=" + attackInformation.VictimShield.Item?.StringId
+                    + "; incoming=" + baseDamage + "; final=" + damage
+                    + "; takenMultiplier=" + shield.ShieldDamageTakenMultiplier);
+#endif
             return damage;
         }
 

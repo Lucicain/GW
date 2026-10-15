@@ -45,6 +45,13 @@ namespace GreyWardenPolicePurity
             public const int PlayerOrderDowngradePerInterval = 4;
         }
 
+        internal static class LordCombat
+        {
+            // 用户裁定 2026-10-16：致命伤后锁 1 血的时长（秒，起初 5 秒，同日改 10 秒），锁血期间战斗成长的倍数。
+            public const float LastStandSeconds = 10f;
+            public const float LastStandGrowthMultiplier = 1.5f;
+        }
+
         internal static class Training
         {
             // 用户裁定 2026-10-15：超过一半可派，超过四分之三概率翻倍，派至剩余队伍一半。

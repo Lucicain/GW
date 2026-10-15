@@ -161,6 +161,10 @@ namespace GreyWardenPolicePurity
                 " | stage=" + Safe(stage) +
                 " | " + Safe(details));
 
+        internal static void WriteCombat(string stage, string details) =>
+            Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture)
+                + " | COMBAT | stage=" + Safe(stage) + " | " + Safe(details));
+
         /// <summary>
         /// 火誓者各系统的监控：信众村、祭司、地牢、烧人、传教队、狂信者队、军械库、领主差事、收入。
         /// 用来看各系统之间配合得怎样；功能验收后按健康路径退休。

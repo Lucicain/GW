@@ -147,6 +147,7 @@ python tools/Check-StateFreshness.py
 | 文件 | 覆盖范围 |
 |---|---|
 | [`troop-combat.md`](troop-combat.md) | 灰袍兵种等级、整套预设装备、弓手/重步兵/骑士战斗加成 |
+| [`lord-combat.md`](lord-combat.md) | 灰袍领主用普通装备继承战斗词条，模拟保持原版 |
 | [`dual-blade.md`](dual-blade.md) | 双刀 AI、踢/盾击与换武器互斥、双刀武器分类、左手砍击 |
 | [`battle-support.md`](battle-support.md) | 战场援军：三层触发、战力预算、兵种配比、原生耗尽判定 |
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
