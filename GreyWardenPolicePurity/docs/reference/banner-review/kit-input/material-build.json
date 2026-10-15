@@ -1,0 +1,14 @@
+{
+  "status": "Artifact generated; deployment is tracked in docs/state/clan-banner.md",
+  "method": "Native material metadata clone; only diffuse GUID replaced",
+  "template": "Native/custom_banner_icons_07",
+  "texture_tpac_sha256": "4c8cd69ec0f0b66111939b84d6a6137a18379839964b8a371154902973866ac5",
+  "material_guid": "a1b6fa4a-4464-5124-9a30-2e642ecc314d",
+  "package_guid": "6094d742-e51e-5d65-a264-f906ac744474",
+  "texture_guid": "721dc80a-4131-4fee-b809-8e24b326cf6b",
+  "output": "C:\\Users\\lucif\\source\\repos\\GreyWardenPolicePurity\\GreyWardenPolicePurity\\docs\\reference\\banner-review\\kit-input\\gwp_commander_banner_mtl.tpac",
+  "output_sha256": "c27be4a2d4aa753b23feac95f10b92f8110c59fac3235ed7402c03454817290f",
+  "native_metadata_bytes": 239,
+  "non_diffuse_metadata_comparison": "BYTE_IDENTICAL",
+  "tpac_record_readback": "PASS"
+}

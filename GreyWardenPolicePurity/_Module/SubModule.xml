@@ -29,6 +29,9 @@
 	</SubModules>
 	<Xmls>
 		<XmlNode>
+			<XmlName id="BannerIcons" path="banner_icons" />
+		</XmlNode>
+		<XmlNode>
 			<XmlName id="CraftingPieces" path="gwp_crafting_pieces" />
 			<IncludedGameTypes>
 				<GameType value="Campaign" />

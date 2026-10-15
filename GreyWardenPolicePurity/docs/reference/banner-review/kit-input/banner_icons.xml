@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <BannerIconData>
+    <BannerIconGroup id="63" name="{=!}Grey Warden" is_pattern="false">
+      <Icon id="63010" material_name="gwp_commander_banner" texture_index="0" is_reserved="true" />
+    </BannerIconGroup>
+    <BannerColors>
+      <Color id="63001" hex="0xFF1A1A1A" />
+      <Color id="63002" hex="0xFFFDDC88" />
+    </BannerColors>
+  </BannerIconData>
+</base>

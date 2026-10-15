@@ -1,0 +1,18 @@
+{
+  "status": "Prepared; Kit texture/material import and runtime activation pending",
+  "approved_art": "C:\\Users\\lucif\\source\\repos\\GreyWardenPolicePurity\\GreyWardenPolicePurity\\docs\\reference\\banner-review\\commander-banner-complete-v1.png",
+  "art_sha256": "bb0acfb06f960e8930f39276ebfd90cef1bb41b46da5f9bd3caef4a39a93c784",
+  "live_dds": "D:\\steam\\steamapps\\common\\Mount & Blade II Bannerlord\\Modules\\GreyWarden\\AssetSources\\BannerIcons\\gwp_commander_banner.dds",
+  "dds_sha256": "09d8bc3729c58cca75efcb391d7b9c8fd0782dd57616ef5284e8a5b663c979e2",
+  "atlas_png_sha256": "cc148e178c314e5726273bddc43873795d4d11a337fda0188860965f90ef3d1a",
+  "material_name": "gwp_commander_banner",
+  "shader": "gui_color_and_stroke",
+  "native_shader_guid": "b96efd31-7127-46ec-8648-b28d23ece108",
+  "texture_index": 0,
+  "icon_id": 63010,
+  "group_id": 63,
+  "background_color_id": 63001,
+  "sigil_color_id": 63002,
+  "banner_code": "11.63001.63001.1528.1528.764.764.1.0.0.63010.63002.63002.512.512.764.764.0.0.0",
+  "dds_readback": "PASS: 2048 RGBA; red/blue zero, green full, alpha exact; only cell 0 occupied"
+}

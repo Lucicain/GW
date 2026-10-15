@@ -8,6 +8,8 @@
 
 灰袍是无国、无城镇城堡的贵族家族，必须始终独立。来源是玩家反馈：r12/r13 存档里灰袍加入了南帝国。
 
+`spclans.xml` 的 gw 仍为 `is_noble=true`、`is_outlaw=false`、`culture=empire`；旗帜由 [clan-banner](clan-banner.md) 归属，banner_key 不参与上述入国判据。（依据：当前 XML 与归属入口复核 2026-10-15）
+
 ## 为什么只挡评分不够
 
 - 外交模型只影响评分；原版 1.4.8 `ChangeKingdomAction` 的入国动作不再查询模型。（依据：C# 反编译）

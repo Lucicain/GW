@@ -99,9 +99,14 @@ A first default-settings import (2026-09-27) created the 22 `_geo.tpac` and 33
 `_tex.tpac` correctly (LODs, per-material split, skinning, BC5 normal maps all
 right) but no materials, and the editor build then raised
 `CONTENT WARNING: Unable to find material for mesh ...` once per mesh (about 200
-popups, each with a ~700 MB dump). TpacTool cannot write materials
-(`AssetItem.WriteMetadata` throws `NotImplementedException`), so the materials
-have to be made in the Kit. Once the 18 materials existed, re-importing the 22 FBX let the Kit bind each
+popups, each with a ~700 MB dump). TpacTool's typed Material writer is incomplete
+(`AssetItem.WriteMetadata` throws `NotImplementedException`), so the original
+18 materials were made in the Kit. A new material does not always require manual
+parameter entry: `tools/Build-ClanBannerMaterial.py` can clone the exact native
+banner material record and replace only its diffuse texture GUID, after that
+texture has been imported. This is a narrow metadata clone, not a general material
+serializer; its current validation and deployment status are in
+[`../state/clan-banner.md`](../state/clan-banner.md). Once the 18 materials existed, re-importing the 22 FBX let the Kit bind each
 submesh to the material whose name matches the FBX material slot (19 of 20 models
 exact; `winfarmor.lod1.2` came out empty and is assigned by hand). Cloth pieces must
 share positions across UV seams as the original does, or the simulation tears
@@ -125,8 +130,10 @@ re-parenting that `modkit-fbx.py` does (see `tools/tpac/README.md`); the first r
 `wharness` / `wharnesscom` shipped without it and the neck plate followed the left hind leg in
 game. (依据：C++反汇编 2026-09-27)
 
-The user performs all Modding Kit/editor interaction. Do not control the editor
-for them.
+Offline metadata preparation does not perform texture import/cooking or publishing.
+The editor must be closed before an asset file is replaced, so its in-memory copy
+cannot overwrite the replacement on save. Cloth still follows the Kit-only rule in
+[`../state/cloth-assets.md`](../state/cloth-assets.md). (依据：资源加载与缓存流程)
 
 ## Solved: black-and-gold shield shutdown failure
 

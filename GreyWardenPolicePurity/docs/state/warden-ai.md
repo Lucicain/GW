@@ -139,6 +139,16 @@
 - 悬停提示：协力军团是直接 `new Army(...)` 造出来的，`AiBehaviorObject` 为 null，原版提示框会因此抛异常。
   只在这种情况下返回空文本（`GwpAssistanceArmyTooltipPatch`）。（依据：实机诊断 2026-09-16/17）
 
+## 族长留城：当前确认的直接原因
+
+最新实机日志中，族长 gw_leader_0_party_1 在 town_EW1 先被比武 Visit 意图（8 分）留城，campaignHour=2187125.89 已有 ENVOY_DUEL_FINISHED、wardenWon=True；比武收尾正常，之后意图已换成 Escort / Approach，相关小时候选约 0.99 为最高。此后到 2187182.65 仍在城，已持续约 57 游戏小时，粮食够约 27 天、伤兵 0、非食物货值 0、卖货系数 1.000。（依据：实机诊断 2026-10-15 16:09:20 后当前局）
+
+这些小时的原版主动性观测一致为 FleeToPoint@naval_patrol_party_1_party_445、score=11.3208。原版 MobilePartyAi.GetFleeBehavior 在人在聚落、威胁不在同一聚落时，将避敌短期动作改为回当前聚落/留在聚落。小时追捕赢竞价不保证压过这个短期避敌；8 分留城和 11.32 主动性属于不同决策层，不能直接用大小相减。（依据：实机诊断；C#反编译 v1.4.8 DefaultMobilePartyAIModel.GetBestInitiativeBehavior、MobilePartyAi.GetFleeBehavior）
+
+港口允许原版把不同海陆状态的敌人列入周边威胁，并在不同海陆状态时查询己方 SeaBattle 战力；NavalDLC 包装先调用基础模型再另管风暴，这次有明确舰队目标，不是风暴。当前日志没有该舰队海陆状态、真实兵船、距离与可登陆能力，不能只凭其 ID 判断这是误报还是应躲的真实威胁；这些具体状态是下一步取证缺口。本轮没有修改避敌规则或强制出城。（依据：C#反编译 v1.4.8 基础及 NavalDLC 模型；当前日志字段复核）
+
+已知缺陷：族长比武结束后被附近 naval_patrol_party_1_party_445 的短期避敌持续留城，追捕约 57 游戏小时未执行；直接机制已确认，海陆威胁是否误判尚未证实、未修。（依据：实机诊断与 C#反编译 2026-10-15）
+
 ## 玩家请求的顺延计数
 
 - 只有成功完成的普通差事，才计入玩家请求的顺延（`GwpPlayerRequestDeferral`）。取消、被挤掉、失效的不算。

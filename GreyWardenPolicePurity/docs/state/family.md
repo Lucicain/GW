@@ -6,6 +6,8 @@
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
 > 待实测：见文末
 
+家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
+
 灰袍是一个独立家族（`gw`，文化 empire，初始家乡 `village_EN5_1`），不加入王国（见 `crime-intake.md` 外交封锁）。
 新成员从村庄收养来，见 [`village-relief.md`](village-relief.md)；地图上谁去做什么，见 [`warden-ai.md`](warden-ai.md)。
 
