@@ -119,6 +119,32 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
           <Mesh name="horse_mane_2"
                 affected_by_cover="true" />
         </AdditionalMeshes>
+        <!-- 毛色照原版同款战马 t2_empire_horse：棕、黑、灰、白四种，每种再随机深浅（用户要求 2026-10-15：灰袍战马不要全长一样）。 -->
+        <Materials>
+          <Material name="horse_brown_mat">
+            <MeshMultipliers>
+              <MeshMultiplier mesh_multiplier="FF010101" percentage="0.75" />
+              <MeshMultiplier mesh_multiplier="FF909090" percentage="0.25" />
+            </MeshMultipliers>
+          </Material>
+          <Material name="horse_black_mat">
+            <MeshMultipliers>
+              <MeshMultiplier mesh_multiplier="FF010101" percentage="0.75" />
+              <MeshMultiplier mesh_multiplier="FF909090" percentage="0.25" />
+            </MeshMultipliers>
+          </Material>
+          <Material name="horse_grey_mat">
+            <MeshMultipliers>
+              <MeshMultiplier mesh_multiplier="FF303030" percentage="0.75" />
+              <MeshMultiplier mesh_multiplier="FF909090" percentage="0.25" />
+            </MeshMultipliers>
+          </Material>
+          <Material name="horse_white_mat">
+            <MeshMultipliers>
+              <MeshMultiplier mesh_multiplier="FF303030" percentage="1.0" />
+            </MeshMultipliers>
+          </Material>
+        </Materials>
       </Horse>
     </ItemComponent>
   </Item>
