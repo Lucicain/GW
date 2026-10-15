@@ -10,6 +10,8 @@
 
 [村庄](firesworn-villages.md) · [仪式](firesworn-rituals.md) · [军械库](firesworn-armory.md) · [队伍](firesworn-parties.md) · [招兵](warden-recruitment.md)
 
+GwpFireswornDungeon 中的守村队直接征募采用低阶优先，人数/伤兵/经验走共享转兵入口；具体边界归 [招兵](warden-recruitment.md)，不会改变捐赠或地牢经济规则。（依据：源码复核 2026-10-15）
+
 ## 经济边界
 
 - 信众村对灰袍来说就是城：灰袍领主在那里交俘虏、交装备、买补给。（依据：用户裁定 2026-10-05）

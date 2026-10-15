@@ -13,9 +13,9 @@ using TaleWorlds.Core;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 灰袍招兵（用户裁定 2026-10-07）：原版的补兵路——要人的志愿兵、城里的雇佣兵、招降俘虏——全部照原版放开，纯化删掉，
-    /// 原版兵留在灰袍队里照原版领饷。信众村另有两条：祭司的格子、直接招守村队里现有的狂信者
-    /// （见 <see cref="GwpFireswornBehavior"/>），都给守村队留底。灰袍兵不领饷。
+    /// 原版补兵路（志愿兵、雇佣兵、招降俘虏）照常；非灰袍兵的纯化由 GwpWardenPurification 负责。
+    /// 信众村的祭司格子放精锐，直接招守村队则低阶优先，都给村庄留底（用户裁定 2026-10-15）。
+    /// 只有灰袍领主能从信众村这两条路招兵；灰袍兵不领饷。
     /// </summary>
     internal static class GwpWardenRecruitment
     {

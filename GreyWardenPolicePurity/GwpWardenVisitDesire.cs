@@ -23,7 +23,7 @@ namespace GreyWardenPolicePurity
     /// <item>候选：原版只给王国领主看本国所有聚落，独立家族只看身边约 0.8 天路程以内的（FillSettlementsToVisitWithDistancesAsDays：
     /// 直线 0.5 天 × 1.6 以内）。灰袍是独立家族，信众村和城镇一样，路过身边才进候选（用户裁定 2026-10-08：路过才去）。
     /// 以前信众村全图都进候选，俘虏半满就压过差事，跟人途中跑 60–126 格、16–86 小时回信众村交俘虏（实机诊断 2026-10-08）。</item>
-    /// <item>招兵数：原版数要人格子里的兵；信众村再加上能直接招的狂信者（正在这里或刚走到门口时不加）；平均工资至少报 1（<see cref="VolunteersFor"/>）。</item>
+    /// <item>招兵数：原版数要人格子里的兵；信众村再加上能直接招的守村兵（正在这里或刚走到门口时不加）；平均工资至少报 1（<see cref="VolunteersFor"/>）。</item>
     /// <item>打分（<see cref="Rescore"/>）：原版只给城堡城镇乘的俘虏、伤员、卖东西三项（合起来叫「需要」），信众村也乘，
     /// 「灰袍优先做信众村的事」的倍数放大的是需要高出 1 的那部分：1 + (需要 − 1) × 倍数。城堡城镇照原版不动：
     /// 买卖、招兵、招降俘虏、卖俘虏都照原版，灰袍只是更偏好去信众村办（用户裁定 2026-10-08：不是大改，别破坏原版体验）。</item>
@@ -88,7 +88,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 原版估算「这里能招几个兵」时不看招不招得到，只数每位要人的前几格（同势力 4 格、否则 2 格），平均工资是整数除法
         /// （C#反编译 v1.4.8 GetApproximateVolunteersCanBeRecruitedDataFromSettlement）。灰袍照原版去各处要人那里招兵（用户裁定 2026-10-07）；
-        /// 信众村再加上能直接招的狂信者（只招守村队里现有的、留够守村的）。
+        /// 信众村再加上能直接招的守村兵（实际招募低阶优先，留够守村的）。
         /// 正在这座村或刚走到村口时不加：招兵只在进门那一刻（RecruitmentCampaignBehavior.OnBeforeSettlementEntered），
         /// 站在村口的招兵分只会让原版每小时选「去这里」，而「已经在这里」就原地待命（AiPartyThinkBehavior.PartyHourlyAiTick）。
         /// 原版拿平均工资去除工资预算再 MathF.Floor 成人数上限；格子里全是不领饷的灰袍兵时平均是 0，得到 -2147483648，
@@ -102,7 +102,7 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? party = hero.PartyBelongedTo;
             bool here = party != null && MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party) == settlement;
-            int direct = here || party == null ? 0 : GwpFireswornBehavior.DirectZealotsFor(settlement, party);
+            int direct = here || party == null ? 0 : GwpFireswornBehavior.DirectGuardRecruitsFor(settlement, party);
             int count = vanilla.Count + direct;
             if (!here && GwpFireswornBehavior.IsPreachedVillage(settlement))
                 count = (int)(count * GwpTuning.Firesworn.FaithVillageVisitPriority);

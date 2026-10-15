@@ -442,19 +442,21 @@ namespace GreyWardenPolicePurity
         internal static int HouseholdCap(Settlement settlement) => (int)settlement.Village.Hearth;
 
         /// <summary>
-        /// 灰袍领主在这座信众村能直接招几个狂信者：只招守村队里现有的狂信者，不凭空从村民里变（用户裁定 2026-10-07）；
+        /// 灰袍领主在这座信众村能直接招几个守村兵，实际取人按低阶优先（用户裁定 2026-10-15）；
         /// 守村队留够守村的（一半、不少于 5 人，<see cref="SpareGuard"/>），祭司格子里已经占下的人也算在能走的数里。按部队空位封顶。
         /// </summary>
-        internal static int DirectZealotsFor(Settlement settlement, MobileParty party) =>
-            _instance == null || !IsPreachedVillage(settlement) || !IsVillageQuiet(settlement)
+        internal static int DirectGuardRecruitsFor(Settlement settlement, MobileParty party) =>
+            _instance == null || !party.IsLordParty || !GwpWardenRecruitment.IsWardenParty(party) ||
+            !IsPreachedVillage(settlement) || !IsVillageQuiet(settlement) ||
+            settlement.MilitiaPartyComponent?.MobileParty?.IsActive != true ||
+            settlement.MilitiaPartyComponent.MobileParty.MapEvent != null
                 ? 0
-                : Math.Min(FreeSlots(party), _instance.DirectZealotsAvailable(_instance._villages[settlement.StringId]));
+                : Math.Min(FreeSlots(party), _instance.DirectGuardRecruitsAvailable(_instance._villages[settlement.StringId]));
 
-        private int DirectZealotsAvailable(FaithVillage row)
+        private int DirectGuardRecruitsAvailable(FaithVillage row)
         {
             int inSlots = FindLivingPriest(row)?.VolunteerTypes.Count(troop => troop != null) ?? 0;
-            int zealots = GuardOf(row.VillageId).GetTroopCount(CharacterObject.Find(GwpIds.ZealotId));
-            return Math.Max(0, Math.Min(zealots, SpareGuard(row) - inSlots));
+            return Math.Max(0, SpareGuard(row) - inSlots);
         }
 
         // ---------------------------------------------------------------- 事件分派
@@ -544,7 +546,7 @@ namespace GreyWardenPolicePurity
                 party.MapEvent != null || !IsPreachedVillage(settlement))
                 return;
             HandOver(party, settlement);
-            EnlistZealots(party, settlement);
+            EnlistGuardRecruits(party, settlement);
         }
 
         private void OnSettlementLeft(MobileParty party, Settlement settlement) => _lastVisits.Remove(party.StringId);

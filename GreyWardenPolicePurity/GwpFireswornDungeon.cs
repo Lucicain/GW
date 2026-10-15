@@ -156,29 +156,49 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 灰袍领主用部队空位直接招守村队里现有的狂信者（用户裁定 2026-10-07：不凭空变，不能招完），不花钱。
+        /// 灰袍领主从守村队按低阶优先补空位（用户裁定 2026-10-15），不花钱；保留原有留守和祭司格子额度。
         /// 户数和信众户都不扣：信教的人家还在，只是当兵的子女走了（用户裁定 2026-10-07），守村队慢慢补回。
         /// 每人带走他那一套装备（用户裁定：招兵连装备带走）。祭司格子的兵已经在进门前招完。
         /// </summary>
-        private void EnlistZealots(MobileParty party, Settlement settlement)
+        private void EnlistGuardRecruits(MobileParty party, Settlement settlement)
         {
-            int enlisted = DirectZealotsFor(settlement, party);
-            if (enlisted <= 0)
+            int requested = DirectGuardRecruitsFor(settlement, party);
+            if (requested <= 0)
                 return;
             FaithVillage row = _villages[settlement.StringId];
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
-            int kits = MoveBestSets(settlement.StringId, party.StringId, zealot, enlisted);
-            GuardOf(row.VillageId).AddToCounts(zealot, -enlisted);
-            party.MemberRoster.AddToCounts(zealot, enlisted);
+            TroopRoster guard = GuardOf(row.VillageId);
+            TroopRoster militia = settlement.MilitiaPartyComponent!.MobileParty.MemberRoster;
+            int enlisted = 0, kits = 0;
+#if GWP_DIAGNOSTICS
+            var composition = new List<string>();
+#endif
+            foreach (TroopRosterElement batch in guard.GetTroopRoster()
+                .Where(element => IsGuardTroop(element.Character))
+                .OrderBy(element => element.Character.Tier)
+                .ThenBy(element => element.Character.StringId, StringComparer.Ordinal).ToList())
+            {
+                if (enlisted >= requested) break;
+                int moved = GwpTroopTransfer.Move(militia, party.MemberRoster, batch.Character,
+                    Math.Min(batch.Number, requested - enlisted)).Number;
+                kits += MoveBestSets(settlement.StringId, party.StringId, batch.Character, moved);
+                guard.AddToCounts(batch.Character, -moved);
+                enlisted += moved;
+#if GWP_DIAGNOSTICS
+                if (moved > 0) composition.Add(batch.Character.StringId + ":" + moved);
+#endif
+            }
             PushGuard(row, settlement);
             ReconcilePriestSlots(row);
             UpdatePriestPower(row);
             RecordVisit(party, settlement, recruits: enlisted);
             GwpSettlementNotices.Post(settlement, party.LeaderHero, GwpSettlementNotices.RecruitText(enlisted));
-            GwpAiDiagnostics.WriteFaith("ZEALOTS_ENLISTED",
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFaith("GUARD_ENLISTED",
                 "party=" + party.StringId + "; village=" + settlement.StringId + "; enlisted=" + enlisted +
+                "; composition=" + string.Join(",", composition) +
                 "; kitItems=" + kits + "; guardLeft=" + Sworn(row) + "; households=" + row.Households +
                 "; members=" + party.Party.NumberOfAllMembers + "/" + party.Party.PartySizeLimit);
+#endif
         }
 
         private static int NonFoodValue(ItemRoster roster)

@@ -161,7 +161,7 @@ def main():
         gains[data["village"]]["烧掉的不信教户"] -= num(data.get("householdsBurned"))
     for _, data in by_stage["PRIEST_RECRUITED"]:
         gains[data["village"]]["祭司格子招走"] -= num(data.get("fromGuard"))
-    for _, data in by_stage["ZEALOTS_ENLISTED"]:
+    for _, data in by_stage["GUARD_ENLISTED"]:
         gains[data["village"]]["直接招走"] -= num(data.get("enlisted"))
     for _, data in by_stage["SWORN_GROWTH"]:
         for field, label in (("fromWardensHouseholds", "驻留信众户"),
@@ -206,8 +206,8 @@ def main():
     recruits = collections.defaultdict(collections.Counter)
     for _, data in by_stage["PRIEST_RECRUITED"]:
         recruits[data["party"]]["祭司:" + data["troop"]] += num(data.get("count"))
-    for _, data in by_stage["ZEALOTS_ENLISTED"]:
-        recruits[data["party"]]["狂信者"] += num(data.get("enlisted"))
+    for _, data in by_stage["GUARD_ENLISTED"]:
+        recruits[data["party"]]["守村队直招"] += num(data.get("enlisted"))
     for _, data in by_stage["ARMORY_LOOT"]:
         recruits[data["holder"]]["缴获尸体"] += num(data.get("bodies"))
         recruits[data["holder"]]["缴获件数"] += num(data.get("items"))

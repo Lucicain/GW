@@ -91,7 +91,7 @@
   NotablesCampaignBehavior.CheckAndMakeNotableDisappear → KillCharacterAction.ApplyByRemove）
 - **格子**：几格有人、什么时候补、怎么排都照原版（每格每天按原版概率补，按等级从低到高排）。
   格子里放守村队里最精锐的兵：等级高的在前，同兵种里配装好的先走。守村队至少留一半（不少于 5 人）守村，格子只放多出来的，
-  不够就空着；直接招狂信者也从这「多出来的」里扣（见 `warden-recruitment.md`）。（依据：实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，剩下 5 人里 4 人又进了格子）
+  不够就空着；低阶优先的直接招守村兵也从这「多出来的」里扣（见 [招兵](warden-recruitment.md)）。（依据：用户裁定 2026-10-15；实机诊断 2026-10-07：开局领主补兵把守村队从 11 人招到 5 人，剩下 5 人里 4 人又进了格子）
   原版会自己升格子里的兵，升出来的守村队里可能没有，所以每天原版补完、以及每小时，都照守村队重排一次。（依据：用户裁定 2026-10-07；C#反编译 v1.4.8 RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement）
 - 领主从格子招走人，守村队就少这几个，他们那一套装备整套带走。
 

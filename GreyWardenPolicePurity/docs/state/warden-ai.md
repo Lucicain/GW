@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）；协力编队与招兵统计见案件页
 > 最后验收：未建立检查点
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-15）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -92,7 +92,7 @@
 **灰袍改了什么**：
 - 候选：独立家族原版只看身边约 0.8 天路程以内的聚落（直线 0.5 天 × 1.6），信众村也一样，路过身边才进候选。
   （依据：用户裁定 2026-10-08：路过才去；实机诊断 2026-10-08：以前全图都进候选，跟人途中跑 60–126 格、16–86 小时回信众村交俘虏）
-- 招兵数：照原版数要人格子；信众村再加上能直接招的狂信者，再乘偏好倍数 3（正在这座村或刚走到村口时都不加），平均工资至少报 1。见 `warden-recruitment.md`。
+- 招兵数：照原版数要人格子；信众村再加上能直接招的守村兵，再乘偏好倍数 3（正在这座村或刚走到村口时都不加），平均工资至少报 1。实际直招与这里共用 DirectGuardRecruitsFor，低阶优先和留守口径见 [招兵](warden-recruitment.md)。（依据：用户裁定、源码复核 2026-10-15）
   原版招兵分按能招到的人数做乘方，城里要人多（七八位，村里三位），不乘的话缺兵时总是城里赢；各要人出兵快慢和势力无关，只看格子和关系。
   （依据：用户裁定 2026-10-08：招兵也偏好信众村；C#反编译 v1.4.8 AiVisitSettlementBehavior num26–num31、DefaultVolunteerModel）
 - 信众村：俘虏（1 + 2 × 俘虏/上限，连续算；地牢到了软上限就是 1）× 伤员 × 交东西（原版卖东西项的非坐骑那一半，只算到了村里会交出去的东西：口粮和普通坐骑不算），合起来叫「需要」；「灰袍优先做信众村的事」放大需要高出 1 的那部分：
@@ -107,14 +107,14 @@
 - 养伤（`GwpFaithHealingModel`）：在没被劫的信众村里按在城里算，普通兵每天多好 10 个、英雄多回 8 点。（依据：C#反编译 v1.4.8 DefaultPartyHealingModel）
 
 这些分和灰袍的差事一起进欲望竞价（普通案件 0.99），手上的案子不退回案件池。
-进了信众村（不管为什么进的）交俘虏、捐东西、直接招狂信者，见 `firesworn-economy.md`。
+进了信众村（不管为什么进的）交俘虏、捐东西；低阶优先直接招守村兵见 [招兵](warden-recruitment.md)，交接见 `firesworn-economy.md`。
 
 **监控**：每日异常 `LORD_HOLDING_AT_SETTLEMENT`（领主在聚落门口待命，办重建、请愿的原地驻留不算）。
 
 **聚落名牌上的动态**（`GwpSettlementNotices.cs`）：原版领主在聚落做了事，名牌上会冒出一条「某某招募了几名士兵」「解决了一个请愿」
 （SandBox.ViewModelCollection `SettlementNameplateNotificationsVM` 听招兵、卖俘虏、卖东西、请愿等事件）。灰袍的这些事原版没有事件，
-往同一张列表里加同样样式的一条：交俘虏、捐东西、直接招狂信者（用原版招兵那句）、本村传教、烧人、传教队并入、运械队到了、卖货队卖货、重建完成、
-门口办完的请愿（原版只在人在聚落里时显示）。不借原版招兵事件：RBM 听到 AI 招兵会向领主收招兵钱，而直接招狂信者不花钱。
+往同一张列表里加同样样式的一条：交俘虏、捐东西、直接招守村兵（用原版招兵那句）、本村传教、烧人、传教队并入、运械队到了、卖货队卖货、重建完成、
+门口办完的请愿（原版只在人在聚落里时显示）。不借原版招兵事件：RBM 听到 AI 招兵会向领主收招兵钱，而直接招守村兵不花钱。
 只在玩家查看过的聚落上显示，同原版。（依据：用户裁定 2026-10-07；C#反编译 v1.4.8 SandBox.ViewModelCollection、RBMCampaign SpoilsPool）
 
 ## 巡区
