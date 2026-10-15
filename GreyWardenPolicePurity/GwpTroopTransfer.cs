@@ -22,6 +22,23 @@ namespace GreyWardenPolicePurity
             return moved;
         }
 
+        /// <summary>
+        /// 在同一份名册里把一整批兵换成另一兵种（纯化用）：人数、伤兵照原样，原兵种攒的经验不带过去——兵种树不同。
+        /// 返回换了几个。
+        /// </summary>
+        internal static int Convert(TroopRoster roster, CharacterObject from, CharacterObject to)
+        {
+            int index = roster.FindIndexOfTroop(from);
+            if (index < 0 || from == to)
+                return 0;
+            TroopRosterElement current = roster.GetElementCopyAtIndex(index);
+            if (current.Number <= 0)
+                return 0;
+            roster.AddToCounts(from, -current.Number, woundedCount: -current.WoundedNumber);
+            roster.AddToCounts(to, current.Number, woundedCount: current.WoundedNumber);
+            return current.Number;
+        }
+
         internal static TroopRosterElement Move(TroopRoster source, TroopRoster destination,
             CharacterObject troop, int requested, bool healthyOnly = false, int? exactXp = null)
         {

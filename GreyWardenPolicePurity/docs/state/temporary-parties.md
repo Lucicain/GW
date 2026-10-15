@@ -101,7 +101,7 @@
 - 原版饥饿规则备查：看 `RemainingFoodPercentage < 0`，只在每日进食时刷新；饥饿的移动队
   每天 25% 普通兵转伤。无领主自定义队不走原版逃兵。
 
-兵员纯化已删（用户裁定 2026-10-07：灰袍照原版招原版兵），见 [warden-recruitment.md](warden-recruitment.md)。
+纯化只对灰袍领主队做，临时队不纯化，见 [warden-recruitment.md](warden-recruitment.md)「纯化」。
 
 ## 共享编号与兵员搬运
 

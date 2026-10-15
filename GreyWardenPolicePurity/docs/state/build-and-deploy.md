@@ -8,8 +8,8 @@
 
 ## 当前开发部署
 
-当前 live 是协力编队统一修复的开发构建（源码基线 `99a3fdb`），DLL SHA-256 前缀 `a647254a03018162`；
-live 一致、GameCompat、ContentKeys、PartyTransfers、Python 19 项、CaseSettlement.Tests 155 项均通过。（依据：构建与哈希 2026-10-15）
+当前 live 是协力编队、纯化与归队改法的开发构建（源码基线 `e4b6cb7`），DLL SHA-256 前缀 `aac6b38d1ca9c1d5`；
+live 一致、GameCompat、ContentKeys、PartyTransfers 177 项（含纯化整批换兵种）、Python 19 项、CaseSettlement.Tests 155 项均通过。（依据：构建与哈希 2026-10-15）
 
 ## 两个开关决定一切
 

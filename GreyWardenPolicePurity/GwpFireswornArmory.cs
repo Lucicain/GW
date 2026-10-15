@@ -676,6 +676,30 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>自动结算里这一方这个兵种分到的装备平均阶数（兵器、护甲）。</summary>
+        /// <summary>
+        /// 纯化下来的兵把自己那套装备交进这支部队的军械库：兵种自带的第一套战斗装备，一兵一套；马和马具不收
+        /// （军械库不配马，用户裁定 2026-10-08）。用不上的照账本规则算多余，到信众村捐掉、进货仓。返回收进几件。
+        /// </summary>
+        internal static int DepositTroopKits(MobileParty party, CharacterObject troop, int count)
+        {
+            string? holder = _instance?.HolderOf(party.Party);
+            if (_instance == null || holder == null || count <= 0)
+                return 0;
+            ItemRoster ledger = ItemsOf(_instance._armories, holder);
+            Equipment kit = troop.FirstBattleEquipment;
+            int items = 0;
+            for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumEquipmentSetSlots; slot++)
+            {
+                EquipmentElement element = kit[slot];
+                if (element.Item == null || slot == EquipmentIndex.Horse || slot == EquipmentIndex.HorseHarness)
+                    continue;
+                ledger.AddToCounts(element, count);
+                items += count;
+            }
+            _instance._plans.Remove(holder);
+            return items;
+        }
+
         internal static bool TryGetArmoryTiers(PartyBase? party, CharacterObject troop, out float weapon, out float armor)
         {
             weapon = armor = 0f;

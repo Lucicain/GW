@@ -7,7 +7,7 @@
 > 待实测：练兵领主练满后去最近的信众村、待两小时与守村队一换一，别的灰袍领主不再被练兵叫走；agent 核对 `TRAINING_TASK_ASSIGNED`、`TRAINING_EXCHANGE_ROSTER`；调兵、练兵队归还及解散保留实际伤兵与经验；同版存读后接续
 
 灰袍自己的兵怎么练、怎么在领主之间流转。玩家下的练兵订单和随行练兵队见 [`troop-orders.md`](troop-orders.md)；
-兵员从哪来见 [`warden-recruitment.md`](warden-recruitment.md)（原版招兵照常，纯化已删）。
+兵员从哪来见 [`warden-recruitment.md`](warden-recruitment.md)（原版招兵照常，进队后按等级纯化）。
 
 兵员搬运及建队编号规则只在 [临时队](temporary-parties.md) 定义，选兵与订单阶段沿用本页。
 

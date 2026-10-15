@@ -23,7 +23,7 @@ namespace GreyWardenPolicePurity
     ///    无英雄的临时纠察/支援队是一次性任务单位，只在生成时携带固定行军口粮，
     ///    不参与灰袍家族收支，也不会进城购买补给。
     /// 2. 保留旧补给 API 仅用于存档/调用兼容；它只请求重新思考，不下移动命令
-    /// 兵员纯化已删（用户裁定 2026-10-07：灰袍照原版招原版兵，原版兵留在队里）。
+    /// 3. 每小时给灰袍领主队纯化（规则在 GwpWardenPurification）。
     /// </summary>
     public class PoliceResourceManager : CampaignBehaviorBase
     {
@@ -87,6 +87,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HeroComesOfAgeEvent.AddNonSerializedListener(this, OnHeroComesOfAge);
             CampaignEvents.OnShipOwnerChangedEvent.AddNonSerializedListener(this, OnShipOwnerChanged);
+            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, GwpWardenPurification.Purify);
         }
 
         public override void SyncData(IDataStore dataStore)

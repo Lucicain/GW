@@ -90,6 +90,16 @@ public static class PartyTransferRegression
         Check(State(escort, troop).WoundedNumber + State(escort, other).WoundedNumber == 5, "multi-batch wounds");
         Check(State(escort, troop).Xp + State(escort, other).Xp == 328, "multi-batch XP");
 
+        // Purification converts a whole batch in place: count and wounds kept, the old tree's XP dropped.
+        var vanilla = Troop(); var warden = Troop();
+        var lord = Roster(vanilla, 9, 3, 450);
+        lord.AddToCounts(warden, 2, false, 1, 77);
+        int converted = (int)Owner.GetMethod("Convert", Hidden).Invoke(null, new object[] { lord, vanilla, warden });
+        Check(converted == 9 && lord.FindIndexOfTroop(vanilla) < 0, "whole batch converted");
+        Check(State(lord, warden).Number == 11 && State(lord, warden).WoundedNumber == 4, "count and wounds conserved");
+        Check(State(lord, warden).Xp == 77 && lord.TotalManCount == 11, "target XP untouched; no troops created");
+        Check((int)Owner.GetMethod("Convert", Hidden).Invoke(null, new object[] { lord, vanilla, warden }) == 0, "absent source is a no-op");
+
         // The original registry supplies unique IDs across prefixes and existing suffixes.
         var manager = new CampaignObjectManager();
         var parties = (MBList<MobileParty>)typeof(CampaignObjectManager).GetField("_mobileParties", Hidden).GetValue(manager);
