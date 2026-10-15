@@ -156,7 +156,7 @@ namespace GreyWardenPolicePurity
     /// 现有按整支民兵队算）。包在已注册的模型外面：
     /// <list type="bullet">
     /// <item>本村能烧自己人（祭司已是本地最强）起：不再出新的原版民兵，也不退役，守村交给守村队；旧民兵等着被烧掉、
-    /// 把守村队纯化（用户裁定 2026-10-07）。</item>
+    /// 把守村队纯化（用户裁定 2026-10-07）。原版民兵那份增长改给守村队（用户裁定 2026-10-15）。</item>
     /// <item>有守村队、祭司还不是最强（或还没有祭司）的村子：原版民兵照原版增长，退役项里把灰袍兵那一份加回来，原版民兵的增减就和没有灰袍兵时一样。</item>
     /// <item>别的村镇照原版。</item>
     /// </list>
@@ -165,6 +165,14 @@ namespace GreyWardenPolicePurity
     {
         // AddModel<T> 总会把已注册的模型设成 BaseModel（CampaignGameStarter.AddModel<T>）。
         private SettlementMilitiaModel Inner => BaseModel;
+
+        /// <summary>
+        /// 原版这座村民兵每天的增长项，不算退役：原版增减（0.5 + 户数/400，加政策、文化）把「现有 × 2.5%」的退役项加回来。
+        /// 祭司最强以后原版民兵不再长，这份增长改给守村队（<see cref="GwpFireswornBehavior"/> 每日补兵）。
+        /// </summary>
+        internal float VanillaGrowth(Settlement settlement) =>
+            Inner.CalculateMilitiaChange(settlement).ResultNumber +
+            settlement.Militia * GwpTuning.Firesworn.VanillaMilitiaRetireShare;
 
         public override int MilitiaToSpawnAfterSiege(Town town) => Inner.MilitiaToSpawnAfterSiege(town);
 

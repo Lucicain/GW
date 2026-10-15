@@ -914,16 +914,21 @@ namespace GreyWardenPolicePurity
                         fromHearth = Convert(row, village, MBRandom.RoundRandomized(hearthGrowth * share));
                 }
                 int headroom = GuardHeadroom(row);
+                // 祭司最强以后原版民兵不再长，守村队照原版民兵的速度长（用户裁定 2026-10-15）；之前按缺额的 5% 补（用户裁定 2026-10-09）。
+                // 两种都只补到两户一兵的上限。
+                float dailyGrowth = IsPriestStrongest(row, village)
+                    ? ((GwpFireswornMilitiaModel)Campaign.Current.Models.SettlementMilitiaModel).VanillaGrowth(village)
+                    : headroom * GwpTuning.Firesworn.GuardRegrowDailyChance;
                 if (IsVillageQuiet(village))
-                    regrown = AddToGuard(row, village, zealot,
-                        MBRandom.RoundRandomized(headroom * GwpTuning.Firesworn.GuardRegrowDailyChance));
+                    regrown = AddToGuard(row, village, zealot, MBRandom.RoundRandomized(dailyGrowth));
                 presence.TryGetValue(row.VillageId, out int fromWardens);
                 if (fromHearth + regrown + fromWardens <= 0)
                     continue;
                 UpdatePriestPower(row);
                 GwpAiDiagnostics.WriteFaith("SWORN_GROWTH",
                     "village=" + row.VillageId + "; fromWardensHouseholds=" + fromWardens + "; fromHearthHouseholds=" + fromHearth +
-                    "; regrown=" + regrown + "; households=" + row.Households + "; guard=" + Sworn(row) +
+                    "; regrown=" + regrown + "; dailyGrowth=" + dailyGrowth.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) +
+                    "; households=" + row.Households + "; guard=" + Sworn(row) +
                     "; population=" + GuardPopulation(row) + "; cap=" + GuardCap(row) + "; headroomBefore=" + headroom +
                     "; share=" + SwornShare(row, village).ToString("0.000") + "; hearth=" + village.Village.Hearth.ToString("0"));
             }

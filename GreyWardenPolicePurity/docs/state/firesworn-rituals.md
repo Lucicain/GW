@@ -2,7 +2,7 @@
 
 > 当前状态：集会只加信众户、烧民兵额外限额与烧死者经验供守村队已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`7320b86`（2026-10-15）
 > 覆盖源码：`GwpFireswornRituals.cs` `GwpDamnationSmokePatch.cs` `GwpFireswornMenus.cs`
 > 待实测：见文末
 
