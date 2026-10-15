@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-182 个源文件、54,689 行、344 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
+182 个源文件、54,751 行、344 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -528,7 +528,7 @@
 ### 诊断（4 个文件）
 
 - `GwpAiDiagnostics.cs` — 597 行 · `GwpAiDiagnostics`，另含 1 个类型
-- `GwpRuntimeFaultWatch.cs` — 87 行 · `GwpRuntimeFaultWatch`
+- `GwpRuntimeFaultWatch.cs` — 148 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 34 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 23 行 · `GwpDispatchBarterFaultDiagnostics`
 
@@ -624,7 +624,7 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 170 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 171 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（94 个文件）
 

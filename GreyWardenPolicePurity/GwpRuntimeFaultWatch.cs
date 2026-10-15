@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
 namespace GreyWardenPolicePurity
 {
@@ -27,6 +29,10 @@ namespace GreyWardenPolicePurity
             _armed = true;
             AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandled;
+            // 2026-10-16 08:37 实机无报错闪退：rgl 日志没有正常退出的托管卸载记录，看门狗没收到异常事件，
+            // 没有 WER 记录或转储，首次/未处理异常观察也都没触发。用退出记录区分托管退出与进程被直接结束，
+            // 用内存采样核对内存耗尽的猜测（开局时系统空闲内存只剩 17.9%）。问题查清后随本诊断一起退休。
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             GwpFaultTrace.Write("FAULT_WATCH_ARMED", details: "assembly="
                 + typeof(GwpRuntimeFaultWatch).Assembly.GetName().Version
                 + "; build=" + typeof(GwpRuntimeFaultWatch).Module.ModuleVersionId
@@ -67,6 +73,59 @@ namespace GreyWardenPolicePurity
             lock (Seen) { Seen.Clear(); _written = 0; }
         }
 
+        private static readonly Stopwatch MemoryClock = Stopwatch.StartNew();
+        private const long MemorySampleMilliseconds = 60_000;
+        private static long _nextMemorySample;
+
+        /// <summary>主线程应用心跳调用；每分钟写一条内存采样。</summary>
+        internal static void SampleMemory()
+        {
+            if (MemoryClock.ElapsedMilliseconds < _nextMemorySample) return;
+            _nextMemorySample = MemoryClock.ElapsedMilliseconds + MemorySampleMilliseconds;
+            GwpFaultTrace.Write("MEMORY", details: MemoryState());
+        }
+
+        private static void OnProcessExit(object sender, EventArgs args) =>
+            GwpFaultTrace.Write("PROCESS_EXIT", details: "exitCode=" + Environment.ExitCode + "; " + MemoryState()
+                + "; stack=" + Environment.StackTrace.Replace(Environment.NewLine, " | "));
+
+        private static string MemoryState()
+        {
+            Process process = Process.GetCurrentProcess();
+            var status = new MemoryStatus { Length = (uint)Marshal.SizeOf(typeof(MemoryStatus)) };
+            bool system = GlobalMemoryStatusEx(ref status);
+            const double mb = 1024d * 1024d;
+            return "privateMb=" + (process.PrivateMemorySize64 / mb).ToString("0")
+                + "; workingSetMb=" + (process.WorkingSet64 / mb).ToString("0")
+                + "; managedMb=" + (GC.GetTotalMemory(false) / mb).ToString("0")
+                + (system
+                    ? "; systemLoad=" + status.MemoryLoad + "%; availPhysMb=" + (status.AvailPhys / mb).ToString("0")
+                      + "/" + (status.TotalPhys / mb).ToString("0")
+                      + "; availCommitMb=" + (status.AvailPageFile / mb).ToString("0")
+                      + "/" + (status.TotalPageFile / mb).ToString("0")
+                      + "; availVirtualMb=" + (status.AvailVirtual / mb).ToString("0")
+                      + "/" + (status.TotalVirtual / mb).ToString("0")
+                      + "; extVirtual=" + status.AvailExtendedVirtual
+                    : "; system=unavailable");
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MemoryStatus
+        {
+            public uint Length;
+            public uint MemoryLoad;
+            public ulong TotalPhys;
+            public ulong AvailPhys;
+            public ulong TotalPageFile;
+            public ulong AvailPageFile;
+            public ulong TotalVirtual;
+            public ulong AvailVirtual;
+            public ulong AvailExtendedVirtual;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GlobalMemoryStatusEx(ref MemoryStatus buffer);
+
         private static void OnUnhandled(object sender, UnhandledExceptionEventArgs args)
         {
             if (args?.ExceptionObject is not Exception exception) return;
@@ -80,6 +139,8 @@ namespace GreyWardenPolicePurity
         }
 
         internal static void StartSession() { }
+
+        internal static void SampleMemory() { }
 
 #endif
     }

@@ -2,9 +2,9 @@
 
 > 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
 > 最后验收：未建立检查点
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-16）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py`
-> 待实测：无
+> 待实测：再次闪退时 agent 核对 Faults 日志末尾有无 `PROCESS_EXIT` 与最后几条 `MEMORY`
 
 ## 原则
 
@@ -105,7 +105,7 @@
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
-| `GwpRuntimeFaultWatch.Guard` | 旧档错误依据被扩用到 28 处回调，开发版额外吞异常 | 待逐站点清理，不能按「故障观察」永久保留；见 code-health.md |
+| `GwpRuntimeFaultWatch` 的 `PROCESS_EXIT`（托管退出时的退出码、内存与调用栈）与 `MEMORY`（主线程应用心跳每分钟一条：进程私有/工作集/托管堆，系统内存负载、可用物理内存、提交量） | 2026-10-16 08:37 实机无报错闪退：没有正常退出的托管卸载记录，看门狗无异常事件，无 WER 记录或转储。下次闪退若日志里没有 `PROCESS_EXIT`，说明进程被直接结束；`MEMORY` 用来核对内存耗尽 | 闪退原因查清后退休 |
 
 已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
 2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /
