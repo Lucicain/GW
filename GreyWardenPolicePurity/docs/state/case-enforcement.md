@@ -2,12 +2,14 @@
 
 > 当前状态：原有案件行为已验收；抓捕结案后的战后崩溃已修复并经用户实测（2026-10-14）
 > 最后验收：`9d005bb`
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：无（追截队见 [立即追截队](case-interceptors.md)，宣战前的使者见 [灰袍使者](case-envoy.md)）
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
+
+负声望赎罪单独见[赎罪委派](atonement.md)。玩家占案统一查询 `GwpPlayerCaseAssignment`；案件转给玩家时，生命周期入口同时撤回普通承办人与使者。每小时在普通追捕、宣战之前释放玩家已持有的案子；显式请求的带路支援仍按原分支执行。（依据：源码复核2026-10-15）
 
 ## 用户裁定的三条规则
 

@@ -23,7 +23,7 @@ namespace GreyWardenPolicePurity
             return current == null || !current._supportRequested;
         }
 
-        internal static bool IsReservedTarget(MobileParty? target)
+        internal static bool IsBountyReservedTarget(MobileParty? target)
         {
             var current = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             if (target == null || current == null || current._supportRequested || !current.IsTrackingBountyTarget) return false;

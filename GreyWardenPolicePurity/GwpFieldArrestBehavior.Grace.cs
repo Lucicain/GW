@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -13,7 +13,7 @@ namespace GreyWardenPolicePurity
         private bool HasGrace => _offender != null && _offender.StringId == _graceHeroId
             && IsAssignedCase(_offender);
         private bool CanOfferGrace => !HasGrace
-            && Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.CanOfferFieldGrace == true;
+            && GwpPlayerCaseAssignment.CanOfferGrace(_offender);
 
         internal void ClearFieldGrace()
         {
@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
             _graceNoticeShown = false;
             string message = GwpText.Get(GwpTextCatalog.gwp_grace_granted,
                 "VAR_1", _offender.Name.ToString());
-            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.RecordFieldGrace(message);
+            GwpPlayerCaseAssignment.RecordFieldGrace(_offender, message);
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
             GwpAiDiagnostics.WriteFieldArrest("GRACE_GRANTED", "hero=" + _graceHeroId + "; due=" + _graceDueHours);
             EndPersuasionConsequence();
@@ -41,12 +41,11 @@ namespace GreyWardenPolicePurity
         private void CheckGraceDeadline()
         {
             if (string.IsNullOrEmpty(_graceHeroId) || _graceNoticeShown || CampaignTime.Now.ToHours < _graceDueHours) return;
-            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             Hero? target = Hero.FindFirst(h => h.StringId == _graceHeroId);
-            if (target == null || bounty?.IsActiveBountyTarget(target) != true) { ClearFieldGrace(); return; }
+            if (target == null || !GwpPlayerCaseAssignment.IsAssignedCase(target)) { ClearFieldGrace(); return; }
             _graceNoticeShown = true;
             string message = GwpText.Get(GwpTextCatalog.gwp_grace_due, "VAR_1", target.Name.ToString());
-            bounty.RecordFieldGrace(message);
+            GwpPlayerCaseAssignment.RecordFieldGrace(target, message);
             InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
         }
 

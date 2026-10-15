@@ -198,6 +198,8 @@ namespace GreyWardenPolicePurity
         internal const string gwp_ai_det_intro_personal_medium = "{=gwp_ai_det_intro_personal_medium}{HERO_NAME}'s voice grows more measured. Their own encounter with the Grey Wardens still weighs on every word.";
         internal const string gwp_asset_gold = "{=gwp_asset_gold}Gold";
         internal const string gwp_asset_value = "{=gwp_asset_value}{VAR_1} ({VAR_2} denars each)";
+        internal const string gwp_atonement_closed_elsewhere = "{=gwp_atonement_closed_elsewhere}This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized.";
+        internal const string gwp_atonement_report = "{=gwp_atonement_report}Tell us how the case ended, and hand over anything you collected on our behalf.";
         internal const string gwp_battle_support_enemy = "{=gwp_battle_support_enemy}Grey Warden reinforcements have joined the enemy!";
         internal const string gwp_bio_hint_caravan = "{=gwp_bio_hint_caravan}She patrols the trade roads and pursues those who attack caravans.";
         internal const string gwp_bio_hint_issues = "{=gwp_bio_hint_issues}She travels between villages and towns to hear the notables' petitions.";
@@ -949,8 +951,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_policecrimemonitorenhanced_009 = "{=gwp_policecrimemonitorenhanced_009}Village={VAR_1}";
         internal const string gwp_policecrimemonitorenhanced_010 = "{=gwp_policecrimemonitorenhanced_010}Raid Village";
         internal const string gwp_policeenforcementbehavior_001 = "{=gwp_policeenforcementbehavior_001}The atonement contract times out, reputation -5.";
-        internal const string gwp_policeenforcementbehavior_002 = "{=gwp_policeenforcementbehavior_002}Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name.";
-        internal const string gwp_policeenforcementbehavior_003 = "{=gwp_policeenforcementbehavior_003}You have defeated {VAR_1}. Report to any Warden lord to complete your atonement.";
+        internal const string gwp_policeenforcementbehavior_003 = "{=gwp_policeenforcementbehavior_003}The case against {VAR_1} has been dealt with. Report to a Warden lord.";
         internal const string gwp_policeenforcementbehavior_004 = "{=gwp_policeenforcementbehavior_004}Your atonement has failed.";
         internal const string gwp_policeenforcementbehavior_005 = "{=gwp_policeenforcementbehavior_005}Insufficient fine";
         internal const string gwp_policeenforcementbehavior_006 = "{=gwp_policeenforcementbehavior_006}Escort fine unpaid";
@@ -961,10 +962,10 @@ namespace GreyWardenPolicePurity
         internal const string gwp_policeenforcementbehavior_atonementquest_001 = "{=gwp_policeenforcementbehavior_atonementquest_001}Unknown Target";
         internal const string gwp_policeenforcementbehavior_atonementquest_002 = "{=gwp_policeenforcementbehavior_atonementquest_002}Unknown Target";
         internal const string gwp_policeenforcementbehavior_atonementquest_003 = "{=gwp_policeenforcementbehavior_atonementquest_003}the Grey Wardens Atonement: The Hunt {VAR_1}";
-        internal const string gwp_policeenforcementbehavior_atonementquest_004 = "{=gwp_policeenforcementbehavior_atonementquest_004}The target has been defeated. Report to any Grey Warden lord to complete your atonement.";
+        internal const string gwp_policeenforcementbehavior_atonementquest_004 = "{=gwp_policeenforcementbehavior_atonementquest_004}The case has been dealt with. Report to any Warden lord and account for anything collected.";
         internal const string gwp_policeenforcementbehavior_atonementquest_005 = "{=gwp_policeenforcementbehavior_atonementquest_005}Atonement completed: reputation +{VAR_1}, current reputation {VAR_2}.";
         internal const string gwp_policeenforcementbehavior_atonementquest_006 = "{=gwp_policeenforcementbehavior_atonementquest_006}Unknown location";
-        internal const string gwp_policeenforcementbehavior_atonementquest_007 = "{=gwp_policeenforcementbehavior_atonementquest_007}Contract assigned: Defeat {VAR_2} within {VAR_1} days (case size {VAR_3} people).";
+        internal const string gwp_policeenforcementbehavior_atonementquest_007 = "{=gwp_policeenforcementbehavior_atonementquest_007}Resolve the case against {VAR_2} within {VAR_1} days. Their party had {VAR_3} members when assigned. You may negotiate payment or surrender, or defeat their party, then report to a Warden lord.";
         internal const string gwp_policeenforcementbehavior_atonementquest_008 = "{=gwp_policeenforcementbehavior_atonementquest_008}Scouts last reported the target near {VAR_1}. Once the task is done, report to any Grey Warden lord to complete your atonement.";
         internal const string gwp_policeenforcementbehavior_atonementquest_009 = "{=gwp_policeenforcementbehavior_atonementquest_009}Unknown location";
         internal const string gwp_policeenforcementbehavior_atonementquest_010 = "{=gwp_policeenforcementbehavior_atonementquest_010}Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people).";

@@ -350,7 +350,7 @@ namespace GreyWardenPolicePurity
             GwpStrength.LocalBalance? declaration)
         {
             if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task) ||
-                PlayerBountyBehavior.IsReservedTarget(targetParty)) return;
+                GwpPlayerCaseAssignment.IsReservedTarget(targetParty)) return;
             bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
@@ -756,7 +756,7 @@ namespace GreyWardenPolicePurity
                     continue;
 
                 if (PlayerBountyBehavior.AwaitingSupportRequest(CrimeState.GetTask(state.SourceTaskPolicePartyId))
-                    || PlayerBountyBehavior.IsReservedTarget(MobileParty.All.FirstOrDefault(p => p.StringId == state.TargetPartyId)))
+                    || GwpPlayerCaseAssignment.IsReservedTarget(MobileParty.All.FirstOrDefault(p => p.StringId == state.TargetPartyId)))
                     state.Returning = true;
                 if (!state.Returning &&
                     !eligibleTargetIds.Contains(state.TargetPartyId) &&

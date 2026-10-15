@@ -1781,8 +1781,8 @@
       "zh": "你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。"
     },
     "gwp_policeenforcementbehavior_003": {
-      "en": "You have defeated {VAR_1}. Report to any Warden lord to complete your atonement.",
-      "zh": "你已击败赎罪目标{VAR_1}，向任意一位灰袍领主复命即可。"
+      "en": "The case against {VAR_1} has been dealt with. Report to a Warden lord.",
+      "zh": "{VAR_1}的案件已处置，回去向灰袍领主复命。"
     },
     "gwp_policeenforcementbehavior_004": {
       "en": "Your atonement has failed.",
@@ -1825,8 +1825,8 @@
       "zh": "灰袍赎罪令：追捕 {VAR_1}"
     },
     "gwp_policeenforcementbehavior_atonementquest_004": {
-      "en": "The target has been defeated. Report to any Grey Warden lord to complete your atonement.",
-      "zh": "已击败目标。向任意灰袍领主交付赎罪任务。",
+      "en": "The case has been dealt with. Report to any Warden lord and account for anything collected.",
+      "zh": "这件案子已处置。向任意灰袍领主复命，交代经过及代收的钱货。",
       "context": "赎罪任务进度文字，原文仍用“灰袍警察”。"
     },
     "gwp_policeenforcementbehavior_atonementquest_005": {
@@ -1838,8 +1838,8 @@
       "zh": "未知位置"
     },
     "gwp_policeenforcementbehavior_atonementquest_007": {
-      "en": "Contract assigned: Defeat {VAR_2} within {VAR_1} days (case size {VAR_3} people).",
-      "zh": "任务下达：在 {VAR_1} 天内击败 {VAR_2}（接案规模 {VAR_3} 人）。"
+      "en": "Resolve the case against {VAR_2} within {VAR_1} days. Their party had {VAR_3} members when assigned. You may negotiate payment or surrender, or defeat their party, then report to a Warden lord.",
+      "zh": "在 {VAR_1} 天内处置 {VAR_2} 的案件，接案时其部队有 {VAR_3} 人。你可以要求缴罚或投案，必要时击败其部队，再向灰袍领主复命。"
     },
     "gwp_policeenforcementbehavior_atonementquest_008": {
       "en": "Scouts last reported the target near {VAR_1}. Once the task is done, report to any Grey Warden lord to complete your atonement.",
@@ -6012,6 +6012,16 @@
     "gwp_envoy_duel_offender_won": {
       "en": "{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed.",
       "zh": "{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。"
+    },
+    "gwp_atonement_closed_elsewhere": {
+      "en": "This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized.",
+      "zh": "这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。",
+      "context": "赎罪目标死亡、被他人俘获或案件在别处结清；撤销任务，不扣声望。"
+    },
+    "gwp_atonement_report": {
+      "en": "Tell us how the case ended, and hand over anything you collected on our behalf.",
+      "zh": "说说这件事是怎样了结的，代收的钱货也一并交来。",
+      "context": "赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。"
     }
   },
   "fragments": {

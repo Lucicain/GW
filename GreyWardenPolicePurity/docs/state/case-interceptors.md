@@ -2,13 +2,15 @@
 
 > 当前状态：归队改为并回主队、多余的人去信众村，已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior.DelayPatrols.cs`
 > 待实测：追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
 
 案件本身的生命周期见 [案件](case-enforcement.md)；船怎么借、怎么还见 [临时队](temporary-parties.md)。
 [灰袍使者](case-envoy.md) 的出队（`CreateDetachment`、`DetachmentBatches`）和归队与追截队同一套；
 使者归队时另把带回的钱交进公库、把投案的罪犯交给主队。
+
+派队的玩家目标避让统一查 `GwpPlayerCaseAssignment.IsReservedTarget`，同时包括普通悬赏与赎罪；交接规则见[赎罪](atonement.md)和[使者](case-envoy.md)。（依据：源码复核2026-10-15）
 
 立即追截队（`TrySpawnImmediateCaseInterceptor`）的人是从来源领主名册里抽出来的。返程时
 先还来源领主；来源领主战败、被俘或队伍没了（`CanContinueLeadingPoliceTask` 为假），改交最近的

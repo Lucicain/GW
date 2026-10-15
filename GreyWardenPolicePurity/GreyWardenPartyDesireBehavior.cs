@@ -390,7 +390,7 @@ namespace GreyWardenPolicePurity
             List<(AIBehaviorData, float)> rawScores = think.AIBehaviorScores.ToList();
             foreach (var entry in rawScores)
             {
-                if (entry.Item1.AiBehavior == AiBehavior.GoAroundParty && PlayerBountyBehavior.IsReservedTarget(entry.Item1.Party as MobileParty))
+                if (entry.Item1.AiBehavior == AiBehavior.GoAroundParty && GwpPlayerCaseAssignment.IsReservedTarget(entry.Item1.Party as MobileParty))
                 {
                     AIBehaviorData candidate = entry.Item1;
                     think.SetBehaviorScore(in candidate, 0f);
@@ -557,7 +557,7 @@ namespace GreyWardenPolicePurity
 
             if (Intents.TryGetValue(party.StringId, out Intent? external) &&
                 external.ExpiresAt >= CampaignTime.Now.ToHours && IsValid(external))
-                return external.Kind == IntentKind.Pursue && PlayerBountyBehavior.IsReservedTarget(external.Party) ? null : external;
+                return external.Kind == IntentKind.Pursue && GwpPlayerCaseAssignment.IsReservedTarget(external.Party) ? null : external;
 
             PoliceTask? task = CrimePool.GetTask(party.StringId);
             if (task == null) return ResolvePatrolBeat(party);
@@ -569,7 +569,7 @@ namespace GreyWardenPolicePurity
             // 保存的旧 PartyId 可能已经失效；只按旧 ID 搜索会让“已有承办人”的
             // 案件暂时被当成无职责，原版巡逻欲望便会重新出现。
             MobileParty? criminal = task.TargetCrime?.Offender;
-            return criminal?.IsActive != true || PlayerBountyBehavior.IsReservedTarget(criminal)
+            return criminal?.IsActive != true || GwpPlayerCaseAssignment.IsReservedTarget(criminal)
                 ? ResolvePatrolBeat(party)
                 : new Intent {
                 Kind = ResolveUndeclaredPursuitKind(task, criminal),

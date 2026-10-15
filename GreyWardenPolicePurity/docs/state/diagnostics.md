@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
 > 最后验收：未建立检查点
-> 已复核至：`9bd6ce3`（2026-10-14）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py`
 > 待实测：无
 
@@ -48,6 +48,8 @@
 （例：`GwpRangedCommandTrace` 扩到双方所有编队后曾改名 `GwpBattleCommandTrace`，现已退休。）
 
 ## 日志文件
+
+负声望赎罪在役阶段记录与退休条件只在[赎罪委派](atonement.md)定义，实测后由agent读取案件日志核对。
 
 游戏 Documents 目录下：
 

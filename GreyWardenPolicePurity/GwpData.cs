@@ -115,7 +115,7 @@ namespace GreyWardenPolicePurity
         public bool IsOffenderPursuable() =>
             HasOpenCase && Offender?.IsActive == true && Offender.CurrentSettlement == null
             // 玩家接手的案子由玩家承办，灰袍不再自行派人；支援另由求援送达后明确指派。
-            && !PlayerBountyBehavior.IsCaseHeldByPlayer(OffenderHeroId);
+            && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
     }
 
     /// <summary>
@@ -473,7 +473,7 @@ namespace GreyWardenPolicePurity
                                           !assignedCrimeIds.Contains(record.CrimeId) &&
                                           // 玩家正在办的案子没有承办队伍，但绝不能被挤出案件池，
                                           // 否则他的委托会凭空作废。
-                                          !PlayerBountyBehavior.IsCaseHeldByPlayer(record.OffenderHeroId))
+                                          !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(record.OffenderHeroId))
                          .OrderBy(record => record.LastCrimeTime.ToHours)
                          .ThenBy(record => record.CrimeId, StringComparer.OrdinalIgnoreCase)
                          .Take(removeCount).ToList())
@@ -512,13 +512,12 @@ namespace GreyWardenPolicePurity
             GetUnassignedOpenCases().Where(c => c.CrimeId != PlayerCrimeId && c.IsOffenderPursuable()), pos);
 
         public static CrimeRecord? GetNearestNonPlayerFromAll(Vec2 pos) => SelectNearest(
-            _ledger.Values.Where(c => c.CrimeId != PlayerCrimeId && c.HasOpenCase && c.IsOffenderPursuable()), pos);
+            _ledger.Values.Where(c => c.CrimeId != PlayerCrimeId && GwpPlayerCaseAssignment.CanTakeCase(c)), pos);
 
         public static List<CrimeRecord> GetAvailablePlayerBounties() =>
             _ledger.Values
                 .Where(c => c.CrimeId != PlayerCrimeId &&
-                            c.HasOpenCase &&
-                            c.IsOffenderPursuable())
+                            GwpPlayerCaseAssignment.CanTakeCase(c))
                 .ToList();
 
 

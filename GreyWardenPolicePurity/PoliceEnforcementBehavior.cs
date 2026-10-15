@@ -223,30 +223,29 @@ namespace GreyWardenPolicePurity
             TryReconnectAtonementQuestOnHourlyTick();
             if (!IsAtonementActiveState) return;
 
+            Hero? hero = AtonementTargetHero;
+            CrimeRecord? activeCrime = CrimePool.GetRecordByKey(_atonementTargetHeroId)
+                ?? CrimeState.GetByOffenderId(_atonementTargetPartyId);
+            if (hero?.IsPrisoner == true && hero.PartyBelongedToAsPrisoner == MobileParty.MainParty.Party)
+            {
+                MarkAtonementReady("captured_in_player_custody");
+                CloseCase(activeCrime, "atonement_captured");
+                return;
+            }
+            if (activeCrime?.HasOpenCase != true || hero?.IsDead == true || hero?.IsPrisoner == true)
+            {
+                WithdrawAtonementTask();
+                return;
+            }
             if (CampaignTime.Now.ToHours >= _atonementDeadlineHours)
             {
                 FailAtonementTask(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_001));
                 return;
             }
 
-            MobileParty target = MobileParty.All.FirstOrDefault(p =>
-                p.StringId == _atonementTargetPartyId && p.IsActive);
-            if (target == null)
-            {
-                FailAtonementTask(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_002));
-                return;
-            }
-
-            // 旧存档兼容：更新前已经接下的赎罪追捕没有保存犯人英雄与犯罪分类。
-            // 在案件仍存在时补齐，确保战斗结算采用原案件的商路/乡土分类。
-            CrimeRecord? activeCrime = CrimeState.GetByOffenderId(_atonementTargetPartyId);
-            if (activeCrime != null)
-            {
-                if (string.IsNullOrWhiteSpace(_atonementTargetHeroId))
-                    _atonementTargetHeroId = activeCrime.OffenderHeroId ?? string.Empty;
-                if ((GwpCrimeCategory)_atonementTargetCrimeCategory == GwpCrimeCategory.Unknown)
-                    _atonementTargetCrimeCategory = (int)activeCrime.CrimeCategory;
-            }
+            MobileParty? target = AtonementTargetParty;
+            if (target?.IsActive != true) return;
+            _atonementTargetPartyId = target.StringId;
 
             if ((CampaignTime.Now - _lastAtonementIntelReportTime).ToDays >= GwpTuning.Enforcement.AtonementIntelReportIntervalDays)
             {
@@ -275,6 +274,9 @@ namespace GreyWardenPolicePurity
             }
 
             if (!playerInvolved || !targetInvolved) return;
+            if (mapEvent.AttackerSide.Parties.Any(p => p.Party?.MobileParty == MobileParty.MainParty) ==
+                mapEvent.AttackerSide.Parties.Any(p => p.Party?.MobileParty == completedTarget))
+                return;
 
             bool playerWon = false;
             if (mapEvent.HasWinner && mapEvent.Winner != null)
@@ -291,29 +293,20 @@ namespace GreyWardenPolicePurity
 
             if (playerWon)
             {
-                CrimeRecord? completedCrime = CrimeState.GetByOffenderId(_atonementTargetPartyId);
-                Hero? completedOffender = completedTarget?.LeaderHero ?? completedCrime?.OffenderHero;
-                if (completedOffender == null && !string.IsNullOrWhiteSpace(_atonementTargetHeroId))
-                {
-                    completedOffender = Hero.FindFirst(hero =>
-                        string.Equals(hero.StringId, _atonementTargetHeroId,
-                            StringComparison.OrdinalIgnoreCase));
-                }
+                CrimeRecord? completedCrime = CrimePool.GetRecordByKey(_atonementTargetHeroId)
+                    ?? CrimeState.GetByOffenderId(_atonementTargetPartyId);
+                Hero? completedOffender = AtonementTargetHero ?? completedCrime?.OffenderHero
+                    ?? completedTarget?.LeaderHero;
 
                 GwpCrimeCategory completedCategory = (GwpCrimeCategory)_atonementTargetCrimeCategory;
                 if (completedCategory == GwpCrimeCategory.Unknown)
                     completedCategory = completedCrime?.CrimeCategory ?? GwpCrimeCategory.Unknown;
 
                 Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                    ?.RegisterEnforcementOutcome(mapEvent, completedOffender, completedCategory, countAsArrest: true);
+                    ?.RegisterEnforcementOutcome(mapEvent, completedOffender, completedCategory, countAsArrest: completedOffender?.IsPrisoner == true);
 
-                SetAtonementFlowState(AtonementFlowState.WaitingForTurnIn);
-                _atonementDeadlineHours = 0f;
-
-                _atonementQuest?.MarkReadyForTurnIn();
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_003, "VAR_1", _atonementTargetName),
-                    Colors.Green));
+                MarkAtonementReady("target_defeated");
+                CloseCase(completedCrime, "atonement_target_defeated");
             }
             else
             {
@@ -343,7 +336,10 @@ namespace GreyWardenPolicePurity
             _awaitingAtonementQuestReconnect = false;
             _enforcementAtonementAssigned = false;
             _atonementQuest = null!;
+            _atonementPayment = null;
+            _atonementTurnInOpened = false;
             SetAtonementFlowState(AtonementFlowState.Inactive);
+            CrimeState.RefreshAccepting();
         }
 
         #region 犯罪通知
@@ -901,6 +897,14 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
+                    continue;
+                }
+
+                // 玩家接手后，普通承办任务也必须交还，避免已有追捕继续宣战或截击。
+                // 玩家主动请求的带路支援已在上面的 PlayerBountyEscort 分支处理。
+                if (GwpPlayerCaseAssignment.IsCaseHeldByPlayer(task.TargetCrime?.OffenderHeroId))
+                {
+                    ReleaseWardensFromCase(task.TargetCrime?.OffenderHeroId);
                     continue;
                 }
 

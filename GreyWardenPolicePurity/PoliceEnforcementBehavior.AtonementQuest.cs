@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.BarterSystem;
+using TaleWorlds.CampaignSystem.BarterSystem.Barterables;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -19,6 +21,62 @@ namespace GreyWardenPolicePurity
         private bool _awaitingAtonementQuestReconnect = false;
         private CampaignTime _lastAtonementIntelReportTime = CampaignTime.Zero;
         private AtonementQuest _atonementQuest = null!;
+        // Native barter blocks campaign saving; this selection belongs only to the open dialogue.
+        private GwpAssetPayment? _atonementPayment;
+        private bool _atonementTurnInOpened;
+
+        private Hero? AtonementTargetHero => string.IsNullOrWhiteSpace(_atonementTargetHeroId)
+            ? null : Hero.Find(_atonementTargetHeroId);
+        private MobileParty? AtonementTargetParty => AtonementTargetHero?.PartyBelongedTo
+            ?? FindActiveParty(_atonementTargetPartyId);
+
+        internal bool HoldsAtonementCase(string? heroId) => HasAtonementTask &&
+            !string.IsNullOrWhiteSpace(heroId) &&
+            string.Equals(heroId, _atonementTargetHeroId, StringComparison.OrdinalIgnoreCase);
+        internal bool IsActiveAtonementTarget(Hero? hero) => IsAtonementActiveState && hero != null &&
+            (HoldsAtonementCase(hero.StringId) ||
+             (string.IsNullOrEmpty(_atonementTargetHeroId) && hero.PartyBelongedTo?.StringId == _atonementTargetPartyId));
+        internal bool ReservesAtonementTarget(MobileParty? party)
+        {
+            if (!HasAtonementTask || party == null) return false;
+            MobileParty? target = AtonementTargetParty;
+            return party.StringId == _atonementTargetPartyId || party == target ||
+                (target?.Army?.LeaderParty != null && party == target.Army.LeaderParty);
+        }
+        internal bool CanOfferAtonementGrace => IsAtonementActiveState &&
+            _atonementDeadlineHours - CampaignTime.Now.ToHours >= GwpTuning.FieldArrest.GraceHours;
+        internal void RecordAtonementGrace(string message) => _atonementQuest?.WriteLog(message);
+
+        internal void NotifyAtonementResolved(Hero? hero, string source)
+        {
+            if (IsActiveAtonementTarget(hero)) MarkAtonementReady(source);
+        }
+
+        private void MarkAtonementReady(string source)
+        {
+            if (!IsAtonementActiveState) return;
+            SetAtonementFlowState(AtonementFlowState.WaitingForTurnIn);
+            _atonementDeadlineHours = 0f;
+            _atonementQuest?.MarkReadyForTurnIn();
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFieldArrest("ATONEMENT_READY",
+                "hero=" + _atonementTargetHeroId + "; party=" + _atonementTargetPartyId + "; source=" + source);
+#endif
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_003, "VAR_1", _atonementTargetName), Colors.Green));
+        }
+
+        private void WithdrawAtonementTask()
+        {
+            string message = GwpText.Get(GwpTextCatalog.gwp_atonement_closed_elsewhere);
+            if (_atonementQuest?.IsOngoing == true)
+                _atonementQuest.CompleteQuestWithCancel(new TextObject(message));
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFieldArrest("ATONEMENT_WITHDRAWN", "hero=" + _atonementTargetHeroId);
+#endif
+            ClearAtonementTaskState();
+            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Yellow));
+        }
 
         internal sealed class AtonementQuest : QuestBase
         {
@@ -68,6 +126,7 @@ namespace GreyWardenPolicePurity
 
             internal void MarkReadyForTurnIn()
             {
+                ChangeQuestDueTime(CampaignTime.Never);
                 WriteLog(GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_atonementquest_004));
             }
 
@@ -217,13 +276,25 @@ namespace GreyWardenPolicePurity
 
         private void OnEnforcementAtonementTurnInConsequence()
         {
+            if (!IsAtonementWaitingForTurnInState || !_atonementTurnInOpened ||
+                (_atonementPayment != null && !_atonementPayment.Applied)) return;
+            int delivered = _atonementPayment?.Paid ?? 0;
+            if (GwpFieldReportLedger.Instance?.PendingAssessedFor(_atonementTargetHeroId) > 0)
+                GwpFieldReportLedger.Instance.DeclareAmount(delivered, offenderId: _atonementTargetHeroId);
+            _atonementPayment = null;
+            _atonementTurnInOpened = false;
             int before = PlayerState.Reputation;
-            int after = Math.Min(0, before + Math.Max(1, _atonementReputationReward));
+            int after = before < 0 ? Math.Min(0, before + Math.Max(1, _atonementReputationReward)) : before;
             int gain = after - before;
             PlayerState.ResetReputation(after);
             MakePeaceWithAtonementTargetFaction();
 
             _atonementQuest?.SucceedQuestWithReputation(gain, after);
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFieldArrest("ATONEMENT_TURNED_IN",
+                "hero=" + _atonementTargetHeroId + "; delivered=" + delivered +
+                "; gain=" + gain + "; reputation=" + after);
+#endif
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_atonementquest_016, "VAR_1", gain, "VAR_2", after),
@@ -231,6 +302,42 @@ namespace GreyWardenPolicePurity
 
             ClearAtonementTaskState();
         }
+
+        private void BeginAtonementTurnIn()
+        {
+            _atonementTurnInOpened = false;
+            _atonementPayment = null;
+            if (!IsAtonementWaitingForTurnInState) return;
+            GwpFieldReportLedger? ledger = GwpFieldReportLedger.Instance;
+            int received = ledger?.PendingReceivedFor(_atonementTargetHeroId) ?? 0;
+            Hero? captive = AtonementTargetHero;
+            if (captive?.IsPrisoner != true || captive.PartyBelongedToAsPrisoner != MobileParty.MainParty.Party)
+                captive = null;
+            if (received == 0 && captive == null) { _atonementTurnInOpened = true; return; }
+            Hero? treasurer = PoliceStats.GetPoliceClan()?.Leader;
+            PartyBase? clerk = MobileParty.ConversationParty?.Party
+                ?? Hero.OneToOneConversationHero?.PartyBelongedTo?.Party
+                ?? Hero.OneToOneConversationHero?.CurrentSettlement?.Party;
+            if (treasurer == null || clerk == null) return;
+            _atonementPayment = new GwpAssetPayment(Hero.MainHero, treasurer,
+                MobileParty.MainParty.Party, clerk, int.MaxValue, received,
+                reportMode: true, autoReceipt: ledger?.ReceiptFor(_atonementTargetHeroId), prisoner: captive);
+            _atonementTurnInOpened = true;
+            BarterManager manager = Campaign.Current.BarterManager;
+            BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
+            try
+            {
+                manager.BarterBegin = data => { _atonementPayment.PrepareCatalogue(data); original?.Invoke(data); };
+                manager.StartBarterOffer(Hero.MainHero, treasurer, MobileParty.MainParty.Party, clerk,
+                    null, AtonementPaymentContext, 0, false, _atonementPayment.Entries);
+            }
+            finally { manager.BarterBegin = original; }
+        }
+
+        private bool AtonementPaymentContext(Barterable barterable, BarterData data, object obj) => false;
+
+        private bool AtonementPaymentAccepted() => _atonementTurnInOpened &&
+            (_atonementPayment == null || _atonementPayment.Applied);
 
         private void MakePeaceWithAtonementTargetFaction()
         {

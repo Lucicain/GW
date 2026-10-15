@@ -47,7 +47,7 @@ namespace GreyWardenPolicePurity
         /// 承办这个罪犯——别人该去干别的事。只有玩家求援送达之后，才由
         /// <see cref="AssignSupportResponder"/> 明确指派一名灰袍领主接手支援。
         /// </summary>
-        internal static bool IsCaseHeldByPlayer(string? offenderHeroId)
+        internal static bool IsBountyCaseHeldByPlayer(string? offenderHeroId)
         {
             if (string.IsNullOrWhiteSpace(offenderHeroId)) return false;
             var current = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();

@@ -342,7 +342,7 @@ namespace GreyWardenPolicePurity
                 return false;
 
 
-            return Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.HasCommissionAuthority(hero) == true;
+            return GwpPlayerCaseAssignment.HasAuthority(hero);
         }
 
         private void PrepareFieldArrest()
@@ -350,8 +350,8 @@ namespace GreyWardenPolicePurity
             ClearState();
             _voice.BeginEncounter();
             _offender = Hero.OneToOneConversationHero;
-            _offenderParty = MobileParty.ConversationParty;
-            _crime = CrimeState.GetByOffenderId(_offenderParty?.StringId);
+            _offenderParty = _offender?.PartyBelongedTo ?? MobileParty.ConversationParty;
+            _crime = _offender == null ? null : CrimePool.GetRecordByKey(_offender.StringId);
             if (_crime == null || _offender == null) return;
             _fine = CalculateFine(_crime);
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
@@ -435,8 +435,7 @@ namespace GreyWardenPolicePurity
         /// 案底累累，也轮不到一个没接案的猎手上去拦路。
         /// </summary>
         private static bool IsAssignedCase(Hero? offender) =>
-            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                ?.IsActiveBountyTarget(offender) == true;
+            GwpPlayerCaseAssignment.IsAssignedCase(offender);
 
         private bool HasBeenTakenBefore =>
             _offender != null && (CrimePool.GetHistory(_offender)?.TotalArrestCount ?? 0) > 0;
@@ -959,8 +958,7 @@ namespace GreyWardenPolicePurity
                 _offender, owed, collected, CalculateBaseFine(_crime),
                 wasBroke ?? _offender.Gold < owed - collected, receipt: receipt ?? (prepaid == null ? new GwpCaseReceipt { Gold = collected } : null));
 
-            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                ?.NotifyCaseSettledInField(_offender, collected, owed, standingBefore);
+            GwpPlayerCaseAssignment.NotifySettledInField(_offender, collected, owed, standingBefore);
 
             RegisterFieldEnforcement(_offender, _crime);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_submitted");
@@ -1009,8 +1007,7 @@ namespace GreyWardenPolicePurity
 
             LeaveEncounterPeacefully();
 
-            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                ?.NotifyCaseClosedByCapture(_offender, assessed, standing);
+            GwpPlayerCaseAssignment.NotifyCaptured(_offender, assessed, standing);
             RegisterFieldEnforcement(_offender, _crime);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_captured");
             PlayerState.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
@@ -1044,8 +1041,7 @@ namespace GreyWardenPolicePurity
             LeaveEncounterPeacefully();
             GwpFieldReportLedger.Instance?.RecordSettlement(
                 _offender, owed, 0, CalculateBaseFine(_crime), false, taken, receipt ?? (prepaid == null ? new GwpCaseReceipt { Gold = taken } : null));
-            Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                ?.NotifyCaseSettledInField(_offender, 0, owed, GetNegativeStanding(_crime));
+            GwpPlayerCaseAssignment.NotifySettledInField(_offender, 0, owed, GetNegativeStanding(_crime));
             RegisterFieldEnforcement(_offender, _crime);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_settled_short");
 
@@ -1100,8 +1096,7 @@ namespace GreyWardenPolicePurity
             {
                 // 他赢了，按他自己开出的条件免罚。案子就此销掉，案底照留。
                 GwpFieldReportLedger.Instance?.RecordSettlement(opponent, fine, 0, CalculateBaseFine(crime), false);
-                Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                    ?.NotifyCaseSettledInField(opponent, 0, fine, GetNegativeStanding(crime));
+                GwpPlayerCaseAssignment.NotifySettledInField(opponent, 0, fine, GetNegativeStanding(crime));
                 RegisterFieldEnforcement(opponent, crime);
                 PoliceEnforcementBehavior.CloseCase(crime, "field_duel_lost");
                 InformationManager.DisplayMessage(new InformationMessage(

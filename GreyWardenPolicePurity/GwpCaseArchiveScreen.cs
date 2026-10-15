@@ -768,7 +768,7 @@ namespace GreyWardenPolicePurity
         {
             // 玩家接了这宗案子，卷宗上的主理人就是玩家。求援之后到场的那名灰袍是支援，
             // 不是主理人——虽然内部仍由他的任务驱动行动，档案上要按职责如实写。
-            if (PlayerBountyBehavior.IsCaseHeldByPlayer(record.OffenderHeroId))
+            if (GwpPlayerCaseAssignment.IsCaseHeldByPlayer(record.OffenderHeroId))
             {
                 string commissioner = Hero.MainHero?.Name?.ToString() ??
                     GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_017);

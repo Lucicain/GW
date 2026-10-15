@@ -91,6 +91,8 @@ namespace GreyWardenPolicePurity
         {
             if (_instance == null || string.IsNullOrWhiteSpace(offenderHeroId)) return;
 
+            _instance.ReleaseEnvoysToPlayer(offenderHeroId!);
+
             foreach (PoliceTask task in CrimeState.ActiveTasks.Values
                          .Where(t => string.Equals(t.TargetCrime?.OffenderHeroId, offenderHeroId,
                              StringComparison.OrdinalIgnoreCase))

@@ -160,11 +160,18 @@ namespace GreyWardenPolicePurity
             starter.AddDialogLine(
                 "gwp_enforcement_atonement_turnin_response",
                 "gwp_enforcement_atonement_turnin_response",
-                "lord_pretalk",
-                "{GWP_ENFORCEMENT_ATONEMENT_TURNIN_TEXT}",
+                "gwp_atonement_payment_result",
+                GwpTextCatalog.gwp_atonement_report,
                 null,
-                OnEnforcementAtonementTurnInConsequence,
+                BeginAtonementTurnIn,
                 100);
+            starter.AddDialogLine("gwp_atonement_report_done", "gwp_atonement_payment_result", "lord_pretalk",
+                "{GWP_ENFORCEMENT_ATONEMENT_TURNIN_TEXT}", AtonementPaymentAccepted,
+                OnEnforcementAtonementTurnInConsequence, 110);
+            starter.AddDialogLine("gwp_atonement_report_cancelled", "gwp_atonement_payment_result", "lord_pretalk",
+                GwpTextCatalog.gwp_case_barter_cancelled, null, () => {
+                    _atonementPayment = null; _atonementTurnInOpened = false;
+                });
 
             PlayerState.SetAtonementTaskActive(HasAtonementTask);
             TryRestoreAtonementQuestOnSessionStart();
@@ -326,7 +333,13 @@ namespace GreyWardenPolicePurity
             _atonementReputationReward = rewardRep;
             _atonementDeadlineHours = (float)(CampaignTime.Now.ToHours + GwpTuning.Enforcement.AtonementDeadlineDays * 24f);
             _lastAtonementIntelReportTime = CampaignTime.Now;
+            ReleaseWardensFromCase(_atonementTargetHeroId);
             StartAtonementQuest();
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFieldArrest("ATONEMENT_ASSIGNED",
+                "hero=" + _atonementTargetHeroId + "; party=" + _atonementTargetPartyId +
+                "; deadline=" + _atonementDeadlineHours + "; reward=" + _atonementReputationReward);
+#endif
 
             CrimeState.EndPlayerHunt();
             if (_dialogPolice != null && _dialogPolice.IsActive)

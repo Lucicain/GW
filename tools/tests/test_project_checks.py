@@ -24,6 +24,18 @@ freshness = load("Check-StateFreshness")
 
 
 class OwnershipTests(unittest.TestCase):
+    def test_player_case_assignment_has_one_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            owner = Path(directory) / "GwpPlayerCaseAssignment.cs"
+            caller = Path(directory) / "OtherBehavior.cs"
+            source = ('PlayerBountyBehavior.IsBountyReservedTarget(party);\n'
+                      'bounty?.HasCommissionAuthority(hero);\n'
+                      'enforcement.IsActiveAtonementTarget(hero);\n')
+            owner.write_text(source, encoding="utf-8")
+            caller.write_text(source, encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(owner)]))
+            self.assertEqual(3, len(hygiene.owner_violations([str(caller)])))
+
     def test_peace_has_one_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             owner = Path(directory) / "GwpPeace.cs"

@@ -143,7 +143,7 @@ namespace GreyWardenPolicePurity
                 entry.Party?.IsMobile == true && GwpCommon.IsGreyWardenEnforcementParty(entry.Party.MobileParty));
             bool playerHeldTheCase = playerSide.OtherSide.Parties.Any(entry =>
                 entry.Party?.MobileParty?.LeaderHero != null &&
-                PlayerBountyBehavior.IsCaseHeldByPlayer(
+                GwpPlayerCaseAssignment.IsCaseHeldByPlayer(
                     entry.Party.MobileParty.LeaderHero.StringId));
             if (!stoppedCrimeInProgress && !wardenOnPlayerSide && !playerHeldTheCase) return false;
 

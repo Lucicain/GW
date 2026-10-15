@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-176 个源文件、54,244 行、336 个公开类型、75 个 Harmony 补丁点（分布在 75 个补丁类里）。
+177 个源文件、54,443 行、337 个公开类型、75 个 Harmony 补丁点（分布在 75 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -378,6 +378,7 @@
 - `GwpPassiveShieldRegisterBlowPatch` → GwpShieldBashGuardPatch.cs ←
 - `GwpPatrolBeats` → GwpPatrolBeats.cs
 - `GwpPeace` → GwpPeace.cs
+- `GwpPlayerCaseAssignment` → GwpPlayerCaseAssignment.cs
 - `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
 - `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
@@ -528,30 +529,30 @@
 ### 执法：案件与巡逻（32 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 1896 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1471 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
-- `GwpFieldArrestBehavior.cs` — 1304 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `PoliceEnforcementBehavior.cs` — 1475 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `GwpFieldArrestBehavior.cs` — 1299 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1271 行 · `PoliceEnforcementBehavior`
 - `PolicePatrolBehavior.cs` — 1014 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.Envoy.cs` — 804 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Envoy.cs` — 834 行 · `PoliceEnforcementBehavior`
 - `PoliceResourceManager.cs` — 722 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 698 行 · `GwpAiDeterrenceState`
-- `PoliceEnforcementBehavior.Dialogue.cs` — 586 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Dialogue.cs` — 599 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Helpers.cs` — 481 行 · `PoliceEnforcementBehavior`
 - `PoliceCrimeMonitorEnhanced.cs` — 459 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
 - `PoliceAIDeterrenceBehavior.cs` — 427 行 · `PoliceAIDeterrenceBehavior` : CampaignBehaviorBase
 - `PoliceAntiWarDeclaration.cs` — 412 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase，另含 1 个类型
+- `PoliceEnforcementBehavior.AtonementQuest.cs` — 361 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
 - `PolicePatrolBehavior.Helpers.cs` — 311 行 · `PolicePatrolBehavior`
-- `PoliceEnforcementBehavior.AtonementQuest.cs` — 254 行 · `PoliceEnforcementBehavior` : QuestBase，另含 1 个类型
+- `PoliceEnforcementBehavior.CaseLifecycle.cs` — 122 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PolicePrisonerImmunityBehavior.cs` — 121 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.CaseLifecycle.cs` — 120 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceShipModels.cs` — 99 行 · `PoliceShipModelSupport` : CampaignShipDamageModel，另含 2 个类型
 - `PoliceEnforcementBehavior.WarPursuitTrace.cs` — 86 行 · `PoliceEnforcementBehavior`
 - `PolicePartyTroopUpgradeModel.cs` — 76 行 · `PolicePartyTroopUpgradeModel` : DefaultPartyTroopUpgradeModel
 - `PoliceAntiVanillaWarBehavior.cs` — 74 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
-- `GwpFieldArrestBehavior.Grace.cs` — 71 行 · `GwpFieldArrestBehavior`
 - `PoliceMobilePartyAIModel.cs` — 71 行 · `PoliceMobilePartyAIModel` : DefaultMobilePartyAIModel
+- `GwpFieldArrestBehavior.Grace.cs` — 70 行 · `GwpFieldArrestBehavior`
 - `PoliceAntiRecruitmentModel.cs` — 67 行 · `PoliceAntiRecruitmentModel` : DefaultDiplomacyModel
 - `PolicePatrolBehavior.Encyclopedia.cs` — 49 行 · `PolicePatrolBehavior`
 - `PoliceMarriageModel.cs` — 36 行 · `PoliceMarriageModel` : DefaultMarriageModel
@@ -609,7 +610,7 @@
 
 ### 数据与共用（4 个文件）
 
-- `GwpData.cs` — 1125 行 · `CrimeRecord`，另含 5 个类型
+- `GwpData.cs` — 1124 行 · `CrimeRecord`，另含 5 个类型
 - `GwpTuning.cs` — 411 行 · `GwpTuning`，另含 13 个类型
 - `GwpCommon.cs` — 352 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
@@ -618,10 +619,10 @@
 
 - `SubModule.cs` — 168 行 · `SubModule` : MBSubModuleBase
 
-### 其他（89 个文件）
+### 其他（90 个文件）
 
 - `GwpFireswornBehavior.cs` — 1319 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpTextCatalog.g.cs` — 1225 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1226 行 · `GwpTextCatalog`
 - `GwpStrength.cs` — 1049 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornArmory.cs` — 999 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 694 行 · `GwpFireswornBehavior`
@@ -685,6 +686,7 @@
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
 - `GwpFireswornExperience.cs` — 52 行 · `GwpFireswornBehavior`
 - `GwpEscortSpeedCapPatch.cs` — 50 行 · `GwpEscortSpeedCapPatch`
+- `GwpPlayerCaseAssignment.cs` — 49 行 · `GwpPlayerCaseAssignment`
 - `GwpCaseReceipt.cs` — 48 行 · `GwpCaseReceipt`，另含 1 个类型
 - `GwpWardenAutoEquipmentPatch.cs` — 48 行 · `GwpWardenAutoEquipmentPatch`
 - `GwpFieldCollectionBarterable.cs` — 47 行 · `GwpFieldCollectionBarterable` : Barterable

@@ -2,7 +2,7 @@
 
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpNegotiationResistance.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
 > 待实测：对方的打算更看性格，有钱的领主不再多半照数全缴；第二层更难谈（实力差不再进第二层），性格越极端越难
 
@@ -11,8 +11,7 @@
 
 ## 入口
 
-与承办目标（`PlayerBountyBehavior.HasCommissionAuthority`）在野外单独对话；任一方在定居点里
-不走这条路。
+与承办目标（`GwpPlayerCaseAssignment.HasAuthority`）在野外单独对话；普通悬赏与[赎罪委派](atonement.md)共用入口，赎罪不要求入会。任一方在定居点里不走这条路。取案按对话英雄ID，不拿同队另一嫌犯的案卷；宽限日志和处理结果由公共入口转交所属任务。（依据：源码复核2026-10-15）
 
 ## 肯不肯谈
 

@@ -2,7 +2,7 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`72d6712`（2026-10-15）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
@@ -12,7 +12,7 @@
 
 测试包美术来自用户本轮Kit发布的 `D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden/AssetPackages/pack0.tpac`，现保存于 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/GreyWardenPolicePurity/_Module/AssetPackages/pack0.tpac`，身份为当前玩家包资源；370,972,860字节，SHA-256 `f7a323f5c2c91e58ad9eaccbf5d2cfee53654256564116daa0c53ea3cd737b42`。live已移除发布目录，继续保留可编辑美术。（依据：用户资源、复制与哈希 2026-10-15）
 
-当前live为v1.4.15开发构建（源码基线 `72d6712` 加六人声音/性格区分）；DLL SHA-256 `32e21bf7c58bf1beefca467c5a75394f32f6d6f7b7838066cf964ba369fa7a9a`。客户端与编辑器相同，GameCompat加载728类型、89补丁绑定通过。隔离玩家DLL关闭监控，加载711类型、84补丁绑定通过。（依据：构建与哈希2026-10-15）
+当前live为v1.4.15开发构建（源码基线 `18779c6` 加[赎罪修复](atonement.md)）；DLL SHA-256 `dd8d6972d3c21293d853e3e4a2ec300695c4d2fb404e5cf06b13b867c7b82c7d`。客户端与编辑器相同；本轮开发构建0警告0错误，74个runtime文件镜像一致，1474条中文内容键无缺失。GameCompat加载732类型、89补丁绑定通过，无缺失类型/成员。（依据：构建、加载与哈希2026-10-15）
 
 角色XML沿用[家族](family.md)已确认的六张脸；本轮只改声音位、语气与性格，新增85项专项验证通过；`ModuleData/spspecialcharacters.xml` 与 live 的 SHA-256 均为 `871ac6e2cd65db6403b36e8aa3bbd8d01a4b35cb38e3fcf5e008cbafb333d338`。DLL 使用上述开发构建；LiveModule 与 ContentKeys 校验通过。（依据：部署与哈希 2026-10-15）
 
@@ -22,7 +22,7 @@
 
 玩家DLL SHA-256 `5cee66acdba0693c3ea1efa5e01c3b47cc2c35b276e43449b2a5db43b50bc0de`。隔离Rebuild为0警告0错误；77个包内文件逐项解压哈希通过，五组监控串ASCII/UTF-16LE均不存在，TPAC与本页最新资源哈希一致。证据归档 `build-check/package-v1.4-r15/`（manifest、玩家DLL、校验文件），归本次交付所有。（依据：离线验证2026-10-15）
 
-本地包为v14-refresh之后的当前开发内容，具体变动与已知问题见包内中英README；不等同于一个新建的线上正式Release。该ZIP对应源码 `72d6712`，本轮六人声音/性格改动只更新开发live，未重打此包。live当前DLL与校验结果见上节。Python16项（含讲和62、配装53断言）、案件155项、战斗137项、实际名册转移173项通过。（依据：本轮构建与回归2026-10-15）
+本地包为v14-refresh之后的开发内容，具体变动与已知问题见包内中英README；不等同于一个新建的线上正式Release。该ZIP对应源码 `72d6712`，六人声音/性格和赎罪修复只更新开发live，未重打此包。live当前DLL与校验结果见上节。Python18项（含赎罪42、讲和62、配装53断言）、案件155项通过；战斗137项、实际名册转移173项沿用先前未改动验证。（依据：离线回归2026-10-15）
 
 ## 两个开关决定一切
 
@@ -72,7 +72,8 @@
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
 | `tests/test_player_text.py` | 4 | 中英输出、只读陈旧检查、新键生成、换行等价、占位符丢失拒绝及新增内联文本拒绝 |
-| `tests/test_project_checks.py` | 9 | 战力/讲和/守村经验容量归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
+| `tests/test_project_checks.py` | 10 | 战力/讲和/守村经验容量/玩家委派归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
+| `tests/test_atonement.py` | 42断言 | 抽取实际赎罪、委派入口与使者方法，覆盖未入会权限、交接、存档字段恢复、和平/战斗完成、多嫌犯、原版期限、实际申报、取消交付与不重复领奖；引擎边界为桩 |
 | `tests/test_battle_peace.py` | 62断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
 | `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
 | `Verify-FounderProfiles.ps1` | 85断言 | 实际原版语体/选音、六组演员、战斗声音与性格合法互异；生产Harmony补丁范围与婚后接续 |

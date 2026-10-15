@@ -2,12 +2,14 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`18779c6`（2026-10-15）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
 各本职见 [`family.md`](family.md)。
+
+追捕欲望的玩家占案避让统一查 `GwpPlayerCaseAssignment`，同时覆盖普通悬赏与赎罪；已有任务交接只由[案件生命周期](case-enforcement.md)处理。（依据：源码复核2026-10-15）
 
 ## 谁拿到活（派活顺序）
 

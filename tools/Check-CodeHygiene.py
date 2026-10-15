@@ -182,6 +182,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("玩家案件委派", r"\bPlayerBountyBehavior\.(?:IsBountyCaseHeldByPlayer|IsBountyReservedTarget)\s*\(|\??\.(?:HasCommissionAuthority|IsActiveBountyTarget|HoldsAtonementCase|IsActiveAtonementTarget|ReservesAtonementTarget)\s*\(",
+     "GwpPlayerCaseAssignment.cs", "GwpPlayerCaseAssignment"),
     ("讲和", r"\b(?:FactionManager\.SetNeutral|MakePeaceAction\.Apply)\s*\(", "GwpPeace.cs", "GwpPeace.Make / EndPoliceWar"),
     ("临时队唯一编号", r"\bFindNextUniqueStringId\s*<\s*MobileParty\s*>\s*\(", "GwpPartyIdentity.cs", "GwpPartyIdentity.Next"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),

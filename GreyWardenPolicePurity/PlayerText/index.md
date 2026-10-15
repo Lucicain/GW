@@ -12,7 +12,7 @@
 | gwp_clan_short_name | Grey Wardens | 灰袍 | 家族百科与名牌的组织名，保留。 |
 | gwp_common_garrison | garrison | 驻地点 | PolicePatrolBehavior.cs:903 |
 | gwp_common_understood | Understood | 知道了 | PlayerBountyBehavior.cs:170 |
-| gwp_common_unknown_target | Unknown target | 未知目标 | PlayerBountyBehavior.cs:873, PlayerBountyBehavior.QuestAndNotification.cs:78, PoliceEnforcementBehavior.AtonementQuest.cs:45 |
+| gwp_common_unknown_target | Unknown target | 未知目标 | PlayerBountyBehavior.cs:873, PlayerBountyBehavior.QuestAndNotification.cs:78, PoliceEnforcementBehavior.AtonementQuest.cs:103 |
 | gwp_crime_aid_criminals | Aiding malefactors against the Grey Wardens | 帮助罪犯对抗灰袍守卫 | GwpText.cs:51 |
 | gwp_crime_attack_caravan | Attack upon a caravan | 攻击商队 | GwpText.cs:35 |
 | gwp_crime_attack_villagers | Attack upon villagers | 攻击村民 | GwpText.cs:33 |
@@ -145,8 +145,8 @@
 | gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:204 |
 | gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:391 |
 | gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:406 |
-| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1071 |
-| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1085 |
+| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1070 |
+| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1084 |
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_002 | — | 宣战详情 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_003 | — | 查看灰袍守卫当前对各势力宣战的详细原因。 | 未检出直接引用；保留 |
@@ -439,33 +439,33 @@
 | gwp_policecrimemonitorenhanced_008 | Raid village (start) | 劫掠村庄(开始) | PoliceCrimeMonitorEnhanced.cs:411 |
 | gwp_policecrimemonitorenhanced_009 | Village={VAR_1} | 村庄={VAR_1} | PoliceCrimeMonitorEnhanced.cs:411 |
 | gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:413 |
-| gwp_policeenforcementbehavior_001 | The atonement contract times out, reputation -5. | 赎罪任务超时，声望 -5。 | PoliceEnforcementBehavior.cs:228 |
-| gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | PoliceEnforcementBehavior.cs:236 |
-| gwp_policeenforcementbehavior_003 | You have defeated {VAR_1}. Report to any Warden lord to complete your atonement. | 你已击败赎罪目标{VAR_1}，向任意一位灰袍领主复命即可。 | PoliceEnforcementBehavior.cs:315 |
-| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:320 |
-| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:530 |
-| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:530 |
-| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:534 |
-| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:536 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1367 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1369 |
-| gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:35 |
-| gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:41 |
-| gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:45 |
-| gwp_policeenforcementbehavior_atonementquest_004 | The target has been defeated. Report to any Grey Warden lord to complete your atonement. | 已击败目标。向任意灰袍领主交付赎罪任务。 | 赎罪任务进度文字，原文仍用“灰袍警察”。 |
-| gwp_policeenforcementbehavior_atonementquest_005 | Atonement completed: reputation +{VAR_1}, current reputation {VAR_2}. | 赎罪完成：声望 +{VAR_1}，当前声望 {VAR_2}。 | PoliceEnforcementBehavior.AtonementQuest.cs:76 |
-| gwp_policeenforcementbehavior_atonementquest_006 | Unknown location | 未知位置 | PoliceEnforcementBehavior.AtonementQuest.cs:102 |
-| gwp_policeenforcementbehavior_atonementquest_007 | Contract assigned: Defeat {VAR_2} within {VAR_1} days (case size {VAR_3} people). | 任务下达：在 {VAR_1} 天内击败 {VAR_2}（接案规模 {VAR_3} 人）。 | PoliceEnforcementBehavior.AtonementQuest.cs:113 |
+| gwp_policeenforcementbehavior_001 | The atonement contract times out, reputation -5. | 赎罪任务超时，声望 -5。 | PoliceEnforcementBehavior.cs:242 |
+| gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | 未检出直接引用；保留 |
+| gwp_policeenforcementbehavior_003 | The case against {VAR_1} has been dealt with. Report to a Warden lord. | {VAR_1}的案件已处置，回去向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:66 |
+| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:313 |
+| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:526 |
+| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:526 |
+| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:530 |
+| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:532 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1371 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1373 |
+| gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
+| gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
+| gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |
+| gwp_policeenforcementbehavior_atonementquest_004 | The case has been dealt with. Report to any Warden lord and account for anything collected. | 这件案子已处置。向任意灰袍领主复命，交代经过及代收的钱货。 | 赎罪任务进度文字，原文仍用“灰袍警察”。 |
+| gwp_policeenforcementbehavior_atonementquest_005 | Atonement completed: reputation +{VAR_1}, current reputation {VAR_2}. | 赎罪完成：声望 +{VAR_1}，当前声望 {VAR_2}。 | PoliceEnforcementBehavior.AtonementQuest.cs:135 |
+| gwp_policeenforcementbehavior_atonementquest_006 | Unknown location | 未知位置 | PoliceEnforcementBehavior.AtonementQuest.cs:161 |
+| gwp_policeenforcementbehavior_atonementquest_007 | Resolve the case against {VAR_2} within {VAR_1} days. Their party had {VAR_3} members when assigned. You may negotiate payment or surrender, or defeat their party, then report to a Warden lord. | 在 {VAR_1} 天内处置 {VAR_2} 的案件，接案时其部队有 {VAR_3} 人。你可以要求缴罚或投案，必要时击败其部队，再向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:172 |
 | gwp_policeenforcementbehavior_atonementquest_008 | Scouts last reported the target near {VAR_1}. Once the task is done, report to any Grey Warden lord to complete your atonement. | 探子回报：目标最后出现在{VAR_1}附近。完成后向任意灰袍领主交付赎罪任务。 | 赎罪任务中的首次目标位置报告。 |
-| gwp_policeenforcementbehavior_atonementquest_009 | Unknown location | 未知位置 | PoliceEnforcementBehavior.AtonementQuest.cs:130, PoliceEnforcementBehavior.AtonementQuest.cs:133 |
-| gwp_policeenforcementbehavior_atonementquest_010 | Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people). | 探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。 | PoliceEnforcementBehavior.AtonementQuest.cs:135, PoliceEnforcementBehavior.AtonementQuest.cs:140 |
-| gwp_policeenforcementbehavior_atonementquest_011 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:174 |
-| gwp_policeenforcementbehavior_atonementquest_012 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:184 |
-| gwp_policeenforcementbehavior_atonementquest_013 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:198 |
-| gwp_policeenforcementbehavior_atonementquest_014 | Concerning the atonement (up to {VAR_1} standing may be restored upon discharge) | 关于赎罪任务（提交后恢复最多 {VAR_1} 点声望） | PoliceEnforcementBehavior.AtonementQuest.cs:211 |
-| gwp_policeenforcementbehavior_atonementquest_015 | The account is verified. Your atonement is complete, and the roll allows the restoration of up to {VAR_1} standing. | 核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。 | PoliceEnforcementBehavior.AtonementQuest.cs:214 |
-| gwp_policeenforcementbehavior_atonementquest_016 | Your atonement is complete. | 赎罪已完成。 | PoliceEnforcementBehavior.AtonementQuest.cs:229 |
-| gwp_policeenforcementbehavior_atonementquest_017 | Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}. | 赎罪完成，经灰袍调停，你与{VAR_1}恢复了和平。 | PoliceEnforcementBehavior.AtonementQuest.cs:249 |
+| gwp_policeenforcementbehavior_atonementquest_009 | Unknown location | 未知位置 | PoliceEnforcementBehavior.AtonementQuest.cs:189, PoliceEnforcementBehavior.AtonementQuest.cs:192 |
+| gwp_policeenforcementbehavior_atonementquest_010 | Spy report: {VAR_1} recently appeared near {VAR_2} (about {VAR_3} people). | 探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。 | PoliceEnforcementBehavior.AtonementQuest.cs:194, PoliceEnforcementBehavior.AtonementQuest.cs:199 |
+| gwp_policeenforcementbehavior_atonementquest_011 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:233 |
+| gwp_policeenforcementbehavior_atonementquest_012 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:243 |
+| gwp_policeenforcementbehavior_atonementquest_013 | The atonement target is still at large. Continue the hunt. | 赎罪的目标仍然在逃。继续追下去。 | PoliceEnforcementBehavior.AtonementQuest.cs:257 |
+| gwp_policeenforcementbehavior_atonementquest_014 | Concerning the atonement (up to {VAR_1} standing may be restored upon discharge) | 关于赎罪任务（提交后恢复最多 {VAR_1} 点声望） | PoliceEnforcementBehavior.AtonementQuest.cs:270 |
+| gwp_policeenforcementbehavior_atonementquest_015 | The account is verified. Your atonement is complete, and the roll allows the restoration of up to {VAR_1} standing. | 核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。 | PoliceEnforcementBehavior.AtonementQuest.cs:273 |
+| gwp_policeenforcementbehavior_atonementquest_016 | Your atonement is complete. | 赎罪已完成。 | PoliceEnforcementBehavior.AtonementQuest.cs:300 |
+| gwp_policeenforcementbehavior_atonementquest_017 | Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}. | 赎罪完成，经灰袍调停，你与{VAR_1}恢复了和平。 | PoliceEnforcementBehavior.AtonementQuest.cs:356 |
 | gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:682 |
 | gwp_policeenforcementbehavior_delaypatrols_002 | — | 与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1} | 未检出直接引用；保留 |
 | gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1214 |
@@ -480,23 +480,23 @@
 | gwp_policeenforcementbehavior_dialogue_005 | No charge of atonement can presently be assigned. You may pay the fine or refuse the order. | 当前无法分配赎罪任务。你可以继续缴纳罚金，或拒绝执法。 | PoliceEnforcementBehavior.Dialogue.cs:119 |
 | gwp_policeenforcementbehavior_dialogue_006 | I refuse the order. Let arms decide. | 拒绝执法，开战。 | PoliceEnforcementBehavior.Dialogue.cs:128 |
 | gwp_policeenforcementbehavior_dialogue_007 | Resistance is entered upon the roll. Grey Wardens—make the arrest! | 拒捕记录在案。灰袍守卫，执行抓捕！ | PoliceEnforcementBehavior.Dialogue.cs:146 |
-| gwp_policeenforcementbehavior_dialogue_008 | You carry {VAR_1} denars, enough to pay in full. | 你当前携带 {VAR_1} 金，可直接缴清。 | PoliceEnforcementBehavior.Dialogue.cs:217 |
-| gwp_policeenforcementbehavior_dialogue_009 | You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment. | 你当前携带 {VAR_1} 金，可在谈判界面继续出价，或改选认罪认罚。 | PoliceEnforcementBehavior.Dialogue.cs:219 |
-| gwp_policeenforcementbehavior_dialogue_010 | Stand! The Grey Wardens come under warrant. Your present standing is {VAR_1}, | 站住！灰袍守卫正在执行逮捕。你当前负声望 {VAR_1}， | PoliceEnforcementBehavior.Dialogue.cs:224 |
-| gwp_policeenforcementbehavior_dialogue_011 | and the lawful fine in this case is {VAR_1} denars. {VAR_2} | 本案正式罚金 {VAR_1} 金。{VAR_2} | PoliceEnforcementBehavior.Dialogue.cs:225 |
-| gwp_policeenforcementbehavior_dialogue_012 | Pay the lawful fine ({VAR_1} denars; clear the warrant) | 缴纳正式罚金（{VAR_1} 金，清除通缉） | PoliceEnforcementBehavior.Dialogue.cs:237 |
-| gwp_policeenforcementbehavior_dialogue_013 | unknown quarry | 未知目标 | PoliceEnforcementBehavior.Dialogue.cs:321 |
-| gwp_policeenforcementbehavior_dialogue_014 | A charge of atonement has been issued: pursue {VAR_1} (strength when assigned: {VAR_2}). | 赎罪任务已下达：追捕 {VAR_1}（接案规模 {VAR_2} 人）。 | PoliceEnforcementBehavior.Dialogue.cs:340 |
-| gwp_policeenforcementbehavior_dialogue_015 | Fulfilment may restore up to {VAR_1} standing, but never above 0; | 完成可恢复最多 {VAR_1} 点声望（最高恢复到 0）； | PoliceEnforcementBehavior.Dialogue.cs:341 |
-| gwp_policeenforcementbehavior_dialogue_016 | failure will impose a further loss of 5 standing. | 失败将追加 5 点负声望。 | PoliceEnforcementBehavior.Dialogue.cs:342 |
-| gwp_policeenforcementbehavior_dialogue_017 | The Wardens charge you to defeat {VAR_1} within {VAR_2} days in atonement. | 灰袍命你在 {VAR_2} 天内击败{VAR_1}以赎罪。 | PoliceEnforcementBehavior.Dialogue.cs:345 |
-| gwp_policeenforcementbehavior_dialogue_018 | Pay the lawful fine | 缴纳正式罚金 | PoliceEnforcementBehavior.Dialogue.cs:361 |
-| gwp_policeenforcementbehavior_dialogue_019 | The fine of {VAR_1} denars is paid. You are no longer wanted. | 罚金 {VAR_1} 第纳尔已缴清，通缉撤销。 | PoliceEnforcementBehavior.Dialogue.cs:395 |
-| gwp_policeenforcementbehavior_dialogue_020 | You refuse to submit. The Wardens will take you by force. | 你拒绝伏法，灰袍将强行缉拿。 | PoliceEnforcementBehavior.Dialogue.cs:475 |
-| gwp_enforcement_companion_charge | Stand! {VAR_1} travels with you under a Grey Warden warrant. The fine for {VAR_1}'s case is {VAR_2} denars. {VAR_3} | 站住！与你同行的 {VAR_1} 有灰袍未结案件。本案罚金为 {VAR_2} 金。{VAR_3} | PoliceEnforcementBehavior.Dialogue.cs:226 |
-| gwp_enforcement_companion_insufficient | You carry {VAR_1} denars. Return when you can pay the fine in full. | 你当前携带 {VAR_1} 金。凑齐罚金后可回来一次缴清。 | PoliceEnforcementBehavior.Dialogue.cs:220 |
-| gwp_enforcement_companion_pay | Pay this companion's fine ({VAR_1} denars) | 替这名同伴缴纳罚金（{VAR_1} 金） | PoliceEnforcementBehavior.Dialogue.cs:249 |
-| gwp_enforcement_companion_paid | {VAR_1} has paid the fine of {VAR_2} denars. The case is closed. | {VAR_1}已缴清罚金 {VAR_2} 第纳尔，案件了结。 | PoliceEnforcementBehavior.Dialogue.cs:285 |
+| gwp_policeenforcementbehavior_dialogue_008 | You carry {VAR_1} denars, enough to pay in full. | 你当前携带 {VAR_1} 金，可直接缴清。 | PoliceEnforcementBehavior.Dialogue.cs:224 |
+| gwp_policeenforcementbehavior_dialogue_009 | You carry {VAR_1} denars. You may make another offer at the table, or confess and accept judgment. | 你当前携带 {VAR_1} 金，可在谈判界面继续出价，或改选认罪认罚。 | PoliceEnforcementBehavior.Dialogue.cs:226 |
+| gwp_policeenforcementbehavior_dialogue_010 | Stand! The Grey Wardens come under warrant. Your present standing is {VAR_1}, | 站住！灰袍守卫正在执行逮捕。你当前负声望 {VAR_1}， | PoliceEnforcementBehavior.Dialogue.cs:231 |
+| gwp_policeenforcementbehavior_dialogue_011 | and the lawful fine in this case is {VAR_1} denars. {VAR_2} | 本案正式罚金 {VAR_1} 金。{VAR_2} | PoliceEnforcementBehavior.Dialogue.cs:232 |
+| gwp_policeenforcementbehavior_dialogue_012 | Pay the lawful fine ({VAR_1} denars; clear the warrant) | 缴纳正式罚金（{VAR_1} 金，清除通缉） | PoliceEnforcementBehavior.Dialogue.cs:244 |
+| gwp_policeenforcementbehavior_dialogue_013 | unknown quarry | 未知目标 | PoliceEnforcementBehavior.Dialogue.cs:328 |
+| gwp_policeenforcementbehavior_dialogue_014 | A charge of atonement has been issued: pursue {VAR_1} (strength when assigned: {VAR_2}). | 赎罪任务已下达：追捕 {VAR_1}（接案规模 {VAR_2} 人）。 | PoliceEnforcementBehavior.Dialogue.cs:353 |
+| gwp_policeenforcementbehavior_dialogue_015 | Fulfilment may restore up to {VAR_1} standing, but never above 0; | 完成可恢复最多 {VAR_1} 点声望（最高恢复到 0）； | PoliceEnforcementBehavior.Dialogue.cs:354 |
+| gwp_policeenforcementbehavior_dialogue_016 | failure will impose a further loss of 5 standing. | 失败将追加 5 点负声望。 | PoliceEnforcementBehavior.Dialogue.cs:355 |
+| gwp_policeenforcementbehavior_dialogue_017 | The Wardens charge you to defeat {VAR_1} within {VAR_2} days in atonement. | 灰袍命你在 {VAR_2} 天内击败{VAR_1}以赎罪。 | PoliceEnforcementBehavior.Dialogue.cs:358 |
+| gwp_policeenforcementbehavior_dialogue_018 | Pay the lawful fine | 缴纳正式罚金 | PoliceEnforcementBehavior.Dialogue.cs:374 |
+| gwp_policeenforcementbehavior_dialogue_019 | The fine of {VAR_1} denars is paid. You are no longer wanted. | 罚金 {VAR_1} 第纳尔已缴清，通缉撤销。 | PoliceEnforcementBehavior.Dialogue.cs:408 |
+| gwp_policeenforcementbehavior_dialogue_020 | You refuse to submit. The Wardens will take you by force. | 你拒绝伏法，灰袍将强行缉拿。 | PoliceEnforcementBehavior.Dialogue.cs:488 |
+| gwp_enforcement_companion_charge | Stand! {VAR_1} travels with you under a Grey Warden warrant. The fine for {VAR_1}'s case is {VAR_2} denars. {VAR_3} | 站住！与你同行的 {VAR_1} 有灰袍未结案件。本案罚金为 {VAR_2} 金。{VAR_3} | PoliceEnforcementBehavior.Dialogue.cs:233 |
+| gwp_enforcement_companion_insufficient | You carry {VAR_1} denars. Return when you can pay the fine in full. | 你当前携带 {VAR_1} 金。凑齐罚金后可回来一次缴清。 | PoliceEnforcementBehavior.Dialogue.cs:227 |
+| gwp_enforcement_companion_pay | Pay this companion's fine ({VAR_1} denars) | 替这名同伴缴纳罚金（{VAR_1} 金） | PoliceEnforcementBehavior.Dialogue.cs:256 |
+| gwp_enforcement_companion_paid | {VAR_1} has paid the fine of {VAR_2} denars. The case is closed. | {VAR_1}已缴清罚金 {VAR_2} 第纳尔，案件了结。 | PoliceEnforcementBehavior.Dialogue.cs:292 |
 | gwp_enforcement_companion_leave | I cannot settle this companion's case now. | 我现在无法替这名同伴结案。 | PoliceEnforcementBehavior.Dialogue.cs:137 |
 | gwp_policepatrolbehavior_001 | A return order has been issued, waiting to be destroyed upon arrival at the settlement. | 已下发返程命令，等待到达定居点后销毁 | PolicePatrolBehavior.cs:79 |
 | gwp_policepatrolbehavior_002 | has been scheduled: Destroy the pickets after returning to the settlement. | 已调度：返程至驻地后销毁纠察队 | PolicePatrolBehavior.cs:86 |
@@ -911,19 +911,19 @@
 | gwp_item_dual_offhand | Grey Warden Dual Blade (Off Hand) | 灰袍双持剑（副手） | _Module/ModuleData/gwp_crafting_pieces.xml, _Module/ModuleData/items.xml |
 | gwp_item_dual_mainhand | Grey Warden Dual Blade (Main Hand) | 灰袍双持剑（主手） | _Module/ModuleData/items.xml |
 | gwp_fieldarrest_open | Stand where you are. I speak for the Grey Wardens. | 我受灰袍委托，为你名下的一件案子而来。 | GwpFieldArrestBehavior.cs:104 |
-| gwp_fieldarrest_charge | The Grey Wardens charge you with {VAR_1}, against {VAR_2}. The fine is {VAR_3} denars. They sent me to settle this. | 灰袍指控你曾{VAR_1}，受害方是{VAR_2}。应缴罚金 {VAR_3} 第纳尔，我受托来处理这件事。 | GwpFieldArrestBehavior.cs:547 |
+| gwp_fieldarrest_charge | The Grey Wardens charge you with {VAR_1}, against {VAR_2}. The fine is {VAR_3} denars. They sent me to settle this. | 灰袍指控你曾{VAR_1}，受害方是{VAR_2}。应缴罚金 {VAR_3} 第纳尔，我受托来处理这件事。 | GwpFieldArrestBehavior.cs:546 |
 | gwp_fieldarrest_walk_away | Never mind. Go on your way. | 算了，你走吧。 | GwpFieldArrestBehavior.cs:145 |
-| gwp_fieldarrest_victim_unknown | the Wardens' own record | 灰袍记录在案的受害人 | GwpFieldArrestBehavior.cs:539 |
-| gwp_fieldarrest_crime_caravan | attacking a caravan under Warden protection | 袭击灰袍保护的商队 | GwpFieldArrestBehavior.cs:572 |
-| gwp_fieldarrest_crime_village | violence against villagers under Warden protection | 对灰袍保护的村民动手 | GwpFieldArrestBehavior.cs:573 |
-| gwp_fieldarrest_msg_fine | {VAR_1} pays the fine of {VAR_2} denars in full. The money belongs to the Wardens and must be handed to a Warden lord. | {VAR_1}缴清了 {VAR_2} 第纳尔罚金，须交给灰袍领主。 | GwpFieldArrestBehavior.cs:980 |
+| gwp_fieldarrest_victim_unknown | the Wardens' own record | 灰袍记录在案的受害人 | GwpFieldArrestBehavior.cs:538 |
+| gwp_fieldarrest_crime_caravan | attacking a caravan under Warden protection | 袭击灰袍保护的商队 | GwpFieldArrestBehavior.cs:571 |
+| gwp_fieldarrest_crime_village | violence against villagers under Warden protection | 对灰袍保护的村民动手 | GwpFieldArrestBehavior.cs:572 |
+| gwp_fieldarrest_msg_fine | {VAR_1} pays the fine of {VAR_2} denars in full. The money belongs to the Wardens and must be handed to a Warden lord. | {VAR_1}缴清了 {VAR_2} 第纳尔罚金，须交给灰袍领主。 | GwpFieldArrestBehavior.cs:978 |
 | gwp_fieldarrest_msg_refused | — | 对方拒捕。动手拿人。 | 未检出直接引用；保留 |
 | gwp_field_fine_handed_in | — | 已上缴罚金 {VAR_1} 第纳尔。 | 未检出直接引用；保留 |
 | gwp_field_settle_notice_title | Case settled on the road | 外勤处理结束，待交付 | PlayerBountyBehavior.cs:164 |
 | gwp_field_settle_notice_body | The pursuit has ended. You must account for the commission and deliver the {VAR_1} denars collected as fines. Report to a Grey Warden lord; any shortfall must also be explained. | 追捕已结束。你需要交代这次办案的结果，并上缴作为罚金收到的 {VAR_1} 第纳尔。请找灰袍领主交付；未收足的部分也要说明。 | PlayerBountyBehavior.cs:166 |
 | gwp_field_turnin_lord | — | 罚金已点清，案子销了。灰袍收下 {VAR_1} 第纳尔，你的办案酬劳是 {VAR_2}。 | 未检出直接引用；保留 |
 | gwp_fieldarrest_dismissed | Then stop wasting my daylight. | 那就别耽误我的工夫。 | GwpFieldArrestBehavior.cs:150 |
-| gwp_fieldarrest_msg_partial | {VAR_1} pays only {VAR_2} of the {VAR_3} denars owed. Hand what you collected to a Warden lord. | {VAR_1}只缴了 {VAR_2} 第纳尔，应缴 {VAR_3} 第纳尔。所收罚金须交给灰袍领主。 | GwpFieldArrestBehavior.cs:981 |
+| gwp_fieldarrest_msg_partial | {VAR_1} pays only {VAR_2} of the {VAR_3} denars owed. Hand what you collected to a Warden lord. | {VAR_1}只缴了 {VAR_2} 第纳尔，应缴 {VAR_3} 第纳尔。所收罚金须交给灰袍领主。 | GwpFieldArrestBehavior.cs:979 |
 | gwp_fieldarrest_msg_captured | — | {VAR_1} 落在你手里。案底与声望罚款一并结清；把俘虏交给灰袍领主。 | 未检出直接引用；保留 |
 | gwp_fieldarrest_seize | — | 我要依照通缉令，抓你归案。 | 未检出直接引用；保留 |
 | gwp_fieldarrest_seize_reply | — | 原来灰袍就这点分量。动手吧。 | 未检出直接引用；保留 |
@@ -1019,11 +1019,11 @@
 | gwp_fa_accept_duel | Draw, then. Let us settle it between us. | 那就拔剑。你我之间了结。 | GwpOffenderDesire.cs:168 |
 | gwp_fa_accept_deeds | Pay for the deed, then. The dead stay on your record. | 那就为你做下的事付钱。那些人命的账留着。 | GwpOffenderDesire.cs:170 |
 | gwp_fa_accept_haggle | Seven tenths, then. I will have to account for the shortfall. | 七成就七成。剩下的差额，我回去交代。 | GwpOffenderDesire.cs:172 |
-| gwp_fieldarrest_msg_surrender | {VAR_1} surrenders. Deliver him to a Warden lord. | {VAR_1}投降了。请将他押交灰袍领主。 | GwpFieldArrestBehavior.cs:1024 |
-| gwp_fieldarrest_msg_bribe | {VAR_1} slips you goods worth {VAR_2} denars. | {VAR_1}私下塞给你价值 {VAR_2} 第纳尔的财物。 | GwpFieldArrestBehavior.cs:1058 |
-| gwp_fieldarrest_msg_own_men | He has several of his own men put to death before you to bear the blame. | 他当着你的面处决了几名手下顶罪。 | GwpFieldArrestBehavior.cs:1161 |
+| gwp_fieldarrest_msg_surrender | {VAR_1} surrenders. Deliver him to a Warden lord. | {VAR_1}投降了。请将他押交灰袍领主。 | GwpFieldArrestBehavior.cs:1021 |
+| gwp_fieldarrest_msg_bribe | {VAR_1} slips you goods worth {VAR_2} denars. | {VAR_1}私下塞给你价值 {VAR_2} 第纳尔的财物。 | GwpFieldArrestBehavior.cs:1054 |
+| gwp_fieldarrest_msg_own_men | He has several of his own men put to death before you to bear the blame. | 他当着你的面处决了几名手下顶罪。 | GwpFieldArrestBehavior.cs:1156 |
 | gwp_fieldarrest_reaction_fallback | — | …… | 未检出直接引用；保留 |
-| gwp_fieldarrest_msg_duel_lost | {VAR_1} wins the duel, and you let him go as agreed. | {VAR_1}赢了决斗，你依约放他离开。 | GwpFieldArrestBehavior.cs:1108 |
+| gwp_fieldarrest_msg_duel_lost | {VAR_1} wins the duel, and you let him go as agreed. | {VAR_1}赢了决斗，你依约放他离开。 | GwpFieldArrestBehavior.cs:1103 |
 | gwp_fieldarrest_msg_duel_won | — | 你赢了单挑，向 {VAR_1} 收到 {VAR_2} 第纳尔。若未收足，交账时仍需说明。 | 未检出直接引用；保留 |
 | gwp_report_open | — | 我有一笔路上办案收来的罚金要交代。 | 未检出直接引用；保留 |
 | gwp_report_ask | — | 卷宗要一个数。他交了你多少？ | 未检出直接引用；保留 |
@@ -1050,12 +1050,12 @@
 | gwp_case_missing_prisoner | — | 俘虏已经不在我手里了。这笔酬劳我领不了。 | 未检出直接引用；保留 |
 | gwp_case_report_later | I am not ready to hand it over yet. | 钱和人还没有准备好，我改日再来。 | PlayerBountyBehavior.CaseSettlement.cs:462 |
 | gwp_case_barter_accepted | We have counted the payment. Your report will be entered. | 钱物清点好了，这份委托可以结了。 | PlayerBountyBehavior.CaseSettlement.cs:475 |
-| gwp_case_barter_cancelled | Nothing has been entered. We can count it again when you are ready. | 这次没有入账。你准备好了，我们再点。 | PlayerBountyBehavior.CaseSettlement.cs:490 |
+| gwp_case_barter_cancelled | Nothing has been entered. We can count it again when you are ready. | 这次没有入账。你准备好了，我们再点。 | PlayerBountyBehavior.CaseSettlement.cs:490, PoliceEnforcementBehavior.Dialogue.cs:172 |
 | gwp_case_report_summary | The account lists {VAR_1} denars. Have you brought the fines, or the prisoner? If any money is missing, tell me why. | 卷宗上记着 {VAR_1} 第纳尔。你带来了罚金，还是把人押来了？钱若有短缺，也请说清缘由。 | PlayerBountyBehavior.CaseSettlement.cs:510 |
 | gwp_case_missing_result | — | 人没有交到，办案酬劳就不能发。这份委托到此结束。 | 未检出直接引用；保留 |
 | gwp_case_report_complete | Your report is entered. The treasury has paid {VAR_1} denars in expenses. This commission is concluded. | 交付已经记下。公库付给你 {VAR_1} 第纳尔办案酬劳，这份委托结清了。 | PlayerBountyBehavior.CaseSettlement.cs:668 |
-| gwp_case_capture_failed | The target was not taken. The case remains open. | 目标未被俘获，案件尚未了结。 | GwpFieldArrestBehavior.cs:1003 |
-| gwp_case_duel_failed | The duel could not begin. | 决斗未能开始。 | GwpFieldArrestBehavior.cs:1148 |
+| gwp_case_capture_failed | The target was not taken. The case remains open. | 目标未被俘获，案件尚未了结。 | GwpFieldArrestBehavior.cs:1001 |
+| gwp_case_duel_failed | The duel could not begin. | 决斗未能开始。 | GwpFieldArrestBehavior.cs:1143 |
 | gwp_case_cash_with_prisoner | — | 你之前还向他收过 {VAR_1} 第纳尔。把这笔钱补齐，和俘虏一起交来。 | 未检出直接引用；保留 |
 | gwp_case_cash_still_due | — | 俘虏已经不在你手里，但先前收下的罚金仍要交代。 | 未检出直接引用；保留 |
 | gwp_case_purse_short | I accept the fine, but my money and goods together are worth only {VAR_1} denars. That is what I can give now. | 罚金我认，可我身边的钱和东西合起来只值 {VAR_1} 第纳尔。现在能交的就是这些。 | GwpFieldArrestBehavior.cs:381, GwpFieldArrestBehavior.cs:393 |
@@ -1086,7 +1086,7 @@
 | gwp_fa_accept_empty | I will report that you could not pay. Your debt remains. | 我会如实回报你付不起钱，欠账仍记在你名下。 | GwpFieldArrestBehavior.cs:286 |
 | gwp_fa_collection_cancel | No payment has changed hands. What do you intend to do? | 钱还没交出去。你到底打算怎么办？ | GwpFieldArrestBehavior.cs:290 |
 | gwp_fa_fight_reply | — | 那就拔剑吧。 | 未检出直接引用；保留 |
-| gwp_fa_accept_count | Show me the money and goods. We will agree what they cover. | 把钱和东西拿出来，能抵多少，我们当面说清。 | GwpFieldArrestBehavior.cs:1198 |
+| gwp_fa_accept_count | Show me the money and goods. We will agree what they cover. | 把钱和东西拿出来，能抵多少，我们当面说清。 | GwpFieldArrestBehavior.cs:1193 |
 | gwp_terms_final_objection | And if I pay the full amount, what do I gain by giving up my terms? | 就算照数交清，我放弃刚才的条件，又能换来什么？ | GwpFieldArrestLines.cs:183 |
 | gwp_terms_final_lead | Your command stays with you. I need the account settled, not another battle. | 你仍带你的队伍。我来是为了结清这笔账，不是再打一仗。 | GwpFieldArrestLines.cs:184 |
 | gwp_terms_final_charm | We both leave with our people alive. That is worth more than prolonging this quarrel. | 双方的人都能活着离开。这比继续争执要紧。 | GwpFieldArrestLines.cs:185 |
@@ -1135,10 +1135,10 @@
 | gwp_terms_haggledown_charm | Let us end this without another quarrel. Pay the remainder as well. | 别再为余款起争执了，照数交齐吧。 | GwpFieldArrestLines.cs:230 |
 | gwp_terms_haggledown_rogue | You are bargaining as though I must sell. I can still enforce the warrant. | 你以为我非卖给你不可？我还可以照令抓人。 | GwpFieldArrestLines.cs:231 |
 | gwp_terms_haggledown_trade | Seven tenths leaves three tenths unpaid. Close the balance now. | 七成交了还剩三成。把余款也结清。 | GwpFieldArrestLines.cs:232 |
-| gwp_field_villagers | local villagers | 附近的村民 | GwpFieldArrestBehavior.cs:542 |
-| gwp_fa_retry_payment | I still stand by my terms. Have you another proposal? | 我还是坚持刚才的条件。你还有别的说法吗？ | GwpFieldArrestBehavior.cs:770 |
-| gwp_fa_retry_authority | That is not enough for me to accept your authority. Have you another reason? | 这还不足以让我接受你的处置。你还有别的理由吗？ | GwpFieldArrestBehavior.cs:771 |
-| gwp_fa_critical_rebuff | Enough. I will hear no more of this. | 够了，这件事我不想再谈。 | GwpFieldArrestBehavior.cs:845 |
+| gwp_field_villagers | local villagers | 附近的村民 | GwpFieldArrestBehavior.cs:541 |
+| gwp_fa_retry_payment | I still stand by my terms. Have you another proposal? | 我还是坚持刚才的条件。你还有别的说法吗？ | GwpFieldArrestBehavior.cs:769 |
+| gwp_fa_retry_authority | That is not enough for me to accept your authority. Have you another reason? | 这还不足以让我接受你的处置。你还有别的理由吗？ | GwpFieldArrestBehavior.cs:770 |
+| gwp_fa_critical_rebuff | Enough. I will hear no more of this. | 够了，这件事我不想再谈。 | GwpFieldArrestBehavior.cs:844 |
 | gwp_rebuff_authority_lead | Your warrant is not a command I have sworn to obey. Give me a better reason. | 我可没向这份通缉令宣过誓。你得拿出更能让我信服的理由。 | GwpFieldArrestLines.cs:244 |
 | gwp_rebuff_authority_charm | I hear your concern for them. That does not settle whether I answer to you. | 我听见你替他们说话了，但这还没说明我为什么该接受你的处置。 | GwpFieldArrestLines.cs:245 |
 | gwp_rebuff_authority_rogue | Threats are easy to make. I have not agreed to your authority. | 威胁谁都会说。我还没答应听你的。 | GwpFieldArrestLines.cs:246 |
@@ -1269,10 +1269,10 @@
 | gwp_fa_accept_grace | Three days, once only. I will return for payment. | 三天，只宽限这一次。我会回来收钱。 | GwpOffenderDesire.cs:158 |
 | gwp_voice_grace_alt | I need three days to gather the money. I am asking for time, not forgiveness. | 我需要三天把钱凑起来。我求的是宽限，不是免掉罚金。 | GwpFieldDialogueVoice.cs:61 |
 | gwp_grace_granted | You allowed {VAR_1} three days to raise the fine. The commission remains open; return to collect it or take the offender into custody. | 你给了{VAR_1}三天筹措罚金。委托尚未完成，届时仍须收钱或拿人。 | GwpFieldArrestBehavior.Grace.cs:31 |
-| gwp_grace_due | The time you allowed {VAR_1} has expired. Seek payment or take him into custody; no payment has been received automatically. | 你给{VAR_1}的宽限已经到期。可以前去收钱或拿人。 | GwpFieldArrestBehavior.Grace.cs:48 |
+| gwp_grace_due | The time you allowed {VAR_1} has expired. Seek payment or take him into custody; no payment has been received automatically. | 你给{VAR_1}的宽限已经到期。可以前去收钱或拿人。 | GwpFieldArrestBehavior.Grace.cs:47 |
 | gwp_fa_grace_wait | Then I will come back on the day we named. | 那我就等到说好的那天再来。 | GwpFieldArrestBehavior.cs:141 |
-| gwp_grace_return_early | You gave me until the day we named. It has not come yet. I have nothing ready for you before then. | 说好的日子还没到。到那天之前，我这儿拿不出什么给你。 | GwpFieldArrestBehavior.cs:454 |
-| gwp_grace_return_due | The time we agreed is up. Let us see what I can pay now. | 说好的日子到了。你看看我现在能拿出多少吧。 | GwpFieldArrestBehavior.cs:455 |
+| gwp_grace_return_early | You gave me until the day we named. It has not come yet. I have nothing ready for you before then. | 说好的日子还没到。到那天之前，我这儿拿不出什么给你。 | GwpFieldArrestBehavior.cs:453 |
+| gwp_grace_return_due | The time we agreed is up. Let us see what I can pay now. | 说好的日子到了。你看看我现在能拿出多少吧。 | GwpFieldArrestBehavior.cs:454 |
 | gwp_grace_collect | Show me what you can pay now. | 把现在能交的钱拿出来看看。 | GwpFieldArrestBehavior.cs:138 |
 | gwp_terms_requestgrace_lead | The Wardens expect payment, not another delay. Show me what you have now. | 灰袍等的是罚金，不是再拖几天。先把你眼下能交的拿出来。 | GwpFieldArrestLines.cs:194 |
 | gwp_terms_requestgrace_charm | Let us settle what you can today. There is no need to leave this hanging over your people. | 今天能交多少就先解决多少，别让这件事一直压着你和部下。 | GwpFieldArrestLines.cs:195 |
@@ -1284,10 +1284,10 @@
 | gwp_rebuff_requestgrace_trade | I asked for time to raise it. Repeating the amount will not fill my purse today. | 再跑一趟是麻烦，可现在让我凑齐，同样办不到。 | 未检出直接引用；保留 |
 | gwp_asset_gold | Gold | 第纳尔 | GwpAssetPayment.cs:222 |
 | gwp_asset_value | {VAR_1} ({VAR_2} denars each) | {VAR_1}（每件 {VAR_2} 第纳尔） | GwpAssetPayment.cs:235 |
-| gwp_duel_payment_pending | You win the duel. You may now collect his fine. | 你赢了决斗，可以收缴他的罚金。 | GwpFieldArrestBehavior.cs:1117 |
+| gwp_duel_payment_pending | You win the duel. You may now collect his fine. | 你赢了决斗，可以收缴他的罚金。 | GwpFieldArrestBehavior.cs:1112 |
 | gwp_duel_inspect_property | Show me your property. We will settle the fine now. | 把你的财物拿出来，现在结清罚金。 | GreyWardenSparringBehavior.cs:92, GwpFieldArrestBehavior.cs:135 |
 | gwp_duel_collect_later | I will collect it later. | 我稍后再来收。 | GreyWardenSparringBehavior.cs:95 |
-| gwp_duel_return_collect | You won our duel. I still owe you the payment we agreed. | 单挑是你赢了。照约定，我还欠着你这笔罚金。 | GwpFieldArrestBehavior.cs:448 |
+| gwp_duel_return_collect | You won our duel. I still owe you the payment we agreed. | 单挑是你赢了。照约定，我还欠着你这笔罚金。 | GwpFieldArrestBehavior.cs:447 |
 | gwp_case_pay_any | I am ready to submit my report. Let us settle the account. | 我来交差，请清点结账。 | PlayerBountyBehavior.CaseSettlement.cs:457 |
 | gwp_case_resume_report | About the shortfall in what I handed over... | 刚才交的钱物还差一些，我来说明原因。 | PlayerBountyBehavior.CaseSettlement.cs:460 |
 | gwp_case_nothing_concealed | That is what he put in your hands, and all of it is here. Your report will be entered. | 他交到你手上的就是这些，一分不少地都在这儿了。你的汇报会照实登记。 | PlayerBountyBehavior.CaseSettlement.cs:480 |
@@ -1473,6 +1473,8 @@
 | gwp_fs_party_products_more |  and more | 等 | 卖货报价超过四种货物时追加的省略片段。 |
 | gwp_fs_healing_hearth | Care from the Grey Warden faithful | 灰袍教众的照料 | 部队治疗速度的解释条目；这是加成来源，不是地图地点。 |
 | gwp_envoy_party_name | Grey Warden envoy | 灰袍使者 | PoliceEnforcementBehavior.Envoy.cs:181 |
-| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:566 |
-| gwp_envoy_duel_warden_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。 | PoliceEnforcementBehavior.Envoy.cs:695 |
-| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:705 |
+| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:571 |
+| gwp_envoy_duel_warden_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。 | PoliceEnforcementBehavior.Envoy.cs:700 |
+| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:710 |
+| gwp_atonement_closed_elsewhere | This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized. | 这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。 | 赎罪目标死亡、被他人俘获或案件在别处结清；撤销任务，不扣声望。 |
+| gwp_atonement_report | Tell us how the case ended, and hand over anything you collected on our behalf. | 说说这件事是怎样了结的，代收的钱货也一并交来。 | 赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。 |

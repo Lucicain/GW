@@ -441,7 +441,7 @@
   <string id="gwp_policecrimemonitorenhanced_010" text="劫掠村庄" />
   <string id="gwp_policeenforcementbehavior_001" text="赎罪任务超时，声望 -5。" />
   <string id="gwp_policeenforcementbehavior_002" text="你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。" />
-  <string id="gwp_policeenforcementbehavior_003" text="你已击败赎罪目标{VAR_1}，向任意一位灰袍领主复命即可。" />
+  <string id="gwp_policeenforcementbehavior_003" text="{VAR_1}的案件已处置，回去向灰袍领主复命。" />
   <string id="gwp_policeenforcementbehavior_004" text="赎罪失败。" />
   <string id="gwp_policeenforcementbehavior_005" text="罚款不足" />
   <string id="gwp_policeenforcementbehavior_006" text="押送罚款未缴清" />
@@ -452,10 +452,10 @@
   <string id="gwp_policeenforcementbehavior_atonementquest_001" text="未知目标" />
   <string id="gwp_policeenforcementbehavior_atonementquest_002" text="未知目标" />
   <string id="gwp_policeenforcementbehavior_atonementquest_003" text="灰袍赎罪令：追捕 {VAR_1}" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_004" text="已击败目标。向任意灰袍领主交付赎罪任务。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_004" text="这件案子已处置。向任意灰袍领主复命，交代经过及代收的钱货。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_005" text="赎罪完成：声望 +{VAR_1}，当前声望 {VAR_2}。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_006" text="未知位置" />
-  <string id="gwp_policeenforcementbehavior_atonementquest_007" text="任务下达：在 {VAR_1} 天内击败 {VAR_2}（接案规模 {VAR_3} 人）。" />
+  <string id="gwp_policeenforcementbehavior_atonementquest_007" text="在 {VAR_1} 天内处置 {VAR_2} 的案件，接案时其部队有 {VAR_3} 人。你可以要求缴罚或投案，必要时击败其部队，再向灰袍领主复命。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_008" text="探子回报：目标最后出现在{VAR_1}附近。完成后向任意灰袍领主交付赎罪任务。" />
   <string id="gwp_policeenforcementbehavior_atonementquest_009" text="未知位置" />
   <string id="gwp_policeenforcementbehavior_atonementquest_010" text="探子回报：{VAR_1} 最近出现在 {VAR_2} 附近（约 {VAR_3} 人）。" />
@@ -1476,5 +1476,7 @@
   <string id="gwp_envoy_duel_called" text="{VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。" />
   <string id="gwp_envoy_duel_warden_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。" />
   <string id="gwp_envoy_duel_offender_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。" />
+  <string id="gwp_atonement_closed_elsewhere" text="这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。" />
+  <string id="gwp_atonement_report" text="说说这件事是怎样了结的，代收的钱货也一并交来。" />
 </strings>
 </base>

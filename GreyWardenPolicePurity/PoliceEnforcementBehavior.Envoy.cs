@@ -153,7 +153,7 @@ namespace GreyWardenPolicePurity
             if (criminal.LeaderHero == null) return "target_leaderless";
             if (police.MapEvent != null) return "warden_in_battle";
             if (police.Army != null && police.Army.LeaderParty != police) return "warden_army_member";
-            if (PlayerBountyBehavior.IsReservedTarget(criminal)) return "player_target";
+            if (GwpPlayerCaseAssignment.IsReservedTarget(criminal)) return "player_target";
             if (FactionManager.IsAtWarAgainstFaction(policeClan, criminal.MapFaction))
                 return "already_at_war:" + (criminal.MapFaction?.StringId ?? "-");
             if (PoliceResourceManager.IsStrandedAtSea(police)) return "warden_stranded_at_sea";
@@ -225,6 +225,11 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
                 CrimeRecord? crime = CrimePool.GetRecordByKey(envoyCase.CrimeId);
+                if (crime != null && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(crime.OffenderHeroId))
+                {
+                    CancelEnvoyForPlayer(envoyCase);
+                    continue;
+                }
                 if (crime?.HasOpenCase != true)
                 {
                     if (envoyCase.Stage == EnvoyStage.Duel || envoyCase.Stage == EnvoyStage.DuelDecided)
@@ -799,5 +804,30 @@ namespace GreyWardenPolicePurity
                 GwpAiDiagnostics.WriteAction(police, "ENVOY_CASE_DROPPED",
                     "crime=" + envoyCase.CrimeId + "; stage=" + envoyCase.Stage + "; reason=" + reason);
         }
+
+        private void ReleaseEnvoysToPlayer(string heroId)
+        {
+            foreach (EnvoyCase entry in _envoyCases.Values.Where(e => e.Stage != EnvoyStage.Aftermath &&
+                         string.Equals(CrimePool.GetRecordByKey(e.CrimeId)?.OffenderHeroId,
+                             heroId, StringComparison.OrdinalIgnoreCase)).ToList())
+                CancelEnvoyForPlayer(entry);
+        }
+
+        private void CancelEnvoyForPlayer(EnvoyCase entry)
+        {
+            // A failed negotiation has already sent its envoy home. Keep the
+            // recorded failure if the player's warrant later returns to the pool.
+            if (entry.Stage == EnvoyStage.Failed) return;
+            if (entry.Stage == EnvoyStage.Duel || entry.Stage == EnvoyStage.DuelDecided)
+                ReleaseDuelists(entry);
+            if (_delayPatrolStates.ContainsKey(entry.EnvoyPartyId))
+                MarkDelayPatrolReturning(entry.EnvoyPartyId);
+            ForgetEnvoyCase(entry, "assigned_to_player");
+        }
+
+        internal static bool HasEnvoyAgreement(CrimeRecord crime) => _instance != null &&
+            (_instance.IsAwaitingEnvoyCollection(crime) ||
+             _instance._envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? entry) &&
+             (entry.Stage == EnvoyStage.Duel || entry.Stage == EnvoyStage.DuelDecided));
     }
 }
