@@ -2,11 +2,11 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-15）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
 
-事务台账中的日常练兵项显示实体运兵出程、归队或最终落村阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
+事务台账中的日常练兵项显示实体运兵出程或改道落村阶段，不再有带新兵归队阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；

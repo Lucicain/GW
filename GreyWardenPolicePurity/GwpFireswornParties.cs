@@ -473,7 +473,9 @@ namespace GreyWardenPolicePurity
             bool preaching = record.Kind == FaithPartyKind.Mission && !backHome && IsVillageQuiet(village) && !HasRitual(village);
             if (preaching)
                 StartCongregation(row, village, "mission:" + record.HomeId);
-            GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Mission
+            GwpSettlementNotices.Post(village, party, record.Kind == FaithPartyKind.Training
+                ? GwpText.Get(GwpTextCatalog.gwp_notice_training, "COUNT", joined)
+                : record.Kind == FaithPartyKind.Mission
                 ? GwpText.Get(GwpTextCatalog.gwp_notice_mission, "COUNT", joined)
                 : GwpText.Get(GwpTextCatalog.gwp_notice_balance, "COUNT", kits));
             _faithParties.Remove(party.StringId);
@@ -481,7 +483,9 @@ namespace GreyWardenPolicePurity
             DestroyPartyAction.Apply(null, party);
             ReconcilePriestSlots(row);
             UpdatePriestPower(row);
-            GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Mission ? "MISSION_JOINED" : "BALANCE_DELIVERED",
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFaith(record.Kind == FaithPartyKind.Training ? "TRAINING_TRANSPORT_DELIVERED"
+                : record.Kind == FaithPartyKind.Mission ? "MISSION_JOINED" : "BALANCE_DELIVERED",
                 "party=" + party.StringId + "; home=" + record.HomeId + "; village=" + village.StringId +
                 "; backHome=" + backHome + "; preaching=" + preaching + "; prisoners=" + prisoners + "; gold=" + gold +
                 "; hours=" + (CampaignTime.Now.ToHours - record.PhaseHour).ToString("0") +
@@ -489,6 +493,7 @@ namespace GreyWardenPolicePurity
                 "; guard=" + Sworn(row) + "; kitItems=" + kits +
                 "; share=" + SwornShare(row, village).ToString("0.00") + "; armed=" + ArmedShare(village.StringId).ToString("0.00") +
                 "; priest=" + (FindLivingPriest(row) != null));
+#endif
         }
 
         /// <summary>

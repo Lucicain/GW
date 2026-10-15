@@ -47,6 +47,11 @@ namespace GreyWardenPolicePurity
 
         internal static class Training
         {
+            // 用户裁定 2026-10-15：超过一半可派，超过四分之三概率翻倍，派至剩余队伍一半。
+            public const double VeteranDispatchTriggerShare = 0.5d;
+            public const double VeteranDispatchBoostShare = 0.75d;
+            public const float VeteranDispatchChanceMultiplier = 2f;
+            public const double VeteranDispatchTargetShare = 0.5d;
             public const float ExchangeStayHours = 2f;
             public const float MovementIntentHours = 8f;
 

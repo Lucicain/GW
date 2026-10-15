@@ -3346,8 +3346,8 @@
       "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
     },
     "gwp_training_ledger_travel": {
-      "en": "A transport is taking veterans and surplus arms to {VAR_1}, to bring back recruits from its guard.",
-      "zh": "运兵队正将老兵和多余军械送往{VAR_1}，再带回守村队里的弱兵。",
+      "en": "A transport is taking veterans and surplus arms to {VAR_1}. The veterans will join the village guard on arrival.",
+      "zh": "运兵队正将老兵和多余军械送往{VAR_1}，到村后老兵将并入守村队。",
       "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_training_stage_travel": {
@@ -5994,24 +5994,9 @@
       "zh": "向{VILLAGE}运送老兵和军械",
       "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
-    "gwp_training_transport_returning": {
-      "en": "Bringing recruits back to the training officer",
-      "zh": "带新兵返回练兵官部队",
-      "context": "练兵官实体运兵队；地图状态和差事台账。"
-    },
-    "gwp_training_ledger_return": {
-      "en": "The transport has left {VAR_1} and is returning to the training officer. If the officer cannot receive it, the troops will settle in a faith village.",
-      "zh": "运兵队已离开{VAR_1}，正返回练兵官部队；原队无法接收时，余兵会走回信众村落脚。",
-      "context": "练兵官实体运兵队；地图状态和差事台账。"
-    },
-    "gwp_training_stage_return": {
-      "en": "Returning with recruits",
-      "zh": "带兵归队",
-      "context": "练兵官实体运兵队；地图状态和差事台账。"
-    },
     "gwp_training_transport_greeting": {
       "en": "We're taking soldiers and arms where the Training Warden has ordered. We must keep moving.",
-      "zh": "我们奉练兵官的命令接送兵员、运送军械，还得赶路。",
+      "zh": "我们奉练兵官的命令运送老兵和军械，还得赶路。",
       "context": "实体运兵队的遭遇对话、落村状态和台账。"
     },
     "gwp_training_transport_settling": {
@@ -6028,6 +6013,11 @@
       "en": "Returning to a village",
       "zh": "回村落脚",
       "context": "实体运兵队的遭遇对话、落村状态和台账。"
+    },
+    "gwp_notice_training": {
+      "en": "{COUNT} veterans joined the village guard.",
+      "zh": "{COUNT}名老兵加入守村队。",
+      "context": "单程运兵队到村交付后显示的聚落动态。"
     }
   },
   "fragments": {

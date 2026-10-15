@@ -50,6 +50,8 @@
 
 ## 调参（`GwpTuning`）
 
+练兵老兵派出/剩余占比与高占比概率翻倍参数集中在 `Training.VeteranDispatchTriggerShare/TargetShare/BoostShare/ChanceMultiplier`，行为只在 [运兵](warden-training.md) 定义。（依据：用户裁定、源码复核 2026-10-15）
+
 数值集中在这里，按子系统分组。数值的含义写在各子系统的 state 文件里；改数值时同步改对应 state。
 
 火誓者补兵系数复用已查证的原版民兵退役系数乘用户选定的加速倍数；取消的烧民兵额外限额常量已删除。当前行为只在 [村庄](firesworn-villages.md) 与 [仪式](firesworn-rituals.md) 维护。（依据：源码复核、用户裁定2026-10-09）

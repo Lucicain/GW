@@ -130,8 +130,8 @@ python tools/Check-StateFreshness.py
 | [`family.md`](family.md) | 成员、六个本职与继承、婚姻、与要人的关系、成就兼容 |
 | [`clan-banner.md`](clan-banner.md) | 黑底金鸟旗帜、自定义图标、静态材质与美术源 |
 | [`village-relief.md`](village-relief.md) | 被焚村庄的善后与收养、重建、请愿、村民打赏 |
-| [`warden-training.md`](warden-training.md) | 练兵官实体运兵、守村队换兵、兵种配比取向 |
-| [`warden-recruitment.md`](warden-recruitment.md) | 灰袍照原版招兵、信众村的祭司格子与直接招狂信者、灰袍兵不领饷 |
+| [`warden-training.md`](warden-training.md) | 练兵官老兵单程送村、派出比例、兵种配比取向 |
+| [`warden-recruitment.md`](warden-recruitment.md) | 灰袍照原版招兵、信众村祭司精锐格子与守村队低阶优先直招、灰袍兵不领饷 |
 | [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮 |
 | [`firesworn.md`](firesworn.md) | 火誓者设定、子系统入口、待定设计 |

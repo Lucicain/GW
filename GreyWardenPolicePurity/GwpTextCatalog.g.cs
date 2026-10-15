@@ -825,6 +825,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_notice_mission = "{=gwp_notice_mission}{COUNT} believers settled here";
         internal const string gwp_notice_prisoners = "{=gwp_notice_prisoners}Handed over {COUNT} prisoners";
         internal const string gwp_notice_rebuilt = "{=gwp_notice_rebuilt}Rebuilt this village";
+        internal const string gwp_notice_training = "{=gwp_notice_training}{COUNT} veterans joined the village guard.";
         internal const string gwp_offer_changed = "{=gwp_offer_changed}What you hand over does not match the agreement. Adjust it and try again.";
         internal const string gwp_patrol_barter_name_cn = "{=gwp_patrol_barter_name_cn}penalty clause";
         internal const string gwp_patrol_returning_dialogue = "{=gwp_patrol_returning_dialogue}This patrol has rendered its account and is returning to quarters. No further hearing will be held.";
@@ -1085,16 +1086,13 @@ namespace GreyWardenPolicePurity
         internal const string gwp_terms_final_trade = "{=gwp_terms_final_trade}An exact payment leaves no remainder to argue over when I deliver the account.";
         internal const string gwp_training_ledger_assignment = "{=gwp_training_ledger_assignment}Trainer: {VAR_1} | Stage: {VAR_2}";
         internal const string gwp_training_ledger_header = "{=gwp_training_ledger_header}Troop transport: {VAR_1}";
-        internal const string gwp_training_ledger_return = "{=gwp_training_ledger_return}The transport has left {VAR_1} and is returning to the training officer. If the officer cannot receive it, the troops will settle in a faith village.";
         internal const string gwp_training_ledger_settle = "{=gwp_training_ledger_settle}The transport is taking the remaining soldiers to settle in {VAR_1}.";
-        internal const string gwp_training_ledger_travel = "{=gwp_training_ledger_travel}A transport is taking veterans and surplus arms to {VAR_1}, to bring back recruits from its guard.";
-        internal const string gwp_training_stage_return = "{=gwp_training_stage_return}Returning with recruits";
+        internal const string gwp_training_ledger_travel = "{=gwp_training_ledger_travel}A transport is taking veterans and surplus arms to {VAR_1}. The veterans will join the village guard on arrival.";
         internal const string gwp_training_stage_settle = "{=gwp_training_stage_settle}Returning to a village";
         internal const string gwp_training_stage_travel = "{=gwp_training_stage_travel}Delivering veterans";
         internal const string gwp_training_transport_greeting = "{=gwp_training_transport_greeting}We're taking soldiers and arms where the Training Warden has ordered. We must keep moving.";
         internal const string gwp_training_transport_outbound = "{=gwp_training_transport_outbound}Delivering veterans and arms to {VILLAGE}";
         internal const string gwp_training_transport_party = "{=gwp_training_transport_party}Warden troop transport";
-        internal const string gwp_training_transport_returning = "{=gwp_training_transport_returning}Bringing recruits back to the training officer";
         internal const string gwp_training_transport_settling = "{=gwp_training_transport_settling}Taking soldiers to settle in {VILLAGE}";
         internal const string gwp_troop_order_cohort_lost = "{=gwp_troop_order_cohort_lost}The soldiers being trained for you were lost on the road. The Wardens are training another company.";
         internal const string gwp_troop_order_cohort_name = "{=gwp_troop_order_cohort_name}Grey Warden training cohort";

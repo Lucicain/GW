@@ -50,7 +50,7 @@
 
 | 领主 | 本职 | 做什么 |
 |---|---|---|
-| `gw_leader_0` | 练兵 | 练自己队里的灰袍兵，练满后去信众村和守村队换兵，见 `warden-training.md` |
+| `gw_leader_0` | 练兵 | 带队成长并派老兵单程送到信众村，见 `warden-training.md` |
 | `gw_leader_1` | 商队护卫 | 派案时先接商队袭击案 |
 | `gw_leader_2` | 护村 | 派案时先接村庄暴力案 |
 | `gw_leader_3` | 请愿 | 处理原版要人请愿（issue），见 `village-relief.md` |

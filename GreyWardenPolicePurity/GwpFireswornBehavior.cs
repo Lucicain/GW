@@ -642,9 +642,7 @@ namespace GreyWardenPolicePurity
                 {
                     text = record.Phase == FaithPartyPhase.Outbound
                         ? GwpText.Create(GwpTextCatalog.gwp_training_transport_outbound, "VILLAGE", home.Name)
-                        : string.IsNullOrEmpty(record.TrainerId)
-                            ? GwpText.Create(GwpTextCatalog.gwp_training_transport_settling, "VILLAGE", home.Name)
-                            : GwpText.Create(GwpTextCatalog.gwp_training_transport_returning);
+                        : GwpText.Create(GwpTextCatalog.gwp_training_transport_settling, "VILLAGE", home.Name);
                     return true;
                 }
                 text = record.Phase == FaithPartyPhase.Outbound
@@ -980,10 +978,10 @@ namespace GreyWardenPolicePurity
         /// 原版的概率看在场的领主和英雄，这里用户定为固定概率（C#反编译 v1.4.8 TournamentCampaignBehavior.ConsiderStartOrEndTournament、
         /// DefaultTournamentModel.GetTournamentStartChance）。运械队、传教队走这里，每天调一次；本村传教、烧人见 <see cref="IsRitualDay"/>。
         /// </summary>
-        private static bool IsFestivalDay(FaithVillage row, double last, double now) =>
+        private static bool IsFestivalDay(FaithVillage row, double last, double now, float chanceMultiplier = 1f) =>
             CampaignTime.Now.GetDayOfSeason / CampaignTime.DaysInWeek == StableDay(row.VillageId, CampaignTime.WeeksInSeason) &&
             now - last >= GwpTuning.Firesworn.FestivalIntervalDays * 24d &&
-            MBRandom.RandomFloat < GwpTuning.Firesworn.FestivalDailyChance;
+            MBRandom.RandomFloat < GwpTuning.Firesworn.FestivalDailyChance * chanceMultiplier;
 
         /// <summary>正在进行的仪式：村子 id 和哪一种（<see cref="GwpRitualMapSoundView"/> 用）。</summary>
         internal static IEnumerable<KeyValuePair<string, RitualKind>> ActiveRituals() =>
@@ -1115,60 +1113,6 @@ namespace GreyWardenPolicePurity
 
         private static bool IsGuardTroop(CharacterObject? troop) =>
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
-
-        // ---- 练兵领主来换兵（用户裁定 2026-10-14：练兵领主练守村队，不再和领主换兵）。选兵口径在练兵那边，
-        // 守村队的进出只在这里。
-
-        /// <summary>守村队里还能升级的灰袍兵人数；村子不在能换兵的状态（民兵队不在或正打仗）时为 0。</summary>
-        internal static int GuardTraineeCount(Settlement village)
-        {
-            if (_instance == null || !_instance._villages.TryGetValue(village.StringId, out FaithVillage? row))
-                return 0;
-            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
-            if (militia?.IsActive != true || militia.MapEvent != null)
-                return 0;
-            return _instance.GuardOf(row.VillageId).GetTroopRoster()
-                .Where(entry => entry.Character.UpgradeTargets.Length > 0).Sum(entry => entry.Number);
-        }
-
-        /// <summary>
-        /// 守村队里最弱的可升级灰袍兵（等级低的先）最多 <paramref name="count"/> 人跟这支队伍走，各带走自己那一套装备
-        /// （和领主在信众村招兵一样）。返回走了几个。
-        /// </summary>
-        internal static int ReleaseGuardTrainees(Settlement village, MobileParty party, int count)
-        {
-            if (_instance == null || count <= 0 || GuardTraineeCount(village) <= 0)
-                return 0;
-            FaithVillage row = _instance._villages[village.StringId];
-            MobileParty militia = village.MilitiaPartyComponent!.MobileParty;
-            TroopRoster guard = _instance.GuardOf(row.VillageId);
-            int moved = 0;
-            foreach (TroopRosterElement element in guard.GetTroopRoster()
-                         .Where(entry => entry.Character.UpgradeTargets.Length > 0)
-                         .OrderBy(entry => entry.Character.Tier).ToList())
-            {
-                if (moved >= count)
-                    break;
-                int take = GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster, element.Character,
-                    Math.Min(count - moved, element.Number)).Number;
-                guard.AddToCounts(element.Character, -take);
-                _instance.MoveBestSets(row.VillageId, party.StringId, element.Character, take);
-                moved += take;
-            }
-            _instance.PushGuard(row, village);
-            _instance.ReconcilePriestSlots(row);
-            return moved;
-        }
-
-        /// <summary>这支队伍的 <paramref name="count"/> 个 <paramref name="troop"/> 进守村队（可超过上限）。返回进了几个。</summary>
-        internal static int AdmitToGuard(Settlement village, TroopRoster from, CharacterObject troop, int count)
-        {
-            if (_instance == null || !_instance._villages.TryGetValue(village.StringId, out FaithVillage? row))
-                return 0;
-            int joined = _instance.JoinGuard(row, village, troop, count, from);
-            _instance.ReconcilePriestSlots(row);
-            return joined;
-        }
 
         /// <summary>
         /// 每小时从民兵队读回守村队：民兵队里的灰袍兵就是守村队现在的样子。

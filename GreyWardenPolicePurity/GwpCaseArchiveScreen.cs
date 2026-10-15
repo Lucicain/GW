@@ -634,9 +634,7 @@ namespace GreyWardenPolicePurity
             AssignmentText = GwpText.Get(
                 GwpTextCatalog.gwp_training_ledger_assignment,
                 "VAR_1", trainerName, "VAR_2", DescribeTrainingStage(training.Stage));
-            DetailsText = GwpText.Get(training.Stage == GreyWardenTrainingBehavior.TrainingTaskStage.ReturningToTrainer
-                ? GwpTextCatalog.gwp_training_ledger_return
-                : training.Stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
+            DetailsText = GwpText.Get(training.Stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
                     ? GwpTextCatalog.gwp_training_ledger_settle : GwpTextCatalog.gwp_training_ledger_travel,
                 "VAR_1", training.SettlementName);
         }
@@ -861,9 +859,7 @@ namespace GreyWardenPolicePurity
         };
 
         private static string DescribeTrainingStage(GreyWardenTrainingBehavior.TrainingTaskStage stage) =>
-            GwpText.Get(stage == GreyWardenTrainingBehavior.TrainingTaskStage.ReturningToTrainer
-                ? GwpTextCatalog.gwp_training_stage_return
-                : stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
+            GwpText.Get(stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
                     ? GwpTextCatalog.gwp_training_stage_settle : GwpTextCatalog.gwp_training_stage_travel);
 
         private static string DescribeFiefRequestStage(

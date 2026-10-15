@@ -1,10 +1,7 @@
 using System;
-using Helpers;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -30,9 +27,7 @@ namespace GreyWardenPolicePurity
                     IsAssigned = true,
                     Stage = record.Phase == FaithPartyPhase.Outbound
                         ? GreyWardenTrainingBehavior.TrainingTaskStage.TravelingToRendezvous
-                        : string.IsNullOrEmpty(record.TrainerId)
-                            ? GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
-                            : GreyWardenTrainingBehavior.TrainingTaskStage.ReturningToTrainer
+                        : GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
                 });
             return tasks;
         }
@@ -53,19 +48,19 @@ namespace GreyWardenPolicePurity
                 List<TroopRosterElement> elites = trainer.MemberRoster.GetTroopRoster()
                     .Where(e => IsGuardTroop(e.Character) && e.Character.UpgradeTargets.Length == 0 && e.Number > e.WoundedNumber)
                     .OrderByDescending(e => e.Character.Tier).ThenBy(e => e.Character.StringId).ToList();
-                int available = Math.Min(elites.Sum(e => e.Number - e.WoundedNumber),
-                    Math.Max(0, trainer.MemberRoster.TotalManCount - GwpTuning.Firesworn.MissionMinimumLeftBehind));
-                if (available < GwpTuning.Firesworn.BalanceEscortSize) continue;
+                int healthyVeterans = elites.Sum(e => e.Number - e.WoundedNumber);
+                int requested = TrainingVeteransToDispatch(trainer.MemberRoster.TotalManCount, healthyVeterans);
+                if (requested < GwpTuning.Firesworn.BalanceEscortSize) continue;
+                float chanceMultiplier = healthyVeterans > trainer.MemberRoster.TotalManCount * GwpTuning.Training.VeteranDispatchBoostShare
+                    ? GwpTuning.Training.VeteranDispatchChanceMultiplier : 1f;
                 double last = _trainingDepartures.TryGetValue(trainer.LeaderHero.StringId, out double sent) ? sent : Never;
                 FaithVillage? row = _villages.Values
                     .Where(v => IsPreachedVillage(Settlement.Find(v.VillageId)) &&
-                        IsTripTargetValid(Settlement.Find(v.VillageId)) && !HasRitual(Settlement.Find(v.VillageId)) &&
-                        GuardTraineeCount(Settlement.Find(v.VillageId)) >= GwpTuning.Firesworn.BalanceMinimumMen)
+                        IsTripTargetValid(Settlement.Find(v.VillageId)) && !HasRitual(Settlement.Find(v.VillageId)))
                     .OrderBy(v => Settlement.Find(v.VillageId).GetPosition2D.DistanceSquared(trainer.GetPosition2D))
-                    .FirstOrDefault(v => IsFestivalDay(v, last, now));
+                    .FirstOrDefault(v => IsFestivalDay(v, last, now, chanceMultiplier));
                 if (row == null) continue;
                 Settlement village = Settlement.Find(row.VillageId);
-                int requested = Math.Min(available, GuardTraineeCount(village));
                 MobileParty transport = CreateFaithParty(row, village, FaithPartyKind.Training, trainer);
                 var healthy = elites.Select(e => new TroopRosterElement(e.Character) { Number = e.Number - e.WoundedNumber }).ToList();
                 int moved = TransferEliteTroopsProportionally(healthy, requested,
@@ -78,10 +73,23 @@ namespace GreyWardenPolicePurity
                 _plans.Remove(trainer.StringId);
                 _trainingDepartures[record.TrainerId] = now;
                 Dispatch(record, transport, village);
+#if GWP_DIAGNOSTICS
                 GwpAiDiagnostics.WriteFaith("TRAINING_TRANSPORT_DISPATCHED",
                     "party=" + transport.StringId + "; trainer=" + trainer.StringId + "; village=" + row.VillageId +
                     "; veterans=" + moved + "; composition=" + composition + "; cargo=" + cargo);
+#endif
             }
+        }
+
+        private static int TrainingVeteransToDispatch(int total, int healthyVeterans)
+        {
+            if (healthyVeterans <= total * GwpTuning.Training.VeteranDispatchTriggerShare)
+                return 0;
+            // 派出后分母也变小：(老兵 - 派出) / (全队 - 派出) <= 目标占比。
+            int desired = (int)Math.Ceiling((healthyVeterans - total * GwpTuning.Training.VeteranDispatchTargetShare) /
+                (1d - GwpTuning.Training.VeteranDispatchTargetShare));
+            return Math.Min(desired, Math.Min(healthyVeterans,
+                Math.Max(0, total - GwpTuning.Firesworn.MissionMinimumLeftBehind)));
         }
 
         private void TendTrainingTransport(FaithParty record, MobileParty party)
@@ -89,79 +97,19 @@ namespace GreyWardenPolicePurity
             Settlement village = Settlement.Find(record.HomeId);
             MobileParty? trainer = ResolveTrainer(record.TrainerId);
             bool timedOut = CampaignTime.Now.ToHours - record.PhaseHour > GwpTuning.Firesworn.FaithPartyTravelTimeoutHours;
-            if (trainer?.LeaderHero?.IsActive != true || timedOut)
+            if (record.Phase != FaithPartyPhase.Outbound || trainer?.LeaderHero?.IsActive != true || timedOut ||
+                !IsTripTargetValid(village) || !IsPreachedVillage(village))
             {
                 SettleTrainingTransport(record, party);
                 return;
             }
-            if (record.Phase == FaithPartyPhase.Outbound)
+            if (!HasArrived(party, village))
             {
-                if (!IsTripTargetValid(village) || !IsPreachedVillage(village))
-                {
-                    SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
-                    return;
-                }
-                if (!HasArrived(party, village))
-                {
-                    Travel(party, village);
-                    return;
-                }
-                // 先取出弱兵，避免刚送入的兵被再次取走。按实际到达的老兵人数交换，减员不补发。
-                int veterans = party.MemberRoster.GetTroopRoster().Where(e => IsGuardTroop(e.Character) &&
-                    e.Character.UpgradeTargets.Length == 0).Sum(e => e.Number);
-                int trainees = ReleaseGuardTrainees(village, party, veterans);
-                int delivered = 0;
-                foreach (TroopRosterElement batch in party.MemberRoster.GetTroopRoster()
-                    .Where(e => IsGuardTroop(e.Character) && e.Character.UpgradeTargets.Length == 0).ToList())
-                    delivered += AdmitToGuard(village, party.MemberRoster, batch.Character, batch.Number);
-                UnloadKits(party, village.StringId);
-                // 取回的弱兵自带的军械仍在本队账本里，归队时一同交还练兵官。
-                SetPhase(record, FaithPartyPhase.Returning, record.HomeId);
-                GwpAiDiagnostics.WriteFaith("TRAINING_TRANSPORT_EXCHANGED",
-                    "party=" + party.StringId + "; village=" + village.StringId + "; veterans=" + delivered + "; trainees=" + trainees);
-                if (party.MemberRoster.TotalManCount == 0)
-                    JoinVillage(record, party, village);
+                Travel(party, village);
                 return;
             }
-
-            // 与送信队相同的陆路可达检查；海上的练兵官等下一小时，超时则实际走回信众村。
-            if (trainer.MapEvent != null || trainer.IsCurrentlyAtSea ||
-                !NavigationHelper.IsPositionValidForNavigationType(trainer.Position, party.NavigationCapability))
-                return;
-            if (party.GetPosition2D.Distance(trainer.GetPosition2D) > GwpTuning.Firesworn.ArrivalDistance)
-            {
-                GwpWardenDispatchBehavior.KeepCourierDisposition(party);
-                GreyWardenPartyDesireBehavior.RequestEscort(party, trainer);
-                return;
-            }
-            int returned = 0;
-            foreach (TroopRosterElement batch in party.MemberRoster.GetTroopRoster().Where(e => IsGuardTroop(e.Character)).ToList())
-            {
-                int count = Math.Min(batch.Number, FreeSlots(trainer));
-                MoveBestSets(party.StringId, trainer.StringId, batch.Character, count);
-                returned += GwpTroopTransfer.Move(party.MemberRoster, trainer.MemberRoster, batch.Character, count).Number;
-            }
-            GwpAiDiagnostics.WriteFaith("TRAINING_TRANSPORT_RETURNED",
-                "party=" + party.StringId + "; trainer=" + trainer.StringId + "; troops=" + returned +
-                "; overflow=" + party.MemberRoster.TotalManCount);
-            if (party.MemberRoster.TotalManCount > 0)
-            {
-                // 原队补满后不超编塞兵；剩下的人带着自己的军械走回村里。
-                record.TrainerId = string.Empty;
-                SettleTrainingTransport(record, party);
-                return;
-            }
-            ReturnPartyLedger(party, trainer.StringId);
-            GwpTroopTransfer.MoveBatches(party.PrisonRoster, trainer.PrisonRoster,
-                party.PrisonRoster.GetTroopRoster(), party.PrisonRoster.TotalManCount);
-            UnloadKits(party, trainer.StringId);
-            trainer.ItemRoster.Add(party.ItemRoster);
-            party.ItemRoster.Clear();
-            CreditTreasury(party.PartyTradeGold);
-            party.PartyTradeGold = 0;
-            _faithParties.Remove(party.StringId);
-            GreyWardenPartyDesireBehavior.ClearIntent(party);
-            DestroyPartyAction.Apply(null, party);
+            // 单程交付：老兵、人货和军械全部落村，新兵继续留村供正常招募。
+            JoinVillage(record, party, village);
         }
 
         private void SettleTrainingTransport(FaithParty record, MobileParty party)
