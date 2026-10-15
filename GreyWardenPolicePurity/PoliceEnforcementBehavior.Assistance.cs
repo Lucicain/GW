@@ -188,214 +188,103 @@ namespace GreyWardenPolicePurity
         private void UpdateLordAssistance()
         {
             CleanupInvalidAssistanceGroups();
-
+            ReconcileAssistanceFormations();
             foreach (MobileParty leader in PoliceStats.GetAllPoliceParties()
                          .Where(IsActiveGreyWardenLordParty)
-                         .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
-                         .ToList())
+                         .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase).ToList())
             {
-                if (IsAssistanceMember(leader.StringId))
-                    continue;
-
+                if (IsAssistanceMember(leader.StringId)) continue;
+                ReleaseUnownedAssistanceArmy(leader);
                 PoliceTask? task = CrimeState.GetTask(leader.StringId);
-                if (task != null)
-                    TryCaptureAssistanceLeaderSoloSpeed(leader, task);
-                if (_assistanceGroups.TryGetValue(leader.StringId,
-                        out LordAssistanceGroup? group))
+                if (task != null) TryCaptureAssistanceLeaderSoloSpeed(leader, task);
+                MobileParty? offender = GetAssistanceEvaluationTarget(leader, task);
+                if (offender == null || FormationInBattle(leader)) continue;
+
+                if (!_assistanceGroups.TryGetValue(leader.StringId, out LordAssistanceGroup? group))
                 {
-                    if (!IsAssistanceGroupCaseStillActive(group, task))
-                    {
-                        ReleaseAssistanceGroup(leader.StringId, "leader_case_ended");
-                        continue;
-                    }
-
-                    if (task?.IsPlayerBountyEscort == true)
-                    {
-                        MaintainAssistancePlayerBountyEscort(leader, group);
-                        continue;
-                    }
-
-                    ExitAssistancePlayerBountyEscort(leader, group);
-
-                    MobileParty? activeTarget =
-                        GetActiveAssistanceCaseTarget(group, task);
-                    if (activeTarget == null)
-                        continue;
-                    group.TargetPartyId = activeTarget.StringId;
-
-                    GwpStrength.Threat targetThreat =
-                        GwpStrength.EnemyAround(leader, activeTarget);
-                    MobileParty movementTarget =
-                        GwpStrength.CombatGroupOf(activeTarget);
-                    float targetMovementSpeed =
-                        GwpStrength.TheoreticalBaseSpeed(movementTarget);
-                    float targetStrength = targetThreat.Strength;
-                    // 目标战力是现场战斗群的和，会随旁边的人来去而变。编成必须
-                    // 跟着变，否则路人一走就变成五百打一百。
-                    TryShrinkAssistanceGroup(leader, group, targetStrength);
-                    float committedStrength =
-                        GetCommittedAssistanceStrength(leader, group);
-                    if (group.DispersedForSpeed)
-                    {
-                        Army? remainingArmy =
-                            MaintainSpeedDispersedPursuit(
-                                leader, group, activeTarget);
-                        if (!EnsureCommittedStrengthAdvantage(leader, task!,
-                                activeTarget, group, remainingArmy,
-                                targetStrength))
-                        {
-                            FailAssistanceCase(leader, task!, group,
-                                targetStrength,
-                                "no_remaining_eligible_force_while_dispersed");
-                            continue;
-                        }
-
-                        committedStrength =
-                            GetCommittedAssistanceStrength(leader, group);
-                        if (!CanReformAssistanceArmyAfterSpeedDispersal(
-                                task!, targetMovementSpeed))
-                            continue;
-
-                        group.DispersedForSpeed = false;
-                        group.SpeedDetachedPartyIds.Clear();
-                        group.SpeedCatcherPartyId = string.Empty;
-                        GwpAiDiagnostics.WriteAction(leader,
-                            "ASSISTANCE_ARMY_SPEED_REFORMING",
-                            FormatStrengthDiagnostic(leader, activeTarget,
-                                committedStrength, targetStrength) +
-                            "; speedTarget=" + movementTarget.StringId +
-                            "; offenderSpeed=" +
-                            activeTarget.LastCalculatedBaseSpeed.ToString(
-                                "0.00", CultureInfo.InvariantCulture) +
-                            "; speedTargetCachedBaseSpeed=" +
-                            movementTarget.LastCalculatedBaseSpeed.ToString(
-                                "0.00", CultureInfo.InvariantCulture) +
-                            "; speedTargetTheoreticalSpeed=" +
-                            targetMovementSpeed.ToString(
-                                "0.00", CultureInfo.InvariantCulture) +
-                            "; theoreticalLeaderSoloSpeedAtAssignment=" +
-                            task!.LeaderSoloSpeedAtAssignment.ToString(
-                                "0.00", CultureInfo.InvariantCulture));
-                        GreyWardenPartyDesireBehavior.RequestImmediateRethink(
-                            leader);
-                    }
-
-                    Army? army = MaintainAssistanceArmy(leader, group);
-                    if (army == null)
-                        continue;
-
-                    if (!EnsureCommittedStrengthAdvantage(leader, task!,
-                            activeTarget, group, army, targetStrength))
-                    {
-                        FailAssistanceCase(leader, task!, group, targetStrength,
-                            "no_remaining_eligible_force");
-                        continue;
-                    }
-
-                    targetThreat =
-                        GwpStrength.EnemyAround(leader, activeTarget);
-                    targetStrength = targetThreat.Strength;
-                    movementTarget =
-                        GwpStrength.CombatGroupOf(activeTarget);
-                    targetMovementSpeed =
-                        GwpStrength.TheoreticalBaseSpeed(movementTarget);
-                    if (ShouldDisperseAssistanceArmyForSpeed(
-                            army, task!, targetMovementSpeed))
-                    {
-                        DisperseAssistanceArmyForSpeed(leader, group,
-                            activeTarget, army, task!,
-                            GetCommittedAssistanceStrength(leader, group),
-                            targetStrength, targetThreat);
-                        continue;
-                    }
-
-                    if (!AreAllMembersAssembled(leader, group, army))
-                        continue;
-
-                    float assembledStrength = GwpStrength.CombatGroup(army.LeaderParty);
-                    if (assembledStrength <= targetStrength)
-                    {
-                        if (!EnsureCommittedStrengthAdvantage(leader, task!,
-                                activeTarget, group, army, targetStrength))
-                            FailAssistanceCase(leader, task!, group,
-                                targetStrength,
-                                "assembled_army_still_insufficient");
-                        continue;
-                    }
-
-                    continue;
+                    group = TryFormAssistanceGroup(leader, task!, offender);
+                    if (group == null) continue;
                 }
 
-                MobileParty? offender =
-                    GetAssistanceEvaluationTarget(leader, task);
-                if (offender == null)
-                    continue;
-                // 正在打仗时不新建协力组：协办的人加入不了这一仗；凑不够兵时 FailAssistanceCase 又因为在打仗不判失败、
-                // 直接返回，新建的组和军团就只剩军团长一个人挂着（实机诊断 2026-10-08：gw_leader_2 单独开打后
-                // 敌方援军陆续加入，战斗中途建出 members=0 的协力军团，她战败后成了空壳军团）。
-                if (leader.MapEvent != null)
-                    continue;
-                if (!TryCaptureAssistanceLeaderSoloSpeed(leader, task!))
-                    continue;
-
-                float leaderStrength = GwpStrength.Party(leader);
-                float initialTargetStrength =
-                    GwpStrength.EnemyAround(leader, offender).Strength;
-                if (leaderStrength > initialTargetStrength)
-                    continue;
-
-                var newGroup = new LordAssistanceGroup
+                group.TargetPartyId = offender.StringId;
+                if (task!.IsPlayerBountyEscort)
                 {
-                    LeaderPartyId = leader.StringId,
-                    CrimeId = task!.TargetCrimeId,
-                    TargetPartyId = offender.StringId
-                };
-                _assistanceGroups[leader.StringId] = newGroup;
-                Army? newArmy = CreateOrRecoverAssistanceArmy(leader);
-                if (newArmy == null)
-                {
-                    _assistanceGroups.Remove(leader.StringId);
+                    MaintainAssistancePlayerBountyEscort(leader, group);
                     continue;
                 }
-
-                if (!EnsureCommittedStrengthAdvantage(leader, task, offender,
-                        newGroup, newArmy, initialTargetStrength))
+                ExitAssistancePlayerBountyEscort(leader, group);
+                float target = GwpStrength.EnemyAround(leader, offender).Strength;
+                TryShrinkAssistanceGroup(leader, group, target);
+                if (!ReconcileAssistanceFormation(leader, group)) continue;
+                Army? existing = group.DispersedForSpeed ? null : leader.Army;
+                if (!EnsureCommittedStrengthAdvantage(leader, task, offender, group, existing, target))
                 {
-                    // A player commission is the player's to abandon, not ours.
-                    // Too weak today simply means no war is declared yet.
-                    if (task.IsPlayerBountyEscort)
-                    {
-                        GwpAiDiagnostics.WriteAction(leader,
-                            "PLAYER_BOUNTY_SUPPORT_FORCE_EXHAUSTED",
-                            FormatStrengthDiagnostic(leader, offender,
-                                GetCommittedAssistanceStrength(leader, newGroup),
-                                initialTargetStrength) + "; commissionKept=True");
-                        continue;
-                    }
-                    FailAssistanceCase(leader, task, newGroup,
-                        initialTargetStrength,
-                        "no_remaining_eligible_force_at_assignment");
+                    FailAssistanceCase(leader, task, group, target, "no_remaining_eligible_force");
                     continue;
                 }
+                if (!ReconcileAssistanceFormation(leader, group)) continue;
 
-                GwpAiDiagnostics.WriteAction(leader,
-                    "ASSISTANCE_ARMY_STRENGTH_REQUIRED",
-                    FormatStrengthDiagnostic(leader, offender, leaderStrength,
-                        initialTargetStrength) +
-                    "; committedStrength=" +
-                    GetCommittedAssistanceStrength(leader, newGroup).ToString(
-                        "0.00", CultureInfo.InvariantCulture) +
-                    "; memberCount=" + newGroup.MemberPartyIds.Count);
-                GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
-
-                if (newGroup.MemberPartyIds.Count == 0 &&
-                    newArmy.LeaderParty == leader && newArmy.Parties.Count <= 1)
+                MobileParty movementTarget = GwpStrength.CombatGroupOf(offender);
+                float targetSpeed = GwpStrength.TheoreticalBaseSpeed(movementTarget);
+                if (group.DispersedForSpeed)
                 {
-                    _assistanceGroups.Remove(leader.StringId);
-                    GwpAssistanceArmyDisbandGuardPatch
-                        .ApplyAuthorizedObjectiveFinished(newArmy);
+                    MaintainSpeedDispersedPursuit(leader, group, offender);
+                    if (GetAssistanceRendezvous(leader, group, offender) != null ||
+                        !CanReformAssistanceArmyAfterSpeedDispersal(task, targetSpeed)) continue;
+                    group.DispersedForSpeed = false;
+                    group.SpeedDetachedPartyIds.Clear();
+                    group.SpeedCatcherPartyId = string.Empty;
+#if GWP_DIAGNOSTICS
+                    GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_SPEED_REFORMING",
+                        "target=" + offender.StringId + "; localStrengthReady=True");
+#endif
+                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
                 }
+                Army? army = MaintainAssistanceArmy(leader, group);
+                if (army == null) continue;
+                // 要会合时由 TryGetAssistanceDuty 给出真正的移动意图；这里只是不在会合途中分散。
+                if (GetAssistanceRendezvous(leader, group, offender) != null) continue;
+                if (ShouldDisperseAssistanceArmyForSpeed(army, task, targetSpeed))
+                    DisperseAssistanceArmyForSpeed(leader, group, offender, army, task,
+                        GetCommittedAssistanceStrength(leader, group), target,
+                        GwpStrength.EnemyAround(leader, offender));
             }
+        }
+
+        /// <summary>
+        /// 组长自己打不过（或已有本案临时支援在场）时组一个协力组：先征调协办人，再由
+        /// <see cref="MaintainAssistanceArmy"/> 建军团。征不到人时不登记空组（玩家委托照留，下一小时再试），
+        /// 以免每小时建了又拆、反复重新竞价。凑不出兵的普通案件按原规则退回台账。
+        /// </summary>
+        private LordAssistanceGroup? TryFormAssistanceGroup(MobileParty leader, PoliceTask task,
+            MobileParty offender)
+        {
+            if (!TryCaptureAssistanceLeaderSoloSpeed(leader, task)) return null;
+            float targetStrength = GwpStrength.EnemyAround(leader, offender).Strength;
+            var group = new LordAssistanceGroup
+            {
+                LeaderPartyId = leader.StringId,
+                CrimeId = task.TargetCrimeId,
+                TargetPartyId = offender.StringId
+            };
+            if (GwpStrength.Party(leader) > targetStrength && !FormationSupports(group).Any())
+                return null;
+
+            _assistanceGroups[leader.StringId] = group;
+            if (!EnsureCommittedStrengthAdvantage(leader, task, offender, group, null, targetStrength) &&
+                !task.IsPlayerBountyEscort)
+            {
+                FailAssistanceCase(leader, task, group, targetStrength,
+                    "no_remaining_eligible_force_at_assignment");
+                return null;
+            }
+            if (!HasFormationParticipants(group))
+            {
+                _assistanceGroups.Remove(leader.StringId);
+                return null;
+            }
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
+            return group;
         }
 
         private static MobileParty? GetAssistanceEvaluationTarget(
@@ -462,10 +351,11 @@ namespace GreyWardenPolicePurity
             if (player?.IsActive != true)
                 return;
 
+            GrowPlayerBountyAssistanceStrength(leader, group, group.DispersedForSpeed ? null : leader.Army);
+            if (!ReconcileAssistanceFormation(leader, group)) return;
             Army? army = group.DispersedForSpeed
                 ? null
                 : MaintainAssistanceArmy(leader, group);
-            GrowPlayerBountyAssistanceStrength(leader, group, army);
             if (!_playerBountyEscortGroups.Add(group.LeaderPartyId))
                 return;
 
@@ -498,8 +388,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             MobileParty? offender = GetActiveAssistanceCaseTarget(group, task);
-            // 没有真实军团时不做增员：TryAddAssistanceMember 要往军团里塞人。
-            if (offender == null || army?.LeaderParty == null)
+            if (offender == null)
                 return;
 
             group.TargetPartyId = offender.StringId;
@@ -594,6 +483,7 @@ namespace GreyWardenPolicePurity
                 if (IsActiveGreyWardenLordParty(member))
                     strength += GwpStrength.Party(member!);
             }
+            strength += _instance?.FormationSupports(group).Sum(GwpStrength.Party) ?? 0f;
             return Math.Max(0f, strength);
         }
 
@@ -737,6 +627,7 @@ namespace GreyWardenPolicePurity
             float assembledStrength, float targetStrength,
             GwpStrength.Threat targetThreat)
         {
+            if (FormationInBattle(leader)) return;
             int supportCount = army.Parties.Count(party =>
                 GwpCommon.IsEnforcementDelayPatrolParty(party));
             float armySpeed = leader.LastCalculatedBaseSpeed;
@@ -826,6 +717,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
+                if (member!.MapEvent != null) continue;
                 if (member!.Army != null)
                     member.Army = null;
                 AddSpeedDetachedParty(group, member.StringId);
@@ -875,24 +767,36 @@ namespace GreyWardenPolicePurity
         private static void RequestAssistanceTargetIntent(MobileParty party,
             LordAssistanceGroup group, MobileParty offender, float priority)
         {
+            if (RequestAssistanceDutyIntent(party, priority))
+                return;
             MobileParty movementTarget =
                 GwpStrength.CombatGroupOf(offender);
             GreyWardenPartyDesireBehavior.RequestPursuit(
                 party, movementTarget, priority);
         }
 
+        /// <summary>
+        /// 把这支队伍此刻的协力职责（会合、跟随组长或追目标，判断只在 <see cref="TryGetAssistanceDuty"/>）
+        /// 落成欲望层意图。没有协力职责时返回 false，由调用方另作安排。
+        /// </summary>
+        private static bool RequestAssistanceDutyIntent(MobileParty party, float priority)
+        {
+            if (!TryGetAssistanceDuty(party, out MobileParty? dutyTarget, out AiBehavior behavior, out _, out _) ||
+                dutyTarget == null)
+                return false;
+            if (behavior == AiBehavior.EscortParty)
+                GreyWardenPartyDesireBehavior.RequestEscort(party, dutyTarget, priority);
+            else
+                GreyWardenPartyDesireBehavior.RequestPursuit(party, dutyTarget, priority);
+            return true;
+        }
+
         private void SendDelayPatrolsAfterSpeedDispersal(
             LordAssistanceGroup group, MobileParty offender)
         {
-            foreach (DelayPatrolState state in _delayPatrolStates.Values.ToList())
+            foreach (MobileParty patrol in FormationSupports(group).ToList())
             {
-                if (state.Returning ||
-                    !string.Equals(state.TargetPartyId, group.TargetPartyId,
-                        StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                MobileParty? patrol = FindActiveParty(state.PatrolPartyId);
-                if (patrol == null) continue;
+                if (patrol.MapEvent != null) continue;
                 DetachDelayPatrolFromArmy(patrol);
                 RequestAssistanceTargetIntent(patrol, group, offender, 8f);
             }
@@ -912,6 +816,8 @@ namespace GreyWardenPolicePurity
         private Army? MaintainAssistanceArmy(MobileParty leader,
             LordAssistanceGroup group)
         {
+            if (!ReconcileAssistanceFormation(leader, group) || FormationInBattle(leader))
+                return null;
             Army? army = CreateOrRecoverAssistanceArmy(leader);
             if (army == null) return null;
 
@@ -941,6 +847,11 @@ namespace GreyWardenPolicePurity
                 TryMergeArmyMember(army, leader, member);
             }
 
+            foreach (MobileParty support in FormationSupports(group).Where(party => party.MapEvent == null))
+            {
+                if (support.Army != army) support.Army = army;
+                TryMergeArmyMember(army, leader, support);
+            }
             return army;
         }
 
@@ -974,8 +885,10 @@ namespace GreyWardenPolicePurity
             {
                 if (group.DispersedForSpeed)
                     AddSpeedDetachedParty(group, helper.StringId);
-                RequestAssistanceTargetIntent(
-                    helper, group, offender, 0.99f);
+                if (group.DispersedForSpeed)
+                    RequestAssistanceTargetIntent(helper, group, offender, 0.99f);
+                else
+                    GreyWardenPartyDesireBehavior.RequestEscort(helper, leader, 0.99f);
             }
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(helper);
             GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_MEMBER_ADDED",
@@ -1033,20 +946,6 @@ namespace GreyWardenPolicePurity
             if ((member.Position - leader.Position).LengthSquared <
                 contactDistance * contactDistance)
                 army.AddPartyToMergedParties(member);
-        }
-
-        private static bool AreAllMembersAssembled(MobileParty leader,
-            LordAssistanceGroup group, Army army)
-        {
-            if (group.MemberPartyIds.Count == 0) return false;
-            foreach (string memberId in group.MemberPartyIds)
-            {
-                MobileParty? member = FindActiveParty(memberId);
-                if (member == null || member.Army != army ||
-                    member.AttachedTo != leader)
-                    return false;
-            }
-            return true;
         }
 
         private void CleanupInvalidAssistanceGroups()
@@ -1140,6 +1039,7 @@ namespace GreyWardenPolicePurity
             if (party.Army != null && party.Army.LeaderParty != party) party.Army = null;
             GreyWardenPartyDesireBehavior.ClearIntent(party);
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
+            _instance.ReconcileAssistanceFormations();
         }
 
         /// <summary>
@@ -1341,8 +1241,12 @@ namespace GreyWardenPolicePurity
                     "leader=" + leaderId + "; reason=" + reason);
             }
             if (leader?.IsActive == true)
+            {
+                GreyWardenPartyDesireBehavior.ClearIntent(leader);
+                GreyWardenPartyDesireBehavior.RequestImmediateRethink(leader);
                 GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_ARMY_DISBANDED",
                     "reason=" + reason + "; released=" + group.MemberPartyIds.Count);
+            }
             CrimePool.TrimOpenCasesToCapacity(
                 CrimePool.MaxTaskPoolEntries);
         }
@@ -1416,7 +1320,9 @@ namespace GreyWardenPolicePurity
                 return false;
             return _instance._assistanceGroups.TryGetValue(
                        army.LeaderParty.StringId, out LordAssistanceGroup? group) &&
-                   IsArmyOwnedByGroup(army, group);
+                   IsArmyOwnedByGroup(army, group) && !group.DispersedForSpeed &&
+                   IsAssistanceGroupCaseStillActive(group, CrimeState.GetTask(group.LeaderPartyId)) &&
+                   _instance.HasFormationParticipants(group);
         }
 
         internal static bool TryGetAssistanceDuty(MobileParty? party,
@@ -1437,13 +1343,25 @@ namespace GreyWardenPolicePurity
             {
                 group = _instance._assistanceGroups.Values.FirstOrDefault(candidate =>
                     candidate.MemberPartyIds.Contains(party.StringId,
-                        StringComparer.OrdinalIgnoreCase));
+                        StringComparer.OrdinalIgnoreCase) ||
+                    _instance.FormationSupports(candidate).Contains(party));
             }
-            if (group == null)
+            if (group == null || !IsAssistanceGroupCaseStillActive(group, CrimeState.GetTask(group.LeaderPartyId)))
                 return false;
 
+            MobileParty? groupLeader = FindActiveParty(group.LeaderPartyId);
+            MobileParty? groupOffender = FindActiveParty(group.TargetPartyId);
+            if (groupLeader != null && groupOffender != null &&
+                _instance.GetAssistanceRendezvous(groupLeader, group, groupOffender) is MobileParty rendezvous)
+            {
+                target = isLeader ? rendezvous : groupLeader;
+                behavior = AiBehavior.EscortParty;
+                return target != party;
+            }
+
             bool speedDetached =
-                IsSpeedDetached(group, party.StringId);
+                IsSpeedDetached(group, party.StringId) || group.DispersedForSpeed &&
+                _instance.FormationSupports(group).Contains(party);
             playerBountyEscort = IsAssistancePlayerBountyEscort(group);
             if (playerBountyEscort)
             {
@@ -1559,9 +1477,7 @@ namespace GreyWardenPolicePurity
                     out LordAssistanceGroup? group))
                 return true;
 
-            // Group size is fixed by the same native-style regional comparison.
-            // It never shrinks when the target weakens; a target that grows past
-            // all eligible Grey Warden strength is failed before contact.
+            // 承诺战力只决定征调多少人；下面的宣战候选另外按现场实际战力判断。
             engagementStrength =
                 GetCommittedAssistanceStrength(leader, group);
 

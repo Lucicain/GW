@@ -133,12 +133,24 @@ namespace GreyWardenPolicePurity
         /// <summary>「灰袍优先做信众村的事」放大需要高出 1 的那部分。</summary>
         private static float Amplified(float need) => 1f + (need - 1f) * GwpTuning.Firesworn.FaithVillageVisitPriority;
 
+        private static List<MobileParty> LocalMembers(MobileParty party) =>
+            new[] { party }.Concat(party.Army?.LeaderParty == party
+                    ? party.AttachedParties.Where(member => member.IsActive && member.AttachedTo == party)
+                    : Enumerable.Empty<MobileParty>()).Distinct().ToList();
+
+        internal static (float, float, int, int) LocalPartyParameters(MobileParty party)
+        {
+            List<MobileParty> members = LocalMembers(party);
+            return (members.Average(member => member.PartySizeRatio),
+                members.Average(PartyBaseHelper.FindPartySizeNormalLimit),
+                members.Sum(member => member.MemberRoster.TotalWounded),
+                members.Sum(member => member.MemberRoster.TotalManCount));
+        }
+
         internal static void Rescore(MobileParty party, PartyThinkParams think)
         {
             // 军团长照原版把挂靠部队一起算。
-            List<MobileParty> members = new List<MobileParty> { party };
-            if (party.Army != null)
-                members.AddRange(party.AttachedParties);
+            List<MobileParty> members = LocalMembers(party);
             int prisoners = members.Sum(member => member.PrisonRoster.TotalRegulars);
             int prisonLimit = Math.Max(1, members.Sum(member => member.Party.PrisonerSizeLimit));
             int men = Math.Max(1, members.Sum(member => member.MemberRoster.TotalManCount));
@@ -185,6 +197,17 @@ namespace GreyWardenPolicePurity
             LastBest[party.StringId] = best;
         }
 
+    }
+
+    [HarmonyPatch(typeof(AiVisitSettlementBehavior), "CalculatePartyParameters")]
+    internal static class GwpWardenVisitPartyParametersPatch
+    {
+        private static void Postfix(MobileParty mobileParty, ref (float, float, int, int) __result)
+        {
+            if (GwpWardenVisitDesire.AppliesTo(mobileParty) && mobileParty.Army != null &&
+                mobileParty.Army.Kingdom == null && mobileParty.Army.LeaderParty == mobileParty)
+                __result = GwpWardenVisitDesire.LocalPartyParameters(mobileParty);
+        }
     }
 
     [HarmonyPatch(typeof(AiVisitSettlementBehavior), "FillSettlementsToVisitWithDistancesAsDays")]

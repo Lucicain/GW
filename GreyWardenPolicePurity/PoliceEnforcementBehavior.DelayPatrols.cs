@@ -821,6 +821,7 @@ namespace GreyWardenPolicePurity
 
                 GreyWardenPartyDesireBehavior.RequestPursuit(patrol, target, 8f);
             }
+            ReconcileAssistanceFormations();
         }
 
         private static bool IsActivePlayerBountyInterceptor(
@@ -981,7 +982,10 @@ namespace GreyWardenPolicePurity
                     state.SourceTaskPolicePartyId, state.TargetPartyId,
                     out MobileParty? leader, out Army? army) ||
                 leader == null || army == null)
-                return false;
+            {
+                // 为追速而分散的协力组本来就没有军团；本案临时支援照样按协力职责会合，不单独锁定直扑。
+                return RequestAssistanceDutyIntent(patrol, 8f);
+            }
 
             if (patrol.Army != null && patrol.Army != army)
                 patrol.Army = null;

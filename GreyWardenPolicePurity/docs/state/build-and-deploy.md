@@ -8,21 +8,8 @@
 
 ## 当前开发部署
 
-当前交付为普通玩家版 v1.4-r15：关闭监控，包含最新Kit打包美术，排除Assets、AssetSources、RuntimeDataCache及编辑器文件。只生成本地ZIP并推送源码，不创建GitHub Release或tag；本机live继续保留开发监控与可编辑美术。（依据：用户裁定2026-10-15，取代本轮较早的带监控测试包要求）
-
-测试包美术来自用户本轮Kit发布的 `D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden/AssetPackages/pack0.tpac`，现保存于 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/GreyWardenPolicePurity/_Module/AssetPackages/pack0.tpac`，身份为当前玩家包资源；370,972,860字节，SHA-256 `f7a323f5c2c91e58ad9eaccbf5d2cfee53654256564116daa0c53ea3cd737b42`。live已移除发布目录，继续保留可编辑美术。（依据：用户资源、复制与哈希 2026-10-15）
-
-当前live为v1.4.15开发构建（源码基线 `18779c6` 加[赎罪修复](atonement.md)）；DLL SHA-256 `dd8d6972d3c21293d853e3e4a2ec300695c4d2fb404e5cf06b13b867c7b82c7d`。客户端与编辑器相同；本轮开发构建0警告0错误，74个runtime文件镜像一致，1474条中文内容键无缺失。GameCompat加载732类型、89补丁绑定通过，无缺失类型/成员。（依据：构建、加载与哈希2026-10-15）
-
-角色XML沿用[家族](family.md)已确认的六张脸；本轮只改声音位、语气与性格，新增85项专项验证通过；`ModuleData/spspecialcharacters.xml` 与 live 的 SHA-256 均为 `871ac6e2cd65db6403b36e8aa3bbd8d01a4b35cb38e3fcf5e008cbafb333d338`。DLL 使用上述开发构建；LiveModule 与 ContentKeys 校验通过。（依据：部署与哈希 2026-10-15）
-
-## 当前本地玩家包
-
-`D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden-v1.4-r15.zip`，442,637,270字节；SHA-256 `a54856d944d0ce49b9f0d41d4772e6593bb8240bb06c563baa6814e3fac5121b`。同目录 `.zip.sha256` 配套，v14旧本地包对已在新包验证后删除；保留清单内的不可再生历史资产不在此清理范围。（依据：用户裁定、打包与哈希2026-10-15）
-
-玩家DLL SHA-256 `5cee66acdba0693c3ea1efa5e01c3b47cc2c35b276e43449b2a5db43b50bc0de`。隔离Rebuild为0警告0错误；77个包内文件逐项解压哈希通过，五组监控串ASCII/UTF-16LE均不存在，TPAC与本页最新资源哈希一致。证据归档 `build-check/package-v1.4-r15/`（manifest、玩家DLL、校验文件），归本次交付所有。（依据：离线验证2026-10-15）
-
-本地包为v14-refresh之后的开发内容，具体变动与已知问题见包内中英README；不等同于一个新建的线上正式Release。该ZIP对应源码 `72d6712`，六人声音/性格和赎罪修复只更新开发live，未重打此包。live当前DLL与校验结果见上节。Python18项（含赎罪42、讲和62、配装53断言）、案件155项通过；战斗137项、实际名册转移173项沿用先前未改动验证。（依据：离线回归2026-10-15）
+当前 live 是协力编队统一修复的开发构建（源码基线 `99a3fdb`），DLL SHA-256 前缀 `a647254a03018162`；
+live 一致、GameCompat、ContentKeys、PartyTransfers、Python 19 项、CaseSettlement.Tests 155 项均通过。（依据：构建与哈希 2026-10-15）
 
 ## 两个开关决定一切
 

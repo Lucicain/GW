@@ -1,8 +1,8 @@
 # 灰袍地图 AI：派活、欲望竞价与巡区
 
-> 当前状态：现行规则（2026-10-05 从源码提取）
+> 当前状态：现行规则（2026-10-05 从源码提取）；协力编队与招兵统计见案件页
 > 最后验收：未建立检查点
-> 已复核至：`18779c6`（2026-10-15）
+> 已复核至：`99a3fdb`（2026-10-15）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -129,6 +129,8 @@
 ## 协力军团（引擎侧补丁）
 
 协力怎么编、怎么缩见 `case-enforcement.md`。这里是让原版不把它弄坏的补丁（`GwpAssistanceArmyLifecyclePatch`）：
+
+协力编队的在编、空组释放、原版解散保护与招兵统计只在[案件](case-enforcement.md)「协力编队」定义。
 
 - 承办任务还在时，军团的生死由执法系统管：原版的无战争、缺粮、闲置、凝聚力等自动解散一律挡掉。
 - 同族军团不掉凝聚力；无领主支援队加入现成的执法军团，影响力费用为 0。

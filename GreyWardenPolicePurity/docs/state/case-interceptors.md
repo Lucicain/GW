@@ -6,6 +6,7 @@
 > 覆盖源码：`PoliceEnforcementBehavior.DelayPatrols.cs`
 > 待实测：追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
 
+追截队、使者不算协力编队的在编力量，不靠它们保留军团（见 [案件](case-enforcement.md)「协力编队」）。
 案件本身的生命周期见 [案件](case-enforcement.md)；船怎么借、怎么还见 [临时队](temporary-parties.md)。
 [灰袍使者](case-envoy.md) 的出队（`CreateDetachment`、`DetachmentBatches`）和归队与追截队同一套；
 使者归队时另把带回的钱交进公库、把投案的罪犯交给主队。
