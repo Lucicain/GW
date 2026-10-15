@@ -4,7 +4,7 @@
 > 最后验收：`9d005bb`
 > 已复核至：`99a3fdb`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
-> 待实测：协力最后一人走后军团消失、案子还在；组长打不过时先去会合；军团长缺兵时会进城招兵；读档后编队接续
+> 待实测：协力组不再反复拉人放人；最后一人走后军团消失、案子还在；组长打不过先会合；军团长缺兵会进城招兵
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
@@ -155,12 +155,12 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 
 ## 协力组动态缩编
 
-`TryShrinkAssistanceGroup` 挂在 `UpdateLordAssistance` 既有组分支里、`targetStrength`
-算出之后。
+`TryShrinkAssistanceGroup` 挂在 `UpdateLordAssistance` 既有组分支里。
 
-起因：`targetStrength` 是**现场战斗群之和**（内圈 `joiningRadius` 全额、外圈到
-`threatRadius` 按距离衰减），一个路过的领主就能把目标战力抬高一倍。旧实现编成
-只增不减，路人走了就变成五百打一百。
+- 要不要征调帮手只看目标自己那一组（`GwpStrength.CaseTarget`），和接案门槛同一个数。（依据：实机诊断 2026-10-15）
+  「自己那一组」是他和已挂靠的军团、攻城营。放人时按它与「现场战斗群之和」（`EnemyAround`，含身边路过的人）中较大的那个留足余量，
+  放完不会立刻又低于需要。路人只影响现场宣战判断，不再拉人放人——以前路人来去让协力组每十几小时拉一个、放一个。
+- 他正在打仗时「凑不出兵」先不判、等那一仗的结果，新组这时也不登记，不会每小时建了又拆。（依据：实机诊断 2026-10-15：围城中的目标让空组连续 12 小时建了又拆）
 
 - **回滞是刻意的**：入组看 `committed <= target`，放人要求放完之后仍然
   `committed > target * AssistanceReleaseMargin(1.5)`。两个门槛之间留一档，

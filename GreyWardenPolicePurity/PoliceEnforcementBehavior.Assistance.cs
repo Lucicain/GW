@@ -213,13 +213,17 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
                 ExitAssistancePlayerBountyEscort(leader, group);
+                // 要不要帮手只看他自己那一组（含已挂靠的军团、攻城营），和接案门槛同一个数；身边路过的人
+                // 来来去去，拿来拉人放人会让协力组拉一个、放一个（实机诊断 2026-10-15）。放人时按两者中大的
+                // 那个留足余量，放完不会立刻又低于需要。路人只影响下面的现场宣战判断。
+                float needed = GwpStrength.CaseTarget(task.TargetCrime);
                 float target = GwpStrength.EnemyAround(leader, offender).Strength;
-                TryShrinkAssistanceGroup(leader, group, target);
+                TryShrinkAssistanceGroup(leader, group, Math.Max(needed, target));
                 if (!ReconcileAssistanceFormation(leader, group)) continue;
                 Army? existing = group.DispersedForSpeed ? null : leader.Army;
-                if (!EnsureCommittedStrengthAdvantage(leader, task, offender, group, existing, target))
+                if (!EnsureCommittedStrengthAdvantage(leader, task, offender, group, existing, needed))
                 {
-                    FailAssistanceCase(leader, task, group, target, "no_remaining_eligible_force");
+                    FailAssistanceCase(leader, task, group, needed, "no_remaining_eligible_force");
                     continue;
                 }
                 if (!ReconcileAssistanceFormation(leader, group)) continue;
@@ -254,13 +258,14 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 组长自己打不过（或已有本案临时支援在场）时组一个协力组：先征调协办人，再由
         /// <see cref="MaintainAssistanceArmy"/> 建军团。征不到人时不登记空组（玩家委托照留，下一小时再试），
-        /// 以免每小时建了又拆、反复重新竞价。凑不出兵的普通案件按原规则退回台账。
+        /// 以免每小时建了又拆、反复重新竞价。凑不出兵的普通案件按原规则退回台账；他正在打仗时
+        /// <see cref="FailAssistanceCase"/> 先不判（等那一仗的结果），这时同样不留空组。
         /// </summary>
         private LordAssistanceGroup? TryFormAssistanceGroup(MobileParty leader, PoliceTask task,
             MobileParty offender)
         {
             if (!TryCaptureAssistanceLeaderSoloSpeed(leader, task)) return null;
-            float targetStrength = GwpStrength.EnemyAround(leader, offender).Strength;
+            float targetStrength = GwpStrength.CaseTarget(task.TargetCrime);
             var group = new LordAssistanceGroup
             {
                 LeaderPartyId = leader.StringId,
@@ -276,7 +281,9 @@ namespace GreyWardenPolicePurity
             {
                 FailAssistanceCase(leader, task, group, targetStrength,
                     "no_remaining_eligible_force_at_assignment");
-                return null;
+                // 判了就已经随案收尾；先不判时组还登记着，下面按有没有人决定留不留。
+                if (!_assistanceGroups.TryGetValue(leader.StringId, out LordAssistanceGroup? kept) || kept != group)
+                    return null;
             }
             if (!HasFormationParticipants(group))
             {

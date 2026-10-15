@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-178 个源文件、54,490 行、339 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
+178 个源文件、54,497 行、339 个公开类型、76 个 Harmony 补丁点（分布在 76 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -530,7 +530,7 @@
 
 ### 执法：案件与巡逻（33 个文件）
 
-- `PoliceEnforcementBehavior.Assistance.cs` — 1812 行 · `PoliceEnforcementBehavior`，另含 1 个类型
+- `PoliceEnforcementBehavior.Assistance.cs` — 1819 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceEnforcementBehavior.cs` — 1475 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1299 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1275 行 · `PoliceEnforcementBehavior`

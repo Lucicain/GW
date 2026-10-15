@@ -31,7 +31,7 @@ class Roster { public int TotalManCount=99,TotalWounded; }
 class PartyBase { public int NumberOfHealthyMembers=99; }
 class MobileParty {
  public enum NavigationType { None,Default }
- public string StringId="";public bool IsActive=true,IsWarden=true,IsCurrentlyAtSea,Reserved,Reachable=true,IsCaravan;
+ public string StringId="";public bool IsActive=true,IsWarden=true,IsCurrentlyAtSea,Reserved,Reachable=true,IsCaravan;public float Passers;
  public Hero? LeaderHero=new Hero();public object? MapEvent,CurrentSettlement;public bool IsMainParty;
  public Kingdom MapFaction=new Kingdom();
  public Roster MemberRoster=new Roster();public PartyBase Party=new PartyBase();public float PartySizeRatio=.62f,NormalLimit=1f,Strength=40,LastCalculatedBaseSpeed=4;
@@ -76,7 +76,8 @@ static class GwpStrength {
  public static MobileParty CombatGroupOf(MobileParty p)=>p.AttachedTo??p;
  public static float CombatGroup(MobileParty p)=>p.Strength+p.AttachedParties.Sum(x=>x.Strength);
  public static float TheoreticalBaseSpeed(MobileParty p)=>p.TargetSpeed;
- public static Threat EnemyAround(MobileParty a,MobileParty b)=>new Threat{Strength=b.Strength};
+ public static Threat EnemyAround(MobileParty a,MobileParty b)=>new Threat{Strength=b.Strength+b.Passers};
+ public static float CaseTarget(CrimeRecord? c)=>c?.Offender==null?0:CombatGroup(CombatGroupOf(c.Offender));
  public static Balance Compare(MobileParty a,MobileParty b)=>new Balance{StrengthReady=CombatGroup(a)+MobileParty.All.Where(p=>p!=a&&p.IsWarden&&p.AttachedTo==null&&p.Position.Distance(a.Position)<=3).Sum(p=>p.Strength)>b.Strength};
 }
 static class GwpTuning {public static class Enforcement {public const float AssistanceReleaseMargin=1.5f,AssistanceMinimumMemberHours=12;public const int AssistanceSurplusConfirmTicks=4;}}
@@ -92,7 +93,7 @@ public partial class PoliceEnforcementBehavior {
  private Dictionary<string,double> _assistanceAssignedHours=new();private Dictionary<string,int> _assistanceSurplusTicks=new();private HashSet<string> _playerBountyEscortGroups=new();
  private static readonly System.Reflection.FieldInfo? ArmyHourlyTickField=typeof(Army).GetField("_hourlyTickEvent",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
  private static readonly System.Reflection.MethodInfo? ArmyOnAfterLoad=typeof(Army).GetMethod("OnAfterLoad",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
- public int CaseFailures;private void FailAssistanceCase(MobileParty p,PoliceTask t,LordAssistanceGroup? g,float n,string r){CaseFailures++;ReleaseAssistanceGroup(p.StringId,r);}
+ public int CaseFailures;private void FailAssistanceCase(MobileParty p,PoliceTask t,LordAssistanceGroup? g,float n,string r){if(t.TargetCrime.Offender.MapEvent!=null||p.MapEvent!=null)return;CaseFailures++;ReleaseAssistanceGroup(p.StringId,r);}
  private void CleanupInvalidAssistanceGroups(){foreach(var g in _assistanceGroups.Values.ToList())if(!IsAssistanceGroupCaseStillActive(g,CrimeState.GetTask(g.LeaderPartyId)))ReleaseAssistanceGroup(g.LeaderPartyId,"case_ended");}
  private bool TryCaptureAssistanceLeaderSoloSpeed(MobileParty p,PoliceTask t)=>true;
  private void ExitAssistancePlayerBountyEscort(MobileParty p,LordAssistanceGroup g)=>_playerBountyEscortGroups.Remove(g.LeaderPartyId);
@@ -150,6 +151,13 @@ public partial class PoliceEnforcementBehavior {
   Check(g.DispersedForSpeed&&g.MemberPartyIds.SequenceEqual(new[]{"helper"})&&g.SpeedDetachedPartyIds.Count==2,"actual saved fields restore dispersed membership");Check(restored._assistanceAssignedHours["helper"]==42,"minimum-member clock persists");Check(TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==h,"derived rendezvous resumes after state restoration");
   g.DispersedForSpeed=false;g.SpeedDetachedPartyIds.Clear();saved.IsSaving=true;restored.SyncAssistanceData(saved);var gathering=new PoliceEnforcementBehavior();_instance=gathering;saved.IsSaving=false;gathering.SyncAssistanceData(saved);Check(!gathering._assistanceGroups["leader"].DispersedForSpeed&&TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==h,"gathering resumes after saved-state restoration");
   g=gathering._assistanceGroups["leader"];g.MemberPartyIds.Clear();l.MapEvent=new object();saved.IsSaving=true;gathering.SyncAssistanceData(saved);var pending=new PoliceEnforcementBehavior();_instance=pending;saved.IsSaving=false;pending.SyncAssistanceData(saved);pending.ReconcileAssistanceFormations();Check(pending._assistanceGroups.Count==1,"battle-deferred empty state persists");l.MapEvent=null;pending.ReconcileAssistanceFormations();Check(pending._assistanceGroups.Count==0,"restored pending empty state released at safe point");
+  e=Setup(out l,out h,out t);h.Reserved=true;t.MapEvent=new object();e.UpdateLordAssistance();e.UpdateLordAssistance();
+  Check(e._assistanceGroups.Count==0&&e.CaseFailures==0&&CrimeState.Tasks.ContainsKey("leader"),"failure deferred by target battle leaves no empty group to churn");
+  e=Setup(out l,out h,out t);l.Strength=150;t.Passers=200;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"passers-by alone do not pull in a helper");
+  e=Setup(out l,out h,out t);g=e.Group(l,h);l.Strength=200;h.Position.X=20;e._assistanceAssignedHours["helper"]=0;t.Passers=60;e.MaintainAssistanceArmy(l,g);
+  for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(g.MemberPartyIds.Count==1,"helper kept while passers keep local threat above release margin");
+  t.Passers=0;for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"surplus helper released once passers leave");
+  e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"released helper not re-requested for the same target");
   VisitChecks(l,h);
   l.Army=null;h.Army=null;var recruitingArmy=new Army(null,l,Army.ArmyTypes.Patrolling);h.Army=recruitingArmy;
   var entry=new NativeRecruiter();var village=new Settlement();entry.OnBeforeSettlementEntered(l,village,l.LeaderHero!);
