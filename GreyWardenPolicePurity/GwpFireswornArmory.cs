@@ -20,7 +20,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 军械库（用户裁定 2026-10-05，docs/state/firesworn-economy.md）：每支灰袍领主部队、每座信众村各一本账，
-    /// 自动武装狂信者和灰袍新兵，一个兵一套。不配马（不武装成骑兵），肩部固定灰袍印章。
+    /// 按阶从高到低给所有灰袍兵配装；高阶只补空位，狂信者/新兵可换强装。
     ///
     /// 账本记「物品 + 品质 → 数量」，兵身上穿的也算在里面；配装是按现有兵力每小时重新分配算出来的
     /// （<see cref="ArmoryPlan"/>，不存档，随时可由账本和兵力推出）。所以我方守住战场时兵死了装备自然还在；
@@ -39,19 +39,6 @@ namespace GreyWardenPolicePurity
         // 以前按 NumAllWeaponSlots（5）算，拿满四件武器的兵还会再配一面盾、塞进旗帜格（C#反编译 v1.4.8 EquipmentIndex）。
         private const int WeaponSlots = (int)EquipmentIndex.NumPrimaryWeaponSlots;
 
-        /// <summary>一个持有者此刻的配装结果。由账本和兵力推出，不存档。</summary>
-        private sealed class ArmoryPlan
-        {
-            public readonly List<EquipmentElement[]> Sets = new List<EquipmentElement[]>();
-            public int Recruits;
-            public ItemRoster? Ledger;
-            public int LedgerVersion, Zealots, Reserve;
-            // 没分出去的：先覆盖高阶兵和空编制的每个位置，额度以外才可捐、可卖。
-            public readonly ItemRoster Free = new ItemRoster();
-            public readonly ItemRoster Surplus = new ItemRoster();
-            public float RecruitWeaponTier, RecruitArmorTier, ZealotWeaponTier, ZealotArmorTier;
-        }
-
         // 每小时核对账本版本、兵力和编制；变化才重算，读档后按需现算。
         private readonly Dictionary<string, ArmoryPlan> _plans =
             new Dictionary<string, ArmoryPlan>(StringComparer.OrdinalIgnoreCase);
@@ -59,9 +46,6 @@ namespace GreyWardenPolicePurity
         // 一场实战里，每个持有者每个兵种已经发出去几套。只在这一场战斗里有意义，不存档（战斗中不能存档）。
         private readonly Dictionary<string, int> _issuedThisMission = new Dictionary<string, int>(StringComparer.Ordinal);
         private Mission? _issuedMission;
-
-        internal static bool IsArmedTroop(CharacterObject? troop) =>
-            troop != null && (troop.StringId == GwpIds.ZealotId || troop.StringId == GwpIds.NewRecruitId);
 
         // ---------------------------------------------------------------- 持有者与配装
 
@@ -83,142 +67,31 @@ namespace GreyWardenPolicePurity
 
         private ArmoryPlan PlanOf(string holder)
         {
-            // 战斗内沿用已分的套装，不因伤亡重新洗牌；小时结算及库存写入负责复核/失效。
-            if (_plans.TryGetValue(holder, out ArmoryPlan? plan)) return plan;
+            // 战斗内沿用已分的套装，不因伤亡重新洗牌。战斗外每次按账本和名册复核（没变就命中缓存），
+            // 原版升级、招兵改了名册后不用等整点。
+            if (_plans.TryGetValue(holder, out ArmoryPlan? plan) && HolderInBattle(holder)) return plan;
             return BuildPlanFor(holder);
         }
 
-        // 原版 ItemRoster.AddToCounts / Clear 都递增 VersionNo（C#反编译 v1.4.8）。
-        // 只缓存可重算配装：库存对象/版本、两种人数、编制余量任一变化就重算，不存档。
-        private ArmoryPlan PlanForCounts(string holder, ItemRoster ledger, int recruits, int zealots, int reserve)
-        {
-            if (_plans.TryGetValue(holder, out ArmoryPlan? plan) && ReferenceEquals(plan.Ledger, ledger) &&
-                plan.LedgerVersion == ledger.VersionNo && plan.Recruits == recruits &&
-                plan.Zealots == zealots && plan.Reserve == reserve)
-                return plan;
-            plan = BuildPlan(ledger, recruits, zealots, reserve);
-            plan.Ledger = ledger;
-            plan.LedgerVersion = ledger.VersionNo;
-            plan.Zealots = zealots;
-            plan.Reserve = reserve;
-            _plans[holder] = plan;
-            return plan;
-        }
+        private bool HolderInBattle(string holder) =>
+            (_villages.ContainsKey(holder) ? Settlement.Find(holder).MilitiaPartyComponent?.MobileParty : FindParty(holder))
+            ?.MapEvent != null;
 
         private ArmoryPlan BuildPlanFor(string holder)
         {
             ItemRoster ledger = ItemsOf(_armories, holder);
             if (_villages.TryGetValue(holder, out FaithVillage? row))
             {
-                Settlement village = Settlement.Find(holder);
-                // 村子的账武装守村队；出门的无领主队带着自己的账。
                 TroopRoster guard = GuardOf(holder);
-                int villageRecruits = CountOf(guard, GwpIds.NewRecruitId);
-                int villageZealots = CountOf(guard, GwpIds.ZealotId);
-                // 村子至少留够守村队上限那么多套（人比上限多就按人算），挑最好的留（用户裁定 2026-10-15）。
-                int villagePositions = Math.Max(GuardCap(row), Sworn(row));
-                return PlanForCounts(holder, ledger, villageRecruits, villageZealots,
-                    Math.Max(0, villagePositions - villageRecruits - villageZealots));
+                List<TroopRosterElement> troops = ArmoryTroops(guard);
+                int positions = Math.Max(GuardCap(row), Sworn(row));
+                return PlanForCounts(holder, ledger, troops, Math.Max(0, positions - troops.Sum(e => e.Number)));
             }
             MobileParty party = FindParty(holder)!;
-            int recruits = CountOf(party.MemberRoster, GwpIds.NewRecruitId);
-            int zealots = CountOf(party.MemberRoster, GwpIds.ZealotId);
-            // 领主部队要保证每个位置都有装备可拿：高阶兵、空着的编制也算，按部队编制上限留套，挑最好的留（用户裁定 2026-10-15）。
-            // 无领主队只带自己身上那几套，不留。
-            int partyReserve = _faithParties.ContainsKey(holder)
-                ? 0
-                : Math.Max(0, Math.Max(party.Party.PartySizeLimit, party.MemberRoster.TotalManCount) - recruits - zealots);
-            return PlanForCounts(holder, ledger, recruits, zealots, partyReserve);
-        }
-
-        private static int CountOf(TroopRoster roster, string troopId) =>
-            roster.GetTroopRoster().Where(element => element.Character.StringId == troopId).Sum(element => element.Number);
-
-        /// <summary>
-        /// 每一类装备按数值强度（<see cref="Strength"/>）从强到弱排好，一个一个兵往下发（新兵排在狂信者前面，先挑）：
-        /// 每一类拿自己技能够得着的（原版物品的 Difficulty 对 RelevantSkill，按领装备的那个兵自己的技能算）、比兵种自带的那件更强的最强那件；
-        /// 不如自带的就不发，上战场穿自带的（用户裁定 2026-10-08：比数值强度；和自带的比，更强才换；每个兵拿自己用得了的最强那件）。
-        /// 上战场时武器只有四格（<see cref="GwpArmorySpawnPatch"/>），主武器之后先发投掷，再发远程（要配上对应的弹药：弓配箭、弩配矢，
-        /// 没有就不发，占两格），最后是盾（手里的主武器是单手的、格子还有空才发；自带的武器也占格子）（用户裁定 2026-10-08）。
-        /// 新兵和狂信者都用不了的、马、马具、披风、男女有一方不能用的，都算多余卖掉。
-        /// 分完剩下的先覆盖全部编制（最强的那些，含已有高阶兵和空位），再多的就是多余。（用户裁定 2026-10-05：不配骑兵，肩部是灰袍印章；2026-10-08：弓弩箭矢进军械库，能用就用，不能用就卖，马不行）
-        /// </summary>
-        private static ArmoryPlan BuildPlan(ItemRoster ledger, int recruits, int zealots, int reserve)
-        {
-            ArmoryPlan plan = new ArmoryPlan { Recruits = recruits };
-            CharacterObject recruit = CharacterObject.Find(GwpIds.NewRecruitId);
-            CharacterObject zealot = CharacterObject.Find(GwpIds.ZealotId);
-            List<EquipmentElement>[] buckets = Enumerable.Range(0, KitSlots).Select(_ => new List<EquipmentElement>()).ToArray();
-            for (int i = 0; i < ledger.Count; i++)
-            {
-                ItemRosterElement element = ledger.GetElementCopyAtIndex(i);
-                int kind = KitKind(element.EquipmentElement.Item);
-                if (kind < 0 || !CanUse(recruit, element.EquipmentElement.Item) && !CanUse(zealot, element.EquipmentElement.Item))
-                {
-                    plan.Surplus.AddToCounts(element.EquipmentElement, element.Amount);
-                    continue;
-                }
-                for (int n = 0; n < element.Amount; n++)
-                    buckets[kind].Add(element.EquipmentElement);
-            }
-            foreach (List<EquipmentElement> bucket in buckets)
-                bucket.Sort((x, y) => Strength(y).CompareTo(Strength(x)));
-            EquipmentElement[] recruitOwn = OwnBest(recruit);
-            EquipmentElement[] zealotOwn = OwnBest(zealot);
-
-            int men = recruits + zealots;
-            for (int i = 0; i < men; i++)
-            {
-                CharacterObject troop = i < recruits ? recruit : zealot;
-                EquipmentElement[] own = i < recruits ? recruitOwn : zealotOwn;
-                EquipmentElement[] kit = new EquipmentElement[KitSlots];
-                foreach (int kind in new[] { KitHead, KitBody, KitLeg, KitGloves, KitMain, KitThrow })
-                    kit[kind] = Take(buckets[kind], item => CanUse(troop, item.Item) && Stronger(item, own[kind]));
-                EquipmentElement ranged = Take(buckets[KitRanged], item => CanUse(troop, item.Item) && Stronger(item, own[KitRanged]) &&
-                    buckets[KitAmmo].Any(ammo => ammo.Item.ItemType == AmmoFor(item.Item)));
-                if (!ranged.IsEmpty)
-                {
-                    kit[KitRanged] = ranged;
-                    kit[KitAmmo] = Take(buckets[KitAmmo], ammo => ammo.Item.ItemType == AmmoFor(ranged.Item));
-                }
-                // 上战场时没分到的那一类穿自带的，所以算格子、看主武器都要把自带的算进去。
-                EquipmentElement main = kit[KitMain].IsEmpty ? own[KitMain] : kit[KitMain];
-                int weapons = new[] { KitMain, KitThrow, KitRanged, KitAmmo }
-                    .Count(kind => !kit[kind].IsEmpty || !own[kind].IsEmpty && (kind != KitAmmo || kit[KitRanged].IsEmpty));
-                if (weapons < WeaponSlots && !main.IsEmpty && main.Item.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon)
-                    kit[KitShield] = Take(buckets[KitShield], item => CanUse(troop, item.Item) && Stronger(item, own[KitShield]));
-                plan.Sets.Add(kit);
-            }
-            for (int kind = 0; kind < buckets.Length; kind++)
-            {
-                // 没领库装（自带更好或缺搭配）的兵位也要留一件；已领的那件已经算在编制里。
-                int keep = reserve + men - plan.Sets.Count(kit => !kit[kind].IsEmpty);
-                for (int i = 0; i < buckets[kind].Count; i++)
-                    (i < keep ? plan.Free : plan.Surplus).AddToCounts(buckets[kind][i], 1);
-            }
-
-            Tiers(plan.Sets.Take(recruits), out plan.RecruitWeaponTier, out plan.RecruitArmorTier);
-            Tiers(plan.Sets.Skip(recruits), out plan.ZealotWeaponTier, out plan.ZealotArmorTier);
-            return plan;
-        }
-
-        /// <summary>比兵种自带的那件强（自带的没有这一类就算强）。</summary>
-        private static bool Stronger(EquipmentElement candidate, EquipmentElement own) =>
-            own.IsEmpty || Strength(candidate) > Strength(own);
-
-        /// <summary>兵种自带的每一类里最强的那件：所有战斗装备套里挑，没有就空着。</summary>
-        private static EquipmentElement[] OwnBest(CharacterObject troop)
-        {
-            EquipmentElement[] best = new EquipmentElement[KitSlots];
-            foreach (Equipment set in troop.BattleEquipments)
-                for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumEquipmentSetSlots; slot++)
-                {
-                    EquipmentElement element = set[slot];
-                    int kind = element.IsEmpty ? -1 : KitKind(element.Item);
-                    if (kind >= 0 && (best[kind].IsEmpty || Strength(element) > Strength(best[kind])))
-                        best[kind] = element;
-                }
-            return best;
+            List<TroopRosterElement> members = ArmoryTroops(party.MemberRoster);
+            int reserve = _faithParties.ContainsKey(holder) ? 0 :
+                Math.Max(0, Math.Max(party.Party.PartySizeLimit, party.MemberRoster.TotalManCount) - members.Sum(e => e.Number));
+            return PlanForCounts(holder, ledger, members, reserve);
         }
 
         /// <summary>
@@ -270,36 +143,6 @@ namespace GreyWardenPolicePurity
             return 0f;
         }
 
-        /// <summary>
-        /// 上战场时排武器四格：主武器、投掷、远程、弹药、盾，按这个先后放（用户裁定 2026-10-08）；哪一类分到了军械库的就用它，
-        /// 没分到的用兵种这一套里自带的（配装时自带的更强就不分）；放满四格为止。一件武器都没分到就不动。
-        /// </summary>
-        internal static void ArrangeWeapons(EquipmentElement[] kit, Equipment equipment)
-        {
-            int[] order = { KitMain, KitThrow, KitRanged, KitAmmo, KitShield };
-            if (order.All(kind => kit[kind].IsEmpty))
-                return;
-            List<EquipmentElement> own = new List<EquipmentElement>();
-            for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumPrimaryWeaponSlots; slot++)
-                if (!equipment[slot].IsEmpty)
-                    own.Add(equipment[slot]);
-            List<EquipmentElement> weapons = new List<EquipmentElement>();
-            foreach (int kind in order)
-            {
-                if (!kit[kind].IsEmpty)
-                    weapons.Add(kit[kind]);
-                // 分到了远程就配它自己的弹药，自带的弹药不再放。
-                else if (kind != KitAmmo || kit[KitRanged].IsEmpty)
-                    weapons.AddRange(own.Where(element => KitKind(element.Item) == kind));
-            }
-            weapons.AddRange(own.Where(element => KitKind(element.Item) < 0));
-            for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumPrimaryWeaponSlots; slot++)
-            {
-                int index = slot - EquipmentIndex.WeaponItemBeginSlot;
-                equipment[slot] = index < weapons.Count ? weapons[index] : EquipmentElement.Invalid;
-            }
-        }
-
         /// <summary>从排好的一类里拿走第一件合适的；没有就空着。</summary>
         private static EquipmentElement Take(List<EquipmentElement> bucket, Func<EquipmentElement, bool> fits)
         {
@@ -343,15 +186,41 @@ namespace GreyWardenPolicePurity
             };
         }
 
+        // 灰袍兵种名单，按本局的 CharacterObject 建一次；新开或读档会换 behavior 实例，不跨局复用。
+        private List<CharacterObject>? _armoryUsers;
+
+        /// <summary>
+        /// 军械库只收灰袍兵能用的兵器护甲（用户裁定 2026-10-16）：配装类别之内（<see cref="KitKind"/>），
+        /// 且至少一种灰袍兵种的技能够得着。马、马具、披风、男女有一方不能用的、谁都够不着的都不进库。
+        /// </summary>
+        private bool IsArmoryItem(ItemObject item) =>
+            KitKind(item) >= 0 && (_armoryUsers ??= CharacterObject.All.Where(IsGuardTroop).ToList())
+                .Any(troop => CanUse(troop, item));
+
+        /// <summary>
+        /// 收东西的唯一入口：能进军械库的进 <paramref name="holder"/> 的军械库，其余进它自己的背包——
+        /// 领主部队、无领主队是部队背包，村子是货仓（用户裁定 2026-10-16：进背包，照原版去卖）。返回是否进了军械库。
+        /// </summary>
+        private bool Store(string holder, EquipmentElement item, int amount)
+        {
+            bool armory = IsArmoryItem(item.Item);
+            ItemRoster target = armory ? ItemsOf(_armories, holder)
+                : _villages.ContainsKey(holder) ? ItemsOf(_goods, holder) : FindParty(holder)!.ItemRoster;
+            target.AddToCounts(item, amount);
+            if (armory)
+                _plans.Remove(holder);
+            return armory;
+        }
+
         private static int TierOf(EquipmentElement element) => element.IsEmpty ? 0 : (int)element.Item.Tier + 1;
 
-        private static void Tiers(IEnumerable<EquipmentElement[]> sets, out float weapon, out float armor)
+        private static void Tiers(IEnumerable<ArmoryKit> sets, out float weapon, out float armor)
         {
-            List<EquipmentElement[]> list = sets.ToList();
+            List<ArmoryKit> list = sets.ToList();
             weapon = armor = 0f;
             if (list.Count == 0)
                 return;
-            weapon = (float)list.Average(kit => TierOf(kit[KitMain]));
+            weapon = (float)list.Average(kit => new[] { KitMain, KitThrow, KitRanged }.Max(kind => TierOf(kit[kind])));
             armor = (float)list.Average(kit =>
                 (TierOf(kit[KitHead]) + TierOf(kit[KitBody]) + TierOf(kit[KitLeg]) + TierOf(kit[KitGloves])) / 4f);
         }
@@ -359,7 +228,11 @@ namespace GreyWardenPolicePurity
         private void RefreshArmoryPlans()
         {
             foreach (string holder in _armories.Keys.ToList())
+            {
+                // 战斗使用同一份分配，人数因伤亡变化时不能中途重分或让库装被再次发出。
+                if (HolderInBattle(holder) && _plans.ContainsKey(holder)) continue;
                 _plans[holder] = BuildPlanFor(holder);
+            }
         }
 
         /// <summary>
@@ -388,17 +261,15 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private int TakeBestSets(string homeId, MobileParty party)
         {
-            // 人已经从家里扣掉：按实际出队的两种兵配装，不能再用留守名单的套数。
+            // 人已经从家里扣掉：按实际出队的各阶灰袍兵配装，不能再用留守名单的套数。
             // 常驻卖货队已携带的装备仍在自己的账里，只补这次尚未满足的配装。
             ItemRoster available = new ItemRoster();
             available.Add(ItemsOf(_armories, party.StringId));
             available.Add(ItemsOf(_armories, homeId));
-            ArmoryPlan escort = BuildPlan(available,
-                CountOf(party.MemberRoster, GwpIds.NewRecruitId),
-                CountOf(party.MemberRoster, GwpIds.ZealotId), 0);
+            ArmoryPlan escort = BuildPlan(available, ArmoryTroops(party.MemberRoster), 0);
             ItemRoster taken = new ItemRoster();
-            foreach (EquipmentElement[] kit in escort.Sets)
-                foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
+            foreach (ArmoryKit kit in escort.Sets)
+                foreach (EquipmentElement item in kit.Items.Where(entry => !entry.IsEmpty))
                     taken.AddToCounts(item, 1);
             foreach (ItemRosterElement item in ItemsOf(_armories, party.StringId))
             {
@@ -426,11 +297,11 @@ namespace GreyWardenPolicePurity
             return sets;
         }
 
-        /// <summary>这座村的守村队里狂信者和新兵有几成拿到了主兵器。</summary>
+        /// <summary>这座村各阶守村兵有几成持有原配或军械库提供的主武器/远程武器。</summary>
         private float ArmedShare(string villageId)
         {
             ArmoryPlan plan = PlanOf(villageId);
-            return plan.Sets.Count == 0 ? 0f : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) / (float)plan.Sets.Count;
+            return plan.Sets.Count == 0 ? 0f : plan.Sets.Count(kit => IsArmoryKitArmed(kit)) / (float)plan.Sets.Count;
         }
 
         /// <summary>把一支无领主队自己的账整本并进 <paramref name="toHolder"/>，这支队的账就没了。</summary>
@@ -455,7 +326,8 @@ namespace GreyWardenPolicePurity
             for (int i = cart.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = cart.ItemRoster.GetElementCopyAtIndex(i);
-                if (KitKind(element.EquipmentElement.Item) < 0)
+                // 不能进库的留在车上，随后按到村的规矩交货仓。
+                if (!IsArmoryItem(element.EquipmentElement.Item))
                     continue;
                 ledger.AddToCounts(element.EquipmentElement, element.Amount);
                 cart.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
@@ -485,7 +357,15 @@ namespace GreyWardenPolicePurity
             if (!_armories.ContainsKey(partyId))
                 return 0;
             ArmoryPlan plan = BuildPlanFor(partyId);
-            int moved = MoveAll(plan.Surplus, ItemsOf(_armories, partyId), ItemsOf(_armories, villageId));
+            ItemRoster ledger = ItemsOf(_armories, partyId);
+            int moved = 0;
+            // 余量里不该在库的（旧档留下的马之类）随捐赠进村货仓，能用的进村军械库。
+            foreach (ItemRosterElement element in plan.Surplus.ToList())
+            {
+                ledger.AddToCounts(element.EquipmentElement, -element.Amount);
+                if (Store(villageId, element.EquipmentElement, element.Amount))
+                    moved += element.Amount;
+            }
             _plans.Remove(partyId);
             _plans.Remove(villageId);
             return moved;
@@ -497,15 +377,13 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private int MoveBestSets(string fromHolder, string toHolder, CharacterObject troop, int men)
         {
-            if (men <= 0 || !IsArmedTroop(troop) || !_armories.ContainsKey(fromHolder))
+            if (men <= 0 || !IsGuardTroop(troop) || !_armories.ContainsKey(fromHolder))
                 return 0;
             ArmoryPlan plan = BuildPlanFor(fromHolder);
-            IEnumerable<EquipmentElement[]> sets = troop.StringId == GwpIds.NewRecruitId
-                ? plan.Sets.Take(plan.Recruits)
-                : plan.Sets.Skip(plan.Recruits);
+            IEnumerable<ArmoryKit> sets = plan.Sets.Where(kit => kit.Troop == troop);
             ItemRoster taken = new ItemRoster();
-            foreach (EquipmentElement[] kit in sets.Take(men))
-                foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
+            foreach (ArmoryKit kit in sets.Take(men))
+                foreach (EquipmentElement item in kit.Items.Where(entry => !entry.IsEmpty))
                     taken.AddToCounts(item, 1);
             int moved = MoveAll(taken, ItemsOf(_armories, fromHolder), ItemsOf(_armories, toHolder));
             _plans.Remove(fromHolder);
@@ -519,8 +397,8 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 缴获
 
         // 这一场战斗每本账缴获了几具尸体、几件东西。战斗结束时写一行监控就清掉；只给监控用，不存档。
-        private readonly Dictionary<string, (int Bodies, int Items, int Value)> _lootThisBattle =
-            new Dictionary<string, (int, int, int)>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, (int Bodies, int Items, int Value, int Packed)> _lootThisBattle =
+            new Dictionary<string, (int, int, int, int)>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// 军械库的进项照原版缴获（用户裁定 2026-10-06：不是把俘虏全扒下来，和玩家一样，打赢了从尸体上缴获一些）。
@@ -540,38 +418,37 @@ namespace GreyWardenPolicePurity
             int tries = MBRandom.RoundRandomized(winner.ContributionToBattle / (float)Math.Max(1, total));
             BattleRewardModel model = Campaign.Current.Models.BattleRewardModel;
             float value = model.GetExpectedLootedItemValueFromCasualty(winner.Party.LeaderHero, casualty);
-            ItemRoster ledger = ItemsOf(_instance._armories, holder);
             List<ItemObject.ItemTypeEnum> taken = new List<ItemObject.ItemTypeEnum>();
-            int items = 0, worth = 0;
+            int items = 0, worth = 0, packed = 0;
             for (int i = 0; i < tries; i++)
             {
                 EquipmentElement item = model.GetLootedItemFromTroop(casualty, value);
                 if (item.Item == null || taken.Contains(item.Item.Type))
                     continue;
                 taken.Add(item.Item.Type);
-                ledger.AddToCounts(item, 1);
+                if (!_instance.Store(holder, item, 1))
+                    packed++;
                 items++;
                 worth += item.ItemValue;
             }
-            _instance._lootThisBattle.TryGetValue(holder, out (int Bodies, int Items, int Value) sum);
-            _instance._lootThisBattle[holder] = (sum.Bodies + 1, sum.Items + items, sum.Value + worth);
-            _instance._plans.Remove(holder);
+            _instance._lootThisBattle.TryGetValue(holder, out (int Bodies, int Items, int Value, int Packed) sum);
+            _instance._lootThisBattle[holder] = (sum.Bodies + 1, sum.Items + items, sum.Value + worth, sum.Packed + packed);
             return true;
         }
 
         private void WriteBattleLoot(MapEvent mapEvent)
         {
-            foreach (KeyValuePair<string, (int Bodies, int Items, int Value)> pair in _lootThisBattle)
+            foreach (KeyValuePair<string, (int Bodies, int Items, int Value, int Packed)> pair in _lootThisBattle)
                 GwpAiDiagnostics.WriteFaith("ARMORY_LOOT",
                     "holder=" + pair.Key + "; bodies=" + pair.Value.Bodies + "; items=" + pair.Value.Items +
-                    "; value=" + pair.Value.Value + "; mapEvent=" + mapEvent.EventType);
+                    "; toBackpack=" + pair.Value.Packed + "; value=" + pair.Value.Value + "; mapEvent=" + mapEvent.EventType);
             _lootThisBattle.Clear();
         }
 
         // ---------------------------------------------------------------- 输了、没了
 
         /// <summary>
-        /// 我方输了：死去的狂信者、新兵身上那一套从账本里去掉，其中一部分归胜方——玩家在胜方就进玩家背包，
+        /// 我方输了：阵亡的各阶灰袍兵实际分到的库装从账本里去掉，其中一部分归胜方——玩家在胜方就进玩家背包，
         /// 否则进胜方领头部队的背包（用户裁定：照原版尸体缴获，AI 抢走一部分）。我方守住战场时什么都不丢。
         /// 灰袍领主部队被打没了不走这里：它的账本在销毁时已经整本送回信众村（<see cref="OnPartyGone"/>）。
         /// </summary>
@@ -589,27 +466,29 @@ namespace GreyWardenPolicePurity
                 string? holder = HolderOf(party.Party);
                 if (holder == null || !_armories.ContainsKey(holder))
                     continue;
-                int dead = 0;
-                for (int i = 0; i < party.DiedInBattle.Count; i++)
-                    if (IsArmedTroop(party.DiedInBattle.GetCharacterAtIndex(i)))
-                        dead += party.DiedInBattle.GetElementNumber(i);
-                if (dead <= 0)
-                    continue;
-
                 ArmoryPlan plan = PlanOf(holder);
                 ItemRoster ledger = ItemsOf(_armories, holder);
-                int lost = 0, looted = 0;
-                foreach (EquipmentElement[] kit in plan.Sets.OrderBy(_ => MBRandom.RandomFloat).Take(dead))
-                    foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
-                    {
-                        ledger.AddToCounts(item, -1);
-                        lost++;
-                        if (looter != null && MBRandom.RandomFloat < GwpTuning.Firesworn.ArmoryLossLootShare)
+                int lost = 0, looted = 0, dead = 0;
+                // 只扣阵亡兵种自己的库装，不能拿骑兵的死亡去扣新兵的整套。
+                for (int i = 0; i < party.DiedInBattle.Count; i++)
+                {
+                    CharacterObject troop = party.DiedInBattle.GetCharacterAtIndex(i);
+                    int count = party.DiedInBattle.GetElementNumber(i);
+                    if (!IsGuardTroop(troop) || count <= 0) continue;
+                    dead += count;
+                    foreach (ArmoryKit kit in plan.Sets.Where(kit => kit.Troop == troop)
+                        .OrderBy(_ => MBRandom.RandomFloat).Take(count))
+                        foreach (EquipmentElement item in kit.Items.Where(entry => !entry.IsEmpty))
                         {
-                            looter.AddToCounts(item, 1);
-                            looted++;
+                            ledger.AddToCounts(item, -1);
+                            lost++;
+                            if (looter != null && MBRandom.RandomFloat < GwpTuning.Firesworn.ArmoryLossLootShare)
+                            {
+                                looter.AddToCounts(item, 1);
+                                looted++;
+                            }
                         }
-                    }
+                }
                 _plans.Remove(holder);
                 GwpAiDiagnostics.WriteFaith("ARMORY_LOST_IN_DEFEAT",
                     "holder=" + holder + "; dead=" + dead + "; items=" + lost + "; lootedByWinner=" + looted +
@@ -659,9 +538,9 @@ namespace GreyWardenPolicePurity
         // ---------------------------------------------------------------- 实战、自动结算
 
         /// <summary>这个兵在这场实战里分到的那一套；没有就返回 null（照兵种原样）。</summary>
-        internal static EquipmentElement[]? TakeKitForAgent(PartyBase? party, CharacterObject troop)
+        internal static Equipment? TakeKitForAgent(PartyBase? party, CharacterObject troop)
         {
-            if (_instance == null || !IsArmedTroop(troop))
+            if (_instance == null || !IsGuardTroop(troop))
                 return null;
             string? holder = _instance.HolderOf(party);
             if (holder == null || !_instance._armories.ContainsKey(holder))
@@ -675,49 +554,52 @@ namespace GreyWardenPolicePurity
             string key = holder + "|" + troop.StringId;
             _instance._issuedThisMission.TryGetValue(key, out int issued);
             _instance._issuedThisMission[key] = issued + 1;
-            bool recruit = troop.StringId == GwpIds.NewRecruitId;
-            int index = (recruit ? 0 : plan.Recruits) + issued;
-            int end = recruit ? plan.Recruits : plan.Sets.Count;
-            return index < end ? plan.Sets[index] : null;
+            ArmoryKit? kit = plan.Sets.Where(kit => kit.Troop == troop).Skip(issued).FirstOrDefault();
+            if (kit == null) return null;
+            Equipment equipment = kit.Equipment.Clone();
+            // 沿用原版/整套预设补丁的原配品质抽取；库装保留账本中实际物品的品质。
+            for (int slot = 0; slot < (int)EquipmentIndex.NumEquipmentSetSlots; slot++)
+            {
+                if (kit.Slots.Contains(slot)) continue;
+                EquipmentElement element = equipment[slot];
+                ItemModifier? modifier = element.Item?.ItemComponent?.ItemModifierGroup?.GetRandomItemModifierLootScoreBased();
+                if (modifier == null) continue;
+                element.SetModifier(modifier);
+                equipment[slot] = element;
+            }
+            return equipment;
         }
 
-        /// <summary>自动结算里这一方这个兵种分到的装备平均阶数（兵器、护甲）。</summary>
         /// <summary>
-        /// 纯化下来的兵把自己那套装备交进这支部队的军械库：兵种自带的第一套战斗装备，一兵一套；马和马具不收
-        /// （军械库不配马，用户裁定 2026-10-08）。用不上的照账本规则算多余，到信众村捐掉、进货仓。返回收进几件。
+        /// 纯化下来的兵交出自己那套装备：兵种自带的第一套战斗装备，一兵一套。能进军械库的进库，
+        /// 马、马具、披风等进部队背包（用户裁定 2026-10-16）。返回进军械库的件数。
         /// </summary>
         internal static int DepositTroopKits(MobileParty party, CharacterObject troop, int count)
         {
             string? holder = _instance?.HolderOf(party.Party);
             if (_instance == null || holder == null || count <= 0)
                 return 0;
-            ItemRoster ledger = ItemsOf(_instance._armories, holder);
             Equipment kit = troop.FirstBattleEquipment;
             int items = 0;
             for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumEquipmentSetSlots; slot++)
             {
                 EquipmentElement element = kit[slot];
-                if (element.Item == null || slot == EquipmentIndex.Horse || slot == EquipmentIndex.HorseHarness)
-                    continue;
-                ledger.AddToCounts(element, count);
-                items += count;
+                if (element.Item != null && _instance.Store(holder, element, count))
+                    items += count;
             }
-            _instance._plans.Remove(holder);
             return items;
         }
 
         internal static bool TryGetArmoryTiers(PartyBase? party, CharacterObject troop, out float weapon, out float armor)
         {
             weapon = armor = 0f;
-            if (_instance == null || !IsArmedTroop(troop))
+            if (_instance == null || !IsGuardTroop(troop))
                 return false;
             string? holder = _instance.HolderOf(party);
             if (holder == null || !_instance._armories.ContainsKey(holder))
                 return false;
-            ArmoryPlan plan = _instance.PlanOf(holder);
-            bool recruit = troop.StringId == GwpIds.NewRecruitId;
-            weapon = recruit ? plan.RecruitWeaponTier : plan.ZealotWeaponTier;
-            armor = recruit ? plan.RecruitArmorTier : plan.ZealotArmorTier;
+            if (_instance.PlanOf(holder).TroopTiers.TryGetValue(troop, out (float Weapon, float Armor) tiers))
+                (weapon, armor) = tiers;
             return true;
         }
 
@@ -742,7 +624,7 @@ namespace GreyWardenPolicePurity
                 return GwpText.Get(GwpTextCatalog.gwp_fs_armory_empty);
             ArmoryPlan plan = _instance.PlanOf(holder);
             return GwpText.Get(GwpTextCatalog.gwp_fs_armory_summary,
-                "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => !kit[KitMain].IsEmpty),
+                "MEN", plan.Sets.Count, "ARMED", plan.Sets.Count(kit => IsArmoryKitArmed(kit)),
                 "FREE", CountItems(plan.Free), "SURPLUS", CountItems(plan.Surplus));
         }
 
@@ -768,6 +650,8 @@ namespace GreyWardenPolicePurity
                 string parties = string.Join(",", _faithParties.Values
                     .Where(entry => string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase))
                     .Select(entry => entry.Kind + ":" + entry.Phase + ":" + FindParty(entry.PartyId)!.MemberRoster.TotalManCount));
+                plan.TroopTiers.TryGetValue(CharacterObject.Find(GwpIds.ZealotId), out (float Weapon, float Armor) zealotTiers);
+                float zealotWeapon = zealotTiers.Weapon, zealotArmor = zealotTiers.Armor;
                 GwpAiDiagnostics.WriteFaith("DAILY_VILLAGE",
                     "village=" + row.VillageId + "; hearth=" + village.Village.Hearth.ToString("0") +
                     "; households=" + row.Households + "; guard=" + Sworn(row) + "; share=" + SwornShare(row, village).ToString("0.00") +
@@ -785,8 +669,8 @@ namespace GreyWardenPolicePurity
                     "; dungeon=" + (_dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon) ? dungeon.TotalManCount : 0) +
                     "; armoryItems=" + (_armories.TryGetValue(row.VillageId, out ItemRoster? armory) ? CountItems(armory) : 0) +
                     "; armoryKinds=" + (armory == null ? "-" : KindCounts(armory)) +
-                    "; armed=" + plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count +
-                    "; weaponTier=" + plan.ZealotWeaponTier.ToString("0.0") + "; armorTier=" + plan.ZealotArmorTier.ToString("0.0") +
+                    "; armed=" + plan.Sets.Count(kit => IsArmoryKitArmed(kit)) + "/" + plan.Sets.Count +
+                    "; weaponTier=" + zealotWeapon.ToString("0.0") + "; armorTier=" + zealotArmor.ToString("0.0") +
                     "; goodsValue=" + (_goods.TryGetValue(row.VillageId, out ItemRoster? goods) ? goods.TotalValue : 0) +
                     "; parties=" + (parties.Length == 0 ? "-" : parties) +
                     "; daysSinceDamnation=" + DaysSince(row.LastDamnation) + "; daysSinceCongregation=" + DaysSince(row.LastCongregation) +
@@ -800,7 +684,7 @@ namespace GreyWardenPolicePurity
                     "; troops=" + Composition(lord.MemberRoster) +
                     "; prisoners=" + CountRegularPrisoners(lord) + "/" + lord.Party.PrisonerSizeLimit +
                     "; armoryItems=" + (_armories.TryGetValue(lord.StringId, out ItemRoster? armory) ? CountItems(armory) : 0) +
-                    "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count) +
+                    "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => IsArmoryKitArmed(kit)) + "/" + plan.Sets.Count) +
                     "; inventoryValue=" + NonFoodValue(lord.ItemRoster) +
                     "; faithVisit=" + GwpWardenVisitDesire.Describe(lord) +
                     "; case=" + CrimePool.HasTask(lord.StringId) + "; wage=" + lord.TotalWage +
@@ -885,9 +769,9 @@ namespace GreyWardenPolicePurity
                         "; shortLords=" + string.Join(",", shortLords));
                 ArmoryPlan plan = PlanOf(row.VillageId);
                 if (plan.Sets.Count > 0 && CountItems(ItemsOf(_armories, row.VillageId)) > plan.Sets.Count &&
-                    plan.Sets.Count(kit => !kit[KitMain].IsEmpty) < plan.Sets.Count / 10)
+                    plan.Sets.Count(kit => IsArmoryKitArmed(kit)) < plan.Sets.Count / 10)
                     Flag("ARMORY_UNARMED", "village=" + row.VillageId + "; armed=" +
-                        plan.Sets.Count(kit => !kit[KitMain].IsEmpty) + "/" + plan.Sets.Count +
+                        plan.Sets.Count(kit => IsArmoryKitArmed(kit)) + "/" + plan.Sets.Count +
                         "; kinds=" + KindCounts(ItemsOf(_armories, row.VillageId)));
                 if (_goods.TryGetValue(row.VillageId, out ItemRoster? goods) && goods.TotalValue > 50000)
                     Flag("GOODS_BACKLOG", "village=" + row.VillageId + "; goodsValue=" + goods.TotalValue +
@@ -921,10 +805,10 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 实战里给狂信者、灰袍新兵换上军械库分到的那一套（用户裁定：一个兵一套装备）。
+    /// 实战里给各阶灰袍兵使用对应完整原配与库装分配（用户裁定：一个兵一套装备）。
     /// 原版在 Mission.SpawnAgent 里按 AgentBuildData 的装备生成兵（C#反编译 v1.4.8 Mission.SpawnAgent：
     /// 有覆盖装备就用覆盖的，没有就按兵种随机一套）。
-    /// 分到的护甲、兵器换上去，没分到的那一格照兵种原样（配装时不如自带的就不分）；肩部换成灰袍印章（用户裁定），不配马。
+    /// 高阶只补原配空位；新兵/狂信者可以换强装并沿用印章/无马规则。显式覆盖的场景装备由原调用方负责。
     /// </summary>
     [HarmonyPatch(typeof(Mission), nameof(Mission.SpawnAgent))]
     internal static class GwpArmorySpawnPatch
@@ -933,7 +817,7 @@ namespace GreyWardenPolicePurity
         {
             if (Campaign.Current == null || agentBuildData.AgentCivilianEquipment ||
                 agentBuildData.AgentCharacter is not CharacterObject troop ||
-                !GwpFireswornBehavior.IsArmedTroop(troop))
+                !GwpFireswornBehavior.IsGuardTroop(troop))
                 return;
             PartyBase? party = agentBuildData.AgentOrigin switch
             {
@@ -942,29 +826,19 @@ namespace GreyWardenPolicePurity
                 SimpleAgentOrigin origin => origin.Party,
                 _ => null
             };
-            EquipmentElement[]? kit = GwpFireswornBehavior.TakeKitForAgent(party, troop);
-            if (kit == null)
+            // 明确覆盖的场景装备由原调用方负责；不拿另一套原配的空位计划去覆盖它。
+            if (agentBuildData.AgentOverridenSpawnEquipment != null)
                 return;
-
-            Equipment equipment = agentBuildData.AgentOverridenSpawnEquipment?.Clone() ??
-                                  Equipment.GetRandomEquipmentElements(troop, true, Equipment.EquipmentType.Battle,
-                                      agentBuildData.AgentEquipmentSeed);
-            EquipmentIndex[] armor = { EquipmentIndex.Head, EquipmentIndex.Body, EquipmentIndex.Leg, EquipmentIndex.Gloves };
-            for (int i = 0; i < armor.Length; i++)
-                if (!kit[i].IsEmpty)
-                    equipment[armor[i]] = kit[i];
-            GwpFireswornBehavior.ArrangeWeapons(kit, equipment);
-            equipment[EquipmentIndex.Cape] = CharacterObject.Find(GwpIds.NewRecruitId).FirstBattleEquipment[EquipmentIndex.Cape];
-            equipment[EquipmentIndex.Horse] = EquipmentElement.Invalid;
-            equipment[EquipmentIndex.HorseHarness] = EquipmentElement.Invalid;
-            agentBuildData.Equipment(equipment);
+            Equipment? equipment = GwpFireswornBehavior.TakeKitForAgent(party, troop);
+            if (equipment != null)
+                agentBuildData.Equipment(equipment);
         }
     }
 
     /// <summary>
     /// 自动结算不看装备，只看兵种阶数（C#反编译 v1.4.8 DefaultCombatSimulationModel.SimulateHit：
     /// 伤害按双方兵种 GetTroopPower 之比算）。军械库也要在自动结算里算数（用户裁定）：
-    /// 狂信者、新兵出手按分到的兵器阶数加伤害，挨打按分到的护甲阶数减伤害。
+    /// 各阶灰袍兵按额外库装的兵器阶数加伤害，挨打按分到的护甲阶数减伤害。
     /// </summary>
     public sealed class GwpFaithCombatSimulationModel : CombatSimulationModel
     {

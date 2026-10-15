@@ -564,9 +564,9 @@ namespace GreyWardenPolicePurity
                 return;
             TroopRoster guard = GuardOf(row.VillageId);
             int taken = Math.Min(count, guard.GetTroopCount(troop));
+            int kits = MoveBestSets(row.VillageId, party.StringId, troop, taken);
             if (taken > 0)
                 guard.AddToCounts(troop, -taken);
-            int kits = MoveBestSets(row.VillageId, party.StringId, troop, taken);
             PushGuard(row, settlement);
             ReconcilePriestSlots(row);
             RecordVisit(party, settlement, recruits: count);
@@ -1111,7 +1111,7 @@ namespace GreyWardenPolicePurity
             return count;
         }
 
-        private static bool IsGuardTroop(CharacterObject? troop) =>
+        internal static bool IsGuardTroop(CharacterObject? troop) =>
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
 
         /// <summary>

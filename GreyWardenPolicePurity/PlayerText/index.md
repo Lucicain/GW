@@ -1422,7 +1422,7 @@
 | gwp_fs_armory_village | Armory of {VILLAGE} ({ITEMS} pieces) | {VILLAGE}的军械库（{ITEMS}件） | 仅开发版：村庄库房弹窗标题。 |
 | gwp_fs_armory_party | Armory of {PARTY} ({ITEMS} pieces) | {PARTY}的军械库（{ITEMS}件） | 仅开发版：领主部队库房弹窗标题。 |
 | gwp_fs_armory_empty | The stores are empty. | 库房为空。 | 仅开发版：该持有者尚无军械账本时的说明。 |
-| gwp_fs_armory_summary | These stores supply {MEN} people, of whom {ARMED} have weapons. Another {FREE} pieces are held in reserve, and {SURPLUS} surplus pieces will be sold at market. | 这里为{MEN}人保管装备，其中{ARMED}人已配有兵器；另存{FREE}件备用装备，{SURPLUS}件余货将运往集市出售。 | 仅开发版：库房摘要。MEN为配装记录数，ARMED为其中配有主手兵器的记录数。 |
+| gwp_fs_armory_summary | These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces. | 这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。 | 仅开发版：MEN为各阶灰袍兵的配装记录数，ARMED包含原配或库装主武器/远程武器。库存含已分配库装，备用与多余分开。 |
 | gwp_fs_party_pretalk | Anything else? | 还有什么事？ | 地图遇到教众队伍，买卖取消后回到主对话。 |
 | gwp_fs_party_buy | What goods are you carrying? | 你们带了什么货？ | 只有卖货队有货、总价大于零且玩家付得起时显示的购买选项。 |
 | gwp_fs_party_offer | We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful. | 有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。 | 卖货队报价，不把钱说成归某团火所有。 |

@@ -64,7 +64,11 @@ namespace GreyWardenPolicePurity
                 MobileParty transport = CreateFaithParty(row, village, FaithPartyKind.Training, trainer);
                 var healthy = elites.Select(e => new TroopRosterElement(e.Character) { Number = e.Number - e.WoundedNumber }).ToList();
                 int moved = TransferEliteTroopsProportionally(healthy, requested,
-                    (troop, count) => GwpTroopTransfer.Move(trainer.MemberRoster, transport.MemberRoster, troop, count, healthyOnly: true).Number,
+                    (troop, count) =>
+                    {
+                        MoveBestSets(trainer.StringId, transport.StringId, troop, count);
+                        return GwpTroopTransfer.Move(trainer.MemberRoster, transport.MemberRoster, troop, count, healthyOnly: true).Number;
+                    },
                     out string composition);
                 FaithParty record = _faithParties[transport.StringId];
                 record.TrainerId = trainer.LeaderHero.StringId;

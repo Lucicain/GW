@@ -129,3 +129,5 @@
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
+
+军械全兵种分配新增 `ARMORY_PLAN`，仅方案变化时记录持有者、兵种顺序、件数及首套库装；不在每帧/每次出兵打印，用户确认高阶补空位及低阶换装后退休。定义见[军械库](firesworn-armory.md)。（依据：流程、源码复核 2026-10-15）

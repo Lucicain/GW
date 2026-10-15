@@ -2,7 +2,7 @@
 
 > 当前状态：已部署待实测；数值是试玩值
 > 最后验收：未建立检查点
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`4f31993`（2026-10-16）
 > 覆盖源码：`GwpFireswornDungeon.cs` `GwpFaithBattleRewardModel.cs` `GwpFireswornBehavior.cs`
 > 待实测：见文末
 
@@ -27,7 +27,7 @@ GwpFireswornDungeon 中的守村队直接征募采用低阶优先，人数/伤�
 
 改原版进城意愿，信众村对灰袍等于城；候选、打分、养伤、村口不加分的规则在 [`warden-ai.md`](warden-ai.md)「进聚落的意愿」。
 进了信众村（不管为什么进的）：交俘虏；背包里的东西照原版领主进城卖东西的规矩交出——留口粮和普通坐骑（无前缀、不是驮兽），
-其余捐给村子（狂信者能用的兵器护甲进村军械库，其余进货仓）；用空位直接招狂信者（见 `warden-recruitment.md`）。（C#反编译 v1.4.8 PartiesSellLootCampaignBehavior）
+其余捐给村子（灰袍兵能用的兵器护甲进村军械库，其余进货仓，判断见 [军械库](firesworn-armory.md)「入库分流」）；用空位从守村队低阶开始直接招（见 `warden-recruitment.md`）。（C#反编译 v1.4.8 PartiesSellLootCampaignBehavior）
 
 ## 地图上的状态文字
 

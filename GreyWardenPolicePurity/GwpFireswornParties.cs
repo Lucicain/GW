@@ -404,8 +404,8 @@ namespace GreyWardenPolicePurity
             if (targetPlan.Sets.Count > 0 &&
                 ArmedShare(home.StringId) - ArmedShare(target.StringId) >= GwpTuning.Firesworn.BalanceMinimumArmedGap)
             {
-                int homeArmed = homePlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
-                int targetArmed = targetPlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
+                int homeArmed = homePlan.Sets.Count(kit => IsArmoryKitArmed(kit));
+                int targetArmed = targetPlan.Sets.Count(kit => IsArmoryKitArmed(kit));
                 int surplus = homePlan.Surplus.Where(e => KitKind(e.EquipmentElement.Item) == KitMain).Sum(e => e.Amount);
                 sets = Math.Min(surplus, (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
                                        (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed);

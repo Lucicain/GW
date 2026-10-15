@@ -68,7 +68,8 @@ class ItemRoster : IEnumerable<ItemRosterElement> {
         EquipmentElement=new EquipmentElement {Quality=r.Key},Amount=r.Value}).Where(r=>r.Amount>0).GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();
 }
-class ArmoryPlan { public List<EquipmentElement[]> Sets=new List<EquipmentElement[]>(); }
+class ArmoryKit {public EquipmentElement[] Items;}
+class ArmoryPlan { public List<ArmoryKit> Sets=new List<ArmoryKit>(); }
 static class GwpIds { public const string NewRecruitId="recruit",ZealotId="zealot"; }
 static class GwpTuning { public static class Firesworn { public const int MissionMinimumLeftBehind=5; } }
 static class GwpStrength { public static float Party(MobileParty party)=>party.MemberRoster.TotalManCount; }
@@ -91,12 +92,15 @@ class Regression {
     static ItemRoster ItemsOf(Dictionary<string,ItemRoster> ledger,string id) {
         if(!ledger.ContainsKey(id)) ledger[id]=new ItemRoster(); return ledger[id];
     }
-    static ArmoryPlan BuildPlan(ItemRoster stock,int recruits,int zealots,int headroom) {
+    static List<TroopRosterElement> ArmoryTroops(TroopRoster roster)=>roster.GetTroopRoster().Where(e=>IsGuardTroop(e.Character)).ToList();
+    static ArmoryPlan BuildPlan(ItemRoster stock,IReadOnlyList<TroopRosterElement> troops,int headroom) {
+        int recruits=troops.Where(e=>e.Character.StringId==GwpIds.NewRecruitId).Sum(e=>e.Number);
+        int zealots=troops.Where(e=>e.Character.StringId==GwpIds.ZealotId).Sum(e=>e.Number);
         // This boundary supplies one scored main weapon per eligible soldier.
         var items=stock.OrderByDescending(e=>e.EquipmentElement.Quality)
             .SelectMany(e=>Enumerable.Repeat(e.EquipmentElement,e.Amount)).ToList();
         var plan=new ArmoryPlan();
-        foreach(var item in items.Take(recruits+zealots)) plan.Sets.Add(new[]{item});
+        foreach(var item in items.Take(recruits+zealots)) plan.Sets.Add(new ArmoryKit{Items=new[]{item}});
         return plan;
     }
     static int MoveAll(ItemRoster batch,ItemRoster from,ItemRoster to) {

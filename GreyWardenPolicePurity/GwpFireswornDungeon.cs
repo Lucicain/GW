@@ -118,22 +118,16 @@ namespace GreyWardenPolicePurity
                 prisoners += take;
             }
 
-            ItemRoster goods = ItemsOf(_goods, village.StringId);
-            ItemRoster villageArmory = ItemsOf(_armories, village.StringId);
             int goodsCount = 0, goodsValue = 0, armoryItems = 0;
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
                 ItemRosterElement element = party.ItemRoster.GetElementCopyAtIndex(i);
                 if (KeptOnHandover(element.EquipmentElement))
                     continue;
-                if (KitKind(element.EquipmentElement.Item) >= 0)
-                {
-                    villageArmory.AddToCounts(element.EquipmentElement, element.Amount);
+                if (Store(village.StringId, element.EquipmentElement, element.Amount))
                     armoryItems += element.Amount;
-                }
                 else
                 {
-                    goods.AddToCounts(element.EquipmentElement, element.Amount);
                     goodsCount += element.Amount;
                     goodsValue += element.Amount * element.EquipmentElement.ItemValue;
                 }

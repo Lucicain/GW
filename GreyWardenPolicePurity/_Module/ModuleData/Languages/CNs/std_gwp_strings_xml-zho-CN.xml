@@ -1422,7 +1422,7 @@
   <string id="gwp_fs_armory_village" text="{VILLAGE}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_party" text="{PARTY}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_empty" text="库房为空。" />
-  <string id="gwp_fs_armory_summary" text="这里为{MEN}人保管装备，其中{ARMED}人已配有兵器；另存{FREE}件备用装备，{SURPLUS}件余货将运往集市出售。" />
+  <string id="gwp_fs_armory_summary" text="这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。" />
   <string id="gwp_fs_party_pretalk" text="还有什么事？" />
   <string id="gwp_fs_party_buy" text="你们带了什么货？" />
   <string id="gwp_fs_party_offer" text="有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。" />

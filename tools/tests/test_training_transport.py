@@ -88,7 +88,7 @@ class Regression {
  static EquipmentElement Take(List<EquipmentElement> b,Func<EquipmentElement,bool> f){int i=b.FindIndex(x=>f(x));if(i<0)return default;var e=b[i];b.RemoveAt(i);return e;}
  static void Tiers(IEnumerable<EquipmentElement[]> s,out float w,out float a){w=a=0;}
  static ItemRoster ItemsOf(Dictionary<string,ItemRoster> d,string id){if(!d.ContainsKey(id))d[id]=new ItemRoster();return d[id];}
- ArmoryPlan PlanOf(string id)=>PlanForCounts(id,ItemsOf(_armories,id),0,0,20);
+ ArmoryPlan PlanOf(string id)=>new ArmoryPlan();
  static int MoveAll(ItemRoster what,ItemRoster a,ItemRoster b){int n=0;foreach(var e in what.ToList()){a.AddToCounts(e.EquipmentElement,-e.Amount);b.AddToCounts(e.EquipmentElement,e.Amount);n+=e.Amount;}return n;}
  static bool IsGuardTroop(CharacterObject t)=>!t.IsHero;
  static MobileParty ResolveTrainer(string id)=>MobileParty.All.FirstOrDefault(p=>p.IsActive&&p.LeaderHero?.StringId==id);
@@ -112,6 +112,7 @@ class Regression {
  public static int Main(){
   var (r,t,v)=Start();var (record,p)=DispatchOne(r);
   Check(t.MemberRoster.TotalManCount==5&&p.MemberRoster.TotalManCount==10,"real veterans leave trainer; five stay");
+  Check(r.transportedKits==10,"veteran dispatch invokes troop-specific kit transfer");
   r.DispatchTrainingTransports();Check(r._faithParties.Count==1,"one in-flight shipment per trainer");
   // Save and load actual production fields while physical engine parties remain registered.
   var store=new IDataStore{IsSaving=true};r.SyncData(store);var loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();
@@ -132,12 +133,6 @@ class Regression {
   store.IsSaving=true;r.SyncData(store);loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();Check(record.HomeId=="safe"&&record.Phase==FaithPartyPhase.Returning,"fallback stage and destination survive save/load");
   p.Position.X=20;r.TendTrainingTransport(record,p);Check(!p.IsActive&&safe.Guard.TotalManCount==10&&t.MemberRoster.TotalManCount==5,"rerouted veterans settle physically without returning to trainer");
   (r,t,v)=Start();(record,p)=DispatchOne(r);CampaignTime.Now.ToHours=102;r.TendTrainingTransport(record,p);Check(record.TrainerId=="","timeout stops chasing trainer");p.Position.X=0;r.TendTrainingTransport(record,p);Check(!p.IsActive,"timed out carrier settles");
-  // Actual armory allocation retains strongest stock for empty and higher-tier positions.
-  var stock=new ItemRoster();var sword=new ItemObject{Kind=KitMain};stock.AddToCounts(new EquipmentElement{Item=sword,Quality=9},20);stock.AddToCounts(new EquipmentElement{Item=sword,Quality=1},10);
-  var plan=r.PlanForCounts("a",stock,2,3,15);Check(plan.Sets.Count==5&&plan.Free.Total==15&&plan.Surplus.Total==10,"full twenty positions retained");Check(plan.Surplus.All(e=>e.EquipmentElement.Quality==1),"best equipment retained");Check(ReferenceEquals(plan,r.PlanForCounts("a",stock,2,3,15)),"unchanged inputs reuse plan");
-  stock.AddToCounts(new EquipmentElement{Item=sword,Quality=10},1);var next=r.PlanForCounts("a",stock,2,3,15);Check(!ReferenceEquals(plan,next),"inventory change invalidates cached plan");Check(!ReferenceEquals(next,r.PlanForCounts("a",stock,2,3,16)),"capacity change invalidates cached plan");Check(!ReferenceEquals(next,r.PlanForCounts("a",stock,3,2,15)),"troop type change invalidates cached plan");
-  var empty=BuildPlan(stock,0,0,20);Check(empty.Free.Total==20&&empty.Surplus.Total==11,"empty party still reserves entire capacity");
-  StrongOwn=true;var owned=BuildPlan(stock,2,3,15);Check(owned.Sets.All(k=>k[KitMain].IsEmpty)&&owned.Free.Total==20,"positions with stronger built-in equipment still retain reserve");StrongOwn=false;
   (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,-6);r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"never send fewer than five or empty the trainer");
   (r,t,v)=Start();v.Guard.AddToCounts(Weak,-10);(record,p)=DispatchOne(r);p.Position.X=0;r.TendTrainingTransport(record,p);Check(!p.IsActive&&v.Guard.TotalManCount==10,"no trainees required for one-way veteran delivery");
   (r,t,v)=Start();t.MapEvent=new object();r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"battle prevents dispatch");
@@ -174,7 +169,6 @@ class TrainingTransportTests(unittest.TestCase):
             "DispatchTrainingTransports", "TendTrainingTransport", "SettleTrainingTransport",
             "TransferEliteTroopsProportionally", "TrainingVeteransToDispatch"))
         methods += extract("GwpFireswornBehavior.cs", ("SyncData",))
-        methods += extract("GwpFireswornArmory.cs", ("PlanForCounts", "BuildPlan"))
         major = subprocess.check_output(["dotnet", "--version"], text=True).split(".")[0]
         with tempfile.TemporaryDirectory(prefix="gwp-training-") as directory:
             path = Path(directory)

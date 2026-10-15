@@ -539,7 +539,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_armory_section_arms = "{=gwp_fs_armory_section_arms}Arms and Armour";
         internal const string gwp_fs_armory_section_goods = "{=gwp_fs_armory_section_goods}Goods for Sale";
         internal const string gwp_fs_armory_section_inventory = "{=gwp_fs_armory_section_inventory}Baggage";
-        internal const string gwp_fs_armory_summary = "{=gwp_fs_armory_summary}These stores supply {MEN} people, of whom {ARMED} have weapons. Another {FREE} pieces are held in reserve, and {SURPLUS} surplus pieces will be sold at market.";
+        internal const string gwp_fs_armory_summary = "{=gwp_fs_armory_summary}These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces.";
         internal const string gwp_fs_armory_village = "{=gwp_fs_armory_village}Armory of {VILLAGE} ({ITEMS} pieces)";
         internal const string gwp_fs_balance_party = "{=gwp_fs_balance_party}Armsbearers of {VILLAGE}";
         internal const string gwp_fs_caravan_party = "{=gwp_fs_caravan_party}Faithful Traders of {VILLAGE}";

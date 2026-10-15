@@ -5751,9 +5751,9 @@
       "context": "仅开发版：该持有者尚无军械账本时的说明。"
     },
     "gwp_fs_armory_summary": {
-      "en": "These stores supply {MEN} people, of whom {ARMED} have weapons. Another {FREE} pieces are held in reserve, and {SURPLUS} surplus pieces will be sold at market.",
-      "zh": "这里为{MEN}人保管装备，其中{ARMED}人已配有兵器；另存{FREE}件备用装备，{SURPLUS}件余货将运往集市出售。",
-      "context": "仅开发版：库房摘要。MEN为配装记录数，ARMED为其中配有主手兵器的记录数。"
+      "en": "These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces.",
+      "zh": "这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。",
+      "context": "仅开发版：MEN为各阶灰袍兵的配装记录数，ARMED包含原配或库装主武器/远程武器。库存含已分配库装，备用与多余分开。"
     },
     "gwp_fs_party_pretalk": {
       "en": "Anything else?",
