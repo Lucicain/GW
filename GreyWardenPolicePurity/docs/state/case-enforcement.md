@@ -2,9 +2,11 @@
 
 > 当前状态：原有案件行为已验收；协力编队统一（空组放军团、先征调再建、会合、招兵统计）已部署待实测
 > 最后验收：`9d005bb`
-> 已复核至：`a943736`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：协力组不再反复拉人放人；最后一人走后军团消失、案子还在；组长打不过先会合；军团长缺兵会进城招兵
+
+强制差事不再取消自动练兵换兵队：它由独立实体执行，不占领主差事，见 [运兵](warden-training.md)。（依据：用户裁定、源码复核 2026-10-15）
 
 本文件覆盖**案件生命周期与协力编成**。巡逻、悬赏、使者送单、练兵分别见
 [`patrol.md`](patrol.md)、[`player-justice.md`](player-justice.md)、[`dispatch.md`](dispatch.md)、[`warden-training.md`](warden-training.md)。
@@ -222,19 +224,7 @@ targetStrength = 706.55  >  maximumStrength = 682.70
 
 ## 地图条声望图标
 
-- 当前位置：`SecondaryInfoItems`，插在 `influence` 之后（按用户要求"挨着影响力"）。
-- **代价已告知用户**：那一排只在信息条展开（`IsInfoBarExtended`）时显示；
-  `PrimaryInfoItems`（第纳尔所在）才是常驻。用户在"挨着影响力"与"常驻可见"之间
-  选了前者。
-- **点击打开事务界面：做不到。** `MapBar.xml` 两排的 `ItemTemplate` 外层是
-  `HintWidget : Widget`，反射确认 `Widget` 没有任何 click 事件（只有 `EventFire`
-  与各类 `PropertyChanged`），点击是 `ButtonWidget` 独有。金币和影响力自己也点不动。
-  要改只能整份覆盖 SandBox 的 `MapBar.xml`（219 行），会在游戏更新时失效并与任何
-  改地图条的模组冲突。
-- **可行的最小方案（未做，等用户点头）**：照 `GwpCaseArchiveScreen.Open()` 的现成套路
-  （`new GauntletLayer` + `AddLayer` + `LoadMovie`）加一个常驻小层，一个
-  `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，
-  `IsFocusLayer = false`、不设 `InputRestrictions`。不覆盖任何原版文件。
+显示位置、交互限制与尚未实施的方案归 [玩家声望](player-justice.md)「声望图标的交互边界与待办」。
 
 ## 立即追截队
 

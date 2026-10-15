@@ -71,7 +71,8 @@ namespace GreyWardenPolicePurity
         {
             Mission = 0,
             Market = 1,
-            Balance = 2
+            Balance = 2,
+            Training = 3
         }
 
         private enum FaithPartyPhase
@@ -109,6 +110,7 @@ namespace GreyWardenPolicePurity
         {
             public string PartyId = string.Empty;
             public string HomeId = string.Empty;
+            public string TrainerId = string.Empty;
             public FaithPartyKind Kind;
             public FaithPartyPhase Phase;
             public string TargetId = string.Empty;
@@ -147,7 +149,9 @@ namespace GreyWardenPolicePurity
             List<string>? ritualVillages = null;
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
-            List<string>? partyIds = null, partyHomes = null, partyTargets = null;
+            List<string>? partyIds = null, partyHomes = null, partyTargets = null, partyTrainers = null;
+            List<string>? trainingHeroes = null;
+            List<double>? trainingDepartures = null;
             List<int>? partyKinds = null, partyPhases = null, partyStops = null;
             List<double>? partyHours = null;
 
@@ -168,6 +172,9 @@ namespace GreyWardenPolicePurity
                 ritualEnds = _rituals.Select(ritual => ritual.EndHour).ToList();
                 List<FaithParty> parties = _faithParties.Values.ToList();
                 partyIds = parties.Select(party => party.PartyId).ToList();
+                partyTrainers = parties.Select(party => party.TrainerId).ToList();
+                trainingHeroes = _trainingDepartures.Keys.ToList();
+                trainingDepartures = trainingHeroes.Select(id => _trainingDepartures[id]).ToList();
                 partyHomes = parties.Select(party => party.HomeId).ToList();
                 partyKinds = parties.Select(party => (int)party.Kind).ToList();
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
@@ -176,6 +183,9 @@ namespace GreyWardenPolicePurity
                 partyStops = parties.Select(party => party.Stops).ToList();
             }
 
+            dataStore.SyncData("GWPP_FsPartyTrainers", ref partyTrainers);
+            dataStore.SyncData("GWPP_FsTrainingHeroes", ref trainingHeroes);
+            dataStore.SyncData("GWPP_FsTrainingDepartures", ref trainingDepartures);
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
             dataStore.SyncData("GWPP_FsVillageLastCongregation", ref congregations);
             dataStore.SyncData("GWPP_FsVillageLastDamnation", ref damnations);
@@ -232,6 +242,7 @@ namespace GreyWardenPolicePurity
                 _faithParties[partyIds[i]] = new FaithParty
                 {
                     PartyId = partyIds[i],
+                    TrainerId = partyTrainers![i],
                     HomeId = partyHomes![i],
                     Kind = (FaithPartyKind)partyKinds![i],
                     Phase = (FaithPartyPhase)partyPhases![i],
@@ -240,6 +251,10 @@ namespace GreyWardenPolicePurity
                     Stops = partyStops![i]
                 };
 
+            _trainingDepartures.Clear();
+            for (int i = 0; i < trainingHeroes!.Count; i++)
+                _trainingDepartures[trainingHeroes[i]] = trainingDepartures![i];
+            _plans.Clear();
             RebuildPriestIndex();
         }
 
@@ -469,29 +484,42 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
-            UpdateRituals();
-            ClearExpiredSmoke();
-            TendFaithParties();
-            SweepPrisonersAndSpoils();
-            foreach (FaithVillage row in _villages.Values.ToList())
-                ObserveGuard(row);
-            RefreshArmoryPlans();
-            foreach (FaithVillage row in _villages.Values)
-                ReconcilePriestSlots(row);
+            // 只在本次结算内使用：避免每本军械账、每支物流队反复全图线性找队；不存档。
+            _partySnapshot = MobileParty.All.ToDictionary(party => party.StringId, StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                UpdateRituals();
+                ClearExpiredSmoke();
+                TendFaithParties();
+                SweepPrisonersAndSpoils();
+                foreach (FaithVillage row in _villages.Values.ToList())
+                    ObserveGuard(row);
+                RefreshArmoryPlans();
+                foreach (FaithVillage row in _villages.Values)
+                    ReconcilePriestSlots(row);
+            }
+            finally { _partySnapshot = null; }
         }
 
         private void OnDailyTick()
         {
-            MaintainPriests();
-            GrowSworn();
-            SpawnPriestsByShare();
-            foreach (FaithVillage row in _villages.Values)
-                UpdatePriestPower(row);
-            ScheduleCongregations();
-            ScheduleDamnations();
-            DispatchFaithParties();
-            RebalanceArmories();
-            WriteDailySummary();
+            // 只在本次结算内使用：避免每本军械账、每支物流队反复全图线性找队；不存档。
+            _partySnapshot = MobileParty.All.ToDictionary(party => party.StringId, StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                MaintainPriests();
+                GrowSworn();
+                SpawnPriestsByShare();
+                foreach (FaithVillage row in _villages.Values)
+                    UpdatePriestPower(row);
+                ScheduleCongregations();
+                ScheduleDamnations();
+                DispatchFaithParties();
+                DispatchTrainingTransports();
+                RebalanceArmories();
+                WriteDailySummary();
+            }
+            finally { _partySnapshot = null; }
         }
 
         /// <summary>
@@ -608,6 +636,15 @@ namespace GreyWardenPolicePurity
             {
                 Settlement home = Settlement.Find(record.HomeId);
                 Settlement target = Settlement.Find(record.TargetId);
+                if (record.Kind == FaithPartyKind.Training)
+                {
+                    text = record.Phase == FaithPartyPhase.Outbound
+                        ? GwpText.Create(GwpTextCatalog.gwp_training_transport_outbound, "VILLAGE", home.Name)
+                        : string.IsNullOrEmpty(record.TrainerId)
+                            ? GwpText.Create(GwpTextCatalog.gwp_training_transport_settling, "VILLAGE", home.Name)
+                            : GwpText.Create(GwpTextCatalog.gwp_training_transport_returning);
+                    return true;
+                }
                 text = record.Phase == FaithPartyPhase.Outbound
                     ? record.Kind == FaithPartyKind.Mission
                         ? GwpText.Create(GwpTextCatalog.gwp_fs_status_mission, "TARGET", target.Name)
@@ -1005,7 +1042,8 @@ namespace GreyWardenPolicePurity
         /// （用户裁定 2026-10-09：增长按包括外出无人队在内的总人数与上限的差值计算。）
         /// </summary>
         private int GuardPopulation(FaithVillage row) => Sworn(row) + _faithParties.Values
-            .Where(entry => string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase))
+            .Where(entry => entry.Kind != FaithPartyKind.Training &&
+                string.Equals(entry.HomeId, row.VillageId, StringComparison.OrdinalIgnoreCase))
             .Select(entry => FindParty(entry.PartyId))
             .Where(party => party?.IsActive == true)
             .Sum(party => party!.MemberRoster.GetTroopRoster()
@@ -1090,14 +1128,6 @@ namespace GreyWardenPolicePurity
             return _instance.GuardOf(row.VillageId).GetTroopRoster()
                 .Where(entry => entry.Character.UpgradeTargets.Length > 0).Sum(entry => entry.Number);
         }
-
-        /// <summary>离这支队伍最近的、守村队里有可升级灰袍兵、能去的信众村。</summary>
-        internal static Settlement? NearestGuardToTrain(MobileParty party) =>
-            _instance?._villages.Keys.Select(Settlement.Find)
-                .Where(village => village != null && IsPreachedVillage(village) && IsTripTargetValid(village) &&
-                                  GuardTraineeCount(village) > 0)
-                .OrderBy(village => village.GetPosition2D.DistanceSquared(party.GetPosition2D))
-                .FirstOrDefault();
 
         /// <summary>
         /// 守村队里最弱的可升级灰袍兵（等级低的先）最多 <paramref name="count"/> 人跟这支队伍走，各带走自己那一套装备
@@ -1314,10 +1344,14 @@ namespace GreyWardenPolicePurity
             party.CurrentSettlement == settlement ||
             party.GetPosition2D.Distance(settlement.GetPosition2D) <= GwpTuning.Firesworn.ArrivalDistance;
 
-        private static MobileParty? FindParty(string partyId) =>
-            string.IsNullOrEmpty(partyId)
-                ? null
-                : MobileParty.All.FirstOrDefault(party =>
-                    string.Equals(party.StringId, partyId, StringComparison.OrdinalIgnoreCase));
+        private Dictionary<string, MobileParty>? _partySnapshot;
+        private static MobileParty? FindParty(string partyId)
+        {
+            if (string.IsNullOrEmpty(partyId)) return null;
+            if (_instance?._partySnapshot?.TryGetValue(partyId, out MobileParty party) == true)
+                return party;
+            return MobileParty.All.FirstOrDefault(candidate =>
+                string.Equals(candidate.StringId, partyId, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

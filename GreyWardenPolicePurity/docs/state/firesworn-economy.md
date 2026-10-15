@@ -2,9 +2,11 @@
 
 > 当前状态：已部署待实测；数值是试玩值
 > 最后验收：未建立检查点
-> 已复核至：`7320b86`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GwpFireswornDungeon.cs` `GwpFaithBattleRewardModel.cs` `GwpFireswornBehavior.cs`
 > 待实测：见文末
+
+领主军械余装留库和全编制预留只在 [军械库](firesworn-armory.md) 定义；练兵官送到村里的装备同样进军械库，规则见 [运兵](warden-training.md)。（依据：用户裁定 2026-10-15）
 
 [村庄](firesworn-villages.md) · [仪式](firesworn-rituals.md) · [军械库](firesworn-armory.md) · [队伍](firesworn-parties.md) · [招兵](warden-recruitment.md)
 

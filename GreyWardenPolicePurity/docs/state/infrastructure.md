@@ -2,9 +2,11 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
+
+练兵官自队额外经验和旧军械 25%/最小 10 件旋钮已随机制删除；玩家订单经验保留，见 [运兵](warden-training.md) 和 [军械库](firesworn-armory.md)。（依据：用户裁定、源码复核 2026-10-15）
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
 

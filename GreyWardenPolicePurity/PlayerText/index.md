@@ -729,41 +729,41 @@
 | gwp_gwpcasearchivescreen_010 | Unrecorded | 未记录 | GwpCaseArchiveScreen.cs:485, GwpCaseArchiveScreen.cs:522 |
 | gwp_gwpcasearchivescreen_011 | Unrecorded | 未记录 | GwpCaseArchiveScreen.cs:488 |
 | gwp_gwpcasearchivescreen_012 | Offence: {VAR_1} &#124; Victim: {VAR_2} &#124; Location: {VAR_3} | 罪行：{VAR_1} &#124; 受害者：{VAR_2} &#124; 地点：{VAR_3} | GwpCaseArchiveScreen.cs:491 |
-| gwp_gwpcasearchivescreen_013 | Tracking: unassigned | 追踪情况：无人承办 | GwpCaseArchiveScreen.cs:793 |
-| gwp_gwpcasearchivescreen_015 | {VAR_1} ({VAR_2}) | {VAR_1}（{VAR_2}） | GwpCaseArchiveScreen.cs:802 |
-| gwp_gwpcasearchivescreen_016 | Tracking: {VAR_1} &#124; Stage: {VAR_2} | 追踪情况：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:805 |
-| gwp_gwpcasearchivescreen_017 | Player | 玩家 | GwpCaseArchiveScreen.cs:774, GwpCaseArchiveScreen.cs:813 |
-| gwp_gwpcasearchivescreen_018 | supporting the commissioned player | 支援受托的玩家 | GwpCaseArchiveScreen.cs:824 |
-| gwp_gwpcasearchivescreen_019 | escort after arrest | 抓捕后护送 | GwpCaseArchiveScreen.cs:826 |
-| gwp_gwpcasearchivescreen_020 | preparing dispatch | 准备出动 | GwpCaseArchiveScreen.cs:828 |
-| gwp_gwpcasearchivescreen_021 | wartime pursuit | 战时追捕 | GwpCaseArchiveScreen.cs:830 |
-| gwp_gwpcasearchivescreen_022 | tracking target | 追踪目标 | GwpCaseArchiveScreen.cs:831 |
-| gwp_gwpcasearchivescreen_023 | Spring | 春季 | GwpCaseArchiveScreen.cs:914 |
-| gwp_gwpcasearchivescreen_024 | Summer | 夏季 | GwpCaseArchiveScreen.cs:915 |
-| gwp_gwpcasearchivescreen_025 | Autumn | 秋季 | GwpCaseArchiveScreen.cs:916 |
-| gwp_gwpcasearchivescreen_026 | Winter | 冬季 | GwpCaseArchiveScreen.cs:917 |
-| gwp_gwpcasearchivescreen_027 | Unknown season | 未知季节 | GwpCaseArchiveScreen.cs:918 |
-| gwp_gwpcasearchivescreen_028 | Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00 | {VAR_1}年{VAR_2}第{VAR_3}日 {VAR_4}:00 | GwpCaseArchiveScreen.cs:922 |
-| gwp_gwpcasearchivescreen_029 | near {VAR_1} ({VAR_2}, {VAR_3}) | {VAR_1}附近（{VAR_2}, {VAR_3}） | GwpCaseArchiveScreen.cs:935 |
-| gwp_gwpcasearchivescreen_030 | wilderness ({VAR_1}, {VAR_2}) | 荒野（{VAR_1}, {VAR_2}） | GwpCaseArchiveScreen.cs:942 |
-| gwp_gwpcasearchivescreen_031 | Unknown town | 未知城镇 | GwpCaseArchiveScreen.cs:936 |
+| gwp_gwpcasearchivescreen_013 | Tracking: unassigned | 追踪情况：无人承办 | GwpCaseArchiveScreen.cs:784 |
+| gwp_gwpcasearchivescreen_015 | {VAR_1} ({VAR_2}) | {VAR_1}（{VAR_2}） | GwpCaseArchiveScreen.cs:793 |
+| gwp_gwpcasearchivescreen_016 | Tracking: {VAR_1} &#124; Stage: {VAR_2} | 追踪情况：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:796 |
+| gwp_gwpcasearchivescreen_017 | Player | 玩家 | GwpCaseArchiveScreen.cs:765, GwpCaseArchiveScreen.cs:804 |
+| gwp_gwpcasearchivescreen_018 | supporting the commissioned player | 支援受托的玩家 | GwpCaseArchiveScreen.cs:815 |
+| gwp_gwpcasearchivescreen_019 | escort after arrest | 抓捕后护送 | GwpCaseArchiveScreen.cs:817 |
+| gwp_gwpcasearchivescreen_020 | preparing dispatch | 准备出动 | GwpCaseArchiveScreen.cs:819 |
+| gwp_gwpcasearchivescreen_021 | wartime pursuit | 战时追捕 | GwpCaseArchiveScreen.cs:821 |
+| gwp_gwpcasearchivescreen_022 | tracking target | 追踪目标 | GwpCaseArchiveScreen.cs:822 |
+| gwp_gwpcasearchivescreen_023 | Spring | 春季 | GwpCaseArchiveScreen.cs:897 |
+| gwp_gwpcasearchivescreen_024 | Summer | 夏季 | GwpCaseArchiveScreen.cs:898 |
+| gwp_gwpcasearchivescreen_025 | Autumn | 秋季 | GwpCaseArchiveScreen.cs:899 |
+| gwp_gwpcasearchivescreen_026 | Winter | 冬季 | GwpCaseArchiveScreen.cs:900 |
+| gwp_gwpcasearchivescreen_027 | Unknown season | 未知季节 | GwpCaseArchiveScreen.cs:901 |
+| gwp_gwpcasearchivescreen_028 | Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00 | {VAR_1}年{VAR_2}第{VAR_3}日 {VAR_4}:00 | GwpCaseArchiveScreen.cs:905 |
+| gwp_gwpcasearchivescreen_029 | near {VAR_1} ({VAR_2}, {VAR_3}) | {VAR_1}附近（{VAR_2}, {VAR_3}） | GwpCaseArchiveScreen.cs:918 |
+| gwp_gwpcasearchivescreen_030 | wilderness ({VAR_1}, {VAR_2}) | 荒野（{VAR_1}, {VAR_2}） | GwpCaseArchiveScreen.cs:925 |
+| gwp_gwpcasearchivescreen_031 | Unknown town | 未知城镇 | GwpCaseArchiveScreen.cs:919 |
 | gwp_gwpcasearchivescreen_032 | Assistance — {VAR_1} | 协力任务 — {VAR_1} | GwpCaseArchiveScreen.cs:525 |
 | gwp_gwpcasearchivescreen_033 | Assigned: {VAR_1} | 分配时间：{VAR_1} | GwpCaseArchiveScreen.cs:527 |
 | gwp_gwpcasearchivescreen_034 | Assignee: {VAR_1} &#124; Supporting: {VAR_2} | 受领人：{VAR_1} &#124; 支援主办人：{VAR_2} | GwpCaseArchiveScreen.cs:530 |
 | gwp_gwpcasearchivescreen_035 | Assistance reason: the lead Grey Warden's pursuit was blocked and requires a joint capture &#124; Source case: {VAR_1} — {VAR_2} | 协力原因：主办灰袍追击受阻，需要共同围捕 &#124; 来源案件：{VAR_1} — {VAR_2} | GwpCaseArchiveScreen.cs:533 |
 | gwp_gwpcasearchivescreen_036 | Village relief — {VAR_1} | 村庄善后 — {VAR_1} | GwpCaseArchiveScreen.cs:547 |
-| gwp_gwpcasearchivescreen_037 | Queued: {VAR_1} | 进入任务池：{VAR_1} | GwpCaseArchiveScreen.cs:549, GwpCaseArchiveScreen.cs:573, GwpCaseArchiveScreen.cs:605, GwpCaseArchiveScreen.cs:632, GwpCaseArchiveScreen.cs:667, GwpCaseArchiveScreen.cs:707 |
+| gwp_gwpcasearchivescreen_037 | Queued: {VAR_1} | 进入任务池：{VAR_1} | GwpCaseArchiveScreen.cs:549, GwpCaseArchiveScreen.cs:573, GwpCaseArchiveScreen.cs:605, GwpCaseArchiveScreen.cs:632, GwpCaseArchiveScreen.cs:658, GwpCaseArchiveScreen.cs:698 |
 | gwp_gwpcasearchivescreen_038 | Assignee: {VAR_1} &#124; Stage: {VAR_2} | 受领人：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:552 |
 | gwp_gwpcasearchivescreen_039 | Assignee: waiting for forced assignment | 受领人：等待强制分配 | GwpCaseArchiveScreen.cs:554 |
 | gwp_gwpcasearchivescreen_040 | Task type: forced adoption relief &#124; Remaining: {VAR_1} hours | 任务类型：强制收养善后 &#124; 剩余：{VAR_1}小时 | GwpCaseArchiveScreen.cs:556 |
 | gwp_gwpcasearchivescreen_041 | Task type: forced adoption relief | 任务类型：强制收养善后 | GwpCaseArchiveScreen.cs:558 |
-| gwp_gwpcasearchivescreen_042 | waiting for assignment | 等待分配 | GwpCaseArchiveScreen.cs:838, GwpCaseArchiveScreen.cs:852, GwpCaseArchiveScreen.cs:864 |
-| gwp_gwpcasearchivescreen_043 | resupplying | 补给中 | GwpCaseArchiveScreen.cs:840 |
-| gwp_gwpcasearchivescreen_044 | travelling to village | 前往村庄 | GwpCaseArchiveScreen.cs:842, GwpCaseArchiveScreen.cs:854 |
-| gwp_gwpcasearchivescreen_045 | relief in progress | 驻村善后 | GwpCaseArchiveScreen.cs:844 |
-| gwp_gwpcasearchivescreen_046 | unknown | 未知 | GwpCaseArchiveScreen.cs:845, GwpCaseArchiveScreen.cs:857, GwpCaseArchiveScreen.cs:869, GwpCaseArchiveScreen.cs:883, GwpCaseArchiveScreen.cs:897, GwpCaseArchiveScreen.cs:907 |
-| gwp_gwpcasearchivescreen_047 | Unknown Grey Warden party | 未知灰袍队伍 | GwpCaseArchiveScreen.cs:511, GwpCaseArchiveScreen.cs:514, GwpCaseArchiveScreen.cs:545, GwpCaseArchiveScreen.cs:569, GwpCaseArchiveScreen.cs:602, GwpCaseArchiveScreen.cs:629, GwpCaseArchiveScreen.cs:701, GwpCaseArchiveScreen.cs:785, GwpCaseArchiveScreen.cs:798 |
-| gwp_gwpcasearchivescreen_048 | Unknown target | 未知目标 | GwpCaseArchiveScreen.cs:520, GwpCaseArchiveScreen.cs:818 |
+| gwp_gwpcasearchivescreen_042 | waiting for assignment | 等待分配 | GwpCaseArchiveScreen.cs:829, GwpCaseArchiveScreen.cs:843, GwpCaseArchiveScreen.cs:855 |
+| gwp_gwpcasearchivescreen_043 | resupplying | 补给中 | GwpCaseArchiveScreen.cs:831 |
+| gwp_gwpcasearchivescreen_044 | travelling to village | 前往村庄 | GwpCaseArchiveScreen.cs:833, GwpCaseArchiveScreen.cs:845 |
+| gwp_gwpcasearchivescreen_045 | relief in progress | 驻村善后 | GwpCaseArchiveScreen.cs:835 |
+| gwp_gwpcasearchivescreen_046 | unknown | 未知 | GwpCaseArchiveScreen.cs:836, GwpCaseArchiveScreen.cs:848, GwpCaseArchiveScreen.cs:860, GwpCaseArchiveScreen.cs:880, GwpCaseArchiveScreen.cs:890 |
+| gwp_gwpcasearchivescreen_047 | Unknown Grey Warden party | 未知灰袍队伍 | GwpCaseArchiveScreen.cs:511, GwpCaseArchiveScreen.cs:514, GwpCaseArchiveScreen.cs:545, GwpCaseArchiveScreen.cs:569, GwpCaseArchiveScreen.cs:602, GwpCaseArchiveScreen.cs:629, GwpCaseArchiveScreen.cs:692, GwpCaseArchiveScreen.cs:776, GwpCaseArchiveScreen.cs:789 |
+| gwp_gwpcasearchivescreen_048 | Unknown target | 未知目标 | GwpCaseArchiveScreen.cs:520, GwpCaseArchiveScreen.cs:809 |
 | gwp_greywardenfamilybehavior_053 | Village Reconstruction Warden | 灰袍村庄重建官 | GreyWardenFamilyBehavior.cs:312 |
 | gwp_greywardenfamilybehavior_054 | Grey Warden Lawkeeper | 灰袍巡法官 | GreyWardenFamilyBehavior.cs:304, GreyWardenFamilyBehavior.cs:314 |
 | gwp_greywardenfamilybehavior_055 | — | {VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。成年后，她正式受职为{VAR_3}并承担对应职责；她的经历证明，法律不仅要缉捕罪犯，也必须替灾后幸存者恢复秩序与归宿。 | 未检出直接引用；保留 |
@@ -776,7 +776,7 @@
 | gwp_gwpcasearchivescreen_052 | Assignee: reconstruction office has died out | 受领人：村庄重建职务已经断绝 | GwpCaseArchiveScreen.cs:582 |
 | gwp_gwpcasearchivescreen_053 | Task type: village reconstruction &#124; Remaining: {VAR_1} hours &#124; Estimated allocation: {VAR_2} &#124; Treasury reserve: {VAR_3} | 任务类型：村庄重建 &#124; 剩余：{VAR_1}小时 &#124; 预计拨款：{VAR_2} &#124; 公库红线：{VAR_3} | GwpCaseArchiveScreen.cs:585 |
 | gwp_gwpcasearchivescreen_054 | Task type: village reconstruction &#124; Estimated allocation: {VAR_1} &#124; Treasury reserve: {VAR_2} | 任务类型：村庄重建 &#124; 预计拨款：{VAR_1} &#124; 公库红线：{VAR_2} | GwpCaseArchiveScreen.cs:589 |
-| gwp_gwpcasearchivescreen_055 | reconstruction in progress | 驻村重建中 | GwpCaseArchiveScreen.cs:856 |
+| gwp_gwpcasearchivescreen_055 | reconstruction in progress | 驻村重建中 | GwpCaseArchiveScreen.cs:847 |
 | gwp_gwpcasearchivescreen_056 | Judicial treasury: {VAR_1} denars | 司法公库：{VAR_1} 第纳尔 | GwpCaseArchiveScreen.cs:363 |
 | gwp_gwpcasearchivescreen_057 | Your standing: {VAR_1} &#124; Wanted — the lawful fine is {VAR_2} denars to a provost patrol, {VAR_3} to a Grey Warden lord | 你的声望：{VAR_1} &#124; 通缉中 —— 巡逻队罚金 {VAR_2} 第纳尔，灰袍领主罚金 {VAR_3} 第纳尔 | GwpCaseArchiveScreen.cs:422 |
 | gwp_gwpcasearchivescreen_058 | in good standing | 声誉良好 | GwpCaseArchiveScreen.cs:429 |
@@ -797,8 +797,8 @@
 | gwp_gwpcasearchivescreen_073 | Ground {VAR_1} of {VAR_2} | 开战依据 {VAR_1}/{VAR_2} | GwpCaseArchiveScreen.cs:460 |
 | gwp_gwpcasearchivescreen_074 | Ground for the war | 开战依据 | GwpCaseArchiveScreen.cs:462 |
 | gwp_gwpcasearchivescreen_075 | Peace returns once no ground remains. | 依据全部消失后即恢复和平。 | GwpCaseArchiveScreen.cs:465 |
-| gwp_location_duty_travelling | Travelling toward the last known position of {TARGET_PARTY}. | 正在前往{TARGET_PARTY}最后出现的位置。 | GwpPartyDutyMovementPatch.cs:183 |
-| gwp_location_duty_pursuing | Pursuing {TARGET_PARTY}. | 正在追捕{TARGET_PARTY}。 | GwpPartyDutyMovementPatch.cs:171 |
+| gwp_location_duty_travelling | Travelling toward the last known position of {TARGET_PARTY}. | 正在前往{TARGET_PARTY}最后出现的位置。 | GwpPartyDutyMovementPatch.cs:177 |
+| gwp_location_duty_pursuing | Pursuing {TARGET_PARTY}. | 正在追捕{TARGET_PARTY}。 | GwpPartyDutyMovementPatch.cs:165 |
 | gwp_mapbar_reputation_title | Grey Warden Standing | 灰袍声望 | GwpMapBarReputationPatch.cs:67 |
 | gwp_mapbar_reputation_hint | How the Grey Wardens judge you. Crimes lower it, good deeds raise it. | 灰袍守卫对你的评价。犯罪扣分，行善加分。 | GwpMapBarReputationPatch.cs:70 |
 | gwp_mapbar_reputation_wanted | You are wanted. Grey Warden lords will open a case against you. | 你已被通缉。灰袍领主会对你立案。 | GwpMapBarReputationPatch.cs:77 |
@@ -825,19 +825,12 @@
 | gwp_issue_ledger_waiting | Assigned to: no one yet; the petition is still on the shelf | 受领人：尚无；这份陈情还搁在架上 | GwpCaseArchiveScreen.cs:612 |
 | gwp_issue_ledger_review | Task type: native town/village issue &#124; Issuer: {VAR_1} &#124; Settlement: {VAR_2} &#124; Remaining review: {VAR_3} hours | 任务类型：原版城镇/村庄任务 &#124; 发布人：{VAR_1} &#124; 地点：{VAR_2} &#124; 剩余审理：{VAR_3}小时 | GwpCaseArchiveScreen.cs:614 |
 | gwp_issue_ledger_detail | Task type: native town/village issue &#124; Issuer: {VAR_1} &#124; Settlement: {VAR_2} | 任务类型：原版城镇/村庄任务 &#124; 发布人：{VAR_1} &#124; 地点：{VAR_2} | GwpCaseArchiveScreen.cs:617 |
-| gwp_issue_stage_travel | travelling to the issuer | 前往任务发布人 | GwpCaseArchiveScreen.cs:866 |
-| gwp_issue_stage_review | reviewing for six hours | 驻留审理六小时 | GwpCaseArchiveScreen.cs:868 |
-| gwp_training_ledger_header | Training exchange — {VAR_1} | 练兵换兵 — {VAR_1} | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
+| gwp_issue_stage_travel | travelling to the issuer | 前往任务发布人 | GwpCaseArchiveScreen.cs:857 |
+| gwp_issue_stage_review | reviewing for six hours | 驻留审理六小时 | GwpCaseArchiveScreen.cs:859 |
+| gwp_training_ledger_header | Troop transport: {VAR_1} | 运兵：{VAR_1} | 练兵官实体运兵队；地图状态和差事台账。 |
 | gwp_training_ledger_assignment | Trainer: {VAR_1} &#124; Stage: {VAR_2} | 练兵领主：{VAR_1} &#124; 当前阶段：{VAR_2} | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
-| gwp_training_ledger_pending_place | To be selected | 待选定 | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
-| gwp_training_ledger_queued | Task type: troop training exchange &#124; Queued as the Training Warden's next duty | 任务类型：练兵换兵 &#124; 已列为练兵领主的下一项任务 | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
-| gwp_training_ledger_waiting | Troop training and exchange &#124; Destination: {VAR_1} &#124; Waiting for the current duty to end | 练兵换兵 &#124; 目的地：{VAR_1} &#124; 等待当前差事结束 | 玩家事务台账：已选目标村但领主仍有当前差事。 |
-| gwp_training_ledger_stay | Troop training and exchange &#124; Staying at: {VAR_1} &#124; {VAR_2} hours remaining | 练兵换兵 &#124; 驻留地：{VAR_1} &#124; 尚需{VAR_2}小时 | 玩家事务台账：领主到村后的驻留阶段。 |
-| gwp_training_ledger_travel | Troop training and exchange &#124; Travelling to {VAR_1} | 练兵换兵 &#124; 正前往{VAR_1} | 玩家事务台账：领主去目标村途中。 |
-| gwp_training_stage_queued | queued as next duty | 已列为下一项任务 | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
-| gwp_training_stage_waiting | waiting for current duties | 等待完成当前任务 | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
-| gwp_training_stage_travel | Travelling to the exchange village | 前往换兵的村庄 | 玩家事务台账中的当前阶段名称。 |
-| gwp_training_stage_stay | two-hour troop exchange | 驻留两小时并换兵 | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
+| gwp_training_ledger_travel | A transport is taking veterans and surplus arms to {VAR_1}, to bring back recruits from its guard. | 运兵队正将老兵和多余军械送往{VAR_1}，再带回守村队里的弱兵。 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_stage_travel | Delivering veterans | 运送老兵 | 练兵官实体运兵队；地图状态和差事台账。 |
 | gwp_det_ui_record | Recorded crimes: {VAR_1} &#124; Arrested by Grey Wardens: {VAR_2} | 累计犯罪：{VAR_1} &#124; 被灰袍抓获：{VAR_2} | GwpEncyclopediaHeroPageVM.cs:107 |
 | gwp_det_ui_village_heading | Harm against villagers | 【侵害村民】 | GwpEncyclopediaHeroPageVM.cs:111 |
 | gwp_det_ui_villager_desire | Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%) | 攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%） | GwpEncyclopediaHeroPageVM.cs:112 |
@@ -880,7 +873,7 @@
 | gwp_fief_appeal_refunded | Your petition could not be brought forward. The fee has been returned in full. | 封地请愿未能提交，费用已全额退还。 | GreyWardenPlayerRequestBehavior.cs:918 |
 | gwp_player_troop_order_file | I want the Training Warden to prepare soldiers for my command. | 我想让练兵官为我准备一批士兵。 | GreyWardenTroopRequestBehavior.cs:274 |
 | gwp_player_troop_order_recorded | Settle the price with me now, and I will send the order. The Training Warden will train real troops and bring them to you when they are ready. | 价钱当场结清，我这就把单子送出去。练兵长会把兵训好，亲自给你送来。 | GreyWardenTroopRequestBehavior.cs:283 |
-| gwp_player_troop_delivery_offer | Your order is ready: {VAR_1} {VAR_2}. The {VAR_3} denars were settled when you placed it; nothing further is owed. | 你要的兵已经齐了：{VAR_1} 名{VAR_2}。{VAR_3} 第纳尔在你下单那天就结清了，不欠什么。 | GreyWardenTroopRequestBehavior.cs:1113 |
+| gwp_player_troop_delivery_offer | Your order is ready: {VAR_1} {VAR_2}. The {VAR_3} denars were settled when you placed it; nothing further is owed. | 你要的兵已经齐了：{VAR_1} 名{VAR_2}。{VAR_3} 第纳尔在你下单那天就结清了，不欠什么。 | GreyWardenTroopRequestBehavior.cs:1114 |
 | gwp_player_troop_delivery_accept | Then place them under my command. | 那就把他们交到我手上吧。 | GreyWardenTroopRequestBehavior.cs:308 |
 | gwp_player_troop_delivery_accepted | They are yours. These soldiers now answer to you. | 人归你了。从今往后他们听你的。 | GreyWardenTroopRequestBehavior.cs:317 |
 | gwp_player_troop_delivery_cancel | Cancel the order. Keep the soldiers. | 取消订单，士兵留给你。 | GreyWardenTroopRequestBehavior.cs:325 |
@@ -890,24 +883,24 @@
 | gwp_player_troop_order_description | Your Grey Warden standing sets the maximum order and available branches. | 你在灰袍中的声望决定订单上限和可选兵种。 | GreyWardenTroopRequestBehavior.cs:411 |
 | gwp_player_troop_order_confirm | Send order | 发送订单 | GreyWardenTroopRequestBehavior.cs:413 |
 | gwp_player_troop_order_filed | The Training Warden has your order and will bring the soldiers to you once they are ready. | 练兵领主已收到订单，训练完成后会送到你身边。 | GreyWardenTroopRequestBehavior.cs:586 |
-| gwp_player_request_unknown_liaison | Unknown Noble Affairs Liaison | 未知的贵族事务协调官 | GwpCaseArchiveScreen.cs:661 |
-| gwp_player_request_ledger_header | Player fief appeal — {VAR_1} | 玩家封地申诉 — {VAR_1} | GwpCaseArchiveScreen.cs:664 |
-| gwp_player_request_ledger_assignment | Liaison: {VAR_1} &#124; Stage: {VAR_2} | 协调官：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:670 |
-| gwp_player_request_ledger_lobbying | Task type: player fief appeal &#124; Fee: {VAR_1} &#124; Public support: {VAR_2}% &#124; Remaining stay: {VAR_3} hours | 任务类型：玩家封地申诉 &#124; 费用：{VAR_1} &#124; 民间支持：{VAR_2}% &#124; 剩余驻留：{VAR_3}小时 | GwpCaseArchiveScreen.cs:679 |
-| gwp_player_request_ledger_detail | Task type: player fief appeal &#124; Fee: {VAR_1} &#124; Public support: {VAR_2}% | 任务类型：玩家封地申诉 &#124; 费用：{VAR_1} &#124; 民间支持：{VAR_2}% | GwpCaseArchiveScreen.cs:686 |
-| gwp_player_request_fee_paid | paid into public treasury | 已交入公库 | GwpCaseArchiveScreen.cs:681, GwpCaseArchiveScreen.cs:688 |
-| gwp_player_request_fee_unpaid | not yet collected | 尚未收取 | GwpCaseArchiveScreen.cs:682, GwpCaseArchiveScreen.cs:689 |
-| gwp_player_request_stage_payment | travelling to collect payment | 正在前往玩家身边收款 | GwpCaseArchiveScreen.cs:890 |
-| gwp_player_request_stage_travel | travelling to disputed fief | 正在前往争议封地 | GwpCaseArchiveScreen.cs:892 |
-| gwp_player_request_stage_lobbying | organizing public petition | 正在组织民间请愿 | GwpCaseArchiveScreen.cs:894 |
-| gwp_player_request_stage_vote | new fief vote opened | 新的封地投票已经开启 | GwpCaseArchiveScreen.cs:896 |
-| gwp_player_request_stage_deferred | Petition set aside | 请愿已搁置 | GwpCaseArchiveScreen.cs:674 |
+| gwp_player_request_unknown_liaison | Unknown Noble Affairs Liaison | 未知的贵族事务协调官 | GwpCaseArchiveScreen.cs:652 |
+| gwp_player_request_ledger_header | Player fief appeal — {VAR_1} | 玩家封地申诉 — {VAR_1} | GwpCaseArchiveScreen.cs:655 |
+| gwp_player_request_ledger_assignment | Liaison: {VAR_1} &#124; Stage: {VAR_2} | 协调官：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:661 |
+| gwp_player_request_ledger_lobbying | Task type: player fief appeal &#124; Fee: {VAR_1} &#124; Public support: {VAR_2}% &#124; Remaining stay: {VAR_3} hours | 任务类型：玩家封地申诉 &#124; 费用：{VAR_1} &#124; 民间支持：{VAR_2}% &#124; 剩余驻留：{VAR_3}小时 | GwpCaseArchiveScreen.cs:670 |
+| gwp_player_request_ledger_detail | Task type: player fief appeal &#124; Fee: {VAR_1} &#124; Public support: {VAR_2}% | 任务类型：玩家封地申诉 &#124; 费用：{VAR_1} &#124; 民间支持：{VAR_2}% | GwpCaseArchiveScreen.cs:677 |
+| gwp_player_request_fee_paid | paid into public treasury | 已交入公库 | GwpCaseArchiveScreen.cs:672, GwpCaseArchiveScreen.cs:679 |
+| gwp_player_request_fee_unpaid | not yet collected | 尚未收取 | GwpCaseArchiveScreen.cs:673, GwpCaseArchiveScreen.cs:680 |
+| gwp_player_request_stage_payment | travelling to collect payment | 正在前往玩家身边收款 | GwpCaseArchiveScreen.cs:873 |
+| gwp_player_request_stage_travel | travelling to disputed fief | 正在前往争议封地 | GwpCaseArchiveScreen.cs:875 |
+| gwp_player_request_stage_lobbying | organizing public petition | 正在组织民间请愿 | GwpCaseArchiveScreen.cs:877 |
+| gwp_player_request_stage_vote | new fief vote opened | 新的封地投票已经开启 | GwpCaseArchiveScreen.cs:879 |
+| gwp_player_request_stage_deferred | Petition set aside | 请愿已搁置 | GwpCaseArchiveScreen.cs:665 |
 | gwp_fief_defer_complete | The officer for noble affairs will return to take up your petition. | 贵族事务官将回来继续处理你的封地请愿。 | GreyWardenPlayerRequestBehavior.cs:807 |
-| gwp_player_troop_ledger_header | Player troop order — {VAR_1} × {VAR_2} | 玩家调兵订单 — {VAR_1}名{VAR_2} | GwpCaseArchiveScreen.cs:704 |
-| gwp_player_troop_ledger_assignment | Trainer: {VAR_1} &#124; Stage: {VAR_2} | 练兵官：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:710 |
-| gwp_player_troop_ledger_detail | Task type: player troop order &#124; Ready: {VAR_1}/{VAR_2} &#124; Paid on order: {VAR_3} denars | 任务类型：玩家订兵 &#124; 已备：{VAR_1}/{VAR_2} &#124; 下单已付：{VAR_3} 第纳尔 | GwpCaseArchiveScreen.cs:714 |
-| gwp_player_troop_stage_training | training real troops | 正在训练真实兵员 | GwpCaseArchiveScreen.cs:904 |
-| gwp_player_troop_stage_delivery | travelling to deliver troops | 正在前往玩家身边交付 | GwpCaseArchiveScreen.cs:906 |
+| gwp_player_troop_ledger_header | Player troop order — {VAR_1} × {VAR_2} | 玩家调兵订单 — {VAR_1}名{VAR_2} | GwpCaseArchiveScreen.cs:695 |
+| gwp_player_troop_ledger_assignment | Trainer: {VAR_1} &#124; Stage: {VAR_2} | 练兵官：{VAR_1} &#124; 当前阶段：{VAR_2} | GwpCaseArchiveScreen.cs:701 |
+| gwp_player_troop_ledger_detail | Task type: player troop order &#124; Ready: {VAR_1}/{VAR_2} &#124; Paid on order: {VAR_3} denars | 任务类型：玩家订兵 &#124; 已备：{VAR_1}/{VAR_2} &#124; 下单已付：{VAR_3} 第纳尔 | GwpCaseArchiveScreen.cs:705 |
+| gwp_player_troop_stage_training | training real troops | 正在训练真实兵员 | GwpCaseArchiveScreen.cs:887 |
+| gwp_player_troop_stage_delivery | travelling to deliver troops | 正在前往玩家身边交付 | GwpCaseArchiveScreen.cs:889 |
 | gwp_item_dual_offhand | Grey Warden Dual Blade (Off Hand) | 灰袍双持剑（副手） | _Module/ModuleData/gwp_crafting_pieces.xml, _Module/ModuleData/items.xml |
 | gwp_item_dual_mainhand | Grey Warden Dual Blade (Main Hand) | 灰袍双持剑（主手） | _Module/ModuleData/items.xml |
 | gwp_fieldarrest_open | Stand where you are. I speak for the Grey Wardens. | 我受灰袍委托，为你名下的一件案子而来。 | GwpFieldArrestBehavior.cs:104 |
@@ -1392,8 +1385,8 @@
 | gwp_bounty_intel_lost | [Investigation] The scouts have lost the trail. There is no sighting to report this time. | 【侦情】探子跟丢了，这一次没有目击可报。 | PlayerBountyBehavior.cs:680 |
 | gwp_case_withdrawn_result | The man was already beyond reach. The treasury covers {VAR_1} denars for your trouble. The commission is closed. | 那个人早就够不着了。公库付你 {VAR_1} 第纳尔，算这趟的花销。委托结清。 | PlayerBountyBehavior.CaseSettlement.cs:607 |
 | gwp_case_report_withdrawn_summary | We have word that the man is beyond reach. Say the word and I will settle your expenses. | 我们这边已经得到消息，那个人够不着了。你说一声，我把你的花销结了。 | PlayerBountyBehavior.CaseSettlement.cs:505 |
-| gwp_case_owner_player | Tracking: {VAR_1} &#124; Stage: commissioned to the player | 追踪情况：{VAR_1} &#124; 当前阶段：已交由玩家承办 | GwpCaseArchiveScreen.cs:781 |
-| gwp_case_owner_player_supported | Tracking: {VAR_1} &#124; Supporting: {VAR_2} &#124; Stage: {VAR_3} | 追踪情况：{VAR_1} &#124; 支援：{VAR_2} &#124; 当前阶段：{VAR_3} | GwpCaseArchiveScreen.cs:787 |
+| gwp_case_owner_player | Tracking: {VAR_1} &#124; Stage: commissioned to the player | 追踪情况：{VAR_1} &#124; 当前阶段：已交由玩家承办 | GwpCaseArchiveScreen.cs:772 |
+| gwp_case_owner_player_supported | Tracking: {VAR_1} &#124; Supporting: {VAR_2} &#124; Stage: {VAR_3} | 追踪情况：{VAR_1} &#124; 支援：{VAR_2} &#124; 当前阶段：{VAR_3} | GwpCaseArchiveScreen.cs:778 |
 | gwp_dispatch_trouble_battle | Word reaches you: the men you sent have been brought to battle. | 有消息传来：你派出去的人被堵上了，正在交战。 | GwpWardenDispatchBehavior.cs:384 |
 | gwp_dispatch_trouble_mauled | Word reaches you: the men you sent have been badly cut up. | 有消息传来：你派出去的人伤亡过半。 | GwpWardenDispatchBehavior.cs:386 |
 | gwp_dispatch_trouble_starving | — | 有消息传来：你派出去的人已经断粮。 | 未检出直接引用；保留 |
@@ -1466,7 +1459,6 @@
 | gwp_fs_status_resting | Resting in {VILLAGE}. | 在{VILLAGE}休整。 | 灰袍领主在教众村庄停留、无本次交割记录且没有伤兵时。 |
 | gwp_status_rebuilding | Rebuilding {VILLAGE} ({HOURS} hours left). | 正在重建{VILLAGE}（还剩{HOURS}小时）。 | GreyWardenVillageReconstructionBehavior.cs:138 |
 | gwp_status_petition | Settling a petition in {SETTLEMENT} ({HOURS} hours left). | 正在{SETTLEMENT}处理请愿（还剩{HOURS}小时）。 | GreyWardenIssueResolutionBehavior.cs:110 |
-| gwp_status_training | Drilling the Wardens' recruits. | 正在操练灰袍的新兵。 | GwpPartyDutyMovementPatch.cs:160 |
 | gwp_fs_party_greet_cart_back | We have traded at market and are returning to {HOME}. | 我们在集市卖过货，正返回{HOME}。 | 地图遇到返村阶段的卖货队；返程可能仍有余货，故不再说全部售完。 |
 | gwp_fs_party_products_separator | ,  | 、 | 货物列表与火刑人数/户数组合所用分隔符。 |
 | gwp_fs_party_product | {COUNT} {ITEM} | {COUNT}件{ITEM} | 卖货队报价中的单个货物条目。 |
@@ -1478,3 +1470,12 @@
 | gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:710 |
 | gwp_atonement_closed_elsewhere | This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized. | 这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。 | 赎罪目标死亡、被他人俘获或案件在别处结清；撤销任务，不扣声望。 |
 | gwp_atonement_report | Tell us how the case ended, and hand over anything you collected on our behalf. | 说说这件事是怎样了结的，代收的钱货也一并交来。 | 赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。 |
+| gwp_training_transport_party | Warden troop transport | 灰袍运兵队 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_transport_outbound | Delivering veterans and arms to {VILLAGE} | 向{VILLAGE}运送老兵和军械 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_transport_returning | Bringing recruits back to the training officer | 带新兵返回练兵官部队 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_ledger_return | The transport has left {VAR_1} and is returning to the training officer. If the officer cannot receive it, the troops will settle in a faith village. | 运兵队已离开{VAR_1}，正返回练兵官部队；原队无法接收时，余兵会走回信众村落脚。 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_stage_return | Returning with recruits | 带兵归队 | 练兵官实体运兵队；地图状态和差事台账。 |
+| gwp_training_transport_greeting | We're taking soldiers and arms where the Training Warden has ordered. We must keep moving. | 我们奉练兵官的命令接送兵员、运送军械，还得赶路。 | 实体运兵队的遭遇对话、落村状态和台账。 |
+| gwp_training_transport_settling | Taking soldiers to settle in {VILLAGE} | 带兵前往{VILLAGE}落脚 | 实体运兵队的遭遇对话、落村状态和台账。 |
+| gwp_training_ledger_settle | The transport is taking the remaining soldiers to settle in {VAR_1}. | 运兵队正带余兵前往{VAR_1}，到村后并入守村队。 | 实体运兵队的遭遇对话、落村状态和台账。 |
+| gwp_training_stage_settle | Returning to a village | 回村落脚 | 实体运兵队的遭遇对话、落村状态和台账。 |

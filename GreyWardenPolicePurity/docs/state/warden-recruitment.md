@@ -2,9 +2,11 @@
 
 > 当前状态：按等级纯化已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`99a3fdb`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GwpWardenRecruitment.cs` `GwpWardenPurification.cs`
 > 待实测：见文末
+
+纯化每小时先核对名册对象/VersionNo，未变不再扫描；版本来自原版人数、兵种等名册写入。弱引用缓存只记已检查结果，读档重新推导，不改纯化频率和换兵规则。（依据：C#反编译 v1.4.8 TroopRoster；设计 2026-10-15）
 
 灰袍兵从哪来、发不发饷。信众村、祭司本身见 [村庄](firesworn-villages.md)；练兵与换兵见 [`warden-training.md`](warden-training.md)。
 

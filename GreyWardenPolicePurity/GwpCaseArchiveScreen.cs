@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -634,20 +634,11 @@ namespace GreyWardenPolicePurity
             AssignmentText = GwpText.Get(
                 GwpTextCatalog.gwp_training_ledger_assignment,
                 "VAR_1", trainerName, "VAR_2", DescribeTrainingStage(training.Stage));
-            DetailsText = training.Stage switch
-            {
-                GreyWardenTrainingBehavior.TrainingTaskStage.QueuedForTrainer =>
-                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_queued),
-                GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
-                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_waiting,
-                        "VAR_1", training.SettlementName),
-                GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
-                    GwpText.Get(GwpTextCatalog.gwp_training_ledger_stay,
-                        "VAR_1", training.SettlementName,
-                        "VAR_2", Math.Ceiling(training.RemainingHours)),
-                _ => GwpText.Get(GwpTextCatalog.gwp_training_ledger_travel,
-                    "VAR_1", training.SettlementName)
-            };
+            DetailsText = GwpText.Get(training.Stage == GreyWardenTrainingBehavior.TrainingTaskStage.ReturningToTrainer
+                ? GwpTextCatalog.gwp_training_ledger_return
+                : training.Stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
+                    ? GwpTextCatalog.gwp_training_ledger_settle : GwpTextCatalog.gwp_training_ledger_travel,
+                "VAR_1", training.SettlementName);
         }
 
         internal GwpCaseArchiveItemVM(
@@ -869,19 +860,11 @@ namespace GreyWardenPolicePurity
             _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
         };
 
-        private static string DescribeTrainingStage(
-            GreyWardenTrainingBehavior.TrainingTaskStage stage) => stage switch
-        {
-            GreyWardenTrainingBehavior.TrainingTaskStage.QueuedForTrainer =>
-                GwpText.Get(GwpTextCatalog.gwp_training_stage_queued),
-            GreyWardenTrainingBehavior.TrainingTaskStage.WaitingForCurrentDuties =>
-                GwpText.Get(GwpTextCatalog.gwp_training_stage_waiting),
-            GreyWardenTrainingBehavior.TrainingTaskStage.TravelingToRendezvous =>
-                GwpText.Get(GwpTextCatalog.gwp_training_stage_travel),
-            GreyWardenTrainingBehavior.TrainingTaskStage.ExchangingAtSettlement =>
-                GwpText.Get(GwpTextCatalog.gwp_training_stage_stay),
-            _ => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_046)
-        };
+        private static string DescribeTrainingStage(GreyWardenTrainingBehavior.TrainingTaskStage stage) =>
+            GwpText.Get(stage == GreyWardenTrainingBehavior.TrainingTaskStage.ReturningToTrainer
+                ? GwpTextCatalog.gwp_training_stage_return
+                : stage == GreyWardenTrainingBehavior.TrainingTaskStage.SettlingInVillage
+                    ? GwpTextCatalog.gwp_training_stage_settle : GwpTextCatalog.gwp_training_stage_travel);
 
         private static string DescribeFiefRequestStage(
             GreyWardenPlayerRequestBehavior.FiefRequestStage stage) => stage switch

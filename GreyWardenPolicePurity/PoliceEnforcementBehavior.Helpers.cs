@@ -72,7 +72,6 @@ namespace GreyWardenPolicePurity
             if (police.Army != null)
                 return false;
 
-            GreyWardenTrainingBehavior.ReleasePartyForForcedDuty(police);
             GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
             GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(police);
 

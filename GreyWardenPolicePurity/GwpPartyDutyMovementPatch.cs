@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -155,12 +155,6 @@ namespace GreyWardenPolicePurity
                 __result = activity;
                 return;
             }
-            if (__instance.DefaultBehavior == AiBehavior.Hold && GreyWardenFamilyBehavior.IsTrainingParty(__instance))
-            {
-                __result = new TextObject(GwpTextCatalog.gwp_status_training);
-                return;
-            }
-
             // 未宣战追捕现在走原版跟随，原版会把它读成"正在跟随 XXX"——对着一个
             // 通缉犯像是在给他护航。目标躲进定居点时才退回定点，那一档保留原措辞。
             if (__instance.DefaultBehavior == AiBehavior.EscortParty &&

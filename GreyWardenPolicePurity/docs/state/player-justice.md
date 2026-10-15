@@ -2,9 +2,11 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`18779c6`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
+
+事务台账中的日常练兵项显示实体运兵出程、归队或最终落村阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
@@ -50,6 +52,22 @@
   只有通缉时标红（`GwpMapBarReputation`）。这项在信息条展开时才看得到。（依据：用户要求放在影响力旁边）
 - 灰袍事务界面（`GwpCaseArchiveScreen`，入口见 `map-bar-affairs.md`）汇总：
   玩家声望、档位与通缉时的应缴数、家族规模与收养冷却、各场战争的理由、当前所有开放案件和差事队列。
+
+### 声望图标的交互边界与待办
+
+- 当前位置：`SecondaryInfoItems`，插在 `influence` 之后（按用户要求"挨着影响力"）。
+- **代价已告知用户**：那一排只在信息条展开（`IsInfoBarExtended`）时显示；
+  `PrimaryInfoItems`（第纳尔所在）才是常驻。用户在"挨着影响力"与"常驻可见"之间
+  选了前者。
+- **点击打开事务界面：做不到。** `MapBar.xml` 两排的 `ItemTemplate` 外层是
+  `HintWidget : Widget`，反射确认 `Widget` 没有任何 click 事件（只有 `EventFire`
+  与各类 `PropertyChanged`），点击是 `ButtonWidget` 独有。金币和影响力自己也点不动。
+  要改只能整份覆盖 SandBox 的 `MapBar.xml`（219 行），会在游戏更新时失效并与任何
+  改地图条的模组冲突。
+- **可行的最小方案（未做，等用户点头）**：照 `GwpCaseArchiveScreen.Open()` 的现成套路
+  （`new GauntletLayer` + `AddLayer` + `LoadMovie`）加一个常驻小层，一个
+  `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，
+  `IsFocusLayer = false`、不设 `InputRestrictions`。不覆盖任何原版文件。
 
 ## 入会与退会
 

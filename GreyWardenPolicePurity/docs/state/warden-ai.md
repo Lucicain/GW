@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）；协力编队与招兵统计见案件页
 > 最后验收：未建立检查点
-> 已复核至：`99a3fdb`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -28,7 +28,7 @@
    - 玩家贵族事务（见 `player-requests.md`）。
 2. **强制差事**：村庄被焚后的善后会把领主从普通案件上撤下来（见 `village-relief.md`）。
 3. **本职优先的活**：重建本职在有待重建的村子时、请愿本职在有待办请愿时，不接普通案件。
-   练兵本职在练兵排队时不接新差事。
+   自动运兵由独立队执行，不再占用练兵官；玩家订单的换兵来源资格由 StockExchange 差事口径单独判断。
 4. **进信众村**：不是差事，是原版进城意愿——信众村对灰袍等于城，俘虏、伤员、背包往信众村加分，再乘 3。买卖、招兵、招降俘虏、卖俘虏都照原版，
    灰袍只是更偏好去信众村办（用户裁定 2026-10-08：不是大改，别破坏原版体验）。俘虏多、伤员多、背包重时压过普通案件（0.99），进完村回去接着办。详见本文件「进聚落的意愿」。灰袍领主不主持传教。
    （依据：用户裁定 2026-10-05：灰袍优先做和信众村相关的事；2026-10-07：改原版意愿，不另搞差事）
@@ -73,7 +73,7 @@
 - 冻结（`DoNotMakeNewDecisions`）：只有直扑锁和火誓者卖货队在家停驻会冻住灰袍的队。读档时对所有受管队伍解冻一遍——
   意图和直扑锁不进存档（读档清空，由各差事每小时重下），冻结却是原版状态、会进存档；卖货队在家的停驻除外。
   以前每小时还解冻一次，那是 2026-07-19 为旧存档清锁写的，会盖掉卖货队的停驻，已删。（依据：设计；C#反编译 v1.4.8 AiPartyThinkBehavior；实机诊断 2026-10-07）
-- 地图状态文字：重建施工、请愿驻留、练兵官原地操练、灰袍领主在信众村、火誓者的无领主队，都写成实际在做的事（`GwpLocationDutyBehaviorTextPatch`；
+- 地图状态文字：重建施工、请愿驻留、灰袍领主在信众村、火誓者的无领主队，都写成实际在做的事（`GwpLocationDutyBehaviorTextPatch`；
   用户裁定 2026-10-07：用状态文字，不弹灰色消息）。原版对进了聚落的部队只写「在某地等待」，原地办事只写「原地待命」，
   卖俘虏、招兵、养伤都不记日志条目（C#反编译 v1.4.8 MobileParty.GetBehaviorText）。
 
@@ -109,7 +109,7 @@
 这些分和灰袍的差事一起进欲望竞价（普通案件 0.99），手上的案子不退回案件池。
 进了信众村（不管为什么进的）交俘虏、捐东西、直接招狂信者，见 `firesworn-economy.md`。
 
-**监控**：每日异常 `LORD_HOLDING_AT_SETTLEMENT`（领主在聚落门口待命，办重建、请愿、练兵的原地驻留不算）。
+**监控**：每日异常 `LORD_HOLDING_AT_SETTLEMENT`（领主在聚落门口待命，办重建、请愿的原地驻留不算）。
 
 **聚落名牌上的动态**（`GwpSettlementNotices.cs`）：原版领主在聚落做了事，名牌上会冒出一条「某某招募了几名士兵」「解决了一个请愿」
 （SandBox.ViewModelCollection `SettlementNameplateNotificationsVM` 听招兵、卖俘虏、卖东西、请愿等事件）。灰袍的这些事原版没有事件，

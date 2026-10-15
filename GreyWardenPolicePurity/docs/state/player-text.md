@@ -2,9 +2,11 @@
 
 > 当前状态：宗教改稿与赎罪任务文案已应用；1474条文字集中维护，编译前检查生成产物
 > 最后验收：未建立检查点
-> 已复核至：`18779c6`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GwpTextCatalog.g.cs` `GreyWardenPolicePurity/PlayerText/strings.json` `tools/Generate-PlayerText.py` `tools/tests/test_player_text.py` `_Module/ModuleData/Languages/**`
 > 待实测：中英文菜单、对话、百科与地图提示正常显示，变量替换完整
+
+运兵队名称、遭遇台词、地图状态与事务台账中英词句统一放在 PlayerText/strings.json，旧自动操练/练兵排队句子随机制删除。（依据：用户裁定词句单独维护；源码复核 2026-10-15）
 
 玩家常见词语、句子单独维护，不能继续散放在行为代码中；中文与英文放在同一个文本目录，调整时同时核对出现情境和变量。（依据：用户裁定 2026-10-15）
 

@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：调兵、练兵队归还及解散保留实际伤兵与经验；同版存读后接续
 
@@ -90,3 +90,5 @@
 
 见 [training-feedback.md](training-feedback.md)：订单 `gwheavyinfantry`×80 卡在 `Training`
 约 76 天，练兵队 71 重步兵 + 5 灰袍弓手 + 4 外来兵占满 80 个名额。
+
+玩家订单原有随行队加经验保留；临时换兵来源资格由差事表 StockExchange 口径判断。自主运兵不占用领主、不取消订单。自主运兵规则见 [运兵](warden-training.md)。（依据：用户裁定、源码复核 2026-10-15）

@@ -2,9 +2,11 @@
 
 > 当前状态：祭司最强后守村队照原版民兵速度补兵已部署待实测；其余（留村、缺额补兵、烧人经验、公库付升级费）待实测
 > 最后验收：未建立检查点
-> 已复核至：`7320b86`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs` `GwpPatrolBeats.cs`
 > 待实测：见文末
+
+练兵官派来的运兵队不算本村外出人口，防止送入老兵/取出弱兵时重复占增长名额；实体交换规则在 [运兵](warden-training.md)。（依据：设计、源码复核 2026-10-15）
 
 [总览](firesworn.md) · [仪式](firesworn-rituals.md) · [队伍](firesworn-parties.md) · [招兵入口](warden-recruitment.md)
 

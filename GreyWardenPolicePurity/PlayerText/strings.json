@@ -3336,59 +3336,24 @@
       "zh": "驻留审理六小时"
     },
     "gwp_training_ledger_header": {
-      "en": "Training exchange — {VAR_1}",
-      "zh": "练兵换兵 — {VAR_1}",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
+      "en": "Troop transport: {VAR_1}",
+      "zh": "运兵：{VAR_1}",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_training_ledger_assignment": {
       "en": "Trainer: {VAR_1} | Stage: {VAR_2}",
       "zh": "练兵领主：{VAR_1} | 当前阶段：{VAR_2}",
       "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
     },
-    "gwp_training_ledger_pending_place": {
-      "en": "To be selected",
-      "zh": "待选定",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
-    },
-    "gwp_training_ledger_queued": {
-      "en": "Task type: troop training exchange | Queued as the Training Warden's next duty",
-      "zh": "任务类型：练兵换兵 | 已列为练兵领主的下一项任务",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
-    },
-    "gwp_training_ledger_waiting": {
-      "en": "Troop training and exchange | Destination: {VAR_1} | Waiting for the current duty to end",
-      "zh": "练兵换兵 | 目的地：{VAR_1} | 等待当前差事结束",
-      "context": "玩家事务台账：已选目标村但领主仍有当前差事。"
-    },
-    "gwp_training_ledger_stay": {
-      "en": "Troop training and exchange | Staying at: {VAR_1} | {VAR_2} hours remaining",
-      "zh": "练兵换兵 | 驻留地：{VAR_1} | 尚需{VAR_2}小时",
-      "context": "玩家事务台账：领主到村后的驻留阶段。"
-    },
     "gwp_training_ledger_travel": {
-      "en": "Troop training and exchange | Travelling to {VAR_1}",
-      "zh": "练兵换兵 | 正前往{VAR_1}",
-      "context": "玩家事务台账：领主去目标村途中。"
-    },
-    "gwp_training_stage_queued": {
-      "en": "queued as next duty",
-      "zh": "已列为下一项任务",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
-    },
-    "gwp_training_stage_waiting": {
-      "en": "waiting for current duties",
-      "zh": "等待完成当前任务",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
+      "en": "A transport is taking veterans and surplus arms to {VAR_1}, to bring back recruits from its guard.",
+      "zh": "运兵队正将老兵和多余军械送往{VAR_1}，再带回守村队里的弱兵。",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_training_stage_travel": {
-      "en": "Travelling to the exchange village",
-      "zh": "前往换兵的村庄",
-      "context": "玩家事务台账中的当前阶段名称。"
-    },
-    "gwp_training_stage_stay": {
-      "en": "two-hour troop exchange",
-      "zh": "驻留两小时并换兵",
-      "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
+      "en": "Delivering veterans",
+      "zh": "运送老兵",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_det_ui_record": {
       "en": "Recorded crimes: {VAR_1} | Arrested by Grey Wardens: {VAR_2}",
@@ -5968,10 +5933,6 @@
       "en": "Settling a petition in {SETTLEMENT} ({HOURS} hours left).",
       "zh": "正在{SETTLEMENT}处理请愿（还剩{HOURS}小时）。"
     },
-    "gwp_status_training": {
-      "en": "Drilling the Wardens' recruits.",
-      "zh": "正在操练灰袍的新兵。"
-    },
     "gwp_fs_party_greet_cart_back": {
       "en": "We have traded at market and are returning to {HOME}.",
       "zh": "我们在集市卖过货，正返回{HOME}。",
@@ -6022,6 +5983,51 @@
       "en": "Tell us how the case ended, and hand over anything you collected on our behalf.",
       "zh": "说说这件事是怎样了结的，代收的钱货也一并交来。",
       "context": "赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。"
+    },
+    "gwp_training_transport_party": {
+      "en": "Warden troop transport",
+      "zh": "灰袍运兵队",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
+    },
+    "gwp_training_transport_outbound": {
+      "en": "Delivering veterans and arms to {VILLAGE}",
+      "zh": "向{VILLAGE}运送老兵和军械",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
+    },
+    "gwp_training_transport_returning": {
+      "en": "Bringing recruits back to the training officer",
+      "zh": "带新兵返回练兵官部队",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
+    },
+    "gwp_training_ledger_return": {
+      "en": "The transport has left {VAR_1} and is returning to the training officer. If the officer cannot receive it, the troops will settle in a faith village.",
+      "zh": "运兵队已离开{VAR_1}，正返回练兵官部队；原队无法接收时，余兵会走回信众村落脚。",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
+    },
+    "gwp_training_stage_return": {
+      "en": "Returning with recruits",
+      "zh": "带兵归队",
+      "context": "练兵官实体运兵队；地图状态和差事台账。"
+    },
+    "gwp_training_transport_greeting": {
+      "en": "We're taking soldiers and arms where the Training Warden has ordered. We must keep moving.",
+      "zh": "我们奉练兵官的命令接送兵员、运送军械，还得赶路。",
+      "context": "实体运兵队的遭遇对话、落村状态和台账。"
+    },
+    "gwp_training_transport_settling": {
+      "en": "Taking soldiers to settle in {VILLAGE}",
+      "zh": "带兵前往{VILLAGE}落脚",
+      "context": "实体运兵队的遭遇对话、落村状态和台账。"
+    },
+    "gwp_training_ledger_settle": {
+      "en": "The transport is taking the remaining soldiers to settle in {VAR_1}.",
+      "zh": "运兵队正带余兵前往{VAR_1}，到村后并入守村队。",
+      "context": "实体运兵队的遭遇对话、落村状态和台账。"
+    },
+    "gwp_training_stage_settle": {
+      "en": "Returning to a village",
+      "zh": "回村落脚",
+      "context": "实体运兵队的遭遇对话、落村状态和台账。"
     }
   },
   "fragments": {

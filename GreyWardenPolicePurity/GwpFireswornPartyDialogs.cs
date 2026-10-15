@@ -64,7 +64,9 @@ namespace GreyWardenPolicePurity
             if (!GwpFireswornBehavior.TryDescribeFaithParty(party, out GwpFireswornBehavior.FaithPartyKind kind, out bool outbound,
                     out Settlement? home, out Settlement? target))
                 return false;
-            TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Mission
+            TextObject greeting = kind == GwpFireswornBehavior.FaithPartyKind.Training
+                ? GwpText.Create(GwpTextCatalog.gwp_training_transport_greeting)
+                : kind == GwpFireswornBehavior.FaithPartyKind.Mission
                 ? GwpText.Create(GwpTextCatalog.gwp_fs_party_greet_mission,
                     "HOME", home!.Name, "TARGET", target!.Name)
                 : kind == GwpFireswornBehavior.FaithPartyKind.Balance

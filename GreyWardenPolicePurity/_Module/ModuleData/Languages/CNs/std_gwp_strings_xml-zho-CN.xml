@@ -827,17 +827,10 @@
   <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
   <string id="gwp_issue_stage_travel" text="前往任务发布人" />
   <string id="gwp_issue_stage_review" text="驻留审理六小时" />
-  <string id="gwp_training_ledger_header" text="练兵换兵 — {VAR_1}" />
+  <string id="gwp_training_ledger_header" text="运兵：{VAR_1}" />
   <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 当前阶段：{VAR_2}" />
-  <string id="gwp_training_ledger_pending_place" text="待选定" />
-  <string id="gwp_training_ledger_queued" text="任务类型：练兵换兵 | 已列为练兵领主的下一项任务" />
-  <string id="gwp_training_ledger_waiting" text="练兵换兵 | 目的地：{VAR_1} | 等待当前差事结束" />
-  <string id="gwp_training_ledger_stay" text="练兵换兵 | 驻留地：{VAR_1} | 尚需{VAR_2}小时" />
-  <string id="gwp_training_ledger_travel" text="练兵换兵 | 正前往{VAR_1}" />
-  <string id="gwp_training_stage_queued" text="已列为下一项任务" />
-  <string id="gwp_training_stage_waiting" text="等待完成当前任务" />
-  <string id="gwp_training_stage_travel" text="前往换兵的村庄" />
-  <string id="gwp_training_stage_stay" text="驻留两小时并换兵" />
+  <string id="gwp_training_ledger_travel" text="运兵队正将老兵和多余军械送往{VAR_1}，再带回守村队里的弱兵。" />
+  <string id="gwp_training_stage_travel" text="运送老兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
   <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
   <string id="gwp_det_ui_villager_desire" text="攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
@@ -1466,7 +1459,6 @@
   <string id="gwp_fs_status_resting" text="在{VILLAGE}休整。" />
   <string id="gwp_status_rebuilding" text="正在重建{VILLAGE}（还剩{HOURS}小时）。" />
   <string id="gwp_status_petition" text="正在{SETTLEMENT}处理请愿（还剩{HOURS}小时）。" />
-  <string id="gwp_status_training" text="正在操练灰袍的新兵。" />
   <string id="gwp_fs_party_greet_cart_back" text="我们在集市卖过货，正返回{HOME}。" />
   <string id="gwp_fs_party_products_separator" text="、" />
   <string id="gwp_fs_party_product" text="{COUNT}件{ITEM}" />
@@ -1478,5 +1470,14 @@
   <string id="gwp_envoy_duel_offender_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。" />
   <string id="gwp_atonement_closed_elsewhere" text="这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。" />
   <string id="gwp_atonement_report" text="说说这件事是怎样了结的，代收的钱货也一并交来。" />
+  <string id="gwp_training_transport_party" text="灰袍运兵队" />
+  <string id="gwp_training_transport_outbound" text="向{VILLAGE}运送老兵和军械" />
+  <string id="gwp_training_transport_returning" text="带新兵返回练兵官部队" />
+  <string id="gwp_training_ledger_return" text="运兵队已离开{VAR_1}，正返回练兵官部队；原队无法接收时，余兵会走回信众村落脚。" />
+  <string id="gwp_training_stage_return" text="带兵归队" />
+  <string id="gwp_training_transport_greeting" text="我们奉练兵官的命令接送兵员、运送军械，还得赶路。" />
+  <string id="gwp_training_transport_settling" text="带兵前往{VILLAGE}落脚" />
+  <string id="gwp_training_ledger_settle" text="运兵队正带余兵前往{VAR_1}，到村后并入守村队。" />
+  <string id="gwp_training_stage_settle" text="回村落脚" />
 </strings>
 </base>

@@ -906,9 +906,10 @@ namespace GreyWardenPolicePurity
         {
             return PoliceStats.GetAllPoliceParties()
                 .Where(party => party != trainer &&
-                    party.AttachedTo == null &&
-                    GreyWardenTrainingBehavior
-                        .IsFreeForTrainingExchange(party) &&
+                    party.IsActive && party.IsLordParty && !party.IsDisbanding &&
+                    party.LeaderHero?.IsActive == true && party.AttachedTo == null && party.Army == null &&
+                    party.MapEvent is not { IsFinalized: false } &&
+                    GwpWardenDuties.IsFreeFor(party, WardenDuty.StockExchange) &&
                     CountHealthy(GetIncomingBatches(party, target)) > 0)
                 .OrderBy(party => string.Equals(party.StringId,
                     _lastStockSourcePartyId,

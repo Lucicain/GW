@@ -44,13 +44,15 @@ namespace GreyWardenPolicePurity
         {
             public readonly List<EquipmentElement[]> Sets = new List<EquipmentElement[]>();
             public int Recruits;
-            // 没分出去的：前一段是给狂信者增长留的余量，余量以外是多余，可以捐、可以卖。
+            public ItemRoster? Ledger;
+            public int LedgerVersion, Zealots, Reserve;
+            // 没分出去的：先覆盖高阶兵和空编制的每个位置，额度以外才可捐、可卖。
             public readonly ItemRoster Free = new ItemRoster();
             public readonly ItemRoster Surplus = new ItemRoster();
             public float RecruitWeaponTier, RecruitArmorTier, ZealotWeaponTier, ZealotArmorTier;
         }
 
-        // 每小时由账本和兵力重算，读档后第一个小时前由 PlanOf 现算。
+        // 每小时核对账本版本、兵力和编制；变化才重算，读档后按需现算。
         private readonly Dictionary<string, ArmoryPlan> _plans =
             new Dictionary<string, ArmoryPlan>(StringComparer.OrdinalIgnoreCase);
 
@@ -81,9 +83,24 @@ namespace GreyWardenPolicePurity
 
         private ArmoryPlan PlanOf(string holder)
         {
-            if (_plans.TryGetValue(holder, out ArmoryPlan? plan))
+            // 战斗内沿用已分的套装，不因伤亡重新洗牌；小时结算及库存写入负责复核/失效。
+            if (_plans.TryGetValue(holder, out ArmoryPlan? plan)) return plan;
+            return BuildPlanFor(holder);
+        }
+
+        // 原版 ItemRoster.AddToCounts / Clear 都递增 VersionNo（C#反编译 v1.4.8）。
+        // 只缓存可重算配装：库存对象/版本、两种人数、编制余量任一变化就重算，不存档。
+        private ArmoryPlan PlanForCounts(string holder, ItemRoster ledger, int recruits, int zealots, int reserve)
+        {
+            if (_plans.TryGetValue(holder, out ArmoryPlan? plan) && ReferenceEquals(plan.Ledger, ledger) &&
+                plan.LedgerVersion == ledger.VersionNo && plan.Recruits == recruits &&
+                plan.Zealots == zealots && plan.Reserve == reserve)
                 return plan;
-            plan = BuildPlanFor(holder);
+            plan = BuildPlan(ledger, recruits, zealots, reserve);
+            plan.Ledger = ledger;
+            plan.LedgerVersion = ledger.VersionNo;
+            plan.Zealots = zealots;
+            plan.Reserve = reserve;
             _plans[holder] = plan;
             return plan;
         }
@@ -98,19 +115,20 @@ namespace GreyWardenPolicePurity
                 TroopRoster guard = GuardOf(holder);
                 int villageRecruits = CountOf(guard, GwpIds.NewRecruitId);
                 int villageZealots = CountOf(guard, GwpIds.ZealotId);
-                int headroom = GuardHeadroom(row);
-                int reserve = Math.Min(headroom, Math.Max(GwpTuning.Firesworn.ArmoryVillageReserveMinimum,
-                    (int)(Sworn(row) * GwpTuning.Firesworn.ArmoryReserveShare)));
-                return BuildPlan(ledger, villageRecruits, villageZealots, reserve);
+                // 村子至少留够守村队上限那么多套（人比上限多就按人算），挑最好的留（用户裁定 2026-10-15）。
+                int villagePositions = Math.Max(GuardCap(row), Sworn(row));
+                return PlanForCounts(holder, ledger, villageRecruits, villageZealots,
+                    Math.Max(0, villagePositions - villageRecruits - villageZealots));
             }
             MobileParty party = FindParty(holder)!;
             int recruits = CountOf(party.MemberRoster, GwpIds.NewRecruitId);
             int zealots = CountOf(party.MemberRoster, GwpIds.ZealotId);
-            // 无领主队只带自己身上那几套，不留增长余量。
+            // 领主部队要保证每个位置都有装备可拿：高阶兵、空着的编制也算，按部队编制上限留套，挑最好的留（用户裁定 2026-10-15）。
+            // 无领主队只带自己身上那几套，不留。
             int partyReserve = _faithParties.ContainsKey(holder)
                 ? 0
-                : (int)Math.Ceiling((recruits + zealots) * GwpTuning.Firesworn.ArmoryReserveShare);
-            return BuildPlan(ledger, recruits, zealots, partyReserve);
+                : Math.Max(0, Math.Max(party.Party.PartySizeLimit, party.MemberRoster.TotalManCount) - recruits - zealots);
+            return PlanForCounts(holder, ledger, recruits, zealots, partyReserve);
         }
 
         private static int CountOf(TroopRoster roster, string troopId) =>
@@ -123,7 +141,7 @@ namespace GreyWardenPolicePurity
         /// 上战场时武器只有四格（<see cref="GwpArmorySpawnPatch"/>），主武器之后先发投掷，再发远程（要配上对应的弹药：弓配箭、弩配矢，
         /// 没有就不发，占两格），最后是盾（手里的主武器是单手的、格子还有空才发；自带的武器也占格子）（用户裁定 2026-10-08）。
         /// 新兵和狂信者都用不了的、马、马具、披风、男女有一方不能用的，都算多余卖掉。
-        /// 分完剩下的先留够余量（最强的那些），再多的就是多余。（用户裁定 2026-10-05：不配骑兵，肩部是灰袍印章；2026-10-08：弓弩箭矢进军械库，能用就用，不能用就卖，马不行）
+        /// 分完剩下的先覆盖全部编制（最强的那些，含已有高阶兵和空位），再多的就是多余。（用户裁定 2026-10-05：不配骑兵，肩部是灰袍印章；2026-10-08：弓弩箭矢进军械库，能用就用，不能用就卖，马不行）
         /// </summary>
         private static ArmoryPlan BuildPlan(ItemRoster ledger, int recruits, int zealots, int reserve)
         {
@@ -171,9 +189,13 @@ namespace GreyWardenPolicePurity
                     kit[KitShield] = Take(buckets[KitShield], item => CanUse(troop, item.Item) && Stronger(item, own[KitShield]));
                 plan.Sets.Add(kit);
             }
-            foreach (List<EquipmentElement> bucket in buckets)
-                for (int i = 0; i < bucket.Count; i++)
-                    (i < reserve ? plan.Free : plan.Surplus).AddToCounts(bucket[i], 1);
+            for (int kind = 0; kind < buckets.Length; kind++)
+            {
+                // 没领库装（自带更好或缺搭配）的兵位也要留一件；已领的那件已经算在编制里。
+                int keep = reserve + men - plan.Sets.Count(kit => !kit[kind].IsEmpty);
+                for (int i = 0; i < buckets[kind].Count; i++)
+                    (i < keep ? plan.Free : plan.Surplus).AddToCounts(buckets[kind][i], 1);
+            }
 
             Tiers(plan.Sets.Take(recruits), out plan.RecruitWeaponTier, out plan.RecruitArmorTier);
             Tiers(plan.Sets.Skip(recruits), out plan.ZealotWeaponTier, out plan.ZealotArmorTier);
@@ -336,27 +358,25 @@ namespace GreyWardenPolicePurity
 
         private void RefreshArmoryPlans()
         {
-            _plans.Clear();
             foreach (string holder in _armories.Keys.ToList())
                 _plans[holder] = BuildPlanFor(holder);
         }
 
         /// <summary>
-        /// 每天一次：村子军械库多出来的进货仓，由信众队拉去卖；领主部队多出来的进部队原版仓库，
-        /// 到信众村时捐掉（用户裁定）。村与村之间的平衡由运械队把兵器运过去（<see cref="LoadBalanceCargo"/>）。
+        /// 每天一次：村子军械库留够套数以外的进货仓，由卖货队拉去卖；村与村之间由运械队把兵器运过去（<see cref="LoadBalanceCargo"/>）。
+        /// 领主部队多出来的留在军械库里，到信众村时捐掉，不进原版背包——进了背包原版会想进城卖货，
+        /// 人待在城里又不再卖，背包越堆越多就不走了（实机诊断 2026-10-15：族长在城里停了约 100 小时；用户裁定 2026-10-15）。
         /// </summary>
         private void RebalanceArmories()
         {
             RefreshArmoryPlans();
             foreach (KeyValuePair<string, ArmoryPlan> pair in _plans.ToList())
             {
-                if (pair.Value.Surplus.Count == 0)
+                if (pair.Value.Surplus.Count == 0 || !_villages.ContainsKey(pair.Key))
                     continue;
-                bool village = _villages.ContainsKey(pair.Key);
-                ItemRoster target = village ? ItemsOf(_goods, pair.Key) : FindParty(pair.Key)!.ItemRoster;
                 int value = pair.Value.Surplus.TotalValue;
-                int moved = MoveAll(pair.Value.Surplus, ItemsOf(_armories, pair.Key), target);
-                GwpAiDiagnostics.WriteFaith(village ? "ARMORY_SURPLUS_TO_GOODS" : "ARMORY_SURPLUS_TO_INVENTORY",
+                int moved = MoveAll(pair.Value.Surplus, ItemsOf(_armories, pair.Key), ItemsOf(_goods, pair.Key));
+                GwpAiDiagnostics.WriteFaith("ARMORY_SURPLUS_TO_GOODS",
                     "holder=" + pair.Key + "; items=" + moved + "; value=" + value);
             }
             RefreshArmoryPlans();
@@ -394,28 +414,14 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 运械队装车（用户裁定 2026-10-07：兵器先进无领主队的背包，到了再进目标军械库，路上会被抢）。
-        /// 押车的人已经带着自己那几套走了；按「家里少这些人、那边多这些人」算两边拿到主兵器的比例一样时
-        /// 那边还差几套，从家里拿到兵器的人里配装最差的那几套整套装进背包。返回装了几套。
+        /// 押车的人已经带着自己那几套走了；家里按全部编制择优预留后，只有真正多余的装进背包。返回多余主兵器套数。
         /// </summary>
-        private int LoadBalanceCargo(string homeId, string targetId, MobileParty party)
+        private int LoadBalanceCargo(string homeId, MobileParty party)
         {
-            ArmoryPlan home = BuildPlanFor(homeId);
-            ArmoryPlan target = BuildPlanFor(targetId);
-            ArmoryPlan escort = BuildPlanFor(party.StringId);
-            List<EquipmentElement[]> homeArmed = home.Sets.Where(kit => !kit[KitMain].IsEmpty).ToList();
-            int escortArmed = escort.Sets.Count(kit => !kit[KitMain].IsEmpty);
-            int targetArmed = target.Sets.Count(kit => !kit[KitMain].IsEmpty) + escortArmed;
-            int targetMen = target.Sets.Count + escort.Sets.Count;
-            int allMen = home.Sets.Count + targetMen;
-            if (allMen <= 0)
-                return 0;
-            int wanted = (int)Math.Round((homeArmed.Count + targetArmed) * targetMen / (float)allMen);
-            int sets = Math.Max(0, Math.Min(homeArmed.Count, wanted - targetArmed));
-            ItemRoster cargo = new ItemRoster();
-            foreach (EquipmentElement[] kit in homeArmed.Skip(homeArmed.Count - sets))
-                foreach (EquipmentElement item in kit.Where(entry => !entry.IsEmpty))
-                    cargo.AddToCounts(item, 1);
-            MoveAll(cargo, ItemsOf(_armories, homeId), party.ItemRoster);
+            // 运械也必须先保留本村全部编制的最好装备，只运真正多余的；不能拆已配装的套数。
+            ArmoryPlan home = PlanOf(homeId);
+            int sets = home.Surplus.Where(e => KitKind(e.EquipmentElement.Item) == KitMain).Sum(e => e.Amount);
+            MoveAll(home.Surplus, ItemsOf(_armories, homeId), party.ItemRoster);
             _plans.Remove(homeId);
             return sets;
         }
@@ -861,8 +867,7 @@ namespace GreyWardenPolicePurity
                 // 赢的目标就是「正在这里」的聚落时原版原地待命；办重建、请愿、练兵的原地驻留不算。
                 Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(lord);
                 if (lord.DefaultBehavior == AiBehavior.Hold && lord.MapEvent == null && here != null &&
-                    !GwpWardenDuties.HoldsAny(lord, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.Training) &&
-                    !GreyWardenFamilyBehavior.IsTrainingParty(lord))
+                    !GwpWardenDuties.HoldsAny(lord, WardenDuty.Reconstruction, WardenDuty.Issue))
                     Flag("LORD_HOLDING_AT_SETTLEMENT", "party=" + lord.StringId + "; settlement=" + here.StringId +
                         "; inside=" + (lord.CurrentSettlement == here) + "; faithVisit=" + GwpWardenVisitDesire.Describe(lord));
                 if (lord.Party.NumberOfAllMembers < lord.Party.PartySizeLimit * GwpTuning.Firesworn.AnomalyLowStrength)

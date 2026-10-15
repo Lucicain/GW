@@ -38,6 +38,11 @@ namespace GreyWardenPolicePurity
                 Settlement home = Settlement.Find(record.HomeId);
                 if (party.MapEvent != null)
                     continue;
+                if (record.Kind == FaithPartyKind.Training)
+                {
+                    TendTrainingTransport(record, party);
+                    continue;
+                }
 
                 switch (record.Phase)
                 {
@@ -187,10 +192,12 @@ namespace GreyWardenPolicePurity
         /// 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
         /// （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
         /// </summary>
-        private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind)
+        private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind, MobileParty? origin = null)
         {
             Clan police = PoliceStats.GetPoliceClan();
-            TextObject name = kind == FaithPartyKind.Mission
+            TextObject name = kind == FaithPartyKind.Training
+                ? GwpText.Create(GwpTextCatalog.gwp_training_transport_party)
+                : kind == FaithPartyKind.Mission
                 ? GwpText.Create(GwpTextCatalog.gwp_fs_mission_party)
                 : kind == FaithPartyKind.Balance
                     ? GwpText.Create(GwpTextCatalog.gwp_fs_balance_party, "VILLAGE", home.Name)
@@ -198,7 +205,7 @@ namespace GreyWardenPolicePurity
             // 所有者留空，和纠察队、追截队、练兵队一样（PolicePatrolBehavior 当年因为填了族长出过事）：
             // 填族长的话，这支队一打输，被俘豁免就把族长当败将强制逃亡，原版逃亡先销毁她正带着的部队（实机诊断 2026-10-08）。
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
+                origin?.Position ?? home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
             party.StringId = GwpPartyIdentity.Next(GwpIds.FaithPartyPrefix);
             party.ActualClan = police;
             party.MemberRoster.Clear();
@@ -399,8 +406,9 @@ namespace GreyWardenPolicePurity
             {
                 int homeArmed = homePlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
                 int targetArmed = targetPlan.Sets.Count(kit => !kit[KitMain].IsEmpty);
-                sets = (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
-                                       (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed;
+                int surplus = homePlan.Surplus.Where(e => KitKind(e.EquipmentElement.Item) == KitMain).Sum(e => e.Amount);
+                sets = Math.Min(surplus, (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
+                                       (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed);
             }
             return (Math.Max(0, men), Math.Max(0, sets));
         }
@@ -433,7 +441,7 @@ namespace GreyWardenPolicePurity
                 Sworn(row) - GwpTuning.Firesworn.MissionMinimumLeftBehind);
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Balance);
             int kits = ManParty(party, row, home, escort);
-            int cargo = LoadBalanceCargo(home.StringId, target.StringId, party);
+            int cargo = LoadBalanceCargo(home.StringId, party);
             row.LastBalance = now;
             Dispatch(_faithParties[party.StringId], party, target);
             GwpAiDiagnostics.WriteFaith("BALANCE_DISPATCHED",

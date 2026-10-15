@@ -47,8 +47,6 @@ namespace GreyWardenPolicePurity
 
         internal static class Training
         {
-            public const float ExperienceIntervalHours = 6f;
-            public const int ExperiencePerTroopPerInterval = 250;
             public const float ExchangeStayHours = 2f;
             public const float MovementIntentHours = 8f;
 
@@ -397,9 +395,6 @@ namespace GreyWardenPolicePurity
             // 信众村保护费：只收信众村（用户裁定：不再全图收），每户每天。
             public const float FaithProtectionPerHearth = 1f;
 
-            // 军械库：分完以后给增长留的余量（村子至少 10 套，按狂信者的 25%，不超过离上限还差的人数）。
-            public const float ArmoryReserveShare = 0.25f;
-            public const int ArmoryVillageReserveMinimum = 10;
             // 输了时死去的兵身上的东西，每件有这个概率归胜方，其余毁了。
             public const float ArmoryLossLootShare = 0.33f;
             // 自动结算：兵器每阶加 6% 伤害；护甲平均阶数每阶让挨的伤害除以 (1 + 8%)。

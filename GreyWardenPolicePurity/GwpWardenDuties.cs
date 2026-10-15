@@ -28,12 +28,10 @@ namespace GreyWardenPolicePurity
         Issue,
         /// <summary>请愿本职有待办请愿，或已在办：不接普通案件。</summary>
         IssueReserve,
-        /// <summary>正在练兵（练兵官或受训方）。</summary>
-        Training,
-        /// <summary>正在练兵，或练兵本职已练满在排队：不接新差事。</summary>
-        TrainingQueue,
         /// <summary>承办普通案件。</summary>
         OrdinaryCase,
+        /// <summary>玩家练兵订单挑选临时换兵来源；不是自动运兵占用。</summary>
+        StockExchange,
     }
 
     /// <summary>
@@ -65,8 +63,6 @@ namespace GreyWardenPolicePurity
                 [WardenDuty.ReconstructionReserve] = GreyWardenVillageReconstructionBehavior.ShouldReserveFromOrdinaryCases,
                 [WardenDuty.Issue] = GreyWardenIssueResolutionBehavior.IsIssueDutyParty,
                 [WardenDuty.IssueReserve] = GreyWardenIssueResolutionBehavior.ShouldReserveFromOrdinaryCases,
-                [WardenDuty.Training] = GreyWardenTrainingBehavior.IsTrainingOccupied,
-                [WardenDuty.TrainingQueue] = GreyWardenTrainingBehavior.ShouldReserveFromNewDuties,
                 [WardenDuty.OrdinaryCase] = party =>
                     GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && task.TargetCrimeId != CrimePool.PlayerCrimeId &&
                     !task.IsEscortingPlayer && !task.IsPlayerBountyEscort,
@@ -83,7 +79,7 @@ namespace GreyWardenPolicePurity
                 [WardenDuty.VillageRelief] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.TrainingQueue, WardenDuty.Assistance,
+                    WardenDuty.Assistance,
                 },
                 [WardenDuty.PlayerCase] = new[]
                 {
@@ -93,29 +89,29 @@ namespace GreyWardenPolicePurity
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
-                    WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve, WardenDuty.TrainingQueue,
+                    WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve,
                 },
                 [WardenDuty.Reconstruction] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.TrainingQueue,
+                    WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue,
                 },
                 [WardenDuty.Issue] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.TrainingQueue,
+                    WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue,
                 },
-                [WardenDuty.Training] = new[]
+                [WardenDuty.StockExchange] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
-                    WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.Training, WardenDuty.OrdinaryCase,
+                    WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.OrdinaryCase,
                 },
                 [WardenDuty.OrdinaryCase] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
-                    WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve, WardenDuty.TrainingQueue,
+                    WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve,
                     WardenDuty.OrdinaryCase,
                 },
             };

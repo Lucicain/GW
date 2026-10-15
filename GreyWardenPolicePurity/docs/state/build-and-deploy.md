@@ -2,14 +2,17 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`18779c6`（2026-10-15）
+> 已复核至：`93d5bd6`（2026-10-15）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
 ## 当前开发部署
 
-当前 live 是祭司最强后守村队按原版民兵速度补兵的开发构建（源码基线 `7320b86`），DLL SHA-256 前缀 `2769cfe93cbd703c`；
-live 一致、GameCompat、ContentKeys、PartyTransfers 177 项（含纯化整批换兵种）、Python 19 项、CaseSettlement.Tests 155 项均通过。（依据：构建与哈希 2026-10-15）
+当前 live 是实体运兵与全编制军械预留的监控开发构建（源码复核基线 `93d5bd6` 加本轮物流修改）；
+Client/Editor DLL SHA-256 同为 `f218c262ba971c2f893a62e8140225585ae2a1c7ec095b173078856687a2f407`。
+构建 0 错误/警告，74 个仓库 runtime 文件镜像一致；GameCompat 缺类型/成员 0，736 类型加载、90 补丁绑定通过；
+ContentKeys 缺失/重复 0；Python 20 项（运兵/存读/军械 31 断言）、实际游戏名册 177 断言、案件结算 155 断言通过。
+用户实测仍由各子系统列出，本轮新增运兵存档字段要求新档。（依据：构建、部署哈希与离线执行 2026-10-15）
 
 ## 两个开关决定一切
 
@@ -63,8 +66,9 @@ live 一致、GameCompat、ContentKeys、PartyTransfers 177 项（含纯化整�
 | `tests/test_atonement.py` | 42断言 | 抽取实际赎罪、委派入口与使者方法，覆盖未入会权限、交接、存档字段恢复、和平/战斗完成、多嫌犯、原版期限、实际申报、取消交付与不重复领奖；引擎边界为桩 |
 | `tests/test_battle_peace.py` | 62断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
 | `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
+| `tests/test_training_transport.py` | 31断言 | 抽取生产派队、交换、归队、落村、SyncData 与军械分配/缓存，核对减员、空队、失效原队、满编、海陆/战斗边界、冷却及同版存读；引擎行为为桩 |
 | `Verify-FounderProfiles.ps1` | 85断言 | 实际原版语体/选音、六组演员、战斗声音与性格合法互异；生产Harmony补丁范围与婚后接续 |
-| `Verify-PartyTransfers.ps1` | 173断言 | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
+| `Verify-PartyTransfers.ps1` | 177断言 | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
 | `tests/test_firesworn_logs.py` | 1 | 带BOM的启动标记、当前日志、归档，以及启动前后过滤 |
 | `BattleSceneTests` | 137 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 27 | 双刀 AI 与踢/盾击互斥 |

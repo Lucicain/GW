@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -12,11 +13,19 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpWardenPurification
     {
+        private sealed class RosterStamp { public int Version; }
+        // 纯化结果可由名册推导，不存档；弱引用避免销毁部队后缓存仍占着名册。
+        private static readonly ConditionalWeakTable<TroopRoster, RosterStamp> CheckedRosters =
+            new ConditionalWeakTable<TroopRoster, RosterStamp>();
+
         internal static void Purify(MobileParty party)
         {
             if (!GwpCommon.IsGreyWardenLordParty(party) || party.MapEvent != null)
                 return;
-            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster().ToList())
+            TroopRoster roster = party.MemberRoster;
+            if (CheckedRosters.TryGetValue(roster, out RosterStamp stamp) && stamp.Version == roster.VersionNo)
+                return;
+            foreach (TroopRosterElement element in roster.GetTroopRoster().ToList())
             {
                 CharacterObject troop = element.Character;
                 if (troop == null || troop.IsHero || GwpCommon.IsGreyWardenTroop(troop) || element.Number <= 0)
@@ -30,6 +39,7 @@ namespace GreyWardenPolicePurity
                     "from=" + troop.StringId + "; tier=" + troop.Tier + "; to=" + warden.StringId +
                     "; count=" + converted + "; wounded=" + element.WoundedNumber + "; kitItems=" + kitItems);
             }
+            CheckedRosters.GetValue(roster, _ => new RosterStamp()).Version = roster.VersionNo;
         }
 
         /// <summary>
