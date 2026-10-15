@@ -2,7 +2,7 @@
 
 > 当前状态：原有案件行为已验收；协力编队统一（空组放军团、先征调再建、会合、招兵统计）已部署待实测
 > 最后验收：`9d005bb`
-> 已复核至：`99a3fdb`（2026-10-15）
+> 已复核至：`a943736`（2026-10-15）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**`
 > 待实测：协力组不再反复拉人放人；最后一人走后军团消失、案子还在；组长打不过先会合；军团长缺兵会进城招兵
 

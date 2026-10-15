@@ -904,8 +904,10 @@ namespace GreyWardenPolicePurity
             if (!interceptor.IsCurrentlyAtSea)
                 PoliceResourceManager.ReturnLentShips(interceptor);
 
-            // 主队装得下的都回主队，灰袍兵先回；装不下的去最近的信众村加入守村队，
-            // 不从主队换人出来、不进城解散（用户裁定 2026-10-14）。
+            // 在陆上先全部并回主队，再把主队里最低阶的人拿出去（同阶的原版兵先走），去最近的信众村进守村队，
+            // 主队留下精锐（用户裁定 2026-10-15）。在海上没法下船，仍只回装得下的、灰袍兵先回，剩下的带着船去信众村
+            // （用户裁定 2026-10-14；10-15 确认海上这样就对）。都不进城解散。
+            bool atSea = interceptor.IsCurrentlyAtSea;
             int sourceMembersBefore = sourceParty.Party.NumberOfAllMembers;
             int availableSlotsBefore = Math.Max(0,
                 sourceParty.Party.PartySizeLimit - sourceMembersBefore);
@@ -919,7 +921,19 @@ namespace GreyWardenPolicePurity
                 .OrderBy(static element => GwpCommon.IsGreyWardenTroop(element.Character) ? 0 : 1)
                 .ToList();
             int returned = GwpTroopTransfer.MoveBatches(interceptor.MemberRoster,
-                sourceParty.MemberRoster, returningBatches, availableSlotsBefore);
+                sourceParty.MemberRoster, returningBatches, atSea ? availableSlotsBefore : int.MaxValue);
+            int handedOut = 0;
+            if (!atSea)
+            {
+                int overflow = Math.Min(returned, Math.Max(0,
+                    sourceParty.Party.NumberOfAllMembers - sourceParty.Party.PartySizeLimit));
+                handedOut = GwpTroopTransfer.MoveBatches(sourceParty.MemberRoster, interceptor.MemberRoster,
+                    sourceParty.MemberRoster.GetTroopRoster()
+                        .Where(static element => element.Character != null && !element.Character.IsHero && element.Number > 0)
+                        .OrderBy(static element => element.Character.Tier)
+                        .ThenBy(static element => GwpCommon.IsGreyWardenTroop(element.Character) ? 1 : 0)
+                        .ToList(), overflow);
+            }
             int prisonersHandedOver = GwpTroopTransfer.MoveBatches(interceptor.PrisonRoster,
                 sourceParty.PrisonRoster,
                 interceptor.PrisonRoster.GetTroopRoster()
@@ -959,6 +973,7 @@ namespace GreyWardenPolicePurity
                 "interceptor=" + state.PatrolPartyId +
                 "; returningWardens=" + returningWardens +
                 "; returned=" + returned +
+                "; handedOut=" + handedOut + "; atSea=" + atSea +
                 "; prisoners=" + prisonersHandedOver +
                 "; retiring=" + retiring +
                 "; availableSlotsBefore=" + availableSlotsBefore +

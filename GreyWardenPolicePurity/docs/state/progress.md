@@ -61,8 +61,8 @@
   - 协力组不再反复拉人放人；最后一人走后军团消失、案子还在；组长打不过先会合；军团长缺兵会进城招兵
 - [case-envoy.md](case-envoy.md)（首版已部署待实测）
   - 目标在城里时使者进城谈；结局更多样（打折、宽限、单挑、投案）；正在打仗的目标投案时使者等他打完再带走；agent 核对 `ENVOY_*` 日志
-- [case-interceptors.md](case-interceptors.md)（归队改为并回主队、多余的人去信众村，已部署待实测）
-  - 追截队回到主队时船当场还回、人和普通俘虏并入主队，主队装不下的人去最近的信众村进守村队（地图上不再有追截队往城里走）；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 与 `DETACHMENT_SETTLED`
+- [case-interceptors.md](case-interceptors.md)（在陆上先全部并回、再把低阶兵拿出去，已部署待实测）
+  - 在陆上归队后主队留下精锐，走去信众村的是主队里最低阶的兵；agent 核对 `IMMEDIATE_CASE_INTERCEPTOR_REJOINED` 的 handedOut 与 `DETACHMENT_SETTLED`
 - [cloth-assets.md](cloth-assets.md)（三件服装与弓箭手下摆按用户认可的手感定稿（2026-10-03，非原包值）；弓箭手不用替身，直接模拟，下摆为竖向渐变）
   - 弓箭手下摆定稿手感（用户进游戏体验）
 - [code-health.md](code-health.md)（已确认的配装、紧急补兵、编号与调兵状态缺陷已修复；通用吞异常包装已移除；正常卡顿耗时尚未测定）
