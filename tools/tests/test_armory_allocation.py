@@ -15,7 +15,7 @@ class ItemModifier {}
 class ModifierGroup {public ItemModifier GetRandomItemModifierLootScoreBased()=>null;}
 class ItemComponent {public ModifierGroup ItemModifierGroup;}
 class Mission {public static Mission Current=new Mission();}
-class ItemObject {public ItemComponent ItemComponent;public string StringId;public ItemFlags ItemFlags;public string RelevantSkill;public int Difficulty,Tier=3;public float Power=1;public ItemTypeEnum ItemType;public enum ItemTypeEnum {OneHandedWeapon,TwoHandedWeapon,Polearm,Thrown,Bow,Crossbow,Arrows,Bolts,Shield,HeadArmor,BodyArmor,LegArmor,HandArmor,Horse,HorseHarness,Cape}}
+class ItemObject {public bool NoMount;public ItemComponent ItemComponent;public string StringId;public ItemFlags ItemFlags;public string RelevantSkill;public int Difficulty,Tier=3;public float Power=1;public ItemTypeEnum ItemType;public enum ItemTypeEnum {OneHandedWeapon,TwoHandedWeapon,Polearm,Thrown,Bow,Crossbow,Arrows,Bolts,Shield,HeadArmor,BodyArmor,LegArmor,HandArmor,Horse,HorseHarness,Cape}}
 struct EquipmentElement {public ItemObject Item;public int Quality;public bool IsEmpty=>Item==null;public void SetModifier(ItemModifier modifier){Quality++;}public static EquipmentElement Invalid=>default;public EquipmentElement(ItemObject item){Item=item;Quality=0;} }
 class Equipment {public enum EquipmentType {Battle} readonly EquipmentElement[] slots=new EquipmentElement[12];public Equipment(EquipmentType type=EquipmentType.Battle){}public EquipmentElement this[int i]{get=>slots[i];set=>slots[i]=value;}public EquipmentElement this[EquipmentIndex i]{get=>slots[(int)i];set=>slots[(int)i]=value;}public Equipment Clone(){var e=new Equipment();Array.Copy(slots,e.slots,12);return e;} }
 class CharacterRegistry:IEnumerable<CharacterObject> {readonly Dictionary<string,CharacterObject> d=new Dictionary<string,CharacterObject>();public CharacterObject this[string id]{get=>d[id];set=>d[id]=value;}public IEnumerator<CharacterObject> GetEnumerator()=>d.Values.GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
@@ -48,6 +48,7 @@ readonly Dictionary<string,ArmoryPlan> _plans=new Dictionary<string,ArmoryPlan>(
 static ItemRoster ItemsOf(Dictionary<string,ItemRoster> d,string key){if(!d.ContainsKey(key))d[key]=new ItemRoster();return d[key];}
 static float Strength(EquipmentElement e)=>e.Item.Power+e.Quality;
 string HolderOf(PartyBase p)=>p.Id;
+static bool UsableMounted(ItemObject i)=>!i.NoMount;
 readonly Dictionary<string,ItemRoster> _goods=new Dictionary<string,ItemRoster>();readonly Dictionary<string,MobileParty> parties=new Dictionary<string,MobileParty>();MobileParty FindParty(string id)=>parties.TryGetValue(id,out var p)?p:null;
 readonly HashSet<string> battleHolders=new HashSet<string>();bool HolderInBattle(string id)=>battleHolders.Contains(id);
 ArmoryPlan BuildPlanFor(string id)=>PlanForCounts(id,ItemsOf(_armories,id),ArmoryTroops(rosters[id]),0);
@@ -121,6 +122,11 @@ public static int Main(){
  Check(ItemsOf(b._armories,"vv").Total==1&&ItemsOf(b._goods,"vv").Total==2,"village surplus goes to its warehouse");
  Check(ItemsOf(b._armories,"cart").Total==3&&cart.ItemRoster.Total==0,"leaderless parties keep their ledger");
  Check(ItemsOf(b._armories,"fight").Total==3&&fighting.ItemRoster.Total==0,"a party in battle keeps its frozen ledger");
+ // 骑马的只领马上用得了的武器；步兵不受限。
+ var longbow=Item("longbow",ItemObject.ItemTypeEnum.Bow,20);longbow.Item.NoMount=true;var shortbow=Item("shortbow",ItemObject.ItemTypeEnum.Bow,5);
+ var rider=Troop("gwrider",6,Gear((0,sword),(6,body),(10,horse)));var walker=Troop("gwwalker",6,Gear((0,sword),(6,body)));
+ stock=Stock((longbow,1),(shortbow,1),(arrows,2));plan=BuildPlan(stock,Troops((rider,1),(walker,1)),0);
+ Check(For(plan,rider)[KitRanged].Equals(shortbow)&&For(plan,walker)[KitRanged].Equals(longbow),"mounted kit skips a no-mount bow even though it is stronger; the foot soldier takes it");
  Console.WriteLine("ARMORY_ALLOCATION_ASSERTIONS="+checks+"; PASS");return 0;
 }
 }

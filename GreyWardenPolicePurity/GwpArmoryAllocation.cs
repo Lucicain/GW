@@ -119,6 +119,9 @@ namespace GreyWardenPolicePurity
             ArmoryKit kit = new ArmoryKit(troop, original.Clone());
             Equipment equipment = kit.Equipment;
             bool replace = CanReplaceArmoryEquipment(troop);
+            // 这一套骑马的（骑士），只发骑在马上用得了的武器，否则长弓、长枪、装不了箭的弩只会白占格子。
+            bool mounted = !equipment[EquipmentIndex.Horse].IsEmpty;
+            bool Fits(EquipmentElement e) => CanUse(troop, e.Item) && (!mounted || UsableMounted(e.Item));
             EquipmentIndex[] armor = { EquipmentIndex.Head, EquipmentIndex.Body, EquipmentIndex.Leg, EquipmentIndex.Gloves };
             for (int kind = KitHead; kind <= KitGloves; kind++)
             {
@@ -137,7 +140,7 @@ namespace GreyWardenPolicePurity
                 int slot = ArmoryWeaponSlot(equipment, kind, replace);
                 if (slot < 0) continue;
                 EquipmentElement own = equipment[slot];
-                EquipmentElement item = Take(buckets[kind], e => CanUse(troop, e.Item) && StrongerArmoryItem(e, own));
+                EquipmentElement item = Take(buckets[kind], e => Fits(e) && StrongerArmoryItem(e, own));
                 if (item.IsEmpty) continue;
                 kit.Items[kind] = item;
                 kit.Slots[kind] = slot;
@@ -148,7 +151,7 @@ namespace GreyWardenPolicePurity
             int rangedSlot = ArmoryWeaponSlot(equipment, KitRanged, replace);
             if (rangedSlot >= 0)
             {
-                EquipmentElement ranged = Take(buckets[KitRanged], e => CanUse(troop, e.Item) &&
+                EquipmentElement ranged = Take(buckets[KitRanged], e => Fits(e) &&
                     StrongerArmoryItem(e, equipment[rangedSlot]) && ArmoryAmmoSlot(equipment, e.Item, rangedSlot, replace, buckets[KitAmmo], troop) >= 0);
                 if (!ranged.IsEmpty)
                 {
@@ -185,7 +188,7 @@ namespace GreyWardenPolicePurity
             if (shieldSlot >= 0 && Enumerable.Range(0, WeaponSlots).Any(slot =>
                 !equipment[slot].IsEmpty && equipment[slot].Item.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon))
             {
-                EquipmentElement item = Take(buckets[KitShield], e => CanUse(troop, e.Item) && StrongerArmoryItem(e, equipment[shieldSlot]));
+                EquipmentElement item = Take(buckets[KitShield], e => Fits(e) && StrongerArmoryItem(e, equipment[shieldSlot]));
                 if (!item.IsEmpty) { kit.Items[KitShield] = item; kit.Slots[KitShield] = shieldSlot; equipment[shieldSlot] = item; }
             }
             if (replace)

@@ -158,6 +158,17 @@ namespace GreyWardenPolicePurity
         private static bool CanUse(CharacterObject troop, ItemObject item) =>
             item.RelevantSkill == null || item.Difficulty <= troop.GetSkillValue(item.RelevantSkill);
 
+        /// <summary>
+        /// 骑在马上能不能用：至少有一种用法不要求下马，而且不是在马上装不了箭的弩。原版 item_usage_sets 里长弓、长枪、
+        /// 架枪姿势等用法标了 requires_no_mount，引擎用 MBItem.GetItemUsageSetFlags 查；弩另有 CantReloadOnHorseback
+        /// （C#反编译 v1.4.8 MBItem、MissionWeapon、WeaponFlags；Native item_usage_sets.xml）。
+        /// </summary>
+        private static bool UsableMounted(ItemObject item) =>
+            item.WeaponComponent?.Weapons.Any(weapon =>
+                !weapon.WeaponFlags.HasAnyFlag(WeaponFlags.CantReloadOnHorseback) &&
+                (string.IsNullOrEmpty(weapon.ItemUsage) ||
+                 (MBItem.GetItemUsageSetFlags(weapon.ItemUsage) & ItemObject.ItemUsageSetFlags.RequiresNoMount) == 0)) ?? true;
+
         private static ItemObject.ItemTypeEnum AmmoFor(ItemObject ranged) =>
             ranged.ItemType == ItemObject.ItemTypeEnum.Crossbow ? ItemObject.ItemTypeEnum.Bolts : ItemObject.ItemTypeEnum.Arrows;
 

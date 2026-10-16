@@ -8,8 +8,8 @@
 
 ## 当前开发部署
 
-当前 live 是 `21d68f0` 加上「领主多余装备每天进背包」的监控开发构建（领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜、闪退取证诊断都在内）。
-Client/Editor DLL SHA-256 同为 `83cec4b6324f714a125f1c05a1d0eb313ac621c5888c7005f8b3e14c5e4bbec0`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
+当前 live 是 `a3ba641` 加上「骑兵只领马上可用的武器」的监控开发构建（领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜、闪退取证诊断都在内）。
+Client/Editor DLL SHA-256 同为 `224ea0f2981954acff7111f270a0f7278531baedb1325a2b076e8d5fae3c39d1`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
 构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；名册转移 177 断言通过。（依据：构建、部署哈希与离线执行 2026-10-16）
 
 ## 两个开关决定一切
