@@ -6018,6 +6018,131 @@
       "en": "{COUNT} veterans joined the village guard.",
       "zh": "{COUNT}名老兵加入守村队。",
       "context": "单程运兵队到村交付后显示的聚落动态。"
+    },
+    "gwp_case_envoy_suffix": {
+      "en": "{VAR_1} | Envoy: {VAR_2}",
+      "zh": "{VAR_1} | 使者：{VAR_2}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_travelling": {
+      "en": "on the way, at most about {VAR_1} h more",
+      "zh": "在路上，最多还要约{VAR_1}小时",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_collecting": {
+      "en": "on the way to collect the payment after the grace period",
+      "zh": "宽限到期，去收罚金",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_failed": {
+      "en": "talks broke down; pursuit as usual",
+      "zh": "谈崩了，照常追捕",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_grace": {
+      "en": "grace granted until {VAR_1}",
+      "zh": "给了宽限，到{VAR_1}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_duel": {
+      "en": "to be settled at the tournament in {VAR_1}",
+      "zh": "约在{VAR_1}的比武大会上了结",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_helper_paused": {
+      "en": "{VAR_1} | Paused while helping {VAR_2}",
+      "zh": "{VAR_1} | 暂停：正在协助{VAR_2}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_report_header": {
+      "en": "Envoy report: {VAR_1}",
+      "zh": "使者回报：{VAR_1}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_report_time": {
+      "en": "Reported: {VAR_1}",
+      "zh": "回报时间：{VAR_1}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_report_warden": {
+      "en": "Sent by: {VAR_1}",
+      "zh": "派出：{VAR_1}",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_grace": {
+      "en": "Asked for grace. An envoy will collect the fine when it runs out.",
+      "zh": "对方求了宽限，到期再派使者收钱。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_duel_called": {
+      "en": "Demanded a duel at the tournament in {VAR_1}.",
+      "zh": "对方要单挑，约在{VAR_1}的比武大会。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_paid": {
+      "en": "Paid {VAR_1} denars. Case closed.",
+      "zh": "缴了{VAR_1}第纳尔，结案。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_paid_share": {
+      "en": "Paid part of the fine, {VAR_1} denars. Case closed.",
+      "zh": "缴了部分罚金{VAR_1}第纳尔，结案。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_surrender": {
+      "en": "Surrendered to the envoy. Case closed.",
+      "zh": "向使者投案，结案。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_bribed": {
+      "en": "The Warden took {VAR_1} denars on the side, and the case was dropped.",
+      "zh": "承办人私下收了{VAR_1}第纳尔，案子销掉。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_duel_won": {
+      "en": "The Warden won the duel. The offender paid {VAR_1} denars.",
+      "zh": "灰袍比武胜出，对方缴了{VAR_1}第纳尔。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_duel_lost": {
+      "en": "The offender won the duel and was let go as agreed.",
+      "zh": "对方比武胜出，依约放走。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_refused": {
+      "en": "Refused to listen. Pursuit continues.",
+      "zh": "对方不肯谈，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_talks_failed": {
+      "en": "The talks failed. Pursuit continues.",
+      "zh": "没谈拢，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_grace_broke": {
+      "en": "Could not pay when the grace ran out. Pursuit continues.",
+      "zh": "宽限到期付不出钱，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_lost": {
+      "en": "The envoy never came back. Pursuit continues.",
+      "zh": "使者没能回来，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_timeout": {
+      "en": "The envoy ran out of time, or war broke out first. Pursuit continues.",
+      "zh": "使者超时或已开战，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_duel_cancelled": {
+      "en": "The duel fell through. Pursuit continues.",
+      "zh": "比武约定作废，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_envoy_outcome_failed": {
+      "en": "The talks came to nothing. Pursuit continues.",
+      "zh": "谈判没有结果，照常追捕。",
+      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     }
   },
   "fragments": {

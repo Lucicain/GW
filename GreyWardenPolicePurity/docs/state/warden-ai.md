@@ -2,7 +2,7 @@
 
 > 当前状态：整批交俘与访问需求已对齐，修复少量地牢名额导致的两村折返；离线通过待实测
 > 最后验收：未建立检查点
-> 已复核至：`81d6475`（2026-10-16）
+> 已复核至：`1782a40`（2026-10-16）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
@@ -17,7 +17,8 @@
 
 各差事系统各自挑人，但「谁挡得住谁」只写在 `GwpWardenDuties`：每种差事登记一个「谁正在做我」的判断
 （全部取自各系统已存档的状态），`BlockedBy` 表写明想接某种差事时哪些差事会挡住你；挑人时只问
-`IsFreeFor(部队, 差事)`。表里没列的，是这种差事压得过的，由那一边自己让路（取消或退回）。
+`IsFreeFor(部队, 差事)`。表里没列的，是这种差事压得过的，由那一边自己让路（请愿取消；普通案件被协力征调时留在协办人手上暂停，
+见 [案件](case-enforcement.md)「协力编队」）。
 新加差事 = 登记一个判断 + 写一行。不得在别处直接调用其他系统的占用判断。（依据：设计 2026-10-07；归属检查拦截）
 
 以前 8 个挑人函数各抄一份清单，彼此有出入；统一时唯一的行为变化是请愿和重建不再从协力组里拉人。

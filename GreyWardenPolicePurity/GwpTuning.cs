@@ -91,6 +91,8 @@ namespace GreyWardenPolicePurity
             /// </summary>
             public const int EnvoySize = 5;
             public const double EnvoyTimeoutHours = 72d;
+            /// <summary>案件台账里留几条最近的使者回报（用户裁定 2026-10-16：显示使者进度和结果）。</summary>
+            public const int EnvoyReportsKept = 12;
             /// <summary>
             /// 约到比武大会后最多等这么多天（试玩值）。到期两人都在城里就按原版结算把那场打完，有人没到就按原版比武评分比一次。
             /// 原版新开的比武要满 10 天才可能自行结束（DefaultTournamentModel.GetTournamentEndChance），所以这里必须自己收尾。

@@ -858,6 +858,24 @@ namespace GreyWardenPolicePurity
             //     Colors.Cyan));
         }
 
+#if GWP_DIAGNOSTICS
+        // 正在协力、自己的案子暂停的协办人。只给诊断去重用：读档后第一次再记一条暂停，不影响游戏，不进存档。
+        private readonly HashSet<string> _pausedHelperCases =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private void TraceHelperCasePause(MobileParty police, PoliceTask task, bool paused)
+        {
+            if (paused ? !_pausedHelperCases.Add(police.StringId) : !_pausedHelperCases.Remove(police.StringId))
+                return;
+            GwpAiDiagnostics.WriteAction(police,
+                paused ? "ASSISTANCE_HELPER_CASE_PAUSED" : "ASSISTANCE_HELPER_CASE_RESUMED",
+                "crime=" + task.TargetCrimeId + "; target=" + (task.TargetCrime?.Offender?.StringId ?? "-") +
+                "; envoy=" + (_envoyCases.TryGetValue(task.TargetCrimeId, out EnvoyCase? envoyCase)
+                    ? envoyCase.Stage.ToString() : "-") +
+                "; warDeclared=" + task.WarDeclared);
+        }
+#endif
+
         private void UpdateTasks()
         {
             foreach (var kvp in CrimeState.ActiveTasks.ToList())
@@ -950,6 +968,19 @@ namespace GreyWardenPolicePurity
                     EndCaseTask(kvp.Key, CaseTaskEnd.Released, "offender_party_inactive");
                     continue;
                 }
+
+                // 他正在协助别人：自己的案子先放着，不派使者、不宣战；已派出的使者由 TendEnvoyCases 照常办完，
+                // 谈成就结案，谈崩的等协力结束接着办（用户裁定 2026-10-16）。
+                if (IsAssistanceMember(pp.StringId))
+                {
+#if GWP_DIAGNOSTICS
+                    TraceHelperCasePause(pp, task, true);
+#endif
+                    continue;
+                }
+#if GWP_DIAGNOSTICS
+                TraceHelperCasePause(pp, task, false);
+#endif
 
                 // 宣战前先派使者去谈；使者在路上、宽限中或约了比武时不宣战（用户裁定 2026-10-15）。
                 if (HoldWarForEnvoy(pp, task, criminal))

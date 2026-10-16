@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.Library;
 using TaleWorlds.ScreenSystem;
@@ -329,6 +330,9 @@ namespace GreyWardenPolicePurity
 
             foreach (CrimeRecord record in unassignedCases)
                 Cases.Add(new GwpCaseArchiveItemVM(record, null));
+            // 最近几次使者回报（用户裁定 2026-10-16：显示使者进度和结果）。案子结了卷宗就没了，回报单独成行。
+            foreach (PoliceEnforcementBehavior.EnvoyReport report in PoliceEnforcementBehavior.GetEnvoyReports())
+                Cases.Add(new GwpCaseArchiveItemVM(report));
             foreach (GreyWardenVillageAdoptionBehavior.VillageReliefTaskSnapshot task in
                      reliefTasks.Where(task => !task.IsAssigned))
                 Cases.Add(new GwpCaseArchiveItemVM(task));
@@ -479,7 +483,7 @@ namespace GreyWardenPolicePurity
                 "VAR_1", FormatCampaignDate(record.LastCrimeTime),
                 "VAR_2", FormatCampaignDate(record.OccurredTime));
 
-            AssignmentText = BuildAssignmentText(record, task);
+            AssignmentText = AppendEnvoyStatus(AppendHelperPause(BuildAssignmentText(record, task), task), record);
 
             string crimeType = string.IsNullOrWhiteSpace(record.CrimeType)
                 ? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_010)
@@ -493,6 +497,40 @@ namespace GreyWardenPolicePurity
                 "VAR_2", victim,
                 "VAR_3", FormatLocation(record.Location));
         }
+
+        /// <summary>一次使者谈判的结果。</summary>
+        internal GwpCaseArchiveItemVM(PoliceEnforcementBehavior.EnvoyReport report)
+        {
+            string offenderName = Hero.Find(report.OffenderHeroId)?.Name?.ToString()
+                                  ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_048);
+            string wardenName = Hero.Find(report.WardenHeroId)?.Name?.ToString()
+                                ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_047);
+            Header = GwpText.Get(GwpTextCatalog.gwp_envoy_report_header, "VAR_1", offenderName);
+            TimeText = GwpText.Get(GwpTextCatalog.gwp_envoy_report_time,
+                "VAR_1", FormatCampaignDate(CampaignTime.Hours((float)report.Hours)));
+            AssignmentText = GwpText.Get(GwpTextCatalog.gwp_envoy_report_warden, "VAR_1", wardenName);
+            DetailsText = DescribeEnvoyOutcome(report);
+        }
+
+        private static string DescribeEnvoyOutcome(PoliceEnforcementBehavior.EnvoyReport report) => report.Outcome switch
+        {
+            "grace" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_grace),
+            "duel_called" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_called,
+                "VAR_1", Settlement.Find(report.TownId)?.Name?.ToString() ?? string.Empty),
+            "paid" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_paid, "VAR_1", report.Amount),
+            "paid_share" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_paid_share, "VAR_1", report.Amount),
+            "surrender" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_surrender),
+            "bribed" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_bribed, "VAR_1", report.Amount),
+            "duel_won" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_won, "VAR_1", report.Amount),
+            "duel_lost" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_lost),
+            "refused" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_refused),
+            "talks_failed" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_talks_failed),
+            "grace_broke" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_grace_broke),
+            "lost" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_lost),
+            "timeout" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_timeout),
+            "duel_cancelled" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_cancelled),
+            _ => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_failed)
+        };
 
         internal GwpCaseArchiveItemVM(
             PoliceEnforcementBehavior.AssistanceTaskSnapshot assistance)
@@ -794,6 +832,44 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_gwpcasearchivescreen_016,
                 "VAR_1", assignee,
                 "VAR_2", DescribeTaskStage(task));
+        }
+
+        /// <summary>承办人正在协助别人：他自己这宗案子暂停（用户裁定 2026-10-16）。</summary>
+        private static string AppendHelperPause(string text, PoliceTask? task)
+        {
+            if (task == null) return text;
+            MobileParty? owner = MobileParty.All.FirstOrDefault(candidate =>
+                string.Equals(candidate.StringId, task.PolicePartyId, StringComparison.OrdinalIgnoreCase));
+            MobileParty? leader = PoliceEnforcementBehavior.AssistingLeaderOf(owner);
+            if (leader == null) return text;
+            return GwpText.Get(GwpTextCatalog.gwp_case_helper_paused, "VAR_1", text,
+                "VAR_2", leader.LeaderHero?.Name?.ToString() ?? leader.Name?.ToString() ?? string.Empty);
+        }
+
+        /// <summary>这宗案子的使者走到哪一步了（用户裁定 2026-10-16：显示使者进度和结果）。</summary>
+        private static string AppendEnvoyStatus(string text, CrimeRecord record)
+        {
+            PoliceEnforcementBehavior.EnvoyStatus? found = PoliceEnforcementBehavior.GetEnvoyStatus(record.CrimeId);
+            if (found == null) return text;
+            PoliceEnforcementBehavior.EnvoyStatus status = found.Value;
+            string? stage = status.Stage switch
+            {
+                PoliceEnforcementBehavior.EnvoyStage.Travelling when status.CollectOnly =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_collecting),
+                PoliceEnforcementBehavior.EnvoyStage.Travelling =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_travelling, "VAR_1",
+                        Math.Max(1, (int)Math.Ceiling(status.DueHours - CampaignTime.Now.ToHours))),
+                PoliceEnforcementBehavior.EnvoyStage.Failed =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_failed),
+                PoliceEnforcementBehavior.EnvoyStage.Grace =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_grace, "VAR_1",
+                        FormatCampaignDate(CampaignTime.Hours((float)status.DueHours))),
+                PoliceEnforcementBehavior.EnvoyStage.Duel or PoliceEnforcementBehavior.EnvoyStage.DuelDecided =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_duel, "VAR_1",
+                        Settlement.Find(status.TownId)?.Name?.ToString() ?? string.Empty),
+                _ => null
+            };
+            return stage == null ? text : GwpText.Get(GwpTextCatalog.gwp_case_envoy_suffix, "VAR_1", text, "VAR_2", stage);
         }
 
         private static string ResolveOffenderName(CrimeRecord record)

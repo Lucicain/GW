@@ -70,7 +70,8 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 想接左边这种差事时，身上挂着右边任何一种就不行。没列出来的，是左边这种差事压得过的——
-        /// 由那一边的系统自己让路（取消或退回，普通案件被协力抽调就退回台账）。
+        /// 由那一边的系统自己让路（请愿被协力抽调就取消；普通案件留在他手上，协力期间暂停，
+        /// 协力结束接着办，用户裁定 2026-10-16）。
         /// 玩家贵族事务和练兵订单是指定的人，谁都压不过，所以不在左边。
         /// </summary>
         private static readonly Dictionary<WardenDuty, WardenDuty[]> BlockedBy =

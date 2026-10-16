@@ -31,7 +31,7 @@ class Roster { public int TotalManCount=99,TotalWounded; }
 class PartyBase { public int NumberOfHealthyMembers=99; }
 class MobileParty {
  public enum NavigationType { None,Default }
- public string StringId="";public bool IsActive=true,IsWarden=true,IsCurrentlyAtSea,Reserved,Reachable=true,IsCaravan;public float Passers;
+ public string StringId="";public bool IsActive=true,IsWarden=true,IsCurrentlyAtSea,Reserved,Reachable=true,IsCaravan;public float Passers;public string? EnvoyBlocked="stub_no_envoy";
  public Hero? LeaderHero=new Hero();public object? MapEvent,CurrentSettlement;public bool IsMainParty;
  public Kingdom MapFaction=new Kingdom();
  public Roster MemberRoster=new Roster();public PartyBase Party=new PartyBase();public float PartySizeRatio=.62f,NormalLimit=1f,Strength=40,LastCalculatedBaseSpeed=4;
@@ -52,7 +52,7 @@ class Army {
  public void AddPartyToMergedParties(MobileParty p){p.AttachedTo=LeaderParty;}
  private object? _hourlyTickEvent,_tickEvent;public int TickRestores;private void OnAfterLoad(){_hourlyTickEvent=new object();_tickEvent=new object();TickRestores++;}public bool HasTicks=>_hourlyTickEvent!=null&&_tickEvent!=null;
 }
-class CrimeRecord { public bool HasOpenCase=true;public MobileParty Offender=null!; }
+class CrimeRecord { public bool HasOpenCase=true;public string CrimeId="crime";public MobileParty Offender=null!; }
 class PoliceTask { public string PolicePartyId="leader",TargetCrimeId="crime";public bool IsPlayerBountyEscort,IsEscortingPlayer,WarDeclared;public float LeaderSoloSpeedAtAssignment=4; public CrimeRecord TargetCrime=new CrimeRecord(); }
 static class CrimeState { public static Dictionary<string,PoliceTask> Tasks=new();public static PoliceTask? GetTask(string id)=>Tasks.TryGetValue(id,out var t)?t:null;public static void RefreshAccepting(){} }
 static class CrimePool {public const int MaxTaskPoolEntries=10;public static void TrimOpenCasesToCapacity(int n){} }
@@ -98,7 +98,10 @@ public partial class PoliceEnforcementBehavior {
  private bool TryCaptureAssistanceLeaderSoloSpeed(MobileParty p,PoliceTask t)=>true;
  private void ExitAssistancePlayerBountyEscort(MobileParty p,LordAssistanceGroup g)=>_playerBountyEscortGroups.Remove(g.LeaderPartyId);
  private static string FormatStrengthDiagnostic(MobileParty a,MobileParty b,float c,float d)=>"";
- private void ReleaseCandidateCaseToPool(MobileParty p){CrimeState.Tasks.Remove(p.StringId);}
+ internal enum EnvoyStage { Travelling,Failed,Grace,Duel,DuelDecided,Aftermath }
+ private sealed class EnvoyCase {public string WardenPartyId="";public EnvoyStage Stage;}
+ private Dictionary<string,EnvoyCase> _envoyCases=new();
+ private static string? EnvoyBlocker(MobileParty police,MobileParty criminal)=>police.EnvoyBlocked;
  private bool IsAssistanceMember(string id)=>_assistanceGroups.Values.Any(g=>g.MemberPartyIds.Contains(id));
  internal static bool Occupied(MobileParty p)=>_instance?._assistanceGroups.ContainsKey(p.StringId)==true||_instance?.IsAssistanceMember(p.StringId)==true;
  private static void DetachDelayPatrolFromArmy(MobileParty p){p.Army=null;}
@@ -158,6 +161,16 @@ public partial class PoliceEnforcementBehavior {
   for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(g.MemberPartyIds.Count==1,"helper kept while passers keep local threat above release margin");
   t.Passers=0;for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"surplus helper released once passers leave");
   e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"released helper not re-requested for the same target");
+  // 使者有结果之前不调人；谈崩才组协力（用户裁定 2026-10-16）。
+  e=Setup(out l,out h,out t);l.EnvoyBlocked=null;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0&&h.Army==null,"no helper before the envoy is sent");
+  l.EnvoyBlocked="stub_no_envoy";e._envoyCases["crime"]=new EnvoyCase{WardenPartyId="leader",Stage=EnvoyStage.Travelling};e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"no helper while the envoy travels");
+  e._envoyCases["crime"].Stage=EnvoyStage.Duel;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"no helper while a duel is arranged");
+  e._envoyCases["crime"].Stage=EnvoyStage.Failed;e.UpdateLordAssistance();Check(l.Army!=null&&h.Army==l.Army,"broken talks raise assistance");
+  e=Setup(out l,out h,out t);l.EnvoyBlocked=null;CrimeState.Tasks["leader"].WarDeclared=true;e.UpdateLordAssistance();Check(l.Army!=null,"declared case does not wait for an envoy");
+  // 协办人自己的案子留着；自己约了比武的调不走。
+  e=Setup(out l,out h,out t);var own=new PoliceTask{PolicePartyId="helper",TargetCrimeId="own",TargetCrime=new CrimeRecord{CrimeId="own",Offender=new MobileParty{StringId="other",IsWarden=false}}};CrimeState.Tasks["helper"]=own;
+  e.UpdateLordAssistance();Check(h.Army==l.Army&&CrimeState.GetTask("helper")==own,"helper keeps own case while helping");
+  e=Setup(out l,out h,out t);CrimeState.Tasks["helper"]=own;e._envoyCases["own"]=new EnvoyCase{WardenPartyId="helper",Stage=EnvoyStage.DuelDecided};e.UpdateLordAssistance();Check(h.Army==null&&e._assistanceGroups.Count==0,"helper held for a duel is not drafted");
   VisitChecks(l,h);
   l.Army=null;h.Army=null;var recruitingArmy=new Army(null,l,Army.ArmyTypes.Patrolling);h.Army=recruitingArmy;
   var entry=new NativeRecruiter();var village=new Settlement();entry.OnBeforeSettlementEntered(l,village,l.LeaderHero!);
@@ -199,7 +212,7 @@ class AssistanceTests(unittest.TestCase):
                  'MaintainAssistancePlayerBountyEscort', 'GrowPlayerBountyAssistanceStrength',
                  'AdvancePlayerBountyAssistanceStrength', 'EnsureCommittedStrengthAdvantage',
                  'GetCommittedAssistanceStrength', 'GetAvailableAssistanceCandidates',
-                 'IsAvailableAssistanceCandidate', 'MaintainAssistanceArmy', 'CreateOrRecoverAssistanceArmy',
+                 'IsAvailableAssistanceCandidate', 'IsHeldForDuel', 'IsAwaitingEnvoyResult', 'MaintainAssistanceArmy', 'CreateOrRecoverAssistanceArmy',
                  'TryAddAssistanceMember', 'TryMergeArmyMember', 'ReleasePartyFromAssistance',
                  'TryShrinkAssistanceGroup', 'RemoveAssistanceMember', 'ReleaseAssistanceGroup',
                  'IsArmyOwnedByGroup', 'IsActiveAssistanceArmy', 'TryGetAssistanceDuty',

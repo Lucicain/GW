@@ -202,6 +202,14 @@ namespace GreyWardenPolicePurity
 
                 if (!_assistanceGroups.TryGetValue(leader.StringId, out LordAssistanceGroup? group))
                 {
+                    // 使者有结果之前不调人（用户裁定 2026-10-16）：谈成就结案，用不着协力；谈崩了再组。
+                    if (IsAwaitingEnvoyResult(leader, task!, offender))
+                    {
+#if GWP_DIAGNOSTICS
+                        TraceAssistanceEnvoyWait(leader, task!);
+#endif
+                        continue;
+                    }
                     group = TryFormAssistanceGroup(leader, task!, offender);
                     if (group == null) continue;
                 }
@@ -254,6 +262,41 @@ namespace GreyWardenPolicePurity
                         GwpStrength.EnemyAround(leader, offender));
             }
         }
+
+        /// <summary>
+        /// 这宗案子还在等使者的结果：使者在路上、宽限或约了比武，或者还没派、但承办人派得出（他在打仗时
+        /// 仗打完就派）。判断和 <see cref="HoldWarForEnvoy"/> 同一套：那边不宣战的时候，这边也不调人。
+        /// 已宣战的、玩家的、玩家请来支援的案子不派使者，不等。
+        /// </summary>
+        private bool IsAwaitingEnvoyResult(MobileParty leader, PoliceTask task, MobileParty offender)
+        {
+            CrimeRecord? crime = task.TargetCrime;
+            if (task.WarDeclared || task.IsPlayerBountyEscort || offender.IsMainParty || crime == null)
+                return false;
+            if (_envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase))
+                return envoyCase.Stage != EnvoyStage.Failed;
+            return leader.MapEvent != null || EnvoyBlocker(leader, offender) == null;
+        }
+
+#if GWP_DIAGNOSTICS
+        // 组长 → 上一次记下的等待内容。只在变化时写一行，不进存档。
+        private readonly Dictionary<string, string> _assistanceEnvoyWaitTrace =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private void TraceAssistanceEnvoyWait(MobileParty leader, PoliceTask task)
+        {
+            string stage = _envoyCases.TryGetValue(task.TargetCrimeId, out EnvoyCase? envoyCase)
+                ? envoyCase.Stage.ToString()
+                : "not_sent";
+            string current = task.TargetCrimeId + ":" + stage;
+            if (_assistanceEnvoyWaitTrace.TryGetValue(leader.StringId, out string? last) && last == current) return;
+            _assistanceEnvoyWaitTrace[leader.StringId] = current;
+            GwpAiDiagnostics.WriteAction(leader, "ASSISTANCE_WAITING_FOR_ENVOY",
+                "crime=" + task.TargetCrimeId + "; envoyStage=" + stage +
+                "; leaderStrength=" + GwpStrength.Party(leader).ToString("0") +
+                "; needed=" + GwpStrength.CaseTarget(task.TargetCrime).ToString("0"));
+        }
+#endif
 
         /// <summary>
         /// 组长自己打不过（或已有本案临时支援在场）时组一个协力组：先征调协办人，再由
@@ -873,13 +916,21 @@ namespace GreyWardenPolicePurity
             if (helper == null)
                 return false;
 
-            ReleaseCandidateCaseToPool(helper);
+            // 协办人手上的案子留着（用户裁定 2026-10-16）：协力期间先放着，他已派出的使者照常谈，
+            // 谈成就结案；谈崩的等协力结束他接着办（UpdateTasks 里按协办人跳过）。
+#if GWP_DIAGNOSTICS
+            PoliceTask? kept = CrimeState.GetTask(helper.StringId);
+            if (kept != null)
+                GwpAiDiagnostics.WriteAction(helper, "ASSISTANCE_HELPER_CASE_KEPT",
+                    "leader=" + leader.StringId + "; ownCrime=" + kept.TargetCrimeId +
+                    "; ownEnvoy=" + (_envoyCases.TryGetValue(kept.TargetCrimeId, out EnvoyCase? ownEnvoy)
+                        ? ownEnvoy.Stage.ToString() : "-") +
+                    "; warDeclared=" + kept.WarDeclared);
+#endif
             group.MemberPartyIds.Add(helper.StringId);
             group.MemberPartyIds = group.MemberPartyIds
                 .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             _assistanceAssignedHours[helper.StringId] = CampaignTime.Now.ToHours;
-            CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries);
 
             if (army != null)
             {
@@ -927,13 +978,36 @@ namespace GreyWardenPolicePurity
             return IsActiveGreyWardenLordParty(candidate) && candidate != leader &&
                    candidate!.MapEvent == null && candidate.LeaderHero?.IsPrisoner != true &&
                    candidate.Army == null &&
-                   GwpWardenDuties.IsFreeFor(candidate, WardenDuty.Assistance);
+                   GwpWardenDuties.IsFreeFor(candidate, WardenDuty.Assistance) &&
+                   !IsHeldForDuel(candidate);
         }
 
-        private void ReleaseCandidateCaseToPool(MobileParty helper)
+        /// <summary>他自己的使者约了比武，正在赶去或留城等赛：调不走。</summary>
+        private bool IsHeldForDuel(MobileParty party) =>
+            _envoyCases.Values.Any(envoyCase =>
+                (envoyCase.Stage == EnvoyStage.Duel || envoyCase.Stage == EnvoyStage.DuelDecided) &&
+                string.Equals(envoyCase.WardenPartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>协办人离开所在的协力组和它的军团（例如他自己的使者约了比武）。</summary>
+        private void LeaveAssistanceAsMember(MobileParty party, string reason)
         {
-            EndCaseTask(helper.StringId, CaseTaskEnd.Released, "helper_released_to_assistance");
-            GreyWardenPartyDesireBehavior.ClearIntent(helper);
+            LordAssistanceGroup? group = _assistanceGroups.Values.FirstOrDefault(candidate =>
+                candidate.MemberPartyIds.Contains(party.StringId, StringComparer.OrdinalIgnoreCase));
+            if (group == null) return;
+            RemoveAssistanceMember(group, party.StringId);
+            if (party.Army != null && party.Army.LeaderParty != party)
+                party.Army = null;
+            GwpAiDiagnostics.WriteAction(party, "ASSISTANCE_MEMBER_LEFT",
+                "leader=" + group.LeaderPartyId + "; reason=" + reason);
+        }
+
+        /// <summary>案件台账用：这支部队正在协助哪位组长；不是协办人返回 null。</summary>
+        internal static MobileParty? AssistingLeaderOf(MobileParty? party)
+        {
+            if (_instance == null || party == null) return null;
+            LordAssistanceGroup? group = _instance._assistanceGroups.Values.FirstOrDefault(candidate =>
+                candidate.MemberPartyIds.Contains(party.StringId, StringComparer.OrdinalIgnoreCase));
+            return group == null ? null : FindActiveParty(group.LeaderPartyId);
         }
 
         private static void TryMergeArmyMember(Army army, MobileParty leader,

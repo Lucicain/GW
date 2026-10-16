@@ -1477,5 +1477,30 @@
   <string id="gwp_training_ledger_settle" text="运兵队正带余兵前往{VAR_1}，到村后并入守村队。" />
   <string id="gwp_training_stage_settle" text="回村落脚" />
   <string id="gwp_notice_training" text="{COUNT}名老兵加入守村队。" />
+  <string id="gwp_case_envoy_suffix" text="{VAR_1} | 使者：{VAR_2}" />
+  <string id="gwp_case_envoy_travelling" text="在路上，最多还要约{VAR_1}小时" />
+  <string id="gwp_case_envoy_collecting" text="宽限到期，去收罚金" />
+  <string id="gwp_case_envoy_failed" text="谈崩了，照常追捕" />
+  <string id="gwp_case_envoy_grace" text="给了宽限，到{VAR_1}" />
+  <string id="gwp_case_envoy_duel" text="约在{VAR_1}的比武大会上了结" />
+  <string id="gwp_case_helper_paused" text="{VAR_1} | 暂停：正在协助{VAR_2}" />
+  <string id="gwp_envoy_report_header" text="使者回报：{VAR_1}" />
+  <string id="gwp_envoy_report_time" text="回报时间：{VAR_1}" />
+  <string id="gwp_envoy_report_warden" text="派出：{VAR_1}" />
+  <string id="gwp_envoy_outcome_grace" text="对方求了宽限，到期再派使者收钱。" />
+  <string id="gwp_envoy_outcome_duel_called" text="对方要单挑，约在{VAR_1}的比武大会。" />
+  <string id="gwp_envoy_outcome_paid" text="缴了{VAR_1}第纳尔，结案。" />
+  <string id="gwp_envoy_outcome_paid_share" text="缴了部分罚金{VAR_1}第纳尔，结案。" />
+  <string id="gwp_envoy_outcome_surrender" text="向使者投案，结案。" />
+  <string id="gwp_envoy_outcome_bribed" text="承办人私下收了{VAR_1}第纳尔，案子销掉。" />
+  <string id="gwp_envoy_outcome_duel_won" text="灰袍比武胜出，对方缴了{VAR_1}第纳尔。" />
+  <string id="gwp_envoy_outcome_duel_lost" text="对方比武胜出，依约放走。" />
+  <string id="gwp_envoy_outcome_refused" text="对方不肯谈，照常追捕。" />
+  <string id="gwp_envoy_outcome_talks_failed" text="没谈拢，照常追捕。" />
+  <string id="gwp_envoy_outcome_grace_broke" text="宽限到期付不出钱，照常追捕。" />
+  <string id="gwp_envoy_outcome_lost" text="使者没能回来，照常追捕。" />
+  <string id="gwp_envoy_outcome_timeout" text="使者超时或已开战，照常追捕。" />
+  <string id="gwp_envoy_outcome_duel_cancelled" text="比武约定作废，照常追捕。" />
+  <string id="gwp_envoy_outcome_failed" text="谈判没有结果，照常追捕。" />
 </strings>
 </base>

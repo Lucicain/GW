@@ -2,15 +2,15 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`81d6475`（2026-10-16）
+> 已复核至：`1782a40`（2026-10-16）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
 ## 当前开发部署
 
-当前live为`81d6475`基线加本轮宗教/物流与原版村民队合并的监控开发构建（工作树，尚未建立功能实测检查点）。
-Client/Editor DLL SHA-256同为`b9ae0976bbcb2c767dc2b265069fa1e474fc937063fbcfed9ab80c04af5d8cc5`；Assets、AssetSources、RuntimeDataCache保留，无AssetPackages/DsAssetPackages。
-构建0错误/警告、runtime镜像一致；GameCompat缺类型/成员0、96补丁绑定；实际游戏名册转移177断言通过；玩家无监控隔离构建通过，本轮未出ZIP、未推送/发版。（依据：构建、哈希、离线执行2026-10-16）
+当前live为`1782a40`基线加协力等使者结果、协办人保留自己的案子、台账显示使者进度与回报、祭司不被原版删掉、家乡村补祭司的监控开发构建（尚未建立功能实测检查点）。
+Client/Editor DLL SHA-256同为`25923bad1ddb3857c561c02b74d6cf97b2e38abb9e9c16374de9334be80b9fe7`；Assets、AssetSources、RuntimeDataCache保留，无AssetPackages/DsAssetPackages。
+构建0错误/警告、runtime镜像一致；GameCompat缺类型/成员0、97补丁绑定；离线回归27项通过（协力75断言）；玩家无监控隔离构建通过，本轮未出ZIP、未推送/发版。（依据：构建、哈希、离线执行2026-10-16）
 
 ## 两个开关决定一切
 

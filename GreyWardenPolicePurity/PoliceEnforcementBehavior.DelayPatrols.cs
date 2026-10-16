@@ -270,6 +270,9 @@ namespace GreyWardenPolicePurity
                         StringComparison.OrdinalIgnoreCase));
                 if (assignedPolice == null || !GwpCommon.IsGreyWardenEnforcementParty(assignedPolice))
                     continue;
+                // 承办人正在协助别人，自己的案子暂停（用户裁定 2026-10-16），不给它派周期支援。
+                if (_instance?.IsAssistanceMember(assignedPolice.StringId) == true)
+                    continue;
                 if (offender?.IsActive != true || offender.IsMainParty ||
                     offender.Party == null || offender.Party.NumberOfHealthyMembers <= 0)
                     continue;

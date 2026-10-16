@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PoliceEnforcementBehavior
     {
-        private enum EnvoyStage
+        internal enum EnvoyStage
         {
             /// <summary>使者在路上。期间不宣战。</summary>
             Travelling = 0,
@@ -60,6 +60,86 @@ namespace GreyWardenPolicePurity
         private readonly Dictionary<string, EnvoyCase> _envoyCases =
             new Dictionary<string, EnvoyCase>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>案件台账显示的使者进度（用户裁定 2026-10-16）。</summary>
+        internal readonly struct EnvoyStatus
+        {
+            internal EnvoyStatus(EnvoyStage stage, bool collectOnly, double dueHours, string townId)
+            {
+                Stage = stage;
+                CollectOnly = collectOnly;
+                DueHours = dueHours;
+                TownId = townId;
+            }
+
+            internal EnvoyStage Stage { get; }
+            internal bool CollectOnly { get; }
+            internal double DueHours { get; }
+            internal string TownId { get; }
+        }
+
+        internal static EnvoyStatus? GetEnvoyStatus(string crimeId) =>
+            _instance != null && _instance._envoyCases.TryGetValue(crimeId, out EnvoyCase? envoyCase)
+                ? new EnvoyStatus(envoyCase.Stage, envoyCase.CollectOnly, envoyCase.DueHours, envoyCase.TownId)
+                : (EnvoyStatus?)null;
+
+        /// <summary>
+        /// 一次使者谈判的结果，给案件台账看（用户裁定 2026-10-16：显示使者进度和结果）。案子结了卷宗就没了，
+        /// 所以人和结果当场记下来，只留最近 <see cref="GwpTuning.Enforcement.EnvoyReportsKept"/> 条，进存档。
+        /// </summary>
+        internal sealed class EnvoyReport
+        {
+            public double Hours;
+            public string OffenderHeroId = string.Empty;
+            public string WardenHeroId = string.Empty;
+            /// <summary>结果代码，台账按它选文本：grace、duel_called、paid、paid_share、surrender、bribed、
+            /// duel_won、duel_lost、refused、talks_failed、grace_broke、lost、timeout、duel_cancelled、failed。</summary>
+            public string Outcome = string.Empty;
+            public int Amount;
+            public string TownId = string.Empty;
+        }
+
+        private readonly List<EnvoyReport> _envoyReports = new List<EnvoyReport>();
+
+        internal static IReadOnlyList<EnvoyReport> GetEnvoyReports() =>
+            _instance?._envoyReports ?? new List<EnvoyReport>();
+
+        private void RecordEnvoyReport(EnvoyCase envoyCase, string outcome, int amount)
+        {
+            MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
+            var report = new EnvoyReport
+            {
+                Hours = CampaignTime.Now.ToHours,
+                OffenderHeroId = CrimePool.GetRecordByKey(envoyCase.CrimeId)?.OffenderHeroId ?? string.Empty,
+                WardenHeroId = police?.LeaderHero?.StringId ?? string.Empty,
+                Outcome = outcome,
+                Amount = amount,
+                TownId = envoyCase.TownId
+            };
+            _envoyReports.Insert(0, report);
+            if (_envoyReports.Count > GwpTuning.Enforcement.EnvoyReportsKept)
+                _envoyReports.RemoveRange(GwpTuning.Enforcement.EnvoyReportsKept,
+                    _envoyReports.Count - GwpTuning.Enforcement.EnvoyReportsKept);
+#if GWP_DIAGNOSTICS
+            if (police != null)
+                GwpAiDiagnostics.WriteAction(police, "ENVOY_REPORT",
+                    "crime=" + envoyCase.CrimeId + "; offender=" + report.OffenderHeroId +
+                    "; outcome=" + outcome + "; amount=" + amount + "; collectOnly=" + envoyCase.CollectOnly +
+                    "; helper=" + IsAssistanceMember(police.StringId));
+#endif
+        }
+
+        /// <summary>谈崩的原因归成台账上的几种说法。</summary>
+        private static string FailureOutcome(string reason) => reason switch
+        {
+            "envoy_refused" => "refused",
+            "envoy_layer_one_failed" => "talks_failed",
+            "envoy_grace_broke" => "grace_broke",
+            "envoy_lost" => "lost",
+            "envoy_timeout_or_war" => "timeout",
+            _ when reason.StartsWith("duel_", StringComparison.Ordinal) => "duel_cancelled",
+            _ => "failed"
+        };
+
         private void SyncEnvoyData(IDataStore dataStore)
         {
             List<string> crimeIds = null!;
@@ -71,8 +151,20 @@ namespace GreyWardenPolicePurity
             List<int> flags = null!;
             List<double> dueHours = null!;
             List<int> pending = null!;
+            List<double> reportHours = null!;
+            List<string> reportOffenders = null!;
+            List<string> reportWardens = null!;
+            List<string> reportOutcomes = null!;
+            List<int> reportAmounts = null!;
+            List<string> reportTowns = null!;
             if (dataStore.IsSaving)
             {
+                reportHours = _envoyReports.Select(r => r.Hours).ToList();
+                reportOffenders = _envoyReports.Select(r => r.OffenderHeroId).ToList();
+                reportWardens = _envoyReports.Select(r => r.WardenHeroId).ToList();
+                reportOutcomes = _envoyReports.Select(r => r.Outcome).ToList();
+                reportAmounts = _envoyReports.Select(r => r.Amount).ToList();
+                reportTowns = _envoyReports.Select(r => r.TownId).ToList();
                 List<EnvoyCase> cases = _envoyCases.Values.ToList();
                 crimeIds = cases.Select(c => c.CrimeId).ToList();
                 wardenIds = cases.Select(c => c.WardenPartyId).ToList();
@@ -94,8 +186,25 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_envoy_flags", ref flags);
             dataStore.SyncData("gwp_enf_envoy_due", ref dueHours);
             dataStore.SyncData("gwp_enf_envoy_pending", ref pending);
+            dataStore.SyncData("gwp_enf_envoy_report_hours", ref reportHours);
+            dataStore.SyncData("gwp_enf_envoy_report_offenders", ref reportOffenders);
+            dataStore.SyncData("gwp_enf_envoy_report_wardens", ref reportWardens);
+            dataStore.SyncData("gwp_enf_envoy_report_outcomes", ref reportOutcomes);
+            dataStore.SyncData("gwp_enf_envoy_report_amounts", ref reportAmounts);
+            dataStore.SyncData("gwp_enf_envoy_report_towns", ref reportTowns);
 
             if (!dataStore.IsLoading) return;
+            _envoyReports.Clear();
+            for (int i = 0; reportOutcomes != null && i < reportOutcomes.Count; i++)
+                _envoyReports.Add(new EnvoyReport
+                {
+                    Hours = reportHours[i],
+                    OffenderHeroId = reportOffenders[i],
+                    WardenHeroId = reportWardens[i],
+                    Outcome = reportOutcomes[i],
+                    Amount = reportAmounts[i],
+                    TownId = reportTowns[i]
+                });
             _envoyCases.Clear();
             if (crimeIds == null) return;
             for (int i = 0; i < crimeIds.Count; i++)
@@ -407,6 +516,7 @@ namespace GreyWardenPolicePurity
                     // 用户裁定 2026-10-15：给了宽限，承办人直接去接下一个差事，到期派使者收钱。
                     envoyCase.Stage = EnvoyStage.Grace;
                     envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.FieldArrest.GraceHours;
+                    RecordEnvoyReport(envoyCase, "grace", 0);
                     PoliceTask? graceTask = TaskForCrime(crime);
                     if (graceTask != null)
                         EndCaseTask(graceTask.PolicePartyId, CaseTaskEnd.Released, "envoy_grace");
@@ -419,6 +529,7 @@ namespace GreyWardenPolicePurity
                     // 交到灰袍手里那一刻原版抓捕事件只认还开着的案子，所以震慑、清账在这里先做。
                     GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
                     GwpAiDeterrenceState.ClearArrestRecord(offender);
+                    RecordEnvoyReport(envoyCase, "surrender", 0);
                     ResolveEnvoyCase(envoyCase, crime, true, "envoy_surrender");
                     if (target.MapEvent == null)
                         TakePrisonerAction.Apply(envoy.Party, offender);
@@ -432,6 +543,7 @@ namespace GreyWardenPolicePurity
                     if (bribe > 0)
                         GiveGoldAction.ApplyBetweenCharacters(offender, warden, bribe, true);
                     GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                    RecordEnvoyReport(envoyCase, "bribed", bribe);
                     ResolveEnvoyCase(envoyCase, crime, false, "envoy_bribed");
                     return;
             }
@@ -498,6 +610,7 @@ namespace GreyWardenPolicePurity
             GwpFieldReportLedger.SettleWithWardens(offender, GwpFieldArrestPricing.AssessFine(crime),
                 collected, GwpFieldArrestPricing.BaseChargeFor(crime));
             GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+            RecordEnvoyReport(envoyCase, reason == "envoy_paid_share" ? "paid_share" : "paid", collected);
             ResolveEnvoyCase(envoyCase, crime, true, reason + "_" + collected);
         }
 
@@ -559,8 +672,11 @@ namespace GreyWardenPolicePurity
                     Campaign.Current.Models.TournamentModel.CreateTournament(venue));
 
             ReleaseAssistanceGroup(police.StringId, "envoy_duel");
+            // 他正在协助别人：约了比武就离开那个协力组去赴约（用户裁定 2026-10-16：协办人自己的使者照常办完）。
+            LeaveAssistanceAsMember(police, "envoy_duel");
             envoyCase.Stage = EnvoyStage.Duel;
             envoyCase.TownId = venue.Settlement.StringId;
+            RecordEnvoyReport(envoyCase, "duel_called", 0);
             envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.TournamentDuelTimeoutDays * 24d;
             HoldForDuel(police, venue.Settlement, true);
             HoldForDuel(target, venue.Settlement, false);
@@ -695,6 +811,7 @@ namespace GreyWardenPolicePurity
                 }
                 GwpFieldReportLedger.SettleWithWardens(offender, fine, collected, GwpFieldArrestPricing.BaseChargeFor(crime));
                 GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                RecordEnvoyReport(envoyCase, "duel_won", collected);
                 ResolveEnvoyCase(envoyCase, crime, true, "envoy_duel_won_" + collected);
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_envoy_duel_warden_won,
@@ -705,6 +822,7 @@ namespace GreyWardenPolicePurity
 
             // 他赢了按约免罚：案子销掉，案底照留。
             GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+            RecordEnvoyReport(envoyCase, "duel_lost", 0);
             ResolveEnvoyCase(envoyCase, crime, false, "envoy_duel_lost");
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_envoy_duel_offender_won,
@@ -773,6 +891,7 @@ namespace GreyWardenPolicePurity
                 _delayPatrolStates.ContainsKey(envoyCase.EnvoyPartyId))
                 MarkDelayPatrolReturning(envoyCase.EnvoyPartyId);
             envoyCase.Stage = EnvoyStage.Failed;
+            RecordEnvoyReport(envoyCase, FailureOutcome(reason), 0);
             MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
             if (police != null)
                 GwpAiDiagnostics.WriteAction(police, "ENVOY_FAILED",

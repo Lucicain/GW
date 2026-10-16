@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
 > 最后验收：未建立检查点
-> 已复核至：`81d6475`（2026-10-16）
+> 已复核至：`1782a40`（2026-10-16）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1`
 > 待实测：再次闪退时 agent 核对 Faults 日志最后几条 `MEMORY`
 
@@ -77,13 +77,13 @@
 
 | 类别 | stage |
 |---|---|
-| 每日快照 | `DAILY_VILLAGE`（信众户与比例、在村守村兵构成、实体名册中灰袍各兵种经验 guardXp、本村灰袍总人数 population、上限 cap、缺额 headroom、原版民兵、祭司与其他要人势力、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
+| 每日快照 | `DAILY_VILLAGE`（信众户与比例、在村守村兵构成、实体名册中灰袍各兵种经验 guardXp、本村灰袍总人数 population、上限 cap、缺额 headroom、原版民兵、祭司势力、其他要人 others（职业:势力，没有祭司时也写）、是否最强、格子、军械库按类件数、武装率）、`DAILY_LORD`、`DAILY_TOTALS` |
 | 留守队经验 | `GUARD_EXPERIENCE`（来源 damnation，earned/实际granted/容量不足unused）；`DAMNATION` 附 experience/experienceGranted。核对烧人经验在村内累积、同版存读接续后退休，分配规则只在村庄与仪式state定义。分析器按来源汇总经验，不与新增兵数相加。 |
 | 守村升级付款 | `GUARD_UPGRADE_PAYMENT`（party/troop/payer、quoted与实际paid、付款后treasury），仅观察真实原版金币交易，报价不重复计算。核对灰袍兵由灰袍公库付款、杂兵不改归属后退休。 |
 | 火誓者来源 | `SWORN_GROWTH`（驻留/自然增长信众户 fromWardensHouseholds/fromHearthHouseholds、补兵 regrown、补前缺额 headroomBefore）、`RECONSTRUCTION_SWORN`（added为实际增户）、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`（gain为实际增户）、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么）；分析器将户、兵、人次分项标注，旧集会日志按households前后值求实际增户。 |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
-| 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED` |
+| 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED`、`PRIEST_HOME_RESTORED`、`PRIEST_DISAPPEAR_BLOCKED` |
 | 无领主队 | `FAITH_PARTY_FORMED`、`DETACHMENT_SETTLED`（追截队多余的人在信众村落脚）、`BALANCE_DISPATCHED`、`BALANCE_DELIVERED`、`MARKET_DISPATCHED`、`MARKET_SOLD`、`FAITH_PARTY_HOME`、`FAITH_PARTY_TURNED_BACK`、`FAITH_PARTY_LOST` |
 | 领主进村意愿 | `DAILY_LORD` 和领主类异常里的 `faithVisit`：上一小时分最高的信众村和分数 |
 | 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
@@ -103,6 +103,8 @@
 |---|---|---|
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
+| 协力与使者：`ASSISTANCE_WAITING_FOR_ENVOY`（组长等使者结果没调人，案子或使者阶段变了才再写）、`ASSISTANCE_HELPER_CASE_KEPT` / `_PAUSED` / `_RESUMED`（协办人带着自己的案子入组、暂停、协力结束接着办）、`ASSISTANCE_MEMBER_LEFT`（协办人约了比武离组）、`ENVOY_REPORT`（每次谈判结果，带是否协办人） | 用户要监控军团效率：协力不再打断有使者的案子、协办人回来接着办（用户裁定 2026-10-16） | 用户确认协力与使者配合可用后退休健康路径 |
+| 宗教：`PRIEST_DISAPPEAR_BLOCKED`（原版本要按低势力删掉的祭司）、`PRIEST_HOME_RESTORED`（家乡村补回祭司）；`DAILY_VILLAGE` 的 `others`（其他要人职业:势力，没有祭司时也写） | 用户要监控宗教：家乡村祭司曾被原版删掉，比例不够再也来不了人（实机诊断 2026-10-16） | 用户确认信众村祭司稳定后退休 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |

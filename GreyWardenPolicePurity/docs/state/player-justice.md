@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`4f31993`（2026-10-15）
+> 已复核至：`1782a40`（2026-10-16）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
 > 待实测：无
 
@@ -52,6 +52,7 @@
   只有通缉时标红（`GwpMapBarReputation`）。这项在信息条展开时才看得到。（依据：用户要求放在影响力旁边）
 - 灰袍事务界面（`GwpCaseArchiveScreen`，入口见 `map-bar-affairs.md`）汇总：
   玩家声望、档位与通缉时的应缴数、家族规模与收养冷却、各场战争的理由、当前所有开放案件和差事队列。
+  开放案件后面接使者进度和协办暂停，列表最后是最近的使者回报，规则见 [使者](case-envoy.md)「台账上的使者」。
 
 ### 声望图标的交互边界与待办
 
