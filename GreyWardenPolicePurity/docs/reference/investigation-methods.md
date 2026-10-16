@@ -91,9 +91,12 @@ ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
   「no longer tracking PID <pid>, exit code …」。`-2147023895`（0x800703E9，COR_E_STACKOVERFLOW）是 .NET 栈溢出：
   进程立即结束，模组的首次异常观察、TaleWorlds 看门狗和 WER 都拿不到东西；`-1073741819`（0xC0000005）是原生访问违例。
   游戏进程的 PID 见 `watchdog_log_<pid>.txt` 的文件名。（依据：实机诊断 2026-10-16）
-- 抓栈溢出现场：用户运行 `tools/Capture-StackOverflow.ps1`（可加 `-ContinueGame`），它在 cdb 下按启动器同样的模块参数启动游戏，
-  常规首次异常放行，栈溢出（sov）时把 SOS `!clrstack` 托管栈和原生栈写进 `Documents\Mount and Blade II Bannerlord\GreyWarden-StackOverflow-<时间>.log`，
-  另存小转储后关掉游戏。agent 不运行它。
+- 抓无提示闪退现场：用户运行 `tools/Capture-StackOverflow.ps1`（可加 `-ContinueGame`），它在 cdb 下按启动器同样的模块参数启动游戏，
+  整个调试会话写进 `Documents\Mount and Blade II Bannerlord\GreyWarden-Crash-<时间>.log`。常规首次异常放行；栈溢出（sov），以及访问违例、
+  CLR 异常、fail-fast（c0000409）的第二次机会（即致命的那一次）时，写最后事件、SOS `!pe` / `!clrstack`、原生栈和全部线程栈，
+  另存小转储（同名 `.dmp`）后关掉游戏；游戏自己退出时记下退出码。在调试器下 Windows 不写 WER 记录，Steam 也不记退出码，
+  所以只有这份日志。cdb 引号命令串里反斜杠是转义符，路径要写成双反斜杠。agent 不运行它。
+  （依据：实机诊断 2026-10-16：第一版只处理栈溢出，22:28 那次闪退什么也没留下）
 
 ## 实机诊断
 

@@ -110,7 +110,7 @@
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
 | `GwpRuntimeFaultWatch` 的 `MEMORY`（主线程应用心跳每分钟一条：进程私有/工作集/托管堆，系统内存负载、可用物理内存、提交量） | 游戏中途无报错闪退（2026-10-16 08:37、20:18）原因未明。20:18 那次闪退前私有内存约 10–11 GB、提交量余约 28 GB，内存耗尽已基本排除；留着给下一次对照 | 闪退原因查清后退休 |
-| `tools/Capture-StackOverflow.ps1`（用户运行：cdb 下启动游戏，栈溢出时写托管/原生栈与小转储） | 游戏中途 .NET 栈溢出闪退（Steam 退出码 0x800703E9）抓不到任何异常，只有调试器在溢出那一刻能拿到调用栈 | 栈溢出定位并修复后，连同工具一起退休 |
+| `tools/Capture-StackOverflow.ps1`（用户运行：cdb 下启动游戏，整个会话写 `GreyWarden-Crash-<时间>.log`；栈溢出和致命的访问违例、CLR 异常、fail-fast 时写托管/原生栈与小转储，正常退出记退出码） | 游戏中途无提示闪退（栈溢出 0x800703E9，及 2026-10-16 22:28 那次不明原因）抓不到任何异常，只有调试器在出事那一刻能拿到调用栈 | 闪退定位并修复后，连同工具一起退休 |
 
 已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
 2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /

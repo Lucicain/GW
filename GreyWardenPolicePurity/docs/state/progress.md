@@ -44,7 +44,7 @@
 <!-- 已知缺陷汇总：由 tools/Check-StateFreshness.py 从各 state 的「已知缺陷：」行生成，手改会被覆盖 -->
 
 - [code-health.md](code-health.md)：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
-- [code-health.md](code-health.md)：游戏中途偶发 .NET 栈溢出直接关闭（2026-10-16 08:37、20:18，Steam 退出码 0x800703E9），都在快进中，递归发生在哪里还没定位；抓现场用 `tools/Capture-StackOverflow.ps1`，方法见 `../reference/investigation-methods.md`「崩溃转储」。（依据：Steam 退出码、日志 2026-10-16）
+- [code-health.md](code-health.md)：游戏中途偶发 .NET 栈溢出直接关闭（2026-10-16 08:37、20:18，Steam 退出码 0x800703E9），都在快进中，递归发生在哪里还没定位。2026-10-16 22:28 在 cdb 下又闪退一次：发生在一场协力军团加支援队打赢之后的整点处理里，没有托管异常、也不是栈溢出（不然抓取脚本会留日志），多半是原生异常，具体未知；抓现场用 `tools/Capture-StackOverflow.ps1`，方法见 `../reference/investigation-methods.md`「崩溃转储」。（依据：Steam 退出码、日志 2026-10-16）
 - [warden-ai.md](warden-ai.md)：族长比武结束后被附近 naval_patrol_party_1_party_445 的短期避敌持续留城，追捕约 57 游戏小时未执行；直接机制已确认，海陆威胁是否误判尚未证实、未修。（依据：实机诊断与 C#反编译 2026-10-15）
 
 <!-- /已知缺陷汇总 -->
