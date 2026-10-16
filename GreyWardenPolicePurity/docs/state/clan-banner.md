@@ -50,6 +50,6 @@ Kit 的上述 `_tex.tpac` 为源图与导入元数据，不含内嵌像素；参
 - `Verify-ClanBanner.ps1 -Installed`：安装版 XSD、Native/NavalDLC ID无冲突、实际 Banner DLL解析两层、图标材质/格号、精确黑金色、颜色归一、旗帜码往返、reserved、gw引用、唯一注册、3份XML镜像哈希均通过。
 - DDS 解码读回：通道、alpha、格边界一致；[512/128/64像素参考](../reference/banner-review/kit-input/native-mask-preview.png)已目视，非引擎截图。
 - live 75份 runtime文件镜像一致，ContentKeys重复/缺失0；未改DLL，无需C#重编译。未启动游戏或验收引擎渲染。
-- 玩家美术包已含新旗帜：用户 2026-10-16 用 Kit 发布后，pack0 多出 `gwp_commander_banner` 材质与纹理；第一次发布还带了未被引用的 `new_material` 草稿材质，用户删掉草稿后重新发布，现行 pack0 只多这两项（148 项）。当天的本地测试版 v1.4-r15 用的是第一次发布的包。哈希只在[构建与部署](build-and-deploy.md)与资源流程维护。（依据：TPAC 资产清单对照、离线核验 2026-10-16）
+- 玩家美术包已含新旗帜：用户 2026-10-16 用 Kit 发布后，pack0 多出 `gwp_commander_banner` 材质与纹理；第一次发布还带了未被引用的 `new_material` 草稿材质，用户删掉草稿后重新发布，现行 pack0 只多这两项（148 项）。本地测试版 v1.4-r15 用的是重新发布后的这份包。哈希只在[构建与部署](build-and-deploy.md)与资源流程维护。（依据：TPAC 资产清单对照、离线核验 2026-10-16）
 
 回退：取回 `4f31993` 的 `_Module/ModuleData/spclans.xml`、`_Module/SubModule.xml` 并镜像，撤去新增运行时 banner_icons.xml。新旗帜源与成图可保留作素材；需要撤下新材质时，在 Kit 退出后移除对应独立资源，不影响装备素材。（依据：设计、资源归属）

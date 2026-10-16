@@ -8,9 +8,9 @@
 
 ## 当前开发部署
 
-当前 live 是 `a3ba641` 加上「骑兵只领马上可用的武器」的监控开发构建（领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜、闪退取证诊断都在内）。
-Client/Editor DLL SHA-256 同为 `224ea0f2981954acff7111f270a0f7278531baedb1325a2b076e8d5fae3c39d1`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
-构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；名册转移 177 断言通过。（依据：构建、部署哈希与离线执行 2026-10-16）
+当前 live 是 `907bdcd` 的监控开发构建（和当前 r15 测试版同一份源码，只多诊断）。
+Client/Editor DLL SHA-256 同为 `38684a32b576dc194ce763f95835208785292d58a0ea96ce2e7ed653297a7a12`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
+构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；旗帜安装核验通过。（依据：构建、部署哈希与离线执行 2026-10-16）
 
 ## 两个开关决定一切
 
@@ -161,10 +161,11 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
   玩家 DLL `99f3c068373ce0a9c227cf42fb0a6c69bd1bdd8a23c23cc8a6a4ce0e53a46e8f`；美术 TPAC 与原 v14 相同（`bcaae1d2…6e09`）。
 - 核验归档：`build-check/package-v1.4-r14-refresh/` 与 `build-check/package-v1.4-r14-original/`（各四件，见上节）。
   替换前公开过的原 ZIP 在 `.codex_tmp/pre-refresh-v14-release-20261007/`，见 `../reference/local-scratch.md`。
-- 当前本地测试版 v1.4-r15（模组版本 1.4.15）：2026-10-16 同号替换了 10-15 的本地包，只出本地 ZIP 并推送源码，不打 tag、不建 Release。
-  没有监控（诊断关闭），也没有玩家军械库（开发暂停）；其余功能与开发版相同。（依据：用户裁定 2026-10-15、2026-10-16）
-  ZIP `Modules/GreyWarden-v1.4-r15.zip` 442704604 字节，SHA-256 `7301efbc7b35cfc2675b43e428afbbb4373b7dbca8ee3595575456a05abe1cda`，78 项；
-  玩家 DLL `2cd410d585997ca6657b73ad6cdcca1d64d641e802f148fd76108da0f84c86cd`（GameCompat 86 补丁绑定，五组监控串双编码均不存在）；
-  美术 pack0 `4606781f316292b8c12a93a1054c62110469a7c34e02156bce99451bc964af22`（149 项，比旧包多旗帜材质、旗帜纹理和一个未使用的 `new_material` 草稿材质）。
-  核验归档 `build-check/package-v1.4-r15/`（manifest、玩家 DLL、`.zip.sha256`）。之后用户删掉 `new_material` 重新发布，仓库 pack0 已换成 148 项的 `753aaf1d…`；这份 ZIP 还没重打。被替换的 10-15 包（ZIP `a54856d9…`）没有保留，它的美术包作为回退点见 local-scratch。
-  玩家说明的 r15 条目对比的仍是 `v1.4-r14-refresh`。
+- 当前本地测试版 v1.4-r15（模组版本 1.4.15）：第一次发出的测试包。2026-10-16 当天两次替换同名本地包（10-15 一版、10-16 上午一版都没保留），
+  只出本地 ZIP 并推送源码，不打 tag、不建 Release。没有监控（诊断关闭），也没有玩家军械库（开发暂停）；其余功能与开发版相同。（依据：用户裁定 2026-10-15、2026-10-16）
+  源码 `907bdcd`（打包后的说明提交在其后，不改游戏内容）。ZIP `Modules/GreyWarden-v1.4-r15.zip` 442705217 字节，
+  SHA-256 `b1456ada759e8160109b4c78c3a204af0d212517421e9ba89952cf29e88de477`，78 项；
+  玩家 DLL `77537a8225bf7d42433b639d1cec17ac03e7ab2d56674f780e5f4ea7aaee995f`（GameCompat 86 补丁绑定，五组监控串双编码均不存在）；
+  美术 pack0 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`（148 项，比 v14 多旗帜材质与纹理）。
+  核验归档 `build-check/package-v1.4-r15/`（manifest、玩家 DLL、`.zip.sha256`）。加旗帜之前的美术包作为回退点见 local-scratch。
+  玩家说明的 r15 条目对比的是 `v1.4-r14-refresh`，分「新增与调整」和「修复」。
