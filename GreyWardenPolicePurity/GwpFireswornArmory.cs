@@ -236,20 +236,25 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 每天一次：村子军械库留够套数以外的进货仓，由卖货队拉去卖；村与村之间由运械队把兵器运过去（<see cref="LoadBalanceCargo"/>）。
-        /// 领主部队多出来的留在军械库里，到信众村时捐掉，不进原版背包——进了背包原版会想进城卖货，
-        /// 人待在城里又不再卖，背包越堆越多就不走了（实机诊断 2026-10-15：族长在城里停了约 100 小时；用户裁定 2026-10-15）。
+        /// 每天一次：留够全部编制的最好装备以后，多出来的进持有者的背包交给原版处理——村子进货仓，由卖货队拉去卖；
+        /// 领主部队进部队背包，照原版进城卖（用户裁定 2026-10-16，取代 10-15 的「领主余量留库」：现在全编制都留了装备，
+        /// 多出来的只是更差或没人用的）。村与村之间另由运械队调剂（<see cref="LoadBalanceCargo"/>）。正在打仗的不动。
         /// </summary>
         private void RebalanceArmories()
         {
             RefreshArmoryPlans();
             foreach (KeyValuePair<string, ArmoryPlan> pair in _plans.ToList())
             {
-                if (pair.Value.Surplus.Count == 0 || !_villages.ContainsKey(pair.Key))
+                if (pair.Value.Surplus.Count == 0 || HolderInBattle(pair.Key))
+                    continue;
+                bool village = _villages.ContainsKey(pair.Key);
+                MobileParty? lord = village ? null : FindParty(pair.Key);
+                if (!village && lord?.IsLordParty != true)
                     continue;
                 int value = pair.Value.Surplus.TotalValue;
-                int moved = MoveAll(pair.Value.Surplus, ItemsOf(_armories, pair.Key), ItemsOf(_goods, pair.Key));
-                GwpAiDiagnostics.WriteFaith("ARMORY_SURPLUS_TO_GOODS",
+                int moved = MoveAll(pair.Value.Surplus, ItemsOf(_armories, pair.Key),
+                    village ? ItemsOf(_goods, pair.Key) : lord!.ItemRoster);
+                GwpAiDiagnostics.WriteFaith(village ? "ARMORY_SURPLUS_TO_GOODS" : "ARMORY_SURPLUS_TO_BACKPACK",
                     "holder=" + pair.Key + "; items=" + moved + "; value=" + value);
             }
             RefreshArmoryPlans();

@@ -8,9 +8,9 @@
 
 ## 当前开发部署
 
-当前 live 是 `cbdfb71` 之后的监控开发构建：领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜，以及闪退取证诊断。
-Client/Editor DLL SHA-256 同为 `57cf2da0a1facb58f2373498655753309a79464515fb772198d206356016b5ea`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
-构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；ContentKeys 缺失/重复 0；名册转移 177 断言、旗帜安装核验通过。（依据：构建、部署哈希与离线执行 2026-10-16）
+当前 live 是 `21d68f0` 加上「领主多余装备每天进背包」的监控开发构建（领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜、闪退取证诊断都在内）。
+Client/Editor DLL SHA-256 同为 `83cec4b6324f714a125f1c05a1d0eb313ac621c5888c7005f8b3e14c5e4bbec0`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
+构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；名册转移 177 断言通过。（依据：构建、部署哈希与离线执行 2026-10-16）
 
 ## 两个开关决定一切
 
@@ -166,5 +166,5 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
   ZIP `Modules/GreyWarden-v1.4-r15.zip` 442704604 字节，SHA-256 `7301efbc7b35cfc2675b43e428afbbb4373b7dbca8ee3595575456a05abe1cda`，78 项；
   玩家 DLL `2cd410d585997ca6657b73ad6cdcca1d64d641e802f148fd76108da0f84c86cd`（GameCompat 86 补丁绑定，五组监控串双编码均不存在）；
   美术 pack0 `4606781f316292b8c12a93a1054c62110469a7c34e02156bce99451bc964af22`（149 项，比旧包多旗帜材质、旗帜纹理和一个未使用的 `new_material` 草稿材质）。
-  核验归档 `build-check/package-v1.4-r15/`（manifest、玩家 DLL、`.zip.sha256`）。被替换的 10-15 包（ZIP `a54856d9…`）没有保留，它的美术包作为回退点见 local-scratch。
+  核验归档 `build-check/package-v1.4-r15/`（manifest、玩家 DLL、`.zip.sha256`）。之后用户删掉 `new_material` 重新发布，仓库 pack0 已换成 148 项的 `753aaf1d…`；这份 ZIP 还没重打。被替换的 10-15 包（ZIP `a54856d9…`）没有保留，它的美术包作为回退点见 local-scratch。
   玩家说明的 r15 条目对比的仍是 `v1.4-r14-refresh`。

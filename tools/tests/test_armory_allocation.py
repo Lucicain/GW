@@ -23,9 +23,9 @@ class CharacterObject {public static readonly CharacterRegistry All=new Characte
 struct TroopRosterElement {public CharacterObject Character;public int Number,WoundedNumber;public TroopRosterElement(CharacterObject c){Character=c;Number=WoundedNumber=0;} }
 class TroopRoster {public List<TroopRosterElement> Rows=new List<TroopRosterElement>();public int GetTroopCount(CharacterObject troop)=>Rows.Where(e=>e.Character==troop).Sum(e=>e.Number);public int TotalManCount=>Rows.Sum(e=>e.Number);public IEnumerable<TroopRosterElement> GetTroopRoster()=>Rows.ToList();public void AddToCounts(CharacterObject c,int n){int i=Rows.FindIndex(e=>e.Character==c);var e=i<0?new TroopRosterElement(c):Rows[i];e.Number+=n;if(e.Number<0)throw new Exception("negative troop stock");if(i<0)Rows.Add(e);else Rows[i]=e;}public int Count=>Rows.Count;public CharacterObject GetCharacterAtIndex(int i)=>Rows[i].Character;public int GetElementNumber(int i)=>Rows[i].Number;}
 class ItemRosterElement {public EquipmentElement EquipmentElement;public int Amount;}
-class ItemRoster:IEnumerable<ItemRosterElement> {readonly List<ItemRosterElement> rows=new List<ItemRosterElement>();public int VersionNo;public int Count=>rows.Count;public int Total=>rows.Sum(e=>e.Amount);public void AddToCounts(EquipmentElement item,int n){var e=rows.FirstOrDefault(e=>e.EquipmentElement.Equals(item));if(e==null){e=new ItemRosterElement{EquipmentElement=item};rows.Add(e);}e.Amount+=n;if(e.Amount<0)throw new Exception("negative equipment stock");if(e.Amount==0)rows.Remove(e);VersionNo++;}public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Add(ItemRoster other){foreach(var e in other)AddToCounts(e.EquipmentElement,e.Amount);}public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
+class ItemRoster:IEnumerable<ItemRosterElement> {readonly List<ItemRosterElement> rows=new List<ItemRosterElement>();public int VersionNo;public int Count=>rows.Count;public int Total=>rows.Sum(e=>e.Amount);public int TotalValue=>Total;public void AddToCounts(EquipmentElement item,int n){var e=rows.FirstOrDefault(e=>e.EquipmentElement.Equals(item));if(e==null){e=new ItemRosterElement{EquipmentElement=item};rows.Add(e);}e.Amount+=n;if(e.Amount<0)throw new Exception("negative equipment stock");if(e.Amount==0)rows.Remove(e);VersionNo++;}public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Add(ItemRoster other){foreach(var e in other)AddToCounts(e.EquipmentElement,e.Amount);}public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
 class PartyBase {public static PartyBase MainParty=new PartyBase();public string Id;public string Name=>Id;public ItemRoster ItemRoster=new ItemRoster();}
-class MobileParty {public string StringId;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
+class MobileParty {public string StringId;public bool IsLordParty=true;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
 class Hero {public MobileParty PartyBelongedTo;public bool IsPriest;}
 class Settlement {public string StringId;}
 class FaithVillage {public string VillageId;}
@@ -112,6 +112,15 @@ public static int Main(){
  ItemsOf(b._armories,"lord").AddToCounts(mount,4);b.rosters["lord"]=new TroopRoster();int donated=b.DonateArmorySurplus("lord","vil");
  Check(donated==2&&ItemsOf(b._armories,"lord").Total==0,"lord surplus fully leaves on donation and only usable items count as donated kits");
  Check(ItemsOf(b._armories,"vil").Total==3&&ItemsOf(b._goods,"vil").Total==7,"legacy horses go to the village warehouse, usable surplus to the village armory");
+ // 每日：留够编制以后多出来的，领主进部队背包、村子进货仓；交战中和无领主队不动（用户裁定 2026-10-16）。
+ b=new Regression();var lordP=new MobileParty{StringId="lordp"};var cart=new MobileParty{StringId="cart",IsLordParty=false};var fighting=new MobileParty{StringId="fight"};
+ b.parties["lordp"]=lordP;b.parties["cart"]=cart;b.parties["fight"]=fighting;b._villages["vv"]=new FaithVillage{VillageId="vv"};
+ foreach(var id in new[]{"lordp","cart","fight","vv"}){b.rosters[id]=new TroopRoster();b.rosters[id].AddToCounts(recruit,1);ItemsOf(b._armories,id).AddToCounts(best,1);ItemsOf(b._armories,id).AddToCounts(second,2);}
+ b.battleHolders.Add("fight");b.RebalanceArmories();
+ Check(ItemsOf(b._armories,"lordp").Total==1&&lordP.ItemRoster.Total==2,"lord keeps the reserved best piece and sends weaker surplus to the backpack");
+ Check(ItemsOf(b._armories,"vv").Total==1&&ItemsOf(b._goods,"vv").Total==2,"village surplus goes to its warehouse");
+ Check(ItemsOf(b._armories,"cart").Total==3&&cart.ItemRoster.Total==0,"leaderless parties keep their ledger");
+ Check(ItemsOf(b._armories,"fight").Total==3&&fighting.ItemRoster.Total==0,"a party in battle keeps its frozen ledger");
  Console.WriteLine("ARMORY_ALLOCATION_ASSERTIONS="+checks+"; PASS");return 0;
 }
 }
@@ -125,7 +134,7 @@ class ArmoryAllocationTests(unittest.TestCase):
         end = hygiene.match_brace(source, hygiene.code_mask(source), brace)
         production = source[brace + 1:end]
         production += extract("GwpFireswornBehavior.cs", ("OnTroopRecruited",))
-        production += extract("GwpFireswornArmory.cs", ("Take", "KitKind", "Tiers", "MoveBestSets", "TakeBestSets", "MoveAll", "SettleBattleLosses", "PlanOf", "Store", "DonateArmorySurplus"))
+        production += extract("GwpFireswornArmory.cs", ("Take", "KitKind", "Tiers", "MoveBestSets", "TakeBestSets", "MoveAll", "SettleBattleLosses", "PlanOf", "Store", "DonateArmorySurplus", "RebalanceArmories", "RefreshArmoryPlans"))
         armory = (ROOT / "GreyWardenPolicePurity/GwpFireswornArmory.cs").read_text(encoding="utf-8-sig")
         for name in ("TakeKitForAgent", "TryGetArmoryTiers"):
             match = re.search(r"internal static [^\n]+\b" + name + r"\([^)]*\)\s*\{", armory)
