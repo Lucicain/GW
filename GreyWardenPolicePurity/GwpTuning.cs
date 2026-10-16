@@ -380,14 +380,12 @@ namespace GreyWardenPolicePurity
             public const float BalanceMaxDistance = 300f;
             public const float BalanceMinimumArmedGap = 0.2f;
             public const int BalanceMinimumSets = 5;
+            // 村间转运积压俘虏的最小单独派队批量；有兵/装备要运时可顺带更少的人。
+            public const int BalanceMinimumPrisoners = 5;
 
             // 卖货：货仓里的东西值 2,000 以上、隔 3 天出一次车。
-            public const int CaravanSize = 8;
             public const int CaravanMinimumGoodsValue = 2000;
-            public const float CaravanIntervalDays = 3f;
             // 一趟最多卖几座城；下一座城金库至少要有这么多钱才去。
-            public const int CaravanMaxTowns = 3;
-            public const int CaravanMinimumTownGold = 5000;
 
             // 无领主队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
             public const float FaithPartyVisitScore = 8f;

@@ -88,10 +88,10 @@ namespace GreyWardenPolicePurity
                 return PlanForCounts(holder, ledger, troops, Math.Max(0, positions - troops.Sum(e => e.Number)));
             }
             MobileParty party = FindParty(holder)!;
-            List<TroopRosterElement> members = ArmoryTroops(party.MemberRoster);
+            List<TroopRosterElement> members = ArmoryTroops(party.MemberRoster, IsFaithVillager(party));
             int reserve = _faithParties.ContainsKey(holder) ? 0 :
                 Math.Max(0, Math.Max(party.Party.PartySizeLimit, party.MemberRoster.TotalManCount) - members.Sum(e => e.Number));
-            return PlanForCounts(holder, ledger, members, reserve);
+            return PlanForCounts(holder, ledger, members, reserve, IsFaithVillager(party));
         }
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace GreyWardenPolicePurity
             ItemRoster available = new ItemRoster();
             available.Add(ItemsOf(_armories, party.StringId));
             available.Add(ItemsOf(_armories, homeId));
-            ArmoryPlan escort = BuildPlan(available, ArmoryTroops(party.MemberRoster), 0);
+            ArmoryPlan escort = BuildPlan(available, ArmoryTroops(party.MemberRoster, IsFaithVillager(party)), 0, IsFaithVillager(party));
             ItemRoster taken = new ItemRoster();
             foreach (ArmoryKit kit in escort.Sets)
                 foreach (EquipmentElement item in kit.Items.Where(entry => !entry.IsEmpty))
@@ -393,7 +393,7 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private int MoveBestSets(string fromHolder, string toHolder, CharacterObject troop, int men)
         {
-            if (men <= 0 || !IsGuardTroop(troop) || !_armories.ContainsKey(fromHolder))
+            if (men <= 0 || troop.IsHero || !_armories.ContainsKey(fromHolder))
                 return 0;
             ArmoryPlan plan = BuildPlanFor(fromHolder);
             IEnumerable<ArmoryKit> sets = plan.Sets.Where(kit => kit.Troop == troop);
@@ -490,7 +490,7 @@ namespace GreyWardenPolicePurity
                 {
                     CharacterObject troop = party.DiedInBattle.GetCharacterAtIndex(i);
                     int count = party.DiedInBattle.GetElementNumber(i);
-                    if (!IsGuardTroop(troop) || count <= 0) continue;
+                    if (troop.IsHero || count <= 0) continue;
                     dead += count;
                     foreach (ArmoryKit kit in plan.Sets.Where(kit => kit.Troop == troop)
                         .OrderBy(_ => MBRandom.RandomFloat).Take(count))
@@ -523,6 +523,7 @@ namespace GreyWardenPolicePurity
             if (_faithParties.TryGetValue(party.StringId, out FaithParty? record))
             {
                 _faithParties.Remove(party.StringId);
+                _marketCargo.Remove(party.StringId);
                 int lost = 0;
                 if (_armories.TryGetValue(party.StringId, out ItemRoster? kits))
                 {
@@ -556,7 +557,7 @@ namespace GreyWardenPolicePurity
         /// <summary>这个兵在这场实战里分到的那一套；没有就返回 null（照兵种原样）。</summary>
         internal static Equipment? TakeKitForAgent(PartyBase? party, CharacterObject troop)
         {
-            if (_instance == null || !IsGuardTroop(troop))
+            if (_instance == null || troop.IsHero)
                 return null;
             string? holder = _instance.HolderOf(party);
             if (holder == null || !_instance._armories.ContainsKey(holder))
@@ -609,7 +610,7 @@ namespace GreyWardenPolicePurity
         internal static bool TryGetArmoryTiers(PartyBase? party, CharacterObject troop, out float weapon, out float armor)
         {
             weapon = armor = 0f;
-            if (_instance == null || !IsGuardTroop(troop))
+            if (_instance == null || troop.IsHero)
                 return false;
             string? holder = _instance.HolderOf(party);
             if (holder == null || !_instance._armories.ContainsKey(holder))
@@ -832,8 +833,7 @@ namespace GreyWardenPolicePurity
         private static void Prefix(AgentBuildData agentBuildData)
         {
             if (Campaign.Current == null || agentBuildData.AgentCivilianEquipment ||
-                agentBuildData.AgentCharacter is not CharacterObject troop ||
-                !GwpFireswornBehavior.IsGuardTroop(troop))
+                agentBuildData.AgentCharacter is not CharacterObject troop)
                 return;
             PartyBase? party = agentBuildData.AgentOrigin switch
             {

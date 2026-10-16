@@ -26,6 +26,7 @@ namespace GreyWardenPolicePurity
             public IReadOnlyList<TroopRosterElement> Troops = Array.Empty<TroopRosterElement>();
             public ItemRoster? Ledger;
             public int LedgerVersion, Reserve;
+            public bool IncludesVillagers;
             public readonly ItemRoster Free = new ItemRoster();
             public readonly ItemRoster Surplus = new ItemRoster();
             // 自动结算每次模拟命中都要查，建方案时按兵种算好，不在命中时再遍历套装。
@@ -38,21 +39,21 @@ namespace GreyWardenPolicePurity
                 (KitKind(kit.Equipment[slot].Item) == KitMain || KitKind(kit.Equipment[slot].Item) == KitRanged));
 
         private static bool CanReplaceArmoryEquipment(CharacterObject troop) =>
-            troop.StringId == GwpIds.NewRecruitId || troop.StringId == GwpIds.ZealotId;
+            !IsGuardTroop(troop) || troop.StringId == GwpIds.NewRecruitId || troop.StringId == GwpIds.ZealotId;
 
-        private static List<TroopRosterElement> ArmoryTroops(TroopRoster roster) =>
-            roster.GetTroopRoster().Where(e => IsGuardTroop(e.Character) && e.Number > 0)
+        private static List<TroopRosterElement> ArmoryTroops(TroopRoster roster, bool villagers = false) =>
+            roster.GetTroopRoster().Where(e => (IsGuardTroop(e.Character) || villagers && !e.Character.IsHero) && e.Number > 0)
                 .OrderByDescending(e => e.Character.Tier)
                 .ThenBy(e => e.Character.StringId, StringComparer.Ordinal).ToList();
 
         // 人数按兵种逐项核对；升级后即使总人数不变也会失效。伤情/经验不改变配装，不需要进缓存键。
-        private ArmoryPlan PlanForCounts(string holder, ItemRoster ledger, IReadOnlyList<TroopRosterElement> troops, int reserve)
+        private ArmoryPlan PlanForCounts(string holder, ItemRoster ledger, IReadOnlyList<TroopRosterElement> troops, int reserve, bool villagers = false)
         {
             if (_plans.TryGetValue(holder, out ArmoryPlan? plan) && ReferenceEquals(plan.Ledger, ledger) &&
-                plan.LedgerVersion == ledger.VersionNo && plan.Reserve == reserve && plan.Troops.Count == troops.Count &&
+                plan.LedgerVersion == ledger.VersionNo && plan.Reserve == reserve && plan.IncludesVillagers == villagers && plan.Troops.Count == troops.Count &&
                 plan.Troops.Select((e, i) => e.Character == troops[i].Character && e.Number == troops[i].Number).All(equal => equal))
                 return plan;
-            plan = BuildPlan(ledger, troops, reserve);
+            plan = BuildPlan(ledger, troops, reserve, villagers);
             plan.Ledger = ledger;
             plan.LedgerVersion = ledger.VersionNo;
             plan.Reserve = reserve;
@@ -67,11 +68,11 @@ namespace GreyWardenPolicePurity
             return plan;
         }
 
-        private static ArmoryPlan BuildPlan(ItemRoster ledger, IReadOnlyList<TroopRosterElement> troops, int reserve)
+        private static ArmoryPlan BuildPlan(ItemRoster ledger, IReadOnlyList<TroopRosterElement> troops, int reserve, bool villagers = false)
         {
-            var ordered = troops.Where(e => IsGuardTroop(e.Character) && e.Number > 0)
+            var ordered = troops.Where(e => (IsGuardTroop(e.Character) || villagers && !e.Character.IsHero) && e.Number > 0)
                 .OrderByDescending(e => e.Character.Tier).ThenBy(e => e.Character.StringId, StringComparer.Ordinal).ToList();
-            ArmoryPlan plan = new ArmoryPlan { Troops = ordered };
+            ArmoryPlan plan = new ArmoryPlan { Troops = ordered, IncludesVillagers = villagers };
             List<EquipmentElement>[] buckets = Enumerable.Range(0, KitSlots).Select(_ => new List<EquipmentElement>()).ToArray();
             // 空编制仍按低阶兵可用装备预留；现有高阶能用的装备也可留下，不能先按低阶技能丢掉。
             var users = ordered.Select(e => e.Character).Concat(new[] {

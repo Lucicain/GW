@@ -25,7 +25,7 @@ class TroopRoster {public List<TroopRosterElement> Rows=new List<TroopRosterElem
 class ItemRosterElement {public EquipmentElement EquipmentElement;public int Amount;}
 class ItemRoster:IEnumerable<ItemRosterElement> {readonly List<ItemRosterElement> rows=new List<ItemRosterElement>();public int VersionNo;public int Count=>rows.Count;public int Total=>rows.Sum(e=>e.Amount);public int TotalValue=>Total;public void AddToCounts(EquipmentElement item,int n){var e=rows.FirstOrDefault(e=>e.EquipmentElement.Equals(item));if(e==null){e=new ItemRosterElement{EquipmentElement=item};rows.Add(e);}e.Amount+=n;if(e.Amount<0)throw new Exception("negative equipment stock");if(e.Amount==0)rows.Remove(e);VersionNo++;}public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Add(ItemRoster other){foreach(var e in other)AddToCounts(e.EquipmentElement,e.Amount);}public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
 class PartyBase {public static PartyBase MainParty=new PartyBase();public string Id;public string Name=>Id;public ItemRoster ItemRoster=new ItemRoster();}
-class MobileParty {public string StringId;public bool IsLordParty=true;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
+class MobileParty {public string StringId;public bool IsLordParty=true,IsVillager;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
 class Hero {public MobileParty PartyBelongedTo;public bool IsPriest;}
 class Settlement {public string StringId;}
 class FaithVillage {public string VillageId;}
@@ -40,6 +40,7 @@ static class GwpCommon {public static bool IsGreyWardenTroop(CharacterObject t)=
 static class GwpTuning {public static class Firesworn {public const float ArmoryLossLootShare=.33f;}}
 static class GwpAiDiagnostics {public static void WriteFaith(string a,string b){} }
 partial class Regression {
+static bool IsFaithVillager(MobileParty p)=>p?.IsVillager==true;
 readonly Dictionary<string,FaithVillage> _villages=new Dictionary<string,FaithVillage>();
 TroopRoster GuardOf(string id)=>rosters[id];static bool IsFireswornPriest(Hero hero)=>hero?.IsPriest==true;void PushGuard(FaithVillage row,Settlement village){}void ReconcilePriestSlots(FaithVillage row){}static void RecordVisit(MobileParty p,Settlement v,int recruits){}
 static Regression _instance;readonly Dictionary<string,int> _issuedThisMission=new Dictionary<string,int>();Mission _issuedMission;
@@ -51,7 +52,7 @@ string HolderOf(PartyBase p)=>p.Id;
 static bool UsableMounted(ItemObject i)=>!i.NoMount;
 readonly Dictionary<string,ItemRoster> _goods=new Dictionary<string,ItemRoster>();readonly Dictionary<string,MobileParty> parties=new Dictionary<string,MobileParty>();MobileParty FindParty(string id)=>parties.TryGetValue(id,out var p)?p:null;
 readonly HashSet<string> battleHolders=new HashSet<string>();bool HolderInBattle(string id)=>battleHolders.Contains(id);
-ArmoryPlan BuildPlanFor(string id)=>PlanForCounts(id,ItemsOf(_armories,id),ArmoryTroops(rosters[id]),0);
+ArmoryPlan BuildPlanFor(string id)=>PlanForCounts(id,ItemsOf(_armories,id),ArmoryTroops(rosters[id],IsFaithVillager(FindParty(id))),0,IsFaithVillager(FindParty(id)));
 __PRODUCTION__
 static int checks;
 static void Check(bool ok,string msg){checks++;if(!ok)throw new Exception(msg);}
@@ -84,7 +85,15 @@ public static int Main(){
  var highSkill=Item("elite_helmet",ItemObject.ItemTypeEnum.HeadArmor,100,difficulty:150);top.Skill=200;recruit.Skill=20;stock=Stock((highSkill,1),(best,1));plan=BuildPlan(stock,Troops((recruit,1),(top,1)),0);Check(For(plan,top)[KitHead].Equals(highSkill)&&For(plan,recruit)[KitHead].Equals(best),"high-tier usable stock is not discarded due to recruit skill gate");Conserved(plan,stock);
  var onlyMale=Item("male_only",ItemObject.ItemTypeEnum.HeadArmor,100);onlyMale.Item.ItemFlags=ItemFlags.NotUsableByFemale;stock=Stock((onlyMale,1),(horse,1),(harness,1),(cape,1));plan=BuildPlan(stock,Troops((top,1)),0);Check(Assigned(plan)==0&&plan.Surplus.Total==4,"gender-restricted horse harness and cape remain ineligible library stock");
  var outsider=Troop("outsider",6);var hero=Troop("gwhero",6);hero.IsHero=true;stock=Stock((best,10));plan=BuildPlan(stock,Troops((hero,1),(outsider,1),(top,1)),0);Check(plan.Sets.Count==1&&plan.Sets[0].Troop==top,"hero and non-grey troops excluded");
+ var villager=Troop("villager",1,Gear((0,Item("farm_tool",ItemObject.ItemTypeEnum.OneHandedWeapon,0.1f))));stock=Stock((sword,1),(best,1));plan=BuildPlan(stock,Troops((villager,1)),0,true);
+ Check(For(plan,villager).Equipment[0].Equals(sword)&&For(plan,villager)[KitHead].Equals(best),"authorized native villager can replace weak equipment with actual stock");Conserved(plan,stock);
+ stock=Stock((best,1));plan=BuildPlan(stock,Troops((villager,1)),0);Check(plan.Sets.Count==0&&plan.Surplus.Total==1,"ordinary village and unrelated party remain excluded");
  var b=new Regression();stock=Stock((best,10),(second,10));var troopRows=Troops((recruit,2),(zealot,3));plan=b.PlanForCounts("cache",stock,troopRows,15);Check(plan.Sets.Count==5&&plan.Free.Total==15,"full twenty positions retained");Conserved(plan,stock);var ordered=plan.Troops;Check(ReferenceEquals(plan,b.PlanForCounts("cache",stock,ordered,15)),"unchanged inputs reuse cached plan");stock.AddToCounts(best,1);var next=b.PlanForCounts("cache",stock,ordered,15);Check(!ReferenceEquals(plan,next),"stock version invalidates plan");Check(!ReferenceEquals(next,b.PlanForCounts("cache",stock,ordered,16)),"reserve change invalidates plan");var upgraded=Troops((top,2),(zealot,3));Check(!ReferenceEquals(next,b.PlanForCounts("cache",stock,upgraded,15)),"same headcount upgraded to higher type invalidates plan");plan=BuildPlan(stock,Troops(),20);Check(plan.Free.Total==20&&plan.Surplus.Total==1,"empty roster still reserves entire capacity");
+ b=new Regression();_instance=b;var nativeParty=new MobileParty{StringId="native",IsVillager=true,IsLordParty=false};nativeParty.MemberRoster.AddToCounts(villager,1);b.parties["native"]=nativeParty;b.rosters["native"]=nativeParty.MemberRoster;
+ ItemsOf(b._armories,"home").AddToCounts(sword,1);ItemsOf(b._armories,"home").AddToCounts(best,1);
+ Check(b.TakeBestSets("home",nativeParty)==2&&ItemsOf(b._armories,"home").Total==0,"native villager actually withdraws gear from home stock");
+ Check(TakeKitForAgent(new PartyBase{Id="native"},villager)[0].Equals(sword),"native villager receives its stock weapon in live spawn resolver");
+ Check(TryGetArmoryTiers(new PartyBase{Id="native"},villager,out w,out a)&&w>0&&a>0,"native villager equipment reaches actual simulation resolver");
  // Actual troop-specific transfers carry only library additions, not native items.
  b=new Regression();b.rosters["v"]=new TroopRoster();b.rosters["v"].AddToCounts(top,2);b.rosters["p"]=new TroopRoster();ItemsOf(b._armories,"v").AddToCounts(best,2);Check(b.MoveBestSets("v","p",top,1)==1,"high tier carries allocated equipment on recruitment");Check(ItemsOf(b._armories,"v").Total==1&&ItemsOf(b._armories,"p").Total==1,"recruit equipment transfer conserves both ledgers");Check(!b._plans.ContainsKey("v")&&!b._plans.ContainsKey("p"),"recruit transfer invalidates both plans");
  b=new Regression();var escort=new MobileParty{StringId="p"};escort.MemberRoster.AddToCounts(top,1);escort.MemberRoster.AddToCounts(recruit,1);ItemsOf(b._armories,"v").AddToCounts(best,1);ItemsOf(b._armories,"v").AddToCounts(second,1);Check(b.TakeBestSets("v",escort)==2&&b.TakeBestSets("v",escort)==0,"mixed high-low outgoing party carries chosen kits without duplicate draws");

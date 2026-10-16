@@ -93,6 +93,7 @@ python tools/Check-StateFreshness.py
 | [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
 | [`infrastructure.md`](infrastructure.md) | 身份判据、调参、文本与本地化、存档类型 |
 | [`player-text.md`](player-text.md) | 玩家词句的独立中英文本入口、生成与核对 |
+| [`promotional-art.md`](promotional-art.md) | 制作已终止；保留的装备、设定与场景素材索引 |
 | [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
 
 ### 执法：案件从立案到结案
@@ -140,7 +141,8 @@ python tools/Check-StateFreshness.py
 | [`firesworn-media.md`](firesworn-media.md) | 已验收的仪式配图、地图声与菜单声、素材身份 |
 | [`firesworn-armory.md`](firesworn-armory.md) | 军械账本、配装、缴获、战损与开发版查看 |
 | [`firesworn-economy.md`](firesworn-economy.md) | 捐赠、地牢、货仓、守村收益、保护费与公库 |
-| [`firesworn-parties.md`](firesworn-parties.md) | 传教、运械、卖货 |
+| [`firesworn-parties.md`](firesworn-parties.md) | 自建传教队与村间转运 |
+| [`firesworn-villagers.md`](firesworn-villagers.md) | 原版村民队的比例补员、精锐替换、兼运分账 |
 
 ### 战斗
 

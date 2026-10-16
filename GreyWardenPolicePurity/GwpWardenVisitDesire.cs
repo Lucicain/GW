@@ -161,7 +161,8 @@ namespace GreyWardenPolicePurity
             Settlement? here = MobilePartyHelper.GetCurrentSettlementOfMobilePartyForAICalculation(party);
             // 原版城堡城镇的伤员项：伤员超过两成，按比例乘 1–5。
             float woundTerm = wounded > 0.2f ? MBMath.Map(wounded - 0.2f, 0f, 0.8f, 1f, 5f) : 1f;
-            // 原版城堡城镇的俘虏项是整数除法、满了才乘 3；信众村连续算，地牢满了（软上限）就不算。
+            // 信众村整批接收普通俘虏，软目标不截断交付；交完后押送需求归零，
+            // 不再因两个村每天各腾一两个名额而反复往返（用户裁定2026-10-16）。
             float prisonerTerm = 1f + 2f * Math.Min(1f, prisoners / (float)prisonLimit);
 
             string best = "-";
@@ -182,7 +183,7 @@ namespace GreyWardenPolicePurity
                 else
                 {
                     // 倍数放大的是需要，不是底分；没事就是原版的闲逛分（用户裁定 2026-10-05：灰袍优先做信众村的事）。
-                    float need = (GwpFireswornBehavior.PrisonerRoom(settlement) > 0 ? prisonerTerm : 1f) * woundTerm * sell;
+                    float need = prisonerTerm * woundTerm * sell;
                     factor = Amplified(need);
                 }
                 float rescored = score * factor;

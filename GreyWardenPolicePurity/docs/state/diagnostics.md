@@ -2,9 +2,9 @@
 
 > 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
 > 最后验收：未建立检查点
-> 已复核至：`4f31993`（2026-10-16）
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py`
-> 待实测：再次闪退时 agent 核对 Faults 日志末尾有无 `PROCESS_EXIT` 与最后几条 `MEMORY`
+> 已复核至：`81d6475`（2026-10-16）
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1`
+> 待实测：再次闪退时 agent 核对 Faults 日志最后几条 `MEMORY`
 
 ## 原则
 
@@ -88,6 +88,8 @@
 | 领主进村意愿 | `DAILY_LORD` 和领主类异常里的 `faithVisit`：上一小时分最高的信众村和分数 |
 | 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
 | 保护费 | `PROTECTION_FEE` |
+
+烧村抑制调查使用Case-Events中的`RAID_SCORE_SAMPLE`，每位领主每24游戏小时最多一行：真实原版返回baseScore、实际multiplier/result、当前注册activeModel与候选村。只旁观本次计算，不为打印重算评分；只编入GWP_DIAGNOSTICS，玩法无依赖，不保存采样冷却。用户确认抑制链路后退休此健康路径诊断。（依据：用户反馈、流程2026-10-16）
 | 仪式画面 | `RITUAL_MENU_SHOWN` |
 | 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`PRISONERS_PILING`、`LORD_HOLDING_AT_SETTLEMENT`、`LORD_UNDERSTRENGTH`、`PRIEST_SLOTS_EMPTY`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`ARMORY_NON_POSITIVE`、`TREASURY_LOW` |
 
@@ -105,7 +107,8 @@
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
-| `GwpRuntimeFaultWatch` 的 `PROCESS_EXIT`（托管退出时的退出码、内存与调用栈）与 `MEMORY`（主线程应用心跳每分钟一条：进程私有/工作集/托管堆，系统内存负载、可用物理内存、提交量） | 2026-10-16 08:37 实机无报错闪退：没有正常退出的托管卸载记录，看门狗无异常事件，无 WER 记录或转储。下次闪退若日志里没有 `PROCESS_EXIT`，说明进程被直接结束；`MEMORY` 用来核对内存耗尽 | 闪退原因查清后退休 |
+| `GwpRuntimeFaultWatch` 的 `MEMORY`（主线程应用心跳每分钟一条：进程私有/工作集/托管堆，系统内存负载、可用物理内存、提交量） | 游戏中途无报错闪退（2026-10-16 08:37、20:18）原因未明。20:18 那次闪退前私有内存约 10–11 GB、提交量余约 28 GB，内存耗尽已基本排除；留着给下一次对照 | 闪退原因查清后退休 |
+| `tools/Capture-StackOverflow.ps1`（用户运行：cdb 下启动游戏，栈溢出时写托管/原生栈与小转储） | 游戏中途 .NET 栈溢出闪退（Steam 退出码 0x800703E9）抓不到任何异常，只有调试器在溢出那一刻能拿到调用栈 | 栈溢出定位并修复后，连同工具一起退休 |
 
 已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
 2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /
@@ -133,3 +136,5 @@ postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
 
 军械全兵种分配新增 `ARMORY_PLAN`，仅方案变化时记录持有者、兵种顺序、件数及首套库装；不在每帧/每次出兵打印，用户确认高阶补空位及低阶换装后退休。定义见[军械库](firesworn-armory.md)。（依据：流程、源码复核 2026-10-15）
+
+原版村民队合并的在役健康取证为VILLAGERS_RAISED（本次新增、转化、队内信众前后、当前比例和户数）、VILLAGERS_EQUIPPED（仅灰袍名额替换、领装和留守）、MARKET_DISPATCHED与MARKET_HOME（兼运/分账），均只编入诊断；用户确认比例补员、换兵和结账可用后同轮退休。（依据：流程2026-10-16）

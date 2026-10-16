@@ -1409,7 +1409,7 @@
 | gwp_fs_militia_stopped | The Grey Warden faithful guard the village; no new militia is raised | 灰袍教众负责守卫，停止征募新民兵 | 教士势力已达本村最强时，民兵变化的说明条目。 |
 | gwp_fs_priest_lore | {PRIEST} teaches the Grey Wardens' rule in {VILLAGE}. He urges villagers to revere Heaven, aid the poor, and submit to the order's discipline. The Wardens' women command its troops and patrols; he gathers the faithful, conducts worship, and helps provide for those who defend the village or join the ranks. | {PRIEST}在{VILLAGE}传授灰袍的戒律。他教导村民敬畏上天，接济穷人，并服从修会的惩戒。灰袍的女统领掌管武装和巡察，他则召集教众、主持礼拜，为守村与从军的人备办衣食。 | 村中灰袍教士的百科介绍；宗教与分工说明。 |
 | gwp_fs_village_stores | The cellar holds {PRISONERS} people awaiting the stake. The stores contain {ARMORY} pieces of arms and armour, with goods worth {GOODS} denars awaiting transport to market. | 地窖关押着{PRISONERS}人，等候火刑。库房存有{ARMORY}件兵器甲胄，另有价值{GOODS}第纳尔的货物待运往集市。 | 村庄教众详情最后一段，显示地牢、军械与货物。 |
-| gwp_fs_caravan_party | Faithful Traders of {VILLAGE} | {VILLAGE}的教众货队 | 卖货队的大地图队名。 |
+| gwp_fs_caravan_party | Faithful Traders of {VILLAGE} | {VILLAGE}的教众货队 | 旧自建卖货队名称留档；当前卖货复用原版村民队名。 |
 | gwp_fs_armory_option | Inspect the faithful's stores | 查看教众库房 | 仅开发版：有守村队的村庄菜单库房入口。 |
 | gwp_fs_armory_close | Close | 关闭 | 仅开发版：库房明细关闭按钮。 |
 | gwp_fs_armory_section_arms | Arms and Armour | 军械 | 仅开发版：库房明细中的军械分组。 |
@@ -1433,12 +1433,12 @@
 | gwp_fs_party_fight | Then we have nothing more to discuss. | 那就没什么可谈的了。 | 威胁被拒后，玩家结束对话回到遭遇菜单；此项本身不直接发起战斗。 |
 | gwp_fs_party_back_off | Leave, then. | 算了，你们走吧。 | 玩家收回威胁并离开遭遇。 |
 | gwp_fs_party_leave | Carry on your way. | 你们继续赶路吧。 | 正常结束教众队伍对话并离开遭遇。 |
-| gwp_fs_party_greet_cart_out | We come from {HOME}, taking these goods to sell in {TARGET}. The proceeds will support the faithful back home. | 我们从{HOME}来，要把这车货送到{TARGET}去卖，所得用来供养村里的教众。 | 地图遇到向集市出发的卖货队。 |
+| gwp_fs_party_greet_cart_out | We come from {HOME}, taking village produce and goods entrusted by the faithful to sell in {TARGET}. | 我们从{HOME}来，正把村里的出产和教众托运的货送去{TARGET}卖。 | 兼运村庄产物与灰袍货物的原版村民队；实际收入分别入村税和灰袍公库。 |
 | gwp_fs_party_greet_mission | We come from {HOME}, bound for {TARGET} to preach and settle there. | 我们从{HOME}来，要到{TARGET}传教，此后就在那里住下。 | 地图遇到前往新村的传教队。 |
-| gwp_fs_party_greet_balance | We come from {HOME}, carrying arms for the faithful of {TARGET}. Once they are delivered, we will stay to help guard the village. | 我们从{HOME}来，为{TARGET}的教众运送兵器。送到以后，我们也留在那里守村。 | 地图遇到运械队；抵达后人也留下。 |
+| gwp_fs_party_greet_balance | We come from {HOME}, bringing troops and supplies to {TARGET}, with any prisoners under guard. We will stay to help guard the village. | 我们从{HOME}来，给{TARGET}送人和物资，沿途押送的俘虏也会交到那里。到了以后，我们就留在那里守村。 | 地图遇到运械队；抵达后人也留下。 |
 | gwp_fs_mission_party | Grey Warden Mission | 灰袍传教队 | 传教队的大地图队名。 |
-| gwp_fs_balance_party | Armsbearers of {VILLAGE} | {VILLAGE}的运械队 | 运械队的大地图队名。 |
-| gwp_fs_status_balance | Carrying arms from {HOME} to the faithful of {TARGET}. | 正从{HOME}运送兵器给{TARGET}的教众。 | 运械队出发阶段的部队行为说明。 |
+| gwp_fs_balance_party | Convoy of {VILLAGE} | {VILLAGE}的转运队 | 运械队的大地图队名。 |
+| gwp_fs_status_balance | Transporting troops and supplies from {HOME} to {TARGET}, with any prisoners under guard. | 正从{HOME}前往{TARGET}，转运兵员、物资并押送俘虏。 | 运械队出发阶段的部队行为说明。 |
 | gwp_notice_prisoners | Handed over {COUNT} prisoners | 交付{COUNT}名俘虏 | 领主向村庄地牢交人后，村庄名牌上的短通知。 |
 | gwp_notice_donated | Donated {COUNT} items | 捐赠{COUNT}件物资 | 领主交物资后村庄名牌短通知；包含军械与货物，不全是装备。 |
 | gwp_notice_congregation | {COUNT} households joined the Grey Warden faithful | {COUNT}户加入灰袍教众 | 布道完成后的村庄名牌通知；COUNT来自信众新增户数，原中文“人”单位不符。 |
@@ -1446,7 +1446,7 @@
 | gwp_notice_burned_people | {COUNT} people | {COUNT}人 | 火刑通知中的俘虏与民兵人数片段。 |
 | gwp_notice_burned_homes | {COUNT} households | {COUNT}户 | 火刑通知中的不信教户数片段，不改写成人数。 |
 | gwp_notice_mission | {COUNT} believers settled here | {COUNT}名教众在此定居 | 传教队抵达后村庄名牌短通知；COUNT是实际留下的兵员人数。 |
-| gwp_notice_balance | Delivered {COUNT} pieces of arms and armour | 运来{COUNT}件兵器甲胄 | 运械队抵达后的村庄名牌通知。 |
+| gwp_notice_balance | Received {MEN} soldiers, {COUNT} arms and armour items, and {PRISONERS} prisoners | 接收{MEN}名士兵、{COUNT}件军械和{PRISONERS}名俘虏 | 运械队抵达后的村庄名牌通知。 |
 | gwp_notice_market | Sold {COUNT} goods | 售出{COUNT}件货物 | 卖货队在城镇卖货后的城镇名牌通知。 |
 | gwp_notice_rebuilt | Rebuilt this village | 重建了这座村子 | 灰袍完成重建后的村庄名牌通知。 |
 | gwp_notice_issue_solved | Resolved a petition | 处理了一件请愿 | 灰袍完成要人事务后的聚落名牌通知。 |

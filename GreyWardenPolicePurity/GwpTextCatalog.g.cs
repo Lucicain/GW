@@ -541,8 +541,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_armory_section_inventory = "{=gwp_fs_armory_section_inventory}Baggage";
         internal const string gwp_fs_armory_summary = "{=gwp_fs_armory_summary}These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces.";
         internal const string gwp_fs_armory_village = "{=gwp_fs_armory_village}Armory of {VILLAGE} ({ITEMS} pieces)";
-        internal const string gwp_fs_balance_party = "{=gwp_fs_balance_party}Armsbearers of {VILLAGE}";
-        internal const string gwp_fs_caravan_party = "{=gwp_fs_caravan_party}Faithful Traders of {VILLAGE}";
+        internal const string gwp_fs_balance_party = "{=gwp_fs_balance_party}Convoy of {VILLAGE}";
         internal const string gwp_fs_healing_hearth = "{=gwp_fs_healing_hearth}Care from the Grey Warden faithful";
         internal const string gwp_fs_lord_armory_ask = "{=gwp_fs_lord_armory_ask}Let me see your company's stores.";
         internal const string gwp_fs_lord_armory_reply = "{=gwp_fs_lord_armory_reply}Here is the inventory.";
@@ -554,9 +553,9 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_party_buy_no = "{=gwp_fs_party_buy_no}Never mind.";
         internal const string gwp_fs_party_buy_yes = "{=gwp_fs_party_buy_yes}Agreed. Here is {TOTAL_PRICE}{GOLD_ICON}.";
         internal const string gwp_fs_party_fight = "{=gwp_fs_party_fight}Then we have nothing more to discuss.";
-        internal const string gwp_fs_party_greet_balance = "{=gwp_fs_party_greet_balance}We come from {HOME}, carrying arms for the faithful of {TARGET}. Once they are delivered, we will stay to help guard the village.";
+        internal const string gwp_fs_party_greet_balance = "{=gwp_fs_party_greet_balance}We come from {HOME}, bringing troops and supplies to {TARGET}, with any prisoners under guard. We will stay to help guard the village.";
         internal const string gwp_fs_party_greet_cart_back = "{=gwp_fs_party_greet_cart_back}We have traded at market and are returning to {HOME}.";
-        internal const string gwp_fs_party_greet_cart_out = "{=gwp_fs_party_greet_cart_out}We come from {HOME}, taking these goods to sell in {TARGET}. The proceeds will support the faithful back home.";
+        internal const string gwp_fs_party_greet_cart_out = "{=gwp_fs_party_greet_cart_out}We come from {HOME}, taking village produce and goods entrusted by the faithful to sell in {TARGET}.";
         internal const string gwp_fs_party_greet_mission = "{=gwp_fs_party_greet_mission}We come from {HOME}, bound for {TARGET} to preach and settle there.";
         internal const string gwp_fs_party_leave = "{=gwp_fs_party_leave}Carry on your way.";
         internal const string gwp_fs_party_offer = "{=gwp_fs_party_offer}We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful.";
@@ -574,7 +573,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_ritual_damnation_text = "{=gwp_fs_ritual_damnation_text}People are bound to stakes in the square of {VILLAGE}, where a burning is under way. The gathered believers pray as smoke drifts over the roofs. Village business is suspended for about {HOURS} more hours. Host: {HOST}.";
         internal const string gwp_fs_ritual_damnation_title = "{=gwp_fs_ritual_damnation_title}Burning at the Stake";
         internal const string gwp_fs_ritual_leave = "{=gwp_fs_ritual_leave}Leave...";
-        internal const string gwp_fs_status_balance = "{=gwp_fs_status_balance}Carrying arms from {HOME} to the faithful of {TARGET}.";
+        internal const string gwp_fs_status_balance = "{=gwp_fs_status_balance}Transporting troops and supplies from {HOME} to {TARGET}, with any prisoners under guard.";
         internal const string gwp_fs_status_healing = "{=gwp_fs_status_healing}Tending the wounded in {VILLAGE}.";
         internal const string gwp_fs_status_home = "{=gwp_fs_status_home}Keeping watch in {HOME}.";
         internal const string gwp_fs_status_market = "{=gwp_fs_status_market}Taking goods from {HOME} to market in {TARGET}.";
@@ -814,7 +813,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_membership_leave_prompt_higher = "{=gwp_membership_leave_prompt_higher}If you withdraw, your warrants, detachments, and battlefield relief end. Readmission will require {VAR_1} standing and a personal appeal to a Warden-lord. Is this your final decision?";
         internal const string gwp_membership_rejoin_player = "{=gwp_membership_rejoin_player}I wish to petition for a place among the Grey Warden sworn hunters again.";
         internal const string gwp_membership_rejoin_response = "{=gwp_membership_rejoin_response}Your petition is accepted. You are again recognised as a sworn hunter; take a fresh commander's harness and answer our warrants faithfully.";
-        internal const string gwp_notice_balance = "{=gwp_notice_balance}Delivered {COUNT} pieces of arms and armour";
+        internal const string gwp_notice_balance = "{=gwp_notice_balance}Received {MEN} soldiers, {COUNT} arms and armour items, and {PRISONERS} prisoners";
         internal const string gwp_notice_burned_homes = "{=gwp_notice_burned_homes}{COUNT} households";
         internal const string gwp_notice_burned_people = "{=gwp_notice_burned_people}{COUNT} people";
         internal const string gwp_notice_congregation = "{=gwp_notice_congregation}{COUNT} households joined the Grey Warden faithful";

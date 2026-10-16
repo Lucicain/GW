@@ -80,6 +80,7 @@ static class GwpTroopTransfer {
     }
 }
 class Regression {
+    static bool IsFaithVillager(MobileParty p)=>false;
     readonly Dictionary<string,ItemRoster> _armories=new Dictionary<string,ItemRoster>();
     readonly Dictionary<string,ArmoryPlan> _plans=new Dictionary<string,ArmoryPlan>();
     readonly TroopRoster guard=new TroopRoster();
@@ -92,8 +93,8 @@ class Regression {
     static ItemRoster ItemsOf(Dictionary<string,ItemRoster> ledger,string id) {
         if(!ledger.ContainsKey(id)) ledger[id]=new ItemRoster(); return ledger[id];
     }
-    static List<TroopRosterElement> ArmoryTroops(TroopRoster roster)=>roster.GetTroopRoster().Where(e=>IsGuardTroop(e.Character)).ToList();
-    static ArmoryPlan BuildPlan(ItemRoster stock,IReadOnlyList<TroopRosterElement> troops,int headroom) {
+    static List<TroopRosterElement> ArmoryTroops(TroopRoster roster,bool villagers=false)=>roster.GetTroopRoster().Where(e=>IsGuardTroop(e.Character)).ToList();
+    static ArmoryPlan BuildPlan(ItemRoster stock,IReadOnlyList<TroopRosterElement> troops,int headroom,bool villagers=false) {
         int recruits=troops.Where(e=>e.Character.StringId==GwpIds.NewRecruitId).Sum(e=>e.Number);
         int zealots=troops.Where(e=>e.Character.StringId==GwpIds.ZealotId).Sum(e=>e.Number);
         // This boundary supplies one scored main weapon per eligible soldier.

@@ -51,9 +51,8 @@ namespace GreyWardenPolicePurity
                     released++;
                     continue;
                 }
-                dungeon.AddToCounts(element.Character, element.Number);
-                militia.PrisonRoster.AddToCounts(element.Character, -element.Number, false, -element.WoundedNumber);
-                men += element.Number;
+                men += GwpTroopTransfer.Move(militia.PrisonRoster, dungeon,
+                    element.Character, element.Number).Number;
             }
             ItemRoster goods = ItemsOf(_goods, village.StringId);
             for (int i = militia.ItemRoster.Count - 1; i >= 0; i--)
@@ -94,28 +93,17 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 地牢还收得下几个：软上限是本村信众户数（用户裁定 2026-10-08）。满了领主就不交、也不再想来交，
-        /// 改去附近别的信众村或照原版进城卖（<see cref="GwpWardenVisitDesire.Rescore"/>）；无领主队押回来的照收，超出的留着慢慢烧。
+        /// 普通俘虏整批交付，信众户数只是村间分流的软目标（用户裁定2026-10-16）。
         /// </summary>
-        internal static int PrisonerRoom(Settlement village) =>
-            _instance != null && _instance._villages.TryGetValue(village.StringId, out FaithVillage? row)
-                ? Math.Max(0, row.Households - RosterOf(_instance._dungeons, village.StringId).TotalManCount)
-                : 0;
-
         private void HandOver(MobileParty party, Settlement village)
         {
             TroopRoster dungeon = RosterOf(_dungeons, village.StringId);
-            int room = PrisonerRoom(village);
             int prisoners = 0;
             foreach (TroopRosterElement element in party.PrisonRoster.GetTroopRoster()
                          .Where(entry => !entry.Character.IsHero).OrderByDescending(entry => entry.Character.Tier).ToList())
             {
-                int take = Math.Min(element.Number, room - prisoners);
-                if (take <= 0)
-                    break;
-                dungeon.AddToCounts(element.Character, take);
-                party.PrisonRoster.AddToCounts(element.Character, -take, false, -Math.Min(take, element.WoundedNumber));
-                prisoners += take;
+                prisoners += GwpTroopTransfer.Move(party.PrisonRoster, dungeon,
+                    element.Character, element.Number).Number;
             }
 
             int goodsCount = 0, goodsValue = 0, armoryItems = 0;

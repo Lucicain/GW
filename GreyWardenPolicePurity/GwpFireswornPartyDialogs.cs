@@ -114,13 +114,15 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        /// <summary>钱进队伍身上，回村后进灰袍公库，和在城里卖货一样（GwpFireswornParties.ArriveHome）。</summary>
+        /// <summary>钱进真实交易账户；标记灰袍货款，回村时与村庄产物税收分账。</summary>
         private static void Buy()
         {
             MobileParty party = Encountered()!;
             foreach (ItemRosterElement element in Goods(party).ToList())
             {
-                int cost = Price(party, element.EquipmentElement) * element.Amount;
+                int price = Price(party, element.EquipmentElement);
+                int cost = price * element.Amount;
+                GwpFireswornBehavior.RecordFaithMarketSale(party, element.EquipmentElement, element.Amount, price);
                 GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, cost);
                 party.PartyTradeGold += cost;
                 PartyBase.MainParty.ItemRoster.AddToCounts(element.EquipmentElement, element.Amount);

@@ -2,9 +2,9 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`81d6475`（2026-10-16）
 > 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
-> 待实测：无
+> 待实测：烧村实际目标评分中的震慑倍率与当前注册模型，由agent读取RAID_SCORE_SAMPLE核对，不改变当前抑制数值
 
 案件怎么进池、罚金怎么算、被惩戒的领主之后怎么收敛、灰袍与原版外交的边界。
 案件进池之后的派单、追捕、结案见 [`case-enforcement.md`](case-enforcement.md)；
@@ -53,7 +53,7 @@
 ## 震慑（`GwpAiDeterrenceState`）
 
 - 村庄暴力、商队袭击各有一套点数，上限都是 9。每套都分两部分：本人被捕得到的直接震慑，和家族转述来的震慑。
-- 每次被捕，本类直接震慑增加的点数等于本类累计被捕次数，单次最多 9。
+- 每次实际拘捕，本类直接震慑按本类累计被捕次数增加，单次最多9；和平付款、使者单挑等实际执法结果也登记震慑，但不增加拘捕次数，增量按现有本类拘捕数、至少1计算。只影响事后意愿，不是禁止烧村。（依据：源码复核2026-10-16）
   总量到顶时，先压缩家族转述那部分。
 - 只有人确实落在灰袍手里（灰袍的队伍或灰袍的据点），被捕才会清账：负声望清零，开着的案件当场结案。
   这一段的 `catch` 还是旧式的空 `catch`，待改成留痕写法。
@@ -68,6 +68,8 @@
 - 灰袍自己的倍率恒为 0：灰袍短期 AI 只打承办的目标和野怪。
 - 震慑总量 ≥ 0.25 时，和领主对话会有专门的说辞：按主导来源（本人/家族）、档位（≤3、≤6、更高）、
   性格权重抽一种口吻，玩家是灰袍时措辞不同（`GwpAiDeterrenceDialogueCatalog`）。
+
+当前烧村调查：模型挂点仍是原版AiMilitaryBehavior调用的TargetScoreCalculatingModel.GetTargetScoreForFaction；已加入有界真实评分采样，入口与退休条件只在[诊断](diagnostics.md)定义。离线生产模型已验证一次调用只算一次原版评分、非Raider/非正分/无领主不改、倍率1保持原分。现有实机日志能证明执法登记和再犯，不能证明运行时最终倍率；保留数值，待采样闭环。（依据：C#反编译、生产回归2026-10-16）
 
 ## 外交封锁
 

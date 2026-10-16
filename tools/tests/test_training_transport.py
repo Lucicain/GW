@@ -73,12 +73,12 @@ class Regression {
  const double Never=-10000;static int checks;static void Check(bool c,string m){checks++;if(!c)throw new Exception(m);}
  enum FaithPartyKind{Mission,Market,Balance,Training} enum FaithPartyPhase{Home,Outbound,Returning} enum RitualKind{Congregation}
  class FaithVillage{public string VillageId,PriestId="p";public double LastCongregation,LastDamnation,LastMission,LastMarket,LastBalance;public int Households,MissionsSent;}
- class FaithParty{public string PartyId,HomeId,TargetId,TrainerId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int Stops;}
+ class FaithParty{public string PartyId,HomeId,TargetId,TrainerId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int MarketGold;}
  class Ritual{public string VillageId;public RitualKind Kind;public double EndHour;}
  readonly Dictionary<string,FaithVillage> _villages=new Dictionary<string,FaithVillage>();readonly List<Ritual> _rituals=new List<Ritual>();
  readonly Dictionary<string,FaithParty> _faithParties=new Dictionary<string,FaithParty>();readonly Dictionary<string,double> _trainingDepartures=new Dictionary<string,double>();
  readonly Dictionary<string,TroopRoster> _guards=new Dictionary<string,TroopRoster>(),_dungeons=new Dictionary<string,TroopRoster>();
- readonly Dictionary<string,ItemRoster> _armories=new Dictionary<string,ItemRoster>(),_goods=new Dictionary<string,ItemRoster>();
+ readonly Dictionary<string,ItemRoster> _armories=new Dictionary<string,ItemRoster>(),_goods=new Dictionary<string,ItemRoster>(),_marketCargo=new Dictionary<string,ItemRoster>();
  class ArmoryPlan {public int Recruits,Zealots,Reserve,LedgerVersion;public ItemRoster Ledger;public List<EquipmentElement[]> Sets=new List<EquipmentElement[]>();public ItemRoster Free=new ItemRoster(),Surplus=new ItemRoster();public float RecruitWeaponTier,RecruitArmorTier,ZealotWeaponTier,ZealotArmorTier;}
  readonly Dictionary<string,ArmoryPlan> _plans=new Dictionary<string,ArmoryPlan>();
  const int KitSlots=9,WeaponSlots=4,KitHead=0,KitBody=1,KitLeg=2,KitGloves=3,KitMain=4,KitShield=5,KitThrow=6,KitRanged=7,KitAmmo=8;
@@ -115,7 +115,8 @@ class Regression {
   Check(r.transportedKits==10,"veteran dispatch invokes troop-specific kit transfer");
   r.DispatchTrainingTransports();Check(r._faithParties.Count==1,"one in-flight shipment per trainer");
   // Save and load actual production fields while physical engine parties remain registered.
-  var store=new IDataStore{IsSaving=true};r.SyncData(store);var loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();
+  record.MarketGold=123;var store=new IDataStore{IsSaving=true};r.SyncData(store);var loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();
+  Check(record.MarketGold==123,"in-flight market gold survives actual SyncData");
   Check(record.TrainerId=="trainer"&&record.HomeId=="v"&&record.Phase==FaithPartyPhase.Outbound,"outbound save/load owner and destination");Check(r._trainingDepartures["trainer"]==1,"dispatch cooldown survives save/load");
   p.MemberRoster.AddToCounts(Veteran,-3);p.Position.X=0;r.TendTrainingTransport(record,p);
   Check(v.Guard.TotalManCount==17&&v.Guard.GetTroopRoster().Single(e=>e.Character==Veteran).Number==7,"only seven surviving veterans delivered; ten trainees stay");

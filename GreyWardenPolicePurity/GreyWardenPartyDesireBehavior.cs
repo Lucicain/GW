@@ -92,10 +92,9 @@ namespace GreyWardenPolicePurity
             EscortSpeedUncapped.Clear();
             GwpAiDiagnostics.StartSession();
             // 意图和直扑锁都不进存档（读档时清空，由各差事每小时重新下达），可直扑锁下的冻结是原版状态、会进存档；
-            // 读档后不解开，锁已经没了的队伍就永远冻着。火誓者信众队在家的停驻冻结是它自己要的，不解。
+            // 读档后不解开，锁已经没了的队伍就永远冻着。原版村民队不受本系统管理。
             foreach (MobileParty party in MobileParty.All.Where(IsManagedParty))
-                if (!GwpFireswornBehavior.IsParkedFaithParty(party))
-                    RequestImmediateRethink(party);
+                RequestImmediateRethink(party);
         }
 
         private static void OnPartyDisbandStarted(MobileParty party) =>

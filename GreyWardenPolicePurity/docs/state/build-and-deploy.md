@@ -2,15 +2,15 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`cbdfb71`（2026-10-16）
+> 已复核至：`81d6475`（2026-10-16）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
 ## 当前开发部署
 
-当前 live 是 `907bdcd` 的监控开发构建（和当前 r15 测试版同一份源码，只多诊断）。
-Client/Editor DLL SHA-256 同为 `38684a32b576dc194ce763f95835208785292d58a0ea96ce2e7ed653297a7a12`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
-构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；旗帜安装核验通过。（依据：构建、部署哈希与离线执行 2026-10-16）
+当前live为`81d6475`基线加本轮宗教/物流与原版村民队合并的监控开发构建（工作树，尚未建立功能实测检查点）。
+Client/Editor DLL SHA-256同为`b9ae0976bbcb2c767dc2b265069fa1e474fc937063fbcfed9ab80c04af5d8cc5`；Assets、AssetSources、RuntimeDataCache保留，无AssetPackages/DsAssetPackages。
+构建0错误/警告、runtime镜像一致；GameCompat缺类型/成员0、96补丁绑定；实际游戏名册转移177断言通过；玩家无监控隔离构建通过，本轮未出ZIP、未推送/发版。（依据：构建、哈希、离线执行2026-10-16）
 
 ## 两个开关决定一切
 
@@ -65,11 +65,14 @@ Client/Editor DLL SHA-256 同为 `38684a32b576dc194ce763f95835208785292d58a0ea96
 | `tests/test_atonement.py` | 42断言 | 抽取实际赎罪、委派入口与使者方法，覆盖未入会权限、交接、存档字段恢复、和平/战斗完成、多嫌犯、原版期限、实际申报、取消交付与不重复领奖；引擎边界为桩 |
 | `tests/test_battle_peace.py` | 62断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
 | `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
-| `tests/test_armory_allocation.py` | 60断言 | 抽取生产全阶分配/缓存、实战发装与结算取值、出队和招募搬装、分兵种战损；高阶保留原配及坐骑/双刀，低阶择强、预设空位、弹药配对、四格上限、技能/品质/存量守恒及祭司最后一人带装 |
-| `tests/test_training_transport.py` | 43断言 | 抽取生产派队/50%门槛及75%概率翻倍/50%数量公式、单程落村/改道、SyncData与老兵搬装回调，核对健康老兵、全队分母、留守、减员、无弱兵、失效原队、冷却及同版存读；引擎行为为桩 |
+| `tests/test_armory_allocation.py` | 88断言 | 抽取生产全阶分配/缓存、实战发装与结算取值、出队和招募搬装、分兵种战损；高阶保留原配及坐骑/双刀，低阶择强、预设空位、弹药配对、四格上限、技能/品质/存量守恒及祭司最后一人带装 |
+| `tests/test_training_transport.py` | 44断言 | 抽取生产派队/50%门槛及75%概率翻倍/50%数量公式、单程落村/改道、SyncData与老兵搬装回调，核对健康老兵、全队分母、留守、减员、无弱兵、失效原队、冷却及同版存读；引擎行为为桩 |
 | `tests/test_lord_combat.py` | 75断言 | 编译生产身份/武器解析器、实际命中、盾伤模型、盾体选择、耐久/延后破盾、当前骑手变更/死亡与分伤；引擎边界为桩 |
 | `Verify-FounderProfiles.ps1` | 85断言 | 实际原版语体/选音、六组演员、战斗声音与性格合法互异；生产Harmony补丁范围与婚后接续 |
 | `Verify-PartyTransfers.ps1` | 177断言 | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
+| `tests/test_faith_logistics.py` | 1029断言（含500轮重复重算） | 生产首兵建队/回读/死亡、实际归队伤兵和经验、已有民兵不清空、祭司严格领先及势力守恒、全量交俘/交后访问需求消失、两村超额分流/押送容量、混编落村和地牢同版存读；引擎边界为桩 |
+| `tests/test_faith_villagers.py` | 31断言 | 生产出生/补员比例纠偏、只交换灰袍名额、伤情经验守恒、真实原版守方枚举、混装成交/村税/公库分账、余货和财产损失、物品品质标记存读；原版规则来自本机反编译，引擎边界为桩 |
+| `tests/test_raid_score.py` | 21断言（玩家/开发两种编译） | 生产Raider倍率、原版评分只调用一次、零/负分/无领主不改、有界诊断及玩家分支无诊断 |
 | `tests/test_firesworn_logs.py` | 1 | 带BOM的启动标记、当前日志、归档，以及启动前后过滤 |
 | `BattleSceneTests` | 137 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 27 | 双刀 AI 与踢/盾击互斥 |

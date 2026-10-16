@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -88,7 +89,6 @@ namespace GreyWardenPolicePurity
             public double LastCongregation = Never;
             public double LastDamnation = Never;
             public double LastMission = Never;
-            public double LastMarket = Never;
             public double LastBalance = Never;
             public string PriestId = string.Empty;
             // 信众户：信教的人家，不超过户数。
@@ -115,8 +115,8 @@ namespace GreyWardenPolicePurity
             public FaithPartyPhase Phase;
             public string TargetId = string.Empty;
             public double PhaseHour;
-            // 这一趟已经卖过几座城。
-            public int Stops;
+            // 在途灰袍货款，实际金币仍在原版交易账户；同版存读不能丢失。
+            public int MarketGold;
         }
 
         public GwpFireswornBehavior()
@@ -145,14 +145,14 @@ namespace GreyWardenPolicePurity
             List<string>? villageIds = null, priests = null;
             List<int>? households = null;
             List<int>? missionsSent = null;
-            List<double>? congregations = null, damnations = null, missions = null, markets = null, balances = null;
+            List<double>? congregations = null, damnations = null, missions = null, balances = null;
             List<string>? ritualVillages = null;
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null, partyTrainers = null;
             List<string>? trainingHeroes = null;
             List<double>? trainingDepartures = null;
-            List<int>? partyKinds = null, partyPhases = null, partyStops = null;
+            List<int>? partyKinds = null, partyPhases = null, partyMarketGold = null;
             List<double>? partyHours = null;
 
             if (dataStore.IsSaving)
@@ -162,7 +162,6 @@ namespace GreyWardenPolicePurity
                 congregations = rows.Select(row => row.LastCongregation).ToList();
                 damnations = rows.Select(row => row.LastDamnation).ToList();
                 missions = rows.Select(row => row.LastMission).ToList();
-                markets = rows.Select(row => row.LastMarket).ToList();
                 balances = rows.Select(row => row.LastBalance).ToList();
                 priests = rows.Select(row => row.PriestId).ToList();
                 households = rows.Select(row => row.Households).ToList();
@@ -180,7 +179,7 @@ namespace GreyWardenPolicePurity
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
-                partyStops = parties.Select(party => party.Stops).ToList();
+                partyMarketGold = parties.Select(party => party.MarketGold).ToList();
             }
 
             dataStore.SyncData("GWPP_FsPartyTrainers", ref partyTrainers);
@@ -190,7 +189,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsVillageLastCongregation", ref congregations);
             dataStore.SyncData("GWPP_FsVillageLastDamnation", ref damnations);
             dataStore.SyncData("GWPP_FsVillageLastMission", ref missions);
-            dataStore.SyncData("GWPP_FsVillageLastMarket", ref markets);
             dataStore.SyncData("GWPP_FsVillageLastBalance", ref balances);
             dataStore.SyncData("GWPP_FsVillagePriest", ref priests);
             dataStore.SyncData("GWPP_FsVillageHouseholds", ref households);
@@ -204,11 +202,12 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyPhases", ref partyPhases);
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
-            dataStore.SyncData("GWPP_FsPartyStops", ref partyStops);
+            dataStore.SyncData("GWPP_FsPartyMarketGold", ref partyMarketGold);
             SyncTroopRosters(dataStore, "GWPP_FsGuard", _guards);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
             SyncItemRosters(dataStore, "GWPP_FsArmory", _armories);
+            SyncItemRosters(dataStore, "GWPP_FsMarketCargo", _marketCargo);
 
             if (!dataStore.IsLoading)
                 return;
@@ -221,7 +220,6 @@ namespace GreyWardenPolicePurity
                     LastCongregation = congregations![i],
                     LastDamnation = damnations![i],
                     LastMission = missions![i],
-                    LastMarket = markets![i],
                     LastBalance = balances![i],
                     PriestId = priests![i],
                     Households = households![i],
@@ -248,7 +246,7 @@ namespace GreyWardenPolicePurity
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
-                    Stops = partyStops![i]
+                    MarketGold = partyMarketGold![i]
                 };
 
             _trainingDepartures.Clear();
@@ -262,28 +260,35 @@ namespace GreyWardenPolicePurity
             Dictionary<string, TroopRoster> rosters)
         {
             List<string>? holders = null, characters = null;
-            List<int>? counts = null;
+            List<int>? counts = null, wounded = null, experience = null;
             if (dataStore.IsSaving)
             {
                 holders = new List<string>();
                 characters = new List<string>();
                 counts = new List<int>();
+                wounded = new List<int>();
+                experience = new List<int>();
                 foreach (KeyValuePair<string, TroopRoster> pair in rosters)
                     foreach (TroopRosterElement element in pair.Value.GetTroopRoster())
                     {
                         holders.Add(pair.Key);
                         characters.Add(element.Character.StringId);
                         counts.Add(element.Number);
+                        wounded.Add(element.WoundedNumber);
+                        experience.Add(element.Xp);
                     }
             }
             dataStore.SyncData(key + "Holders", ref holders);
             dataStore.SyncData(key + "Characters", ref characters);
             dataStore.SyncData(key + "Counts", ref counts);
+            dataStore.SyncData(key + "Wounded", ref wounded);
+            dataStore.SyncData(key + "Experience", ref experience);
             if (!dataStore.IsLoading)
                 return;
             rosters.Clear();
             for (int i = 0; i < holders!.Count; i++)
-                RosterOf(rosters, holders[i]).AddToCounts(CharacterObject.Find(characters![i]), counts![i]);
+                RosterOf(rosters, holders[i]).AddToCounts(CharacterObject.Find(characters![i]), counts![i],
+                    false, wounded![i], experience![i]);
         }
 
         private static void SyncItemRosters(IDataStore dataStore, string key,
@@ -361,11 +366,6 @@ namespace GreyWardenPolicePurity
             outbound = record.Phase == FaithPartyPhase.Outbound;
             return true;
         }
-
-        /// <summary>这支卖货队正在家里停驻（Park 冻住的）。</summary>
-        internal static bool IsParkedFaithParty(MobileParty party) =>
-            _instance != null && _instance._faithParties.TryGetValue(party.StringId, out FaithParty? record) &&
-            record.Phase == FaithPartyPhase.Home && party.CurrentSettlement?.StringId == record.HomeId;
 
         /// <summary>信众村：有祭司的村子（用户裁定 2026-10-07：生成要人以后才算信众）。</summary>
         internal static IEnumerable<Settlement> FaithVillages() =>
@@ -881,10 +881,17 @@ namespace GreyWardenPolicePurity
             float share = Math.Min(SwornShare(row, village), GwpTuning.Firesworn.PriestMaxPowerShare);
             float priestPower = total * share;
             float scale = (total - priestPower) / othersPower;
-            // 封顶一半时只剩一位别的要人会和祭司平手；封顶的祭司必须严格最强（用户裁定 2026-10-14）。
-            float ceiling = share >= GwpTuning.Firesworn.PriestMaxPowerShare ? priestPower - 1f : float.MaxValue;
+            // 需要严格领先时，允许祭司略超一半，但全部差额必须来自其他要人，
+            // 不再每次重算凭空扣掉1点总势力（用户裁定2026-10-16）。
+            if (share >= GwpTuning.Firesworn.PriestMaxPowerShare)
+            {
+                float strongest = others.Max(hero => hero.Power);
+                priestPower = Math.Max(priestPower, Math.Min(total,
+                    (total * strongest + othersPower) / (othersPower + strongest)));
+                scale = (total - priestPower) / othersPower;
+            }
             foreach (Hero other in others)
-                other.AddPower(Math.Min(other.Power * scale, ceiling) - other.Power);
+                other.AddPower(other.Power * scale - other.Power);
             priest.AddPower(priestPower - priest.Power);
         }
 
@@ -1155,7 +1162,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 把守村队放进民兵队，和原版民兵站在一起：原版民兵一个不动，灰袍兵按记录补齐、多的去掉。
-        /// 民兵队还没有时，借原版 setter 建队（它会按文化兵种填人），再把多填的原版兵拿掉。
+        /// 第一个灰袍兵抵达时就创建真实民兵队，不等待原版增长累计超过1的阈值。
         /// </summary>
         private void PushGuard(FaithVillage row, Settlement village)
         {
@@ -1165,13 +1172,9 @@ namespace GreyWardenPolicePurity
                 return;
             if (militia?.IsActive != true)
             {
-                if (guard.TotalManCount < 2)
+                if (guard.TotalManCount == 0)
                     return;
-                village.Militia += guard.TotalManCount;
-                militia = village.MilitiaPartyComponent?.MobileParty;
-                if (militia?.IsActive != true)
-                    return;
-                RemoveVanillaMilitia(militia, guard.TotalManCount);
+                militia = EnsureVillageMilitia(village);
             }
 
             TroopRoster roster = militia.MemberRoster;
@@ -1193,6 +1196,18 @@ namespace GreyWardenPolicePurity
                     roster.AddToCounts(element.Character, -remove, false, -Math.Max(0, remove - healthy));
                 }
             }
+        }
+
+        private static MobileParty EnsureVillageMilitia(Settlement village)
+        {
+            MobileParty? militia = village.MilitiaPartyComponent?.MobileParty;
+            if (militia?.IsActive == true)
+                return militia;
+            // 原版公开工厂负责聚落挂接、停驻和存档；文化模板自带的占位兵
+            // 不是实有村民，清空后由实际转入的名册填充，不能额外造兵。
+            militia = MilitiaPartyComponent.CreateMilitiaParty(village.StringId, village);
+            militia.MemberRoster.Clear();
+            return militia;
         }
 
         /// <summary>按兵种比例从民兵队里拿掉 <paramref name="count"/> 个原版民兵，灰袍兵不动。</summary>

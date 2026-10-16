@@ -1433,12 +1433,12 @@
   <string id="gwp_fs_party_fight" text="那就没什么可谈的了。" />
   <string id="gwp_fs_party_back_off" text="算了，你们走吧。" />
   <string id="gwp_fs_party_leave" text="你们继续赶路吧。" />
-  <string id="gwp_fs_party_greet_cart_out" text="我们从{HOME}来，要把这车货送到{TARGET}去卖，所得用来供养村里的教众。" />
+  <string id="gwp_fs_party_greet_cart_out" text="我们从{HOME}来，正把村里的出产和教众托运的货送去{TARGET}卖。" />
   <string id="gwp_fs_party_greet_mission" text="我们从{HOME}来，要到{TARGET}传教，此后就在那里住下。" />
-  <string id="gwp_fs_party_greet_balance" text="我们从{HOME}来，为{TARGET}的教众运送兵器。送到以后，我们也留在那里守村。" />
+  <string id="gwp_fs_party_greet_balance" text="我们从{HOME}来，给{TARGET}送人和物资，沿途押送的俘虏也会交到那里。到了以后，我们就留在那里守村。" />
   <string id="gwp_fs_mission_party" text="灰袍传教队" />
-  <string id="gwp_fs_balance_party" text="{VILLAGE}的运械队" />
-  <string id="gwp_fs_status_balance" text="正从{HOME}运送兵器给{TARGET}的教众。" />
+  <string id="gwp_fs_balance_party" text="{VILLAGE}的转运队" />
+  <string id="gwp_fs_status_balance" text="正从{HOME}前往{TARGET}，转运兵员、物资并押送俘虏。" />
   <string id="gwp_notice_prisoners" text="交付{COUNT}名俘虏" />
   <string id="gwp_notice_donated" text="捐赠{COUNT}件物资" />
   <string id="gwp_notice_congregation" text="{COUNT}户加入灰袍教众" />
@@ -1446,7 +1446,7 @@
   <string id="gwp_notice_burned_people" text="{COUNT}人" />
   <string id="gwp_notice_burned_homes" text="{COUNT}户" />
   <string id="gwp_notice_mission" text="{COUNT}名教众在此定居" />
-  <string id="gwp_notice_balance" text="运来{COUNT}件兵器甲胄" />
+  <string id="gwp_notice_balance" text="接收{MEN}名士兵、{COUNT}件军械和{PRISONERS}名俘虏" />
   <string id="gwp_notice_market" text="售出{COUNT}件货物" />
   <string id="gwp_notice_rebuilt" text="重建了这座村子" />
   <string id="gwp_notice_issue_solved" text="处理了一件请愿" />

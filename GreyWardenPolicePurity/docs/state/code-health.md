@@ -2,11 +2,12 @@
 
 > 当前状态：已确认的配装、紧急补兵、编号与调兵状态缺陷已修复；通用吞异常包装已移除；正常卡顿耗时尚未测定
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 已复核至：`4f31993`（2026-10-16）
+> 已复核至：`81d6475`（2026-10-16）
 > 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs`
 > 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 
-已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。（依据：WER、转储与日志2026-09-28）
+已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
+已知缺陷：游戏中途偶发 .NET 栈溢出直接关闭（2026-10-16 08:37、20:18，Steam 退出码 0x800703E9），都在快进中，递归发生在哪里还没定位；抓现场用 `tools/Capture-StackOverflow.ps1`，方法见 `../reference/investigation-methods.md`「崩溃转储」。（依据：Steam 退出码、日志 2026-10-16）
 
 ## 客户端退出阶段的原生故障
 
@@ -98,6 +99,7 @@
 | 讲和（含玩家战斗时序、灰袍交战理由） | `GwpPeace` | `FactionManager.SetNeutral`、`MakePeaceAction.Apply`；规则见 [调停](warden-mediation.md) |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
+| 信众村民队的登记与生命周期介入 | `GwpFireswornBehavior.IsFaithVillager`、`GwpFaithVillagers.cs` | 别处给VillagerCampaignBehavior或SellGoodsForTradeAction加补丁；军械、装货、分账统一查询登记入口。规则归[村民队](firesworn-villagers.md) |
 | 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool`/`CrimeState` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
 | 玩家承办权限、占案与目标预留 | `GwpPlayerCaseAssignment` | 其他调用方直查普通悬赏或赎罪各自的权限/持案方法；共享规则与专项回归见[赎罪](atonement.md) |
 | 差事占用 | `GwpWardenDuties` | 其他系统的占用判断（`IsVillageReliefParty` 等） |
