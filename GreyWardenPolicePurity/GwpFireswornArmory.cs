@@ -680,7 +680,7 @@ namespace GreyWardenPolicePurity
                     "; vanillaMilitia=" + (militia?.IsActive == true ? militia.MemberRoster.TotalManCount - Sworn(row) : 0) +
                     "; priest=" + (priest?.StringId ?? "-") +
                     "; priestPower=" + (priest?.Power.ToString("0") ?? "-") +
-                    "; othersPower=" + (priest == null ? "-" : string.Join(",", OtherNotables(village, priest).Select(hero => hero.Power.ToString("0")))) +
+                    "; others=" + string.Join(",", OtherNotables(village, priest).Select(hero => hero.Occupation + ":" + hero.Power.ToString("0"))) +
                     "; strongest=" + IsPriestStrongest(row, village) +
                     "; priestSlots=" + (priest == null ? "-" : string.Join(",", priest.VolunteerTypes.Select(troop => troop?.StringId ?? "_"))) +
                     "; dungeon=" + (_dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon) ? dungeon.TotalManCount : 0) +

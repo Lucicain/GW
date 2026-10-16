@@ -2,7 +2,7 @@
 
 > 当前状态：所有灰袍兵按阶从高到低领装；轻步兵起只补原配空位，部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`81d6475`（2026-10-16）
+> 已复核至：`1782a40`（2026-10-16）
 > 覆盖源码：`GwpFireswornArmory.cs` `GwpArmoryAllocation.cs` `GwpFireswornArmoryView.cs` `tools/tests/test_armory_allocation.py` `tools/tests/test_firesworn_outfitting.py`
 > 待实测：见文末
 

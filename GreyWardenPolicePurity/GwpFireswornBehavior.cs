@@ -510,6 +510,7 @@ namespace GreyWardenPolicePurity
             try
             {
                 MaintainPriests();
+                RestoreHomePriest();
                 GrowSworn();
                 SpawnPriestsByShare();
                 foreach (FaithVillage row in _villages.Values)
@@ -788,6 +789,24 @@ namespace GreyWardenPolicePurity
             }
         }
 
+        /// <summary>
+        /// 灰袍的家乡村（氏族的初始家乡）始终有祭司：没有活祭司就当天补一位，不看火誓者比例、巡区容量和概率
+        /// （用户裁定 2026-10-16：开局家乡村的祭司被原版删掉后，比例不到 10% 就再也来不了人，灰袍连招兵的地方都没了）。
+        /// 原版补来的亲属接任在前（<see cref="MaintainPriests"/>），这里只补没人接的情况。
+        /// </summary>
+        private void RestoreHomePriest()
+        {
+            Settlement home = PoliceStats.GetPoliceClan().InitialHomeSettlement;
+            if (_villages.TryGetValue(home.StringId, out FaithVillage? row) && FindLivingPriest(row) != null)
+                return;
+            InstallPriest(home);
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFaith("PRIEST_HOME_RESTORED", "village=" + home.StringId +
+                "; priest=" + _villages[home.StringId].PriestId +
+                "; share=" + SwornShare(_villages[home.StringId], home).ToString("0.00"));
+#endif
+        }
+
         private static Hero? FindLivingPriest(FaithVillage row)
         {
             if (string.IsNullOrEmpty(row.PriestId))
@@ -831,18 +850,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>
-        /// 祭司的势力按当地火誓者比例算：祭司占全村要人势力的份额等于火誓者占户数的份额，
-        /// 其他要人的势力照原版不动（用户裁定 2026-10-07）。所以 祭司 = 其他要人势力之和 × 比例 / (1 − 比例)。
-        /// 原版要人势力：普通 &lt; 100、有影响力 100–200、强大 &gt; 200，初始 50–400 随机，每天只变零点几
-        /// （C#反编译 v1.4.8 DefaultNotablePowerModel）。
-        /// </summary>
-        /// <summary>
-        /// 祭司势力：全村要人势力总量不变，祭司拿火誓者比例那一份，其他要人按各自现有势力分剩下的（用户裁定 2026-10-07）。
-        /// 早先按「其他要人之和 × 比例 /（1 − 比例）」只抬祭司，比例接近 1 时祭司接近无穷大。
-        /// 其他要人会因此掉到 100 以下，原版每天按 (100 − 势力)/100 × 2% 的概率删掉他们（C#反编译 v1.4.8
-        /// DefaultNotablePowerModel、NotablesCampaignBehavior），用户裁定时知情。村里没有别的要人时不动。
-        /// </summary>
         /// <summary>这座村归哪个巡区：离它最近的在用巡区圆心。</summary>
         private static Settlement? FaithRegionOf(Settlement village, Dictionary<Settlement, int> beats) =>
             beats.Keys.OrderBy(center => center.GetPosition2D.DistanceSquared(village.GetPosition2D)).FirstOrDefault();
@@ -850,7 +857,7 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 这座村所在巡区的信众村（有活祭司的村）满了没有。每座巡区容纳 <c>FaithVillagesPerWarden</c> × 守它的领主数，
         /// 合起来就是全图 3 × 在编领主数（用户裁定 2026-10-15：信众村尽量长在灰袍的巡逻点一带，全图上限是灰袍领主数的三倍）。
-        /// 软上限：只挡新来祭司和祭司接任，已有的信众村不拆，照原版退休、死亡后自然回到普通村子。
+        /// 软上限：只挡新来祭司和祭司接任，已有的信众村不拆，祭司死后自然回到普通村子。
         /// </summary>
         private bool FaithRegionHasRoom(Settlement village, Dictionary<Settlement, int> beats) =>
             FaithRegionLoad(village, beats) < 1f;
@@ -867,6 +874,12 @@ namespace GreyWardenPolicePurity
             return sworn / (float)(beats[region] * GwpTuning.Firesworn.FaithVillagesPerWarden);
         }
 
+        /// <summary>
+        /// 祭司势力：全村要人势力总量不变，祭司拿火誓者比例那一份，其他要人按各自现有势力分剩下的（用户裁定 2026-10-07）。
+        /// 其他要人会因此掉到 100 以下，原版每天按 (100 − 势力)/100 × 2% 的概率删掉他们（C#反编译 v1.4.8
+        /// DefaultNotablePowerModel、NotablesCampaignBehavior），用户裁定时知情；祭司自己不被删（<see cref="GwpPriestStaysPatch"/>）。
+        /// 村里没有别的要人时不动。
+        /// </summary>
         private void UpdatePriestPower(FaithVillage row)
         {
             Hero? priest = FindLivingPriest(row);
@@ -895,7 +908,7 @@ namespace GreyWardenPolicePurity
             priest.AddPower(priestPower - priest.Power);
         }
 
-        private static IEnumerable<Hero> OtherNotables(Settlement village, Hero priest) =>
+        private static IEnumerable<Hero> OtherNotables(Settlement village, Hero? priest) =>
             village.Notables.Where(hero => hero != priest && hero.IsAlive);
 
         /// <summary>

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-183 个源文件、54,973 行、351 个公开类型、82 个 Harmony 补丁点（分布在 82 个补丁类里）。
+184 个源文件、55,348 行、354 个公开类型、83 个 Harmony 补丁点（分布在 83 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -79,6 +79,7 @@
 | `MissionNameMarkerVM` | `Tick` | Postfix | `GwpDuelOpponentMarkerPatch` | GwpDuelOpponentMarkerPatch.cs |
 | `MobileParty` | `CalculateSpeed` | Prefix | `GwpEscortSpeedCapPatch` | GwpEscortSpeedCapPatch.cs |
 | `MobileParty` | `GetBehaviorText` | Postfix | `GwpLocationDutyBehaviorTextPatch` | GwpPartyDutyMovementPatch.cs |
+| `NotablesCampaignBehavior` | `CheckAndMakeNotableDisappear` | Prefix | `GwpPriestStaysPatch` | GwpFireswornPriestStays.cs |
 | `PartyBase` | `Owner` (Getter) | Postfix | `GwpFireswornUpgradePayerPatch` | GwpFireswornUpgradePayment.cs |
 | `PartyCharacterVM` | `ExecuteTalk` | Prefix | `GwpPartyCharacterExecuteTalkPatch` | GwpPartyScreenTroopTalkPatch.cs |
 | `PartyCharacterVM` | `UpdateTalkable` | Postfix | `GwpPartyCharacterTalkablePatch` | GwpPartyScreenTroopTalkPatch.cs |
@@ -197,6 +198,8 @@
 - `Enforcement` → GwpTuning.cs ←
 - `Entry` → GwpDispatchCargo.cs ←
 - `Envelope` → GwpMusicScore.cs ←
+- `EnvoyReport` → PoliceEnforcementBehavior.Envoy.cs ←
+- `EnvoyStage` → PoliceEnforcementBehavior.Envoy.cs ←
 - `FaithPartyKind` → GwpFireswornBehavior.cs ←
 - `Family` → GwpTuning.cs ←
 - `FiefRequestStage` → GreyWardenPlayerRequestBehavior.cs ←
@@ -397,6 +400,7 @@
 - `GwpPlayerEnforcementEngageActionPatch` → GwpPartyDutyMovementPatch.cs ←
 - `GwpPlayerRequestDeferral` → GwpPlayerRequestDeferral.cs
 - `GwpPoliceWarReasonService` → GwpPoliceWarReasonService.cs
+- `GwpPriestStaysPatch` → GwpFireswornPriestStays.cs ←
 - `GwpRitualMapSoundView` → GwpRitualMapSoundView.cs
 - `GwpRitualMapSoundViewPatch` → GwpRitualMapSoundView.cs ←
 - `GwpRitualSoundOutput` → GwpRitualSoundOutput.cs
@@ -501,7 +505,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 180 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 183 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -546,12 +550,12 @@
 
 ### 执法：案件与巡逻（33 个文件）
 
-- `PoliceEnforcementBehavior.Assistance.cs` — 1819 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1475 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.Assistance.cs` — 1893 行 · `PoliceEnforcementBehavior`，另含 1 个类型
+- `PoliceEnforcementBehavior.cs` — 1506 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1299 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1290 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1293 行 · `PoliceEnforcementBehavior`
 - `PolicePatrolBehavior.cs` — 1014 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.Envoy.cs` — 834 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.Envoy.cs` — 953 行 · `PoliceEnforcementBehavior`，另含 2 个类型
 - `PoliceResourceManager.cs` — 723 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 698 行 · `GwpAiDeterrenceState`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 599 行 · `PoliceEnforcementBehavior`
@@ -582,8 +586,8 @@
 
 ### 执法：玩家悬赏（7 个文件）
 
+- `GwpCaseArchiveScreen.cs` — 1003 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
 - `PlayerBountyBehavior.cs` — 934 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
-- `GwpCaseArchiveScreen.cs` — 927 行 · `GwpCaseArchiveScreen` : ViewModel，另含 2 个类型
 - `PlayerBountyBehavior.DialogueAndNotification.cs` — 867 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.CaseSettlement.cs` — 677 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 187 行 · `PlayerBountyBehavior` : QuestBase，另含 3 个类型
@@ -630,7 +634,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1124 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 416 行 · `GwpTuning`，另含 14 个类型
+- `GwpTuning.cs` — 418 行 · `GwpTuning`，另含 14 个类型
 - `GwpCommon.cs` — 363 行 · `GwpCommon`
 - `GwpIds.cs` — 94 行 · `GwpIds`
 
@@ -638,10 +642,10 @@
 
 - `SubModule.cs` — 171 行 · `SubModule` : MBSubModuleBase
 
-### 其他（95 个文件）
+### 其他（96 个文件）
 
-- `GwpFireswornBehavior.cs` — 1319 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpTextCatalog.g.cs` — 1224 行 · `GwpTextCatalog`
+- `GwpFireswornBehavior.cs` — 1332 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpTextCatalog.g.cs` — 1249 行 · `GwpTextCatalog`
 - `GwpStrength.cs` — 1049 行 · `GwpStrength`，另含 2 个类型
 - `GwpFireswornArmory.cs` — 918 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 586 行 · `GwpFireswornBehavior`
@@ -678,7 +682,7 @@
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
 - `GwpFireswornPartyDialogs.cs` — 137 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
-- `GwpWardenDuties.cs` — 136 行 · `WardenDuty`，另含 1 个类型
+- `GwpWardenDuties.cs` — 137 行 · `WardenDuty`，另含 1 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
 - `GwpLordLastStand.cs` — 129 行 · `GwpLordLastStandBehavior` : MissionBehavior
@@ -728,6 +732,7 @@
 - `GwpCaseSettlementEntryPatch.cs` — 33 行 · `GwpCaseSettlementEntryPatch`
 - `GwpAdultCommanderLoadoutPatch.cs` — 32 行 · `GwpAdultCommanderLoadoutPatch`
 - `GwpCaseSettlementRules.cs` — 31 行 · `GwpCaseSettlementRules`
+- `GwpFireswornPriestStays.cs` — 31 行 · `GwpPriestStaysPatch`
 - `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
 - `GwpFounderVoiceRegisterPatch.cs` — 26 行 · `GwpFounderVoiceRegisterPatch`
