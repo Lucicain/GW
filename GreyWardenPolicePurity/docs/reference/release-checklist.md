@@ -1,6 +1,6 @@
 # 玩家包交付检查清单
 
-当前游戏版本、live布局和正式发布基线以[构建与部署](../state/build-and-deploy.md)为准。本次用户只要求本地ZIP和源码推送，不创建Release或tag。（依据：用户裁定2026-10-15）
+当前游戏版本、live布局和正式发布基线以[构建与部署](../state/build-and-deploy.md)为准。测试版只出本地ZIP并推送源码，不创建Release或tag；测试版不带监控。（依据：用户裁定2026-10-15、2026-10-16）
 
 1. 读取 `.claude/rules/release-notes.md`，两份玩家说明相对上一正式玩家包描述变化，并同步到live。
 2. 隔离重建玩家DLL：`dotnet build GreyWardenPolicePurity/GreyWardenPolicePurity.csproj -c Release -t:Rebuild -p:DeployToLiveModule=false -p:GwpDiagnosticsEnabled=false`。

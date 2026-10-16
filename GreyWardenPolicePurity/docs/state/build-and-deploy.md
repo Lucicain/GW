@@ -2,17 +2,15 @@
 
 > 当前状态：main 火誓者 live 使用监控 DLL 与可编辑美术；构建排除玩家打包资源，校验同时检查布局和监控
 > 最后验收：`03964e4`（v1.4-r13，含远端下载核验）
-> 已复核至：`4f31993`（2026-10-16）
+> 已复核至：`cbdfb71`（2026-10-16）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：无
 
 ## 当前开发部署
 
-当前 live 是老兵超过50%可派/超过75%概率翻倍/50%留队的单程运兵、全兵种高阶优先配装/轻步兵起只补空位、全编制军械预留与守村队低阶优先直招的监控开发构建（源码复核基线 `4f31993` 加上述工作树修改及公共带装顺序修复），现追加[灰袍领主普通装备身份加成](lord-combat.md)；
-Client/Editor DLL SHA-256 同为 `124a48518538c6316423233bd76be63452767b2d620d888a3a49fb4ee5fb7975`。
-构建 0 错误/警告，75 个仓库 runtime 文件镜像一致（含新鸟徽配置）；GameCompat 缺类型/成员 0，743 类型加载、90 补丁绑定通过；
-ContentKeys 缺失/重复 0；Python 23 项（含领主战斗75断言、直招20断言、军械60断言、运兵43断言），双刀/踢击27项、实际游戏名册177断言通过；案件结算既有155断言记录未因本轮运兵/直招改变。
-用户实测仍由各子系统列出；本轮军械方案为派生缓存，未新增存档字段，跨版本不提供迁移。（依据：构建、部署哈希与离线执行 2026-10-16）
+当前 live 是 `cbdfb71` 之后的监控开发构建：领主战斗加成与锁血、守村队低阶直招、练兵单程送村、全兵种按阶配装与入库分流、新旗帜，以及闪退取证诊断。
+Client/Editor DLL SHA-256 同为 `57cf2da0a1facb58f2373498655753309a79464515fb772198d206356016b5ea`；Assets、AssetSources、RuntimeDataCache 保留，没有 AssetPackages/DsAssetPackages。
+构建 0 错误/警告，runtime 镜像一致；GameCompat 缺类型/成员 0、90 补丁绑定；ContentKeys 缺失/重复 0；名册转移 177 断言、旗帜安装核验通过。（依据：构建、部署哈希与离线执行 2026-10-16）
 
 ## 两个开关决定一切
 
@@ -163,3 +161,10 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
   玩家 DLL `99f3c068373ce0a9c227cf42fb0a6c69bd1bdd8a23c23cc8a6a4ce0e53a46e8f`；美术 TPAC 与原 v14 相同（`bcaae1d2…6e09`）。
 - 核验归档：`build-check/package-v1.4-r14-refresh/` 与 `build-check/package-v1.4-r14-original/`（各四件，见上节）。
   替换前公开过的原 ZIP 在 `.codex_tmp/pre-refresh-v14-release-20261007/`，见 `../reference/local-scratch.md`。
+- 当前本地测试版 v1.4-r15（模组版本 1.4.15）：2026-10-16 同号替换了 10-15 的本地包，只出本地 ZIP 并推送源码，不打 tag、不建 Release。
+  没有监控（诊断关闭），也没有玩家军械库（开发暂停）；其余功能与开发版相同。（依据：用户裁定 2026-10-15、2026-10-16）
+  ZIP `Modules/GreyWarden-v1.4-r15.zip` 442704604 字节，SHA-256 `7301efbc7b35cfc2675b43e428afbbb4373b7dbca8ee3595575456a05abe1cda`，78 项；
+  玩家 DLL `2cd410d585997ca6657b73ad6cdcca1d64d641e802f148fd76108da0f84c86cd`（GameCompat 86 补丁绑定，五组监控串双编码均不存在）；
+  美术 pack0 `4606781f316292b8c12a93a1054c62110469a7c34e02156bce99451bc964af22`（149 项，比旧包多旗帜材质、旗帜纹理和一个未使用的 `new_material` 草稿材质）。
+  核验归档 `build-check/package-v1.4-r15/`（manifest、玩家 DLL、`.zip.sha256`）。被替换的 10-15 包（ZIP `a54856d9…`）没有保留，它的美术包作为回退点见 local-scratch。
+  玩家说明的 r15 条目对比的仍是 `v1.4-r14-refresh`。

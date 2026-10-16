@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent religious order descended from the Imperial priesthood. Its members regard protecting the common folk and pursuing raiders as duties of faith. Six Warden lords handle cases, aid villages, and raise successors on the campaign map, while village priests and congregations provide recruits and supplies. Players may be pursued for crimes or earn the Wardens' trust, join them, and accept contracts.
 
-This local player build is v1.4-r15 (15 October 2026) for Bannerlord 1.4.8, provided for playtesting and feedback. The latest runtime art is included; art source files and editor directories are excluded. Players on 1.5.2 should use the earlier v1.5-r1 package.
+This local player build is v1.4-r15 (16 October 2026) for Bannerlord 1.4.8, provided for playtesting and feedback. The latest runtime art is included; art source files and editor directories are excluded. Players on 1.5.2 should use the earlier v1.5-r1 package.
 Chinese: README.md
 
 ## Main features
@@ -22,14 +22,19 @@ Chinese: README.md
 Compared with the formal v1.4-r14 replacement package dated 7 October 2026:
 
 - Warden priests preach in villages, gather believers to defend them, and hold congregations and burnings. Rituals have artwork, sound, and village smoke.
-- Congregations donate money and goods, receive prisoners and equipment, and maintain stores of arms. Village defenders can use captured weapons and armour.
+- Congregations donate money and goods, receive prisoners and equipment, and maintain stores of arms. Once a priest has established herself in a village, its defenders grow over time like a militia.
+- Warden parties and faith villages keep armories that issue captured weapons and armour to Warden soldiers from the most senior down: veterans only fill gaps in their own kit, while recruits and zealots take better gear. Horses, capes, and anything soldiers cannot use stay out of the armory and are sold.
 - Villages send out missions and armsbearers, while traders take surplus goods to towns. Players can meet these parties, speak with them, and buy their goods.
-- Warden lords visit villages for recruits, supplies, prisoner handovers, and care for the wounded. The training lord exchanges soldiers with village defenders.
+- Warden lords visit villages for recruits (taking the least experienced defenders first), supplies, prisoner handovers, and care for the wounded. When the training lord has many veterans, she sends a transport that delivers veterans and surplus arms to strengthen a village's defenders.
+- Other soldiers in a Warden lord's party are converted into Warden soldiers of matching rank, and their equipment goes to the armory.
 - Wardens can send an envoy to negotiate before pursuing a case. The accused may pay, ask for time, propose a duel, or submit to the envoy.
-- Players who meet the marriage requirements can propose directly to any adult Warden lord. If she leads the clan, another Warden takes over first.
-- The order, its priests, and its congregations now have consistent descriptions and dialogue, with revised village menus and map notices. Five founding lords have new appearances; the clan leader retains hers.
+- A new campaign starts on excellent terms with the Warden lords. Players who meet the marriage requirements can propose directly to any adult Warden lord; if she leads the clan, another Warden takes over first. A Warden lord who marries you keeps her Warden lord combat abilities.
+- Warden lords gain the combat effects of Warden equipment with any weapon, shield, or mount, and so does the Warden commander in Custom Battle. When struck down they hold on briefly at the brink; knocking out an enemy during that time restores their health, and every kill makes them stronger for the rest of the battle.
+- The order, its priests, and its congregations now have consistent descriptions and dialogue, with revised village menus and map notices. Five founding lords have new appearances; the clan leader retains hers. The six founding lords now have distinct voices and personalities.
+- The Warden clan has a new black banner with a golden bird. Warden warhorses come in several coat colours.
 - Updated helmet faceplate positions and clothing cloth assets.
-- Improved assistance armies, returning detachments, borrowed ships, and transfers of wounded troops and experience. Ongoing duties should resume after loading a save made with the same version.
+- Assistance armies form and disband far less often. Returning detachments, borrowed ships, and transfers of wounded troops and experience are improved, and detachments that return on land rejoin their lord first. Ongoing duties should resume after loading a save made with the same version.
+- Fixed the atonement task offered at negative standing: the target can now be negotiated with, Warden envoys no longer take over the same case, and the task can be turned in once resolved.
 
 Useful feedback includes whether villages develop naturally, envoy negotiations are clear, the Wardens feel too strong or weak, and any wording that remains confusing. If something goes wrong, note what you were doing and the people and place involved.
 
@@ -37,6 +42,7 @@ Useful feedback includes whether villages develop naturally, envoy negotiations 
 
 - When a village has fewer than two defenders and no militia party yet, returning troops may lose their wound status and remaining experience.
 - Intermittent crashes when exiting the game remain unresolved. Whether this player package reproduces them is still unconfirmed.
+- The game occasionally closes during play without an error message. The cause is still under investigation; please tell us what you were doing when it happens.
 - Performance as village activity and armory stocks grow still needs observation.
 
 ## Installation and updating

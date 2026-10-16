@@ -27,8 +27,12 @@
 Since 2026-09-27 the module ships one package, published by the Modding Kit from
 the rebuilt editor sources:
 
-- The current v14 `AssetPackages/pack0.tpac` is 371,238,167 bytes, SHA-256
-  `bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`.
+- The current player `AssetPackages/pack0.tpac` (published 2026-10-16, used by the
+  local v1.4-r15 test build) is 371,054,156 bytes, SHA-256
+  `4606781f316292b8c12a93a1054c62110469a7c34e02156bce99451bc964af22`, 149 assets:
+  the 146 below plus the clan banner material and texture (`gwp_commander_banner`)
+  and an unused Kit draft material `new_material`. The v14 package was
+  371,238,167 bytes, SHA-256 `bcaae1d2553d69bdb69960560848f7363f8cf2d1a44eeec9ee76e1e869516e09`,
   146 assets: 21 metameshes
   (the 20 inherited armour/harness/shield models plus `wlarge_shield_black_static`),
   19 materials, 36 textures, 2 physics shapes (`bo_cap_wlarge_shield`,

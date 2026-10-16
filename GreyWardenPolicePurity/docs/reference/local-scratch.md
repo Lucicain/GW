@@ -17,6 +17,7 @@
 | `published-assets/2026-07-16_001310/pack0_newly_published_031DC443.tpac` | 2026-07-16 发布时的盾牌资产包 | 盾牌资源回滚点，与仓库里的正式包不同 | `031dc4430da668d1` |
 | `published-assets/2026-07-16_001310/pack0_replaced_old_D14AE4B3.tpac` | 同次发布被替换掉的旧包 | 同上 | `d14ae4b3f8576f96` |
 | `legacy-packages-before-rebuild-20260927/`（三个 `.tpac`） | 重建前的三个运行时资产包；继承包是 2024 年盔甲的唯一原件 | 重建资源的回滚点；`pack0.tpac` 出问题时放回这三个 | `957dd525945e3b18` 等，见 `asset-pipeline.md` |
+| `player-pack0-before-banner-20261016/pack0.tpac` | 加入新旗帜之前的玩家美术包（10-15 本地 r15 用的那份） | 10-15 的 ZIP 已被替换，这是旧美术的唯一副本，旗帜美术出问题时回退用 | `f7a323f5c2c91e58` |
 | `ds-asset-packages-v1.4-r14/pack0.tpac` | 2026-10-02 Kit 专用服务器发布产出的服务器资源包 | 日后联机适配要用；不在仓库与 live 里 | `87106276b84aa3a8` |
 | `pre-six-lod-package/gwp_black_gold_shield_single_stable.tpac` | 六级 LOD 之前的单 LOD 稳定版黑金盾 | 同上；六级 LOD 方案出问题时回到这里 | `1606cad209d02a33` |
 | `exit-crash-2026092*-*.txt`（6 份） | 客户端退出时原生崩溃的 cdb 取证 | 该崩溃仍在观察，原始转储已删 | — |

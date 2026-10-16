@@ -2,7 +2,7 @@
 
 > 当前状态：健康满级老兵超过50%可派、超过75%概率翻倍，派至剩余队伍一半；单程送村已部署待实测
 > 最后验收：未建立实机验收点
-> 已复核至：`4f31993`（2026-10-15）
+> 已复核至：`cbdfb71`（2026-10-16）
 > 覆盖源码：`GreyWardenTrainingBehavior.cs` `GwpTrainingTransports.cs` `tools/tests/test_training_transport.py`
 > 待实测：见文末
 
