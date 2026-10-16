@@ -191,12 +191,7 @@ namespace GreyWardenPolicePurity
                 EquipmentElement item = Take(buckets[KitShield], e => Fits(e) && StrongerArmoryItem(e, equipment[shieldSlot]));
                 if (!item.IsEmpty) { kit.Items[KitShield] = item; kit.Slots[KitShield] = shieldSlot; equipment[shieldSlot] = item; }
             }
-            if (replace)
-            {
-                equipment[EquipmentIndex.Cape] = CharacterObject.Find(GwpIds.NewRecruitId).FirstBattleEquipment[EquipmentIndex.Cape];
-                equipment[EquipmentIndex.Horse] = EquipmentElement.Invalid;
-                equipment[EquipmentIndex.HorseHarness] = EquipmentElement.Invalid;
-            }
+            // 肩部印章写在兵种原配里（狂信者也有），军械库不发肩部也不发马，这里不用再改原配。
             return kit;
         }
 

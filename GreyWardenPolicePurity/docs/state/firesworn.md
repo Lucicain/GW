@@ -65,7 +65,7 @@
 
 原版宗教依据、卡牌语气参考、125条文字的出现情境及中英改稿在[文本审阅稿](../reference/faith-text-review/README.md)。原版可确认帝国教会、上天与诫命；灰袍具体出身与称呼为用户批准的模组设定，不冒充原作事实。已应用运行时，日常维护归[玩家文字](player-text.md)。反馈截图：`C:/Users/lucif/AppData/Local/Temp/codex-clipboard-38db0c84-e9d7-4995-8c8b-aeb99b1d4031.png`，身份为本轮用户提供的文本方向与前次中断进度参考。（依据：用户资源与源码文本核对 2026-10-15）
 
-狂信者 `gwzealot` 为 2 阶步兵（等级 11），原版袍子、农具、兜帽，升级到 `gwnewrecruit`；男女混编与装备定义见 [装备](warden-gear.md)。祭司、狂信者所需袍子和民兵装备仍需美术资源，管线见 [资源管线](../reference/asset-pipeline.md)。
+狂信者 `gwzealot` 为 2 阶步兵（等级 11），朝圣者、修士、苦修者三套原版袍子与农具，都戴灰袍印章，升级到 `gwnewrecruit`；原配、男女混编与装备定义见 [装备](warden-gear.md)。祭司如需专门的袍子仍要美术资源，管线见 [资源管线](../reference/asset-pipeline.md)。
 
 ## 与原版的交互范围
 

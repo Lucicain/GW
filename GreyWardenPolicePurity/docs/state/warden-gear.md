@@ -2,7 +2,7 @@
 
 > 当前状态：便装模板摘盔已镜像，战斗头盔保留；入会品质已验收，最佳品质与自动换装保护待实测
 > 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`6855489`（2026-10-16）
 > 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs`
 > 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常；战场上灰袍兵约一半是男的、男兵有胡子、同一个兵每场一样
 
@@ -76,6 +76,15 @@
 离线回归 `tools/Verify-WardenAutoEquipment.ps1`：用真实原版和本机 RBMCampaign.dll 只读调用候选搜索，有 RBM 23 项、无 RBM 11 项断言，覆盖 gw/GW、普通英雄、普通士兵、手动装备重载与库存不变。
 
 回退：撤 `4e39db2`。
+
+## 兵种原配
+
+- 每个灰袍兵种的原配都带灰袍标识；从灰袍兵 `gwrecruit` 起用模组自制的灰袍装备，原配不改。（依据：用户裁定 2026-10-16）
+- 狂信者 `gwzealot` 是修会最底层的信众，三套原配都是原版物品加灰袍肩部印章 `warchshoulder`：朝圣者（朝圣兜帽、麻布长衣、皮鞋、草叉）、
+  修士（布兜帽、学者长袍、皮鞋、手斧）、苦修者（黑兜帽、破长袍、裹布鞋、镰刀）。袍子和兜帽随家族配色，物品男女都能穿。
+  之后由军械库换更好的装备，见 [军械库](firesworn-armory.md)。（依据：用户裁定 2026-10-16；物品与性别标记核对 SandBoxCore items）
+- 回退：取回 `6855489` 的 `_Module/ModuleData/spnpccharacters.xml`（狂信者旧原配：破袍/僧袍、皮鞋、农具，两套肩部是兜帽），
+  同时恢复 `GwpArmoryAllocation.AllocateArmoryKit` 末尾给狂信者/新兵换印章、去马的那段。
 
 ## 男女混编
 

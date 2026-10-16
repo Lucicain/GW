@@ -24,6 +24,7 @@ Compared with the formal v1.4-r14 replacement package dated 7 October 2026:
 ### New and changed
 
 - Warden priests preach in villages, gather believers to defend them, and hold congregations and burnings. Rituals have artwork, sound, and village smoke.
+- Zealots, the lowest rank of the order, appear as pilgrims, monks, and ascetics, each wearing the Warden seal.
 - Congregations donate money and goods, receive prisoners and equipment, and maintain stores of arms. Once a priest has established herself in a village, its defenders grow over time like a militia.
 - Warden parties and faith villages keep armories that issue captured weapons and armour to Warden soldiers from the most senior down: veterans keep their own gear and only fill empty slots, while recruits and zealots take better gear. Horses, capes, and equipment that soldiers cannot use or that is left over are sold.
 - Villages send out missions and armsbearers, while traders take surplus goods to towns. Players can meet these parties, speak with them, and buy their goods.

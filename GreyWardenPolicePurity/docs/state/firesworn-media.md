@@ -2,7 +2,7 @@
 
 > 当前状态：仪式配图、双声音交接已由用户确认完全修复；声音健康路径诊断、日志与临时调查产物已清理
 > 最后验收：`774d2e2`（2026-10-08，仪式媒体）
-> 已复核至：`61ee7c9`（2026-10-14）
+> 已复核至：`6855489`（2026-10-16）
 > 覆盖源码：`GwpFireswornArt.cs` `GwpFireswornSoundView.cs` `GwpRitualSoundOutput.cs` `GwpRitualMapSoundView.cs` `_Module/GUI/Images/**` `_Module/ModuleData/module_sounds.xml` `_Module/ModuleSounds/gwp_firesworn_*.wav`
 > 待实测：无
 
@@ -24,7 +24,7 @@
   增益校到 −23.1 LUFS，当前部署为 48000 Hz 立体声 16 位 PCM WAV，放在
   `_Module/ModuleSounds/gwp_firesworn_{damnation,congregation}.wav`；从现有校准后的 Vorbis 解码，未变速或移调。
 - 配音可以用，男声台词也可以用（用户 2026-10-07 要求传教画面放带人声的打出音效）。
-- 祭司、狂信者的装备原版凑不出来，要新做袍子和民兵装备；源资源重建见 `../reference/asset-pipeline.md`。
+- 狂信者现用原版袍子、兜帽加灰袍印章（见 [装备](warden-gear.md)「兵种原配」）；祭司如需专门的袍子仍要新做，源资源重建见 `../reference/asset-pipeline.md`。
 
 ## 播放与配图实现
 

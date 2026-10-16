@@ -824,7 +824,7 @@ namespace GreyWardenPolicePurity
     /// 实战里给各阶灰袍兵使用对应完整原配与库装分配（用户裁定：一个兵一套装备）。
     /// 原版在 Mission.SpawnAgent 里按 AgentBuildData 的装备生成兵（C#反编译 v1.4.8 Mission.SpawnAgent：
     /// 有覆盖装备就用覆盖的，没有就按兵种随机一套）。
-    /// 高阶只补原配空位；新兵/狂信者可以换强装并沿用印章/无马规则。显式覆盖的场景装备由原调用方负责。
+    /// 高阶只补原配空位；新兵/狂信者可以换强装。肩部印章在兵种原配里，军械库不发肩部和马。显式覆盖的场景装备由原调用方负责。
     /// </summary>
     [HarmonyPatch(typeof(Mission), nameof(Mission.SpawnAgent))]
     internal static class GwpArmorySpawnPatch

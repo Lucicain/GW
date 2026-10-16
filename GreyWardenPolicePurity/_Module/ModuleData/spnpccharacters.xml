@@ -35,15 +35,19 @@
       <upgrade_target id="NPCCharacter.gwnewrecruit" />
     </upgrade_targets>
     <Equipments>
+      <!-- 狂信者是修会最底层的信众：朝圣者、修士、苦修者三套，都戴灰袍肩部印章（用户裁定 2026-10-16）。
+           袍子和兜帽随家族配色；武器仍是农具，之后由军械库换装。 -->
       <EquipmentRoster>
         <equipment slot="Item0"
                    id="Item.peasant_pitchfork_2_t1" />
         <equipment slot="Body"
-                   id="Item.ragged_robes" />
+                   id="Item.sackcloth_tunic" />
         <equipment slot="Leg"
                    id="Item.leather_shoes" />
         <equipment slot="Head"
                    id="Item.pilgrim_hood" />
+        <equipment slot="Cape"
+                   id="Item.warchshoulder" />
       </EquipmentRoster>
       <EquipmentRoster>
         <equipment slot="Item0"
@@ -52,8 +56,10 @@
                    id="Item.monk_robe" />
         <equipment slot="Leg"
                    id="Item.leather_shoes" />
+        <equipment slot="Head"
+                   id="Item.battania_civil_hood" />
         <equipment slot="Cape"
-                   id="Item.female_hood" />
+                   id="Item.warchshoulder" />
       </EquipmentRoster>
       <EquipmentRoster>
         <equipment slot="Item0"
@@ -61,9 +67,11 @@
         <equipment slot="Body"
                    id="Item.ragged_robes" />
         <equipment slot="Leg"
-                   id="Item.leather_shoes" />
+                   id="Item.wrapped_shoes" />
+        <equipment slot="Head"
+                   id="Item.assassin_hood" />
         <equipment slot="Cape"
-                   id="Item.hood" />
+                   id="Item.warchshoulder" />
       </EquipmentRoster>
       <EquipmentSet id="empire_troop_civilian_template_t1"
                     equipmentType="Civilian" />
