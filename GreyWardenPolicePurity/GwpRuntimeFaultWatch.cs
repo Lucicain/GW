@@ -29,10 +29,9 @@ namespace GreyWardenPolicePurity
             _armed = true;
             AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandled;
-            // 2026-10-16 08:37 实机无报错闪退：rgl 日志没有正常退出的托管卸载记录，看门狗没收到异常事件，
-            // 没有 WER 记录或转储，首次/未处理异常观察也都没触发。用退出记录区分托管退出与进程被直接结束，
-            // 用内存采样核对内存耗尽的猜测（开局时系统空闲内存只剩 17.9%）。问题查清后随本诊断一起退休。
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            // 2026-10-16 实机两次游戏中途无报错闪退（08:37、20:18）：没有正常退出的托管卸载记录、看门狗无异常事件、
+            // 无 WER 记录或转储。内存采样用来核对内存耗尽的猜测（20:18 那次提交量仍有约 28 GB 余量，已基本排除）。
+            // ProcessExit 在 Bannerlord 宿主里正常退出也不触发（同日四个会话都没有记录），已删除。问题查清后随本诊断一起退休。
             GwpFaultTrace.Write("FAULT_WATCH_ARMED", details: "assembly="
                 + typeof(GwpRuntimeFaultWatch).Assembly.GetName().Version
                 + "; build=" + typeof(GwpRuntimeFaultWatch).Module.ModuleVersionId
@@ -84,10 +83,6 @@ namespace GreyWardenPolicePurity
             _nextMemorySample = MemoryClock.ElapsedMilliseconds + MemorySampleMilliseconds;
             GwpFaultTrace.Write("MEMORY", details: MemoryState());
         }
-
-        private static void OnProcessExit(object sender, EventArgs args) =>
-            GwpFaultTrace.Write("PROCESS_EXIT", details: "exitCode=" + Environment.ExitCode + "; " + MemoryState()
-                + "; stack=" + Environment.StackTrace.Replace(Environment.NewLine, " | "));
 
         private static string MemoryState()
         {

@@ -87,6 +87,13 @@ ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
   本机的 cdb 来自 WinDbg 商店版：`%LOCALAPPDATA%\Microsoft\WindowsApps\cdbX64.exe`（2026-09-27 确认可用）。
 - 转储常缺堆页：能看到崩在哪个函数和寄存器，但指针指向的对象可能读不出来，
   不要因此把它"精确指认"到某个士兵或物体。
+- 游戏无提示关闭、没有转储也没有系统记录时，先查 Steam 的退出码：`<Steam>\logs\console_log*.txt` 里
+  「no longer tracking PID <pid>, exit code …」。`-2147023895`（0x800703E9，COR_E_STACKOVERFLOW）是 .NET 栈溢出：
+  进程立即结束，模组的首次异常观察、TaleWorlds 看门狗和 WER 都拿不到东西；`-1073741819`（0xC0000005）是原生访问违例。
+  游戏进程的 PID 见 `watchdog_log_<pid>.txt` 的文件名。（依据：实机诊断 2026-10-16）
+- 抓栈溢出现场：用户运行 `tools/Capture-StackOverflow.ps1`（可加 `-ContinueGame`），它在 cdb 下按启动器同样的模块参数启动游戏，
+  常规首次异常放行，栈溢出（sov）时把 SOS `!clrstack` 托管栈和原生栈写进 `Documents\Mount and Blade II Bannerlord\GreyWarden-StackOverflow-<时间>.log`，
+  另存小转储后关掉游戏。agent 不运行它。
 
 ## 实机诊断
 
