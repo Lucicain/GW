@@ -10,7 +10,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 在原版劫掠评分之上追加“灰袍执法后的收敛期”修正。
+    /// 在原版劫掠评分之上叠乘执法震慑与目标信众村比例修正。
     /// 只影响 Raider 目标，不干扰普通 VisitSettlement（招兵、补粮、入城出售）路径。
     /// </summary>
     public sealed class PoliceRaidDeterrenceModel : DefaultTargetScoreCalculatingModel
@@ -29,17 +29,24 @@ namespace GreyWardenPolicePurity
             if (missionType != Army.ArmyTypes.Raider || baseScore <= 0f || mobileParty?.LeaderHero == null)
                 return baseScore;
 
-            float multiplier = GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(mobileParty);
+            float deterrenceMultiplier = GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(mobileParty);
+            float faithShare = GwpFireswornBehavior.GetPreachedVillageShare(targetSettlement);
+            float faithMultiplier = 1f - GwpTuning.Firesworn.MaximumFaithRaidScoreReduction * faithShare;
+            float multiplier = deterrenceMultiplier * faithMultiplier;
             float result = baseScore * multiplier;
 #if GWP_DIAGNOSTICS
             string offender = mobileParty.LeaderHero.StringId;
+            // 普通村和信众村各取一条，避免首个普通候选占掉整天的信众抑制样本。
+            string sampleKey = offender + (faithShare > 0f ? ":faith" : ":ordinary");
             double now = CampaignTime.Now.ToHours;
-            if (!_lastRaidSample.TryGetValue(offender, out double previous) || now < previous || now - previous >= 24d)
+            if (!_lastRaidSample.TryGetValue(sampleKey, out double previous) || now < previous || now - previous >= 24d)
             {
-                _lastRaidSample[offender] = now;
+                _lastRaidSample[sampleKey] = now;
                 GwpAiDiagnostics.WriteFieldArrest("RAID_SCORE_SAMPLE",
                     "offender=" + offender + "; village=" + targetSettlement.StringId +
                     "; baseScore=" + baseScore.ToString("0.0000") + "; multiplier=" + multiplier.ToString("0.0000") +
+                    "; deterrenceMultiplier=" + deterrenceMultiplier.ToString("0.0000") +
+                    "; faithShare=" + faithShare.ToString("0.0000") + "; faithMultiplier=" + faithMultiplier.ToString("0.0000") +
                     "; result=" + result.ToString("0.0000") +
                     "; activeModel=" + Campaign.Current.Models.TargetScoreCalculatingModel.GetType().FullName);
             }

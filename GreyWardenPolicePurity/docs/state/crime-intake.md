@@ -1,10 +1,10 @@
 # 立案、伤亡计价、震慑与外交封锁
 
-> 当前状态：现行规则（2026-10-05 从源码提取）
+> 当前状态：人物追责保留；信众村烧村评分额外最多减50%，叠乘既有震慑，已构建部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`81d6475`（2026-10-16）
-> 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
-> 待实测：烧村实际目标评分中的震慑倍率与当前注册模型，由agent读取RAID_SCORE_SAMPLE核对，不改变当前抑制数值
+> 已复核至：`7573179`（2026-10-17）
+> 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs` `tools/tests/test_raid_score.py`
+> 待实测：信众比例越高烧村候选分越低，封顶减50%且叠乘个人震慑；agent读取RAID_SCORE_SAMPLE核对两类倍率与运行模型
 
 案件怎么进池、罚金怎么算、被惩戒的领主之后怎么收敛、灰袍与原版外交的边界。
 案件进池之后的派单、追捕、结案见 [`case-enforcement.md`](case-enforcement.md)；
@@ -50,13 +50,20 @@
 - 一个案件的罚金 = 每件基础罚 1,000 × 件数 + 负声望 × 100（`Enforcement.FinePerPoint`），封顶 20,000。
 - 被捕次数不进罚金，只影响震慑。
 
+## 按人保留未了罪责
+
+- 用户要求追责只记录犯人及其犯罪造成的伤亡、恶果，不再依靠事件案卷来追人；处罚沿用这些后果作为依据。犯罪类别仍服务于护商/护村专职与分类震慑，临时追捕、使者交涉和同版本存读档仍要有各自行动状态。（依据：用户裁定 2026-10-17；现行调用约束）
+- 现有 `CrimeRecord` 本来以英雄ID为键，同一人再犯累加，不是每次生成新案号；它另存未结犯罪次数、当前平民死亡数与最近事件描述。`HeroCrimeStats` 则存终身次数、负声望/余数及分类震慑；两者分开，撤下承办任务不删除前者。人物暂时被第三方俘虏/失队、暂未解析到英雄、承办人失效均留责；开放记录不按数量裁剪。生命周期只在[案件](case-enforcement.md#人物追责与回退)定义。（依据：源码复核 2026-10-17）
+- 只用现有长期负声望会漏掉仍需收取的逐次基础费：罚金当前为未结犯罪次数×1000＋负声望×100，封顶20000；负声望还可因杀匪抵减，终身犯罪次数也不能当成未清次数重复收费。当前保留未了与已经处理的边界，不能删除基础费数据后宣称处罚不变。（依据：现行计价生产源码；设计约束 2026-10-17）
+- 当前记录的量化恶果主要是平民死亡，劫掠以户数下降按既定规则计人命；受伤人数、财产损失没有独立累计字段。本轮未自行增加这些处罚项目，也未删除最近罪名/受害者/位置，因为当前专职选择、信众村附近优先与对话仍读取它们。（依据：源码复核 2026-10-17）
+
 ## 震慑（`GwpAiDeterrenceState`）
 
 - 村庄暴力、商队袭击各有一套点数，上限都是 9。每套都分两部分：本人被捕得到的直接震慑，和家族转述来的震慑。
-- 每次实际拘捕，本类直接震慑按本类累计被捕次数增加，单次最多9；和平付款、使者单挑等实际执法结果也登记震慑，但不增加拘捕次数，增量按现有本类拘捕数、至少1计算。只影响事后意愿，不是禁止烧村。（依据：源码复核2026-10-16）
+- 每次登记按本类被捕计数计算直接震慑，单次最多9；和平付款与兑现的单挑结果也登记本人震慑并转述同族。震慑只影响事后意愿，不保证不再烧村。和平结局计数口径见下行。（依据：生产源码复核 2026-10-17）
+- 和平付款、收私钱、罪犯赢约斗免罚同样累加现有执法/被捕计数，当前 `RegisterFieldEnforcement(countAsArrest: true)` 保留。这不是待修缺陷，不改该计数及其震慑增量规则。（依据：用户裁定 2026-10-17）
   总量到顶时，先压缩家族转述那部分。
 - 只有人确实落在灰袍手里（灰袍的队伍或灰袍的据点），被捕才会清账：负声望清零，开着的案件当场结案。
-  这一段的 `catch` 还是旧式的空 `catch`，待改成留痕写法。
 - 恢复：每天按性格恢复。基础 0.009，勇武越高恢复越快，荣誉、仁慈、算计越高越慢。
   再夹在 0.004–0.0175 之间，最后乘 0.5。
   被俘期间不恢复。直接与家族两部分按当时比例一起衰减。
@@ -69,7 +76,21 @@
 - 震慑总量 ≥ 0.25 时，和领主对话会有专门的说辞：按主导来源（本人/家族）、档位（≤3、≤6、更高）、
   性格权重抽一种口吻，玩家是灰袍时措辞不同（`GwpAiDeterrenceDialogueCatalog`）。
 
-当前烧村调查：模型挂点仍是原版AiMilitaryBehavior调用的TargetScoreCalculatingModel.GetTargetScoreForFaction；已加入有界真实评分采样，入口与退休条件只在[诊断](diagnostics.md)定义。离线生产模型已验证一次调用只算一次原版评分、非Raider/非正分/无领主不改、倍率1保持原分。现有实机日志能证明执法登记和再犯，不能证明运行时最终倍率；保留数值，待采样闭环。（依据：C#反编译、生产回归2026-10-16）
+## 信众村烧村评分
+
+- 烧村评分在原版 `GetTargetScoreForFaction(...Raider...)` 完整返回后追加：`原评分 × 个人震慑倍率 × (1－0.5×信众户比例)`。信众越多越难被选去烧，信众这一项最多减50%，与原有震慑叠乘；不调整商队/村民队袭击。（依据：用户裁定 2026-10-17）
+- 信众村沿用有活祭司的定义，比例由火誓者归属方 `GetPreachedVillageShare` 读取现有信众户/当前户数并夹到0～1；没有活祭司、未登记村庄、非村庄倍率为1。不根据守村兵人数或祭司势力重新推算比例。（依据：既有村庄定义；设计 2026-10-17）
+- 信众0%/50%/80%/100%对应倍率1/0.75/0.6/0.5。80%且个人震慑倍率0.65时，合计剩原评分39%。降低的是AI候选分数，不等于烧村发生概率直接减同样百分比，也不改已发生劫掠的伤害速度。（依据：公式；C#反编译 v1.4.8 2026-10-17）
+- 非Raider、原评分非正、无领主保持原返回值；只调用一次原版评分。原版 `AiMilitaryBehavior` 使用该模型分后继续乘距离、凝聚力、兵额与食物等因素，再参与竞价；模组没有复制或替换原版选村公式。（依据：本机C#反编译 2026-10-17）
+- 离线回归直接编译生产模型和真实比例查询，覆盖0～100%梯度、超额/负数户数、零户数、无祭司/未登记/非村庄、震慑叠乘与开发/玩家两种编译。实机最终分值由[诊断](diagnostics.md)的有界采样核对。
+- 回退为 `7573179` 的 `PoliceRaidDeterrenceModel.cs` 与 `tools/tests/test_raid_score.py`，删除本轮 `GwpFireswornBehavior.GetPreachedVillageShare` 和 `GwpTuning.Firesworn.MaximumFaithRaidScoreReduction` 即回到仅个人震慑；不回退同轮之前的协力修复。（依据：流程）
+
+## 震慑与罪责结算的独立性
+
+- NPC使者打折付款走 `SettleThroughEnvoy`，比武双方任一方获胜均在 `FinishDuel` 调 `RegisterFieldEnforcement`；犯人获胜免罚、私钱抹案仍登记震慑，负声望不因免罚/私钱清除。玩家野外结算及犯人赢切磋也走同一登记入口。（依据：生产源码复核 2026-10-17）
+- 第一层拒谈、说服失败、使者丢失/超时、约斗作废等纯失败走 `FailEnvoy`，当前不登记震慑；只是答应宽限或约斗尚未兑现时也不预记。（依据：生产源码复核 2026-10-17）
+- `GwpFieldReportLedger.ClearOffenderRecord` 只抵负声望，先扣基础罚款，余款每100抵1点；触顶罚金足额支付有现有全清分支，不修改震慑字段。免罚结局结清本次行动但负声望保留，影响以后再犯的定价；既有震慑继续独立保存并按日衰减。（依据：生产源码复核 2026-10-17）
+- 震慑登记受原有上限和同次惩戒去重约束，不能将“调用登记”说成任何时候都额外增加固定点数。（依据：生产源码复核 2026-10-17）
 
 ## 外交封锁
 

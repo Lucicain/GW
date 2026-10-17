@@ -314,6 +314,8 @@ namespace GreyWardenPolicePurity
         internal static class Firesworn
         {
             public const float ArrivalDistance = 3f;
+            // 信众占满全村时，烧村评分最多额外降低50%（用户裁定 2026-10-17）。
+            public const float MaximumFaithRaidScoreReduction = 0.5f;
 
 
             // 原版村庄民兵每天的退役项：现有民兵 × 2.5%（C#反编译 v1.4.8 DefaultSettlementMilitiaModel）。

@@ -378,6 +378,12 @@ namespace GreyWardenPolicePurity
             settlement?.IsVillage == true && _instance != null &&
             _instance._villages.TryGetValue(settlement.StringId, out FaithVillage? row) && FindLivingPriest(row) != null;
 
+        /// <summary>有活祭司的信众村当前信众户比例；其他村庄为零，取值不超过全村。</summary>
+        internal static float GetPreachedVillageShare(Settlement? settlement) =>
+            IsPreachedVillage(settlement)
+                ? Math.Max(0f, Math.Min(1f, SwornShare(_instance!._villages[settlement!.StringId], settlement)))
+                : 0f;
+
         /// <summary>村里有没有火誓者（有守村队、有军械库），不管有没有祭司。</summary>
         internal static bool HasFireswornGuard(Settlement? settlement) =>
             settlement?.IsVillage == true && _instance != null && _instance._villages.ContainsKey(settlement.StringId);
