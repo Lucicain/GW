@@ -1,7 +1,7 @@
 # 玩家声望、入会与悬赏
 
 > 当前状态：执勤旗与入退会收发经用户确认未见问题，已进入正式版准备；事务页可主动领取
-> 最后验收：2026-10-17 用户确认当前执勤旗构建可用（FC098662开发DLL，待源码存档）
+> 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
 > 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs` `_Module/GUI/Prefabs/GwpCaseArchive.xml`
 > 待实测：事务页主动选单与已有委托保留的完整边界，未逐项实测不由一般反馈代替
