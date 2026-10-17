@@ -2,7 +2,7 @@
 
 > 当前状态：装备身份加成与锁血均已部署，待实际比赛与野战验收
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`f00ca9b`（2026-10-17）
 > 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs` `GwpLordLastStand.cs` `tools/tests/test_lord_combat.py` `tools/tests/test_lord_last_stand.py`
 > 待实测：普通比赛装备、自定义战斗灰袍指挥官与嫁给玩家的灰袍领主的近战、射击、盾挡与骑乘加成；领主锁血 10 秒、击杀回血与超时放开、锁血期间成长 1.5 倍；agent 核对领主战斗日志
 

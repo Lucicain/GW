@@ -9,6 +9,6 @@
 5. 解压核对逐项哈希，确认玩家DLL等于隔离构建；在 `build-check/package-<version>/` 保留manifest及DLL证据。校验成功后，游戏Modules父目录只保留最新ZIP与校验文件。
 6. live重建开发监控DLL，Client/Editor一致；保留Assets、AssetSources、RuntimeDataCache，不保留AssetPackages和DsAssetPackages。运行 `Verify-LiveModule.ps1`。
 7. 完成适用离线回归、StateFreshness与开发记录；稳定点存档并按用户要求推送源码。
-8. 用户明确要求线上发布时创建tag/Release并上传，随后重新下载校验。本次已授权正式发版；公开发布文字按当前会话技能完成最终核对。（依据：用户裁定2026-10-17；流程）
+8. 用户明确要求线上发布时创建tag/Release并上传，随后重新下载校验。本次已授权正式发版。（依据：用户裁定2026-10-17；流程）
 
 游戏内验收仅由用户进行，agent不启动或操控游戏。（依据：用户裁定2026-09-25）

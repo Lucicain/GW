@@ -2,7 +2,7 @@
 
 > 当前状态：祭司不再被原版按低势力删掉、家乡村缺祭司当天补回已部署待实测；首兵建队与势力守恒已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`f00ca9b`（2026-10-17）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornPriestStays.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs` `GwpPatrolBeats.cs`
 > 待实测：见文末
 

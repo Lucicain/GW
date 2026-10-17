@@ -2,7 +2,7 @@
 
 > 当前状态：地牢整批接收与完整俘虏状态保存已实现、已部署、离线验证通过，待实测
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`f00ca9b`（2026-10-17）
 > 覆盖源码：`GwpFireswornDungeon.cs` `GwpFaithBattleRewardModel.cs` `GwpFireswornBehavior.cs`
 > 待实测：见文末
 

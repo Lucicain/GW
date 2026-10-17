@@ -2,7 +2,7 @@
 
 > 当前状态：用户已确认本轮游玩正常；协力崩溃探针与内存采样已退休，退出原生故障独立取证
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`f00ca9b`（2026-10-17）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1`
 > 待实测：退出阶段原生释放故障；收养交接等未覆盖项仍随所属功能核对
 

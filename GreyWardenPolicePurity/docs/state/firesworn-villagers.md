@@ -2,7 +2,7 @@
 
 > 当前状态：已复用原版村民队，实现比例补员、仅灰袍兵换精锐、兼运分账与军械领装；已部署、离线通过，待实测
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`f00ca9b`（2026-10-17）
 > 覆盖源码：`GwpFaithVillagers.cs` `GwpFireswornBehavior.cs` `GwpFireswornPartyDialogs.cs` `tools/tests/test_faith_villagers.py`
 > 待实测：见文末
 
