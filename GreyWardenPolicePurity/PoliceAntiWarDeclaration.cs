@@ -209,6 +209,19 @@ namespace GreyWardenPolicePurity
         internal static bool HasMediationRequests() =>
             _instance != null && _instance.LiveMediationFactions().Any();
 
+        internal static IEnumerable<GwpAffairsEntry> GetAffairsMediation()
+        {
+            if (_instance == null) yield break;
+            foreach (IFaction faction in _instance.LiveMediationFactions())
+            {
+                var entry = new GwpAffairsEntry("mediation:" + faction.StringId,
+                    GwpText.Get(GwpTextCatalog.gwp_affairs_support), faction.Name.ToString())
+                { IsPersonal = true, Summary = GwpText.Get(GwpTextCatalog.gwp_affairs_need_mediation) };
+                entry.Fields.Add(entry.Summary);
+                yield return entry;
+            }
+        }
+
         private IEnumerable<IFaction> LiveMediationFactions()
         {
             IFaction? playerFaction = Hero.MainHero?.MapFaction;

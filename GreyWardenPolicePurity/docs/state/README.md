@@ -122,7 +122,8 @@ python tools/Check-StateFreshness.py
 | [`troop-orders.md`](troop-orders.md) | 玩家练兵订单、随行练兵队补员与退回 |
 | [`player-requests.md`](player-requests.md) | 贵族事务：封地重议申诉 |
 | [`sparring.md`](sparring.md) | 与灰袍领主切磋（竞技场与野外） |
-| [`map-bar-affairs.md`](map-bar-affairs.md) | 地图导航栏的「灰袍事务」按钮 |
+| [`map-bar-affairs.md`](map-bar-affairs.md) | 灰袍事务入口、界面定位与改版讨论 |
+| [`affairs-interface.md`](affairs-interface.md) | 原版家族风格的五页事务界面、六职能分类与玩家自选案件 |
 | [`warden-gear.md`](warden-gear.md) | 入会装备与原版品质、宗教常服、执勤旗与玩家本队战场纹章 |
 
 ### 灰袍家族与世界

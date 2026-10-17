@@ -17,8 +17,8 @@ namespace GreyWardenPolicePurity
     /// <summary>
     /// 地图左下角导航栏的「灰袍事务」按钮，排在家族之后、王国之前。
     /// 原版按钮由 <see cref="MapNavigationHandler"/> 的 OnCreateElements 列出，
-    /// NavalDLC 的舰队按钮也是这样插进去的。未入会时按钮灰显并给出原因，
-    /// 与原版王国按钮在没有王国时的做法一致；百科家族页的入口不设门槛。
+    /// NavalDLC 的舰队按钮也是这样插进去的。权限不足时按钮灰显并给出原因，
+    /// 地图与百科家族页入口共用事务屏幕的开放条件。
     /// </summary>
     internal sealed class GwpAffairsNavigationElement : MapNavigationElementBase
     {
@@ -41,10 +41,9 @@ namespace GreyWardenPolicePurity
         {
             if (!MapNavigationHelper.IsNavigationBarEnabled(_handler) || IsActive)
                 return new NavigationPermissionItem(false, null);
-            if (Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-                    ?.IsRecruitedByGreyWardens != true)
-                return new NavigationPermissionItem(false, GwpText.Create(
-                    GwpTextCatalog.gwp_affairs_nav_need_membership));
+            if (!GwpCaseArchiveScreen.CanOpen)
+                return new NavigationPermissionItem(false, GwpText.Create(GwpTextCatalog.gwp_affairs_standing_gate,
+                    "STANDING", GwpTuning.Bounty.RecruitmentReputationThreshold));
             return new NavigationPermissionItem(true, null);
         }
 

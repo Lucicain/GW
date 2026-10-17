@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -21,7 +21,7 @@ namespace GreyWardenPolicePurity
     /// 带到。派出去的是真部队——归玩家家族，在地图上看得见，路上会遇敌，钱粮会消耗，
     /// 也可能全军覆没。办完事回来，人、钱、粮、物和路上捡到的东西全部交还。
     /// </summary>
-    public sealed class GwpWardenDispatchBehavior : CampaignBehaviorBase
+    public sealed partial class GwpWardenDispatchBehavior : CampaignBehaviorBase
     {
         internal const string DispatchPartyPrefix = "gwp_dispatch_";
         // 原版护送会把队伍带到目标身边但不会重叠，判定距离要留出这段站位余量。

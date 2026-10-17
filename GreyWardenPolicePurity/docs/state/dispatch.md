@@ -2,11 +2,13 @@
 
 > 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
 > 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：`1f84971`（2026-10-15）
+> 已复核至：`626b079`（2026-10-18）
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
 > 待实测：送信归队接续伤兵和累计经验；反复建队不重号
 
 送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。
+
+四种玩家使者的只读行程、实际兵员/财货/收件人快照已接入[我的事务](affairs-interface.md#玩家与办案使者)，不改派遣与存档流程。（依据：用户裁定、实现2026-10-18）
 
 ## 四种差事
 

@@ -1,10 +1,10 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：执勤旗与入退会收发经用户确认未见问题，已进入正式版准备；事务页可主动领取
+> 当前状态：原有执勤旗/入退会验收保持；接单改为全屏案件自选，周期招揽与三选一已删除，待实测
 > 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
-> 已复核至：`7573179`（2026-10-17）
-> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs` `_Module/GUI/Prefabs/GwpCaseArchive.xml`
-> 待实测：事务页主动选单与已有委托保留的完整边界，未逐项实测不由一般反馈代替
+> 已复核至：`626b079`（2026-10-18）
+> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs`
+> 待实测：自选案件的接单/目标变化/交差完整流程，原界面新验收见事务界面
 
 事务台账中的日常练兵项显示实体运兵出程或改道落村阶段，不再有带新兵归队阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
 
@@ -50,9 +50,7 @@
 
 - 右下角原版信息条里，影响力旁边多一项「灰袍声望」。图标是影响力图标的副本，染成冷银蓝；
   只有通缉时标红（`GwpMapBarReputation`）。这项在信息条展开时才看得到。（依据：用户要求放在影响力旁边）
-- 灰袍事务界面（`GwpCaseArchiveScreen`，入口见 `map-bar-affairs.md`）汇总：
-  玩家声望、档位与通缉时的应缴数、家族规模与收养冷却、各场战争的理由、当前所有开放案件和差事队列。
-  开放案件后面接使者进度和协办暂停，列表最后是最近的使者回报，规则见 [使者](case-envoy.md)「台账上的使者」。
+- 灰袍事务界面统一见[事务界面](affairs-interface.md)，入口见[地图栏](map-bar-affairs.md)；声望、领单、占案与交差业务仍由本页和所属业务页面定义。使者进度与回报保存规则见[使者](case-envoy.md)「台账上的使者」。
 
 ### 声望图标的交互边界与待办
 
@@ -86,11 +84,12 @@
 
 ## 悬赏（接单）
 
-- 接新委托要同时满足三条：已入会、声望 ≥ 20、玩家在原版旗帜槽装备 `gwp_duty_banner`；不要求指挥官套装。背包持有、装备普通旗帜均不启用；卸旗停止后续新委托提醒与领取资格，已接委托、追踪和交差照常，现有通知也由同一资格查询判有效性。原每2天右侧提示节奏保留。（依据：用户裁定、实现 2026-10-17）
-- 地图左下角“灰袍事务”可查看任务台账，并主动点击“领取委托”，不必等待右侧通知；入口复用同一三选一选单及 `CanInspectBountyOffers`，点按钮时再查实时资格，先关闭台账再弹选单。条件不符时按钮灰显、页面显示原因；查看台账本身不要求举旗。（依据：用户反馈与实现 2026-10-17）
+- 接新委托要同时满足三条：已入会、声望 ≥ 20、玩家在原版旗帜槽装备 `gwp_duty_banner`；不要求指挥官套装。背包持有、装备普通旗帜均不启用；卸旗停用新委托领取资格，已接委托、追踪和交差照常。周期接单招揽已删除，改由事务页主动查看。（依据：用户裁定与实现 2026-10-17、2026-10-18）
+- 灰袍事务的领取入口直接转到职能案件列表，列出共享候选池中所有商队/村庄暴力合资格卷宗，玩家选中后在详情接受。接受当刻复核资格、稳定案件ID、目标、使者约定、当前罚金与预计酬劳；变化则刷新，不关闭事务页弹选单。成功后沿原AcceptBounty占案/释放灰袍/记任务的事务执行。（依据：用户裁定、实现2026-10-18）
+- 玩家看到的预计办案费复用真实Reward公式，按当前罪责、无新增阵亡估算，罚金上限另列；实际交差及抚恤仍按原规则，不保证把罚金全给玩家。新回归与界面验收见[事务界面](affairs-interface.md)。（依据：原结算源码复核2026-10-18）
 - 入会/重入会发旗，主动补领是正常对话功能：已入会且与普通灰袍领主对话、玩家未装备、本队背包无旗、物品有效时才显示；发一面到背包，不自动装备。玩家已有旗时不重复补领，不在读档/小时检查中补发。（依据：设计 2026-10-17）
 - 执勤身份统一由 `GwpCommon.IsPlayerGreyWardenOnDuty` 查询，旗帜槽即原版 `Hero.BannerItem` / `ExtraWeaponSlot`；持有与装备由原版装备/背包存档，不新增开关字段。物品与家族/地图/场景纹章见[装备](warden-gear.md)。（依据：C#反编译与离线回归 2026-10-17）
-- 入口回退基线 `7573179`：恢复 `GwpCaseArchiveScreen.cs`、`_Module/GUI/Prefabs/GwpCaseArchive.xml` 及主文本，对接旗帜源文件见[装备回退](warden-gear.md)。离线回归29断言加XML模板核对已通过，UI/原生渲染待实测。（依据：流程、验证 2026-10-17）
+- 事务入口与接单改版回退范围见[事务界面](affairs-interface.md#回退与设计参考)，旗帜业务回退另见[装备](warden-gear.md)。原生渲染待用户实测。（依据：流程）
 - 从案件池里所有开着、能追到人的案件中，挑三份给玩家选：最近的、最难的、最容易的。
   难度看对方战力与玩家战力之比：≤ 0.75 算易，≥ 1.25 算难。对方用接案门槛同一个数（`GwpStrength.CaseTarget`：
   他所在战斗组，挂靠在军团里就算整支军团），玩家用自己的战斗组。

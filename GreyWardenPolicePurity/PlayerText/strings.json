@@ -6183,6 +6183,406 @@
       "en": "Duel agreed; waiting for the Warden to finish an existing commitment",
       "zh": "已答应单挑，待灰袍完成已有约定后赴会",
       "context": "使者已经谈出单挑结果，领主正在战斗、履行玩家事务或另一场约斗；只排队，不重新谈判。"
+    },
+    "gwp_affairs_mine": {
+      "zh": "我的事务",
+      "en": "My affairs",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_members": {
+      "zh": "灰袍成员",
+      "en": "Wardens",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_duties": {
+      "zh": "职能事务",
+      "en": "Duties",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith": {
+      "zh": "教务",
+      "en": "Congregations",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_armory": {
+      "zh": "军械库",
+      "en": "Armory",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_empty": {
+      "zh": "当前没有此类事务。",
+      "en": "No affairs in this category.",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_details": {
+      "zh": "事务详情",
+      "en": "Details",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_accept": {
+      "zh": "接受委托",
+      "en": "Accept commission",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_browse": {
+      "zh": "领取委托：查看案件",
+      "en": "Browse available cases",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_view_hero": {
+      "zh": "查看人物",
+      "en": "View character",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_view_place": {
+      "zh": "查看地点",
+      "en": "View location",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_line": {
+      "zh": "{LABEL}：{VALUE}",
+      "en": "{LABEL}: {VALUE}",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_row": {
+      "zh": "{A}  |  {B}",
+      "en": "{A}  |  {B}",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_reward": {
+      "zh": "预计办案费",
+      "en": "Estimated fee",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_fine": {
+      "zh": "应缴罚金上限",
+      "en": "Assessed fine cap",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_reward_note": {
+      "zh": "预计办案费按当前案情、无新增阵亡计算；最终按实际交差与抚恤结算，罚金不等于个人报酬。",
+      "en": "Estimate uses the current case and no new casualties. Final payment depends on the hand-in and casualty compensation; fines are not your personal fee.",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_location": {
+      "zh": "目标现所在地",
+      "en": "Target location",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_strength": {
+      "zh": "目标战斗组战力",
+      "en": "Target combat-group strength",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_own_strength": {
+      "zh": "你的战斗组战力",
+      "en": "Your combat-group strength",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_men": {
+      "zh": "目标本队兵员",
+      "en": "Target party troops",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_numbers": {
+      "zh": "{TOTAL} 人，健康 {HEALTHY} 人",
+      "en": "{TOTAL} troops, {HEALTHY} healthy",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_formation": {
+      "zh": "所在编组",
+      "en": "Formation",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_army": {
+      "zh": "随军团行动",
+      "en": "With an army",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_party": {
+      "zh": "独立部队",
+      "en": "Independent party",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_unavailable": {
+      "zh": "当前无法追查",
+      "en": "Currently unavailable",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_scene": {
+      "zh": "案发地点",
+      "en": "Incident location",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_offers": {
+      "zh": "可领案件",
+      "en": "Available cases",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_current": {
+      "zh": "当前委托",
+      "en": "Current commission",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_couriers": {
+      "zh": "我的使者",
+      "en": "My couriers",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_orders": {
+      "zh": "调兵订单",
+      "en": "Troop orders",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_support": {
+      "zh": "受援与调停",
+      "en": "Support and mediation",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_petitions": {
+      "zh": "封地申诉",
+      "en": "Fief appeals",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_report": {
+      "zh": "复命使者",
+      "en": "Report courier",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_support_courier": {
+      "zh": "求援使者",
+      "en": "Support courier",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_order_courier": {
+      "zh": "订单使者",
+      "en": "Order courier",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_peace_courier": {
+      "zh": "调停使者",
+      "en": "Mediation courier",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_outbound": {
+      "zh": "正在递送",
+      "en": "Outbound",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_returning": {
+      "zh": "正在归队",
+      "en": "Returning",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_receiver": {
+      "zh": "收件领主",
+      "en": "Recipient",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_cargo": {
+      "zh": "随队财货",
+      "en": "Cargo",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_gold": {
+      "zh": "携带金币",
+      "en": "Gold carried",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_prisoners": {
+      "zh": "押送俘虏",
+      "en": "Prisoners",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_departed": {
+      "zh": "出发时间",
+      "en": "Dispatched",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_waiting": {
+      "zh": "等待主队恢复后归队",
+      "en": "Waiting for your party to return",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_selling": {
+      "zh": "途中前往城镇出售普通俘虏",
+      "en": "Detouring to sell ordinary prisoners",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_pending": {
+      "zh": "等待交割",
+      "en": "Awaiting handover",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_homes": {
+      "zh": "信教人家",
+      "en": "Faithful households",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_guard": {
+      "zh": "在村守兵",
+      "en": "Guards at home",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_priest": {
+      "zh": "祭司",
+      "en": "Priest",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_ritual": {
+      "zh": "当前仪式",
+      "en": "Current ritual",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_none": {
+      "zh": "当前没有仪式",
+      "en": "No active ritual",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_end": {
+      "zh": "剩余约 {HOURS} 小时",
+      "en": "About {HOURS} hours remaining",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_armory": {
+      "zh": "村庄军械件数",
+      "en": "Village armory items",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_goods": {
+      "zh": "货仓作价",
+      "en": "Warehouse value",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_dungeon": {
+      "zh": "地牢人数",
+      "en": "Dungeon prisoners",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_faith_travel": {
+      "zh": "外出队伍",
+      "en": "Outbound parties",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_family": {
+      "zh": "家族与收养",
+      "en": "Family and adoption",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_war": {
+      "zh": "交战缘由",
+      "en": "Grounds for war",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_appendix": {
+      "zh": "其他记录",
+      "en": "Related records",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_recent": {
+      "zh": "最近交涉",
+      "en": "Recent negotiations",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_duty": {
+      "zh": "本职",
+      "en": "Office",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_action": {
+      "zh": "当前行动",
+      "en": "Current action",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_children": {
+      "zh": "未成年成员",
+      "en": "Children",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_idle": {
+      "zh": "当前无专职待办",
+      "en": "No pending office business",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_unknown": {
+      "zh": "尚不明确",
+      "en": "Unknown",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_armory_closed": {
+      "zh": "军械库尚未开放",
+      "en": "The armory is not yet open.",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_standing_gate": {
+      "zh": "宣誓入会且灰袍声望达到 {STANDING} 后可查看。",
+      "en": "Swear the oath and reach {STANDING} Grey Warden standing to open this screen.",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_refresh_changed": {
+      "zh": "案件或资格已变化，请查看刷新后的详情。",
+      "en": "The case or your eligibility changed. Review the refreshed details.",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_collect": {
+      "zh": "案件已了结，待复命交差",
+      "en": "Case resolved; report for settlement",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_pursuing": {
+      "zh": "追踪目标",
+      "en": "Tracking target",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_deadline": {
+      "zh": "委托期限",
+      "en": "Commission deadline",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_amount": {
+      "zh": "{VALUE} 第纳尔",
+      "en": "{VALUE} denars",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_status": {
+      "zh": "当前情况",
+      "en": "Current status",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_escort": {
+      "zh": "支援领主",
+      "en": "Supporting Warden",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_need_mediation": {
+      "zh": "待调停的战争",
+      "en": "Wars awaiting mediation",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_religion": {
+      "zh": "村落教务与物资",
+      "en": "Village congregations and stores",
+      "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_congregation": {
+      "zh": "集会传教",
+      "en": "Congregation",
+      "context": "事务教务仪式名。"
+    },
+    "gwp_affairs_damnation": {
+      "zh": "烈火责罚",
+      "en": "Fiery punishment",
+      "context": "事务教务仪式名。"
+    },
+    "gwp_affairs_near": {
+      "zh": "{PLACE}附近",
+      "en": "Near {PLACE}",
+      "context": "目标当前在聚落外时的位置说明。"
+    },
+    "gwp_affairs_faith_share": {
+      "zh": "信众比例",
+      "en": "Faithful share",
+      "context": "教务页信众户占总户数比例。"
     }
   },
   "fragments": {

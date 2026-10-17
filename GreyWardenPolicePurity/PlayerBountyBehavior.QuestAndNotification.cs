@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -136,51 +136,5 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 右侧通知数据层（InformationData）
-
-        /// <summary>
-        /// ★ internal（非 private）：存档系统需通过反射访问。
-        /// ★ 无参构造器：存档系统重建对象时调用。
-        /// </summary>
-        internal sealed class BountyMapNotification : InformationData
-        {
-            internal BountyMapNotification()
-                : base(new TextObject(GwpText.Get(
-                    GwpTextCatalog.gwp_bounty_notification_description))) { }
-
-            public override TextObject TitleText =>
-                new TextObject(GwpText.Get(
-                    GwpTextCatalog.gwp_bounty_notification_title));
-            public override string SoundEventPath => "event:/ui/notification/quest_start";
-
-            public override bool IsValid()
-            {
-                PlayerBountyBehavior? behavior = Campaign.Current
-                    ?.GetCampaignBehavior<PlayerBountyBehavior>();
-                return behavior?.CanInspectBountyOffers() == true;
-            }
-        }
-
-        #endregion
-
-        #region 右侧通知ViewModel层（MapNotificationItemBaseVM）
-
-        /// <summary>★ internal（非 private）：与 BountyMapNotification 同理。</summary>
-        internal sealed class BountyMapNotificationItemVM : MapNotificationItemBaseVM
-        {
-            public BountyMapNotificationItemVM(BountyMapNotification data) : base(data)
-            {
-                NotificationIdentifier = "armycreation";
-                _onInspect = () =>
-                {
-                    ExecuteRemove();
-                    var behavior = Campaign.Current
-                        ?.GetCampaignBehavior<PlayerBountyBehavior>();
-                    behavior?.ShowBountySelectionInquiry();
-                };
-            }
-        }
-
-        #endregion
     }
 }

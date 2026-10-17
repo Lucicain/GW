@@ -1,8 +1,8 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
-> 当前状态：六位创始领主声音与正面性格已区分并部署待试听；已选外貌保留
+> 当前状态：六位创始领主声音与正面性格已区分并部署待试听；所有成年成员均履职的界面口径已明确
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 已复核至：`4f31993`（2026-10-16）
+> 已复核至：`626b079`（2026-10-18）
 > 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
 > 待实测：见文末
 
@@ -60,6 +60,8 @@
 Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之后的成长属于存档状态，不在读档时重置。比武各条结算路径及buff缺口只在[使者约斗](case-envoy.md)定义。本轮未调整技能、perk或比武胜率。（依据：源码复核 2026-10-15）
 
 ## 本职
+
+所有成年灰袍成员均参与六个本职的分工，界面不设“其他成年成员”闲职组；成年后如何分配仍由下述本职机制负责。（依据：用户裁定 2026-10-18）
 
 六个位子，开局按创始领主依次指定（`EnsureCoreDutyAssignments`）：
 

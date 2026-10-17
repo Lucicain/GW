@@ -4,7 +4,6 @@ namespace GreyWardenPolicePurity
     {
         internal static class Bounty
         {
-            public const float OfferCooldownDays = 2f;
             public const float IntelReportIntervalDays = 2f;
             public const float DeadlineDays = 45f;
             public const float EasyStrengthRatio = 0.75f;

@@ -25,12 +25,6 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-            // ★ 每次新会话（新档/读档）必须重置此 static 标志。
-            // 原因：_notificationTypeRegistered 是 static 字段，在进程生命周期内持续存在。
-            // 会话1注册后置 true → 会话2 TryRegisterNotificationType() 直接 return →
-            // 新 MapNotificationView 未注册类型 → 通知图标消失 → 玩家永远看不到悬赏任务。
-            _notificationTypeRegistered = false;
-
             // ── 招募对话（招募使者接触玩家时触发）────────────────────────────────────
             starter.AddDialogLine(
                 "gwp_recruit_start",
@@ -595,58 +589,13 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 悬赏派发（原版通知与三选一询问）
+        #region 事务页接案
 
         private enum BountyDifficulty
         {
             Easy,
             Standard,
             Hard
-        }
-
-        private enum BountyOfferRole
-        {
-            Nearest,
-            Harder,
-            Easier
-        }
-
-        private sealed class BountyOfferChoice
-        {
-            internal CrimeRecord Crime { get; }
-            internal BountyOfferRole Role { get; }
-            internal BountyDifficulty Difficulty { get; }
-            internal int Reward { get; }
-
-            internal BountyOfferChoice(
-                CrimeRecord crime,
-                BountyOfferRole role,
-                BountyDifficulty difficulty,
-                int reward)
-            {
-                Crime = crime;
-                Role = role;
-                Difficulty = difficulty;
-                Reward = reward;
-            }
-        }
-
-        private void OfferBountySelection()
-        {
-            TryRegisterNotificationType();
-            Campaign.Current.CampaignInformationManager.NewMapNoticeAdded(
-                new BountyMapNotification());
-        }
-
-        private static void TryRegisterNotificationType()
-        {
-            if (_notificationTypeRegistered) return;
-
-            _notificationTypeRegistered = true;
-            MapScreen? mapScreen = ScreenManager.TopScreen as MapScreen;
-            mapScreen?.MapNotificationView?.RegisterMapNotificationType(
-                typeof(BountyMapNotification),
-                typeof(BountyMapNotificationItemVM));
         }
 
         private string? GetBountyOfferBlocker()
@@ -658,7 +607,7 @@ namespace GreyWardenPolicePurity
             if (!MeetsBountyDutyAndStanding())
                 return GwpText.Get(GwpTextCatalog.gwp_bounty_duty_requirements,
                     "STANDING", GwpTuning.Bounty.RecruitmentReputationThreshold);
-            return CrimeState.GetAvailablePlayerBounties().Count == 0
+            return GetAffairsOffers().Count == 0
                 ? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_012) : null;
         }
 
@@ -667,116 +616,30 @@ namespace GreyWardenPolicePurity
         internal string GetBountyOfferStatusText() => GetBountyOfferBlocker()
             ?? GwpText.Get(GwpTextCatalog.gwp_bounty_duty_ready);
 
-        internal void ShowBountySelectionInquiry()
+        // The affairs screen lists every currently eligible case; no three-choice picker.
+        internal IReadOnlyList<CrimeRecord> GetAffairsOffers() =>
+            CrimeState.GetAvailablePlayerBounties()
+                .Where(crime => crime.CrimeCategory == GwpCrimeCategory.CaravanAttack ||
+                                crime.CrimeCategory == GwpCrimeCategory.VillageViolence)
+                .OrderByDescending(EstimateAffairsReward)
+                .ThenBy(crime => crime.CrimeId, StringComparer.OrdinalIgnoreCase).ToList();
+
+        internal static int EstimateAffairsReward(CrimeRecord crime) =>
+            GwpCaseSettlementRules.Reward(GwpFieldArrestPricing.AssessFine(crime), 0,
+                Math.Max(0, CrimePool.GetHistory(crime.OffenderHero)?.NegativeStanding ?? 0));
+
+        internal static string AffairsDifficulty(CrimeRecord crime) => GetDifficultyText(GetBountyDifficulty(crime));
+
+        internal bool TryAcceptAffairsCase(string crimeId, int displayedFine, int displayedReward)
         {
-            if (!CanInspectBountyOffers()) return;
-
-            List<BountyOfferChoice> choices = BuildBountyOfferChoices();
-            if (choices.Count == 0) return;
-
-            var roles = new[]
-            {
-                BountyOfferRole.Nearest,
-                BountyOfferRole.Harder,
-                BountyOfferRole.Easier
-            };
-            var elements = new List<InquiryElement>(3);
-
-            foreach (BountyOfferRole role in roles)
-            {
-                BountyOfferChoice? choice = choices.FirstOrDefault(item => item.Role == role);
-                string roleText = GetRoleText(role);
-                if (choice == null)
-                {
-                    elements.Add(new InquiryElement(
-                        null,
-                        GwpText.Get(GwpTextCatalog.gwp_bounty_choice_unavailable, "VAR_1", roleText),
-                        null,
-                        false,
-                        GwpText.Get(GwpTextCatalog.gwp_bounty_choice_unavailable_hint)));
-                    continue;
-                }
-
-                MobileParty target = choice.Crime.Offender!;
-                string label = GwpText.Get(
-                    GwpTextCatalog.gwp_bounty_choice_label,
-                    "VAR_1", roleText,
-                    "VAR_2", target.Name,
-                    "VAR_3", GetDifficultyText(choice.Difficulty),
-                    "VAR_4", choice.Reward);
-                string hint = GwpText.Get(
-                    GwpTextCatalog.gwp_bounty_choice_hint,
-                    "VAR_1", GwpText.CrimeType(choice.Crime.CrimeType),
-                    "VAR_2", GetNearestSettlementName(target.GetPosition2D));
-                elements.Add(new InquiryElement(choice, label, null, true, hint));
-            }
-
-            MBInformationManager.ShowMultiSelectionInquiry(
-                new MultiSelectionInquiryData(
-                    GwpText.Get(GwpTextCatalog.gwp_bounty_select_title),
-                    GwpText.Get(GwpTextCatalog.gwp_bounty_select_description),
-                    elements,
-                    true,
-                    1,
-                    1,
-                    GwpText.Get(GwpTextCatalog.gwp_bounty_review_contract),
-                    GwpText.Get(GwpTextCatalog.gwp_cancel),
-                    selected =>
-                    {
-                        BountyOfferChoice? choice = selected.FirstOrDefault()?.Identifier
-                            as BountyOfferChoice;
-                        if (choice != null)
-                            ShowBountyInquiry(choice);
-                    },
-                    _ => { }),
-                true);
-        }
-
-        private List<BountyOfferChoice> BuildBountyOfferChoices()
-        {
-            List<CrimeRecord> available = CrimeState.GetAvailablePlayerBounties();
-            if (available.Count == 0) return new List<BountyOfferChoice>();
-
-            Vec2 playerPosition = MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero;
-            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var result = new List<BountyOfferChoice>(3);
-
-            AddBountyChoice(
-                result,
-                used,
-                available.OrderBy(crime =>
-                    playerPosition.Distance(crime.Offender!.GetPosition2D)).FirstOrDefault(),
-                BountyOfferRole.Nearest);
-            AddBountyChoice(
-                result,
-                used,
-                available.Where(crime => !used.Contains(crime.CrimeId))
-                    .OrderByDescending(GetBountyStrength).FirstOrDefault(),
-                BountyOfferRole.Harder);
-            AddBountyChoice(
-                result,
-                used,
-                available.Where(crime => !used.Contains(crime.CrimeId))
-                    .OrderBy(GetBountyStrength).FirstOrDefault(),
-                BountyOfferRole.Easier);
-
-            return result;
-        }
-
-        private static void AddBountyChoice(
-            ICollection<BountyOfferChoice> result,
-            ISet<string> used,
-            CrimeRecord? crime,
-            BountyOfferRole role)
-        {
-            if (crime == null || !used.Add(crime.CrimeId)) return;
-
-            BountyDifficulty difficulty = GetBountyDifficulty(crime);
-            result.Add(new BountyOfferChoice(
-                crime,
-                role,
-                difficulty,
-                GwpFieldArrestPricing.AssessFine(crime)));
+            if (!CanInspectBountyOffers()) return false;
+            CrimeRecord? crime = GetAffairsOffers().FirstOrDefault(row =>
+                string.Equals(row.CrimeId, crimeId, StringComparison.OrdinalIgnoreCase));
+            // Re-read the authority's pool: stale rows, agreements and withdrawn cases are not contracts.
+            if (crime == null || GwpFieldArrestPricing.AssessFine(crime) != displayedFine ||
+                EstimateAffairsReward(crime) != displayedReward) return false;
+            AcceptBounty(crime, displayedFine);
+            return true;
         }
 
         // 与接案门槛同一个口径：目标所在战斗组，不算路过的人。
@@ -802,49 +665,10 @@ namespace GreyWardenPolicePurity
             _ => GwpText.Get(GwpTextCatalog.gwp_bounty_difficulty_standard)
         };
 
-        private static string GetRoleText(BountyOfferRole role) => role switch
-        {
-            BountyOfferRole.Harder => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_harder),
-            BountyOfferRole.Easier => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_easier),
-            _ => GwpText.Get(GwpTextCatalog.gwp_bounty_choice_nearest)
-        };
-
-        private void ShowBountyInquiry(BountyOfferChoice choice)
-        {
-            if (!CanInspectBountyOffers()) return;
-            CrimeRecord crime = choice.Crime;
-            if (!crime.IsOffenderPursuable()) return;
-
-            MobileParty target = crime.Offender!;
-            string description = string.Join(
-                Environment.NewLine,
-                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_target, "VAR_1", target.Name),
-                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_021, "VAR_1", GwpText.CrimeType(crime.CrimeType)),
-                GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_022, "VAR_1", GetNearestSettlementName(target.GetPosition2D)),
-                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_difficulty, "VAR_1", GetDifficultyText(choice.Difficulty)),
-                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_reward, "VAR_1", choice.Reward),
-                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_deadline),
-                GwpText.Get(GwpTextCatalog.gwp_bounty_contract_turnin));
-
-            InformationManager.ShowInquiry(
-                new InquiryData(
-                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_027),
-                    description,
-                    true,
-                    true,
-                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_028),
-                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_029),
-                    () => AcceptBounty(choice),
-                    () => { },
-                    "event:/ui/panels/quest_start"),
-                true);
-        }
-
-        private void AcceptBounty(BountyOfferChoice choice)
+        private void AcceptBounty(CrimeRecord crime, int assessedFine)
         {
             if (!CanInspectBountyOffers()) return;
 
-            CrimeRecord crime = choice.Crime;
             if (!crime.IsOffenderPursuable())
             {
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -858,7 +682,7 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
             _activeBountyCrimeCategory = (int)crime.CrimeCategory;
-            _assignedCaseFine = choice.Reward;
+            _assignedCaseFine = assessedFine;
             _assignedCaseStanding = Math.Max(0, CrimePool.GetHistory(crime.OffenderHero)?.NegativeStanding ?? 0);
             _bountyPlayerCasualties = 0;
             _waitingForCollection = false;
@@ -899,7 +723,7 @@ namespace GreyWardenPolicePurity
                         "VAR_1", GwpText.Create(
                             GwpTextCatalog.gwp_bounty_quest_target,
                             "VAR_1", offender.Name,
-                            "VAR_2", GetDifficultyText(choice.Difficulty)),
+                            "VAR_2", GetDifficultyText(GetBountyDifficulty(crime))),
                         "VAR_2", GwpText.Create(
                             GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_034,
                             "VAR_1", lastSeenNear),
@@ -912,7 +736,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(
                     GwpTextCatalog.gwp_bounty_contract_accepted,
                     "VAR_1", offender.Name,
-                    "VAR_2", GetDifficultyText(choice.Difficulty),
+                    "VAR_2", GetDifficultyText(GetBountyDifficulty(crime)),
                     "VAR_3", _assignedCaseFine),
                 Colors.Cyan));
         }

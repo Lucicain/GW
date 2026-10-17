@@ -34,7 +34,7 @@ namespace GreyWardenPolicePurity
     ///   3. 在旗帜槽装备灰袍执勤旗（背包持有不算）
     ///
     /// 任务流程：
-    ///   右侧通知图标 → 从最近、较难、较简单三份原版选单中选择 → 接受 → 追击目标 →
+    ///   灰袍事务 → 查看案件列表与合同 → 接受 → 追击目标 →
     ///   胜利后前往警察领主对话领取赏金 → 灰袍调停战争
     /// </summary>
     public partial class PlayerBountyBehavior : CampaignBehaviorBase
@@ -66,14 +66,12 @@ namespace GreyWardenPolicePurity
         private string _escortPolicePartyId = null!; // 当前护送玩家追捕的警察部队 StringId（null=无护送，向族长领赏）
 
         // ---- 运行时状态（不持久化）----
-        private CampaignTime _lastOfferTime = CampaignTime.Zero;
         private CampaignTime _lastIntelReportTime = CampaignTime.Zero; // 运行时，不持久化（读档后立即触发一次，好体验）
         private BountyHunterQuest _activeQuest = null!;
         private string _recruitmentPatrolId = null!;       // 当前在场的招募使者队ID
         private Settlement _recruitmentPatrolOrigin = null!; // 使者出发的定居点（返回目标）
         private bool _recruitmentPatrolReturning = false;  // 是否已进入返回阶段
         private double _recruitmentPatrolDispatchHour = -1d; // 本轮追赶玩家的起始小时
-        private static bool _notificationTypeRegistered = false;
 
         private PlayerBountyFlowState CurrentBountyState =>
             !string.IsNullOrEmpty(_activeBountyTargetId)
@@ -284,9 +282,6 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            double lastOfferHours = _lastOfferTime.ToHours;
-            dataStore.SyncData("gwp_bounty_last_offer_hours", ref lastOfferHours);
-            if (dataStore.IsLoading) _lastOfferTime = CampaignTime.Hours((float)lastOfferHours);
             dataStore.SyncData("gwp_case_submitted_value", ref _caseSubmitted);
             dataStore.SyncData("gwp_case_submitted_prisoner", ref _caseSubmittedPrisoner);
             dataStore.SyncData("gwp_case_assigned_fine", ref _assignedCaseFine);
@@ -762,23 +757,7 @@ namespace GreyWardenPolicePurity
 
             if (IsWaitingForBountyCollection) return;
 
-            // ── 接任务三条件 ──────────────────────────────────────────────────────────
-            if (!_recruitmentAccepted) return;                                        // 条件1：已接受招募
-            if (!MeetsBountyDutyAndStanding()) return;                                // 条件2、3：声望与执勤旗
-            // ─────────────────────────────────────────────────────────────────────────
 
-            if ((CampaignTime.Now - _lastOfferTime).ToDays < GwpTuning.Bounty.OfferCooldownDays) return;
-            _lastOfferTime = CampaignTime.Now;
-
-            if (CrimeState.GetAvailablePlayerBounties().Count == 0)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_012),
-                    Colors.White));
-                return;
-            }
-
-            OfferBountySelection();
         }
 
         #endregion
@@ -889,10 +868,6 @@ namespace GreyWardenPolicePurity
 
         private static Settlement? FindNearestSettlement(Vec2 position)
             => GwpCommon.FindNearestSettlement(position);
-
-        private static string GetNearestSettlementName(Vec2 position) =>
-            FindNearestSettlement(position)?.Name?.ToString() ??
-            GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_020);
 
         private static Settlement FindNearestTown(Vec2 position)
         {

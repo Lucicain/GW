@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`f00ca9b`（2026-10-17）
+> 已复核至：`626b079`（2026-10-18）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
@@ -84,7 +84,7 @@
 ## 存档
 
 - 本模组的存档类型由 `GwpSaveableTypeDefiner` 注册，基数 2,894,632，原版占 1–1,000,000：
-  1 悬赏任务、2 悬赏地图通知、3 赎罪任务、4 收养日志、5 封地重议决议。
+  1 悬赏任务、3 赎罪任务、4 收养日志、5 封地重议决议。原2悬赏地图通知及其周期冷却已删除，接单改在[事务页](affairs-interface.md)主动进行；不保留旧通知类型或旧格式兼容。（依据：用户裁定不做跨版本兼容；实现2026-10-18）
   发布后已有的 localId 不能改，否则旧档里对应的对象读不出来。
 - 其余状态都用行为自己的 `SyncData`，存成基础类型的并列列表（`List<string>`、`List<int>`、`List<double>`），不注册容器类型。
   这样不会和别的模组的容器定义冲突。

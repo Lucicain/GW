@@ -57,13 +57,12 @@ static class GwpTextCatalog{ TEXT_KEYS }
 class MBObjectManager{public static MBObjectManager Instance=new();public ItemObject? Item;public T GetObject<T>(string id) where T:class=>(Item?.StringId==id?Item as T:null)!;}
 public class PlayerBountyBehavior{
  public bool _recruitmentAccepted=true,HasBountyTask,_recruitmentOffered,HasFieldBusinessToSettle;public int _voluntaryExitCount,GearGrants,RecruitGrants,QuestEnds;public bool IsRecruitedByGreyWardens=>_recruitmentAccepted;
- public List<string> Events=new();public int ShowCalls;public void ShowBountySelectionInquiry(){Events.Add("inquiry");ShowCalls++;}
+ public List<int> GetAffairsOffers()=>CrimeState.Available;
 void DestroyRecruitmentPatrol(){}void GiveCommanderEquipment(){GearGrants++;}void GiveStarterRecruits(){RecruitGrants++;}void EndBountyTaskState(bool tryRestorePeace){QuestEnds++;HasBountyTask=false;}Quest? _activeQuest;class Quest{public void FailQuestMembershipEnded(){}}
  public void Join()=>OnRejoinThroughLord();public void Leave()=>OnLeaveThroughLord();
  BOUNTY_METHODS
  public bool Ready()=>CanInspectBountyOffers();public void Issue()=>IssueDutyBanner();public bool CanIssue()=>CanRequestDutyBanner();
 }
-class GwpCaseArchiveVM{Action _onClose;public int Refreshes;public GwpCaseArchiveVM(Action close){_onClose=close;}void RefreshLedger()=>Refreshes++; VM_METHOD }
  IDS
  BANNER_CLASSES
 class Replay{static int Checks;static void Check(bool b,string why){if(!b)throw new Exception(why);Checks++;}
@@ -82,9 +81,8 @@ class Replay{static int Checks;static void Check(bool b,string why){if(!b)throw 
   b.HasBountyTask=true;hero.BannerItem=default;Check(b.HasBountyTask&&!b.Ready(),"unequipping does not cancel accepted warrant and blocks new ones");Check(Emblem(PartyBase.MainParty,own)==own,"unequipping restores original emblem without rewriting clan");
   b.HasBountyTask=false;hero.BannerItem=new(new(){StringId="ordinary_banner"});Check(!b.Ready(),"ordinary banner cannot opt in");
   hero.BannerItem=new(duty);CrimeState.Available.Clear();Check(!b.Ready(),"empty pool cannot open an offer");CrimeState.Available.Add(1);
-  var vm=new GwpCaseArchiveVM(()=>b.Events.Add("close"));vm.ExecuteTakeBounty();Check(b.ShowCalls==1&&string.Join(",",b.Events)=="close,inquiry","manual entry closes ledger then opens same selector");
-  hero.BannerItem=default;vm.ExecuteTakeBounty();Check(b.ShowCalls==1&&vm.Refreshes==1,"manual click rechecks live duty state instead of cached button enablement");
-  Check(!b.CanIssue(),"inventory copy suppresses replacement");MobileParty.MainParty.ItemRoster.Clear();Check(b.CanIssue(),"member may explicitly replace lost flag");b.Issue();b.Issue();Check(MobileParty.MainParty.ItemRoster.Count==1,"repeated issue calls cannot duplicate flag in current party inventory");
+
+  hero.BannerItem=default;Check(!b.CanIssue(),"inventory copy suppresses replacement");MobileParty.MainParty.ItemRoster.Clear();Check(b.CanIssue(),"member may explicitly replace lost flag");b.Issue();b.Issue();Check(MobileParty.MainParty.ItemRoster.Count==1,"repeated issue calls cannot duplicate flag in current party inventory");
   Check(hero.BannerItem.Item==null,"issuing flag does not silently activate duty");MobileParty.MainParty.ItemRoster.Clear();b._recruitmentAccepted=false;b.Issue();Check(MobileParty.MainParty.ItemRoster.Count==0,"nonmember cannot issue flag");b._recruitmentAccepted=true;
   GwpCommon.LordConversation=false;b.Issue();Check(MobileParty.MainParty.ItemRoster.Count==0,"cannot issue from unrelated or enforcement conversation");GwpCommon.LordConversation=true;
   hero.BannerItem=new(duty);Check(!b.CanIssue(),"equipped copy suppresses replacement");
@@ -138,7 +136,7 @@ class DutyBannerTests(unittest.TestCase):
         keys = sorted(set(re.findall(r'GwpTextCatalog\.(\w+)',methods)))
         code = HARNESS.replace('HERO_BANNER',hero_banner).replace('NATIVE_POOL',method(base,'GetPossibleRewardBannerItems') + method(base,'CanBannerBeUpdated'))
         code = code.replace('COMMON_METHODS',method(common,'IsPlayerGreyWardenMember') + method(common,'IsPlayerGreyWardenOnDuty'))
-        code = code.replace('BOUNTY_METHODS',methods).replace('VM_METHOD',method(read('GwpCaseArchiveScreen.cs'),'ExecuteTakeBounty'))
+        code = code.replace('BOUNTY_METHODS',methods)
         code = code.replace('TEXT_KEYS','\n'.join(f'public const string {k}="{k}";' for k in keys))
         code = code.replace('IDS',body(read('GwpIds.cs'))).replace('BANNER_CLASSES',body(read('GwpDutyBanner.cs')))
         major = subprocess.check_output(['dotnet','--version'],text=True).split('.')[0]

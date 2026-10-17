@@ -1510,5 +1510,85 @@
   <string id="gwp_duty_banner_request" text="我需要补领一面执勤旗。" />
   <string id="gwp_duty_banner_issued" text="旗已交给你。装备后以灰袍黑金鸟徽执勤，可接新委托；留在行囊里便是暂不执勤。退出修会时须交还。" />
   <string id="gwp_case_envoy_duel_waiting" text="已答应单挑，待灰袍完成已有约定后赴会" />
+  <string id="gwp_affairs_mine" text="我的事务" />
+  <string id="gwp_affairs_members" text="灰袍成员" />
+  <string id="gwp_affairs_duties" text="职能事务" />
+  <string id="gwp_affairs_faith" text="教务" />
+  <string id="gwp_affairs_armory" text="军械库" />
+  <string id="gwp_affairs_empty" text="当前没有此类事务。" />
+  <string id="gwp_affairs_details" text="事务详情" />
+  <string id="gwp_affairs_accept" text="接受委托" />
+  <string id="gwp_affairs_browse" text="领取委托：查看案件" />
+  <string id="gwp_affairs_view_hero" text="查看人物" />
+  <string id="gwp_affairs_view_place" text="查看地点" />
+  <string id="gwp_affairs_line" text="{LABEL}：{VALUE}" />
+  <string id="gwp_affairs_row" text="{A}  |  {B}" />
+  <string id="gwp_affairs_reward" text="预计办案费" />
+  <string id="gwp_affairs_fine" text="应缴罚金上限" />
+  <string id="gwp_affairs_reward_note" text="预计办案费按当前案情、无新增阵亡计算；最终按实际交差与抚恤结算，罚金不等于个人报酬。" />
+  <string id="gwp_affairs_location" text="目标现所在地" />
+  <string id="gwp_affairs_strength" text="目标战斗组战力" />
+  <string id="gwp_affairs_own_strength" text="你的战斗组战力" />
+  <string id="gwp_affairs_men" text="目标本队兵员" />
+  <string id="gwp_affairs_numbers" text="{TOTAL} 人，健康 {HEALTHY} 人" />
+  <string id="gwp_affairs_formation" text="所在编组" />
+  <string id="gwp_affairs_army" text="随军团行动" />
+  <string id="gwp_affairs_party" text="独立部队" />
+  <string id="gwp_affairs_unavailable" text="当前无法追查" />
+  <string id="gwp_affairs_scene" text="案发地点" />
+  <string id="gwp_affairs_offers" text="可领案件" />
+  <string id="gwp_affairs_current" text="当前委托" />
+  <string id="gwp_affairs_couriers" text="我的使者" />
+  <string id="gwp_affairs_orders" text="调兵订单" />
+  <string id="gwp_affairs_support" text="受援与调停" />
+  <string id="gwp_affairs_petitions" text="封地申诉" />
+  <string id="gwp_affairs_report" text="复命使者" />
+  <string id="gwp_affairs_support_courier" text="求援使者" />
+  <string id="gwp_affairs_order_courier" text="订单使者" />
+  <string id="gwp_affairs_peace_courier" text="调停使者" />
+  <string id="gwp_affairs_outbound" text="正在递送" />
+  <string id="gwp_affairs_returning" text="正在归队" />
+  <string id="gwp_affairs_receiver" text="收件领主" />
+  <string id="gwp_affairs_cargo" text="随队财货" />
+  <string id="gwp_affairs_gold" text="携带金币" />
+  <string id="gwp_affairs_prisoners" text="押送俘虏" />
+  <string id="gwp_affairs_departed" text="出发时间" />
+  <string id="gwp_affairs_waiting" text="等待主队恢复后归队" />
+  <string id="gwp_affairs_selling" text="途中前往城镇出售普通俘虏" />
+  <string id="gwp_affairs_pending" text="等待交割" />
+  <string id="gwp_affairs_faith_homes" text="信教人家" />
+  <string id="gwp_affairs_faith_guard" text="在村守兵" />
+  <string id="gwp_affairs_faith_priest" text="祭司" />
+  <string id="gwp_affairs_faith_ritual" text="当前仪式" />
+  <string id="gwp_affairs_faith_none" text="当前没有仪式" />
+  <string id="gwp_affairs_faith_end" text="剩余约 {HOURS} 小时" />
+  <string id="gwp_affairs_faith_armory" text="村庄军械件数" />
+  <string id="gwp_affairs_faith_goods" text="货仓作价" />
+  <string id="gwp_affairs_faith_dungeon" text="地牢人数" />
+  <string id="gwp_affairs_faith_travel" text="外出队伍" />
+  <string id="gwp_affairs_family" text="家族与收养" />
+  <string id="gwp_affairs_war" text="交战缘由" />
+  <string id="gwp_affairs_appendix" text="其他记录" />
+  <string id="gwp_affairs_recent" text="最近交涉" />
+  <string id="gwp_affairs_duty" text="本职" />
+  <string id="gwp_affairs_action" text="当前行动" />
+  <string id="gwp_affairs_children" text="未成年成员" />
+  <string id="gwp_affairs_idle" text="当前无专职待办" />
+  <string id="gwp_affairs_unknown" text="尚不明确" />
+  <string id="gwp_affairs_armory_closed" text="军械库尚未开放" />
+  <string id="gwp_affairs_standing_gate" text="宣誓入会且灰袍声望达到 {STANDING} 后可查看。" />
+  <string id="gwp_affairs_refresh_changed" text="案件或资格已变化，请查看刷新后的详情。" />
+  <string id="gwp_affairs_collect" text="案件已了结，待复命交差" />
+  <string id="gwp_affairs_pursuing" text="追踪目标" />
+  <string id="gwp_affairs_deadline" text="委托期限" />
+  <string id="gwp_affairs_amount" text="{VALUE} 第纳尔" />
+  <string id="gwp_affairs_status" text="当前情况" />
+  <string id="gwp_affairs_escort" text="支援领主" />
+  <string id="gwp_affairs_need_mediation" text="待调停的战争" />
+  <string id="gwp_affairs_religion" text="村落教务与物资" />
+  <string id="gwp_affairs_congregation" text="集会传教" />
+  <string id="gwp_affairs_damnation" text="烈火责罚" />
+  <string id="gwp_affairs_near" text="{PLACE}附近" />
+  <string id="gwp_affairs_faith_share" text="信众比例" />
 </strings>
 </base>

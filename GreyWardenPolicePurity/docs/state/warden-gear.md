@@ -2,7 +2,7 @@
 
 > 当前状态：用户确认执勤旗修复后未见问题，家徽切换、重入不发装与退会收旗进入正式版
 > 最后验收：2026-10-17 用户确认当前旗帜构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`626b079`（2026-10-18）
 > 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs` `GwpDutyBanner.cs` `tools/tests/test_duty_banner.py`
 > 待实测：新档城堡/城镇大厅修士长袍、鸟徽肩饰与露面，野外战斗原套装；旗手数量与分配沿用原版；最佳品质、RBM不换装与男女混编沿原待验收项
 
@@ -67,7 +67,7 @@
 
 原版Clan保存的是`[SaveableField(84)] _banner`，序列化生成入口直接读该字段；临时展示不写字段，卸旗/退会即返回原版结果，无备份旗帜和迁移状态。原版旗帜编辑器直接修改传入Banner，因此其活动状态下Clan读取保留玩家原徽，避免修改灰袍共享图案；普通显示返回独立副本，也不允许原版染色写回灰袍家徽。原版库存DoneLogic即使只换装备也发PlayerInventoryExchange，监听后标脏玩家家族战团地图视觉；退会收旗后同样刷新。（依据：本机v1.4.8托管源码、编辑器重新反编译与生产回归 2026-10-17）
 
-专项生产42断言核对入退会/重入、收旗、补领、防随机掉落、家族/主队/场景显示、卸旗恢复、独立副本、编辑器及地图缓存刷新；XML检查帝国最高档外形和原一级效果。装备/旗帜及入会状态沿原版已有保存，无新增进行中字段。用户2026-10-17确认当前游玩未见问题；旗手数量继续按原版编队/队长规则。（依据：离线回归 2026-10-17）
+专项生产40断言核对入退会/重入、收旗、补领、防随机掉落、家族/主队/场景显示、卸旗恢复、独立副本、编辑器及地图缓存刷新；XML检查帝国最高档外形和原一级效果。旧接单UI的两项断言随界面替换移交[事务专项](affairs-interface.md#验证与待实测)，旗帜业务未改。装备/旗帜及入会状态沿原版已有保存，无新增进行中字段。用户2026-10-17确认当前游玩未见问题；旗手数量继续按原版编队/队长规则。（依据：离线回归 2026-10-18；实机确认 2026-10-17）
 
 执勤旗回退基线 `7573179`：恢复 `items.xml`、`GwpIds.cs`、`GwpCommon.cs`、两份PlayerBountyBehavior源文件及主文本，删除 `GwpDutyBanner.cs` 和SubModule中的旗帜模型注册；事务界面回退见[玩家](player-justice.md)。恢复时保留本轮之前的人物追责与协力工作树改动。（依据：流程）
 

@@ -1,4 +1,4 @@
-﻿using TaleWorlds.SaveSystem;
+using TaleWorlds.SaveSystem;
 
 namespace GreyWardenPolicePurity
 {
@@ -41,12 +41,6 @@ namespace GreyWardenPolicePurity
             // 读档时通过 SpecialQuestType 告知引擎本任务为独立特殊任务，
             // 可正常调用 InitializeQuestOnGameLoad() 而不被自动取消。
             AddClassDefinition(typeof(PlayerBountyBehavior.BountyHunterQuest), 1);
-
-            // localId = 2 → 全局 ID 2_894_634
-            // BountyMapNotification 在 OfferBountySelection() → NewMapNoticeAdded() 后进入
-            // Campaign 持久化通知列表。
-            // IsValid() 会按当前成员资格、装备、任务状态和可用案件自动刷新。
-            AddClassDefinition(typeof(PlayerBountyBehavior.BountyMapNotification), 2);
 
             // localId = 3 → 全局 ID 2_894_635
             // 警察执法中的“赎罪任务”，用于任务面板展示 + 读档恢复。
