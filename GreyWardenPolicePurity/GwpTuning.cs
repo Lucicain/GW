@@ -108,6 +108,10 @@ namespace GreyWardenPolicePurity
             /// </summary>
             public const int FinePerPoint = 100;
 
+            // 区域危险范围只服务于主动出战；协力候选须能在一天内到主办。
+            public const float RegionalThreatRadius = 6f;
+            public const float AssistanceMaximumTravelDays = 1f;
+
             /// <summary>
             /// 办案领主改追更近罪犯的门槛：新目标必须近到当前目标距离的这个比例以下。
             /// 留出余量是为了不让两个此消彼长的移动目标把承办人来回拉扯。
@@ -121,12 +125,10 @@ namespace GreyWardenPolicePurity
 
             public const float WarDistance = 3f;
             public const float PlayerWarDistance = 15f;
-            // 协力组按目标现场战力动态缩编。入组门槛是"我方不占优"（committed <= target），
-            // 放人门槛要求放完之后仍然稳稳压住目标，两个数不一样才有回滞——否则一个
-            // 路过的领主来回走，协力组就会跟着反复拆装。
+            // 协力组按目标本体战斗组动态缩编。入组门槛是"我方不占优"（committed <= target），
+            // 放人门槛要求放完之后仍然稳稳压住目标，两个数不一样才有回滞——否则本体补兵、伤兵恢复的微小变化也会造成反复拆装。
             public const float AssistanceReleaseMargin = 1.5f;
-            // 放人还要求富余连续成立这么多轮小时维护。目标战力本来就会随
-            // 身边的人来去而抖，只看单轮就放人会变成反复拉人又反复放人。
+            // 放人还要求富余连续成立这么多轮小时维护。本体补兵和战损也可能在临界值附近变化，只看单轮就放人会变成反复拉人又反复放人。
             public const int AssistanceSurplusConfirmTicks = 4;
             // 刚拉来就被放走，地图上看是"来了又走"的抽搐。最短在编时长挡住这种来回。
             public const float AssistanceMinimumMemberHours = 12f;
@@ -134,13 +136,9 @@ namespace GreyWardenPolicePurity
             // 又被指派给同样凑不出兵的人，来回空转。
             public const float AssistanceFailureCooldownHours = 72f;
             // 接案门槛。案件难度按目标本队/军团的战力算（不含身边路过的人，
-            // 那一档由协力编成负责），超过全家族能凑出来的战力就不立案——
+            // 那一档仅控制主动出战），超过可及时征调的战力就不接案——
             // 否则案子会被反复接起又反复因凑不出兵退回。留一成余量。
             public const float CaseIntakeStrengthMargin = 0.9f;
-            // 城外围堵点可直接触发既有驱逐流程，不要求军团贴到城门脚下。
-            public const float ShelteredGateDistance = 12f;
-            public const int ShelteredGateHoldHours = 1;
-            public const float ShelteredGateStopTolerance = 0.35f;
             public const float EscortPunishDistance = 3f;
             public const float AtonementIntelReportIntervalDays = 2f;
             public const float AtonementDeadlineDays = 45f;

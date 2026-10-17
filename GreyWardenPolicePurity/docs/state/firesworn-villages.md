@@ -2,13 +2,15 @@
 
 > 当前状态：祭司不再被原版按低势力删掉、家乡村缺祭司当天补回已部署待实测；首兵建队与势力守恒已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`1782a40`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornPriestStays.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs` `GwpPatrolBeats.cs`
 > 待实测：见文末
 
 练兵官派来的运兵队不算本村外出人口，实际送入后才增加村内人数；单程交付规则在 [运兵](warden-training.md)。（依据：设计、源码复核 2026-10-15）
 
 [总览](firesworn.md) · [仪式](firesworn-rituals.md) · [队伍](firesworn-parties.md) · [招兵入口](warden-recruitment.md)
+
+烧村评分按本村信众户比例额外下调、最多减50%，入口与完整公式只在[犯罪抑制](crime-intake.md#信众村烧村评分)维护。共享比例查询读取现有户数，不改信众增长、守村兵或扩散。（依据：用户裁定 2026-10-17）
 
 ## 信众户与守村队
 

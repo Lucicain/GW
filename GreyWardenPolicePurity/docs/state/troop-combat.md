@@ -2,7 +2,7 @@
 
 > 当前状态：兵种装备规则已验收；领主身份扩展已实现，验证与验收见 lord-combat.md
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`907bdcd`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpAgentStatCalculateModel.cs` `_Module/ModuleData/spnpccharacters.xml` `_Module/ModuleData/items.xml` `_Module/ModuleData/gwp_monsters.xml`
 > 待实测：无
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <base type="string">
  <tags>
   <tag language="简体中文" />
@@ -758,7 +758,7 @@
   <string id="gwp_gwpcasearchivescreen_040" text="任务类型：强制收养善后 | 剩余：{VAR_1}小时" />
   <string id="gwp_gwpcasearchivescreen_041" text="任务类型：强制收养善后" />
   <string id="gwp_gwpcasearchivescreen_042" text="等待分配" />
-  <string id="gwp_gwpcasearchivescreen_043" text="补给中" />
+  <string id="gwp_gwpcasearchivescreen_043" text="暂缓，先履行已有约定" />
   <string id="gwp_gwpcasearchivescreen_044" text="前往村庄" />
   <string id="gwp_gwpcasearchivescreen_045" text="驻村善后" />
   <string id="gwp_gwpcasearchivescreen_046" text="未知" />

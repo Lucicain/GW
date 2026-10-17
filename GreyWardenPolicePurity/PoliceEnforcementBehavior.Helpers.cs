@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
             return mapEvent.InvolvedParties.Any(p => p.MobileParty == party);
         }
 
-        private bool TryPreparePolicePartyForVillageRelief(MobileParty? police)
+        private bool TryPreparePolicePartyForVillageRelief(MobileParty? police, WardenDuty duty)
         {
             if (police == null || !police.IsActive)
                 return false;
@@ -35,17 +35,14 @@ namespace GreyWardenPolicePurity
             if (police.MapEvent != null && !police.MapEvent.IsFinalized)
                 return false;
 
-            if (IsAssistanceOccupied(police))
+            if (!GwpWardenDuties.IsFreeFor(police, duty))
                 return false;
-
-            GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
-            GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(police);
 
             PoliceTask? task = CrimeState.GetTask(police.StringId);
             if (task != null)
             {
                 if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
-                    task.TargetCrimeId == CrimePool.PlayerCrimeId)
+                    task.TargetCrimeId == CrimePool.PlayerCrimeId || task.WarDeclared)
                     return false;
 
                 EndCaseTask(police.StringId, CaseTaskEnd.Released, "released_for_forced_duty");
@@ -57,9 +54,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// A filed player request outranks every autonomous Grey Warden duty.
-        /// Never interrupt a live battle or an existing player-bounty escort;
-        /// ordinary work is returned to its pool before the specialist travels.
+        /// Player work may release autonomous work, but respects battle, escort,
+        /// player enforcement and an already arranged duel. Ordinary liability is retained.
         /// </summary>
         private bool TryPreparePartyForPlayerRequest(MobileParty? police)
         {
@@ -67,9 +63,11 @@ namespace GreyWardenPolicePurity
                 return false;
             if (police.MapEvent is { IsFinalized: false })
                 return false;
+            if (!GwpWardenDuties.IsFreeFor(police, WardenDuty.PlayerRequest))
+                return false;
 
-            ReleaseAssistanceForPlayerRequest(police);
-            if (police.Army != null)
+            ReleasePartyFromAssistance(police.StringId, "player_request_priority");
+            if (police.Army != null || GwpWardenDuties.HoldsAny(police, WardenDuty.Assistance))
                 return false;
 
             GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
@@ -149,329 +147,6 @@ namespace GreyWardenPolicePurity
                 best = FindNearestTown();
 
             return best;
-        }
-
-        private void ClearShelteredTargetTracking(string taskId)
-        {
-            if (string.IsNullOrEmpty(taskId)) return;
-            _shelteredPoliceLastPositionByTaskId.Remove(taskId);
-            _shelteredPoliceStoppedHoursByTaskId.Remove(taskId);
-        }
-
-        private void BreakInvalidShelteredBattles()
-        {
-            foreach (var kvp in CrimeState.ActiveTasks.ToList())
-            {
-                PoliceTask task = kvp.Value;
-                MobileParty? policeParty = MobileParty.All.FirstOrDefault(p => p.StringId == task.PolicePartyId);
-                MobileParty? criminal = task.TargetCrime?.Offender;
-
-                if (policeParty == null || !policeParty.IsActive) continue;
-                if (criminal == null || !criminal.IsActive || criminal.IsMainParty) continue;
-                if (criminal.CurrentSettlement == null) continue;
-                if (policeParty.MapEvent == null || policeParty.MapEvent.IsFinalized) continue;
-                if (policeParty.MapEvent.IsPlayerMapEvent) continue;
-
-                float distToShelter = policeParty.GetPosition2D.Distance(criminal.CurrentSettlement.GetPosition2D);
-                if (distToShelter <= GwpTuning.Enforcement.WarDistance) continue;
-
-                _ignoredInvalidShelteredBattlePartyIds.Add(policeParty.StringId);
-
-                policeParty.MapEvent.FinalizeEvent();
-            }
-        }
-
-        private bool HandleShelteredCriminal(
-            MobileParty policeParty,
-            PoliceTask task,
-            string taskId,
-            MobileParty criminal)
-        {
-            if (policeParty == null || !policeParty.IsActive) return true;
-            if (criminal == null || !criminal.IsActive) return false;
-            if (criminal.IsMainParty) return false;
-
-            Settlement shelter = criminal.CurrentSettlement;
-            if (shelter == null)
-            {
-                ClearShelteredTargetTracking(taskId);
-                return false;
-            }
-
-            float distToGate = policeParty.GetPosition2D.Distance(shelter.GatePosition.ToVec2());
-            int stoppedHours = UpdateShelteredPoliceStoppedHours(taskId, policeParty);
-
-            // 围堵仍是案件保底欲望；原版补给/恢复欲望可自然打断并在完成后回来。
-
-            // 本方法不决定是否宣战。调用者已经按协力总战力与现场区域
-            // 战力完成正常判定；只有本案确实进入 WarPursuit 后才能驱逐。
-            if (task.WarDeclared &&
-                distToGate <= GwpTuning.Enforcement.ShelteredGateDistance &&
-                stoppedHours >= GwpTuning.Enforcement.ShelteredGateHoldHours)
-            {
-                TryForceExpelShelteredCriminal(policeParty, criminal, taskId);
-            }
-
-            if (criminal.CurrentSettlement == null)
-            {
-                ClearShelteredTargetTracking(taskId);
-                return false;
-            }
-
-            return true;
-        }
-
-        private int UpdateShelteredPoliceStoppedHours(string taskId, MobileParty policeParty)
-        {
-            if (string.IsNullOrEmpty(taskId) || policeParty == null)
-                return 0;
-
-            Vec2 currentPosition = policeParty.GetPosition2D;
-            if (!_shelteredPoliceLastPositionByTaskId.TryGetValue(taskId, out Vec2 previousPosition))
-            {
-                _shelteredPoliceLastPositionByTaskId[taskId] = currentPosition;
-                _shelteredPoliceStoppedHoursByTaskId[taskId] = 0;
-                return 0;
-            }
-
-            float movedDistance = currentPosition.Distance(previousPosition);
-            int stoppedHours = movedDistance <= GwpTuning.Enforcement.ShelteredGateStopTolerance
-                ? (_shelteredPoliceStoppedHoursByTaskId.TryGetValue(taskId, out int lastStoppedHours)
-                    ? lastStoppedHours + 1
-                    : 1)
-                : 0;
-
-            _shelteredPoliceLastPositionByTaskId[taskId] = currentPosition;
-            _shelteredPoliceStoppedHoursByTaskId[taskId] = stoppedHours;
-            return stoppedHours;
-        }
-
-        private bool TryForceExpelShelteredCriminal(
-            MobileParty attacker,
-            MobileParty defender,
-            string taskId)
-        {
-            if (attacker == null || defender == null) return false;
-            if (!attacker.IsActive || !defender.IsActive) return false;
-            if (attacker.CurrentSettlement != null) return false;
-            if (string.Equals(attacker.StringId, defender.StringId, StringComparison.OrdinalIgnoreCase)) return false;
-
-            Settlement? defenderSettlement = defender.CurrentSettlement;
-            if (defenderSettlement != null)
-            {
-                MobileParty expelParty = defender;
-                MobileParty? armyLeader = defender.Army?.LeaderParty;
-
-                // 目标若属于军团，且军团领队也在同一座城里，
-                // 直接把领队整支拉出城，原版会递归带出附属军团成员。
-                if (armyLeader != null &&
-                    armyLeader.IsActive &&
-                    armyLeader.CurrentSettlement == defenderSettlement)
-                {
-                    expelParty = armyLeader;
-                }
-
-                var forcedPartyIds = new HashSet<string>(
-                    expelParty.AttachedParties
-                        .Where(party => party?.IsActive == true)
-                        .Select(party => party.StringId),
-                    StringComparer.OrdinalIgnoreCase)
-                {
-                    expelParty.StringId,
-                    defender.StringId
-                };
-
-                LeaveSettlementAction.ApplyForParty(expelParty);
-
-                // 目标被逐出城后不再原地等待。直接命令目标（若属于军团则命令
-                // 军团领队）进攻当前案件的承办领主。关闭原版新欲望决策，
-                // 案件结束前只允许执行这一条进攻指令。
-                if (!string.IsNullOrWhiteSpace(taskId))
-                {
-                    UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
-                    TryForceShelteredCaseAttack(defender, attacker);
-                }
-            }
-
-            return defender.CurrentSettlement == null;
-        }
-
-        internal static bool IsSettlementEntryBlockedByActiveCase(
-            MobileParty? enteringParty,
-            Settlement? settlement)
-        {
-            if (enteringParty?.IsActive != true || settlement == null ||
-                enteringParty.IsMainParty)
-                return false;
-
-            return _instance?.IsPartyBlockedFromSettlementByShelteredCase(
-                enteringParty) == true;
-        }
-
-        internal static void RedirectShelteredCasePartyToAssignee(
-            MobileParty? enteringParty)
-        {
-            if (enteringParty?.IsActive != true) return;
-            _instance?.TryForceShelteredCaseAttackForTrackedParty(enteringParty);
-        }
-
-        private bool IsPartyBlockedFromSettlementByShelteredCase(
-            MobileParty enteringParty)
-        {
-            foreach (var entry in _shelteredForcedPartyIdsByTaskId)
-            {
-                PoliceTask? task = CrimeState.GetTask(entry.Key);
-                if (!IsShelteredForcedAttackTaskActive(task))
-                    continue;
-                if (entry.Value.Contains(enteringParty.StringId))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void TryForceShelteredCaseAttackForTrackedParty(
-            MobileParty trackedParty)
-        {
-            foreach (var entry in _shelteredForcedPartyIdsByTaskId)
-            {
-                if (!entry.Value.Contains(trackedParty.StringId)) continue;
-
-                PoliceTask? task = CrimeState.GetTask(entry.Key);
-                if (!IsShelteredForcedAttackTaskActive(task)) continue;
-
-                MobileParty? offender = task!.TargetCrime?.Offender;
-                MobileParty? assignee = MobileParty.All.FirstOrDefault(party =>
-                    party.IsActive &&
-                    string.Equals(party.StringId, task.PolicePartyId,
-                        StringComparison.OrdinalIgnoreCase));
-                TryForceShelteredCaseAttack(offender, assignee);
-                return;
-            }
-        }
-
-        private void MaintainShelteredCaseForcedAttacks()
-        {
-            // 这个方法挂在 TickEvent 上，每秒跑约 60 次。而"有罪犯躲进定居点、
-            // 正被强制围攻"是罕见状态，绝大部分游戏时间这张表是空的。
-            //
-            // 不先判空的话，每一帧都要白白分配一个 Keys 的副本；进了循环之后更贵——
-            // 每个任务一次 MobileParty.All 全表扫描（带闭包和逐个字符串比较）、一个
-            // HashSet 构造、两轮 LINQ。空表时这些全是纯浪费。
-            if (_shelteredForcedPartyIdsByTaskId.Count == 0) return;
-
-            foreach (string taskId in _shelteredForcedPartyIdsByTaskId.Keys.ToList())
-            {
-                PoliceTask? task = CrimeState.GetTask(taskId);
-                if (!IsShelteredForcedAttackTaskActive(task))
-                {
-                    ReleaseShelteredForcedAttack(taskId);
-                    continue;
-                }
-
-                MobileParty? offender = task!.TargetCrime?.Offender;
-                MobileParty? assignee = MobileParty.All.FirstOrDefault(party =>
-                    party.IsActive &&
-                    string.Equals(party.StringId, task.PolicePartyId,
-                        StringComparison.OrdinalIgnoreCase));
-                if (offender?.IsActive != true || assignee?.IsActive != true)
-                    continue;
-
-                MobileParty forceParty = GetShelteredForcedMovementParty(offender);
-                var forcedPartyIds = new HashSet<string>(
-                    forceParty.AttachedParties
-                        .Where(party => party?.IsActive == true)
-                        .Select(party => party.StringId),
-                    StringComparer.OrdinalIgnoreCase)
-                {
-                    forceParty.StringId,
-                    offender.StringId
-                };
-                UpdateShelteredForcedPartyTracking(taskId, forcedPartyIds);
-
-                TryForceShelteredCaseAttack(offender, assignee);
-            }
-        }
-
-        private void UpdateShelteredForcedPartyTracking(
-            string taskId,
-            HashSet<string> currentPartyIds)
-        {
-            if (_shelteredForcedPartyIdsByTaskId.TryGetValue(
-                    taskId, out HashSet<string>? previousPartyIds))
-            {
-                foreach (string releasedPartyId in previousPartyIds
-                             .Where(partyId => !currentPartyIds.Contains(partyId))
-                             .ToList())
-                {
-                    MobileParty? releasedParty = MobileParty.All.FirstOrDefault(party =>
-                        party.IsActive &&
-                        string.Equals(party.StringId, releasedPartyId,
-                            StringComparison.OrdinalIgnoreCase));
-                    if (releasedParty != null)
-                        GwpCommon.TryResetAi(releasedParty);
-                }
-            }
-
-            _shelteredForcedPartyIdsByTaskId[taskId] = currentPartyIds;
-        }
-
-        private void ReleaseShelteredForcedAttack(string taskId)
-        {
-            if (string.IsNullOrWhiteSpace(taskId) ||
-                !_shelteredForcedPartyIdsByTaskId.TryGetValue(
-                    taskId, out HashSet<string>? forcedPartyIds))
-                return;
-
-            foreach (MobileParty party in MobileParty.All.Where(party =>
-                         party.IsActive && forcedPartyIds.Contains(party.StringId)).ToList())
-            {
-                GwpCommon.TryResetAi(party);
-            }
-
-            _shelteredForcedPartyIdsByTaskId.Remove(taskId);
-        }
-
-        private static MobileParty GetShelteredForcedMovementParty(
-            MobileParty offender)
-        {
-            MobileParty? armyLeader = offender.Army?.LeaderParty;
-            return armyLeader?.IsActive == true ? armyLeader : offender;
-        }
-
-        private bool TryForceShelteredCaseAttack(
-            MobileParty? offender,
-            MobileParty? assignee)
-        {
-            if (offender?.IsActive != true || assignee?.IsActive != true)
-                return false;
-            if (offender.IsMainParty)
-                return false;
-
-            MobileParty forceParty = GetShelteredForcedMovementParty(offender);
-            if (!forceParty.IsActive ||
-                forceParty.CurrentSettlement != null ||
-                forceParty.MapEvent != null ||
-                assignee.CurrentSettlement != null ||
-                assignee.MapEvent != null ||
-                string.Equals(forceParty.StringId, assignee.StringId,
-                    StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            forceParty.Ai.SetDoNotMakeNewDecisions(false);
-            forceParty.SetMoveEngageParty(
-                assignee, forceParty.NavigationCapability);
-            forceParty.Ai.SetDoNotMakeNewDecisions(true);
-            return true;
-        }
-
-        private static bool IsShelteredForcedAttackTaskActive(PoliceTask? task)
-        {
-            if (task == null || !task.WarDeclared || !task.IsTargetValid())
-                return false;
-
-            MobileParty? offender = task.TargetCrime?.Offender;
-            return offender?.IsActive == true && !offender.IsMainParty;
         }
 
         #endregion

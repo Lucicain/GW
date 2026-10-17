@@ -19,6 +19,7 @@ namespace GreyWardenPolicePurity
         private const string OwnerIdsKey = "GWPP_IssueDutyOwnerIds";
         private const string PartyIdsKey = "GWPP_IssueDutyPartyIds";
         private const string WorkEndHoursKey = "GWPP_IssueDutyWorkEndHours";
+        private const string PausedAtHoursKey = "GWPP_IssueDutyPausedAtHours";
 
         private static GreyWardenIssueResolutionBehavior? _instance;
         private readonly List<IssueAssignment> _assignments = new List<IssueAssignment>();
@@ -27,7 +28,8 @@ namespace GreyWardenPolicePurity
         {
             WaitingForAssignment,
             TravelingToIssuer,
-            ReviewingPetition
+            ReviewingPetition,
+            Paused
         }
 
         internal sealed class IssueTaskSnapshot
@@ -48,7 +50,8 @@ namespace GreyWardenPolicePurity
             public string IssueId { get; set; } = string.Empty;
             public string OwnerHeroId { get; set; } = string.Empty;
             public string PolicePartyId { get; set; } = string.Empty;
-            public double WorkEndHours { get; set; }
+            public double WorkEndHours;
+            public double PausedAtHours = -1d;
         }
 
         public GreyWardenIssueResolutionBehavior() => _instance = this;
@@ -67,23 +70,26 @@ namespace GreyWardenPolicePurity
             List<string>? ownerIds = null;
             List<string>? partyIds = null;
             List<double>? workEnds = null;
+            List<double>? pausedAtHours = null;
             if (dataStore.IsSaving)
             {
                 issueIds = _assignments.Select(entry => entry.IssueId).ToList();
                 ownerIds = _assignments.Select(entry => entry.OwnerHeroId).ToList();
                 partyIds = _assignments.Select(entry => entry.PolicePartyId).ToList();
                 workEnds = _assignments.Select(entry => entry.WorkEndHours).ToList();
+                pausedAtHours = _assignments.Select(entry => entry.PausedAtHours).ToList();
             }
 
             dataStore.SyncData(IssueIdsKey, ref issueIds);
             dataStore.SyncData(OwnerIdsKey, ref ownerIds);
             dataStore.SyncData(PartyIdsKey, ref partyIds);
             dataStore.SyncData(WorkEndHoursKey, ref workEnds);
+            dataStore.SyncData(PausedAtHoursKey, ref pausedAtHours);
             if (!dataStore.IsLoading) return;
 
             _assignments.Clear();
             int count = new[] { issueIds?.Count ?? 0, ownerIds?.Count ?? 0,
-                partyIds?.Count ?? 0, workEnds?.Count ?? 0 }.Min();
+                partyIds?.Count ?? 0, workEnds?.Count ?? 0, pausedAtHours?.Count ?? 0 }.Min();
             for (int i = 0; i < count; i++)
             {
                 if (string.IsNullOrWhiteSpace(issueIds![i]) ||
@@ -93,7 +99,8 @@ namespace GreyWardenPolicePurity
                     IssueId = issueIds[i],
                     OwnerHeroId = ownerIds[i],
                     PolicePartyId = partyIds![i] ?? string.Empty,
-                    WorkEndHours = workEnds![i]
+                    WorkEndHours = workEnds![i],
+                    PausedAtHours = pausedAtHours![i]
                 });
             }
         }
@@ -102,7 +109,7 @@ namespace GreyWardenPolicePurity
         internal static bool TryDescribeActivity(MobileParty party, out TaleWorlds.Localization.TextObject text)
         {
             text = TaleWorlds.Localization.TextObject.GetEmpty();
-            IssueAssignment? assignment = _instance?._assignments.FirstOrDefault(entry => entry.WorkEndHours > 0d &&
+            IssueAssignment? assignment = _instance?._assignments.FirstOrDefault(entry => entry.WorkEndHours > 0d && entry.PausedAtHours < 0d &&
                 string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
             Settlement? place = assignment == null ? null : Hero.Find(assignment.OwnerHeroId)?.CurrentSettlement;
             if (assignment == null || place == null)
@@ -158,11 +165,13 @@ namespace GreyWardenPolicePurity
                     QueuedTime = issue.IssueCreationTime,
                     Stage = assignment == null || string.IsNullOrWhiteSpace(assignment.PolicePartyId)
                         ? IssueDutyStage.WaitingForAssignment
+                        : assignment.PausedAtHours >= 0d
+                            ? IssueDutyStage.Paused
                         : assignment.WorkEndHours > 0d
                             ? IssueDutyStage.ReviewingPetition
                             : IssueDutyStage.TravelingToIssuer,
                     RemainingHours = assignment?.WorkEndHours > 0d
-                        ? Math.Max(0d, assignment.WorkEndHours - CampaignTime.Now.ToHours)
+                        ? GwpWardenDuties.RemainingWorkHours(assignment.WorkEndHours, assignment.PausedAtHours)
                         : 0d
                 });
             }
@@ -235,6 +244,14 @@ namespace GreyWardenPolicePurity
                     Unassign(assignment, party, "assignee_invalid");
                     continue;
                 }
+                if (GwpWardenDuties.PauseWork(party, HasArrived(party, settlement),
+                        ref assignment.WorkEndHours, ref assignment.PausedAtHours))
+                {
+                    if (!GwpWardenDuties.HoldsAny(party, WardenDuty.Duel))
+                        GreyWardenPartyDesireBehavior.RequestVisit(party, settlement, 8f);
+                    continue;
+                }
+
                 if (GwpWardenDuties.HoldsAny(party, WardenDuty.VillageRelief) ||
                     party.Army != null)
                 {
@@ -311,7 +328,7 @@ namespace GreyWardenPolicePurity
                     .OrderBy(row => party.GetPosition2D.Distance(row.Settlement!.GetPosition2D))
                     .Select(row => row.Issue).FirstOrDefault();
                 if (nearest == null) break;
-                if (!PoliceEnforcementBehavior.TryReservePolicePartyForVillageRelief(party)) continue;
+                if (!PoliceEnforcementBehavior.TryReservePolicePartyForVillageRelief(party, WardenDuty.Issue)) continue;
 
                 _assignments.Add(new IssueAssignment
                 {

@@ -2,7 +2,7 @@
 
 > 当前状态：装备身份加成与锁血均已部署，待实际比赛与野战验收
 > 最后验收：未建立检查点
-> 已复核至：`4f31993`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs` `GwpLordLastStand.cs` `tools/tests/test_lord_combat.py` `tools/tests/test_lord_last_stand.py`
 > 待实测：普通比赛装备、自定义战斗灰袍指挥官与嫁给玩家的灰袍领主的近战、射击、盾挡与骑乘加成；领主锁血 10 秒、击杀回血与超时放开、锁血期间成长 1.5 倍；agent 核对领主战斗日志
 
@@ -35,3 +35,5 @@
 ## 回退
 
 此次身份扩展之前的源码基线为 `4f31993`：取回本页覆盖的六个生产文件可恢复装备绑定规则；恢复时保留本轮之前已经存在的军械、运兵等其他工作树修改。调查补全的文档更正不回退。锁血单独撤回：删除 `GwpLordLastStand.cs` 与测试、`GwpTuning.LordCombat`，`SubModule.cs` 去掉注册，`GwpAgentApplyDamageModel.ApplyGeneralDamageModifiers` 去掉外层 `LimitDamage`，`GwpAlternativeAttackControlBehavior.AddMasteryBonus` 去掉倍数一行。（依据：流程）
+
+本轮GwpCommon只删除地图藏城判据，未改战斗身份、装备词条或领主加成入口；战斗回归仍独立执行。（依据：源码复核、生产回归 2026-10-17）

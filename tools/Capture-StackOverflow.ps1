@@ -12,8 +12,10 @@ Reporting writes nothing, and an unhandled exception stops in cdb instead.
 
 So the whole cdb session is logged to GreyWarden-Crash-<time>.log. On a stack overflow,
 or on the second (fatal) chance of an access violation, a CLR exception or a fail-fast,
-the command file writes the last event, the managed exception and stack (SOS !pe,
-!clrstack) and the native stacks, saves a small dump, and closes the game. When the
+the command file saves the exception registers, addressed native stack and a dump
+with indirectly referenced memory, then the managed and native thread stacks.
+It also stops before process termination with a stack-overflow exit code, since
+the CLR may terminate without delivering a catchable exception. When the
 game exits on its own, the exit code is logged. (2026-10-16: the first version only
 handled stack overflows; a crash at 22:28 left nothing behind.)
 
@@ -51,9 +53,15 @@ $commands = Join-Path $out 'GreyWarden-Crash-commands.txt'
 
 # Everything the debugger prints goes to $log (-logo). This runs at the fatal moment.
 # Backslashes are escape characters inside cdb's quoted command strings, so the dump path doubles them.
-$collect = '.echo === GWP CRASH ===; .lastevent; .loadby sos clr; .echo === managed exception ===; !pe; ' +
-    '.echo === managed stack ===; !clrstack; .echo === native stack ===; .ecxr; kc 400; ' +
-    '.echo === all threads ===; ~*kc 40; .dump /mh \"' + $dump.Replace('\', '\\') + '\"; .kill; q'
+$collect = '.echo === GWP CRASH ===; .lastevent; .exr -1; .ecxr; r; ' +
+    '.echo === native stack ===; kv 400; .dump /mip \"' + $dump.Replace('\', '\\') + '\"; ' +
+    '.loadby sos clr; .echo === managed exception ===; !pe; .echo === managed stack ===; !clrstack -a; ' +
+    '.echo === all threads ===; ~*kv 40; .kill; q'
+
+# Termination breakpoints do not have an exception context. Preserve the caller's
+# stack before CLR/native shutdown destroys it; do not use .ecxr here.
+$terminating = '.echo === GWP STACK OVERFLOW TERMINATION ===; r; kv 400; ' +
+    '.dump /mip \"' + $dump.Replace('\', '\\') + '\"; .loadby sos clr; !pe; !clrstack -a; ~*kv 40; .kill; q'
 
 # av / clr / C++ exceptions are routine first-chance events in this game: stop only when
 # they are fatal (second chance), on a stack overflow, or on a fail-fast (c0000409).
@@ -67,6 +75,8 @@ sxi ud
 sxi ct
 sxi et
 sxe -c "$collect" sov
+bu ntdll!RtlExitUserProcess ".if ((@ecx == 0x800703e9) or (@ecx == 0xc00000fd)) { $terminating } .else { gc }"
+bu ntdll!NtTerminateProcess ".if ((@edx == 0x800703e9) or (@edx == 0xc00000fd)) { $terminating } .else { gc }"
 sxe -c ".echo === GWP PROCESS EXIT ===; .lastevent; q" epr
 g
 "@ | Set-Content -Encoding ASCII -Path $commands
@@ -75,4 +85,4 @@ $arguments = @('-G', '-logo', "`"$log`"", '-cf', "`"$commands`"", "`"$game`"", '
 if ($ContinueGame) { $arguments += '/continuegame' }
 Write-Host "Starting the game under cdb. Play as usual; the debugger log (and on a crash the stacks) goes to:"
 Write-Host "  $log"
-Start-Process -FilePath $cdb -ArgumentList $arguments -WorkingDirectory $bin
+Start-Process -FilePath $cdb -ArgumentList $arguments -WorkingDirectory $bin -WindowStyle Hidden

@@ -383,11 +383,9 @@ namespace GreyWardenPolicePurity
             if (!IsTrackingBountyTarget) return;
             CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(r => r.HasOpenCase && r.OffenderHeroId == hero.StringId);
 
-            // 普通案件在承办队那边靠 IsTargetValid / IsOffenderPursuable 自动结案：罪犯
-            // 死了、被别人拿下了、部队没了，案子就消失，那名灰袍去接下一宗。玩家自己
-            // 承办，没有承办队替他做这件事，所以这里按同一套判据替他判。
-            bool offenderGone = hero.IsDead || hero.IsPrisoner || crime == null ||
-                crime.Offender?.IsActive != true;
+            // 第三方俘虏、暂时失队不清人物罪责；仅死亡或实际结清后撤委托。
+            // 依据：用户裁定 2026-10-17。
+            bool offenderGone = hero.IsDead || crime == null;
             // 玩家已经在战场上打垮了他：部队被原版解散、人跑掉，是玩家自己的结果，
             // 不是"被别人了结"。交给战后结算那条路（打垮即可交差）。
             if (offenderGone && !_caseTargetDefeated)

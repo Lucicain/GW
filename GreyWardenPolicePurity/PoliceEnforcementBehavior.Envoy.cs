@@ -36,6 +36,8 @@ namespace GreyWardenPolicePurity
             DuelDecided = 4,
             /// <summary>案子已结，使者等他打完仗再押人或看他杀兵（<see cref="BeginAftermath"/>）。</summary>
             Aftermath = 5,
+            /// <summary>已答应单挑，承办人先履行已有玩家事务或另一场约斗，再选城赴会。</summary>
+            WaitingForDuel = 6,
         }
 
         /// <summary>一宗案子的使者进度，按案卷记。谈崩记录留到销案为止，所以同一宗案子不会再派。</summary>
@@ -362,6 +364,13 @@ namespace GreyWardenPolicePurity
                     case EnvoyStage.DuelDecided:
                         FinishDuel(envoyCase, crime);
                         break;
+                    case EnvoyStage.WaitingForDuel:
+                        MobileParty? warden = FindActiveParty(envoyCase.WardenPartyId);
+                        if (warden != null && crime.Offender?.IsActive == true)
+                            StartDuel(envoyCase, warden, crime.Offender);
+                        else
+                            FailEnvoy(envoyCase, "duel_participant_unavailable");
+                        break;
                 }
             }
         }
@@ -375,19 +384,14 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            // 承办人放下了这宗案子（改追别人、被调走）：使者回去，案子留给下一个人，不算谈崩。
-            // 宽限后去收钱的那趟本来就没有承办人。
-            PoliceTask? task = TaskForCrime(crime);
+            // 已出使者固定该罪犯；原承办人改追或撤下任务不撤销交涉。
             MobileParty? target = crime.Offender;
-            bool ownerLeft = !envoyCase.CollectOnly && (task == null ||
-                !string.Equals(task.PolicePartyId, envoyCase.WardenPartyId, StringComparison.OrdinalIgnoreCase));
-            if (ownerLeft || target?.IsActive != true)
+            if (target?.IsActive != true)
             {
-                MarkDelayPatrolReturning(envoy.StringId);
-                ForgetEnvoyCase(envoyCase, "case_left_owner");
+                if (CampaignTime.Now.ToHours >= envoyCase.DueHours)
+                    FailEnvoy(envoyCase, "offender_unavailable_timeout");
                 return;
             }
-
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (CampaignTime.Now.ToHours >= envoyCase.DueHours || policeClan == null ||
                 FactionManager.IsAtWarAgainstFaction(policeClan, target.MapFaction))
@@ -649,6 +653,13 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void StartDuel(EnvoyCase envoyCase, MobileParty police, MobileParty target)
         {
+            if (police.MapEvent is { IsFinalized: false } ||
+                GwpWardenDuties.HoldsAny(police, WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder,
+                    WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Duel))
+            {
+                envoyCase.Stage = EnvoyStage.WaitingForDuel;
+                return;
+            }
             Clan? policeClan = PoliceStats.GetPoliceClan();
             Vec2 middle = (police.GetPosition2D + target.GetPosition2D) * 0.5f;
             List<Town> towns = Town.AllTowns
@@ -947,6 +958,7 @@ namespace GreyWardenPolicePurity
         internal static bool HasEnvoyAgreement(CrimeRecord crime) => _instance != null &&
             (_instance.IsAwaitingEnvoyCollection(crime) ||
              _instance._envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? entry) &&
-             (entry.Stage == EnvoyStage.Duel || entry.Stage == EnvoyStage.DuelDecided));
+             (entry.Stage == EnvoyStage.Duel || entry.Stage == EnvoyStage.DuelDecided ||
+              entry.Stage == EnvoyStage.WaitingForDuel));
     }
 }

@@ -53,10 +53,10 @@ class Army {
  private object? _hourlyTickEvent,_tickEvent;public int TickRestores;private void OnAfterLoad(){_hourlyTickEvent=new object();_tickEvent=new object();TickRestores++;}public bool HasTicks=>_hourlyTickEvent!=null&&_tickEvent!=null;
 }
 class CrimeRecord { public bool HasOpenCase=true;public string CrimeId="crime";public MobileParty Offender=null!; }
-class PoliceTask { public string PolicePartyId="leader",TargetCrimeId="crime";public bool IsPlayerBountyEscort,IsEscortingPlayer,WarDeclared;public float LeaderSoloSpeedAtAssignment=4; public CrimeRecord TargetCrime=new CrimeRecord(); }
+class PoliceTask { public string PolicePartyId="leader",TargetCrimeId="crime";public bool IsPlayerBountyEscort,IsEscortingPlayer,WarDeclared,AssistanceRequested;public float LeaderSoloSpeedAtAssignment=4; public CrimeRecord TargetCrime=new CrimeRecord(); }
 static class CrimeState { public static Dictionary<string,PoliceTask> Tasks=new();public static PoliceTask? GetTask(string id)=>Tasks.TryGetValue(id,out var t)?t:null;public static void RefreshAccepting(){} }
 static class CrimePool {public const int MaxTaskPoolEntries=10;public static void TrimOpenCasesToCapacity(int n){} }
-class CampaignTime {public double ToHours;public static CampaignTime Now=new CampaignTime{ToHours=100};}
+class CampaignTime {public const int HoursInDay=24;public double ToHours;public static CampaignTime Now=new CampaignTime{ToHours=100};}
 interface IDataStore {bool IsSaving{get;}bool IsLoading{get;}void SyncData<T>(string key,ref T value);}
 class Store:IDataStore {public Dictionary<string,object> Data=new();public bool IsSaving{get;set;}public bool IsLoading=>!IsSaving;public void SyncData<T>(string k,ref T v){if(IsSaving)Data[k]=v!;else v=(T)Data[k];}}
 class EncounterModel {public float GetEncounterJoiningRadius=3,MaximumAllowedNavalDistanceForEncounteringMobilePartyInArmy=2,MaximumAllowedLandDistanceForEncounteringMobilePartyInArmy=2;}
@@ -67,7 +67,7 @@ static class PartyBaseHelper {public static float FindPartySizeNormalLimit(Mobil
 static class GwpCommon {public static bool IsGreyWardenLordParty(MobileParty p)=>p.IsWarden&&p.LeaderHero!=null;public static bool IsGreyWardenClanParty(MobileParty p)=>p.IsWarden;public static bool IsEnforcementDelayPatrolParty(MobileParty p)=>p.StringId.StartsWith("support");public static void TryResetAi(MobileParty p){}public static bool IsShelteredOffender(MobileParty? p)=>p?.CurrentSettlement!=null;}
 static class PoliceStats {public static IEnumerable<MobileParty> GetAllPoliceParties()=>MobileParty.All.Where(p=>p.IsWarden&&p.LeaderHero!=null);}
 enum WardenDuty{Assistance}
-static class GwpWardenDuties {public static bool IsFreeFor(MobileParty p,WardenDuty d)=>!p.Reserved&&!PoliceEnforcementBehavior.Occupied(p);}
+static class GwpWardenDuties {public static bool IsFreeFor(MobileParty p,WardenDuty d)=>!p.Reserved&&!PoliceEnforcementBehavior.Occupied(p)&&!PoliceEnforcementBehavior.IsPartyHeldForDuel(p);}
 static class PlayerBountyBehavior {public static bool AwaitingSupportRequest(PoliceTask? t)=>false;}
 static class GwpStrength {
  public class Threat {public float Strength,JoiningRadius=3,ThreatRadius=6,MaximumSpeed=3;public string FastestCombatGroupId="enemy";public List<string> CombatGroups=new();}
@@ -80,13 +80,13 @@ static class GwpStrength {
  public static float CaseTarget(CrimeRecord? c)=>c?.Offender==null?0:CombatGroup(CombatGroupOf(c.Offender));
  public static Balance Compare(MobileParty a,MobileParty b)=>new Balance{StrengthReady=CombatGroup(a)+MobileParty.All.Where(p=>p!=a&&p.IsWarden&&p.AttachedTo==null&&p.Position.Distance(a.Position)<=3).Sum(p=>p.Strength)>b.Strength};
 }
-static class GwpTuning {public static class Enforcement {public const float AssistanceReleaseMargin=1.5f,AssistanceMinimumMemberHours=12;public const int AssistanceSurplusConfirmTicks=4;}}
+static class GwpTuning {public static class Enforcement {public const float AssistanceReleaseMargin=1.5f,AssistanceMinimumMemberHours=12,AssistanceMaximumTravelDays=1;public const int AssistanceSurplusConfirmTicks=4;}}
 static class GreyWardenPartyDesireBehavior {public static Dictionary<string,(string,string)> Intent=new();public static void ClearIntent(MobileParty p)=>Intent.Remove(p.StringId);public static void RequestImmediateRethink(MobileParty? p){}public static void RequestEscort(MobileParty p,MobileParty t,float priority)=>Intent[p.StringId]=("escort",t.StringId);public static void RequestPursuit(MobileParty p,MobileParty t,float priority)=>Intent[p.StringId]=("pursue",t.StringId);}
 static class GwpAiDiagnostics {public static void WriteAction(MobileParty p,string a,string d){}}
 static class GwpFaultTrace {public static void WriteQuiet(Exception e)=>throw e;}
 static class GwpAssistanceArmyDisbandGuardPatch {public static int Disbands;public static void ApplyAuthorizedObjectiveFinished(Army a){Disbands++;foreach(var p in a.Parties.ToList())p.Army=null;}}
 public partial class PoliceEnforcementBehavior {
- private sealed class LordAssistanceGroup {public string LeaderPartyId="leader",CrimeId="crime",TargetPartyId="enemy";public List<string> MemberPartyIds=new(),SpeedDetachedPartyIds=new();public bool DispersedForSpeed;public float LastArmySpeedAtDispersal;public string SpeedCatcherPartyId="";}
+ private sealed class LordAssistanceGroup {public string LeaderPartyId="leader",CrimeId="crime",TargetPartyId="enemy";public List<string> MemberPartyIds=new(),SpeedDetachedPartyIds=new();public bool DispersedForSpeed;public float LastArmySpeedAtDispersal;public string SpeedCatcherPartyId="",PendingReleaseReason="";}
  private sealed class DelayPatrolState {public string PatrolPartyId="",SourceTaskPolicePartyId="leader",TargetPartyId="enemy";public bool Returning,IsEnvoy,IsImmediateInterceptor;}
  private static PoliceEnforcementBehavior? _instance;
  private Dictionary<string,LordAssistanceGroup> _assistanceGroups=new();private Dictionary<string,DelayPatrolState> _delayPatrolStates=new();
@@ -99,7 +99,7 @@ public partial class PoliceEnforcementBehavior {
  private void ExitAssistancePlayerBountyEscort(MobileParty p,LordAssistanceGroup g)=>_playerBountyEscortGroups.Remove(g.LeaderPartyId);
  private static string FormatStrengthDiagnostic(MobileParty a,MobileParty b,float c,float d)=>"";
  internal enum EnvoyStage { Travelling,Failed,Grace,Duel,DuelDecided,Aftermath }
- private sealed class EnvoyCase {public string WardenPartyId="";public EnvoyStage Stage;}
+ private sealed class EnvoyCase {public string WardenPartyId="",TownId="";public EnvoyStage Stage;}
  private Dictionary<string,EnvoyCase> _envoyCases=new();
  private static string? EnvoyBlocker(MobileParty police,MobileParty criminal)=>police.EnvoyBlocked;
  private bool IsAssistanceMember(string id)=>_assistanceGroups.Values.Any(g=>g.MemberPartyIds.Contains(id));
@@ -111,10 +111,10 @@ public partial class PoliceEnforcementBehavior {
  static void Check(bool condition,string why){Checks++;if(!condition)throw new Exception(why);}
  static PoliceEnforcementBehavior Setup(out MobileParty leader,out MobileParty helper,out MobileParty enemy){
   var e=new PoliceEnforcementBehavior();_instance=e;MobileParty.All.Clear();CrimeState.Tasks.Clear();GreyWardenPartyDesireBehavior.Intent.Clear();GwpAssistanceArmyDisbandGuardPatch.Disbands=0;
-  leader=new MobileParty{StringId="leader"};helper=new MobileParty{StringId="helper",Strength=120,Position=new Vec{X=50}};enemy=new MobileParty{StringId="enemy",IsWarden=false,Strength=100,Position=new Vec{X=100}};
+  leader=new MobileParty{StringId="leader"};helper=new MobileParty{StringId="helper",Strength=120,Position=new Vec{X=1}};enemy=new MobileParty{StringId="enemy",IsWarden=false,Strength=100,Position=new Vec{X=100}};
   MobileParty.All.AddRange(new[]{leader,helper,enemy});CrimeState.Tasks["leader"]=new PoliceTask{TargetCrime=new CrimeRecord{Offender=enemy}};return e;}
  LordAssistanceGroup Group(MobileParty l,MobileParty? h=null){var g=new LordAssistanceGroup{LeaderPartyId=l.StringId};if(h!=null)g.MemberPartyIds.Add(h.StringId);_assistanceGroups[l.StringId]=g;return g;}
- MobileParty Support(string name="support",bool returning=false,bool envoy=false,bool immediate=false){var p=new MobileParty{StringId=name,LeaderHero=null,Strength=120,Position=new Vec{X=40}};MobileParty.All.Add(p);_delayPatrolStates[name]=new DelayPatrolState{PatrolPartyId=name,Returning=returning,IsEnvoy=envoy,IsImmediateInterceptor=immediate};return p;}
+ MobileParty Support(string name="support",bool returning=false,bool envoy=false,bool immediate=false){var p=new MobileParty{StringId=name,LeaderHero=null,Strength=120,Position=new Vec{X=1}};MobileParty.All.Add(p);_delayPatrolStates[name]=new DelayPatrolState{PatrolPartyId=name,Returning=returning,IsEnvoy=envoy,IsImmediateInterceptor=immediate};return p;}
  public static void Main(){
   var e=Setup(out var l,out var h,out var t);var g=e.Group(l);var a=new Army(null,l,Army.ArmyTypes.Patrolling);
   Check(!IsActiveAssistanceArmy(a),"empty formation has no native disband protection");e.ReconcileAssistanceFormations();
@@ -135,30 +135,29 @@ public partial class PoliceEnforcementBehavior {
   e=Setup(out l,out h,out t);g=e.Group(l);var support=e.Support();a=e.MaintainAssistanceArmy(l,g)!;Check(a!=null&&support.Army==a&&IsActiveAssistanceArmy(a),"ordinary temporary support keeps formation alive");
   Check(GetCommittedAssistanceStrength(l,g)==160,"ordinary support contributes committed force");e._delayPatrolStates["support"].Returning=true;e.ReconcileAssistanceFormations();Check(l.Army==null&&support.Army==null,"last returning support releases formation");
   foreach(int kind in new[]{0,1,2}){e=Setup(out l,out h,out t);g=e.Group(l);e.Support(returning:kind==0,envoy:kind==1,immediate:kind==2);Check(!e.HasFormationParticipants(g),"returning/envoy/interceptor do not keep shell");Check(e.MaintainAssistanceArmy(l,g)==null,"no shell created for excluded support");}
-  e=Setup(out l,out h,out t);g=e.Group(l,h);Check(e.GetAssistanceRendezvous(l,g,t)==h,"weak leader meets distant helper");
-  Check(TryGetAssistanceDuty(l,out var goal,out var behavior,out _,out var pursues)&&goal==h&&behavior==AiBehavior.EscortParty&&!pursues,"leader movement really gathers");
-  Check(TryGetAssistanceDuty(h,out goal,out behavior,out _,out _)&&goal==l,"helper moves toward leader");
-  h.Position.X=1;Check(e.GetAssistanceRendezvous(l,g,t)==null,"local advantage permits advance");
-  h.Position.X=50;l.Strength=150;Check(e.GetAssistanceRendezvous(l,g,t)==null,"self-sufficient leader need not wait");
-  l.Strength=40;h.Reachable=false;Check(e.GetAssistanceRendezvous(l,g,t)==null,"unreachable helper is not movement destination");
+  e=Setup(out l,out h,out t);g=e.Group(l,h);
+  Check(TryGetAssistanceDuty(l,out var goal,out var behavior,out _,out var pursues)&&goal==t&&behavior==AiBehavior.EscortParty&&pursues,"chief follows offender rather than helper");
+  Check(TryGetAssistanceDuty(h,out goal,out behavior,out _,out _)&&goal==l,"helper moves toward chief");
+  h.Position.X=50;Check(e.MaintainAssistanceArmy(l,g)!=null&&h.Army==l.Army&&h.AttachedTo==null,"real responding helper keeps gathering army marker without remote attachment");
+  h.Position.X=1;Check(e.MaintainAssistanceArmy(l,g)!=null&&h.Army==l.Army,"arrived helper actually merges into gathering army");
   e=Setup(out l,out h,out t);g=e.Group(l,h);g.DispersedForSpeed=true;g.SpeedDetachedPartyIds.AddRange(new[]{"leader","helper"});
-  e.MaintainSpeedDispersedPursuit(l,g,t);Check(l.Army==null&&h.Army==null,"speed-dispersed formation has no army shell");Check(GreyWardenPartyDesireBehavior.Intent["leader"]==("escort","helper")&&GreyWardenPartyDesireBehavior.Intent["helper"]==("escort","leader"),"separated insufficient force regroups instead of chasing");
-  support=e.Support();Check(e.TryAssignDelayPatrolToAssistanceArmy(support,e._delayPatrolStates["support"]),"dispersed support receives logical duty without army");Check(GreyWardenPartyDesireBehavior.Intent["support"].Item1=="escort","temporary support rendezvous is not independent attack lock");
+  e.MaintainSpeedDispersedPursuit(l,g,t);Check(l.Army==null&&h.Army==null,"speed dispersion clears native army");
+  Check(GreyWardenPartyDesireBehavior.Intent["leader"]==("escort","enemy")&&GreyWardenPartyDesireBehavior.Intent["helper"]==("escort","leader"),"dispersed chief follows offender and helper follows chief");
   e=Setup(out l,out h,out t);g=e.Group(l);CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;e.MaintainAssistancePlayerBountyEscort(l,g);
   Check(g.MemberPartyIds.Contains("helper")&&l.Army!=null,"first player reinforcement can be recruited without preexisting army");Check(TryGetAssistanceDuty(l,out goal,out _,out var escort,out _)&&escort&&goal==MobileParty.MainParty,"player support keeps following player");
   e=Setup(out l,out h,out t);g=e.Group(l);h.Reserved=true;CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;e.MaintainAssistancePlayerBountyEscort(l,g);Check(l.Army==null&&CrimeState.Tasks.ContainsKey("leader")&&e.CaseFailures==0,"exhausted player support keeps case without empty shell");h.Reserved=false;e.UpdateLordAssistance();Check(l.Army!=null&&e._assistanceGroups["leader"].MemberPartyIds.Count==1,"player support can retry recruitment after empty release");
-  e=Setup(out l,out h,out t);e.UpdateLordAssistance();Check(l.Army!=null&&h.Army==l.Army,"full hourly path allocates then forms");Check(e.GetAssistanceRendezvous(l,e._assistanceGroups["leader"],t)==h,"hourly path does not make weak leader chase alone");
+  e=Setup(out l,out h,out t);e.UpdateLordAssistance();Check(l.Army!=null&&h.Army==l.Army,"full hourly path allocates then forms");Check(TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==t,"hourly chief keeps offender as target");
   e=Setup(out l,out h,out t);g=e.Group(l,h);l.Strength=200;h.Position.X=20;e._assistanceAssignedHours["helper"]=0;e.MaintainAssistanceArmy(l,g);for(int i=0;i<4;i++){e.TryShrinkAssistanceGroup(l,g,100);e.ReconcileAssistanceFormations();}Check(l.Army==null&&e._assistanceGroups.Count==0&&CrimeState.Tasks.ContainsKey("leader"),"surplus last-member shrink releases shell and retains case");
   e=Setup(out l,out h,out t);g=e.Group(l,h);g.DispersedForSpeed=true;g.SpeedDetachedPartyIds.AddRange(new[]{"leader","helper"});e._assistanceAssignedHours["helper"]=42;
   var saved=new Store{IsSaving=true};e.SyncAssistanceData(saved);var restored=new PoliceEnforcementBehavior();_instance=restored;saved.IsSaving=false;restored.SyncAssistanceData(saved);g=restored._assistanceGroups["leader"];
-  Check(g.DispersedForSpeed&&g.MemberPartyIds.SequenceEqual(new[]{"helper"})&&g.SpeedDetachedPartyIds.Count==2,"actual saved fields restore dispersed membership");Check(restored._assistanceAssignedHours["helper"]==42,"minimum-member clock persists");Check(TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==h,"derived rendezvous resumes after state restoration");
-  g.DispersedForSpeed=false;g.SpeedDetachedPartyIds.Clear();saved.IsSaving=true;restored.SyncAssistanceData(saved);var gathering=new PoliceEnforcementBehavior();_instance=gathering;saved.IsSaving=false;gathering.SyncAssistanceData(saved);Check(!gathering._assistanceGroups["leader"].DispersedForSpeed&&TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==h,"gathering resumes after saved-state restoration");
+  Check(g.DispersedForSpeed&&g.MemberPartyIds.SequenceEqual(new[]{"helper"})&&g.SpeedDetachedPartyIds.Count==2,"actual saved fields restore dispersed membership");Check(restored._assistanceAssignedHours["helper"]==42,"minimum-member clock persists");Check(TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==t,"offender tracking resumes after state restoration");
+  g.DispersedForSpeed=false;g.SpeedDetachedPartyIds.Clear();saved.IsSaving=true;restored.SyncAssistanceData(saved);var gathering=new PoliceEnforcementBehavior();_instance=gathering;saved.IsSaving=false;gathering.SyncAssistanceData(saved);Check(!gathering._assistanceGroups["leader"].DispersedForSpeed&&TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==t,"chief tracking resumes after saved-state restoration");
   g=gathering._assistanceGroups["leader"];g.MemberPartyIds.Clear();l.MapEvent=new object();saved.IsSaving=true;gathering.SyncAssistanceData(saved);var pending=new PoliceEnforcementBehavior();_instance=pending;saved.IsSaving=false;pending.SyncAssistanceData(saved);pending.ReconcileAssistanceFormations();Check(pending._assistanceGroups.Count==1,"battle-deferred empty state persists");l.MapEvent=null;pending.ReconcileAssistanceFormations();Check(pending._assistanceGroups.Count==0,"restored pending empty state released at safe point");
   e=Setup(out l,out h,out t);h.Reserved=true;t.MapEvent=new object();e.UpdateLordAssistance();e.UpdateLordAssistance();
   Check(e._assistanceGroups.Count==0&&e.CaseFailures==0&&CrimeState.Tasks.ContainsKey("leader"),"failure deferred by target battle leaves no empty group to churn");
-  e=Setup(out l,out h,out t);l.Strength=150;t.Passers=200;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"passers-by alone do not pull in a helper");
+  e=Setup(out l,out h,out t);l.Strength=150;t.Passers=200;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0&&e.CaseFailures==0,"regional passers do not trigger recruitment or assignment failure");
   e=Setup(out l,out h,out t);g=e.Group(l,h);l.Strength=200;h.Position.X=20;e._assistanceAssignedHours["helper"]=0;t.Passers=60;e.MaintainAssistanceArmy(l,g);
-  for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(g.MemberPartyIds.Count==1,"helper kept while passers keep local threat above release margin");
+  for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"regional passers do not prevent stable-force surplus release");
   t.Passers=0;for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"surplus helper released once passers leave");
   e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"released helper not re-requested for the same target");
   // 使者有结果之前不调人；谈崩才组协力（用户裁定 2026-10-16）。
@@ -171,6 +170,10 @@ public partial class PoliceEnforcementBehavior {
   e=Setup(out l,out h,out t);var own=new PoliceTask{PolicePartyId="helper",TargetCrimeId="own",TargetCrime=new CrimeRecord{CrimeId="own",Offender=new MobileParty{StringId="other",IsWarden=false}}};CrimeState.Tasks["helper"]=own;
   e.UpdateLordAssistance();Check(h.Army==l.Army&&CrimeState.GetTask("helper")==own,"helper keeps own case while helping");
   e=Setup(out l,out h,out t);CrimeState.Tasks["helper"]=own;e._envoyCases["own"]=new EnvoyCase{WardenPartyId="helper",Stage=EnvoyStage.DuelDecided};e.UpdateLordAssistance();Check(h.Army==null&&e._assistanceGroups.Count==0,"helper held for a duel is not drafted");
+  e=Setup(out l,out h,out t);g=e.Group(l,h);h.Position.X=50;e.MaintainAssistanceArmy(l,g);
+  Check(GetImmediateInterceptorTroopSources(l,g).SequenceEqual(new[]{l}),"gathering marker does not teleport remote helper troops into interceptor");
+  h.Position.X=1;e.MaintainAssistanceArmy(l,g);Check(GetImmediateInterceptorTroopSources(l,g).Contains(h),"actually attached helper may contribute interceptor troops");
+  h.IsActive=false;Check(!GetImmediateInterceptorTroopSources(l,g).Contains(h),"lost helper cannot contribute interceptor troops");h.IsActive=true;
   VisitChecks(l,h);
   l.Army=null;h.Army=null;var recruitingArmy=new Army(null,l,Army.ArmyTypes.Patrolling);h.Army=recruitingArmy;
   var entry=new NativeRecruiter();var village=new Settlement();entry.OnBeforeSettlementEntered(l,village,l.LeaderHero!);
@@ -212,11 +215,11 @@ class AssistanceTests(unittest.TestCase):
                  'MaintainAssistancePlayerBountyEscort', 'GrowPlayerBountyAssistanceStrength',
                  'AdvancePlayerBountyAssistanceStrength', 'EnsureCommittedStrengthAdvantage',
                  'GetCommittedAssistanceStrength', 'GetAvailableAssistanceCandidates',
-                 'IsAvailableAssistanceCandidate', 'IsHeldForDuel', 'IsAwaitingEnvoyResult', 'MaintainAssistanceArmy', 'CreateOrRecoverAssistanceArmy',
+                 'IsAvailableAssistanceCandidate', 'IsPartyHeldForDuel', 'DuelForParty', 'IsAwaitingEnvoyResult', 'MaintainAssistanceArmy', 'CreateOrRecoverAssistanceArmy',
                  'TryAddAssistanceMember', 'TryMergeArmyMember', 'ReleasePartyFromAssistance',
                  'TryShrinkAssistanceGroup', 'RemoveAssistanceMember', 'ReleaseAssistanceGroup',
                  'IsArmyOwnedByGroup', 'IsActiveAssistanceArmy', 'TryGetAssistanceDuty',
-                 'IsUndeclaredSoloAssistancePursuit', 'FindParty', 'FindActiveParty',
+                 'IsUndeclaredAssistancePursuit', 'GetAssistanceTravelHours', 'GetAssistanceRequiredStrength', 'FindParty', 'FindActiveParty',
                  'IsActiveGreyWardenLordParty', 'CanContinueLeadingPoliceTask',
                  'MaintainSpeedDispersedPursuit', 'IsSpeedDetached', 'AddSpeedDetachedParty',
                  'RequestAssistanceTargetIntent', 'ShouldDisperseAssistanceArmyForSpeed',
@@ -225,6 +228,7 @@ class AssistanceTests(unittest.TestCase):
         methods = [member(source, name) for name in names]
         delay = (MODULE / 'PoliceEnforcementBehavior.DelayPatrols.cs').read_text(encoding='utf-8-sig')
         methods.append(member(delay, 'TryAssignDelayPatrolToAssistanceArmy'))
+        methods.append(member(delay, 'GetImmediateInterceptorTroopSources'))
         visit = (MODULE / 'GwpWardenVisitDesire.cs').read_text(encoding='utf-8-sig')
         patch = visit[visit.index('    [HarmonyPatch(typeof(AiVisitSettlementBehavior), "CalculatePartyParameters")]'):
                       visit.index('    [HarmonyPatch(typeof(AiVisitSettlementBehavior), "FillSettlements')]
@@ -249,5 +253,5 @@ class AssistanceTests(unittest.TestCase):
             (path / 'Program.cs').write_text(harness, encoding='utf-8')
             (path / 'Formation.cs').write_text(formation, encoding='utf-8')
             result = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
-            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual(0, result.returncode, '\n'.join(l for l in result.stdout.splitlines() if ': warning ' not in l) + result.stderr)
             print(next(line for line in result.stdout.splitlines() if line.startswith('ASSISTANCE_ASSERTIONS=')))

@@ -31,7 +31,9 @@ namespace GreyWardenPolicePurity
 
         /// <summary>组长或军团里任何一支队伍正在打仗。</summary>
         private static bool FormationInBattle(MobileParty leader) =>
-            leader.MapEvent != null || leader.Army?.Parties.Any(party => party.MapEvent != null) == true;
+            leader.MapEvent != null || leader.Army?.Parties.Any(party => party.MapEvent != null) == true ||
+            _instance != null && _instance._assistanceGroups.TryGetValue(leader.StringId, out LordAssistanceGroup? group) &&
+            _instance.FormationParticipants(group).Any(member => member.MapEvent != null);
 
         /// <summary>
         /// 核对编队：剔掉失效、被别的军团拉走的协办人；一个有效协力都不剩就放掉协力组和军团壳子，案子照留。
@@ -39,6 +41,11 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private bool ReconcileAssistanceFormation(MobileParty leader, LordAssistanceGroup group)
         {
+            if (group.PendingReleaseReason.Length != 0)
+            {
+                ReleaseAssistanceGroup(group.LeaderPartyId, group.PendingReleaseReason);
+                return false;
+            }
             foreach (string memberId in group.MemberPartyIds.ToList())
             {
                 MobileParty? member = FindActiveParty(memberId);
@@ -77,27 +84,5 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
-        /// <summary>
-        /// 组长靠自己和身边友军还打不过、需要的协办人又不在身边时，返回该先去会合的那一位（最近、走得到的）。
-        /// 每小时由已存档的名单和当前位置现算，和其他小时意图一样不另存会合目的地。
-        /// </summary>
-        private MobileParty? GetAssistanceRendezvous(MobileParty leader, LordAssistanceGroup group,
-            MobileParty offender)
-        {
-            if (IsAssistancePlayerBountyEscort(group) || FormationInBattle(leader) ||
-                GwpStrength.Compare(leader, offender).StrengthReady) return null;
-            float joiningRadius = Campaign.Current.Models.EncounterModel.GetEncounterJoiningRadius;
-            foreach (MobileParty member in FormationParticipants(group)
-                         .Where(member => member.AttachedTo != leader)
-                         .OrderBy(member => member.GetPosition2D.Distance(leader.GetPosition2D))
-                         .ThenBy(member => member.StringId, StringComparer.OrdinalIgnoreCase))
-            {
-                if (member.GetPosition2D.Distance(leader.GetPosition2D) <= joiningRadius) continue;
-                AiHelper.GetBestNavigationTypeAndDistanceOfMobilePartyForMobileParty(leader, member,
-                    out MobileParty.NavigationType navigation, out _);
-                if (navigation != MobileParty.NavigationType.None) return member;
-            }
-            return null;
-        }
     }
 }

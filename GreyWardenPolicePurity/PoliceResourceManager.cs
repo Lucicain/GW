@@ -36,8 +36,6 @@ namespace GreyWardenPolicePurity
         private static readonly bool _navalDlcLoaded =
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "NavalDLC");
 
-        public static bool IsResupplying(MobileParty party) => false;
-
         public static bool IsReady(MobileParty party)
         {
             if (party == null || !party.IsActive) return false;

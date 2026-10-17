@@ -19,7 +19,7 @@ namespace GreyWardenPolicePurity
         {
             /// <summary>灰袍办成了：结案、记办案经费、通知差事完成，协力组按办成收尾。</summary>
             Solved,
-            /// <summary>结案但不算灰袍办成：承办人战败或失效、案子被别人了结。不记功，协力组解散。</summary>
+            /// <summary>结案但不算灰袍办成：实际处置已由外部完成。不记功，协力组解散。</summary>
             Closed,
             /// <summary>撤下承办人，案卷留在台账上等别人接；只有犯人已死才销卷。</summary>
             Released,
@@ -110,11 +110,11 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        /// <summary>承办部队已经消失、或案卷目标无法恢复的任务按「结案」收尾；死人的案卷移出台账。</summary>
+        /// <summary>承办部队已经消失、或案卷目标无法恢复的任务按「撤人留责」收尾；死人的案卷移出台账。</summary>
         private void CleanCaseLedger()
         {
             foreach (string ownerId in CrimeState.StaleTaskOwnerIds())
-                EndCaseTask(ownerId, CaseTaskEnd.Closed, "owner_party_or_crime_record_missing");
+                EndCaseTask(ownerId, CaseTaskEnd.Released, "owner_party_or_crime_record_missing");
             CrimeState.RemoveDeadOffenderRecords();
         }
     }

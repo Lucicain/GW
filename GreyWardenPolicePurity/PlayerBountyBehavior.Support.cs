@@ -47,7 +47,8 @@ namespace GreyWardenPolicePurity
             CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(record =>
                 record.HasOpenCase && string.Equals(record.OffenderHeroId,
                     _activeBountyTargetHeroId, StringComparison.OrdinalIgnoreCase));
-            if (lord == null || crime == null)
+            if (lord == null || crime == null ||
+                !PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(lord))
             {
                 GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_NO_RESPONDER",
                     "source=" + source + "; lord=" + (lord?.StringId ?? "-")
@@ -58,12 +59,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            // 求援送到之后，灰袍才正式派这名领主接手这宗案子的支援职责。先把他手上的事
-            // 全部放下：退出别人的协力组、脱离军团、清掉旧意图，否则他的欲望仍旧指向
-            // 原来那个目标，看上去就是"接了却不跟玩家"。他自己原本承办的案子由
-            // BeginTask 重新放回案件池，交给别的灰袍去接。
-            PoliceEnforcementBehavior.ReleasePartyFromAssistance(
-                lord.StringId, "reassigned_to_player_support");
+            // 同一玩家准备入口已经处理了协力退出、旧案退回和意图交接。
             CrimeState.BeginTask(lord.StringId, crime);
             if (CrimeState.GetTask(lord.StringId)?.TargetCrimeId != crime.CrimeId)
             {
@@ -95,10 +91,6 @@ namespace GreyWardenPolicePurity
         /// 接下求援的人：优先是使者真正见到的那名领主；他已经不合适时，改由离玩家最近的
         /// 灰袍领主接手。不凭空生成部队。
         /// </summary>
-        /// <summary>
-        /// 接下求援的就是使者真正见到的那名领主——他当时在忙什么都得放下。只有他已经不在
-        /// （阵亡、被俘、部队没了）时，才退而求其次找离玩家最近的合格灰袍领主。
-        /// </summary>
         private static MobileParty? ResolveSupportResponder(MobileParty? responder)
         {
             if (IsEligibleSupportResponder(responder)) return responder;
@@ -115,6 +107,8 @@ namespace GreyWardenPolicePurity
         {
             Clan? wardens = PoliceStats.GetPoliceClan();
             return party?.IsActive == true && party.LeaderHero != null &&
+                   party.MapEvent is not { IsFinalized: false } &&
+                   GwpWardenDuties.IsFreeFor(party, WardenDuty.PlayerEscort) &&
                    wardens != null && party.ActualClan != null &&
                    string.Equals(party.ActualClan.StringId, wardens.StringId,
                        StringComparison.OrdinalIgnoreCase);

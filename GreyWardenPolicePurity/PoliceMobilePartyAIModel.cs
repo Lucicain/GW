@@ -14,6 +14,10 @@ namespace GreyWardenPolicePurity
             if (!GreyWardenPartyDesireBehavior.IsAuthorizedAttackTarget(party, targetParty))
                 return false;
 
+            if (GwpCommon.IsGreyWardenLordParty(party) && !targetParty.IsBandit &&
+                !PoliceEnforcementBehavior.CanInitiateCaseAttack(party, targetParty))
+                return false;
+
             if (!base.ShouldConsiderAttacking(party, targetParty))
                 return false;
 

@@ -553,7 +553,8 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 玩家在野外把案子办成了——他收了罚金，或者对方兑现了谈成的处置。这同样是一次
         /// 灰袍执法，必须记进震慑与"最近一次执法"的时间戳，否则罪犯的收敛期不会启动，
-        /// 表现就是"我明明罚过他了，他照样接着抢"。押走才算被捕，这里不动拘捕履历。
+        /// 表现就是"我明明罚过他了，他照样接着抢"。和平兑现也累加执法/被捕计数，
+        /// 罪犯赢约斗免罚亦然；计数与负声望抵扣分开（用户裁定 2026-10-17）。
         /// </summary>
         internal static void RegisterFieldEnforcement(Hero? offender, CrimeRecord? crime)
         {

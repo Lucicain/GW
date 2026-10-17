@@ -2,7 +2,7 @@
 
 > 当前状态：已复用原版村民队，实现比例补员、仅灰袍兵换精锐、兼运分账与军械领装；已部署、离线通过，待实测
 > 最后验收：未建立检查点
-> 已复核至：`1782a40`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpFaithVillagers.cs` `GwpFireswornBehavior.cs` `GwpFireswornPartyDialogs.cs` `tools/tests/test_faith_villagers.py`
 > 待实测：见文末
 
@@ -62,3 +62,5 @@
 ## 回退
 
 基线81d6475：取回Parties中Market方法、Behavior中Market保存字段、PartyDialogs买货处理、Armory/Allocation的村民例外、DesireBehavior读档Park例外，删除GwpFaithVillagers.cs及专属回归。仅撤本项，保留同轮地牢/转运/首兵等其他修改；重新构建、镜像哈希并开新档。（依据：流程）
+
+本轮信众比例查询供烧村评分使用；村民队原出生/补员比例及精锐交换不变。见[犯罪抑制](crime-intake.md#信众村烧村评分)。（依据：源码复核 2026-10-17）

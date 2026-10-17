@@ -867,6 +867,8 @@ namespace GreyWardenPolicePurity
                 PoliceEnforcementBehavior.EnvoyStage.Duel or PoliceEnforcementBehavior.EnvoyStage.DuelDecided =>
                     GwpText.Get(GwpTextCatalog.gwp_case_envoy_duel, "VAR_1",
                         Settlement.Find(status.TownId)?.Name?.ToString() ?? string.Empty),
+                PoliceEnforcementBehavior.EnvoyStage.WaitingForDuel =>
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_duel_waiting),
                 _ => null
             };
             return stage == null ? text : GwpText.Get(GwpTextCatalog.gwp_case_envoy_suffix, "VAR_1", text, "VAR_2", stage);
@@ -901,7 +903,7 @@ namespace GreyWardenPolicePurity
         {
             GreyWardenVillageAdoptionBehavior.ReliefStage.WaitingForAssignment =>
                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
-            GreyWardenVillageAdoptionBehavior.ReliefStage.AwaitingResupply =>
+            GreyWardenVillageAdoptionBehavior.ReliefStage.Paused =>
                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_043),
             GreyWardenVillageAdoptionBehavior.ReliefStage.TravelingToVillage =>
                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_044),
@@ -913,6 +915,8 @@ namespace GreyWardenPolicePurity
         private static string DescribeReconstructionStage(
             GreyWardenVillageReconstructionBehavior.ReconstructionStage stage) => stage switch
         {
+            GreyWardenVillageReconstructionBehavior.ReconstructionStage.Paused =>
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_043),
             GreyWardenVillageReconstructionBehavior.ReconstructionStage.WaitingForAssignment =>
                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
             GreyWardenVillageReconstructionBehavior.ReconstructionStage.TravelingToVillage =>
@@ -925,6 +929,8 @@ namespace GreyWardenPolicePurity
         private static string DescribeIssueDutyStage(
             GreyWardenIssueResolutionBehavior.IssueDutyStage stage) => stage switch
         {
+            GreyWardenIssueResolutionBehavior.IssueDutyStage.Paused =>
+                GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_043),
             GreyWardenIssueResolutionBehavior.IssueDutyStage.WaitingForAssignment =>
                 GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_042),
             GreyWardenIssueResolutionBehavior.IssueDutyStage.TravelingToIssuer =>

@@ -2,7 +2,7 @@
 
 > 当前状态：战力按"当场会一起上阵"口径、冷却台词不提时限，用户已实测确认（2026-10-02）
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
-> 已复核至：`18779c6`（2026-10-15）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpNegotiationResistance.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
 > 待实测：对方的打算更看性格，有钱的领主不再多半照数全缴；第二层更难谈（实力差不再进第二层），性格越极端越难
 
@@ -31,7 +31,7 @@
 
 和灰袍现场宣战同一个判断（`GwpStrength.Compare`，见 `infrastructure.md`「战力判断」）：
 我方 = 玩家所在战斗组 + 身边肯一起打的同势力部队；对方 = 他所在战斗组 + 身边会来帮他的部队
-（加入半径内全额、外圈折算）。他名义上属于某军团、还在赶去会合时只算他本人。
+（固定区域与实际可参战资格见[协力](case-assistance.md#区域宣战与持续接战)）。他名义上属于某军团、还在赶去会合时只算他本人。
 第一层、第二层抗性和诊断都用它。
 
 2026-09-26 之前用的是原版 `GetTotalLandStrengthWithFollowers`：在队伍护送别人时（去军团会合就是 `EscortParty`）
@@ -100,7 +100,7 @@
   - 交到公库的罚金另用一个专门条目记实缴数（`GwpFieldFineBarterable`），普通买卖、赠礼、取消的报价都不能冒充罚金。
 - 结案时：
   - 犯人这一侧的账当场按实缴清；
-  - 记一次灰袍执法（启动他的震慑收敛期，但不记被捕履历）；
+  - 记一次灰袍执法，登记震慑；和平结局计入执法/被捕履历的规则见[震慑](crime-intake.md#震慑与罪责结算的独立性)；
   - 销案，玩家声望 +2；
   - 罚金跟着玩家走，交给任一灰袍领主才算交差。
 - 结案对话会主动结束遭遇，免得刚缴完罚金的人站在开战界面里。

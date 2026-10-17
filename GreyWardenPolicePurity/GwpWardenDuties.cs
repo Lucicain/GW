@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 
 namespace GreyWardenPolicePurity
 {
@@ -12,7 +14,9 @@ namespace GreyWardenPolicePurity
         PlayerRequest,
         /// <summary>玩家练兵订单预留的练兵官。</summary>
         PlayerTroopOrder,
-        /// <summary>被焚村庄善后（强制差事）。</summary>
+        /// <summary>已经约定的比武，赴会或等赛。</summary>
+        Duel,
+        /// <summary>烧村后的收养驻留。</summary>
         VillageRelief,
         /// <summary>押送被俘的玩家，或作为支援跟随玩家办委托。</summary>
         PlayerEscort,
@@ -52,6 +56,7 @@ namespace GreyWardenPolicePurity
             {
                 [WardenDuty.PlayerRequest] = GreyWardenPlayerRequestBehavior.IsPartyReservedForPlayerRequest,
                 [WardenDuty.PlayerTroopOrder] = GreyWardenTroopRequestBehavior.IsTrainerReservedForPlayerOrder,
+                [WardenDuty.Duel] = PoliceEnforcementBehavior.IsPartyHeldForDuel,
                 [WardenDuty.VillageRelief] = GreyWardenVillageAdoptionBehavior.IsVillageReliefParty,
                 [WardenDuty.PlayerEscort] = party =>
                     GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && (task.IsEscortingPlayer || task.IsPlayerBountyEscort),
@@ -69,44 +74,58 @@ namespace GreyWardenPolicePurity
             };
 
         /// <summary>
-        /// 想接左边这种差事时，身上挂着右边任何一种就不行。没列出来的，是左边这种差事压得过的——
-        /// 由那一边的系统自己让路（请愿被协力抽调就取消；普通案件留在他手上，协力期间暂停，
-        /// 协力结束接着办，用户裁定 2026-10-16）。
-        /// 玩家贵族事务和练兵订单是指定的人，谁都压不过，所以不在左边。
+        /// 想接左边这种差事时，右边的占用不允许被打断。未列的差事由接入入口先释放或暂停。
+        /// 协力暂停普通案；本职尚未认领的待办不挡协力，已经认领的重建和请愿保留。
+        /// 玩家事务和练兵订单共用 PlayerRequest 准备入口，不中断既有护送、通缉或约斗。
         /// </summary>
         private static readonly Dictionary<WardenDuty, WardenDuty[]> BlockedBy =
             new Dictionary<WardenDuty, WardenDuty[]>
             {
+                [WardenDuty.PlayerRequest] = new[]
+                {
+                    WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Duel,
+                },
+                [WardenDuty.PlayerEscort] = new[]
+                {
+                    WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.PlayerEscort,
+                    WardenDuty.PlayerCase, WardenDuty.Duel,
+                },
                 [WardenDuty.VillageRelief] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.Assistance,
+                    WardenDuty.Assistance, WardenDuty.Duel, WardenDuty.PlayerEscort, WardenDuty.PlayerCase,
+                    WardenDuty.Reconstruction, WardenDuty.Issue,
                 },
                 [WardenDuty.PlayerCase] = new[]
                 {
+                    WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.Duel,
                     WardenDuty.VillageRelief, WardenDuty.PlayerEscort, WardenDuty.Assistance,
+                    WardenDuty.Reconstruction, WardenDuty.Issue,
                 },
                 [WardenDuty.Assistance] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
-                    WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve,
+                    WardenDuty.Duel, WardenDuty.Reconstruction, WardenDuty.Issue,
                 },
                 [WardenDuty.Reconstruction] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue,
+                    WardenDuty.Duel, WardenDuty.PlayerEscort, WardenDuty.PlayerCase,
                 },
                 [WardenDuty.Issue] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue,
+                    WardenDuty.Duel, WardenDuty.PlayerEscort, WardenDuty.PlayerCase,
                 },
                 [WardenDuty.StockExchange] = new[]
                 {
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
                     WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.OrdinaryCase,
+                    WardenDuty.Duel,
                 },
                 [WardenDuty.OrdinaryCase] = new[]
                 {
@@ -114,11 +133,54 @@ namespace GreyWardenPolicePurity
                     WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
                     WardenDuty.ReconstructionReserve, WardenDuty.IssueReserve,
                     WardenDuty.OrdinaryCase,
+                    WardenDuty.Duel,
                 },
             };
 
         internal static bool HoldsAny(MobileParty? party, params WardenDuty[] duties) =>
             party != null && duties.Any(duty => Holders[duty](party));
+
+        /// <summary>已有案件可以保留，但不能同时支配另一件正在执行的差事。</summary>
+        internal static bool CanContinueCase(MobileParty party) =>
+            !HoldsAny(party, WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder,
+                WardenDuty.Duel, WardenDuty.VillageRelief, WardenDuty.Reconstruction, WardenDuty.Issue);
+
+        internal static bool CanContinueRelief(MobileParty party) =>
+            !HoldsAny(party, WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder,
+                WardenDuty.Duel, WardenDuty.PlayerEscort, WardenDuty.PlayerCase);
+
+        /// <summary>从保存的任务直接恢复驻留目标，不依赖外部指令的提交次序或8小时有效期。</summary>
+        internal static bool TryGetVisitDuty(MobileParty party, out Settlement? target, out float score)
+        {
+            target = PoliceEnforcementBehavior.GetDuelVenue(party);
+            score = 8f;
+            if (target != null) return true;
+            if (!CanContinueRelief(party))
+                return false;
+            return GreyWardenVillageAdoptionBehavior.TryGetReliefVisit(party, out target, out score);
+        }
+
+        /// <summary>赴约、离开工地或战斗时暂停；暂停起点由所属任务存档。</summary>
+        internal static bool PauseWork(MobileParty party, bool atWorksite,
+            ref double endHours, ref double pausedAtHours)
+        {
+            double now = CampaignTime.Now.ToHours;
+            if (HoldsAny(party, WardenDuty.Duel) ||
+                endHours > 0d && (!atWorksite || party.MapEvent is { IsFinalized: false }))
+            {
+                if (pausedAtHours < 0d) pausedAtHours = now;
+                return true;
+            }
+            if (pausedAtHours >= 0d)
+            {
+                if (endHours > 0d) endHours += now - pausedAtHours;
+                pausedAtHours = -1d;
+            }
+            return false;
+        }
+
+        internal static double RemainingWorkHours(double endHours, double pausedAtHours) =>
+            Math.Max(0d, endHours - (pausedAtHours >= 0d ? pausedAtHours : CampaignTime.Now.ToHours));
 
         /// <summary>这支部队身上有没有挡住 <paramref name="wanted"/> 的差事。<paramref name="except"/> 里的不算。</summary>
         internal static bool IsFreeFor(MobileParty? party, WardenDuty wanted, params WardenDuty[] except) =>

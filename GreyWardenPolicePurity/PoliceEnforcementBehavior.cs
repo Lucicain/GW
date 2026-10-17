@@ -44,32 +44,19 @@ namespace GreyWardenPolicePurity
         private int _atonementReputationReward = 0;
         private float _atonementDeadlineHours = 0f;
         /// <summary>
-        /// 承办人上一次改追更近罪犯的时刻。只用于抑制来回换目标，不进存档：
-        /// 读档后重新开始计时最多多换一次，没有正确性风险。
+        /// 承办人上一次改追更近罪犯的时刻。用于抑制来回换目标，随同版本存档保存，读档后不重置冷却。
         /// </summary>
         private readonly Dictionary<string, double> _lastRetargetHourByParty =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Vec2> _shelteredPoliceLastPositionByTaskId =
-            new Dictionary<string, Vec2>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, int> _shelteredPoliceStoppedHoursByTaskId =
-            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _ignoredInvalidShelteredBattlePartyIds =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, HashSet<string>> _shelteredForcedPartyIdsByTaskId =
-            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-        private const string ShelteredForcedTaskIdsKey =
-            "GWPP_ShelteredForcedAttackTaskIds";
-        private const string ShelteredForcedPartyIdsKey =
-            "GWPP_ShelteredForcedAttackPartyIds";
-
         public PoliceEnforcementBehavior()
         {
             _instance = this;
         }
 
-        internal static bool TryReservePolicePartyForVillageRelief(MobileParty? police)
+        internal static bool TryReservePolicePartyForVillageRelief(MobileParty? police,
+            WardenDuty duty = WardenDuty.VillageRelief)
         {
-            return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police);
+            return _instance != null && _instance.TryPreparePolicePartyForVillageRelief(police, duty);
         }
 
         internal static bool TryReservePartyForPlayerRequest(MobileParty? police)
@@ -136,23 +123,6 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            List<string>? shelteredForcedTaskIds = null;
-            List<string>? shelteredForcedPartyIds = null;
-            if (dataStore.IsSaving)
-            {
-                shelteredForcedTaskIds = new List<string>();
-                shelteredForcedPartyIds = new List<string>();
-                foreach (KeyValuePair<string, HashSet<string>> entry in
-                         _shelteredForcedPartyIdsByTaskId)
-                {
-                    foreach (string partyId in entry.Value)
-                    {
-                        shelteredForcedTaskIds.Add(entry.Key);
-                        shelteredForcedPartyIds.Add(partyId);
-                    }
-                }
-            }
-
             CrimeState.SyncData(dataStore);
             SyncCooldownsAndRetries(dataStore);
             dataStore.SyncData("gwp_enf_war_check_day_counter", ref _warStatusCheckDayCounter);
@@ -172,39 +142,10 @@ namespace GreyWardenPolicePurity
             SyncDelayPatrolStateData(dataStore);
             SyncEnvoyData(dataStore);
             SyncAssistanceData(dataStore);
-            dataStore.SyncData(ShelteredForcedTaskIdsKey,
-                ref shelteredForcedTaskIds);
-            dataStore.SyncData(ShelteredForcedPartyIdsKey,
-                ref shelteredForcedPartyIds);
             if (dataStore.IsLoading)
             {
                 if (_warStatusCheckDayCounter < 0 || _warStatusCheckDayCounter > 1)
                     _warStatusCheckDayCounter = 0;
-                _shelteredPoliceLastPositionByTaskId.Clear();
-                _shelteredPoliceStoppedHoursByTaskId.Clear();
-                _ignoredInvalidShelteredBattlePartyIds.Clear();
-                _shelteredForcedPartyIdsByTaskId.Clear();
-                int forcedCount = Math.Min(
-                    shelteredForcedTaskIds?.Count ?? 0,
-                    shelteredForcedPartyIds?.Count ?? 0);
-                for (int i = 0; i < forcedCount; i++)
-                {
-                    string taskId = shelteredForcedTaskIds![i];
-                    string partyId = shelteredForcedPartyIds![i];
-                    if (string.IsNullOrWhiteSpace(taskId) ||
-                        string.IsNullOrWhiteSpace(partyId))
-                        continue;
-
-                    if (!_shelteredForcedPartyIdsByTaskId.TryGetValue(
-                            taskId, out HashSet<string>? partyIds))
-                    {
-                        partyIds = new HashSet<string>(
-                            StringComparer.OrdinalIgnoreCase);
-                        _shelteredForcedPartyIdsByTaskId[taskId] = partyIds;
-                    }
-
-                    partyIds.Add(partyId);
-                }
                 _enforcementAtonementAssigned = false;
                 _atonementQuest = null!;
                 _awaitingAtonementQuestReconnect = false;
@@ -424,7 +365,6 @@ namespace GreyWardenPolicePurity
         private void OnTick(float dt)
         {
             MaintainPlayerEnforcementContact();
-            MaintainShelteredCaseForcedAttacks();
 
             if (!PlayerCaptivity.IsCaptive) return;
 
@@ -560,7 +500,6 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
             TraceStalledWarPursuits();
 #endif
-            BreakInvalidShelteredBattles();
             CloseSettledPlayerHunt();
             CleanCaseLedger();
             // 先让承办人改追更近的罪犯，被放开的旧案同一轮就能被别人接走。
@@ -655,7 +594,9 @@ namespace GreyWardenPolicePurity
 
                 float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
-                    candidate => CanPickUpCase(candidate, musterable));
+                    candidate => CanPickUpCase(candidate, musterable)) ??
+                    CrimeState.GetNearest(pp.GetPosition2D,
+                        candidate => CanPickUpCase(candidate, musterable, true));
                 if (crime != null)
                     BeginTask(pp, crime);
             }
@@ -681,10 +622,11 @@ namespace GreyWardenPolicePurity
                         StringComparison.OrdinalIgnoreCase));
                 if (owner?.IsActive != true || owner.MapEvent != null ||
                     owner.Army != null || IsAssistanceOccupied(owner) ||
-                    _assistanceGroups.ContainsKey(owner.StringId))
+                    _assistanceGroups.ContainsKey(owner.StringId) ||
+                    !GwpWardenDuties.CanContinueCase(owner))
                     continue;
                 // 已经放出去的拦截队是冲着当前目标去的，换目标会把它甩在半路。
-                if (_delayPatrolStates.Values.Any(state => !state.Returning &&
+                if (_delayPatrolStates.Values.Any(state => !state.Returning && !state.IsEnvoy &&
                         string.Equals(state.SourceTaskPolicePartyId, owner.StringId,
                             StringComparison.OrdinalIgnoreCase)))
                     continue;
@@ -733,8 +675,8 @@ namespace GreyWardenPolicePurity
         /// 台账上的案子此刻能不能接（接案和就近改追同一道门）：凑不出兵的冷却中、他在宽限期里等使者收钱、
         /// 或者超出全族量级的，都不接。
         /// </summary>
-        private bool CanPickUpCase(CrimeRecord candidate, float musterable) =>
-            !IsCaseUnderStrengthCooldown(candidate) &&
+        private bool CanPickUpCase(CrimeRecord candidate, float musterable, bool allowDeferred = false) =>
+            (allowDeferred || !IsCaseUnderStrengthCooldown(candidate)) &&
             !IsAwaitingEnvoyCollection(candidate) &&
             IsCaseWithinReach(candidate, musterable);
 
@@ -953,14 +895,6 @@ namespace GreyWardenPolicePurity
                     EndCaseTask(kvp.Key, CaseTaskEnd.Released, "offender_party_missing");
                     continue;
                 }
-                bool isShelteredTarget =
-                    !criminal.IsMainParty &&
-                    criminal.CurrentSettlement != null;
-                if (!isShelteredTarget)
-                {
-                    ClearShelteredTargetTracking(kvp.Key);
-                }
-
                 if (!criminal.IsActive)
                 {
                     // 这条路径是"他的部队没了，而且不是我们在战斗里打没的"——
@@ -981,6 +915,9 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
                 TraceHelperCasePause(pp, task, false);
 #endif
+
+                if (!GwpWardenDuties.CanContinueCase(pp))
+                    continue;
 
                 // 宣战前先派使者去谈；使者在路上、宽限中或约了比武时不宣战（用户裁定 2026-10-15）。
                 if (HoldWarForEnvoy(pp, task, criminal))
@@ -1004,16 +941,11 @@ namespace GreyWardenPolicePurity
                 float warDist = criminal.IsMainParty
                     ? GwpTuning.Enforcement.PlayerWarDistance
                     : GwpTuning.Enforcement.WarDistance;
-                // 宣战距离必须跟着本队**实际在跑的那个移动行为**走，判据与
-                // TryGetAssistanceDuty 同一个，不能各写一份。还在用原版
-                // GoAroundParty 的（军团整体行军，或目标已躲进定居点而退回环外
-                // 围堵）会停在平方半环上，判定放不到环外就永远不成立；已经拆开
-                // 单独跟随的队伍直接贴到目标身上，沿用 WarDistance，避免隔着
-                // 大半个环就对一个王国开战。
+                // 已宣战的 GoAroundParty 可能停在原版外环；未宣战统一 Escort 使用普通宣战距离。
                 if (!criminal.IsMainParty &&
                     _assistanceGroups.TryGetValue(pp.StringId,
                         out LordAssistanceGroup? ringGroup) &&
-                    !IsUndeclaredSoloAssistancePursuit(pp, ringGroup, movementTarget))
+                    !IsUndeclaredAssistancePursuit(ringGroup))
                 {
                     warDist = Math.Max(
                         warDist, GetNativeMaximumGoAroundDistance());
@@ -1060,7 +992,7 @@ namespace GreyWardenPolicePurity
                 // 玩家目标不自动宣战——改由对话系统让玩家选择缴纳或战斗。
                 // 只有玩家在对话中选择"战斗"后（OnEnforcementFightConsequence）才宣战。
                 // 非玩家目标只有在我方实际区域战力严格高于敌方
-                // 实际区域战力时才宣战；宣战后完全交还原版短期欲望。
+                // 实际区域战力时才宣战；宣战后的主动接战仍重新检查区域力量。
                 if (!task.WarDeclared && dist <= warDist &&
                     !isPatrolRange && !criminal.IsMainParty &&
                     assistanceReady && nativeDeclarationReady)
@@ -1086,15 +1018,6 @@ namespace GreyWardenPolicePurity
                 else if (!task.WarDeclared)
                 {
                     ClearTaskWarTracking(kvp.Key, false);
-                }
-
-                // 藏城只改变宣战后的驱逐执行时机，不能绕过或截断上面的
-                // 两层战力判定。未满足战力条件时继续围堵；本案正式宣战后
-                // 才复用既有拉出定居点、禁止回城和攻击主理人的流程。
-                if (isShelteredTarget &&
-                    HandleShelteredCriminal(pp, task, kvp.Key, criminal))
-                {
-                    continue;
                 }
 
                 // 协力军团无论仍在集结追击，还是已经因目标速度而分散，
@@ -1245,10 +1168,12 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void SyncCooldownsAndRetries(IDataStore dataStore)
         {
-            List<string>? strengthIds = null, peaceIds = null;
-            List<double>? strengthHours = null, peaceHours = null;
+            List<string>? strengthIds = null, peaceIds = null, retargetIds = null;
+            List<double>? strengthHours = null, peaceHours = null, retargetHours = null;
             if (dataStore.IsSaving)
             {
+                retargetIds = _lastRetargetHourByParty.Keys.ToList();
+                retargetHours = retargetIds.Select(id => _lastRetargetHourByParty[id]).ToList();
                 strengthIds = _caseStrengthCooldownHours.Keys.ToList();
                 strengthHours = strengthIds.Select(id => _caseStrengthCooldownHours[id]).ToList();
                 List<IFaction> factions = _peaceRetryTargets.Keys.ToList();
@@ -1259,8 +1184,13 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_strength_cooldown_hours", ref strengthHours);
             dataStore.SyncData("gwp_enf_peace_retry_ids", ref peaceIds);
             dataStore.SyncData("gwp_enf_peace_retry_hours", ref peaceHours);
+            dataStore.SyncData("gwp_enf_retarget_ids", ref retargetIds);
+            dataStore.SyncData("gwp_enf_retarget_hours", ref retargetHours);
             if (!dataStore.IsLoading) return;
 
+            _lastRetargetHourByParty.Clear();
+            for (int i = 0; i < retargetIds!.Count; i++)
+                _lastRetargetHourByParty[retargetIds[i]] = retargetHours![i];
             _caseStrengthCooldownHours.Clear();
             for (int i = 0; i < strengthIds!.Count; i++)
                 _caseStrengthCooldownHours[strengthIds[i]] = strengthHours![i];
@@ -1357,13 +1287,11 @@ namespace GreyWardenPolicePurity
                 {
                     MobileParty? offender = task.TargetCrime?.Offender;
                     if (offender == null || !InEvent(offender, mapEvent)) continue;
-                    EndCaseTask(kvp.Key, CaseTaskEnd.Closed, "owner_party_gone_after_battle");
+                    EndCaseTask(kvp.Key, CaseTaskEnd.Released, "owner_party_gone_after_battle");
                     continue;
                 }
 
                 if (!InEvent(pp, mapEvent)) continue;
-                if (_ignoredInvalidShelteredBattlePartyIds.Remove(pp.StringId))
-                    continue;
                 MobileParty? activeOffender = task.TargetCrime?.Offender;
                 bool playerOffender = task.TargetCrimeId == CrimePool.PlayerCrimeId;
                 // 承办警察打赢一场无关战斗不能让手中的案件自动结案。目标可能在
@@ -1417,7 +1345,7 @@ namespace GreyWardenPolicePurity
                 }
                 else
                 {
-                    EndCaseTask(kvp.Key, CaseTaskEnd.Closed, "case_owner_defeated_in_battle");
+                    EndCaseTask(kvp.Key, CaseTaskEnd.Released, "case_owner_defeated_in_battle");
                 }
 
                 CrimeState.RefreshAccepting();

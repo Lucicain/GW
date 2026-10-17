@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -27,8 +27,8 @@ namespace GreyWardenPolicePurity
         private const string ActiveVillageNamesKey = "GWPP_AdoptActiveVillageNames";
         private const string ActiveQueuedHoursKey = "GWPP_AdoptActiveQueuedHours";
         private const string ActiveStartedFlagsKey = "GWPP_AdoptActiveStartedFlags";
-        private const string ActiveEndHoursKey = "GWPP_AdoptActiveEndHours";
-        private const string ActiveAwaitingResupplyFlagsKey = "GWPP_AdoptActiveAwaitingResupplyFlags";
+        private const string ActiveRemainingHoursKey = "GWPP_AdoptActiveRemainingHours";
+        private const string ActiveLastWorkHoursKey = "GWPP_AdoptActiveLastWorkHours";
         private const string OriginHeroIdsKey = "GWPP_AdoptOriginHeroIds";
         private const string OriginVillageNamesKey = "GWPP_AdoptOriginVillageNames";
         private const string LastAdoptionHoursKey = "GWPP_LastAdoptionHours";
@@ -67,7 +67,6 @@ namespace GreyWardenPolicePurity
             CampaignEvents.VillageLooted.AddNonSerializedListener(this, OnVillageLooted);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
-            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -80,8 +79,8 @@ namespace GreyWardenPolicePurity
             List<string>? activeVillageNames = null;
             List<double>? activeQueuedHours = null;
             List<int>? activeStartedFlags = null;
-            List<double>? activeEndHours = null;
-            List<int>? activeAwaitingResupplyFlags = null;
+            List<double>? activeRemainingHours = null;
+            List<double>? activeLastWorkHours = null;
             List<string>? originHeroIds = null;
             List<string>? originVillageNames = null;
 
@@ -96,8 +95,8 @@ namespace GreyWardenPolicePurity
                 activeVillageNames = _activeReliefs.Select(static x => x.VillageName).ToList();
                 activeQueuedHours = _activeReliefs.Select(static x => x.QueuedTimeHours).ToList();
                 activeStartedFlags = _activeReliefs.Select(static x => x.ReliefStarted ? 1 : 0).ToList();
-                activeEndHours = _activeReliefs.Select(static x => x.ReliefEndHours).ToList();
-                activeAwaitingResupplyFlags = _activeReliefs.Select(static x => x.AwaitingResupply ? 1 : 0).ToList();
+                activeRemainingHours = _activeReliefs.Select(static x => x.RemainingHours).ToList();
+                activeLastWorkHours = _activeReliefs.Select(static x => x.LastWorkHours).ToList();
 
                 originHeroIds = _adoptionOrigins.Keys.ToList();
                 originVillageNames = _adoptionOrigins.Values.ToList();
@@ -111,8 +110,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData(ActiveVillageNamesKey, ref activeVillageNames);
             dataStore.SyncData(ActiveQueuedHoursKey, ref activeQueuedHours);
             dataStore.SyncData(ActiveStartedFlagsKey, ref activeStartedFlags);
-            dataStore.SyncData(ActiveEndHoursKey, ref activeEndHours);
-            dataStore.SyncData(ActiveAwaitingResupplyFlagsKey, ref activeAwaitingResupplyFlags);
+            dataStore.SyncData(ActiveRemainingHoursKey, ref activeRemainingHours);
+            dataStore.SyncData(ActiveLastWorkHoursKey, ref activeLastWorkHours);
             dataStore.SyncData(OriginHeroIdsKey, ref originHeroIds);
             dataStore.SyncData(OriginVillageNamesKey, ref originVillageNames);
             dataStore.SyncData(LastAdoptionHoursKey, ref _lastAdoptionTimeHours);
@@ -146,9 +145,10 @@ namespace GreyWardenPolicePurity
                 activePartyIds,
                 activeVillageIds,
                 activeVillageNames,
+                activeQueuedHours,
                 activeStartedFlags,
-                activeEndHours,
-                activeAwaitingResupplyFlags);
+                activeRemainingHours,
+                activeLastWorkHours);
             for (int i = 0; i < activeCount; i++)
             {
                 if (string.IsNullOrWhiteSpace(activePartyIds![i]) ||
@@ -162,12 +162,10 @@ namespace GreyWardenPolicePurity
                     PolicePartyId = activePartyIds[i],
                     VillageSettlementId = activeVillageIds[i],
                     VillageName = activeVillageNames![i] ?? string.Empty,
-                    QueuedTimeHours = activeQueuedHours != null && i < activeQueuedHours.Count
-                        ? activeQueuedHours[i]
-                        : CampaignTime.Now.ToHours,
+                    QueuedTimeHours = activeQueuedHours![i],
                     ReliefStarted = activeStartedFlags![i] != 0,
-                    ReliefEndHours = activeEndHours![i],
-                    AwaitingResupply = activeAwaitingResupplyFlags![i] != 0
+                    RemainingHours = activeRemainingHours![i],
+                    LastWorkHours = activeLastWorkHours![i]
                 });
             }
 
@@ -190,6 +188,15 @@ namespace GreyWardenPolicePurity
         internal static bool IsVillageReliefParty(MobileParty? party)
         {
             return party != null && _activeReliefPartyIds.Contains(party.StringId);
+        }
+
+        internal static bool TryGetReliefVisit(MobileParty party, out Settlement? target, out float score)
+        {
+            ActiveVillageRelief? relief = _instance?._activeReliefs.FirstOrDefault(
+                entry => string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
+            target = relief == null ? null : FindSettlement(relief.VillageSettlementId);
+            score = target != null && HasArrivedAtVillage(party, target) ? 10f : 8f;
+            return target?.IsVillage == true;
         }
 
         internal static bool TryGetAdoptionOrigin(string? heroId, out string villageName)
@@ -223,8 +230,9 @@ namespace GreyWardenPolicePurity
 
             foreach (ActiveVillageRelief relief in _instance._activeReliefs)
             {
-                ReliefStage stage = relief.AwaitingResupply
-                    ? ReliefStage.AwaitingResupply
+                MobileParty? party = FindPoliceParty(relief.PolicePartyId);
+                ReliefStage stage = party != null && !GwpWardenDuties.CanContinueRelief(party)
+                    ? ReliefStage.Paused
                     : relief.ReliefStarted
                         ? ReliefStage.StayingInVillage
                         : ReliefStage.TravelingToVillage;
@@ -237,7 +245,7 @@ namespace GreyWardenPolicePurity
                     QueuedTime = CampaignTime.Hours((float)relief.QueuedTimeHours),
                     Stage = stage,
                     RemainingHours = relief.ReliefStarted
-                        ? Math.Max(0d, relief.ReliefEndHours - CampaignTime.Now.ToHours)
+                        ? relief.RemainingHours
                         : 0d
                 });
             }
@@ -266,15 +274,8 @@ namespace GreyWardenPolicePurity
 
         private void OnGameLoaded(CampaignGameStarter starter)
         {
-            NormalizeReliefStateAfterLoad();
             RebuildActiveReliefPartyIndex();
             GreyWardenFamilyBehavior.RefreshPoliceClanFamilyPresentation();
-        }
-
-        private void OnSessionLaunched(CampaignGameStarter starter)
-        {
-            NormalizeReliefStateAfterLoad();
-            RebuildActiveReliefPartyIndex();
         }
 
         private AdoptionStatusInfo BuildAdoptionStatusInfo()
@@ -296,19 +297,20 @@ namespace GreyWardenPolicePurity
                 ActiveVillageRelief relief = _activeReliefs[0];
                 currentReliefVillageName = ResolveVillageName(relief.VillageSettlementId, relief.VillageName);
 
-                if (relief.AwaitingResupply)
+                MobileParty? party = FindPoliceParty(relief.PolicePartyId);
+                if (party != null && !GwpWardenDuties.CanContinueRelief(party))
                 {
-                    currentReliefStage = ReliefStage.AwaitingResupply;
+                    currentReliefStage = ReliefStage.Paused;
                 }
                 else if (relief.ReliefStarted)
                 {
                     currentReliefStage = ReliefStage.StayingInVillage;
-                    currentReliefRemainingHours = Math.Max(0d, relief.ReliefEndHours - CampaignTime.Now.ToHours);
                 }
                 else
                 {
                     currentReliefStage = ReliefStage.TravelingToVillage;
                 }
+                currentReliefRemainingHours = relief.ReliefStarted ? relief.RemainingHours : 0d;
             }
             else if (_pendingReliefs.Count > 0)
             {
@@ -354,8 +356,7 @@ namespace GreyWardenPolicePurity
                 VillageName = villageSettlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_greywardenvillageadoptionbehavior_001),
                 QueuedTimeHours = CampaignTime.Now.ToHours
             });
-            CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries);
+
         }
 
         private void OnHourlyTick()
@@ -406,15 +407,15 @@ namespace GreyWardenPolicePurity
                 VillageSettlementId = pending.VillageSettlementId,
                 VillageName = pending.VillageName,
                 QueuedTimeHours = pending.QueuedTimeHours,
-                AwaitingResupply = true,
                 ReliefStarted = false,
-                ReliefEndHours = 0d
+                RemainingHours = GwpTuning.Family.VillageReliefStayHours,
+                LastWorkHours = -1d
             });
 
             _pendingReliefs.Clear();
             RebuildActiveReliefPartyIndex();
-            CrimePool.TrimOpenCasesToCapacity(
-                CrimePool.MaxTaskPoolEntries);
+            GreyWardenPartyDesireBehavior.RequestImmediateRethink(reservedPolice);
+
         }
 
         private void UpdateActiveReliefs()
@@ -430,7 +431,8 @@ namespace GreyWardenPolicePurity
                 MobileParty? police = FindPoliceParty(relief.PolicePartyId);
                 Settlement? village = FindSettlement(relief.VillageSettlementId);
 
-                if (police == null || !police.IsActive || village == null || !village.IsVillage)
+                if (police?.IsActive != true || police.LeaderHero?.IsActive != true ||
+                    police.LeaderHero.IsPrisoner || village == null || !village.IsVillage)
                 {
                     FinishRelief(relief, police, shouldAdopt: false);
                     continue;
@@ -442,42 +444,30 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (relief.AwaitingResupply)
+                if (!GwpWardenDuties.CanContinueRelief(police) ||
+                    police.MapEvent is { IsFinalized: false } || !HasArrivedAtVillage(police, village))
                 {
-                    if (PoliceResourceManager.IsResupplying(police))
-                    {
-                        continue;
-                    }
-
-                    relief.AwaitingResupply = false;
-                    GreyWardenPartyDesireBehavior.RequestVisit(police, village, 8f);
+#if GWP_DIAGNOSTICS
+                    if (relief.LastWorkHours >= 0d)
+                        GwpAiDiagnostics.WriteAction(police, "ADOPTION_STAY_PAUSED",
+                            "village=" + village.StringId + "; remainingHours=" + relief.RemainingHours);
+#endif
+                    relief.LastWorkHours = -1d;
                     continue;
                 }
 
-                if (police.MapEvent != null && !police.MapEvent.IsFinalized)
-                {
-                    continue;
-                }
-
-                if (!relief.ReliefStarted)
-                {
-                    if (HasArrivedAtVillage(police, village))
-                    {
-                        relief.ReliefStarted = true;
-                        relief.ReliefEndHours = CampaignTime.Now.ToHours + GwpTuning.Family.VillageReliefStayHours;
-                        HoldPartyInVillage(police);
-                    }
-                    else
-                    {
-                        GreyWardenPartyDesireBehavior.RequestVisit(police, village, 8f);
-                    }
-
-                    continue;
-                }
-
-                HoldPartyInVillage(police);
-
-                if (CampaignTime.Now.ToHours >= relief.ReliefEndHours)
+                // 只累计连续两个小时检查都在执行驻留的时间。暂停和在途不计时；进度随任务保存。
+                double now = CampaignTime.Now.ToHours;
+#if GWP_DIAGNOSTICS
+                if (relief.LastWorkHours < 0d)
+                    GwpAiDiagnostics.WriteAction(police, "ADOPTION_STAY_STARTED_OR_RESUMED",
+                        "village=" + village.StringId + "; remainingHours=" + relief.RemainingHours);
+#endif
+                relief.ReliefStarted = true;
+                if (relief.LastWorkHours >= 0d)
+                    relief.RemainingHours = Math.Max(0d, relief.RemainingHours - (now - relief.LastWorkHours));
+                relief.LastWorkHours = now;
+                if (relief.RemainingHours <= 0d)
                 {
                     FinishRelief(relief, police, shouldAdopt: true);
                 }
@@ -488,6 +478,12 @@ namespace GreyWardenPolicePurity
 
         private void FinishRelief(ActiveVillageRelief relief, MobileParty? police, bool shouldAdopt)
         {
+#if GWP_DIAGNOSTICS
+            if (police != null)
+                GwpAiDiagnostics.WriteAction(police, "ADOPTION_STAY_FINISHED",
+                    "village=" + relief.VillageSettlementId + "; completed=" + shouldAdopt +
+                    "; remainingHours=" + relief.RemainingHours);
+#endif
             Settlement? village = FindSettlement(relief.VillageSettlementId);
             Hero? adoptedHero = null;
             if (shouldAdopt && village != null && IsAdoptionSystemEligible())
@@ -662,13 +658,6 @@ namespace GreyWardenPolicePurity
             return police.GetPosition2D.Distance(village.GetPosition2D) <= GwpTuning.Family.VillageReliefArrivalDistance;
         }
 
-        private static void HoldPartyInVillage(MobileParty police)
-        {
-            Settlement? village = police.CurrentSettlement;
-            if (village != null)
-                GreyWardenPartyDesireBehavior.RequestVisit(police, village, 10f);
-        }
-
         private static bool ShouldAbortReliefForOperationalReason(MobileParty police)
         {
             return GwpCommon.IsPatrolParty(police) || GwpCommon.IsEnforcementDelayPatrolParty(police);
@@ -678,7 +667,8 @@ namespace GreyWardenPolicePurity
         {
             return PoliceStats.GetAllPoliceParties()
                 .Where(IsBasicVillageReliefCandidate)
-                .OrderBy(police => police.GetPosition2D.Distance(village.GetPosition2D));
+                .OrderBy(police => CrimePool.HasTask(police.StringId) ? 1 : 0)
+                .ThenBy(police => police.GetPosition2D.Distance(village.GetPosition2D));
         }
 
         private static bool IsBasicVillageReliefCandidate(MobileParty? police)
@@ -707,70 +697,6 @@ namespace GreyWardenPolicePurity
         {
             Settlement? village = FindSettlement(villageSettlementId);
             return village?.Name?.ToString() ?? fallbackVillageName;
-        }
-
-        private void NormalizeReliefStateAfterLoad()
-        {
-            bool hadBacklog = _pendingReliefs.Count > 0 || _activeReliefs.Count > 1;
-
-            if (_pendingReliefs.Count > 0)
-            {
-                _pendingReliefs.Clear();
-            }
-
-            if (_activeReliefs.Count == 0)
-            {
-                RebuildActiveReliefPartyIndex();
-                return;
-            }
-
-            if (hadBacklog)
-            {
-                foreach (ActiveVillageRelief relief in _activeReliefs.ToList())
-                {
-                    FinishRelief(relief, FindPoliceParty(relief.PolicePartyId), shouldAdopt: false);
-                }
-
-                RebuildActiveReliefPartyIndex();
-                return;
-            }
-
-            ActiveVillageRelief keep = ChooseReliefToKeep(_activeReliefs);
-            foreach (ActiveVillageRelief relief in _activeReliefs.ToList())
-            {
-                if (ReferenceEquals(relief, keep))
-                {
-                    continue;
-                }
-
-                FinishRelief(relief, FindPoliceParty(relief.PolicePartyId), shouldAdopt: false);
-            }
-
-            MobileParty? keepPolice = FindPoliceParty(keep.PolicePartyId);
-            Settlement? keepVillage = FindSettlement(keep.VillageSettlementId);
-            if (keepPolice == null || !keepPolice.IsActive || keepVillage == null || !keepVillage.IsVillage || !IsAdoptionSystemEligible())
-            {
-                FinishRelief(keep, keepPolice, shouldAdopt: false);
-                RebuildActiveReliefPartyIndex();
-                return;
-            }
-
-            if (keep.AwaitingResupply)
-            {
-                keep.AwaitingResupply = false;
-                GreyWardenPartyDesireBehavior.RequestVisit(keepPolice, keepVillage, 8f);
-            }
-
-            RebuildActiveReliefPartyIndex();
-        }
-
-        private static ActiveVillageRelief ChooseReliefToKeep(IEnumerable<ActiveVillageRelief> reliefs)
-        {
-            return reliefs
-                .OrderByDescending(static relief => relief.ReliefStarted)
-                .ThenBy(static relief => relief.AwaitingResupply ? 1 : 0)
-                .ThenBy(static relief => relief.ReliefEndHours <= 0d ? double.MaxValue : relief.ReliefEndHours)
-                .First();
         }
 
         private void RebuildActiveReliefPartyIndex()
@@ -809,16 +735,16 @@ namespace GreyWardenPolicePurity
             public string VillageSettlementId { get; set; } = string.Empty;
             public string VillageName { get; set; } = string.Empty;
             public double QueuedTimeHours { get; set; }
-            public bool AwaitingResupply { get; set; }
             public bool ReliefStarted { get; set; }
-            public double ReliefEndHours { get; set; }
+            public double RemainingHours { get; set; }
+            public double LastWorkHours { get; set; }
         }
 
         internal enum ReliefStage
         {
             None,
             WaitingForAssignment,
-            AwaitingResupply,
+            Paused,
             TravelingToVillage,
             StayingInVillage
         }

@@ -225,12 +225,15 @@ namespace GreyWardenPolicePurity
             if (PoliceEnforcementBehavior.IsAuthorizedAssistanceTarget(party, target))
                 return true;
 
-            if (party != null && Intents.TryGetValue(party.StringId, out Intent? intent) &&
+            if (party != null && !GwpWardenDuties.HoldsAny(party, WardenDuty.Assistance) &&
+                Intents.TryGetValue(party.StringId, out Intent? intent) &&
                 intent.ExpiresAt >= CampaignTime.Now.ToHours &&
                 (intent.Kind == IntentKind.Approach || intent.Kind == IntentKind.Pursue) &&
                 intent.Party == target)
                 return true;
 
+            if (party != null && GwpWardenDuties.HoldsAny(party, WardenDuty.Assistance))
+                return false;
             PoliceTask? task = party == null ? null : CrimePool.GetTask(party.StringId);
             return task?.TargetCrime?.Offender == target;
         }
@@ -530,6 +533,9 @@ namespace GreyWardenPolicePurity
 
         private static Intent? ResolveIntent(MobileParty party)
         {
+            if (GwpWardenDuties.TryGetVisitDuty(party, out Settlement? visitTarget, out float visitScore))
+                return new Intent { Kind = IntentKind.Visit, Settlement = visitTarget,
+                    Priority = visitScore, ExpiresAt = double.MaxValue };
             if (PlayerBountyBehavior.AwaitingSupportRequest(CrimePool.GetTask(party.StringId)))
                 return new Intent { Kind = IntentKind.Escort, Party = MobileParty.MainParty,
                     Priority = PlayerRequestScore, ExpiresAt = double.MaxValue };
@@ -613,9 +619,7 @@ namespace GreyWardenPolicePurity
             MobileParty criminal)
         {
             if (task.WarDeclared) return IntentKind.Pursue;
-            return GwpCommon.IsShelteredOffender(criminal)
-                ? IntentKind.Approach
-                : IntentKind.Escort;
+            return IntentKind.Escort;
         }
 
         private static float NormalizePriority(float priority) =>

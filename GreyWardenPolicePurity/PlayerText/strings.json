@@ -3051,8 +3051,8 @@
       "zh": "等待分配"
     },
     "gwp_gwpcasearchivescreen_043": {
-      "en": "resupplying",
-      "zh": "补给中"
+      "en": "Paused for an existing commitment",
+      "zh": "暂缓，先履行已有约定"
     },
     "gwp_gwpcasearchivescreen_044": {
       "en": "travelling to village",
@@ -6143,6 +6143,11 @@
       "en": "The talks came to nothing. Pursuit continues.",
       "zh": "谈判没有结果，照常追捕。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_case_envoy_duel_waiting": {
+      "en": "Duel agreed; waiting for the Warden to finish an existing commitment",
+      "zh": "已答应单挑，待灰袍完成已有约定后赴会",
+      "context": "使者已经谈出单挑结果，领主正在战斗、履行玩家事务或另一场约斗；只排队，不重新谈判。"
     }
   },
   "fragments": {

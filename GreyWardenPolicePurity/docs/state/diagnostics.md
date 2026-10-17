@@ -1,10 +1,10 @@
 # 诊断系统
 
-> 当前状态：现行规则；巡逻与紧急出动随功能删除，其派队日志与分析器空队检查一并退休
+> 当前状态：用户已确认本轮游玩正常；协力崩溃探针与内存采样已退休，退出原生故障独立取证
 > 最后验收：未建立检查点
-> 已复核至：`1782a40`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1`
-> 待实测：再次闪退时 agent 核对 Faults 日志最后几条 `MEMORY`
+> 待实测：退出阶段原生释放故障；收养交接等未覆盖项仍随所属功能核对
 
 ## 原则
 
@@ -15,6 +15,8 @@
 
 全部诊断在 `#if GWP_DIAGNOSTICS` 内，
 纯 trace 的退休只改变开发者日志；通用 `Guard` 已移除，故障观察器不吞业务异常，开发与玩家版执行相同业务。军械库每日汇总及异常统计整段仅在诊断版编译，玩家版不执行这些遍历与字符串构造。（依据：源码复核2026-10-14）
+
+收养驻留新增三个状态转换事件：`ADOPTION_STAY_STARTED_OR_RESUMED`、`ADOPTION_STAY_PAUSED`、`ADOPTION_STAY_FINISHED`，只在开始/恢复、暂停或收尾记录目标村和剩余小时，全部在诊断编译开关内。用于核对赴约/返程不计时及完成释放；用户确认收养交接可用时同轮退休。实现随[收养](village-relief.md)维护。（依据：已复现实机缺陷后的验收诊断 2026-10-17）
 
 ## 谁来管
 
@@ -57,6 +59,8 @@
 
 ## 日志文件
 
+AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinaryCase`，代表队伍活跃、领主活跃与灰袍归属，不含差事占用、使者约定、可接目标或战力门槛；不能把True当成完整派案资格。完整接案还经过 `GwpWardenDuties` 等所属入口。本次约珥实际被善后占用时该字段仍True。（依据：源码与实机日志 2026-10-17）
+
 负声望赎罪在役阶段记录与退休条件只在[赎罪委派](atonement.md)定义，实测后由agent读取案件日志核对。
 
 游戏 Documents 目录下：
@@ -89,7 +93,7 @@
 | 军械库 | `ARMORY_SURPLUS_*`、`ARMORY_LOST_IN_DEFEAT`、`ARMORY_RELOCATED` |
 | 保护费 | `PROTECTION_FEE` |
 
-烧村抑制调查使用Case-Events中的`RAID_SCORE_SAMPLE`，每位领主每24游戏小时最多一行：真实原版返回baseScore、实际multiplier/result、当前注册activeModel与候选村。只旁观本次计算，不为打印重算评分；只编入GWP_DIAGNOSTICS，玩法无依赖，不保存采样冷却。用户确认抑制链路后退休此健康路径诊断。（依据：用户反馈、流程2026-10-16）
+烧村抑制调查使用Case-Events中的`RAID_SCORE_SAMPLE`，每位领主每24游戏小时在普通村/有信众比例村各最多一行：真实原版返回baseScore、个人deterrenceMultiplier、faithShare、faithMultiplier、合计multiplier/result、当前注册activeModel与候选村。只旁观本次计算，不为打印重算评分；只编入GWP_DIAGNOSTICS，玩法无依赖，不保存采样冷却。用户确认抑制链路后退休此健康路径诊断。（依据：用户反馈、流程2026-10-16）
 | 仪式画面 | `RITUAL_MENU_SHOWN` |
 | 每日异常 | `ANOMALY`，kind：`FAITH_PARTY_ADRIFT`、`FAITH_PARTY_TRIP_LONG`、`PRISONERS_PILING`、`LORD_HOLDING_AT_SETTLEMENT`、`LORD_UNDERSTRENGTH`、`PRIEST_SLOTS_EMPTY`、`ARMORY_UNARMED`、`GOODS_BACKLOG`、`ARMORY_NON_POSITIVE`、`TREASURY_LOW` |
 
@@ -109,8 +113,9 @@
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
-| `GwpRuntimeFaultWatch` 的 `MEMORY`（主线程应用心跳每分钟一条：进程私有/工作集/托管堆，系统内存负载、可用物理内存、提交量） | 游戏中途无报错闪退（2026-10-16 08:37、20:18）原因未明。20:18 那次闪退前私有内存约 10–11 GB、提交量余约 28 GB，内存耗尽已基本排除；留着给下一次对照 | 闪退原因查清后退休 |
-| `tools/Capture-StackOverflow.ps1`（用户运行：cdb 下启动游戏，整个会话写 `GreyWarden-Crash-<时间>.log`；栈溢出和致命的访问违例、CLR 异常、fail-fast 时写托管/原生栈与小转储，正常退出记退出码） | 游戏中途无提示闪退（栈溢出 0x800703E9，及 2026-10-16 22:28 那次不明原因）抓不到任何异常，只有调试器在出事那一刻能拿到调用栈 | 闪退定位并修复后，连同工具一起退休 |
+| `tools/Capture-StackOverflow.ps1`（用户运行：cdb启动游戏，记录全会话；致命异常先存寄存器、带地址的原生栈和/mip转储，再读SOS及全部线程；栈溢出退出码另在RtlExitUserProcess/NtTerminateProcess入口拦截，正常退出不截停） | 中途无提示退出，异常回调可能缺席；原版与CLR的两条退出入口均需留证 | 闪退定位并修复后连工具退休；新增终止断点尚待真实进程验证 |
+
+2026-10-17用户确认当前游玩未发现问题；新会话约179战役小时、军团解散26步正常返回，未见新增异常。军团分段/导航面探针和每分钟内存采样已退休，并清除其专属历史日志行；故障观察与未覆盖功能诊断仍保留，退出原生释放故障单独调查。（依据：用户确认与实机日志2026-10-17）
 
 已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
 2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /

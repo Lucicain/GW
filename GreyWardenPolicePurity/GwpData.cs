@@ -12,7 +12,7 @@ namespace GreyWardenPolicePurity
 {
     // ===================== 警察执法数据 =====================
 
-    /// <summary>只保存一件当前尚未结案的案件；结案后整条记录会从案件池删除。</summary>
+    /// <summary>按英雄保存尚未清偿的犯罪次数和伤亡；撤下执行人不清除人物责任。</summary>
     public class CrimeRecord
     {
         private MobileParty? _offender;
@@ -113,7 +113,9 @@ namespace GreyWardenPolicePurity
 
         public bool IsOffenderValid() => Offender?.IsActive == true;
         public bool IsOffenderPursuable() =>
-            HasOpenCase && Offender?.IsActive == true && Offender.CurrentSettlement == null
+            HasOpenCase &&
+            (CrimeId == CrimePool.PlayerCrimeId || OffenderHero is { IsAlive: true, IsPrisoner: false, IsDisabled: false }) &&
+            Offender?.IsActive == true && Offender.CurrentSettlement == null
             // 玩家接手的案子由玩家承办，灰袍不再自行派人；支援另由求援送达后明确指派。
             && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
     }
@@ -294,7 +296,6 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, PoliceTask>(StringComparer.OrdinalIgnoreCase);
 
         public const string PlayerCrimeId = "PLAYER_WANTED";
-        public const int MaxTaskPoolEntries = 100;
 
         public static bool IsAccepting => true;
         public static bool IsDispatchReady => GetUnassignedOpenCases().Any(c => c.IsOffenderPursuable());
@@ -385,7 +386,6 @@ namespace GreyWardenPolicePurity
                 VictimName = detail,
                 HasOpenCase = true
             };
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_gwpdata_001), Colors.Red));
@@ -444,7 +444,6 @@ namespace GreyWardenPolicePurity
             record.IncidentCount++;
             record.AccruedBaseFine = GwpFieldArrestPricing.BaseChargeFor(record);
             GetOrCreateHistory(leader).TotalCrimeCount++;
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             return true;
         }
 
@@ -454,31 +453,9 @@ namespace GreyWardenPolicePurity
             if (crime == null || crime.CrimeId == PlayerCrimeId) return;
             crime.HasOpenCase = true;
             _ledger[crime.CrimeId] = crime;
-            TrimOpenCasesToCapacity(MaxTaskPoolEntries);
         }
 
-        public static void TrimOpenCasesToCapacity(int capacity)
-        {
-            int safeCapacity = Math.Max(0, capacity);
-            var assignedCrimeIds = new HashSet<string>(_tasks.Values
-                .Select(task => task.TargetCrimeId)
-                .Where(id => !string.IsNullOrWhiteSpace(id)),
-                StringComparer.OrdinalIgnoreCase);
-            List<CrimeRecord> openCases = _ledger.Values.Where(record => record.HasOpenCase).ToList();
-            int removeCount = openCases.Count - safeCapacity;
-            if (removeCount <= 0) return;
 
-            foreach (CrimeRecord record in openCases
-                         .Where(record => record.CrimeId != PlayerCrimeId &&
-                                          !assignedCrimeIds.Contains(record.CrimeId) &&
-                                          // 玩家正在办的案子没有承办队伍，但绝不能被挤出案件池，
-                                          // 否则他的委托会凭空作废。
-                                          !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(record.OffenderHeroId))
-                         .OrderBy(record => record.LastCrimeTime.ToHours)
-                         .ThenBy(record => record.CrimeId, StringComparer.OrdinalIgnoreCase)
-                         .Take(removeCount).ToList())
-                _ledger.Remove(record.CrimeId);
-        }
 
         public static int RecordArrest(Hero? hero)
         {
@@ -494,7 +471,8 @@ namespace GreyWardenPolicePurity
             GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable()), pos);
 
         public static CrimeRecord? GetNearest(Vec2 pos, Func<CrimeRecord, bool> predicate) =>
-            SelectNearest(GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable() && predicate(c)), pos);
+            GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable())
+                .OrderBy(c => pos.Distance(c.Offender!.GetPosition2D)).FirstOrDefault(predicate);
 
         public static bool IsCategoryIntakeEnabled(GwpCrimeCategory category) => category switch
         {
@@ -599,10 +577,6 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 结束任务即从当前案件池删除案件。战败或承办人失效也直接结案；只有玩家
-        /// 案件挤占、村庄救济调度等明确的行政移交路径才会先调用 ReopenCase。
-        /// </summary>
-        /// <summary>
         /// 给承办人换一个目标，旧案**不算了结**。EndTask 会把罪案从台账里删掉（等同破案），
         /// 重定向绝不能走那条路：旧案必须留在台账里，退回未指派状态等人接手。
         /// </summary>
@@ -614,6 +588,8 @@ namespace GreyWardenPolicePurity
                 return false;
 
             task.TargetCrime = newCrime;
+            task.LeaderSoloSpeedAtAssignment = 0f;
+            task.HasTheoreticalLeaderSoloSpeedAtAssignment = false;
             return true;
         }
 
@@ -690,7 +666,7 @@ namespace GreyWardenPolicePurity
                 return;
             }
             Hero? offender = crime?.OffenderHero;
-            if (crime == null || offender?.IsAlive != true)
+            if (crime == null || offender?.IsDead == true)
             {
                 EndTask(policePartyId, reason + "_offender_gone");
                 return;
@@ -701,9 +677,9 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteFieldArrest("CASE_KEPT_OPEN_OWNER_RELEASED",
                 "policeParty=" + policePartyId +
                 "; crime=" + crime.CrimeId +
-                "; offender=" + offender.StringId +
-                "; offenderPrisoner=" + offender.IsPrisoner +
-                "; offenderFugitive=" + offender.IsFugitive +
+                "; offender=" + crime.OffenderHeroId +
+                "; offenderPrisoner=" + (offender?.IsPrisoner.ToString() ?? "unresolved") +
+                "; offenderFugitive=" + (offender?.IsFugitive.ToString() ?? "unresolved") +
                 "; reason=" + reason);
         }
 
@@ -753,13 +729,15 @@ namespace GreyWardenPolicePurity
                     kv.Value.TargetCrime == null)
                 .Select(kv => kv.Key).ToList();
 
-        /// <summary>犯人已经死了的案卷直接移出台账（玩家通缉另有规则，不动）。</summary>
+        /// <summary>清除已完成死亡/永久移除的案卷；原版 ApplyByRemove(Lost) 最终也设 Dead。
+        /// Disabled 同时用于暂离任务与退休，不能单凭它清账；未解析到英雄也不清。（C#反编译 v1.4.8，2026-10-17）
+        /// 玩家通缉另有规则，不动。</summary>
         public static void RemoveDeadOffenderRecords()
         {
             foreach (string crimeId in _ledger.Values.Where(record =>
             {
                 Hero? hero = record.OffenderHero;
-                return record.CrimeId != PlayerCrimeId && hero != null && !hero.IsAlive;
+                return record.CrimeId != PlayerCrimeId && hero?.IsDead == true;
             }).Select(record => record.CrimeId).ToList())
                 _ledger.Remove(crimeId);
         }
@@ -792,7 +770,6 @@ namespace GreyWardenPolicePurity
         {
             if (dataStore.IsSaving)
             {
-                TrimOpenCasesToCapacity(MaxTaskPoolEntries);
                 List<CrimeRecord> records = _ledger.Values.Where(record => record.HasOpenCase).ToList();
                 int count = records.Count;
                 dataStore.SyncData("gwp_ledger_count", ref count);
@@ -849,7 +826,6 @@ namespace GreyWardenPolicePurity
                         continue;
                     _tasks[task.PolicePartyId] = task;
                 }
-                TrimOpenCasesToCapacity(MaxTaskPoolEntries);
             }
         }
 

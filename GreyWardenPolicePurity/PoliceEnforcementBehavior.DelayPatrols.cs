@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -353,7 +353,8 @@ namespace GreyWardenPolicePurity
             GwpStrength.LocalBalance? declaration)
         {
             if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task) ||
-                GwpPlayerCaseAssignment.IsReservedTarget(targetParty)) return;
+                GwpPlayerCaseAssignment.IsReservedTarget(targetParty) ||
+                !CanInitiateCaseAttack(sourceParty, targetParty)) return;
             bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
@@ -414,16 +415,8 @@ namespace GreyWardenPolicePurity
             if (alreadyExists)
                 return;
 
-            List<MobileParty> troopSourceParties = assembledAssistance
-                ? sourceParty.Army!.Parties
-                    .Where(party => party?.IsActive == true &&
-                        (party == sourceParty ||
-                         assistanceGroup!.MemberPartyIds.Contains(
-                             party.StringId,
-                             StringComparer.OrdinalIgnoreCase)))
-                    .Distinct()
-                    .ToList()
-                : new List<MobileParty> { sourceParty };
+            List<MobileParty> troopSourceParties = GetImmediateInterceptorTroopSources(
+                sourceParty, assembledAssistance ? assistanceGroup : null);
             List<ImmediateInterceptorTroopTransfer> mountedBatches =
                 DetachmentBatches(sourceParty, troopSourceParties, true);
             int detachmentSize = Math.Min(
@@ -522,6 +515,18 @@ namespace GreyWardenPolicePurity
                 "; enemyLocalStrength=" +
                 (declaration?.EnemyLocalStrength.ToString("0.00") ??
                  "n/a"));
+        }
+
+        /// <summary>召集标记不是到场：截击兵只能从本队与实际挂靠的协办名册中抽取。</summary>
+        private static List<MobileParty> GetImmediateInterceptorTroopSources(
+            MobileParty sourceParty, LordAssistanceGroup? group)
+        {
+            if (group == null || sourceParty.Army == null)
+                return new List<MobileParty> { sourceParty };
+            return sourceParty.Army.Parties.Where(party => party?.IsActive == true &&
+                    (party == sourceParty || party.AttachedTo == sourceParty &&
+                        group.MemberPartyIds.Contains(party.StringId, StringComparer.OrdinalIgnoreCase)))
+                .Distinct().ToList();
         }
 
         /// <summary>
@@ -1190,8 +1195,6 @@ namespace GreyWardenPolicePurity
 
         private void ClearTaskWarTracking(string policeTaskId, bool markDelayPatrolReturning)
         {
-            ReleaseShelteredForcedAttack(policeTaskId);
-            ClearShelteredTargetTracking(policeTaskId);
             if (!markDelayPatrolReturning || string.IsNullOrEmpty(policeTaskId)) return;
             MarkDelayPatrolsReturningForTask(policeTaskId);
         }

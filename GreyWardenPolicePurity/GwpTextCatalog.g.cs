@@ -253,6 +253,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_case_duel_post_reply = "{=gwp_case_duel_post_reply}I will report the outcome to the Grey Wardens.";
         internal const string gwp_case_duel_post_win = "{=gwp_case_duel_post_win}You won. I accept it. Inspect my property and let us settle the fine as agreed.";
         internal const string gwp_case_envoy_collecting = "{=gwp_case_envoy_collecting}on the way to collect the payment after the grace period";
+        internal const string gwp_case_envoy_duel_waiting = "{=gwp_case_envoy_duel_waiting}Duel agreed; waiting for the Warden to finish an existing commitment";
         internal const string gwp_case_envoy_duel = "{=gwp_case_envoy_duel}to be settled at the tournament in {VAR_1}";
         internal const string gwp_case_envoy_failed = "{=gwp_case_envoy_failed}talks broke down; pursuit as usual";
         internal const string gwp_case_envoy_grace = "{=gwp_case_envoy_grace}grace granted until {VAR_1}";
@@ -738,7 +739,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_gwpcasearchivescreen_040 = "{=gwp_gwpcasearchivescreen_040}Task type: forced adoption relief | Remaining: {VAR_1} hours";
         internal const string gwp_gwpcasearchivescreen_041 = "{=gwp_gwpcasearchivescreen_041}Task type: forced adoption relief";
         internal const string gwp_gwpcasearchivescreen_042 = "{=gwp_gwpcasearchivescreen_042}waiting for assignment";
-        internal const string gwp_gwpcasearchivescreen_043 = "{=gwp_gwpcasearchivescreen_043}resupplying";
+        internal const string gwp_gwpcasearchivescreen_043 = "{=gwp_gwpcasearchivescreen_043}Paused for an existing commitment";
         internal const string gwp_gwpcasearchivescreen_044 = "{=gwp_gwpcasearchivescreen_044}travelling to village";
         internal const string gwp_gwpcasearchivescreen_045 = "{=gwp_gwpcasearchivescreen_045}relief in progress";
         internal const string gwp_gwpcasearchivescreen_046 = "{=gwp_gwpcasearchivescreen_046}unknown";

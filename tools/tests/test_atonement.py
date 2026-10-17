@@ -57,7 +57,7 @@ class PlayerBountyBehavior {
  public void RecordFieldGrace(string m){} public void NotifyCaseSettledInField(Hero? h,int c,int a,int s){}
  public void NotifyCaseClosedByCapture(Hero? h,int a,int s){}
 }
-class CrimeRecord { public string OffenderHeroId="target",CrimeId="target"; public bool HasOpenCase=true;
+class CrimeRecord { public MobileParty? Offender; public string OffenderHeroId="target",CrimeId="target"; public bool HasOpenCase=true;
  public Hero? OffenderHero=>Hero.Target; public GwpCrimeCategory CrimeCategory; public bool IsOffenderPursuable()=>true; }
 static class CrimePool { public static CrimeRecord? Record=new CrimeRecord();
  public static CrimeRecord? GetRecordByKey(string id)=>Record?.CrimeId==id?Record:null; }
@@ -117,8 +117,8 @@ partial class PoliceEnforcementBehavior {
  QUEST_METHOD }
  METHODS
  // Envoy engine boundaries; the cancellation and hourly ownership checks below are production methods.
- enum EnvoyStage { Travelling,Failed,Grace,Duel,DuelDecided,Aftermath }
- class EnvoyCase { public string CrimeId="target",EnvoyPartyId="envoy"; public EnvoyStage Stage; public double DueHours; public bool CollectOnly; }
+ enum EnvoyStage { Travelling,Failed,Grace,Duel,DuelDecided,Aftermath,WaitingForDuel }
+ class EnvoyCase { public string CrimeId="target",EnvoyPartyId="envoy",WardenPartyId="warden"; public EnvoyStage Stage; public double DueHours; public bool CollectOnly; }
  readonly Dictionary<string,EnvoyCase> _envoyCases=new Dictionary<string,EnvoyCase>();
  readonly Dictionary<string,bool> _delayPatrolStates=new Dictionary<string,bool>();
  public int Returned,ReleasedDuelists,EnvoyActions;
@@ -129,6 +129,8 @@ partial class PoliceEnforcementBehavior {
  private void TendTravellingEnvoy(EnvoyCase e,CrimeRecord c){EnvoyActions++;}
  private void SendGraceCollector(EnvoyCase e,CrimeRecord c){EnvoyActions++;}
  private void TendDuel(EnvoyCase e,CrimeRecord c){EnvoyActions++;}
+ private void StartDuel(EnvoyCase e,MobileParty p,MobileParty t){EnvoyActions++;}
+ private void FailEnvoy(EnvoyCase e,string reason){EnvoyActions++;}
  private void FinishDuel(EnvoyCase e,CrimeRecord c){EnvoyActions++;}
  public void AddEnvoy(int stage){_envoyCases["target"]=new EnvoyCase{Stage=(EnvoyStage)stage};_delayPatrolStates["envoy"]=true;}
  public void Handover()=>ReleaseEnvoysToPlayer("target"); public void Tend()=>TendEnvoyCases();

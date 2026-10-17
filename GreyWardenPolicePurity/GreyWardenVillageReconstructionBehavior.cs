@@ -24,6 +24,7 @@ namespace GreyWardenPolicePurity
         private const string QueuedHoursKey = "GWPP_RebuildQueuedHours";
         private const string WorkStartedFlagsKey = "GWPP_RebuildWorkStartedFlags";
         private const string WorkEndHoursKey = "GWPP_RebuildWorkEndHours";
+        private const string PausedAtHoursKey = "GWPP_RebuildPausedAtHours";
 
         private static GreyWardenVillageReconstructionBehavior? _instance;
         private readonly List<ReconstructionTask> _tasks = new List<ReconstructionTask>();
@@ -32,7 +33,8 @@ namespace GreyWardenPolicePurity
         {
             WaitingForAssignment,
             TravelingToVillage,
-            Rebuilding
+            Rebuilding,
+            Paused
         }
 
         internal sealed class ReconstructionTaskSnapshot
@@ -55,7 +57,8 @@ namespace GreyWardenPolicePurity
             public string PolicePartyId { get; set; } = string.Empty;
             public double QueuedTimeHours { get; set; }
             public bool WorkStarted { get; set; }
-            public double WorkEndHours { get; set; }
+            public double WorkEndHours;
+            public double PausedAtHours = -1d;
         }
 
         public GreyWardenVillageReconstructionBehavior()
@@ -80,6 +83,7 @@ namespace GreyWardenPolicePurity
             List<double>? queuedHours = null;
             List<int>? workStartedFlags = null;
             List<double>? workEndHours = null;
+            List<double>? pausedAtHours = null;
 
             if (dataStore.IsSaving)
             {
@@ -89,6 +93,7 @@ namespace GreyWardenPolicePurity
                 queuedHours = _tasks.Select(task => task.QueuedTimeHours).ToList();
                 workStartedFlags = _tasks.Select(task => task.WorkStarted ? 1 : 0).ToList();
                 workEndHours = _tasks.Select(task => task.WorkEndHours).ToList();
+                pausedAtHours = _tasks.Select(task => task.PausedAtHours).ToList();
             }
 
             dataStore.SyncData(VillageIdsKey, ref villageIds);
@@ -97,6 +102,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData(QueuedHoursKey, ref queuedHours);
             dataStore.SyncData(WorkStartedFlagsKey, ref workStartedFlags);
             dataStore.SyncData(WorkEndHoursKey, ref workEndHours);
+            dataStore.SyncData(PausedAtHoursKey, ref pausedAtHours);
 
             if (!dataStore.IsLoading)
                 return;
@@ -109,7 +115,8 @@ namespace GreyWardenPolicePurity
                 partyIds?.Count ?? 0,
                 queuedHours?.Count ?? 0,
                 workStartedFlags?.Count ?? 0,
-                workEndHours?.Count ?? 0
+                workEndHours?.Count ?? 0,
+                pausedAtHours?.Count ?? 0
             }.Min();
             for (int i = 0; i < count; i++)
             {
@@ -122,7 +129,8 @@ namespace GreyWardenPolicePurity
                     PolicePartyId = partyIds![i] ?? string.Empty,
                     QueuedTimeHours = queuedHours![i],
                     WorkStarted = workStartedFlags![i] != 0,
-                    WorkEndHours = workEndHours![i]
+                    WorkEndHours = workEndHours![i],
+                    PausedAtHours = pausedAtHours![i]
                 });
             }
         }
@@ -133,7 +141,7 @@ namespace GreyWardenPolicePurity
             text = TaleWorlds.Localization.TextObject.GetEmpty();
             ReconstructionTask? task = _instance?._tasks.FirstOrDefault(entry => entry.WorkStarted &&
                 string.Equals(entry.PolicePartyId, party.StringId, StringComparison.OrdinalIgnoreCase));
-            if (task == null)
+            if (task == null || task.PausedAtHours >= 0d)
                 return false;
             text = GwpText.Create(GwpTextCatalog.gwp_status_rebuilding,
                 "VILLAGE", task.VillageName,
@@ -209,11 +217,13 @@ namespace GreyWardenPolicePurity
                     QueuedTime = CampaignTime.Hours((float)task.QueuedTimeHours),
                     Stage = string.IsNullOrWhiteSpace(task.PolicePartyId)
                         ? ReconstructionStage.WaitingForAssignment
+                        : task.PausedAtHours >= 0d
+                            ? ReconstructionStage.Paused
                         : task.WorkStarted
                             ? ReconstructionStage.Rebuilding
                             : ReconstructionStage.TravelingToVillage,
                     RemainingHours = task.WorkStarted
-                        ? Math.Max(0d, task.WorkEndHours - CampaignTime.Now.ToHours)
+                        ? GwpWardenDuties.RemainingWorkHours(task.WorkEndHours, task.PausedAtHours)
                         : 0d,
                     EstimatedCost = estimatedCost,
                     TreasuryReserve = reserve
@@ -320,6 +330,14 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
+                if (GwpWardenDuties.PauseWork(police, HasArrived(police, village!),
+                        ref task.WorkEndHours, ref task.PausedAtHours))
+                {
+                    if (!GwpWardenDuties.HoldsAny(police, WardenDuty.Duel))
+                        GreyWardenPartyDesireBehavior.RequestVisit(police, village!, 8f);
+                    continue;
+                }
+
                 if (GwpWardenDuties.HoldsAny(police, WardenDuty.VillageRelief) ||
                     police.Army != null)
                 {
@@ -414,7 +432,7 @@ namespace GreyWardenPolicePurity
                 if (nearest == null)
                     break;
 
-                if (!PoliceEnforcementBehavior.TryReservePolicePartyForVillageRelief(police))
+                if (!PoliceEnforcementBehavior.TryReservePolicePartyForVillageRelief(police, WardenDuty.Reconstruction))
                     continue;
 
                 nearest.PolicePartyId = police.StringId;
@@ -470,6 +488,7 @@ namespace GreyWardenPolicePurity
             task.PolicePartyId = string.Empty;
             task.WorkStarted = false;
             task.WorkEndHours = 0d;
+            task.PausedAtHours = -1d;
             if (police?.IsActive == true)
             {
                 GreyWardenPartyDesireBehavior.ClearIntent(police);

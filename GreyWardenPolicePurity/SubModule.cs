@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
@@ -70,7 +70,6 @@ namespace GreyWardenPolicePurity
         {
             base.OnApplicationTick(dt);
             _ = dt;
-            GwpRuntimeFaultWatch.SampleMemory();
             GreyWardenSparringBehavior.OnApplicationTick();
             GwpSyndicateMusicBehavior.Pump();
             // 战役心跳跟着时间流走，地图暂停时不一定推进。派遣的对话与分兵界面必须

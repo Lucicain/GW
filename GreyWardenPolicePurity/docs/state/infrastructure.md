@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`1782a40`（2026-10-16）
+> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
@@ -27,6 +27,8 @@
 （代表灰袍出面的人：族长，出不了面时第一个能出面的成员）。别处不直接比家族 ID。
 （依据：设计 2026-10-07；`Check-CodeHygiene.py` 的归属检查拦截）
 
+玩家是否主动执勤统一由 `IsPlayerGreyWardenOnDuty` 判断：入会且在原版旗帜槽装备执勤旗；不是仅有物品，不改变入会本身。接单规则见[玩家](player-justice.md)，场景纹章和物品来源见[装备](warden-gear.md)。（依据：用户裁定、共享归属 2026-10-17）
+
 - 封地申诉多要求玩家是某王国的正式封臣（`IsPlayerGreyWardenVassal`，见 `player-requests.md`）；
   军团混乱豁免多认练兵队和送信队（`GwpArmyExitDisorganizedPatch`）。额外条件写在各自的名字里。
 - 灰袍家族 id `gw`。领主 `gw_leader_*`；`gw_leader_0` 兼作领主与收养女孩的模板。
@@ -43,9 +45,7 @@
 大地图上「谁比谁强」只在这里算：立案门槛、悬赏难度、派单、协力编成、现场宣战、野外执法都调它。
 （依据：设计 2026-10-07；归属检查拦截直接读 `EstimatedStrength` / `GetPowerOfParty` / `GetTroopPower` / `GetTotalLandStrength*`）
 
-- 口径照原版 `DefaultMobilePartyAIModel.GetBestInitiativeBehavior`：单队用 `PartyBase.EstimatedStrength`；
-  战斗组 = 攻城营总和 / 已挂靠的军团 / 本队；区域战力加加入半径内圈全额、外到两倍半径线性折算的
-  周边可参战部队，已在打仗时按 `MapEvent` 实际参战方，追同一目标的友军全额。（依据：C#反编译 2026-07-24/25）
+- 单队用原版 `PartyBase.EstimatedStrength`，战斗组读取攻城营/实际挂靠军团/本队；编成与区域两层用途只在[协力](case-assistance.md#稳定力量与区域力量)定义。区域不沿用原版随观察者位置缩圈、外圈折算和共同目标友军远方全额口径。（依据：用户裁定与实现 2026-10-17）
 - 名义上属于某军团、还在赶去会合的部队**不**算进那支军团，只算它自己——原版 `Army.EstimatedStrength`
   也只数军团长和已挂靠的成员。（依据：C#反编译 2026-10-07；实机诊断 2026-09-26）
 - `CaseTarget`（目标本身多强，不含路过的人）给立案门槛和悬赏难度；`Compare`（现场双方）给现场宣战和野外执法。
@@ -103,3 +103,7 @@
 - `GwpFlowStates`：赎罪、悬赏、承办任务三套流程的状态枚举。存进存档的数值不能改。
 
 自建卖货队的8人/3天/最多三城旋钮与旧LastMarket/Stops保存字段已随机制删除；原版村民队新货款与物品标记保存、灰袍登记归[村民队](firesworn-villagers.md)。（依据：用户裁定复用原版、源码复核2026-10-16）
+
+人物追责保留与战力两层的共享入口见[案件](case-enforcement.md)和[协力](case-assistance.md)；GwpCommon的藏城阻跟随判据及ShelteredGate旧旋钮已删除，固定风险半径和一天可达在GwpTuning维护。（依据：源码复核、生产回归 2026-10-17）
+
+信众村烧村评分上限由 `Firesworn.MaximumFaithRaidScoreReduction=0.5` 维护，公式只在[犯罪抑制](crime-intake.md#信众村烧村评分)定义。（依据：用户裁定 2026-10-17）
