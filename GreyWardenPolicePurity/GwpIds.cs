@@ -27,6 +27,7 @@ namespace GreyWardenPolicePurity
         public const string CustomBattleCommanderId = "gwp_custom_commander";
         public const string LargeShieldItemId = "wlarge_shield";
         public const string BlackLargeShieldItemId = "wlarge_shield_black";
+        public const string DutyBannerItemId = "gwp_duty_banner";
         public const string GrainItemId = "grain";
         public const string DualBladeOffhandItemId = "gwdualbladeoffhand";
 
@@ -56,7 +57,7 @@ namespace GreyWardenPolicePurity
             };
 
         /// <summary>
-        /// 加入或重新加入灰袍时发给玩家的物品：全套指挥装（六件甲胄＋马具＋
+        /// 首次加入灰袍时发给玩家的物品：全套指挥装（五件甲胄＋马具＋
         /// 指挥官黑色大盾），外加一副双刀。盾只发指挥官那面，普通 `wlarge_shield`
         /// 不在此列——发两面盾是多余的。
         ///

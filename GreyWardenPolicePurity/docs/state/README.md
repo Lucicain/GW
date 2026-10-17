@@ -102,6 +102,7 @@ python tools/Check-StateFreshness.py
 |---|---|
 | [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、震慑、外交封锁、被俘豁免 |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：派单门槛、结案口径、协力编成、战争跟随 |
+| [`case-assistance.md`](case-assistance.md) | 协力登记、征调、会合、追速分散、缩编与普通支援 |
 | [`case-interceptors.md`](case-interceptors.md) | 立即追截队：归队、船与多余的人去信众村 |
 | [`case-envoy.md`](case-envoy.md) | 灰袍使者：宣战前派骑兵去谈、谈判结局、比武大会单挑 |
 | [`warden-ai.md`](warden-ai.md) | 灰袍谁拿到什么活、欲望竞价怎么落到原版动作、进信众村、巡区、协力军团引擎补丁 |
@@ -122,7 +123,7 @@ python tools/Check-StateFreshness.py
 | [`player-requests.md`](player-requests.md) | 贵族事务：封地重议申诉 |
 | [`sparring.md`](sparring.md) | 与灰袍领主切磋（竞技场与野外） |
 | [`map-bar-affairs.md`](map-bar-affairs.md) | 地图导航栏的「灰袍事务」按钮 |
-| [`warden-gear.md`](warden-gear.md) | 灰袍装备只由入会发放、发放时的原版品质、各物品品质组 |
+| [`warden-gear.md`](warden-gear.md) | 入会装备与原版品质、宗教常服、执勤旗与玩家本队战场纹章 |
 
 ### 灰袍家族与世界
 

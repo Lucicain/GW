@@ -132,6 +132,11 @@ namespace GreyWardenPolicePurity
             return Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true;
         }
 
+        /// <summary>玩家主动执勤：已入会，且把灰袍执勤旗装备在原版旗帜槽；背包持有不算。</summary>
+        public static bool IsPlayerGreyWardenOnDuty() =>
+            IsPlayerGreyWardenMember() && string.Equals(Hero.MainHero?.BannerItem.Item?.StringId,
+                GwpIds.DutyBannerItemId, StringComparison.OrdinalIgnoreCase);
+
         /// <summary>
         /// 当前对话是灰袍在对玩家执法：纠察队、延迟纠察队，或正在追捕玩家的承办人。
         /// 这时只走执法对话，别的灰袍选项都不出。

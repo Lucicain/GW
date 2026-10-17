@@ -1,4 +1,4 @@
-﻿<!--You can add new or override old items(weapons and armors) by adding nodes to this xml.
+<!--You can add new or override old items(weapons and armors) by adding nodes to this xml.
 For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
   <Items>
   <!--Weapons-->
@@ -681,4 +681,11 @@ For examples please refer to: SandBoxCore/ModuleData/spitems/arm_armors.xml.-->
     </ItemComponent>
     <Flags />
   </Item>
-  </Items>
+  <Item id="gwp_duty_banner" value="1" name="{=gwp_item_duty_banner}Grey Warden Ceremonial Duty Standard" is_merchandise="false" body_name="bo_mace_a" recalculate_body="true" mesh="empire_tier_3_banner" prefab="empire_tier_3_banner" culture="Culture.neutral_culture" weight="0.2" Type="Banner" using_tableau="true" item_holsters="abdomen_left">
+    <ItemComponent>
+      <Banner banner_level="1" weapon_class="Banner" effect="DecreasedMoraleShock" weapon_balance="100" thrust_speed="78" speed_rating="97" missile_speed="0" weapon_length="150" swing_damage="6" swing_damage_type="Blunt" item_usage="banner" physics_material="metal_weapon" position="0.0, 0.0, -0.8" />
+    </ItemComponent>
+    <Flags DropOnWeaponChange="true" ForceAttachOffHandPrimaryItemBone="true" HeldInOffHand="true" HasToBeHeldUp="true" CanBePickedUpFromCorpse="false" />
+  </Item>
+
+</Items>

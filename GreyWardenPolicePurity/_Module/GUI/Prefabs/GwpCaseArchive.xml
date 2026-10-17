@@ -18,7 +18,9 @@
 
             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="182" MarginLeft="55" MarginRight="55" Brush="Encyclopedia.Text" Text="@FamilyText" />
 
-            <Widget Id="CaseListRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="55" MarginRight="55" MarginTop="218" MarginBottom="104">
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="212" MarginLeft="55" MarginRight="55" Brush="Encyclopedia.Text" Text="@DutyStatusText" />
+
+            <Widget Id="CaseListRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="55" MarginRight="55" MarginTop="248" MarginBottom="104">
               <Children>
                 <ScrollablePanel Id="CaseScrollablePanel" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" InnerPanel="CaseListClip\CaseList" ClipRect="CaseListClip" MouseScrollAxis="Vertical" VerticalScrollbar="..\CaseScrollbar" AutoHideScrollBars="true">
                   <Children>
@@ -55,6 +57,12 @@
 
             <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="60" StackLayout.LayoutMethod="HorizontalLeftToRight" HorizontalAlignment="Center" VerticalAlignment="Bottom" MarginBottom="28">
               <Children>
+                <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="58" MarginRight="22" Brush="ButtonBrush3" IsEnabled="@CanTakeBounty" Command.Click="ExecuteTakeBounty">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@BountySelectionText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />
+                  </Children>
+                </ButtonWidget>
+
                 <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="58" MarginRight="22" Brush="ButtonBrush3" Command.Click="ExecuteRefresh">
                   <Children>
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Center" VerticalAlignment="Center" Text="@RefreshText" MarginLeft="10" MarginRight="10" Brush="Crafting.History.Control.Button.Text" />

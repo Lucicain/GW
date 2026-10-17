@@ -239,8 +239,33 @@ namespace GreyWardenPolicePurity
             _onClose();
         }
 
+        [DataSourceProperty]
+        public string BountySelectionText => GwpText.Get(GwpTextCatalog.gwp_bounty_duty_select);
+
+        [DataSourceProperty]
+        public bool CanTakeBounty => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
+            ?.CanInspectBountyOffers() == true;
+
+        [DataSourceProperty]
+        public string DutyStatusText => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
+            ?.GetBountyOfferStatusText() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_nav_need_membership);
+
+        public void ExecuteTakeBounty()
+        {
+            PlayerBountyBehavior? behavior = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
+            if (behavior?.CanInspectBountyOffers() != true)
+            {
+                RefreshLedger();
+                return;
+            }
+            _onClose();
+            behavior.ShowBountySelectionInquiry();
+        }
+
         private void RefreshLedger()
         {
+            OnPropertyChanged(nameof(CanTakeBounty));
+            OnPropertyChanged(nameof(DutyStatusText));
             Cases.Clear();
 
             var assignedCases = CrimePool.ActiveTasks.Values

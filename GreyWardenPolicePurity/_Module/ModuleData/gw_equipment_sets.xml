@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <EquipmentRosters>
 	<EquipmentRoster
 		id="spc_gw_leader_0"
@@ -16,16 +16,10 @@
 				<Equipment slot="HorseHarness" id="wharnesscom" />
 		</EquipmentSet>
 		<EquipmentSet equipmentType="Civilian">
-				<Equipment slot="Item0" id="Item.gwonehandedsword"/>
-				<Equipment slot="Item1" id="Item.gwlance"/>
-				<Equipment slot="Item2" id="Item.wlarge_shield_black"/>
-				<Equipment slot="Cape" id="Item.wcomshoulder"/>
-				<Equipment slot="Body" id="Item.wcomarmorhv"/>
-				<Equipment slot="Gloves" id="Item.wcomgloves"/>
-				<Equipment slot="Leg" id="Item.wcomlegs"/>
-				<Equipment slot="Horse" id="Item.t2_empire_horse" />
-				<Equipment slot="HorseHarness" id="wharnesscom" />
-		</EquipmentSet>
+                <Equipment slot="Body" id="Item.monk_robe" />
+                <Equipment slot="Cape" id="Item.warchshoulder" />
+                <Equipment slot="Leg" id="Item.leather_shoes" />
+        </EquipmentSet>
 		<Flags IsLordTemplate="true" />
 	</EquipmentRoster>
 </EquipmentRosters>

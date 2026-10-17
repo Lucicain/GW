@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <base type="string">
  <tags>
   <tag language="简体中文" />
@@ -326,7 +326,7 @@
   <string id="gwp_playerbountybehavior_019" text="读档恢复：目标已击败，向任意灰袍领主报告即可结案并领取赏金。" />
   <string id="gwp_playerbountybehavior_020" text="未知位置" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_001" text="我接受，愿为灰袍守卫效力。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="那就收下这套甲胄，穿着它替我们办案。收来的罚金或捉到的罪犯，交给灰袍领主。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_002" text="收下这套甲胄与执勤旗。装备旗帜，我们就知道你愿意接新委托；卸下便暂停。收来的罚金或捉到的罪犯，仍交给灰袍领主。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_003" text="若因此惹上战事，交差后我们会出面调停。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_004" text="不，我不感兴趣。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_005" text="随你。这名使者不会再来打扰；以后若改变主意，可以亲自找一位灰袍领主谈。" />
@@ -334,13 +334,13 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_007" text="关于那个悬赏任务，我已击败目标，来结算赏金。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_008" text="关于那个悬赏任务，我已经完成了。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_009" text="灰袍听说了你的事迹。愿不愿意替我们追捕罪犯？办妥了，自有酬劳。" />
-  <string id="gwp_playerbountybehavior_dialogueandnotification_014" text="你已成为灰袍悬赏猎人。黑袍指挥官套装已放入你的行囊，穿上它，灰袍便会向你托付悬赏。" />
+  <string id="gwp_playerbountybehavior_dialogueandnotification_014" text="你已成为灰袍受托猎手。装备与执勤旗已放入行囊。把旗装备到旗帜槽即可接新委托，卸下则暂停；地图左下角的“灰袍事务”可查看事务并领取委托。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_015" text="你回绝了灰袍的招募。日后可以向灰袍领主请求加入。" />
   <string id="gwp_membership_rejoin_player" text="我想再次申请成为灰袍受托猎手。" />
-  <string id="gwp_membership_rejoin_response" text="你的申请获得批准。你重新成为灰袍受托猎手；收下这套新的指挥官装备，认真履行我们交付的通缉任务。" />
+  <string id="gwp_membership_rejoin_response" text="你的申请获得批准。执勤旗已交给你，原来的装备继续使用。装备旗帜便可接新委托，卸下则暂停；也可从地图左下角的“灰袍事务”领取委托。" />
   <string id="gwp_membership_leave_player" text="我想退出灰袍，不再担任受托猎手。" />
-  <string id="gwp_membership_leave_prompt_higher" text="退出后，你将失去通缉任务、兵员征调与战场支援。再次加入需要达到 {VAR_1} 声望，并亲自向灰袍领主申请。你确定这是最后决定吗？" />
-  <string id="gwp_membership_leave_prompt_final" text="这次退出后，你的名字将被永久从名册上划去，任何灰袍领主都不会再接纳你。你确定这是最后决定吗？" />
+  <string id="gwp_membership_leave_prompt_higher" text="退出后，你将失去通缉任务、兵员征调与战场支援。再次加入需要达到 {VAR_1} 声望，并亲自向灰袍领主申请。你确定这是最后决定吗？ 退出时收回执勤旗。" />
+  <string id="gwp_membership_leave_prompt_final" text="这次退出后，你的名字将被永久从名册上划去，任何灰袍领主都不会再接纳你。你确定这是最后决定吗？ 退出时收回执勤旗。" />
   <string id="gwp_membership_leave_confirm" text="确定。把我的名字从名册上划掉吧。" />
   <string id="gwp_membership_leave_done" text="已经办妥。此前交给你的装备仍归你所有，但它不再代表任何灰袍权限。" />
   <string id="gwp_membership_leave_cancel" text="不，我继续留下。" />
@@ -1502,5 +1502,13 @@
   <string id="gwp_envoy_outcome_timeout" text="使者超时或已开战，照常追捕。" />
   <string id="gwp_envoy_outcome_duel_cancelled" text="比武约定作废，照常追捕。" />
   <string id="gwp_envoy_outcome_failed" text="谈判没有结果，照常追捕。" />
+  <string id="gwp_item_duty_banner" text="灰袍仪仗执勤旗" />
+  <string id="gwp_bounty_duty_select" text="领取委托" />
+  <string id="gwp_bounty_duty_requirements" text="接新委托需装备灰袍执勤旗，且声望达到{STANDING}；旗留在行囊中即暂停。" />
+  <string id="gwp_bounty_duty_ready" text="正在执勤，可在此领取委托；卸下执勤旗暂停新委托，已接任务继续。" />
+  <string id="gwp_bounty_duty_busy" text="当前委托仍待完成或交差；卸下执勤旗不会取消它。" />
+  <string id="gwp_duty_banner_request" text="我需要补领一面执勤旗。" />
+  <string id="gwp_duty_banner_issued" text="旗已交给你。装备后以灰袍黑金鸟徽执勤，可接新委托；留在行囊里便是暂不执勤。退出修会时须交还。" />
+  <string id="gwp_case_envoy_duel_waiting" text="已答应单挑，待灰袍完成已有约定后赴会" />
 </strings>
 </base>

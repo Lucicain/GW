@@ -1319,8 +1319,8 @@
       "zh": "我接受，愿为灰袍守卫效力。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_002": {
-      "en": "Then take this harness. Wear it when you ride under our warrant, and bring the money or prisoner to a Warden-lord.",
-      "zh": "那就收下这套甲胄，穿着它替我们办案。收来的罚金或捉到的罪犯，交给灰袍领主。"
+      "en": "Take this harness and duty standard. Equip the standard when you are ready for new warrants; unequip it to pause. Bring collected fines or prisoners to a Warden-lord.",
+      "zh": "收下这套甲胄与执勤旗。装备旗帜，我们就知道你愿意接新委托；卸下便暂停。收来的罚金或捉到的罪犯，仍交给灰袍领主。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_003": {
       "en": " If the pursuit brings war upon you, we will speak for you when the matter is settled.",
@@ -1351,8 +1351,8 @@
       "zh": "灰袍听说了你的事迹。愿不愿意替我们追捕罪犯？办妥了，自有酬劳。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_014": {
-      "en": "You are now a Grey Warden bounty hunter. The black commander's gear is in your baggage; wear it, and the Wardens will entrust bounties to you.",
-      "zh": "你已成为灰袍悬赏猎人。黑袍指挥官套装已放入你的行囊，穿上它，灰袍便会向你托付悬赏。"
+      "en": "You are now a sworn hunter of the Grey Wardens. Your equipment and duty standard are in your baggage. Equip the standard in the banner slot to receive new warrants; unequip it to pause. Open Grey Warden Affairs at the bottom left of the map to view your duties and choose a warrant.",
+      "zh": "你已成为灰袍受托猎手。装备与执勤旗已放入行囊。把旗装备到旗帜槽即可接新委托，卸下则暂停；地图左下角的“灰袍事务”可查看事务并领取委托。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_015": {
       "en": "You decline the Wardens. You may still ask a Warden lord to join them later.",
@@ -1363,20 +1363,20 @@
       "zh": "我想再次申请成为灰袍受托猎手。"
     },
     "gwp_membership_rejoin_response": {
-      "en": "Your petition is accepted. You are again recognised as a sworn hunter; take a fresh commander's harness and answer our warrants faithfully.",
-      "zh": "你的申请获得批准。你重新成为灰袍受托猎手；收下这套新的指挥官装备，认真履行我们交付的通缉任务。"
+      "en": "Your petition is accepted. Take your duty standard and keep using your existing equipment. Equip the standard for new warrants, or unequip it to pause. You can also choose a warrant through Grey Warden Affairs at the bottom left of the map.",
+      "zh": "你的申请获得批准。执勤旗已交给你，原来的装备继续使用。装备旗帜便可接新委托，卸下则暂停；也可从地图左下角的“灰袍事务”领取委托。"
     },
     "gwp_membership_leave_player": {
       "en": "I wish to relinquish my place with the Grey Wardens.",
       "zh": "我想退出灰袍，不再担任受托猎手。"
     },
     "gwp_membership_leave_prompt_higher": {
-      "en": "If you withdraw, your warrants, detachments, and battlefield relief end. Readmission will require {VAR_1} standing and a personal appeal to a Warden-lord. Is this your final decision?",
-      "zh": "退出后，你将失去通缉任务、兵员征调与战场支援。再次加入需要达到 {VAR_1} 声望，并亲自向灰袍领主申请。你确定这是最后决定吗？"
+      "en": "If you withdraw, your warrants, detachments, and battlefield relief end. Readmission will require {VAR_1} standing and a personal appeal to a Warden-lord. Is this your final decision? Your duty standard will be returned when you leave.",
+      "zh": "退出后，你将失去通缉任务、兵员征调与战场支援。再次加入需要达到 {VAR_1} 声望，并亲自向灰袍领主申请。你确定这是最后决定吗？ 退出时收回执勤旗。"
     },
     "gwp_membership_leave_prompt_final": {
-      "en": "If you withdraw this time, your name will be struck permanently and no Warden-lord will readmit you. Is this your final decision?",
-      "zh": "这次退出后，你的名字将被永久从名册上划去，任何灰袍领主都不会再接纳你。你确定这是最后决定吗？"
+      "en": "If you withdraw this time, your name will be struck permanently and no Warden-lord will readmit you. Is this your final decision? Your duty standard will be returned when you leave.",
+      "zh": "这次退出后，你的名字将被永久从名册上划去，任何灰袍领主都不会再接纳你。你确定这是最后决定吗？ 退出时收回执勤旗。"
     },
     "gwp_membership_leave_confirm": {
       "en": "Yes. Remove my name from the roll.",
@@ -6143,6 +6143,41 @@
       "en": "The talks came to nothing. Pursuit continues.",
       "zh": "谈判没有结果，照常追捕。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
+    },
+    "gwp_item_duty_banner": {
+      "zh": "灰袍仪仗执勤旗",
+      "en": "Grey Warden Ceremonial Duty Standard",
+      "context": "入会发放的旗帜；装备在旗帜槽表示愿意接收新委托。"
+    },
+    "gwp_bounty_duty_select": {
+      "zh": "领取委托",
+      "en": "Choose a warrant",
+      "context": "灰袍事务底部按钮，复用三类悬赏选择。"
+    },
+    "gwp_bounty_duty_requirements": {
+      "zh": "接新委托需装备灰袍执勤旗，且声望达到{STANDING}；旗留在行囊中即暂停。",
+      "en": "Equip the Grey Warden Duty Standard and reach {STANDING} standing to take new warrants. Keep it in your baggage to pause.",
+      "context": "事务界面的接新委托条件，已接任务不受卸旗影响。"
+    },
+    "gwp_bounty_duty_ready": {
+      "zh": "正在执勤，可在此领取委托；卸下执勤旗暂停新委托，已接任务继续。",
+      "en": "On duty. Choose a warrant here; unequip the standard to pause new offers. Accepted warrants continue.",
+      "context": "事务界面已达接单条件时。"
+    },
+    "gwp_bounty_duty_busy": {
+      "zh": "当前委托仍待完成或交差；卸下执勤旗不会取消它。",
+      "en": "Your current warrant still needs completion or settlement. Unequipping the standard will not cancel it.",
+      "context": "事务界面已有委托时。"
+    },
+    "gwp_duty_banner_request": {
+      "zh": "我需要补领一面执勤旗。",
+      "en": "I need a replacement duty standard.",
+      "context": "已入会、玩家未装备且本队行囊没有执勤旗时，在灰袍领主外交对话中显示。"
+    },
+    "gwp_duty_banner_issued": {
+      "zh": "旗已交给你。装备后以灰袍黑金鸟徽执勤，可接新委托；留在行囊里便是暂不执勤。退出修会时须交还。",
+      "en": "Here is your standard. Equip it to serve under the Grey Wardens’ black and gold bird emblem and receive new warrants; keep it in your baggage when off duty. Return it when you leave the order.",
+      "context": "主动补领后回到领主对话，发一面旗，不自动装备、不发整套装备。"
     },
     "gwp_case_envoy_duel_waiting": {
       "en": "Duel agreed; waiting for the Warden to finish an existing commitment",

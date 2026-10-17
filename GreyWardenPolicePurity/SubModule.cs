@@ -89,6 +89,7 @@ namespace GreyWardenPolicePurity
             starter.AddModel(new PoliceMobilePartyAIModel());
             starter.AddModel(new PoliceMarriageModel());
             starter.AddModel(new PoliceRaidDeterrenceModel());
+            starter.AddModel(new GwpDutyBannerItemModel());
             starter.AddModel(new PoliceShipDamageModel());
             starter.AddModel(new PoliceShipParametersModel());
             starter.AddModel(new GwpLeaderlessFoodModel());

@@ -1,10 +1,10 @@
 # 灰袍装备：来源与原版品质
 
-> 当前状态：便装模板摘盔已镜像，战斗头盔保留；入会品质已验收，最佳品质与自动换装保护待实测
-> 最后验收：`eebeb33`（随机品质，2026-10-02 用户确认）
-> 已复核至：`6855489`（2026-10-16）
-> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs`
-> 待实测：新档城堡/城镇大厅灰袍便装无头盔、战斗仍戴盔；重新入会后装备为最佳品质；RBM 环境进城装备保持，普通领主和玩家手动换装照常；战场上灰袍兵约一半是男的、男兵有胡子、同一个兵每场一样
+> 当前状态：用户确认执勤旗修复后未见问题，家徽切换、重入不发装与退会收旗进入正式版
+> 最后验收：2026-10-17 用户确认当前旗帜构建可用（FC098662开发DLL，待源码存档）
+> 已复核至：`7573179`（2026-10-17）
+> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs` `GwpDutyBanner.cs` `tools/tests/test_duty_banner.py`
+> 待实测：新档城堡/城镇大厅修士长袍、鸟徽肩饰与露面，野外战斗原套装；旗手数量与分配沿用原版；最佳品质、RBM不换装与男女混编沿原待验收项
 
 本文件写"灰袍装备从哪来、带不带原版品质（`ItemModifier`，精良/大师/传奇等前缀）"。
 `spspecialcharacters.xml` 中的领主外貌定义归 [灰袍家族](family.md)，本页覆盖其装备引用。（依据：职责划分）
@@ -12,7 +12,7 @@
 
 ## 只有灰袍能拿到
 
-- 玩家和 NPC 都不得通过购买、打造、战利品或任何其他途径获得灰袍装备；玩家只在入会时由灰袍发放。（依据：用户裁定 2026-10-02）
+- 玩家和 NPC 都不得通过购买、打造、战利品获得灰袍战斗装备；玩家的战斗套装只在首次入会时由灰袍发放。新执勤旗是可主动补领的职务凭证，领取规则见[玩家](player-justice.md)。（依据：用户裁定 2026-10-02；执勤旗设计 2026-10-17）
 - 全部灰袍物品 `is_merchandise="false"`。原版战利品（`DefaultBattleRewardModel.GetRandomItem`）、作坊产出、商队、比武奖品、
   藏身处与地图拾取都跳过 `NotMerchandise`（依据：C#反编译 v1.4.8，2026-10-02）。不要把灰袍物品改成商品。（依据：用户裁定 2026-10-02）
 - 双刀专用刀身 `gwp_vlandian_blade_3_dual` 是 `is_hidden="true"`，锻造里解锁不到。其他打造类武器用原版部件，
@@ -20,12 +20,16 @@
 
 ## 入会发装
 
-加入或重新加入时（`PlayerBountyBehavior.GiveCommanderEquipment`，发放清单 `GwpIds.MembershipGrantItemIds`：
-五件指挥甲胄、马具、黑色大盾、一副双刀），每件取所在品质组里最好的原版品质：`ItemQuality` 最高，
+首次加入时（`PlayerBountyBehavior.GiveCommanderEquipment`，发放清单 `GwpIds.MembershipGrantItemIds`：
+五件指挥甲胄、马具、黑色大盾与一副双刀），每件取所在品质组里最好的原版品质：`ItemQuality` 最高，
 同档取 `PriceMultiplier` 最高。各组最高都是传奇（剑、锤、枪 伤害+7 速度+3；板甲 护甲+12；链甲 +9；皮甲 +7；布甲 +5；盾 耐久+210）。
 这是灰袍装备带上品质的唯一途径；品质机制为日后复刻辛迪加设定铺垫。（依据：用户裁定 2026-10-02）
 
-已发出去的装备不补掷（不做存档兼容）。判断"穿没穿全套指挥装"、双刀配对、武器效果都按物品 id，不看品质。
+重新加入不再发整套装备；加入发执勤旗，退出收回执勤旗，旗帜是接新委托的开关。执勤外形换原版帝国最高档三级旗，原先一级旗效果保持；装备时家族/地图/战场显示灰袍黑金鸟徽，卸下或退会恢复玩家原徽。首次获装仍保留，原入退会声望/次数与新兵规则未要求调整。（依据：用户裁定 2026-10-17；保留效果为本轮实现选择）
+
+本轮回退基线`7573179`，范围为GwpDutyBanner.cs、入退会/发装方法、GwpIds清单、旗帜物品与相应主文本/生成语言文件；回退须保留此前未提交的差事调度、协力与人物追责改动，不整文件覆盖工作树。（依据：流程）
+
+已发出去的装备不补掷（不做存档兼容）。执勤旗、双刀配对、武器效果都按物品 id，不看品质；接单不再要求指挥装。
 
 ## 品质组
 
@@ -45,17 +49,27 @@
 
 撤回本功能的提交：`GiveCommanderEquipment` 恢复 `new EquipmentElement(item)`，两面大盾恢复 `shield_metal`。
 
-## 城堡便装摘盔
+## 宗教常服与执勤旗
 
-灰袍领主便装摘掉头盔，其余甲胄保留，战斗仍戴盔；只改模板，不新增存档适配、读档补正或场景摘盔补丁。反馈截图 `C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/1f4cfb438e919396d0397636c1ec84c3.png` 是城堡全甲现象参考。（依据：用户裁定 2026-10-07）
+灰袍领主平民装备统一使用原版修士长袍 `monk_robe`、灰袍鸟徽肩饰 `warchshoulder` 与皮鞋 `leather_shoes`；无头部、手部、兵器、盾、坐骑及马具，便于城堡/城镇大厅会面看清脸。战斗套的十槽原配保持。修士长袍有原版男女模型变体并随团队色着色，实际配色和肩饰搭配待目视验收。（依据：用户裁定宗教常服、实现选材；原版物品XML核对 2026-10-17）
 
-回退：取回源码存档 `515a2eb` 中的 `gw_equipment_sets.xml` 并镜像，可恢复原便装 Head。修改前 live 模板与双端 DLL/PDB 备份至 `C:/Users/lucif/source/repos/GreyWardenPolicePurity/.codex_tmp/warden-civilian-head-before-20261007/`，DLL 保持原 SHA-256 `8ba222c1a650b894d2572525ae33140dc04c35ebfa8b90d4698bb191f2b796ff`。（依据：流程）
+常服回退：取回 `7573179` 的 `gw_equipment_sets.xml` 并镜像，可恢复上一版“去盔、其余全甲”便装；反馈截图 `C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/1f4cfb438e919396d0397636c1ec84c3.png` 保留为此前城堡全甲现象参考。（依据：流程）
 
 原版 1.4.8 的 `HeroAgentSpawnCampaignBehavior.CreateLocationCharacterForHero` 给城镇/城堡领主设置 `UseCivilianEquipment=true`，带队领主在村庄才为 false；`MissionAgentHandler.SpawnLocationCharacter` 把该选择传入 AgentBuildData。`Mission.SpawnAgent` 将英雄设为 FixedEquipment，按该选择克隆 `FirstCivilianEquipment` 或 `FirstBattleEquipment`；本链不检查 `ItemFlags.Civilian`，也不调用自动换装的 `CharacterHelper.CanUseItem`。XML 的 `Equipment.DeserializeNode` 只检查物品是否适合槽位；`Hero.CheckInvalidEquipmentsAndReplaceIfNeeded` 处理 Trash、未就绪物品/品质，不过滤便装栏里的盔甲。便装栏是独立的装备集合，不保证其中是普通衣服。（依据：C#反编译当前安装 v1.4.8，2026-10-07）
 
-本模组 `gw_equipment_sets.xml` 的 `spc_gw_leader_0` 同时定义战斗套和 Civilian 套：战斗十槽含 `wcomhelmethv`，便装九槽无 Head，其余甲胄、武器和马具不变；六位创始领主在 `spspecialcharacters.xml` 同时引用这两套。生成/成年发装的 `PoliceResourceManager.EnsureCommanderLoadout` 也分别复制该模板的战斗和便装装备。五件指挥甲胄在 items.xml 中均为 `Civilian=false`，不改变 NPC 生成时直接取便装栏的行为。（依据：源码与 XML 核对）
+`gw_equipment_sets.xml` 的 `spc_gw_leader_0` 分别定义战斗与 Civilian 套，六位创始领主共同引用；生成/成年发装的 `PoliceResourceManager.EnsureCommanderLoadout` 分别复制两套。平民与战斗装备均由原版保存，模板不是每次进场景强制覆盖装备的补丁。（依据：源码与 XML 核对）
 
-整套士兵预设补丁只处理非英雄 Battle 装备；火誓者军械库补丁跳过 AgentCivilianEquipment；自动换装候选保护不改场景装备选择。城堡穿着沿用模板，没有场景换装覆盖。已有英雄的便装已存档，不保证随 XML 更新而改变，不为此添加兼容逻辑。新模板与 live XML SHA-256 均为 `5702a7295b982ed45cee7ddb034979972fa59b9eef9c44b94445800d38368144`。（依据：C#反编译；用户裁定 2026-10-07）
+整套士兵预设补丁只处理非英雄 Battle 装备；军械库补丁跳过 AgentCivilianEquipment；自动换装保护不改场景装备选择。已有英雄的便装已入档，不保证随XML更新改变，不新增旧档修复或场景强制换装；常服按新档验收。（依据：C#反编译；用户存档裁定）
+
+执勤旗 `gwp_duty_banner` 用原版帝国最高档三级模型/预制体 `empire_tier_3_banner` 与tableau，无新增美术；外形升级，旗帜效果仍为原一级伤亡士气冲击减10%，不附加灰袍身份战斗加成。它是非卖品，入会发放、退出收回；具体领取和退还规则只在[玩家入会与悬赏](player-justice.md)维护。（依据：用户反馈与原版旗帜XML核对；效果保持为实现选择 2026-10-17）
+
+`GwpDutyBannerItemModel`从原版奖励池排除执勤旗，并阻止自动升级。执勤时三个读取入口统一从`GwpDutyBanner.GetDutyEmblem`返回灰袍家徽的独立副本：`Clan.Banner`负责玩家家族显示及其通常战团纹章，`MobileParty.Banner`保证主队地图标记覆盖原版CustomBanner优先分支，`PartyAgentOrigin.Banner`保持主队场景纹章。其他家族/势力与其他队的特殊旗帜保留原版；不改政治身份、国旗或玩家保存的原徽。（依据：用户反馈、原版读取链与生产补丁回归 2026-10-17）
+
+原版Clan保存的是`[SaveableField(84)] _banner`，序列化生成入口直接读该字段；临时展示不写字段，卸旗/退会即返回原版结果，无备份旗帜和迁移状态。原版旗帜编辑器直接修改传入Banner，因此其活动状态下Clan读取保留玩家原徽，避免修改灰袍共享图案；普通显示返回独立副本，也不允许原版染色写回灰袍家徽。原版库存DoneLogic即使只换装备也发PlayerInventoryExchange，监听后标脏玩家家族战团地图视觉；退会收旗后同样刷新。（依据：本机v1.4.8托管源码、编辑器重新反编译与生产回归 2026-10-17）
+
+专项生产42断言核对入退会/重入、收旗、补领、防随机掉落、家族/主队/场景显示、卸旗恢复、独立副本、编辑器及地图缓存刷新；XML检查帝国最高档外形和原一级效果。装备/旗帜及入会状态沿原版已有保存，无新增进行中字段。用户2026-10-17确认当前游玩未见问题；旗手数量继续按原版编队/队长规则。（依据：离线回归 2026-10-17）
+
+执勤旗回退基线 `7573179`：恢复 `items.xml`、`GwpIds.cs`、`GwpCommon.cs`、两份PlayerBountyBehavior源文件及主文本，删除 `GwpDutyBanner.cs` 和SubModule中的旗帜模型注册；事务界面回退见[玩家](player-justice.md)。恢复时保留本轮之前的人物追责与协力工作树改动。（依据：流程）
 
 灰袍头盔面罩开口：指挥官翼盔 `wcomhelmethv`、士兵翼盔 `winfhelmethv`（重步兵、骑士）与无翼盔 `winfhelmet` 的开口已由用户在美术里下移，男女都能看到眼睛，用户实测确认（2026-10-14）。改前开口偏高，女性完全看不到眼睛；开口一圈只绑头部骨骼，转头不会错位。开发版 live 的 `Assets` 已是新模型，玩家包 `pack0.tpac` 尚未重新发布（见 [布料资源](cloth-assets.md)）。
 

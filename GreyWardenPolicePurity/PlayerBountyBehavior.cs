@@ -28,10 +28,10 @@ namespace GreyWardenPolicePurity
     ///   拒绝：不再派使者，但仍可在领主处按当前门槛申请
     ///   主动退出：重新加入门槛按 20→40→60 递增，第三次退出后永久关闭
     ///
-    /// 接任务条件（三选一都满足才生效）：
+    /// 接任务条件（三项都满足才生效）：
     ///   1. 已接受招募（_recruitmentAccepted）
     ///   2. 声望 >= 阈值
-    ///   3. 穿戴黑袍指挥官全套
+    ///   3. 在旗帜槽装备灰袍执勤旗（背包持有不算）
     ///
     /// 任务流程：
     ///   右侧通知图标 → 从最近、较难、较简单三份原版选单中选择 → 接受 → 追击目标 →
@@ -85,10 +85,10 @@ namespace GreyWardenPolicePurity
         private bool IsWaitingForBountyCollection => CurrentBountyState == PlayerBountyFlowState.WaitingForCollection;
         private bool HasEscortPoliceParty => !string.IsNullOrEmpty(_escortPolicePartyId);
 
-        /// <summary>接单需声望达标且穿着指挥官套装。</summary>
-        private bool MeetsBountyEquipmentAndStanding() =>
+        /// <summary>接单需声望达标且主动装备执勤旗；卸旗不影响已接受的任务。</summary>
+        private bool MeetsBountyDutyAndStanding() =>
             PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
-            && IsWearingCommanderSet();
+            && GwpCommon.IsPlayerGreyWardenOnDuty();
 
         /// <summary>
         /// 这名罪犯是不是玩家当前接下的那件案子的目标。别人犯了罪与玩家无关——
@@ -278,6 +278,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.TickEvent.AddNonSerializedListener(this, ReconcileCaseOnTick);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.PlayerInventoryExchangeEvent.AddNonSerializedListener(this, GwpDutyBanner.OnInventoryExchange);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
         }
 
@@ -763,7 +764,7 @@ namespace GreyWardenPolicePurity
 
             // ── 接任务三条件 ──────────────────────────────────────────────────────────
             if (!_recruitmentAccepted) return;                                        // 条件1：已接受招募
-            if (!MeetsBountyEquipmentAndStanding()) return;                           // 条件2、3：声望与套装
+            if (!MeetsBountyDutyAndStanding()) return;                                // 条件2、3：声望与执勤旗
             // ─────────────────────────────────────────────────────────────────────────
 
             if ((CampaignTime.Now - _lastOfferTime).ToDays < GwpTuning.Bounty.OfferCooldownDays) return;
@@ -904,20 +905,6 @@ namespace GreyWardenPolicePurity
                 if (dist < minDist) { minDist = dist; nearest = s; }
             }
             return nearest;
-        }
-
-        private bool IsWearingCommanderSet()
-        {
-            var equipment = Hero.MainHero?.BattleEquipment;
-            if (equipment == null) return false;
-            var wornIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < 12; i++)
-            {
-                var elem = equipment[i];
-                if (!elem.IsEmpty && elem.Item != null)
-                    wornIds.Add(elem.Item.StringId);
-            }
-            return GwpIds.CommanderSetItemIds.All(wornIds.Contains);
         }
 
         #endregion

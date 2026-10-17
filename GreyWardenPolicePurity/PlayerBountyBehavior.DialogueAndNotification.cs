@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.BarterSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapNotificationTypes;
 using TaleWorlds.Core;
@@ -72,6 +73,13 @@ namespace GreyWardenPolicePurity
                 null,
                 null,
                 100);
+
+            starter.AddPlayerLine("gwp_duty_banner_request", "lord_talk_speak_diplomacy_2",
+                "gwp_duty_banner_issued", GwpText.Get(GwpTextCatalog.gwp_duty_banner_request),
+                CanRequestDutyBanner, null, 102);
+            starter.AddDialogLine("gwp_duty_banner_issued", "gwp_duty_banner_issued",
+                "lord_pretalk", GwpText.Get(GwpTextCatalog.gwp_duty_banner_issued),
+                null, IssueDutyBanner, 100);
 
             // ── 通过灰袍领主重新加入 / 主动退出 ──────────────────────────────────
             starter.AddPlayerLine(
@@ -202,6 +210,7 @@ namespace GreyWardenPolicePurity
             WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_COMMITTED",
                 "membership state committed on player choice");
             GiveCommanderEquipment();
+            GiveDutyBanner();
             GiveStarterRecruits();
             CloseRecruitmentEncounterAndReturn();
 
@@ -324,6 +333,38 @@ namespace GreyWardenPolicePurity
             return GwpCommon.IsOrdinaryGreyWardenLordConversation() && _recruitmentAccepted;
         }
 
+        private bool CanRequestDutyBanner() => CanLeaveThroughLord()
+            && !GwpCommon.IsPlayerGreyWardenOnDuty()
+            && MobileParty.MainParty?.ItemRoster.Any(element =>
+                element.EquipmentElement.Item?.StringId == GwpIds.DutyBannerItemId) == false
+            && MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.DutyBannerItemId) != null;
+
+        private void IssueDutyBanner()
+        {
+            if (!CanRequestDutyBanner()) return;
+            GiveDutyBanner();
+        }
+
+        private static void GiveDutyBanner()
+        {
+            if (Hero.MainHero.BannerItem.Item?.StringId == GwpIds.DutyBannerItemId ||
+                MobileParty.MainParty.ItemRoster.Any(element => element.EquipmentElement.Item?.StringId == GwpIds.DutyBannerItemId))
+                return;
+            ItemObject item = MBObjectManager.Instance.GetObject<ItemObject>(GwpIds.DutyBannerItemId);
+            MobileParty.MainParty.ItemRoster.AddToCounts(new EquipmentElement(item), 1);
+        }
+
+        private static void RecoverDutyBanners()
+        {
+            foreach (ItemRosterElement element in MobileParty.MainParty.ItemRoster
+                         .Where(element => element.EquipmentElement.Item?.StringId == GwpIds.DutyBannerItemId).ToList())
+                MobileParty.MainParty.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
+            foreach (Equipment equipment in new[] { Hero.MainHero.BattleEquipment, Hero.MainHero.CivilianEquipment })
+                if (equipment[EquipmentIndex.ExtraWeaponSlot].Item?.StringId == GwpIds.DutyBannerItemId)
+                    equipment[EquipmentIndex.ExtraWeaponSlot] = default;
+            GwpDutyBanner.RefreshPlayerClanVisuals();
+        }
+
         private int GetRequiredReadmissionReputation()
         {
             return GwpTuning.Bounty.RecruitmentReputationThreshold +
@@ -357,13 +398,16 @@ namespace GreyWardenPolicePurity
             _recruitmentAccepted = true;
             _recruitmentOffered = true;
             DestroyRecruitmentPatrol();
-            GiveCommanderEquipment();
+            // 第一次拒绝使者、之后从领主处加入仍算首次；主动退出过就不再发整套。
+            if (_voluntaryExitCount == 0) GiveCommanderEquipment();
+            GiveDutyBanner();
             GiveStarterRecruits();
         }
 
         private void OnLeaveThroughLord()
         {
             _recruitmentAccepted = false;
+            RecoverDutyBanners();
             _recruitmentOffered = true;
             _voluntaryExitCount = Math.Min(
                 GwpTuning.Bounty.MaximumVoluntaryExits,
@@ -605,11 +649,23 @@ namespace GreyWardenPolicePurity
                 typeof(BountyMapNotificationItemVM));
         }
 
-        internal bool CanInspectBountyOffers() =>
-            _recruitmentAccepted &&
-            MeetsBountyEquipmentAndStanding() &&
-            !HasBountyTask &&
-            CrimeState.GetAvailablePlayerBounties().Count > 0;
+        private string? GetBountyOfferBlocker()
+        {
+            if (!_recruitmentAccepted)
+                return GwpText.Get(GwpTextCatalog.gwp_affairs_nav_need_membership);
+            if (HasBountyTask)
+                return GwpText.Get(GwpTextCatalog.gwp_bounty_duty_busy);
+            if (!MeetsBountyDutyAndStanding())
+                return GwpText.Get(GwpTextCatalog.gwp_bounty_duty_requirements,
+                    "STANDING", GwpTuning.Bounty.RecruitmentReputationThreshold);
+            return CrimeState.GetAvailablePlayerBounties().Count == 0
+                ? GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_012) : null;
+        }
+
+        internal bool CanInspectBountyOffers() => GetBountyOfferBlocker() == null;
+
+        internal string GetBountyOfferStatusText() => GetBountyOfferBlocker()
+            ?? GwpText.Get(GwpTextCatalog.gwp_bounty_duty_ready);
 
         internal void ShowBountySelectionInquiry()
         {

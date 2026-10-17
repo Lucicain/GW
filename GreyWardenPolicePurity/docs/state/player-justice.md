@@ -1,10 +1,10 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：现行规则（2026-10-05 从源码提取）
-> 最后验收：未建立检查点
-> 已复核至：`1782a40`（2026-10-16）
-> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpCaseSettlementEntryPatch.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs`
-> 待实测：无
+> 当前状态：执勤旗与入退会收发经用户确认未见问题，已进入正式版准备；事务页可主动领取
+> 最后验收：2026-10-17 用户确认当前执勤旗构建可用（FC098662开发DLL，待源码存档）
+> 已复核至：`7573179`（2026-10-17）
+> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseArchiveScreen.cs` `_Module/GUI/Prefabs/GwpCaseArchive.xml`
+> 待实测：事务页主动选单与已有委托保留的完整边界，未逐项实测不由一般反馈代替
 
 事务台账中的日常练兵项显示实体运兵出程或改道落村阶段，不再有带新兵归队阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
 
@@ -75,18 +75,22 @@
 - 声望 ≥ 20 且从未被招募过：从离玩家最近的城镇派一支 20 人的招募使者队来找玩家。
   使者不吃饭。追了 5 天还没碰上，使者就进离自己最近的城解散；下一次资格检查再从离玩家最近的城重新派一支，
   所以派出点会跟着玩家走。
-- 接受：
-  - 发放黑袍指挥官全套、黑曜指挥官盾、一副双刀；
+- 首次接受（使者或先拒绝后经领主申请）：
+  - 发放黑袍指挥官全套、黑曜指挥官盾、一副双刀；执勤旗独立发放；
   - 发 5 名 `gwnewrecruit`。
   
   装备品质规则见 `warden-gear.md`。拒绝后不再派使者，但可以去找任一灰袍领主申请。
-- 退会：找任一普通灰袍领主。退会只撤职权，已经代收的罚金、已经押着的犯人仍要交。
+- 退会：找任一普通灰袍领主，撤职权并收回玩家行囊中的全部执勤旗、玩家战斗/便装旗槽的执勤旗；其他物品和普通旗帜保持，已经代收的罚金、已经押着的犯人仍要交。再次加入只发执勤旗，不再发整套装备；沿已有主动退出次数区分首次/重入，不新增发装记账或读档补发。新兵规则保持。（依据：用户裁定 2026-10-17）
   重新入会的门槛按 20 / 40 / 60 递增；自愿退会满 3 次后永久关闭。
 - 「入会」的判据是 `PlayerBountyBehavior.IsRecruitedByGreyWardens`，地图栏按钮、祭司招兵等都看这个。
 
 ## 悬赏（接单）
 
-- 接单要同时满足三条：已入会、声望 ≥ 20、穿着指挥官全套。每 2 天提示一次，右侧出现通知图标。
+- 接新委托要同时满足三条：已入会、声望 ≥ 20、玩家在原版旗帜槽装备 `gwp_duty_banner`；不要求指挥官套装。背包持有、装备普通旗帜均不启用；卸旗停止后续新委托提醒与领取资格，已接委托、追踪和交差照常，现有通知也由同一资格查询判有效性。原每2天右侧提示节奏保留。（依据：用户裁定、实现 2026-10-17）
+- 地图左下角“灰袍事务”可查看任务台账，并主动点击“领取委托”，不必等待右侧通知；入口复用同一三选一选单及 `CanInspectBountyOffers`，点按钮时再查实时资格，先关闭台账再弹选单。条件不符时按钮灰显、页面显示原因；查看台账本身不要求举旗。（依据：用户反馈与实现 2026-10-17）
+- 入会/重入会发旗，主动补领是正常对话功能：已入会且与普通灰袍领主对话、玩家未装备、本队背包无旗、物品有效时才显示；发一面到背包，不自动装备。玩家已有旗时不重复补领，不在读档/小时检查中补发。（依据：设计 2026-10-17）
+- 执勤身份统一由 `GwpCommon.IsPlayerGreyWardenOnDuty` 查询，旗帜槽即原版 `Hero.BannerItem` / `ExtraWeaponSlot`；持有与装备由原版装备/背包存档，不新增开关字段。物品与家族/地图/场景纹章见[装备](warden-gear.md)。（依据：C#反编译与离线回归 2026-10-17）
+- 入口回退基线 `7573179`：恢复 `GwpCaseArchiveScreen.cs`、`_Module/GUI/Prefabs/GwpCaseArchive.xml` 及主文本，对接旗帜源文件见[装备回退](warden-gear.md)。离线回归29断言加XML模板核对已通过，UI/原生渲染待实测。（依据：流程、验证 2026-10-17）
 - 从案件池里所有开着、能追到人的案件中，挑三份给玩家选：最近的、最难的、最容易的。
   难度看对方战力与玩家战力之比：≤ 0.75 算易，≥ 1.25 算难。对方用接案门槛同一个数（`GwpStrength.CaseTarget`：
   他所在战斗组，挂靠在军团里就算整支军团），玩家用自己的战斗组。
@@ -94,7 +98,7 @@
   每 2 天往任务日志写一条目标的位置情报。目标换队或重建部队时，按英雄本人重新找。
 - 求援（`PlayerBountyBehavior.Support`）：当面开口或派兵送信，都算求援。
   - 送到之前，灰袍不为这件案子开战、也不去追人。
-  - 送到之后，由收到求援的那名领主接手支援，放下手上其他事；他已经不在时，改派离玩家最近的合格领主。
+  - 送到之后，先由收到求援的领主接手；他正在战斗、已有玩家事务/订单/护送/通缉或已约单挑时，改选离玩家最近的合格者。共用玩家差事准备入口退出协力、释放旧案及重建/请愿，收养保留暂停；无人可接则此次求援不成立。占用只查[差事登记处](warden-ai.md)。（依据：用户批准方案、源码复核 2026-10-17）
   - 灰袍为此案开战时，玩家阵营一并对犯人宣战。这场战争记进调停申请通道（`PoliceAntiWarDeclaration.RecordMediationRequest`），不再自动讲和，见 `warden-mediation.md`。（依据：实机诊断 2026-09-16）
 - 三个常量 `Bounty.EasyReward/StandardReward/HardReward` 已无人引用。报酬按罚金封顶算，见 `player-commission.md`。
 
@@ -113,8 +117,6 @@
   人不是玩家打下的（犯人死了、被别人抓了）：只付 400 + 60 × 阵亡数。
 - 收据（`GwpCaseReceipt`）只记物品 ID 和词条 ID，不存对象引用：缺了某个模组的物品，也不会毁掉旧账。
 
-## 案件目标不能进城躲
+## 案件目标进出城
 
-- 案件已宣战后，目标的进城动作会被拒绝（`GwpCaseSettlementEntryPatch`，前置 `EnterSettlementAction.ApplyForParty`）。
-  同时命令它（在军团里时命令军团领队）去进攻承办的灰袍。
-  案件结束或战争回退后，限制自动消失。
+灰袍跟随与目标进出城均交原版处理，不阻止目标重新入城，也不强制敌方出战；定义见[案件](case-enforcement.md#藏城目标与战后连续交战)。（依据：用户裁定、生产回归 2026-10-17）
