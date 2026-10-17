@@ -17,6 +17,49 @@ MODULE = ROOT / 'GreyWardenPolicePurity'
 
 
 class AffairsTests(unittest.TestCase):
+    def test_actual_game_input_context_supports_map_bar_panel_switching(self):
+        screen = (MODULE / 'GwpCaseArchiveScreen.cs').read_text(encoding='utf-8-sig')
+        categories = re.findall(r'\.Input\.RegisterHotKeyCategory\(HotKeyManager.GetCategory\("([^"]+)"\)\)', screen)
+        # Execute the installed game's actual InputContext and key categories. No engine or game is started.
+        script = r'''
+param([string]$Registrations)
+$ErrorActionPreference = 'Stop'
+$gameBin = 'D:/steam/steamapps/common/Mount & Blade II Bannerlord/bin/Win64_Shipping_Client'
+Get-ChildItem $gameBin -Filter 'TaleWorlds.*.dll' | Where-Object Name -ne 'TaleWorlds.Native.dll' | ForEach-Object { [void][Reflection.Assembly]::LoadFrom($_.FullName) }
+$panel = [TaleWorlds.MountAndBlade.GenericPanelGameKeyCategory]::new('GenericPanelGameKeyCategory')
+$campaign = [TaleWorlds.MountAndBlade.GenericCampaignPanelsGameKeyCategory]::new('GenericCampaignPanelsGameKeyCategory')
+$known = @{ GenericPanelGameKeyCategory = $panel; GenericCampaignPanelsGameKeyCategory = $campaign }
+$old = [TaleWorlds.InputSystem.InputContext]::new()
+$old.RegisterHotKeyCategory($panel)
+$reproduced = $false
+try { [void]$old.IsGameKeyReleased(37) }
+catch { if ($_.Exception.ToString().Contains('NullReferenceException')) { $reproduced = $true } else { throw } }
+if (-not $reproduced) { throw 'The old screen must reproduce the observed map-bar null-reference failure.' }
+$current = [TaleWorlds.InputSystem.InputContext]::new()
+foreach ($name in (Get-Content -LiteralPath $Registrations -Raw | ConvertFrom-Json)) {
+    if (-not $known.ContainsKey($name)) { throw "Unmapped production input category: $name" }
+    $current.RegisterHotKeyCategory($known[$name])
+}
+$count = 1
+foreach ($id in @(37, 43, 42, 38, 41, 40, 45)) {
+    if ($current.IsGameKeyReleased($id)) { throw "Idle navigation key $id was unexpectedly released." }
+    $count++
+}
+foreach ($name in @('Exit', 'SwitchToNextTab', 'SwitchToPreviousTab')) {
+    if ($null -eq $panel.GetHotKey($name)) { throw "Missing own panel hotkey: $name" }
+    if ($current.IsHotKeyReleased($name)) { throw "Idle hotkey $name was unexpectedly released." }
+    $count++
+}
+Write-Output "AFFAIRS_NATIVE_INPUT_ASSERTIONS=$count"
+'''
+        with tempfile.TemporaryDirectory(prefix='gwp-affairs-input-') as temp:
+            p = Path(temp)
+            (p / 'keys.json').write_text(json.dumps(categories), encoding='utf-8')
+            (p / 'test.ps1').write_text(script, encoding='utf-8-sig')
+            result = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(p / 'test.ps1'), '-Registrations', str(p / 'keys.json')], capture_output=True, text=True)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            print(next(s for s in result.stdout.splitlines() if s.startswith('AFFAIRS_NATIVE_INPUT_ASSERTIONS=')))
+
     def test_production_viewmodel_selection_refresh_and_acceptance_flow(self):
         vm = (MODULE / 'GwpAffairsVM.cs').read_text(encoding='utf-8-sig')
         data = (MODULE / 'GwpAffairsData.cs').read_text(encoding='utf-8-sig')

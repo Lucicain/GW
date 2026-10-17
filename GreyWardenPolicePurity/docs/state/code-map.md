@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-190 个源文件、54,536 行、365 个公开类型、85 个 Harmony 补丁点（分布在 85 个补丁类里）。
+190 个源文件、54,538 行、365 个公开类型、85 个 Harmony 补丁点（分布在 85 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -603,7 +603,7 @@
 - `GwpCaseArchiveItemVM.cs` — 574 行 · `GwpCaseArchiveItemVM` : ViewModel
 - `PlayerBountyBehavior.Support.cs` — 164 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 141 行 · `PlayerBountyBehavior` : QuestBase，另含 1 个类型
-- `GwpCaseArchiveScreen.cs` — 79 行 · `GwpAffairsState` : GameState，另含 1 个类型
+- `GwpCaseArchiveScreen.cs` — 81 行 · `GwpAffairsState` : GameState，另含 1 个类型
 - `PlayerBountyBehavior.Affairs.cs` — 52 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.Encyclopedia.cs` — 49 行 · `PlayerBountyBehavior`
 

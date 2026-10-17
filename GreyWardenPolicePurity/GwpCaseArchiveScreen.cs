@@ -46,6 +46,8 @@ namespace GreyWardenPolicePurity
             _sprites = UIResourceManager.LoadSpriteCategory("ui_clan");
             _layer = new GauntletLayer("GwpAffairs", 1, true) { IsFocusLayer = true, ActiveCursor = CursorType.Default };
             _layer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));
+            // The map bar reads campaign-panel keys from this focused layer, including NavalDLC's fleet key.
+            _layer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericCampaignPanelsGameKeyCategory"));
             _layer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All | InputUsageMask.BlockEverythingWithoutHitTest);
             _vm = new GwpAffairsVM(Close);
             AddLayer(_layer);
