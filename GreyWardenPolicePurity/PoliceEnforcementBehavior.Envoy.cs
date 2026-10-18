@@ -666,27 +666,13 @@ namespace GreyWardenPolicePurity
                 envoyCase.Stage = EnvoyStage.WaitingForDuel;
                 return;
             }
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-            Vec2 middle = (police.GetPosition2D + target.GetPosition2D) * 0.5f;
-            List<Town> towns = Town.AllTowns
-                .Where(town => town.IsTown && !town.IsUnderSiege && !town.InRebelliousState &&
-                    policeClan != null &&
-                    !FactionManager.IsAtWarAgainstFaction(town.MapFaction, policeClan) &&
-                    !FactionManager.IsAtWarAgainstFaction(town.MapFaction, target.MapFaction))
-                .OrderBy(town => town.Settlement.GetPosition2D.DistanceSquared(middle))
-                .Take(GwpTuning.Enforcement.TournamentDuelNearbyTowns)
-                .ToList();
-            Town? venue = towns.FirstOrDefault(town =>
-                Campaign.Current.TournamentManager.GetTournamentGame(town) != null) ?? towns.FirstOrDefault();
+            Town? venue = PickDuelVenue(police, target);
             if (venue == null)
             {
                 FailEnvoy(envoyCase, "duel_no_town");
                 return;
             }
-            bool existingTournament = Campaign.Current.TournamentManager.GetTournamentGame(venue) != null;
-            if (!existingTournament)
-                Campaign.Current.TournamentManager.AddTournament(
-                    Campaign.Current.Models.TournamentModel.CreateTournament(venue));
+            bool existingTournament = EnsureTournament(venue);
 
             ReleaseAssistanceGroup(police.StringId, "envoy_duel");
             // 他正在协助别人：约了比武就离开那个协力组去赴约（用户裁定 2026-10-16：协办人自己的使者照常办完）。
@@ -708,18 +694,76 @@ namespace GreyWardenPolicePurity
                 Colors.Yellow));
         }
 
+        /// <summary>
+        /// 比武场地双方都进得去、比完出得来：城不与灰袍交战、不与他的势力交战，没被围，没在叛乱。
+        /// 选城和约定期间每小时的核对都只用这一个判断。
+        /// </summary>
+        private static bool IsDuelVenueOpen(Town town, MobileParty target)
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            return policeClan != null && town.IsTown && !town.IsUnderSiege && !town.InRebelliousState &&
+                   !FactionManager.IsAtWarAgainstFaction(town.MapFaction, policeClan) &&
+                   !FactionManager.IsAtWarAgainstFaction(town.MapFaction, target.MapFaction);
+        }
+
+        /// <summary>离双方中点最近的几座可用城里，有比武的取最近那座，都没有就取最近的。</summary>
+        private static Town? PickDuelVenue(MobileParty police, MobileParty target)
+        {
+            Vec2 middle = (police.GetPosition2D + target.GetPosition2D) * 0.5f;
+            List<Town> towns = Town.AllTowns
+                .Where(town => IsDuelVenueOpen(town, target))
+                .OrderBy(town => town.Settlement.GetPosition2D.DistanceSquared(middle))
+                .Take(GwpTuning.Enforcement.TournamentDuelNearbyTowns)
+                .ToList();
+            return towns.FirstOrDefault(town =>
+                Campaign.Current.TournamentManager.GetTournamentGame(town) != null) ?? towns.FirstOrDefault();
+        }
+
+        /// <summary>这座城没有比武就新开一场。返回原来是否已有比武。</summary>
+        private static bool EnsureTournament(Town venue)
+        {
+            if (Campaign.Current.TournamentManager.GetTournamentGame(venue) != null) return true;
+            Campaign.Current.TournamentManager.AddTournament(
+                Campaign.Current.Models.TournamentModel.CreateTournament(venue));
+            return false;
+        }
+
         private void TendDuel(EnvoyCase envoyCase, CrimeRecord crime)
         {
             MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
             MobileParty? target = crime.Offender;
             Settlement? town = Settlement.Find(envoyCase.TownId);
             if (police?.LeaderHero == null || target?.IsActive != true || target.LeaderHero == null ||
-                town?.Town == null || town.Town.IsUnderSiege)
+                town?.Town == null)
             {
-                // 有一方来不了（战败、被俘、城被围）：约定作废，照常追捕。
+                // 有一方来不了（战败、被俘）：约定作废，照常追捕。
                 ReleaseDuelists(envoyCase);
                 FailEnvoy(envoyCase, "duel_cancelled");
                 return;
+            }
+            // 约定的几天里，灰袍可能为别的案子和城主势力开战，他的势力也可能，城也可能被围、叛乱。
+            // 场地必须双方都进得去、比完出得来，否则换一座双方都能去的城，截止时间不变；
+            // 一座都没有才作废（用户裁定 2026-10-18：场地双方都能去、比完能正常出来；换城而不作废是设计）。
+            if (!IsDuelVenueOpen(town.Town, target))
+            {
+                Town? moved = PickDuelVenue(police, target);
+                if (moved == null)
+                {
+                    ReleaseDuelists(envoyCase);
+                    FailEnvoy(envoyCase, "duel_cancelled");
+                    return;
+                }
+                EnsureTournament(moved);
+                GwpAiDiagnostics.WriteAction(police, "ENVOY_DUEL_MOVED",
+                    "offender=" + target.StringId + "; from=" + town.StringId + "; to=" + moved.Settlement.StringId);
+                envoyCase.TownId = moved.Settlement.StringId;
+                town = moved.Settlement;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    GwpText.Get(GwpTextCatalog.gwp_envoy_duel_moved,
+                        "VAR_1", target.LeaderHero.Name?.ToString() ?? string.Empty,
+                        "VAR_2", police.LeaderHero.Name?.ToString() ?? string.Empty,
+                        "VAR_3", moved.Name?.ToString() ?? string.Empty),
+                    Colors.Yellow));
             }
 
             HoldForDuel(police, town, true);
@@ -730,8 +774,7 @@ namespace GreyWardenPolicePurity
             {
                 // 别人赶在他们到之前把那场打完了，就再开一场。
                 if (game == null)
-                    Campaign.Current.TournamentManager.AddTournament(
-                        Campaign.Current.Models.TournamentModel.CreateTournament(town.Town));
+                    EnsureTournament(town.Town);
                 return;
             }
 

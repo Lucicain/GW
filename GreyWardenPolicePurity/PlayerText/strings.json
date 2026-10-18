@@ -5966,6 +5966,11 @@
       "en": "{VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}.",
       "zh": "{VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。"
     },
+    "gwp_envoy_duel_moved": {
+      "en": "The duel between {VAR_1} and {VAR_2} moves to the tournament in {VAR_3}.",
+      "zh": "{VAR_1}与{VAR_2}的比武改到{VAR_3}的比武大会。",
+      "context": "约斗场地与任一方开战、被围或叛乱后换城时的地图提示。"
+    },
     "gwp_envoy_duel_warden_won": {
       "en": "{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full.",
       "zh": "{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。"

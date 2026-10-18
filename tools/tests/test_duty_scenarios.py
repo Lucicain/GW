@@ -163,7 +163,7 @@ class Program {static void Main(){int checks=GreyWardenVillageReconstructionBeha
         code=code.replace(' static Dictionary<string,Intent> Intents=', ' public static Settlement? ActualTarget(MobileParty p)=>ResolveIntent(p)?.Settlement;public static void ClearIntent(MobileParty p)=>Intents.Remove(p.StringId);public static void RequestVisit(MobileParty p,Settlement s,float priority)=>SetIntent(p,new Intent{Kind=IntentKind.Visit,Settlement=s,Priority=priority,ExpiresAt=108});\n static Dictionary<string,Intent> Intents=')
         code=code.replace('SCORES','\n'.join(re.findall(r'(?:private|internal) const float (?:AssignedDutyScore|PlayerRequestScore|PlayerEnforcementScore)\s*=\s*[^;]+;',desire)))
         code=code.replace('\n METHODS\n','\n'+'\n'.join(member(desire,n) for n in ['SetIntent','ResolveIntent','NormalizePriority'])+'\n')
-        code=code.replace('POLICE_METHODS','\n'.join([member(helper,n) for n in ['TryPreparePolicePartyForVillageRelief','TryPreparePartyForPlayerRequest']]+[member(envoy,'StartDuel')]+[member(assistance,n) for n in ['DuelForParty','IsPartyHeldForDuel','GetDuelVenue']]))
+        code=code.replace('POLICE_METHODS','\n'.join([member(helper,n) for n in ['TryPreparePolicePartyForVillageRelief','TryPreparePartyForPlayerRequest']]+[member(envoy,n) for n in ['StartDuel','IsDuelVenueOpen','PickDuelVenue','EnsureTournament']]+[member(assistance,n) for n in ['DuelForParty','IsPartyHeldForDuel','GetDuelVenue']]))
         code=code.replace('namespace GreyWardenPolicePurity {','namespace GreyWardenPolicePurity {\n'+EXTRA,1)
         major=subprocess.check_output(['dotnet','--version'],text=True).split('.')[0]
         with tempfile.TemporaryDirectory(prefix='gwp-duty-scenarios-') as temp:

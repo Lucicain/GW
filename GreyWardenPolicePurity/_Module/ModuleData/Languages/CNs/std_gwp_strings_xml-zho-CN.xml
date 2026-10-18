@@ -1466,6 +1466,7 @@
   <string id="gwp_fs_healing_hearth" text="灰袍教众的照料" />
   <string id="gwp_envoy_party_name" text="灰袍使者" />
   <string id="gwp_envoy_duel_called" text="{VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。" />
+  <string id="gwp_envoy_duel_moved" text="{VAR_1}与{VAR_2}的比武改到{VAR_3}的比武大会。" />
   <string id="gwp_envoy_duel_warden_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。" />
   <string id="gwp_envoy_duel_offender_won" text="{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。" />
   <string id="gwp_atonement_closed_elsewhere" text="这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。" />

@@ -441,6 +441,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_enforcement_companion_paid = "{=gwp_enforcement_companion_paid}{VAR_1} has paid the fine of {VAR_2} denars. The case is closed.";
         internal const string gwp_enforcement_companion_pay = "{=gwp_enforcement_companion_pay}Pay this companion's fine ({VAR_1} denars)";
         internal const string gwp_envoy_duel_called = "{=gwp_envoy_duel_called}{VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}.";
+        internal const string gwp_envoy_duel_moved = "{=gwp_envoy_duel_moved}The duel between {VAR_1} and {VAR_2} moves to the tournament in {VAR_3}.";
         internal const string gwp_envoy_duel_offender_won = "{=gwp_envoy_duel_offender_won}{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed.";
         internal const string gwp_envoy_duel_warden_won = "{=gwp_envoy_duel_warden_won}{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full.";
         internal const string gwp_envoy_outcome_bribed = "{=gwp_envoy_outcome_bribed}Negotiation ended: the warden took {VAR_1} denars privately and closed the case.";

@@ -1465,9 +1465,10 @@
 | gwp_fs_party_products_more |  and more | 等 | 卖货报价超过四种货物时追加的省略片段。 |
 | gwp_fs_healing_hearth | Care from the Grey Warden faithful | 灰袍教众的照料 | 部队治疗速度的解释条目；这是加成来源，不是地图地点。 |
 | gwp_envoy_party_name | Grey Warden envoy | 灰袍使者 | PoliceEnforcementBehavior.Envoy.cs:294 |
-| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:704 |
-| gwp_envoy_duel_warden_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。 | PoliceEnforcementBehavior.Envoy.cs:834 |
-| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:845 |
+| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:690 |
+| gwp_envoy_duel_moved | The duel between {VAR_1} and {VAR_2} moves to the tournament in {VAR_3}. | {VAR_1}与{VAR_2}的比武改到{VAR_3}的比武大会。 | 约斗场地与任一方开战、被围或叛乱后换城时的地图提示。 |
+| gwp_envoy_duel_warden_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。 | PoliceEnforcementBehavior.Envoy.cs:877 |
+| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:888 |
 | gwp_atonement_closed_elsewhere | This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized. | 这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。 | 赎罪目标死亡、被他人俘获或案件在别处结清；撤销任务，不扣声望。 |
 | gwp_atonement_report | Tell us how the case ended, and hand over anything you collected on our behalf. | 说说这件事是怎样了结的，代收的钱货也一并交来。 | 赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。 |
 | gwp_training_transport_party | Warden troop transport | 灰袍运兵队 | 练兵官实体运兵队；地图状态和差事台账。 |
