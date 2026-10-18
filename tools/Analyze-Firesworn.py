@@ -180,7 +180,7 @@ def main():
         sworn_change = num(b["households"]) - num(a["households"])
         print(f"   {village}: 户 {a['hearth']}->{b['hearth']}  信众户 {a['households']}->{b['households']}（{b['share']}）"
               f"  守村队 {a['guard']}->{b['guard']}"
-              f"  原版民兵 {b['vanillaMilitia']}  祭司 {b['priest'] != '-'} 势力 {b['priestPower']} 其他 {b['othersPower']}"
+              f"  原版民兵 {b['vanillaMilitia']}  祭司 {b['priest'] != '-'} 势力 {b['priestPower']} 其他 {b['others']}"
               f" 最强 {b['strongest']}")
         print(f"      守村队 {b['guard'] or '-'}  格子 {b['priestSlots']}  地牢 {b['dungeon']}"
               f"  军械库 {b['armoryItems']} 件（{b['armoryKinds']}） 武装 {b['armed']}  货仓 {b['goodsValue']}  信众队 {b['parties']}")
