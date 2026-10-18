@@ -71,7 +71,8 @@ namespace GreyWardenPolicePurity
             public int Price { get; set; }
             public CampaignTime FiledTime { get; set; }
             public PlayerTroopOrderStage Stage { get; set; }
-            }
+            public WardenDuty? PausedBy { get; set; }
+        }
 
         private sealed class TroopKind
         {
@@ -228,7 +229,8 @@ namespace GreyWardenPolicePurity
                 Price = _instance._orderPrice,
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
-                Stage = (PlayerTroopOrderStage)_instance._orderStage
+                Stage = (PlayerTroopOrderStage)_instance._orderStage,
+                PausedBy = trainer == null ? null : GwpWardenDuties.BlockingDuty(trainer, WardenDuty.PlayerRequest)
             });
             return result;
         }

@@ -28,6 +28,9 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public bool HasPortrait { get; }
         [DataSourceProperty] public int TextInset => HasPortrait ? 94 : 18;
         [DataSourceProperty] public string TabBrush { get; }
+        [DataSourceProperty] public bool IsFirstTab => TabBrush == "Header.Tab.Left";
+        [DataSourceProperty] public bool IsMiddleTab => TabBrush == "Header.Tab.Center";
+        [DataSourceProperty] public bool IsLastTab => TabBrush == "Header.Tab.Right";
         [DataSourceProperty] public bool IsSelected
         {
             get => _selected;
@@ -94,15 +97,15 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public InputKeyItemVM? DoneInputKey { get; private set; }
         internal void SetDoneInputKey(HotKey key) => DoneInputKey = InputKeyItemVM.CreateFromHotKey(key, true);
         [DataSourceProperty] public string Title => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_001);
-        [DataSourceProperty] public string Standing => GwpAffairsText.Pair(
-            GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_061, "VAR_1", GwpRuntimeState.Player.Reputation,
-                "VAR_2", GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_058)),
-            Bounty?.GetBountyOfferStatusText() ?? string.Empty);
+        [DataSourceProperty] public string Standing => GwpText.Get(GwpTextCatalog.gwp_affairs_standing, "VALUE", GwpRuntimeState.Player.Reputation);
         [DataSourceProperty] public string ListTitle => Categories.FirstOrDefault(c => c.Id == _category)?.Title ?? string.Empty;
         [DataSourceProperty] public string DetailTitle => _selected?.Title ?? GwpText.Get(_page == 4 ? GwpTextCatalog.gwp_affairs_armory_closed : GwpTextCatalog.gwp_affairs_empty);
         [DataSourceProperty] public string DetailSummary => _selected?.Summary ?? string.Empty;
         [DataSourceProperty] public string EmptyText => GwpText.Get(_page == 4 ? GwpTextCatalog.gwp_affairs_armory_closed : GwpTextCatalog.gwp_affairs_empty);
-        [DataSourceProperty] public string Status => _status;
+        [DataSourceProperty] public string Status => !string.IsNullOrEmpty(_status) ? _status
+            : ShowAccept && !CanAccept ? Bounty?.GetBountyOfferStatusText() ?? string.Empty : string.Empty;
+        [DataSourceProperty] public bool ShowBrowse => _page == 0 && _category == "current" && !_entries.Any(e => e.Id == "commission");
+        [DataSourceProperty] public bool ShowRefresh => _page != 4;
         [DataSourceProperty] public string BrowseText => GwpText.Get(GwpTextCatalog.gwp_affairs_browse);
         [DataSourceProperty] public string AcceptText => GwpText.Get(GwpTextCatalog.gwp_affairs_accept);
         [DataSourceProperty] public string HeroText => GwpText.Get(GwpTextCatalog.gwp_affairs_view_hero);
@@ -214,13 +217,15 @@ namespace GreyWardenPolicePurity
                     NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_organization) };
                 if (hero.PartyBelongedTo != null)
                 {
+                    entry.Place = GwpCommon.NormalizePlayerFacingSettlement(hero.CurrentSettlement, hero.PartyBelongedTo.GetPosition2D);
                     entry.Fields.Add(GwpAffairsText.TargetLocation(hero.PartyBelongedTo, GwpTextCatalog.gwp_affairs_current_location));
                     entry.Fields.Add(hero.PartyBelongedTo.GetBehaviorText().ToString());
                 }
                 foreach (var task in _entries.Where(e => e.Assignee == hero))
                 {
-                    entry.Work.Add(task.Title);
-                    entry.Work.Add(task.WorkSummary);
+                    var lines = task.IsPaused ? entry.Pending : entry.Work;
+                    lines.Add(task.Title);
+                    lines.Add(task.WorkSummary);
                 }
                 foreach (var report in PoliceEnforcementBehavior.GetEnvoyReports().Where(r => r.WardenHeroId == hero.StringId))
                 {
@@ -249,12 +254,13 @@ namespace GreyWardenPolicePurity
             {
                 foreach (string line in _selected.Fields.Where(s => !string.IsNullOrWhiteSpace(s))) Fields.Add(new GwpAffairsLineVM(line));
                 if (_selected.Work.Count > 0) Sections.Add(new GwpAffairsSectionVM(GwpText.Get(GwpTextCatalog.gwp_affairs_work), _selected.Work));
+                if (_selected.Pending.Count > 0) Sections.Add(new GwpAffairsSectionVM(GwpText.Get(GwpTextCatalog.gwp_affairs_queued_work), _selected.Pending));
                 if (_selected.Reports.Count > 0) Sections.Add(new GwpAffairsSectionVM(GwpText.Get(GwpTextCatalog.gwp_affairs_negotiations), _selected.Reports));
                 if (_selected.Notes.Count > 0) Sections.Add(new GwpAffairsSectionVM(
                     string.IsNullOrEmpty(_selected.NotesTitle) ? GwpText.Get(GwpTextCatalog.gwp_affairs_processing) : _selected.NotesTitle, _selected.Notes));
             }
             foreach (string property in new[] { nameof(Standing), nameof(ListTitle), nameof(DetailTitle), nameof(DetailSummary), nameof(IsEmpty),
-                         nameof(EmptyText), nameof(CanAccept), nameof(ShowAccept), nameof(HasHero), nameof(HasPlace), nameof(Status) })
+                         nameof(EmptyText), nameof(CanAccept), nameof(ShowAccept), nameof(HasHero), nameof(HasPlace), nameof(Status), nameof(ShowBrowse), nameof(ShowRefresh) })
                 OnPropertyChanged(property);
         }
         public void ExecuteAccept()

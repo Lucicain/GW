@@ -79,8 +79,8 @@ class PoliceEnforcementBehavior{
  private void ClearTaskWarTracking(string id,bool returning){}private void ReleaseEnvoysToPlayer(string id){}
  internal static void ReleaseWardensFromCase(string? id){}
  private void MarkDelayPatrolReturning(string id){if(_delayPatrolStates.TryGetValue(id,out var s))s.Returning=true;}
- private void RecordEnvoyReport(EnvoyCase e,string outcome,int amount)=>ReportsCount++;
- private static string FailureOutcome(string r)=>r;private static bool EnvoyReached(MobileParty e,MobileParty t)=>false;
+ private string LastOutcome="";private void RecordEnvoyReport(EnvoyCase e,string outcome,int amount){ReportsCount++;LastOutcome=outcome;}
+ private static bool EnvoyReached(MobileParty e,MobileParty t)=>false;
  private void FollowTarget(MobileParty e,MobileParty t){Followed++;LastFollowed=t;}
  private void Negotiate(EnvoyCase e,CrimeRecord c,MobileParty p,Hero h,MobileParty envoy,MobileParty target,Hero offender)=>throw new Exception("negotiation boundary unexpectedly reached");
  POLICE_METHODS
@@ -118,6 +118,14 @@ class PoliceEnforcementBehavior{
   Check(e.Followed==1&&e._envoyCases.ContainsKey("own"),"grace collector can operate with no assigned task");
   (e,chief,helper,main,own,ec)=Setup();CampaignTime.Now.ToHours=101;e.TendTravellingEnvoy(ec,own);CampaignTime.Now.ToHours=10;
   Check(ec.Stage==EnvoyStage.Failed&&e.ReportsCount==1,"timeout remains failed outcome rather than forgotten");
+  Check(e.LastOutcome=="timeout"&&own.HasOpenCase,"deadline failure has an unambiguous outcome and leaves pursuit available");
+  (e,chief,helper,main,own,ec)=Setup();MobileParty.All.RemoveAll(p=>p.StringId=="envoy");e.TendTravellingEnvoy(ec,own);
+  Check(ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="lost"&&own.HasOpenCase,"disappeared envoy is failed negotiation with the case still open");
+  Check(e._delayPatrolStates["envoy"].Returning,"lost envoy leaves no active travelling negotiation");
+  (e,chief,helper,main,own,ec)=Setup();FactionManager.War=true;e.TendTravellingEnvoy(ec,own);
+  Check(ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="war"&&own.HasOpenCase,"already at war is distinct from the deadline failure");
+  (e,chief,helper,main,own,ec)=Setup();own.OffenderHero!.PartyBelongedTo=null;CampaignTime.Now.ToHours=101;e.TendTravellingEnvoy(ec,own);CampaignTime.Now.ToHours=10;
+  Check(ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="target_unavailable"&&own.HasOpenCase,"missing target at deadline has its own failed outcome");
   (e,chief,helper,main,own,ec)=Setup();var oldParty=own.Offender!;var person=own.OffenderHero!;person.IsPrisoner=true;person.PartyBelongedTo=null;e.TendTravellingEnvoy(ec,own);
   Check(own.Offender==null&&own.HasOpenCase&&e._envoyCases.ContainsKey("own"),"temporary target party loss preserves envoy and liability");
   var rebuilt=new MobileParty{StringId="new_party",LeaderHero=person};person.IsPrisoner=false;person.PartyBelongedTo=rebuilt;MobileParty.All.Add(rebuilt);
@@ -198,7 +206,7 @@ class CaseEnvoyScenarios(unittest.TestCase):
         nearest_start = data.index('        public static CrimeRecord? GetNearest(Vec2 pos, Func<CrimeRecord, bool> predicate)')
         nearest = data[nearest_start:data.index(';', nearest_start) + 1]
         code = code.replace(' DATA_EXTRA', nearest)
-        methods = [member(envoy, n) for n in ['TendTravellingEnvoy', 'TaskForCrime', 'FailEnvoy', 'ForgetEnvoyCase', 'ResolveEnvoyCase', 'SyncEnvoyData']]
+        methods = [member(envoy, n) for n in ['FailureOutcome', 'TendTravellingEnvoy', 'TaskForCrime', 'FailEnvoy', 'ForgetEnvoyCase', 'ResolveEnvoyCase', 'SyncEnvoyData']]
         methods += [extract(lifecycle, n) for n in ['EndCaseTask', 'CloseCase']]
         methods += [member(assistance, n) for n in ['FindActiveParty', 'FailTaskBecauseOwnerCannotLead']]
         behavior = (MODULE / 'PoliceEnforcementBehavior.cs').read_text(encoding='utf-8-sig')

@@ -137,7 +137,9 @@ namespace GreyWardenPolicePurity
             "envoy_layer_one_failed" => "talks_failed",
             "envoy_grace_broke" => "grace_broke",
             "envoy_lost" => "lost",
-            "envoy_timeout_or_war" => "timeout",
+            "envoy_timeout" => "timeout",
+            "envoy_war" => "war",
+            "offender_unavailable_timeout" => "target_unavailable",
             _ when reason.StartsWith("duel_", StringComparison.Ordinal) => "duel_cancelled",
             _ => "failed"
         };
@@ -393,10 +395,14 @@ namespace GreyWardenPolicePurity
                 return;
             }
             Clan? policeClan = PoliceStats.GetPoliceClan();
-            if (CampaignTime.Now.ToHours >= envoyCase.DueHours || policeClan == null ||
-                FactionManager.IsAtWarAgainstFaction(policeClan, target.MapFaction))
+            if (policeClan == null || FactionManager.IsAtWarAgainstFaction(policeClan, target.MapFaction))
             {
-                FailEnvoy(envoyCase, "envoy_timeout_or_war");
+                FailEnvoy(envoyCase, policeClan == null ? "warden_unavailable" : "envoy_war");
+                return;
+            }
+            if (CampaignTime.Now.ToHours >= envoyCase.DueHours)
+            {
+                FailEnvoy(envoyCase, "envoy_timeout");
                 return;
             }
 

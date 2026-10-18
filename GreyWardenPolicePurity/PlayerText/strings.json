@@ -2899,8 +2899,8 @@
       "zh": "当前任务池为空。"
     },
     "gwp_gwpcasearchivescreen_003": {
-      "en": "Refresh ledger",
-      "zh": "刷新案卷"
+      "en": "Refresh",
+      "zh": "刷新"
     },
     "gwp_gwpcasearchivescreen_004": {
       "en": "Close",
@@ -2935,16 +2935,16 @@
       "zh": "罪行：{VAR_1} | 受害者：{VAR_2} | 地点：{VAR_3}"
     },
     "gwp_gwpcasearchivescreen_013": {
-      "en": "Tracking: unassigned",
-      "zh": "追踪情况：无人承办"
+      "en": "Unassigned",
+      "zh": "待分配"
     },
     "gwp_gwpcasearchivescreen_015": {
       "en": "{VAR_1} ({VAR_2})",
       "zh": "{VAR_1}（{VAR_2}）"
     },
     "gwp_gwpcasearchivescreen_016": {
-      "en": "Tracking: {VAR_1} | Stage: {VAR_2}",
-      "zh": "追踪情况：{VAR_1} | 当前阶段：{VAR_2}"
+      "en": "Assigned to: {VAR_1} | {VAR_2}",
+      "zh": "承办：{VAR_1} | {VAR_2}"
     },
     "gwp_gwpcasearchivescreen_017": {
       "en": "Player",
@@ -3015,36 +3015,36 @@
       "zh": "分配时间：{VAR_1}"
     },
     "gwp_gwpcasearchivescreen_034": {
-      "en": "Assignee: {VAR_1} | Supporting: {VAR_2}",
-      "zh": "受领人：{VAR_1} | 支援主办人：{VAR_2}"
+      "en": "Assisting: {VAR_1} | Lead: {VAR_2}",
+      "zh": "协办：{VAR_1} | 主办：{VAR_2}"
     },
     "gwp_gwpcasearchivescreen_035": {
-      "en": "Assistance reason: the lead Grey Warden's pursuit was blocked and requires a joint capture | Source case: {VAR_1} — {VAR_2}",
-      "zh": "协力原因：主办灰袍追击受阻，需要共同围捕 | 来源案件：{VAR_1} — {VAR_2}"
+      "en": "Assisted case: {VAR_1}, {VAR_2}",
+      "zh": "协办案件：{VAR_1}，{VAR_2}"
     },
     "gwp_gwpcasearchivescreen_036": {
       "en": "Village relief — {VAR_1}",
       "zh": "村庄善后 — {VAR_1}"
     },
     "gwp_gwpcasearchivescreen_037": {
-      "en": "Queued: {VAR_1}",
-      "zh": "进入任务池：{VAR_1}"
+      "en": "Registered: {VAR_1}",
+      "zh": "登记时间：{VAR_1}"
     },
     "gwp_gwpcasearchivescreen_038": {
-      "en": "Assignee: {VAR_1} | Stage: {VAR_2}",
-      "zh": "受领人：{VAR_1} | 当前阶段：{VAR_2}"
+      "en": "Assigned to: {VAR_1} | {VAR_2}",
+      "zh": "承办：{VAR_1} | {VAR_2}"
     },
     "gwp_gwpcasearchivescreen_039": {
-      "en": "Assignee: waiting for forced assignment",
-      "zh": "受领人：等待强制分配"
+      "en": "Unassigned",
+      "zh": "待分配"
     },
     "gwp_gwpcasearchivescreen_040": {
-      "en": "Task type: forced adoption relief | Remaining: {VAR_1} hours",
-      "zh": "任务类型：强制收养善后 | 剩余：{VAR_1}小时"
+      "en": "Relief work remaining: {VAR_1} hours",
+      "zh": "善后剩余：{VAR_1}小时"
     },
     "gwp_gwpcasearchivescreen_041": {
-      "en": "Task type: forced adoption relief",
-      "zh": "任务类型：强制收养善后"
+      "en": "Village relief",
+      "zh": "村庄善后"
     },
     "gwp_gwpcasearchivescreen_042": {
       "en": "waiting for assignment",
@@ -3103,24 +3103,24 @@
       "zh": "村庄重建 — {VAR_1}"
     },
     "gwp_gwpcasearchivescreen_050": {
-      "en": "Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
-      "zh": "受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}"
+      "en": "Assigned to: {VAR_1} ({VAR_2}) | {VAR_3}",
+      "zh": "承办：{VAR_1}（{VAR_2}） | {VAR_3}"
     },
     "gwp_gwpcasearchivescreen_051": {
-      "en": "Assignee: waiting for a reconstruction warden",
-      "zh": "受领人：等待村庄重建官"
+      "en": "Awaiting a reconstruction officer",
+      "zh": "等待重建官"
     },
     "gwp_gwpcasearchivescreen_052": {
-      "en": "Assignee: reconstruction office has died out",
-      "zh": "受领人：村庄重建职务已经断绝"
+      "en": "No reconstruction officer",
+      "zh": "暂无重建官"
     },
     "gwp_gwpcasearchivescreen_053": {
-      "en": "Task type: village reconstruction | Remaining: {VAR_1} hours | Estimated allocation: {VAR_2} | Treasury reserve: {VAR_3}",
-      "zh": "任务类型：村庄重建 | 剩余：{VAR_1}小时 | 预计拨款：{VAR_2} | 公库红线：{VAR_3}"
+      "en": "Remaining: {VAR_1} hours | Estimated funding: {VAR_2} | Treasury reserve: {VAR_3}",
+      "zh": "剩余：{VAR_1}小时 | 预计拨款：{VAR_2} | 公库留存：{VAR_3}"
     },
     "gwp_gwpcasearchivescreen_054": {
-      "en": "Task type: village reconstruction | Estimated allocation: {VAR_1} | Treasury reserve: {VAR_2}",
-      "zh": "任务类型：村庄重建 | 预计拨款：{VAR_1} | 公库红线：{VAR_2}"
+      "en": "Estimated funding: {VAR_1} | Treasury reserve: {VAR_2}",
+      "zh": "预计拨款：{VAR_1} | 公库留存：{VAR_2}"
     },
     "gwp_gwpcasearchivescreen_055": {
       "en": "reconstruction in progress",
@@ -3308,24 +3308,24 @@
       "zh": "{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。"
     },
     "gwp_issue_ledger_header": {
-      "en": "Petition — {VAR_1}",
-      "zh": "请愿任务 — {VAR_1}"
+      "en": "Petition: {VAR_1}",
+      "zh": "请愿：{VAR_1}"
     },
     "gwp_issue_ledger_assignment": {
-      "en": "Assignee: {VAR_1} ({VAR_2}) | Stage: {VAR_3}",
-      "zh": "受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}"
+      "en": "Assigned to: {VAR_1} ({VAR_2}) | {VAR_3}",
+      "zh": "承办：{VAR_1}（{VAR_2}） | {VAR_3}"
     },
     "gwp_issue_ledger_waiting": {
-      "en": "Assigned to: no one yet; the petition is still on the shelf",
-      "zh": "受领人：尚无；这份陈情还搁在架上"
+      "en": "Unassigned",
+      "zh": "待分配"
     },
     "gwp_issue_ledger_review": {
-      "en": "Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2} | Remaining review: {VAR_3} hours",
-      "zh": "任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2} | 剩余审理：{VAR_3}小时"
+      "en": "Petitioner: {VAR_1} | Location: {VAR_2} | Remaining: {VAR_3} hours",
+      "zh": "请愿人：{VAR_1} | 地点：{VAR_2} | 剩余：{VAR_3}小时"
     },
     "gwp_issue_ledger_detail": {
-      "en": "Task type: native town/village issue | Issuer: {VAR_1} | Settlement: {VAR_2}",
-      "zh": "任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}"
+      "en": "Petitioner: {VAR_1} | Location: {VAR_2}",
+      "zh": "请愿人：{VAR_1} | 地点：{VAR_2}"
     },
     "gwp_issue_stage_travel": {
       "en": "travelling to the issuer",
@@ -3341,13 +3341,13 @@
       "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_training_ledger_assignment": {
-      "en": "Trainer: {VAR_1} | Stage: {VAR_2}",
-      "zh": "练兵领主：{VAR_1} | 当前阶段：{VAR_2}",
+      "en": "Trainer: {VAR_1} | {VAR_2}",
+      "zh": "练兵官：{VAR_1} | {VAR_2}",
       "context": "玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。"
     },
     "gwp_training_ledger_travel": {
-      "en": "A transport is taking veterans and surplus arms to {VAR_1}. The veterans will join the village guard on arrival.",
-      "zh": "运兵队正将老兵和多余军械送往{VAR_1}，到村后老兵将并入守村队。",
+      "en": "Travelling to {VAR_1}",
+      "zh": "运往{VAR_1}",
       "context": "练兵官实体运兵队；地图状态和差事台账。"
     },
     "gwp_training_stage_travel": {
@@ -3616,24 +3616,24 @@
       "zh": "贵族事务官将回来继续处理你的封地请愿。"
     },
     "gwp_player_troop_ledger_header": {
-      "en": "Player troop order — {VAR_1} × {VAR_2}",
-      "zh": "玩家调兵订单 — {VAR_1}名{VAR_2}"
+      "en": "Troop order: {VAR_1} {VAR_2}",
+      "zh": "调兵：{VAR_1}名{VAR_2}"
     },
     "gwp_player_troop_ledger_assignment": {
-      "en": "Trainer: {VAR_1} | Stage: {VAR_2}",
-      "zh": "练兵官：{VAR_1} | 当前阶段：{VAR_2}"
+      "en": "Trainer: {VAR_1} | {VAR_2}",
+      "zh": "练兵官：{VAR_1} | {VAR_2}"
     },
     "gwp_player_troop_ledger_detail": {
-      "en": "Task type: player troop order | Ready: {VAR_1}/{VAR_2} | Paid on order: {VAR_3} denars",
-      "zh": "任务类型：玩家订兵 | 已备：{VAR_1}/{VAR_2} | 下单已付：{VAR_3} 第纳尔"
+      "en": "Ready: {VAR_1}/{VAR_2} | Paid: {VAR_3} denars",
+      "zh": "已备：{VAR_1}/{VAR_2} | 已付：{VAR_3} 第纳尔"
     },
     "gwp_player_troop_stage_training": {
-      "en": "training real troops",
-      "zh": "正在训练真实兵员"
+      "en": "Training",
+      "zh": "训练中"
     },
     "gwp_player_troop_stage_delivery": {
-      "en": "travelling to deliver troops",
-      "zh": "正在前往玩家身边交付"
+      "en": "Delivering troops",
+      "zh": "正在送兵"
     },
     "gwp_item_dual_offhand": {
       "en": "Grey Warden Dual Blade (Off Hand)",
@@ -6005,8 +6005,8 @@
       "context": "实体运兵队的遭遇对话、落村状态和台账。"
     },
     "gwp_training_ledger_settle": {
-      "en": "The transport is taking the remaining soldiers to settle in {VAR_1}.",
-      "zh": "运兵队正带余兵前往{VAR_1}，到村后并入守村队。",
+      "en": "Travelling to garrison {VAR_1}",
+      "zh": "前往{VAR_1}驻防",
       "context": "实体运兵队的遭遇对话、落村状态和台账。"
     },
     "gwp_training_stage_settle": {
@@ -6025,8 +6025,8 @@
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_travelling": {
-      "en": "on the way, at most about {VAR_1} h more",
-      "zh": "在路上，最多还要约{VAR_1}小时",
+      "en": "Travelling; about {VAR_1} hours until the deadline",
+      "zh": "出使中，期限剩余约{VAR_1}小时",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_collecting": {
@@ -6035,18 +6035,18 @@
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_failed": {
-      "en": "talks broke down; pursuit as usual",
-      "zh": "谈崩了，照常追捕",
+      "en": "Negotiation failed; pursuit underway",
+      "zh": "交涉未成，追捕中",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_grace": {
-      "en": "grace granted until {VAR_1}",
-      "zh": "给了宽限，到{VAR_1}",
+      "en": "Payment extended until {VAR_1}",
+      "zh": "已同意宽限至{VAR_1}",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_duel": {
-      "en": "to be settled at the tournament in {VAR_1}",
-      "zh": "约在{VAR_1}的比武大会上了结",
+      "en": "Duel agreed at {VAR_1}",
+      "zh": "已约定在{VAR_1}比武",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_helper_paused": {
@@ -6070,78 +6070,78 @@
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_grace": {
-      "en": "Asked for grace. An envoy will collect the fine when it runs out.",
-      "zh": "对方求了宽限，到期再派使者收钱。",
+      "en": "Agreement reached: payment extended.",
+      "zh": "交涉达成：同意宽限缴款。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_duel_called": {
-      "en": "Demanded a duel at the tournament in {VAR_1}.",
-      "zh": "对方要单挑，约在{VAR_1}的比武大会。",
+      "en": "Agreement reached: duel at {VAR_1}.",
+      "zh": "交涉达成：约在{VAR_1}比武。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_paid": {
-      "en": "Paid {VAR_1} denars. Case closed.",
-      "zh": "缴了{VAR_1}第纳尔，结案。",
+      "en": "Agreement reached: paid {VAR_1} denars; case closed.",
+      "zh": "交涉达成：已缴罚金{VAR_1}第纳尔，结案。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_paid_share": {
-      "en": "Paid part of the fine, {VAR_1} denars. Case closed.",
-      "zh": "缴了部分罚金{VAR_1}第纳尔，结案。",
+      "en": "Agreement reached: case closed after a payment of {VAR_1} denars.",
+      "zh": "交涉达成：缴纳{VAR_1}第纳尔后结案。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_surrender": {
-      "en": "Surrendered to the envoy. Case closed.",
-      "zh": "向使者投案，结案。",
+      "en": "Agreement reached: the offender surrendered.",
+      "zh": "交涉达成：对方已投案。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_bribed": {
-      "en": "The Warden took {VAR_1} denars on the side, and the case was dropped.",
-      "zh": "承办人私下收了{VAR_1}第纳尔，案子销掉。",
+      "en": "Negotiation ended: the warden took {VAR_1} denars privately and closed the case.",
+      "zh": "交涉结束：承办人私收{VAR_1}第纳尔后销案。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_duel_won": {
-      "en": "The Warden won the duel. The offender paid {VAR_1} denars.",
-      "zh": "灰袍比武胜出，对方缴了{VAR_1}第纳尔。",
+      "en": "Agreement fulfilled: the warden won the duel and collected {VAR_1} denars.",
+      "zh": "依约结案：灰袍比武获胜，对方缴纳{VAR_1}第纳尔。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_duel_lost": {
-      "en": "The offender won the duel and was let go as agreed.",
-      "zh": "对方比武胜出，依约放走。",
+      "en": "Agreement fulfilled: the offender won the duel; case closed.",
+      "zh": "依约结案：对方比武获胜。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_refused": {
-      "en": "Refused to listen. Pursuit continues.",
-      "zh": "对方不肯谈，照常追捕。",
+      "en": "Negotiation failed: the offender refused to talk.",
+      "zh": "交涉未成：对方拒绝谈判。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_talks_failed": {
-      "en": "The talks failed. Pursuit continues.",
-      "zh": "没谈拢，照常追捕。",
+      "en": "Negotiation failed: no agreement.",
+      "zh": "交涉未成：未能达成协议。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_grace_broke": {
-      "en": "Could not pay when the grace ran out. Pursuit continues.",
-      "zh": "宽限到期付不出钱，照常追捕。",
+      "en": "Negotiation failed: payment was not made by the deadline.",
+      "zh": "交涉未成：对方未按期缴款。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_lost": {
-      "en": "The envoy never came back. Pursuit continues.",
-      "zh": "使者没能回来，照常追捕。",
+      "en": "Negotiation failed: the envoy went missing.",
+      "zh": "交涉未成：使者途中失踪。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_timeout": {
-      "en": "The envoy ran out of time, or war broke out first. Pursuit continues.",
-      "zh": "使者超时或已开战，照常追捕。",
+      "en": "Negotiation failed: the mission deadline passed.",
+      "zh": "交涉未成：未能按期完成交涉。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_duel_cancelled": {
-      "en": "The duel fell through. Pursuit continues.",
-      "zh": "比武约定作废，照常追捕。",
+      "en": "Negotiation failed: the duel agreement was cancelled.",
+      "zh": "交涉未成：比武约定作废。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_failed": {
-      "en": "The talks came to nothing. Pursuit continues.",
-      "zh": "谈判没有结果，照常追捕。",
+      "en": "Negotiation failed.",
+      "zh": "交涉未成。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_item_duty_banner": {
@@ -6155,18 +6155,18 @@
       "context": "灰袍事务底部按钮，复用三类悬赏选择。"
     },
     "gwp_bounty_duty_requirements": {
-      "zh": "接新委托需装备灰袍执勤旗，且声望达到{STANDING}；旗留在行囊中即暂停。",
-      "en": "Equip the Grey Warden Duty Standard and reach {STANDING} standing to take new warrants. Keep it in your baggage to pause.",
+      "zh": "需装备执勤旗，且声望达到{STANDING}。",
+      "en": "Equip the duty banner and reach {STANDING} standing.",
       "context": "事务界面的接新委托条件，已接任务不受卸旗影响。"
     },
     "gwp_bounty_duty_ready": {
-      "zh": "正在执勤，可在此领取委托；卸下执勤旗暂停新委托，已接任务继续。",
-      "en": "On duty. Choose a warrant here; unequip the standard to pause new offers. Accepted warrants continue.",
+      "zh": "可领取委托",
+      "en": "Available for a commission",
       "context": "事务界面已达接单条件时。"
     },
     "gwp_bounty_duty_busy": {
-      "zh": "当前委托仍待完成或交差；卸下执勤旗不会取消它。",
-      "en": "Your current warrant still needs completion or settlement. Unequipping the standard will not cancel it.",
+      "zh": "已有在办委托",
+      "en": "Commission in progress",
       "context": "事务界面已有委托时。"
     },
     "gwp_duty_banner_request": {
@@ -6180,8 +6180,8 @@
       "context": "主动补领后回到领主对话，发一面旗，不自动装备、不发整套装备。"
     },
     "gwp_case_envoy_duel_waiting": {
-      "en": "Duel agreed; waiting for the Warden to finish an existing commitment",
-      "zh": "已答应单挑，待灰袍完成已有约定后赴会",
+      "en": "Duel agreed; awaiting departure",
+      "zh": "比武已约定，等待赴会",
       "context": "使者已经谈出单挑结果，领主正在战斗、履行玩家事务或另一场约斗；只排队，不重新谈判。"
     },
     "gwp_affairs_mine": {
@@ -6225,8 +6225,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_browse": {
-      "zh": "挑选案件",
-      "en": "Browse cases",
+      "zh": "领取委托",
+      "en": "Find a commission",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_view_hero": {
@@ -6435,8 +6435,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_faith_none": {
-      "zh": "当前没有仪式",
-      "en": "No active ritual",
+      "zh": "暂无仪式",
+      "en": "No ritual",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_faith_end": {
@@ -6525,8 +6525,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_collect": {
-      "zh": "案件已了结，待复命交差",
-      "en": "Case resolved; report for settlement",
+      "zh": "待复命",
+      "en": "Awaiting report",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_pursuing": {
@@ -6623,6 +6623,41 @@
       "zh": "完成",
       "en": "Done",
       "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_standing": {
+      "zh": "声望：{VALUE}",
+      "en": "Standing: {VALUE}",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_affairs_queued_work": {
+      "zh": "待办事项",
+      "en": "Pending work",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_player_order_wait_support": {
+      "zh": "等待支援结束",
+      "en": "Waiting for support duty to finish",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_player_order_wait_case": {
+      "zh": "等待执法任务结束",
+      "en": "Waiting for enforcement duty to finish",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_player_order_wait_duel": {
+      "zh": "等待比武结束",
+      "en": "Waiting for the duel to finish",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_envoy_outcome_war": {
+      "zh": "交涉未成：双方已开战。",
+      "en": "Negotiation failed: the factions are at war.",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    },
+    "gwp_envoy_outcome_target_unavailable": {
+      "zh": "交涉未成：未能找到目标。",
+      "en": "Negotiation failed: the target could not be found.",
+      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
     }
   },
   "fragments": {

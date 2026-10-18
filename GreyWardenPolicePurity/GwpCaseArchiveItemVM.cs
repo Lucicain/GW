@@ -93,6 +93,8 @@ namespace GreyWardenPolicePurity
             "grace_broke" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_grace_broke),
             "lost" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_lost),
             "timeout" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_timeout),
+            "war" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_war),
+            "target_unavailable" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_target_unavailable),
             "duel_cancelled" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_cancelled),
             _ => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_failed)
         };
@@ -301,10 +303,16 @@ namespace GreyWardenPolicePurity
             AssignmentText = GwpText.Get(
                 GwpTextCatalog.gwp_player_troop_ledger_assignment,
                 "VAR_1", trainerName,
-                "VAR_2", DescribePlayerTroopOrderStage(order.Stage));
+                "VAR_2", order.PausedBy switch
+                {
+                    WardenDuty.PlayerEscort => GwpText.Get(GwpTextCatalog.gwp_player_order_wait_support),
+                    WardenDuty.PlayerCase => GwpText.Get(GwpTextCatalog.gwp_player_order_wait_case),
+                    WardenDuty.Duel => GwpText.Get(GwpTextCatalog.gwp_player_order_wait_duel),
+                    _ => DescribePlayerTroopOrderStage(order.Stage)
+                });
             DetailsText = GwpText.Get(
                 GwpTextCatalog.gwp_player_troop_ledger_detail,
-                "VAR_1", order.ReadyCount, "VAR_2", order.Count,
+                "VAR_1", Math.Min(order.ReadyCount, order.Count), "VAR_2", order.Count,
                 "VAR_3", order.Price);
         }
 
@@ -554,20 +562,9 @@ namespace GreyWardenPolicePurity
 
         private static string FormatLocation(Vec2 position)
         {
-            var nearestTown = GwpCommon.FindNearestTown(position);
-            if (nearestTown != null)
-            {
-                return GwpText.Get(
-                    GwpTextCatalog.gwp_gwpcasearchivescreen_029,
-                    "VAR_1", nearestTown.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_031),
-                    "VAR_2", GwpText.Format(position.x, "0.0"),
-                    "VAR_3", GwpText.Format(position.y, "0.0"));
-            }
-
-            return GwpText.Get(
-                GwpTextCatalog.gwp_gwpcasearchivescreen_030,
-                "VAR_1", GwpText.Format(position.x, "0.0"),
-                "VAR_2", GwpText.Format(position.y, "0.0"));
+            var nearest = GwpCommon.FindNearestSettlement(position);
+            return nearest == null ? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)
+                : GwpText.Get(GwpTextCatalog.gwp_affairs_near, "PLACE", nearest.Name.ToString());
         }
     }
 }

@@ -2,7 +2,7 @@
 
 > 当前状态：人物追责保留、使者独立、真实进城跟随与动态出战门槛已修复，已部署待实测
 > 最后验收：`9d005bb`
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`79a01fe`（2026-10-18）
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_sheltered_enforcement.py`
 > 待实测：第三方击溃/俘虏或人物暂离后罪责与伤亡保留、恢复带队自动重选；普通改追与使者原目标独立；进城跟随和战后恢复目标均不强制开打；同版本存读冷却接续
 

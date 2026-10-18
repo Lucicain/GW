@@ -2,7 +2,7 @@
 
 > 当前状态：第三方俘虏或暂时失队保留人物追责与委托；既有交差规则保留，已部署待实测
 > 最后验收：`032cf65`（诊断已退休；后续当场补登记待实测）
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`79a01fe`（2026-10-18）
 > 覆盖源码：`PlayerBountyBehavior.CaseSettlement.cs` `tools/tests/test_case_envoy_scenarios.py`
 > 待实测：委托目标被打垮但人跑掉时，震慑照上、不再计被捕次数（和灰袍自己打垮未俘一致，见 case-enforcement.md「震慑口径」）
 

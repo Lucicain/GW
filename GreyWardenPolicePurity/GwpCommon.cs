@@ -286,7 +286,7 @@ namespace GreyWardenPolicePurity
         /// 但不把藏身处等特殊地点当作普通地理参照。
         /// </summary>
         public static bool IsOrdinarySettlement(Settlement? settlement) =>
-            settlement?.IsTown == true || settlement?.IsVillage == true;
+            settlement?.IsTown == true || settlement?.IsCastle == true || settlement?.IsVillage == true;
 
         public static Settlement? FindNearestSettlement(Vec2 position)
         {

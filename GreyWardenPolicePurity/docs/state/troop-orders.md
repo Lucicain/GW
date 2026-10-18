@@ -2,7 +2,7 @@
 
 > 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`93d5bd6`（2026-10-15）
+> 已复核至：`79a01fe`（2026-10-18）
 > 覆盖源码：`GreyWardenTroopRequestBehavior.cs` `GreyWardenTroopRequestBehavior.Cohort.cs` `PolicePartyTroopUpgradeModel.cs`
 > 待实测：调兵、练兵队归还及解散保留实际伤兵与经验；同版存读后接续
 
@@ -21,6 +21,7 @@
   不足则 `Training`（调货、补员、加经验、拆编重训）；够数则转 `Delivering`，
   练兵官主队去找玩家交付。
 - 交付对话要求 `Delivering`、正确练兵官、足量目标兵。
+- 练兵官被后送达的玩家求援、玩家案件或约斗占用时，订单暂停，等那件事结束再接着练（`GwpWardenDuties.BlockingDuty(练兵官, PlayerRequest)`）；已有订单的练兵官不会被后来的求援抽走。订单快照带 `PausedBy`，事务页据此显示等待原因。（依据：差事归属表；离线回归 test_duty_priority、test_player_order_status 2026-10-18）
 
 ## 随行练兵队
 

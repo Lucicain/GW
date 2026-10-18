@@ -105,7 +105,7 @@ namespace TaleWorlds.Core.ViewModelCollection.ImageIdentifiers{public class Char
 namespace TaleWorlds.InputSystem{public class HotKey{}}
 namespace TaleWorlds.CampaignSystem.ViewModelCollection.Input{public class InputKeyItemVM{public static InputKeyItemVM CreateFromHotKey(TaleWorlds.InputSystem.HotKey k,bool c)=>new();public void OnFinalize(){}}}
 namespace TaleWorlds.CampaignSystem{
- public class Party{public string StringId="";public string Name="";public Text GetBehaviorText()=>new();}public class Text{public override string ToString()=>"moving";}
+ public class Party{public string StringId="";public string Name="";public object GetPosition2D=new();public Text GetBehaviorText()=>new();}public class Text{public override string ToString()=>"moving";}
  public class Settlement{public string EncyclopediaLink="village";}public class Hero{public bool IsAlive=true;public int Age=30;public string StringId="hero",Name="hero",EncyclopediaLink="hero";public object CharacterObject=new();public Party? PartyBelongedTo;public Settlement? CurrentSettlement;}
  public class Clan{public List<Hero> Heroes=new();}
  public class Campaign{public static Campaign Current=new();public Models Models=new();public Encyclopedia EncyclopediaManager=new();public T? GetCampaignBehavior<T>() where T:class=>GreyWardenPolicePurity.PlayerBountyBehavior.Current as T;}
@@ -117,6 +117,7 @@ using TaleWorlds.CampaignSystem;
 ENTRY
 static class GwpTextCatalog{KEYS}
 static class GwpText{public static string Get(string k,params object[] a)=>k;}
+static class GwpCommon{public static Settlement? NormalizePlayerFacingSettlement(Settlement? s,object position)=>s;}
 static class GwpAffairsText{public static string Pair(string a,string b)=>a+"|"+b;public static string Duty(GreyWardenFamilyBehavior.DutyKind d)=>d.ToString();public static string Line(string k,object v)=>k+":"+v;public static string TargetLocation(Party p,string? k=null)=>p.StringId;}
 static class GwpRuntimeState{public static class Player{public static int Reputation=22;}}
 static class GreyWardenFamilyBehavior{public enum DutyKind{LegacyOrdinary,Training,CaravanProtection,VillageProtection,IssueResolution,Reconstruction,PlayerRequests}public static bool TryGetDuty(Hero h,out DutyKind d){d=DutyKind.Training;return true;}public static string GetDutyTitle(Hero h)=>"Training";}
@@ -146,7 +147,10 @@ static void Main(){
  int closes=0;var vm=new GwpAffairsVM(()=>closes++);
  Check(vm.Rows.Single().Id=="dispatch:1","opening without a commission defaults to the active player courier");
  Check(vm.Tabs.Count==5,"existing personal, member, duty, faith and armory sections");
+ Check(!vm.ShowBrowse,"courier page has no unrelated commission button");
+ vm.Categories.First(c=>c.Id=="current").ExecuteSelect();Check(vm.ShowBrowse,"empty current commission offers the commission entry");
  vm.BrowseCases();Check(vm.Categories.Count==6&&vm.Rows.Count==8,"case browser has six offices and all available cases");
+ Check(!vm.ShowBrowse&&vm.ShowRefresh,"office case browser only offers relevant actions");
  Check(!vm.Categories.Any(c=>c.Id=="all"),"no crowded all-affairs category");Check(vm.Rows[0].Id=="case7","highest personal fee first");
  vm.Rows.First(r=>r.Id=="case3").ExecuteSelect();vm.ExecuteRefresh();Check(vm.Rows.First(r=>r.Id=="case3").IsSelected,"refresh retains selected stable case identity");
  vm.ExecuteHero();Check(closes==0&&Campaign.Current.EncyclopediaManager.Last=="hero"&&vm.Rows.Single(r=>r.IsSelected).Id=="case3","hero encyclopedia overlays the current selection without closing to the map");
@@ -154,6 +158,7 @@ static void Main(){
  GwpAffairsData.Items.RemoveAll(e=>e.Id=="case3");vm.ExecuteRefresh();Check(vm.Rows[0].IsSelected,"withdrawn selected case picks a valid remaining row");
  PlayerBountyBehavior.Current.Ready=false;Check(!vm.CanAccept,"button eligibility is live after flag removal");vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted==null&&vm.Status.Length>0,"stale acceptance refreshes in place without closing");
  PlayerBountyBehavior.Current.Ready=true;vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted=="case7","selected full-list case reaches authority");Check(vm.Rows.Single().Id=="commission","successful acceptance opens the ongoing personal contract");
+ Check(!vm.ShowBrowse&&vm.Standing==GwpTextCatalog.gwp_affairs_standing,"accepted commission has no browser shortcut or banner-mechanics explanation");
  vm.Tabs[1].ExecuteSelect();Check(vm.Categories.Count==7&&!vm.Categories.Any(c=>c.Id=="other"),"adult offices plus children, no unassigned adult group");
  var warden=new Hero{Name="warden",StringId="warden"};PoliceStats.Clan.Heroes.Add(warden);
  var task=new GwpAffairsEntry("work-case","trade","real current case"){Assignee=warden,WorkSummary="envoy travelling",Summary="PLAYER FEE"};task.Fields.Add("PLAYER FEE AND TARGET STRENGTH");GwpAffairsData.Items.Add(task);
@@ -162,7 +167,12 @@ static void Main(){
  Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_work).Lines.Select(l=>l.Text).SequenceEqual(new[]{"real current case","envoy travelling"}),"current work uses assignment progress, not personal reward fields or report entries");
  Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_negotiations).Lines.Any(l=>l.Text=="paid outcome 123"),"historical negotiation shows its actual outcome in a separate named section");
  Check(!vm.Fields.Any(l=>l.Text.Contains("PLAYER FEE"))&&!vm.Sections.SelectMany(s=>s.Lines).Any(l=>l.Text.Contains("PLAYER FEE")),"member details do not copy a player's potential bounty into NPC work");
+ task.IsPaused=true;task.WorkSummary="waiting for support";vm.ExecuteRefresh();
+ Check(!vm.Sections.Any(s=>s.Title==GwpTextCatalog.gwp_affairs_work),"paused order is not presented as concurrent active work");
+ Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_queued_work).Lines.Any(l=>l.Text=="waiting for support"),"paused order has an explicit pending section");
+ Check(!vm.ShowBrowse,"member page has no commission shortcut");
  vm.Tabs[4].ExecuteSelect();Check(vm.IsEmpty&&!vm.ShowAccept,"unimplemented player armory cannot manufacture items or commissions");
+ Check(!vm.ShowRefresh&&!vm.ShowBrowse,"unimplemented armory has no irrelevant actions");
  vm.Tabs[3].ExecuteSelect();Check(vm.IsEmpty&&!vm.HasHero&&!vm.HasPlace,"empty congregation has no stale navigation target");
  Console.WriteLine("AFFAIRS_VM_ASSERTIONS="+count);
 }}
@@ -264,13 +274,23 @@ static void Main(){
         texts = json.loads((MODULE / 'PlayerText/strings.json').read_text(encoding='utf-8-sig'))['strings']
         for key in re.findall(r'GwpTextCatalog\.(gwp_affairs_\w+)', vm):
             self.assertTrue(texts[key]['en'] and texts[key]['zh'], key)
-        # The native ClanScreen footer is the sole bottom action; tools live above the lists.
+        # Native header/footer and page-scoped actions address the reported overlap and styling.
         footer = root.find('.//Standard.DialogCloseButtons')
         self.assertIsNotNone(footer)
         self.assertEqual('ExecuteClose', footer.get('Parameter.DoneButtonAction'))
         self.assertEqual('false', footer.get('Parameter.ShowCancel'))
-        toolbar = next(e for e in root.iter('ListPanel') if e.get('Id') == 'ListActions')
-        self.assertEqual({'ExecuteTakeBounty', 'ExecuteRefresh'}, {b.get('Command.Click') for b in toolbar.iter('ButtonWidget')})
+        self.assertEqual('@Title', root.find('.//Standard.TopPanel').get('Parameter.Title'))
+        self.assertFalse(any(e.get('Id') == 'ListActions' for e in root.iter()))
+        browse = next(e for e in root.iter('ButtonWidget') if e.get('Command.Click') == 'ExecuteTakeBounty')
+        self.assertEqual('@ShowBrowse', browse.get('IsVisible'))
+        refresh = next(e for e in root.iter('ButtonWidget') if e.get('Command.Click') == 'ExecuteRefresh')
+        self.assertEqual('@ShowRefresh', refresh.get('IsVisible'))
+        self.assertEqual('24', refresh.get('MarginTop'))
+        tabs = [e for e in root.iter('ButtonWidget') if e.get('Brush', '').startswith('Header.Tab.')]
+        self.assertEqual(3, len(tabs))
+        for button in tabs:
+            self.assertEqual('!'+button.get('Brush')+'.Width.Scaled', button.get('SuggestedWidth'))
+            self.assertEqual('!'+button.get('Brush')+'.Height.Scaled', button.get('SuggestedHeight'))
         self.assertFalse(any(e.get('Command.Click') == 'ExecuteAppendix' for e in root.iter()))
         self.assertFalse(any(e.get('Brush') == 'ButtonBrush3' for e in root.iter()))
         for text in root.iter('TextWidget'):

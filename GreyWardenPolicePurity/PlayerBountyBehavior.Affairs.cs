@@ -33,12 +33,15 @@ namespace GreyWardenPolicePurity
             entry.Summary = GwpText.Get(IsWaitingForBountyCollection ? GwpTextCatalog.gwp_affairs_collect : GwpTextCatalog.gwp_affairs_pursuing);
             entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward,
                 GwpAffairsText.Money(CalculateCaseFee(CaseAmountDue))));
-            entry.Fields.Add(GwpText.Get(GwpTextCatalog.gwp_affairs_reward_note));
             if (_activeBountyDeadlineHours > 0 && IsTrackingBountyTarget)
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_deadline,
                     GwpCaseArchiveItemVM.FormatCampaignDate(CampaignTime.Hours((float)_activeBountyDeadlineHours))));
             MobileParty? target = crime?.Offender ?? hero?.PartyBelongedTo;
-            if (target?.IsActive == true) entry.Fields.Add(GwpAffairsText.TargetLocation(target));
+            if (target?.IsActive == true)
+            {
+                entry.Fields.Add(GwpAffairsText.TargetLocation(target));
+                entry.Place = GwpCommon.NormalizePlayerFacingSettlement(target.CurrentSettlement, target.GetPosition2D);
+            }
             if (crime != null && target?.IsActive == true)
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_strength,
                     GwpText.Format(GwpStrength.CaseTarget(crime), "0")));

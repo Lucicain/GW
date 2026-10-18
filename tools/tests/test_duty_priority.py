@@ -65,6 +65,8 @@ class GreyWardenPartyDesireBehavior {
   foreach(var wanted in new[]{WardenDuty.VillageRelief,WardenDuty.PlayerCase,WardenDuty.Reconstruction,WardenDuty.Issue,WardenDuty.OrdinaryCase})Check(!GwpWardenDuties.IsFreeFor(p,wanted),"existing assistance blocks "+wanted);
   p.Duties.Clear();p.Duties.Add(WardenDuty.Reconstruction);Check(!GwpWardenDuties.IsFreeFor(p,WardenDuty.VillageRelief),"relief cannot take reconstruction");
   p.Duties.Clear();p.Duties.Add(WardenDuty.Issue);Check(!GwpWardenDuties.IsFreeFor(p,WardenDuty.VillageRelief),"relief cannot take issue");
+  p.Duties.Clear();GwpRuntimeState.Crime.Task=new PoliceTask{IsPlayerBountyEscort=true};Check(GwpWardenDuties.BlockingDuty(p,WardenDuty.PlayerRequest)==WardenDuty.PlayerEscort,"accepted support pauses a later troop order");
+  GwpRuntimeState.Crime.Task=null;p.Duties.Add(WardenDuty.PlayerTroopOrder);Check(GwpWardenDuties.BlockingDuty(p,WardenDuty.PlayerEscort)==WardenDuty.PlayerTroopOrder,"existing troop order cannot be taken by later support");
   p.Duties.Clear();p.Duties.Add(WardenDuty.ReconstructionReserve);Check(GwpWardenDuties.IsFreeFor(p,WardenDuty.Assistance),"unassigned reconstruction backlog permits assistance");
   p.Duties.Clear();p.Duties.Add(WardenDuty.IssueReserve);Check(GwpWardenDuties.IsFreeFor(p,WardenDuty.Assistance),"unassigned issue backlog permits assistance");
   p.Duties.Clear();p.Duties.Add(WardenDuty.Duel);foreach(var wanted in new[]{WardenDuty.OrdinaryCase,WardenDuty.Assistance,WardenDuty.VillageRelief,WardenDuty.PlayerCase,WardenDuty.PlayerRequest,WardenDuty.Reconstruction,WardenDuty.Issue})Check(!GwpWardenDuties.IsFreeFor(p,wanted),"duel blocks "+wanted);

@@ -720,7 +720,7 @@
   <string id="gwp_affairs_nav_need_membership" text="只有宣誓加入灰袍的悬赏猎人才能查看灰袍事务。" />
   <string id="gwp_gwpcasearchivescreen_001" text="灰袍事务" />
   <string id="gwp_gwpcasearchivescreen_002" text="当前任务池为空。" />
-  <string id="gwp_gwpcasearchivescreen_003" text="刷新案卷" />
+  <string id="gwp_gwpcasearchivescreen_003" text="刷新" />
   <string id="gwp_gwpcasearchivescreen_004" text="关闭" />
   <string id="gwp_gwpcasearchivescreen_005" text="在册卷宗：罪案 {VAR_1} 宗，其他事务 {VAR_2} 宗 | 已有人办：{VAR_3} | 尚无人办：{VAR_4}" />
   <string id="gwp_gwpcasearchivescreen_006" text="未结案" />
@@ -729,9 +729,9 @@
   <string id="gwp_gwpcasearchivescreen_010" text="未记录" />
   <string id="gwp_gwpcasearchivescreen_011" text="未记录" />
   <string id="gwp_gwpcasearchivescreen_012" text="罪行：{VAR_1} | 受害者：{VAR_2} | 地点：{VAR_3}" />
-  <string id="gwp_gwpcasearchivescreen_013" text="追踪情况：无人承办" />
+  <string id="gwp_gwpcasearchivescreen_013" text="待分配" />
   <string id="gwp_gwpcasearchivescreen_015" text="{VAR_1}（{VAR_2}）" />
-  <string id="gwp_gwpcasearchivescreen_016" text="追踪情况：{VAR_1} | 当前阶段：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_016" text="承办：{VAR_1} | {VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_017" text="玩家" />
   <string id="gwp_gwpcasearchivescreen_018" text="支援受托的玩家" />
   <string id="gwp_gwpcasearchivescreen_019" text="抓捕后护送" />
@@ -749,14 +749,14 @@
   <string id="gwp_gwpcasearchivescreen_031" text="未知城镇" />
   <string id="gwp_gwpcasearchivescreen_032" text="协力任务 — {VAR_1}" />
   <string id="gwp_gwpcasearchivescreen_033" text="分配时间：{VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_034" text="受领人：{VAR_1} | 支援主办人：{VAR_2}" />
-  <string id="gwp_gwpcasearchivescreen_035" text="协力原因：主办灰袍追击受阻，需要共同围捕 | 来源案件：{VAR_1} — {VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_034" text="协办：{VAR_1} | 主办：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_035" text="协办案件：{VAR_1}，{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_036" text="村庄善后 — {VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_037" text="进入任务池：{VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_038" text="受领人：{VAR_1} | 当前阶段：{VAR_2}" />
-  <string id="gwp_gwpcasearchivescreen_039" text="受领人：等待强制分配" />
-  <string id="gwp_gwpcasearchivescreen_040" text="任务类型：强制收养善后 | 剩余：{VAR_1}小时" />
-  <string id="gwp_gwpcasearchivescreen_041" text="任务类型：强制收养善后" />
+  <string id="gwp_gwpcasearchivescreen_037" text="登记时间：{VAR_1}" />
+  <string id="gwp_gwpcasearchivescreen_038" text="承办：{VAR_1} | {VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_039" text="待分配" />
+  <string id="gwp_gwpcasearchivescreen_040" text="善后剩余：{VAR_1}小时" />
+  <string id="gwp_gwpcasearchivescreen_041" text="村庄善后" />
   <string id="gwp_gwpcasearchivescreen_042" text="等待分配" />
   <string id="gwp_gwpcasearchivescreen_043" text="暂缓，先履行已有约定" />
   <string id="gwp_gwpcasearchivescreen_044" text="前往村庄" />
@@ -771,11 +771,11 @@
   <string id="gwp_reconstruction_001" text="无名村庄" />
   <string id="gwp_reconstruction_002" text="{VAR_1}完成了{VAR_2}的重建。" />
   <string id="gwp_gwpcasearchivescreen_049" text="村庄重建 — {VAR_1}" />
-  <string id="gwp_gwpcasearchivescreen_050" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
-  <string id="gwp_gwpcasearchivescreen_051" text="受领人：等待村庄重建官" />
-  <string id="gwp_gwpcasearchivescreen_052" text="受领人：村庄重建职务已经断绝" />
-  <string id="gwp_gwpcasearchivescreen_053" text="任务类型：村庄重建 | 剩余：{VAR_1}小时 | 预计拨款：{VAR_2} | 公库红线：{VAR_3}" />
-  <string id="gwp_gwpcasearchivescreen_054" text="任务类型：村庄重建 | 预计拨款：{VAR_1} | 公库红线：{VAR_2}" />
+  <string id="gwp_gwpcasearchivescreen_050" text="承办：{VAR_1}（{VAR_2}） | {VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_051" text="等待重建官" />
+  <string id="gwp_gwpcasearchivescreen_052" text="暂无重建官" />
+  <string id="gwp_gwpcasearchivescreen_053" text="剩余：{VAR_1}小时 | 预计拨款：{VAR_2} | 公库留存：{VAR_3}" />
+  <string id="gwp_gwpcasearchivescreen_054" text="预计拨款：{VAR_1} | 公库留存：{VAR_2}" />
   <string id="gwp_gwpcasearchivescreen_055" text="驻村重建中" />
   <string id="gwp_gwpcasearchivescreen_056" text="司法公库：{VAR_1} 第纳尔" />
   <string id="gwp_gwpcasearchivescreen_057" text="你的声望：{VAR_1} | 通缉中 —— 巡逻队罚金 {VAR_2} 第纳尔，灰袍领主罚金 {VAR_3} 第纳尔" />
@@ -820,16 +820,16 @@
   <string id="gwp_bio_hint_rebuild" text="她留在受灾村庄安排重建，帮助流散的居民回来。" />
   <string id="gwp_bio_hint_player" text="她受理贵族的申诉，为受到不公对待的灰袍成员请求公开议决。" />
   <string id="gwp_issue_resolution_complete" text="{VAR_1}在{VAR_2}处驻留六小时并解决了请求：{VAR_3}。" />
-  <string id="gwp_issue_ledger_header" text="请愿任务 — {VAR_1}" />
-  <string id="gwp_issue_ledger_assignment" text="受领人：{VAR_1}（{VAR_2}） | 当前阶段：{VAR_3}" />
-  <string id="gwp_issue_ledger_waiting" text="受领人：尚无；这份陈情还搁在架上" />
-  <string id="gwp_issue_ledger_review" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2} | 剩余审理：{VAR_3}小时" />
-  <string id="gwp_issue_ledger_detail" text="任务类型：原版城镇/村庄任务 | 发布人：{VAR_1} | 地点：{VAR_2}" />
+  <string id="gwp_issue_ledger_header" text="请愿：{VAR_1}" />
+  <string id="gwp_issue_ledger_assignment" text="承办：{VAR_1}（{VAR_2}） | {VAR_3}" />
+  <string id="gwp_issue_ledger_waiting" text="待分配" />
+  <string id="gwp_issue_ledger_review" text="请愿人：{VAR_1} | 地点：{VAR_2} | 剩余：{VAR_3}小时" />
+  <string id="gwp_issue_ledger_detail" text="请愿人：{VAR_1} | 地点：{VAR_2}" />
   <string id="gwp_issue_stage_travel" text="前往任务发布人" />
   <string id="gwp_issue_stage_review" text="驻留审理六小时" />
   <string id="gwp_training_ledger_header" text="运兵：{VAR_1}" />
-  <string id="gwp_training_ledger_assignment" text="练兵领主：{VAR_1} | 当前阶段：{VAR_2}" />
-  <string id="gwp_training_ledger_travel" text="运兵队正将老兵和多余军械送往{VAR_1}，到村后老兵将并入守村队。" />
+  <string id="gwp_training_ledger_assignment" text="练兵官：{VAR_1} | {VAR_2}" />
+  <string id="gwp_training_ledger_travel" text="运往{VAR_1}" />
   <string id="gwp_training_stage_travel" text="运送老兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
   <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
@@ -896,11 +896,11 @@
   <string id="gwp_player_request_stage_vote" text="新的封地投票已经开启" />
   <string id="gwp_player_request_stage_deferred" text="请愿已搁置" />
   <string id="gwp_fief_defer_complete" text="贵族事务官将回来继续处理你的封地请愿。" />
-  <string id="gwp_player_troop_ledger_header" text="玩家调兵订单 — {VAR_1}名{VAR_2}" />
-  <string id="gwp_player_troop_ledger_assignment" text="练兵官：{VAR_1} | 当前阶段：{VAR_2}" />
-  <string id="gwp_player_troop_ledger_detail" text="任务类型：玩家订兵 | 已备：{VAR_1}/{VAR_2} | 下单已付：{VAR_3} 第纳尔" />
-  <string id="gwp_player_troop_stage_training" text="正在训练真实兵员" />
-  <string id="gwp_player_troop_stage_delivery" text="正在前往玩家身边交付" />
+  <string id="gwp_player_troop_ledger_header" text="调兵：{VAR_1}名{VAR_2}" />
+  <string id="gwp_player_troop_ledger_assignment" text="练兵官：{VAR_1} | {VAR_2}" />
+  <string id="gwp_player_troop_ledger_detail" text="已备：{VAR_1}/{VAR_2} | 已付：{VAR_3} 第纳尔" />
+  <string id="gwp_player_troop_stage_training" text="训练中" />
+  <string id="gwp_player_troop_stage_delivery" text="正在送兵" />
   <string id="gwp_item_dual_offhand" text="灰袍双持剑（副手）" />
   <string id="gwp_item_dual_mainhand" text="灰袍双持剑（主手）" />
   <string id="gwp_fieldarrest_open" text="我受灰袍委托，为你名下的一件案子而来。" />
@@ -1474,42 +1474,42 @@
   <string id="gwp_training_transport_outbound" text="向{VILLAGE}运送老兵和军械" />
   <string id="gwp_training_transport_greeting" text="我们奉练兵官的命令运送老兵和军械，还得赶路。" />
   <string id="gwp_training_transport_settling" text="带兵前往{VILLAGE}落脚" />
-  <string id="gwp_training_ledger_settle" text="运兵队正带余兵前往{VAR_1}，到村后并入守村队。" />
+  <string id="gwp_training_ledger_settle" text="前往{VAR_1}驻防" />
   <string id="gwp_training_stage_settle" text="回村落脚" />
   <string id="gwp_notice_training" text="{COUNT}名老兵加入守村队。" />
   <string id="gwp_case_envoy_suffix" text="{VAR_1} | 使者：{VAR_2}" />
-  <string id="gwp_case_envoy_travelling" text="在路上，最多还要约{VAR_1}小时" />
+  <string id="gwp_case_envoy_travelling" text="出使中，期限剩余约{VAR_1}小时" />
   <string id="gwp_case_envoy_collecting" text="宽限到期，去收罚金" />
-  <string id="gwp_case_envoy_failed" text="谈崩了，照常追捕" />
-  <string id="gwp_case_envoy_grace" text="给了宽限，到{VAR_1}" />
-  <string id="gwp_case_envoy_duel" text="约在{VAR_1}的比武大会上了结" />
+  <string id="gwp_case_envoy_failed" text="交涉未成，追捕中" />
+  <string id="gwp_case_envoy_grace" text="已同意宽限至{VAR_1}" />
+  <string id="gwp_case_envoy_duel" text="已约定在{VAR_1}比武" />
   <string id="gwp_case_helper_paused" text="{VAR_1} | 暂停：正在协助{VAR_2}" />
   <string id="gwp_envoy_report_header" text="使者回报：{VAR_1}" />
   <string id="gwp_envoy_report_time" text="回报时间：{VAR_1}" />
   <string id="gwp_envoy_report_warden" text="派出：{VAR_1}" />
-  <string id="gwp_envoy_outcome_grace" text="对方求了宽限，到期再派使者收钱。" />
-  <string id="gwp_envoy_outcome_duel_called" text="对方要单挑，约在{VAR_1}的比武大会。" />
-  <string id="gwp_envoy_outcome_paid" text="缴了{VAR_1}第纳尔，结案。" />
-  <string id="gwp_envoy_outcome_paid_share" text="缴了部分罚金{VAR_1}第纳尔，结案。" />
-  <string id="gwp_envoy_outcome_surrender" text="向使者投案，结案。" />
-  <string id="gwp_envoy_outcome_bribed" text="承办人私下收了{VAR_1}第纳尔，案子销掉。" />
-  <string id="gwp_envoy_outcome_duel_won" text="灰袍比武胜出，对方缴了{VAR_1}第纳尔。" />
-  <string id="gwp_envoy_outcome_duel_lost" text="对方比武胜出，依约放走。" />
-  <string id="gwp_envoy_outcome_refused" text="对方不肯谈，照常追捕。" />
-  <string id="gwp_envoy_outcome_talks_failed" text="没谈拢，照常追捕。" />
-  <string id="gwp_envoy_outcome_grace_broke" text="宽限到期付不出钱，照常追捕。" />
-  <string id="gwp_envoy_outcome_lost" text="使者没能回来，照常追捕。" />
-  <string id="gwp_envoy_outcome_timeout" text="使者超时或已开战，照常追捕。" />
-  <string id="gwp_envoy_outcome_duel_cancelled" text="比武约定作废，照常追捕。" />
-  <string id="gwp_envoy_outcome_failed" text="谈判没有结果，照常追捕。" />
+  <string id="gwp_envoy_outcome_grace" text="交涉达成：同意宽限缴款。" />
+  <string id="gwp_envoy_outcome_duel_called" text="交涉达成：约在{VAR_1}比武。" />
+  <string id="gwp_envoy_outcome_paid" text="交涉达成：已缴罚金{VAR_1}第纳尔，结案。" />
+  <string id="gwp_envoy_outcome_paid_share" text="交涉达成：缴纳{VAR_1}第纳尔后结案。" />
+  <string id="gwp_envoy_outcome_surrender" text="交涉达成：对方已投案。" />
+  <string id="gwp_envoy_outcome_bribed" text="交涉结束：承办人私收{VAR_1}第纳尔后销案。" />
+  <string id="gwp_envoy_outcome_duel_won" text="依约结案：灰袍比武获胜，对方缴纳{VAR_1}第纳尔。" />
+  <string id="gwp_envoy_outcome_duel_lost" text="依约结案：对方比武获胜。" />
+  <string id="gwp_envoy_outcome_refused" text="交涉未成：对方拒绝谈判。" />
+  <string id="gwp_envoy_outcome_talks_failed" text="交涉未成：未能达成协议。" />
+  <string id="gwp_envoy_outcome_grace_broke" text="交涉未成：对方未按期缴款。" />
+  <string id="gwp_envoy_outcome_lost" text="交涉未成：使者途中失踪。" />
+  <string id="gwp_envoy_outcome_timeout" text="交涉未成：未能按期完成交涉。" />
+  <string id="gwp_envoy_outcome_duel_cancelled" text="交涉未成：比武约定作废。" />
+  <string id="gwp_envoy_outcome_failed" text="交涉未成。" />
   <string id="gwp_item_duty_banner" text="灰袍仪仗执勤旗" />
   <string id="gwp_bounty_duty_select" text="领取委托" />
-  <string id="gwp_bounty_duty_requirements" text="接新委托需装备灰袍执勤旗，且声望达到{STANDING}；旗留在行囊中即暂停。" />
-  <string id="gwp_bounty_duty_ready" text="正在执勤，可在此领取委托；卸下执勤旗暂停新委托，已接任务继续。" />
-  <string id="gwp_bounty_duty_busy" text="当前委托仍待完成或交差；卸下执勤旗不会取消它。" />
+  <string id="gwp_bounty_duty_requirements" text="需装备执勤旗，且声望达到{STANDING}。" />
+  <string id="gwp_bounty_duty_ready" text="可领取委托" />
+  <string id="gwp_bounty_duty_busy" text="已有在办委托" />
   <string id="gwp_duty_banner_request" text="我需要补领一面执勤旗。" />
   <string id="gwp_duty_banner_issued" text="旗已交给你。装备后以灰袍黑金鸟徽执勤，可接新委托；留在行囊里便是暂不执勤。退出修会时须交还。" />
-  <string id="gwp_case_envoy_duel_waiting" text="已答应单挑，待灰袍完成已有约定后赴会" />
+  <string id="gwp_case_envoy_duel_waiting" text="比武已约定，等待赴会" />
   <string id="gwp_affairs_mine" text="我的事务" />
   <string id="gwp_affairs_members" text="灰袍成员" />
   <string id="gwp_affairs_duties" text="职能事务" />
@@ -1518,7 +1518,7 @@
   <string id="gwp_affairs_empty" text="当前没有此类事务。" />
   <string id="gwp_affairs_details" text="事务详情" />
   <string id="gwp_affairs_accept" text="接受委托" />
-  <string id="gwp_affairs_browse" text="挑选案件" />
+  <string id="gwp_affairs_browse" text="领取委托" />
   <string id="gwp_affairs_view_hero" text="查看人物" />
   <string id="gwp_affairs_view_place" text="查看地点" />
   <string id="gwp_affairs_line" text="{LABEL}：{VALUE}" />
@@ -1560,7 +1560,7 @@
   <string id="gwp_affairs_faith_guard" text="在村守兵" />
   <string id="gwp_affairs_faith_priest" text="祭司" />
   <string id="gwp_affairs_faith_ritual" text="当前仪式" />
-  <string id="gwp_affairs_faith_none" text="当前没有仪式" />
+  <string id="gwp_affairs_faith_none" text="暂无仪式" />
   <string id="gwp_affairs_faith_end" text="剩余约 {HOURS} 小时" />
   <string id="gwp_affairs_faith_armory" text="村庄军械件数" />
   <string id="gwp_affairs_faith_goods" text="货仓作价" />
@@ -1578,7 +1578,7 @@
   <string id="gwp_affairs_armory_closed" text="军械库尚未开放" />
   <string id="gwp_affairs_standing_gate" text="宣誓入会且灰袍声望达到 {STANDING} 后可查看。" />
   <string id="gwp_affairs_refresh_changed" text="案件或资格已变化，请查看刷新后的详情。" />
-  <string id="gwp_affairs_collect" text="案件已了结，待复命交差" />
+  <string id="gwp_affairs_collect" text="待复命" />
   <string id="gwp_affairs_pursuing" text="追踪目标" />
   <string id="gwp_affairs_deadline" text="委托期限" />
   <string id="gwp_affairs_amount" text="{VALUE} 第纳尔" />
@@ -1598,5 +1598,12 @@
   <string id="gwp_affairs_work" text="当前工作" />
   <string id="gwp_affairs_negotiations" text="近期交涉回报" />
   <string id="gwp_affairs_done" text="完成" />
+  <string id="gwp_affairs_standing" text="声望：{VALUE}" />
+  <string id="gwp_affairs_queued_work" text="待办事项" />
+  <string id="gwp_player_order_wait_support" text="等待支援结束" />
+  <string id="gwp_player_order_wait_case" text="等待执法任务结束" />
+  <string id="gwp_player_order_wait_duel" text="等待比武结束" />
+  <string id="gwp_envoy_outcome_war" text="交涉未成：双方已开战。" />
+  <string id="gwp_envoy_outcome_target_unavailable" text="交涉未成：未能找到目标。" />
 </strings>
 </base>

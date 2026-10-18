@@ -2,7 +2,7 @@
 
 > 当前状态：现行规则；灰袍中立操作由公共入口延后至玩家战斗收尾
 > 最后验收：未建立检查点
-> 已复核至：`626b079`（2026-10-18）
+> 已复核至：`79a01fe`（2026-10-18）
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 

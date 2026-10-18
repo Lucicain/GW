@@ -1,24 +1,48 @@
 <Prefab>
+  <Constants>
+    <Constant Name="Header.Tab.Left.Width" BrushLayer="Default" BrushName="Header.Tab.Left" BrushValueType="Width" />
+    <Constant Name="Header.Tab.Left.Width.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Left.Width" />
+    <Constant Name="Header.Tab.Left.Height" BrushLayer="Default" BrushName="Header.Tab.Left" BrushValueType="Height" />
+    <Constant Name="Header.Tab.Left.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Left.Height" />
+    <Constant Name="Header.Tab.Center.Width" BrushLayer="Default" BrushName="Header.Tab.Center" BrushValueType="Width" />
+    <Constant Name="Header.Tab.Center.Width.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Center.Width" />
+    <Constant Name="Header.Tab.Center.Height" BrushLayer="Default" BrushName="Header.Tab.Center" BrushValueType="Height" />
+    <Constant Name="Header.Tab.Center.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Center.Height" />
+    <Constant Name="Header.Tab.Right.Width" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Width" />
+    <Constant Name="Header.Tab.Right.Width.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Width" />
+    <Constant Name="Header.Tab.Right.Height" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Height" />
+    <Constant Name="Header.Tab.Right.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Height" />
+  </Constants>
   <Window>
     <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
       <Children>
         <Standard.Background />
-        <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="184" Brush="Clan.Header">
-          <Children>
-            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="58" Text="@Title" Brush="Encyclopedia.Title" MarginTop="12" DoNotAcceptEvents="true" CanBreakWords="true" />
-            <ListPanel DataSource="{Tabs}" WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="62" HorizontalAlignment="Center" MarginTop="82" StackLayout.LayoutMethod="HorizontalLeftToRight">
-              <ItemTemplate>
-                <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="230" SuggestedHeight="56" Brush="@TabBrush" Command.Click="ExecuteSelect" IsSelected="@IsSelected" UpdateChildrenStates="true" DoNotPassEventsToChildren="true">
+        <Standard.TopPanel Parameter.Title="@Title" />
+        <ListPanel DataSource="{Tabs}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="100" StackLayout.LayoutMethod="HorizontalLeftToRight">
+          <ItemTemplate>
+            <Widget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren">
+              <Children>
+                <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="!Header.Tab.Left.Width.Scaled" SuggestedHeight="!Header.Tab.Left.Height.Scaled" Brush="Header.Tab.Left" Command.Click="ExecuteSelect" IsSelected="@IsSelected" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" IsVisible="@IsFirstTab">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Text="@Title" Brush="Clan.TabControl.Text" DoNotAcceptEvents="true" CanBreakWords="true" PositionXOffset="10" MarginTop="3" />
+                  </Children>
+                </ButtonWidget>
+                <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="!Header.Tab.Center.Width.Scaled" SuggestedHeight="!Header.Tab.Center.Height.Scaled" Brush="Header.Tab.Center" Command.Click="ExecuteSelect" IsSelected="@IsSelected" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" IsVisible="@IsMiddleTab" PositionYOffset="6">
                   <Children>
                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Text="@Title" Brush="Clan.TabControl.Text" DoNotAcceptEvents="true" CanBreakWords="true" />
                   </Children>
                 </ButtonWidget>
-              </ItemTemplate>
-            </ListPanel>
-            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="28" MarginTop="148" MarginLeft="40" MarginRight="40" Text="@Standing" Brush="Encyclopedia.Text" Brush.FontSize="20" DoNotAcceptEvents="true" CanBreakWords="true" />
-          </Children>
-        </BrushWidget>
-        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="196" MarginBottom="108" MarginLeft="24" MarginRight="24" Id="AffairsColumns">
+                <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="!Header.Tab.Right.Width.Scaled" SuggestedHeight="!Header.Tab.Right.Height.Scaled" Brush="Header.Tab.Right" Command.Click="ExecuteSelect" IsSelected="@IsSelected" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" IsVisible="@IsLastTab">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Text="@Title" Brush="Clan.TabControl.Text" DoNotAcceptEvents="true" CanBreakWords="true" PositionXOffset="-10" MarginTop="3" />
+                  </Children>
+                </ButtonWidget>
+              </Children>
+            </Widget>
+          </ItemTemplate>
+        </ListPanel>
+        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="28" MarginTop="164" MarginLeft="40" MarginRight="40" Text="@Standing" Brush="Encyclopedia.Text" Brush.FontSize="20" DoNotAcceptEvents="true" CanBreakWords="true" />
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="208" MarginBottom="108" MarginLeft="24" MarginRight="24" Id="AffairsColumns">
           <Children>
             <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="272" Brush="Frame1Brush">
               <Children>
@@ -49,7 +73,7 @@
             <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="560" MarginLeft="286" Brush="Frame1Brush">
               <Children>
                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="48" MarginTop="12" MarginLeft="18" MarginRight="18" Brush="Clan.RightPanel.Name.Text" Text="@ListTitle" DoNotAcceptEvents="true" CanBreakWords="true" />
-                <Widget Id="AffairRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="152" MarginBottom="16" MarginLeft="12" MarginRight="12">
+                <Widget Id="AffairRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="66" MarginBottom="16" MarginLeft="12" MarginRight="12">
                   <Children>
                     <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" InnerPanel="AffairClip\AffairList" ClipRect="AffairClip" MouseScrollAxis="Vertical" VerticalScrollbar="..\AffairScrollbar\Scrollbar" AutoHideScrollBars="true" ClipContents="true">
                       <Children>
@@ -77,27 +101,17 @@
                     <Standard.VerticalScrollbar Id="AffairScrollbar" HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" VerticalAlignment="Bottom" MarginBottom="3" />
                   </Children>
                 </Widget>
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="30" MarginRight="30" MarginTop="170" Brush="Encyclopedia.Text" Text="@EmptyText" IsVisible="@IsEmpty" DoNotAcceptEvents="true" CanBreakWords="true" />
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" VerticalAlignment="Top" MarginBottom="0" MarginLeft="20" MarginRight="20" Text="@Status" Brush="Encyclopedia.Text" DoNotAcceptEvents="true" CanBreakWords="true" MarginTop="114" Brush.FontSize="19" AutoHideIfEmpty="true" />
-                <ListPanel Id="ListActions" WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="44" HorizontalAlignment="Center" MarginTop="66" StackLayout.LayoutMethod="HorizontalLeftToRight">
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="30" MarginRight="30" MarginTop="88" Brush="Encyclopedia.Text" Text="@EmptyText" IsVisible="@IsEmpty" DoNotAcceptEvents="true" CanBreakWords="true" />
+                <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="260" SuggestedHeight="44" Brush="ButtonBrush2" Command.Click="ExecuteTakeBounty" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" Id="FindCommissionButton" IsVisible="@ShowBrowse" HorizontalAlignment="Center" MarginTop="140">
                   <Children>
-                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="250" SuggestedHeight="42" Brush="ButtonBrush2" Command.Click="ExecuteTakeBounty" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" MarginLeft="8">
-                      <Children>
-                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotAcceptEvents="true" Brush="Standard.DialogCloseButtons.ButtonText" Text="@BrowseText" MarginLeft="10" MarginRight="10" CanBreakWords="true" Brush.FontSize="24" />
-                      </Children>
-                    </ButtonWidget>
-                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="160" SuggestedHeight="42" Brush="ButtonBrush2" Command.Click="ExecuteRefresh" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" MarginLeft="8">
-                      <Children>
-                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotAcceptEvents="true" Brush="Standard.DialogCloseButtons.ButtonText" Text="@RefreshText" MarginLeft="10" MarginRight="10" CanBreakWords="true" Brush.FontSize="24" />
-                      </Children>
-                    </ButtonWidget>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotAcceptEvents="true" Brush="Standard.DialogCloseButtons.ButtonText" Text="@BrowseText" MarginLeft="10" MarginRight="10" CanBreakWords="true" Brush.FontSize="24" />
                   </Children>
-                </ListPanel>
+                </ButtonWidget>
               </Children>
             </BrushWidget>
             <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="860" Brush="Frame1Brush">
               <Children>
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="24" MarginRight="24" MarginTop="24" MarginBottom="144">
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="24" MarginRight="24" MarginTop="24" MarginBottom="192">
                   <Children>
                     <Widget Id="DetailRegion" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ClipContents="true">
                       <Children>
@@ -141,6 +155,7 @@
                 </Widget>
                 <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Bottom" HorizontalAlignment="Center" MarginBottom="22" StackLayout.LayoutMethod="VerticalTopToBottom">
                   <Children>
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" MarginBottom="10" MarginLeft="0" MarginRight="0" Text="@Status" Brush="Encyclopedia.Text" DoNotAcceptEvents="true" CanBreakWords="true" MarginTop="0" Brush.FontSize="20" AutoHideIfEmpty="true" SuggestedWidth="420" />
                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="270" SuggestedHeight="54" Brush="ButtonBrush1" Command.Click="ExecuteAccept" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" IsVisible="@ShowAccept" IsEnabled="@CanAccept">
                       <Children>
                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotAcceptEvents="true" Brush="Standard.DialogCloseButtons.ButtonText" Text="@AcceptText" MarginLeft="10" MarginRight="10" CanBreakWords="true" Brush.FontSize="24" />
@@ -167,6 +182,11 @@
           </Children>
         </Widget>
         <Standard.DialogCloseButtons Parameter.DoneButtonAction="ExecuteClose" Parameter.DoneButtonText="@CloseText" Parameter.DoneInputKeyDataSource="{DoneInputKey}" Parameter.ShowCancel="false" />
+        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="120" SuggestedHeight="40" Brush="ButtonBrush2" Command.Click="ExecuteRefresh" UpdateChildrenStates="true" DoNotPassEventsToChildren="true" Id="RefreshPageButton" HorizontalAlignment="Right" MarginRight="36" MarginTop="24" IsVisible="@ShowRefresh">
+          <Children>
+            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotAcceptEvents="true" Brush="Standard.DialogCloseButtons.ButtonText" Text="@RefreshText" MarginLeft="10" MarginRight="10" CanBreakWords="true" Brush.FontSize="24" />
+          </Children>
+        </ButtonWidget>
       </Children>
     </Widget>
   </Window>

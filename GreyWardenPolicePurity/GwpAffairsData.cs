@@ -20,6 +20,7 @@ namespace GreyWardenPolicePurity
         internal GreyWardenFamilyBehavior.DutyKind Duty { get; set; }
         internal bool IsPersonal { get; set; }
         internal bool IsOffer { get; set; }
+        internal bool IsPaused { get; set; }
         internal int DisplayedFine { get; set; }
         internal int DisplayedReward { get; set; }
         internal Hero? Hero { get; set; }
@@ -28,6 +29,7 @@ namespace GreyWardenPolicePurity
         internal List<string> Fields { get; } = new();
         internal List<string> Notes { get; } = new();
         internal List<string> Work { get; } = new();
+        internal List<string> Pending { get; } = new();
         internal List<string> Reports { get; } = new();
     }
 
@@ -37,10 +39,14 @@ namespace GreyWardenPolicePurity
             "LABEL", GwpText.Get(labelKey), "VALUE", value);
         internal static string Money(int value) => GwpText.Get(GwpTextCatalog.gwp_affairs_amount, "VALUE", value);
         internal static string Pair(string a, string b) => GwpText.Get(GwpTextCatalog.gwp_affairs_row, "A", a, "B", b);
-        internal static string TargetLocation(MobileParty target, string? labelKey = null) => Line(labelKey ?? GwpTextCatalog.gwp_affairs_location,
-            target.CurrentSettlement?.Name?.ToString() ??
-            GwpText.Get(GwpTextCatalog.gwp_affairs_near, "PLACE",
-                GwpCommon.FindNearestTown(target.GetPosition2D)?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)));
+        internal static string TargetLocation(MobileParty target, string? labelKey = null)
+        {
+            var place = GwpCommon.NormalizePlayerFacingSettlement(target.CurrentSettlement, target.GetPosition2D);
+            string name = place?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown);
+            return Line(labelKey ?? GwpTextCatalog.gwp_affairs_location,
+                place == null || GwpCommon.IsOrdinarySettlement(target.CurrentSettlement) ? name
+                    : GwpText.Get(GwpTextCatalog.gwp_affairs_near, "PLACE", name));
+        }
         internal static string Duty(GreyWardenFamilyBehavior.DutyKind duty) => GwpText.Get(duty switch
         {
             GreyWardenFamilyBehavior.DutyKind.Training => GwpTextCatalog.gwp_duty_training,
@@ -99,12 +105,11 @@ namespace GreyWardenPolicePurity
                 entry.DisplayedReward = reward;
                 entry.Summary = GwpAffairsText.Pair(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward, GwpAffairsText.Money(reward)),
                     PlayerBountyBehavior.AffairsDifficulty(crime));
-                entry.Notes.Add(GwpText.Get(GwpTextCatalog.gwp_affairs_reward_note));
                 entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_fine, GwpAffairsText.Money(entry.DisplayedFine)));
                 MobileParty? target = crime.Offender;
                 if (target?.IsActive == true)
                 {
-                    entry.Place = target.CurrentSettlement;
+                    entry.Place = GwpCommon.NormalizePlayerFacingSettlement(target.CurrentSettlement, target.GetPosition2D);
                     entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_formation,
                         GwpText.Get(target.AttachedTo != null || target.Army?.LeaderParty == target
                             ? GwpTextCatalog.gwp_affairs_army : GwpTextCatalog.gwp_affairs_party)));
@@ -155,8 +160,12 @@ namespace GreyWardenPolicePurity
                 result.Add(Formatted("training:" + item.TrainerPartyId, GreyWardenFamilyBehavior.DutyKind.Training,
                     new GwpCaseArchiveItemVM(item), item.TrainerPartyId));
             foreach (var item in GreyWardenTroopRequestBehavior.GetTaskSnapshots())
-                result.Add(Formatted("order:" + item.TrainerPartyId, GreyWardenFamilyBehavior.DutyKind.Training,
-                    new GwpCaseArchiveItemVM(item), item.TrainerPartyId, true));
+            {
+                var entry = Formatted("order:" + item.TrainerPartyId, GreyWardenFamilyBehavior.DutyKind.Training,
+                    new GwpCaseArchiveItemVM(item), item.TrainerPartyId, true);
+                entry.IsPaused = item.PausedBy != null;
+                result.Add(entry);
+            }
             foreach (var item in GreyWardenPlayerRequestBehavior.GetTaskSnapshots())
                 result.Add(Formatted("request:" + item.SettlementName, GreyWardenFamilyBehavior.DutyKind.PlayerRequests,
                     new GwpCaseArchiveItemVM(item), item.AssigneePartyId, true));

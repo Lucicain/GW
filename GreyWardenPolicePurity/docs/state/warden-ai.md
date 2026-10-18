@@ -2,7 +2,7 @@
 
 > 当前状态：沿用差事登记处完成约斗保护、协力征调与收养续办修复，离线通过，已部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
+> 已复核至：`79a01fe`（2026-10-18）
 > 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs` `tools/tests/test_native_campaign_contracts.py` `tools/tests/test_native_follow_settlement.py` `tools/tests/test_duty_priority.py` `tools/tests/test_duty_scenarios.py` `tools/Check-CodeHygiene.py`
 > 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
 
