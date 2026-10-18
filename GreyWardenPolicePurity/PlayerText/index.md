@@ -718,10 +718,10 @@
 | gwp_gwpencyclopediaclanpagevm_004 | Grey Warden affairs | 灰袍事务 | GwpAffairsNavigation.cs:51, GwpEncyclopediaClanPageVM.cs:30 |
 | gwp_gwpencyclopediaclanpagevm_005 | Standing wars and their grounds, the case and duty pool, the judicial treasury, your standing, and the family roll. | 查看对外战争与开战依据、案件与差事总池、司法公库、你的声望，以及家族名册。 | GwpEncyclopediaClanPageVM.cs:32 |
 | gwp_affairs_nav_need_membership | Only sworn hunters of the Grey Wardens can open their affairs. | 只有宣誓加入灰袍的悬赏猎人才能查看灰袍事务。 | PlayerBountyBehavior.DialogueAndNotification.cs:604 |
-| gwp_gwpcasearchivescreen_001 | Grey Warden affairs | 灰袍事务 | GwpAffairsVM.cs:78 |
+| gwp_gwpcasearchivescreen_001 | Grey Warden affairs | 灰袍事务 | GwpAffairsVM.cs:96 |
 | gwp_gwpcasearchivescreen_002 | There are currently no tasks in the pool. | 当前任务池为空。 | 未检出直接引用；保留 |
-| gwp_gwpcasearchivescreen_003 | Refresh ledger | 刷新案卷 | GwpAffairsVM.cs:93 |
-| gwp_gwpcasearchivescreen_004 | Close | 关闭 | GwpAffairsVM.cs:94 |
+| gwp_gwpcasearchivescreen_003 | Refresh ledger | 刷新案卷 | GwpAffairsVM.cs:110 |
+| gwp_gwpcasearchivescreen_004 | Close | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpcasearchivescreen_005 | Open files: {VAR_1} criminal cases, {VAR_2} other matters &#124; In hand: {VAR_3} &#124; Unassigned: {VAR_4} | 在册卷宗：罪案 {VAR_1} 宗，其他事务 {VAR_2} 宗 &#124; 已有人办：{VAR_3} &#124; 尚无人办：{VAR_4} | 未检出直接引用；保留 |
 | gwp_gwpcasearchivescreen_006 | OPEN | 未结案 | GwpCaseArchiveItemVM.cs:40 |
 | gwp_gwpcasearchivescreen_008 | {VAR_1} — {VAR_2} | {VAR_1} — {VAR_2} | GwpCaseArchiveItemVM.cs:42 |
@@ -764,7 +764,7 @@
 | gwp_gwpcasearchivescreen_046 | unknown | 未知 | GwpCaseArchiveItemVM.cs:477, GwpCaseArchiveItemVM.cs:491, GwpCaseArchiveItemVM.cs:505, GwpCaseArchiveItemVM.cs:523, GwpCaseArchiveItemVM.cs:533 |
 | gwp_gwpcasearchivescreen_047 | Unknown Grey Warden party | 未知灰袍队伍 | GwpCaseArchiveItemVM.cs:72, GwpCaseArchiveItemVM.cs:114, GwpCaseArchiveItemVM.cs:117, GwpCaseArchiveItemVM.cs:148, GwpCaseArchiveItemVM.cs:172, GwpCaseArchiveItemVM.cs:205, GwpCaseArchiveItemVM.cs:232, GwpCaseArchiveItemVM.cs:293, GwpCaseArchiveItemVM.cs:377, GwpCaseArchiveItemVM.cs:390 |
 | gwp_gwpcasearchivescreen_048 | Unknown target | 未知目标 | GwpCaseArchiveItemVM.cs:70, GwpCaseArchiveItemVM.cs:123, GwpCaseArchiveItemVM.cs:450 |
-| gwp_greywardenfamilybehavior_053 | Village Reconstruction Warden | 灰袍村庄重建官 | GreyWardenFamilyBehavior.cs:312, GwpAffairsData.cs:46 |
+| gwp_greywardenfamilybehavior_053 | Village Reconstruction Warden | 灰袍村庄重建官 | GreyWardenFamilyBehavior.cs:312, GwpAffairsData.cs:50 |
 | gwp_greywardenfamilybehavior_054 | Grey Warden Lawkeeper | 灰袍巡法官 | GreyWardenFamilyBehavior.cs:304, GreyWardenFamilyBehavior.cs:314 |
 | gwp_greywardenfamilybehavior_055 | — | {VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。成年后，她正式受职为{VAR_3}并承担对应职责；她的经历证明，法律不仅要缉捕罪犯，也必须替灾后幸存者恢复秩序与归宿。 | 未检出直接引用；保留 |
 | gwp_greywardenfamilybehavior_056 | — | {VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。成年后，她正式受职为{VAR_2}并承担对应职责。对民众而言，她代表着灰袍仍会守护道路、缉捕罪犯、修复暴力造成的破坏并维持和平。 | 未检出直接引用；保留 |
@@ -777,12 +777,12 @@
 | gwp_gwpcasearchivescreen_053 | Task type: village reconstruction &#124; Remaining: {VAR_1} hours &#124; Estimated allocation: {VAR_2} &#124; Treasury reserve: {VAR_3} | 任务类型：村庄重建 &#124; 剩余：{VAR_1}小时 &#124; 预计拨款：{VAR_2} &#124; 公库红线：{VAR_3} | GwpCaseArchiveItemVM.cs:188 |
 | gwp_gwpcasearchivescreen_054 | Task type: village reconstruction &#124; Estimated allocation: {VAR_1} &#124; Treasury reserve: {VAR_2} | 任务类型：村庄重建 &#124; 预计拨款：{VAR_1} &#124; 公库红线：{VAR_2} | GwpCaseArchiveItemVM.cs:192 |
 | gwp_gwpcasearchivescreen_055 | reconstruction in progress | 驻村重建中 | GwpCaseArchiveItemVM.cs:490 |
-| gwp_gwpcasearchivescreen_056 | Judicial treasury: {VAR_1} denars | 司法公库：{VAR_1} 第纳尔 | GwpAffairsVM.cs:211 |
+| gwp_gwpcasearchivescreen_056 | Judicial treasury: {VAR_1} denars | 司法公库：{VAR_1} 第纳尔 | GwpAffairsVM.cs:232 |
 | gwp_gwpcasearchivescreen_057 | Your standing: {VAR_1} &#124; Wanted — the lawful fine is {VAR_2} denars to a provost patrol, {VAR_3} to a Grey Warden lord | 你的声望：{VAR_1} &#124; 通缉中 —— 巡逻队罚金 {VAR_2} 第纳尔，灰袍领主罚金 {VAR_3} 第纳尔 | 未检出直接引用；保留 |
-| gwp_gwpcasearchivescreen_058 | in good standing | 声誉良好 | GwpAffairsVM.cs:81 |
+| gwp_gwpcasearchivescreen_058 | in good standing | 声誉良好 | GwpAffairsVM.cs:99 |
 | gwp_gwpcasearchivescreen_059 | nothing on record | 尚无记录 | 未检出直接引用；保留 |
 | gwp_gwpcasearchivescreen_060 | under suspicion, not yet wanted | 已有嫌疑，尚未通缉 | 未检出直接引用；保留 |
-| gwp_gwpcasearchivescreen_061 | Your standing: {VAR_1} &#124; {VAR_2} | 你的声望：{VAR_1} &#124; {VAR_2} | GwpAffairsVM.cs:80 |
+| gwp_gwpcasearchivescreen_061 | Your standing: {VAR_1} &#124; {VAR_2} | 你的声望：{VAR_1} &#124; {VAR_2} | GwpAffairsVM.cs:98 |
 | gwp_gwpcasearchivescreen_062 | Family: not yet established | 家族：尚未建立 | 未检出直接引用；保留 |
 | gwp_gwpcasearchivescreen_063 | ready to take in a girl | 已可收养女孩 | 未检出直接引用；保留 |
 | gwp_gwpcasearchivescreen_064 | {VAR_1} until the next adoption | 距下次收养还需 {VAR_1} | 未检出直接引用；保留 |
@@ -805,11 +805,11 @@
 | gwp_join_recruits_granted | {VAR_1} Grey Warden recruits have joined your party. | {VAR_1} 名灰袍新兵加入了你的队伍。 | PlayerBountyBehavior.DialogueAndNotification.cs:444 |
 | gwp_gwpencyclopediaheropagevm_020 | — | 村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_021 | — | 商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |
-| gwp_duty_training | Training Warden | 灰袍练兵者 | GreyWardenFamilyBehavior.cs:308, GwpAffairsData.cs:42 |
-| gwp_duty_caravan | Caravan Protection Warden | 灰袍商路巡法者 | GreyWardenFamilyBehavior.cs:309, GwpAffairsData.cs:43 |
-| gwp_duty_village | Village Protection Warden | 灰袍乡土巡法者 | GreyWardenFamilyBehavior.cs:310, GwpAffairsData.cs:44 |
-| gwp_duty_issues | Petition Warden | 灰袍请愿巡行者 | GreyWardenFamilyBehavior.cs:311, GwpAffairsData.cs:45 |
-| gwp_duty_player | Noble Affairs Liaison | 贵族事务协调官 | GreyWardenFamilyBehavior.cs:313, GwpAffairsData.cs:47 |
+| gwp_duty_training | Training Warden | 灰袍练兵者 | GreyWardenFamilyBehavior.cs:308, GwpAffairsData.cs:46 |
+| gwp_duty_caravan | Caravan Protection Warden | 灰袍商路巡法者 | GreyWardenFamilyBehavior.cs:309, GwpAffairsData.cs:47 |
+| gwp_duty_village | Village Protection Warden | 灰袍乡土巡法者 | GreyWardenFamilyBehavior.cs:310, GwpAffairsData.cs:48 |
+| gwp_duty_issues | Petition Warden | 灰袍请愿巡行者 | GreyWardenFamilyBehavior.cs:311, GwpAffairsData.cs:49 |
+| gwp_duty_player | Noble Affairs Liaison | 贵族事务协调官 | GreyWardenFamilyBehavior.cs:313, GwpAffairsData.cs:51 |
 | gwp_adult_adopted_origin | {VAR_1} was taken in by the Grey Wardens after {VAR_2} was sacked and burned in her childhood. She remained to serve the order as an adult. {VAR_3} | {VAR_1}幼时因{VAR_2}遭劫焚毁而被灰袍收养，成年后留在修会任职。{VAR_3} | 收养成员成年后的百科开头，再拼接实际本职简介VAR_3。 |
 | gwp_adult_born_origin | {VAR_1} grew up under the Grey Warden order's rule and took up its duties on reaching adulthood. {VAR_2} | {VAR_1}在灰袍修会长大，从小受戒律约束，成年后承担修会的职责。{VAR_2} | 非收养成员成年后的百科开头，再拼接实际本职简介VAR_2。 |
 | gwp_bio_hint_law | She serves with the patrols, dealing with cases across the land. | 她随巡察队处理各地案件。 | 成年成员没有本职记录时的百科职责片段。 |
@@ -1518,7 +1518,7 @@
 | gwp_affairs_empty | No affairs in this category. | 当前没有此类事务。 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_details | Details | 事务详情 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_accept | Accept commission | 接受委托 | 灰袍事务全屏界面，2026-10-18。 |
-| gwp_affairs_browse | Browse available cases | 领取委托：查看案件 | 灰袍事务全屏界面，2026-10-18。 |
+| gwp_affairs_browse | Browse cases | 挑选案件 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_view_hero | View character | 查看人物 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_view_place | View location | 查看地点 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_line | {LABEL}: {VALUE} | {LABEL}：{VALUE} | 灰袍事务全屏界面，2026-10-18。 |
@@ -1549,7 +1549,7 @@
 | gwp_affairs_outbound | Outbound | 正在递送 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_returning | Returning | 正在归队 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_receiver | Recipient | 收件领主 | 灰袍事务全屏界面，2026-10-18。 |
-| gwp_affairs_cargo | Cargo | 随队财货 | 灰袍事务全屏界面，2026-10-18。 |
+| gwp_affairs_cargo | Cargo | 携带物资 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
 | gwp_affairs_gold | Gold carried | 携带金币 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_prisoners | Prisoners | 押送俘虏 | 灰袍事务全屏界面，2026-10-18。 |
 | gwp_affairs_departed | Dispatched | 出发时间 | 灰袍事务全屏界面，2026-10-18。 |
@@ -1590,3 +1590,11 @@
 | gwp_affairs_damnation | Fiery punishment | 烈火责罚 | 事务教务仪式名。 |
 | gwp_affairs_near | Near {PLACE} | {PLACE}附近 | 目标当前在聚落外时的位置说明。 |
 | gwp_affairs_faith_share | Faithful share | 信众比例 | 教务页信众户占总户数比例。 |
+| gwp_affairs_processing | Processing record | 办理记录 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_incident | Incident record | 案情记录 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_stores | Stores and travelling parties | 库房与外出队伍 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_current_location | Current location | 当前所在 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_organization | Order overview | 组织概况 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_work | Current work | 当前工作 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_negotiations | Recent negotiation reports | 近期交涉回报 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |
+| gwp_affairs_done | Done | 完成 | 灰袍事务明确分节与原版完成按钮，2026-10-18。 |

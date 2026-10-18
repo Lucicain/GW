@@ -26,6 +26,7 @@ namespace GreyWardenPolicePurity
                     GwpText.Get(GwpTextCatalog.gwp_affairs_couriers), GwpText.Get(titleKey))
                 {
                     IsPersonal = true, Hero = receiver?.LeaderHero,
+                    NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_cargo),
                     Summary = GwpText.Get(record.Phase == GwpDispatchPhase.Outbound
                         ? GwpTextCatalog.gwp_affairs_outbound : GwpTextCatalog.gwp_affairs_returning)
                 };
@@ -37,7 +38,7 @@ namespace GreyWardenPolicePurity
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_status, entry.Summary));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_receiver,
                     receiver?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)));
-                entry.Fields.Add(GwpAffairsText.TargetLocation(party));
+                entry.Fields.Add(GwpAffairsText.TargetLocation(party, GwpTextCatalog.gwp_affairs_current_location));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_men, GwpText.Get(GwpTextCatalog.gwp_affairs_numbers,
                     "TOTAL", party.MemberRoster.TotalManCount, "HEALTHY", party.Party.NumberOfHealthyMembers)));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_gold, GwpAffairsText.Money(party.PartyTradeGold)));

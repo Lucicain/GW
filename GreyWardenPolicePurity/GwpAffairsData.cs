@@ -15,6 +15,8 @@ namespace GreyWardenPolicePurity
         internal string Group { get; }
         internal string Title { get; }
         internal string Summary { get; set; } = string.Empty;
+        internal string WorkSummary { get; set; } = string.Empty;
+        internal string NotesTitle { get; set; } = string.Empty;
         internal GreyWardenFamilyBehavior.DutyKind Duty { get; set; }
         internal bool IsPersonal { get; set; }
         internal bool IsOffer { get; set; }
@@ -25,6 +27,8 @@ namespace GreyWardenPolicePurity
         internal Settlement? Place { get; set; }
         internal List<string> Fields { get; } = new();
         internal List<string> Notes { get; } = new();
+        internal List<string> Work { get; } = new();
+        internal List<string> Reports { get; } = new();
     }
 
     internal static class GwpAffairsText
@@ -33,7 +37,7 @@ namespace GreyWardenPolicePurity
             "LABEL", GwpText.Get(labelKey), "VALUE", value);
         internal static string Money(int value) => GwpText.Get(GwpTextCatalog.gwp_affairs_amount, "VALUE", value);
         internal static string Pair(string a, string b) => GwpText.Get(GwpTextCatalog.gwp_affairs_row, "A", a, "B", b);
-        internal static string TargetLocation(MobileParty target) => Line(GwpTextCatalog.gwp_affairs_location,
+        internal static string TargetLocation(MobileParty target, string? labelKey = null) => Line(labelKey ?? GwpTextCatalog.gwp_affairs_location,
             target.CurrentSettlement?.Name?.ToString() ??
             GwpText.Get(GwpTextCatalog.gwp_affairs_near, "PLACE",
                 GwpCommon.FindNearestTown(target.GetPosition2D)?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)));
@@ -63,8 +67,8 @@ namespace GreyWardenPolicePurity
             GwpCaseArchiveItemVM item, string assignee, bool personal = false)
         {
             var entry = new GwpAffairsEntry(id, GwpAffairsText.Duty(duty), item.Header)
-            { Duty = duty, IsPersonal = personal, Summary = item.AssignmentText, Assignee = FindParty(assignee)?.LeaderHero };
-            entry.Fields.Add(item.AssignmentText);
+            { Duty = duty, IsPersonal = personal, Summary = item.AssignmentText, WorkSummary = item.AssignmentText,
+                NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_processing), Assignee = FindParty(assignee)?.LeaderHero };
             entry.Fields.Add(item.DetailsText);
             entry.Notes.Add(item.TimeText);
             return entry;
@@ -86,6 +90,8 @@ namespace GreyWardenPolicePurity
                     ? GreyWardenFamilyBehavior.DutyKind.CaravanProtection : GreyWardenFamilyBehavior.DutyKind.VillageProtection;
                 var item = new GwpCaseArchiveItemVM(crime, task);
                 GwpAffairsEntry entry = Formatted(crime.CrimeId, duty, item, task?.PolicePartyId ?? string.Empty);
+                entry.NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_incident);
+                entry.Fields.Insert(0, item.AssignmentText);
                 entry.Hero = crime.OffenderHero;
                 entry.IsOffer = available.Contains(crime.CrimeId);
                 entry.DisplayedFine = GwpFieldArrestPricing.AssessFine(crime);
@@ -93,7 +99,7 @@ namespace GreyWardenPolicePurity
                 entry.DisplayedReward = reward;
                 entry.Summary = GwpAffairsText.Pair(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward, GwpAffairsText.Money(reward)),
                     PlayerBountyBehavior.AffairsDifficulty(crime));
-                entry.Fields.Insert(0, GwpText.Get(GwpTextCatalog.gwp_affairs_reward_note));
+                entry.Notes.Add(GwpText.Get(GwpTextCatalog.gwp_affairs_reward_note));
                 entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_fine, GwpAffairsText.Money(entry.DisplayedFine)));
                 MobileParty? target = crime.Offender;
                 if (target?.IsActive == true)
@@ -110,14 +116,15 @@ namespace GreyWardenPolicePurity
                     entry.Fields.Insert(0, GwpAffairsText.TargetLocation(target));
                 }
                 else entry.Fields.Insert(0, GwpText.Get(GwpTextCatalog.gwp_affairs_unavailable));
-                entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward, GwpAffairsText.Money(reward)));
+                // Reward and difficulty are already the selected row's detail summary.
                 // Incident details are secondary. The current target position above is the actionable location.
                 entry.Fields.Remove(item.DetailsText);
                 entry.Notes.Add(item.DetailsText);
                 foreach (var report in reports.Where(r => r.OffenderHeroId == crime.OffenderHeroId))
                 {
                     var reportVM = new GwpCaseArchiveItemVM(report);
-                    entry.Notes.Add(GwpAffairsText.Pair(reportVM.TimeText, reportVM.DetailsText));
+                    entry.Reports.Add(GwpAffairsText.Pair(reportVM.TimeText, reportVM.AssignmentText));
+                    entry.Reports.Add(reportVM.DetailsText);
                 }
                 result.Add(entry);
             }
@@ -126,20 +133,7 @@ namespace GreyWardenPolicePurity
                 GwpAffairsEntry? entry = result.FirstOrDefault(e => e.Id == assist.CrimeId);
                 if (entry != null) entry.Notes.Add(new GwpCaseArchiveItemVM(assist).AssignmentText);
             }
-            var displayedOffenders = new HashSet<string>(result.Where(e => e.Hero != null).Select(e => e.Hero!.StringId), StringComparer.OrdinalIgnoreCase);
-            foreach (var report in reports.Where(r => !displayedOffenders.Contains(r.OffenderHeroId)))
-            {
-                Hero? offender = Hero.Find(report.OffenderHeroId);
-                var record = offender == null ? null : CrimePool.GetRecord(offender);
-                var duty = record?.CrimeCategory == GwpCrimeCategory.CaravanAttack
-                    ? GreyWardenFamilyBehavior.DutyKind.CaravanProtection : GreyWardenFamilyBehavior.DutyKind.VillageProtection;
-                var item = new GwpCaseArchiveItemVM(report);
-                var entry = Formatted("recent:" + report.OffenderHeroId + ":" + report.Hours.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    duty, item, string.Empty);
-                entry.Hero = offender;
-                entry.Assignee = Hero.Find(report.WardenHeroId);
-                result.Add(entry);
-            }
+            // Completed negotiations are reports on a member/case, never additional work or cases.
             foreach (var item in GreyWardenVillageAdoptionBehavior.GetTaskSnapshots())
             {
                 var entry = Formatted("relief:" + item.VillageSettlementId, GreyWardenFamilyBehavior.DutyKind.VillageProtection,
@@ -182,7 +176,8 @@ namespace GreyWardenPolicePurity
             {
                 if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int homes, out int guard, out Hero? priest)) continue;
                 var entry = new GwpAffairsEntry(village.StringId, GwpText.Get(GwpTextCatalog.gwp_affairs_faith), village.Name.ToString())
-                { Place = village, Hero = priest, Summary = GwpText.Get(GwpTextCatalog.gwp_affairs_faith_none) };
+                { Place = village, Hero = priest, Summary = GwpText.Get(GwpTextCatalog.gwp_affairs_faith_none),
+                    NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_stores) };
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_faith_priest, priest?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_faith_homes,
                     GwpAffairsText.Pair(homes.ToString(), GwpFireswornBehavior.HouseholdCap(village).ToString())));

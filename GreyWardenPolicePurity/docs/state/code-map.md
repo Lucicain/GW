@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-190 个源文件、54,538 行、365 个公开类型、85 个 Harmony 补丁点（分布在 85 个补丁类里）。
+190 个源文件、54,567 行、366 个公开类型、85 个 Harmony 补丁点（分布在 85 个补丁类里）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -240,6 +240,7 @@
 - `GwpAffairsLineVM` → GwpAffairsVM.cs ←
 - `GwpAffairsNavigationElement` → GwpAffairsNavigation.cs ←
 - `GwpAffairsNavigationPatch` → GwpAffairsNavigation.cs ←
+- `GwpAffairsSectionVM` → GwpAffairsVM.cs ←
 - `GwpAffairsState` → GwpCaseArchiveScreen.cs ←
 - `GwpAffairsText` → GwpAffairsData.cs ←
 - `GwpAffairsVM` → GwpAffairsVM.cs
@@ -516,7 +517,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 188 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 189 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -603,7 +604,7 @@
 - `GwpCaseArchiveItemVM.cs` — 574 行 · `GwpCaseArchiveItemVM` : ViewModel
 - `PlayerBountyBehavior.Support.cs` — 164 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 141 行 · `PlayerBountyBehavior` : QuestBase，另含 1 个类型
-- `GwpCaseArchiveScreen.cs` — 81 行 · `GwpAffairsState` : GameState，另含 1 个类型
+- `GwpCaseArchiveScreen.cs` — 83 行 · `GwpAffairsState` : GameState，另含 1 个类型
 - `PlayerBountyBehavior.Affairs.cs` — 52 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.Encyclopedia.cs` — 49 行 · `PlayerBountyBehavior`
 
@@ -615,7 +616,7 @@
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 304 行 · `GreyWardenTroopRequestBehavior`
 - `GwpWardenDispatch.cs` — 101 行 · `GwpDispatchPurpose`，另含 2 个类型
 - `GwpBribeBarterable.cs` — 62 行 · `GwpBribeBarterable` : Barterable
-- `GwpWardenDispatchBehavior.Affairs.cs` — 54 行 · `GwpWardenDispatchBehavior`
+- `GwpWardenDispatchBehavior.Affairs.cs` — 55 行 · `GwpWardenDispatchBehavior`
 
 ### 练兵与切磋（3 个文件）
 
@@ -659,7 +660,7 @@
 ### 其他（99 个文件）
 
 - `GwpFireswornBehavior.cs` — 1338 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpTextCatalog.g.cs` — 1290 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1296 行 · `GwpTextCatalog`
 - `GwpFireswornArmory.cs` — 918 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 586 行 · `GwpFireswornBehavior`
 - `GwpStrength.cs` — 547 行 · `GwpStrength`，另含 2 个类型
@@ -672,13 +673,13 @@
 - `GwpFireswornRituals.cs` — 315 行 · `GwpFireswornBehavior`
 - `GwpFaithVillagers.cs` — 310 行 · `GwpFireswornBehavior`，另含 6 个类型
 - `GwpWardenVisitDesire.cs` — 303 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
-- `GwpAffairsVM.cs` — 263 行 · `GwpAffairsChoiceVM` : ViewModel，另含 2 个类型
+- `GwpAffairsVM.cs` — 288 行 · `GwpAffairsChoiceVM` : ViewModel，另含 3 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAssistanceArmyLifecyclePatch.cs` — 242 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 6 个类型
 - `GreyWardenNotableRelationsBehavior.cs` — 232 行 · `GreyWardenNotableRelationsBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpArmoryAllocation.cs` — 224 行 · `GwpFireswornBehavior`
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
-- `GwpAffairsData.cs` — 210 行 · `GwpAffairsEntry`，另含 2 个类型
+- `GwpAffairsData.cs` — 205 行 · `GwpAffairsEntry`，另含 2 个类型
 - `GwpFireswornMenus.cs` — 202 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFireswornDungeon.cs` — 199 行 · `GwpFireswornBehavior`
 - `GwpWardenDuties.cs` — 199 行 · `WardenDuty`，另含 1 个类型

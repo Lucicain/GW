@@ -50,6 +50,7 @@ namespace GreyWardenPolicePurity
             _layer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericCampaignPanelsGameKeyCategory"));
             _layer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All | InputUsageMask.BlockEverythingWithoutHitTest);
             _vm = new GwpAffairsVM(Close);
+            _vm.SetDoneInputKey(HotKeyManager.GetCategory("GenericPanelGameKeyCategory").GetHotKey("Confirm"));
             AddLayer(_layer);
             _layer.LoadMovie("GwpCaseArchive", _vm);
             ScreenManager.TrySetFocus(_layer);
@@ -71,8 +72,9 @@ namespace GreyWardenPolicePurity
         protected override void OnFrameTick(float dt)
         {
             base.OnFrameTick(dt);
-            if (_layer == null) return;
-            if (_layer.Input.IsHotKeyReleased("Exit")) Close();
+            // Encyclopedia is an overlay on this screen; its focused layer owns Esc and tab input.
+            if (_layer == null || ScreenManager.FocusedLayer != _layer) return;
+            if (_layer.Input.IsHotKeyReleased("Exit") || _layer.Input.IsHotKeyReleased("Confirm")) Close();
             else if (_layer.Input.IsHotKeyReleased("SwitchToNextTab")) _vm?.SwitchTab(1);
             else if (_layer.Input.IsHotKeyReleased("SwitchToPreviousTab")) _vm?.SwitchTab(-1);
         }

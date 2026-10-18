@@ -16,7 +16,7 @@ namespace GreyWardenPolicePurity
                 Summary = party?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown) };
             if (party?.IsActive == true)
             {
-                entry.Fields.Add(GwpAffairsText.TargetLocation(party));
+                entry.Fields.Add(GwpAffairsText.TargetLocation(party, GwpTextCatalog.gwp_affairs_current_location));
                 entry.Fields.Add(party.GetBehaviorText().ToString());
             }
             return entry;

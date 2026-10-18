@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
+using TaleWorlds.CampaignSystem.ViewModelCollection.Input;
 using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
@@ -12,17 +14,20 @@ namespace GreyWardenPolicePurity
     {
         private readonly Action _select;
         private bool _selected;
-        internal GwpAffairsChoiceVM(string id, string title, string summary, Action select, Hero? hero = null)
+        internal GwpAffairsChoiceVM(string id, string title, string summary, Action select, Hero? hero = null, string tabBrush = "Header.Tab.Center")
         {
             Id = id; Title = title; Summary = summary; _select = select;
             Portrait = hero == null ? null : new CharacterImageIdentifierVM(CampaignUIHelper.GetCharacterCode(hero.CharacterObject));
             HasPortrait = hero != null;
+            TabBrush = tabBrush;
         }
         internal string Id { get; }
         [DataSourceProperty] public string Title { get; }
         [DataSourceProperty] public string Summary { get; }
         [DataSourceProperty] public CharacterImageIdentifierVM? Portrait { get; }
         [DataSourceProperty] public bool HasPortrait { get; }
+        [DataSourceProperty] public int TextInset => HasPortrait ? 94 : 18;
+        [DataSourceProperty] public string TabBrush { get; }
         [DataSourceProperty] public bool IsSelected
         {
             get => _selected;
@@ -38,6 +43,17 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public string Text { get; }
     }
 
+    public sealed class GwpAffairsSectionVM : ViewModel
+    {
+        internal GwpAffairsSectionVM(string title, IEnumerable<string> lines)
+        {
+            Title = title;
+            foreach (string line in lines.Where(s => !string.IsNullOrWhiteSpace(s))) Lines.Add(new GwpAffairsLineVM(line));
+        }
+        [DataSourceProperty] public string Title { get; }
+        [DataSourceProperty] public MBBindingList<GwpAffairsLineVM> Lines { get; } = new();
+    }
+
     public sealed class GwpAffairsVM : ViewModel
     {
         private readonly Action _close;
@@ -50,7 +66,6 @@ namespace GreyWardenPolicePurity
         private int _page;
         private string _category = "current";
         private GwpAffairsEntry? _selected;
-        private bool _appendix;
         private string _status = string.Empty;
         private PlayerBountyBehavior? Bounty => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
         private string SelectionKey => _page + ":" + _category;
@@ -63,7 +78,8 @@ namespace GreyWardenPolicePurity
             for (int i = 0; i < titles.Length; i++)
             {
                 int index = i;
-                Tabs.Add(new GwpAffairsChoiceVM(i.ToString(), GwpText.Get(titles[i]), string.Empty, () => SetPage(index)));
+                Tabs.Add(new GwpAffairsChoiceVM(i.ToString(), GwpText.Get(titles[i]), string.Empty, () => SetPage(index),
+                    tabBrush: i == 0 ? "Header.Tab.Left" : i == titles.Length - 1 ? "Header.Tab.Right" : "Header.Tab.Center"));
             }
             Refresh();
             if (!_entries.Any(e => e.Id == "commission"))
@@ -74,7 +90,9 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public MBBindingList<GwpAffairsChoiceVM> Categories { get; } = new();
         [DataSourceProperty] public MBBindingList<GwpAffairsChoiceVM> Rows { get; } = new();
         [DataSourceProperty] public MBBindingList<GwpAffairsLineVM> Fields { get; } = new();
-        [DataSourceProperty] public MBBindingList<GwpAffairsLineVM> Notes { get; } = new();
+        [DataSourceProperty] public MBBindingList<GwpAffairsSectionVM> Sections { get; } = new();
+        [DataSourceProperty] public InputKeyItemVM? DoneInputKey { get; private set; }
+        internal void SetDoneInputKey(HotKey key) => DoneInputKey = InputKeyItemVM.CreateFromHotKey(key, true);
         [DataSourceProperty] public string Title => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_001);
         [DataSourceProperty] public string Standing => GwpAffairsText.Pair(
             GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_061, "VAR_1", GwpRuntimeState.Player.Reputation,
@@ -89,16 +107,13 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public string AcceptText => GwpText.Get(GwpTextCatalog.gwp_affairs_accept);
         [DataSourceProperty] public string HeroText => GwpText.Get(GwpTextCatalog.gwp_affairs_view_hero);
         [DataSourceProperty] public string PlaceText => GwpText.Get(GwpTextCatalog.gwp_affairs_view_place);
-        [DataSourceProperty] public string AppendixText => GwpText.Get(GwpTextCatalog.gwp_affairs_appendix);
         [DataSourceProperty] public string RefreshText => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_003);
-        [DataSourceProperty] public string CloseText => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_004);
+        [DataSourceProperty] public string CloseText => GwpText.Get(GwpTextCatalog.gwp_affairs_done);
         [DataSourceProperty] public bool IsEmpty => Rows.Count == 0;
         [DataSourceProperty] public bool CanAccept => _selected?.IsOffer == true && Bounty?.CanInspectBountyOffers() == true;
         [DataSourceProperty] public bool ShowAccept => _page == 2 && _selected?.IsOffer == true;
         [DataSourceProperty] public bool HasHero => _selected?.Hero != null || _selected?.Assignee != null;
         [DataSourceProperty] public bool HasPlace => _selected?.Place != null;
-        [DataSourceProperty] public bool HasNotes => Notes.Count > 0;
-        [DataSourceProperty] public bool ShowNotes => _appendix && HasNotes;
 
         private void SetPage(int page)
         {
@@ -119,7 +134,6 @@ namespace GreyWardenPolicePurity
         public void ExecuteTakeBounty() => BrowseCases();
         public void ExecuteRefresh() => Refresh();
         public void ExecuteClose() => _close();
-        public void ExecuteAppendix() { _appendix = !_appendix; OnPropertyChanged(nameof(ShowNotes)); }
 
         private void Refresh()
         {
@@ -177,7 +191,7 @@ namespace GreyWardenPolicePurity
             foreach (GwpAffairsEntry entry in _visible)
             {
                 var captured = entry;
-                Rows.Add(new GwpAffairsChoiceVM(entry.Id, entry.Title, GwpAffairsText.Pair(entry.Group, entry.Summary),
+                Rows.Add(new GwpAffairsChoiceVM(entry.Id, entry.Title, entry.Group == ListTitle ? entry.Summary : GwpAffairsText.Pair(entry.Group, entry.Summary),
                     () => SelectEntry(captured.Id), _page == 1 ? entry.Hero : null));
             }
             foreach (var tab in Tabs) tab.IsSelected = tab.Id == _page.ToString();
@@ -196,16 +210,23 @@ namespace GreyWardenPolicePurity
                 GreyWardenFamilyBehavior.TryGetDuty(hero, out var duty);
                 if ((_category == "children") != !adult || adult && duty.ToString() != _category) continue;
                 var entry = new GwpAffairsEntry(hero.StringId, GwpAffairsText.Duty(duty), hero.Name.ToString())
-                { Hero = hero, Place = hero.CurrentSettlement, Duty = duty, Summary = GreyWardenFamilyBehavior.GetDutyTitle(hero) };
-                entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_duty, entry.Summary));
-                if (hero.PartyBelongedTo != null) entry.Fields.Add(GwpAffairsText.TargetLocation(hero.PartyBelongedTo));
-                if (hero.PartyBelongedTo != null) entry.Fields.Add(hero.PartyBelongedTo.GetBehaviorText().ToString());
+                { Hero = hero, Place = hero.CurrentSettlement, Duty = duty, Summary = GreyWardenFamilyBehavior.GetDutyTitle(hero),
+                    NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_organization) };
+                if (hero.PartyBelongedTo != null)
+                {
+                    entry.Fields.Add(GwpAffairsText.TargetLocation(hero.PartyBelongedTo, GwpTextCatalog.gwp_affairs_current_location));
+                    entry.Fields.Add(hero.PartyBelongedTo.GetBehaviorText().ToString());
+                }
                 foreach (var task in _entries.Where(e => e.Assignee == hero))
                 {
-                    entry.Fields.Add(task.Title);
-                    entry.Fields.Add(task.Summary);
-                    entry.Notes.AddRange(task.Fields);
-                    entry.Notes.AddRange(task.Notes);
+                    entry.Work.Add(task.Title);
+                    entry.Work.Add(task.WorkSummary);
+                }
+                foreach (var report in PoliceEnforcementBehavior.GetEnvoyReports().Where(r => r.WardenHeroId == hero.StringId))
+                {
+                    var formatted = new GwpCaseArchiveItemVM(report);
+                    entry.Reports.Add(GwpAffairsText.Pair(formatted.Header, formatted.TimeText));
+                    entry.Reports.Add(formatted.DetailsText);
                 }
                 if (!adult && GreyWardenVillageAdoptionBehavior.TryGetAdoptionOrigin(hero.StringId, out string origin)) entry.Fields.Add(origin);
                 entry.Notes.Add(GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_056, "VAR_1", PoliceResourceManager.GetJudicialTreasuryBalance()));
@@ -223,14 +244,17 @@ namespace GreyWardenPolicePurity
             _selected = _visible.FirstOrDefault(e => e.Id == id) ?? _visible.FirstOrDefault();
             if (_selected != null) _selections[SelectionKey] = _selected.Id;
             foreach (var row in Rows) row.IsSelected = row.Id == _selected?.Id;
-            Fields.Clear(); Notes.Clear(); _appendix = false;
+            Fields.Clear(); Sections.Clear();
             if (_selected != null)
             {
                 foreach (string line in _selected.Fields.Where(s => !string.IsNullOrWhiteSpace(s))) Fields.Add(new GwpAffairsLineVM(line));
-                foreach (string line in _selected.Notes.Where(s => !string.IsNullOrWhiteSpace(s))) Notes.Add(new GwpAffairsLineVM(line));
+                if (_selected.Work.Count > 0) Sections.Add(new GwpAffairsSectionVM(GwpText.Get(GwpTextCatalog.gwp_affairs_work), _selected.Work));
+                if (_selected.Reports.Count > 0) Sections.Add(new GwpAffairsSectionVM(GwpText.Get(GwpTextCatalog.gwp_affairs_negotiations), _selected.Reports));
+                if (_selected.Notes.Count > 0) Sections.Add(new GwpAffairsSectionVM(
+                    string.IsNullOrEmpty(_selected.NotesTitle) ? GwpText.Get(GwpTextCatalog.gwp_affairs_processing) : _selected.NotesTitle, _selected.Notes));
             }
             foreach (string property in new[] { nameof(Standing), nameof(ListTitle), nameof(DetailTitle), nameof(DetailSummary), nameof(IsEmpty),
-                         nameof(EmptyText), nameof(CanAccept), nameof(ShowAccept), nameof(HasHero), nameof(HasPlace), nameof(HasNotes), nameof(ShowNotes), nameof(Status) })
+                         nameof(EmptyText), nameof(CanAccept), nameof(ShowAccept), nameof(HasHero), nameof(HasPlace), nameof(Status) })
                 OnPropertyChanged(property);
         }
         public void ExecuteAccept()
@@ -245,17 +269,18 @@ namespace GreyWardenPolicePurity
         {
             Hero? hero = _selected?.Hero ?? _selected?.Assignee;
             if (hero == null) return;
-            _close(); Campaign.Current.EncyclopediaManager.GoToLink(hero.EncyclopediaLink);
+            Campaign.Current.EncyclopediaManager.GoToLink(hero.EncyclopediaLink);
         }
         public void ExecutePlace()
         {
             var place = _selected?.Place;
             if (place == null) return;
-            _close(); Campaign.Current.EncyclopediaManager.GoToLink(place.EncyclopediaLink);
+            Campaign.Current.EncyclopediaManager.GoToLink(place.EncyclopediaLink);
         }
         public override void OnFinalize()
         {
             foreach (var row in Rows) row.OnFinalize();
+            DoneInputKey?.OnFinalize();
             base.OnFinalize();
         }
     }

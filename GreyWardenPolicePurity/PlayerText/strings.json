@@ -6225,8 +6225,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_browse": {
-      "zh": "领取委托：查看案件",
-      "en": "Browse available cases",
+      "zh": "挑选案件",
+      "en": "Browse cases",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_view_hero": {
@@ -6380,9 +6380,9 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_cargo": {
-      "zh": "随队财货",
+      "zh": "携带物资",
       "en": "Cargo",
-      "context": "灰袍事务全屏界面，2026-10-18。"
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
     },
     "gwp_affairs_gold": {
       "zh": "携带金币",
@@ -6583,6 +6583,46 @@
       "zh": "信众比例",
       "en": "Faithful share",
       "context": "教务页信众户占总户数比例。"
+    },
+    "gwp_affairs_processing": {
+      "zh": "办理记录",
+      "en": "Processing record",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_incident": {
+      "zh": "案情记录",
+      "en": "Incident record",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_stores": {
+      "zh": "库房与外出队伍",
+      "en": "Stores and travelling parties",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_current_location": {
+      "zh": "当前所在",
+      "en": "Current location",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_organization": {
+      "zh": "组织概况",
+      "en": "Order overview",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_work": {
+      "zh": "当前工作",
+      "en": "Current work",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_negotiations": {
+      "zh": "近期交涉回报",
+      "en": "Recent negotiation reports",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
+    },
+    "gwp_affairs_done": {
+      "zh": "完成",
+      "en": "Done",
+      "context": "灰袍事务明确分节与原版完成按钮，2026-10-18。"
     }
   },
   "fragments": {

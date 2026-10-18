@@ -17,6 +17,39 @@ MODULE = ROOT / 'GreyWardenPolicePurity'
 
 
 class AffairsTests(unittest.TestCase):
+    def test_encyclopedia_overlay_owns_exit_and_tab_input(self):
+        screen = (MODULE / 'GwpCaseArchiveScreen.cs').read_text(encoding='utf-8-sig')
+        # The shared extractor recognizes public/internal methods; retain the original modifier in the harness.
+        tick = method(screen.replace('protected override void OnFrameTick', 'public override void OnFrameTick'), 'OnFrameTick')
+        tick = tick.replace('public override void OnFrameTick', 'protected override void OnFrameTick')
+        code = r'''
+using System;
+static class ScreenManager{public static object? FocusedLayer;}
+class Input{public string Released="";public bool IsHotKeyReleased(string key)=>key==Released;}
+class Layer{public Input Input=new();}
+class VM{public int Delta;public void SwitchTab(int d){Delta+=d;}}
+class ScreenBase{protected virtual void OnFrameTick(float dt){}}
+class Screen:ScreenBase{internal Layer? _layer=new();internal VM? _vm=new();internal int Closed;void Close(){Closed++;}public void Tick()=>OnFrameTick(0);
+TICK
+}
+class Program{static int checks;static void Check(bool c){checks++;if(!c)throw new Exception("overlay input "+checks);}static void Main(){
+var s=new Screen();s._layer!.Input.Released="Exit";ScreenManager.FocusedLayer=new object();s.Tick();Check(s.Closed==0);
+s._layer.Input.Released="SwitchToNextTab";s.Tick();Check(s._vm!.Delta==0);
+ScreenManager.FocusedLayer=s._layer;s.Tick();Check(s._vm.Delta==1);
+s._layer.Input.Released="Confirm";s.Tick();Check(s.Closed==1);
+s._layer.Input.Released="Exit";s.Tick();Check(s.Closed==2);
+Console.WriteLine("AFFAIRS_OVERLAY_INPUT_ASSERTIONS="+checks);
+}}
+'''.replace('TICK', tick)
+        major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
+        with tempfile.TemporaryDirectory(prefix='gwp-affairs-overlay-') as temp:
+            p = Path(temp)
+            (p / 'Test.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net{major}.0</TargetFramework><Nullable>enable</Nullable><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup></Project>', encoding='utf-8')
+            (p / 'Program.cs').write_text(code, encoding='utf-8')
+            result = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            print(next(s for s in result.stdout.splitlines() if s.startswith('AFFAIRS_OVERLAY_INPUT_ASSERTIONS=')))
+
     def test_actual_game_input_context_supports_map_bar_panel_switching(self):
         screen = (MODULE / 'GwpCaseArchiveScreen.cs').read_text(encoding='utf-8-sig')
         categories = re.findall(r'\.Input\.RegisterHotKeyCategory\(HotKeyManager.GetCategory\("([^"]+)"\)\)', screen)
@@ -69,6 +102,8 @@ Write-Output "AFFAIRS_NATIVE_INPUT_ASSERTIONS=$count"
 using System;using System.Linq;using System.Collections.Generic;
 namespace TaleWorlds.Library{public class DataSourceProperty:Attribute{}public class ViewModel{public void OnPropertyChanged(string n){}public void OnPropertyChangedWithValue<T>(T v,string n){}public virtual void OnFinalize(){}}public class MBBindingList<T>:List<T>{}}
 namespace TaleWorlds.Core.ViewModelCollection.ImageIdentifiers{public class CharacterImageIdentifierVM{public static int Finalized;public CharacterImageIdentifierVM(object c){}public void OnFinalize(){Finalized++;}}}
+namespace TaleWorlds.InputSystem{public class HotKey{}}
+namespace TaleWorlds.CampaignSystem.ViewModelCollection.Input{public class InputKeyItemVM{public static InputKeyItemVM CreateFromHotKey(TaleWorlds.InputSystem.HotKey k,bool c)=>new();public void OnFinalize(){}}}
 namespace TaleWorlds.CampaignSystem{
  public class Party{public string StringId="";public string Name="";public Text GetBehaviorText()=>new();}public class Text{public override string ToString()=>"moving";}
  public class Settlement{public string EncyclopediaLink="village";}public class Hero{public bool IsAlive=true;public int Age=30;public string StringId="hero",Name="hero",EncyclopediaLink="hero";public object CharacterObject=new();public Party? PartyBelongedTo;public Settlement? CurrentSettlement;}
@@ -82,7 +117,7 @@ using TaleWorlds.CampaignSystem;
 ENTRY
 static class GwpTextCatalog{KEYS}
 static class GwpText{public static string Get(string k,params object[] a)=>k;}
-static class GwpAffairsText{public static string Pair(string a,string b)=>a+"|"+b;public static string Duty(GreyWardenFamilyBehavior.DutyKind d)=>d.ToString();public static string Line(string k,object v)=>k+":"+v;public static string TargetLocation(Party p)=>p.StringId;}
+static class GwpAffairsText{public static string Pair(string a,string b)=>a+"|"+b;public static string Duty(GreyWardenFamilyBehavior.DutyKind d)=>d.ToString();public static string Line(string k,object v)=>k+":"+v;public static string TargetLocation(Party p,string? k=null)=>p.StringId;}
 static class GwpRuntimeState{public static class Player{public static int Reputation=22;}}
 static class GreyWardenFamilyBehavior{public enum DutyKind{LegacyOrdinary,Training,CaravanProtection,VillageProtection,IssueResolution,Reconstruction,PlayerRequests}public static bool TryGetDuty(Hero h,out DutyKind d){d=DutyKind.Training;return true;}public static string GetDutyTitle(Hero h)=>"Training";}
 class CrimeRecord{public int Reward;public float Strength;}
@@ -98,7 +133,8 @@ class PlayerBountyBehavior{public static PlayerBountyBehavior Current=new();publ
 static class PoliceStats{public static Clan Clan=new();public static Clan GetPoliceClan()=>Clan;}
 static class PoliceResourceManager{public static int GetJudicialTreasuryBalance()=>100;}
 static class GwpPoliceWarReasonService{public static IEnumerable<int> GetCurrentWarReasonEntries()=>Array.Empty<int>();}
-class GwpCaseArchiveItemVM{public GwpCaseArchiveItemVM(int w){}public string AssignmentText="war";}
+static class PoliceEnforcementBehavior{public class EnvoyReport{public string WardenHeroId="warden";}public static List<EnvoyReport> Reports=new();public static IReadOnlyList<EnvoyReport> GetEnvoyReports()=>Reports;}
+class GwpCaseArchiveItemVM{public GwpCaseArchiveItemVM(int w){}public GwpCaseArchiveItemVM(PoliceEnforcementBehavior.EnvoyReport r){}public string Header="negotiation target",TimeText="report date",DetailsText="paid outcome 123",AssignmentText="war";}
 static class GreyWardenVillageAdoptionBehavior{public class Status{public int LivingMembers=6,MaxMembers=15;}public static bool TryGetAdoptionOrigin(string id,out string n){n="village";return false;}public static bool TryGetAdoptionStatus(out Status s){s=new();return true;}}
 class Replay{
 static int count;static void Check(bool b,string why){if(!b)throw new Exception(why);count++;}
@@ -107,16 +143,25 @@ static void Main(){
  var target=new Hero{Name="offender",StringId="offender"};
  GwpAffairsData.Items.Add(new("dispatch:1","couriers","courier"){IsPersonal=true});
  for(int i=0;i<8;i++){string id="case"+i;GwpAffairsData.Items.Add(new(id,"trade",id){Duty=trade,Hero=target,IsOffer=true,DisplayedFine=2000,DisplayedReward=400+i});CrimePool.Cases.Add(id,new(){Reward=400+i,Strength=100-i});}
- var vm=new GwpAffairsVM(()=>{});
+ int closes=0;var vm=new GwpAffairsVM(()=>closes++);
  Check(vm.Rows.Single().Id=="dispatch:1","opening without a commission defaults to the active player courier");
  Check(vm.Tabs.Count==5,"existing personal, member, duty, faith and armory sections");
  vm.BrowseCases();Check(vm.Categories.Count==6&&vm.Rows.Count==8,"case browser has six offices and all available cases");
  Check(!vm.Categories.Any(c=>c.Id=="all"),"no crowded all-affairs category");Check(vm.Rows[0].Id=="case7","highest personal fee first");
  vm.Rows.First(r=>r.Id=="case3").ExecuteSelect();vm.ExecuteRefresh();Check(vm.Rows.First(r=>r.Id=="case3").IsSelected,"refresh retains selected stable case identity");
+ vm.ExecuteHero();Check(closes==0&&Campaign.Current.EncyclopediaManager.Last=="hero"&&vm.Rows.Single(r=>r.IsSelected).Id=="case3","hero encyclopedia overlays the current selection without closing to the map");
+ GwpAffairsData.Items.Single(e=>e.Id=="case3").Place=new();vm.ExecuteRefresh();vm.ExecutePlace();Check(closes==0&&Campaign.Current.EncyclopediaManager.Last=="village"&&vm.Rows.Single(r=>r.IsSelected).Id=="case3","settlement encyclopedia keeps the current screen and row too");
  GwpAffairsData.Items.RemoveAll(e=>e.Id=="case3");vm.ExecuteRefresh();Check(vm.Rows[0].IsSelected,"withdrawn selected case picks a valid remaining row");
  PlayerBountyBehavior.Current.Ready=false;Check(!vm.CanAccept,"button eligibility is live after flag removal");vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted==null&&vm.Status.Length>0,"stale acceptance refreshes in place without closing");
  PlayerBountyBehavior.Current.Ready=true;vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted=="case7","selected full-list case reaches authority");Check(vm.Rows.Single().Id=="commission","successful acceptance opens the ongoing personal contract");
  vm.Tabs[1].ExecuteSelect();Check(vm.Categories.Count==7&&!vm.Categories.Any(c=>c.Id=="other"),"adult offices plus children, no unassigned adult group");
+ var warden=new Hero{Name="warden",StringId="warden"};PoliceStats.Clan.Heroes.Add(warden);
+ var task=new GwpAffairsEntry("work-case","trade","real current case"){Assignee=warden,WorkSummary="envoy travelling",Summary="PLAYER FEE"};task.Fields.Add("PLAYER FEE AND TARGET STRENGTH");GwpAffairsData.Items.Add(task);
+ PoliceEnforcementBehavior.Reports.Add(new());vm.ExecuteRefresh();
+ Check(vm.Rows.Single().Title=="warden","only the member occupies the member roster");
+ Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_work).Lines.Select(l=>l.Text).SequenceEqual(new[]{"real current case","envoy travelling"}),"current work uses assignment progress, not personal reward fields or report entries");
+ Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_negotiations).Lines.Any(l=>l.Text=="paid outcome 123"),"historical negotiation shows its actual outcome in a separate named section");
+ Check(!vm.Fields.Any(l=>l.Text.Contains("PLAYER FEE"))&&!vm.Sections.SelectMany(s=>s.Lines).Any(l=>l.Text.Contains("PLAYER FEE")),"member details do not copy a player's potential bounty into NPC work");
  vm.Tabs[4].ExecuteSelect();Check(vm.IsEmpty&&!vm.ShowAccept,"unimplemented player armory cannot manufacture items or commissions");
  vm.Tabs[3].ExecuteSelect();Check(vm.IsEmpty&&!vm.HasHero&&!vm.HasPlace,"empty congregation has no stale navigation target");
  Console.WriteLine("AFFAIRS_VM_ASSERTIONS="+count);
@@ -219,6 +264,18 @@ static void Main(){
         texts = json.loads((MODULE / 'PlayerText/strings.json').read_text(encoding='utf-8-sig'))['strings']
         for key in re.findall(r'GwpTextCatalog\.(gwp_affairs_\w+)', vm):
             self.assertTrue(texts[key]['en'] and texts[key]['zh'], key)
+        # The native ClanScreen footer is the sole bottom action; tools live above the lists.
+        footer = root.find('.//Standard.DialogCloseButtons')
+        self.assertIsNotNone(footer)
+        self.assertEqual('ExecuteClose', footer.get('Parameter.DoneButtonAction'))
+        self.assertEqual('false', footer.get('Parameter.ShowCancel'))
+        toolbar = next(e for e in root.iter('ListPanel') if e.get('Id') == 'ListActions')
+        self.assertEqual({'ExecuteTakeBounty', 'ExecuteRefresh'}, {b.get('Command.Click') for b in toolbar.iter('ButtonWidget')})
+        self.assertFalse(any(e.get('Command.Click') == 'ExecuteAppendix' for e in root.iter()))
+        self.assertFalse(any(e.get('Brush') == 'ButtonBrush3' for e in root.iter()))
+        for text in root.iter('TextWidget'):
+            if text.get('HeightSizePolicy') == 'CoverChildren':
+                self.assertEqual('true', text.get('CanBreakWords'))
 
 
 if __name__ == '__main__':

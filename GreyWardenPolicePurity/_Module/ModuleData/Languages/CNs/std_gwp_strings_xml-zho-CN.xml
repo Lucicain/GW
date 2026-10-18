@@ -1518,7 +1518,7 @@
   <string id="gwp_affairs_empty" text="当前没有此类事务。" />
   <string id="gwp_affairs_details" text="事务详情" />
   <string id="gwp_affairs_accept" text="接受委托" />
-  <string id="gwp_affairs_browse" text="领取委托：查看案件" />
+  <string id="gwp_affairs_browse" text="挑选案件" />
   <string id="gwp_affairs_view_hero" text="查看人物" />
   <string id="gwp_affairs_view_place" text="查看地点" />
   <string id="gwp_affairs_line" text="{LABEL}：{VALUE}" />
@@ -1549,7 +1549,7 @@
   <string id="gwp_affairs_outbound" text="正在递送" />
   <string id="gwp_affairs_returning" text="正在归队" />
   <string id="gwp_affairs_receiver" text="收件领主" />
-  <string id="gwp_affairs_cargo" text="随队财货" />
+  <string id="gwp_affairs_cargo" text="携带物资" />
   <string id="gwp_affairs_gold" text="携带金币" />
   <string id="gwp_affairs_prisoners" text="押送俘虏" />
   <string id="gwp_affairs_departed" text="出发时间" />
@@ -1590,5 +1590,13 @@
   <string id="gwp_affairs_damnation" text="烈火责罚" />
   <string id="gwp_affairs_near" text="{PLACE}附近" />
   <string id="gwp_affairs_faith_share" text="信众比例" />
+  <string id="gwp_affairs_processing" text="办理记录" />
+  <string id="gwp_affairs_incident" text="案情记录" />
+  <string id="gwp_affairs_stores" text="库房与外出队伍" />
+  <string id="gwp_affairs_current_location" text="当前所在" />
+  <string id="gwp_affairs_organization" text="组织概况" />
+  <string id="gwp_affairs_work" text="当前工作" />
+  <string id="gwp_affairs_negotiations" text="近期交涉回报" />
+  <string id="gwp_affairs_done" text="完成" />
 </strings>
 </base>

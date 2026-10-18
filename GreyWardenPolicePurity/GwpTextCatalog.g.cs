@@ -59,21 +59,22 @@ namespace GreyWardenPolicePurity
         internal const string gwp_adult_born_origin = "{=gwp_adult_born_origin}{VAR_1} grew up under the Grey Warden order's rule and took up its duties on reaching adulthood. {VAR_2}";
         internal const string gwp_affairs_accept = "{=gwp_affairs_accept}Accept commission";
         internal const string gwp_affairs_amount = "{=gwp_affairs_amount}{VALUE} denars";
-        internal const string gwp_affairs_appendix = "{=gwp_affairs_appendix}Related records";
         internal const string gwp_affairs_armory = "{=gwp_affairs_armory}Armory";
         internal const string gwp_affairs_armory_closed = "{=gwp_affairs_armory_closed}The armory is not yet open.";
         internal const string gwp_affairs_army = "{=gwp_affairs_army}With an army";
-        internal const string gwp_affairs_browse = "{=gwp_affairs_browse}Browse available cases";
+        internal const string gwp_affairs_browse = "{=gwp_affairs_browse}Browse cases";
+        internal const string gwp_affairs_cargo = "{=gwp_affairs_cargo}Cargo";
         internal const string gwp_affairs_children = "{=gwp_affairs_children}Children";
         internal const string gwp_affairs_collect = "{=gwp_affairs_collect}Case resolved; report for settlement";
         internal const string gwp_affairs_congregation = "{=gwp_affairs_congregation}Congregation";
         internal const string gwp_affairs_couriers = "{=gwp_affairs_couriers}My couriers";
         internal const string gwp_affairs_current = "{=gwp_affairs_current}Current commission";
+        internal const string gwp_affairs_current_location = "{=gwp_affairs_current_location}Current location";
         internal const string gwp_affairs_damnation = "{=gwp_affairs_damnation}Fiery punishment";
         internal const string gwp_affairs_deadline = "{=gwp_affairs_deadline}Commission deadline";
         internal const string gwp_affairs_departed = "{=gwp_affairs_departed}Dispatched";
+        internal const string gwp_affairs_done = "{=gwp_affairs_done}Done";
         internal const string gwp_affairs_duties = "{=gwp_affairs_duties}Duties";
-        internal const string gwp_affairs_duty = "{=gwp_affairs_duty}Office";
         internal const string gwp_affairs_empty = "{=gwp_affairs_empty}No affairs in this category.";
         internal const string gwp_affairs_escort = "{=gwp_affairs_escort}Supporting Warden";
         internal const string gwp_affairs_faith = "{=gwp_affairs_faith}Congregations";
@@ -91,6 +92,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_affairs_fine = "{=gwp_affairs_fine}Assessed fine cap";
         internal const string gwp_affairs_formation = "{=gwp_affairs_formation}Formation";
         internal const string gwp_affairs_gold = "{=gwp_affairs_gold}Gold carried";
+        internal const string gwp_affairs_incident = "{=gwp_affairs_incident}Incident record";
         internal const string gwp_affairs_line = "{=gwp_affairs_line}{LABEL}: {VALUE}";
         internal const string gwp_affairs_location = "{=gwp_affairs_location}Target location";
         internal const string gwp_affairs_members = "{=gwp_affairs_members}Wardens";
@@ -99,9 +101,11 @@ namespace GreyWardenPolicePurity
         internal const string gwp_affairs_nav_need_membership = "{=gwp_affairs_nav_need_membership}Only sworn hunters of the Grey Wardens can open their affairs.";
         internal const string gwp_affairs_near = "{=gwp_affairs_near}Near {PLACE}";
         internal const string gwp_affairs_need_mediation = "{=gwp_affairs_need_mediation}Wars awaiting mediation";
+        internal const string gwp_affairs_negotiations = "{=gwp_affairs_negotiations}Recent negotiation reports";
         internal const string gwp_affairs_numbers = "{=gwp_affairs_numbers}{TOTAL} troops, {HEALTHY} healthy";
         internal const string gwp_affairs_order_courier = "{=gwp_affairs_order_courier}Order courier";
         internal const string gwp_affairs_orders = "{=gwp_affairs_orders}Troop orders";
+        internal const string gwp_affairs_organization = "{=gwp_affairs_organization}Order overview";
         internal const string gwp_affairs_outbound = "{=gwp_affairs_outbound}Outbound";
         internal const string gwp_affairs_own_strength = "{=gwp_affairs_own_strength}Your combat-group strength";
         internal const string gwp_affairs_party = "{=gwp_affairs_party}Independent party";
@@ -109,6 +113,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_affairs_pending = "{=gwp_affairs_pending}Awaiting handover";
         internal const string gwp_affairs_petitions = "{=gwp_affairs_petitions}Fief appeals";
         internal const string gwp_affairs_prisoners = "{=gwp_affairs_prisoners}Prisoners";
+        internal const string gwp_affairs_processing = "{=gwp_affairs_processing}Processing record";
         internal const string gwp_affairs_pursuing = "{=gwp_affairs_pursuing}Tracking target";
         internal const string gwp_affairs_receiver = "{=gwp_affairs_receiver}Recipient";
         internal const string gwp_affairs_refresh_changed = "{=gwp_affairs_refresh_changed}The case or your eligibility changed. Review the refreshed details.";
@@ -121,6 +126,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_affairs_selling = "{=gwp_affairs_selling}Detouring to sell ordinary prisoners";
         internal const string gwp_affairs_standing_gate = "{=gwp_affairs_standing_gate}Swear the oath and reach {STANDING} Grey Warden standing to open this screen.";
         internal const string gwp_affairs_status = "{=gwp_affairs_status}Current status";
+        internal const string gwp_affairs_stores = "{=gwp_affairs_stores}Stores and travelling parties";
         internal const string gwp_affairs_strength = "{=gwp_affairs_strength}Target combat-group strength";
         internal const string gwp_affairs_support = "{=gwp_affairs_support}Support and mediation";
         internal const string gwp_affairs_support_courier = "{=gwp_affairs_support_courier}Support courier";
@@ -129,6 +135,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_affairs_view_hero = "{=gwp_affairs_view_hero}View character";
         internal const string gwp_affairs_view_place = "{=gwp_affairs_view_place}View location";
         internal const string gwp_affairs_waiting = "{=gwp_affairs_waiting}Waiting for your party to return";
+        internal const string gwp_affairs_work = "{=gwp_affairs_work}Current work";
         internal const string gwp_ai_det_audience_outsider_high_calculating = "{=gwp_ai_det_audience_outsider_high_calculating}Whatever gain you imagine in a burning village, set it against years of pursuit before you decide.";
         internal const string gwp_ai_det_audience_outsider_high_cautious = "{=gwp_ai_det_audience_outsider_high_cautious}If self-preservation matters to you, do not give them a reason to learn your name.";
         internal const string gwp_ai_det_audience_outsider_high_closefisted = "{=gwp_ai_det_audience_outsider_high_closefisted}Even the most selfish arithmetic reaches the same answer: a raid is not worth what they collect afterward.";
@@ -760,7 +767,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_gwpbattlereinforcementbehavior_002 = "{=gwp_gwpbattlereinforcementbehavior_002}Grey Warden reinforcements have arrived!";
         internal const string gwp_gwpcasearchivescreen_001 = "{=gwp_gwpcasearchivescreen_001}Grey Warden affairs";
         internal const string gwp_gwpcasearchivescreen_003 = "{=gwp_gwpcasearchivescreen_003}Refresh ledger";
-        internal const string gwp_gwpcasearchivescreen_004 = "{=gwp_gwpcasearchivescreen_004}Close";
         internal const string gwp_gwpcasearchivescreen_006 = "{=gwp_gwpcasearchivescreen_006}OPEN";
         internal const string gwp_gwpcasearchivescreen_008 = "{=gwp_gwpcasearchivescreen_008}{VAR_1} — {VAR_2}";
         internal const string gwp_gwpcasearchivescreen_009 = "{=gwp_gwpcasearchivescreen_009}Last offence: {VAR_1} | Case opened: {VAR_2}";
