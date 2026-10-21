@@ -112,6 +112,7 @@ namespace GreyWardenPolicePurity
         private bool _warDeclared;
         private float _nextChallengeCheck;
         private float _civilianSampleAt = -1f;
+        private int _healthyAtStart;
 
         internal GwpCitySearchMissionController(Settlement settlement, Hero target, TroopRoster troops)
         {
@@ -165,6 +166,7 @@ namespace GreyWardenPolicePurity
             SandBoxHelpers.MissionHelper.SpawnPlayer(spawn, civilianEquipment: false, noHorses: true);
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
             int passages = DisablePlayerPassages();
+            _healthyAtStart = MobileParty.MainParty?.MemberRoster.TotalHealthyCount ?? 0;
             int spawned = SpawnTroops();
             GwpAiDiagnostics.WriteCitySearch("SPAWNED", "settlement=" + _settlement.StringId
                 + "; spawnTag=" + (spawn == null ? "none" : spawnTag) + "; troops=" + spawned
@@ -224,7 +226,10 @@ namespace GreyWardenPolicePurity
                 for (int i = 0; i < element.Number - element.WoundedNumber; i++)
                 {
                     Vec3 position = Mission.GetRandomPositionAroundPoint(main.Position, 1f, 4f);
-                    Agent agent = Mission.SpawnTroop(new SimpleAgentOrigin(character), true, true, false, false,
+                    // 来源挂主队：原版 GetAgentTeam 在有盟友队伍时只把「受玩家指挥」的兵放进玩家队伍，
+                    // SimpleAgentOrigin 对普通兵没有所属部队，会被分进盟友队伍、无法指挥（C#反编译 v1.4.8，实机日志 2026-10-21）。
+                    // 伤亡也由原版 BattleAgentLogic 经它直接写进主队名册。
+                    Agent agent = Mission.SpawnTroop(new PartyAgentOrigin(PartyBase.MainParty, character), true, true, false, false,
                         0, 0, false, false, position, main.LookDirection.AsVec2);
                     _ours[agent] = character;
                     count++;
@@ -395,15 +400,11 @@ namespace GreyWardenPolicePurity
 
         protected override void OnEndMission()
         {
-            // 兵员是按名册生成的普通任务兵，伤亡由这里写回主队名册；英雄的伤情由原版处理。
-            TroopRoster? roster = MobileParty.MainParty?.MemberRoster;
-            if (roster != null)
-            {
-                foreach (var entry in _killed.Where(e => !e.Key.IsHero)) roster.AddToCounts(entry.Key, -entry.Value);
-                foreach (var entry in _wounded.Where(e => !e.Key.IsHero)) roster.AddToCounts(entry.Key, 0, false, entry.Value);
-            }
+            // 伤亡已由原版 BattleAgentLogic 经 PartyAgentOrigin 写进主队名册，这里只记录，核对是否只扣一次。
             GwpAiDiagnostics.WriteCitySearch("MISSION_END", "stage=" + _stage + "; war=" + _warDeclared
-                + "; killed=" + _killed.Values.Sum() + "; wounded=" + _wounded.Values.Sum());
+                + "; killed=" + _killed.Values.Sum() + "; wounded=" + _wounded.Values.Sum()
+                + "; healthyBefore=" + _healthyAtStart
+                + "; healthyNow=" + (MobileParty.MainParty?.MemberRoster.TotalHealthyCount ?? 0));
         }
 
         private bool IsOurs(Agent agent) => agent == Agent.Main || _ours.ContainsKey(agent);

@@ -136,6 +136,68 @@ class CitySearchTests(unittest.TestCase):
             self.assertEqual(0, r.returncode, r.stdout + r.stderr)
             print(next(line for line in r.stdout.splitlines() if line.startswith('CITY_SEARCH_ASSERTIONS=')))
 
+    def test_spawned_troops_join_the_player_team(self):
+        """Negative control: the installed GetAgentTeam puts SimpleAgentOrigin soldiers in the ally team
+        whenever an ally team exists (the town mission has one); a main-party PartyAgentOrigin goes to the player team."""
+        game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
+
+        def native(type_name, dll):
+            return subprocess.check_output(['ilspycmd', '-t', type_name, str(game / dll)], text=True, encoding='utf-8-sig')
+
+        def prop(source, name):
+            start = re.search(r'(?m)^\s*public [^\n]*\b' + name + r'\s*$', source)
+            if not start:
+                raise AssertionError('Missing native property: ' + name)
+            depth, i = 0, source.index('{', start.end())
+            for j in range(i, len(source)):
+                depth += {'{': 1, '}': -1}.get(source[j], 0)
+                if depth == 0:
+                    return source[start.start():j + 1]
+            raise AssertionError(name)
+
+        mission = native('TaleWorlds.MountAndBlade.Mission', 'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.dll')
+        simple = native('TaleWorlds.CampaignSystem.AgentOrigins.SimpleAgentOrigin', 'bin/Win64_Shipping_Client/TaleWorlds.CampaignSystem.dll')
+        party = native('TaleWorlds.CampaignSystem.AgentOrigins.PartyAgentOrigin', 'bin/Win64_Shipping_Client/TaleWorlds.CampaignSystem.dll')
+        production = read('GwpCitySearchMission.cs')
+        self.assertIn('new PartyAgentOrigin(PartyBase.MainParty, character)', production)
+        self.assertNotIn('new SimpleAgentOrigin(', production)
+        code = r'''
+using System;
+namespace TaleWorlds.Library{static class Debug{public static void FailedAssert(string a,string b,string c,int d){}}}
+namespace Probe{
+class Hero{public static Hero MainHero=new();public MobileParty? PartyBelongedTo;}
+class Faction{public Hero? Leader;}
+class PartyBase{public static PartyBase MainParty=new();public Hero? Owner;public Faction MapFaction=new();}
+class MobileParty{public PartyBase Party=new();}
+class CharacterObject{public bool IsHero;public Hero? HeroObject;}
+class Team{public string Name;public Team(string n){Name=n;}}
+interface IAgentOriginBase{bool IsUnderPlayersCommand{get;}bool IsInSameArmyAsPlayer{get;}}
+class Simple:IAgentOriginBase{CharacterObject _troop;public Simple(CharacterObject c){_troop=c;}public bool IsInSameArmyAsPlayer=>false; SIMPLE_PARTY SIMPLE_COMMAND}
+class FromParty:IAgentOriginBase{public PartyBase Party;public FromParty(PartyBase p){this.Party=p;}public bool IsInSameArmyAsPlayer=>false; PARTY_COMMAND}
+class Mission{public static Mission? Current;public Team PlayerTeam=new("player"),PlayerEnemyTeam=new("enemy");public Team? PlayerAllyTeam=new("ally");
+ GET_AGENT_TEAM}
+static class Program{static int Main(){
+ Mission.Current=new Mission();var soldier=new CharacterObject();
+ if(Mission.GetAgentTeam(new Simple(soldier),true).Name!="ally")throw new Exception("old origin no longer reproduces the ally-team split");
+ if(Mission.GetAgentTeam(new FromParty(PartyBase.MainParty),true).Name!="player")throw new Exception("main-party origin must join the player team");
+ Mission.Current.PlayerAllyTeam=null;
+ if(Mission.GetAgentTeam(new Simple(soldier),true).Name!="player")throw new Exception("without an ally team every player-side soldier joins the player team");
+ Console.WriteLine("TEAM_ASSIGNMENT_ASSERTIONS=3; old SimpleAgentOrigin -> ally team, main-party PartyAgentOrigin -> player team");return 0;}}
+}
+'''
+        code = (code.replace('SIMPLE_PARTY', prop(simple, 'Party'))
+                .replace('SIMPLE_COMMAND', prop(simple, 'IsUnderPlayersCommand'))
+                .replace('PARTY_COMMAND', prop(party, 'IsUnderPlayersCommand'))
+                .replace('GET_AGENT_TEAM', method(mission, 'GetAgentTeam')))
+        major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
+        with tempfile.TemporaryDirectory(prefix='gwp-city-team-') as temp:
+            p = Path(temp)
+            (p / 'Test.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net{major}.0</TargetFramework><Nullable>enable</Nullable><NoWarn>CS8618;CS0649;CS8602;CS8603</NoWarn><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup></Project>', encoding='utf-8')
+            (p / 'Program.cs').write_text(code, encoding='utf-8')
+            r = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
+            self.assertEqual(0, r.returncode, r.stdout + r.stderr)
+            print(next(line for line in r.stdout.splitlines() if line.startswith('TEAM_ASSIGNMENT_ASSERTIONS=')))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,6 @@
 # 进城搜捕：无部队住城领主的旧案
 
-> 当前状态：第1段已部署；首测对话与说服正常、士兵不跟随且不能指挥，已按查实原因修复部署待复测；大厅、单挑/群殴、杀出城未做
+> 当前状态：第1段已部署；复测时下令界面提示没有部队，已查实为士兵被分进盟友队伍并修复部署，待再测；大厅、单挑/群殴、杀出城未做
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpCitySearchBehavior.cs` `GwpCitySearchMission.cs` `GwpCitySearchMissionViews.cs` `GwpPersuasionRound.cs` `PlayerBountyBehavior.CitySearch.cs` `tools/tests/test_city_search.py`
 > 待实测：见文末
@@ -67,7 +67,8 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 - **动手即宣战**：我方任何人打到守卫或场景里与城主同势力的英雄，经 `PlayerBountyBehavior.DeclarePlayerCaseWar` 让玩家阵营对城主势力宣战并登记调停申请，再把守卫与同势力的人放进敌方队伍、交给场景行为里的战斗行为，切战斗模式，我方经下令控制器冲锋；守方全部倒下即打完，恢复跟随；交战中不能离开场景。（依据：用户裁定2026-10-21）
 - 不要用原版 `MissionFightHandler.StartCustomFight` 打带兵的群战：它结束时把参战者放进新建的 Team 对象，队伍无相等重写，我方会脱离玩家队伍、不能再指挥。（依据：C#反编译 v1.4.8 MissionFightHandler.ResetTeamsForFightAndDuel、Team）
 - 已知缺陷（待取证）：原版平民逃跑以 `MissionFightHandler` 有进行中的打斗为前提，换成队伍群战后平民是否仍跑开未证实，由 `CIVILIAN_FLIGHT` 取证。
-- **伤亡**：我方普通兵的阵亡与重伤在离开场景时写回主队名册；英雄的伤情交给原版。（依据：设计）
+- **士兵来源**：按名册生成的士兵用挂主队的 `PartyAgentOrigin`。原版 `Mission.GetAgentTeam` 在任务有盟友队伍时（城镇任务的基础分队会建一支）只把「受玩家指挥」的兵放进玩家队伍；伤亡也由原版 `BattleAgentLogic` 经它写进主队名册，英雄的伤亡与血量一并由原版处理。（依据：C#反编译 v1.4.8；实机日志 ORDERS 编队为空 2026-10-21；离线负对照 test_city_search）
+- 不要用 `SimpleAgentOrigin` 生成要受玩家指挥的普通兵：它对普通兵没有所属部队，会被分进盟友队伍、下令界面显示没有部队。（依据：C#反编译 v1.4.8、离线负对照 2026-10-21）
 - 已知缺陷：第1段打完卫兵后仍可直接退出城外，「杀出去才能退出」属于第4段；打进去后只能群殴的限制在第2、3段实现。
 
 ## 待实测

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-205 个源文件、56,333 行、391 个公开类型、105 条 Harmony 目标声明（含动态入口，共 105 个补丁类）。
+205 个源文件、56,334 行、391 个公开类型、105 条 Harmony 目标声明（含动态入口，共 105 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -703,7 +703,7 @@
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpCitySearchMission.cs` — 421 行 · `GwpCitySearchMission` : MissionLogic，另含 1 个类型
+- `GwpCitySearchMission.cs` — 422 行 · `GwpCitySearchMission` : MissionLogic，另含 1 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 415 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpAffairsVM.cs` — 371 行 · `GwpAffairsChoiceVM` : ViewModel，另含 4 个类型
