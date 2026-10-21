@@ -16,8 +16,10 @@ namespace GreyWardenPolicePurity
         // that UI; the resulting hero custody and commission use existing saves.
         private CasePrisonerTransfer? _casePrisonerTransfer;
 
+        // 住在城里的人知道在哪，要进城搜捕，不算失去踪迹。
         private bool IsCaseTargetMissing => CaseHero is { IsDead: false, IsPrisoner: false } hero &&
-            (hero.IsFugitive || hero.IsDisabled || hero.PartyBelongedTo?.IsActive != true);
+            (hero.IsFugitive || hero.IsDisabled || hero.PartyBelongedTo?.IsActive != true)
+            && CrimeRecord.ShelterOf(hero) == null;
 
         internal bool CanWithdrawUnavailableCommission => IsTrackingBountyTarget &&
             !HasCompletedEnforcement && CaseHero?.IsDead == false &&

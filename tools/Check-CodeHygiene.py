@@ -185,6 +185,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("玩家为本案宣战", r"\bDeclareWarAction\.Apply\w*\s*\(",
+     "PlayerBountyBehavior.Support.cs", "PlayerBountyBehavior.DeclarePlayerCaseWar"),
     ("海陆交接资格", r"\.IsCurrentlyAtSea\s*==\s*\w+\.IsCurrentlyAtSea\b",
      "GwpCommon.cs", "GwpCommon.CanCompletePartyHandover"),
     ("信众村民队生命周期", r"\[HarmonyPatch\(typeof\((?:VillagerCampaignBehavior|SellGoodsForTradeAction)\)",

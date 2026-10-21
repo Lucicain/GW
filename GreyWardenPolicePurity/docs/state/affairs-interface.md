@@ -125,7 +125,7 @@
 
 拆分/封地使者若要撤回：恢复旧派遣记录编解码前，先处理新增 FiefAppeal 的在途使者，不能让旧分支误当 Report 交差。（依据：设计2026-10-21）
 
-替换前源码基线为`626b079`。回退范围：旧GwpCaseArchiveScreen及XML、PlayerBountyBehavior三个主文件、导航/百科入口、GwpTuning通知冷却、SaveableTypeDefiner通知类型、主文本与生成文件；删除新事务VM/数据/只读快照文件并恢复dispatch/调停新增查询。恢复后重新构建、镜像并比哈希；这是回退路径，r13向当前版升级的范围见[公共底座](infrastructure.md#r13存档直升范围)。（依据：流程）
+替换前源码基线为`626b079`。回退范围：旧GwpCaseArchiveScreen及XML、PlayerBountyBehavior三个主文件、导航/百科入口、GwpTuning通知冷却、SaveableTypeDefiner通知类型、主文本与生成文件；删除新事务VM/数据/只读快照文件并恢复dispatch/调停新增查询。恢复后重新构建、镜像并比哈希；这是回退路径。（依据：流程）
 
 本次布局/百科/报告修复单独回退基线`4394629`：GwpAffairsData/VM/Screen、两个玩家只读快照partial、事务XML、主文本/生成文件与test_affairs。安全撤销本次修复存档会保留此前战役面板键注册修复，但恢复已反馈的遮挡与跳转问题。（依据：流程）
 

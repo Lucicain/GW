@@ -73,10 +73,13 @@ namespace GreyWardenPolicePurity
         private bool _recruitmentPatrolReturning = false;  // 是否已进入返回阶段
         private double _recruitmentPatrolDispatchHour = -1d; // 本轮追赶玩家的起始小时
 
+        // 追捕中只要记着目标本人就算：住在城里的目标没有部队 ID。接案时清掉等待交差，
+        // 进交差时清掉部队 ID，两者不会同时成立，所以先看等待交差与旧判断等价。
         private PlayerBountyFlowState CurrentBountyState =>
-            !string.IsNullOrEmpty(_activeBountyTargetId)
+            _waitingForCollection ? PlayerBountyFlowState.WaitingForCollection
+            : !string.IsNullOrEmpty(_activeBountyTargetId) || !string.IsNullOrEmpty(_activeBountyTargetHeroId)
                 ? PlayerBountyFlowState.HuntingTarget
-                : (_waitingForCollection ? PlayerBountyFlowState.WaitingForCollection : PlayerBountyFlowState.Idle);
+                : PlayerBountyFlowState.Idle;
 
         private bool HasBountyTask => CurrentBountyState != PlayerBountyFlowState.Idle;
         private bool IsTrackingBountyTarget => CurrentBountyState == PlayerBountyFlowState.HuntingTarget;
@@ -670,6 +673,13 @@ namespace GreyWardenPolicePurity
             _lastIntelReportTime = CampaignTime.Now;
 
             MobileParty? target = ResolveBountyTargetParty();
+            Settlement? shelter = target == null ? CrimeRecord.ShelterOf(CaseHero) : null;
+            if (shelter != null)
+            {
+                _activeQuest.WriteLog(GwpText.Create(GwpTextCatalog.gwp_bounty_intel_sheltered,
+                    "VAR_1", shelter.EncyclopediaLinkWithName));
+                return;
+            }
             if (target == null)
             {
                 // 断了线也要说一句。原来是直接 return，任务界面一片安静，玩家只会以为

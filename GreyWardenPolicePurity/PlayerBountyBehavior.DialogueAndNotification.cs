@@ -670,17 +670,22 @@ namespace GreyWardenPolicePurity
         {
             if (!CanInspectBountyOffers()) return;
 
-            if (!crime.IsOffenderPursuable())
+            // 野外有部队的照旧追部队；没带部队、住在城里的，记下人和他所在的城，进城搜捕。
+            MobileParty? offender = crime.IsOffenderPursuable() ? crime.Offender : null;
+            Settlement? shelter = offender == null && crime.IsOffenderSearchableInSettlement() ? crime.ShelterSettlement : null;
+            Hero? offenderHero = crime.OffenderHero;
+            if (offender == null && (shelter == null || offenderHero == null))
             {
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_030), Colors.Red));
                 return;
             }
 
-            MobileParty offender = crime.Offender!;
-            _activeBountyTargetId = offender.StringId;
-            _activeBountyTargetName = offender.Name.ToString();
-            _activeBountyTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
+            TextObject targetName = offender?.Name ?? offenderHero!.Name;
+            IFaction? targetFaction = offender?.MapFaction ?? offenderHero!.MapFaction;
+            _activeBountyTargetId = offender?.StringId!;
+            _activeBountyTargetName = targetName.ToString();
+            _activeBountyTargetFactionId = targetFaction?.StringId ?? string.Empty;
             _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
             _activeBountyCrimeCategory = (int)crime.CrimeCategory;
             _assignedCaseFine = assessedFine;
@@ -691,7 +696,6 @@ namespace GreyWardenPolicePurity
                                          GwpTuning.Bounty.DeadlineDays * 24d;
 
             IFaction? playerFaction = Hero.MainHero?.MapFaction;
-            IFaction? targetFaction = offender.MapFaction;
             _activeBountyPlayerFactionId = playerFaction?.StringId ?? string.Empty;
             _playerFactionWasAtWarWhenBountyAccepted =
                 playerFaction != null &&
@@ -713,9 +717,9 @@ namespace GreyWardenPolicePurity
             {
                 _activeQuest = new BountyHunterQuest(
                     policeLeader,
-                    offender.Name.ToString());
+                    targetName.ToString());
                 _activeQuest.StartQuest();
-                Settlement? lastSeenSettlement = FindNearestSettlement(offender.GetPosition2D);
+                Settlement? lastSeenSettlement = shelter ?? FindNearestSettlement(offender!.GetPosition2D);
                 TextObject lastSeenNear = lastSeenSettlement?.EncyclopediaLinkWithName ??
                                           GwpText.Create(GwpTextCatalog.gwp_playerbountybehavior_020);
                 _activeQuest.WriteLog(
@@ -723,10 +727,11 @@ namespace GreyWardenPolicePurity
                         "{=!}{VAR_1}{VAR_2}{VAR_3}",
                         "VAR_1", GwpText.Create(
                             GwpTextCatalog.gwp_bounty_quest_target,
-                            "VAR_1", offender.Name,
+                            "VAR_1", targetName,
                             "VAR_2", GetDifficultyText(GetBountyDifficulty(crime))),
                         "VAR_2", GwpText.Create(
-                            GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_034,
+                            shelter != null ? GwpTextCatalog.gwp_bounty_quest_sheltered
+                                : GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_034,
                             "VAR_1", lastSeenNear),
                         "VAR_3", GwpText.Create(
                             GwpTextCatalog.gwp_bounty_quest_reward,
@@ -736,7 +741,7 @@ namespace GreyWardenPolicePurity
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(
                     GwpTextCatalog.gwp_bounty_contract_accepted,
-                    "VAR_1", offender.Name,
+                    "VAR_1", targetName,
                     "VAR_2", GetDifficultyText(GetBountyDifficulty(crime)),
                     "VAR_3", _assignedCaseFine),
                 Colors.Cyan));

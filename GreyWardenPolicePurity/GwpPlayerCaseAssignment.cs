@@ -24,6 +24,11 @@ namespace GreyWardenPolicePurity
         internal static bool CanTakeCase(CrimeRecord crime) => crime.HasOpenCase &&
             crime.IsOffenderPursuable() && !PoliceEnforcementBehavior.HasEnvoyAgreement(crime);
 
+        /// <summary>玩家能接的：野外可追捕的，加上无部队住城、可进城搜捕的。</summary>
+        internal static bool CanPlayerTakeCase(CrimeRecord crime) => crime.HasOpenCase &&
+            (crime.IsOffenderPursuable() || crime.IsOffenderSearchableInSettlement())
+            && !PoliceEnforcementBehavior.HasEnvoyAgreement(crime);
+
         internal static bool CanOfferGrace(Hero? hero) => Enforcement?.IsActiveAtonementTarget(hero) == true
             ? Enforcement.CanOfferAtonementGrace : Bounty?.CanOfferFieldGrace == true;
 

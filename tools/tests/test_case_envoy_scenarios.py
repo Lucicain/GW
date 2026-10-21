@@ -21,13 +21,13 @@ using System;using System.Linq;using System.Collections.Generic;
 namespace GreyWardenPolicePurity {
 public enum AiBehavior {None,Hold} public enum GwpCrimeCategory{Unknown,VillageViolence,CaravanAttack}
 enum PoliceTaskFlowState{None,PreparingDispatch,Pursuit,WarPursuit,EscortingPlayer,PlayerBountyEscort}
-public struct Vec2{public float X,Y;public Vec2(float x=0,float y=0){X=x;Y=y;}public float Distance(Vec2 v)=>Math.Abs(X-v.X);} public class Settlement{} public interface IFaction{string StringId{get;}} public class Clan:IFaction{public string StringId{get;set;}="clan";}
+public struct Vec2{public float X,Y;public Vec2(float x=0,float y=0){X=x;Y=y;}public float Distance(Vec2 v)=>Math.Abs(X-v.X);} public class Settlement{public bool IsFortification;public List<Hero> HeroesWithoutParty=new();} public interface IFaction{string StringId{get;}} public class Clan:IFaction{public string StringId{get;set;}="clan";}
 public struct CampaignTime{public static CampaignTime Now=new(){ToHours=10};public double ToHours;public static CampaignTime Hours(float h)=>new(){ToHours=h};}
 class Campaign{public static Campaign Current=new();public List<IFaction> Factions=new();}
 interface IDataStore{bool IsSaving{get;}bool IsLoading{get;}void SyncData<T>(string key,ref T value);}
 class Store:IDataStore{public bool IsSaving{get;set;}public bool IsLoading=>!IsSaving;public Dictionary<string,object> Data=new();public void SyncData<T>(string key,ref T value){if(IsSaving)Data[key]=value!;else value=(T)Data[key];}}
 public class Hero{public string StringId="",Name="";public bool IsAlive=true,IsPrisoner,IsFugitive,IsDisabled;public bool IsDead=>!IsAlive;
- public MobileParty? PartyBelongedTo;public static List<Hero> All=new();public static Hero? FindFirst(Func<Hero,bool> f)=>All.FirstOrDefault(f);}
+ public MobileParty? PartyBelongedTo;public Settlement? CurrentSettlement;public static List<Hero> All=new();public static Hero? FindFirst(Func<Hero,bool> f)=>All.FirstOrDefault(f);}
 public class MobileParty{public string StringId="";public bool IsActive=true,IsMainParty;public Hero? LeaderHero;public object? MapEvent;public Settlement? CurrentSettlement;
  public Vec2 GetPosition2D=new();public AiBehavior DefaultBehavior;public IFaction MapFaction=new Clan();public static List<MobileParty> All=new();public static MobileParty MainParty=new(){StringId="player",IsMainParty=true};}
  RECORD_TYPES

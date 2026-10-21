@@ -112,6 +112,7 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new PolicePatrolBehavior());
             starter.AddBehavior(new PlayerBountyBehavior());
             starter.AddBehavior(new GwpFieldArrestBehavior());
+            starter.AddBehavior(new GwpCitySearchBehavior());
             starter.AddBehavior(new GwpFieldReportLedger());
             starter.AddBehavior(new GwpWardenDispatchBehavior());
             starter.AddBehavior(new GreyWardenVillageAdoptionBehavior());

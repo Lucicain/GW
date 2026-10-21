@@ -1,0 +1,334 @@
+using System.Collections.Generic;
+using System.Linq;
+using SandBox;
+using SandBox.Conversation.MissionLogics;
+using SandBox.Missions.AgentBehaviors;
+using SandBox.Missions.MissionLogics;
+using SandBox.Missions.MissionLogics.Towns;
+using SandBox.Objects;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.Settlements.Locations;
+using TaleWorlds.Core;
+using TaleWorlds.Engine;
+using TaleWorlds.Library;
+using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Source.Missions;
+using TaleWorlds.MountAndBlade.Source.Missions.Handlers;
+
+namespace GreyWardenPolicePurity
+{
+    /// <summary>
+    /// 进城搜捕的城镇中心场景：沿用原版城镇中心任务的全部行为（居民、卫兵、对话、打架、恐慌），
+    /// 只把原版控制器换成 <see cref="GwpCitySearchMissionController"/>，让玩家穿战斗装备、带兵从城门进城。
+    /// </summary>
+    internal static class GwpCitySearchMission
+    {
+        /// <summary>原版「进城时遭遇战斗」用的城门外出生点：城镇场景全有，城堡约一半有（场景标签核对 2026-10-21）。</summary>
+        internal const string GateSpawnTag = "sp_outside_near_town_main_gate";
+
+        internal static void Open(Settlement settlement, Hero target, TroopRoster troops)
+        {
+            Location center = settlement.LocationComplex.GetLocationWithId("center");
+            int wallLevel = settlement.Town.GetWallLevel();
+            string scene = center.GetSceneName(wallLevel);
+            string levels = Campaign.Current.Models.LocationModel.GetCivilianUpgradeLevelTag(wallLevel);
+            GwpAiDiagnostics.WriteCitySearch("MISSION_OPEN", "settlement=" + settlement.StringId
+                + "; castle=" + settlement.IsCastle + "; scene=" + scene + "; levels=" + levels
+                + "; troops=" + troops.TotalManCount);
+            MissionState.OpenNew("TownCenter",
+                SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town),
+                mission => Behaviors(settlement, target, troops, center));
+        }
+
+        private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops, Location center)
+        {
+            var list = new List<MissionBehavior>
+            {
+                new MissionOptionsComponent(),
+                new CampaignMissionComponent(),
+                new MissionBasicTeamLogic(),
+                new MissionSettlementPrepareLogic(),
+                new GwpCitySearchMissionController(settlement, target, troops),
+                new MissionAgentLookHandler(),
+                new SandBoxMissionHandler()
+            };
+            if (settlement.IsTown) list.Add(new WorkshopMissionHandler(settlement));
+            list.AddRange(new MissionBehavior[]
+            {
+                new BasicLeaveMissionLogic(),
+                new LeaveMissionLogic(),
+                new BattleAgentLogic(),
+                new MountAgentLogic(),
+                new NotableSpawnPointHandler(),
+                new MissionAgentPanicHandler(),
+                new AgentHumanAILogic(),
+                new MissionAlleyHandler(),
+                new MissionCrimeHandler(),
+                new MissionConversationLogic(),
+                new MissionAgentHandler(),
+                new MissionLocationLogic(center, GateSpawnTag),
+                new HeroSkillHandler(),
+                new MissionFightHandler(),
+                new MissionFacialAnimationHandler(),
+                new MissionHardBorderPlacer(),
+                new MissionBoundaryPlacer(),
+                new MissionBoundaryCrossingHandler(),
+                new VisualTrackerMissionBehavior(),
+                new EquipmentControllerLeaveLogic()
+            });
+            return list.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// 场景里的搜捕：玩家带兵从城门进来，卫兵上前盘问并做一次简单说服；对守卫或同势力的人动手
+    /// 即玩家阵营对该势力宣战，卫兵和场景里同势力的人一起打（用户裁定 2026-10-21）。
+    /// 进领主大厅、大厅交涉与杀出城属于后续阶段，这一版先关掉玩家能用的门。
+    /// </summary>
+    internal sealed class GwpCitySearchMissionController : MissionLogic
+    {
+        private enum Stage { Entering, Questioned, Allowed, Refused, Fighting, FightOver }
+
+        internal static GwpCitySearchMissionController? Current { get; private set; }
+
+        private readonly Settlement _settlement;
+        private readonly Hero _target;
+        private readonly TroopRoster _troops;
+        private readonly Dictionary<Agent, CharacterObject> _ours = new Dictionary<Agent, CharacterObject>();
+        private readonly Dictionary<CharacterObject, int> _killed = new Dictionary<CharacterObject, int>();
+        private readonly Dictionary<CharacterObject, int> _wounded = new Dictionary<CharacterObject, int>();
+        private readonly List<(Agent Agent, Vec3 Start)> _civiliansAtFight = new List<(Agent, Vec3)>();
+        private Stage _stage = Stage.Entering;
+        private Agent? _guard;
+        private bool _warDeclared;
+        private float _nextChallengeCheck;
+        private float _civilianSampleAt = -1f;
+
+        internal GwpCitySearchMissionController(Settlement settlement, Hero target, TroopRoster troops)
+        {
+            _settlement = settlement;
+            _target = target;
+            _troops = troops;
+        }
+
+        internal TextObject TargetName => _target.Name;
+
+        internal bool IsGuardTalk => _stage == Stage.Questioned && _guard != null
+            && ReferenceEquals(Campaign.Current.ConversationManager.OneToOneConversationAgent, _guard);
+
+        public override void OnBehaviorInitialize()
+        {
+            base.OnBehaviorInitialize();
+            Current = this;
+        }
+
+        public override void OnRemoveBehavior()
+        {
+            if (Current == this) Current = null;
+            base.OnRemoveBehavior();
+        }
+
+        public override void OnCreated()
+        {
+            base.OnCreated();
+            // 带兵进城搜捕穿战斗装备，不穿常服（用户裁定 2026-10-21）。
+            Mission.DoesMissionRequireCivilianEquipment = false;
+        }
+
+        public override void AfterStart()
+        {
+            Mission.SetMissionMode(MissionMode.StartUp, true);
+            Mission.IsInventoryAccessible = false;
+            Mission.IsQuestScreenAccessible = true;
+
+            string spawnTag = GwpCitySearchMission.GateSpawnTag;
+            GameEntity? spawn = Mission.Scene.FindEntityWithTag(spawnTag);
+            if (spawn == null)
+            {
+                spawnTag = "sp_player_outside";
+                spawn = Mission.Scene.FindEntityWithTag(spawnTag);
+            }
+            if (spawn == null)
+            {
+                spawnTag = "spawnpoint_player_outside";
+                spawn = Mission.Scene.FindEntityWithTag(spawnTag);
+            }
+            SandBoxHelpers.MissionHelper.SpawnPlayer(spawn, civilianEquipment: false, noHorses: true);
+            Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
+            int passages = DisablePlayerPassages();
+            int spawned = SpawnTroops();
+            GwpAiDiagnostics.WriteCitySearch("SPAWNED", "settlement=" + _settlement.StringId
+                + "; spawnTag=" + (spawn == null ? "none" : spawnTag) + "; troops=" + spawned
+                + "; passagesClosed=" + passages + "; watch=" + Mission.Agents.Count(IsWatch));
+        }
+
+        /// <summary>原版门会把玩家单独送进新场景、兵就丢了；进大厅属于下一阶段，先只对玩家关门，平民仍可穿门逃开。</summary>
+        private int DisablePlayerPassages()
+        {
+            int count = 0;
+            foreach (UsableMachine machine in Mission.ActiveMissionObjects.FindAllWithType<UsableMachine>())
+                foreach (StandingPoint point in machine.StandingPoints)
+                    if (point is PassageUsePoint passage)
+                    {
+                        passage.SetIsDisabledForPlayersSynched(true);
+                        count++;
+                    }
+            return count;
+        }
+
+        private int SpawnTroops()
+        {
+            Agent? main = Agent.Main;
+            if (main == null) return 0;
+            int count = 0;
+            foreach (TroopRosterElement element in _troops.GetTroopRoster())
+            {
+                CharacterObject character = element.Character;
+                if (character == null || character.IsPlayerCharacter) continue;
+                for (int i = 0; i < element.Number - element.WoundedNumber; i++)
+                {
+                    Vec3 position = Mission.GetRandomPositionAroundPoint(main.Position, 1f, 4f);
+                    Agent agent = Mission.SpawnTroop(new SimpleAgentOrigin(character), true, true, false, false,
+                        0, 0, false, false, position, main.LookDirection.AsVec2);
+                    _ours[agent] = character;
+                    count++;
+                }
+            }
+            OrderTroops(MovementOrder.MovementOrderFollow(main));
+            return count;
+        }
+
+        private void OrderTroops(MovementOrder order)
+        {
+            foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+                if (formation.CountOfUnits > 0) formation.SetMovementOrder(order);
+        }
+
+        public override void OnMissionTick(float dt)
+        {
+            if (_stage == Stage.Entering && Mission.CurrentTime >= _nextChallengeCheck)
+            {
+                _nextChallengeCheck = Mission.CurrentTime + 0.5f;
+                TryChallenge();
+            }
+            if (_civilianSampleAt > 0f && Mission.CurrentTime >= _civilianSampleAt)
+            {
+                _civilianSampleAt = -1f;
+                WriteCivilianFlight();
+            }
+        }
+
+        private void TryChallenge()
+        {
+            Agent? main = Agent.Main;
+            if (main == null || Campaign.Current.ConversationManager.IsConversationFlowActive) return;
+            Agent? guard = Mission.Agents
+                .Where(agent => agent.IsActive() && agent.IsAIControlled && IsWatch(agent)
+                    && agent.Position.Distance(main.Position) <= GwpTuning.CitySearch.GuardChallengeDistance)
+                .OrderBy(agent => agent.Position.Distance(main.Position))
+                .FirstOrDefault();
+            if (guard == null) return;
+            _guard = guard;
+            _stage = Stage.Questioned;
+            GwpAiDiagnostics.WriteCitySearch("GUARD_CHALLENGE", "guard=" + guard.Character.StringId
+                + "; distance=" + guard.Position.Distance(main.Position).ToString("0.0"));
+            Mission.GetMissionBehavior<MissionConversationLogic>().StartConversation(guard, false);
+        }
+
+        internal void OnGuardDecision(bool allowed, string result)
+        {
+            if (_stage != Stage.Questioned) return;
+            _stage = allowed ? Stage.Allowed : Stage.Refused;
+            GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=" + allowed + "; result=" + result);
+            if (result != "player_leaves")
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(allowed
+                    ? GwpTextCatalog.gwp_cs_allowed_notice : GwpTextCatalog.gwp_cs_refused_notice)));
+        }
+
+        public override void OnAgentHit(Agent affectedAgent, Agent affectorAgent, in MissionWeapon affectorWeapon,
+            in Blow blow, in AttackCollisionData attackCollisionData)
+        {
+            if (_stage == Stage.Fighting || affectorAgent == null || affectedAgent == null) return;
+            if (IsOurs(affectorAgent) && IsDefender(affectedAgent)) StartFight(affectedAgent);
+        }
+
+        /// <summary>对守卫或同势力的人动手就是开战：玩家阵营对城主势力宣战，卫兵和场景里同势力的人一起打。</summary>
+        private void StartFight(Agent struck)
+        {
+            if (!_warDeclared)
+            {
+                _warDeclared = true;
+                Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.DeclarePlayerCaseWar(
+                    _settlement.MapFaction, "city_search_watch_struck", GwpTextCatalog.gwp_cs_war_notice);
+            }
+            List<Agent> ours = Mission.Agents.Where(agent => agent.IsActive() && IsOurs(agent)).ToList();
+            List<Agent> theirs = Mission.Agents.Where(agent => agent.IsActive() && IsDefender(agent)).ToList();
+            _stage = Stage.Fighting;
+            Agent? main = Agent.Main;
+            _civiliansAtFight.Clear();
+            if (main != null)
+                foreach (Agent agent in Mission.Agents.Where(agent => agent.IsActive() && agent.IsHuman
+                             && agent.IsAIControlled && !IsOurs(agent) && !IsDefender(agent)
+                             && agent.Position.Distance(main.Position) <= 30f))
+                    _civiliansAtFight.Add((agent, agent.Position));
+            _civilianSampleAt = Mission.CurrentTime + 8f;
+            GwpAiDiagnostics.WriteCitySearch("FIGHT_START", "struck=" + struck.Character?.StringId
+                + "; war=" + _warDeclared + "; ours=" + ours.Count + "; theirs=" + theirs.Count
+                + "; civiliansNear=" + _civiliansAtFight.Count);
+            Mission.GetMissionBehavior<MissionFightHandler>().StartCustomFight(ours, theirs, false, false, OnFightEnd);
+            OrderTroops(MovementOrder.MovementOrderCharge);
+        }
+
+        private void OnFightEnd(bool playerWon)
+        {
+            _stage = Stage.FightOver;
+            GwpAiDiagnostics.WriteCitySearch("FIGHT_END", "playerWon=" + playerWon
+                + "; oursLeft=" + Mission.Agents.Count(agent => agent.IsActive() && IsOurs(agent)));
+            if (Agent.Main != null) OrderTroops(MovementOrder.MovementOrderFollow(Agent.Main));
+        }
+
+        /// <summary>取证：开打时 30 米内的平民，8 秒后有多少跑开了（原版只把玩家本人当危险来源）。</summary>
+        private void WriteCivilianFlight()
+        {
+            int moved = _civiliansAtFight.Count(entry => !entry.Agent.IsActive() || entry.Agent.Position.Distance(entry.Start) > 5f);
+            GwpAiDiagnostics.WriteCitySearch("CIVILIAN_FLIGHT", "civilians=" + _civiliansAtFight.Count + "; movedOrGone=" + moved);
+        }
+
+        public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
+        {
+            if (!_ours.TryGetValue(affectedAgent, out CharacterObject character)) return;
+            Dictionary<CharacterObject, int>? bucket = agentState == AgentState.Killed ? _killed
+                : agentState == AgentState.Unconscious ? _wounded : null;
+            if (bucket != null) bucket[character] = bucket.TryGetValue(character, out int n) ? n + 1 : 1;
+        }
+
+        protected override void OnEndMission()
+        {
+            // 兵员是按名册生成的普通任务兵，伤亡由这里写回主队名册；英雄的伤情由原版处理。
+            TroopRoster? roster = MobileParty.MainParty?.MemberRoster;
+            if (roster != null)
+            {
+                foreach (var entry in _killed.Where(e => !e.Key.IsHero)) roster.AddToCounts(entry.Key, -entry.Value);
+                foreach (var entry in _wounded.Where(e => !e.Key.IsHero)) roster.AddToCounts(entry.Key, 0, false, entry.Value);
+            }
+            GwpAiDiagnostics.WriteCitySearch("MISSION_END", "stage=" + _stage + "; war=" + _warDeclared
+                + "; killed=" + _killed.Values.Sum() + "; wounded=" + _wounded.Values.Sum());
+        }
+
+        private bool IsOurs(Agent agent) => agent == Agent.Main || _ours.ContainsKey(agent);
+
+        /// <summary>守卫：原版算作执法者的士兵、卫兵、狱卒，不含我方带进来的兵。</summary>
+        private bool IsWatch(Agent agent) => agent.IsHuman && !IsOurs(agent)
+            && agent.Character is CharacterObject character && MissionFightHandler.IsAgentJusticeWarrior(character);
+
+        /// <summary>会出手的人：守卫，加上场景里与城主同势力的英雄。</summary>
+        private bool IsDefender(Agent agent) => IsWatch(agent) || agent.IsHuman && !IsOurs(agent)
+            && agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
+            && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction;
+    }
+}

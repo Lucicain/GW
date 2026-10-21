@@ -111,6 +111,8 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 
 区域业务评估不写成真实initiative结果；`GwpInitiativeDiagnosticsPatch` 跳过同步预估，只在区域守卫之后旁观原版正式结果。区域数据使用业务评估已产生的原值，不为了打印重跑原版评分。（依据：流程、离线执行2026-10-18）
 
+进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、GUARD_CHALLENGE、GUARD_DECISION、FIGHT_START（双方人数与 30 米内平民数）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
+
 ## 在役
 
 | 系统 | 为什么还留着 | 退休条件 |

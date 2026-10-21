@@ -278,7 +278,7 @@ static void Main(){
     def test_live_offer_authority_and_stale_contract(self):
         source = (MODULE / 'PlayerBountyBehavior.DialogueAndNotification.cs').read_text(encoding='utf-8-sig')
         methods = '\n'.join(method(source, n) for n in ['GetAffairsOffers', 'EstimateAffairsReward', 'TryAcceptAffairsCase'])
-        assignment = method((MODULE / 'GwpPlayerCaseAssignment.cs').read_text(encoding='utf-8-sig'), 'CanTakeCase')
+        assignment = method((MODULE / 'GwpPlayerCaseAssignment.cs').read_text(encoding='utf-8-sig'), 'CanTakeCase') + method((MODULE / 'GwpPlayerCaseAssignment.cs').read_text(encoding='utf-8-sig'), 'CanPlayerTakeCase')
         pool = method((MODULE / 'GwpData.cs').read_text(encoding='utf-8-sig'), 'GetAvailablePlayerBounties')
         reward = method((MODULE / 'GwpCaseSettlementRules.cs').read_text(encoding='utf-8-sig'), 'Reward')
         tuning = (MODULE / 'GwpTuning.cs').read_text(encoding='utf-8-sig')
@@ -288,7 +288,7 @@ static void Main(){
 using System;using System.Linq;using System.Collections.Generic;
 namespace GreyWardenPolicePurity {
 public enum GwpCrimeCategory { Unknown,CaravanAttack,VillageViolence,PlayerCase }
-public class CrimeRecord {public string CrimeId="";public GwpCrimeCategory CrimeCategory;public bool HasOpenCase=true,Pursuable=true,Agreement;public int Fine=2000,Severity;public object? OffenderHero;public bool IsOffenderPursuable()=>Pursuable;}
+public class CrimeRecord {public string CrimeId="";public GwpCrimeCategory CrimeCategory;public bool HasOpenCase=true,Pursuable=true,Agreement;public int Fine=2000,Severity;public object? OffenderHero;public bool IsOffenderPursuable()=>Pursuable;public bool IsOffenderSearchableInSettlement()=>false;}
 public class History{public int NegativeStanding;}
 public static class CrimePool {public const string PlayerCrimeId="player";internal static List<CrimeRecord> _ledgerList=new();internal static Dictionary<string,CrimeRecord> _ledger=>_ledgerList.ToDictionary(c=>c.CrimeId);public static History? GetHistory(object? o)=>o as History; POOL }
 static class CrimeState{public static List<CrimeRecord> GetAvailablePlayerBounties()=>CrimePool.GetAvailablePlayerBounties();}

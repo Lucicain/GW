@@ -58,7 +58,7 @@ class PlayerBountyBehavior {
  public void NotifyCaseClosedByCapture(Hero? h,int a,int s){}
 }
 class CrimeRecord { public MobileParty? Offender; public string OffenderHeroId="target",CrimeId="target"; public bool HasOpenCase=true;
- public Hero? OffenderHero=>Hero.Target; public GwpCrimeCategory CrimeCategory; public bool IsOffenderPursuable()=>true; }
+ public Hero? OffenderHero=>Hero.Target; public GwpCrimeCategory CrimeCategory; public bool IsOffenderPursuable()=>true; public bool IsOffenderSearchableInSettlement()=>false; }
 static class CrimePool { public static CrimeRecord? Record=new CrimeRecord();
  public static CrimeRecord? GetRecordByKey(string id)=>Record?.CrimeId==id?Record:null; }
 static class CrimeState { public static CrimeRecord? Other;

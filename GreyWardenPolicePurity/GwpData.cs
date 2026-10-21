@@ -118,6 +118,22 @@ namespace GreyWardenPolicePurity
             Offender?.IsActive == true && Offender.CurrentSettlement == null
             // 玩家接手的案子由玩家承办，灰袍不再自行派人；支援另由求援送达后明确指派。
             && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
+
+        /// <summary>
+        /// 没带部队、住在城镇或城堡里的人。原版把这样的贵族放在领主大厅
+        /// （DefaultHeroAgentLocationModel，依据：C#反编译 v1.4.8），玩家可以进城搜捕。
+        /// </summary>
+        public static Settlement? ShelterOf(Hero? hero) =>
+            hero is { IsAlive: true, IsPrisoner: false, IsDisabled: false, IsFugitive: false, PartyBelongedTo: null }
+            && hero.CurrentSettlement is { IsFortification: true } settlement
+            && settlement.HeroesWithoutParty.Contains(hero) ? settlement : null;
+
+        public Settlement? ShelterSettlement => ShelterOf(OffenderHero);
+
+        /// <summary>住城的人目前只有玩家能进城搜捕；灰袍 NPC 的做法另定（用户裁定 2026-10-21）。</summary>
+        public bool IsOffenderSearchableInSettlement() =>
+            HasOpenCase && CrimeId != CrimePool.PlayerCrimeId && ShelterSettlement != null
+            && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
     }
 
     /// <summary>
@@ -495,7 +511,7 @@ namespace GreyWardenPolicePurity
         public static List<CrimeRecord> GetAvailablePlayerBounties() =>
             _ledger.Values
                 .Where(c => c.CrimeId != PlayerCrimeId &&
-                            GwpPlayerCaseAssignment.CanTakeCase(c))
+                            GwpPlayerCaseAssignment.CanPlayerTakeCase(c))
                 .ToList();
 
 

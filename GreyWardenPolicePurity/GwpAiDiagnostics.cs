@@ -161,6 +161,13 @@ namespace GreyWardenPolicePurity
                 " | stage=" + Safe(stage) +
                 " | " + Safe(details));
 
+        internal static void WriteCitySearch(string stage, string details) =>
+            Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture) +
+                " | campaignHour=" + CampaignTime.Now.ToHours.ToString("0.00", CultureInfo.InvariantCulture) +
+                " | CITY_SEARCH" +
+                " | stage=" + Safe(stage) +
+                " | " + Safe(details));
+
         internal static void WriteCombat(string stage, string details) =>
             Append(DateTime.Now.ToString("O", CultureInfo.InvariantCulture)
                 + " | COMBAT | stage=" + Safe(stage) + " | " + Safe(details));
@@ -587,6 +594,7 @@ namespace GreyWardenPolicePurity
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
         internal static void WritePlayerJusticeState(string action, string details) { }
         internal static void WriteFieldArrest(string stage, string details) { }
+        internal static void WriteCitySearch(string stage, string details) { }
         internal static void WriteFaith(string stage, string details) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
         internal static bool ShouldTraceObservedParty(MobileParty? party) => false;

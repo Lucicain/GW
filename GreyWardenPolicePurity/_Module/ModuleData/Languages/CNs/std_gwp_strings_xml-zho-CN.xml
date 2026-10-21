@@ -1657,5 +1657,30 @@
   <string id="gwp_dispatch_fief_filed" text="使者已递交封地重议申请，灰袍贵族事务领主将来与你会面。" />
   <string id="gwp_dispatch_fief_moot" text="封地重议申请已无法登记，使者正在返回。" />
   <string id="gwp_dispatch_fief_send" text="派出使者" />
+  <string id="gwp_affairs_sheltered" text="藏身于{PLACE}的领主大厅" />
+  <string id="gwp_affairs_sheltered_help" text="他没有带兵。到他所在的城镇或城堡，在菜单里选择带兵进城搜捕。" />
+  <string id="gwp_bounty_quest_sheltered" text="当前所在：{VAR_1}的领主大厅，没有带兵。&#10;" />
+  <string id="gwp_bounty_intel_sheltered" text="【侦情】目标仍未带兵，住在{VAR_1}的领主大厅。" />
+  <string id="gwp_city_search_option" text="带兵进城搜捕{TARGET}" />
+  <string id="gwp_city_search_wounded" text="你受了伤，不能带兵搜捕。" />
+  <string id="gwp_cs_guard_challenge" text="站住！带着这么多兵进城，你们想做什么？" />
+  <string id="gwp_cs_explain" text="灰袍办案，奉命捉拿{TARGET}。我们只借道去领主大厅。" />
+  <string id="gwp_cs_will_leave" text="我们这就出城。" />
+  <string id="gwp_cs_guard_reservation" text="城里不许外人带兵走动。" />
+  <string id="gwp_cs_arg_lead" text="我的人守规矩，出了事由我担着。" />
+  <string id="gwp_cs_arg_charm" text="我们只为一个人来，办完就走，不惊扰百姓。" />
+  <string id="gwp_cs_arg_rogue" text="挡灰袍办案，这麻烦你担得起吗？" />
+  <string id="gwp_cs_arg_trade" text="我们不在城里买卖，也不碰一针一线。" />
+  <string id="gwp_cs_guard_fail_immediate" text="这话说服不了我。" />
+  <string id="gwp_cs_guard_fail_final" text="不行。" />
+  <string id="gwp_cs_guard_try_later" text="改天再说。" />
+  <string id="gwp_cs_guard_reaction_success" text="……也有道理。" />
+  <string id="gwp_cs_guard_reaction_fail" text="少来这套。" />
+  <string id="gwp_cs_guard_reaction_critical" text="你这是在威胁守卫？" />
+  <string id="gwp_cs_guard_pass" text="去吧。别在城里惹事。" />
+  <string id="gwp_cs_guard_refuse" text="不行。带着你的人出城去。" />
+  <string id="gwp_cs_refused_notice" text="守卫不放行。不动手就退出城外，搜捕作罢；对守卫动手就是开战。" />
+  <string id="gwp_cs_allowed_notice" text="守卫放行了。" />
+  <string id="gwp_cs_war_notice" text="你对守卫动了手，{VAR_1}与你开战。" />
 </strings>
 </base>

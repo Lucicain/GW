@@ -156,6 +156,13 @@
         /// sum to 1 and decide how much the odds, his temper and the player's standing
         /// each count; the two thresholds cut that score into submit / argue / fight.
         /// </summary>
+        /// <summary>玩家带兵进城搜捕住城的旧案目标（用户裁定 2026-10-21）。</summary>
+        internal static class CitySearch
+        {
+            /// <summary>卫兵走到这个距离内就上前盘问。原版打手搭话用 5，带兵进城离得稍远也该被拦下。</summary>
+            public const float GuardChallengeDistance = 6f;
+        }
+
         internal static class FieldArrest
         {
             public const int ReportAuditDelayDays = 7;

@@ -74,7 +74,7 @@ namespace GreyWardenPolicePurity {
  static class GwpTextCatalog{KEYS}
  static class GwpText{public static string Get(string k,params object[] a)=>k;public static TextObject Create(string k,params object[] a)=>new(k);}
  static class GwpPlayerCaseAssignment{public static bool Authority=true;public static bool HasAuthority(Hero h)=>Authority;}
- static class CrimePool{public static CrimeRecord Record=new();public static CrimeRecord GetRecord(Hero h)=>Record;}class CrimeRecord{public bool HasOpenCase=true;}
+ static class CrimePool{public static CrimeRecord Record=new();public static CrimeRecord GetRecord(Hero h)=>Record;}class CrimeRecord{public bool HasOpenCase=true;public static Settlement? ShelterOf(Hero? h)=>null;}
  public partial class PlayerBountyBehavior {
   string _activeBountyTargetId;public bool IsTrackingBountyTarget=true,HasCompletedEnforcement;public Hero CaseHero;public BountyHunterQuest _activeQuest=new();public int Ended,Registered;public bool CaseStillOpen=true;public void EndBountyTaskState(bool peace){Ended++;IsTrackingBountyTarget=false;}public void RegisterCaptureInCustody(){Registered++;}public void LeaveCaseClerk(){} TARGET_RESOLVER
   public class BountyHunterQuest {public int Canceled;public void CompleteQuestWithCancel(TextObject t){Canceled++;}CANCEL_QUEST}

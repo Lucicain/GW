@@ -6889,6 +6889,131 @@
     "gwp_dispatch_fief_send": {
       "en": "Dispatch courier",
       "zh": "派出使者"
+    },
+    "gwp_affairs_sheltered": {
+      "en": "Hiding in the lord's hall of {PLACE}",
+      "zh": "藏身于{PLACE}的领主大厅",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_affairs_sheltered_help": {
+      "en": "He leads no party. Go to that town or castle and choose the search from its menu.",
+      "zh": "他没有带兵。到他所在的城镇或城堡，在菜单里选择带兵进城搜捕。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_bounty_quest_sheltered": {
+      "en": "Current whereabouts: the lord's hall of {VAR_1}; he leads no party.\n",
+      "zh": "当前所在：{VAR_1}的领主大厅，没有带兵。\n",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_bounty_intel_sheltered": {
+      "en": "[Investigation] The target still leads no party and is staying in the lord's hall of {VAR_1}.",
+      "zh": "【侦情】目标仍未带兵，住在{VAR_1}的领主大厅。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_city_search_option": {
+      "en": "Lead your men in to arrest {TARGET}",
+      "zh": "带兵进城搜捕{TARGET}",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_city_search_wounded": {
+      "en": "You are wounded and cannot lead the search.",
+      "zh": "你受了伤，不能带兵搜捕。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_challenge": {
+      "en": "Halt! What business do you have marching armed men through this town?",
+      "zh": "站住！带着这么多兵进城，你们想做什么？",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_explain": {
+      "en": "Grey Warden business. We have a warrant for {TARGET} and only need the way to the lord's hall.",
+      "zh": "灰袍办案，奉命捉拿{TARGET}。我们只借道去领主大厅。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_will_leave": {
+      "en": "We will leave town.",
+      "zh": "我们这就出城。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_reservation": {
+      "en": "Outsiders do not march soldiers through this town.",
+      "zh": "城里不许外人带兵走动。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_arg_lead": {
+      "en": "My men keep discipline. Anything that happens is on me.",
+      "zh": "我的人守规矩，出了事由我担着。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_arg_charm": {
+      "en": "We came for one man. We will be gone once it is done, and no townsman will be troubled.",
+      "zh": "我们只为一个人来，办完就走，不惊扰百姓。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_arg_rogue": {
+      "en": "Standing in the Wardens' way is trouble you do not want.",
+      "zh": "挡灰袍办案，这麻烦你担得起吗？",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_arg_trade": {
+      "en": "We buy nothing, sell nothing and touch nothing here.",
+      "zh": "我们不在城里买卖，也不碰一针一线。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_fail_immediate": {
+      "en": "That does not convince me.",
+      "zh": "这话说服不了我。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_fail_final": {
+      "en": "No.",
+      "zh": "不行。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_try_later": {
+      "en": "Another time.",
+      "zh": "改天再说。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_reaction_success": {
+      "en": "...Fair enough.",
+      "zh": "……也有道理。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_reaction_fail": {
+      "en": "Spare me.",
+      "zh": "少来这套。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_reaction_critical": {
+      "en": "Are you threatening the watch?",
+      "zh": "你这是在威胁守卫？",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_pass": {
+      "en": "Go on, then. Make no trouble in town.",
+      "zh": "去吧。别在城里惹事。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_guard_refuse": {
+      "en": "No. Take your men and get out of town.",
+      "zh": "不行。带着你的人出城去。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_refused_notice": {
+      "en": "The watch will not let you through. Leave without a fight and the search is dropped; strike the watch and it means war.",
+      "zh": "守卫不放行。不动手就退出城外，搜捕作罢；对守卫动手就是开战。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_allowed_notice": {
+      "en": "The watch lets you through.",
+      "zh": "守卫放行了。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_war_notice": {
+      "en": "You struck the town watch. {VAR_1} is now at war with you.",
+      "zh": "你对守卫动了手，{VAR_1}与你开战。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
     }
   },
   "fragments": {

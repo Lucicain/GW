@@ -121,32 +121,36 @@ namespace GreyWardenPolicePurity
         internal void NotifySupportWarDeclared(MobileParty? criminal)
         {
             if (!HasBountyTask || criminal == null) return;
-            IFaction? playerFaction = Hero.MainHero?.MapFaction;
-            IFaction? criminalFaction = criminal.MapFaction;
-            if (playerFaction == null || criminalFaction == null ||
-                playerFaction == criminalFaction) return;
-
             Clan? criminalClan = criminal.ActualClan;
             if (criminalClan != null && criminalClan.IsOutlaw && criminalClan.IsBanditFaction) return;
+            DeclarePlayerCaseWar(criminal.MapFaction, "case_support_declaration",
+                GwpTextCatalog.gwp_support_player_war);
+        }
+
+        /// <summary>
+        /// 玩家为本案开战的唯一入口（求援成立、进城搜捕动手）：玩家阵营对对方势力宣战，
+        /// 记进调停申请通道，结案时不再替玩家自动讲和。接案前就在打的战争不算本案造成。
+        /// </summary>
+        internal void DeclarePlayerCaseWar(IFaction? target, string reason, string noticeKey)
+        {
+            if (!HasBountyTask) return;
+            IFaction? playerFaction = Hero.MainHero?.MapFaction;
+            if (playerFaction == null || target == null || playerFaction == target) return;
 
             _bountyTargetEncounterStarted = true;
-            if (FactionManager.IsAtWarAgainstFaction(playerFaction, criminalFaction))
+            if (FactionManager.IsAtWarAgainstFaction(playerFaction, target))
             {
                 // 接案之前就已经在打的战争不是这宗案子造成的，结案时也不该由它来收。
                 _playerFactionWasAtWarWhenBountyAccepted = true;
                 return;
             }
 
-            DeclareWarAction.ApplyByDefault(playerFaction, criminalFaction);
-            // 这一战是替灰袍办案打的，记进申请通道；结案时不再替玩家自动讲和。
-            PoliceAntiWarDeclaration.RecordMediationRequest(
-                criminalFaction, "case_support_declaration");
-            GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_PLAYER_WAR",
-                "playerFaction=" + playerFaction.StringId +
-                "; criminalFaction=" + criminalFaction.StringId);
+            DeclareWarAction.ApplyByDefault(playerFaction, target);
+            PoliceAntiWarDeclaration.RecordMediationRequest(target, reason);
+            GwpAiDiagnostics.WriteFieldArrest("CASE_PLAYER_WAR", "reason=" + reason +
+                "; playerFaction=" + playerFaction.StringId + "; targetFaction=" + target.StringId);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                GwpTextCatalog.gwp_support_player_war,
-                "VAR_1", criminalFaction.Name), Colors.Cyan));
+                noticeKey, "VAR_1", target.Name), Colors.Cyan));
         }
 
         private void RegisterSupportDialogue(CampaignGameStarter starter)

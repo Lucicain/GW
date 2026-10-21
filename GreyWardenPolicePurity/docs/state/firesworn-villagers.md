@@ -63,7 +63,6 @@ MARKET_DISPATCHED含dedicated/下一趟专运待办、装灰袍货前余量、�
 
 当前优先接续的存档为 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Game Saves/save001.sav`（2026-10-19 13:29:25 保存，SHA-256 d8e670438b7744113252f966ab494d4ce4a07fbdcc7921aef850c307e1fb9a91，agent 不改写它）。它 22:26 加载时的 SyncData 空引用对应专运新增键，已按缺键默认 false 修复，23:18 实机读取成功；23:30 另一路军团影响力崩溃见[地图AI](warden-ai.md#军团影响力计算空英雄故障)。（依据：故障日志、文件哈希、离线执行2026-10-19）
 
-r13没有整个宗教行为记录，原版不会调用这个新增行为的SyncData，不能把本次当前开发档的缺键修复冒称r13完整兼容；其他升级范围与已知缺陷统一见[公共底座](infrastructure.md#r13存档直升范围)。
 
 ## 待实测
 

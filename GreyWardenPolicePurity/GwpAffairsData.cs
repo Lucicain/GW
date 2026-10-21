@@ -127,6 +127,14 @@ namespace GreyWardenPolicePurity
                         GwpText.Format(MobileParty.MainParty == null ? 0 : GwpStrength.CombatGroup(MobileParty.MainParty), "0")));
                     entry.Fields.Insert(0, GwpAffairsText.TargetLocation(target));
                 }
+                else if (crime.ShelterSettlement is { } shelter)
+                {
+                    // 没带部队、住在城里：给出城名，玩家进城搜捕。
+                    if (MobileParty.MainParty != null)
+                        entry.DistanceToPlayer = MobileParty.MainParty.GetPosition2D.Distance(shelter.GetPosition2D);
+                    entry.Place = shelter;
+                    entry.Fields.Insert(0, GwpText.Get(GwpTextCatalog.gwp_affairs_sheltered, "PLACE", shelter.Name));
+                }
                 else entry.Fields.Insert(0, GwpText.Get(GwpTextCatalog.gwp_affairs_unavailable));
                 // Reward and difficulty are already the selected row's detail summary.
                 // Incident details are secondary. The current target position above is the actionable location.

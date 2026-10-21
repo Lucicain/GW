@@ -127,6 +127,7 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 | 玩家词句与中英变量 | `PlayerText/strings.json`、`Generate-PlayerText.py` | 构建拒绝新内联带键整句与陈旧生成文件；详见[玩家文字](player-text.md) |
 | 临时队海陆交接资格 | `GwpCommon.CanCompletePartyHandover` | 海陆相同判断只在公共入口实现；距离、接收人资格归各业务，规则见[临时队](temporary-parties.md#海陆交接资格) |
 | 临时队唯一编号 | `GwpPartyIdentity` | `FindNextUniqueStringId<MobileParty>`；查重与严格递增在本入口完成 |
+| 玩家为本案宣战（求援成立、进城搜捕动手） | `PlayerBountyBehavior.DeclarePlayerCaseWar` | `DeclareWarAction.Apply*`；宣战同时登记调停申请通道 |
 | 讲和（含玩家战斗时序、灰袍交战理由） | `GwpPeace` | `FactionManager.SetNeutral`、`MakePeaceAction.Apply`；规则见 [调停](warden-mediation.md) |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |

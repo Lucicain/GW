@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 
 namespace GreyWardenPolicePurity
 {
@@ -48,6 +49,13 @@ namespace GreyWardenPolicePurity
                     entry.Place = holder.Settlement;
                     entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_current_location, holder.Settlement.Name.ToString()));
                 }
+            }
+            Settlement? shelter = holder == null && IsTrackingBountyTarget ? CrimeRecord.ShelterOf(hero) : null;
+            if (shelter != null)
+            {
+                entry.Summary = GwpText.Get(GwpTextCatalog.gwp_affairs_sheltered, "PLACE", shelter.Name);
+                entry.Place = shelter;
+                entry.Fields.Add(GwpText.Get(GwpTextCatalog.gwp_affairs_sheltered_help));
             }
             if (holder == null && IsTrackingBountyTarget && IsCaseTargetMissing)
             {

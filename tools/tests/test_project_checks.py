@@ -95,6 +95,18 @@ class OwnershipTests(unittest.TestCase):
             self.assertEqual(1, len(violations))
             self.assertIn("GwpStrength", violations[0])
 
+    def test_player_case_war_has_one_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            owner = Path(directory) / "PlayerBountyBehavior.Support.cs"
+            caller = Path(directory) / "GwpCitySearchMission.cs"
+            source = "DeclareWarAction.ApplyByDefault(player, target);\n"
+            owner.write_text(source, encoding="utf-8")
+            caller.write_text(source, encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(owner)]))
+            violations = hygiene.owner_violations([str(caller)])
+            self.assertEqual(1, len(violations))
+            self.assertIn("DeclarePlayerCaseWar", violations[0])
+
     def test_comments_and_strings_do_not_look_like_calls(self):
         with tempfile.TemporaryDirectory() as directory:
             caller = Path(directory) / "Caller.cs"
