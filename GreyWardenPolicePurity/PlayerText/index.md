@@ -1682,3 +1682,4 @@
 | gwp_cs_refused_notice | The watch will not let you through. Leave without a fight and the search is dropped; strike the watch and it means war. | 守卫不放行。不动手就退出城外，搜捕作罢；对守卫动手就是开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_allowed_notice | The watch lets you through. | 守卫放行了。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_war_notice | You struck the town watch. {VAR_1} is now at war with you. | 你对守卫动了手，{VAR_1}与你开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_fight_not_over | The fight is not over. You cannot leave yet. | 仗还没打完，现在不能离开。 | 进城搜捕第1段（用户裁定2026-10-21） |

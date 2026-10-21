@@ -7014,6 +7014,11 @@
       "en": "You struck the town watch. {VAR_1} is now at war with you.",
       "zh": "你对守卫动了手，{VAR_1}与你开战。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
+    },
+    "gwp_cs_fight_not_over": {
+      "en": "The fight is not over. You cannot leave yet.",
+      "zh": "仗还没打完，现在不能离开。",
+      "context": "进城搜捕第1段（用户裁定2026-10-21）"
     }
   },
   "fragments": {

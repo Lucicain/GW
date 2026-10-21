@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-204 个源文件、56,192 行、390 个公开类型、105 条 Harmony 目标声明（含动态入口，共 105 个补丁类）。
+205 个源文件、56,333 行、391 个公开类型、105 条 Harmony 目标声明（含动态入口，共 105 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -303,6 +303,7 @@
 - `GwpCitySearchBehavior` → GwpCitySearchBehavior.cs
 - `GwpCitySearchMission` → GwpCitySearchMission.cs
 - `GwpCitySearchMissionController` → GwpCitySearchMission.cs ←
+- `GwpCitySearchMissionViews` → GwpCitySearchMissionViews.cs
 - `GwpCommon` → GwpCommon.cs
 - `GwpCrimeCategory` → GwpCrimeCategory.cs
 - `GwpCrimeCategoryClassifier` → GwpCrimeCategory.cs ←
@@ -694,20 +695,20 @@
 
 - `SubModule.cs` — 171 行 · `SubModule` : MBSubModuleBase
 
-### 其他（111 个文件）
+### 其他（112 个文件）
 
-- `GwpTextCatalog.g.cs` — 1371 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1372 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 881 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpCitySearchMission.cs` — 421 行 · `GwpCitySearchMission` : MissionLogic，另含 1 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 415 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpAffairsVM.cs` — 371 行 · `GwpAffairsChoiceVM` : ViewModel，另含 4 个类型
 - `GwpFaithVillagers.cs` — 370 行 · `GwpFireswornBehavior`，另含 7 个类型
 - `GwpPoliceWarReasonService.cs` — 362 行 · `GwpPoliceWarReasonService`
-- `GwpCitySearchMission.cs` — 335 行 · `GwpCitySearchMission` : MissionLogic，另含 1 个类型
 - `GreyWardenDesertersCampaignBehavior.cs` — 328 行 · `GreyWardenDesertersCampaignBehavior` : CampaignBehaviorBase
 - `GwpFireswornRituals.cs` — 325 行 · `GwpFireswornBehavior`
 - `GwpWardenVisitDesire.cs` — 303 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
@@ -773,6 +774,7 @@
 - `GwpWardenPurification.cs` — 62 行 · `GwpWardenPurification`
 - `GreyWardenDeserterFilterBehavior.cs` — 59 行 · `GreyWardenDeserterFilterBehavior` : CampaignBehaviorBase
 - `GwpSaveableTypeDefiner.cs` — 59 行 · `GwpSaveableTypeDefiner` : SaveableTypeDefiner
+- `GwpCitySearchMissionViews.cs` — 54 行 · `GwpCitySearchMissionViews`
 - `GwpNegotiationPolicy.cs` — 54 行 · `GwpNegotiationPolicy`
 - `GwpPlayerCaseAssignment.cs` — 54 行 · `GwpPlayerCaseAssignment`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型

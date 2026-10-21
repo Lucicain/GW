@@ -403,6 +403,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_arg_rogue = "{=gwp_cs_arg_rogue}Standing in the Wardens' way is trouble you do not want.";
         internal const string gwp_cs_arg_trade = "{=gwp_cs_arg_trade}We buy nothing, sell nothing and touch nothing here.";
         internal const string gwp_cs_explain = "{=gwp_cs_explain}Grey Warden business. We have a warrant for {TARGET} and only need the way to the lord's hall.";
+        internal const string gwp_cs_fight_not_over = "{=gwp_cs_fight_not_over}The fight is not over. You cannot leave yet.";
         internal const string gwp_cs_guard_challenge = "{=gwp_cs_guard_challenge}Halt! What business do you have marching armed men through this town?";
         internal const string gwp_cs_guard_fail_final = "{=gwp_cs_guard_fail_final}No.";
         internal const string gwp_cs_guard_fail_immediate = "{=gwp_cs_guard_fail_immediate}That does not convince me.";
