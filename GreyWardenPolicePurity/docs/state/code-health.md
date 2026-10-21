@@ -1,22 +1,41 @@
 # 代码健康
 
-> 当前状态：协力职责与战力无限递归已切断、生产回归通过；退出阶段原生释放故障另案未明
+> 当前状态：名牌补丁提前初始化与控件回写递归已修复并补回归；文档漂移与地图漏项已修正；CodeGraph 查询及十项业务场景的接手复核完成，已知运行缺口仍保留
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 已复核至：`7573179`（2026-10-17）
-> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `tools/tests/test_assistance_recursion.py`
+> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `tools/tests/test_assistance_recursion.py`
 > 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
 
 已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
 
-本轮调查的回退基线为`7573179`；已撤诊断中的主动小时寻路及其SubModule行为注册，旁观实际解散调用。本轮业务修复见[案件](case-enforcement.md)，不从旧规则恢复机制。（依据：流程2026-10-16）
+## 文档一致性现状
+
+当前规则由所属 state 定义，设定总文档只作世界观与玩法概览。接手顺序和代码定位在根 AGENTS 与 [state 索引](README.md) 维护；CodeGraph 是可重建的源码索引，不是第二份项目记忆。（依据：用户要求跨 agent 接手；流程 2026-10-18）
+
+代码定位已在当前工作树验证：区域宣战、临时队交接、使者、订单占用、事务入口/排序、派单、村民分账与军械缓存均能从图定位到生产入口，再对照所属 state 与现有回归。十项场景复核不是全仓掌握率，也不是实机验收；未用熟悉本项目的自测冒充新 agent 冷启动评测。（依据：源码与离线执行 2026-10-18）
+
+CodeGraph 使用准确类型/方法名和文件名时定位较好；泛化英语问题、猜错方法名或过低文件上限可能返回相邻代码、同名桩而遗漏目标正文。动态抽取 C# 的 Python 测试未建立完整调用边，需从所属 state 的验证入口查找。工具已能辅助接手，但不能单凭结果排序认定生产归属或测试缺失。（依据：本仓库实际查询 2026-10-18）
+
+已核对并同步宗教身份、案件容量与自选入口、订单收款/准入、原版区域战力、自主运兵与村民售货、待验收分类、测试矩阵和章节链接。复核范围为此前发现的冲突项，不代表所有历史玩法概述已逐句验收。（依据：源码、主文本与所属 state 交叉复核 2026-10-18）
+
+`Generate-CodeMap.py` 按装饰类的实际作用域提取 Harmony 声明，包含动态 `TargetMethod(s)`、显式接口成员与条件编译内的类。动态目标保持未静态解析，不猜实际绑定；声明集合的回归与运行时加载预检是两项不同证据。`Check-StateFreshness` 仍只检查机械一致性，源码/文档同时 dirty 不证明正文正确。（依据：生成器与专项回归 2026-10-18）
+
+已知缺陷：部分源码注释仍描述自建卖货队、冻结 AI 或纯骑兵追截等旧实现；这些旧注释尚未逐项校正，后续改对应功能时核对。（依据：源码注释与当前实现交叉核对 2026-10-18）
+
+## 启动补丁与静态初始化
+
+Harmony启动期预编译目标可能触发其引用类的静态初始化；绑定成功不证明初始化未失败。2026-10-20名牌RefreshBinding引用CampaignUIHelper.IssueQuestFlagsValues，文本尚未加载时其静态字段调用GameTexts.FindText抛空引用，之后地图创建持续报类型初始化失败。标识改挂安全属性写入，业务见[玩家案件](player-justice.md#办案目标地图标识)。（依据：实机栈与安装版反编译2026-10-20）
+
+Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化异常，并检查PartyNameplateVM补丁目标对CampaignUIHelper静态字段的直接读取，任一命中即失败。Windows PowerShell未重现游戏中的实际初始化异常，但旧目标指令检查报2处并拒绝；专项安装版负对照可持续复查。该检查只覆盖这条明确故障依赖，不代表全部静态初始化或原生启动均已模拟。（依据：离线负对照2026-10-20）
+
+## 双向控件绑定与名称修饰
+
+原版生成的PartyNameplateItem在VM通知后更新TextWidget.Text，Text变化又回写VM.FullName。对属性输入无条件追加标签会破坏原版同值终止条件，使每次回写产生新值、无限通知。办案标识从原版原名缓存生成，业务与验证见[玩家案件](player-justice.md#办案目标地图标识)；不能仅凭没有回写的VM桩断言界面无递归。（依据：2026-10-20实机栈溢出退出码、安装版生成回调负对照）
 
 ## 协力职责与战力的无限递归
 
-当前 `FriendlyAround` 只读取空间、阵营及实际战斗组，不调用协力移动职责；主办职责只指向罪犯，协办只指向主办，已删除反向寻找协办的 `GetAssistanceRendezvous`。静态调用层次不再构成环。`test_assistance_recursion.py` 编译实际 Compare/FriendlyAround、协力职责与日志意图方法，10个场景确认附近独立支援、挂靠后脱离、强主办、速度分散及日志入口均不会重入。（依据：源码、生产方法离线执行 2026-10-17）
+当前主办职责只指向罪犯，协办只指向主办，不反向寻找协办；职责与日志意图解析不进入区域战力评估。原版区域计算在作用域内采集，实际接战检查复用本次采集，不再次递归评估；实现只在[协力](case-assistance.md#区域宣战与持续接战)维护。`test_assistance_recursion.py` 编译生产职责/日志方法，以拒绝区域战力重入的边界覆盖10个场景；原版计算与采集适配由区域专项回归验证。（依据：源码、生产方法离线执行 2026-10-18）
 
-修复前环为 Compare → FriendlyAround → IsFriendlyGroupCoordinatingOnTarget → TryGetAssistanceDuty → GetAssistanceRendezvous → Compare，来源为 `a1d6479` 的反向职责查询与 `e4b6cb7` 的会合判断组合。历史中途闪退的适用证据与原负对照在2026-10 journal，不以新测试冒充当时每次致命调用栈。原始退出码0x800703E9与该环吻合，但不能证明所有闪退只有这一个原因。（依据：生产复现、历史差异、实机日志）
-
-业务回退基线 `7573179`，文件见[案件回退](case-enforcement.md#人物追责与回退)。区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义。用户2026-10-17确认持续游玩未见问题，最新日志覆盖约179战役小时和一次完整军团解散；军团分段、导航面探针与每分钟内存采样退休。回退诊断可取7573179的GwpRuntimeFaultWatch/SubModule，探针尚未进入提交，历史证据保存在journal。退出原生释放故障仍独立保留，不宣称所有原生崩溃已根除。（依据：流程）
+区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义。退出原生释放故障仍独立保留，不宣称所有原生崩溃已根除。（依据：流程）
 
 ## 客户端退出阶段的原生故障
 
@@ -64,7 +83,6 @@
 
 原有依据来自实机故障日志及 journal。当前范围需逐站点复核，不能把同一个旧档错误当作新回调的触发证据。
 
-
 **以后**：
 - 不写「以防万一」的 catch，让异常暴露，读崩溃、修根因。故障实际发生过，才在那一处加 catch 并写依据。
 - `tools/Check-CodeHygiene.py` 检查两条：每个不重新抛出的 catch 都有 `依据：`；每个声明都有人引用。
@@ -104,8 +122,10 @@
 
 | 概念 | 归属 | 别处直接用就会被拦的写法 |
 |---|---|---|
+| 和平投案退团、押人与原队收尾 | `GwpVoluntarySurrender` | 玩家当面投案与使者立即/战后投案均用此入口；规则归[使者](case-envoy.md#投案与原版军团退队衔接) |
 | 兵员人数、伤兵与经验搬运 | `GwpTroopTransfer` | 各功能选兵后调用公共搬运入口；语义由实际游戏名册回归检查，不声称正则覆盖所有扣人加人代码 |
 | 玩家词句与中英变量 | `PlayerText/strings.json`、`Generate-PlayerText.py` | 构建拒绝新内联带键整句与陈旧生成文件；详见[玩家文字](player-text.md) |
+| 临时队海陆交接资格 | `GwpCommon.CanCompletePartyHandover` | 海陆相同判断只在公共入口实现；距离、接收人资格归各业务，规则见[临时队](temporary-parties.md#海陆交接资格) |
 | 临时队唯一编号 | `GwpPartyIdentity` | `FindNextUniqueStringId<MobileParty>`；查重与严格递增在本入口完成 |
 | 讲和（含玩家战斗时序、灰袍交战理由） | `GwpPeace` | `FactionManager.SetNeutral`、`MakePeaceAction.Apply`；规则见 [调停](warden-mediation.md) |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
@@ -124,7 +144,7 @@
 
 ## 接手与机械检查
 
-- 战力归属包括尚未组队的士兵：`GwpStrength.LeaderlessRoster` 负责换算，火誓者只提供选出的兵种和数量；战力计算参数与整理前一致。
+- CodeGraph 先定位源码与调用链，state 决定当前规则，测试和原版取证确认实际行为；动态图中没有边或测试时，仍需核对真实入口，不据此删代码。（依据：流程）
 - 火誓者按村庄、仪式、媒体、军械库、经济和队伍拆分，入口在 [firesworn.md](firesworn.md)。文档保留当前规则与验收项，旧说法只在 journal 追溯。
-- `Check-StateFreshness.py` 提示复核头部的格式、日期或提交不存在；不会新增提交硬闸。格式规范与提交稳定点只在 [AGENTS.md](../../../AGENTS.md) 定义。
-- `python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、复核头部、提示与硬闸的区别。机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）
+- `Check-StateFreshness.py` 提示 state 正文引用了已不存在的文件、类型或成员；不会新增提交硬闸。改动牵连到哪些规则由 `Check-ChangeImpact.py` 点名，流程见 [workflow](workflow.md#改动流程的细节)。
+- `python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、引用失效核对、提示与硬闸的区别。机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）

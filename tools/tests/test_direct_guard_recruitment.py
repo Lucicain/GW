@@ -32,6 +32,7 @@ class TroopRoster {
 }
 class Hero {public CharacterObject[] VolunteerTypes=new CharacterObject[6];}
 class MobileParty {
+ public object Party=>this;
  public bool IsLordParty=true,IsWarden=true,IsActive=true;public object MapEvent;
  public string StringId="lord";public int Capacity=100;public Hero LeaderHero=new Hero();
  public TroopRoster MemberRoster=new TroopRoster();
@@ -49,6 +50,7 @@ class Regression {
  static bool IsPreachedVillage(Settlement s)=>s.Preached;static bool IsVillageQuiet(Settlement s)=>s.Quiet;
  static int FreeSlots(MobileParty p)=>Math.Max(0,p.Capacity-p.MemberRoster.TotalManCount);
  static bool IsGuardTroop(CharacterObject t)=>t!=null&&!t.IsHero&&t.IsWarden;
+ string HolderOf(object party)=>"lord";
  int MoveBestSets(string from,string to,CharacterObject t,int n){Kits+=n;if(!carried.ContainsKey(t.StringId))carried[t.StringId]=0;carried[t.StringId]+=n;return n;}
  void PushGuard(FaithVillage r,Settlement s){foreach(var e in guard.GetTroopRoster())if(s.MilitiaPartyComponent.MobileParty.MemberRoster.GetTroopCount(e.Character)!=e.Number)throw new Exception("shadow differs from physical guard");}
  void ReconcilePriestSlots(FaithVillage r){}void UpdatePriestPower(FaithVillage r){}void RecordVisit(MobileParty p,Settlement s,int recruits){}

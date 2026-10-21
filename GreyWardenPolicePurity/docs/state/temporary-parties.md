@@ -2,7 +2,6 @@
 
 > 当前状态：原借船规则已验收；共享编号与调兵状态搬运已修复部署待实测
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs` `GwpPartyIdentity.cs` `GwpTroopTransfer.cs` `tools/Verify-PartyTransfers.ps1`
 > 待实测：练兵/订单/追截/送信归队保留伤兵及累计经验；反复建队不重号；同版存读接续
 
@@ -31,6 +30,7 @@
   新建队伍的锚点是无效的，NavalDLC 对无锚点的队伍下水一律算 48 小时。
   （依据：C#反编译 `NavalDLCPartyTransitionModel.GetTransitionTimeForEmbarking`，原版 `RaftStateCampaignBehavior` 也这样复制锚点；
   实机诊断 2026-10-15：使者在海边原地停了一天多）
+- 追截/使者归队及玩家送信队的交付、归队使用下文[海陆交接资格](#海陆交接资格)，还船本身继续由本页共享入口执行。
 - **还**：登记过的临时队身上**所有**船（借来的和路上缴获的）在销毁前交回出借方。出借方不能接收
   （已不在、在海上交战中、正在解散）时，交给最近的、能接收的灰袍领主；接收条件与 NavalDLC
   `CanSendShipToParty` 同一口径。出借方是玩家时，玩家被俘（主队不活跃）也照样还给玩家——
@@ -62,6 +62,12 @@
   理想船数买卖船；原版只在本家族封地里挑城，灰袍无封地，由 `GwpLandlessShipTradePatch`
   改为任意非敌对城镇，买不买、买哪条、卖不卖仍由原版判断。原版家族船数、买卖与家族内换船
   都只看 `clan.WarPartyComponents`（领主队）；借出去的船在借期内不计入出借方。
+
+## 海陆交接资格
+
+`GwpCommon.CanCompletePartyHandover` 是共享入口：双方均不在上下船过渡中、不处于下一帧离港待过渡，并且当前海陆状态相同，才允许交接。距离、接收人资格与交接内容仍由各业务决定；不凭地图距离跨岸转交。生产交付与归队方法各自也复核本门槛，不只依赖调用方。（依据：实际游戏DLL复现与离线执行 2026-10-19）
+
+实际DLL的上下船、真实船只守恒与270项检查边界见[追截](case-interceptors.md#上下船与归队交接)。玩家送信队的出程及回程流程见[派遣](dispatch.md)，不改变借船、交差后余兵留船及销毁前还船规则。
 
 ## 无领主队全表
 

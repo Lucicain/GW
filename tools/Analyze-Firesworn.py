@@ -45,7 +45,7 @@ def last_launch():
         for line in handle:
             if "| FAULT_WATCH_ARMED |" in line:
                 stamp = line.split(" | ", 1)[0]
-    return dt.datetime.fromisoformat(stamp[:26]) if stamp else None
+    return dt.datetime.fromisoformat(stamp) if stamp else None
 
 
 def read_events(all_logs):
@@ -53,19 +53,24 @@ def read_events(all_logs):
     files.append(os.path.join(DOCS, "GreyWarden-AI-Diagnostics.log"))
     since = None if all_logs else last_launch()
     events = []
+    seen = set()
     for path in files:
         if not os.path.exists(path):
             continue
-        if since and dt.datetime.fromtimestamp(os.path.getmtime(path)) < since.replace(tzinfo=None):
+        if since and os.path.getmtime(path) < since.timestamp():
             continue
         with open(path, encoding="utf-8-sig", errors="replace") as handle:
             for line in handle:
-                match = LINE.match(line.rstrip("\n"))
+                line = line.rstrip("\r\n")
+                if line in seen:
+                    continue
+                match = LINE.match(line)
                 if not match:
                     continue
-                when = dt.datetime.fromisoformat(match.group(1)[:26])
-                if since and when < since.replace(tzinfo=None):
+                when = dt.datetime.fromisoformat(match.group(1))
+                if since and when < since:
                     continue
+                seen.add(line)
                 events.append((float(match.group(2)), match.group(3), fields(match.group(4))))
     events.sort(key=lambda event: event[0])
     return events
@@ -117,22 +122,20 @@ def main():
     income = collections.Counter()
     for hour, data in by_stage["PROTECTION_FEE"]:
         income["保护费"] += num(data.get("amount"))
-    for hour, data in by_stage["FAITH_PARTY_HOME"]:
-        income["信众队卖货"] += num(data.get("proceedsToTreasury"))
+    for hour, data in by_stage["MARKET_HOME"]:
+        income["村民队灰袍货款入公库"] += num(data.get("goldToTreasury"))
     for hour, data in by_stage["DEFENCE_SPOILS"]:
         income["守村金币"] += num(data.get("goldToTreasury"))
     print("\n== 收支（这段时间合计）")
     for key, value in income.items():
         print(f"   {key}: {value:.0f}（每天 {value / days:.0f}）")
     cargo = sum(num(data.get("cargoValue")) for _, data in by_stage["MARKET_DISPATCHED"])
-    sold = sum(num(data.get("proceeds")) for _, data in by_stage["MARKET_SOLD"])
     if cargo:
-        print(f"   信众队装车估值 {cargo:.0f}，实卖 {sold:.0f}（{sold / cargo:.0%}）")
-        if sold / cargo < 0.2:
-            issues.append(f"信众队只卖掉装车估值的 {sold / cargo:.0%}：城镇金库太少或货太贵，货仓会越堆越多")
-    low_gold = [data for _, data in by_stage["MARKET_SOLD"] if num(data.get("townGoldLeft")) < 1000]
-    if low_gold:
-        issues.append(f"{len(low_gold)} 次卖货把城镇金库卖空了：{', '.join(sorted({d['town'] for d in low_gold}))}")
+        print(f"   灰袍货物装车估值合计 {cargo:.0f}；包含重复出车，不等于本窗口成交额")
+    if by_stage["MARKET_HOME"]:
+        returned = sum(num(data.get("unsoldReturned")) for _, data in by_stage["MARKET_HOME"])
+        print(f"   回家结算 {len(by_stage['MARKET_HOME'])} 次，灰袍余货归仓 {returned:.0f} 件")
+        print("   原版村税金币不计公库收入；装车与回款可能跨窗口，不计算售出比例")
 
     # ------------------------------------------------------------ 信众村
     print("\n== 有火誓者的村子（首日 -> 末日；来源注明户、兵和人次，不相加）")
@@ -189,7 +192,7 @@ def main():
         if hearth_change / span < -3:
             issues.append(f"{village} 户数每天掉 {hearth_change / span:.1f}")
         if b["priest"] != "-" and span >= 15 and sworn_change <= 0:
-            issues.append(f"{village} 有祭司，{span} 天信众户没涨（{a['households']}->{b['households']}）")
+            issues.append(f"{village} 信众户净变化 {sworn_change:+.0f}（{a['households']}->{b['households']}）；需结合增长、出队及损失，不能据净值判定未增长")
         armed, total = (b["armed"].split("/") + ["0"])[:2]
         if num(total) >= 20 and num(armed) / num(total) < 0.25:
             issues.append(f"{village} 只有 {b['armed']} 的火誓者拿到兵器（{b['armoryKinds']}）")
@@ -231,7 +234,7 @@ def main():
     print("\n== 无领主队与仪式")
     for stage in ("CONGREGATION_STARTED", "CONGREGATION_COMPLETED", "CONGREGATION_CANCELLED",
                   "MISSION_DISPATCHED", "MISSION_JOINED", "BALANCE_DISPATCHED", "BALANCE_DELIVERED",
-                  "MARKET_DISPATCHED", "MARKET_SOLD", "FAITH_PARTY_HOME",
+                  "MARKET_DISPATCHED", "MARKET_HOME",
                   "FAITH_PARTY_TURNED_BACK", "FAITH_PARTY_LOST", "RECONSTRUCTION_SWORN",
                   "PRIEST_SPAWNED", "RITUAL_MENU_SHOWN"):
         print(f"   {stage}: {len(by_stage[stage])}")

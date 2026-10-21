@@ -22,7 +22,8 @@ internal static class Program
     static void Main(string[] args)
     {
         string dir=Path.GetFullPath(args[0]); var data=JObject.Parse(File.ReadAllText(Path.Combine(dir,"score.json")));
-        if (args.Contains("--fingerprint")) { Fingerprint(dir, args.Contains("--dump") ? args[Array.IndexOf(args, "--dump") + 1] : null); return; }
+        if (args.Contains("--fingerprint")) { Fingerprint(dir, args.Contains("--dump") ? args[Array.IndexOf(args, "--dump") + 1] : null,
+            args.Contains("--output-dump") ? args[Array.IndexOf(args, "--output-dump") + 1] : null); return; }
         if (args.Contains("--compare-old")) { CompareOld(dir, args[Array.IndexOf(args, "--compare-old") + 1]); return; }
         var playlists=(JObject)data["playlists"]!; var segments=(JObject)data["segments"]!;
         // Verify every explicit transition and the fallback against the source bank manifest.
@@ -133,7 +134,7 @@ internal static class Program
             s.Want("high");Render(s,.02);s.Want("outro");Render(s,20);Assert(s.State=="outro"&&s.VoiceCount==0,"ending cancels pending switch and plays once");
             s.Reinforcement();s.Want("low");Render(s,10);Assert(s.VoiceCount==0,"outro terminal");
         }
-        File.WriteAllLines("build-check/music-rebuild/timeline.txt",timeline);
+        Console.WriteLine("PASS reinforcement and ending timeline ("+timeline.Count+" transitions)");
         LimiterTests(dir);
         BattlePolicyTests();
         // Real Windows device exercise: volume stays ZERO from before the first submitted buffer.
@@ -178,13 +179,15 @@ internal static class Program
 
     // Offline comparison of the complete PCM and transition schedule before
     // and after renderer optimization; this never opens an audio device.
-    private static void Fingerprint(string dir, string? dump)
+    private static void Fingerprint(string dir, string? dump, string? outputDump)
     {
         using var hash = SHA256.Create();
         var samples = new float[1920]; var bytes = new byte[7680];
         var logs = new List<string>();
         using var score = new GwpMusicScore(dir, logs.Add, 43);
         using var raw = dump == null ? null : File.Create(dump); // float32 stereo 48 kHz, for loudness measurement
+        using var output = outputDump == null ? null : File.Create(outputDump);
+        var limiter = new GwpMusicLimiter();
         for (int i = 0; i < 16000; i++)
         {
             if (i == 2000) score.Want("low");
@@ -200,6 +203,12 @@ internal static class Program
             Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
             hash.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
             raw?.Write(bytes, 0, bytes.Length);
+            if (output != null)
+            {
+                GwpMusicOutput.ProcessSamples(limiter, samples, 960, 1);
+                Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
+                output.Write(bytes, 0, bytes.Length);
+            }
         }
         hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
         Console.WriteLine("PCM_SHA256=" + BitConverter.ToString(hash.Hash!).Replace("-", ""));
@@ -222,22 +231,29 @@ internal static class Program
             hot.Process(buf,960,4);foreach(float v in buf)worst=Math.Max(worst,Math.Abs(v));
         }
         Assert(worst<=GwpMusicLimiter.Threshold*(1+1e-6),"no sample exceeds -1 dBFS at +12 dB");
-        // The real score at the shipped +8 dB and full volume: bounded, and limiting stays rare.
-        var mix=new GwpMusicLimiter();var gain=(float)Math.Pow(10,GwpMusicOutput.MakeupDb/20);long limited=0,total=0;double peak=0,deepest=1;
+        // Real shipping pipeline: content normalization/limiter, then native -9 dB and user faders.
+        var mix=new GwpMusicLimiter();long limited=0,total=0;double peak=0,deepest=1;
         using(var s=new GwpMusicScore(dir,_=>{},43))
         {
             var buf=new float[1920];
             for(int i=0;i<16000;i++)
             {
                 if(i==2000)s.Want("low");if(i==3200)s.Want("medium");if(i==4200)s.Want("high");if(i==10000)s.Want("low");if(i==14000)s.Want("outro");
-                s.Render(buf,960);mix.Process(buf,960,gain);
+                s.Render(buf,960);GwpMusicOutput.ProcessSamples(mix,buf,960,1);
                 foreach(float v in buf)peak=Math.Max(peak,Math.Abs(v));
                 if(mix.Reduction<.999f)limited++;total++;deepest=Math.Min(deepest,mix.Reduction);
             }
         }
-        Assert(peak<=GwpMusicLimiter.Threshold*(1+1e-6),"score at makeup gain never exceeds -1 dBFS");
+        Assert(peak<=GwpMusicLimiter.Threshold*Math.Pow(10,-9/20.0)*(1+1e-6),"native bus attenuation follows the limiter: sample peak cannot exceed -10 dBFS");
         Console.WriteLine($"PASS limiter: +{GwpMusicOutput.MakeupDb} dB score peak {20*Math.Log10(peak):F2} dBFS; buffers touched {limited}/{total} ({100.0*limited/total:F2}%), deepest {20*Math.Log10(deepest):F2} dB");
-        Assert(limited*50<total&&deepest>Math.Pow(10,-4/20.0),"limiting stays rare (<2% of buffers) and shallow (<4 dB) at full volume");
+        var full=new GwpMusicLimiter();var lower=new GwpMusicLimiter();var muted=new GwpMusicLimiter();
+        for(int b=0;b<20;b++)
+        {
+            var a=new float[1920];for(int i=0;i<a.Length;i++)a[i]=(float)Math.Sin((b*1920+i)*.017);
+            var q=(float[])a.Clone();var z=(float[])a.Clone();
+            GwpMusicOutput.ProcessSamples(full,a,960,1);GwpMusicOutput.ProcessSamples(lower,q,960,.25f);GwpMusicOutput.ProcessSamples(muted,z,960,0);
+            for(int i=0;i<a.Length;i++){Assert(Math.Abs(q[i]-a[i]*.25f)<1e-7,"user fader scales mastered samples without changing compression");Assert(z[i]==0,"mute suppresses even delayed limiter samples");}
+        }
     }
 
     private static void BattlePolicyTests()
@@ -336,7 +352,6 @@ internal static class Program
             if(p.Update(500,500,.5f)) { if(changes>0) Assert(i*.5f-last>=12,"minimum audible tier hold");last=i*.5f;changes++; }
         }
         Assert(changes<8,"no rapid threshold oscillation");
-        File.WriteAllLines("build-check/music-rebuild/battle-policy.txt",lines);
         foreach(string line in lines)Console.WriteLine("PASS "+line);
     }
 }

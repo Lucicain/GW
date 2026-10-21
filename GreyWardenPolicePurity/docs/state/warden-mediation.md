@@ -2,11 +2,10 @@
 
 > 当前状态：所有讲和收归 `GwpPeace`、战后结算提前中立的空引用已修复，开战扣的关系当场还回；均经用户实测与日志确认（2026-10-14）
 > 最后验收：`c576fd7`（推迟讲和与开战关系恢复，用户实测与日志确认 2026-10-14）
-> 已复核至：`626b079`（2026-10-18）
 > 覆盖源码：`PoliceAntiWarDeclaration.cs` `GwpPeace.cs` `tools/tests/test_battle_peace.py`
 > 待实测：无
 
-待调停势力的只读列表已接入[我的事务](affairs-interface.md)，仍从现有LiveMediationFactions核对；不新增调停资格或远程讲和操作。（依据：实现2026-10-18）
+待讲和势力的只读列表接入[我的事务](affairs-interface.md)独立“战后讲和”，与办案支援分开；仍从现有LiveMediationFactions核对，不新增资格或远程讲和操作。15:33实机日志有case_support_declaration登记，与现行入口一致。（依据：用户反馈、源码与实机日志2026-10-18）
 
 ## 调停申请（替灰袍打出来的战争）
 
@@ -82,4 +81,4 @@
 任务的玩家时不在这里讲和；玩家击败执行玩家任务的灰袍后，灰袍与玩家讲和。
 土匪势力不处理。
 
-回退：讲和入口统一前为 `0614808`（`GwpCommon.TrySetNeutral` 与各处直接 `MakePeaceAction`）；`git revert` 本次存档即可退回，会恢复已确认的提前中立崩溃。（依据：流程）
+回退：讲和入口统一前为 `0614808`（当时各处直接设中立与调用 `MakePeaceAction`）；`git revert` 本次存档即可退回，会恢复已确认的提前中立崩溃。（依据：流程）

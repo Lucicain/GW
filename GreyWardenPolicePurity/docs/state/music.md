@@ -1,16 +1,17 @@
 # 辛迪加分段战场配乐
 
-> 当前状态：用户已实测确认（2026-09-26：用户确认此前各项待实测均已测过，未发现问题）
-> 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 已复核至：`64e36ec`（2026-10-07）
-> 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/Export-SyndicateMusic.py`
-> 待实测：无
+> 当前状态：原版音乐路由与−9dB效果器已查实，响度/峰值校准已部署；用户本轮反馈未发现问题
+> 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；具体滑块/暂停等边界仍按待实测核对
+> 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/*Music*.py` `tools/native/inspect-fmod-mix.py` `tools/tests/test_native_music_mix.py`
+> 待实测：同一主音量/音乐音量设置下比较普通野战的响度、鼓点峰值及低中高档起伏；滑块、切后台与暂停正常
 
 **回退路径**：回到用户验收的 `b68b43c` 预渲染版时，从该提交取回
 `GreyWardenPolicePurity/GwpMusicScore.cs`、`GreyWardenPolicePurity/_Module/Music/Lab/`（26 个 `.pcm`
 与 `score.json`、`manifest.json`）、`tools/Export-SyndicateMusic.py`、`tools/MusicTests/`；
 删掉 `GreyWardenPolicePurity/GwpFlacReader.cs` 与 `_Module/Music/Lab/*.flac`，重新构建，按
 [build-and-deploy](build-and-deploy.md) 镜像并比对哈希。
+
+用户要求按原版实际声音链查证后修正偏响，不采用任意降低几个dB作为准确对齐的依据。新调查不改变战斗资格、曲目和强度策略。（依据：用户裁定2026-10-18）
 
 ## 何时启用
 
@@ -71,8 +72,7 @@ Tension  = Exchange × (0.7 + 0.2 × Attrition + 0.1 × Pressure)
   增援打断/恢复最新档位、结尾取消待切换且只播一次。
 - 增援到场按 Redraw 完整过渡通知一次，**不逐兵切歌**。双方援军各通知一次。
 - 音乐收尾按双方分别查询待生援军（早期版本只防玩家侧，已修）。
-- 播放器走原版留给模组的 PSAI 音轨接口；策略请求的档位**不等于**听到换段的时刻，
-  还受原版节拍、乐句、过渡段和 Redraw 优先规则约束。
+- 播放器使用WinMM输出已解码PCM，进入时暂停原版PSAI，离开恢复；档位切换仍由素材乐句、过渡规则和Redraw决定，策略请求时刻不等于立即换段。
 
 ## 渲染
 
@@ -90,19 +90,17 @@ Tension  = Exchange × (0.7 + 0.2 × Attrition + 0.1 × Pressure)
   （多项式常数来自 wwiser 对引擎的还原，见 `D:\lucigames\assets\syndicate\research\music-arrangement\tools\reference\bnode_rtpc.py`）。
   交叉淡化读规则里的 `eFadeCurve`（16 条同时间位置规则都是 Log1，淡入 `t(3−t)/2`，淡出为其 1 减）。
   旧版用的 `log10(1+9x)` 是浏览器实验室的近似，已废除。
-- **输出增益与限制器**（2026-09-24，用户反馈比原版小）：
-  - 响度实测（EBU R128）：我们 320 秒指纹场景混音 −23.5 LUFS，峰值 −5.2 dBFS；
-    骑砍原版 51 首战斗/攻城曲（`Modules/Native/Music/PC/Battle_*`、`Siege_*`）中位 −13.3 LUFS，
-    按时长能量平均 −12.9。内容差约 10 dB。
-  - 原版音乐音量由引擎原生层施加，托管代码看不到，所以不知道引擎是否对原版音乐再加减增益。
-  - 现在 `GwpMusicOutput` 在“主音量 × 音乐音量”之外固定加 `MakeupDb = +8 dB`，保守地略低于原版。
-  - 之后接 `GwpMusicLimiter`，参数照原版 Wwise 主总线：门限 −1 dBFS、提前 10 ms、释放 20 ms，
-    输出延迟 10 ms。
-  - 两个音量都在 100% 时，指纹场景约 1% 的 20 ms 块被压，最深 3.8 dB；音量调低后压得更少。
-    低于门限的信号原样通过。
+- **输出响度与峰值**：`ProcessSamples`先施加素材归一补偿`+10.26 dB`，再走既有限幅器，最后施加原版音乐路径`−9 dB`和主音量×音乐音量。小信号净增益`+1.26 dB`；用户滑块在限幅后缩放，不随音量改变压缩效果。（依据：用户要求准确、原版音频库解析、离线校准2026-10-18）
+  - 原版v1.4.8的`event:/music`输入总线→`bus:/Music/music/gamemusic`→`bus:/Music/music`→`port:/Music`；各bus fader为0dB，但`music`父总线的pre-fader效果器`0f70651a-7c75-4a3b-84fe-ef00ed2e563e`为FMOD type7 FADER，GAIN参数`−9.0dB`。Music/Master VCA静态值0dB，Music继承Master。此固定效果不由PSAI的VolumeBoost=0反映。
+  - 可复核解析入口`tools/native/inspect-fmod-mix.py`，读本机`Modules/Native/Sounds/PC/MasterBank.bank`、`MasterBank.strings.bank`与`music.bank`，版本0x8e/0x8c；路由、效果和参数格式参考[FModBankParser源码](https://github.com/Masusder/FModBankParser)，FADER增益单位参照[FMOD官方文档](https://www.fmod.com/docs/2.04/api/core-api-common-dsp-effects.html#fmod_dsp_fader)。只读metadata，不加载或启动游戏。
+  - 原生调用补充证据：Music.SetVolume→Native+0x4D3130→sound vtable+0x1e8/0x255390→event volume vtable+0x100/0x48D5C0→FMOD event setVolume/0x92A400；Music滑块经0x254D10调用vca:/Music，输入被夹到0～1而非额外加dB。这些地址只对本机v1.4.8有效。（依据：C++反汇编2026-10-18）
+  - EBU R128实测当前320秒seed43混音`−23.56 LUFS`、`−5.18 dBTP`；52首Battle_/Siege_源文件中位`−13.295 LUFS`。以该中位数作普通战斗参考并计入−9dB，目标约`−22.30 LUFS`；实际生产输出`−22.56 LUFS`，差`−0.26 LU`，真峰值`−9.81 dBTP`。这是静态普通音乐路由的客观校准，不代表每首曲子、每个瞬间同响。
+  - 测量事实保存在[校准报告](../reference/music-calibration-20261018.json)，可用MusicTests `--fingerprint --dump <raw.f32> --output-dump <out.f32>`加`Measure-MusicCalibration.py --score-pcm <raw.f32> --output-pcm <out.f32>`复测；PCM为48kHz双声道float32，ffmpeg loudnorm只测input_i并丢弃音频输出。
+  - 限幅参数仍为−1dBFS门限、10ms提前、20ms释放；它在−9dB总线之前工作，输出样本上限−10dBFS。真实曲目验证压缩785/16000个20ms块（4.91%），最深6.08dB。输出后的用户滑块线性缩放、静音含延迟样本均通过回归。
+- **精确范围**：WinMM仍绕过FMOD动态快照。已解析到过场/视频/最小化对music bus施加−80dB，通知/警示为0dB；本轮不声称实现全部快照、路由效果或主观编曲平衡。常规战斗的固定增益与参考响度已校准，过场/视频与特殊状态要做时再接原版实际状态，不用“战斗时统一压低”代替未知行为。（依据：bank解析2026-10-18）
 - **仍未还原**：
   - 源侧淡出偏移 `iFadeOffset=2000 ms`：正负号的含义没有权威依据，交叉淡化仍在切换点同时开始。
-  - Music 总线 −6 dB：未施加；响度改为向骑砍原版对齐，见上。
+  - 辛迪加源作Music总线−6dB未单独套用；此处以完整素材响度归一到骑砍参考，避免重复衰减。
   - 20 Hz 高通：听不出。
   - 原版这条音乐路径**没有混响**，不存在“缺混响”。
 - 解码：`GwpFlacReader`，只支持本素材的 16 位立体声、固定块长 FLAC。导出时记下每帧字节位置，
@@ -115,14 +113,14 @@ Tension  = Exchange × (0.7 + 0.2 × Attrition + 0.1 × Pressure)
 
 `tools/MusicTests`：
 
-- 完整运行 58,770,640 条断言，**绝大多数是逐采样检查**（解码值在 16 位范围内、输出为有限值），
+- 完整运行 58,847,439 条断言，**绝大多数是逐采样检查**（解码值在 16 位范围内、输出为有限值），
   不等于这么多场景。
 - **无损**：27 个源片段逐帧解码，SHA-256 与导出时记下的原始 16 位 PCM 一致；随机定位与顺序解码一致。
 - **曲线**：9 种 Wwise 曲线端点与单调性；Log1 中点为 0.625。
 - **包络**：开场 02 的 SineRecip 淡出先保持、终点归零、中点等于 cos(π/4)；低强度 01 的音量自动化按“增益减 1”。
 - **交叉淡化**：低→中同时间位置切换在 15.025 秒处定位，逐采样等于两个声部各自的未淡化输出乘以独立算出的 Log1 曲线。
 - **限制器**：低于门限原样通过，只延迟 481 个采样；+12 dB 方波与尖峰不越过 −1 dBFS；
-  真实乐谱在 +8 dB、满音量下不越过 −1 dBFS，被压的块少于 2%、深度小于 4 dB。
+  真实生产链满音量样本峰值不超过−10dBFS，另验证调小音量不改变压缩过程、静音覆盖限幅器里的延迟样本。
 - **节奏**：零星命中停在低档；猛烈接战先中后高，高潮至少等中档 40 秒，从不由低直跳高。
 - 35 条过渡规则、增援返回最新档位、结尾只播一次、静音 WinMM 生命周期（提交首 buffer 前 `Volume = 0`）。
 - `--fingerprint`：固定 seed 43、320 秒场景（intro/low/medium/high、低中互切、分批增援、回落、outro）。

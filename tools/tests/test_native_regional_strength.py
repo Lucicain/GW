@@ -21,7 +21,7 @@ namespace TaleWorlds.Library {static class MathF {
  public static float Sin(float a)=>(float)Math.Sin(a);public static float Cos(float a)=>(float)Math.Cos(a);
 }}
 namespace Audit {
-enum AiBehavior{None,PatrolAroundPoint,DefendSettlement,EngageParty,GoAroundParty,FleeToPoint,FleeToGate}
+enum AiBehavior{None,PatrolAroundPoint,DefendSettlement,EngageParty,GoAroundParty,GoToSettlement,FleeToPoint,FleeToGate}
 enum BattleSideEnum{Attacker,Defender}
 struct Vec2 {public float X,Y;public Vec2(float x,float y=0){X=x;Y=y;}public static Vec2 Zero=>new();
  public float Length=>(float)Math.Sqrt(X*X+Y*Y);public Vec2 Normalized()=>Length==0?new():new(X/Length,Y/Length);
@@ -81,6 +81,7 @@ class NativeAi {
  private void CalculateInitiativeScoresForEnemy(MobileParty a,MobileParty b,out float avoid,out float attack,float ratio,float aggression){
   CalculateInitiativeScoresForEnemyImpl(a,b,out avoid,out attack,ratio,aggression);Observed[b]=(ratio,attack,avoid);
  }
+ public float AvoidAt(MobileParty a,MobileParty b,float ratio){CalculateInitiativeScoresForEnemyImpl(a,b,out var avoid,out _,ratio,1);return avoid;}
  NATIVE_METHODS
 }
 static class Replay {
@@ -125,6 +126,28 @@ static class Replay {
   n.GetBestInitiativeBehavior(a,out behavior,out target,out score,out _);
   Near(n.Observed[t].Advantage,300.01f/200.01f,"different hostile faction is not summed into offender faction");
   Check(n.Observed.ContainsKey(r),"different hostile faction instead gets separate initiative score");
+  (n,a,t,r)=Setup(2.51f,-8.5f);n.GetBestInitiativeBehavior(a,out behavior,out target,out score,out _);
+  Check(r.Position.Distance(t.Position)>6&&r.Position.Distance(a.Position)<9,"hostile outside target risk circle remains inside native chief scan");
+  Check(behavior==AiBehavior.FleeToPoint&&target==r&&score>1,"native AI flees separately evaluated threat despite target-centred 300 versus 200 advantage");
+  Check(n.Observed[r].Advantage<1,"native assessment against flee target is locally outmatched");
+  Console.WriteLine($"NATIVE_CIRCLE_MISMATCH: behavior={behavior}, target={target?.Id}, avoid={score:F4}, target_circle_enemy=200, chief_strength=300");
+  n.AttackAllowed=false;r.Position.X=a.Position.X;
+  foreach(float ratio in new[]{1f,1.1f,2f,10f})Check(n.AvoidAt(a,r,ratio)<=.188680f,"without local disadvantage avoid score cannot reach recorded 1.7481 at normal avoid initiative");
+  (n,a,t,r)=Setup(3);MobileParty.All.Remove(r);
+  a.DefaultBehavior=AiBehavior.GoToSettlement;a.TargetParty=null;a.TargetSettlement=new();
+  a._lastCalculatedSpeed=a.LastCalculatedBaseSpeed=3;
+  t._lastCalculatedSpeed=t.LastCalculatedBaseSpeed=6;t.IsMoving=true;
+  n.GetBestInitiativeBehavior(a,out behavior,out target,out score,out _);
+  Check(score<=1,"faster moving quarry need not produce initiative above override threshold");
+  var blocker=New("interceptor",0,20,a.MapFaction);
+  var fight=new MapEvent();fight.AttackerSide.LeaderParty=blocker.Party;fight.DefenderSide.LeaderParty=t.Party;
+  fight.AttackerSide.OtherSide=fight.DefenderSide;fight.DefenderSide.OtherSide=fight.AttackerSide;
+  fight.AttackerSide.Parties.Add(new(){Party=blocker.Party});fight.DefenderSide.Parties.Add(new(){Party=t.Party});
+  t.MapEvent=fight;t.MapEventSide=fight.DefenderSide;blocker.MapEvent=fight;blocker.MapEventSide=fight.AttackerSide;
+  n.GetBestInitiativeBehavior(a,out behavior,out target,out score,out _);
+  Check(behavior==AiBehavior.EngageParty&&target==t&&score>1,"existing same-faction interceptor battle permits native attack while default is settlement visit");
+  Check(a.DefaultBehavior==AiBehavior.GoToSettlement,"initiative choice does not require changing long-term visiting behavior");
+  Console.WriteLine($"NATIVE_INTERCEPTOR_BATTLE: default={a.DefaultBehavior}, initiative={behavior}, score={score:F4}; long-term visit score is not an input");
   Console.WriteLine("NATIVE_REGIONAL_ASSERTIONS="+Checks+"; CHARACTERIZED; original managed decisions, controlled engine boundaries");
  }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -16,21 +16,11 @@ namespace GreyWardenPolicePurity
         private const float NativeHitObservationWindowSeconds = 0.55f;
         private readonly Dictionary<int, PendingAlternativeAttack>
             _pendingActions = new();
-        private readonly Dictionary<int, int> _meleeMasteryBonusByAgentIndex =
-            new();
-        private readonly Dictionary<int, int> _bowMasteryBonusByAgentIndex =
+        private readonly Dictionary<int, Dictionary<SkillObject, int>> _masteryByAgentIndex =
             new();
         private Agent? _observedPlayerAgent;
         private bool _playerActionObserved;
 
-        private const int MeleeMasteryPerAlternativeAction = 50;
-        private const int BowMasteryPerArrow = 10;
-        // 灰袍领主每击杀（含打晕）一个敌人：弓箭击杀记弓术，其余记单手与运动（用户裁定 2026-10-16）。
-        private const int MasteryPerLordKill = 50;
-        // Total battle-mastery bonus per skill track. Each kick or bash still adds 50 and
-        // each arrow 10; the cap guards against the known double counting of one action
-        // (journal 2026-09-03), which could otherwise run the bonus toward 1000 (2026-09-24).
-        private const int MaxMasteryBonus = 500;
 
         private sealed class PendingAlternativeAttack
         {
@@ -63,7 +53,7 @@ namespace GreyWardenPolicePurity
             behavior?.QueueAction(attacker);
         }
 
-        internal static int GetMeleeMasteryBonus(Agent? agent)
+        internal static int GetMasteryBonus(Agent? agent, SkillObject skill)
         {
             if (agent == null)
                 return 0;
@@ -71,24 +61,10 @@ namespace GreyWardenPolicePurity
             GwpAlternativeAttackControlBehavior? behavior = agent.Mission?
                 .GetMissionBehavior<GwpAlternativeAttackControlBehavior>();
             return behavior != null
-                && behavior._meleeMasteryBonusByAgentIndex.TryGetValue(
+                && behavior._masteryByAgentIndex.TryGetValue(
                     agent.Index,
-                    out int bonus)
-                        ? bonus
-                        : 0;
-        }
-
-        internal static int GetBowMasteryBonus(Agent? agent)
-        {
-            if (agent == null)
-                return 0;
-
-            GwpAlternativeAttackControlBehavior? behavior = agent.Mission?
-                .GetMissionBehavior<GwpAlternativeAttackControlBehavior>();
-            return behavior != null
-                && behavior._bowMasteryBonusByAgentIndex.TryGetValue(
-                    agent.Index,
-                    out int bonus)
+                    out Dictionary<SkillObject, int>? skills)
+                && skills.TryGetValue(skill, out int bonus)
                         ? bonus
                         : 0;
         }
@@ -203,17 +179,13 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            MissionWeapon bow = shooterAgent.Equipment[weaponIndex];
-            if (bow.CurrentUsageItem?.RelevantSkill != DefaultSkills.Bow)
+            SkillObject? skill = shooterAgent.Equipment[weaponIndex].CurrentUsageItem?.RelevantSkill;
+            if (skill != DefaultSkills.Bow && skill != DefaultSkills.Crossbow && skill != DefaultSkills.Throwing)
                 return;
 
-            if (AddMasteryBonus(
-                    _bowMasteryBonusByAgentIndex,
-                    shooterAgent,
-                    BowMasteryPerArrow))
-            {
-                shooterAgent.UpdateAgentStats();
-            }
+            AddMasteryBonus(shooterAgent, skill,
+                skill == DefaultSkills.Throwing ? GwpTuning.BattleGrowth.MasteryPerThrow : GwpTuning.BattleGrowth.MasteryPerShot);
+            shooterAgent.UpdateAgentStats();
         }
 
         public override void OnAgentRemoved(
@@ -237,23 +209,20 @@ namespace GreyWardenPolicePurity
             if (killer == null
                 || !killer.IsHuman
                 || !killer.IsEnemyOf(affectedAgent)
-                || !GwpCommon.IsGreyWardenLordAgent(killer))
+                || !GwpKickBehavior.IsEligibleGreyWarden(killer))
             {
                 return;
             }
 
-            // 箭只能由弓射出（原版 WeaponClass.Arrow），弩矢、投掷、近战和冲撞都走近战线。
-            bool bowKill = blow.IsMissile
-                && blow.WeaponClass == (int)WeaponClass.Arrow;
-            if (AddMasteryBonus(
-                    bowKill
-                        ? _bowMasteryBonusByAgentIndex
-                        : _meleeMasteryBonusByAgentIndex,
-                    killer,
-                    MasteryPerLordKill))
-            {
-                killer.UpdateAgentStats();
-            }
+            // 用致命一击的武器类别，不能读此刻手里的武器（射出后可能已经换武器）。
+            SkillObject? skill = affectorAgent?.IsMount == true ? DefaultSkills.Riding
+                : blow.AttackType == AgentAttackType.Kick ? DefaultSkills.Athletics
+                : blow.AttackType == AgentAttackType.Bash ? DefaultSkills.OneHanded
+                : WeaponComponentData.GetRelevantSkillFromWeaponClass((WeaponClass)blow.WeaponClass);
+            if (skill == null) return;
+            AddMasteryBonus(killer, skill,
+                GwpCommon.IsGreyWardenLordAgent(killer) ? GwpTuning.BattleGrowth.MasteryPerLordKill : GwpTuning.BattleGrowth.MasteryPerSoldierKill);
+            killer.UpdateAgentStats();
         }
 
         public override void OnAgentDeleted(Agent affectedAgent)
@@ -264,16 +233,14 @@ namespace GreyWardenPolicePurity
 
             int index = affectedAgent.Index;
             _pendingActions.Remove(index);
-            _meleeMasteryBonusByAgentIndex.Remove(index);
-            _bowMasteryBonusByAgentIndex.Remove(index);
+            _masteryByAgentIndex.Remove(index);
         }
 
         public override void OnRemoveBehavior()
         {
             base.OnRemoveBehavior();
             _pendingActions.Clear();
-            _meleeMasteryBonusByAgentIndex.Clear();
-            _bowMasteryBonusByAgentIndex.Clear();
+            _masteryByAgentIndex.Clear();
         }
 
         private void ObservePlayerAlternativeAttack()
@@ -328,33 +295,24 @@ namespace GreyWardenPolicePurity
 
         private void AddMeleeMastery(Agent attacker)
         {
-            if (AddMasteryBonus(
-                    _meleeMasteryBonusByAgentIndex,
-                    attacker,
-                    MeleeMasteryPerAlternativeAction))
-            {
-                attacker.UpdateAgentStats();
-            }
+            AddMasteryBonus(attacker, DefaultSkills.OneHanded, GwpTuning.BattleGrowth.MeleeMasteryPerAlternativeAction);
+            AddMasteryBonus(attacker, DefaultSkills.Athletics, GwpTuning.BattleGrowth.MeleeMasteryPerAlternativeAction);
+            attacker.UpdateAgentStats();
         }
 
-        private static bool AddMasteryBonus(
-            IDictionary<int, int> bonuses,
+        private void AddMasteryBonus(
             Agent agent,
+            SkillObject skill,
             int amount)
         {
-            // 灰袍领主锁血期间，每一笔成长都乘倍数（用户裁定 2026-10-16）。
-            if (GwpLordLastStandBehavior.IsStanding(agent))
-                amount = (int)Math.Round(amount * GwpTuning.LordCombat.LastStandGrowthMultiplier);
             int agentIndex = agent.Index;
-            int current = bonuses.TryGetValue(agentIndex, out int existing)
+            if (!_masteryByAgentIndex.TryGetValue(agentIndex, out Dictionary<SkillObject, int>? bonuses))
+                _masteryByAgentIndex[agentIndex] = bonuses = new Dictionary<SkillObject, int>();
+            int current = bonuses.TryGetValue(skill, out int existing)
                 ? existing
                 : 0;
-            int updated = Math.Min(MaxMasteryBonus, current + amount);
-            if (updated == current)
-                return false;
-
-            bonuses[agentIndex] = updated;
-            return true;
+            // 本场临时值；原版各项效果自行限幅，不另设模组累计/技能上限（用户裁定2026-10-20）。
+            bonuses[skill] = current + amount;
         }
 
         private static void ResolveFallbackTargets(

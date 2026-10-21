@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -37,6 +37,7 @@ namespace GreyWardenPolicePurity
                 Settlement home = Settlement.Find(record.HomeId);
                 if (party.MapEvent != null)
                     continue;
+                PackUnusedPartyArmory(party);
                 if (record.Kind == FaithPartyKind.Market)
                 {
                     ObserveFaithMarket(record, party, home);
@@ -163,12 +164,10 @@ namespace GreyWardenPolicePurity
         /// 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
         /// （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
         /// </summary>
-        private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind, MobileParty? origin = null)
+        private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind)
         {
             Clan police = PoliceStats.GetPoliceClan();
-            TextObject name = kind == FaithPartyKind.Training
-                ? GwpText.Create(GwpTextCatalog.gwp_training_transport_party)
-                : kind == FaithPartyKind.Mission
+            TextObject name = kind == FaithPartyKind.Mission
                 ? GwpText.Create(GwpTextCatalog.gwp_fs_mission_party)
                 : kind == FaithPartyKind.Balance
                     ? GwpText.Create(GwpTextCatalog.gwp_fs_balance_party, "VILLAGE", home.Name)
@@ -176,7 +175,7 @@ namespace GreyWardenPolicePurity
             // 所有者留空，和纠察队、追截队、练兵队一样（PolicePatrolBehavior 当年因为填了族长出过事）：
             // 填族长的话，这支队一打输，被俘豁免就把族长当败将强制逃亡，原版逃亡先销毁她正带着的部队（实机诊断 2026-10-08）。
             MobileParty party = CustomPartyComponent.CreateCustomPartyWithPartyTemplate(
-                origin?.Position ?? home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
+                home.GatePosition, 1f, home, name, police, police.DefaultPartyTemplate, null, "", "", 4f, false);
             party.StringId = GwpPartyIdentity.Next(GwpIds.FaithPartyPrefix);
             party.ActualClan = police;
             party.MemberRoster.Clear();
@@ -197,34 +196,35 @@ namespace GreyWardenPolicePurity
             return party;
         }
 
-        /// <summary>补到 <paramref name="size"/> 人（<see cref="DrawMen"/>），再从家里军械库拿最好的那几套。返回拿了几件。</summary>
-        private int ManParty(MobileParty party, FaithVillage row, Settlement home, int size)
+        /// <summary>
+        /// 补到指定人数：只从真实民兵取健康灰袍轻步兵及以上，按Tier降序，不足不拿低阶或伤员充数。
+        /// </summary>
+        private int FaithEscortAvailable(FaithVillage row, Settlement home)
         {
-            DrawMen(party, row, home, size);
-            _plans.Remove(row.VillageId);
-            return TakeBestSets(row.VillageId, party);
+            MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
+            if (militia?.IsActive != true || militia.MapEvent != null) return 0;
+            int healthy = militia.MemberRoster.GetTroopRoster()
+                .Where(e => IsGuardTroop(e.Character) && e.Character.Tier >= GwpTuning.Firesworn.FaithEscortMinimumTier)
+                .Sum(e => e.Number - e.WoundedNumber);
+            return Math.Min(healthy, Math.Max(0, Sworn(row) - GwpTuning.Firesworn.MissionMinimumLeftBehind));
         }
 
-        /// <summary>
-        /// 补人，补到 <paramref name="size"/>：拉守村队最高级的（用户裁定 2026-10-08：出门的队伍精锐度要高）。
-        /// </summary>
         private void DrawMen(MobileParty party, FaithVillage row, Settlement home, int size)
         {
-            int need = Math.Max(0, size - party.MemberRoster.TotalManCount);
+            int need = Math.Min(Math.Max(0, size - party.MemberRoster.TotalManCount), FaithEscortAvailable(row, home));
             MobileParty? militia = home.MilitiaPartyComponent?.MobileParty;
+            if (need == 0 || militia == null) return;
             TroopRoster guard = GuardOf(row.VillageId);
-            foreach (TroopRosterElement element in guard.GetTroopRoster().OrderByDescending(entry => entry.Character.Tier).ToList())
+            foreach (TroopRosterElement element in militia.MemberRoster.GetTroopRoster()
+                .Where(e => IsGuardTroop(e.Character) && e.Character.Tier >= GwpTuning.Firesworn.FaithEscortMinimumTier)
+                .OrderByDescending(e => e.Character.Tier).ThenBy(e => e.Character.StringId, StringComparer.Ordinal).ToList())
             {
-                if (need <= 0)
-                    break;
-                int take = Math.Min(need, element.Number);
-                // 自有记录只记人数，实际伤兵与经验仍由村内实体民兵持有。
-                if (militia?.IsActive == true && militia.MapEvent == null)
-                    GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster, element.Character, take);
-                else
-                    party.MemberRoster.AddToCounts(element.Character, take);
-                guard.AddToCounts(element.Character, -take);
-                need -= take;
+                int take = Math.Min(need, element.Number - element.WoundedNumber);
+                if (take <= 0) continue;
+                int moved = GwpTroopTransfer.Move(militia.MemberRoster, party.MemberRoster, element.Character, take, healthyOnly: true).Number;
+                guard.AddToCounts(element.Character, -moved);
+                need -= moved;
+                if (need <= 0) break;
             }
             PushGuard(row, home);
             ReconcilePriestSlots(row);
@@ -335,7 +335,7 @@ namespace GreyWardenPolicePurity
                 row.MissionsSent > _villages.Values
                     .Where(other => IsPriestStrongest(other, Settlement.Find(other.VillageId)))
                     .Min(other => other.MissionsSent) ||
-                Sworn(row) < GwpTuning.Firesworn.MissionSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
+                FaithEscortAvailable(row, home) < GwpTuning.Firesworn.MissionSize ||
                 _faithParties.Values.Count(entry => entry.Kind == FaithPartyKind.Mission) >= GwpTuning.Firesworn.MaxActiveMissions ||
                 !IsFestivalDay(row, row.LastMission, now))
                 return;
@@ -360,94 +360,68 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 运械队要补给目标村的人和兵器（用户裁定 2026-10-07：运械队算周围信众村之间的人数差和武器差来平衡）。
         /// 两边都按大小拉平：人按户数比分两边守村队的总人数，兵器按两边要配的人数分拿到主兵器的总套数。
-        /// 兵器只在目标的武装率比家里低得够多时才算。
+        /// 九类装备按人数和择优保留后的强度差计算，具体实现见 GwpArmoryBalance.cs。
         /// </summary>
-        private (int men, int sets, int prisoners) BalanceNeed(FaithVillage row, Settlement home, Settlement target)
+        private (int men, int sets) BalanceNeed(FaithVillage row, Settlement home, Settlement target)
         {
             FaithVillage other = _villages[target.StringId];
             float hearths = home.Village.Hearth + target.Village.Hearth;
             int men = hearths <= 0f ? 0
                 : (int)Math.Round((Sworn(row) + Sworn(other)) * target.Village.Hearth / hearths) - Sworn(other);
-            ArmoryPlan homePlan = PlanOf(home.StringId);
-            ArmoryPlan targetPlan = PlanOf(target.StringId);
-            int sets = 0;
-            if (targetPlan.Sets.Count > 0 &&
-                ArmedShare(home.StringId) - ArmedShare(target.StringId) >= GwpTuning.Firesworn.BalanceMinimumArmedGap)
-            {
-                int homeArmed = homePlan.Sets.Count(kit => IsArmoryKitArmed(kit));
-                int targetArmed = targetPlan.Sets.Count(kit => IsArmoryKitArmed(kit));
-                int surplus = homePlan.Surplus.Where(e => KitKind(e.EquipmentElement.Item) == KitMain).Sum(e => e.Amount);
-                sets = Math.Min(surplus, (int)Math.Round((homeArmed + targetArmed) * targetPlan.Sets.Count /
-                                       (float)Math.Max(1, homePlan.Sets.Count + targetPlan.Sets.Count)) - targetArmed);
-            }
-            int prisoners = PrisonersToBalance(
-                RosterOf(_dungeons, row.VillageId).TotalManCount, row.Households,
-                RosterOf(_dungeons, other.VillageId).TotalManCount, other.Households);
-            return (Math.Max(0, men), Math.Max(0, sets), prisoners);
-        }
-
-        private static int PrisonersToBalance(int source, int sourceHouseholds, int target, int targetHouseholds)
-        {
-            int excess = Math.Max(0, source - sourceHouseholds);
-            int households = sourceHouseholds + targetHouseholds;
-            if (excess == 0 || targetHouseholds <= 0 || households <= 0)
-                return 0;
-            // 户数只决定分流方向。两边都超额时仍可运输，不能把软目标再写成拒收上限。
-            int desired = (int)Math.Round(((double)source + target) * targetHouseholds / households) - target;
-            return Math.Min(excess, Math.Max(0, desired));
-        }
-
-        private int LoadBalancePrisoners(FaithVillage home, MobileParty party, int requested)
-        {
-            TroopRoster dungeon = RosterOf(_dungeons, home.VillageId);
-            // 运输队仍使用真实押送容量，避免超载导致逃俘；抵达地牢整批接收。
-            int capacity = Math.Max(0, party.Party.PrisonerSizeLimit - party.PrisonRoster.TotalManCount);
-            return GwpTroopTransfer.MoveBatches(dungeon, party.PrisonRoster,
-                dungeon.GetTroopRoster().Where(element => !element.Character.IsHero), Math.Min(requested, capacity));
+            int sets = CountItems(ArmoryCargoFor(row, other));
+            return (Math.Max(0, men), Math.Max(0, sets));
         }
 
         /// <summary>
         /// 家里比附近有火誓者的村子人多或兵器好得够多，就派运械队：押车的人至少 5 个、人数差多少带多少（到了并入当地守村队），
-        /// 背包里装上让两边武装率拉平所差的那几套（<see cref="LoadBalanceCargo"/>）。去差得最多的那座。照比武大会派（用户裁定 2026-10-07）。
+        /// 背包按实际有效重量分批装质量调剂货（<see cref="LoadBalanceCargo"/>）。去差得最多的那座。照比武大会派（用户裁定 2026-10-07）。
         /// 只送有祭司的信众村：运械是祭司来了才解锁的服务（用户裁定 2026-10-07）。
         /// </summary>
         private void TryDispatchBalance(FaithVillage row, Settlement home, double now)
         {
-            if (Sworn(row) < GwpTuning.Firesworn.BalanceEscortSize + GwpTuning.Firesworn.MissionMinimumLeftBehind ||
+            if (FaithEscortAvailable(row, home) < GwpTuning.Firesworn.BalanceEscortSize ||
                 !IsFestivalDay(row, row.LastBalance, now))
                 return;
-            (Settlement target, int men, int sets, int prisoners)? best = NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
+            (Settlement target, int men, int sets)? best = NearbyTargets(home, GwpTuning.Firesworn.BalanceMaxDistance, FaithPartyKind.Balance)
                 .Where(IsPreachedVillage)
                 .Select(settlement =>
                 {
-                    (int men, int sets, int prisoners) need = BalanceNeed(row, home, settlement);
-                    return ((Settlement target, int men, int sets, int prisoners)?)(settlement, need.men, need.sets, need.prisoners);
+                    (int men, int sets) need = BalanceNeed(row, home, settlement);
+                    return ((Settlement target, int men, int sets)?)(settlement, need.men, need.sets);
                 })
                 .Where(entry => entry!.Value.men >= GwpTuning.Firesworn.BalanceMinimumMen ||
-                                entry!.Value.sets >= GwpTuning.Firesworn.BalanceMinimumSets ||
-                                entry!.Value.prisoners >= GwpTuning.Firesworn.BalanceMinimumPrisoners)
-                .OrderByDescending(entry => entry!.Value.men + entry!.Value.sets + entry!.Value.prisoners)
+                                entry!.Value.sets >= GwpTuning.Firesworn.BalanceMinimumSets)
+                .OrderByDescending(entry => entry!.Value.men + entry!.Value.sets)
                 .FirstOrDefault();
             if (best == null)
                 return;
             Settlement target = best.Value.target;
             int escort = Math.Min(Math.Max(GwpTuning.Firesworn.BalanceEscortSize, best.Value.men),
-                Sworn(row) - GwpTuning.Firesworn.MissionMinimumLeftBehind);
+                Math.Min(GwpTuning.Firesworn.EscortMaximumSize, FaithEscortAvailable(row, home)));
             MobileParty party = CreateFaithParty(row, home, FaithPartyKind.Balance);
-            int kits = ManParty(party, row, home, escort);
-            int cargo = LoadBalanceCargo(home.StringId, party);
-            int prisoners = LoadBalancePrisoners(row, party, best.Value.prisoners);
+            int kits = ManEscort(party, row, home, target, escort, out float danger);
+            ItemRoster cargoPlan = ArmoryCargoFor(row, _villages[target.StringId]);
+            while (party.MemberRoster.TotalManCount < GwpTuning.Firesworn.EscortMaximumSize &&
+                FaithEscortAvailable(row, home) > 0 &&
+                ArmoryCargoWeight(cargoPlan, party) > party.InventoryCapacity - party.TotalWeightCarried)
+                DrawMen(party, row, home, party.MemberRoster.TotalManCount + 1);
+            kits += TakeBestSets(home.StringId, party);
+            // 护送兵领走的装备和人数已变化，按实际离村后的存量重算，不多装旧计划。
+            cargoPlan = ArmoryCargoFor(row, _villages[target.StringId]);
+            int cargo = LoadBalanceCargo(home.StringId, party, cargoPlan);
             row.LastBalance = now;
             Dispatch(_faithParties[party.StringId], party, target);
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFaith("BALANCE_DISPATCHED",
                 "party=" + party.StringId + "; home=" + home.StringId + "; target=" + target.StringId +
                 "; menNeed=" + best.Value.men + "; setNeed=" + best.Value.sets +
-                "; prisonerNeed=" + best.Value.prisoners + "; prisoners=" + prisoners +
                 "; men=" + party.MemberRoster.TotalManCount + "; escortKitItems=" + kits + "; cargoSets=" + cargo +
-                "; cargoValue=" + party.ItemRoster.TotalValue + "; homeGuard=" + Sworn(row) +
+                "; capacity=" + party.InventoryCapacity + "; weight=" + party.TotalWeightCarried +
+                "; danger=" + danger.ToString("0") + "; cargoValue=" + party.ItemRoster.TotalValue + "; homeGuard=" + Sworn(row) +
                 "; targetGuard=" + Sworn(_villages[target.StringId]) +
                 "; homeArmed=" + ArmedShare(home.StringId).ToString("0.00") +
                 "; targetArmed=" + ArmedShare(target.StringId).ToString("0.00"));
+#endif
         }
 
         // ---------------------------------------------------------------- 到了就并入

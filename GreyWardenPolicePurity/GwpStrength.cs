@@ -1,6 +1,5 @@
 using System;
 
-using System.Collections.Generic;
 
 using System.Globalization;
 
@@ -8,13 +7,10 @@ using System.Linq;
 
 using TaleWorlds.CampaignSystem;
 
-using TaleWorlds.CampaignSystem.Map;
 
-using TaleWorlds.CampaignSystem.MapEvents;
 
 using TaleWorlds.CampaignSystem.Party;
 
-using TaleWorlds.Core;
 
 using TaleWorlds.Library;
 
@@ -34,37 +30,17 @@ namespace GreyWardenPolicePurity
 
     ///
 
-    /// 本体战力用于接案与编成；固定目标区域的可参战敌军用于宣战和主动攻击。
-    /// 友军只计实际挂靠或原版参战半径内的队伍，不以远方共同任务代替到场。
-    /// 依据：用户裁定 2026-10-17。单队数值仍用 PartyBase.EstimatedStrength。
+    /// 本体战力用于接案与编成；宣战和主动攻击读取原版区域战力计算。
+    /// 区域友军、敌军资格与距离折算由原版判断，不以远方共同任务代替到场。
+    /// 依据：用户裁定 2026-10-18。单队数值仍用 PartyBase.EstimatedStrength。
     ///
     /// 战斗场景里的兵力（音乐、战场支援）是另一回事，按 Agent 计算，不走这里。
 
     /// </summary>
 
-    internal static class GwpStrength
+    internal static partial class GwpStrength
 
     {
-
-        internal sealed class Threat
-
-        {
-
-            public float Strength { get; set; }
-
-            public float MaximumSpeed { get; set; }
-
-            public string FastestCombatGroupId { get; set; } = string.Empty;
-
-            public float JoiningRadius { get; set; }
-
-            public float ThreatRadius { get; set; }
-
-            public List<string> CombatGroups { get; } = new List<string>();
-
-        }
-
-
 
         internal sealed class LocalBalance
 
@@ -78,7 +54,7 @@ namespace GreyWardenPolicePurity
 
             public float EnemyLocalStrength { get; set; }
 
-            public string FriendlyCombatGroups { get; set; } = string.Empty;
+            public string NativeComparisons { get; set; } = string.Empty;
 
             public float Distance { get; set; }
 
@@ -237,89 +213,6 @@ namespace GreyWardenPolicePurity
 
 
 
-        internal static Threat EnemyAround(MobileParty observer, MobileParty offender)
-        {
-            var snapshot = new Threat();
-            if (observer?.IsActive != true || offender?.IsActive != true || offender.Party == null)
-                return snapshot;
-            MobileParty combatTarget = CombatGroupOf(offender);
-            MapEvent? battle = combatTarget.MapEvent ?? offender.MapEvent;
-            BattleSideEnum targetSide = combatTarget.Party.Side != BattleSideEnum.None
-                ? combatTarget.Party.Side : offender.Party.Side;
-            var countedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (battle?.IsFinalized == false && targetSide != BattleSideEnum.None)
-            {
-                foreach (MapEventParty participant in battle.PartiesOnSide(targetSide))
-                {
-                    if (participant.Party?.IsActive != true) continue;
-                    snapshot.Strength += Math.Max(0f, participant.Party.EstimatedStrength);
-                    MobileParty? member = participant.Party.MobileParty;
-                    if (member == null) continue;
-                    countedGroups.Add(CombatGroupKey(member));
-                    snapshot.CombatGroups.Add(member.StringId + ":" + participant.Party.EstimatedStrength.ToString("0.00", CultureInfo.InvariantCulture));
-                    IncludeMaximumCombatGroupSpeed(snapshot, member);
-                }
-            }
-            else
-            {
-                snapshot.Strength = CombatGroup(combatTarget);
-                countedGroups.Add(CombatGroupKey(combatTarget));
-                snapshot.CombatGroups.Add(CombatGroupKey(combatTarget) + ":" + snapshot.Strength.ToString("0.00", CultureInfo.InvariantCulture));
-                IncludeMaximumCombatGroupSpeed(snapshot, combatTarget);
-            }
-            snapshot.JoiningRadius = Math.Max(0f, Campaign.Current.Models.EncounterModel.GetEncounterJoiningRadius);
-            snapshot.ThreatRadius = GwpTuning.Enforcement.RegionalThreatRadius;
-            Vec2 center = battle?.IsFinalized == false
-                ? battle.Position.ToVec2() : combatTarget.Position.ToVec2();
-            LocatableSearchData<MobileParty> data = MobileParty.StartFindingLocatablesAroundPosition(
-                center, snapshot.ThreatRadius);
-            for (MobileParty nearby = MobileParty.FindNextLocatable(ref data); nearby != null;
-                 nearby = MobileParty.FindNextLocatable(ref data))
-            {
-                MobileParty group = CombatGroupOf(nearby);
-                string key = CombatGroupKey(group);
-                if (countedGroups.Contains(key) ||
-                    group.Position.ToVec2().Distance(center) > snapshot.ThreatRadius ||
-                    !CanNearbyCombatGroupJoinTarget(group, combatTarget, battle, targetSide, observer)) continue;
-                float contribution = CombatGroup(group);
-                snapshot.Strength += contribution;
-                snapshot.CombatGroups.Add(key + ":" + contribution.ToString("0.00", CultureInfo.InvariantCulture) + "@1.00");
-                countedGroups.Add(key);
-                IncludeMaximumCombatGroupSpeed(snapshot, group);
-            }
-            return snapshot;
-        }
-
-
-
-        private static void IncludeMaximumCombatGroupSpeed(
-
-            Threat snapshot, MobileParty party)
-
-        {
-
-            MobileParty movementGroup =
-
-                CombatGroupOf(party);
-
-            float speed = TheoreticalBaseSpeed(movementGroup);
-
-            if (speed <= snapshot.MaximumSpeed)
-
-                return;
-
-
-
-            snapshot.MaximumSpeed = speed;
-
-            snapshot.FastestCombatGroupId =
-
-                CombatGroupKey(movementGroup);
-
-        }
-
-
-
         internal static float CombatGroup(
 
             MobileParty combatTarget)
@@ -370,177 +263,29 @@ namespace GreyWardenPolicePurity
 
 
 
-        internal static string CombatGroupKey(MobileParty party) =>
-
-            CombatGroupOf(party).StringId;
-
-
-
-        private static bool CanNearbyCombatGroupJoinTarget(MobileParty candidate, MobileParty combatTarget,
-            MapEvent? mapEvent, BattleSideEnum targetSide, MobileParty observer)
-        {
-            if (candidate?.IsActive != true || candidate.Party == null || candidate.Party.NumberOfHealthyMembers <= 0 ||
-                candidate.AttachedTo != null || candidate.Position.IsOnLand != combatTarget.Position.IsOnLand ||
-                candidate.IsGarrison || candidate.IsMilitia || candidate.CurrentSettlement?.SiegeEvent != null ||
-                candidate.BesiegerCamp?.LeaderParty != null && candidate.BesiegerCamp.LeaderParty != candidate ||
-                candidate.MapEvent?.IsFinalized == false && candidate.MapEvent != mapEvent) return false;
-            if (mapEvent?.IsFinalized == false && targetSide != BattleSideEnum.None)
-                return mapEvent.CanPartyJoinBattle(candidate.Party, targetSide);
-            IFaction? faction = candidate.MapFaction;
-            return faction != null && combatTarget.MapFaction != null &&
-                (faction == combatTarget.MapFaction || observer.MapFaction != null && faction.IsAtWarWith(observer.MapFaction)) &&
-                (candidate.IsLordParty || candidate.Aggressiveness > 0.01f);
-        }
-
-
-
-        internal static float FriendlyAround(MobileParty actor, MobileParty offender,
-            out string friendlyCombatGroups, bool includePlayer = false)
+        internal static LocalBalance Compare(MobileParty actor, MobileParty offender,
+            bool includePlayer = false, MobileParty? excludedFriendly = null)
         {
             MobileParty target = CombatGroupOf(offender);
-            float strength = CombatGroup(actor);
-            var counted = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { CombatGroupKey(actor) };
-            var groups = new List<string> { CombatGroupKey(actor) + ":" + strength.ToString("0.00", CultureInfo.InvariantCulture) + "@1.00" };
-            // Enemy risk uses a fixed target-centred region. Friendly reinforcements
-            // must already be within the native joining radius of the acting party;
-            // promising to help, sharing an objective, or joining Army is not arrival.
-            float joiningRadius = Campaign.Current.Models.EncounterModel.GetEncounterJoiningRadius;
-            LocatableSearchData<MobileParty> data = MobileParty.StartFindingLocatablesAroundPosition(actor.Position.ToVec2(), joiningRadius);
-            for (MobileParty nearby = MobileParty.FindNextLocatable(ref data); nearby != null;
-                 nearby = MobileParty.FindNextLocatable(ref data))
-            {
-                MobileParty group = CombatGroupOf(nearby);
-                string key = CombatGroupKey(group);
-                if (counted.Contains(key) || !CanNearbyFriendlyGroupJoinActor(group, actor, includePlayer) ||
-                    group.Position.ToVec2().Distance(actor.Position.ToVec2()) > joiningRadius ||
-                    group.Position.ToVec2().Distance(target.Position.ToVec2()) > GwpTuning.Enforcement.RegionalThreatRadius) continue;
-                float contribution = CombatGroup(group);
-                strength += contribution;
-                groups.Add(key + ":" + contribution.ToString("0.00", CultureInfo.InvariantCulture) + "@1.00");
-                counted.Add(key);
-            }
-            friendlyCombatGroups = string.Join(",", groups);
-            return Math.Max(0f, strength);
-        }
-
-
-
-
-
-
-
-        private static bool CanNearbyFriendlyGroupJoinActor(
-
-            MobileParty candidate, MobileParty actor, bool includePlayer = false)
-
-        {
-
-            if (candidate?.IsActive != true || candidate.Party == null ||
-
-                candidate.Party.NumberOfHealthyMembers <= 0 ||
-
-                candidate.AttachedTo != null ||
-
-                candidate.Position.IsOnLand != actor.Position.IsOnLand ||
-
-                candidate.IsGarrison || candidate.IsMilitia ||
-
-                candidate.CurrentSettlement?.SiegeEvent != null ||
-
-                candidate.BesiegerCamp?.LeaderParty != null &&
-
-                candidate.BesiegerCamp.LeaderParty != candidate)
-
-                return false;
-
-
-
-            // The player who asked for this help is one of the parties that will
-
-            // actually fight. Being already engaged does not disqualify him - that
-
-            // is the very battle the Wardens are being brought in to join.
-
-            if (includePlayer && candidate.IsMainParty)
-
-                return true;
-
-
-
-            return (candidate.MapEvent == null || candidate.MapEvent.IsFinalized) &&
-
-                   candidate.MapFaction != null &&
-
-                   candidate.MapFaction == actor.MapFaction &&
-
-                   (candidate.IsLordParty || candidate.Aggressiveness > 0.01f);
-
-        }
-
-
-
-        internal static LocalBalance
-
-            Compare(
-
-                MobileParty actor, MobileParty offender,
-
-                bool includePlayer = false)
-
-        {
-
-            MobileParty movementTarget =
-
-                CombatGroupOf(offender);
-
-            Threat enemy =
-
-                EnemyAround(actor, offender);
-
-            float friendlyStrength =
-
-                FriendlyAround(
-
-                    actor, offender, out string friendlyCombatGroups,
-
-                    includePlayer);
-
-            float distance = actor.Position.ToVec2().Distance(
-
-                movementTarget.Position.ToVec2());
-
-            bool strengthReady =
-
-                friendlyStrength > enemy.Strength;
-
+            NativeFrame frame = ReadNativeRegion(actor, offender, includePlayer, excludedFriendly);
+            NativeContact? contact = frame.Contacts.FirstOrDefault(item => item.Target == target);
+            NativeContact? unsafeContact = UnsafeNativeContact(frame, target);
+            NativeContact? decisive = unsafeContact ?? contact;
+            bool ready = contact != null && unsafeContact == null;
             return new LocalBalance
-
             {
-
                 Actor = actor,
-
-                MovementTarget = movementTarget,
-
-                FriendlyLocalStrength = friendlyStrength,
-
-                EnemyLocalStrength = enemy.Strength,
-
-                FriendlyCombatGroups = friendlyCombatGroups,
-
-                Distance = distance,
-
-                StrengthReady = strengthReady,
-
-                Reason = strengthReady
-
-                    ? "friendly_local_strength_ready"
-
-                    : "friendly_local_strength_not_ready"
-
+                MovementTarget = target,
+                FriendlyLocalStrength = decisive?.Friendly ?? CombatGroup(actor),
+                EnemyLocalStrength = decisive?.Enemy ?? CombatGroup(target),
+                NativeComparisons = string.Join(",", frame.Contacts.Select(item =>
+                    item.Target.StringId + ":native=" + item.Friendly.ToString("0.00", CultureInfo.InvariantCulture) +
+                    "/" + item.Enemy.ToString("0.00", CultureInfo.InvariantCulture))),
+                Distance = actor.Position.ToVec2().Distance(target.Position.ToVec2()),
+                StrengthReady = ready,
+                Reason = contact == null ? "target_not_in_native_region" : unsafeContact != null
+                    ? "native_region_disadvantage:" + unsafeContact.Target.StringId : "native_region_ready"
             };
-
         }
-
     }
-
 }

@@ -1,4 +1,4 @@
-"""Execute production case selection/acceptance against controlled campaign boundaries.
+﻿"""Execute production case selection/acceptance against controlled campaign boundaries.
 
 Also validate the shipped prefab's binding scopes and scroll targets without
 starting Bannerlord. Native rendering and menu input remain in-game acceptance.
@@ -17,6 +17,49 @@ MODULE = ROOT / 'GreyWardenPolicePurity'
 
 
 class AffairsTests(unittest.TestCase):
+    def test_clan_easter_egg_bypasses_only_screen_entry(self):
+        screen = (MODULE / 'GwpCaseArchiveScreen.cs').read_text(encoding='utf-8-sig')
+        clan = (MODULE / 'GwpEncyclopediaClanPageVM.cs').read_text(encoding='utf-8-sig')
+        gate = re.search(r'internal static bool CanOpen\s*=>.*?;', screen, re.S).group(0)
+        methods = '\n'.join(method(screen, n) for n in ['Show', 'ShowFromClanPage', 'Open'])
+        click = method(clan, 'ExecuteOpenCaseArchive')
+        code = r'''
+using System;
+class PlayerBountyBehavior{public bool IsRecruitedByGreyWardens;}
+enum CampaignTimeControlMode{Stop,UnstoppablePlay}
+class Campaign{public static Campaign? Current=new();public PlayerBountyBehavior Member=new();public CampaignTimeControlMode TimeControlMode=CampaignTimeControlMode.UnstoppablePlay;public T? GetCampaignBehavior<T>() where T:class=>Member as T;}
+static class GwpRuntimeState{public static PlayerData Player=new();public class PlayerData{public int Reputation;}}
+static class GwpTuning{public static class Bounty{public const int RecruitmentReputationThreshold=20;}}
+class GwpAffairsState{}
+class StateManager{public object? ActiveState;public int Pushes;public T CreateState<T>() where T:new()=>new();public void PushState(object o){Pushes++;ActiveState=o;}}
+class Game{public static Game? Current=new();public StateManager GameStateManager=new();}
+static class GwpCaseArchiveScreen{static bool IsOpen=>Game.Current?.GameStateManager.ActiveState is GwpAffairsState;
+GATE
+METHODS
+}
+class ClanExtension{public bool IsVisible=true;CLICK public void Click()=>ExecuteOpenCaseArchive();}
+class Program{static int checks;static void Check(bool c,string message){checks++;if(!c)throw new Exception(message);}static void Main(){
+ foreach(bool joined in new[]{false,true})foreach(int rep in new[]{-10,0,19,20,40}){
+  Campaign.Current=new();Campaign.Current.Member.IsRecruitedByGreyWardens=joined;GwpRuntimeState.Player.Reputation=rep;Game.Current=new();
+  bool allowed=joined&&rep>=20;Check(GwpCaseArchiveScreen.CanOpen==allowed,"map navigation gate preserved");GwpCaseArchiveScreen.Show();Check(Game.Current.GameStateManager.Pushes==(allowed?1:0),"ordinary opening respects membership and reputation");
+  Game.Current=new();Campaign.Current.TimeControlMode=CampaignTimeControlMode.UnstoppablePlay;new ClanExtension().Click();Check(Game.Current.GameStateManager.Pushes==1&&Campaign.Current.TimeControlMode==CampaignTimeControlMode.Stop,"Grey Warden clan Easter egg opens for every membership/reputation combination and pauses time");
+  new ClanExtension().Click();Check(Game.Current.GameStateManager.Pushes==1,"Easter egg does not duplicate open state");
+  Check(Campaign.Current.Member.IsRecruitedByGreyWardens==joined&&GwpRuntimeState.Player.Reputation==rep,"viewing does not enlist player or change reputation");
+ }
+ Game.Current=new();new ClanExtension{IsVisible=false}.Click();Check(Game.Current.GameStateManager.Pushes==0,"unrelated clans cannot open hidden entry");
+ Campaign.Current=null;new ClanExtension().Click();Check(Game.Current.GameStateManager.Pushes==0,"no campaign does not open screen");Game.Current=null;new ClanExtension().Click();Check(true,"no game is safe");
+ Console.WriteLine("AFFAIRS_CLAN_ENTRY_ASSERTIONS="+checks);
+}}
+'''.replace('GATE', gate).replace('METHODS', methods).replace('CLICK', click)
+        major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
+        with tempfile.TemporaryDirectory(prefix='gwp-affairs-clan-') as temp:
+            p = Path(temp)
+            (p / 'Test.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net{major}.0</TargetFramework><Nullable>enable</Nullable><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup></Project>', encoding='utf-8')
+            (p / 'Program.cs').write_text(code, encoding='utf-8')
+            result = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            print(next(s for s in result.stdout.splitlines() if s.startswith('AFFAIRS_CLAN_ENTRY_ASSERTIONS=')))
+
     def test_encyclopedia_overlay_owns_exit_and_tab_input(self):
         screen = (MODULE / 'GwpCaseArchiveScreen.cs').read_text(encoding='utf-8-sig')
         # The shared extractor recognizes public/internal methods; retain the original modifier in the harness.
@@ -100,25 +143,30 @@ Write-Output "AFFAIRS_NATIVE_INPUT_ASSERTIONS=$count"
         keys = sorted(set(re.findall(r'GwpTextCatalog\.(\w+)', vm)))
         harness = r'''
 using System;using System.Linq;using System.Collections.Generic;
-namespace TaleWorlds.Library{public class DataSourceProperty:Attribute{}public class ViewModel{public void OnPropertyChanged(string n){}public void OnPropertyChangedWithValue<T>(T v,string n){}public virtual void OnFinalize(){}}public class MBBindingList<T>:List<T>{}}
-namespace TaleWorlds.Core.ViewModelCollection.ImageIdentifiers{public class CharacterImageIdentifierVM{public static int Finalized;public CharacterImageIdentifierVM(object c){}public void OnFinalize(){Finalized++;}}}
+namespace TaleWorlds.Library{public class DataSourceProperty:Attribute{}public class ViewModel{public void OnPropertyChanged(string n){}public void OnPropertyChangedWithValue<T>(T v,string n){}public virtual void OnFinalize(){}}public class MBBindingList<T>:List<T>{}public class InquiryData{public Action Accept;public InquiryData(string title,string text,bool ok,bool cancel,string yes,string no,Action accept,Action reject){Accept=accept;}}public static class InformationManager{public static InquiryData Last;public static void ShowInquiry(InquiryData data){Last=data;}}}
+namespace TaleWorlds.Core.ViewModelCollection.ImageIdentifiers{public class CharacterImageIdentifierVM{public static int Finalized;public object? Code;public CharacterImageIdentifierVM(object? c){Code=c;}public void OnFinalize(){Finalized++;}}}
 namespace TaleWorlds.InputSystem{public class HotKey{}}
 namespace TaleWorlds.CampaignSystem.ViewModelCollection.Input{public class InputKeyItemVM{public static InputKeyItemVM CreateFromHotKey(TaleWorlds.InputSystem.HotKey k,bool c)=>new();public void OnFinalize(){}}}
 namespace TaleWorlds.CampaignSystem{
- public class Party{public string StringId="";public string Name="";public object GetPosition2D=new();public Text GetBehaviorText()=>new();}public class Text{public override string ToString()=>"moving";}
- public class Settlement{public string EncyclopediaLink="village";}public class Hero{public bool IsAlive=true;public int Age=30;public string StringId="hero",Name="hero",EncyclopediaLink="hero";public object CharacterObject=new();public Party? PartyBelongedTo;public Settlement? CurrentSettlement;}
+ public class TestParty{public string StringId="";public string Name="";public object GetPosition2D=new();public Text GetBehaviorText()=>new();}public class Text{public override string ToString()=>"moving";}
+ public class Settlement{public string EncyclopediaLink="village";}public class Hero{public bool IsAlive=true;public int Age=30;public string StringId="hero",Name="hero",EncyclopediaLink="hero";public object CharacterObject=new();public TestParty? PartyBelongedTo;public Settlement? CurrentSettlement;}
  public class Clan{public List<Hero> Heroes=new();}
  public class Campaign{public static Campaign Current=new();public Models Models=new();public Encyclopedia EncyclopediaManager=new();public T? GetCampaignBehavior<T>() where T:class=>GreyWardenPolicePurity.PlayerBountyBehavior.Current as T;}
  public class Models{public AgeModel AgeModel=new();}public class AgeModel{public int HeroComesOfAge=18;}public class Encyclopedia{public string Last="";public void GoToLink(string s){Last=s;}}
 }
-namespace TaleWorlds.CampaignSystem.ViewModelCollection{public static class CampaignUIHelper{public static object GetCharacterCode(object c)=>c;}}
+namespace TaleWorlds.CampaignSystem.ViewModelCollection{public static class CampaignUIHelper{public static object? GetCharacterCode(object? c)=>c;}}
+namespace TaleWorlds.CampaignSystem.Party{public class MobileParty{public static MobileParty MainParty=new();}}
 namespace GreyWardenPolicePurity{
 using TaleWorlds.CampaignSystem;
 ENTRY
+internal enum GwpDispatchPurpose{Report,Support,TroopOrder,PeaceRequest,FiefAppeal}
+static class GwpWardenDispatchDialogue{public static string Block="";public static bool Accept=true;public static List<GwpDispatchPurpose> Sent=new();public static string AffairsDispatchBlockReason(GwpDispatchPurpose p)=>Block;public static bool TryStartFromAffairs(GwpDispatchPurpose p){if(Block.Length>0||!Accept)return false;Sent.Add(p);return true;}}
 static class GwpTextCatalog{KEYS}
 static class GwpText{public static string Get(string k,params object[] a)=>k;}
 static class GwpCommon{public static Settlement? NormalizePlayerFacingSettlement(Settlement? s,object position)=>s;}
-static class GwpAffairsText{public static string Pair(string a,string b)=>a+"|"+b;public static string Duty(GreyWardenFamilyBehavior.DutyKind d)=>d.ToString();public static string Line(string k,object v)=>k+":"+v;public static string TargetLocation(Party p,string? k=null)=>p.StringId;}
+static class GwpAffairsText{public static string Pair(string a,string b)=>a+"|"+b;public static string Duty(GreyWardenFamilyBehavior.DutyKind d)=>d.ToString();public static string Line(string k,object v)=>k+":"+v;public static string TargetLocation(TestParty p,string? k=null)=>p.StringId;}
+static class GwpTuning{public static class Bounty{public const int RecruitmentReputationThreshold=20;}}
+static class GwpFireswornBehavior{public static bool CanManagePlayerArmory=true;public static int Opens;public static List<ArmoryItem> PlayerArmoryItems=new();public static bool OpenPlayerArmory(){if(!CanManagePlayerArmory)return false;Opens++;return true;}public static int ArmoryCapacity(TaleWorlds.CampaignSystem.Party.MobileParty p)=>100;public class ArmoryItem{public int Amount;}}
 static class GwpRuntimeState{public static class Player{public static int Reputation=22;}}
 static class GreyWardenFamilyBehavior{public enum DutyKind{LegacyOrdinary,Training,CaravanProtection,VillageProtection,IssueResolution,Reconstruction,PlayerRequests}public static bool TryGetDuty(Hero h,out DutyKind d){d=DutyKind.Training;return true;}public static string GetDutyTitle(Hero h)=>"Training";}
 class CrimeRecord{public int Reward;public float Strength;}
@@ -126,8 +174,9 @@ static class CrimePool{public static Dictionary<string,CrimeRecord> Cases=new();
 static class GwpStrength{public static float CaseTarget(CrimeRecord c)=>c.Strength;}
 static class GwpAffairsData{
  public static readonly GreyWardenFamilyBehavior.DutyKind[] Duties={GreyWardenFamilyBehavior.DutyKind.Training,GreyWardenFamilyBehavior.DutyKind.CaravanProtection,GreyWardenFamilyBehavior.DutyKind.VillageProtection,GreyWardenFamilyBehavior.DutyKind.IssueResolution,GreyWardenFamilyBehavior.DutyKind.Reconstruction,GreyWardenFamilyBehavior.DutyKind.PlayerRequests};
- public static List<GwpAffairsEntry> Items=new(),Faith=new();public static List<GwpAffairsEntry> Read()=>Items.ToList();public static List<GwpAffairsEntry> ReadFaith()=>Faith.ToList();}
+ public static List<GwpAffairsEntry> Items=new(),Faith=new(),Armory=new();public static List<GwpAffairsEntry> Read()=>Items.ToList();public static List<GwpAffairsEntry> ReadFaith()=>Faith.ToList();public static List<GwpAffairsEntry> ReadPlayerArmory()=>Armory.ToList();}
 class PlayerBountyBehavior{public static PlayerBountyBehavior Current=new();public bool Ready=true,Accept=true;public string? Accepted;
+ public bool CanWithdrawUnavailableCommission;public int Withdrawals;public bool WithdrawUnavailableCommission(){if(!CanWithdrawUnavailableCommission)return false;Withdrawals++;CanWithdrawUnavailableCommission=false;GwpAffairsData.Items.RemoveAll(e=>e.Id=="commission");return true;}
  public string GetBountyOfferStatusText()=>"ready";public bool CanInspectBountyOffers()=>Ready;
  public static int EstimateAffairsReward(CrimeRecord c)=>c.Reward;
  public bool TryAcceptAffairsCase(string id,int fine,int reward){if(!Ready||!Accept)return false;Accepted=id;GwpAffairsData.Items.Insert(0,new("commission","current","mine"));return true;}}
@@ -143,22 +192,55 @@ static void Main(){
  var trade=GreyWardenFamilyBehavior.DutyKind.CaravanProtection;
  var target=new Hero{Name="offender",StringId="offender"};
  GwpAffairsData.Items.Add(new("dispatch:1","couriers","courier"){IsPersonal=true});
- for(int i=0;i<8;i++){string id="case"+i;GwpAffairsData.Items.Add(new(id,"trade",id){Duty=trade,Hero=target,IsOffer=true,DisplayedFine=2000,DisplayedReward=400+i});CrimePool.Cases.Add(id,new(){Reward=400+i,Strength=100-i});}
+ var pursuer=new Hero{Name="pursuer",StringId="pursuer"};
+ for(int i=0;i<8;i++){string id="case"+i;GwpAffairsData.Items.Add(new(id,"trade",id){Duty=trade,Hero=target,IsCase=true,DistanceToPlayer=i*10,IsOffer=true,DisplayedFine=2000,DisplayedReward=400+i,Summary="pursuer: pursuing",DetailSummary="PLAYER FEE",Assignee=pursuer});CrimePool.Cases.Add(id,new(){Reward=400+i,Strength=100-i});}
+ GwpAffairsData.Items.Single(e=>e.Id=="dispatch:1").DispatchPurpose=GwpDispatchPurpose.Report;
  int closes=0;var vm=new GwpAffairsVM(()=>closes++);
  Check(vm.Rows.Single().Id=="dispatch:1","opening without a commission defaults to the active player courier");
  Check(vm.Tabs.Count==5,"existing personal, member, duty, faith and armory sections");
- Check(!vm.ShowBrowse,"courier page has no unrelated commission button");
- vm.Categories.First(c=>c.Id=="current").ExecuteSelect();Check(vm.ShowBrowse,"empty current commission offers the commission entry");
+ Check(vm.ShowBrowse&&vm.DispatchOptions.Count==0,"returning case courier remains visible with the commission entry available and no new report action");
+ Check(!vm.Categories.Any(c=>c.Id=="world"||c.Id=="benefits"),"unneeded world and gift categories removed");
+ Check(typeof(GwpAffairsVM).GetMethod("ExecuteActions")==null,"no generic affairs action command");
+ Check(!vm.Categories.Any(c=>c.Id=="couriers"),"combined courier category removed");
+ Check(vm.Categories.Select(c=>c.Id).SequenceEqual(new[]{"current","orders","mediation","requests"}),"personal categories group cases, troop orders, peace and fiefs by business");
+ foreach(var pair in new[]{("orders",GwpDispatchPurpose.TroopOrder),("mediation",GwpDispatchPurpose.PeaceRequest),("requests",GwpDispatchPurpose.FiefAppeal)}){vm.Categories.First(c=>c.Id==pair.Item1).ExecuteSelect();Check(vm.DispatchOptions.Count==1,"each independent service page has exactly one purpose");vm.DispatchOptions.Single().ExecuteSend();Check(GwpWardenDispatchDialogue.Sent.Last()==pair.Item2,"service starts only its own purpose");}
+ GwpWardenDispatchDialogue.Sent.Clear();closes=0;vm.Categories.First(c=>c.Id=="mediation").ExecuteSelect();
+ vm.DispatchOptions[0].ExecuteSend();Check(closes==1&&GwpWardenDispatchDialogue.Sent.Single()==GwpDispatchPurpose.PeaceRequest,"peace button directly queues correct existing purpose and closes");closes=0;
+ GwpWardenDispatchDialogue.Block="no eligible case";Check(!vm.DispatchOptions[0].IsEnabled&&vm.DispatchOptions[0].Reason=="no eligible case","disabled action explains exact reason");vm.DispatchOptions[0].ExecuteSend();Check(closes==0&&GwpWardenDispatchDialogue.Sent.Count==1,"changed qualification leaves screen open with reason");GwpWardenDispatchDialogue.Block="";
+ GwpAffairsData.Items.RemoveAll(e=>e.Id.StartsWith("dispatch:"));vm.ExecuteRefresh();Check(vm.IsEmpty&&vm.DispatchOptions.Count==1,"empty service page still allows its own dispatch");
+ GwpAffairsData.Items.Add(new("dispatch:peace","peace","peace courier"){DispatchPurpose=GwpDispatchPurpose.PeaceRequest});GwpAffairsData.Items.Add(new("dispatch:order","order","order courier"){DispatchPurpose=GwpDispatchPurpose.TroopOrder});vm.ExecuteRefresh();Check(vm.Rows.Single().Id=="dispatch:peace","peace page excludes other courier purposes");vm.Categories.First(c=>c.Id=="orders").ExecuteSelect();Check(vm.Rows.Single().Id=="dispatch:order","order page contains only its own courier");GwpAffairsData.Items.RemoveAll(e=>e.DispatchPurpose.HasValue);
+ vm.Categories.First(c=>c.Id=="current").ExecuteSelect();Check(vm.ShowBrowse&&vm.DispatchOptions.Count==0,"empty current commission offers only the commission entry");
  vm.BrowseCases();Check(vm.Categories.Count==6&&vm.Rows.Count==8,"case browser has six offices and all available cases");
- Check(!vm.ShowBrowse&&vm.ShowRefresh,"office case browser only offers relevant actions");
- Check(!vm.Categories.Any(c=>c.Id=="all"),"no crowded all-affairs category");Check(vm.Rows[0].Id=="case7","highest personal fee first");
+ Check(!vm.ShowBrowse&&vm.ShowRefresh&&vm.DispatchOptions.Count==0,"office case browser only offers relevant actions");
+ Check(!vm.Categories.Any(c=>c.Id=="all"),"no crowded all-affairs category");Check(vm.Rows[0].Id=="case0","current offender distance takes precedence over reward and strength");
+ Check(vm.Categories[0].Id=="CaravanProtection","offices with actual work precede empty offices");
+ Check(!vm.Rows.Any(r=>r.Summary.Contains("PLAYER FEE"))&&vm.DetailSummary=="PLAYER FEE","personal fee is confined to the selected detail, while rows retain assignment progress");
+ Check(vm.Rows[0].Portrait?.Code==target.CharacterObject&&vm.Rows[0].AssigneePortrait?.Code==pursuer.CharacterObject,"offender and pursuer have distinct portraits");
+ GwpAffairsData.Items.Single(e=>e.Id=="case0").Hero=null;GwpAffairsData.Items.Single(e=>e.Id=="case0").IsOffer=false;vm.ExecuteRefresh();
+ Check(vm.Rows[0].Id=="case0"&&vm.Rows[0].HasPortrait&&vm.Rows[0].Portrait!.Code==null&&vm.Rows[0].HasAssigneePortrait,"missing offender uses the native empty portrait without replacing it with the pursuer or sorting it below offers");
+ GwpAffairsData.Items.Single(e=>e.Id=="case0").Hero=target;GwpAffairsData.Items.Single(e=>e.Id=="case0").IsOffer=true;
  vm.Rows.First(r=>r.Id=="case3").ExecuteSelect();vm.ExecuteRefresh();Check(vm.Rows.First(r=>r.Id=="case3").IsSelected,"refresh retains selected stable case identity");
  vm.ExecuteHero();Check(closes==0&&Campaign.Current.EncyclopediaManager.Last=="hero"&&vm.Rows.Single(r=>r.IsSelected).Id=="case3","hero encyclopedia overlays the current selection without closing to the map");
  GwpAffairsData.Items.Single(e=>e.Id=="case3").Place=new();vm.ExecuteRefresh();vm.ExecutePlace();Check(closes==0&&Campaign.Current.EncyclopediaManager.Last=="village"&&vm.Rows.Single(r=>r.IsSelected).Id=="case3","settlement encyclopedia keeps the current screen and row too");
  GwpAffairsData.Items.RemoveAll(e=>e.Id=="case3");vm.ExecuteRefresh();Check(vm.Rows[0].IsSelected,"withdrawn selected case picks a valid remaining row");
  PlayerBountyBehavior.Current.Ready=false;Check(!vm.CanAccept,"button eligibility is live after flag removal");vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted==null&&vm.Status.Length>0,"stale acceptance refreshes in place without closing");
- PlayerBountyBehavior.Current.Ready=true;vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted=="case7","selected full-list case reaches authority");Check(vm.Rows.Single().Id=="commission","successful acceptance opens the ongoing personal contract");
+ PlayerBountyBehavior.Current.Ready=true;vm.ExecuteAccept();Check(PlayerBountyBehavior.Current.Accepted=="case0","selected full-list case reaches authority");Check(vm.Rows.Single().Id=="commission","successful acceptance opens the ongoing personal contract");
+ Check(vm.DispatchOptions.Count==2,"commission details contain report and support dispatch actions");
+ GwpWardenDispatchDialogue.Sent.Clear();foreach(var option in vm.DispatchOptions)option.ExecuteSend();Check(GwpWardenDispatchDialogue.Sent.SequenceEqual(new[]{GwpDispatchPurpose.Report,GwpDispatchPurpose.Support}),"commission actions dispatch the actual report and support purposes");closes=0;
+ GwpAffairsData.Items.Add(new("support:active","support","assigned escort"){IsPersonal=true});GwpAffairsData.Items.Add(new("dispatch:report","report","report courier"){DispatchPurpose=GwpDispatchPurpose.Report});GwpAffairsData.Items.Add(new("dispatch:support","support","support courier"){DispatchPurpose=GwpDispatchPurpose.Support});GwpAffairsData.Items.Add(new("dispatch:fief","fief","fief courier"){DispatchPurpose=GwpDispatchPurpose.FiefAppeal});vm.ExecuteRefresh();
+ Check(vm.Rows.Select(r=>r.Id).SequenceEqual(new[]{"commission","support:active","dispatch:report","dispatch:support"}),"commission, actual escort and both case couriers share the case category without fief courier or duplicate commission");
+ vm.Rows.First(r=>r.Id=="dispatch:report").ExecuteSelect();Check(vm.DispatchOptions.Count==0&&!vm.ShowWithdrawCommission,"courier detail cannot dispatch another report or withdraw the commission");vm.ExecuteRefresh();Check(vm.Rows.Single(r=>r.IsSelected).Id=="dispatch:report","refresh retains selected case courier");vm.Rows.First(r=>r.Id=="commission").ExecuteSelect();
+ GwpAffairsData.Items.RemoveAll(e=>e.Id=="support:active"||e.DispatchPurpose.HasValue);vm.ExecuteRefresh();
  Check(!vm.ShowBrowse&&vm.Standing==GwpTextCatalog.gwp_affairs_standing,"accepted commission has no browser shortcut or banner-mechanics explanation");
+ Check(!vm.ShowWithdrawCommission,"free target commission has no exceptional withdrawal");
+ PlayerBountyBehavior.Current.CanWithdrawUnavailableCommission=true;Check(vm.ShowWithdrawCommission,"externally captured commission exposes withdrawal only on current commission");
+ vm.ExecuteWithdrawCommission();Check(PlayerBountyBehavior.Current.Withdrawals==0,"withdrawal waits for explicit confirmation");
+ TaleWorlds.Library.InformationManager.Last.Accept();Check(PlayerBountyBehavior.Current.Withdrawals==1&&vm.ShowBrowse,"confirmed withdrawal releases commission and refreshes current page");
+ Check(vm.Categories.Count==4&&!vm.Categories.Any(c=>c.Id=="report"||c.Id=="support"),"report and support do not duplicate the commission as separate categories");
+ vm.Categories.First(c=>c.Id=="requests").ExecuteSelect();Check(vm.IsEmpty&&vm.EmptyText==GwpTextCatalog.gwp_affairs_fief_empty,"empty fief page explains the existing application entry");
+ GwpAffairsData.Items.Add(new("support:1","support","case escort"){IsPersonal=true});GwpAffairsData.Items.Add(new("mediation:1","peace","faction"){IsPersonal=true});vm.ExecuteRefresh();
+ vm.Categories.First(c=>c.Id=="current").ExecuteSelect();Check(vm.Rows.Single().Id=="support:1"&&vm.DispatchOptions.Count==0,"actual case escort belongs to commission and cannot start an unrelated case dispatch");
+ vm.Categories.First(c=>c.Id=="mediation").ExecuteSelect();Check(vm.Rows.Single().Id=="mediation:1","post-battle peace excludes escort work");
  vm.Tabs[1].ExecuteSelect();Check(vm.Categories.Count==7&&!vm.Categories.Any(c=>c.Id=="other"),"adult offices plus children, no unassigned adult group");
  var warden=new Hero{Name="warden",StringId="warden"};PoliceStats.Clan.Heroes.Add(warden);
  var task=new GwpAffairsEntry("work-case","trade","real current case"){Assignee=warden,WorkSummary="envoy travelling",Summary="PLAYER FEE"};task.Fields.Add("PLAYER FEE AND TARGET STRENGTH");GwpAffairsData.Items.Add(task);
@@ -171,8 +253,12 @@ static void Main(){
  Check(!vm.Sections.Any(s=>s.Title==GwpTextCatalog.gwp_affairs_work),"paused order is not presented as concurrent active work");
  Check(vm.Sections.Single(s=>s.Title==GwpTextCatalog.gwp_affairs_queued_work).Lines.Any(l=>l.Text=="waiting for support"),"paused order has an explicit pending section");
  Check(!vm.ShowBrowse,"member page has no commission shortcut");
- vm.Tabs[4].ExecuteSelect();Check(vm.IsEmpty&&!vm.ShowAccept,"unimplemented player armory cannot manufacture items or commissions");
- Check(!vm.ShowRefresh&&!vm.ShowBrowse,"unimplemented armory has no irrelevant actions");
+ vm.Tabs[4].ExecuteSelect();Check(vm.IsEmpty&&!vm.ShowAccept&&vm.ShowManageArmory,"empty armory offers inventory management without manufacturing stock or commissions");
+ Check(!vm.ShowRefresh&&!vm.ShowBrowse,"armory has no case actions");
+ GwpFireswornBehavior.CanManagePlayerArmory=false;Check(!vm.CanManageArmory,"browsing an Easter egg does not grant armory management");vm.ExecuteManageArmory();Check(GwpFireswornBehavior.Opens==0,"locked armory cannot open native storage");
+ GwpFireswornBehavior.CanManagePlayerArmory=true;vm.ExecuteManageArmory();Check(GwpFireswornBehavior.Opens==1,"armory opens its inventory authority");
+ GwpAffairsData.Armory.Add(new("player-armory:0","armory","Fine sword"){Summary="In stock: 3"});vm.ExecuteRefresh();Check(vm.Rows.Single().Title=="Fine sword"&&!vm.HasHero&&!vm.HasPlace,"armory shows real stock without stale person or settlement actions");
+ var resumed=new GwpAffairsVM(()=>{},4);Check(resumed.CurrentPage==4&&resumed.Rows.Single().Title=="Fine sword"&&resumed.ShowManageArmory,"returning from inventory reopens the armory page with new stock");
  vm.Tabs[3].ExecuteSelect();Check(vm.IsEmpty&&!vm.HasHero&&!vm.HasPlace,"empty congregation has no stale navigation target");
  Console.WriteLine("AFFAIRS_VM_ASSERTIONS="+count);
 }}
@@ -296,6 +382,19 @@ static void Main(){
         for text in root.iter('TextWidget'):
             if text.get('HeightSizePolicy') == 'CoverChildren':
                 self.assertEqual('true', text.get('CanBreakWords'))
+        portraits = list(root.iter('ImageIdentifierWidget'))
+        parents = {child: parent for parent in root.iter() for child in parent}
+        self.assertEqual({'{Portrait}', '{AssigneePortrait}'}, {p.get('DataSource') for p in portraits})
+        for portrait in portraits:
+            frame = parents[parents[portrait]]
+            self.assertEqual('Clan\\portrait_slot_right_panel', frame.get('Sprite'))
+            self.assertAlmostEqual(113 / 84, float(frame.get('SuggestedWidth')) / float(frame.get('SuggestedHeight')))
+            self.assertTrue(all(float(portrait.get('Margin' + side)) > 0 for side in ('Left', 'Right', 'Top', 'Bottom')))
+        row = root.find('.//ListPanel[@Id="AffairList"]//ButtonWidget')
+        self.assertEqual('CoverChildren', row.get('HeightSizePolicy'))
+        row_summary = next(e for e in row.iter('TextWidget') if e.get('Text') == '@Summary')
+        self.assertEqual('CoverChildren', row_summary.get('HeightSizePolicy'))
+        self.assertEqual('@SummaryRightInset', row_summary.get('MarginRight'))
 
 
 if __name__ == '__main__':

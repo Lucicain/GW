@@ -21,36 +21,43 @@ class Equipment {public enum EquipmentType {Battle} readonly EquipmentElement[] 
 class CharacterRegistry:IEnumerable<CharacterObject> {readonly Dictionary<string,CharacterObject> d=new Dictionary<string,CharacterObject>();public CharacterObject this[string id]{get=>d[id];set=>d[id]=value;}public IEnumerator<CharacterObject> GetEnumerator()=>d.Values.GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
 class CharacterObject {public static readonly CharacterRegistry All=new CharacterRegistry();public string StringId;public int Tier,Skill=100;public bool IsHero;public List<Equipment> BattleEquipments=new List<Equipment>();public Equipment FirstBattleEquipment=>BattleEquipments.FirstOrDefault()??new Equipment();public int GetSkillValue(string s)=>Skill;public static CharacterObject Find(string id)=>All[id];}
 struct TroopRosterElement {public CharacterObject Character;public int Number,WoundedNumber;public TroopRosterElement(CharacterObject c){Character=c;Number=WoundedNumber=0;} }
-class TroopRoster {public List<TroopRosterElement> Rows=new List<TroopRosterElement>();public int GetTroopCount(CharacterObject troop)=>Rows.Where(e=>e.Character==troop).Sum(e=>e.Number);public int TotalManCount=>Rows.Sum(e=>e.Number);public IEnumerable<TroopRosterElement> GetTroopRoster()=>Rows.ToList();public void AddToCounts(CharacterObject c,int n){int i=Rows.FindIndex(e=>e.Character==c);var e=i<0?new TroopRosterElement(c):Rows[i];e.Number+=n;if(e.Number<0)throw new Exception("negative troop stock");if(i<0)Rows.Add(e);else Rows[i]=e;}public int Count=>Rows.Count;public CharacterObject GetCharacterAtIndex(int i)=>Rows[i].Character;public int GetElementNumber(int i)=>Rows[i].Number;}
+class TroopRoster {public List<TroopRosterElement> Rows=new List<TroopRosterElement>();public int GetTroopCount(CharacterObject troop)=>Rows.Where(e=>e.Character==troop).Sum(e=>e.Number);public int TotalManCount=>Rows.Sum(e=>e.Number);public IEnumerable<TroopRosterElement> GetTroopRoster()=>Rows.ToList();public void AddToCounts(CharacterObject c,int n){int i=Rows.FindIndex(e=>e.Character==c);var e=i<0?new TroopRosterElement(c):Rows[i];e.Number+=n;if(e.Number<0)throw new Exception("negative troop stock");if(i<0)Rows.Add(e);else Rows[i]=e;}public static TroopRoster CreateDummyTroopRoster()=>new TroopRoster();public int Count=>Rows.Count;public CharacterObject GetCharacterAtIndex(int i)=>Rows[i].Character;public int GetElementNumber(int i)=>Rows[i].Number;}
 class ItemRosterElement {public EquipmentElement EquipmentElement;public int Amount;}
 class ItemRoster:IEnumerable<ItemRosterElement> {readonly List<ItemRosterElement> rows=new List<ItemRosterElement>();public int VersionNo;public int Count=>rows.Count;public int Total=>rows.Sum(e=>e.Amount);public int TotalValue=>Total;public void AddToCounts(EquipmentElement item,int n){var e=rows.FirstOrDefault(e=>e.EquipmentElement.Equals(item));if(e==null){e=new ItemRosterElement{EquipmentElement=item};rows.Add(e);}e.Amount+=n;if(e.Amount<0)throw new Exception("negative equipment stock");if(e.Amount==0)rows.Remove(e);VersionNo++;}public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Add(ItemRoster other){foreach(var e in other)AddToCounts(e.EquipmentElement,e.Amount);}public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();}
-class PartyBase {public static PartyBase MainParty=new PartyBase();public string Id;public string Name=>Id;public ItemRoster ItemRoster=new ItemRoster();}
-class MobileParty {public string StringId;public bool IsLordParty=true,IsVillager;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
-class Hero {public MobileParty PartyBelongedTo;public bool IsPriest;}
-class Settlement {public string StringId;}
+class PartyBase {public MapEventSide MapEventSide;public MobileParty MobileParty;public static PartyBase MainParty=new PartyBase();public string Id;public string Name=>Id;public ItemRoster ItemRoster=new ItemRoster();}
+struct Point {public float Distance(Point p)=>0;}
+class MobileParty {public static List<MobileParty> All=new();public MobileParty(){All.Add(this);}public Point GetPosition2D=>default;public int PartyTradeGold;public Hero LeaderHero;public MapEvent MapEvent;public bool IsActive=true,IsMainParty;public PartyBase Party=new();private string sid;public string StringId{get=>sid;set{sid=value;Party.Id=value;Party.MobileParty=this;}}public bool IsLordParty=true,IsVillager;public TroopRoster MemberRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();}
+class Hero {public static Hero MainHero=new();public static Dictionary<string,Hero> All=new();public static Hero Find(string id)=>All.TryGetValue(id,out var h)?h:null;public string StringId;public bool IsPrisoner;public MobileParty PartyBelongedTo;public bool IsPriest;}
+class Settlement {public Point GetPosition2D=>default;public string StringId;}
+class FaithParty {public string Kind,HomeId,Phase,TargetId;}
 class FaithVillage {public string VillageId;}
 static class GwpWardenRecruitment {public static bool IsWardenParty(MobileParty party)=>true;}
-class MapEventParty {public PartyBase Party;public TroopRoster DiedInBattle=new TroopRoster();}
+struct UniqueTroopDescriptor {public int UniqueSeed;}
+class FlattenedTroopRosterElement {public CharacterObject Troop;public UniqueTroopDescriptor Descriptor;public bool IsKilled,IsWounded,IsRouted;}
+class MapEventParty {public PartyBase Party;public TroopRoster DiedInBattle=new TroopRoster();public List<FlattenedTroopRosterElement> Troops=new List<FlattenedTroopRosterElement>();}
 class MapEventSide {public List<MapEventParty> Parties=new List<MapEventParty>();public PartyBase LeaderParty;}
 enum BattleState {None,AttackerVictory,DefenderVictory}
-class MapEvent {public BattleState BattleState=BattleState.AttackerVictory;public int DefeatedSide=0,WinningSide=1;public string EventType="battle";public MapEventSide Loser=new MapEventSide(),Winner=new MapEventSide();public MapEventSide GetMapEventSide(int side)=>side==0?Loser:Winner;}
-static class MBRandom {public static float RandomFloat=>0.2f;}
+class MapEvent {public bool EndedByRetreat;public MapEventSide AttackerSide=>Loser;public MapEventSide DefenderSide=>Winner;public BattleState BattleState=BattleState.AttackerVictory;public int DefeatedSide=0,WinningSide=1;public string EventType="battle";public MapEventSide Loser=new MapEventSide(),Winner=new MapEventSide();public MapEventSide GetMapEventSide(int side)=>side==0?Loser:Winner;}
+static class MBRandom {public static float Value=.2f;public static float RandomFloat=>Value;}
 static class GwpIds {public const string NewRecruitId="gwnewrecruit",ZealotId="gwzealot";}
 static class GwpCommon {public static bool IsGreyWardenTroop(CharacterObject t)=>t.StringId.StartsWith("gw");}
 static class GwpTuning {public static class Firesworn {public const float ArmoryLossLootShare=.33f;}}
 static class GwpAiDiagnostics {public static void WriteFaith(string a,string b){} }
 partial class Regression {
 static bool IsFaithVillager(MobileParty p)=>p?.IsVillager==true;
+readonly Dictionary<string,FaithParty> _faithParties=new();readonly Dictionary<string,ItemRoster> _marketCargo=new();
+IEnumerable<Settlement> FaithVillages()=>_villages.Values.Select(v=>new Settlement{StringId=v.VillageId});
 readonly Dictionary<string,FaithVillage> _villages=new Dictionary<string,FaithVillage>();
 TroopRoster GuardOf(string id)=>rosters[id];static bool IsFireswornPriest(Hero hero)=>hero?.IsPriest==true;void PushGuard(FaithVillage row,Settlement village){}void ReconcilePriestSlots(FaithVillage row){}static void RecordVisit(MobileParty p,Settlement v,int recruits){}
 static Regression _instance;readonly Dictionary<string,int> _issuedThisMission=new Dictionary<string,int>();Mission _issuedMission;
 const int KitHead=0,KitBody=1,KitLeg=2,KitGloves=3,KitMain=4,KitShield=5,KitThrow=6,KitRanged=7,KitAmmo=8,KitSlots=9,WeaponSlots=4;
 readonly Dictionary<string,ArmoryPlan> _plans=new Dictionary<string,ArmoryPlan>();readonly Dictionary<string,ItemRoster> _armories=new Dictionary<string,ItemRoster>();readonly Dictionary<string,TroopRoster> rosters=new Dictionary<string,TroopRoster>();
 static ItemRoster ItemsOf(Dictionary<string,ItemRoster> d,string key){if(!d.ContainsKey(key))d[key]=new ItemRoster();return d[key];}
+static int CountItems(ItemRoster roster)=>roster.Total;
 static float Strength(EquipmentElement e)=>e.Item.Power+e.Quality;
 string HolderOf(PartyBase p)=>p.Id;
 static bool UsableMounted(ItemObject i)=>!i.NoMount;
-readonly Dictionary<string,ItemRoster> _goods=new Dictionary<string,ItemRoster>();readonly Dictionary<string,MobileParty> parties=new Dictionary<string,MobileParty>();MobileParty FindParty(string id)=>parties.TryGetValue(id,out var p)?p:null;
+readonly Dictionary<string,ItemRoster> _goods=new Dictionary<string,ItemRoster>();readonly Dictionary<string,MobileParty> parties=new Dictionary<string,MobileParty>();static MobileParty FindParty(string id)=>MobileParty.All.LastOrDefault(p=>p.StringId==id);
 readonly HashSet<string> battleHolders=new HashSet<string>();bool HolderInBattle(string id)=>battleHolders.Contains(id);
 ArmoryPlan BuildPlanFor(string id)=>PlanForCounts(id,ItemsOf(_armories,id),ArmoryTroops(rosters[id],IsFaithVillager(FindParty(id))),0,IsFaithVillager(FindParty(id)));
 __PRODUCTION__
@@ -97,7 +104,43 @@ public static int Main(){
  // Actual troop-specific transfers carry only library additions, not native items.
  b=new Regression();b.rosters["v"]=new TroopRoster();b.rosters["v"].AddToCounts(top,2);b.rosters["p"]=new TroopRoster();ItemsOf(b._armories,"v").AddToCounts(best,2);Check(b.MoveBestSets("v","p",top,1)==1,"high tier carries allocated equipment on recruitment");Check(ItemsOf(b._armories,"v").Total==1&&ItemsOf(b._armories,"p").Total==1,"recruit equipment transfer conserves both ledgers");Check(!b._plans.ContainsKey("v")&&!b._plans.ContainsKey("p"),"recruit transfer invalidates both plans");
  b=new Regression();var escort=new MobileParty{StringId="p"};escort.MemberRoster.AddToCounts(top,1);escort.MemberRoster.AddToCounts(recruit,1);ItemsOf(b._armories,"v").AddToCounts(best,1);ItemsOf(b._armories,"v").AddToCounts(second,1);Check(b.TakeBestSets("v",escort)==2&&b.TakeBestSets("v",escort)==0,"mixed high-low outgoing party carries chosen kits without duplicate draws");
- b=new Regression();b.rosters["dead"]=new TroopRoster();b.rosters["dead"].AddToCounts(top,1);b.rosters["dead"].AddToCounts(recruit,1);ItemsOf(b._armories,"dead").AddToCounts(best,1);ItemsOf(b._armories,"dead").AddToCounts(second,1);b.BuildPlanFor("dead");var battle=new MapEvent();var defeated=new MapEventParty{Party=new PartyBase{Id="dead"}};defeated.DiedInBattle.AddToCounts(top,1);battle.Loser.Parties.Add(defeated);battle.Winner.LeaderParty=new PartyBase{Id="winner"};b.SettleBattleLosses(battle);Check(ItemsOf(b._armories,"dead").Total==1&&ItemsOf(b._armories,"dead").Single().EquipmentElement.Equals(second),"high-tier death removes its own allocated kit and preserves recruit kit");Check(battle.Winner.LeaderParty.ItemRoster.Single().EquipmentElement.Equals(best),"winner receives actual lost item including quality");Check(!b._plans.ContainsKey("dead"),"defeat invalidates plan");
+ // Same troop, different qualities: issue in reverse spawn order, then lose only the fallen man's exact kit.
+ b=new Regression();_instance=b;var battle=new MapEvent{EndedByRetreat=true};var pbdead=new PartyBase{Id="dead",MapEventSide=battle.Loser};
+ var defeated=new MapEventParty{Party=pbdead};battle.Loser.Parties.Add(defeated);battle.Winner.LeaderParty=new PartyBase{Id="winner"};
+ var alive=new FlattenedTroopRosterElement{Troop=top,Descriptor=new UniqueTroopDescriptor{UniqueSeed=1},IsRouted=true};
+ var fallen=new FlattenedTroopRosterElement{Troop=top,Descriptor=new UniqueTroopDescriptor{UniqueSeed=2},IsKilled=true};
+ defeated.Troops.Add(fallen);defeated.Troops.Add(alive);ItemsOf(b._armories,"dead").AddToCounts(best,1);ItemsOf(b._armories,"dead").AddToCounts(second,1);ItemsOf(b._armories,"dead").AddToCounts(third,1);
+ var fallenGear=TakeKitForAgent(pbdead,top,2);Check(fallenGear[5].Equals(second),"actual spawn binds quality to unique troop seed rather than spawn order");
+ Check(TakeKitForAgent(pbdead,top,1)[5].Equals(best),"survivor has the best kit");
+ Check(ItemsOf(b._armories,"dead").Total==3,"a death alone never deducts stock");
+ Mission.Current=new Mission();Check(TakeKitForAgent(pbdead,top,2)[5].Equals(second),"same map battle re-entry preserves the soldier kit");
+ b._battleLoadouts.Clear();Check(TakeKitForAgent(pbdead,top,2)[5].Equals(second),"loadout reconstructs from saved flattened roster including casualties");
+ b.SettleBattleLosses(battle);Check(ItemsOf(b._armories,"dead").Total==2&&ItemsOf(b._armories,"dead").Any(e=>e.EquipmentElement.Equals(best))&&ItemsOf(b._armories,"dead").Any(e=>e.EquipmentElement.Equals(third)),"defeat removes fallen actual kit, preserving escaped soldier and reserve");
+ Check(battle.Winner.LeaderParty.ItemRoster.Single().EquipmentElement.Equals(second),"winner receives actual lost item and quality");Check(b._battleLoadouts.Count==0,"battle cleanup releases per-soldier mapping");
+ // Destruction runs after MapEventEnded: a leaderless party cannot deliver or respawn its fallen kits.
+ var destroyed=new MobileParty{StringId="dead"};b._faithParties["dead"]=new FaithParty();b._marketCargo["dead"]=new ItemRoster();
+ int winnerBefore=battle.Winner.LeaderParty.ItemRoster.Total;b.OnPartyGone(destroyed,battle.Winner.LeaderParty);
+ Check(!b._armories.ContainsKey("dead")&&!b._faithParties.ContainsKey("dead")&&!b._marketCargo.ContainsKey("dead"),"leaderless destruction removes its ledger and delivery tracking");
+ Check(battle.Winner.LeaderParty.ItemRoster.Total==winnerBefore+2,"destruction transfers only leftover ledger, without duplicating battle losses");
+ // Lord reserves follow the person, not the defeated army or a village.
+ b=new Regression();var owner=new Hero{StringId="warden"};Hero.All[owner.StringId]=owner;var oldParty=new MobileParty{StringId="oldparty",LeaderHero=owner};owner.PartyBelongedTo=oldParty;
+ ItemsOf(b._armories,"oldparty").AddToCounts(best,2);string ownerId=b.BindLordArmory(oldParty);
+ Check(ownerId=="hero:warden"&&!b._armories.ContainsKey("oldparty")&&ItemsOf(b._armories,ownerId).Total==2,"old party ledger migrates to hero ownership without copying");
+ b.OnPartyGone(oldParty,null);oldParty.IsActive=false;owner.PartyBelongedTo=null;
+ Check(ItemsOf(b._armories,ownerId).Total==2&&FindArmoryParty(ownerId)==null,"lord defeat retains dormant personal stock and never teleports to village");
+ var newParty=new MobileParty{StringId="newparty",LeaderHero=owner};owner.PartyBelongedTo=newParty;
+ Check(b.BindLordArmory(newParty)==ownerId&&FindArmoryParty(ownerId)==newParty&&ItemsOf(b._armories,ownerId).Total==2,"same lord with new party continues same armory");
+ b.BindLordArmory(newParty);Check(ItemsOf(b._armories,ownerId).Total==2,"repeated binding cannot duplicate personal stock");
+ // Unissued leaderless stock uses the same 33% chance, rather than guaranteed seizure.
+ b=new Regression();b._faithParties["wiped"]=new FaithParty();ItemsOf(b._armories,"wiped").AddToCounts(best,4);var captor=new PartyBase();MBRandom.Value=.8f;
+ b.OnPartyGone(new MobileParty{StringId="wiped"},captor);Check(!b._armories.ContainsKey("wiped")&&captor.ItemRoster.Total==0,"failed 33 percent rolls destroy leaderless surplus rather than awarding all of it");MBRandom.Value=.2f;
+ // Defeat includes knocked-out/captured soldiers; no death count needed. Full victory preserves even fallen kit.
+ b=new Regression();battle=new MapEvent();pbdead=new PartyBase{Id="lost",MapEventSide=battle.Loser};defeated=new MapEventParty{Party=pbdead};battle.Loser.Parties.Add(defeated);
+ defeated.Troops.Add(new FlattenedTroopRosterElement{Troop=top,Descriptor=new UniqueTroopDescriptor{UniqueSeed=1},IsWounded=true});
+ defeated.Troops.Add(new FlattenedTroopRosterElement{Troop=top,Descriptor=new UniqueTroopDescriptor{UniqueSeed=2}});
+ ItemsOf(b._armories,"lost").AddToCounts(best,3);b.SettleBattleLosses(battle);Check(ItemsOf(b._armories,"lost").Total==1,"total defeat loses wounded and captured kits, leaving unissued reserve");
+ b=new Regression();battle=new MapEvent();pbdead=new PartyBase{Id="won",MapEventSide=battle.Winner};defeated=new MapEventParty{Party=pbdead};battle.Winner.Parties.Add(defeated);defeated.Troops.Add(fallen);ItemsOf(b._armories,"won").AddToCounts(second,1);
+ b.BattleLoadoutFor("won",defeated);b.SettleBattleLosses(battle);Check(ItemsOf(b._armories,"won").Total==1&&b._battleLoadouts.Count==0,"winner recovers fallen kits and clears battle cache");
  b=new Regression();_instance=b;b.rosters["spawn"]=new TroopRoster();b.rosters["spawn"].AddToCounts(top,2);ItemsOf(b._armories,"spawn").AddToCounts(best,1);ItemsOf(b._armories,"spawn").AddToCounts(second,1);var pb=new PartyBase{Id="spawn"};
  var first=TakeKitForAgent(pb,top);var another=TakeKitForAgent(pb,top);Check(first[5].Equals(best)&&another[5].Equals(second),"actual spawn API issues troop-specific kits in allocation order");Check(TakeKitForAgent(pb,top)==null,"actual spawn API cannot issue more kits than allocated soldiers");
  first[0]=default;Mission.Current=new Mission();Check(TakeKitForAgent(pb,top)[0].Equals(sword),"new mission restarts issuance and caller cannot mutate cached equipment");
@@ -136,6 +179,19 @@ public static int Main(){
  var rider=Troop("gwrider",6,Gear((0,sword),(6,body),(10,horse)));var walker=Troop("gwwalker",6,Gear((0,sword),(6,body)));
  stock=Stock((longbow,1),(shortbow,1),(arrows,2));plan=BuildPlan(stock,Troops((rider,1),(walker,1)),0);
  Check(For(plan,rider)[KitRanged].Equals(shortbow)&&For(plan,walker)[KitRanged].Equals(longbow),"mounted kit skips a no-mount bow even though it is stronger; the foot soldier takes it");
+ // 已有主武器不遮蔽护甲/品质需求；按200:10的人数而非平分件数。
+ var goodArmor=Item("balance_good",ItemObject.ItemTypeEnum.BodyArmor,100);var poorArmor=Item("balance_poor",ItemObject.ItemTypeEnum.BodyArmor,1);
+ var homeBalance=Stock((goodArmor,200));var targetBalance=Stock((poorArmor,10));
+ var manifest=BalancedArmoryCargo(homeBalance,targetBalance,200,10,200,10);
+ Check(manifest.Total>0&&manifest.Total<=10,"quality balance repairs full but inferior armour without splitting stock equally");
+ Check(homeBalance.Total==200&&targetBalance.Total==10,"planning never mutates either real inventory");
+ Check(BalancedArmoryCargo(Stock((goodArmor,200)),Stock((goodArmor,10)),200,10,200,10).Total==0,"equal per-person quality causes no shipment");
+ manifest=BalancedArmoryCargo(Stock((goodArmor,200)),new ItemRoster(),200,10,200,10);
+ Check(manifest.Total>0&&manifest.Total<=10,"empty small village receives proportionate useful amount");
+ Check(BalancedArmoryCargo(Stock((poorArmor,200)),Stock((goodArmor,10)),200,10,200,10).Total==0,"poor village does not send inferior equipment to rich village");
+ Check(BalancedArmoryCargo(homeBalance,new ItemRoster(),200,10,200,0).Total==0,"zero receiving capacity cannot consume cargo");
+ var qualityArmor=new EquipmentElement{Item=goodArmor.Item,Quality=10};manifest=BalancedArmoryCargo(Stock((qualityArmor,20)),Stock((poorArmor,20)),20,20,20,20);
+ Check(manifest.All(e=>e.EquipmentElement.Equals(qualityArmor)),"balance preserves actual quality modifiers");
  Console.WriteLine("ARMORY_ALLOCATION_ASSERTIONS="+checks+"; PASS");return 0;
 }
 }
@@ -148,8 +204,17 @@ class ArmoryAllocationTests(unittest.TestCase):
         brace = source.index("{", start)
         end = hygiene.match_brace(source, hygiene.code_mask(source), brace)
         production = source[brace + 1:end]
+        battle_source = (ROOT / "GreyWardenPolicePurity/GwpArmoryBattle.cs").read_text(encoding="utf-8-sig")
+        battle_start = battle_source.index("{", battle_source.index("public sealed partial class"))
+        battle_end = hygiene.match_brace(battle_source, hygiene.code_mask(battle_source), battle_start)
+        production += battle_source[battle_start + 1:battle_end]
+        owner = (ROOT / "GreyWardenPolicePurity/GwpArmoryOwnership.cs").read_text(encoding="utf-8-sig")
+        owner_start = owner.index("{", owner.index("public sealed partial class"))
+        owner_end = hygiene.match_brace(owner, hygiene.code_mask(owner), owner_start)
+        production += owner[owner_start + 1:owner_end]
+        production += extract("GwpArmoryBalance.cs", ("BalancedArmoryCargo",))
         production += extract("GwpFireswornBehavior.cs", ("OnTroopRecruited",))
-        production += extract("GwpFireswornArmory.cs", ("Take", "KitKind", "Tiers", "MoveBestSets", "TakeBestSets", "MoveAll", "SettleBattleLosses", "PlanOf", "Store", "DonateArmorySurplus", "RebalanceArmories", "RefreshArmoryPlans"))
+        production += extract("GwpFireswornArmory.cs", ("Take", "KitKind", "Tiers", "MoveBestSets", "TakeBestSets", "MoveAll", "PackUnusedPartyArmory", "OnPartyGone", "PlanOf", "Store", "DonateArmorySurplus", "RebalanceArmories", "RefreshArmoryPlans"))
         armory = (ROOT / "GreyWardenPolicePurity/GwpFireswornArmory.cs").read_text(encoding="utf-8-sig")
         for name in ("TakeKitForAgent", "TryGetArmoryTiers"):
             match = re.search(r"internal static [^\n]+\b" + name + r"\([^)]*\)\s*\{", armory)

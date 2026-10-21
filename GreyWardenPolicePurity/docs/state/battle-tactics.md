@@ -48,12 +48,12 @@
 
 | 候选 | 处置 |
 |---|---|
-| `GwpChokePointEligibilityPatch`（按预计盾墙覆盖宽度额外核对隘口资格） | 已从生产源码删除，未建立提交 |
-| `GwpChokePointPolicy.cs` + `GwpChokePointFormationPatch.cs` | 停放在 `.codex_tmp/choke-spacing-candidate-not-deployed-20260921/`，从未部署，不是稳定回滚点 |
+| 隘口资格补丁（按预计盾墙覆盖宽度额外核对隘口资格） | 已从生产源码删除，未建立提交 |
+| 隘口间距策略与编队补丁 | 停放在 `.codex_tmp/choke-spacing-candidate-not-deployed-20260921/`，从未部署，不是稳定回滚点 |
 
 ## 监控（已退休）
 
-调查用的 `GwpBattleCommandTrace` 及双刀 AI 里的记录调用、测试桩已删除，日志中相关记录已清除。
+调查用的战场编队采样及双刀 AI 里的记录调用、测试桩已删除，日志中相关记录已清除。
 `417a17b` 版可从 Git 取回；此后工作树追加的零射程、闲置近战、换武器计数监控从未提交，
 需要时按本文件描述重写。
 

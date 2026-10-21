@@ -40,10 +40,7 @@ namespace GreyWardenPolicePurity
 
         internal void ExecuteOpenCaseArchive()
         {
-            if (IsVisible && GwpCaseArchiveScreen.CanOpen) GwpCaseArchiveScreen.Show();
-            else if (IsVisible) InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get(GwpTextCatalog.gwp_affairs_standing_gate,
-                    "STANDING", GwpTuning.Bounty.RecruitmentReputationThreshold)));
+            if (IsVisible) GwpCaseArchiveScreen.ShowFromClanPage();
         }
     }
 

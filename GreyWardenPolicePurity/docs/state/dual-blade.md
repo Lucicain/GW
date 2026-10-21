@@ -1,9 +1,8 @@
 # 双刀 AI 与踢/盾击互斥
 
-> 当前状态：双刀和踢击旧规则已验收；普通盾的领主身份扩展见 lord-combat.md
+> 当前状态：双刀和踢击旧规则已验收；发射与击杀成长已扩展，规则见combat-growth.md
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs` `tools/DualBladeTests/**`
-> 已复核至：`4f31993`（2026-10-16）
 > 待实测：无
 
 ## 已修复的崩溃
@@ -80,10 +79,6 @@ seq4408/t112.276  仍空副手盾击
 - 已删除：开火命令跟踪（`TrackFiringOrder`、`RangedRequested`、`RangedWieldPending`）、
   "近战结束恢复开火"、NPC 副刀的 `HasHitPoints | CanBlockRanged` 与 500 耐久。
 - 不要放行双刀在手时的单独收副手：放行后若原版仍选近战，就会收了又补——2026-09 的 384 次补刀循环。（依据：C++反汇编 2026-09-24——原版副手规则每次决策都会收掉不带 `CanBlockRanged` 的副手，方案 B 下副刀正是这种；实机诊断 2026-09 的 384 次循环。方案 B 之后这条从经验变成了结构上必需）
-- 回退：改动都在工作树、未提交：`GwpDualBladeAiBehavior.cs`、`GwpDualBladeActionGate.cs`、
-  `GwpDualBladeItemSetup.cs`（原 `GwpDualBladeNpcItemSetup.cs`）、`GwpAgentStatCalculateModel.cs`、
-  `GwpDualBladeActionSetPatch.cs`、`GwpAgentApplyDamageModel.cs`、`SubModule.cs`、`GwpIds.cs`、
-  `_Module/ModuleData/items.xml`、`_Module/ModuleData/spnpccharacters.xml`、`tools/DualBladeTests/*`。
   切换机制确认可用的版本 live DLL `CBBD71FC…`（尚未合并副刀、未减半击倒）；更早 `828ACAD5…`、`67CC0785…`；
   已验收基线 `99f9426`。
 
@@ -118,19 +113,7 @@ seq4408/t112.276  仍空副手盾击
   - 只管踢和盾击。双刀挥砍、刺击的击倒 2026-09-25 起由武器词条给出：主刀、副刀固定 40%，谁拿都一样，
     另有打下马 12.5%、被武器招架时破防 25%（见 [troop-combat.md](troop-combat.md)「武器词条」）。
     此前是这一档 × 0.5（`DualBladeKnockdownScale`，已删）。
-- **越打越强**（`GwpAlternativeAttackControlBehavior`，只在本场战斗有效）：
-  - 踢或盾击**命中**一次，单手与运动 +50；每射一箭，弓术 +10。两条线各自累计上限 500（`MaxMasteryBonus`）。
-  - 灰袍领主（身份见 [lord-combat.md](lord-combat.md)）每杀死或打晕一个敌人再 +50：箭（原版 `WeaponClass.Arrow`）击杀记弓术，近战、投掷、弩矢、所骑坐骑冲撞记单手与运动；普通灰袍兵不记，友军和溃逃不算。记分点 `OnAgentRemoved`。锁血期间每一笔都乘 1.5，见 lord-combat。（依据：用户裁定 2026-10-16）
-  - 成长先检查射手/攻击者的灰袍身份；弓成长再查实际发射武器RelevantSkill是Bow，不要求灰袍弓或灰袍穿刺箭，弩不走弓成长。最终有效技能至多1000。（依据：OnAgentShootMissile/OnAgentHit、ApplyBattleMastery源码复核2026-10-16）
-  - 原生踢/盾击未命中时，接受动作后观察0.55秒，对开始时2米内最近的非玩家、下马敌人补一次1伤害控制接触，同样按击倒概率判；没有第二次叠加原生命中。候选排除主玩家，不能把此补控说成对玩家也自动命中。（依据：AlternativeAttackControl/Behavior源码复核2026-10-16）
-  - 记分点：`OnAgentHit` 里有伤害的替代攻击命中。引擎每次命中只发一次；原生没踢中时模组补的 1 点
-    补打也经过这里，两者互斥。弓术记在 `OnAgentShootMissile`，每箭一次。
-  - 生效点：只有 `GwpBattleMasteryEffectiveSkillPatch`，它是基类 `AgentStatCalculateModel.GetEffectiveSkill`
-    （读原始技能值）上的单一后置补丁。所有模型链（Sandbox、Naval、自定义战斗、本模组外壳）都恰好经过它一次。
-  - 2026-09-24 根治了两处重复：
-    - 加成曾在 AI 每帧重复的踢击输入上记；
-    - 曾同时补丁 Sandbox、Naval 与外壳，一次读取加两到三次。
-    没有用锁或去重。2026-09-03 带深度守卫、上升沿锁的旧修复已回退，不要恢复。（依据：C#反编译 2026-09-24：各模型链都恰好只经过一次 `GetEffectiveSkill` 后置补丁）
+- **越打越强**：逐人、按技能的本场临时成长，发射/击杀及原版限幅边界统一见[战斗成长](combat-growth.md)。
 - **盾被动覆盖**（`GwpPassiveHeldShieldCollision`；灰袍大盾以及[灰袍领主持用的普通盾](lord-combat.md)）：
   - 手持盾未举起时，打到实际盾形状（正面 × 1.3、厚度 × 1.2）的近战也算格挡。
   - 灰袍踢或盾击动作中，任何近战身体命中都由盾挡下；普通盾仅对灰袍领主扩展。
@@ -194,10 +177,9 @@ seq4408/t112.276  仍空副手盾击
 
 踱步调查 2026-09-23 结案：模组没有卡弓（两场 `gripBlock` 0 次、`modRedraw` 2 次），
 射手停火拔刀、拿刀时逐人射程为 0 都是原版通则，详见 [`battle-tactics.md`](battle-tactics.md)。
-为该调查加进双刀 AI 的 `NoteGripBlock` / `NoteWeaponEvent` / `NoteNativeWeaponInput`
-调用已随 `GwpBattleCommandTrace` 一起删除。
+为该调查加进双刀 AI 的 `NoteGripBlock` / `NoteWeaponEvent` / `NoteNativeWeaponInput` 调用已随战场编队采样一起删除。
 
-接触监控（`GwpArcherContactTrace` 及其两类 Harmony 补丁）已随验收**退休删除**。
+接触监控及其两类 Harmony 补丁已随验收**退休删除**。
 `GwpDualBladeActionGate` 仅保留 `alternative && !paired` 的异常分支，标签
 `DUAL_BLADE_INVALID_ACTION`，不再记录正常拦截。
 

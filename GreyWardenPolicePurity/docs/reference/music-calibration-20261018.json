@@ -1,0 +1,316 @@
+{
+  "method": "EBU R128 integrated loudness, FFmpeg loudnorm input_i; median of installed Battle_/Siege_ source tracks",
+  "game": "D:\\steam\\steamapps\\common\\Mount & Blade II Bannerlord",
+  "source": {
+    "file": "gwp-music-calibration-20261018.f32",
+    "integrated_lufs": -23.56,
+    "true_peak_dbfs": -5.18
+  },
+  "native_track_count": 52,
+  "native_source_median_lufs": -13.295,
+  "native_music_static_gain_db": -9.0,
+  "content_compensation_db": 10.26,
+  "output_gain_db": 1.26,
+  "reference_output_lufs": -22.3,
+  "music_route": [
+    {
+      "guid": "12224304-4c5a-476b-bc28-b3dc2832b327",
+      "path": "12224304-4c5a-476b-bc28-b3dc2832b327",
+      "fader_db": 0.0,
+      "effects": []
+    },
+    {
+      "guid": "e7df1c3f-daf9-4434-a079-0dedd53eb0f5",
+      "path": "bus:/Music/music/gamemusic",
+      "fader_db": 0.0,
+      "effects": []
+    },
+    {
+      "guid": "74ee7440-95ae-493c-ac3f-06686d248ce5",
+      "path": "bus:/Music/music",
+      "fader_db": 0.0,
+      "effects": [
+        {
+          "guid": "0f70651a-7c75-4a3b-84fe-ef00ed2e563e",
+          "type": "FMOD_DSP_TYPE_FADER",
+          "gain_db": -9.0
+        }
+      ]
+    },
+    {
+      "guid": "f436edaf-978e-4fe0-86d3-07cc11d9248d",
+      "path": "port:/Music",
+      "fader_db": 0.0,
+      "effects": []
+    }
+  ],
+  "native_tracks": [
+    {
+      "file": "Battle_Defeated.ogg",
+      "integrated_lufs": -12.78,
+      "true_peak_dbfs": -0.87
+    },
+    {
+      "file": "Battle_Medium_01.ogg",
+      "integrated_lufs": -23.87,
+      "true_peak_dbfs": -10.01
+    },
+    {
+      "file": "Battle_Medium_02.ogg",
+      "integrated_lufs": -20.95,
+      "true_peak_dbfs": -7.79
+    },
+    {
+      "file": "Battle_Medium_03.ogg",
+      "integrated_lufs": -18.28,
+      "true_peak_dbfs": -4.34
+    },
+    {
+      "file": "Battle_Medium_04.ogg",
+      "integrated_lufs": -16.41,
+      "true_peak_dbfs": -2.25
+    },
+    {
+      "file": "Battle_Medium_05.ogg",
+      "integrated_lufs": -12.95,
+      "true_peak_dbfs": -1.85
+    },
+    {
+      "file": "Battle_Medium_06.ogg",
+      "integrated_lufs": -12.99,
+      "true_peak_dbfs": -2.28
+    },
+    {
+      "file": "Battle_Medium_07.ogg",
+      "integrated_lufs": -12.93,
+      "true_peak_dbfs": -1.7
+    },
+    {
+      "file": "Battle_Medium_08.ogg",
+      "integrated_lufs": -13.73,
+      "true_peak_dbfs": -1.81
+    },
+    {
+      "file": "Battle_Medium_09.ogg",
+      "integrated_lufs": -12.45,
+      "true_peak_dbfs": -1.6
+    },
+    {
+      "file": "Battle_Medium_10.ogg",
+      "integrated_lufs": -11.48,
+      "true_peak_dbfs": -1.34
+    },
+    {
+      "file": "Battle_Medium_11.ogg",
+      "integrated_lufs": -12.28,
+      "true_peak_dbfs": -1.71
+    },
+    {
+      "file": "Battle_Medium_12.ogg",
+      "integrated_lufs": -10.88,
+      "true_peak_dbfs": -1.65
+    },
+    {
+      "file": "Battle_Medium_13.ogg",
+      "integrated_lufs": -10.21,
+      "true_peak_dbfs": -1.62
+    },
+    {
+      "file": "Battle_Medium_14.ogg",
+      "integrated_lufs": -17.51,
+      "true_peak_dbfs": -3.59
+    },
+    {
+      "file": "Battle_Medium_15.ogg",
+      "integrated_lufs": -15.75,
+      "true_peak_dbfs": -1.93
+    },
+    {
+      "file": "Battle_Medium_16.ogg",
+      "integrated_lufs": -13.2,
+      "true_peak_dbfs": -1.83
+    },
+    {
+      "file": "Battle_Medium_17.ogg",
+      "integrated_lufs": -14.87,
+      "true_peak_dbfs": -1.74
+    },
+    {
+      "file": "Battle_Medium_18.ogg",
+      "integrated_lufs": -12.2,
+      "true_peak_dbfs": -1.74
+    },
+    {
+      "file": "Battle_Medium_19.ogg",
+      "integrated_lufs": -10.74,
+      "true_peak_dbfs": -2.0
+    },
+    {
+      "file": "Battle_Medium_20.ogg",
+      "integrated_lufs": -11.58,
+      "true_peak_dbfs": -1.69
+    },
+    {
+      "file": "Battle_Medium_21.ogg",
+      "integrated_lufs": -10.18,
+      "true_peak_dbfs": -1.7
+    },
+    {
+      "file": "Battle_Medium_22.ogg",
+      "integrated_lufs": -13.29,
+      "true_peak_dbfs": -1.94
+    },
+    {
+      "file": "Battle_Medium_23.ogg",
+      "integrated_lufs": -10.6,
+      "true_peak_dbfs": -1.7
+    },
+    {
+      "file": "Battle_Medium_24.ogg",
+      "integrated_lufs": -12.05,
+      "true_peak_dbfs": -1.73
+    },
+    {
+      "file": "Battle_Medium_25.ogg",
+      "integrated_lufs": -11.14,
+      "true_peak_dbfs": -1.66
+    },
+    {
+      "file": "Battle_Medium_26.ogg",
+      "integrated_lufs": -11.29,
+      "true_peak_dbfs": -1.48
+    },
+    {
+      "file": "Battle_Medium_27.ogg",
+      "integrated_lufs": -14.62,
+      "true_peak_dbfs": -2.68
+    },
+    {
+      "file": "Battle_Medium_28.ogg",
+      "integrated_lufs": -23.59,
+      "true_peak_dbfs": -7.74
+    },
+    {
+      "file": "Battle_Negative_Event-01.ogg",
+      "integrated_lufs": -13.49,
+      "true_peak_dbfs": -2.94
+    },
+    {
+      "file": "Battle_Negative_Event-02.ogg",
+      "integrated_lufs": -14.39,
+      "true_peak_dbfs": -3.36
+    },
+    {
+      "file": "Battle_Negative_Event-03.ogg",
+      "integrated_lufs": -12.93,
+      "true_peak_dbfs": -2.9
+    },
+    {
+      "file": "Battle_Positive_Event-01.ogg",
+      "integrated_lufs": -13.63,
+      "true_peak_dbfs": -2.77
+    },
+    {
+      "file": "Battle_Positive_Event-02.ogg",
+      "integrated_lufs": -13.3,
+      "true_peak_dbfs": -2.99
+    },
+    {
+      "file": "Battle_Positive_Event-03.ogg",
+      "integrated_lufs": -13.48,
+      "true_peak_dbfs": -2.86
+    },
+    {
+      "file": "Siege_01.ogg",
+      "integrated_lufs": -14.69,
+      "true_peak_dbfs": -2.96
+    },
+    {
+      "file": "Siege_02.ogg",
+      "integrated_lufs": -14.45,
+      "true_peak_dbfs": -2.85
+    },
+    {
+      "file": "Siege_03.ogg",
+      "integrated_lufs": -13.18,
+      "true_peak_dbfs": -2.78
+    },
+    {
+      "file": "Siege_04.ogg",
+      "integrated_lufs": -13.36,
+      "true_peak_dbfs": -2.88
+    },
+    {
+      "file": "Siege_05.ogg",
+      "integrated_lufs": -12.33,
+      "true_peak_dbfs": -2.78
+    },
+    {
+      "file": "Siege_06.ogg",
+      "integrated_lufs": -14.04,
+      "true_peak_dbfs": -2.98
+    },
+    {
+      "file": "Siege_07.ogg",
+      "integrated_lufs": -14.26,
+      "true_peak_dbfs": -2.87
+    },
+    {
+      "file": "Siege_08.ogg",
+      "integrated_lufs": -13.97,
+      "true_peak_dbfs": -2.78
+    },
+    {
+      "file": "Siege_09.ogg",
+      "integrated_lufs": -12.75,
+      "true_peak_dbfs": -2.87
+    },
+    {
+      "file": "Siege_10.ogg",
+      "integrated_lufs": -10.45,
+      "true_peak_dbfs": -2.72
+    },
+    {
+      "file": "Siege_11.ogg",
+      "integrated_lufs": -17.98,
+      "true_peak_dbfs": -2.98
+    },
+    {
+      "file": "Siege_12.ogg",
+      "integrated_lufs": -16.18,
+      "true_peak_dbfs": -2.79
+    },
+    {
+      "file": "Siege_13.ogg",
+      "integrated_lufs": -14.32,
+      "true_peak_dbfs": -2.85
+    },
+    {
+      "file": "Siege_14.ogg",
+      "integrated_lufs": -15.56,
+      "true_peak_dbfs": -2.96
+    },
+    {
+      "file": "Siege_15.ogg",
+      "integrated_lufs": -12.63,
+      "true_peak_dbfs": -2.73
+    },
+    {
+      "file": "Siege_16A.ogg",
+      "integrated_lufs": -12.71,
+      "true_peak_dbfs": -2.75
+    },
+    {
+      "file": "Siege_16B.ogg",
+      "integrated_lufs": -17.54,
+      "true_peak_dbfs": -2.85
+    }
+  ],
+  "limits": "Static normal playback calibration; live cutscene, video, notification snapshots and subjective arrangement balance are not measured.",
+  "measured_output": {
+    "file": "gwp-music-calibrated-20261018.f32",
+    "integrated_lufs": -22.56,
+    "true_peak_dbfs": -9.81
+  },
+  "output_difference_lu": -0.26
+}

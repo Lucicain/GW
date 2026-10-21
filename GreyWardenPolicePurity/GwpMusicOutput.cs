@@ -44,12 +44,25 @@ namespace GreyWardenPolicePurity
         public volatile float Volume = 1;
         public Exception? Failure { get; private set; }
         private const int FramesPerBuffer = 960;
-        // The Syndicate score sits about 10 dB below Bannerlord's battle music (EBU R128: our mix
-        // -23.5 LUFS, native battle/siege tracks median -13.3). +8 dB stays slightly under native;
-        // the limiter keeps the rare peaks this pushes past -1 dBFS from clipping.
-        internal const float MakeupDb = 8;
-        private static readonly float Makeup = (float)Math.Pow(10, MakeupDb / 20);
+        // Installed v1.4.8 event:/music -> bus:/Music/music contains a -9 dB FMOD fader.
+        // EBU R128: this 320 s mix is -23.56 LUFS; 52 native battle/siege sources median -13.295.
+        // Normalize the source difference, then apply the native fader. Evidence and rerun command:
+        // docs/state/music.md; docs/reference/music-calibration-20261018.json.
+        private const float ContentMakeupDb = 10.26f;
+        private const float NativeMusicBusGainDb = -9f;
+        internal const float MakeupDb = ContentMakeupDb + NativeMusicBusGainDb;
+        private static readonly float ContentMakeup = (float)Math.Pow(10, ContentMakeupDb / 20);
+        private static readonly float NativeMusicGain = (float)Math.Pow(10, NativeMusicBusGainDb / 20);
         private static readonly uint HeaderSize = (uint)Marshal.SizeOf(typeof(Header));
+
+        internal static void ProcessSamples(GwpMusicLimiter limiter, float[] samples, int frames, float volume)
+        {
+            // Master the source before the game's music bus and user faders.
+            // Applying the -9 dB before limiting would leave peaks 9 dB above the native route.
+            limiter.Process(samples, frames, ContentMakeup);
+            float gain = Math.Max(0, Math.Min(1, volume)) * NativeMusicGain;
+            for (int i = 0; i < frames * 2; i++) samples[i] *= gain;
+        }
 
         public GwpMusicOutput(string directory)
         {
@@ -98,7 +111,7 @@ namespace GreyWardenPolicePurity
                     while (_commands.TryDequeue(out string? command))
                         if (command == "reinforcement") _score.Reinforcement(); else _score.Want(command);
                     _score.Render(samples, FramesPerBuffer);
-                    limiter.Process(samples, FramesPerBuffer, Math.Max(0, Math.Min(1, Volume)) * Makeup);
+                    ProcessSamples(limiter, samples, FramesPerBuffer, Volume);
                     Marshal.Copy(samples, 0, buffers[next], samples.Length);
                     Check(waveOutWrite(_device, headers[next], HeaderSize), "write");
                     queued[next] = true; next = (next + 1) % 4;

@@ -1,4 +1,4 @@
-"""Compile production logistics, persistence and armory allocation against engine-boundary stubs."""
+﻿"""Compile production logistics, persistence and armory allocation against engine-boundary stubs."""
 import importlib.util
 from pathlib import Path
 import re
@@ -53,7 +53,8 @@ class ItemRoster:IEnumerable<ItemRosterElement> {
  public void AddToCounts(EquipmentElement e,int n){var row=rows.FirstOrDefault(r=>r.EquipmentElement.Quality==e.Quality&&r.EquipmentElement.Item==e.Item);if(row==null){row=new ItemRosterElement{EquipmentElement=e};rows.Add(row);}row.Amount+=n;if(row.Amount<0)throw new Exception("negative kit stock");VersionNo++;if(row.Amount==0)rows.Remove(row);}
  public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();public void Clear(){rows.Clear();VersionNo++;}public void Add(ItemRoster r){foreach(var e in r)AddToCounts(e.EquipmentElement,e.Amount);}
 }
-class IDataStore {public bool IsSaving;public bool IsLoading=>!IsSaving;public Dictionary<string,object> Data=new Dictionary<string,object>();public void SyncData<T>(string k,ref T v){if(IsSaving)Data[k]=v;else v=(T)Data[k];}}
+// Native BehaviorSaveData: saving adds keys, absent load keys leave the ref unchanged.
+class IDataStore {public bool IsSaving;public bool IsLoading=>!IsSaving;public Dictionary<string,object> Data=new Dictionary<string,object>();public void SyncData<T>(string k,ref T v){if(IsSaving)Data.Add(k,v);else if(Data.TryGetValue(k,out var saved))v=(T)saved;}}
 static class GwpIds {public const string NewRecruitId="recruit",ZealotId="zealot";}
 static class GwpTuning {public static class Training {__TRAINING_TUNING__} public static class Firesworn {public const int MissionMinimumLeftBehind=5,BalanceEscortSize=5;__FESTIVAL_TUNING__ public const double FaithPartyTravelTimeoutHours=100; public const float ArrivalDistance=3;} }
 enum WardenDuty {PlayerTroopOrder,PlayerRequest}
@@ -73,7 +74,7 @@ class Regression {
  const double Never=-10000;static int checks;static void Check(bool c,string m){checks++;if(!c)throw new Exception(m);}
  enum FaithPartyKind{Mission,Market,Balance,Training} enum FaithPartyPhase{Home,Outbound,Returning} enum RitualKind{Congregation}
  class FaithVillage{public string VillageId,PriestId="p";public double LastCongregation,LastDamnation,LastMission,LastMarket,LastBalance;public int Households,MissionsSent;}
- class FaithParty{public string PartyId,HomeId,TargetId,TrainerId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int MarketGold;}
+ class FaithParty{public string PartyId,HomeId,TargetId,TrainerId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int MarketGold;public bool DedicatedMarketTripPending;}
  class Ritual{public string VillageId;public RitualKind Kind;public double EndHour;}
  readonly Dictionary<string,FaithVillage> _villages=new Dictionary<string,FaithVillage>();readonly List<Ritual> _rituals=new List<Ritual>();
  readonly Dictionary<string,FaithParty> _faithParties=new Dictionary<string,FaithParty>();readonly Dictionary<string,double> _trainingDepartures=new Dictionary<string,double>();
@@ -81,6 +82,9 @@ class Regression {
  readonly Dictionary<string,ItemRoster> _armories=new Dictionary<string,ItemRoster>(),_goods=new Dictionary<string,ItemRoster>(),_marketCargo=new Dictionary<string,ItemRoster>();
  class ArmoryPlan {public int Recruits,Zealots,Reserve,LedgerVersion;public ItemRoster Ledger;public List<EquipmentElement[]> Sets=new List<EquipmentElement[]>();public ItemRoster Free=new ItemRoster(),Surplus=new ItemRoster();public float RecruitWeaponTier,RecruitArmorTier,ZealotWeaponTier,ZealotArmorTier;}
  readonly Dictionary<string,ArmoryPlan> _plans=new Dictionary<string,ArmoryPlan>();
+ readonly Dictionary<object,object> _battleLoadouts=new(),_battleOwners=new();
+ void BindExistingLordArmories(){}
+ void SyncArmoryBattles(IDataStore store){}
  const int KitSlots=9,WeaponSlots=4,KitHead=0,KitBody=1,KitLeg=2,KitGloves=3,KitMain=4,KitShield=5,KitThrow=6,KitRanged=7,KitAmmo=8;
  static int KitKind(ItemObject i)=>i.Kind;static bool CanUse(CharacterObject t,ItemObject i)=>true;static float Strength(EquipmentElement e)=>e.Quality;static bool Stronger(EquipmentElement e,EquipmentElement own)=>own.IsEmpty||e.Quality>own.Quality;
  static bool StrongOwn;
@@ -108,67 +112,35 @@ class Regression {
  __METHODS__
  static CharacterObject Veteran=new CharacterObject{StringId="veteran"};static CharacterObject Weak=new CharacterObject{StringId="weak",UpgradeTargets=new[]{Veteran}};
  static (Regression r,MobileParty trainer,Settlement village) Start(){MobileParty.All.Clear();Settlement.All.Clear();CampaignTime.Now.ToHours=1;CampaignTime.Now.GetDayOfSeason=0;MBRandom.RandomFloat=0;var r=new Regression();var t=new MobileParty("lord"){LeaderHero=new Hero()};t.MemberRoster.AddToCounts(Veteran,15);t.Position.X=50;var v=new Settlement{StringId="v"};v.Guard.AddToCounts(Weak,10);Settlement.All[v.StringId]=v;r._villages[v.StringId]=new FaithVillage{VillageId=v.StringId};return(r,t,v);}
- static (FaithParty record,MobileParty party) DispatchOne(Regression r){r.DispatchTrainingTransports();var record=r._faithParties.Values.Single();return(record,MobileParty.All.Single(p=>p.StringId==record.PartyId));}
  public static int Main(){
-  var (r,t,v)=Start();var (record,p)=DispatchOne(r);
-  Check(t.MemberRoster.TotalManCount==5&&p.MemberRoster.TotalManCount==10,"real veterans leave trainer; five stay");
-  Check(r.transportedKits==10,"veteran dispatch invokes troop-specific kit transfer");
-  r.DispatchTrainingTransports();Check(r._faithParties.Count==1,"one in-flight shipment per trainer");
-  // Save and load actual production fields while physical engine parties remain registered.
-  record.MarketGold=123;var store=new IDataStore{IsSaving=true};r.SyncData(store);var loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();
-  Check(record.MarketGold==123,"in-flight market gold survives actual SyncData");
-  Check(record.TrainerId=="trainer"&&record.HomeId=="v"&&record.Phase==FaithPartyPhase.Outbound,"outbound save/load owner and destination");Check(r._trainingDepartures["trainer"]==1,"dispatch cooldown survives save/load");
-  p.MemberRoster.AddToCounts(Veteran,-3);p.Position.X=0;r.TendTrainingTransport(record,p);
-  Check(v.Guard.TotalManCount==17&&v.Guard.GetTroopRoster().Single(e=>e.Character==Veteran).Number==7,"only seven surviving veterans delivered; ten trainees stay");
-  Check(p.MemberRoster.TotalManCount==0&&!p.IsActive&&r._faithParties.Count==0,"one-way delivery closes transport without slow return leg");
-  Check(t.MemberRoster.TotalManCount==5,"trainer receives no remote replacements");
-  store.IsSaving=true;r.SyncData(store);loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;Check(r._faithParties.Count==0,"completed delivery stays completed after save/load");
-  t.MemberRoster.AddToCounts(Veteran,10);
-  r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"cooldown prevents immediate repeat");
-  CampaignTime.Now.ToHours=361;(record,p)=DispatchOne(r);Check(p.MemberRoster.TotalManCount==10,"new shipment possible after cooldown and previous delivery");
-  (r,t,v)=Start();(record,p)=DispatchOne(r);t.MemberRoster.AddToCounts(Veteran,15);t.MapEvent=new object();t.IsCurrentlyAtSea=true;p.Position.X=0;r.TendTrainingTransport(record,p);
-  Check(!p.IsActive&&v.Guard.TotalManCount==20&&t.MemberRoster.TotalManCount==20,"delivery independent of trainer capacity, battle and sea movement");
-  (r,t,v)=Start();(record,p)=DispatchOne(r);t.IsActive=false;r.TendTrainingTransport(record,p);Check(p.IsActive&&record.TrainerId=="","lost trainer triggers physical return");p.Position.X=0;r.TendTrainingTransport(record,p);Check(!p.IsActive&&v.Guard.TotalManCount==20,"orphan transport settles rather than disappears");
-  (r,t,v)=Start();(record,p)=DispatchOne(r);v.Quiet=false;r.TendTrainingTransport(record,p);Check(p.IsActive&&v.Guard.TotalManCount==10,"no safe village preserves actual transport without teleporting");
-  var safe=new Settlement{StringId="safe"};safe.GetPosition2D.X=20;Settlement.All[safe.StringId]=safe;r.TendTrainingTransport(record,p);Check(record.Phase==FaithPartyPhase.Returning&&record.HomeId=="safe"&&record.TrainerId=="","unsafe target reroutes to safe village");
-  store.IsSaving=true;r.SyncData(store);loaded=new Regression();store.IsSaving=false;loaded.SyncData(store);r=loaded;record=r._faithParties.Values.Single();Check(record.HomeId=="safe"&&record.Phase==FaithPartyPhase.Returning,"fallback stage and destination survive save/load");
-  p.Position.X=20;r.TendTrainingTransport(record,p);Check(!p.IsActive&&safe.Guard.TotalManCount==10&&t.MemberRoster.TotalManCount==5,"rerouted veterans settle physically without returning to trainer");
-  (r,t,v)=Start();(record,p)=DispatchOne(r);CampaignTime.Now.ToHours=102;r.TendTrainingTransport(record,p);Check(record.TrainerId=="","timeout stops chasing trainer");p.Position.X=0;r.TendTrainingTransport(record,p);Check(!p.IsActive,"timed out carrier settles");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,-6);r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"never send fewer than five or empty the trainer");
-  (r,t,v)=Start();v.Guard.AddToCounts(Weak,-10);(record,p)=DispatchOne(r);p.Position.X=0;r.TendTrainingTransport(record,p);Check(!p.IsActive&&v.Guard.TotalManCount==10,"no trainees required for one-way veteran delivery");
-  (r,t,v)=Start();t.MapEvent=new object();r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"battle prevents dispatch");
-  Check(TrainingVeteransToDispatch(100,50)==0,"exactly one half does not trigger");
-  Check(TrainingVeteransToDispatch(100,49)==0,"below one half does not trigger");
-  Check(TrainingVeteransToDispatch(100,76)==52,"strictly above three quarters leaves twenty-four veterans among forty-eight");
-  Check(TrainingVeteransToDispatch(100,80)==60,"eighty of one hundred sends sixty, leaving twenty of forty");
-  Check(TrainingVeteransToDispatch(101,80)==59,"odd total also reaches exactly one half");
-  Check(TrainingVeteransToDispatch(10,8)==5,"existing five-person retention floor takes priority");
-  Check(TrainingVeteransToDispatch(5,5)==0,"never empty a small trainer party");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,65);t.MemberRoster.AddToCounts(Weak,20);(record,p)=DispatchOne(r);
-  Check(p.MemberRoster.TotalManCount==60&&t.MemberRoster.TotalManCount==40&&t.MemberRoster.GetTroopRoster().Single(e=>e.Character==Veteran).Number==20,"dispatch uses remaining roster denominator in production");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,65);t.MemberRoster.AddToCounts(Weak,20);int vi=t.MemberRoster.Rows.FindIndex(e=>e.Character==Veteran);var wound=t.MemberRoster.Rows[vi];wound.WoundedNumber=30;t.MemberRoster.Rows[vi]=wound;r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"wounded veterans do not count toward trigger");
-  wound.WoundedNumber=27;t.MemberRoster.Rows[vi]=wound;(record,p)=DispatchOne(r);Check(p.MemberRoster.TotalManCount==6&&t.MemberRoster.Rows[vi].WoundedNumber==27,"healthy-only dispatch leaves wounded at home");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,35);t.MemberRoster.AddToCounts(Weak,49);t.MemberRoster.AddToCounts(new CharacterObject{StringId="hero",IsHero=true},1);r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"hero belongs to full roster denominator but is never a veteran candidate");
-  Check(TrainingVeteransToDispatch(100,60)==20,"sixty percent sends twenty, leaving forty of eighty");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,45);t.MemberRoster.AddToCounts(Weak,40);MBRandom.RandomFloat=0.35f;r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"base probability excludes boundary thirty-five percent");
-  MBRandom.RandomFloat=0.349f;(record,p)=DispatchOne(r);Check(p.MemberRoster.TotalManCount==20,"over half can dispatch at base probability");
-  (r,t,v)=Start();t.MemberRoster.AddToCounts(Veteran,60);t.MemberRoster.AddToCounts(Weak,25);MBRandom.RandomFloat=0.4f;r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"exactly seventy-five percent does not double chance");
-  t.MemberRoster.AddToCounts(Veteran,1);t.MemberRoster.AddToCounts(Weak,-1);MBRandom.RandomFloat=0.7f;r.DispatchTrainingTransports();Check(r._faithParties.Count==0,"boosted probability excludes boundary seventy percent");
-  MBRandom.RandomFloat=0.699f;(record,p)=DispatchOne(r);Check(p.MemberRoster.TotalManCount==52,"over seventy-five percent uses doubled probability");
-  var festival=new FaithVillage{VillageId="v"};CampaignTime.Now.GetDayOfSeason=7;MBRandom.RandomFloat=0;Check(!IsFestivalDay(festival,Never,CampaignTime.Now.ToHours,2f),"boost never bypasses village week");
-  CampaignTime.Now.GetDayOfSeason=0;Check(!IsFestivalDay(festival,0,359,2f)&&IsFestivalDay(festival,0,360,2f),"boost preserves actual fifteen-day cooldown boundary");
-  MBRandom.RandomFloat=0.4f;Check(!IsFestivalDay(festival,Never,360),"mission and balance default probability unchanged");
-  Console.WriteLine("TRAINING_LOGISTICS_ASSERTIONS="+checks+"; PASS");return 0;
+  var (r,t,v)=Start();
+  var p=new MobileParty("legacy");p.Position.X=30;p.MemberRoster.AddToCounts(Veteran,10);
+  var record=new FaithParty{PartyId=p.StringId,HomeId="v",TargetId="v",TrainerId="trainer",Kind=FaithPartyKind.Training,Phase=FaithPartyPhase.Outbound,PhaseHour=1,MarketGold=123,DedicatedMarketTripPending=true};
+  r._faithParties[p.StringId]=record;
+  var save=new IDataStore{IsSaving=true};r.SyncData(save);
+  Check(!save.Data.ContainsKey("GWPP_FsTrainingHeroes")&&!save.Data.ContainsKey("GWPP_FsTrainingDepartures"),"retired dispatch cooldown is not saved again");
+  var copy=new Regression();copy.SyncData(new IDataStore{Data=save.Data});
+  var loaded=copy._faithParties[p.StringId];
+  Check(loaded.TrainerId=="trainer"&&loaded.HomeId=="v"&&loaded.MarketGold==123&&loaded.DedicatedMarketTripPending,"existing in-flight task and resources survive sync");
+  var old=new Dictionary<string,object>(save.Data);old.Remove("GWPP_FsDedicatedMarketTrips");old["GWPP_FsTrainingHeroes"]=new List<string>{"trainer"};old["GWPP_FsTrainingDepartures"]=new List<double>{1};
+  var older=new Regression();older.SyncData(new IDataStore{Data=old});
+  Check(!older._faithParties[p.StringId].DedicatedMarketTripPending&&older._faithParties[p.StringId].MarketGold==123,"old cooldown keys harmless; missing new flag preserves cargo and trip");
+  copy.TendTrainingTransport(loaded,p);Check(p.IsActive&&p.MemberRoster.TotalManCount==10,"legacy party continues physical trip");
+  p.Position.X=0;copy.TendTrainingTransport(loaded,p);Check(!p.IsActive&&v.Guard.TotalManCount==20,"legacy people arrive instead of being deleted");
+  Check(copy._faithParties.Count==0,"completed legacy task removed once");
+  var orphan=new MobileParty("orphan");orphan.Position.X=20;orphan.MemberRoster.AddToCounts(Veteran,7);var o=new FaithParty{PartyId=orphan.StringId,HomeId="v",TargetId="v",TrainerId="lost",Kind=FaithPartyKind.Training};r._faithParties[o.PartyId]=o;
+  r.TendTrainingTransport(o,orphan);Check(o.TrainerId==""&&orphan.IsActive,"lost trainer redirects actual people");orphan.Position.X=0;r.TendTrainingTransport(o,orphan);Check(!orphan.IsActive&&v.Guard.TotalManCount==27,"orphan settles without loss");
+  Console.WriteLine("TRAINING_RETIREMENT_ASSERTIONS="+checks+"; PASS");return 0;
  }
 }
+
 '''
 
 
 class TrainingTransportTests(unittest.TestCase):
-    def test_one_way_delivery_ratio_persistence_and_armory(self):
+    def test_retired_dispatch_keeps_legacy_entities_and_save_state(self):
         methods = extract("GwpTrainingTransports.cs", (
-            "DispatchTrainingTransports", "TendTrainingTransport", "SettleTrainingTransport",
-            "TransferEliteTroopsProportionally", "TrainingVeteransToDispatch"))
+            "TendTrainingTransport", "SettleTrainingTransport"))
         methods += extract("GwpFireswornBehavior.cs", ("SyncData",))
         major = subprocess.check_output(["dotnet", "--version"], text=True).split(".")[0]
         with tempfile.TemporaryDirectory(prefix="gwp-training-") as directory:
@@ -179,7 +151,8 @@ class TrainingTransportTests(unittest.TestCase):
                 '<NoWarn>CS0649</NoWarn></PropertyGroup></Project>', encoding="utf-8")
             tuning = (ROOT / "GreyWardenPolicePurity/GwpTuning.cs").read_text(encoding="utf-8-sig")
             constants = "\n".join(re.findall(r"public const (?:double|float) VeteranDispatch\w+ = [^;]+;", tuning))
-            self.assertEqual(4, len(constants.splitlines()))
+            self.assertEqual("", constants)
+            self.assertNotIn("DispatchTrainingTransports", (ROOT / "GreyWardenPolicePurity/GwpFireswornBehavior.cs").read_text(encoding="utf-8-sig"))
             festival_constants = "\n".join(re.findall(r"public const float Festival(?:DailyChance|IntervalDays) = [^;]+;", tuning))
             behavior = (ROOT / "GreyWardenPolicePurity/GwpFireswornBehavior.cs").read_text(encoding="utf-8-sig")
             festival_method = re.search(r"private static bool IsFestivalDay\([^;]+;", behavior).group(0)

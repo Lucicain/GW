@@ -18,7 +18,9 @@ namespace GreyWardenPolicePurity
         /// 练好的兵仍由灰袍领主亲自送来——使者不运兵。</summary>
         TroopOrder = 2,
         /// <summary>请灰袍出面，把玩家替他们打出来的那些战争一并了结。空手去空手回。</summary>
-        PeaceRequest = 3
+        PeaceRequest = 3,
+        /// <summary>带选定分封记录的封地重议申请；送达登记后仍由贵族事务本人收费。</summary>
+        FiefAppeal = 4
     }
 
     internal enum GwpDispatchPhase
@@ -60,6 +62,8 @@ namespace GreyWardenPolicePurity
         internal string OrderTroopId = string.Empty;
         internal int OrderCount;
         internal int OrderPrice;
+        internal string FiefSettlementId = string.Empty;
+        internal double FiefCaptureHours;
 
         internal string Serialize() => string.Join("|",
             PartyId, ((int)Purpose).ToString(), ((int)Phase).ToString(), ReceiverPartyId,
@@ -67,7 +71,8 @@ namespace GreyWardenPolicePurity
             DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture), CargoState, CaseHeroId,
-            OrderTroopId, OrderCount.ToString(), OrderPrice.ToString());
+            OrderTroopId, OrderCount.ToString(), OrderPrice.ToString(), FiefSettlementId,
+            FiefCaptureHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 
         internal static GwpDispatchRecord? Deserialize(string? line)
         {
@@ -90,7 +95,10 @@ namespace GreyWardenPolicePurity
                 CaseHeroId = parts[11],
                 OrderTroopId = parts[12],
                 OrderCount = ParseInt(parts[13]),
-                OrderPrice = ParseInt(parts[14])
+                OrderPrice = ParseInt(parts[14]),
+                // Existing four-purpose records have fifteen fields and carry no fief application.
+                FiefSettlementId = parts.Length > 15 ? parts[15] : string.Empty,
+                FiefCaptureHours = parts.Length > 16 ? double.Parse(parts[16], invariant) : 0d
             };
         }
 

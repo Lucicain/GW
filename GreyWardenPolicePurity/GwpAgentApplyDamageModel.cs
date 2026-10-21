@@ -13,7 +13,7 @@ namespace GreyWardenPolicePurity
     /// the reactions and shield damage selected by Grey Warden weapon traits,
     /// kicks, shield bashes and warhorse rules. Grey Warden lords inherit the
     /// corresponding item effects with ordinary equipment as well, and a lethal
-    /// blow on a lord is capped by <see cref="GwpLordLastStandBehavior"/>.
+    /// blow on an eligible Grey Warden is capped by <see cref="GwpLastStandBehavior"/>.
     /// This decision is evaluated once when an eligible blow connects. There
     /// is no post-rise input lock or forced animation.
     /// </summary>
@@ -264,7 +264,7 @@ namespace GreyWardenPolicePurity
             in AttackInformation attackInformation,
             in AttackCollisionData collisionData,
             float baseDamage) =>
-            GwpLordLastStandBehavior.LimitDamage(
+            GwpLastStandBehavior.LimitDamage(
                 in attackInformation,
                 in collisionData,
                 GwpTroopCombat.ApplyWarhorseDamageRules(

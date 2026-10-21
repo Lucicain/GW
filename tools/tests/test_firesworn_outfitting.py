@@ -19,7 +19,7 @@ def methods():
     hygiene = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(hygiene)
     result = []
-    for file, names in (("GwpFireswornParties.cs", ("DrawMen", "ManToBeat")),
+    for file, names in (("GwpFireswornParties.cs", ("DrawMen", "ManToBeat", "FaithEscortAvailable")),
                         ("GwpFireswornBehavior.cs", ("JoinGuard",)),
                         ("GwpFireswornArmory.cs", ("TakeBestSets",))):
         source = (ROOT / "GreyWardenPolicePurity" / file).read_text(encoding="utf-8-sig")
@@ -71,7 +71,7 @@ class ItemRoster : IEnumerable<ItemRosterElement> {
 class ArmoryKit {public EquipmentElement[] Items;}
 class ArmoryPlan { public List<ArmoryKit> Sets=new List<ArmoryKit>(); }
 static class GwpIds { public const string NewRecruitId="recruit",ZealotId="zealot"; }
-static class GwpTuning { public static class Firesworn { public const int MissionMinimumLeftBehind=5; } }
+static class GwpTuning { public static class Firesworn { public const int MissionMinimumLeftBehind=5,FaithEscortMinimumTier=4; } }
 static class GwpStrength { public static float Party(MobileParty party)=>party.MemberRoster.TotalManCount; }
 static class GwpTroopTransfer {
     public static TroopRosterElement Move(TroopRoster from,TroopRoster to,CharacterObject troop,int count,bool healthyOnly=false) {
@@ -111,7 +111,7 @@ class Regression {
     __METHODS__
     static int checks;
     static void Check(bool condition,string message) {checks++;if(!condition)throw new Exception(message);}
-    static CharacterObject Troop(string id)=>new CharacterObject {StringId=id};
+    static CharacterObject Troop(string id)=>new CharacterObject {StringId=id,Tier=4};
     static void EquipmentScenario(int recruits,int zealots,int elite,int stock,int already) {
         var b=new Regression();var party=new MobileParty();
         party.MemberRoster.AddToCounts(Troop("recruit"),recruits);
@@ -165,7 +165,7 @@ class Regression {
         EscortScenario(30,40,25,9,10);
         // Five sworn always stay home.
         EscortScenario(30,17,25,100,12);
-        EscortScenario(30,8,25,100,8);
+        EscortScenario(30,8,25,100,3);
         Console.WriteLine("OUTFITTING_ASSERTIONS="+checks+"; PASS");return 0;
     }
 }

@@ -19,13 +19,14 @@ namespace GreyWardenPolicePurity
                     GwpDispatchPurpose.Report => GwpTextCatalog.gwp_affairs_report,
                     GwpDispatchPurpose.Support => GwpTextCatalog.gwp_affairs_support_courier,
                     GwpDispatchPurpose.TroopOrder => GwpTextCatalog.gwp_affairs_order_courier,
+                    GwpDispatchPurpose.FiefAppeal => GwpTextCatalog.gwp_affairs_fief_courier,
                     _ => GwpTextCatalog.gwp_affairs_peace_courier
                 };
                 MobileParty? receiver = FindParty(record.ReceiverPartyId);
                 var entry = new GwpAffairsEntry("dispatch:" + record.PartyId,
-                    GwpText.Get(GwpTextCatalog.gwp_affairs_couriers), GwpText.Get(titleKey))
+                    GwpText.Get(titleKey), GwpText.Get(titleKey))
                 {
-                    IsPersonal = true, Hero = receiver?.LeaderHero,
+                    IsPersonal = true, DispatchPurpose = record.Purpose, Hero = receiver?.LeaderHero,
                     NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_cargo),
                     Summary = GwpText.Get(record.Phase == GwpDispatchPhase.Outbound
                         ? GwpTextCatalog.gwp_affairs_outbound : GwpTextCatalog.gwp_affairs_returning)
@@ -38,6 +39,9 @@ namespace GreyWardenPolicePurity
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_status, entry.Summary));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_receiver,
                     receiver?.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_affairs_unknown)));
+                if (record.Purpose == GwpDispatchPurpose.FiefAppeal)
+                    entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_fief_target,
+                        TaleWorlds.CampaignSystem.Settlements.Settlement.Find(record.FiefSettlementId)?.Name?.ToString() ?? record.FiefSettlementId));
                 entry.Fields.Add(GwpAffairsText.TargetLocation(party, GwpTextCatalog.gwp_affairs_current_location));
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_men, GwpText.Get(GwpTextCatalog.gwp_affairs_numbers,
                     "TOTAL", party.MemberRoster.TotalManCount, "HEALTHY", party.Party.NumberOfHealthyMembers)));

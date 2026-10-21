@@ -1,10 +1,9 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：原有执勤旗/入退会验收保持；接单改为全屏案件自选，周期招揽与三选一已删除，待实测
+> 当前状态：四类主动参战改为可取消准备、确认后走原版选边转场，已部署待实测；既有名牌/接案保持
 > 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
-> 已复核至：`626b079`（2026-10-18）
-> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs`
-> 待实测：自选案件的接单/目标变化/交差完整流程，原界面新验收见事务界面
+> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `tools/tests/test_case_target_nameplate.py` `GwpPlayerIntervention.cs` `tools/tests/test_player_intervention.py`
+> 待实测：四类现场选边后返回/不介入不锁进战斗；确认进攻/派兵及劫掠转场，帮攻守两侧；办案目标及挂靠军团名牌的实际渲染，结案后恢复；自选案件接单/目标变化/交差完整流程，界面新验收见事务界面
 
 事务台账中的日常练兵项显示实体运兵出程或改道落村阶段，不再有带新兵归队阶段；本页声望/赎罪规则不涉及此变更，业务见 [运兵](warden-training.md)。（依据：源码复核 2026-10-15）
 
@@ -15,6 +14,18 @@
 负声望赎罪的权限、占案、完成与申报单独见[赎罪委派](atonement.md)。普通悬赏与赎罪通过 `GwpPlayerCaseAssignment` 汇总，灰袍事务界面也用这个口径显示玩家占案；案件池不把NPC已有宽限/收款/比武约定的案子再次给玩家选择。（依据：源码复核2026-10-15）
 
 读档与回执业务直接执行，移除无依据的通用吞异常包装；故障观察器不改变结果判定。规则见 [代码健康](code-health.md)。（依据：源码复核2026-10-14）
+
+当前追踪目标不可用时的无责撤回、原案留池和情报不追旧队口径只在[玩家委托](player-commission.md#目标不可追踪时的无责撤回)维护；接案与占案身份保持。（依据：用户裁定2026-10-21）
+
+## 办案目标地图标识
+
+普通悬赏/赎罪的当前追捕目标复用GwpPlayerCaseAssignment.IsAssignedCase。在原版PartyNameplateVM.FullName和NameplateVM.FactionColor属性写入前，将目标名称/人数等FactionColor文字设为原版敌方红色，名称加“办案目标”；罪犯挂靠在军团内时标可见首队，已分离成员不染远处原军团。不改外交、英雄/部队实体名或原版可见范围。（依据：用户裁定、原版名牌XML/托管源码2026-10-20）
+
+原版每次先重建普通绑定，结案、退任务或名牌复用后恢复原色原名；目标依英雄匹配重建的部队。13项断言执行真实标识及共享/悬赏身份，原版绑定刷新/战役对象受控；实际安装版VM与生成控件双向回调另有13项断言，中英文原名已显示后接案、重复刷新、回写与结案通过，字体/布局渲染和目标身份受控。另有启动补丁边界负对照，旧RefreshBinding目标被预检拒绝，当前两个属性补丁通过。回退d5a8d84加本轮前工作树时仅移除标识补丁与新文本，不撤接案/谈判。（依据：生产回归与流程2026-10-20）
+
+名称前缀经Harmony字段注入读取原版_fullNameBind原名缓存，始终从原名生成一次标签，不给控件回写值继续加标签。原版生成控件会把Text回写FullName，旧前缀使每次回写都改变值，引发递归；2026-10-20 09:13 Steam退出码0x800703E9为栈溢出。旧逻辑在真实生成控件回调/VM属性中连续递归，负对照于第17次写入主动中止；修复版一次通知后稳定，沿原版同值不通知终止回写链，无须吞异常。（依据：实机退出码与安装版生成控件反编译2026-10-20）
+
+启动时不再补丁RefreshBinding：该方法直接读CampaignUIHelper静态字段，Harmony预编译在文本系统初始化前触发其静态构造并失败，后续创建地图栏时继续抛TypeInitializationException。2026-10-20日志确认此次读档失败发生在地图创建，不是保存数据读取；改补丁点未增加保存字段。启动预检规则见[代码健康](code-health.md#启动补丁与静态初始化)。（依据：实机故障栈、安装版反编译与离线负对照2026-10-20）
 
 ## 声望（`PlayerBehaviorPool`，在 `GwpData.cs`）
 
@@ -30,8 +41,8 @@
 - 打败村民队或商队、劫掠得手、强征新兵或补给：按失败方战前人数，每 10 人（向上取整）−1。
   打劫无人防守的村子，按民兵和驻军人数算；一个人没有就不扣。
 - 强征新兵、强征补给另各记一条罪行，−1。
-- 打败灰袍或纠察队：按灰袍阵亡数，每 10 人（向上取整）−1。
-- 帮罪犯打灰袍：按灰袍阵亡数，每 10 人（向上取整）−1，通缉时记「妨碍执法」。
+- 打败灰袍或纠察队：按失败方灰袍执法队的死亡、受伤及溃逃人数合计，每 10 人（向上取整）−1，不是只数阵亡。（依据：CountPoliceCasualties及TryApplyPoliceBattlePenalty源码复核2026-10-21）
+- 强制介入时帮罪犯打灰袍并获胜：按灰袍执法队死亡、受伤及溃逃人数合计，每 10 人（向上取整）−1，通缉时记「妨碍执法」。（依据：TryResolvePendingPoliceCriminalReputation源码复核2026-10-21）
 - 已在通缉状态时，以上罪行都会追加到 `PLAYER_WANTED` 案。
 
 ### 加分
@@ -40,11 +51,45 @@
   按玩家亲手击倒人数累计，每满 10 人 +1。余数跨战斗保留、存进存档。
 - 亲手击倒还开着案的罪犯部队，同样按每 10 人 +1 计。
   协助灰袍抓人走另一条结算路径，两条互斥，同一场战斗不会重复记分。
-- 遭遇菜单有两个选项，无视外交直接加入：
-  - 「强制介入」：先对攻方宣战，再站到防守方。
-  - 「落井下石」：站到攻方。
-  
-  原版遭遇说明会把玩家写成劫掠者，加入后改写这段文字。
+
+### 现场介入正在发生的犯罪与执法
+
+GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守方选项，不再重复加入自定义强制介入按钮；入口不检查入会、灰袍声望或执勤旗，也不要求玩家先领取委托。TryBuildForceJoinTexts识别以下场面，不是任意两支领主交战都给出强制介入。（依据：源码复核2026-10-21）
+
+| 已经发生的场面 | 可选站队 |
+|---|---|
+| 防守方有商队 | 保护商队，或帮助攻击方 |
+| 防守方有村民队 | 保护村民，或帮助攻击方 |
+| 村庄劫掠且防守首队为聚落 | 救援村庄，或协助劫掠 |
+| 灰袍执法队与其实际承办目标正在交战 | 协助灰袍，或帮助罪犯；文案按灰袍实际在攻/守哪侧变化 |
+
+沿既有TryBuildForceJoinTexts识别上述四类场面，扩展原版选边选项的外交显示资格，保留原版健康、海陆及荣誉禁用条件。选边仅记录意向并显示双方/人数准备菜单；进攻、派兵进攻、返回重选、不介入四项可用性按当前事件/健康/士气/军团规则检查。准备时未加入实际MapEvent，不转移兵物或记战果；返回重选原版选边菜单，不介入按原版Finish并停止移动。准备不加载Encounter覆盖层，因这时玩家尚无MapEvent。（依据：用户批准方案、原版C#反编译与实现2026-10-21）
+
+明确确认出战时重新验证同一有效事件和原版条件，先记录原有声望结算基线，再调用原版帮助攻/守方consequence，劫掠转野战及兵员迁移由原版处理；若仍进入普通encounter，再调用原版Attack/OrderAttack。原版转入劫掠/军团等待等其他菜单时沿原流程，不强制打开错误战斗场景。进入真实战斗后撤退资格与代价仍由原版决定。（依据：用户批准方案、实现与离线回归2026-10-21）
+
+强征志愿兵和强征补给有犯罪监听，但上述按钮没有单独识别这两类事件的分支；是否出现沿当前TryBuildCivilianEncounterTexts的实际场面判断，不把“能立案”说成已有专门现场介入选项。玩家只是路过、查看案件或打开菜单不加声望；胜利及个人击倒/敌方减员才进入上文相应结算，普通介入也不会凭空生成付费委托。（依据：源码复核2026-10-21）
+
+### 原版参战与离开的依据
+
+玩家反馈的选择介入后无法反悔已通过延迟实际加入处理，部署待实测。没有全局放开防守方离开，也不手动清MapEventSide；只在join_encounter的主动选边接入准备；已加入战斗与驻村等待被打断的共用原版回调保持原处理，重复确认不切走已开出的战斗菜单。准备之外的原版撤退约束保持。（依据：用户反馈、批准方案与实现2026-10-21）
+
+本机TaleWorlds.CampaignSystem.dll重新反编译确认：
+
+- 原版join_encounter的“不要介入”在选边前可用（军团非领队另走离军团选项）；离开调用Finish并停止主队移动。（依据：本机EncounterGameMenuBehavior C#反编译2026-10-21）
+- 普通原版帮助攻/守方也会直接JoinBattle；JoinBattleInternal写入实际MapEventSide、记录IsJoinedBattle并收集附近援军。它不是只记录玩家意向。
+- MapEventHelper.CanMainPartyLeaveBattleCommonCondition在玩家为防守方时通常返回false；例外是围城守方且玩家已不在聚落。encounter普通离开选项还叠加军团、出击及海袭判断；陆地村庄劫掠在LeaveOptionVisibilityCheckForNavalRaid中同样不显示普通离开。不能只把模组调用换成原版帮助守方就承诺反悔问题消失。
+- 原版帮助防守村庄时，保存双方原名单及劫掠阶段，结束原劫掠事件并重启野战遭遇；是否等待中被打断/是否已进掠夺阶段决定新遭遇攻守。帮助劫掠方且曾进掠夺阶段也有专门转场；原版不是对所有场面一律JoinBattle。新实现调用这些原版分支。
+- 原版进攻和派兵进攻均在实际出战链调用BeHostileAction.ApplyEncounterHostileAction。预览、取消与出战应分清时刻，既有调停与关系恢复仍归所属业务。
+- Finish会经FinalizeBattle/LeaveBattle收尾；原事件已出结果、外交结束或特定劫掠状态会FinalizeEvent，LeaveBattle在玩家已成首队时也可能结束事件。直接全局放行“离开”或手动清MapEventSide，不能保证原NPC战斗不被打断。
+
+以上为本机v1.4.8托管链结论，不是用户现场已完整重放。原版反编译输出在已登记的mb148-decomp/join-encounter-20261021目录，过程与行号写journal。（依据：C#反编译2026-10-21）
+
+### 对世界的后续影响
+
+- 玩家现场救援或协助执法可积累声望，继而关联入会、委托、[打赏](village-relief.md#村民打赏greywardenvillagerewardbehavior)、[订兵](troop-orders.md)、[封地重议支持](player-requests.md#民意支持)和[战场援军](battle-support.md)；各自门槛只在所属业务维护。
+- 执法处置会影响罪犯本人与同族、目击者的[震慑](crime-intake.md#震慑gwpaideterrencestate)，进而影响之后袭击村民/商队及烧村的AI意愿；不是每次路过救援都自动登记一次惩戒。
+- 犯罪与妨碍执法进入声望/追责通道；[纠察](patrol.md)、[正式追捕及本队NPC旧案](case-enforcement.md#主队中的-npc-旧案)、[赎罪](atonement.md)分别办理，不把玩家与同伴案底混成一笔。
+- 玩家可在英雄百科查看犯罪账目与震慑、在事务中看开放案/成员工作及教务动态；已承办普通或赎罪目标另有地图名牌标识。查看不授予现场执法权，权限归GwpPlayerCaseAssignment。（依据：源码复核2026-10-21）
 
 ### 显示
 
@@ -52,21 +97,9 @@
   只有通缉时标红（`GwpMapBarReputation`）。这项在信息条展开时才看得到。（依据：用户要求放在影响力旁边）
 - 灰袍事务界面统一见[事务界面](affairs-interface.md)，入口见[地图栏](map-bar-affairs.md)；声望、领单、占案与交差业务仍由本页和所属业务页面定义。使者进度与回报保存规则见[使者](case-envoy.md)「台账上的使者」。
 
-### 声望图标的交互边界与待办
+### 声望显示与事务入口
 
-- 当前位置：`SecondaryInfoItems`，插在 `influence` 之后（按用户要求"挨着影响力"）。
-- **代价已告知用户**：那一排只在信息条展开（`IsInfoBarExtended`）时显示；
-  `PrimaryInfoItems`（第纳尔所在）才是常驻。用户在"挨着影响力"与"常驻可见"之间
-  选了前者。
-- **点击打开事务界面：做不到。** `MapBar.xml` 两排的 `ItemTemplate` 外层是
-  `HintWidget : Widget`，反射确认 `Widget` 没有任何 click 事件（只有 `EventFire`
-  与各类 `PropertyChanged`），点击是 `ButtonWidget` 独有。金币和影响力自己也点不动。
-  要改只能整份覆盖 SandBox 的 `MapBar.xml`（219 行），会在游戏更新时失效并与任何
-  改地图条的模组冲突。
-- **可行的最小方案（未做，等用户点头）**：照 `GwpCaseArchiveScreen.Open()` 的现成套路
-  （`new GauntletLayer` + `AddLayer` + `LoadMovie`）加一个常驻小层，一个
-  `ButtonWidget` 带图标与数字，`Command.Click` 调 `GwpCaseArchiveScreen.Show()`，
-  `IsFocusLayer = false`、不设 `InputRestrictions`。不覆盖任何原版文件。
+声望数字仍在右下角信息条展开后的 `SecondaryInfoItems`，紧随影响力；其原版 `HintWidget` 不提供点击操作。事务入口已经是左下角导航栏的独立按钮，位置、门槛与家族百科彩蛋只在[地图栏](map-bar-affairs.md)定义，不再保留另叠一层点击控件的旧提案。（依据：当前实现与原版控件复核 2026-10-19）
 
 ## 入会与退会
 
@@ -90,16 +123,14 @@
 - 入会/重入会发旗，主动补领是正常对话功能：已入会且与普通灰袍领主对话、玩家未装备、本队背包无旗、物品有效时才显示；发一面到背包，不自动装备。玩家已有旗时不重复补领，不在读档/小时检查中补发。（依据：设计 2026-10-17）
 - 执勤身份统一由 `GwpCommon.IsPlayerGreyWardenOnDuty` 查询，旗帜槽即原版 `Hero.BannerItem` / `ExtraWeaponSlot`；持有与装备由原版装备/背包存档，不新增开关字段。物品与家族/地图/场景纹章见[装备](warden-gear.md)。（依据：C#反编译与离线回归 2026-10-17）
 - 事务入口与接单改版回退范围见[事务界面](affairs-interface.md#回退与设计参考)，旗帜业务回退另见[装备](warden-gear.md)。原生渲染待用户实测。（依据：流程）
-- 从案件池里所有开着、能追到人的案件中，挑三份给玩家选：最近的、最难的、最容易的。
-  难度看对方战力与玩家战力之比：≤ 0.75 算易，≥ 1.25 算难。对方用接案门槛同一个数（`GwpStrength.CaseTarget`：
-  他所在战斗组，挂靠在军团里就算整支军团），玩家用自己的战斗组。
+- 候选列表不再限制三份；显示与排序归[事务界面](affairs-interface.md)。难度仍按目标与玩家战斗组战力之比：≤ 0.75 算易，≥ 1.25 算难，目标使用 `GwpStrength.CaseTarget`。难度分档不决定固定报酬。（依据：源码复核 2026-10-19）
 - 接单后这件案子归玩家：原承办的灰袍撤走，期限 45 天。
   每 2 天往任务日志写一条目标的位置情报。目标换队或重建部队时，按英雄本人重新找。
 - 求援（`PlayerBountyBehavior.Support`）：当面开口或派兵送信，都算求援。
   - 送到之前，灰袍不为这件案子开战、也不去追人。
   - 送到之后，先由收到求援的领主接手；他正在战斗、已有玩家事务/订单/护送/通缉或已约单挑时，改选离玩家最近的合格者。共用玩家差事准备入口退出协力、释放旧案及重建/请愿，收养保留暂停；无人可接则此次求援不成立。占用只查[差事登记处](warden-ai.md)。（依据：用户批准方案、源码复核 2026-10-17）
   - 灰袍为此案开战时，玩家阵营一并对犯人宣战。这场战争记进调停申请通道（`PoliceAntiWarDeclaration.RecordMediationRequest`），不再自动讲和，见 `warden-mediation.md`。（依据：实机诊断 2026-09-16）
-- 三个常量 `Bounty.EasyReward/StandardReward/HardReward` 已无人引用。报酬按罚金封顶算，见 `player-commission.md`。
+- 报酬统一由 `GwpCaseSettlementRules.Reward` 计算，不按难度三档发固定金额，见 `player-commission.md`。（依据：源码复核 2026-10-19）
 
 ## 交差与查账（`GwpFieldReportLedger`）
 
@@ -113,7 +144,7 @@
   - 查出来：按差额每 100 第纳尔扣 1 点声望。
 - 过度执法：对方已经缴过钱或兑现过处置，玩家又把他打垮。赏照领、案照结，但单独排一次查账。
 - 办案报酬（`GwpCaseSettlementRules.Reward`）= 400 + 60 × 玩家阵亡数 + 120 × 罪责点，以应缴罚金封顶。
-  人不是玩家打下的（犯人死了、被别人抓了）：只付 400 + 60 × 阵亡数。
+  犯人死亡或追责实际已由外部结清而撤委托时，只付 400 + 60 × 阵亡数；第三方暂时俘虏不撤委托。结果归[玩家委托](player-commission.md)。（依据：源码复核 2026-10-19）
 - 收据（`GwpCaseReceipt`）只记物品 ID 和词条 ID，不存对象引用：缺了某个模组的物品，也不会毁掉旧账。
 
 ## 案件目标进出城

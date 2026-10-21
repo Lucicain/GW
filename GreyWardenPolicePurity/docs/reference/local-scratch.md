@@ -3,7 +3,7 @@
 `.codex_tmp/` 被 git 忽略：**里面的东西不在任何存档里，也不在云端**，只存在这台机器上。
 它装的是调查过程的中间产物：反编译输出、旧 DLL 备份、一次性脚本、调试输出、截图。
 
-清理它是 agent 的职责（见 AGENTS.md「诊断跟着功能走」）。**删任何东西之前先看本清单。**
+清理它是 agent 的职责（见 AGENTS.md「硬约束」的诊断一条与 `docs/state/diagnostics.md`）。**删任何东西之前先看本清单。**
 清单外的东西默认可以在结论写进 state 或 journal 之后删除；清单内的不删。
 
 **登记规则**：顶层每一项都要被下面某张表的路径（可用 `*` 通配）认领。`Check-StateFreshness.py` 会列出没人认领的项和大小，收尾时要么删、要么登记，不留无主文件。一次性脚本不进这里：用完即删，反复用得上的迁进 `tools/`。（依据：流程）
@@ -41,6 +41,9 @@
 
 | 路径 | 用途 |
 |---|---|
+| `mb148-decomp/affairs-dispatch-20261021/` | 事务页按钮无效调查：本机安装版GauntletInformationView/MBInformationManager及地图衔接；现行结论归affairs-interface，修复验收后退休 |
+| `mb148-decomp/join-encounter-20261021/` | 主动参战不可反悔与原生菜单衔接调研，本机安装DLL新反编译EncounterGameMenuBehavior、PlayerEncounter、MenuHelper、MapEventHelper；现状及待定方案归player-justice，尚未实施修复 |
+| `mb148-decomp/player-support-encounter-20261020/` | 未修复的玩家求援参战时序调查，当前安装1.4.8原版新反编译；结论见field-arrest「菜单确认、离开与附近援军」，用于下一步参战/离开离线回归 |
 | `mb148-decomp/`、`core148-decomp/`、`campaignsystem-full-decompile/`、`sandbox148-decomp/`、`navaldlc148-decomp/` | v1.4.8 反编译（sandbox148 只有比武任务逻辑 `TournamentBehavior`，灰袍使者比武名次读它，`case-envoy.md`；navaldlc148 是 NavalDLC.dll，下水时间与锚点见 `temporary-parties.md`），见 `investigation-methods.md`；可用 ilspycmd 重建 |
 | `check-native-persuasion-direct.ps1` | `investigation-methods.md` 引用的运行时反射先例 |
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |

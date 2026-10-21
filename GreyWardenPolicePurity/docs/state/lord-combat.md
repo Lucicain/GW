@@ -1,39 +1,36 @@
-# 灰袍领主的身份战斗加成
+﻿# 灰袍领主的身份战斗加成
 
 > 当前状态：装备身份加成与锁血均已部署，待实际比赛与野战验收
 > 最后验收：未建立检查点
-> 已复核至：`79a01fe`（2026-10-18）
-> 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs` `GwpLordLastStand.cs` `tools/tests/test_lord_combat.py` `tools/tests/test_lord_last_stand.py`
-> 待实测：普通比赛装备、自定义战斗灰袍指挥官与嫁给玩家的灰袍领主的近战、射击、盾挡与骑乘加成；领主锁血 10 秒、击杀回血与超时放开、锁血期间成长 1.5 倍；agent 核对领主战斗日志
+> 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs` `tools/tests/test_lord_combat.py`
+> 待实测：普通比赛装备、自定义战斗灰袍指挥官与嫁给玩家的灰袍领主的近战、射击、盾挡与骑乘加成；锁血见last-stand.md；agent 核对领主战斗日志
 
 ## 用户裁定与范围
 
 - 灰袍领主在实际战斗中无论拿什么装备，都取得对应灰袍装备的战斗加成；原版没有双刀时不强加双刀机制。（依据：用户裁定 2026-10-16）
 - 无人进场和玩家跳过比赛的模拟评分保留原版，不折算场景控制效果。（依据：用户裁定 2026-10-16）
 - 身份沿用 `GwpCommon.IsGreyWardenLord`：当前属于灰袍家族且为领主英雄；普通灰袍兵、外族领主、穿灰袍装备的外人保持原物品规则。新入家族的领主自动适用，离开家族即失去身份加成；例外是成婚时还是灰袍领主、嫁出去的英雄，加成跟着她走（依据：用户裁定 2026-10-16），名单归[家族](family.md)婚姻一节。初始送的孩子按创始领主本人生成、收养的女孩按 `gw_leader_0` 模板生成，都是灰袍家族的领主，成年后自动适用。自定义战斗没有战役和英雄，灰袍指挥官 `gwp_custom_commander` 只注册成 BasicCharacterObject，按这个 ID 认作灰袍领主；战役角色只按英雄判断，不看这个 ID。（依据：设计；实机 2026-10-16 自定义战斗领主加成不生效）
-- 锁血：灰袍领主挨致命一击只掉到 1 血，之后 10 秒血量不低于 1；这 10 秒内亲手（含所骑坐骑冲撞）杀死或打晕一个敌人，按锁血以来对敌人造成的实际扣血回血（不超过血量上限），锁血结束，之后可再次触发。10 秒内没有击杀则放开锁血、保留 1 血，本场不再触发。（依据：用户裁定 2026-10-16，同日由 5 秒改 10 秒）
-- 锁血期间，每一笔战斗成长（踢/盾击命中、射箭、击杀）都乘 1.5；结束锁血的那一下击杀也按 1.5 倍记。成长本身的规则见[踢击、成长与双刀](dual-blade.md)「越打越强」。（依据：用户裁定 2026-10-16）
+- 领主锁血与顶阶士兵锁血共用同一行为，时长、回血、成长倍数及生命周期只在[锁血](last-stand.md)定义；本页维护领主身份判定。（依据：用户裁定2026-10-20；职责划分）
 - 数值沿用[武器与战马](troop-combat.md)、[踢击、成长与双刀](dual-blade.md)，不叠加第二份同类词条，也不改基础护甲、物品面板或原版比赛发装。（依据：设计）
 
 ## 实现范围
 
 普通近战继承近战词条，实际可架枪的攻击继承架枪词条；普通远程武器和弹药继承箭的命中词条。普通盾继承盾伤减半、背盾和手持被动覆盖、踢/盾击期间保护；覆盖按实际盾牌碰撞形状计算。当前骑乘普通坐骑时继承战马的冲撞、抗小伤、人立和伤害分担规则，离开坐骑后解除身份带来的马匹加成。
 
-锁血接在伤害模型最后一步 `ApplyGeneralDamageModifiers`（在战马分伤之后）：引擎把该结果四舍五入后扣血、血量低于 1 即死，所以致命时把伤害压到 floor(血量−1)。盾挡、背盾、兵器挡箭时这一步算的是盾的伤害，不触发；场景不让死（不死状态、对话、过场）时不消耗这一次。回血伤害取 `OnScoreHit` 的实际扣血，只算敌人、不算被挡的；致命一击在原版先报命中后报阵亡，所以计入。坐骑冲撞记在骑手名下。（依据：C#反编译 v1.4.8 Mission.GetAttackCollisionResults、Agent.HandleBlow、Mission.OnAgentHit）
-
 双刀出招保护与延续挥砍仍需真实双刀及相应动作；踢/盾击控制和临时成长原已按身份生效。数值只在上述所属页面定义。
 
 ## 验证与在役诊断
 
-- 锁血回归抽取生产 `GwpLordLastStandBehavior` 与成长的击杀记分共执行 32 项断言：四舍五入后留 1 血、锁定期不掉血、盾伤不触发、只算敌人且含坐骑冲撞的回血、打晕算击杀、回血封顶、成功后可再锁、时限边界、超时放开后不再触发、不死状态不消耗；领主击杀按武器记弓术或近战线、普通兵/友军/溃逃不记、坐骑冲撞记骑手、500 封顶、锁血期间 1.5 倍且结束锁血的那一下也算；并核对它是伤害模型最后一步、注册在成长行为之后。
+- 锁血79项及成长31项联动回归与诊断归[锁血](last-stand.md)，领主十秒及伤害模型末尾入口、成长先记后回血顺序继续覆盖。
 - 生产解析器、身体命中、盾伤模型、盾形选择、耐久与延后破盾、坐骑身份及分伤共81断言通过（含自定义战斗指挥官身份、嫁出去的灰袍领主保留身份）；Python全套23项、双刀/踢击27项通过。引擎边界为桩，不证明真实碰撞表现。
 - 开发与关闭诊断的隔离构建均0错误/警告；live双端哈希、75个runtime文件镜像及当前1.4.8加载校验通过，实际哈希只在[构建部署](build-and-deploy.md)维护。
-- 开发版 `GreyWarden-AI-Diagnostics.log` 的 `COMBAT` 记录 `LORD_READY`、`LORD_BODY_CONTROL`、`LORD_PASSIVE_SHIELD`、`LORD_SHIELD_DAMAGE`，以及锁血的 `LORD_LAST_STAND_START` / `_HEAL` / `_EXPIRED`，每个场景每个Agent每种事件至多3条。`LORD_READY` 只对灰袍领主写，武器取生成装备 `SpawnEquipment`：比武大会刷人时 `OnAgentBuild` 早于任务装备就绪，读 `WieldedWeapon` 会抛空引用，观赛直接报错。（依据：实机诊断 2026-10-16，TournamentFightMissionController.SpawnAgentWithRandomItems）用于核对身份、普通装备、被动挡盾及有效击倒；用户确认后同轮退休。所有采样字段与调用只在 `GWP_DIAGNOSTICS` 中，玩家构建不编入。
-- 锁血注册在 `GwpAlternativeAttackControlBehavior` 之后：原版按注册顺序回调 `OnAgentRemoved`，成长要先按倍数记下这一下击杀，锁血再结束。（依据：设计）锁血状态只属于当前场景，场景结束即消失，不进存档。
+- 开发版 `GreyWarden-AI-Diagnostics.log` 的 `COMBAT` 记录 `LORD_READY`、`LORD_BODY_CONTROL`、`LORD_PASSIVE_SHIELD`、`LORD_SHIELD_DAMAGE`；锁血记录及采样归[last-stand](last-stand.md)，每个场景每个Agent每种事件至多3条。`LORD_READY` 只对灰袍领主写，武器取生成装备 `SpawnEquipment`：比武大会刷人时 `OnAgentBuild` 早于任务装备就绪，读 `WieldedWeapon` 会抛空引用，观赛直接报错。（依据：实机诊断 2026-10-16，TournamentFightMissionController.SpawnAgentWithRandomItems）用于核对身份、普通装备、被动挡盾及有效击倒；用户确认后同轮退休。所有采样字段与调用只在 `GWP_DIAGNOSTICS` 中，玩家构建不编入。
 - 场景临时控制决定、成长和采样无需存档；装备身份在每次实际调用时按当前英雄和坐骑推导，无新增战役存档字段。
 
 ## 回退
 
-此次身份扩展之前的源码基线为 `4f31993`：取回本页覆盖的六个生产文件可恢复装备绑定规则；恢复时保留本轮之前已经存在的军械、运兵等其他工作树修改。调查补全的文档更正不回退。锁血单独撤回：删除 `GwpLordLastStand.cs` 与测试、`GwpTuning.LordCombat`，`SubModule.cs` 去掉注册，`GwpAgentApplyDamageModel.ApplyGeneralDamageModifiers` 去掉外层 `LimitDamage`，`GwpAlternativeAttackControlBehavior.AddMasteryBonus` 去掉倍数一行。（依据：流程）
+此次身份扩展之前的源码基线为 `4f31993`：取回本页覆盖的六个生产文件可恢复装备绑定规则；恢复时保留本轮之前已经存在的军械、运兵等其他工作树修改。调查补全的文档更正不回退。锁血已独立为[分阶战狂锁血](last-stand.md)，撤回方式在该页。（依据：流程）
 
 本轮GwpCommon只删除地图藏城判据，未改战斗身份、装备词条或领主加成入口；战斗回归仍独立执行。（依据：源码复核、生产回归 2026-10-17）
+
+本轮共用AI诊断文件只补无领主队导航快照，身份加成、锁血与COMBAT记录未变；取证范围见[诊断](diagnostics.md)。（依据：源码差异复核2026-10-18）

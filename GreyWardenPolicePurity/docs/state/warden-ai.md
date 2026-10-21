@@ -1,19 +1,18 @@
-# 灰袍地图 AI：派活、欲望竞价与巡区
+﻿# 灰袍地图 AI：派活、欲望竞价与巡区
 
-> 当前状态：沿用差事登记处完成约斗保护、协力征调与收养续办修复，离线通过，已部署待实测
+> 当前状态：追截取消速度拒派已部署，主队原版欲望保持；低分避敌解读已纠正，投案失败探针保留
 > 最后验收：未建立检查点
-> 已复核至：`79a01fe`（2026-10-18）
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs` `tools/tests/test_native_campaign_contracts.py` `tools/tests/test_native_follow_settlement.py` `tools/tests/test_duty_priority.py` `tools/tests/test_duty_scenarios.py` `tools/Check-CodeHygiene.py`
-> 待实测：请愿、重建不会再从正在协力的领主里挑人；灰袍领主闲着时不再往信众村跑；信众村名牌上有交俘虏、捐东西、招兵等动态
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs` `tools/tests/test_native_campaign_contracts.py` `tools/tests/test_native_follow_settlement.py` `tools/tests/test_pursuit_city_behavior.py` `tools/tests/test_duty_priority.py` `tools/tests/test_duty_scenarios.py` `tools/Check-CodeHygiene.py` `tools/tests/test_army_influence_fault.py`
+> 待实测：投案修复后正常游玩核对，异常再现时取失败参数；请愿/重建职责与信众村名牌动态仍待确认
 
 原自建卖货队的Park冻结与读档例外已随机制删除；原版村民队不进入灰袍托管欲望，规则归[村民队](firesworn-villagers.md)。（依据：用户裁定2026-10-16）
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；
 各本职见 [`family.md`](family.md)。
 
-约珥长时间无普通案涉及的约斗/收养双重控制与驻留指令失续已按[收养](village-relief.md#驻留状态与存读)修复，当前等待实机核对。（依据：实机问题定位、生产方法回归 2026-10-17）
-
 追捕欲望的玩家占案避让统一查 `GwpPlayerCaseAssignment`，同时覆盖普通悬赏与赎罪；已有任务交接只由[案件生命周期](case-enforcement.md)处理。（依据：源码复核2026-10-15）
+
+原版区域战力接入和宣战/接战许可归[协力](case-assistance.md#区域宣战与持续接战)。本页移动补丁中的initiative旁观已跳过同步预估，顺序和证据归[诊断](diagnostics.md)；没有调整欲望分数、补给规则或强制追击命令。（依据：源码复核2026-10-18）
 
 ## 谁拿到活（派活顺序）
 
@@ -38,9 +37,15 @@
 
 协力的提升落实为征调资格与原任务暂停，不抬高原版竞价分；编成、会合、战力和军团释放按[协力](case-assistance.md)原规则。进信众村仍是原版访问欲望，真实补给/疗伤等需求照常竞价。（依据：用户批准保留体验的简化方案；生产实现 2026-10-17）
 
-本轮回退基线为`7573179`：本次范围是GwpWardenDuties的登记/占用表、执法Helpers与Envoy的交接、Desire的约斗/收养解析，以及收养/重建/请愿的暂停计时与相关测试；取回整文件会同时撤掉此前未提交的协力、人物追责与执勤旗改动，回退须按本轮职责范围撤差异，保留这些前轮修改。（依据：流程）
-
 ## 欲望竞价（`GreyWardenPartyDesireBehavior`）
+
+长期候选与短期主动行为是两层。`MobilePartyAi.GetBehaviors` 先读取长期DefaultBehavior，再检查原版initiative；短期评分>1即覆盖长期行为，不与小时竞价里补给/访问的原始分比较。`DoNotMakeNewDecisions`等原版门槛仍有效。当前普通领主不因办案冻结AI；目标进入追截战斗可解除高速移动目标造成的进攻抑制，但仍需授权、区域优势、实际赶到和战斗尚未结束，不能推成必已入场。（依据：本机v1.4.8新反编译、原版评分28项回归 2026-10-19）
+
+initiative日志只是候选，不等于执行结果：GetBehaviors要求score>1才发起短期覆盖。低分Flee从Engage不会启动逃跑；若原来就在逃且尚未走到逃跑点，则可延续旧逃跑。判断须同时核对short、原短期状态与时刻，不能仅看到FleeToPoint字样就称其避战。（依据：本机原版完整GetBehaviors执行、实机日志纠错2026-10-20）
+
+原版GoAround不是独立Wait状态；正常可导航平面夹具中，完整GetBehaviors/GetGoAroundPartyBehavior/GetDefendingPosition将目标周围半径约5.95125的位置作为GoToPoint目的地。原生场景几何未加载，不能保证真实每座城的最终落点或到达时间。固定initiative输入的移动对照只证明命令落地，不证明目标自己会留城；目标原版自主反击与离城的联动见[案件](case-enforcement.md#藏城目标与战后连续交战)。（依据：原版完整方法63项离线对照 2026-10-19）
+
+案件宣战由每小时UpdateTasks独立检查距离、使者、区域等门槛，不要求本轮追捕候选赢得小时竞价，也不等待“刚刚赢了追捕”事件。因此已宣战本身不能证明宣战前后其他长期候选均低于0.99；实际接战与短期决策另查。保留原版主队欲望的要求不变，不按此结论新增宣战条件。（依据：用户要求与源码复核 2026-10-19）
 
 - 灰袍不冻结原版 AI：每个差事只是往原版小时竞价里加一个候选，补给、疗伤这些原版欲望照样能压过它。
 - 竞价在 `CampaignEventDispatcher.AiHourlyTick` 的后置补丁里做（`GwpFinalDesireAuctionPatch`），保证在所有原版评分之后。
@@ -81,9 +86,9 @@
 
 ## 原版决策的离线证据边界
 
-`test_native_campaign_contracts.py` 每次从本机 CampaignSystem.dll 新反编译4个托管方法后编译执行，18项断言确认：`GoAroundParty` 有防守点时走环绕点、无点才直扑；进城导航比较陆路/港口可达距离，再以平均领主速度折天数；军团成员跟随评分及不可达降分按[协力移动职责](case-assistance.md#速度分散重组与移动职责)运行；`CanPartyJoinBattle` 只判阵营准入，非距离/实际入场保证。导航结果、阵营关系与引擎对象为受控输入，未执行原生寻路。（依据：本机v1.4.8 C#反编译及离线执行 2026-10-17）
+原版决策要点：`GoAroundParty` 有防守点时走环绕点、无点才直扑；进城导航比较陆路/港口可达距离，再以平均领主速度折天数；`CanPartyJoinBattle` 只判阵营准入，不保证距离或实际入场。离线对照未执行原生寻路。（依据：本机v1.4.8 C#反编译及离线执行 2026-10-17）
 
-当前启动器选择包含NavalDLC；重新反编译本机NavalDLC模型，Encounter的参战半径转交BaseModel，initiative先执行BaseModel，仅在海上风暴时改写行为，未找到它改动陆上本次区域计算的代码。仍未捕获该局AI/Encounter最终模型类型，其他覆盖不能仅凭配置排除；RGL扫描模组目录也不证明其启用。完整区域及最终攻击选择的生产执行证据在[协力](case-assistance.md#原版区域估计与最终进攻选择)维护。（依据：本机C#反编译、启动器配置及取证范围 2026-10-17）
+NavalDLC 的 Encounter 参战半径转交 BaseModel，initiative 先执行 BaseModel，仅海上风暴时改写行为；未找到它改动陆上区域计算的代码，但未捕获实际局里的最终模型类型，其他覆盖不能仅凭配置排除。（依据：本机C#反编译、启动器配置 2026-10-17）
 
 ## 进聚落的意愿（`GwpWardenVisitDesire.cs`）
 
@@ -155,9 +160,17 @@ AUCTION的rawScores是最终差事竞价入口快照，已经过访问Harmony后
 - 悬停提示：协力军团是直接 `new Army(...)` 造出来的，`AiBehaviorObject` 为 null，原版提示框会因此抛异常。
   只在这种情况下返回空文本（`GwpAssistanceArmyTooltipPatch`）。（依据：实机诊断 2026-09-16/17）
 
-## 族长留城：当前确认的直接原因
+## 军团影响力计算空英雄故障
 
-最新实机日志中，族长 gw_leader_0_party_1 在 town_EW1 先被比武 Visit 意图（8 分）留城，campaignHour=2187125.89 已有 ENVOY_DUEL_FINISHED、wardenWon=True；比武收尾正常，之后意图已换成 Escort / Approach，相关小时候选约 0.99 为最高。此后到 2187182.65 仍在城，已持续约 57 游戏小时，粮食够约 27 天、伤兵 0、非食物货值 0、卖货系数 1.000。（依据：实机诊断 2026-10-15 16:09:20 后当前局）
+2026-10-19 23:30当前存档运行中在Army.ThinkAboutCohesionBoost→CalculateTotalInfluenceCost→CalculatePartyInfluenceCost→DefaultDiplomacyModel.GetHeroesForEffectiveRelation空引用崩溃；历史具体军团及缺英雄成员未确认。已修复离线复现同栈的投案漏退团路径，费用规则不变，修复归[使者投案衔接](case-envoy.md#投案与原版军团退队衔接)。
+
+灰袍同族军团仍不消耗影响力。原版每小时在凝聚力低于50时尝试补充，先算费用，满足条件后才可能实际扣费；普通同族且两支队都有英雄时CalculatePartyInfluenceCost直接返回0。任一英雄为null时原版可能进入关系计算并崩溃。现有无领主临时支援零费用适配要求真实Army关系与有效协力登记；实际报错是否因其未命中仍缺现场参数，不能直接放宽全部军团或全局关系模型。（依据：用户确认、安装版v1.4.8反编译与受控执行2026-10-19）
+
+诊断版在 `GwpAssistanceArmyLifecyclePatch` 有两个失败 Finalizer：逐队费用失败记录双方队伍/英雄ID、是否临时支援与登记条件，总费用失败记录调用方实际传入的 Army 及成员；成功不写，异常原样传播。取到现场并修复确认后退休。（依据：故障取证需要 2026-10-19）
+
+直接相关候选：修复前生产投案直接调用 TakePrisonerAction，没有先把原队移出原版军团；安装版抓捕会清英雄但保留原队的 Army 登记。离线把生产投案与安装版抓捕/小时费用/关系方法相接，复现同一栈的空引用，原队移出成员表后不崩。投案漏退团已修复（见[使者投案衔接](case-envoy.md#投案与原版军团退队衔接)）；23:30 出错的军团是否就是它，历史日志无参数不能确认，不宣称全部军团故障根除。（依据：生产源码、安装版方法执行 2026-10-20）
+
+## 族长留城：当前确认的直接原因
 
 这些小时的原版主动性观测一致为 FleeToPoint@naval_patrol_party_1_party_445、score=11.3208。原版 MobilePartyAi.GetFleeBehavior 在人在聚落、威胁不在同一聚落时，将避敌短期动作改为回当前聚落/留在聚落。小时追捕赢竞价不保证压过这个短期避敌；8 分留城和 11.32 主动性属于不同决策层，不能直接用大小相减。（依据：实机诊断；C#反编译 v1.4.8 DefaultMobilePartyAIModel.GetBestInitiativeBehavior、MobilePartyAi.GetFleeBehavior）
 

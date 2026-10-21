@@ -7,7 +7,7 @@ using TaleWorlds.CampaignSystem.ComponentInterfaces;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 玩家与灰袍领主的婚姻（用户裁定 2026-10-14：新档与每位灰袍领主关系 100，能和任意一位灰袍领主结婚；之后给每人做故事线）。
+    /// 玩家与灰袍领主的免费婚姻入口保留，不再赠送满关系（用户裁定 2026-10-20）。
     /// 灰袍领主对话里直接求婚、当场成婚，不走原版求爱说服和嫁妆谈判。
     /// 嫁出去的灰袍领主带走灰袍领主的战斗加成（用户裁定 2026-10-16：跟随，不要消灭），名单在这里记、进存档。
     /// </summary>
@@ -21,12 +21,11 @@ namespace GreyWardenPolicePurity
 
         public override void RegisterEvents()
         {
-            CampaignEvents.OnCharacterCreationIsOverEvent.AddNonSerializedListener(this, OnCharacterCreationIsOver);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, AddDialogs);
             CampaignEvents.BeforeHeroesMarried.AddNonSerializedListener(this, OnBeforeHeroesMarried);
         }
 
-        // 关系只在新档设一次，之后照原版涨落；求婚是即时动作，没有进行中的状态。嫁出去的名单要存。
+        // 求婚是即时动作，没有进行中的状态。嫁出去的名单要存。
         public override void SyncData(IDataStore dataStore) =>
             dataStore.SyncData("gwp_married_warden_ids", ref _marriedWardenIds);
 
@@ -43,20 +42,6 @@ namespace GreyWardenPolicePurity
             foreach (Hero hero in new[] { first, second })
                 if (GwpCommon.IsGreyWardenLord(hero) && !_marriedWardenIds.Contains(hero.StringId))
                     _marriedWardenIds.Add(hero.StringId);
-        }
-
-        /// <summary>
-        /// 原版两位英雄的关系落在双方族长之间（C#反编译 v1.4.8 DefaultDiplomacyModel.GetHeroesForEffectiveRelation），
-        /// 所以玩家与每位灰袍领主的关系就是玩家与灰袍族长这一对。
-        /// </summary>
-        private static void OnCharacterCreationIsOver()
-        {
-            Clan? wardens = PoliceStats.GetPoliceClan();
-            if (wardens?.Leader == null)
-                return;
-            Campaign.Current.Models.DiplomacyModel.GetHeroesForEffectiveRelation(
-                Hero.MainHero, wardens.Leader, out Hero player, out Hero theirs);
-            player.SetPersonalRelation(theirs, Campaign.Current.Models.DiplomacyModel.MaxRelationLimit);
         }
 
         private static void AddDialogs(CampaignGameStarter starter)

@@ -21,10 +21,20 @@ namespace GreyWardenPolicePurity
             public double Since;
             public float LastDistance = -1f;
             public int Reported;
+            public string InterceptorGate = "not_observed";
         }
 
         private readonly Dictionary<string, WarPursuitWatch> _warPursuitWatch =
             new Dictionary<string, WarPursuitWatch>(StringComparer.OrdinalIgnoreCase);
+
+        private void TraceInterceptorGate(MobileParty source, MobileParty target, string reason)
+        {
+            if (_warPursuitWatch.TryGetValue(source.StringId + ">" + target.StringId, out WarPursuitWatch? watch))
+                watch.InterceptorGate = reason;
+            else if (CrimeState.GetTask(source.StringId)?.WarDeclared == false)
+                GwpAiDiagnostics.WriteAction(source, "CASE_DECLARATION_WAITING_INTERCEPTOR",
+                    "target=" + target.StringId + "; reason=" + reason);
+        }
 
         private void TraceStalledWarPursuits()
         {
@@ -58,6 +68,7 @@ namespace GreyWardenPolicePurity
                     "target=" + offender.StringId + "; hours=" + (now - watch.Since).ToString("0") +
                     "; distance=" + distance.ToString("0.0", CultureInfo.InvariantCulture) +
                     "; lastDistance=" + watch.LastDistance.ToString("0.0", CultureInfo.InvariantCulture) +
+                    "; lastInterceptorGate=" + watch.InterceptorGate +
                     "; policeSpeed=" + police.Speed.ToString("0.00", CultureInfo.InvariantCulture) +
                     "; targetSpeed=" + offender.Speed.ToString("0.00", CultureInfo.InvariantCulture) +
                     "; policeStrength=" + armyStrength.ToString("0", CultureInfo.InvariantCulture) +

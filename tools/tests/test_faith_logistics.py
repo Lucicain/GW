@@ -76,6 +76,7 @@ class Regression {
  static float SwornShare(FaithVillage r,Settlement s)=>r.Share;
  static bool KeptOnHandover(EquipmentElement e)=>false;
  static bool Store(string id,EquipmentElement e,int n)=>false;
+ string HolderOf(PartyBase party)=>"party";
  static int DonateArmorySurplus(string a,string b)=>0;
  static void RecordVisit(MobileParty p,Settlement s,int prisoners,int donated){}
  static void ReleaseHeroPrisoners(MobileParty p){foreach(var e in p.PrisonRoster.GetTroopRoster().Where(e=>e.Character.IsHero).ToList())p.PrisonRoster.AddToCounts(e.Character,-e.Number,false,-e.WoundedNumber,-e.Xp);}
@@ -106,10 +107,6 @@ __METHODS__
   row.Share=0.2f;r.UpdatePriestPower(row);Near(row.Priest.Power,40,"below cap keeps real faith share");Near(rival.Power,160,"ordinary shares conserve total");
   var second=new Hero{Power=100};s.Notables.Add(second);row.Share=1;r.UpdatePriestPower(row);Near(row.Priest.Power,150,"multiple rivals do not require excess half share");Near(rival.Power/second.Power,1.6f,"rivals retain relative proportions");
   s.Notables.Clear();float before=row.Priest.Power;r.UpdatePriestPower(row);Near(before,row.Priest.Power,"sole priest unchanged");
-  Check(PrisonersToBalance(200,50,60,50)==70,"both villages over soft target still rebalance");
-  Check(PrisonersToBalance(50,50,0,100)==0,"no export below or at soft target");
-  Check(PrisonersToBalance(200,50,0,100)==133,"different village sizes weighted by faith households");
-  Check(PrisonersToBalance(100,50,300,50)==0&&PrisonersToBalance(100,50,0,0)==0,"no wrong-way or zero-household delivery");
   var p=new MobileParty();p.PrisonRoster.AddToCounts(other,40,false,31,407);p.PrisonRoster.AddToCounts(hero,1);
   var ai=new AIBehaviorData{AiBehavior=AiBehavior.GoToSettlement,Party=s};var think=new PartyThinkParams();think.AIBehaviorScores.Add((ai,0.384f));
   GwpWardenVisitDesire.Rescore(p,think);Near(think.AIBehaviorScores[0].Item2,2.688f,"full prisoner load gives real delivery need even at full village");
@@ -118,9 +115,8 @@ __METHODS__
   e=dungeon.GetElementCopyAtIndex(dungeon.FindIndexOfTroop(other));Check(e.WoundedNumber==31&&e.Xp==407,"handover preserves prisoner wounds and XP");
   think=new PartyThinkParams();think.AIBehaviorScores.Add((ai,0.384f));GwpWardenVisitDesire.Rescore(p,think);
   Near(think.AIBehaviorScores[0].Item2,0.384f,"delivery clears the visit bonus, captive hero never keeps it alive");
-  p=new MobileParty();p.Party.PrisonerSizeLimit=12;p.PrisonRoster.AddToCounts(other,2);int moved=r.LoadBalancePrisoners(row,p,70);
-  Check(moved==10&&p.PrisonRoster.TotalManCount==12&&dungeon.TotalManCount==180,"convoy respects actual moving prisoner capacity");
-  Check(r.LoadBalancePrisoners(row,p,70)==0,"full moving convoy never overloads");
+  // Already carried or battle-won captives still arrive after active village export retires.
+  p=new MobileParty();p.PrisonRoster.AddToCounts(other,12);
   var store=new IDataStore{IsSaving=true};SyncTroopRosters(store,"Dungeon",r._dungeons);var loaded=new Dictionary<string,TroopRoster>();store.IsSaving=false;SyncTroopRosters(store,"Dungeon",loaded);
   var saved=dungeon.GetElementCopyAtIndex(0);e=loaded[s.StringId].GetElementCopyAtIndex(0);
   Check(e.Number==saved.Number&&e.WoundedNumber==saved.WoundedNumber&&e.Xp==saved.Xp,"actual dungeon persistence restores counts wounds XP");
@@ -129,7 +125,7 @@ __METHODS__
   Check(delivered==12&&local.TotalManCount==12&&p.PrisonRoster.TotalManCount==0,"village convoy arrival transfers full ordinary load and releases heroes");
   e=target.MilitiaPartyComponent.MobileParty.MemberRoster.GetElementCopyAtIndex(0);
   Check(joined==1&&e.Character==other&&e.WoundedNumber==1&&e.Xp==73,"non-warden rescued soldier survives first arrival without militia");
-  Near(r._dungeons[s.StringId].TotalManCount+local.TotalManCount,192,"global ordinary captives conserved across journey");
+  Near(r._dungeons[s.StringId].TotalManCount+local.TotalManCount,202,"global ordinary captives conserved across journey");
   Console.WriteLine("FAITH_LOGISTICS_ASSERTIONS="+checks+"; PASS");
  }
 }
@@ -141,8 +137,7 @@ class FaithLogisticsTests(unittest.TestCase):
         methods = members(source("GwpFireswornBehavior.cs"), "RosterOf", "SyncTroopRosters",
                           "UpdatePriestPower", "PushGuard", "ObserveGuard", "EnsureVillageMilitia", "JoinGuard")
         methods += members(source("GwpFireswornDungeon.cs"), "HandOver")
-        methods += members(source("GwpFireswornParties.cs"), "PrisonersToBalance", "LoadBalancePrisoners",
-                           "LodgePrisonersAndStrangers")
+        methods += members(source("GwpFireswornParties.cs"), "LodgePrisonersAndStrangers")
         roster = RECRUIT_STUBS[RECRUIT_STUBS.index("struct TroopRosterElement"):RECRUIT_STUBS.index("class Hero")]
         roster = roster.replace(" public int TotalManCount", " public static TroopRoster CreateDummyTroopRoster()=>new TroopRoster();public void Clear()=>rows.Clear();\n public int TotalManCount")
         roster = roster.replace(" public List<TroopRosterElement>", " public int TotalWounded=>rows.Sum(e=>e.WoundedNumber);public int TotalRegulars=>rows.Where(e=>!e.Character.IsHero).Sum(e=>e.Number);\n public List<TroopRosterElement>")

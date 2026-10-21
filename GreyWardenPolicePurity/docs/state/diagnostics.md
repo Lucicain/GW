@@ -1,10 +1,9 @@
 # 诊断系统
 
-> 当前状态：用户已确认本轮游玩正常；协力崩溃探针与内存采样已退休，退出原生故障独立取证
-> 最后验收：未建立检查点
-> 已复核至：`5b0591f`（2026-10-18）
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1`
-> 待实测：退出阶段原生释放故障；收养交接等未覆盖项仍随所属功能核对
+> 当前状态：事务派遣入口健康探针已退休；军团费用失败、村民出车容量/货仓与专运标记诊断仍在役
+> 最后验收：2026-10-21 事务派遣入口用户未发现问题，已核对点击与选兵日志；其他功能仍按各自验收范围
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpPartyDutyMovementPatch.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `tools/tests/test_firesworn_logs.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1` `GwpWardenDispatchDialogue.cs`
+> 待实测：投案修复后正常游玩核对，若仍故障则取军团参数；退出原生释放与收养交接仍随所属功能核对
 
 ## 原则
 
@@ -18,7 +17,13 @@
 
 收养驻留新增三个状态转换事件：`ADOPTION_STAY_STARTED_OR_RESUMED`、`ADOPTION_STAY_PAUSED`、`ADOPTION_STAY_FINISHED`，只在开始/恢复、暂停或收尾记录目标村和剩余小时，全部在诊断编译开关内。用于核对赴约/返程不计时及完成释放；用户确认收养交接可用时同轮退休。实现随[收养](village-relief.md)维护。（依据：已复现实机缺陷后的验收诊断 2026-10-17）
 
+军团费用失败探针ARMY_INFLUENCE_FAILURE与ARMY_TOTAL_INFLUENCE_FAILURE仅在诊断版编入，记录实际参数并原样传播异常，成功不写；根因、证据缺口与退休条件只在[地图AI](warden-ai.md#军团影响力计算空英雄故障)维护。（依据：实机崩溃与取证需要2026-10-19）
+
+普通案宣战增加既有区域评估快照，停滞记录增加lastInterceptorGate；只复用业务已经计算的值，不重复调用原版评分。证据缺口、字段与退休条件随[协力](case-assistance.md#区域宣战与持续接战)和[追截队](case-interceptors.md#卡拉多格追捕的证据边界)维护；尚未闭合，不宣称已修复首次接触问题。（依据：本轮实机证据缺口2026-10-20）
+
 ## 谁来管
+
+首队准备失败时诊断版增加CASE_DECLARATION_WAITING_INTERCEPTOR，沿现有门槛记录原因；玩家支援等待记录额外区分localReady与interceptorReady。均复用业务判定，不额外评分、不新增定时器。随[宣战/首队联动](case-interceptors.md#常规追截与战力复核)验收退休。（依据：空宣战已复现及诊断设计2026-10-20）
 
 诊断的加、删、加强与日志清理由 agent 自己决定并执行，不等用户下指令，也不请用户
 去读日志。遇到难以解决的问题或体验问题时，agent 先加强相关诊断取证，并配合 C# 反编译
@@ -49,17 +54,23 @@
 `cdbX64.exe`，见 `../reference/investigation-methods.md`），结论写进 journal 后直接删，不需要再问用户。（依据：用户裁定）
 
 **按当前覆盖范围命名。** 范围变了就改系统名和日志文件名，不要留一个误导的名字。（依据：流程）
-（例：`GwpRangedCommandTrace` 扩到双方所有编队后曾改名 `GwpBattleCommandTrace`，现已退休。）
+（例：战场编队采样扩到双方所有编队后曾整体改名，现已退休。）
 
-领主普通装备加成的 `COMBAT` 采样字段与退休条件见[lord-combat.md](lord-combat.md)，不使用案件时间戳，竞技场场景也可记录。
+领主普通装备加成的 `COMBAT` 采样字段与退休条件见[lord-combat.md](lord-combat.md)，不使用案件时间戳，竞技场场景也可记录；领主与最高阶步兵/弓手的共享锁血转换采样只在[last-stand.md](last-stand.md)维护。
 
 ## 运兵在役诊断
 
-自主练兵旧排队/驻留/自队经验日志随机制删除。`TRAINING_TRANSPORT_DISPATCHED` 记录出队人货，`DELIVERED` 记录实际交付人数与落脚村；交换/归队日志随机制删除；阶段与退休条件只在 [运兵](warden-training.md) 定义。日志在诊断版编译，用户确认运兵可用时同轮退休健康路径记录。（依据：流程、源码复核 2026-10-15）
+自主练兵送老兵已退休，TRAINING_TRANSPORT_DISPATCHED随机制删除；旧在途实体仍可用DELIVERED记录实际交付，随接续验收退休，规则只在[挂名练兵官](warden-training.md)维护。BALANCE_DISPATCHED增加真实capacity/weight与danger，DAMNATION增加surplusBurned/promotedToGuard，用于核对分批运量及超额两换一；确认后退休健康路径。（依据：用户裁定及诊断流程2026-10-20）
 
 ## 日志文件
 
-AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinaryCase`，代表队伍活跃、领主活跃与灰袍归属，不含差事占用、使者约定、可接目标或战力门槛；不能把True当成完整派案资格。完整接案还经过 `GwpWardenDuties` 等所属入口。本次约珥实际被善后占用时该字段仍True。（依据：源码与实机日志 2026-10-17）
+村民运输验收沿用MARKET_DISPATCHED，容量、货仓、专运/下一趟待办字段和退休条件只在[村民运输](firesworn-villagers.md#普通贸易专运与分账)定义；不额外循环记录健康状态。（依据：诊断流程 2026-10-19）
+
+经济分析器按完整行去重并保留时间戳时区；公库卖货收入只统计当前MARKET_HOME.goldToTreasury，不把nativeTradeGold村税混入。装车估值可能重复出车且与回款跨窗口，不据旧MARKET_SOLD缺席计算“卖出0%”或推断城镇缺钱；信众净户数减少也不等于没有自然增长。（依据：日志、生产卖货源码与分析器回归 2026-10-19）
+
+周期50人兜底的派出记录与退休条件只在[追截队](case-interceptors.md#周期兜底的定位与当前缺口)维护。
+
+AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinaryCase`，代表队伍活跃、领主活跃与灰袍归属，不含差事占用、使者约定、可接目标或战力门槛；不能把True当成完整派案资格。完整接案还经过 `GwpWardenDuties` 等所属入口。（依据：源码与实机日志 2026-10-17）
 
 负声望赎罪在役阶段记录与退休条件只在[赎罪委派](atonement.md)定义，实测后由agent读取案件日志核对。
 
@@ -71,9 +82,6 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 | `GreyWarden-AI-Diagnostics.log` | AI / 欲望拍卖 / 协力编成 / 地图战斗采样，每局开新文件，旧的滚进归档 |
 | `GreyWarden-Case-Events.log` | 案件生命周期事件 |
 | `GreyWarden-Diagnostics-Archive` | 滚动归档 |
-
-骑兵伤害调查的 `GreyWarden-Knight-Damage.log`、`GreyWarden-Warhorse-Damage.log`（含 `.previous`）已于 2026-09-25 随诊断退休删除，
-不再可读；结论在 journal。
 
 ## 火誓者监控字段
 
@@ -101,6 +109,8 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 输出总览与收支、每座有火誓者的村子（人数来源、守村队、祭司势力、军械库按类）、新信众村出现的速度、每位领主、无领主队与仪式、异常汇总，
 最后列出需要看的问题；当前、归档与启动标记都按UTF-8 BOM读取。
 
+区域业务评估不写成真实initiative结果；`GwpInitiativeDiagnosticsPatch` 跳过同步预估，只在区域守卫之后旁观原版正式结果。区域数据使用业务评估已产生的原值，不为了打印重跑原版评分。（依据：流程、离线执行2026-10-18）
+
 ## 在役
 
 | 系统 | 为什么还留着 | 退休条件 |
@@ -115,17 +125,7 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
 | `tools/Capture-StackOverflow.ps1`（用户运行：cdb启动游戏，记录全会话；致命异常先存寄存器、带地址的原生栈和/mip转储，再读SOS及全部线程；栈溢出退出码另在RtlExitUserProcess/NtTerminateProcess入口拦截，正常退出不截停） | 中途无提示退出，异常回调可能缺席；原版与CLR的两条退出入口均需留证 | 闪退定位并修复后连工具退休；新增终止断点尚待真实进程验证 |
 
-2026-10-17用户确认当前游玩未发现问题；新会话约179战役小时、军团解散26步正常返回，未见新增异常。军团分段/导航面探针和每分钟内存采样已退休，并清除其专属历史日志行；故障观察与未覆盖功能诊断仍保留，退出原生释放故障单独调查。（依据：用户确认与实机日志2026-10-17）
-
-已退休的：仪式双声音交接经用户 2026-10-08 确认完全修复，`RITUAL_MAP_SOUND_*` / `RITUAL_MENU_SOUND_*` 两份 Trace、调用与反射探测已删除；共享日志中只清除相应声音行，其他诊断保留。已闭合的声音调查目录已删除，媒体验收与清理状态见 `firesworn-media.md`。
-2026-10-08 用户说没有大 bug、很多监控可以退休：每小时部队状态 `HOURLY_STATE` / `DIRECT_ATTACK_STATE` / `RESOLVED` /
-`OBSERVED_AUCTION` / `OBSERVED_RESOLVED`、进聚落意愿对账 `DESIRE`（连同 `GwpWardenVisitDesire.Trace.cs` 和 `tools/Analyze-Desire.py`；
-3413 个候选读到的原版分全是 0，对账早已失效）、仪式声音 `RITUAL_SOUND_*` / `RITUAL_MAP_SOUND_*`。
-案件事件（`GreyWarden-Case-Events.log`）、ACTION、AUCTION、地图战斗、火誓者行仍在役：查宣战追捕要用。送信队的 AI 诊断（2026-10-02 为查卖俘虏折返临时纳入，用户确认修复后退出）；`PLAYER_JUSTICE` 的 `companionCases` 字段与 `COMPANION_FINE_SETTLED`（2026-10-02 用户确认主队 NPC 旧案后删除；失败路径 `COMPANION_FINE_INCOMPLETE` 保留）；援军 `BATTLE_SCENE_OPENING` / `BATTLE_SCENE_SUPPORT` 与音乐档位 `SYNDICATE_BATTLE_DYNAMICS`（2026-09-26 用户确认全部实测项后删除，同时清掉了累积 2.9 MB 的 `GreyWarden-Faults.log` 与 9 月 15–17 日归档）；`GwpWarhorseDamageTrace`（2026-09-25 用户确认骑兵表现后删除代码）；`WARDEN_RESOLVE_BLOCK`（2026-09-25 士气改动时删除）；`GwpArcherContactTrace` 及其两类 Harmony 补丁（双刀互斥验收时删除）；
-`GwpBattleCommandTrace` 全套战场采样与 `GwpArcherSwitchObserver`（2026-09-23 踱步调查结案删除，
-日志行一并清除，结论见 [`battle-tactics.md`](battle-tactics.md)）。
-其日志、WER 与一次性分析输出**不再可读**；需要重新调查时从新复现取证，
-不要把已退休路径写成仍可用文件。（依据：流程）
+案件事件（`GreyWarden-Case-Events.log`）、ACTION、AUCTION、地图战斗与火誓者行仍在役；主队 NPC 代缴的失败路径 `COMPANION_FINE_INCOMPLETE` 保留。其余已退休诊断（仪式声音、每小时部队状态、进聚落意愿对账、送信队 AI、援军与音乐档位、战马伤害、双刀互斥、战场编队采样等）的代码、日志与 WER 均已删除，**不再可读**；退休时间与结论在 journal。需要重新调查时从新复现取证，不要把已退休路径写成仍可用文件。（依据：流程）
 
 ## 限流是必需的
 

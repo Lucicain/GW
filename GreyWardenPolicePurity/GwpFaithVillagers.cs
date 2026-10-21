@@ -135,31 +135,75 @@ namespace GreyWardenPolicePurity
             return replaced;
         }
 
-        internal static void LoadFaithMarket(Village village, MobileParty party)
+        internal static bool IsDedicatedFaithMarket(Village village, MobileParty party) =>
+            IsFaithVillager(party) && party.HomeSettlement == village.Settlement &&
+            party.CurrentSettlement == village.Settlement && party.MapEvent == null && !party.IsInRaftState &&
+            IsPreachedVillage(village.Settlement) && IsVillageQuiet(village.Settlement) && !_instance!.HasRitual(village.Settlement) &&
+            _instance._faithParties[party.StringId].DedicatedMarketTripPending &&
+            ItemsOf(_instance._goods, village.Settlement.StringId).TotalValue >= GwpTuning.Firesworn.CaravanMinimumGoodsValue;
+
+        internal static bool LoadNativeMarketGoods(Village village, MobileParty party)
+        {
+            if (!IsDedicatedFaithMarket(village, party)) return true;
+            ItemRoster cargo = ItemsOf(_instance!._marketCargo, party.StringId);
+            ItemObject? pack = MarketPackAnimal(party);
+            // 专运不再装新村产；上次未卖完的村产先存回本村，运输驮兽按原版留存量保留。
+            // 原版村民不消耗食物，故粮食也按普通贸易货物归仓。
+            foreach (ItemRosterElement entry in party.ItemRoster.ToList())
+            {
+                int owned = cargo.Where(e => e.EquipmentElement.Equals(entry.EquipmentElement)).Sum(e => e.Amount);
+                int kept = entry.EquipmentElement.Item == pack ? (int)(party.MemberRoster.TotalManCount * 0.5f) : 0;
+                int count = Math.Max(0, entry.Amount - owned - kept);
+                if (count == 0) continue;
+                party.ItemRoster.AddToCounts(entry.EquipmentElement, -count);
+                village.Settlement.ItemRoster.AddToCounts(entry.EquipmentElement, count);
+            }
+            return false;
+        }
+
+        internal static void LoadFaithMarket(Village village, MobileParty party, bool dedicated = false)
         {
             if (!IsFaithVillager(party)) return;
             GwpFireswornBehavior behavior = _instance!;
             ItemRoster goods = ItemsOf(behavior._goods, village.Settlement.StringId);
             ItemRoster cargo = ItemsOf(behavior._marketCargo, party.StringId);
             float space = Math.Max(0f, party.InventoryCapacity - party.TotalWeightCarried);
+#if GWP_DIAGNOSTICS
+            float spaceBeforeLoading = space;
+#endif
             int loaded = 0;
-            foreach (ItemRosterElement entry in goods.ToList())
+            // 陆上动物不占货重且可增加运力；先装动物，再用实际新增容量装其他货。
+            foreach (ItemRosterElement entry in goods.OrderByDescending(e => e.EquipmentElement.Item.HasHorseComponent).ToList())
             {
-                float weight = entry.EquipmentElement.Item.Weight;
+                space = Math.Max(0f, party.InventoryCapacity - party.TotalWeightCarried);
+                float weight = Campaign.Current.Models.InventoryCapacityModel.GetItemEffectiveWeight(
+                    entry.EquipmentElement, party, party.IsCurrentlyAtSea, out _);
                 int count = weight > 0f ? Math.Min(entry.Amount, (int)(space / weight)) : entry.Amount;
                 if (count <= 0) continue;
                 goods.AddToCounts(entry.EquipmentElement, -count);
                 party.ItemRoster.AddToCounts(entry.EquipmentElement, count);
                 cargo.AddToCounts(entry.EquipmentElement, count);
-                space = Math.Max(0f, space - count * weight);
                 loaded += count;
             }
-            SetPhase(behavior._faithParties[party.StringId], FaithPartyPhase.Outbound,
+            FaithParty record = behavior._faithParties[party.StringId];
+            record.DedicatedMarketTripPending = !dedicated && goods.TotalValue >= GwpTuning.Firesworn.CaravanMinimumGoodsValue;
+            SetPhase(record, FaithPartyPhase.Outbound,
                 (party.TargetSettlement ?? village.TradeBound ?? village.Settlement).StringId);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFaith("MARKET_DISPATCHED",
                 "party=" + party.StringId + "; home=" + village.Settlement.StringId + "; nativeVillager=True; cargoItems=" + loaded +
-                "; cargoValue=" + cargo.TotalValue + "; men=" + party.MemberRoster.TotalManCount);
+                "; cargoValue=" + cargo.TotalValue + "; men=" + party.MemberRoster.TotalManCount +
+                "; dedicated=" + dedicated + "; dedicatedNext=" + record.DedicatedMarketTripPending +
+                "; freeBeforeGrayLoad=" + spaceBeforeLoading.ToString("0.##") +
+                "; capacityAfterGrayLoad=" + party.InventoryCapacity +
+                "; weightAfterGrayLoad=" + party.TotalWeightCarried.ToString("0.##") +
+                "; inventoryModel=" + Campaign.Current.Models.InventoryCapacityModel.GetType().FullName +
+                "; warehouseValue=" + goods.TotalValue +
+                "; warehouseTop=" + string.Join(",", goods.OrderByDescending(e =>
+                        (long)e.EquipmentElement.Item.Value * e.Amount).Take(5).Select(e =>
+                        e.EquipmentElement.Item.StringId + ":" + e.Amount +
+                        ":rawWeight=" + e.EquipmentElement.Item.Weight.ToString("0.##") +
+                        ":horse=" + e.EquipmentElement.Item.HasHorseComponent)));
 #endif
         }
 
@@ -175,12 +219,15 @@ namespace GreyWardenPolicePurity
             _instance._faithParties[party.StringId].MarketGold += sold * unitPrice;
         }
 
+        private static ItemObject? MarketPackAnimal(MobileParty party) =>
+            party.ItemRoster.Select(e => e.EquipmentElement.Item)
+                .Where(item => item.ItemCategory == DefaultItemCategories.PackAnimal)
+                .OrderBy(item => item.Value).FirstOrDefault();
+
         internal static bool SellFaithMarket(Settlement settlement, MobileParty party)
         {
             if (!IsFaithVillager(party) || settlement.Town == null) return false;
-            ItemObject? pack = party.ItemRoster.Select(e => e.EquipmentElement.Item)
-                .Where(item => item.ItemCategory == DefaultItemCategories.PackAnimal)
-                .OrderBy(item => item.Value).FirstOrDefault();
+            ItemObject? pack = MarketPackAnimal(party);
             int sold = 0;
             for (int i = party.ItemRoster.Count - 1; i >= 0; i--)
             {
@@ -270,8 +317,21 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch(typeof(VillagerCampaignBehavior), "LoadAndSendVillagerParty")]
     internal static class GwpFaithVillagerDeparturePatch
     {
-        private static void Prefix(Village village, MobileParty villagerParty) => GwpFireswornBehavior.PrepareFaithVillagers(village, villagerParty);
-        private static void Postfix(Village village, MobileParty villagerParty) => GwpFireswornBehavior.LoadFaithMarket(village, villagerParty);
+        private static void Prefix(Village village, MobileParty villagerParty, out bool __state)
+        {
+            GwpFireswornBehavior.PrepareFaithVillagers(village, villagerParty);
+            // 仅跨本次同步调用传递，下一趟待办另有存档字段。
+            __state = GwpFireswornBehavior.IsDedicatedFaithMarket(village, villagerParty);
+        }
+        private static void Postfix(Village village, MobileParty villagerParty, bool __state) =>
+            GwpFireswornBehavior.LoadFaithMarket(village, villagerParty, __state);
+    }
+
+    [HarmonyPatch(typeof(VillagerCampaignBehavior), "MoveItemsToVillagerParty")]
+    internal static class GwpFaithVillagerNativeLoadPatch
+    {
+        private static bool Prefix(Village village, MobileParty villagerParty) =>
+            GwpFireswornBehavior.LoadNativeMarketGoods(village, villagerParty);
     }
 
     [HarmonyPatch(typeof(VillagerCampaignBehavior), "ThinkAboutSendingItemToTown")]

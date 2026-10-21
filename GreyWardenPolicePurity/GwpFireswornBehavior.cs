@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Helpers;
@@ -117,6 +117,8 @@ namespace GreyWardenPolicePurity
             public double PhaseHour;
             // 在途灰袍货款，实际金币仍在原版交易账户；同版存读不能丢失。
             public int MarketGold;
+            // 普通贸易后仍有积货，下次在家出车改跑灰袍专运；在途存读也要保留。
+            public bool DedicatedMarketTripPending;
         }
 
         public GwpFireswornBehavior()
@@ -133,6 +135,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
             CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);
             CampaignEvents.OnTroopRecruitedEvent.AddNonSerializedListener(this, OnTroopRecruited);
+            CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnArmoryBattleStarted);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnMobilePartyDestroyed);
             CampaignEvents.OnNewGameCreatedPartialFollowUpEndEvent.AddNonSerializedListener(this, OnNewGameCreated);
@@ -150,9 +153,8 @@ namespace GreyWardenPolicePurity
             List<int>? ritualKinds = null;
             List<double>? ritualEnds = null;
             List<string>? partyIds = null, partyHomes = null, partyTargets = null, partyTrainers = null;
-            List<string>? trainingHeroes = null;
-            List<double>? trainingDepartures = null;
             List<int>? partyKinds = null, partyPhases = null, partyMarketGold = null;
+            List<bool>? dedicatedMarketTrips = null;
             List<double>? partyHours = null;
 
             if (dataStore.IsSaving)
@@ -172,19 +174,16 @@ namespace GreyWardenPolicePurity
                 List<FaithParty> parties = _faithParties.Values.ToList();
                 partyIds = parties.Select(party => party.PartyId).ToList();
                 partyTrainers = parties.Select(party => party.TrainerId).ToList();
-                trainingHeroes = _trainingDepartures.Keys.ToList();
-                trainingDepartures = trainingHeroes.Select(id => _trainingDepartures[id]).ToList();
                 partyHomes = parties.Select(party => party.HomeId).ToList();
                 partyKinds = parties.Select(party => (int)party.Kind).ToList();
                 partyPhases = parties.Select(party => (int)party.Phase).ToList();
                 partyTargets = parties.Select(party => party.TargetId).ToList();
                 partyHours = parties.Select(party => party.PhaseHour).ToList();
                 partyMarketGold = parties.Select(party => party.MarketGold).ToList();
+                dedicatedMarketTrips = parties.Select(party => party.DedicatedMarketTripPending).ToList();
             }
 
             dataStore.SyncData("GWPP_FsPartyTrainers", ref partyTrainers);
-            dataStore.SyncData("GWPP_FsTrainingHeroes", ref trainingHeroes);
-            dataStore.SyncData("GWPP_FsTrainingDepartures", ref trainingDepartures);
             dataStore.SyncData("GWPP_FsVillageIds", ref villageIds);
             dataStore.SyncData("GWPP_FsVillageLastCongregation", ref congregations);
             dataStore.SyncData("GWPP_FsVillageLastDamnation", ref damnations);
@@ -203,11 +202,13 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("GWPP_FsPartyTargets", ref partyTargets);
             dataStore.SyncData("GWPP_FsPartyHours", ref partyHours);
             dataStore.SyncData("GWPP_FsPartyMarketGold", ref partyMarketGold);
+            dataStore.SyncData("GWPP_FsDedicatedMarketTrips", ref dedicatedMarketTrips);
             SyncTroopRosters(dataStore, "GWPP_FsGuard", _guards);
             SyncTroopRosters(dataStore, "GWPP_FsDungeon", _dungeons);
             SyncItemRosters(dataStore, "GWPP_FsGoods", _goods);
             SyncItemRosters(dataStore, "GWPP_FsArmory", _armories);
             SyncItemRosters(dataStore, "GWPP_FsMarketCargo", _marketCargo);
+            SyncArmoryBattles(dataStore);
 
             if (!dataStore.IsLoading)
                 return;
@@ -246,13 +247,14 @@ namespace GreyWardenPolicePurity
                     Phase = (FaithPartyPhase)partyPhases![i],
                     TargetId = partyTargets![i],
                     PhaseHour = partyHours![i],
-                    MarketGold = partyMarketGold![i]
+                    MarketGold = partyMarketGold![i],
+                    // 专运功能加入前没有待办标记；旧档先照普通贸易继续，保留实体财物和既有行程。
+                    DedicatedMarketTripPending = dedicatedMarketTrips?[i] ?? false
                 };
 
-            _trainingDepartures.Clear();
-            for (int i = 0; i < trainingHeroes!.Count; i++)
-                _trainingDepartures[trainingHeroes[i]] = trainingDepartures![i];
             _plans.Clear();
+            _battleLoadouts.Clear();
+            _battleOwners.Clear();
             RebuildPriestIndex();
         }
 
@@ -391,10 +393,6 @@ namespace GreyWardenPolicePurity
         internal static bool IsFireswornPriest(Hero? hero) =>
             hero != null && _instance != null && _instance._priestIds.Contains(hero.StringId);
 
-        /// <summary>案子发生在某座信众村跟前：灰袍优先接这种案子（用户裁定）。</summary>
-        internal static bool IsNearFaithVillage(Vec2 position) =>
-            FaithVillages().Any(village => village.GetPosition2D.Distance(position) <= GwpTuning.Firesworn.FaithCaseRadius);
-
         /// <summary>村庄菜单要显示的：信众户、守村队人数、祭司。</summary>
         internal static bool TryGetVillageFaith(Settlement? settlement, out int households,
             out int guard, out Hero? priest)
@@ -469,6 +467,8 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
+            RestoreArmoryBattleLoadouts();
+            BindExistingLordArmories();
             GwpFireswornMenus.Register(starter);
             GwpFireswornPartyDialogs.Register(starter);
             RebuildPriestIndex();
@@ -524,7 +524,6 @@ namespace GreyWardenPolicePurity
                 ScheduleCongregations();
                 ScheduleDamnations();
                 DispatchFaithParties();
-                DispatchTrainingTransports();
                 RebalanceArmories();
                 WriteDailySummary();
             }
@@ -571,7 +570,7 @@ namespace GreyWardenPolicePurity
                 return;
             TroopRoster guard = GuardOf(row.VillageId);
             int taken = Math.Min(count, guard.GetTroopCount(troop));
-            int kits = MoveBestSets(row.VillageId, party.StringId, troop, taken);
+            int kits = MoveBestSets(row.VillageId, HolderOf(party.Party)!, troop, taken);
             if (taken > 0)
                 guard.AddToCounts(troop, -taken);
             PushGuard(row, settlement);

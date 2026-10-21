@@ -105,7 +105,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 每天一次，只在信众村（有祭司）。烧人与集会各自计算仪式间隔（试玩值 10 天），满间隔后每天按概率举办；
-        /// 同一场先烧俘虏；祭司已是本地最强时，再烧原版民兵和不信教的户。
+        /// 祭司最强时先用超额低阶守村兵两换一升阶，剩余预算烧俘虏，再烧原版民兵和不信教的户。
         /// </summary>
         private void ScheduleDamnations()
         {
@@ -206,8 +206,12 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void HoldDamnation(FaithVillage row, Settlement village)
         {
+            ObserveGuard(row);
             int budget = Sworn(row);
             int experience = 0;
+            var promoted = new Dictionary<CharacterObject, int>();
+            int surplusBurned = BurnSurplusGuards(row, village, budget, promoted, ref experience);
+            budget -= surplusBurned;
             Dictionary<CharacterObject, int> produced = new Dictionary<CharacterObject, int>();
             int prisonersBurned = _dungeons.TryGetValue(row.VillageId, out TroopRoster? dungeon)
                 ? BurnPairs(dungeon, dungeon.GetTroopRoster(), budget, produced, ref experience)
@@ -230,7 +234,7 @@ namespace GreyWardenPolicePurity
                 householdsBurned = Math.Min(budget,
                     Math.Min((unbelievers + 1) / 2, row.Households / GwpTuning.Firesworn.DamnationSwornPerBurnedHousehold));
             }
-            if (prisonersBurned + militiaBurned + householdsBurned <= 0)
+            if (surplusBurned + prisonersBurned + militiaBurned + householdsBurned <= 0)
                 return;
 
             double now = CampaignTime.Now.ToHours;
@@ -245,6 +249,9 @@ namespace GreyWardenPolicePurity
                 row.Households = Math.Min(HouseholdCap(village), row.Households + pair.Value);
                 risen += JoinGuard(row, village, pair.Key, pair.Value);
             }
+            // 本来就是信众的守村兵两换一升阶，不再感化一户、也不从原配凭空产军械。
+            foreach (KeyValuePair<CharacterObject, int> pair in promoted)
+                JoinGuard(row, village, pair.Key, pair.Value);
             int householdsSworn = 0;
             if (householdsBurned > 0)
             {
@@ -258,8 +265,8 @@ namespace GreyWardenPolicePurity
             village.Party.SetVisualAsDirty();
             // 聚落上那一条只说烧了多少、多少户立誓（用户 2026-10-08：写得太多）；立誓户数连烧俘虏感化的一起算。
             List<string> burned = new List<string>();
-            if (prisonersBurned + militiaBurned > 0)
-                burned.Add(GwpText.Get(GwpTextCatalog.gwp_notice_burned_people, "COUNT", prisonersBurned + militiaBurned));
+            if (surplusBurned + prisonersBurned + militiaBurned > 0)
+                burned.Add(GwpText.Get(GwpTextCatalog.gwp_notice_burned_people, "COUNT", surplusBurned + prisonersBurned + militiaBurned));
             if (householdsBurned > 0)
                 burned.Add(GwpText.Get(GwpTextCatalog.gwp_notice_burned_homes, "COUNT", householdsBurned));
             GwpSettlementNotices.Post(village, FindLivingPriest(row),
@@ -272,14 +279,17 @@ namespace GreyWardenPolicePurity
                 Kind = RitualKind.Damnation,
                 EndHour = now + GwpTuning.Firesworn.DamnationLockHours
             });
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFaith("DAMNATION",
-                "village=" + village.StringId + "; prisonersBurned=" + prisonersBurned + "; militiaBurned=" + militiaBurned +
+                "village=" + village.StringId + "; surplusBurned=" + surplusBurned +
+                "; promotedToGuard=" + promoted.Values.Sum() + "; prisonersBurned=" + prisonersBurned + "; militiaBurned=" + militiaBurned +
                 "; householdsBurned=" + householdsBurned + "; householdsSworn=" + householdsSworn +
                 "; produced=" + string.Join(",", produced.Select(pair => pair.Key.StringId + ":" + pair.Value)) +
                 "; addedToGuard=" + risen + "; households=" + before + "->" + row.Households +
                 "; experience=" + experience + "; experienceGranted=" + experienceGranted +
                 "; hearth=" + hearthBefore.ToString("0") + "->" + village.Village.Hearth.ToString("0") + "; guard=" + Sworn(row) +
                 "; dungeonLeft=" + (dungeon?.TotalManCount ?? 0));
+#endif
         }
 
         /// <summary>从名单里成对烧（PickPairs），把烧掉的人从名单里拿掉，生成的灰袍兵记进 produced。返回烧了几个。</summary>

@@ -68,7 +68,7 @@ static class GwpCommon {public static bool IsGreyWardenLordParty(MobileParty p)=
 static class PoliceStats {public static IEnumerable<MobileParty> GetAllPoliceParties()=>MobileParty.All.Where(p=>p.IsWarden&&p.LeaderHero!=null);}
 enum WardenDuty{Assistance}
 static class GwpWardenDuties {public static bool IsFreeFor(MobileParty p,WardenDuty d)=>!p.Reserved&&!PoliceEnforcementBehavior.Occupied(p)&&!PoliceEnforcementBehavior.IsPartyHeldForDuel(p);}
-static class PlayerBountyBehavior {public static bool AwaitingSupportRequest(PoliceTask? t)=>false;}
+static class PlayerBountyBehavior {public static bool SupportPending;public static bool AwaitingSupportRequest(PoliceTask? t)=>t?.IsPlayerBountyEscort==true&&SupportPending;}
 static class GwpStrength {
  public class Threat {public float Strength,JoiningRadius=3,ThreatRadius=6,MaximumSpeed=3;public string FastestCombatGroupId="enemy";public List<string> CombatGroups=new();}
  public class Balance {public bool StrengthReady;}
@@ -105,12 +105,14 @@ public partial class PoliceEnforcementBehavior {
  private bool IsAssistanceMember(string id)=>_assistanceGroups.Values.Any(g=>g.MemberPartyIds.Contains(id));
  internal static bool Occupied(MobileParty p)=>_instance?._assistanceGroups.ContainsKey(p.StringId)==true||_instance?.IsAssistanceMember(p.StringId)==true;
  private static void DetachDelayPatrolFromArmy(MobileParty p){p.Army=null;}
+
  private bool TryGetDelaySupportAssistanceArmy(string s,string t,out MobileParty? leader,out Army? army){leader=FindActiveParty(s);army=null;if(leader==null||!_assistanceGroups.TryGetValue(s,out var g)||g.DispersedForSpeed)return false;army=MaintainAssistanceArmy(leader,g);return army!=null;}
  METHODS
  public static int Checks;
  static void Check(bool condition,string why){Checks++;if(!condition)throw new Exception(why);}
  static PoliceEnforcementBehavior Setup(out MobileParty leader,out MobileParty helper,out MobileParty enemy){
   var e=new PoliceEnforcementBehavior();_instance=e;MobileParty.All.Clear();CrimeState.Tasks.Clear();GreyWardenPartyDesireBehavior.Intent.Clear();GwpAssistanceArmyDisbandGuardPatch.Disbands=0;
+  MobileParty.MainParty=new MobileParty{StringId="player",IsMainParty=true,IsWarden=false,Strength=0};PlayerBountyBehavior.SupportPending=false;
   leader=new MobileParty{StringId="leader"};helper=new MobileParty{StringId="helper",Strength=120,Position=new Vec{X=1}};enemy=new MobileParty{StringId="enemy",IsWarden=false,Strength=100,Position=new Vec{X=100}};
   MobileParty.All.AddRange(new[]{leader,helper,enemy});CrimeState.Tasks["leader"]=new PoliceTask{TargetCrime=new CrimeRecord{Offender=enemy}};return e;}
  LordAssistanceGroup Group(MobileParty l,MobileParty? h=null){var g=new LordAssistanceGroup{LeaderPartyId=l.StringId};if(h!=null)g.MemberPartyIds.Add(h.StringId);_assistanceGroups[l.StringId]=g;return g;}
@@ -146,6 +148,33 @@ public partial class PoliceEnforcementBehavior {
   e=Setup(out l,out h,out t);g=e.Group(l);CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;e.MaintainAssistancePlayerBountyEscort(l,g);
   Check(g.MemberPartyIds.Contains("helper")&&l.Army!=null,"first player reinforcement can be recruited without preexisting army");Check(TryGetAssistanceDuty(l,out goal,out _,out var escort,out _)&&escort&&goal==MobileParty.MainParty,"player support keeps following player");
   e=Setup(out l,out h,out t);g=e.Group(l);h.Reserved=true;CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;e.MaintainAssistancePlayerBountyEscort(l,g);Check(l.Army==null&&CrimeState.Tasks.ContainsKey("leader")&&e.CaseFailures==0,"exhausted player support keeps case without empty shell");h.Reserved=false;e.UpdateLordAssistance();Check(l.Army!=null&&e._assistanceGroups["leader"].MemberPartyIds.Count==1,"player support can retry recruitment after empty release");
+  // Player-requested assistance commits the player's real group before deciding how many helpers to draft.
+  e=Setup(out l,out h,out t);CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;MobileParty.MainParty.Strength=80;
+  e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0&&h.Army==null,"player plus chief already sufficient: no redundant helper");
+  Check(CrimeState.Tasks.ContainsKey("leader")&&e.CaseFailures==0,"sufficient player force preserves commission");
+  g=e.Group(l);Check(GetCommittedAssistanceStrength(l,g)==120,"player commits strength even before physically reaching chief");
+  MobileParty.MainParty.Position.X=100000;Check(GetCommittedAssistanceStrength(l,g)==120,"commitment is not a local declaration permission");
+  MobileParty.MainParty.Strength=10;Check(GetCommittedAssistanceStrength(l,g)==50,"player losses immediately change commitment");
+  e.MaintainAssistancePlayerBountyEscort(l,g);Check(g.MemberPartyIds.SequenceEqual(new[]{"helper"}),"loss of combined advantage drafts a reachable helper");
+  e=Setup(out l,out h,out t);CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;MobileParty.MainParty.Strength=20;t.Strength=150;
+  MobileParty.All.Add(new MobileParty{StringId="second",Strength=120,Position=new Vec{X=2}});e.UpdateLordAssistance();
+  Check(e._assistanceGroups["leader"].MemberPartyIds.SequenceEqual(new[]{"helper"}),"draft stops once player plus chief plus nearest helper exceed target");
+  e=Setup(out l,out h,out t);CrimeState.Tasks["leader"].IsPlayerBountyEscort=true;MobileParty.MainParty.Strength=10;g=e.Group(l);
+  var playerArmy=new Army(new object(),MobileParty.MainParty,Army.ArmyTypes.Patrolling);
+  var playerAttached=new MobileParty{StringId="player_attached",IsWarden=false,Strength=80};playerAttached.Army=playerArmy;playerAttached.AttachedTo=MobileParty.MainParty;
+  var playerRemote=new MobileParty{StringId="player_remote",IsWarden=false,Strength=999};playerRemote.Army=playerArmy;
+  Check(GetCommittedAssistanceStrength(l,g)==130,"player's actually attached army counts but remote nominal member does not");
+  g.MemberPartyIds.Add("helper");h.Army=playerArmy;h.AttachedTo=MobileParty.MainParty;
+  Check(GetCommittedAssistanceStrength(l,g)==250,"helper already in player's actual group is counted exactly once");
+  MobileParty.MainParty.Strength=0;PlayerBountyBehavior.SupportPending=true;Check(GetCommittedAssistanceStrength(l,g)==160,"undelivered request contributes no player army");
+  PlayerBountyBehavior.SupportPending=false;MobileParty.MainParty.IsActive=false;Check(GetCommittedAssistanceStrength(l,g)==160,"inactive player contributes no force");
+  MobileParty.MainParty.IsActive=true;MobileParty.MainParty.LeaderHero!.IsPrisoner=true;Check(GetCommittedAssistanceStrength(l,g)==160,"captured player contributes no force");
+  e=Setup(out l,out h,out t);MobileParty.MainParty.Strength=10000;e.UpdateLordAssistance();
+  Check(e._assistanceGroups["leader"].MemberPartyIds.Contains("helper"),"ordinary NPC assistance ignores player strength");
+  e=Setup(out l,out h,out t);h.Position.X=24*h.TargetSpeed;
+  Check(e.GetAvailableAssistanceCandidates(l).Contains(h),"one-day travel boundary is inclusive");h.Position.X+=.01f;
+  Check(!e.GetAvailableAssistanceCandidates(l).Contains(h),"beyond one-day travel is excluded");h.Position.X=1;l.Reachable=false;
+  Check(!e.GetAvailableAssistanceCandidates(l).Contains(h),"navigation failure excludes nearby helper");
   e=Setup(out l,out h,out t);e.UpdateLordAssistance();Check(l.Army!=null&&h.Army==l.Army,"full hourly path allocates then forms");Check(TryGetAssistanceDuty(l,out goal,out _,out _,out _)&&goal==t,"hourly chief keeps offender as target");
   e=Setup(out l,out h,out t);g=e.Group(l,h);l.Strength=200;h.Position.X=20;e._assistanceAssignedHours["helper"]=0;e.MaintainAssistanceArmy(l,g);for(int i=0;i<4;i++){e.TryShrinkAssistanceGroup(l,g,100);e.ReconcileAssistanceFormations();}Check(l.Army==null&&e._assistanceGroups.Count==0&&CrimeState.Tasks.ContainsKey("leader"),"surplus last-member shrink releases shell and retains case");
   e=Setup(out l,out h,out t);g=e.Group(l,h);g.DispersedForSpeed=true;g.SpeedDetachedPartyIds.AddRange(new[]{"leader","helper"});e._assistanceAssignedHours["helper"]=42;
@@ -160,6 +189,10 @@ public partial class PoliceEnforcementBehavior {
   for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"regional passers do not prevent stable-force surplus release");
   t.Passers=0;for(int i=0;i<4;i++){e.UpdateLordAssistance();}Check(e._assistanceGroups.Count==0,"surplus helper released once passers leave");
   e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"released helper not re-requested for the same target");
+  foreach(float strength in new[]{100f,150f}){e=Setup(out l,out h,out t);l.Strength=strength;support=e.Support();e.UpdateLordAssistance();
+   Check(e._assistanceGroups.Count==0&&l.Army==null&&h.Army==null&&support.Army==null,"ordinary fallback support cannot form assistance for an equal or weaker enemy");
+   Check(CrimeState.Tasks.ContainsKey("leader")&&e.CaseFailures==0,"independent fallback support preserves ordinary case");}
+  e=Setup(out l,out h,out t);e.Support();e.UpdateLordAssistance();Check(e._assistanceGroups.Count==1,"genuinely stronger enemy can still form assistance with support");
   // 使者有结果之前不调人；谈崩才组协力（用户裁定 2026-10-16）。
   e=Setup(out l,out h,out t);l.EnvoyBlocked=null;e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0&&h.Army==null,"no helper before the envoy is sent");
   l.EnvoyBlocked="stub_no_envoy";e._envoyCases["crime"]=new EnvoyCase{WardenPartyId="leader",Stage=EnvoyStage.Travelling};e.UpdateLordAssistance();Check(e._assistanceGroups.Count==0,"no helper while the envoy travels");
@@ -174,7 +207,16 @@ public partial class PoliceEnforcementBehavior {
   Check(GetImmediateInterceptorTroopSources(l,g).SequenceEqual(new[]{l}),"gathering marker does not teleport remote helper troops into interceptor");
   h.Position.X=1;e.MaintainAssistanceArmy(l,g);Check(GetImmediateInterceptorTroopSources(l,g).Contains(h),"actually attached helper may contribute interceptor troops");
   h.IsActive=false;Check(!GetImmediateInterceptorTroopSources(l,g).Contains(h),"lost helper cannot contribute interceptor troops");h.IsActive=true;
-  VisitChecks(l,h);
+  // An ended case can defer physical disbanding while a remote member is fighting.
+  // This proves the lifecycle boundary, not that the historical crash used this army.
+  e=Setup(out l,out h,out t);g=e.Group(l,h);support=e.Support();a=e.MaintainAssistanceArmy(l,g)!;
+  h.MapEvent=new object();CrimeState.Tasks.Clear();e.CleanupInvalidAssistanceGroups();
+  Check(l.MapEvent==null&&l.Army==a&&support.Army==a&&g.PendingReleaseReason=="case_ended","other member battle defers army disband while leader and support remain outside battle");
+  Check(!IsActiveAssistanceArmy(a),"ended case stops active-assistance protection before deferred physical disband");
+  h.MapEvent=null;e.ReconcileAssistanceFormations();
+  Check(l.Army==null&&support.Army==null,"once battle ends ordinary reconciliation removes retained army and support");
+  Console.WriteLine("ASSISTANCE_LIFECYCLE_BOUNDARY: ended case + other member fighting -> physical army retained, active protection false -> battle ends -> released; historical army identity unknown");
+  e=Setup(out l,out h,out t);VisitChecks(l,h);
   l.Army=null;h.Army=null;var recruitingArmy=new Army(null,l,Army.ArmyTypes.Patrolling);h.Army=recruitingArmy;
   var entry=new NativeRecruiter();var village=new Settlement();entry.OnBeforeSettlementEntered(l,village,l.LeaderHero!);
   Check(entry.Calls.Count==7&&entry.Calls.All(p=>p==l),"native entry recruits for leader but not distant member");
@@ -254,4 +296,4 @@ class AssistanceTests(unittest.TestCase):
             (path / 'Formation.cs').write_text(formation, encoding='utf-8')
             result = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
             self.assertEqual(0, result.returncode, '\n'.join(l for l in result.stdout.splitlines() if ': warning ' not in l) + result.stderr)
-            print(next(line for line in result.stdout.splitlines() if line.startswith('ASSISTANCE_ASSERTIONS=')))
+            print('\n'.join(line for line in result.stdout.splitlines() if line.startswith(('ASSISTANCE_LIFECYCLE_BOUNDARY:', 'ASSISTANCE_ASSERTIONS='))))

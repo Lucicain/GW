@@ -15,11 +15,15 @@ namespace GreyWardenPolicePurity
         internal string Group { get; }
         internal string Title { get; }
         internal string Summary { get; set; } = string.Empty;
+        internal string DetailSummary { get; set; } = string.Empty;
         internal string WorkSummary { get; set; } = string.Empty;
         internal string NotesTitle { get; set; } = string.Empty;
         internal GreyWardenFamilyBehavior.DutyKind Duty { get; set; }
         internal bool IsPersonal { get; set; }
+        internal GwpDispatchPurpose? DispatchPurpose { get; set; }
         internal bool IsOffer { get; set; }
+        internal bool IsCase { get; set; }
+        internal float DistanceToPlayer { get; set; } = float.MaxValue;
         internal bool IsPaused { get; set; }
         internal int DisplayedFine { get; set; }
         internal int DisplayedReward { get; set; }
@@ -99,16 +103,19 @@ namespace GreyWardenPolicePurity
                 entry.NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_incident);
                 entry.Fields.Insert(0, item.AssignmentText);
                 entry.Hero = crime.OffenderHero;
+                entry.IsCase = true;
                 entry.IsOffer = available.Contains(crime.CrimeId);
                 entry.DisplayedFine = GwpFieldArrestPricing.AssessFine(crime);
                 int reward = PlayerBountyBehavior.EstimateAffairsReward(crime);
                 entry.DisplayedReward = reward;
-                entry.Summary = GwpAffairsText.Pair(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward, GwpAffairsText.Money(reward)),
+                entry.DetailSummary = GwpAffairsText.Pair(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward, GwpAffairsText.Money(reward)),
                     PlayerBountyBehavior.AffairsDifficulty(crime));
                 entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_fine, GwpAffairsText.Money(entry.DisplayedFine)));
                 MobileParty? target = crime.Offender;
                 if (target?.IsActive == true)
                 {
+                    if (MobileParty.MainParty != null)
+                        entry.DistanceToPlayer = MobileParty.MainParty.GetPosition2D.Distance(target.GetPosition2D);
                     entry.Place = GwpCommon.NormalizePlayerFacingSettlement(target.CurrentSettlement, target.GetPosition2D);
                     entry.Fields.Insert(0, GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_formation,
                         GwpText.Get(target.AttachedTo != null || target.Army?.LeaderParty == target
@@ -176,6 +183,18 @@ namespace GreyWardenPolicePurity
             result.AddRange(GwpWardenDispatchBehavior.Instance?.GetAffairsDispatches() ?? Enumerable.Empty<GwpAffairsEntry>());
             result.AddRange(PoliceAntiWarDeclaration.GetAffairsMediation());
             return result;
+        }
+
+        internal static List<GwpAffairsEntry> ReadPlayerArmory()
+        {
+            return GwpFireswornBehavior.PlayerArmoryItems.Where(item => item.Amount > 0)
+                .OrderBy(item => item.EquipmentElement.Item.ItemType)
+                .ThenByDescending(item => GwpFireswornBehavior.Strength(item.EquipmentElement))
+                .Select((item, index) => new GwpAffairsEntry("player-armory:" + index,
+                    GwpText.Get(GwpTextCatalog.gwp_player_armory), item.EquipmentElement.GetModifiedItemName().ToString())
+                {
+                    Summary = GwpText.Get(GwpTextCatalog.gwp_player_armory_count, "COUNT", item.Amount)
+                }).ToList();
         }
 
         internal static List<GwpAffairsEntry> ReadFaith()

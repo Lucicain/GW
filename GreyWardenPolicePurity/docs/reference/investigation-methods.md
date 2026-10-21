@@ -133,3 +133,14 @@ ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
 旧的想法留在 journal 里。
 
 `tools/Check-StateFreshness.py` 会列出没有标依据的硬规则。
+
+
+## 离线测试与完整战役模拟的证据边界
+
+用户要求按特定场景完整推进双方原版AI、当前模组、移动、进出城及后续战斗，不用只执行局部方法的通过数替代，也不预设目标必然离城或追截队会消失。（依据：用户澄清 2026-10-19）
+
+- 方法回归：实际生产/新反编译方法执行，其他业务或引擎状态作为输入；只能证明对应方法的决策。
+- 托管联动：双方原版评分、完整移动解算、原版离城谓词等直接相接；若导航到达、最终动作提交或战斗结果仍是夹具，明确指出边界。没有手设目标出城也不等于完整原生战役。
+- 完整战役：真实原生地图/导航、时间循环、全部原版行为与本轮模组共同运行；报告实际宿主、版本、模组及存档/新世界。隐藏窗口不等于无图形引擎；没有运行这些不能称“后台跑了骑砍”。
+
+当前仓库只具备前两级，尚无经验证的完整无界面战役宿主。本机bin仅发现Client/Editor布局，CampaignGameMode只有None/Campaign/Tutorial；这不证明第三方或自行开发宿主不可能。官方Dedicated Server文档描述多人Mission，不直接提供单人战役测试入口。社区[BUTR Bannerlord.GABS](https://github.com/BUTR/Bannerlord.GABS/blob/master/docs/setup-guide.md)通过MCP控制游戏，但其[启动脚本](https://github.com/BUTR/Bannerlord.GABS/blob/master/launch-bannerlord.ps1)仍运行BLSE /singleplayer及模块列表，未由此取得无界面原生战役能力；本轮未安装或运行它。Calradia.online页面抓取525，搜索摘要的完整headless宣称未核实，未采用。（依据：本机布局/原版枚举、官方与项目源文件核查 2026-10-19）

@@ -13,27 +13,33 @@ HARNESS = r'''
 using System;using System.Collections;using System.Collections.Generic;using System.Linq;
 class CharacterObject {public string StringId;public int Tier;public bool IsHero,IsWarden;public static Dictionary<string,CharacterObject> All=new Dictionary<string,CharacterObject>();public static CharacterObject Find(string id)=>All[id];}
 __ROSTER__
-class ItemObject {public string StringId;public float Weight;public int Value;public object ItemCategory;}
-class ItemModifier {public string StringId;}
+class ItemObject {public string StringId;public float Weight;public int Value;public object ItemCategory;public bool HasHorseComponent;}
+class ItemModifier {public string StringId;public float WeightFactor=1;}
 struct EquipmentElement {public ItemObject Item;public ItemModifier ItemModifier;public EquipmentElement(ItemObject i,ItemModifier m=null){Item=i;ItemModifier=m;}}
 struct ItemRosterElement {public EquipmentElement EquipmentElement;public int Amount;}
 class ItemRoster:IEnumerable<ItemRosterElement> {
  List<ItemRosterElement> rows=new List<ItemRosterElement>();public int Count=>rows.Count;public int TotalValue=>rows.Sum(e=>e.Amount*e.EquipmentElement.Item.Value);
- public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Clear()=>rows.Clear();
- public void AddToCounts(EquipmentElement item,int count){int i=rows.FindIndex(e=>e.EquipmentElement.Equals(item));var e=i>=0?rows[i]:new ItemRosterElement{EquipmentElement=item};e.Amount+=count;if(e.Amount<0)throw new Exception("negative items");if(i>=0)rows.RemoveAt(i);if(e.Amount>0)rows.Add(e);}
+ public ItemRosterElement this[int i]=>rows[i];public ItemRosterElement GetElementCopyAtIndex(int i)=>rows[i];public void Clear()=>rows.Clear();
+ public void AddToCounts(EquipmentElement item,int count){int i=rows.FindIndex(e=>e.EquipmentElement.Equals(item));var e=i>=0?rows[i]:new ItemRosterElement{EquipmentElement=item};e.Amount+=count;if(e.Amount<0)throw new Exception("negative items");if(i>=0){if(e.Amount==0)rows.RemoveAt(i);else rows[i]=e;}else if(e.Amount>0)rows.Add(e);}
  public IEnumerator<ItemRosterElement> GetEnumerator()=>rows.ToList().GetEnumerator();IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();
 }
 class MBObjectManager {public static MBObjectManager Instance=new MBObjectManager();public Dictionary<string,object> Items=new Dictionary<string,object>();public T GetObject<T>(string id)=>(T)Items[id];}
 static class DefaultItemCategories {public static readonly object PackAnimal=new object();}
 enum AiBehavior {Hold,GoToSettlement}
+class Campaign {public static Campaign Current=new Campaign();public Models Models=new Models();}
+class Models {public InventoryCapacityModel InventoryCapacityModel=new InventoryCapacityModel();}
+class InventoryCapacityModel {
+ public float GetItemEffectiveWeight(EquipmentElement e,MobileParty p,bool sea,out object description){description=null;return e.Item.HasHorseComponent?(sea?30:0):e.Item.Weight*(e.ItemModifier?.WeightFactor??1);}
+}
 class MobileParty {
- public string StringId;public bool IsActive=true,IsVillager=true,IsMilitia,IsCaravan;public object MapEvent;
+ public string StringId;public bool IsActive=true,IsVillager=true,IsMilitia,IsCaravan,IsCurrentlyAtSea,IsInRaftState;public object MapEvent;
  public Settlement HomeSettlement,CurrentSettlement,TargetSettlement;public AiBehavior DefaultBehavior;
  public TroopRoster MemberRoster=new TroopRoster(),PrisonRoster=new TroopRoster();public ItemRoster ItemRoster=new ItemRoster();
- public int PartyTradeGold,MapFaction=2;public float InventoryCapacity=100;public float TotalWeightCarried=>ItemRoster.Sum(e=>e.Amount*e.EquipmentElement.Item.Weight);
+ public int PartyTradeGold,MapFaction=2;public float BaseCapacity=100;public float InventoryCapacity {get=>BaseCapacity+(IsCurrentlyAtSea?0:ItemRoster.Where(e=>e.EquipmentElement.Item.ItemCategory==DefaultItemCategories.PackAnimal).Sum(e=>e.Amount)*100);set=>BaseCapacity=value;}
+ public float TotalWeightCarried=>ItemRoster.Sum(e=>e.Amount*Campaign.Current.Models.InventoryCapacityModel.GetItemEffectiveWeight(e.EquipmentElement,this,IsCurrentlyAtSea,out _));
  public PartyBase Party;public MobileParty(){Party=new PartyBase{MobileParty=this};}
 }
-class PartyBase {public MobileParty MobileParty;}
+class PartyBase {public MobileParty MobileParty;public ItemRoster ItemRoster=>MobileParty.ItemRoster;}
 class MilitiaPartyComponent {public MobileParty MobileParty;}
 class Settlement {
  public string StringId;public bool Preached=true,Quiet=true,Ritual,IsUnderSiege;public int MapFaction=2;
@@ -61,7 +67,7 @@ __TRANSFER__
 class GwpFireswornBehavior {
  static GwpFireswornBehavior _instance;
  enum FaithPartyKind {Market}enum FaithPartyPhase {Home,Outbound,Returning}
- class FaithParty {public string PartyId,HomeId,TargetId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int MarketGold;}
+ class FaithParty {public string PartyId,HomeId,TargetId;public FaithPartyKind Kind;public FaithPartyPhase Phase;public double PhaseHour;public int MarketGold;public bool DedicatedMarketTripPending;}
  class FaithVillage {public string VillageId;public int Households=200;}
  readonly Dictionary<string,FaithVillage> _villages=new Dictionary<string,FaithVillage>();
  readonly Dictionary<string,FaithParty> _faithParties=new Dictionary<string,FaithParty>();
@@ -78,6 +84,8 @@ class GwpFireswornBehavior {
  static void ReleaseHeroPrisoners(MobileParty p){foreach(var e in p.PrisonRoster.GetTroopRoster().Where(e=>e.Character.IsHero))p.PrisonRoster.AddToCounts(e.Character,-e.Number,false,-e.WoundedNumber,-e.Xp);}
  static void CreditTreasury(int gold)=>Treasury+=gold;
 __METHODS__
+__NATIVE_LOAD__
+ static bool Depart(Village v,MobileParty p){PrepareFaithVillagers(v,p);bool dedicated=IsDedicatedFaithMarket(v,p);if(LoadNativeMarketGoods(v,p))MoveItemsToVillagerParty(v,p);p.TargetSettlement=v.TradeBound;LoadFaithMarket(v,p,dedicated);return dedicated;}
  static int checks;static void Check(bool c,string why){checks++;if(!c)throw new Exception(why);}
  static int Amount(ItemRoster r,EquipmentElement e)=>r.Where(x=>x.EquipmentElement.Equals(e)).Sum(x=>x.Amount);
  static CharacterObject Troop(string id,int tier,bool warden=false){var t=new CharacterObject{StringId=id,Tier=tier,IsWarden=warden};CharacterObject.All[id]=t;return t;}
@@ -138,6 +146,38 @@ __METHODS__
   (b,v,p)=Start();p.MemberRoster.AddToCounts(civilian,2);PrepareFaithVillagers(v,p);Check(p.MemberRoster.GetTroopCount(civilian)==2,"no guard does not delete native crew or prevent native shipping");
   var valuable=new EquipmentElement(new ItemObject{StringId="loot",Value=2500,Weight=1});ItemsOf(b._goods,"home").AddToCounts(valuable,1);
   Check(FaithMarketWarehouseThreshold(50,v)==0,"gray-only warehouse participates in original threshold");v.Settlement.Ritual=true;Check(FaithMarketWarehouseThreshold(50,v)==50,"ritual leaves native warehouse threshold unchanged");v.Settlement.Ritual=false;v.Settlement.Preached=false;Check(FaithMarketWarehouseThreshold(50,v)==50,"non-faith village warehouse unchanged");
+  (b,v,p)=Start();PrepareFaithVillagers(v,p);p.InventoryCapacity=610;
+  var grain=new EquipmentElement(new ItemObject{StringId="heavy_grain",Value=5,Weight=10});
+  var loot=new EquipmentElement(new ItemObject{StringId="gray_loot",Value=100,Weight=5});
+  v.Settlement.ItemRoster.AddToCounts(grain,1000);ItemsOf(b._goods,"home").AddToCounts(loot,500);
+  Check(!Depart(v,p)&&Amount(p.ItemRoster,grain)==61&&Amount(p.ItemRoster,loot)==0,"complete native loader fills ordinary trade with village produce");
+  Check(b._faithParties[p.StringId].DedicatedMarketTripPending,"unsent gray stock schedules a separate trip");
+  SettleFaithMarket(p,v.Settlement);Check(b._faithParties[p.StringId].DedicatedMarketTripPending,"home settlement preserves dedicated departure, including native unsold stock");
+  Check(Depart(v,p)&&Amount(v.Settlement.ItemRoster,grain)==1000&&Amount(p.ItemRoster,grain)==0&&Amount(p.ItemRoster,loot)==122,"dedicated trip returns native unsold grain and loads real gray cargo");
+  Check(!b._faithParties[p.StringId].DedicatedMarketTripPending&&p.InventoryCapacity==p.TotalWeightCarried,"dedicated trip is full without an artificial capacity boost and releases ordinary trade");
+  SettleFaithMarket(p,v.Settlement);Check(!Depart(v,p)&&Amount(p.ItemRoster,grain)==61&&Amount(p.ItemRoster,loot)==0,"native trade resumes even while large gray backlog remains");
+  p.CurrentSettlement=v.TradeBound;Check(!IsDedicatedFaithMarket(v,p),"pending dedicated trip cannot redirect villagers already in transit");p.CurrentSettlement=v.Settlement;
+  p.IsInRaftState=true;Check(!IsDedicatedFaithMarket(v,p),"raft villagers cannot begin dedicated transport");p.IsInRaftState=false;
+  p.MapEvent=new object();Check(!IsDedicatedFaithMarket(v,p),"battle prevents dedicated departure");p.MapEvent=null;
+  v.Settlement.Ritual=true;Check(!IsDedicatedFaithMarket(v,p),"ritual prevents dedicated departure");v.Settlement.Ritual=false;
+  v.Settlement.Quiet=false;Check(!IsDedicatedFaithMarket(v,p),"unsafe village cannot dedicate its villagers");v.Settlement.Quiet=true;
+  v.Settlement.Preached=false;Check(LoadNativeMarketGoods(v,p),"nonfaith village retains native loading");v.Settlement.Preached=true;
+  ItemsOf(b._goods,"home").Clear();Check(!IsDedicatedFaithMarket(v,p),"empty gray warehouse does not claim an empty dedicated trip");
+  (b,v,p)=Start();PrepareFaithVillagers(v,p);p.InventoryCapacity=10;
+  var pack=new EquipmentElement(new ItemObject{StringId="pack",Value=100,Weight=430,HasHorseComponent=true,ItemCategory=DefaultItemCategories.PackAnimal});
+  ItemsOf(b._goods,"home").AddToCounts(loot,20);ItemsOf(b._goods,"home").AddToCounts(pack,1);
+  LoadFaithMarket(v,p);Check(Amount(p.ItemRoster,pack)==1&&Amount(p.ItemRoster,loot)==20&&p.InventoryCapacity==110&&p.TotalWeightCarried==100,"land pack animal uses model weight and increases capacity before other goods load");
+  var nativePack=new EquipmentElement(new ItemObject{StringId="native_pack",Value=20,Weight=430,HasHorseComponent=true,ItemCategory=DefaultItemCategories.PackAnimal});
+  p.MemberRoster.AddToCounts(civilian,2);p.ItemRoster.AddToCounts(nativePack,1);v.Settlement.ItemRoster.AddToCounts(grain,4);b._faithParties[p.StringId].DedicatedMarketTripPending=true;ItemsOf(b._goods,"home").AddToCounts(loot,100);
+  Check(!LoadNativeMarketGoods(v,p)&&Amount(p.ItemRoster,loot)==20&&Amount(p.ItemRoster,nativePack)==1&&Amount(v.Settlement.ItemRoster,loot)==0,"native unloading preserves gray ownership and native transport animals");
+  p.ItemRoster.AddToCounts(nativePack,5);Check(!LoadNativeMarketGoods(v,p)&&Amount(p.ItemRoster,nativePack)==1&&Amount(v.Settlement.ItemRoster,nativePack)==5,"unsold excess native animals return home rather than occupying dedicated cargo space");
+  (b,v,p)=Start();PrepareFaithVillagers(v,p);p.IsCurrentlyAtSea=true;p.InventoryCapacity=65;ItemsOf(b._goods,"home").AddToCounts(pack,11);
+  LoadFaithMarket(v,p);Check(Amount(p.ItemRoster,pack)==2&&p.TotalWeightCarried==60&&Amount(ItemsOf(b._goods,"home"),pack)==9,"sea load follows active model's 30 weight, never raw 430 or land zero");
+  (b,v,p)=Start();PrepareFaithVillagers(v,p);p.InventoryCapacity=10;
+  var modified=new EquipmentElement(loot.Item,new ItemModifier{StringId="heavy",WeightFactor=2});ItemsOf(b._goods,"home").AddToCounts(modified,3);
+  LoadFaithMarket(v,p);Check(Amount(p.ItemRoster,modified)==1&&p.TotalWeightCarried==10,"modified equipment uses actual effective weight");
+  (b,v,p)=Start();p.InventoryCapacity=150;v.Settlement.ItemRoster.AddToCounts(grain,10);ItemsOf(b._goods,"home").AddToCounts(loot,10);
+  Check(!Depart(v,p)&&Amount(p.ItemRoster,grain)>0&&Amount(p.ItemRoster,loot)==10,"ordinary native trade still piggybacks gray goods into spare capacity");
   Console.WriteLine("FAITH_VILLAGER_ASSERTIONS="+checks+"; PASS");
  }
 }
@@ -147,8 +187,8 @@ __METHODS__
 class FaithVillagerTests(unittest.TestCase):
     def test_native_birth_swap_sale_and_persistence(self):
         production = members(source("GwpFaithVillagers.cs"), "IsFaithVillager", "RegisterFaithVillager", "ConvertRaisedVillagers",
-            "FaithMarketWarehouseThreshold", "PrepareFaithVillagers", "RefitVillageEscort", "LoadFaithMarket", "RecordFaithMarketSale",
-            "SellFaithMarket", "SettleFaithMarket")
+            "FaithMarketWarehouseThreshold", "PrepareFaithVillagers", "RefitVillageEscort", "IsDedicatedFaithMarket", "LoadNativeMarketGoods", "LoadFaithMarket", "RecordFaithMarketSale",
+            "MarketPackAnimal", "SellFaithMarket", "SettleFaithMarket")
         production += members(source("GwpFireswornBehavior.cs"), "RosterOf", "ItemsOf", "SpareGuard", "SyncItemRosters")
         production += members(source("GwpFireswornParties.cs"), "SetPhase")
         roster = RECRUIT_STUBS[RECRUIT_STUBS.index("struct TroopRosterElement"):RECRUIT_STUBS.index("class Hero")]
@@ -158,7 +198,12 @@ class FaithVillagerTests(unittest.TestCase):
         start = native.index("public IEnumerable<PartyBase> GetDefenderParties(")
         brace = native.index("{", start)
         native = native[start:hygiene.match_brace(native, hygiene.code_mask(native), brace)+1]
-        program = HARNESS.replace("__METHODS__", production).replace("__ROSTER__", roster).replace("__TRANSFER__", transfer).replace("__NATIVE_DEFENDERS__", native)
+        loader = (ROOT / ".codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.CampaignBehaviors/VillagerCampaignBehavior.cs").read_text(encoding="utf-8-sig")
+        start = loader.index("private static void MoveItemsToVillagerParty(")
+        brace = loader.index("{", start)
+        loader = loader[start:hygiene.match_brace(loader, hygiene.code_mask(loader), brace)+1]
+        loader = loader.replace("MathF.Ceiling(", "(int)Math.Ceiling(")
+        program = HARNESS.replace("__METHODS__", production).replace("__ROSTER__", roster).replace("__TRANSFER__", transfer).replace("__NATIVE_DEFENDERS__", native).replace("__NATIVE_LOAD__", loader)
         major = subprocess.check_output(["dotnet", "--version"], text=True).split(".")[0]
         with tempfile.TemporaryDirectory(prefix="gwp-villagers-") as directory:
             path = Path(directory)

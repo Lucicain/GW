@@ -334,10 +334,10 @@ namespace GreyWardenPolicePurity
         {
             Hero? hero = Hero.OneToOneConversationHero;
             MobileParty? party = MobileParty.ConversationParty;
-            if (hero == null || hero == Hero.MainHero || party == null || party == MobileParty.MainParty || !party.IsActive)
+            if (hero == null || hero.IsPrisoner || hero == Hero.MainHero || party == null || party == MobileParty.MainParty || !party.IsActive)
                 return false;
 
-            // 只在野外执法。城里那条路是另一套（向总督交涉）。
+            // 当前只实现野外执法；城内向总督交涉尚未实现。
             if (party.CurrentSettlement != null || MobileParty.MainParty?.CurrentSettlement != null)
                 return false;
 
@@ -984,8 +984,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 荣誉高的兑现方式：钱留给部下，人跟你走。原版会让失去领主的队伍自行
-        /// 解散、士兵各自返回最近的定居点，这里不额外干预。
+        /// 荣誉高的兑现方式：钱留给部下，人跟你走。与使者共用退团、押人与原队收尾。
         /// </summary>
         private void SurrenderConsequence()
         {
@@ -995,8 +994,7 @@ namespace GreyWardenPolicePurity
             int assessed = EnsureFine();
             int standing = GetNegativeStanding(_crime);
 
-            TakePrisonerAction.Apply(MobileParty.MainParty.Party, _offender);
-            if (!_offender.IsPrisoner || _offender.PartyBelongedToAsPrisoner != MobileParty.MainParty.Party)
+            if (!GwpVoluntarySurrender.TryCapture(MobileParty.MainParty.Party, _offender))
             {
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_case_capture_failed), Colors.Red));
@@ -1175,6 +1173,14 @@ namespace GreyWardenPolicePurity
         private void AttackConsequence()
         {
             EndPersuasionConsequence();
+            // Prisoner dialogue belongs to custody transfer, never an attack
+            // against the captor's party (observed 2026-10-20).
+            if (_offender?.IsPrisoner != false || _offender.PartyBelongedTo != _offenderParty)
+            {
+                LeaveEncounterPeacefully();
+                ClearState();
+                return;
+            }
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "ATTACK",

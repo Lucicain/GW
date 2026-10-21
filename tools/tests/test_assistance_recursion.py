@@ -1,8 +1,7 @@
-"""Prevent the production strength/duty cycle from recurring.
+"""Duty and diagnostic resolution must never enter regional strength evaluation.
 
-Only the spatial-query boundary interrupts after repeated identical searches. The
-strength, coordination, duty methods are taken from production.
-This is an investigation regression: it requires the previously confirmed call cycle to remain absent.
+The production duty methods run with a strength boundary that rejects reentry.
+Native arithmetic and its scoped evaluator have their own production-hook replay.
 """
 from pathlib import Path
 import re
@@ -68,16 +67,8 @@ class GreyWardenPartyDesireBehavior {
  private static IntentKind ResolveUndeclaredPursuitKind(PoliceTask t,MobileParty p)=>IntentKind.Escort;
  DIAGNOSTIC_METHODS
 }
-static class GwpTuning {public static class Enforcement {public const float RegionalThreatRadius=6;}}
 static class GwpStrength {
- public class Threat {public float Strength;}
- public class LocalBalance {public MobileParty Actor=null!,MovementTarget=null!;public float FriendlyLocalStrength,EnemyLocalStrength,Distance;public string FriendlyCombatGroups="",Reason="";public bool StrengthReady;}
- // Engine-side inputs are fixed; none of these boundary models calls a duty resolver.
- public static float CombatGroup(MobileParty p)=>p.Strength;
  public static MobileParty CombatGroupOf(MobileParty p)=>p.AttachedTo??p;
- public static string CombatGroupKey(MobileParty p)=>CombatGroupOf(p).StringId;
- public static Threat EnemyAround(MobileParty a,MobileParty b)=>new Threat{Strength=b.Strength};
- STRENGTH_METHODS
 }
 class PoliceEnforcementBehavior {
  private class LordAssistanceGroup {public string LeaderPartyId="leader",TargetPartyId="enemy",PendingReleaseReason="";public List<string> MemberPartyIds=new(),SpeedDetachedPartyIds=new();public bool DispersedForSpeed,PlayerEscort;}
@@ -103,16 +94,16 @@ class PoliceEnforcementBehavior {
   if(print)Console.WriteLine("PRODUCTION_CYCLE_STACK\n"+string.Join("\n",stack.Split('\n').Take(15)));return true;
  }}
  static void Main(){
-  var(e,l,s,t,g)=Setup();Check(!Cycle(()=>GwpStrength.Compare(l,t),true),"detached nearby logical support reenters strength forever");
-  (e,l,s,t,g)=Setup();s.AttachedTo=l;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"attached support collapses into leader and does not recurse");
-  s.AttachedTo=null;MobileParty.Searches=0;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"detaching same support exposes cycle");
-  (e,l,s,t,g)=Setup();s.Ai.AiBehaviorPartyBase=t.Party;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"native target equality avoids duty fallback");
-  (e,l,s,t,g)=Setup();s.Position.X=7;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"outside target join radius no recursion");
-  (e,l,s,t,g)=Setup();l.Strength=2000;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"strong leader is not a recursion guard");
-  (e,l,s,t,g)=Setup();g.PlayerEscort=true;Check(!Cycle(()=>GwpStrength.Compare(l,t)),"player-escort rendezvous early exit avoids cycle");
-  (e,l,s,t,g)=Setup();Check(!Cycle(()=>TryGetAssistanceDuty(l,out _,out _,out _,out _)),"duty entry also exposes same cycle");
-  (e,l,s,t,g)=Setup();g.DispersedForSpeed=true;s.Ai.AiBehaviorPartyBase=l.Party;s.AttachedTo=l;Check(!Cycle(()=>GreyWardenPartyDesireBehavior.GetDiagnosticIntent(l)),"speed-dispersal logger lookup returns while support attached");
-  s.AttachedTo=null;MobileParty.Searches=0;Check(!Cycle(()=>GreyWardenPartyDesireBehavior.GetDiagnosticIntent(l)),"next logger intent lookup recurses after support detaches");
+  var(e,l,s,t,g)=Setup();Check(!Cycle(()=>TryGetAssistanceDuty(l,out _,out _,out _,out _),true),"leader duty does not reenter regional strength");
+  (e,l,s,t,g)=Setup();s.AttachedTo=l;Check(!Cycle(()=>TryGetAssistanceDuty(s,out _,out _,out _,out _)),"attached support duty terminates");
+  s.AttachedTo=null;Check(!Cycle(()=>TryGetAssistanceDuty(s,out _,out _,out _,out _)),"detached support duty terminates");
+  (e,l,s,t,g)=Setup();s.Ai.AiBehaviorPartyBase=t.Party;Check(!Cycle(()=>TryGetAssistanceDuty(l,out _,out _,out _,out _)),"native combat target does not add duty strength lookup");
+  (e,l,s,t,g)=Setup();s.Position.X=7;Check(!Cycle(()=>TryGetAssistanceDuty(l,out _,out _,out _,out _)),"remote logical support duty terminates");
+  (e,l,s,t,g)=Setup();l.Strength=2000;Check(!Cycle(()=>TryGetAssistanceDuty(l,out _,out _,out _,out _)),"duty independent of strength advantage");
+  (e,l,s,t,g)=Setup();g.PlayerEscort=true;Check(TryGetAssistanceDuty(l,out var target,out _,out _,out _)&&target==MobileParty.MainParty,"player escort resolves to actual player");
+  (e,l,s,t,g)=Setup();g.PendingReleaseReason="ended";Check(!TryGetAssistanceDuty(l,out _,out _,out _,out _),"pending release has no duty");
+  (e,l,s,t,g)=Setup();g.DispersedForSpeed=true;s.Ai.AiBehaviorPartyBase=l.Party;s.AttachedTo=l;Check(!Cycle(()=>GreyWardenPartyDesireBehavior.GetDiagnosticIntent(l)),"attached support diagnostic resolves without strength evaluation");
+  s.AttachedTo=null;Check(!Cycle(()=>GreyWardenPartyDesireBehavior.GetDiagnosticIntent(l)),"detached support diagnostic resolves without strength evaluation");
   Console.WriteLine("ASSISTANCE_RECURSION_ASSERTIONS="+assertions+"; PASS; no reentry");
  }
 }
@@ -121,17 +112,11 @@ class PoliceEnforcementBehavior {
 
 
 class AssistanceRecursionTests(unittest.TestCase):
-    def test_actual_strength_and_duty_methods_do_not_reenter(self):
-        strength = (MODULE / "GwpStrength.cs").read_text(encoding="utf-8-sig")
-        # Normalize only line breaks in declarations; all bodies stay verbatim.
-        strength = re.sub(r"(?m)^(\s*(?:internal|private) static \w+)\s*\n\s*(\w+\s*\()", r"\1 \2", strength)
-        methods = [extract(strength, name) for name in ["Compare", "FriendlyAround",
-                   "CanNearbyFriendlyGroupJoinActor"]]
-        formation = (MODULE / "PoliceEnforcementBehavior.Formation.cs").read_text(encoding="utf-8-sig")
+    def test_actual_duty_and_diagnostic_methods_do_not_reenter(self):
         assistance = (MODULE / "PoliceEnforcementBehavior.Assistance.cs").read_text(encoding="utf-8-sig")
         duty_methods = [extract(assistance, "TryGetAssistanceDuty"),
                         member(assistance, "IsUndeclaredAssistancePursuit")]
-        code = HARNESS.replace("STRENGTH_METHODS", "\n".join(methods)).replace("ASSISTANCE_METHODS", "\n".join(duty_methods))
+        code = HARNESS.replace("ASSISTANCE_METHODS", "\n".join(duty_methods))
         desire = (MODULE / "GreyWardenPartyDesireBehavior.cs").read_text(encoding="utf-8-sig")
         code = code.replace("DIAGNOSTIC_METHODS", "\n".join(extract(desire, name) for name in
                             ["GetDiagnosticIntent", "ResolveIntent", "DescribeIntent"]))

@@ -6,6 +6,7 @@ using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Conversation;
 using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
@@ -91,6 +92,8 @@ namespace GreyWardenPolicePurity
 
             if (_selectionQueued)
             {
+                // The affairs screen queues intent before closing. Never open a party screen over that screen.
+                if (Game.Current?.GameStateManager.ActiveState is not MapState) return;
                 _selectionQueued = false;
                 OpenTroopSelection();
                 return;
@@ -151,7 +154,7 @@ namespace GreyWardenPolicePurity
             troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop) &&
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true &&
             Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>() != null &&
-            (ReportAvailable() || SupportAvailable() || TroopOrderAvailable() || PeaceRequestAvailable());
+            (ReportAvailable() || SupportAvailable() || TroopOrderAvailable() || PeaceRequestAvailable() || FiefAppealAvailable());
 
         internal static void Register(CampaignGameStarter starter)
         {
@@ -175,6 +178,10 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_dispatch_troop_order),
                 CanSendTroopOrder, () => _pendingPurpose = GwpDispatchPurpose.TroopOrder);
 
+            starter.AddPlayerLine("gwp_dispatch_fief_appeal", "gwp_dispatch_options", "gwp_dispatch_confirm",
+                GwpText.Get(GwpTextCatalog.gwp_dispatch_fief_appeal),
+                () => IsOurConversation() && FiefAppealAvailable(), () => _pendingPurpose = GwpDispatchPurpose.FiefAppeal);
+
             starter.AddPlayerLine("gwp_dispatch_never_mind", "gwp_dispatch_options", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_dispatch_never_mind),
                 IsOurConversation, null);
@@ -185,6 +192,55 @@ namespace GreyWardenPolicePurity
         }
 
         private static bool CanSendReport() => IsOurConversation() && ReportAvailable();
+
+        internal static string AffairsDispatchBlockReason(GwpDispatchPurpose purpose)
+        {
+            string? key = null;
+            var main = MobileParty.MainParty;
+            var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
+            if (!GwpCaseArchiveScreen.CanOpen || dispatch == null)
+                key = GwpTextCatalog.gwp_affairs_dispatch_membership;
+            else if (main?.IsActive != true || main.MapEvent != null || PlayerEncounter.Current != null)
+                key = GwpTextCatalog.gwp_affairs_dispatch_encounter;
+            else if (main.CurrentSettlement != null || Campaign.Current?.CurrentMenuContext != null)
+                key = GwpTextCatalog.gwp_affairs_dispatch_outside;
+            else if (_selectionQueued || _afterPayment != null || _activeTroop != null || _requestedTroop != null)
+                key = GwpTextCatalog.gwp_affairs_dispatch_busy;
+            else if (!main.MemberRoster.GetTroopRoster().Any(e => e.Number > 0 && !e.Character.IsHero && GwpCommon.IsGreyWardenTroop(e.Character)))
+                key = GwpTextCatalog.gwp_affairs_dispatch_need_soldiers;
+            else if (dispatch.HasActiveDispatch(purpose))
+                key = GwpTextCatalog.gwp_affairs_dispatch_in_transit;
+            else if (!PurposeAvailable(purpose))
+                key = purpose switch
+                {
+                    GwpDispatchPurpose.Report => GwpTextCatalog.gwp_affairs_dispatch_no_report,
+                    GwpDispatchPurpose.Support => GwpTextCatalog.gwp_affairs_dispatch_no_support,
+                    GwpDispatchPurpose.TroopOrder => GwpTextCatalog.gwp_affairs_dispatch_no_order,
+                    GwpDispatchPurpose.FiefAppeal => GwpTextCatalog.gwp_affairs_dispatch_no_fief,
+                    _ => GwpTextCatalog.gwp_affairs_dispatch_no_peace
+                };
+            return key == null ? string.Empty : GwpText.Get(key);
+        }
+
+        private static bool PurposeAvailable(GwpDispatchPurpose purpose) => purpose switch
+        {
+            GwpDispatchPurpose.Report => ReportAvailable(),
+            GwpDispatchPurpose.Support => SupportAvailable(),
+            GwpDispatchPurpose.TroopOrder => TroopOrderAvailable(),
+            GwpDispatchPurpose.PeaceRequest => PeaceRequestAvailable(),
+            GwpDispatchPurpose.FiefAppeal => FiefAppealAvailable(),
+            _ => false
+        };
+
+        internal static bool TryStartFromAffairs(GwpDispatchPurpose purpose)
+        {
+            string reason = AffairsDispatchBlockReason(purpose);
+            if (!string.IsNullOrEmpty(reason)) return false;
+            // No campaign work or resources exist until the original selection/payment flow confirms them.
+            _pendingPurpose = purpose;
+            _selectionQueued = true;
+            return true;
+        }
 
         private static bool ReportAvailable()
         {
@@ -216,6 +272,9 @@ namespace GreyWardenPolicePurity
         }
 
         private static bool CanSendTroopOrder() => IsOurConversation() && TroopOrderAvailable();
+
+        private static bool FiefAppealAvailable() => GreyWardenPlayerRequestBehavior.CanFileCourierAppeal() &&
+            Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>()?.HasActiveDispatch(GwpDispatchPurpose.FiefAppeal) != true;
 
         private static bool TroopOrderAvailable()
         {
@@ -262,10 +321,14 @@ namespace GreyWardenPolicePurity
                 () => true);
         }
 
-        private static TextObject BuildScreenName(GwpDispatchPurpose purpose) =>
-            GwpText.Create(purpose == GwpDispatchPurpose.Report
-                ? GwpTextCatalog.gwp_dispatch_screen_report
-                : GwpTextCatalog.gwp_dispatch_screen_support);
+        private static TextObject BuildScreenName(GwpDispatchPurpose purpose) => GwpText.Create(purpose switch
+        {
+            GwpDispatchPurpose.Report => GwpTextCatalog.gwp_dispatch_screen_report,
+            GwpDispatchPurpose.Support => GwpTextCatalog.gwp_dispatch_screen_support,
+            GwpDispatchPurpose.TroopOrder => GwpTextCatalog.gwp_dispatch_screen_order,
+            GwpDispatchPurpose.PeaceRequest => GwpTextCatalog.gwp_dispatch_screen_peace,
+            _ => GwpTextCatalog.gwp_dispatch_screen_fief
+        });
 
         /// <summary>
         /// 只许派灰袍的兵；俘虏只许带本案目标本人，别的人犯不在这趟差事里。
@@ -307,6 +370,19 @@ namespace GreyWardenPolicePurity
                 _reportSelection = escort;
                 _afterPayment = () => GreyWardenTroopRequestBehavior.ShowCourierOrderInquiry(
                     (troopId, count, price) => SendTroopOrder(escort, troopId, count, price));
+                return;
+            }
+
+            if (purpose == GwpDispatchPurpose.FiefAppeal)
+            {
+                // The inquiry selects an application only. Troops remain in the main party until final confirmation.
+                var escort = TroopRoster.CreateDummyTroopRoster();
+                foreach (var entry in members.GetTroopRoster())
+                    escort.AddToCounts(entry.Character, entry.Number, false, entry.WoundedNumber, entry.Xp);
+                ReturnSelection(members, prisoners);
+                _reportSelection = escort;
+                _afterPayment = () => GreyWardenPlayerRequestBehavior.ShowCourierAppealInquiry(
+                    (settlementId, captureHours) => SendFiefAppeal(escort, settlementId, captureHours));
                 return;
             }
 
@@ -412,11 +488,28 @@ namespace GreyWardenPolicePurity
         private static void SendTroopOrder(TroopRoster escort, string troopId, int count, int price)
         {
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            if (dispatch == null || !ReferenceEquals(_reportSelection, escort))
-            {
-                ReturnSelection(escort, null);
-                return;
-            }
+            if (dispatch == null || !TryTakeSelectedEscort(escort)) return;
+
+            MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
+                GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
+                troopId, count, price);
+            if (party == null) ReturnSelection(escort, null);
+        }
+
+        private static void SendFiefAppeal(TroopRoster escort, string settlementId, double captureHours)
+        {
+            var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
+            if (dispatch == null || !GreyWardenPlayerRequestBehavior.CanFileCourierAppeal(settlementId, captureHours) ||
+                dispatch.HasActiveDispatch(GwpDispatchPurpose.FiefAppeal) || !TryTakeSelectedEscort(escort)) return;
+            MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
+                GwpDispatchPurpose.FiefAppeal, 0, false, string.Empty,
+                fiefSettlementId: settlementId, fiefCaptureHours: captureHours);
+            if (party == null) ReturnSelection(escort, null);
+        }
+
+        private static bool TryTakeSelectedEscort(TroopRoster escort)
+        {
+            if (!ReferenceEquals(_reportSelection, escort)) return false;
             _reportSelection = null;
 
             var available = MobileParty.MainParty.MemberRoster.GetTroopRoster();
@@ -426,15 +519,12 @@ namespace GreyWardenPolicePurity
                 escort.Clear();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                     GwpTextCatalog.gwp_dispatch_pick_someone)));
-                return;
+                return false;
             }
             foreach (var entry in escort.GetTroopRoster())
                 MobileParty.MainParty.MemberRoster.AddToCounts(entry.Character, -entry.Number, false, -entry.WoundedNumber, -entry.Xp);
 
-            MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
-                GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
-                troopId, count, price);
-            if (party == null) ReturnSelection(escort, null);
+            return true;
         }
 
         private static void Send(GwpDispatchPurpose purpose, TroopRoster members,

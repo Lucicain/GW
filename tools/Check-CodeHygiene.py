@@ -185,6 +185,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("海陆交接资格", r"\.IsCurrentlyAtSea\s*==\s*\w+\.IsCurrentlyAtSea\b",
+     "GwpCommon.cs", "GwpCommon.CanCompletePartyHandover"),
     ("信众村民队生命周期", r"\[HarmonyPatch\(typeof\((?:VillagerCampaignBehavior|SellGoodsForTradeAction)\)",
      "GwpFaithVillagers.cs", "GwpFireswornBehavior.IsFaithVillager / GwpFaithVillagers.cs"),
     ("玩家案件委派", r"\bPlayerBountyBehavior\.(?:IsBountyCaseHeldByPlayer|IsBountyReservedTarget)\s*\(|\??\.(?:HasCommissionAuthority|IsActiveBountyTarget|HoldsAtonementCase|IsActiveAtonementTarget|ReservesAtonementTarget)\s*\(",

@@ -1,18 +1,31 @@
 # 构建、校验与部署
 
-> 当前状态：事务页遮挡、百科跳转与回报混排修复已部署待复测；正式发布仍为v1.4-r15，live保留监控和可编辑美术
+> 当前状态：委托复命/求援及行程并入委托，保留订单/讲和/封地四项业务分类；健康派遣探针退休，已构建部署
 > 最后验收：`f00ca9b`（2026-10-17 用户确认同业务开发构建；正式包经离线/远端校验）
-> 已复核至：`4394629`（2026-10-18）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：无
+> 待实测：辅助模组 Better Time 的4/10/30倍地图快进、Useful Skips一键新档；游戏由用户启动
 
 ## 当前开发部署
 
-当前live为`5b0591f`（接手Codex的事务文字、原版顶栏页签、地点含城堡、交涉回报两分、订单等待显示）加约斗场地换城的监控开发构建；版本号仍1.4.15.0。事务显示与验收归[事务界面](affairs-interface.md)，约斗规则归[使者](case-envoy.md)。
+当前 live 是基于 `d5a8d84` 加未提交工作树的诊断版开发构建，版本号仍 1.4.15.0；各功能的行为、存档影响与待实测归所属 state，每次构建、测试与哈希的经过在提交信息与 journal。部署后按下文「live 镜像是硬要求」比对哈希。（依据：流程 2026-10-21）
 
-开发构建与无监控隔离构建均0警告/错误，已同步Client/Editor与runtime；双端DLL SHA-256同为`dbf9070f22dd3fc603574d2c89436fff5b5b8b6d4bd14e56485f53979cfdad7f`。runtime源文件与live无缺失、差异或散落；可编辑美术与监控布局保留，无打包资源目录。GameCompat 99补丁绑定、缺失0；完整离线回归49项通过。没有制作新玩家包或变更线上发布。（依据：构建、哈希、离线执行2026-10-18）
+## 开发测试辅助模组
 
-当前验证：事务专项5项6.208秒通过（接单15、VM20、原版输入11、实际帧处理5断言与XML核对），文本专项4项0.049秒通过。GameCompat核查557类型引用、1768成员引用缺失0，780类型加载、99补丁类绑定失败0；新增类型来自命名详情节与原版InputKeyItemVM接入。ContentKeys XML32、本地化1594、引用1308，重复/缺失0。完整Python43项93.875秒和执勤旗40断言为前轮结果，本次没有重跑完整集合；原结算155断言也不是本轮新结果。没有启动游戏；原生布局、百科回程与分辨率仍待用户复测。（依据：构建、加载预检、哈希与离线执行 2026-10-18）
+用户希望安装现成辅助模组，让观察 AI、开新档和布置测试条件更方便；本次不修改灰袍或第三方模组代码，旧模组也可作为功能参考。（依据：用户裁定 2026-10-18）
+
+| 候选 | 用途 | 当前核查 |
+|---|---|---|
+| [Better Time](https://www.nexusmods.com/mountandblade2bannerlord/mods/2849?tab=files) | 地图加速，三档默认 4/8/16，MCM 可设 1～128 倍 | 已安装1.1.3（Nexus file 69933），配置4/10/30倍；作者声明已测1.3/1.4/1.5 |
+| [Useful Skips](https://www.nexusmods.com/mountandblade2bannerlord/mods/4896?tab=files) | 跳开场、介绍、角色创建和教程，一键进新战役 | 已安装1.0.2（Nexus file 50825，标明1.4.x）；四个跳过开关均true。1.0.3面向1.5.x，未装 |
+| [GameMaster](https://steamcommunity.com/sharedfiles/filedetails/?id=3624152079)＋[Commander](https://steamcommunity.com/sharedfiles/filedetails/?id=3670027574) | 控制台＋菜单建立人物/家族/部队，调整聚落，快速布置场景 | 有配套 1.4.x 版本；可选，尚未安装或验收 |
+| [RTS Camera](https://github.com/lzh-mb-mod/RTSCamera) | 战场自由视角、暂停、慢动作 | 本机已装 RTSCamera 与 CommandSystem；不凭目录认定本局启用 |
+| [Super Speed](https://steamcommunity.com/sharedfiles/filedetails/?id=2875225186) | 战场快进 | 作者说明 RBM 已集成，本机已有 RBM，先利用现有功能 |
+
+启动器 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Configs/LauncherData.xml` 已勾选两模组及Harmony/UIExtenderEx/ButterLib/MCM必需前置，保留其他模组选择；原文件已有两份前置记录（Modules与工坊并存），未另行整理。MCM配置在同级 `ModSettings/Global/BetterTime/BetterTime.json` 和 `ModSettings/Global/UsefulSkips/UsefulSkips.json`；Better Time的3键/原快进4倍、4键/额外按钮10倍、按住Ctrl+空格30倍。
+
+安装清单与原配置备份：`C:/Users/lucif/Downloads/Bannerlord-DeveloperTools-20261018/`（`installed-files.sha256.json`、`LauncherData.before.xml`、`UsefulSkips.before.json`）。卸载可删两新模块目录、恢复这两配置备份，BetterTime配置为本次新建；不涉及灰袍源码读档。原7z保留在Downloads。本轮未启动游戏，待用户确认一键新档及地图快进。（依据：安装与配置核查2026-10-18）
+
+本机 Native 声明 v1.4.8。原版 `Campaign.SpeedUpMultiplier` 默认 4；作弊模式控制台 `campaign.set_campaign_speed_multiplier 10` 可设快进倍率，普通模式上限 15、开发模式 30；倍率不保证实际吞吐。官方 `FastMode` 模块设置 `CampaignOptions.AccelerationMode`，不能据名称当作地图快进。（依据：本机模块与 C#反编译 2026-10-18）
 
 ## 两个开关决定一切
 
@@ -43,7 +56,7 @@
 
 | 脚本 | 作用 | 通过标准 |
 |---|---|---|
-| `Invoke-ModuleLoadPreflight.ps1` | 把构建产物对着已安装游戏加载，报出游戏启动时会撞上的类型加载与 Harmony 绑定失败 | 类型/成员引用无缺失；类型加载数与补丁绑定数与上一版一致或有已解释的增量 |
+| `Invoke-ModuleLoadPreflight.ps1` | 加载安装版依赖并检查类型/补丁绑定、启动名牌补丁的界面静态字段依赖与实际初始化异常 | 类型/成员无缺失，补丁全部成功；EARLY_UI_FIELD_FAIL_COUNT与STATIC_INIT_FAIL_COUNT均0；数量变化有解释 |
 | `Verify-GameCompat.ps1` | 检查 DLL 与当前安装的 Bannerlord 是否兼容，防止换游戏版本后静默产出游戏拒绝加载的模组 | `GAME COMPAT: PASS`、`MEMBER_FAIL_COUNT=0`、`PATCH_FAIL=0` |
 | `Verify-LiveModule.ps1` | **双向**比对开发 runtime，检查开发布局和双端监控 DLL | 无缺失/差异/散落；三类可编辑目录非空；无客户端/服务器打包目录；Client/Editor DLL 哈希一致且五组监控串存在；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
@@ -52,7 +65,7 @@
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `New-PlayerPackage.py` | 从隔离玩家DLL和_Module生成本地ZIP及逐项manifest，ASCII/UTF-16检查无监控、逐项解压哈希 | `PLAYER PACKAGE: PASS`；不自动上传 |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
-| `Check-StateFreshness.py` | 报 state 过期、源码归属、state 堆积、复核头部格式/日期/提交存在性与遗留物；生成进度汇总 | 被点名的当轮处理 |
+| `Check-StateFreshness.py` | 报 state 引用失效的文件与符号、源码归属、state 堆积、残留的已取消头部与遗留物；生成进度汇总 | 被点名的当轮处理 |
 | `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体；预提交硬闸 | 四项全零 |
 | `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `diagnostics.md`「火誓者监控字段」） | 不是闸门，读结果 |
 
@@ -62,31 +75,39 @@
 
 | 工程 | 数量 | 覆盖 |
 |---|---|---|
-| `tests/test_assistance_recursion.py` | 10场景 | 编译真实战力、协力职责及日志意图入口；附近独立支援、挂靠/脱离、强主办、速度分散等不再重入 |
+| `tests/test_assistance_recursion.py` | 10场景 | 编译生产协力职责与日志意图入口，以拒绝区域评估重入的边界覆盖附近支援、挂靠/脱离、强主办与速度分散 |
+| `tests/test_code_map.py` | 3项 | 动态目标、显式接口名、组合属性、条件编译、类作用域及当前仓库补丁声明集合完整性；不替代运行时绑定 |
+| `tests/test_native_regional_strength.py`、`test_regional_threat.py` | 原版对照28、采集适配40断言 | 原版区域/最终欲望生产方法及实际 Harmony 采集、预览外交作用域与还原、既有强敌规避、避免重复原版评分；参见[协力](case-assistance.md#原版对照与回归范围) |
+| `tests/test_resident_counterattack.py` | 23断言 | 原版双方initiative/移动与目标离城申请联动，未手设目标出城；原生地图/引擎动作提交仍未覆盖 |
+| `tests/test_pursuit_city_behavior.py` | 63断言 | 完整原版移动/接触方法对照；initiative及导航有效性为输入，不用于证明目标会自主留城或离城 |
+| `tests/test_native_interceptor_contact.py` | 8断言 | 当前生产追截直攻命令与新反编译完整接触入口：普通驻城不逐出、离城恢复接触、交互距离、已有同阵营战斗例外及行动方驻城门槛 |
+| `tests/test_case_interceptors.py` | 35断言 | 生产追截抽兵、混编与人数、补派时机及抽兵后复核失败回滚；规则见[追截](case-interceptors.md) |
+| `tests/test_case_dispatch.py` | 生产派单回归 | 职业优先与就近排序、取消信众村远单优先；规则见[案件](case-enforcement.md#自动接案的实际顺序) |
+| `Verify-EnvoyNavigation.ps1` | 270断言 | 实际游戏 DLL 与生产临时队船只/导航时序；边界与诊断结论见[临时队](temporary-parties.md) |
 | `tests/test_player_text.py` | 4 | 中英输出、只读陈旧检查、新键生成、换行等价、占位符丢失拒绝及新增内联文本拒绝 |
-| `tests/test_project_checks.py` | 10 | 战力/讲和/守村经验容量/玩家委派归属、复核头部格式与日期、无效提交提示、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
+| `tests/test_project_checks.py` | 14 | 战力/讲和/守村经验容量/玩家委派/海陆交接归属、引用失效核对、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
 | `tests/test_atonement.py` | 42断言 | 抽取实际赎罪、委派入口与使者方法，覆盖未入会权限、交接、存档字段恢复、和平/战斗完成、多嫌犯、原版期限、实际申报、取消交付与不重复领奖；引擎边界为桩 |
 | `tests/test_battle_peace.py` | 62断言 | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
 | `tests/test_firesworn_outfitting.py` | 53断言 | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
 | `tests/test_armory_allocation.py` | 88断言 | 抽取生产全阶分配/缓存、实战发装与结算取值、出队和招募搬装、分兵种战损；高阶保留原配及坐骑/双刀，低阶择强、预设空位、弹药配对、四格上限、技能/品质/存量守恒及祭司最后一人带装 |
-| `tests/test_training_transport.py` | 44断言 | 抽取生产派队/50%门槛及75%概率翻倍/50%数量公式、单程落村/改道、SyncData与老兵搬装回调，核对健康老兵、全队分母、留守、减员、无弱兵、失效原队、冷却及同版存读；引擎行为为桩 |
-| `tests/test_lord_combat.py` | 75断言 | 编译生产身份/武器解析器、实际命中、盾伤模型、盾体选择、耐久/延后破盾、当前骑手变更/死亡与分伤；引擎边界为桩 |
+| `tests/test_training_transport.py` | 51断言 | 抽取生产派队/50%门槛及75%概率翻倍/50%数量公式、单程落村/改道、SyncData与老兵搬装回调，核对健康老兵、全队分母、留守、减员、无弱兵、失效原队、冷却及同版存读；引擎行为为桩 |
+| `tests/test_lord_combat.py` | 81断言 | 编译生产身份/武器解析器、实际命中、盾伤模型、盾体选择、耐久/延后破盾、当前骑手变更/死亡与分伤；引擎边界为桩 |
 | `Verify-FounderProfiles.ps1` | 85断言 | 实际原版语体/选音、六组演员、战斗声音与性格合法互异；生产Harmony补丁范围与婚后接续 |
 | `Verify-PartyTransfers.ps1` | 177断言 | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
 | `tests/test_faith_logistics.py` | 1029断言（含500轮重复重算） | 生产首兵建队/回读/死亡、实际归队伤兵和经验、已有民兵不清空、祭司严格领先及势力守恒、全量交俘/交后访问需求消失、两村超额分流/押送容量、混编落村和地牢同版存读；引擎边界为桩 |
 | `tests/test_faith_villagers.py` | 31断言 | 生产出生/补员比例纠偏、只交换灰袍名额、伤情经验守恒、真实原版守方枚举、混装成交/村税/公库分账、余货和财产损失、物品品质标记存读；原版规则来自本机反编译，引擎边界为桩 |
 | `tests/test_raid_score.py` | 67断言（玩家/开发两种编译） | 真实信众比例查询、0～100%梯度与最多减50%、原震慑叠乘、无祭司/未登记/非村庄/户数边界、单次原评分及两类有界诊断 |
-| `tests/test_firesworn_logs.py` | 1 | 带BOM的启动标记、当前日志、归档，以及启动前后过滤 |
+| `tests/test_firesworn_logs.py` | 3 | 带BOM的启动标记/归档与启动切片、带时区不同秒精度、完整行去重、当前村民回款与村税分账口径；2026-10-19专项通过 |
 | `BattleSceneTests` | 137 | 援军三层/预算/Origin/原生耗尽 + 死战不退 18 项 |
 | `DualBladeTests` | 27 | 双刀 AI 与踢/盾击互斥 |
 | `tests/test_duty_priority.py`、`test_duty_scenarios.py`、`test_village_relief.py` | 91断言 | 真实差事准入、约斗/收养目标解析、玩家征调/求援、后台约斗先后交接、暂停/返回及三类驻留任务保存恢复；引擎移动/比武/收养副作用受控 |
 | `tests/test_duty_banner.py` | 40断言＋XML配置核对 | 生产执勤身份/领取资格、补领/入退会/重入、家族/地图/场景纹章与副本隔离/编辑器/视觉刷新、奖励池排除及升级保护；原版Hero旗槽/奖励池方法反编译执行，引擎边界为桩 |
-| `tests/test_affairs.py` | 5项，接单/VM35断言、真实输入11断言、帧处理5断言及XML核对 | 候选/酬劳/权限/过期合同、稳定ID刷新/接受、百科不退事务、成员工作/历史回报分开、五页空态/六职能、原版完成区/命名分节/换行/三滚动区；输入直接执行安装版DLL，其他引擎边界为桩 |
-| `MusicTests` | 58770640 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
+| `tests/test_affairs.py` | 6项，权限15/VM36/家族入口53断言、真实输入11/帧处理5断言及XML核对 | 候选/酬劳/权限/过期合同、稳定ID刷新/接受、百科不退事务、未入会彩蛋入口、成员工作/历史回报分开、五页空态/六职能、原版完成区/头像边框/换行/三滚动区；输入直接执行安装版DLL，其他引擎边界为桩 |
+| `MusicTests` | 58847439 断言（多为逐采样） | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
 | `CaseSettlement.Tests` | 155 | 案件结算、派遣记录同版本存读往返 |
 | `ChokePointTests` | — | 隘口候选已撤回，其 bin/obj 仅为被忽略的生成缓存，不参与构建或部署 |
 
-测试都是引擎边界桩：**不验证真实战场位置、AI 行军、原生物理或游戏内观感。**
+测试分别使用引擎边界桩、反编译原版方法回放或实际游戏 DLL，具体看各行；**离线通过不验证真实战场位置、AI 行军、原生物理或游戏内观感。**
 
 ## live 镜像是硬要求
 
@@ -160,23 +181,14 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 `_Module/README.md` 与 `README_EN.md` 是**发布产物**，只在用户说开发完成、要发新版本
 时更新。开发期一律不动。写法见 `.claude/rules/release-notes.md`。
 
-
 ## 已发布版本与下一版的对比基线
 
 - 最新正式版为 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布并设为latest。tag指向`d199c54`；游戏内容截至`f00ca9b`，最后一笔仅发行说明与记录。（依据：用户批准、远端Release与tag核验2026-10-17）
 - **下一版的玩家说明对比`v1.4-r15`。** 本次r15说明对比的是上个正式替换包`v1.4-r14-refresh`。（依据：发布基线）
 - 上一正式版 v1.4-r14（模组版本 1.4.14）。2026-10-07 同号替换了下载包，加入入国拦截、读档离国、自动换装候选保护，
   源码 `89a9972`，tag `v1.4-r14-refresh`。原 tag `v1.4-r14` 仍指 `ac66f86`（替换前内容），已推送的 tag 不移动。（依据：用户裁定 2026-10-07）
-- 替换后的包：ZIP 434464792 字节，SHA-256 `c5d8e2f4652d9eb55ead640bdb615b51b42ec52b13b5473e0d215dcc0bdb8e0a`；
-  玩家 DLL `99f3c068373ce0a9c227cf42fb0a6c69bd1bdd8a23c23cc8a6a4ce0e53a46e8f`；美术 TPAC 与原 v14 相同（`bcaae1d2…6e09`）。
-- 核验归档：`build-check/package-v1.4-r14-refresh/` 与 `build-check/package-v1.4-r14-original/`（各四件，见上节）。
-  替换前公开过的原 ZIP 在 `.codex_tmp/pre-refresh-v14-release-20261007/`，见 `../reference/local-scratch.md`。
 - 旧r15本地测试包已由本次正式包替换，不再作为现行下载包；线上没有该测试版Release可下架。最新美术包SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`（148项）。核验归档仍为 `build-check/package-v1.4-r15/`，旧资源回退点见local-scratch。（依据：用户裁定与文件/远端核对2026-10-17）
 
 ## 当前正式玩家包
 
-用户2026-10-17确认目前未发现问题，要求重新打包并发布正式版，撤下之前测试版；玩家包含运行时美术、不含监控或美术源文件。此前r15测试包只在本地，现已由正式包替换；线上没有测试Release需要删除。此次正式版沿用v1.4-r15/1.4.15，保持已推送历史与旧正式版，不移动已有tag。（依据：用户裁定2026-10-17；GitHub Release清单核查）
-
-正式包已生成：78项，442708872字节，ZIP SHA-256 `bcd77a8f198db4d324ca8e289944888500d04035bf16b00cc193d6bedac82dab`；玩家DLL `df96a0a8e928f905208d88a9ef757f91f3dfd07fda6c6eac659928f34f732f8c`，552类型引用/1720成员引用缺失0，748类型加载、95补丁类绑定通过。五组监控标记双编码全无，逐项解压哈希通过；美术pack0沿用最新753aaf1d…1b93fb6。证据在build-check/package-v1.4-r15。旧同名本地测试ZIP已由正式包覆盖；用户已批准确切公开说明和附件，远端回读的字节数/ZIP哈希/78项解压哈希/玩家DLL/双编码监控标记/正文全部一致；发布后asset ID、摘要和大小保持，Release为非草稿、非预发布并设latest。游戏源码已分别存档为de1f09e（追责/协力/差事）、82167c2（信众烧村抑制）和f00ca9b（执勤旗/常服），最终组合源码无未提交差异。（依据：发布前隔离构建、加载与ZIP核验2026-10-17）
-
-发布时间（UTC）`2026-10-17T05:56:09Z`；Release地址 https://github.com/Lucicain/GW/releases/tag/v1.4-r15 。远端元数据、下载验证与用户批准记录保存在build-check/package-v1.4-r15；临时回读ZIP校验后删除，不保留第二份443MB下载包。公开版本只保留ZIP和SHA256两项附件，原有正式版和已推送历史均未删除或改写。（依据：GitHub回执、下载逐项核验2026-10-17）
+v1.4-r15 正式包（2026-10-17 用户确认后发布，沿用 1.4.15、不移动已有 tag）：78 项，ZIP SHA-256 `bcd77a8f198db4d324ca8e289944888500d04035bf16b00cc193d6bedac82dab`，玩家 DLL `df96a0a8e928f905208d88a9ef757f91f3dfd07fda6c6eac659928f34f732f8c`；五组监控标记双编码全无。Release 只有 ZIP 与 SHA256 两项附件；核验证据与远端元数据在 `build-check/package-v1.4-r15/`。（依据：发布核验 2026-10-17）

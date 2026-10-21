@@ -1,8 +1,7 @@
 # 村庄善后、收养、重建、请愿与村民打赏
 
-> 当前状态：收养驻留、约斗交接与同版存读已修复，已部署待实测；重建/请愿支持赴约暂停
+> 当前状态：事务页酬谢分类/入口按用户要求撤除；原村庄打赏与收养/重建/请愿规则保持
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs` `tools/tests/test_village_relief.py`
 > 待实测：约斗不被收养抢人；先领收养后新约斗能暂停返回；离村不计时、返回续办；暂停与待派状态存读接续，agent读取诊断核对
 
@@ -28,7 +27,6 @@
 
 - 收养记录保存剩余驻留小时和上次有效工作时刻，待派记录也保留；读档只恢复索引，不清待办、不补旧格式。（依据：用户裁定同版接续；生产序列化回归 2026-10-17）
 - 先接收养后独立使者约成单挑，当前领主赴约，收养记录保留并暂停，约斗结束后继续原村；已在赴约的人不会再被收养挑中。约斗占用与等待规则只在[地图AI](warden-ai.md)和[使者](case-envoy.md)定义。（依据：用户批准方案 2026-10-17）
-- `test_village_relief.py`执行生产更新、目标解析与SyncData，18断言覆盖村口驻留、远处不完成、暂停/归来、待派和进行中存读、被俘中止及不重复结算。移动与收养副作用是受控边界，实机验收仍待完成。（依据：离线执行 2026-10-17）
 
 ## 重建（`GreyWardenVillageReconstructionBehavior`）
 
@@ -60,6 +58,8 @@
   - 计入玩家请求的顺延。
 
 ## 村民打赏（`GreyWardenVillageRewardBehavior`）
+
+事务页不显示酬谢分类或余额，不提供领取入口；原村庄菜单、累计余额、滑条与保存键保持。（依据：用户裁定2026-10-21）
 
 - 玩家灰袍声望为正时，每天按「声望 × 10」第纳尔累积一笔打赏，在任何村子的菜单里都能领。
 - 领取时可以用滑条（`GreyWardenVillageRewardSliderScreen`）选领多少。

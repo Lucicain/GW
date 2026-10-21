@@ -253,8 +253,6 @@ namespace GreyWardenPolicePurity
         internal static bool IsTrainingHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.Training;
 
-        internal static bool IsTrainingParty(MobileParty? party) =>
-            IsTrainingHero(party?.LeaderHero);
 
         internal static bool IsPlayerRequestsHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.PlayerRequests;

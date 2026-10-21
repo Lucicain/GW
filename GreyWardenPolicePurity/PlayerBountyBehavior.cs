@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -650,6 +650,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private MobileParty? ResolveBountyTargetParty()
         {
+            // 人已逃亡/被俘时不能拿旧部队ID继续报位置，旧部队可能仍活跃或已换领主。
+            if (CaseHero != null && (IsCaseTargetMissing || CaseHero.IsPrisoner || CaseHero.IsDead)) return null;
             MobileParty? party = CaseHero?.PartyBelongedTo;
             if (party?.IsActive != true && !string.IsNullOrEmpty(_activeBountyTargetId))
                 party = MobileParty.All.FirstOrDefault(candidate => candidate.IsActive &&

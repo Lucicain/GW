@@ -1,15 +1,16 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
-> 当前状态：六位创始领主声音与正面性格已区分并部署待试听；所有成年成员均履职的界面口径已明确
+> 当前状态：满关系写入/锁定已取消，免费求婚保留；成年分职与后继规则保持
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 已复核至：`626b079`（2026-10-18）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GreyWardenNotableRelationsBehavior.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
 > 待实测：见文末
 
 家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
 
 灰袍是一个独立家族（`gw`，文化 empire，初始家乡 `village_EN5_1`），不加入王国（见 `crime-intake.md` 外交封锁）。
 新成员从村庄收养来，见 [`village-relief.md`](village-relief.md)；地图上谁去做什么，见 [`warden-ai.md`](warden-ai.md)。
+
+灰袍家族百科的事务按钮是未入会也可进入的彩蛋；正常导航门槛和具体业务权限只在[入口](map-bar-affairs.md#位置与门槛)与[事务界面](affairs-interface.md)定义。（依据：用户裁定2026-10-18）
 
 ## 成员
 
@@ -25,7 +26,7 @@
 | 晨曦 `gw_leader_4` | ⑤原帖6号 |
 | 暮光 `gw_leader_5` | ⑥原帖7号 |
 
-已选脸码与预设weight/build沿用，保留各领主原有age。本轮只调整五人的声音位，族长完整BodyProperties仍不变；规则见本页「六人声音与性格」。外貌定义作用于新档英雄；已有英雄的 StaticBodyProperties 已存档，预览使用新档，不增加读档改脸逻辑。（依据：实现选择；C#反编译 v1.4.8 Hero 存档属性；用户裁定：不做版本间存档兼容）
+已选脸码与预设weight/build沿用，保留各领主原有age。本轮只调整五人的声音位，族长完整BodyProperties仍不变；规则见本页「六人声音与性格」。外貌定义作用于新档英雄；已有英雄的 StaticBodyProperties 已存档，预览使用新档，不增加读档改脸逻辑。（依据：现行实现；C#反编译 v1.4.8 Hero 存档属性；升级范围见公共底座）
 
 回退：取回存档 `1f84971` 的 `_Module/ModuleData/spspecialcharacters.xml` 并镜像到 live，即恢复替换前六人的定义。（依据：流程）
 
@@ -67,22 +68,23 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 | 领主 | 本职 | 做什么 |
 |---|---|---|
-| `gw_leader_0` | 练兵 | 带队成长并派老兵单程送到信众村，见 `warden-training.md` |
+| `gw_leader_0` | 练兵 | 暂为挂名；玩家订单保留，自主送老兵退休，见 `warden-training.md` |
 | `gw_leader_1` | 商队护卫 | 派案时先接商队袭击案 |
 | `gw_leader_2` | 护村 | 派案时先接村庄暴力案 |
 | `gw_leader_3` | 请愿 | 处理原版要人请愿（issue），见 `village-relief.md` |
 | `gw_leader_4` | 重建 | 重建被焚村庄，见 `village-relief.md` |
 | `gw_leader_5` | 贵族事务 | 玩家的封地申诉等请求，见 `player-requests.md` |
 
-- 新成员成年时补位：选在世持有人最少的本职；人数相同时按重建 → 请愿 → 护村 → 商队 → 练兵 → 贵族事务的顺序。
+- 新成员成年时补强仍有成年在世持有人的本职：选其中人数最少者；人数相同时按重建 → 请愿 → 护村 → 商队 → 练兵 → 贵族事务的顺序。不是优先填补人数为0的空缺。（依据：当前AssignDutyIfNeeded实现、生产方法离线复核2026-10-19）
 - 某个本职的最后一位持有人死了，这条线就断了，后来的孩子不会再补上。（依据：设计）
 - 本职名称和百科生平提示随本职变化。
+
+后继来自既有村庄收养并按游戏年龄模型成年；不是负责人死后立即生成替补。如果该职能在原负责人去世前已有成年继任者，仍能继续；如果只有尚未成年的孩子，则孩子以后成年也不会恢复已断职能，已经分到别职的成年人也不转职。所有职能都失去在世成年持有人时，后续成年者甚至无法分到本职。这是当前筛选Count>0和已有职能不重分的结果，不是原版引擎限制。本轮7项生产方法离线场景已核对，未更改该设计；未验证多年战役全量成长/派队。（依据：用户询问、源码与受控离线执行2026-10-19）
 
 ## 婚姻
 
 - 灰袍女性只能嫁给玩家，不和任何 AI 家族成员结婚（`PoliceMarriageModel`）。（依据：设计）
-- 新档（角色创建结束）时玩家与灰袍的关系设为 100。原版两位英雄的关系落在双方族长之间，所以这就是玩家与每位灰袍领主的关系；之后照原版涨落。
-  （依据：用户裁定 2026-10-14；C#反编译 v1.4.8 DefaultDiplomacyModel.GetHeroesForEffectiveRelation）
+- 取消新档玩家与灰袍关系自动设为100；保留免费求婚入口和婚后身份保存。旧档已经保存的关系不统一清零，后续照原版涨落。（依据：用户裁定2026-10-20；原始关系未保存，无法可靠恢复）
 - 玩家能和任意一位成年灰袍领主结婚：领主对话主选项「做我的妻子吧」，当场照原版 `MarriageAction` 成婚，不走原版求爱说服和嫁妆谈判；
   她按原版婚姻进玩家家族（队伍解散、成为流亡者，等玩家去接）。条件照原版婚姻模型（性别、未婚、不在战斗或军团里、未与他人求爱到高阶段）。
   原版不让两位族长成婚，玩家永远是族长：求的是灰袍族长时只看其余条件，成婚前照原版 `ChangeClanLeaderAction` 把族长位子交给本家族另一位活着的成年灰袍领主
@@ -92,9 +94,10 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 与要人的关系
 
-- 灰袍家族成员与所有聚落要人的关系恒定 100（`GreyWardenNotableRelationsBehavior`）：
-  每天、读档、新英雄出生、成年时都刷新；后置补丁挡住原版改写这份关系。
-  目的是让灰袍没有封地也能招兵、拜访、和要人交互。
+原版NotableSupportersCampaignBehavior在要人与当前支持家族族长关系达到上限时直接拒绝转投，满关系确实会干扰地方支持竞争。旧代码锁的是灰袍与要人的关系，并非直接给玩家与全部要人设100；新档玩家与灰袍100是另一处写入，二者分别取消。封地重议额外支持取灰袍声望，见[封地重议](player-requests.md#民意支持)，不依赖这些私人关系。（依据：安装版1.4.8反编译、生产源码与用户反馈2026-10-20）
+
+- 取消灰袍家族成员与要人关系强制100，包括刷新行为及拦截关系写入/变化的补丁；不另用满关系维持招募和地方支持。（依据：用户裁定2026-10-20）
+- 本次回退基线`d5a8d84`：GreyWardenNotableRelationsBehavior.cs、SubModule中的该行为注册、GwpWardenMarriageBehavior的新档关系回调。恢复时只取对应差异，不覆盖其他开发工作树。（依据：流程2026-10-20）
 
 ## 对话与百科
 
@@ -113,6 +116,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 待实测
 
+- 正常游玩中的关系变化不再被恢复100，免费求婚入口及婚后身份保持。旧档现值保留，不将取消锁定误报为已还原历史关系。
 - 新档分别会面六人，听原版配音台词的声线与口吻；百科可见各自性格，战斗叫喊按六套声音/音高组合区分。文字自写台词没有新增录音。
 - 求的是灰袍族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转。
 

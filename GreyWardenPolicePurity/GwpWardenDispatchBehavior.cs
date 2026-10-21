@@ -190,10 +190,13 @@ namespace GreyWardenPolicePurity
             int carriedCaseGold,
             bool reportLie,
             string prisonerHeroId, List<ItemRosterElement>? cargo = null,
-            string orderTroopId = "", int orderCount = 0, int orderPrice = 0)
+            string orderTroopId = "", int orderCount = 0, int orderPrice = 0,
+            string fiefSettlementId = "", double fiefCaptureHours = 0d)
         {
             MobileParty player = MobileParty.MainParty;
             if (player?.IsActive != true || detachment.TotalManCount <= 0) return null;
+            if (purpose == GwpDispatchPurpose.FiefAppeal &&
+                (HasActiveDispatch(purpose) || !GreyWardenPlayerRequestBehavior.CanFileCourierAppeal(fiefSettlementId, fiefCaptureHours))) return null;
             Settlement? home = player.CurrentSettlement ??
                 GwpCommon.FindNearestTown(player.GetPosition2D);
             MobileParty? receiver = home == null ? null : FindReceiver(player, player);
@@ -275,6 +278,8 @@ namespace GreyWardenPolicePurity
                 OrderTroopId = orderTroopId ?? string.Empty,
                 OrderCount = Math.Max(0, orderCount),
                 OrderPrice = Math.Max(0, orderPrice),
+                FiefSettlementId = fiefSettlementId ?? string.Empty,
+                FiefCaptureHours = fiefCaptureHours,
                 CaseHeroId = purpose == GwpDispatchPurpose.Report
                     ? Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.CaseReportIdentity ?? string.Empty : string.Empty,
                 ReportLie = reportLie,
@@ -303,10 +308,14 @@ namespace GreyWardenPolicePurity
             return party;
         }
 
-        private static TextObject BuildDispatchName(GwpDispatchPurpose purpose) =>
-            GwpText.Create(purpose == GwpDispatchPurpose.Report
-                ? GwpTextCatalog.gwp_dispatch_name_report
-                : GwpTextCatalog.gwp_dispatch_name_support);
+        private static TextObject BuildDispatchName(GwpDispatchPurpose purpose) => GwpText.Create(purpose switch
+        {
+            GwpDispatchPurpose.Report => GwpTextCatalog.gwp_dispatch_name_report,
+            GwpDispatchPurpose.Support => GwpTextCatalog.gwp_dispatch_name_support,
+            GwpDispatchPurpose.TroopOrder => GwpTextCatalog.gwp_dispatch_name_order,
+            GwpDispatchPurpose.PeaceRequest => GwpTextCatalog.gwp_dispatch_name_peace,
+            _ => GwpTextCatalog.gwp_dispatch_name_fief
+        });
 
         /// <summary>
         /// 派出去的人和灰袍领主用同一套下注方式：巡逻类候选由欲望系统统一压到最低，
@@ -565,6 +574,11 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            if (!GwpCommon.CanCompletePartyHandover(party, receiver))
+            {
+                SendTo(party, receiver);
+                return;
+            }
             DeliverTo(record, party, receiver);
         }
 
@@ -618,6 +632,16 @@ namespace GreyWardenPolicePurity
 
         private void DeliverTo(GwpDispatchRecord record, MobileParty party, MobileParty receiver)
         {
+            if (!GwpCommon.CanCompletePartyHandover(party, receiver)) return;
+            if (record.Purpose == GwpDispatchPurpose.FiefAppeal)
+            {
+                bool filed = GreyWardenPlayerRequestBehavior.FileCourierAppeal(record.FiefSettlementId, record.FiefCaptureHours);
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(filed
+                    ? GwpTextCatalog.gwp_dispatch_fief_filed : GwpTextCatalog.gwp_dispatch_fief_moot),
+                    filed ? Colors.Green : Colors.Yellow));
+                BeginReturn(record, party);
+                return;
+            }
             if (record.Purpose == GwpDispatchPurpose.Support)
             {
                 bool granted = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
@@ -754,6 +778,11 @@ namespace GreyWardenPolicePurity
                 if (!TryHandleTownBusiness(record, party)) FollowTo(party, player);
                 return;
             }
+            if (!GwpCommon.CanCompletePartyHandover(party, player))
+            {
+                FollowTo(party, player);
+                return;
+            }
             HandBackEverything(record, party, player);
         }
 
@@ -798,7 +827,8 @@ namespace GreyWardenPolicePurity
         private void HandBackEverything(GwpDispatchRecord record, MobileParty party, MobileParty player)
         {
             if (!_dispatches.Contains(record) || !party.IsActive || party.MapEvent != null ||
-                player.MapEvent != null || record.Phase == GwpDispatchPhase.Rejoined) return;
+                player.MapEvent != null || record.Phase == GwpDispatchPhase.Rejoined ||
+                !GwpCommon.CanCompletePartyHandover(party, player)) return;
             UntrackOnMap(party);
             int men = party.MemberRoster.TotalManCount;
             int wounded = party.MemberRoster.TotalWoundedRegulars;

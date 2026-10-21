@@ -215,9 +215,8 @@ namespace GreyWardenPolicePurity
             foreach (IFaction faction in _instance.LiveMediationFactions())
             {
                 var entry = new GwpAffairsEntry("mediation:" + faction.StringId,
-                    GwpText.Get(GwpTextCatalog.gwp_affairs_support), faction.Name.ToString())
+                    GwpText.Get(GwpTextCatalog.gwp_affairs_mediation), faction.Name.ToString())
                 { IsPersonal = true, Summary = GwpText.Get(GwpTextCatalog.gwp_affairs_need_mediation) };
-                entry.Fields.Add(entry.Summary);
                 yield return entry;
             }
         }

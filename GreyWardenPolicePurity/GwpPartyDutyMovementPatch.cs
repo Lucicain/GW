@@ -115,13 +115,14 @@ namespace GreyWardenPolicePurity
         nameof(DefaultMobilePartyAIModel.GetBestInitiativeBehavior))]
     internal static class GwpInitiativeDiagnosticsPatch
     {
-        [HarmonyPostfix]
+        [HarmonyPostfix, HarmonyPriority(Priority.Last)]
         private static void Postfix(MobileParty mobileParty,
             ref AiBehavior bestInitiativeBehavior,
             ref MobileParty bestInitiativeTargetParty,
             ref float bestInitiativeBehaviorScore,
             ref Vec2 averageEnemyVec)
         {
+            if (GwpStrength.IsNativePreview) return;
             GwpAiDiagnostics.CaptureInitiative(mobileParty,
                 bestInitiativeBehavior, bestInitiativeTargetParty,
                 bestInitiativeBehaviorScore, averageEnemyVec);

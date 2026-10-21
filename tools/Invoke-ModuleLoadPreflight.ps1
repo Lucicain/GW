@@ -107,6 +107,37 @@ Write-Host ('MEMBER_FAIL_COUNT=' + $memberFail)
 # Harmony binding is the second half of the answer: a patch class whose target
 # method no longer exists throws at Patch() time, which in the game surfaces as
 # a startup crash rather than a load refusal.
+# A successful Patch() can still poison a type initializer: MonoMod's eager JIT
+# can consume the original exception. This happened to CampaignUIHelper on
+# 2026-10-20 before GameTexts existed; observe that exact failure as well.
+Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+public static class GwpPreflightInitializationWatch
+{
+    public static string PatchName;
+    public static readonly List<string> Failures = new List<string>();
+    public static void Start() { AppDomain.CurrentDomain.FirstChanceException += Observe; }
+    public static void Stop() { AppDomain.CurrentDomain.FirstChanceException -= Observe; }
+    private static void Observe(object sender, FirstChanceExceptionEventArgs args)
+    {
+        if (!(args.Exception is NullReferenceException)) return;
+        foreach (StackFrame frame in new StackTrace().GetFrames())
+        {
+            var method = frame.GetMethod();
+            if (method != null && method.Name == ".cctor" && method.DeclaringType != null &&
+                method.DeclaringType.FullName == "TaleWorlds.CampaignSystem.ViewModelCollection.CampaignUIHelper")
+            {
+                Failures.Add(PatchName + ": CampaignUIHelper initialized before GameTexts: " + args.Exception.Message);
+                break;
+            }
+        }
+    }
+}
+'@
+[GwpPreflightInitializationWatch]::Start()
 $h = New-Object HarmonyLib.Harmony('gwp.compat.preflight')
 $ok = 0
 $fail = 0
@@ -121,6 +152,7 @@ foreach ($t in $types) {
         }
     } catch { }
     if (-not $isPatch) { continue }
+    [GwpPreflightInitializationWatch]::PatchName = $t.FullName
     try {
         $processor = New-Object HarmonyLib.PatchClassProcessor($h, $t)
         $result = $processor.Patch()
@@ -133,9 +165,33 @@ foreach ($t in $types) {
         Write-Host ('  PATCH_FAIL ' + $t.Name + ': ' + $_.Exception.GetBaseException().Message)
     }
 }
+[GwpPreflightInitializationWatch]::Stop()
+# The framework may defer .cctor execution in this host even though the game
+# eagerly executes it. Check the exact installed IL dependency that caused the
+# observed failure, as well as exceptions actually seen in this process.
+$earlyUiFieldFaults = 0
+$instructionReader = [HarmonyLib.PatchProcessor].GetMethod('GetOriginalInstructions',
+    [type[]]@([System.Reflection.MethodBase], [System.Reflection.Emit.ILGenerator]))
+foreach ($original in [HarmonyLib.Harmony]::GetAllPatchedMethods()) {
+    if ($original.DeclaringType.FullName -ne 'SandBox.ViewModelCollection.Nameplate.PartyNameplateVM') { continue }
+    $instructions = $instructionReader.Invoke($null, [object[]]@($original, $null))
+    foreach ($instruction in $instructions) {
+        if ($instruction.opcode -eq [System.Reflection.Emit.OpCodes]::Ldsfld -and
+            $instruction.operand -is [System.Reflection.FieldInfo] -and
+            $instruction.operand.DeclaringType.FullName -eq 'TaleWorlds.CampaignSystem.ViewModelCollection.CampaignUIHelper') {
+            $earlyUiFieldFaults++
+            Write-Host ('  EARLY_UI_FIELD_FAIL ' + $original.Name + ' -> CampaignUIHelper.' + $instruction.operand.Name)
+        }
+    }
+}
+Write-Host ('EARLY_UI_FIELD_FAIL_COUNT=' + $earlyUiFieldFaults)
+foreach ($initializationFailure in [GwpPreflightInitializationWatch]::Failures) {
+    Write-Host ('  STATIC_INIT_FAIL ' + $initializationFailure)
+}
+Write-Host ('STATIC_INIT_FAIL_COUNT=' + [GwpPreflightInitializationWatch]::Failures.Count)
 Write-Host ('PATCH_OK=' + $ok + '; PATCH_FAIL=' + $fail)
 
-if ($typeLoadFailures -gt 0 -or $memberFail -gt 0 -or $fail -gt 0) {
+if ($typeLoadFailures -gt 0 -or $memberFail -gt 0 -or $fail -gt 0 -or $earlyUiFieldFaults -gt 0 -or [GwpPreflightInitializationWatch]::Failures.Count -gt 0) {
     Write-Host 'PREFLIGHT=FAIL'
     exit 1
 }

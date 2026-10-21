@@ -111,7 +111,62 @@ namespace GreyWardenPolicePurity
             __result = 0;
             return false;
         }
+
+#if GWP_DIAGNOSTICS
+        // 依据：实机诊断2026-10-19 23:30，军团补凝聚力时关系模型收到空英雄。
+        // 原栈没有军团/成员参数；只补失败现场，不吞异常、不改变费用或编队。
+        [HarmonyFinalizer]
+        private static Exception? Finalizer(MobileParty armyLeaderParty,
+            MobileParty party, Exception? __exception)
+        {
+            if (__exception == null) return null;
+            Army? army = armyLeaderParty?.Army;
+            GwpFaultTrace.Write("ARMY_INFLUENCE_FAILURE", details:
+                "leaderParty=" + (armyLeaderParty?.StringId ?? "-") +
+                "; leaderHero=" + (armyLeaderParty?.LeaderHero?.StringId ?? "-") +
+                "; leaderActive=" + (armyLeaderParty?.IsActive == true) +
+                "; memberParty=" + (party?.StringId ?? "-") +
+                "; memberHero=" + (party?.LeaderHero?.StringId ?? "-") +
+                "; memberActive=" + (party?.IsActive == true) +
+                "; memberIsDelay=" + GwpCommon.IsEnforcementDelayPatrolParty(party) +
+                "; memberArmyLeader=" + (party?.Army?.LeaderParty?.StringId ?? "-") +
+                "; armyKingdom=" + (army?.Kingdom?.StringId ?? "-") +
+                "; activeAssistance=" + PoliceEnforcementBehavior.IsActiveAssistanceArmy(army) +
+                "; members=" + (army == null ? "-" : string.Join(",",
+                    army.Parties.Select(member => (member?.StringId ?? "-") + ":" +
+                        (member?.LeaderHero?.StringId ?? "-")))) +
+                "; error=" + __exception.GetType().FullName);
+            return __exception;
+        }
+#endif
     }
+
+#if GWP_DIAGNOSTICS
+    /// <summary>失败时记录真正被计费的Army；不能用LeaderParty.Army代替，残留回调的两者可能不同。</summary>
+    [HarmonyPatch(typeof(DefaultArmyManagementCalculationModel),
+        nameof(DefaultArmyManagementCalculationModel.CalculateTotalInfluenceCost))]
+    internal static class GwpArmyInfluenceFailureTracePatch
+    {
+        [HarmonyFinalizer]
+        private static Exception? Finalizer(Army army, float percentage,
+            Exception? __exception)
+        {
+            if (__exception == null) return null;
+            GwpFaultTrace.Write("ARMY_TOTAL_INFLUENCE_FAILURE", details:
+                "leaderParty=" + (army?.LeaderParty?.StringId ?? "-") +
+                "; leaderHero=" + (army?.LeaderParty?.LeaderHero?.StringId ?? "-") +
+                "; kingdom=" + (army?.Kingdom?.StringId ?? "-") +
+                "; leaderPointsToThisArmy=" + (army != null && army.LeaderParty?.Army == army) +
+                "; activeAssistance=" + PoliceEnforcementBehavior.IsActiveAssistanceArmy(army) +
+                "; percentage=" + percentage.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                "; members=" + (army == null ? "-" : string.Join(",", army.Parties.Select(member =>
+                    (member?.StringId ?? "-") + ":hero=" + (member?.LeaderHero?.StringId ?? "-") +
+                    ":delay=" + GwpCommon.IsEnforcementDelayPatrolParty(member) +
+                    ":pointsToThisArmy=" + (member?.Army == army)))));
+            return __exception;
+        }
+    }
+#endif
 
     /// <summary>
     /// The native army encounter background assumes every Army owns a Kingdom

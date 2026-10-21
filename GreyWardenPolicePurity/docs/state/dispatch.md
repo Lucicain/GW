@@ -1,22 +1,25 @@
 # 玩家送信队（使者）
 
-> 当前状态：用户已实测确认（2026-10-02：按路程选城、卖掉才回去送信、卖俘虏提示、押送不逃）
-> 最后验收：`6b9f090`（2026-10-02 用户确认）
-> 已复核至：`626b079`（2026-10-18）
-> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs`
-> 待实测：送信归队接续伤兵和累计经验；反复建队不重号
+> 当前状态：复命/求援归入当前委托，订单/讲和/封地各归业务；五种真实使者与封地递送保持
+> 最后验收：2026-10-21 用户反馈前轮无功能问题；日志确认订兵/讲和/复命选兵，封地送达与存读边界仍待测
+> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs` `GwpWardenDispatchBehavior.Affairs.cs` `tools/tests/test_affairs_dispatch.py` `tools/tests/test_fief_courier.py`
+> 待实测：委托内复命/求援及行程归类；封地选定/出发/送达/失效返回及存读接续；归队伤兵和累计经验；反复建队不重号
 
 送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。
 
-四种玩家使者的只读行程、实际兵员/财货/收件人快照已接入[我的事务](affairs-interface.md#玩家与办案使者)，不改派遣与存档流程。（依据：用户裁定、实现2026-10-18）
+五种差事各在[我的事务](affairs-interface.md#玩家与办案使者)对应业务子页发起并显示行程，不再有整合使者页；本队灰袍兵对话同时支持这五类。正常选兵/付款/交割及真实资源归本行为。（依据：用户裁定与实现2026-10-21）
 
-## 四种差事
+## 五种差事
 
-`GwpDispatchPurpose`：`Report`（带钱物、必要时押俘虏去复命）、`Support`（求援，送到才成立）、
-`TroopOrder`（带练兵订单和订金，送到才立单；练好的兵仍由练兵官亲自送）、`PeaceRequest`
-（请灰袍出面调停，空手去空手回）。阶段 `Outbound → Returning → Rejoined`，存档键 `gwp_dispatch_state`。
+`GwpDispatchPurpose`：`Report=0`带钱物/本案俘虏复命、`Support=1`送达求援、`TroopOrder=2`带订单和全额预付送达立单、`PeaceRequest=3`请求调停、`FiefAppeal=4`递交选定封地重议申请。前四项数值保持。阶段Outbound→Returning→Rejoined，存档键仍gwp_dispatch_state。船只/人员归队见[临时队](temporary-parties.md)。（依据：原业务与本轮新增目的2026-10-21）
 
-建队编号与归队状态搬运使用 [临时队](temporary-parties.md) 定义的公共入口；送信阶段、交割与工资流程不变。（依据：源码复核2026-10-14）
+### 封地申请使者
+
+先选护卫，归还这份临时选兵，再由[封地归属方](player-requests.md)列合资格分封；最终选定后复核精确SettlementId+CaptureHours、当前申请、同类在途和真实护卫，再实扣人员建队。取消任一步没有丢兵/伤员/经验；没有预扣5万。封地负载只代表待递交申请，不占为已登记阶段。（依据：用户裁定、设计及生产验证2026-10-21）
+
+随队保存FiefSettlementId与FiefCaptureHours，原15段字符串末尾追加两段；旧记录无两段按无封地负载读取，前15段及已有差事/钱物/俘虏/订单不清空，原目的ID不变。精确分封身份防止重攻同城后把旧信递成新案。未新增保存类型ID或顶层键，不据此冒称完整r13升级已完成。（依据：存档裁定、设计及编解码回归2026-10-21）
+
+通过原海陆交接门槛后调用FileCourierAppeal，重新核对会员/正式封臣、30天、原分封记录及封地现状、无已有申请；成功进入原SeekingPlayerForPayment，贵族事务本人再找玩家收费/游说/投票。超时、失去封地资格、重攻、退会/佣兵或已手动登记均不另立申请，使者沿原返程带回人员/物资。申请失效提示与申请已登记提示分开；返程与归队沿原规则。（依据：设计与实际交付方法执行2026-10-21）
 
 ## 出发
 
@@ -31,7 +34,7 @@
 ## 路上
 
 - 出程直扑（`RequestRush`）；回程跟随玩家（`RequestEscort`），不用直扑，否则原版会拉出一场遭遇。
-- 攻击倾向 0.2、6 小时，每小时续：贴身弱敌照打，不为远处目标丢下差事。火誓者的传教队、运械队、卖货队出门也用这一套（`KeepCourierDisposition`）。
+- 攻击倾向 0.2、6 小时，每小时续：贴身弱敌照打，不为远处目标丢下差事。火誓者自建的传教队与村间转运队也用 `KeepCourierDisposition`；售货村民走原版村民AI，见[村民队](firesworn-villagers.md)。（依据：源码复核 2026-10-19）
 - 收件人每小时重选最近且**走得到**的灰袍领主；新目标要近 25 以上才改道。
   `CanReach` 必需：目标位置不合本队通行方式时，引擎把目的地换成自己脚下，队伍原地不动。
 - 12 小时没有真的靠近收件人就换一个；换不出来就带着东西回玩家身边。
@@ -50,6 +53,7 @@
 
 ## 交付与交割
 
+- 出程交付及回程归队均须通过[公共海陆交接门槛](temporary-parties.md#海陆交接资格)。距离已到但尚不能交接时，保留差事与货物，继续直扑收件人或跟随玩家；不提前转人、转钱、还船或销毁。实际生产DLL验证见[追截](case-interceptors.md#上下船与归队交接)。（依据：实际DLL复现与离线回归 2026-10-19）
 - 距离 3 以内交付。`Report`：交出案件款与清单货物、押的人，拿办案费（同样受保护）回来；
   委托已不在时原样带回。`TroopOrder`：带的钱不够订价或练兵官不能接单时原样带回。
 - 回程最后 15 的路上设为不可交互，距玩家 3 以内交割：人（含伤员与经验）、俘虏、全部物品、
@@ -61,7 +65,11 @@
 
 每天由玩家付 `party.TotalWage`；付不起时队伍士气 −1。案件款不参与。
 
-## 开口：跟队里的灰袍兵说话
+## 开口：我的事务或本队灰袍兵
+
+事务入口由AffairsDispatchBlockReason统一检查：正常事务会员/声望资格、派遣行为存在、主队有效且无战斗/遭遇、野外无聚落菜单、无当前选兵/付款/交谈待办、有普通灰袍兵、同类使者不在途，以及原四目的及FiefAppeal资格。不可用返回具体原因，按钮显示并在TryStartFromAffairs再核对；其他入口继续各自既有资格，不把事务声望门槛强加到原士兵对话。（依据：用户澄清、共享归属与源码2026-10-21）
+
+按钮成功时只记录目的和_selectionQueued并关闭事务页。SubModule的应用心跳在地图暂停时也运行，Pump须等ActiveState为MapState且无菜单/遭遇/对话再进入原OpenTroopSelection；不会在事务屏上直接打开PartyScreen。确认前只是无兵钱变更的界面意向，读档/会话重开清空这类临时待办；已在途使者沿原记录存读，不清资源。原选兵取消ReturnSelection归还人数/伤员/经验，复命和订单继续后续付款/押人；封地继续选择具体分封再最终派出。（依据：设计、原版衔接与53断言原生命令执行2026-10-21）
 
 - 原版队伍界面只有英雄有「交谈」按钮。这里只给「自己队里的灰袍兵」也开一个，接到派遣对话上（`GwpPartyScreenTroopTalkPatch`）。
   原版 `ExecuteTalk` 只处理英雄，普通士兵走进去会空引用，所以命中灰袍兵时整条拦下。
@@ -78,7 +86,7 @@
 - 原版分兵界面写死了俘虏不可转移。所以界面关掉后再单问一句：交钱还是押人。
   押人只能押本案目标本人，直接转到这支队伍名下。
 - 交多少、怎么说，出发前由玩家定死，士兵不替他临场决定。
-- 练兵订单的订金按案件款带走，受 `CaseGoldFloor` 保护，路上不许拿去发饷。
+- 练兵订单的预付款按案件款带走，受 `CaseGoldFloor` 保护，路上不许拿去发饷。
 
 ## 付款与交割：原版交易界面（`GwpAssetPayment`）
 

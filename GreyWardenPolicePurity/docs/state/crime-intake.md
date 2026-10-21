@@ -2,7 +2,6 @@
 
 > 当前状态：人物追责保留；信众村烧村评分额外最多减50%，叠乘既有震慑，已构建部署待实测
 > 最后验收：未建立检查点
-> 已复核至：`7573179`（2026-10-17）
 > 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs` `tools/tests/test_raid_score.py`
 > 待实测：信众比例越高烧村候选分越低，封顶减50%且叠乘个人震慑；agent读取RAID_SCORE_SAMPLE核对两类倍率与运行模型
 
@@ -55,7 +54,7 @@
 - 用户要求追责只记录犯人及其犯罪造成的伤亡、恶果，不再依靠事件案卷来追人；处罚沿用这些后果作为依据。犯罪类别仍服务于护商/护村专职与分类震慑，临时追捕、使者交涉和同版本存读档仍要有各自行动状态。（依据：用户裁定 2026-10-17；现行调用约束）
 - 现有 `CrimeRecord` 本来以英雄ID为键，同一人再犯累加，不是每次生成新案号；它另存未结犯罪次数、当前平民死亡数与最近事件描述。`HeroCrimeStats` 则存终身次数、负声望/余数及分类震慑；两者分开，撤下承办任务不删除前者。人物暂时被第三方俘虏/失队、暂未解析到英雄、承办人失效均留责；开放记录不按数量裁剪。生命周期只在[案件](case-enforcement.md#人物追责与回退)定义。（依据：源码复核 2026-10-17）
 - 只用现有长期负声望会漏掉仍需收取的逐次基础费：罚金当前为未结犯罪次数×1000＋负声望×100，封顶20000；负声望还可因杀匪抵减，终身犯罪次数也不能当成未清次数重复收费。当前保留未了与已经处理的边界，不能删除基础费数据后宣称处罚不变。（依据：现行计价生产源码；设计约束 2026-10-17）
-- 当前记录的量化恶果主要是平民死亡，劫掠以户数下降按既定规则计人命；受伤人数、财产损失没有独立累计字段。本轮未自行增加这些处罚项目，也未删除最近罪名/受害者/位置，因为当前专职选择、信众村附近优先与对话仍读取它们。（依据：源码复核 2026-10-17）
+- 当前记录的量化恶果主要是平民死亡，劫掠以户数下降按既定规则计人命；受伤人数、财产损失没有独立累计字段。本轮未自行增加这些处罚项目，也未删除最近罪名/受害者/位置，因为当前专职选择、案情记录与对话仍读取它们。（依据：源码复核 2026-10-17）
 
 ## 震慑（`GwpAiDeterrenceState`）
 

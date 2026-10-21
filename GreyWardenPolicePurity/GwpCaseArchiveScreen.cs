@@ -23,13 +23,23 @@ namespace GreyWardenPolicePurity
         private GauntletLayer? _layer;
         private GwpAffairsVM? _vm;
         private SpriteCategory? _sprites;
+        private int _pageOnReturn;
         public GwpCaseArchiveScreen(GwpAffairsState state) { _state = state; }
         internal static bool IsOpen => Game.Current?.GameStateManager.ActiveState is GwpAffairsState;
         internal static bool CanOpen => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
             ?.IsRecruitedByGreyWardens == true && GwpRuntimeState.Player.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold;
         public static void Show()
         {
-            if (!CanOpen || Game.Current == null) return;
+            Open(false);
+        }
+        internal static void ShowFromClanPage()
+        {
+            Open(true);
+        }
+        private static void Open(bool clanEasterEgg)
+        {
+            // 家族百科入口是未入会也能发现的彩蛋；接案等业务另查自身资格。
+            if (Campaign.Current == null || Game.Current == null || !clanEasterEgg && !CanOpen) return;
             if (IsOpen) return;
             Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
             GwpAffairsState state = Game.Current.GameStateManager.CreateState<GwpAffairsState>();
@@ -49,7 +59,7 @@ namespace GreyWardenPolicePurity
             // The map bar reads campaign-panel keys from this focused layer, including NavalDLC's fleet key.
             _layer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericCampaignPanelsGameKeyCategory"));
             _layer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All | InputUsageMask.BlockEverythingWithoutHitTest);
-            _vm = new GwpAffairsVM(Close);
+            _vm = new GwpAffairsVM(Close, _pageOnReturn);
             _vm.SetDoneInputKey(HotKeyManager.GetCategory("GenericPanelGameKeyCategory").GetHotKey("Confirm"));
             AddLayer(_layer);
             _layer.LoadMovie("GwpCaseArchive", _vm);
@@ -62,6 +72,7 @@ namespace GreyWardenPolicePurity
             ScreenManager.TryLoseFocus(_layer);
             _layer.InputRestrictions.ResetInputRestrictions();
             RemoveLayer(_layer);
+            _pageOnReturn = _vm?.CurrentPage ?? 0;
             _vm?.OnFinalize();
             _vm = null;
             _layer = null;

@@ -552,21 +552,6 @@ namespace GreyWardenPolicePurity
                 .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // 信众村跟前的案子最先派：灰袍优先做和信众村相关的事（用户裁定 2026-10-05）。
-            foreach (MobileParty pp in available.ToList())
-            {
-                if (!CrimeState.IsDispatchReady)
-                    break;
-
-                float musterable = GetMaximumMusterableStrength(pp);
-                CrimeRecord? crime = CrimeState.GetNearest(pp.GetPosition2D,
-                    candidate => GwpFireswornBehavior.IsNearFaithVillage(candidate.Location) &&
-                        CanPickUpCase(candidate, musterable));
-                if (crime == null) continue;
-                BeginTask(pp, crime);
-                available.Remove(pp);
-            }
-
             // First pass preserves each office's own priority. The second pass lets every
             // idle office holder help with any ordinary case already admitted to the pool.
             foreach (MobileParty pp in available.ToList())
@@ -750,6 +735,7 @@ namespace GreyWardenPolicePurity
                 // 撤销战争，原版 initiative 当场失去 IsEnemy 资格，仗打一半散场。
                 // 现在改为对他**当前**的势力重新宣战，执法不因他换东家而作废。
                 if (offender?.IsActive == true && !offender.IsMainParty &&
+                    offender.CurrentSettlement == null && police?.CurrentSettlement == null &&
                     currentTarget != null && task.TargetCrime?.HasOpenCase == true)
                 {
                     IFaction? previousTarget = task.WarTarget;
@@ -978,7 +964,8 @@ namespace GreyWardenPolicePurity
                             out assistanceContact,
                             out declarationPrediction);
                     dist = declarationPrediction.Distance;
-                    if (!nativeDeclarationReady && dist <= warDist)
+                    if (!nativeDeclarationReady && dist <= warDist &&
+                        criminal.CurrentSettlement == null && assistanceContact.CurrentSettlement == null)
                     {
                         GwpAiDiagnostics.WriteAction(pp,
                             "ASSISTANCE_DECLARATION_WAITING_LOCAL_STRENGTH",
@@ -997,36 +984,27 @@ namespace GreyWardenPolicePurity
                     !isPatrolRange && !criminal.IsMainParty &&
                     assistanceReady && nativeDeclarationReady)
                 {
-                    if (assistanceContact != pp ||
-                        _assistanceGroups.ContainsKey(pp.StringId))
-                    {
+#if GWP_DIAGNOSTICS
                         GwpAiDiagnostics.WriteAction(pp,
-                            "ASSISTANCE_DECLARATION_LOCAL_STRENGTH_READY",
+                            assistanceContact != pp || _assistanceGroups.ContainsKey(pp.StringId)
+                                ? "ASSISTANCE_DECLARATION_LOCAL_STRENGTH_READY"
+                                : "CASE_DECLARATION_LOCAL_STRENGTH_READY",
                             FormatLocalStrengthDeclarationDiagnostic(
                                 declarationPrediction!,
                                 assistanceEngagementStrength,
                                 assistanceTargetStrength));
-                    }
-                    DeclareWar(task, criminal);
-                    RefreshAssistanceDutyAfterWarDeclaration(pp);
-                    if (task.FlowState == PoliceTaskFlowState.WarPursuit)
-                    {
-                        TrySpawnImmediateCaseInterceptor(pp, task, criminal,
-                            declarationPrediction!);
-                    }
+#endif
+                    TryDeclareCaseWarWithInterceptor(pp, task, criminal,
+                        declarationPrediction!);
                 }
                 else if (!task.WarDeclared)
                 {
                     ClearTaskWarTracking(kvp.Key, false);
                 }
 
-                // 协力军团无论仍在集结追击，还是已经因目标速度而分散，
-                // 都可以由主理人真实分出一支能追上目标的骑兵截击队先
-                // 建立地图战斗；同案同时只保留一支，既有截击队会由其
-                // 生命周期继续维护。
-                if (task.FlowState == PoliceTaskFlowState.WarPursuit &&
-                    _assistanceGroups.TryGetValue(pp.StringId,
-                        out LordAssistanceGroup? assistanceGroup))
+                // 普通单队与协力主办都持续补派；同案已有有效追截队时由入口去重。
+                // 首队战败不必等待两日兜底支援，也不以创建协力组为前提。
+                if (task.FlowState == PoliceTaskFlowState.WarPursuit)
                 {
                     TrySpawnImmediateCaseInterceptor(
                         pp, task, criminal, null);
@@ -1100,12 +1078,11 @@ namespace GreyWardenPolicePurity
                     prediction = candidate;
                 }
 
-                if (localReady)
+                if (localReady && TryDeclareCaseWarWithInterceptor(
+                        police, task, criminal, prediction))
                 {
-                    DeclareWar(task, criminal);
                     Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
                         ?.NotifySupportWarDeclared(criminal);
-                    RefreshAssistanceDutyAfterWarDeclaration(police);
                     GwpAiDiagnostics.WriteAction(police,
                         "PLAYER_BOUNTY_SUPPORT_DECLARING_WAR",
                         FormatLocalStrengthDeclarationDiagnostic(
@@ -1125,6 +1102,7 @@ namespace GreyWardenPolicePurity
                     GwpAiDiagnostics.WriteAction(police,
                         "PLAYER_BOUNTY_SUPPORT_WAITING_STRENGTH",
                         "committedReady=" + committedReady +
+                        "; localReady=" + localReady + "; interceptorReady=False" +
                         "; committedStrength=" + committedStrength.ToString(
                             "0.00", CultureInfo.InvariantCulture) +
                         "; committedTargetStrength=" +

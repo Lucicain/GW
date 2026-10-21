@@ -2,7 +2,6 @@
 
 > 当前状态：入国拦截、读档离国已上线（v1.4-r14 同号替换包与 main 均含）；读档离国经用户确认可用
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
-> 已复核至：`1f84971`（2026-10-15）
 > 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1`
 > 待实测：另存读档后仍保持独立、原案件能继续；修复后不再出现新的入国
 
@@ -61,5 +60,4 @@ SyncData 无状态：本行为只响应宣战与读档完成事件，没有进�
 
 ## 测试与回退
 
-- 离线回归 `tools/Verify-KingdomMembership.ps1`：真实游戏程序集加实际内战 DLL 43 项断言，不带内战 39 项。离国动作的边界用桩替代，佣兵与真实封地两个分支还没有实机样本。
 - 回退：撤 `c7ca2e0`（入国拦截）、`9dc76be`（读档离国）、`7c91b2d`（退休离国 trace）。

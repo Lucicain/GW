@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -348,13 +348,38 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private void TrySpawnImmediateCaseInterceptor(MobileParty sourceParty,
+        private bool TryDeclareCaseWarWithInterceptor(MobileParty sourceParty,
+            PoliceTask task, MobileParty targetParty, GwpStrength.LocalBalance? declaration)
+        {
+            Clan? policeClan = PoliceStats.GetPoliceClan();
+            IFaction? targetFaction = targetParty.ActualClan?.MapFaction;
+            if (policeClan != null && targetFaction != null &&
+                FactionManager.IsAtWarAgainstFaction(policeClan, targetFaction))
+            {
+                // 已有外交战争不能靠本案是否能分兵撤回；照常登记案件，
+                // 让战斗结果可结算，补派仍由下方当前区域门槛控制。
+                DeclareWar(task, targetParty);
+                RefreshAssistanceDutyAfterWarDeclaration(sourceParty);
+                TrySpawnImmediateCaseInterceptor(sourceParty, task, targetParty, declaration);
+                return task.WarDeclared;
+            }
+            return TrySpawnImmediateCaseInterceptor(sourceParty, task, targetParty,
+                declaration, declareWar: true);
+        }
+
+        private bool TrySpawnImmediateCaseInterceptor(MobileParty sourceParty,
             PoliceTask? task, MobileParty targetParty,
-            GwpStrength.LocalBalance? declaration)
+            GwpStrength.LocalBalance? declaration, bool declareWar = false)
         {
             if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task) ||
-                GwpPlayerCaseAssignment.IsReservedTarget(targetParty) ||
-                !CanInitiateCaseAttack(sourceParty, targetParty)) return;
+                GwpPlayerCaseAssignment.IsReservedTarget(targetParty)) return false;
+            if (!CanInitiateCaseAttack(sourceParty, targetParty))
+            {
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "native_case_attack_not_ready");
+#endif
+                return false;
+            }
             bool hasAssistanceGroup =
                 _assistanceGroups.TryGetValue(sourceParty.StringId,
                     out LordAssistanceGroup? assistanceGroup) &&
@@ -364,14 +389,12 @@ namespace GreyWardenPolicePurity
                 string.Equals(assistanceGroup.TargetPartyId,
                     targetParty.StringId,
                     StringComparison.OrdinalIgnoreCase);
-            bool ordinaryDeclaration =
+            bool ordinaryPursuit =
                 !hasAssistanceGroup &&
-                declaration?.StrengthReady == true &&
-                declaration.Distance <= GwpTuning.Enforcement.WarDistance &&
-                declaration.FriendlyLocalStrength >
-                declaration.EnemyLocalStrength;
+                (task.FlowState == PoliceTaskFlowState.WarPursuit ||
+                 declareWar && task.FlowState == PoliceTaskFlowState.Pursuit);
             bool playerBountyDeclaration =
-                task?.IsPlayerBountyEscort == true && task.WarDeclared;
+                task?.IsPlayerBountyEscort == true && (task.WarDeclared || declareWar);
             bool dispersedAssistance =
                 hasAssistanceGroup &&
                 assistanceGroup.DispersedForSpeed &&
@@ -386,81 +409,99 @@ namespace GreyWardenPolicePurity
                 sourceParty.Army != null && !assembledAssistance ||
                 targetParty?.IsActive != true ||
                 targetParty.IsMainParty)
-                return;
+                return false;
             if (task == null ||
-                (task.FlowState != PoliceTaskFlowState.WarPursuit && !playerBountyDeclaration) ||
+                (task.FlowState != PoliceTaskFlowState.WarPursuit &&
+                 !(declareWar && task.FlowState == PoliceTaskFlowState.Pursuit) && !playerBountyDeclaration) ||
                 !string.Equals(task.PolicePartyId, sourceParty.StringId, StringComparison.OrdinalIgnoreCase) ||
                 task.TargetCrime?.Offender != targetParty ||
-                (!ordinaryDeclaration && !playerBountyDeclaration && !dispersedAssistance && !assembledAssistance))
-                return;
+                (!ordinaryPursuit && !playerBountyDeclaration && !dispersedAssistance && !assembledAssistance))
+                return false;
 
-            MobileParty movementTarget =
-                GwpStrength.CombatGroupOf(targetParty);
-            // 与协力军团的速度分散判定保持同一口径：调用原版
-            // PartySpeedCalculatingModel 推算具体部队在正常条件下的理论速度，
-            // 排除战后混乱、天气和双方所处地形不同造成的瞬时噪声。
-            float sourceCurrentSpeed = Math.Max(0f, sourceParty.Speed);
-            float targetCurrentSpeed = Math.Max(0f, movementTarget.Speed);
-            float sourceSpeed = GwpStrength.TheoreticalBaseSpeed(sourceParty);
-            float targetSpeed = GwpStrength.TheoreticalBaseSpeed(movementTarget);
-            if (sourceSpeed <= 0.01f || targetSpeed <= sourceSpeed)
-                return;
-
+            // 追截负责发起接战，不以双方速度推断主队一定能自行追上。
+            // 每次首派/补派仍须通过当前区域许可及抽兵后的再次复核。
             bool alreadyExists = _delayPatrolStates.Values.Any(state =>
                 state.IsImmediateInterceptor && !state.Returning &&
                 string.Equals(state.SourceTaskPolicePartyId,
                     sourceParty.StringId, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(state.TargetPartyId, targetParty.StringId,
-                    StringComparison.OrdinalIgnoreCase));
+                    StringComparison.OrdinalIgnoreCase) &&
+                FindActiveParty(state.PatrolPartyId)?.Party.NumberOfHealthyMembers > 0);
             if (alreadyExists)
-                return;
+            {
+                if (declareWar)
+                {
+                    DeclareWar(task, targetParty);
+                    RefreshAssistanceDutyAfterWarDeclaration(sourceParty);
+                }
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "existing_interceptor");
+#endif
+                return !declareWar || task.WarDeclared;
+            }
 
             List<MobileParty> troopSourceParties = GetImmediateInterceptorTroopSources(
                 sourceParty, assembledAssistance ? assistanceGroup : null);
-            List<ImmediateInterceptorTroopTransfer> mountedBatches =
-                DetachmentBatches(sourceParty, troopSourceParties, true);
+            List<ImmediateInterceptorTroopTransfer> batches =
+                DetachmentBatches(sourceParty, troopSourceParties);
             int detachmentSize = Math.Min(
-                ImmediateInterceptorMaximumSize, HealthyTroopCount(mountedBatches));
+                ImmediateInterceptorMaximumSize, HealthyTroopCount(batches));
             if (detachmentSize < ImmediateInterceptorMinimumSize)
-                return;
+            {
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "insufficient_healthy_troops:" + detachmentSize);
+#endif
+                return false;
+            }
             // 追截队在来源领主身边出生；他在海上又借不出船，就不派。
             if (PoliceResourceManager.IsStrandedAtSea(sourceParty))
-                return;
+            {
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "no_spare_ship");
+#endif
+                return false;
+            }
 
             var transferredBatches =
                 new List<ImmediateInterceptorTroopTransfer>();
-            MobileParty? interceptor = CreateDetachment(sourceParty, mountedBatches, detachmentSize,
+            MobileParty? interceptor = CreateDetachment(sourceParty, batches, detachmentSize,
                 ImmediateInterceptorMinimumSize,
                 GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_005),
                 transferredBatches, out int moved, out Settlement? returnSettlement);
             if (interceptor == null || returnSettlement == null)
-                return;
+            {
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "creation_failed");
+#endif
+                return false;
+            }
 
             PoliceResourceManager.OutfitTemporaryDutyParty(interceptor, sourceParty);
-            float interceptorCurrentSpeed =
-                Math.Max(0f, interceptor.Speed);
-            float interceptorSpeed =
-                GwpStrength.TheoreticalBaseSpeed(interceptor);
-            if (interceptorSpeed <= targetSpeed)
+
+            // The main force must still be safe after the actual roster transfer.
+            // The new detachment is not a reinforcement promise for this check.
+            if (!CanInitiateCaseAttack(sourceParty, targetParty, interceptor))
             {
-                GwpAiDiagnostics.WriteAction(sourceParty,
-                    "IMMEDIATE_CASE_INTERCEPTOR_TOO_SLOW",
-                    "interceptor=" + interceptor.StringId +
-                    "; target=" + targetParty.StringId +
-                    "; movementTarget=" + movementTarget.StringId +
-                    "; troops=" + moved +
-                    "; interceptorTheoreticalSpeed=" +
-                    interceptorSpeed.ToString("0.00") +
-                    "; targetTheoreticalSpeed=" +
-                    targetSpeed.ToString("0.00") +
-                    "; interceptorCurrentSpeed=" +
-                    interceptorCurrentSpeed.ToString("0.00") +
-                    "; targetCurrentSpeed=" +
-                    targetCurrentSpeed.ToString("0.00"));
-                RollBackImmediateInterceptorTroops(
-                    interceptor.MemberRoster, transferredBatches);
+#if GWP_DIAGNOSTICS
+                TraceInterceptorGate(sourceParty, targetParty, "region_not_ready_after_transfer");
+#endif
+                RollBackImmediateInterceptorTroops(interceptor.MemberRoster, transferredBatches);
                 TryDestroyDelayPatrolParty(interceptor);
-                return;
+                return false;
+            }
+
+            // 首队准备与分兵后的区域复核都已成功；此前不改变外交，
+            // 避免小优势通过宣战、却在抽兵后无法出队。
+            if (declareWar)
+            {
+                DeclareWar(task, targetParty);
+                if (!task.WarDeclared)
+                {
+                    RollBackImmediateInterceptorTroops(interceptor.MemberRoster, transferredBatches);
+                    TryDestroyDelayPatrolParty(interceptor);
+                    return false;
+                }
+                RefreshAssistanceDutyAfterWarDeclaration(sourceParty);
             }
 
             _delayPatrolStates[interceptor.StringId] = new DelayPatrolState
@@ -476,6 +517,9 @@ namespace GreyWardenPolicePurity
 
             GreyWardenPartyDesireBehavior.RequestPursuit(
                 interceptor, targetParty, 8f);
+#if GWP_DIAGNOSTICS
+            TraceInterceptorGate(sourceParty, targetParty, "deployed:" + interceptor.StringId);
+            MobileParty movementTarget = GwpStrength.CombatGroupOf(targetParty);
             GwpAiDiagnostics.WriteAction(sourceParty,
                 "IMMEDIATE_CASE_INTERCEPTOR_DEPLOYED",
                 "interceptor=" + interceptor.StringId +
@@ -486,18 +530,6 @@ namespace GreyWardenPolicePurity
                 transferredBatches.Select(batch =>
                         batch.SourceParty.StringId)
                     .Distinct(StringComparer.OrdinalIgnoreCase).Count() +
-                "; sourceTheoreticalSpeed=" +
-                sourceSpeed.ToString("0.00") +
-                "; targetTheoreticalSpeed=" +
-                targetSpeed.ToString("0.00") +
-                "; interceptorTheoreticalSpeed=" +
-                interceptorSpeed.ToString("0.00") +
-                "; sourceCurrentSpeed=" +
-                sourceCurrentSpeed.ToString("0.00") +
-                "; targetCurrentSpeed=" +
-                targetCurrentSpeed.ToString("0.00") +
-                "; interceptorCurrentSpeed=" +
-                interceptorCurrentSpeed.ToString("0.00") +
                 "; trigger=" + (playerBountyDeclaration
                     ? assembledAssistance
                         ? "player_bounty_assistance_army"
@@ -508,13 +540,17 @@ namespace GreyWardenPolicePurity
                         ? "assistance_army"
                         : dispersedAssistance
                             ? "assistance_speed_dispersed"
-                            : "ordinary_declaration") +
+                            : declaration != null
+                                ? "ordinary_declaration"
+                                : "ordinary_pursuit") +
                 "; friendlyLocalStrength=" +
                 (declaration?.FriendlyLocalStrength.ToString("0.00") ??
                  "n/a") +
                 "; enemyLocalStrength=" +
                 (declaration?.EnemyLocalStrength.ToString("0.00") ??
                  "n/a"));
+#endif
+            return true;
         }
 
         /// <summary>召集标记不是到场：截击兵只能从本队与实际挂靠的协办名册中抽取。</summary>
@@ -531,18 +567,16 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 名册里没受伤的兵，按出队顺序排：骑兵先出，灰袍兵先出，兵阶高的先出，同兵阶时来源领主自己的先出。
-        /// 追截队要追得上人，只取灰袍骑兵（<paramref name="mountedWardensOnly"/>）；使者只是优先骑兵，
-        /// 不够就由别的兵补上（用户裁定 2026-10-15）。
+        /// 追截队和使者都不限定兵种；骑兵不够时用其他健康兵补齐。
+        /// （用户裁定 2026-10-18；使者抽兵规则保持）
         /// </summary>
         private static List<ImmediateInterceptorTroopTransfer> DetachmentBatches(MobileParty sourceParty,
-            IEnumerable<MobileParty> troopSourceParties, bool mountedWardensOnly) =>
+            IEnumerable<MobileParty> troopSourceParties) =>
             troopSourceParties
                 .SelectMany(party =>
                     party.MemberRoster.GetTroopRoster()
                          .Where(element => element.Character != null &&
                              !element.Character.IsHero &&
-                             (!mountedWardensOnly || GwpCommon.IsGreyWardenTroop(element.Character) &&
-                                 element.Character.IsMounted) &&
                             element.Number - element.WoundedNumber > 0)
                         .Select(element =>
                             new ImmediateInterceptorTroopTransfer
@@ -718,6 +752,19 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.RequestPursuit(
                     patrol, targetParty, 8f);
 
+#if GWP_DIAGNOSTICS
+            // 依据：2026-10-18 长局只有借船和战斗旁证，无法按复用的临时队ID精确统计50人兜底派出。
+            GwpAiDiagnostics.WriteAction(sourcePoliceParty ?? patrol,
+                "DELAY_SUPPORT_DEPLOYED",
+                "patrol=" + patrolId + "; target=" + targetParty.StringId +
+                "; sourceTask=" + sourceTaskPolicePartyId +
+                "; troops=" + patrol.MemberRoster.TotalManCount +
+                "; trigger=two_day_scan; targetSettlement=" +
+                (targetParty.CurrentSettlement?.StringId ?? "-") +
+                "; targetMapEvent=" + (targetParty.MapEvent?.EventType.ToString() ?? "-") +
+                "; sourceFaithVisit=" + (sourcePoliceParty == null
+                    ? "-" : GwpWardenVisitDesire.Describe(sourcePoliceParty)));
+#endif
             return true;
         }
 
@@ -901,6 +948,12 @@ namespace GreyWardenPolicePurity
                 return true;
             }
 
+            // 上下船尚未完成时海陆标记仍是旧值，不能据“当前在陆上”提前还船。
+            // 原版会先完成已到时的登船，再检查船只；提前归还会留下海上无船队。
+            // 港口待出发也属于尚未完成的登船，双方必须处于同一海陆侧才能交接。
+            if (!GwpCommon.CanCompletePartyHandover(interceptor, sourceParty))
+                return true;
+
             // 使者收来的罚金随人带回，交进灰袍公库。
             if (interceptor.PartyTradeGold > 0)
             {
@@ -992,6 +1045,10 @@ namespace GreyWardenPolicePurity
                 "; distance=" + distance.ToString("0.00"));
             return true;
         }
+
+
+
+
 
         private bool TryAssignDelayPatrolToAssistanceArmy(
             MobileParty patrol, DelayPatrolState state)

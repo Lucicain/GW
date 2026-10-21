@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
@@ -124,7 +124,6 @@ namespace GreyWardenPolicePurity
             starter.AddBehavior(new GreyWardenTrainingBehavior());
             starter.AddBehavior(new GreyWardenPlayerRequestBehavior());
             starter.AddBehavior(new GreyWardenLeaderBalanceBehavior());
-            starter.AddBehavior(new GreyWardenNotableRelationsBehavior());
             starter.AddBehavior(new GreyWardenTroopRequestBehavior());
             starter.AddBehavior(new GreyWardenSparringBehavior());
             starter.AddBehavior(new GwpFireswornBehavior());
@@ -154,7 +153,7 @@ namespace GreyWardenPolicePurity
             mission.AddMissionBehavior(
                 new GwpAlternativeAttackControlBehavior());
             // 排在成长之后：原版按注册顺序回调 OnAgentRemoved，锁血期间那一下击杀要先按 1.5 倍记成长，再结束锁血。
-            mission.AddMissionBehavior(new GwpLordLastStandBehavior());
+            mission.AddMissionBehavior(new GwpLastStandBehavior());
             mission.AddMissionBehavior(new GwpPassiveShieldBreakBehavior());
 
             mission.AddMissionBehavior(new GwpBattleSceneContext());

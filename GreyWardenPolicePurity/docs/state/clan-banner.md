@@ -2,7 +2,6 @@
 
 > 当前状态：黑底浅金鸟徽已部署并进入玩家美术包；用户实机反馈未发现问题；无在役旗帜运行时诊断
 > 最后验收：2026-10-15 用户实机确认（旗帜工作树，尚无对应提交检查点）
-> 已复核至：`cbdfb71`（2026-10-16）
 > 覆盖源码：`_Module/ModuleData/spclans.xml` `_Module/ModuleData/banner_icons.xml` `_Module/SubModule.xml` `tools/Prepare-ClanBanner.py` `tools/Verify-ClanBanner.ps1` `tools/Build-ClanBannerMaterial.py`
 > 待实测：无
 

@@ -230,7 +230,7 @@ namespace GreyWardenPolicePurity
                 // 征调、缩编只看目标自己的战斗组；周围援军只决定此刻能否宣战、接战。
                 // 依据：用户裁定 2026-10-17。
                 float needed = GetAssistanceRequiredStrength(offender);
-                float target = GwpStrength.EnemyAround(leader, offender).Strength;
+                float target = GwpStrength.CombatGroup(GwpStrength.CombatGroupOf(offender));
                 TryShrinkAssistanceGroup(leader, group, needed);
                 if (!ReconcileAssistanceFormation(leader, group)) continue;
                 Army? existing = group.DispersedForSpeed ? null : leader.Army;
@@ -260,8 +260,7 @@ namespace GreyWardenPolicePurity
                 if (army == null) continue;
                 if (ShouldDisperseAssistanceArmyForSpeed(army, task, targetSpeed))
                     DisperseAssistanceArmyForSpeed(leader, group, offender, army, task,
-                        GetCommittedAssistanceStrength(leader, group), target,
-                        GwpStrength.EnemyAround(leader, offender));
+                        GetCommittedAssistanceStrength(leader, group), target);
             }
         }
 
@@ -301,7 +300,7 @@ namespace GreyWardenPolicePurity
 #endif
 
         /// <summary>
-        /// 组长自己打不过（或已有本案临时支援在场）时组一个协力组：先征调协办人，再由
+        /// 组长自己打不过时组一个协力组：先征调协办人，再由
         /// <see cref="MaintainAssistanceArmy"/> 建军团。征不到人时不登记空组（玩家委托照留，下一小时再试），
         /// 以免每小时建了又拆、反复重新竞价。凑不出兵的普通案件按原规则退回台账；他正在打仗时
         /// <see cref="FailAssistanceCase"/> 先不判（等那一仗的结果），这时同样不留空组。
@@ -320,7 +319,10 @@ namespace GreyWardenPolicePurity
                 CrimeId = task.TargetCrimeId,
                 TargetPartyId = offender.StringId
             };
-            if (GwpStrength.Party(leader) > targetStrength && !FormationSupports(group).Any())
+            float initialStrength = task.IsPlayerBountyEscort
+                ? GetCommittedAssistanceStrength(leader, group)
+                : GwpStrength.Party(leader);
+            if (initialStrength >= targetStrength)
                 return null;
 
             _assistanceGroups[leader.StringId] = group;
@@ -427,8 +429,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 求援送到之后，按普通案件那一套第一层判定继续征调灰袍，直到已承诺战力
-        /// 高于目标区域战力。与普通案件唯一的差别是：全部合格力量仍然不够时，
+        /// 求援送到之后，把玩家实际战斗组计入承诺力量，再按第一层判定征调灰袍，
+        /// 直到已承诺战力高于目标本体战力。全部合格力量仍然不够时，
         /// 不把玩家的委托作废——玩家的案子由玩家自己决定要不要继续。
         /// </summary>
         private void GrowPlayerBountyAssistanceStrength(
@@ -529,16 +531,31 @@ namespace GreyWardenPolicePurity
         private static float GetCommittedAssistanceStrength(
             MobileParty leader, LordAssistanceGroup group)
         {
-            float strength = GwpStrength.Party(leader);
+            var parties = new HashSet<MobileParty> { leader };
             foreach (string memberId in group.MemberPartyIds.Distinct(
                          StringComparer.OrdinalIgnoreCase))
             {
                 MobileParty? member = FindActiveParty(memberId);
                 if (IsActiveGreyWardenLordParty(member))
-                    strength += GwpStrength.Party(member!);
+                    parties.Add(member!);
             }
-            strength += _instance?.FormationSupports(group).Sum(GwpStrength.Party) ?? 0f;
-            return Math.Max(0f, strength);
+            if (_instance != null)
+                parties.UnionWith(_instance.FormationSupports(group));
+
+            float playerStrength = 0f;
+            PoliceTask? task = CrimeState.GetTask(leader.StringId);
+            MobileParty player = MobileParty.MainParty;
+            if (task?.IsPlayerBountyEscort == true &&
+                !PlayerBountyBehavior.AwaitingSupportRequest(task) &&
+                player?.IsActive == true && player.LeaderHero?.IsPrisoner != true)
+            {
+                // 玩家求援时承诺参战；只算实际战斗组，未挂靠的军团成员不算。
+                // 这不是现场力量，宣战仍由原版区域比较另行确认。
+                MobileParty playerGroup = GwpStrength.CombatGroupOf(player);
+                playerStrength = GwpStrength.CombatGroup(playerGroup);
+                parties.RemoveWhere(party => GwpStrength.CombatGroupOf(party) == playerGroup);
+            }
+            return Math.Max(0f, parties.Sum(GwpStrength.Party) + playerStrength);
         }
 
         private List<MobileParty> GetAvailableAssistanceCandidates(
@@ -593,28 +610,9 @@ namespace GreyWardenPolicePurity
             MobileParty observer, MobileParty offender,
             float ourStrength, float targetStrength)
         {
-            GwpStrength.Threat threat =
-                GwpStrength.EnemyAround(observer, offender);
-            return "target=" + offender.StringId +
-                   "; ourStrength=" + ourStrength.ToString(
-                       "0.00", CultureInfo.InvariantCulture) +
-                   "; targetStrength=" + targetStrength.ToString(
-                       "0.00", CultureInfo.InvariantCulture) +
-                   "; joiningRadius=" +
-                   threat.JoiningRadius.ToString(
-                       "0.00", CultureInfo.InvariantCulture) +
-                   "; threatRadius=" +
-                   threat.ThreatRadius.ToString(
-                       "0.00", CultureInfo.InvariantCulture) +
-                   "; enemyMaximumSpeed=" +
-                   threat.MaximumSpeed.ToString(
-                       "0.00", CultureInfo.InvariantCulture) +
-                   "; fastestEnemyGroup=" +
-                   (threat.FastestCombatGroupId.Length == 0
-                       ? "-"
-                       : threat.FastestCombatGroupId) +
-                   "; targetCombatGroups=" +
-                   string.Join(",", threat.CombatGroups);
+            return "actor=" + observer.StringId + "; target=" + offender.StringId +
+                   "; ourStrength=" + ourStrength.ToString("0.00", CultureInfo.InvariantCulture) +
+                   "; targetStrength=" + targetStrength.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -687,8 +685,7 @@ namespace GreyWardenPolicePurity
         private void DisperseAssistanceArmyForSpeed(MobileParty leader,
             LordAssistanceGroup group, MobileParty offender, Army army,
             PoliceTask task,
-            float assembledStrength, float targetStrength,
-            GwpStrength.Threat targetThreat)
+            float assembledStrength, float targetStrength)
         {
             if (FormationInBattle(leader)) return;
             int supportCount = army.Parties.Count(party =>
@@ -753,9 +750,6 @@ namespace GreyWardenPolicePurity
                     "0.00", CultureInfo.InvariantCulture) +
                 "; theoreticalLeaderSoloSpeedAtAssignment=" +
                 task.LeaderSoloSpeedAtAssignment.ToString(
-                    "0.00", CultureInfo.InvariantCulture) +
-                "; regionalEnemyMaximumSpeed=" +
-                targetThreat.MaximumSpeed.ToString(
                     "0.00", CultureInfo.InvariantCulture) +
                 "; lordMembers=" + group.MemberPartyIds.Count +
                 "; supports=" + supportCount);
@@ -853,6 +847,8 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.RequestPursuit(party, dutyTarget, priority);
             return true;
         }
+
+
 
         private void SendDelayPatrolsAfterSpeedDispersal(
             LordAssistanceGroup group, MobileParty offender)
@@ -1523,7 +1519,7 @@ namespace GreyWardenPolicePurity
             out float engagementStrength, out float targetStrength)
         {
             targetStrength =
-                GwpStrength.EnemyAround(leader, offender).Strength;
+                GwpStrength.CombatGroup(GwpStrength.CombatGroupOf(offender));
             engagementStrength = GwpStrength.Party(leader);
             if (!_assistanceGroups.TryGetValue(leader.StringId,
                     out LordAssistanceGroup? group))
@@ -1576,7 +1572,9 @@ namespace GreyWardenPolicePurity
                     GwpStrength.Compare(
                         candidate, offender, includePlayer);
                 closestPrediction ??= current;
-                if (current.Distance > warDistance ||
+                // 跟随可以进城；双方都回到野外才因本案宣战（用户裁定 2026-10-18）。
+                if (candidate.CurrentSettlement != null || offender.CurrentSettlement != null ||
+                    current.Distance > warDistance ||
                     !current.StrengthReady)
                     continue;
 
@@ -1604,10 +1602,10 @@ namespace GreyWardenPolicePurity
                    "; friendlyLocalStrength=" +
                    prediction.FriendlyLocalStrength.ToString(
                        "0.00", CultureInfo.InvariantCulture) +
-                   "; friendlyLocalGroups=" +
-                   (prediction.FriendlyCombatGroups.Length == 0
+                   "; nativeComparisons=" +
+                   (prediction.NativeComparisons.Length == 0
                        ? "-"
-                       : prediction.FriendlyCombatGroups) +
+                       : prediction.NativeComparisons) +
                    "; enemyLocalStrength=" +
                    prediction.EnemyLocalStrength.ToString(
                        "0.00", CultureInfo.InvariantCulture) +
@@ -1638,6 +1636,8 @@ namespace GreyWardenPolicePurity
                         member);
             }
         }
+
+
 
         private bool TryGetDelaySupportAssistanceArmy(
             string sourceTaskPolicePartyId, string targetPartyId,
@@ -1699,22 +1699,39 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        internal static bool CanInitiateCaseAttack(MobileParty actor, MobileParty target)
+        internal static bool TryGetNativeCaseTarget(MobileParty actor, out MobileParty? offender)
         {
-            if (_instance == null || actor?.IsActive != true || target?.IsActive != true ||
-                actor.CurrentSettlement != null || target.CurrentSettlement != null) return false;
+            offender = null;
+            if (_instance == null || actor?.IsActive != true || actor.CurrentSettlement != null) return false;
             PoliceTask? task;
-            MobileParty? offender;
             if (!TryGetAssistanceCase(actor, out task, out offender))
             {
                 if (IsPartyOccupiedByAssistance(actor)) return false;
                 task = CrimeState.GetTask(actor.StringId);
                 offender = task?.TargetCrime?.Offender;
             }
-            if (task == null || offender?.IsActive != true ||
-                target != offender && target != GwpStrength.CombatGroupOf(offender) ||
-                _instance.IsAwaitingEnvoyResult(actor, task, offender)) return false;
-            return GwpStrength.Compare(actor, offender, task.IsPlayerBountyEscort).StrengthReady;
+            return task != null && offender?.IsActive == true && offender.CurrentSettlement == null &&
+                !_instance.IsAwaitingEnvoyResult(actor, task, offender);
+        }
+
+        internal static bool NativeCaseIncludesPlayer(MobileParty actor)
+        {
+            return TryGetAssistanceCase(actor, out PoliceTask? task, out _) ?
+                task?.IsPlayerBountyEscort == true : CrimeState.GetTask(actor.StringId)?.IsPlayerBountyEscort == true;
+        }
+
+        internal static bool CanInitiateCaseAttack(MobileParty actor, MobileParty target,
+            MobileParty? excludedFriendly = null)
+        {
+            if (target?.IsActive != true || target.CurrentSettlement != null ||
+                !TryGetNativeCaseTarget(actor, out MobileParty? offender) ||
+                target != offender && target != GwpStrength.CombatGroupOf(offender!)) return false;
+            MobileParty combatTarget = GwpStrength.CombatGroupOf(offender!);
+            // During native initiative the raw regional sums have just been captured.
+            // Reuse them instead of recursively invoking the initiative evaluator.
+            return GwpStrength.IsInNativeEvaluation(actor)
+                ? GwpStrength.NativeAttackReady(actor, combatTarget)
+                : GwpStrength.Compare(actor, offender!, NativeCaseIncludesPlayer(actor), excludedFriendly).StrengthReady;
         }
 
         internal static string GetAssistanceDiagnostic(MobileParty? party)
@@ -1737,11 +1754,6 @@ namespace GreyWardenPolicePurity
                     led.MemberPartyIds.Count - detachedMembers;
                 MobileParty? diagnosticTarget =
                     FindActiveParty(led.TargetPartyId);
-                GwpStrength.Threat? diagnosticThreat =
-                    diagnosticTarget == null
-                        ? null
-                        : GwpStrength.EnemyAround(
-                            party, diagnosticTarget);
                 MobileParty contactParty = party;
                 float contactDistance = diagnosticTarget == null
                     ? float.MaxValue
@@ -1776,22 +1788,9 @@ namespace GreyWardenPolicePurity
                         engagementStrength.ToString(
                             "0.00", CultureInfo.InvariantCulture) +
                         ",targetStrength=" +
-                       (diagnosticThreat != null
-                           ? diagnosticThreat.Strength.ToString(
-                               "0.00", CultureInfo.InvariantCulture)
-                           : "n/a") +
-                        ",targetJoiningRadius=" +
-                        (diagnosticThreat?.JoiningRadius.ToString(
-                             "0.00", CultureInfo.InvariantCulture) ??
-                         "n/a") +
-                        ",targetThreatRadius=" +
-                        (diagnosticThreat?.ThreatRadius.ToString(
-                             "0.00", CultureInfo.InvariantCulture) ??
-                          "n/a") +
-                        ",enemyMaximumSpeed=" +
-                        (diagnosticThreat?.MaximumSpeed.ToString(
-                             "0.00", CultureInfo.InvariantCulture) ??
-                         "n/a") +
+                       (diagnosticTarget != null
+                           ? GwpStrength.CombatGroup(GwpStrength.CombatGroupOf(diagnosticTarget))
+                               .ToString("0.00", CultureInfo.InvariantCulture) : "n/a") +
                         ",targetMovementCachedBaseSpeed=" +
                         (movementTarget?.LastCalculatedBaseSpeed.ToString(
                              "0.00", CultureInfo.InvariantCulture) ??
@@ -1808,16 +1807,6 @@ namespace GreyWardenPolicePurity
                         ",leaderSpeedTheoretical=" +
                         (diagnosticTask?.HasTheoreticalLeaderSoloSpeedAtAssignment
                              == true) +
-                        ",fastestEnemyGroup=" +
-                        (diagnosticThreat == null ||
-                         diagnosticThreat.FastestCombatGroupId.Length == 0
-                            ? "-"
-                            : diagnosticThreat.FastestCombatGroupId) +
-                        ",targetCombatGroups=" +
-                       (diagnosticThreat == null
-                           ? "n/a"
-                           : string.Join("|",
-                               diagnosticThreat.CombatGroups)) +
                        ",supports=" + supportCount +
                         ",attachedSupports=" + attachedSupportCount +
                         ",armyKingdom=" + (army?.Kingdom?.StringId ?? "-") +

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -15,8 +15,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal sealed class GwpAgentStatCalculateModel : AgentStatCalculateModel
     {
-        internal const int MasteredSkillValue = 1000;
-
         private readonly AgentStatCalculateModel _fallbackModel =
             new CustomBattleAgentStatCalculateModel();
 
@@ -145,22 +143,9 @@ namespace GreyWardenPolicePurity
             if (agent == null || skill == null)
                 return nativeSkill;
 
-            int bonus = 0;
-            if (skill == DefaultSkills.OneHanded
-                || skill == DefaultSkills.Athletics)
-            {
-                bonus = GwpAlternativeAttackControlBehavior
-                    .GetMeleeMasteryBonus(agent);
-            }
-            else if (skill == DefaultSkills.Bow)
-            {
-                bonus = GwpAlternativeAttackControlBehavior
-                    .GetBowMasteryBonus(agent);
-            }
-
-            return bonus > 0 && nativeSkill < MasteredSkillValue
-                ? Math.Min(MasteredSkillValue, nativeSkill + bonus)
-                : nativeSkill;
+            int effective = nativeSkill + GwpAlternativeAttackControlBehavior.GetMasteryBonus(agent, skill);
+            return GwpLastStandBehavior.IsStanding(agent)
+                ? (int)Math.Round(effective * GwpTuning.LastStand.SkillMultiplier) : effective;
         }
     }
 

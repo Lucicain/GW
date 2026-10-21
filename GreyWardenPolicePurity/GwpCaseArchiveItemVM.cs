@@ -92,9 +92,7 @@ namespace GreyWardenPolicePurity
             "talks_failed" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_talks_failed),
             "grace_broke" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_grace_broke),
             "lost" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_lost),
-            "timeout" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_timeout),
             "war" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_war),
-            "target_unavailable" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_target_unavailable),
             "duel_cancelled" => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_duel_cancelled),
             _ => GwpText.Get(GwpTextCatalog.gwp_envoy_outcome_failed)
         };
@@ -430,8 +428,7 @@ namespace GreyWardenPolicePurity
                 PoliceEnforcementBehavior.EnvoyStage.Travelling when status.CollectOnly =>
                     GwpText.Get(GwpTextCatalog.gwp_case_envoy_collecting),
                 PoliceEnforcementBehavior.EnvoyStage.Travelling =>
-                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_travelling, "VAR_1",
-                        Math.Max(1, (int)Math.Ceiling(status.DueHours - CampaignTime.Now.ToHours))),
+                    GwpText.Get(GwpTextCatalog.gwp_case_envoy_travelling),
                 PoliceEnforcementBehavior.EnvoyStage.Failed =>
                     GwpText.Get(GwpTextCatalog.gwp_case_envoy_failed),
                 PoliceEnforcementBehavior.EnvoyStage.Grace =>

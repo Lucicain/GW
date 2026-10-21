@@ -10,7 +10,7 @@ using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
 {
-    /// <summary>全队兵种配比与练兵运兵台账；老兵由实体运兵队单程送村，练兵官不离开案件、不额外发经验。</summary>
+    /// <summary>全队兵种升级取向与旧在途运兵台账；练兵官暂为挂名，玩家订单保留，不新派老兵。</summary>
     public sealed class GreyWardenTrainingBehavior : CampaignBehaviorBase
     {
         internal enum TrainingTaskStage { TravelingToRendezvous, SettlingInVillage }

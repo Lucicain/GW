@@ -123,7 +123,7 @@ namespace GreyWardenPolicePurity
             }
             _plans.Remove(village.StringId);
 
-            armoryItems += DonateArmorySurplus(party.StringId, village.StringId);
+            armoryItems += DonateArmorySurplus(HolderOf(party.Party)!, village.StringId);
             RecordVisit(party, village, prisoners: prisoners, donated: armoryItems + goodsCount);
             if (prisoners > 0)
                 GwpSettlementNotices.Post(village, party.LeaderHero,
@@ -162,7 +162,7 @@ namespace GreyWardenPolicePurity
                 if (enlisted >= requested) break;
                 int moved = GwpTroopTransfer.Move(militia, party.MemberRoster, batch.Character,
                     Math.Min(batch.Number, requested - enlisted)).Number;
-                kits += MoveBestSets(settlement.StringId, party.StringId, batch.Character, moved);
+                kits += MoveBestSets(settlement.StringId, HolderOf(party.Party)!, batch.Character, moved);
                 guard.AddToCounts(batch.Character, -moved);
                 enlisted += moved;
 #if GWP_DIAGNOSTICS

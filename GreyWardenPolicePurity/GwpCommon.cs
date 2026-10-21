@@ -56,6 +56,15 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
+        /// 交人、交货和还船前的共同门槛。上下船期间海陆标记仍是旧值，港口待登船也不能提前交割。
+        /// 依据：实际游戏DLL复现2026-10-18；玩家送信队跨岸交割离线复现2026-10-18。
+        /// </summary>
+        internal static bool CanCompletePartyHandover(MobileParty first, MobileParty second) =>
+            !first.IsTransitionInProgress && !second.IsTransitionInProgress &&
+            !first.StartTransitionNextFrameToExitFromPort && !second.StartTransitionNextFrameToExitFromPort &&
+            first.IsCurrentlyAtSea == second.IsCurrentlyAtSea;
+
+        /// <summary>
         /// 能接收回流兵员的最近灰袍领主队：活着、没被俘、不在战斗里。原主队没了时，
         /// 从领主身上抽出去的人交给他，不在城里销毁。
         /// </summary>

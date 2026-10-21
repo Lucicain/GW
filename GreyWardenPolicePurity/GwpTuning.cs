@@ -1,4 +1,4 @@
-namespace GreyWardenPolicePurity
+﻿namespace GreyWardenPolicePurity
 {
     internal static class GwpTuning
     {
@@ -44,20 +44,28 @@ namespace GreyWardenPolicePurity
             public const int PlayerOrderDowngradePerInterval = 4;
         }
 
-        internal static class LordCombat
+        internal static class BattleGrowth
         {
-            // 用户裁定 2026-10-16：致命伤后锁 1 血的时长（秒，起初 5 秒，同日改 10 秒），锁血期间战斗成长的倍数。
-            public const float LastStandSeconds = 10f;
-            public const float LastStandGrowthMultiplier = 1.5f;
+            // 用户裁定2026-10-20：逐人本场成长；弓弩10沿用，士兵击杀25为实施选择。
+            public const int MeleeMasteryPerAlternativeAction = 50;
+            public const int MasteryPerShot = 10;
+            public const int MasteryPerThrow = 30;
+            public const int MasteryPerLordKill = 50;
+            public const int MasteryPerSoldierKill = 25;
+        }
+
+        internal static class LastStand
+        {
+            // 用户裁定2026-10-21：领主保持10秒，新兵1秒、轻步兵2秒、重步兵/弓箭手4秒；狂信者和骑士不授予。
+            public const float LordSeconds = 10f;
+            public const float RecruitSeconds = 1f;
+            public const float LightInfantrySeconds = 2f;
+            public const float EliteTroopSeconds = 4f;
+            public const float SkillMultiplier = 1.5f;
         }
 
         internal static class Training
         {
-            // 用户裁定 2026-10-15：超过一半可派，超过四分之三概率翻倍，派至剩余队伍一半。
-            public const double VeteranDispatchTriggerShare = 0.5d;
-            public const double VeteranDispatchBoostShare = 0.75d;
-            public const float VeteranDispatchChanceMultiplier = 2f;
-            public const double VeteranDispatchTargetShare = 0.5d;
             public const float ExchangeStayHours = 2f;
             public const float MovementIntentHours = 8f;
 
@@ -89,7 +97,7 @@ namespace GreyWardenPolicePurity
             /// 灰袍使者（用户裁定 2026-10-15）：宣战前从承办领主队里抽人组成（骑兵优先），先去和目标谈。人数、超时为试玩值。
             /// </summary>
             public const int EnvoySize = 5;
-            public const double EnvoyTimeoutHours = 72d;
+            public const double EnvoyAftermathWaitHours = 72d;
             /// <summary>案件台账里留几条最近的使者回报（用户裁定 2026-10-16：显示使者进度和结果）。</summary>
             public const int EnvoyReportsKept = 12;
             /// <summary>
@@ -107,8 +115,7 @@ namespace GreyWardenPolicePurity
             /// </summary>
             public const int FinePerPoint = 100;
 
-            // 区域危险范围只服务于主动出战；协力候选须能在一天内到主办。
-            public const float RegionalThreatRadius = 6f;
+            // 协力候选须能在一天内到主办。
             public const float AssistanceMaximumTravelDays = 1f;
 
             /// <summary>
@@ -341,6 +348,7 @@ namespace GreyWardenPolicePurity
             public const int HouseholdsPerGuard = 2;
             // 卖货队、传教队按路上敌人加人的上限（试玩值）。
             public const int EscortMaximumSize = 25;
+            public const int FaithEscortMinimumTier = 4; // 精锐护送：至少灰袍轻步兵，优先高阶（设计2026-10-20）。
             public const float PriestWeeklyChance = 0.5f;
             public const int PriestStartingGold = 2000;
             // 祭司格子只能从守村队拉多出来的人：守村队至少留这个比例（且不少于派队时家里留的人数）守村。
@@ -366,6 +374,7 @@ namespace GreyWardenPolicePurity
             public const float DamnationLockHours = 24f;
             // 烧不信教的户（用户裁定 2026-10-07）：现有信众户每 3 户烧 1 户，烧 1 户换 1 户信教。
             public const int DamnationSwornPerBurnedHousehold = 3;
+            public const int SurplusGuardCapMultiplier = 2; // 用户裁定2026-10-20：当前补兵上限两倍以上才焚烧低阶。
 
             // 传教队：祭司已是本地最强的信众村照比武大会派，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
             // 先去 150 距离内有火誓者、还没有祭司、比例不到来祭司门槛的村子里比例最高的，没有就去最近的还没有火誓者的。
@@ -379,10 +388,7 @@ namespace GreyWardenPolicePurity
             public const int BalanceEscortSize = 5;
             public const int BalanceMinimumMen = 5;
             public const float BalanceMaxDistance = 300f;
-            public const float BalanceMinimumArmedGap = 0.2f;
             public const int BalanceMinimumSets = 5;
-            // 村间转运积压俘虏的最小单独派队批量；有兵/装备要运时可顺带更少的人。
-            public const int BalanceMinimumPrisoners = 5;
 
             // 卖货：货仓里的东西值 2,000 以上、隔 3 天出一次车。
             public const int CaravanMinimumGoodsValue = 2000;
@@ -399,9 +405,6 @@ namespace GreyWardenPolicePurity
             public const float FaithVillageVisitPriority = 3f;
             // 每日异常检查用的线：领主俘虏到上限的 90%、兵力低于 60%。
             public const float AnomalyLowStrength = 0.6f;
-
-            // 案子发生在信众村这个距离内，算信众村的案子，优先派人。
-            public const float FaithCaseRadius = 6f;
 
             // 信众村保护费：只收信众村（用户裁定：不再全图收），每户每天。
             public const float FaithProtectionPerHearth = 1f;

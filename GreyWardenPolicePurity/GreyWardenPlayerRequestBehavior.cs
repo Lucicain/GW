@@ -320,7 +320,29 @@ namespace GreyWardenPolicePurity
                    GetEligibleCaptures().Count > 0;
         }
 
-        private void ShowFiefSelectionInquiry()
+        internal static bool CanFileCourierAppeal() => _instance != null && IsPlayerGreyWardenVassal() &&
+            (FiefRequestStage)_instance._activeStage == FiefRequestStage.None && _instance.GetEligibleCaptures().Count > 0;
+
+        internal static bool CanFileCourierAppeal(string settlementId, double captureHours) => CanFileCourierAppeal() &&
+            _instance!.GetEligibleCaptures().Any(r => r.SettlementId == settlementId && r.CaptureHour == captureHours);
+
+        internal static void ShowCourierAppealInquiry(Action<string, double> selected)
+        {
+            if (CanFileCourierAppeal()) _instance!.ShowFiefChoices(selected);
+        }
+
+        internal static bool FileCourierAppeal(string settlementId, double captureHours)
+        {
+            if (!CanFileCourierAppeal(settlementId, captureHours)) return false;
+            CaptureRecord record = _instance!._captures.First(r => r.SettlementId == settlementId && r.CaptureHour == captureHours);
+            _instance.ActivateRequest(record, false);
+            return (FiefRequestStage)_instance._activeStage == FiefRequestStage.SeekingPlayerForPayment &&
+                _instance._activeSettlementId == settlementId;
+        }
+
+        private void ShowFiefSelectionInquiry() => ShowFiefChoices(null);
+
+        private void ShowFiefChoices(Action<string, double>? courierSelection)
         {
             List<CaptureRecord> eligible = GetEligibleCaptures();
             var elements = eligible.Select(record =>
@@ -337,14 +359,19 @@ namespace GreyWardenPolicePurity
                     GwpText.Get(GwpTextCatalog.gwp_fief_select_title),
                     GwpText.Get(GwpTextCatalog.gwp_fief_select_description),
                     elements, true, 1, 1,
-                    GwpText.Get(GwpTextCatalog.gwp_file_petition),
+                    GwpText.Get(courierSelection == null ? GwpTextCatalog.gwp_file_petition : GwpTextCatalog.gwp_dispatch_fief_send),
                     GwpText.Get(GwpTextCatalog.gwp_cancel),
                     selected =>
                     {
                         CaptureRecord? record = selected.FirstOrDefault()?.Identifier
                             as CaptureRecord;
-                        if (record != null)
-                            ActivateRequest(record, false);
+                        if (record == null) return;
+                        if (courierSelection != null)
+                        {
+                            if (CanFileCourierAppeal(record.SettlementId, record.CaptureHour))
+                                courierSelection(record.SettlementId, record.CaptureHour);
+                        }
+                        else ActivateRequest(record, false);
                     },
                     _ => { }),
                 true);

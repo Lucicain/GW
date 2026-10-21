@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
         {
             /// <summary>使者在路上。期间不宣战。</summary>
             Travelling = 0,
-            /// <summary>谈崩、使者没了或超时。这宗案子不再派使者，照常宣战。</summary>
+            /// <summary>未说服或使者没了。这宗案子不再派使者，照常宣战。</summary>
             Failed = 1,
             /// <summary>他求了宽限。承办人当场放下案子去忙别的，到期由最近的灰袍领主派一趟只收钱的使者。</summary>
             Grace = 2,
@@ -47,7 +47,7 @@ namespace GreyWardenPolicePurity
             public string WardenPartyId = string.Empty;
             public string EnvoyPartyId = string.Empty;
             public EnvoyStage Stage;
-            /// <summary>使者超时、宽限到期或比武截止的时刻（小时）。</summary>
+            /// <summary>宽限、比武或战后交割截止时刻（小时）。赶路阶段不使用。</summary>
             public double DueHours;
             public string TownId = string.Empty;
             /// <summary>比武作废或案子被别人了结时，要放开的那支原版部队。</summary>
@@ -94,7 +94,7 @@ namespace GreyWardenPolicePurity
             public string OffenderHeroId = string.Empty;
             public string WardenHeroId = string.Empty;
             /// <summary>结果代码，台账按它选文本：grace、duel_called、paid、paid_share、surrender、bribed、
-            /// duel_won、duel_lost、refused、talks_failed、grace_broke、lost、timeout、duel_cancelled、failed。</summary>
+            /// duel_won、duel_lost、refused、talks_failed、grace_broke、lost、duel_cancelled、failed。</summary>
             public string Outcome = string.Empty;
             public int Amount;
             public string TownId = string.Empty;
@@ -137,9 +137,7 @@ namespace GreyWardenPolicePurity
             "envoy_layer_one_failed" => "talks_failed",
             "envoy_grace_broke" => "grace_broke",
             "envoy_lost" => "lost",
-            "envoy_timeout" => "timeout",
             "envoy_war" => "war",
-            "offender_unavailable_timeout" => "target_unavailable",
             _ when reason.StartsWith("duel_", StringComparison.Ordinal) => "duel_cancelled",
             _ => "failed"
         };
@@ -284,7 +282,7 @@ namespace GreyWardenPolicePurity
 
             // 用户裁定 2026-10-15：使者优先排骑兵，不够由别的兵补，只从承办领主自己队里抽；船由主队借。
             List<ImmediateInterceptorTroopTransfer> batches =
-                DetachmentBatches(police, new[] { police }, false);
+                DetachmentBatches(police, new[] { police });
             int size = Math.Min(GwpTuning.Enforcement.EnvoySize, HealthyTroopCount(batches));
             if (size <= 0)
                 return false;
@@ -316,7 +314,6 @@ namespace GreyWardenPolicePurity
                 EnvoyPartyId = envoy.StringId,
                 TargetPartyId = criminal.StringId,
                 Stage = EnvoyStage.Travelling,
-                DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyTimeoutHours,
                 CollectOnly = collectOnly
             };
             // 跟随中立目标不会触发遭遇（只有 EngageParty 才会），所以用护送去追。
@@ -389,20 +386,11 @@ namespace GreyWardenPolicePurity
             // 已出使者固定该罪犯；原承办人改追或撤下任务不撤销交涉。
             MobileParty? target = crime.Offender;
             if (target?.IsActive != true)
-            {
-                if (CampaignTime.Now.ToHours >= envoyCase.DueHours)
-                    FailEnvoy(envoyCase, "offender_unavailable_timeout");
                 return;
-            }
             Clan? policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null || FactionManager.IsAtWarAgainstFaction(policeClan, target.MapFaction))
             {
                 FailEnvoy(envoyCase, policeClan == null ? "warden_unavailable" : "envoy_war");
-                return;
-            }
-            if (CampaignTime.Now.ToHours >= envoyCase.DueHours)
-            {
-                FailEnvoy(envoyCase, "envoy_timeout");
                 return;
             }
 
@@ -505,14 +493,16 @@ namespace GreyWardenPolicePurity
                 GwpNegotiationResistance.LayerTwoReservations, layerTwo, false, charm);
             if (bargained)
                 share = (share + 100) / 2;
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(police, "ENVOY_NEGOTIATED",
                 "envoy=" + envoy.StringId + "; offender=" + offender.StringId +
                 "; ours=" + ours.ToString("0") + "; theirs=" + theirs.ToString("0") +
                 "; fine=" + fine + "; wealth=" + wealth + "; gold=" + offender.Gold +
-                "; layerOne=" + layerOne + "; refusal=" + refusal.ToString("0.00") +
+                "; charm=" + charm + "; layerOne=" + layerOne + "; refusal=" + refusal.ToString("0.00") +
                 "; acknowledged=" + acknowledged + "; desire=" + desire + "; layerTwo=" + layerTwo +
                 "; bargained=" + bargained + "; share=" + share +
                 "; inBattle=" + (target.MapEvent != null));
+#endif
 
             if (!acknowledged)
             {
@@ -541,9 +531,8 @@ namespace GreyWardenPolicePurity
                     GwpAiDeterrenceState.ClearArrestRecord(offender);
                     RecordEnvoyReport(envoyCase, "surrender", 0);
                     ResolveEnvoyCase(envoyCase, crime, true, "envoy_surrender");
-                    if (target.MapEvent == null)
-                        TakePrisonerAction.Apply(envoy.Party, offender);
-                    else
+                    if (!GwpVoluntarySurrender.CanCapture(offender) ||
+                        !GwpVoluntarySurrender.TryCapture(envoy.Party, offender))
                         BeginAftermath(envoyCase, desire);
                     return;
                 case GwpOffenderDesire.BribeTheWarden:
@@ -577,7 +566,7 @@ namespace GreyWardenPolicePurity
         {
             envoyCase.Stage = EnvoyStage.Aftermath;
             envoyCase.PendingDesire = (int)desire;
-            envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyTimeoutHours;
+            envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyAftermathWaitHours;
             _envoyCases[envoyCase.CrimeId] = envoyCase;
             // 结案时承办人的临时队都被转成返程（ClearTaskWarTracking），这一支还要留下。
             if (_delayPatrolStates.TryGetValue(envoyCase.EnvoyPartyId, out DelayPatrolState? state))
@@ -596,14 +585,18 @@ namespace GreyWardenPolicePurity
                 ForgetEnvoyCase(envoyCase, "aftermath_lapsed");
                 return;
             }
-            if (envoy.MapEvent != null || target.MapEvent != null || !EnvoyReached(envoy, target))
+            if (envoy.MapEvent != null || target.MapEvent != null || !EnvoyReached(envoy, target) ||
+                (GwpOffenderDesire)envoyCase.PendingDesire == GwpOffenderDesire.SurrenderSelf &&
+                !GwpVoluntarySurrender.CanCapture(offender))
             {
                 FollowTarget(envoy, target);
                 return;
             }
 
             if ((GwpOffenderDesire)envoyCase.PendingDesire == GwpOffenderDesire.SurrenderSelf)
-                TakePrisonerAction.Apply(envoy.Party, offender);
+            {
+                if (!GwpVoluntarySurrender.TryCapture(envoy.Party, offender)) return;
+            }
             else
                 GwpOffenderDesires.SacrificeOwnMen(target);
             MarkDelayPatrolReturning(envoy.StringId);
@@ -875,7 +868,7 @@ namespace GreyWardenPolicePurity
                 ResolveEnvoyCase(envoyCase, crime, true, "envoy_duel_won_" + collected);
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_envoy_duel_warden_won,
-                        "VAR_1", wardenName, "VAR_2", offenderName, "VAR_3", townName),
+                        "VAR_1", wardenName, "VAR_2", offenderName, "VAR_3", townName, "VAR_4", collected),
                     Colors.Green));
                 return;
             }

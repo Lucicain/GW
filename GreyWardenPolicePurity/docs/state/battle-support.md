@@ -3,7 +3,6 @@
 > 当前状态：用户已实测满意（2026-09-23 确认支援部分）
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
 > 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
-> 已复核至：`1f84971`（2026-10-15）
 > 待实测：无（用户已确认）
 
 实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、

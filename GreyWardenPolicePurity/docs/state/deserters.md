@@ -2,7 +2,6 @@
 
 > 当前状态：现行规则（2026-10-05 从源码提取）
 > 最后验收：未建立检查点
-> 已复核至：`5674af4`（2026-10-08）
 > 覆盖源码：`GreyWardenDesertersCampaignBehavior.cs` `GreyWardenDeserterFilterBehavior.cs` `GwpFaithBattleRewardModel.cs`
 > 待实测：灰袍兵输了仗不出现在对方俘虏里，也不会被招走
 

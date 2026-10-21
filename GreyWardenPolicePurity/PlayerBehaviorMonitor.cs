@@ -28,8 +28,6 @@ namespace GreyWardenPolicePurity
         private int _pendingEnemyCount = 0;
         private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
         private int _pendingPlayerKillBaseline = -1;
-        private bool _pendingVillageDefenseEncounterText;
-        private string _pendingVillageDefenseName = string.Empty;
 
         public override void RegisterEvents()
         {
@@ -49,7 +47,6 @@ namespace GreyWardenPolicePurity
             // 修复：在此事件中手动调用 ClearAll()，保证新档从干净状态启动。
             CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
-            CampaignEvents.AfterGameMenuInitializedEvent.AddNonSerializedListener(this, OnAfterGameMenuInitialized);
 
             // ── 犯罪 / 行善监听 ─────────────────────────────────────────────────────
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
@@ -400,150 +397,17 @@ namespace GreyWardenPolicePurity
 
         #region 强制介入 GameMenu 选项
 
-        /// <summary>
-        /// 注册"强制介入"选项到 join_encounter 菜单。
-        ///
-        /// join_encounter 是玩家点击地图上正在进行中的战斗/劫掠事件时弹出的菜单，
-        /// 涵盖三种场景：NPC攻击商队、NPC攻击村民、NPC劫掠村庄。
-        ///
-        /// 原版菜单已有"帮助防守方"选项，但条件因未宣战而隐藏该按钮。
-        /// 本选项绕过此限制：先对攻击方宣战，再以防守方身份加入战斗。
-        /// </summary>
-        private void OnSessionLaunched(CampaignGameStarter starter)
+        private void OnSessionLaunched(CampaignGameStarter starter) => GwpPlayerIntervention.Register(starter);
+
+        internal void PrepareIntervention(MapEvent battle, BattleSideEnum side)
         {
-            // 强制介入（保护防守方）：无视外交状态，以防守方身份加入战斗
-            starter.AddGameMenuOption(
-                "join_encounter",
-                "gwp_force_join_battle",
-                "{GWP_FORCE_JOIN_TEXT}",
-                ForceJoinBattleCondition,
-                ForceJoinBattleConsequence,
-                isLeave: false,
-                index: -1);
-
-            // 落井下石（帮助攻击方）：无视外交状态，以攻击方身份加入战斗
-            starter.AddGameMenuOption(
-                "join_encounter",
-                "gwp_force_join_attackers",
-                "{GWP_FORCE_JOIN_ATTACKERS_TEXT}",
-                ForceJoinAttackersCondition,
-                ForceJoinAttackersConsequence,
-                isLeave: false,
-                index: -1);
-        }
-
-        /// <summary>
-        /// 条件：当前遭遇属于可强制介入场景时，显示"强制介入"选项。
-        /// </summary>
-        private bool ForceJoinBattleCondition(MenuCallbackArgs args)
-        {
-            args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
-
-            MapEvent battle = PlayerEncounter.EncounteredBattle;
-            if (battle == null) return false;
-
-            if (!TryBuildForceJoinTexts(battle, out string defendText, out _))
-                return false;
-
-            MBTextManager.SetTextVariable("GWP_FORCE_JOIN_TEXT", new TextObject(defendText));
-            return true;
-        }
-
-        /// <summary>
-        /// 记录敌方人数供声望缩放，以防守方身份加入战斗并切换到战斗菜单。
-        /// </summary>
-        private void ForceJoinBattleConsequence(MenuCallbackArgs args)
-        {
-            MapEvent battle = PlayerEncounter.EncounteredBattle;
-            if (battle == null) return;
-
-            CaptureForcedJoinEncounterState(battle, BattleSideEnum.Defender);
-
-            // 记录攻击方战前人数（JoinBattle 后不再触发 OnMapEventStarted，需在此预先记录）
-            _pendingEnemyCount = 0;
-            foreach (var p in battle.AttackerSide.Parties)
-                if (p.Party?.IsMobile == true)
-                    _pendingEnemyCount += p.Party.NumberOfAllMembers;
-
+            CaptureForcedJoinEncounterState(battle, side);
+            _pendingEnemyCount = battle.GetMapEventSide(side == BattleSideEnum.Attacker ? BattleSideEnum.Defender : BattleSideEnum.Attacker)
+                .Parties.Where(p => p.Party?.IsMobile == true).Sum(p => p.Party.NumberOfAllMembers);
             CapturePlayerKillBaseline();
-
-            // 直接加入防守方的战斗阵营是正确的；问题仅在于原版仍沿用
-            // 村庄劫掠事件的 encounter 说明，把玩家写成了劫掠者。
-            // 在菜单完成原版初始化后覆盖说明文字，不改动任何战斗方。
-            if (battle.IsRaid)
-            {
-                _pendingVillageDefenseEncounterText = true;
-                _pendingVillageDefenseName = battle.MapEventSettlement?.Name?.ToString()
-                    ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_050);
-            }
-
-            PlayerEncounter.JoinBattle(BattleSideEnum.Defender);
-            GameMenu.ActivateGameMenu("encounter");
         }
 
-        private void OnAfterGameMenuInitialized(MenuCallbackArgs args)
-        {
-            if (!_pendingVillageDefenseEncounterText ||
-                !string.Equals(args.MenuContext?.GameMenu?.StringId, "encounter", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            MBTextManager.SetTextVariable(
-                "ENCOUNTER_TEXT",
-                new TextObject(GwpText.Get(
-                    GwpTextCatalog.gwp_playerbehaviormonitor_051,
-                    "VAR_1",
-                    _pendingVillageDefenseName)));
-            MBTextManager.SetTextVariable(
-                "ATTACK_TEXT",
-                new TextObject(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_052)));
-
-            _pendingVillageDefenseEncounterText = false;
-            _pendingVillageDefenseName = string.Empty;
-        }
-
-        /// <summary>
-        /// 条件：当前遭遇属于可强制介入场景时，显示"落井下石"选项。
-        /// </summary>
-        private bool ForceJoinAttackersCondition(MenuCallbackArgs args)
-        {
-            args.optionLeaveType = GameMenuOption.LeaveType.HostileAction;
-
-            MapEvent battle = PlayerEncounter.EncounteredBattle;
-            if (battle == null) return false;
-
-            if (!TryBuildForceJoinTexts(battle, out _, out string attackText))
-                return false;
-
-            MBTextManager.SetTextVariable("GWP_FORCE_JOIN_ATTACKERS_TEXT", new TextObject(attackText));
-            return true;
-        }
-
-        /// <summary>
-        /// 记录防守方人数供战后声望扣除缩放，以攻击方身份加入战斗。
-        /// </summary>
-        private void ForceJoinAttackersConsequence(MenuCallbackArgs args)
-        {
-            MapEvent battle = PlayerEncounter.EncounteredBattle;
-            if (battle == null) return;
-
-            CaptureForcedJoinEncounterState(battle, BattleSideEnum.Attacker);
-
-            // 记录防守方战前人数（供战后按人数缩放扣声望；JoinBattle 不触发 OnMapEventStarted）
-            _pendingEnemyCount = 0;
-            foreach (var p in battle.DefenderSide.Parties)
-                if (p.Party?.IsMobile == true)
-                    _pendingEnemyCount += p.Party.NumberOfAllMembers;
-
-            CapturePlayerKillBaseline();
-
-            // 以攻击方身份加入战斗 → 切换到遭遇战菜单（进入战斗准备界面）
-            PlayerEncounter.JoinBattle(BattleSideEnum.Attacker);
-            GameMenu.ActivateGameMenu("encounter");
-        }
-
-        private bool TryBuildForceJoinTexts(MapEvent battle, out string defendText, out string attackText)
+        internal static bool TryBuildForceJoinTexts(MapEvent battle, out string defendText, out string attackText)
         {
             defendText = string.Empty;
             attackText = string.Empty;
@@ -584,7 +448,7 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool TryBuildPoliceCriminalEncounterTexts(MapEvent battle, out string defendText, out string attackText)
+        private static bool TryBuildPoliceCriminalEncounterTexts(MapEvent battle, out string defendText, out string attackText)
         {
             defendText = string.Empty;
             attackText = string.Empty;
@@ -743,7 +607,7 @@ namespace GreyWardenPolicePurity
             return CrimeState.GetByOffenderId(party.StringId) != null;
         }
 
-        private bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)
+        private static bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)
         {
             criminal = null!;
             policeSide = BattleSideEnum.Attacker;
@@ -763,7 +627,7 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        private bool TryMatchPoliceCriminalEncounterOnSide(
+        private static bool TryMatchPoliceCriminalEncounterOnSide(
             MapEvent battle,
             BattleSideEnum policeSide,
             out MobileParty? criminal)

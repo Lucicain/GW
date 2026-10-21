@@ -20,20 +20,25 @@ enum AiBehavior{None,EscortParty,GoAroundParty} enum IntentKind{Approach,Escort,
 struct Vec2{public float X;public Vec2(float x){X=x;}public float Distance(Vec2 p)=>Math.Abs(X-p.X);}
 class Position{public float X;public Vec2 ToVec2()=>new(X);}
 class Settlement{}
+interface IFaction{string StringId{get;}}class Clan:IFaction{public static Clan PlayerClan=new();public string StringId{get;}="faction";public IFaction MapFaction=>this;}
+static class PoliceStats{public static Clan GetPoliceClan()=>new();}static class FactionManager{public static bool War;public static bool IsAtWarAgainstFaction(IFaction a,IFaction b)=>War;}
+static class GwpAiDiagnostics{public static void WriteAction(MobileParty p,string action,string detail){}}
 class MobileParty{public string StringId="";public bool IsActive=true,IsMainParty,IsBandit,Managed=true;public float Strength=10;public Settlement? CurrentSettlement;
- public object? MapEvent;public Position Position=new();public Vec2 GetPosition2D=>Position.ToVec2();}
+ public static List<MobileParty> All=new();public Clan ActualClan=new();public IFaction MapFaction=>ActualClan;public object? MapEvent;public Position Position=new();public Vec2 GetPosition2D=>Position.ToVec2();}
 class CrimeRecord{public string CrimeId="crime";public bool HasOpenCase=true;public MobileParty? Offender;}
-class PoliceTask{public bool WarDeclared,IsPlayerBountyEscort;public CrimeRecord? TargetCrime;}
+class PoliceTask{public string PolicePartyId="chief";public IFaction? WarTarget;public bool WarDeclared,IsPlayerBountyEscort;public CrimeRecord? TargetCrime;}
 static class CrimePool{public static Dictionary<string,PoliceTask> Tasks=new();public static PoliceTask? GetTask(string id)=>Tasks.GetValueOrDefault(id);}
-static class CrimeState{public static PoliceTask? GetTask(string id)=>CrimePool.GetTask(id);}
+static class CrimeState{public static Dictionary<string,PoliceTask> ActiveTasks=>CrimePool.Tasks;public static PoliceTask? GetTask(string id)=>CrimePool.GetTask(id);}
 static class GwpStrength{public class LocalBalance{public MobileParty Actor=null!;public float Distance;public bool StrengthReady;}
+ public static bool IsInNativeEvaluation(MobileParty p)=>false;public static bool NativeAttackReady(MobileParty a,MobileParty b)=>throw new Exception("unexpected native boundary");
  public static MobileParty CombatGroupOf(MobileParty p)=>p;
- public static LocalBalance Compare(MobileParty a,MobileParty b,bool includePlayer=false)=>new(){Actor=a,Distance=a.GetPosition2D.Distance(b.GetPosition2D),StrengthReady=a.Strength>b.Strength};}
+ public static LocalBalance Compare(MobileParty a,MobileParty b,bool includePlayer=false,MobileParty? excludedFriendly=null)=>new(){Actor=a,Distance=a.GetPosition2D.Distance(b.GetPosition2D),StrengthReady=a.Strength>b.Strength};}
 static class CampaignTime{public static NowValue Now=new();public class NowValue{public double ToHours=10;}}
 enum WardenDuty {Assistance}
 static class GwpWardenDuties {public static bool HoldsAny(MobileParty p, WardenDuty d)=>PoliceEnforcementBehavior.IsPartyOccupiedByAssistance(p);}
 static class GwpWardenDispatchBehavior{public static bool IsDispatchParty(MobileParty? p)=>false;}
 class PoliceEnforcementBehavior{
+ public int WarCalls;private void DeclareWar(PoliceTask task,MobileParty target){WarCalls++;task.WarTarget=target.MapFaction;FactionManager.War=true;}private void ClearTaskWarTracking(string id,bool returning){}public void Reconcile()=>ReconcileTaskWarStatesWithDiplomacy();
  enum EnvoyStage{Travelling,Failed}class EnvoyCase{public EnvoyStage Stage;}
  class LordAssistanceGroup{public string LeaderPartyId="chief",PendingReleaseReason="";public bool DispersedForSpeed;public List<string> MemberPartyIds=new();}
  static PoliceEnforcementBehavior? _instance; Dictionary<string,LordAssistanceGroup> _assistanceGroups=new();Dictionary<string,EnvoyCase> _envoyCases=new();
@@ -50,9 +55,10 @@ class PoliceEnforcementBehavior{
  public bool Declaration(MobileParty c,MobileParty t)=>TryGetNativeDeclarationCandidate(c,t,2,out _,out _);
  public void AddHelper(MobileParty h)=>_assistanceGroups["chief"]=new(){MemberPartyIds=new(){h.StringId}};
  public void EndHelp()=>_assistanceGroups.Clear();
- public static PoliceEnforcementBehavior Setup(MobileParty c,MobileParty t,PoliceTask task){Parties=new(){{c.StringId,c},{t.StringId,t}};CrimePool.Tasks.Clear();CrimePool.Tasks[c.StringId]=task;var e=new PoliceEnforcementBehavior();_instance=e;return e;}
+ public static PoliceEnforcementBehavior Setup(MobileParty c,MobileParty t,PoliceTask task){Parties=new(){{c.StringId,c},{t.StringId,t}};MobileParty.All=new(){c,t};FactionManager.War=false;CrimePool.Tasks.Clear();CrimePool.Tasks[c.StringId]=task;var e=new PoliceEnforcementBehavior();_instance=e;return e;}
 }
 class GreyWardenPartyDesireBehavior{
+ public static void RequestImmediateRethink(MobileParty p){}
  class Intent{public IntentKind Kind;public double ExpiresAt;public MobileParty? Party;}
  static Dictionary<string,Intent> Intents=new();private static bool IsManagedParty(MobileParty? p)=>p?.Managed==true;
  DESIRE_METHODS
@@ -67,9 +73,12 @@ static class Replay{
   t.CurrentSettlement=null;Check(GreyWardenPartyDesireBehavior.Kind(task,t)=="Escort","field target uses same live escort");
   task.WarDeclared=true;Check(GreyWardenPartyDesireBehavior.Kind(task,t)=="Pursue","declared task retains native pursuit");task.WarDeclared=false;
   c.CurrentSettlement=t.CurrentSettlement=new();Check(e.HoldEnvoy(c,task,t,false),"travelling envoy holds declaration");
-  Check(!e.HoldEnvoy(c,task,t,true)&&e.Declaration(c,t),"failed talks allow declaration inside town under native departure contract");
+  Check(!e.HoldEnvoy(c,task,t,true)&&!e.Declaration(c,t),"failed talks do not authorize declaration while both parties are inside");
+  c.CurrentSettlement=null;Check(!e.Declaration(c,t),"actor outside does not declare on a sheltered target");
+  c.CurrentSettlement=t.CurrentSettlement;t.CurrentSettlement=null;Check(!e.Declaration(c,t),"target departure does not declare while actor remains inside");
   Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(c,t),"actual field attack cannot start while actor is in town");
   c.CurrentSettlement=t.CurrentSettlement=null;Check(PoliceEnforcementBehavior.CanInitiateCaseAttack(c,t),"outside town current local advantage permits attack");
+  Check(e.Declaration(c,t),"both parties outside resume existing declaration gates");
   t.Strength=300;Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(c,t),"enemy growth blocks even previously ready attack");
   task.WarDeclared=true;Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(c,t),"already declared war does not bypass fresh strength check");
   t.Strength=100;e.HoldEnvoy(c,task,t,false);task.WarDeclared=false;Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(c,t),"pending envoy blocks actual attack");
@@ -81,6 +90,12 @@ static class Replay{
   Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(h,old),"helper cannot reuse old war against old target");
   e.EndHelp();Check(GreyWardenPartyDesireBehavior.IsAuthorizedAttackTarget(h,old),"own target resumes after release");
   Check(!PoliceEnforcementBehavior.CanInitiateCaseAttack(h,old),"resumed old case must pass its own fresh strength check");
+  foreach(bool actorInside in new[]{true,false}){
+   task=new(){TargetCrime=new(){Offender=t},WarDeclared=true,WarTarget=new Clan()};e=PoliceEnforcementBehavior.Setup(c,t,task);c.CurrentSettlement=actorInside?new():null;t.CurrentSettlement=actorInside?null:new();e.Reconcile();
+   Check(e.WarCalls==0&&!task.WarDeclared,"faction change must not declare a new war from either side of a settlement");
+  }
+  c.CurrentSettlement=t.CurrentSettlement=null;task=new(){TargetCrime=new(){Offender=t},WarDeclared=true,WarTarget=new Clan()};e=PoliceEnforcementBehavior.Setup(c,t,task);e.Reconcile();Check(e.WarCalls==1&&task.WarDeclared,"field faction change retains person-based pursuit");
+  t.CurrentSettlement=new();task=new(){TargetCrime=new(){Offender=t},WarDeclared=true,WarTarget=t.MapFaction};e=PoliceEnforcementBehavior.Setup(c,t,task);FactionManager.War=true;e.Reconcile();Check(e.WarCalls==0&&task.WarDeclared,"sheltered target does not revoke a war that already exists");
   Console.WriteLine("SHELTERED_ENFORCEMENT_ASSERTIONS="+checks+"; PASS");
  }
 }}
@@ -92,8 +107,9 @@ class ShelteredEnforcementTests(unittest.TestCase):
         desire = (MODULE / 'GreyWardenPartyDesireBehavior.cs').read_text(encoding='utf-8-sig')
         assistance = (MODULE / 'PoliceEnforcementBehavior.Assistance.cs').read_text(encoding='utf-8-sig')
         envoy = (MODULE / 'PoliceEnforcementBehavior.Envoy.cs').read_text(encoding='utf-8-sig')
+        enforcement = (MODULE / 'PoliceEnforcementBehavior.cs').read_text(encoding='utf-8-sig')
         code = HARNESS.replace('PRODUCTION', '\n'.join(extract(assistance, n) for n in
-            ['TryGetNativeDeclarationCandidate','TryGetAssistanceCase','IsAuthorizedAssistanceTarget','CanInitiateCaseAttack']) + '\n' + extract(envoy,'HoldWarForEnvoy'))
+            ['TryGetNativeDeclarationCandidate','TryGetAssistanceCase','IsAuthorizedAssistanceTarget','TryGetNativeCaseTarget','NativeCaseIncludesPlayer','CanInitiateCaseAttack']) + '\n' + extract(envoy,'HoldWarForEnvoy') + '\n' + extract(enforcement,'ReconcileTaskWarStatesWithDiplomacy'))
         code = code.replace('DESIRE_METHODS', '\n'.join(extract(desire, n) for n in ['ResolveUndeclaredPursuitKind', 'IsAuthorizedAttackTarget']))
         major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
         with tempfile.TemporaryDirectory(prefix='gwp-sheltered-') as temp:

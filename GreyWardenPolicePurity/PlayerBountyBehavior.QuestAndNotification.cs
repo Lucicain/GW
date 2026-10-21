@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SandBox.View.Map;
@@ -131,6 +131,9 @@ namespace GreyWardenPolicePurity
             {
                 CompleteQuestWithCancel(new TextObject(GwpText.Get(GwpTextCatalog.gwp_bounty_membership_ended)));
             }
+
+            internal void CancelUnavailableCommission() =>
+                CompleteQuestWithCancel(GwpText.Create(GwpTextCatalog.gwp_case_custody_withdrawn));
 
         }
 

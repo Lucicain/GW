@@ -168,6 +168,7 @@ namespace GreyWardenPolicePurity
 
             RegisterCaseTurnInDialogues(starter);
             RegisterSupportDialogue(starter);
+            RegisterCaseCustodyDialogues(starter);
 
             // ── 读档后悬赏任务恢复（兜底）─────────────────────────────────────────
             // 此时 SyncData 已完成，所有持久化字段均已正确加载，可以安全访问。

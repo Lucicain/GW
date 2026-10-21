@@ -1,7 +1,7 @@
 """Regenerate docs/state/code-map.md from the actual source.
 
-A hand-written architecture note rots within days. This one is derived, so it
-cannot disagree with the code: if it is wrong, the extractor is wrong.
+Extract declarations and registration calls, not runtime behavior. Reflection,
+conditional compilation and Harmony Prepare still require the compatibility check.
 
 Run from the repository root:  python tools/Generate-CodeMap.py
 """
@@ -20,15 +20,17 @@ TYPE_RE = re.compile(
     r"(class|struct|enum|interface)\s+(\w+)", re.M)
 BASE_RE = re.compile(r"^\s*(?:public|internal)\s+(?:\w+\s+)*"
                      r"(?:class|struct)\s+(\w+)\s*:\s*([^\r\n{]+)", re.M)
-PATCH_RE = re.compile(
+STATIC_TARGET_RE = re.compile(
     r"\[HarmonyPatch\(\s*typeof\(([\w.]+)\)\s*,\s*"
-    r"(?:nameof\([\w.]*?(\w+)\)|\"(\w+)\")"
+    r"(?:nameof\([\w.]*?(\w+)\)|\"([\w.]+)\")"
     r"(?:\s*,\s*MethodType\.(\w+))?", re.S)
-PATCH_CLASS_RE = re.compile(r"(?:public|internal)\s+static\s+class\s+(\w+)")
+CLASS_RE = re.compile(r"\b(?:public|internal)\s+(?:(?:static|sealed|abstract|partial)\s+)*class\s+(\w+)[^{;]*\{")
+NON_CODE_RE = re.compile(
+    r'//[^\n]*|/\*[\s\S]*?\*/|@"(?:""|[^"])*"|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 # Harmony accepts either an explicit attribute or a method simply named
 # Prefix/Postfix/Transpiler/Finalizer. Both forms appear in this repo.
 KIND_RE = re.compile(
-    r"\[Harmony(Prefix|Postfix|Transpiler|Finalizer)\]"
+    r"\[Harmony(Prefix|Postfix|Transpiler|Finalizer)\b"
     r"|\b(?:private|internal|public|static|\s)+\s"
     r"(?:\w[\w<>,.\[\]\?]*)\s+(Prefix|Postfix|Transpiler|Finalizer)\s*\(")
 ADD_BEHAVIOR_RE = re.compile(r"AddMissionBehavior\(\s*new\s+(\w+)")
@@ -89,6 +91,69 @@ def bucket(name: str) -> str:
     return "其他"
 
 
+def mask_non_code(text: str, keep_strings: bool = False) -> str:
+    """Preserve offsets/newlines so braces in comments and strings cannot end a class."""
+    def replace(match):
+        token = match.group()
+        if keep_strings and not token.startswith(("//", "/*")):
+            return token
+        return re.sub(r"[^\n]", " ", token)
+    return NON_CODE_RE.sub(replace, text)
+
+
+def matching_delimiter(code: str, start: int, opening: str, closing: str,
+                       direction: int = 1) -> int:
+    depth = 0
+    for pos in range(start, len(code) if direction == 1 else -1, direction):
+        if code[pos] == opening:
+            depth += 1
+        elif code[pos] == closing:
+            depth -= 1
+            if depth == 0:
+                return pos
+    raise ValueError(f"unbalanced delimiter at offset {start}")
+
+
+def extract_patches(text: str, filename: str):
+    """Inventory class declarations, including dynamic and conditional targets.
+
+    Unsupported target syntax remains visible as unresolved. Prepare is not run.
+    """
+    code = mask_non_code(text)
+    attributes_source = mask_non_code(text, keep_strings=True)
+    patches = []
+    for cls in CLASS_RE.finditer(code):
+        cursor = cls.start() - 1
+        attributes = []
+        while cursor >= 0:
+            while cursor >= 0 and code[cursor].isspace():
+                cursor -= 1
+            if cursor < 0 or code[cursor] != "]":
+                break
+            start = matching_delimiter(code, cursor, "]", "[", -1)
+            attributes.append(attributes_source[start:cursor + 1])
+            cursor = start - 1
+        decorated = "\n".join(reversed(attributes))
+        if not re.search(r"\bHarmonyPatch\b", decorated):
+            continue
+        end = matching_delimiter(code, cls.end() - 1, "{", "}")
+        body = code[cls.end():end]
+        kinds = sorted({g for pair in KIND_RE.findall(body) for g in pair if g})
+        location = f"{filename}:{text.count(chr(10), 0, cls.start()) + 1}"
+        targets = list(STATIC_TARGET_RE.finditer(decorated))
+        if targets:
+            for target in targets:
+                patches.append((target.group(1), target.group(2) or target.group(3),
+                                target.group(4) or "", cls.group(1),
+                                "/".join(kinds) or "?", location))
+        else:
+            resolver = re.search(r"\b(TargetMethods?)\s*\(", body)
+            patches.append(("动态/未静态解析", resolver.group(1) + "()" if resolver
+                            else "见类属性与实现", "", cls.group(1),
+                            "/".join(kinds) or "?", location))
+    return patches
+
+
 def main() -> int:
     files = sorted(p for p in SRC.glob("*.cs"))
     if not files:
@@ -107,19 +172,7 @@ def main() -> int:
         bases = {m.group(1): m.group(2).strip() for m in BASE_RE.finditer(text)}
         rows.append((bucket(path.stem), path.name, loc, types, bases))
 
-        # Harmony patches: the attribute, then the class it decorates. Scope the
-        # search for prefix/postfix markers to that class, i.e. up to the next
-        # [HarmonyPatch( — a fixed character window misses long class bodies.
-        starts = [m.start() for m in PATCH_RE.finditer(text)]
-        for i, m in enumerate(PATCH_RE.finditer(text)):
-            end = starts[i + 1] if i + 1 < len(starts) else len(text)
-            body = text[m.end():end]
-            cls = PATCH_CLASS_RE.search(body)
-            kinds = sorted({g for pair in KIND_RE.findall(body) for g in pair if g})
-            member = m.group(2) or m.group(3)
-            patches.append((m.group(1), member, m.group(4) or "",
-                            cls.group(1) if cls else "?",
-                            "/".join(kinds) or "?", path.name))
+        patches.extend(extract_patches(text, path.name))
 
     sub = (SRC / "SubModule.cs").read_text(encoding="utf-8-sig", errors="replace")
     mission_behaviors = ADD_BEHAVIOR_RE.findall(sub)
@@ -152,15 +205,15 @@ def main() -> int:
     patch_classes = {p[3] for p in patches if p[3] != "?"}
     w(f"{len(files)} 个源文件、{total_loc:,} 行、"
       f"{sum(len(r[3]) for r in rows)} 个公开类型、"
-      f"{len(patches)} 个 Harmony 补丁点（分布在 {len(patch_classes)} 个补丁类里）。")
+      f"{len(patches)} 条 Harmony 目标声明（含动态入口，共 {len(patch_classes)} 个补丁类）。")
     w("")
     w("## 原版接触面（Harmony 补丁）")
     w("")
-    w("**这张表是这个模组与 Bannerlord 的全部契约。** 换游戏版本时先核对它。")
+    w("源码中的 Harmony 类级声明清单；换游戏版本时先定位这些接触面，再运行加载兼容预检。")
     w("")
-    w("这里数的是源码里 `[HarmonyPatch(typeof(...))]` 的**补丁点**。")
-    w("`Verify-GameCompat.ps1` 的 `PATCH_OK` 数的是**成功绑定的补丁类**，口径不同，")
-    w("两个数字不应直接相减。")
+    w("静态目标列出类型/成员；`TargetMethod(s)` 动态目标保留入口和源码行号，不猜运行时结果。")
+    w("包含条件编译内的声明，不执行 `Prepare`。这不是实际生效列表，也不涵盖模型覆盖等非 Harmony 接触面。")
+    w("`Verify-GameCompat.ps1` 的 `PATCH_OK` 是实际加载绑定的补丁类数，需按构建条件与声明集合核对。")
     w("")
     w("| 原版类型 | 成员 | 方式 | 补丁类 | 文件 |")
     w("|---|---|---|---|---|")

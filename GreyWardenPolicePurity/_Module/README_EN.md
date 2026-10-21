@@ -2,24 +2,29 @@
 
 GreyWarden adds an independent religious order descended from the Imperial church to Mount & Blade II: Bannerlord. Its members protect civilians, pursue raiders, support villages and train successors. Village priests and believers provide recruits and supplies. Players can face the Wardens for their crimes, or earn their trust, join the order and take commissions.
 
-This is the v1.4-r15 release (2026-10-17), for Bannerlord 1.4.8. Runtime art is included; editable art sources and editor folders are excluded. For Bannerlord 1.5.2, use the previously released v1.5-r1.
+This guide describes the current development build for Bannerlord 1.4.8. The latest published release remains v1.4-r15 (2026-10-17); changes listed under "In development" have not been released. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
 中文：README.md
 
 ## Main features
 
-- Six founding Warden lords lead their own parties, handling training, trade routes, village protection, local requests, rebuilding and player affairs. Adult successors inherit vacant duties.
-- The Wardens record attacks on caravans and villagers, and village raids. They pursue offenders, gather allies against strong opponents and send cavalry to intercept fast targets.
-- The case ledger shows open cases, assigned parties and the order's treasury. Offenders retain a criminal record and face deterrence that gradually wears off; repeat offences carry lasting consequences.
+- Six founding Warden lords lead their own parties, handling training, trade routes, village protection, local requests, rebuilding and player affairs. Adult successors inherit duties that still have an adult holder.
+- The Wardens record attacks on caravans and villagers, and village raids. They first take the nearest eligible case in their own field, gather allies against strong opponents and send detachments drawn from existing troops, with cavalry preferred.
+- Grey Warden Affairs has five tabs: My Affairs, Members, Duties, Faith and Armory. It shows assigned Wardens, messenger journeys and separate negotiation reports. The player armory is not yet open. Offenders retain criminal records and face deterrence that gradually wears off.
 - Players can earn reputation by protecting civilians and helping the Wardens. Membership grants access to commissions, troop orders, battlefield support and fief appeals.
 - The mod includes a Warden troop tree, black-and-gold equipment, warhorses, shields, dual blades, kicks, shield bashes and sparring. Wardens fight without routing and have their own battle music.
-- At 20 Warden reputation, the player receives an invitation. New commissions require membership, sufficient reputation and a Warden duty standard equipped in the banner slot. Unequip it to stop new offers; existing work can still be completed. The Grey Warden Affairs button opens the ledger and commission list.
+- The training lord sends healthy veterans to villages. Player troop orders are paid when placed and delivered by the training lord when ready. An order messenger carries the order and payment, not the trained soldiers.
+- At 20 Warden reputation, a recruitment messenger comes to invite you. Members can talk to Warden soldiers in their party and send them on errands. New commissions require membership, at least 20 reputation and a Warden duty standard equipped in the banner slot. Unequipping it disables new commissions; existing work continues. Choose cases in Affairs; periodic commission offers have been removed.
+- The map-bar Affairs button requires membership and 20 reputation. The Warden clan's encyclopedia page also has a browsing entrance for non-members; browsing grants no membership or commission rights.
+- In Duties, cases appear first and are sorted by the offender's current distance from the player. Rows show offender and assignee portraits. Select a case to see the estimated case fee, current location and strength. The case fee is separate from the fine.
 - Commissions allow negotiation, collection of fines and goods, prisoner delivery and requests for help. Keeping case proceeds or using excessive force can bring an investigation.
+- Resolve a case through negotiation, defeat the offender's party or capture the offender, then report back. Case fees are assessed separately; delivering a captive also earns the ransom value. Wars entered on the Wardens' behalf can be referred to them for mediation in person or by messenger.
 
 ## Known issues
 
 - A crash has occurred while exiting the game; the cause remains unresolved.
 - A lord may stay in a settlement for a long time when threatened by enemies outside.
 - Performance in campaigns with many developed villages and large armories still needs observation.
+- In the development build, periodic support is not yet limited to stalled cases, so prolonged unresolved cases can cause repeated deployments.
 
 ## Installation and updates
 
@@ -30,6 +35,16 @@ This is the v1.4-r15 release (2026-10-17), for Bannerlord 1.4.8. Runtime art is 
 Start a new campaign for this release. Saves are not supported across versions. Replace the complete module when updating.
 
 ## Changelog
+
+### In development (2026-10-19, not released)
+
+- Rebuilt Affairs with case selection, player messenger journeys and separate negotiation reports, distinguishing case support, peace requests, fief reconsideration and troop orders.
+- Added native portrait frames, offender and assignee portraits; corrected case sorting, footer overlap and return from encyclopedia pages.
+- Ordinary pursuits keep checking for replacement interceptors after a detachment is lost. Other existing soldiers can fill places when healthy cavalry are insufficient.
+- Declarations of war and case attacks check native regional strength. No new case war is declared while either party is in a settlement; following continues and eligibility is checked again outside.
+- Warden envoys have no travel deadline. They wait if the offender temporarily loses their party; a lost envoy counts as an unsuccessful negotiation.
+- Prevented handovers before navigation transitions finish. Player messengers and Warden envoys share the sea/land handover check.
+- Recalibrated battle music volume and reviewed quest, dialogue and gameplay descriptions.
 
 ### 2026-10-17 v1.4-r15 (Bannerlord 1.4.8)
 

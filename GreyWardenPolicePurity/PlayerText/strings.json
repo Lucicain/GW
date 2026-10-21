@@ -1220,18 +1220,6 @@
       "en": "The Grey Wardens record your attack on {VAR_1}.",
       "zh": "灰袍记下了你袭击{VAR_1}的罪行。"
     },
-    "gwp_playerbehaviormonitor_050": {
-      "en": "the village",
-      "zh": "这个村庄"
-    },
-    "gwp_playerbehaviormonitor_051": {
-      "en": "You have come to {VAR_1} and joined its militia against the raiders. When you are ready, stand with the villagers and meet the enemy.",
-      "zh": "你已抵达{VAR_1}，并与当地民兵一同抵御劫掠者。待整备妥当，便与村民并肩迎敌。"
-    },
-    "gwp_playerbehaviormonitor_052": {
-      "en": "Stand with the militia and attack",
-      "zh": "与民兵并肩迎敌"
-    },
     "gwp_playerbehaviormonitor_053": {
       "en": null,
       "zh": "击倒在案罪犯部队"
@@ -1351,8 +1339,8 @@
       "zh": "灰袍听说了你的事迹。愿不愿意替我们追捕罪犯？办妥了，自有酬劳。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_014": {
-      "en": "You are now a sworn hunter of the Grey Wardens. Your equipment and duty standard are in your baggage. Equip the standard in the banner slot to receive new warrants; unequip it to pause. Open Grey Warden Affairs at the bottom left of the map to view your duties and choose a warrant.",
-      "zh": "你已成为灰袍受托猎手。装备与执勤旗已放入行囊。把旗装备到旗帜槽即可接新委托，卸下则暂停；地图左下角的“灰袍事务”可查看事务并领取委托。"
+      "en": "You have joined the Grey Wardens. Your equipment and duty standard have been issued.",
+      "zh": "你已加入灰袍，装备与执勤旗已交付。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_015": {
       "en": "You decline the Wardens. You may still ask a Warden lord to join them later.",
@@ -1412,12 +1400,12 @@
       "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。"
     },
     "gwp_dispatch_troop_order": {
-      "en": "Carry my order for troops to the Wardens, and the coin with it.",
-      "zh": "把我的练兵订单和订金一起送到灰袍手里。"
+      "en": "Carry my troop order and payment to the Wardens.",
+      "zh": "把我的调兵订单和款项一起送到灰袍手里。"
     },
     "gwp_player_troop_order_unaffordable": {
-      "en": "You cannot pay the deposit. The order was not placed.",
-      "zh": "你付不起订金，订单未成立。"
+      "en": "You cannot afford this order. It was not placed.",
+      "zh": "你付不起这笔订购款，订单未成立。"
     },
     "gwp_player_troop_order_short": {
       "en": "What you offered falls short of the price. The order was not placed.",
@@ -1452,8 +1440,8 @@
       "zh": "没有什么要我们去递的了。你替我们担下的那些，早就平了。"
     },
     "gwp_dispatch_peace": {
-      "en": "Ride to the Wardens and have them close the quarrels I took up for them.",
-      "zh": "去灰袍那儿走一趟，把我替他们挑起来的那几桩梁子了了。"
+      "en": "Ask the Wardens to arrange peace in the wars I entered on their behalf.",
+      "zh": "请灰袍为我替他们卷入的战争出面讲和。"
     },
     "gwp_dispatch_peace_done": {
       "en": "The message was delivered. The Wardens have made peace on your behalf.",
@@ -1488,12 +1476,12 @@
       "zh": "这事我们谈过了。我的答复不变。"
     },
     "gwp_dispatch_order_moot": {
-      "en": "The Wardens cannot take the order now. Your deposit is being returned.",
-      "zh": "灰袍眼下无法接单，订金将退回给你。"
+      "en": "The Wardens cannot take this order. Your payment is being brought back.",
+      "zh": "灰袍眼下无法接单，款项将随使者带回。"
     },
     "gwp_player_troop_order_filed_prepaid": {
-      "en": "Your order and deposit are with the Wardens. The Training Warden will bring the soldiers to you herself.",
-      "zh": "订单与订金已交给灰袍，练兵领主训练完成后会亲自送来。"
+      "en": "The Wardens have received your order and payment. The training lord will deliver the soldiers when they are ready.",
+      "zh": "订单与款项已交给灰袍，练兵领主训练完成后会亲自送来。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_020": {
       "en": null,
@@ -1653,8 +1641,9 @@
       "zh": "目标：{VAR_1}。评估难度：{VAR_2}。\n"
     },
     "gwp_bounty_quest_reward": {
-      "en": "Within 45 days, collect the assessed fine of {VAR_1} denars or capture the offender. Deliver the money or prisoner to a Grey Warden lord. Expenses depend on the actual delivery.",
-      "zh": "在 45 天内收取卷宗应缴的 {VAR_1} 第纳尔罚金，或俘虏目标。将钱或人交给灰袍领主后，按实际交付结算办案酬劳。"
+      "en": "Within 45 days, resolve the case by negotiation, defeat the offender's party, or capture the offender. The assessed fine is {VAR_1} denars. Report to a Grey Warden lord and hand over any fines collected or the captive. The case fee is assessed separately from the money collected; a delivered captive is also bought at the ransom price.",
+      "zh": "在45天内交涉结案、击溃目标部队或俘获目标。本案应缴罚金为{VAR_1}第纳尔。办妥后向灰袍领主复命，交回代收的罚金或俘虏；办案费另行核算，活捉目标还可领取赎金。",
+      "context": "普通悬赏任务日志：期限、三种完成方式与交差；办案费按应缴额封顶计算，不按实收金额同比缩减。"
     },
     "gwp_bounty_contract_accepted": {
       "en": "You take up the bounty on {VAR_1}. The fine is {VAR_3} denars.",
@@ -1729,8 +1718,8 @@
       "zh": "该悬赏目标已失效"
     },
     "gwp_policeantirecruitmentmodel_001": {
-      "en": "The Grey Wardens do not join wars of aggression declared by the realm’s ordinary diplomatic councils.",
-      "zh": "灰袍守卫不会参与原版外交 AI 的主动宣战。"
+      "en": "The Grey Wardens do not declare wars for territorial expansion.",
+      "zh": "灰袍不为争夺领土开战。"
     },
     "gwp_policecrimemonitorenhanced_001": {
       "en": "Villager",
@@ -1773,8 +1762,8 @@
       "zh": "劫掠村庄"
     },
     "gwp_policeenforcementbehavior_001": {
-      "en": "The atonement contract times out, reputation -5.",
-      "zh": "赎罪任务超时，声望 -5。"
+      "en": "The time allowed for your atonement has expired.",
+      "zh": "赎罪期限已过。"
     },
     "gwp_policeenforcementbehavior_002": {
       "en": "Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name.",
@@ -2887,8 +2876,9 @@
       "zh": "查看对外战争与开战依据、案件与差事总池、司法公库、你的声望，以及家族名册。"
     },
     "gwp_affairs_nav_need_membership": {
-      "en": "Only sworn hunters of the Grey Wardens can open their affairs.",
-      "zh": "只有宣誓加入灰袍的悬赏猎人才能查看灰袍事务。"
+      "en": "Join the Grey Wardens before taking a commission.",
+      "zh": "加入灰袍后才能领取委托。",
+      "context": "自选案件的入会资格提示；不限制家族百科彩蛋浏览入口。"
     },
     "gwp_gwpcasearchivescreen_001": {
       "en": "Grey Warden affairs",
@@ -3536,12 +3526,12 @@
       "zh": "人归你了。从今往后他们听你的。"
     },
     "gwp_player_troop_delivery_cancel": {
-      "en": "Cancel the order. Keep the soldiers.",
-      "zh": "取消订单，士兵留给你。"
+      "en": "Cancel the order and keep the soldiers. I understand the advance payment is not refunded.",
+      "zh": "取消订单，士兵留给你。我知道预付款不会退还。"
     },
     "gwp_player_troop_delivery_cancelled": {
-      "en": "Then no payment is due. They return to ordinary Grey Warden service.",
-      "zh": "那么无需付款，他们会回到灰袍的日常勤务中。"
+      "en": "Very well. The order is cancelled. The soldiers will stay with us.",
+      "zh": "好吧。订单已取消，士兵会留在我们这里。"
     },
     "gwp_player_troop_choice": {
       "en": "{VAR_1} × {VAR_2} — {VAR_3} denars",
@@ -4172,8 +4162,8 @@
       "zh": "目标已被你俘获。将他押交任意一位灰袍领主即可领取赏金。"
     },
     "gwp_case_closed_elsewhere": {
-      "en": "{VAR_1} is beyond your reach now. The commission is void. Report to any Grey Warden lord, or send a man.",
-      "zh": "{VAR_1}已经不在你能追到的地方了。委托到此为止。去找任意灰袍领主复命，或者派个人去。"
+      "en": "Your commission concerning {VAR_1} has been withdrawn. Report to a Grey Warden lord in person or send a messenger.",
+      "zh": "关于{VAR_1}的委托已撤回。请向灰袍领主复命，或派使者代为回报。"
     },
     "gwp_case_report_open": {
       "en": "I have come to report on the commission.",
@@ -4208,8 +4198,8 @@
       "zh": "这次没有入账。你准备好了，我们再点。"
     },
     "gwp_case_report_summary": {
-      "en": "The account lists {VAR_1} denars. Have you brought the fines, or the prisoner? If any money is missing, tell me why.",
-      "zh": "卷宗上记着 {VAR_1} 第纳尔。你带来了罚金，还是把人押来了？钱若有短缺，也请说清缘由。"
+      "en": "The assessed fine is {VAR_1} denars. Hand over the money and goods you collected, or the captive, and report what happened.",
+      "zh": "本案罚金为{VAR_1}第纳尔。请交回代收的财物或押来的犯人，并说明办案经过。"
     },
     "gwp_case_missing_result": {
       "en": null,
@@ -5160,8 +5150,8 @@
       "zh": "我来交差，请清点结账。"
     },
     "gwp_case_resume_report": {
-      "en": "About the shortfall in what I handed over...",
-      "zh": "刚才交的钱物还差一些，我来说明原因。"
+      "en": "The money and goods have been recorded. I will explain what happened.",
+      "zh": "钱物已经交过了，我来说明办案经过。"
     },
     "gwp_case_nothing_concealed": {
       "en": "That is what he put in your hands, and all of it is here. Your report will be entered.",
@@ -5564,12 +5554,12 @@
       "zh": "【侦情】探子跟丢了，这一次没有目击可报。"
     },
     "gwp_case_withdrawn_result": {
-      "en": "The man was already beyond reach. The treasury covers {VAR_1} denars for your trouble. The commission is closed.",
-      "zh": "那个人早就够不着了。公库付你 {VAR_1} 第纳尔，算这趟的花销。委托结清。"
+      "en": "The commission has been withdrawn. The treasury pays {VAR_1} denars for your trouble. Your account is settled.",
+      "zh": "这份委托已撤回。公库付给你{VAR_1}第纳尔辛苦费，账目已结清。"
     },
     "gwp_case_report_withdrawn_summary": {
-      "en": "We have word that the man is beyond reach. Say the word and I will settle your expenses.",
-      "zh": "我们这边已经得到消息，那个人够不着了。你说一声，我把你的花销结了。"
+      "en": "This commission has been withdrawn. I will settle the payment for your trouble.",
+      "zh": "这份委托已经撤回，我来结清你的辛苦费。"
     },
     "gwp_case_owner_player": {
       "en": "Tracking: {VAR_1} | Stage: commissioned to the player",
@@ -5721,9 +5711,9 @@
       "context": "仅开发版：库房每个分组的数量与估值标题。"
     },
     "gwp_fs_lord_armory_ask": {
-      "en": "Let me see your company's stores.",
-      "zh": "让我看看你们的随队物资。",
-      "context": "仅开发版：与带队灰袍领主正常交谈时查看物资的玩家选项。"
+      "en": "Let me see your company's armoury.",
+      "zh": "让我看看你们的军械库。",
+      "context": "仅开发版：查看灰袍领主部队的军械账，不列领主背包。"
     },
     "gwp_fs_lord_armory_reply": {
       "en": "Here is the inventory.",
@@ -5972,8 +5962,9 @@
       "context": "约斗场地与任一方开战、被围或叛乱后换城时的地图提示。"
     },
     "gwp_envoy_duel_warden_won": {
-      "en": "{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. {VAR_2} pays the Wardens in full.",
-      "zh": "{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}。{VAR_2}照数缴清了罚金。"
+      "en": "{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. The Wardens collected {VAR_4} denars.",
+      "zh": "{VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍收取了{VAR_4}第纳尔。",
+      "context": "灰袍比武获胜通知；VAR_4为实际收取金币，可能低于罚金，不能写成照数缴清。"
     },
     "gwp_envoy_duel_offender_won": {
       "en": "{VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed.",
@@ -6030,8 +6021,8 @@
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_travelling": {
-      "en": "Travelling; about {VAR_1} hours until the deadline",
-      "zh": "出使中，期限剩余约{VAR_1}小时",
+      "en": "Travelling",
+      "zh": "出使中",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_collecting": {
@@ -6040,8 +6031,8 @@
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_failed": {
-      "en": "Negotiation failed; pursuit underway",
-      "zh": "交涉未成，追捕中",
+      "en": "Negotiation failed",
+      "zh": "交涉未成",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_case_envoy_grace": {
@@ -6132,11 +6123,6 @@
     "gwp_envoy_outcome_lost": {
       "en": "Negotiation failed: the envoy went missing.",
       "zh": "交涉未成：使者途中失踪。",
-      "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
-    },
-    "gwp_envoy_outcome_timeout": {
-      "en": "Negotiation failed: the mission deadline passed.",
-      "zh": "交涉未成：未能按期完成交涉。",
       "context": "案件台账：使者进度或回报（用户裁定 2026-10-16：显示使者进度和结果）。"
     },
     "gwp_envoy_outcome_duel_cancelled": {
@@ -6340,14 +6326,23 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_support": {
-      "zh": "受援与调停",
-      "en": "Support and mediation",
+      "zh": "办案支援",
+      "en": "Case support",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_petitions": {
-      "zh": "封地申诉",
-      "en": "Fief appeals",
+      "zh": "封地重议",
+      "en": "Fief reconsideration",
       "context": "灰袍事务全屏界面，2026-10-18。"
+    },
+    "gwp_affairs_mediation": {
+      "zh": "战后讲和",
+      "en": "Post-battle peace",
+      "context": "我的事务中，为玩家因协助灰袍办案而引起的战争请求讲和，2026-10-18。"
+    },
+    "gwp_affairs_fief_empty": {
+      "en": "No appeal or fief courier is in progress.",
+      "zh": "暂无在办重议或在途封地申请使者。"
     },
     "gwp_affairs_report": {
       "zh": "复命使者",
@@ -6365,8 +6360,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_peace_courier": {
-      "zh": "调停使者",
-      "en": "Mediation courier",
+      "zh": "求和使者",
+      "en": "Peace courier",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_outbound": {
@@ -6514,11 +6509,6 @@
       "en": "Unknown",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
-    "gwp_affairs_armory_closed": {
-      "zh": "军械库尚未开放",
-      "en": "The armory is not yet open.",
-      "context": "灰袍事务全屏界面，2026-10-18。"
-    },
     "gwp_affairs_standing_gate": {
       "zh": "宣誓入会且灰袍声望达到 {STANDING} 后可查看。",
       "en": "Swear the oath and reach {STANDING} Grey Warden standing to open this screen.",
@@ -6560,8 +6550,8 @@
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_need_mediation": {
-      "zh": "待调停的战争",
-      "en": "Wars awaiting mediation",
+      "zh": "可请灰袍出面讲和",
+      "en": "A Warden can negotiate peace",
       "context": "灰袍事务全屏界面，2026-10-18。"
     },
     "gwp_affairs_religion": {
@@ -6659,10 +6649,246 @@
       "en": "Negotiation failed: the factions are at war.",
       "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
     },
-    "gwp_envoy_outcome_target_unavailable": {
-      "zh": "交涉未成：未能找到目标。",
-      "en": "Negotiation failed: the target could not be found.",
-      "context": "事务状态简明展示及使者明确交涉结果，用户反馈2026-10-18。"
+    "gwp_case_target_nameplate": {
+      "en": "[Case target] {NAME}",
+      "zh": "【办案目标】{NAME}",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory": {
+      "en": "My armory",
+      "zh": "我的军械库",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_manage": {
+      "en": "Manage equipment",
+      "zh": "整理军械",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_summary": {
+      "en": "Party capacity: {CAPACITY} | Equipment: {COUNT}",
+      "zh": "编制：{CAPACITY}人 | 军械：{COUNT}件",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_count": {
+      "en": "In stock: {COUNT}",
+      "zh": "库存：{COUNT}",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_rules": {
+      "en": "The best equipment is kept for each category up to party capacity. Excess or unsuitable items return to your inventory.",
+      "zh": "每类按部队编制择优保留，多余或不适用的物品退回背包。",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_empty": {
+      "en": "The armory is empty.",
+      "zh": "军械库为空。",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_player_armory_locked": {
+      "en": "Available outside battle after joining the Grey Wardens with standing {STANDING} or higher.",
+      "zh": "入会且灰袍声望达到{STANDING}后，可在战斗外整理军械。",
+      "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
+    },
+    "gwp_case_custody_request": {
+      "en": "Your prisoner {NAME} is the subject of my commission. I wish to take custody.",
+      "zh": "你押着的{NAME}是我正在追查的案犯。我想接管此人。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_offer": {
+      "en": "We can discuss a price for the prisoner.",
+      "zh": "人可以交给你，先谈谈价钱。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_buy": {
+      "en": "Let us discuss the ransom.",
+      "zh": "谈谈赎金。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_leave": {
+      "en": "Perhaps another time.",
+      "zh": "暂且不谈了。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_done": {
+      "en": "Agreed. The prisoner is in your custody.",
+      "zh": "成交。人归你押送。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_declined": {
+      "en": "We have no agreement.",
+      "zh": "这笔交易没有谈成。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_withdraw": {
+      "en": "Withdraw commission",
+      "zh": "无责撤回委托",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_withdrawn": {
+      "en": "The commission has been withdrawn. The offender remains wanted.",
+      "zh": "委托已撤回。案犯仍将被追责。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_withdraw_prompt": {
+      "en": "The target is captive, in hiding, or waiting to form a new party. Withdraw this commission without penalty and return the unresolved case to the pool?",
+      "zh": "目标被俘、逃亡或暂时无法带队。无责撤回委托，将未结案件退回案件池？",
+      "context": "用户裁定2026-10-20：第三方扣押与逃亡/暂失部队同样允许无责撤回，保留原罪责。"
+    },
+    "gwp_case_custody_held": {
+      "en": "Held by {HOLDER}",
+      "zh": "由{HOLDER}扣押",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_custody_help": {
+      "en": "Negotiate a transfer with the captor, or withdraw the commission.",
+      "zh": "可向扣押者商谈移交，或撤回委托。",
+      "context": "2026-10-20 用户选择：第三方俘虏赎买接管，或无责撤回玩家委托；保留案犯罪责。"
+    },
+    "gwp_case_target_missing": {
+      "en": "Target temporarily unavailable",
+      "zh": "目标暂时失去踪迹",
+      "context": "用户裁定2026-10-20：逃亡后等待重建部队时显示失踪，可无责退回案件池。"
+    },
+    "gwp_case_target_missing_help": {
+      "en": "The target has no active party. Wait for their return, or withdraw without penalty; the unresolved case remains in the pool.",
+      "zh": "目标正在逃亡或尚未重新带队。可继续等待，或无责撤回；未结案件仍保留在案件池。",
+      "context": "用户裁定2026-10-20：无责退回案件池不清罪责，不自动派发未出现的目标。"
+    },
+    "gwp_intervention_attack": {
+      "en": "Attack.",
+      "zh": "进攻。"
+    },
+    "gwp_intervention_send": {
+      "en": "Send troops.",
+      "zh": "派兵进攻。"
+    },
+    "gwp_intervention_back": {
+      "en": "Choose another side.",
+      "zh": "返回选择。"
+    },
+    "gwp_intervention_leave": {
+      "en": "Don't get involved.",
+      "zh": "不要介入。"
+    },
+    "gwp_intervention_prepare": {
+      "en": "You prepare to help {ALLY} against {ENEMY}.\nAllied troops: {ALLIES}\nOpposing troops: {ENEMIES}",
+      "zh": "你准备帮助{ALLY}对抗{ENEMY}。\n友方兵力：{ALLIES}\n对方兵力：{ENEMIES}"
+    },
+    "gwp_intervention_unfit": {
+      "en": "Your party is not ready to fight.",
+      "zh": "你的部队目前无法出战。"
+    },
+    "gwp_affairs_send_report": {
+      "en": "Send report",
+      "zh": "派使者复命"
+    },
+    "gwp_affairs_send_support": {
+      "en": "Request support",
+      "zh": "派使者求援"
+    },
+    "gwp_affairs_send_order": {
+      "en": "Order troops",
+      "zh": "派使者订兵"
+    },
+    "gwp_affairs_send_peace": {
+      "en": "Request mediation",
+      "zh": "派使者请求讲和"
+    },
+    "gwp_affairs_dispatch_membership": {
+      "en": "Join the Grey Wardens and reach 20 reputation first.",
+      "zh": "需已加入灰袍，且灰袍声望达到20。"
+    },
+    "gwp_affairs_dispatch_encounter": {
+      "en": "You cannot dispatch a courier during a battle or encounter.",
+      "zh": "当前处于战斗或遭遇中，无法派遣使者。"
+    },
+    "gwp_affairs_dispatch_outside": {
+      "en": "Leave the settlement before dispatching a courier.",
+      "zh": "请离开聚落后，在野外派遣使者。"
+    },
+    "gwp_affairs_dispatch_busy": {
+      "en": "Finish the current dispatch selection or payment first.",
+      "zh": "请先完成当前的使者选兵或付款。"
+    },
+    "gwp_affairs_dispatch_need_soldiers": {
+      "en": "You need Grey Warden soldiers in your party.",
+      "zh": "本队需要有可派遣的普通灰袍士兵。"
+    },
+    "gwp_affairs_dispatch_in_transit": {
+      "en": "A courier for this purpose is already away.",
+      "zh": "已有办理同类差事的使者在途。"
+    },
+    "gwp_affairs_dispatch_no_report": {
+      "en": "You have no commission ready to report.",
+      "zh": "当前没有可复命的委托。"
+    },
+    "gwp_affairs_dispatch_no_support": {
+      "en": "You have no commission eligible for support.",
+      "zh": "当前没有可以求援的委托。"
+    },
+    "gwp_affairs_dispatch_no_order": {
+      "en": "You cannot place a troop order at present.",
+      "zh": "当前无法提交新的练兵订单。"
+    },
+    "gwp_affairs_dispatch_no_peace": {
+      "en": "There are no pending mediation requests.",
+      "zh": "当前没有待讲和的势力。"
+    },
+    "gwp_affairs_send_fief": {
+      "en": "Send appeal",
+      "zh": "派使者申请重议"
+    },
+    "gwp_affairs_dispatch_no_fief": {
+      "en": "No fief is eligible, or an appeal is already in progress.",
+      "zh": "暂无合资格封地，或已有重议申请在办理。"
+    },
+    "gwp_affairs_fief_courier": {
+      "en": "Fief appeal courier",
+      "zh": "封地申请使者"
+    },
+    "gwp_affairs_fief_target": {
+      "en": "Fief",
+      "zh": "申请封地"
+    },
+    "gwp_dispatch_name_order": {
+      "en": "Troop Order Courier",
+      "zh": "订兵使者队"
+    },
+    "gwp_dispatch_name_peace": {
+      "en": "Mediation Courier",
+      "zh": "讲和使者队"
+    },
+    "gwp_dispatch_name_fief": {
+      "en": "Fief Appeal Courier",
+      "zh": "封地申请使者队"
+    },
+    "gwp_dispatch_screen_order": {
+      "en": "Choose troop order couriers",
+      "zh": "选派订兵使者"
+    },
+    "gwp_dispatch_screen_peace": {
+      "en": "Choose mediation couriers",
+      "zh": "选派讲和使者"
+    },
+    "gwp_dispatch_screen_fief": {
+      "en": "Choose fief appeal couriers",
+      "zh": "选派封地申请使者"
+    },
+    "gwp_dispatch_fief_appeal": {
+      "en": "Deliver a petition to reconsider a fief.",
+      "zh": "替我递交封地重议申请。"
+    },
+    "gwp_dispatch_fief_filed": {
+      "en": "The courier delivered your fief appeal. A Grey Warden liaison will contact you.",
+      "zh": "使者已递交封地重议申请，灰袍贵族事务领主将来与你会面。"
+    },
+    "gwp_dispatch_fief_moot": {
+      "en": "The fief appeal could not be filed. Your courier is returning.",
+      "zh": "封地重议申请已无法登记，使者正在返回。"
+    },
+    "gwp_dispatch_fief_send": {
+      "en": "Dispatch courier",
+      "zh": "派出使者"
     }
   },
   "fragments": {
