@@ -3,12 +3,14 @@
 code-map.md cannot rot — it is generated. The behaviour files are hand-written,
 so they can, in five ways this script looks for:
 
-1. Covered source changed and the document did not follow.
-   Check both work in progress and completed checkpoints. Working-tree drift
-   means a covered source file is modified but
-   the state file is not. Committed drift is measured from the newest of the
-   file's 已复核至 / 最后验收 commit and the last commit that touched the state
-   file itself.
+1. The document names a file, type or member that no longer exists.
+   Until 2026-10-21 this was "covered source changed and the document did not
+   follow", which made every source edit demand a document edit: the docs
+   churn outgrew the code churn (+2034 doc lines against +1152 code lines in
+   one batch). A document only has to change when its conclusion changes, and
+   whether a rule still holds is asked by Check-ChangeImpact at the moment of
+   the edit. What can be checked mechanically is a reference gone dead, using
+   the CodeGraph index when it exists (user ruling 2026-10-21).
 2. New source that no state file claims (orphans), against a baseline of the
    subsystems known to be unextracted.
 3. Source in that baseline being edited — the moment AGENTS.md says to extract
@@ -51,7 +53,6 @@ code hygiene.
 """
 
 import re
-from datetime import date
 import subprocess
 import sys
 from fnmatch import fnmatch
@@ -62,15 +63,21 @@ MODULE = "GreyWardenPolicePurity"
 STATE = ROOT / MODULE / "docs" / "state"
 BASELINE = STATE / "uncovered-baseline.txt"
 
-ACCEPT_RE = re.compile(r"^>\s*最后验收：(.*)$", re.M)
-# "最后验收" is the last time a human confirmed the behaviour in game and must
-# not move for a refactor. "已复核至" records a later commit whose changes were
-# read and found not to affect this document.
-REVIEW_RE = re.compile(r"^>\s*已复核至：(.*)$", re.M)
-REVIEW_VALUE_RE = re.compile(r"`([0-9a-f]{7,40})`（(\d{4}-\d{2}-\d{2})）")
+# 已复核至 was the per-round "I re-read this against commit X" stamp that fed
+# the old drift check; it went with that check (user ruling 2026-10-21).
+RETIRED_HEADER_RE = re.compile(r"^>\s*已复核至：", re.M)
 COVER_RE = re.compile(r"^>\s*覆盖源码：(.*)$", re.M)
-HASH_RE = re.compile(r"`([0-9a-f]{7,40})`")
 GLOB_RE = re.compile(r"`([^`]+)`")
+# References a reader would follow: a source file by name, or a mod type /
+# member. Engine types are not checked; the index only knows this repository.
+FILE_REF_RE = re.compile(r"^[\w./-]+\.(?:cs|py|ps1)$")
+# A member is PascalCase; `GreyWardenPolicePurity.csproj` is a file, not a member.
+SYMBOL_REF_RE = re.compile(r"^((?:Gwp|Police|GreyWarden)\w*)(?:\.([A-Z]\w*\*?))?(?:\(\))?$")
+IDENT_RE = re.compile(r"\b(?:Gwp|Police|GreyWarden)\w*")
+# Where a mod name can be defined: C# types, MSBuild properties and targets,
+# XML ids, tool scripts. Docs are not a definition.
+SOURCE_SUFFIXES = (".cs", ".csproj", ".props", ".targets", ".xml", ".ps1", ".py")
+CODEGRAPH_DB = ROOT / ".codegraph" / "codegraph.db"
 HEADING_RE = re.compile(r"^#{2,4} .*$", re.M)
 DATED_RE = re.compile(r"20\d\d-\d\d-\d\d|\b\d\d:\d\d\b")
 
@@ -85,7 +92,7 @@ MAX_LINES = 250          # past this a state file is usually carrying history
 MAX_DATED_HEADINGS = 2   # one "as of" date is fine; a run of them is a log
 # A header field is one line saying where things stand. 已复核至 grew into a
 # dated changelog in eight files (up to 1,287 characters) before this check.
-HEADER_RE = re.compile(r"^>\s*(当前状态|最后验收|已复核至|待实测)：(.*)$", re.M)
+HEADER_RE = re.compile(r"^>\s*(当前状态|最后验收|待实测)：(.*)$", re.M)
 MAX_HEADER_CHARS = 200
 
 PROGRESS = STATE / "progress.md"
@@ -139,15 +146,70 @@ def rel(p: Path) -> str:
     return str(p.relative_to(ROOT)).replace("\\", "/")
 
 
-def newer(a: str, b: str) -> str:
-    """Return whichever of two commits is later in history (b if unrelated)."""
-    if not a:
-        return b
-    if not b:
-        return a
-    ok = subprocess.run(["git", "merge-base", "--is-ancestor", a, b],
-                        cwd=str(ROOT)).returncode == 0
-    return b if ok else a
+class KnownCode:
+    """What exists now: repository files, every mod identifier written in a
+    source file, and (from the CodeGraph index, when present) which members
+    each type has. Without the index a member only has to exist somewhere."""
+
+    def __init__(self, files=None, idents=None, members=None):
+        if files is None or idents is None:
+            listed = git("ls-files", "-co", "--exclude-standard").splitlines()
+            files = {f for f in listed} | {f.rsplit("/", 1)[-1] for f in listed}
+            idents = set()
+            for f in listed:
+                if f.endswith(SOURCE_SUFFIXES) and (ROOT / f).is_file():
+                    idents.update(IDENT_RE.findall((ROOT / f).read_text(encoding="utf-8", errors="replace")))
+        self.files, self.idents = files, idents
+        if members is None and CODEGRAPH_DB.exists():
+            import sqlite3
+            db = sqlite3.connect(f"file:{CODEGRAPH_DB.as_posix()}?mode=ro", uri=True)
+            members = {}
+            for (q,) in db.execute("select qualified_name from nodes where language = 'csharp'"):
+                parts = q.split("::")
+                for parent, child in zip(parts, parts[1:]):
+                    members.setdefault(parent, set()).add(child)
+            db.close()
+        self.members = members  # {"GwpTuning": {"LastStand", ...}} or None
+
+    def missing(self, token: str) -> bool:
+        if FILE_REF_RE.match(token) and not any(c in token for c in "*?[{"):
+            return token not in self.files and token.rsplit("/", 1)[-1] not in self.files
+        m = SYMBOL_REF_RE.match(token)
+        if not m:
+            return False
+        type_name, member = m[1], m[2]
+        if type_name not in self.idents and f"{type_name}.cs" not in self.files:
+            return True
+        if not member or f"{type_name}.{member}.cs" in self.files:
+            return False  # a partial-class file such as PolicePatrolBehavior.Helpers.cs
+        if member.endswith("*"):
+            prefix = member[:-1]
+            pool = self.members.get(type_name, set()) if self.members is not None else self.idents_bare()
+            return not any(name.startswith(prefix) for name in pool)
+        if self.members is not None and type_name in self.members:
+            return member not in self.members[type_name]
+        return member not in self.idents_bare()
+
+    def idents_bare(self) -> set:
+        if not hasattr(self, "_bare"):
+            text_names = set()
+            for f in self.files:
+                if f.endswith(".cs") and "/" in f and (ROOT / f).is_file():
+                    text_names.update(re.findall(r"\b[A-Z]\w*", (ROOT / f).read_text(encoding="utf-8", errors="replace")))
+            self._bare = text_names
+        return self._bare
+
+
+def dead_references(text: str, known: KnownCode) -> list:
+    """[(line number, token)] for backticked references to code that is gone."""
+    found = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith(">"):
+            continue  # 覆盖源码 has its own check
+        for token in GLOB_RE.findall(line):
+            if known.missing(token.strip()):
+                found.append((n, token.strip()))
+    return found
 
 
 def dirty(*paths: str) -> list:
@@ -161,23 +223,6 @@ def dirty(*paths: str) -> list:
     return [ln[3:] for ln in done.stdout.splitlines() if len(ln) > 3]
 
 
-def review_header_problem(text: str) -> str:
-    """Advisory only; missing optional headers are allowed, changelog prose is not."""
-    headers = REVIEW_RE.findall(text)
-    if not headers:
-        return ""
-    if len(headers) != 1:
-        return "已复核至只能有一行"
-    match = REVIEW_VALUE_RE.fullmatch(headers[0].strip())
-    if not match:
-        return "应为 `提交号`（YYYY-MM-DD），改动说明放正文或 journal"
-    try:
-        date.fromisoformat(match[2])
-    except ValueError:
-        return "复核日期无效"
-    return ""
-
-
 def main() -> int:
     sys.stdout.flush()
     subprocess.run([sys.executable, str(ROOT / "tools" / "Generate-CodeMap.py")])
@@ -187,11 +232,13 @@ def main() -> int:
     refresh_defect_rollup(files)
     memory_unmirrored = check_memory()
 
-    stale, fresh, exempt, unchecked, bloated = [], [], [], [], []
+    exempt, unchecked, bloated = [], [], []
     unsourced = []   # hard rules with no 依据：tag
     dangling = []    # scratch paths named in state that no longer exist
-    review_problems = []  # advisory, never a pre-commit gate
+    dead = []        # files, types and members named in state that no longer exist
+    retired = []     # state files still carrying the 已复核至 header
     hand_written = 0
+    known = KnownCode()
 
     for p in files:
         text = p.read_text(encoding="utf-8")
@@ -199,13 +246,9 @@ def main() -> int:
             continue
         hand_written += 1
 
-        problem = review_header_problem(text)
-        if problem:
-            review_problems.append((p.name, problem))
-        elif match := REVIEW_RE.search(text):
-            commit = HASH_RE.search(match[1])[1]
-            if not git("rev-parse", "--verify", f"{commit}^{{commit}}"):
-                review_problems.append((p.name, f"复核提交 {commit} 不存在"))
+        if RETIRED_HEADER_RE.search(text):
+            retired.append(p.name)
+        dead.extend((p.name, n, token) for n, token in dead_references(text, known))
 
         # 5. hard rules that do not say what they rest on
         for n, line in enumerate(text.splitlines(), 1):
@@ -244,45 +287,19 @@ def main() -> int:
             if not any(ROOT.glob(g)):
                 unchecked.append((p.name, f"覆盖源码 `{g}` 已不存在——文件被删或改名，正文可能还在描述它"))
 
-        # 1a. working tree: source moved, document did not
-        me = rel(p)
-        src_dirty = dirty(*paths)
-        doc_dirty = bool(dirty(me))
-
-        # 1b. history: commits to covered source after the newest baseline
-        declared = ""
-        for rx in (REVIEW_RE, ACCEPT_RE):
-            m = rx.search(text)
-            h = HASH_RE.search(m.group(1)) if m else None
-            if h and git("cat-file", "-t", h.group(1)):
-                declared = h.group(1)
-                break
-        base = newer(declared, git("log", "-1", "--format=%h", "--", me))
-        commits = git("log", "--oneline", f"{base}..HEAD", "--", *paths) if base else ""
-
-        reasons = []
-        if commits:
-            reasons.append(f"{len(commits.splitlines())} 个提交在本文件之后改了源码")
-        if src_dirty and not doc_dirty:
-            reasons.append(f"{len(src_dirty)} 个源码文件有未提交改动，本文件没跟着改")
-        if reasons:
-            stale.append((p.name, base or "未入库", reasons, commits, src_dirty))
-        else:
-            note = "与源码一起在改" if src_dirty and doc_dirty else (base or "新文件")
-            fresh.append((p.name, note))
-
-    if stale:
-        print("[!] 可能已过期：\n")
-        for name, base, reasons, commits, src in stale:
-            print(f"  {name}  (基准 {base})")
-            for r in reasons:
-                print(f"      - {r}")
-            for line in commits.splitlines()[:3]:
-                print(f"        {line}")
-            if not commits:
-                for s in src[:3]:
-                    print(f"        {s}")
+    if dead:
+        print("[!] state 提到的文件或符号已不存在 —— 规则还成立就改成现在的名字，机制没了就删掉这句：\n")
+        for name, n, token in dead[:30]:
+            print(f"  {name}:{n}  `{token}`")
+        if len(dead) > 30:
+            print(f"  … 另有 {len(dead) - 30} 处")
+        if known.members is None:
+            print("  （没有 .codegraph/ 索引，只核对了文件名）")
         print()
+
+    if retired:
+        print("[!] `已复核至` 头部已取消（2026-10-21）—— 删掉这一行：\n")
+        print("  " + "、".join(retired) + "\n")
 
     if bloated:
         print("[!] state 文件在堆积流水 —— 应只写当前结论，过程移到 journal：\n")
@@ -296,12 +313,6 @@ def main() -> int:
                 bits.append(f"头部 {'、'.join(long_fields)} 超过 {MAX_HEADER_CHARS} 字"
                             "（只留最新一次，经过写 journal）")
             print(f"  {name}  {'，'.join(bits)}")
-        print()
-
-    if review_problems:
-        print("[!] 复核头部需整理（提示，不拦提交）：\n")
-        for name, problem in review_problems:
-            print(f"  {name}: {problem}")
         print()
 
     if unsourced:
@@ -326,12 +337,6 @@ def main() -> int:
     leftovers = check_leftovers()
     scratch = check_scratch()
 
-    if fresh:
-        print("[OK] 一致：")
-        for name, note in fresh:
-            print(f"  {name}  ({note})")
-        print()
-
     if exempt:
         print(f"— 声明不核对（{len(exempt)}/{hand_written} 个手写 state 文件）：")
         print("  " + "、".join(exempt))
@@ -343,9 +348,9 @@ def main() -> int:
         print()
 
     findings = {
-        "可能过期": stale, "堆积流水": bloated, "新增未归属": orphans_new,
+        "引用失效": dead, "堆积流水": bloated, "新增未归属": orphans_new,
         "未提取子系统被改": baseline_touched, "无法核对": unchecked,
-        "硬规则缺依据": unsourced, "复核头部有误": review_problems, "待实测写法有误": rollup_problems,
+        "硬规则缺依据": unsourced, "已取消的复核头部": retired, "待实测写法有误": rollup_problems,
         "引用的临时文件不存在": dangling, "journal 重复条目": journal_dups,
         "遗留分支/工作树/stash": leftovers, "临时目录无主项": scratch,
         "记忆只有 Claude 看得到": memory_unmirrored,

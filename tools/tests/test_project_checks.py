@@ -1,4 +1,4 @@
-"""Regressions for the ownership leak and advisory review-header validation."""
+"""Regressions for the ownership leak, dead-reference checks and change-impact parsing."""
 import contextlib
 import importlib.util
 import io
@@ -24,6 +24,23 @@ freshness = load("Check-StateFreshness")
 
 
 class OwnershipTests(unittest.TestCase):
+    def test_handover_shore_comparison_has_one_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            owner = Path(directory) / "GwpCommon.cs"
+            caller = Path(directory) / "GwpWardenDispatchBehavior.cs"
+            source = "return first.IsCurrentlyAtSea == second.IsCurrentlyAtSea;\n"
+            owner.write_text(source, encoding="utf-8")
+            caller.write_text(source, encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(owner)]))
+            violations = hygiene.owner_violations([str(caller)])
+            self.assertEqual(1, len(violations))
+            self.assertIn("GwpCommon.CanCompletePartyHandover", violations[0])
+            caller.write_text(
+                "return GwpCommon.CanCompletePartyHandover(first, second);\n"
+                "// first.IsCurrentlyAtSea == second.IsCurrentlyAtSea\n",
+                encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(caller)]))
+
     def test_player_case_assignment_has_one_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             owner = Path(directory) / "GwpPlayerCaseAssignment.cs"
@@ -93,27 +110,66 @@ class OwnershipTests(unittest.TestCase):
             self.assertEqual(1, len(hygiene.owner_violations([str(caller)])))
 
 
-class ReviewHeaderTests(unittest.TestCase):
-    def test_optional_or_exact_header_is_valid(self):
-        for text in ("# No review yet\n", "> 已复核至：`a898237`（2026-10-08）\n"):
-            with self.subTest(text=text):
-                self.assertEqual("", freshness.review_header_problem(text))
+def known_code():
+    return freshness.KnownCode(
+        files={"GwpStrength.cs", "GreyWardenPolicePurity/GwpStrength.cs",
+               "PolicePatrolBehavior.Helpers.cs", "GreyWardenPolicePurity.csproj"},
+        idents={"GwpStrength", "GwpTuning", "PolicePatrolBehavior", "GwpDiagnosticsEnabled"},
+        members={"GwpStrength": {"Compare", "CaseTarget"}, "GwpTuning": {"LastStand"}})
 
-    def test_narrative_invalid_date_and_duplicate_are_reported(self):
-        for value in ("2026-10-08 修了声音", "`a898237`（2026-10-08，已改）",
-                      "`a898237`（2026-02-30）", "`a898237`（2026-10-08）\n"
-                      "> 已复核至：`a898237`（2026-10-08）"):
-            with self.subTest(value=value):
-                self.assertTrue(freshness.review_header_problem("> 已复核至：" + value))
 
+class DeadReferenceTests(unittest.TestCase):
+    def test_existing_files_types_members_and_build_names_pass(self):
+        text = ("`GwpStrength.cs` `GwpStrength` `GwpStrength.Compare` `GwpStrength.Case*` "
+                "`GwpTuning.LastStand` `PolicePatrolBehavior.Helpers` `GreyWardenPolicePurity.csproj` "
+                "`GwpDiagnosticsEnabled` `Settlement.Position` `tools/*.ps1`\n")
+        self.assertEqual([], freshness.dead_references(text, known_code()))
+
+    def test_deleted_file_type_and_member_are_reported(self):
+        text = "a\n`GwpLordLastStand.cs` `GwpChokePointPolicy` `GwpTuning.LordCombat` `GwpStrength.Gone*`\n"
+        self.assertEqual(
+            [(2, "GwpLordLastStand.cs"), (2, "GwpChokePointPolicy"),
+             (2, "GwpTuning.LordCombat"), (2, "GwpStrength.Gone*")],
+            freshness.dead_references(text, known_code()))
+
+    def test_header_lines_are_left_to_the_coverage_check(self):
+        self.assertEqual([], freshness.dead_references("> 覆盖源码：`GwpGone.cs`\n", known_code()))
+
+
+class ChangeImpactTests(unittest.TestCase):
+    impact = load("Check-ChangeImpact")
+
+    def test_hunks_mark_added_lines_and_the_line_a_deletion_left(self):
+        diff = ("+++ b/GreyWardenPolicePurity/GwpStrength.cs\n"
+                "@@ -10,2 +10,3 @@\n"
+                "@@ -40,5 +41,0 @@\n"
+                "+++ /dev/null\n"
+                "@@ -1,9 +0,0 @@\n")
+        self.assertEqual({"GreyWardenPolicePurity/GwpStrength.cs": {10, 11, 12, 41}},
+                         dict(self.impact.parse_hunks(diff)))
+
+    def test_owner_is_the_named_type_not_the_files_allowed_to_use_it(self):
+        owners = [("战力", r"x", "GwpStrength.cs|GwpFireswornParties.cs", "GwpStrength"),
+                  ("灰袍身份", r"x", "GwpCommon.cs", "GwpCommon.IsGreyWarden*")]
+        changed = ["GreyWardenPolicePurity::GwpStrength::Compare",
+                   "GreyWardenPolicePurity::GwpCommon::FindHero",
+                   "GreyWardenPolicePurity::GwpFireswornParties::Spawn"]
+        self.assertEqual({("战力", "GwpStrength"): {"Compare"}},
+                         self.impact.owner_hits(changed, owners))
+        changed.append("GreyWardenPolicePurity::GwpCommon::IsGreyWardenHero")
+        self.assertIn(("灰袍身份", "GwpCommon.IsGreyWarden*"), self.impact.owner_hits(changed, owners))
+
+
+class StrictModeTests(unittest.TestCase):
     def run_strict(self, *, duplicate=False, hygiene_failed=False):
         with tempfile.TemporaryDirectory() as directory, contextlib.ExitStack() as stack:
             state = Path(directory)
             (state / "example.md").write_text(
-                "> 已复核至：`badc0de`（2026-10-08）\n"
-                "> 覆盖源码：跨文件，不做自动核对\n", encoding="utf-8")
+                "> 覆盖源码：跨文件，不做自动核对\n"
+                "仍在用 `GwpLordLastStand.cs`。\n", encoding="utf-8")
             stack.enter_context(patch.object(freshness, "STATE", state))
             stack.enter_context(patch.object(freshness, "git", return_value=""))
+            stack.enter_context(patch.object(freshness, "KnownCode", return_value=known_code()))
             for name in ("refresh_pending_rollup", "refresh_defect_rollup", "check_memory",
                          "check_leftovers", "check_scratch"):
                 stack.enter_context(patch.object(freshness, name, return_value=[]))
@@ -127,10 +183,10 @@ class ReviewHeaderTests(unittest.TestCase):
             result = freshness.main()
             return result, output.getvalue()
 
-    def test_nonexistent_commit_is_advisory_even_in_strict_mode(self):
+    def test_dead_reference_is_advisory_even_in_strict_mode(self):
         result, output = self.run_strict()
         self.assertEqual(0, result)
-        self.assertIn("复核提交 badc0de 不存在", output)
+        self.assertIn("example.md:2  `GwpLordLastStand.cs`", output)
 
     def test_existing_mechanical_gates_still_block(self):
         for inputs in ({"duplicate": True}, {"hygiene_failed": True}):
