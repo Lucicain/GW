@@ -198,6 +198,78 @@ static class Program{static int Main(){
             self.assertEqual(0, r.returncode, r.stdout + r.stderr)
             print(next(line for line in r.stdout.splitlines() if line.startswith('TEAM_ASSIGNMENT_ASSERTIONS=')))
 
+    def test_striking_a_guard_starts_the_fight(self):
+        """Negative control: the installed hit rule cancels every blow on a neutral human, so the old
+        OnAgentHit trigger could never fire before the fight; the collision-callback note does.
+        Also: guard persuasion difficulty follows the player's standing."""
+        game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
+        mission = subprocess.check_output(['ilspycmd', '-t', 'TaleWorlds.MountAndBlade.Mission',
+                                           str(game / 'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.dll')],
+                                          text=True, encoding='utf-8-sig')
+        # Harmony binds prefix arguments by name.
+        self.assertRegex(mission, r'MeleeHitCallback\([^)]*\bAgent attacker, Agent victim\b')
+        production = read('GwpCitySearchMission.cs')
+        behavior = read('GwpCitySearchBehavior.cs')
+        self.assertNotIn('override void OnAgentHit', production)
+        self.assertIn('[HarmonyPatch(typeof(Mission), "MeleeHitCallback")]', production)
+        # troop-combat.md: patching MissileHitCallback lost battle shouts (2026-09-03).
+        self.assertNotIn('"MissileHitCallback"', production)
+        code = r'''
+using System;using System.Collections.Generic;
+namespace Probe{
+enum MissionMode{StartUp,Battle,Duel}
+enum AgentControllerType{None,AI,Player}
+static class GameNetwork{public static bool IsSessionActive;}
+static class MultiplayerOptions{public enum OptionType{FriendlyFireDamageMeleeFriendPercent,FriendlyFireDamageMeleeSelfPercent}}
+static class OptionValues{public static int GetIntValue(this MultiplayerOptions.OptionType t)=>0;}
+class Agent{public string Team;public bool IsHuman=true;public AgentControllerType Controller=AgentControllerType.Player;public Agent(string t){Team=t;}
+ public bool IsFriendOf(Agent o)=>Team==o.Team;
+ public bool IsEnemyOf(Agent o)=>Team=="player"&&o.Team=="enemy"||Team=="enemy"&&o.Team=="player";}
+class Mission{public bool ForceNoFriendlyFire;public MissionMode Mode=MissionMode.StartUp;public bool Cancels(Agent a,Agent v)=>CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase(a,v);
+ CANCEL}
+enum Stage{Entering,Questioned,Allowed,Refused,Fighting,FightOver}
+class Controller{public Stage _stage;public Agent? _struck;public HashSet<Agent> Ours=new(),Defenders=new();bool IsOurs(Agent a)=>Ours.Contains(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
+ NOTE_STRIKE}
+enum PersuasionArgumentStrength{ExtremelyHard=-3,VeryHard,Hard,Normal,Easy,VeryEasy,ExtremelyEasy}
+enum PersuasionDifficulty{VeryEasy,Easy,EasyMedium,Medium,MediumHard,Hard,VeryHard,UltraHard,Impossible}
+class GwpFieldArrestBehavior{internal enum WardenStandingTier{UnderCharge,Ordinary,Respected}}
+static class Tiers{GUARD_DIFFICULTY}
+static class Program{static int n;static void Check(bool c,string m){n++;if(!c)throw new Exception(m);}
+ static int Main(){
+  var mission=new Mission();var main=new Agent("player");var soldier=new Agent("player"){Controller=AgentControllerType.AI};
+  var guard=new Agent("town"){Controller=AgentControllerType.AI};var civilian=new Agent("town"){Controller=AgentControllerType.AI};
+  Check(mission.Cancels(main,guard),"old: a neutral guard's blow is cancelled, so OnAgentHit never fires");
+  Check(mission.Cancels(main,civilian),"civilians stay untouchable");
+  foreach(var before in new[]{Stage.Entering,Stage.Questioned,Stage.Allowed}){var p=new Controller{_stage=before};p.Ours.Add(main);p.Defenders.Add(guard);p.NoteStrike(main,guard);Check(p._struck==null,"no war unless the guard talk failed: "+before);}
+  var c=new Controller{_stage=Stage.Refused};c.Ours.Add(main);c.Ours.Add(soldier);c.Defenders.Add(guard);
+  c.NoteStrike(main,civilian);Check(c._struck==null,"striking a civilian is not war");
+  c.NoteStrike(guard,main);Check(c._struck==null,"being struck is not our attack");
+  c.NoteStrike(main,null);Check(c._struck==null,"a miss on scenery");
+  c.NoteStrike(main,guard);Check(c._struck==guard,"new: the collision itself marks the strike");
+  var other=new Agent("town");c.Defenders.Add(other);c.NoteStrike(main,other);Check(c._struck==guard,"first strike is kept until the tick");
+  var fighting=new Controller{_stage=Stage.Fighting};fighting.Ours.Add(main);fighting.Defenders.Add(guard);fighting.NoteStrike(main,guard);Check(fighting._struck==null,"no new fight while fighting");
+  guard.Team="enemy";Check(!mission.Cancels(main,guard),"after the fight starts the guard takes damage");
+  var respected=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.Respected);
+  var ordinary=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.Ordinary);
+  var charged=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.UnderCharge);
+  Check(ordinary==(PersuasionArgumentStrength.Easy,PersuasionDifficulty.Easy),"ordinary standing keeps the easy guard talk");
+  Check(respected.Strength>ordinary.Strength&&respected.Difficulty<ordinary.Difficulty,"respected is easier");
+  Check(charged.Strength<ordinary.Strength&&charged.Difficulty>ordinary.Difficulty,"under charge is harder");
+  Console.WriteLine("STRIKE_ASSERTIONS="+n);return 0;}}
+}
+'''
+        code = (code.replace('CANCEL', method(mission, 'CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase'))
+                .replace('NOTE_STRIKE', method(production, 'NoteStrike'))
+                .replace('GUARD_DIFFICULTY', method(behavior, 'GuardDifficulty')))
+        major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
+        with tempfile.TemporaryDirectory(prefix='gwp-city-strike-') as temp:
+            p = Path(temp)
+            (p / 'Test.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net{major}.0</TargetFramework><Nullable>enable</Nullable><NoWarn>CS8618;CS0649;CS8602;CS8603</NoWarn><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup></Project>', encoding='utf-8')
+            (p / 'Program.cs').write_text(code, encoding='utf-8')
+            r = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
+            self.assertEqual(0, r.returncode, r.stdout + r.stderr)
+            print(next(line for line in r.stdout.splitlines() if line.startswith('STRIKE_ASSERTIONS=')))
+
 
 if __name__ == '__main__':
     unittest.main()

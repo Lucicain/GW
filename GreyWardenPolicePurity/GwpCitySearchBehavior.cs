@@ -107,12 +107,27 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        /// <summary>
+        /// 卫兵盘问的难易随玩家在灰袍的声望（用户裁定 2026-10-21）；分档沿用当面拘捕看玩家记录的那三档。
+        /// </summary>
+        internal static (PersuasionArgumentStrength Strength, PersuasionDifficulty Difficulty) GuardDifficulty(
+            GwpFieldArrestBehavior.WardenStandingTier tier) => tier switch
+        {
+            GwpFieldArrestBehavior.WardenStandingTier.Respected => (PersuasionArgumentStrength.VeryEasy, PersuasionDifficulty.VeryEasy),
+            GwpFieldArrestBehavior.WardenStandingTier.UnderCharge => (PersuasionArgumentStrength.Hard, PersuasionDifficulty.Medium),
+            _ => (PersuasionArgumentStrength.Easy, PersuasionDifficulty.Easy)
+        };
+
         private void BeginGuardPersuasion()
         {
+            GwpFieldArrestBehavior.WardenStandingTier tier = GwpFieldArrestBehavior.CurrentStandingTier();
+            (PersuasionArgumentStrength strength, PersuasionDifficulty difficulty) = GuardDifficulty(tier);
+            GwpAiDiagnostics.WriteCitySearch("GUARD_PERSUASION", "tier=" + tier + "; strength=" + strength
+                + "; difficulty=" + difficulty);
             _guardRound.Begin(new[]
             {
                 GwpPersuasionRound.Task(GwpText.Create(GwpTextCatalog.gwp_cs_guard_reservation),
-                    PersuasionArgumentStrength.Easy,
+                    strength,
                     GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate),
                     GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final),
                     GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later),
@@ -120,7 +135,7 @@ namespace GreyWardenPolicePurity
                     GwpText.Create(GwpTextCatalog.gwp_cs_arg_charm),
                     GwpText.Create(GwpTextCatalog.gwp_cs_arg_rogue),
                     GwpText.Create(GwpTextCatalog.gwp_cs_arg_trade))
-            }, PersuasionDifficulty.Easy);
+            }, difficulty);
         }
 
         private void FinishGuard(bool allowed)

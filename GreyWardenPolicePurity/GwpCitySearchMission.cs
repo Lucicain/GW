@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using SandBox;
 using SandBox.Conversation.MissionLogics;
 using SandBox.Missions.AgentBehaviors;
@@ -109,6 +110,7 @@ namespace GreyWardenPolicePurity
         private readonly List<Agent> _defenders = new List<Agent>();
         private Stage _stage = Stage.Entering;
         private Agent? _guard;
+        private Agent? _struck;
         private bool _warDeclared;
         private float _nextChallengeCheck;
         private float _civilianSampleAt = -1f;
@@ -174,11 +176,36 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("ORDERS", "formations=" + DescribeFormations());
             _followSampleAt = Mission.CurrentTime + 10f;
+            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued += WriteOrderIssued;
 #endif
         }
 
 #if GWP_DIAGNOSTICS
         private float _followSampleAt = -1f;
+        private float _orderSampleAt = -1f;
+        private readonly Dictionary<Agent, Vec3> _positionsAtOrder = new Dictionary<Agent, Vec3>();
+
+        /// <summary>取证：玩家下令界面有没有发出命令；5 秒后兵有没有照做（编队命令与位移）。</summary>
+        private void WriteOrderIssued(OrderType orderType, MBReadOnlyList<Formation> appliedFormations,
+            OrderController orderController, params object[] delegateParams)
+        {
+            GwpAiDiagnostics.WriteCitySearch("ORDER_ISSUED", "order=" + orderType + "; mode=" + Mission.Mode
+                + "; applied=" + appliedFormations.Count + "; selected=" + orderController.SelectedFormations.Count
+                + "; formations=" + DescribeFormations());
+            _positionsAtOrder.Clear();
+            foreach (Agent agent in _ours.Keys.Where(agent => agent.IsActive()))
+                _positionsAtOrder[agent] = agent.Position;
+            _orderSampleAt = Mission.CurrentTime + 5f;
+        }
+
+        private void WriteOrderCheck()
+        {
+            List<float> moved = _positionsAtOrder.Where(entry => entry.Key.IsActive())
+                .Select(entry => entry.Key.Position.Distance(entry.Value)).ToList();
+            GwpAiDiagnostics.WriteCitySearch("ORDER_CHECK", "troops=" + moved.Count
+                + "; avgMoved=" + (moved.Count == 0 ? 0f : moved.Average()).ToString("0.0")
+                + "; formations=" + DescribeFormations());
+        }
 
         /// <summary>取证：有兵的编队是否已转为玩家控制、当前移动命令。</summary>
         private string DescribeFormations() => string.Join(",", Mission.PlayerTeam.FormationsIncludingEmpty
@@ -266,6 +293,12 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
+            if (_struck != null)
+            {
+                Agent struck = _struck;
+                _struck = null;
+                StartFight(struck);
+            }
             if (_stage == Stage.Entering && Mission.CurrentTime >= _nextChallengeCheck)
             {
                 _nextChallengeCheck = Mission.CurrentTime + 0.5f;
@@ -276,6 +309,11 @@ namespace GreyWardenPolicePurity
             {
                 _followSampleAt = -1f;
                 WriteFollowCheck();
+            }
+            if (_orderSampleAt > 0f && Mission.CurrentTime >= _orderSampleAt)
+            {
+                _orderSampleAt = -1f;
+                WriteOrderCheck();
             }
 #endif
             if (_civilianSampleAt > 0f && Mission.CurrentTime >= _civilianSampleAt)
@@ -312,11 +350,16 @@ namespace GreyWardenPolicePurity
                     ? GwpTextCatalog.gwp_cs_allowed_notice : GwpTextCatalog.gwp_cs_refused_notice)));
         }
 
-        public override void OnAgentHit(Agent affectedAgent, Agent affectorAgent, in MissionWeapon affectorWeapon,
-            in Blow blow, in AttackCollisionData attackCollisionData)
+        /// <summary>
+        /// 卫兵那关谈崩之后，我方的兵器碰到守卫就记下，下一帧开战；谈崩前或已放行时不算动手（用户裁定 2026-10-21）。
+        /// 守卫开战前是中立的，原版对中立的人一律取消伤害、
+        /// 不触发 OnAgentHit，所以只能在近战碰撞回调里认出这一下（C#反编译 v1.4.8 Mission.MeleeHitCallback
+        /// 2026-10-21）。箭矢回调禁止补丁（troop-combat.md），射守卫不开战。不在原生回调里换队伍、宣战，留到任务帧里做。
+        /// </summary>
+        internal void NoteStrike(Agent? attacker, Agent? victim)
         {
-            if (_stage == Stage.Fighting || affectorAgent == null || affectedAgent == null) return;
-            if (IsOurs(affectorAgent) && IsDefender(affectedAgent)) StartFight(affectedAgent);
+            if (_stage != Stage.Refused || _struck != null || attacker == null || victim == null) return;
+            if (IsOurs(attacker) && IsDefender(victim)) _struck = victim;
         }
 
         /// <summary>对守卫或同势力的人动手就是开战：玩家阵营对城主势力宣战，卫兵和场景里同势力的人一起打。</summary>
@@ -417,5 +460,13 @@ namespace GreyWardenPolicePurity
         private bool IsDefender(Agent agent) => IsWatch(agent) || agent.IsHuman && !IsOurs(agent)
             && agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
             && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction;
+    }
+
+    /// <summary>近战碰到人：交给进城搜捕认是不是对守卫动手。参数名须与原版回调一致，Harmony 按名绑定。</summary>
+    [HarmonyPatch(typeof(Mission), "MeleeHitCallback")]
+    internal static class GwpCitySearchMeleeStrikePatch
+    {
+        private static void Prefix(Agent attacker, Agent victim) =>
+            GwpCitySearchMissionController.Current?.NoteStrike(attacker, victim);
     }
 }
