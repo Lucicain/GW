@@ -111,7 +111,7 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 
 区域业务评估不写成真实initiative结果；`GwpInitiativeDiagnosticsPatch` 跳过同步预估，只在区域守卫之后旁观原版正式结果。区域数据使用业务评估已产生的原值，不为了打印重跑原版评分。（依据：流程、离线执行2026-10-18）
 
-进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（声望档与说服难度）、GUARD_DECISION、FIGHT_START（双方人数与 30 米内平民数）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
+进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（声望档、论点强弱、关系、犯罪评级与折成的加减）、GUARD_DECISION、REFUSED_CHOICE（谈崩后选打或撤）、HEADING_IN（说要走或选撤后往城里走：警告或开战，离进城处多远）、FIGHT_START（开战起因、双方人数与 30 米内平民数）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
 
 ## 在役
 

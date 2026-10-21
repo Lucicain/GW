@@ -7,6 +7,7 @@ using TaleWorlds.MountAndBlade.View;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 using TaleWorlds.MountAndBlade.View.MissionViews.Order;
 using TaleWorlds.MountAndBlade.View.MissionViews.Singleplayer;
+using TaleWorlds.MountAndBlade.View.VisualOrders;
 
 namespace GreyWardenPolicePurity
 {
@@ -49,5 +50,16 @@ namespace GreyWardenPolicePurity
             ViewCreator.CreateMissionSpectatorControlView(mission),
             new MissionCampaignBattleSpectatorView()
         }.ToArray();
+    }
+
+    /// <summary>
+    /// 下令界面里的命令表。原版默认表只在非「友好任务」里给出命令，城镇任务一律是友好任务，
+    /// 表是空的，只剩拖拽摆位能用；原版藏身处也是另登记一张表（C#反编译 v1.4.8 DefaultVisualOrderProvider、
+    /// HideoutVisualOrderProvider；实机日志 2026-10-21）。不改友好任务标记：它同时管按住 Tab 离开。
+    /// </summary>
+    public sealed class GwpCitySearchVisualOrderProvider : DefaultVisualOrderProvider
+    {
+        public override bool IsAvailable() =>
+            Mission.Current?.HasMissionBehavior<GwpCitySearchMissionController>() ?? false;
     }
 }

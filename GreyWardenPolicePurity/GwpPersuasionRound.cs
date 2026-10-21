@@ -11,7 +11,7 @@ using TaleWorlds.Localization;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 一轮原版说服：若干道关卡，每道四种说法（统御、魅力、诡道、交易），由原版掷骰。
+    /// 一轮原版说服：若干道关卡，每道四种说法，各道可考不同的技能与性格，由原版掷骰。
     /// 进城搜捕的卫兵盘问和大厅交涉都用它；野外执法有自己的两层谈判，不经过这里。
     /// 对话里用到的文本变量带上各自前缀，两轮说服不会互相覆盖。
     /// </summary>
@@ -49,6 +49,9 @@ namespace GreyWardenPolicePurity
         internal bool IsFailed =>
             !ConversationManager.GetPersuasionIsActive() || ConversationManager.GetPersuasionIsFailure()
             || (!ConversationManager.GetPersuasionProgressSatisfied() && Current == null);
+
+        internal bool Owns(PersuasionOptionArgs option) =>
+            _tasks.Any(task => task.Options.Any(candidate => ReferenceEquals(candidate, option)));
 
         private PersuasionTask? Current => _tasks.FirstOrDefault(task => !task.Options.All(option => option.IsBlocked));
 
@@ -112,10 +115,13 @@ namespace GreyWardenPolicePurity
 
         internal string LastResult => _lastResult.ToString();
 
+        /// <summary>一种说法：考哪项技能、哪种性格（正向或反向），成功时是否算大成功。</summary>
+        internal sealed record Argument(SkillObject Skill, TraitObject Trait, TraitEffect Effect,
+            bool GivesCriticalSuccess, TextObject Line);
+
         /// <summary>一道关卡：对方的一句顾虑，玩家四种说法。最后一个参数让说服成功后进下一道。</summary>
         internal static PersuasionTask Task(TextObject spoken, PersuasionArgumentStrength strength,
-            TextObject immediateFail, TextObject finalFail, TextObject tryLater,
-            TextObject leadership, TextObject charm, TextObject roguery, TextObject trade)
+            TextObject immediateFail, TextObject finalFail, TextObject tryLater, params Argument[] arguments)
         {
             var task = new PersuasionTask(0)
             {
@@ -124,14 +130,9 @@ namespace GreyWardenPolicePurity
                 FinalFailLine = finalFail,
                 TryLaterLine = tryLater
             };
-            task.AddOptionToTask(new PersuasionOptionArgs(DefaultSkills.Leadership, DefaultTraits.Honor,
-                TraitEffect.Positive, strength, false, leadership, null, false, true));
-            task.AddOptionToTask(new PersuasionOptionArgs(DefaultSkills.Charm, DefaultTraits.Mercy,
-                TraitEffect.Positive, strength, false, charm, null, false, true));
-            task.AddOptionToTask(new PersuasionOptionArgs(DefaultSkills.Roguery, DefaultTraits.Valor,
-                TraitEffect.Negative, strength, true, roguery, null, false, true));
-            task.AddOptionToTask(new PersuasionOptionArgs(DefaultSkills.Trade, DefaultTraits.Calculating,
-                TraitEffect.Positive, strength, false, trade, null, false, true));
+            foreach (Argument argument in arguments.Take(Arguments))
+                task.AddOptionToTask(new PersuasionOptionArgs(argument.Skill, argument.Trait, argument.Effect,
+                    strength, argument.GivesCriticalSuccess, argument.Line, null, false, true));
             return task;
         }
     }

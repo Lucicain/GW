@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-205 个源文件、56,400 行、392 个公开类型、106 条 Harmony 目标声明（含动态入口，共 106 个补丁类）。
+205 个源文件、56,572 行、393 个公开类型、106 条 Harmony 目标声明（含动态入口，共 106 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -73,7 +73,7 @@
 | `MenuViewContext` | `TaleWorlds.CampaignSystem.GameState.IMenuContextHandler.OnMenuActivate` | Postfix | `GwpFireswornSoundMenuActivatePatch` | GwpFireswornSoundView.cs:73 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveHeldShieldParticlePatch` | GwpShieldBashGuardPatch.cs:1134 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveShieldHitParticlePatch` | GwpShieldBashGuardPatch.cs:1210 |
-| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:467 |
+| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:527 |
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs:982 |
 | `Mission` | `RegisterBlow` | Prefix | `GwpPassiveShieldRegisterBlowPatch` | GwpShieldBashGuardPatch.cs:1171 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs:794 |
@@ -306,6 +306,7 @@
 - `GwpCitySearchMission` → GwpCitySearchMission.cs
 - `GwpCitySearchMissionController` → GwpCitySearchMission.cs ←
 - `GwpCitySearchMissionViews` → GwpCitySearchMissionViews.cs
+- `GwpCitySearchVisualOrderProvider` → GwpCitySearchMissionViews.cs ←
 - `GwpCommon` → GwpCommon.cs
 - `GwpCrimeCategory` → GwpCrimeCategory.cs
 - `GwpCrimeCategoryClassifier` → GwpCrimeCategory.cs ←
@@ -555,7 +556,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 200 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 201 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -689,22 +690,22 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1116 行 · `CrimeRecord`，另含 5 个类型
-- `GwpTuning.cs` — 427 行 · `GwpTuning`，另含 16 个类型
+- `GwpTuning.cs` — 448 行 · `GwpTuning`，另含 16 个类型
 - `GwpCommon.cs` — 366 行 · `GwpCommon`
 - `GwpIds.cs` — 95 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 171 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 174 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（112 个文件）
 
-- `GwpTextCatalog.g.cs` — 1372 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1381 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 881 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
+- `GwpCitySearchMission.cs` — 533 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
-- `GwpCitySearchMission.cs` — 473 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 415 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
@@ -721,6 +722,7 @@
 - `GwpStrength.Native.cs` — 240 行 · `GwpStrength`，另含 3 个类型
 - `GwpArmoryAllocation.cs` — 224 行 · `GwpFireswornBehavior`
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
+- `GwpCitySearchBehavior.cs` — 215 行 · `GwpCitySearchBehavior` : CampaignBehaviorBase
 - `GwpFireswornMenus.cs` — 202 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFireswornDungeon.cs` — 199 行 · `GwpFireswornBehavior`
 - `GwpWardenDuties.cs` — 199 行 · `WardenDuty`，另含 1 个类型
@@ -737,12 +739,11 @@
 - `GwpLastStand.cs` — 163 行 · `GwpLastStandBehavior` : MissionBehavior
 - `GwpPlayerIntervention.cs` — 154 行 · `GwpPlayerIntervention`，另含 2 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
-- `GwpCitySearchBehavior.cs` — 151 行 · `GwpCitySearchBehavior` : CampaignBehaviorBase
 - `GwpFieldDialogueVoice.cs` — 147 行 · `GwpFieldDialogueVoice`
 - `GwpFiefPublicSupportPatch.cs` — 145 行 · `GwpFiefPublicSupportPatch`
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
-- `GwpPersuasionRound.cs` — 139 行 · `GwpPersuasionRound`
+- `GwpPersuasionRound.cs` — 140 行 · `GwpPersuasionRound`
 - `GwpFireswornPartyDialogs.cs` — 137 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
@@ -770,13 +771,13 @@
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
 - `GwpText.cs` — 69 行 · `GwpText`
 - `GwpAssistanceArmyTooltipPatch.cs` — 66 行 · `GwpAssistanceArmyTooltipPatch`
+- `GwpCitySearchMissionViews.cs` — 66 行 · `GwpCitySearchMissionViews` : DefaultVisualOrderProvider，另含 1 个类型
 - `GwpFireswornArt.cs` — 64 行 · `GwpFireswornArt`
 - `GwpTroopTransfer.cs` — 64 行 · `GwpTroopTransfer`
 - `GwpPatrolBeats.cs` — 63 行 · `GwpPatrolBeats`
 - `GwpWardenPurification.cs` — 62 行 · `GwpWardenPurification`
 - `GreyWardenDeserterFilterBehavior.cs` — 59 行 · `GreyWardenDeserterFilterBehavior` : CampaignBehaviorBase
 - `GwpSaveableTypeDefiner.cs` — 59 行 · `GwpSaveableTypeDefiner` : SaveableTypeDefiner
-- `GwpCitySearchMissionViews.cs` — 54 行 · `GwpCitySearchMissionViews`
 - `GwpNegotiationPolicy.cs` — 54 行 · `GwpNegotiationPolicy`
 - `GwpPlayerCaseAssignment.cs` — 54 行 · `GwpPlayerCaseAssignment`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
@@ -810,4 +811,4 @@
 - `GwpPartyIdentity.cs` — 23 行 · `GwpPartyIdentity`
 - `GwpTextKeys.cs` — 22 行 · `GwpTextKeys`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`
-- `GwpNegotiationChancePatch.cs` — 18 行 · `GwpNegotiationChancePatch`
+- `GwpNegotiationChancePatch.cs` — 20 行 · `GwpNegotiationChancePatch`

@@ -1679,9 +1679,18 @@
   <string id="gwp_cs_guard_reaction_critical" text="你这是在威胁守卫？" />
   <string id="gwp_cs_guard_pass" text="去吧。别在城里惹事。" />
   <string id="gwp_cs_guard_refuse" text="不行。带着你的人出城去。" />
-  <string id="gwp_cs_refused_notice" text="守卫不放行。不动手就退出城外，搜捕作罢；对守卫动手就是开战。" />
   <string id="gwp_cs_allowed_notice" text="守卫放行了。" />
-  <string id="gwp_cs_war_notice" text="你对守卫动了手，{VAR_1}与你开战。" />
+  <string id="gwp_cs_war_notice" text="你与城里的守卫动了手，{VAR_1}与你开战。" />
   <string id="gwp_cs_fight_not_over" text="仗还没打完，现在不能离开。" />
+  <string id="gwp_cs_guard_reservation_vouch" text="名头谁都会报。城里谁能替你和你这些兵作保？" />
+  <string id="gwp_cs_arg_tactics" text="派你的人跟着我们、点清人数。我的兵没有我的令一步不动。" />
+  <string id="gwp_cs_arg_steward" text="令状上有灰袍的印。拿去给你家大人的管家，一字一句地看。" />
+  <string id="gwp_cs_arg_valor" text="要是有一句假话，我亲自到你家大人面前领罪。" />
+  <string id="gwp_cs_arg_blackmail" text="听说这里的守卫收走私贩子的钱放行。咱们别把这事也扯进来。" />
+  <string id="gwp_cs_choose_fight" text="那就从你们身上踏过去。" />
+  <string id="gwp_cs_choose_withdraw" text="好，我们撤。" />
+  <string id="gwp_cs_leave_notice" text="你答应了守卫出城。再往城里走，他们会拦你。" />
+  <string id="gwp_cs_withdraw_notice" text="撤出城外，搜捕作罢；再往城里走就是开战。" />
+  <string id="gwp_cs_leave_warning" text="守卫警告：掉头出城，否则后果自负。" />
 </strings>
 </base>

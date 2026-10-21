@@ -16,6 +16,9 @@ namespace GreyWardenPolicePurity
         {
             base.OnSubModuleLoad();
             GwpRuntimeFaultWatch.Arm();
+            // 后登记的先查：进城搜捕场景用自己的命令表（见 GwpCitySearchVisualOrderProvider）。
+            TaleWorlds.MountAndBlade.ViewModelCollection.Order.Visual.VisualOrderFactory.RegisterProvider(
+                new GwpCitySearchVisualOrderProvider());
 
             // Self-contained library patch; no separate Harmony module or
             // launcher dependency is required.

@@ -90,13 +90,13 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// 场景里的搜捕：玩家带兵从城门进来，卫兵上前盘问并做一次简单说服；对守卫或同势力的人动手
-    /// 即玩家阵营对该势力宣战，卫兵和场景里同势力的人一起打（用户裁定 2026-10-21）。
+    /// 场景里的搜捕：玩家带兵从城门进来，卫兵上前盘问并说服；谈崩后玩家选打进去或撤，选撤、或一开始就说要走
+    /// 却往城里去、或对守卫动手，都是玩家阵营对该势力宣战，卫兵和场景里同势力的人一起打（用户裁定 2026-10-21、2026-10-22）。
     /// 进领主大厅、大厅交涉与杀出城属于后续阶段，这一版先关掉玩家能用的门。
     /// </summary>
     internal sealed class GwpCitySearchMissionController : MissionLogic
     {
-        private enum Stage { Entering, Questioned, Allowed, Refused, Fighting, FightOver }
+        private enum Stage { Entering, Questioned, Allowed, Leaving, Refused, Withdrawing, Fighting, FightOver }
 
         internal static GwpCitySearchMissionController? Current { get; private set; }
 
@@ -110,7 +110,10 @@ namespace GreyWardenPolicePurity
         private readonly List<Agent> _defenders = new List<Agent>();
         private Stage _stage = Stage.Entering;
         private Agent? _guard;
-        private Agent? _struck;
+        private string? _pendingFight;
+        private Vec3 _gate;
+        private float _inwardLimit;
+        private bool _warned;
         private bool _warDeclared;
         private float _nextChallengeCheck;
         private float _civilianSampleAt = -1f;
@@ -124,6 +127,7 @@ namespace GreyWardenPolicePurity
         }
 
         internal TextObject TargetName => _target.Name;
+        internal Settlement Settlement => _settlement;
 
         internal bool IsGuardTalk => _stage == Stage.Questioned && _guard != null
             && ReferenceEquals(Campaign.Current.ConversationManager.OneToOneConversationAgent, _guard);
@@ -166,6 +170,7 @@ namespace GreyWardenPolicePurity
                 spawn = Mission.Scene.FindEntityWithTag(spawnTag);
             }
             SandBoxHelpers.MissionHelper.SpawnPlayer(spawn, civilianEquipment: false, noHorses: true);
+            _gate = Agent.Main?.Position ?? Vec3.Zero;
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
             int passages = DisablePlayerPassages();
             _healthyAtStart = MobileParty.MainParty?.MemberRoster.TotalHealthyCount ?? 0;
@@ -293,16 +298,17 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
-            if (_struck != null)
+            if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
             {
-                Agent struck = _struck;
-                _struck = null;
-                StartFight(struck);
+                string cause = _pendingFight;
+                _pendingFight = null;
+                StartFight(cause);
             }
-            if (_stage == Stage.Entering && Mission.CurrentTime >= _nextChallengeCheck)
+            if (Mission.CurrentTime >= _nextChallengeCheck)
             {
                 _nextChallengeCheck = Mission.CurrentTime + 0.5f;
-                TryChallenge();
+                if (_stage == Stage.Entering) TryChallenge();
+                else if (_stage == Stage.Leaving || _stage == Stage.Withdrawing) CheckHeadingIn();
             }
 #if GWP_DIAGNOSTICS
             if (_followSampleAt > 0f && Mission.CurrentTime >= _followSampleAt)
@@ -345,31 +351,85 @@ namespace GreyWardenPolicePurity
             if (_stage != Stage.Questioned) return;
             _stage = allowed ? Stage.Allowed : Stage.Refused;
             GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=" + allowed + "; result=" + result);
-            if (result != "player_leaves")
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(allowed
-                    ? GwpTextCatalog.gwp_cs_allowed_notice : GwpTextCatalog.gwp_cs_refused_notice)));
+            if (allowed)
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_allowed_notice)));
+        }
+
+        /// <summary>一见卫兵就说要走：答应了出城，再往里走先警告一次，不听就打（用户裁定 2026-10-22）。</summary>
+        internal void OnPromisedToLeave()
+        {
+            if (_stage != Stage.Questioned) return;
+            GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=False; result=player_leaves");
+            BeginLeaving(Stage.Leaving, GwpTextCatalog.gwp_cs_leave_notice);
+        }
+
+        /// <summary>谈崩后选打进去：对话关上后开战（用户裁定 2026-10-22）。</summary>
+        internal void OnChoseFight()
+        {
+            if (_stage != Stage.Refused) return;
+            GwpAiDiagnostics.WriteCitySearch("REFUSED_CHOICE", "choice=fight");
+            _pendingFight = "chose_fight";
+        }
+
+        /// <summary>谈崩后选撤：撤出城外搜捕作罢，再往里走就开战，不再警告（用户裁定 2026-10-22）。</summary>
+        internal void OnChoseWithdraw()
+        {
+            if (_stage != Stage.Refused) return;
+            GwpAiDiagnostics.WriteCitySearch("REFUSED_CHOICE", "choice=withdraw");
+            BeginLeaving(Stage.Withdrawing, GwpTextCatalog.gwp_cs_withdraw_notice);
+        }
+
+        private void BeginLeaving(Stage stage, string noticeKey)
+        {
+            _stage = stage;
+            Agent? main = Agent.Main;
+            _inwardLimit = (main == null ? 0f : main.Position.Distance(_gate)) + GwpTuning.CitySearch.InwardTolerance;
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(noticeKey)));
         }
 
         /// <summary>
-        /// 卫兵那关谈崩之后，我方的兵器碰到守卫就记下，下一帧开战；谈崩前或已放行时不算动手（用户裁定 2026-10-21）。
-        /// 守卫开战前是中立的，原版对中立的人一律取消伤害、
+        /// 说了要走却往城里去：以进城处为准，比答应时再远出一段就算违抗。说要走的那次先警告并重新起算，
+        /// 第二次、或谈崩后选了撤的，直接开战。
+        /// </summary>
+        private void CheckHeadingIn()
+        {
+            Agent? main = Agent.Main;
+            if (main == null || Campaign.Current.ConversationManager.IsConversationFlowActive) return;
+            float distance = main.Position.Distance(_gate);
+            if (distance <= _inwardLimit) return;
+            if (_stage == Stage.Leaving && !_warned)
+            {
+                _warned = true;
+                _inwardLimit = distance + GwpTuning.CitySearch.InwardTolerance;
+                GwpAiDiagnostics.WriteCitySearch("HEADING_IN", "stage=" + _stage + "; warned=True; fromGate=" + distance.ToString("0.0"));
+                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_cs_leave_warning));
+                return;
+            }
+            GwpAiDiagnostics.WriteCitySearch("HEADING_IN", "stage=" + _stage + "; warned=" + _warned + "; fromGate=" + distance.ToString("0.0"));
+            _pendingFight = _stage == Stage.Leaving ? "ignored_warning" : "broke_withdrawal";
+        }
+
+        /// <summary>
+        /// 不放行之后（谈崩、说了要走、选了撤），我方的兵器碰到守卫就记下，下一帧开战；谈之前或已放行时不算动手
+        /// （用户裁定 2026-10-21）。守卫开战前是中立的，原版对中立的人一律取消伤害、
         /// 不触发 OnAgentHit，所以只能在近战碰撞回调里认出这一下（C#反编译 v1.4.8 Mission.MeleeHitCallback
         /// 2026-10-21）。箭矢回调禁止补丁（troop-combat.md），射守卫不开战。不在原生回调里换队伍、宣战，留到任务帧里做。
         /// </summary>
         internal void NoteStrike(Agent? attacker, Agent? victim)
         {
-            if (_stage != Stage.Refused || _struck != null || attacker == null || victim == null) return;
-            if (IsOurs(attacker) && IsDefender(victim)) _struck = victim;
+            if (_stage != Stage.Refused && _stage != Stage.Leaving && _stage != Stage.Withdrawing) return;
+            if (_pendingFight != null || attacker == null || victim == null) return;
+            if (IsOurs(attacker) && IsDefender(victim)) _pendingFight = "struck";
         }
 
-        /// <summary>对守卫或同势力的人动手就是开战：玩家阵营对城主势力宣战，卫兵和场景里同势力的人一起打。</summary>
-        private void StartFight(Agent struck)
+        /// <summary>开战：玩家阵营对城主势力宣战，卫兵和场景里同势力的人一起打。</summary>
+        private void StartFight(string cause)
         {
             if (!_warDeclared)
             {
                 _warDeclared = true;
                 Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.DeclarePlayerCaseWar(
-                    _settlement.MapFaction, "city_search_watch_struck", GwpTextCatalog.gwp_cs_war_notice);
+                    _settlement.MapFaction, "city_search_" + cause, GwpTextCatalog.gwp_cs_war_notice);
             }
             int ours = Mission.Agents.Count(agent => agent.IsActive() && IsOurs(agent));
             _defenders.Clear();
@@ -383,7 +443,7 @@ namespace GreyWardenPolicePurity
                              && agent.Position.Distance(main.Position) <= 30f))
                     _civiliansAtFight.Add((agent, agent.Position));
             _civilianSampleAt = Mission.CurrentTime + 8f;
-            GwpAiDiagnostics.WriteCitySearch("FIGHT_START", "struck=" + struck.Character?.StringId
+            GwpAiDiagnostics.WriteCitySearch("FIGHT_START", "cause=" + cause
                 + "; war=" + _warDeclared + "; ours=" + ours + "; theirs=" + _defenders.Count
                 + "; civiliansNear=" + _civiliansAtFight.Count);
 

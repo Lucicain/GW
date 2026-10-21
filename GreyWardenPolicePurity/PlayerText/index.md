@@ -1679,7 +1679,16 @@
 | gwp_cs_guard_reaction_critical | Are you threatening the watch? | 你这是在威胁守卫？ | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_pass | Go on, then. Make no trouble in town. | 去吧。别在城里惹事。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_refuse | No. Take your men and get out of town. | 不行。带着你的人出城去。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_refused_notice | The watch will not let you through. Leave without a fight and the search is dropped; strike the watch and it means war. | 守卫不放行。不动手就退出城外，搜捕作罢；对守卫动手就是开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_allowed_notice | The watch lets you through. | 守卫放行了。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_war_notice | You struck the town watch. {VAR_1} is now at war with you. | 你对守卫动了手，{VAR_1}与你开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_war_notice | You defied the town watch. {VAR_1} is now at war with you. | 你与城里的守卫动了手，{VAR_1}与你开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_fight_not_over | The fight is not over. You cannot leave yet. | 仗还没打完，现在不能离开。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_guard_reservation_vouch | Anyone can shout a name. Who in this town will vouch for you and your men? | 名头谁都会报。城里谁能替你和你这些兵作保？ | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_tactics | Post your men beside mine and count us. Mine move only on my word. | 派你的人跟着我们、点清人数。我的兵没有我的令一步不动。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_steward | The warrant bears the Wardens' seal. Send it to your lord's steward and let him read every line. | 令状上有灰袍的印。拿去给你家大人的管家，一字一句地看。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_valor | If a word of this is false, I will stand before your lord and answer for it myself. | 要是有一句假话，我亲自到你家大人面前领罪。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_blackmail | I hear the watch here turns a blind eye for smugglers' coin. Let us not make that our business. | 听说这里的守卫收走私贩子的钱放行。咱们别把这事也扯进来。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_choose_fight | Then we go through you. | 那就从你们身上踏过去。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_choose_withdraw | Fine. We are leaving. | 好，我们撤。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_leave_notice | You promised the watch to leave town. Head further in and they will stop you. | 你答应了守卫出城。再往城里走，他们会拦你。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_withdraw_notice | Leave town and the search is dropped. Head further in and it means war. | 撤出城外，搜捕作罢；再往城里走就是开战。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_leave_warning | The watch warns you: turn back and leave town, or answer for it. | 守卫警告：掉头出城，否则后果自负。 | 进城搜捕第1段（用户裁定2026-10-22） |

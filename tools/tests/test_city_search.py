@@ -198,10 +198,12 @@ static class Program{static int Main(){
             self.assertEqual(0, r.returncode, r.stdout + r.stderr)
             print(next(line for line in r.stdout.splitlines() if line.startswith('TEAM_ASSIGNMENT_ASSERTIONS=')))
 
-    def test_striking_a_guard_starts_the_fight(self):
+    def test_defying_the_watch_starts_the_fight(self):
         """Negative control: the installed hit rule cancels every blow on a neutral human, so the old
         OnAgentHit trigger could never fire before the fight; the collision-callback note does.
-        Also: guard persuasion difficulty follows the player's standing."""
+        After the guard refuses, the player either fights or withdraws; walking back in after promising to
+        leave earns one warning, after choosing to withdraw none. Guard odds: skill and trait matter,
+        critical failure has a floor, the four outcomes add up to one."""
         game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
         mission = subprocess.check_output(['ilspycmd', '-t', 'TaleWorlds.MountAndBlade.Mission',
                                            str(game / 'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.dll')],
@@ -210,10 +212,12 @@ static class Program{static int Main(){
         self.assertRegex(mission, r'MeleeHitCallback\([^)]*\bAgent attacker, Agent victim\b')
         production = read('GwpCitySearchMission.cs')
         behavior = read('GwpCitySearchBehavior.cs')
+        tuning = read('GwpTuning.cs')
         self.assertNotIn('override void OnAgentHit', production)
         self.assertIn('[HarmonyPatch(typeof(Mission), "MeleeHitCallback")]', production)
         # troop-combat.md: patching MissileHitCallback lost battle shouts (2026-09-03).
         self.assertNotIn('"MissileHitCallback"', production)
+        city_tuning = block(tuning, r'internal static class CitySearch\b')
         code = r'''
 using System;using System.Collections.Generic;
 namespace Probe{
@@ -222,45 +226,95 @@ enum AgentControllerType{None,AI,Player}
 static class GameNetwork{public static bool IsSessionActive;}
 static class MultiplayerOptions{public enum OptionType{FriendlyFireDamageMeleeFriendPercent,FriendlyFireDamageMeleeSelfPercent}}
 static class OptionValues{public static int GetIntValue(this MultiplayerOptions.OptionType t)=>0;}
-class Agent{public string Team;public bool IsHuman=true;public AgentControllerType Controller=AgentControllerType.Player;public Agent(string t){Team=t;}
+struct Vec3{public float X;public Vec3(float x){X=x;}public float Distance(Vec3 o)=>Math.Abs(X-o.X);public static Vec3 Zero=>new(0);}
+class Agent{public static Agent? Main;public string Team;public Vec3 Position;public bool IsHuman=true;public AgentControllerType Controller=AgentControllerType.Player;public Agent(string t){Team=t;}
  public bool IsFriendOf(Agent o)=>Team==o.Team;
  public bool IsEnemyOf(Agent o)=>Team=="player"&&o.Team=="enemy"||Team=="enemy"&&o.Team=="player";}
 class Mission{public bool ForceNoFriendlyFire;public MissionMode Mode=MissionMode.StartUp;public bool Cancels(Agent a,Agent v)=>CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase(a,v);
  CANCEL}
-enum Stage{Entering,Questioned,Allowed,Refused,Fighting,FightOver}
-class Controller{public Stage _stage;public Agent? _struck;public HashSet<Agent> Ours=new(),Defenders=new();bool IsOurs(Agent a)=>Ours.Contains(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
- NOTE_STRIKE}
+class ConversationFlow{public bool IsConversationFlowActive;}
+class Campaign{public static Campaign Current=new();public ConversationFlow ConversationManager=new();}
+static class GwpAiDiagnostics{public static void WriteCitySearch(string stage,string details){}}
+static class GwpTextCatalog{public const string gwp_cs_leave_notice="leave",gwp_cs_withdraw_notice="withdraw",gwp_cs_leave_warning="warning";}
+static class GwpText{public static string Get(string k)=>k;public static string Create(string k)=>k;}
+class InformationMessage{public InformationMessage(string s){}}
+static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
+static class MBInformationManager{public static int Warnings;public static void AddQuickInformation(string s){Warnings++;}}
+static class GwpTuning{CITY_TUNING}
+enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver}
+class Controller{public Stage _stage;public string? _pendingFight;public Vec3 _gate;public float _inwardLimit;public bool _warned;
+ public HashSet<Agent> Ours=new(),Defenders=new();bool IsOurs(Agent a)=>Ours.Contains(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
+ NOTE_STRIKE PROMISED CHOSE_FIGHT CHOSE_WITHDRAW BEGIN_LEAVING HEADING_IN
+ public void Tick(){CheckHeadingIn();}}
 enum PersuasionArgumentStrength{ExtremelyHard=-3,VeryHard,Hard,Normal,Easy,VeryEasy,ExtremelyEasy}
-enum PersuasionDifficulty{VeryEasy,Easy,EasyMedium,Medium,MediumHard,Hard,VeryHard,UltraHard,Impossible}
 class GwpFieldArrestBehavior{internal enum WardenStandingTier{UnderCharge,Ordinary,Respected}}
-static class Tiers{GUARD_DIFFICULTY}
+static class Guard{GUARD_STRENGTH GUARD_ODDS
+ // Vanilla DefaultPersuasionModel.GetChances multipliers with the default chance at its usual ~1 (C# decompile v1.4.8).
+ static (float S,float C) Native(PersuasionArgumentStrength s)=>s switch{PersuasionArgumentStrength.Easy=>(0.7f,0f),PersuasionArgumentStrength.Normal=>(0.55f,0.15f),PersuasionArgumentStrength.Hard=>(0.35f,0.15f),_=>throw new Exception()};
+ // Each concern has four arguments, the third (and fourth in the second concern) staking a critical success; the player tries them in order.
+ static readonly bool[][] Crit={new[]{false,false,true,false},new[]{false,false,false,true}};
+ public static double Pass(PersuasionArgumentStrength strength,int skill,int trait=0,float situation=0f)=>Walk(strength,skill,trait,situation,0,0,0);
+ static double Walk(PersuasionArgumentStrength st,int skill,int trait,float sit,int c,int i,int progress){
+  if(progress>=2)return 1;if(c==2)return 0;if(i==4)return Walk(st,skill,trait,sit,c+1,0,progress);
+  var n=Native(st);GuardOdds(n.S,n.C,Crit[c][i],skill,trait,sit,out float s,out float cs,out float cf,out float f);
+  return s*Walk(st,skill,trait,sit,c+1,0,progress+1)+cs*Walk(st,skill,trait,sit,c+1,0,progress+2)+f*Walk(st,skill,trait,sit,c,i+1,progress);}}
 static class Program{static int n;static void Check(bool c,string m){n++;if(!c)throw new Exception(m);}
+ static Controller Scene(Stage stage,Agent main,Agent guard){var c=new Controller{_stage=stage};c.Ours.Add(main);c.Defenders.Add(guard);return c;}
  static int Main(){
   var mission=new Mission();var main=new Agent("player");var soldier=new Agent("player"){Controller=AgentControllerType.AI};
   var guard=new Agent("town"){Controller=AgentControllerType.AI};var civilian=new Agent("town"){Controller=AgentControllerType.AI};
+  Agent.Main=main;
   Check(mission.Cancels(main,guard),"old: a neutral guard's blow is cancelled, so OnAgentHit never fires");
   Check(mission.Cancels(main,civilian),"civilians stay untouchable");
-  foreach(var before in new[]{Stage.Entering,Stage.Questioned,Stage.Allowed}){var p=new Controller{_stage=before};p.Ours.Add(main);p.Defenders.Add(guard);p.NoteStrike(main,guard);Check(p._struck==null,"no war unless the guard talk failed: "+before);}
-  var c=new Controller{_stage=Stage.Refused};c.Ours.Add(main);c.Ours.Add(soldier);c.Defenders.Add(guard);
-  c.NoteStrike(main,civilian);Check(c._struck==null,"striking a civilian is not war");
-  c.NoteStrike(guard,main);Check(c._struck==null,"being struck is not our attack");
-  c.NoteStrike(main,null);Check(c._struck==null,"a miss on scenery");
-  c.NoteStrike(main,guard);Check(c._struck==guard,"new: the collision itself marks the strike");
-  var other=new Agent("town");c.Defenders.Add(other);c.NoteStrike(main,other);Check(c._struck==guard,"first strike is kept until the tick");
-  var fighting=new Controller{_stage=Stage.Fighting};fighting.Ours.Add(main);fighting.Defenders.Add(guard);fighting.NoteStrike(main,guard);Check(fighting._struck==null,"no new fight while fighting");
+  foreach(var before in new[]{Stage.Entering,Stage.Questioned,Stage.Allowed,Stage.Fighting}){var p=Scene(before,main,guard);p.NoteStrike(main,guard);Check(p._pendingFight==null,"a strike is not war in stage "+before);}
+  foreach(var after in new[]{Stage.Refused,Stage.Leaving,Stage.Withdrawing}){var p=Scene(after,main,guard);p.NoteStrike(main,guard);Check(p._pendingFight=="struck","new: striking the watch after it refused is war: "+after);}
+  var c=Scene(Stage.Withdrawing,main,guard);c.Ours.Add(soldier);
+  c.NoteStrike(main,civilian);c.NoteStrike(guard,main);c.NoteStrike(main,null);Check(c._pendingFight==null,"civilians, being struck and misses are not our attack");
+  // Refused: the player picks.
+  var fight=Scene(Stage.Refused,main,guard);fight.OnChoseFight();Check(fight._pendingFight=="chose_fight","choosing to fight starts it");
+  var tol=GwpTuning.CitySearch.InwardTolerance;
+  main.Position=new Vec3(20);var back=Scene(Stage.Refused,main,guard);back.OnChoseWithdraw();Check(back._stage==Stage.Withdrawing&&back._pendingFight==null,"choosing to withdraw is no fight yet");
+  main.Position=new Vec3(5);back.Tick();Check(back._pendingFight==null,"walking out is fine");
+  main.Position=new Vec3(20+tol-1);back.Tick();Check(back._pendingFight==null,"milling about where you stood is fine");
+  main.Position=new Vec3(20+tol+1);MBInformationManager.Warnings=0;back.Tick();Check(back._pendingFight=="broke_withdrawal"&&MBInformationManager.Warnings==0,"withdrew then went in: war without warning");
+  // Promised to leave at once: one warning, then war.
+  main.Position=new Vec3(20);var promised=Scene(Stage.Questioned,main,guard);promised.OnPromisedToLeave();Check(promised._stage==Stage.Leaving,"promise to leave");
+  main.Position=new Vec3(20+tol+1);promised.Tick();Check(promised._pendingFight==null&&promised._warned&&MBInformationManager.Warnings==1,"first time heading in: a warning");
+  main.Position=new Vec3(20+tol+1+tol-1);promised.Tick();Check(promised._pendingFight==null,"the warning restarts the measure");
+  main.Position=new Vec3(20+2*tol+2);promised.Tick();Check(promised._pendingFight=="ignored_warning","ignored the warning: war");
+  Campaign.Current.ConversationManager.IsConversationFlowActive=true;var talking=Scene(Stage.Questioned,main,guard);main.Position=new Vec3(0);talking.OnPromisedToLeave();main.Position=new Vec3(100);talking.Tick();talking.Tick();Check(talking._pendingFight==null,"no judgement during a conversation");
+  Campaign.Current.ConversationManager.IsConversationFlowActive=false;
+  var wrongStage=Scene(Stage.Allowed,main,guard);wrongStage.OnChoseFight();wrongStage.OnChoseWithdraw();wrongStage.OnPromisedToLeave();Check(wrongStage._stage==Stage.Allowed&&wrongStage._pendingFight==null,"choices only count at their own step");
   guard.Team="enemy";Check(!mission.Cancels(main,guard),"after the fight starts the guard takes damage");
-  var respected=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.Respected);
-  var ordinary=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.Ordinary);
-  var charged=Tiers.GuardDifficulty(GwpFieldArrestBehavior.WardenStandingTier.UnderCharge);
-  Check(ordinary==(PersuasionArgumentStrength.Easy,PersuasionDifficulty.Easy),"ordinary standing keeps the easy guard talk");
-  Check(respected.Strength>ordinary.Strength&&respected.Difficulty<ordinary.Difficulty,"respected is easier");
-  Check(charged.Strength<ordinary.Strength&&charged.Difficulty>ordinary.Difficulty,"under charge is harder");
+  // Odds.
+  var R=GwpFieldArrestBehavior.WardenStandingTier.Respected;var O=GwpFieldArrestBehavior.WardenStandingTier.Ordinary;var U=GwpFieldArrestBehavior.WardenStandingTier.UnderCharge;
+  Check(Guard.GuardStrength(R)>Guard.GuardStrength(O)&&Guard.GuardStrength(O)>Guard.GuardStrength(U),"standing orders the argument strength");
+  Check(Guard.GuardStrength(O)==PersuasionArgumentStrength.Normal,"ordinary standing is one notch harder than the first version's Easy");
+  foreach(float ns in new[]{0f,0.35f,0.55f,0.7f})foreach(float nc in new[]{0f,0.15f,0.2f})foreach(bool crit in new[]{false,true})foreach(int skill in new[]{0,100,300})foreach(int trait in new[]{-2,0,2})foreach(float sit in new[]{-0.5f,0f,0.2f}){
+   Guard.GuardOdds(ns,nc,crit,skill,trait,sit,out float s,out float cs,out float cf,out float f);
+   Check(Math.Abs(s+cs+cf+f-1f)<1e-5f&&s>=0&&cs>=0&&cf>=0&&f>=-1e-6f,"outcomes add up to one");
+   Check(cf>=GwpTuning.CitySearch.CriticalFailureFloor*(crit?2:1)-1e-6f&&cf>=nc-1e-6f,"critical failure keeps its floor and never drops below vanilla");
+   Check(crit?s==0:cs==0,"critical-success arguments win only critically");}
+  Guard.GuardOdds(0.7f,0f,false,100,0,0f,out float s1,out _,out float c1,out _);Check(Math.Abs(s1-0.7f*(GwpTuning.CitySearch.SkillFactorAtZero+100f/GwpTuning.CitySearch.SkillPointsPerFactor))<1e-5f&&c1==GwpTuning.CitySearch.CriticalFailureFloor,"vanilla's zero critical failure on easy arguments gets the floor");
+  Guard.GuardOdds(0.55f,0.15f,false,0,0,0f,out float low,out _,out _,out _);Guard.GuardOdds(0.55f,0.15f,false,200,0,0f,out float high,out _,out _,out _);Check(high>low+0.2f,"skill counts point by point");
+  Guard.GuardOdds(0.55f,0.15f,false,100,2,0f,out float good,out _,out _,out _);Guard.GuardOdds(0.55f,0.15f,false,100,-2,0f,out float bad,out _,out _,out _);Check(good>bad,"the argument's trait counts");
+  Guard.GuardOdds(0.55f,0.15f,false,100,0,-1f,out float hated,out _,out _,out _);Check(hated==GwpTuning.CitySearch.SuccessFloor,"bad relations and crime cannot make it impossible");
+  Check(Guard.Pass(Guard.GuardStrength(R),100)>Guard.Pass(Guard.GuardStrength(O),100)&&Guard.Pass(Guard.GuardStrength(O),100)>Guard.Pass(Guard.GuardStrength(U),100),"pass rate follows standing");
+  Check(Guard.Pass(Guard.GuardStrength(R),300)<1,"even the best player can fail");
+  foreach(var tier in new[]{R,O,U})Console.WriteLine("PASS_RATE "+tier+": skill0="+Guard.Pass(Guard.GuardStrength(tier),0).ToString("0.00")+" skill100="+Guard.Pass(Guard.GuardStrength(tier),100).ToString("0.00")+" skill200="+Guard.Pass(Guard.GuardStrength(tier),200).ToString("0.00"));
   Console.WriteLine("STRIKE_ASSERTIONS="+n);return 0;}}
 }
 '''
         code = (code.replace('CANCEL', method(mission, 'CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase'))
+                .replace('CITY_TUNING', city_tuning)
                 .replace('NOTE_STRIKE', method(production, 'NoteStrike'))
-                .replace('GUARD_DIFFICULTY', method(behavior, 'GuardDifficulty')))
+                .replace('PROMISED', method(production, 'OnPromisedToLeave').replace('internal ', 'public '))
+                .replace('CHOSE_FIGHT', method(production, 'OnChoseFight').replace('internal ', 'public '))
+                .replace('CHOSE_WITHDRAW', method(production, 'OnChoseWithdraw').replace('internal ', 'public '))
+                .replace('BEGIN_LEAVING', method(production, 'BeginLeaving'))
+                .replace('HEADING_IN', method(production, 'CheckHeadingIn'))
+                .replace('GUARD_STRENGTH', method(behavior, 'GuardStrength'))
+                .replace('GUARD_ODDS', method(behavior, 'GuardOdds')))
         major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
         with tempfile.TemporaryDirectory(prefix='gwp-city-strike-') as temp:
             p = Path(temp)
@@ -268,7 +322,49 @@ static class Program{static int n;static void Check(bool c,string m){n++;if(!c)t
             (p / 'Program.cs').write_text(code, encoding='utf-8')
             r = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
             self.assertEqual(0, r.returncode, r.stdout + r.stderr)
-            print(next(line for line in r.stdout.splitlines() if line.startswith('STRIKE_ASSERTIONS=')))
+            for line in r.stdout.splitlines():
+                if line.startswith(('PASS_RATE', 'STRIKE_ASSERTIONS=')):
+                    print(line)
+
+
+    def test_order_menu_has_orders_in_town(self):
+        """Negative control: the installed default order list is empty in friendly missions (a town mission
+        never stops being one), so the order menu offered nothing; our list answers for the search scene."""
+        game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
+
+        def native(type_name, dll):
+            return subprocess.check_output(['ilspycmd', '-t', type_name, str(game / dll)], text=True, encoding='utf-8-sig')
+
+        provider = native('TaleWorlds.MountAndBlade.View.VisualOrders.DefaultVisualOrderProvider',
+                          'Modules/Native/bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.View.dll')
+        factory = native('TaleWorlds.MountAndBlade.ViewModelCollection.Order.Visual.VisualOrderFactory',
+                         'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.ViewModelCollection.dll')
+        mission = native('TaleWorlds.MountAndBlade.Mission', 'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.dll')
+        self.assertRegex(block(provider, r'public override bool IsAvailable\(\)'), r'return !Mission\.Current\.IsFriendlyMission;')
+        self.assertIn('public bool IsFriendlyMission = true;', mission)
+        # Providers are asked last-registered first; the first available one supplies the whole list.
+        self.assertRegex(factory, r'for \(int num = _providers\.Count - 1; num >= 0; num--\)')
+        views = read('GwpCitySearchMissionViews.cs')
+        submodule = read('SubModule.cs')
+        search = read('GwpCitySearchMission.cs')
+        self.assertRegex(views, r'class GwpCitySearchVisualOrderProvider : DefaultVisualOrderProvider')
+        self.assertIn('HasMissionBehavior<GwpCitySearchMissionController>()', views)
+        self.assertIn('RegisterProvider(\n                new GwpCitySearchVisualOrderProvider())', submodule.replace('\r\n', '\n'))
+        # Holding Tab to leave also needs the friendly flag, so the search scene keeps it.
+        self.assertRegex(mission, r'IsFriendlyMission && !IsInPhotoMode')
+        self.assertNotIn('IsFriendlyMission', search)
+
+
+def block(source, header):
+    start = re.search(r'(?m)^\s*' + header, source)
+    if not start:
+        raise AssertionError('Missing block: ' + header)
+    depth, i = 0, source.index('{', start.end())
+    for j in range(i, len(source)):
+        depth += {'{': 1, '}': -1}.get(source[j], 0)
+        if depth == 0:
+            return source[start.start():j + 1]
+    raise AssertionError(header)
 
 
 if __name__ == '__main__':

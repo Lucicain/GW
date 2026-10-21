@@ -1,10 +1,13 @@
+using System;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Conversation.Persuasion;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 using TaleWorlds.Localization;
 
 namespace GreyWardenPolicePurity
@@ -75,7 +78,7 @@ namespace GreyWardenPolicePurity
         private static bool CanTakeAlong(CharacterObject character) =>
             !character.IsPlayerCharacter && !character.IsNotTransferableInHideouts;
 
-        #region 卫兵盘问：一次简单说服
+        #region 卫兵盘问：两道关卡的说服，谈崩后玩家选打或撤
 
         private void RegisterGuardDialogue(CampaignGameStarter starter)
         {
@@ -84,20 +87,26 @@ namespace GreyWardenPolicePurity
             starter.AddPlayerLine("gwp_cs_explain", "gwp_cs_guard_options", "gwp_cs_guard_next",
                 "{=!}{GWP_CS_EXPLAIN}", PrepareExplain, BeginGuardPersuasion);
             starter.AddPlayerLine("gwp_cs_will_leave", "gwp_cs_guard_options", "close_window",
-                GwpText.Get(GwpTextCatalog.gwp_cs_will_leave), null, () => Scene?.OnGuardDecision(false, "player_leaves"));
+                GwpText.Get(GwpTextCatalog.gwp_cs_will_leave), null, () => Scene?.OnPromisedToLeave());
 
             // 先看是否已说服，再给下一道顾虑，都没有就是谈崩：对话总有出口。
             starter.AddDialogLine("gwp_cs_guard_pass", "gwp_cs_guard_next", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_cs_guard_pass), () => _guardRound.IsSatisfied, () => FinishGuard(true), 110);
             starter.AddDialogLine("gwp_cs_guard_reservation", "gwp_cs_guard_next", "gwp_cs_guard_argument",
                 "{=!}{GWP_CS_GUARD_RESERVATION}", _guardRound.PrepareReservation, null, 105);
-            starter.AddDialogLine("gwp_cs_guard_refuse", "gwp_cs_guard_next", "close_window",
+            starter.AddDialogLine("gwp_cs_guard_refuse", "gwp_cs_guard_next", "gwp_cs_refused_options",
                 GwpText.Get(GwpTextCatalog.gwp_cs_guard_refuse), () => _guardRound.IsFailed, () => FinishGuard(false), 100);
             _guardRound.RegisterArguments(starter, "gwp_cs_guard_argument", "gwp_cs_guard_argument", "gwp_cs_guard_reaction");
             starter.AddDialogLine("gwp_cs_guard_reaction", "gwp_cs_guard_reaction", "gwp_cs_guard_next",
                 "{=!}{PERSUASION_REACTION}", () => _guardRound.PrepareReaction(
                     GwpTextCatalog.gwp_cs_guard_reaction_success, GwpTextCatalog.gwp_cs_guard_reaction_fail,
                     GwpTextCatalog.gwp_cs_guard_reaction_critical), null);
+
+            // 谈崩后玩家二选一：打进去，或撤出城（用户裁定 2026-10-22）。
+            starter.AddPlayerLine("gwp_cs_choose_fight", "gwp_cs_refused_options", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_choose_fight), null, () => Scene?.OnChoseFight());
+            starter.AddPlayerLine("gwp_cs_choose_withdraw", "gwp_cs_refused_options", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_choose_withdraw), null, () => Scene?.OnChoseWithdraw());
         }
 
         private static bool PrepareExplain()
@@ -108,34 +117,89 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 卫兵盘问的难易随玩家在灰袍的声望（用户裁定 2026-10-21）；分档沿用当面拘捕看玩家记录的那三档。
+        /// 卫兵盘问论点的强弱随玩家在灰袍的声望（用户裁定 2026-10-21），分档沿用当面拘捕看玩家记录的那三档；
+        /// 整体比最初的「简单」难一档（用户裁定 2026-10-22）。原版难度档几乎不影响成败，不再分档。
         /// </summary>
-        internal static (PersuasionArgumentStrength Strength, PersuasionDifficulty Difficulty) GuardDifficulty(
-            GwpFieldArrestBehavior.WardenStandingTier tier) => tier switch
+        internal static PersuasionArgumentStrength GuardStrength(GwpFieldArrestBehavior.WardenStandingTier tier) => tier switch
         {
-            GwpFieldArrestBehavior.WardenStandingTier.Respected => (PersuasionArgumentStrength.VeryEasy, PersuasionDifficulty.VeryEasy),
-            GwpFieldArrestBehavior.WardenStandingTier.UnderCharge => (PersuasionArgumentStrength.Hard, PersuasionDifficulty.Medium),
-            _ => (PersuasionArgumentStrength.Easy, PersuasionDifficulty.Easy)
+            GwpFieldArrestBehavior.WardenStandingTier.Respected => PersuasionArgumentStrength.Easy,
+            GwpFieldArrestBehavior.WardenStandingTier.UnderCharge => PersuasionArgumentStrength.Hard,
+            _ => PersuasionArgumentStrength.Normal
         };
+
+        /// <summary>城主家族族长对玩家的关系、玩家在该势力的犯罪评级折成的成功率加减，开谈时定下，整轮不变。</summary>
+        private float _guardSituation;
 
         private void BeginGuardPersuasion()
         {
             GwpFieldArrestBehavior.WardenStandingTier tier = GwpFieldArrestBehavior.CurrentStandingTier();
-            (PersuasionArgumentStrength strength, PersuasionDifficulty difficulty) = GuardDifficulty(tier);
+            PersuasionArgumentStrength strength = GuardStrength(tier);
+            Settlement? settlement = Scene?.Settlement;
+            Hero? owner = settlement?.OwnerClan?.Leader;
+            int relation = owner == null || owner == Hero.MainHero ? 0 : Hero.MainHero.GetRelation(owner);
+            float crime = settlement?.MapFaction?.MainHeroCrimeRating ?? 0f;
+            _guardSituation = relation * GwpTuning.CitySearch.RelationStep - crime * GwpTuning.CitySearch.CrimeStep;
             GwpAiDiagnostics.WriteCitySearch("GUARD_PERSUASION", "tier=" + tier + "; strength=" + strength
-                + "; difficulty=" + difficulty);
+                + "; relation=" + relation + "; crime=" + crime.ToString("0") + "; situation=" + _guardSituation.ToString("0.00"));
+            TextObject immediate = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate);
+            TextObject final = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final);
+            TextObject later = GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later);
+            // 两道顾虑考八种说法：统御、魅力、诡道、交易，再是战术、管理、统御、诡道，各配一种性格
+            // （用户裁定 2026-10-22：多考验玩家各方面素质）。
             _guardRound.Begin(new[]
             {
-                GwpPersuasionRound.Task(GwpText.Create(GwpTextCatalog.gwp_cs_guard_reservation),
-                    strength,
-                    GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_arg_lead),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_arg_charm),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_arg_rogue),
-                    GwpText.Create(GwpTextCatalog.gwp_cs_arg_trade))
-            }, difficulty);
+                GwpPersuasionRound.Task(GwpText.Create(GwpTextCatalog.gwp_cs_guard_reservation), strength, immediate, final, later,
+                    new GwpPersuasionRound.Argument(DefaultSkills.Leadership, DefaultTraits.Honor, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_lead)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Charm, DefaultTraits.Mercy, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_charm)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Roguery, DefaultTraits.Valor, TraitEffect.Negative, true,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_rogue)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Trade, DefaultTraits.Calculating, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_trade))),
+                GwpPersuasionRound.Task(GwpText.Create(GwpTextCatalog.gwp_cs_guard_reservation_vouch), strength, immediate, final, later,
+                    new GwpPersuasionRound.Argument(DefaultSkills.Tactics, DefaultTraits.Calculating, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_tactics)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Steward, DefaultTraits.Honor, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_steward)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Leadership, DefaultTraits.Valor, TraitEffect.Positive, false,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_valor)),
+                    new GwpPersuasionRound.Argument(DefaultSkills.Roguery, DefaultTraits.Honor, TraitEffect.Negative, true,
+                        GwpText.Create(GwpTextCatalog.gwp_cs_arg_blackmail)))
+            }, PersuasionDifficulty.Medium);
+        }
+
+        /// <summary>原版掷骰前改写卫兵这轮说法的成败率；别的说服原样不动。</summary>
+        internal void AdjustGuardChances(PersuasionOptionArgs option, ref float success, ref float criticalSuccess,
+            ref float criticalFailure, ref float failure)
+        {
+            if (!_guardRound.Owns(option)) return;
+            int trait = option.TraitUsed == null ? 0 : Hero.MainHero.GetTraitLevel(option.TraitUsed)
+                * (option.TraitEffect == TraitEffect.Positive ? 1 : -1);
+            GuardOdds(success + criticalSuccess, criticalFailure, option.GivesCriticalSuccess,
+                Hero.MainHero.GetSkillValue(option.SkillUsed), trait, _guardSituation,
+                out success, out criticalSuccess, out criticalFailure, out failure);
+        }
+
+        /// <summary>
+        /// 原版成功率（已按论点强弱折算）乘技能系数，加性格与处境，夹在上下限内；大失败取原版与保底的较大者，
+        /// 以大成功为赌注的说法保底翻倍；四项相加为 1，先挤掉普通失败、再挤成功。
+        /// 原版技能加成要满级才生效（整数相除），难度档几乎不起作用（C#反编译 v1.4.8 DefaultPersuasionModel）。
+        /// </summary>
+        internal static void GuardOdds(float nativeSuccess, float nativeCriticalFailure, bool givesCriticalSuccess,
+            int skill, int trait, float situation,
+            out float success, out float criticalSuccess, out float criticalFailure, out float failure)
+        {
+            float skillFactor = Math.Min(GwpTuning.CitySearch.SkillFactorCap,
+                GwpTuning.CitySearch.SkillFactorAtZero + skill / GwpTuning.CitySearch.SkillPointsPerFactor);
+            float win = Math.Max(GwpTuning.CitySearch.SuccessFloor, Math.Min(GwpTuning.CitySearch.SuccessCeiling,
+                nativeSuccess * skillFactor + Math.Max(-2, Math.Min(2, trait)) * GwpTuning.CitySearch.TraitStep + situation));
+            criticalFailure = Math.Max(nativeCriticalFailure,
+                GwpTuning.CitySearch.CriticalFailureFloor * (givesCriticalSuccess ? 2f : 1f));
+            win = Math.Min(win, 1f - criticalFailure);
+            failure = 1f - win - criticalFailure;
+            success = givesCriticalSuccess ? 0f : win;
+            criticalSuccess = givesCriticalSuccess ? win : 0f;
         }
 
         private void FinishGuard(bool allowed)

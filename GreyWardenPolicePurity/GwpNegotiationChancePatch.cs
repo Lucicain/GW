@@ -12,6 +12,8 @@ namespace GreyWardenPolicePurity
         {
             Campaign.Current?.GetCampaignBehavior<GwpFieldArrestBehavior>()?.AdjustNativeChances(
                 optionArgs, ref successChance, ref critSuccessChance, ref critFailChance, ref failChance);
+            Campaign.Current?.GetCampaignBehavior<GwpCitySearchBehavior>()?.AdjustGuardChances(
+                optionArgs, ref successChance, ref critSuccessChance, ref critFailChance, ref failChance);
         }
     }
 }
