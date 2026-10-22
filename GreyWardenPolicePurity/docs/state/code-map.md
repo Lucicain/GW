@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-209 个源文件、57,485 行、403 个公开类型、109 条 Harmony 目标声明（含动态入口，共 109 个补丁类）。
+209 个源文件、57,519 行、403 个公开类型、109 条 Harmony 目标声明（含动态入口，共 109 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -73,7 +73,7 @@
 | `MenuViewContext` | `TaleWorlds.CampaignSystem.GameState.IMenuContextHandler.OnMenuActivate` | Postfix | `GwpFireswornSoundMenuActivatePatch` | GwpFireswornSoundView.cs:73 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveHeldShieldParticlePatch` | GwpShieldBashGuardPatch.cs:1134 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveShieldHitParticlePatch` | GwpShieldBashGuardPatch.cs:1210 |
-| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:623 |
+| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:657 |
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs:982 |
 | `Mission` | `RegisterBlow` | Prefix | `GwpPassiveShieldRegisterBlowPatch` | GwpShieldBashGuardPatch.cs:1171 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs:794 |
@@ -712,7 +712,7 @@
 - `GwpTextCatalog.g.cs` — 1425 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 881 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
-- `GwpCitySearchMission.cs` — 629 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
+- `GwpCitySearchMission.cs` — 663 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型

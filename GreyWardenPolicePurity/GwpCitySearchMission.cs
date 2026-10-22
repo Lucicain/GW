@@ -242,6 +242,8 @@ namespace GreyWardenPolicePurity
                 .Select(entry => entry.Key.Position.Distance(entry.Value)).ToList();
             GwpAiDiagnostics.WriteCitySearch("ORDER_CHECK", "troops=" + moved.Count
                 + "; avgMoved=" + (moved.Count == 0 ? 0f : moved.Average()).ToString("0.0")
+                + "; alarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
+                + "; aiStates=" + string.Join("|", _ours.Keys.Where(agent => agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
                 + "; formations=" + DescribeFormations());
         }
 
@@ -511,18 +513,13 @@ namespace GreyWardenPolicePurity
             // 不用原版 MissionFightHandler：它打完把参战者放进新建的 Team 对象，
             // 我方会脱离玩家队伍、无法再指挥（Team 无相等重写，C#反编译 v1.4.8 2026-10-21）。
             Mission.PlayerEnemyTeam.SetIsEnemyOf(Mission.PlayerTeam, true);
+            // 原版城内打架会唤醒双方。Charge只改编队命令，不会把未警戒的随行兵切进战斗AI。
+            foreach (Agent ally in _ours.Keys.Where(agent => agent.IsActive()))
+                SetSearchFighter(ally);
             foreach (Agent defender in _defenders)
             {
                 defender.SetTeam(Mission.PlayerEnemyTeam, true);
-                if (!defender.IsAIControlled) continue;
-                defender.SetWatchState(Agent.WatchState.Alarmed);
-                // 同原版城里开打：交给场景行为里的战斗行为，并不再自行平静下来。
-                AlarmedBehaviorGroup? alarmed = defender.GetComponent<CampaignAgentComponent>()?.AgentNavigator
-                    ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
-                if (alarmed == null) continue;
-                alarmed.DisableCalmDown = true;
-                alarmed.AddBehavior<FightBehavior>();
-                alarmed.SetScriptedBehavior<FightBehavior>();
+                SetSearchFighter(defender);
             }
             foreach (Agent civilian in Mission.Agents.Where(agent => agent.IsActive() && agent.IsAIControlled
                          && agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)))
@@ -538,6 +535,42 @@ namespace GreyWardenPolicePurity
             Mission.SetMissionMode(MissionMode.Battle, false);
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
             Order(OrderType.Charge);
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteCitySearch("FIGHT_AI", "oursActive=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAIControlled)
+                + "; oursAlarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
+                + "; oursNavigators=" + _ours.Keys.Count(agent => agent.IsActive()
+                    && agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator != null)
+                + "; oursStates=" + string.Join("|", _ours.Keys.Where(agent => agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
+                + "; defendersAlarmed=" + _defenders.Count(agent => agent.IsActive() && agent.IsAlarmed()));
+#endif
+        }
+
+        private static void SetSearchFighter(Agent agent)
+        {
+            if (!agent.IsAIControlled) return;
+            agent.SetWatchState(Agent.WatchState.Alarmed);
+            // SpawnTroop生成的随行兵没有城市场景导航器；有导航器的人物同原版强制进入Fight。
+            AlarmedBehaviorGroup? alarmed = agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator
+                ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
+            if (alarmed == null) return;
+            alarmed.DisableCalmDown = true;
+            alarmed.AddBehavior<FightBehavior>();
+            alarmed.SetScriptedBehavior<FightBehavior>();
+        }
+
+        private void RestoreSearchFollowers()
+        {
+            foreach (Agent ally in _ours.Keys.Where(agent => agent.IsActive() && agent.IsAIControlled))
+            {
+                AlarmedBehaviorGroup? alarmed = ally.GetComponent<CampaignAgentComponent>()?.AgentNavigator
+                    ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
+                if (alarmed != null)
+                {
+                    alarmed.DisableScriptedBehavior();
+                    alarmed.DisableCalmDown = false;
+                }
+                ally.SetWatchState(Agent.WatchState.Patrolling);
+            }
         }
 
         private void EndFightIfDefendersDown()
@@ -545,6 +578,7 @@ namespace GreyWardenPolicePurity
             if (_stage != Stage.Fighting || _defenders.Any(agent => agent.IsActive())) return;
             _stage = Stage.FightOver;
             Mission.SetMissionMode(MissionMode.StartUp, false);
+            RestoreSearchFollowers();
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("FIGHT_END", "oursLeft="
                 + Mission.Agents.Count(agent => agent.IsActive() && IsOurs(agent)));
