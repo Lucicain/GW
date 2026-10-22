@@ -51,16 +51,13 @@ namespace GreyWardenPolicePurity
                 + "; castle=" + settlement.IsCastle + "; scene=" + scene + "; levels=" + levels
                 + "; troops=" + troops.TotalManCount);
 #endif
-            MissionInitializerRecord record = SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town);
-            // 要拖运倒地目标，同原版两个拖尸场景（越狱、伪装潜入）关掉尸体淡出：开着时尸体一登记，
-            // 外观上的场景实体就没了，原版拖尸一读即空引用、崩溃（C#反编译 v1.4.8 SandBoxMissions；实机日志 2026-10-22）。
-            record.DisableCorpseFadeOut = true;
-            MissionState.OpenNew(MissionName, record, mission => Behaviors(settlement, target, troops, center));
+            MissionState.OpenNew(MissionName,
+                SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town),
+                mission => Behaviors(settlement, target, troops, center));
         }
 
         private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops, Location center)
         {
-            GwpCitySearchBodyCarrierPatch.EnsureApplied();
             var list = new List<MissionBehavior>
             {
                 new MissionOptionsComponent(),
@@ -68,7 +65,6 @@ namespace GreyWardenPolicePurity
                 new MissionBasicTeamLogic(),
                 new MissionSettlementPrepareLogic(),
                 new GwpCitySearchMissionController(settlement, target, troops),
-                new GwpCitySearchBodyTransport(),
                 new MissionAgentLookHandler(),
                 new SandBoxMissionHandler()
             };
@@ -610,6 +606,9 @@ namespace GreyWardenPolicePurity
             canPlayerLeave = CanLeaveSearch();
             // 原版还会遍历其余离场逻辑并等待0.6秒；请求通过不代表已经卸载场景。
             _outsideExitRequested = canPlayerLeave && Search.SearchWar;
+#if GWP_DIAGNOSTICS
+            if (!canPlayerLeave) WriteExitBlocked();
+#endif
             if (!canPlayerLeave)
                 MBInformationManager.AddQuickInformation(GwpText.Create(Search.SearchWar
                     ? GwpTextCatalog.gwp_cs_hostile_exit_blocked : GwpTextCatalog.gwp_cs_route_blocked));
@@ -617,6 +616,14 @@ namespace GreyWardenPolicePurity
         }
 
 #if GWP_DIAGNOSTICS
+        /// <summary>取证 2026-10-22：实机反馈到了撤离点仍按 Tab 退不出；记下被哪项拦住、离城外出生点多远。</summary>
+        private void WriteExitBlocked() => GwpAiDiagnostics.WriteCitySearch("EXIT_BLOCKED", "stage=" + _stage
+            + "; war=" + Search.SearchWar + "; inHall=" + InHall + "; gateExit=" + _gateExitAvailable
+            + "; pendingFight=" + _pendingFight + "; pendingHall=" + _pendingHallAction
+            + "; talking=" + Campaign.Current.ConversationManager.IsConversationFlowActive
+            + "; fromGate=" + (Agent.Main == null ? "-" : Agent.Main.Position.Distance(_gate).ToString("0.0"))
+            + "; limit=" + GwpTuning.CitySearch.GateExitDistance);
+
         /// <summary>取证：开打时 30 米内的平民，8 秒后有多少跑开了。</summary>
         private void WriteCivilianFlight()
         {
@@ -644,7 +651,6 @@ namespace GreyWardenPolicePurity
                 && (agentState == AgentState.Killed || agentState == AgentState.Unconscious))
             {
                 Search.MarkTargetDown(agentState == AgentState.Killed);
-                Mission.GetMissionBehavior<GwpCitySearchBodyTransport>().TakeTarget(affectedAgent);
 #if GWP_DIAGNOSTICS
                 GwpAiDiagnostics.WriteCitySearch("TARGET_DOWN", "state=" + agentState + "; resultRecorded=True");
 #endif

@@ -187,7 +187,7 @@ DUTY_PREDICATES = {
 }
 OWNERS = [
     ("不扣名册的战役场景来源", r"\bnew\s+GreyWardenSafePartyAgentOrigin\s*\(",
-     "GreyWardenSafeTroopSupplier.cs|GwpCitySearchMission.Reinforcements.cs|GwpCitySearchBodyTransport.cs", "GreyWardenSafePartyAgentOrigin"),
+     "GreyWardenSafeTroopSupplier.cs|GwpCitySearchMission.Reinforcements.cs", "GreyWardenSafePartyAgentOrigin"),
     ("战场完整名册", r"\bGetAllTroopsForSide\s*\(",
      "GwpBattleScene*.cs|GwpCitySearchMission.Reinforcements.cs", "IGwpBattleSceneSource / GwpBattleSceneContext"),
     ("玩家为本案宣战", r"\bDeclareWarAction\.Apply\w*\s*\(",

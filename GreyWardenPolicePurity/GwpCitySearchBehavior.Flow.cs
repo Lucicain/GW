@@ -39,17 +39,14 @@ namespace GreyWardenPolicePurity
         private List<string> _enemyLosses = new List<string>();
         private bool _entryWaveQueued;
         private bool _hasLeftHall;
-        private bool _bodyPending;
-        private bool _bodyKilled;
-        private bool _bodyDelivered;
+        private bool _targetDown;
+        private bool _targetKilled;
         // 场景内的对象引用不存；地图衔接从已存的 ID 解析，不能把 Location/Agent 放进存档。
         private Hero? _searchTarget;
         internal GwpCitySearchPlace SearchPlace => (GwpCitySearchPlace)_searchPlace;
         internal bool SearchActive => SearchPlace != GwpCitySearchPlace.None;
         internal bool SearchWar => _searchWar;
         internal bool HasLeftHall => _hasLeftHall;
-        internal bool BodyPending => _bodyPending;
-        internal bool BodyKilled => _bodyKilled;
         internal bool SearchHere => SearchActive && Settlement.CurrentSettlement?.StringId == _searchSettlementId;
         internal GwpCitySearchGate GateState { get => (GwpCitySearchGate)_gateState; set => _gateState = (int)value; }
         internal bool HallAccessible => GateState == GwpCitySearchGate.Allowed || GateState == GwpCitySearchGate.Cleared;
@@ -80,9 +77,8 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_enemy_losses", ref _enemyLosses);
             store.SyncData("gwp_cs_entry_wave", ref _entryWaveQueued);
             store.SyncData("gwp_cs_left_hall", ref _hasLeftHall);
-            store.SyncData("gwp_cs_body_pending", ref _bodyPending);
-            store.SyncData("gwp_cs_body_killed", ref _bodyKilled);
-            store.SyncData("gwp_cs_body_delivered", ref _bodyDelivered);
+            store.SyncData("gwp_cs_target_down", ref _targetDown);
+            store.SyncData("gwp_cs_target_killed", ref _targetKilled);
         }
 
         private void BeginSearch(Settlement settlement, Hero target, TroopRoster roster)
@@ -101,7 +97,7 @@ namespace GreyWardenPolicePurity
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
-            _entryWaveQueued = _hasLeftHall = _bodyPending = _bodyKilled = _bodyDelivered = false;
+            _entryWaveQueued = _hasLeftHall = _targetDown = _targetKilled = false;
             foreach (TroopRosterElement element in roster.GetTroopRoster())
                 if (!element.Character.IsPlayerCharacter)
                     for (int i = 0; i < element.Number - element.WoundedNumber; i++)
@@ -175,15 +171,12 @@ namespace GreyWardenPolicePurity
 
         internal void MarkTargetDown(bool killed)
         {
-            _bodyPending = true;
-            _bodyKilled = killed;
-            _bodyDelivered = false;
+            _targetDown = true;
+            _targetKilled = killed;
             _captureReady = !killed && !SearchTarget.IsDead;
             _returning = true;
             _duelAgreed = false;
         }
-
-        internal void ConfirmBodyDelivered() => _bodyDelivered = true;
 
         internal void WonHall()
         {
@@ -197,7 +190,6 @@ namespace GreyWardenPolicePurity
 
         internal void FinishSearch(bool escaped)
         {
-            escaped = escaped && (!_bodyPending || _bodyDelivered);
             Hero? target = SearchTarget;
             // 群殴胜利先控制住人，杀出城后才正式交进主队囚笼；途中倒下不能隔城领到俘虏。
             bool captured = escaped && _captureReady && target != null && !target.IsDead && !target.IsPrisoner
@@ -205,7 +197,7 @@ namespace GreyWardenPolicePurity
                 && CrimeRecord.ShelterOf(target) == Settlement.CurrentSettlement
                 && GwpVoluntarySurrender.TryCapture(PartyBase.MainParty, target);
             if (captured) Bounty?.RegisterCaptureInCustody();
-            if (escaped && _bodyPending && _bodyKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
+            if (escaped && _targetDown && _targetKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("SEARCH_COMPLETE", "escaped=" + escaped + "; captured=" + captured
                 + "; target=" + target?.StringId + "; place=" + SearchPlace + "; war=" + _searchWar);
@@ -219,7 +211,7 @@ namespace GreyWardenPolicePurity
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
-            _bodyPending = _bodyKilled = _bodyDelivered = false;
+            _targetDown = _targetKilled = false;
             _leavePending = escaped;
         }
 

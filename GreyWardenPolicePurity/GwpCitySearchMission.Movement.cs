@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using SandBox;
+using SandBox.AI;
 using SandBox.Conversation.MissionLogics;
 using SandBox.Missions.AgentBehaviors;
 using SandBox.Missions.MissionLogics;
@@ -76,9 +77,26 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
+        internal bool IsDuelWalker(Agent agent) =>
+            Search.DuelAgreed && !Search.SearchWar && agent == _hallTarget;
+
         internal bool AllowsDuelArenaEntry(LocationCharacter character, Location destination) =>
             Search.DuelAgreed && !Search.SearchWar && destination.StringId == "arena"
             && character.Character == _target.CharacterObject;
+    }
+
+    /// <summary>
+    /// 赴约的目标跑过去（用户裁定 2026-10-22）。原版穿门的 PassageAI 对未受惊者固定加 DoNotRun，
+    /// 只对本次赴约目标去掉这一项，寻路与过门仍走原版（C#反编译 v1.4.8 SandBox.AI.PassageAI）。
+    /// </summary>
+    [HarmonyPatch(typeof(PassageAI), "GetScriptedFrameFlags")]
+    internal static class GwpCitySearchDuelRunPatch
+    {
+        private static void Postfix(Agent agent, ref Agent.AIScriptedFrameFlags __result)
+        {
+            if (GwpCitySearchMissionController.Current?.IsDuelWalker(agent) == true)
+                __result &= ~Agent.AIScriptedFrameFlags.DoNotRun;
+        }
     }
 
     [HarmonyPatch(typeof(MissionConversationLogic), nameof(MissionConversationLogic.IsThereAgentAction))]
