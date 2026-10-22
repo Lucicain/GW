@@ -165,7 +165,6 @@ namespace GreyWardenPolicePurity
 
         public override void OnRemoveBehavior()
         {
-            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued -= ReleaseHallPosts;
             if (Current == this) Current = null;
             base.OnRemoveBehavior();
         }
@@ -659,6 +658,8 @@ namespace GreyWardenPolicePurity
 
         protected override void OnEndMission()
         {
+            // 原版 EndMissionInternal 在本回调之后清空 Teams，晚到 OnRemoveBehavior 已没有 PlayerTeam。
+            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued -= ReleaseHallPosts;
             EndSearchScene();
             // 伤亡已由原版 BattleAgentLogic 经 PartyAgentOrigin 写进主队名册，这里只记录，核对是否只扣一次。
 #if GWP_DIAGNOSTICS
