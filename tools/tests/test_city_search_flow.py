@@ -58,7 +58,9 @@ class GameStateManager{public static GameStateManager Current=new();public objec
 static class PlayerEncounter{public static object? Current=new();public static int Leaves,Finishes;public static void LeaveSettlement(){Leaves++;Settlement.CurrentSettlement=null;}public static void Finish(){Finishes++;Current=null;}}
 class MissionLogic{public Mission Mission=>Mission.Current!;public virtual void OnMissionTick(float dt){}protected virtual void OnEndMission(){}public void Close()=>OnEndMission();}
 class Mission{public static Mission? Current;public bool Ended;public List<MissionLogic> Behaviors=new();public void AddMissionBehavior(MissionLogic l)=>Behaviors.Add(l);public void EndMission(){Ended=true;}public void Close(){foreach(var b in Behaviors)b.Close();Current=null;}}
-static class CampaignMission{public static Action<CharacterObject>? Callback;public static int Arenas;public static void OpenArenaDuelMission(string s,Location l,CharacterObject c,bool civilian,bool horse,Action<CharacterObject> cb,float hp){Callback=cb;Arenas++;Mission.Current=new();}}
+static class CampaignMission{public static Action<CharacterObject>? Callback;public static int Arenas;public static Mission? Created;public static Location? PreviousAtArenaOpen;
+ public static Mission OpenArenaDuelMission(string s,Location l,CharacterObject c,bool civilian,bool horse,Action<CharacterObject> cb,float hp){Callback=cb;Arenas++;PreviousAtArenaOpen=Campaign.Current.GameMenuManager.PreviousLocation;Created=new();return Created;}
+ public static void Initialize(){Mission.Current=Created;}}
 static class GwpCitySearchMission{public static int Opens;public static TroopRoster Last;public static GwpCitySearchPlace Place;public static void Open(Settlement s,Hero h,TroopRoster r){Opens++;Last=r;Place=Campaign.Current.Search.SearchPlace;Mission.Current=new();}}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
 partial class GwpCitySearchBehavior{
@@ -96,6 +98,7 @@ static class Program{
   b.QueuePlace(GwpCitySearchPlace.Street);Mission.Current!.Close();GwpCitySearchBehavior.Pump();Check(Campaign.Current.GameMenuManager.PreviousLocation?.StringId=="lordshall","walking out of hall spawns at actual hall door");
   Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Street&&b.DuelAgreed,"street walk preserves agreed duel");
   Mission.Current!.Close();b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();Check(CampaignMission.Arenas==1,"walking to arena opens native duel");
+  Check(Mission.Current==null&&CampaignMission.Created!.Behaviors.Count==1,"arena lifecycle attaches return behavior before Current is initialized");CampaignMission.Initialize();
   CampaignMission.Callback!(CharacterObject.PlayerCharacter);Check(b.Capture&&!h.IsPrisoner&&b.Returning,"arena win secures target without instant capture");
   Mission.Current!.Behaviors[0].OnMissionTick(0);Check(!Mission.Current.Ended,"native duel winner stays until player exits");Mission.Current.Close();b=Reload(b);
   Check(b.SearchPlace==GwpCitySearchPlace.Escape&&!b.Pending,"arena Tab returns to menu without forced scene");
@@ -106,7 +109,7 @@ static class Program{
   Check(h.IsPrisoner&&Campaign.Current.Bounty.Registered==reg+1&&!b.SearchActive,"escape captures via existing owner exactly once");
   var leaves=PlayerEncounter.Leaves;Mission.Current=new();GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves,"no settlement teardown inside scene");Mission.Current.Close();b=Reload(b);GwpCitySearchBehavior.Pump();
   Check(PlayerEncounter.Leaves==leaves+1,"saved exit completes on map");GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves+1,"exit is idempotent");
-  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();CampaignMission.Callback!(h.CharacterObject);Check(!b.Capture&&!b.SearchActive,"losing native duel gives no prisoner");Mission.Current!.Close();
+  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();CampaignMission.Initialize();CampaignMission.Callback!(h.CharacterObject);Check(!b.Capture&&!b.SearchActive,"losing native duel gives no prisoner");Mission.Current!.Close();
   b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Hall);CrimeRecord.Shelter=new();GwpCitySearchBehavior.Pump();Check(!b.SearchActive,"target no longer there aborts without spawning clone");
   b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Hall);b.WonHall();h.IsDead=true;GwpCitySearchBehavior.Pump();Check(b.Returning&&b.SearchActive,"dead target does not erase escape requirement");b.FinishSearch(true);Check(!h.IsPrisoner,"dead target never becomes prisoner");Mission.Current!.Close();
   b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Escape);b.WonHall();b.MarkSearchWar();b.EscapeCleared=true;b=Reload(b);Hero.MainHero.IsWounded=true;GwpCitySearchBehavior.Pump();Check(b.SearchActive&&b.SearchWar&&b.EscapeCleared,"war and cleared escape wave survive reload with wounded player");Mission.Current!.Close();b.FinishSearch(false);
@@ -114,6 +117,8 @@ static class Program{
   b.PauseSearch();Settlement.CurrentSettlement=null;GwpCitySearchBehavior.Pump();Check(!b.SearchActive,"leaving settlement outside search abandons without capture");
   b=New(out s,out h);b.Start(s,h,r);b.PauseSearch();b.PeacefulCapture();CrimeRecord.Shelter=new Settlement();b.FinishSearch(true);Check(!h.IsPrisoner,"paused search cannot capture target who has left settlement");
   b=New(out s,out h);b.Start(s,h,r);b.PauseSearch();PartyBase.MainParty.MemberRoster=TroopRoster.CreateDummyTroopRoster();PartyBase.MainParty.MemberRoster.AddToCounts(bow,1);b.QueuePlace(GwpCitySearchPlace.Hall);GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Last.Total==1&&b.SavedHealth("bow",0)==-1,"paused search cannot spawn troops transferred out of main party");Mission.Current!.Close();
+  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Hall);b.PauseSearch();b.AgreeDuel();b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();
+  Check(CampaignMission.PreviousAtArenaOpen==null,"hall-to-arena menu shortcut must not claim a nonexistent door");CampaignMission.Initialize();CampaignMission.Callback!(CharacterObject.PlayerCharacter);Mission.Current!.Close();
   Console.WriteLine("CITY_SEARCH_FLOW_ASSERTIONS="+n);
  }
 }}
@@ -133,6 +138,13 @@ class CitySearchFlowTests(unittest.TestCase):
         old_roster = flow.replace('if (!available.TryGetValue(character, out int count) || count <= 0) continue;', 'available.TryGetValue(character, out int count);')
         with self.assertRaisesRegex(AssertionError, 'paused search cannot spawn troops'):
             run(STUBS + old_roster + SCENARIOS)
+        old_current = flow.replace('mission.AddMissionBehavior(new GwpCitySearchArenaReturn(this));',
+                                   'Mission.Current.AddMissionBehavior(new GwpCitySearchArenaReturn(this));')
+        with self.assertRaisesRegex(AssertionError, 'Object reference not set'):
+            run(STUBS + old_current + SCENARIOS)
+        old_arena_door = flow.replace('Campaign.Current.GameMenuManager.PreviousLocation = null;', '')
+        with self.assertRaisesRegex(AssertionError, 'hall-to-arena menu shortcut must not claim a nonexistent door'):
+            run(STUBS + old_arena_door + SCENARIOS)
 
     def test_production_scene_progression(self):
         mission = read('GwpCitySearchMission.cs')

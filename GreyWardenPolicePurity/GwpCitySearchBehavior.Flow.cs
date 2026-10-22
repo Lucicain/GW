@@ -198,13 +198,21 @@ namespace GreyWardenPolicePurity
             if (SearchPlace == GwpCitySearchPlace.Arena)
             {
                 var arena = settlement.LocationComplex.GetLocationWithId("arena");
-                CampaignMission.OpenArenaDuelMission(arena.GetSceneName(settlement.Town.GetWallLevel()), arena,
+                // 原版单挑从sp_arena摆双方；菜单直达不代表大厅与竞技场之间存在门。
+                Campaign.Current.GameMenuManager.PreviousLocation = null;
+#if GWP_DIAGNOSTICS
+                GwpAiDiagnostics.WriteCitySearch("ARENA_OPEN", "settlement=" + settlement.StringId
+                    + "; target=" + target.StringId + "; scene=" + arena.GetSceneName(settlement.Town.GetWallLevel())
+                    + "; from=" + _previousLocationId);
+#endif
+                var mission = (Mission)CampaignMission.OpenArenaDuelMission(arena.GetSceneName(settlement.Town.GetWallLevel()), arena,
                     target.CharacterObject, false, false, winner =>
                     {
                         if (winner == CharacterObject.PlayerCharacter) WonHall();
                         else FinishSearch(false);
                     }, 100f);
-                Mission.Current.AddMissionBehavior(new GwpCitySearchArenaReturn(this));
+                // OpenNew返回新任务时尚未Initialize，Mission.Current此时仍为空；绑定到返回的实例。
+                mission.AddMissionBehavior(new GwpCitySearchArenaReturn(this));
                 return;
             }
             TroopRoster roster = TroopRoster.CreateDummyTroopRoster();

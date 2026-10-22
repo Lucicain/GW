@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-209 个源文件、57,519 行、403 个公开类型、109 条 Harmony 目标声明（含动态入口，共 109 个补丁类）。
+209 个源文件、57,527 行、403 个公开类型、109 条 Harmony 目标声明（含动态入口，共 109 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -727,7 +727,7 @@
 - `GwpWardenVisitDesire.cs` — 303 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
-- `GwpCitySearchBehavior.Flow.cs` — 245 行 · `GwpCitySearchPlace` : MissionLogic，另含 3 个类型
+- `GwpCitySearchBehavior.Flow.cs` — 253 行 · `GwpCitySearchPlace` : MissionLogic，另含 3 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAffairsData.cs` — 241 行 · `GwpAffairsEntry`，另含 2 个类型
 - `GwpStrength.Native.cs` — 240 行 · `GwpStrength`，另含 3 个类型
