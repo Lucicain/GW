@@ -1721,4 +1721,19 @@
 | gwp_cs_choice_arg_shame | People will remember how eagerly you hid behind your own terms. | 人们会记住，你是怎么躲在自己那套规矩后面的。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_hall_notice | Proceed to the lord's hall with your surviving followers. | 带着还站得住的部下，进入领主大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_escape_notice | Return to the gate and get out of the settlement. | 回到城门，带人撤出城外。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_route_blocked | You must finish the search or withdraw through the gate. | 你得办完搜捕，或从城门撤出去。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_route_blocked | You cannot leave while combat or a conversation is still in progress. | 交战或交涉尚未结束，暂时不能离场。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_menu_begin | Choose your troops and enter through the gate | 选择随行士兵，亲自从城门进城 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_resume | Return to the search on foot | 返回搜捕现场，继续步行 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_hall | Take your troops to the lord’s hall | 带兵前往领主大厅 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_street | Take your troops outside to the street or courtyard | 带兵回到街道或庭院 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_arena | Go to the arena for the agreed duel | 前往竞技场赴约单挑 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_leave | Leave the settlement with your party and end this search | 带队出城，结束本次搜捕 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_back | Return to the settlement menu | 返回聚落菜单 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_new | You are preparing to search for {TARGET}. Enter through the gate with your troops, negotiate with the guards, and walk to the lord’s hall. | 你准备带兵进城搜捕{TARGET}。你可以亲自从城门进入，与卫兵交涉，再带兵走到领主大厅。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_gate | The guards have not granted passage. Return to the gate to deal with them. Tab returns here and preserves your search progress. Your target is {TARGET}. | 卫兵尚未放行。返回现场继续处理门口的交涉；Tab返回此菜单会保留本次搜捕进度。搜捕目标：{TARGET}。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_allowed | You have secured passage through the gate. Walk with your troops to the hall where {TARGET} is staying, or enter the hall directly from this menu. | 卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_duel | You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu. | 你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_return | Your encounter with {TARGET} is over. Lead your party out of the hall and walk to the gate, or end this search here. | 与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_fight_out | The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way to the gate. Returning here with Tab does not deliver a prisoner. | 与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离。Tab返回菜单不会交付俘虏。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_out_notice | You are finished here. Lead your party out of the hall and leave through the gate, or press Tab to return to the search menu. | 这里的事情已了。带队走出大厅，再从城门离开；也可按Tab返回搜捕菜单。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_arena_notice | The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu. | 单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。 | 玩家进城搜捕：体验路线与地点子菜单 |

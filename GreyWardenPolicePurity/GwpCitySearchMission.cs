@@ -29,6 +29,9 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal static class GwpCitySearchMission
     {
+        /// <summary>原版 sp_player 预制体继承的实际标签，预制体名称本身不算标签。</summary>
+        internal const string HallSpawnTag = "spawnpoint_player";
+
         /// <summary>原版「进城时遭遇战斗」用的城门外出生点：城镇场景全有，城堡约一半有（场景标签核对 2026-10-21）。</summary>
         internal const string GateSpawnTag = "sp_outside_near_town_main_gate";
 
@@ -79,9 +82,9 @@ namespace GreyWardenPolicePurity
                 new MissionCrimeHandler(),
                 new MissionConversationLogic(),
                 new MissionAgentHandler(),
-                new MissionLocationLogic(center, center.StringId == "lordshall" ? "sp_player"
-                    : Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().SearchPlace == GwpCitySearchPlace.Escape
-                        ? null : GateSpawnTag),
+                new MissionLocationLogic(center, center.StringId == "lordshall" ? HallSpawnTag
+                    : Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().SearchPlace != GwpCitySearchPlace.Entry
+                        || Campaign.Current.GameMenuManager.PreviousLocation != null ? null : GateSpawnTag),
                 new HeroSkillHandler(),
                 new MissionFightHandler(),
                 new MissionFacialAnimationHandler(),
@@ -110,7 +113,7 @@ namespace GreyWardenPolicePurity
     /// </summary>
     internal sealed partial class GwpCitySearchMissionController : MissionLogic
     {
-        private enum Stage { Entering, Questioned, Allowed, Leaving, Refused, Withdrawing, Fighting, FightOver, HallReady, HallTalking, Duel, Escaping, Failed }
+        private enum Stage { Entering, Questioned, Allowed, Leaving, Refused, Withdrawing, Fighting, FightOver, HallReady, HallTalking, Duel, Escaping, Failed, HallDone }
 
         internal static GwpCitySearchMissionController? Current { get; private set; }
 
@@ -188,8 +191,11 @@ namespace GreyWardenPolicePurity
                 spawnTag = "spawnpoint_player_outside";
                 spawn = Mission.Scene.FindEntityWithTag(spawnTag);
             }
-            SandBoxHelpers.MissionHelper.SpawnPlayer(InHall ? Mission.Scene.FindEntityWithTag("sp_player") : spawn,
-                civilianEquipment: false, noHorses: true);
+            if (InHall)
+                SandBoxHelpers.MissionHelper.SpawnPlayer(civilianEquipment: false, noHorses: true,
+                    spawnTag: GwpCitySearchMission.HallSpawnTag);
+            else
+                SandBoxHelpers.MissionHelper.SpawnPlayer(spawn, civilianEquipment: false, noHorses: true);
             _gate = spawn?.GetGlobalFrame().origin ?? Agent.Main?.Position ?? Vec3.Zero;
             CampaignMission.Current.Location.RemoveAllCharacters(character => character.Character.HeroObject?.PartyBelongedTo == MobileParty.MainParty);
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
@@ -201,7 +207,8 @@ namespace GreyWardenPolicePurity
             BeginSearchStage();
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("SPAWNED", "settlement=" + _settlement.StringId
-                + "; spawnTag=" + (spawn == null ? "none" : spawnTag) + "; troops=" + spawned
+                + "; spawnTag=" + (InHall ? GwpCitySearchMission.HallSpawnTag : spawn == null ? "none" : spawnTag)
+                + "; player=" + Agent.Main?.Position + "; troops=" + spawned
                 + "; passagesClosed=" + passages + "; watch=" + Mission.Agents.Count(IsWatch));
 #endif
 #if GWP_DIAGNOSTICS
@@ -258,7 +265,7 @@ namespace GreyWardenPolicePurity
         }
 #endif
 
-        /// <summary>原版门只送玩家；只有当前阶段允许的大厅门可用，由搜捕带兵切场景，平民仍可穿门逃开。</summary>
+        /// <summary>玩家走门时带整队衔接大厅、街道和竞技场；其他人物沿用原版。</summary>
         private int DisablePlayerPassages()
         {
             int count = 0;
@@ -382,6 +389,7 @@ namespace GreyWardenPolicePurity
         {
             if (_stage != Stage.Questioned) return;
             _stage = allowed ? Stage.Allowed : Stage.Refused;
+            Search.GateState = allowed ? GwpCitySearchGate.Allowed : GwpCitySearchGate.Refused;
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=" + allowed + "; result=" + result);
 #endif
@@ -425,6 +433,7 @@ namespace GreyWardenPolicePurity
         private void BeginLeaving(Stage stage, string noticeKey)
         {
             _stage = stage;
+            Search.GateState = stage == Stage.Leaving ? GwpCitySearchGate.Leaving : GwpCitySearchGate.Withdrawing;
             Agent? main = Agent.Main;
             _inwardLimit = (main == null ? 0f : main.Position.Distance(_gate)) + GwpTuning.CitySearch.InwardTolerance;
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(noticeKey)));

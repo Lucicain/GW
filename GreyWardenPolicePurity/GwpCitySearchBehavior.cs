@@ -44,17 +44,17 @@ namespace GreyWardenPolicePurity
                     SearchOptionCondition, SearchOptionConsequence, isLeave: false, index: 1);
             RegisterGuardDialogue(starter);
             RegisterHallDialogue(starter);
-            if (SearchActive) _openPending = true;
+            RegisterSearchMenu(starter);
         }
 
-        private static bool SearchOptionCondition(MenuCallbackArgs args)
+        private bool SearchOptionCondition(MenuCallbackArgs args)
         {
-            Hero? target = Bounty?.CitySearchTargetIn(Settlement.CurrentSettlement);
+            Hero? target = SearchHere ? SearchTarget : Bounty?.CitySearchTargetIn(Settlement.CurrentSettlement);
             if (target == null) return false;
             MBTextManager.SetTextVariable("GWP_CITY_SEARCH_OPTION",
                 GwpText.Create(GwpTextCatalog.gwp_city_search_option, "TARGET", target.Name));
-            args.optionLeaveType = GameMenuOption.LeaveType.Mission;
-            if (Hero.MainHero.IsWounded)
+            args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
+            if (!SearchHere && Hero.MainHero.IsWounded)
             {
                 args.IsEnabled = false;
                 args.Tooltip = GwpText.Create(GwpTextCatalog.gwp_city_search_wounded);
@@ -62,7 +62,9 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private static void SearchOptionConsequence(MenuCallbackArgs args)
+        private static void SearchOptionConsequence(MenuCallbackArgs args) => GameMenu.SwitchToMenu(SearchMenu);
+
+        private static void SelectSearchTroops(MenuCallbackArgs args)
         {
             Settlement? settlement = Settlement.CurrentSettlement;
             Hero? target = Bounty?.CitySearchTargetIn(settlement);

@@ -39,13 +39,13 @@ class Store:IDataStore{public Dictionary<string,JsonElement> Data=new();public b
 class CharacterObject{public static List<CharacterObject> All=new();public static CharacterObject PlayerCharacter=new("player"){IsPlayerCharacter=true};public string StringId;public bool IsPlayerCharacter;public CharacterObject(string id){StringId=id;All.Add(this);}}
 class Hero{public static List<Hero> All=new();public static Hero MainHero=new("player");public string StringId;public CharacterObject CharacterObject;public bool IsDead,IsPrisoner,IsWounded;public Hero(string id){StringId=id;CharacterObject=new(id);All.Add(this);}public static Hero FindFirst(Func<Hero,bool> p)=>All.FirstOrDefault(p);}
 class Town{public int GetWallLevel()=>1;}
-class Location{public string GetSceneName(int n)=>"arena";}
-class Locations{public Location GetLocationWithId(string s)=>new();}
+class Location{public string StringId="";public string GetSceneName(int n)=>"arena";}
+class Locations{public Location GetLocationWithId(string s)=>new(){StringId=s};}
 class Settlement{public static Settlement? CurrentSettlement;public string StringId="town";public Town Town=new();public Locations LocationComplex=new();}
 class TroopRosterElement{public CharacterObject Character;public int Number,WoundedNumber;}
 class TroopRoster{List<TroopRosterElement> e=new();public static TroopRoster CreateDummyTroopRoster()=>new();public IEnumerable<TroopRosterElement> GetTroopRoster()=>e;public int Total=>e.Sum(x=>x.Number-x.WoundedNumber);
  public void AddToCounts(CharacterObject c,int n,int wounded=0){var v=e.FirstOrDefault(x=>x.Character==c);if(v==null){v=new(){Character=c};e.Add(v);}v.Number+=n;v.WoundedNumber+=wounded;}}
-class PartyBase{public static PartyBase MainParty=new();}
+class PartyBase{public static PartyBase MainParty=new();public TroopRoster MemberRoster=TroopRoster.CreateDummyTroopRoster();}
 static class CrimeRecord{public static Settlement? Shelter;public static Settlement? ShelterOf(Hero h)=>h.IsDead||h.IsPrisoner?null:Shelter;}
 static class GwpVoluntarySurrender{public static int Calls;public static bool Allowed=true;public static bool TryCapture(PartyBase p,Hero h){Calls++;if(!Allowed)return false;h.IsPrisoner=true;return true;}}
 class PlayerBountyBehavior{public int Registered;public bool RegisterCaptureInCustody(){Registered++;return true;}}
@@ -63,7 +63,7 @@ static class GwpCitySearchMission{public static int Opens;public static TroopRos
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
 partial class GwpCitySearchBehavior{
  static PlayerBountyBehavior Bounty=>Campaign.Current.Bounty;
- public void Start(Settlement s,Hero h,TroopRoster r)=>BeginSearch(s,h,r);
+ public void Start(Settlement s,Hero h,TroopRoster r){PartyBase.MainParty.MemberRoster=r;BeginSearch(s,h,r);}
  public void Sync(IDataStore store)=>SyncSearch(store);
  public bool Pending=>_openPending;public bool Capture=>_captureReady;public bool LeavePending=>_leavePending;
 }
@@ -83,34 +83,37 @@ static class Program{
   var b=New(out var s,out var h);var foot=new CharacterObject("foot");var bow=new CharacterObject("bow");var r=TroopRoster.CreateDummyTroopRoster();r.AddToCounts(foot,3,1);r.AddToCounts(bow,1);r.AddToCounts(CharacterObject.PlayerCharacter,1);
   b.Start(s,h,r);Check(b.SearchPlace==GwpCitySearchPlace.Entry&&b.Pending,"selection queues entry");
   Check(b.SavedHealth("foot",0)==-1&&b.SavedHealth("foot",1)==-1,"wounded excluded and player not duplicated");
-  GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Opens==1&&GwpCitySearchMission.Last.Total==3,"entry has exactly three healthy selected followers");
-  b.SaveSurvivors(new[]{(foot,37f),(bow,12f)});b.MarkSearchWar();b.QueuePlace(GwpCitySearchPlace.Hall);
-  var opens=GwpCitySearchMission.Opens;GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Opens==opens,"cannot open hall over current mission");
-  Mission.Current!.Close();b=Reload(b);Check(b.SearchPlace==GwpCitySearchPlace.Hall&&b.SearchWar,"route and war survive actual SyncSearch round trip");
+  GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Last.Total==3,"entry has exactly three healthy selected followers");
+  Check(Campaign.Current.GameMenuManager.PreviousLocation==null,"first entry has no nonexistent previous passage");
+  b.GateState=GwpCitySearchGate.Allowed;b.SaveSurvivors(new[]{(foot,37f),(bow,12f)});b.PauseSearch();Mission.Current!.Close();b=Reload(b);
+  Check(b.HallAccessible&&!b.Pending,"Tab and save/load preserve gate permission without opening a scene");
+  var opens=GwpCitySearchMission.Opens;GwpCitySearchBehavior.Pump();Check(opens==GwpCitySearchMission.Opens,"Tab remains at search menu");
+  b.QueuePlace(GwpCitySearchPlace.Hall);Campaign.Current.GameMenuManager.NextLocation=new();GwpCitySearchBehavior.Pump();
+  Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Hall&&GwpCitySearchMission.Last.Total==2,"hall receives only survivors");
   Check(b.SavedHealth("foot",0)==37&&b.SavedHealth("bow",0)==12,"individual wounds persist across save/load");
-  Campaign.Current.GameMenuManager.NextLocation=new();Campaign.Current.GameMenuManager.PreviousLocation=new();
-  GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Hall&&GwpCitySearchMission.Last.Total==2,"hall receives only survivors");
-  Check(Campaign.Current.GameMenuManager.NextLocation==null&&Campaign.Current.GameMenuManager.PreviousLocation==null,"native automatic passage cannot steal transition");
-  b.WonHall();Check(!h.IsPrisoner&&b.Capture&&b.SearchPlace==GwpCitySearchPlace.Escape,"hall win does not teleport prisoner to party");
-  Mission.Current!.Close();b=Reload(b);GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Escape&&b.Capture,"escape obligation persists");
-  Check(Campaign.Current.GameMenuManager.PreviousLocation!=null,"escape uses native hall passage frame, including castles without town guard spawn tag");
+  Check(Campaign.Current.GameMenuManager.NextLocation==null&&Campaign.Current.GameMenuManager.PreviousLocation?.StringId=="center","hall uses native center-to-hall passage provenance");
+  b.AgreeDuel();Check(b.DuelAgreed&&!b.Returning&&b.SearchPlace==GwpCitySearchPlace.Hall&&!b.Pending,"agreeing duel leaves player in hall");
+  b.QueuePlace(GwpCitySearchPlace.Street);Mission.Current!.Close();GwpCitySearchBehavior.Pump();Check(Campaign.Current.GameMenuManager.PreviousLocation?.StringId=="lordshall","walking out of hall spawns at actual hall door");
+  Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Street&&b.DuelAgreed,"street walk preserves agreed duel");
+  Mission.Current!.Close();b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();Check(CampaignMission.Arenas==1,"walking to arena opens native duel");
+  CampaignMission.Callback!(CharacterObject.PlayerCharacter);Check(b.Capture&&!h.IsPrisoner&&b.Returning,"arena win secures target without instant capture");
+  Mission.Current!.Behaviors[0].OnMissionTick(0);Check(!Mission.Current.Ended,"native duel winner stays until player exits");Mission.Current.Close();b=Reload(b);
+  Check(b.SearchPlace==GwpCitySearchPlace.Escape&&!b.Pending,"arena Tab returns to menu without forced scene");
+  b.QueuePlace(GwpCitySearchPlace.Escape);GwpCitySearchBehavior.Pump();Check(Campaign.Current.GameMenuManager.PreviousLocation?.StringId=="arena","arena exit resumes at actual arena door");Mission.Current!.Close();
   var cap=GwpVoluntarySurrender.Calls;var reg=Campaign.Current.Bounty.Registered;b.FinishSearch(false);
   Check(!h.IsPrisoner&&GwpVoluntarySurrender.Calls==cap&&Campaign.Current.Bounty.Registered==reg,"losing escape grants no prisoner or capture credit");
-  Mission.Current!.Close();
-  b=New(out s,out h);b.Start(s,h,r);b.WonHall();b=Reload(b);b.FinishSearch(true);
+  b=New(out s,out h);b.Start(s,h,r);b.PauseSearch();b.PeacefulCapture();Check(b.SearchActive&&b.Returning&&!h.IsPrisoner&&!b.Pending,"peaceful surrender lets player walk out first");b=Reload(b);b.FinishSearch(true);
   Check(h.IsPrisoner&&Campaign.Current.Bounty.Registered==reg+1&&!b.SearchActive,"escape captures via existing owner exactly once");
-  var leaves=PlayerEncounter.Leaves;Check(b.LeavePending&&leaves==PlayerEncounter.Leaves,"settlement exit is deferred until mission ends");
-  Mission.Current=new();GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves,"no settlement teardown inside scene");Mission.Current.Close();b=Reload(b);GwpCitySearchBehavior.Pump();
-  Check(PlayerEncounter.Leaves==leaves+1&&PlayerEncounter.Finishes>0,"saved exit completes on map");GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves+1,"exit is idempotent");
-  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();Check(CampaignMission.Arenas==1,"town duel opens native arena");
-  CampaignMission.Callback!(CharacterObject.PlayerCharacter);Check(b.Capture&&!h.IsPrisoner,"native arena win queues capture for escape");
-  Mission.Current!.Behaviors[0].OnMissionTick(0);Check(Mission.Current.Ended,"arena return occurs on task frame");Mission.Current.Close();GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Escape,"arena returns through center");Mission.Current!.Close();
-  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();CampaignMission.Callback!(h.CharacterObject);Check(!b.Capture,"losing native duel gives no prisoner");Mission.Current!.Close();b.FinishSearch(false);
+  var leaves=PlayerEncounter.Leaves;Mission.Current=new();GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves,"no settlement teardown inside scene");Mission.Current.Close();b=Reload(b);GwpCitySearchBehavior.Pump();
+  Check(PlayerEncounter.Leaves==leaves+1,"saved exit completes on map");GwpCitySearchBehavior.Pump();Check(PlayerEncounter.Leaves==leaves+1,"exit is idempotent");
+  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Arena);GwpCitySearchBehavior.Pump();CampaignMission.Callback!(h.CharacterObject);Check(!b.Capture&&!b.SearchActive,"losing native duel gives no prisoner");Mission.Current!.Close();
   b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Hall);CrimeRecord.Shelter=new();GwpCitySearchBehavior.Pump();Check(!b.SearchActive,"target no longer there aborts without spawning clone");
-  b=New(out s,out h);b.Start(s,h,r);b.WonHall();h.IsDead=true;GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Place==GwpCitySearchPlace.Escape,"dead target does not erase escape requirement");b.FinishSearch(true);Check(!h.IsPrisoner,"dead target never becomes a prisoner");Mission.Current!.Close();
-  b=New(out s,out h);b.Start(s,h,r);b.WonHall();Hero.MainHero.IsWounded=true;GwpCitySearchBehavior.Pump();Check(b.SearchActive&&!h.IsPrisoner&&GwpCitySearchMission.Place==GwpCitySearchPlace.Escape,"living but wounded player still has to escape at actual remaining health");Mission.Current!.Close();b.FinishSearch(false);
+  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Hall);b.WonHall();h.IsDead=true;GwpCitySearchBehavior.Pump();Check(b.Returning&&b.SearchActive,"dead target does not erase escape requirement");b.FinishSearch(true);Check(!h.IsPrisoner,"dead target never becomes prisoner");Mission.Current!.Close();
+  b=New(out s,out h);b.Start(s,h,r);b.QueuePlace(GwpCitySearchPlace.Escape);b.WonHall();b.MarkSearchWar();b.EscapeCleared=true;b=Reload(b);Hero.MainHero.IsWounded=true;GwpCitySearchBehavior.Pump();Check(b.SearchActive&&b.SearchWar&&b.EscapeCleared,"war and cleared escape wave survive reload with wounded player");Mission.Current!.Close();b.FinishSearch(false);
   b=New(out s,out h);b.Start(s,h,r);Campaign.Current.ConversationManager.IsConversationInProgress=true;opens=GwpCitySearchMission.Opens;GwpCitySearchBehavior.Pump();Check(opens==GwpCitySearchMission.Opens,"conversation must close before opening");Campaign.Current.ConversationManager.IsConversationInProgress=false;
-  b.PeacefulCapture();Check(h.IsPrisoner&&!b.SearchActive,"peaceful surrender uses same capture owner");
+  b.PauseSearch();Settlement.CurrentSettlement=null;GwpCitySearchBehavior.Pump();Check(!b.SearchActive,"leaving settlement outside search abandons without capture");
+  b=New(out s,out h);b.Start(s,h,r);b.PauseSearch();b.PeacefulCapture();CrimeRecord.Shelter=new Settlement();b.FinishSearch(true);Check(!h.IsPrisoner,"paused search cannot capture target who has left settlement");
+  b=New(out s,out h);b.Start(s,h,r);b.PauseSearch();PartyBase.MainParty.MemberRoster=TroopRoster.CreateDummyTroopRoster();PartyBase.MainParty.MemberRoster.AddToCounts(bow,1);b.QueuePlace(GwpCitySearchPlace.Hall);GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Last.Total==1&&b.SavedHealth("bow",0)==-1,"paused search cannot spawn troops transferred out of main party");Mission.Current!.Close();
   Console.WriteLine("CITY_SEARCH_FLOW_ASSERTIONS="+n);
  }
 }}
@@ -121,10 +124,15 @@ class CitySearchFlowTests(unittest.TestCase):
     def test_production_coordinator_roundtrip_and_all_routes(self):
         flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))
         run(STUBS + flow + SCENARIOS)
-        old_passage = re.sub(r'Campaign.Current.GameMenuManager.PreviousLocation = SearchPlace == GwpCitySearchPlace.Escape\s*\? settlement.LocationComplex.GetLocationWithId\("lordshall"\) : null;',
-                            'Campaign.Current.GameMenuManager.PreviousLocation = null;', flow)
-        with self.assertRaisesRegex(AssertionError, 'escape uses native hall passage frame'):
+        old_passage = flow.replace('settlement.LocationComplex.GetLocationWithId(_previousLocationId)', 'null')
+        with self.assertRaisesRegex(AssertionError, 'hall uses native center-to-hall passage provenance'):
             run(STUBS + old_passage + SCENARIOS)
+        old_capture = flow.replace('&& CrimeRecord.ShelterOf(target) == Settlement.CurrentSettlement', '')
+        with self.assertRaisesRegex(AssertionError, 'paused search cannot capture target'):
+            run(STUBS + old_capture + SCENARIOS)
+        old_roster = flow.replace('if (!available.TryGetValue(character, out int count) || count <= 0) continue;', 'available.TryGetValue(character, out int count);')
+        with self.assertRaisesRegex(AssertionError, 'paused search cannot spawn troops'):
+            run(STUBS + old_roster + SCENARIOS)
 
     def test_production_scene_progression(self):
         mission = read('GwpCitySearchMission.cs')
@@ -133,8 +141,9 @@ class CitySearchFlowTests(unittest.TestCase):
         template = r'''
 using System;using System.Linq;using System.Collections.Generic;
 namespace GreyWardenPolicePurity{
-enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver,HallReady,HallTalking,Duel,Escaping}
-enum GwpCitySearchPlace{None,Entry,Hall,Arena,Escape}
+enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver,HallReady,HallTalking,Duel,Escaping,Failed,HallDone}
+enum GwpCitySearchPlace{None,Entry,Hall,Arena,Escape,Street}
+enum GwpCitySearchGate{Unchecked,Allowed,Leaving,Refused,Withdrawing,Cleared}
 enum AgentState{None,Unconscious,Killed}
 class CharacterObject{public bool IsHero;public Hero? HeroObject;}
 struct Vec3{public float X;public Vec3(float x){X=x;}public float Distance(Vec3 v)=>Math.Abs(X-v.X);}
@@ -147,59 +156,66 @@ class AlarmedBehaviorGroup{public bool DisableCalmDown;public void AddBehavior<T
 class Hero{public static Hero MainHero=new();public object MapFaction=new();public CharacterObject CharacterObject=new();public bool IsDead;}
 class Settlement{public bool IsTown;public object MapFaction=new();}
 class PlayerBountyBehavior{public int Dead,Defeats;public void RecordCitySearchLosses(Hero h,int n){Dead+=n;}public void RecordCitySearchDefeat(Hero h){Defeats++;}}
-class GwpCitySearchBehavior{public GwpCitySearchPlace SearchPlace;public bool SearchActive=true,War,Won,Peaceful,Escaped,Aborted;public List<(CharacterObject,float)> Saved=new();
- public void QueuePlace(GwpCitySearchPlace p){SearchPlace=p;}public void MarkSearchWar(){War=true;}public void WonHall(){Won=true;SearchPlace=GwpCitySearchPlace.Escape;}public void PeacefulCapture(){Peaceful=true;SearchActive=false;}public void FinishSearch(bool escaped){Escaped=escaped;Aborted=!escaped;SearchActive=false;}public void SaveSurvivors(IEnumerable<(CharacterObject,float)> s){Saved=s.ToList();}}
+class GwpCitySearchBehavior{public GwpCitySearchPlace SearchPlace;public bool SearchActive=true,War,Won,Peaceful,Escaped,Aborted,DuelAgreed,Returning,EscapeCleared,Paused,HallAccessible;public bool SearchWar=>War;public GwpCitySearchGate GateState;public bool HallResolved=>DuelAgreed||Returning;public List<(CharacterObject,float)> Saved=new();
+ public void QueuePlace(GwpCitySearchPlace p){SearchPlace=p;}public void MarkSearchWar(){War=true;}public void WonHall(){Won=true;Returning=true;}public void PeacefulCapture(){Peaceful=true;Returning=true;}public void AgreeDuel(){DuelAgreed=true;}public void WithdrawFromHall(){Returning=true;}public void PauseSearch(){Paused=true;}public void FinishSearch(bool escaped){Escaped=escaped;Aborted=!escaped;SearchActive=false;}public void SaveSurvivors(IEnumerable<(CharacterObject,float)> s){Saved=s.ToList();}}
 class Conversation{public bool IsConversationFlowActive;public Agent? OneToOneConversationAgent;}
 class Campaign{public static Campaign Current=new();public Conversation ConversationManager=new();public PlayerBountyBehavior Bounty=new();public T GetCampaignBehavior<T>() where T:class=>Bounty as T;}
 class MissionConversationLogic{public int Talks;public bool Disabled;public void StartConversation(Agent a,bool b){Talks++;Campaign.Current.ConversationManager.OneToOneConversationAgent=a;}public void DisableStartConversation(bool b){Disabled=b;}}
-enum MissionMode{Duel}
+enum MissionMode{Duel,StartUp}
+enum OrderType{FollowMe}
 class Mission{public List<Agent> Agents=new();public Team PlayerTeam=new(),PlayerEnemyTeam=new();public bool Ended;public MissionConversationLogic Talk=new();public T GetMissionBehavior<T>() where T:class=>Talk as T;public void EndMission(){Ended=true;}public void SetMissionMode(MissionMode m,bool b){}}
 class PassageUsePoint{public string ToLocationId="";}
-static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6;}}
+static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6,InwardTolerance=10;}}
 class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
-static class GwpText{public static string Get(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape";}
+static class GwpText{public static string Get(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena";}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
-class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public bool InHall=>_place==GwpCitySearchPlace.Hall;public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
- public bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsWatch(Agent a)=>a.Watch;void DisablePlayerPassages(){}void EndFightIfDefendersDown(){}
+class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
+ public bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsWatch(Agent a)=>a.Watch;void DisablePlayerPassages(){}void EndFightIfDefendersDown(){}void Order(OrderType o){}
  METHODS
- public bool Tick()=>TickSearchProgress();public bool CanLeave()=>CanLeaveSearch();public void End()=>EndSearchScene();public void DuelRemoval(Agent a)=>NoteDuelRemoval(a);public void FightWon()=>OnSearchFightWon();
+ public void Begin()=>BeginSearchStage();public bool Tick()=>TickSearchProgress();public bool CanLeave()=>CanLeaveSearch();public void End()=>EndSearchScene();public void DuelRemoval(Agent a)=>NoteDuelRemoval(a);public void FightWon()=>OnSearchFightWon();
 }
 static class Program{static int n;static void Check(bool c,string why){n++;if(!c)throw new Exception(why);}static Scene New(GwpCitySearchPlace p,Stage s){Agent.Main=new(){Position=new Vec3(50)};return new(){_place=p,_stage=s};}
 static void Main(){
  var entry=New(GwpCitySearchPlace.Entry,Stage.Entering);Check(entry.CanLeave(),"peaceful entry can withdraw");var door=new PassageUsePoint{ToLocationId="lordshall"};
+ entry.Search.GateState=GwpCitySearchGate.Allowed;entry.Search.HallAccessible=true;entry.Search.SearchPlace=GwpCitySearchPlace.Entry;entry.Begin();Check(entry._stage==Stage.Allowed,"resuming entry restores permission without repeat challenge");
+ Campaign.Current.ConversationManager.IsConversationFlowActive=true;entry.TryUseSearchPassage(door,Agent.Main!);Check(entry._pendingHallAction=="enter_hall","permission granted inside dialogue opens hall door");entry._pendingHallAction=null;Campaign.Current.ConversationManager.IsConversationFlowActive=false;entry.Search.HallAccessible=false;
  Check(!entry.TryUseSearchPassage(door,new Agent()),"AI doors retain native handling");entry.TryUseSearchPassage(door,Agent.Main!);Check(entry._pendingHallAction==null,"hall locked until guard allows passage");
- foreach(var stage in new[]{Stage.Allowed,Stage.FightOver}){entry=New(GwpCitySearchPlace.Entry,stage);entry.TryUseSearchPassage(door,Agent.Main!);Check(entry.Tick()&&entry._transitioning&&entry.Mission.Ended&&entry.Search.SearchPlace==GwpCitySearchPlace.Hall,"approved or victorious entry leads to hall with transition marked");}
- var war=New(GwpCitySearchPlace.Entry,Stage.FightOver);war._warDeclared=true;Check(!war.CanLeave(),"winning at gate cannot skip hall and escape");
- var hall=New(GwpCitySearchPlace.Hall,Stage.HallReady);hall._hallTarget=new(){Position=new Vec3(52)};hall.Tick();Check(hall._stage==Stage.HallTalking&&hall.Mission.Talk.Talks==1,"approaching actual target starts warrant dialogue");hall.Tick();Check(hall.Mission.Talk.Talks==1,"one hall conversation");Check(!hall.CanLeave(),"no Tab teleport from hall");
+ foreach(var stage in new[]{Stage.Allowed,Stage.FightOver}){entry=New(GwpCitySearchPlace.Entry,stage);entry.Search.HallAccessible=true;entry.TryUseSearchPassage(door,Agent.Main!);Check(entry.Tick()&&entry._transitioning&&entry.Mission.Ended&&entry.Search.SearchPlace==GwpCitySearchPlace.Hall,"approved or victorious entry leads to hall with transition marked");}
+ var war=New(GwpCitySearchPlace.Entry,Stage.FightOver);war._warDeclared=true;Check(war.CanLeave(),"winning at gate permits native Tab pause");
+ var resolved=New(GwpCitySearchPlace.Hall,Stage.HallReady);resolved.Search.SearchPlace=GwpCitySearchPlace.Hall;resolved.Search.Returning=true;resolved.Search.War=true;resolved.Begin();Check(resolved._stage==Stage.HallDone&&resolved._pendingFight==null&&resolved._pendingHallAction==null,"return to resolved hall neither clones target nor restarts fight");
+ var clear=New(GwpCitySearchPlace.Escape,Stage.Escaping);clear.Search.SearchPlace=GwpCitySearchPlace.Escape;clear.Search.War=true;clear.Search.EscapeCleared=true;clear.Begin();Check(clear._pendingFight==null,"resuming cleared escape wave does not restart combat");
+ var hall=New(GwpCitySearchPlace.Hall,Stage.HallReady);hall._hallTarget=new(){Position=new Vec3(52)};hall.Tick();Check(hall._stage==Stage.HallTalking&&hall.Mission.Talk.Talks==1,"approaching actual target starts warrant dialogue");hall.Tick();Check(hall.Mission.Talk.Talks==1,"one hall conversation");Check(hall.CanLeave(),"calm hall permits native Tab pause");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallReady);hall._hallTarget=new(){Position=new Vec3(52)};hall._pendingFight="forced_hall";hall._warDeclared=true;hall.Tick();Check(hall.Mission.Talk.Talks==0&&hall._stage==Stage.HallReady,"forced hall fight cannot open peaceful dialogue even when target spawns beside player");
  var foreign=new Agent{Character=new CharacterObject{IsHero=true,HeroObject=new Hero()}};hall._hallTarget=foreign;Check(hall.IsDefender(foreign),"foreign faction target must fight with hall defenders");var guest=new Agent{Character=new CharacterObject{IsHero=true,HeroObject=new Hero()}};Check(!hall.IsDefender(guest),"other foreign guests are not turned into defenders");
- hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="surrender";hall.Tick();Check(hall.Search.Peaceful&&hall.Mission.Ended,"successful hall persuasion takes captive and ends scene");
- hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="duel";hall._settlement.IsTown=true;hall.Tick();Check(hall.Search.SearchPlace==GwpCitySearchPlace.Arena,"town duel transfers to arena");
+ hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="surrender";hall.Tick();Check(hall.Search.Peaceful&&!hall.Mission.Ended&&hall._stage==Stage.HallDone,"successful hall persuasion leaves player to walk out");
+ hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="duel";hall._settlement.IsTown=true;hall.Tick();Check(hall.Search.DuelAgreed&&!hall.Mission.Ended&&hall._stage==Stage.HallDone,"town duel agreement waits for walk to arena");hall.TryUseSearchPassage(new PassageUsePoint{ToLocationId="center"},Agent.Main!);hall.Tick();Check(hall.Search.SearchPlace==GwpCitySearchPlace.Street,"hall exit leads to street before arena");var street=New(GwpCitySearchPlace.Street,Stage.Allowed);street.Search.DuelAgreed=true;street.TryUseSearchPassage(new PassageUsePoint{ToLocationId="arena"},Agent.Main!);street.Tick();Check(street.Search.SearchPlace==GwpCitySearchPlace.Arena,"walking to arena starts agreed duel");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="duel";hall._hallTarget=new();var friend=new Agent();var guard=new Agent();var friendTeam=friend.Team;var guardTeam=guard.Team;hall.Mission.Agents.AddRange(new[]{Agent.Main!,hall._hallTarget,friend,guard});hall._ours[friend]=friend.Character;
  hall.Tick();Check(hall._stage==Stage.Duel&&friend.Team==Team.Invalid&&guard.Team==Team.Invalid,"castle duel leaves companions and guards as spectators");Check(hall._hallTarget.Team==hall.Mission.PlayerEnemyTeam&&hall.Mission.PlayerEnemyTeam.Hostile,"only duelists fight");
- Check(hall.GetAgentState(hall._hallTarget,1,out _)==AgentState.Unconscious,"castle duel cannot kill target");hall.DuelRemoval(hall._hallTarget);hall.Tick();Check(hall.Search.Won&&hall.Search.SearchPlace==GwpCitySearchPlace.Escape&&friend.Team==friendTeam&&guard.Team==guardTeam,"castle victory restores spectator ownership before leaving");
+ Check(hall.GetAgentState(hall._hallTarget,1,out _)==AgentState.Unconscious,"castle duel cannot kill target");hall.DuelRemoval(hall._hallTarget);hall.Tick();Check(hall.Search.Won&&hall.Search.Returning&&!hall.Mission.Ended&&friend.Team==friendTeam&&guard.Team==guardTeam,"castle victory restores spectator ownership before leaving");
  hall=New(GwpCitySearchPlace.Hall,Stage.Duel);hall.DuelRemoval(Agent.Main!);hall.Tick();Check(hall.Search.Aborted&&!hall.Search.Won,"castle duel loss grants no arrest");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="melee";hall.Tick();Check(hall._pendingFight=="hall_melee","chosen brawl queues war after dialogue closes");
- hall=New(GwpCitySearchPlace.Hall,Stage.FightOver);hall.FightWon();hall.Tick();Check(hall.Search.Won&&hall.Search.SearchPlace==GwpCitySearchPlace.Escape,"hall brawl victory must still fight out");
-  var escape=New(GwpCitySearchPlace.Escape,Stage.Escaping);Check(!escape.CanLeave(),"cannot Tab out of center");escape.Tick();Check(!escape.Mission.Ended,"must walk toward gate");Agent.Main!.Position=new Vec3(5);escape._pendingFight="escape";escape.Tick();Check(!escape.Mission.Ended,"guard wave starts before checking the exit even at gate");escape._pendingFight=null;escape.Tick();Check(escape.Search.Escaped&&escape.Mission.Ended,"actual gate arrival permits escape");
+ hall=New(GwpCitySearchPlace.Hall,Stage.FightOver);hall.FightWon();hall.Tick();Check(hall.Search.Won&&hall.Search.Returning&&!hall.Mission.Ended,"hall brawl victory leaves player to walk out");
+  var escape=New(GwpCitySearchPlace.Escape,Stage.Escaping);Check(escape.CanLeave(),"calm street permits Tab without completing escape");escape.Tick();Check(!escape.Mission.Ended,"must walk toward gate");Agent.Main!.Position=new Vec3(5);escape._pendingFight="escape";escape.Tick();Check(!escape.Mission.Ended,"guard wave starts before checking the exit even at gate");escape._pendingFight=null;escape.Tick();Check(escape.Search.Escaped&&escape.Mission.Ended,"actual gate arrival permits escape");
  var transfer=New(GwpCitySearchPlace.Entry,Stage.Allowed);var alive=new Agent{Health=13};var dead=new Agent{Active=false};transfer._ours[alive]=alive.Character;transfer._ours[dead]=dead.Character;transfer._transitioning=true;transfer._killed[dead.Character]=1;transfer.End();Check(transfer.Search.Saved.Count==1&&transfer.Search.Saved[0].Item2==13,"transition snapshots active survivors and their health only");Check(Campaign.Current.Bounty.Dead==1,"mission casualties enter bounty owner exactly once per scene");
- transfer=New(GwpCitySearchPlace.Hall,Stage.Fighting);transfer.End();Check(transfer.Search.Aborted,"unplanned mission end never leaves a phantom pending arrest");
+ transfer=New(GwpCitySearchPlace.Hall,Stage.HallReady);transfer.End();Check(transfer.Search.Paused&&!transfer.Search.Aborted,"Tab preserves search and snapshots survivors");
   var failed=New(GwpCitySearchPlace.Hall,Stage.Fighting);failed.Search.FinishSearch(false);failed.FightWon();failed.Tick();Check(failed.Search.Aborted&&!failed.Search.Won&&!failed.Mission.Ended,"late ally victory cannot resurrect search after player fell");
  Console.WriteLine("CITY_SEARCH_PROGRESS_ASSERTIONS="+n);
 }}}
 '''
-        names = ['TryUseSearchPassage', 'CanUsePassage', 'TickSearchProgress', 'TransitionTo',
+        names = ['BeginSearchStage', 'TryUseSearchPassage', 'CanUsePassage', 'TickSearchProgress', 'TransitionTo',
                  'OnSearchFightWon', 'StartHallDuel', 'RestoreSpectators', 'NoteDuelRemoval',
                  'CanLeaveSearch', 'EndSearchScene', 'GetAgentState']
         bodies = '\n'.join(method(progress, name) for name in names)
         bodies += method(mission, 'IsDefender').replace('private ', 'public ')
         run(template.replace('METHODS', bodies))
         controls = [
+            ('Tab preserves search', bodies.replace('if (!_transitioning) Search.PauseSearch();', 'if (!_transitioning) Search.FinishSearch(false);')),
+            ('permission granted inside dialogue', bodies.replace('if (_stage == Stage.Fighting || _stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null) return false;', 'if (!CanLeaveSearch()) return false;')),
             ('late ally victory', bodies.replace('if (!Search.SearchActive) return false;', '')
              .replace('if (!Search.SearchActive) return;', '')),
             ('forced hall fight', bodies.replace('&& !_warDeclared && _pendingFight == null', '')),
             ('foreign faction target must fight', bodies.replace('IsWatch(agent) || InHall && agent == _hallTarget ||', 'IsWatch(agent) ||')),
-            ('guard wave starts before checking the exit', bodies.replace('_place == GwpCitySearchPlace.Escape && _pendingFight == null', '_place == GwpCitySearchPlace.Escape')),
+            ('guard wave starts before checking the exit', bodies.replace('&& _pendingFight == null && Agent.Main?.IsActive()', '&& Agent.Main?.IsActive()')),
         ]
         for failure, old in controls:
             with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):

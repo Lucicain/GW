@@ -44,6 +44,12 @@ namespace GreyWardenPolicePurity
             _hallTarget = Mission.Agents.FirstOrDefault(agent => agent.Character == _target.CharacterObject && agent.IsActive());
             if (InHall)
             {
+                if (Search.HallResolved)
+                {
+                    _stage = Stage.HallDone;
+                    DisablePlayerPassages();
+                    return;
+                }
                 // 目标应由原版大厅人口生成。核对后缺席说明委托对象已经不在大厅，不生造第二个领主。
                 if (_hallTarget == null)
                 {
@@ -57,21 +63,41 @@ namespace GreyWardenPolicePurity
             else if (_place == GwpCitySearchPlace.Escape)
             {
                 _stage = Stage.Escaping;
-                if (_warDeclared) _pendingFight = "escape";
+                if (_warDeclared && !Search.EscapeCleared) _pendingFight = "escape";
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_escape_notice)));
+            }
+            else
+            {
+                _stage = Search.GateState switch
+                {
+                    GwpCitySearchGate.Allowed => Stage.Allowed,
+                    GwpCitySearchGate.Cleared => Stage.FightOver,
+                    GwpCitySearchGate.Leaving => Stage.Leaving,
+                    GwpCitySearchGate.Refused => Stage.Refused,
+                    GwpCitySearchGate.Withdrawing => Stage.Withdrawing,
+                    _ => Stage.Entering
+                };
+                _inwardLimit = (Agent.Main?.Position.Distance(_gate) ?? 0f) + GwpTuning.CitySearch.InwardTolerance;
             }
             DisablePlayerPassages();
         }
 
-        private bool CanUsePassage(PassageUsePoint passage) => !InHall
-            && _place == GwpCitySearchPlace.Entry && passage.ToLocationId == "lordshall"
-            && (_stage == Stage.Allowed || _stage == Stage.FightOver);
+        private bool CanUsePassage(PassageUsePoint passage)
+        {
+            // 放行回调发生在对话中；门的许可不能因对话尚未关闭而永久关掉。
+            if (_stage == Stage.Fighting || _stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null) return false;
+            if (InHall) return passage.ToLocationId == "center";
+            if (passage.ToLocationId == "arena") return Search.DuelAgreed;
+            return passage.ToLocationId == "lordshall" && Search.HallAccessible && !Search.HallResolved;
+        }
 
         internal bool TryUseSearchPassage(PassageUsePoint passage, Agent user)
         {
             if (user != Agent.Main) return false;
-            if (CanUsePassage(passage)) _pendingHallAction = "enter_hall";
-            return true; // 搜捕里的玩家门由本控制器办理，不让原版单独把玩家送走。
+            if (CanUsePassage(passage))
+                _pendingHallAction = passage.ToLocationId == "lordshall" ? "enter_hall"
+                    : passage.ToLocationId == "arena" ? "enter_arena" : "enter_street";
+            return true; // 走门也只切地点，不改案件进度，整队随行。
         }
 
         internal void AcceptHallSurrender() => _pendingHallAction = "surrender";
@@ -93,21 +119,41 @@ namespace GreyWardenPolicePurity
                 switch (action)
                 {
                     case "enter_hall": TransitionTo(GwpCitySearchPlace.Hall); return true;
-                    case "leave_hall": TransitionTo(GwpCitySearchPlace.Escape); return true;
+                    case "enter_street":
+                        TransitionTo(Search.Returning ? GwpCitySearchPlace.Escape : GwpCitySearchPlace.Street);
+                        return true;
+                    case "enter_arena": TransitionTo(GwpCitySearchPlace.Arena); return true;
+                    case "leave_hall":
+                        Search.WithdrawFromHall();
+                        _stage = Stage.HallDone;
+                        DisablePlayerPassages();
+                        break;
                     case "missing": Search.FinishSearch(false); Mission.EndMission(); return true;
                     case "surrender":
                         Search.PeacefulCapture();
-                        Mission.EndMission();
-                        return true;
+                        _stage = Stage.HallDone;
+                        DisablePlayerPassages();
+                        InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_out_notice)));
+                        break;
                     case "duel":
-                        if (_settlement.IsTown) { TransitionTo(GwpCitySearchPlace.Arena); return true; }
+                        if (_settlement.IsTown)
+                        {
+                            Search.AgreeDuel();
+                            _stage = Stage.HallDone;
+                            DisablePlayerPassages();
+                            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
+                            break;
+                        }
                         StartHallDuel();
                         break;
                     case "duel_won":
                         RestoreSpectators();
                         Search.WonHall();
-                        TransitionTo(GwpCitySearchPlace.Escape);
-                        return true;
+                        _stage = Stage.HallDone;
+                        Mission.SetMissionMode(MissionMode.StartUp, false);
+                        Order(OrderType.FollowMe);
+                        DisablePlayerPassages();
+                        break;
                     case "duel_lost":
                         RestoreSpectators();
                         Search.FinishSearch(false);
@@ -125,8 +171,9 @@ namespace GreyWardenPolicePurity
             }
             EndFightIfDefendersDown();
             if (_pendingHallAction != null) return false;
-            // 逃离必须真的走到城门外出生点，不能用 Tab 从大厅或城中直接跳到大地图。
-            if (_place == GwpCitySearchPlace.Escape && _pendingFight == null && Agent.Main?.IsActive() == true
+            // 战斗撤离的完成仍须走到实际城门；Tab 回菜单只暂停，不交付俘虏。
+            if ((_place == GwpCitySearchPlace.Escape || _stage == Stage.Leaving || _stage == Stage.Withdrawing)
+                && _pendingFight == null && Agent.Main?.IsActive() == true
                 && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance)
             {
                 Search.FinishSearch(true);
@@ -149,10 +196,14 @@ namespace GreyWardenPolicePurity
             if (InHall)
             {
                 Search.WonHall();
-                _pendingHallAction = "leave_hall";
+                _stage = Stage.HallDone;
+                DisablePlayerPassages();
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_out_notice)));
             }
             else
             {
+                if (_place == GwpCitySearchPlace.Entry) Search.GateState = GwpCitySearchGate.Cleared;
+                else if (_place == GwpCitySearchPlace.Escape) Search.EscapeCleared = true;
                 DisablePlayerPassages();
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(_place == GwpCitySearchPlace.Entry
                     ? GwpTextCatalog.gwp_cs_hall_notice : GwpTextCatalog.gwp_cs_escape_notice)));
@@ -205,19 +256,21 @@ namespace GreyWardenPolicePurity
             else if (agent == _hallTarget) _pendingHallAction = "duel_won";
         }
 
-        private bool CanLeaveSearch() => !_warDeclared && !InHall && _place == GwpCitySearchPlace.Entry
-            && _stage != Stage.Fighting && _stage != Stage.Duel;
+        private bool CanLeaveSearch() => _stage != Stage.Fighting && _stage != Stage.Duel
+            && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
+            && !Campaign.Current.ConversationManager.IsConversationFlowActive;
 
         private void EndSearchScene()
         {
             var bounty = Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>();
             bounty.RecordCitySearchLosses(_target, _killed.Values.Sum());
             if (_target.IsDead && InHall) bounty.RecordCitySearchDefeat(_target);
-            if (_transitioning)
+            if (Search.SearchActive)
+            {
                 Search.SaveSurvivors(_ours.Where(entry => entry.Key.IsActive())
                     .Select(entry => (entry.Value, entry.Key.Health)));
-            else if (Search.SearchActive)
-                Search.FinishSearch(false);
+                if (!_transitioning) Search.PauseSearch();
+            }
         }
 
         internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting

@@ -242,7 +242,9 @@ static class InformationManager{public static void DisplayMessage(InformationMes
 static class MBInformationManager{public static int Warnings;public static void AddQuickInformation(string s){Warnings++;}}
 static class GwpTuning{CITY_TUNING}
 enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver}
-class Controller{public Stage _stage;public string? _pendingFight;public Vec3 _gate;public float _inwardLimit;public bool _warned;
+enum GwpCitySearchGate{Unchecked,Allowed,Leaving,Refused,Withdrawing,Cleared}
+class SearchState{public GwpCitySearchGate GateState;}
+class Controller{public SearchState Search=new();public Stage _stage;public string? _pendingFight;public Vec3 _gate;public float _inwardLimit;public bool _warned;
  public HashSet<Agent> Ours=new(),Defenders=new();bool IsOurs(Agent a)=>Ours.Contains(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
  NOTE_STRIKE PROMISED CHOSE_FIGHT CHOSE_WITHDRAW BEGIN_LEAVING HEADING_IN
  public void Tick(){CheckHeadingIn();}}
