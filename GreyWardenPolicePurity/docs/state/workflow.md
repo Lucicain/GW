@@ -100,7 +100,7 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 清理待办：
 
-- （无）
+- `%LOCALAPPDATA%\CrashDumps` 有 4 个游戏旧转储（pid 1664/6648/9096/19236）和 4 个 `Test.exe` 转储，来源与结论未核对；核对后按诊断规则删除。（2026-10-22 Claude Code 登记）
 
 ## 接入 harness
 

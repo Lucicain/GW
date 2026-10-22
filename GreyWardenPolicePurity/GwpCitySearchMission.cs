@@ -51,9 +51,11 @@ namespace GreyWardenPolicePurity
                 + "; castle=" + settlement.IsCastle + "; scene=" + scene + "; levels=" + levels
                 + "; troops=" + troops.TotalManCount);
 #endif
-            MissionState.OpenNew(MissionName,
-                SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town),
-                mission => Behaviors(settlement, target, troops, center));
+            MissionInitializerRecord record = SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town);
+            // 要拖运倒地目标，同原版两个拖尸场景（越狱、伪装潜入）关掉尸体淡出：开着时尸体一登记，
+            // 外观上的场景实体就没了，原版拖尸一读即空引用、崩溃（C#反编译 v1.4.8 SandBoxMissions；实机日志 2026-10-22）。
+            record.DisableCorpseFadeOut = true;
+            MissionState.OpenNew(MissionName, record, mission => Behaviors(settlement, target, troops, center));
         }
 
         private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops, Location center)
