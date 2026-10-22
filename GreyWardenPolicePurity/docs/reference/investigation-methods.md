@@ -94,6 +94,9 @@ ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
 - WER 转储在 `%LOCALAPPDATA%\CrashDumps\TaleWorlds.MountAndBlade.Launcher.exe.<pid>.dmp`。
 - 用 Windows SDK 的 cdb：`cdb -y . -z <dmp> -c ".ecxr; kb; q"`。
   本机的 cdb 来自 WinDbg 商店版：`%LOCALAPPDATA%\Microsoft\WindowsApps\cdbX64.exe`（2026-09-27 确认可用）。
+- 托管崩溃再加 SOS：`.loadby sos clr; !pe -nested; !clrstack` 读出异常类型和托管栈。Harmony 改写后的方法是动态方法，
+  SOS 显示为 `<unknown>`、`!ip2md` 认不出，JIT 代码页和托管堆通常也不在 WER 转储里（`!dso` 报读不到堆段）；
+  这时只能确认调用链，具体哪个引用为空要靠首次异常记录的 IL 偏移或针对性诊断。（依据：实机转储 2026-10-22）
 - 转储常缺堆页：能看到崩在哪个函数和寄存器，但指针指向的对象可能读不出来，
   不要因此把它"精确指认"到某个士兵或物体。
 - 游戏无提示关闭、没有转储也没有系统记录时，先查 Steam 的退出码：`<Steam>\logs\console_log*.txt` 里
