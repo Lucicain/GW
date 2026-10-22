@@ -357,6 +357,7 @@ def main() -> int:
     }
     print(" / ".join(f"{k} {len(v)}" for k, v in findings.items()))
     print(f"（另有 {len(exempt)} 个 state 声明不核对，只计数）")
+    print(cleanup_ledger())
     print("\n这只说明去哪里看，不说明文字对不对。")
 
     print()
@@ -416,6 +417,25 @@ def check_journal():
             print(f"  … 另有 {len(dups) - 12} 条")
         print()
     return dups
+
+
+def cleanup_ledger() -> str:
+    """Report the shared cleanup ledger in workflow.md: commits since the last
+    cleanup and open cleanup items. A reminder only; it never fails a commit."""
+    ledger = STATE / "workflow.md"
+    text = ledger.read_text(encoding="utf-8-sig") if ledger.exists() else ""
+    base = re.search(r"上次集中清理：`([0-9a-f]{7,40})`", text)
+    if not base:
+        return "— 集中清理：workflow.md 缺少「上次集中清理」台账行"
+    items = []
+    todo = re.search(r"清理待办：\s*\n(.*?)(?:\n#|\Z)", text, re.S)
+    if todo:
+        items = [line for line in todo.group(1).splitlines()
+                 if line.startswith("- ") and line.strip() != "- （无）"]
+    since = git("rev-list", "--count", base.group(1) + "..HEAD")
+    if not since:
+        return f"— 集中清理：台账基线 {base.group(1)} 不在历史里，清理时改成实际的清理提交"
+    return f"— 集中清理：上次在 {base.group(1)}，之后 {since} 个提交，清理待办 {len(items)} 项（见 workflow.md「清理台账」）"
 
 
 def check_leftovers():

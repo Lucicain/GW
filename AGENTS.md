@@ -59,6 +59,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 - **提交**在一件事到了稳定点时自己做，几件相关改动可以一起提交，但不要碎提交；**推送、打 tag、建 Release、出 ZIP、
   改 `_Module/README*.md`** 只在用户提出新版本时做。细则见 `workflow.md`「提交与发版」。（依据：用户裁定 2026-10-21）
 - **多 agent**：同一块耦合区域同一时间只有一个 agent 在写；并行只在互不相干的子系统、各用 worktree；交接只经仓库。（依据：用户裁定 2026-10-21）
+- **熵控制**：集中清理哪个 agent 都可以做，同一时间只有一个；以 `workflow.md`「清理台账」的基线做增量清理。开发中发现却不处理的整洁问题，
+  写进清理待办，不留在对话里。（依据：用户裁定 2026-10-22）
 - **harness**：仓库目录里不要新建 `CLAUDE.md`、`.claude/CLAUDE.md`、`CLAUDE.local.md`、`GEMINI.md`（会顶掉本文件）；
   harness 记忆只放个人习惯或指回仓库的指针。新克隆后设 `git config core.hooksPath .githooks`。细则见 `workflow.md`「接入 harness」。（依据：用户裁定 2026-10-07）
 
@@ -67,7 +69,7 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 1. `python tools/Check-StateFreshness.py`，点名项当轮处理，确实不该动的在报告里说明。
 2. 报告实际结果：改了什么、构建/测试/部署/哈希，失败就说失败并贴输出；部署了就写「进游戏看什么」。
 3. 收尾不等于提交：没到稳定点就留在工作树里，下一轮接着做。
-4. 发版前或用户要求时做一次集中清理，清单见 `workflow.md`「定期集中清理」。
+4. 发版前或用户要求时做一次集中清理，清单与台账见 `workflow.md`「定期集中清理」；本轮发现却没处理的整洁问题记进台账待办。
 
 ## 跟用户说话
 
