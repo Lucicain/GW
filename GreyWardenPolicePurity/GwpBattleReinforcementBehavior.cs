@@ -52,7 +52,8 @@ namespace GreyWardenPolicePurity
             if (_disposed) return;
             if (Mission.MissionEnded || Mission.MissionResult != null) { Stop(); return; }
             _context ??= Mission.GetMissionBehavior<GwpBattleSceneContext>();
-            if (_context == null || !_context.TryCapture() || !_context.Spawn!.IsDeploymentOver) return;
+            if (_context == null || !_context.TryCapture() || !_context.Spawn!.IsDeploymentOver
+                || !_context.Spawn.AllowsWardenRescue) return;
             _time += dt;
             if (!_started)
             {

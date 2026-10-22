@@ -41,6 +41,7 @@ class Agent{
  public CampaignAgentComponent Component=new();public T? GetComponent<T>() where T:class=>Component as T;
  public Agent GetPtr()=>this;public bool IsActive()=>Active;public void SetTeam(Team t,bool b){Team=t;}
  public bool HasWeapon()=>true;
+ public void DisableScriptedMovement(){}
  WATCH
 }
 class Team{public static Team Invalid=new();public bool Enemy;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}

@@ -190,6 +190,10 @@
             public const int ReserveBatch = 4;
             public const float ReserveInterval = 3f;
             public const float SecureTargetDistance = 2f;
+            public const int EntryReserveLimit = 4;
+            public const int HallPostAttempts = 12;
+            public const float HallPostRadius = 5f;
+            public const float HallPostSpacing = 1.5f;
         }
 
         internal static class FieldArrest

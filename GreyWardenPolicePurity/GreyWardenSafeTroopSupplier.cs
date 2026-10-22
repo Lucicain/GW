@@ -86,7 +86,7 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// A no-op origin used only inside a friendly sparring mission. Returning
+    /// A no-op origin for friendly sparring and non-persistent city defenders. Returning
     /// the real PartyBase keeps CampaignAgentComponent and conversation
     /// animations compatible, while no-op casualty callbacks prevent the bout
     /// from changing campaign rosters.

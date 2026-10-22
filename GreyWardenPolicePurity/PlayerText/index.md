@@ -140,9 +140,9 @@
 | gwp_gwpaideterrencestate_042 | — | 正在赶路 | 未检出直接引用；保留 |
 | gwp_gwpaideterrencestate_043 | — | 尚未重新现身 | 未检出直接引用；保留 |
 | gwp_gwpaideterrencestate_044 | — | 状态不明 | 未检出直接引用；保留 |
-| gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
-| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:216 |
-| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:217 |
+| gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:126 |
+| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:217 |
+| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:218 |
 | gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:407 |
 | gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:422 |
 | gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1062 |
@@ -1724,6 +1724,8 @@
 | gwp_cs_route_blocked | You cannot leave while combat or a conversation is still in progress. | 交战或交涉尚未结束，暂时不能离场。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_hostile_exit_blocked | You cannot escape from inside the settlement. Reach the outside of the gate before leaving. | 城内无法直接脱身。必须亲自撤到城门外，才能离开。 | 玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。 |
 | gwp_cs_unarmed_target_notice | The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out. | 目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。 | 玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。 |
+| gwp_cs_transport_target | The target is down. A follower will move the body; protect the carrier through the exits and out of the settlement. | 目标已经倒下。一名部下会将其运走；掩护搬运者经过出口，一路撤到城外。 | 玩家进城搜捕：复用原版拖拽搬运倒地目标，运出城再结算。 |
+| gwp_cs_transport_failed | The target can no longer be extracted. This search has failed; retreat outside the gate. | 已经无法运走目标。这次搜捕失败，先撤出城外。 | 玩家进城搜捕：所有搬运候选倒下或目标尸体实际丢失。 |
 | gwp_cs_menu_begin | Choose your troops and enter through the gate | 选择随行士兵，亲自从城门进城 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_resume | Return to the search on foot | 返回搜捕现场，继续步行 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_hall | Take your troops to the lord’s hall | 带兵前往领主大厅 | 玩家进城搜捕：体验路线与地点子菜单 |

@@ -27,6 +27,7 @@ class Controller {
  public bool InHall;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
  public Stage _stage=Stage.Allowed;public string? _pendingFight,_pendingHallAction;public Vec _gate=new();public bool _gateExitAvailable=true;
  bool IsWatch(Agent a)=>a.Watch&&!a.Ours;bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
+ bool BodyReadyAt(Vec p)=>true;
  public bool Defender(Agent a)=>IsDefender(a);public bool Leave()=>CanLeaveSearch();
  BODIES
 }

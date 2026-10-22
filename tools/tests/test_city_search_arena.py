@@ -40,8 +40,9 @@ class CitySearchArenaTests(unittest.TestCase):
         edge_code = '\n'.join(f'Link("{a}","{b}");' for a, b in edges)
         stubs = STUBS.replace('class Location{public string StringId="";',
                               'class Location{public List<Location> LocationsOfPassages=new();public string DoorName=>StringId;public string StringId="";')
-        stubs = stubs.replace('class Locations{public Location GetLocationWithId(string s)=>new(){StringId=s};}', r'''
+        stubs = stubs.replace('class Locations{public Location GetLocationWithId(string s)=>new(){StringId=s};public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}}', r'''
 class Locations{Dictionary<string,Location> LocationsById=new();
+ public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}
  public Locations(){EDGES}
  void Link(string a,string b){var first=GetLocationWithId(a);var second=GetLocationWithId(b);first.LocationsOfPassages.Add(second);second.LocationsOfPassages.Add(first);}
  public Location GetLocationWithId(string id){if(!LocationsById.TryGetValue(id,out var value)){value=new(){StringId=id};LocationsById[id]=value;}return value;}}

@@ -88,6 +88,7 @@ namespace GreyWardenPolicePurity
             // 放行回调发生在对话中；门的许可不能因对话尚未关闭而永久关掉。
             if (_stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null || _pendingHallAction != null) return false;
             if (_stage == Stage.Fighting && !Search.SearchWar) return false;
+            if (!BodyReadyAt(passage.GameEntity.GetGlobalFrame().origin)) return false;
             if (InHall) return passage.ToLocationId == "center";
             if (passage.ToLocationId == "arena") return Search.DuelAgreed;
             return passage.ToLocationId == "lordshall" && (Search.HallAccessible || Search.SearchWar) && !Search.HallResolved;
@@ -142,6 +143,7 @@ namespace GreyWardenPolicePurity
                         {
                             Search.AgreeDuel();
                             _stage = Stage.HallDone;
+                            BeginDuelWalk("center");
                             DisablePlayerPassages();
                             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
                             break;
@@ -177,8 +179,9 @@ namespace GreyWardenPolicePurity
             // 敌对后只能在已核实的城外出生点附近退出，守军仍在战斗也可冲出城门。
             if ((_place == GwpCitySearchPlace.Escape || _stage == Stage.Leaving || _stage == Stage.Withdrawing)
                 && _gateExitAvailable && _stage != Stage.Failed && _pendingFight == null && Agent.Main?.IsActive() == true
-                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance)
+                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance && BodyReadyAt(_gate))
             {
+                if (Search.BodyPending) Search.ConfirmBodyDelivered();
                 Search.FinishSearch(true);
                 Mission.EndMission();
                 return true;
@@ -293,15 +296,20 @@ namespace GreyWardenPolicePurity
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
             && !Campaign.Current.ConversationManager.IsConversationFlowActive
             && (Search.SearchWar ? !InHall && _gateExitAvailable && Agent.Main?.IsActive() == true
-                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance : _stage != Stage.Fighting);
+                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance && BodyReadyAt(_gate) : _stage != Stage.Fighting);
+
+        private bool BodyReadyAt(Vec3 position) => !Search.BodyPending
+            || Mission.GetMissionBehavior<GwpCitySearchBodyTransport>().IsTargetNear(position);
 
         private void EndSearchScene()
         {
             if (!_transitioning && _outsideExitRequested && Search.SearchActive && CanLeaveSearch())
+            {
+                if (Search.BodyPending) Search.ConfirmBodyDelivered();
                 Search.FinishSearch(true);
+            }
             var bounty = Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>();
             bounty.RecordCitySearchLosses(_target, _killed.Values.Sum());
-            if (_target.IsDead && InHall) bounty.RecordCitySearchDefeat(_target);
             if (Search.SearchActive)
             {
                 SaveCitySoldiers();

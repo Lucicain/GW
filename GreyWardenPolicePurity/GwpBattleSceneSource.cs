@@ -17,6 +17,7 @@ namespace GreyWardenPolicePurity
         bool IsDeploymentOver { get; }
         event Action<BattleSideEnum, int> OnReinforcementsSpawned;
         bool OpeningAgentsAlreadySpawned { get; }
+        bool AllowsWardenRescue { get; }
         int NumberOfAgents { get; }
         int NumberOfRemainingDefenderTroops { get; }
         int NumberOfRemainingAttackerTroops { get; }
@@ -35,6 +36,7 @@ namespace GreyWardenPolicePurity
             remove => _spawn.OnReinforcementsSpawned -= value;
         }
         public bool OpeningAgentsAlreadySpawned => false;
+        public bool AllowsWardenRescue => true;
         public int NumberOfAgents => _spawn.NumberOfAgents;
         public int NumberOfRemainingDefenderTroops => _spawn.NumberOfRemainingDefenderTroops;
         public int NumberOfRemainingAttackerTroops => _spawn.NumberOfRemainingAttackerTroops;

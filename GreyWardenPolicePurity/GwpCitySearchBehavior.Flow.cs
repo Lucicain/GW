@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.Settlements.Locations;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 
@@ -35,11 +36,20 @@ namespace GreyWardenPolicePurity
         private List<double> _searchHealth = new List<double>();
         private List<string> _enemyKeys = new List<string>();
         private List<double> _enemyHealth = new List<double>();
+        private List<string> _enemyLosses = new List<string>();
+        private bool _entryWaveQueued;
+        private bool _hasLeftHall;
+        private bool _bodyPending;
+        private bool _bodyKilled;
+        private bool _bodyDelivered;
         // 场景内的对象引用不存；地图衔接从已存的 ID 解析，不能把 Location/Agent 放进存档。
         private Hero? _searchTarget;
         internal GwpCitySearchPlace SearchPlace => (GwpCitySearchPlace)_searchPlace;
         internal bool SearchActive => SearchPlace != GwpCitySearchPlace.None;
         internal bool SearchWar => _searchWar;
+        internal bool HasLeftHall => _hasLeftHall;
+        internal bool BodyPending => _bodyPending;
+        internal bool BodyKilled => _bodyKilled;
         internal bool SearchHere => SearchActive && Settlement.CurrentSettlement?.StringId == _searchSettlementId;
         internal GwpCitySearchGate GateState { get => (GwpCitySearchGate)_gateState; set => _gateState = (int)value; }
         internal bool HallAccessible => GateState == GwpCitySearchGate.Allowed || GateState == GwpCitySearchGate.Cleared;
@@ -67,6 +77,12 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_health", ref _searchHealth);
             store.SyncData("gwp_cs_enemy_keys", ref _enemyKeys);
             store.SyncData("gwp_cs_enemy_health", ref _enemyHealth);
+            store.SyncData("gwp_cs_enemy_losses", ref _enemyLosses);
+            store.SyncData("gwp_cs_entry_wave", ref _entryWaveQueued);
+            store.SyncData("gwp_cs_left_hall", ref _hasLeftHall);
+            store.SyncData("gwp_cs_body_pending", ref _bodyPending);
+            store.SyncData("gwp_cs_body_killed", ref _bodyKilled);
+            store.SyncData("gwp_cs_body_delivered", ref _bodyDelivered);
         }
 
         private void BeginSearch(Settlement settlement, Hero target, TroopRoster roster)
@@ -84,6 +100,8 @@ namespace GreyWardenPolicePurity
             _searchHealth.Clear();
             _enemyKeys.Clear();
             _enemyHealth.Clear();
+            _enemyLosses.Clear();
+            _entryWaveQueued = _hasLeftHall = _bodyPending = _bodyKilled = _bodyDelivered = false;
             foreach (TroopRosterElement element in roster.GetTroopRoster())
                 if (!element.Character.IsPlayerCharacter)
                     for (int i = 0; i < element.Number - element.WoundedNumber; i++)
@@ -132,6 +150,8 @@ namespace GreyWardenPolicePurity
 
         internal void QueuePlace(GwpCitySearchPlace place)
         {
+            if (SearchPlace == GwpCitySearchPlace.Hall && (place == GwpCitySearchPlace.Street || place == GwpCitySearchPlace.Escape))
+                _hasLeftHall = true;
             if (place != SearchPlace)
                 _previousLocationId = SearchPlace == GwpCitySearchPlace.None ? string.Empty
                     : SearchPlace == GwpCitySearchPlace.Hall ? "lordshall"
@@ -143,6 +163,27 @@ namespace GreyWardenPolicePurity
         internal void PauseSearch() => _openPending = false;
 
         internal void MarkSearchWar() => _searchWar = true;
+
+        internal int EnemyLossCount(string key) => _enemyLosses.Count(loss => loss == key);
+        internal void RecordEnemyLoss(string key) => _enemyLosses.Add(key);
+        internal bool ClaimEntryWave()
+        {
+            if (_entryWaveQueued) return false;
+            _entryWaveQueued = true;
+            return true;
+        }
+
+        internal void MarkTargetDown(bool killed)
+        {
+            _bodyPending = true;
+            _bodyKilled = killed;
+            _bodyDelivered = false;
+            _captureReady = !killed && !SearchTarget.IsDead;
+            _returning = true;
+            _duelAgreed = false;
+        }
+
+        internal void ConfirmBodyDelivered() => _bodyDelivered = true;
 
         internal void WonHall()
         {
@@ -156,6 +197,7 @@ namespace GreyWardenPolicePurity
 
         internal void FinishSearch(bool escaped)
         {
+            escaped = escaped && (!_bodyPending || _bodyDelivered);
             Hero? target = SearchTarget;
             // 群殴胜利先控制住人，杀出城后才正式交进主队囚笼；途中倒下不能隔城领到俘虏。
             bool captured = escaped && _captureReady && target != null && !target.IsDead && !target.IsPrisoner
@@ -163,6 +205,7 @@ namespace GreyWardenPolicePurity
                 && CrimeRecord.ShelterOf(target) == Settlement.CurrentSettlement
                 && GwpVoluntarySurrender.TryCapture(PartyBase.MainParty, target);
             if (captured) Bounty?.RegisterCaptureInCustody();
+            if (escaped && _bodyPending && _bodyKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("SEARCH_COMPLETE", "escaped=" + escaped + "; captured=" + captured
                 + "; target=" + target?.StringId + "; place=" + SearchPlace + "; war=" + _searchWar);
@@ -175,6 +218,8 @@ namespace GreyWardenPolicePurity
             _searchHealth.Clear();
             _enemyKeys.Clear();
             _enemyHealth.Clear();
+            _enemyLosses.Clear();
+            _bodyPending = _bodyKilled = _bodyDelivered = false;
             _leavePending = escaped;
         }
 
@@ -217,6 +262,13 @@ namespace GreyWardenPolicePurity
             }
             _openPending = false;
             // 原版 Passage 会写 NextLocation 并自动开普通步行场景；自有衔接清掉它，避免抢先打开而丢兵。
+            if (DuelAgreed && SearchPlace == GwpCitySearchPlace.Street)
+            {
+                Location? from = settlement.LocationComplex.GetLocationOfCharacter(target);
+                if (from?.StringId == "lordshall")
+                    settlement.LocationComplex.ChangeLocation(settlement.LocationComplex.GetLocationCharacterOfHero(target),
+                        from, settlement.LocationComplex.GetLocationWithId("center"));
+            }
             Campaign.Current.GameMenuManager.NextLocation = null;
             // 与原版门衔接同源：记录从哪个地点来，中心出生在对应门口；Tab 只暂停，不推进。
             Campaign.Current.GameMenuManager.PreviousLocation = string.IsNullOrEmpty(_previousLocationId)

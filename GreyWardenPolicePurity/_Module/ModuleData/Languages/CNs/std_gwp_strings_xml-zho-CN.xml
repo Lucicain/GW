@@ -1724,6 +1724,8 @@
   <string id="gwp_cs_route_blocked" text="交战或交涉尚未结束，暂时不能离场。" />
   <string id="gwp_cs_hostile_exit_blocked" text="城内无法直接脱身。必须亲自撤到城门外，才能离开。" />
   <string id="gwp_cs_unarmed_target_notice" text="目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。" />
+  <string id="gwp_cs_transport_target" text="目标已经倒下。一名部下会将其运走；掩护搬运者经过出口，一路撤到城外。" />
+  <string id="gwp_cs_transport_failed" text="已经无法运走目标。这次搜捕失败，先撤出城外。" />
   <string id="gwp_cs_menu_begin" text="选择随行士兵，亲自从城门进城" />
   <string id="gwp_cs_menu_resume" text="返回搜捕现场，继续步行" />
   <string id="gwp_cs_menu_hall" text="带兵前往领主大厅" />

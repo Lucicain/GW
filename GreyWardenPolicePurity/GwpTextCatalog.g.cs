@@ -466,6 +466,8 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_opponent_duel = "{=gwp_cs_opponent_duel}Enough talk. I choose single combat. Defeat me and I will go with you.";
         internal const string gwp_cs_opponent_melee = "{=gwp_cs_opponent_melee}I choose to stand with my guards. If you want me, come and take me.";
         internal const string gwp_cs_route_blocked = "{=gwp_cs_route_blocked}You cannot leave while combat or a conversation is still in progress.";
+        internal const string gwp_cs_transport_failed = "{=gwp_cs_transport_failed}The target can no longer be extracted. This search has failed; retreat outside the gate.";
+        internal const string gwp_cs_transport_target = "{=gwp_cs_transport_target}The target is down. A follower will move the body; protect the carrier through the exits and out of the settlement.";
         internal const string gwp_cs_unarmed_target_notice = "{=gwp_cs_unarmed_target_notice}The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out.";
         internal const string gwp_cs_walk_arena_notice = "{=gwp_cs_walk_arena_notice}The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu.";
         internal const string gwp_cs_walk_out_notice = "{=gwp_cs_walk_out_notice}You are finished here. Lead your party out of the hall and leave through the gate.";

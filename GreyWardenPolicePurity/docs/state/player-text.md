@@ -1,6 +1,6 @@
 # 玩家可见文字：独立维护入口
 
-> 当前状态：进城搜捕无武器目标、敌对城外撤离中英文本已补齐；主文本1735条、编译常量1418条
+> 当前状态：进城搜捕目标搬运与提取失败中英文本已补齐；主文本1737条、编译常量1420条
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpTextCatalog.g.cs` `GreyWardenPolicePurity/PlayerText/strings.json` `tools/Generate-PlayerText.py` `tools/tests/test_player_text.py` `_Module/ModuleData/Languages/**`
 > 待实测：中英文菜单、对话、百科与地图提示正常显示，变量替换完整
@@ -25,7 +25,7 @@
 
 ## 维护与检查
 
-`PlayerText/README.md` 说明编辑步骤；`strings.json` 保存中英文及情境，`index.md` 是生成的调用位置索引。日常只改主文本，再运行 `python tools/Generate-PlayerText.py`，构建自动以 `--check` 拒绝陈旧输出及行为代码中新写的带键整句。当前生成1337个常量，继续由原版TextObject处理，无新增运行时加载器。（依据：实现与生成检查2026-10-19）
+`PlayerText/README.md` 说明编辑步骤；`strings.json` 保存中英文及情境，`index.md` 是生成的调用位置索引。日常只改主文本，再运行 `python tools/Generate-PlayerText.py`，构建自动以 `--check` 拒绝陈旧输出及行为代码中新写的带键整句。当前生成1420个常量，继续由原版TextObject处理，无新增运行时加载器。（依据：实现与生成检查2026-10-22）
 
 1602条中1405条已有英文，197条历史保留中文尚无已知英文，不凭空补译或只因没检出引用就删除。动态谈判句子与5个备用片段也集中维护。新增键仅改主文本即可生成语言条目；LF/CRLF检出等价。中英文变量按名称集合一致校验，同名变量可按语序重复。115条当前宗教引用应用已审阅稿，其中92条改写；10条未引用的旧稿保留。宗教审阅目录只作当时的前后对照。（依据：文本盘点2026-10-18；用户批准2026-10-15）
 

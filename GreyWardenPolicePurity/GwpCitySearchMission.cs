@@ -65,6 +65,7 @@ namespace GreyWardenPolicePurity
                 new MissionBasicTeamLogic(),
                 new MissionSettlementPrepareLogic(),
                 new GwpCitySearchMissionController(settlement, target, troops),
+                new GwpCitySearchBodyTransport(),
                 new MissionAgentLookHandler(),
                 new SandBoxMissionHandler()
             };
@@ -164,6 +165,7 @@ namespace GreyWardenPolicePurity
 
         public override void OnRemoveBehavior()
         {
+            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued -= ReleaseHallPosts;
             if (Current == this) Current = null;
             base.OnRemoveBehavior();
         }
@@ -208,6 +210,9 @@ namespace GreyWardenPolicePurity
 #endif
             int spawned = SpawnTroops();
             BeginSearchStage();
+            PostHallTroops();
+            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued += ReleaseHallPosts;
+            ResumeDuelWalk();
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("SPAWNED", "settlement=" + _settlement.StringId
                 + "; spawnTag=" + (InHall ? GwpCitySearchMission.HallSpawnTag : spawn == null ? "none" : spawnTag)
@@ -558,6 +563,7 @@ namespace GreyWardenPolicePurity
         private static void SetSearchFighter(Agent agent)
         {
             if (!agent.IsAIControlled) return;
+            agent.DisableScriptedMovement();
             agent.SetWatchState(Agent.WatchState.Alarmed);
             // SpawnTroop生成的随行兵没有城市场景导航器；有导航器的人物同原版强制进入Fight。
             AlarmedBehaviorGroup? alarmed = agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator
@@ -632,8 +638,15 @@ namespace GreyWardenPolicePurity
                 Search.FinishSearch(false);
                 return; // 原版 LeaveMissionLogic 办理倒地后退出，不能把失败带入下一场景。
             }
-            if (InHall && affectedAgent == _hallTarget && agentState == AgentState.Killed && Search.SearchActive)
-                Search.WithdrawFromHall();
+            if (InHall && affectedAgent == _hallTarget && Search.SearchActive && _stage == Stage.Fighting
+                && (agentState == AgentState.Killed || agentState == AgentState.Unconscious))
+            {
+                Search.MarkTargetDown(agentState == AgentState.Killed);
+                Mission.GetMissionBehavior<GwpCitySearchBodyTransport>().TakeTarget(affectedAgent);
+#if GWP_DIAGNOSTICS
+                GwpAiDiagnostics.WriteCitySearch("TARGET_DOWN", "state=" + agentState + "; resultRecorded=True");
+#endif
+            }
             EndFightIfDefendersDown();
             if (!_ours.TryGetValue(affectedAgent, out CharacterObject character)) return;
             if (agentState == AgentState.Killed)

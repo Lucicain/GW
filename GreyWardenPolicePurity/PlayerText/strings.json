@@ -7225,6 +7225,16 @@
       "en": "The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out.",
       "context": "玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。"
     },
+    "gwp_cs_transport_target": {
+      "zh": "目标已经倒下。一名部下会将其运走；掩护搬运者经过出口，一路撤到城外。",
+      "en": "The target is down. A follower will move the body; protect the carrier through the exits and out of the settlement.",
+      "context": "玩家进城搜捕：复用原版拖拽搬运倒地目标，运出城再结算。"
+    },
+    "gwp_cs_transport_failed": {
+      "zh": "已经无法运走目标。这次搜捕失败，先撤出城外。",
+      "en": "The target can no longer be extracted. This search has failed; retreat outside the gate.",
+      "context": "玩家进城搜捕：所有搬运候选倒下或目标尸体实际丢失。"
+    },
     "gwp_cs_menu_begin": {
       "zh": "选择随行士兵，亲自从城门进城",
       "en": "Choose your troops and enter through the gate",
