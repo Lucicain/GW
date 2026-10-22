@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-213 个源文件、58,259 行、411 个公开类型、112 条 Harmony 目标声明（含动态入口，共 112 个补丁类）。
+213 个源文件、58,291 行、411 个公开类型、112 条 Harmony 目标声明（含动态入口，共 112 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -125,7 +125,7 @@
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpEncyclopediaHeroPageExtensionPatch` | GwpEncyclopediaHeroPageVM.cs:288 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipPurchaseTownPatch` | GwpLandlessShipTradePatch.cs:109 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipSaleTownPatch` | GwpLandlessShipTradePatch.cs:127 |
-| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCitySearchBodyCarrierPatch` | GwpCitySearchBodyTransport.cs:191 |
+| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCitySearchBodyCarrierPatch` | GwpCitySearchBodyTransport.cs:219 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpEngineAssertDiagnostics` | GwpEngineAssertDiagnostics.cs:12 |
 | `动态/未静态解析` | `TargetMethods()` | Postfix | `GwpInterventionChoicePatch` | GwpPlayerIntervention.cs:131 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpInterventionSelectionPatch` | GwpPlayerIntervention.cs:143 |
@@ -614,7 +614,7 @@
 ### 诊断（4 个文件）
 
 - `GwpAiDiagnostics.cs` — 605 行 · `GwpAiDiagnostics`，另含 1 个类型
-- `GwpRuntimeFaultWatch.cs` — 88 行 · `GwpRuntimeFaultWatch`
+- `GwpRuntimeFaultWatch.cs` — 92 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 34 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 23 行 · `GwpDispatchBarterFaultDiagnostics`
 
@@ -738,12 +738,12 @@
 - `GwpWardenVisitDesire.cs` — 303 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
+- `GwpCitySearchBodyTransport.cs` — 248 行 · `GwpCitySearchBodyTransport` : CorpseDraggingMissionLogic，另含 1 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAffairsData.cs` — 241 行 · `GwpAffairsEntry`，另含 2 个类型
 - `GwpStrength.Native.cs` — 240 行 · `GwpStrength`，另含 3 个类型
 - `GwpCitySearchBehavior.cs` — 227 行 · `GwpCitySearchBehavior` : CampaignBehaviorBase
 - `GwpArmoryAllocation.cs` — 224 行 · `GwpFireswornBehavior`
-- `GwpCitySearchBodyTransport.cs` — 220 行 · `GwpCitySearchBodyTransport` : CorpseDraggingMissionLogic，另含 1 个类型
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
 - `GwpFireswornMenus.cs` — 202 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFireswornDungeon.cs` — 199 行 · `GwpFireswornBehavior`

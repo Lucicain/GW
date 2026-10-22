@@ -48,10 +48,14 @@ namespace GreyWardenPolicePurity
                     _written++;
                 }
                 bool ours = exception.TargetSite?.DeclaringType?.Assembly == Ours;
+                // The throwing frame's IL offset maps a release-built vanilla or
+                // Harmony-replaced method without line info to its exact instruction.
+                System.Diagnostics.StackFrame? thrower = new System.Diagnostics.StackTrace(exception, false).GetFrame(0);
                 // Observe native/other-mod managed exceptions too: a deferred
                 // engine callback need not contain our namespace on its stack.
                 GwpFaultTrace.Write(ours ? "FIRST_CHANCE_MOD" : "FIRST_CHANCE_OBSERVED",
-                    details: exception.ToString().Replace(Environment.NewLine, " | ")
+                    details: "ilOffset=" + (thrower?.GetILOffset().ToString() ?? "-") + " | "
+                        + exception.ToString().Replace(Environment.NewLine, " | ")
                         + " | observerStack=" + Environment.StackTrace.Replace(Environment.NewLine, " | "));
             }
             catch

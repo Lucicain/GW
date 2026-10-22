@@ -29,13 +29,37 @@ namespace GreyWardenPolicePurity
         private bool _bodyLost;
 #if GWP_DIAGNOSTICS
         private bool _reportedAttach;
+        private bool _attachTried;
         private float _carrierSampleAt = -1f;
 #endif
         private GwpCitySearchBehavior Search => Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>();
 
+#if GWP_DIAGNOSTICS
+        private float _takenAt = -1f;
+
+        /// <summary>
+        /// 取证 2026-10-22：大厅击昏目标 0.35 秒后接身体，原版 SetDraggedCorpse 本帧空引用。
+        /// 该方法内能为空的只有尸体的装备、外观、外观实体和换成搬运兵的 MainAgent，逐一记下。
+        /// </summary>
+        private void WriteAttachCheck()
+        {
+            _attachTried = true;
+            MBAgentVisuals? visuals = _body!.AgentVisuals;
+            GwpAiDiagnostics.WriteCitySearch("BODY_ATTACH_TRY", "body=" + _body.State
+                + "; sinceDown=" + (_takenAt < 0f ? "spawned" : (Mission.CurrentTime - _takenAt).ToString("0.00"))
+                + "; equipment=" + (_body.Equipment != null) + "; visuals=" + (visuals != null)
+                + "; entity=" + (visuals?.GetEntity() != null) + "; corpse=" + _body.IsAddedAsCorpse()
+                + "; primary=" + _body.GetPrimaryWieldedItemIndex() + "; offhand=" + _body.GetOffhandWieldedItemIndex()
+                + "; carrierActive=" + Carrier?.IsActive());
+        }
+#endif
+
         internal void TakeTarget(Agent target)
         {
             _body = target;
+#if GWP_DIAGNOSTICS
+            _takenAt = Mission.CurrentTime;
+#endif
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_transport_target)));
         }
 
@@ -77,6 +101,7 @@ namespace GreyWardenPolicePurity
                 }
 #if GWP_DIAGNOSTICS
                 _reportedAttach = false;
+                _attachTried = false;
                 _carrierSampleAt = Mission.CurrentTime + 10f;
                 GwpAiDiagnostics.WriteCitySearch("BODY_CARRIER", "troop=" + Carrier.Character.StringId);
 #endif
@@ -102,6 +127,9 @@ namespace GreyWardenPolicePurity
                 Carrier.SetWieldedItemIndexAsClient(Agent.HandIndex.OffHand, EquipmentIndex.None, true, false, 0);
                 // 原版拖尸遇到上身攻击/收刀动作会松手，先等本次动作结束再接上物理。
                 if (Carrier.GetCurrentAction(1) != ActionIndexCache.act_none) return;
+#if GWP_DIAGNOSTICS
+                if (!_attachTried) WriteAttachCheck();
+#endif
                 SetBody(this, _body, 0);
                 base.OnCollectPlayerEventControlFlags();
                 Carrier.SetCrouchMode(true);

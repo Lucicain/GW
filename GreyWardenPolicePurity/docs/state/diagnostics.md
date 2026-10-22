@@ -96,7 +96,7 @@
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
-| 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
+| 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察（首次异常记出错帧IL偏移）、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
 | `tools/Capture-StackOverflow.ps1`（用户运行：cdb启动游戏，记录全会话；致命异常先存寄存器、带地址的原生栈和/mip转储，再读SOS及全部线程；栈溢出退出码另在RtlExitUserProcess/NtTerminateProcess入口拦截，正常退出不截停） | 中途无提示退出，异常回调可能缺席；原版与CLR的两条退出入口均需留证 | 闪退定位并修复后连工具退休；新增终止断点尚待真实进程验证 |
 
 案件事件（`GreyWarden-Case-Events.log`）、ACTION、AUCTION、地图战斗与火誓者行仍在役；主队 NPC 代缴的失败路径 `COMPANION_FINE_INCOMPLETE` 保留。其余已退休诊断（仪式声音、每小时部队状态、进聚落意愿对账、送信队 AI、援军与音乐档位、战马伤害、双刀互斥、战场编队采样等）的代码、日志与 WER 均已删除，**不再可读**；退休时间与结论在 journal。需要重新调查时从新复现取证，不要把已退休路径写成仍可用文件。（依据：流程）
@@ -107,7 +107,7 @@
 
 进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（声望档、论点强弱、关系、犯罪评级与折成的加减）、GUARD_DECISION、REFUSED_CHOICE（谈崩后选打或撤）、HEADING_IN（说要走或选撤后往城里走：警告或开战，离进城处多远）、FIGHT_START（开战起因、双方人数与 30 米内平民数）、RESERVES_READY（真实预备兵数、绑定守卫、来源队）、RESERVES_NO_POINT（缺少实际出生点时每3秒至多一条）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
 
-搜捕新增TARGET_DOWN、BODY_CARRIER、BODY_ATTACHED、BODY_PROGRESS及DUEL_WALK，回答倒地是否登记、由谁搬运、十秒后身体与搬运兵位置、两段正常步行的目的地。均只在诊断版按状态转换或每名搬运兵一次采样，验收后退休；具体边界归[进城搜捕](city-search.md#城防增援与场景衔接)。（依据：本轮正常游玩取证设计2026-10-22）
+搜捕新增TARGET_DOWN、BODY_CARRIER、BODY_ATTACH_TRY、BODY_ATTACHED、BODY_PROGRESS及DUEL_WALK，回答倒地是否登记、由谁搬运、十秒后身体与搬运兵位置、两段正常步行的目的地。均只在诊断版按状态转换或每名搬运兵一次采样，验收后退休；具体边界归[进城搜捕](city-search.md#城防增援与场景衔接)。（依据：本轮正常游玩取证设计2026-10-22）
 
 直接招守村兵使用 `GUARD_ENLISTED`，记录实际兵种 composition、人数、随兵军械和留守量；统计器读取同一事件。该功能待用户实测低阶优先与留守正确后退休健康路径记录。（依据：本轮直招功能验证设计 2026-10-15）
 
