@@ -186,6 +186,10 @@
             public const float DuelBaseChance = 0.5f;
             public const float DuelTraitStep = 0.1f;
             public const float GateExitDistance = 6f;
+            public const int DefenderLimit = 20;
+            public const int ReserveBatch = 4;
+            public const float ReserveInterval = 3f;
+            public const float SecureTargetDistance = 2f;
         }
 
         internal static class FieldArrest

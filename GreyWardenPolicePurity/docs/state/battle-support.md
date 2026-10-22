@@ -1,11 +1,11 @@
 # 战场援军
 
-> 当前状态：用户已实测满意（2026-09-23 确认支援部分）
+> 当前状态：原有野战援军已实测满意；城内真实名册与场景支援出生点接入已部署，143项回归通过，城内效果待实测
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
 > 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
-> 待实测：无（用户已确认）
+> 待实测：普通野战保持既有结果；城内真实名册接入与支援衔接见city-search
 
-实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、
+实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、`GwpBattleSceneSource`、
 `GwpBattleReinforcementBehavior`、`GwpBattleSupportOrigin`。
 
 ## 适用范围
@@ -21,6 +21,8 @@
 - 无玩家、多人、友好切磋、非 Battle 模式不启用。
 
 援军资格与音乐资格是两套独立判据，音乐见 [`music.md`](music.md)。
+
+城内搜捕通过同一IGwpBattleSceneSource提供真实预备兵；已生成中立人口在开战换队后校准一次累计战力，不能与预备兵重复。原版野战适配器转发既有人数与增援通知。城防入场和伤亡归[进城搜捕](city-search.md#城防增援)，不属于下述临时灰袍赠援。（依据：设计2026-10-22）
 
 ## 三层触发
 
@@ -105,6 +107,7 @@ descriptor 和原生 traits（基于 `BasicBattleAgentOrigin`，跨战役/Custom
 
 ## 提示与音乐
 
+- 城内临时支援由IGwpSceneReinforcementSource提供实际双方出生点，保留所在楼层高度并禁用坐骑；敌方城内支援不依赖野战编队。找不到实际点则保留队列，不能落到建筑外的野战边界。普通野战仍用既有边界入场。（依据：本机场景/预制体XML、原版导航选位反编译与离线测试2026-10-22）
 - 两侧援军均在首批实际到场后各通知音乐一次，沿用 Redraw 完整过渡。
 - 敌方援军中文提示「敌方的灰袍援军抵达战场！」，友方提示「灰袍援军赶到了！」。
 - 号角同场共用；退出/结果出现时停止释放。未强制接管玩家编队 AI。
@@ -112,7 +115,7 @@ descriptor 和原生 traits（基于 `BasicBattleAgentOrigin`，跨战役/Custom
 ## 测试
 
 `tools/BattleSceneTests` 链接真实 context/policy/support/origin 源码，仅替换引擎
-边界，**137 项通过**。覆盖：
+边界，**143 项通过**。覆盖：
 
 - 大局 1000→200、小局 50→11 不误判、非整除阈值、小局仅一人
 - 预备兵阻止末层、三层失败不重掷、越级、成功终止

@@ -40,9 +40,11 @@ class Agent{
  public static Agent? Main;public bool IsHuman=true,IsAIControlled=true,Active=true;public Team Team=new();public int AlarmCalls;public AIStateFlag AIStateFlags;
  public CampaignAgentComponent Component=new();public T? GetComponent<T>() where T:class=>Component as T;
  public Agent GetPtr()=>this;public bool IsActive()=>Active;public void SetTeam(Team t,bool b){Team=t;}
+ public bool HasWeapon()=>true;
  WATCH
 }
-class Team{public bool Enemy;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}
+class Team{public static Team Invalid=new();public bool Enemy;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}
+class MobileParty{}
 class CampaignAgentComponent{public AgentNavigator? AgentNavigator;}
 class AgentNavigator{public AlarmedBehaviorGroup Group=new();public T? GetBehaviorGroup<T>() where T:class=>Group as T;}
 class AlarmedBehaviorGroup{public bool DisableCalmDown,ScriptedFight,ScriptedFlee;public int Clears;
@@ -57,13 +59,16 @@ class SearchState{public bool War;public void MarkSearchWar(){War=true;}}
 class Settlement{public object MapFaction=new();}
 class PlayerBountyBehavior{public int Wars;public string Reason="";public void DeclarePlayerCaseWar(object f,string reason,string text){Wars++;Reason=reason;}}
 class Campaign{public static Campaign Current=new();public PlayerBountyBehavior Bounty=new();public T? GetCampaignBehavior<T>() where T:class=>Bounty as T;}
-static class GwpTextCatalog{public const string gwp_cs_war_notice="war";}
+static class GwpTextCatalog{public const string gwp_cs_war_notice="war",gwp_cs_unarmed_target_notice="unarmed";}
+static class GwpText{public static string Get(string s)=>s;}class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
 class NativeFight{public List<Agent> _playerSideAgents=new(),_opponentSideAgents=new();NATIVE_SETUP}
 class Controller{
  public Mission Mission=>Mission.Current;public SearchState Search=new();public Settlement _settlement=new();public bool _warDeclared;public Stage _stage;
+ bool InHall;Agent? _hallTarget;
  public List<Agent> _defenders=new();public Dictionary<Agent,object> _ours=new();public HashSet<Agent> Defenders=new();public OrderType Last;public int Wins;
  bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
  void Order(OrderType o){Last=o;}void OnSearchFightWon(){Wins++;}
+ MobileParty[] CityDefenseParties()=>Array.Empty<MobileParty>();void PrepareCityReserves(IEnumerable<MobileParty> p){}bool HasCityDefenders()=>false;
  BODIES
  public void Start(string cause)=>StartFight(cause);public void End()=>EndFightIfDefendersDown();
 }

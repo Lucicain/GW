@@ -4,6 +4,7 @@
     <Compile Include="../../GreyWardenPolicePurity/GwpTextCatalog.g.cs" Link="GwpTextCatalog.g.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpBattleScenePolicy.cs" Link="GwpBattleScenePolicy.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpBattleSceneContext.cs" Link="GwpBattleSceneContext.cs" />
+    <Compile Include="../../GreyWardenPolicePurity/GwpBattleSceneSource.cs" Link="GwpBattleSceneSource.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpBattleReinforcementBehavior.cs" Link="GwpBattleReinforcementBehavior.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpBattleSupportOrigin.cs" Link="GwpBattleSupportOrigin.cs" />
     <Compile Include="../../GreyWardenPolicePurity/GwpWardenResolve.cs" Link="GwpWardenResolve.cs" />

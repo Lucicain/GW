@@ -1,6 +1,6 @@
 # 玩家可见文字：独立维护入口
 
-> 当前状态：进城搜捕子菜单、步行赴约与撤离中英文本已补齐；主文本1733条、编译常量1416条
+> 当前状态：进城搜捕无武器目标、敌对城外撤离中英文本已补齐；主文本1735条、编译常量1418条
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpTextCatalog.g.cs` `GreyWardenPolicePurity/PlayerText/strings.json` `tools/Generate-PlayerText.py` `tools/tests/test_player_text.py` `_Module/ModuleData/Languages/**`
 > 待实测：中英文菜单、对话、百科与地图提示正常显示，变量替换完整

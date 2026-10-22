@@ -7215,6 +7215,16 @@
       "zh": "交战或交涉尚未结束，暂时不能离场。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
+    "gwp_cs_hostile_exit_blocked": {
+      "zh": "城内无法直接脱身。必须亲自撤到城门外，才能离开。",
+      "en": "You cannot escape from inside the settlement. Reach the outside of the gate before leaving.",
+      "context": "玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。"
+    },
+    "gwp_cs_unarmed_target_notice": {
+      "zh": "目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。",
+      "en": "The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out.",
+      "context": "玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。"
+    },
     "gwp_cs_menu_begin": {
       "zh": "选择随行士兵，亲自从城门进城",
       "en": "Choose your troops and enter through the gate",
@@ -7276,13 +7286,13 @@
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_fight_out": {
-      "zh": "与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离。Tab返回菜单不会交付俘虏。",
-      "en": "The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way to the gate. Returning here with Tab does not deliver a prisoner.",
+      "zh": "与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。",
+      "en": "The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way outside the gate; Tab cannot get you out from inside.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_walk_out_notice": {
-      "zh": "这里的事情已了。带队走出大厅，再从城门离开；也可按Tab返回搜捕菜单。",
-      "en": "You are finished here. Lead your party out of the hall and leave through the gate, or press Tab to return to the search menu.",
+      "zh": "这里的事情已了。带队走出大厅，再从城门离开。",
+      "en": "You are finished here. Lead your party out of the hall and leave through the gate.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_walk_arena_notice": {

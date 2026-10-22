@@ -447,6 +447,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_hall_start = "{=gwp_cs_hall_start}You have brought armed followers into this hall. What do you want of me?";
         internal const string gwp_cs_hall_surrender = "{=gwp_cs_hall_surrender}Very well. I will come with you and answer before the Wardens.";
         internal const string gwp_cs_hall_warrant = "{=gwp_cs_hall_warrant}The Grey Wardens hold you accountable for your crimes. Come with us to answer the charges.";
+        internal const string gwp_cs_hostile_exit_blocked = "{=gwp_cs_hostile_exit_blocked}You cannot escape from inside the settlement. Reach the outside of the gate before leaving.";
         internal const string gwp_cs_leave_notice = "{=gwp_cs_leave_notice}You promised the watch to leave town. Head further in and they will stop you.";
         internal const string gwp_cs_leave_warning = "{=gwp_cs_leave_warning}The watch warns you: turn back and leave town, or answer for it.";
         internal const string gwp_cs_menu_allowed = "{=gwp_cs_menu_allowed}You have secured passage through the gate. Walk with your troops to the hall where {TARGET} is staying, or enter the hall directly from this menu.";
@@ -454,7 +455,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_menu_back = "{=gwp_cs_menu_back}Return to the settlement menu";
         internal const string gwp_cs_menu_begin = "{=gwp_cs_menu_begin}Choose your troops and enter through the gate";
         internal const string gwp_cs_menu_duel = "{=gwp_cs_menu_duel}You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu.";
-        internal const string gwp_cs_menu_fight_out = "{=gwp_cs_menu_fight_out}The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way to the gate. Returning here with Tab does not deliver a prisoner.";
+        internal const string gwp_cs_menu_fight_out = "{=gwp_cs_menu_fight_out}The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way outside the gate; Tab cannot get you out from inside.";
         internal const string gwp_cs_menu_gate = "{=gwp_cs_menu_gate}The guards have not granted passage. Return to the gate to deal with them. Tab returns here and preserves your search progress. Your target is {TARGET}.";
         internal const string gwp_cs_menu_hall = "{=gwp_cs_menu_hall}Take your troops to the lord’s hall";
         internal const string gwp_cs_menu_leave = "{=gwp_cs_menu_leave}Leave the settlement with your party and end this search";
@@ -465,8 +466,9 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_opponent_duel = "{=gwp_cs_opponent_duel}Enough talk. I choose single combat. Defeat me and I will go with you.";
         internal const string gwp_cs_opponent_melee = "{=gwp_cs_opponent_melee}I choose to stand with my guards. If you want me, come and take me.";
         internal const string gwp_cs_route_blocked = "{=gwp_cs_route_blocked}You cannot leave while combat or a conversation is still in progress.";
+        internal const string gwp_cs_unarmed_target_notice = "{=gwp_cs_unarmed_target_notice}The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out.";
         internal const string gwp_cs_walk_arena_notice = "{=gwp_cs_walk_arena_notice}The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu.";
-        internal const string gwp_cs_walk_out_notice = "{=gwp_cs_walk_out_notice}You are finished here. Lead your party out of the hall and leave through the gate, or press Tab to return to the search menu.";
+        internal const string gwp_cs_walk_out_notice = "{=gwp_cs_walk_out_notice}You are finished here. Lead your party out of the hall and leave through the gate.";
         internal const string gwp_cs_war_notice = "{=gwp_cs_war_notice}You defied the town watch. {VAR_1} is now at war with you.";
         internal const string gwp_cs_will_leave = "{=gwp_cs_will_leave}We will leave town.";
         internal const string gwp_cs_withdraw_notice = "{=gwp_cs_withdraw_notice}Leave town and the search is dropped. Head further in and it means war.";

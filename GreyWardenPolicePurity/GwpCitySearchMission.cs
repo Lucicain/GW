@@ -131,6 +131,8 @@ namespace GreyWardenPolicePurity
         private Agent? _guard;
         private string? _pendingFight;
         private Vec3 _gate;
+        private bool _gateExitAvailable;
+        private bool _outsideExitRequested;
         private float _inwardLimit;
         private bool _warned;
         private bool _warDeclared;
@@ -197,6 +199,7 @@ namespace GreyWardenPolicePurity
             else
                 SandBoxHelpers.MissionHelper.SpawnPlayer(spawn, civilianEquipment: false, noHorses: true);
             _gate = spawn?.GetGlobalFrame().origin ?? Agent.Main?.Position ?? Vec3.Zero;
+            _gateExitAvailable = !InHall && spawn != null;
             CampaignMission.Current.Location.RemoveAllCharacters(character => character.Character.HeroObject?.PartyBelongedTo == MobileParty.MainParty);
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
             int passages = DisablePlayerPassages();
@@ -334,6 +337,7 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
+            TickCityReserves();
             if (TickSearchProgress()) return;
             if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
             {
@@ -483,6 +487,8 @@ namespace GreyWardenPolicePurity
         /// <summary>开战：玩家阵营对城主势力宣战，卫兵和场景里同势力的人一起打。</summary>
         private void StartFight(string cause)
         {
+            // 宣战可能让原版立即移走驻城队，先冻结当时确实驻城的来源。
+            MobileParty[] defenseParties = CityDefenseParties();
             Search.MarkSearchWar();
             if (!_warDeclared)
             {
@@ -521,9 +527,11 @@ namespace GreyWardenPolicePurity
                 defender.SetTeam(Mission.PlayerEnemyTeam, true);
                 SetSearchFighter(defender);
             }
+            PrepareCityReserves(defenseParties);
             foreach (Agent civilian in Mission.Agents.Where(agent => agent.IsActive() && agent.IsAIControlled
                          && agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)))
             {
+                civilian.SetTeam(Team.Invalid, true);
                 civilian.SetWatchState(Agent.WatchState.Alarmed);
                 AlarmedBehaviorGroup? alarmed = civilian.GetComponent<CampaignAgentComponent>()?.AgentNavigator
                     ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
@@ -535,6 +543,8 @@ namespace GreyWardenPolicePurity
             Mission.SetMissionMode(MissionMode.Battle, false);
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
             Order(OrderType.Charge);
+            if (InHall && _hallTarget?.IsActive() == true && !_hallTarget.HasWeapon())
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_unarmed_target_notice)));
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("FIGHT_AI", "oursActive=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAIControlled)
                 + "; oursAlarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
@@ -560,7 +570,7 @@ namespace GreyWardenPolicePurity
 
         private void RestoreSearchFollowers()
         {
-            foreach (Agent ally in _ours.Keys.Where(agent => agent.IsActive() && agent.IsAIControlled))
+            foreach (Agent ally in Mission.Agents.Where(agent => IsOurs(agent) && agent.IsActive() && agent.IsAIControlled))
             {
                 AlarmedBehaviorGroup? alarmed = ally.GetComponent<CampaignAgentComponent>()?.AgentNavigator
                     ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
@@ -575,7 +585,7 @@ namespace GreyWardenPolicePurity
 
         private void EndFightIfDefendersDown()
         {
-            if (_stage != Stage.Fighting || _defenders.Any(agent => agent.IsActive())) return;
+            if (_stage != Stage.Fighting || _defenders.Any(agent => agent.IsActive()) || HasCityDefenders()) return;
             _stage = Stage.FightOver;
             Mission.SetMissionMode(MissionMode.StartUp, false);
             RestoreSearchFollowers();
@@ -590,8 +600,11 @@ namespace GreyWardenPolicePurity
         public override InquiryData OnEndMissionRequest(out bool canPlayerLeave)
         {
             canPlayerLeave = CanLeaveSearch();
+            // 原版还会遍历其余离场逻辑并等待0.6秒；请求通过不代表已经卸载场景。
+            _outsideExitRequested = canPlayerLeave && Search.SearchWar;
             if (!canPlayerLeave)
-                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_cs_route_blocked));
+                MBInformationManager.AddQuickInformation(GwpText.Create(Search.SearchWar
+                    ? GwpTextCatalog.gwp_cs_hostile_exit_blocked : GwpTextCatalog.gwp_cs_route_blocked));
             return null!;
         }
 
@@ -608,6 +621,7 @@ namespace GreyWardenPolicePurity
 
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
+            NoteCitySoldierRemoval(affectedAgent, agentState);
             NoteDuelRemoval(affectedAgent);
             if (affectedAgent == Agent.Main && agentState != AgentState.Deleted)
             {
@@ -618,6 +632,8 @@ namespace GreyWardenPolicePurity
                 Search.FinishSearch(false);
                 return; // 原版 LeaveMissionLogic 办理倒地后退出，不能把失败带入下一场景。
             }
+            if (InHall && affectedAgent == _hallTarget && agentState == AgentState.Killed && Search.SearchActive)
+                Search.WithdrawFromHall();
             EndFightIfDefendersDown();
             if (!_ours.TryGetValue(affectedAgent, out CharacterObject character)) return;
             if (agentState == AgentState.Killed)
@@ -640,16 +656,17 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
-        private bool IsOurs(Agent agent) => agent == Agent.Main || _ours.ContainsKey(agent);
+        private bool IsOurs(Agent agent) => agent == Agent.Main || _ours.ContainsKey(agent)
+            || agent.Team == Mission.PlayerTeam && agent.Origin is GwpBattleSupportOrigin;
 
         /// <summary>守卫：原版算作执法者的士兵、卫兵、狱卒，不含我方带进来的兵。</summary>
         private bool IsWatch(Agent agent) => agent.IsHuman && !IsOurs(agent)
             && agent.Character is CharacterObject character && MissionFightHandler.IsAgentJusticeWarrior(character);
 
-        /// <summary>会出手的人：守卫，加上场景里与城主同势力的英雄。</summary>
-        private bool IsDefender(Agent agent) => IsWatch(agent) || InHall && agent == _hallTarget || agent.IsHuman && !IsOurs(agent)
-            && agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
-            && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction;
+        /// <summary>按场景实际装备判断；原版HasWeapon也检查未拔出的武器，不以职业代替武器。</summary>
+        private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && agent.HasWeapon() && (IsWatch(agent) || InHall && agent == _hallTarget
+            || agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
+            && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction);
     }
 
     /// <summary>近战碰到人：交给进城搜捕认是不是对守卫动手。参数名须与原版回调一致，Harmony 按名绑定。</summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 
@@ -8,7 +9,7 @@ namespace GreyWardenPolicePurity
     {
         internal bool Ready { get; private set; }
         internal bool MusicEligible { get; private set; }
-        internal DefaultBattleMissionAgentSpawnLogic? Spawn { get; private set; }
+        internal IGwpBattleSceneSource? Spawn { get; private set; }
         private readonly float[] _openingPower = new float[2], _spawnedPower = new float[2];
         private readonly int[] _openingCount = new int[2];
         internal int OpeningCount(BattleSideEnum side) => _openingCount[(int)side];
@@ -21,13 +22,21 @@ namespace GreyWardenPolicePurity
                 || Mission.PlayerTeam == null || Mission.PlayerTeam.Side == BattleSideEnum.None
                 || GameNetwork.IsMultiplayer
                 || Mission.GetMissionBehavior<GreyWardenFieldSparringMissionController>() != null) return false;
-            Spawn = Mission.GetMissionBehavior<DefaultBattleMissionAgentSpawnLogic>();
+            DefaultBattleMissionAgentSpawnLogic? native = Mission.GetMissionBehavior<DefaultBattleMissionAgentSpawnLogic>();
+            Spawn = native != null ? new GwpNativeBattleSceneSource(native)
+                : Mission.MissionBehaviors.OfType<IGwpBattleSceneSource>().FirstOrDefault();
             if (Spawn == null || Spawn.GetTotalNumberOfTroopsForSide(BattleSideEnum.Defender) <= 0
                 || Spawn.GetTotalNumberOfTroopsForSide(BattleSideEnum.Attacker) <= 0) return false;
             // The supplier's complete opening roster includes reserves and
             // is available during deployment, before casualty callbacks.
             Count(BattleSideEnum.Defender, out int defenders, out int greyDefenders);
             Count(BattleSideEnum.Attacker, out int attackers, out int greyAttackers);
+            // 城内人口在开战前已生成且原先中立；以换队后的实际人员重建累计值。
+            if (Spawn.OpeningAgentsAlreadySpawned)
+            {
+                Array.Clear(_spawnedPower, 0, _spawnedPower.Length);
+                foreach (Agent agent in Mission.Agents) OnAgentBuild(agent, null!);
+            }
             MusicEligible = GwpBattleScenePolicy.MusicEligible(greyDefenders, defenders)
                 || GwpBattleScenePolicy.MusicEligible(greyAttackers, attackers);
             Ready = true;

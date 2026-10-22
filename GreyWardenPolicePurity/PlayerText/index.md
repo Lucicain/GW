@@ -141,8 +141,8 @@
 | gwp_gwpaideterrencestate_043 | — | 尚未重新现身 | 未检出直接引用；保留 |
 | gwp_gwpaideterrencestate_044 | — | 状态不明 | 未检出直接引用；保留 |
 | gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
-| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:203 |
-| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:204 |
+| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:216 |
+| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:217 |
 | gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:407 |
 | gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:422 |
 | gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1062 |
@@ -1722,6 +1722,8 @@
 | gwp_cs_hall_notice | Proceed to the lord's hall with your surviving followers. | 带着还站得住的部下，进入领主大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_escape_notice | Return to the gate and get out of the settlement. | 回到城门，带人撤出城外。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_route_blocked | You cannot leave while combat or a conversation is still in progress. | 交战或交涉尚未结束，暂时不能离场。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hostile_exit_blocked | You cannot escape from inside the settlement. Reach the outside of the gate before leaving. | 城内无法直接脱身。必须亲自撤到城门外，才能离开。 | 玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。 |
+| gwp_cs_unarmed_target_notice | The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out. | 目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。 | 玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。 |
 | gwp_cs_menu_begin | Choose your troops and enter through the gate | 选择随行士兵，亲自从城门进城 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_resume | Return to the search on foot | 返回搜捕现场，继续步行 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_hall | Take your troops to the lord’s hall | 带兵前往领主大厅 | 玩家进城搜捕：体验路线与地点子菜单 |
@@ -1734,6 +1736,6 @@
 | gwp_cs_menu_allowed | You have secured passage through the gate. Walk with your troops to the hall where {TARGET} is staying, or enter the hall directly from this menu. | 卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_duel | You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu. | 你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_return | Your encounter with {TARGET} is over. Lead your party out of the hall and walk to the gate, or end this search here. | 与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_fight_out | The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way to the gate. Returning here with Tab does not deliver a prisoner. | 与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离。Tab返回菜单不会交付俘虏。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_walk_out_notice | You are finished here. Lead your party out of the hall and leave through the gate, or press Tab to return to the search menu. | 这里的事情已了。带队走出大厅，再从城门离开；也可按Tab返回搜捕菜单。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_fight_out | The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way outside the gate; Tab cannot get you out from inside. | 与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_out_notice | You are finished here. Lead your party out of the hall and leave through the gate. | 这里的事情已了。带队走出大厅，再从城门离开。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_walk_arena_notice | The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu. | 单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。 | 玩家进城搜捕：体验路线与地点子菜单 |

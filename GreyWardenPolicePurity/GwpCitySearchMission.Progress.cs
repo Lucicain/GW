@@ -78,6 +78,7 @@ namespace GreyWardenPolicePurity
                     _ => Stage.Entering
                 };
                 _inwardLimit = (Agent.Main?.Position.Distance(_gate) ?? 0f) + GwpTuning.CitySearch.InwardTolerance;
+                if (_warDeclared) _pendingFight = "street";
             }
             DisablePlayerPassages();
         }
@@ -85,10 +86,11 @@ namespace GreyWardenPolicePurity
         private bool CanUsePassage(PassageUsePoint passage)
         {
             // 放行回调发生在对话中；门的许可不能因对话尚未关闭而永久关掉。
-            if (_stage == Stage.Fighting || _stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null) return false;
+            if (_stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null || _pendingHallAction != null) return false;
+            if (_stage == Stage.Fighting && !Search.SearchWar) return false;
             if (InHall) return passage.ToLocationId == "center";
             if (passage.ToLocationId == "arena") return Search.DuelAgreed;
-            return passage.ToLocationId == "lordshall" && Search.HallAccessible && !Search.HallResolved;
+            return passage.ToLocationId == "lordshall" && (Search.HallAccessible || Search.SearchWar) && !Search.HallResolved;
         }
 
         internal bool TryUseSearchPassage(PassageUsePoint passage, Agent user)
@@ -169,11 +171,12 @@ namespace GreyWardenPolicePurity
                 _stage = Stage.HallTalking;
                 Mission.GetMissionBehavior<MissionConversationLogic>().StartConversation(_hallTarget, false);
             }
+            TrySecureHallTarget();
             EndFightIfDefendersDown();
             if (_pendingHallAction != null) return false;
-            // 战斗撤离的完成仍须走到实际城门；Tab 回菜单只暂停，不交付俘虏。
+            // 敌对后只能在已核实的城外出生点附近退出，守军仍在战斗也可冲出城门。
             if ((_place == GwpCitySearchPlace.Escape || _stage == Stage.Leaving || _stage == Stage.Withdrawing)
-                && _pendingFight == null && Agent.Main?.IsActive() == true
+                && _gateExitAvailable && _stage != Stage.Failed && _pendingFight == null && Agent.Main?.IsActive() == true
                 && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance)
             {
                 Search.FinishSearch(true);
@@ -195,6 +198,21 @@ namespace GreyWardenPolicePurity
             if (!Search.SearchActive) return;
             if (InHall)
             {
+                // 没有武器的目标会逃跑。只击败卫兵不能隔空控制他，必须追到身边。
+                if (!Search.HallResolved && _hallTarget?.IsActive() == true && !_hallTarget.HasWeapon())
+                {
+                    _stage = Stage.FightOver;
+                    TrySecureHallTarget();
+                    DisablePlayerPassages();
+                    return;
+                }
+                if (_hallTarget?.State == AgentState.Routed || _hallTarget?.State == AgentState.Deleted)
+                {
+                    Search.WithdrawFromHall();
+                    _stage = Stage.HallDone;
+                    DisablePlayerPassages();
+                    return;
+                }
                 Search.WonHall();
                 _stage = Stage.HallDone;
                 DisablePlayerPassages();
@@ -208,6 +226,21 @@ namespace GreyWardenPolicePurity
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(_place == GwpCitySearchPlace.Entry
                     ? GwpTextCatalog.gwp_cs_hall_notice : GwpTextCatalog.gwp_cs_escape_notice)));
             }
+        }
+
+        private void TrySecureHallTarget()
+        {
+            if (!InHall || !Search.SearchWar || Search.HallResolved || _stage == Stage.Failed
+                || _pendingFight != null || _hallTarget == null
+                || (_hallTarget.State != AgentState.Unconscious && (!_hallTarget.IsActive() || _hallTarget.HasWeapon()))
+                || Agent.Main?.IsActive() != true
+                || Agent.Main.Position.Distance(_hallTarget.Position) > GwpTuning.CitySearch.SecureTargetDistance
+                || Mission.Agents.Any(agent => IsCityEnemyFighter(agent)
+                    && agent.Position.Distance(_hallTarget.Position) <= GwpTuning.CitySearch.GuardChallengeDistance)) return;
+            Search.WonHall();
+            if (_hallTarget.IsActive()) SandBoxHelpers.MissionHelper.FollowAgent(_hallTarget, Agent.Main);
+            DisablePlayerPassages();
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_out_notice)));
         }
 
         private void StartHallDuel()
@@ -256,17 +289,22 @@ namespace GreyWardenPolicePurity
             else if (agent == _hallTarget) _pendingHallAction = "duel_won";
         }
 
-        private bool CanLeaveSearch() => _stage != Stage.Fighting && _stage != Stage.Duel
+        private bool CanLeaveSearch() => _stage != Stage.Duel
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
-            && !Campaign.Current.ConversationManager.IsConversationFlowActive;
+            && !Campaign.Current.ConversationManager.IsConversationFlowActive
+            && (Search.SearchWar ? !InHall && _gateExitAvailable && Agent.Main?.IsActive() == true
+                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance : _stage != Stage.Fighting);
 
         private void EndSearchScene()
         {
+            if (!_transitioning && _outsideExitRequested && Search.SearchActive && CanLeaveSearch())
+                Search.FinishSearch(true);
             var bounty = Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>();
             bounty.RecordCitySearchLosses(_target, _killed.Values.Sum());
             if (_target.IsDead && InHall) bounty.RecordCitySearchDefeat(_target);
             if (Search.SearchActive)
             {
+                SaveCitySoldiers();
                 Search.SaveSurvivors(_ours.Where(entry => entry.Key.IsActive())
                     .Select(entry => (entry.Value, entry.Key.Health)));
                 if (!_transitioning) Search.PauseSearch();
@@ -275,6 +313,7 @@ namespace GreyWardenPolicePurity
 
         internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting
             && !IsOurs(civilian) && !IsDefender(civilian)
+            && !(civilian == _hallTarget && Search.Returning)
             ? Mission.Agents.Where(agent => agent.IsActive() && IsOurs(agent)).ToArray() : null;
 
         // 单挑按竞技场原版只击昏，群殴让原版伤亡模型裁定；不改武器标记。

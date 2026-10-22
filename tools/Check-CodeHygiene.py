@@ -186,6 +186,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("战场完整名册", r"\bGetAllTroopsForSide\s*\(",
+     "GwpBattleScene*.cs|GwpCitySearchMission.Reinforcements.cs", "IGwpBattleSceneSource / GwpBattleSceneContext"),
     ("玩家为本案宣战", r"\bDeclareWarAction\.Apply\w*\s*\(",
      "PlayerBountyBehavior.Support.cs", "PlayerBountyBehavior.DeclarePlayerCaseWar"),
     ("海陆交接资格", r"\.IsCurrentlyAtSea\s*==\s*\w+\.IsCurrentlyAtSea\b",

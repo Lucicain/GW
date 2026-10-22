@@ -33,6 +33,8 @@ namespace GreyWardenPolicePurity
         private string _previousLocationId = string.Empty;
         private List<string> _searchTroops = new List<string>();
         private List<double> _searchHealth = new List<double>();
+        private List<string> _enemyKeys = new List<string>();
+        private List<double> _enemyHealth = new List<double>();
         // 场景内的对象引用不存；地图衔接从已存的 ID 解析，不能把 Location/Agent 放进存档。
         private Hero? _searchTarget;
         internal GwpCitySearchPlace SearchPlace => (GwpCitySearchPlace)_searchPlace;
@@ -63,6 +65,8 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_previous", ref _previousLocationId);
             store.SyncData("gwp_cs_troops", ref _searchTroops);
             store.SyncData("gwp_cs_health", ref _searchHealth);
+            store.SyncData("gwp_cs_enemy_keys", ref _enemyKeys);
+            store.SyncData("gwp_cs_enemy_health", ref _enemyHealth);
         }
 
         private void BeginSearch(Settlement settlement, Hero target, TroopRoster roster)
@@ -78,6 +82,8 @@ namespace GreyWardenPolicePurity
             _previousLocationId = string.Empty;
             _searchTroops.Clear();
             _searchHealth.Clear();
+            _enemyKeys.Clear();
+            _enemyHealth.Clear();
             foreach (TroopRosterElement element in roster.GetTroopRoster())
                 if (!element.Character.IsPlayerCharacter)
                     for (int i = 0; i < element.Number - element.WoundedNumber; i++)
@@ -104,6 +110,24 @@ namespace GreyWardenPolicePurity
             for (int i = 0; i < _searchTroops.Count; i++)
                 if (_searchTroops[i] == troopId && ordinal-- == 0) return (float)_searchHealth[i];
             throw new InvalidOperationException("Search survivor missing: " + troopId);
+        }
+
+        internal float SavedEnemyHealth(string key, int ordinal)
+        {
+            for (int i = 0; i < _enemyKeys.Count; i++)
+                if (_enemyKeys[i] == key && ordinal-- == 0) return (float)_enemyHealth[i];
+            return -1f;
+        }
+
+        internal void SaveEnemySurvivors(IEnumerable<(string Key, float Health)> survivors)
+        {
+            _enemyKeys.Clear();
+            _enemyHealth.Clear();
+            foreach (var survivor in survivors)
+            {
+                _enemyKeys.Add(survivor.Key);
+                _enemyHealth.Add(survivor.Health);
+            }
         }
 
         internal void QueuePlace(GwpCitySearchPlace place)
@@ -149,6 +173,8 @@ namespace GreyWardenPolicePurity
             _searchTarget = null;
             _searchTroops.Clear();
             _searchHealth.Clear();
+            _enemyKeys.Clear();
+            _enemyHealth.Clear();
             _leavePending = escaped;
         }
 

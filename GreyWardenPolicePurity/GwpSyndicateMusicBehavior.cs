@@ -16,7 +16,7 @@ namespace GreyWardenPolicePurity
     {
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
         private static GwpSyndicateMusicBehavior? _owner;
-        private DefaultBattleMissionAgentSpawnLogic? _spawn;
+        private IGwpBattleSceneSource? _spawn;
         private GwpMusicOutput? _output;
         private readonly GwpMusicBattlePolicy _policy = new();
         private bool _checked, _nativePaused, _battle, _outro, _disposed;

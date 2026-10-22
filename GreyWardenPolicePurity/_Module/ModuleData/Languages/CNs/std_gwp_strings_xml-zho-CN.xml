@@ -1722,6 +1722,8 @@
   <string id="gwp_cs_hall_notice" text="带着还站得住的部下，进入领主大厅。" />
   <string id="gwp_cs_escape_notice" text="回到城门，带人撤出城外。" />
   <string id="gwp_cs_route_blocked" text="交战或交涉尚未结束，暂时不能离场。" />
+  <string id="gwp_cs_hostile_exit_blocked" text="城内无法直接脱身。必须亲自撤到城门外，才能离开。" />
+  <string id="gwp_cs_unarmed_target_notice" text="目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。" />
   <string id="gwp_cs_menu_begin" text="选择随行士兵，亲自从城门进城" />
   <string id="gwp_cs_menu_resume" text="返回搜捕现场，继续步行" />
   <string id="gwp_cs_menu_hall" text="带兵前往领主大厅" />
@@ -1734,8 +1736,8 @@
   <string id="gwp_cs_menu_allowed" text="卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。" />
   <string id="gwp_cs_menu_duel" text="你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。" />
   <string id="gwp_cs_menu_return" text="与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。" />
-  <string id="gwp_cs_menu_fight_out" text="与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离。Tab返回菜单不会交付俘虏。" />
-  <string id="gwp_cs_walk_out_notice" text="这里的事情已了。带队走出大厅，再从城门离开；也可按Tab返回搜捕菜单。" />
+  <string id="gwp_cs_menu_fight_out" text="与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。" />
+  <string id="gwp_cs_walk_out_notice" text="这里的事情已了。带队走出大厅，再从城门离开。" />
   <string id="gwp_cs_walk_arena_notice" text="单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。" />
 </strings>
 </base>

@@ -85,6 +85,9 @@ static class Program{
   var b=New(out var s,out var h);var foot=new CharacterObject("foot");var bow=new CharacterObject("bow");var r=TroopRoster.CreateDummyTroopRoster();r.AddToCounts(foot,3,1);r.AddToCounts(bow,1);r.AddToCounts(CharacterObject.PlayerCharacter,1);
   b.Start(s,h,r);Check(b.SearchPlace==GwpCitySearchPlace.Entry&&b.Pending,"selection queues entry");
   Check(b.SavedHealth("foot",0)==-1&&b.SavedHealth("foot",1)==-1,"wounded excluded and player not duplicated");
+  b.SaveEnemySurvivors(new[]{("garrison|foot",24f),("garrison|foot",57f),("militia|foot",16f)});b=Reload(b);
+  Check(b.SavedEnemyHealth("garrison|foot",0)==24&&b.SavedEnemyHealth("garrison|foot",1)==57&&b.SavedEnemyHealth("militia|foot",0)==16,"enemy survivor wounds retain source party and ordinal across save/load");
+  Check(b.SavedEnemyHealth("other|foot",0)==-1,"new real reserve slot uses native initial health");
   GwpCitySearchBehavior.Pump();Check(GwpCitySearchMission.Last.Total==3,"entry has exactly three healthy selected followers");
   Check(Campaign.Current.GameMenuManager.PreviousLocation==null,"first entry has no nonexistent previous passage");
   b.GateState=GwpCitySearchGate.Allowed;b.SaveSurvivors(new[]{(foot,37f),(bow,12f)});b.PauseSearch();Mission.Current!.Close();b=Reload(b);
@@ -156,12 +159,12 @@ namespace GreyWardenPolicePurity{
 enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver,HallReady,HallTalking,Duel,Escaping,Failed,HallDone}
 enum GwpCitySearchPlace{None,Entry,Hall,Arena,Escape,Street}
 enum GwpCitySearchGate{Unchecked,Allowed,Leaving,Refused,Withdrawing,Cleared}
-enum AgentState{None,Unconscious,Killed}
+enum AgentState{None,Unconscious,Killed,Routed,Deleted}
 class CharacterObject{public bool IsHero;public Hero? HeroObject;}
 struct Vec3{public float X;public Vec3(float x){X=x;}public float Distance(Vec3 v)=>Math.Abs(X-v.X);}
 class Team{public static Team Invalid=new();public bool Hostile;public void SetIsEnemyOf(Team other,bool b){Hostile=b;}}
 struct WorldPosition{}
-class Agent{public static Agent? Main;public CharacterObject Character=new();public float Health=100;public bool Active=true,IsHuman=true,Watch;public Team Team=new();public Vec3 Position;
+class Agent{public static Agent? Main;public CharacterObject Character=new();public float Health=100;public bool Active=true,IsHuman=true,Watch,Armed=true,IsRunningAway;public bool HasWeapon()=>Armed;public AgentState State;public Team Team=new();public Vec3 Position;
  public enum WatchState{Alarmed}public bool IsActive()=>Active;public void DisableScriptedMovement(){}public void SetTeam(Team t,bool b){Team=t;}public WorldPosition GetWorldPosition()=>new();public void SetScriptedPosition(ref WorldPosition p,bool b){}public void SetLookAgent(Agent a){}public void SetWatchState(WatchState s){}public T? GetComponent<T>() where T:class=>null;}
 class CampaignAgentComponent{public Navigator AgentNavigator=new();}class Navigator{public T? GetBehaviorGroup<T>() where T:class=>null;}
 class AlarmedBehaviorGroup{public bool DisableCalmDown;public void AddBehavior<T>(){}public void SetScriptedBehavior<T>(){}}class FightBehavior{}
@@ -177,12 +180,15 @@ enum MissionMode{Duel,StartUp}
 enum OrderType{FollowMe}
 class Mission{public List<Agent> Agents=new();public Team PlayerTeam=new(),PlayerEnemyTeam=new();public bool Ended;public MissionConversationLogic Talk=new();public T GetMissionBehavior<T>() where T:class=>Talk as T;public void EndMission(){Ended=true;}public void SetMissionMode(MissionMode m,bool b){}}
 class PassageUsePoint{public string ToLocationId="";}
-static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6,InwardTolerance=10;}}
+static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6,InwardTolerance=10,SecureTargetDistance=2;}}
+static class SandBoxHelpers{public static class MissionHelper{public static void FollowAgent(Agent a,Agent target){a.IsRunningAway=false;}}}
 class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
 static class GwpText{public static string Get(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena";}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
-class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
+class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _gateExitAvailable=true;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
  public bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsWatch(Agent a)=>a.Watch;void DisablePlayerPassages(){}void EndFightIfDefendersDown(){}void Order(OrderType o){}
+ bool _outsideExitRequested;void SaveCitySoldiers(){}public List<Agent> _defenders=new();
+ bool IsCityEnemyFighter(Agent a)=>a.Active&&!a.IsRunningAway&&a.IsHuman&&a.Armed&&a.Team==Mission.PlayerEnemyTeam;
  METHODS
  public void Begin()=>BeginSearchStage();public bool Tick()=>TickSearchProgress();public bool CanLeave()=>CanLeaveSearch();public void End()=>EndSearchScene();public void DuelRemoval(Agent a)=>NoteDuelRemoval(a);public void FightWon()=>OnSearchFightWon();
 }
@@ -193,7 +199,9 @@ static void Main(){
  Campaign.Current.ConversationManager.IsConversationFlowActive=true;entry.TryUseSearchPassage(door,Agent.Main!);Check(entry._pendingHallAction=="enter_hall","permission granted inside dialogue opens hall door");entry._pendingHallAction=null;Campaign.Current.ConversationManager.IsConversationFlowActive=false;entry.Search.HallAccessible=false;
  Check(!entry.TryUseSearchPassage(door,new Agent()),"AI doors retain native handling");entry.TryUseSearchPassage(door,Agent.Main!);Check(entry._pendingHallAction==null,"hall locked until guard allows passage");
  foreach(var stage in new[]{Stage.Allowed,Stage.FightOver}){entry=New(GwpCitySearchPlace.Entry,stage);entry.Search.HallAccessible=true;entry.TryUseSearchPassage(door,Agent.Main!);Check(entry.Tick()&&entry._transitioning&&entry.Mission.Ended&&entry.Search.SearchPlace==GwpCitySearchPlace.Hall,"approved or victorious entry leads to hall with transition marked");}
- var war=New(GwpCitySearchPlace.Entry,Stage.FightOver);war._warDeclared=true;Check(war.CanLeave(),"winning at gate permits native Tab pause");
+ var war=New(GwpCitySearchPlace.Entry,Stage.FightOver);war._warDeclared=true;war.Search.War=true;Check(!war.CanLeave(),"winning a wave inside city cannot escape by Tab");
+ war._stage=Stage.Fighting;war.TryUseSearchPassage(door,Agent.Main!);Check(war._pendingHallAction=="enter_hall","hostile player can break through hall door before killing all reserves");
+ var retreat=New(GwpCitySearchPlace.Street,Stage.FightOver);retreat.Search.SearchPlace=GwpCitySearchPlace.Street;retreat.Search.GateState=GwpCitySearchGate.Cleared;retreat.Search.War=true;retreat.Begin();Check(retreat._pendingFight=="street","retreating before target capture preserves hostile street pursuit");
  var resolved=New(GwpCitySearchPlace.Hall,Stage.HallReady);resolved.Search.SearchPlace=GwpCitySearchPlace.Hall;resolved.Search.Returning=true;resolved.Search.War=true;resolved.Begin();Check(resolved._stage==Stage.HallDone&&resolved._pendingFight==null&&resolved._pendingHallAction==null,"return to resolved hall neither clones target nor restarts fight");
  var clear=New(GwpCitySearchPlace.Escape,Stage.Escaping);clear.Search.SearchPlace=GwpCitySearchPlace.Escape;clear.Search.War=true;clear.Search.EscapeCleared=true;clear.Begin();Check(clear._pendingFight==null,"resuming cleared escape wave does not restart combat");
  var hall=New(GwpCitySearchPlace.Hall,Stage.HallReady);hall._hallTarget=new(){Position=new Vec3(52)};hall.Tick();Check(hall._stage==Stage.HallTalking&&hall.Mission.Talk.Talks==1,"approaching actual target starts warrant dialogue");hall.Tick();Check(hall.Mission.Talk.Talks==1,"one hall conversation");Check(hall.CanLeave(),"calm hall permits native Tab pause");
@@ -207,6 +215,12 @@ static void Main(){
  hall=New(GwpCitySearchPlace.Hall,Stage.Duel);hall.DuelRemoval(Agent.Main!);hall.Tick();Check(hall.Search.Aborted&&!hall.Search.Won,"castle duel loss grants no arrest");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="melee";hall.Tick();Check(hall._pendingFight=="hall_melee","chosen brawl queues war after dialogue closes");
  hall=New(GwpCitySearchPlace.Hall,Stage.FightOver);hall.FightWon();hall.Tick();Check(hall.Search.Won&&hall.Search.Returning&&!hall.Mission.Ended,"hall brawl victory leaves player to walk out");
+ hall=New(GwpCitySearchPlace.Hall,Stage.Fighting);hall.Search.War=true;hall._hallTarget=new(){Armed=false,Position=new Vec3(60),IsRunningAway=true};hall.FightWon();Check(!hall.Search.Won,"unarmed distant target cannot be captured merely by defeating guards");
+ Agent.Main!.Position=new Vec3(59);var protector=new Agent{Position=new Vec3(60),Team=hall.Mission.PlayerEnemyTeam};hall._defenders.Add(protector);hall.Mission.Agents.Add(protector);hall.Tick();Check(!hall.Search.Won,"armed protector prevents automatic capture of civilian target");protector.Active=false;
+ var supportGuard=new Agent{Position=new Vec3(60),Team=hall.Mission.PlayerEnemyTeam};hall.Mission.Agents.Add(supportGuard);hall.Tick();Check(!hall.Search.Won,"temporary enemy support also protects unarmed target");supportGuard.Active=false;
+ hall.Tick();Check(hall.Search.Won&&!hall._hallTarget.IsRunningAway,"catching unarmed target starts escorted withdrawal");
+ hall=New(GwpCitySearchPlace.Hall,Stage.Fighting);hall.Search.War=true;hall._hallTarget=new(){Active=false,State=AgentState.Unconscious,Position=new Vec3(50)};hall.Tick();Check(hall.Search.Won&&hall.Search.Returning,"downed target can be secured while distant reserves still arrive");
+ hall=New(GwpCitySearchPlace.Hall,Stage.FightOver);hall._hallTarget=new(){Active=false,State=AgentState.Routed};hall.FightWon();Check(!hall.Search.Won&&hall.Search.Returning,"target who already fled is not captured remotely");
   var escape=New(GwpCitySearchPlace.Escape,Stage.Escaping);Check(escape.CanLeave(),"calm street permits Tab without completing escape");escape.Tick();Check(!escape.Mission.Ended,"must walk toward gate");Agent.Main!.Position=new Vec3(5);escape._pendingFight="escape";escape.Tick();Check(!escape.Mission.Ended,"guard wave starts before checking the exit even at gate");escape._pendingFight=null;escape.Tick();Check(escape.Search.Escaped&&escape.Mission.Ended,"actual gate arrival permits escape");
  var transfer=New(GwpCitySearchPlace.Entry,Stage.Allowed);var alive=new Agent{Health=13};var dead=new Agent{Active=false};transfer._ours[alive]=alive.Character;transfer._ours[dead]=dead.Character;transfer._transitioning=true;transfer._killed[dead.Character]=1;transfer.End();Check(transfer.Search.Saved.Count==1&&transfer.Search.Saved[0].Item2==13,"transition snapshots active survivors and their health only");Check(Campaign.Current.Bounty.Dead==1,"mission casualties enter bounty owner exactly once per scene");
  transfer=New(GwpCitySearchPlace.Hall,Stage.HallReady);transfer.End();Check(transfer.Search.Paused&&!transfer.Search.Aborted,"Tab preserves search and snapshots survivors");
@@ -216,18 +230,20 @@ static void Main(){
 '''
         names = ['BeginSearchStage', 'TryUseSearchPassage', 'CanUsePassage', 'TickSearchProgress', 'TransitionTo',
                  'OnSearchFightWon', 'StartHallDuel', 'RestoreSpectators', 'NoteDuelRemoval',
-                 'CanLeaveSearch', 'EndSearchScene', 'GetAgentState']
+                 'CanLeaveSearch', 'EndSearchScene', 'GetAgentState', 'TrySecureHallTarget']
         bodies = '\n'.join(method(progress, name) for name in names)
         bodies += method(mission, 'IsDefender').replace('private ', 'public ')
         run(template.replace('METHODS', bodies))
         controls = [
             ('Tab preserves search', bodies.replace('if (!_transitioning) Search.PauseSearch();', 'if (!_transitioning) Search.FinishSearch(false);')),
-            ('permission granted inside dialogue', bodies.replace('if (_stage == Stage.Fighting || _stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null) return false;', 'if (!CanLeaveSearch()) return false;')),
+            ('permission granted inside dialogue', bodies.replace('if (_stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null || _pendingHallAction != null) return false;', 'if (!CanLeaveSearch()) return false;')),
             ('late ally victory', bodies.replace('if (!Search.SearchActive) return false;', '')
              .replace('if (!Search.SearchActive) return;', '')),
             ('forced hall fight', bodies.replace('&& !_warDeclared && _pendingFight == null', '')),
-            ('foreign faction target must fight', bodies.replace('IsWatch(agent) || InHall && agent == _hallTarget ||', 'IsWatch(agent) ||')),
+            ('foreign faction target must fight', bodies.replace('|| InHall && agent == _hallTarget', '')),
             ('guard wave starts before checking the exit', bodies.replace('&& _pendingFight == null && Agent.Main?.IsActive()', '&& Agent.Main?.IsActive()')),
+            ('retreating before target capture', bodies.replace('if (_warDeclared) _pendingFight = "street";', '')),
+            ('temporary enemy support also protects', bodies.replace('Mission.Agents.Any(agent => IsCityEnemyFighter(agent)', '_defenders.Any(agent => IsCityEnemyFighter(agent)')),
         ]
         for failure, old in controls:
             with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):

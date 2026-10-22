@@ -175,19 +175,32 @@ namespace GreyWardenPolicePurity
             {
                 // Leave room for both rider and horse; resume when space opens.
                 if (_context!.Spawn!.NumberOfAgents + 2 > DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission) break;
-                int kind = side.Troops.Dequeue();
+                int kind = side.Troops.Peek();
                 BasicCharacterObject troop = kind == 0 ? _infantry : kind == 1 ? _archer : _cavalry;
                 FormationClass formationClass = kind == 0 ? FormationClass.Infantry
                     : kind == 1 ? FormationClass.Ranged : FormationClass.Cavalry;
-                Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
-                if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
-                Vec3 position = side.Frame.origin + new Vec3(offset.X, offset.Y, 0);
-                if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = side.Frame.origin;
-                position.z = Mission.Scene.GetGroundHeightAtPosition(position);
-                Vec2 direction = side.Frame.rotation.f.AsVec2;
+                MatrixFrame frame = side.Frame;
+                bool scenePoints = _context.Spawn is IGwpSceneReinforcementSource;
+                Vec3 position;
+                if (_context.Spawn is IGwpSceneReinforcementSource sceneSource)
+                {
+                    if (!sceneSource.TryGetReinforcementFrame(side.Team.Side, troop, out frame)) break;
+                    position = Mission.GetRandomPositionAroundPoint(frame.origin, .5f, 2f);
+                }
+                else
+                {
+                    Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
+                    if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
+                    position = frame.origin + new Vec3(offset.X, offset.Y, 0);
+                    if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = frame.origin;
+                    position.z = Mission.Scene.GetGroundHeightAtPosition(position);
+                }
+                side.Troops.Dequeue();
+                Vec2 direction = frame.rotation.f.AsVec2;
                 var data = new AgentBuildData(new GwpBattleSupportOrigin(troop, side.Owner))
                     .Team(side.Team).InitialPosition(in position).InitialDirection(in direction)
-                    .Formation(side.Team.GetFormation(formationClass));
+                    .NoHorses(scenePoints)
+                    .Formation(scenePoints && side.Team != Mission.PlayerTeam ? null : side.Team.GetFormation(formationClass));
                 Agent agent = Mission.SpawnAgent(data);
                 if (agent == null) continue;
                 agent.SetWatchState(Agent.WatchState.Alarmed);
