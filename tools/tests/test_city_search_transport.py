@@ -93,7 +93,7 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
 class CitySearchTransportTests(unittest.TestCase):
     def test_production_carrier_replacement_and_physical_delivery(self):
         source = read('GwpCitySearchBodyTransport.cs')
-        source = source[source.index('namespace GreyWardenPolicePurity'):source.index('    /// <summary>只改原版')]+ '}\n'
+        source = source[source.index('namespace GreyWardenPolicePurity'):source.index('    /// <summary>\n    /// 只改原版')]+ '}\n'
         start = source.index('        private static readonly Action<')
         end = source.index('        private Agent? _body;', start)
         source = source[:start] + r'''
@@ -136,6 +136,54 @@ class CitySearchCorpseFadeTests(unittest.TestCase):
         self.assertTrue(keeps_corpses(production), 'search scene with body transport must disable corpse fade-out')
         self.assertFalse(keeps_corpses(production.replace('record.DisableCorpseFadeOut = true;', '')),
                          'negative control: without the setting the check must fail')
+
+
+EARLY_INIT = r'''
+using System;using System.Collections.Generic;using HarmonyLib;
+// ActionIndexCache shape: beforefieldinit struct whose statics resolve names through the engine's action table.
+public struct Cache{public static readonly Cache None=new Cache(-1);public static readonly Cache Spectator=Make("act_arena_spectator");public int Index;
+ private Cache(int i){Index=i;}private static Cache Make(string n)=>new Cache(Program.ActionsLoaded?7:-1);}
+public class Mission{public object MainAgent=>null;}
+// CorpseDraggingMissionLogic.OnMissionTick shape: reads MainAgent and compares with Cache.None.
+public class Logic{public Mission Mission=new Mission();public virtual void OnMissionTick(float dt){object m=Mission.MainAgent;if(m!=null||Program.Action!=Cache.None.Index)Program.Ticks++;}}
+public static class Carrier{public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> i)=>i;}
+public static class Program{public static bool ActionsLoaded;public static int Action=-1,Ticks;
+ static void Patch()=>new Harmony("exp").Patch(AccessTools.Method(typeof(Logic),nameof(Logic.OnMissionTick)),transpiler:new HarmonyMethod(typeof(Carrier),nameof(Carrier.Transpiler)));
+ [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]static int Spectator()=>Cache.Spectator.Index;
+ public static int Main(string[] a){
+  if(a[0]=="load")Patch();      // patched during module initialization
+  ActionsLoaded=true;            // the engine reads action_types.xml after module initialization
+  if(a[0]=="lazy")Patch();       // patched on first search scene
+  Console.WriteLine("SPECTATOR="+Spectator());return 0;}}
+'''
+
+
+class CitySearchCarrierPatchTimingTests(unittest.TestCase):
+    def test_carrier_patch_is_applied_after_actions_load(self):
+        """Live 2026-10-22: the arena audience crashed natively prefetching act_arena_spectator with index -1.
+        Harmony-patching a method that reads ActionIndexCache runs its static initializer at patch time; module
+        initialization precedes action_types.xml, so a load-time patch freezes every action index at -1."""
+        import shutil
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        from test_city_search import MODULE
+        with tempfile.TemporaryDirectory(prefix='gwp-early-init-') as temp:
+            p = Path(temp)
+            shutil.copy(MODULE / 'lib' / '0Harmony.dll', p / '0Harmony.dll')
+            (p / 'Exp.csproj').write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net472</TargetFramework><LangVersion>10.0</LangVersion><PlatformTarget>x64</PlatformTarget></PropertyGroup><ItemGroup><Reference Include="0Harmony"><HintPath>0Harmony.dll</HintPath></Reference></ItemGroup></Project>', encoding='utf-8')
+            (p / 'Program.cs').write_text(EARLY_INIT, encoding='utf-8')
+            build = subprocess.run(['dotnet', 'build', temp, '-c', 'Release', '-v', 'quiet', '-nologo'], capture_output=True, text=True)
+            self.assertEqual(0, build.returncode, build.stdout + build.stderr)
+            exe = p / 'bin' / 'Release' / 'net472' / 'Exp.exe'
+            index = {mode: subprocess.check_output([str(exe), mode], text=True).strip() for mode in ('none', 'load', 'lazy')}
+        self.assertEqual('SPECTATOR=7', index['none'])
+        self.assertEqual('SPECTATOR=-1', index['load'], 'negative control: a load-time patch freezes the action index')
+        self.assertEqual('SPECTATOR=7', index['lazy'])
+        transport = read('GwpCitySearchBodyTransport.cs')
+        patch = transport[transport.index('    internal static class GwpCitySearchBodyCarrierPatch') - 600:]
+        self.assertNotIn('[HarmonyPatch', patch, 'the module-load sweep must not apply the carrier patch')
+        self.assertIn('GwpCitySearchBodyCarrierPatch.EnsureApplied();', read('GwpCitySearchMission.cs'))
 
 
 if __name__ == '__main__':

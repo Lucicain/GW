@@ -214,11 +214,26 @@ namespace GreyWardenPolicePurity
         }
     }
 
-    /// <summary>只改原版拖尸方法中取得搬运者的一处依赖；其他任务仍返回原玩家。</summary>
-    [HarmonyPatch]
+    /// <summary>
+    /// 只改原版拖尸方法中取得搬运者的一处依赖；其他任务仍返回原玩家。
+    /// 不在模组加载时打：被改写的 OnMissionTick 读 ActionIndexCache，打补丁会当场运行它的静态初始化，
+    /// 而引擎在模组初始化之后才读 action_types.xml，于是整局所有原版动作编号都成 -1，竞技场看台观众按 -1
+    /// 预载动画越界读、原生崩溃（实机转储与引擎日志 2026-10-22；离线 Harmony 实验同结果）。首次进搜捕场景时再打。
+    /// </summary>
     internal static class GwpCitySearchBodyCarrierPatch
     {
-        private static IEnumerable<MethodBase> TargetMethods() => new[]
+        private static bool _applied;
+
+        internal static void EnsureApplied()
+        {
+            if (_applied) return;
+            _applied = true;
+            var harmony = new Harmony(SubModule.HarmonyId);
+            var transpiler = new HarmonyMethod(typeof(GwpCitySearchBodyCarrierPatch), nameof(Transpiler));
+            foreach (MethodBase target in Targets()) harmony.Patch(target, transpiler: transpiler);
+        }
+
+        private static IEnumerable<MethodBase> Targets() => new[]
         {
             AccessTools.Method(typeof(CorpseDraggingMissionLogic), "SetDraggedCorpse"),
             AccessTools.Method(typeof(CorpseDraggingMissionLogic), nameof(CorpseDraggingMissionLogic.OnMissionTick)),

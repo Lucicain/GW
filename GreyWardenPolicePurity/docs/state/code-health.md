@@ -27,6 +27,10 @@ Harmony启动期预编译目标可能触发其引用类的静态初始化；绑�
 
 Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化异常，并检查PartyNameplateVM补丁目标对CampaignUIHelper静态字段的直接读取，任一命中即失败。Windows PowerShell未重现游戏中的实际初始化异常，但旧目标指令检查报2处并拒绝；专项安装版负对照可持续复查。该检查只覆盖这条明确故障依赖，不代表全部静态初始化或原生启动均已模拟。（依据：离线负对照2026-10-20）
 
+2026-10-22 第二例：搜捕拖尸补丁在模组加载时改写原版 `CorpseDraggingMissionLogic.OnMissionTick`，该方法读 `ActionIndexCache`（beforefieldinit 值类型，静态字段按名字向引擎查动作编号）。打补丁当场运行其静态初始化，而引擎在模组初始化结束后才读 `action_types.xml`，整局所有原版动作编号都成 -1；竞技场看台观众按 -1 预载动画，原生越界读崩溃。改为首次进搜捕场景时再打。这例初始化不抛异常，只留下错值，上面的启动预检拦不住。（依据：WER 转储与引擎日志时序 2026-10-22；C++反汇编 v1.4.8 TaleWorlds.Native+0x6FE2B0/+0x5A4050；离线 Harmony 实验 test_city_search_transport）
+
+- 不要在模组加载时给读取「按名字向引擎解析的静态缓存」的原版方法打补丁（`ActionIndexCache`、`GameTexts` 之类）：静态初始化会在引擎数据加载前跑完并永久留下错值。这类补丁在首次需要时再打。（依据：上两例 2026-10-20、2026-10-22）
+
 ## 双向控件绑定与名称修饰
 
 原版生成的PartyNameplateItem在VM通知后更新TextWidget.Text，Text变化又回写VM.FullName。对属性输入无条件追加标签会破坏原版同值终止条件，使每次回写产生新值、无限通知。办案标识从原版原名缓存生成，业务与验证见[玩家案件](player-justice.md#办案目标地图标识)；不能仅凭没有回写的VM桩断言界面无递归。（依据：2026-10-20实机栈溢出退出码、安装版生成回调负对照）

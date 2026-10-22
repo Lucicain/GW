@@ -60,6 +60,7 @@ namespace GreyWardenPolicePurity
 
         private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops, Location center)
         {
+            GwpCitySearchBodyCarrierPatch.EnsureApplied();
             var list = new List<MissionBehavior>
             {
                 new MissionOptionsComponent(),

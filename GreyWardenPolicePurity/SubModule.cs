@@ -10,7 +10,7 @@ namespace GreyWardenPolicePurity
 {
     public class SubModule : MBSubModuleBase
     {
-        private const string HarmonyId =
+        internal const string HarmonyId =
             "GreyWardenPolicePurity.ShieldBashGuard";
         protected override void OnSubModuleLoad()
         {
