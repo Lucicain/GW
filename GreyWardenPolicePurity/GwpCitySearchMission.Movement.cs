@@ -24,24 +24,26 @@ namespace GreyWardenPolicePurity
         {
             if (!InHall || Search.SearchWar) return;
             Order(OrderType.StandYourGround);
-            Vec3[] anchors = Mission.Agents.Where(agent => agent.IsActive() && IsWatch(agent))
-                .Select(agent => agent.Position).ToArray();
+            var anchors = Mission.Agents.Where(agent => agent.IsActive() && IsWatch(agent))
+                .Select(agent => (Position: agent.Position, Direction: agent.Frame.rotation.f.AsVec2)).ToArray();
             if (anchors.Length == 0) anchors = Mission.Scene.FindEntitiesWithTag("defender_infantry")
-                .Select(entity => entity.GetGlobalFrame().origin).ToArray();
+                .Select(entity => entity.GetGlobalFrame())
+                .Select(frame => (Position: frame.origin, Direction: frame.rotation.f.AsVec2)).ToArray();
             var occupied = new List<Vec3>();
             int slot = 0;
             foreach (Agent agent in _ours.Keys.Where(ally => ally.IsActive() && ally.IsAIControlled))
             {
                 if (anchors.Length == 0) break;
-                Vec3 anchor = anchors[slot++ % anchors.Length];
+                var anchor = anchors[slot++ % anchors.Length];
                 for (int attempt = 0; attempt < GwpTuning.CitySearch.HallPostAttempts; attempt++)
                 {
-                    Vec3 position = Mission.GetRandomPositionAroundPoint(anchor, 2f, GwpTuning.CitySearch.HallPostRadius);
+                    Vec3 position = Mission.GetRandomPositionAroundPoint(anchor.Position, 2f, GwpTuning.CitySearch.HallPostRadius);
                     if (occupied.Any(point => point.Distance(position) < GwpTuning.CitySearch.HallPostSpacing)
                         || _hallTarget != null && _hallTarget.Position.Distance(position) < GwpTuning.CitySearch.GuardChallengeDistance
                         || Agent.Main != null && Agent.Main.Position.Distance(position) < GwpTuning.CitySearch.SecureTargetDistance) continue;
                     WorldPosition world = new WorldPosition(Mission.Scene, System.UIntPtr.Zero, position, true);
-                    agent.SetScriptedPosition(ref world, false);
+                    // 位置和朝向一起交给原版导航，随对应卫兵（或守卫点）面向站岗方向。
+                    agent.SetScriptedPositionAndDirection(ref world, anchor.Direction.RotationInRadians, false);
                     _hallPosts.Add(agent);
                     occupied.Add(position);
                     break;

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-212 个源文件、58,052 行、410 个公开类型、112 条 Harmony 目标声明（含动态入口，共 112 个补丁类）。
+212 个源文件、58,054 行、410 个公开类型、112 条 Harmony 目标声明（含动态入口，共 112 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -64,7 +64,7 @@
 | `GiveGoldAction` | `ApplyBetweenCharacters` | Postfix/Prefix | `GwpFireswornUpgradePaymentTracePatch` | GwpFireswornUpgradePayment.cs:85 |
 | `HumanAIComponent` | `RefreshBehaviorValues` | Prefix | `GwpWardenRetreatBehaviorPatch` | GwpWardenResolve.cs:52 |
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs:19 |
-| `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelArenaEntryPatch` | GwpCitySearchMission.Movement.cs:112 |
+| `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelArenaEntryPatch` | GwpCitySearchMission.Movement.cs:114 |
 | `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:781 |
 | `MapEventParty` | `Update` | Postfix/Prefix | `GwpArmoryBattleRosterPatch` | GwpArmoryBattle.cs:184 |
 | `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs:116 |
@@ -81,7 +81,7 @@
 | `Mission` | `SpawnAgent` | Prefix | `GwpWardenTroopGenderPatch` | GwpWardenTroopGenderPatch.cs:20 |
 | `MissionCombatMechanicsHelper` | `ComputeBlowDamage` | Prefix | `GwpDualWieldDamageTypePatch` | GwpDualWieldingPatch.cs:47 |
 | `MissionCombatMechanicsHelper` | `IsCollisionBoneDifferentThanWeaponAttachBone` | Postfix | `GwpDualWieldCollisionPatch` | GwpDualWieldingPatch.cs:18 |
-| `MissionConversationLogic` | `IsThereAgentAction` | Postfix | `GwpCitySearchFollowerTalkPatch` | GwpCitySearchMission.Movement.cs:103 |
+| `MissionConversationLogic` | `IsThereAgentAction` | Postfix | `GwpCitySearchFollowerTalkPatch` | GwpCitySearchMission.Movement.cs:105 |
 | `MissionFightHandler` | `GetDangerSources` | Postfix | `GwpCitySearchCivilianDangerPatch` | GwpCitySearchMission.Progress.cs:336 |
 | `MissionLocationLogic` | `SpawnCharactersAccompanyingPlayer` | Prefix | `GwpCitySearchCompanionsPatch` | GwpCitySearchMission.Progress.cs:347 |
 | `MissionNameMarkerVM` | `Tick` | Postfix | `GwpDuelOpponentMarkerPatch` | GwpDuelOpponentMarkerPatch.cs:12 |
@@ -96,7 +96,7 @@
 | `PartyCharacterVM` | `UpdateTalkable` | Postfix | `GwpPartyCharacterTalkablePatch` | GwpPartyScreenTroopTalkPatch.cs:31 |
 | `PartyNameplateVM` | `FullName` (Setter) | Prefix | `GwpCaseTargetNameplatePatch` | GwpCaseTargetNameplatePatch.cs:12 |
 | `PartyUpgraderCampaignBehavior` | `UpgradeReadyTroops` | Finalizer/Prefix | `GwpFireswornUpgradeScopePatch` | GwpFireswornUpgradePayment.cs:54 |
-| `PassageAI` | `GetScriptedFrameFlags` | Postfix | `GwpCitySearchDuelRunPatch` | GwpCitySearchMission.Movement.cs:93 |
+| `PassageAI` | `GetScriptedFrameFlags` | Postfix | `GwpCitySearchDuelRunPatch` | GwpCitySearchMission.Movement.cs:95 |
 | `PassageUsePoint` | `OnUse` | Prefix | `GwpCitySearchPassagePatch` | GwpCitySearchMission.Progress.cs:328 |
 | `PersonaSoftspokenTag` | `IsApplicableTo` | Finalizer | `GwpDispatchBarterFaultDiagnostics` | GwpDispatchBarterFaultDiagnostics.cs:11 |
 | `PlayerTownVisitCampaignBehavior` | `game_menu_village_on_init` | Postfix | `GwpFireswornVillageLockPatch` | GwpFireswornMenus.cs:129 |
@@ -769,8 +769,8 @@
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpCitySearchMission.Movement.cs` — 122 行 · `GwpCitySearchMissionController`，另含 3 个类型
 - `GwpCitySearchBehavior.Hall.cs` — 120 行 · `GwpCitySearchBehavior`
-- `GwpCitySearchMission.Movement.cs` — 120 行 · `GwpCitySearchMissionController`，另含 3 个类型
 - `GwpPeace.cs` — 115 行 · `GwpPeace`
 - `GwpNegotiationResistance.cs` — 112 行 · `GwpNegotiationResistance`
 - `GwpFireswornUpgradePayment.cs` — 107 行 · `GwpFireswornUpgradePayment`，另含 4 个类型
