@@ -6,11 +6,6 @@ using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
-    internal interface IGwpSceneReinforcementSource
-    {
-        bool TryGetReinforcementFrame(BattleSideEnum side, BasicCharacterObject troop, out MatrixFrame frame);
-    }
-
     /// <summary>共享战场名册入口：原版野战供应器与城内真实预备兵向援军/音乐提供同一份人数和来源。</summary>
     internal interface IGwpBattleSceneSource
     {

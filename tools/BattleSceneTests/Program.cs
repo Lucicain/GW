@@ -9,17 +9,15 @@ using TaleWorlds.MountAndBlade;
 using TaleWorlds.Library;
 static class Program
 {
- private sealed class IndoorSource:MissionBehavior,IGwpBattleSceneSource,IGwpSceneReinforcementSource
+ private sealed class IndoorSource:MissionBehavior,IGwpBattleSceneSource
  {
-  internal DefaultBattleMissionAgentSpawnLogic Native=null!;internal bool HasPoint=true,Rescue=true;
+  internal DefaultBattleMissionAgentSpawnLogic Native=null!;internal bool Rescue=true;
   public event Action<BattleSideEnum,int> OnReinforcementsSpawned{add{}remove{}}
   public bool IsDeploymentOver=>true;public bool OpeningAgentsAlreadySpawned=>true;
   public bool AllowsWardenRescue=>Rescue;
   public int NumberOfAgents=>Native.NumberOfAgents;public int NumberOfRemainingDefenderTroops=>0;public int NumberOfRemainingAttackerTroops=>0;
   public int GetTotalNumberOfTroopsForSide(BattleSideEnum side)=>Native.GetTotalNumberOfTroopsForSide(side);
   public IEnumerable<IAgentOriginBase> GetAllTroopsForSide(BattleSideEnum side)=>Native.GetAllTroopsForSide(side);
-  public bool TryGetReinforcementFrame(BattleSideEnum side,BasicCharacterObject troop,out MatrixFrame frame)
-  {frame=new MatrixFrame(Mat3.Identity,new Vec3(side==Mission.PlayerTeam.Side?9:-9,3,14));return HasPoint;}
  }
  static int checks;
  static void Check(bool condition,string message){checks++;if(!condition)throw new Exception(message);}
@@ -192,18 +190,6 @@ static class Program
   m.MissionResult=new();Check(GwpWardenRetreatPatch.Before(reinforcement),"battle result releases protection for cleanup");m.MissionResult=null;
   m.MissionEnded=true;Check(GwpWardenPanicPatch.Before(reinforcement),"mission end releases protection");m.MissionEnded=false;
   support.OnRemoveBehavior();
-  foreach(bool friendly in new[]{true,false})
-  {
-   (m,sp,c,support)=Battle(friendly?1:100,friendly?100:1,greyOurs:friendly,greyEnemy:!friendly);
-   m.Behaviors.Remove(sp);m.Add(new IndoorSource{Native=sp});MBRandom.Rolls.Enqueue(0);support.OnMissionTick(1);
-   Check(m.Spawned.Count>0&&m.Spawned.All(a=>a.NoHorse&&a.Position.z==14&&a.Position.x==(friendly?9:-9)),
-    "indoor support uses actual side's scene point, floor height and dismounted equipment");
-   Check(m.Spawned.All(a=>friendly?a.Formation!=null:a.Formation==null),"enemy indoor reserves fight without a field formation; allies remain commandable");
-   support.OnRemoveBehavior();
-  }
-  (m,sp,c,support)=Battle(1,100);m.Behaviors.Remove(sp);var missingPoint=new IndoorSource{Native=sp,HasPoint=false};m.Add(missingPoint);MBRandom.Rolls.Enqueue(0);support.OnMissionTick(1);
-  Check(m.Spawned.Count==0&&support.HasPendingReinforcementSpawn(BattleSideEnum.Defender),"missing indoor marker cannot fall back to field boundary or consume queue");
-  missingPoint.HasPoint=true;support.OnMissionTick(1);Check(m.Spawned.Count>0,"valid scene marker resumes pending indoor support");support.OnRemoveBehavior();
   (m,sp,c,support)=Battle(1,100);m.Behaviors.Remove(sp);m.Add(new IndoorSource{Native=sp,Rescue=false});MBRandom.Rolls.Enqueue(0);support.OnMissionTick(1);
   Check(m.Spawned.Count==0&&MBRandom.Calls==0,"city roster provider disables random warden rescue without consuming its roll");support.OnRemoveBehavior();
   Console.WriteLine($"PASS {checks} battle-scene checks using production mission/context/origin/policy/resolve sources; native AI and spawn physics still require live validation.");

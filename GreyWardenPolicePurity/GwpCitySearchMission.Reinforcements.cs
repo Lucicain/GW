@@ -10,7 +10,7 @@ using TaleWorlds.MountAndBlade;
 
 namespace GreyWardenPolicePurity
 {
-    internal sealed partial class GwpCitySearchMissionController : IGwpBattleSceneSource, IGwpSceneReinforcementSource
+    internal sealed partial class GwpCitySearchMissionController : IGwpBattleSceneSource
     {
         private readonly Queue<(GreyWardenSafePartyAgentOrigin Origin, float Health)> _cityReserves = new();
         private readonly Dictionary<Agent, GreyWardenSafePartyAgentOrigin> _citySoldiers = new();
@@ -107,17 +107,6 @@ namespace GreyWardenPolicePurity
                 ?? Mission.Scene.FindEntityWithTag("defender_infantry_reinforcement")
                 ?? Mission.Scene.FindEntityWithTag("defender_" + formation)
                 ?? Mission.Scene.FindEntityWithTag("defender_infantry");
-        }
-
-        bool IGwpSceneReinforcementSource.TryGetReinforcementFrame(BattleSideEnum side, BasicCharacterObject troop, out MatrixFrame frame)
-        {
-            GameEntity? spawn = side == Mission.PlayerEnemyTeam.Side ? CityReserveSpawn(troop)
-                : Mission.Scene.FindEntityWithTag(InHall ? GwpCitySearchMission.HallSpawnTag : GwpCitySearchMission.GateSpawnTag);
-            if (spawn == null && !InHall && side == Mission.PlayerTeam.Side)
-                spawn = Mission.Scene.FindEntityWithTag("sp_player_outside")
-                    ?? Mission.Scene.FindEntityWithTag("spawnpoint_player_outside");
-            frame = spawn?.GetGlobalFrame() ?? MatrixFrame.Identity;
-            return spawn != null;
         }
 
         private void TickCityReserves()

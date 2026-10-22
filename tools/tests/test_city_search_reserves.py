@@ -98,8 +98,6 @@ static class Program{
  var context=new GwpBattleSceneContext{Mission=c.Mission};c.Mission.MissionBehaviors.Add(context);Check(context.TryCapture(),"city source participates in existing battle context");
  Check(context.OpeningCount(BattleSideEnum.Defender)==15&&context.RemainingPower(BattleSideEnum.Defender)==150,"already spawned neutral guards are subtracted exactly once from reserve power");
  c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"arrival notifies correct side");arrivals+=count;};
- var sceneSource=(IGwpSceneReinforcementSource)c;Check(sceneSource.TryGetReinforcementFrame(BattleSideEnum.Defender,foot,out var enemyFrame)&&enemyFrame.origin.x==77,"temporary enemy support shares real defender marker");
- c.InHall=true;c.Mission.Scene.Points["spawnpoint_player"]=Point(11,8);Check(sceneSource.TryGetReinforcementFrame(BattleSideEnum.Attacker,foot,out var allyFrame)&&allyFrame.origin.x==11&&allyFrame.origin.z==8,"friendly indoor support uses actual hall entrance and floor");c.InHall=false;
  c.Tick();Check(c.Remaining==10&&arrivals==4,"first limited batch joins combat");
  Check(c.Mission.Agents.Skip(2).All(a=>a.Alarmed&&a.Team==c.Mission.PlayerEnemyTeam&&a.Position.x==77&&a.Position.z==12),"reserves use native defender point and wake combat AI without changing hall floor");
  Check(context.RemainingPower(BattleSideEnum.Defender)==150,"moving reserves to scene cannot inflate shared power");
@@ -117,7 +115,6 @@ static class Program{
  c=New();garrison=Party("hall",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
  c.Mission.Scene.Points["defender_infantry"]=Point(42,4);c.Tick();Check(c.Remaining==0&&c.Mission.Agents.Last().Position.x==42,"hall uses native initial defender point when reinforcement tag is absent");
  c=New();garrison=Party("missing",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Tick();Check(c.Remaining==1&&c.Mission.Agents.Count==1,"missing point cannot spawn troops at world origin");
- Check(!((IGwpSceneReinforcementSource)c).TryGetReinforcementFrame(BattleSideEnum.Defender,foot,out _),"temporary support also rejects nonexistent scene point");
  c.Mission.Scene.Points["defender_infantry"]=Point();c.Mission.SpawnArmed=false;c.Mission.CurrentTime=4;c.Tick();Check(c.Mission.Agents.Last().Team==Team.Invalid&&!c.Mission.Agents.Last().Alarmed,"actual unarmed equipment variant never joins fight");
  var routed=c.Mission.Agents.Last();routed.Health=37;c.Removed(routed,AgentState.Routed);c.Save();Check(c.Search.Saved.Count==0&&c.Search.Losses.Count==1,"routed defender consumes task roster without entering next scene again");
  c=New();c.Search.HasLeftHall=false;garrison=Party("entry",foot,30);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();

@@ -108,16 +108,15 @@ namespace TaleWorlds.MountAndBlade
  {
   public bool IsHuman=true,Active=true,IsRunningAway;public Team Team=null!;public BasicCharacterObject Character=new();
   public IAgentOriginBase Origin=null!;public Vec3 Position;public float CharacterPowerCached=>Character.GetPower();
-  public Mission Mission=null!;public bool IsAIControlled=true,NoHorse;public Formation? Formation;
+  public Mission Mission=null!;public bool IsAIControlled=true;public Formation? Formation;
   public HumanAIComponent? HumanAIComponent=new();public float GetMorale()=>0;
   public bool IsActive()=>Active;public enum WatchState{Alarmed}public void SetWatchState(WatchState state){}
  }
  public class AgentBuildData
  {
-  public IAgentOriginBase Origin;public Team Target=null!;public Vec3 Position;public bool NoHorse;public Formation? TargetFormation;
+  public IAgentOriginBase Origin;public Team Target=null!;public Vec3 Position;
   public AgentBuildData(IAgentOriginBase origin){Origin=origin;}
-  public AgentBuildData Team(Team t){Target=t;return this;}public AgentBuildData Formation(Formation? f){TargetFormation=f;return this;}
-  public AgentBuildData NoHorses(bool noHorses){NoHorse=noHorses;return this;}
+  public AgentBuildData Team(Team t){Target=t;return this;}public AgentBuildData Formation(Formation f)=>this;
   public AgentBuildData InitialPosition(in Vec3 p){Position=p;return this;}public AgentBuildData InitialDirection(in Vec2 d)=>this;
  }
  public class Mission
@@ -130,10 +129,9 @@ namespace TaleWorlds.MountAndBlade
   public T? GetMissionBehavior<T>() where T:MissionBehavior=>Behaviors.OfType<T>().FirstOrDefault();
   public void Add(MissionBehavior b){b.Mission=this;Behaviors.Add(b);}
   public Vec2 GetClosestBoundaryPosition(Vec2 p)=>new(-100,0);public bool IsPositionInsideBoundaries(Vec2 p)=>true;
-  public Vec3 GetRandomPositionAroundPoint(Vec3 point,float min,float max)=>point;
   public Agent SpawnAgent(AgentBuildData d)
   {
-   var a=new Agent{Mission=this,Origin=d.Origin,Character=d.Origin.Troop,Team=d.Target,Position=d.Position,NoHorse=d.NoHorse,Formation=d.TargetFormation};
+   var a=new Agent{Mission=this,Origin=d.Origin,Character=d.Origin.Troop,Team=d.Target,Position=d.Position};
    Agents.Add(a);Spawned.Add(a);foreach(var b in Behaviors)b.OnAgentBuild(a,new Banner());return a;
   }
  }
