@@ -24,16 +24,16 @@ class Team{public static Team Invalid=new();}
 class KillingBlow{}
 class Agent{
  public enum EventControlFlag{None}[Flags]public enum AIScriptedFrameFlags{None=0,NoAttack=1,Crouch=2,Drag=4,DoNotRun=8}public enum HandIndex{MainHand,OffHand}
- public static Agent Main=null!;public bool Active=true,IsAIControlled=true,IsHuman=true,Crouched,Dragging,Scripted;public int CurrentAction=-1,Wielded,MadeDead;public bool Killed;
+ public static Agent Main=null!;public bool Active=true,IsAIControlled=true,IsHuman=true,Crouched,Dragging,Scripted,Corpse=true;public int CurrentAction=-1,Wielded,MadeDead;public bool Killed;
  public AgentState State;public Vec3 Position;public Team Team=null!;public object Origin=new();public CharacterObject Character=new();public Direction LookDirection=new();
  public WorldPosition Destination;public AIScriptedFrameFlags Flags;
- public bool IsActive()=>Active;public WorldPosition GetWorldPosition()=>new(Position);
+ public bool IsActive()=>Active;public bool IsAddedAsCorpse()=>Corpse;public WorldPosition GetWorldPosition()=>new(Position);
  public void SetWieldedItemIndexAsClient(HandIndex h,EquipmentIndex i,bool a,bool b,int c){Wielded++;}
  public int GetCurrentAction(int channel)=>CurrentAction;
  public void SetCrouchMode(bool b){Crouched=b;}public void SetDraggingMode(bool b){Dragging=b;}
  public void DisableScriptedMovement(){Scripted=false;}public void WieldInitialWeapons(){Wielded++;}
  public void SetScriptedPosition(ref WorldPosition p,bool b,AIScriptedFrameFlags f){Destination=p;Flags=f;Scripted=true;}
- public void MakeDead(bool killed,int action){MadeDead++;Killed=killed;Active=false;State=killed?AgentState.Killed:AgentState.Unconscious;}
+ public void MakeDead(bool killed,int action){MadeDead++;Killed=killed;Active=false;Corpse=false;State=killed?AgentState.Killed:AgentState.Unconscious;}
 }
 interface IPlayerInputEffector{Agent.EventControlFlag OnCollectPlayerEventControlFlags();}
 class MissionLogic{public Mission Mission=null!;public virtual void OnMissionTick(float dt){}public virtual void OnFixedMissionTick(float dt){}public virtual void OnAgentRemoved(Agent a,Agent b,AgentState s,KillingBlow k){}public virtual bool IsThereAgentAction(Agent a,Agent b)=>true;public virtual void OnRemoveBehavior(){}protected virtual void OnEndMission(){}}
@@ -68,7 +68,8 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
   m.Agents.AddRange(new[]{wrong,reinforcement,first,second});var t=new GwpCitySearchBodyTransport{Mission=m};t.TakeTarget(body);
   t.OnMissionTick(.1f);Check(t.Carrier==first,"nearest actual surviving follower is selected");
   Check(t.NativeBody==null&&first.Scripted&&(first.Flags&Agent.AIScriptedFrameFlags.NoAttack)!=0,"carrier stops attacking before pickup");
-  first.CurrentAction=ActionIndexCache.act_none;t.OnMissionTick(.1f);Check(t.NativeBody==body&&first.Crouched,"finished action allows native attachment and crouch");
+  first.CurrentAction=ActionIndexCache.act_none;body.Corpse=false;t.OnMissionTick(.1f);Check(t.NativeBody==null&&first.Scripted,"freshly fallen body waits for the engine to register its corpse");
+  body.Corpse=true;t.OnMissionTick(.1f);Check(t.NativeBody==body&&first.Crouched,"finished action allows native attachment and crouch");
   Check(!t.InputPending&&((IPlayerInputEffector)t).OnCollectPlayerEventControlFlags()==Agent.EventControlFlag.None,"AI native input never controls player");
   Check(first.Destination.Point.X==20&&(first.Flags&Agent.AIScriptedFrameFlags.Drag)!=0,"attached carrier follows player using native dragging script flags");
   Check(!t.IsTargetNear(new(20)),"player outside while body remains inside cannot complete");
@@ -79,6 +80,7 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
   second.Position=new(15);t.OnMissionTick(.1f);Check(t.NativeBody==body,"replacement attaches original body");
   t.OnRemoveBehavior();Check(t.Carrier==null&&t.NativeBody==null&&!second.Crouched&&!second.Scripted,"scene removal restores surviving carrier and unbinds native corpse");
   Campaign.Current.Search=new(){BodyKilled=true};second.Position=Agent.Main.Position;var next=new GwpCitySearchBodyTransport{Mission=m};next.OnMissionTick(.1f);
+  Check(m.Spawns==1&&next.NativeBody==null,"restored body waits for engine corpse registration");m.Agents.Last().Corpse=true;next.OnMissionTick(.1f);
   Check(m.Spawns==1&&next.NativeBody!=null&&next.NativeBody.Killed&&next.NativeBody.MadeDead==1&&next.NativeBody.Origin is GreyWardenSafePartyAgentOrigin,"outgoing scene restores dead body visual once with non-campaign origin");
   next.OnMissionTick(.1f);Check(m.Spawns==1,"mission ticks cannot clone extraction corpse");
   next.NativeBody!.State=AgentState.Deleted;next.OnMissionTick(.1f);next.OnMissionTick(.1f);Check(Campaign.Current.Search.Failures==1,"deleted corpse cannot grant phantom success or repeat failure");next.OnRemoveBehavior();
@@ -97,7 +99,7 @@ class CitySearchTransportTests(unittest.TestCase):
         start = source.index('        private static readonly Action<')
         end = source.index('        private Agent? _body;', start)
         source = source[:start] + r'''
-        private static readonly Action<CorpseDraggingMissionLogic,Agent,sbyte> SetBody=(b,a,i)=>b.Attach(a);
+        private static readonly Action<CorpseDraggingMissionLogic,Agent,sbyte> SetBody=(b,a,i)=>{if(a!=null&&!a.IsAddedAsCorpse())throw new NullReferenceException("native drag forced corpse registration mid-death");b.Attach(a);};
         private static Agent? DraggedBody(CorpseDraggingMissionLogic b)=>b.NativeBody;
 ''' + source[end:]
         code = STUBS + source + SCENARIO
@@ -106,6 +108,8 @@ class CitySearchTransportTests(unittest.TestCase):
             (code.replace('if (affectedAgent == Carrier) ReleaseCarrier();', ''), 'fallen carrier releases original corpse'),
             (code.replace('_body.Position.Distance(position)', 'Agent.Main.Position.Distance(position)'), 'player outside while body remains inside'),
             (code.replace('MoveCarrier(_body.GetWorldPosition(), false);', 'MoveCarrier(Agent.Main.GetWorldPosition(), false);'), 'replacement approaches the same body'),
+            # Live crash 2026-10-22: attaching 0.34 s after the knock-down, before the engine registered the corpse.
+            (code.replace('if (!_body.IsAddedAsCorpse()) return;', ''), 'native drag forced corpse registration mid-death'),
         ]:
             with self.subTest(negative_control=error), self.assertRaisesRegex(AssertionError, error):
                 run(mutation)

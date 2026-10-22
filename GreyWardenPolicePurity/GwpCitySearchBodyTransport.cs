@@ -127,6 +127,10 @@ namespace GreyWardenPolicePurity
                 Carrier.SetWieldedItemIndexAsClient(Agent.HandIndex.OffHand, EquipmentIndex.None, true, false, 0);
                 // 原版拖尸遇到上身攻击/收刀动作会松手，先等本次动作结束再接上物理。
                 if (Carrier.GetCurrentAction(1) != ActionIndexCache.act_none) return;
+                // 等引擎自己把倒地者登记成尸体再接。原版拖尸只拖已倒稳的尸体；倒地动作中被它强行登记，
+                // 随后读外观/实体为空，未接住的空引用直接结束游戏（实机故障与转储 2026-10-22；
+                // C++反汇编 v1.4.8：引擎对击昏/阵亡者自行登记尸体，TaleWorlds.Native+0x5CCC2D/+0x5FE9F0）。
+                if (!_body.IsAddedAsCorpse()) return;
 #if GWP_DIAGNOSTICS
                 if (!_attachTried) WriteAttachCheck();
 #endif
