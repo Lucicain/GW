@@ -1692,3 +1692,33 @@
 | gwp_cs_leave_notice | You promised the watch to leave town. Head further in and they will stop you. | 你答应了守卫出城。再往城里走，他们会拦你。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_withdraw_notice | Leave town and the search is dropped. Head further in and it means war. | 撤出城外，搜捕作罢；再往城里走就是开战。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_leave_warning | The watch warns you: turn back and leave town, or answer for it. | 守卫警告：掉头出城，否则后果自负。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_hall_start | You have brought armed followers into this hall. What do you want of me? | 你带着这么多持械的人进我的大厅，想做什么？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_warrant | The Grey Wardens hold you accountable for your crimes. Come with us to answer the charges. | 灰袍要你为所犯罪行负责。跟我们走，去把案子交代清楚。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_leave | I will leave for now. | 我先告辞。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_surrender | Very well. I will come with you and answer before the Wardens. | 好吧。我跟你走，到灰袍面前说清楚。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_reaction_success | You have a point. Go on. | 这话有道理。接着说。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_law | Why should I submit to the Wardens in my own hall? | 在我的大厅里，凭什么要听灰袍的？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_safety | And what assurance have I that I will receive a fair hearing? | 我怎么知道，去了以后还能公正地说话？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_law | Your rank does not erase what happened. Answering the charges is the honourable course. | 身份抹不掉已经发生的事。肯当面认账，才算守得住体面。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_people | Those who suffered deserve an answer. You can give it without shedding more blood. | 受害的人该得到一个交代。你可以不再流血，就把话说清。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_risk | Sheltering here only postpones the reckoning. Do you want everyone to learn why we came? | 躲在这里只是拖延。你真想让所有人都知道，我们是为什么来的？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_terms | Come to account for the losses. The charges can be settled without ruining this hall. | 先去把损失对清楚。这宗案子不必闹到毁了这座大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_word | You have my word that you will be brought before the Wardens to answer the charges. | 我保证把你带到灰袍面前，让你当面答辩。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_guard | Your guards cannot settle these charges. They can only add casualties. | 卫兵结不了这宗案子，只会让死伤更多。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_courage | If you believe yourself innocent, have the courage to face your accusers. | 如果你觉得自己无罪，就拿出勇气，去见告你的人。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_trial | The people under your care must also answer for their deeds. Give them the same example. | 你治下的人做事也要负责。你也该给他们做个样子。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_duel | Then let the two of us settle it in single combat. If I win, you come with me. | 那就你我单挑。我赢了，你跟我走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_melee | We will fight it out here. | 就在这里，双方一起上。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_opponent_duel | Enough talk. I choose single combat. Defeat me and I will go with you. | 不必再说。我选单挑。赢了我，我就跟你走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_opponent_melee | I choose to stand with my guards. If you want me, come and take me. | 我选跟卫兵一起打。想抓我，就过来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_agreed | Agreed. Let us begin. | 说定了。开始吧。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_won | Very well, we will fight on your terms. | 好，就按你说的打。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_lost | No. We fight as I proposed. | 不。照我说的来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_reservation | Why should I give up my choice of how we fight? | 我为什么要放弃自己的选法？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_fair | Give me this choice, and I will honour the result. | 这次让我选，我会认这个结果。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_brave | Are you afraid to face the terms I offered? | 我提的打法，你不敢接吗？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_losses | My proposal gives us a clear result without needless losses. | 按我说的打，胜负分得清，也少些无谓损失。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_shame | People will remember how eagerly you hid behind your own terms. | 人们会记住，你是怎么躲在自己那套规矩后面的。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_notice | Proceed to the lord's hall with your surviving followers. | 带着还站得住的部下，进入领主大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_escape_notice | Return to the gate and get out of the settlement. | 回到城门，带人撤出城外。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_route_blocked | You must finish the search or withdraw through the gate. | 你得办完搜捕，或从城门撤出去。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |

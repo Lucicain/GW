@@ -34,6 +34,7 @@ ENGINE_CALLED = {
     "IsVisibleNotification": "IChatNotification member (GreyWardenAdoptionLogEntry)",
     "GetNotificationText": "IChatNotification member (GreyWardenAdoptionLogEntry)",
     "NumRemovedTroops": "IMissionTroopSupplier member (GreyWardenSafeTroopSupplier)",
+    "GetAgentState": "IAgentStateDecider member (GwpCitySearchMissionController); Mission.GetAgentState invokes it",
     "User": "WAVEHDR interop layout (GwpMusicOutput)",
     "Reserved": "WAVEHDR interop layout (GwpMusicOutput)",
 }

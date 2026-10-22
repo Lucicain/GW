@@ -182,6 +182,10 @@
             public const float CriticalFailureFloor = 0.05f;
             /// <summary>说了要走或谈崩后选了撤，又往城里多走这么远就算违抗。</summary>
             public const float InwardTolerance = 10f;
+            public const float HallPenalty = 0.1f;
+            public const float DuelBaseChance = 0.5f;
+            public const float DuelTraitStep = 0.1f;
+            public const float GateExitDistance = 6f;
         }
 
         internal static class FieldArrest

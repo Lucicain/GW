@@ -1,6 +1,6 @@
 ﻿# 案件生命周期与执法
 
-> 当前状态：本职就近接案与区域判断已部署；无部队住城旧案缺少处置入口已查实，尚未新增城内执法
+> 当前状态：本职就近接案与区域判断已部署；玩家住城旧案走进城搜捕，NPC 城内办案仍缺入口
 > 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；未逐项声明覆盖的边界仍待核对
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_sheltered_enforcement.py` `tools/tests/test_case_dispatch.py` `tools/tests/test_native_interceptor_contact.py` `tools/tests/test_resident_counterattack.py`
 > 待实测：第三方击溃/俘虏或人物暂离后罪责与伤亡保留、恢复带队自动重选；普通改追与使者原目标独立；进城跟随和战后恢复目标均不强制开打；同版本存读冷却接续；本职最近接案、无信众村远案优先；双方驻城不新宣战，离城继续原追捕
@@ -42,13 +42,13 @@
 
 ## 藏城目标与战后连续交战
 
-已知缺陷：存活但无活跃部队、长期住城的旧案领主只保留罪责，NPC派案及玩家接案均被IsOffenderPursuable的部队门槛排除；现有野外执法也排除驻城及无ConversationParty，尚无城内向总督交涉或按人物办理入口。
+已知缺陷：存活但无活跃部队、长期住城的旧案领主仍被NPC派案的IsOffenderPursuable部队门槛排除，NPC尚无城内办理入口；玩家已由CanPlayerTakeCase接住城旧案，走进城搜捕，状态与验收归city-search。
 
 此缺口与“仍带队但暂时驻城”不同，后者才适用下述跟随和原版自行离城。重新带队会恢复原账目候选，不需要再犯罪；但无机制保证无队人物一定重新带队，故不能承诺旧案最终自然办完。2026-09-11曾记录城内向总督交涉为未做后续，当前源码里只有第三方囚犯赎买使用总督身份，不是自由住城嫌犯执法；历史计划不作为当前已实现或已批准的新规则。（依据：用户反馈、CrimeRecord/玩家接案/野外入口及源码全量总督引用复核2026-10-21）
 
 用户继续指出总督身份不易查找。原版城镇百科EncyclopediaSettlementPageVM.Refresh显示OwnerClan.Leader作为属主，预制体无总督栏；TownManagementVM读取Town.Governor（或正在赴任的人物），用HasGovernor支持空缺；管理入口CanMainHeroManageTown要求属主族长为玩家。人物提示TooltipRefresherCollection则可显示该英雄任职的城镇，所以不能笼统说玩家完全看不到总督，也不能把城镇百科属主等同总督。本机安装版v1.4.8重新反编译两个VM并核对XML/准入/人物提示，未操控游戏。（依据：用户提问、C#反编译及原版XML2026-10-21）
 
-城内处置为「进城搜捕」，尚未实施；裁定、原版机制与可借用部件见[进城搜捕](city-search.md)。早先「城镇菜单交涉此案」的建议作废。（依据：用户裁定2026-10-21）
+玩家城内处置为「进城搜捕」，已补齐既定流程、待实机验收；NPC部分未实施，裁定、实现与验收见[进城搜捕](city-search.md)。早先「城镇菜单交涉此案」的建议作废。（依据：用户裁定2026-10-21；实现2026-10-22）
 
 - 未宣战追踪统一 `EscortParty`，原版 `GetFollowBehavior` 对驻城对象返回 `GoToSettlement`，离城后恢复移动目标。模组不再替换成城门点移动，不强逐罪犯、不命令敌人攻击、不冻结敌方决策，也不阻止目标重新入城。（依据：用户裁定；本机原版方法离线执行 2026-10-17）
 - 城内不新宣战：统一自动宣战候选要求行动方、罪犯均不在聚落；跟随仍可进城，双方离城后沿用原有距离、协力、区域强度门槛。已宣战案件中的人物换阵营也不能绕过驻城检查，新势力仍中立时恢复普通跟随；已有其他原因形成的战争不被本规则撤销。未新增逐城、撤案期限或扩大截击队。（依据：用户裁定、生产宣战/外交复核23断言2026-10-18）

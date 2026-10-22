@@ -1692,5 +1692,35 @@
   <string id="gwp_cs_leave_notice" text="你答应了守卫出城。再往城里走，他们会拦你。" />
   <string id="gwp_cs_withdraw_notice" text="撤出城外，搜捕作罢；再往城里走就是开战。" />
   <string id="gwp_cs_leave_warning" text="守卫警告：掉头出城，否则后果自负。" />
+  <string id="gwp_cs_hall_start" text="你带着这么多持械的人进我的大厅，想做什么？" />
+  <string id="gwp_cs_hall_warrant" text="灰袍要你为所犯罪行负责。跟我们走，去把案子交代清楚。" />
+  <string id="gwp_cs_hall_leave" text="我先告辞。" />
+  <string id="gwp_cs_hall_surrender" text="好吧。我跟你走，到灰袍面前说清楚。" />
+  <string id="gwp_cs_hall_reaction_success" text="这话有道理。接着说。" />
+  <string id="gwp_cs_hall_law" text="在我的大厅里，凭什么要听灰袍的？" />
+  <string id="gwp_cs_hall_safety" text="我怎么知道，去了以后还能公正地说话？" />
+  <string id="gwp_cs_hall_arg_law" text="身份抹不掉已经发生的事。肯当面认账，才算守得住体面。" />
+  <string id="gwp_cs_hall_arg_people" text="受害的人该得到一个交代。你可以不再流血，就把话说清。" />
+  <string id="gwp_cs_hall_arg_risk" text="躲在这里只是拖延。你真想让所有人都知道，我们是为什么来的？" />
+  <string id="gwp_cs_hall_arg_terms" text="先去把损失对清楚。这宗案子不必闹到毁了这座大厅。" />
+  <string id="gwp_cs_hall_arg_word" text="我保证把你带到灰袍面前，让你当面答辩。" />
+  <string id="gwp_cs_hall_arg_guard" text="卫兵结不了这宗案子，只会让死伤更多。" />
+  <string id="gwp_cs_hall_arg_courage" text="如果你觉得自己无罪，就拿出勇气，去见告你的人。" />
+  <string id="gwp_cs_hall_arg_trial" text="你治下的人做事也要负责。你也该给他们做个样子。" />
+  <string id="gwp_cs_hall_duel" text="那就你我单挑。我赢了，你跟我走。" />
+  <string id="gwp_cs_hall_melee" text="就在这里，双方一起上。" />
+  <string id="gwp_cs_opponent_duel" text="不必再说。我选单挑。赢了我，我就跟你走。" />
+  <string id="gwp_cs_opponent_melee" text="我选跟卫兵一起打。想抓我，就过来。" />
+  <string id="gwp_cs_choice_agreed" text="说定了。开始吧。" />
+  <string id="gwp_cs_choice_won" text="好，就按你说的打。" />
+  <string id="gwp_cs_choice_lost" text="不。照我说的来。" />
+  <string id="gwp_cs_choice_reservation" text="我为什么要放弃自己的选法？" />
+  <string id="gwp_cs_choice_arg_fair" text="这次让我选，我会认这个结果。" />
+  <string id="gwp_cs_choice_arg_brave" text="我提的打法，你不敢接吗？" />
+  <string id="gwp_cs_choice_arg_losses" text="按我说的打，胜负分得清，也少些无谓损失。" />
+  <string id="gwp_cs_choice_arg_shame" text="人们会记住，你是怎么躲在自己那套规矩后面的。" />
+  <string id="gwp_cs_hall_notice" text="带着还站得住的部下，进入领主大厅。" />
+  <string id="gwp_cs_escape_notice" text="回到城门，带人撤出城外。" />
+  <string id="gwp_cs_route_blocked" text="你得办完搜捕，或从城门撤出去。" />
 </strings>
 </base>

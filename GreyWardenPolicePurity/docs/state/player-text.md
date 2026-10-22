@@ -1,6 +1,6 @@
 # 玩家可见文字：独立维护入口
 
-> 当前状态：五种使者具体动作/标题及封地回话保持，复命/求援归入委托；主文本1653条、编译常量1337条
+> 当前状态：进城搜捕大厅、战斗选择与撤离中英文本已补齐；主文本1718条、编译常量1401条
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpTextCatalog.g.cs` `GreyWardenPolicePurity/PlayerText/strings.json` `tools/Generate-PlayerText.py` `tools/tests/test_player_text.py` `_Module/ModuleData/Languages/**`
 > 待实测：中英文菜单、对话、百科与地图提示正常显示，变量替换完整

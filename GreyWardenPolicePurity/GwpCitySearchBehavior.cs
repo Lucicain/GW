@@ -16,7 +16,7 @@ namespace GreyWardenPolicePurity
     /// 玩家带兵进城搜捕没带部队、住在城里的委托目标（用户裁定 2026-10-21）。
     /// 本行为管城镇/城堡菜单入口、选兵和卫兵盘问；场景里的事由 <see cref="GwpCitySearchMissionController"/> 管。
     /// </summary>
-    internal sealed class GwpCitySearchBehavior : CampaignBehaviorBase
+    internal sealed partial class GwpCitySearchBehavior : CampaignBehaviorBase
     {
         private readonly GwpPersuasionRound _guardRound = new GwpPersuasionRound("GWP_CS_GUARD");
 
@@ -24,11 +24,14 @@ namespace GreyWardenPolicePurity
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _guardRound.OnCommitted);
+            CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _hallRound.OnCommitted);
+            CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _choiceRound.OnCommitted);
         }
 
-        // 搜捕只在任务场景里进行，场景里不能存档；离开场景这次搜捕就结束，没有进行中的状态要存。
+        // 场景内不能存档；切场景时短暂回到地图，所以下一场景、随行人和伤情也要保存。
         public override void SyncData(IDataStore dataStore)
         {
+            SyncSearch(dataStore);
         }
 
         private static PlayerBountyBehavior? Bounty => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
@@ -40,6 +43,8 @@ namespace GreyWardenPolicePurity
                 starter.AddGameMenuOption(menu, "gwp_city_search_" + menu, "{GWP_CITY_SEARCH_OPTION}",
                     SearchOptionCondition, SearchOptionConsequence, isLeave: false, index: 1);
             RegisterGuardDialogue(starter);
+            RegisterHallDialogue(starter);
+            if (SearchActive) _openPending = true;
         }
 
         private static bool SearchOptionCondition(MenuCallbackArgs args)
@@ -68,11 +73,13 @@ namespace GreyWardenPolicePurity
             int max = Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(party, true);
             TroopRoster initial = TroopRoster.CreateDummyTroopRoster();
             initial.Add(MobilePartyHelper.GetStrongestAndPriorTroops(party, max, includePlayer: true));
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("SELECT_TROOPS", "settlement=" + settlement.StringId
                 + "; target=" + target.StringId + "; max=" + max
                 + "; healthy=" + party.MemberRoster.TotalHealthyCount);
+#endif
             args.MenuContext.OpenTroopSelection(party.MemberRoster, initial, CanTakeAlong,
-                roster => GwpCitySearchMission.Open(settlement, target, roster), max, 1);
+                roster => Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().BeginSearch(settlement, target, roster), max, 1);
         }
 
         private static bool CanTakeAlong(CharacterObject character) =>
@@ -139,8 +146,10 @@ namespace GreyWardenPolicePurity
             int relation = owner == null || owner == Hero.MainHero ? 0 : Hero.MainHero.GetRelation(owner);
             float crime = settlement?.MapFaction?.MainHeroCrimeRating ?? 0f;
             _guardSituation = relation * GwpTuning.CitySearch.RelationStep - crime * GwpTuning.CitySearch.CrimeStep;
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteCitySearch("GUARD_PERSUASION", "tier=" + tier + "; strength=" + strength
                 + "; relation=" + relation + "; crime=" + crime.ToString("0") + "; situation=" + _guardSituation.ToString("0.00"));
+#endif
             TextObject immediate = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate);
             TextObject final = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final);
             TextObject later = GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later);
@@ -173,11 +182,12 @@ namespace GreyWardenPolicePurity
         internal void AdjustGuardChances(PersuasionOptionArgs option, ref float success, ref float criticalSuccess,
             ref float criticalFailure, ref float failure)
         {
-            if (!_guardRound.Owns(option)) return;
+            bool hall = _hallRound.Owns(option) || _choiceRound.Owns(option);
+            if (!_guardRound.Owns(option) && !hall) return;
             int trait = option.TraitUsed == null ? 0 : Hero.MainHero.GetTraitLevel(option.TraitUsed)
                 * (option.TraitEffect == TraitEffect.Positive ? 1 : -1);
             GuardOdds(success + criticalSuccess, criticalFailure, option.GivesCriticalSuccess,
-                Hero.MainHero.GetSkillValue(option.SkillUsed), trait, _guardSituation,
+                Hero.MainHero.GetSkillValue(option.SkillUsed), trait, hall ? HallSituation() : _guardSituation,
                 out success, out criticalSuccess, out criticalFailure, out failure);
         }
 
