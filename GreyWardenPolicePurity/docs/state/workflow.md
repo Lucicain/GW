@@ -101,6 +101,7 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 清理待办：
 
 - `%LOCALAPPDATA%\CrashDumps` 有 4 个游戏旧转储（pid 1664/6648/9096/19236）和 4 个 `Test.exe` 转储，来源与结论未核对；核对后按诊断规则删除。（2026-10-22 Claude Code 登记）
+- dsh路径判区调查已结束：`D:/gwp-load-test`、`%TEMP%/gwp-zone-probe`、`gwp-persuasion-run`、`zoneok`、7个`gwp`测试候选/CLR源码及`CitySearchPersuasionTests.exe.49780.dmp`已核对为一次性残留；清理命令被自动审批拒绝，尚未删除。确切清单与归属证据见journal「2026-10-27 dsh本轮文件与记忆核对」，不含游戏故障转储或第三方运行时。（2026-10-27检查登记）
 
 ## 接入 harness
 
