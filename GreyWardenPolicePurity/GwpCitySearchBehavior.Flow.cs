@@ -52,6 +52,7 @@ namespace GreyWardenPolicePurity
         internal bool HallAccessible => GateState == GwpCitySearchGate.Allowed || GateState == GwpCitySearchGate.Cleared;
         internal bool DuelAgreed => _duelAgreed;
         internal bool Returning => _returning;
+        internal bool TargetResolved => _captureReady || _targetDown;
         internal bool HallResolved => _duelAgreed || _returning;
         internal bool EscapeCleared { get => _escapeCleared; set => _escapeCleared = value; }
         internal Hero SearchTarget => _searchTarget ??= Hero.FindFirst(hero => hero.StringId == _searchTargetId);

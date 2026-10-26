@@ -1664,81 +1664,89 @@
   <string id="gwp_city_search_option" text="带兵进城搜捕{TARGET}" />
   <string id="gwp_city_search_wounded" text="你受了伤，不能带兵搜捕。" />
   <string id="gwp_cs_guard_challenge" text="站住！带着这么多兵进城，你们想做什么？" />
-  <string id="gwp_cs_explain" text="灰袍办案，奉命捉拿{TARGET}。我们只借道去领主大厅。" />
+  <string id="gwp_cs_explain" text="灰袍托我来找{TARGET}。人在领主大厅，我们过去找人。" />
   <string id="gwp_cs_will_leave" text="我们这就出城。" />
-  <string id="gwp_cs_guard_reservation" text="城里不许外人带兵走动。" />
-  <string id="gwp_cs_arg_lead" text="我的人守规矩，出了事由我担着。" />
-  <string id="gwp_cs_arg_charm" text="我们只为一个人来，办完就走，不惊扰百姓。" />
-  <string id="gwp_cs_arg_rogue" text="挡灰袍办案，这麻烦你担得起吗？" />
-  <string id="gwp_cs_arg_trade" text="我们不在城里买卖，也不碰一针一线。" />
+  <string id="gwp_cs_guard_reservation" text="带着兵找人？城里出了乱子，谁来收拾？" />
+  <string id="gwp_cs_arg_lead" text="我的人听我的。谁敢在城里惹事，我亲自收拾。" />
+  <string id="gwp_cs_arg_charm" text="我们只找那个人，不为难旁人。找到就走。" />
+  <string id="gwp_cs_arg_rogue" text="人就在城里，你却拦着不让找。我要是空手回去，该怎么跟灰袍说？" />
+  <string id="gwp_cs_arg_trade" text="我的人不会白拿城里一件东西。该付的钱，一文不少。" />
   <string id="gwp_cs_guard_fail_immediate" text="这话说服不了我。" />
   <string id="gwp_cs_guard_fail_final" text="不行。" />
   <string id="gwp_cs_guard_try_later" text="改天再说。" />
-  <string id="gwp_cs_guard_reaction_success" text="……也有道理。" />
+  <string id="gwp_cs_guard_reaction_success" text="……好，你接着说。" />
   <string id="gwp_cs_guard_reaction_fail" text="少来这套。" />
-  <string id="gwp_cs_guard_reaction_critical" text="你这是在威胁守卫？" />
+  <string id="gwp_cs_guard_reaction_critical" text="够了！别再跟我耍嘴皮子。" />
   <string id="gwp_cs_guard_pass" text="去吧。别在城里惹事。" />
   <string id="gwp_cs_guard_refuse" text="不行。带着你的人出城去。" />
   <string id="gwp_cs_allowed_notice" text="守卫放行了。" />
   <string id="gwp_cs_war_notice" text="你与城里的守卫动了手，{VAR_1}与你开战。" />
   <string id="gwp_cs_fight_not_over" text="仗还没打完，现在不能离开。" />
-  <string id="gwp_cs_guard_reservation_vouch" text="名头谁都会报。城里谁能替你和你这些兵作保？" />
-  <string id="gwp_cs_arg_tactics" text="派你的人跟着我们、点清人数。我的兵没有我的令一步不动。" />
-  <string id="gwp_cs_arg_steward" text="令状上有灰袍的印。拿去给你家大人的管家，一字一句地看。" />
+  <string id="gwp_cs_guard_reservation_vouch" text="就凭你几句话，我怎么知道你说的是真是假？" />
+  <string id="gwp_cs_arg_tactics" text="你看着，我的人都在这里。进城以后也跟着我，一个都不会散开。" />
+  <string id="gwp_cs_arg_steward" text="我来找谁、替谁办事，都已经说了。真想闹事，何必站在这里跟你解释？" />
   <string id="gwp_cs_arg_valor" text="要是有一句假话，我亲自到你家大人面前领罪。" />
-  <string id="gwp_cs_arg_blackmail" text="听说这里的守卫收走私贩子的钱放行。咱们别把这事也扯进来。" />
+  <string id="gwp_cs_arg_blackmail" text="你拦住了我们，可那个人要是趁这会儿走了，到时候谁来解释？" />
   <string id="gwp_cs_choose_fight" text="那就从你们身上踏过去。" />
   <string id="gwp_cs_choose_withdraw" text="好，我们撤。" />
   <string id="gwp_cs_leave_notice" text="你答应了守卫出城。再往城里走，他们会拦你。" />
   <string id="gwp_cs_withdraw_notice" text="撤出城外，搜捕作罢；再往城里走就是开战。" />
   <string id="gwp_cs_leave_warning" text="守卫警告：掉头出城，否则后果自负。" />
-  <string id="gwp_cs_hall_start" text="你带着这么多持械的人进我的大厅，想做什么？" />
-  <string id="gwp_cs_hall_warrant" text="灰袍要你为所犯罪行负责。跟我们走，去把案子交代清楚。" />
+  <string id="gwp_cs_hall_start" text="带着这些人来找我，有什么事？" />
+  <string id="gwp_cs_hall_warrant" text="灰袍让我把你带回去。跟我们走。" />
   <string id="gwp_cs_hall_leave" text="我先告辞。" />
-  <string id="gwp_cs_hall_surrender" text="好吧。我跟你走，到灰袍面前说清楚。" />
-  <string id="gwp_cs_hall_reaction_success" text="这话有道理。接着说。" />
-  <string id="gwp_cs_hall_law" text="在我的大厅里，凭什么要听灰袍的？" />
-  <string id="gwp_cs_hall_safety" text="我怎么知道，去了以后还能公正地说话？" />
-  <string id="gwp_cs_hall_arg_law" text="身份抹不掉已经发生的事。肯当面认账，才算守得住体面。" />
-  <string id="gwp_cs_hall_arg_people" text="受害的人该得到一个交代。你可以不再流血，就把话说清。" />
-  <string id="gwp_cs_hall_arg_risk" text="躲在这里只是拖延。你真想让所有人都知道，我们是为什么来的？" />
-  <string id="gwp_cs_hall_arg_terms" text="先去把损失对清楚。这宗案子不必闹到毁了这座大厅。" />
-  <string id="gwp_cs_hall_arg_word" text="我保证把你带到灰袍面前，让你当面答辩。" />
-  <string id="gwp_cs_hall_arg_guard" text="卫兵结不了这宗案子，只会让死伤更多。" />
-  <string id="gwp_cs_hall_arg_courage" text="如果你觉得自己无罪，就拿出勇气，去见告你的人。" />
-  <string id="gwp_cs_hall_arg_trial" text="你治下的人做事也要负责。你也该给他们做个样子。" />
-  <string id="gwp_cs_hall_duel" text="那就你我单挑。我赢了，你跟我走。" />
-  <string id="gwp_cs_hall_melee" text="就在这里，双方一起上。" />
-  <string id="gwp_cs_opponent_duel" text="不必再说。我选单挑。赢了我，我就跟你走。" />
-  <string id="gwp_cs_opponent_melee" text="我选跟卫兵一起打。想抓我，就过来。" />
-  <string id="gwp_cs_choice_agreed" text="说定了。开始吧。" />
-  <string id="gwp_cs_choice_forced_melee" text="你是仗着人多不肯单打。好，那就来吧。" />
-  <string id="gwp_cs_choice_won" text="好，就按你说的打。" />
-  <string id="gwp_cs_choice_lost" text="不。照我说的来。" />
-  <string id="gwp_cs_choice_reservation" text="我为什么要放弃自己的选法？" />
-  <string id="gwp_cs_choice_arg_fair" text="这次让我选，我会认这个结果。" />
-  <string id="gwp_cs_choice_arg_brave" text="我提的打法，你不敢接吗？" />
-  <string id="gwp_cs_choice_arg_losses" text="按我说的打，胜负分得清，也少些无谓损失。" />
-  <string id="gwp_cs_choice_arg_shame" text="人们会记住，你是怎么躲在自己那套规矩后面的。" />
-  <string id="gwp_cs_hall_notice" text="带着还站得住的部下，进入领主大厅。" />
-  <string id="gwp_cs_escape_notice" text="回到城门，带人撤出城外。" />
+  <string id="gwp_cs_hall_surrender" text="好，我跟你走。让你的人把兵器收好。" />
+  <string id="gwp_cs_hall_reaction_success" text="……接着说。" />
+  <string id="gwp_cs_hall_reaction_fail" text="这话留着去骗别人吧。" />
+  <string id="gwp_cs_hall_reaction_critical" text="够了！我不想再听你说了。" />
+  <string id="gwp_cs_hall_law" text="灰袍让你来的？我可没答应跟你走。" />
+  <string id="gwp_cs_hall_safety" text="你把我带走以后，打算怎么处置我？" />
+  <string id="gwp_cs_hall_arg_law" text="你做过的事，不能就这么算了。自己跟我走，还能留些体面。" />
+  <string id="gwp_cs_hall_arg_people" text="被你害的人还等着一个交代。别再为这件事添人命了。" />
+  <string id="gwp_cs_hall_arg_risk" text="你要我在这里，当着所有人的面，把事情再说一遍？" />
+  <string id="gwp_cs_hall_arg_terms" text="你也不想这事闹得满城皆知。跟我走，咱们安静地出去。" />
+  <string id="gwp_cs_hall_arg_word" text="我会把你交给灰袍。路上有我看着，没人能私下动你。" />
+  <string id="gwp_cs_hall_arg_guard" text="真动起手来，刀剑可不长眼。趁现在还没见血，跟我走。" />
+  <string id="gwp_cs_hall_arg_courage" text="敢做就敢认。别到这时候，还要身边的人替你出头。" />
+  <string id="gwp_cs_hall_arg_trial" text="我接的是带你回去的差事。活着把你交到灰袍手里，我也好交差。" />
+  <string id="gwp_cs_hall_duel" text="好，就你我两个。我赢了，你跟我走。" />
+  <string id="gwp_cs_hall_request_duel" text="你我单打。我赢了，你跟我走。" />
+  <string id="gwp_cs_hall_melee" text="都动手，把人拿下！" />
+  <string id="gwp_cs_opponent_duel" text="你要抓的是我。你我单打，赢了我就跟你走。" />
+  <string id="gwp_cs_opponent_melee" text="少废话。你们敢上前，就别想站着出去。" />
+  <string id="gwp_cs_choice_agreed" text="好，就这么定了。" />
+  <string id="gwp_cs_choice_agreed_melee" text="上！" />
+  <string id="gwp_cs_choice_forced_melee" text="那就试试！" />
+  <string id="gwp_cs_choice_won" text="好。让你的人退开。" />
+  <string id="gwp_cs_choice_lost" text="少费口舌。想抓我，就上来。" />
+  <string id="gwp_cs_choice_reservation" text="我凭什么答应你？" />
+  <string id="gwp_cs_choice_arg_fair" text="就你我两个，输赢都认。我输了，带人走；你输了，跟我走。" />
+  <string id="gwp_cs_choice_arg_brave" text="我就在这里。你连亲自拔剑的胆量都没有？" />
+  <string id="gwp_cs_choice_arg_losses" text="你真想让这大厅里躺满人？我们两个就能了结的事，何必把他们拖进来。" />
+  <string id="gwp_cs_choice_arg_shame" text="当着这些人的面，你倒是站出来啊。" />
+  <string id="gwp_cs_hall_notice" text="带上还能行动的部下，去领主大厅。" />
+  <string id="gwp_cs_escape_notice" text="带着部下撤到城门外。" />
   <string id="gwp_cs_route_blocked" text="交战或交涉尚未结束，暂时不能离场。" />
-  <string id="gwp_cs_hostile_exit_blocked" text="城内无法直接脱身。必须亲自撤到城门外，才能离开。" />
+  <string id="gwp_cs_hostile_exit_blocked" text="还没出城，无法离开。" />
   <string id="gwp_cs_unarmed_target_notice" text="目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。" />
-  <string id="gwp_cs_menu_begin" text="选择随行士兵，亲自从城门进城" />
-  <string id="gwp_cs_menu_resume" text="返回搜捕现场，继续步行" />
-  <string id="gwp_cs_menu_hall" text="带兵前往领主大厅" />
-  <string id="gwp_cs_menu_street" text="带兵回到街道或庭院" />
+  <string id="gwp_cs_menu_begin" text="选择随行士兵，进城" />
+  <string id="gwp_cs_menu_resume" text="回到搜捕现场" />
+  <string id="gwp_cs_menu_hall" text="前往领主大厅" />
+  <string id="gwp_cs_menu_street" text="走出大厅" />
   <string id="gwp_cs_menu_arena" text="前往竞技场赴约单挑" />
-  <string id="gwp_cs_menu_leave" text="带队出城，结束本次搜捕" />
+  <string id="gwp_cs_menu_leave" text="带队出城，结束搜捕" />
   <string id="gwp_cs_menu_back" text="返回聚落菜单" />
-  <string id="gwp_cs_menu_new" text="你准备带兵进城搜捕{TARGET}。你可以亲自从城门进入，与卫兵交涉，再带兵走到领主大厅。" />
-  <string id="gwp_cs_menu_gate" text="卫兵尚未放行。返回现场继续处理门口的交涉；Tab返回此菜单会保留本次搜捕进度。搜捕目标：{TARGET}。" />
-  <string id="gwp_cs_menu_allowed" text="卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。" />
+  <string id="gwp_cs_menu_new" text="{TARGET}就在城里。选好随行的人，从城门进去。" />
+  <string id="gwp_cs_menu_gate" text="{TARGET}在领主大厅。带上部下，回去继续交涉，或另找办法。" />
+  <string id="gwp_cs_menu_allowed" text="卫兵让开了路。带上部下，去领主大厅找{TARGET}。" />
+  <string id="gwp_cs_menu_cleared" text="挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。" />
   <string id="gwp_cs_menu_duel" text="你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。" />
-  <string id="gwp_cs_menu_return" text="与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。" />
-  <string id="gwp_cs_menu_fight_out" text="与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。" />
-  <string id="gwp_cs_walk_out_notice" text="这里的事情已了。带队走出大厅，再从城门离开。" />
-  <string id="gwp_cs_walk_arena_notice" text="单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。" />
+  <string id="gwp_cs_menu_court" text="你已和{TARGET}约好单挑。到大厅外的空地赴约。" />
+  <string id="gwp_cs_menu_return" text="{TARGET}已被拿下。带上部下，出城。" />
+  <string id="gwp_cs_menu_withdraw" text="带上部下，离开这里。" />
+  <string id="gwp_cs_menu_fight_out" text="大厅里的战斗已经结束。带上还能行动的人，杀出城去。" />
+  <string id="gwp_cs_walk_out_notice" text="带上部下，出城。" />
+  <string id="gwp_cs_walk_arena_notice" text="前往竞技场赴约。" />
+  <string id="gwp_cs_walk_court_notice" text="去空地赴约。" />
 </strings>
 </base>

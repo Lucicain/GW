@@ -218,9 +218,8 @@ namespace GreyWardenPolicePurity
                         _stage = Stage.HallDone;
                         BeginDuelWalk("center");
                         DisablePlayerPassages();
-                        if (!Search.UsesCourtyardDuel)
-                            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
-                        else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_menu_street)));
+                        InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(Search.UsesCourtyardDuel
+                            ? GwpTextCatalog.gwp_cs_walk_court_notice : GwpTextCatalog.gwp_cs_walk_arena_notice)));
                         break;
                     case "duel_won":
                         RestoreSpectators();

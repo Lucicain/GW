@@ -6926,8 +6926,8 @@
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_explain": {
-      "en": "Grey Warden business. We have a warrant for {TARGET} and only need the way to the lord's hall.",
-      "zh": "灰袍办案，奉命捉拿{TARGET}。我们只借道去领主大厅。",
+      "en": "The Wardens sent me to find {TARGET}. They're in the lord's hall. That's where we're going.",
+      "zh": "灰袍托我来找{TARGET}。人在领主大厅，我们过去找人。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_will_leave": {
@@ -6936,28 +6936,28 @@
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_reservation": {
-      "en": "Outsiders do not march soldiers through this town.",
-      "zh": "城里不许外人带兵走动。",
+      "en": "Looking for someone with all these soldiers? Who cleans up if you cause trouble?",
+      "zh": "带着兵找人？城里出了乱子，谁来收拾？",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_arg_lead": {
-      "en": "My men keep discipline. Anything that happens is on me.",
-      "zh": "我的人守规矩，出了事由我担着。",
+      "en": "My men answer to me. If any of them causes trouble here, I'll deal with it myself.",
+      "zh": "我的人听我的。谁敢在城里惹事，我亲自收拾。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_arg_charm": {
-      "en": "We came for one man. We will be gone once it is done, and no townsman will be troubled.",
-      "zh": "我们只为一个人来，办完就走，不惊扰百姓。",
+      "en": "We're only here for that one person. We won't trouble anyone else. Once we've found them, we're leaving.",
+      "zh": "我们只找那个人，不为难旁人。找到就走。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_arg_rogue": {
-      "en": "Standing in the Wardens' way is trouble you do not want.",
-      "zh": "挡灰袍办案，这麻烦你担得起吗？",
+      "en": "The person we're after is here, and you're keeping us out. What should I tell the Wardens if I return empty-handed?",
+      "zh": "人就在城里，你却拦着不让找。我要是空手回去，该怎么跟灰袍说？",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_arg_trade": {
-      "en": "We buy nothing, sell nothing and touch nothing here.",
-      "zh": "我们不在城里买卖，也不碰一针一线。",
+      "en": "My men won't take a thing without paying. You'll get every coin you're owed.",
+      "zh": "我的人不会白拿城里一件东西。该付的钱，一文不少。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_fail_immediate": {
@@ -6976,8 +6976,8 @@
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_reaction_success": {
-      "en": "...Fair enough.",
-      "zh": "……也有道理。",
+      "en": "...All right. Go on.",
+      "zh": "……好，你接着说。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_reaction_fail": {
@@ -6986,8 +6986,8 @@
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_reaction_critical": {
-      "en": "Are you threatening the watch?",
-      "zh": "你这是在威胁守卫？",
+      "en": "Enough! I've had enough of your talk.",
+      "zh": "够了！别再跟我耍嘴皮子。",
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_pass": {
@@ -7016,18 +7016,18 @@
       "context": "进城搜捕第1段（用户裁定2026-10-21）"
     },
     "gwp_cs_guard_reservation_vouch": {
-      "en": "Anyone can shout a name. Who in this town will vouch for you and your men?",
-      "zh": "名头谁都会报。城里谁能替你和你这些兵作保？",
+      "en": "All I have is your word. How do I know any of it's true?",
+      "zh": "就凭你几句话，我怎么知道你说的是真是假？",
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_arg_tactics": {
-      "en": "Post your men beside mine and count us. Mine move only on my word.",
-      "zh": "派你的人跟着我们、点清人数。我的兵没有我的令一步不动。",
+      "en": "Look. My men are all here. They'll stay with me inside the city, too. No one goes wandering off.",
+      "zh": "你看着，我的人都在这里。进城以后也跟着我，一个都不会散开。",
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_arg_steward": {
-      "en": "The warrant bears the Wardens' seal. Send it to your lord's steward and let him read every line.",
-      "zh": "令状上有灰袍的印。拿去给你家大人的管家，一字一句地看。",
+      "en": "I've told you who I'm after and who sent me. If I wanted trouble, why would I stand here explaining myself?",
+      "zh": "我来找谁、替谁办事，都已经说了。真想闹事，何必站在这里跟你解释？",
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_arg_valor": {
@@ -7036,8 +7036,8 @@
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_arg_blackmail": {
-      "en": "I hear the watch here turns a blind eye for smugglers' coin. Let us not make that our business.",
-      "zh": "听说这里的守卫收走私贩子的钱放行。咱们别把这事也扯进来。",
+      "en": "You've stopped us. If our quarry slips away while we're standing here, who gets to explain that?",
+      "zh": "你拦住了我们，可那个人要是趁这会儿走了，到时候谁来解释？",
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_choose_fight": {
@@ -7066,13 +7066,13 @@
       "context": "进城搜捕第1段（用户裁定2026-10-22）"
     },
     "gwp_cs_hall_start": {
-      "en": "You have brought armed followers into this hall. What do you want of me?",
-      "zh": "你带着这么多持械的人进我的大厅，想做什么？",
+      "en": "What do you want with me, bringing all these men?",
+      "zh": "带着这些人来找我，有什么事？",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_warrant": {
-      "en": "The Grey Wardens hold you accountable for your crimes. Come with us to answer the charges.",
-      "zh": "灰袍要你为所犯罪行负责。跟我们走，去把案子交代清楚。",
+      "en": "The Wardens sent me to bring you back. Come with us.",
+      "zh": "灰袍让我把你带回去。跟我们走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_leave": {
@@ -7081,138 +7081,158 @@
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_surrender": {
-      "en": "Very well. I will come with you and answer before the Wardens.",
-      "zh": "好吧。我跟你走，到灰袍面前说清楚。",
+      "en": "All right. I'll come. Tell your men to put their weapons away.",
+      "zh": "好，我跟你走。让你的人把兵器收好。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_reaction_success": {
-      "en": "You have a point. Go on.",
-      "zh": "这话有道理。接着说。",
+      "en": "...Go on.",
+      "zh": "……接着说。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
+    "gwp_cs_hall_reaction_fail": {
+      "en": "Save that for someone who'll believe it.",
+      "zh": "这话留着去骗别人吧。",
+      "context": "玩家进城搜捕：大厅与打法说服的普通失败反应"
+    },
+    "gwp_cs_hall_reaction_critical": {
+      "en": "Enough! I don't want to hear another word.",
+      "zh": "够了！我不想再听你说了。",
+      "context": "玩家进城搜捕：大厅与打法说服的大失败反应"
+    },
     "gwp_cs_hall_law": {
-      "en": "Why should I submit to the Wardens in my own hall?",
-      "zh": "在我的大厅里，凭什么要听灰袍的？",
+      "en": "The Wardens sent you? I haven't agreed to go anywhere with you.",
+      "zh": "灰袍让你来的？我可没答应跟你走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_safety": {
-      "en": "And what assurance have I that I will receive a fair hearing?",
-      "zh": "我怎么知道，去了以后还能公正地说话？",
+      "en": "And once you've taken me away, what do you intend to do with me?",
+      "zh": "你把我带走以后，打算怎么处置我？",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_law": {
-      "en": "Your rank does not erase what happened. Answering the charges is the honourable course.",
-      "zh": "身份抹不掉已经发生的事。肯当面认账，才算守得住体面。",
+      "en": "What you've done won't just go away. Come of your own accord and keep some dignity.",
+      "zh": "你做过的事，不能就这么算了。自己跟我走，还能留些体面。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_people": {
-      "en": "Those who suffered deserve an answer. You can give it without shedding more blood.",
-      "zh": "受害的人该得到一个交代。你可以不再流血，就把话说清。",
+      "en": "The people you hurt are still waiting for an answer. Don't add more deaths to it.",
+      "zh": "被你害的人还等着一个交代。别再为这件事添人命了。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_risk": {
-      "en": "Sheltering here only postpones the reckoning. Do you want everyone to learn why we came?",
-      "zh": "躲在这里只是拖延。你真想让所有人都知道，我们是为什么来的？",
+      "en": "Do you want me to go through it all again, here, in front of everyone?",
+      "zh": "你要我在这里，当着所有人的面，把事情再说一遍？",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_terms": {
-      "en": "Come to account for the losses. The charges can be settled without ruining this hall.",
-      "zh": "先去把损失对清楚。这宗案子不必闹到毁了这座大厅。",
+      "en": "You don't want the whole town talking about this. Come with me. We can leave quietly.",
+      "zh": "你也不想这事闹得满城皆知。跟我走，咱们安静地出去。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_word": {
-      "en": "You have my word that you will be brought before the Wardens to answer the charges.",
-      "zh": "我保证把你带到灰袍面前，让你当面答辩。",
+      "en": "I'll hand you over to the Wardens. You'll be under my watch on the road. No one gets to lay a hand on you.",
+      "zh": "我会把你交给灰袍。路上有我看着，没人能私下动你。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_guard": {
-      "en": "Your guards cannot settle these charges. They can only add casualties.",
-      "zh": "卫兵结不了这宗案子，只会让死伤更多。",
+      "en": "Once blades are drawn, anyone can get hurt. Come with me while there's still no blood on the floor.",
+      "zh": "真动起手来，刀剑可不长眼。趁现在还没见血，跟我走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_courage": {
-      "en": "If you believe yourself innocent, have the courage to face your accusers.",
-      "zh": "如果你觉得自己无罪，就拿出勇气，去见告你的人。",
+      "en": "You had the nerve to do it. Have the nerve to own it. Don't make the people around you answer for you.",
+      "zh": "敢做就敢认。别到这时候，还要身边的人替你出头。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_arg_trial": {
-      "en": "The people under your care must also answer for their deeds. Give them the same example.",
-      "zh": "你治下的人做事也要负责。你也该给他们做个样子。",
+      "en": "I was sent to bring you back. Handing you over alive is how I finish the job.",
+      "zh": "我接的是带你回去的差事。活着把你交到灰袍手里，我也好交差。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_duel": {
-      "en": "Then let the two of us settle it in single combat. If I win, you come with me.",
-      "zh": "那就你我单挑。我赢了，你跟我走。",
+      "en": "Agreed. Just you and me. If I win, you come with me.",
+      "zh": "好，就你我两个。我赢了，你跟我走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
+    "gwp_cs_hall_request_duel": {
+      "en": "Fight me alone. If I win, you come with me.",
+      "zh": "你我单打。我赢了，你跟我走。",
+      "context": "玩家进城搜捕：对方要群殴时玩家提出单挑"
+    },
     "gwp_cs_hall_melee": {
-      "en": "We will fight it out here.",
-      "zh": "就在这里，双方一起上。",
+      "en": "Take them! Bring our quarry down!",
+      "zh": "都动手，把人拿下！",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_opponent_duel": {
-      "en": "Enough talk. I choose single combat. Defeat me and I will go with you.",
-      "zh": "不必再说。我选单挑。赢了我，我就跟你走。",
+      "en": "I'm the one you're after. Fight me alone. If you win, I'll go with you.",
+      "zh": "你要抓的是我。你我单打，赢了我就跟你走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_opponent_melee": {
-      "en": "I choose to stand with my guards. If you want me, come and take me.",
-      "zh": "我选跟卫兵一起打。想抓我，就过来。",
+      "en": "Enough talk. Take another step and you won't be walking out of here.",
+      "zh": "少废话。你们敢上前，就别想站着出去。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_agreed": {
-      "en": "Agreed. Let us begin.",
-      "zh": "说定了。开始吧。",
+      "en": "Agreed, then.",
+      "zh": "好，就这么定了。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
+    "gwp_cs_choice_agreed_melee": {
+      "en": "At them!",
+      "zh": "上！",
+      "context": "玩家进城搜捕：双方都选群殴、当场开打"
+    },
     "gwp_cs_choice_forced_melee": {
-      "en": "So you'd rather bring all your men against mine. Fine. Come on, then.",
-      "zh": "你是仗着人多不肯单打。好，那就来吧。",
+      "en": "Then try it!",
+      "zh": "那就试试！",
       "context": "玩家进城搜捕：大厅里对方自知打不过、提出单挑，玩家仍选群殴，对方无奈接战，随即开打。"
     },
     "gwp_cs_choice_won": {
-      "en": "Very well, we will fight on your terms.",
-      "zh": "好，就按你说的打。",
+      "en": "All right. Have your men stand back.",
+      "zh": "好。让你的人退开。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_lost": {
-      "en": "No. We fight as I proposed.",
-      "zh": "不。照我说的来。",
+      "en": "Save your breath. If you want me, come and take me.",
+      "zh": "少费口舌。想抓我，就上来。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_reservation": {
-      "en": "Why should I give up my choice of how we fight?",
-      "zh": "我为什么要放弃自己的选法？",
+      "en": "Why should I agree to that?",
+      "zh": "我凭什么答应你？",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_arg_fair": {
-      "en": "Give me this choice, and I will honour the result.",
-      "zh": "这次让我选，我会认这个结果。",
+      "en": "Just you and me, and we both accept the result. If I lose, my men and I leave. If you lose, you come with me.",
+      "zh": "就你我两个，输赢都认。我输了，带人走；你输了，跟我走。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_arg_brave": {
-      "en": "Are you afraid to face the terms I offered?",
-      "zh": "我提的打法，你不敢接吗？",
+      "en": "I'm right here. Haven't you the nerve to draw your own sword?",
+      "zh": "我就在这里。你连亲自拔剑的胆量都没有？",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_arg_losses": {
-      "en": "My proposal gives us a clear result without needless losses.",
-      "zh": "按我说的打，胜负分得清，也少些无谓损失。",
+      "en": "Do you want bodies all over this hall? The two of us can settle this. Leave them out of it.",
+      "zh": "你真想让这大厅里躺满人？我们两个就能了结的事，何必把他们拖进来。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_choice_arg_shame": {
-      "en": "People will remember how eagerly you hid behind your own terms.",
-      "zh": "人们会记住，你是怎么躲在自己那套规矩后面的。",
+      "en": "They're all watching. Go on, step forward.",
+      "zh": "当着这些人的面，你倒是站出来啊。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hall_notice": {
-      "en": "Proceed to the lord's hall with your surviving followers.",
-      "zh": "带着还站得住的部下，进入领主大厅。",
+      "en": "Take everyone still on their feet to the lord's hall.",
+      "zh": "带上还能行动的部下，去领主大厅。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_escape_notice": {
-      "en": "Return to the gate and get out of the settlement.",
-      "zh": "回到城门，带人撤出城外。",
+      "en": "Lead your men back beyond the gate.",
+      "zh": "带着部下撤到城门外。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_route_blocked": {
@@ -7221,8 +7241,8 @@
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
     "gwp_cs_hostile_exit_blocked": {
-      "zh": "城内无法直接脱身。必须亲自撤到城门外，才能离开。",
-      "en": "You cannot escape from inside the settlement. Reach the outside of the gate before leaving.",
+      "zh": "还没出城，无法离开。",
+      "en": "You're still inside the walls. You can't leave yet.",
       "context": "玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。"
     },
     "gwp_cs_unarmed_target_notice": {
@@ -7231,23 +7251,23 @@
       "context": "玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。"
     },
     "gwp_cs_menu_begin": {
-      "zh": "选择随行士兵，亲自从城门进城",
-      "en": "Choose your troops and enter through the gate",
+      "zh": "选择随行士兵，进城",
+      "en": "Choose your men and enter the settlement",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_resume": {
-      "zh": "返回搜捕现场，继续步行",
-      "en": "Return to the search on foot",
+      "zh": "回到搜捕现场",
+      "en": "Return to the search",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_hall": {
-      "zh": "带兵前往领主大厅",
-      "en": "Take your troops to the lord’s hall",
+      "zh": "前往领主大厅",
+      "en": "Go to the lord's hall",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_street": {
-      "zh": "带兵回到街道或庭院",
-      "en": "Take your troops outside to the street or courtyard",
+      "zh": "走出大厅",
+      "en": "Leave the hall",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_arena": {
@@ -7256,8 +7276,8 @@
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_leave": {
-      "zh": "带队出城，结束本次搜捕",
-      "en": "Leave the settlement with your party and end this search",
+      "zh": "带队出城，结束搜捕",
+      "en": "Leave with your men and end the search",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_back": {
@@ -7266,44 +7286,64 @@
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_new": {
-      "zh": "你准备带兵进城搜捕{TARGET}。你可以亲自从城门进入，与卫兵交涉，再带兵走到领主大厅。",
-      "en": "You are preparing to search for {TARGET}. Enter through the gate with your troops, negotiate with the guards, and walk to the lord’s hall.",
+      "zh": "{TARGET}就在城里。选好随行的人，从城门进去。",
+      "en": "{TARGET} is in the settlement. Choose who will come with you and enter through the gate.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_gate": {
-      "zh": "卫兵尚未放行。返回现场继续处理门口的交涉；Tab返回此菜单会保留本次搜捕进度。搜捕目标：{TARGET}。",
-      "en": "The guards have not granted passage. Return to the gate to deal with them. Tab returns here and preserves your search progress. Your target is {TARGET}.",
+      "zh": "{TARGET}在领主大厅。带上部下，回去继续交涉，或另找办法。",
+      "en": "{TARGET} is in the lord's hall. Take your men back to speak to the guards, or find another way through.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_menu_allowed": {
-      "zh": "卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。",
-      "en": "You have secured passage through the gate. Walk with your troops to the hall where {TARGET} is staying, or enter the hall directly from this menu.",
+      "zh": "卫兵让开了路。带上部下，去领主大厅找{TARGET}。",
+      "en": "The guards have stepped aside. Take your men to the lord's hall and find {TARGET}.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
+    },
+    "gwp_cs_menu_cleared": {
+      "zh": "挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。",
+      "en": "The guards who barred your way are down. Take everyone still on their feet to the lord's hall and find {TARGET}.",
+      "context": "玩家进城搜捕：击败门口守军后的菜单提示"
     },
     "gwp_cs_menu_duel": {
       "zh": "你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。",
       "en": "You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
+    "gwp_cs_menu_court": {
+      "zh": "你已和{TARGET}约好单挑。到大厅外的空地赴约。",
+      "en": "You and {TARGET} have agreed to a duel. Meet outside the lord's hall.",
+      "context": "玩家进城搜捕：约好单挑后的菜单提示"
+    },
     "gwp_cs_menu_return": {
-      "zh": "与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。",
-      "en": "Your encounter with {TARGET} is over. Lead your party out of the hall and walk to the gate, or end this search here.",
+      "zh": "{TARGET}已被拿下。带上部下，出城。",
+      "en": "{TARGET} has been taken. Gather your men and leave the settlement.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
+    "gwp_cs_menu_withdraw": {
+      "zh": "带上部下，离开这里。",
+      "en": "Gather your men. It's time to leave.",
+      "context": "玩家进城搜捕：未拿下目标而撤回时的菜单提示"
+    },
     "gwp_cs_menu_fight_out": {
-      "zh": "与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。",
-      "en": "The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way outside the gate; Tab cannot get you out from inside.",
+      "zh": "大厅里的战斗已经结束。带上还能行动的人，杀出城去。",
+      "en": "The fight in the hall is over. Take everyone still on their feet and fight your way out.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_walk_out_notice": {
-      "zh": "这里的事情已了。带队走出大厅，再从城门离开。",
-      "en": "You are finished here. Lead your party out of the hall and leave through the gate.",
+      "zh": "带上部下，出城。",
+      "en": "Gather your men and leave the city.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
     "gwp_cs_walk_arena_notice": {
-      "zh": "单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。",
-      "en": "The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu.",
+      "zh": "前往竞技场赴约。",
+      "en": "Go to the arena for the duel.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
+    },
+    "gwp_cs_walk_court_notice": {
+      "zh": "去空地赴约。",
+      "en": "Go outside for the duel.",
+      "context": "玩家进城搜捕：约好单挑后出门去空地"
     }
   },
   "fragments": {

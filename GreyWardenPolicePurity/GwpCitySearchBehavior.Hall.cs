@@ -35,18 +35,25 @@ namespace GreyWardenPolicePurity
             _hallRound.RegisterArguments(starter, "gwp_cs_hall_argument", "gwp_cs_hall_argument", "gwp_cs_hall_reaction");
             starter.AddDialogLine("gwp_cs_hall_reaction", "gwp_cs_hall_reaction", "gwp_cs_hall_next",
                 "{=!}{PERSUASION_REACTION}", () => _hallRound.PrepareReaction(
-                    GwpTextCatalog.gwp_cs_hall_reaction_success, GwpTextCatalog.gwp_cs_guard_reaction_fail,
-                    GwpTextCatalog.gwp_cs_guard_reaction_critical), null);
+                    GwpTextCatalog.gwp_cs_hall_reaction_success, GwpTextCatalog.gwp_cs_hall_reaction_fail,
+                    GwpTextCatalog.gwp_cs_hall_reaction_critical), null);
+            // 对面提议单挑时玩家应战；对面提议群殴时玩家改提单挑（用户裁定 2026-10-26）。
             starter.AddPlayerLine("gwp_cs_hall_duel", "gwp_cs_hall_combat_choice", "gwp_cs_hall_choice_next",
-                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), null, () => ChooseCombat(true));
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), () => _opponentDuel, () => ChooseCombat(true));
+            starter.AddPlayerLine("gwp_cs_hall_request_duel", "gwp_cs_hall_combat_choice", "gwp_cs_hall_choice_next",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_request_duel), () => !_opponentDuel, () => ChooseCombat(true));
             starter.AddPlayerLine("gwp_cs_hall_melee", "gwp_cs_hall_combat_choice", "gwp_cs_hall_choice_next",
                 GwpText.Get(GwpTextCatalog.gwp_cs_hall_melee), null, () => ChooseCombat(false));
             // 对方选了单挑、玩家要群殴：对方是弱势一方，不再谈判，直接开打（用户裁定 2026-10-26）。
             starter.AddDialogLine("gwp_cs_choice_forced_melee", "gwp_cs_hall_choice_next", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_cs_choice_forced_melee), () => _opponentDuel && !_playerDuel,
                 () => Scene?.ChooseHallCombat(false), 125);
+            // 双方都选群殴同样不用谈；双方都选单挑见下一行（用户裁定 2026-10-26）。
+            starter.AddDialogLine("gwp_cs_choice_agreed_melee", "gwp_cs_hall_choice_next", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed_melee), () => !_opponentDuel && !_playerDuel,
+                () => Scene?.ChooseHallCombat(false), 122);
             starter.AddDialogLine("gwp_cs_choice_agreed", "gwp_cs_hall_choice_next", "close_window",
-                GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed), () => !_choicePending,
+                GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed), () => _opponentDuel && _playerDuel,
                 () => Scene?.ChooseHallCombat(_playerDuel), 120);
             starter.AddDialogLine("gwp_cs_choice_won", "gwp_cs_hall_choice_next", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_cs_choice_won), () => _choicePending && _choiceRound.IsSatisfied,
@@ -59,8 +66,8 @@ namespace GreyWardenPolicePurity
             _choiceRound.RegisterArguments(starter, "gwp_cs_choice_argument", "gwp_cs_choice_argument", "gwp_cs_choice_reaction");
             starter.AddDialogLine("gwp_cs_choice_reaction", "gwp_cs_choice_reaction", "gwp_cs_hall_choice_next",
                 "{=!}{PERSUASION_REACTION}", () => _choiceRound.PrepareReaction(
-                    GwpTextCatalog.gwp_cs_hall_reaction_success, GwpTextCatalog.gwp_cs_guard_reaction_fail,
-                    GwpTextCatalog.gwp_cs_guard_reaction_critical), null);
+                    GwpTextCatalog.gwp_cs_hall_reaction_success, GwpTextCatalog.gwp_cs_hall_reaction_fail,
+                    GwpTextCatalog.gwp_cs_hall_reaction_critical), null);
         }
 
         private PersuasionTask HallTask(string line, params GwpPersuasionRound.Argument[] args) =>

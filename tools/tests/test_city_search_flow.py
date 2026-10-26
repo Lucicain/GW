@@ -163,7 +163,7 @@ static class Program{static int n;static void Check(bool yes,string why){n++;if(
   bool court=test||castle;Check(b.UsesCourtyardDuel==court,"single route owner covers test and restored town/castle routes");
   var starter=new CampaignGameStarter();b.Register(starter);var args=new MenuCallbackArgs();
   Check(starter.Conditions["arena"](args)==!court,"arena shortcut visibility follows actual duel route");starter.Initialize(args);
-  Check(MBTextManager.Text==(court?GwpTextCatalog.gwp_cs_menu_street:GwpTextCatalog.gwp_cs_menu_duel),"courtyard menu never says to go to arena");
+  Check(MBTextManager.Text==(court?GwpTextCatalog.gwp_cs_menu_court:GwpTextCatalog.gwp_cs_menu_duel),"courtyard menu never says to go to arena");
   b.QueuePlace(GwpCitySearchPlace.Arena);Check(b.SearchPlace==(court?GwpCitySearchPlace.Street:GwpCitySearchPlace.Arena),"queued arena shortcut cannot bypass courtyard testing");
   var save=new Store();b.Sync(save);var loaded=new GwpCitySearchBehavior();loaded.Sync(new Store{Loading=true,Data=save.Data});Campaign.Current.Search=loaded;
   int arenas=CampaignMission.Arenas;GwpCitySearchBehavior.Pump();
@@ -183,6 +183,59 @@ static class Program{static int n;static void Check(bool yes,string why){n++;if(
         old_route = flow.replace('GwpTuning.CitySearch.TestCourtyardDuels || ', '')
         with self.assertRaisesRegex(AssertionError, 'single route owner'):
             run(code.replace(flow, old_route))
+
+    def test_menu_state_text_mapping(self):
+        flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))
+        menu = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Menu.cs'))
+        stubs = STUBS.replace('public string StringId;public CharacterObject CharacterObject;',
+                              'public string StringId;public string Name=>StringId;public CharacterObject CharacterObject;')
+        stubs = stubs.replace('public int Defeats;public void RecordCitySearchDefeat',
+                              'public Hero? Target;public Hero? CitySearchTargetIn(Settlement s)=>Target;public int Defeats;public void RecordCitySearchDefeat')
+        keys = sorted(set(re.findall(r'GwpTextCatalog\.(\w+)', menu)))
+        extra = r'''
+namespace GreyWardenPolicePurity{
+class MenuCallbackArgs{public GameMenuOption.LeaveType optionLeaveType;public bool IsEnabled;public string Tooltip="";}
+class GameMenuOption{public enum LeaveType{Leave,Submenu,Mission}}
+class CampaignGameStarter{public Action<MenuCallbackArgs> Initialize=null!;
+ public void AddGameMenu(string id,string text,Action<MenuCallbackArgs> init){Initialize=init;}
+ public void AddGameMenuOption(string menu,string id,string text,Func<MenuCallbackArgs,bool> condition,Action<MenuCallbackArgs> action,bool isLeave=false){}}
+static class GameMenu{public static void SwitchToMenu(string s){}}
+static class GwpText{public static string Create(string key,params object[] args)=>key;}
+static class MBTextManager{public static string Text="";public static void SetTextVariable(string key,string value){Text=value;}}
+static class GwpTextCatalog{KEYS}
+partial class GwpCitySearchBehavior{void SelectSearchTroops(MenuCallbackArgs args){}public void Register(CampaignGameStarter starter)=>RegisterSearchMenu(starter);}
+static class Program{
+ static string TextOf(GwpCitySearchBehavior b){var starter=new CampaignGameStarter();b.Register(starter);starter.Initialize(new MenuCallbackArgs());return MBTextManager.Text;}
+ static GwpCitySearchBehavior Started(out Settlement s,out Hero h){Mission.Current=null;s=new();h=new Hero("target");Settlement.CurrentSettlement=s;CrimeRecord.Shelter=s;var b=new GwpCitySearchBehavior();Campaign.Current.Search=b;b.Start(s,h,TroopRoster.CreateDummyTroopRoster());return b;}
+ static void Main(){
+  var fresh=new Settlement();Settlement.CurrentSettlement=fresh;CrimeRecord.Shelter=fresh;Campaign.Current.Search=new GwpCitySearchBehavior();Campaign.Current.Bounty.Target=new Hero("fresh");
+  if(TextOf(Campaign.Current.Search)!=GwpTextCatalog.gwp_cs_menu_new)throw new Exception("not started shows the entry prompt");
+  var b=Started(out var s,out var h);
+  if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_gate)throw new Exception("unchecked gate shows the gate prompt");
+  b.GateState=GwpCitySearchGate.Allowed;if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_allowed)throw new Exception("allowed gate shows the hall prompt");
+  b.GateState=GwpCitySearchGate.Cleared;if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_cleared)throw new Exception("cleared gate shows the rout prompt");
+  b=Started(out s,out h);b.PeacefulCapture();if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_return)throw new Exception("captured target shows the return prompt");
+  b=Started(out s,out h);b.WithdrawFromHall();if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_withdraw)throw new Exception("withdrawn search shows the leave prompt");
+  b=Started(out s,out h);b.WonHall();b.MarkSearchWar();if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_fight_out)throw new Exception("war breakout shows the fight-out prompt");
+  GwpTuning.CitySearch.TestCourtyardDuels=true;b=Started(out s,out h);b.QueuePlace(GwpCitySearchPlace.Hall);b.AgreeDuel();if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_court)throw new Exception("courtyard duel shows the courtyard prompt");
+  GwpTuning.CitySearch.TestCourtyardDuels=false;b=Started(out s,out h);b.QueuePlace(GwpCitySearchPlace.Hall);b.AgreeDuel();if(TextOf(b)!=GwpTextCatalog.gwp_cs_menu_duel)throw new Exception("restored arena route shows the arena prompt");
+  Console.WriteLine("CITY_SEARCH_MENU_STATE_ASSERTIONS=9");
+ }
+}}
+'''
+        constants = '\n'.join(f'public const string {key}="{key}";' for key in keys)
+        code = stubs + flow + menu + extra.replace('KEYS', constants)
+        run(code)
+        cleared_as_allowed = menu.replace(
+            'GateState == GwpCitySearchGate.Cleared ? GwpTextCatalog.gwp_cs_menu_cleared : GwpTextCatalog.gwp_cs_menu_allowed',
+            'GwpTextCatalog.gwp_cs_menu_allowed')
+        with self.assertRaisesRegex(AssertionError, 'cleared gate shows the rout prompt'):
+            run(stubs + flow + cleared_as_allowed + extra.replace('KEYS', constants))
+        always_return = menu.replace(
+            'TargetResolved ? GwpTextCatalog.gwp_cs_menu_return : GwpTextCatalog.gwp_cs_menu_withdraw',
+            'GwpTextCatalog.gwp_cs_menu_return')
+        with self.assertRaisesRegex(AssertionError, 'withdrawn search shows the leave prompt'):
+            run(stubs + flow + always_return + extra.replace('KEYS', constants))
 
     def test_production_coordinator_roundtrip_and_all_routes(self):
         flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))
@@ -238,8 +291,8 @@ class Mission{public List<Agent> Agents=new();public Team PlayerTeam=new(),Playe
 class Frame{public Vec3 origin;}class GameEntity{public Frame GetGlobalFrame()=>new();}class PassageUsePoint{public GameEntity GameEntity=new();public string ToLocationId="";}
 static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6,InwardTolerance=10,SecureTargetDistance=2;}}
 static class SandBoxHelpers{public static class MissionHelper{public static void FollowAgent(Agent a,Agent target){a.IsRunningAway=false;}}}
-class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
-static class GwpText{public static string Get(string s)=>s;public static string Create(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_menu_street="courtyard",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena",gwp_cs_hostile_exit_blocked="blocked",gwp_cs_route_blocked="route";}
+class InformationMessage{public string Text;public InformationMessage(string s){Text=s;}}static class InformationManager{public static string Last="";public static void DisplayMessage(InformationMessage m){Last=m.Text;}}
+static class GwpText{public static string Get(string s)=>s;public static string Create(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_menu_street="courtyard",gwp_cs_walk_court_notice="court",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena",gwp_cs_hostile_exit_blocked="blocked",gwp_cs_route_blocked="route";}
 class InquiryData{}static class MBInformationManager{public static void AddQuickInformation(string s){}}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
 class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _gateExitAvailable=true;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public bool IsCourtAppointment=>Search.UsesCourtyardDuel&&Search.DuelAgreed&&!Search.SearchWar;public Dictionary<Agent,Vec3> _courtSeats=new();public bool _courtPreparing;static void ReleaseCourtPosition(Agent a){a.DisableScriptedMovement();}public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
@@ -268,6 +321,8 @@ static void Main(){
  var foreign=new Agent{Character=new CharacterObject{IsHero=true,HeroObject=new Hero()}};hall._hallTarget=foreign;Check(hall.IsDefender(foreign),"foreign faction target must fight with hall defenders");var guest=new Agent{Character=new CharacterObject{IsHero=true,HeroObject=new Hero()}};Check(!hall.IsDefender(guest),"other foreign guests are not turned into defenders");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="surrender";hall.Tick();Check(hall.Search.Peaceful&&!hall.Mission.Ended&&hall._stage==Stage.HallDone,"successful hall persuasion leaves player to walk out");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="duel";hall._settlement.IsTown=true;hall.Tick();Check(hall.Search.DuelAgreed&&!hall.Mission.Ended&&hall._stage==Stage.HallDone,"town duel agreement waits for walk to arena");hall.TryUseSearchPassage(new PassageUsePoint{ToLocationId="center"},Agent.Main!);hall.Tick();Check(hall.Search.SearchPlace==GwpCitySearchPlace.Street,"hall exit leads to street before arena");var street=New(GwpCitySearchPlace.Street,Stage.Allowed);street.Search.DuelAgreed=true;street.TryUseSearchPassage(new PassageUsePoint{ToLocationId="arena"},Agent.Main!);street.Tick();Check(street.Search.SearchPlace==GwpCitySearchPlace.Arena,"walking to arena starts agreed duel");
+ Check(InformationManager.Last==GwpTextCatalog.gwp_cs_walk_arena_notice,"arena duel walk keeps the arena notice");
+ var courtWalk=New(GwpCitySearchPlace.Hall,Stage.HallTalking);courtWalk._pendingHallAction="duel";courtWalk.Search.UsesCourtyardDuel=true;courtWalk.Tick();Check(courtWalk._stage==Stage.HallDone&&InformationManager.Last==GwpTextCatalog.gwp_cs_walk_court_notice,"courtyard duel walk tells the player to go outside");
  hall=New(GwpCitySearchPlace.Hall,Stage.HallTalking);hall._pendingHallAction="duel";hall._hallTarget=new();var friend=new Agent();var guard=new Agent();var friendTeam=friend.Team;var guardTeam=guard.Team;hall.Mission.Agents.AddRange(new[]{Agent.Main!,hall._hallTarget,friend,guard});hall._ours[friend]=friend.Character;
  hall.Tick();Check(hall._stage==Stage.HallDone&&hall.Search.DuelAgreed,"castle appointment requires walking out of hall first");hall._place=GwpCitySearchPlace.Street;hall.CourtStart();Check(hall._stage==Stage.Duel&&friend.Team==Team.Invalid&&guard.Team==Team.Invalid,"castle duel leaves companions and guards as spectators");Check(hall._hallTarget.Team==hall.Mission.PlayerEnemyTeam&&hall.Mission.PlayerEnemyTeam.Hostile&&!hall._hallTarget.ScriptedMovement,"only duelists fight and target old scripted movement is released");
  Check(hall.GetAgentState(hall._hallTarget,1,out _)==AgentState.Unconscious,"castle duel cannot kill target");hall.DuelRemoval(hall._hallTarget);hall.Tick();Check(hall.Search.Won&&hall.Search.Returning&&!hall.Mission.Ended&&friend.Team==friendTeam&&guard.Team==guardTeam,"castle victory restores spectator ownership before leaving");
@@ -325,6 +380,7 @@ static void Main(){
             ('native Tab exit at the gate completes the escape', bodies.replace('(Search.SearchWar || AtGateExit)', 'Search.SearchWar')),
             ('retreating before target capture', bodies.replace('if (_warDeclared) _pendingFight = "street";', '')),
             ('courtyard player cannot bypass', bodies.replace('return Search.DuelAgreed && !Search.UsesCourtyardDuel;', 'return Search.DuelAgreed;')),
+            ('courtyard duel walk tells the player', bodies.replace('GwpTextCatalog.gwp_cs_walk_court_notice', 'GwpTextCatalog.gwp_cs_menu_street')),
         ]
         for failure, old in controls:
             with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):
@@ -375,7 +431,7 @@ class PersuasionTask{public PersuasionArgumentStrength Strength;}
 class GwpPersuasionRound{public int Status;public int TaskCount;public PersuasionArgumentStrength Strength;public GwpPersuasionRound(string s){}
  public bool IsSatisfied=>Status==1;public bool IsFailed=>Status>=2;
  public void Begin(IEnumerable<PersuasionTask> tasks){Status=0;TaskCount=0;foreach(var t in tasks){TaskCount++;Strength=t.Strength;}}
- public void End(){Status=3;}public bool PrepareReservation()=>Status==0;public bool PrepareReaction(string a,string b,string c)=>true;
+ public void End(){Status=3;}public bool PrepareReservation()=>Status==0;public string LastSuccess="",LastFail="",LastCritical="";public bool PrepareReaction(string a,string b,string c){LastSuccess=a;LastFail=b;LastCritical=c;return true;}
  public void RegisterArguments(CampaignGameStarter s,string id,string input,string output){}
  public sealed record Argument(object Skill,object Trait,TraitEffect Effect,bool GivesCriticalSuccess,TextObject Line);
  public static PersuasionTask Task(TextObject t,Func<Argument,PersuasionArgumentStrength> strength,TextObject immediate,TextObject final,TextObject later,params Argument[] args)=>new(){Strength=strength(args[0])};}
@@ -392,27 +448,44 @@ partial class GwpCitySearchBehavior{public static GwpCitySearchMissionController
  public GwpPersuasionRound Hall=>_hallRound;public GwpPersuasionRound Choice=>_choiceRound;
 }
 static class Program{static int n;static void Check(bool c,string why){n++;if(!c)throw new Exception(why);}
+ static bool Offered(CampaignGameStarter st,string id)=>st.Lines[id].Condition?.Invoke()!=false;
  static void Main(){
  var b=new GwpCitySearchBehavior();var s=b.Register();s.Run("gwp_cs_hall_start");s.Run("gwp_cs_hall_warrant");Check(b.Hall.TaskCount==2&&b.Hall.Strength==PersuasionArgumentStrength.VeryEasy&&GwpCitySearchBehavior.StrengthAsked==b.SearchTarget.CharacterObject,"hall has two concerns whose strength comes from the shared per-argument rule against the target");
+ Check(s.Lines["gwp_cs_hall_reaction"].Condition!()&&b.Hall.LastSuccess==GwpTextCatalog.gwp_cs_hall_reaction_success&&b.Hall.LastFail==GwpTextCatalog.gwp_cs_hall_reaction_fail&&b.Hall.LastCritical==GwpTextCatalog.gwp_cs_hall_reaction_critical,"hall persuasion reports with hall reaction lines, not the guard's");
  Check(s.Lines["gwp_cs_hall_reservation"].Condition!(),"ongoing persuasion has an argument exit");b.Hall.Status=1;s.Run("gwp_cs_hall_surrender");Check(GwpCitySearchBehavior.Scene.Action=="surrender","successful persuasion immediately queues surrender");
  foreach(bool opponentDuel in new[]{false,true})foreach(bool playerDuel in new[]{false,true})foreach(bool convince in new[]{false,true}){
   GwpCitySearchBehavior.Scene=new(){Duel=opponentDuel};b=new();s=b.Register();s.Run("gwp_cs_hall_warrant");b.Hall.Status=2;
   Check(s.Lines["gwp_cs_hall_refuse"].Condition!(),"failed hall persuasion has refusal exit");s.Lines["gwp_cs_hall_refuse"].Condition!();Check(GwpCitySearchBehavior.Scene.Asked==1,"NPC choice is decided once by strength, not on every UI refresh");
   Check(MBTextManager.Text["GWP_CS_OPPONENT_CHOICE"].Key==(opponentDuel?GwpTextCatalog.gwp_cs_opponent_duel:GwpTextCatalog.gwp_cs_opponent_melee),"NPC announces its own choice first");
-  s.Run("gwp_cs_hall_refuse");s.Run(playerDuel?"gwp_cs_hall_duel":"gwp_cs_hall_melee");
-  if(playerDuel==opponentDuel){s.Run("gwp_cs_choice_agreed");Check(GwpCitySearchBehavior.Scene.Action==(playerDuel?"duel":"melee"),"matching choices begin immediately");}
-  else if(!playerDuel){Check(b.Choice.TaskCount==0&&!s.Lines["gwp_cs_choice_reservation"].Condition!(),"player melee against a weaker opponent starts at once without persuasion");s.Run("gwp_cs_choice_forced_melee");Check(GwpCitySearchBehavior.Scene.Action=="melee"&&s.Lines["gwp_cs_choice_forced_melee"].Priority>s.Lines["gwp_cs_choice_agreed"].Priority,"weaker opponent accepts the melee");}
-  else{Check(b.Choice.TaskCount==1&&s.Lines["gwp_cs_choice_reservation"].Condition!(),"disagreement opens a separate persuasion round");b.Choice.Status=convince?1:2;s.Run(convince?"gwp_cs_choice_won":"gwp_cs_choice_lost");Check(GwpCitySearchBehavior.Scene.Action==((convince?playerDuel:opponentDuel)?"duel":"melee"),"disagreement outcome obeys winner's choice");}
+  s.Run("gwp_cs_hall_refuse");
+  string duelLine=opponentDuel?"gwp_cs_hall_duel":"gwp_cs_hall_request_duel";string otherDuelLine=opponentDuel?"gwp_cs_hall_request_duel":"gwp_cs_hall_duel";
+  Check(Offered(s,duelLine),"the player duel line matches the proposal on the table");Check(!Offered(s,otherDuelLine),"the other duel line stays hidden so each proposal has one meaning");
+  s.Run(playerDuel?duelLine:"gwp_cs_hall_melee");
+  if(opponentDuel&&playerDuel){Check(s.Lines["gwp_cs_choice_agreed"].Condition!(),"two duel choices settle on the agreed line");s.Run("gwp_cs_choice_agreed");Check(GwpCitySearchBehavior.Scene.Action=="duel","matching duel choices begin immediately");}
+  else if(opponentDuel&&!playerDuel){Check(b.Choice.TaskCount==0&&!s.Lines["gwp_cs_choice_reservation"].Condition!(),"player melee against a weaker opponent starts at once without persuasion");Check(s.Lines["gwp_cs_choice_forced_melee"].Condition!()&&s.Lines["gwp_cs_choice_forced_melee"].Priority>s.Lines["gwp_cs_choice_agreed"].Priority,"weaker opponent accepts the melee at the forced line");s.Run("gwp_cs_choice_forced_melee");Check(GwpCitySearchBehavior.Scene.Action=="melee","weaker opponent accepts the melee");}
+  else if(!opponentDuel&&!playerDuel){Check(b.Choice.TaskCount==0&&!s.Lines["gwp_cs_choice_reservation"].Condition!(),"mutual melee needs no persuasion");Check(s.Lines["gwp_cs_choice_agreed_melee"].Condition!()&&!s.Lines["gwp_cs_choice_agreed"].Condition!(),"both choosing melee resolves on the agreed melee line");s.Run("gwp_cs_choice_agreed_melee");Check(GwpCitySearchBehavior.Scene.Action=="melee","both choosing melee begins the brawl");}
+  else{Check(b.Choice.TaskCount==1&&s.Lines["gwp_cs_choice_reservation"].Condition!(),"disagreement opens a separate persuasion round");Check(s.Lines["gwp_cs_choice_reaction"].Condition!()&&b.Choice.LastSuccess==GwpTextCatalog.gwp_cs_hall_reaction_success&&b.Choice.LastFail==GwpTextCatalog.gwp_cs_hall_reaction_fail&&b.Choice.LastCritical==GwpTextCatalog.gwp_cs_hall_reaction_critical,"choice persuasion reports with hall reaction lines, not the guard's");b.Choice.Status=convince?1:2;s.Run(convince?"gwp_cs_choice_won":"gwp_cs_choice_lost");Check(GwpCitySearchBehavior.Scene.Action==((convince?playerDuel:opponentDuel)?"duel":"melee"),"disagreement outcome obeys winner's choice");}
  }
  s.Run("gwp_cs_hall_leave");Check(GwpCitySearchBehavior.Scene.Action=="leave","initial hall dialogue also has a withdrawal exit");
  Console.WriteLine("CITY_SEARCH_DIALOGUE_ASSERTIONS="+n);
 }}}
 '''
-        constants = '\n'.join(f'public const string {key}="{key}";' for key in sorted(keys))
+        constants = '\n'.join(f'public const string {key}="{key}";' for key in sorted(keys | {'gwp_cs_guard_reaction_success', 'gwp_cs_guard_reaction_fail', 'gwp_cs_guard_reaction_critical'}))
         run(template.replace('KEYS', constants) + hall)
         old = hall.replace('_choicePending = duel && !_opponentDuel;', '_choicePending = duel != _opponentDuel;')
         with self.assertRaisesRegex(AssertionError, 'player melee against a weaker opponent'):
             run(template.replace('KEYS', constants) + old)
+
+        guard_reactions = (hall.replace('gwp_cs_hall_reaction_success', 'gwp_cs_guard_reaction_success')
+                           .replace('gwp_cs_hall_reaction_fail', 'gwp_cs_guard_reaction_fail')
+                           .replace('gwp_cs_hall_reaction_critical', 'gwp_cs_guard_reaction_critical'))
+        with self.assertRaisesRegex(AssertionError, 'hall persuasion reports with hall reaction lines'):
+            run(template.replace('KEYS', constants) + guard_reactions)
+        unsplit_duel = hall.replace(
+            'GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), () => _opponentDuel, () => ChooseCombat(true)',
+            'GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), null, () => ChooseCombat(true)')
+        with self.assertRaisesRegex(AssertionError, 'the other duel line stays hidden'):
+            run(template.replace('KEYS', constants) + unsplit_duel)
 
 
     def test_opponent_choice_follows_simulated_strength(self):

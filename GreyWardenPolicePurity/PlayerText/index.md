@@ -1664,79 +1664,87 @@
 | gwp_city_search_option | Lead your men in to arrest {TARGET} | 带兵进城搜捕{TARGET} | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_city_search_wounded | You are wounded and cannot lead the search. | 你受了伤，不能带兵搜捕。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_challenge | Halt! What business do you have marching armed men through this town? | 站住！带着这么多兵进城，你们想做什么？ | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_explain | Grey Warden business. We have a warrant for {TARGET} and only need the way to the lord's hall. | 灰袍办案，奉命捉拿{TARGET}。我们只借道去领主大厅。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_explain | The Wardens sent me to find {TARGET}. They're in the lord's hall. That's where we're going. | 灰袍托我来找{TARGET}。人在领主大厅，我们过去找人。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_will_leave | We will leave town. | 我们这就出城。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_guard_reservation | Outsiders do not march soldiers through this town. | 城里不许外人带兵走动。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_arg_lead | My men keep discipline. Anything that happens is on me. | 我的人守规矩，出了事由我担着。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_arg_charm | We came for one man. We will be gone once it is done, and no townsman will be troubled. | 我们只为一个人来，办完就走，不惊扰百姓。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_arg_rogue | Standing in the Wardens' way is trouble you do not want. | 挡灰袍办案，这麻烦你担得起吗？ | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_arg_trade | We buy nothing, sell nothing and touch nothing here. | 我们不在城里买卖，也不碰一针一线。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_guard_reservation | Looking for someone with all these soldiers? Who cleans up if you cause trouble? | 带着兵找人？城里出了乱子，谁来收拾？ | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_arg_lead | My men answer to me. If any of them causes trouble here, I'll deal with it myself. | 我的人听我的。谁敢在城里惹事，我亲自收拾。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_arg_charm | We're only here for that one person. We won't trouble anyone else. Once we've found them, we're leaving. | 我们只找那个人，不为难旁人。找到就走。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_arg_rogue | The person we're after is here, and you're keeping us out. What should I tell the Wardens if I return empty-handed? | 人就在城里，你却拦着不让找。我要是空手回去，该怎么跟灰袍说？ | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_arg_trade | My men won't take a thing without paying. You'll get every coin you're owed. | 我的人不会白拿城里一件东西。该付的钱，一文不少。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_fail_immediate | That does not convince me. | 这话说服不了我。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_fail_final | No. | 不行。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_try_later | Another time. | 改天再说。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_guard_reaction_success | ...Fair enough. | ……也有道理。 | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_guard_reaction_success | ...All right. Go on. | ……好，你接着说。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_reaction_fail | Spare me. | 少来这套。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_guard_reaction_critical | Are you threatening the watch? | 你这是在威胁守卫？ | 进城搜捕第1段（用户裁定2026-10-21） |
+| gwp_cs_guard_reaction_critical | Enough! I've had enough of your talk. | 够了！别再跟我耍嘴皮子。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_pass | Go on, then. Make no trouble in town. | 去吧。别在城里惹事。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_guard_refuse | No. Take your men and get out of town. | 不行。带着你的人出城去。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_allowed_notice | The watch lets you through. | 守卫放行了。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_war_notice | You defied the town watch. {VAR_1} is now at war with you. | 你与城里的守卫动了手，{VAR_1}与你开战。 | 进城搜捕第1段（用户裁定2026-10-21） |
 | gwp_cs_fight_not_over | The fight is not over. You cannot leave yet. | 仗还没打完，现在不能离开。 | 进城搜捕第1段（用户裁定2026-10-21） |
-| gwp_cs_guard_reservation_vouch | Anyone can shout a name. Who in this town will vouch for you and your men? | 名头谁都会报。城里谁能替你和你这些兵作保？ | 进城搜捕第1段（用户裁定2026-10-22） |
-| gwp_cs_arg_tactics | Post your men beside mine and count us. Mine move only on my word. | 派你的人跟着我们、点清人数。我的兵没有我的令一步不动。 | 进城搜捕第1段（用户裁定2026-10-22） |
-| gwp_cs_arg_steward | The warrant bears the Wardens' seal. Send it to your lord's steward and let him read every line. | 令状上有灰袍的印。拿去给你家大人的管家，一字一句地看。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_guard_reservation_vouch | All I have is your word. How do I know any of it's true? | 就凭你几句话，我怎么知道你说的是真是假？ | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_tactics | Look. My men are all here. They'll stay with me inside the city, too. No one goes wandering off. | 你看着，我的人都在这里。进城以后也跟着我，一个都不会散开。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_steward | I've told you who I'm after and who sent me. If I wanted trouble, why would I stand here explaining myself? | 我来找谁、替谁办事，都已经说了。真想闹事，何必站在这里跟你解释？ | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_arg_valor | If a word of this is false, I will stand before your lord and answer for it myself. | 要是有一句假话，我亲自到你家大人面前领罪。 | 进城搜捕第1段（用户裁定2026-10-22） |
-| gwp_cs_arg_blackmail | I hear the watch here turns a blind eye for smugglers' coin. Let us not make that our business. | 听说这里的守卫收走私贩子的钱放行。咱们别把这事也扯进来。 | 进城搜捕第1段（用户裁定2026-10-22） |
+| gwp_cs_arg_blackmail | You've stopped us. If our quarry slips away while we're standing here, who gets to explain that? | 你拦住了我们，可那个人要是趁这会儿走了，到时候谁来解释？ | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_choose_fight | Then we go through you. | 那就从你们身上踏过去。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_choose_withdraw | Fine. We are leaving. | 好，我们撤。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_leave_notice | You promised the watch to leave town. Head further in and they will stop you. | 你答应了守卫出城。再往城里走，他们会拦你。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_withdraw_notice | Leave town and the search is dropped. Head further in and it means war. | 撤出城外，搜捕作罢；再往城里走就是开战。 | 进城搜捕第1段（用户裁定2026-10-22） |
 | gwp_cs_leave_warning | The watch warns you: turn back and leave town, or answer for it. | 守卫警告：掉头出城，否则后果自负。 | 进城搜捕第1段（用户裁定2026-10-22） |
-| gwp_cs_hall_start | You have brought armed followers into this hall. What do you want of me? | 你带着这么多持械的人进我的大厅，想做什么？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_warrant | The Grey Wardens hold you accountable for your crimes. Come with us to answer the charges. | 灰袍要你为所犯罪行负责。跟我们走，去把案子交代清楚。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_start | What do you want with me, bringing all these men? | 带着这些人来找我，有什么事？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_warrant | The Wardens sent me to bring you back. Come with us. | 灰袍让我把你带回去。跟我们走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_hall_leave | I will leave for now. | 我先告辞。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_surrender | Very well. I will come with you and answer before the Wardens. | 好吧。我跟你走，到灰袍面前说清楚。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_reaction_success | You have a point. Go on. | 这话有道理。接着说。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_law | Why should I submit to the Wardens in my own hall? | 在我的大厅里，凭什么要听灰袍的？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_safety | And what assurance have I that I will receive a fair hearing? | 我怎么知道，去了以后还能公正地说话？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_law | Your rank does not erase what happened. Answering the charges is the honourable course. | 身份抹不掉已经发生的事。肯当面认账，才算守得住体面。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_people | Those who suffered deserve an answer. You can give it without shedding more blood. | 受害的人该得到一个交代。你可以不再流血，就把话说清。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_risk | Sheltering here only postpones the reckoning. Do you want everyone to learn why we came? | 躲在这里只是拖延。你真想让所有人都知道，我们是为什么来的？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_terms | Come to account for the losses. The charges can be settled without ruining this hall. | 先去把损失对清楚。这宗案子不必闹到毁了这座大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_word | You have my word that you will be brought before the Wardens to answer the charges. | 我保证把你带到灰袍面前，让你当面答辩。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_guard | Your guards cannot settle these charges. They can only add casualties. | 卫兵结不了这宗案子，只会让死伤更多。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_courage | If you believe yourself innocent, have the courage to face your accusers. | 如果你觉得自己无罪，就拿出勇气，去见告你的人。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_arg_trial | The people under your care must also answer for their deeds. Give them the same example. | 你治下的人做事也要负责。你也该给他们做个样子。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_duel | Then let the two of us settle it in single combat. If I win, you come with me. | 那就你我单挑。我赢了，你跟我走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_melee | We will fight it out here. | 就在这里，双方一起上。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_opponent_duel | Enough talk. I choose single combat. Defeat me and I will go with you. | 不必再说。我选单挑。赢了我，我就跟你走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_opponent_melee | I choose to stand with my guards. If you want me, come and take me. | 我选跟卫兵一起打。想抓我，就过来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_agreed | Agreed. Let us begin. | 说定了。开始吧。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_forced_melee | So you'd rather bring all your men against mine. Fine. Come on, then. | 你是仗着人多不肯单打。好，那就来吧。 | 玩家进城搜捕：大厅里对方自知打不过、提出单挑，玩家仍选群殴，对方无奈接战，随即开打。 |
-| gwp_cs_choice_won | Very well, we will fight on your terms. | 好，就按你说的打。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_lost | No. We fight as I proposed. | 不。照我说的来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_reservation | Why should I give up my choice of how we fight? | 我为什么要放弃自己的选法？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_arg_fair | Give me this choice, and I will honour the result. | 这次让我选，我会认这个结果。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_arg_brave | Are you afraid to face the terms I offered? | 我提的打法，你不敢接吗？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_arg_losses | My proposal gives us a clear result without needless losses. | 按我说的打，胜负分得清，也少些无谓损失。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_choice_arg_shame | People will remember how eagerly you hid behind your own terms. | 人们会记住，你是怎么躲在自己那套规矩后面的。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hall_notice | Proceed to the lord's hall with your surviving followers. | 带着还站得住的部下，进入领主大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_escape_notice | Return to the gate and get out of the settlement. | 回到城门，带人撤出城外。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_surrender | All right. I'll come. Tell your men to put their weapons away. | 好，我跟你走。让你的人把兵器收好。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_reaction_success | ...Go on. | ……接着说。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_reaction_fail | Save that for someone who'll believe it. | 这话留着去骗别人吧。 | 玩家进城搜捕：大厅与打法说服的普通失败反应 |
+| gwp_cs_hall_reaction_critical | Enough! I don't want to hear another word. | 够了！我不想再听你说了。 | 玩家进城搜捕：大厅与打法说服的大失败反应 |
+| gwp_cs_hall_law | The Wardens sent you? I haven't agreed to go anywhere with you. | 灰袍让你来的？我可没答应跟你走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_safety | And once you've taken me away, what do you intend to do with me? | 你把我带走以后，打算怎么处置我？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_law | What you've done won't just go away. Come of your own accord and keep some dignity. | 你做过的事，不能就这么算了。自己跟我走，还能留些体面。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_people | The people you hurt are still waiting for an answer. Don't add more deaths to it. | 被你害的人还等着一个交代。别再为这件事添人命了。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_risk | Do you want me to go through it all again, here, in front of everyone? | 你要我在这里，当着所有人的面，把事情再说一遍？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_terms | You don't want the whole town talking about this. Come with me. We can leave quietly. | 你也不想这事闹得满城皆知。跟我走，咱们安静地出去。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_word | I'll hand you over to the Wardens. You'll be under my watch on the road. No one gets to lay a hand on you. | 我会把你交给灰袍。路上有我看着，没人能私下动你。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_guard | Once blades are drawn, anyone can get hurt. Come with me while there's still no blood on the floor. | 真动起手来，刀剑可不长眼。趁现在还没见血，跟我走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_courage | You had the nerve to do it. Have the nerve to own it. Don't make the people around you answer for you. | 敢做就敢认。别到这时候，还要身边的人替你出头。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_arg_trial | I was sent to bring you back. Handing you over alive is how I finish the job. | 我接的是带你回去的差事。活着把你交到灰袍手里，我也好交差。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_duel | Agreed. Just you and me. If I win, you come with me. | 好，就你我两个。我赢了，你跟我走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_request_duel | Fight me alone. If I win, you come with me. | 你我单打。我赢了，你跟我走。 | 玩家进城搜捕：对方要群殴时玩家提出单挑 |
+| gwp_cs_hall_melee | Take them! Bring our quarry down! | 都动手，把人拿下！ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_opponent_duel | I'm the one you're after. Fight me alone. If you win, I'll go with you. | 你要抓的是我。你我单打，赢了我就跟你走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_opponent_melee | Enough talk. Take another step and you won't be walking out of here. | 少废话。你们敢上前，就别想站着出去。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_agreed | Agreed, then. | 好，就这么定了。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_agreed_melee | At them! | 上！ | 玩家进城搜捕：双方都选群殴、当场开打 |
+| gwp_cs_choice_forced_melee | Then try it! | 那就试试！ | 玩家进城搜捕：大厅里对方自知打不过、提出单挑，玩家仍选群殴，对方无奈接战，随即开打。 |
+| gwp_cs_choice_won | All right. Have your men stand back. | 好。让你的人退开。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_lost | Save your breath. If you want me, come and take me. | 少费口舌。想抓我，就上来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_reservation | Why should I agree to that? | 我凭什么答应你？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_fair | Just you and me, and we both accept the result. If I lose, my men and I leave. If you lose, you come with me. | 就你我两个，输赢都认。我输了，带人走；你输了，跟我走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_brave | I'm right here. Haven't you the nerve to draw your own sword? | 我就在这里。你连亲自拔剑的胆量都没有？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_losses | Do you want bodies all over this hall? The two of us can settle this. Leave them out of it. | 你真想让这大厅里躺满人？我们两个就能了结的事，何必把他们拖进来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_arg_shame | They're all watching. Go on, step forward. | 当着这些人的面，你倒是站出来啊。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_hall_notice | Take everyone still on their feet to the lord's hall. | 带上还能行动的部下，去领主大厅。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_escape_notice | Lead your men back beyond the gate. | 带着部下撤到城门外。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_route_blocked | You cannot leave while combat or a conversation is still in progress. | 交战或交涉尚未结束，暂时不能离场。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
-| gwp_cs_hostile_exit_blocked | You cannot escape from inside the settlement. Reach the outside of the gate before leaving. | 城内无法直接脱身。必须亲自撤到城门外，才能离开。 | 玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。 |
+| gwp_cs_hostile_exit_blocked | You're still inside the walls. You can't leave yet. | 还没出城，无法离开。 | 玩家进城搜捕：敌对后大厅及城内禁止Tab脱身。 |
 | gwp_cs_unarmed_target_notice | The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out. | 目标没有武器，正在逃跑。追到他身边、摆脱附近守军后可将其控制，再带队出城。 | 玩家进城搜捕：无武器目标不参战，必须实际追上才能控制。 |
-| gwp_cs_menu_begin | Choose your troops and enter through the gate | 选择随行士兵，亲自从城门进城 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_resume | Return to the search on foot | 返回搜捕现场，继续步行 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_hall | Take your troops to the lord’s hall | 带兵前往领主大厅 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_street | Take your troops outside to the street or courtyard | 带兵回到街道或庭院 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_begin | Choose your men and enter the settlement | 选择随行士兵，进城 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_resume | Return to the search | 回到搜捕现场 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_hall | Go to the lord's hall | 前往领主大厅 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_street | Leave the hall | 走出大厅 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_arena | Go to the arena for the agreed duel | 前往竞技场赴约单挑 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_leave | Leave the settlement with your party and end this search | 带队出城，结束本次搜捕 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_leave | Leave with your men and end the search | 带队出城，结束搜捕 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_back | Return to the settlement menu | 返回聚落菜单 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_new | You are preparing to search for {TARGET}. Enter through the gate with your troops, negotiate with the guards, and walk to the lord’s hall. | 你准备带兵进城搜捕{TARGET}。你可以亲自从城门进入，与卫兵交涉，再带兵走到领主大厅。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_gate | The guards have not granted passage. Return to the gate to deal with them. Tab returns here and preserves your search progress. Your target is {TARGET}. | 卫兵尚未放行。返回现场继续处理门口的交涉；Tab返回此菜单会保留本次搜捕进度。搜捕目标：{TARGET}。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_allowed | You have secured passage through the gate. Walk with your troops to the hall where {TARGET} is staying, or enter the hall directly from this menu. | 卫兵已放行，或门口守军已被击败。你可以带兵步行前往{TARGET}所在的大厅，也可以直接从这里进入大厅。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_new | {TARGET} is in the settlement. Choose who will come with you and enter through the gate. | {TARGET}就在城里。选好随行的人，从城门进去。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_gate | {TARGET} is in the lord's hall. Take your men back to speak to the guards, or find another way through. | {TARGET}在领主大厅。带上部下，回去继续交涉，或另找办法。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_allowed | The guards have stepped aside. Take your men to the lord's hall and find {TARGET}. | 卫兵让开了路。带上部下，去领主大厅找{TARGET}。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_cleared | The guards who barred your way are down. Take everyone still on their feet to the lord's hall and find {TARGET}. | 挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。 | 玩家进城搜捕：击败门口守军后的菜单提示 |
 | gwp_cs_menu_duel | You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu. | 你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_return | Your encounter with {TARGET} is over. Lead your party out of the hall and walk to the gate, or end this search here. | 与{TARGET}的交涉已经结束。你可以带队从大厅走出去，再走向城门；也可以从此处结束本次搜捕。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_fight_out | The hall fight with {TARGET} is over, but guards remain outside. Lead your party out of the hall and fight your way outside the gate; Tab cannot get you out from inside. | 与{TARGET}的大厅战斗已经结束，城中仍有守军。带队走出大厅，杀到城门外才算完成撤离；城内不能按Tab脱身。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_walk_out_notice | You are finished here. Lead your party out of the hall and leave through the gate. | 这里的事情已了。带队走出大厅，再从城门离开。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_walk_arena_notice | The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu. | 单挑已约定。带队走出大厅，前往竞技场；也可按Tab返回搜捕菜单。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_court | You and {TARGET} have agreed to a duel. Meet outside the lord's hall. | 你已和{TARGET}约好单挑。到大厅外的空地赴约。 | 玩家进城搜捕：约好单挑后的菜单提示 |
+| gwp_cs_menu_return | {TARGET} has been taken. Gather your men and leave the settlement. | {TARGET}已被拿下。带上部下，出城。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_menu_withdraw | Gather your men. It's time to leave. | 带上部下，离开这里。 | 玩家进城搜捕：未拿下目标而撤回时的菜单提示 |
+| gwp_cs_menu_fight_out | The fight in the hall is over. Take everyone still on their feet and fight your way out. | 大厅里的战斗已经结束。带上还能行动的人，杀出城去。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_out_notice | Gather your men and leave the city. | 带上部下，出城。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_arena_notice | Go to the arena for the duel. | 前往竞技场赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
+| gwp_cs_walk_court_notice | Go outside for the duel. | 去空地赴约。 | 玩家进城搜捕：约好单挑后出门去空地 |
