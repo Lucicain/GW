@@ -79,6 +79,28 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
+#if GWP_DIAGNOSTICS
+        private float _nextDuelPace;
+
+        /// <summary>
+        /// 取证 2026-10-26：实机反馈赴约目标跑得离谱地快。每秒记目标与玩家的实际速度、原版速度上限与相隔距离，
+        /// 判断是满速冲刺本身快（无甲常服、运动技能高），还是另有加速或瞬移。验收赴约后退休。
+        /// </summary>
+        private void WriteDuelPace()
+        {
+            if (_hallTarget?.IsActive() != true || Agent.Main?.IsActive() != true || !IsDuelWalker(_hallTarget)
+                || Mission.CurrentTime < _nextDuelPace) return;
+            _nextDuelPace = Mission.CurrentTime + 1f;
+            GwpAiDiagnostics.WriteCitySearch("DUEL_PACE", "place=" + _place
+                + "; target=" + _hallTarget.GetCurrentVelocity().Length.ToString("0.00")
+                + "/" + _hallTarget.GetMaximumForwardUnlimitedSpeed().ToString("0.00")
+                + " limit=" + _hallTarget.GetMaximumSpeedLimit().ToString("0.00")
+                + "; player=" + Agent.Main.GetCurrentVelocity().Length.ToString("0.00")
+                + "/" + Agent.Main.GetMaximumForwardUnlimitedSpeed().ToString("0.00")
+                + "; gap=" + _hallTarget.Position.Distance(Agent.Main.Position).ToString("0.0"));
+        }
+#endif
+
         internal bool IsDuelWalker(Agent agent) =>
             Search.DuelAgreed && !Search.SearchWar && agent == _hallTarget;
 

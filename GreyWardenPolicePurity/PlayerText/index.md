@@ -140,9 +140,9 @@
 | gwp_gwpaideterrencestate_042 | — | 正在赶路 | 未检出直接引用；保留 |
 | gwp_gwpaideterrencestate_043 | — | 尚未重新现身 | 未检出直接引用；保留 |
 | gwp_gwpaideterrencestate_044 | — | 状态不明 | 未检出直接引用；保留 |
-| gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:126 |
-| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:204 |
-| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:205 |
+| gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
+| gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:182 |
+| gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:183 |
 | gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:407 |
 | gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:422 |
 | gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1062 |
@@ -1712,6 +1712,7 @@
 | gwp_cs_opponent_duel | Enough talk. I choose single combat. Defeat me and I will go with you. | 不必再说。我选单挑。赢了我，我就跟你走。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_opponent_melee | I choose to stand with my guards. If you want me, come and take me. | 我选跟卫兵一起打。想抓我，就过来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_choice_agreed | Agreed. Let us begin. | 说定了。开始吧。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
+| gwp_cs_choice_forced_melee | So you'd rather bring all your men against mine. Fine. Come on, then. | 你是仗着人多不肯单打。好，那就来吧。 | 玩家进城搜捕：大厅里对方自知打不过、提出单挑，玩家仍选群殴，对方无奈接战，随即开打。 |
 | gwp_cs_choice_won | Very well, we will fight on your terms. | 好，就按你说的打。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_choice_lost | No. We fight as I proposed. | 不。照我说的来。 | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |
 | gwp_cs_choice_reservation | Why should I give up my choice of how we fight? | 我为什么要放弃自己的选法？ | 玩家进城搜捕：大厅交涉、战斗方式与撤离。 |

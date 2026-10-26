@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <GameBin>D:\steam\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client</GameBin>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(GameBin)\TaleWorlds.*.dll" Exclude="$(GameBin)\TaleWorlds.Native.dll"><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>../../GreyWardenPolicePurity/lib/0Harmony.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

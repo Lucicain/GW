@@ -260,6 +260,15 @@ internal static class Program
     {
         var lines = new List<string>();
         void Note(GwpMusicBattlePolicy p, float t, string scenario) => lines.Add($"{scenario} t={t:F1} tier={p.Tier} damage20={p.Damage20:F2} losses20={p.Casualties20:F2} exchange={p.Exchange:F3} attrition={p.Attrition:F3} tension={p.Tension:F3}");
+        var rounds = new GwpMusicBattlePolicy(); rounds.Initialize(500, 500);
+        var cues = new List<int>();
+        for(int wave=1;wave<=8;wave++) if(rounds.RecordArrivalWave()) cues.Add(wave);
+        Assert(string.Join(",",cues)=="1,3","arrival cue on waves 1 and 3 only, at most twice a battle");
+        var bounds = new GwpMusicBattlePolicy(); bounds.Initialize(500, 500);
+        Assert(bounds.Round==1&&bounds.Shown=="low","round 1 keeps the tension tier");
+        bounds.RecordArrivalWave(); Assert(bounds.Round==2&&bounds.Shown=="medium","round 2 lifts low to medium");
+        bounds.RecordArrivalWave(); bounds.RecordArrivalWave(); Assert(bounds.Round==3&&bounds.Shown=="high","round 3 plays only high");
+        bounds.Initialize(500, 500); Assert(bounds.Round==3,"battle initialization keeps arrivals counted before power was ready");
         var p = new GwpMusicBattlePolicy(); p.Initialize(500, 500);
         for(int i=0;i<600;i++) p.Update(500,500,.5f);
         Assert(p.Tier=="low", "balanced waiting never climbs on a timer");

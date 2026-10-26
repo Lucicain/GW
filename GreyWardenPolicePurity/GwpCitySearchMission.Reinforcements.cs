@@ -99,14 +99,28 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
-        /// <summary>沿用原版守方增援点→守方初始点顺序；大厅也用实际defender_infantry标签。</summary>
-        private GameEntity? CityReserveSpawn(BasicCharacterObject character)
+        // 原版守方点（攻城布阵组）与城内卫兵站岗、巡逻出生点（SandBox v1.4.8 反编译与场景 XML 2026-10-26）。
+        private static readonly string[] CityReserveTags =
         {
-            string formation = character.IsRanged ? "ranged" : "infantry";
-            return Mission.Scene.FindEntityWithTag("defender_" + formation + "_reinforcement")
-                ?? Mission.Scene.FindEntityWithTag("defender_infantry_reinforcement")
-                ?? Mission.Scene.FindEntityWithTag("defender_" + formation)
-                ?? Mission.Scene.FindEntityWithTag("defender_infantry");
+            "defender_infantry_reinforcement", "defender_ranged_reinforcement", "defender_infantry", "defender_ranged",
+            "sp_guard", "sp_guard_with_spear", "sp_guard_patrol", "sp_guard_castle"
+        };
+
+        /// <summary>
+        /// 原版单机攻城只取一个固定守方增援点，empire_town_g 那一处离城门外出生点 2.1 米，撤离时援兵就刷在玩家身边。
+        /// 改为在原版守方点与城内卫兵出生点中取离玩家最远的一处，同原版野战援军从远端进场。（用户裁定 2026-10-26）
+        /// </summary>
+        private GameEntity? CityReserveSpawn()
+        {
+            if (Agent.Main?.IsActive() != true) return null;
+            Vec3 player = Agent.Main.Position;
+            GameEntity? best = CityReserveTags.SelectMany(tag => Mission.Scene.FindEntitiesWithTag(tag))
+                .OrderByDescending(point => point.GlobalPosition.Distance(player)).FirstOrDefault();
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteCitySearch("RESERVE_POINT", "place=" + _place + "; fromPlayer="
+                + (best == null ? "-" : best.GlobalPosition.Distance(player).ToString("0.0")) + "; remaining=" + _cityReserves.Count);
+#endif
+            return best;
         }
 
         private void TickCityReserves()
@@ -117,20 +131,17 @@ namespace GreyWardenPolicePurity
             int living = _defenders.Count(agent => agent.IsActive() && !agent.IsRunningAway);
             int count = System.Math.Min(GwpTuning.CitySearch.ReserveBatch,
                 GwpTuning.CitySearch.DefenderLimit - living);
+            if (count <= 0) return;
+            // 没有真实点不能把人刷在世界原点；保留名册供下一地点。
+            GameEntity? spawn = CityReserveSpawn();
+            if (spawn == null) return;
+            MatrixFrame frame = spawn.GetGlobalFrame();
+            int arrived = 0;
             while (count-- > 0 && _cityReserves.Count > 0
                 && Mission.AllAgents.Count(agent => agent.IsActive()) + 2 <= DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission)
             {
                 var reserve = _cityReserves.Peek();
                 var character = (CharacterObject)reserve.Origin.Troop;
-                GameEntity? spawn = CityReserveSpawn(character);
-                if (spawn == null)
-                {
-#if GWP_DIAGNOSTICS
-                    GwpAiDiagnostics.WriteCitySearch("RESERVES_NO_POINT", "place=" + _place + "; remaining=" + _cityReserves.Count);
-#endif
-                    return; // 没有真实点不能把人刷在世界原点；保留名册供下一地点。
-                }
-                MatrixFrame frame = spawn.GetGlobalFrame();
                 // 原版方法只接受导航网格内的位置，保留大厅出生点所在楼层的高度。
                 Vec3 position = Mission.GetRandomPositionAroundPoint(frame.origin, .5f, 2f);
                 Agent agent = Mission.SpawnAgent(new AgentBuildData(character)
@@ -147,10 +158,12 @@ namespace GreyWardenPolicePurity
                     agent.SetTeam(Mission.PlayerEnemyTeam, true);
                     _defenders.Add(agent);
                     SetSearchFighter(agent);
-                    _cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, 1);
+                    arrived++;
                 }
                 else agent.SetTeam(Team.Invalid, true);
             }
+            // 一批是一波：配乐按波数决定增援提示，不能每个兵各算一波。
+            if (arrived > 0) _cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, arrived);
         }
 
         private bool HasCityDefenders() => _cityReserves.Count > 0

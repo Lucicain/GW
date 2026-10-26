@@ -186,6 +186,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("搜捕现场模拟攻防", r"\bGetSimulationAttackPower\s*\(",
+     "GwpCitySearchMission.Progress.cs", "GwpCitySearchMissionController.CombatBalance / SimulationPower"),
     ("不扣名册的战役场景来源", r"\bnew\s+GreyWardenSafePartyAgentOrigin\s*\(",
      "GreyWardenSafeTroopSupplier.cs|GwpCitySearchMission.Reinforcements.cs", "GreyWardenSafePartyAgentOrigin"),
     ("战场完整名册", r"\bGetAllTroopsForSide\s*\(",

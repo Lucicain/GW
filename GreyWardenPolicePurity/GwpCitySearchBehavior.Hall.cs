@@ -41,6 +41,10 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), null, () => ChooseCombat(true));
             starter.AddPlayerLine("gwp_cs_hall_melee", "gwp_cs_hall_combat_choice", "gwp_cs_hall_choice_next",
                 GwpText.Get(GwpTextCatalog.gwp_cs_hall_melee), null, () => ChooseCombat(false));
+            // 对方选了单挑、玩家要群殴：对方是弱势一方，不再谈判，直接开打（用户裁定 2026-10-26）。
+            starter.AddDialogLine("gwp_cs_choice_forced_melee", "gwp_cs_hall_choice_next", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_choice_forced_melee), () => _opponentDuel && !_playerDuel,
+                () => Scene?.ChooseHallCombat(false), 125);
             starter.AddDialogLine("gwp_cs_choice_agreed", "gwp_cs_hall_choice_next", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed), () => !_choicePending,
                 () => Scene?.ChooseHallCombat(_playerDuel), 120);
@@ -59,33 +63,28 @@ namespace GreyWardenPolicePurity
                     GwpTextCatalog.gwp_cs_guard_reaction_critical), null);
         }
 
-        private float HallSituation() => Hero.MainHero.GetRelation(SearchTarget) * GwpTuning.CitySearch.RelationStep
-            - (Scene?.Settlement.MapFaction.MainHeroCrimeRating ?? 0f) * GwpTuning.CitySearch.CrimeStep
-            - GwpTuning.CitySearch.HallPenalty;
-
-        private PersuasionTask HallTask(string line, PersuasionArgumentStrength strength, params GwpPersuasionRound.Argument[] args) =>
-            GwpPersuasionRound.Task(GwpText.Create(line), strength,
+        private PersuasionTask HallTask(string line, params GwpPersuasionRound.Argument[] args) =>
+            GwpPersuasionRound.Task(GwpText.Create(line), StrengthAgainst(SearchTarget.CharacterObject),
                 GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate), GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final),
                 GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later), args);
 
         private void BeginHallPersuasion()
         {
             _combatChoicePrepared = false;
-            PersuasionArgumentStrength strength = (PersuasionArgumentStrength)((int)GuardStrength(
-                GwpFieldArrestBehavior.CurrentStandingTier()) - 1);
-            _hallRound.Begin(new[]
+            PersuasionTask[] tasks =
             {
-                HallTask(GwpTextCatalog.gwp_cs_hall_law, strength,
+                HallTask(GwpTextCatalog.gwp_cs_hall_law,
                     new(DefaultSkills.Leadership, DefaultTraits.Honor, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_law)),
                     new(DefaultSkills.Charm, DefaultTraits.Mercy, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_people)),
                     new(DefaultSkills.Roguery, DefaultTraits.Calculating, TraitEffect.Positive, true, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_risk)),
                     new(DefaultSkills.Trade, DefaultTraits.Generosity, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_terms))),
-                HallTask(GwpTextCatalog.gwp_cs_hall_safety, strength,
+                HallTask(GwpTextCatalog.gwp_cs_hall_safety,
                     new(DefaultSkills.Charm, DefaultTraits.Honor, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_word)),
                     new(DefaultSkills.Tactics, DefaultTraits.Calculating, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_guard)),
                     new(DefaultSkills.Leadership, DefaultTraits.Valor, TraitEffect.Positive, true, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_courage)),
                     new(DefaultSkills.Steward, DefaultTraits.Mercy, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_hall_arg_trial)))
-            }, PersuasionDifficulty.Hard);
+            };
+            BeginSearchPersuasion(_hallRound, tasks);
         }
 
         private bool PrepareCombatChoice()
@@ -93,11 +92,8 @@ namespace GreyWardenPolicePurity
             if (!_hallRound.IsFailed) return false;
             if (_combatChoicePrepared) return true;
             _combatChoicePrepared = true;
-            // 对方先选：勇武、荣誉倾向单挑，算计倾向借助卫兵；概率是设计值。
-            float duelChance = GwpTuning.CitySearch.DuelBaseChance + GwpTuning.CitySearch.DuelTraitStep
-                * (SearchTarget.GetTraitLevel(DefaultTraits.Valor) + SearchTarget.GetTraitLevel(DefaultTraits.Honor)
-                    - SearchTarget.GetTraitLevel(DefaultTraits.Calculating));
-            _opponentDuel = MBRandom.RandomFloat < Math.Max(0f, Math.Min(1f, duelChance));
+            // 对方先选：按双方在场参战者的原版实力，打不过才选单挑（用户裁定 2026-10-26）。
+            _opponentDuel = Scene!.OpponentPrefersDuel();
             MBTextManager.SetTextVariable("GWP_CS_OPPONENT_CHOICE", GwpText.Create(_opponentDuel
                 ? GwpTextCatalog.gwp_cs_opponent_duel : GwpTextCatalog.gwp_cs_opponent_melee));
             return true;
@@ -106,14 +102,15 @@ namespace GreyWardenPolicePurity
         private void ChooseCombat(bool duel)
         {
             _playerDuel = duel;
-            _choicePending = duel != _opponentDuel;
+            // 只有对方占优选了群殴、玩家仍要单挑时才谈；反过来玩家选群殴直接开打。
+            _choicePending = duel && !_opponentDuel;
             if (!_choicePending) return;
-            _choiceRound.Begin(new[] { HallTask(GwpTextCatalog.gwp_cs_choice_reservation, PersuasionArgumentStrength.Hard,
+            BeginSearchPersuasion(_choiceRound, new[] { HallTask(GwpTextCatalog.gwp_cs_choice_reservation,
                 new(DefaultSkills.Charm, DefaultTraits.Honor, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_choice_arg_fair)),
                 new(DefaultSkills.Leadership, DefaultTraits.Valor, TraitEffect.Positive, true, GwpText.Create(GwpTextCatalog.gwp_cs_choice_arg_brave)),
                 new(DefaultSkills.Tactics, DefaultTraits.Calculating, TraitEffect.Positive, false, GwpText.Create(GwpTextCatalog.gwp_cs_choice_arg_losses)),
                 new(DefaultSkills.Roguery, DefaultTraits.Honor, TraitEffect.Negative, true, GwpText.Create(GwpTextCatalog.gwp_cs_choice_arg_shame)))
-            }, PersuasionDifficulty.Hard);
+            });
         }
     }
 }

@@ -109,6 +109,7 @@ static class Program
   for(int i=0;i<8;i++)support.OnMissionTick(1);
   Check(m.Spawned.Sum(a=>a.CharacterPowerCached)<=50.0001f&&m.Spawned.Sum(a=>a.CharacterPowerCached)>48,"custom player uses maximum fifty percent power budget");
   Check(m.Spawned.All(a=>a.Origin.IsUnderPlayersCommand),"friendly support keeps command affiliation");
+  Check(m.Spawned.All(a=>a.Reinforcement&&!a.PlacedByCaller),"support enters at the native reinforcement spawn frame, not beside the recipient");
   bool depleted=true;GwpBattleSupportDepletionPatch.After(sp,BattleSideEnum.Defender,ref depleted);
   Check(!depleted,"living rescue troops prevent native supplier's premature defeat");
   bool enemyDepleted=true;GwpBattleSupportDepletionPatch.After(sp,BattleSideEnum.Attacker,ref enemyDepleted);

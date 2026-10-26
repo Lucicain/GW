@@ -13,6 +13,10 @@ namespace GreyWardenPolicePurity
         internal const float DamageScale = .16f, LossScale = .10f;
         internal const float MediumEnter = .12f, HighEnter = .55f, HighKeep = .35f;
         internal const float FirstClimb = 40, Reclimb = 20, HighHold = 30;
+        // Arrival cues (user ruling 2026-10-26): waves 1 and 3 play the redraw cue, at most twice a battle.
+        // Each cue opens the next round; rounds bound the tier the tension may pick.
+        internal const int CueWaveStride = 2, MaxCues = 2;
+        private int _waves, _cues;
         private bool _climbed;
         private readonly Queue<(float time, float damage, float losses)> _window = new();
         private readonly Queue<(float time, float damage, float losses)> _recent = new();
@@ -31,6 +35,19 @@ namespace GreyWardenPolicePurity
         public float Tension { get; private set; }
         public float QuietSeconds => float.IsNegativeInfinity(_lastContact) ? -1 : _time - _lastContact;
         public string Reason { get; private set; } = "no-contact";
+        public int Round => _cues + 1;
+        // Round 1 any tier, round 2 at least medium, round 3 only high. The Syndicate original is
+        // low-medium / any / medium-high; the user raised every round by one step.
+        public string Shown => Round >= 3 ? "high" : Round == 2 && Tier == "low" ? "medium" : Tier;
+
+        // One call is one arrival wave, whichever side; waves are kept across Initialize because
+        // arrivals may land before the battle's power counters are ready.
+        public bool RecordArrivalWave()
+        {
+            if ((_waves++ % CueWaveStride) != 0 || _cues >= MaxCues) return false;
+            _cues++;
+            return true;
+        }
 
         private static float Unit(float n) => Math.Max(0, Math.Min(1, n));
         public void Initialize(float ours, float enemy)

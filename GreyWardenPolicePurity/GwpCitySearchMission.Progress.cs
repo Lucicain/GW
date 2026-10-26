@@ -8,6 +8,7 @@ using SandBox.Missions.MissionLogics;
 using SandBox.Objects;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -26,7 +27,77 @@ namespace GreyWardenPolicePurity
         private Agent? _hallTarget;
         private readonly Dictionary<string, int> _spawnedTroops = new Dictionary<string, int>();
         private readonly Dictionary<Agent, Team> _spectators = new Dictionary<Agent, Team>();
-        internal bool IsHallTalk => InHall && _stage == Stage.HallTalking && _hallTarget != null
+        /// <summary>
+        /// 大厅谈崩后对方先选打法（用户裁定 2026-10-26）：比较群殴与自己单挑玩家的赢面，再看性格。
+        /// 实力用原版比武模拟胜负所用的 GetSimulationAttackPower，按装备与对应技能算攻防分；原版模拟里双方同时互攻，
+        /// 每回合从对方防御分中扣去己方攻击分，先被扣完的一方输（SandBox v1.4.8 TournamentFightMissionController 反编译）。
+        /// 赢面取「对方攻×防 / 我方攻×防」的对数：群殴按双方在场参战者当场装备，单挑按目标与玩家各自的战斗装备。
+        /// 勇武、荣誉高的偏向单挑，低的偏向躲在卫兵后面；偏向大小为设计值。
+        /// </summary>
+        internal bool OpponentPrefersDuel()
+        {
+            (float ours, float theirs) = CombatBalance();
+            float targetAttack = 0f, targetDefence = 0f, playerAttack = 0f, playerDefence = 0f;
+            SimulationPower(_target.CharacterObject, _target.CharacterObject.FirstBattleEquipment, ref targetAttack, ref targetDefence);
+            SimulationPower(CharacterObject.PlayerCharacter, CharacterObject.PlayerCharacter.FirstBattleEquipment, ref playerAttack, ref playerDefence);
+            float melee = 2f * (float)System.Math.Log(theirs / ours);
+            float duel = (float)System.Math.Log(targetAttack * targetDefence / (playerAttack * playerDefence));
+            float lean = GwpTuning.CitySearch.DuelTraitLean
+                * (_target.GetTraitLevel(DefaultTraits.Valor) + _target.GetTraitLevel(DefaultTraits.Honor));
+            bool prefersDuel = duel + lean > melee;
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteCitySearch("HALL_CHOICE", "duel=" + prefersDuel + "; meleeEdge=" + melee.ToString("0.00")
+                + "; duelEdge=" + duel.ToString("0.00") + "; lean=" + lean.ToString("0.00")
+                + "; ours=" + ours.ToString("0") + "; theirs=" + theirs.ToString("0"));
+#endif
+            return prefersDuel;
+        }
+
+        /// <summary>搜捕现场的参战实力。说服与打法选择共用，只数活跃随行者及实际持械守方，不数平民和未入场预备兵。</summary>
+        internal (float ours, float theirs) CombatBalance()
+        {
+            float ourAttack = 0f, ourDefence = 0f, theirAttack = 0f, theirDefence = 0f;
+            foreach (Agent agent in Mission.Agents.Where(agent => agent.IsActive()))
+            {
+                if (agent.Character is not CharacterObject character) continue;
+                if (IsOurs(agent)) SimulationPower(character, agent.SpawnEquipment, ref ourAttack, ref ourDefence);
+                else if (IsDefender(agent)) SimulationPower(character, agent.SpawnEquipment, ref theirAttack, ref theirDefence);
+            }
+            return ((float)System.Math.Sqrt(ourAttack * ourDefence), (float)System.Math.Sqrt(theirAttack * theirDefence));
+        }
+
+        private static void SimulationPower(CharacterObject character, Equipment equipment, ref float attack, ref float defence)
+        {
+            character.GetSimulationAttackPower(out float a, out float d, equipment);
+            // 依据：安装版1.4.8裸装DLL负对照，护甲分/重量为0/0，污染整队与说服概率。
+            // 零重量时护甲贡献为零；保留原版基础防御、盾牌及坐骑贡献。正常装备仍直接用原版结果。
+            if (float.IsNaN(d) && equipment.GetTotalWeightOfArmor(true) == 0f)
+                d = UnarmoredDefence(character, equipment);
+            attack += a;
+            defence += d;
+        }
+
+        private static float UnarmoredDefence(CharacterObject character, Equipment equipment)
+        {
+            // 原版CharacterObject.GetSimulationAttackPower中与护甲无关的防御项（v1.4.8）。
+            float defence = 4000f;
+            for (EquipmentIndex slot = EquipmentIndex.WeaponItemBeginSlot; slot < EquipmentIndex.NumAllWeaponSlots; slot++)
+            {
+                EquipmentElement element = equipment[slot];
+                if (element.IsEmpty || !element.Item.PrimaryWeapon.IsShield) continue;
+                float skill = element.Item.RelevantSkill == null ? 1f
+                    : 0.3f + character.GetSkillValue(element.Item.RelevantSkill) / 300f * 0.7f;
+                defence += skill * element.Item.Effectiveness * 10f;
+            }
+            float mount = 0f;
+            for (EquipmentIndex slot = EquipmentIndex.ArmorItemEndSlot; slot <= EquipmentIndex.HorseHarness; slot++)
+                if (!equipment[slot].IsEmpty) mount += equipment[slot].Item.Effectiveness;
+            float riding = equipment.Horse.Item?.RelevantSkill == null ? 1f
+                : 0.3f + character.GetSkillValue(equipment.Horse.Item.RelevantSkill) / 300f * 0.7f;
+            return defence + mount * riding * 5f;
+        }
+
+        internal bool IsHallTalk =>InHall && _stage == Stage.HallTalking && _hallTarget != null
             && ReferenceEquals(Campaign.Current.ConversationManager.OneToOneConversationAgent, _hallTarget);
 
         private void RestoreTroopHealth(Agent agent, CharacterObject character)
@@ -174,18 +245,16 @@ namespace GreyWardenPolicePurity
             }
             TrySecureHallTarget();
             EndFightIfDefendersDown();
-            if (_pendingHallAction != null) return false;
-            // 敌对后只能在已核实的城外出生点附近退出，守军仍在战斗也可冲出城门。
-            if ((_place == GwpCitySearchPlace.Escape || _stage == Stage.Leaving || _stage == Stage.Withdrawing)
-                && _gateExitAvailable && _stage != Stage.Failed && _pendingFight == null && Agent.Main?.IsActive() == true
-                && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance)
-            {
-                Search.FinishSearch(true);
-                Mission.EndMission();
-                return true;
-            }
             return false;
         }
+
+        /// <summary>
+        /// 押人出城、谈崩后撤离或说了要走，走到已核实的城外出生点附近才算到了城外；守军仍在战斗也可冲出城门。
+        /// 到了也不自动离场，仍由原版按住 Tab 的 0.6 秒进度条办理（用户裁定 2026-10-26；Mission.OnEndMissionRequest 反编译）。
+        /// </summary>
+        private bool AtGateExit => (_place == GwpCitySearchPlace.Escape || _stage == Stage.Leaving || _stage == Stage.Withdrawing)
+            && _gateExitAvailable && _stage != Stage.Failed && _pendingFight == null && Agent.Main?.IsActive() == true
+            && Agent.Main.Position.Distance(_gate) <= GwpTuning.CitySearch.GateExitDistance;
 
         private void TransitionTo(GwpCitySearchPlace place)
         {

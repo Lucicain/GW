@@ -105,9 +105,9 @@
 
 各功能自己的 stage、字段与退休条件；通用规则见上文，每段的细节归所属 state。
 
-进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（声望档、论点强弱、关系、犯罪评级与折成的加减）、GUARD_DECISION、REFUSED_CHOICE（谈崩后选打或撤）、HEADING_IN（说要走或选撤后往城里走：警告或开战，离进城处多远）、FIGHT_START（开战起因、双方人数与 30 米内平民数）、RESERVES_READY（真实预备兵数、绑定守卫、来源队）、RESERVES_NO_POINT（缺少实际出生点时每3秒至多一条）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
+进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（实际声望、现场双方实力、本轮难度与论点强弱）、GUARD_DECISION、REFUSED_CHOICE（谈崩后选打或撤）、HEADING_IN（说要走或选撤后往城里走：警告或开战，离进城处多远）、FIGHT_START（开战起因、双方人数与 30 米内平民数）、RESERVES_READY（真实预备兵数、绑定守卫、来源队）、RESERVE_POINT（每批援军所选出生点离玩家多远，每3秒至多一条；2026-10-26取代RESERVES_NO_POINT）、CIVILIAN_FLIGHT（8 秒后跑开或消失的平民数）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
 
-搜捕新增TARGET_DOWN、DUEL_WALK及EXIT_BLOCKED，回答倒地是否登记、两段赴约的目的地、按Tab被拦时卡在哪一项。均只在诊断版按状态转换或按键时记录，验收后退休；具体边界归[进城搜捕](city-search.md#城防增援与场景衔接)。（依据：本轮正常游玩取证设计2026-10-22）
+搜捕新增TARGET_DOWN、DUEL_WALK及EXIT_BLOCKED，回答倒地是否登记、两段赴约的目的地、按Tab被拦时卡在哪一项；2026-10-26再加HALL_CHOICE（双方赢面与性格偏向）、HALL_PERSUASION/CHOICE_PERSUASION（大厅交涉/争取单挑的实际声望、现场双方实力、本轮难度与论点强弱）与DUEL_PACE（赴约时每秒一条：目标与玩家实际速度、原版速度上限、相隔距离），回答对方为何这样选打法、说服难度是否符合预期、赴约目标是否异常地快。均只在诊断版按状态转换或按键时记录，验收后退休；具体边界归[进城搜捕](city-search.md#城防增援与场景衔接)。（依据：本轮正常游玩取证设计2026-10-22）
 
 直接招守村兵使用 `GUARD_ENLISTED`，记录实际兵种 composition、人数、随兵军械和留守量；统计器读取同一事件。该功能待用户实测低阶优先与留守正确后退休健康路径记录。（依据：本轮直招功能验证设计 2026-10-15）
 

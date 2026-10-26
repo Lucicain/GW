@@ -26,13 +26,17 @@ namespace GreyWardenPolicePurity
 
         internal GwpPersuasionRound(string variablePrefix) => _variablePrefix = variablePrefix;
 
-        internal void Begin(IEnumerable<PersuasionTask> tasks, PersuasionDifficulty difficulty)
+        internal float DifficultyMultiplier { get; private set; }
+
+        /// <summary>原版负责进度、掷骰与特长；本轮的现场难度同时用于界面概率与实际掷骰。</summary>
+        internal void Begin(IEnumerable<PersuasionTask> tasks, float difficultyMultiplier)
         {
             End();
+            DifficultyMultiplier = difficultyMultiplier;
             _tasks.AddRange(tasks);
             _lastTask = null;
             _pending = null;
-            ConversationManager.StartPersuasion(Math.Max(1, _tasks.Count), 1f, 1f, 2f, 2f, 0f, difficulty);
+            ConversationManager.StartPersuasion(Math.Max(1, _tasks.Count), 1f, 1f, 2f, 2f, 0f, PersuasionDifficulty.Medium);
         }
 
         internal void End()
@@ -119,8 +123,8 @@ namespace GreyWardenPolicePurity
         internal sealed record Argument(SkillObject Skill, TraitObject Trait, TraitEffect Effect,
             bool GivesCriticalSuccess, TextObject Line);
 
-        /// <summary>一道关卡：对方的一句顾虑，玩家四种说法。最后一个参数让说服成功后进下一道。</summary>
-        internal static PersuasionTask Task(TextObject spoken, PersuasionArgumentStrength strength,
+        /// <summary>一道关卡：对方的一句顾虑，玩家四种说法，每种说法的强弱由调用方按对象算。最后一个参数让说服成功后进下一道。</summary>
+        internal static PersuasionTask Task(TextObject spoken, Func<Argument, PersuasionArgumentStrength> strength,
             TextObject immediateFail, TextObject finalFail, TextObject tryLater, params Argument[] arguments)
         {
             var task = new PersuasionTask(0)
@@ -132,7 +136,7 @@ namespace GreyWardenPolicePurity
             };
             foreach (Argument argument in arguments.Take(Arguments))
                 task.AddOptionToTask(new PersuasionOptionArgs(argument.Skill, argument.Trait, argument.Effect,
-                    strength, argument.GivesCriticalSuccess, argument.Line, null, false, true));
+                    strength(argument), argument.GivesCriticalSuccess, argument.Line, null, false, true));
             return task;
         }
     }

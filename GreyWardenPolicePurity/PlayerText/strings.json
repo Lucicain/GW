@@ -7165,6 +7165,11 @@
       "zh": "说定了。开始吧。",
       "context": "玩家进城搜捕：大厅交涉、战斗方式与撤离。"
     },
+    "gwp_cs_choice_forced_melee": {
+      "en": "So you'd rather bring all your men against mine. Fine. Come on, then.",
+      "zh": "你是仗着人多不肯单打。好，那就来吧。",
+      "context": "玩家进城搜捕：大厅里对方自知打不过、提出单挑，玩家仍选群殴，对方无奈接战，随即开打。"
+    },
     "gwp_cs_choice_won": {
       "en": "Very well, we will fight on your terms.",
       "zh": "好，就按你说的打。",

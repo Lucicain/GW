@@ -17,7 +17,6 @@ namespace GreyWardenPolicePurity
             internal readonly GwpBattleSupportChecks Checks = new();
             internal Team Team = null!;
             internal IAgentOriginBase Owner = null!;
-            internal MatrixFrame Frame;
             internal readonly Queue<int> Troops = new();
             internal int Remaining => Troops.Count;
             internal float NextBatch;
@@ -128,7 +127,6 @@ namespace GreyWardenPolicePurity
             }
             side.Team = recipient!.Team;
             side.Owner = recipient.Origin;
-            side.Frame = GetReinforcementFrame(recipient);
             BattleSideEnum enemySide = sideId == BattleSideEnum.Defender ? BattleSideEnum.Attacker : BattleSideEnum.Defender;
             float enemyPower = _context!.RemainingPower(enemySide);
             float share = GwpBattleScenePolicy.PowerShare(playerSide, reputation);
@@ -151,22 +149,6 @@ namespace GreyWardenPolicePurity
                 && PlayerBehaviorPool.Reputation >= 20;
         }
 
-        private MatrixFrame GetReinforcementFrame(Agent recipient)
-        {
-            Vec3 position = recipient.Position;
-            Vec2 edge = Mission.GetClosestBoundaryPosition(position.AsVec2);
-            Vec2 facing = position.AsVec2 - edge;
-            facing = facing.LengthSquared > .01f ? facing.Normalized() : Vec2.Forward;
-            Mat3 rotation = Mat3.Identity;
-            rotation.f = facing.ToVec3(); rotation.u = Vec3.Up;
-            rotation.s = Vec3.CrossProduct(rotation.f, rotation.u).NormalizedCopy();
-            // Keep the arrival inside the map rather than scattering half the
-            // batch outside the boundary, and use local ground elevation.
-            Vec2 arrival = edge + facing * 6f;
-            if (!Mission.IsPositionInsideBoundaries(arrival)) arrival = position.AsVec2;
-            return new MatrixFrame(rotation, arrival.ToVec3(position.Z));
-        }
-
         private void SpawnBatch(SideSupport side)
         {
             if (Mission.MissionEnded || Mission.MissionResult != null) { side.Troops.Clear(); return; }
@@ -180,14 +162,10 @@ namespace GreyWardenPolicePurity
                 BasicCharacterObject troop = kind == 0 ? _infantry : kind == 1 ? _archer : _cavalry;
                 FormationClass formationClass = kind == 0 ? FormationClass.Infantry
                     : kind == 1 ? FormationClass.Ranged : FormationClass.Cavalry;
-                Vec2 offset = new Vec2(MBRandom.RandomFloatRanged(-1, 1), MBRandom.RandomFloatRanged(-1, 1));
-                if (offset.LengthSquared > .001f) offset = offset.Normalized() * MBRandom.RandomFloatRanged(1, 5);
-                Vec3 position = side.Frame.origin + new Vec3(offset.X, offset.Y, 0);
-                if (!Mission.IsPositionInsideBoundaries(position.AsVec2)) position = side.Frame.origin;
-                position.z = Mission.Scene.GetGroundHeightAtPosition(position);
-                Vec2 direction = side.Frame.rotation.f.AsVec2;
+                // 不给位置：原版 SpawnAgent 按本方该编队的增援出生点排开，同原版野战援军从己方后方进场，
+                // 不再从接收者最近的地图边缘刷到玩家身边（用户裁定 2026-10-26；Mission.SpawnAgent/GetTroopSpawnFrameWithIndex 反编译）。
                 var data = new AgentBuildData(new GwpBattleSupportOrigin(troop, side.Owner))
-                    .Team(side.Team).InitialPosition(in position).InitialDirection(in direction)
+                    .Team(side.Team).IsReinforcement(true)
                     .Formation(side.Team.GetFormation(formationClass));
                 Agent agent = Mission.SpawnAgent(data);
                 if (agent == null) continue;

@@ -411,6 +411,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_choice_arg_fair = "{=gwp_cs_choice_arg_fair}Give me this choice, and I will honour the result.";
         internal const string gwp_cs_choice_arg_losses = "{=gwp_cs_choice_arg_losses}My proposal gives us a clear result without needless losses.";
         internal const string gwp_cs_choice_arg_shame = "{=gwp_cs_choice_arg_shame}People will remember how eagerly you hid behind your own terms.";
+        internal const string gwp_cs_choice_forced_melee = "{=gwp_cs_choice_forced_melee}So you'd rather bring all your men against mine. Fine. Come on, then.";
         internal const string gwp_cs_choice_lost = "{=gwp_cs_choice_lost}No. We fight as I proposed.";
         internal const string gwp_cs_choice_reservation = "{=gwp_cs_choice_reservation}Why should I give up my choice of how we fight?";
         internal const string gwp_cs_choice_won = "{=gwp_cs_choice_won}Very well, we will fight on your terms.";

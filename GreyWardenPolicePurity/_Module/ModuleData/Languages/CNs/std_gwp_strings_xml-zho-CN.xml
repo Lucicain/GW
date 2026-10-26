@@ -1712,6 +1712,7 @@
   <string id="gwp_cs_opponent_duel" text="不必再说。我选单挑。赢了我，我就跟你走。" />
   <string id="gwp_cs_opponent_melee" text="我选跟卫兵一起打。想抓我，就过来。" />
   <string id="gwp_cs_choice_agreed" text="说定了。开始吧。" />
+  <string id="gwp_cs_choice_forced_melee" text="你是仗着人多不肯单打。好，那就来吧。" />
   <string id="gwp_cs_choice_won" text="好，就按你说的打。" />
   <string id="gwp_cs_choice_lost" text="不。照我说的来。" />
   <string id="gwp_cs_choice_reservation" text="我为什么要放弃自己的选法？" />

@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from test_duty_banner import method
-from test_city_search import read, block
+from test_city_search import read, block, member
 
 
 def run(code):
@@ -190,7 +190,8 @@ class Frame{public Vec3 origin;}class GameEntity{public Frame GetGlobalFrame()=>
 static class GwpTuning{public static class CitySearch{public const float GuardChallengeDistance=6,GateExitDistance=6,InwardTolerance=10,SecureTargetDistance=2;}}
 static class SandBoxHelpers{public static class MissionHelper{public static void FollowAgent(Agent a,Agent target){a.IsRunningAway=false;}}}
 class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
-static class GwpText{public static string Get(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena";}
+static class GwpText{public static string Get(string s)=>s;public static string Create(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena",gwp_cs_hostile_exit_blocked="blocked",gwp_cs_route_blocked="route";}
+class InquiryData{}static class MBInformationManager{public static void AddQuickInformation(string s){}}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
 class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _gateExitAvailable=true;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
  public bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsWatch(Agent a)=>a.Watch;void DisablePlayerPassages(){}void EndFightIfDefendersDown(){}void Order(OrderType o){}
@@ -198,6 +199,7 @@ class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _ga
  void NoteCitySoldierRemoval(Agent a,AgentState s){}void BeginDuelWalk(string destination){}
  bool IsCityEnemyFighter(Agent a)=>a.Active&&!a.IsRunningAway&&a.IsHuman&&a.Armed&&a.Team==Mission.PlayerEnemyTeam;
  METHODS
+ public bool HoldTab(){OnEndMissionRequest(out bool leave);return leave;}
  public void Begin()=>BeginSearchStage();public bool Tick()=>TickSearchProgress();public bool CanLeave()=>CanLeaveSearch();public void End()=>EndSearchScene();public void DuelRemoval(Agent a)=>NoteDuelRemoval(a);public void FightWon()=>OnSearchFightWon();
 }
 static class Program{static int n;static void Check(bool c,string why){n++;if(!c)throw new Exception(why);}static Scene New(GwpCitySearchPlace p,Stage s){Agent.Main=new(){Position=new Vec3(50)};return new(){_place=p,_stage=s};}
@@ -230,9 +232,12 @@ static void Main(){
  hall=New(GwpCitySearchPlace.Hall,Stage.Fighting);hall.Search.War=true;hall._hallTarget=new(){Active=false,State=AgentState.Unconscious,Position=new Vec3(50)};hall.Tick();Check(hall.Search.Won&&hall.Search.Returning,"downed target can be secured while distant reserves still arrive");
  hall=New(GwpCitySearchPlace.Hall,Stage.Fighting);hall.Search.War=true;hall._hallTarget=new(){Active=false,State=AgentState.Unconscious,Position=new Vec3(500)};hall.OnAgentRemoved(hall._hallTarget,Agent.Main!,AgentState.Unconscious,new());Check(hall.Search.Won&&hall.Search.Returning,"target knockout must be remembered before player leaves hall even when enemies remain");
  var hallDoor=new PassageUsePoint{ToLocationId="center"};hall.TryUseSearchPassage(hallDoor,Agent.Main!);Check(hall._pendingHallAction=="enter_street","downed target does not hold the player in the hall");
- var extraction=New(GwpCitySearchPlace.Escape,Stage.Escaping);extraction.Search.War=true;Agent.Main!.Position=extraction._gate;Check(extraction.CanLeave()&&extraction.Tick()&&extraction.Search.Escaped,"at the gate, Tab and the automatic exit both complete the escape without a body");
+ var extraction=New(GwpCitySearchPlace.Escape,Stage.Escaping);extraction.Search.War=true;Agent.Main!.Position=extraction._gate;extraction.Tick();Check(!extraction.Mission.Ended&&!extraction.Search.Escaped,"reaching the gate does not leave without the native Tab hold");
+ Check(extraction.HoldTab(),"at the gate the native Tab hold is allowed");extraction.End();Check(extraction.Search.Escaped,"native Tab exit at the gate completes the escape without a body");
  hall=New(GwpCitySearchPlace.Hall,Stage.FightOver);hall._hallTarget=new(){Active=false,State=AgentState.Routed};hall.FightWon();Check(!hall.Search.Won&&hall.Search.Returning,"target who already fled is not captured remotely");
-  var escape=New(GwpCitySearchPlace.Escape,Stage.Escaping);Check(escape.CanLeave(),"calm street permits Tab without completing escape");escape.Tick();Check(!escape.Mission.Ended,"must walk toward gate");Agent.Main!.Position=new Vec3(5);escape._pendingFight="escape";escape.Tick();Check(!escape.Mission.Ended,"guard wave starts before checking the exit even at gate");escape._pendingFight=null;escape.Tick();Check(escape.Search.Escaped&&escape.Mission.Ended,"actual gate arrival permits escape");
+  var escape=New(GwpCitySearchPlace.Escape,Stage.Escaping);Check(escape.CanLeave(),"calm street permits Tab without completing escape");escape.Tick();Check(!escape.Mission.Ended,"must walk toward gate");Agent.Main!.Position=new Vec3(5);escape._pendingFight="escape";escape.Tick();Check(!escape.Mission.Ended,"guard wave starts before checking the exit even at gate");Check(!escape.HoldTab(),"guard wave at the gate blocks the Tab exit");escape._pendingFight=null;escape.Tick();Check(!escape.Mission.Ended,"gate arrival alone never ends the scene");Check(escape.HoldTab(),"Tab is allowed once at the gate");escape.End();Check(escape.Search.Escaped,"native Tab exit at the gate completes the escape");
+ var withdraw=New(GwpCitySearchPlace.Entry,Stage.Withdrawing);Check(withdraw.HoldTab(),"peaceful withdrawal may hold Tab anywhere");withdraw.End();Check(withdraw.Search.Paused&&!withdraw.Search.Escaped,"Tab preserves search away from the gate during withdrawal");
+ withdraw=New(GwpCitySearchPlace.Entry,Stage.Withdrawing);Agent.Main!.Position=withdraw._gate;withdraw.Tick();Check(!withdraw.Mission.Ended,"walking out during withdrawal waits for Tab");withdraw.HoldTab();withdraw.End();Check(withdraw.Search.Escaped,"Tab outside the gate ends the withdrawal");
  var transfer=New(GwpCitySearchPlace.Entry,Stage.Allowed);var alive=new Agent{Health=13};var dead=new Agent{Active=false};transfer._ours[alive]=alive.Character;transfer._ours[dead]=dead.Character;transfer._transitioning=true;transfer._killed[dead.Character]=1;transfer.End();Check(transfer.Search.Saved.Count==1&&transfer.Search.Saved[0].Item2==13,"transition snapshots active survivors and their health only");Check(Campaign.Current.Bounty.Dead==1,"mission casualties enter bounty owner exactly once per scene");
  transfer=New(GwpCitySearchPlace.Hall,Stage.HallReady);transfer.End();Check(transfer.Search.Paused&&!transfer.Search.Aborted,"Tab preserves search and snapshots survivors");
   var failed=New(GwpCitySearchPlace.Hall,Stage.Fighting);failed.Search.FinishSearch(false);failed.FightWon();failed.Tick();Check(failed.Search.Aborted&&!failed.Search.Won&&!failed.Mission.Ended,"late ally victory cannot resurrect search after player fell");
@@ -243,6 +248,8 @@ static void Main(){
                  'OnSearchFightWon', 'StartHallDuel', 'RestoreSpectators', 'NoteDuelRemoval',
                  'CanLeaveSearch', 'EndSearchScene', 'GetAgentState', 'TrySecureHallTarget']
         bodies = '\n'.join(method(progress, name) for name in names)
+        bodies += '\n' + member(progress, 'AtGateExit')
+        bodies += '\n' + method(mission, 'OnEndMissionRequest').replace('public override ', 'public ')
         bodies += method(mission, 'IsDefender').replace('private ', 'public ')
         bodies += method(mission, 'OnAgentRemoved').replace('public override ', 'public ')
         run(template.replace('METHODS', bodies))
@@ -254,7 +261,10 @@ static void Main(){
              .replace('if (!Search.SearchActive) return;', '')),
             ('forced hall fight', bodies.replace('&& !_warDeclared && _pendingFight == null', '')),
             ('foreign faction target must fight', bodies.replace('|| InHall && agent == _hallTarget', '')),
-            ('guard wave starts before checking the exit', bodies.replace('&& _pendingFight == null && Agent.Main?.IsActive()', '&& Agent.Main?.IsActive()')),
+            ('guard wave at the gate blocks', bodies.replace('_stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null', '_stage != Stage.Failed && _pendingHallAction == null')),
+            ('reaching the gate does not leave without', bodies.replace('EndFightIfDefendersDown();',
+                'EndFightIfDefendersDown(); if (AtGateExit) { Search.FinishSearch(true); Mission.EndMission(); return true; }', 1)),
+            ('native Tab exit at the gate completes the escape', bodies.replace('(Search.SearchWar || AtGateExit)', 'Search.SearchWar')),
             ('retreating before target capture', bodies.replace('if (_warDeclared) _pendingFight = "street";', '')),
             ('temporary enemy support also protects', bodies.replace('Mission.Agents.Any(agent => IsCityEnemyFighter(agent)', '_defenders.Any(agent => IsCityEnemyFighter(agent)')),
         ]
@@ -300,40 +310,40 @@ class TextObject{public string Key;public TextObject(string k){Key=k;}}
 static class GwpTextCatalog{KEYS}
 static class GwpText{public static string Get(string k)=>k;public static TextObject Create(string k)=>new(k);}
 static class MBTextManager{public static Dictionary<string,TextObject> Text=new();public static void SetTextVariable(string k,TextObject v){Text[k]=v;}}
-class Hero{public static Hero MainHero=new();public int Relation,Trait;public int GetRelation(Hero h)=>Relation;public int GetTraitLevel(object t)=>Trait;}
+class CharacterObject{}class Hero{public static Hero MainHero=new();public CharacterObject CharacterObject=new();}
 class Faction{public float MainHeroCrimeRating;}class Settlement{public Faction MapFaction=new();}
-class GwpCitySearchMissionController{public bool IsHallTalk=true;public string Action="";public Settlement Settlement=new();public void LeaveHall(){Action="leave";}public void AcceptHallSurrender(){Action="surrender";}public void ChooseHallCombat(bool duel){Action=duel?"duel":"melee";}}
+class GwpCitySearchMissionController{public bool IsHallTalk=true,Duel;public int Asked;public bool OpponentPrefersDuel(){Asked++;return Duel;}public string Action="";public Settlement Settlement=new();public void LeaveHall(){Action="leave";}public void AcceptHallSurrender(){Action="surrender";}public void ChooseHallCombat(bool duel){Action=duel?"duel":"melee";}}
 class PersuasionTask{public PersuasionArgumentStrength Strength;}
 class GwpPersuasionRound{public int Status;public int TaskCount;public PersuasionArgumentStrength Strength;public GwpPersuasionRound(string s){}
  public bool IsSatisfied=>Status==1;public bool IsFailed=>Status>=2;
- public void Begin(IEnumerable<PersuasionTask> tasks,PersuasionDifficulty d){Status=0;TaskCount=0;foreach(var t in tasks){TaskCount++;Strength=t.Strength;}}
+ public void Begin(IEnumerable<PersuasionTask> tasks){Status=0;TaskCount=0;foreach(var t in tasks){TaskCount++;Strength=t.Strength;}}
  public void End(){Status=3;}public bool PrepareReservation()=>Status==0;public bool PrepareReaction(string a,string b,string c)=>true;
  public void RegisterArguments(CampaignGameStarter s,string id,string input,string output){}
  public sealed record Argument(object Skill,object Trait,TraitEffect Effect,bool GivesCriticalSuccess,TextObject Line);
- public static PersuasionTask Task(TextObject t,PersuasionArgumentStrength strength,TextObject immediate,TextObject final,TextObject later,params Argument[] args)=>new(){Strength=strength};}
+ public static PersuasionTask Task(TextObject t,Func<Argument,PersuasionArgumentStrength> strength,TextObject immediate,TextObject final,TextObject later,params Argument[] args)=>new(){Strength=strength(args[0])};}
 class CampaignGameStarter{public class Line{public Func<bool>? Condition;public Action? Consequence;public string Input,Output;public int Priority;}
  public Dictionary<string,Line> Lines=new();
  public void AddDialogLine(string id,string input,string output,string text,Func<bool>? cond,Action? cons,int priority=100){Lines[id]=new(){Input=input,Output=output,Condition=cond,Consequence=cons,Priority=priority};}
  public void AddPlayerLine(string id,string input,string output,string text,Func<bool>? cond,Action? cons){AddDialogLine(id,input,output,text,cond,cons);}
  public void Run(string id){var line=Lines[id];if(line.Condition?.Invoke()==false)throw new Exception("unavailable line: "+id);line.Consequence?.Invoke();}}
-static class MBRandom{public static float Roll;public static int Calls;public static float RandomFloat{get{Calls++;return Roll;}}}
-static class GwpFieldArrestBehavior{public static int CurrentStandingTier()=>0;}
-static class GwpTuning{public static class CitySearch{public const float RelationStep=0.002f,CrimeStep=0.004f,HallPenalty=0.1f,DuelBaseChance=0.5f,DuelTraitStep=0.1f;}}
 partial class GwpCitySearchBehavior{public static GwpCitySearchMissionController Scene=new();public Hero SearchTarget=new();
- static PersuasionArgumentStrength GuardStrength(int tier)=>PersuasionArgumentStrength.Normal;
+ public static CharacterObject? StrengthAsked;
+ static Func<GwpPersuasionRound.Argument,PersuasionArgumentStrength> StrengthAgainst(CharacterObject c){StrengthAsked=c;return a=>PersuasionArgumentStrength.VeryEasy;}
+ private void BeginSearchPersuasion(GwpPersuasionRound round,PersuasionTask[] tasks)=>round.Begin(tasks);
  public CampaignGameStarter Register(){var s=new CampaignGameStarter();RegisterHallDialogue(s);return s;}
  public GwpPersuasionRound Hall=>_hallRound;public GwpPersuasionRound Choice=>_choiceRound;
 }
 static class Program{static int n;static void Check(bool c,string why){n++;if(!c)throw new Exception(why);}
  static void Main(){
- var b=new GwpCitySearchBehavior();var s=b.Register();s.Run("gwp_cs_hall_start");s.Run("gwp_cs_hall_warrant");Check(b.Hall.TaskCount==2&&b.Hall.Strength<PersuasionArgumentStrength.Normal,"hall has two harder concerns");
+ var b=new GwpCitySearchBehavior();var s=b.Register();s.Run("gwp_cs_hall_start");s.Run("gwp_cs_hall_warrant");Check(b.Hall.TaskCount==2&&b.Hall.Strength==PersuasionArgumentStrength.VeryEasy&&GwpCitySearchBehavior.StrengthAsked==b.SearchTarget.CharacterObject,"hall has two concerns whose strength comes from the shared per-argument rule against the target");
  Check(s.Lines["gwp_cs_hall_reservation"].Condition!(),"ongoing persuasion has an argument exit");b.Hall.Status=1;s.Run("gwp_cs_hall_surrender");Check(GwpCitySearchBehavior.Scene.Action=="surrender","successful persuasion immediately queues surrender");
  foreach(bool opponentDuel in new[]{false,true})foreach(bool playerDuel in new[]{false,true})foreach(bool convince in new[]{false,true}){
-  GwpCitySearchBehavior.Scene=new();b=new();s=b.Register();s.Run("gwp_cs_hall_warrant");b.Hall.Status=2;MBRandom.Roll=opponentDuel?0:0.99f;MBRandom.Calls=0;
-  Check(s.Lines["gwp_cs_hall_refuse"].Condition!(),"failed hall persuasion has refusal exit");s.Lines["gwp_cs_hall_refuse"].Condition!();Check(MBRandom.Calls==1,"NPC choice does not reroll on UI refresh");
+  GwpCitySearchBehavior.Scene=new(){Duel=opponentDuel};b=new();s=b.Register();s.Run("gwp_cs_hall_warrant");b.Hall.Status=2;
+  Check(s.Lines["gwp_cs_hall_refuse"].Condition!(),"failed hall persuasion has refusal exit");s.Lines["gwp_cs_hall_refuse"].Condition!();Check(GwpCitySearchBehavior.Scene.Asked==1,"NPC choice is decided once by strength, not on every UI refresh");
   Check(MBTextManager.Text["GWP_CS_OPPONENT_CHOICE"].Key==(opponentDuel?GwpTextCatalog.gwp_cs_opponent_duel:GwpTextCatalog.gwp_cs_opponent_melee),"NPC announces its own choice first");
   s.Run("gwp_cs_hall_refuse");s.Run(playerDuel?"gwp_cs_hall_duel":"gwp_cs_hall_melee");
   if(playerDuel==opponentDuel){s.Run("gwp_cs_choice_agreed");Check(GwpCitySearchBehavior.Scene.Action==(playerDuel?"duel":"melee"),"matching choices begin immediately");}
+  else if(!playerDuel){Check(b.Choice.TaskCount==0&&!s.Lines["gwp_cs_choice_reservation"].Condition!(),"player melee against a weaker opponent starts at once without persuasion");s.Run("gwp_cs_choice_forced_melee");Check(GwpCitySearchBehavior.Scene.Action=="melee"&&s.Lines["gwp_cs_choice_forced_melee"].Priority>s.Lines["gwp_cs_choice_agreed"].Priority,"weaker opponent accepts the melee");}
   else{Check(b.Choice.TaskCount==1&&s.Lines["gwp_cs_choice_reservation"].Condition!(),"disagreement opens a separate persuasion round");b.Choice.Status=convince?1:2;s.Run(convince?"gwp_cs_choice_won":"gwp_cs_choice_lost");Check(GwpCitySearchBehavior.Scene.Action==((convince?playerDuel:opponentDuel)?"duel":"melee"),"disagreement outcome obeys winner's choice");}
  }
  s.Run("gwp_cs_hall_leave");Check(GwpCitySearchBehavior.Scene.Action=="leave","initial hall dialogue also has a withdrawal exit");
@@ -342,7 +352,69 @@ static class Program{static int n;static void Check(bool c,string why){n++;if(!c
 '''
         constants = '\n'.join(f'public const string {key}="{key}";' for key in sorted(keys))
         run(template.replace('KEYS', constants) + hall)
+        old = hall.replace('_choicePending = duel && !_opponentDuel;', '_choicePending = duel != _opponentDuel;')
+        with self.assertRaisesRegex(AssertionError, 'player melee against a weaker opponent'):
+            run(template.replace('KEYS', constants) + old)
 
+
+    def test_opponent_choice_follows_simulated_strength(self):
+        progress = read('GwpCitySearchMission.Progress.cs')
+        bodies = method(progress, 'OpponentPrefersDuel').replace('internal ', 'public ') + '\n' + method(progress, 'SimulationPower') + '\n' + method(progress, 'CombatBalance').replace('internal ', 'public ')
+        template = r'''
+using System;using System.Linq;using System.Collections.Generic;
+namespace GreyWardenPolicePurity{
+class Equipment{public float A,D;public float GetTotalWeightOfArmor(bool human)=>1f;}
+class BasicCharacterObject{}
+class CharacterObject:BasicCharacterObject{public static CharacterObject PlayerCharacter=new();public Equipment FirstBattleEquipment=new(){A=100,D=8000};
+ public void GetSimulationAttackPower(out float a,out float d,Equipment? e){a=e!.A;d=e.D;}}
+static class DefaultTraits{public static object Valor=new(),Honor=new();}
+class Hero{public CharacterObject CharacterObject=new();public int Valor,Honor;public int GetTraitLevel(object t)=>t==DefaultTraits.Valor?Valor:Honor;}
+static class GwpTuning{public static class CitySearch{public const float DuelTraitLean=0.25f;}}
+static class GwpAiDiagnostics{public static void WriteCitySearch(string a,string b){}}
+class Agent{public bool Active=true,Ours,Defender;public BasicCharacterObject Character=new CharacterObject();public Equipment SpawnEquipment=new();public bool IsActive()=>Active;}
+class Mission{public List<Agent> Agents=new();}
+class Scene{public Mission Mission=new();public Hero _target=new();bool IsOurs(Agent a)=>a.Ours;bool IsDefender(Agent a)=>a.Defender;
+ static float UnarmoredDefence(CharacterObject c,Equipment e)=>throw new Exception("finite equipment must not enter zero-armour correction");
+ METHODS}
+static class Program{static int n;static void Check(bool c,string why){n++;if(!c)throw new Exception(why);}
+ static Agent A(bool ours,float a,float d,bool active=true)=>new(){Ours=ours,Defender=!ours,Active=active,SpawnEquipment=new(){A=a,D=d}};
+ static Scene Hall(int ours,float ourA,float ourD,int theirs,float theirA,float theirD,bool theirsActive=true){var s=new Scene();
+  for(int i=0;i<ours;i++)s.Mission.Agents.Add(A(true,ourA,ourD));for(int i=0;i<theirs;i++)s.Mission.Agents.Add(A(false,theirA,theirD,theirsActive));return s;}
+ static void Main(){
+  CharacterObject.PlayerCharacter.FirstBattleEquipment=new(){A=100,D=8000};
+  var elite=Hall(15,120,9000,3,60,5000);
+  Check(elite.OpponentPrefersDuel(),"a lord with a few guards facing fifteen elites asks for a duel");
+  var weak=Hall(3,30,4200,8,90,7000);
+  Check(!weak.OpponentPrefersDuel(),"a strong hall guard faces a weak party in a melee");
+  var gone=Hall(3,30,4200,8,90,7000,false);
+  Check(gone.OpponentPrefersDuel(),"fallen or absent defenders do not count");
+  var even=Hall(4,100,8000,4,100,8000);
+  Check(!even.OpponentPrefersDuel(),"with no edge either way a neutral lord keeps his guards");
+  even._target.Valor=2;even._target.Honor=1;
+  Check(even.OpponentPrefersDuel(),"a brave, honourable lord leans toward single combat");
+  var close=Hall(4,100,8000,4,88,5500);close._target.CharacterObject.FirstBattleEquipment=new(){A=90,D=7000};
+  Check(close.OpponentPrefersDuel(),"losing slightly either way, a neutral lord takes the closer duel");
+  close._target.Valor=-2;close._target.Honor=-2;
+  Check(!close.OpponentPrefersDuel(),"a cowardly, dishonourable lord in the same spot hides behind his guards");
+  var hopeless=Hall(15,120,9000,3,60,5000);hopeless._target.Valor=-2;hopeless._target.Honor=-2;
+  Check(hopeless.OpponentPrefersDuel(),"even a coward duels when his guards stand no chance");
+  var balance=elite.CombatBalance();
+  Check(balance.ours>balance.theirs,"scene power counts equipment and all active escorts");
+  elite.Mission.Agents.Add(new Agent{Defender=false,Ours=false,SpawnEquipment=new(){A=1000000,D=1000000}});
+  Check(elite.CombatBalance()==balance,"civilians do not change persuasion strength");
+  var twice=Hall(30,120,9000,6,60,5000).CombatBalance();
+  Check(Math.Abs(twice.ours/twice.theirs-balance.ours/balance.theirs)<0.0001,"doubling both rosters preserves their relative strength");
+  Console.WriteLine("CITY_SEARCH_CHOICE_ASSERTIONS="+n);
+ }}}
+'''
+        run(template.replace('METHODS', bodies))
+        for failure, old in [
+            ('a lord with a few guards facing fifteen elites', bodies.replace('bool prefersDuel = duel + lean > melee;', 'bool prefersDuel = duel + lean < melee;')),
+            ('fallen or absent defenders', bodies.replace('Mission.Agents.Where(agent => agent.IsActive())', 'Mission.Agents')),
+            ('a brave, honourable lord', bodies.replace('bool prefersDuel = duel + lean > melee;', 'bool prefersDuel = duel > melee;')),
+        ]:
+            with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):
+                run(template.replace('METHODS', old))
 
 if __name__ == '__main__':
     unittest.main()

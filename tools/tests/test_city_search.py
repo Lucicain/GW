@@ -202,8 +202,7 @@ static class Program{static int Main(){
         """Negative control: the installed hit rule cancels every blow on a neutral human, so the old
         OnAgentHit trigger could never fire before the fight; the collision-callback note does.
         After the guard refuses, the player either fights or withdraws; walking back in after promising to
-        leave earns one warning, after choosing to withdraw none. Guard odds: skill and trait matter,
-        critical failure has a floor, the four outcomes add up to one."""
+        leave earns one warning, after choosing to withdraw none. Persuasion has its own native-DLL suite."""
         game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
         mission = subprocess.check_output(['ilspycmd', '-t', 'TaleWorlds.MountAndBlade.Mission',
                                            str(game / 'bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.dll')],
@@ -211,7 +210,6 @@ static class Program{static int Main(){
         # Harmony binds prefix arguments by name.
         self.assertRegex(mission, r'MeleeHitCallback\([^)]*\bAgent attacker, Agent victim\b')
         production = read('GwpCitySearchMission.cs')
-        behavior = read('GwpCitySearchBehavior.cs')
         tuning = read('GwpTuning.cs')
         self.assertNotIn('override void OnAgentHit', production)
         self.assertIn('[HarmonyPatch(typeof(Mission), "MeleeHitCallback")]', production)
@@ -248,18 +246,6 @@ class Controller{public SearchState Search=new();public Stage _stage;public stri
  public HashSet<Agent> Ours=new(),Defenders=new();bool IsOurs(Agent a)=>Ours.Contains(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
  NOTE_STRIKE PROMISED CHOSE_FIGHT CHOSE_WITHDRAW BEGIN_LEAVING HEADING_IN
  public void Tick(){CheckHeadingIn();}}
-enum PersuasionArgumentStrength{ExtremelyHard=-3,VeryHard,Hard,Normal,Easy,VeryEasy,ExtremelyEasy}
-class GwpFieldArrestBehavior{internal enum WardenStandingTier{UnderCharge,Ordinary,Respected}}
-static class Guard{GUARD_STRENGTH GUARD_ODDS
- // Vanilla DefaultPersuasionModel.GetChances multipliers with the default chance at its usual ~1 (C# decompile v1.4.8).
- static (float S,float C) Native(PersuasionArgumentStrength s)=>s switch{PersuasionArgumentStrength.Easy=>(0.7f,0f),PersuasionArgumentStrength.Normal=>(0.55f,0.15f),PersuasionArgumentStrength.Hard=>(0.35f,0.15f),_=>throw new Exception()};
- // Each concern has four arguments, the third (and fourth in the second concern) staking a critical success; the player tries them in order.
- static readonly bool[][] Crit={new[]{false,false,true,false},new[]{false,false,false,true}};
- public static double Pass(PersuasionArgumentStrength strength,int skill,int trait=0,float situation=0f)=>Walk(strength,skill,trait,situation,0,0,0);
- static double Walk(PersuasionArgumentStrength st,int skill,int trait,float sit,int c,int i,int progress){
-  if(progress>=2)return 1;if(c==2)return 0;if(i==4)return Walk(st,skill,trait,sit,c+1,0,progress);
-  var n=Native(st);GuardOdds(n.S,n.C,Crit[c][i],skill,trait,sit,out float s,out float cs,out float cf,out float f);
-  return s*Walk(st,skill,trait,sit,c+1,0,progress+1)+cs*Walk(st,skill,trait,sit,c+1,0,progress+2)+f*Walk(st,skill,trait,sit,c,i+1,progress);}}
 static class Program{static int n;static void Check(bool c,string m){n++;if(!c)throw new Exception(m);}
  static Controller Scene(Stage stage,Agent main,Agent guard){var c=new Controller{_stage=stage};c.Ours.Add(main);c.Defenders.Add(guard);return c;}
  static int Main(){
@@ -288,22 +274,6 @@ static class Program{static int n;static void Check(bool c,string m){n++;if(!c)t
   Campaign.Current.ConversationManager.IsConversationFlowActive=false;
   var wrongStage=Scene(Stage.Allowed,main,guard);wrongStage.OnChoseFight();wrongStage.OnChoseWithdraw();wrongStage.OnPromisedToLeave();Check(wrongStage._stage==Stage.Allowed&&wrongStage._pendingFight==null,"choices only count at their own step");
   guard.Team="enemy";Check(!mission.Cancels(main,guard),"after the fight starts the guard takes damage");
-  // Odds.
-  var R=GwpFieldArrestBehavior.WardenStandingTier.Respected;var O=GwpFieldArrestBehavior.WardenStandingTier.Ordinary;var U=GwpFieldArrestBehavior.WardenStandingTier.UnderCharge;
-  Check(Guard.GuardStrength(R)>Guard.GuardStrength(O)&&Guard.GuardStrength(O)>Guard.GuardStrength(U),"standing orders the argument strength");
-  Check(Guard.GuardStrength(O)==PersuasionArgumentStrength.Normal,"ordinary standing is one notch harder than the first version's Easy");
-  foreach(float ns in new[]{0f,0.35f,0.55f,0.7f})foreach(float nc in new[]{0f,0.15f,0.2f})foreach(bool crit in new[]{false,true})foreach(int skill in new[]{0,100,300})foreach(int trait in new[]{-2,0,2})foreach(float sit in new[]{-0.5f,0f,0.2f}){
-   Guard.GuardOdds(ns,nc,crit,skill,trait,sit,out float s,out float cs,out float cf,out float f);
-   Check(Math.Abs(s+cs+cf+f-1f)<1e-5f&&s>=0&&cs>=0&&cf>=0&&f>=-1e-6f,"outcomes add up to one");
-   Check(cf>=GwpTuning.CitySearch.CriticalFailureFloor*(crit?2:1)-1e-6f&&cf>=nc-1e-6f,"critical failure keeps its floor and never drops below vanilla");
-   Check(crit?s==0:cs==0,"critical-success arguments win only critically");}
-  Guard.GuardOdds(0.7f,0f,false,100,0,0f,out float s1,out _,out float c1,out _);Check(Math.Abs(s1-0.7f*(GwpTuning.CitySearch.SkillFactorAtZero+100f/GwpTuning.CitySearch.SkillPointsPerFactor))<1e-5f&&c1==GwpTuning.CitySearch.CriticalFailureFloor,"vanilla's zero critical failure on easy arguments gets the floor");
-  Guard.GuardOdds(0.55f,0.15f,false,0,0,0f,out float low,out _,out _,out _);Guard.GuardOdds(0.55f,0.15f,false,200,0,0f,out float high,out _,out _,out _);Check(high>low+0.2f,"skill counts point by point");
-  Guard.GuardOdds(0.55f,0.15f,false,100,2,0f,out float good,out _,out _,out _);Guard.GuardOdds(0.55f,0.15f,false,100,-2,0f,out float bad,out _,out _,out _);Check(good>bad,"the argument's trait counts");
-  Guard.GuardOdds(0.55f,0.15f,false,100,0,-1f,out float hated,out _,out _,out _);Check(hated==GwpTuning.CitySearch.SuccessFloor,"bad relations and crime cannot make it impossible");
-  Check(Guard.Pass(Guard.GuardStrength(R),100)>Guard.Pass(Guard.GuardStrength(O),100)&&Guard.Pass(Guard.GuardStrength(O),100)>Guard.Pass(Guard.GuardStrength(U),100),"pass rate follows standing");
-  Check(Guard.Pass(Guard.GuardStrength(R),300)<1,"even the best player can fail");
-  foreach(var tier in new[]{R,O,U})Console.WriteLine("PASS_RATE "+tier+": skill0="+Guard.Pass(Guard.GuardStrength(tier),0).ToString("0.00")+" skill100="+Guard.Pass(Guard.GuardStrength(tier),100).ToString("0.00")+" skill200="+Guard.Pass(Guard.GuardStrength(tier),200).ToString("0.00"));
   Console.WriteLine("STRIKE_ASSERTIONS="+n);return 0;}}
 }
 '''
@@ -314,9 +284,7 @@ static class Program{static int n;static void Check(bool c,string m){n++;if(!c)t
                 .replace('CHOSE_FIGHT', method(production, 'OnChoseFight').replace('internal ', 'public '))
                 .replace('CHOSE_WITHDRAW', method(production, 'OnChoseWithdraw').replace('internal ', 'public '))
                 .replace('BEGIN_LEAVING', method(production, 'BeginLeaving'))
-                .replace('HEADING_IN', method(production, 'CheckHeadingIn'))
-                .replace('GUARD_STRENGTH', method(behavior, 'GuardStrength'))
-                .replace('GUARD_ODDS', method(behavior, 'GuardOdds')))
+                .replace('HEADING_IN', method(production, 'CheckHeadingIn')))
         major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
         with tempfile.TemporaryDirectory(prefix='gwp-city-strike-') as temp:
             p = Path(temp)

@@ -340,6 +340,9 @@ namespace GreyWardenPolicePurity
 
         public override void OnMissionTick(float dt)
         {
+#if GWP_DIAGNOSTICS
+            WriteDuelPace();
+#endif
             TickCityReserves();
             if (TickSearchProgress()) return;
             if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
@@ -605,7 +608,7 @@ namespace GreyWardenPolicePurity
         {
             canPlayerLeave = CanLeaveSearch();
             // 原版还会遍历其余离场逻辑并等待0.6秒；请求通过不代表已经卸载场景。
-            _outsideExitRequested = canPlayerLeave && Search.SearchWar;
+            _outsideExitRequested = canPlayerLeave && (Search.SearchWar || AtGateExit);
 #if GWP_DIAGNOSTICS
             if (!canPlayerLeave) WriteExitBlocked();
 #endif

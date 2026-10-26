@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -125,39 +126,51 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        /// <summary>
-        /// 卫兵盘问论点的强弱随玩家在灰袍的声望（用户裁定 2026-10-21），分档沿用当面拘捕看玩家记录的那三档；
-        /// 整体比最初的「简单」难一档（用户裁定 2026-10-22）。原版难度档几乎不影响成败，不再分档。
-        /// </summary>
-        internal static PersuasionArgumentStrength GuardStrength(GwpFieldArrestBehavior.WardenStandingTier tier) => tier switch
+        /// <summary>双方性格对论点的影响交给原版；声望与兵力只调本轮难度，不再另挪论点档位。</summary>
+        private static Func<GwpPersuasionRound.Argument, PersuasionArgumentStrength> StrengthAgainst(CharacterObject opponent)
         {
-            GwpFieldArrestBehavior.WardenStandingTier.Respected => PersuasionArgumentStrength.Easy,
-            GwpFieldArrestBehavior.WardenStandingTier.UnderCharge => PersuasionArgumentStrength.Hard,
-            _ => PersuasionArgumentStrength.Normal
-        };
+            return argument => Campaign.Current.Models.PersuasionModel.GetArgumentStrengthBasedOnTargetTraits(
+                opponent, new[] { Tuple.Create(argument.Trait, argument.Effect == TraitEffect.Positive ? 1 : -1) });
+        }
 
-        /// <summary>城主家族族长对玩家的关系、玩家在该势力的犯罪评级折成的成功率加减，开谈时定下，整轮不变。</summary>
-        private float _guardSituation;
+        /// <summary>三轮共用：以声望20和现场势均力敌为基准，优势/劣势有限度地改变原版难度输入。</summary>
+        internal static float SearchDifficulty(int reputation, float ours, float theirs)
+        {
+            float standing = Math.Max(-GwpTuning.CitySearch.PersuasionStandingLimit,
+                Math.Min(GwpTuning.CitySearch.PersuasionStandingLimit,
+                    ((float)reputation - GwpTuning.CitySearch.PersuasionStandingBaseline) * GwpTuning.CitySearch.PersuasionStandingStep));
+            // 没有一方参战者时是确定的极端优势；双方都无人时只按声望，不把0/0交给Log。
+            float power = ours <= 0f ? (theirs <= 0f ? 0f : -GwpTuning.CitySearch.PersuasionPowerLimit)
+                : theirs <= 0f ? GwpTuning.CitySearch.PersuasionPowerLimit
+                : (float)Math.Log(ours / theirs, 2d) * GwpTuning.CitySearch.PersuasionPowerStep;
+            power = Math.Max(-GwpTuning.CitySearch.PersuasionPowerLimit, Math.Min(GwpTuning.CitySearch.PersuasionPowerLimit, power));
+            return GwpTuning.CitySearch.PersuasionBaseDifficulty - standing - power;
+        }
+
+        private void BeginSearchPersuasion(GwpPersuasionRound round, PersuasionTask[] tasks)
+        {
+            (float ours, float theirs) = Scene!.CombatBalance();
+            int reputation = GwpRuntimeState.Player.Reputation;
+            float difficulty = SearchDifficulty(reputation, ours, theirs);
+            round.Begin(tasks, difficulty);
+#if GWP_DIAGNOSTICS
+            string stage = ReferenceEquals(round, _guardRound) ? "GUARD_PERSUASION"
+                : ReferenceEquals(round, _hallRound) ? "HALL_PERSUASION" : "CHOICE_PERSUASION";
+            GwpAiDiagnostics.WriteCitySearch(stage, "standing=" + reputation + "; ours=" + ours.ToString("0.00")
+                + "; theirs=" + theirs.ToString("0.00") + "; difficulty=" + difficulty.ToString("0.00")
+                + "; strengths=" + string.Join(",", tasks.SelectMany(task => task.Options).Select(option => option.ArgumentStrength)));
+#endif
+        }
 
         private void BeginGuardPersuasion()
         {
-            GwpFieldArrestBehavior.WardenStandingTier tier = GwpFieldArrestBehavior.CurrentStandingTier();
-            PersuasionArgumentStrength strength = GuardStrength(tier);
-            Settlement? settlement = Scene?.Settlement;
-            Hero? owner = settlement?.OwnerClan?.Leader;
-            int relation = owner == null || owner == Hero.MainHero ? 0 : Hero.MainHero.GetRelation(owner);
-            float crime = settlement?.MapFaction?.MainHeroCrimeRating ?? 0f;
-            _guardSituation = relation * GwpTuning.CitySearch.RelationStep - crime * GwpTuning.CitySearch.CrimeStep;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("GUARD_PERSUASION", "tier=" + tier + "; strength=" + strength
-                + "; relation=" + relation + "; crime=" + crime.ToString("0") + "; situation=" + _guardSituation.ToString("0.00"));
-#endif
+            var strength = StrengthAgainst(CharacterObject.OneToOneConversationCharacter);
             TextObject immediate = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_immediate);
             TextObject final = GwpText.Create(GwpTextCatalog.gwp_cs_guard_fail_final);
             TextObject later = GwpText.Create(GwpTextCatalog.gwp_cs_guard_try_later);
             // 两道顾虑考八种说法：统御、魅力、诡道、交易，再是战术、管理、统御、诡道，各配一种性格
             // （用户裁定 2026-10-22：多考验玩家各方面素质）。
-            _guardRound.Begin(new[]
+            PersuasionTask[] tasks =
             {
                 GwpPersuasionRound.Task(GwpText.Create(GwpTextCatalog.gwp_cs_guard_reservation), strength, immediate, final, later,
                     new GwpPersuasionRound.Argument(DefaultSkills.Leadership, DefaultTraits.Honor, TraitEffect.Positive, false,
@@ -177,41 +190,38 @@ namespace GreyWardenPolicePurity
                         GwpText.Create(GwpTextCatalog.gwp_cs_arg_valor)),
                     new GwpPersuasionRound.Argument(DefaultSkills.Roguery, DefaultTraits.Honor, TraitEffect.Negative, true,
                         GwpText.Create(GwpTextCatalog.gwp_cs_arg_blackmail)))
-            }, PersuasionDifficulty.Medium);
+            };
+            BeginSearchPersuasion(_guardRound, tasks);
         }
 
-        /// <summary>原版掷骰前改写卫兵这轮说法的成败率；别的说服原样不动。</summary>
-        internal void AdjustGuardChances(PersuasionOptionArgs option, ref float success, ref float criticalSuccess,
+        internal void AdjustSearchDifficulty(PersuasionOptionArgs option, ref float difficultyMultiplier)
+        {
+            GwpPersuasionRound? round = _guardRound.Owns(option) ? _guardRound
+                : _hallRound.Owns(option) ? _hallRound : _choiceRound.Owns(option) ? _choiceRound : null;
+            if (round != null) difficultyMultiplier = round.DifficultyMultiplier;
+        }
+
+        /// <summary>保留既定的大失败下限，技能、性格、特长和游戏难度加成仍由原版计算。</summary>
+        internal void AdjustSearchChances(PersuasionOptionArgs option, ref float success, ref float criticalSuccess,
             ref float criticalFailure, ref float failure)
         {
-            bool hall = _hallRound.Owns(option) || _choiceRound.Owns(option);
-            if (!_guardRound.Owns(option) && !hall) return;
-            int trait = option.TraitUsed == null ? 0 : Hero.MainHero.GetTraitLevel(option.TraitUsed)
-                * (option.TraitEffect == TraitEffect.Positive ? 1 : -1);
-            GuardOdds(success + criticalSuccess, criticalFailure, option.GivesCriticalSuccess,
-                Hero.MainHero.GetSkillValue(option.SkillUsed), trait, hall ? HallSituation() : _guardSituation,
-                out success, out criticalSuccess, out criticalFailure, out failure);
+            if (!_guardRound.Owns(option) && !_hallRound.Owns(option) && !_choiceRound.Owns(option)) return;
+            EnsureCriticalFailure(option.GivesCriticalSuccess, ref success, ref criticalSuccess, ref criticalFailure, ref failure);
         }
 
-        /// <summary>
-        /// 原版成功率（已按论点强弱折算）乘技能系数，加性格与处境，夹在上下限内；大失败取原版与保底的较大者，
-        /// 以大成功为赌注的说法保底翻倍；四项相加为 1，先挤掉普通失败、再挤成功。
-        /// 原版技能加成要满级才生效（整数相除），难度档几乎不起作用（C#反编译 v1.4.8 DefaultPersuasionModel）。
-        /// </summary>
-        internal static void GuardOdds(float nativeSuccess, float nativeCriticalFailure, bool givesCriticalSuccess,
-            int skill, int trait, float situation,
-            out float success, out float criticalSuccess, out float criticalFailure, out float failure)
+        internal static void EnsureCriticalFailure(bool givesCriticalSuccess,
+            ref float success, ref float criticalSuccess, ref float criticalFailure, ref float failure)
         {
-            float skillFactor = Math.Min(GwpTuning.CitySearch.SkillFactorCap,
-                GwpTuning.CitySearch.SkillFactorAtZero + skill / GwpTuning.CitySearch.SkillPointsPerFactor);
-            float win = Math.Max(GwpTuning.CitySearch.SuccessFloor, Math.Min(GwpTuning.CitySearch.SuccessCeiling,
-                nativeSuccess * skillFactor + Math.Max(-2, Math.Min(2, trait)) * GwpTuning.CitySearch.TraitStep + situation));
-            criticalFailure = Math.Max(nativeCriticalFailure,
+            criticalFailure = Math.Max(criticalFailure,
                 GwpTuning.CitySearch.CriticalFailureFloor * (givesCriticalSuccess ? 2f : 1f));
-            win = Math.Min(win, 1f - criticalFailure);
-            failure = 1f - win - criticalFailure;
-            success = givesCriticalSuccess ? 0f : win;
-            criticalSuccess = givesCriticalSuccess ? win : 0f;
+            float totalSuccess = success + criticalSuccess;
+            if (totalSuccess > 1f - criticalFailure)
+            {
+                float scale = (1f - criticalFailure) / totalSuccess;
+                success *= scale;
+                criticalSuccess *= scale;
+            }
+            failure = Math.Max(0f, 1f - success - criticalSuccess - criticalFailure);
         }
 
         private void FinishGuard(bool allowed)

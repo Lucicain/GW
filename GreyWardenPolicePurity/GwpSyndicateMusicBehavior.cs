@@ -21,7 +21,7 @@ namespace GreyWardenPolicePurity
         private readonly GwpMusicBattlePolicy _policy = new();
         private bool _checked, _nativePaused, _battle, _outro, _disposed;
         private float _sampleTime, _elapsed, _emptyTime;
-        private int _reinforcementCount;
+        private bool _cuePending;
         private BattleSideEnum _ourSide;
         private readonly HashSet<Agent> _countedCasualties = new();
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
@@ -62,8 +62,8 @@ namespace GreyWardenPolicePurity
                 // Initial spawn counters may be zero. Never initialize from that transient state.
                 if (ours <= 0 || enemy <= 0) return;
                 _battle = true; _policy.Initialize(ours, enemy);
-                _output.Want(_policy.Tier);
-                if (_reinforcementCount > 0) { _output.Reinforcement(); _reinforcementCount = 0; }
+                _output.Want(_policy.Shown);
+                if (_cuePending) { _output.Reinforcement(); _cuePending = false; }
             }
             bool ourDefender = _ourSide == BattleSideEnum.Defender;
             int ourReserves = ourDefender ? _spawn.NumberOfRemainingDefenderTroops : _spawn.NumberOfRemainingAttackerTroops;
@@ -75,7 +75,7 @@ namespace GreyWardenPolicePurity
             _emptyTime = ended ? _emptyTime + sample : 0;
             if (_elapsed >= 5 && _emptyTime >= 3) { EndMusic("no fighting force or reserves on one side"); return; }
             bool changed = _policy.Update(ours, enemy, sample);
-            if (changed) _output.Want(_policy.Tier);
+            if (changed) _output.Want(_policy.Shown);
         }
         private void ReadPower(out float ours, out float enemy)
         {
@@ -110,8 +110,10 @@ namespace GreyWardenPolicePurity
         }
         internal void NotifyReinforcementArrival(BattleSideEnum side, int count)
         {
-            if (_disposed || _outro || count <= 0) return;
-            if (!_battle) _reinforcementCount += count; else _output?.Reinforcement();
+            if (_disposed || _outro || count <= 0 || !_policy.RecordArrivalWave()) return;
+            if (!_battle) { _cuePending = true; return; }
+            _output?.Reinforcement();
+            _output?.Want(_policy.Shown);
         }
         private void EndMusic(string reason)
         {

@@ -162,29 +162,20 @@
             /// <summary>卫兵走到这个距离内就上前盘问。原版打手搭话用 5，带兵进城离得稍远也该被拦下。</summary>
             public const float GuardChallengeDistance = 6f;
 
-            /// <summary>
-            /// 卫兵盘问的成功率：原版成功率（已按论点强弱折算）先乘技能系数，再加性格与处境。
-            /// 原版的技能加成要满级才生效、难度档几乎不起作用，这里改成技能逐点都算（C#反编译 v1.4.8
-            /// DefaultPersuasionModel.GetChances/GetBonusSuccessChance）。技能 0 为 0.6 倍，每 250 点加 1 倍。
-            /// </summary>
-            public const float SkillFactorAtZero = 0.6f;
-            public const float SkillPointsPerFactor = 250f;
-            public const float SkillFactorCap = 1.6f;
-            /// <summary>说法所用性格每级（-2…2）加减的成功率。</summary>
-            public const float TraitStep = 0.06f;
-            /// <summary>与城主家族族长的关系每点加减的成功率（±100 即 ±0.2）。</summary>
-            public const float RelationStep = 0.002f;
-            /// <summary>玩家家族对该势力的犯罪评级每点减去的成功率。</summary>
-            public const float CrimeStep = 0.004f;
-            public const float SuccessFloor = 0.05f;
-            public const float SuccessCeiling = 0.9f;
+            // 声望20、双方相当为基准（用户裁定2026-10-26）。以下系数是本轮调试值，
+            // 传给原版 GetChances，使它自己的技能、性格与特长计算产生实际差异。
+            public const int PersuasionStandingBaseline = 20;
+            public const float PersuasionBaseDifficulty = 75f;
+            public const float PersuasionStandingStep = 0.5f;
+            public const float PersuasionStandingLimit = 20f;
+            public const float PersuasionPowerStep = 15f;
+            public const float PersuasionPowerLimit = 25f;
             /// <summary>保底大失败：原版简单论点大失败为 0，这里每句话至少这么多；以大成功为赌注的说法翻倍。</summary>
             public const float CriticalFailureFloor = 0.05f;
             /// <summary>说了要走或谈崩后选了撤，又往城里多走这么远就算违抗。</summary>
             public const float InwardTolerance = 10f;
-            public const float HallPenalty = 0.1f;
-            public const float DuelBaseChance = 0.5f;
-            public const float DuelTraitStep = 0.1f;
+            /// <summary>大厅对方选打法时，目标勇武与荣誉每级把单挑的赢面（攻×防比值的对数）抬高多少；设计值（用户裁定 2026-10-26：性格仍有影响）。</summary>
+            public const float DuelTraitLean = 0.25f;
             public const float GateExitDistance = 6f;
             public const int DefenderLimit = 20;
             public const int ReserveBatch = 4;

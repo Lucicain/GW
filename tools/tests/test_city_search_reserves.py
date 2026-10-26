@@ -36,10 +36,11 @@ interface IAgentOriginBase{BasicCharacterObject Troop{get;}object BattleCombatan
 class PartyAgentOrigin:IAgentOriginBase{public PartyBase Party;public object BattleCombatant=>Party;public BasicCharacterObject Troop{get;}public PartyAgentOrigin(PartyBase p,CharacterObject c){Party=p;Troop=c;}}
 class GwpBattleSupportOrigin:IAgentOriginBase{public object BattleCombatant=>new();public BasicCharacterObject Troop{get;}=new();}
 class GreyWardenSafePartyAgentOrigin:PartyAgentOrigin{public uint FactionColor=>Party.Primary;public uint FactionColor2=>Party.Secondary;public Banner Banner=>Party.Banner;public GreyWardenSafePartyAgentOrigin(PartyBase p,CharacterObject c,bool player,int rank):base(p,c){}}
-class Vec2{}struct Vec3{public float x,z;public Vec3(float a,float height){x=a;z=height;}}
+class Vec2{}struct Vec3{public float x,y,z;public Vec3(float a,float height){x=a;y=0;z=height;}public float Distance(Vec3 o)=>MathF.Sqrt((x-o.x)*(x-o.x)+(y-o.y)*(y-o.y)+(z-o.z)*(z-o.z));}
 class Direction{public Vec2 AsVec2=new();}class Rotation{public Direction f=new();}
-class MatrixFrame{public static MatrixFrame Identity=new();public Vec3 origin;public Rotation rotation=new();}class GameEntity{public MatrixFrame Frame=new();public MatrixFrame GetGlobalFrame()=>Frame;}
-class Scene{public Dictionary<string,GameEntity> Points=new();public List<string> Reads=new();public GameEntity? FindEntityWithTag(string s){Reads.Add(s);return Points.GetValueOrDefault(s);}}
+class MatrixFrame{public static MatrixFrame Identity=new();public Vec3 origin;public Rotation rotation=new();}class GameEntity{public MatrixFrame Frame=new();public Vec3 GlobalPosition=>Frame.origin;public MatrixFrame GetGlobalFrame()=>Frame;}
+class Scene{public Dictionary<string,GameEntity> Points=new();public List<(string Tag,GameEntity Point)> Extra=new();public List<string> Reads=new();
+ public IEnumerable<GameEntity> FindEntitiesWithTag(string s){Reads.Add(s);if(Points.TryGetValue(s,out var e))yield return e;foreach(var x in Extra)if(x.Tag==s)yield return x.Point;}}
 class Team{public static Team Invalid=new(){Side=BattleSideEnum.None};public uint Color=0x77777777,Color2=0x88888888;public BattleSideEnum Side;}
 class Agent{public static Agent Main=null!;public IAgentOriginBase Origin=null!;public BasicCharacterObject Character=>Origin.Troop;public float CharacterPowerCached=>Character.GetPower();public bool Active=true,IsHuman=true,IsRunningAway,Armed=true,Alarmed;public Team Team=null!;public float Health=100,HealthLimit=100;public Vec3 Position;public uint Color1,Color2;public void WieldInitialWeapons(){}public bool IsActive()=>Active;public bool HasWeapon()=>Armed;public void SetTeam(Team team,bool b){Team=team;}}
 class MissionBehavior{public Mission Mission=null!;public virtual MissionBehaviorType BehaviorType=>MissionBehaviorType.Other;public virtual void OnAgentBuild(Agent a,Banner b){}}
@@ -97,8 +98,8 @@ static class Program{
  c.Prepare();Check(c.Remaining==14,"preparing twice does not duplicate roster");
  var context=new GwpBattleSceneContext{Mission=c.Mission};c.Mission.MissionBehaviors.Add(context);Check(context.TryCapture(),"city source participates in existing battle context");
  Check(context.OpeningCount(BattleSideEnum.Defender)==15&&context.RemainingPower(BattleSideEnum.Defender)==150,"already spawned neutral guards are subtracted exactly once from reserve power");
- c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"arrival notifies correct side");arrivals+=count;};
- c.Tick();Check(c.Remaining==10&&arrivals==4,"first limited batch joins combat");
+ c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0,waves=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"arrival notifies correct side");arrivals+=count;waves++;};
+ c.Tick();Check(c.Remaining==10&&arrivals==4,"first limited batch joins combat");Check(waves==1,"one batch notifies music as one arrival wave");
  Check(c.Mission.Agents.Skip(2).All(a=>a.Alarmed&&a.Team==c.Mission.PlayerEnemyTeam&&a.Position.x==77&&a.Position.z==12),"reserves use native defender point and wake combat AI without changing hall floor");
  Check(context.RemainingPower(BattleSideEnum.Defender)==150,"moving reserves to scene cannot inflate shared power");
  Check(c.Mission.Agents.Skip(2).All(a=>a.Color1==((PartyAgentOrigin)a.Origin).Party.Primary&&a.Color2==((PartyAgentOrigin)a.Origin).Party.Secondary),"reinforcements use source party colors rather than generic mission team colors");
@@ -114,6 +115,9 @@ static class Program{
  c.Save();Check(c.Search.Saved.Count==0,"dead and unconscious units cannot be resurrected next scene");
  c=New();garrison=Party("hall",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
  c.Mission.Scene.Points["defender_infantry"]=Point(42,4);c.Tick();Check(c.Remaining==0&&c.Mission.Agents.Last().Position.x==42,"hall uses native initial defender point when reinforcement tag is absent");
+ c=New();garrison=Party("far",foot,4);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
+ c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point(2,0);c.Mission.Scene.Extra.Add(("sp_guard_patrol",Point(300,0)));c.Mission.Scene.Extra.Add(("sp_guard",Point(120,0)));
+ c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Position.x==300),"reserves enter at the point farthest from the player, not the native siege point beside the gate");
  c=New();garrison=Party("missing",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Tick();Check(c.Remaining==1&&c.Mission.Agents.Count==1,"missing point cannot spawn troops at world origin");
  c.Mission.Scene.Points["defender_infantry"]=Point();c.Mission.SpawnArmed=false;c.Mission.CurrentTime=4;c.Tick();Check(c.Mission.Agents.Last().Team==Team.Invalid&&!c.Mission.Agents.Last().Alarmed,"actual unarmed equipment variant never joins fight");
  var routed=c.Mission.Agents.Last();routed.Health=37;c.Removed(routed,AgentState.Routed);c.Save();Check(c.Search.Saved.Count==0&&c.Search.Losses.Count==1,"routed defender consumes task roster without entering next scene again");
@@ -190,6 +194,11 @@ static class Program{static void Check(bool b,string why){if(!b)throw new Except
             (code.replace('.Distinct().ToArray()', '.ToArray()'), 'finite healthy roster'),
             (code.replace('if (present != null)', 'if (false)'), 'finite healthy roster'),
             (code.replace('if (Spawn.OpeningAgentsAlreadySpawned)', 'if (false)'), 'already spawned neutral guards'),
+            (code.replace('.OrderByDescending(point => point.GlobalPosition.Distance(player))',
+                          '.OrderBy(point => point.GlobalPosition.Distance(player))'), 'farthest from the player'),
+            (code.replace('if (arrived > 0) _cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, arrived);', '')
+                 .replace('arrived++;', 'arrived++;_cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, 1);'),
+             'one batch notifies music as one arrival wave'),
             (code.replace('.ClothingColor1(reserve.Origin.FactionColor).ClothingColor2(reserve.Origin.FactionColor2)',
                           '.ClothingColor1(Mission.PlayerEnemyTeam.Color).ClothingColor2(Mission.PlayerEnemyTeam.Color2)'),
              'reinforcements use source party colors'),

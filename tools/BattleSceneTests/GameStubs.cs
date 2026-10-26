@@ -106,7 +106,7 @@ namespace TaleWorlds.MountAndBlade
  public class Formation {public MovementOrder Order;public ref readonly MovementOrder GetReadonlyMovementOrderReference()=>ref Order;}
  public class Agent
  {
-  public bool IsHuman=true,Active=true,IsRunningAway;public Team Team=null!;public BasicCharacterObject Character=new();
+  public bool IsHuman=true,Active=true,IsRunningAway,PlacedByCaller,Reinforcement;public Team Team=null!;public BasicCharacterObject Character=new();
   public IAgentOriginBase Origin=null!;public Vec3 Position;public float CharacterPowerCached=>Character.GetPower();
   public Mission Mission=null!;public bool IsAIControlled=true;public Formation? Formation;
   public HumanAIComponent? HumanAIComponent=new();public float GetMorale()=>0;
@@ -117,7 +117,9 @@ namespace TaleWorlds.MountAndBlade
   public IAgentOriginBase Origin;public Team Target=null!;public Vec3 Position;
   public AgentBuildData(IAgentOriginBase origin){Origin=origin;}
   public AgentBuildData Team(Team t){Target=t;return this;}public AgentBuildData Formation(Formation f)=>this;
-  public AgentBuildData InitialPosition(in Vec3 p){Position=p;return this;}public AgentBuildData InitialDirection(in Vec2 d)=>this;
+  public bool Positioned,Reinforcement;
+  public AgentBuildData InitialPosition(in Vec3 p){Position=p;Positioned=true;return this;}public AgentBuildData InitialDirection(in Vec2 d)=>this;
+  public AgentBuildData IsReinforcement(bool b){Reinforcement=b;return this;}
  }
  public class Mission
  {
@@ -128,10 +130,9 @@ namespace TaleWorlds.MountAndBlade
   public List<Agent> Spawned=new();
   public T? GetMissionBehavior<T>() where T:MissionBehavior=>Behaviors.OfType<T>().FirstOrDefault();
   public void Add(MissionBehavior b){b.Mission=this;Behaviors.Add(b);}
-  public Vec2 GetClosestBoundaryPosition(Vec2 p)=>new(-100,0);public bool IsPositionInsideBoundaries(Vec2 p)=>true;
   public Agent SpawnAgent(AgentBuildData d)
   {
-   var a=new Agent{Mission=this,Origin=d.Origin,Character=d.Origin.Troop,Team=d.Target,Position=d.Position};
+   var a=new Agent{Mission=this,Origin=d.Origin,Character=d.Origin.Troop,Team=d.Target,Position=d.Position,PlacedByCaller=d.Positioned,Reinforcement=d.Reinforcement};
    Agents.Add(a);Spawned.Add(a);foreach(var b in Behaviors)b.OnAgentBuild(a,new Banner());return a;
   }
  }
