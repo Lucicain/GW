@@ -344,7 +344,7 @@ namespace GreyWardenPolicePurity
             WriteDuelPace();
 #endif
             TickCityReserves();
-            if (TickCastleDuel()) return;
+            if (TickCourtDuel()) return;
             if (TickSearchProgress()) return;
             if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
             {

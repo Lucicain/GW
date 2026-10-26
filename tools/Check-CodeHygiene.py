@@ -186,8 +186,10 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("搜捕单挑路线", r"\bTestCourtyardDuels\b",
+     "GwpTuning.cs|GwpCitySearchBehavior.Flow.cs", "GwpCitySearchBehavior.UsesCourtyardDuel"),
     ("庭院单挑空地扫描", r"\b(?:GetNavMeshFaceCount|GetNavMeshCenterPosition)\s*\(",
-     "GwpCitySearchMission.CastleDuel.cs", "GwpDuelGround / GwpCitySearchMissionController.PrepareCastleDuel"),
+     "GwpCitySearchMission.CourtyardDuel.cs", "GwpDuelGround / GwpCitySearchMissionController.PrepareCourtDuel"),
     ("搜捕现场模拟攻防", r"\bGetSimulationAttackPower\s*\(",
      "GwpCitySearchMission.Progress.cs", "GwpCitySearchMissionController.CombatBalance / SimulationPower"),
     ("不扣名册的战役场景来源", r"\bnew\s+GreyWardenSafePartyAgentOrigin\s*\(",

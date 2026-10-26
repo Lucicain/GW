@@ -19,7 +19,7 @@ class CitySearchNativeFlowTests(unittest.TestCase):
         keys = set(re.findall(r'GwpTextCatalog\.(\w+)', menu))
         stubs = STUBS.replace('public string StringId;public CharacterObject CharacterObject;',
                               'public string Name="target";public string StringId;public CharacterObject CharacterObject;')
-        stubs = stubs.replace('public Town Town=new();', 'public bool IsTown=true,IsCastle;public Town Town=new();')
+        stubs = stubs.replace('public Town Town=new();', 'public bool IsTown=true;public Town Town=new();')
         stubs = stubs.replace('public int Registered;', 'public Hero? Target;public Hero? CitySearchTargetIn(Settlement? s)=>Target;public int Registered;')
         run(stubs + r'''
 namespace GreyWardenPolicePurity{

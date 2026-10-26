@@ -21,7 +21,7 @@ namespace GreyWardenPolicePurity
         private bool _courtPreparing;
         private Vec3 _courtCenter, _courtTargetStart;
         private float _nextCourtCheck;
-        private bool IsCastleAppointment => _settlement.IsCastle && Search.DuelAgreed && !Search.SearchWar;
+        private bool IsCourtAppointment => Search.UsesCourtyardDuel && Search.DuelAgreed && !Search.SearchWar;
 
         private Vec3? CourtGround(Vec3 position)
         {
@@ -53,9 +53,9 @@ namespace GreyWardenPolicePurity
             return Mission.Scene.GetPathDistanceBetweenPositions(ref from, ref to, 0.5f, out float distance);
         }
 
-        private void PrepareCastleDuel()
+        private void PrepareCourtDuel()
         {
-            if (!IsCastleAppointment || InHall || _hallTarget?.IsActive() != true || Agent.Main == null) return;
+            if (!IsCourtAppointment || InHall || _hallTarget?.IsActive() != true || Agent.Main == null) return;
             var door = Mission.GetMissionBehavior<MissionAgentHandler>().TownPassageProps.OfType<Passage>()
                 .FirstOrDefault(passage => passage.ToLocation?.StringId == "lordshall");
             Vec3 entrance = door?.GameEntity.GlobalPosition ?? Agent.Main.Position;
@@ -95,7 +95,7 @@ namespace GreyWardenPolicePurity
             if (!GwpDuelGround.TryPick(candidates, entrance, CourtGround, CourtLineClear, Reachable, out _courtCenter))
             {
 #if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("CASTLE_DUEL_SITE_FAILED", "settlement=" + _settlement.StringId
+                GwpAiDiagnostics.WriteCitySearch("COURT_DUEL_SITE_FAILED", "settlement=" + _settlement.StringId
                     + "; entrance=" + entrance + "; candidates=" + candidates.Count);
 #endif
                 return; // 约定保留且可正常Tab暂停；不在未经验证的位置开打或瞬移人物。
@@ -118,7 +118,7 @@ namespace GreyWardenPolicePurity
             SetCourtPosition(_hallTarget, _courtTargetStart, _courtCenter);
             _courtPreparing = true;
 #if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("CASTLE_DUEL_SITE", "settlement=" + _settlement.StringId
+            GwpAiDiagnostics.WriteCitySearch("COURT_DUEL_SITE", "settlement=" + _settlement.StringId
                 + "; center=" + _courtCenter + "; radius=" + GwpTuning.CitySearch.CourtDuelRadius
                 + "; watchers=" + _courtSeats.Count + "; candidates=" + candidates.Count);
 #endif
@@ -162,10 +162,10 @@ namespace GreyWardenPolicePurity
             agent.DisableScriptedMovement();
         }
 
-        private bool TickCastleDuel()
+        private bool TickCourtDuel()
         {
             if (!_courtPreparing) return false;
-            if (!Search.SearchActive || !IsCastleAppointment || _stage == Stage.Failed)
+            if (!Search.SearchActive || !IsCourtAppointment || _stage == Stage.Failed)
             {
                 RestoreSpectators();
                 return false;
@@ -173,7 +173,7 @@ namespace GreyWardenPolicePurity
             if (_hallTarget?.IsActive() != true || _courtSeats.Any(entry => !entry.Key.IsActive()))
             {
 #if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("CASTLE_DUEL_ASSEMBLY_CANCELLED", "center=" + _courtCenter);
+                GwpAiDiagnostics.WriteCitySearch("COURT_DUEL_ASSEMBLY_CANCELLED", "center=" + _courtCenter);
 #endif
                 RestoreSpectators();
                 return false;
@@ -191,7 +191,7 @@ namespace GreyWardenPolicePurity
             _courtPreparing = false;
             StartCourtDuel();
 #if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("CASTLE_DUEL_STARTED", "center=" + _courtCenter + "; watchers=" + _courtSeats.Count);
+            GwpAiDiagnostics.WriteCitySearch("COURT_DUEL_STARTED", "center=" + _courtCenter + "; watchers=" + _courtSeats.Count);
 #endif
             return true;
         }

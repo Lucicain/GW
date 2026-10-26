@@ -135,9 +135,15 @@
 
 ## 五、离开大厅、赴约与出城
 
-[已经约好在竞技场单挑。]
+[已经约好单挑，双方还在大厅。当前测试中，城镇与城堡都从大厅出门赴约。]
 
-提示：去竞技场赴约。
+领主：带上你的兵器。我们到外面去。
+
+[带着部下走出大厅，士兵与巡逻卫兵在空地上站定，目标走到圈内等候。]
+
+提示：去空地赴约。
+
+[走进圈内，与目标交手。]
 
 [大厅里的事处理完，带队离开。]
 
@@ -151,17 +157,43 @@
 
 提示：带着部下撤到城门外。
 
-[城堡里约好单挑，双方还在大厅。]
-
-领主：带上你的兵器。我们到外面去。
-
-[玩家带着部下走出大厅，庭院中的士兵和巡逻卫兵向空地围拢，目标到圈内等候。]
-
-提示：去庭院赴约。
-
-[众人站定，玩家走进圈内，才开始交手。目标不会空手参战，也不会临阵逃跑。]
-
 操作说明仍放在需要操作的地方：城门外可按住 Tab 离场；交战时尚未到城外，提示“还没出城，无法离开。”。这些是界面反馈，不塞进人物台词。
+
+## 六、暂时退到菜单，再回到现场
+
+[准备进城，尚未选随行的人。]
+
+{TARGET}就在城里。选好随行的人，从城门进去。
+
+[卫兵已经让路。]
+
+卫兵让开了路。带上部下，去领主大厅找{TARGET}。
+
+[门口是打过去的。]
+
+挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。
+
+[还没有得到通行许可，暂时退到菜单。]
+
+{TARGET}在领主大厅。带上部下，回去继续交涉，或另找办法。
+
+[已经约好单挑；当前城镇和城堡都在大厅外赴约。]
+
+你已和{TARGET}约好单挑。到大厅外的空地赴约。
+
+[目标投降，或单挑已经获胜。]
+
+{TARGET}已被拿下。带上部下，出城。
+
+[未拿下目标，决定从大厅撤回。]
+
+带上部下，离开这里。
+
+[在大厅里动过手，现在要带人突围。]
+
+大厅里的战斗已经结束。带上还能行动的人，杀出城去。
+
+菜单按钮依次使用：“选择随行士兵，进城”“回到搜捕现场”“前往领主大厅”“走出大厅”“带队出城，结束搜捕”“返回聚落菜单”。只显示当下能走的路；测试阶段没有竞技场按钮。目标被拿下与撤回大厅两种情境须拆开，不继续共用“交涉已经结束”。
 
 ## 这次分开写的上下句
 
@@ -226,10 +258,25 @@
 | `gwp_cs_choice_arg_shame` | 四，回应4 | They're all watching. Go on, step forward. |
 | `gwp_cs_choice_won` | 四，对方答应单挑 | All right. Have your men stand back. |
 | `gwp_cs_choice_lost` | 四，对方坚持混战 | Save your breath. If you want me, come and take me. |
-| `gwp_cs_walk_arena_notice` | 五，赴约 | Go to the arena for the duel. |
+| `gwp_cs_walk_court_notice`（拟新增） | 五，出门赴约 | Go outside for the duel. |
+| `gwp_cs_walk_arena_notice`（当前测试停用，恢复竞技场时使用） | 五，竞技场赴约 | Go to the arena for the duel. |
 | `gwp_cs_walk_out_notice` | 五，离开大厅 | Gather your men and leave the city. |
 | `gwp_cs_hall_notice` | 五，继续往大厅去 | Take everyone still on their feet to the lord's hall. |
 | `gwp_cs_escape_notice` | 五，撤出城外 | Lead your men back beyond the gate. |
 | `gwp_cs_hostile_exit_blocked` | 五，尚未出城 | You're still inside the walls. You can't leave yet. |
+| `gwp_cs_menu_new` | 六，准备进城 | {TARGET} is in the settlement. Choose who will come with you and enter through the gate. |
+| `gwp_cs_menu_allowed` | 六，卫兵放行 | The guards have stepped aside. Take your men to the lord's hall and find {TARGET}. |
+| `gwp_cs_menu_cleared`（拟新增） | 六，击败门口守军 | The guards who barred your way are down. Take everyone still on their feet to the lord's hall and find {TARGET}. |
+| `gwp_cs_menu_gate` | 六，尚未通行 | {TARGET} is in the lord's hall. Take your men back to speak to the guards, or find another way through. |
+| `gwp_cs_menu_court`（拟新增） | 六，空地约斗 | You and {TARGET} have agreed to a duel. Meet outside the lord's hall. |
+| `gwp_cs_menu_return` | 六，目标已拿下 | {TARGET} has been taken. Gather your men and leave the settlement. |
+| `gwp_cs_menu_withdraw`（拟新增） | 六，未拿下而撤回 | Gather your men. It's time to leave. |
+| `gwp_cs_menu_fight_out` | 六，武力突围 | The fight in the hall is over. Take everyone still on their feet and fight your way out. |
+| `gwp_cs_menu_begin` | 六，选兵按钮 | Choose your men and enter the settlement |
+| `gwp_cs_menu_resume` | 六，返回现场按钮 | Return to the search |
+| `gwp_cs_menu_hall` | 六，大厅按钮 | Go to the lord's hall |
+| `gwp_cs_menu_street` | 六，出大厅按钮 | Leave the hall |
+| `gwp_cs_menu_leave` | 六，出城按钮 | Leave with your men and end the search |
+| `gwp_cs_menu_back` | 六，返回按钮 | Return to the settlement menu |
 
-写入前检查：大厅的新反应与两条分支分别接线；城堡出门赴约与城镇竞技场的提示要按地点分开。城堡没有竞技场，单挑去庭院空地，不能显示“去竞技场”。城镇/城堡共用的提示最后核对用“城外”是否自然。菜单与操作说明另按实际可选路线压缩，不能把和平放行、强攻与不同结局混写成玩家眼前都发生过的事。
+写入前检查：大厅的新反应与两条分支分别接线；当前城镇与城堡都在出门后的空地单挑，不能显示“去竞技场”。用户实测满意并决定恢复后，城镇才用竞技场提示，城堡继续去庭院。第六节按实际放行/击败守军、拿下/撤回的状态接线，不能只换字而继续混用旧条目。共用出城文字须同时适合城镇和城堡。

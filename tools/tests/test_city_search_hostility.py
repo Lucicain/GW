@@ -30,7 +30,7 @@ class SearchState {public bool SearchWar,DuelAgreed;public bool SearchActive=tru
 static class GwpTuning {public static class CitySearch {public const float GateExitDistance=6;}}
 enum Stage {Entering,Allowed,Fighting,FightOver,Duel,Failed,HallDone}
 class Controller {
- public bool InHall,_transitioning;public bool IsCastleAppointment;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
+ public bool InHall,_transitioning;public bool IsCourtAppointment;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
  public Stage _stage=Stage.Allowed;public string? _pendingFight,_pendingHallAction;public Vec _gate=new();public bool _gateExitAvailable=true;
  bool IsWatch(Agent a)=>a.Watch&&!a.Ours;bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
  public bool Defender(Agent a)=>IsDefender(a);public bool Flee(Agent a)=>ShouldFlee(a);public bool Stay(Agent a)=>TargetMustStay(a);public bool Leave()=>CanLeaveSearch();
@@ -100,7 +100,7 @@ class Mission{public int Panics;public void OnAgentPanicked(Agent a){Panics++;}p
 class Agent{public enum AIStateFlag{Alarmed}public enum UsageDirection{None}public Mission Mission=new();public Vec Position=new();public Formation Formation=new();public bool Left;
  public void SetAlarmState(AIStateFlag f){}public void EnforceShieldUsage(UsageDirection d){}public void Retreat(WorldPosition p){Left=true;}}
 class SearchState{public bool SearchActive=true,DuelAgreed,SearchWar;}
-class GwpCitySearchMissionController{public static GwpCitySearchMissionController? Current;public bool InHall=true,_transitioning;public bool IsCastleAppointment;public Agent? _hallTarget;public SearchState Search=new();STAY}
+class GwpCitySearchMissionController{public static GwpCitySearchMissionController? Current;public bool InHall=true,_transitioning;public bool IsCourtAppointment;public Agent? _hallTarget;public SearchState Search=new();STAY}
 class Gate{PREFIX public static bool Allows(Agent agent)=>Prefix(agent);}
 class Common{public Agent Agent;public bool IsRetreating,IsPanicked;public Common(Agent agent){Agent=agent;}
  public void Panic(){if(Gate.Allows(Agent))NativePanic();}public void Retreat(){if(Gate.Allows(Agent))NativeRetreat();}

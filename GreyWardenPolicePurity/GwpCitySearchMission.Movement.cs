@@ -61,9 +61,9 @@ namespace GreyWardenPolicePurity
         private void ResumeDuelWalk()
         {
             if (!Search.DuelAgreed || Search.SearchWar || _hallTarget?.IsActive() != true || Agent.Main == null) return;
-            if (!InHall && _settlement.IsCastle)
+            if (!InHall && Search.UsesCourtyardDuel)
             {
-                PrepareCastleDuel();
+                PrepareCourtDuel();
                 return;
             }
             if (!InHall)
@@ -74,6 +74,7 @@ namespace GreyWardenPolicePurity
         private void BeginDuelWalk(string destination)
         {
             if (!Search.DuelAgreed || Search.SearchWar || _hallTarget?.IsActive() != true) return;
+            if (destination == "arena" && Search.UsesCourtyardDuel) return;
             Passage? door = Mission.GetMissionBehavior<MissionAgentHandler>().TownPassageProps
                 .OfType<Passage>().FirstOrDefault(passage => passage.ToLocation?.StringId == destination);
             if (door == null) return;
@@ -110,7 +111,7 @@ namespace GreyWardenPolicePurity
             Search.DuelAgreed && !Search.SearchWar && agent == _hallTarget;
 
         internal bool AllowsDuelArenaEntry(LocationCharacter character, Location destination) =>
-            Search.DuelAgreed && !Search.SearchWar && destination.StringId == "arena"
+            Search.DuelAgreed && !Search.SearchWar && !Search.UsesCourtyardDuel && destination.StringId == "arena"
             && character.Character == _target.CharacterObject;
     }
 

@@ -185,6 +185,8 @@
             public const float HallPostRadius = 5f;
             public const float HallPostSpacing = 1.5f;
             public const float HallPostPlayerClearance = 2f;
+            // 用户裁定2026-10-26：先让所有聚落走空地围圈，用户实测满意后才恢复城镇竞技场。
+            public static readonly bool TestCourtyardDuels = true;
             // 用户裁定2026-10-26：人数/圈大小固定，不按场景人数伸缩；以下尺寸是实现选择。
             public const int CourtDuelSeats = 32;
             public const float CourtDuelRadius = 6f;

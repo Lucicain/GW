@@ -38,10 +38,10 @@ class Scene{public IEnumerable<Entity> FindEntitiesWithTag(string tag)=>new[]{ne
 class Mission{public List<Agent> Agents=new();public Scene Scene=new();public MissionAgentHandler Handler=new();public Queue<float> Positions=new();
  public Vec3 GetRandomPositionAroundPoint(Vec3 anchor,float min,float max)=>new(Positions.Dequeue());public T GetMissionBehavior<T>()=>(T)(object)Handler;}
 enum OrderType{StandYourGround,FollowMe}class Formation{}class OrderController{}class MBReadOnlyList<T>{}
-class SearchState{public bool SearchWar,DuelAgreed;}class Settlement{public bool IsCastle;}
+class SearchState{public bool SearchWar,DuelAgreed,UsesCourtyardDuel;}class Settlement{public bool IsCastle;}
 static class GwpTuning{public static class CitySearch{public const int HallPostAttempts=12;public const float HallPostRadius=5,HallPostSpacing=1.5f,GuardChallengeDistance=6,HallPostPlayerClearance=2;}}
 partial class GwpCitySearchMissionController{
- public Settlement _settlement=new();public int CourtPlans;void PrepareCastleDuel(){CourtPlans++;}public Mission Mission=new();public SearchState Search=new();public bool InHall=true;private Agent? _hallTarget;private Hero _target=new();private Dictionary<Agent,object> _ours=new();public int Orders;
+ public Settlement _settlement=new();public int CourtPlans;void PrepareCourtDuel(){CourtPlans++;}public Mission Mission=new();public SearchState Search=new();public bool InHall=true;private Agent? _hallTarget;private Hero _target=new();private Dictionary<Agent,object> _ours=new();public int Orders;
  bool IsWatch(Agent a)=>a.Watch;void Order(OrderType t){Orders++;}
  public void Post()=>PostHallTroops();public void Release()=>ReleaseHallPosts(OrderType.FollowMe,new(),new());public void Walk(string to)=>BeginDuelWalk(to);public void Resume()=>ResumeDuelWalk();
  public void Setup(Agent target,params Agent[] ours){_hallTarget=target;_target.CharacterObject=target.Character;Mission.Agents.Add(target);foreach(var a in ours){_ours[a]=new();Mission.Agents.Add(a);}}
@@ -59,6 +59,10 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
  c.InHall=true;c.Resume();Check(lord.Component.AgentNavigator.Daily.ScriptedBehavior!.Target==door,"resuming paused hall restarts unfinished normal walk to exit");c.InHall=false;c.Mission.Positions.Enqueue(2);c.Resume();Check(lord.Position.X==2&&lord.Component.AgentNavigator.Daily.ScriptedBehavior!.Target==arena,"street resume emerges beside actual player hall doorway then walks to arena");
  Check(c.AllowsDuelArenaEntry(new(){Character=lord.Character},arena.ToLocation!)&&!c.AllowsDuelArenaEntry(new(){Character=first.Character},arena.ToLocation!)&&!c.AllowsDuelArenaEntry(new(){Character=lord.Character},door.ToLocation!),"arena AI access exception is target and destination scoped");
  c.Search.SearchWar=true;Check(!c.AllowsDuelArenaEntry(new(){Character=lord.Character},arena.ToLocation!),"war never grants peaceful duel arena access");
+ c.Search.SearchWar=false;c.Search.UsesCourtyardDuel=true;lord.Position=new(100);
+ foreach(bool castle in new[]{false,true}){c._settlement.IsCastle=castle;int plans=c.CourtPlans;c.Resume();Check(c.CourtPlans==plans+1&&lord.Position.X==100,"both town and castle resume at a courtyard site without teleporting the target");}
+ Check(!c.AllowsDuelArenaEntry(new(){Character=lord.Character},arena.ToLocation!),"courtyard appointment never grants AI arena access");
+ c.Walk("center");c.Walk("arena");Check(lord.Component.AgentNavigator.Daily.ScriptedBehavior!.Target==door,"courtyard target cannot be redirected to arena");
  var fallback=new GwpCitySearchMissionController();var third=new Agent();fallback.Setup(lord,third);fallback.Mission.Positions.Enqueue(21);fallback.Post();Check(third.ScriptedDirection==3,"empty hall guard list uses defender spawn frame facing");
  Console.WriteLine("CITY_SEARCH_MOVEMENT_ASSERTIONS="+n);
  }

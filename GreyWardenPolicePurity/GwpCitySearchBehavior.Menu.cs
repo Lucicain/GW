@@ -16,7 +16,7 @@ namespace GreyWardenPolicePurity
             starter.AddGameMenuOption(SearchMenu, "begin", GwpTextCatalog.gwp_cs_menu_begin,
                 args => MenuRoute(args, !SearchActive), SelectSearchTroops);
             starter.AddGameMenuOption(SearchMenu, "resume", GwpTextCatalog.gwp_cs_menu_resume,
-                args => MenuRoute(args, SearchHere && SearchPlace != GwpCitySearchPlace.Arena),
+                args => MenuRoute(args, SearchHere && (SearchPlace != GwpCitySearchPlace.Arena || UsesCourtyardDuel)),
                 _ => QueuePlace(SearchPlace));
             starter.AddGameMenuOption(SearchMenu, "hall", GwpTextCatalog.gwp_cs_menu_hall,
                 args => MenuRoute(args, SearchHere && HallAccessible && !HallResolved && SearchPlace != GwpCitySearchPlace.Hall),
@@ -25,7 +25,7 @@ namespace GreyWardenPolicePurity
                 args => MenuRoute(args, SearchHere && SearchPlace == GwpCitySearchPlace.Hall),
                 _ => QueuePlace(Returning ? GwpCitySearchPlace.Escape : GwpCitySearchPlace.Street));
             starter.AddGameMenuOption(SearchMenu, "arena", GwpTextCatalog.gwp_cs_menu_arena,
-                args => MenuRoute(args, SearchHere && DuelAgreed && Settlement.CurrentSettlement.IsTown),
+                args => MenuRoute(args, SearchHere && DuelAgreed && !UsesCourtyardDuel),
                 _ => QueuePlace(GwpCitySearchPlace.Arena));
             starter.AddGameMenuOption(SearchMenu, "leave", GwpTextCatalog.gwp_cs_menu_leave,
                 args => { args.optionLeaveType = GameMenuOption.LeaveType.Leave; return SearchHere && !SearchWar; },
@@ -54,7 +54,7 @@ namespace GreyWardenPolicePurity
             }
             string state = !SearchHere ? GwpTextCatalog.gwp_cs_menu_new
                 : Returning ? SearchWar ? GwpTextCatalog.gwp_cs_menu_fight_out : GwpTextCatalog.gwp_cs_menu_return
-                : DuelAgreed ? Settlement.CurrentSettlement.IsCastle ? GwpTextCatalog.gwp_cs_menu_street : GwpTextCatalog.gwp_cs_menu_duel
+                : DuelAgreed ? UsesCourtyardDuel ? GwpTextCatalog.gwp_cs_menu_street : GwpTextCatalog.gwp_cs_menu_duel
                 : HallAccessible ? GwpTextCatalog.gwp_cs_menu_allowed : GwpTextCatalog.gwp_cs_menu_gate;
             MBTextManager.SetTextVariable("GWP_CS_MENU_TEXT", GwpText.Create(state, "TARGET", target.Name));
         }

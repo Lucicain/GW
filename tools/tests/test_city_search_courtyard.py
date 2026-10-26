@@ -50,7 +50,7 @@ static void Main(){
             run(old)
 
     def test_native_boundary_adapter_checks_nav_height_and_two_ray_levels(self):
-        court = read('GwpCitySearchMission.CastleDuel.cs')
+        court = read('GwpCitySearchMission.CourtyardDuel.cs')
         bodies = method(court, 'CourtGround') + method(court, 'CourtLineClear')
         code = r'''
 using System;using System.Collections.Generic;using TaleWorlds.Library;
@@ -77,7 +77,7 @@ static class Program{static int n;static void Check(bool v,string why){n++;if(!v
         run(code)
 
     def test_duel_equipment_uses_battle_gear_without_mutating_inventory(self):
-        body = method(read('GwpCitySearchMission.CastleDuel.cs'), 'EquipCourtDuelist')
+        body = method(read('GwpCitySearchMission.CourtyardDuel.cs'), 'EquipCourtDuelist')
         code = r'''
 using System;using System.Collections.Generic;
 namespace GreyWardenPolicePurity{
@@ -101,7 +101,7 @@ static class Program{static int n;static void Check(bool v,string why){n++;if(!v
         run(code)
 
     def test_patrol_position_behavior_keeps_its_target_until_released(self):
-        body = block(read('GwpCitySearchMission.CastleDuel.cs'), r'internal sealed class GwpCitySearchPositionBehavior')
+        body = block(read('GwpCitySearchMission.CourtyardDuel.cs'), r'internal sealed class GwpCitySearchPositionBehavior')
         code = r'''
 using System;
 namespace GreyWardenPolicePurity{
@@ -121,10 +121,10 @@ static class Program{static void Main(){var group=new AgentBehaviorGroup();var p
         run(code)
 
     def test_court_preparation_waits_and_restores_every_spectator(self):
-        court = read('GwpCitySearchMission.CastleDuel.cs')
+        court = read('GwpCitySearchMission.CourtyardDuel.cs')
         progress = read('GwpCitySearchMission.Progress.cs')
         tuning = block(read('GwpTuning.cs'), r'internal static class CitySearch')
-        bodies = method(court, 'TickCastleDuel') + method(progress, 'StartCourtDuel')
+        bodies = method(court, 'TickCourtDuel') + method(progress, 'StartCourtDuel')
         bodies += method(progress, 'RestoreSpectators') + method(progress, 'GetAgentState')
         code = r'''
 using System;using System.Collections.Generic;using System.Linq;using TaleWorlds.Library;
@@ -139,10 +139,10 @@ class Mission{public float CurrentTime;public List<Agent> Agents=new();public Te
  public MissionConversationLogic Talk=new();public T GetMissionBehavior<T>()=>(T)(object)Talk;public void SetMissionMode(MissionMode m,bool b){Mode=m;}}
 class SearchState{public bool SearchActive=true,DuelAgreed=true;}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
-class Court{public bool _courtPreparing=true;public Stage _stage=Stage.HallDone;public SearchState Search=new();public bool IsCastleAppointment=>Search.DuelAgreed;public Mission Mission=new();
+class Court{public bool _courtPreparing=true;public Stage _stage=Stage.HallDone;public SearchState Search=new();public bool IsCourtAppointment=>Search.DuelAgreed;public Mission Mission=new();
  public Dictionary<Agent,Vec3> _courtSeats=new();public Dictionary<Agent,Team> _spectators=new();public Agent? _hallTarget;public Vec3 _courtCenter=new(0,0,0),_courtTargetStart=new(2,0,0);public float _nextCourtCheck;
  static void ReleaseCourtPosition(Agent a){a.Scripted=false;}static void SetSearchFighter(Agent a){a.Scripted=false;a.Fights=true;}
- public bool Tick(){Mission.CurrentTime++;return TickCastleDuel();}public void Restore()=>RestoreSpectators();
+ public bool Tick(){Mission.CurrentTime++;return TickCourtDuel();}public void Restore()=>RestoreSpectators();
  BODIES}
 static class Program{static int n;static void Check(bool v,string why){n++;if(!v)throw new Exception(why);}
 static Court Setup(out Agent target,out Agent watcher,out Team old){Agent.Main=new(){Position=new(12,0,0)};target=new(){Position=new(12,0,0)};watcher=new(){Position=new(12,0,0)};old=watcher.Team;

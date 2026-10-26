@@ -131,7 +131,7 @@ namespace GreyWardenPolicePurity
                 if (_warDeclared) _pendingFight = "forced_hall";
                 else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_hall_notice)));
             }
-            else if (IsCastleAppointment)
+            else if (IsCourtAppointment)
             {
                 _stage = Stage.HallDone;
             }
@@ -164,7 +164,7 @@ namespace GreyWardenPolicePurity
             if (_stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null || _pendingHallAction != null) return false;
             if (_stage == Stage.Fighting && !Search.SearchWar) return false;
             if (InHall) return passage.ToLocationId == "center";
-            if (passage.ToLocationId == "arena") return Search.DuelAgreed;
+            if (passage.ToLocationId == "arena") return Search.DuelAgreed && !Search.UsesCourtyardDuel;
             return passage.ToLocationId == "lordshall" && (Search.HallAccessible || Search.SearchWar) && !Search.HallResolved;
         }
 
@@ -218,7 +218,7 @@ namespace GreyWardenPolicePurity
                         _stage = Stage.HallDone;
                         BeginDuelWalk("center");
                         DisablePlayerPassages();
-                        if (_settlement.IsTown)
+                        if (!Search.UsesCourtyardDuel)
                             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
                         else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_menu_street)));
                         break;
@@ -354,9 +354,9 @@ namespace GreyWardenPolicePurity
         internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting && ShouldFlee(civilian)
             ? Mission.Agents.Where(agent => agent.IsActive() && IsOurs(agent)).ToArray() : null;
 
-        /// <summary>大厅目标不走逃跑出口；城镇约斗后按约走门赴约仍允许。</summary>
+        /// <summary>目标不走逃跑出口；约好单挑后允许正常走出大厅，去空地围圈或赴竞技场。</summary>
         internal bool TargetMustStay(Agent? agent) => agent != null && agent == _hallTarget && Search.SearchActive && !_transitioning
-            && (InHall ? !(Search.DuelAgreed && !Search.SearchWar) : IsCastleAppointment);
+            && (InHall ? !(Search.DuelAgreed && !Search.SearchWar) : IsCourtAppointment);
 
         // 单挑按竞技场原版只击昏，群殴让原版伤亡模型裁定；不改武器标记。
         public AgentState GetAgentState(Agent affectedAgent, float deathProbability, out bool usedSurgery)

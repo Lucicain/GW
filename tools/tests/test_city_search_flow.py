@@ -33,6 +33,7 @@ using System;using System.Linq;using System.Collections.Generic;using System.Tex
 namespace TaleWorlds.ObjectSystem{class MBObjectManager{
  public static MBObjectManager Instance=new();public T GetObject<T>(string id) where T:class=>GreyWardenPolicePurity.CharacterObject.All.First(c=>c.StringId==id) as T;}}
 namespace GreyWardenPolicePurity{
+static class GwpTuning{public static class CitySearch{public static bool TestCourtyardDuels=false;}}
 interface IDataStore{void SyncData<T>(string key,ref T value);}
 class Store:IDataStore{public Dictionary<string,JsonElement> Data=new();public bool Loading;
  public void SyncData<T>(string key,ref T value){if(Loading){if(Data.TryGetValue(key,out var json))value=json.Deserialize<T>()!;}else Data[key]=JsonSerializer.SerializeToElement(value);}}
@@ -41,7 +42,7 @@ class Hero{public static List<Hero> All=new();public static Hero MainHero=new("p
 class Town{public int GetWallLevel()=>1;}
 class Location{public string StringId="";public string GetSceneName(int n)=>"arena";}
 class LocationCharacter{}class Locations{public Location GetLocationWithId(string s)=>new(){StringId=s};public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}}
-class Settlement{public static Settlement? CurrentSettlement;public string StringId="town";public Town Town=new();public Locations LocationComplex=new();}
+class Settlement{public static Settlement? CurrentSettlement;public string StringId="town";public bool IsCastle;public Town Town=new();public Locations LocationComplex=new();}
 class TroopRosterElement{public CharacterObject Character;public int Number,WoundedNumber;}
 class TroopRoster{List<TroopRosterElement> e=new();public static TroopRoster CreateDummyTroopRoster()=>new();public IEnumerable<TroopRosterElement> GetTroopRoster()=>e;public int Total=>e.Sum(x=>x.Number-x.WoundedNumber);
  public void AddToCounts(CharacterObject c,int n,int wounded=0){var v=e.FirstOrDefault(x=>x.Character==c);if(v==null){v=new(){Character=c};e.Add(v);}v.Number+=n;v.WoundedNumber+=wounded;}}
@@ -135,6 +136,54 @@ static class Program{
 
 
 class CitySearchFlowTests(unittest.TestCase):
+    def test_all_settlements_temporarily_use_courtyard_and_hide_arena_routes(self):
+        flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))
+        menu = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Menu.cs'))
+        tuning = re.search(r'public static readonly bool TestCourtyardDuels = (true|false);', read('GwpTuning.cs')).group(1)
+        stubs = STUBS.replace('public string StringId;public CharacterObject CharacterObject;', 'public string StringId;public string Name=>StringId;public CharacterObject CharacterObject;')
+        stubs = stubs.replace('public int Defeats;public void RecordCitySearchDefeat', 'public Hero? CitySearchTargetIn(Settlement s)=>Campaign.Current.Search.SearchTarget;public int Defeats;public void RecordCitySearchDefeat')
+        keys = sorted(set(re.findall(r'GwpTextCatalog\.(\w+)', menu)))
+        extra = r'''
+namespace GreyWardenPolicePurity{
+class MenuCallbackArgs{public GameMenuOption.LeaveType optionLeaveType;public bool IsEnabled;public string Tooltip="";}
+class GameMenuOption{public enum LeaveType{Leave,Submenu,Mission}}
+class CampaignGameStarter{public Dictionary<string,Func<MenuCallbackArgs,bool>> Conditions=new();public Action<MenuCallbackArgs> Initialize=null!;
+ public void AddGameMenu(string id,string text,Action<MenuCallbackArgs> init){Initialize=init;}
+ public void AddGameMenuOption(string menu,string id,string text,Func<MenuCallbackArgs,bool> condition,Action<MenuCallbackArgs> action,bool isLeave=false){Conditions[id]=condition;}}
+static class GameMenu{public static void SwitchToMenu(string s){}}
+static class GwpText{public static string Create(string key,params object[] args)=>key;}
+static class MBTextManager{public static string Text="";public static void SetTextVariable(string key,string value){Text=value;}}
+static class GwpTextCatalog{KEYS}
+partial class GwpCitySearchBehavior{void SelectSearchTroops(MenuCallbackArgs args){}public void Register(CampaignGameStarter starter)=>RegisterSearchMenu(starter);}
+static class Program{static int n;static void Check(bool yes,string why){n++;if(!yes)throw new Exception(why);}
+ static void Main(){Check(DEFAULT,"current shipped test switch must enable courtyards for towns too");
+ foreach(bool test in new[]{false,true})foreach(bool castle in new[]{false,true}){
+  GwpTuning.CitySearch.TestCourtyardDuels=test;Mission.Current=null;var s=new Settlement{IsCastle=castle};Settlement.CurrentSettlement=s;CrimeRecord.Shelter=s;
+  var h=new Hero("target");var b=new GwpCitySearchBehavior();Campaign.Current.Search=b;var roster=TroopRoster.CreateDummyTroopRoster();b.Start(s,h,roster);b.QueuePlace(GwpCitySearchPlace.Hall);b.AgreeDuel();
+  bool court=test||castle;Check(b.UsesCourtyardDuel==court,"single route owner covers test and restored town/castle routes");
+  var starter=new CampaignGameStarter();b.Register(starter);var args=new MenuCallbackArgs();
+  Check(starter.Conditions["arena"](args)==!court,"arena shortcut visibility follows actual duel route");starter.Initialize(args);
+  Check(MBTextManager.Text==(court?GwpTextCatalog.gwp_cs_menu_street:GwpTextCatalog.gwp_cs_menu_duel),"courtyard menu never says to go to arena");
+  b.QueuePlace(GwpCitySearchPlace.Arena);Check(b.SearchPlace==(court?GwpCitySearchPlace.Street:GwpCitySearchPlace.Arena),"queued arena shortcut cannot bypass courtyard testing");
+  var save=new Store();b.Sync(save);var loaded=new GwpCitySearchBehavior();loaded.Sync(new Store{Loading=true,Data=save.Data});Campaign.Current.Search=loaded;
+  int arenas=CampaignMission.Arenas;GwpCitySearchBehavior.Pump();
+  Check(court?CampaignMission.Arenas==arenas&&GwpCitySearchMission.Place==GwpCitySearchPlace.Street:CampaignMission.Arenas==arenas+1,"save/load opens the selected route with the existing roster");
+ }
+ // A pending arena scene saved before the temporary switch is normalized on load as well.
+ Mission.Current=null;GwpTuning.CitySearch.TestCourtyardDuels=false;Settlement.CurrentSettlement=new();CrimeRecord.Shelter=Settlement.CurrentSettlement;
+ var pending=new GwpCitySearchBehavior();Campaign.Current.Search=pending;pending.Start(Settlement.CurrentSettlement,new Hero("pending"),TroopRoster.CreateDummyTroopRoster());pending.AgreeDuel();pending.QueuePlace(GwpCitySearchPlace.Arena);
+ GwpTuning.CitySearch.TestCourtyardDuels=true;int before=CampaignMission.Arenas;GwpCitySearchBehavior.Pump();
+ Check(CampaignMission.Arenas==before&&pending.SearchPlace==GwpCitySearchPlace.Street,"pending pre-switch arena load also goes to courtyard");
+ Console.WriteLine("CITY_SEARCH_ROUTE_ASSERTIONS="+n);
+ }
+}}
+'''.replace('KEYS', '\n'.join('public const string '+key+'="'+key+'";' for key in keys)).replace('DEFAULT', tuning)
+        code = stubs + flow + menu + extra
+        run(code)
+        old_route = flow.replace('GwpTuning.CitySearch.TestCourtyardDuels || ', '')
+        with self.assertRaisesRegex(AssertionError, 'single route owner'):
+            run(code.replace(flow, old_route))
+
     def test_production_coordinator_roundtrip_and_all_routes(self):
         flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))
         run(STUBS + flow + SCENARIOS)
@@ -178,7 +227,7 @@ class AlarmedBehaviorGroup{public bool DisableCalmDown;public void AddBehavior<T
 class Hero{public static Hero MainHero=new();public object MapFaction=new();public CharacterObject CharacterObject=new();public bool IsDead;}
 class Settlement{public bool IsTown;public object MapFaction=new();}
 class PlayerBountyBehavior{public int Dead,Defeats;public void RecordCitySearchLosses(Hero h,int n){Dead+=n;}public void RecordCitySearchDefeat(Hero h){Defeats++;}}
-class GwpCitySearchBehavior{public GwpCitySearchPlace SearchPlace;public bool SearchActive=true,War,Won,Peaceful,Escaped,Aborted,DuelAgreed,Returning,EscapeCleared,Paused,HallAccessible;public void MarkTargetDown(bool killed){Won=true;Returning=true;}public bool SearchWar=>War;public GwpCitySearchGate GateState;public bool HallResolved=>DuelAgreed||Returning;public List<(CharacterObject,float)> Saved=new();
+class GwpCitySearchBehavior{public GwpCitySearchPlace SearchPlace;public bool UsesCourtyardDuel;public bool SearchActive=true,War,Won,Peaceful,Escaped,Aborted,DuelAgreed,Returning,EscapeCleared,Paused,HallAccessible;public void MarkTargetDown(bool killed){Won=true;Returning=true;}public bool SearchWar=>War;public GwpCitySearchGate GateState;public bool HallResolved=>DuelAgreed||Returning;public List<(CharacterObject,float)> Saved=new();
  public void QueuePlace(GwpCitySearchPlace p){SearchPlace=p;}public void MarkSearchWar(){War=true;}public void WonHall(){Won=true;Returning=true;}public void PeacefulCapture(){Peaceful=true;Returning=true;}public void AgreeDuel(){DuelAgreed=true;}public void WithdrawFromHall(){Returning=true;}public void PauseSearch(){Paused=true;}public void FinishSearch(bool escaped){Escaped=escaped;Aborted=!escaped;SearchActive=false;}public void SaveSurvivors(IEnumerable<(CharacterObject,float)> s){Saved=s.ToList();}}
 class Conversation{public bool IsConversationFlowActive;public Agent? OneToOneConversationAgent;}
 class Campaign{public static Campaign Current=new();public Conversation ConversationManager=new();public PlayerBountyBehavior Bounty=new();public T GetCampaignBehavior<T>() where T:class=>Bounty as T;}
@@ -193,7 +242,7 @@ class InformationMessage{public InformationMessage(string s){}}static class Info
 static class GwpText{public static string Get(string s)=>s;public static string Create(string s)=>s;}static class GwpTextCatalog{public const string gwp_cs_hall_notice="hall",gwp_cs_escape_notice="escape",gwp_cs_menu_street="courtyard",gwp_cs_walk_out_notice="walkout",gwp_cs_walk_arena_notice="walkarena",gwp_cs_hostile_exit_blocked="blocked",gwp_cs_route_blocked="route";}
 class InquiryData{}static class MBInformationManager{public static void AddQuickInformation(string s){}}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string s,string d){}}
-class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _gateExitAvailable=true;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public bool IsCastleAppointment=>!_settlement.IsTown&&Search.DuelAgreed&&!Search.SearchWar;public Dictionary<Agent,Vec3> _courtSeats=new();public bool _courtPreparing;static void ReleaseCourtPosition(Agent a){a.DisableScriptedMovement();}public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
+class Scene{public Stage _stage;public GwpCitySearchPlace _place;public bool _gateExitAvailable=true;public bool _transitioning,_warDeclared;public string? _pendingHallAction,_pendingFight;public Agent? _hallTarget;public Hero _target=new();public Settlement _settlement=new();public Vec3 _gate;public Mission Mission=new();public GwpCitySearchBehavior Search=new();public float _inwardLimit;public bool InHall=>_place==GwpCitySearchPlace.Hall;public bool IsCourtAppointment=>Search.UsesCourtyardDuel&&Search.DuelAgreed&&!Search.SearchWar;public Dictionary<Agent,Vec3> _courtSeats=new();public bool _courtPreparing;static void ReleaseCourtPosition(Agent a){a.DisableScriptedMovement();}public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<CharacterObject,int> _killed=new();public Dictionary<Agent,Team> _spectators=new();
  public bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsWatch(Agent a)=>a.Watch;void DisablePlayerPassages(){}void EndFightIfDefendersDown(){}void Order(OrderType o){}
  bool _outsideExitRequested;void SaveCitySoldiers(){}public List<Agent> _defenders=new();
  void NoteCitySoldierRemoval(Agent a,AgentState s){}void BeginDuelWalk(string destination){}
@@ -232,6 +281,12 @@ static void Main(){
  hall.Search.DuelAgreed=true;Check(hall.TryUseSearchPassage(targetDoor,hall._hallTarget),"hostility still prevents an old appointment from letting the target escape");
  hall.Search.War=false;Check(!hall.TryUseSearchPassage(targetDoor,hall._hallTarget),"peaceful city duel appointment keeps native AI door travel");
  hall.Search.War=true;hall.Search.DuelAgreed=false;
+ foreach(bool town in new[]{false,true}){
+  var court=New(GwpCitySearchPlace.Street,Stage.Allowed);court._settlement.IsTown=town;court.Search.UsesCourtyardDuel=true;court.Search.DuelAgreed=true;court.Search.SearchPlace=GwpCitySearchPlace.Street;court._hallTarget=new(){Character=court._target.CharacterObject};court.Mission.Agents.Add(court._hallTarget);court.Begin();
+  Check(court._stage==Stage.HallDone&&court._pendingFight==null,"town and castle courtyard appointments skip repeat street challenge");
+  Check(court.TryUseSearchPassage(new PassageUsePoint{ToLocationId="arena"},court._hallTarget),"town and castle courtyard targets cannot disappear through a passage");
+  court.TryUseSearchPassage(new PassageUsePoint{ToLocationId="arena"},Agent.Main!);Check(court._pendingHallAction==null,"courtyard player cannot bypass the circle through the arena door");
+ }
  hall=New(GwpCitySearchPlace.Hall,Stage.Fighting);hall.Search.War=true;hall._hallTarget=new(){Active=false,State=AgentState.Unconscious,Position=new Vec3(500)};hall.OnAgentRemoved(hall._hallTarget,Agent.Main!,AgentState.Unconscious,new());Check(hall.Search.Won&&hall.Search.Returning,"target knockout must be remembered before player leaves hall even when enemies remain");
  var hallDoor=new PassageUsePoint{ToLocationId="center"};hall.TryUseSearchPassage(hallDoor,Agent.Main!);Check(hall._pendingHallAction=="enter_street","downed target does not hold the player in the hall");
  var extraction=New(GwpCitySearchPlace.Escape,Stage.Escaping);extraction.Search.War=true;Agent.Main!.Position=extraction._gate;extraction.Tick();Check(!extraction.Mission.Ended&&!extraction.Search.Escaped,"reaching the gate does not leave without the native Tab hold");
@@ -269,6 +324,7 @@ static void Main(){
                 'EndFightIfDefendersDown(); if (AtGateExit) { Search.FinishSearch(true); Mission.EndMission(); return true; }', 1)),
             ('native Tab exit at the gate completes the escape', bodies.replace('(Search.SearchWar || AtGateExit)', 'Search.SearchWar')),
             ('retreating before target capture', bodies.replace('if (_warDeclared) _pendingFight = "street";', '')),
+            ('courtyard player cannot bypass', bodies.replace('return Search.DuelAgreed && !Search.UsesCourtyardDuel;', 'return Search.DuelAgreed;')),
         ]
         for failure, old in controls:
             with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):

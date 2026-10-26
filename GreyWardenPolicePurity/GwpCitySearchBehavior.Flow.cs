@@ -55,6 +55,7 @@ namespace GreyWardenPolicePurity
         internal bool HallResolved => _duelAgreed || _returning;
         internal bool EscapeCleared { get => _escapeCleared; set => _escapeCleared = value; }
         internal Hero SearchTarget => _searchTarget ??= Hero.FindFirst(hero => hero.StringId == _searchTargetId);
+        internal bool UsesCourtyardDuel => GwpTuning.CitySearch.TestCourtyardDuels || Settlement.CurrentSettlement?.IsCastle == true;
 
         private void SyncSearch(IDataStore store)
         {
@@ -146,6 +147,7 @@ namespace GreyWardenPolicePurity
 
         internal void QueuePlace(GwpCitySearchPlace place)
         {
+            if (place == GwpCitySearchPlace.Arena && DuelAgreed && UsesCourtyardDuel) place = GwpCitySearchPlace.Street;
             if (SearchPlace == GwpCitySearchPlace.Hall && (place == GwpCitySearchPlace.Street || place == GwpCitySearchPlace.Escape))
                 _hasLeftHall = true;
             if (place != SearchPlace)
@@ -252,6 +254,7 @@ namespace GreyWardenPolicePurity
                 FinishSearch(false);
                 return;
             }
+            if (SearchPlace == GwpCitySearchPlace.Arena && DuelAgreed && UsesCourtyardDuel) QueuePlace(GwpCitySearchPlace.Street);
             _openPending = false;
             // 原版 Passage 会写 NextLocation 并自动开普通步行场景；自有衔接清掉它，避免抢先打开而丢兵。
             if (DuelAgreed && SearchPlace == GwpCitySearchPlace.Street)
