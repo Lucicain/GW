@@ -1,6 +1,6 @@
 # 构建、校验与部署
 
-> 当前状态：10-27城镇与城堡临时统一出门后固定圈单挑已部署，目标留场及原版旁观者分类保留；进城搜捕台词按审阅稿写回并接线；113类补丁、镜像及双端哈希通过；实际导航/物理与台词显示待测
+> 当前状态：10-27台词实装已部署，113类补丁、镜像及双端哈希通过；当前启动被四组重复前置勾选阻断，已定位但按用户要求只分析、未修配置；实际导航/物理与台词显示待测
 > 最后验收：`f00ca9b`（2026-10-17 用户确认同业务开发构建；正式包经离线/远端校验）
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
 > 待实测：辅助模组 Better Time 的4/10/30倍地图快进、Useful Skips一键新档；进城搜捕新增台词与菜单文案在游戏内显示；游戏由用户启动
@@ -10,6 +10,14 @@
 当前 live 是诊断版开发构建，版本号仍1.4.15.0，2026-10-27构建部署。保留原版说服重调、城防远点增援、城外按住Tab离场及配乐修正，新增目标不逃跑/不穿门消失、旁观者按原版IsAgentAggressive判断、城镇与城堡均出大厅到空地固定圈约斗，测试满意后再恢复城镇竞技场；竞技场菜单、玩家/AI通道与旧待办统一遵循该路线。空地半径6米加1米余量，32个固定席位，使用现有随行者和巡逻卫兵；整片导航/高度/静态物理及每个人到站位的路径都参与筛选。目标和围观者到位、玩家亲自进圈后开打，使用战斗装备并在缺近战武器时临时补原版练习剑；退出和胜负后释放站位。实际行为归[搜捕](city-search.md)。本轮按用户批准把[台词审阅稿](../reference/text-review-city-search-20261026.md)写入 PlayerText/strings.json 并重生成中文语言 XML 与英文属性（54 条改写、8 条新增），代码接线大厅/打法专属反应、单挑应战与改提、双方群殴、庭院出门提示与菜单四态；赴约速度仍按原诊断取证。
 
 Client/Editor DLL SHA-256同为 `615839D8BB1FA81B0DF772110E234111D19821E0F4DF383D344499E427467D2A`；75项运行时镜像无缺失/差异/散落（live 426 文件）。113类补丁（Windows PowerShell 5.1预检）、TYPES_OK=865、成员与补丁失败0、初始化异常计数0；内容键 LOCALIZED=1744、CHECKED_KEYS=1447、重复0、缺失0。开发构建0警告0错误，玩家文本生成器1744条/1426常量0更新。搜捕27项中26项通过；余1项 .NET Framework 说服回归受工作区环境限制：工作区内文件被 `Zone.CreateFromUrl` 判为 Internet 区，`Assembly.LoadFrom` 报 FileLoadException 0x80131515；同一构建的 DLL 复制到工作区外运行输出 `CITY_SEARCH_NATIVE_PERSUASION_ASSERTIONS=4063`、EXITCODE=0（见 journal）。4项文本回归、15项工程检查通过；代码卫生四项全零；影响分析只命中进城搜捕与玩家文本。独立审查只读 diff 与影响报告：无阻塞项；指出审阅稿第五节「带上你的兵器。我们到外面去」在落地映射表里没有键、当前出门没有再次对话的时机，本轮按映射实装未新增该句，另指出 AGENTS.md 的中文交流规则属预存改动、promo-materials 不进提交。离线测试没有执行引擎导航、射线或人物物理，实际庭院、围圈与台词显示由用户正常游玩验收，agent没有启动游戏。（依据：构建、部署、哈希、验证脚本、离线回归、环境探测与独立审查 2026-10-27）
+
+## 当前启动阻断（仅分析，2026-10-27）
+
+已知缺陷：当前`Configs/LauncherData.xml`的单人勾选列表中，Bannerlord.Harmony、Bannerlord.UIExtenderEx、Bannerlord.ButterLib、Bannerlord.MBOptionScreen各选中两次；00:56、00:58、00:59的启动参数均含重复ID，加载UIExtenderEx时中止，尚未进入GreyWarden。00:58与00:59的WER转储内层异常均为`System.InvalidOperationException: Sequence contains more than one matching element`，调用链为`Enumerable.SingleOrDefault`→`ModuleInfoHelper.ValidateLoadOrder`→`UIExtenderEx.SubModule.ValidateLoadOrder`；本机UIExtenderEx反编译确认它按依赖ID调用SingleOrDefault，直接依赖Harmony，而当前列表里Harmony出现两次。（依据：用户启动故障、现有启动日志/转储及本机DLL反编译2026-10-27）
+
+- 四个前置在Modules与Steam工坊各有一份，版本也不完全相同。2026-10-26 23:08成功启动日志中的模块参数每个ID仅一次；现有材料能证明当前重复勾选触发校验异常，不能证明是谁改变了勾选，也不能仅凭开发先后归因于台词代码。（依据：本机配置、安装清单与前后启动日志2026-10-27）
+- CLR 4.0.30319离线执行反编译中同一`SingleOrDefault`依赖查询，读取当前真实配置与UIExtenderEx依赖XML：原名单复现相同异常，在内存中按ID保序去重后通过。此验证只覆盖已经定位的校验阻断，不证明整局实机可用。修复方向为保留每个前置的一份有效勾选、保持既有其他选择及加载顺序；本轮按用户“先分析”要求未修改启动器配置、第三方模组或live文件，也未启动游戏。（依据：用户要求与离线负对照2026-10-27）
+- 本轮复核当前灰袍DLL仍为上文`615839D8…`，Client/Editor一致；75项运行镜像无差异，638类型/1950成员引用及113类Harmony补丁全部通过。该预检只覆盖灰袍，不会执行前置模组的完整启动构造，不能代替启动器整条加载链。（依据：本轮兼容预检、镜像和哈希核对2026-10-27）
 
 ## 开发测试辅助模组
 

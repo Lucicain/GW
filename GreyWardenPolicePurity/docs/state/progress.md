@@ -48,6 +48,7 @@
 
 <!-- 已知缺陷汇总：由 tools/Check-StateFreshness.py 从各 state 的「已知缺陷：」行生成，手改会被覆盖 -->
 
+- [build-and-deploy.md](build-and-deploy.md)：当前`Configs/LauncherData.xml`的单人勾选列表中，Bannerlord.Harmony、Bannerlord.UIExtenderEx、Bannerlord.ButterLib、Bannerlord.MBOptionScreen各选中两次；00:56、00:58、00:59的启动参数均含重复ID，加载UIExtenderEx时中止，尚未进入GreyWarden。00:58与00:59的WER转储内层异常均为`System.InvalidOperationException: Sequence contains more than one matching element`，调用链为`Enumerable.SingleOrDefault`→`ModuleInfoHelper.ValidateLoadOrder`→`UIExtenderEx.SubModule.ValidateLoadOrder`；本机UIExtenderEx反编译确认它按依赖ID调用SingleOrDefault，直接依赖Harmony，而当前列表里Harmony出现两次。（依据：用户启动故障、现有启动日志/转储及本机DLL反编译2026-10-27）
 - [case-assistance.md](case-assistance.md)：玩家求援已送达、附近灰袍尚未为本案宣战时，创建战前MapEvent的回调仍经AdvancePlayerBountyEscortCase的承诺/现场优势及首队准备门槛，playerEncounterStarted仅用于诊断；玩家最终确认敌对时也缺少灰袍同步及援军重收集路径，可能有援军在旁却未入场。进菜单不等于已经宣战，具体时序、原版参战半径与建议入口统一见[野外强捕时序](field-arrest.md#菜单确认离开与附近援军)。用户指出强军团且远方帮手不在召集范围时的缺口；尚未修复，没有扩大一天召集范围或强制送兵。（依据：用户反馈、生产源码与原版C#反编译2026-10-20）
 - [case-enforcement.md](case-enforcement.md)：存活但无活跃部队、长期住城的旧案领主仍被NPC派案的IsOffenderPursuable部队门槛排除，NPC尚无城内办理入口；玩家已由CanPlayerTakeCase接住城旧案，走进城搜捕，状态与验收归city-search。
 - [case-interceptors.md](case-interceptors.md)：两日扫描仅查已承办开放案件、WarPursuit和外交仍交战，没有确认真正无进展；不排除目标驻城、主队正在后勤、已有追截/支援在途或交战，也没有单案数量上限，因此正常未结案也会反复派50人。周期是全局两日，不是每宗案宣战满48小时；本轮只分析并补诊断，尚未改触发规则。（依据：用户目标、源码与长局2026-10-18）
@@ -82,7 +83,7 @@
   - 接赎罪任务后目标可谈判、使者撤回且不抢案，和平/战斗处理后可交差；同版本存读接续
 - [battle-support.md](battle-support.md)（原有野战援军已实测满意；入场位置改为原版本方增援出生点（2026-10-26部署待测）；搜捕只用真实城防预备兵，139项回归通过）
   - 普通野战灰袍援军从己方后方（原版援军进场的一侧）出现，不在玩家身边刷出；城内真实名册接入与支援衔接见city-search
-- [build-and-deploy.md](build-and-deploy.md)（10-27城镇与城堡临时统一出门后固定圈单挑已部署，目标留场及原版旁观者分类保留；进城搜捕台词按审阅稿写回并接线；113类补丁、镜像及双端哈希通过；实际导航/物理与台词显示待测）
+- [build-and-deploy.md](build-and-deploy.md)（10-27台词实装已部署，113类补丁、镜像及双端哈希通过；当前启动被四组重复前置勾选阻断，已定位但按用户要求只分析、未修配置；实际导航/物理与台词显示待测）
   - 辅助模组 Better Time 的4/10/30倍地图快进、Useful Skips一键新档；进城搜捕新增台词与菜单文案在游戏内显示；游戏由用户启动
 - [case-assistance.md](case-assistance.md)（玩家求援征调计入玩家实际战斗组并去重，已部署待实测；一天导航路程召集范围、现场宣战和追截准备保持）
   - 玩家求援后按玩家实际参战编组减少征调，玩家损失再补足；临场仍按原版现场力量决定能否宣战。
