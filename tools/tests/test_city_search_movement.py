@@ -38,10 +38,10 @@ class Scene{public IEnumerable<Entity> FindEntitiesWithTag(string tag)=>new[]{ne
 class Mission{public List<Agent> Agents=new();public Scene Scene=new();public MissionAgentHandler Handler=new();public Queue<float> Positions=new();
  public Vec3 GetRandomPositionAroundPoint(Vec3 anchor,float min,float max)=>new(Positions.Dequeue());public T GetMissionBehavior<T>()=>(T)(object)Handler;}
 enum OrderType{StandYourGround,FollowMe}class Formation{}class OrderController{}class MBReadOnlyList<T>{}
-class SearchState{public bool SearchWar,DuelAgreed;}
-static class GwpTuning{public static class CitySearch{public const int HallPostAttempts=12;public const float HallPostRadius=5,HallPostSpacing=1.5f,GuardChallengeDistance=6,SecureTargetDistance=2;}}
+class SearchState{public bool SearchWar,DuelAgreed;}class Settlement{public bool IsCastle;}
+static class GwpTuning{public static class CitySearch{public const int HallPostAttempts=12;public const float HallPostRadius=5,HallPostSpacing=1.5f,GuardChallengeDistance=6,HallPostPlayerClearance=2;}}
 partial class GwpCitySearchMissionController{
- public Mission Mission=new();public SearchState Search=new();public bool InHall=true;private Agent? _hallTarget;private Hero _target=new();private Dictionary<Agent,object> _ours=new();public int Orders;
+ public Settlement _settlement=new();public int CourtPlans;void PrepareCastleDuel(){CourtPlans++;}public Mission Mission=new();public SearchState Search=new();public bool InHall=true;private Agent? _hallTarget;private Hero _target=new();private Dictionary<Agent,object> _ours=new();public int Orders;
  bool IsWatch(Agent a)=>a.Watch;void Order(OrderType t){Orders++;}
  public void Post()=>PostHallTroops();public void Release()=>ReleaseHallPosts(OrderType.FollowMe,new(),new());public void Walk(string to)=>BeginDuelWalk(to);public void Resume()=>ResumeDuelWalk();
  public void Setup(Agent target,params Agent[] ours){_hallTarget=target;_target.CharacterObject=target.Character;Mission.Agents.Add(target);foreach(var a in ours){_ours[a]=new();Mission.Agents.Add(a);}}
@@ -66,7 +66,7 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
 '''.replace('NATIVE', add_target) + production
         run(code)
         old = subprocess.check_output(['git', 'show', '8799100:GreyWardenPolicePurity/GwpCitySearchMission.Movement.cs'], text=True, encoding='utf-8-sig').replace('\r\n', '\n')
-        old_production = old[old.index('namespace GreyWardenPolicePurity'):old.index('    [HarmonyPatch')]+ '}\n'
+        old_production = (old[old.index('namespace GreyWardenPolicePurity'):old.index('    [HarmonyPatch')]+ '}\n').replace('GwpTuning.CitySearch.SecureTargetDistance', 'GwpTuning.CitySearch.HallPostPlayerClearance')
         with self.assertRaisesRegex(AssertionError, 'each posted soldier inherits its own guard facing'):
             run(code.replace(production, old_production))
 

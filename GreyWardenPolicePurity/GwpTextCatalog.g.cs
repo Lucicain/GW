@@ -467,7 +467,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_opponent_duel = "{=gwp_cs_opponent_duel}Enough talk. I choose single combat. Defeat me and I will go with you.";
         internal const string gwp_cs_opponent_melee = "{=gwp_cs_opponent_melee}I choose to stand with my guards. If you want me, come and take me.";
         internal const string gwp_cs_route_blocked = "{=gwp_cs_route_blocked}You cannot leave while combat or a conversation is still in progress.";
-        internal const string gwp_cs_unarmed_target_notice = "{=gwp_cs_unarmed_target_notice}The target is unarmed and fleeing. Catch up with him and clear the guards nearby to secure him, then lead your party out.";
         internal const string gwp_cs_walk_arena_notice = "{=gwp_cs_walk_arena_notice}The duel is agreed. Lead your party out of the hall and go to the arena, or press Tab to return to the search menu.";
         internal const string gwp_cs_walk_out_notice = "{=gwp_cs_walk_out_notice}You are finished here. Lead your party out of the hall and leave through the gate.";
         internal const string gwp_cs_war_notice = "{=gwp_cs_war_notice}You defied the town watch. {VAR_1} is now at war with you.";

@@ -40,7 +40,7 @@ namespace GreyWardenPolicePurity
                     Vec3 position = Mission.GetRandomPositionAroundPoint(anchor.Position, 2f, GwpTuning.CitySearch.HallPostRadius);
                     if (occupied.Any(point => point.Distance(position) < GwpTuning.CitySearch.HallPostSpacing)
                         || _hallTarget != null && _hallTarget.Position.Distance(position) < GwpTuning.CitySearch.GuardChallengeDistance
-                        || Agent.Main != null && Agent.Main.Position.Distance(position) < GwpTuning.CitySearch.SecureTargetDistance) continue;
+                        || Agent.Main != null && Agent.Main.Position.Distance(position) < GwpTuning.CitySearch.HallPostPlayerClearance) continue;
                     WorldPosition world = new WorldPosition(Mission.Scene, System.UIntPtr.Zero, position, true);
                     // 位置和朝向一起交给原版导航，随对应卫兵（或守卫点）面向站岗方向。
                     agent.SetScriptedPositionAndDirection(ref world, anchor.Direction.RotationInRadians, false);
@@ -61,6 +61,11 @@ namespace GreyWardenPolicePurity
         private void ResumeDuelWalk()
         {
             if (!Search.DuelAgreed || Search.SearchWar || _hallTarget?.IsActive() != true || Agent.Main == null) return;
+            if (!InHall && _settlement.IsCastle)
+            {
+                PrepareCastleDuel();
+                return;
+            }
             if (!InHall)
                 _hallTarget.TeleportToPosition(Mission.GetRandomPositionAroundPoint(Agent.Main.Position, 2f, 3f));
             BeginDuelWalk(InHall ? "center" : "arena");

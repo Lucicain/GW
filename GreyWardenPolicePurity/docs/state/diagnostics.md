@@ -154,3 +154,5 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
 
+
+城堡庭院约斗记录CASTLE_DUEL_SITE（中心、固定半径、参与数、候选数）/STARTED及SITE_FAILED、ASSEMBLY_CANCELLED；CROWD_ROLE记录场内人物是否持械、是否目标、是否守方和是否强制逃跑。只在选址、集合转换和开战时记录，帮助agent自己核对现场分类及选址失败，不要求用户专项复现；验收后退休。（依据：诊断取证设计2026-10-26）

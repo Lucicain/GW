@@ -54,7 +54,7 @@ namespace GreyWardenPolicePurity
             }
             string state = !SearchHere ? GwpTextCatalog.gwp_cs_menu_new
                 : Returning ? SearchWar ? GwpTextCatalog.gwp_cs_menu_fight_out : GwpTextCatalog.gwp_cs_menu_return
-                : DuelAgreed ? GwpTextCatalog.gwp_cs_menu_duel
+                : DuelAgreed ? Settlement.CurrentSettlement.IsCastle ? GwpTextCatalog.gwp_cs_menu_street : GwpTextCatalog.gwp_cs_menu_duel
                 : HallAccessible ? GwpTextCatalog.gwp_cs_menu_allowed : GwpTextCatalog.gwp_cs_menu_gate;
             MBTextManager.SetTextVariable("GWP_CS_MENU_TEXT", GwpText.Create(state, "TARGET", target.Name));
         }

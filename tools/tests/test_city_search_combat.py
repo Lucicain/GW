@@ -40,7 +40,7 @@ class Agent{
  public static Agent? Main;public bool IsHuman=true,IsAIControlled=true,Active=true;public Team Team=new();public int AlarmCalls;public AIStateFlag AIStateFlags;
  public CampaignAgentComponent Component=new();public T? GetComponent<T>() where T:class=>Component as T;
  public Agent GetPtr()=>this;public bool IsActive()=>Active;public void SetTeam(Team t,bool b){Team=t;}
- public bool HasWeapon()=>true;
+ public bool Armed;public bool HasWeapon()=>Armed;
  public void DisableScriptedMovement(){}
  WATCH
 }
@@ -65,9 +65,9 @@ static class GwpText{public static string Get(string s)=>s;}class InformationMes
 class NativeFight{public List<Agent> _playerSideAgents=new(),_opponentSideAgents=new();NATIVE_SETUP}
 class Controller{
  public Mission Mission=>Mission.Current;public SearchState Search=new();public Settlement _settlement=new();public bool _warDeclared;public Stage _stage;
- bool InHall;Agent? _hallTarget;
+ public bool InHall;public Agent? _hallTarget;
  public List<Agent> _defenders=new();public Dictionary<Agent,object> _ours=new();public HashSet<Agent> Defenders=new();public OrderType Last;public int Wins;
- bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsDefender(Agent a)=>Defenders.Contains(a);
+ bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsDefender(Agent a)=>Defenders.Contains(a)||InHall&&a==_hallTarget;bool ShouldFlee(Agent a)=>!IsOurs(a)&&!IsDefender(a)&&!a.Armed;
  void Order(OrderType o){Last=o;}void OnSearchFightWon(){Wins++;}
  MobileParty[] CityDefenseParties()=>Array.Empty<MobileParty>();void PrepareCityReserves(IEnumerable<MobileParty> p){}bool HasCityDefenders()=>false;
  BODIES
@@ -101,6 +101,16 @@ static class Program{
    Check(!ally.IsAlarmed()&&!guided.IsAlarmed()&&!guided.Component.AgentNavigator!.Group.ScriptedFight&&!guided.Component.AgentNavigator.Group.DisableCalmDown,"victory releases ally combat state for walking");
    c.End();Check(c.Wins==1,"victory cleanup is idempotent");
   }
+  // No weapon is required for the actual arrest target to stay in the fight.
+  Mission.Current=new();Agent.Main=new(){IsAIControlled=false};
+  var target=new Agent{Component=new(){AgentNavigator=new()}};
+  var observer=new Agent{Armed=true,Component=new(){AgentNavigator=new()}};
+  Mission.Current.Agents.AddRange(new[]{Agent.Main,target,observer});
+  var hall=new Controller{InHall=true,_hallTarget=target};hall.Start("hall_melee");
+  Check(hall._defenders.Contains(target)&&target.Component.AgentNavigator!.Group.ScriptedFight&&!target.Component.AgentNavigator.Group.ScriptedFlee,"unarmed target gets actual fight behavior and never civilian flight");
+  Check(!observer.Component.AgentNavigator!.Group.ScriptedFlee,"armed observer is not forced into civilian flight");
+  hall.End();Check(hall.Wins==0,"living target holds hall combat open even after guards are gone");
+  target.Active=false;hall.End();Check(hall.Wins==1,"target down allows hall combat to finish");
   Console.WriteLine("CITY_SEARCH_COMBAT_ASSERTIONS="+n);
  }
 }

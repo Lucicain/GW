@@ -180,11 +180,22 @@
             public const int DefenderLimit = 20;
             public const int ReserveBatch = 4;
             public const float ReserveInterval = 3f;
-            public const float SecureTargetDistance = 2f;
             public const int EntryReserveLimit = 4;
             public const int HallPostAttempts = 12;
             public const float HallPostRadius = 5f;
             public const float HallPostSpacing = 1.5f;
+            public const float HallPostPlayerClearance = 2f;
+            // 用户裁定2026-10-26：人数/圈大小固定，不按场景人数伸缩；以下尺寸是实现选择。
+            public const int CourtDuelSeats = 32;
+            public const float CourtDuelRadius = 6f;
+            public const float CourtDuelClearance = 1f;
+            public const float CourtDuelHeightTolerance = 0.35f;
+            public const float CourtDuelGridStep = 1f;
+            public const float CourtDuelSearchDistance = 60f;
+            public const int CourtDuelCandidateLimit = 128;
+            public const float CourtDuelStartOffset = 2f;
+            public const float CourtDuelFightRadius = 4f;
+            public const float CourtDuelArrivalDistance = 1.2f;
         }
 
         internal static class FieldArrest

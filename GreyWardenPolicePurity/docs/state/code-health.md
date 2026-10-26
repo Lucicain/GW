@@ -136,6 +136,7 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 | 战场完整名册、预备兵与增援通知 | `IGwpBattleSceneSource`、`GwpBattleSceneContext` | 援军与音乐只查此入口；野战转接原供应器，城内由搜捕提供真实名册 |
 | 无战役伤亡回调的场景人物来源 | `GreyWardenSafePartyAgentOrigin` | 切磋、搜捕守军与提取身体表现复用此来源；玩家随行兵仍用原版PartyAgentOrigin结算伤亡 |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
+| 庭院单挑空地 | `GwpDuelGround`（形状判定）、`GwpCitySearchMission.CastleDuel.cs`（导航/物理采集） | 场景导航面扫描只在适配方；固定尺寸与完整圆盘验证归[搜捕](city-search.md)（依据：设计2026-10-26） |
 | 搜捕现场模拟攻防 | `GwpCitySearchMissionController.CombatBalance` / `SimulationPower` | `GetSimulationAttackPower`；现场说服与打法选择共用，范围见[搜捕](city-search.md)（依据：设计2026-10-26） |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
 | 信众村民队的登记与生命周期介入 | `GwpFireswornBehavior.IsFaithVillager`、`GwpFaithVillagers.cs` | 别处给VillagerCampaignBehavior或SellGoodsForTradeAction加补丁；军械、装货、分账统一查询登记入口。规则归[村民队](firesworn-villagers.md) |

@@ -344,6 +344,7 @@ namespace GreyWardenPolicePurity
             WriteDuelPace();
 #endif
             TickCityReserves();
+            if (TickCastleDuel()) return;
             if (TickSearchProgress()) return;
             if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
             {
@@ -534,8 +535,7 @@ namespace GreyWardenPolicePurity
                 SetSearchFighter(defender);
             }
             PrepareCityReserves(defenseParties);
-            foreach (Agent civilian in Mission.Agents.Where(agent => agent.IsActive() && agent.IsAIControlled
-                         && agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)))
+            foreach (Agent civilian in Mission.Agents.Where(agent => agent.IsActive() && agent.IsAIControlled && ShouldFlee(agent)))
             {
                 civilian.SetTeam(Team.Invalid, true);
                 civilian.SetWatchState(Agent.WatchState.Alarmed);
@@ -549,9 +549,11 @@ namespace GreyWardenPolicePurity
             Mission.SetMissionMode(MissionMode.Battle, false);
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
             Order(OrderType.Charge);
-            if (InHall && _hallTarget?.IsActive() == true && !_hallTarget.HasWeapon())
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_unarmed_target_notice)));
 #if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteCitySearch("CROWD_ROLE", string.Join("|", Mission.Agents
+                .Where(agent => agent.IsActive() && agent.IsHuman && !IsOurs(agent))
+                .Select(agent => (agent.Character as CharacterObject)?.StringId + ":armed=" + agent.HasWeapon()
+                    + ",target=" + (InHall && agent == _hallTarget) + ",defender=" + IsDefender(agent) + ",flee=" + ShouldFlee(agent))));
             GwpAiDiagnostics.WriteCitySearch("FIGHT_AI", "oursActive=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAIControlled)
                 + "; oursAlarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
                 + "; oursNavigators=" + _ours.Keys.Count(agent => agent.IsActive()
@@ -689,10 +691,15 @@ namespace GreyWardenPolicePurity
         private bool IsWatch(Agent agent) => agent.IsHuman && !IsOurs(agent)
             && agent.Character is CharacterObject character && MissionFightHandler.IsAgentJusticeWarrior(character);
 
-        /// <summary>按场景实际装备判断；原版HasWeapon也检查未拔出的武器，不以职业代替武器。</summary>
-        private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && agent.HasWeapon() && (IsWatch(agent) || InHall && agent == _hallTarget
-            || agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
-            && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction);
+        /// <summary>目标不因没武器逃跑；其余守方仍按实际装备及所属身份判断。</summary>
+        private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && (InHall && agent == _hallTarget
+            || agent.HasWeapon() && (IsWatch(agent)
+                || agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
+                && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction));
+
+        /// <summary>原版把持械者和打手视为可还击者，不能将所有非守军一概强制逃跑。</summary>
+        private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)
+            && !MissionFightHandler.IsAgentAggressive(agent);
     }
 
     /// <summary>近战碰到人：交给进城搜捕认是不是对守卫动手。参数名须与原版回调一致，Harmony 按名绑定。</summary>

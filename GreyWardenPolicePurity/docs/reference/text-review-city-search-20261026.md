@@ -151,15 +151,15 @@
 
 提示：带着部下撤到城门外。
 
-[无武器的目标正往门口逃，仍在眼前。]
+[城堡里约好单挑，双方还在大厅。]
 
-提示：目标往外逃了，快拦住！
+领主：带上你的兵器。我们到外面去。
 
-[目标已经逃出当前场景，眼前的人淡出消失。]
+[玩家带着部下走出大厅，庭院中的士兵和巡逻卫兵向空地围拢，目标到圈内等候。]
 
-提示：人跑了，带上部下撤出去。
+提示：去庭院赴约。
 
-这次没有抓到人，委托仍未完成。目前没有跨门续追流程，不能让提示继续催玩家追一个已经不在场的人。
+[众人站定，玩家走进圈内，才开始交手。目标不会空手参战，也不会临阵逃跑。]
 
 操作说明仍放在需要操作的地方：城门外可按住 Tab 离场；交战时尚未到城外，提示“还没出城，无法离开。”。这些是界面反馈，不塞进人物台词。
 
@@ -230,8 +230,6 @@
 | `gwp_cs_walk_out_notice` | 五，离开大厅 | Gather your men and leave the city. |
 | `gwp_cs_hall_notice` | 五，继续往大厅去 | Take everyone still on their feet to the lord's hall. |
 | `gwp_cs_escape_notice` | 五，撤出城外 | Lead your men back beyond the gate. |
-| `gwp_cs_unarmed_target_notice` | 五，目标仍在眼前逃跑 | Your quarry is heading for the exit. Stop them! |
-| `gwp_cs_target_escaped_notice`（拟新增） | 五，目标已逃脱 | They got away. Gather your men and withdraw. |
 | `gwp_cs_hostile_exit_blocked` | 五，尚未出城 | You're still inside the walls. You can't leave yet. |
 
-写入前检查：大厅的新反应与两条分支分别接线；已逃脱提示需接到目标实际逃离/淡出的事件，不把倒地、约斗赴约或普通切场景算成逃脱。城堡没有竞技场，城堡的单挑不使用赴约提示。城镇/城堡共用的提示最后核对用“城外”是否自然。菜单与操作说明另按实际可选路线压缩，不能把和平放行、强攻与不同结局混写成玩家眼前都发生过的事。
+写入前检查：大厅的新反应与两条分支分别接线；城堡出门赴约与城镇竞技场的提示要按地点分开。城堡没有竞技场，单挑去庭院空地，不能显示“去竞技场”。城镇/城堡共用的提示最后核对用“城外”是否自然。菜单与操作说明另按实际可选路线压缩，不能把和平放行、强攻与不同结局混写成玩家眼前都发生过的事。

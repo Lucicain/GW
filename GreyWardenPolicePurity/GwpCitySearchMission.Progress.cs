@@ -131,6 +131,10 @@ namespace GreyWardenPolicePurity
                 if (_warDeclared) _pendingFight = "forced_hall";
                 else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_hall_notice)));
             }
+            else if (IsCastleAppointment)
+            {
+                _stage = Stage.HallDone;
+            }
             else if (_place == GwpCitySearchPlace.Escape)
             {
                 _stage = Stage.Escaping;
@@ -166,6 +170,7 @@ namespace GreyWardenPolicePurity
 
         internal bool TryUseSearchPassage(PassageUsePoint passage, Agent user)
         {
+            if (TargetMustStay(user)) return true;
             if (user != Agent.Main) return false;
             if (CanUsePassage(passage))
                 _pendingHallAction = passage.ToLocationId == "lordshall" ? "enter_hall"
@@ -209,16 +214,13 @@ namespace GreyWardenPolicePurity
                         InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_out_notice)));
                         break;
                     case "duel":
+                        Search.AgreeDuel();
+                        _stage = Stage.HallDone;
+                        BeginDuelWalk("center");
+                        DisablePlayerPassages();
                         if (_settlement.IsTown)
-                        {
-                            Search.AgreeDuel();
-                            _stage = Stage.HallDone;
-                            BeginDuelWalk("center");
-                            DisablePlayerPassages();
                             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
-                            break;
-                        }
-                        StartHallDuel();
+                        else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_menu_street)));
                         break;
                     case "duel_won":
                         RestoreSpectators();
@@ -243,7 +245,6 @@ namespace GreyWardenPolicePurity
                 _stage = Stage.HallTalking;
                 Mission.GetMissionBehavior<MissionConversationLogic>().StartConversation(_hallTarget, false);
             }
-            TrySecureHallTarget();
             EndFightIfDefendersDown();
             return false;
         }
@@ -268,14 +269,6 @@ namespace GreyWardenPolicePurity
             if (!Search.SearchActive) return;
             if (InHall)
             {
-                // 没有武器的目标会逃跑。只击败卫兵不能隔空控制他，必须追到身边。
-                if (!Search.HallResolved && _hallTarget?.IsActive() == true && !_hallTarget.HasWeapon())
-                {
-                    _stage = Stage.FightOver;
-                    TrySecureHallTarget();
-                    DisablePlayerPassages();
-                    return;
-                }
                 if (_hallTarget?.State == AgentState.Routed || _hallTarget?.State == AgentState.Deleted)
                 {
                     Search.WithdrawFromHall();
@@ -298,47 +291,21 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private void TrySecureHallTarget()
-        {
-            if (!InHall || !Search.SearchWar || Search.HallResolved || _stage == Stage.Failed
-                || _pendingFight != null || _hallTarget == null
-                || (_hallTarget.State != AgentState.Unconscious && (!_hallTarget.IsActive() || _hallTarget.HasWeapon()))
-                || Agent.Main?.IsActive() != true
-                || Agent.Main.Position.Distance(_hallTarget.Position) > GwpTuning.CitySearch.SecureTargetDistance
-                || Mission.Agents.Any(agent => IsCityEnemyFighter(agent)
-                    && agent.Position.Distance(_hallTarget.Position) <= GwpTuning.CitySearch.GuardChallengeDistance)) return;
-            Search.WonHall();
-            if (_hallTarget.IsActive()) SandBoxHelpers.MissionHelper.FollowAgent(_hallTarget, Agent.Main);
-            DisablePlayerPassages();
-            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_out_notice)));
-        }
-
-        private void StartHallDuel()
+        private void StartCourtDuel()
         {
             if (_hallTarget?.IsActive() != true || Agent.Main?.IsActive() != true) return;
             _stage = Stage.Duel;
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
-            // 原版藏身处：旁人暂离双方队伍，固定原位围观，不创建另一套队伍。
+            // 只有两位交手者敌对；已走到圈上的人保持站位，其他旁人保留自己的行为。
             foreach (Agent agent in Mission.Agents.Where(agent => agent.IsActive() && agent.IsHuman
                          && agent != Agent.Main && agent != _hallTarget))
             {
-                _spectators[agent] = agent.Team;
+                if (!_spectators.ContainsKey(agent)) _spectators[agent] = agent.Team;
                 agent.SetTeam(Team.Invalid, true);
-                WorldPosition position = agent.GetWorldPosition();
-                agent.SetScriptedPosition(ref position, false);
-                agent.SetLookAgent(_hallTarget);
             }
             _hallTarget.SetTeam(Mission.PlayerEnemyTeam, true);
             Mission.PlayerEnemyTeam.SetIsEnemyOf(Mission.PlayerTeam, true);
-            _hallTarget.SetWatchState(Agent.WatchState.Alarmed);
-            AlarmedBehaviorGroup? alarmed = _hallTarget.GetComponent<CampaignAgentComponent>()?.AgentNavigator
-                ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
-            if (alarmed != null)
-            {
-                alarmed.DisableCalmDown = true;
-                alarmed.AddBehavior<FightBehavior>();
-                alarmed.SetScriptedBehavior<FightBehavior>();
-            }
+            SetSearchFighter(_hallTarget);
             Mission.SetMissionMode(MissionMode.Duel, false);
         }
 
@@ -346,10 +313,13 @@ namespace GreyWardenPolicePurity
         {
             foreach (var entry in _spectators.Where(entry => entry.Key.IsActive()))
             {
-                entry.Key.DisableScriptedMovement();
+                ReleaseCourtPosition(entry.Key);
                 entry.Key.SetTeam(entry.Value, true);
             }
             _spectators.Clear();
+            _courtSeats.Clear();
+            _courtPreparing = false;
+            if (_hallTarget?.IsActive() == true) ReleaseCourtPosition(_hallTarget);
         }
 
         private void NoteDuelRemoval(Agent agent)
@@ -367,6 +337,7 @@ namespace GreyWardenPolicePurity
 
         private void EndSearchScene()
         {
+            RestoreSpectators();
             if (!_transitioning && _outsideExitRequested && Search.SearchActive && CanLeaveSearch())
                 Search.FinishSearch(true);
             var bounty = Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>();
@@ -380,10 +351,12 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting
-            && !IsOurs(civilian) && !IsDefender(civilian)
-            && !(civilian == _hallTarget && Search.Returning)
+        internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting && ShouldFlee(civilian)
             ? Mission.Agents.Where(agent => agent.IsActive() && IsOurs(agent)).ToArray() : null;
+
+        /// <summary>大厅目标不走逃跑出口；城镇约斗后按约走门赴约仍允许。</summary>
+        internal bool TargetMustStay(Agent? agent) => agent != null && agent == _hallTarget && Search.SearchActive && !_transitioning
+            && (InHall ? !(Search.DuelAgreed && !Search.SearchWar) : IsCastleAppointment);
 
         // 单挑按竞技场原版只击昏，群殴让原版伤亡模型裁定；不改武器标记。
         public AgentState GetAgentState(Agent affectedAgent, float deathProbability, out bool usedSurgery)
@@ -391,6 +364,19 @@ namespace GreyWardenPolicePurity
             usedSurgery = false;
             return _stage == Stage.Duel ? AgentState.Unconscious : AgentState.None;
         }
+    }
+
+    [HarmonyPatch]
+    internal static class GwpCitySearchTargetRetreatPatch
+    {
+        private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(CommonAIComponent), nameof(CommonAIComponent.Panic));
+            yield return AccessTools.Method(typeof(CommonAIComponent), nameof(CommonAIComponent.Retreat));
+        }
+
+        private static bool Prefix(Agent ___Agent) =>
+            GwpCitySearchMissionController.Current?.TargetMustStay(___Agent) != true;
     }
 
     [HarmonyPatch(typeof(PassageUsePoint), nameof(PassageUsePoint.OnUse))]
