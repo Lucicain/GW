@@ -73,6 +73,7 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
 
 ## 跟用户说话
 
+- 一律用中文交流，包括计划、收尾报告和界面里的按钮文字；代码标识符与文件名保持原文。（依据：用户裁定 2026-10-26）
 - 分清三种来源：用户说过的、原作（卡牌、游戏）原文、agent 的推断。只有用户明确说过的才能叫「你定的」。（依据：用户裁定 2026-09-26）
 - 讲 git 用「存档 / 读档」：`git log --oneline` 看存档，`git show <hash>` 看内容，
   `git checkout <hash> -- 文件` 取回单个文件，`git revert` 安全撤销；`reset --hard` 先警告会丢东西。
