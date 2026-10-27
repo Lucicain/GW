@@ -16,6 +16,7 @@ namespace GreyWardenPolicePurity
         {
             base.OnSubModuleLoad();
             GwpRuntimeFaultWatch.Arm();
+            GwpCitySearchNativeVisualFix.Install();
             // 后登记的先查：进城搜捕场景用自己的命令表（见 GwpCitySearchVisualOrderProvider）。
             TaleWorlds.MountAndBlade.ViewModelCollection.Order.Visual.VisualOrderFactory.RegisterProvider(
                 new GwpCitySearchVisualOrderProvider());

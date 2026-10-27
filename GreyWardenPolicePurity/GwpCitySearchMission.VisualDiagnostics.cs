@@ -31,6 +31,7 @@ namespace GreyWardenPolicePurity
         {
             if (Mission.CurrentTime < _nextVisualSample) return;
             _nextVisualSample = Mission.CurrentTime + 0.5f;
+            GwpCitySearchNativeVisualFix.WriteDiagnostics();
             // 包含玩家、我方、坐骑和新生增援；仅记录首次出现或地址变化，不逐帧刷日志。
             foreach (Agent agent in Mission.Agents) CaptureSearchVisual(agent, "tick");
         }

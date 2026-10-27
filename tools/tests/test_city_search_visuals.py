@@ -25,6 +25,7 @@ namespace TaleWorlds.MountAndBlade{
 namespace GreyWardenPolicePurity{
  using System;using System.Collections.Generic;using System.Linq;using TaleWorlds.MountAndBlade;
  class Mission{public float CurrentTime;public List<Agent> Agents=new();}
+ static class GwpCitySearchNativeVisualFix{public static void WriteDiagnostics(){}}
  static class GwpAiDiagnostics{public static List<(string Stage,string Text)> Lines=new();public static void WriteCitySearch(string s,string d)=>Lines.Add((s,d));}
  internal sealed partial class GwpCitySearchMissionController:MissionLogic{
   public Mission Mission=new();string _place="Escape";

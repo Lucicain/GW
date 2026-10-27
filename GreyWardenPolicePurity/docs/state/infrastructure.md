@@ -2,7 +2,7 @@
 
 > 当前状态：兼容范围为 r15 及以后、不强求；r13 直升已放弃
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `tools/Verify-ContentKeys.ps1`
+> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `SubModule.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
 练兵官自队额外经验和旧军械 25%/最小 10 件旋钮已随机制删除；玩家订单经验保留，见 [运兵](warden-training.md) 和 [军械库](firesworn-armory.md)。（依据：用户裁定、源码复核 2026-10-15）
@@ -12,6 +12,8 @@
 使者赶路时限旋钮已删除；72小时常量改名EnvoyAftermathWaitHours，仅用于已谈妥后的战后交割等待。业务归[使者](case-envoy.md)。（依据：用户裁定、源码复核2026-10-18）
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
+
+模块初始化在场景与人物渲染任务产生前安装已查明的原生外观判空修复；具体指令签名、支持范围、运行时页与诊断生命周期归[搜捕](city-search.md)。不改游戏磁盘文件或存档。（依据：原生崩溃修复设计2026-10-27）
 
 ## 存档兼容
 

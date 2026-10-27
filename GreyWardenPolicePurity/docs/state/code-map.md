@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-216 个源文件、58,592 行、416 个公开类型、113 条 Harmony 目标声明（含动态入口，共 113 个补丁类）。
+217 个源文件、58,724 行、417 个公开类型、113 条 Harmony 目标声明（含动态入口，共 113 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -320,6 +320,7 @@
 - `GwpCitySearchMission` → GwpCitySearchMission.cs
 - `GwpCitySearchMissionController` → GwpCitySearchMission.CourtyardDuel.cs , GwpCitySearchMission.CrowdDiagnostics.cs , GwpCitySearchMission.cs , GwpCitySearchMission.Movement.cs , GwpCitySearchMission.Progress.cs , GwpCitySearchMission.Reinforcements.cs , GwpCitySearchMission.VisualDiagnostics.cs ←
 - `GwpCitySearchMissionViews` → GwpCitySearchMissionViews.cs
+- `GwpCitySearchNativeVisualFix` → GwpCitySearchNativeVisualFix.cs
 - `GwpCitySearchPassagePatch` → GwpCitySearchMission.Progress.cs ←
 - `GwpCitySearchPlace` → GwpCitySearchBehavior.Flow.cs ←
 - `GwpCitySearchPositionBehavior` → GwpCitySearchMission.CourtyardDuel.cs ←
@@ -718,9 +719,9 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 175 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 176 行 · `SubModule` : MBSubModuleBase
 
-### 其他（122 个文件）
+### 其他（123 个文件）
 
 - `GwpTextCatalog.g.cs` — 1435 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -775,6 +776,7 @@
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpCitySearchNativeVisualFix.cs` — 130 行 · `GwpCitySearchNativeVisualFix`
 - `GwpCitySearchBehavior.Hall.cs` — 124 行 · `GwpCitySearchBehavior`
 - `GwpPeace.cs` — 115 行 · `GwpPeace`
 - `GwpNegotiationResistance.cs` — 112 行 · `GwpNegotiationResistance`
@@ -813,7 +815,7 @@
 - `GwpPlayerCaseAssignment.cs` — 54 行 · `GwpPlayerCaseAssignment`
 - `GwpDispatchCargo.cs` — 52 行 · `GwpDispatchCargo`，另含 1 个类型
 - `GwpFireswornExperience.cs` — 52 行 · `GwpFireswornBehavior`
-- `GwpCitySearchMission.VisualDiagnostics.cs` — 50 行 · `GwpCitySearchMissionController`
+- `GwpCitySearchMission.VisualDiagnostics.cs` — 51 行 · `GwpCitySearchMissionController`
 - `GwpEscortSpeedCapPatch.cs` — 50 行 · `GwpEscortSpeedCapPatch`
 - `GwpSurplusGuardRitual.cs` — 50 行 · `GwpFireswornBehavior`
 - `GwpArmoryOwnership.cs` — 49 行 · `GwpFireswornBehavior`

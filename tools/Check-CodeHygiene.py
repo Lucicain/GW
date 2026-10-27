@@ -186,6 +186,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("人物外观原生渲染修复", r"\b0x5AE(?:AB6|ACA|AE7|AEC)\b",
+     "GwpCitySearchNativeVisualFix.cs", "GwpCitySearchNativeVisualFix.Install"),
     ("搜捕单挑路线", r"\bTestCourtyardDuels\b",
      "GwpTuning.cs|GwpCitySearchBehavior.Flow.cs", "GwpCitySearchBehavior.UsesCourtyardDuel"),
     ("庭院单挑空地扫描", r"\b(?:GetNavMeshFaceCount|GetNavMeshCenterPosition)\s*\(",
