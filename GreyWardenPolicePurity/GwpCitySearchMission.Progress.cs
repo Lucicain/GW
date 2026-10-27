@@ -355,7 +355,8 @@ namespace GreyWardenPolicePurity
 
         /// <summary>目标不走逃跑出口；约好单挑后允许正常走出大厅，去空地围圈或赴竞技场。</summary>
         internal bool TargetMustStay(Agent? agent) => agent != null && agent == _hallTarget && Search.SearchActive && !_transitioning
-            && (InHall ? !(Search.DuelAgreed && !Search.SearchWar) : IsCourtAppointment);
+            && (InHall ? !(Search.DuelAgreed && !Search.SearchWar)
+                : Search.SearchWar || !Search.DuelAgreed || IsCourtAppointment);
 
         // 单挑按竞技场原版只击昏，群殴让原版伤亡模型裁定；不改武器标记。
         public AgentState GetAgentState(Agent affectedAgent, float deathProbability, out bool usedSurgery)

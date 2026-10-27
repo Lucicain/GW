@@ -18,7 +18,7 @@ class CitySearchHostilityTests(unittest.TestCase):
         native_roles = '\n'.join(method(native, name) for name in ['IsAgentAggressive', 'IsAgentVillian', 'IsAgentJusticeWarrior'])
         code = r'''
 using System;using System.Linq;using System.Collections.Generic;
-class Hero {public static Hero MainHero=new();public object MapFaction=new();}
+class Hero {public static Hero MainHero=new();public object MapFaction=new();public bool IsNotable;}
 class BasicCharacterObject{}
 class CharacterObject:BasicCharacterObject {public int Occupation;public bool IsHero;public Hero? HeroObject;}
 static class MissionFightHandler{NATIVE_ROLES}
@@ -43,6 +43,16 @@ static class Program {
  static int n;static void Check(bool b,string why){n++;if(!b)throw new Exception(why);}
  static void Main(){
  var c=new Controller();var guard=new Agent{Watch=true,Character=new(){Occupation=7}};
+ foreach(int occupation in new[]{4,25,15,27,21,16}){
+  var bystander=new Agent{Armed=true,Character=new(){Occupation=occupation}};
+  Check(c.Defender(bystander)&&!c.Flee(bystander),"armed passerby joins defence regardless of civilian occupation");
+  bystander.Armed=false;Check(!c.Defender(bystander)&&c.Flee(bystander),"unarmed passerby flees regardless of aggressive occupation");
+ }
+ var notable=new Agent{Armed=true,Character=new(){IsHero=true,HeroObject=new(){IsNotable=true}}};
+ Check(!c.Defender(notable)&&c.Flee(notable),"named notable flees even when carrying a weapon");
+ c._hallTarget=notable;Check(c.Defender(notable)&&!c.Flee(notable),"arrest target takes priority over named notable exception");c._hallTarget=null;
+ notable.Ours=true;Check(!c.Defender(notable)&&!c.Flee(notable),"allied notable is neither enemy nor fleeing bystander");
+ var animal=new Agent{IsHuman=false,Armed=true};Check(!c.Defender(animal)&&!c.Flee(animal),"animals never enter human crowd roles");
  foreach(int occupation in new[]{7,23,24}){
   var watch=new Agent{Character=new(){Occupation=occupation}};
   Check(MissionFightHandler.IsAgentAggressive(watch)&&!c.Defender(watch)&&c.Flee(watch),"unarmed native watch must enter flight despite aggressive occupation");
@@ -58,15 +68,18 @@ static class Program {
  c._hallTarget.Armed=true;Check(c.Defender(c._hallTarget),"armed foreign target fights");
  guard.Ours=true;Check(!c.Defender(guard),"armed ally never becomes defender");
  var armedGuest=new Agent{Armed=true};
- Check(!c.Defender(armedGuest)&&!c.Flee(armedGuest),"armed foreign guest keeps native behavior instead of forced flight");
+ Check(c.Defender(armedGuest)&&!c.Flee(armedGuest),"armed foreign guest joins defence");
  var thug=new Agent{Character=new(){Occupation=15}};
- Check(MissionFightHandler.IsAgentAggressive(thug)&&!c.Flee(thug),"native thug classification is respected even without visible weapon");
+ Check(MissionFightHandler.IsAgentAggressive(thug)&&c.Flee(thug),"unarmed native thug flees despite aggressive occupation");
  Check(c.Flee(new Agent()),"ordinary unarmed bystander still flees");
  Check(c.Stay(c._hallTarget)&&!c.Stay(armedGuest),"target stay rule never traps another person");
  c.Search.DuelAgreed=true;Check(!c.Stay(c._hallTarget),"city duel appointment allows normal passage");
  c.Search.SearchWar=true;Check(c.Stay(c._hallTarget),"war overrides stale duel appointment");
  c.Search.SearchActive=false;Check(!c.Stay(c._hallTarget),"completed search does not block native movement");c.Search.SearchActive=true;c.Search.SearchWar=false;c.Search.DuelAgreed=false;
- c.InHall=false;Agent.Main.Position.X=100;Check(c.Leave(),"peaceful walking shortcut remains available");
+ c.InHall=false;Check(c.Stay(c._hallTarget),"street target stays even outside courtyard preparation");
+ c.Search.DuelAgreed=true;Check(!c.Stay(c._hallTarget),"restored arena appointment permits native street passage");
+ c.Search.SearchWar=true;Check(c.Stay(c._hallTarget),"street combat prevents target retreat despite old appointment");c.Search.SearchWar=false;c.Search.DuelAgreed=false;
+ Agent.Main.Position.X=100;Check(c.Leave(),"peaceful walking shortcut remains available");
  c.Search.SearchWar=true;c._stage=Stage.FightOver;Check(!c.Leave(),"hostile city blocks Tab even after wave defeated");
  c.InHall=true;Agent.Main.Position.X=0;Check(!c.Leave(),"hostile hall blocks Tab even beside its spawn");
  c.InHall=false;c._stage=Stage.Fighting;Check(c.Leave(),"actual outside exit permits retreat during fighting");
@@ -81,15 +94,19 @@ static class Program {
 }
 '''.replace('BODIES', bodies).replace('NATIVE_ROLES', native_roles)
         run(code)
-        old_defender = bodies.replace('InHall && agent == _hallTarget\n            || agent.HasWeapon() && (IsWatch(agent)', 'agent.HasWeapon() && (IsWatch(agent)')
-        with self.assertRaisesRegex(AssertionError, 'unarmed hall target'):
+        old_defender = bodies.replace(method(mission, 'IsDefender'), 'private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && agent.HasWeapon() && agent.Character is not CharacterObject { HeroObject: { IsNotable: true } };')
+        with self.assertRaisesRegex(AssertionError, 'arrest target takes priority'):
             run(code.replace(bodies, old_defender))
-        old_crowd = bodies.replace(method(mission, 'ShouldFlee'), 'private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent);')
-        with self.assertRaisesRegex(AssertionError, 'armed foreign guest'):
-            run(code.replace(bodies, old_crowd))
+        previous = subprocess.check_output(['git', 'show', '587fcc3:GreyWardenPolicePurity/GwpCitySearchMission.cs'], text=True, encoding='utf-8-sig')
+        old_armed_roles = bodies.replace(method(mission, 'IsDefender'), method(previous, 'IsDefender'))
+        with self.assertRaisesRegex(AssertionError, 'armed passerby joins defence'):
+            run(code.replace(bodies, old_armed_roles))
+        without_notables = bodies.replace('&& agent.Character is not CharacterObject { HeroObject: { IsNotable: true } }', '')
+        with self.assertRaisesRegex(AssertionError, 'named notable flees'):
+            run(code.replace(bodies, without_notables))
         old_unarmed_watch = bodies.replace(method(mission, 'ShouldFlee'), '''private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)
             && !MissionFightHandler.IsAgentAggressive(agent);''')
-        with self.assertRaisesRegex(AssertionError, 'unarmed native watch must enter flight'):
+        with self.assertRaisesRegex(AssertionError, 'unarmed passerby flees regardless'):
             run(code.replace(bodies, old_unarmed_watch))
         old_tab = bodies.replace(method(progress, 'CanLeaveSearch'), '''private bool CanLeaveSearch() => _stage != Stage.Fighting && _stage != Stage.Duel
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
@@ -126,7 +143,9 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
  var other=new Agent();var bystander=new Common(other);bystander.Panic();bystander.Retreat();Check(bystander.IsPanicked&&bystander.IsRetreating&&other.Left&&other.Mission.Panics==1,"other native agents keep their original panic and retreat");
  controller.Search.DuelAgreed=true;Check(Gate.Allows(target),"peaceful city appointment is allowed");controller.Search.SearchWar=true;Check(!Gate.Allows(target),"war cancels the appointment exception");
  controller.Search.SearchActive=false;Check(Gate.Allows(target),"finished search does not intercept normal campaign agents");controller.Search.SearchActive=true;
- controller.InHall=false;Check(Gate.Allows(target),"scope is restricted to this hall mission");controller.InHall=true;
+ controller.InHall=false;Check(!Gate.Allows(target),"street target cannot retreat during combat");
+ controller.Search.SearchWar=false;Check(Gate.Allows(target),"restored arena appointment keeps native street travel");
+ controller.IsCourtAppointment=true;Check(!Gate.Allows(target),"courtyard appointment holds target outside hall too");controller.InHall=true;
  controller._transitioning=true;Check(Gate.Allows(target),"mission cleanup and transition are allowed");GwpCitySearchMissionController.Current=null;Check(Gate.Allows(target),"all other missions keep native behavior");
  Console.WriteLine("CITY_SEARCH_TARGET_RETREAT_ASSERTIONS="+n);
 }}
