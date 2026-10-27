@@ -342,6 +342,7 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
             TickSearchVisuals();
             WriteDuelPace();
+            TickCityPursuitDiagnostics();
 #endif
             TickCityReserves();
             if (TickHallDuel()) return;
@@ -528,7 +529,7 @@ namespace GreyWardenPolicePurity
             foreach (Agent defender in _defenders)
             {
                 defender.SetTeam(Mission.PlayerEnemyTeam, true);
-                SetSearchFighter(defender);
+                SetCityPursuer(defender);
             }
             PrepareCityReserves(defenseParties);
             foreach (Agent civilian in Mission.Agents.Where(agent => agent.IsActive() && agent.IsAIControlled && ShouldFlee(agent)))

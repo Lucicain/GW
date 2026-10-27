@@ -126,7 +126,8 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 
 | 概念 | 归属 | 别处直接用就会被拦的写法 |
 |---|---|---|
-| 搜捕单挑路线与大厅占用 | `GwpCitySearchBehavior.UsesHallDuel` / `HallDuelLocked` | 真实竞技场场景名决定路线；菜单、走门、Tab与存读档共用入口，规则归[搜捕](city-search.md) |
+| 搜捕单挑路线与大厅占用 | `GwpCitySearchBehavior.UsesHallDuel` / `HallDuelLocked` | 临时大厅测试开关优先，关闭后按真实竞技场场景名决定；菜单、走门、Tab与存读档共用入口，规则归[搜捕](city-search.md) |
+| 搜捕敌方追击 | `GwpCitySearchMissionController.SetCityPursuer` | 初始守方与新援军共用原版下马兵种编队、冲锋及自动选敌，不改我方编队与血量归属 |
 | 人物外观原生渲染修复 | `GwpCitySearchNativeVisualFix` | 对已查明故障RVA的修复只在此处安装；签名、生命周期及验收归[搜捕](city-search.md)（依据：转储与离线负对照2026-10-27） |
 | 和平投案退团、押人与原队收尾 | `GwpVoluntarySurrender` | 玩家当面投案与使者立即/战后投案均用此入口；规则归[使者](case-envoy.md#投案与原版军团退队衔接) |
 | 兵员人数、伤兵与经验搬运 | `GwpTroopTransfer` | 各功能选兵后调用公共搬运入口；语义由实际游戏名册回归检查，不声称正则覆盖所有扣人加人代码 |

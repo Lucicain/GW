@@ -30,9 +30,15 @@ class CitySearchCombatTests(unittest.TestCase):
         names = ['StartFight', 'EndFightIfDefendersDown']
         names += ['SetSearchFighter', 'RestoreSearchFollowers']
         bodies = '\n'.join(method(source, name) for name in names)
+        bodies += method(read('GwpCitySearchMission.Reinforcements.cs'), 'SetCityPursuer')
         template = r'''
 using System;using System.Collections.Generic;using System.Linq;
 enum AIStateFlag{None=0,Cautious=1,PatrollingCautious=2,Alarmed=3}
+enum FormationClass{Infantry,Ranged}
+static class TroopClassExtensions{public static FormationClass DismountedClass(this FormationClass c)=>c;}
+class CharacterObject{public FormationClass GetFormationClass()=>FormationClass.Infantry;}
+class MovementOrder{public static MovementOrder MovementOrderCharge=new();}
+class Formation{public bool IsAIControlled=true;public MovementOrder? Order;public void SetControlledByAI(bool b){IsAIControlled=b;}public void SetMovementOrder(MovementOrder o){Order=o;}}
 static class MBAPI{public static class IMBAgent{public static void SetAIAlarmState(Agent a,AIStateFlag f){a.AIStateFlags=f;a.AlarmCalls++;}}}
 namespace TaleWorlds.Library{static class Debug{public static void FailedAssert(params object[] o){throw new Exception("native assertion");}}}
 class Agent{
@@ -41,10 +47,11 @@ class Agent{
  public CampaignAgentComponent Component=new();public T? GetComponent<T>() where T:class=>Component as T;
  public Agent GetPtr()=>this;public bool IsActive()=>Active;public void SetTeam(Team t,bool b){Team=t;}
  public bool Armed;public bool HasWeapon()=>Armed;
+ public CharacterObject Character=new();public Formation? Formation;public bool AutoTarget;public void SetAutomaticTargetSelection(bool b){AutoTarget=b;}
  public void DisableScriptedMovement(){}
  WATCH
 }
-class Team{public static Team Invalid=new();public bool Enemy;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}
+class Team{public static Team Invalid=new();public bool Enemy;public Formation Infantry=new();public Formation GetFormation(FormationClass c)=>Infantry;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}
 class MobileParty{}
 class CampaignAgentComponent{public AgentNavigator? AgentNavigator;}
 class AgentNavigator{public AlarmedBehaviorGroup Group=new();public T? GetBehaviorGroup<T>() where T:class=>Group as T;}
@@ -89,6 +96,8 @@ static class Program{
    var team=ally.Team;var playerCalls=Agent.Main.AlarmCalls;var wars=Campaign.Current.Bounty.Wars;bool alreadyWar=cause=="escape";c._warDeclared=alreadyWar;c.Start(cause);
    Check(ally.IsAlarmed()&&guided.IsAlarmed(),"our followers must enter combat AI state: "+cause);
    Check(guard.IsAlarmed()&&guard.Component.AgentNavigator!.Group.ScriptedFight,"guard retains native fight behavior");
+   Check(guard.Formation==Mission.Current.PlayerEnemyTeam.Infantry&&!guard.Formation.IsAIControlled&&guard.Formation.Order==MovementOrder.MovementOrderCharge&&guard.AutoTarget,"initial defenders actively charge the player force instead of just becoming alarmed");
+   Check(ally.Formation==null&&guided.Formation==null,"enemy pursuit cannot replace the player's formation commands");
    Check(civilian.IsAlarmed()&&civilian.Component.AgentNavigator!.Group.ScriptedFlee&&!civilian.Component.AgentNavigator.Group.ScriptedFight,"civilian flees rather than joins fight");
    Check(guided.Component.AgentNavigator!.Group.ScriptedFight&&guided.Component.AgentNavigator.Group.DisableCalmDown,"existing follower navigator stays in fight until victory");
    Check(ally.Team==team&&guided.Team==team&&Mission.Current.PlayerEnemyTeam.Enemy,"fighting does not replace player formation teams");
@@ -122,6 +131,9 @@ static class Program{
         old_cleanup = bodies.replace('RestoreSearchFollowers();', '')
         with self.assertRaisesRegex(AssertionError, 'victory releases ally combat state'):
             run(template.replace(bodies, old_cleanup))
+        old_pursuit = bodies.replace('SetCityPursuer(defender);', 'SetSearchFighter(defender);')
+        with self.assertRaisesRegex(AssertionError, 'initial defenders actively charge'):
+            run(template.replace(bodies, old_pursuit))
 
 
 if __name__ == '__main__':

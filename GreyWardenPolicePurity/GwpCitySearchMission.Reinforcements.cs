@@ -18,6 +18,9 @@ namespace GreyWardenPolicePurity
         private bool _cityReservesReady;
         private float _nextCityReserve;
         private event System.Action<BattleSideEnum, int>? _cityReinforcementsSpawned;
+#if GWP_DIAGNOSTICS
+        private readonly Dictionary<Agent, (float At, Vec3 Start, int Index)> _cityPursuitSamples = new();
+#endif
         event System.Action<BattleSideEnum, int> IGwpBattleSceneSource.OnReinforcementsSpawned
         {
             add => _cityReinforcementsSpawned += value;
@@ -48,6 +51,39 @@ namespace GreyWardenPolicePurity
         private static bool HasBattleWeapon(CharacterObject character) => character.BattleEquipments.Any(equipment =>
             Enumerable.Range(0, 5).Any(slot => equipment[(EquipmentIndex)slot].Item?.Weapons
                 .Any(weapon => weapon.WeaponFlags.HasAnyFlag(WeaponFlags.WeaponMask)) == true));
+
+        /// <summary>城中守方与后到援军都按原版冲锋接敌，不停在无编队的警戒状态。</summary>
+        private void SetCityPursuer(Agent agent)
+        {
+            SetSearchFighter(agent);
+            Formation formation = Mission.PlayerEnemyTeam.GetFormation(agent.Character.GetFormationClass().DismountedClass());
+            agent.Formation = formation;
+            // 城镇任务没有部队AI；由本场给出原版冲锋命令，原生AI持续选敌、追击和交战。
+            formation.SetControlledByAI(false);
+            formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+            agent.SetAutomaticTargetSelection(true);
+#if GWP_DIAGNOSTICS
+            _cityPursuitSamples[agent] = (Mission.CurrentTime + 8f, agent.Position, agent.Index);
+#endif
+        }
+
+#if GWP_DIAGNOSTICS
+        /// <summary>每名守方/援军只在追击8秒后采样一次；已移除者只查缓存，不读原生对象。</summary>
+        private void TickCityPursuitDiagnostics()
+        {
+            foreach (var entry in _cityPursuitSamples.Where(entry => Mission.CurrentTime >= entry.Value.At).ToArray())
+            {
+                _cityPursuitSamples.Remove(entry.Key);
+                Agent agent = entry.Key;
+                if (WasSearchVisualRemoved(agent) || !agent.IsActive()) continue;
+                GwpAiDiagnostics.WriteCitySearch("PURSUIT_CHECK", "place=" + _place + "; index=" + entry.Value.Index
+                    + "; rosterBound=" + _citySoldiers.ContainsKey(agent) + "; moved=" + agent.Position.Distance(entry.Value.Start).ToString("0.0")
+                    + "; position=" + agent.Position + "; formation=" + agent.Formation?.FormationIndex
+                    + "; order=" + agent.Formation?.GetReadonlyMovementOrderReference().OrderType
+                    + "; fromPlayer=" + (Agent.Main?.IsActive() == true ? agent.Position.Distance(Agent.Main.Position).ToString("0.0") : "-"));
+            }
+        }
+#endif
 
         /// <summary>原版城内居民先生成；已在场的同兵种守卫占用真实名册，不能在预备兵中重复出现。</summary>
         private void PrepareCityReserves(IEnumerable<MobileParty> parties)
@@ -157,7 +193,7 @@ namespace GreyWardenPolicePurity
                 {
                     agent.SetTeam(Mission.PlayerEnemyTeam, true);
                     _defenders.Add(agent);
-                    SetSearchFighter(agent);
+                    SetCityPursuer(agent);
                     arrived++;
                 }
                 else agent.SetTeam(Team.Invalid, true);

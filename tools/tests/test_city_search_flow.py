@@ -40,6 +40,7 @@ class Store:IDataStore{public Dictionary<string,JsonElement> Data=new();public b
 class CharacterObject{public static List<CharacterObject> All=new();public static CharacterObject PlayerCharacter=new("player"){IsPlayerCharacter=true};public string StringId;public bool IsPlayerCharacter;public CharacterObject(string id){StringId=id;All.Add(this);}}
 class Hero{public static List<Hero> All=new();public static Hero MainHero=new("player");public string StringId;public CharacterObject CharacterObject;public bool IsDead,IsPrisoner,IsWounded;public Hero(string id){StringId=id;CharacterObject=new(id);All.Add(this);}public static Hero FindFirst(Func<Hero,bool> p)=>All.FirstOrDefault(p);}
 class Town{public int GetWallLevel()=>1;}
+static class GwpTuning{public static class CitySearch{public static bool TestHallDuels;}}
 class Location{public string StringId="",SceneName="arena";public string GetSceneName(int n)=>SceneName;}
 class LocationCharacter{}class Locations{public bool ArenaAvailable=true;public string ArenaScene="arena";public Location? GetLocationWithId(string s)=>s=="arena"&&!ArenaAvailable?null:new(){StringId=s,SceneName=s=="arena"?ArenaScene:s};public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}}
 class Settlement{public static Settlement? CurrentSettlement;public string StringId="town";public bool IsCastle;public Town Town=new();public Locations LocationComplex=new();}
@@ -156,18 +157,20 @@ static class GwpTextCatalog{KEYS}
 partial class GwpCitySearchBehavior{void SelectSearchTroops(MenuCallbackArgs args){}public void Register(CampaignGameStarter starter)=>RegisterSearchMenu(starter);}
 static class Program{static int n;static void Check(bool yes,string why){n++;if(!yes)throw new Exception(why);}
  static void Main(){
- foreach(bool castle in new[]{false,true})foreach(bool hasArena in new[]{false,true}){
+ foreach(bool forceHall in new[]{false,true})foreach(bool castle in new[]{false,true})foreach(bool hasArena in new[]{false,true}){
+  GwpTuning.CitySearch.TestHallDuels=forceHall;
   Mission.Current=null;var s=new Settlement{IsCastle=castle};s.LocationComplex.ArenaAvailable=hasArena;Settlement.CurrentSettlement=s;CrimeRecord.Shelter=s;
   var h=new Hero("target");var b=new GwpCitySearchBehavior();Campaign.Current.Search=b;b.Start(s,h,TroopRoster.CreateDummyTroopRoster());b.QueuePlace(GwpCitySearchPlace.Hall);b.AgreeDuel();
-  bool hall=!hasArena;Check(b.UsesHallDuel==hall,"single route owner uses actual arena scene rather than settlement type");
+  bool hall=forceHall||!hasArena;Check(b.UsesHallDuel==hall,"single route owner honors temporary hall test and actual arena scene");
   var starter=new CampaignGameStarter();b.Register(starter);var args=new MenuCallbackArgs();
-  Check(starter.Conditions["arena"](args)==hasArena,"arena shortcut is shown only when an arena exists");
-  Check(starter.Conditions["street"](args)==hasArena&&starter.Conditions["leave"](args)==hasArena,"hall appointment locks leaving and street routes");
-  starter.Initialize(args);Check(!hasArena||MBTextManager.Text==GwpTextCatalog.gwp_cs_menu_duel,"arena appointment retains its approved menu prompt");
+  Check(starter.Conditions["arena"](args)==!hall,"arena shortcut is hidden while hall testing is enabled");
+  Check(starter.Conditions["street"](args)==!hall&&starter.Conditions["leave"](args)==!hall,"hall appointment locks leaving and street routes");
+  starter.Initialize(args);Check(hall||MBTextManager.Text==GwpTextCatalog.gwp_cs_menu_duel,"arena appointment retains its approved menu prompt");
   b.QueuePlace(GwpCitySearchPlace.Arena);Check(b.SearchPlace==(hall?GwpCitySearchPlace.Hall:GwpCitySearchPlace.Arena),"missing arena returns the pending appointment to the hall");
   var save=new Store();b.Sync(save);var loaded=new GwpCitySearchBehavior();loaded.Sync(new Store{Loading=true,Data=save.Data});Campaign.Current.Search=loaded;
   int arenas=CampaignMission.Arenas;GwpCitySearchBehavior.Pump();Check(hall?CampaignMission.Arenas==arenas&&GwpCitySearchMission.Place==GwpCitySearchPlace.Hall:CampaignMission.Arenas==arenas+1,"save/load preserves the selected duel route and roster");
  }
+ GwpTuning.CitySearch.TestHallDuels=false;
  Mission.Current=null;Settlement.CurrentSettlement=new();CrimeRecord.Shelter=Settlement.CurrentSettlement;var pending=new GwpCitySearchBehavior();Campaign.Current.Search=pending;
  pending.Start(Settlement.CurrentSettlement,new Hero("pending"),TroopRoster.CreateDummyTroopRoster());pending.AgreeDuel();pending.QueuePlace(GwpCitySearchPlace.Arena);
  Settlement.CurrentSettlement.LocationComplex.ArenaAvailable=false;int before=CampaignMission.Arenas;GwpCitySearchBehavior.Pump();
@@ -181,6 +184,8 @@ static class Program{static int n;static void Check(bool yes,string why){n++;if(
         old_route = flow.replace('return string.IsNullOrEmpty', 'return !string.IsNullOrEmpty')
         with self.assertRaisesRegex(AssertionError, 'single route owner'):
             run(code.replace(flow, old_route))
+        with self.assertRaisesRegex(AssertionError, 'single route owner'):
+            run(code.replace('if (GwpTuning.CitySearch.TestHallDuels) return true;', ''))
 
     def test_menu_state_text_mapping(self):
         flow = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Flow.cs'))

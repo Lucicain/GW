@@ -60,6 +60,7 @@ namespace GreyWardenPolicePurity
         {
             get
             {
+                if (GwpTuning.CitySearch.TestHallDuels) return true;
                 Settlement? settlement = Settlement.CurrentSettlement;
                 return string.IsNullOrEmpty(settlement?.LocationComplex.GetLocationWithId("arena")
                     ?.GetSceneName(settlement.Town.GetWallLevel()));

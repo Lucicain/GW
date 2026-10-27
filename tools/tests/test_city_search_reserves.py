@@ -16,12 +16,16 @@ using System;using System.Linq;using System.Collections.Generic;
 namespace GreyWardenPolicePurity {
 enum BattleSideEnum{None=-1,Defender,Attacker}enum MissionMode{StartUp,Battle}enum GwpCitySearchPlace{Entry,Hall}
 enum AgentState{Routed,Killed,Unconscious}
+enum FormationClass{Infantry,Ranged,Cavalry,HorseArcher}
+static class TroopClassExtensions{public static FormationClass DismountedClass(this FormationClass c)=>c==FormationClass.Cavalry?FormationClass.Infantry:c==FormationClass.HorseArcher?FormationClass.Ranged:c;}
+class MovementOrder{public static MovementOrder MovementOrderCharge=new();}
+class Formation{public bool IsAIControlled=true;public MovementOrder? Order;public void SetControlledByAI(bool b){IsAIControlled=b;}public void SetMovementOrder(MovementOrder o){Order=o;}}
 enum EquipmentIndex{Weapon0} [Flags]enum WeaponFlags{None=0,WeaponMask=3,MeleeWeapon=1}
 static class Flags {public static bool HasAnyFlag(this WeaponFlags a,WeaponFlags b)=>(a&b)!=0;}
 class Weapon{public WeaponFlags WeaponFlags=WeaponFlags.MeleeWeapon;}
 class Item{public List<Weapon> Weapons=new(){new()};}class EquipmentElement{public Item? Item=new();}
 class Equipment{public EquipmentElement Element=new();public EquipmentElement this[EquipmentIndex i]=>Element;}
-class BasicCharacterObject{public string StringId="foot";public bool IsHero,IsRanged;public float Power=10;public float GetPower()=>Power;}
+class BasicCharacterObject{public string StringId="foot";public bool IsHero,IsRanged;public float Power=10;public float GetPower()=>Power;public FormationClass GetFormationClass()=>IsRanged?FormationClass.HorseArcher:FormationClass.Cavalry;}
 class CharacterObject:BasicCharacterObject{public List<Equipment> BattleEquipments=new(){new()};}
 class Banner{}class Faction{}class Hero{public static Hero MainHero=new();public Faction MapFaction=new();}
 static class FactionManager{public static HashSet<Faction> Hostiles=new();public static bool IsAtWarAgainstFaction(Faction a,Faction b)=>Hostiles.Contains(a);}
@@ -41,8 +45,8 @@ class Direction{public Vec2 AsVec2=new();}class Rotation{public Direction f=new(
 class MatrixFrame{public static MatrixFrame Identity=new();public Vec3 origin;public Rotation rotation=new();}class GameEntity{public MatrixFrame Frame=new();public Vec3 GlobalPosition=>Frame.origin;public MatrixFrame GetGlobalFrame()=>Frame;}
 class Scene{public Dictionary<string,GameEntity> Points=new();public List<(string Tag,GameEntity Point)> Extra=new();public List<string> Reads=new();
  public IEnumerable<GameEntity> FindEntitiesWithTag(string s){Reads.Add(s);if(Points.TryGetValue(s,out var e))yield return e;foreach(var x in Extra)if(x.Tag==s)yield return x.Point;}}
-class Team{public static Team Invalid=new(){Side=BattleSideEnum.None};public uint Color=0x77777777,Color2=0x88888888;public BattleSideEnum Side;}
-class Agent{public static Agent Main=null!;public IAgentOriginBase Origin=null!;public BasicCharacterObject Character=>Origin.Troop;public float CharacterPowerCached=>Character.GetPower();public bool Active=true,IsHuman=true,IsRunningAway,Armed=true,Alarmed;public Team Team=null!;public float Health=100,HealthLimit=100;public Vec3 Position;public uint Color1,Color2;public void WieldInitialWeapons(){}public bool IsActive()=>Active;public bool HasWeapon()=>Armed;public void SetTeam(Team team,bool b){Team=team;}}
+class Team{public static Team Invalid=new(){Side=BattleSideEnum.None};public uint Color=0x77777777,Color2=0x88888888;public BattleSideEnum Side;public Dictionary<FormationClass,Formation> Forms=new();public Formation GetFormation(FormationClass c){if(c==FormationClass.Cavalry||c==FormationClass.HorseArcher)throw new Exception("no mounted city pursuers");if(!Forms.ContainsKey(c))Forms[c]=new();return Forms[c];}}
+class Agent{public static Agent Main=null!;public IAgentOriginBase Origin=null!;public BasicCharacterObject Character=>Origin.Troop;public float CharacterPowerCached=>Character.GetPower();public bool Active=true,IsHuman=true,IsRunningAway,Armed=true,Alarmed,AutoTarget;public Team Team=null!;public Formation? Formation;public void SetAutomaticTargetSelection(bool b){AutoTarget=b;}public float Health=100,HealthLimit=100;public Vec3 Position;public uint Color1,Color2;public void WieldInitialWeapons(){}public bool IsActive()=>Active;public bool HasWeapon()=>Armed;public void SetTeam(Team team,bool b){Team=team;}}
 class MissionBehavior{public Mission Mission=null!;public virtual MissionBehaviorType BehaviorType=>MissionBehaviorType.Other;public virtual void OnAgentBuild(Agent a,Banner b){}}
 enum MissionBehaviorType{Other}class MissionLogic:MissionBehavior{}
 class GreyWardenFieldSparringMissionController:MissionBehavior{}
@@ -101,6 +105,7 @@ static class Program{
  c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0,waves=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"arrival notifies correct side");arrivals+=count;waves++;};
  c.Tick();Check(c.Remaining==10&&arrivals==4,"first limited batch joins combat");Check(waves==1,"one batch notifies music as one arrival wave");
  Check(c.Mission.Agents.Skip(2).All(a=>a.Alarmed&&a.Team==c.Mission.PlayerEnemyTeam&&a.Position.x==77&&a.Position.z==12),"reserves use native defender point and wake combat AI without changing hall floor");
+ Check(c.Mission.Agents.Skip(2).All(a=>a.Formation!=null&&!a.Formation.IsAIControlled&&a.Formation.Order==MovementOrder.MovementOrderCharge&&a.AutoTarget),"distant reserves receive a continuing native charge order and automatic enemy selection");
  Check(context.RemainingPower(BattleSideEnum.Defender)==150,"moving reserves to scene cannot inflate shared power");
  Check(c.Mission.Agents.Skip(2).All(a=>a.Color1==((PartyAgentOrigin)a.Origin).Party.Primary&&a.Color2==((PartyAgentOrigin)a.Origin).Party.Secondary),"reinforcements use source party colors rather than generic mission team colors");
  c.Tick();Check(c.Remaining==10,"same-frame reentry cannot repeatedly spawn");
@@ -118,6 +123,8 @@ static class Program{
  c=New();garrison=Party("far",foot,4);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
  c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point(2,0);c.Mission.Scene.Extra.Add(("sp_guard_patrol",Point(300,0)));c.Mission.Scene.Extra.Add(("sp_guard",Point(120,0)));
  c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Position.x==300),"reserves enter at the point farthest from the player, not the native siege point beside the gate");
+ Check(c.Mission.Agents.Skip(1).All(a=>a.Formation?.Order==MovementOrder.MovementOrderCharge),"farthest spawn still attacks instead of waiting at its spawn point");
+ c=New();var archer=new CharacterObject{IsRanged=true};garrison=Party("archers",archer,2);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry"]=Point();c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Formation==c.Mission.PlayerEnemyTeam.GetFormation(FormationClass.Ranged)&&a.AutoTarget),"mounted archers dismount into a ranged formation and retain native weapon choice");
  c=New();garrison=Party("missing",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Tick();Check(c.Remaining==1&&c.Mission.Agents.Count==1,"missing point cannot spawn troops at world origin");
  c.Mission.Scene.Points["defender_infantry"]=Point();c.Mission.SpawnArmed=false;c.Mission.CurrentTime=4;c.Tick();Check(c.Mission.Agents.Last().Team==Team.Invalid&&!c.Mission.Agents.Last().Alarmed,"actual unarmed equipment variant never joins fight");
  var routed=c.Mission.Agents.Last();routed.Health=37;c.Removed(routed,AgentState.Routed);c.Save();Check(c.Search.Saved.Count==0&&c.Search.Losses.Count==1,"routed defender consumes task roster without entering next scene again");
@@ -141,6 +148,36 @@ def production(name):
 
 
 class CitySearchReserveTests(unittest.TestCase):
+    def test_pursuit_sample_runs_once_and_does_not_read_removed_agents(self):
+        stubs = STUBS.replace('public static MovementOrder MovementOrderCharge=new();',
+                              'public static MovementOrder MovementOrderCharge=new();public string OrderType=>"Charge";')
+        stubs = stubs.replace('public bool IsAIControlled=true;public MovementOrder? Order;',
+                             'public int FormationIndex;public MovementOrder GetReadonlyMovementOrderReference()=>Order!;public bool IsAIControlled=true;public MovementOrder? Order;')
+        stubs = stubs.replace('public static Agent Main=null!;', 'public int Index;public bool Gone;public static Agent Main=null!;')
+        stubs = stubs.replace('public bool IsActive()=>Active;',
+                             'public bool IsActive(){if(Gone)throw new Exception("removed native actor read");return Active;}')
+        stubs = stubs.replace('private static void SetSearchFighter',
+                             'public GwpCitySearchPlace _place;public HashSet<Agent> RemovedCache=new();bool WasSearchVisualRemoved(Agent a)=>RemovedCache.Contains(a);void CaptureSearchVisual(Agent a,string s){}public void Sample()=>TickCityPursuitDiagnostics();private static void SetSearchFighter')
+        scenario = r'''
+static class GwpAiDiagnostics{public static List<string> Checks=new();public static void WriteCitySearch(string kind,string details){if(kind=="PURSUIT_CHECK")Checks.Add(details);}}
+static class Program{static void Main(){
+ var m=new Mission();Agent.Main=new(){Origin=new PartyAgentOrigin(MobileParty.MainParty.Party,new()),Team=m.PlayerTeam};m.Agents.Add(Agent.Main);
+ var c=new GwpCitySearchMissionController{Mission=m};m.MissionBehaviors.Add(c);var p=new MobileParty("garrison"){MapFaction=c._settlement.MapFaction};p.MemberRoster.Elements.Add(new(){Character=new(),Number=2});c._settlement.Town.GarrisonParty=p;
+ m.Scene.Points["defender_infantry"]=new(){Frame=new(){origin=new Vec3(200,0)}};c.Prepare();c.Tick();
+ var moving=m.Agents[1];var removed=m.Agents[2];moving.Position=new(180,0);c.RemovedCache.Add(removed);removed.Gone=true;
+ m.CurrentTime=7;c.Sample();if(GwpAiDiagnostics.Checks.Count!=0)throw new Exception("sampled too early");
+ m.CurrentTime=8;c.Sample();if(GwpAiDiagnostics.Checks.Count!=1||!GwpAiDiagnostics.Checks[0].Contains("moved=20.0")||!GwpAiDiagnostics.Checks[0].Contains("order=Charge"))throw new Exception("wrong pursuit observation");
+ m.CurrentTime=20;c.Sample();if(GwpAiDiagnostics.Checks.Count!=1)throw new Exception("pursuit sample repeated");
+ Console.WriteLine("CITY_PURSUIT_DIAGNOSTICS=PASS");
+}}}
+'''
+        code = '#define GWP_DIAGNOSTICS\n' + stubs + scenario + production('GwpCitySearchMission.Reinforcements.cs') + production('GwpBattleSceneSource.cs')
+        run(code)
+        with self.assertRaisesRegex(AssertionError, 'removed native actor read'):
+            run(code.replace('WasSearchVisualRemoved(agent) || ', ''))
+        with self.assertRaisesRegex(AssertionError, 'pursuit sample repeated'):
+            run(code.replace('_cityPursuitSamples.Remove(entry.Key);', ''))
+
     def test_installed_origin_casualties_return_to_source_only(self):
         game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
         def decompile(assembly, name):
@@ -190,6 +227,7 @@ static class Program{static void Check(bool b,string why){if(!b)throw new Except
         code = STUBS + SCENARIOS + supplier + production('GwpBattleSceneSource.cs') + production('GwpBattleSceneContext.cs')
         run(code)
         for old, failure in [
+            (code.replace('SetCityPursuer(agent);', 'SetSearchFighter(agent);'), 'continuing native charge order'),
             (code.replace('element.Number - element.WoundedNumber', 'element.Number'), 'finite healthy roster'),
             (code.replace('.Distinct().ToArray()', '.ToArray()'), 'finite healthy roster'),
             (code.replace('if (present != null)', 'if (false)'), 'finite healthy roster'),

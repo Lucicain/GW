@@ -177,6 +177,8 @@ namespace GreyWardenPolicePurity
             /// <summary>大厅对方选打法时，目标勇武与荣誉每级把单挑的赢面（攻×防比值的对数）抬高多少；设计值（用户裁定 2026-10-26：性格仍有影响）。</summary>
             public const float DuelTraitLean = 0.25f;
             public const float GateExitDistance = 6f;
+            // 用户裁定2026-10-28：先隔离竞技场，让所有聚落验证大厅现场单挑；验收后关闭。
+            public static readonly bool TestHallDuels = true;
             public const int DefenderLimit = 20;
             public const int ReserveBatch = 4;
             public const float ReserveInterval = 3f;

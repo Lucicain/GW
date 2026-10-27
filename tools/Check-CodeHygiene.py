@@ -192,6 +192,8 @@ OWNERS = [
      "GwpCitySearchBehavior.Flow.cs", "GwpCitySearchBehavior.UsesHallDuel"),
     ("大厅单挑离场占用", r"\bDuelAgreed\s*&&\s*UsesHallDuel\b",
      "GwpCitySearchBehavior.Flow.cs", "GwpCitySearchBehavior.HallDuelLocked"),
+    ("搜捕敌方追击", r"\bPlayerEnemyTeam\.GetFormation\(",
+     "GwpCitySearchMission.Reinforcements.cs", "GwpCitySearchMissionController.SetCityPursuer"),
     ("搜捕现场模拟攻防", r"\bGetSimulationAttackPower\s*\(",
      "GwpCitySearchMission.Progress.cs", "GwpCitySearchMissionController.CombatBalance / SimulationPower"),
     ("不扣名册的战役场景来源", r"\bnew\s+GreyWardenSafePartyAgentOrigin\s*\(",
