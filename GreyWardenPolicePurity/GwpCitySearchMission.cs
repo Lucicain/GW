@@ -24,8 +24,8 @@ using TaleWorlds.MountAndBlade.Source.Missions.Handlers;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 进城搜捕的城镇中心场景：沿用原版城镇中心任务的全部行为（居民、卫兵、对话、打架、恐慌），
-    /// 只把原版控制器换成 <see cref="GwpCitySearchMissionController"/>，让玩家穿战斗装备、带兵从城门进城。
+    /// 进城搜捕复用原版居民、卫兵、对话与恐慌；搜捕控制器独立办理战斗，不挂小巷斗殴。
+    /// 玩家穿战斗装备，带自选部队从城门进入。
     /// </summary>
     internal static class GwpCitySearchMission
     {
@@ -78,7 +78,6 @@ namespace GreyWardenPolicePurity
                 new NotableSpawnPointHandler(),
                 new MissionAgentPanicHandler(),
                 new AgentHumanAILogic(),
-                new MissionAlleyHandler(),
                 new MissionCrimeHandler(),
                 new MissionConversationLogic(),
                 new MissionAgentHandler(),
@@ -98,7 +97,7 @@ namespace GreyWardenPolicePurity
             {
                 // 与原版 Indoor 同样不运行工坊、小巷、城镇入口准备；保留大厅人口与场景物品。
                 list.RemoveAll(behavior => behavior is MissionSettlementPrepareLogic || behavior is WorkshopMissionHandler
-                    || behavior is NotableSpawnPointHandler || behavior is MissionAlleyHandler);
+                    || behavior is NotableSpawnPointHandler);
                 list.Add(new LocationItemSpawnHandler());
                 list.Add(new BattleSurgeonLogic());
             }

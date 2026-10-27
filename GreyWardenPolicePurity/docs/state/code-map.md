@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-216 个源文件、58,819 行、418 个公开类型、115 条 Harmony 目标声明（含动态入口，共 115 个补丁类）。
+216 个源文件、58,803 行、417 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -65,7 +65,7 @@
 | `GiveGoldAction` | `ApplyBetweenCharacters` | Postfix/Prefix | `GwpFireswornUpgradePaymentTracePatch` | GwpFireswornUpgradePayment.cs:85 |
 | `HumanAIComponent` | `RefreshBehaviorValues` | Prefix | `GwpWardenRetreatBehaviorPatch` | GwpWardenResolve.cs:52 |
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs:19 |
-| `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:143 |
+| `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:127 |
 | `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:781 |
 | `MapEventParty` | `Update` | Postfix/Prefix | `GwpArmoryBattleRosterPatch` | GwpArmoryBattle.cs:184 |
 | `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs:116 |
@@ -75,15 +75,15 @@
 | `MenuViewContext` | `TaleWorlds.CampaignSystem.GameState.IMenuContextHandler.OnMenuActivate` | Postfix | `GwpFireswornSoundMenuActivatePatch` | GwpFireswornSoundView.cs:73 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveHeldShieldParticlePatch` | GwpShieldBashGuardPatch.cs:1134 |
 | `Mission` | `DecideAgentHitParticles` | Prefix | `GwpPassiveShieldHitParticlePatch` | GwpShieldBashGuardPatch.cs:1210 |
-| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:707 |
+| `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:706 |
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs:982 |
 | `Mission` | `RegisterBlow` | Prefix | `GwpPassiveShieldRegisterBlowPatch` | GwpShieldBashGuardPatch.cs:1171 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs:794 |
-| `Mission` | `SpawnAgent` | Prefix | `GwpHallDuelSpawnEquipmentPatch` | GwpCitySearchMission.HallDuel.cs:236 |
+| `Mission` | `SpawnAgent` | Prefix | `GwpHallDuelSpawnEquipmentPatch` | GwpCitySearchMission.HallDuel.cs:237 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpWardenTroopGenderPatch` | GwpWardenTroopGenderPatch.cs:20 |
 | `MissionCombatMechanicsHelper` | `ComputeBlowDamage` | Prefix | `GwpDualWieldDamageTypePatch` | GwpDualWieldingPatch.cs:47 |
 | `MissionCombatMechanicsHelper` | `IsCollisionBoneDifferentThanWeaponAttachBone` | Postfix | `GwpDualWieldCollisionPatch` | GwpDualWieldingPatch.cs:18 |
-| `MissionConversationLogic` | `IsThereAgentAction` | Postfix | `GwpCitySearchFollowerTalkPatch` | GwpCitySearchMission.Movement.cs:134 |
+| `MissionConversationLogic` | `IsThereAgentAction` | Postfix | `GwpCitySearchFollowerTalkPatch` | GwpCitySearchMission.Movement.cs:118 |
 | `MissionFightHandler` | `GetDangerSources` | Postfix | `GwpCitySearchCivilianDangerPatch` | GwpCitySearchMission.Progress.cs:361 |
 | `MissionLocationLogic` | `SpawnCharactersAccompanyingPlayer` | Prefix | `GwpCitySearchCompanionsPatch` | GwpCitySearchMission.Progress.cs:372 |
 | `MissionNameMarkerVM` | `Tick` | Postfix | `GwpDuelOpponentMarkerPatch` | GwpDuelOpponentMarkerPatch.cs:12 |
@@ -98,7 +98,6 @@
 | `PartyCharacterVM` | `UpdateTalkable` | Postfix | `GwpPartyCharacterTalkablePatch` | GwpPartyScreenTroopTalkPatch.cs:31 |
 | `PartyNameplateVM` | `FullName` (Setter) | Prefix | `GwpCaseTargetNameplatePatch` | GwpCaseTargetNameplatePatch.cs:12 |
 | `PartyUpgraderCampaignBehavior` | `UpgradeReadyTroops` | Finalizer/Prefix | `GwpFireswornUpgradeScopePatch` | GwpFireswornUpgradePayment.cs:54 |
-| `PassageAI` | `GetScriptedFrameFlags` | Postfix | `GwpCitySearchDuelRunPatch` | GwpCitySearchMission.Movement.cs:124 |
 | `PassageUsePoint` | `OnUse` | Prefix | `GwpCitySearchPassagePatch` | GwpCitySearchMission.Progress.cs:353 |
 | `PersonaSoftspokenTag` | `IsApplicableTo` | Finalizer | `GwpDispatchBarterFaultDiagnostics` | GwpDispatchBarterFaultDiagnostics.cs:11 |
 | `PlayerTownVisitCampaignBehavior` | `game_menu_village_on_init` | Postfix | `GwpFireswornVillageLockPatch` | GwpFireswornMenus.cs:129 |
@@ -315,7 +314,6 @@
 - `GwpCitySearchCivilianDangerPatch` → GwpCitySearchMission.Progress.cs ←
 - `GwpCitySearchCompanionsPatch` → GwpCitySearchMission.Progress.cs ←
 - `GwpCitySearchDuelLocationEntryPatch` → GwpCitySearchMission.Movement.cs ←
-- `GwpCitySearchDuelRunPatch` → GwpCitySearchMission.Movement.cs ←
 - `GwpCitySearchFadeDiagnosticsPatch` → GwpCitySearchMission.VisualDiagnostics.cs ←
 - `GwpCitySearchFollowerTalkPatch` → GwpCitySearchMission.Movement.cs ←
 - `GwpCitySearchGate` → GwpCitySearchBehavior.Flow.cs ←
@@ -581,7 +579,7 @@
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 216 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 215 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -729,7 +727,7 @@
 - `GwpTextCatalog.g.cs` — 1437 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 881 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
-- `GwpCitySearchMission.cs` — 713 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
+- `GwpCitySearchMission.cs` — 712 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -745,7 +743,7 @@
 - `GwpWardenVisitDesire.cs` — 303 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
-- `GwpCitySearchMission.HallDuel.cs` — 259 行 · `GwpCitySearchMissionController` : AgentBehavior，另含 2 个类型
+- `GwpCitySearchMission.HallDuel.cs` — 260 行 · `GwpCitySearchMissionController` : AgentBehavior，另含 2 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpCitySearchMission.Reinforcements.cs` — 242 行 · `GwpCitySearchMissionController` : IGwpBattleSceneSource
 - `GwpAffairsData.cs` — 241 行 · `GwpAffairsEntry`，另含 2 个类型
@@ -768,7 +766,6 @@
 - `GwpCitySearchNativeVisualFix.cs` — 167 行 · `GwpCitySearchNativeVisualFix`
 - `GwpFaithBattleRewardModel.cs` — 167 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `GwpLastStand.cs` — 163 行 · `GwpLastStandBehavior` : MissionBehavior
-- `GwpCitySearchMission.Movement.cs` — 154 行 · `GwpCitySearchMissionController`，另含 3 个类型
 - `GwpPlayerIntervention.cs` — 154 行 · `GwpPlayerIntervention`，另含 2 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
 - `GwpFieldDialogueVoice.cs` — 147 行 · `GwpFieldDialogueVoice`
@@ -776,6 +773,7 @@
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpPersuasionRound.cs` — 144 行 · `GwpPersuasionRound`
 - `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
+- `GwpCitySearchMission.Movement.cs` — 138 行 · `GwpCitySearchMissionController`，另含 2 个类型
 - `GwpFireswornPartyDialogs.cs` — 137 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpCitySearchBehavior.Hall.cs` — 136 行 · `GwpCitySearchBehavior`

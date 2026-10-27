@@ -27,8 +27,8 @@ class LocationCharacter{public AgentData AgentData=new();public bool UseCivilian
 class Location{public string StringId="";public List<LocationCharacter> Characters=new();public LocationCharacter? GetLocationCharacter(object origin)=>Characters.FirstOrDefault(c=>c.AgentData.Origin==origin);public void RemoveLocationCharacter(LocationCharacter c){Characters.Remove(c);}public void AddCharacter(LocationCharacter c){Characters.Add(c);}public void OnAIChangeLocation(Location? from){}}
 class LocationComplex{public Location Hall=new(){StringId="lordshall"},Center=new(){StringId="center"};CHANGE_LOCATION}
 class Settlement{public LocationComplex LocationComplex=new();}
-class CampaignMission{public static CampaignMission Current=new();public Location Location=null!;}
-class LocationEncounter{public void OnCharacterLocationChanged(LocationCharacter c,Location from,Location to){Mission.Current.Handler.SpawnEnteringLocationCharacter(c,from);}}
+class CampaignMission{public static CampaignMission Current=new();public Location Location=null!;public void OnCharacterLocationChanged(LocationCharacter c,Location from,Location to){Mission.Current.Handler.SpawnEnteringLocationCharacter(c,from);}}
+class LocationEncounter{LOCATION_NOTIFICATION}
 static class PlayerEncounter{public static LocationEncounter LocationEncounter=new();}
 class Team{public static Team Invalid=new();public bool Hostile;public void SetIsEnemyOf(Team other,bool value){Hostile=value;}}
 enum AgentState{Routed,Killed,Unconscious,Deleted}enum MissionMode{StartUp,Duel}enum OrderType{StandYourGround,FollowMe}
@@ -110,7 +110,7 @@ static void RunScenario(bool delay){
  c.Tick();Check(c.Mission.Handler.Spawns==0,"offscreen equipment interval is retained");
  var late=Actor(c,"late",true);for(int i=0;i<8;i++)c.Tick();Check(c.Mission.Handler.Spawns==0&&late.Active,"delayed NPCs also leave before the target returns");
  late.Position=new(10);c.Tick();if(delay){Check(c.Phase=="Changing"&&c.Mission.Handler.Spawns==0,"late exit request does not count as empty hall");late.CompleteFade();}while(c.Phase=="Changing")c.Tick();Check(late.NativeGone,"late arrival exited at the main door");
- Check(c.Mission.Handler.Spawns==1&&c.Mission.Handler.EnteredFrom==c._settlement.LocationComplex.Center,"native location notification returns the same target through the main door once");
+ Check(c.Mission.Handler.Spawns==1&&c.Mission.Handler.EnteredFrom==c._settlement.LocationComplex.Center,"explicit native entrance call returns the same target through the main door once");
  Check(c.Mission.Handler.EquippedBeforeVisible&&c.Target.Character==target.Character,"battle gear and a melee weapon are set before reentry becomes visible");
  Check(c.Target.Health==73&&c.Target.FollowTarget==Agent.Main,"return keeps health and walks back toward the player");
  var ch=c._settlement.LocationComplex.Hall.GetLocationCharacter(c.Target.Origin)!;
@@ -135,7 +135,9 @@ class HallDuelTests(unittest.TestCase):
         position = block(source, r'internal sealed class GwpHallDuelPositionBehavior')
         progress = read('GwpCitySearchMission.Progress.cs')
         location = Path('.codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.Settlements.Locations/LocationComplex.cs').read_text(encoding='utf-8-sig')
+        encounter = Path('.codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.Encounters/LocationEncounter.cs').read_text(encoding='utf-8-sig')
         code = STUBS.replace('CHANGE_LOCATION', method(location, 'ChangeLocation'))
+        code = code.replace('LOCATION_NOTIFICATION', method(encounter, 'OnCharacterLocationChanged'))
         code = code.replace('CONTROLLER', controller).replace('POSITION_BEHAVIOR', position)
         code = code.replace('EXIT_RULES', member(progress, 'CanLeaveSearch') + method(progress, 'CanUsePassage'))
         mission = read('GwpCitySearchMission.cs')
@@ -153,6 +155,8 @@ class HallDuelTests(unittest.TestCase):
             run(code.replace('_hallExiting.Add(agent);', '_hallDepartures.Remove(agent);_hallExiting.Add(agent);'))
         with self.assertRaisesRegex(AssertionError, 'removed native state was read'):
             run(code.replace('!WasSearchVisualRemoved(agent) && ', '').replace('!WasSearchVisualRemoved(entry.Key) && ', ''))
+        with self.assertRaisesRegex(AssertionError, 'Sequence contains no matching element'):
+            run(code.replace('Mission.GetMissionBehavior<MissionAgentHandler>().SpawnEnteringLocationCharacter(character, _hallDuelDoor.ToLocation);', ''))
 
 
 if __name__ == '__main__':

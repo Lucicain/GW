@@ -138,8 +138,9 @@ namespace GreyWardenPolicePurity
             _hallDuelSpawnEquipment = true;
             try
             {
-                // ChangeLocation通知原版SpawnEnteringLocationCharacter：从同一扇门生成并FadeIn。
+                // 原版LocationEncounter只转发空地点↔当前地点；两个非空地点间搬迁不会生成场景人物。
                 _settlement.LocationComplex.ChangeLocation(character, _hallDuelDoor!.ToLocation, CampaignMission.Current.Location);
+                Mission.GetMissionBehavior<MissionAgentHandler>().SpawnEnteringLocationCharacter(character, _hallDuelDoor.ToLocation);
             }
             finally
             {
