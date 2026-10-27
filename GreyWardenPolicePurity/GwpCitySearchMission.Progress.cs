@@ -26,7 +26,6 @@ namespace GreyWardenPolicePurity
         private string? _pendingHallAction;
         private Agent? _hallTarget;
         private readonly Dictionary<string, int> _spawnedTroops = new Dictionary<string, int>();
-        private readonly Dictionary<Agent, Team> _spectators = new Dictionary<Agent, Team>();
         /// <summary>
         /// 大厅谈崩后对方先选打法（用户裁定 2026-10-26）：比较群殴与自己单挑玩家的赢面，再看性格。
         /// 实力用原版比武模拟胜负所用的 GetSimulationAttackPower，按装备与对应技能算攻防分；原版模拟里双方同时互攻，
@@ -131,7 +130,7 @@ namespace GreyWardenPolicePurity
                 if (_warDeclared) _pendingFight = "forced_hall";
                 else InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_hall_notice)));
             }
-            else if (IsCourtAppointment)
+            else if (Search.HallDuelLocked)
             {
                 _stage = Stage.HallDone;
             }
@@ -162,9 +161,10 @@ namespace GreyWardenPolicePurity
         {
             // 放行回调发生在对话中；门的许可不能因对话尚未关闭而永久关掉。
             if (_stage == Stage.Duel || _stage == Stage.Failed || _pendingFight != null || _pendingHallAction != null) return false;
+            if (Search.HallDuelLocked) return false;
             if (_stage == Stage.Fighting && !Search.SearchWar) return false;
             if (InHall) return passage.ToLocationId == "center";
-            if (passage.ToLocationId == "arena") return Search.DuelAgreed && !Search.UsesCourtyardDuel;
+            if (passage.ToLocationId == "arena") return Search.DuelAgreed && !Search.UsesHallDuel;
             return passage.ToLocationId == "lordshall" && (Search.HallAccessible || Search.SearchWar) && !Search.HallResolved;
         }
 
@@ -216,13 +216,15 @@ namespace GreyWardenPolicePurity
                     case "duel":
                         Search.AgreeDuel();
                         _stage = Stage.HallDone;
-                        BeginDuelWalk("center");
+                        if (Search.UsesHallDuel) BeginHallDuel();
+                        else BeginDuelWalk("center");
                         DisablePlayerPassages();
-                        InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(Search.UsesCourtyardDuel
-                            ? GwpTextCatalog.gwp_cs_walk_court_notice : GwpTextCatalog.gwp_cs_walk_arena_notice)));
+                        if (!Search.UsesHallDuel)
+                            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_walk_arena_notice)));
                         break;
+                    case "hall_duel_start": StartHallDuel(); break;
                     case "duel_won":
-                        RestoreSpectators();
+                        FinishHallDuel();
                         Search.WonHall();
                         _stage = Stage.HallDone;
                         Mission.SetMissionMode(MissionMode.StartUp, false);
@@ -230,7 +232,7 @@ namespace GreyWardenPolicePurity
                         DisablePlayerPassages();
                         break;
                     case "duel_lost":
-                        RestoreSpectators();
+                        FinishHallDuel();
                         Search.FinishSearch(false);
                         Mission.EndMission();
                         return true;
@@ -290,37 +292,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private void StartCourtDuel()
-        {
-            if (_hallTarget?.IsActive() != true || Agent.Main?.IsActive() != true) return;
-            _stage = Stage.Duel;
-            Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
-            // 只有两位交手者敌对；已走到圈上的人保持站位，其他旁人保留自己的行为。
-            foreach (Agent agent in Mission.Agents.Where(agent => agent.IsActive() && agent.IsHuman
-                         && agent != Agent.Main && agent != _hallTarget))
-            {
-                if (!_spectators.ContainsKey(agent)) _spectators[agent] = agent.Team;
-                agent.SetTeam(Team.Invalid, true);
-            }
-            _hallTarget.SetTeam(Mission.PlayerEnemyTeam, true);
-            Mission.PlayerEnemyTeam.SetIsEnemyOf(Mission.PlayerTeam, true);
-            SetSearchFighter(_hallTarget);
-            Mission.SetMissionMode(MissionMode.Duel, false);
-        }
-
-        private void RestoreSpectators()
-        {
-            foreach (var entry in _spectators.Where(entry => entry.Key.IsActive()))
-            {
-                ReleaseCourtPosition(entry.Key);
-                entry.Key.SetTeam(entry.Value, true);
-            }
-            _spectators.Clear();
-            _courtSeats.Clear();
-            _courtPreparing = false;
-            if (_hallTarget?.IsActive() == true) ReleaseCourtPosition(_hallTarget);
-        }
-
         private void NoteDuelRemoval(Agent agent)
         {
             if (_stage != Stage.Duel) return;
@@ -328,7 +299,7 @@ namespace GreyWardenPolicePurity
             else if (agent == _hallTarget) _pendingHallAction = "duel_won";
         }
 
-        private bool CanLeaveSearch() => _stage != Stage.Duel
+        private bool CanLeaveSearch() => !Search.HallDuelLocked && _stage != Stage.Duel
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
             && !Campaign.Current.ConversationManager.IsConversationFlowActive
             && (Search.SearchWar ? !InHall && _gateExitAvailable && Agent.Main?.IsActive() == true
@@ -336,7 +307,7 @@ namespace GreyWardenPolicePurity
 
         private void EndSearchScene()
         {
-            RestoreSpectators();
+            FinishHallDuel();
             if (!_transitioning && _outsideExitRequested && Search.SearchActive && CanLeaveSearch())
                 Search.FinishSearch(true);
             var bounty = Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>();
@@ -344,8 +315,7 @@ namespace GreyWardenPolicePurity
             if (Search.SearchActive)
             {
                 SaveCitySoldiers();
-                Search.SaveSurvivors(_ours.Where(entry => entry.Key.IsActive())
-                    .Select(entry => (entry.Value, entry.Key.Health)));
+                Search.SaveSurvivors(SearchSurvivors());
                 if (!_transitioning) Search.PauseSearch();
             }
         }
@@ -353,10 +323,10 @@ namespace GreyWardenPolicePurity
         internal IEnumerable<Agent>? CivilianDanger(Agent civilian) => _stage == Stage.Fighting && ShouldFlee(civilian)
             ? Mission.Agents.Where(agent => agent.IsActive() && IsOurs(agent)).ToArray() : null;
 
-        /// <summary>目标不走逃跑出口；约好单挑后允许正常走出大厅，去空地围圈或赴竞技场。</summary>
+        /// <summary>目标不走逃跑出口；约好单挑后允许走出大厅换装，或沿原版路线赴竞技场。</summary>
         internal bool TargetMustStay(Agent? agent) => agent != null && agent == _hallTarget && Search.SearchActive && !_transitioning
             && (InHall ? !(Search.DuelAgreed && !Search.SearchWar)
-                : Search.SearchWar || !Search.DuelAgreed || IsCourtAppointment);
+                : Search.SearchWar || !Search.DuelAgreed || Search.UsesHallDuel);
 
         // 单挑按竞技场原版只击昏，群殴让原版伤亡模型裁定；不改武器标记。
         public AgentState GetAgentState(Agent affectedAgent, float deathProbability, out bool usedSurgery)

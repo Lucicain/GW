@@ -61,9 +61,9 @@ namespace GreyWardenPolicePurity
         private void ResumeDuelWalk()
         {
             if (!Search.DuelAgreed || Search.SearchWar || _hallTarget?.IsActive() != true || Agent.Main == null) return;
-            if (!InHall && Search.UsesCourtyardDuel)
+            if (Search.UsesHallDuel)
             {
-                PrepareCourtDuel();
+                if (InHall) BeginHallDuel();
                 return;
             }
             if (!InHall)
@@ -74,7 +74,7 @@ namespace GreyWardenPolicePurity
         private void BeginDuelWalk(string destination)
         {
             if (!Search.DuelAgreed || Search.SearchWar || _hallTarget?.IsActive() != true) return;
-            if (destination == "arena" && Search.UsesCourtyardDuel) return;
+            if (destination == "arena" && Search.UsesHallDuel) return;
             Passage? door = Mission.GetMissionBehavior<MissionAgentHandler>().TownPassageProps
                 .OfType<Passage>().FirstOrDefault(passage => passage.ToLocation?.StringId == destination);
             if (door == null) return;
@@ -94,7 +94,8 @@ namespace GreyWardenPolicePurity
         /// </summary>
         private void WriteDuelPace()
         {
-            if (_hallTarget?.IsActive() != true || Agent.Main?.IsActive() != true || !IsDuelWalker(_hallTarget)
+            if (_hallTarget == null || WasSearchVisualRemoved(_hallTarget) || !_hallTarget.IsActive()
+                || Agent.Main?.IsActive() != true || !IsDuelWalker(_hallTarget)
                 || Mission.CurrentTime < _nextDuelPace) return;
             _nextDuelPace = Mission.CurrentTime + 1f;
             GwpAiDiagnostics.WriteCitySearch("DUEL_PACE", "place=" + _place
@@ -111,7 +112,7 @@ namespace GreyWardenPolicePurity
             Search.DuelAgreed && !Search.SearchWar && agent == _hallTarget;
 
         internal bool AllowsDuelArenaEntry(LocationCharacter character, Location destination) =>
-            Search.DuelAgreed && !Search.SearchWar && !Search.UsesCourtyardDuel && destination.StringId == "arena"
+            Search.DuelAgreed && !Search.SearchWar && !Search.UsesHallDuel && destination.StringId == "arena"
             && character.Character == _target.CharacterObject;
     }
 
@@ -139,11 +140,14 @@ namespace GreyWardenPolicePurity
     }
 
     [HarmonyPatch(typeof(Location), nameof(Location.CanAIEnter))]
-    internal static class GwpCitySearchDuelArenaEntryPatch
+    internal static class GwpCitySearchDuelLocationEntryPatch
     {
         private static void Postfix(Location __instance, LocationCharacter character, ref bool __result)
         {
-            if (GwpCitySearchMissionController.Current?.AllowsDuelArenaEntry(character, __instance) == true) __result = true;
+            var scene = GwpCitySearchMissionController.Current;
+            if (scene == null) return;
+            if (scene.BlocksHallDuelEntry(character, __instance)) __result = false;
+            else if (scene.AllowsHallDuelExit(character, __instance) || scene.AllowsDuelArenaEntry(character, __instance)) __result = true;
         }
     }
 }

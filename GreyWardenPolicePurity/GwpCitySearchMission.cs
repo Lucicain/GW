@@ -236,19 +236,19 @@ namespace GreyWardenPolicePurity
                 + "; applied=" + appliedFormations.Count + "; selected=" + orderController.SelectedFormations.Count
                 + "; formations=" + DescribeFormations());
             _positionsAtOrder.Clear();
-            foreach (Agent agent in _ours.Keys.Where(agent => agent.IsActive()))
+            foreach (Agent agent in _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive()))
                 _positionsAtOrder[agent] = agent.Position;
             _orderSampleAt = Mission.CurrentTime + 5f;
         }
 
         private void WriteOrderCheck()
         {
-            List<float> moved = _positionsAtOrder.Where(entry => entry.Key.IsActive())
+            List<float> moved = _positionsAtOrder.Where(entry => !WasSearchVisualRemoved(entry.Key) && entry.Key.IsActive())
                 .Select(entry => entry.Key.Position.Distance(entry.Value)).ToList();
             GwpAiDiagnostics.WriteCitySearch("ORDER_CHECK", "troops=" + moved.Count
                 + "; avgMoved=" + (moved.Count == 0 ? 0f : moved.Average()).ToString("0.0")
-                + "; alarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
-                + "; aiStates=" + string.Join("|", _ours.Keys.Where(agent => agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
+                + "; alarmed=" + _ours.Keys.Count(agent => !WasSearchVisualRemoved(agent) && agent.IsActive() && agent.IsAlarmed())
+                + "; aiStates=" + string.Join("|", _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
                 + "; formations=" + DescribeFormations());
         }
 
@@ -263,7 +263,7 @@ namespace GreyWardenPolicePurity
         {
             Agent? main = Agent.Main;
             if (main == null) return;
-            List<float> distances = _ours.Keys.Where(agent => agent.IsActive())
+            List<float> distances = _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive())
                 .Select(agent => agent.Position.Distance(main.Position)).ToList();
             GwpAiDiagnostics.WriteCitySearch("FOLLOW_CHECK", "troops=" + distances.Count
                 + "; avg=" + (distances.Count == 0 ? 0f : distances.Average()).ToString("0.0")
@@ -344,7 +344,7 @@ namespace GreyWardenPolicePurity
             WriteDuelPace();
 #endif
             TickCityReserves();
-            if (TickCourtDuel()) return;
+            if (TickHallDuel()) return;
             if (TickSearchProgress()) return;
             if (_pendingFight != null && !Campaign.Current.ConversationManager.IsConversationFlowActive)
             {
@@ -608,7 +608,7 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
             if (!canPlayerLeave) WriteExitBlocked();
 #endif
-            if (!canPlayerLeave)
+            if (!canPlayerLeave && !Search.HallDuelLocked)
                 MBInformationManager.AddQuickInformation(GwpText.Create(Search.SearchWar
                     ? GwpTextCatalog.gwp_cs_hostile_exit_blocked : GwpTextCatalog.gwp_cs_route_blocked));
             return null!;
@@ -641,6 +641,7 @@ namespace GreyWardenPolicePurity
             WriteCrowdRemoval(affectedAgent, agentState);
 #endif
             NoteCitySoldierRemoval(affectedAgent, agentState);
+            NoteHallDuelRemoval(affectedAgent, agentState);
             NoteDuelRemoval(affectedAgent);
             if (affectedAgent == Agent.Main && agentState != AgentState.Deleted)
             {

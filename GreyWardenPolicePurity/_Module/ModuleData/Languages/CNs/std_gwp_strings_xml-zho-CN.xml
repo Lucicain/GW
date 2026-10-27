@@ -1741,12 +1741,14 @@
   <string id="gwp_cs_menu_allowed" text="卫兵让开了路。带上部下，去领主大厅找{TARGET}。" />
   <string id="gwp_cs_menu_cleared" text="挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。" />
   <string id="gwp_cs_menu_duel" text="你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。" />
-  <string id="gwp_cs_menu_court" text="你已和{TARGET}约好单挑。到大厅外的空地赴约。" />
   <string id="gwp_cs_menu_return" text="{TARGET}已被拿下。带上部下，出城。" />
   <string id="gwp_cs_menu_withdraw" text="带上部下，离开这里。" />
   <string id="gwp_cs_menu_fight_out" text="大厅里的战斗已经结束。带上还能行动的人，杀出城去。" />
   <string id="gwp_cs_walk_out_notice" text="带上部下，出城。" />
   <string id="gwp_cs_walk_arena_notice" text="前往竞技场赴约。" />
-  <string id="gwp_cs_walk_court_notice" text="去空地赴约。" />
+  <string id="gwp_cs_hall_duel_clear" text="你们都出去。这件事，我自己了结。" />
+  <string id="gwp_cs_hall_duel_ready" text="让你久等了。拔剑吧。" />
+  <string id="gwp_cs_hall_duel_start" text="来吧。" />
+  <string id="gwp_cs_hall_duel_wait" text="稍等。" />
 </strings>
 </base>

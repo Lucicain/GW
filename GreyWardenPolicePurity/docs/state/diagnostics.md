@@ -156,4 +156,4 @@ postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
 
 
-城镇/城堡空地约斗记录COURT_DUEL_SITE（中心、固定半径、参与数、候选数）/STARTED及SITE_FAILED、ASSEMBLY_CANCELLED；CROWD_STATE替代旧CROWD_ROLE，按开战人物身份和装备逐人记录角色、位置、活跃行为及脚本，在开战/8秒/战斗结束/场景结束各采样一次，CROWD_REMOVED记录相同index的移除状态；移除后仅用事先保存的身份，不读装备或导航器。只在固定采样或状态转换时记录，帮助agent自己核对现场分类及选址失败，不要求用户专项复现；验收后退休。（依据：诊断取证设计2026-10-26、2026-10-27）
+无竞技场的大厅单挑记录HALL_DUEL_CLEAR/OUTSIDE/REENTER三次阶段转换，取代已退休的COURT_DUEL选址/围圈诊断；随行者出门后仍保留名册，FOLLOW_CHECK、ORDER_ISSUED、ORDER_CHECK与DUEL_PACE必须先查移除缓存，不再访问已移除Agent的原生状态指针。CROWD_STATE替代旧CROWD_ROLE，按开战人物身份和装备逐人记录角色、位置、活跃行为及脚本，在开战/8秒/战斗结束/场景结束各采样一次，CROWD_REMOVED记录相同index的移除状态；移除后仅用事先保存的身份，不读装备或导航器。只在固定采样或状态转换时记录，帮助agent自己核对现场分类及退场顺序，不要求用户专项复现；验收后退休。（依据：用户裁定、诊断取证设计2026-10-26至2026-10-28；独立审查与移除后读取负对照）

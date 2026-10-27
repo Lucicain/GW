@@ -1741,10 +1741,12 @@
 | gwp_cs_menu_allowed | The guards have stepped aside. Take your men to the lord's hall and find {TARGET}. | 卫兵让开了路。带上部下，去领主大厅找{TARGET}。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_cleared | The guards who barred your way are down. Take everyone still on their feet to the lord's hall and find {TARGET}. | 挡路的守军已经倒下。带上还能行动的人，去领主大厅找{TARGET}。 | 玩家进城搜捕：击败门口守军后的菜单提示 |
 | gwp_cs_menu_duel | You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu. | 你已与{TARGET}约好在竞技场单挑。你可以从大厅走到街道，再前往竞技场，也可以直接从这里赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_menu_court | You and {TARGET} have agreed to a duel. Meet outside the lord's hall. | 你已和{TARGET}约好单挑。到大厅外的空地赴约。 | 玩家进城搜捕：约好单挑后的菜单提示 |
 | gwp_cs_menu_return | {TARGET} has been taken. Gather your men and leave the settlement. | {TARGET}已被拿下。带上部下，出城。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_menu_withdraw | Gather your men. It's time to leave. | 带上部下，离开这里。 | 玩家进城搜捕：未拿下目标而撤回时的菜单提示 |
 | gwp_cs_menu_fight_out | The fight in the hall is over. Take everyone still on their feet and fight your way out. | 大厅里的战斗已经结束。带上还能行动的人，杀出城去。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_walk_out_notice | Gather your men and leave the city. | 带上部下，出城。 | 玩家进城搜捕：体验路线与地点子菜单 |
 | gwp_cs_walk_arena_notice | Go to the arena for the duel. | 前往竞技场赴约。 | 玩家进城搜捕：体验路线与地点子菜单 |
-| gwp_cs_walk_court_notice | Go outside for the duel. | 去空地赴约。 | 玩家进城搜捕：约好单挑后出门去空地 |
+| gwp_cs_hall_duel_clear | All of you, leave. I will settle this myself. | 你们都出去。这件事，我自己了结。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
+| gwp_cs_hall_duel_ready | I have kept you waiting. Draw your sword. | 让你久等了。拔剑吧。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
+| gwp_cs_hall_duel_start | Come on, then. | 来吧。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
+| gwp_cs_hall_duel_wait | One moment. | 稍等。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |

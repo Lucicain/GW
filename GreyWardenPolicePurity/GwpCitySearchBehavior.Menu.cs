@@ -16,22 +16,22 @@ namespace GreyWardenPolicePurity
             starter.AddGameMenuOption(SearchMenu, "begin", GwpTextCatalog.gwp_cs_menu_begin,
                 args => MenuRoute(args, !SearchActive), SelectSearchTroops);
             starter.AddGameMenuOption(SearchMenu, "resume", GwpTextCatalog.gwp_cs_menu_resume,
-                args => MenuRoute(args, SearchHere && (SearchPlace != GwpCitySearchPlace.Arena || UsesCourtyardDuel)),
+                args => MenuRoute(args, SearchHere && (SearchPlace != GwpCitySearchPlace.Arena || UsesHallDuel)),
                 _ => QueuePlace(SearchPlace));
             starter.AddGameMenuOption(SearchMenu, "hall", GwpTextCatalog.gwp_cs_menu_hall,
                 args => MenuRoute(args, SearchHere && HallAccessible && !HallResolved && SearchPlace != GwpCitySearchPlace.Hall),
                 _ => QueuePlace(GwpCitySearchPlace.Hall));
             starter.AddGameMenuOption(SearchMenu, "street", GwpTextCatalog.gwp_cs_menu_street,
-                args => MenuRoute(args, SearchHere && SearchPlace == GwpCitySearchPlace.Hall),
+                args => MenuRoute(args, SearchHere && SearchPlace == GwpCitySearchPlace.Hall && !HallDuelLocked),
                 _ => QueuePlace(Returning ? GwpCitySearchPlace.Escape : GwpCitySearchPlace.Street));
             starter.AddGameMenuOption(SearchMenu, "arena", GwpTextCatalog.gwp_cs_menu_arena,
-                args => MenuRoute(args, SearchHere && DuelAgreed && !UsesCourtyardDuel),
+                args => MenuRoute(args, SearchHere && DuelAgreed && !UsesHallDuel),
                 _ => QueuePlace(GwpCitySearchPlace.Arena));
             starter.AddGameMenuOption(SearchMenu, "leave", GwpTextCatalog.gwp_cs_menu_leave,
-                args => { args.optionLeaveType = GameMenuOption.LeaveType.Leave; return SearchHere && !SearchWar; },
+                args => { args.optionLeaveType = GameMenuOption.LeaveType.Leave; return SearchHere && !SearchWar && !HallDuelLocked; },
                 _ => FinishSearch(true), isLeave: true);
             starter.AddGameMenuOption(SearchMenu, "back", GwpTextCatalog.gwp_cs_menu_back,
-                args => { args.optionLeaveType = GameMenuOption.LeaveType.Submenu; return !SearchHere || !SearchWar; },
+                args => { args.optionLeaveType = GameMenuOption.LeaveType.Submenu; return !SearchHere || !SearchWar && !HallDuelLocked; },
                 _ => GameMenu.SwitchToMenu(Settlement.CurrentSettlement.IsCastle ? "castle" : "town"));
         }
 
@@ -55,7 +55,7 @@ namespace GreyWardenPolicePurity
             string state = !SearchHere ? GwpTextCatalog.gwp_cs_menu_new
                 : Returning ? SearchWar ? GwpTextCatalog.gwp_cs_menu_fight_out
                     : TargetResolved ? GwpTextCatalog.gwp_cs_menu_return : GwpTextCatalog.gwp_cs_menu_withdraw
-                : DuelAgreed ? UsesCourtyardDuel ? GwpTextCatalog.gwp_cs_menu_court : GwpTextCatalog.gwp_cs_menu_duel
+                : DuelAgreed && !UsesHallDuel ? GwpTextCatalog.gwp_cs_menu_duel
                 : HallAccessible ? GateState == GwpCitySearchGate.Cleared ? GwpTextCatalog.gwp_cs_menu_cleared : GwpTextCatalog.gwp_cs_menu_allowed
                 : GwpTextCatalog.gwp_cs_menu_gate;
             MBTextManager.SetTextVariable("GWP_CS_MENU_TEXT", GwpText.Create(state, "TARGET", target.Name));

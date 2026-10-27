@@ -53,16 +53,28 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed_melee), () => !_opponentDuel && !_playerDuel,
                 () => Scene?.ChooseHallCombat(false), 122);
             starter.AddDialogLine("gwp_cs_choice_agreed", "gwp_cs_hall_choice_next", "close_window",
-                GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed), () => _opponentDuel && _playerDuel,
+                GwpText.Get(GwpTextCatalog.gwp_cs_choice_agreed), () => _opponentDuel && _playerDuel && !UsesHallDuel,
                 () => Scene?.ChooseHallCombat(_playerDuel), 120);
+            starter.AddDialogLine("gwp_cs_choice_hall_duel", "gwp_cs_hall_choice_next", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel_clear), () => _opponentDuel && _playerDuel && UsesHallDuel,
+                () => Scene?.ChooseHallCombat(true), 121);
+            starter.AddDialogLine("gwp_cs_choice_hall_duel_won", "gwp_cs_hall_choice_next", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel_clear), () => _choicePending && _choiceRound.IsSatisfied && UsesHallDuel,
+                () => { _choiceRound.End(); Scene?.ChooseHallCombat(true); }, 116);
             starter.AddDialogLine("gwp_cs_choice_won", "gwp_cs_hall_choice_next", "close_window",
-                GwpText.Get(GwpTextCatalog.gwp_cs_choice_won), () => _choicePending && _choiceRound.IsSatisfied,
+                GwpText.Get(GwpTextCatalog.gwp_cs_choice_won), () => _choicePending && _choiceRound.IsSatisfied && !UsesHallDuel,
                 () => { _choiceRound.End(); Scene?.ChooseHallCombat(_playerDuel); }, 115);
             starter.AddDialogLine("gwp_cs_choice_reservation", "gwp_cs_hall_choice_next", "gwp_cs_choice_argument",
                 "{=!}{GWP_CS_CHOICE_RESERVATION}", () => _choicePending && _choiceRound.PrepareReservation(), null, 110);
             starter.AddDialogLine("gwp_cs_choice_lost", "gwp_cs_hall_choice_next", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_cs_choice_lost), () => _choicePending && _choiceRound.IsFailed,
                 () => { _choiceRound.End(); Scene?.ChooseHallCombat(_opponentDuel); });
+            starter.AddDialogLine("gwp_cs_hall_duel_ready", "start", "gwp_cs_hall_duel_ready_options",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel_ready), () => Scene?.IsHallDuelTalk == true, null, 240);
+            starter.AddPlayerLine("gwp_cs_hall_duel_start", "gwp_cs_hall_duel_ready_options", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel_start), null, () => Scene?.ChooseHallDuelStart());
+            starter.AddPlayerLine("gwp_cs_hall_duel_wait", "gwp_cs_hall_duel_ready_options", "close_window",
+                GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel_wait), null, null);
             _choiceRound.RegisterArguments(starter, "gwp_cs_choice_argument", "gwp_cs_choice_argument", "gwp_cs_choice_reaction");
             starter.AddDialogLine("gwp_cs_choice_reaction", "gwp_cs_choice_reaction", "gwp_cs_hall_choice_next",
                 "{=!}{PERSUASION_REACTION}", () => _choiceRound.PrepareReaction(

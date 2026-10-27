@@ -440,6 +440,10 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_hall_arg_trial = "{=gwp_cs_hall_arg_trial}I was sent to bring you back. Handing you over alive is how I finish the job.";
         internal const string gwp_cs_hall_arg_word = "{=gwp_cs_hall_arg_word}I'll hand you over to the Wardens. You'll be under my watch on the road. No one gets to lay a hand on you.";
         internal const string gwp_cs_hall_duel = "{=gwp_cs_hall_duel}Agreed. Just you and me. If I win, you come with me.";
+        internal const string gwp_cs_hall_duel_clear = "{=gwp_cs_hall_duel_clear}All of you, leave. I will settle this myself.";
+        internal const string gwp_cs_hall_duel_ready = "{=gwp_cs_hall_duel_ready}I have kept you waiting. Draw your sword.";
+        internal const string gwp_cs_hall_duel_start = "{=gwp_cs_hall_duel_start}Come on, then.";
+        internal const string gwp_cs_hall_duel_wait = "{=gwp_cs_hall_duel_wait}One moment.";
         internal const string gwp_cs_hall_law = "{=gwp_cs_hall_law}The Wardens sent you? I haven't agreed to go anywhere with you.";
         internal const string gwp_cs_hall_leave = "{=gwp_cs_hall_leave}I will leave for now.";
         internal const string gwp_cs_hall_melee = "{=gwp_cs_hall_melee}Take them! Bring our quarry down!";
@@ -460,7 +464,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_menu_back = "{=gwp_cs_menu_back}Return to the settlement menu";
         internal const string gwp_cs_menu_begin = "{=gwp_cs_menu_begin}Choose your men and enter the settlement";
         internal const string gwp_cs_menu_cleared = "{=gwp_cs_menu_cleared}The guards who barred your way are down. Take everyone still on their feet to the lord's hall and find {TARGET}.";
-        internal const string gwp_cs_menu_court = "{=gwp_cs_menu_court}You and {TARGET} have agreed to a duel. Meet outside the lord's hall.";
         internal const string gwp_cs_menu_duel = "{=gwp_cs_menu_duel}You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu.";
         internal const string gwp_cs_menu_fight_out = "{=gwp_cs_menu_fight_out}The fight in the hall is over. Take everyone still on their feet and fight your way out.";
         internal const string gwp_cs_menu_gate = "{=gwp_cs_menu_gate}{TARGET} is in the lord's hall. Take your men back to speak to the guards, or find another way through.";
@@ -475,7 +478,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_opponent_melee = "{=gwp_cs_opponent_melee}Enough talk. Take another step and you won't be walking out of here.";
         internal const string gwp_cs_route_blocked = "{=gwp_cs_route_blocked}You cannot leave while combat or a conversation is still in progress.";
         internal const string gwp_cs_walk_arena_notice = "{=gwp_cs_walk_arena_notice}Go to the arena for the duel.";
-        internal const string gwp_cs_walk_court_notice = "{=gwp_cs_walk_court_notice}Go outside for the duel.";
         internal const string gwp_cs_walk_out_notice = "{=gwp_cs_walk_out_notice}Gather your men and leave the city.";
         internal const string gwp_cs_war_notice = "{=gwp_cs_war_notice}You defied the town watch. {VAR_1} is now at war with you.";
         internal const string gwp_cs_will_leave = "{=gwp_cs_will_leave}We will leave town.";

@@ -7310,11 +7310,6 @@
       "en": "You have agreed to duel {TARGET} in the arena. Walk out of the hall and through the streets, or go to the arena directly from this menu.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
-    "gwp_cs_menu_court": {
-      "zh": "你已和{TARGET}约好单挑。到大厅外的空地赴约。",
-      "en": "You and {TARGET} have agreed to a duel. Meet outside the lord's hall.",
-      "context": "玩家进城搜捕：约好单挑后的菜单提示"
-    },
     "gwp_cs_menu_return": {
       "zh": "{TARGET}已被拿下。带上部下，出城。",
       "en": "{TARGET} has been taken. Gather your men and leave the settlement.",
@@ -7340,10 +7335,25 @@
       "en": "Go to the arena for the duel.",
       "context": "玩家进城搜捕：体验路线与地点子菜单"
     },
-    "gwp_cs_walk_court_notice": {
-      "zh": "去空地赴约。",
-      "en": "Go outside for the duel.",
-      "context": "玩家进城搜捕：约好单挑后出门去空地"
+    "gwp_cs_hall_duel_clear": {
+      "zh": "你们都出去。这件事，我自己了结。",
+      "en": "All of you, leave. I will settle this myself.",
+      "context": "无竞技场时的大厅单挑；2026-10-28用户审核通过。"
+    },
+    "gwp_cs_hall_duel_ready": {
+      "zh": "让你久等了。拔剑吧。",
+      "en": "I have kept you waiting. Draw your sword.",
+      "context": "无竞技场时的大厅单挑；2026-10-28用户审核通过。"
+    },
+    "gwp_cs_hall_duel_start": {
+      "zh": "来吧。",
+      "en": "Come on, then.",
+      "context": "无竞技场时的大厅单挑；2026-10-28用户审核通过。"
+    },
+    "gwp_cs_hall_duel_wait": {
+      "zh": "稍等。",
+      "en": "One moment.",
+      "context": "无竞技场时的大厅单挑；2026-10-28用户审核通过。"
     }
   },
   "fragments": {

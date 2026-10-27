@@ -38,9 +38,9 @@ class CitySearchArenaTests(unittest.TestCase):
         self.assertIn(('center', 'arena'), edges)
         self.assertNotIn(('lordshall', 'arena'), edges)
         edge_code = '\n'.join(f'Link("{a}","{b}");' for a, b in edges)
-        stubs = STUBS.replace('class Location{public string StringId="";',
-                              'class Location{public List<Location> LocationsOfPassages=new();public string DoorName=>StringId;public string StringId="";')
-        stubs = stubs.replace('class Locations{public Location GetLocationWithId(string s)=>new(){StringId=s};public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}}', r'''
+        stubs = STUBS.replace('class Location{public string StringId="",SceneName="arena";',
+                              'class Location{public List<Location> LocationsOfPassages=new();public string DoorName=>StringId;public string StringId="",SceneName="arena";')
+        stubs = stubs.replace('class Locations{public bool ArenaAvailable=true;public string ArenaScene="arena";public Location? GetLocationWithId(string s)=>s=="arena"&&!ArenaAvailable?null:new(){StringId=s,SceneName=s=="arena"?ArenaScene:s};public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}}', r'''
 class Locations{Dictionary<string,Location> LocationsById=new();
  public Location? GetLocationOfCharacter(Hero h)=>null;public LocationCharacter GetLocationCharacterOfHero(Hero h)=>new();public void ChangeLocation(LocationCharacter c,Location a,Location b){}
  public Locations(){EDGES}
