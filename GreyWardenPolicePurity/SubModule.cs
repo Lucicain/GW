@@ -60,6 +60,9 @@ namespace GreyWardenPolicePurity
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+#if GWP_DIAGNOSTICS
+            GwpCharacterPreviewDiagnostics.Install();
+#endif
             // Wrap whichever native damage model this game mode registered
             // (Sandbox in Campaign, Custom in Custom Battle). The wrapper
             // changes only Grey Warden alternative-attack knockdowns.

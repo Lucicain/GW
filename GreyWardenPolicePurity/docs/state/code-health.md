@@ -1,9 +1,9 @@
 # 代码健康
 
-> 当前状态：名牌补丁提前初始化与控件回写递归已修复并补回归；文档漂移与地图漏项已修正；CodeGraph 查询及十项业务场景的接手复核完成，已知运行缺口仍保留
+> 当前状态：人物预览横躺复发调查中，已部署限量动作/矩阵取证，根因未定；既有初始化与递归修复保留
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `tools/tests/test_assistance_recursion.py`
-> 待实测：开新档后的第一次实玩（删掉无依据兜底后，原先静默跳过的故障会直接抛出，崩了由 agent 读崩溃报告修根因）；退出崩溃的最小差异对照；正常客户端在开发版 `Assets` 布局下偶发原生释放故障
+> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `GwpCharacterPreviewDiagnostics.cs` `tools/tests/test_preview_action_cache.py` `tools/tests/test_assistance_recursion.py`
+> 待实测：正常打开人物预览时由agent读取动作缓存/实际动作与模型矩阵诊断；既有兜底退休、退出崩溃及开发版Assets释放问题仍待核对
 
 已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
 
@@ -20,6 +20,14 @@ CodeGraph 使用准确类型/方法名和文件名时定位较好；泛化英语
 `Generate-CodeMap.py` 按装饰类的实际作用域提取 Harmony 声明，包含动态 `TargetMethod(s)`、显式接口成员与条件编译内的类。动态目标保持未静态解析，不猜实际绑定；声明集合的回归与运行时加载预检是两项不同证据。`Check-StateFreshness` 仍只检查机械一致性，源码/文档同时 dirty 不证明正文正确。（依据：生成器与专项回归 2026-10-18）
 
 已知缺陷：部分源码注释仍描述自建卖货队、冻结 AI 或纯骑兵追截等旧实现；这些旧注释尚未逐项校正，后续改对应功能时核对。（依据：源码注释与当前实现交叉核对 2026-10-18）
+
+## 人物预览横躺调查
+
+已知缺陷：2026-10-28用户部队页截图中人物横躺、旁边马匹直立。8月1.5.2旧调查曾由移除Agent/MissionWeapon逐次补丁恢复预览（70ca667与后续实测），9月另有成长硬化包装回退后恢复；这些是历史对照，不能直接认定当前1.4.8是同一底层根因。当前新增的GwpCitySearchFadeDiagnosticsPatch在b242d20进入启动扫描、直接补Agent.FadeOut，是优先隔离对象；尚无当前画面对照证明它就是责任方。（依据：用户截图、历史存档与当前补丁差异2026-10-28）
+
+安装版CharacterTableau的用户旋转只绕竖轴，不提供横向翻转；预览使用独立AgentVisuals，不是任务里的Agent。离线实际游戏/模组DLL与Harmony对照：当前FadeOut补丁单独早装/晚装、完整启动扫描在Framework宿主里均未提前解析动作缓存；强制提前读取的负对照才冻结214个名字为-1，随后动态解析恢复而旧缓存不恢复。因此“新补丁已把缓存全变-1”尚未成立，也不能把托管检查当成画面复现。（依据：安装版反编译与test_preview_action_cache五种隔离进程对照2026-10-28）
+
+CHARACTER_PREVIEW取证只在诊断版、OnGameStart后安装CharacterTableau.OnTick后置；每外观最多3条、间隔0.5秒、每进程最多60条，记录缓存/动态idle编号、实际动作、动作集、出生/本地/全局/根骨骼朝向及马匹朝向。数据用于区分错误动作、模型矩阵和骨骼姿态；不写动作、矩阵或资源。原始全局FadeOut诊断尚未隔离，不因此声称预览已经修复。用户确认问题解决后退休新增取证。（依据：取证设计与故障修复流程2026-10-28）
 
 ## 启动补丁与静态初始化
 

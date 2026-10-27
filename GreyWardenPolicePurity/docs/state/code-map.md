@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-216 个源文件、58,805 行、417 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
+217 个源文件、58,888 行、418 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -309,6 +309,7 @@
 - `GwpCaseSettlementRules` → GwpCaseSettlementRules.cs
 - `GwpCaseTargetColorPatch` → GwpCaseTargetNameplatePatch.cs ←
 - `GwpCaseTargetNameplatePatch` → GwpCaseTargetNameplatePatch.cs
+- `GwpCharacterPreviewDiagnostics` → GwpCharacterPreviewDiagnostics.cs
 - `GwpCitySearchArenaReturn` → GwpCitySearchBehavior.Flow.cs ←
 - `GwpCitySearchBehavior` → GwpCitySearchBehavior.cs , GwpCitySearchBehavior.Flow.cs , GwpCitySearchBehavior.Hall.cs , GwpCitySearchBehavior.Menu.cs
 - `GwpCitySearchCivilianDangerPatch` → GwpCitySearchMission.Progress.cs ←
@@ -618,7 +619,7 @@
 
 ### 诊断（4 个文件）
 
-- `GwpAiDiagnostics.cs` — 605 行 · `GwpAiDiagnostics`，另含 1 个类型
+- `GwpAiDiagnostics.cs` — 609 行 · `GwpAiDiagnostics`，另含 1 个类型
 - `GwpRuntimeFaultWatch.cs` — 92 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 34 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 23 行 · `GwpDispatchBarterFaultDiagnostics`
@@ -720,9 +721,9 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 176 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 179 行 · `SubModule` : MBSubModuleBase
 
-### 其他（122 个文件）
+### 其他（123 个文件）
 
 - `GwpTextCatalog.g.cs` — 1437 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -797,6 +798,7 @@
 - `GwpFireswornArmoryView.cs` — 82 行 · `GwpFireswornArmoryView`
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
 - `GwpDutyBanner.cs` — 78 行 · `GwpDutyBanner` : DefaultBannerItemModel，另含 4 个类型
+- `GwpCharacterPreviewDiagnostics.cs` — 76 行 · `GwpCharacterPreviewDiagnostics`
 - `GwpTrainingTransports.cs` — 76 行 · `GwpFireswornBehavior`
 - `GwpPartyScreenTroopTalkPatch.cs` — 72 行 · `GwpPartyScreenTroopTalk`，另含 2 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
