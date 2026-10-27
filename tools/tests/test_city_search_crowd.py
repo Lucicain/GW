@@ -11,6 +11,7 @@ class CitySearchCrowdTests(unittest.TestCase):
         mission = read('GwpCitySearchMission.cs')
         bodies = '\n'.join(method(diagnostic, n) for n in ['CrowdWeapons', 'CaptureCrowd', 'WriteCrowdSnapshot', 'WriteCrowdRemoval'])
         bodies += '\n' + method(mission, 'IsDefender') + method(mission, 'ShouldFlee') + method(mission, 'WriteCivilianFlight')
+        bodies += '\n' + method(read('GwpCitySearchMission.VisualDiagnostics.cs'), 'WasSearchVisualRemoved')
         code = r'''
 using System;using System.Collections.Generic;using System.Linq;
 class Hero{public bool IsNotable;}
@@ -24,19 +25,20 @@ class Group{public object? ScriptedBehavior;}
 class Navigator{public object? Behavior,TargetUsableMachine;public Group Group=new();public Group GetActiveBehaviorGroup()=>Group;public object? GetActiveBehavior()=>Behavior;}
 class CampaignAgentComponent{public Navigator? AgentNavigator;}
 class Agent{
- public int Index;public bool Active=true,IsHuman=true,IsAIControlled=true,Ours,Armed;public CharacterObject Data=new();public Vec3 Point;public Equipment Gear=new();public CampaignAgentComponent Component=new();
+ public int Index;public bool Active=true,IsHuman=true,IsAIControlled=true,Ours,Armed,NativeStateGone;public CharacterObject Data=new();public Vec3 Point;public Equipment Gear=new();public CampaignAgentComponent Component=new();
  void RequireActive(){if(!Active)throw new Exception("accessed removed agent native state");}
  public object Character{get{RequireActive();return Data;}}public Vec3 Position{get{RequireActive();return Point;}}
  public Equipment Equipment{get{RequireActive();return Gear;}}public string CurrentWatchState{get{RequireActive();return "Alarmed";}}
- public bool IsActive()=>Active;public bool HasWeapon(){RequireActive();return Armed;}public T GetComponent<T>(){RequireActive();return (T)(object)Component;}
+ public bool IsActive(){if(NativeStateGone)throw new Exception("accessed removed native state pointer");return Active;}public bool HasWeapon(){RequireActive();return Armed;}public T GetComponent<T>(){RequireActive();return (T)(object)Component;}
 }
 class Mission{public List<Agent> Agents=new();}
 static class GwpAiDiagnostics{public static List<(string Stage,string Text)> Lines=new();public static void WriteCitySearch(string s,string d)=>Lines.Add((s,d));}
 class Controller{
  public Mission Mission=new();public Agent? _hallTarget;string _place="Street";
  readonly List<(Agent Agent,Vec3 Start,string Identity,bool Flee)> _crowdAtFight=new();
+ readonly Dictionary<Agent,string> _visualRemovalStates=new();
  bool IsOurs(Agent a)=>a.Ours;
- public void Capture()=>CaptureCrowd();public void Sample(string s)=>WriteCrowdSnapshot(s);public void Remove(Agent a)=>WriteCrowdRemoval(a,AgentState.Deleted);public void Flight()=>WriteCivilianFlight();
+ public void Capture()=>CaptureCrowd();public void Sample(string s)=>WriteCrowdSnapshot(s);public void Remove(Agent a){_visualRemovalStates[a]="Deleted";WriteCrowdRemoval(a,AgentState.Deleted);}public void Flight()=>WriteCivilianFlight();
  BODIES
 }
 static class Program{static int n;static void Check(bool b,string why){n++;if(!b)throw new Exception(why);}
@@ -49,7 +51,7 @@ static void Main(){
  Check(GwpAiDiagnostics.Lines.Count==4,"census includes armed defenders and civilians but excludes allies animals and inactive agents");
  Check(GwpAiDiagnostics.Lines.Any(x=>x.Text.Contains("index=1")&&x.Text.Contains("weapons=0:short_sword_t3")&&x.Text.Contains("initialDefender=True")),"civilian clothing cannot hide actual weapon and defender classification");
  Check(GwpAiDiagnostics.Lines.Any(x=>x.Text.Contains("index=3")&&x.Text.Contains("initialFlee=True")&&x.Text.Contains("scripted=FleeBehavior")&&x.Text.Contains("target=Passage")),"named civilian flight includes actual behavior and passage target");
- gang.Active=false;c.Remove(gang);c.Sample("after_8s");
+ gang.Active=false;c.Remove(gang);gang.NativeStateGone=true;c.Sample("after_8s");
  Check(GwpAiDiagnostics.Lines.Any(x=>x.Stage=="CROWD_REMOVED"&&x.Text.Contains("index=2")&&x.Text.Contains("state=Deleted")),"gang disappearance is tracked by original identity and removal state");
  Check(GwpAiDiagnostics.Lines.Any(x=>x.Text.Contains("sample=after_8s")&&x.Text.Contains("index=2")&&x.Text.Contains("active=False")),"inactive snapshots never read removed native state");
  civilian.Point=new(){X=6};c.Flight();Check(GwpAiDiagnostics.Lines.Any(x=>x.Stage=="CIVILIAN_FLIGHT"&&x.Text=="civilians=2; movedOrGone=1"),"flight count excludes armed fighters and tracks only intended runners");
@@ -58,6 +60,9 @@ static void Main(){
 }}
 '''.replace('BODIES', bodies)
         run(code)
+        old = code.replace('!WasSearchVisualRemoved(agent) && agent.IsActive()', 'agent.IsActive()')
+        with self.assertRaisesRegex(AssertionError, 'removed native state pointer'):
+            run(old)
 
 
 if __name__ == '__main__':

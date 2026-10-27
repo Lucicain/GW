@@ -38,7 +38,7 @@ namespace GreyWardenPolicePurity
             {
                 Agent agent = entry.Agent;
                 // 移除后只读事先保存的身份，不访问已离场人物的装备、位置或导航器。
-                bool active = agent.IsActive();
+                bool active = !WasSearchVisualRemoved(agent) && agent.IsActive();
                 string details = "sample=" + sample + "; place=" + _place + "; " + entry.Identity
                     + "; initialFlee=" + entry.Flee + "; active=" + active;
                 if (active)

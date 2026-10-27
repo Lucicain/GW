@@ -63,8 +63,10 @@ namespace GreyWardenPolicePurity{
    Put(parent,new byte[]{0x48,0x89,0x0A,0x8B,0x44,0x24,0x28,0xC3});
    Jump(System.IntPtr.Add(site,0x36),empty);Jump(System.IntPtr.Add(site,0x31),parentless);Jump(System.IntPtr.Add(site,20),parent);
    // Provide the original function's local stack area for its [rsp+28h] argument write.
-   var wrapper=new System.Collections.Generic.List<byte>{0x48,0x83,0xEC,0x48,0x48,0xB8};
-   wrapper.AddRange(System.BitConverter.GetBytes(site.ToInt64()));wrapper.AddRange(new byte[]{0xFF,0xD0,0x48,0x83,0xC4,0x48,0xC3});Put(image,wrapper.ToArray());
+   const long visualMarker=0x1234567890;
+   var wrapper=new System.Collections.Generic.List<byte>{0x53,0x48,0x83,0xEC,0x40,0x48,0xBB};
+   wrapper.AddRange(System.BitConverter.GetBytes(visualMarker));wrapper.AddRange(new byte[]{0x48,0xB8});
+   wrapper.AddRange(System.BitConverter.GetBytes(site.ToInt64()));wrapper.AddRange(new byte[]{0xFF,0xD0,0x48,0x83,0xC4,0x40,0x5B,0xC3});Put(image,wrapper.ToArray());
    var invoke=(Probe)System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer(image,typeof(Probe));
    var entity=System.Runtime.InteropServices.Marshal.AllocHGlobal(512);var observed=System.Runtime.InteropServices.Marshal.AllocHGlobal(16);
    System.Runtime.InteropServices.Marshal.WriteIntPtr(entity,0x170,System.IntPtr.Zero);
@@ -82,9 +84,21 @@ namespace GreyWardenPolicePurity{
    Check(emptyResource(System.IntPtr.Zero,14,System.IntPtr.Zero,8)==-1,"actual installed resource function already handles a null entity");
    FreeLibrary(native);
 #if GWP_DIAGNOSTICS
+   Check(GwpCitySearchNativeVisualFix.TryReadLastUpdate(out ulong lastVisual,out long sequence)&&lastVisual==(ulong)visualMarker&&sequence==10001,"native record preserves actor pointer and update sequence");
+   System.Threading.Tasks.Parallel.For(0,4,_=>{for(int i=0;i<500;i++)if(invoke(System.IntPtr.Zero,observed)!=1)throw new System.Exception("parallel trace damaged native branch");});
+   Check(GwpCitySearchNativeVisualFix.EmptyUpdateCount==12001&&GwpCitySearchNativeVisualFix.TryReadLastUpdate(out lastVisual,out sequence)&&sequence==12001&&lastVisual==(ulong)visualMarker,"parallel native writers publish a coherent final record");
+   var page=(System.IntPtr)typeof(GwpCitySearchNativeVisualFix).GetField("_guardPage",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static)!.GetValue(null);
+   System.Runtime.InteropServices.Marshal.WriteInt64(page,264,1);
+   Check(!GwpCitySearchNativeVisualFix.TryReadLastUpdate(out _,out _),"managed observer does not wait for or consume an unfinished native record");
+   GwpCitySearchNativeVisualFix.WriteDiagnostics();Check(GwpAiDiagnostics.Last=="","unfinished native sample is deferred rather than logged and forgotten");
+   System.Runtime.InteropServices.Marshal.WriteInt64(page,264,0);
    GwpCitySearchNativeVisualFix.WriteDiagnostics();
-   Check(GwpAiDiagnostics.Last.Contains("installed=True")&&GwpAiDiagnostics.Last.Contains("emptyEntityUpdates=10001"),"diagnostic counter counts only missing entities");
+   Check(GwpAiDiagnostics.Last.Contains("installed=True")&&GwpAiDiagnostics.Last.Contains("emptyEntityUpdates=12001"),"diagnostic counter counts only missing entities");
 #else
+   const string priorPlayerGuard="4885C90F850E000000FF25000000003600001000000000488B81700100004885C0750EFF25000000003100001000000000C744242827000000FF25000000001400001000000000";
+   var frozen=System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0,priorPlayerGuard.Length/2),i=>System.Convert.ToByte(priorPlayerGuard.Substring(i*2,2),16)));
+   var current=(byte[])typeof(GwpCitySearchNativeVisualFix).GetMethod("BuildGuard",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static)!.Invoke(null,new object[]{new System.IntPtr(0x10000000),new System.IntPtr(0x20000000)});
+   Check(System.Linq.Enumerable.SequenceEqual(current,frozen),"player guard bytes match checkpoint 05587f9 exactly at fixed continuation addresses");
    Check(typeof(GwpCitySearchNativeVisualFix).GetMethod("WriteDiagnostics",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static)==null,"player build contains no diagnostic callback");
 #endif
    System.Runtime.InteropServices.Marshal.FreeHGlobal(entity);System.Runtime.InteropServices.Marshal.FreeHGlobal(observed);

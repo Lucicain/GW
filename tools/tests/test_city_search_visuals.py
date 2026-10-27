@@ -9,14 +9,16 @@ class CitySearchVisualTests(unittest.TestCase):
     def test_visual_identity_changes_and_native_free_removal(self):
         source = read('GwpCitySearchMission.VisualDiagnostics.cs')
         code = '#define GWP_DIAGNOSTICS\n' + source + r'''
+namespace HarmonyLib{class HarmonyPatch:System.Attribute{public HarmonyPatch(System.Type type,string method){}}}
 namespace TaleWorlds.MountAndBlade{
  class Character{public string StringId="troop",Name="person";}
  struct Entity{public System.UIntPtr Pointer;}
  class Visuals{public System.UIntPtr Pointer;public Entity Entity;public int Reads;public Entity GetWeakEntity(){Reads++;return Entity;}}
  class Agent{
-  public bool Active=true,IsHuman=true;public int Index;public Visuals? Visual;public Character Data=new();
+  public bool Active=true,IsHuman=true;public int Index,ActiveReads;public Visuals? Visual;public Character Data=new();
   void RequireActive(){if(!Active)throw new System.Exception("removed native object accessed");}
-  public bool IsActive()=>Active;
+  public bool IsActive(){ActiveReads++;return Active;}
+  public void FadeOut(bool instantly,bool mount){}
   public Visuals? AgentVisuals{get{RequireActive();return Visual;}}
   public Character Character{get{RequireActive();return Data;}}
  }
@@ -25,10 +27,14 @@ namespace TaleWorlds.MountAndBlade{
 namespace GreyWardenPolicePurity{
  using System;using System.Collections.Generic;using System.Linq;using TaleWorlds.MountAndBlade;
  class Mission{public float CurrentTime;public List<Agent> Agents=new();}
- static class GwpCitySearchNativeVisualFix{public static void WriteDiagnostics(){}}
+ static class GwpCitySearchNativeVisualFix{
+  public static long EmptyUpdateCount;public static ulong Visual;public static bool Stable=true;
+  public static bool TryReadLastUpdate(out ulong v,out long c){v=Visual;c=EmptyUpdateCount;return Stable;}
+  public static void WriteDiagnostics(){}
+ }
  static class GwpAiDiagnostics{public static List<(string Stage,string Text)> Lines=new();public static void WriteCitySearch(string s,string d)=>Lines.Add((s,d));}
  internal sealed partial class GwpCitySearchMissionController:MissionLogic{
-  public Mission Mission=new();string _place="Escape";
+  public static GwpCitySearchMissionController? Current;public Mission Mission=new();string _place="Escape";
   public void Build(Agent a)=>CaptureSearchVisual(a,"build");
   public void Tick()=>TickSearchVisuals();public void Remove(Agent a)=>WriteSearchVisualRemoval(a,"Routed");
  }
@@ -54,6 +60,19 @@ namespace GreyWardenPolicePurity{
    var uncatalogued=New(6,0x600,0x6000);uncatalogued.Active=false;int before=GwpAiDiagnostics.Lines.Count;c.Remove(uncatalogued);c.OnAgentDeleted(uncatalogued);c.Build(uncatalogued);
    Check(GwpAiDiagnostics.Lines.Count==before,"unknown removed actors never trigger native access");
    Check(GwpAiDiagnostics.Lines.Count(l=>l.Stage=="VISUAL_STATE"&&l.Text.Contains("index=2"))==3,"newly spawned reinforcements are logged immediately");
+   GwpCitySearchMissionController.Current=c;
+   var flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static;
+   var prefix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("Prefix",flags)!;
+   var postfix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("Postfix",flags)!;
+   int activeReads=defender.ActiveReads;object?[] state={defender,null};prefix.Invoke(null,state);GwpCitySearchNativeVisualFix.EmptyUpdateCount=1;GwpCitySearchNativeVisualFix.Visual=0x200;postfix.Invoke(null,new[]{state[1]});
+   Check(GwpAiDiagnostics.Lines.Last().Text.Contains("matchingEmptyUpdateDuringCall=True")&&GwpAiDiagnostics.Lines.Last().Text.Contains("caller="),"matching native update during fade records its managed caller");
+   Check(GwpAiDiagnostics.Lines.Any(l=>l.Stage=="VISUAL_FADE_BEGIN"&&l.Text.Contains("index=2")&&l.Text.Contains("removalSeen=Deleted"))&&defender.ActiveReads==activeReads,"repeated fade of removed actor uses cached removal state without even reading native IsActive");
+   prefix.Invoke(null,state);GwpCitySearchNativeVisualFix.EmptyUpdateCount=2;GwpCitySearchNativeVisualFix.Visual=0x400;postfix.Invoke(null,new[]{state[1]});
+   Check(GwpAiDiagnostics.Lines.Last().Text.Contains("matchingEmptyUpdateDuringCall=False")&&!GwpAiDiagnostics.Lines.Last().Text.Contains("caller="),"another actor's update is not attributed to this fade call");
+   prefix.Invoke(null,state);GwpCitySearchNativeVisualFix.Visual=0x200;GwpCitySearchNativeVisualFix.EmptyUpdateCount=3;GwpCitySearchNativeVisualFix.Stable=false;postfix.Invoke(null,new[]{state[1]});
+   Check(GwpAiDiagnostics.Lines.Last().Text.Contains("sampleStable=False")&&GwpAiDiagnostics.Lines.Last().Text.Contains("matchingEmptyUpdateDuringCall=False"),"unfinished native sample never becomes overlap evidence");
+   int lines=GwpAiDiagnostics.Lines.Count;object?[] unknown={uncatalogued,null};prefix.Invoke(null,unknown);postfix.Invoke(null,new[]{unknown[1]});
+   Check(GwpAiDiagnostics.Lines.Count==lines,"unknown agents do not generate fade records");
    Console.WriteLine("CITY_SEARCH_VISUAL_ASSERTIONS="+n);
   }
  }

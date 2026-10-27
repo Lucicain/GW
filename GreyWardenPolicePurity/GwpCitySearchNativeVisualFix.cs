@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 本机1.4.8两次WER：人物穿门FadeOut后，渲染队列仍访问已清空的Agent_visuals实体。
+    /// 本机1.4.8两次WER：人物离场时，渲染队列访问已清空的Agent_visuals实体。
     /// 只补+0x5AEAB6漏掉的实体判空，空值进入原函数已有的空资源分支；非空保留原指令。
     /// 这是进程内指令修复，不改磁盘上的游戏DLL。其他二进制只有完整指令签名相同时才适用。
     /// </summary>
@@ -73,10 +73,19 @@ namespace GreyWardenPolicePurity
         {
             var code = new List<byte> { 0x48, 0x85, 0xC9, 0x0F, 0x85, 0, 0, 0, 0 }; // test rcx,rcx; jne valid
 #if GWP_DIAGNOSTICS
-            // 原生空值分支仅计数，不调托管回调；不保留已移除人物或实体的强引用。
-            code.AddRange(new byte[] { 0x50, 0x48, 0xB8 }); // push rax; mov rax,counter
-            code.AddRange(BitConverter.GetBytes(IntPtr.Add(page, CounterOffset).ToInt64()));
-            code.AddRange(new byte[] { 0xF0, 0x48, 0xFF, 0x00, 0x58 }); // lock inc [rax]; pop rax
+            // 只保存原生外观地址和序号；不调托管回调，不持有实体。短锁只保护这两项诊断数据。
+            code.AddRange(new byte[] { 0x50, 0x48, 0xB8 }); // push rax; mov rax,page
+            code.AddRange(BitConverter.GetBytes(page.ToInt64()));
+            code.AddRange(new byte[] { 0xF0, 0x48, 0x0F, 0xBA, 0xA8 }); // lock bts [rax+lock],0
+            code.AddRange(BitConverter.GetBytes(TraceLockOffset));
+            code.AddRange(new byte[] { 0, 0x72, 0xF4 }); // jc acquire，锁内无调用、无引擎操作
+            code.AddRange(new byte[] { 0x48, 0x89, 0x98 }); // mov [rax+visual],rbx
+            code.AddRange(BitConverter.GetBytes(LastVisualOffset));
+            code.AddRange(new byte[] { 0xF0, 0x48, 0xFF, 0x80 }); // lock inc [rax+count]
+            code.AddRange(BitConverter.GetBytes(CounterOffset));
+            code.AddRange(new byte[] { 0xF0, 0x48, 0x0F, 0xBA, 0xB0 }); // lock btr [rax+lock],0
+            code.AddRange(BitConverter.GetBytes(TraceLockOffset));
+            code.AddRange(new byte[] { 0, 0x58 }); // pop rax
 #endif
             AppendJump(code, IntPtr.Add(site, 0x36)); // +0x5AEAEC：原有空资源处理
             byte[] validOffset = BitConverter.GetBytes(code.Count - 9);
@@ -104,14 +113,33 @@ namespace GreyWardenPolicePurity
 
 #if GWP_DIAGNOSTICS
         private const int CounterOffset = 256;
+        private const int TraceLockOffset = 264;
+        private const int LastVisualOffset = 272;
         private static long _lastEmptyCount = -1;
+
+        internal static long EmptyUpdateCount => _guardPage == IntPtr.Zero ? 0 : Marshal.ReadInt64(_guardPage, CounterOffset);
+
+        internal static bool TryReadLastUpdate(out ulong visual, out long count)
+        {
+            visual = 0;
+            count = EmptyUpdateCount;
+            if (_guardPage == IntPtr.Zero || Marshal.ReadInt64(_guardPage, TraceLockOffset) != 0) return false;
+            System.Threading.Thread.MemoryBarrier();
+            visual = unchecked((ulong)Marshal.ReadInt64(_guardPage, LastVisualOffset));
+            System.Threading.Thread.MemoryBarrier();
+            // 先读锁、最后复核序号，排除读到更新到一半的数据；不在托管侧等待原生线程。
+            return Marshal.ReadInt64(_guardPage, TraceLockOffset) == 0 && count == EmptyUpdateCount;
+        }
 
         internal static void WriteDiagnostics()
         {
-            long count = _guardPage == IntPtr.Zero ? 0 : Marshal.ReadInt64(_guardPage, CounterOffset);
+            long count = EmptyUpdateCount;
             if (count == _lastEmptyCount) return;
-            _lastEmptyCount = count;
-            GwpAiDiagnostics.WriteCitySearch("VISUAL_NATIVE_GUARD", "installed=" + (_guardPage != IntPtr.Zero) + "; emptyEntityUpdates=" + count);
+            bool stable = TryReadLastUpdate(out ulong visual, out long sampleCount);
+            if (_guardPage != IntPtr.Zero && !stable) return; // 写入中留到下一次采样，不丢掉这条命中记录。
+            _lastEmptyCount = sampleCount;
+            GwpAiDiagnostics.WriteCitySearch("VISUAL_NATIVE_GUARD", "installed=" + (_guardPage != IntPtr.Zero) + "; emptyEntityUpdates=" + sampleCount
+                + "; latestVisual=0x" + visual.ToString("X") + "; latestSequence=" + sampleCount + "; sampleStable=" + stable);
         }
 #endif
 

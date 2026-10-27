@@ -97,7 +97,7 @@
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |
 | 故障观察：`GwpRuntimeFaultWatch` 的 CLR 事件观察（首次异常记出错帧IL偏移）、`GwpEngineAssertDiagnostics`；已发生故障的 `DUAL_BLADE_INVALID_ACTION`、`DISPATCH_BARTER_PERSONA_FAILED` | 健康时沉默 | 有依据的失败路径保留 |
-| 搜捕 `VISUAL_STATE` / `VISUAL_REMOVED`：全体人物出生及每0.5秒采样外观/弱实体地址，只记地址变化；移除和删除严格只读缓存；`VISUAL_NATIVE_GUARD`只在安装状态首报或空实体命中计数变化时写 | 强攻崩溃已对应到index14要人穿门逃离，原生判空修复通过离线负对照；核对安装及实际命中，结论归city-search | 用户确认修复正常后退休诊断，实际原生判空修复保留 |
+| 搜捕 `VISUAL_STATE` / `VISUAL_REMOVED`只读身份/地址与移除缓存；`VISUAL_NATIVE_GUARD`按变化记录原生空值序号/最近外观地址；`VISUAL_FADE_BEGIN/END`旁观原版调用窗口，同人物命中时记托管调用栈 | 止崩判空已经通过离线负对照，失效更新的形成/取消时序仍未闭合；不以切Battle或持械者被强制逃跑直接作归因，边界归city-search | 完整根因闭合并经用户确认后退休诊断，实际原生判空修复保留 |
 | `tools/Capture-StackOverflow.ps1`（用户运行：cdb启动游戏，记录全会话；致命异常先存寄存器、带地址的原生栈和/mip转储，再读SOS及全部线程；栈溢出退出码另在RtlExitUserProcess/NtTerminateProcess入口拦截，正常退出不截停） | 中途无提示退出，异常回调可能缺席；原版与CLR的两条退出入口均需留证 | 闪退定位并修复后连工具退休；新增终止断点尚待真实进程验证 |
 
 案件事件（`GreyWarden-Case-Events.log`）、ACTION、AUCTION、地图战斗与火誓者行仍在役；主队 NPC 代缴的失败路径 `COMPANION_FINE_INCOMPLETE` 保留。其余已退休诊断（仪式声音、每小时部队状态、进聚落意愿对账、送信队 AI、援军与音乐档位、战马伤害、双刀互斥、战场编队采样等）的代码、日志与 WER 均已删除，**不再可读**；退休时间与结论在 journal。需要重新调查时从新复现取证，不要把已退休路径写成仍可用文件。（依据：流程）

@@ -627,7 +627,8 @@ namespace GreyWardenPolicePurity
         private void WriteCivilianFlight()
         {
             var civilians = _crowdAtFight.Where(entry => entry.Flee).ToArray();
-            int moved = civilians.Count(entry => !entry.Agent.IsActive() || entry.Agent.Position.Distance(entry.Start) > 5f);
+            int moved = civilians.Count(entry => WasSearchVisualRemoved(entry.Agent)
+                || !entry.Agent.IsActive() || entry.Agent.Position.Distance(entry.Start) > 5f);
             GwpAiDiagnostics.WriteCitySearch("CIVILIAN_FLIGHT", "civilians=" + civilians.Length + "; movedOrGone=" + moved);
             WriteCrowdSnapshot("after_8s");
         }
