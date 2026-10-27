@@ -66,13 +66,24 @@ namespace GreyWardenPolicePurity
         }
     }
 
-    [HarmonyPatch(typeof(Agent), nameof(Agent.FadeOut))]
     internal static class GwpCitySearchFadeDiagnosticsPatch
     {
-        private static void Prefix(Agent __instance, out (string Context, ulong Visual, long Before)? __state) =>
+        private static bool _applied;
+
+        // 预览现场cachedIdle=-1而动态查找为4008；Agent静态字段读取动作缓存，移出启动扫描。
+        internal static void EnsureApplied()
+        {
+            if (_applied) return;
+            new Harmony(SubModule.HarmonyId).Patch(AccessTools.Method(typeof(Agent), nameof(Agent.FadeOut)),
+                prefix: new HarmonyMethod(typeof(GwpCitySearchFadeDiagnosticsPatch), nameof(BeforeFade)),
+                postfix: new HarmonyMethod(typeof(GwpCitySearchFadeDiagnosticsPatch), nameof(AfterFade)));
+            _applied = true;
+        }
+
+        private static void BeforeFade(Agent __instance, out (string Context, ulong Visual, long Before)? __state) =>
             __state = GwpCitySearchMissionController.Current?.CaptureFadeTrace(__instance);
 
-        private static void Postfix((string Context, ulong Visual, long Before)? __state)
+        private static void AfterFade((string Context, ulong Visual, long Before)? __state)
         {
             if (!__state.HasValue) return;
             var trace = __state.Value;

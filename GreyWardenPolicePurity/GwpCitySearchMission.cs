@@ -47,6 +47,7 @@ namespace GreyWardenPolicePurity
             string scene = center.GetSceneName(wallLevel);
             string levels = Campaign.Current.Models.LocationModel.GetCivilianUpgradeLevelTag(wallLevel);
 #if GWP_DIAGNOSTICS
+            GwpCitySearchFadeDiagnosticsPatch.EnsureApplied();
             GwpAiDiagnostics.WriteCitySearch("MISSION_OPEN", "settlement=" + settlement.StringId
                 + "; castle=" + settlement.IsCastle + "; scene=" + scene + "; levels=" + levels
                 + "; troops=" + troops.TotalManCount);

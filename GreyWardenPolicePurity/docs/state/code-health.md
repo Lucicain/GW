@@ -1,9 +1,9 @@
 # 代码健康
 
-> 当前状态：人物预览横躺复发调查中，已部署限量动作/矩阵取证，根因未定；既有初始化与递归修复保留
+> 当前状态：预览实际使用失效待机缓存已确认，按原版名字重新解析的修复已部署待验收；缓存提前初始化来源仍在取证
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `GwpCharacterPreviewDiagnostics.cs` `tools/tests/test_preview_action_cache.py` `tools/tests/test_assistance_recursion.py`
-> 待实测：正常打开人物预览时由agent读取动作缓存/实际动作与模型矩阵诊断；既有兜底退休、退出崩溃及开发版Assets释放问题仍待核对
+> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `GwpCharacterPreviewDiagnostics.cs` `GwpCharacterPreviewActions.cs` `tools/tests/test_preview_action_cache.py` `tools/tests/test_assistance_recursion.py`
+> 待实测：正常打开部队/人物预览，核对实际待机恢复和身体姿态；agent读缓存初始化调用来源；既有兜底退休与退出释放问题仍待核对
 
 已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
 
@@ -23,11 +23,13 @@ CodeGraph 使用准确类型/方法名和文件名时定位较好；泛化英语
 
 ## 人物预览横躺调查
 
-已知缺陷：2026-10-28用户部队页截图中人物横躺、旁边马匹直立。8月1.5.2旧调查曾由移除Agent/MissionWeapon逐次补丁恢复预览（70ca667与后续实测），9月另有成长硬化包装回退后恢复；这些是历史对照，不能直接认定当前1.4.8是同一底层根因。当前新增的GwpCitySearchFadeDiagnosticsPatch在b242d20进入启动扫描、直接补Agent.FadeOut，是优先隔离对象；尚无当前画面对照证明它就是责任方。（依据：用户截图、历史存档与当前补丁差异2026-10-28）
+已知缺陷：预览默认待机缓存在真实游戏内为-1，动态同名解析为4008，主角/骑士/步兵/弓手/狂信者实际动作也为-1；外观出生/本地/全局竖轴保持直立，仅有比例缩放。已修复预览引用无效动作这一故障点，谁在动作数据加载前初始化了缓存仍未归因，其他静态动作条目是否受影响也未逐项证实。8月1.5.2撤回Agent/MissionWeapon补丁、9月撤回成长包装曾恢复预览，是历史对照；b242d20的Agent.FadeOut诊断现已移出启动扫描、首次搜捕时延后绑定，但不把此隔离直接称为责任方已证实。（依据：用户截图、03:17至03:18实机诊断、安装版DLL与补丁差异2026-10-28）
 
-安装版CharacterTableau的用户旋转只绕竖轴，不提供横向翻转；预览使用独立AgentVisuals，不是任务里的Agent。离线实际游戏/模组DLL与Harmony对照：当前FadeOut补丁单独早装/晚装、完整启动扫描在Framework宿主里均未提前解析动作缓存；强制提前读取的负对照才冻结214个名字为-1，随后动态解析恢复而旧缓存不恢复。因此“新补丁已把缓存全变-1”尚未成立，也不能把托管检查当成画面复现。（依据：安装版反编译与test_preview_action_cache五种隔离进程对照2026-10-28）
+安装版CharacterTableau的用户旋转只绕竖轴，预览使用独立AgentVisuals。Framework宿主的单独补丁/完整启动扫描未复现提前解析，不能据此排除真实游戏缓存失效；现场已补齐这部分证据。生产修复GwpCharacterPreviewActions仅在OnGameStart后绑定GetIdleAction，当原版返回负编号时用原版ActionIndexCache.Create重新解析act_inventory_idle_start；有效默认/自定义动作不变，不写原版只读静态字段、模型矩阵或骨骼资源。（依据：实机诊断、安装版反编译与生产实现2026-10-28）
 
-CHARACTER_PREVIEW取证只在诊断版、OnGameStart后安装CharacterTableau.OnTick后置；每外观最多3条、间隔0.5秒、每进程最多60条，记录缓存/动态idle编号、实际动作、动作集、出生/本地/全局/根骨骼朝向及马匹朝向。数据用于区分错误动作、模型矩阵和骨骼姿态；不写动作、矩阵或资源。原始全局FadeOut诊断尚未隔离，不因此声称预览已经修复。用户确认问题解决后退休新增取证。（依据：取证设计与故障修复流程2026-10-28）
+test_preview_action_cache在实际安装版DLL执行原版GetIdleAction：提前读取负对照得到缓存-1、动态1234、原版返回-1；安装生产修复后返回1234，自定义有效动作5678保持、静态坏缓存仍为-1，重复安装各只有一个补丁。默认有效的其余四种对照原样返回1234。五种宿主与12项观察断言通过，不代表原生画面已经验收。（依据：安装版方法和生产DLL离线负对照2026-10-28）
+
+CHARACTER_PREVIEW取证在诊断版OnGameStart后安装，每外观3条、间隔0.5秒、每进程60条，保留动作和矩阵快照。ACTION_CACHE_EARLY_MISS在本模块入口最先绑定生成桥接类ManagedCallbacks.ScriptingInterfaceOfIMBAnimation.GetActionCodeWithName：实际方法仅UTF8封送/原生委托调用，整类不含ActionIndexCache引用。不能早装MBAnimation同名包装，它的空名分支读取act_none缓存。inventory/taunt/arena三个名字首次负编号各记一次栈；ACTION_CACHE_READY在OnGameStart记缓存/动态编号与早期缺失数，均写既有故障日志。用于定位最初责任方，不据此宣称缓存来源已经查明；确认功能后退休健康路径，归因完成后退休早期取证。（依据：安装版桥接类/包装反编译、独立审查与取证设计2026-10-28）
 
 ## 启动补丁与静态初始化
 

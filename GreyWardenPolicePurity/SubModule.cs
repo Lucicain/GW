@@ -15,6 +15,9 @@ namespace GreyWardenPolicePurity
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
+#if GWP_DIAGNOSTICS
+            GwpActionCacheDiagnostics.InstallBeforeModulePatches();
+#endif
             GwpRuntimeFaultWatch.Arm();
             GwpCitySearchNativeVisualFix.Install();
             // 后登记的先查：进城搜捕场景用自己的命令表（见 GwpCitySearchVisualOrderProvider）。
@@ -60,6 +63,10 @@ namespace GreyWardenPolicePurity
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+#if GWP_DIAGNOSTICS
+            GwpActionCacheDiagnostics.MarkActionsLoaded();
+#endif
+            GwpCharacterPreviewActions.Install();
 #if GWP_DIAGNOSTICS
             GwpCharacterPreviewDiagnostics.Install();
 #endif

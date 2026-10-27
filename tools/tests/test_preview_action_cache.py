@@ -27,34 +27,69 @@ foreach($file in $candidates){try{[void][Reflection.Assembly]::LoadFrom($file.Fu
 [void][Reflection.Assembly]::LoadFrom((Join-Path $live '0Harmony.dll'))
 $module=[Reflection.Assembly]::LoadFrom((Join-Path $live 'GreyWardenPolicePurity.dll'))
 Add-Type -ReferencedAssemblies (Join-Path $live '0Harmony.dll') -TypeDefinition '
-using System;using System.Reflection;using HarmonyLib;
+using System;using System.Reflection;using System.Collections.Generic;using HarmonyLib;
 public static class PreviewCacheProbe{
  public static bool Ready;public static int EarlyCalls,Calls;public static string FirstStack,PatchName;
+ public static List<string> Records=new List<string>();
+ public static bool CaptureTrace(string __0,string __2){Records.Add(__0+" "+__2);return false;}
  public static bool Resolve(string __0,ref int __result){
   Calls++;if(!Ready){EarlyCalls++;if(FirstStack==null)FirstStack="PATCH="+PatchName+"\n"+Environment.StackTrace;}
-  __result=Ready?1234:-1;return false;
+  __result=Ready?(__0=="gwp_test_custom_idle"?5678:1234):-1;return false;
  }
  public static void Execute(Assembly module,Assembly mb,string mode){
   var harmony=new Harmony("gwp.preview.offline.probe");
   var resolver=mb.GetType("TaleWorlds.MountAndBlade.MBAnimation").GetMethod("GetActionCodeWithName");
-  harmony.Patch(resolver,prefix:new HarmonyMethod(typeof(PreviewCacheProbe).GetMethod("Resolve")));
+  var bridgeType=AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIMBAnimation");
+  var bridge=Activator.CreateInstance(bridgeType,true);
+  var api=mb.GetType("TaleWorlds.MountAndBlade.MBAPI");
+  api.GetField("IMBAnimation",BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic).SetValue(null,bridge);
+  harmony.Patch(bridgeType.GetMethod("GetActionCodeWithName"),prefix:new HarmonyMethod(typeof(PreviewCacheProbe).GetMethod("Resolve")));
+  harmony.Patch(AccessTools.Method(module.GetType("GreyWardenPolicePurity.GwpFaultTrace"),"Write"),prefix:new HarmonyMethod(typeof(PreviewCacheProbe).GetMethod("CaptureTrace")));
+  var trace=module.GetType("GreyWardenPolicePurity.GwpActionCacheDiagnostics",true);
+  trace.GetMethod("InstallBeforeModulePatches",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
+  trace.GetMethod("InstallBeforeModulePatches",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
+  var fade=module.GetType("GreyWardenPolicePurity.GwpCitySearchFadeDiagnosticsPatch",true);
+  var fadeTarget=mb.GetType("TaleWorlds.MountAndBlade.Agent").GetMethod("FadeOut");
   Console.WriteLine("BEFORE_PATCH_CALLS="+Calls);
   if(mode=="early")new PatchClassProcessor(harmony,module.GetType("GreyWardenPolicePurity.GwpCitySearchFadeDiagnosticsPatch",true)).Patch();
   if(mode=="all")foreach(var type in module.GetTypes()){
    PatchName=type.FullName;
    try{new PatchClassProcessor(harmony,type).Patch();}catch(Exception e){Console.WriteLine("PATCH_FAIL="+type.Name+":"+e.GetType().Name);}
   }
+  Console.WriteLine("FADE_BOUND_AT_START="+(Harmony.GetPatchInfo(fadeTarget)!=null));
+  var tableauType=AccessTools.TypeByName("TaleWorlds.MountAndBlade.View.Tableaus.CharacterTableau");
+  var getIdle=AccessTools.Method(tableauType,"GetIdleAction");
+  Console.WriteLine("PREVIEW_BOUND_AT_START="+(Harmony.GetPatchInfo(getIdle)!=null));
   Console.WriteLine("AFTER_PATCH_EARLY_CALLS="+EarlyCalls);
   var cache=mb.GetType("TaleWorlds.MountAndBlade.ActionIndexCache");
   if(mode=="forced")cache.GetField("act_inventory_idle_start").GetValue(null);
   Ready=true;
+  trace.GetMethod("MarkActionsLoaded",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
   if(mode=="install")module.GetType("GreyWardenPolicePurity.GwpCharacterPreviewDiagnostics",true).GetMethod("Install",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
   var idle=cache.GetField("act_inventory_idle_start").GetValue(null);
   Console.WriteLine("INVENTORY_IDLE_INDEX="+cache.GetProperty("Index").GetValue(idle,null));
   Console.WriteLine("DYNAMIC_AFTER_LOAD_INDEX="+resolver.Invoke(null,new object[]{"act_inventory_idle_start"}));
-  if(mode=="late")new PatchClassProcessor(harmony,module.GetType("GreyWardenPolicePurity.GwpCitySearchFadeDiagnosticsPatch",true)).Patch();
+  var tableau=System.Runtime.Serialization.FormatterServices.GetUninitializedObject(tableauType);
+  var idleField=tableauType.GetField("_idleAction",BindingFlags.Instance|BindingFlags.NonPublic);
+  idleField.SetValue(tableau,cache.GetField("act_none").GetValue(null));
+  var index=cache.GetProperty("Index");
+  Console.WriteLine("NATIVE_PREVIEW_IDLE="+index.GetValue(getIdle.Invoke(tableau,null),null));
+  var repair=module.GetType("GreyWardenPolicePurity.GwpCharacterPreviewActions",true).GetMethod("Install",BindingFlags.Static|BindingFlags.NonPublic);
+  repair.Invoke(null,null);repair.Invoke(null,null);
+  Console.WriteLine("REPAIRED_PREVIEW_IDLE="+index.GetValue(getIdle.Invoke(tableau,null),null));
+  Console.WriteLine("PREVIEW_REPAIR_POSTFIXES="+Harmony.GetPatchInfo(getIdle).Postfixes.Count);
+  idleField.SetValue(tableau,cache.GetMethod("Create").Invoke(null,new object[]{"gwp_test_custom_idle"}));
+  Console.WriteLine("CUSTOM_PREVIEW_IDLE="+index.GetValue(getIdle.Invoke(tableau,null),null));
+  Console.WriteLine("CACHE_AFTER_REPAIR="+index.GetValue(cache.GetField("act_inventory_idle_start").GetValue(null),null));
+  if(mode=="late"||mode=="install"){
+   fade.GetMethod("EnsureApplied",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
+   fade.GetMethod("EnsureApplied",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
+   Console.WriteLine("FADE_LATE_PREFIXES="+Harmony.GetPatchInfo(fadeTarget).Prefixes.Count);
+  }
+  int misses=0;bool caller=false;foreach(var line in Records){if(line.StartsWith("ACTION_CACHE_EARLY_MISS")){misses++;caller|=line.Contains("ActionIndexCache..cctor");}else Console.WriteLine("TRACE="+line);}
+  Console.WriteLine("MISS_RECORDS="+misses+"; CACHE_CALLER="+caller);
   Console.WriteLine("TOTAL_CALLS="+Calls+"; EARLY_CALLS="+EarlyCalls);
-  if(FirstStack!=null)Console.WriteLine(FirstStack);
+  if(FirstStack!=null)Console.WriteLine("EARLY_STACK_HAS_CCTOR="+FirstStack.Contains("ActionIndexCache..cctor"));
  }
 }
 '
@@ -64,6 +99,11 @@ public static class PreviewCacheProbe{
 
 class PreviewActionCacheTests(unittest.TestCase):
     def test_fadeout_patch_before_and_after_engine_action_table(self):
+        bridge = subprocess.check_output(['ilspycmd', '-t', 'ManagedCallbacks.ScriptingInterfaceOfIMBAnimation',
+            'D:/steam/steamapps/common/Mount & Blade II Bannerlord/bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.AutoGenerated.dll'],
+            text=True, encoding='utf-8-sig')
+        self.assertNotIn('ActionIndexCache', bridge)
+        self.assertIn('call_GetActionCodeWithNameDelegate', block(bridge, r'public int GetActionCodeWithName\('))
         outputs = {}
         with tempfile.TemporaryDirectory(prefix='gwp-preview-investigation-') as temp:
             path = Path(temp) / 'probe.ps1'
@@ -86,6 +126,21 @@ class PreviewActionCacheTests(unittest.TestCase):
         self.assertIn('INVENTORY_IDLE_INDEX=-1', outputs['forced'])
         self.assertIn('DYNAMIC_AFTER_LOAD_INDEX=1234', outputs['forced'])
         self.assertIn('INVENTORY_IDLE_INDEX=1234', outputs['install'])
+        for output in outputs.values():
+            self.assertIn('FADE_BOUND_AT_START=False', output)
+            self.assertIn('PREVIEW_BOUND_AT_START=False', output)
+            self.assertIn('REPAIRED_PREVIEW_IDLE=1234', output)
+            self.assertIn('PREVIEW_REPAIR_POSTFIXES=1', output)
+            self.assertIn('CUSTOM_PREVIEW_IDLE=5678', output)
+        self.assertIn('NATIVE_PREVIEW_IDLE=-1', outputs['forced'])
+        self.assertIn('CACHE_AFTER_REPAIR=-1', outputs['forced'])
+        self.assertIn('NATIVE_PREVIEW_IDLE=1234', outputs['all'])
+        self.assertIn('FADE_LATE_PREFIXES=1', outputs['late'])
+        self.assertIn('FADE_LATE_PREFIXES=1', outputs['install'])
+        self.assertIn('MISS_RECORDS=0; CACHE_CALLER=False', outputs['all'])
+        self.assertIn('CACHE_CALLER=True', outputs['forced'])
+        self.assertIn('TRACE=ACTION_CACHE_READY cachedIdle=-1; resolvedIdle=1234', outputs['forced'])
+        self.assertIn('TRACE=ACTION_CACHE_READY cachedIdle=1234; resolvedIdle=1234', outputs['install'])
 
     def test_preview_observer_is_bounded_and_skips_finalized_visuals(self):
         source = block(read('GwpCharacterPreviewDiagnostics.cs'), r'internal static class GwpCharacterPreviewDiagnostics')

@@ -9,6 +9,45 @@ using TaleWorlds.MountAndBlade.View.Tableaus;
 
 namespace GreyWardenPolicePurity
 {
+    /// <summary>现场已确认动作缓存失效；只观察原版名字查找，捕捉动作表加载前的失败调用栈。</summary>
+    internal static class GwpActionCacheDiagnostics
+    {
+        private static readonly System.Collections.Generic.HashSet<string> Seen = new(System.StringComparer.Ordinal);
+        private static bool _installed;
+        private static volatile bool _actionsLoaded;
+
+        internal static void InstallBeforeModulePatches()
+        {
+            if (_installed) return;
+            // MBAnimation包装的空名分支读取ActionIndexCache，不能早装；生成桥接类只做UTF8封送和原生委托调用。
+            new Harmony(SubModule.HarmonyId).Patch(
+                AccessTools.Method(AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIMBAnimation"),
+                    nameof(MBAnimation.GetActionCodeWithName)),
+                postfix: new HarmonyMethod(typeof(GwpActionCacheDiagnostics), nameof(ObserveResolution)));
+            _installed = true;
+        }
+
+        private static void ObserveResolution(string __0, int __result)
+        {
+            if (_actionsLoaded || __result >= 0 || (__0 != "act_inventory_idle_start"
+                && __0 != "act_taunt_cheer_1" && __0 != "act_arena_spectator")) return;
+            lock (Seen)
+                if (!Seen.Add(__0)) return;
+            // 三个已知原版动作各最多一条；写故障日志，避免战役日志开局轮转丢掉启动证据。
+            GwpFaultTrace.Write("ACTION_CACHE_EARLY_MISS", details: "name=" + __0 + "; index=" + __result
+                + "; caller=" + System.Environment.StackTrace);
+        }
+
+        internal static void MarkActionsLoaded()
+        {
+            if (_actionsLoaded) return;
+            _actionsLoaded = true;
+            GwpFaultTrace.Write("ACTION_CACHE_READY", details: "cachedIdle=" + ActionIndexCache.act_inventory_idle_start.Index
+                + "; resolvedIdle=" + MBAnimation.GetActionCodeWithName("act_inventory_idle_start")
+                + "; earlyMissNames=" + Seen.Count);
+        }
+    }
+
     /// <summary>预览横躺取证。动作表加载后才安装，只观察，不改动作、矩阵或资源。</summary>
     internal static class GwpCharacterPreviewDiagnostics
     {

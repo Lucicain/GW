@@ -56,7 +56,7 @@
 
 | 文件 | 内容 |
 |---|---|
-| `GreyWarden-Faults.log` | 故障与静默吞异常留痕，只追加不滚动。**健康的一局里只有 `FAULT_WATCH_ARMED` 一行** |
+| `GreyWarden-Faults.log` | 故障与静默吞异常留痕，只追加不滚动。常态只有FAULT_WATCH_ARMED；预览调查期间另有一次ACTION_CACHE_READY快照和最多三个原版名字的EARLY_MISS调用栈 |
 | `GreyWarden-AI-Diagnostics.log` | AI / 欲望拍卖 / 协力编成 / 地图战斗采样，每局开新文件，旧的滚进归档 |
 | `GreyWarden-Case-Events.log` | 案件生命周期事件 |
 | `GreyWarden-Diagnostics-Archive` | 滚动归档 |
@@ -89,7 +89,7 @@
 
 | 系统 | 为什么还留着 | 退休条件 |
 |---|---|---|
-| CHARACTER_PREVIEW（动作表加载后才安装的CharacterTableau后置；每外观3条、每进程60条） | 部队页人物横躺复发，记录动作缓存/实际动作与人、马、根骨骼矩阵；原Agent.FadeOut诊断是嫌疑但未证明，证据边界归code-health | 根因查清且用户确认预览恢复后连同延迟安装与采样缓存退休 |
+| CHARACTER_PREVIEW（动作表加载后安装；每外观3条、每进程60条）、ACTION_CACHE_EARLY_MISS/READY（原版三名字各一次早期失败栈、加载后一条缓存对照） | 已确认真实游戏默认idle缓存-1而动态4008，预览故障点已修复待验收；FadeOut改为首次搜捕绑定，最初缓存初始化来源仍待查，证据归code-health | 用户确认预览恢复后退休健康画面采样；责任来源闭合后退休启动取证，实际待机修复保留 |
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
 | 协力与使者：`ASSISTANCE_WAITING_FOR_ENVOY`（组长等使者结果没调人，案子或使者阶段变了才再写）、`ASSISTANCE_HELPER_CASE_KEPT` / `_PAUSED` / `_RESUMED`（协办人带着自己的案子入组、暂停、协力结束接着办）、`ASSISTANCE_MEMBER_LEFT`（协办人约了比武离组）、`ENVOY_REPORT`（每次谈判结果，带是否协办人） | 用户要监控军团效率：协力不再打断有使者的案子、协办人回来接着办（用户裁定 2026-10-16） | 用户确认协力与使者配合可用后退休健康路径 |

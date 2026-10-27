@@ -9,7 +9,12 @@ class CitySearchVisualTests(unittest.TestCase):
     def test_visual_identity_changes_and_native_free_removal(self):
         source = read('GwpCitySearchMission.VisualDiagnostics.cs')
         code = '#define GWP_DIAGNOSTICS\n' + source + r'''
-namespace HarmonyLib{class HarmonyPatch:System.Attribute{public HarmonyPatch(System.Type type,string method){}}}
+namespace HarmonyLib{
+ class HarmonyPatch:System.Attribute{public HarmonyPatch(System.Type type,string method){}}
+ class Harmony{public static int Calls;public Harmony(string id){}public void Patch(object target,object prefix,object postfix){Calls++;}}
+ class HarmonyMethod{public HarmonyMethod(System.Type type,string method){}}
+ static class AccessTools{public static object Method(System.Type type,string method)=>new();}
+}
 namespace TaleWorlds.MountAndBlade{
  class Character{public string StringId="troop",Name="person";}
  struct Entity{public System.UIntPtr Pointer;}
@@ -27,6 +32,7 @@ namespace TaleWorlds.MountAndBlade{
 namespace GreyWardenPolicePurity{
  using System;using System.Collections.Generic;using System.Linq;using TaleWorlds.MountAndBlade;
  class Mission{public float CurrentTime;public List<Agent> Agents=new();}
+ static class SubModule{public const string HarmonyId="test";}
  static class GwpCitySearchNativeVisualFix{
   public static long EmptyUpdateCount;public static ulong Visual;public static bool Stable=true;
   public static bool TryReadLastUpdate(out ulong v,out long c){v=Visual;c=EmptyUpdateCount;return Stable;}
@@ -61,9 +67,10 @@ namespace GreyWardenPolicePurity{
    Check(GwpAiDiagnostics.Lines.Count==before,"unknown removed actors never trigger native access");
    Check(GwpAiDiagnostics.Lines.Count(l=>l.Stage=="VISUAL_STATE"&&l.Text.Contains("index=2"))==3,"newly spawned reinforcements are logged immediately");
    GwpCitySearchMissionController.Current=c;
+   GwpCitySearchFadeDiagnosticsPatch.EnsureApplied();GwpCitySearchFadeDiagnosticsPatch.EnsureApplied();Check(HarmonyLib.Harmony.Calls==1,"late fade diagnostics install only once");
    var flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static;
-   var prefix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("Prefix",flags)!;
-   var postfix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("Postfix",flags)!;
+   var prefix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("BeforeFade",flags)!;
+   var postfix=typeof(GwpCitySearchFadeDiagnosticsPatch).GetMethod("AfterFade",flags)!;
    int activeReads=defender.ActiveReads;object?[] state={defender,null};prefix.Invoke(null,state);GwpCitySearchNativeVisualFix.EmptyUpdateCount=1;GwpCitySearchNativeVisualFix.Visual=0x200;postfix.Invoke(null,new[]{state[1]});
    Check(GwpAiDiagnostics.Lines.Last().Text.Contains("matchingEmptyUpdateDuringCall=True")&&GwpAiDiagnostics.Lines.Last().Text.Contains("caller="),"matching native update during fade records its managed caller");
    Check(GwpAiDiagnostics.Lines.Any(l=>l.Stage=="VISUAL_FADE_BEGIN"&&l.Text.Contains("index=2")&&l.Text.Contains("removalSeen=Deleted"))&&defender.ActiveReads==activeReads,"repeated fade of removed actor uses cached removal state without even reading native IsActive");
