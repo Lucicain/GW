@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-217 个源文件、58,791 行、418 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
+217 个源文件、58,800 行、418 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -764,9 +764,9 @@
 - `GwpPartyDutyMovementPatch.cs` — 184 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
 - `GwpOffenderDesire.cs` — 178 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpAgentStatCalculateModel.cs` — 175 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
+- `GwpCitySearchNativeVisualFix.cs` — 167 行 · `GwpCitySearchNativeVisualFix`
 - `GwpFaithBattleRewardModel.cs` — 167 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `GwpLastStand.cs` — 163 行 · `GwpLastStandBehavior` : MissionBehavior
-- `GwpCitySearchNativeVisualFix.cs` — 158 行 · `GwpCitySearchNativeVisualFix`
 - `GwpPlayerIntervention.cs` — 154 行 · `GwpPlayerIntervention`，另含 2 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
 - `GwpCitySearchMission.Movement.cs` — 150 行 · `GwpCitySearchMissionController`，另含 3 个类型
