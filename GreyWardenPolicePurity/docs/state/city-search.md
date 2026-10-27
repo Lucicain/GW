@@ -1,6 +1,6 @@
 # 进城搜捕：无部队住城领主的旧案
 
-> 当前状态：现场持械人员参与防守，有姓名城镇要人优先逃跑，搜捕目标留场；逐人行为/离场诊断已补齐；实际战斗/逃跑与围圈待实测
+> 当前状态：持械防守与要人逃跑已从日志确认；杀出城发生人物外观渲染原生崩溃，根因仍在调查，已补外观地址与删除时序取证；围圈等其余体验仍待实测
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpCitySearch*.cs` `GwpDuelGround.cs` `GwpPersuasionRound.cs` `PlayerBountyBehavior.CitySearch.cs` `tools/tests/test_city_search*.py` `tools/CitySearchPersuasionTests/**`
 > 待实测：见文末
@@ -85,6 +85,7 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 - 开战前守卫是中立的：原版对中立的人一律取消伤害并让出手者僵直、不触发 `OnAgentHit`，所以不能等「打中」再开战，要在 `Mission.MeleeHitCallback` 前缀里认出这一下，下一任务帧再换队伍、宣战（不在原生回调里做）。（依据：C#反编译 v1.4.8 Mission.CancelsDamageAndBlocksAttackBecauseOfNonEnemyCase；实机反馈 2026-10-21；离线负对照 test_city_search）
 - 已知缺陷：实测反馈赴约目标跑得离谱地快，根因未定。按原版 `SandboxAgentStatCalculateModel` 离线估算，无甲常服、技能与跑步特长点满的领主也只比披甲玩家快约 10%–30%，不像是满速本身；更可能是进街道时目标被瞬移到玩家身边、过门淡出或起步加速。原版带路行为 `EscortAgentBehavior` 在 1.4.8 每帧要求目标为人物，以门为目的地会立即停止，不能直接借用。已加 DUEL_PACE 取证，下次自然赴约后定案再改。（依据：用户实测、本机v1.4.8反编译 2026-10-26）
 - 已知缺陷：射箭、投掷打到守卫不开战，箭从守卫身上无伤滑过；箭矢回调禁止补丁（见[兵种战斗](troop-combat.md#与呼喊回归的关系)）。（依据：设计取舍 2026-10-21）
+- 已知缺陷：2026-10-27杀出城时发生原生访问违例，WER为PID48392；本机1.4.8的TaleWorlds.Native+0x5AEAB6在渲染更新队列读取Agent_visuals+0x8B8的空场景实体，再访问实体+0x170而崩溃。仍在Escape战斗，未离场结算；区别于退出阶段+0x74E2B1旧故障。转储缺少外观对象堆页，无法确定人物及实体被清空的来源，业务代码未改。VISUAL_STATE在出生与每0.5秒采样记录全体人物（含玩家、我方、坐骑、增援）的外观/弱实体地址，仅地址变化写日志；VISUAL_REMOVED只用缓存记录移除与删除，便于下次自然触发时对照转储指认对象。故障修复确认后退休此诊断。（依据：WER转储、在役日志、本机1.4.8原生RTTI/接口283及渲染调用链反汇编2026-10-27）
 - 不要用原版 `MissionFightHandler.StartCustomFight` 打带兵的群战：它结束时把参战者放进新建的 Team 对象，队伍无相等重写，我方会脱离玩家队伍、不能再指挥。（依据：C#反编译 v1.4.8 MissionFightHandler.ResetTeamsForFightAndDuel、Team）
 - 原版平民逃跑的危险源只在 `MissionFightHandler` 自有打斗时给玩家本人；搜捕群殴改为给实际在场的我方玩家与士兵，并让平民进入原版 `FleeBehavior`。路径与穿门效果仍由 `CIVILIAN_FLIGHT` 在实机核对。（依据：本机v1.4.8 C#反编译2026-10-22；设计）
 - **士兵来源**：按名册生成的士兵用挂主队的 `PartyAgentOrigin`。原版 `Mission.GetAgentTeam` 在任务有盟友队伍时（城镇任务的基础分队会建一支）只把「受玩家指挥」的兵放进玩家队伍；伤亡也由原版 `BattleAgentLogic` 经它写进主队名册，英雄的伤亡与血量一并由原版处理。（依据：C#反编译 v1.4.8；实机日志 ORDERS 编队为空 2026-10-21；离线负对照 test_city_search）
@@ -145,6 +146,8 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 - 赴约速度：当前空地路线不会执行原城镇脚边瞬移，导航仍由原版驱动；2026-10-26现有AI日志没有DUEL_PACE样本，保留采样，不能将离线路线通过当成原速度反馈已经实机结案。（依据：现有日志与离线证据边界2026-10-26）
 
 ## 待实测
+
+- 正常游玩期间观察杀出城的报错是否再出现；agent自行把VISUAL_STATE/VISUAL_REMOVED的外观地址与新转储对照，确定具体人物、移除/删除时序及实体清空来源，不要求用户定点复现或读日志。目前只有取证部署，尚未修复此原生故障。
 
 - 接一宗住城的委托：事务页候选与当前委托显示所在城镇/城堡，任务日志写「当前所在」，不出现无责撤回。
 - 到那座城镇或城堡，「带兵进城搜捕」打开子菜单，再选择随行士兵亲自进场；选兵默认最强，上限15人（有小股战术另加）。

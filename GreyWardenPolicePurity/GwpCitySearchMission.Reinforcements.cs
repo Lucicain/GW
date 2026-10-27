@@ -192,6 +192,9 @@ namespace GreyWardenPolicePurity
 
         public override void OnAgentBuild(Agent agent, Banner banner)
         {
+#if GWP_DIAGNOSTICS
+            CaptureSearchVisual(agent, "build");
+#endif
             // 共用支援系统生成的临时援军也必须唤醒；只在本场使用，不放进主队跨场景名册。
             if (!_cityReservesReady || _stage != Stage.Fighting || !agent.IsHuman
                 || agent.Origin is not GwpBattleSupportOrigin) return;

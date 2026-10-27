@@ -340,6 +340,7 @@ namespace GreyWardenPolicePurity
         public override void OnMissionTick(float dt)
         {
 #if GWP_DIAGNOSTICS
+            TickSearchVisuals();
             WriteDuelPace();
 #endif
             TickCityReserves();
@@ -635,6 +636,7 @@ namespace GreyWardenPolicePurity
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
 #if GWP_DIAGNOSTICS
+            WriteSearchVisualRemoval(affectedAgent, agentState.ToString());
             WriteCrowdRemoval(affectedAgent, agentState);
 #endif
             NoteCitySoldierRemoval(affectedAgent, agentState);
