@@ -278,7 +278,7 @@ class Team{public static Team Invalid=new();public bool Hostile;public void SetI
 struct WorldPosition{}
 class Agent{public static Agent? Main;public CharacterObject Character=new();public float Health=100;public bool Active=true,IsHuman=true,IsAIControlled=true,Watch,Armed=true,IsRunningAway,ScriptedMovement=true;public bool HasWeapon()=>Armed;public AgentState State;public Team Team=new();public Vec3 Position;
  public enum WatchState{Alarmed}public bool IsActive()=>Active;public void DisableScriptedMovement(){ScriptedMovement=false;}public void SetTeam(Team t,bool b){Team=t;}public WorldPosition GetWorldPosition()=>new();public void SetScriptedPosition(ref WorldPosition p,bool b){ScriptedMovement=true;}public void SetLookAgent(Agent a){}public void SetWatchState(WatchState s){}public T? GetComponent<T>() where T:class=>null;}
-class CampaignAgentComponent{public Navigator AgentNavigator=new();}class Navigator{public T? GetBehaviorGroup<T>() where T:class=>null;}
+class CampaignAgentComponent{public AgentNavigator AgentNavigator=new();}class AgentNavigator{public T? GetBehaviorGroup<T>() where T:class=>null;public void RefreshBehaviorGroups(bool simulation){}}
 class AlarmedBehaviorGroup{public bool DisableCalmDown;public void AddBehavior<T>(){}public void SetScriptedBehavior<T>(){}}class FightBehavior{}
 class Hero{public static Hero MainHero=new();public bool IsNotable;public object MapFaction=new();public CharacterObject CharacterObject=new();public bool IsDead;}
 class Settlement{public bool IsTown;public object MapFaction=new();}

@@ -562,12 +562,14 @@ namespace GreyWardenPolicePurity
             agent.DisableScriptedMovement();
             agent.SetWatchState(Agent.WatchState.Alarmed);
             // SpawnTroop生成的随行兵没有城市场景导航器；有导航器的人物同原版强制进入Fight。
-            AlarmedBehaviorGroup? alarmed = agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator
-                ?.GetBehaviorGroup<AlarmedBehaviorGroup>();
+            AgentNavigator? navigator = agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator;
+            AlarmedBehaviorGroup? alarmed = navigator?.GetBehaviorGroup<AlarmedBehaviorGroup>();
             if (alarmed == null) return;
             alarmed.DisableCalmDown = true;
             alarmed.AddBehavior<FightBehavior>();
             alarmed.SetScriptedBehavior<FightBehavior>();
+            // 原版自动切组最多等1秒；先退出巡逻、释放物件，再交给战斗编队，避免未登记detachment查表。
+            navigator!.RefreshBehaviorGroups(false);
         }
 
         private void RestoreSearchFollowers()

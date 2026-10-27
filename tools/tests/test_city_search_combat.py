@@ -54,7 +54,7 @@ class Agent{
 class Team{public static Team Invalid=new();public bool Enemy;public Formation Infantry=new();public Formation GetFormation(FormationClass c)=>Infantry;public void SetIsEnemyOf(Team other,bool b){Enemy=b;}}
 class MobileParty{}
 class CampaignAgentComponent{public AgentNavigator? AgentNavigator;}
-class AgentNavigator{public AlarmedBehaviorGroup Group=new();public T? GetBehaviorGroup<T>() where T:class=>Group as T;}
+class AgentNavigator{public AlarmedBehaviorGroup Group=new();public T? GetBehaviorGroup<T>() where T:class=>Group as T;public void RefreshBehaviorGroups(bool simulation){}}
 class AlarmedBehaviorGroup{public bool DisableCalmDown,ScriptedFight,ScriptedFlee;public int Clears;
  public void AddBehavior<T>(){}public void SetScriptedBehavior<T>(){ScriptedFight=typeof(T)==typeof(FightBehavior);ScriptedFlee=typeof(T)==typeof(FleeBehavior);}
  public void DisableScriptedBehavior(){ScriptedFight=ScriptedFlee=false;Clears++;}}
