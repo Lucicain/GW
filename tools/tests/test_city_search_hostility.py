@@ -11,18 +11,20 @@ class CitySearchHostilityTests(unittest.TestCase):
     def test_armed_defenders_and_physical_exit(self):
         mission = read('GwpCitySearchMission.cs')
         progress = read('GwpCitySearchMission.Progress.cs')
-        bodies = '\n'.join(method(mission, n) for n in ['IsDefender', 'ShouldFlee'])
+        bodies = '\n'.join(method(mission, n) for n in ['IsDefender', 'ShouldFlee', 'IsWatch'])
         bodies += '\n' + method(progress, 'CanLeaveSearch') + '\n' + method(progress, 'TargetMustStay')
+        bodies += '\n' + method(progress, 'CivilianDanger')
         native = subprocess.check_output(['ilspycmd', '-t', 'SandBox.Missions.MissionLogics.MissionFightHandler', str(Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/SandBox/bin/Win64_Shipping_Client/SandBox.dll'))], text=True, encoding='utf-8-sig')
         native_roles = '\n'.join(method(native, name) for name in ['IsAgentAggressive', 'IsAgentVillian', 'IsAgentJusticeWarrior'])
         code = r'''
-using System;
+using System;using System.Linq;using System.Collections.Generic;
 class Hero {public static Hero MainHero=new();public object MapFaction=new();}
 class BasicCharacterObject{}
 class CharacterObject:BasicCharacterObject {public int Occupation;public bool IsHero;public Hero? HeroObject;}
 static class MissionFightHandler{NATIVE_ROLES}
 class Vec {public float X;public float Distance(Vec v)=>Math.Abs(X-v.X);}
 class Agent {public static Agent Main=new();public bool IsHuman=true,Armed,Watch,Ours,Active=true;public CharacterObject Character=new();public Vec Position=new();public bool HasWeapon()=>Armed;public bool IsActive()=>Active;}
+class Mission {public List<Agent> Agents=new(){Agent.Main,new Agent{Ours=true},new Agent{Ours=true,Active=false},new Agent()};}
 class Conversation {public bool IsConversationFlowActive;}
 class Campaign {public static Campaign Current=new();public Conversation ConversationManager=new();}
 class Settlement {public object MapFaction=new();}
@@ -32,18 +34,27 @@ enum Stage {Entering,Allowed,Fighting,FightOver,Duel,Failed,HallDone}
 class Controller {
  public bool InHall,_transitioning;public bool IsCourtAppointment;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
  public Stage _stage=Stage.Allowed;public string? _pendingFight,_pendingHallAction;public Vec _gate=new();public bool _gateExitAvailable=true;
- bool IsWatch(Agent a)=>a.Watch&&!a.Ours;bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
+ public Mission Mission=new();public int? DangerCount(Agent a)=>CivilianDanger(a)?.Count();
+ bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
  public bool Defender(Agent a)=>IsDefender(a);public bool Flee(Agent a)=>ShouldFlee(a);public bool Stay(Agent a)=>TargetMustStay(a);public bool Leave()=>CanLeaveSearch();
  BODIES
 }
 static class Program {
  static int n;static void Check(bool b,string why){n++;if(!b)throw new Exception(why);}
  static void Main(){
- var c=new Controller();var guard=new Agent{Watch=true};
+ var c=new Controller();var guard=new Agent{Watch=true,Character=new(){Occupation=7}};
+ foreach(int occupation in new[]{7,23,24}){
+  var watch=new Agent{Character=new(){Occupation=occupation}};
+  Check(MissionFightHandler.IsAgentAggressive(watch)&&!c.Defender(watch)&&c.Flee(watch),"unarmed native watch must enter flight despite aggressive occupation");
+  Check(c.DangerCount(watch)==null,"peaceful unarmed watch has no forced danger source");c._stage=Stage.Fighting;
+  Check(c.DangerCount(watch)==2,"unarmed watch receives player and active allies as flee danger despite native aggressive role");c._stage=Stage.Allowed;
+  watch.Armed=true;Check(c.Defender(watch)&&!c.Flee(watch),"armed native watch fights instead of fleeing");
+  watch.Ours=true;watch.Armed=false;Check(!c.Defender(watch)&&!c.Flee(watch),"unarmed allied watch is never forced to flee");
+ }
  Check(!c.Defender(guard),"unarmed guard must flee");guard.Armed=true;Check(c.Defender(guard),"armed guard fights");
  var lord=new Agent{Character=new(){IsHero=true,HeroObject=new(){MapFaction=c._settlement.MapFaction}}};
  Check(!c.Defender(lord),"unarmed local lord must flee");lord.Armed=true;Check(c.Defender(lord),"armed local lord fights");
- c.InHall=true;c._hallTarget=new Agent();Check(c.Defender(c._hallTarget)&&!c.Flee(c._hallTarget),"unarmed hall target never becomes a fleeing civilian");
+ c.InHall=true;c._hallTarget=new Agent{Character=new(){Occupation=7}};Check(c.Defender(c._hallTarget)&&!c.Flee(c._hallTarget),"unarmed hall target never becomes a fleeing civilian");
  c._hallTarget.Armed=true;Check(c.Defender(c._hallTarget),"armed foreign target fights");
  guard.Ours=true;Check(!c.Defender(guard),"armed ally never becomes defender");
  var armedGuest=new Agent{Armed=true};
@@ -73,9 +84,13 @@ static class Program {
         old_defender = bodies.replace('InHall && agent == _hallTarget\n            || agent.HasWeapon() && (IsWatch(agent)', 'agent.HasWeapon() && (IsWatch(agent)')
         with self.assertRaisesRegex(AssertionError, 'unarmed hall target'):
             run(code.replace(bodies, old_defender))
-        old_crowd = bodies.replace('&& !MissionFightHandler.IsAgentAggressive(agent)', '')
+        old_crowd = bodies.replace(method(mission, 'ShouldFlee'), 'private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent);')
         with self.assertRaisesRegex(AssertionError, 'armed foreign guest'):
             run(code.replace(bodies, old_crowd))
+        old_unarmed_watch = bodies.replace(method(mission, 'ShouldFlee'), '''private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)
+            && !MissionFightHandler.IsAgentAggressive(agent);''')
+        with self.assertRaisesRegex(AssertionError, 'unarmed native watch must enter flight'):
+            run(code.replace(bodies, old_unarmed_watch))
         old_tab = bodies.replace(method(progress, 'CanLeaveSearch'), '''private bool CanLeaveSearch() => _stage != Stage.Fighting && _stage != Stage.Duel
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null
             && !Campaign.Current.ConversationManager.IsConversationFlowActive;''')

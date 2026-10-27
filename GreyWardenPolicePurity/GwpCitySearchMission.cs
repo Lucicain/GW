@@ -697,9 +697,9 @@ namespace GreyWardenPolicePurity
                 || agent.Character is CharacterObject { IsHero: true } character && character.HeroObject is { } hero
                 && hero != Hero.MainHero && hero.MapFaction == _settlement.MapFaction));
 
-        /// <summary>原版把持械者和打手视为可还击者，不能将所有非守军一概强制逃跑。</summary>
+        /// <summary>未持械守卫逃散；原版把兵种身份也算作可还击者，不能让他们既不参战又不逃跑。</summary>
         private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)
-            && !MissionFightHandler.IsAgentAggressive(agent);
+            && (IsWatch(agent) && !agent.HasWeapon() || !MissionFightHandler.IsAgentAggressive(agent));
     }
 
     /// <summary>近战碰到人：交给进城搜捕认是不是对守卫动手。参数名须与原版回调一致，Harmony 按名绑定。</summary>
