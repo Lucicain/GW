@@ -100,6 +100,8 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 清理待办：
 
+- SubModule.cs的OnMissionBehaviorInitialize注册注释仍称锁血期间击杀成长按1.5倍记录，实际为正常成长后对当前有效技能整体乘1.5；仅注释过期，待改该处时校正。（2026-10-28强化调查登记）
+
 - `%LOCALAPPDATA%\CrashDumps` 有 4 个游戏旧转储（pid 1664/6648/9096/19236）和 4 个 `Test.exe` 转储，来源与结论未核对；核对后按诊断规则删除。（2026-10-22 Claude Code 登记）
 
 ## 接入 harness
