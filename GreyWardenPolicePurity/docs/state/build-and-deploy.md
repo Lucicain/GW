@@ -185,16 +185,9 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 ## 已发布版本与下一版的对比基线
 
-- 最新正式版为 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布并设为latest。tag指向`d199c54`；游戏内容截至`f00ca9b`，最后一笔仅发行说明与记录。（依据：用户批准、远端Release与tag核验2026-10-17）
-- **下一版的玩家说明对比`v1.4-r15`。** 本次r15说明对比的是上个正式替换包`v1.4-r14-refresh`。（依据：发布基线）
-- 上一正式版 v1.4-r14（模组版本 1.4.14）。2026-10-07 同号替换了下载包，加入入国拦截、读档离国、自动换装候选保护，
-  源码 `89a9972`，tag `v1.4-r14-refresh`。原 tag `v1.4-r14` 仍指 `ac66f86`（替换前内容），已推送的 tag 不移动。（依据：用户裁定 2026-10-07）
-- 旧r15本地测试包已由本次正式包替换，不再作为现行下载包；线上没有该测试版Release可下架。最新美术包SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`（148项）。核验归档仍为 `build-check/package-v1.4-r15/`，旧资源回退点见local-scratch。（依据：用户裁定与文件/远端核对2026-10-17）
-
-## 待发布玩家包
-
-v1.4-r16（模组版本1.4.16）已于2026-10-28本地打包，尚未推送、打tag或建Release：78项，ZIP在游戏Modules目录，SHA-256 `5e31041dbda8babd3c687bbed270c9f881887fcfb21f1b2a1204646aa28eef91`；玩家DLL `1C0C2FCA22E3C9AB2AD8BAAEBF6D7616DF3CF01C72AFF92C17354C4D6D18107D` 为隔离无诊断构建，五组监控标记双编码全无，兼容检查PASS（109条补丁，诊断补丁不在玩家版）；美术包与r15相同。玩家说明对比`v1.4-r15`。在`build-check`目录下直接加载DLL会被Windows PowerShell 5.1拒绝（0x80131515），兼容检查改用临时目录副本。核验证据在`build-check/package-v1.4-r16/`。（依据：打包核验2026-10-28）
+- 最新正式版为 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本1.4.16），2026-10-29发布并设为latest；tag指向`fc87267`。**下一版的玩家说明对比`v1.4-r16`。**（依据：用户批准推送与发布、远端Release与tag核验2026-10-29）
+- 上一正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
 
 ## 当前正式玩家包
 
-v1.4-r15 正式包（2026-10-17 用户确认后发布，沿用 1.4.15、不移动已有 tag）：78 项，ZIP SHA-256 `bcd77a8f198db4d324ca8e289944888500d04035bf16b00cc193d6bedac82dab`，玩家 DLL `df96a0a8e928f905208d88a9ef757f91f3dfd07fda6c6eac659928f34f732f8c`；五组监控标记双编码全无。Release 只有 ZIP 与 SHA256 两项附件；核验证据与远端元数据在 `build-check/package-v1.4-r15/`。（依据：发布核验 2026-10-17）
+v1.4-r16 正式包：78 项，ZIP 442,793,008 字节，SHA-256 `5e31041dbda8babd3c687bbed270c9f881887fcfb21f1b2a1204646aa28eef91`；玩家DLL `1C0C2FCA22E3C9AB2AD8BAAEBF6D7616DF3CF01C72AFF92C17354C4D6D18107D` 为隔离无诊断构建，五组监控标记双编码全无，兼容检查PASS（109条补丁）。Release 只有 ZIP 与 SHA256 两项附件；从 GitHub 重新下载后字节数、哈希、逐项清单与监控串复核一致。游戏Modules目录只留r16一对包。在`build-check`目录下直接加载DLL会被Windows PowerShell 5.1拒绝（0x80131515），兼容检查改用临时目录副本。核验证据在 `build-check/package-v1.4-r16/`。（依据：发布与重新下载核验2026-10-29）
