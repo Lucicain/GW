@@ -38,6 +38,8 @@ SyncData 无状态：本行为只响应宣战与读档完成事件，没有进�
 
 Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKingdom`，没有直接写家族归属或Harmony补丁。真实候选谓词默认纳入独立灰袍；在隔离的MCM内存设置把 `gw` 加入 `excludedClanIds` 后排除。真实 `JoinKingdomWithReason` 在正式r15拦截生效时不改归属／债务，却仍发成功通知；它不检查动作后的实际归属。这是已证实的候选与通知不协调，不足以解释本次实际入国。测试没有改第三方文件、设置或方法。（依据：实装DLL反编译与真实DLL方法执行2026-10-28）
 
+用户随后提供战斗日志照片（`C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/ce91889ece236bedba210682019c490a.jpg`），显示 `灰袍守卫 joined 南帝国 (Joined most friendly kingdom)`。该完整格式与理由字符串精确对应Recruit Exiled Clans的 `GetJoinReason` → `JoinKingdomWithReason`，故本条提示及自动投国尝试的来源已定位。照片本身不显示家族归属；此前用户确认的百科／王国列表实际归属仍待存档／现场证据闭合，不能用已复现的虚假成功通知推翻用户反馈。（依据：用户照片与实装DLL字符串／控制流核对2026-10-28）
+
 随后安装的三份DLL（2026-10-28）核对如下；模块同号不等于与玩家DLL逐字节一致。
 
 | 模组 | 本机版本／SHA-256 | 与入国有关的核对结论 |
