@@ -90,14 +90,14 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 ### 清理台账
 
-上次集中清理：基于 `2006b3a`，清理提交为其后一笔（2026-10-28，Claude Code；规则总数 1145→959：city-search、case-envoy、warden-ai、workflow、code-health、firesworn-villages/armory、case-enforcement/assistance、player-justice 按主题合并，新写原版手册 tournaments.md）
+上次集中清理：`2cf7b69`（2026-10-28，Claude Code；规则总数 1145→959：city-search、case-envoy、warden-ai、workflow、code-health、firesworn-villages/armory、case-enforcement/assistance、player-justice 按主题合并，新写原版手册 tournaments.md）
 
 熵指标：state 规则总数（手写 state 里「依据」出现的次数，`Check-StateFreshness` 报告），基线 959（2026-10-28 集中清理后）。新裁定会让它上升，这不拦；手册替掉规则、合并重复让它下降。每次集中清理把它压回上次基线以下并更新基线，压不下就在台账写明原因。
 
 清理待办：
 
 - 原生接口测试底座：把 30 个含手写 `namespace TaleWorlds` 假类型的测试迁到真实游戏 DLL 上，只在原生接口一层放假返回值；先建一个共用底座，再按子系统迁，进城搜捕优先。底座未建前，2026-10-28 为重演办案队“打仗后失队”在 test_city_search_support 的桩里新增了 MapEvent 类型，为驱动离城事件在 test_city_search_flow 的一个用例里新增了 MobileParty 类型，随同迁移。（2026-10-28 登记）
-- 规则数继续压：本次只清了规则最多的十页，affairs-interface、firesworn-parties、firesworn、family、firesworn-rituals/villagers、case-interceptors 等仍有同源依据可合并；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
+- 规则数继续压：本次只清了规则最多的十页，affairs-interface、firesworn-parties、firesworn、family、firesworn-rituals/villagers、case-interceptors 等仍有同一来源的规则可合并；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
 - `test_case_target_nameplate.test_installed_native_startup_boundary` 从 Python 调 Windows PowerShell 5.1 运行预检，本机执行策略拒绝未签名脚本，负对照 stdout 为空而失败；直接运行预检为 PASS。是否在测试里给子进程传 `-ExecutionPolicy Bypass` 需用户决定。（2026-10-28 登记）
 - 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会四篇已写。（2026-10-28 登记）
 
