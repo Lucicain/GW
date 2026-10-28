@@ -227,7 +227,7 @@ namespace GreyWardenPolicePurity
                         break;
                     case "duel_lost":
                         FinishHallDuel();
-                        Search.FinishSearch(false);
+                        Search.LostSearchDuel();
                         Mission.EndMission();
                         return true;
                     case "melee": _pendingFight = "hall_melee"; break;

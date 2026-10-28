@@ -820,7 +820,8 @@ namespace GreyWardenPolicePurity
                 MobileParty patrol = MobileParty.All.FirstOrDefault(p => p.StringId == state.PatrolPartyId);
                 if (patrol == null || !patrol.IsActive)
                 {
-                    _delayPatrolStates.Remove(kv.Key);
+                    // 城内办案队的失队指派由 TendCitySearchParties 持有并补派，不能先丢掉玩家/代办归属。
+                    if (state.Returning || string.IsNullOrEmpty(state.CityCrimeId)) _delayPatrolStates.Remove(kv.Key);
                     continue;
                 }
 

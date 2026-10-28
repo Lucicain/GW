@@ -14,10 +14,6 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        internal static bool CanDispatch(CrimeRecord? crime) => crime?.HasOpenCase == true
-            && !crime.CitySearchSupportDispatched && !crime.CitySearchSupportUsed;
-
-        internal static void MarkDispatched(CrimeRecord crime) => crime.CitySearchSupportDispatched = true;
         internal static bool SupportSpent(CrimeRecord? crime) => crime?.CitySearchSupportUsed == true;
     }
 }

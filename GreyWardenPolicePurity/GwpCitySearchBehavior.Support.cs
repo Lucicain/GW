@@ -13,6 +13,7 @@ namespace GreyWardenPolicePurity
         private bool _searchAttemptStarted;
         private static PoliceEnforcementBehavior? Enforcement => Campaign.Current?.GetCampaignBehavior<PoliceEnforcementBehavior>();
         internal bool Supported => !string.IsNullOrEmpty(_searchSourcePartyId);
+        internal bool UsesSupportParty(string partyId) => Supported && _searchSourcePartyId == partyId;
         internal PartyBase? TroopSource => Supported
             ? MobileParty.All.FirstOrDefault(party => party.IsActive && party.StringId == _searchSourcePartyId)?.Party
             : PartyBase.MainParty;
@@ -54,8 +55,6 @@ namespace GreyWardenPolicePurity
         {
             Hero? target = Bounty?.CitySearchTargetIn(TaleWorlds.CampaignSystem.Settlements.Settlement.CurrentSettlement);
             if (SearchActive || target == null || GwpCitySearchCasePolicy.SupportSpent(CrimePool.GetRecord(target))) return false;
-            if (!GwpCitySearchCasePolicy.CanDispatch(CrimePool.GetRecord(target))
-                && Enforcement?.CitySearchSupport(target, false) == null) return false;
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
             return true;
         }

@@ -28,8 +28,8 @@ interface IDataStore{bool IsSaving{get;}bool IsLoading{get;}void SyncData<T>(str
 class Store:IDataStore{public bool IsSaving{get;set;}public bool IsLoading=>!IsSaving;public Dictionary<string,object> Data=new();public void SyncData<T>(string key,ref T value){if(IsSaving)Data[key]=value!;else value=(T)Data[key];}}
 public class Hero{public string StringId="",Name="";public bool IsAlive=true,IsPrisoner,IsFugitive,IsDisabled;public bool IsDead=>!IsAlive;
  public MobileParty? PartyBelongedTo;public Settlement? CurrentSettlement;public static List<Hero> All=new();public static Hero? FindFirst(Func<Hero,bool> f)=>All.FirstOrDefault(f);}
-public class MobileParty{public string StringId="";public bool IsActive=true,IsMainParty;public Hero? LeaderHero;public object? MapEvent;public Settlement? CurrentSettlement;
- public Vec2 GetPosition2D=new();public AiBehavior DefaultBehavior;public IFaction MapFaction=new Clan();public static List<MobileParty> All=new();public static MobileParty MainParty=new(){StringId="player",IsMainParty=true};}
+public class Roster{public int TotalHealthyCount=5;}public class MobileParty{public string StringId="";public bool IsActive=true,IsMainParty;public Hero? LeaderHero;public object? MapEvent;public Settlement? CurrentSettlement;
+ public Roster MemberRoster=new();public Vec2 GetPosition2D=new();public AiBehavior DefaultBehavior;public IFaction MapFaction=new Clan();public static List<MobileParty> All=new();public static MobileParty MainParty=new(){StringId="player",IsMainParty=true};}
  RECORD_TYPES
 static class CrimePool{public const string PlayerCrimeId="PLAYER_WANTED";public static IEnumerable<CrimeRecord> LedgerRecords=>CrimeState.Records.Values;public static CrimeRecord? GetRecordByKey(string id)=>CrimeState.Records.GetValueOrDefault(id);}
 static class CrimeState{
@@ -79,7 +79,7 @@ class PoliceEnforcementBehavior{
  private void ClearTaskWarTracking(string id,bool returning){}private void ReleaseEnvoysToPlayer(string id){}
  internal static void ReleaseWardensFromCase(string? id){}
  private void MarkDelayPatrolReturning(string id){if(_delayPatrolStates.TryGetValue(id,out var s))s.Returning=true;}
- private string LastOutcome="";private void RecordEnvoyReport(EnvoyCase e,string outcome,int amount){ReportsCount++;LastOutcome=outcome;}
+ private int Replacements;private bool ReplacementAvailable=true,ReplacementCollectOnly;private void SendEnvoyFromNearestWarden(CrimeRecord c,MobileParty target,bool collectOnly){if(!ReplacementAvailable)return;Replacements++;ReplacementCollectOnly=collectOnly;var replacement=new MobileParty{StringId="replacement"+Replacements};MobileParty.All.Add(replacement);_envoyCases[c.CrimeId]=new EnvoyCase{CrimeId=c.CrimeId,EnvoyPartyId=replacement.StringId,CollectOnly=collectOnly};}private string LastOutcome="";private void RecordEnvoyReport(EnvoyCase e,string outcome,int amount){ReportsCount++;LastOutcome=outcome;}
  private bool EnvoyReached(MobileParty e,MobileParty t)=>Reached;
  private void FollowTarget(MobileParty e,MobileParty t){Followed++;LastFollowed=t;}
  private void Negotiate(EnvoyCase e,CrimeRecord c,MobileParty p,Hero h,MobileParty envoy,MobileParty target,Hero offender){Negotiated++;if(NegotiationSucceeded){RecordEnvoyReport(e,"paid",1000);ResolveEnvoyCase(e,c,true,"envoy_paid");}else FailEnvoy(e,"envoy_layer_one_failed");}
@@ -102,7 +102,7 @@ class PoliceEnforcementBehavior{
  static void Main(){
   var(e,chief,helper,main,own,ec)=Setup();e.TendTravellingEnvoy(ec,own);
   Check(e.Followed==1&&e.LastFollowed==own.Offender&&e._envoyCases.ContainsKey("own"),"own envoy continues original target while helper's task exists");
-  e.FailEnvoy(ec,"envoy_lost");Check(ec.Stage==EnvoyStage.Failed&&e.ReportsCount==1,"own envoy failure records result");
+  e.FailEnvoy(ec,"envoy_layer_one_failed");Check(ec.Stage==EnvoyStage.Failed&&e.ReportsCount==1,"own envoy failure records result");
   Check(e._groups.Contains("chief")&&CrimeState._tasks.ContainsKey("helper"),"own envoy failure keeps cooperative group and own pending case");
   (e,chief,helper,main,own,ec)=Setup();e.ResolveEnvoyCase(ec,own,true,"envoy_paid");
   Check(!own.HasOpenCase&&!CrimeState.Records.ContainsKey("own"),"own envoy settlement actually closes own record");
@@ -124,8 +124,10 @@ class PoliceEnforcementBehavior{
   (e,chief,helper,main,own,ec)=Setup();CampaignTime.Now.ToHours=10000;e.Reached=true;e.NegotiationSucceeded=false;e.TendTravellingEnvoy(ec,own);CampaignTime.Now.ToHours=10;
   Check(e.Negotiated==1&&ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="talks_failed"&&own.HasOpenCase,"after long travel only the actual persuasion failure enables pursuit");
   (e,chief,helper,main,own,ec)=Setup();MobileParty.All.RemoveAll(p=>p.StringId=="envoy");e.TendTravellingEnvoy(ec,own);
-  Check(ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="lost"&&own.HasOpenCase,"disappeared envoy is failed negotiation with the case still open");
-  Check(e._delayPatrolStates["envoy"].Returning,"lost envoy leaves no active travelling negotiation");
+  Check(ec.Stage==EnvoyStage.Travelling&&e.ReportsCount==0&&e.Replacements==1&&own.HasOpenCase,"disappeared envoy replaces execution team without reporting failed negotiation");
+  Check(e._delayPatrolStates["envoy"].Returning&&e._envoyCases["own"].EnvoyPartyId=="replacement1","lost envoy retires former roster and assigns replacement");
+  (e,chief,helper,main,own,ec)=Setup();ec.CollectOnly=true;MobileParty.All.RemoveAll(p=>p.StringId=="envoy");e.ReplacementAvailable=false;e.TendTravellingEnvoy(ec,own);Check(ec.Stage==EnvoyStage.Travelling&&e.Replacements==0&&e.ReportsCount==0,"lost collector waits for real source without failure");e.ReplacementAvailable=true;e.TendTravellingEnvoy(ec,own);Check(e.Replacements==1&&e.ReplacementCollectOnly,"replacement collector preserves collect-only agreement");
+  (e,chief,helper,main,own,ec)=Setup();var wounded=MobileParty.All.Single(p=>p.StringId=="envoy");wounded.MemberRoster.TotalHealthyCount=0;wounded.MapEvent=new();e.TendTravellingEnvoy(ec,own);Check(e.Replacements==0,"envoy battle owns roster until combat ends");wounded.MapEvent=null;e.TendTravellingEnvoy(ec,own);Check(e.Replacements==1&&e._delayPatrolStates["envoy"].Returning,"all wounded envoy returns survivors and replaces execution team");
   (e,chief,helper,main,own,ec)=Setup();FactionManager.War=true;e.TendTravellingEnvoy(ec,own);
   Check(ec.Stage==EnvoyStage.Failed&&e.LastOutcome=="war"&&own.HasOpenCase,"already at war is distinct from the deadline failure");
   (e,chief,helper,main,own,ec)=Setup();own.OffenderHero!.PartyBelongedTo=null;CampaignTime.Now.ToHours=101;e.TendTravellingEnvoy(ec,own);CampaignTime.Now.ToHours=10;
@@ -165,7 +167,7 @@ class PoliceEnforcementBehavior{
   pursued.IsAlive=false;CrimeState.RemoveDeadOffenderRecords();Check(!CrimeState.Records.ContainsKey("target")&&CrimeState.Records.ContainsKey("unresolved"),"only confirmed dead person removed by passive cleanup");
 
   unresolved.OccurredTime=unresolved.LastCrimeTime=CampaignTime.Now;unresolved.Location=new Vec2(3,4);unresolved.CivilianCasualties=497;
-  unresolved.CitySearchPersonalUsed=true;unresolved.CitySearchSupportUsed=true;unresolved.CitySearchSupportDispatched=true;var savedUnresolved=CrimeState.RoundTrip(unresolved);Check(savedUnresolved.CitySearchPersonalUsed&&savedUnresolved.CitySearchSupportUsed&&savedUnresolved.CitySearchSupportDispatched,"same-version record serializer keeps both spent city attempts and dispatched quota");CrimeState.Records["unresolved"]=savedUnresolved;
+  unresolved.CitySearchPersonalUsed=true;unresolved.CitySearchSupportUsed=true;var savedUnresolved=CrimeState.RoundTrip(unresolved);Check(savedUnresolved.CitySearchPersonalUsed&&savedUnresolved.CitySearchSupportUsed,"same-version record serializer keeps both spent player city attempts");CrimeState.Records["unresolved"]=savedUnresolved;
   Check(savedUnresolved.HasOpenCase&&savedUnresolved.OffenderHeroId=="unresolved"&&savedUnresolved.IncidentCount==9&&savedUnresolved.CivilianCasualties==497,"real person record serializer retains unpaid severe liability without resolvable hero");
   Check(!savedUnresolved.IsOffenderPursuable(),"loaded unresolved person stays deferred");
   var returnedHero=new Hero{StringId="unresolved"};var returnedParty=new MobileParty{StringId="after_load_party",LeaderHero=returnedHero};returnedHero.PartyBelongedTo=returnedParty;Hero.All.Add(returnedHero);MobileParty.All.Add(returnedParty);

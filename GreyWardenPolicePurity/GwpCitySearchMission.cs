@@ -504,11 +504,13 @@ namespace GreyWardenPolicePurity
             NoteDuelRemoval(affectedAgent);
             if (affectedAgent == Agent.Main && agentState != AgentState.Deleted)
             {
+                bool duelLost = _stage == Stage.Duel;
                 _pendingHallAction = null;
                 _pendingFight = null;
                 _transitioning = false;
                 _stage = Stage.Failed;
-                Search.FinishSearch(false);
+                if (duelLost) Search.LostSearchDuel();
+                else Search.FinishSearch(false);
                 return; // 原版 LeaveMissionLogic 办理倒地后退出，不能把失败带入下一场景。
             }
             if (InHall && affectedAgent == _hallTarget && Search.SearchActive && _stage == Stage.Fighting

@@ -33,7 +33,7 @@ namespace GreyWardenPolicePurity
             entry.IsPersonal = true;
             entry.Summary = GwpText.Get(IsWaitingForBountyCollection ? GwpTextCatalog.gwp_affairs_collect : GwpTextCatalog.gwp_affairs_pursuing);
             entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_reward,
-                GwpAffairsText.Money(CalculateCaseFee(CaseAmountDue))));
+                GwpAffairsText.Money(ExpectedCaseFee)));
             if (_activeBountyDeadlineHours > 0 && IsTrackingBountyTarget)
                 entry.Fields.Add(GwpAffairsText.Line(GwpTextCatalog.gwp_affairs_deadline,
                     GwpCaseArchiveItemVM.FormatCampaignDate(CampaignTime.Hours((float)_activeBountyDeadlineHours))));

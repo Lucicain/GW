@@ -1,5 +1,15 @@
 {
   "strings": {
+    "gwp_cs_support_duel_agreement": {
+      "en": "You lost the duel. The Grey Wardens will honour the agreement and withdraw; {TARGET}'s unpaid record remains. Report back to receive payment for your trouble.",
+      "zh": "你在约斗中落败。灰袍依约收手，{TARGET}的旧账仍记在册。回去复命，领取这趟的辛苦费。",
+      "context": "用户审核通过2026-10-28：城内支援约斗落败，按约放人，保留未缴案底，只结辛苦费。"
+    },
+    "gwp_cs_support_commission_failed": {
+      "en": "The search was unsuccessful, and your commission has ended. The Grey Wardens will continue pursuing {TARGET}.",
+      "zh": "这次搜捕未能办成，委托到此结束。灰袍会继续追查{TARGET}。",
+      "context": "用户审核通过2026-10-28：已实际入场的支援搜捕真正失败或主动结束，释放玩家占案，原案交灰袍继续追查。"
+    },
     "gwp_adoption_chat_notice": {
       "en": "{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}.",
       "zh": "{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。"
@@ -7423,16 +7433,6 @@
     "gwp_cs_support_duel": {
       "en": "If you mean to take me, settle it with steel first.",
       "zh": "想带我走，就先在剑下分个高低。",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
-    "gwp_cs_support_success": {
-      "en": "The Warden detachment has taken {TARGET} into custody and is returning.",
-      "zh": "灰袍搜捕队已拿下{TARGET}，正押送返回。",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
-    "gwp_cs_support_failed": {
-      "en": "The Warden detachment could not take {TARGET}. The survivors have withdrawn.",
-      "zh": "灰袍搜捕队未能拿下{TARGET}，余部已经撤回。",
       "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     }
   },

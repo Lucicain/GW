@@ -149,7 +149,7 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 | 战场完整名册、预备兵与增援通知 | `IGwpBattleSceneSource`、`GwpBattleSceneContext` | 援军与音乐只查此入口；野战转接原供应器，城内由搜捕提供真实名册 |
 | 无战役伤亡回调的场景人物来源 | `GreyWardenSafePartyAgentOrigin` | 切磋、搜捕守军与提取身体表现复用此来源；玩家随行兵仍用原版PartyAgentOrigin结算伤亡 |
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
-| 搜捕单案机会与派队额度 | `GwpCitySearchCasePolicy` | CrimeRecord保存字段仅在此读取/消耗；重新接委托不重置 |
+| 玩家搜捕单案机会 | `GwpCitySearchCasePolicy` | CrimeRecord保存玩家亲自/协同次数，仅在此读取/消耗；重新接委托不重置，NPC派队不占次数 |
 | 搜捕街道伤亡快照 | `GwpCitySearchBehavior.SaveStreetBodies` / `StreetBodies` | 死伤外观/位置/结果仅经此保存读取；不跨Mission持有Agent引用 |
 | 搜捕现场模拟攻防 | `GwpCitySearchMissionController.CombatBalance` / `SimulationPower` | `GetSimulationAttackPower`；现场说服与打法选择共用，范围见[搜捕](city-search.md)（依据：设计2026-10-26） |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |

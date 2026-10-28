@@ -71,7 +71,7 @@ namespace GreyWardenPolicePurity
         private bool IsCaseClerk => GwpCommon.IsOrdinaryGreyWardenLordConversation();
         internal bool IsCommissionTarget(Hero? hero) => HasBountyTask && hero != null
             && hero.StringId == _activeBountyTargetHeroId;
-        internal int ExpectedCaseFee => CalculateCaseFee(CaseAmountDue);
+        internal int ExpectedCaseFee => HasNothingLeftToSettle ? WithdrawnCaseCompensation() : CalculateCaseFee(CaseAmountDue);
         internal bool CanOfferFieldGrace => IsTrackingBountyTarget && _activeBountyDeadlineHours - CampaignTime.Now.ToHours >= 72d;
         internal void RecordFieldGrace(string message) => _activeQuest?.WriteLog(message);
         internal bool HasCommissionAuthority(Hero? hero) => _recruitmentAccepted && IsCommissionTarget(hero);
@@ -278,11 +278,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 案子被别人了结，而且玩家手上一分钱、一个人都没有。这时才只剩一笔辛苦费；
+        /// 案子被别人了结或支援约斗依约收手，且手上没有钱、人待交时，只剩辛苦费；
         /// 收过钱就仍然要正常上缴，只是差额全免。
         /// </summary>
         private bool HasNothingLeftToSettle =>
-            _caseClosedElsewhere && CaseAmountDue <= 0 && !HasFieldBusinessToSettle;
+            _caseClosedElsewhere && (_casePeacefullyResolved || CaseAmountDue <= 0 && !HasFieldBusinessToSettle);
 
         /// <summary>白跑一趟的辛苦费：按底薪加实际阵亡算，不含按罪责严重度给的那一段。</summary>
         private int WithdrawnCaseCompensation() =>
@@ -293,7 +293,7 @@ namespace GreyWardenPolicePurity
         /// <summary>还有帐要交、或者还有人要押走，才值得派一趟。</summary>
         internal bool CanDispatchCaseReport => HasBountyTask && CaseHero != null
             && (HasNothingLeftToSettle || CaseAmountDue > 0 || CanDeliverCasePrisoner());
-        internal int CaseReportAmountDue => CaseAmountDue;
+        internal int CaseReportAmountDue => HasNothingLeftToSettle ? 0 : CaseAmountDue;
         internal string CaseReportIdentity => CaseHero?.StringId ?? string.Empty;
         internal int CaseReportSuggestedPayment => Reports?.PendingReceivedFor(CaseReportIdentity) ?? 0;
         internal GwpCaseReceipt? CaseReportReceipt => Reports?.ReceiptFor(CaseReportIdentity);
@@ -500,7 +500,8 @@ namespace GreyWardenPolicePurity
             if (HasNothingLeftToSettle)
             {
                 MBTextManager.SetTextVariable("GWP_CASE_REPORT_SUMMARY", GwpText.Get(
-                    GwpTextCatalog.gwp_case_report_withdrawn_summary));
+                    _casePeacefullyResolved ? GwpTextCatalog.gwp_case_settle_expenses
+                        : GwpTextCatalog.gwp_case_report_withdrawn_summary));
                 return true;
             }
             int due = CaseAmountDue;
@@ -596,12 +597,13 @@ namespace GreyWardenPolicePurity
         /// <summary>白跑一趟的结案：只付辛苦费，不查账、不扣分、不动震慑。</summary>
         private void CompleteWithdrawnCaseReport()
         {
+            bool agreed = _casePeacefullyResolved;
             int paid = PoliceResourceManager.PayFromJudicialTreasury(WithdrawnCaseCompensation());
             GwpAiDiagnostics.WriteFieldArrest("REPORT_WITHDRAWN_CASE",
                 "offender=" + (_activeBountyTargetHeroId ?? "-") +
                 "; casualties=" + _bountyPlayerCasualties + "; compensation=" + paid);
             FinishCaseReport(paid);
-            MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
+            if (!agreed) MBTextManager.SetTextVariable("GWP_CASE_REPORT_RESULT", GwpText.Get(
                 GwpTextCatalog.gwp_case_withdrawn_result,
                 "VAR_1", paid));
         }

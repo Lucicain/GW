@@ -4,6 +4,8 @@
   <tag language="简体中文" />
  </tags>
  <strings>
+  <string id="gwp_cs_support_duel_agreement" text="你在约斗中落败。灰袍依约收手，{TARGET}的旧账仍记在册。回去复命，领取这趟的辛苦费。" />
+  <string id="gwp_cs_support_commission_failed" text="这次搜捕未能办成，委托到此结束。灰袍会继续追查{TARGET}。" />
   <string id="gwp_adoption_chat_notice" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。" />
   <string id="gwp_adoption_log_entry" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。" />
   <string id="gwp_clan_description" text="灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。" />
@@ -1764,7 +1766,5 @@
   <string id="gwp_cs_support_warrant" text="灰袍的人就在这里。跟我们走吧。" />
   <string id="gwp_cs_support_surrender" text="我跟你们走。" />
   <string id="gwp_cs_support_duel" text="想带我走，就先在剑下分个高低。" />
-  <string id="gwp_cs_support_success" text="灰袍搜捕队已拿下{TARGET}，正押送返回。" />
-  <string id="gwp_cs_support_failed" text="灰袍搜捕队未能拿下{TARGET}，余部已经撤回。" />
 </strings>
 </base>

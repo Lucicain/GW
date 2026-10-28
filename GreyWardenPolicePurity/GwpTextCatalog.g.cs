@@ -477,10 +477,11 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_opponent_duel = "{=gwp_cs_opponent_duel}I'm the one you're after. Fight me alone. If you win, I'll go with you.";
         internal const string gwp_cs_opponent_melee = "{=gwp_cs_opponent_melee}Enough talk. Take another step and you won't be walking out of here.";
         internal const string gwp_cs_route_blocked = "{=gwp_cs_route_blocked}You cannot leave while combat or a conversation is still in progress.";
+        internal const string gwp_cs_support_commission_failed = "{=gwp_cs_support_commission_failed}The search was unsuccessful, and your commission has ended. The Grey Wardens will continue pursuing {TARGET}.";
         internal const string gwp_cs_support_delegate = "{=gwp_cs_support_delegate}Ask the Wardens to take over this case";
         internal const string gwp_cs_support_delegated = "{=gwp_cs_support_delegated}The case is now in the hands of the Warden detachment.";
         internal const string gwp_cs_support_duel = "{=gwp_cs_support_duel}If you mean to take me, settle it with steel first.";
-        internal const string gwp_cs_support_failed = "{=gwp_cs_support_failed}The Warden detachment could not take {TARGET}. The survivors have withdrawn.";
+        internal const string gwp_cs_support_duel_agreement = "{=gwp_cs_support_duel_agreement}You lost the duel. The Grey Wardens will honour the agreement and withdraw; {TARGET}'s unpaid record remains. Report back to receive payment for your trouble.";
         internal const string gwp_cs_support_gate = "{=gwp_cs_support_gate}The Wardens? Go on in. Leave the townsfolk in peace.";
         internal const string gwp_cs_support_party_name = "{=gwp_cs_support_party_name}Warden Arrest Party";
         internal const string gwp_cs_support_personal_spent = "{=gwp_cs_support_personal_spent}Your men have withdrawn. You can ask the Wardens to take over, or wait for their detachment before entering again.";
@@ -488,7 +489,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_cs_support_request = "{=gwp_cs_support_request}Ask the Wardens to send men to accompany me";
         internal const string gwp_cs_support_sent = "{=gwp_cs_support_sent}The Wardens have sent a detachment to meet you.";
         internal const string gwp_cs_support_spent = "{=gwp_cs_support_spent}This attempt has ended. The surviving Wardens are returning.";
-        internal const string gwp_cs_support_success = "{=gwp_cs_support_success}The Warden detachment has taken {TARGET} into custody and is returning.";
         internal const string gwp_cs_support_surrender = "{=gwp_cs_support_surrender}I'll come with you.";
         internal const string gwp_cs_support_travelling = "{=gwp_cs_support_travelling}The Warden detachment is on its way.";
         internal const string gwp_cs_support_unavailable = "{=gwp_cs_support_unavailable}The Wardens cannot spare the men just now. Ask again later.";

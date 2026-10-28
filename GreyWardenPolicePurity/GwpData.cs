@@ -30,7 +30,6 @@ namespace GreyWardenPolicePurity
         public bool HasOpenCase { get; set; }
         public bool CitySearchPersonalUsed { get; set; }
         public bool CitySearchSupportUsed { get; set; }
-        public bool CitySearchSupportDispatched { get; set; }
         /// <summary>
         /// Villagers and caravan guards this offender has actually killed under this
         /// case. The fine is built on it, the same way the Wardens price the player's
@@ -879,7 +878,6 @@ namespace GreyWardenPolicePurity
             int accruedBaseFine = record.AccruedBaseFine;
             bool cityPersonalUsed = record.CitySearchPersonalUsed;
             bool citySupportUsed = record.CitySearchSupportUsed;
-            bool citySupportDispatched = record.CitySearchSupportDispatched;
 
             store.SyncData($"gwp_l_{i}_id", ref id);
             store.SyncData($"gwp_l_{i}_type", ref type);
@@ -897,7 +895,6 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_l_{i}_basefine", ref accruedBaseFine);
             store.SyncData($"gwp_l_{i}_city_personal_used", ref cityPersonalUsed);
             store.SyncData($"gwp_l_{i}_city_support_used", ref citySupportUsed);
-            store.SyncData($"gwp_l_{i}_city_support_sent", ref citySupportDispatched);
 
             if (!saving)
             {
@@ -915,7 +912,6 @@ namespace GreyWardenPolicePurity
                 record.AccruedBaseFine = accruedBaseFine;
                 record.CitySearchPersonalUsed = cityPersonalUsed;
                 record.CitySearchSupportUsed = citySupportUsed;
-                record.CitySearchSupportDispatched = citySupportDispatched;
                 record.OffenderPartyId = party;
                 record.Offender = id == PlayerCrimeId
                     ? MobileParty.MainParty

@@ -4,6 +4,8 @@
 
 | 文本键 | 英文 | 中文 | 出现位置或情境 |
 |---|---|---|---|
+| gwp_cs_support_duel_agreement | You lost the duel. The Grey Wardens will honour the agreement and withdraw; {TARGET}'s unpaid record remains. Report back to receive payment for your trouble. | 你在约斗中落败。灰袍依约收手，{TARGET}的旧账仍记在册。回去复命，领取这趟的辛苦费。 | 用户审核通过2026-10-28：城内支援约斗落败，按约放人，保留未缴案底，只结辛苦费。 |
+| gwp_cs_support_commission_failed | The search was unsuccessful, and your commission has ended. The Grey Wardens will continue pursuing {TARGET}. | 这次搜捕未能办成，委托到此结束。灰袍会继续追查{TARGET}。 | 用户审核通过2026-10-28：已实际入场的支援搜捕真正失败或主动结束，释放玩家占案，原案交灰袍继续追查。 |
 | gwp_adoption_chat_notice | {HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}. | {HERO.LINK}被灰袍守卫从{VILLAGE}收留了。 | GreyWardenAdoptionLogEntry.cs:57 |
 | gwp_adoption_log_entry | {HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised. | {HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。 | GreyWardenAdoptionLogEntry.cs:77 |
 | gwp_clan_description | The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven's commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment. | 灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。 | 家族百科总介绍；出身、政教分离与严苛惩戒为按用户方向拟写的模组设定，非原版事实。 |
@@ -143,10 +145,10 @@
 | gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
 | gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:182 |
 | gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:183 |
-| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:410 |
-| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:425 |
-| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1074 |
-| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1088 |
+| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:409 |
+| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:424 |
+| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1070 |
+| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1084 |
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_002 | — | 宣战详情 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_003 | — | 查看灰袍守卫当前对各势力宣战的详细原因。 | 未检出直接引用；保留 |
@@ -465,8 +467,8 @@
 | gwp_policeenforcementbehavior_atonementquest_017 | Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}. | 赎罪完成，经灰袍调停，你与{VAR_1}恢复了和平。 | PoliceEnforcementBehavior.AtonementQuest.cs:356 |
 | gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:742 |
 | gwp_policeenforcementbehavior_delaypatrols_002 | — | 与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1} | 未检出直接引用；保留 |
-| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1315 |
-| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1317 |
+| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1316 |
+| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1318 |
 | gwp_policeenforcementbehavior_delaypatrols_005 | Grey Warden pursuit detachment | 灰袍高速追截队 | PoliceEnforcementBehavior.DelayPatrols.cs:487 |
 | gwp_troop_order_cohort_name | Grey Warden training cohort | 灰袍随行练兵队 | GreyWardenTroopRequestBehavior.Cohort.cs:156 |
 | gwp_troop_order_cohort_lost | The soldiers being trained for you were lost on the road. The Wardens are training another company. | 为你训练的士兵在途中覆没，灰袍正重新训练一批。 | GreyWardenTroopRequestBehavior.Cohort.cs:101 |
@@ -1041,9 +1043,9 @@
 | gwp_case_report_later | I am not ready to hand it over yet. | 钱和人还没有准备好，我改日再来。 | PlayerBountyBehavior.CaseSettlement.cs:460 |
 | gwp_case_barter_accepted | We have counted the payment. Your report will be entered. | 钱物清点好了，这份委托可以结了。 | PlayerBountyBehavior.CaseSettlement.cs:473 |
 | gwp_case_barter_cancelled | Nothing has been entered. We can count it again when you are ready. | 这次没有入账。你准备好了，我们再点。 | PlayerBountyBehavior.CaseSettlement.cs:488, PoliceEnforcementBehavior.Dialogue.cs:172 |
-| gwp_case_report_summary | The assessed fine is {VAR_1} denars. Hand over the money and goods you collected, or the captive, and report what happened. | 本案罚金为{VAR_1}第纳尔。请交回代收的财物或押来的犯人，并说明办案经过。 | PlayerBountyBehavior.CaseSettlement.cs:508 |
+| gwp_case_report_summary | The assessed fine is {VAR_1} denars. Hand over the money and goods you collected, or the captive, and report what happened. | 本案罚金为{VAR_1}第纳尔。请交回代收的财物或押来的犯人，并说明办案经过。 | PlayerBountyBehavior.CaseSettlement.cs:509 |
 | gwp_case_missing_result | — | 人没有交到，办案酬劳就不能发。这份委托到此结束。 | 未检出直接引用；保留 |
-| gwp_case_report_complete | Your report is entered. The treasury has paid {VAR_1} denars in expenses. This commission is concluded. | 交付已经记下。公库付给你 {VAR_1} 第纳尔办案酬劳，这份委托结清了。 | PlayerBountyBehavior.CaseSettlement.cs:666 |
+| gwp_case_report_complete | Your report is entered. The treasury has paid {VAR_1} denars in expenses. This commission is concluded. | 交付已经记下。公库付给你 {VAR_1} 第纳尔办案酬劳，这份委托结清了。 | PlayerBountyBehavior.CaseSettlement.cs:668 |
 | gwp_case_capture_failed | The target was not taken. The case remains open. | 目标未被俘获，案件尚未了结。 | GwpFieldArrestBehavior.cs:1000 |
 | gwp_case_duel_failed | The duel could not begin. | 决斗未能开始。 | GwpFieldArrestBehavior.cs:1142 |
 | gwp_case_cash_with_prisoner | — | 你之前还向他收过 {VAR_1} 第纳尔。把这笔钱补齐，和俘虏一起交来。 | 未检出直接引用；保留 |
@@ -1281,7 +1283,7 @@
 | gwp_case_pay_any | I am ready to submit my report. Let us settle the account. | 我来交差，请清点结账。 | PlayerBountyBehavior.CaseSettlement.cs:455 |
 | gwp_case_resume_report | The money and goods have been recorded. I will explain what happened. | 钱物已经交过了，我来说明办案经过。 | PlayerBountyBehavior.CaseSettlement.cs:458 |
 | gwp_case_nothing_concealed | That is what he put in your hands, and all of it is here. Your report will be entered. | 他交到你手上的就是这些，一分不少地都在这儿了。你的汇报会照实登记。 | PlayerBountyBehavior.CaseSettlement.cs:478 |
-| gwp_case_report_kept_result | The {VAR_1} denars are entered. Your expenses are {VAR_2} denars. The commission is concluded. | 这 {VAR_1} 第纳尔已经登记。你的办案费是 {VAR_2} 第纳尔。委托就此结清。 | PlayerBountyBehavior.CaseSettlement.cs:592 |
+| gwp_case_report_kept_result | The {VAR_1} denars are entered. Your expenses are {VAR_2} denars. The commission is concluded. | 这 {VAR_1} 第纳尔已经登记。你的办案费是 {VAR_2} 第纳尔。委托就此结清。 | PlayerBountyBehavior.CaseSettlement.cs:593 |
 | gwp_voice_submit_upright_0 | The charge is fair. Take it, and let it be written that I paid it standing. | 这笔罚是公道的。拿去吧，记上一笔：我是站着交的。 | GwpFieldDialogueVoice.cs:115 |
 | gwp_voice_submit_upright_1 | I will not argue a debt I owe. Count it. | 我欠的账我不争。点吧。 | GwpFieldDialogueVoice.cs:115 |
 | gwp_voice_submit_upright_2 | Then it is owed, and I pay what is owed. Here. | 那就是欠着的，欠着的我就还。给。 | GwpFieldDialogueVoice.cs:115 |
@@ -1333,7 +1335,7 @@
 | gwp_voice_resist_scorn_1 | A wanted man collecting fines. I will not answer to you. | 一个通缉犯跑来收罚金。我不向你交代。 | GwpFieldDialogueVoice.cs:137 |
 | gwp_voice_resist_scorn_2 | Put your own name right before you read mine off a list. | 先把你自己的名字弄干净，再照单子念我的。 | GwpFieldDialogueVoice.cs:137 |
 | gwp_case_short_question | There are still matters to explain in this case. Tell me what happened. | 这宗案子还有需要交代的地方。说说经过。 | PlayerBountyBehavior.CaseSettlement.cs:467, PlayerBountyBehavior.CaseSettlement.cs:482 |
-| gwp_receipt_unknown | Choose what to hand over. | 请选择要上交的钱物。 | PlayerBountyBehavior.CaseSettlement.cs:631 |
+| gwp_receipt_unknown | Choose what to hand over. | 请选择要上交的钱物。 | PlayerBountyBehavior.CaseSettlement.cs:633 |
 | gwp_case_short_truth | Tell the truth | 如实交代 | PlayerBountyBehavior.CaseSettlement.cs:484 |
 | gwp_case_short_lie | Lie | 撒谎 | PlayerBountyBehavior.CaseSettlement.cs:486 |
 | gwp_collection_agreement | Honor our agreement | 履行约定 | GwpAssetPayment.cs:151 |
@@ -1380,14 +1382,14 @@
 | gwp_bounty_case_is_yours | The bounty is yours. If you need help, send word to the Wardens. | 你接下了这桩悬赏。需要援手时可派人向灰袍求援。 | PlayerBountyBehavior.DialogueAndNotification.cs:712 |
 | gwp_support_no_responder | No Warden lord can come just now. | 眼下没有灰袍领主能够前来。 | PlayerBountyBehavior.Support.cs:57, PlayerBountyBehavior.Support.cs:69 |
 | gwp_bounty_intel_lost | [Investigation] The scouts have lost the trail. There is no sighting to report this time. | 【侦情】探子跟丢了，这一次没有目击可报。 | PlayerBountyBehavior.cs:688 |
-| gwp_case_withdrawn_result | The commission has been withdrawn. The treasury pays {VAR_1} denars for your trouble. Your account is settled. | 这份委托已撤回。公库付给你{VAR_1}第纳尔辛苦费，账目已结清。 | PlayerBountyBehavior.CaseSettlement.cs:605 |
-| gwp_case_report_withdrawn_summary | This commission has been withdrawn. I will settle the payment for your trouble. | 这份委托已经撤回，我来结清你的辛苦费。 | PlayerBountyBehavior.CaseSettlement.cs:503 |
+| gwp_case_withdrawn_result | The commission has been withdrawn. The treasury pays {VAR_1} denars for your trouble. Your account is settled. | 这份委托已撤回。公库付给你{VAR_1}第纳尔辛苦费，账目已结清。 | PlayerBountyBehavior.CaseSettlement.cs:607 |
+| gwp_case_report_withdrawn_summary | This commission has been withdrawn. I will settle the payment for your trouble. | 这份委托已经撤回，我来结清你的辛苦费。 | PlayerBountyBehavior.CaseSettlement.cs:504 |
 | gwp_case_owner_player | Tracking: {VAR_1} &#124; Stage: commissioned to the player | 追踪情况：{VAR_1} &#124; 当前阶段：已交由玩家承办 | GwpCaseArchiveItemVM.cs:379 |
 | gwp_case_owner_player_supported | Tracking: {VAR_1} &#124; Supporting: {VAR_2} &#124; Stage: {VAR_3} | 追踪情况：{VAR_1} &#124; 支援：{VAR_2} &#124; 当前阶段：{VAR_3} | GwpCaseArchiveItemVM.cs:385 |
 | gwp_dispatch_trouble_battle | Word reaches you: the men you sent have been brought to battle. | 有消息传来：你派出去的人被堵上了，正在交战。 | GwpWardenDispatchBehavior.cs:393 |
 | gwp_dispatch_trouble_mauled | Word reaches you: the men you sent have been badly cut up. | 有消息传来：你派出去的人伤亡过半。 | GwpWardenDispatchBehavior.cs:395 |
 | gwp_dispatch_trouble_starving | — | 有消息传来：你派出去的人已经断粮。 | 未检出直接引用；保留 |
-| gwp_case_settle_expenses | The commission is closed. We will settle what you are owed. | 这桩委托已经了结，把该付你的报酬结清就行。 | PlayerBountyBehavior.CaseSettlement.cs:462 |
+| gwp_case_settle_expenses | The commission is closed. We will settle what you are owed. | 这桩委托已经了结，把该付你的报酬结清就行。 | PlayerBountyBehavior.CaseSettlement.cs:462, PlayerBountyBehavior.CaseSettlement.cs:503 |
 | gwp_troop_zealot | Grey Warden Zealot | 灰袍狂信者 | 兵种树、名册、战场兵种名；现有二阶步兵。 |
 | gwp_fs_priest_name | Grey Warden Priest {FIRSTNAME} | 灰袍教士{FIRSTNAME} | 村中教士姓名、名牌与百科链接。 |
 | gwp_fs_priest_arrived | {PRIEST} has settled in {VILLAGE} to preach. | {PRIEST}已在{VILLAGE}定居传教。 | 新教士在村中落脚时的左下角灰色提示。 |
@@ -1461,11 +1463,11 @@
 | gwp_fs_party_product | {COUNT} {ITEM} | {COUNT}件{ITEM} | 卖货队报价中的单个货物条目。 |
 | gwp_fs_party_products_more |  and more | 等 | 卖货报价超过四种货物时追加的省略片段。 |
 | gwp_fs_healing_hearth | Care from the Grey Warden faithful | 灰袍教众的照料 | 部队治疗速度的解释条目；这是加成来源，不是地图地点。 |
-| gwp_envoy_party_name | Grey Warden envoy | 灰袍使者 | PoliceEnforcementBehavior.Envoy.cs:292 |
-| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:683 |
+| gwp_envoy_party_name | Grey Warden envoy | 灰袍使者 | PoliceEnforcementBehavior.Envoy.cs:291 |
+| gwp_envoy_duel_called | {VAR_1} has challenged {VAR_2} to settle the Wardens' charge at the tournament in {VAR_3}. | {VAR_1}向{VAR_2}提出，要在{VAR_3}的比武大会上了结灰袍的指控。 | PoliceEnforcementBehavior.Envoy.cs:693 |
 | gwp_envoy_duel_moved | The duel between {VAR_1} and {VAR_2} moves to the tournament in {VAR_3}. | {VAR_1}与{VAR_2}的比武改到{VAR_3}的比武大会。 | 约斗场地与任一方开战、被围或叛乱后换城时的地图提示。 |
 | gwp_envoy_duel_warden_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}. The Wardens collected {VAR_4} denars. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍收取了{VAR_4}第纳尔。 | 灰袍比武获胜通知；VAR_4为实际收取金币，可能低于罚金，不能写成照数缴清。 |
-| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:881 |
+| gwp_envoy_duel_offender_won | {VAR_1} placed above {VAR_2} at the tournament in {VAR_3}, and the Wardens let him go as agreed. | {VAR_1}在{VAR_3}的比武大会上名次压过了{VAR_2}，灰袍依约放他离开。 | PoliceEnforcementBehavior.Envoy.cs:891 |
 | gwp_atonement_closed_elsewhere | This case has been settled by someone else. Your atonement assignment is withdrawn, and you will not be penalized. | 这宗案子已由他人了结，赎罪委托撤销，不计作你的过失。 | 赎罪目标死亡、被他人俘获或案件在别处结清；撤销任务，不扣声望。 |
 | gwp_atonement_report | Tell us how the case ended, and hand over anything you collected on our behalf. | 说说这件事是怎样了结的，代收的钱货也一并交来。 | 赎罪交差；有代收钱货或可交俘虏时打开同一套交付界面。 |
 | gwp_training_transport_party | Warden troop transport | 灰袍运兵队 | 练兵官实体运兵队；地图状态和差事台账。 |
@@ -1764,5 +1766,3 @@
 | gwp_cs_support_warrant | The Wardens are here. Come with us. | 灰袍的人就在这里。跟我们走吧。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
 | gwp_cs_support_surrender | I'll come with you. | 我跟你们走。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
 | gwp_cs_support_duel | If you mean to take me, settle it with steel first. | 想带我走，就先在剑下分个高低。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
-| gwp_cs_support_success | The Warden detachment has taken {TARGET} into custody and is returning. | 灰袍搜捕队已拿下{TARGET}，正押送返回。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
-| gwp_cs_support_failed | The Warden detachment could not take {TARGET}. The survivors have withdrawn. | 灰袍搜捕队未能拿下{TARGET}，余部已经撤回。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |

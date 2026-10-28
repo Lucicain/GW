@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
         {
             /// <summary>使者在路上。期间不宣战。</summary>
             Travelling = 0,
-            /// <summary>未说服或使者没了。这宗案子不再派使者，照常宣战。</summary>
+            /// <summary>交涉谈崩。这宗案子不再派使者，照常追捕；途中失队另行补派。</summary>
             Failed = 1,
             /// <summary>他求了宽限。承办人当场放下案子去忙别的，到期由最近的灰袍领主派一趟只收钱的使者。</summary>
             Grace = 2,
@@ -136,7 +136,6 @@ namespace GreyWardenPolicePurity
             "envoy_refused" => "refused",
             "envoy_layer_one_failed" => "talks_failed",
             "envoy_grace_broke" => "grace_broke",
-            "envoy_lost" => "lost",
             "envoy_war" => "war",
             _ when reason.StartsWith("duel_", StringComparison.Ordinal) => "duel_cancelled",
             _ => "failed"
@@ -377,12 +376,6 @@ namespace GreyWardenPolicePurity
         private void TendTravellingEnvoy(EnvoyCase envoyCase, CrimeRecord crime)
         {
             MobileParty? envoy = FindActiveParty(envoyCase.EnvoyPartyId);
-            if (envoy == null)
-            {
-                FailEnvoy(envoyCase, "envoy_lost");
-                return;
-            }
-
             // 已出使者固定该罪犯；原承办人改追或撤下任务不撤销交涉。
             MobileParty? target = crime.Offender;
             if (target?.IsActive != true)
@@ -396,8 +389,14 @@ namespace GreyWardenPolicePurity
 
             // 他正在打仗（多半是在烧村、抢商队，案子就是这么立的）也照谈（用户裁定 2026-10-15）；
             // 只有使者自己被人拖进仗里时等它打完。
-            if (envoy.MapEvent != null)
+            if (envoy?.MapEvent != null)
                 return;
+            if (envoy == null || envoy.MemberRoster.TotalHealthyCount == 0)
+            {
+                MarkDelayPatrolReturning(envoyCase.EnvoyPartyId);
+                SendEnvoyFromNearestWarden(crime, target, envoyCase.CollectOnly);
+                return;
+            }
             // 被人打过一仗后原版把它停在原地，要等下一轮拍卖才动（实机诊断 2026-10-15：停了约 11 小时）。
             if (envoy.DefaultBehavior == AiBehavior.Hold)
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(envoy);
@@ -607,14 +606,20 @@ namespace GreyWardenPolicePurity
         private void SettleThroughEnvoy(EnvoyCase envoyCase, CrimeRecord crime, MobileParty envoy,
             Hero offender, int demanded, string reason)
         {
+            int collected = CollectEnvoyFine(crime, envoy, offender, demanded);
+            RecordEnvoyReport(envoyCase, reason == "envoy_paid_share" ? "paid_share" : "paid", collected);
+            ResolveEnvoyCase(envoyCase, crime, true, reason + "_" + collected);
+        }
+
+        private static int CollectEnvoyFine(CrimeRecord crime, MobileParty envoy, Hero offender, int demanded)
+        {
             int collected = Math.Min(Math.Max(0, offender.Gold), demanded);
             if (collected > 0)
                 GiveGoldAction.ApplyForCharacterToParty(offender, envoy.Party, collected, true);
             GwpFieldReportLedger.SettleWithWardens(offender, GwpFieldArrestPricing.AssessFine(crime),
                 collected, GwpFieldArrestPricing.BaseChargeFor(crime));
             GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
-            RecordEnvoyReport(envoyCase, reason == "envoy_paid_share" ? "paid_share" : "paid", collected);
-            ResolveEnvoyCase(envoyCase, crime, true, reason + "_" + collected);
+            return collected;
         }
 
         /// <summary>
@@ -633,13 +638,18 @@ namespace GreyWardenPolicePurity
                 FailEnvoy(envoyCase, "grace_collector_at_war");
                 return;
             }
-            // 正在打仗、在军团里跟着走的领主这一小时派不了，就换下一个近的；都派不了下一小时再试。
+            SendEnvoyFromNearestWarden(crime, criminal, true);
+        }
+
+        private void SendEnvoyFromNearestWarden(CrimeRecord crime, MobileParty criminal, bool collectOnly)
+        {
+            // 失队与到期催缴共用真实抽兵；这一小时派不了，下小时保留原进度继续等。
             foreach (MobileParty police in PoliceStats.GetAllPoliceParties()
                          .Where(party => party?.IsActive == true && party.IsLordParty &&
                              CanContinueLeadingPoliceTask(party))
                          .OrderBy(party => party.GetPosition2D.Distance(criminal.GetPosition2D)))
             {
-                if (TrySendEnvoy(police, crime, criminal, true))
+                if (TrySendEnvoy(police, crime, criminal, collectOnly))
                     return;
             }
         }

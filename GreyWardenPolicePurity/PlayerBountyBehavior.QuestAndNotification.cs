@@ -135,6 +135,8 @@ namespace GreyWardenPolicePurity
             internal void CancelUnavailableCommission() =>
                 CompleteQuestWithCancel(GwpText.Create(GwpTextCatalog.gwp_case_custody_withdrawn));
 
+            internal void FailCitySearch(string message) => CompleteQuestWithFail(new TextObject(message));
+
         }
 
         #endregion

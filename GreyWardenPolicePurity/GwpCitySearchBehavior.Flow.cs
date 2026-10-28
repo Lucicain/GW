@@ -211,7 +211,9 @@ namespace GreyWardenPolicePurity
         internal void AgreeDuel() => _duelAgreed = true;
         internal void WithdrawFromHall() => _returning = true;
 
-        internal void FinishSearch(bool escaped)
+        internal void LostSearchDuel() => FinishSearch(false, duelLost: true);
+
+        internal void FinishSearch(bool escaped, bool duelLost = false)
         {
             Hero? target = SearchTarget;
             if (Supported) Enforcement?.ReleaseCitySearchParty(_searchSourcePartyId);
@@ -222,6 +224,12 @@ namespace GreyWardenPolicePurity
                 && GwpVoluntarySurrender.TryCapture(PartyBase.MainParty, target);
             if (captured) Bounty?.RegisterCaptureInCustody();
             if (escaped && _targetDown && _targetKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
+            if (Supported && _searchAttemptStarted && !captured && target != null
+                && !(escaped && _targetDown && _targetKilled))
+            {
+                if (duelLost) Bounty?.RecordCitySearchDuelAgreement(target);
+                else Bounty?.FailCitySearchCommission(target);
+            }
             _searchPlace = (int)GwpCitySearchPlace.None;
             _openPending = false;
             _captureReady = false;
@@ -310,7 +318,7 @@ namespace GreyWardenPolicePurity
                     target.CharacterObject, false, false, winner =>
                     {
                         if (winner == CharacterObject.PlayerCharacter) WonHall();
-                        else FinishSearch(false);
+                        else LostSearchDuel();
                     }, 100f);
                 // OpenNew返回新任务时尚未Initialize，Mission.Current此时仍为空；绑定到返回的实例。
                 mission.AddMissionBehavior(new GwpCitySearchArenaReturn(this));

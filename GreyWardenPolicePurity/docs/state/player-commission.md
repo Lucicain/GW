@@ -1,9 +1,9 @@
-﻿# 玩家承办委托：结果判定与交差
+# 玩家承办委托：结果判定与交差
 
 > 当前状态：逃亡/暂失部队与第三方扣押共用无责撤回已部署待实测；原罪责、赎买和已完成交差保留
 > 最后验收：`032cf65`（诊断已退休；后续当场补登记待实测）
-> 覆盖源码：`PlayerBountyBehavior.CaseSettlement.cs` `PlayerBountyBehavior.Custody.cs` `PlayerBountyBehavior.Affairs.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_case_custody.py`
-> 待实测：目标逃亡/待重建部队时事务和交差对话的无责撤回、保留原案及重现后再派；第三方领主/地牢赎买与旧档接续；委托目标被打垮但人跑掉时，震慑照上、不再计被捕次数（和灰袍自己打垮未俘一致，见 case-enforcement.md「震慑口径」）
+> 覆盖源码：`PlayerBountyBehavior.CaseSettlement.cs` `PlayerBountyBehavior.CitySearch.cs` `PlayerBountyBehavior.Custody.cs` `PlayerBountyBehavior.Affairs.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_case_custody.py`
+> 待实测：支援搜捕约斗败后正常交差只领辛苦费、案底保留；真正失败终止委托但原案留给灰袍；目标逃亡/待重建部队时事务和交差对话的无责撤回、保留原案及重现后再派；第三方领主/地牢赎买与旧档接续；委托目标被打垮但人跑掉时，震慑照上、不再计被捕次数（和灰袍自己打垮未俘一致，见 case-enforcement.md「震慑口径」）
 
 本文件只写普通悬赏**结果怎么判**、何时可以交差、交差拿多少。接单、支援与账本见[玩家声望](player-justice.md)，谈判见[野外执法](field-arrest.md)，负声望任务见[赎罪](atonement.md)。普通悬赏的底层持案查询现由 `GwpPlayerCaseAssignment` 汇总给外部调用，原有结果判定与报酬规则保留。（依据：源码复核2026-10-15）
 
@@ -79,7 +79,7 @@ CanWithdrawUnavailableCommission是事务及灰袍交差对话的共享门槛，
   钱（`CaseReportSuggestedPayment`）才会被追问去向；没收过钱就不追问。未打垮的案子仍以应缴额为准。
 - **押人**：`PrisonerCaseFee` = 押人估价封顶的办案费 + 原版
   `RansomValueCalculationModel.PrisonerRansomValue(俘虏, 玩家)`。亲自交与派人交相同。
-- **被别人了结**：只付辛苦费（底薪 + 阵亡抚恤），不含罪责段。
+- **被别人了结、或城内支援约斗依约收手**：只付辛苦费（底薪 + 阵亡抚恤），不含罪责段。支援约斗败走正常完成，目标不被押走、罚责案底不抵销，其他旧收据不得把本次报酬抬成整案办案费；新结果复用现有和平/仅辛苦费保存标记，不新增保存键。真正失败或主动放弃已入场的支援搜捕则结束玩家任务并释放占案，原案与已耗机会保留，灰袍独立办理不受玩家机会限制。（依据：用户裁定2026-10-28）
 - 所有报酬从灰袍司法公库（族长金币）支付，公库不足时只付得出多少付多少。
 
 任务说明 `gwp_bounty_quest_reward` 写明：击溃部队、收罚金或俘虏均可复命，活捉另按赎金价收购。

@@ -2,12 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.Core;
-using TaleWorlds.Library;
 
 namespace GreyWardenPolicePurity
 {
@@ -35,30 +31,30 @@ namespace GreyWardenPolicePurity
         internal bool RequestCitySearchParty(Hero target, bool followPlayer)
         {
             CrimeRecord? crime = CrimePool.GetRecord(target);
-            if (crime?.HasOpenCase != true || CrimeRecord.ShelterOf(target) == null || GwpCitySearchCasePolicy.SupportSpent(crime))
+            if (crime?.HasOpenCase != true || CrimeRecord.ShelterOf(target) == null
+                || followPlayer && GwpCitySearchCasePolicy.SupportSpent(crime))
                 return false;
             DelayPatrolState? existing = CityPartyState(crime);
             if (existing != null)
             {
-                if (FindActiveParty(existing.PatrolPartyId)?.MemberRoster.TotalHealthyCount is not > 0) return false;
                 existing.CityForPlayer = followPlayer;
                 existing.CityDelegated = !followPlayer;
                 return true;
             }
-            if (!GwpCitySearchCasePolicy.CanDispatch(crime)) return false;
             foreach (MobileParty source in PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
                          .OrderBy(party => party.GetPosition2D.Distance(MobileParty.MainParty.GetPosition2D)))
                 if (SendCitySearchParty(source, crime, followPlayer, !followPlayer)) return true;
             return false;
         }
 
-        private bool SendCitySearchParty(MobileParty source, CrimeRecord crime, bool followPlayer, bool delegated)
+        private bool SendCitySearchParty(MobileParty source, CrimeRecord crime, bool followPlayer, bool delegated,
+            DelayPatrolState? replacing = null)
         {
             Settlement? town = crime.ShelterSettlement;
             Clan? clan = PoliceStats.GetPoliceClan();
             if (town == null || clan == null || source.MapEvent != null
                 || source.Army != null && source.Army.LeaderParty != source || PoliceResourceManager.IsStrandedAtSea(source)
-                || !GwpCitySearchCasePolicy.CanDispatch(crime) || CityPartyState(crime) != null
+                || !crime.HasOpenCase || CityPartyState(crime) != replacing
                 || FactionManager.IsAtWarAgainstFaction(clan, town.MapFaction)) return false;
             var batches = DetachmentBatches(source, new[] { source })
                 .Where(batch => GwpCommon.IsGreyWardenTroop(batch.Character)).ToList();
@@ -76,7 +72,7 @@ namespace GreyWardenPolicePurity
                 ReturnSettlementId = home!.StringId, CityCrimeId = crime.CrimeId,
                 CityForPlayer = followPlayer, CityDelegated = delegated, IsEnvoy = true
             };
-            GwpCitySearchCasePolicy.MarkDispatched(crime);
+            if (replacing != null) MarkDelayPatrolReturning(replacing.PatrolPartyId);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(party, "CITY_CASE_SENT", "crime=" + crime.CrimeId
                 + "; source=" + source.StringId + "; count=" + size + "; player=" + followPlayer + "; delegated=" + delegated);
@@ -92,7 +88,7 @@ namespace GreyWardenPolicePurity
             {
                 GwpCrimeCategory preferred = GetPreferredCrimeCategory(source);
                 var candidates = CrimePool.LedgerRecords.Where(record => record.IsOffenderSearchableInSettlement()
-                        && GwpCitySearchCasePolicy.CanDispatch(record) && !HasEnvoyAgreement(record)
+                        && CityPartyState(record) == null && !HasEnvoyAgreement(record)
                         && !CrimeState.ActiveTasks.Values.Any(task => task.TargetCrimeId == record.CrimeId))
                     .OrderBy(record => preferred != GwpCrimeCategory.Unknown && record.CrimeCategory == preferred ? 0 : 1)
                     .ThenBy(record => source.GetPosition2D.Distance(record.ShelterSettlement!.GetPosition2D))
@@ -119,21 +115,31 @@ namespace GreyWardenPolicePurity
                          .Where(state => !state.Returning && !string.IsNullOrEmpty(state.CityCrimeId)).ToList())
             {
                 MobileParty? party = FindActiveParty(state.PatrolPartyId);
-                if (party == null) continue;
                 var search = Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>();
                 // 地图暂停/存读后的现场仍占用该队；不能在另一处同时归还或自动结算。
-                if (search?.SearchActive == true && search.TroopSource == party.Party) continue;
-                CrimeRecord? crime = CrimePool.GetRecordByKey(state.CityCrimeId);
-                Hero? target = crime?.OffenderHero;
-                if (crime?.HasOpenCase != true || target == null || !target.IsAlive || target.IsPrisoner
-                    || party.MemberRoster.TotalHealthyCount == 0)
+                if (search?.SearchActive == true && search.UsesSupportParty(state.PatrolPartyId))
                 {
-                    if (crime != null && party.MemberRoster.TotalHealthyCount == 0)
-                        GwpCitySearchCasePolicy.TryBegin(crime, true);
-                    MarkDelayPatrolReturning(party.StringId);
+                    if (party == null) search.FinishSearch(false);
                     continue;
                 }
-                if (party.MapEvent != null) continue;
+                CrimeRecord? crime = CrimePool.GetRecordByKey(state.CityCrimeId);
+                Hero? target = crime?.OffenderHero;
+                if (crime?.HasOpenCase != true || target == null || !target.IsAlive || target.IsPrisoner)
+                {
+                    MarkDelayPatrolReturning(state.PatrolPartyId);
+                    continue;
+                }
+                if (party?.MapEvent != null) continue;
+                if (party == null || party.MemberRoster.TotalHealthyCount == 0)
+                {
+                    // 派遣本身不是玩家的办理次数。失队后保留原指派，直到真实兵员能补派。
+                    foreach (MobileParty source in PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
+                                 .OrderBy(source => source.GetPosition2D.Distance(
+                                     state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
+                                         : crime.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D)))
+                        if (SendCitySearchParty(source, crime, state.CityForPlayer, state.CityDelegated, state)) break;
+                    continue;
+                }
                 if (party.DefaultBehavior == AiBehavior.Hold)
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
                 if (!state.CityDelegated && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId))
@@ -159,7 +165,6 @@ namespace GreyWardenPolicePurity
                     GreyWardenPartyDesireBehavior.RequestVisit(party, town, 8f);
                     continue;
                 }
-                if (!GwpVoluntarySurrender.CanCapture(target)) continue;
                 ResolveCitySearchParty(party, crime, target);
                 MarkDelayPatrolReturning(party.StringId);
             }
@@ -167,36 +172,14 @@ namespace GreyWardenPolicePurity
 
         private static void ResolveCitySearchParty(MobileParty party, CrimeRecord crime, Hero target)
         {
-            if (!GwpCitySearchCasePolicy.TryBegin(crime, true)) return;
-            CharacterObject champion = party.MemberRoster.GetTroopRoster()
-                .Where(element => element.Number > element.WoundedNumber && !element.Character.IsHero)
-                .OrderByDescending(element => Campaign.Current.Models.TournamentModel
-                    .GetTournamentSimulationScore(element.Character)).First().Character;
-            bool duel = target.GetTraitLevel(DefaultTraits.Valor) > 0;
-            bool won = !duel || CityChampionWins(champion, target.CharacterObject);
-            if (duel && !won) party.MemberRoster.AddToCounts(champion, 0, woundedCount: 1);
-            if (duel && won) target.MakeWounded();
-            bool captured = won && GwpVoluntarySurrender.TryCapture(party.Party, target);
+            int assessed = GwpFieldArrestPricing.AssessFine(crime);
+            int collected = CollectEnvoyFine(crime, party, target, assessed);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(party, "CITY_CASE_RESULT", "crime=" + crime.CrimeId
-                + "; target=" + target.StringId + "; duel=" + duel + "; won=" + won + "; captured=" + captured);
+                + "; target=" + target.StringId + "; assessed=" + assessed + "; collected=" + collected);
 #endif
-            if (captured)
-            {
-                CloseCase(crime, "city_detachment_captured");
-                PoliceResourceManager.CreditSuccessfulCaseCompletion();
-            }
-            if (GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId))
-                InformationManager.DisplayMessage(new InformationMessage(GwpText.Create(captured
-                    ? GwpTextCatalog.gwp_cs_support_success : GwpTextCatalog.gwp_cs_support_failed, "TARGET", target.Name).ToString()));
-        }
-
-        private static bool CityChampionWins(CharacterObject champion, CharacterObject target)
-        {
-            var model = Campaign.Current.Models.TournamentModel;
-            float ours = model.GetTournamentSimulationScore(champion) * (0.75f + 0.25f * MBRandom.RandomFloat);
-            float theirs = model.GetTournamentSimulationScore(target) * (0.75f + 0.25f * MBRandom.RandomFloat);
-            return ours >= theirs;
+            CloseCase(crime, "city_detachment_settled");
+            PoliceResourceManager.CreditSuccessfulCaseCompletion();
         }
     }
 }
