@@ -34,6 +34,8 @@ namespace GreyWardenPolicePurity
         private string _previousLocationId = string.Empty;
         private List<string> _searchTroops = new List<string>();
         private List<double> _searchHealth = new List<double>();
+        // 与 _searchTroops 一一对应：1 是灰袍办案队的人，0 是玩家本队的人；伤亡写回各自名册。
+        private List<int> _searchTroopSupport = new List<int>();
         private List<string> _enemyKeys = new List<string>();
         private List<double> _enemyHealth = new List<double>();
         private List<string> _enemyLosses = new List<string>();
@@ -83,6 +85,7 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_previous", ref _previousLocationId);
             store.SyncData("gwp_cs_troops", ref _searchTroops);
             store.SyncData("gwp_cs_health", ref _searchHealth);
+            store.SyncData("gwp_cs_troop_support", ref _searchTroopSupport);
             store.SyncData("gwp_cs_enemy_keys", ref _enemyKeys);
             store.SyncData("gwp_cs_enemy_health", ref _enemyHealth);
             store.SyncData("gwp_cs_enemy_losses", ref _enemyLosses);
@@ -109,36 +112,49 @@ namespace GreyWardenPolicePurity
             _previousLocationId = string.Empty;
             _searchTroops.Clear();
             _searchHealth.Clear();
+            _searchTroopSupport.Clear();
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
             ClearStreetBodies();
             _entryWaveQueued = _hasLeftHall = _targetDown = _targetKilled = false;
+            // 选兵结果里含锁定的办案队全员（GwpCitySearchSupportSelection），按办案队名册拆出来，余下是本队的人。
+            var supportCounts = new Dictionary<CharacterObject, int>();
+            foreach (TroopRosterElement element in SupportSource?.MemberRoster.GetTroopRoster() ?? Enumerable.Empty<TroopRosterElement>())
+                if (!element.Character.IsHero)
+                    supportCounts[element.Character] = element.Number - element.WoundedNumber;
             foreach (TroopRosterElement element in roster.GetTroopRoster())
-                if (!element.Character.IsPlayerCharacter)
-                    for (int i = 0; i < element.Number - element.WoundedNumber; i++)
-                    {
-                        _searchTroops.Add(element.Character.StringId);
-                        _searchHealth.Add(-1d); // 首次生成用原版满血；后续保留每个存活者的实际血量。
-                    }
+            {
+                if (element.Character.IsPlayerCharacter) continue;
+                supportCounts.TryGetValue(element.Character, out int support);
+                for (int i = 0; i < element.Number - element.WoundedNumber; i++)
+                {
+                    _searchTroops.Add(element.Character.StringId);
+                    _searchHealth.Add(-1d); // 首次生成用原版满血；后续保留每个存活者的实际血量。
+                    _searchTroopSupport.Add(i < support ? 1 : 0);
+                }
+            }
             QueuePlace(GwpCitySearchPlace.Entry);
         }
 
-        internal void SaveSurvivors(IEnumerable<(CharacterObject Character, float Health)> survivors)
+        internal void SaveSurvivors(IEnumerable<(CharacterObject Character, float Health, bool Support)> survivors)
         {
             _searchTroops.Clear();
             _searchHealth.Clear();
+            _searchTroopSupport.Clear();
             foreach (var survivor in survivors)
             {
                 _searchTroops.Add(survivor.Character.StringId);
                 _searchHealth.Add(survivor.Health);
+                _searchTroopSupport.Add(survivor.Support ? 1 : 0);
             }
         }
 
-        internal float SavedHealth(string troopId, int ordinal)
+        internal float SavedHealth(string troopId, int ordinal, bool support)
         {
             for (int i = 0; i < _searchTroops.Count; i++)
-                if (_searchTroops[i] == troopId && ordinal-- == 0) return (float)_searchHealth[i];
+                if (_searchTroops[i] == troopId && (_searchTroopSupport[i] != 0) == support && ordinal-- == 0)
+                    return (float)_searchHealth[i];
             throw new InvalidOperationException("Search survivor missing: " + troopId);
         }
 
@@ -213,14 +229,15 @@ namespace GreyWardenPolicePurity
 
         internal void LostSearchDuel() => FinishSearch(false, duelLost: true);
 
-        internal void FinishSearch(bool escaped, bool duelLost = false)
+        internal void FinishSearch(bool escaped, bool duelLost = false, Settlement? leftSettlement = null)
         {
             Hero? target = SearchTarget;
+            Settlement? settlement = leftSettlement ?? Settlement.CurrentSettlement;
             if (Supported) Enforcement?.ReleaseCitySearchParty(_searchSourcePartyId);
             // 群殴胜利先控制住人，杀出城后才正式交进主队囚笼；途中倒下不能隔城领到俘虏。
             bool captured = escaped && _captureReady && target != null && !target.IsDead && !target.IsPrisoner
-                && Settlement.CurrentSettlement?.StringId == _searchSettlementId
-                && CrimeRecord.ShelterOf(target) == Settlement.CurrentSettlement
+                && settlement?.StringId == _searchSettlementId
+                && CrimeRecord.ShelterOf(target) == settlement
                 && GwpVoluntarySurrender.TryCapture(PartyBase.MainParty, target);
             if (captured) Bounty?.RegisterCaptureInCustody();
             if (escaped && _targetDown && _targetKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
@@ -236,6 +253,7 @@ namespace GreyWardenPolicePurity
             _searchTarget = null;
             _searchTroops.Clear();
             _searchHealth.Clear();
+            _searchTroopSupport.Clear();
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
@@ -243,7 +261,7 @@ namespace GreyWardenPolicePurity
             _targetDown = _targetKilled = false;
             _searchSourcePartyId = string.Empty;
             _searchAttemptStarted = false;
-            _leavePending = escaped;
+            _leavePending = escaped && leftSettlement == null;
         }
 
         internal void PeacefulCapture()
@@ -259,7 +277,16 @@ namespace GreyWardenPolicePurity
             if (behavior == null || Mission.Current != null
                 || Campaign.Current.ConversationManager.IsConversationInProgress
                 || GameStateManager.Current.ActiveState is not MapState) return;
-            if (behavior.SearchActive && !behavior.SearchHere) behavior.FinishSearch(false);
+            if (behavior.SearchActive && !behavior.SearchHere)
+            {
+#if GWP_DIAGNOSTICS
+                // 复发哨兵（2026-10-28 经城镇菜单离城丢失已控制的目标）：离城交付后这里不应再见到已控制的目标。
+                if (behavior._captureReady)
+                    GwpAiDiagnostics.WriteCitySearch("CITY_SEARCH_CAPTURE_DROPPED", "settlement=" + behavior._searchSettlementId
+                        + "; target=" + behavior.SearchTarget?.StringId + "; current=" + Settlement.CurrentSettlement?.StringId);
+#endif
+                behavior.FinishSearch(false);
+            }
             if (behavior._leavePending)
             {
                 behavior._leavePending = false;
@@ -283,7 +310,7 @@ namespace GreyWardenPolicePurity
                 FinishSearch(false);
                 return;
             }
-            if (TroopSource == null || !StartSearchAttempt())
+            if (Supported && SupportSource == null || !StartSearchAttempt())
             {
                 FinishSearch(false);
                 return;
@@ -325,20 +352,25 @@ namespace GreyWardenPolicePurity
                 return;
             }
             TroopRoster roster = TroopRoster.CreateDummyTroopRoster();
-            // 暂停后玩家可以在聚落菜单调走部下；保存的现场名单不能凭空再生成已不在主队的人。
-            var available = TroopSource!.MemberRoster.GetTroopRoster()
+            TroopRoster supportRoster = TroopRoster.CreateDummyTroopRoster();
+            // 暂停后玩家可以在聚落菜单调走部下；保存的现场名单不能凭空再生成已不在各自名册的人。
+            var available = PartyBase.MainParty.MemberRoster.GetTroopRoster()
                 .ToDictionary(element => element.Character, element => element.Number - element.WoundedNumber);
-            var survivors = new List<(CharacterObject Character, float Health)>();
+            var supportAvailable = (SupportSource?.MemberRoster.GetTroopRoster() ?? Enumerable.Empty<TroopRosterElement>())
+                .ToDictionary(element => element.Character, element => element.Number - element.WoundedNumber);
+            var survivors = new List<(CharacterObject Character, float Health, bool Support)>();
             for (int i = 0; i < _searchTroops.Count; i++)
             {
                 CharacterObject character = TaleWorlds.ObjectSystem.MBObjectManager.Instance.GetObject<CharacterObject>(_searchTroops[i]);
-                if (!available.TryGetValue(character, out int count) || count <= 0) continue;
-                available[character] = count - 1;
-                roster.AddToCounts(character, 1);
-                survivors.Add((character, (float)_searchHealth[i]));
+                bool support = _searchTroopSupport[i] != 0;
+                var pool = support ? supportAvailable : available;
+                if (!pool.TryGetValue(character, out int count) || count <= 0) continue;
+                pool[character] = count - 1;
+                (support ? supportRoster : roster).AddToCounts(character, 1);
+                survivors.Add((character, (float)_searchHealth[i], support));
             }
             SaveSurvivors(survivors);
-            GwpCitySearchMission.Open(settlement, target, roster);
+            GwpCitySearchMission.Open(settlement, target, roster, supportRoster);
         }
     }
 

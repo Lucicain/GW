@@ -43,10 +43,14 @@ namespace GreyWardenPolicePurity
         {
             if (!CanRequestCaseSupport) return false;
 
-            MobileParty? lord = ResolveSupportResponder(responder);
             CrimeRecord? crime = CrimePool.LedgerRecords.FirstOrDefault(record =>
                 record.HasOpenCase && string.Equals(record.OffenderHeroId,
                     _activeBountyTargetHeroId, StringComparison.OrdinalIgnoreCase));
+            // 住城目标只能进城搜捕：领主本人不跟，由他分出同催缴编制的黑甲队跟着玩家（用户裁定 2026-10-28）。
+            if (crime != null && CrimeRecord.ShelterOf(CaseHero) != null)
+                return GrantCitySearchSupport(source, crime, responder);
+
+            MobileParty? lord = ResolveSupportResponder(responder);
             if (lord == null || crime == null ||
                 !PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(lord))
             {
@@ -84,6 +88,25 @@ namespace GreyWardenPolicePurity
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 GwpTextCatalog.gwp_support_granted_notice,
                 "VAR_1", lord.Name.ToString()), Colors.Cyan));
+            return true;
+        }
+
+        private bool GrantCitySearchSupport(string source, CrimeRecord crime, MobileParty? responder)
+        {
+            MobileParty? sender = Campaign.Current.GetCampaignBehavior<PoliceEnforcementBehavior>()
+                ?.SendPlayerCitySearchParty(crime, responder);
+            GwpAiDiagnostics.WriteFieldArrest(sender == null ? "CASE_SUPPORT_NO_RESPONDER" : "CASE_SUPPORT_GRANTED",
+                "source=" + source + "; city=true; responder=" + (sender?.StringId ?? "-") + "; crime=" + crime.CrimeId);
+            if (sender == null)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                    GwpTextCatalog.gwp_support_no_responder), Colors.Yellow));
+                return false;
+            }
+            _supportRequested = true;
+            _activeQuest?.WriteLog(GwpText.Create(GwpTextCatalog.gwp_support_requested_log));
+            InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
+                GwpTextCatalog.gwp_cs_support_sent), Colors.Cyan));
             return true;
         }
 

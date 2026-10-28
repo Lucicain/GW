@@ -61,7 +61,7 @@ class MissionAlleyHandler:MissionBehavior{
  public int Guards=>_guardAgents.Count;public void Finish()=>EndFight();
 }
 class NativeEntry{ENTRY public bool Available()=>alley_talk_start_normal_on_condition();}
-static class GwpCitySearchMission{public const string HallSpawnTag="spawnpoint_player",GateSpawnTag="gate";BEHAVIORS public static MissionBehavior[] Build(bool town,string location)=>Behaviors(new(){IsTown=town},new(),new(),new(){StringId=location});}
+static class GwpCitySearchMission{public const string HallSpawnTag="spawnpoint_player",GateSpawnTag="gate";BEHAVIORS public static MissionBehavior[] Build(bool town,string location)=>Behaviors(new(){IsTown=town},new(),new(),new(),new(){StringId=location});}
 static class Program{
  static int n;static void Check(bool b,string why){n++;if(!b)throw new Exception(why);}
  static void Main(){

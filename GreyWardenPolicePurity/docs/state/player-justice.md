@@ -129,6 +129,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 - 求援（`PlayerBountyBehavior.Support`）：当面开口或派兵送信，都算求援。
   - 送到之前，灰袍不为这件案子开战、也不去追人。
   - 送到之后，先由收到求援的领主接手；他正在战斗、已有玩家事务/订单/护送/通缉或已约单挑时，改选离玩家最近的合格者。共用玩家差事准备入口退出协力、释放旧案及重建/请愿，收养保留暂停；无人可接则此次求援不成立。占用只查[差事登记处](warden-ai.md)。（依据：用户批准方案、源码复核 2026-10-17）
+  - 住城目标的委托不走上一条：领主本人不跟、不被占用，由他分出黑甲办案队跟随玩家进城搜捕，规则见[城内支援](city-search-support.md)。（依据：用户裁定2026-10-28）
   - 灰袍为此案开战时，玩家阵营一并对犯人宣战。这场战争记进调停申请通道（`PoliceAntiWarDeclaration.RecordMediationRequest`），不再自动讲和，见 `warden-mediation.md`。（依据：实机诊断 2026-09-16）
 - 报酬统一由 `GwpCaseSettlementRules.Reward` 计算，不按难度三档发固定金额，见 `player-commission.md`。（依据：源码复核 2026-10-19）
 

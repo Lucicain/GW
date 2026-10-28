@@ -38,7 +38,7 @@ namespace GreyWardenPolicePurity
         /// <summary>自有任务名：界面组见 <see cref="GwpCitySearchMissionViews"/>，带下令界面。</summary>
         internal const string MissionName = "GwpCitySearch";
 
-        internal static void Open(Settlement settlement, Hero target, TroopRoster troops)
+        internal static void Open(Settlement settlement, Hero target, TroopRoster troops, TroopRoster supportTroops)
         {
             var search = Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>();
             bool hall = search.SearchPlace == GwpCitySearchPlace.Hall;
@@ -52,10 +52,11 @@ namespace GreyWardenPolicePurity
 #endif
             MissionState.OpenNew(MissionName,
                 SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town),
-                mission => Behaviors(settlement, target, troops, center));
+                mission => Behaviors(settlement, target, troops, supportTroops, center));
         }
 
-        private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops, Location center)
+        private static MissionBehavior[] Behaviors(Settlement settlement, Hero target, TroopRoster troops,
+            TroopRoster supportTroops, Location center)
         {
             var list = new List<MissionBehavior>
             {
@@ -63,7 +64,7 @@ namespace GreyWardenPolicePurity
                 new CampaignMissionComponent(),
                 new MissionBasicTeamLogic(),
                 new MissionSettlementPrepareLogic(),
-                new GwpCitySearchMissionController(settlement, target, troops),
+                new GwpCitySearchMissionController(settlement, target, troops, supportTroops),
                 new MissionAgentLookHandler(),
                 new SandBoxMissionHandler()
             };
@@ -118,6 +119,7 @@ namespace GreyWardenPolicePurity
         private readonly Settlement _settlement;
         private readonly Hero _target;
         private readonly TroopRoster _troops;
+        private readonly TroopRoster _supportTroops;
         private readonly Dictionary<Agent, CharacterObject> _ours = new Dictionary<Agent, CharacterObject>();
         private readonly Dictionary<CharacterObject, int> _killed = new Dictionary<CharacterObject, int>();
         private readonly List<Agent> _defenders = new List<Agent>();
@@ -132,11 +134,12 @@ namespace GreyWardenPolicePurity
         private bool _warDeclared;
         private float _nextChallengeCheck;
 
-        internal GwpCitySearchMissionController(Settlement settlement, Hero target, TroopRoster troops)
+        internal GwpCitySearchMissionController(Settlement settlement, Hero target, TroopRoster troops, TroopRoster supportTroops)
         {
             _settlement = settlement;
             _target = target;
             _troops = troops;
+            _supportTroops = supportTroops;
             _place = Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().SearchPlace;
         }
 
@@ -221,8 +224,16 @@ namespace GreyWardenPolicePurity
         {
             Agent? main = Agent.Main;
             if (main == null) return 0;
+            int count = SpawnTroops(main, _troops, null) + SpawnTroops(main, _supportTroops, Search.SupportSource);
+            TakeCommand(main);
+            OrderInitialSearchFollowers();
+            return count;
+        }
+
+        private int SpawnTroops(Agent main, TroopRoster troops, PartyBase? support)
+        {
             int count = 0;
-            foreach (TroopRosterElement element in _troops.GetTroopRoster())
+            foreach (TroopRosterElement element in troops.GetTroopRoster())
             {
                 CharacterObject character = element.Character;
                 if (character == null || character.IsPlayerCharacter) continue;
@@ -231,19 +242,17 @@ namespace GreyWardenPolicePurity
                     Vec3 position = Mission.GetRandomPositionAroundPoint(main.Position, 1f, 4f);
                     // 来源挂主队：原版 GetAgentTeam 在有盟友队伍时只把「受玩家指挥」的兵放进玩家队伍，
                     // SimpleAgentOrigin 对普通兵没有所属部队，会被分进盟友队伍、无法指挥（C#反编译 v1.4.8，实机日志 2026-10-21）。
-                    // 伤亡也由原版 BattleAgentLogic 经它直接写进主队名册。
-                    IAgentOriginBase origin = Search.Supported
-                        ? new GwpCitySearchSupportOrigin(Search.TroopSource!, character)
+                    // 伤亡也由原版 BattleAgentLogic 经它直接写进各自名册：本队的人进主队，办案队的人进办案队。
+                    IAgentOriginBase origin = support != null
+                        ? new GwpCitySearchSupportOrigin(support, character)
                         : new PartyAgentOrigin(PartyBase.MainParty, character);
                     Agent agent = Mission.SpawnTroop(origin, true, true, false, false,
                         0, 0, false, false, position, main.LookDirection.AsVec2);
                     _ours[agent] = character;
-                    RestoreTroopHealth(agent, character);
+                    RestoreTroopHealth(agent, character, support != null);
                     count++;
                 }
             }
-            TakeCommand(main);
-            OrderInitialSearchFollowers();
             return count;
         }
 

@@ -808,12 +808,11 @@ namespace GreyWardenPolicePurity
             // 明确覆盖的场景装备由原调用方负责；不拿另一套原配的空位计划去覆盖它。
             if (agentBuildData.AgentOverridenSpawnEquipment != null)
                 return;
-            if (!troop.IsHero && GwpCommon.IsGreyWardenTroop(troop) && PoliceEnforcementBehavior.IsCitySearchParty(party))
-            {
-                agentBuildData.Equipment(PoliceResourceManager.CitySearchUniform());
-                return;
-            }
             Equipment? equipment = GwpFireswornBehavior.TakeKitForAgent(party, troop, agentBuildData.AgentOrigin.UniqueSeed);
+            if (!troop.IsHero && GwpCommon.IsGreyWardenTroop(troop) && PoliceEnforcementBehavior.IsCitySearchParty(party))
+                // 没有库装时按原版这一刻会做的随机挑一套（Mission.SpawnAgent，C#反编译 v1.4.8），再换上黑甲。
+                equipment = PoliceResourceManager.WithCitySearchUniform(equipment ?? Equipment.GetRandomEquipmentElements(
+                    troop, true, Equipment.EquipmentType.Battle, agentBuildData.AgentEquipmentSeed));
             if (equipment != null)
                 agentBuildData.Equipment(equipment);
         }

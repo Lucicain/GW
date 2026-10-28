@@ -192,11 +192,14 @@ namespace GreyWardenPolicePurity
             if (_hallTarget != null && !_hallRemoved.Contains(_hallTarget) && _hallTarget.IsActive()) ReleaseHallDuelPosition(_hallTarget);
         }
 
-        private IEnumerable<(CharacterObject Character, float Health)> SearchSurvivors()
+        private IEnumerable<(CharacterObject Character, float Health, bool Support)> SearchSurvivors()
         {
             foreach (var entry in _ours)
-                if (_hallExitedTroops.TryGetValue(entry.Key, out float health)) yield return (entry.Value, health);
-                else if (!_hallRemoved.Contains(entry.Key) && entry.Key.IsActive()) yield return (entry.Value, entry.Key.Health);
+            {
+                bool support = entry.Key.Origin is GwpCitySearchSupportOrigin;
+                if (_hallExitedTroops.TryGetValue(entry.Key, out float health)) yield return (entry.Value, health, support);
+                else if (!_hallRemoved.Contains(entry.Key) && entry.Key.IsActive()) yield return (entry.Value, entry.Key.Health, support);
+            }
         }
 
         private void SetHallDuelPosition(Agent agent, WorldPosition position, float rotation)

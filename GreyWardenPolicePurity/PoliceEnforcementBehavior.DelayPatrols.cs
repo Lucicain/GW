@@ -45,7 +45,6 @@ namespace GreyWardenPolicePurity
             public bool IsEnvoy { get; set; }
             public string CityCrimeId { get; set; } = string.Empty;
             public bool CityForPlayer { get; set; }
-            public bool CityDelegated { get; set; }
         }
 
         private sealed class ImmediateInterceptorTroopTransfer
@@ -97,7 +96,6 @@ namespace GreyWardenPolicePurity
             List<int> envoyFlags = null!;
             List<string> cityCrimeIds = null!;
             List<int> cityPlayerFlags = null!;
-            List<int> cityDelegatedFlags = null!;
 
             if (dataStore.IsSaving)
             {
@@ -113,7 +111,6 @@ namespace GreyWardenPolicePurity
                 envoyFlags = states.Select(s => s.IsEnvoy ? 1 : 0).ToList();
                 cityCrimeIds = states.Select(s => s.CityCrimeId).ToList();
                 cityPlayerFlags = states.Select(s => s.CityForPlayer ? 1 : 0).ToList();
-                cityDelegatedFlags = states.Select(s => s.CityDelegated ? 1 : 0).ToList();
             }
 
             dataStore.SyncData("gwp_enf_dp_ids", ref patrolIds);
@@ -127,7 +124,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_dp_envoys", ref envoyFlags);
             dataStore.SyncData("gwp_enf_dp_city_crimes", ref cityCrimeIds);
             dataStore.SyncData("gwp_enf_dp_city_players", ref cityPlayerFlags);
-            dataStore.SyncData("gwp_enf_dp_city_delegated", ref cityDelegatedFlags);
 
             if (!dataStore.IsLoading) return;
 
@@ -142,7 +138,6 @@ namespace GreyWardenPolicePurity
             envoyFlags ??= new List<int>();
             cityCrimeIds ??= new List<string>();
             cityPlayerFlags ??= new List<int>();
-            cityDelegatedFlags ??= new List<int>();
 
             int count = patrolIds.Count;
             for (int i = 0; i < count; i++)
@@ -163,8 +158,7 @@ namespace GreyWardenPolicePurity
                         immediateInterceptorFlags[i] != 0,
                     IsEnvoy = i < envoyFlags.Count && envoyFlags[i] != 0,
                     CityCrimeId = i < cityCrimeIds.Count ? cityCrimeIds[i] : string.Empty,
-                    CityForPlayer = i < cityPlayerFlags.Count && cityPlayerFlags[i] != 0,
-                    CityDelegated = i < cityDelegatedFlags.Count && cityDelegatedFlags[i] != 0
+                    CityForPlayer = i < cityPlayerFlags.Count && cityPlayerFlags[i] != 0
                 };
             }
         }
@@ -330,7 +324,8 @@ namespace GreyWardenPolicePurity
                 MobileParty patrol = MobileParty.All.FirstOrDefault(p => p.StringId == kv.Key);
                 if (patrol == null || !patrol.IsActive)
                 {
-                    _delayPatrolStates.Remove(kv.Key);
+                    // 同 UpdateDelayPatrols：城内办案队的失队指派留给 TendCitySearchParties 补派。
+                    if (kv.Value.Returning || string.IsNullOrEmpty(kv.Value.CityCrimeId)) _delayPatrolStates.Remove(kv.Key);
                     continue;
                 }
 
@@ -1131,6 +1126,10 @@ namespace GreyWardenPolicePurity
                     MarkDelayPatrolReturning(party.StringId);
                     continue;
                 }
+
+                // 城内办案队没有野外目标队伍，空目标会被当成“目标已败”而返程，失队后再无补派
+                // （实机诊断 2026-10-28：劫匪全灭玩家办案队后一直未补派）。去留归 TendCitySearchParties。
+                if (!string.IsNullOrEmpty(state.CityCrimeId)) continue;
 
                 MobileParty? target = FindPartyInEventOrCampaign(
                     mapEvent, state.TargetPartyId);

@@ -9,6 +9,10 @@ namespace GreyWardenPolicePurity
 {
     public partial class PoliceEnforcementBehavior
     {
+#if GWP_DIAGNOSTICS
+        private readonly HashSet<string> _tracedLostCityTeams = new HashSet<string>();
+#endif
+
         private DelayPatrolState? CityPartyState(CrimeRecord crime) => _delayPatrolStates.Values.FirstOrDefault(state =>
             state.CityCrimeId == crime.CrimeId && !state.Returning);
 
@@ -21,33 +25,36 @@ namespace GreyWardenPolicePurity
             return !requireArrival || CityPartyReached(party, MobileParty.MainParty) ? party : null;
         }
 
-        internal bool CitySearchDelegated(Hero target) => CrimePool.GetRecord(target) is { } crime
-            && CityPartyState(crime)?.CityDelegated == true;
+        /// <summary>玩家住城委托是否有办案队负责（含失队待补派），以及当前实际在场的那支。</summary>
+        internal bool TryGetPlayerCitySupport(Hero target, out MobileParty? party)
+        {
+            CrimeRecord? crime = CrimePool.GetRecord(target);
+            DelayPatrolState? state = crime == null ? null : CityPartyState(crime);
+            party = state?.CityForPlayer == true ? FindActiveParty(state.PatrolPartyId) : null;
+            return state?.CityForPlayer == true;
+        }
 
         internal static bool IsCitySearchParty(PartyBase? party) => party?.MobileParty is { } mobile
             && _instance?._delayPatrolStates.TryGetValue(mobile.StringId, out DelayPatrolState? state) == true
             && !string.IsNullOrEmpty(state.CityCrimeId);
 
-        internal bool RequestCitySearchParty(Hero target, bool followPlayer)
+        /// <summary>玩家住城委托的求援成立：先由接到求援的领主出人，不行再按离玩家远近找能出人的灰袍。</summary>
+        internal MobileParty? SendPlayerCitySearchParty(CrimeRecord crime, MobileParty? preferred) =>
+            PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
+                .OrderBy(party => party == preferred ? 0 : 1)
+                .ThenBy(party => party.GetPosition2D.Distance(MobileParty.MainParty.GetPosition2D))
+                .FirstOrDefault(source => SendCitySearchParty(source, crime, true));
+
+        /// <summary>玩家接了案，原来独立办理的城内办案队和使者一样撤回；要人手由玩家求援。</summary>
+        private void ReleaseCityPartiesToPlayer(string heroId)
         {
-            CrimeRecord? crime = CrimePool.GetRecord(target);
-            if (crime?.HasOpenCase != true || CrimeRecord.ShelterOf(target) == null
-                || followPlayer && GwpCitySearchCasePolicy.SupportSpent(crime))
-                return false;
-            DelayPatrolState? existing = CityPartyState(crime);
-            if (existing != null)
-            {
-                existing.CityForPlayer = followPlayer;
-                existing.CityDelegated = !followPlayer;
-                return true;
-            }
-            foreach (MobileParty source in PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
-                         .OrderBy(party => party.GetPosition2D.Distance(MobileParty.MainParty.GetPosition2D)))
-                if (SendCitySearchParty(source, crime, followPlayer, !followPlayer)) return true;
-            return false;
+            foreach (DelayPatrolState state in _delayPatrolStates.Values.Where(state => !state.Returning && !state.CityForPlayer
+                         && string.Equals(CrimePool.GetRecordByKey(state.CityCrimeId)?.OffenderHeroId, heroId,
+                             StringComparison.OrdinalIgnoreCase)).ToList())
+                MarkDelayPatrolReturning(state.PatrolPartyId);
         }
 
-        private bool SendCitySearchParty(MobileParty source, CrimeRecord crime, bool followPlayer, bool delegated,
+        private bool SendCitySearchParty(MobileParty source, CrimeRecord crime, bool followPlayer,
             DelayPatrolState? replacing = null)
         {
             Settlement? town = crime.ShelterSettlement;
@@ -70,12 +77,12 @@ namespace GreyWardenPolicePurity
             {
                 PatrolPartyId = party.StringId, SourceTaskPolicePartyId = source.StringId,
                 ReturnSettlementId = home!.StringId, CityCrimeId = crime.CrimeId,
-                CityForPlayer = followPlayer, CityDelegated = delegated, IsEnvoy = true
+                CityForPlayer = followPlayer, IsEnvoy = true
             };
             if (replacing != null) MarkDelayPatrolReturning(replacing.PatrolPartyId);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(party, "CITY_CASE_SENT", "crime=" + crime.CrimeId
-                + "; source=" + source.StringId + "; count=" + size + "; player=" + followPlayer + "; delegated=" + delegated);
+                + "; source=" + source.StringId + "; count=" + size + "; player=" + followPlayer);
 #endif
             if (followPlayer) GreyWardenPartyDesireBehavior.RequestEscort(party, MobileParty.MainParty, 8f);
             else GreyWardenPartyDesireBehavior.RequestVisit(party, town, 8f);
@@ -94,7 +101,7 @@ namespace GreyWardenPolicePurity
                     .ThenBy(record => source.GetPosition2D.Distance(record.ShelterSettlement!.GetPosition2D))
                     .ToList();
                 foreach (CrimeRecord crime in candidates)
-                    if (SendCitySearchParty(source, crime, false, false)) break;
+                    if (SendCitySearchParty(source, crime, false)) break;
             }
         }
 
@@ -133,17 +140,21 @@ namespace GreyWardenPolicePurity
                 if (party == null || party.MemberRoster.TotalHealthyCount == 0)
                 {
                     // 派遣本身不是玩家的办理次数。失队后保留原指派，直到真实兵员能补派。
-                    foreach (MobileParty source in PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
-                                 .OrderBy(source => source.GetPosition2D.Distance(
-                                     state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
-                                         : crime.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D)))
-                        if (SendCitySearchParty(source, crime, state.CityForPlayer, state.CityDelegated, state)) break;
+                    bool replaced = PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
+                        .OrderBy(source => source.GetPosition2D.Distance(
+                            state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
+                                : crime.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D))
+                        .Any(source => SendCitySearchParty(source, crime, state.CityForPlayer, state));
+#if GWP_DIAGNOSTICS
+                    // 复发哨兵（2026-10-28 失队后再无补派）：每支失队只记一次，补派成功即经过一次，没补上是证据。
+                    if (_tracedLostCityTeams.Add(state.PatrolPartyId))
+                        GwpAiDiagnostics.WriteCitySearch("CITY_SUPPORT_LOST", "lost=" + state.PatrolPartyId
+                            + "; crime=" + crime.CrimeId + "; player=" + state.CityForPlayer + "; replaced=" + replaced);
+#endif
                     continue;
                 }
                 if (party.DefaultBehavior == AiBehavior.Hold)
                     GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
-                if (!state.CityDelegated && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId))
-                    state.CityForPlayer = true;
                 if (state.CityForPlayer)
                 {
                     if (GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId))

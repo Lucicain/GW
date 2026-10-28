@@ -95,11 +95,12 @@ namespace GreyWardenPolicePurity
         internal bool IsHallTalk =>InHall && _stage == Stage.HallTalking && _hallTarget != null
             && ReferenceEquals(Campaign.Current.ConversationManager.OneToOneConversationAgent, _hallTarget);
 
-        private void RestoreTroopHealth(Agent agent, CharacterObject character)
+        private void RestoreTroopHealth(Agent agent, CharacterObject character, bool support)
         {
-            _spawnedTroops.TryGetValue(character.StringId, out int ordinal);
-            _spawnedTroops[character.StringId] = ordinal + 1;
-            float health = Search.SavedHealth(character.StringId, ordinal);
+            string key = (support ? "support:" : string.Empty) + character.StringId;
+            _spawnedTroops.TryGetValue(key, out int ordinal);
+            _spawnedTroops[key] = ordinal + 1;
+            float health = Search.SavedHealth(character.StringId, ordinal, support);
             if (health > 0f) agent.Health = System.Math.Min(agent.HealthLimit, health);
         }
 

@@ -7370,24 +7370,9 @@
       "zh": "灰袍搜捕队",
       "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     },
-    "gwp_cs_support_request": {
-      "en": "Ask the Wardens to send men to accompany me",
-      "zh": "请灰袍派人来，随我进城",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
-    "gwp_cs_support_delegate": {
-      "en": "Ask the Wardens to take over this case",
-      "zh": "请灰袍接手此案",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
     "gwp_cs_support_sent": {
       "en": "The Wardens have sent a detachment to meet you.",
       "zh": "灰袍已派出一队人，正在赶来与你会合。",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
-    "gwp_cs_support_unavailable": {
-      "en": "The Wardens cannot spare the men just now. Ask again later.",
-      "zh": "灰袍眼下抽不出人手，稍后再来问问。",
       "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     },
     "gwp_cs_support_travelling": {
@@ -7401,18 +7386,13 @@
       "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     },
     "gwp_cs_support_personal_spent": {
-      "en": "Your men have withdrawn. You can ask the Wardens to take over, or wait for their detachment before entering again.",
-      "zh": "你的人已经撤回。这次搜捕只能请灰袍接手，或等他们的人来后再进城。",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+      "en": "Your men have withdrawn. To enter again, ask the Wardens for help and go in with their detachment.",
+      "zh": "你的人已经撤回。要再进城，得先向灰袍求援，等他们的人到了一起进去。",
+      "context": "用户审核通过2026-10-28：自己那次机会用完、尚未带支援进城时的菜单状态；代办入口已删，改为提示经求援入口请灰袍派人。"
     },
     "gwp_cs_support_spent": {
       "en": "This attempt has ended. The surviving Wardens are returning.",
       "zh": "这趟搜捕已经结束，支援队正带着余部返回。",
-      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
-    },
-    "gwp_cs_support_delegated": {
-      "en": "The case is now in the hands of the Warden detachment.",
-      "zh": "此案已交给灰袍搜捕队。",
       "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     },
     "gwp_cs_support_gate": {

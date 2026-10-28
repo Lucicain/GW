@@ -24,9 +24,27 @@ namespace GreyWardenPolicePurity
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);
             CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _guardRound.OnCommitted);
             CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _hallRound.OnCommitted);
             CampaignEvents.PersuasionProgressCommittedEvent.AddNonSerializedListener(this, _choiceRound.OnCommitted);
+        }
+
+        /// <summary>
+        /// 经城镇菜单的原版「离开」出城同样是离城：已控制住的目标此时交付，不因没走搜捕菜单的出口而丢失
+        /// （用户裁定 2026-10-21「离城才交付」；实机反馈 2026-10-28）。原版先清空所在聚落再发本事件，
+        /// 所以按事件给出的聚落核对。敌对时只能杀出城门，不走这里；被俘时原版也先设俘虏再离城，不算押人离城。
+        /// </summary>
+        private void OnSettlementLeft(MobileParty party, Settlement settlement)
+        {
+            if (party != MobileParty.MainParty || Hero.MainHero.IsPrisoner || !SearchActive || _searchWar
+                || settlement.StringId != _searchSettlementId) return;
+#if GWP_DIAGNOSTICS
+            // 复发哨兵的经过次数：经原版菜单离城时控制住的目标随之交付。
+            GwpAiDiagnostics.WriteCitySearch("CITY_SEARCH_LEFT_BY_MENU", "settlement=" + settlement.StringId
+                + "; target=" + SearchTarget?.StringId + "; captureReady=" + _captureReady);
+#endif
+            FinishSearch(true, leftSettlement: settlement);
         }
 
         // 场景内不能存档；切场景时短暂回到地图，所以下一场景、随行人和伤情也要保存。
@@ -46,7 +64,6 @@ namespace GreyWardenPolicePurity
             RegisterGuardDialogue(starter);
             RegisterHallDialogue(starter);
             RegisterSearchMenu(starter);
-            RegisterSupportMenu(starter);
         }
 
         private bool SearchOptionCondition(MenuCallbackArgs args)
@@ -70,17 +87,17 @@ namespace GreyWardenPolicePurity
         {
             Settlement? settlement = Settlement.CurrentSettlement;
             Hero? target = Bounty?.CitySearchTargetIn(settlement);
-            MobileParty? party = target == null ? null : Enforcement?.CitySearchSupport(target) ?? MobileParty.MainParty;
-            if (settlement == null || target == null || party == null
+            if (settlement == null || target == null
                 || Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().CanBeginSearch(target) != true) return;
 
             // 带兵上限同原版亲自突击藏身处，选兵也用原版那个界面（用户裁定 2026-10-21）。
-            int max = party == MobileParty.MainParty
-                ? Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(party, true)
-                : GwpTuning.Enforcement.EnvoySize;
+            // 灰袍办案队已到身边时，队里的人单列、锁定必带，占这个上限里的名额（用户裁定 2026-10-28）。
+            MobileParty main = MobileParty.MainParty;
+            TroopRoster? support = Enforcement?.CitySearchSupport(target)?.MemberRoster;
+            int max = Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(main, true);
             TroopRoster initial = TroopRoster.CreateDummyTroopRoster();
-            initial.Add(MobilePartyHelper.GetStrongestAndPriorTroops(party, max, includePlayer: true));
-            args.MenuContext.OpenTroopSelection(party.MemberRoster, initial, CanTakeAlong,
+            initial.Add(MobilePartyHelper.GetStrongestAndPriorTroops(main, max - (support?.TotalHealthyCount ?? 0), includePlayer: true));
+            args.MenuContext.OpenTroopSelection(GwpCitySearchSupportSelection.Register(main.MemberRoster, support), initial, CanTakeAlong,
                 roster => Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().BeginSearch(settlement, target, roster), max, 1);
         }
 

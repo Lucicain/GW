@@ -36,6 +36,7 @@ enum AgentState{Routed,Killed,Unconscious,Deleted}enum MissionMode{StartUp,Duel}
 class Formation{}class MBReadOnlyList<T>:List<T>{}class OrderController{public List<Formation> SelectedFormations=new();}
 static class GwpAiDiagnostics{public static void WriteCitySearch(string kind,string details){}}
 enum Stage{Entering,Questioned,Allowed,Leaving,Refused,Withdrawing,Fighting,FightOver,HallReady,HallTalking,Duel,Escaping,Failed,HallDone}
+class GwpCitySearchSupportOrigin{}
 class Agent{
  public enum AIScriptedFrameFlags{None}public static Agent Main=null!;public object Origin=new();public CharacterObject Character=new();public Vec3 Position;public WorldPosition Goal;public Team Team=new();public float Health=100,HealthLimit=100;public bool Active=true,NativeGone,IsHuman=true,Scripted,Fights;public Equipment SpawnEquipment=new();public Agent? FollowTarget;public CampaignAgentComponent? Component;
  public int FadeRequests;public bool FadePending;public int AIStateFlags=>0;public bool IsAlarmed()=>false;

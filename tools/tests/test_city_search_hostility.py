@@ -97,7 +97,7 @@ static class Program {
         old_defender = bodies.replace(method(mission, 'IsDefender'), 'private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && agent.HasWeapon() && agent.Character is not CharacterObject { HeroObject: { IsNotable: true } };')
         with self.assertRaisesRegex(AssertionError, 'armed merchant and civilian flee'):
             run(code.replace(bodies, old_defender))
-        previous = subprocess.check_output(['git', 'show', 'HEAD:GreyWardenPolicePurity/GwpCitySearchMission.cs'], text=True, encoding='utf-8-sig')
+        previous = subprocess.check_output(['git', 'show', 'f9c4d19^:GreyWardenPolicePurity/GwpCitySearchMission.cs'], text=True, encoding='utf-8-sig')
         old_armed_roles = bodies.replace(method(mission, 'IsDefender'), method(previous, 'IsDefender'))
         with self.assertRaisesRegex(AssertionError, 'armed merchant and civilian flee'):
             run(code.replace(bodies, old_armed_roles))

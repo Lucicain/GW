@@ -17,12 +17,13 @@ class CitySearchHealthTests(unittest.TestCase):
         bodies = block(progress, r'private void RestoreTroopHealth\(')
         bodies += block(progress, r'private void EndSearchScene\(')
         bodies += block(read('GwpCitySearchMission.HallDuel.cs'),
-                        r'private IEnumerable<\(CharacterObject Character, float Health\)> SearchSurvivors\(')
+                        r'private IEnumerable<\(CharacterObject Character, float Health, bool Support\)> SearchSurvivors\(')
         stubs = STUBS.replace('public int Defeats;', 'public void RecordCitySearchLosses(Hero h,int count){}public int Defeats;')
         scenario = r'''
 namespace GreyWardenPolicePurity{
+class GwpCitySearchSupportOrigin{}
 class Agent{
- public CharacterObject Character;public float Health=100,HealthLimit=100;public bool Active=true,NativeGone;
+ public CharacterObject Character;public object? Origin;public float Health=100,HealthLimit=100;public bool Active=true,NativeGone;
  public Agent(CharacterObject c){Character=c;}public bool IsActive(){if(NativeGone)throw new Exception("departed follower native state was read");return Active;}
 }
 class FollowerScene{
@@ -31,7 +32,7 @@ class FollowerScene{
  private bool _transitioning=true,_outsideExitRequested;private GwpCitySearchBehavior Search=>Campaign.Current.Search;
  void FinishHallDuel(){}void SaveStreetScene(){}void SaveCitySoldiers(){}bool CanLeaveSearch()=>false;
  BODIES
- public Agent Spawn(CharacterObject c){var a=new Agent(c);_ours[a]=c;RestoreTroopHealth(a,c);return a;}
+ public Agent Spawn(CharacterObject c,bool support=false){var a=new Agent(c){Origin=support?new GwpCitySearchSupportOrigin():null};_ours[a]=c;RestoreTroopHealth(a,c,support);return a;}
  public void Close()=>EndSearchScene();
 }
 static class Program{
@@ -43,15 +44,18 @@ static class Program{
  Campaign.Current.Search.Start(settlement,target,roster);var entry=new FollowerScene();
  var a=entry.Spawn(foot);var b=entry.Spawn(foot);var dead=entry.Spawn(foot);var archer=entry.Spawn(bow);
  Check(a.Health==100&&b.Health==100,"first appearance uses native health");a.Health=13;b.Health=37;dead.Active=false;archer.Health=62;
- entry.Close();Reload();Check(Campaign.Current.Search.SavedHealth("foot",0)==13&&Campaign.Current.Search.SavedHealth("foot",1)==37,"scene end saves each survivor's actual wounds");
+ entry.Close();Reload();Check(Campaign.Current.Search.SavedHealth("foot",0,false)==13&&Campaign.Current.Search.SavedHealth("foot",1,false)==37,"scene end saves each survivor's actual wounds");
  var hall=new FollowerScene();a=hall.Spawn(foot);b=hall.Spawn(foot);archer=hall.Spawn(bow);
  Check(a.Health==13&&b.Health==37&&archer.Health==62,"entering hall restores individual health instead of full health");
- bool missing=false;try{Campaign.Current.Search.SavedHealth("foot",2);}catch(InvalidOperationException){missing=true;}Check(missing,"dead third soldier is not included in next scene");
+ bool missing=false;try{Campaign.Current.Search.SavedHealth("foot",2,false);}catch(InvalidOperationException){missing=true;}Check(missing,"dead third soldier is not included in next scene");
  a.Health=9;b.Health=41;hall._hallExitedTroops[b]=41;hall._hallRemoved.Add(b);b.NativeGone=true;archer.Active=false;
  hall.Close();Reload();var escape=new FollowerScene();a=escape.Spawn(foot);b=escape.Spawn(foot);
  Check(a.Health==9&&b.Health==41,"outgoing scene retains new wounds and offscreen hall follower health");
- missing=false;try{Campaign.Current.Search.SavedHealth("bow",0);}catch(InvalidOperationException){missing=true;}Check(missing,"wounded-out archer is not regenerated after leaving hall");
+ missing=false;try{Campaign.Current.Search.SavedHealth("bow",0,false);}catch(InvalidOperationException){missing=true;}Check(missing,"wounded-out archer is not regenerated after leaving hall");
  escape.Close();Reload();var resumed=new FollowerScene();Check(resumed.Spawn(foot).Health==9&&resumed.Spawn(foot).Health==41,"another save and scene reload does not heal followers");
+ Campaign.Current.Search.SaveSurvivors(new[]{(foot,13f,false),(foot,77f,true)});Reload();var mixed=new FollowerScene();var helper=mixed.Spawn(foot,true);var own=mixed.Spawn(foot);
+ Check(helper.Health==77&&own.Health==13,"support and own soldiers of one troop type keep separate wounds");helper.Health=70;own.Health=11;mixed.Close();Reload();
+ bool sourced;try{sourced=Campaign.Current.Search.SavedHealth("foot",0,true)==70&&Campaign.Current.Search.SavedHealth("foot",0,false)==11;}catch(InvalidOperationException){sourced=false;}Check(sourced,"scene end keeps each survivor's source");
  Console.WriteLine("CITY_SEARCH_FOLLOWER_HEALTH_ASSERTIONS="+n);
  }
 }}
@@ -62,6 +66,8 @@ static class Program{
             run(code.replace('agent.Health = System.Math.Min(agent.HealthLimit, health);', 'agent.Health = agent.HealthLimit;'))
         with self.assertRaisesRegex(AssertionError, "scene end saves each survivor's actual wounds"):
             run(code.replace('Search.SaveSurvivors(SearchSurvivors());', ''))
+        with self.assertRaisesRegex(AssertionError, "scene end keeps each survivor's source"):
+            run(code.replace('bool support = entry.Key.Origin is GwpCitySearchSupportOrigin;', 'bool support = false;'))
         with self.assertRaisesRegex(AssertionError, 'Search survivor missing: foot'):
             run(code.replace('_hallExitedTroops.TryGetValue(entry.Key, out float health)',
                              '_hallExitedTroops.TryGetValue(new Agent(entry.Value), out float health)'))

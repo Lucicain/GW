@@ -209,8 +209,24 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        internal static Equipment CitySearchUniform() =>
-            MBObjectManager.Instance.GetObject<MBEquipmentRoster>(GwpIds.CommanderEquipmentRosterId).DefaultEquipment.Clone();
+        /// <summary>
+        /// 城内办案队的黑甲：原来有盾的换成指挥官的黑盾，没盾不补；头、披肩、身、手、腿哪处有甲就换成指挥官套的同位那件；
+        /// 武器、坐骑和空位不动（用户裁定 2026-10-28）。
+        /// </summary>
+        internal static Equipment WithCitySearchUniform(Equipment equipment)
+        {
+            Equipment uniform = MBObjectManager.Instance.GetObject<MBEquipmentRoster>(GwpIds.CommanderEquipmentRosterId).DefaultEquipment;
+            EquipmentElement shield = Enumerable.Range((int)EquipmentIndex.Weapon0, (int)EquipmentIndex.NumPrimaryWeaponSlots)
+                .Select(slot => uniform[slot]).First(element => element.Item?.Type == ItemObject.ItemTypeEnum.Shield);
+            Equipment dressed = equipment.Clone();
+            for (int slot = (int)EquipmentIndex.Weapon0; slot < (int)EquipmentIndex.NumPrimaryWeaponSlots; slot++)
+                if (dressed[slot].Item?.Type == ItemObject.ItemTypeEnum.Shield)
+                    dressed[slot] = shield;
+            for (int slot = (int)EquipmentIndex.ArmorItemBeginSlot; slot < (int)EquipmentIndex.ArmorItemEndSlot; slot++)
+                if (!dressed[slot].IsEmpty)
+                    dressed[slot] = uniform[slot];
+            return dressed;
+        }
 
         private static void RepairGeneratedAdultCommanderLoadouts()
         {

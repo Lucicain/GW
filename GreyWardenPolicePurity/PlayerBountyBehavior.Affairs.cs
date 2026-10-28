@@ -10,6 +10,26 @@ namespace GreyWardenPolicePurity
         internal GwpAffairsEntry? GetAffairsSupport()
         {
             if (!_supportRequested || !HasBountyTask) return null;
+            Hero? hero = CaseHero;
+            PoliceEnforcementBehavior? enforcement = Campaign.Current.GetCampaignBehavior<PoliceEnforcementBehavior>();
+            // 城内求援不记随行领主编号（GrantCitySearchSupport），支援是派队那边登记的办案队：
+            // 在路上或失队待补派时同样是正在赶来；搜捕结束、登记转为返程后显示余部返回。
+            if (string.IsNullOrEmpty(_escortPolicePartyId))
+            {
+                MobileParty? team = null;
+                bool assigned = hero != null && enforcement?.TryGetPlayerCitySupport(hero, out team) == true;
+                var city = new GwpAffairsEntry("support:city", GwpText.Get(GwpTextCatalog.gwp_affairs_support),
+                    GwpText.Get(GwpTextCatalog.gwp_cs_support_party_name))
+                { IsPersonal = true, Summary = GwpText.Get(!assigned ? GwpTextCatalog.gwp_cs_support_spent
+                    : enforcement!.CitySearchSupport(hero!) != null ? GwpTextCatalog.gwp_cs_support_ready
+                    : GwpTextCatalog.gwp_cs_support_travelling) };
+                if (team?.IsActive == true)
+                {
+                    city.Fields.Add(GwpAffairsText.TargetLocation(team, GwpTextCatalog.gwp_affairs_current_location));
+                    city.Fields.Add(team.GetBehaviorText().ToString());
+                }
+                return city;
+            }
             MobileParty? party = GwpAffairsData.FindParty(_escortPolicePartyId);
             var entry = new GwpAffairsEntry("support:" + _escortPolicePartyId,
                 GwpText.Get(GwpTextCatalog.gwp_affairs_support), GwpText.Get(GwpTextCatalog.gwp_affairs_escort))
