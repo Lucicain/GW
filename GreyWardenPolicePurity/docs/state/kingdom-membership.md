@@ -1,9 +1,9 @@
 # 灰袍入国：灰袍家族不加入任何王国
 
-> 当前状态：正式r15在本机可拦流亡家族2.5.5；新装性格大修／小修补的相关挂钩共存未使拦截失效，叛军建国走原版建国动作；玩家实际入国原因仍未闭合
+> 当前状态：r15入国保护正常；玩家确认未实际入国、功能不受影响，流亡模组成功提示误报已结案，用户决定不修
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
 > 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1` `tools/Verify-Recruit*.ps1`
-> 待实测：另存读档后仍保持独立、原案件能继续；修复后不再出现新的入国
+> 待实测：无（本次反馈已确认只有文本误报，功能正常）
 
 灰袍是无国、无城镇城堡的贵族家族，必须始终独立。来源是玩家反馈：r12/r13 存档里灰袍加入了南帝国。
 
@@ -34,11 +34,11 @@ SyncData 无状态：本行为只响应宣战与读档完成事件，没有进�
 
 ## 反馈环境
 
-本轮 r15 反馈（2026-10-28）：用户确认百科／王国家族列表已有归属，不能按第三方虚假通知结案。截图游戏为 v1.4.7，灰袍 v1.4.15；与此前 BellumCivile 反馈不是同一环境。截图启用 Recruit Exiled Clans 2.5.5、Personality Overhaul 7.7.1、RebellionCreateKingdom 1.0.0、MutliLittleFixes 1.7.10 等。本机随后安装了前者2.5.5，DLL SHA-256 `9135866F0AB5F528CDD3518AF6D7B12576816F79ABDD3D2DB3FA4BD4513F115D`。
+本轮 r15 反馈（2026-10-28）：用户最终澄清灰袍并未实际入国，只是打印成功文本，各项功能不受影响；此前关于百科／王国列表归属的答复不再作为实际入国证据。截图游戏为 v1.4.7，灰袍 v1.4.15；与此前 BellumCivile 反馈不是同一环境。截图启用 Recruit Exiled Clans 2.5.5、Personality Overhaul 7.7.1、RebellionCreateKingdom 1.0.0、MutliLittleFixes 1.7.10 等。本机随后安装了前者2.5.5，DLL SHA-256 `9135866F0AB5F528CDD3518AF6D7B12576816F79ABDD3D2DB3FA4BD4513F115D`。
 
-Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKingdom`，没有直接写家族归属或Harmony补丁。真实候选谓词默认纳入独立灰袍；在隔离的MCM内存设置把 `gw` 加入 `excludedClanIds` 后排除。真实 `JoinKingdomWithReason` 在正式r15拦截生效时不改归属／债务，却仍发成功通知；它不检查动作后的实际归属。这是已证实的候选与通知不协调，不足以解释本次实际入国。测试没有改第三方文件、设置或方法。（依据：实装DLL反编译与真实DLL方法执行2026-10-28）
+Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKingdom`，没有直接写家族归属或Harmony补丁。真实候选谓词默认纳入独立灰袍；在隔离的MCM内存设置把 `gw` 加入 `excludedClanIds` 后排除。真实 `JoinKingdomWithReason` 在正式r15拦截生效时不改归属／债务，却仍发成功通知；它不检查动作后的实际归属。这与用户最终确认的“未入国、只打印”一致。测试没有改第三方文件、设置或方法。（依据：实装DLL反编译、真实DLL方法执行与用户反馈2026-10-28）
 
-用户随后提供战斗日志照片（`C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/ce91889ece236bedba210682019c490a.jpg`），显示 `灰袍守卫 joined 南帝国 (Joined most friendly kingdom)`。该完整格式与理由字符串精确对应Recruit Exiled Clans的 `GetJoinReason` → `JoinKingdomWithReason`，故本条提示及自动投国尝试的来源已定位。照片本身不显示家族归属；此前用户确认的百科／王国列表实际归属仍待存档／现场证据闭合，不能用已复现的虚假成功通知推翻用户反馈。（依据：用户照片与实装DLL字符串／控制流核对2026-10-28）
+用户提供的战斗日志照片（`C:/Users/lucif/Documents/Tencent Files/157652226/nt_qq/nt_data/Pic/2026-10/Ori/ce91889ece236bedba210682019c490a.jpg`）显示 `灰袍守卫 joined 南帝国 (Joined most friendly kingdom)`。完整格式与理由字符串精确对应Recruit Exiled Clans的 `GetJoinReason` → `JoinKingdomWithReason`，本条误报的来源已定位。（依据：用户照片与实装DLL字符串／控制流核对2026-10-28）
 
 随后安装的三份DLL（2026-10-28）核对如下；模块同号不等于与玩家DLL逐字节一致。
 
@@ -50,7 +50,7 @@ Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKi
 
 上述是对应DLL的反编译、静态IL与局部方法执行结果，相关补丁共存测试没有启动完整战役或加载玩家存档；不据此排除其他版本或完整加载环境中的冲突。（依据：本机DLL及实际方法执行2026-10-28）
 
-已知缺陷：玩家反馈 r15 灰袍实际加入他国，责任模组与写入路径未闭合；目前四份实装候选没有查到能解释实际入国的路径，正式r15在本机v1.4.8及相关挂钩共存时可拦自动投国。仍缺玩家实际灰袍DLL、性格大修7.7.1及v1.4.7战役DLL／存档运行证据，以区分补丁未绑定／被替换、版本或安装内容差异、其他归属写入与存档恢复时序；暂不改业务机制。（依据：用户确认、截图及实装DLL离线核对2026-10-28）
+本次反馈结案：保留现有r15入国保护，不过滤这条无功能影响的第三方提示，不新增更底层的归属拦截，也不再为本次误报索取模组或存档。刚提出的过滤与加固方案未实施，游戏代码和部署没有改变。（依据：用户裁定2026-10-28：确认功能不受影响，决定不管这条打印文本）
 
 反馈存档在 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Game Saves/GW-kingdom-report-20261006.sav`（原件 `C:/Users/lucif/Downloads/saveauto1.sav`，SHA-256 `14be06c7…afda5`）。agent 不编辑这两个文件。
 
