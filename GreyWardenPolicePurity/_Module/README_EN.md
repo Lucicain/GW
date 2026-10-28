@@ -2,15 +2,16 @@
 
 GreyWarden adds an independent religious order descended from the Imperial church to Mount & Blade II: Bannerlord. Its members protect civilians, pursue raiders, support villages and train successors. Village priests and believers provide recruits and supplies. Players can face the Wardens for their crimes, or earn their trust, join the order and take commissions.
 
-This guide describes the current development build for Bannerlord 1.4.8. The latest published release remains v1.4-r15 (2026-10-17); changes listed under "In development" have not been released. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
+This guide describes v1.4-r16 (2026-10-28) for Bannerlord 1.4.8. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
 中文：README.md
 
 ## Main features
 
 - Six founding Warden lords lead their own parties, handling training, trade routes, village protection, local requests, rebuilding and player affairs. Adult successors inherit duties that still have an adult holder.
 - The Wardens record attacks on caravans and villagers, and village raids. They first take the nearest eligible case in their own field, gather allies against strong opponents and send detachments drawn from existing troops, with cavalry preferred.
-- Grey Warden Affairs has five tabs: My Affairs, Members, Duties, Faith and Armory. It shows assigned Wardens, messenger journeys and separate negotiation reports. The player armory is not yet open. Offenders retain criminal records and face deterrence that gradually wears off.
+- Grey Warden Affairs has five tabs: My Affairs, Members, Duties, Faith and Armory. It shows assigned Wardens, messenger journeys and separate negotiation reports, and the Armory tab organises your party equipment. Offenders retain criminal records and face deterrence that gradually wears off.
 - Players can earn reputation by protecting civilians and helping the Wardens. Membership grants access to commissions, troop orders, battlefield support and fief appeals.
+- When a target hides in a town or castle, you can lead troops in to search for them: get past the watch, negotiate, duel or brawl in the lord's hall, then take them out of the settlement. You can also ask the Wardens for a black-armoured case team to come along.
 - The mod includes a Warden troop tree, black-and-gold equipment, warhorses, shields, dual blades, kicks, shield bashes and sparring. Wardens fight without routing and have their own battle music.
 - The training lord sends healthy veterans to villages. Player troop orders are paid when placed and delivered by the training lord when ready. An order messenger carries the order and payment, not the trained soldiers.
 - At 20 Warden reputation, a recruitment messenger comes to invite you. Members can talk to Warden soldiers in their party and send them on errands. New commissions require membership, at least 20 reputation and a Warden duty standard equipped in the banner slot. Unequipping it disables new commissions; existing work continues. Choose cases in Affairs; periodic commission offers have been removed.
@@ -24,7 +25,8 @@ This guide describes the current development build for Bannerlord 1.4.8. The lat
 - A crash has occurred while exiting the game; the cause remains unresolved.
 - A lord may stay in a settlement for a long time when threatened by enemies outside.
 - Performance in campaigns with many developed villages and large armories still needs observation.
-- In the development build, periodic support is not yet limited to stalled cases, so prolonged unresolved cases can cause repeated deployments.
+- Periodic support is not yet limited to stalled cases, so prolonged unresolved cases can cause repeated deployments.
+- During city searches, armed townspeople who are not fighting draw their weapons before fleeing; hitting the watch with arrows or thrown weapons does not start a fight.
 
 ## Installation and updates
 
@@ -36,15 +38,34 @@ Start a new campaign for this release. Saves are not supported across versions. 
 
 ## Changelog
 
-### In development (2026-10-19, not released)
+### 2026-10-28 v1.4-r16 (Bannerlord 1.4.8)
 
-- Rebuilt Affairs with case selection, player messenger journeys and separate negotiation reports, distinguishing case support, peace requests, fief reconsideration and troop orders.
-- Added native portrait frames, offender and assignee portraits; corrected case sorting, footer overlap and return from encyclopedia pages.
-- Ordinary pursuits keep checking for replacement interceptors after a detachment is lost. Other existing soldiers can fill places when healthy cavalry are insufficient.
-- Declarations of war and case attacks check native regional strength. No new case war is declared while either party is in a settlement; following continues and eligibility is checked again outside.
-- Warden envoys have no travel deadline. They wait if the offender temporarily loses their party; a lost envoy counts as an unsuccessful negotiation.
-- Prevented handovers before navigation transitions finish. Player messengers and Warden envoys share the sea/land handover check.
-- Recalibrated battle music volume and reviewed quest, dialogue and gameplay descriptions.
+Compared with v1.4-r15 (2026-10-17):
+
+#### Additions and changes
+
+- New city search: when a target has no party and is hiding in a town or castle lord's hall, you can take the commission and lead a small band of soldiers through the gate yourself. The watch will question you; you can talk your way in, withdraw, or force your way through.
+- Confront the target in the hall. If talks succeed, escort them out of the settlement to complete the case. If talks fail, both sides settle on a duel or a brawl: towns with an arena hold the duel there, otherwise the hall is cleared for it.
+- Fighting inside is war with the owner's faction: the garrison keeps sending reinforcements that pursue you, townspeople and merchants flee, and you must fight your way out through the gate. Casualties on both sides and the fallen in the streets persist between the hall and the streets.
+- Each sheltered case gives you one personal search and one request for help. After you ask for help, a Warden lord sends a black-armoured case team that follows you into the settlement; it appears locked in the troop selection and is replaced if it is destroyed on the way. The Wardens also send case teams of their own to collect fines from sheltered offenders.
+- Rebuilt Grey Warden Affairs: commissions, orders, peace and fief business are shown separately; choose commissions from the case list and follow assignees, messenger journeys and negotiation reports. Fief reconsideration requests can be sent by messenger.
+- The player armory is open: organise your party's armory from Affairs, keeping the best equipment for your establishment and returning the rest to your inventory.
+- Armory losses are now settled per soldier: issued equipment left on the field is captured or destroyed only when that side loses. Warden lords keep their own armories.
+- Your current pursuit target is marked in red as a case target on its map nameplate.
+- When joining a battle involving caravans, villagers, raids or Warden enforcement, choosing a side first opens a preparation screen where you can go back or stay out; you join only after confirming.
+- Warden soldiers now fight on past lethal wounds too, for different durations for recruits, light infantry, heavy infantry and archers; the lords' duration is shorter. Shooting, throwing, kicks, shield bashes and kills all make Wardens grow during the battle.
+- Surplus low-tier village guards are promoted two-for-one at the burnings; the training lord delivers veterans in a single trip; villager parties make dedicated trips to sell goods in town.
+- The Wardens declare war only once they can actually send an interceptor, and re-check nearby strength before declaring or attacking. No new case war starts while both sides are inside settlements.
+- After your request for help arrives, your own forces count towards the Wardens' strength. If a target is held by a third party, you can buy them out or withdraw the commission.
+- Arranged duels move to another town if the venue becomes hostile, besieged or rebellious. Warden envoys no longer have a travel deadline and are replaced if destroyed on the way.
+- New campaigns no longer set your relation with Warden members to the maximum, and Warden relations with local notables change normally; free courtship remains.
+
+#### Fixes
+
+- Fixed a possible crash when a surrendered offender's former party stayed attached to an army.
+- Fixed handovers starting before boarding or landing had finished; courier and envoy handovers between sea and land are more reliable.
+- Ordinary pursuits keep sending replacement interceptors after a detachment is lost; other existing soldiers fill in when healthy cavalry are short.
+- Recalibrated battle music volume.
 
 ### 2026-10-17 v1.4-r15 (Bannerlord 1.4.8)
 
@@ -71,32 +92,6 @@ Compared with v1.4-r14 (the replacement package dated 2026-10-07):
 
 - Atonement commissions at negative reputation allow negotiation and completion; Warden envoys no longer intervene in a case already assigned to the player.
 - Improved temporary-party reunions, borrowed-ship returns and transfers of wounded troops and experience.
-
-### 2026-10-07 v1.4-r14 (Bannerlord 1.4.8)
-
-Compared to v1.4-r13:
-
-#### Added and changed
-
-- A new Grey Warden affairs button sits in the bottom-left map bar between Clan and Kingdom. Once you have joined the Wardens it opens their affairs directly; before that it is unavailable.
-- The equipment issued when you join or rejoin the Grey Wardens now comes in the best quality for every piece.
-- Riders carrying ordinary prisoners go to the nearest town to sell them first, then resume their errand, and tell you how much the sale brought in.
-- Prisoners escorted by your riders no longer escape on the road.
-- When a companion with an outstanding case travels in your party, the Wardens come to you about that companion's own case, and you can pay the fine on their behalf to close it. Their case is no longer counted against you, and you are no longer stopped over it again and again.
-- A contract target you stop on the way to join an army no longer refuses to talk on the strength of the whole army, and a refusal no longer names a specific day.
-
-#### Fixed
-
-- Grey Wardens remain independent instead of joining a kingdom, becoming mercenaries, or founding a kingdom.
-- When a save loads, Wardens who have joined another kingdom leave it and its armies, restoring their independence.
-- With RBM installed, Warden lords no longer automatically replace their equipment when entering a town.
-
-- Asking the Wardens to mediate from the post-battle screen could crash the game.
-- Warden lords sometimes took up and dropped the same case they lacked the strength for, over and over.
-- After loading a save, Warden assistance armies could no longer take in members and failed when disbanding.
-- Reporting right after capturing a contract target did not list the prisoner until you had moved on the map.
-- Riders carrying prisoners could head for a distant town, give up before reaching it and turn back, going back and forth.
-- Ships lent to your riders or to Warden detachments were sometimes not returned to their owner.
 
 ## Contact
 
