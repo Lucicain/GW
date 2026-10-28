@@ -54,7 +54,7 @@ static class GreyWardenPartyDesireBehavior {public static List<string> Orders=ne
 class PoliceEnforcementBehavior {
  const int ImmediateInterceptorMaximumSize=8,ImmediateInterceptorMinimumSize=3;
  class LordAssistanceGroup {public string LeaderPartyId="chief",TargetPartyId="target";public bool DispersedForSpeed;public List<string> MemberPartyIds=new();}
- class DelayPatrolState {public string PatrolPartyId="",SourceTaskPolicePartyId="chief",TargetPartyId="target",WarTargetId="",ReturnSettlementId="";public bool Returning,IsImmediateInterceptor,IsEnvoy;}
+ class DelayPatrolState {public string PatrolPartyId="",SourceTaskPolicePartyId="chief",TargetPartyId="target",WarTargetId="",ReturnSettlementId="",CityCrimeId="";public bool Returning,IsImmediateInterceptor,IsEnvoy;}
  class ImmediateInterceptorTroopTransfer {public MobileParty SourceParty=null!;public CharacterObject Character=null!;public int Count;}
  Dictionary<string,LordAssistanceGroup> _assistanceGroups=new();Dictionary<string,DelayPatrolState> _delayPatrolStates=new();int sequence,WarCalls,WarStarts;bool CreationUnavailable;List<string> Events=new();
  static PoliceEnforcementBehavior? _instance;bool Member,AwaitingEnvoy;int _warStatusCheckDayCounter,SupportRequests;

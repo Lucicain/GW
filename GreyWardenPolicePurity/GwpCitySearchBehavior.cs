@@ -39,11 +39,6 @@ namespace GreyWardenPolicePurity
         {
             if (party != MobileParty.MainParty || Hero.MainHero.IsPrisoner || !SearchActive || _searchWar
                 || settlement.StringId != _searchSettlementId) return;
-#if GWP_DIAGNOSTICS
-            // 复发哨兵的经过次数：经原版菜单离城时控制住的目标随之交付。
-            GwpAiDiagnostics.WriteCitySearch("CITY_SEARCH_LEFT_BY_MENU", "settlement=" + settlement.StringId
-                + "; target=" + SearchTarget?.StringId + "; captureReady=" + _captureReady);
-#endif
             FinishSearch(true, leftSettlement: settlement);
         }
 

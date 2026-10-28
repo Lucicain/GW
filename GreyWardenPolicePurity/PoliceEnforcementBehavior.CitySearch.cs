@@ -9,10 +9,6 @@ namespace GreyWardenPolicePurity
 {
     public partial class PoliceEnforcementBehavior
     {
-#if GWP_DIAGNOSTICS
-        private readonly HashSet<string> _tracedLostCityTeams = new HashSet<string>();
-#endif
-
         private DelayPatrolState? CityPartyState(CrimeRecord crime) => _delayPatrolStates.Values.FirstOrDefault(state =>
             state.CityCrimeId == crime.CrimeId && !state.Returning);
 
@@ -140,17 +136,11 @@ namespace GreyWardenPolicePurity
                 if (party == null || party.MemberRoster.TotalHealthyCount == 0)
                 {
                     // 派遣本身不是玩家的办理次数。失队后保留原指派，直到真实兵员能补派。
-                    bool replaced = PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
+                    PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
                         .OrderBy(source => source.GetPosition2D.Distance(
                             state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
                                 : crime.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D))
                         .Any(source => SendCitySearchParty(source, crime, state.CityForPlayer, state));
-#if GWP_DIAGNOSTICS
-                    // 复发哨兵（2026-10-28 失队后再无补派）：每支失队只记一次，补派成功即经过一次，没补上是证据。
-                    if (_tracedLostCityTeams.Add(state.PatrolPartyId))
-                        GwpAiDiagnostics.WriteCitySearch("CITY_SUPPORT_LOST", "lost=" + state.PatrolPartyId
-                            + "; crime=" + crime.CrimeId + "; player=" + state.CityForPlayer + "; replaced=" + replaced);
-#endif
                     continue;
                 }
                 if (party.DefaultBehavior == AiBehavior.Hold)

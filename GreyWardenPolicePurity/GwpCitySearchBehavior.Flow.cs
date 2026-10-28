@@ -279,12 +279,6 @@ namespace GreyWardenPolicePurity
                 || GameStateManager.Current.ActiveState is not MapState) return;
             if (behavior.SearchActive && !behavior.SearchHere)
             {
-#if GWP_DIAGNOSTICS
-                // 复发哨兵（2026-10-28 经城镇菜单离城丢失已控制的目标）：离城交付后这里不应再见到已控制的目标。
-                if (behavior._captureReady)
-                    GwpAiDiagnostics.WriteCitySearch("CITY_SEARCH_CAPTURE_DROPPED", "settlement=" + behavior._searchSettlementId
-                        + "; target=" + behavior.SearchTarget?.StringId + "; current=" + Settlement.CurrentSettlement?.StringId);
-#endif
                 behavior.FinishSearch(false);
             }
             if (behavior._leavePending)

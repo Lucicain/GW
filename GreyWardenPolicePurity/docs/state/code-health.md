@@ -9,13 +9,7 @@
 
 ## 文档一致性现状
 
-当前规则由所属 state 定义，设定总文档只作世界观与玩法概览。接手顺序和代码定位在根 AGENTS 与 [state 索引](README.md) 维护；CodeGraph 是可重建的源码索引，不是第二份项目记忆。（依据：用户要求跨 agent 接手；流程 2026-10-18）
-
-代码定位已在当前工作树验证：区域宣战、临时队交接、使者、订单占用、事务入口/排序、派单、村民分账与军械缓存均能从图定位到生产入口，再对照所属 state 与现有回归。十项场景复核不是全仓掌握率，也不是实机验收；未用熟悉本项目的自测冒充新 agent 冷启动评测。（依据：源码与离线执行 2026-10-18）
-
-CodeGraph 使用准确类型/方法名和文件名时定位较好；泛化英语问题、猜错方法名或过低文件上限可能返回相邻代码、同名桩而遗漏目标正文。动态抽取 C# 的 Python 测试未建立完整调用边，需从所属 state 的验证入口查找。工具已能辅助接手，但不能单凭结果排序认定生产归属或测试缺失。（依据：本仓库实际查询 2026-10-18）
-
-已核对并同步宗教身份、案件容量与自选入口、订单收款/准入、原版区域战力、自主运兵与村民售货、待验收分类、测试矩阵和章节链接。复核范围为此前发现的冲突项，不代表所有历史玩法概述已逐句验收。（依据：源码、主文本与所属 state 交叉复核 2026-10-18）
+当前规则由所属 state 定义，设定总文档只作世界观与玩法概览。接手顺序和代码定位在根 AGENTS 与 [state 索引](README.md) 维护；CodeGraph 是可重建的源码索引，不是第二份项目记忆。它用准确类型/方法名和文件名时定位较好；泛化英语问题、猜错方法名或过低文件上限可能返回相邻代码、同名桩而遗漏目标正文；动态抽取 C# 的 Python 测试未建立完整调用边，需从所属 state 的验证入口查找。不能单凭它的结果排序认定生产归属或测试缺失。（依据：用户要求跨 agent 接手；本仓库实际查询与流程 2026-10-18）
 
 `Generate-CodeMap.py` 按装饰类的实际作用域提取 Harmony 声明，包含动态 `TargetMethod(s)`、显式接口成员与条件编译内的类。动态目标保持未静态解析，不猜实际绑定；声明集合的回归与运行时加载预检是两项不同证据。`Check-StateFreshness` 仍只检查机械一致性，源码/文档同时 dirty 不证明正文正确。（依据：生成器与专项回归 2026-10-18）
 
@@ -25,17 +19,13 @@ CodeGraph 使用准确类型/方法名和文件名时定位较好；泛化英语
 
 已知缺陷：预览默认待机缓存在真实游戏内为-1，动态同名解析为4008，主角/骑士/步兵/弓手/狂信者实际动作也为-1；外观出生/本地/全局竖轴保持直立，仅有比例缩放。已修复预览引用无效动作这一故障点，谁在动作数据加载前初始化了缓存仍未归因，其他静态动作条目是否受影响也未逐项证实。8月1.5.2撤回Agent/MissionWeapon补丁、9月撤回成长包装曾恢复预览，是历史对照；b242d20的Agent.FadeOut诊断现已移出启动扫描、首次搜捕时延后绑定，但不把此隔离直接称为责任方已证实。（依据：用户截图、03:17至03:18实机诊断、安装版DLL与补丁差异2026-10-28）
 
-安装版CharacterTableau的用户旋转只绕竖轴，预览使用独立AgentVisuals。Framework宿主的单独补丁/完整启动扫描未复现提前解析，不能据此排除真实游戏缓存失效；现场已补齐这部分证据。生产修复GwpCharacterPreviewActions仅在OnGameStart后绑定GetIdleAction，当原版返回负编号时用原版ActionIndexCache.Create重新解析act_inventory_idle_start；有效默认/自定义动作不变，不写原版只读静态字段、模型矩阵或骨骼资源。（依据：实机诊断、安装版反编译与生产实现2026-10-28）
-
-test_preview_action_cache在实际安装版DLL执行原版GetIdleAction：提前读取负对照得到缓存-1、动态1234、原版返回-1；安装生产修复后返回1234，自定义有效动作5678保持、静态坏缓存仍为-1，重复安装各只有一个补丁。默认有效的其余四种对照原样返回1234。五种宿主与12项观察断言通过，不代表原生画面已经验收。（依据：安装版方法和生产DLL离线负对照2026-10-28）
+安装版CharacterTableau的用户旋转只绕竖轴，预览使用独立AgentVisuals。Framework宿主的单独补丁/完整启动扫描未复现提前解析，不能据此排除真实游戏缓存失效；现场已补齐这部分证据。生产修复GwpCharacterPreviewActions仅在OnGameStart后绑定GetIdleAction，当原版返回负编号时用原版ActionIndexCache.Create重新解析act_inventory_idle_start；有效默认/自定义动作不变，不写原版只读静态字段、模型矩阵或骨骼资源。test_preview_action_cache在实际安装版DLL上做负对照（提前读取得到缓存-1、原版返回-1；装修复后返回动态编号，自定义有效动作保持，重复安装只有一个补丁），不代表原生画面已经验收。（依据：实机诊断、安装版反编译、生产实现与离线负对照2026-10-28）
 
 CHARACTER_PREVIEW取证在诊断版OnGameStart后安装，每外观3条、间隔0.5秒、每进程60条，保留动作和矩阵快照。ACTION_CACHE_EARLY_MISS在本模块入口最先绑定生成桥接类ManagedCallbacks.ScriptingInterfaceOfIMBAnimation.GetActionCodeWithName：实际方法仅UTF8封送/原生委托调用，整类不含ActionIndexCache引用。不能早装MBAnimation同名包装，它的空名分支读取act_none缓存。inventory/taunt/arena三个名字首次负编号各记一次栈；ACTION_CACHE_READY在OnGameStart记缓存/动态编号与早期缺失数，均写既有故障日志。用于定位最初责任方，不据此宣称缓存来源已经查明；确认功能后退休健康路径，归因完成后退休早期取证。（依据：安装版桥接类/包装反编译、独立审查与取证设计2026-10-28）
 
 ## 启动补丁与静态初始化
 
-Harmony启动期预编译目标可能触发其引用类的静态初始化；绑定成功不证明初始化未失败。2026-10-20名牌RefreshBinding引用CampaignUIHelper.IssueQuestFlagsValues，文本尚未加载时其静态字段调用GameTexts.FindText抛空引用，之后地图创建持续报类型初始化失败。标识改挂安全属性写入，业务见[玩家案件](player-justice.md#办案目标地图标识)。（依据：实机栈与安装版反编译2026-10-20）
-
-Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化异常，并检查PartyNameplateVM补丁目标对CampaignUIHelper静态字段的直接读取，任一命中即失败。Windows PowerShell未重现游戏中的实际初始化异常，但旧目标指令检查报2处并拒绝；专项安装版负对照可持续复查。该检查只覆盖这条明确故障依赖，不代表全部静态初始化或原生启动均已模拟。（依据：离线负对照2026-10-20）
+Harmony启动期预编译目标可能触发其引用类的静态初始化；绑定成功不证明初始化未失败。2026-10-20名牌RefreshBinding引用CampaignUIHelper.IssueQuestFlagsValues，文本尚未加载时其静态字段调用GameTexts.FindText抛空引用，之后地图创建持续报类型初始化失败。标识改挂安全属性写入，业务见[玩家案件](player-justice.md#办案目标地图标识)。Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化异常，并检查PartyNameplateVM补丁目标对CampaignUIHelper静态字段的直接读取，任一命中即失败；该检查只覆盖这条明确故障依赖，不代表全部静态初始化或原生启动均已模拟。（依据：实机栈、安装版反编译与离线负对照2026-10-20）
 
 2026-10-22 第二例：搜捕拖尸补丁在模组加载时改写原版 `CorpseDraggingMissionLogic.OnMissionTick`，该方法读 `ActionIndexCache`（beforefieldinit 值类型，静态字段按名字向引擎查动作编号）。打补丁当场运行其静态初始化，而引擎在模组初始化结束后才读 `action_types.xml`，整局所有原版动作编号都成 -1；竞技场看台观众按 -1 预载动画，原生越界读崩溃。改为首次进搜捕场景时再打。这例初始化不抛异常，只留下错值，上面的启动预检拦不住。（依据：WER 转储与引擎日志时序 2026-10-22；C++反汇编 v1.4.8 TaleWorlds.Native+0x6FE2B0/+0x5A4050；离线 Harmony 实验，提交 422885c；该补丁随拖运于2026-10-22删除，规则仍成立）
 
@@ -47,33 +37,26 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 
 ## 协力职责与战力的无限递归
 
-当前主办职责只指向罪犯，协办只指向主办，不反向寻找协办；职责与日志意图解析不进入区域战力评估。原版区域计算在作用域内采集，实际接战检查复用本次采集，不再次递归评估；实现只在[协力](case-assistance.md#区域宣战与持续接战)维护。`test_assistance_recursion.py` 编译生产职责/日志方法，以拒绝区域战力重入的边界覆盖10个场景；原版计算与采集适配由区域专项回归验证。（依据：源码、生产方法离线执行 2026-10-18）
-
-区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义。退出原生释放故障仍独立保留，不宣称所有原生崩溃已根除。（依据：流程）
+当前主办职责只指向罪犯，协办只指向主办，不反向寻找协办；职责与日志意图解析不进入区域战力评估。原版区域计算在作用域内采集，实际接战检查复用本次采集，不再次递归评估；区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义和维护。`test_assistance_recursion.py` 编译生产职责/日志方法，以拒绝区域战力重入的边界覆盖；原版计算与采集适配由区域专项回归验证。（依据：源码、生产方法离线执行 2026-10-18）
 
 ## 客户端退出阶段的原生故障
 
-2026-09-27 18:58 与 2026-09-28 00:55 两次客户端退出均在日志写出 `Managed Interface deleted` 后，由 `TaleWorlds.Native.dll` 报 `0xc0000005`；Windows 事件偏移分别为 `0x74e0c3`、`0x74e2b1`。两份转储的调用栈落在相同的原生退出释放循环，前者为无效指针写入、后者为无效指针读取；模组故障日志在退出时没有新增托管异常。7 月的转储 `31280` 也落在该原生释放调用链；可确认是旧的退出故障类别复发，尚不能证明损坏内存的是同一对象。同一 `Assets` 布局曾于 19:41 正常退出，因此故障是间歇性的。（依据：WER、RGL 日志与 cdb 转储 2026-07-20、2026-09-28）
+2026-09-27 18:58 与 2026-09-28 00:55 两次客户端退出均在日志写出 `Managed Interface deleted` 后，由 `TaleWorlds.Native.dll` 报 `0xc0000005`；Windows 事件偏移分别为 `0x74e0c3`、`0x74e2b1`。两份转储的调用栈落在相同的原生退出释放循环，前者为无效指针写入、后者为无效指针读取；模组故障日志在退出时没有新增托管异常。7 月的转储 `31280` 也落在该原生释放调用链；可确认是旧的退出故障类别复发，尚不能证明损坏内存的是同一对象。同一 `Assets` 布局曾于 19:41 正常退出，因此故障是间歇性的。2026-10-16 23:10 的`GreyWarden-Crash-20261016-225524.dmp`为用户主动关闭时的同类故障：RGL已完成Final_cleanup与Managed Interface deleted，Native+0x74e20a读取无效地址，分配器元数据读出0xFEEEFEEE；小转储不含相关堆页，不能指认某件装备、某支军团或某个原生对象，保留此份现场区分两类故障。
 
-当前 C# 源码没有运行时修改盾牌网格或材质，黑金盾仍引用静态网格；历史上已修复的运行时盾牌变更不能直接当作这次的根因。转储只有有限内存和公开导出符号，尚不能指认具体资源或原生对象。若继续隔离，应保持本机 live 的开发版布局，在隔离副本中分别对叠加层、无模组客户端及资源发布布局做可重复的退出对照，并记录 Windows 事件；一次正常退出不足以排除间歇故障。（依据：源码复核；崩溃转储；用户裁定的 live 布局）
-
-23:10的`GreyWarden-Crash-20261016-225524.dmp`为主动退出故障：RGL已完成Final_cleanup与Managed Interface deleted，用户确认主动关闭且未见报错。异常是Native+0x74e20a读取无效地址，分配器元数据读取出0xFEEEFEEE；与旧退出释放链同类，不证明业务运行时哪处损坏了内存。小转储不含相关堆页，不能指认某件装备、某支军团或某个原生对象；保留此份现场区分两类故障。（依据：用户确认、C++反汇编与转储2026-10-16）
+当前 C# 源码没有运行时修改盾牌网格或材质，黑金盾仍引用静态网格；历史上已修复的运行时盾牌变更不能直接当作这次的根因。若继续隔离，应保持本机 live 的开发版布局，在隔离副本中分别对叠加层、无模组客户端及资源发布布局做可重复的退出对照，并记录 Windows 事件；一次正常退出不足以排除间歇故障。（依据：WER、RGL 日志与 cdb 转储 2026-07-20、2026-09-28；用户确认与C++反汇编2026-10-16；源码复核；用户裁定的 live 布局）
 
 ## 性能：按频率排查，不按代码量
 
 2026-10-10 对当前 168 个源码文件重新盘点，发现 `MobileParty.All` 的 95 处文字出现（含注释，不等于运行次数）。当前存在嵌套扫描，不能沿用旧调查的「没有 O(n²)、否掉性能优化」结论。
 
 - 火誓者小时/日结各建立本轮部队 ID 快照，`FindParty` 优先字典查找，本轮结束 finally 释放；本轮新建的队伍可走实际全表查找。登记队 F、地图队 P 的反复查找由 F×P 改为建立一次 P 后查 F 次，不引入长期全局队伍缓存。（依据：源码复核 2026-10-15）
-- 军械配装保留缓存；库存对象/`ItemRoster.VersionNo`、两种受装人数或预留编制变化才重算。日结前后复核也复用未变计划。`BuildPlan` 在实际变化时仍有逐件展开及 `FindIndex + RemoveAt` 的成本，尚未改数量桶；不能声称消除了所有二次方路径。（依据：C#反编译 v1.4.8 ItemRoster；源码复核 2026-10-15）
-- 纯化仍每小时检查资格，名册对象/`TroopRoster.VersionNo` 未变就不扫描兵种。缓存是名册弱引用，不保存工作状态；读档自然重新检查。招兵、转兵、伤兵变化等原版名册写入都会更新版本；战斗中不记录已检查版本，结束后仍会处理。（依据：C#反编译 v1.4.8 TroopRoster.AddToCountsAtIndex/UpdateVersion；源码复核 2026-10-15）
+- 军械配装保留缓存；库存对象/`ItemRoster.VersionNo`、两种受装人数或预留编制变化才重算，日结前后复核也复用未变计划；`BuildPlan` 在实际变化时仍有逐件展开及 `FindIndex + RemoveAt` 的成本，尚未改数量桶，不能声称消除了所有二次方路径。纯化仍每小时检查资格，名册对象/`TroopRoster.VersionNo` 未变就不扫描兵种；缓存是名册弱引用，不保存工作状态，读档自然重新检查；招兵、转兵、伤兵变化等原版名册写入都会更新版本；战斗中不记录已检查版本，结束后仍会处理。（依据：C#反编译 v1.4.8 ItemRoster、TroopRoster.AddToCountsAtIndex/UpdateVersion；源码复核 2026-10-15）
 - 练兵偏好每小时只扫灰袍队，维持玩家订单优先和配比；自动运兵派出只在日结检查。村庄观察和志愿兵格子仍每小时核对，因为原版会改民兵/志愿兵，这次不降低这些业务频率。（依据：源码复核 2026-10-15）
-- 旧卡死主线程曾落在火誓者统计/军械链，但受零人队无限增长污染。正常存档各段耗时与改善幅度尚未实测，离线缓存命中不能换算成游戏帧率。（依据：实机诊断 2026-10-09；离线执行 2026-10-15）
-
-原版 v1.4.8 `CampaignObjectManager.Find<T>` 仍是线性查表。附近敌人已经用 `FindNextLocatable` 空间搜索，本轮不替换。后续若仍卡顿，再用实机采样定位真实热点。（依据：C#反编译；设计）
+- 旧卡死主线程曾落在火誓者统计/军械链，但受零人队无限增长污染。正常存档各段耗时与改善幅度尚未实测，离线缓存命中不能换算成游戏帧率。原版 v1.4.8 `CampaignObjectManager.Find<T>` 仍是线性查表；附近敌人已经用 `FindNextLocatable` 空间搜索，本轮不替换。后续若仍卡顿，再用实机采样定位真实热点。（依据：实机诊断 2026-10-09；离线执行 2026-10-15；C#反编译）
 
 ## 兵员转移与临时队编号
 
-共享规则与原版依据只在 [临时队](temporary-parties.md) 定义。练兵、订单、追截、送信归队与火誓者名册转移统一调用 `GwpTroopTransfer`，各自保留原选兵策略；建队统一调用 `GwpPartyIdentity`。实际 v1.4.8 名册与注册表回归 173 项断言通过，包含伤兵、经验余数、多来源回滚及改名后连续建队查重。没有新增存档字段。（依据：源码、C#反编译与实际游戏 DLL 离线执行 2026-10-14）
+共享规则与原版依据只在 [临时队](temporary-parties.md) 定义。练兵、订单、追截、送信归队与火誓者名册转移统一调用 `GwpTroopTransfer`，各自保留原选兵策略；建队统一调用 `GwpPartyIdentity`。实际 v1.4.8 名册与注册表回归覆盖伤兵、经验余数、多来源回滚及改名后连续建队查重。没有新增存档字段。（依据：源码、C#反编译与实际游戏 DLL 离线执行 2026-10-14）
 
 ## 循环可靠性复核
 
@@ -138,7 +121,7 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 |---|---|---|
 | 搜捕单挑路线与大厅占用 | `GwpCitySearchBehavior.UsesHallDuel` / `HallDuelLocked` | 按真实竞技场场景名决定；菜单、走门、Tab与存读档共用入口，规则归[搜捕](city-search.md) |
 | 搜捕敌方追击 | `GwpCitySearchMissionController.SetCityPursuer` | 初始守方与新援军共用原版下马兵种编队、冲锋及自动选敌，不改我方编队与血量归属 |
-| 人物外观原生渲染修复 | `GwpCitySearchNativeVisualFix` | 对已查明故障RVA的修复只在此处安装；签名、生命周期及验收归[搜捕](city-search.md)（依据：转储与离线负对照2026-10-27） |
+| 人物外观原生渲染修复 | `GwpCitySearchNativeVisualFix` | 对已查明故障RVA的修复只在此处安装；签名、生命周期及验收归[搜捕](city-search.md) |
 | 和平投案退团、押人与原队收尾 | `GwpVoluntarySurrender` | 玩家当面投案与使者立即/战后投案均用此入口；规则归[使者](case-envoy.md#投案与原版军团退队衔接) |
 | 兵员人数、伤兵与经验搬运 | `GwpTroopTransfer` | 各功能选兵后调用公共搬运入口；语义由实际游戏名册回归检查，不声称正则覆盖所有扣人加人代码 |
 | 玩家词句与中英变量 | `PlayerText/strings.json`、`Generate-PlayerText.py` | 构建拒绝新内联带键整句与陈旧生成文件；详见[玩家文字](player-text.md) |
@@ -151,7 +134,7 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 | 大地图战力 | `GwpStrength` | `EstimatedStrength`、`GetPowerOfParty`、`GetTroopPower`、`GetTotalLandStrength*` |
 | 玩家搜捕单案机会 | `GwpCitySearchCasePolicy` | CrimeRecord保存玩家亲自/协同次数，仅在此读取/消耗；重新接委托不重置，NPC派队不占次数 |
 | 搜捕街道伤亡快照 | `GwpCitySearchBehavior.SaveStreetBodies` / `StreetBodies` | 死伤外观/位置/结果仅经此保存读取；不跨Mission持有Agent引用 |
-| 搜捕现场模拟攻防 | `GwpCitySearchMissionController.CombatBalance` / `SimulationPower` | `GetSimulationAttackPower`；现场说服与打法选择共用，范围见[搜捕](city-search.md)（依据：设计2026-10-26） |
+| 搜捕现场模拟攻防 | `GwpCitySearchMissionController.CombatBalance` / `SimulationPower` | `GetSimulationAttackPower`；现场说服与打法选择共用，范围见[搜捕](city-search.md) |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
 | 信众村民队的登记与生命周期介入 | `GwpFireswornBehavior.IsFaithVillager`、`GwpFaithVillagers.cs` | 别处给VillagerCampaignBehavior或SellGoodsForTradeAction加补丁；军械、装货、分账统一查询登记入口。规则归[村民队](firesworn-villagers.md) |
 | 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool`/`CrimeState` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
@@ -167,7 +150,6 @@ Invoke-ModuleLoadPreflight在补丁安装期间记录这条已发生的初始化
 
 ## 接手与机械检查
 
-- CodeGraph 先定位源码与调用链，state 决定当前规则，测试和原版取证确认实际行为；动态图中没有边或测试时，仍需核对真实入口，不据此删代码。（依据：流程）
+- CodeGraph 先定位源码与调用链，state 决定当前规则，测试和原版取证确认实际行为；动态图中没有边或测试时，仍需核对真实入口，不据此删代码。`python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、引用失效核对、提示与硬闸的区别；机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）
 - 火誓者按村庄、仪式、媒体、军械库、经济和队伍拆分，入口在 [firesworn.md](firesworn.md)。文档保留当前规则与验收项，旧说法只在 journal 追溯。
 - `Check-StateFreshness.py` 提示 state 正文引用了已不存在的文件、类型或成员；不会新增提交硬闸。改动牵连到哪些规则由 `Check-ChangeImpact.py` 点名，流程见 [workflow](workflow.md#改动流程的细节)。
-- `python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、引用失效核对、提示与硬闸的区别。机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）
