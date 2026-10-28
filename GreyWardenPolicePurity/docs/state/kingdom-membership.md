@@ -1,8 +1,8 @@
 # 灰袍入国：灰袍家族不加入任何王国
 
-> 当前状态：入国拦截、读档离国已上线（v1.4-r14 同号替换包与 main 均含）；读档离国经用户确认可用
+> 当前状态：r15 与 Recruit Exiled Clans 2.5.5 的自动投国入口离线核对可拦截，但仍发成功通知；玩家实际入国原因未闭合，本轮未改业务代码
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
-> 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1`
+> 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1` `tools/Verify-Recruit*.ps1`
 > 待实测：另存读档后仍保持独立、原案件能继续；修复后不再出现新的入国
 
 灰袍是无国、无城镇城堡的贵族家族，必须始终独立。来源是玩家反馈：r12/r13 存档里灰袍加入了南帝国。
@@ -11,9 +11,8 @@
 
 ## 为什么只挡评分不够
 
-- 外交模型只影响评分；原版 1.4.8 `ChangeKingdomAction` 的入国动作不再查询模型。（依据：C# 反编译）
+- 原版动作、直接写归属与存档恢复的区别见[原版入国机制](../vanilla/kingdom-membership.md)。（依据：v1.4.8 C# 反编译）
 - 内战 BellumCivile 1.4.0 的流亡收容 `IsRecoverableExileCandidate` 不排除灰袍，首次 `OnDailyTick` 与周结收容直接调用 `ApplyByJoinToKingdom`。（依据：C# 反编译，实际 DLL SHA-256 `3b88f285…9f29`，与公开源码 `941fc608` 一致）
-- `Clan._kingdom` 是 `SaveableField(57)`；读档恢复已有王国不走任何入国动作，所以只拦写入纠正不了已有存档。（依据：C# 反编译）
 
 ## 现在的做法
 
@@ -34,6 +33,12 @@ SyncData 无状态：本行为只响应宣战与读档完成事件，没有进�
 `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED`（`GWP_DIAGNOSTICS` 内）记录被挡的目标与调用栈，用来确认新入国的真实来源。用户确认不再出现新入国后退休。读档离国的 trace 已在用户确认后退休。
 
 ## 反馈环境
+
+本轮 r15 反馈（2026-10-28）：用户确认百科／王国家族列表已有归属，不能按第三方虚假通知结案。截图游戏为 v1.4.7，灰袍 v1.4.15；与此前 BellumCivile 反馈不是同一环境。截图启用 Recruit Exiled Clans 2.5.5、Personality Overhaul 7.7.1、RebellionCreateKingdom 1.0.0、MultiLittleFixes 1.7.10 等。本机随后安装了前者2.5.5，DLL SHA-256 `9135866F0AB5F528CDD3518AF6D7B12576816F79ABDD3D2DB3FA4BD4513F115D`；其余三者尚未见安装。
+
+Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKingdom`，没有直接写家族归属或Harmony补丁。真实候选谓词默认纳入独立灰袍；在隔离的MCM内存设置把 `gw` 加入 `excludedClanIds` 后排除。真实 `JoinKingdomWithReason` 在正式r15拦截生效时不改归属／债务，却仍发成功通知；它不检查动作后的实际归属。这是已证实的候选与通知不协调，不足以解释本次实际入国。测试没有改第三方文件、设置或方法。（依据：实装DLL反编译与真实DLL方法执行2026-10-28）
+
+已知缺陷：玩家反馈 r15 灰袍实际加入他国，责任模组与写入路径未闭合；目前实装的Recruit Exiled Clans 2.5.5没有发现绕过入口，正式r15在本机v1.4.8可拦其自动投国。仍缺玩家实际灰袍DLL、v1.4.7战役DLL及相关模组／运行证据，以区分补丁未绑定／被替换、其他归属写入和存档恢复时序；暂不改业务机制。（依据：用户确认、截图及实装DLL离线核对2026-10-28）
 
 反馈存档在 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Game Saves/GW-kingdom-report-20261006.sav`（原件 `C:/Users/lucif/Downloads/saveauto1.sav`，SHA-256 `14be06c7…afda5`）。agent 不编辑这两个文件。
 

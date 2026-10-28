@@ -38,6 +38,7 @@
 
 ## 目录
 
+- [kingdom-membership](kingdom-membership.md)：家族入国动作、属性写入、外交评分与存档恢复的区别
 - [town-scenes](town-scenes.md)：城镇与城堡的走动场景，无部队领主住哪、地点与点位、地点人物与切场景
 - [town-alarm-and-flight](town-alarm-and-flight.md)：城镇任务里谁逃跑、谁还击，危险来源与逃进门
 - [town-mission-troops](town-mission-troops.md)：在城镇任务里带兵，队伍归属、编队、命令表、中立不受伤与场内开打
