@@ -50,9 +50,6 @@ namespace GreyWardenPolicePurity
             foreach (Agent agent in Mission.Agents.Where(agent => !_hallRemoved.Contains(agent) && agent.IsActive() && agent.IsHuman
                          && agent != Agent.Main && agent != _hallTarget).ToArray()) OrderHallDeparture(agent);
             DisablePlayerPassages();
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("HALL_DUEL_CLEAR", "people=" + _hallDepartures.Count);
-#endif
         }
 
         private void OrderHallDeparture(Agent agent)
@@ -88,9 +85,6 @@ namespace GreyWardenPolicePurity
             {
                 _hallDuelPhase = HallDuelPhase.Changing;
                 _hallDuelReturnAt = Mission.CurrentTime + GwpTuning.CitySearch.HallDuelChangeSeconds;
-#if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("HALL_DUEL_OUTSIDE", "target=" + _target.StringId);
-#endif
             }
         }
 
@@ -152,9 +146,6 @@ namespace GreyWardenPolicePurity
             _hallTarget.SetTeam(Team.Invalid, true);
             _hallTarget.Health = Math.Min(_hallTarget.HealthLimit, _hallDuelHealth);
             ScriptBehavior.AddAgentTarget(_hallTarget, Agent.Main);
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("HALL_DUEL_REENTER", "target=" + _target.StringId);
-#endif
         }
 
         internal void PrepareHallDuelSpawn(AgentBuildData data)

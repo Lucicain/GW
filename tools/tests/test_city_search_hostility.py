@@ -28,11 +28,11 @@ class Mission {public List<Agent> Agents=new(){Agent.Main,new Agent{Ours=true},n
 class Conversation {public bool IsConversationFlowActive;}
 class Campaign {public static Campaign Current=new();public Conversation ConversationManager=new();}
 class Settlement {public object MapFaction=new();}
-class SearchState {public bool SearchWar,DuelAgreed;public bool SearchActive=true;}
+class SearchState {public bool SearchWar,DuelAgreed,HallDuelLocked,UsesHallDuel;public bool SearchActive=true;}
 static class GwpTuning {public static class CitySearch {public const float GateExitDistance=6;}}
 enum Stage {Entering,Allowed,Fighting,FightOver,Duel,Failed,HallDone}
 class Controller {
- public bool InHall,_transitioning;public bool IsCourtAppointment;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
+ public bool InHall,_transitioning;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
  public Stage _stage=Stage.Allowed;public string? _pendingFight,_pendingHallAction;public Vec _gate=new();public bool _gateExitAvailable=true;
  public Mission Mission=new();public int? DangerCount(Agent a)=>CivilianDanger(a)?.Count();
  bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
@@ -131,8 +131,8 @@ class Formation{public Cache RetreatPositionCache=new();}
 class Mission{public int Panics;public void OnAgentPanicked(Agent a){Panics++;}public WorldPosition GetClosestFleePositionForAgent(Agent a)=>new(){IsValid=true};}
 class Agent{public enum AIStateFlag{Alarmed}public enum UsageDirection{None}public Mission Mission=new();public Vec Position=new();public Formation Formation=new();public bool Left;
  public void SetAlarmState(AIStateFlag f){}public void EnforceShieldUsage(UsageDirection d){}public void Retreat(WorldPosition p){Left=true;}}
-class SearchState{public bool SearchActive=true,DuelAgreed,SearchWar;}
-class GwpCitySearchMissionController{public static GwpCitySearchMissionController? Current;public bool InHall=true,_transitioning;public bool IsCourtAppointment;public Agent? _hallTarget;public SearchState Search=new();STAY}
+class SearchState{public bool SearchActive=true,DuelAgreed,SearchWar,UsesHallDuel;}
+class GwpCitySearchMissionController{public static GwpCitySearchMissionController? Current;public bool InHall=true,_transitioning;public Agent? _hallTarget;public SearchState Search=new();STAY}
 class Gate{PREFIX public static bool Allows(Agent agent)=>Prefix(agent);}
 class Common{public Agent Agent;public bool IsRetreating,IsPanicked;public Common(Agent agent){Agent=agent;}
  public void Panic(){if(Gate.Allows(Agent))NativePanic();}public void Retreat(){if(Gate.Allows(Agent))NativeRetreat();}
@@ -145,7 +145,7 @@ static class Program{static int n;static void Check(bool b,string why){n++;if(!b
  controller.Search.SearchActive=false;Check(Gate.Allows(target),"finished search does not intercept normal campaign agents");controller.Search.SearchActive=true;
  controller.InHall=false;Check(!Gate.Allows(target),"street target cannot retreat during combat");
  controller.Search.SearchWar=false;Check(Gate.Allows(target),"restored arena appointment keeps native street travel");
- controller.IsCourtAppointment=true;Check(!Gate.Allows(target),"courtyard appointment holds target outside hall too");controller.InHall=true;
+ controller.Search.UsesHallDuel=true;Check(!Gate.Allows(target),"hall appointment holds target outside hall too");controller.InHall=true;
  controller._transitioning=true;Check(Gate.Allows(target),"mission cleanup and transition are allowed");GwpCitySearchMissionController.Current=null;Check(Gate.Allows(target),"all other missions keep native behavior");
  Console.WriteLine("CITY_SEARCH_TARGET_RETREAT_ASSERTIONS="+n);
 }}

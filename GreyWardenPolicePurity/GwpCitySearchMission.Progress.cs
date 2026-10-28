@@ -44,11 +44,6 @@ namespace GreyWardenPolicePurity
             float lean = GwpTuning.CitySearch.DuelTraitLean
                 * (_target.GetTraitLevel(DefaultTraits.Valor) + _target.GetTraitLevel(DefaultTraits.Honor));
             bool prefersDuel = duel + lean > melee;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("HALL_CHOICE", "duel=" + prefersDuel + "; meleeEdge=" + melee.ToString("0.00")
-                + "; duelEdge=" + duel.ToString("0.00") + "; lean=" + lean.ToString("0.00")
-                + "; ours=" + ours.ToString("0") + "; theirs=" + theirs.ToString("0"));
-#endif
             return prefersDuel;
         }
 
@@ -191,9 +186,6 @@ namespace GreyWardenPolicePurity
             {
                 string action = _pendingHallAction;
                 _pendingHallAction = null;
-#if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("PROGRESS", "place=" + _place + "; action=" + action);
-#endif
                 switch (action)
                 {
                     case "enter_hall": TransitionTo(GwpCitySearchPlace.Hall); return true;

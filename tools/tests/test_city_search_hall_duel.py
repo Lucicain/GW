@@ -74,15 +74,12 @@ static class ScriptBehavior{public static void AddAgentTarget(Agent a,Agent targ
 static class GwpTuning{internal static class CitySearch{public const float HallDuelDoorDistance=1.2f,HallDuelChangeSeconds=3f,HallDuelTalkDistance=3f,GateExitDistance=6f;}}
 partial class GwpCitySearchMissionController{
  public Settlement _settlement=new();public Hero _target=new();public Dictionary<Agent,CharacterObject> _ours=new();public List<Agent> _hallPosts=new();public bool InHall=true;public SearchState Search=new();public Mission Mission=>Mission.Current;public Stage _stage=Stage.HallDone;public Agent? _hallTarget;public string? _pendingHallAction,_pendingFight;bool _gateExitAvailable;Vec3 _gate;
- Dictionary<Agent,Vec3> _positionsAtOrder=new();Dictionary<Agent,string> _visualRemovalStates=new();float _orderSampleAt;
- void Order(OrderType order){WriteOrderIssued(order,new(),new());}string DescribeFormations()=>"";
+ void Order(OrderType order){}
  void DisablePlayerPassages(){}void SetSearchFighter(Agent a){a.Fights=true;a.DisableScriptedMovement();}
  public string Phase=>_hallDuelPhase.ToString();public Agent Target=>_hallTarget!;public List<Agent> Departures=>_hallDepartures.Keys.ToList();public int HealthySnapshots()=>SearchSurvivors().Count();public float SnapshotHealth()=>SearchSurvivors().Single().Health;
- public void Begin(){Search.DuelAgreed=true;BeginHallDuel();}public bool Tick(){Mission.CurrentTime+=.5f;return TickHallDuel();}public void Removed(Agent a,AgentState state){_visualRemovalStates[a]=state.ToString();NoteHallDuelRemoval(a,state);}
- public void Diagnose(){WriteOrderCheck();WriteFollowCheck();WriteOrderIssued(OrderType.FollowMe,new(),new());}
+ public void Begin(){Search.DuelAgreed=true;BeginHallDuel();}public bool Tick(){Mission.CurrentTime+=.5f;return TickHallDuel();}public void Removed(Agent a,AgentState state){NoteHallDuelRemoval(a,state);}
  public bool Leave()=>CanLeaveSearch();public bool Door()=>CanUsePassage(new());public void Confirm(){ChooseHallDuelStart();if(_pendingHallAction=="hall_duel_start"){_pendingHallAction=null;StartHallDuel();}}public void Win(){FinishHallDuel();Search.WonHall();_stage=Stage.HallDone;}
  EXIT_RULES
- DIAGNOSTIC_METHODS
 }
 CONTROLLER
 POSITION_BEHAVIOR
@@ -102,7 +99,6 @@ static void RunScenario(bool delay){
  foreach(var a in c.Departures)a.Position=new(10);c.Tick();
  if(delay){Check(c.Phase=="Clearing"&&target.Active&&!target.Scripted,"exit request must wait for actual removal before ordering target out");c.Tick();Check(guard.FadeRequests==1&&follower.FadeRequests==1,"pending removals must not issue FadeOut twice");guard.CompleteFade();c.Tick();Check(c.Phase=="Clearing","one person still present prevents target exit");follower.CompleteFade();c.Tick();}
  Check(guard.NativeGone&&follower.NativeGone&&c.Phase=="Leaving"&&target.Active,"target is ordered out only after everyone else is gone");
- c.Diagnose();Check(true,"follow and order diagnostics never read departed native actors");
  Check(c.HealthySnapshots()==1&&c.SnapshotHealth()==41,"departed followers keep their roster and health without native reads");
  target.Position=new(10);c.Tick();if(delay){for(int i=0;i<8;i++)c.Tick();Check(c.Phase=="Leaving"&&target.FadeRequests==1&&c.Mission.Handler.Spawns==0,"target reentry waits for its actual removal callback");target.CompleteFade();}
  Check(target.NativeGone&&c.Phase=="Changing"&&!c.Leave(),"target actually leaves through the door and player remains inside");
@@ -122,7 +118,7 @@ static void RunScenario(bool delay){
  Check(c.IsHallDuelTalk&&!c.Leave(),"the target remains available for the start dialogue while leaving is locked");
  c.Confirm();Check(c.Phase=="Fighting"&&c.Target.Fights&&c.Mission.Mode==MissionMode.Duel,"player dialogue confirmation starts the two-person duel");
  Check(c.Mission.Agents.Count==2&&!c.Leave(),"nobody else remains and player cannot leave the active duel");
- c.Win();c.Diagnose();Check(c.Leave()&&c.Door()&&!c.BlocksHallDuelEntry(new(),c._settlement.LocationComplex.Hall),"victory unlocks doors, Tab, and normal NPC entry");
+ c.Win();Check(c.Leave()&&c.Door()&&!c.BlocksHallDuelEntry(new(),c._settlement.LocationComplex.Hall),"victory unlocks doors, Tab, and normal NPC entry");
  Check(c.HealthySnapshots()==1&&c.SnapshotHealth()==41,"duel cleanup preserves departed followers until scene snapshot");
 }}}
 '''
@@ -140,10 +136,6 @@ class HallDuelTests(unittest.TestCase):
         code = code.replace('LOCATION_NOTIFICATION', method(encounter, 'OnCharacterLocationChanged'))
         code = code.replace('CONTROLLER', controller).replace('POSITION_BEHAVIOR', position)
         code = code.replace('EXIT_RULES', member(progress, 'CanLeaveSearch') + method(progress, 'CanUsePassage'))
-        mission = read('GwpCitySearchMission.cs')
-        code = code.replace('DIAGNOSTIC_METHODS', '\n'.join(method(mission, name) for name in
-                           ('WriteOrderIssued', 'WriteOrderCheck', 'WriteFollowCheck')) +
-                           member(read('GwpCitySearchMission.VisualDiagnostics.cs'), 'WasSearchVisualRemoved'))
         run(code)
         with self.assertRaisesRegex(AssertionError, 'accepting the hall duel locks'):
             run(code.replace('!Search.HallDuelLocked && _stage != Stage.Duel', '_stage != Stage.Duel').replace('if (Search.HallDuelLocked) return false;', ''))
@@ -153,8 +145,6 @@ class HallDuelTests(unittest.TestCase):
             run(code.replace('_hallDuelSpawnEquipment = true;', ''))
         with self.assertRaisesRegex(AssertionError, 'exit request must wait for actual removal'):
             run(code.replace('_hallExiting.Add(agent);', '_hallDepartures.Remove(agent);_hallExiting.Add(agent);'))
-        with self.assertRaisesRegex(AssertionError, 'removed native state was read'):
-            run(code.replace('!WasSearchVisualRemoved(agent) && ', '').replace('!WasSearchVisualRemoved(entry.Key) && ', ''))
         with self.assertRaisesRegex(AssertionError, 'Sequence contains no matching element'):
             run(code.replace('Mission.GetMissionBehavior<MissionAgentHandler>().SpawnEnteringLocationCharacter(character, _hallDuelDoor.ToLocation);', ''))
 

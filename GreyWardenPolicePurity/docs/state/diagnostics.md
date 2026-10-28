@@ -1,7 +1,7 @@
 # 诊断系统
 
-> 当前状态：事务派遣入口健康探针已退休；军团费用失败、村民出车容量/货仓与专运标记诊断仍在役
-> 最后验收：2026-10-21 事务派遣入口用户未发现问题，已核对点击与选兵日志；其他功能仍按各自验收范围
+> 当前状态：搜捕日常流程获用户确认，健康路径诊断已退休；原生外观更新及动作缓存首次初始化取证仍在役
+> 最后验收：2026-10-28 用户确认搜捕日常流程基本测过且未见明显问题；其他功能仍按各自验收范围
 > 覆盖源码：`GwpAiDiagnostics.cs` `GwpPartyDutyMovementPatch.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `tools/tests/test_firesworn_logs.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1` `GwpWardenDispatchDialogue.cs`
 > 待实测：投案修复后正常游玩核对，若仍故障则取军团参数；退出原生释放与收养交接仍随所属功能核对
 
@@ -107,9 +107,7 @@
 
 各功能自己的 stage、字段与退休条件；通用规则见上文，每段的细节归所属 state。
 
-进城搜捕的 `CITY_SEARCH` 行写进 AI 日志：SELECT_TROOPS、MISSION_OPEN（场景与城堡标记）、SPAWNED（实际用的出生点、兵数、关门数、守卫数）、ORDERS（各编队人数、是否已转玩家控制、移动命令）、FOLLOW_CHECK（进场 10 秒后士兵离玩家的平均与最远距离）、ORDER_ISSUED（每次下令的命令、任务模式、作用与选中编队数）、ORDER_CHECK（下令 5 秒后士兵平均位移与编队命令）、GUARD_CHALLENGE、GUARD_PERSUASION（实际声望、现场双方实力、本轮难度与论点强弱）、GUARD_DECISION、REFUSED_CHOICE（谈崩后选打或撤）、HEADING_IN（说要走或选撤后往城里走：警告或开战，离进城处多远）、FIGHT_START（开战起因、双方人数与 30 米内平民数）、RESERVES_READY（真实预备兵数、绑定守卫、来源队）、RESERVE_POINT（每批援军所选出生点离玩家多远，每3秒至多一条；2026-10-26取代RESERVES_NO_POINT）、CIVILIAN_FLIGHT（8秒后应逃跑者的移动/离场数，不含守方）、FIGHT_END、MISSION_END（阵亡与重伤写回数）。玩家宣战另写 FIELD_ARREST 的 CASE_PLAYER_WAR。用来在玩家正常游玩时核对第1段场景行为，不需要玩家专门复现；用户确认第1段可用后退休健康路径，CIVILIAN_FLIGHT 留到群殴阶段验收。规则见[进城搜捕](city-search.md)。（依据：流程 2026-10-21）
-
-搜捕新增TARGET_DOWN、DUEL_WALK及EXIT_BLOCKED，回答倒地是否登记、两段赴约的目的地、按Tab被拦时卡在哪一项；2026-10-26再加HALL_CHOICE（双方赢面与性格偏向）、HALL_PERSUASION/CHOICE_PERSUASION（大厅交涉/争取单挑的实际声望、现场双方实力、本轮难度与论点强弱）与DUEL_PACE（赴约时每秒一条：目标与玩家实际速度、原版速度上限、相隔距离），回答对方为何这样选打法、说服难度是否符合预期、赴约目标是否异常地快。均只在诊断版按状态转换或按键时记录，验收后退休；具体边界归[进城搜捕](city-search.md#城防增援与场景衔接)。（依据：本轮正常游玩取证设计2026-10-22）
+进城搜捕日常流程经用户确认基本测过且未见明显问题，选择兵员、出生/命令/跟随、卫兵与三轮说服、开战/结束、增援位置、平民分类/逃散、追击、目标倒地、赴约速度/清场重入和EXIT_BLOCKED等健康路径日志及专用字段/方法/测试均已退休。原生外观更新形成/取消时序尚未闭合，VISUAL_STATE/REMOVED、VISUAL_FADE_BEGIN/END及原生空实体更新计数保留；不因流程验收而宣称该底层根因已查清。规则见[进城搜捕](city-search.md)。（依据：用户实测确认、诊断流程2026-10-28）
 
 直接招守村兵使用 `GUARD_ENLISTED`，记录实际兵种 composition、人数、随兵军械和留守量；统计器读取同一事件。该功能待用户实测低阶优先与留守正确后退休健康路径记录。（依据：本轮直招功能验证设计 2026-10-15）
 
@@ -155,8 +153,3 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
 `NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
-
-
-无竞技场的大厅单挑记录HALL_DUEL_CLEAR/OUTSIDE/REENTER三次阶段转换，取代已退休的COURT_DUEL选址/围圈诊断；随行者出门后仍保留名册，FOLLOW_CHECK、ORDER_ISSUED、ORDER_CHECK与DUEL_PACE必须先查移除缓存，不再访问已移除Agent的原生状态指针。CROWD_STATE替代旧CROWD_ROLE，按开战人物身份和装备逐人记录角色、位置、活跃行为及脚本，在开战/8秒/战斗结束/场景结束各采样一次，CROWD_REMOVED记录相同index的移除状态；移除后仅用事先保存的身份，不读装备或导航器。只在固定采样或状态转换时记录，帮助agent自己核对现场分类及退场顺序，不要求用户专项复现；验收后退休。（依据：用户裁定、诊断取证设计2026-10-26至2026-10-28；独立审查与移除后读取负对照）
-
-搜捕初始守方与后生援军进入追击8秒后，各记录一次PURSUIT_CHECK：移除前缓存的index、是否绑定真实名册、位移/当前位置、编队/命令及距玩家距离；已移除者先查WasSearchVisualRemoved直接跳过。补齐旧CROWD_STATE只采初始人物的证据缺口，不逐帧记录；agent自行读日志，用户确认主动追击可用后退休。（依据：用户裁定与取证设计2026-10-28）

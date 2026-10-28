@@ -49,8 +49,6 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private bool WasSearchVisualRemoved(Agent agent) => _visualRemovalStates.ContainsKey(agent);
-
         public override void OnAgentDeleted(Agent affectedAgent) => WriteSearchVisualRemoval(affectedAgent, "Deleted");
 
         internal (string Context, ulong Visual, long Before)? CaptureFadeTrace(Agent agent)

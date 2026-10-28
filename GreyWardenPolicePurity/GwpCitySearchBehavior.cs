@@ -76,11 +76,6 @@ namespace GreyWardenPolicePurity
             int max = Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(party, true);
             TroopRoster initial = TroopRoster.CreateDummyTroopRoster();
             initial.Add(MobilePartyHelper.GetStrongestAndPriorTroops(party, max, includePlayer: true));
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("SELECT_TROOPS", "settlement=" + settlement.StringId
-                + "; target=" + target.StringId + "; max=" + max
-                + "; healthy=" + party.MemberRoster.TotalHealthyCount);
-#endif
             args.MenuContext.OpenTroopSelection(party.MemberRoster, initial, CanTakeAlong,
                 roster => Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().BeginSearch(settlement, target, roster), max, 1);
         }
@@ -153,13 +148,6 @@ namespace GreyWardenPolicePurity
             int reputation = GwpRuntimeState.Player.Reputation;
             float difficulty = SearchDifficulty(reputation, ours, theirs);
             round.Begin(tasks, difficulty);
-#if GWP_DIAGNOSTICS
-            string stage = ReferenceEquals(round, _guardRound) ? "GUARD_PERSUASION"
-                : ReferenceEquals(round, _hallRound) ? "HALL_PERSUASION" : "CHOICE_PERSUASION";
-            GwpAiDiagnostics.WriteCitySearch(stage, "standing=" + reputation + "; ours=" + ours.ToString("0.00")
-                + "; theirs=" + theirs.ToString("0.00") + "; difficulty=" + difficulty.ToString("0.00")
-                + "; strengths=" + string.Join(",", tasks.SelectMany(task => task.Options).Select(option => option.ArgumentStrength)));
-#endif
         }
 
         private void BeginGuardPersuasion()

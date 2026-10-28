@@ -18,9 +18,6 @@ namespace GreyWardenPolicePurity
         private bool _cityReservesReady;
         private float _nextCityReserve;
         private event System.Action<BattleSideEnum, int>? _cityReinforcementsSpawned;
-#if GWP_DIAGNOSTICS
-        private readonly Dictionary<Agent, (float At, Vec3 Start, int Index)> _cityPursuitSamples = new();
-#endif
         event System.Action<BattleSideEnum, int> IGwpBattleSceneSource.OnReinforcementsSpawned
         {
             add => _cityReinforcementsSpawned += value;
@@ -62,28 +59,8 @@ namespace GreyWardenPolicePurity
             formation.SetControlledByAI(false);
             formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
             agent.SetAutomaticTargetSelection(true);
-#if GWP_DIAGNOSTICS
-            _cityPursuitSamples[agent] = (Mission.CurrentTime + 8f, agent.Position, agent.Index);
-#endif
         }
 
-#if GWP_DIAGNOSTICS
-        /// <summary>每名守方/援军只在追击8秒后采样一次；已移除者只查缓存，不读原生对象。</summary>
-        private void TickCityPursuitDiagnostics()
-        {
-            foreach (var entry in _cityPursuitSamples.Where(entry => Mission.CurrentTime >= entry.Value.At).ToArray())
-            {
-                _cityPursuitSamples.Remove(entry.Key);
-                Agent agent = entry.Key;
-                if (WasSearchVisualRemoved(agent) || !agent.IsActive()) continue;
-                GwpAiDiagnostics.WriteCitySearch("PURSUIT_CHECK", "place=" + _place + "; index=" + entry.Value.Index
-                    + "; rosterBound=" + _citySoldiers.ContainsKey(agent) + "; moved=" + agent.Position.Distance(entry.Value.Start).ToString("0.0")
-                    + "; position=" + agent.Position + "; formation=" + agent.Formation?.FormationIndex
-                    + "; order=" + agent.Formation?.GetReadonlyMovementOrderReference().OrderType
-                    + "; fromPlayer=" + (Agent.Main?.IsActive() == true ? agent.Position.Distance(Agent.Main.Position).ToString("0.0") : "-"));
-            }
-        }
-#endif
 
         /// <summary>原版城内居民先生成；已在场的同兵种守卫占用真实名册，不能在预备兵中重复出现。</summary>
         private void PrepareCityReserves(IEnumerable<MobileParty> parties)
@@ -129,10 +106,6 @@ namespace GreyWardenPolicePurity
                 _cityOpening[(int)(IsOurs(agent) ? Mission.PlayerTeam.Side : Mission.PlayerEnemyTeam.Side)].Add(agent.Origin);
             foreach (var reserve in _cityReserves) _cityOpening[(int)Mission.PlayerEnemyTeam.Side].Add(reserve.Origin);
             _cityReservesReady = true;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("RESERVES_READY", "place=" + _place + "; roster=" + _cityReserves.Count
-                + "; boundGuards=" + _citySoldiers.Count + "; parties=" + string.Join("|", parties.Select(party => party.StringId)));
-#endif
         }
 
         // 原版守方点（攻城布阵组）与城内卫兵站岗、巡逻出生点（SandBox v1.4.8 反编译与场景 XML 2026-10-26）。
@@ -152,10 +125,6 @@ namespace GreyWardenPolicePurity
             Vec3 player = Agent.Main.Position;
             GameEntity? best = CityReserveTags.SelectMany(tag => Mission.Scene.FindEntitiesWithTag(tag))
                 .OrderByDescending(point => point.GlobalPosition.Distance(player)).FirstOrDefault();
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("RESERVE_POINT", "place=" + _place + "; fromPlayer="
-                + (best == null ? "-" : best.GlobalPosition.Distance(player).ToString("0.0")) + "; remaining=" + _cityReserves.Count);
-#endif
             return best;
         }
 

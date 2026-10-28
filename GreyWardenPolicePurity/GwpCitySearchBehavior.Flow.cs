@@ -60,7 +60,6 @@ namespace GreyWardenPolicePurity
         {
             get
             {
-                if (GwpTuning.CitySearch.TestHallDuels) return true;
                 Settlement? settlement = Settlement.CurrentSettlement;
                 return string.IsNullOrEmpty(settlement?.LocationComplex.GetLocationWithId("arena")
                     ?.GetSceneName(settlement.Town.GetWallLevel()));
@@ -211,10 +210,6 @@ namespace GreyWardenPolicePurity
                 && GwpVoluntarySurrender.TryCapture(PartyBase.MainParty, target);
             if (captured) Bounty?.RegisterCaptureInCustody();
             if (escaped && _targetDown && _targetKilled && target != null) Bounty?.RecordCitySearchDefeat(target);
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("SEARCH_COMPLETE", "escaped=" + escaped + "; captured=" + captured
-                + "; target=" + target?.StringId + "; place=" + SearchPlace + "; war=" + _searchWar);
-#endif
             _searchPlace = (int)GwpCitySearchPlace.None;
             _openPending = false;
             _captureReady = false;
@@ -291,11 +286,6 @@ namespace GreyWardenPolicePurity
                 var arena = settlement.LocationComplex.GetLocationWithId("arena");
                 // 原版单挑从sp_arena摆双方；菜单直达不代表大厅与竞技场之间存在门。
                 Campaign.Current.GameMenuManager.PreviousLocation = null;
-#if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("ARENA_OPEN", "settlement=" + settlement.StringId
-                    + "; target=" + target.StringId + "; scene=" + arena.GetSceneName(settlement.Town.GetWallLevel())
-                    + "; from=" + _previousLocationId);
-#endif
                 var mission = (Mission)CampaignMission.OpenArenaDuelMission(arena.GetSceneName(settlement.Town.GetWallLevel()), arena,
                     target.CharacterObject, false, false, winner =>
                     {

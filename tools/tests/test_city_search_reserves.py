@@ -148,36 +148,6 @@ def production(name):
 
 
 class CitySearchReserveTests(unittest.TestCase):
-    def test_pursuit_sample_runs_once_and_does_not_read_removed_agents(self):
-        stubs = STUBS.replace('public static MovementOrder MovementOrderCharge=new();',
-                              'public static MovementOrder MovementOrderCharge=new();public string OrderType=>"Charge";')
-        stubs = stubs.replace('public bool IsAIControlled=true;public MovementOrder? Order;',
-                             'public int FormationIndex;public MovementOrder GetReadonlyMovementOrderReference()=>Order!;public bool IsAIControlled=true;public MovementOrder? Order;')
-        stubs = stubs.replace('public static Agent Main=null!;', 'public int Index;public bool Gone;public static Agent Main=null!;')
-        stubs = stubs.replace('public bool IsActive()=>Active;',
-                             'public bool IsActive(){if(Gone)throw new Exception("removed native actor read");return Active;}')
-        stubs = stubs.replace('private static void SetSearchFighter',
-                             'public GwpCitySearchPlace _place;public HashSet<Agent> RemovedCache=new();bool WasSearchVisualRemoved(Agent a)=>RemovedCache.Contains(a);void CaptureSearchVisual(Agent a,string s){}public void Sample()=>TickCityPursuitDiagnostics();private static void SetSearchFighter')
-        scenario = r'''
-static class GwpAiDiagnostics{public static List<string> Checks=new();public static void WriteCitySearch(string kind,string details){if(kind=="PURSUIT_CHECK")Checks.Add(details);}}
-static class Program{static void Main(){
- var m=new Mission();Agent.Main=new(){Origin=new PartyAgentOrigin(MobileParty.MainParty.Party,new()),Team=m.PlayerTeam};m.Agents.Add(Agent.Main);
- var c=new GwpCitySearchMissionController{Mission=m};m.MissionBehaviors.Add(c);var p=new MobileParty("garrison"){MapFaction=c._settlement.MapFaction};p.MemberRoster.Elements.Add(new(){Character=new(),Number=2});c._settlement.Town.GarrisonParty=p;
- m.Scene.Points["defender_infantry"]=new(){Frame=new(){origin=new Vec3(200,0)}};c.Prepare();c.Tick();
- var moving=m.Agents[1];var removed=m.Agents[2];moving.Position=new(180,0);c.RemovedCache.Add(removed);removed.Gone=true;
- m.CurrentTime=7;c.Sample();if(GwpAiDiagnostics.Checks.Count!=0)throw new Exception("sampled too early");
- m.CurrentTime=8;c.Sample();if(GwpAiDiagnostics.Checks.Count!=1||!GwpAiDiagnostics.Checks[0].Contains("moved=20.0")||!GwpAiDiagnostics.Checks[0].Contains("order=Charge"))throw new Exception("wrong pursuit observation");
- m.CurrentTime=20;c.Sample();if(GwpAiDiagnostics.Checks.Count!=1)throw new Exception("pursuit sample repeated");
- Console.WriteLine("CITY_PURSUIT_DIAGNOSTICS=PASS");
-}}}
-'''
-        code = '#define GWP_DIAGNOSTICS\n' + stubs + scenario + production('GwpCitySearchMission.Reinforcements.cs') + production('GwpBattleSceneSource.cs')
-        run(code)
-        with self.assertRaisesRegex(AssertionError, 'removed native actor read'):
-            run(code.replace('WasSearchVisualRemoved(agent) || ', ''))
-        with self.assertRaisesRegex(AssertionError, 'pursuit sample repeated'):
-            run(code.replace('_cityPursuitSamples.Remove(entry.Key);', ''))
-
     def test_installed_origin_casualties_return_to_source_only(self):
         game = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
         def decompile(assembly, name):

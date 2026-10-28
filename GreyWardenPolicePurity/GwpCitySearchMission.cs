@@ -48,9 +48,6 @@ namespace GreyWardenPolicePurity
             string levels = Campaign.Current.Models.LocationModel.GetCivilianUpgradeLevelTag(wallLevel);
 #if GWP_DIAGNOSTICS
             GwpCitySearchFadeDiagnosticsPatch.EnsureApplied();
-            GwpAiDiagnostics.WriteCitySearch("MISSION_OPEN", "settlement=" + settlement.StringId
-                + "; castle=" + settlement.IsCastle + "; scene=" + scene + "; levels=" + levels
-                + "; troops=" + troops.TotalManCount);
 #endif
             MissionState.OpenNew(MissionName,
                 SandBoxMissions.CreateSandBoxMissionInitializerRecord(scene, levels, false, DecalAtlasGroup.Town),
@@ -122,9 +119,6 @@ namespace GreyWardenPolicePurity
         private readonly TroopRoster _troops;
         private readonly Dictionary<Agent, CharacterObject> _ours = new Dictionary<Agent, CharacterObject>();
         private readonly Dictionary<CharacterObject, int> _killed = new Dictionary<CharacterObject, int>();
-#if GWP_DIAGNOSTICS
-        private readonly Dictionary<CharacterObject, int> _wounded = new Dictionary<CharacterObject, int>();
-#endif
         private readonly List<Agent> _defenders = new List<Agent>();
         private Stage _stage = Stage.Entering;
         private Agent? _guard;
@@ -136,10 +130,6 @@ namespace GreyWardenPolicePurity
         private bool _warned;
         private bool _warDeclared;
         private float _nextChallengeCheck;
-#if GWP_DIAGNOSTICS
-        private float _civilianSampleAt = -1f;
-        private int _healthyAtStart;
-#endif
 
         internal GwpCitySearchMissionController(Settlement settlement, Hero target, TroopRoster troops)
         {
@@ -201,76 +191,14 @@ namespace GreyWardenPolicePurity
             _gateExitAvailable = !InHall && spawn != null;
             CampaignMission.Current.Location.RemoveAllCharacters(character => character.Character.HeroObject?.PartyBelongedTo == MobileParty.MainParty);
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
-            int passages = DisablePlayerPassages();
-#if GWP_DIAGNOSTICS
-            _healthyAtStart = MobileParty.MainParty?.MemberRoster.TotalHealthyCount ?? 0;
-#endif
-            int spawned = SpawnTroops();
+            DisablePlayerPassages();
+            SpawnTroops();
             BeginSearchStage();
             PostHallTroops();
             Mission.PlayerTeam.PlayerOrderController.OnOrderIssued += ReleaseHallPosts;
             ResumeDuelWalk();
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("SPAWNED", "settlement=" + _settlement.StringId
-                + "; spawnTag=" + (InHall ? GwpCitySearchMission.HallSpawnTag : spawn == null ? "none" : spawnTag)
-                + "; player=" + Agent.Main?.Position + "; troops=" + spawned
-                + "; passagesClosed=" + passages + "; watch=" + Mission.Agents.Count(IsWatch));
-#endif
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("ORDERS", "formations=" + DescribeFormations());
-            _followSampleAt = Mission.CurrentTime + 10f;
-            Mission.PlayerTeam.PlayerOrderController.OnOrderIssued += WriteOrderIssued;
-#endif
         }
 
-#if GWP_DIAGNOSTICS
-        private float _followSampleAt = -1f;
-        private float _orderSampleAt = -1f;
-        private readonly Dictionary<Agent, Vec3> _positionsAtOrder = new Dictionary<Agent, Vec3>();
-
-        /// <summary>取证：玩家下令界面有没有发出命令；5 秒后兵有没有照做（编队命令与位移）。</summary>
-        private void WriteOrderIssued(OrderType orderType, MBReadOnlyList<Formation> appliedFormations,
-            OrderController orderController, params object[] delegateParams)
-        {
-            GwpAiDiagnostics.WriteCitySearch("ORDER_ISSUED", "order=" + orderType + "; mode=" + Mission.Mode
-                + "; applied=" + appliedFormations.Count + "; selected=" + orderController.SelectedFormations.Count
-                + "; formations=" + DescribeFormations());
-            _positionsAtOrder.Clear();
-            foreach (Agent agent in _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive()))
-                _positionsAtOrder[agent] = agent.Position;
-            _orderSampleAt = Mission.CurrentTime + 5f;
-        }
-
-        private void WriteOrderCheck()
-        {
-            List<float> moved = _positionsAtOrder.Where(entry => !WasSearchVisualRemoved(entry.Key) && entry.Key.IsActive())
-                .Select(entry => entry.Key.Position.Distance(entry.Value)).ToList();
-            GwpAiDiagnostics.WriteCitySearch("ORDER_CHECK", "troops=" + moved.Count
-                + "; avgMoved=" + (moved.Count == 0 ? 0f : moved.Average()).ToString("0.0")
-                + "; alarmed=" + _ours.Keys.Count(agent => !WasSearchVisualRemoved(agent) && agent.IsActive() && agent.IsAlarmed())
-                + "; aiStates=" + string.Join("|", _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
-                + "; formations=" + DescribeFormations());
-        }
-
-        /// <summary>取证：有兵的编队是否已转为玩家控制、当前移动命令。</summary>
-        private string DescribeFormations() => string.Join(",", Mission.PlayerTeam.FormationsIncludingEmpty
-            .Where(formation => formation.CountOfUnits > 0)
-            .Select(formation => formation.FormationIndex + ":" + formation.CountOfUnits
-                + (formation.IsAIControlled ? ":ai:" : ":player:") + formation.GetReadonlyMovementOrderReference().OrderType));
-
-        /// <summary>取证：进场 10 秒后我方士兵离玩家多远，证明跟随生效。</summary>
-        private void WriteFollowCheck()
-        {
-            Agent? main = Agent.Main;
-            if (main == null) return;
-            List<float> distances = _ours.Keys.Where(agent => !WasSearchVisualRemoved(agent) && agent.IsActive())
-                .Select(agent => agent.Position.Distance(main.Position)).ToList();
-            GwpAiDiagnostics.WriteCitySearch("FOLLOW_CHECK", "troops=" + distances.Count
-                + "; avg=" + (distances.Count == 0 ? 0f : distances.Average()).ToString("0.0")
-                + "; max=" + (distances.Count == 0 ? 0f : distances.Max()).ToString("0.0")
-                + "; formations=" + DescribeFormations());
-        }
-#endif
 
         /// <summary>玩家走门时带整队衔接大厅、街道和竞技场；其他人物沿用原版。</summary>
         private int DisablePlayerPassages()
@@ -341,8 +269,6 @@ namespace GreyWardenPolicePurity
         {
 #if GWP_DIAGNOSTICS
             TickSearchVisuals();
-            WriteDuelPace();
-            TickCityPursuitDiagnostics();
 #endif
             TickCityReserves();
             if (TickHallDuel()) return;
@@ -359,25 +285,6 @@ namespace GreyWardenPolicePurity
                 if (_stage == Stage.Entering) TryChallenge();
                 else if (_stage == Stage.Leaving || _stage == Stage.Withdrawing) CheckHeadingIn();
             }
-#if GWP_DIAGNOSTICS
-            if (_followSampleAt > 0f && Mission.CurrentTime >= _followSampleAt)
-            {
-                _followSampleAt = -1f;
-                WriteFollowCheck();
-            }
-            if (_orderSampleAt > 0f && Mission.CurrentTime >= _orderSampleAt)
-            {
-                _orderSampleAt = -1f;
-                WriteOrderCheck();
-            }
-#endif
-#if GWP_DIAGNOSTICS
-            if (_civilianSampleAt > 0f && Mission.CurrentTime >= _civilianSampleAt)
-            {
-                _civilianSampleAt = -1f;
-                WriteCivilianFlight();
-            }
-#endif
         }
 
         private void TryChallenge()
@@ -392,10 +299,6 @@ namespace GreyWardenPolicePurity
             if (guard == null) return;
             _guard = guard;
             _stage = Stage.Questioned;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("GUARD_CHALLENGE", "guard=" + guard.Character.StringId
-                + "; distance=" + guard.Position.Distance(main.Position).ToString("0.0"));
-#endif
             Mission.GetMissionBehavior<MissionConversationLogic>().StartConversation(guard, false);
         }
 
@@ -404,9 +307,6 @@ namespace GreyWardenPolicePurity
             if (_stage != Stage.Questioned) return;
             _stage = allowed ? Stage.Allowed : Stage.Refused;
             Search.GateState = allowed ? GwpCitySearchGate.Allowed : GwpCitySearchGate.Refused;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=" + allowed + "; result=" + result);
-#endif
             if (allowed)
             {
                 InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_cs_allowed_notice)));
@@ -418,9 +318,6 @@ namespace GreyWardenPolicePurity
         internal void OnPromisedToLeave()
         {
             if (_stage != Stage.Questioned) return;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("GUARD_DECISION", "allowed=False; result=player_leaves");
-#endif
             BeginLeaving(Stage.Leaving, GwpTextCatalog.gwp_cs_leave_notice);
         }
 
@@ -428,9 +325,6 @@ namespace GreyWardenPolicePurity
         internal void OnChoseFight()
         {
             if (_stage != Stage.Refused) return;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("REFUSED_CHOICE", "choice=fight");
-#endif
             _pendingFight = "chose_fight";
         }
 
@@ -438,9 +332,6 @@ namespace GreyWardenPolicePurity
         internal void OnChoseWithdraw()
         {
             if (_stage != Stage.Refused) return;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("REFUSED_CHOICE", "choice=withdraw");
-#endif
             BeginLeaving(Stage.Withdrawing, GwpTextCatalog.gwp_cs_withdraw_notice);
         }
 
@@ -467,15 +358,9 @@ namespace GreyWardenPolicePurity
             {
                 _warned = true;
                 _inwardLimit = distance + GwpTuning.CitySearch.InwardTolerance;
-#if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("HEADING_IN", "stage=" + _stage + "; warned=True; fromGate=" + distance.ToString("0.0"));
-#endif
                 MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_cs_leave_warning));
                 return;
             }
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WriteCitySearch("HEADING_IN", "stage=" + _stage + "; warned=" + _warned + "; fromGate=" + distance.ToString("0.0"));
-#endif
             _pendingFight = _stage == Stage.Leaving ? "ignored_warning" : "broke_withdrawal";
         }
 
@@ -504,21 +389,9 @@ namespace GreyWardenPolicePurity
                 Campaign.Current.GetCampaignBehavior<PlayerBountyBehavior>()?.DeclarePlayerCaseWar(
                     _settlement.MapFaction, "city_search_" + cause, GwpTextCatalog.gwp_cs_war_notice);
             }
-#if GWP_DIAGNOSTICS
-            int ours = Mission.Agents.Count(agent => agent.IsActive() && IsOurs(agent));
-#endif
             _defenders.Clear();
             _defenders.AddRange(Mission.Agents.Where(agent => agent.IsActive() && IsDefender(agent)));
             _stage = Stage.Fighting;
-#if GWP_DIAGNOSTICS
-            Agent? main = Agent.Main;
-            CaptureCrowd();
-            _civilianSampleAt = Mission.CurrentTime + 8f;
-            GwpAiDiagnostics.WriteCitySearch("FIGHT_START", "cause=" + cause
-                + "; war=" + _warDeclared + "; ours=" + ours + "; theirs=" + _defenders.Count
-                + "; civiliansNear=" + _crowdAtFight.Count(entry => entry.Flee && main != null
-                    && entry.Start.Distance(main.Position) <= 30f));
-#endif
 
             // 不用原版 MissionFightHandler：它打完把参战者放进新建的 Team 对象，
             // 我方会脱离玩家队伍、无法再指挥（Team 无相等重写，C#反编译 v1.4.8 2026-10-21）。
@@ -546,15 +419,6 @@ namespace GreyWardenPolicePurity
             Mission.SetMissionMode(MissionMode.Battle, false);
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
             Order(OrderType.Charge);
-#if GWP_DIAGNOSTICS
-            WriteCrowdSnapshot("fight_start");
-            GwpAiDiagnostics.WriteCitySearch("FIGHT_AI", "oursActive=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAIControlled)
-                + "; oursAlarmed=" + _ours.Keys.Count(agent => agent.IsActive() && agent.IsAlarmed())
-                + "; oursNavigators=" + _ours.Keys.Count(agent => agent.IsActive()
-                    && agent.GetComponent<CampaignAgentComponent>()?.AgentNavigator != null)
-                + "; oursStates=" + string.Join("|", _ours.Keys.Where(agent => agent.IsActive()).Select(agent => agent.AIStateFlags).Distinct())
-                + "; defendersAlarmed=" + _defenders.Count(agent => agent.IsActive() && agent.IsAlarmed()));
-#endif
         }
 
         private static void SetSearchFighter(Agent agent)
@@ -594,11 +458,6 @@ namespace GreyWardenPolicePurity
             _stage = Stage.FightOver;
             Mission.SetMissionMode(MissionMode.StartUp, false);
             RestoreSearchFollowers();
-#if GWP_DIAGNOSTICS
-            WriteCrowdSnapshot("fight_end");
-            GwpAiDiagnostics.WriteCitySearch("FIGHT_END", "oursLeft="
-                + Mission.Agents.Count(agent => agent.IsActive() && IsOurs(agent)));
-#endif
             Order(OrderType.FollowMe);
             OnSearchFightWon();
         }
@@ -608,40 +467,17 @@ namespace GreyWardenPolicePurity
             canPlayerLeave = CanLeaveSearch();
             // 原版还会遍历其余离场逻辑并等待0.6秒；请求通过不代表已经卸载场景。
             _outsideExitRequested = canPlayerLeave && (Search.SearchWar || AtGateExit);
-#if GWP_DIAGNOSTICS
-            if (!canPlayerLeave) WriteExitBlocked();
-#endif
             if (!canPlayerLeave && !Search.HallDuelLocked)
                 MBInformationManager.AddQuickInformation(GwpText.Create(Search.SearchWar
                     ? GwpTextCatalog.gwp_cs_hostile_exit_blocked : GwpTextCatalog.gwp_cs_route_blocked));
             return null!;
         }
 
-#if GWP_DIAGNOSTICS
-        /// <summary>取证 2026-10-22：实机反馈到了撤离点仍按 Tab 退不出；记下被哪项拦住、离城外出生点多远。</summary>
-        private void WriteExitBlocked() => GwpAiDiagnostics.WriteCitySearch("EXIT_BLOCKED", "stage=" + _stage
-            + "; war=" + Search.SearchWar + "; inHall=" + InHall + "; gateExit=" + _gateExitAvailable
-            + "; pendingFight=" + _pendingFight + "; pendingHall=" + _pendingHallAction
-            + "; talking=" + Campaign.Current.ConversationManager.IsConversationFlowActive
-            + "; fromGate=" + (Agent.Main == null ? "-" : Agent.Main.Position.Distance(_gate).ToString("0.0"))
-            + "; limit=" + GwpTuning.CitySearch.GateExitDistance);
-
-        /// <summary>取证：应逃跑者的实际移动，与持械旁观者、打手的在场情况分开记录。</summary>
-        private void WriteCivilianFlight()
-        {
-            var civilians = _crowdAtFight.Where(entry => entry.Flee).ToArray();
-            int moved = civilians.Count(entry => WasSearchVisualRemoved(entry.Agent)
-                || !entry.Agent.IsActive() || entry.Agent.Position.Distance(entry.Start) > 5f);
-            GwpAiDiagnostics.WriteCitySearch("CIVILIAN_FLIGHT", "civilians=" + civilians.Length + "; movedOrGone=" + moved);
-            WriteCrowdSnapshot("after_8s");
-        }
-#endif
 
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
 #if GWP_DIAGNOSTICS
             WriteSearchVisualRemoval(affectedAgent, agentState.ToString());
-            WriteCrowdRemoval(affectedAgent, agentState);
 #endif
             NoteCitySoldierRemoval(affectedAgent, agentState);
             NoteHallDuelRemoval(affectedAgent, agentState);
@@ -659,18 +495,11 @@ namespace GreyWardenPolicePurity
                 && (agentState == AgentState.Killed || agentState == AgentState.Unconscious))
             {
                 Search.MarkTargetDown(agentState == AgentState.Killed);
-#if GWP_DIAGNOSTICS
-                GwpAiDiagnostics.WriteCitySearch("TARGET_DOWN", "state=" + agentState + "; resultRecorded=True");
-#endif
             }
             EndFightIfDefendersDown();
             if (!_ours.TryGetValue(affectedAgent, out CharacterObject character)) return;
             if (agentState == AgentState.Killed)
                 _killed[character] = _killed.TryGetValue(character, out int n) ? n + 1 : 1;
-#if GWP_DIAGNOSTICS
-            if (agentState == AgentState.Unconscious)
-                _wounded[character] = _wounded.TryGetValue(character, out int n) ? n + 1 : 1;
-#endif
         }
 
         protected override void OnEndMission()
@@ -678,14 +507,6 @@ namespace GreyWardenPolicePurity
             // 原版 EndMissionInternal 在本回调之后清空 Teams，晚到 OnRemoveBehavior 已没有 PlayerTeam。
             Mission.PlayerTeam.PlayerOrderController.OnOrderIssued -= ReleaseHallPosts;
             EndSearchScene();
-            // 伤亡已由原版 BattleAgentLogic 经 PartyAgentOrigin 写进主队名册，这里只记录，核对是否只扣一次。
-#if GWP_DIAGNOSTICS
-            WriteCrowdSnapshot("scene_end");
-            GwpAiDiagnostics.WriteCitySearch("MISSION_END", "stage=" + _stage + "; war=" + _warDeclared
-                + "; killed=" + _killed.Values.Sum() + "; wounded=" + _wounded.Values.Sum()
-                + "; healthyBefore=" + _healthyAtStart
-                + "; healthyNow=" + (MobileParty.MainParty?.MemberRoster.TotalHealthyCount ?? 0));
-#endif
         }
 
         private bool IsOurs(Agent agent) => agent == Agent.Main || _ours.ContainsKey(agent)
