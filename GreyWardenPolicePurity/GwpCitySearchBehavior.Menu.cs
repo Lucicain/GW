@@ -14,7 +14,8 @@ namespace GreyWardenPolicePurity
         {
             starter.AddGameMenu(SearchMenu, "{GWP_CS_MENU_TEXT}", InitializeSearchMenu);
             starter.AddGameMenuOption(SearchMenu, "begin", GwpTextCatalog.gwp_cs_menu_begin,
-                args => MenuRoute(args, !SearchActive), SelectSearchTroops);
+                args => MenuRoute(args, !SearchActive && Bounty?.CitySearchTargetIn(Settlement.CurrentSettlement) is { } target
+                    && CanBeginSearch(target)), SelectSearchTroops);
             starter.AddGameMenuOption(SearchMenu, "resume", GwpTextCatalog.gwp_cs_menu_resume,
                 args => MenuRoute(args, SearchHere && (SearchPlace != GwpCitySearchPlace.Arena || UsesHallDuel)),
                 _ => QueuePlace(SearchPlace));
@@ -58,6 +59,7 @@ namespace GreyWardenPolicePurity
                 : DuelAgreed && !UsesHallDuel ? GwpTextCatalog.gwp_cs_menu_duel
                 : HallAccessible ? GateState == GwpCitySearchGate.Cleared ? GwpTextCatalog.gwp_cs_menu_cleared : GwpTextCatalog.gwp_cs_menu_allowed
                 : GwpTextCatalog.gwp_cs_menu_gate;
+            if (!SearchHere) state = SearchSupportStatus(target) ?? state;
             MBTextManager.SetTextVariable("GWP_CS_MENU_TEXT", GwpText.Create(state, "TARGET", target.Name));
         }
     }

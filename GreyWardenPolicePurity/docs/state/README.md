@@ -1,4 +1,4 @@
-﻿# 当前状态（state）
+# 当前状态（state）
 
 **这个目录是唯一可执行的事实来源。**
 
@@ -129,7 +129,8 @@ python tools/Check-StateFreshness.py
 |---|---|
 | [`player-justice.md`](player-justice.md) | 玩家声望涨跌、通缉、入会退会、接悬赏、交差查账 |
 | [`player-commission.md`](player-commission.md) | 玩家承办委托的结果判定与交差金额 |
-| [`city-search.md`](city-search.md) | 玩家进城搜捕住城旧案：卫兵、大厅交涉、单挑/群殴、杀出城与委托衔接；NPC 部分未实施 |
+| [`city-search.md`](city-search.md) | 玩家进城搜捕住城旧案：卫兵、大厅交涉、单挑/群殴、杀出城与委托衔接 |
+| [`city-search-support.md`](city-search-support.md) | 每案一次机会、同催缴编制的黑甲办案队、独立办理与玩家支援 |
 | [`atonement.md`](atonement.md) | 负声望赎罪：权限与占案归属、交接、谈判/战斗结果、申报交差 |
 | [`field-arrest.md`](field-arrest.md) | 野外执法：肯不肯谈、两层谈判、对方的兑现方式、宽限、单挑、结案 |
 | [`patrol.md`](patrol.md) | 玩家纠察队：声望分档、罚金、收尾 |

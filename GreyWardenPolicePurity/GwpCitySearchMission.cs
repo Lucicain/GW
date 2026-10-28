@@ -232,7 +232,10 @@ namespace GreyWardenPolicePurity
                     // 来源挂主队：原版 GetAgentTeam 在有盟友队伍时只把「受玩家指挥」的兵放进玩家队伍，
                     // SimpleAgentOrigin 对普通兵没有所属部队，会被分进盟友队伍、无法指挥（C#反编译 v1.4.8，实机日志 2026-10-21）。
                     // 伤亡也由原版 BattleAgentLogic 经它直接写进主队名册。
-                    Agent agent = Mission.SpawnTroop(new PartyAgentOrigin(PartyBase.MainParty, character), true, true, false, false,
+                    IAgentOriginBase origin = Search.Supported
+                        ? new GwpCitySearchSupportOrigin(Search.TroopSource!, character)
+                        : new PartyAgentOrigin(PartyBase.MainParty, character);
+                    Agent agent = Mission.SpawnTroop(origin, true, true, false, false,
                         0, 0, false, false, position, main.LookDirection.AsVec2);
                     _ours[agent] = character;
                     RestoreTroopHealth(agent, character);
@@ -395,6 +398,7 @@ namespace GreyWardenPolicePurity
         /// <summary>开战：军事守方抵抗，普通居民即便持械也逃散。</summary>
         private void StartFight(string cause)
         {
+            if (Search.Supported) return;
             // 宣战可能让原版立即移走驻城队，先冻结当时确实驻城的来源。
             MobileParty[] defenseParties = CityDefenseParties();
             Search.MarkSearchWar();
@@ -514,7 +518,7 @@ namespace GreyWardenPolicePurity
             }
             EndFightIfDefendersDown();
             if (!_ours.TryGetValue(affectedAgent, out CharacterObject character)) return;
-            if (agentState == AgentState.Killed)
+            if (agentState == AgentState.Killed && affectedAgent.Origin is not GwpCitySearchSupportOrigin)
                 _killed[character] = _killed.TryGetValue(character, out int n) ? n + 1 : 1;
         }
 

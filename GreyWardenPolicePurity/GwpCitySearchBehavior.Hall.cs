@@ -19,6 +19,7 @@ namespace GreyWardenPolicePurity
 
         private void RegisterHallDialogue(CampaignGameStarter starter)
         {
+            RegisterSupportDialogue(starter);
             starter.AddDialogLine("gwp_cs_hall_start", "start", "gwp_cs_hall_options",
                 GwpText.Get(GwpTextCatalog.gwp_cs_hall_start), () => Scene?.IsHallTalk == true, null, 220);
             starter.AddPlayerLine("gwp_cs_hall_warrant", "gwp_cs_hall_options", "gwp_cs_hall_next",

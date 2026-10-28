@@ -1,6 +1,6 @@
-﻿# 案件生命周期与执法
+# 案件生命周期与执法
 
-> 当前状态：本职就近接案与区域判断已部署；玩家住城旧案走进城搜捕，NPC 城内办案仍缺入口
+> 当前状态：本职就近接案与区域判断已部署；玩家住城旧案走进城搜捕，NPC住城旧案由独立办案队接入，已部署待验收
 > 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；未逐项声明覆盖的边界仍待核对
 > 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_sheltered_enforcement.py` `tools/tests/test_case_dispatch.py` `tools/tests/test_native_interceptor_contact.py` `tools/tests/test_resident_counterattack.py`
 > 待实测：第三方击溃/俘虏或人物暂离后罪责与伤亡保留、恢复带队自动重选；普通改追与使者原目标独立；进城跟随和战后恢复目标均不强制开打；同版本存读冷却接续；本职最近接案、无信众村远案优先；双方驻城不新宣战，离城继续原追捕
@@ -42,9 +42,9 @@
 
 ## 藏城目标与战后连续交战
 
-已知缺陷：存活但无活跃部队、长期住城的旧案领主仍被NPC派案的IsOffenderPursuable部队门槛排除，NPC尚无城内办理入口；玩家已由CanPlayerTakeCase接住城旧案，走进城搜捕，状态与验收归city-search。
+住城旧案由独立灰袍办案队办理，派队后领主不持续占案；与玩家协同接续规则见[城内支援办案](city-search-support.md)。（依据：用户裁定与实现2026-10-28）
 
-此缺口与“仍带队但暂时驻城”不同，后者才适用下述跟随和原版自行离城。重新带队会恢复原账目候选，不需要再犯罪；但无机制保证无队人物一定重新带队，故不能承诺旧案最终自然办完。2026-09-11曾记录城内向总督交涉为未做后续，当前源码里只有第三方囚犯赎买使用总督身份，不是自由住城嫌犯执法；历史计划不作为当前已实现或已批准的新规则。（依据：用户反馈、CrimeRecord/玩家接案/野外入口及源码全量总督引用复核2026-10-21）
+仍带队但暂时驻城的目标继续按野外案件跟随和原版离城处理，城内办案队只处理无活跃部队、住在城镇/城堡的同一英雄；目标暂离城不清罪责。（依据：用户裁定及当前两类资格2026-10-28）
 
 用户继续指出总督身份不易查找。原版城镇百科EncyclopediaSettlementPageVM.Refresh显示OwnerClan.Leader作为属主，预制体无总督栏；TownManagementVM读取Town.Governor（或正在赴任的人物），用HasGovernor支持空缺；管理入口CanMainHeroManageTown要求属主族长为玩家。人物提示TooltipRefresherCollection则可显示该英雄任职的城镇，所以不能笼统说玩家完全看不到总督，也不能把城镇百科属主等同总督。本机安装版v1.4.8重新反编译两个VM并核对XML/准入/人物提示，未操控游戏。（依据：用户提问、C#反编译及原版XML2026-10-21）
 

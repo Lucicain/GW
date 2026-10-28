@@ -143,10 +143,10 @@
 | gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
 | gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:182 |
 | gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:183 |
-| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:407 |
-| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:422 |
-| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1062 |
-| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1076 |
+| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:410 |
+| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:425 |
+| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | GwpData.cs:1074 |
+| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | GwpData.cs:1088 |
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_002 | — | 宣战详情 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_003 | — | 查看灰袍守卫当前对各势力宣战的详细原因。 | 未检出直接引用；保留 |
@@ -444,8 +444,8 @@
 | gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:466 |
 | gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:470 |
 | gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:472 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1308 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1310 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1310 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1312 |
 | gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
 | gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
 | gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |
@@ -463,11 +463,11 @@
 | gwp_policeenforcementbehavior_atonementquest_015 | The account is verified. Your atonement is complete, and the roll allows the restoration of up to {VAR_1} standing. | 核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。 | PoliceEnforcementBehavior.AtonementQuest.cs:273 |
 | gwp_policeenforcementbehavior_atonementquest_016 | Your atonement is complete. | 赎罪已完成。 | PoliceEnforcementBehavior.AtonementQuest.cs:300 |
 | gwp_policeenforcementbehavior_atonementquest_017 | Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}. | 赎罪完成，经灰袍调停，你与{VAR_1}恢复了和平。 | PoliceEnforcementBehavior.AtonementQuest.cs:356 |
-| gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:724 |
+| gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:742 |
 | gwp_policeenforcementbehavior_delaypatrols_002 | — | 与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1} | 未检出直接引用；保留 |
-| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1296 |
-| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1298 |
-| gwp_policeenforcementbehavior_delaypatrols_005 | Grey Warden pursuit detachment | 灰袍高速追截队 | PoliceEnforcementBehavior.DelayPatrols.cs:469 |
+| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1315 |
+| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1317 |
+| gwp_policeenforcementbehavior_delaypatrols_005 | Grey Warden pursuit detachment | 灰袍高速追截队 | PoliceEnforcementBehavior.DelayPatrols.cs:487 |
 | gwp_troop_order_cohort_name | Grey Warden training cohort | 灰袍随行练兵队 | GreyWardenTroopRequestBehavior.Cohort.cs:156 |
 | gwp_troop_order_cohort_lost | The soldiers being trained for you were lost on the road. The Wardens are training another company. | 为你训练的士兵在途中覆没，灰袍正重新训练一批。 | GreyWardenTroopRequestBehavior.Cohort.cs:101 |
 | gwp_policeenforcementbehavior_dialogue_001 | By Grey Warden ordinance, the lawful fine must first be paid. | 按灰袍法令，先把正式罚金缴清。 | PoliceEnforcementBehavior.Dialogue.cs:65 |
@@ -544,7 +544,7 @@
 | gwp_policepatrolbehavior_helpers_003 | The return command has been issued, the number of candidates = {VAR_1}, returning = {VAR_2} | 已下发返程命令，候选数量={VAR_1}，returning={VAR_2} | PolicePatrolBehavior.Helpers.cs:60 |
 | gwp_policepatrolbehavior_helpers_004 | The provost patrol reached {VAR_1}; disbanding: {VAR_2} | 纠察队已到达 {VAR_1}，执行销毁：{VAR_2} | PolicePatrolBehavior.Helpers.cs:92 |
 | gwp_policepatrolbehavior_helpers_005 | The return destruction has been completed and the normal session has been restored. | 返程销毁已完成，恢复正常会话。 | PolicePatrolBehavior.Helpers.cs:178 |
-| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:462 |
+| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:465 |
 | gwp_troop_archer | Grey Warden Archer | 灰袍守护者弓箭手 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_heavy_infantry | Grey Warden Heavy Infantry | 灰袍守护者重步兵 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_knight | Grey Warden Knight | 灰袍守护者骑士 | _Module/ModuleData/spnpccharacters.xml |
@@ -1750,3 +1750,19 @@
 | gwp_cs_hall_duel_ready | I have kept you waiting. Draw your sword. | 让你久等了。拔剑吧。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
 | gwp_cs_hall_duel_start | Come on, then. | 来吧。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
 | gwp_cs_hall_duel_wait | One moment. | 稍等。 | 无竞技场时的大厅单挑；2026-10-28用户审核通过。 |
+| gwp_cs_support_party_name | Warden Arrest Party | 灰袍搜捕队 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_request | Ask the Wardens to send men to accompany me | 请灰袍派人来，随我进城 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_delegate | Ask the Wardens to take over this case | 请灰袍接手此案 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_sent | The Wardens have sent a detachment to meet you. | 灰袍已派出一队人，正在赶来与你会合。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_unavailable | The Wardens cannot spare the men just now. Ask again later. | 灰袍眼下抽不出人手，稍后再来问问。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_travelling | The Warden detachment is on its way. | 灰袍的人正在赶来。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_ready | The Wardens have arrived. You can enter the settlement with them. | 灰袍的人已到，可以带他们进城。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_personal_spent | Your men have withdrawn. You can ask the Wardens to take over, or wait for their detachment before entering again. | 你的人已经撤回。这次搜捕只能请灰袍接手，或等他们的人来后再进城。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_spent | This attempt has ended. The surviving Wardens are returning. | 这趟搜捕已经结束，支援队正带着余部返回。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_delegated | The case is now in the hands of the Warden detachment. | 此案已交给灰袍搜捕队。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_gate | The Wardens? Go on in. Leave the townsfolk in peace. | 灰袍到了？进去吧，别惊扰街上的人。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_warrant | The Wardens are here. Come with us. | 灰袍的人就在这里。跟我们走吧。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_surrender | I'll come with you. | 我跟你们走。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_duel | If you mean to take me, settle it with steel first. | 想带我走，就先在剑下分个高低。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_success | The Warden detachment has taken {TARGET} into custody and is returning. | 灰袍搜捕队已拿下{TARGET}，正押送返回。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |
+| gwp_cs_support_failed | The Warden detachment could not take {TARGET}. The survivors have withdrawn. | 灰袍搜捕队未能拿下{TARGET}，余部已经撤回。 | 用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。 |

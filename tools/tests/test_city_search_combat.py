@@ -63,7 +63,7 @@ enum Stage{Entering,Fighting,FightOver}enum MissionMode{StartUp,Battle}enum Orde
 class MissionConversationLogic{public bool Disabled;public void DisableStartConversation(bool b){Disabled=b;}}
 class Mission{public static Mission Current=new();public List<Agent> Agents=new();public Team PlayerTeam=new(),PlayerEnemyTeam=new();public MissionMode Mode;public MissionConversationLogic Talk=new();
  public void SetMissionMode(MissionMode mode,bool start){Mode=mode;}public T? GetMissionBehavior<T>() where T:class=>Talk as T;}
-class SearchState{public bool War;public void MarkSearchWar(){War=true;}}
+class SearchState{public bool Supported;public bool War;public void MarkSearchWar(){War=true;}}
 class Settlement{public object MapFaction=new();}
 class PlayerBountyBehavior{public int Wars;public string Reason="";public void DeclarePlayerCaseWar(object f,string reason,string text){Wars++;Reason=reason;}}
 class Campaign{public static Campaign Current=new();public PlayerBountyBehavior Bounty=new();public T? GetCampaignBehavior<T>() where T:class=>Bounty as T;}
@@ -120,6 +120,7 @@ static class Program{
   Check(!observer.Component.AgentNavigator!.Group.ScriptedFlee,"armed observer is not forced into civilian flight");
   hall.End();Check(hall.Wins==0,"living target holds hall combat open even after guards are gone");
   target.Active=false;hall.End();Check(hall.Wins==1,"target down allows hall combat to finish");
+  Mission.Current=new();Agent.Main=new(){IsAIControlled=false};var supported=new Controller();supported.Search.Supported=true;int beforeWar=Campaign.Current.Bounty.Wars;supported.Start("struck");Check(!supported.Search.War&&Campaign.Current.Bounty.Wars==beforeWar&&supported._stage!=Stage.Fighting,"supported arrest has no group combat or declaration even if player strikes a guard");
   Console.WriteLine("CITY_SEARCH_COMBAT_ASSERTIONS="+n);
  }
 }
@@ -134,6 +135,8 @@ static class Program{
         for guarded in ['if (!EscapingCity) Order(OrderType.Charge);', 'if (!EscapingCity) Order(OrderType.FollowMe);']:
             with self.assertRaises(AssertionError):
                 run(template.replace(bodies,bodies.replace(guarded,guarded.split(') ',1)[1])))
+        with self.assertRaisesRegex(AssertionError, "supported arrest has no group combat"):
+            run(template.replace(bodies,bodies.replace("if (Search.Supported) return;", "")))
         old_pursuit = bodies.replace('SetCityPursuer(defender);', 'SetSearchFighter(defender);')
         with self.assertRaisesRegex(AssertionError, 'initial defenders actively charge'):
             run(template.replace(bodies, old_pursuit))

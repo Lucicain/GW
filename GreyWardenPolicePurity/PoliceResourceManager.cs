@@ -209,6 +209,9 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        internal static Equipment CitySearchUniform() =>
+            MBObjectManager.Instance.GetObject<MBEquipmentRoster>(GwpIds.CommanderEquipmentRosterId).DefaultEquipment.Clone();
+
         private static void RepairGeneratedAdultCommanderLoadouts()
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();

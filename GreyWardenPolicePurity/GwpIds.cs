@@ -22,6 +22,7 @@ namespace GreyWardenPolicePurity
         public const string FaithPartyPrefix = "gwp_faithparty_";
         public const string LeaderCharacterIdPrefix = "gw_leader_";
         public const string CommanderTemplateCharacterId = "gw_leader_0";
+        public const string CommanderEquipmentRosterId = "spc_gw_leader_0";
         // Keep the native commander_2 entry intact; the Grey Warden commander
         // is an additional Custom Battle character inserted at slot one.
         public const string CustomBattleCommanderId = "gwp_custom_commander";

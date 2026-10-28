@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
@@ -83,10 +83,6 @@ namespace GreyWardenPolicePurity
                 return damage;
             _active[victim] = new Stand { EndsAt = now + seconds };
             victim.UpdateAgentStats();
-#if GWP_DIAGNOSTICS
-            TraceStand(victim, "LAST_STAND_START",
-                "seconds=" + seconds + "; endsAt=" + (now + seconds) + "; health=" + victim.Health + "; incoming=" + damage + "; allowed=" + Math.Min(damage, survivable));
-#endif
             return Math.Min(damage, survivable);
         }
 
@@ -125,10 +121,6 @@ namespace GreyWardenPolicePurity
             _active.Remove(fighter);
             fighter.UpdateAgentStats();
             fighter.Health = Math.Min(fighter.HealthLimit, fighter.Health + stand.Damage);
-#if GWP_DIAGNOSTICS
-            TraceStand(fighter, "LAST_STAND_HEAL",
-                "victim=" + affectedAgent.Index + "; state=" + agentState + "; healed=" + stand.Damage + "; health=" + fighter.Health);
-#endif
         }
 
         private void Release(Agent fighter)
@@ -136,24 +128,7 @@ namespace GreyWardenPolicePurity
             _active.Remove(fighter);
             _spent.Add(fighter);
             fighter.UpdateAgentStats();
-#if GWP_DIAGNOSTICS
-            TraceStand(fighter, "LAST_STAND_EXPIRED", "health=" + fighter.Health);
-#endif
         }
-
-#if GWP_DIAGNOSTICS
-        // 每个兵种/英雄每种转换只取前三例，验收该锁血功能后退休。
-        private readonly Dictionary<string, int> _traceSamples = new();
-        private void TraceStand(Agent agent, string stage, string details)
-        {
-            string key = agent.Character.StringId + ":" + stage;
-            _traceSamples.TryGetValue(key, out int count);
-            if (count >= 3) return;
-            _traceSamples[key] = count + 1;
-            GwpAiDiagnostics.WriteCombat(stage, "character=" + agent.Character.StringId + "; agent=" + agent.Index
-                + "; time=" + Mission.CurrentTime + "; " + details);
-        }
-#endif
 
         // 骑着的马冲撞算骑手的。
         private static Agent? Striker(Agent? affector) =>

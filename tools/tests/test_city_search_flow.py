@@ -34,7 +34,8 @@ namespace TaleWorlds.ObjectSystem{class MBObjectManager{
  public static MBObjectManager Instance=new();public T GetObject<T>(string id) where T:class=>GreyWardenPolicePurity.CharacterObject.All.First(c=>c.StringId==id) as T;}}
 namespace GreyWardenPolicePurity{
 
-partial class GwpCitySearchBehavior{void SyncStreetBodies(IDataStore s){}void ClearStreetBodies(){}}
+partial class GwpCitySearchBehavior{void SyncStreetBodies(IDataStore s){}void ClearStreetBodies(){} string _searchSourcePartyId="";bool _searchAttemptStarted;public PartyBase TroopSource=>PartyBase.MainParty;bool Supported=>false;bool PrepareSearchSource(Hero h)=>true;bool StartSearchAttempt()=>true;bool CanBeginSearch(Hero h)=>true;string? SearchSupportStatus(Hero h)=>null;static SupportEnforcement Enforcement=new();}
+class SupportEnforcement{public void ReleaseCitySearchParty(string id){}}
 interface IDataStore{void SyncData<T>(string key,ref T value);}
 class Store:IDataStore{public Dictionary<string,JsonElement> Data=new();public bool Loading;
  public void SyncData<T>(string key,ref T value){if(Loading){if(Data.TryGetValue(key,out var json))value=json.Deserialize<T>()!;}else Data[key]=JsonSerializer.SerializeToElement(value);}}
@@ -275,13 +276,14 @@ class CharacterObject{public bool IsHero;public Hero? HeroObject;}
 struct Vec3{public float X;public Vec3(float x){X=x;}public float Distance(Vec3 v)=>Math.Abs(X-v.X);}
 class Team{public static Team Invalid=new();public bool Hostile;public void SetIsEnemyOf(Team other,bool b){Hostile=b;}}
 struct WorldPosition{}
-class Agent{public static Agent? Main;public CharacterObject Character=new();public float Health=100;public bool Active=true,IsHuman=true,IsAIControlled=true,Watch,Armed=true,IsRunningAway,ScriptedMovement=true;public bool HasWeapon()=>Armed;public AgentState State;public Team Team=new();public Vec3 Position;
+class Agent{public static Agent? Main;public object Origin=new();public CharacterObject Character=new();public float Health=100;public bool Active=true,IsHuman=true,IsAIControlled=true,Watch,Armed=true,IsRunningAway,ScriptedMovement=true;public bool HasWeapon()=>Armed;public AgentState State;public Team Team=new();public Vec3 Position;
  public enum WatchState{Alarmed}public bool IsActive()=>Active;public void DisableScriptedMovement(){ScriptedMovement=false;}public void SetTeam(Team t,bool b){Team=t;}public WorldPosition GetWorldPosition()=>new();public void SetScriptedPosition(ref WorldPosition p,bool b){ScriptedMovement=true;}public void SetLookAgent(Agent a){}public void SetWatchState(WatchState s){}public T? GetComponent<T>() where T:class=>null;}
 class CampaignAgentComponent{public AgentNavigator AgentNavigator=new();}class AgentNavigator{public T? GetBehaviorGroup<T>() where T:class=>null;public void RefreshBehaviorGroups(bool simulation){}}
 class AlarmedBehaviorGroup{public bool DisableCalmDown;public void AddBehavior<T>(){}public void SetScriptedBehavior<T>(){}}class FightBehavior{}
 class Hero{public static Hero MainHero=new();public bool IsNotable;public object MapFaction=new();public CharacterObject CharacterObject=new();public bool IsDead;}
 class Settlement{public bool IsTown;public object MapFaction=new();}
 class PlayerBountyBehavior{public int Dead,Defeats;public void RecordCitySearchLosses(Hero h,int n){Dead+=n;}public void RecordCitySearchDefeat(Hero h){Defeats++;}}
+class GwpCitySearchSupportOrigin{}
 class GwpCitySearchBehavior{public GwpCitySearchPlace SearchPlace;public bool UsesHallDuel;public bool HallDuelLocked=>SearchActive&&DuelAgreed&&UsesHallDuel&&!SearchWar&&!Returning;public bool SearchActive=true,War,Won,Peaceful,Escaped,Aborted,DuelAgreed,Returning,EscapeCleared,Paused,HallAccessible;public void MarkTargetDown(bool killed){Won=true;Returning=true;}public bool SearchWar=>War;public GwpCitySearchGate GateState;public bool HallResolved=>DuelAgreed||Returning;public List<(CharacterObject,float)> Saved=new();
  public void QueuePlace(GwpCitySearchPlace p){SearchPlace=p;}public void MarkSearchWar(){War=true;}public void WonHall(){Won=true;Returning=true;}public void PeacefulCapture(){Peaceful=true;Returning=true;}public void AgreeDuel(){DuelAgreed=true;}public void WithdrawFromHall(){Returning=true;}public void PauseSearch(){Paused=true;}public void FinishSearch(bool escaped){Escaped=escaped;Aborted=!escaped;SearchActive=false;}public void SaveSurvivors(IEnumerable<(CharacterObject,float)> s){Saved=s.ToList();}}
 class Conversation{public bool IsConversationFlowActive;public Agent? OneToOneConversationAgent;}
@@ -353,6 +355,7 @@ static void Main(){
  var transfer=New(GwpCitySearchPlace.Entry,Stage.Allowed);var alive=new Agent{Health=13};var dead=new Agent{Active=false};transfer._ours[alive]=alive.Character;transfer._ours[dead]=dead.Character;transfer._transitioning=true;transfer._killed[dead.Character]=1;transfer.End();Check(transfer.Search.Saved.Count==1&&transfer.Search.Saved[0].Item2==13,"transition snapshots active survivors and their health only");Check(Campaign.Current.Bounty.Dead==1,"mission casualties enter bounty owner exactly once per scene");
  transfer=New(GwpCitySearchPlace.Hall,Stage.HallReady);transfer.End();Check(transfer.Search.Paused&&!transfer.Search.Aborted,"Tab preserves search and snapshots survivors");
   var failed=New(GwpCitySearchPlace.Hall,Stage.Fighting);failed.Search.FinishSearch(false);failed.FightWon();failed.Tick();Check(failed.Search.Aborted&&!failed.Search.Won&&!failed.Mission.Ended,"late ally victory cannot resurrect search after player fell");
+ var supportFail=New(GwpCitySearchPlace.Hall,Stage.Fighting);var supporting=new Agent{Origin=new GwpCitySearchSupportOrigin()};supportFail._ours[supporting]=supporting.Character;supportFail.OnAgentRemoved(Agent.Main!,Agent.Main!,AgentState.Unconscious,new());supportFail.OnAgentRemoved(supporting,Agent.Main!,AgentState.Killed,new());Check(supportFail._killed.Count==0,"late support deaths after player defeat never enter main-party casualty account");
  Console.WriteLine("CITY_SEARCH_PROGRESS_ASSERTIONS="+n);
 }}}
 '''
@@ -410,7 +413,7 @@ static class Program{static void Main(){var location=new NativeLocation();
 '''.replace('CALLBACK', callback).replace('PREFIX', prefix))
 
     def test_hall_dialogue_choices_and_exits(self):
-        hall = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Hall.cs'))
+        hall = re.sub(r'(?m)^using .*;\n', '', read('GwpCitySearchBehavior.Hall.cs') + read('GwpCitySearchBehavior.SupportDialogue.cs'))
         keys = set(re.findall(r'GwpTextCatalog\.(\w+)', hall))
         template = r'''
 using System;using System.Collections.Generic;
@@ -425,7 +428,7 @@ static class GwpText{public static string Get(string k)=>k;public static TextObj
 static class MBTextManager{public static Dictionary<string,TextObject> Text=new();public static void SetTextVariable(string k,TextObject v){Text[k]=v;}}
 class CharacterObject{}class Hero{public static Hero MainHero=new();public CharacterObject CharacterObject=new();}
 class Faction{public float MainHeroCrimeRating;}class Settlement{public Faction MapFaction=new();}
-class GwpCitySearchMissionController{public bool IsHallTalk=true,IsHallDuelTalk,Duel;public int Asked;public bool OpponentPrefersDuel(){Asked++;return Duel;}public string Action="";public Settlement Settlement=new();public void ChooseHallDuelStart(){Action="hall_duel_start";}public void LeaveHall(){Action="leave";}public void AcceptHallSurrender(){Action="surrender";}public void ChooseHallCombat(bool duel){Action=duel?"duel":"melee";}}
+class GwpCitySearchMissionController{public bool IsGuardTalk,IsHallTalk=true,IsHallDuelTalk,Duel;public void OnGuardDecision(bool allowed,string result){Action="gate_pass";}public int Asked;public bool OpponentPrefersDuel(){Asked++;return Duel;}public string Action="";public Settlement Settlement=new();public void ChooseHallDuelStart(){Action="hall_duel_start";}public void LeaveHall(){Action="leave";}public void AcceptHallSurrender(){Action="surrender";}public void ChooseHallCombat(bool duel){Action=duel?"duel":"melee";}}
 class PersuasionTask{public PersuasionArgumentStrength Strength;}
 class GwpPersuasionRound{public int Status;public int TaskCount;public PersuasionArgumentStrength Strength;public GwpPersuasionRound(string s){}
  public bool IsSatisfied=>Status==1;public bool IsFailed=>Status>=2;
@@ -439,7 +442,7 @@ class CampaignGameStarter{public class Line{public Func<bool>? Condition;public 
  public void AddDialogLine(string id,string input,string output,string text,Func<bool>? cond,Action? cons,int priority=100){Lines[id]=new(){Input=input,Output=output,Condition=cond,Consequence=cons,Priority=priority};}
  public void AddPlayerLine(string id,string input,string output,string text,Func<bool>? cond,Action? cons){AddDialogLine(id,input,output,text,cond,cons);}
  public void Run(string id){var line=Lines[id];if(line.Condition?.Invoke()==false)throw new Exception("unavailable line: "+id);line.Consequence?.Invoke();}}
-partial class GwpCitySearchBehavior{public bool UsesHallDuel;public static GwpCitySearchMissionController Scene=new();public Hero SearchTarget=new();
+partial class GwpCitySearchBehavior{public bool UsesHallDuel,Supported;bool PrepareExplain()=>true;public static GwpCitySearchMissionController Scene=new();public Hero SearchTarget=new();
  public static CharacterObject? StrengthAsked;
  static Func<GwpPersuasionRound.Argument,PersuasionArgumentStrength> StrengthAgainst(CharacterObject c){StrengthAsked=c;return a=>PersuasionArgumentStrength.VeryEasy;}
  private void BeginSearchPersuasion(GwpPersuasionRound round,PersuasionTask[] tasks)=>round.Begin(tasks);
@@ -470,6 +473,7 @@ static class Program{static int n;static void Check(bool c,string why){n++;if(!c
  Check(Offered(s,"gwp_cs_choice_hall_duel")&&!Offered(s,"gwp_cs_choice_agreed"),"hall appointment uses the approved clear-room line");s.Run("gwp_cs_choice_hall_duel");
  Check(s.Lines["gwp_cs_hall_duel_ready"].Priority>s.Lines["gwp_cs_hall_start"].Priority&&Offered(s,"gwp_cs_hall_duel_ready"),"returning target has the duel-ready dialogue instead of another warrant");
  s.Run("gwp_cs_hall_duel_ready");s.Run("gwp_cs_hall_duel_wait");Check(GwpCitySearchBehavior.Scene.Action=="duel","waiting does not start combat");s.Run("gwp_cs_hall_duel_start");Check(GwpCitySearchBehavior.Scene.Action=="hall_duel_start","ready dialogue explicitly queues the hall duel start");
+ GwpCitySearchBehavior.Scene=new(){IsGuardTalk=true};b=new(){Supported=true};s=b.Register();Check(s.Lines["gwp_cs_support_gate_start"].Condition!(),"real Warden guard branch is offered");s.Run("gwp_cs_support_gate_pass");Check(GwpCitySearchBehavior.Scene.Action=="gate_pass"&&b.Hall.TaskCount==0,"Warden guard passes without persuasion");s.Run("gwp_cs_support_hall_warrant");Check(b.Hall.TaskCount==2,"supported hall still uses native persuasion tasks");b.Hall.Status=2;CampaignGameStarter.Line? selected=null;foreach(var line in s.Lines.Values)if(line.Input=="gwp_cs_hall_next"&&(line.Condition?.Invoke()!=false)&&(selected==null||line.Priority>selected.Priority))selected=line;Check(selected?.Output=="gwp_cs_support_duel_options","failed supported hall selects only duel branch above ordinary melee offer");s.Run("gwp_cs_support_hall_duel");s.Run("gwp_cs_support_accept_duel");Check(GwpCitySearchBehavior.Scene.Action=="duel","supported refusal actually queues duel without declaration");
  Console.WriteLine("CITY_SEARCH_DIALOGUE_ASSERTIONS="+n);
 }}}
 '''
@@ -484,6 +488,8 @@ static class Program{static int n;static void Check(bool c,string why){n++;if(!c
                            .replace('gwp_cs_hall_reaction_critical', 'gwp_cs_guard_reaction_critical'))
         with self.assertRaisesRegex(AssertionError, 'hall persuasion reports with hall reaction lines'):
             run(template.replace('KEYS', constants) + guard_reactions)
+        with self.assertRaisesRegex(AssertionError, "failed supported hall selects only duel"):
+            run(template.replace("KEYS", constants)+hall.replace("Supported && _hallRound.IsFailed", "false"))
         unsplit_duel = hall.replace(
             'GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), () => _opponentDuel, () => ChooseCombat(true)',
             'GwpText.Get(GwpTextCatalog.gwp_cs_hall_duel), null, () => ChooseCombat(true)')

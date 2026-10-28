@@ -43,6 +43,9 @@ namespace GreyWardenPolicePurity
             public bool IsImmediateInterceptor { get; set; }
             // 灰袍使者（PoliceEnforcementBehavior.Envoy）：宣战前先去和目标谈，回主队的路与追截队相同。
             public bool IsEnvoy { get; set; }
+            public string CityCrimeId { get; set; } = string.Empty;
+            public bool CityForPlayer { get; set; }
+            public bool CityDelegated { get; set; }
         }
 
         private sealed class ImmediateInterceptorTroopTransfer
@@ -92,6 +95,9 @@ namespace GreyWardenPolicePurity
             List<int> returningFlags = null!;
             List<int> immediateInterceptorFlags = null!;
             List<int> envoyFlags = null!;
+            List<string> cityCrimeIds = null!;
+            List<int> cityPlayerFlags = null!;
+            List<int> cityDelegatedFlags = null!;
 
             if (dataStore.IsSaving)
             {
@@ -105,6 +111,9 @@ namespace GreyWardenPolicePurity
                 immediateInterceptorFlags = states.Select(s =>
                     s.IsImmediateInterceptor ? 1 : 0).ToList();
                 envoyFlags = states.Select(s => s.IsEnvoy ? 1 : 0).ToList();
+                cityCrimeIds = states.Select(s => s.CityCrimeId).ToList();
+                cityPlayerFlags = states.Select(s => s.CityForPlayer ? 1 : 0).ToList();
+                cityDelegatedFlags = states.Select(s => s.CityDelegated ? 1 : 0).ToList();
             }
 
             dataStore.SyncData("gwp_enf_dp_ids", ref patrolIds);
@@ -116,6 +125,9 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_dp_immediate_interceptors",
                 ref immediateInterceptorFlags);
             dataStore.SyncData("gwp_enf_dp_envoys", ref envoyFlags);
+            dataStore.SyncData("gwp_enf_dp_city_crimes", ref cityCrimeIds);
+            dataStore.SyncData("gwp_enf_dp_city_players", ref cityPlayerFlags);
+            dataStore.SyncData("gwp_enf_dp_city_delegated", ref cityDelegatedFlags);
 
             if (!dataStore.IsLoading) return;
 
@@ -128,6 +140,9 @@ namespace GreyWardenPolicePurity
             returningFlags ??= new List<int>();
             immediateInterceptorFlags ??= new List<int>();
             envoyFlags ??= new List<int>();
+            cityCrimeIds ??= new List<string>();
+            cityPlayerFlags ??= new List<int>();
+            cityDelegatedFlags ??= new List<int>();
 
             int count = patrolIds.Count;
             for (int i = 0; i < count; i++)
@@ -146,7 +161,10 @@ namespace GreyWardenPolicePurity
                     IsImmediateInterceptor =
                         i < immediateInterceptorFlags.Count &&
                         immediateInterceptorFlags[i] != 0,
-                    IsEnvoy = i < envoyFlags.Count && envoyFlags[i] != 0
+                    IsEnvoy = i < envoyFlags.Count && envoyFlags[i] != 0,
+                    CityCrimeId = i < cityCrimeIds.Count ? cityCrimeIds[i] : string.Empty,
+                    CityForPlayer = i < cityPlayerFlags.Count && cityPlayerFlags[i] != 0,
+                    CityDelegated = i < cityDelegatedFlags.Count && cityDelegatedFlags[i] != 0
                 };
             }
         }
@@ -1260,6 +1278,7 @@ namespace GreyWardenPolicePurity
         {
             foreach (DelayPatrolState state in _delayPatrolStates.Values)
             {
+                if (!string.IsNullOrEmpty(state.CityCrimeId)) continue;
                 if (!string.Equals(state.SourceTaskPolicePartyId, sourceTaskPolicePartyId, StringComparison.OrdinalIgnoreCase))
                     continue;
                 state.Returning = true;

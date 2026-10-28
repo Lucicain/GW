@@ -46,6 +46,7 @@ namespace GreyWardenPolicePurity
             RegisterGuardDialogue(starter);
             RegisterHallDialogue(starter);
             RegisterSearchMenu(starter);
+            RegisterSupportMenu(starter);
         }
 
         private bool SearchOptionCondition(MenuCallbackArgs args)
@@ -69,11 +70,14 @@ namespace GreyWardenPolicePurity
         {
             Settlement? settlement = Settlement.CurrentSettlement;
             Hero? target = Bounty?.CitySearchTargetIn(settlement);
-            MobileParty? party = MobileParty.MainParty;
-            if (settlement == null || target == null || party == null) return;
+            MobileParty? party = target == null ? null : Enforcement?.CitySearchSupport(target) ?? MobileParty.MainParty;
+            if (settlement == null || target == null || party == null
+                || Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>().CanBeginSearch(target) != true) return;
 
             // 带兵上限同原版亲自突击藏身处，选兵也用原版那个界面（用户裁定 2026-10-21）。
-            int max = Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(party, true);
+            int max = party == MobileParty.MainParty
+                ? Campaign.Current.Models.BanditDensityModel.GetMaximumTroopCountForHideoutMission(party, true)
+                : GwpTuning.Enforcement.EnvoySize;
             TroopRoster initial = TroopRoster.CreateDummyTroopRoster();
             initial.Add(MobilePartyHelper.GetStrongestAndPriorTroops(party, max, includePlayer: true));
             args.MenuContext.OpenTroopSelection(party.MemberRoster, initial, CanTakeAlong,

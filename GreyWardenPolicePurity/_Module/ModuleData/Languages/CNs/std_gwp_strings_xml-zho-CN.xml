@@ -1750,5 +1750,21 @@
   <string id="gwp_cs_hall_duel_ready" text="让你久等了。拔剑吧。" />
   <string id="gwp_cs_hall_duel_start" text="来吧。" />
   <string id="gwp_cs_hall_duel_wait" text="稍等。" />
+  <string id="gwp_cs_support_party_name" text="灰袍搜捕队" />
+  <string id="gwp_cs_support_request" text="请灰袍派人来，随我进城" />
+  <string id="gwp_cs_support_delegate" text="请灰袍接手此案" />
+  <string id="gwp_cs_support_sent" text="灰袍已派出一队人，正在赶来与你会合。" />
+  <string id="gwp_cs_support_unavailable" text="灰袍眼下抽不出人手，稍后再来问问。" />
+  <string id="gwp_cs_support_travelling" text="灰袍的人正在赶来。" />
+  <string id="gwp_cs_support_ready" text="灰袍的人已到，可以带他们进城。" />
+  <string id="gwp_cs_support_personal_spent" text="你的人已经撤回。这次搜捕只能请灰袍接手，或等他们的人来后再进城。" />
+  <string id="gwp_cs_support_spent" text="这趟搜捕已经结束，支援队正带着余部返回。" />
+  <string id="gwp_cs_support_delegated" text="此案已交给灰袍搜捕队。" />
+  <string id="gwp_cs_support_gate" text="灰袍到了？进去吧，别惊扰街上的人。" />
+  <string id="gwp_cs_support_warrant" text="灰袍的人就在这里。跟我们走吧。" />
+  <string id="gwp_cs_support_surrender" text="我跟你们走。" />
+  <string id="gwp_cs_support_duel" text="想带我走，就先在剑下分个高低。" />
+  <string id="gwp_cs_support_success" text="灰袍搜捕队已拿下{TARGET}，正押送返回。" />
+  <string id="gwp_cs_support_failed" text="灰袍搜捕队未能拿下{TARGET}，余部已经撤回。" />
 </strings>
 </base>

@@ -496,6 +496,7 @@ namespace GreyWardenPolicePurity
             ReconcileTaskWarStatesWithDiplomacy();
             RetryPeaceAfterPlayerEnforcement();
             UpdateDelayPatrols();
+            TendCitySearchParties();
             TendEnvoyCases();
 #if GWP_DIAGNOSTICS
             TraceStalledWarPursuits();
@@ -504,6 +505,7 @@ namespace GreyWardenPolicePurity
             CleanCaseLedger();
             // 先让承办人改追更近的罪犯，被放开的旧案同一轮就能被别人接走。
             RetargetOrdinaryCasesToNearest();
+            DispatchCitySearchCases();
             AssignTasks();
             UpdateLordAssistance();
             UpdateTasks();

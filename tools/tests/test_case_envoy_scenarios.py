@@ -165,7 +165,7 @@ class PoliceEnforcementBehavior{
   pursued.IsAlive=false;CrimeState.RemoveDeadOffenderRecords();Check(!CrimeState.Records.ContainsKey("target")&&CrimeState.Records.ContainsKey("unresolved"),"only confirmed dead person removed by passive cleanup");
 
   unresolved.OccurredTime=unresolved.LastCrimeTime=CampaignTime.Now;unresolved.Location=new Vec2(3,4);unresolved.CivilianCasualties=497;
-  var savedUnresolved=CrimeState.RoundTrip(unresolved);CrimeState.Records["unresolved"]=savedUnresolved;
+  unresolved.CitySearchPersonalUsed=true;unresolved.CitySearchSupportUsed=true;unresolved.CitySearchSupportDispatched=true;var savedUnresolved=CrimeState.RoundTrip(unresolved);Check(savedUnresolved.CitySearchPersonalUsed&&savedUnresolved.CitySearchSupportUsed&&savedUnresolved.CitySearchSupportDispatched,"same-version record serializer keeps both spent city attempts and dispatched quota");CrimeState.Records["unresolved"]=savedUnresolved;
   Check(savedUnresolved.HasOpenCase&&savedUnresolved.OffenderHeroId=="unresolved"&&savedUnresolved.IncidentCount==9&&savedUnresolved.CivilianCasualties==497,"real person record serializer retains unpaid severe liability without resolvable hero");
   Check(!savedUnresolved.IsOffenderPursuable(),"loaded unresolved person stays deferred");
   var returnedHero=new Hero{StringId="unresolved"};var returnedParty=new MobileParty{StringId="after_load_party",LeaderHero=returnedHero};returnedHero.PartyBelongedTo=returnedParty;Hero.All.Add(returnedHero);MobileParty.All.Add(returnedParty);

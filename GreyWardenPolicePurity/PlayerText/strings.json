@@ -7354,6 +7354,86 @@
       "zh": "稍等。",
       "en": "One moment.",
       "context": "无竞技场时的大厅单挑；2026-10-28用户审核通过。"
+    },
+    "gwp_cs_support_party_name": {
+      "en": "Warden Arrest Party",
+      "zh": "灰袍搜捕队",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_request": {
+      "en": "Ask the Wardens to send men to accompany me",
+      "zh": "请灰袍派人来，随我进城",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_delegate": {
+      "en": "Ask the Wardens to take over this case",
+      "zh": "请灰袍接手此案",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_sent": {
+      "en": "The Wardens have sent a detachment to meet you.",
+      "zh": "灰袍已派出一队人，正在赶来与你会合。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_unavailable": {
+      "en": "The Wardens cannot spare the men just now. Ask again later.",
+      "zh": "灰袍眼下抽不出人手，稍后再来问问。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_travelling": {
+      "en": "The Warden detachment is on its way.",
+      "zh": "灰袍的人正在赶来。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_ready": {
+      "en": "The Wardens have arrived. You can enter the settlement with them.",
+      "zh": "灰袍的人已到，可以带他们进城。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_personal_spent": {
+      "en": "Your men have withdrawn. You can ask the Wardens to take over, or wait for their detachment before entering again.",
+      "zh": "你的人已经撤回。这次搜捕只能请灰袍接手，或等他们的人来后再进城。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_spent": {
+      "en": "This attempt has ended. The surviving Wardens are returning.",
+      "zh": "这趟搜捕已经结束，支援队正带着余部返回。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_delegated": {
+      "en": "The case is now in the hands of the Warden detachment.",
+      "zh": "此案已交给灰袍搜捕队。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_gate": {
+      "en": "The Wardens? Go on in. Leave the townsfolk in peace.",
+      "zh": "灰袍到了？进去吧，别惊扰街上的人。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_warrant": {
+      "en": "The Wardens are here. Come with us.",
+      "zh": "灰袍的人就在这里。跟我们走吧。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_surrender": {
+      "en": "I'll come with you.",
+      "zh": "我跟你们走。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_duel": {
+      "en": "If you mean to take me, settle it with steel first.",
+      "zh": "想带我走，就先在剑下分个高低。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_success": {
+      "en": "The Warden detachment has taken {TARGET} into custody and is returning.",
+      "zh": "灰袍搜捕队已拿下{TARGET}，正押送返回。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
+    },
+    "gwp_cs_support_failed": {
+      "en": "The Warden detachment could not take {TARGET}. The survivors have withdrawn.",
+      "zh": "灰袍搜捕队未能拿下{TARGET}，余部已经撤回。",
+      "context": "用户审核通过2026-10-28；城内灰袍支援/代办，情境见text-review-city-support-20261028.md。"
     }
   },
   "fragments": {

@@ -90,11 +90,14 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_left_hall", ref _hasLeftHall);
             store.SyncData("gwp_cs_target_down", ref _targetDown);
             store.SyncData("gwp_cs_target_killed", ref _targetKilled);
+            store.SyncData("gwp_cs_source_party", ref _searchSourcePartyId);
+            store.SyncData("gwp_cs_attempt_started", ref _searchAttemptStarted);
             SyncStreetBodies(store);
         }
 
         private void BeginSearch(Settlement settlement, Hero target, TroopRoster roster)
         {
+            if (!PrepareSearchSource(target)) return;
             _searchSettlementId = settlement.StringId;
             _searchTargetId = target.StringId;
             _searchTarget = target;
@@ -211,6 +214,7 @@ namespace GreyWardenPolicePurity
         internal void FinishSearch(bool escaped)
         {
             Hero? target = SearchTarget;
+            if (Supported) Enforcement?.ReleaseCitySearchParty(_searchSourcePartyId);
             // 群殴胜利先控制住人，杀出城后才正式交进主队囚笼；途中倒下不能隔城领到俘虏。
             bool captured = escaped && _captureReady && target != null && !target.IsDead && !target.IsPrisoner
                 && Settlement.CurrentSettlement?.StringId == _searchSettlementId
@@ -229,6 +233,8 @@ namespace GreyWardenPolicePurity
             _enemyLosses.Clear();
             ClearStreetBodies();
             _targetDown = _targetKilled = false;
+            _searchSourcePartyId = string.Empty;
+            _searchAttemptStarted = false;
             _leavePending = escaped;
         }
 
@@ -265,6 +271,11 @@ namespace GreyWardenPolicePurity
             if (settlement?.StringId != _searchSettlementId || Hero.MainHero.IsPrisoner
                 || target == null || target.IsPrisoner
                 || (!_returning && (target.IsDead || CrimeRecord.ShelterOf(target) != settlement)))
+            {
+                FinishSearch(false);
+                return;
+            }
+            if (TroopSource == null || !StartSearchAttempt())
             {
                 FinishSearch(false);
                 return;
@@ -307,7 +318,7 @@ namespace GreyWardenPolicePurity
             }
             TroopRoster roster = TroopRoster.CreateDummyTroopRoster();
             // 暂停后玩家可以在聚落菜单调走部下；保存的现场名单不能凭空再生成已不在主队的人。
-            var available = PartyBase.MainParty.MemberRoster.GetTroopRoster()
+            var available = TroopSource!.MemberRoster.GetTroopRoster()
                 .ToDictionary(element => element.Character, element => element.Number - element.WoundedNumber);
             var survivors = new List<(CharacterObject Character, float Health)>();
             for (int i = 0; i < _searchTroops.Count; i++)

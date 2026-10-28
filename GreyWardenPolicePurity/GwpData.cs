@@ -28,6 +28,9 @@ namespace GreyWardenPolicePurity
         public Vec2 Location { get; set; }
         public string VictimName { get; set; } = string.Empty;
         public bool HasOpenCase { get; set; }
+        public bool CitySearchPersonalUsed { get; set; }
+        public bool CitySearchSupportUsed { get; set; }
+        public bool CitySearchSupportDispatched { get; set; }
         /// <summary>
         /// Villagers and caravan guards this offender has actually killed under this
         /// case. The fine is built on it, the same way the Wardens price the player's
@@ -130,7 +133,7 @@ namespace GreyWardenPolicePurity
 
         public Settlement? ShelterSettlement => ShelterOf(OffenderHero);
 
-        /// <summary>住城的人目前只有玩家能进城搜捕；灰袍 NPC 的做法另定（用户裁定 2026-10-21）。</summary>
+        /// <summary>未被玩家占用的住城旧案；玩家入口与灰袍独立办案队共用本资格。</summary>
         public bool IsOffenderSearchableInSettlement() =>
             HasOpenCase && CrimeId != CrimePool.PlayerCrimeId && ShelterSettlement != null
             && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
@@ -874,6 +877,9 @@ namespace GreyWardenPolicePurity
             int civilianCasualties = record.CivilianCasualties;
             int incidentCount = record.IncidentCount;
             int accruedBaseFine = record.AccruedBaseFine;
+            bool cityPersonalUsed = record.CitySearchPersonalUsed;
+            bool citySupportUsed = record.CitySearchSupportUsed;
+            bool citySupportDispatched = record.CitySearchSupportDispatched;
 
             store.SyncData($"gwp_l_{i}_id", ref id);
             store.SyncData($"gwp_l_{i}_type", ref type);
@@ -889,6 +895,9 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_l_{i}_civcas", ref civilianCasualties);
             store.SyncData($"gwp_l_{i}_incidents", ref incidentCount);
             store.SyncData($"gwp_l_{i}_basefine", ref accruedBaseFine);
+            store.SyncData($"gwp_l_{i}_city_personal_used", ref cityPersonalUsed);
+            store.SyncData($"gwp_l_{i}_city_support_used", ref citySupportUsed);
+            store.SyncData($"gwp_l_{i}_city_support_sent", ref citySupportDispatched);
 
             if (!saving)
             {
@@ -904,6 +913,9 @@ namespace GreyWardenPolicePurity
                 record.CivilianCasualties = civilianCasualties;
                 record.IncidentCount = incidentCount;
                 record.AccruedBaseFine = accruedBaseFine;
+                record.CitySearchPersonalUsed = cityPersonalUsed;
+                record.CitySearchSupportUsed = citySupportUsed;
+                record.CitySearchSupportDispatched = citySupportDispatched;
                 record.OffenderPartyId = party;
                 record.Offender = id == PlayerCrimeId
                     ? MobileParty.MainParty
