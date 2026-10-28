@@ -69,16 +69,19 @@ python tools/native/find-string-refs.py "<游戏目录>/TaleWorlds.Native.dll" "
 
 ## C# 反编译（托管 DLL）
 
-工具：`ilspycmd`（9.1，在 `~/.dotnet/tools/ilspycmd`）。
+官方 DLL 不再逐个临时反编译，直接查原版源码库：
 
 ```bash
-ilspycmd -p -o <输出目录> "<游戏目录>/TaleWorlds.MountAndBlade.dll"
+python tools/Build-VanillaSource.py          # 缺库或游戏升级时生成；版本没变则什么都不做
+cd ../BannerlordSource/v1.4.8 && codegraph explore "MissionAgentSpawnLogic 增援" --max-files 3
 ```
 
-- 已有的反编译输出在 `.codex_tmp/` 下，例如 `mb148-decomp/`、`core148-decomp/`、
-  `campaignsystem-full-decompile/`。这个目录被 git 忽略，**随时可以重新生成**，
-  不要把它当成唯一副本来引用。
-- 也用来检查**我们自己构建的 DLL**：例如确认玩家包里诊断代码确实被编译掉了。
+- 库在仓库外 `../BannerlordSource/<游戏版本>/`：`managed/<程序集>/<命名空间>/<类型>.cs` 是全部官方托管 DLL
+  （生成的 Gauntlet 绑定与多人模式除外），`moduledata/` 是官方模块的英文 XML，`manifest.json` 记生成它的 DLL 哈希。
+  MCP 用 `codegraph_explore` 加 `projectPath` 指向该目录；测试读原版方法用 `tools/tests/vanilla_source.py`。
+- 查明的原版运作写进 `docs/vanilla/` 手册，不只在 state 留一句结论。
+- 单个 DLL 的手动反编译（`ilspycmd -p -o <目录> <dll>`，工具在 `~/.dotnet/tools/ilspycmd`）只用于第三方模组和
+  **我们自己构建的 DLL**，例如确认玩家包里诊断代码确实被编译掉了。
 - 托管层读到的"请求"不等于引擎的"结果"。弓↔双刀切换在托管层看起来完全正常，
   真正的决定在 C++ 里。
 

@@ -10,13 +10,13 @@ from pathlib import Path
 from test_city_search import read, block
 from test_city_search_flow import run
 from test_duty_banner import method
+from vanilla_source import vanilla
 
 
 class CitySearchAlleyTests(unittest.TestCase):
     def test_search_has_no_alley_entry_but_normal_town_keeps_native_alley_fights(self):
-        native_root = Path('.codex_tmp/sb148-full')
-        alley = (native_root / 'SandBox.Missions.MissionLogics/MissionAlleyHandler.cs').read_text(encoding='utf-8-sig')
-        campaign = (native_root / 'SandBox.CampaignBehaviors/AlleyCampaignBehavior.cs').read_text(encoding='utf-8-sig')
+        alley = vanilla('SandBox', 'SandBox.Missions.MissionLogics/MissionAlleyHandler.cs')
+        campaign = vanilla('SandBox', 'SandBox.CampaignBehaviors/AlleyCampaignBehavior.cs')
         entry = method(campaign, 'alley_talk_start_normal_on_condition')
         start = method(alley, 'StartCommonAreaBattle')
         end = method(alley, 'EndFight')
@@ -91,7 +91,7 @@ static class Program{
             run(code.replace('return list.ToArray();', 'list.Add(new MissionAlleyHandler());return list.ToArray();'))
 
     def test_native_passage_walk_run_flags_are_not_overridden_by_search(self):
-        source = Path('.codex_tmp/sb148-full/SandBox.AI/PassageAI.cs').read_text(encoding='utf-8-sig')
+        source = vanilla('SandBox', 'SandBox.AI/PassageAI.cs')
         flags = block(source, r'protected override AIScriptedFrameFlags GetScriptedFrameFlags\(').replace('protected override', 'public')
         code = r'''
 using System;

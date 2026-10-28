@@ -6,6 +6,7 @@ from pathlib import Path
 from test_city_search import read, block, member
 from test_city_search_flow import run
 from test_duty_banner import method
+from vanilla_source import vanilla
 
 STUBS = r'''
 using System;using System.Collections.Generic;using System.Linq;
@@ -130,8 +131,8 @@ class HallDuelTests(unittest.TestCase):
         controller = block(source, r'internal sealed partial class GwpCitySearchMissionController')
         position = block(source, r'internal sealed class GwpHallDuelPositionBehavior')
         progress = read('GwpCitySearchMission.Progress.cs')
-        location = (Path(__file__).resolve().parents[2] / '.codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.Settlements.Locations/LocationComplex.cs').read_text(encoding='utf-8-sig')
-        encounter = (Path(__file__).resolve().parents[2] / '.codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.Encounters/LocationEncounter.cs').read_text(encoding='utf-8-sig')
+        location = vanilla('TaleWorlds.CampaignSystem', 'TaleWorlds.CampaignSystem.Settlements.Locations/LocationComplex.cs')
+        encounter = vanilla('TaleWorlds.CampaignSystem', 'TaleWorlds.CampaignSystem.Encounters/LocationEncounter.cs')
         code = STUBS.replace('CHANGE_LOCATION', method(location, 'ChangeLocation'))
         code = code.replace('LOCATION_NOTIFICATION', method(encounter, 'OnCharacterLocationChanged'))
         code = code.replace('CONTROLLER', controller).replace('POSITION_BEHAVIOR', position)

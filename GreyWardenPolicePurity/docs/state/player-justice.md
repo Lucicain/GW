@@ -82,7 +82,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 - 原版进攻和派兵进攻均在实际出战链调用BeHostileAction.ApplyEncounterHostileAction。预览、取消与出战应分清时刻，既有调停与关系恢复仍归所属业务。
 - Finish会经FinalizeBattle/LeaveBattle收尾；原事件已出结果、外交结束或特定劫掠状态会FinalizeEvent，LeaveBattle在玩家已成首队时也可能结束事件。直接全局放行“离开”或手动清MapEventSide，不能保证原NPC战斗不被打断。
 
-以上为本机v1.4.8托管链结论，不是用户现场已完整重放。原版反编译输出在已登记的mb148-decomp/join-encounter-20261021目录，过程与行号写journal。（依据：C#反编译2026-10-21）
+以上为本机v1.4.8托管链结论，不是用户现场已完整重放。原版对应源码（EncounterGameMenuBehavior、PlayerEncounter、MenuHelper、MapEventHelper）在原版源码库，过程与行号写journal。（依据：C#反编译2026-10-21）
 
 ### 对世界的后续影响
 

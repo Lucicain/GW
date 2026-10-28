@@ -7,6 +7,7 @@ from pathlib import Path
 from test_lord_combat import members, source
 from test_training_transport import ROOT, hygiene
 from test_direct_guard_recruitment import STUBS as RECRUIT_STUBS
+from vanilla_source import vanilla
 
 
 HARNESS = r'''
@@ -194,11 +195,11 @@ class FaithVillagerTests(unittest.TestCase):
         roster = RECRUIT_STUBS[RECRUIT_STUBS.index("struct TroopRosterElement"):RECRUIT_STUBS.index("class Hero")]
         roster = roster.replace(" public int TotalManCount", " public static TroopRoster CreateDummyTroopRoster()=>new TroopRoster();public int TotalRegulars=>rows.Where(e=>!e.Character.IsHero).Sum(e=>e.Number);\n public int TotalManCount")
         transfer = source("GwpTroopTransfer.cs").split("namespace GreyWardenPolicePurity", 1)[1].strip()[1:-1]
-        native = (ROOT / ".codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.Settlements/Village.cs").read_text(encoding="utf-8-sig")
+        native = vanilla("TaleWorlds.CampaignSystem", "TaleWorlds.CampaignSystem.Settlements/Village.cs")
         start = native.index("public IEnumerable<PartyBase> GetDefenderParties(")
         brace = native.index("{", start)
         native = native[start:hygiene.match_brace(native, hygiene.code_mask(native), brace)+1]
-        loader = (ROOT / ".codex_tmp/campaignsystem-full-decompile/TaleWorlds.CampaignSystem.CampaignBehaviors/VillagerCampaignBehavior.cs").read_text(encoding="utf-8-sig")
+        loader = vanilla("TaleWorlds.CampaignSystem", "TaleWorlds.CampaignSystem.CampaignBehaviors/VillagerCampaignBehavior.cs")
         start = loader.index("private static void MoveItemsToVillagerParty(")
         brace = loader.index("{", start)
         loader = loader[start:hygiene.match_brace(loader, hygiene.code_mask(loader), brace)+1]

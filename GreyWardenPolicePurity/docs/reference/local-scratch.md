@@ -41,10 +41,6 @@
 
 | 路径 | 用途 |
 |---|---|
-| `mb148-decomp/affairs-dispatch-20261021/` | 事务页按钮无效调查：本机安装版GauntletInformationView/MBInformationManager及地图衔接；现行结论归affairs-interface，修复验收后退休 |
-| `mb148-decomp/join-encounter-20261021/` | 主动参战不可反悔与原生菜单衔接调研，本机安装DLL新反编译EncounterGameMenuBehavior、PlayerEncounter、MenuHelper、MapEventHelper；现状及待定方案归player-justice，尚未实施修复 |
-| `mb148-decomp/player-support-encounter-20261020/` | 未修复的玩家求援参战时序调查，当前安装1.4.8原版新反编译；结论见field-arrest「菜单确认、离开与附近援军」，用于下一步参战/离开离线回归 |
-| `mb148-decomp/`、`core148-decomp/`、`campaignsystem-full-decompile/`、`sandbox148-decomp/`、`navaldlc148-decomp/` | v1.4.8 反编译（sandbox148 只有比武任务逻辑 `TournamentBehavior`，灰袍使者比武名次读它，`case-envoy.md`；navaldlc148 是 NavalDLC.dll，下水时间与锚点见 `temporary-parties.md`），见 `investigation-methods.md`；可用 ilspycmd 重建 |
 | `check-native-persuasion-direct.ps1` | `investigation-methods.md` 引用的运行时反射先例 |
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |
 | `cloth-gradient/warcharmor.original.fbx` | 写渐变之前的弓箭手源 FBX |
@@ -54,6 +50,9 @@
 | `firesworn-hang-18788-*.txt`、`firesworn-hang-18788-ai.log` | 2026-10-09 大地图卡死的双次非侵入线程采样与现场AI日志；巡逻零人派队死循环修复待验收，结案后清理 |
 
 ## 新产生的中间产物
+
+官方 DLL 的反编译不再放这里：用仓库外的原版源码库（`tools/Build-VanillaSource.py`，见 workflow「原版知识」）。2026-10-28 起原有的 15 个官方反编译目录和 4 个单文件已删除，内容全部被源码库覆盖。（依据：用户裁定 2026-10-28）
+
 
 反编译输出、隔离构建、DLL 备份、日志等，结论写进 state 或 journal、对应改动提交后即可删，git 历史就是回退点。
 

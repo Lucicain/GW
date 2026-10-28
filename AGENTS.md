@@ -19,8 +19,11 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   约一半类型的文件名不含类型名，别靠文件名猜。（依据：流程）
 - 调用图不含 Harmony 绑定、反射、原生调用和存读档；「无调用方 / 无测试」不是删代码的依据。（依据：流程）
 - `docs/journal/` 超过 2 MB，不要通读：`grep -n '^## '` 看标题，只读需要的段。它不是规则。
-- 原版行为不明时先反编译（托管层）或反汇编（`TaleWorlds.Native.dll`）查实，不靠反复实测试出来，
-  也不让用户实测回答本该查代码的问题。方法见 `docs/reference/investigation-methods.md`。（依据：用户裁定）
+- 原版行为不明时，先读 `docs/vanilla/` 的原版机制手册，再查原版源码库：仓库外的
+  `../BannerlordSource/<游戏版本>/`，用 CodeGraph 查（`codegraph_explore` 带 `projectPath`，或在该目录下 `codegraph explore`）；
+  库缺失或游戏升级就跑 `python tools/Build-VanillaSource.py`。引擎 C++ 层反汇编 `TaleWorlds.Native.dll`。
+  不靠反复实测试出来，也不让用户实测回答本该查代码的问题。查明的原版运作写进手册，不只留一句规则。
+  方法见 `docs/reference/investigation-methods.md`，手册规矩见 `docs/vanilla/README.md`。（依据：用户裁定 2026-10-28）
 
 ## 改动流程（每次改动都走，不是每轮）
 
@@ -48,7 +51,9 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   `用户裁定 YYYY-MM-DD`，推翻旧裁定就改掉旧句子。不得只留在对话或 harness 记忆里。state 里找不到的规则默认不成立，
   不得从 journal 恢复。（依据：用户裁定 2026-10-07）
 - **修 bug 先钉死根因**：用转储、日志、反编译/反汇编和不开游戏的离线 DLL 测试精确定位并复现；根因没钉死不改业务代码，
-  只加强诊断取证；取证由 agent 自己设计监控、自己读日志，不要求玩家复现特定场景；修复要带负对照测试（旧代码复现、新代码通过）。细则见 `workflow.md`「故障修复」。（依据：用户裁定 2026-10-21）
+  只加强诊断取证；取证由 agent 自己设计监控、自己读日志，不要求玩家复现特定场景。修好一个 bug 留三样：
+  跑真实游戏 DLL 的负对照测试（旧代码复现、新代码通过）、诊断版里的复发哨兵、哨兵记下的经过次数；
+  「没再出现」只按经过次数算。细则见 `workflow.md`「故障修复」。（依据：用户裁定 2026-10-21、2026-10-28）
 - **实机测试只由用户做**：agent 不启动游戏、不操控游戏界面。部署时 DLL 被占用说明用户在玩，保留工作树，等关游戏再部署。（依据：用户裁定 2026-09-25）
 - **诊断**全部在 `#if GWP_DIAGNOSTICS` 内，加、删、加强、退休都由 agent 负责，不请用户读日志；用户确认功能可用时同一轮退休它的诊断。
   细则见 `docs/state/diagnostics.md`。清理 `.codex_tmp/` 前先看 `docs/reference/local-scratch.md` 的保留清单。（依据：用户裁定 2026-09-26）
@@ -60,7 +65,8 @@ Mount & Blade II: Bannerlord mod, C# / net472 / Harmony. Live test module:
   改 `_Module/README*.md`** 只在用户提出新版本时做。细则见 `workflow.md`「提交与发版」。（依据：用户裁定 2026-10-21）
 - **多 agent**：同一块耦合区域同一时间只有一个 agent 在写；并行只在互不相干的子系统、各用 worktree；交接只经仓库。（依据：用户裁定 2026-10-21）
 - **熵控制**：集中清理哪个 agent 都可以做，同一时间只有一个；以 `workflow.md`「清理台账」的基线做增量清理。开发中发现却不处理的整洁问题，
-  写进清理待办，不留在对话里。（依据：用户裁定 2026-10-22）
+  写进清理待办，不留在对话里。state 规则总数是熵指标，`Check-StateFreshness` 报告它。用户新裁定照常写进 state；写一篇原版手册的同一轮，
+  把因这个原版机制而存在的 state 规则改成指向手册或删掉；集中清理时把总数压回上次基线以下，压不下就说明原因。（依据：用户裁定 2026-10-22、2026-10-28）
 - **harness**：仓库目录里不要新建 `CLAUDE.md`、`.claude/CLAUDE.md`、`CLAUDE.local.md`、`GEMINI.md`（会顶掉本文件）；
   harness 记忆只放个人习惯或指回仓库的指针。新克隆后设 `git config core.hooksPath .githooks`。细则见 `workflow.md`「接入 harness」。（依据：用户裁定 2026-10-07）
 

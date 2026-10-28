@@ -1,6 +1,6 @@
 # 原版烧村机制与信众村守备
 
-原版证据来自 `.codex_tmp/campaignsystem-full-decompile`（v1.4.8 `TaleWorlds.CampaignSystem` 反编译），
+原版证据来自原版源码库 `../BannerlordSource/v1.4.8/managed/TaleWorlds.CampaignSystem/`（`tools/Build-VanillaSource.py` 生成），
 监控证据来自 2026-10-14 一局（`GreyWarden-AI-Diagnostics.log`、`GreyWarden-Case-Events.log` 及 10-12 归档）。
 这是参考资料，不是规则；模组现行行为以 `docs/state/` 为准。
 

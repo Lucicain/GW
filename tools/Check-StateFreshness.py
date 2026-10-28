@@ -435,7 +435,24 @@ def cleanup_ledger() -> str:
     since = git("rev-list", "--count", base.group(1) + "..HEAD")
     if not since:
         return f"— 集中清理：台账基线 {base.group(1)} 不在历史里，清理时改成实际的清理提交"
-    return f"— 集中清理：上次在 {base.group(1)}，之后 {since} 个提交，清理待办 {len(items)} 项（见 workflow.md「清理台账」）"
+    return (f"— 集中清理：上次在 {base.group(1)}，之后 {since} 个提交，清理待办 {len(items)} 项（见 workflow.md「清理台账」）\n"
+            + rule_count(text))
+
+
+def rule_count(ledger: str) -> str:
+    """The entropy metric of workflow.md「清理台账」: rules carrying 依据 in the
+    hand-written state files. It may only fall; a vanilla-manual page replaces
+    the rules that existed because of that vanilla mechanism (user ruling
+    2026-10-28). progress.md repeats other files' lines in its roll-ups."""
+    count = sum(p.read_text(encoding="utf-8").count("依据")
+                for p in STATE.glob("*.md")
+                if p.name not in ("progress.md", "code-map.md"))
+    base = re.search(r"熵指标：.*?基线 (\d+)", ledger)
+    if not base:
+        return f"— 规则总数 {count}（workflow.md 缺少熵指标基线）"
+    limit = int(base.group(1))
+    trend = "高于基线：集中清理时用原版手册或合并压回" if count > limit else "未超基线"
+    return f"— 规则总数 {count}，基线 {limit}，{trend}"
 
 
 def check_leftovers():

@@ -62,10 +62,10 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 - **说服**：野外执法已用原版 `PersuasionTask`（统御/魅力/诡道/交易，难度按 `PersuasionArgumentStrength`），简单与较难说服可复用这一套。（依据：源码 `GwpFieldArrestLines.BuildReservations`）
 - **单挑与群殴切换**：藏身处头目对话后在同一场景切单挑或群战（单挑时双方其余人移出队伍、原地围观，结束后按胜负归队）。竞技场单挑 `OpenArenaDuelMission` 可指定对手并回调结果，原版任务「间谍派对」就这样用；**城堡没有竞技场**（城堡只有中心、领主大厅、地牢）。（依据：SandBox.dll v1.4.8 反编译、settlements.xml 2026-10-21）
 
-## 城里打起来时平民与卫兵的原版行为
+## 城里打起来时平民与卫兵
 
-- 原版有这套机制：任务里存在「正在打架」（`MissionFightHandler.IsThereActiveFight`）时，没拿武器的平民把玩家本人当作危险来源，触发 `FleeBehavior`（逃向保护者、逃进门、逃到某处）；拿武器的人以及职业为士兵、卫兵、狱卒的人算「好斗」，走 `FightBehavior` 参战。受惊由 `AlarmedBehaviorGroup` 按看见敌人、听到声响、看到尸体累积警觉值触发。（依据：SandBox.dll v1.4.8 反编译 2026-10-21）
-- 原版的危险来源只认玩家本人，且要经 `MissionFightHandler` 开打；我们带兵群殴时平民是否也躲开我方士兵，实现时要专门验收，必要时补上危险来源。（依据：同上）
+原版谁逃、谁打、逃往哪里见[原版手册：城镇任务里谁逃跑、谁还击](../vanilla/town-alarm-and-flight.md)；下面只写搜捕改了什么。
+
 - 任务控制器设 `DoesMissionRequireCivilianEquipment = false` 即按战斗装备生成玩家，藏身处、越狱、村庄任务都是这样。（依据：同上）
 
 ## 第1段的实现
@@ -95,7 +95,7 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 - FadeOut观察器不进入启动扫描：人物预览现场已确认动作缓存失效、Agent静态字段也引用该缓存，因此仅在首次打开搜捕时显式绑定；诊断回调避开Prefix/Postfix约定名称，避免无目标的类扫描仍尝试注册。离线确认启动未绑定、后期重复安装仅一份；这是隔离诊断初始化风险，不改变逃跑、FadeOut或原生止崩补丁，也未证明它是最早污染缓存者。（依据：实机诊断、Harmony实际绑定负对照2026-10-28）
 - 不要用原版 `MissionFightHandler.StartCustomFight` 打带兵的群战：它结束时把参战者放进新建的 Team 对象，队伍无相等重写，我方会脱离玩家队伍、不能再指挥。（依据：C#反编译 v1.4.8 MissionFightHandler.ResetTeamsForFightAndDuel、Team）
 - 搜捕场景不挂MissionAlleyHandler，原版AlleyCampaignBehavior的入场条件自行返回false，停止自动挑衅/斗殴/占领流程；普通步行任务的原版组件与入口保持。02:01:15异常在MissionAlleyHandler.EndFight：它的StartCommonAreaBattle按Soldier/Guard职业把自选随行兵也收进_guardAgents，EndFight要求每人有AgentNavigator/FightBehavior，而SpawnTroop兵没有地点导航器。执行安装版入口/开战/收尾方法已复现该空引用；搜捕组件移除后入口关闭、普通进城仍可正常开始结束，16项断言和旧挂件负对照通过。不用全局catch吞掉原版异常，也不修改原版普通任务。（依据：用户授权、现场异常栈及安装版DLL/生产组件离线负对照2026-10-28）
-- 原版平民逃跑的危险源只在 `MissionFightHandler` 自有打斗时给玩家本人；搜捕群殴改为给实际在场的我方玩家与士兵，并让平民进入原版 `FleeBehavior`。路径与穿门效果仍由 `CIVILIAN_FLIGHT` 在实机核对。（依据：本机v1.4.8 C#反编译2026-10-22；设计）
+- 搜捕群殴把危险来源改为实际在场的我方玩家与士兵（原版只认玩家本人），并让平民进入原版 `FleeBehavior`。路径与穿门效果仍由 `CIVILIAN_FLIGHT` 在实机核对。（依据：设计）
 - **士兵来源**：按名册生成的士兵用挂主队的 `PartyAgentOrigin`。原版 `Mission.GetAgentTeam` 在任务有盟友队伍时（城镇任务的基础分队会建一支）只把「受玩家指挥」的兵放进玩家队伍；伤亡也由原版 `BattleAgentLogic` 经它写进主队名册，英雄的伤亡与血量一并由原版处理。（依据：C#反编译 v1.4.8；实机日志 ORDERS 编队为空 2026-10-21；离线负对照 test_city_search）
 - 不要用 `SimpleAgentOrigin` 生成要受玩家指挥的普通兵：它对普通兵没有所属部队，会被分进盟友队伍、下令界面显示没有部队。（依据：C#反编译 v1.4.8、离线负对照 2026-10-21）
 
@@ -103,7 +103,7 @@ NavalDLC 剧情另用窃听（`EavesdroppingMissionLogic`）、破坏（`Sabotag
 
 - 大厅用本城/堡的 `lordshall`，保留原版大厅人口、物品、对话与战斗行为，玩家与所选存活者一起出现。目标只从原版已经生成的人物中查找，缺席则结束本次搜捕，不克隆领主。走近目标主动交涉；从外面打进来的立即群殴，不能重新说服。（依据：用户裁定2026-10-21；设计）
 - 当前场景搜捕目标始终算守方，即使没武器也不进入平民逃跑；对该目标拦截原版Panic/Retreat及逃跑穿门，和平约定的出门赴约例外。删除原来无武器追近控制及逃脱结局；群殴倒地立即登记结果，成功撤出城后结算，不能靠打光守卫隔空抓到仍活跃的目标。目标不逃跑及旁观者分类修正随用户本轮日常搜捕反馈登记确认。（依据：用户裁定2026-10-26；原版反编译、生产方法与负对照）
-- 无武器守卫漏档已精确复现：10-27 10:03及10:06两场城中战斗各9名`armed=False/defender=False/flee=False`，均为兵种人物；原版IsAgentAggressive把Soldier/Guard/PrisonGuard身份也算作可还击。ShouldFlee与IsDefender互补，当前无武器旁观者和有姓名城镇要人逃跑，CivilianDanger共用该判断，提供实际我方危险源。专项用真实原版三个职业判定与生产IsWatch回放，旧条件负对照失败，新条件通过；实际逃跑动作仍是引擎边界。（依据：现场CROWD_ROLE、安装版反编译、原版兵种XML及离线负对照2026-10-27）
+- 无武器守卫漏档已精确复现：10-27 10:03及10:06两场城中战斗各9名`armed=False/defender=False/flee=False`，均为兵种人物，原版按职业把他们算作好斗（见手册）。ShouldFlee与IsDefender互补，当前无武器旁观者和有姓名城镇要人逃跑，CivilianDanger共用该判断，提供实际我方危险源。专项用真实原版三个职业判定与生产IsWatch回放，旧条件负对照失败，新条件通过；实际逃跑动作仍是引擎边界。（依据：现场CROWD_ROLE、安装版反编译、原版兵种XML及离线负对照2026-10-27）
 - 大厅劝降是两道顾虑、八种说法，难度与卫兵同一套（见上）。成功先记已控制住目标并留在现场供玩家带队走出；完成离城时才经 `GwpVoluntarySurrender.TryCapture` 押入主队，再调用 `RegisterCaptureInCustody` 接上现有结案、交差与俘虏估价。不存在第二份案件状态。（依据：设计；生产方法离线执行2026-10-22）
 - 谈崩由对方先报单挑/群殴（`OpponentPrefersDuel`），选定后对话重复刷新不重算。实力用原版比武模拟胜负的 `GetSimulationAttackPower`（按装备与对应技能算攻防分）：群殴赢面取「对方在场带武器者攻×防总和 / 我方在场者攻×防总和」的对数，单挑赢面取目标与玩家各自战斗装备的同一比值；单挑赢面加性格偏向（勇武＋荣誉，每级 0.25）大于群殴赢面就选单挑。所以对方打不过时求单挑，连单挑也明显打不过、又胆小不讲荣誉时才躲在卫兵后面。对方选群殴、玩家要单挑时另作一道说服，成功单挑、失败群殴；对方选单挑、玩家要群殴时不谈，对方说一句后直接开打。群殴现场开打；单挑先约定；有竞技场时玩家自己走出大厅赴约，没有竞技场时按下文大厅流程清场、退场换装和返回对话。全身无甲时原版护甲项为0/0，已由安装版DLL离线复现；`SimulationPower`仅对零护甲重量且防御为NaN的结果重算原版基础防御、盾牌和坐骑贡献，正常装备原样使用原版结果。裸装、有武器、盾牌、坐骑与技能变化均已与去掉该0/0的原版结果对照。（依据：用户裁定2026-10-26；SandBox v1.4.8 TournamentFightMissionController/CharacterObject 反编译；偏向大小为设计；离线负对照）
 - 有竞技场的聚落复用原版 `OpenArenaDuelMission` 及胜负回调；无竞技场的大厅单挑只留下玩家与目标，`IAgentStateDecider` 在单挑返回击昏，群殴仍由原版伤亡模型决定。（依据：本机v1.4.8 ArenaDuelMissionController/HideoutMissionController/Mission.GetAgentState反编译2026-10-22）
