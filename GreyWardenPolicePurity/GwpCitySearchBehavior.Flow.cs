@@ -90,6 +90,7 @@ namespace GreyWardenPolicePurity
             store.SyncData("gwp_cs_left_hall", ref _hasLeftHall);
             store.SyncData("gwp_cs_target_down", ref _targetDown);
             store.SyncData("gwp_cs_target_killed", ref _targetKilled);
+            SyncStreetBodies(store);
         }
 
         private void BeginSearch(Settlement settlement, Hero target, TroopRoster roster)
@@ -108,6 +109,7 @@ namespace GreyWardenPolicePurity
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
+            ClearStreetBodies();
             _entryWaveQueued = _hasLeftHall = _targetDown = _targetKilled = false;
             foreach (TroopRosterElement element in roster.GetTroopRoster())
                 if (!element.Character.IsPlayerCharacter)
@@ -144,15 +146,21 @@ namespace GreyWardenPolicePurity
             return -1f;
         }
 
-        internal void SaveEnemySurvivors(IEnumerable<(string Key, float Health)> survivors)
+        internal void SaveEnemySurvivors(IEnumerable<string> observedKeys, IEnumerable<(string Key, float Health)> survivors)
         {
-            _enemyKeys.Clear();
-            _enemyHealth.Clear();
-            foreach (var survivor in survivors)
-            {
-                _enemyKeys.Add(survivor.Key);
-                _enemyHealth.Add(survivor.Health);
-            }
+            var replaced = observedKeys.GroupBy(key => key).ToDictionary(group => group.Key, group => group.Count());
+            for (int i = 0; i < _enemyKeys.Count;)
+                if (replaced.TryGetValue(_enemyKeys[i], out int count) && count > 0)
+                {
+                    replaced[_enemyKeys[i]] = count - 1;
+                    _enemyKeys.RemoveAt(i);
+                    _enemyHealth.RemoveAt(i);
+                }
+                else i++;
+            // 本场只接触同兵种的前N名；其余街道个体不能被大厅的小快照清掉。
+            var current = survivors.ToArray();
+            _enemyKeys.InsertRange(0, current.Select(survivor => survivor.Key));
+            _enemyHealth.InsertRange(0, current.Select(survivor => (double)survivor.Health));
         }
 
         internal void QueuePlace(GwpCitySearchPlace place)
@@ -219,6 +227,7 @@ namespace GreyWardenPolicePurity
             _enemyKeys.Clear();
             _enemyHealth.Clear();
             _enemyLosses.Clear();
+            ClearStreetBodies();
             _targetDown = _targetKilled = false;
             _leavePending = escaped;
         }

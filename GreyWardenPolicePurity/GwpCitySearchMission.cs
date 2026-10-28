@@ -46,6 +46,7 @@ namespace GreyWardenPolicePurity
             int wallLevel = settlement.Town.GetWallLevel();
             string scene = center.GetSceneName(wallLevel);
             string levels = Campaign.Current.Models.LocationModel.GetCivilianUpgradeLevelTag(wallLevel);
+            GwpCityStreetSpawnPatch.Install();
 #if GWP_DIAGNOSTICS
             GwpCitySearchFadeDiagnosticsPatch.EnsureApplied();
 #endif
@@ -190,7 +191,9 @@ namespace GreyWardenPolicePurity
             _gate = spawn?.GetGlobalFrame().origin ?? Agent.Main?.Position ?? Vec3.Zero;
             _gateExitAvailable = !InHall && spawn != null;
             CampaignMission.Current.Location.RemoveAllCharacters(character => character.Character.HeroObject?.PartyBelongedTo == MobileParty.MainParty);
+            PrepareStreetReturn();
             Mission.GetMissionBehavior<MissionAgentHandler>().SpawnLocationCharacters();
+            RestoreStreetBodies();
             DisablePlayerPassages();
             SpawnTroops();
             BeginSearchStage();
@@ -237,8 +240,20 @@ namespace GreyWardenPolicePurity
                 }
             }
             TakeCommand(main);
-            Order(OrderType.FollowMe);
+            OrderInitialSearchFollowers();
             return count;
+        }
+
+        private void OrderInitialSearchFollowers()
+        {
+            if (!EscapingCity || !_gateExitAvailable)
+            {
+                Order(OrderType.FollowMe);
+                return;
+            }
+            OrderController controller = Mission.PlayerTeam.PlayerOrderController;
+            controller.SelectAllFormations();
+            controller.SetOrderWithPosition(OrderType.Move, new WorldPosition(Mission.Scene, System.UIntPtr.Zero, _gate, true));
         }
 
         /// <summary>
@@ -377,7 +392,7 @@ namespace GreyWardenPolicePurity
             if (IsOurs(attacker) && IsDefender(victim)) _pendingFight = "struck";
         }
 
-        /// <summary>开战：玩家阵营对城主势力宣战，所有实际持械的非我方人物参与防守。</summary>
+        /// <summary>开战：军事守方抵抗，普通居民即便持械也逃散。</summary>
         private void StartFight(string cause)
         {
             // 宣战可能让原版立即移走驻城队，先冻结当时确实驻城的来源。
@@ -418,7 +433,7 @@ namespace GreyWardenPolicePurity
             }
             Mission.SetMissionMode(MissionMode.Battle, false);
             Mission.GetMissionBehavior<MissionConversationLogic>().DisableStartConversation(true);
-            Order(OrderType.Charge);
+            if (!EscapingCity) Order(OrderType.Charge);
         }
 
         private static void SetSearchFighter(Agent agent)
@@ -458,7 +473,7 @@ namespace GreyWardenPolicePurity
             _stage = Stage.FightOver;
             Mission.SetMissionMode(MissionMode.StartUp, false);
             RestoreSearchFollowers();
-            Order(OrderType.FollowMe);
+            if (!EscapingCity) Order(OrderType.FollowMe);
             OnSearchFightWon();
         }
 
@@ -476,6 +491,7 @@ namespace GreyWardenPolicePurity
 
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
+            NoteStreetDefeat(affectedAgent, agentState);
 #if GWP_DIAGNOSTICS
             WriteSearchVisualRemoval(affectedAgent, agentState.ToString());
 #endif
@@ -514,15 +530,18 @@ namespace GreyWardenPolicePurity
 
         /// <summary>守卫：原版算作执法者的士兵、卫兵、狱卒，不含我方带进来的兵。</summary>
         private bool IsWatch(Agent agent) => agent.IsHuman && !IsOurs(agent)
+            && !_restoredStreetBodies.Contains(agent)
             && agent.Character is CharacterObject character && MissionFightHandler.IsAgentJusticeWarrior(character);
 
-        /// <summary>用户裁定2026-10-27：城镇要人逃跑，其余非我方持械者防守；目标始终留场。</summary>
+        /// <summary>用户裁定2026-10-28：只由卫兵/巡逻和真实城防兵员抵抗，目标始终留场。</summary>
         private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent)
+            && !_restoredStreetBodies.Contains(agent)
             && (agent == _hallTarget || agent.HasWeapon()
-                && agent.Character is not CharacterObject { HeroObject: { IsNotable: true } });
+                && agent.Character is not CharacterObject { HeroObject: { IsNotable: true } }
+                && (IsWatch(agent) || _citySoldiers.ContainsKey(agent)));
 
         /// <summary>非我方且不参战的人逃散，不再以职业把无武器打手或士兵排除在外。</summary>
-        private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent);
+        private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !_restoredStreetBodies.Contains(agent) && !IsDefender(agent);
     }
 
     /// <summary>近战碰到人：交给进城搜捕认是不是对守卫动手。参数名须与原版回调一致，Harmony 按名绑定。</summary>

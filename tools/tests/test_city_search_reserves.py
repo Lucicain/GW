@@ -25,8 +25,13 @@ static class Flags {public static bool HasAnyFlag(this WeaponFlags a,WeaponFlags
 class Weapon{public WeaponFlags WeaponFlags=WeaponFlags.MeleeWeapon;}
 class Item{public List<Weapon> Weapons=new(){new()};}class EquipmentElement{public Item? Item=new();}
 class Equipment{public EquipmentElement Element=new();public EquipmentElement this[EquipmentIndex i]=>Element;}
-class BasicCharacterObject{public string StringId="foot";public bool IsHero,IsRanged;public float Power=10;public float GetPower()=>Power;public FormationClass GetFormationClass()=>IsRanged?FormationClass.HorseArcher:FormationClass.Cavalry;}
+class BasicCharacterObject{public string StringId="foot";public bool IsHero,IsRanged;public int Level=1;public float Power=10;public float GetPower()=>Power;public FormationClass GetFormationClass()=>IsRanged?FormationClass.HorseArcher:FormationClass.Cavalry;}
 class CharacterObject:BasicCharacterObject{public List<Equipment> BattleEquipments=new(){new()};}
+class FlattenedTroopRosterElement{public CharacterObject Troop=null!;}
+class MapEventParty{public PartyBase Party;public List<FlattenedTroopRosterElement> Troops=new();public int HealthyManCountAtStart=>Troops.Count;private MapEventParty(PartyBase party){Party=party;foreach(var e in party.MobileParty.MemberRoster.Elements)for(int i=0;i<e.Number-e.WoundedNumber;i++)Troops.Add(new(){Troop=e.Character});}}
+static class AccessTools{public static System.Reflection.ConstructorInfo Constructor(Type type,Type[] args)=>type.GetConstructor(System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.NonPublic,null,args,null)!;}
+class PriorityModel{public void EnqueueTroopSpawnProbabilitiesAccordingToUnitSpawnPrioritization(MapEventParty p,object? prior,bool include,int count,bool force,List<(FlattenedTroopRosterElement Troop,MapEventParty Party,float Priority)> target){foreach(var e in p.Troops)target.Add((e,p,e.Troop.Level));}}
+class CampaignModels{public PriorityModel TroopSupplierProbabilityModel=new();}class Campaign{public static Campaign Current=new();public CampaignModels Models=new();}
 class Banner{}class Faction{}class Hero{public static Hero MainHero=new();public Faction MapFaction=new();}
 static class FactionManager{public static HashSet<Faction> Hostiles=new();public static bool IsAtWarAgainstFaction(Faction a,Faction b)=>Hostiles.Contains(a);}
 class Element{public CharacterObject Character=new();public int Number,WoundedNumber;}
@@ -69,11 +74,11 @@ class AgentBuildData{public IAgentOriginBase Origin=null!;public Team Target=nul
  public AgentBuildData(BasicCharacterObject c){}public AgentBuildData TroopOrigin(IAgentOriginBase origin){Origin=origin;return this;}public AgentBuildData Team(Team t){Target=t;return this;}public AgentBuildData Banner(Banner b)=>this;
  public AgentBuildData ClothingColor1(uint c){Color1=c;return this;}public AgentBuildData ClothingColor2(uint c){Color2=c;return this;}public AgentBuildData NoHorses(bool b){NoHorse=b;return this;}public AgentBuildData CivilianEquipment(bool b){Civilian=b;return this;}public AgentBuildData IsReinforcement(bool b){Reinforcement=b;return this;}
  public AgentBuildData InitialPosition(Vec3 p){Position=p;return this;}public AgentBuildData InitialDirection(Vec2 d)=>this;}
-class SearchState{public bool HasLeftHall=true,Claimed;public List<string> Losses=new();public int EnemyLossCount(string key)=>Losses.Count(x=>x==key);public void RecordEnemyLoss(string key){Losses.Add(key);}public bool ClaimEntryWave(){if(Claimed)return false;Claimed=true;return true;}public List<(string Key,float Health)> Saved=new();public float SavedEnemyHealth(string k,int n)=>Saved.Where(s=>s.Key==k).Select(s=>s.Health).Skip(n).DefaultIfEmpty(-1).First();public void SaveEnemySurvivors(IEnumerable<(string Key,float Health)> s){Saved=s.ToList();}}
-static class GwpTuning{public static class CitySearch{public const int DefenderLimit=20,ReserveBatch=4,EntryReserveLimit=4;public const float ReserveInterval=3;}}
+class SearchState{public bool HasLeftHall=true,Claimed;public List<string> Losses=new();public int EnemyLossCount(string key)=>Losses.Count(x=>x==key);public void RecordEnemyLoss(string key){Losses.Add(key);}public bool ClaimEntryWave(){if(Claimed)return false;Claimed=true;return true;}public List<(string Key,float Health)> Saved=new();public float SavedEnemyHealth(string k,int n)=>Saved.Where(s=>s.Key==k).Select(s=>s.Health).Skip(n).DefaultIfEmpty(-1).First();public void SaveEnemySurvivors(IEnumerable<string> keys,IEnumerable<(string Key,float Health)> s){var changed=keys.ToHashSet();Saved.RemoveAll(entry=>changed.Contains(entry.Key));Saved.AddRange(s);}}
+static class GwpTuning{public static class CitySearch{public const int DefenderLimit=20,PursuerTarget=30,ReserveBatch=4,EntryReserveLimit=4;public const float ReserveInterval=3,PursuerCheckInterval=.5f;}}
 static class GwpCitySearchMission{public const string HallSpawnTag="spawnpoint_player",GateSpawnTag="sp_outside_near_town_main_gate";}
 partial class GwpCitySearchMissionController:MissionLogic{
- public bool InHall;
+ public bool InHall;private bool EscapingCity=>!InHall&&Search.HasLeftHall;
  enum Stage{Entering,Fighting,FightOver}private Stage _stage=Stage.Fighting;public Settlement _settlement=new();public SearchState Search=new();
  private List<Agent> _defenders=new();private Dictionary<Agent,object> _ours=new();private bool IsOurs(Agent a)=>a.Team==Mission.PlayerTeam;
  private static void SetSearchFighter(Agent a){a.Alarmed=true;}
@@ -89,53 +94,42 @@ static class Program{
  static GwpCitySearchMissionController New(){var m=new Mission();Agent.Main=new(){Origin=new PartyAgentOrigin(MobileParty.MainParty.Party,new()),Team=m.PlayerTeam};m.Agents.Add(Agent.Main);var c=new GwpCitySearchMissionController{Mission=m};m.MissionBehaviors.Add(c);return c;}
  static GameEntity Point(float x=77,float z=12)=>new(){Frame=new(){origin=new Vec3(x,z)}};
  static void Main(){
- var c=New();var foot=new CharacterObject();var garrison=Party("garrison",foot,10,2);var militia=Party("militia",foot,3);var visitor=Party("enemyVisitor",foot,4);var neutral=Party("neutral",foot,8);
+ var c=New();var foot=new CharacterObject();var garrison=Party("garrison",foot,10,2);var militia=Party("militia",foot,3);var visitor=Party("alliedLord",foot,4);var outsider=Party("hostileOtherFaction",foot,8);
  var unarmed=new CharacterObject{StringId="servant"};unarmed.BattleEquipments[0].Element.Item=null;
  garrison.MemberRoster.Elements.Add(new(){Character=unarmed,Number=20});garrison.MemberRoster.Elements.Add(new(){Character=new(){IsHero=true},Number=1});
- garrison.MapFaction=militia.MapFaction=c._settlement.MapFaction;FactionManager.Hostiles.Add(visitor.MapFaction);
- c._settlement.Town.GarrisonParty=garrison;c._settlement.MilitiaPartyComponent=new(){MobileParty=militia};c._settlement.Parties.AddRange(new[]{garrison,militia,visitor,neutral});
+ garrison.MapFaction=militia.MapFaction=visitor.MapFaction=c._settlement.MapFaction;FactionManager.Hostiles.Add(outsider.MapFaction);
+ c._settlement.Town.GarrisonParty=garrison;c._settlement.MilitiaPartyComponent=new(){MobileParty=militia};c._settlement.Parties.AddRange(new[]{garrison,militia,visitor,outsider});
  var guard=new Agent{Origin=new PartyAgentOrigin(garrison.Party,foot),Team=c.Mission.PlayerEnemyTeam};c.AddGuard(guard);
  c.Search.Saved.Add(("garrison|foot",31));c.Prepare();var source=(IGwpBattleSceneSource)c;
- Check(c.Remaining==14,"finite healthy roster excludes wounded, unarmed, heroes, neutrals and duplicate party entries");
+ Check(c.Remaining==14,"finite healthy roster includes every same-faction lord and excludes other factions, wounded, unarmed, heroes and duplicate parties");
  Check(guard.Origin is PartyAgentOrigin o&&o.Party==garrison.Party&&guard.Health==31,"existing guard occupies one real roster slot and retains wounds");
- Check(source.GetTotalNumberOfTroopsForSide(BattleSideEnum.Defender)==15&&source.NumberOfRemainingDefenderTroops==14,"shared support context includes initial guard plus all reserves exactly once");
+ Check(source.GetTotalNumberOfTroopsForSide(BattleSideEnum.Defender)==15&&source.NumberOfRemainingDefenderTroops==14,"shared context has each finite soldier once");
  c.Prepare();Check(c.Remaining==14,"preparing twice does not duplicate roster");
- var context=new GwpBattleSceneContext{Mission=c.Mission};c.Mission.MissionBehaviors.Add(context);Check(context.TryCapture(),"city source participates in existing battle context");
- Check(context.OpeningCount(BattleSideEnum.Defender)==15&&context.RemainingPower(BattleSideEnum.Defender)==150,"already spawned neutral guards are subtracted exactly once from reserve power");
- c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0,waves=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"arrival notifies correct side");arrivals+=count;waves++;};
- c.Tick();Check(c.Remaining==10&&arrivals==4,"first limited batch joins combat");Check(waves==1,"one batch notifies music as one arrival wave");
- Check(c.Mission.Agents.Skip(2).All(a=>a.Alarmed&&a.Team==c.Mission.PlayerEnemyTeam&&a.Position.x==77&&a.Position.z==12),"reserves use native defender point and wake combat AI without changing hall floor");
- Check(c.Mission.Agents.Skip(2).All(a=>a.Formation!=null&&!a.Formation.IsAIControlled&&a.Formation.Order==MovementOrder.MovementOrderCharge&&a.AutoTarget),"distant reserves receive a continuing native charge order and automatic enemy selection");
- Check(context.RemainingPower(BattleSideEnum.Defender)==150,"moving reserves to scene cannot inflate shared power");
- Check(c.Mission.Agents.Skip(2).All(a=>a.Color1==((PartyAgentOrigin)a.Origin).Party.Primary&&a.Color2==((PartyAgentOrigin)a.Origin).Party.Secondary),"reinforcements use source party colors rather than generic mission team colors");
- c.Tick();Check(c.Remaining==10,"same-frame reentry cannot repeatedly spawn");
- DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission=c.Mission.Agents.Count+1;c.Mission.CurrentTime=4;c.Tick();Check(c.Remaining==10,"engine capacity preserves pending real soldiers");
- DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission=2000;c.Mission.CurrentTime=8;c.Tick();Check(c.Remaining==6,"capacity recovery resumes queue");
- foreach(var a in c.Mission.Agents.Where(a=>a.Team==c.Mission.PlayerEnemyTeam))a.Health=21;
- c.Save();Check(c.Search.Saved.Count==15&&c.Search.Saved.Count(s=>s.Health==21)==9,"scene transition stores living wounds plus untouched reserves");
- foreach(var a in c.Mission.Agents.Where(a=>a.Team==c.Mission.PlayerEnemyTeam))a.Active=false;
- Check(c.Threat,"pending reserves prevent false victory after initial defenders fall");
- c.Mission.CurrentTime=12;c.Tick();c.Mission.CurrentTime=16;c.Tick();Check(c.Remaining==0,"finite reserve roster is exhausted");
- foreach(var a in c.Mission.Agents.Where(a=>a.Team==c.Mission.PlayerEnemyTeam))a.Active=false;Check(!c.Threat,"fully exhausted defenders end fight");
- c.Save();Check(c.Search.Saved.Count==0,"dead and unconscious units cannot be resurrected next scene");
- c=New();garrison=Party("hall",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
- c.Mission.Scene.Points["defender_infantry"]=Point(42,4);c.Tick();Check(c.Remaining==0&&c.Mission.Agents.Last().Position.x==42,"hall uses native initial defender point when reinforcement tag is absent");
- c=New();garrison=Party("far",foot,4);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
- c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point(2,0);c.Mission.Scene.Extra.Add(("sp_guard_patrol",Point(300,0)));c.Mission.Scene.Extra.Add(("sp_guard",Point(120,0)));
- c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Position.x==300),"reserves enter at the point farthest from the player, not the native siege point beside the gate");
- Check(c.Mission.Agents.Skip(1).All(a=>a.Formation?.Order==MovementOrder.MovementOrderCharge),"farthest spawn still attacks instead of waiting at its spawn point");
- c=New();var archer=new CharacterObject{IsRanged=true};garrison=Party("archers",archer,2);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry"]=Point();c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Formation==c.Mission.PlayerEnemyTeam.GetFormation(FormationClass.Ranged)&&a.AutoTarget),"mounted archers dismount into a ranged formation and retain native weapon choice");
- c=New();garrison=Party("missing",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Tick();Check(c.Remaining==1&&c.Mission.Agents.Count==1,"missing point cannot spawn troops at world origin");
- c.Mission.Scene.Points["defender_infantry"]=Point();c.Mission.SpawnArmed=false;c.Mission.CurrentTime=4;c.Tick();Check(c.Mission.Agents.Last().Team==Team.Invalid&&!c.Mission.Agents.Last().Alarmed,"actual unarmed equipment variant never joins fight");
- var routed=c.Mission.Agents.Last();routed.Health=37;c.Removed(routed,AgentState.Routed);c.Save();Check(c.Search.Saved.Count==0&&c.Search.Losses.Count==1,"routed defender consumes task roster without entering next scene again");
- c=New();c.Search.HasLeftHall=false;garrison=Party("entry",foot,30);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();
- Check(c.Remaining==4&&!((IGwpBattleSceneSource)c).AllowsWardenRescue,"fight into city queues one wave and cannot summon random wardens");
- var attempt=c.Search;c=New();c.Search=attempt;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==0,"reentering entry scene cannot request a second wave");
- c=New();c.InHall=true;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==0,"hall never queues reinforcements even with fresh garrison");
- c=New();garrison=Party("return",foot,5);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry"]=Point();c.Tick();
- foreach(var a in c.Mission.Agents.Skip(1).ToArray()){c.Removed(a,AgentState.Killed);c.Removed(a,AgentState.Killed);}
- Check(c.Search.Losses.Count==4,"task casualty counts each actual defender once");
- attempt=c.Search;c=New();c.Search=attempt;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==1&&garrison.MemberRoster.Elements[0].Number==5,"outgoing reserves subtract prior task losses while campaign roster stays intact");
+ var context=new GwpBattleSceneContext{Mission=c.Mission};c.Mission.MissionBehaviors.Add(context);Check(context.TryCapture(),"city participates in shared battle context");
+ Check(context.OpeningCount(BattleSideEnum.Defender)==15&&context.RemainingPower(BattleSideEnum.Defender)==150,"already spawned neutral guard is subtracted once");
+ c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point();int arrivals=0,waves=0;source.OnReinforcementsSpawned+=(side,count)=>{Check(side==BattleSideEnum.Defender,"correct reinforcement side");arrivals+=count;waves++;};
+ c.Tick();Check(c.Remaining==0&&arrivals==14&&waves==1,"escape immediately fills deficit from finite real roster in one wave");
+ Check(c.Mission.Agents.Skip(2).All(a=>a.Alarmed&&a.Team==c.Mission.PlayerEnemyTeam&&a.Position.x==77&&a.Position.z==12),"native point and floor retained");
+ Check(c.Mission.Agents.Skip(2).All(a=>a.Formation!=null&&!a.Formation.IsAIControlled&&a.Formation.Order==MovementOrder.MovementOrderCharge&&a.AutoTarget),"every reserve receives continuing native charge order and target selection");
+ Check(c.Mission.Agents.Skip(2).All(a=>a.Color1==((PartyAgentOrigin)a.Origin).Party.Primary&&a.Color2==((PartyAgentOrigin)a.Origin).Party.Secondary),"source party colors preserved");
+ c=New();garrison=Party("large",foot,45);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Mission.Scene.Points["sp_guard_patrol"]=Point(300,0);c.Prepare();c.Tick();
+ Check(c.Remaining==15&&c.Mission.Agents.Count==31,"thirty real pursuers, not twenty or four");c.Tick();Check(c.Remaining==15,"same-frame call cannot spawn repeatedly");
+ foreach(var a in c.Mission.Agents.Skip(1).Take(4).ToArray())c.Removed(a,AgentState.Killed);
+ DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission=28;c.Mission.CurrentTime=1;c.Tick();Check(c.Remaining==15,"engine capacity preserves pending soldiers");
+ DefaultBattleMissionAgentSpawnLogic.MaxNumberOfAgentsForMission=2000;c.Mission.CurrentTime=2;c.Tick();Check(c.Remaining==11&&c.Mission.Agents.Count(a=>a.Active&&a!=Agent.Main)==30,"four losses are replaced to minimum thirty");
+ foreach(var a in c.Mission.Agents.Where(a=>a.Active&&a!=Agent.Main))a.Health=21;c.Save();Check(c.Search.Saved.Count==41&&c.Search.Saved.Count(e=>e.Health==21)==30,"living wounds plus unused reserves saved");
+ foreach(var a in c.Mission.Agents.Where(a=>a.Active&&a!=Agent.Main).ToArray())c.Removed(a,AgentState.Killed);Check(c.Threat,"remaining real reserves prevent false victory");
+ c.Mission.CurrentTime=3;c.Tick();Check(c.Remaining==0&&c.Mission.Agents.Count(a=>a.Active&&a!=Agent.Main)==11,"finite roster exhaustion does not manufacture more soldiers");
+ foreach(var a in c.Mission.Agents.Where(a=>a.Active&&a!=Agent.Main).ToArray())c.Removed(a,AgentState.Unconscious);Check(!c.Threat,"exhausted defenders end fight");c.Save();Check(c.Search.Saved.Count==0,"observed dead roster is removed from old health snapshot");
+ c=New();garrison=Party("far",foot,4);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry_reinforcement"]=Point(2,0);c.Mission.Scene.Extra.Add(("sp_guard_patrol",Point(300,0)));c.Mission.Scene.Extra.Add(("sp_guard",Point(120,0)));c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Position.x==300),"farthest original spawn point selected");
+ c=New();var archer=new CharacterObject{IsRanged=true};garrison=Party("archers",archer,2);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry"]=Point();c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Formation==c.Mission.PlayerEnemyTeam.GetFormation(FormationClass.Ranged)&&a.AutoTarget),"horse archers dismount to ranged formation");
+ c=New();garrison=Party("missing",foot,1);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Tick();Check(c.Remaining==1&&c.Mission.Agents.Count==1,"missing point cannot spawn at origin");
+ c.Mission.Scene.Points["defender_infantry"]=Point();c.Mission.SpawnArmed=false;c.Mission.CurrentTime=1;c.Tick();Check(c.Mission.Agents.Last().Team==Team.Invalid&&!c.Mission.Agents.Last().Alarmed,"actual unarmed variant is not a pursuer");var routed=c.Mission.Agents.Last();c.Removed(routed,AgentState.Routed);c.Save();Check(c.Search.Saved.Count==0&&c.Search.Losses.Count==1,"routed soldier consumes task roster");
+ c=New();c.Search.HasLeftHall=false;garrison=Party("entry",foot,30);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["sp_guard"]=Point();c.Tick();Check(c.Remaining==0&&c.Mission.Agents.Count==5&&!((IGwpBattleSceneSource)c).AllowsWardenRescue,"entry remains exactly one four-person reinforcement wave");
+ var attempt=c.Search;c=New();c.Search=attempt;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==0,"entry cannot request another wave");c=New();c.InHall=true;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==0,"hall never receives reserves");
+ c=New();garrison=Party("return",foot,5);garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["defender_infantry"]=Point();c.Tick();var killed=c.Mission.Agents[1];c.Removed(killed,AgentState.Killed);c.Removed(killed,AgentState.Killed);Check(c.Search.Losses.Count==1,"duplicate casualty callback cannot count twice");
+ attempt=c.Search;c=New();c.Search=attempt;garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();Check(c.Remaining==4&&garrison.MemberRoster.Elements[0].Number==5,"prior task losses subtracted without changing campaign roster");
+ c=New();var high=new CharacterObject{StringId="elite",Level=26};var low=new CharacterObject{StringId="recruit",Level=6};garrison=Party("priority",low,40);garrison.MemberRoster.Elements.Add(new(){Character=high,Number=40});garrison.MapFaction=c._settlement.MapFaction;c._settlement.Town.GarrisonParty=garrison;c.Prepare();c.Mission.Scene.Points["sp_guard"]=Point();c.Tick();Check(c.Mission.Agents.Skip(1).All(a=>a.Character==high),"native priority model is consulted instead of FIFO roster order");
  Console.WriteLine("CITY_SEARCH_RESERVE_ASSERTIONS="+n);
  }
 }}
@@ -197,19 +191,21 @@ static class Program{static void Check(bool b,string why){if(!b)throw new Except
         code = STUBS + SCENARIOS + supplier + production('GwpBattleSceneSource.cs') + production('GwpBattleSceneContext.cs')
         run(code)
         for old, failure in [
+            (code.replace('priority.OrderByDescending(entry => entry.Priority)', 'priority'), 'native priority model is consulted'),
+            (code.replace('GwpTuning.CitySearch.PursuerTarget - living', '20 - living'), 'thirty real pursuers'),
             (code.replace('SetCityPursuer(agent);', 'SetSearchFighter(agent);'), 'continuing native charge order'),
-            (code.replace('element.Number - element.WoundedNumber', 'element.Number'), 'finite healthy roster'),
+            (code.replace('i<e.Number-e.WoundedNumber', 'i<e.Number'), 'finite healthy roster'),
             (code.replace('.Distinct().ToArray()', '.ToArray()'), 'finite healthy roster'),
             (code.replace('if (present != null)', 'if (false)'), 'finite healthy roster'),
-            (code.replace('if (Spawn.OpeningAgentsAlreadySpawned)', 'if (false)'), 'already spawned neutral guards'),
+            (code.replace('if (Spawn.OpeningAgentsAlreadySpawned)', 'if (false)'), 'already spawned neutral guard'),
             (code.replace('.OrderByDescending(point => point.GlobalPosition.Distance(player))',
-                          '.OrderBy(point => point.GlobalPosition.Distance(player))'), 'farthest from the player'),
+                          '.OrderBy(point => point.GlobalPosition.Distance(player))'), 'farthest original spawn point selected'),
             (code.replace('if (arrived > 0) _cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, arrived);', '')
                  .replace('arrived++;', 'arrived++;_cityReinforcementsSpawned?.Invoke(Mission.PlayerEnemyTeam.Side, 1);'),
-             'one batch notifies music as one arrival wave'),
+             'escape immediately fills deficit'),
             (code.replace('.ClothingColor1(reserve.Origin.FactionColor).ClothingColor2(reserve.Origin.FactionColor2)',
                           '.ClothingColor1(Mission.PlayerEnemyTeam.Color).ClothingColor2(Mission.PlayerEnemyTeam.Color2)'),
-             'reinforcements use source party colors'),
+             'source party colors preserved'),
         ]:
             with self.subTest(negative_control=failure), self.assertRaisesRegex(AssertionError, failure):
                 run(old)

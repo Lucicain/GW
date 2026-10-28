@@ -56,11 +56,11 @@ namespace GreyWardenPolicePurity
 
         internal static class LastStand
         {
-            // 用户裁定2026-10-21：领主保持10秒，新兵1秒、轻步兵2秒、重步兵/弓箭手4秒；狂信者和骑士不授予。
-            public const float LordSeconds = 10f;
-            public const float RecruitSeconds = 1f;
-            public const float LightInfantrySeconds = 2f;
-            public const float EliteTroopSeconds = 4f;
+            // 用户裁定2026-10-28：全部窗口减半；狂信者和骑士仍不授予。
+            public const float LordSeconds = 5f;
+            public const float RecruitSeconds = 0.5f;
+            public const float LightInfantrySeconds = 1f;
+            public const float EliteTroopSeconds = 2f;
             public const float SkillMultiplier = 1.5f;
         }
 
@@ -178,6 +178,8 @@ namespace GreyWardenPolicePurity
             public const float DuelTraitLean = 0.25f;
             public const float GateExitDistance = 6f;
             public const int DefenderLimit = 20;
+            public const int PursuerTarget = 30;
+            public const float PursuerCheckInterval = 0.5f;
             public const int ReserveBatch = 4;
             public const float ReserveInterval = 3f;
             public const int EntryReserveLimit = 4;

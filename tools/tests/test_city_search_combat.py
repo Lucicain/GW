@@ -59,7 +59,7 @@ class AlarmedBehaviorGroup{public bool DisableCalmDown,ScriptedFight,ScriptedFle
  public void AddBehavior<T>(){}public void SetScriptedBehavior<T>(){ScriptedFight=typeof(T)==typeof(FightBehavior);ScriptedFlee=typeof(T)==typeof(FleeBehavior);}
  public void DisableScriptedBehavior(){ScriptedFight=ScriptedFlee=false;Clears++;}}
 class FightBehavior{}class FleeBehavior{}
-enum Stage{Entering,Fighting,FightOver}enum MissionMode{StartUp,Battle}enum OrderType{FollowMe,Charge}
+enum Stage{Entering,Fighting,FightOver}enum MissionMode{StartUp,Battle}enum OrderType{FollowMe,Charge,Move}
 class MissionConversationLogic{public bool Disabled;public void DisableStartConversation(bool b){Disabled=b;}}
 class Mission{public static Mission Current=new();public List<Agent> Agents=new();public Team PlayerTeam=new(),PlayerEnemyTeam=new();public MissionMode Mode;public MissionConversationLogic Talk=new();
  public void SetMissionMode(MissionMode mode,bool start){Mode=mode;}public T? GetMissionBehavior<T>() where T:class=>Talk as T;}
@@ -71,7 +71,7 @@ static class GwpTextCatalog{public const string gwp_cs_war_notice="war",gwp_cs_u
 static class GwpText{public static string Get(string s)=>s;}class InformationMessage{public InformationMessage(string s){}}static class InformationManager{public static void DisplayMessage(InformationMessage m){}}
 class NativeFight{public List<Agent> _playerSideAgents=new(),_opponentSideAgents=new();NATIVE_SETUP}
 class Controller{
- public Mission Mission=>Mission.Current;public SearchState Search=new();public Settlement _settlement=new();public bool _warDeclared;public Stage _stage;
+ public Mission Mission=>Mission.Current;public SearchState Search=new();public Settlement _settlement=new();public bool _warDeclared;public bool EscapingCity;public Stage _stage;
  public bool InHall;public Agent? _hallTarget;
  public List<Agent> _defenders=new();public Dictionary<Agent,object> _ours=new();public HashSet<Agent> Defenders=new();public OrderType Last;public int Wins;
  bool IsOurs(Agent a)=>a==Agent.Main||_ours.ContainsKey(a);bool IsDefender(Agent a)=>Defenders.Contains(a)||InHall&&a==_hallTarget;bool ShouldFlee(Agent a)=>!IsOurs(a)&&!IsDefender(a)&&!a.Armed;
@@ -93,7 +93,7 @@ static class Program{
    var ally=new Agent{Team=Mission.Current.PlayerTeam};var guided=new Agent{Team=Mission.Current.PlayerTeam,Component=new(){AgentNavigator=new()}};var dead=new Agent{Active=false,Team=Mission.Current.PlayerTeam};
    var guard=new Agent{Component=new(){AgentNavigator=new()}};var civilian=new Agent{Component=new(){AgentNavigator=new()}};
    Mission.Current.Agents.AddRange(new[]{Agent.Main,ally,guided,dead,guard,civilian});var c=new Controller();c._ours[ally]=new();c._ours[guided]=new();c._ours[dead]=new();c.Defenders.Add(guard);
-   var team=ally.Team;var playerCalls=Agent.Main.AlarmCalls;var wars=Campaign.Current.Bounty.Wars;bool alreadyWar=cause=="escape";c._warDeclared=alreadyWar;c.Start(cause);
+   var team=ally.Team;var playerCalls=Agent.Main.AlarmCalls;var wars=Campaign.Current.Bounty.Wars;bool alreadyWar=cause=="escape";c._warDeclared=alreadyWar;c.EscapingCity=alreadyWar;c.Last=OrderType.Move;c.Start(cause);
    Check(ally.IsAlarmed()&&guided.IsAlarmed(),"our followers must enter combat AI state: "+cause);
    Check(guard.IsAlarmed()&&guard.Component.AgentNavigator!.Group.ScriptedFight,"guard retains native fight behavior");
    Check(guard.Formation==Mission.Current.PlayerEnemyTeam.Infantry&&!guard.Formation.IsAIControlled&&guard.Formation.Order==MovementOrder.MovementOrderCharge&&guard.AutoTarget,"initial defenders actively charge the player force instead of just becoming alarmed");
@@ -101,12 +101,12 @@ static class Program{
    Check(civilian.IsAlarmed()&&civilian.Component.AgentNavigator!.Group.ScriptedFlee&&!civilian.Component.AgentNavigator.Group.ScriptedFight,"civilian flees rather than joins fight");
    Check(guided.Component.AgentNavigator!.Group.ScriptedFight&&guided.Component.AgentNavigator.Group.DisableCalmDown,"existing follower navigator stays in fight until victory");
    Check(ally.Team==team&&guided.Team==team&&Mission.Current.PlayerEnemyTeam.Enemy,"fighting does not replace player formation teams");
-   Check(c.Last==OrderType.Charge&&Mission.Current.Mode==MissionMode.Battle&&Mission.Current.Talk.Disabled,"combat mode and charge command still issued");
+   Check(c.Last==(alreadyWar?OrderType.Move:OrderType.Charge)&&Mission.Current.Mode==MissionMode.Battle&&Mission.Current.Talk.Disabled,"combat mode and charge command still issued");
    Check(dead.AlarmCalls==0&&Agent.Main.AlarmCalls==playerCalls,"do not alter removed followers or player controller");
    Check(Campaign.Current.Bounty.Wars==wars+(alreadyWar?0:1)&&c.Search.War,"declaration goes through existing owner once");
    if(!alreadyWar)Check(Campaign.Current.Bounty.Reason=="city_search_"+cause,"declaration retains actual gate or hall cause");
    c.End();Check(c.Wins==0&&ally.IsAlarmed(),"living defenders keep fight active");guard.Active=false;c.End();
-   Check(c.Last==OrderType.FollowMe&&Mission.Current.Mode==MissionMode.StartUp&&c.Wins==1,"victory restores follow order and advances once");
+   Check(c.Last==(alreadyWar?OrderType.Move:OrderType.FollowMe)&&Mission.Current.Mode==MissionMode.StartUp&&c.Wins==1,"victory restores follow order and advances once");
    Check(!ally.IsAlarmed()&&!guided.IsAlarmed()&&!guided.Component.AgentNavigator!.Group.ScriptedFight&&!guided.Component.AgentNavigator.Group.DisableCalmDown,"victory releases ally combat state for walking");
    c.End();Check(c.Wins==1,"victory cleanup is idempotent");
   }
@@ -131,6 +131,9 @@ static class Program{
         old_cleanup = bodies.replace('RestoreSearchFollowers();', '')
         with self.assertRaisesRegex(AssertionError, 'victory releases ally combat state'):
             run(template.replace(bodies, old_cleanup))
+        for guarded in ['if (!EscapingCity) Order(OrderType.Charge);', 'if (!EscapingCity) Order(OrderType.FollowMe);']:
+            with self.assertRaises(AssertionError):
+                run(template.replace(bodies,bodies.replace(guarded,guarded.split(') ',1)[1])))
         old_pursuit = bodies.replace('SetCityPursuer(defender);', 'SetSearchFighter(defender);')
         with self.assertRaisesRegex(AssertionError, 'initial defenders actively charge'):
             run(template.replace(bodies, old_pursuit))

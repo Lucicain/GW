@@ -22,6 +22,7 @@ namespace GreyWardenPolicePurity
         private GwpCitySearchBehavior Search => Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>();
         private GwpCitySearchPlace _place;
         private bool InHall => _place == GwpCitySearchPlace.Hall;
+        private bool EscapingCity => !InHall && (Search.HasLeftHall || _place == GwpCitySearchPlace.Escape);
         private bool _transitioning;
         private string? _pendingHallAction;
         private Agent? _hallTarget;
@@ -159,6 +160,7 @@ namespace GreyWardenPolicePurity
             if (Search.HallDuelLocked) return false;
             if (_stage == Stage.Fighting && !Search.SearchWar) return false;
             if (InHall) return passage.ToLocationId == "center";
+            if (passage.ToLocationId == "lordshall" && Search.SearchWar && _stage != Stage.FightOver) return false;
             if (passage.ToLocationId == "arena") return Search.DuelAgreed && !Search.UsesHallDuel;
             return passage.ToLocationId == "lordshall" && (Search.HallAccessible || Search.SearchWar) && !Search.HallResolved;
         }
@@ -306,6 +308,7 @@ namespace GreyWardenPolicePurity
             bounty.RecordCitySearchLosses(_target, _killed.Values.Sum());
             if (Search.SearchActive)
             {
+                SaveStreetScene();
                 SaveCitySoldiers();
                 Search.SaveSurvivors(SearchSurvivors());
                 if (!_transitioning) Search.PauseSearch();

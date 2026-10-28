@@ -95,8 +95,8 @@ class Regression {
   Remove(immortal,enemy);mission.CurrentTime=100;stand.OnMissionTick(0);
   var reborn=Make(0,true);reborn.Health=10;Check(Hit(reborn,50)==9,"each agent has its own stand");
   var noBehavior=new Agent{Lord=true,Mission=new Mission(),Health=10};Check(Hit(noBehavior,50)==50,"missions without the behavior stay native");
-  Check(S==10f&&GwpTuning.LastStand.EliteTroopSeconds==4f,"lord remains ten seconds and elite soldiers get exactly four");
-  foreach(var tier in new[]{("gwnewrecruit",1f),("gwrecruit",2f),("gwheavyinfantry",4f),("gwarcher",4f)}){
+  Check(S==5f&&GwpTuning.LastStand.EliteTroopSeconds==2f,"lord window is five seconds and elite soldiers get exactly two");
+  foreach(var tier in new[]{("gwnewrecruit",0.5f),("gwrecruit",1f),("gwheavyinfantry",2f),("gwarcher",2f)}){
    string id=tier.Item1;float seconds=tier.Item2;mission.CurrentTime=200;var elite=Make(0,id:id);elite.Health=8;
    var shieldOnly=new AttackInformation{VictimAgent=elite};var back=new AttackCollisionData{CollidedWithShieldOnBack=true};
    Check(GwpLastStandBehavior.LimitDamage(in shieldOnly,in back,999)==999&&!GwpLastStandBehavior.IsStanding(elite),id+" back shield hit does not spend stand");

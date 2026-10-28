@@ -29,7 +29,7 @@ class FollowerScene{
  public Dictionary<Agent,CharacterObject> _ours=new();public Dictionary<Agent,float> _hallExitedTroops=new();public HashSet<Agent> _hallRemoved=new();
  private Dictionary<string,int> _spawnedTroops=new();private Dictionary<CharacterObject,int> _killed=new();private Hero _target=new("target");
  private bool _transitioning=true,_outsideExitRequested;private GwpCitySearchBehavior Search=>Campaign.Current.Search;
- void FinishHallDuel(){}void SaveCitySoldiers(){}bool CanLeaveSearch()=>false;
+ void FinishHallDuel(){}void SaveStreetScene(){}void SaveCitySoldiers(){}bool CanLeaveSearch()=>false;
  BODIES
  public Agent Spawn(CharacterObject c){var a=new Agent(c);_ours[a]=c;RestoreTroopHealth(a,c);return a;}
  public void Close()=>EndSearchScene();

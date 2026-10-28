@@ -34,7 +34,7 @@ enum Stage {Entering,Allowed,Fighting,FightOver,Duel,Failed,HallDone}
 class Controller {
  public bool InHall,_transitioning;public Agent? _hallTarget;public Settlement _settlement=new();public SearchState Search=new();
  public Stage _stage=Stage.Allowed;public string? _pendingFight,_pendingHallAction;public Vec _gate=new();public bool _gateExitAvailable=true;
- public Mission Mission=new();public int? DangerCount(Agent a)=>CivilianDanger(a)?.Count();
+ public HashSet<Agent> _restoredStreetBodies=new();public Dictionary<Agent,object> _citySoldiers=new();public Mission Mission=new();public int? DangerCount(Agent a)=>CivilianDanger(a)?.Count();
  bool IsOurs(Agent a)=>a.Ours||a==Agent.Main;
  public bool Defender(Agent a)=>IsDefender(a);public bool Flee(Agent a)=>ShouldFlee(a);public bool Stay(Agent a)=>TargetMustStay(a);public bool Leave()=>CanLeaveSearch();
  BODIES
@@ -45,7 +45,7 @@ static class Program {
  var c=new Controller();var guard=new Agent{Watch=true,Character=new(){Occupation=7}};
  foreach(int occupation in new[]{4,25,15,27,21,16}){
   var bystander=new Agent{Armed=true,Character=new(){Occupation=occupation}};
-  Check(c.Defender(bystander)&&!c.Flee(bystander),"armed passerby joins defence regardless of civilian occupation");
+  Check(!c.Defender(bystander)&&c.Flee(bystander),"armed merchant and civilian flee regardless of civilian occupation");
   bystander.Armed=false;Check(!c.Defender(bystander)&&c.Flee(bystander),"unarmed passerby flees regardless of aggressive occupation");
  }
  var notable=new Agent{Armed=true,Character=new(){IsHero=true,HeroObject=new(){IsNotable=true}}};
@@ -63,12 +63,12 @@ static class Program {
  }
  Check(!c.Defender(guard),"unarmed guard must flee");guard.Armed=true;Check(c.Defender(guard),"armed guard fights");
  var lord=new Agent{Character=new(){IsHero=true,HeroObject=new(){MapFaction=c._settlement.MapFaction}}};
- Check(!c.Defender(lord),"unarmed local lord must flee");lord.Armed=true;Check(c.Defender(lord),"armed local lord fights");
+ Check(!c.Defender(lord),"unarmed local lord must flee");lord.Armed=true;Check(!c.Defender(lord)&&c.Flee(lord),"unassigned armed lord flees");
  c.InHall=true;c._hallTarget=new Agent{Character=new(){Occupation=7}};Check(c.Defender(c._hallTarget)&&!c.Flee(c._hallTarget),"unarmed hall target never becomes a fleeing civilian");
  c._hallTarget.Armed=true;Check(c.Defender(c._hallTarget),"armed foreign target fights");
  guard.Ours=true;Check(!c.Defender(guard),"armed ally never becomes defender");
  var armedGuest=new Agent{Armed=true};
- Check(c.Defender(armedGuest)&&!c.Flee(armedGuest),"armed foreign guest joins defence");
+ Check(!c.Defender(armedGuest)&&c.Flee(armedGuest),"armed foreign guest flees");c._citySoldiers[armedGuest]=new();Check(c.Defender(armedGuest)&&!c.Flee(armedGuest),"real roster soldier fights regardless of outfit");c._restoredStreetBodies.Add(armedGuest);Check(!c.Defender(armedGuest)&&!c.Flee(armedGuest),"restored corpse cannot fight or flee even before native state update");
  var thug=new Agent{Character=new(){Occupation=15}};
  Check(MissionFightHandler.IsAgentAggressive(thug)&&c.Flee(thug),"unarmed native thug flees despite aggressive occupation");
  Check(c.Flee(new Agent()),"ordinary unarmed bystander still flees");
@@ -95,18 +95,15 @@ static class Program {
 '''.replace('BODIES', bodies).replace('NATIVE_ROLES', native_roles)
         run(code)
         old_defender = bodies.replace(method(mission, 'IsDefender'), 'private bool IsDefender(Agent agent) => agent.IsHuman && !IsOurs(agent) && agent.HasWeapon() && agent.Character is not CharacterObject { HeroObject: { IsNotable: true } };')
-        with self.assertRaisesRegex(AssertionError, 'arrest target takes priority'):
+        with self.assertRaisesRegex(AssertionError, 'armed merchant and civilian flee'):
             run(code.replace(bodies, old_defender))
-        previous = subprocess.check_output(['git', 'show', '587fcc3:GreyWardenPolicePurity/GwpCitySearchMission.cs'], text=True, encoding='utf-8-sig')
+        previous = subprocess.check_output(['git', 'show', 'HEAD:GreyWardenPolicePurity/GwpCitySearchMission.cs'], text=True, encoding='utf-8-sig')
         old_armed_roles = bodies.replace(method(mission, 'IsDefender'), method(previous, 'IsDefender'))
-        with self.assertRaisesRegex(AssertionError, 'armed passerby joins defence'):
+        with self.assertRaisesRegex(AssertionError, 'armed merchant and civilian flee'):
             run(code.replace(bodies, old_armed_roles))
-        without_notables = bodies.replace('&& agent.Character is not CharacterObject { HeroObject: { IsNotable: true } }', '')
-        with self.assertRaisesRegex(AssertionError, 'named notable flees'):
-            run(code.replace(bodies, without_notables))
         old_unarmed_watch = bodies.replace(method(mission, 'ShouldFlee'), '''private bool ShouldFlee(Agent agent) => agent.IsHuman && !IsOurs(agent) && !IsDefender(agent)
             && !MissionFightHandler.IsAgentAggressive(agent);''')
-        with self.assertRaisesRegex(AssertionError, 'unarmed passerby flees regardless'):
+        with self.assertRaisesRegex(AssertionError, 'armed merchant and civilian flee'):
             run(code.replace(bodies, old_unarmed_watch))
         old_tab = bodies.replace(method(progress, 'CanLeaveSearch'), '''private bool CanLeaveSearch() => _stage != Stage.Fighting && _stage != Stage.Duel
             && _stage != Stage.Failed && _pendingFight == null && _pendingHallAction == null

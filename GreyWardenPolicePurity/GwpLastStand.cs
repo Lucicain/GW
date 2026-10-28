@@ -7,7 +7,7 @@ using TaleWorlds.MountAndBlade;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 灰袍锁血：领主10秒，新兵1秒、轻步兵2秒、重步兵/弓箭手4秒（用户裁定2026-10-21）；致命伤留1血。
+    /// 灰袍锁血：领主5秒，新兵0.5秒、轻步兵1秒、重步兵/弓箭手2秒（用户裁定2026-10-28）；致命伤留1血。
     /// 这段时间内亲手（含骑着的马冲撞）杀死或打晕一个敌人，就按锁血以来对敌人造成的实际伤害回血，锁血结束，
     /// 之后再挨致命伤还能再锁；时限内没杀到人就放开锁血，留着 1 血，这一场不再触发。
     /// 锁血期间当前有效技能乘 <see cref="GwpTuning.LastStand.SkillMultiplier"/>（<see cref="IsStanding"/>）。

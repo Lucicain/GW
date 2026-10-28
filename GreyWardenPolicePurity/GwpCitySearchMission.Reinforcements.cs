@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -38,8 +41,7 @@ namespace GreyWardenPolicePurity
         private MobileParty[] CityDefenseParties() => _settlement.Parties
             .Concat(new[] { _settlement.Town.GarrisonParty, _settlement.MilitiaPartyComponent?.MobileParty })
             .OfType<MobileParty>().Where(party => party != MobileParty.MainParty && party.IsActive
-                && (party.MapFaction == _settlement.MapFaction
-                    || FactionManager.IsAtWarAgainstFaction(party.MapFaction, Hero.MainHero.MapFaction)))
+                && party.MapFaction == _settlement.MapFaction)
             .Distinct().ToArray();
 
         private static string CitySoldierKey(GreyWardenSafePartyAgentOrigin origin) =>
@@ -48,6 +50,24 @@ namespace GreyWardenPolicePurity
         private static bool HasBattleWeapon(CharacterObject character) => character.BattleEquipments.Any(equipment =>
             Enumerable.Range(0, 5).Any(slot => equipment[(EquipmentIndex)slot].Item?.Weapons
                 .Any(weapon => weapon.WeaponFlags.HasAnyFlag(WeaponFlags.WeaponMask)) == true));
+
+        // 安装版构造器只复制名册，不把该快照挂到MapEvent，不修改战役兵员。
+        private static readonly System.Reflection.ConstructorInfo CityPartySnapshotConstructor =
+            AccessTools.Constructor(typeof(MapEventParty), new[] { typeof(PartyBase) });
+
+        private static IEnumerable<(MobileParty Party, CharacterObject Character)> CityReserveOrder(IEnumerable<MobileParty> parties)
+        {
+            var priority = new List<(FlattenedTroopRosterElement Troop, MapEventParty Party, float Priority)>();
+            foreach (MobileParty party in parties)
+            {
+                var snapshot = (MapEventParty)CityPartySnapshotConstructor.Invoke(new object[] { party.Party });
+                Campaign.Current.Models.TroopSupplierProbabilityModel.EnqueueTroopSpawnProbabilitiesAccordingToUnitSpawnPrioritization(
+                    snapshot, null, true, snapshot.HealthyManCountAtStart, false, priority);
+            }
+            // 同原版MapEventSide.MakeReady；不再把一种兵全部出完才轮到下一种。
+            return priority.OrderByDescending(entry => entry.Priority)
+                .Select(entry => (entry.Party.Party.MobileParty, entry.Troop.Troop));
+        }
 
         /// <summary>城中守方与后到援军都按原版冲锋接敌，不停在无编队的警戒状态。</summary>
         private void SetCityPursuer(Agent agent)
@@ -67,40 +87,38 @@ namespace GreyWardenPolicePurity
         {
             if (_cityReservesReady) return;
             var ordinals = new Dictionary<string, int>();
+            var losses = new Dictionary<string, int>();
             int reserveBudget = InHall ? 0 : Search.HasLeftHall ? int.MaxValue
                 : Search.ClaimEntryWave() ? GwpTuning.CitySearch.EntryReserveLimit : 0;
-            foreach (MobileParty party in parties)
-                foreach (var element in party.MemberRoster.GetTroopRoster())
+            foreach (var troop in CityReserveOrder(parties))
+            {
+                MobileParty party = troop.Party;
+                CharacterObject character = troop.Character;
+                if (character.IsHero || !HasBattleWeapon(character)) continue;
+                string key = party.StringId + "|" + character.StringId;
+                if (!losses.TryGetValue(key, out int missing)) missing = Search.EnemyLossCount(key);
+                losses[key] = System.Math.Max(0, missing - 1);
+                if (missing > 0) continue;
+                Agent? present = _defenders.FirstOrDefault(agent => agent.Character == character
+                    && !_citySoldiers.ContainsKey(agent)
+                    && (agent.Origin.BattleCombatant is not PartyBase actual || actual.MobileParty == null || actual == party.Party));
+                if (present == null && reserveBudget == 0) continue;
+                ordinals.TryGetValue(key, out int ordinal);
+                ordinals[key] = ordinal + 1;
+                var origin = new GreyWardenSafePartyAgentOrigin(party.Party, character, false, ordinal);
+                float health = Search.SavedEnemyHealth(key, ordinal);
+                if (present != null)
                 {
-                    CharacterObject character = element.Character;
-                    // 英雄只沿用原版人口，不能在大厅/街上复制另一位领主。
-                    if (character.IsHero || !HasBattleWeapon(character)) continue;
-                    string sourceKey = party.StringId + "|" + character.StringId;
-                    int healthy = System.Math.Max(0, element.Number - element.WoundedNumber - Search.EnemyLossCount(sourceKey));
-                    for (int i = 0; i < healthy; i++)
-                    {
-                        Agent? present = _defenders.FirstOrDefault(agent => agent.Character == character
-                            && !_citySoldiers.ContainsKey(agent)
-                            && (agent.Origin.BattleCombatant is not PartyBase actual || actual.MobileParty == null || actual == party.Party));
-                        if (present == null && reserveBudget == 0) break;
-                        var origin = new GreyWardenSafePartyAgentOrigin(party.Party, character, false, i);
-                        string key = CitySoldierKey(origin);
-                        ordinals.TryGetValue(key, out int ordinal);
-                        ordinals[key] = ordinal + 1;
-                        float health = Search.SavedEnemyHealth(key, ordinal);
-                        if (present != null)
-                        {
-                            present.Origin = origin;
-                            _citySoldiers.Add(present, origin);
-                            if (health > 0f) present.Health = System.Math.Min(present.HealthLimit, health);
-                        }
-                        else if (reserveBudget > 0)
-                        {
-                            _cityReserves.Enqueue((origin, health));
-                            reserveBudget--;
-                        }
-                    }
+                    present.Origin = origin;
+                    _citySoldiers.Add(present, origin);
+                    if (health > 0f) present.Health = System.Math.Min(present.HealthLimit, health);
                 }
+                else if (reserveBudget > 0)
+                {
+                    _cityReserves.Enqueue((origin, health));
+                    reserveBudget--;
+                }
+            }
             foreach (Agent agent in Mission.Agents.Where(agent => agent.IsActive() && agent.IsHuman
                          && (IsOurs(agent) || _defenders.Contains(agent)) && agent.Origin != null))
                 _cityOpening[(int)(IsOurs(agent) ? Mission.PlayerTeam.Side : Mission.PlayerEnemyTeam.Side)].Add(agent.Origin);
@@ -132,10 +150,11 @@ namespace GreyWardenPolicePurity
         {
             if (_stage != Stage.Fighting || !_cityReservesReady || _cityReserves.Count == 0
                 || Mission.CurrentTime < _nextCityReserve) return;
-            _nextCityReserve = Mission.CurrentTime + GwpTuning.CitySearch.ReserveInterval;
+            _nextCityReserve = Mission.CurrentTime + (EscapingCity
+                ? GwpTuning.CitySearch.PursuerCheckInterval : GwpTuning.CitySearch.ReserveInterval);
             int living = _defenders.Count(agent => agent.IsActive() && !agent.IsRunningAway);
-            int count = System.Math.Min(GwpTuning.CitySearch.ReserveBatch,
-                GwpTuning.CitySearch.DefenderLimit - living);
+            int count = EscapingCity ? GwpTuning.CitySearch.PursuerTarget - living
+                : System.Math.Min(GwpTuning.CitySearch.ReserveBatch, GwpTuning.CitySearch.DefenderLimit - living);
             if (count <= 0) return;
             // 没有真实点不能把人刷在世界原点；保留名册供下一地点。
             GameEntity? spawn = CityReserveSpawn();
@@ -180,7 +199,8 @@ namespace GreyWardenPolicePurity
         private void SaveCitySoldiers()
         {
             if (!_cityReservesReady) return;
-            Search.SaveEnemySurvivors(_citySoldiers.Where(entry => entry.Key.IsActive())
+            Search.SaveEnemySurvivors(_cityOpening.SelectMany(side => side).OfType<GreyWardenSafePartyAgentOrigin>()
+                .Select(CitySoldierKey), _citySoldiers.Where(entry => entry.Key.IsActive())
                 .Select(entry => (CitySoldierKey(entry.Value), entry.Key.Health))
                 .Concat(_cityReserves.Select(entry => (CitySoldierKey(entry.Origin), entry.Health))));
         }
