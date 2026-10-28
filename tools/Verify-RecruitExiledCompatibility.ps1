@@ -4,7 +4,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$ModuleDll,
     [string]$GameFolder = 'D:/steam/steamapps/common/Mount & Blade II Bannerlord',
-    [string]$RecruitDll
+    [string]$RecruitDll,
+    [switch]$WithInstalledDiplomacyPatches
 )
 $ErrorActionPreference = 'Stop'
 $taskGame = $GameFolder
@@ -85,6 +86,38 @@ Write-Output 'CANDIDATE_DEFAULT=True; CANDIDATE_EXCLUDED=False'
 $taskHarmony = New-Object HarmonyLib.Harmony('gwp.recruit.compatibility')
 $taskPatchType = $taskWarden.GetType('GreyWardenPolicePurity.GwpKingdomMembershipPatch',$true)
 [void]$taskHarmony.CreateClassProcessor($taskPatchType).Patch()
+if ($WithInstalledDiplomacyPatches) {
+    # 只执行第三方自己的相关注册入口；不调用完整启动，不改它们的方法或磁盘配置。
+    $taskOtherHarmony = [HarmonyLib.Harmony]::new('gwp.recruit.installed-mod-probe')
+    $taskPersonality = [Reflection.Assembly]::LoadFrom("$taskGame/Modules/PersonalityMatters/bin/Win64_Shipping_Client/PersonalityMatters.dll")
+    [void]$taskOtherHarmony.CreateClassProcessor($taskPersonality.GetType('PersonalityMatters.Patches.ClanJoinKingdomPatch',$true)).Patch()
+    $taskFixes = [Reflection.Assembly]::LoadFrom("$taskGame/Modules/MutliLittleFixes/bin/Win64_Shipping_Client/MutliLittleFixes.dll")
+    $taskRegistry = $taskFixes.GetType('MutliLittleFixes.Patches.HarmonyPatchRegistry',$true)
+    foreach($taskRegistration in 'RegisterMercenaryClanHire','RegisterWanderingClanSurvival') {
+        [void]$taskRegistry.GetMethod($taskRegistration,$taskFlags).Invoke($null,@($taskOtherHarmony))
+    }
+    $taskExternalPatches = @([HarmonyLib.Harmony]::GetAllPatchedMethods() | Where-Object {
+        [HarmonyLib.Harmony]::GetPatchInfo($_).Owners -contains 'gwp.recruit.installed-mod-probe'
+    })
+    Assert-Probe ($taskExternalPatches.Count -eq 7) 'Expected diplomacy patch set changed; inspect installed DLLs'
+    foreach($taskOriginal in $taskExternalPatches) {
+        Write-Output ('EXTERNAL_PATCH='+$taskOriginal.DeclaringType.FullName+'.'+$taskOriginal.Name)
+    }
+    # 实际执行卸载回调，核对混淆的 UnpatchAll 调用没有误清灰袍；仅此测试进程受影响。
+    [void][Reflection.Assembly]::LoadFrom("$taskGame/Modules/Bannerlord.UIExtenderEx/bin/Win64_Shipping_Client/Bannerlord.UIExtenderEx.dll")
+    $taskFixesSubType=$taskFixes.GetType('MutliLittleFixes.SubModule',$true)
+    $taskFixesSub=New-Uninitialized $taskFixesSubType
+    $taskFixesSubType.GetField('_harmony',$taskFlags).SetValue($taskFixesSub,$taskOtherHarmony)
+    [void]$taskFixesSubType.GetMethod('OnSubModuleUnloaded',$taskFlags).Invoke($taskFixesSub,@())
+    Write-Output 'FIXES_UNLOAD_EXECUTED=True'
+    foreach($taskAction in 'ApplyByJoinToKingdom','ApplyByJoinToKingdomByDefection','ApplyByJoinFactionAsMercenary','ApplyByCreateKingdom') {
+        $taskOriginal=[HarmonyLib.AccessTools]::Method([TaleWorlds.CampaignSystem.Actions.ChangeKingdomAction],$taskAction)
+        $taskInfo=[HarmonyLib.Harmony]::GetPatchInfo($taskOriginal)
+        Assert-Probe ($taskInfo.Owners -contains 'gwp.recruit.compatibility') ($taskAction+': Warden prefix lost')
+    }
+    $taskScoreModel = [Activator]::CreateInstance($taskWarden.GetType('GreyWardenPolicePurity.PoliceAntiRecruitmentModel',$true))
+    Assert-Probe ($taskScoreModel.GetScoreOfClanToJoinKingdom($taskCandidateClan,$taskKingdom) -eq [single]::MinValue) 'Personality patch overrode Warden exclusion score'
+}
 foreach($taskProtected in $true,$false) {
     if(-not $taskProtected){ $taskHarmony.UnpatchAll('gwp.recruit.compatibility') }
     $taskClan = [TaleWorlds.CampaignSystem.Clan]::new()
@@ -104,3 +137,7 @@ foreach($taskProtected in $true,$false) {
     Write-Output ('PROTECTED='+$taskProtected+'; KINGDOM_NULL='+($taskClan.Kingdom -eq $null)+'; DEBT='+$taskClan.DebtToKingdom+'; MESSAGES='+([RecruitProbeMessages]::Messages.Count-$taskBefore))
 }
 Write-Output ('RECRUIT_COMPATIBILITY=PASS; ASSERTIONS='+$taskChecks)
+if ($WithInstalledDiplomacyPatches) {
+    # 相关第三方挂钩仍在；继续执行四种原版动作与读档分派的已有真实 DLL 回归。
+    & (Join-Path $PSScriptRoot 'Verify-KingdomMembership.ps1') -ModuleDll $ModuleDll -WithoutBellum
+}

@@ -1,6 +1,6 @@
 # 灰袍入国：灰袍家族不加入任何王国
 
-> 当前状态：r15 与 Recruit Exiled Clans 2.5.5 的自动投国入口离线核对可拦截，但仍发成功通知；玩家实际入国原因未闭合，本轮未改业务代码
+> 当前状态：正式r15在本机可拦流亡家族2.5.5；新装性格大修／小修补的相关挂钩共存未使拦截失效，叛军建国走原版建国动作；玩家实际入国原因仍未闭合
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
 > 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1` `tools/Verify-Recruit*.ps1`
 > 待实测：另存读档后仍保持独立、原案件能继续；修复后不再出现新的入国
@@ -34,11 +34,21 @@ SyncData 无状态：本行为只响应宣战与读档完成事件，没有进�
 
 ## 反馈环境
 
-本轮 r15 反馈（2026-10-28）：用户确认百科／王国家族列表已有归属，不能按第三方虚假通知结案。截图游戏为 v1.4.7，灰袍 v1.4.15；与此前 BellumCivile 反馈不是同一环境。截图启用 Recruit Exiled Clans 2.5.5、Personality Overhaul 7.7.1、RebellionCreateKingdom 1.0.0、MultiLittleFixes 1.7.10 等。本机随后安装了前者2.5.5，DLL SHA-256 `9135866F0AB5F528CDD3518AF6D7B12576816F79ABDD3D2DB3FA4BD4513F115D`；其余三者尚未见安装。
+本轮 r15 反馈（2026-10-28）：用户确认百科／王国家族列表已有归属，不能按第三方虚假通知结案。截图游戏为 v1.4.7，灰袍 v1.4.15；与此前 BellumCivile 反馈不是同一环境。截图启用 Recruit Exiled Clans 2.5.5、Personality Overhaul 7.7.1、RebellionCreateKingdom 1.0.0、MutliLittleFixes 1.7.10 等。本机随后安装了前者2.5.5，DLL SHA-256 `9135866F0AB5F528CDD3518AF6D7B12576816F79ABDD3D2DB3FA4BD4513F115D`。
 
 Recruit Exiled Clans 2.5.5 的实装DLL三处入国调用都走 `ApplyByJoinToKingdom`，没有直接写家族归属或Harmony补丁。真实候选谓词默认纳入独立灰袍；在隔离的MCM内存设置把 `gw` 加入 `excludedClanIds` 后排除。真实 `JoinKingdomWithReason` 在正式r15拦截生效时不改归属／债务，却仍发成功通知；它不检查动作后的实际归属。这是已证实的候选与通知不协调，不足以解释本次实际入国。测试没有改第三方文件、设置或方法。（依据：实装DLL反编译与真实DLL方法执行2026-10-28）
 
-已知缺陷：玩家反馈 r15 灰袍实际加入他国，责任模组与写入路径未闭合；目前实装的Recruit Exiled Clans 2.5.5没有发现绕过入口，正式r15在本机v1.4.8可拦其自动投国。仍缺玩家实际灰袍DLL、v1.4.7战役DLL及相关模组／运行证据，以区分补丁未绑定／被替换、其他归属写入和存档恢复时序；暂不改业务机制。（依据：用户确认、截图及实装DLL离线核对2026-10-28）
+随后安装的三份DLL（2026-10-28）核对如下；模块同号不等于与玩家DLL逐字节一致。
+
+| 模组 | 本机版本／SHA-256 | 与入国有关的核对结论 |
+|---|---|---|
+| PersonalityMatters／性格大修 | XML及DLL均1.0.0，与玩家截图7.7.1不同；`7EBD8570535B2F8C46ED4BA6AFB02CFCE9B68A9D238C3BE8DAB7695831F8308D` | 投国补丁只给原版评分乘倍率；本机灰袍覆盖模型仍返回拒绝评分；BetrayalSystem只用于战斗优势计算，未发现直接写入国家归属 |
+| MutliLittleFixes／许多小修小补 | XML 1.7.10；`630702EB09F2A30DE3C31FAE239B8CA4A72E2FBB2BC0803B15672BB71DC367EB` | 混淆DLL的静态IL未见入国动作或Clan.Kingdom写入；实际挂钩涉及招募／叛国对话条件与流亡家族存续；相关挂钩共存、执行其卸载回调后r15拦截仍在 |
+| RebellionCreateKingdom／叛军建国 | XML 1.0.0，DLL文件版本1.0.1；`08BC0B07BF101D4C78CA5720C9DE31D8AE4EBAF48F4FBBA5DA553A63C7B6A0C4` | 监听叛军家族解散事件，调用KingdomManager.CreateKingdom；归属最终走r15拦截的建国动作，原版时序见手册；未见招募普通家族进入既有王国的路径 |
+
+上述是对应DLL的反编译、静态IL与局部方法执行结果，相关补丁共存测试没有启动完整战役或加载玩家存档；不据此排除其他版本或完整加载环境中的冲突。（依据：本机DLL及实际方法执行2026-10-28）
+
+已知缺陷：玩家反馈 r15 灰袍实际加入他国，责任模组与写入路径未闭合；目前四份实装候选没有查到能解释实际入国的路径，正式r15在本机v1.4.8及相关挂钩共存时可拦自动投国。仍缺玩家实际灰袍DLL、性格大修7.7.1及v1.4.7战役DLL／存档运行证据，以区分补丁未绑定／被替换、版本或安装内容差异、其他归属写入与存档恢复时序；暂不改业务机制。（依据：用户确认、截图及实装DLL离线核对2026-10-28）
 
 反馈存档在 `C:/Users/lucif/Documents/Mount and Blade II Bannerlord/Game Saves/GW-kingdom-report-20261006.sav`（原件 `C:/Users/lucif/Downloads/saveauto1.sav`，SHA-256 `14be06c7…afda5`）。agent 不编辑这两个文件。
 
