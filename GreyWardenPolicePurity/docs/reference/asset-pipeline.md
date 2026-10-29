@@ -1,6 +1,6 @@
 # 资产管线：打包布局、盾牌 LOD 流程、失败恢复表、旧包回收
 
-> 从 `maintenance-plan.md` 迁出；当前开发/玩家布局以 `../state/build-and-deploy.md` 为准。
+> 当前开发/玩家布局以 `../state/build-and-deploy.md` 为准。
 
 ## Release packaging and asset layout
 

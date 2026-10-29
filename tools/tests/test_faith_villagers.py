@@ -4,8 +4,8 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from test_lord_combat import members, source
-from test_training_transport import ROOT, hygiene
+from source_extract import members, read as source
+from source_extract import ROOT, hygiene
 from test_direct_guard_recruitment import STUBS as RECRUIT_STUBS
 from vanilla_source import vanilla
 

@@ -8,8 +8,8 @@ import subprocess
 import tempfile
 import unittest
 
-from test_city_search import read, block
-from test_city_search_flow import run
+from source_extract import read, block
+from source_extract import run
 
 
 PROBE = r'''$ErrorActionPreference='Stop'

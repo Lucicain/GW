@@ -35,7 +35,7 @@
 闪退往往不留存档，玩家也复现不了；没把握的修改会让问题更难查、项目更糟。所以修 bug 的顺序固定如下。
 
 - **定位、钉死、负对照、自己取证**：从现场证据（崩溃转储、Steam 退出码、在役诊断日志、玩家描述）出发，反编译/反汇编查实相关原版规则，再用不开游戏的离线测试复现：直接加载游戏和模组 DLL，执行生产方法；方法和证据强弱见 `docs/reference/investigation-methods.md`。根因没钉死，不改业务代码：复现不了时只在 `#if GWP_DIAGNOSTICS` 内加强取证，并在所属 state 写明缺哪一段证据、下次触发时会记下什么，不做「可能是这里」的猜测式修改。修复带负对照：同一个离线测试里，旧代码复现故障，新代码通过，测试留作回归；只证明了方法级决策的，按 investigation-methods「离线测试与完整战役模拟的证据边界」如实报告边界，不说成实机已验证。崩溃和体验问题都不要求玩家复现特定场景或 bug：agent 自己判断要回答什么问题，在诊断版里加能回答它的状态快照、前后边界和失败参数，让玩家正常游玩时自然产生证据，再自己读日志闭合；一轮日志不够就再加强，不把「请你再试一次某场景」当作取证手段。（依据：用户裁定 2026-10-21）
-- **离线测试跑真实游戏 DLL**：托管层（战役、名册、存读档、任务逻辑）直接加载游戏 DLL 执行，只在原生接口（`ScriptingInterface` 委托、引擎回调）这一层给假返回值。手写的假 `TaleWorlds` 类型写的是 agent 自己对原版的猜测，测试会拿猜测验证猜测；新测试不再新写这种类型，旧的在清理时迁走。修好的 bug 场景往往再也不触发，玩家和 agent 都无法从「没再出现」判断修好没有，所以修复同时在 `#if GWP_DIAGNOSTICS` 里加一个复发哨兵：把这次钉死的出错条件写成检查，条件成立就自动记下证据；每次游戏经过这一步只在内存里计数，写法见 diagnostics「复发哨兵」。所属 state 的待实测写成「经过 N 次，未复发」，不写含糊的「待验证」。经过 10 次无复发即退休哨兵，用户确认功能可用也当轮退休。玩家照常游玩，不为哨兵专门去测。（依据：用户裁定 2026-10-28；10 次门槛为设计）
+- **离线测试跑真实游戏 DLL**：托管层（战役、名册、存读档、任务逻辑）直接加载游戏 DLL 执行，只在原生接口（`ScriptingInterface` 委托、引擎回调）这一层给假返回值。手写的假 `TaleWorlds` 类型写的是 agent 自己对原版的猜测，测试会拿猜测验证猜测；新测试不再新写这种类型，旧的在清理时迁走。切取生产源码、编译运行 C# 的共用辅助只放 `tools/tests/source_extract.py`，测试之间不互相导入。修好的 bug 场景往往再也不触发，玩家和 agent 都无法从「没再出现」判断修好没有，所以修复同时在 `#if GWP_DIAGNOSTICS` 里加一个复发哨兵：把这次钉死的出错条件写成检查，条件成立就自动记下证据；每次游戏经过这一步只在内存里计数，写法见 diagnostics「复发哨兵」。所属 state 的待实测写成「经过 N 次，未复发」，不写含糊的「待验证」。经过 10 次无复发即退休哨兵，用户确认功能可用也当轮退休。玩家照常游玩，不为哨兵专门去测。（依据：用户裁定 2026-10-28；10 次门槛为设计）
 - agent 可以自己跑离线测试，不需要用户；实机验收仍只由用户做（见 AGENTS 硬约束）。
 
 ## 原版知识
@@ -96,10 +96,11 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 清理待办：
 
-- 原生接口测试底座：把 30 个含手写 `namespace TaleWorlds` 假类型的测试迁到真实游戏 DLL 上，只在原生接口一层放假返回值；先建一个共用底座，再按子系统迁，进城搜捕优先。底座未建前，2026-10-28 为重演办案队“打仗后失队”在 test_city_search_support 的桩里新增了 MapEvent 类型，为驱动离城事件在 test_city_search_flow 的一个用例里新增了 MobileParty 类型，随同迁移。（2026-10-28 登记）
-- 规则数继续压：本次只清了规则最多的十页，affairs-interface、firesworn-parties、firesworn、family、firesworn-rituals/villagers、case-interceptors 等仍有同一来源的规则可合并；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
+- 原生接口测试底座：把含手写 `namespace TaleWorlds` 假类型的测试迁到真实游戏 DLL 上，只在原生接口一层放假返回值；先建一个共用底座，再按子系统迁，进城搜捕优先。底座未建前，2026-10-28 为重演办案队“打仗后失队”在 test_city_search_support 的桩里新增了 MapEvent 类型，为驱动离城事件在 test_city_search_flow 的一个用例里新增了 MobileParty 类型，随同迁移。还有 8 处测试互相导入的是对方的 C# 桩字符串（HARNESS/STUBS 等），底座建成后一并消掉。（2026-10-28 登记）
+- 规则数继续压：2026-10-29 又清了 affairs-interface、firesworn-parties、firesworn、firesworn-rituals、firesworn-villagers、family（959→901）；case-interceptors、diagnostics、build-and-deploy、crime-intake、player-text 等仍有同一来源的规则可合并；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
 - `test_case_target_nameplate.test_installed_native_startup_boundary` 从 Python 调 Windows PowerShell 5.1 运行预检，本机执行策略拒绝未签名脚本，负对照 stdout 为空而失败；直接运行预检为 PASS。是否在测试里给子进程传 `-ExecutionPolicy Bypass` 需用户决定。（2026-10-28 登记）
-- 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会四篇已写。（2026-10-28 登记）
+- reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）
+- 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会、烧村五篇已写。（2026-10-28 登记）
 
 ## 接入 harness
 

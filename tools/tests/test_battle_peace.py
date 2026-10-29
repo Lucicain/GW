@@ -11,23 +11,12 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from source_extract import extract
 
 ROOT = Path(__file__).resolve().parents[2]
 GAME_DLL = Path("D:/steam/steamapps/common/Mount & Blade II Bannerlord/bin/Win64_Shipping_Client/TaleWorlds.CampaignSystem.dll")
 # Last commit whose neutral entry ran inside the capture callback (crash of 2026-10-14).
 PRE_FIX = "0614808"
-
-
-def extract(source, name):
-    spec = importlib.util.spec_from_file_location("hygiene", ROOT / "tools/Check-CodeHygiene.py")
-    hygiene = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(hygiene)
-    mask = hygiene.code_mask(source)
-    match = re.search(r"(?m)^[ \t]+(?:private|internal|public)[^\n]+\b" + name + r"\([^)]*\)\s*\{", source)
-    if not match:
-        raise AssertionError("Missing production method: " + name)
-    end = hygiene.match_brace(source, mask, match.end() - 1) + 1
-    return source[match.start():end]
 
 
 HARNESS = r"""

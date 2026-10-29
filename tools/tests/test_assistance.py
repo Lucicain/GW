@@ -4,21 +4,11 @@ import re
 import subprocess
 import tempfile
 import unittest
-from test_battle_peace import extract
+from source_extract import extract
+from source_extract import class_method as member
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'GreyWardenPolicePurity'
-
-
-def member(source, name):
-    match = re.search(r'(?m)^        (?:private|internal)[^\n]*\b' + name + r'\s*\(', source)
-    if not match:
-        raise AssertionError(name)
-    start = match.start()
-    brace, arrow = source.find('{', match.end()), source.find('=>', match.end())
-    if arrow >= 0 and (brace < 0 or arrow < brace):
-        return source[start:source.index(';', arrow) + 1]
-    return extract(source, name)
 
 
 STUBS = r'''

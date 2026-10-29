@@ -3,9 +3,9 @@ import re
 import subprocess
 import unittest
 from pathlib import Path
-from test_city_search import read
-from test_city_search_flow import run
-from test_duty_banner import method
+from source_extract import read
+from source_extract import run
+from source_extract import method
 
 
 class CitySearchMovementTests(unittest.TestCase):

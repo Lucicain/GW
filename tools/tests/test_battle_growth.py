@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from test_lord_combat import block, members, source
+from source_extract import type_block as block, members, read as source
 
 SKILL_STUBS = r'''
 class SkillObject {}

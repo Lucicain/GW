@@ -1,8 +1,8 @@
 """Run production street snapshots and corpse reconstruction with explicit engine seams."""
 import unittest
-from test_city_search import read, block
-from test_city_search_flow import run
-from test_duty_banner import method
+from source_extract import read, block
+from source_extract import run
+from source_extract import method
 
 
 class StreetStateTests(unittest.TestCase):

@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from test_lord_combat import members, source
+from source_extract import members, read as source
 from test_direct_guard_recruitment import STUBS as RECRUIT_STUBS
 
 

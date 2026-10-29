@@ -5,9 +5,10 @@ import subprocess
 import unittest
 import xml.etree.ElementTree as ET
 
-from test_city_search import read, block
-from test_city_search_flow import STUBS, run
-from test_duty_banner import method
+from source_extract import read, block
+from source_extract import run
+from test_city_search_flow import STUBS
+from source_extract import method
 
 GAME = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
 

@@ -25,7 +25,7 @@
 | `latest-5000-monitor.txt`、`messenger-disabled.png`、`notification-*.png` | 7 月的监控原始日志与 UI 截图 | 当时问题的原始证据 | — |
 | `pre-refresh-v14-release-20261007/` | v1.4-r14 同号替换前公开过的原 ZIP、sha256 与原发布页元数据 | 玩家下载过的原包，无法从源码逐字节重建 | `779cc90b99c82f58` |
 
-（依据：流程——2026-09-11 起的既有保留规则，原写在 `maintenance-plan.md`，拆分后只剩 journal 里有；
+（依据：流程——2026-09-11 起的既有保留规则，原写在旧开发记录里，拆分后只剩 journal 里有；
 2026-09-26 移到这里，因为 journal 不算规则。）
 
 **资产包的正式副本**在 `GreyWardenPolicePurity/_Module/AssetPackages/`（也被 git 忽略，见

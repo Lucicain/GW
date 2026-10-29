@@ -9,23 +9,9 @@ import subprocess
 import tempfile
 import unittest
 
-from test_duty_banner import method
-from test_city_search import read, block, member
-
-
-def run(code):
-    # Negative controls return a failing process without invoking Windows crash reporting.
-    code = re.sub(r'static void Main\(\)\s*\{',
-                  'static int Main(){try{Run();return 0;}catch(Exception e){Console.WriteLine(e.Message);return 1;}} static void Run(){', code)
-    major = subprocess.check_output(['dotnet', '--version'], text=True).split('.')[0]
-    with tempfile.TemporaryDirectory(prefix='gwp-city-flow-') as temp:
-        p = Path(temp)
-        (p / 'Test.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net{major}.0</TargetFramework><Nullable>enable</Nullable><NoWarn>CS8618;CS0649;CS0414;CS8600;CS8601;CS8602;CS8603;CS8604</NoWarn><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup></Project>', encoding='utf-8')
-        (p / 'Program.cs').write_text(code, encoding='utf-8')
-        result = subprocess.run(['dotnet', 'run', '--project', temp, '-c', 'Release', '-v', 'quiet'], capture_output=True, text=True)
-        if result.returncode:
-            raise AssertionError(result.stdout + result.stderr)
-        print(result.stdout.strip())
+from source_extract import method
+from source_extract import read, block, expression_member as member
+from source_extract import run
 
 
 STUBS = r'''
@@ -242,7 +228,7 @@ static class Program{
             run(stubs + flow + always_return + extra.replace('KEYS', constants))
 
     def test_production_coordinator_roundtrip_and_all_routes(self):
-        from test_duty_banner import method
+        from source_extract import method
         behavior = read('GwpCitySearchBehavior.cs')
         self.assertIn('CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);', behavior)
         handler = method(behavior, 'OnSettlementLeft')

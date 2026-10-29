@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 import unittest
-from test_assistance import member
+from source_extract import class_method as member
 from test_duty_priority import HARNESS, MODULE
 
 EXTRA = r'''

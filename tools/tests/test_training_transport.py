@@ -5,23 +5,9 @@ import re
 import subprocess
 import tempfile
 import unittest
+from source_extract import hygiene, extract_methods as extract
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("hygiene", ROOT / "tools/Check-CodeHygiene.py")
-hygiene = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(hygiene)
-
-
-def extract(file, names):
-    source = (ROOT / "GreyWardenPolicePurity" / file).read_text(encoding="utf-8-sig")
-    mask = hygiene.code_mask(source)
-    result = []
-    for name in names:
-        match = re.search(r"(?m)^        (?:private|public) [^\n]+\b" + name + r"\([^)]*\)\s*\{", source)
-        assert match, name
-        end = hygiene.match_brace(source, mask, match.end() - 1) + 1
-        result.append(source[match.start():end].replace("public override void", "public void"))
-    return "\n".join(result)
 
 
 HARNESS = r'''

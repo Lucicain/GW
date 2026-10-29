@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from test_battle_peace import extract
+from source_extract import extract
 
 MODULE = Path(__file__).resolve().parents[2] / 'GreyWardenPolicePurity'
 

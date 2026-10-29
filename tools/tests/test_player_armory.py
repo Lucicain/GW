@@ -11,8 +11,8 @@ import tempfile
 import unittest
 
 from test_armory_allocation import HARNESS
-from test_training_transport import ROOT, extract, hygiene
-from test_duty_banner import method
+from source_extract import ROOT, extract_methods as extract, hygiene
+from source_extract import method
 
 GAME_DLL = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord/bin/Win64_Shipping_Client/TaleWorlds.CampaignSystem.dll')
 

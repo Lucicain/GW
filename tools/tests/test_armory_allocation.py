@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from test_training_transport import ROOT, extract, hygiene
+from source_extract import ROOT, extract_methods as extract, hygiene
 
 HARNESS = r"""
 using System;using System.Collections;using System.Collections.Generic;using System.Linq;

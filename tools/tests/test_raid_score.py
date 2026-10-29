@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from test_lord_combat import source, members
+from source_extract import read as source, members
 import re
 
 

@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import unittest
 
-from test_battle_peace import extract
+from source_extract import extract
 
 ROOT = Path(__file__).resolve().parents[2]
 GAME_DLL = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord/bin/Win64_Shipping_Client/TaleWorlds.CampaignSystem.dll')

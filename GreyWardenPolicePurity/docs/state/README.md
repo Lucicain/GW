@@ -184,4 +184,4 @@ python tools/Check-StateFreshness.py
 |---|---|
 | [`training-feedback.md`](training-feedback.md) | 小周练兵交付反馈、存档导入及源码缺口 |
 
-原版婚姻 API 笔记在 [`../reference/vanilla-marriage-reference.md`](../reference/vanilla-marriage-reference.md)，未按 v1.4.8 复核。
+原版婚姻 API 笔记在 [`../reference/vanilla-marriage-reference.md`](../reference/vanilla-marriage-reference.md)，写于2026-03、未按 v1.4.8 复核；家族与婚姻的模组规则归[家族](family.md)。

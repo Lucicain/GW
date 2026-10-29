@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from test_training_transport import extract
+from source_extract import extract_methods as extract
 
 HARNESS = r'''
 using System;using System.Linq;using System.Collections.Generic;

@@ -1,9 +1,9 @@
 """Execute production commission outcomes and payment with campaign/quest seams."""
 import re
 import unittest
-from test_city_search import read
-from test_duty_banner import method
-from test_city_search_flow import run
+from source_extract import read
+from source_extract import method
+from source_extract import run
 
 
 STUBS = r'''

@@ -43,4 +43,4 @@
 - [town-alarm-and-flight](town-alarm-and-flight.md)：城镇任务里谁逃跑、谁还击，危险来源与逃进门
 - [town-mission-troops](town-mission-troops.md)：在城镇任务里带兵，队伍归属、编队、命令表、中立不受伤与场内开打
 - [tournaments](tournaments.md)：比武大会何时开、何时结，后台结算、跳过比赛与实际比赛的胜负与装备
-- [raid-mechanics](../reference/raid-mechanics.md)：原版烧村与村庄守备（写于本目录之前，暂在 reference，下次改动时迁来）
+- [village-raids](village-raids.md)：AI 选不选这个村去烧、村里守备怎么算、烧村过程

@@ -4,8 +4,8 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from test_city_search import read, block
-from test_city_search_flow import run
+from source_extract import read, block
+from source_extract import run
 
 
 STUBS = r'''
@@ -108,7 +108,7 @@ namespace GreyWardenPolicePurity{static class Program{
 
 class CitySearchSupportTests(unittest.TestCase):
     def test_lost_collector_uses_real_send_and_preserves_agreement(self):
-        from test_duty_banner import method
+        from source_extract import method
         stubs=STUBS.replace('SYNC_PATROL','')
         stubs=stubs.replace('public bool IsActive=true,Available=true;', 'public bool IsActive=true,Available=true,IsLordParty=true;public Hero? LeaderHero=new();')
         stubs=stubs.replace('class CrimeRecord{', 'class CrimeRecord{public MobileParty? Offender;')
@@ -232,7 +232,7 @@ namespace GreyWardenPolicePurity{static class Program{
         run(stubs+extra+production(read('GwpCitySearchCasePolicy.cs'))+production(support)+production(flow)+scenario)
 
     def test_commander_uniform_replaces_only_existing_shield_and_armor(self):
-        from test_duty_banner import method
+        from source_extract import method
         armor=method(block(read('GwpFireswornArmory.cs'),r'internal static class GwpArmorySpawnPatch'),'Prefix')
         uniform=method(read('PoliceResourceManager.cs'),'WithCitySearchUniform')
         code=r'''
@@ -294,7 +294,7 @@ class Program{static int n;static void Check(bool b,string s){n++;if(!b)throw ne
             value=read(name)
             return value[value.index('namespace GreyWardenPolicePurity'):]
         city=production('PoliceEnforcementBehavior.CitySearch.cs')
-        from test_duty_banner import method
+        from source_extract import method
         stubs=STUBS.replace('SYNC_PATROL','\n'.join(method(read('PoliceEnforcementBehavior.DelayPatrols.cs'),n) for n in ['SyncDelayPatrolStateData','UpdateDelayPatrols','HandleDelayPatrolBattleEnded','CleanupDelayPatrolsInsideSettlements','IsPartyActuallyDefeated'])+'\n internal void BattleEnded(MapEvent e)=>HandleDelayPatrolBattleEnded(e);internal void TwoDayCleanup()=>CleanupDelayPatrolsInsideSettlements();\n'+method(read('PoliceEnforcementBehavior.Envoy.cs'),'CollectEnvoyFine'))
         code=stubs+production('GwpCitySearchCasePolicy.cs')+city+SCENARIOS
         run(code)

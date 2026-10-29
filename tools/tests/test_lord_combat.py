@@ -5,30 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from test_training_transport import ROOT, hygiene
-
-
-def source(name):
-    return (ROOT / "GreyWardenPolicePurity" / name).read_text(encoding="utf-8-sig")
-
-
-def block(text, name):
-    start = re.search(r"(?m)^    (?:internal|public).*\b(?:class|struct) " + name + r"\b", text).start()
-    brace = text.index("{", start)
-    return text[start:hygiene.match_brace(text, hygiene.code_mask(text), brace) + 1]
-
-
-def members(text, *names):
-    result = []
-    for name in names:
-        match = re.search(r"(?m)^        (?:internal|private|public).*\b" + name + r"\(", text)
-        assert match, name
-        body = re.search(r"\{|=>", text[match.end():])
-        pos = match.end() + body.start()
-        end = (hygiene.match_brace(text, hygiene.code_mask(text), pos) + 1
-               if text[pos] == "{" else text.index(";", pos) + 1)
-        result.append(text[match.start():end].replace("public override", "public"))
-    return "\n".join(result)
+from source_extract import ROOT, hygiene
+from source_extract import read as source, members, type_block as block
 
 
 STUBS = r'''

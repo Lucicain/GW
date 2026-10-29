@@ -1,8 +1,8 @@
 """Execute the production visual-address probe without loading the game engine."""
 import unittest
 
-from test_city_search import read
-from test_city_search_flow import run
+from source_extract import read
+from source_extract import run
 
 
 class CitySearchVisualTests(unittest.TestCase):

@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from test_army_influence_fault import HARNESS, GAME_DLL, ROOT
-from test_battle_peace import extract
+from source_extract import extract
 
 
 EXTRA = r'''

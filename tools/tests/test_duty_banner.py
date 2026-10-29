@@ -9,21 +9,12 @@ import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-from test_battle_peace import extract
+from source_extract import extract
+from source_extract import method
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'GreyWardenPolicePurity'
 GAME = Path('D:/steam/steamapps/common/Mount & Blade II Bannerlord')
-
-
-def method(source, name):
-    match = re.search(r'(?m)^\s*(?:private|internal|public)[^\n]*\b' + name + r'\s*\(', source)
-    if not match:
-        raise AssertionError(name)
-    brace, arrow = source.find('{', match.end()), source.find('=>', match.end())
-    if arrow >= 0 and (brace < 0 or arrow < brace):
-        return source[match.start():source.index(';', arrow) + 1]
-    return extract(source, name)
 
 
 HARNESS = r'''

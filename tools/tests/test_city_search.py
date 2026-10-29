@@ -9,21 +9,11 @@ import subprocess
 import tempfile
 import unittest
 
-from test_duty_banner import method
+from source_extract import method
+from source_extract import read, block, expression_member as member
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'GreyWardenPolicePurity'
-
-
-def read(name):
-    return (MODULE / name).read_text(encoding='utf-8-sig')
-
-
-def member(source, pattern):
-    match = re.search(r'(?ms)^\s*(?:private|internal|public)[^\n]*\b' + pattern + r'\b[^\n]*=>.*?;\s*$', source)
-    if not match:
-        raise AssertionError('Missing production member: ' + pattern)
-    return match.group(0)
 
 
 HARNESS = r'''
@@ -323,18 +313,6 @@ static class Program{static int n;static void Check(bool c,string m){n++;if(!c)t
         # Holding Tab to leave also needs the friendly flag, so the search scene keeps it.
         self.assertRegex(mission, r'IsFriendlyMission && !IsInPhotoMode')
         self.assertNotIn('IsFriendlyMission', search)
-
-
-def block(source, header):
-    start = re.search(r'(?m)^\s*' + header, source)
-    if not start:
-        raise AssertionError('Missing block: ' + header)
-    depth, i = 0, source.index('{', start.end())
-    for j in range(i, len(source)):
-        depth += {'{': 1, '}': -1}.get(source[j], 0)
-        if depth == 0:
-            return source[start.start():j + 1]
-    raise AssertionError(header)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from test_training_transport import ROOT, extract
+from source_extract import ROOT, extract_methods as extract
 
 
 STUBS = r'''

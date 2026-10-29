@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from test_lord_combat import block, members, source
+from source_extract import type_block as block, members, read as source
 from test_battle_growth import SKILL_STUBS, growth_members
 
 STUBS = r'''

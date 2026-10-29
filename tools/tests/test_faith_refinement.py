@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-from test_training_transport import ROOT, extract
+from source_extract import ROOT, extract_methods as extract
 
 HARNESS = r'''
 using System;using System.Linq;using System.Collections;using System.Collections.Generic;

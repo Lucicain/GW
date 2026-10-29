@@ -8,8 +8,8 @@ import subprocess
 import tempfile
 import unittest
 
-from test_assistance import member
-from test_battle_peace import extract
+from source_extract import class_method as member
+from source_extract import extract
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'GreyWardenPolicePurity'

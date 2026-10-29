@@ -10,7 +10,7 @@ import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
-from test_battle_peace import extract
+from source_extract import extract
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'GreyWardenPolicePurity'

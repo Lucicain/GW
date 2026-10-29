@@ -6,8 +6,9 @@ scene-end persistence, and SyncData are production bodies.
 import re
 import unittest
 
-from test_city_search import read, block
-from test_city_search_flow import STUBS, run
+from source_extract import read, block
+from source_extract import run
+from test_city_search_flow import STUBS
 
 
 class CitySearchHealthTests(unittest.TestCase):
