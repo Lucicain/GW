@@ -45,10 +45,9 @@ the rebuilt editor sources:
   `gwp_inherited_legacy_assets.tpac`, `gwp_black_gold_shield.tpac` or
   `gwp_dual_wield_animations.tpac` back beside it: same asset names.
   (依据：设计——同名资源冲突)
-- The three old packages are kept as the pre-rebuild rollback point in
-  `.codex_tmp/legacy-packages-before-rebuild-20260927/` (SHA-256 prefixes
-  `957DD525945E3B18`, `2A572A2FD5914EF7`, `652634753C25CEFB`); the inherited one
-  is the only original of the July 2024 armour and must not be deleted.
+- The three old pre-rebuild packages (SHA-256 prefixes `957DD525945E3B18`,
+  `2A572A2FD5914EF7`, `652634753C25CEFB`) were deleted locally on 2026-10-29 by
+  user decision; the July 2024 armour original is backed up online.
 
 ### Local layout: the live module stays in development layout
 
@@ -92,10 +91,8 @@ The Kit clears the live `AssetPackages` directory and writes only `pack0.tpac`
    `DsAssetPackages/pack0.tpac` too (about 1 MB on 2026-10-02). Move it out of live to
    `.codex_tmp/ds-asset-packages-<version>/` for future multiplayer work. It does not belong
    in `_Module`, in the live development module, or in the client release ZIP.
-4. Do not put back the three pre-rebuild packages beside it: they hold the same
-   asset and clip names. They stay only as rollback in
-   `.codex_tmp/legacy-packages-before-rebuild-20260927/`, and
-   `gwp_inherited_legacy_assets.tpac` there is never deleted.
+4. Do not put the three pre-rebuild packages back beside it: they hold the same
+   asset and clip names.
 
 ### Material and cloth notes from the rebuild
 
