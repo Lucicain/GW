@@ -8,7 +8,7 @@
 
 **登记规则**：顶层每一项都要被下面某张表的路径（可用 `*` 通配）认领。`Check-StateFreshness.py` 会列出没人认领的项和大小，收尾时要么删、要么登记，不留无主文件。一次性脚本不进这里：用完即删，反复用得上的迁进 `tools/`。（依据：流程）
 
-用户裁定老版本不再回退（2026-10-03）。
+用户裁定老版本不再回退（2026-10-03）。加旗帜前的玩家美术包与 r14 同号替换前的原 ZIP 已按用户裁定于 2026-10-29 删除。
 
 ## 不删（不可再生）
 
@@ -17,13 +17,11 @@
 | `published-assets/2026-07-16_001310/pack0_newly_published_031DC443.tpac` | 2026-07-16 发布时的盾牌资产包 | 盾牌资源回滚点，与仓库里的正式包不同 | `031dc4430da668d1` |
 | `published-assets/2026-07-16_001310/pack0_replaced_old_D14AE4B3.tpac` | 同次发布被替换掉的旧包 | 同上 | `d14ae4b3f8576f96` |
 | `legacy-packages-before-rebuild-20260927/`（三个 `.tpac`） | 重建前的三个运行时资产包；继承包是 2024 年盔甲的唯一原件 | 重建资源的回滚点；`pack0.tpac` 出问题时放回这三个 | `957dd525945e3b18` 等，见 `asset-pipeline.md` |
-| `player-pack0-before-banner-20261016/pack0.tpac` | 加入新旗帜之前的玩家美术包（10-15 本地 r15 用的那份） | 10-15 的 ZIP 已被替换，这是旧美术的唯一副本，旗帜美术出问题时回退用 | `f7a323f5c2c91e58` |
 | `ds-asset-packages-v1.4-r14/pack0.tpac` | 2026-10-02 Kit 专用服务器发布产出的服务器资源包 | 日后联机适配要用；不在仓库与 live 里 | `87106276b84aa3a8` |
 | `pre-six-lod-package/gwp_black_gold_shield_single_stable.tpac` | 六级 LOD 之前的单 LOD 稳定版黑金盾 | 同上；六级 LOD 方案出问题时回到这里 | `1606cad209d02a33` |
 | `exit-crash-2026092*-*.txt`（6 份） | 客户端退出时原生崩溃的 cdb 取证 | 该崩溃仍在观察，原始转储已删 | — |
 | `crash-23108-*.txt`（4 份） | 崩溃 23108 的 cdb 分析输出 | 原始转储已删，这几份是唯一的取证结论 | `0a4c7ec6…` `89eaf4fa…` `d4207048…` `4aae2707…` |
 | `latest-5000-monitor.txt`、`messenger-disabled.png`、`notification-*.png` | 7 月的监控原始日志与 UI 截图 | 当时问题的原始证据 | — |
-| `pre-refresh-v14-release-20261007/` | v1.4-r14 同号替换前公开过的原 ZIP、sha256 与原发布页元数据 | 玩家下载过的原包，无法从源码逐字节重建 | `779cc90b99c82f58` |
 
 （依据：流程——2026-09-11 起的既有保留规则，原写在旧开发记录里，拆分后只剩 journal 里有；
 2026-09-26 移到这里，因为 journal 不算规则。）

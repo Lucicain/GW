@@ -96,7 +96,7 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 清理待办：
 
-- 原生接口测试底座：把含手写 `namespace TaleWorlds` 假类型的测试迁到真实游戏 DLL 上，只在原生接口一层放假返回值；先建一个共用底座，再按子系统迁，进城搜捕优先。底座未建前，2026-10-28 为重演办案队“打仗后失队”在 test_city_search_support 的桩里新增了 MapEvent 类型，为驱动离城事件在 test_city_search_flow 的一个用例里新增了 MobileParty 类型，随同迁移。还有 8 处测试互相导入的是对方的 C# 桩字符串（HARNESS/STUBS 等），底座建成后一并消掉。（2026-10-28 登记）
+- 原生接口测试底座：70 个 Python 测试中 59 个手写了 Hero、MobileParty、Agent 等引擎类型的假实现（其中 27 个同时加载了部分真实游戏 DLL），按 2026-10-29 盘点；把这些测试迁到真实游戏 DLL 上，只在原生接口一层放假返回值；先建一个共用底座，再按子系统迁，进城搜捕优先。底座未建前，2026-10-28 为重演办案队“打仗后失队”在 test_city_search_support 的桩里新增了 MapEvent 类型，为驱动离城事件在 test_city_search_flow 的一个用例里新增了 MobileParty 类型，随同迁移。还有 8 处测试互相导入的是对方的 C# 桩字符串（HARNESS/STUBS 等），底座建成后一并消掉。（2026-10-28 登记）
 - 规则数继续压：2026-10-29 又清了 affairs-interface、firesworn-parties、firesworn、firesworn-rituals、firesworn-villagers、family（959→901）；case-interceptors、diagnostics、build-and-deploy、crime-intake、player-text 等仍有同一来源的规则可合并；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
 - `test_case_target_nameplate.test_installed_native_startup_boundary` 从 Python 调 Windows PowerShell 5.1 运行预检，本机执行策略拒绝未签名脚本，负对照 stdout 为空而失败；直接运行预检为 PASS。是否在测试里给子进程传 `-ExecutionPolicy Bypass` 需用户决定。（2026-10-28 登记）
 - reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）
