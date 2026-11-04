@@ -32,6 +32,9 @@ class GameController:
         self.cfg = cfg
         self.host = host
         self._lock = threading.RLock()
+        # stop() 拿不到 _lock 时会和卡住的命令线程同时收尾；Windows 上两边同时删会话文件会撞上
+        # 「删除挂起」报 PermissionError（本机 test_stop_while_another_command_hangs 偶发复现 2026-11-04），所以单独串行。
+        self._clear_lock = threading.Lock()
         self._proc: ProcHandle | None = None
         self._pid: int | None = None
         self._session: str | None = None
@@ -58,16 +61,17 @@ class GameController:
         }, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _clear_session(self) -> None:
-        if self._client is not None:
-            self._client.close()
-        self._proc = None
-        self._pid = None
-        self._session = None
-        self._client = None
-        self._save = None
-        self._modules = []
-        # 强杀路径可能与卡住的命令线程同时收尾，文件已被另一边删掉不算错。
-        self.cfg.session_file.unlink(missing_ok=True)
+        with self._clear_lock:
+            if self._client is not None:
+                self._client.close()
+            self._proc = None
+            self._pid = None
+            self._session = None
+            self._client = None
+            self._save = None
+            self._modules = []
+            # 强杀路径可能与卡住的命令线程同时收尾，文件已被另一边删掉不算错。
+            self.cfg.session_file.unlink(missing_ok=True)
 
     def _adopt_previous_session(self) -> None:
         """MCP 服务重启后接回自己上次启动的测试游戏。

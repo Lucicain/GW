@@ -38,7 +38,7 @@ class LaunchCommandTests(unittest.TestCase):
         argv = fences.launch_argv(cfg, mods)
         self.assertEqual(argv[0], str(cfg.game_dir / "bin" / "Win64_Shipping_Client" / "Bannerlord.exe"))
         self.assertEqual(argv[1], "/singleplayer")
-        self.assertEqual(argv[2], "_MODULES_*Bannerlord.Harmony*Native*SandBoxCore*Sandbox*StoryMode*CustomBattle"
+        self.assertEqual(argv[2], "_MODULES_*Native*SandBoxCore*Sandbox*StoryMode*CustomBattle"
                                   "*ButterLib*GreyWarden*GreyWardenTestBridge*_MODULES_")
         self.assertEqual(len(argv), 3)
 
@@ -46,7 +46,7 @@ class LaunchCommandTests(unittest.TestCase):
         cfg = make_env(self)
         mods, _ = fences.module_list(cfg, ["GreyWardenTestBridge", "GreyWarden", "Extra"])
         self.assertEqual(mods[-3:], ["Extra", "GreyWarden", "GreyWardenTestBridge"])
-        self.assertEqual(mods[0], "Bannerlord.Harmony")
+        self.assertEqual(mods[0], "Native")
 
     def test_rejects_module_names_that_could_break_the_argument(self):
         cfg = make_env(self)

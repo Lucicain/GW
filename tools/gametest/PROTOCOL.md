@@ -9,7 +9,7 @@ Python 端已按此实现，单元测试里的假服务器 `tests/fakes.py` 的 
 1. Python 端启动游戏：
 
    ```
-   <游戏目录>\bin\Win64_Shipping_Client\Bannerlord.exe /singleplayer _MODULES_*Bannerlord.Harmony*Native*SandBoxCore*Sandbox*StoryMode*CustomBattle*<额外模组>*GreyWarden*GreyWardenTestBridge*_MODULES_
+   <游戏目录>\bin\Win64_Shipping_Client\Bannerlord.exe /singleplayer _MODULES_*Native*SandBoxCore*Sandbox*StoryMode*CustomBattle*<额外模组>*GreyWarden*GreyWardenTestBridge*_MODULES_
    ```
 
    工作目录是 exe 所在目录，环境变量里带 `GWP_TEST_BRIDGE_SESSION=<32 位十六进制会话号>`。

@@ -16,9 +16,9 @@ REPO_ROOT = GAMETEST_DIR.parent.parent
 
 DEFAULT_GAME_DIR = r"D:\steam\steamapps\common\Mount & Blade II Bannerlord"
 
-# 灰袍 SubModule.xml 声明的前置（Native/SandBoxCore/Sandbox/CustomBattle/StoryMode）加 Harmony。
-# Bannerlord.Harmony 必须排第一个。
-DEFAULT_BASE_MODULES = ("Bannerlord.Harmony", "Native", "SandBoxCore", "Sandbox", "StoryMode", "CustomBattle")
+# 灰袍 SubModule.xml 声明的前置（Native/SandBoxCore/Sandbox/CustomBattle/StoryMode）。灰袍自带 0Harmony.dll，
+# 不需要 Bannerlord.Harmony 等社区前置模组，和玩家只装 GreyWarden 时一致。
+DEFAULT_BASE_MODULES = ("Native", "SandBoxCore", "Sandbox", "StoryMode", "CustomBattle")
 # 这两个永远排在最后，game_start 的 modules 参数只能往它们前面插额外模组。
 REQUIRED_TAIL_MODULES = ("GreyWarden", "GreyWardenTestBridge")
 
