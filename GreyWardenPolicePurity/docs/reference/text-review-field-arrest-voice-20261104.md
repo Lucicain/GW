@@ -10,7 +10,7 @@
 - 「跟灰袍了结过」＝`TotalArrestCount > 0`，被押走、和平交罚金、塞私钱、约斗都算（[罪案登记](../state/crime-intake.md)）。
 - 两层都谈成后玩家仍可以动手（`gwp_fa_take_anyway`），这时他已答应交钱、钱还没到手。
 - 罚金交进灰袍公库，不给受害者。
-- 委托是灰袍交办的案子，没有可以出示的文书；执勤旗是战斗里的旗帜槽物品，卸下后仍可办已接的案子。
+- 委托是灰袍交办的案子，没有可以出示的文书。执勤旗装在旗帜槽时，玩家的地图标记和家族显示灰袍黑金鸟徽（[装备](../state/warden-gear.md)），所以「旗子我看见了」通常成立；卸旗后仍可办已接的案子，这时这句不准，但只是少数情况，保留。
 - 第二层的打算实际只抽 8 种，`PayToAvoidBattle`、`PayForPeace`、`PayGenerously`、`RashMost` 抽不到（第 1 批代码问题 2），对应四句另一说法不可达。
 
 ## 通用问题
@@ -44,7 +44,7 @@
 | `gwp_voice_open_cold_0` | 你专程追上来，总不会只是问路。说吧。 | 无 | 保留 | 保留 |
 | `gwp_voice_open_cold_1` | 灰袍找我？先说是什么事，再谈别的。 | 无 | 保留 | 保留 |
 | `gwp_voice_open_fierce_0` | 拦我的路，总得有个说法吧。 | 无 | 保留 | 保留 |
-| `gwp_voice_open_fierce_1` | 旗子我看见了。你找我做什么？ / I can see your banner. What do you want? | 说法不准：卸了执勤旗也会抽到这句，地图上也看不到执勤旗 | 看你这架势，是冲我来的。你找我做什么？ | From the look of you, you came for me. What do you want? |
+| `gwp_voice_open_fierce_1` | 旗子我看见了。你找我做什么？ | 无 | 保留 | 保留 |
 | `gwp_voice_open_soft_0` | 有什么事在这里说，别惊动后面的人。 | 无 | 保留 | 保留 |
 | `gwp_voice_open_soft_1` | 灰袍来了……又有谁受了苦？ | 无 | 保留 | 保留 |
 | `gwp_voice_open_tight_0` | 先说清楚，我可没答应给你什么。 | 无 | 保留 | 保留 |
@@ -246,9 +246,9 @@
 
 ## 本稿统计
 
-共 144 条：不可达 36 条（抗法 17、交不出钱 15、打算另一说法 4），实审 108 条。建议改动 8 条（全部中英同改），保留 100 条。
+共 144 条：不可达 36 条（抗法 17、交不出钱 15、打算另一说法 4），实审 108 条。建议改动 7 条（全部中英同改），保留 101 条。
 
-- 说法不准 / 编造 7 条：`gwp_voice_open_upright_0`（出示委托文书，编造）、`gwp_fa_open_respected_known_variant_1`、`gwp_fa_open_known_variant_1`（不一定被带走过）、`gwp_voice_open_fierce_1`（看见执勤旗）、`gwp_voice_fight_tight_0`（钱拿不走）、`gwp_voice_submit_soft_2`（罚金给受害者）、`gwp_fa_task_tally_variant_2`（隔了很久）。
+- 说法不准 / 编造 6 条：`gwp_voice_open_upright_0`（出示委托文书，编造）、`gwp_fa_open_respected_known_variant_1`、`gwp_fa_open_known_variant_1`（不一定被带走过）、`gwp_voice_fight_tight_0`（钱拿不走）、`gwp_voice_submit_soft_2`（罚金给受害者）、`gwp_fa_task_tally_variant_2`（隔了很久）。
 - 其余 1 条是说话对象不清（`gwp_voice_fight_soft_1`）。
 
 批准后的落地：只改 `PlayerText/strings.json` 里上表各键的 `zh`/`en`，再跑 `python tools/Generate-PlayerText.py`；不新增键，不改代码。
