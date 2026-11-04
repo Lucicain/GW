@@ -8,6 +8,7 @@
 
 - 玩家在野外和自己承办的罪犯单独说话时进入这套对话（`GwpFieldArrestBehavior.FieldArrestAvailableCondition`）。普通悬赏要求**已入会、声望 ≥ 20、旗帜槽装着执勤旗**才能接（`HasCommissionAuthority` 要求 `_recruitmentAccepted`）；赎罪任务不要求入会，这时玩家声望为负。
 - 罪犯先开口。玩家声望 < 0 时用「你替灰袍办事？」那组；声望 ≥ 40（`RespectedStanding`）或对方从前被灰袍抓过时用本稿的开场句；其余情况（声望 0–39 且没被抓过）用罪犯口吻池（第 2 批）。所以 `gwp_fa_open_plain` 走不到。
+- 「被灰袍抓过」在代码里是 `TotalArrestCount > 0`：被押走、和平交罚金、塞私钱、约斗（他赢了也算）都会加一次（[罪案登记](../state/crime-intake.md)，用户裁定 2026-10-17）。所以台词不能断定他「被抓走过」，只能说他「跟灰袍了结过一回」。
 - 第一层：罪犯提三条顾虑（`BuildReservations`）。第一条：玩家声望为负用「你的名声也没比我好多少」，否则用「你不是我的主君」。第二条：荣誉 ≤ 0 且死伤 < 20 用「那是我手下干的」；否则被抓过用「你们抓过我一回」；否则商队案用「打着仗呢」；否则用「我要是干脆不交呢」。第三条：多次犯案用「为什么把几次事情合在一起」，否则用「这个数哪儿来的」。
 - 罚金 = 犯案次数 × 基数 + 他累积的负声望 × 100（`GwpFieldArrestPricing.AssessFine`），确实不只算这一次的事。
 - 第二层：罪犯说出自己的打算（`GwpOffenderDesires.Line`），玩家劝他照数全缴；劝不动时玩家可以「照他说的办」（`PlayerAcceptLine`）。实际会抽到的只有 8 种：照数全缴、讨价还价（七成）、骗一道（五成）、人跟你走、只认自己的事（四成，当场杀自己 5 个兵）、塞私钱、单挑、请宽限（三天）。
@@ -92,14 +93,14 @@
 | `gwp_fa_arg_denial_rogue` | 他们打着你的旗号行事。推给部下，灰袍也还是会找你。 | 无 | 保留 | 保留 |
 | `gwp_fa_arg_denial_trade` | 他们是你的部下。先把损失赔了，你回去怎么向他们追究，是你的事。 | 无 | 保留 | 保留 |
 
-### 「你们抓过我一回」（他从前被灰袍抓过）
+### 「你们抓过我一回」（他从前被灰袍办过）
 
 | 键 | 现中文 / 现英文 | 问题 | 建议中文 | 建议英文 |
 |---|---|---|---|---|
-| `gwp_fa_task_record` | 你们抓过我一回了。以后就这么没完了是吗？ | 无 | 保留 | 保留 |
+| `gwp_fa_task_record` | 你们抓过我一回了。以后就这么没完了是吗？ / Your order has had me once already. Is this how it goes now - forever? | 说法不准：他可能只是交过罚金，没被抓走 | 我已经跟灰袍了结过一回了。以后就这么没完没了？ | I've already settled with the Wardens once. Is this how it goes now, forever? |
 | `gwp_fa_arg_record_lead` | 你不再给他们理由，就完了。这一半在你手上。 | 硬译 | 你不再犯事，自然就完了。这得看你自己。 | It ends when you stop giving them cause. That part is up to you. |
-| `gwp_fa_arg_record_charm` | 抓了一回还放你走的团，不多。 / They took you once and let you ride. Few orders would have. | 「团」生硬 | 抓了你还放你走，换了别人可未必。 | They took you once and let you go. Not everyone would have. |
-| `gwp_fa_arg_record_rogue` | 被捕是什么结果，你已经经历过。还要再来一回吗？ | 无 | 保留 | 保留 |
+| `gwp_fa_arg_record_charm` | 抓了一回还放你走的团，不多。 / They took you once and let you ride. Few orders would have. | 「团」生硬；同上，不一定被抓过 | 上回灰袍没为难你，换了别人可未必。 | Last time the Wardens let you go on your way. Not everyone would have. |
+| `gwp_fa_arg_record_rogue` | 被捕是什么结果，你已经经历过。还要再来一回吗？ | 同上，不一定被捕过 | 上回是什么结果，你已经经历过。还要再来一回吗？ | You know how it went last time. Do you want to go through that again? |
 | `gwp_fa_arg_record_trade` | 先结清眼下这笔。以后再犯的事，另有新的账。 | 无 | 保留 | 保留 |
 
 ### 「打着仗呢」（商队案）
@@ -291,14 +292,14 @@
 
 ## 本稿统计
 
-共 148 条：不可达 14 条（不审），见核实稿 1 条，实审 133 条。建议改动 34 条（中英都改 18、只改英文 12、只改中文 4），保留 99 条。
+共 148 条：不可达 14 条（不审），见核实稿 1 条，实审 133 条。建议改动 36 条（中英都改 20、只改英文 12、只改中文 4），保留 97 条。
 
-- 说法不准 / 编造 15 条：
+- 说法不准 / 编造 18 条：
   - 「不是灰袍，是雇来的人」1 条：`gwp_fa_task_authority`；
   - 「通缉令 / warrant」6 条：`gwp_fa_task_later`、`gwp_terms_haggledown_rogue`、`gwp_terms_bribethewarden_lead`（这三条只英文）、`gwp_rebuff_bribethewarden_lead`、`gwp_rebuff_demandduel_lead`、`gwp_terms_demandduel_lead`（后者同时把单挑说成拼命）；
-  - 条件或身份说错 7 条：`gwp_fa_open_respected_known`（没见过玩家）、`gwp_fa_task_final`（赎罪时玩家不是灰袍）、`gwp_fa_arg_authority_trade`（罚金不是赔偿）、`gwp_fa_arg_denial_charm`（商队案也会抽到「村里」）、`gwp_fa_arg_war_rogue`（不一定有尸首）、`gwp_fa_task_tally` 英文与 `gwp_fa_arg_tally_charm`（「隔了几个月」）；
+  - 条件或身份说错 10 条：`gwp_fa_task_record`、`gwp_fa_arg_record_charm`、`gwp_fa_arg_record_rogue`（不一定被抓过）、`gwp_fa_open_respected_known`（没见过玩家）、`gwp_fa_task_final`（赎罪时玩家不是灰袍）、`gwp_fa_arg_authority_trade`（罚金不是赔偿）、`gwp_fa_arg_denial_charm`（商队案也会抽到「村里」）、`gwp_fa_arg_war_rogue`（不一定有尸首）、`gwp_fa_task_tally` 英文与 `gwp_fa_arg_tally_charm`（「隔了几个月」）；
   - 「灰袍的律」1 条：`gwp_fa_arg_war_lead`。
-- 其余 19 条是中英不对应和硬译腔。
+- 其余 18 条是中英不对应和硬译腔。
 - 代码问题 3 处，见上。
 
 批准后的落地：只改 `PlayerText/strings.json` 里上表各键的 `zh`/`en`，再跑 `python tools/Generate-PlayerText.py`；不新增键，变量不变，不改代码。代码问题 1–3 另走代码改动流程。
