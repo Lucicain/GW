@@ -47,6 +47,10 @@ dotnet build tools/gametest/bridge/GreyWardenTestBridge/GreyWardenTestBridge.csp
   （`GwpCommon.IsGreyWarden*`）、战力（`GwpStrength.Party`）、差事占用（`GwpWardenDuties.HoldsAny`）、承办任务。
 - `sentinels`：主项目还没有复发哨兵登记表，诊断版回空表并带 `note`。
 
+网络线程上的 `catch (IOException)` 等只接住连接的正常终点（对端断开、新连接顶掉旧连接、请求不是合法 JSON），写了 `依据：`
+但不记 `GwpFaultTrace`：断线是常态，记了会破坏 Faults.log「健康即空文件」；网络线程不调任何可能对外部输入抛异常的方法，
+因为那里的未处理异常会带走整个游戏进程。
+
 私有表按字段名反射只读；字段改名时抛异常，按协议回 `internal`，不静默返回空表。
 
 ## 本地核对

@@ -96,6 +96,12 @@ namespace GreyWardenTestBridge
                 campaign.TimeControlMode = CampaignTimeControlMode.UnstoppableFastForward;
         }
 
+        /// <summary>Tick 抛异常时把时间停下，回到协议承诺的暂停状态。</summary>
+        internal override void Abandon()
+        {
+            if (Campaign.Current != null) Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+        }
+
         private JObject Progress(CampaignTime? after)
         {
             var result = new JObject

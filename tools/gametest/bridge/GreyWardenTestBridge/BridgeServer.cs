@@ -17,8 +17,6 @@ namespace GreyWardenTestBridge
     /// </summary>
     internal sealed class BridgeServer
     {
-        private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
-
         private readonly TcpListener _listener = new TcpListener(IPAddress.Loopback, 0);
         private readonly ConcurrentQueue<BridgeRequest> _inbox = new ConcurrentQueue<BridgeRequest>();
         private readonly object _sync = new object();
@@ -46,10 +44,6 @@ namespace GreyWardenTestBridge
 
         internal bool TryDequeue(out BridgeRequest request) => _inbox.TryDequeue(out request);
 
-        internal static byte[] Encode(string line) => Utf8.GetBytes(line);
-
-        internal static string Decode(byte[] bytes) => Utf8.GetString(bytes);
-
         private void AcceptLoop()
         {
             // 监听器从不主动停止：游戏退出时进程连同后台线程一起结束，不需要处理关停时的异常。
@@ -69,8 +63,8 @@ namespace GreyWardenTestBridge
         /// </summary>
         internal BridgeReply Hello(JObject args)
         {
-            string token = args.Value<string>("token") ?? string.Empty;
-            string session = args.Value<string>("session") ?? string.Empty;
+            string token = StringArg(args, "token");
+            string session = StringArg(args, "session");
             if (!FixedTimeEquals(token, _token) || !string.Equals(session, _session, StringComparison.Ordinal))
                 return BridgeReply.Fail("unauthorized", "令牌或会话不符");
             JToken? protocol = args["protocol"];
@@ -93,6 +87,10 @@ namespace GreyWardenTestBridge
             if (previous != null && !ReferenceEquals(previous, connection)) previous.Close();
         }
 
+        /// <summary>网络线程上读字符串参数：类型不对按空串处理，不抛异常（这里的异常没人接，会带走整个进程）。</summary>
+        private static string StringArg(JObject args, string key) =>
+            args[key] is JValue value && value.Value is string text ? text : string.Empty;
+
         private static bool FixedTimeEquals(string given, string expected)
         {
             // 长度不同也照样比完整个期望长度，耗时只取决于令牌长度。
@@ -110,6 +108,8 @@ namespace GreyWardenTestBridge
     /// <summary>一条 TCP 连接：一个读线程、一个写线程。主线程只往写队列里放回复。</summary>
     internal sealed class BridgeConnection
     {
+        private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
+
         private readonly BridgeServer _server;
         private readonly TcpClient _client;
         private readonly NetworkStream _stream;
@@ -218,7 +218,7 @@ namespace GreyWardenTestBridge
         /// <summary>处理一行；返回 false 表示已排好「回复后断开」，读线程到此为止。</summary>
         private bool HandleLine(byte[] bytes)
         {
-            string text = BridgeServer.Decode(bytes).TrimEnd('\r');
+            string text = Utf8.GetString(bytes).TrimEnd('\r');
             if (text.Trim().Length == 0) return true;
 
             JObject request;
@@ -237,7 +237,8 @@ namespace GreyWardenTestBridge
             JToken? idToken = request["id"];
             JToken? cmdToken = request["cmd"];
             JToken? argsToken = request["args"];
-            if (idToken == null || idToken.Type != JTokenType.Integer || cmdToken == null || cmdToken.Type != JTokenType.String)
+            // 超出 long 的整数 Newtonsoft 存成 BigInteger，Value<long> 会抛异常，所以按装箱类型判断。
+            if (!(idToken is JValue { Value: long }) || cmdToken == null || cmdToken.Type != JTokenType.String)
             {
                 ReplyAndClose(idToken ?? JValue.CreateNull(), BridgeReply.Fail("bad_request", "请求必须带整数 id 和字符串 cmd"));
                 return false;
@@ -291,7 +292,7 @@ namespace GreyWardenTestBridge
         {
             foreach (Outgoing item in _outbox.GetConsumingEnumerable())
             {
-                byte[] bytes = BridgeServer.Encode(item.Line + "\n");
+                byte[] bytes = Utf8.GetBytes(item.Line + "\n");
                 try
                 {
                     _stream.Write(bytes, 0, bytes.Length);

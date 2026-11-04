@@ -27,7 +27,8 @@ namespace GreyWardenTestBridge
 
             if (kind == "kinds") return BridgeReply.Ok(new JObject { ["kinds"] = new JArray(Kinds.Cast<object>().ToArray()) });
             if (!Kinds.Contains(kind)) return BridgeReply.Fail("unknown_kind", "桥接不认识 query kind " + kind);
-            if (!game.HasLiveCampaign || Campaign.Current == null)
+            // 哨兵计数按本次启动累计，不依赖战役；其他 kind 要有战役。
+            if (kind != "sentinels" && (!game.HasLiveCampaign || Campaign.Current == null))
                 return BridgeReply.Fail("invalid_state", "没有进行中的战役，当前 " + game.Describe());
 
             switch (kind)
@@ -53,7 +54,7 @@ namespace GreyWardenTestBridge
         internal static MobileParty? FindParty(string? id) =>
             string.IsNullOrEmpty(id)
                 ? null
-                : MobileParty.All.FirstOrDefault(p => string.Equals(p.StringId, id, StringComparison.OrdinalIgnoreCase));
+                : MobileParty.All.FirstOrDefault(p => string.Equals(p.StringId, id, StringComparison.Ordinal));
 
         /// <summary>单个部队：位置、人数、行为、目标。只读原版属性。</summary>
         internal static JObject PartySnapshot(MobileParty party)
