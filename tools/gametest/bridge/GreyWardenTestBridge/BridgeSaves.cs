@@ -89,8 +89,8 @@ namespace GreyWardenTestBridge
             var command = new BridgeLoadSave(request, game, file, name, atMenu ? Phase.Loading : Phase.EndingGame);
             if (atMenu) command.BeginLoad();
             else MBGameManager.EndGame();
-            // TODO(本地核对)：在 OnApplicationTick 里直接调 MBGameManager.EndGame 能否像暂停菜单「退回主菜单」一样
-            // 干净地回到主菜单；若原版要求先关地图界面，改成照抄暂停菜单按钮的调用序列。
+            // TODO(本地核对)：原版地图「退回主菜单」(MapScreen.OnExit) 先调 MapCameraView.OnExit() 再 EndGame，这里少了前一步；
+            // 只影响战役中再读档，smoke 从主菜单读档不经过这里。
             return (command, null);
         }
 
@@ -103,8 +103,8 @@ namespace GreyWardenTestBridge
 
         private void OnHelperStateChange(SandBoxSaveHelper.SaveHelperState state) => _helperState = state;
 
-        // TODO(本地核对)：照原版存档界面的读档回调写——先 MBSaveLoad.OnStartGame 再 StartNewGame(SandBoxGameManager)。
-        // 原版 SavedGameVM.StartGame 是私有的，没法直接调用；本地对照原版源码库确认两步的顺序与是否缺步骤。
+        // 照原版 SavedGameVM.StartGame：先 MBSaveLoad.OnStartGame 再 StartNewGame(SandBoxGameManager)。原版在 Game.Current
+        // 不为空时另有 PopScreen/CleanStates，本命令只在主菜单读档，用不到（本机 v1.4.8 源码库核对 2026-11-04）。
         private void OnStartGame(LoadResult result)
         {
             _started = true;
@@ -180,7 +180,7 @@ namespace GreyWardenTestBridge
             Campaign campaign = Campaign.Current;
             if (campaign.SaveHandler.IsSaving)
                 return (null, BridgeReply.Fail("invalid_state", "原版正在存档"));
-            // TODO(本地核对)：IsSaveGameFileExists 收的是不带扩展名的存档名（与 SaveGameFileInfo.Name 相同）。
+            // IsSaveGameFileExists 收不带扩展名的名字，原版 FileDriver 自己补 .sav（本机 v1.4.8 源码库核对 2026-11-04）。
             if (MBSaveLoad.IsSaveGameFileExists(name) && !overwrite)
                 return (null, BridgeReply.Fail("exists", "存档 " + name + " 已存在，未允许覆盖"));
 

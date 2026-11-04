@@ -57,7 +57,7 @@ namespace GreyWardenTestBridge
         internal static BridgeHost Start(string session)
         {
             int pid = Process.GetCurrentProcess().Id;
-            // TODO(本地核对)：ApplicationVersion.ToString() 的格式（协议示例写 "v1.4.8"，可能带修订号）。
+            // ApplicationVersion.ToString() 为前缀+主.次.修订.变更集，如 v1.4.8.119303（本机 v1.4.8 源码库核对 2026-11-04）。
             string gameVersion = ModuleHelper.GetModuleInfo("Native")?.Version.ToString() ?? string.Empty;
             var hello = new JObject
             {
