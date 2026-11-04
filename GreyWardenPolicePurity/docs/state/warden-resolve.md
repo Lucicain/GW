@@ -53,7 +53,7 @@
 
 ## 测试
 
-`tools/BattleSceneTests` 中的 18 项（总 138 项的一部分）：援军加入已 Retreat 编队、
+`tools/BattleSceneTests` 中的死战用例：援军加入已 Retreat 编队、
 后续行为刷新、敌友初始兵、混编普通兵继续正常逃跑、共享编队不变、士气负冲击、
 直接 Panic、普通后撤/移动/坚守、马/玩家/非战斗/多人/战后排除、诊断限流。
 
