@@ -6,6 +6,11 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
+#if GWP_DIAGNOSTICS
+// 游戏测试桥（tools/gametest/bridge/GreyWardenTestBridge）读案件、使者、哨兵等内部状态用；只在诊断版开放，玩家包不带。
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("GreyWardenTestBridge")]
+#endif
+
 namespace GreyWardenPolicePurity
 {
     public class SubModule : MBSubModuleBase

@@ -12,14 +12,27 @@ namespace GreyWardenTestBridge
     {
         internal const string SessionEnvironmentVariable = "GWP_TEST_BRIDGE_SESSION";
 
-        private string? _session;
+        private BridgeHost? _host;
 
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
             string? session = Environment.GetEnvironmentVariable(SessionEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(session)) return;
-            _session = session!.Trim();
+            _host = BridgeHost.Start(session!.Trim());
+        }
+
+        /// <summary>主线程：取出网络线程排好的命令执行，推进跨帧命令（PROTOCOL.md §3）。</summary>
+        protected override void OnApplicationTick(float dt)
+        {
+            base.OnApplicationTick(dt);
+            _host?.Tick();
+        }
+
+        protected override void OnSubModuleUnloaded()
+        {
+            _host?.DeleteInfoFile();
+            base.OnSubModuleUnloaded();
         }
     }
 }
