@@ -2,7 +2,7 @@
 
 > 当前状态：人物追责保留；信众村烧村评分额外最多减50%，叠乘既有震慑，已构建部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs` `tools/tests/test_raid_score.py`
+> 覆盖源码：`PoliceCrimeMonitorEnhanced.cs` `GwpCrimeCategory.cs` `GwpCrimeDesireAuction.cs` `PoliceRaidDeterrenceModel.cs` `PoliceMobilePartyAIModel.cs` `GwpAiDeterrenceState.cs` `GwpAiDeterrenceDialogueCatalog.cs` `GwpPoliceWarReasonService.cs` `PoliceAntiVanillaWarBehavior.cs` `PoliceAntiRecruitmentModel.cs` `PolicePrisonerImmunityBehavior.cs`
 > 待实测：信众比例越高烧村候选分越低，封顶减50%且叠乘个人震慑；agent读取RAID_SCORE_SAMPLE核对两类倍率与运行模型
 
 案件怎么进池、罚金怎么算、被惩戒的领主之后怎么收敛、灰袍与原版外交的边界。
@@ -76,7 +76,7 @@
 - 信众村沿用有活祭司的定义，比例由火誓者归属方 `GetPreachedVillageShare` 读取现有信众户/当前户数并夹到0～1；没有活祭司、未登记村庄、非村庄倍率为1。不根据守村兵人数或祭司势力重新推算比例。（依据：既有村庄定义；设计 2026-10-17）
 - 信众0%/50%/80%/100%对应倍率1/0.75/0.6/0.5。80%且个人震慑倍率0.65时，合计剩原评分39%。降低的是AI候选分数，不等于烧村发生概率直接减同样百分比，也不改已发生劫掠的伤害速度。非Raider、原评分非正、无领主保持原返回值；只调用一次原版评分。原版 `AiMilitaryBehavior` 使用该模型分后继续乘距离、凝聚力、兵额与食物等因素，再参与竞价；模组没有复制或替换原版选村公式。（依据：公式；本机C#反编译 v1.4.8 2026-10-17）
 - 实机最终分值由[诊断](diagnostics.md)的有界采样核对。
-- 回退为 `7573179` 的 `PoliceRaidDeterrenceModel.cs` 与 `tools/tests/test_raid_score.py`，删除本轮 `GwpFireswornBehavior.GetPreachedVillageShare` 和 `GwpTuning.Firesworn.MaximumFaithRaidScoreReduction` 即回到仅个人震慑；不回退同轮之前的协力修复。（依据：流程）
+- 回退为 `7573179` 的 `PoliceRaidDeterrenceModel.cs`，删除本轮 `GwpFireswornBehavior.GetPreachedVillageShare` 和 `GwpTuning.Firesworn.MaximumFaithRaidScoreReduction` 即回到仅个人震慑；不回退同轮之前的协力修复。（依据：流程）
 
 ## 震慑与罪责结算的独立性
 

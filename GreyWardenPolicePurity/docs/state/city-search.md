@@ -2,7 +2,7 @@
 
 > 当前状态：f9c4d19的街道接续、30追兵及默认撤离经用户确认；每案一次机会、灰袍同催缴编制代办/支援已部署待验收
 > 最后验收：2026-10-28用户确认f9c4d19的其他改动测试未见问题；此前竞技场、大厅单挑与强攻已确认
-> 覆盖源码：`GwpCitySearch*.cs` `GwpPersuasionRound.cs` `PlayerBountyBehavior.CitySearch.cs` `tools/tests/test_city_search*.py` `tools/CitySearchPersuasionTests/**`
+> 覆盖源码：`GwpCitySearch*.cs` `GwpPersuasionRound.cs` `PlayerBountyBehavior.CitySearch.cs`
 > 待实测：见文末
 
 缺口本身（罪责保留但无部队住城者没人能接）见[案件](case-enforcement.md#藏城目标与战后连续交战)。本页只写进城搜捕。

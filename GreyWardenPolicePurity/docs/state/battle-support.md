@@ -2,7 +2,7 @@
 
 > 当前状态：原有野战援军已实测满意；入场位置改为原版本方增援出生点（2026-10-26部署待测）；搜捕只用真实城防预备兵，回归通过
 > 最后验收：**`b68b43c`**（本地检查点，未发布）
-> 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs` `tools/BattleSceneTests/**`
+> 覆盖源码：`GwpBattleScene*.cs` `GwpBattleSupportOrigin.cs` `GwpBattleReinforcementBehavior.cs`
 > 待实测：普通野战灰袍援军从己方后方（原版援军进场的一侧）出现，不在玩家身边刷出；城内真实名册接入与支援衔接见city-search
 
 实现分布在 `GwpBattleScenePolicy`、`GwpBattleSceneContext`、`GwpBattleSceneSource`、
@@ -112,19 +112,3 @@ descriptor 和原生 traits（基于 `BasicBattleAgentOrigin`，跨战役/Custom
 - 两侧援军均在首批实际到场后各通知音乐一次，按一波计；是否响换牌段由[音乐](music.md#过渡与播放)的波数规则决定。
 - 敌方援军中文提示「敌方的灰袍援军抵达战场！」，友方提示「灰袍援军赶到了！」。
 - 号角同场共用；退出/结果出现时停止释放。未强制接管玩家编队 AI。
-
-## 测试
-
-`tools/BattleSceneTests` 链接真实 context/policy/support/origin 源码，仅替换引擎
-边界。覆盖：
-
-- 大局 1000→200、小局 50→11 不误判、非整除阈值、小局仅一人
-- 预备兵阻止末层、三层失败不重掷、越级、成功终止
-- 玩家比例上下限与单调成长、NPC 常量、20/30/50% 预算不超额
-- 倒地玩家由 NPC 接应仍 50%、开场分母不被援军扩大
-- 敌友 Team/指挥/音乐到场、临时 Origin 不改名册
-- 援军不给位置、标为增援（交原版增援出生点）；旧代码负对照失败
-- 容量延迟后恢复生成、原生过早判负抑制及恢复
-- 死战不退相关用例（见 [`warden-resolve.md`](warden-resolve.md)）
-
-桩不验证真实战场位置、AI 行军或原生物理。

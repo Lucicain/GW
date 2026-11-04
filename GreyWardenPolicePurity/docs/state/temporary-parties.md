@@ -2,7 +2,7 @@
 
 > 当前状态：原借船规则已验收；共享编号与调兵状态搬运已修复部署待实测
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs` `GwpPartyIdentity.cs` `GwpTroopTransfer.cs` `tools/Verify-PartyTransfers.ps1`
+> 覆盖源码：`PoliceResourceManager.cs` `PoliceShipModels.cs` `GwpLeaderlessFoodModel.cs` `GwpPartyIdentity.cs` `GwpTroopTransfer.cs`
 > 待实测：练兵/订单/追截/送信归队保留伤兵及累计经验；反复建队不重号；同版存读接续
 
 ## 船：只借真船，销毁前退回（2026-09-24 起）

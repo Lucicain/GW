@@ -2,7 +2,7 @@
 
 > 当前状态：实际逐人战损、领主个人余库及战斗快照接续已实现，离线专项通过，已部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpFireswornArmory.cs` `GwpArmoryBattle.cs` `GwpArmoryBattleSave.cs` `GwpArmoryOwnership.cs` `GwpPlayerArmory.cs` `tools/tests/test_player_armory.py` `GwpArmoryAllocation.cs` `GwpArmoryBalance.cs` `tools/tests/test_faith_refinement.py` `GwpFireswornArmoryView.cs` `tools/tests/test_armory_allocation.py` `tools/tests/test_firesworn_outfitting.py`
+> 覆盖源码：`GwpFireswornArmory.cs` `GwpArmoryBattle.cs` `GwpArmoryBattleSave.cs` `GwpArmoryOwnership.cs` `GwpPlayerArmory.cs` `GwpArmoryAllocation.cs` `GwpArmoryBalance.cs` `GwpFireswornArmoryView.cs`
 > 待实测：见文末
 
 [村庄](firesworn-villages.md) · [运械队](firesworn-parties.md) · [货仓与捐赠](firesworn-economy.md)

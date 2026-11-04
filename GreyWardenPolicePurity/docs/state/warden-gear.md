@@ -2,7 +2,7 @@
 
 > 当前状态：用户确认执勤旗修复后未见问题，家徽切换、重入不发装与退会收旗进入正式版
 > 最后验收：2026-10-17 用户确认当前旗帜构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
-> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `tools/Verify-WardenAutoEquipment.ps1` `GwpWardenTroopGenderPatch.cs` `GwpDutyBanner.cs` `tools/tests/test_duty_banner.py`
+> 覆盖源码：`_Module/ModuleData/items.xml` `_Module/ModuleData/crafting_templates.xml` `_Module/ModuleData/gwp_crafting_pieces.xml` `_Module/ModuleData/gw_equipment_sets.xml` `_Module/ModuleData/spspecialcharacters.xml` `GwpWardenAutoEquipmentPatch.cs` `GwpWardenTroopGenderPatch.cs` `GwpDutyBanner.cs`
 > 待实测：新档城堡/城镇大厅修士长袍、鸟徽肩饰与露面，野外战斗原套装；旗手数量与分配沿用原版；最佳品质、RBM不换装与男女混编沿原待验收项
 
 本文件写"灰袍装备从哪来、带不带原版品质（`ItemModifier`，精良/大师/传奇等前缀）"。

@@ -2,7 +2,7 @@
 
 > 当前状态：本职就近接案与区域判断已部署；玩家住城旧案走进城搜捕，NPC住城旧案由独立办案队接入，已部署待验收
 > 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；未逐项声明覆盖的边界仍待核对
-> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs` `tools/CaseSettlement.Tests/**` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_sheltered_enforcement.py` `tools/tests/test_case_dispatch.py` `tools/tests/test_native_interceptor_contact.py` `tools/tests/test_resident_counterattack.py`
+> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs`
 > 待实测：第三方击溃/俘虏或人物暂离后罪责与伤亡保留、恢复带队自动重选；普通改追与使者原目标独立；进城跟随和战后恢复目标均不强制开打；同版本存读冷却接续；本职最近接案、无信众村远案优先；双方驻城不新宣战，离城继续原追捕
 
 本文件覆盖**人物追责与承办生命周期**。巡逻、悬赏、使者送单、练兵分别见
@@ -180,8 +180,3 @@
 追截队归队、多余的人去哪里，见 [立即追截队](case-interceptors.md)。
 
 宣战追捕每满 24 小时记一条 `WAR_PURSUIT_STALLED`（见 diagnostics.md），用来查两天支援队为什么会触发。
-
-## 测试
-
-`tools/CaseSettlement.Tests`；`tools/Verify-CrimeReceipts.ps1`。均为构建期验证。
-

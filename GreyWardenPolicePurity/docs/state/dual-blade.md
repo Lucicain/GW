@@ -2,7 +2,7 @@
 
 > 当前状态：双刀和踢击旧规则已验收；发射与击杀成长已扩展，规则见combat-growth.md
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
-> 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs` `tools/DualBladeTests/**`
+> 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs`
 > 待实测：无
 
 ## 已修复的崩溃
@@ -163,15 +163,6 @@ seq4408/t112.276  仍空副手盾击
 `Agent.IsRangedCached` 读取**整套装备**有无带弹药的非消耗性远程武器，
 `QueryLibrary` 再结合是否骑乘判步兵/弓手/骑兵/骑射——**不是只看当前手持**。
 所以有可用弓箭时拔双刀不会把弓手算成步兵；箭耗尽可以改变该统计，但不代表立刻换编队。
-
-## 测试
-
-`tools/DualBladeTests` 链接真实 AI/输入源码加内存桩，覆盖：650 时序重放、
-动作中保留武器、结束恢复换弓、尚未接受 Kick 与换武器冲突、请求窗口不补刀、
-空手不 Kick、击退不补刀、副刀绑定（单独收副手丢弃、换弓放行、收主手带走副刀、操作物件不动、
-原版拔主刀时补副刀）、旗手惩罚补偿（仅在原版条件成立时 ×1e6、换手时刷新属性）、普通士兵不变。
-
-桩不模拟原生物理，不能代替骑兵冲阵实测。
 
 ## 诊断现状
 

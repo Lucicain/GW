@@ -2,7 +2,7 @@
 
 > 当前状态：按等级纯化在役；守村队直招已扩展为全灰袍兵、低阶优先，部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpWardenRecruitment.cs` `GwpWardenPurification.cs` `tools/tests/test_direct_guard_recruitment.py`
+> 覆盖源码：`GwpWardenRecruitment.cs` `GwpWardenPurification.cs`
 > 待实测：见文末
 
 灰袍兵从哪来、发不发饷。信众村、祭司本身见 [村庄](firesworn-villages.md)；练兵与单程运兵见 [`warden-training.md`](warden-training.md)。

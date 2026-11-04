@@ -224,7 +224,6 @@ namespace GreyWardenPolicePurity
         internal int PendingReceivedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.CashReceived);
         internal int PendingCollectedFor(string id) => _pending.Where(e => e.OffenderId == id).Sum(e => e.Collected);
         internal int TotalAssessed => _pending.Sum(entry => entry.Assessed);
-        internal int PendingAuditGap => _pendingAuditGaps.Values.Sum();
 
         #endregion
 
@@ -325,9 +324,6 @@ namespace GreyWardenPolicePurity
                 "offender=" + offenderId + "; alreadySettled=" + alreadySettled
                 + "; due=" + _excessDueHours[offenderId!]);
         }
-
-        internal bool HasPendingExcessEnforcement(string? offenderId) =>
-            !string.IsNullOrWhiteSpace(offenderId) && _excessEnforcement.ContainsKey(offenderId!);
 
         internal void ResolveExcessAudit(string id, float roll)
         {

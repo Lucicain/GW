@@ -2,7 +2,7 @@
 
 > 当前状态：六兵种的兵器/跑动技能已按原版基准提高并部署，待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`_Module/ModuleData/spnpccharacters.xml` `tools/tests/test_faith_refinement.py`
+> 覆盖源码：`_Module/ModuleData/spnpccharacters.xml`
 > 待实测：旧档各阶技能与装备使用门槛更新；原配、骑士骑术及骑乘限制保持
 
 ## 兵种与等级

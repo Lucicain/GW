@@ -61,8 +61,6 @@ namespace GreyWardenPolicePurity
         internal bool HasActiveDispatch(GwpDispatchPurpose purpose) =>
             _dispatches.Any(d => d.Purpose == purpose && FindParty(d.PartyId) != null);
 
-        internal string CargoFor(MobileParty party) => _dispatches.FirstOrDefault(d => d.PartyId == party.StringId)?.CargoState ?? string.Empty;
-
         public override void RegisterEvents()
         {
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);

@@ -2,7 +2,7 @@
 
 > 当前状态：事务页酬谢分类/入口按用户要求撤除；原村庄打赏与收养/重建/请愿规则保持
 > 最后验收：未建立检查点
-> 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs` `tools/tests/test_village_relief.py`
+> 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs`
 > 待实测：约斗不被收养抢人；先领收养后新约斗能暂停返回；离村不计时、返回续办；暂停与待派状态存读接续，agent读取诊断核对
 
 灰袍在聚落里做的非执法差事。范围都是全大陆，不看村子归谁。谁来做、谁让谁，见 [`warden-ai.md`](warden-ai.md)。

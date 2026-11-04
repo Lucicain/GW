@@ -2,7 +2,7 @@
 
 > 当前状态：减半后的窗口经用户实测确认，健康诊断已退休，专项回归保留
 > 最后验收：2026-10-28用户确认f9c4d19测试未见问题
-> 覆盖源码：`GwpLastStand.cs` `GwpTuning.cs` `tools/tests/test_last_stand.py`
+> 覆盖源码：`GwpLastStand.cs` `GwpTuning.cs`
 > 待实测：无
 
 ## 适用与行为

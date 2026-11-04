@@ -2,7 +2,7 @@
 
 > 当前状态：搜捕日常流程获用户确认，健康路径诊断已退休；原生外观更新及动作缓存首次初始化取证仍在役
 > 最后验收：2026-10-28 用户确认搜捕日常流程基本测过且未见明显问题；其他功能仍按各自验收范围
-> 覆盖源码：`GwpAiDiagnostics.cs` `GwpPartyDutyMovementPatch.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `tools/tests/test_firesworn_logs.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1` `GwpWardenDispatchDialogue.cs`
+> 覆盖源码：`GwpAiDiagnostics.cs` `GwpPartyDutyMovementPatch.cs` `GwpRuntimeFaultWatch.cs` `GwpEngineAssertDiagnostics.cs` `GwpCommon.cs` `tools/Analyze-Firesworn.py` `PoliceRaidDeterrenceModel.cs` `tools/Capture-StackOverflow.ps1` `GwpWardenDispatchDialogue.cs`
 > 待实测：投案修复后正常游玩核对，若仍故障则取军团参数；退出原生释放与收养交接仍随所属功能核对
 
 ## 原则

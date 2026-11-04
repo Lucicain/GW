@@ -2,7 +2,7 @@
 
 > 当前状态：预览实际使用失效待机缓存已确认，按原版名字重新解析的修复已部署待验收；缓存提前初始化来源仍在取证
 > 最后验收：`e16ff95`（异常留痕 + 销毁队伍模板）
-> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `GwpCharacterPreviewDiagnostics.cs` `GwpCharacterPreviewActions.cs` `tools/tests/test_preview_action_cache.py` `tools/tests/test_assistance_recursion.py`
+> 覆盖源码：`tools/Check-CodeHygiene.py` `tools/Check-StateFreshness.py` `tools/Generate-CodeMap.py` `tools/tests/test_code_map.py` `tools/tests/test_project_checks.py` `GwpRuntimeFaultWatch.cs` `GwpCharacterPreviewDiagnostics.cs` `GwpCharacterPreviewActions.cs`
 > 待实测：正常打开部队/人物预览，核对实际待机恢复和身体姿态；agent读缓存初始化调用来源；既有兜底退休与退出释放问题仍待核对
 
 已知缺陷：客户端退出阶段曾间歇发生原生释放崩溃，具体对象与根因未明；发行版打包美术布局是否复现尚未验证。2026-10-16 19:29 又出现一次，转储同为 TaleWorlds.Native 偏移 0x74e2b1、在 Managed Interface deleted 之后。（依据：WER、转储与日志2026-09-28、2026-10-16）
@@ -35,7 +35,7 @@ Harmony启动期预编译目标可能触发其引用类的静态初始化；绑�
 
 ## 协力职责与战力的无限递归
 
-当前主办职责只指向罪犯，协办只指向主办，不反向寻找协办；职责与日志意图解析不进入区域战力评估。原版区域计算在作用域内采集，实际接战检查复用本次采集，不再次递归评估；区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义和维护。`test_assistance_recursion.py` 编译生产职责/日志方法，以拒绝区域战力重入的边界覆盖；原版计算与采集适配由区域专项回归验证。（依据：源码、生产方法离线执行 2026-10-18）
+当前主办职责只指向罪犯，协办只指向主办，不反向寻找协办；职责与日志意图解析不进入区域战力评估。原版区域计算在作用域内采集，实际接战检查复用本次采集，不再次递归评估；区域行为与持续出战守卫只在[协力](case-assistance.md#区域宣战与持续接战)定义和维护。原版计算与采集适配由区域专项回归验证。（依据：源码、生产方法离线执行 2026-10-18）
 
 ## 客户端退出阶段的原生故障
 

@@ -2,7 +2,7 @@
 
 > 当前状态：追截取消速度拒派已部署，主队原版欲望保持；低分避敌解读已纠正，投案失败探针保留
 > 最后验收：未建立检查点
-> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs` `tools/tests/test_native_campaign_contracts.py` `tools/tests/test_native_follow_settlement.py` `tools/tests/test_pursuit_city_behavior.py` `tools/tests/test_duty_priority.py` `tools/tests/test_duty_scenarios.py` `tools/Check-CodeHygiene.py` `tools/tests/test_army_influence_fault.py`
+> 覆盖源码：`GreyWardenPartyDesireBehavior.cs` `GwpWardenDuties.cs` `GreyWardenDutyScheduler.cs` `GwpPartyDutyMovementPatch.cs` `GwpEscortSpeedCapPatch.cs` `GwpPlayerRequestDeferral.cs` `GwpAssistanceArmyLifecyclePatch.cs` `GwpAssistanceArmyTooltipPatch.cs` `GwpWardenVisitDesire.cs` `GwpSettlementNotices.cs` `GwpPatrolBeats.cs` `tools/Check-CodeHygiene.py`
 > 待实测：投案修复后正常游玩核对，异常再现时取失败参数；请愿/重建职责与信众村名牌动态仍待确认
 
 灰袍领主每小时在做什么，由谁决定。案件本身的派单规则见 [`case-enforcement.md`](case-enforcement.md)；

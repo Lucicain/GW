@@ -2,7 +2,7 @@
 
 > 当前状态：我的事务按委托/订单/讲和/封地四项分类；复命、求援、支援和对应使者并入当前委托，新归类待实测
 > 最后验收：2026-10-21 用户反馈前轮未发现功能问题；截图确认使者已派出，分类仍不满意，本轮归类待验收
-> 覆盖源码：`GwpCaseArchiveScreen.cs` `GwpCaseArchiveItemVM.cs` `GwpAffairsVM.cs` `GwpAffairsData.cs` `PlayerBountyBehavior.Affairs.cs` `GwpWardenDispatchBehavior.Affairs.cs` `GwpFireswornAffairs.cs` `_Module/GUI/Prefabs/GwpCaseArchive.xml` `tools/tests/test_affairs.py` `tools/tests/test_affairs_dispatch.py` `tools/tests/test_player_intervention.py`
+> 覆盖源码：`GwpCaseArchiveScreen.cs` `GwpCaseArchiveItemVM.cs` `GwpAffairsVM.cs` `GwpAffairsData.cs` `PlayerBountyBehavior.Affairs.cs` `GwpWardenDispatchBehavior.Affairs.cs` `GwpFireswornAffairs.cs` `_Module/GUI/Prefabs/GwpCaseArchive.xml`
 > 待实测：见文末
 
 ## 当前方向

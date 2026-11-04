@@ -2,7 +2,7 @@
 
 > 当前状态：r15入国保护正常；玩家确认未实际入国、功能不受影响，流亡模组成功提示误报已结案，用户决定不修
 > 最后验收：`9dc76be`（2026-10-07 用户确认读档离国可用）
-> 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-KingdomMembership.ps1` `tools/Verify-Recruit*.ps1`
+> 覆盖源码：`PoliceAntiRecruitmentModel.cs` `PoliceAntiVanillaWarBehavior.cs` `GwpKingdomMembershipPatch.cs` `_Module/ModuleData/spclans.xml` `tools/Verify-Recruit*.ps1`
 > 待实测：无（本次反馈已确认只有文本误报，功能正常）
 
 灰袍是无国、无城镇城堡的贵族家族，必须始终独立。来源是玩家反馈：r12/r13 存档里灰袍加入了南帝国。

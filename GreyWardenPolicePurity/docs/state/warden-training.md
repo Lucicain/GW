@@ -2,7 +2,7 @@
 
 > 当前状态：自主送老兵已退休；挂名职业、玩家订单、升级取向与旧在途交付保留，已部署待实测
 > 最后验收：未建立实机验收点
-> 覆盖源码：`GreyWardenTrainingBehavior.cs` `GwpTrainingTransports.cs` `tools/tests/test_training_transport.py`
+> 覆盖源码：`GreyWardenTrainingBehavior.cs` `GwpTrainingTransports.cs`
 > 待实测：不再新派自主运兵队；既有在途人货落村及玩家订单接续
 
 ## 现行职责

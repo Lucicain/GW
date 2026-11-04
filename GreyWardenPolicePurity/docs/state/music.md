@@ -2,7 +2,7 @@
 
 > 当前状态：原版音乐路由与−9dB效果器已查实，响度/峰值校准已部署；用户本轮反馈未发现问题
 > 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；具体滑块/暂停等边界仍按待实测核对
-> 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/*Music*.py` `tools/native/inspect-fmod-mix.py` `tools/tests/test_native_music_mix.py`
+> 覆盖源码：`GwpMusic*.cs` `GwpFlacReader.cs` `GwpSyndicateMusicBehavior.cs` `tools/MusicTests/**` `tools/*Music*.py` `tools/native/inspect-fmod-mix.py`
 > 待实测：同一主音量/音乐音量设置下比较普通野战的响度、鼓点峰值及低中高档起伏；滑块、切后台与暂停正常；持续来援的战斗（野战援军、进城搜捕撤离）里换牌段只在第1、3波响，一场最多两次，第一次后不再回低档，第二次后一直是高潮
 
 **回退路径**：回到用户验收的 `b68b43c` 预渲染版时，从该提交取回

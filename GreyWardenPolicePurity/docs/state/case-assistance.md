@@ -2,7 +2,7 @@
 
 > 当前状态：玩家求援征调计入玩家实际战斗组并去重，已部署待实测；一天导航路程召集范围、现场宣战和追截准备保持
 > 最后验收：未建立检查点
-> 覆盖源码：`PoliceEnforcementBehavior.cs` `PoliceEnforcementBehavior.Assistance.cs` `PoliceEnforcementBehavior.Formation.cs` `GwpStrength.cs` `GwpStrength.Native.cs` `tools/tests/test_assistance_recursion.py` `tools/tests/test_assistance.py` `tools/tests/test_regional_threat.py` `tools/tests/test_assistance_scenarios.py` `tools/tests/test_native_regional_strength.py`
+> 覆盖源码：`PoliceEnforcementBehavior.cs` `PoliceEnforcementBehavior.Assistance.cs` `PoliceEnforcementBehavior.Formation.cs` `GwpStrength.cs` `GwpStrength.Native.cs`
 > 待实测：见文末
 
 案件派单和人物追责见[案件](case-enforcement.md)，使者交涉见[使者](case-envoy.md)，引擎补丁见[地图AI](warden-ai.md#协力军团引擎侧补丁)。

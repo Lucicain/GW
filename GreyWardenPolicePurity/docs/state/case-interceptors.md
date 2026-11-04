@@ -2,7 +2,7 @@
 
 > 当前状态：首次宣战与首支追截准备合并，分兵后不占优则不宣战；无速度门槛及动态补派保护保留，已部署
 > 最后验收：2026-10-18 用户正常跟随未见异常；本轮日志确认49次8人追截与实际补派，仍有兜底判定待处理
-> 覆盖源码：`PoliceEnforcementBehavior.cs` `PoliceEnforcementBehavior.DelayPatrols.cs` `PoliceEnforcementBehavior.WarPursuitTrace.cs` `tools/Verify-EnvoyNavigation.ps1` `tools/tests/test_case_interceptors.py`
+> 覆盖源码：`PoliceEnforcementBehavior.cs` `PoliceEnforcementBehavior.DelayPatrols.cs` `PoliceEnforcementBehavior.WarPursuitTrace.cs`
 > 待实测：正常游玩中首队准备失败不宣战、准备成功同轮宣战/出队，以及无速度门槛补派和战力变化后停派；周期兜底旧缺陷另待收束，不要求专项挂机
 
 追截队、使者不算协力编队的在编力量，不靠它们保留军团（见 [案件](case-enforcement.md)「协力编队」）。

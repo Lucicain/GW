@@ -2,7 +2,7 @@
 
 > 当前状态：赎罪谈判、占案交接与多种结案路径已修复，部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`PoliceEnforcementBehavior.AtonementQuest.cs` `GwpPlayerCaseAssignment.cs` `tools/tests/test_atonement.py`
+> 覆盖源码：`PoliceEnforcementBehavior.AtonementQuest.cs` `GwpPlayerCaseAssignment.cs`
 > 待实测：接赎罪任务后目标可谈判、使者撤回且不抢案，和平/战斗处理后可交差；同版本存读接续
 
 用户反馈：负声望赎罪任务已发给玩家，但谈判进不去，灰袍使者仍能处理同一案件，任务看似卡住。修复必须查清模组机制，修正权限、案卷归属与结算的共同链路，不能只放开按钮或掩盖卡住的表现。（依据：用户反馈、用户裁定2026-10-15）

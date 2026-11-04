@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（合并云端注释校正后重建）：构建0警告0错误，Client/wEditor的SHA-256同为`B2B528391A9AB08E40C94D224228591DCBFBAD5C53ABB183F2BD750D67DF184C`，live镜像无缺失、差异或散落，游戏兼容检查PASS（114条补丁绑定）。各功能的验收范围与待实测见所属state，本节不复述。（依据：构建、部署与哈希2026-10-28）
+live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（删除离线测试及其专用成员后重建）：构建0警告0错误，Client/wEditor的SHA-256同为`25954537D38C6D3943522FBA7D2D688C397A66180767BB38572493A0914EE88D`，live镜像无缺失、差异或散落，游戏兼容检查PASS（114条补丁绑定）。各功能的验收范围与待实测见所属state，本节不复述。（依据：构建、部署与哈希2026-10-28）
 
 灰袍兼容预检只覆盖本模块的引用、补丁绑定及已知静态初始化问题，不执行前置模组的完整启动构造，不能代替启动器整条加载链；2026-10-27前置模组重复勾选导致的启动失败即在此之外。（依据：预检边界与启动故障2026-10-27）
 
@@ -74,7 +74,6 @@ live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写
 | `Verify-LiveModule.ps1` | **双向**比对开发 runtime，检查开发布局和双端监控 DLL | 无缺失/差异/散落；三类可编辑目录非空；无客户端/服务器打包目录；Client/Editor DLL 哈希一致且五组监控串存在；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
 | `Verify-ClanBanner.ps1` | 新旗帜的安装版 XSD、实际 Banner DLL 与保留图标离线检查；`-Installed` 另核对家族引用、注册和 XML 镜像；状态归 [旗帜](clan-banner.md) | XSD/ID/managed Banner/installed XML PASS；不代表引擎渲染通过 |
-| `Verify-CrimeReceipts.ps1` | 犯罪回执检查，只读，不打开或修改存档 | PASS |
 | `Watch-GreyWardenAI.ps1` | 实机 AI 诊断日志跟看 | — |
 | `New-PlayerPackage.py` | 从隔离玩家DLL和_Module生成本地ZIP及逐项manifest，ASCII/UTF-16检查无监控、逐项解压哈希 | `PLAYER PACKAGE: PASS`；不自动上传 |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
@@ -82,46 +81,19 @@ live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写
 | `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体；预提交硬闸 | 四项全零 |
 | `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `diagnostics.md`「火誓者监控字段」） | 不是闸门，读结果 |
 
-`Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1`、`Verify-CrimeReceipts.ps1` 两边都能跑。两个 `.py` 检查用 python。
+`Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1` 两边都能跑。两个 `.py` 检查用 python。
 
-## 测试工程（`tools/`）
+## 自检（`tools/`）
 
 | 工程 | 覆盖 |
 |---|---|
-| `tests/test_assistance_recursion.py` | 编译生产协力职责与日志意图入口，以拒绝区域评估重入的边界覆盖附近支援、挂靠/脱离、强主办与速度分散 |
 | `tests/test_code_map.py` | 动态目标、显式接口名、组合属性、条件编译、类作用域及当前仓库补丁声明集合完整性；不替代运行时绑定 |
-| `tests/test_native_regional_strength.py`、`test_regional_threat.py` | 原版区域/最终欲望生产方法及实际 Harmony 采集、预览外交作用域与还原、既有强敌规避、避免重复原版评分；参见[协力](case-assistance.md#区域宣战与持续接战) |
-| `tests/test_resident_counterattack.py` | 原版双方initiative/移动与目标离城申请联动，未手设目标出城；原生地图/引擎动作提交仍未覆盖 |
-| `tests/test_pursuit_city_behavior.py` | 完整原版移动/接触方法对照；initiative及导航有效性为输入，不用于证明目标会自主留城或离城 |
-| `tests/test_native_interceptor_contact.py` | 当前生产追截直攻命令与新反编译完整接触入口：普通驻城不逐出、离城恢复接触、交互距离、已有同阵营战斗例外及行动方驻城门槛 |
-| `tests/test_case_interceptors.py` | 生产追截抽兵、混编与人数、补派时机及抽兵后复核失败回滚；规则见[追截](case-interceptors.md) |
-| `tests/test_case_dispatch.py` | 职业优先与就近排序、取消信众村远单优先；规则见[案件](case-enforcement.md#自动接案的实际顺序) |
-| `Verify-EnvoyNavigation.ps1` | 实际游戏 DLL 与生产临时队船只/导航时序；边界与诊断结论见[临时队](temporary-parties.md) |
 | `tests/test_player_text.py` | 中英输出、只读陈旧检查、新键生成、换行等价、占位符丢失拒绝及新增内联文本拒绝 |
 | `tests/test_project_checks.py` | 战力/讲和/守村经验容量/玩家委派/海陆交接归属、引用失效核对、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
-| `tests/test_atonement.py` | 抽取实际赎罪、委派入口与使者方法，覆盖未入会权限、交接、存档字段恢复、和平/战斗完成、多嫌犯、原版期限、实际申报、取消交付与不重复领奖；引擎边界为桩 |
-| `tests/test_battle_peace.py` | 反编译当前游戏的结果方法，编译生产 `GwpPeace` 与执法重试，旧代码负对照复现空引用，核对三种战果、脱离主队、收尾后讲和、正反对去重、交战理由与玩家讲和方式 |
-| `tests/test_firesworn_outfitting.py` | 抽取实际配装、抽兵、护送加人和归队方法，核对少领反例、混编/库存/品质、重复领装、原版民兵留村、家里至少留 5 人与归队不重复人数；引擎名册与评分为桩 |
-| `tests/test_armory_allocation.py` | 抽取生产全阶分配/缓存、实战发装与结算取值、出队和招募搬装、分兵种战损；高阶保留原配及坐骑/双刀，低阶择强、预设空位、弹药配对、四格上限、技能/品质/存量守恒及祭司最后一人带装 |
-| `tests/test_training_transport.py` | 抽取生产派队/50%门槛及75%概率翻倍/50%数量公式、单程落村/改道、SyncData与老兵搬装回调，核对健康老兵、全队分母、留守、减员、无弱兵、失效原队、冷却及同版存读；引擎行为为桩 |
-| `tests/test_lord_combat.py` | 编译生产身份/武器解析器、实际命中、盾伤模型、盾体选择、耐久/延后破盾、当前骑手变更/死亡与分伤；引擎边界为桩 |
-| `Verify-FounderProfiles.ps1` | 实际原版语体/选音、六组演员、战斗声音与性格合法互异；生产Harmony补丁范围与婚后接续 |
-| `Verify-PartyTransfers.ps1` | Windows PowerShell 5.1加载实际游戏和模块DLL，核对人数/伤兵/经验守恒、精确回滚及改名后的连续编号查重 |
-| `tests/test_faith_logistics.py` | 生产首兵建队/回读/死亡、实际归队伤兵和经验、已有民兵不清空、祭司严格领先及势力守恒、全量交俘/交后访问需求消失、两村超额分流/押送容量、混编落村和地牢同版存读；引擎边界为桩 |
-| `tests/test_faith_villagers.py` | 生产出生/补员比例纠偏、只交换灰袍名额、伤情经验守恒、真实原版守方枚举、混装成交/村税/公库分账、余货和财产损失、物品品质标记存读；原版规则来自本机反编译，引擎边界为桩 |
-| `tests/test_raid_score.py` | 真实信众比例查询、0～100%梯度与最多减50%、原震慑叠乘、无祭司/未登记/非村庄/户数边界、单次原评分及两类有界诊断 |
-| `tests/test_firesworn_logs.py` | 带BOM的启动标记/归档与启动切片、带时区不同秒精度、完整行去重、当前村民回款与村税分账口径；2026-10-19专项通过 |
-| `BattleSceneTests` | 援军三层/预算/Origin/原生耗尽、原版增援出生点入场、关闭随机赠援、死战不退 |
-| `DualBladeTests` | 双刀 AI 与踢/盾击互斥 |
-| `tests/test_duty_priority.py`、`test_duty_scenarios.py`、`test_village_relief.py` | 真实差事准入、约斗/收养目标解析、玩家征调/求援、后台约斗先后交接、暂停/返回及三类驻留任务保存恢复；引擎移动/比武/收养副作用受控 |
-| `tests/test_duty_banner.py` | 生产执勤身份/领取资格、补领/入退会/重入、家族/地图/场景纹章与副本隔离/编辑器/视觉刷新、奖励池排除及升级保护；原版Hero旗槽/奖励池方法反编译执行，引擎边界为桩 |
-| `tests/test_affairs.py` | 候选/酬劳/权限/过期合同、稳定ID刷新/接受、百科不退事务、未入会彩蛋入口、成员工作/历史回报分开、五页空态/六职能、原版完成区/头像边框/换行/三滚动区；输入直接执行安装版DLL，其他引擎边界为桩 |
-| `tests/test_city_search*.py` | 生产角色优先级/目标禁逃、原版队伍/命令表/出生/随从/竞技场负对照、双方伤亡分账、有限守军、倒地登记与按Tab撤出、同版保存读回、大厅同门退场换装及竞技场分支、诊断人物离场安全；场景加载/导航/动作/物理仍为引擎边界 |
 | `MusicTests` | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、增援提示波数与分局档位、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
-| `CaseSettlement.Tests` | 案件结算、派遣记录同版本存读往返 |
 | `gametest/tests` | 测试桥 Python 端：启动栅栏（在玩/占用/哈希/镜像/模组/存档名）、启动命令、协议客户端、超时与停止强杀、会话接回、场景断言、MCP 注册；假桥接服务器与假进程，不需要游戏；`python -m unittest discover -s tools/gametest/tests` |
 
-测试分别使用引擎边界桩、反编译原版方法回放或实际游戏 DLL，具体看各行；**离线通过不验证真实战场位置、AI 行军、原生物理或游戏内观感。**
+模拟游戏行为的离线测试（67 个 Python 测试、四个 C# 测试工程、七个行为验证脚本）已于 2026-11-04 全部删除；行为验证走测试桥，见上节。`MusicTests` 同时是配乐校准的混音导出工具（`Measure-MusicCalibration.py` 读它的输出），所以保留。（依据：用户裁定 2026-11-04）
 
 ## live 镜像是硬要求
 

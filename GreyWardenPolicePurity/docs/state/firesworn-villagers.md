@@ -2,7 +2,7 @@
 
 > 当前状态：当前存档缺专运待办标记的读取已实机通过；贸易专运与有效重量保持，运行期军团崩溃另查
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpFaithVillagers.cs` `GwpFireswornBehavior.cs` `GwpFireswornPartyDialogs.cs` `tools/tests/test_faith_villagers.py` `tools/tests/test_training_transport.py`
+> 覆盖源码：`GwpFaithVillagers.cs` `GwpFireswornBehavior.cs` `GwpFireswornPartyDialogs.cs`
 > 待实测：见文末
 
 公共行为文件中已删除取消的案件优先查询；本页村庄/村民行为未变，派案规则只在[案件](case-enforcement.md#自动接案的实际顺序)维护。（依据：用户裁定、源码差异复核2026-10-18）

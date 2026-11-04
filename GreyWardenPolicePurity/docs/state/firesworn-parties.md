@@ -2,7 +2,7 @@
 
 > 当前状态：村间主动运俘已取消，单程运兵运械与原有在途俘虏交付保留，专项通过，已部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpFireswornParties.cs` `GwpArmoryBalance.cs` `GwpFireswornPartyDialogs.cs` `tools/tests/test_balance_dispatch.py`
+> 覆盖源码：`GwpFireswornParties.cs` `GwpArmoryBalance.cs` `GwpFireswornPartyDialogs.cs`
 > 待实测：见文末
 
 自主练兵送兵已退休，旧档仍可能有从领主部队出发的实体运兵队，复用本页物流登记、战损和JoinVillage单程交付（独立老兵到村提示/日志），不计入来源村人口，业务只在 [运兵](warden-training.md) 定义。武装率包含各阶兵原配与库装主武器/远程；补空位、分配顺序、预留与军械存留规则只在[军械库](firesworn-armory.md)定义，村间实际调拨见本页军械质量调剂。（依据：用户裁定、设计与源码复核 2026-10-15）

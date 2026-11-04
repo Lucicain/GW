@@ -78,7 +78,7 @@ cd ../BannerlordSource/v1.4.8 && codegraph explore "MissionAgentSpawnLogic 增�
 
 - 库在仓库外 `../BannerlordSource/<游戏版本>/`：`managed/<程序集>/<命名空间>/<类型>.cs` 是全部官方托管 DLL
   （生成的 Gauntlet 绑定与多人模式除外），`moduledata/` 是官方模块的英文 XML，`manifest.json` 记生成它的 DLL 哈希。
-  MCP 用 `codegraph_explore` 加 `projectPath` 指向该目录；测试读原版方法用 `tools/tests/vanilla_source.py`。
+  MCP 用 `codegraph_explore` 加 `projectPath` 指向该目录。
 - 查明的原版运作写进 `docs/vanilla/` 手册，不只在 state 留一句结论。
 - 单个 DLL 的手动反编译（`ilspycmd -p -o <目录> <dll>`，工具在 `~/.dotnet/tools/ilspycmd`）只用于第三方模组和
   **我们自己构建的 DLL**，例如确认玩家包里诊断代码确实被编译掉了。
@@ -142,6 +142,8 @@ cd ../BannerlordSource/v1.4.8 && codegraph explore "MissionAgentSpawnLogic 增�
 
 
 ## 离线测试与完整战役模拟的证据边界
+
+2026-11-04 起模拟游戏的离线测试已删除，完整战役一级由测试桥（`tools/gametest/`）提供；下面的分级仍用于如实报告证据强弱。
 
 用户要求按特定场景完整推进双方原版AI、当前模组、移动、进出城及后续战斗，不用只执行局部方法的通过数替代，也不预设目标必然离城或追截队会消失。（依据：用户澄清 2026-10-19）
 

@@ -2,7 +2,7 @@
 
 > 当前状态：发射、踢盾与各武器击杀逐人成长已实现，专项及锁血联动回归通过，已部署待实测
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpAlternativeAttackControlBehavior.cs` `GwpAgentStatCalculateModel.cs` `GwpTuning.cs` `tools/tests/test_battle_growth.py`
+> 覆盖源码：`GwpAlternativeAttackControlBehavior.cs` `GwpAgentStatCalculateModel.cs` `GwpTuning.cs`
 > 待实测：弓/弩/投掷发射与各武器击杀的逐人临时成长，长战斗越过旧上限，分阶战狂的当前技能倍率与退出恢复
 
 ## 触发与作用技能

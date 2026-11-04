@@ -2,7 +2,7 @@
 
 > 当前状态：投案统一先退团再押人，原队进入原版接替/解散；修复已部署，原赶路与谈判机制保持
 > 最后验收：未建立检查点
-> 覆盖源码：`PoliceEnforcementBehavior.Envoy.cs` `GwpVoluntarySurrender.cs` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_army_influence_fault.py` `tools/tests/test_voluntary_surrender.py`
+> 覆盖源码：`PoliceEnforcementBehavior.Envoy.cs` `GwpVoluntarySurrender.cs`
 > 待实测：普通使者及宽限催缴途中失队/战后全伤补派、原CollectOnly约定与归队现金；正常游玩自然遇到成员/军团长投案后的收尾；暂失目标后重现继续交涉，存读接续；城内交涉、各种结局、战后押人和协办旧案继续；约斗场地变化后重选可进城市；长途超72小时与最终回报统计已有本页日志证据
 
 灰袍领主对原版罪犯也走谈判，不只玩家能谈。（依据：用户裁定 2026-10-15）

@@ -2,7 +2,7 @@
 
 > 当前状态：满关系写入/锁定已取消，免费求婚保留；成年分职与后继规则保持
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs` `tools/Verify-FounderProfiles.ps1`
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs`
 > 待实测：见文末
 
 家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
@@ -151,4 +151,3 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 v1.4.8原生接口401 GetParamsFromKey入口RVA 0x7027B0调用0x58E9A0；415 ProduceNumericKeyWithParams入口0x702A10调用0x590040。解码分别在0x58EC27与0x58EC84取BodyProperties+0x48，即StaticBodyProperties.KeyPart8的低6位声音索引、25至30位音高；音高为档值/63。反向写入在0x5901F7及0x59028F使用同样字段。仅改掩码 `0x7E00003F` 内声音位，所有可见脸部、头发、身材与其他位保持，族长连声音位也原样保留。（依据：C++反汇编与前后XML结构/掩码核对2026-10-15；Native.dll SHA-256 2a5e0e0b15513ebb7052d747a621b82c50ee834553eba283b33bbbc33766e12a）
 
-专项脚本 `powershell -NoProfile -File tools/Verify-FounderProfiles.ps1` 使用真实游戏的Hero性格截断、ConversationTagHelper、DefaultVoiceOverModel.GetAccentClass和生产Harmony补丁，验证85项：六个不同对话配音组、六组有效战斗声线/音高、六组合法正面特质、婚后仍保留、后继及原版贵族不被覆盖。不启动游戏。主观音色与语气待用户试听。（依据：离线回归2026-10-15）

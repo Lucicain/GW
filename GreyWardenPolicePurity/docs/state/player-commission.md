@@ -2,7 +2,7 @@
 
 > 当前状态：逃亡/暂失部队与第三方扣押共用无责撤回已部署待实测；原罪责、赎买和已完成交差保留
 > 最后验收：`032cf65`（诊断已退休；后续当场补登记待实测）
-> 覆盖源码：`PlayerBountyBehavior.CaseSettlement.cs` `PlayerBountyBehavior.CitySearch.cs` `PlayerBountyBehavior.Custody.cs` `PlayerBountyBehavior.Affairs.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `tools/tests/test_case_envoy_scenarios.py` `tools/tests/test_case_custody.py`
+> 覆盖源码：`PlayerBountyBehavior.CaseSettlement.cs` `PlayerBountyBehavior.CitySearch.cs` `PlayerBountyBehavior.Custody.cs` `PlayerBountyBehavior.Affairs.cs` `PlayerBountyBehavior.QuestAndNotification.cs`
 > 待实测：支援搜捕约斗败后正常交差只领辛苦费、案底保留；真正失败终止委托但原案留给灰袍；目标逃亡/待重建部队时事务和交差对话的无责撤回、保留原案及重现后再派；第三方领主/地牢赎买与旧档接续；委托目标被打垮但人跑掉时，震慑照上、不再计被捕次数（和灰袍自己打垮未俘一致，见 case-enforcement.md「震慑口径」）
 
 本文件只写普通悬赏**结果怎么判**、何时可以交差、交差拿多少。接单、支援与账本见[玩家声望](player-justice.md)，谈判见[野外执法](field-arrest.md)，负声望任务见[赎罪](atonement.md)。普通悬赏的底层持案查询现由 `GwpPlayerCaseAssignment` 汇总给外部调用，原有结果判定与报酬规则保留。（依据：源码复核2026-10-15）

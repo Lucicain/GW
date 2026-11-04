@@ -2,7 +2,7 @@
 
 > 当前状态：复命/求援归入当前委托，订单/讲和/封地各归业务；五种真实使者与封地递送保持
 > 最后验收：2026-10-21 用户反馈前轮无功能问题；日志确认订兵/讲和/复命选兵，封地送达与存读边界仍待测
-> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs` `GwpWardenDispatchBehavior.Affairs.cs` `tools/tests/test_affairs_dispatch.py` `tools/tests/test_fief_courier.py`
+> 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs` `GwpWardenDispatchBehavior.Affairs.cs`
 > 待实测：委托内复命/求援及行程归类；封地选定/出发/送达/失效返回及存读接续；归队伤兵和累计经验；反复建队不重号
 
 送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。

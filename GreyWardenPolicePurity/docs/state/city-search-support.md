@@ -2,7 +2,7 @@
 
 > 当前状态：支援只经三个求援入口成立、接案撤回独立办案队、选兵时办案队单列锁定、黑甲只换已有盾与护甲；路上遇袭后补派与事务页办案队卡片经用户实测确认，其余待验收
 > 最后验收：2026-10-28用户实测确认办案队路上打完仗继续跟来、失队另派、事务页「灰袍搜捕队」卡片
-> 覆盖源码：`tools/tests/test_city_search_outcomes.py` `PlayerBountyBehavior.CitySearch.cs` `GwpCitySearchCasePolicy.cs` `GwpCitySearchBehavior.Support.cs` `GwpCitySearchBehavior.SupportDialogue.cs` `GwpCitySearchSupportOrigin.cs` `GwpCitySearchSupportSelection.cs` `PoliceEnforcementBehavior.CitySearch.cs` `tools/tests/test_city_search_support.py`
+> 覆盖源码：`PlayerBountyBehavior.CitySearch.cs` `GwpCitySearchCasePolicy.cs` `GwpCitySearchBehavior.Support.cs` `GwpCitySearchBehavior.SupportDialogue.cs` `GwpCitySearchSupportOrigin.cs` `GwpCitySearchSupportSelection.cs` `PoliceEnforcementBehavior.CitySearch.cs`
 > 待实测：住城委托经对话/事务/本队灰袍兵求援后办案队跟来、领主本人不跟；选兵界面办案队单列带锁、占15人名额且清空/重置不掉；步兵/弓手/骑兵只换已有盾与护甲；同兵种本队与办案队伤亡各回各的名册；接案时独立办案队撤回；此前失队补派、纯AI收款、约斗结算与同版接续仍待验收
 
 [现场搜捕](city-search.md) · [催缴使者](case-envoy.md) · [临时队归还](temporary-parties.md)

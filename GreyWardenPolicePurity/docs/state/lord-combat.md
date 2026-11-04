@@ -2,7 +2,7 @@
 
 > 当前状态：装备身份加成与锁血均已部署，待实际比赛与野战验收
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs` `tools/tests/test_lord_combat.py`
+> 覆盖源码：`GwpCommon.cs` `GwpTroopCombat.cs` `GwpAgentApplyDamageModel.cs` `GwpShieldBashGuardPatch.cs` `GwpKickBehavior.cs` `GwpAiDiagnostics.cs`
 > 待实测：普通比赛装备、自定义战斗灰袍指挥官与嫁给玩家的灰袍领主的近战、射击、盾挡与骑乘加成；锁血见last-stand.md；agent 核对领主战斗日志
 
 ## 用户裁定与范围
