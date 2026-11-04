@@ -100,13 +100,12 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
-| [`kingdom-membership.md`](kingdom-membership.md) | v14 入国保护、通用读档离国及外交宣战监听、反馈环境与回退路径 |
 | [`workflow.md`](workflow.md) | 改动流程、规则分级、文档、提交发版、多 agent 协作、集中清理、harness 接入 |
 | [`progress.md`](progress.md) | 进度总览、待实测与收尾欠账；建议不等于新开发指令 |
 | [`build-and-deploy.md`](build-and-deploy.md) | 构建开关、预检脚本、live 镜像、发布包 |
 | [`diagnostics.md`](diagnostics.md) | 在役诊断系统与各自的退休条件 |
-| [`code-health.md`](code-health.md) | 异常留痕、性能分层结论、有意不做的重构 |
-| [`infrastructure.md`](infrastructure.md) | 身份判据、调参、文本与本地化、存档类型 |
+| [`code-health.md`](code-health.md) | 共享概念归属、兜底与异常留痕、性能与循环复核、预览与退出原生故障调查、有意不做的重构 |
+| [`infrastructure.md`](infrastructure.md) | 存档兼容、身份判据、战力判断、调参、文本与本地化、存档类型 |
 | [`player-text.md`](player-text.md) | 玩家词句的独立中英文本入口、生成与核对 |
 | [`code-map.md`](code-map.md) | **自动生成**：Harmony 补丁点、注册顺序、文件索引 |
 
@@ -117,7 +116,7 @@ python tools/Check-StateFreshness.py
 | [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、震慑、外交封锁、被俘豁免 |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：派单门槛、结案口径、协力编成、战争跟随 |
 | [`case-assistance.md`](case-assistance.md) | 协力登记、征调、会合、追速分散、缩编与普通支援 |
-| [`case-interceptors.md`](case-interceptors.md) | 立即追截队：归队、船与多余的人去信众村 |
+| [`case-interceptors.md`](case-interceptors.md) | 立即追截队：归队、船与多余的人去信众村、常规追截与周期兜底 |
 | [`case-envoy.md`](case-envoy.md) | 灰袍使者：宣战前派骑兵去谈、谈判结局、比武大会单挑 |
 | [`warden-ai.md`](warden-ai.md) | 灰袍谁拿到什么活、欲望竞价怎么落到原版动作、进信众村、巡区、协力军团引擎补丁 |
 | [`warden-mediation.md`](warden-mediation.md) | 替灰袍打出来的战争由灰袍出面调停；灰袍战后讲和 |
@@ -146,10 +145,11 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
-| [`family.md`](family.md) | 成员、六个本职与继承、婚姻、与要人的关系、成就兼容 |
+| [`family.md`](family.md) | 成员、六个本职与继承、婚姻、与要人的关系、六人声音与性格、成就兼容 |
+| [`kingdom-membership.md`](kingdom-membership.md) | 灰袍不入国：四个入国入口拦截、内战流亡收容排除、读档离国、宣战监听、反馈环境与回退 |
 | [`clan-banner.md`](clan-banner.md) | 黑底金鸟旗帜、自定义图标、静态材质与美术源 |
 | [`village-relief.md`](village-relief.md) | 被焚村庄的善后与收养、重建、请愿、村民打赏 |
-| [`warden-training.md`](warden-training.md) | 练兵官老兵单程送村、派出比例、兵种配比取向 |
+| [`warden-training.md`](warden-training.md) | 挂名练兵官、全灰袍部队升级取向、旧在途运兵队交付（自主送老兵已退休） |
 | [`warden-recruitment.md`](warden-recruitment.md) | 灰袍照原版招兵、信众村祭司精锐格子与守村队低阶优先直招、灰袍兵不领饷 |
 | [`economy.md`](economy.md) | 司法公库收支、无封地家族的船只买卖 |
 | [`temporary-parties.md`](temporary-parties.md) | 无领主临时队：借船与退还、口粮 |
@@ -159,7 +159,7 @@ python tools/Check-StateFreshness.py
 | [`firesworn-media.md`](firesworn-media.md) | 已验收的仪式配图、地图声与菜单声、素材身份 |
 | [`firesworn-armory.md`](firesworn-armory.md) | 军械账本、配装、缴获、战损与开发版查看 |
 | [`firesworn-economy.md`](firesworn-economy.md) | 捐赠、地牢、货仓、守村收益、保护费与公库 |
-| [`firesworn-parties.md`](firesworn-parties.md) | 自建传教队与村间转运 |
+| [`firesworn-parties.md`](firesworn-parties.md) | 自建传教队与单程运兵运械（村间不主动运俘） |
 | [`firesworn-villagers.md`](firesworn-villagers.md) | 原版村民队的比例补员、精锐替换、兼运分账 |
 
 ### 战斗
@@ -176,7 +176,7 @@ python tools/Check-StateFreshness.py
 | [`warden-resolve.md`](warden-resolve.md) | 灰袍死战不退 |
 | [`music.md`](music.md) | 辛迪加分段战场配乐：资格、强度映射、过渡、渲染 |
 | [`battle-tactics.md`](battle-tactics.md) | 隘口/盾墙踱步问题：**已裁定不改原版** |
-| [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料与原包对比、当前 live 设置 |
+| [`cloth-assets.md`](cloth-assets.md) | 重建资源八块布料的定稿设置、只在 Kit 改参数、引擎用法与弓箭手结论 |
 
 ### 专项调查（已闭合）
 
