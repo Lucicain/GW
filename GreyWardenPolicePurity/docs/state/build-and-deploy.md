@@ -2,8 +2,8 @@
 
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
 > 最后验收：2026-10-28；正式包基线见下文
-> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进
+> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py` `tools/gametest/gametest/*.py`
+> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进；测试桥接模组写好后经 MCP 跑通 `smoke` 场景（启动、读档、快进、查询、关游戏）
 
 ## 当前开发部署
 
@@ -28,6 +28,17 @@ live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（合�
 安装清单与原配置备份：`C:/Users/lucif/Downloads/Bannerlord-DeveloperTools-20261018/`（`installed-files.sha256.json`、`LauncherData.before.xml`、`UsefulSkips.before.json`）。卸载可删两新模块目录、恢复这两配置备份，BetterTime配置为本次新建；不涉及灰袍源码读档。原7z保留在Downloads。本轮未启动游戏，待用户确认一键新档及地图快进。（依据：安装与配置核查2026-10-18）
 
 本机 Native 声明 v1.4.8。原版 `Campaign.SpeedUpMultiplier` 默认 4；作弊模式控制台 `campaign.set_campaign_speed_multiplier 10` 可设快进倍率，普通模式上限 15、开发模式 30；倍率不保证实际吞吐。官方 `FastMode` 模块设置 `CampaignOptions.AccelerationMode`，不能据名称当作地图快进。（依据：本机模块与 C#反编译 2026-10-18）
+
+## 自动化实机测试桥
+
+agent 经 MCP 服务 `tools/gametest/`（`python tools/gametest/server.py`，stdio）自己启动游戏跑自动化测试：
+一次工具调用办完一件事、返回结构化 JSON、不看屏幕。边界即 AGENTS.md「实机」：用户在玩（游戏相关进程在、live DLL 被占用）不启动，
+live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写 `gwp_test_` 存档，命令超时即杀进程，跑完关游戏；
+每条栅栏写在代码里并有单元测试。（依据：用户裁定 2026-11-04）
+
+游戏内一侧是独立测试模组 `GreyWardenTestBridge`，协议以 `tools/gametest/PROTOCOL.md` 为准；它只在测试工具经环境变量
+`GWP_TEST_BRIDGE_SESSION` 启动游戏时启用，用户自己开的游戏不会被连上或杀掉，也不进 `_Module` 与玩家包。
+现状：Python 端完成，桥接模组未写，`game_start` 会被「找不到桥接构建产物」挡下。注册与场景写法见 `tools/gametest/README.md`。（依据：设计 2026-11-04）
 
 ## 两个开关决定一切
 
@@ -108,6 +119,7 @@ live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（合�
 | `tests/test_city_search*.py` | 生产角色优先级/目标禁逃、原版队伍/命令表/出生/随从/竞技场负对照、双方伤亡分账、有限守军、倒地登记与按Tab撤出、同版保存读回、大厅同门退场换装及竞技场分支、诊断人物离场安全；场景加载/导航/动作/物理仍为引擎边界 |
 | `MusicTests` | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、增援提示波数与分局档位、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
 | `CaseSettlement.Tests` | 案件结算、派遣记录同版本存读往返 |
+| `gametest/tests` | 测试桥 Python 端：启动栅栏（在玩/占用/哈希/镜像/模组/存档名）、启动命令、协议客户端、超时与停止强杀、会话接回、场景断言、MCP 注册；假桥接服务器与假进程，不需要游戏；`python -m unittest discover -s tools/gametest/tests` |
 
 测试分别使用引擎边界桩、反编译原版方法回放或实际游戏 DLL，具体看各行；**离线通过不验证真实战场位置、AI 行军、原生物理或游戏内观感。**
 

@@ -35,3 +35,7 @@
 
 # Upstream TpacTool checkout for tools/tpac; only our patch is committed
 /tools/tpac/TpacTool-src/
+
+# Game test bridge: machine-local config and the running session record
+/tools/gametest/config.local.json
+/tools/gametest/.runtime/
