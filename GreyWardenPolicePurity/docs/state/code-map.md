@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-225 个源文件、59,430 行、430 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
+225 个源文件、59,432 行、430 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -313,7 +313,7 @@
 - `GwpCharacterPreviewActions` → GwpCharacterPreviewActions.cs
 - `GwpCharacterPreviewDiagnostics` → GwpCharacterPreviewDiagnostics.cs
 - `GwpCitySearchArenaReturn` → GwpCitySearchBehavior.Flow.cs ←
-- `GwpCitySearchBehavior` → GwpCitySearchBehavior.cs , GwpCitySearchBehavior.Flow.cs , GwpCitySearchBehavior.Hall.cs , GwpCitySearchBehavior.Menu.cs , GwpCitySearchBehavior.StreetState.cs , GwpCitySearchBehavior.Support.cs , GwpCitySearchBehavior.SupportDialogue.cs
+- `GwpCitySearchBehavior` → GwpCitySearchBehavior.Flow.cs , GwpCitySearchBehavior.Hall.cs , GwpCitySearchBehavior.Menu.cs , GwpCitySearchBehavior.StreetState.cs , GwpCitySearchBehavior.Support.cs , GwpCitySearchBehavior.SupportDialogue.cs , GwpCitySearchBehavior.cs
 - `GwpCitySearchCasePolicy` → GwpCitySearchCasePolicy.cs
 - `GwpCitySearchCivilianDangerPatch` → GwpCitySearchMission.Progress.cs ←
 - `GwpCitySearchCompanionsPatch` → GwpCitySearchMission.Progress.cs ←
@@ -323,7 +323,7 @@
 - `GwpCitySearchGate` → GwpCitySearchBehavior.Flow.cs ←
 - `GwpCitySearchMeleeStrikePatch` → GwpCitySearchMission.cs ←
 - `GwpCitySearchMission` → GwpCitySearchMission.cs
-- `GwpCitySearchMissionController` → GwpCitySearchMission.cs , GwpCitySearchMission.HallDuel.cs , GwpCitySearchMission.Movement.cs , GwpCitySearchMission.Progress.cs , GwpCitySearchMission.Reinforcements.cs , GwpCitySearchMission.StreetState.cs , GwpCitySearchMission.VisualDiagnostics.cs ←
+- `GwpCitySearchMissionController` → GwpCitySearchMission.HallDuel.cs , GwpCitySearchMission.Movement.cs , GwpCitySearchMission.Progress.cs , GwpCitySearchMission.Reinforcements.cs , GwpCitySearchMission.StreetState.cs , GwpCitySearchMission.VisualDiagnostics.cs , GwpCitySearchMission.cs ←
 - `GwpCitySearchMissionViews` → GwpCitySearchMissionViews.cs
 - `GwpCitySearchNativeVisualFix` → GwpCitySearchNativeVisualFix.cs
 - `GwpCitySearchPassagePatch` → GwpCitySearchMission.Progress.cs ←
@@ -395,7 +395,7 @@
 - `GwpFaithVillagerWarehousePatch` → GwpFaithVillagers.cs ←
 - `GwpFaultTrace` → GwpDualBladeActionSetPatch.cs ←
 - `GwpFiefPublicSupportPatch` → GwpFiefPublicSupportPatch.cs
-- `GwpFieldArrestBehavior` → GwpFieldArrestBehavior.cs , GwpFieldArrestBehavior.Grace.cs
+- `GwpFieldArrestBehavior` → GwpFieldArrestBehavior.Grace.cs , GwpFieldArrestBehavior.cs
 - `GwpFieldArrestHostility` → GwpFieldArrestBehavior.cs ←
 - `GwpFieldArrestLines` → GwpFieldArrestLines.cs
 - `GwpFieldArrestPricing` → GwpCrimeCategory.cs ←
@@ -494,7 +494,7 @@
 - `GwpShipLoanReturnPatch` → PoliceResourceManager.cs ←
 - `GwpSingleQueryPopupClearPatch` → GwpSingleQueryLinkPatch.cs ←
 - `GwpSingleQueryPopupWidgetPatch` → GwpSingleQueryLinkPatch.cs ←
-- `GwpStrength` → GwpStrength.cs , GwpStrength.Native.cs
+- `GwpStrength` → GwpStrength.Native.cs , GwpStrength.cs
 - `GwpSyndicateMusicBehavior` → GwpSyndicateMusicBehavior.cs
 - `GwpText` → GwpText.cs
 - `GwpTextCatalog` → GwpTextCatalog.g.cs
@@ -542,7 +542,7 @@
 - `PendingReport` → GwpFieldReportLedger.cs ←
 - `PlayerBehaviorMonitor` → PlayerBehaviorMonitor.cs
 - `PlayerBehaviorPool` → GwpData.cs ←
-- `PlayerBountyBehavior` → PlayerBountyBehavior.Affairs.cs , PlayerBountyBehavior.CaseSettlement.cs , PlayerBountyBehavior.CitySearch.cs , PlayerBountyBehavior.cs , PlayerBountyBehavior.Custody.cs , PlayerBountyBehavior.DialogueAndNotification.cs , PlayerBountyBehavior.Encyclopedia.cs , PlayerBountyBehavior.QuestAndNotification.cs , PlayerBountyBehavior.Support.cs
+- `PlayerBountyBehavior` → PlayerBountyBehavior.Affairs.cs , PlayerBountyBehavior.CaseSettlement.cs , PlayerBountyBehavior.CitySearch.cs , PlayerBountyBehavior.Custody.cs , PlayerBountyBehavior.DialogueAndNotification.cs , PlayerBountyBehavior.Encyclopedia.cs , PlayerBountyBehavior.QuestAndNotification.cs , PlayerBountyBehavior.Support.cs , PlayerBountyBehavior.cs
 - `PlayerBountyFlowState` → GwpFlowStates.cs ←
 - `PlayerRequests` → GwpTuning.cs ←
 - `PlayerRequestTaskSnapshot` → GreyWardenPlayerRequestBehavior.cs ←
@@ -555,12 +555,12 @@
 - `PoliceAntiWarDeclaration` → PoliceAntiWarDeclaration.cs
 - `PoliceClanTierModel` → PoliceClanTierModel.cs
 - `PoliceCrimeMonitorEnhanced` → PoliceCrimeMonitorEnhanced.cs
-- `PoliceEnforcementBehavior` → PoliceEnforcementBehavior.Assistance.cs , PoliceEnforcementBehavior.AtonementQuest.cs , PoliceEnforcementBehavior.CaseLifecycle.cs , PoliceEnforcementBehavior.CitySearch.cs , PoliceEnforcementBehavior.cs , PoliceEnforcementBehavior.DelayPatrols.cs , PoliceEnforcementBehavior.Dialogue.cs , PoliceEnforcementBehavior.Envoy.cs , PoliceEnforcementBehavior.Formation.cs , PoliceEnforcementBehavior.Helpers.cs , PoliceEnforcementBehavior.IdleDuties.cs , PoliceEnforcementBehavior.WarPursuitTrace.cs
+- `PoliceEnforcementBehavior` → PoliceEnforcementBehavior.Assistance.cs , PoliceEnforcementBehavior.AtonementQuest.cs , PoliceEnforcementBehavior.CaseLifecycle.cs , PoliceEnforcementBehavior.CitySearch.cs , PoliceEnforcementBehavior.DelayPatrols.cs , PoliceEnforcementBehavior.Dialogue.cs , PoliceEnforcementBehavior.Envoy.cs , PoliceEnforcementBehavior.Formation.cs , PoliceEnforcementBehavior.Helpers.cs , PoliceEnforcementBehavior.IdleDuties.cs , PoliceEnforcementBehavior.WarPursuitTrace.cs , PoliceEnforcementBehavior.cs
 - `PoliceHeroCreationModel` → PoliceHeroCreationModel.cs
 - `PoliceMarriageModel` → PoliceMarriageModel.cs
 - `PoliceMobilePartyAIModel` → PoliceMobilePartyAIModel.cs
 - `PolicePartyTroopUpgradeModel` → PolicePartyTroopUpgradeModel.cs
-- `PolicePatrolBehavior` → PolicePatrolBehavior.cs , PolicePatrolBehavior.Encyclopedia.cs , PolicePatrolBehavior.Helpers.cs
+- `PolicePatrolBehavior` → PolicePatrolBehavior.Encyclopedia.cs , PolicePatrolBehavior.Helpers.cs , PolicePatrolBehavior.cs
 - `PolicePrisonerImmunityBehavior` → PolicePrisonerImmunityBehavior.cs
 - `PoliceRaidDeterrenceModel` → PoliceRaidDeterrenceModel.cs
 - `PoliceResourceManager` → PoliceResourceManager.cs
@@ -635,7 +635,7 @@
 ### 执法：案件与巡逻（34 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 1873 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1414 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.cs` — 1415 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1372 行 · `PoliceEnforcementBehavior`
 - `GwpFieldArrestBehavior.cs` — 1306 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.Envoy.cs` — 1017 行 · `PoliceEnforcementBehavior`，另含 2 个类型
@@ -735,7 +735,7 @@
 ### 其他（130 个文件）
 
 - `GwpTextCatalog.g.cs` — 1449 行 · `GwpTextCatalog`
-- `GwpFireswornBehavior.cs` — 1337 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFireswornBehavior.cs` — 1338 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 885 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`

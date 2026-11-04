@@ -195,7 +195,7 @@ namespace GreyWardenPolicePurity
 
             if (DirectAttackLocks.Contains(party.StringId)) return;
 
-            // 解开停驻的冻结（火誓者常驻队出发时走这里）并要求原版重新拍卖；不清空原版短期战术，
+            // 解开直扑锁以外残留的冻结（如读档带回的原版冻结状态）并要求原版重新拍卖；不清空原版短期战术，
             // 不写入目的地，也不人为重置进攻/逃跑判断。
             party.Ai.SetDoNotMakeNewDecisions(false);
             party.Ai.RethinkAtNextHourlyTick = true;
@@ -733,7 +733,7 @@ namespace GreyWardenPolicePurity
             left.Kind == right.Kind && left.Party == right.Party && left.Settlement == right.Settlement;
 
         // 进聚落和巡区认的是聚落，其余认的是部队。巡区漏了这一条时，RequestBeat 下的意图每小时被当成失效扔掉，
-        // 火誓者巡逻队出了村就原地 Hold（实机诊断 2026-10-08：两支巡逻队 20 小时 intent=none、default=Hold）。
+        // 领了巡区的队伍会原地 Hold（实机诊断 2026-10-08，当时是已删除的火誓者巡逻队：两支 20 小时 intent=none、default=Hold）。
         private static bool IsValid(Intent intent) => intent.Kind is IntentKind.Visit or IntentKind.Beat
             ? intent.Settlement != null : intent.Party?.IsActive == true;
 

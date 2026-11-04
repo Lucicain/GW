@@ -18,11 +18,11 @@ namespace GreyWardenPolicePurity
     /// 信众村自建的传教与转运队；卖货复用原版村民队，见GwpFaithVillagers。
     /// <list type="bullet">
     /// <item>传教队：祭司已是本地最强的信众村，把狂信者跋山涉水送到别的村子，到了就并入那里的守村队，队伍没了。
-    /// 先送已经有火誓者、比例比家里低得多的村子，再送还没有火誓者的。只送人，不运货。</item>
-    /// <item>运械队：把家里的兵器护甲装进背包，运给武装率比家里低得多的村子，到了卸进那里的军械库、押车的人并入当地，队伍没了。
+    /// 只去信众村未满的巡区、先去最空的那片；其中先送有火誓者、无祭司、比例不到来祭司门槛的村里比例最高的，再送还没有火誓者的。只送人，不运货。</item>
+    /// <item>运械队：在有祭司的信众村之间按守村人数差和军械质量调剂清单（GwpArmoryBalance）派出，调剂货装进背包，到了卸进那里的军械库、押车的人并入当地，队伍没了。
     /// 背包里的东西路上被打掉就归胜方。</item>
     /// </list>
-    /// 都在出发前从守村队补人（先拉最高级的），再从家里的军械库拿最好的那几套装进自己的账。
+    /// 都在出发前从守村队补人（只取健康4阶及以上，先拉最高级的），再从家里的军械库拿最好的那几套装进自己的账。
     /// 路上和送信队一样专注自己的事：贴身的弱敌照打，不为远处的目标丢下差事（用户裁定 2026-10-07）。
     /// 传教队、运械队走不到（超时、目标出事）就回家，并入家里。
     /// </summary>
@@ -117,7 +117,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 路上最强的敌人有多强：出发村和目的地附近（原版追击范围内）的敌人里战斗组最强的那个。
-        /// 卖货队、传教队按它补人（<see cref="ManEscort"/>）。
+        /// 传教队、运械队按它补人（<see cref="ManEscort"/>）。
         /// </summary>
         private static float RoadDanger(Settlement home, Settlement target) =>
             HostilesAround(home.GetPosition2D, EngageRadius).Concat(HostilesAround(target.GetPosition2D, EngageRadius))
@@ -161,7 +161,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 建一支无领主队。不借船、不配口粮：只走陆路，不吃饭（GwpCommon.IsLeaderlessDutyParty）。
-        /// 以前照临时办差队向最近的灰袍领主借真船，常驻队从不解散，船就再也还不回去
+        /// 以前照临时办差队向最近的灰袍领主借真船，当时的常驻队（已删除）从不解散，船就再也还不回去
         /// （用户反馈 2026-10-07：灰袍船异常少、狂信者队有船）。
         /// </summary>
         private MobileParty CreateFaithParty(FaithVillage row, Settlement home, FaithPartyKind kind)
@@ -231,9 +231,9 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 卖货队、传教队补人：先补到原来的人数，路上最强的敌人（<see cref="RoadDanger"/>）比我们强就一个个加人，
-        /// 加到打得过为止；最多 25 人，家里守村队至少留 5 人（用户裁定 2026-10-08：这两种队人数固定，路上老挨打）。
-        /// 以前卖货队固定 8 人、传教队 10 人（实机诊断 2026-10-08：卖货队一趟被山贼打剩 3 人，下一趟被逃兵全灭）。
+        /// 传教队、运械队补人：先补到基础人数，路上最强的敌人（<see cref="RoadDanger"/>）比我们强就一个个加人，
+        /// 加到打得过为止；最多 25 人，家里守村队至少留 5 人（用户裁定 2026-10-08：当时卖货队、传教队人数固定，路上老挨打）。
+        /// 以前自建卖货队（已删除，卖货改由原版村民队）固定 8 人、传教队 10 人（实机诊断 2026-10-08：卖货队一趟被山贼打剩 3 人，下一趟被逃兵全灭）。
         /// </summary>
         private int ManEscort(MobileParty party, FaithVillage row, Settlement home, Settlement target, int baseSize, out float danger)
         {
@@ -520,11 +520,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 无领主队进村落脚时交人（传教队、运械队到了就并入，卖货队回家）：押着的普通俘虏进地牢，英雄当场放走；
+        /// 无领主队进村落脚时交人（传教队、运械队到了目标或折返回家都并入；原版村民队不走这里）：押着的普通俘虏进地牢，英雄当场放走；
         /// 队里不是灰袍兵种的人并进这座村的原版民兵，和村里别的原版民兵一样，祭司最强以后会被烧。灰袍兵由调用方并进守村队。
         /// 出门打赢了，原版把败方押着的普通俘虏直接编进 AI 胜方的队伍（C#反编译 v1.4.8 MapEvent.LootDefeatedPartyPrisoners、
         /// MapEventParty.RosterToReceiveLootMembers），这些就是队里的非灰袍兵。以前回村只并灰袍兵，这些人随队伍一起销毁，
-        /// 卖货队常驻就一直带着（实机诊断 2026-10-08：打赢劫匪后 25→28 人，回村只并入 25）。
+        /// 当时常驻的自建卖货队就一直带着（实机诊断 2026-10-08：打赢劫匪后 25→28 人，回村只并入 25）。
         /// 原版民兵人数就是民兵队名单上的人数（Settlement.Militia），直接加进名单不会被原版改回；民兵正在打仗也加，下一轮模拟就上场
         /// （见 <see cref="JoinGuard"/>）。没有民兵队时由原版公开工厂建队，再并入实际归队的人。
         /// （用户裁定 2026-10-08：出门的队回来全部并入守村总数，非灰袍的本来就可能被烧；抓的俘虏进地牢）

@@ -70,8 +70,8 @@ namespace GreyWardenPolicePurity
             public const float MovementIntentHours = 8f;
 
             /// <summary>
-            /// 灰袍常备军的兵种配比：骑兵 : 步兵 : 弓手。骑兵翻倍是因为现场追截队
-            /// 只抽骑兵，消耗明显快于另外两种。
+            /// 灰袍常备军的兵种配比：骑兵 : 步兵 : 弓手。骑兵翻倍是因为现场追截队和使者
+            /// 优先抽骑兵（不足才由其他兵补），消耗明显快于另外两种。
             /// 实现上不改原版升级公式，只写 <see cref="TaleWorlds.CampaignSystem.Hero.PreferredUpgradeFormation"/>，
             /// 由原版 GetUpgradeChanceForTroopUpgrade 把缺口最大的那条分支抬到 9999 权重。
             /// </summary>
@@ -383,7 +383,7 @@ namespace GreyWardenPolicePurity
             // 守村队：两户信众出一个兵（用户裁定 2026-10-08：约为原版民兵平衡点的 3 倍，仍和信众户挂钩）。
             // 这是自己长的上限：烧人生出来的、别村来的可以超过它，超过的不删、只是不再自己长。
             public const int HouseholdsPerGuard = 2;
-            // 卖货队、传教队按路上敌人加人的上限（试玩值）。
+            // 传教队、运械队按路上敌人加人的上限（试玩值）。
             public const int EscortMaximumSize = 25;
             public const int FaithEscortMinimumTier = 4; // 精锐护送：至少灰袍轻步兵，优先高阶（设计2026-10-20）。
             public const float PriestWeeklyChance = 0.5f;
@@ -414,22 +414,22 @@ namespace GreyWardenPolicePurity
             public const int SurplusGuardCapMultiplier = 2; // 用户裁定2026-10-20：当前补兵上限两倍以上才焚烧低阶。
 
             // 传教队：祭司已是本地最强的信众村照比武大会派，全图同时最多 4 队在外，一队 10 人；派任何队家里都至少留 5 人。
-            // 先去 150 距离内有火誓者、还没有祭司、比例不到来祭司门槛的村子里比例最高的，没有就去最近的还没有火誓者的。
+            // 只去信众村未满的巡区、先去最空的那片；其中先去 150 距离内有火誓者、还没有祭司、比例不到来祭司门槛的村子里比例最高的，
+            // 没有就去还没有火誓者的村子里离巡区圆心最近的。
             public const int MaxActiveMissions = 4;
             public const int MissionSize = 10;
             public const int MissionMinimumLeftBehind = 5;
             public const float MissionMaxDistance = 150f;
 
-            // 运械队：照比武大会派，看 300 距离内有火誓者的村子，守村队人数（按户数比）拉平要差 5 人以上，
-            // 或拿到主兵器的比例比家里低 0.2 以上、拉平要差 5 套以上，才去；至少 5 人押车，人数差多少就多带多少人。
+            // 运械队：照比武大会派，看 300 距离内有祭司的信众村，守村队人数（按户数比）拉平要差 5 人以上，
+            // 或军械质量调剂清单（GwpArmoryBalance）至少 5 件，才去；至少 5 人押车，人数差多少就多带多少人。
             public const int BalanceEscortSize = 5;
             public const int BalanceMinimumMen = 5;
             public const float BalanceMaxDistance = 300f;
             public const int BalanceMinimumSets = 5;
 
-            // 卖货：货仓里的东西值 2,000 以上、隔 3 天出一次车。
+            // 卖货：货仓里的东西值 2,000 以上，原版村民队本次装货门槛可降为 0、为灰袍货出车（GwpFaithVillagers）；没有另设出车间隔。
             public const int CaravanMinimumGoodsValue = 2000;
-            // 一趟最多卖几座城；下一座城金库至少要有这么多钱才去。
 
             // 无领主队出门的竞价分：压过原版给无领主队刷出的进聚落归并候选（1.6）。
             public const float FaithPartyVisitScore = 8f;

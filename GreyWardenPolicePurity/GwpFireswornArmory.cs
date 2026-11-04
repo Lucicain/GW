@@ -256,7 +256,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 每天一次：留够全部编制的最好装备以后，多出来的进持有者的背包交给原版处理——村子进货仓，由卖货队拉去卖；
+        /// 每天一次：留够全部编制的最好装备以后，多出来的进持有者的背包交给原版处理——村子进货仓，由本村原版村民队拉去卖；
         /// 领主部队进部队背包，照原版进城卖（用户裁定 2026-10-16，取代 10-15 的「领主余量留库」：现在全编制都留了装备，
         /// 多出来的只是更差或没人用的）。村与村之间另由运械队调剂（<see cref="LoadBalanceCargo"/>）。正在打仗的不动。
         /// </summary>
@@ -288,7 +288,7 @@ namespace GreyWardenPolicePurity
         private int TakeBestSets(string homeId, MobileParty party)
         {
             // 人已经从家里扣掉：按实际出队的各阶灰袍兵配装，不能再用留守名单的套数。
-            // 常驻卖货队已携带的装备仍在自己的账里，只补这次尚未满足的配装。
+            // 这支队已在自己账里的装备（如运械队加派护送兵后再次领装）仍算它的，只补这次尚未满足的配装。
             ItemRoster available = new ItemRoster();
             available.Add(ItemsOf(_armories, party.StringId));
             available.Add(ItemsOf(_armories, homeId));

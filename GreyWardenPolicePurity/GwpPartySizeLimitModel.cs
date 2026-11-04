@@ -12,7 +12,7 @@ namespace GreyWardenPolicePurity
     /// <c>limit / men - 1</c>——80 人塞进 20 的上限就是 -75% 速度，随行练兵队
     /// 根本跟不住练兵官。
     ///
-    /// 这里为当前那一支练兵队按订单量抬高上限；火誓者的无领主队（巡逻、紧急出动、卖货、传教、运械）不低于现有人数
+    /// 这里为当前那一支练兵队按订单量抬高上限；火誓者登记的队伍（传教、运械、本村原版村民队、旧档在途运兵队）不低于现有人数
     /// （<see cref="GwpFireswornBehavior.FaithPartySizeLimit"/>）；别的队伍一律交回原版。
     /// </summary>
     public sealed class GwpPartySizeLimitModel : DefaultPartySizeLimitModel
