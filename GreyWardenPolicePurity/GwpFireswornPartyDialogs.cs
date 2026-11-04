@@ -14,7 +14,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 在大地图上遇到信众队时的对话，照原版村民队（C#反编译 v1.4.8 VillagerCampaignBehavior
-    /// .AddVillageFarmerTradeAndLootDialogs）：打招呼说明来处和去向，卖货队可以买它车上的货，可以威逼，可以放行。
+    /// .AddVillageFarmerTradeAndLootDialogs）：打招呼说明来处和去向，本村登记的原版村民队（Market）可以买它车上的货，可以威逼，可以放行。
     /// 原版对话只认村民队，这种队以前落到原版兜底那一句「我不能和你说话」
     /// （default_conversation_for_wrongly_created_heroes；用户反馈 2026-10-07）。
     /// 狂信者不向威逼低头，没有原版村民的交钱、投降两条路；威逼之后回到遭遇菜单，玩家自己决定打不打。

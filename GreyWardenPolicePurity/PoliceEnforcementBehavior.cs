@@ -19,7 +19,8 @@ namespace GreyWardenPolicePurity
     ///
     /// 玩家被抓完整流程：
     /// 1. OnMapEventEnded：标记 IsEscortingPlayer，将最近城堡登记为押送欲望目标
-    /// 2. UpdateTasks（每小时）：维持AI冻结 + 重发行进命令（防止引擎覆盖）
+    /// 2. 欲望竞价每小时按案件状态把押送城堡解析为 Visit 意图（GreyWardenPartyDesireBehavior），不冻结 AI；
+    ///    UpdateTasks 只在玩家已被提前释放时补执行惩罚
     /// 3. OnTick（每帧）：距城堡 &lt; EscortPunishDistance(3格) 时执行惩罚；
     ///    CurrentSettlement!=null 为兜底防崩溃路径
     /// 4. ExecutePunishment：★关键顺序★ 先 EndCaptivity + 清空花名册，

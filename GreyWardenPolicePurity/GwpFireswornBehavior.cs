@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
     /// </list>
     ///
     /// 分文件：本文件是数据、存档、查询、事件分派、祭司、守村队；仪式见 GwpFireswornRituals.cs，
-    /// 传教队、卖货队、运械队见 GwpFireswornParties.cs，地牢与领主进村交接见 GwpFireswornDungeon.cs，军械库见 GwpFireswornArmory.cs。
+    /// 传教队、运械队见 GwpFireswornParties.cs，原版村民队卖货见 GwpFaithVillagers.cs，地牢与领主进村交接见 GwpFireswornDungeon.cs，军械库见 GwpFireswornArmory.cs。
     /// </summary>
     public sealed partial class GwpFireswornBehavior : CampaignBehaviorBase
     {
@@ -49,7 +49,7 @@ namespace GreyWardenPolicePurity
         // 信众村地牢：灰袍领主交来的俘虏、守村俘获的敌兵，等着烧。
         private readonly Dictionary<string, TroopRoster> _dungeons =
             new Dictionary<string, TroopRoster>(StringComparer.OrdinalIgnoreCase);
-        // 信众村的货仓：领主捐的、军械库用不完的东西，由信众队运进城卖。
+        // 信众村的货仓：领主捐的、军械库用不完的东西，由本村原版村民队运进城卖。
         private readonly Dictionary<string, ItemRoster> _goods =
             new Dictionary<string, ItemRoster>(StringComparer.OrdinalIgnoreCase);
         // 军械库账本：键是有火誓者的村子或灰袍领主部队的 StringId。兵身上穿的也算在里面。
@@ -65,8 +65,9 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 三种无领主队（用户裁定 2026-10-07）：传教队把人送过去，到了就并入当地、队伍没了；
-        /// 卖货队照原版村民队常驻，卖完回村；运械队把兵器运到缺的村子，到了也并入当地、队伍没了。
+        /// 登记的队伍种类（用户裁定 2026-10-07；卖货 2026-10-16 改由原版村民队；运兵 2026-10-20 退休）：传教队把人送过去，到了就并入当地、队伍没了；
+        /// Market 是本村登记的原版村民队，生成、补员、出车照原版，灰袍只做整备与分账（GwpFaithVillagers）；
+        /// 运械队在信众村之间调剂人数与军械，到了也并入当地、队伍没了；Training 只接续旧档里的在途运兵队（GwpTrainingTransports）。
         /// </summary>
         internal enum FaithPartyKind
         {
@@ -1062,7 +1063,7 @@ namespace GreyWardenPolicePurity
             _guards.TryGetValue(row.VillageId, out TroopRoster? guard) ? guard.TotalManCount : 0;
 
         /// <summary>
-        /// 本村现有灰袍兵：在村守村队，加本村所有无人队中的灰袍兵（含伤兵、返程和停在村内的卖货队）。
+        /// 本村现有灰袍兵：在村守村队，加本村登记队伍中的灰袍兵（含伤兵、返程中的队和本村原版村民队；不含旧档运兵队）。
         /// 出门不空出补兵名额；传教、运械到了别村并入后才转为那座村的兵。领主招走的不再算本村。
         /// （用户裁定 2026-10-09：增长按包括外出无人队在内的总人数与上限的差值计算。）
         /// </summary>

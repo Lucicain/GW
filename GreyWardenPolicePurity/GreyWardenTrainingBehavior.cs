@@ -24,7 +24,7 @@ namespace GreyWardenPolicePurity
         }
         public override void RegisterEvents() =>
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
-        // 本类只维护每小时可重算的升级偏好；进行中的运兵和冷却由 GwpFireswornBehavior 存档。
+        // 本类只维护每小时可重算的升级偏好；旧档在途运兵队由 GwpFireswornBehavior 存档，自主派队冷却已退休、不再写入。
         public override void SyncData(IDataStore dataStore) { }
         internal static IReadOnlyList<TrainingTaskSnapshot> GetTaskSnapshots() =>
             GwpFireswornBehavior.TrainingTransports();
