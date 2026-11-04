@@ -19,7 +19,10 @@
 去读日志。遇到难以解决的问题或体验问题时，agent 先加强相关诊断取证，并配合 C# 反编译
 与 `TaleWorlds.Native.dll` 反汇编查实原版规则（方法见
 [`../reference/investigation-methods.md`](../reference/investigation-methods.md)）。
-用户说"测过了没问题"时，agent 要自己读在役日志核对待观察项。（依据：用户裁定 2026-09-26）
+用户说"测过了没问题"时，agent 要自己读在役日志核对待观察项。
+游戏的崩溃报告同样归 agent 管：`C:\ProgramData\Mount and Blade II Bannerlord\crashes\` 下每份报告带
+700～850 MB 的转储（Modding Kit 的编辑器版本每条警告都会生成一份）。agent 自己读（转储用 WinDbg 的
+`cdbX64.exe`，见 `../reference/investigation-methods.md`），结论写进 journal 后直接删，不需要再问用户。（依据：用户裁定 2026-09-26；崩溃报告另为用户裁定）
 
 ## 加与删的判据
 
@@ -40,10 +43,6 @@
 **数据也要删。** 诊断系统退休时，同时删掉游戏 Documents 目录下的日志文件、
 一次性崩溃转储和调查已闭合的反编译输出。仍在生效的诊断可以留，但它积攒的旧日志
 不应该留——findings 记进 state 之后，旧日志没有进一步用途。
-
-**游戏的崩溃报告同样归 agent 管**：`C:\ProgramData\Mount and Blade II Bannerlord\crashes\` 下每份报告带
-700～850 MB 的转储（Modding Kit 的编辑器版本每条警告都会生成一份）。agent 自己读（转储用 WinDbg 的
-`cdbX64.exe`，见 `../reference/investigation-methods.md`），结论写进 journal 后直接删，不需要再问用户。（依据：用户裁定）
 
 **按当前覆盖范围命名。** 范围变了就改系统名和日志文件名，不要留一个误导的名字。（依据：流程）
 （例：战场编队采样扩到双方所有编队后曾整体改名，现已退休。）
@@ -111,21 +110,17 @@
 
 进城搜捕日常流程经用户确认基本测过且未见明显问题，选择兵员、出生/命令/跟随、卫兵与三轮说服、开战/结束、增援位置、平民分类/逃散、追击、目标倒地、赴约速度/清场重入和EXIT_BLOCKED等健康路径日志及专用字段/方法/测试均已退休。原生外观更新形成/取消时序尚未闭合，VISUAL_STATE/REMOVED、VISUAL_FADE_BEGIN/END及原生空实体更新计数保留；不因流程验收而宣称该底层根因已查清。规则见[进城搜捕](city-search.md)。（依据：用户实测确认、诊断流程2026-10-28）
 
-直接招守村兵使用 `GUARD_ENLISTED`，记录实际兵种 composition、人数、随兵军械和留守量；统计器读取同一事件。该功能待用户实测低阶优先与留守正确后退休健康路径记录。（依据：本轮直招功能验证设计 2026-10-15）
+直接招守村兵使用 `GUARD_ENLISTED`，记录实际兵种 composition、人数、随兵军械和留守量；统计器读取同一事件。该功能待用户实测低阶优先与留守正确后退休健康路径记录。军械全兵种分配新增 `ARMORY_PLAN`，仅方案变化时记录持有者、兵种顺序、件数及首套库装；不在每帧/每次出兵打印，用户确认高阶补空位及低阶换装后退休。定义见[军械库](firesworn-armory.md)。（依据：直招功能验证设计、流程与源码复核 2026-10-15）
 
 收养驻留新增三个状态转换事件：`ADOPTION_STAY_STARTED_OR_RESUMED`、`ADOPTION_STAY_PAUSED`、`ADOPTION_STAY_FINISHED`，只在开始/恢复、暂停或收尾记录目标村和剩余小时，全部在诊断编译开关内。用于核对赴约/返程不计时及完成释放；用户确认收养交接可用时同轮退休。实现随[收养](village-relief.md)维护。（依据：已复现实机缺陷后的验收诊断 2026-10-17）
 
 军团费用失败探针ARMY_INFLUENCE_FAILURE与ARMY_TOTAL_INFLUENCE_FAILURE仅在诊断版编入，记录实际参数并原样传播异常，成功不写；根因、证据缺口与退休条件只在[地图AI](warden-ai.md#军团影响力计算空英雄故障)维护。（依据：实机崩溃与取证需要2026-10-19）
 
-普通案宣战增加既有区域评估快照，停滞记录增加lastInterceptorGate；只复用业务已经计算的值，不重复调用原版评分。证据缺口、字段与退休条件随[协力](case-assistance.md#区域宣战与持续接战)和[追截队](case-interceptors.md#卡拉多格追捕的证据边界)维护；尚未闭合，不宣称已修复首次接触问题。（依据：本轮实机证据缺口2026-10-20）
-
-首队准备失败时诊断版增加CASE_DECLARATION_WAITING_INTERCEPTOR，沿现有门槛记录原因；玩家支援等待记录额外区分localReady与interceptorReady。均复用业务判定，不额外评分、不新增定时器。随[宣战/首队联动](case-interceptors.md#常规追截与战力复核)验收退休。（依据：空宣战已复现及诊断设计2026-10-20）
+普通案宣战增加既有区域评估快照，停滞记录增加lastInterceptorGate；只复用业务已经计算的值，不重复调用原版评分。证据缺口、字段与退休条件随[协力](case-assistance.md#区域宣战与持续接战)和[追截队](case-interceptors.md#卡拉多格追捕的证据边界)维护；尚未闭合，不宣称已修复首次接触问题。首队准备失败时诊断版增加CASE_DECLARATION_WAITING_INTERCEPTOR，沿现有门槛记录原因；玩家支援等待记录额外区分localReady与interceptorReady。均复用业务判定，不额外评分、不新增定时器。随[宣战/首队联动](case-interceptors.md#常规追截与战力复核)验收退休。（依据：本轮实机证据缺口、空宣战已复现及诊断设计2026-10-20）
 
 领主普通装备加成的 `COMBAT` 采样字段与退休条件见[lord-combat.md](lord-combat.md)，不使用案件时间戳，竞技场场景也可记录；领主与最高阶步兵/弓手的共享锁血转换采样只在[last-stand.md](last-stand.md)维护。
 
-村民运输验收沿用MARKET_DISPATCHED，容量、货仓、专运/下一趟待办字段和退休条件只在[村民运输](firesworn-villagers.md#普通贸易专运与分账)定义；不额外循环记录健康状态。（依据：诊断流程 2026-10-19）
-
-经济分析器按完整行去重并保留时间戳时区；公库卖货收入只统计当前MARKET_HOME.goldToTreasury，不把nativeTradeGold村税混入。装车估值可能重复出车且与回款跨窗口，不据旧MARKET_SOLD缺席计算“卖出0%”或推断城镇缺钱；信众净户数减少也不等于没有自然增长。（依据：日志、生产卖货源码与分析器回归 2026-10-19）
+村民运输验收沿用MARKET_DISPATCHED，容量、货仓、专运/下一趟待办字段和退休条件只在[村民运输](firesworn-villagers.md#普通贸易专运与分账)定义；不额外循环记录健康状态。原版村民队合并的在役健康取证为VILLAGERS_RAISED（本次新增、转化、队内信众前后、当前比例和户数）、VILLAGERS_EQUIPPED（仅灰袍名额替换、领装和留守）、MARKET_DISPATCHED与MARKET_HOME（兼运/分账），均只编入诊断；用户确认比例补员、换兵和结账可用后同轮退休。经济分析器按完整行去重并保留时间戳时区；公库卖货收入只统计当前MARKET_HOME.goldToTreasury，不把nativeTradeGold村税混入。装车估值可能重复出车且与回款跨窗口，不据旧MARKET_SOLD缺席计算“卖出0%”或推断城镇缺钱；信众净户数减少也不等于没有自然增长。（依据：诊断流程2026-10-16、2026-10-19；日志、生产卖货源码与分析器回归 2026-10-19）
 
 周期50人兜底的派出记录与退休条件只在[追截队](case-interceptors.md#周期兜底的定位与当前缺口)维护。
 
@@ -134,12 +129,6 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 负声望赎罪在役阶段记录与退休条件只在[赎罪委派](atonement.md)定义，实测后由agent读取案件日志核对。
 
 烧村抑制调查使用Case-Events中的`RAID_SCORE_SAMPLE`，每位领主每24游戏小时在普通村/有信众比例村各最多一行：真实原版返回baseScore、个人deterrenceMultiplier、faithShare、faithMultiplier、合计multiplier/result、当前注册activeModel与候选村。只旁观本次计算，不为打印重算评分；只编入GWP_DIAGNOSTICS，玩法无依赖，不保存采样冷却。用户确认抑制链路后退休此健康路径诊断。（依据：用户反馈、流程2026-10-16）
-
-区域业务评估不写成真实initiative结果；`GwpInitiativeDiagnosticsPatch` 跳过同步预估，只在区域守卫之后旁观原版正式结果。区域数据使用业务评估已产生的原值，不为了打印重跑原版评分。（依据：流程、离线执行2026-10-18）
-
-军械全兵种分配新增 `ARMORY_PLAN`，仅方案变化时记录持有者、兵种顺序、件数及首套库装；不在每帧/每次出兵打印，用户确认高阶补空位及低阶换装后退休。定义见[军械库](firesworn-armory.md)。（依据：流程、源码复核 2026-10-15）
-
-原版村民队合并的在役健康取证为VILLAGERS_RAISED（本次新增、转化、队内信众前后、当前比例和户数）、VILLAGERS_EQUIPPED（仅灰袍名额替换、领装和留守）、MARKET_DISPATCHED与MARKET_HOME（兼运/分账），均只编入诊断；用户确认比例补员、换兵和结账可用后同轮退休。（依据：流程2026-10-16）
 
 ## 限流是必需的
 
@@ -154,4 +143,4 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 
 `BehaviorScreenedSkirmish` 等评分方法**本身会更新状态**。要读原版评分只能用
 postfix 旁观真实返回值，不能主动再调一次。
-`NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1；2026-09-25 复核）
+`NavmeshlessTargetPositionPenalty` getter 会推进处罚计时，同理不要为打印去读。区域业务评估不写成真实initiative结果：`GwpInitiativeDiagnosticsPatch` 跳过同步预估，只在区域守卫之后旁观原版正式结果，区域数据使用业务评估已产生的原值，不为了打印重跑原版评分。（依据：C#反编译 v1.4.8：getter 会推进计时，满 10 秒时把处罚写回 1，2026-09-25 复核；initiative 旁观为流程、离线执行2026-10-18）
