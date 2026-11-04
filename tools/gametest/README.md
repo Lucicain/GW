@@ -11,11 +11,11 @@ tools/gametest/
   gametest/          实现：config / host（进程）/ fences（安全栅栏）/ protocol（TCP 客户端）/ controller / scenario / server
   scenarios/*.json   场景：命令序列加断言
   tests/             单元测试，假的 TCP 桥接服务器与假进程，Linux 上也能跑
-  bridge/            （之后）GreyWardenTestBridge 的 C# 源码，见 PROTOCOL.md §7
+  bridge/            GreyWardenTestBridge 的 C# 源码（游戏内一侧），构建见 bridge/GreyWardenTestBridge/README.md
 ```
 
-现状：Python 端完成并通过单元测试；游戏内桥接模组 `GreyWardenTestBridge` 还没写，所以现在 `game_start`
-会被「找不到桥接构建产物」挡下。
+现状：Python 端完成并通过单元测试；游戏内桥接模组 `GreyWardenTestBridge` 已写（`bridge/GreyWardenTestBridge/`），
+待本地编译部署后跑通 `smoke`。没构建它时 `game_start` 会被「找不到桥接构建产物」挡下。
 
 ## 依赖
 
