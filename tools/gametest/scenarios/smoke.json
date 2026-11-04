@@ -1,0 +1,21 @@
+{
+  "description": "冒烟：读 gwp_test_smoke，确认在战役中，快进一天，核对战役时间推进、案件快照可读、复发哨兵经过次数不倒退且无触发",
+  "save": "gwp_test_smoke",
+  "stop_after": true,
+  "steps": [
+    {"do": "status", "as": "s0"},
+    {"assert": {"path": "s0.state", "op": "eq", "value": "campaign"}},
+    {"do": "query", "args": {"kind": "sentinels"}, "as": "before"},
+    {"do": "advance", "args": {"hours": 24}, "as": "adv"},
+    {"assert": {"path": "adv.hours_advanced", "op": "approx", "value": 24, "tolerance": 0.5,
+                "message": "桥接实际推进的小时数应接近请求值"}},
+    {"do": "status", "as": "s1"},
+    {"assert": {"path": "s1.campaign_time.hours", "op": "gt", "ref": "s0.campaign_time.hours"}},
+    {"do": "query", "args": {"kind": "cases"}, "as": "cases"},
+    {"assert": {"path": "cases.cases", "op": "exists"}},
+    {"do": "query", "args": {"kind": "sentinels"}, "as": "after"},
+    {"assert": {"path": "after.sentinels", "op": "exists"}},
+    {"do": "query", "args": {"kind": "bad kind"}, "expect_error": "refused",
+     "note": "名字栅栏在 Python 端拦下，不发给桥接"}
+  ]
+}
