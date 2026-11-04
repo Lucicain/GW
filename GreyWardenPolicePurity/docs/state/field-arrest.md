@@ -14,9 +14,7 @@
 
 城内自由住城人物的执法尚未实现，不能把源码旧注释中的“另一套向总督交涉”当作已有入口；无部队旧案缺口统一见[人物追责](case-enforcement.md#藏城目标与战后连续交战)。（依据：用户反馈、入口及总督引用复核2026-10-21）
 
-与承办目标（`GwpPlayerCaseAssignment.HasAuthority`）在野外单独对话；普通悬赏与[赎罪委派](atonement.md)共用入口，赎罪不要求入会。任一方在定居点里或对话目标已是俘虏时不走这条路；动手入口再复核目标非俘虏且仍在原队，防止把扣押队当作犯人队。第三方扣押改走[赎买与撤单](player-commission.md#目标不可追踪时的无责撤回)。取案按对话英雄ID，不拿同队另一嫌犯的案卷；宽限日志和处理结果由公共入口转交所属任务。（依据：源码复核2026-10-15）
-
-玩家谈话对象已被俘时，旧入口会回退到 ConversationParty，动手目标变成扣押者，既污染对话战力比较又引向错误战斗；该入口及动手复核已封住。不调整抗性或说服概率。（依据：实机日志、源码与离线执行2026-10-20）
+与承办目标（`GwpPlayerCaseAssignment.HasAuthority`）在野外单独对话；普通悬赏与[赎罪委派](atonement.md)共用入口，赎罪不要求入会。任一方在定居点里或对话目标已是俘虏时不走这条路；动手入口再复核目标非俘虏且仍在原队，防止把扣押队当作犯人队。第三方扣押改走[赎买与撤单](player-commission.md#目标不可追踪时的无责撤回)。取案按对话英雄ID，不拿同队另一嫌犯的案卷；宽限日志和处理结果由公共入口转交所属任务。玩家谈话对象已被俘时，旧入口会回退到 ConversationParty，动手目标变成扣押者，既污染对话战力比较又引向错误战斗；该入口及动手复核已封住，不调整抗性或说服概率。（依据：源码复核2026-10-15；实机日志、源码与离线执行2026-10-20）
 
 ## 肯不肯谈
 
@@ -129,11 +127,8 @@
 
 ### 菜单确认、离开与附近援军
 
-- 普通野外强捕把玩家设为攻方；原版CanMainPartyLeaveBattleCommonCondition允许攻方离开，军团非主办等额外菜单条件仍适用。MenuHelper.EncounterLeaveConsequence走Finish/FinalizeBattle/LeaveBattle收尾，没有宣战或自动讲和；若此前已经交战，离开不会撤销该战争。（依据：本机v1.4.8 C#反编译2026-10-20）
-- 真正点击「进攻」走MenuHelper.EncounterAttackConsequence；「派兵进攻」走EncounterOrderAttack，两者都先ApplyEncounterHostileAction，随后才创建战斗Mission或模拟。普通领主且未敌对、不同势力、未豁免敌对动作时，原版此处扣关系并ApplyByPlayerHostility宣战。当前GwpHostilityRelationPatch仅记关系，不抑制该动作。旧正文所称整条强捕链不牵扯王国与当前实现不符，不能据此修改原版规则。（依据：生产补丁与本机v1.4.8 C#反编译2026-10-20）
-- PlayerEncounter.StartBattleInternal在创建MapEvent返回后调用CheckNearbyPartiesToJoinPlayerMapEvent；已有未结束的同一MapEvent时再次调用StartBattle只重新收集附近队伍，不创建第二场。单纯Update/普通encounter菜单初始化（已有Battle）及外交变敌对本身，没有重扫援军调用。MapEventStarted发生在MapEvent构造内部，早于Current._mapEvent接到返回值，不能在该回调里重入StartBattle刷新名单。（依据：本机v1.4.8 C#反编译2026-10-20）
-- 原版FindNonAttachedNpcPartiesWhoWillJoinPlayerEncounter按战斗位置收集普通野外半径3内的部队；通常要求同海陆侧、未驻城、未在另一战斗/围城中、非木筏、未挂靠，且部队类型合格。CanPartyJoinBattle要求与己方全部参战方不敌对、与对方全部参战方敌对；不检查是否战力占优。没有把范围外援军传送或拉近的移动动作。（依据：本机v1.4.8 C#反编译2026-10-20）
-- 通过收集的队伍由原版MapEventSide.AddNearbyPartyToPlayerMapEvent实际写入MapEventSide；PartyBase.MapEventSide同步实际AttachedParties，名义在军团但未合兵者仍须独立满足附近收集条件。名单加入与移动接近不是同一动作。（依据：本机v1.4.8 C#反编译2026-10-20）
+- 普通野外强捕把玩家设为攻方；原版CanMainPartyLeaveBattleCommonCondition允许攻方离开，军团非主办等额外菜单条件仍适用。MenuHelper.EncounterLeaveConsequence走Finish/FinalizeBattle/LeaveBattle收尾，没有宣战或自动讲和；若此前已经交战，离开不会撤销该战争。真正点击「进攻」走MenuHelper.EncounterAttackConsequence；「派兵进攻」走EncounterOrderAttack，两者都先ApplyEncounterHostileAction，随后才创建战斗Mission或模拟。普通领主且未敌对、不同势力、未豁免敌对动作时，原版此处扣关系并ApplyByPlayerHostility宣战。当前GwpHostilityRelationPatch仅记关系，不抑制该动作。旧正文所称整条强捕链不牵扯王国与当前实现不符，不能据此修改原版规则。（依据：生产补丁与本机v1.4.8 C#反编译2026-10-20）
+- PlayerEncounter.StartBattleInternal在创建MapEvent返回后调用CheckNearbyPartiesToJoinPlayerMapEvent；已有未结束的同一MapEvent时再次调用StartBattle只重新收集附近队伍，不创建第二场。单纯Update/普通encounter菜单初始化（已有Battle）及外交变敌对本身，没有重扫援军调用。MapEventStarted发生在MapEvent构造内部，早于Current._mapEvent接到返回值，不能在该回调里重入StartBattle刷新名单。原版FindNonAttachedNpcPartiesWhoWillJoinPlayerEncounter按战斗位置收集普通野外半径3内的部队；通常要求同海陆侧、未驻城、未在另一战斗/围城中、非木筏、未挂靠，且部队类型合格。CanPartyJoinBattle要求与己方全部参战方不敌对、与对方全部参战方敌对；不检查是否战力占优。没有把范围外援军传送或拉近的移动动作。通过收集的队伍由原版MapEventSide.AddNearbyPartyToPlayerMapEvent实际写入MapEventSide；PartyBase.MapEventSide同步实际AttachedParties，名义在军团但未合兵者仍须独立满足附近收集条件。名单加入与移动接近不是同一动作。（依据：本机v1.4.8 C#反编译2026-10-20）
 - 玩家求援尚缺「确认敌对后、Mission/模拟前，同步本案灰袍并重新收集」的路径，详见[协力已知缺陷](case-assistance.md#普通支援与玩家带路)。仅监听玩家WarDeclared会漏掉原先就已交战的情况，且仅改外交不会自行补齐既有遭遇名单；本轮只调查，没有新增钩子、改变外交或参战行为。（依据：用户要求先调研、源码及本机v1.4.8 C#反编译2026-10-20）
 
 ## 台词
