@@ -9,11 +9,10 @@
 
 ## 只在 Kit 里改布料参数
 
-- 不要用 TPAC 工具写布料参数或布料子网格数据，`--restore-cloth` / `--cloth-gradient` 只作离线实验，不写进 live。（依据：实机诊断 2026-10-03）
+- 不要用 TPAC 工具写布料参数或布料子网格数据，`--restore-cloth` / `--cloth-gradient` 只作离线实验，不写进 live；顶点色等网格数据改源 FBX，再由 Kit 重导。（依据：实机诊断 2026-10-03；资源包读回对比）
   9-27 工具写回三件服装的原包设置后，工具自己读回无误，但用户在 Kit 里打开模拟、什么都不调直接保存，这些子网格的拉伸/弯曲/剪切刚度就成了 0.5：
   `winfarmor`、`wcomarmorhv` 拉伸 0.8→0.5，`winfarmorhv` 三项 1→0.5；Kit 自己导入的原件
   与未经工具的 `warcharmor` 始终是正确值。工具直接写 TPAC 也不会更新 `RuntimeDataCache`，开发版会继续用旧缓存。
-  顶点色等网格数据改源 FBX，再由 Kit 重导。（依据：实机诊断 2026-10-03；资源包读回对比）
 
 ## 定稿设置（用户认可，2026-10-03）
 
@@ -41,9 +40,7 @@
   （`Shaders/Sources/shared_vertex_functions.rsh` 的 `USE_MAPPED_CLOTH_SIMULATION` 分支）。所以本体 alpha 只是开关，摆动幅度画在替身的 alpha 上；
   多层布贴同一张替身，层间距保持不变。原版 13 个 `clo_*` 替身中 11 个画了渐变（例：36 点为 0、其余 9 级过渡、无 1）。
 - 替身只能有一个子网格（引擎报错 "Simulation meshes for cloth simulation must have single submesh"）。本体可以多材质。
-- 替身要紧贴本体，不得盖在本体外面。官方文档要求本体任何点都不穿到替身里侧；原版 57 件带替身的服装实测是贴着布面走（本体点到替身的距离中位数 0，前后 2–4 cm 内）。（依据：官方文档 moddocs.bannerlord.com/editor/resource-editors/cloth_simulation/；原版资源包统计 2026-10-03）
-- 本体在两腿间开衩的，替身也要在开衩处断开，左右两半各自只从同侧的布取蒙皮；连成一片会让两条腿隔着替身互相拽。例：`sturgian_fortified_armor`、`veteran_mercenary_armor`、`sturgian_lamellar_gambeson`。另一块布（前片）跨过开衩的那一段，替身保持连着。（依据：原版资源包 2026-10-03）
-- 替身权重量级：原版从顶上 0 按深度线性涨到底边，底边只有 9–70/255（铠甲下摆多在 28–48），布料最大距离仍是 1，即下摆最多离开蒙皮位置约 4–27 cm。不要把替身底边画到 255。（依据：原版资源包统计 2026-10-03）
+- 替身要紧贴本体，不得盖在本体外面。官方文档要求本体任何点都不穿到替身里侧；原版 57 件带替身的服装实测是贴着布面走（本体点到替身的距离中位数 0，前后 2–4 cm 内）。本体在两腿间开衩的，替身也要在开衩处断开，左右两半各自只从同侧的布取蒙皮；连成一片会让两条腿隔着替身互相拽。例：`sturgian_fortified_armor`、`veteran_mercenary_armor`、`sturgian_lamellar_gambeson`。另一块布（前片）跨过开衩的那一段，替身保持连着。替身权重量级：原版从顶上 0 按深度线性涨到底边，底边只有 9–70/255（铠甲下摆多在 28–48），布料最大距离仍是 1，即下摆最多离开蒙皮位置约 4–27 cm。不要把替身底边画到 255。（依据：官方文档 moddocs.bannerlord.com/editor/resource-editors/cloth_simulation/；原版资源包统计 2026-10-03）
 - Kit 里替身挂在布料编辑器的 Simulation mesh 栏（不是预览用的 Helper mesh），最大距离与预设设在本体各行上，然后 Re-cook、Save mesh settings。
 - 材质要支持贴合式模拟（报错 "Material %s does not support mapped cloth simulation"）。原版 `battanian_scale_armor_a` 与我们 `warchmatarcclo`
   同为着色器 `328d3572-…`；原版另有 `disable_vertex_color_alpha` 标志。（依据：原版资源包与着色器源码 2026-10-03；C++反汇编字符串）
@@ -52,14 +49,14 @@
 
 - 布料在显卡计算着色器里模拟：`TaleWorlds.Native.dll` 中引用 `"Cloth simulation"` 的函数（`0x180100110`）经
   `ID3D11DeviceContext` 虚表 `+0x218`/`+0x220`/`+0x228`/`+0x148`（CSSetShaderResources / CSSetUnorderedAccessViews /
-  CSSetShader / Dispatch）提交；求解器源码随游戏附带：`Shaders/Sources/gpucloth_solver.rs`。（依据：C++反汇编 2026-10-02；着色器源码）
+  CSSetShader / Dispatch）提交；求解器源码随游戏附带：`Shaders/Sources/gpucloth_solver.rs`。
 - 顶点色 alpha 是**连续权重**：Kit 预处理把每个布料点的 alpha 存成 `alpha/255` 的浮点（包内 Metamesh 数据段类型 `b97e0f10-df49-4666-8f1d-ada6630d4b4e`，
   原包 `warcharmor` 有 0、1 与 27 种中间值；`wharness` 最大距离 0.1，存的仍是 0~1）。求解器每帧
   `max_distance = max_distances[i] * max_distance_multiplier`，把点限制在以骨骼蒙皮位置为球心、该半径的球内（`gpucloth_solver.rs` 第 698–702 行）。
-  0 = 钉在蒙皮位置，1 = 可离开到子网格设的最大距离，中间值按比例。（依据：着色器源码；资源包数据 2026-10-02）
+  0 = 钉在蒙皮位置，1 = 可离开到子网格设的最大距离，中间值按比例。
 - 碰撞只针对碰撞体胶囊（`gpucloth_solver.rs` 第 389–394 行把点推出胶囊），不针对身上其他服装网格。原版 `Native/ModuleData/cloth_bodies.xml`：
   `human_body` 13 个胶囊，大腿半径 0.10、小腿 0.09/0.08、骨盆 0.12，还有手臂与脊柱；`legs` 只有 4 个腿部胶囊，大腿 0.15/0.17、小腿 0.14/0.10，
-  比 `human_body` 的腿粗约一半。下摆穿进护腿等服装属这一机制的结果。（依据：原版 XML 2026-10-02）
+  比 `human_body` 的腿粗约一半。下摆穿进护腿等服装属这一机制的结果。（依据：C++反汇编 2026-10-02；着色器源码；资源包数据与原版 XML 2026-10-02）
 
 ## 弓箭手的结论
 
