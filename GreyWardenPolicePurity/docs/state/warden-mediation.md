@@ -5,7 +5,7 @@
 > 覆盖源码：`PoliceAntiWarDeclaration.cs` `GwpPeace.cs` `tools/tests/test_battle_peace.py`
 > 待实测：无
 
-待讲和势力的只读列表接入[我的事务](affairs-interface.md)独立“战后讲和”，与办案支援分开；仍从现有LiveMediationFactions核对，不新增资格或远程讲和操作。15:33实机日志有case_support_declaration登记，与现行入口一致。（依据：用户反馈、源码与实机日志2026-10-18）
+待讲和势力的只读列表接入[我的事务](affairs-interface.md)独立“战后讲和”，与办案支援分开；仍从现有LiveMediationFactions核对，不新增资格或远程讲和操作。（依据：用户反馈、源码与实机日志2026-10-18）
 
 ## 调停申请（替灰袍打出来的战争）
 
@@ -70,8 +70,8 @@
 - 推迟的做法：玩家战斗（`PlayerEncounter.Battle`，主队暂时脱离时仍持有遭遇；或主队地图战斗）未 finalize 时，
   `GwpPeace` 只记下这对势力（同一对正反只记一次，不进存档：遭遇进行中不能存档），视为已讲和返回；
   之后任一战斗 `MapEventEnded` 且玩家战斗已收尾（此时已 `WaitingRemoval`，原版不再动它）时逐对重办，
-  灰袍对第三方的这时再看一次交战理由。（依据：C#反编译 v1.4.8 与离线回归 2026-10-14）
-- 2026-10-14 10:20:38 实机在捕获 `lord_6_10` 后结案，原版 `DoApplyMapEventResults` 随后空引用；RGL已提前记出玩家战斗进入WaitingRemoval。原版外交检查会调用 `PlayerEncounter.Finish` 清空正在使用的 `_mapEvent`，旧代码与原版结果方法的离线反例可复现此状态破坏。（依据：实机日志、C#反编译 v1.4.8 与 `test_battle_peace.py` 2026-10-14）
+  灰袍对第三方的这时再看一次交战理由。
+  2026-10-14 10:20:38 实机在捕获 `lord_6_10` 后结案，原版 `DoApplyMapEventResults` 随后空引用；RGL已提前记出玩家战斗进入WaitingRemoval。原版外交检查会调用 `PlayerEncounter.Finish` 清空正在使用的 `_mapEvent`，旧代码与原版结果方法的离线反例可复现此状态破坏。（依据：实机日志、C#反编译 v1.4.8 与离线回归 `test_battle_peace.py` 2026-10-14）
 
 ## 战后讲和（灰袍与第三方）
 
@@ -81,4 +81,4 @@
 任务的玩家时不在这里讲和；玩家击败执行玩家任务的灰袍后，灰袍与玩家讲和。
 土匪势力不处理。
 
-回退：讲和入口统一前为 `0614808`（当时各处直接设中立与调用 `MakePeaceAction`）；`git revert` 本次存档即可退回，会恢复已确认的提前中立崩溃。（依据：流程）
+回退：讲和入口统一前为 `0614808`（当时各处直接设中立与调用 `MakePeaceAction`）；`git revert` 本次存档即可退回，会恢复已确认的提前中立崩溃。
