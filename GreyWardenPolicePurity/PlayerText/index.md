@@ -438,16 +438,16 @@
 | gwp_policecrimemonitorenhanced_008 | Raid village (start) | 劫掠村庄(开始) | PoliceCrimeMonitorEnhanced.cs:411 |
 | gwp_policecrimemonitorenhanced_009 | Village={VAR_1} | 村庄={VAR_1} | PoliceCrimeMonitorEnhanced.cs:411 |
 | gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:413 |
-| gwp_policeenforcementbehavior_001 | The time allowed for your atonement has expired. | 赎罪期限已过。 | PoliceEnforcementBehavior.cs:183 |
+| gwp_policeenforcementbehavior_001 | The time allowed for your atonement has expired. | 赎罪期限已过。 | PoliceEnforcementBehavior.cs:184 |
 | gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | 未检出直接引用；保留 |
 | gwp_policeenforcementbehavior_003 | The case against {VAR_1} has been dealt with. Report to a Warden lord. | {VAR_1}的案件已处置，回去向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:66 |
-| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:254 |
-| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:466 |
-| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:466 |
-| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:470 |
-| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:472 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1310 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1312 |
+| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:255 |
+| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:467 |
+| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:467 |
+| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:471 |
+| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:473 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1311 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1313 |
 | gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
 | gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
 | gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |
