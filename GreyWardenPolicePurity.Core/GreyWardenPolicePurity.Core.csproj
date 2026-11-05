@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 逻辑层边界：只编译 GreyWardenPolicePurity/Core 下的源码，不引用任何游戏 DLL。
+       逻辑层里写了游戏类型或主项目里的类型，这里就编译不过。同一批源码也编进主 DLL，
+       所以玩家包不多一个文件。设计见 docs/state/code-health.md「分层架构」。 -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>GreyWardenPolicePurity.Core</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\GreyWardenPolicePurity\Core\**\*.cs" />
+  </ItemGroup>
+
+</Project>

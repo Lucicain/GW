@@ -12,7 +12,7 @@ from typing import Any
 from . import fences
 from .config import Config
 
-STEP_COMMANDS = ("status", "console", "advance", "query", "load_save", "save")
+STEP_COMMANDS = ("status", "console", "advance", "query", "act", "load_save", "save")
 OPS = ("eq", "ne", "gt", "ge", "lt", "le", "approx", "exists", "absent", "contains",
        "len_eq", "len_ge", "len_le", "truthy", "falsy")
 _NO_OPERAND = {"exists", "absent", "truthy", "falsy"}
@@ -202,6 +202,8 @@ def _run_step(controller, cmd: str, args: dict) -> dict:
         return controller.advance(args.get("hours"))
     if cmd == "query":
         return controller.query(args.get("kind"), args.get("args"))
+    if cmd == "act":
+        return controller.act(args.get("kind"), args.get("args"))
     if cmd == "load_save":
         return controller.load_save(args.get("name"))
     return controller.save(args.get("name"), bool(args.get("overwrite", False)))

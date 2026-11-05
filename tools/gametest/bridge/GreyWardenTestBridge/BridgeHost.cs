@@ -186,6 +186,8 @@ namespace GreyWardenTestBridge
                     return Console(request.Args);
                 case "query":
                     return BridgeQuery.Run(request.Args, _game);
+                case "act":
+                    return BridgeAct.Run(request.Args, _game);
                 case "quit":
                     _quitRequested = Stopwatch.StartNew();
                     request.Connection.Send(BridgeReply.Ok(new JObject { ["quitting"] = true }).ToJson(request.Id),

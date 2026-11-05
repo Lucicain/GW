@@ -72,6 +72,7 @@ Python 端已按此实现，单元测试里的假服务器 `tests/fakes.py` 的 
 | `console` | `{"command": "campaign.add_gold_to_hero 1000"}` | `{"output": "原版返回的文本", "found": true}` | 首个空白前是命令名，其余按空白拆成参数，调原版 `CommandLineFunctionality.CallFunction`。命令名含 `save`/`load`/`quit`/`exit` 的回 `refused`（Python 端也拦）。找不到命令回 `unknown_command` |
 | `advance` | `{"hours": 24}` | `{"hours_requested": 24, "hours_advanced": 24.0, "campaign_time_before": {...}, "campaign_time_after": {...}}` | 仅 `campaign`。用原版正常的战役 tick 推进（快进），不跳过 tick，各行为照常运行；到达目标时间后暂停再回复。弹出需要玩家处理的界面（询问框、对话、遭遇菜单）导致时间停走超过 10 秒（真实时间）时回 `blocked`，`data` 给 `{"reason": "inquiry/conversation/encounter/...", "title": "...", "hours_advanced": 3.5}` |
 | `query` | `{"kind": "...", "args": {...}}` | 见下表 | 只读，不改游戏状态。未知 kind 回 `unknown_kind` |
+| `act` | `{"kind": "...", "args": {...}}` | 见下表 | **会改战役状态**，搭场景用，只该在测试存档上用：用原版动作造出某个玩法的前提条件，之后的业务由游戏和灰袍的真实逻辑自己决定。仅 `campaign`。未知 kind 回 `unknown_kind` |
 | `quit` | `{}` | `{"quitting": true}` | 先回复，再在下一帧退出游戏，**不存档**。Python 端等进程退出，等不到就强杀 |
 
 ### query 的 kind
@@ -91,6 +92,14 @@ Python 端已按此实现，单元测试里的假服务器 `tests/fakes.py` 的 
   桥接不另写一套判断。
 - 用稳定 Id（`StringId`）和原始数值，不给本地化文本以外的显示用字符串；时间统一给 `hours`。
 - 新增 kind 不算协议不兼容，`kinds` 里列出来即可。
+
+### act 的 kind
+
+| kind | args | result |
+|---|---|---|
+| `kinds` | `{}` | `{"kinds": [...]}` |
+| `shelter_offender` | `{"crime_id": "可选"}` | `{"crime_id", "hero", "town", "searchable"}`：让一宗开着的 NPC 案子的罪犯离开部队、住进离他最近的对灰袍中立的城（原版 `TeleportHeroAction.ApplyImmediateTeleportToSettlement`），即「无部队住城旧案」。不给 `crime_id` 时挑没有承办任务的案子；`searchable` 为该案此刻是否满足住城旧案资格 |
+| `destroy_party` | `{"id": "部队 StringId"}` | `{"destroyed", "still_active"}`：原版 `DestroyPartyAction.Apply` 销毁部队，模拟路上被打光；战斗中和玩家主队不行 |
 
 ## 6. 错误码
 

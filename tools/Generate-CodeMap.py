@@ -155,7 +155,7 @@ def extract_patches(text: str, filename: str):
 
 
 def main() -> int:
-    files = sorted(p for p in SRC.glob("*.cs"))
+    files = sorted(list(SRC.glob("*.cs")) + list((SRC / "Core").rglob("*.cs")))
     if not files:
         print("no source files found", file=sys.stderr)
         return 1

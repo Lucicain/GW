@@ -82,6 +82,12 @@ def build_server(controller: GameController, cfg: Config):
         return await run(controller.query, kind, args)
 
     @server.tool()
+    async def game_act(kind: str, args: dict[str, Any] | None = None) -> dict[str, Any]:
+        """搭场景，会改战役状态，只在测试存档上用。kind：shelter_offender（让一宗开着的 NPC 案子的罪犯
+        离开部队住进最近的中立城，args 可给 crime_id）、destroy_party（销毁部队，args={"id": 部队Id}）、kinds。"""
+        return await run(controller.act, kind, args)
+
+    @server.tool()
     async def list_scenarios() -> dict[str, Any]:
         """列出 tools/gametest/scenarios/ 里的场景名与说明。"""
         return {"ok": True, "scenarios": scenario.list_scenarios(cfg)}

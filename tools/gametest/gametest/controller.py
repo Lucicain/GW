@@ -340,6 +340,15 @@ class GameController:
             return _err("refused", "query 的 args 必须是对象")
         return self._call("query", {"kind": kind, "args": args or {}})
 
+    def act(self, kind: str, args: dict | None = None) -> dict:
+        """搭场景：用原版动作改战役状态（PROTOCOL.md §5 act），只该在测试存档上用。"""
+        reason = fences.check_query_kind(kind)
+        if reason:
+            return _err("refused", reason.replace("query", "act"))
+        if args is not None and not isinstance(args, dict):
+            return _err("refused", "act 的 args 必须是对象")
+        return self._call("act", {"kind": kind, "args": args or {}})
+
     def load_save(self, name: str) -> dict:
         reason = fences.check_save_name(name)
         if reason:

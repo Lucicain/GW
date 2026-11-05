@@ -283,8 +283,27 @@ def duplicate_bodies(files):
     return found
 
 
+CORE = os.path.join(MOD, "Core")
+CORE_FORBIDDEN = re.compile(r"\bTaleWorlds\b|\bSandBox\b|\bHarmonyLib\b|^\s*using\s+GreyWardenPolicePurity\s*;", re.M)
+
+
+def core_boundary(files):
+    """逻辑层（GreyWardenPolicePurity/Core）不碰游戏：不引用游戏、Harmony 或主项目命名空间。
+    完整的边界由 GreyWardenPolicePurity.Core 项目编译保证；这里先挡最常见的写法。"""
+    found = []
+    for path in files:
+        if not os.path.abspath(path).startswith(os.path.abspath(CORE) + os.sep):
+            continue
+        for match in CORE_FORBIDDEN.finditer(read(path)):
+            line = read(path).count("\n", 0, match.start()) + 1
+            found.append(f"{os.path.relpath(path, ROOT)}:{line} {match.group(0).strip()}")
+    return found
+
+
 def main():
-    files = sorted(glob.glob(os.path.join(MOD, "*.cs")))
+    files = sorted(glob.glob(os.path.join(MOD, "*.cs"))
+                   + glob.glob(os.path.join(CORE, "**", "*.cs"), recursive=True))
+    boundary = core_boundary(files)
     catches = unproven_catches(files)
     dead = unreferenced(files)
     owners = owner_violations(files)
@@ -293,6 +312,11 @@ def main():
         print("[!] 绕过了共享概念的归属方（同一个判断写两份迟早分叉）：\n")
         for o in owners:
             print("  " + o)
+        print()
+    if boundary:
+        print("[!] 逻辑层引用了游戏或主项目——它只能拿局面快照、返回决定，碰游戏的部分放回游戏层：\n")
+        for b in boundary:
+            print("  " + b)
         print()
     if copies:
         print("[!] 函数体完全相同——调用已有的那一个，删掉这份：\n")
@@ -310,8 +334,8 @@ def main():
             print("  " + d)
         print()
     print(f"{len(catches)} 个 catch 缺依据 / {len(dead)} 个声明无人引用 / "
-          f"{len(owners)} 处绕过归属方 / {len(copies)} 个重复函数体")
-    return 1 if catches or dead or owners or copies else 0
+          f"{len(owners)} 处绕过归属方 / {len(copies)} 个重复函数体 / {len(boundary)} 处逻辑层越界")
+    return 1 if catches or dead or owners or copies or boundary else 0
 
 
 if __name__ == "__main__":
