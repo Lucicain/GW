@@ -3,7 +3,7 @@
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
 > 最后验收：2026-10-28；正式包基线见下文
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py` `tools/gametest/gametest/*.py` `tools/gametest/bridge/GreyWardenTestBridge/*`
-> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进；测试桥接模组本地编译部署后经 MCP 跑通 `smoke` 场景（启动、读档、快进、查询、关游戏）
+> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进；测试桥的 MCP 服务层本身（经 Claude Code/Codex 注册调用）
 
 ## 当前开发部署
 
@@ -38,7 +38,7 @@ live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写
 
 游戏内一侧是独立测试模组 `GreyWardenTestBridge`，协议以 `tools/gametest/PROTOCOL.md` 为准；它只在测试工具经环境变量
 `GWP_TEST_BRIDGE_SESSION` 启动游戏时启用，用户自己开的游戏不会被连上或杀掉，也不进 `_Module` 与玩家包。
-源码在 `tools/gametest/bridge/GreyWardenTestBridge/`，引用 live 的主 DLL，先构建主项目再构建它；主 DLL 只在诊断版对它开放 internal 成员，非诊断构建的灰袍查询回 `unavailable`。现状：桥接已写，云端以原版 1.4.8 引用程序集编译通过，原版调用只核对了签名，待本地编译部署后经 MCP 跑通 `smoke`。构建、快照字段与待核对项见该目录 README，注册与场景写法见 `tools/gametest/README.md`。（依据：设计 2026-11-04）
+源码在 `tools/gametest/bridge/GreyWardenTestBridge/`，引用 live 的主 DLL，先构建主项目再构建它；主 DLL 只在诊断版对它开放 internal 成员，非诊断构建的灰袍查询回 `unavailable`。现状：2026-11-06 本地首次跑通 `smoke` 场景（读 `gwp_test_smoke`、确认在战役中、快进 24 小时、读案件与哨兵、关游戏），全程约 70 秒，其中快进一个游戏日约 21 秒；这次由脚本直接调用场景运行器，没经过 MCP 层。测试存档 `gwp_test_smoke` 用最少模组（Native、SandBoxCore、Sandbox、StoryMode、CustomBattle、GreyWarden、GreyWardenTestBridge）新开沙盒战役，测试桥启动的模组列表必须与存档一致，否则读档弹窗、桥接回 `load_failed`。战役中再读档时少了原版 `MapCameraView.OnExit()` 一步，尚未修。构建、快照字段与待核对项见该目录 README，注册与场景写法见 `tools/gametest/README.md`。（依据：设计 2026-11-04）
 
 ## 两个开关决定一切
 
