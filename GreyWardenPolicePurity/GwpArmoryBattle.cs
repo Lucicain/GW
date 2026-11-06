@@ -86,7 +86,21 @@ namespace GreyWardenPolicePurity
             ItemRoster available = new ItemRoster();
             available.Add(ItemsOf(_armories, loadout.Holder));
             foreach (ArmoryKit kit in loadout.BySeed.Values)
-                foreach (var item in kit.Items.Where(item => !item.IsEmpty)) available.AddToCounts(item, -1);
+                foreach (var item in kit.Items.Where(item => !item.IsEmpty))
+                {
+                    int index = available.AddToCounts(item, -1);
+#if GWP_DIAGNOSTICS
+                    // 实机2026-11-06读档后首场模拟战斗：已借出的配装在库存账里找不到，原版断言但不扣。
+                    // 区分品质不一致（同物品别的品质仍在账上）与物品确实已离开账本。
+                    if (index < 0)
+                        GwpAiDiagnostics.WriteFaith("ARMORY_BATTLE_KIT_MISSING", "holder=" + loadout.Holder
+                            + "; party=" + party.Party.Id + "; troop=" + kit.Troop.StringId
+                            + "; item=" + item.Item.StringId + "; modifier=" + (item.ItemModifier?.StringId ?? "-")
+                            + "; ledgerSameItem=" + ItemsOf(_armories, loadout.Holder)
+                                .Where(entry => entry.EquipmentElement.Item == item.Item).Sum(entry => entry.Amount)
+                            + "; lentKits=" + loadout.BySeed.Count + "; mapEvent=" + (party.Party.MapEvent?.Id.ToString() ?? "-"));
+#endif
+                }
             TroopRoster unassigned = TroopRoster.CreateDummyTroopRoster();
             foreach (var soldier in party.Troops.Where(soldier => !loadout.BySeed.ContainsKey(soldier.Descriptor.UniqueSeed)))
                 unassigned.AddToCounts(soldier.Troop, 1);
