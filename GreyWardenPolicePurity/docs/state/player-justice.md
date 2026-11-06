@@ -2,7 +2,7 @@
 
 > 当前状态：四类主动参战改为可取消准备、确认后走原版选边转场，已部署待实测；既有名牌/接案保持
 > 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
-> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
+> 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBehaviorPool.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
 > 待实测：四类现场选边后返回/不介入不锁进战斗；确认进攻/派兵及劫掠转场，帮攻守两侧；办案目标及挂靠军团名牌的实际渲染，结案后恢复；自选案件接单/目标变化/交差完整流程，界面新验收见事务界面
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
@@ -17,12 +17,11 @@
 
 原版每次先重建普通绑定，结案、退任务或名牌复用后恢复原色原名；目标依英雄匹配重建的部队。名称前缀经Harmony字段注入读取原版_fullNameBind原名缓存，始终从原名生成一次标签，不给控件回写值继续加标签：原版生成控件会把Text回写FullName，旧前缀使每次回写都改变值，引发递归（2026-10-20 09:13 Steam退出码0x800703E9为栈溢出）；修复版一次通知后稳定，沿原版同值不通知终止回写链，无须吞异常。启动时不再补丁RefreshBinding：该方法直接读CampaignUIHelper静态字段，Harmony预编译在文本系统初始化前触发其静态构造并失败，后续创建地图栏时继续抛TypeInitializationException；改补丁点未增加保存字段，启动预检规则见[代码健康](code-health.md#启动补丁与静态初始化)。回退d5a8d84加本轮前工作树时仅移除标识补丁与新文本，不撤接案/谈判。（依据：实机退出码与故障栈、安装版生成控件反编译、生产回归与离线负对照2026-10-20）
 
-## 声望（`PlayerBehaviorPool`，在 `GwpData.cs`）
+## 声望（`PlayerBehaviorPool`）
 
 - 范围 −100 到 100，新档为 0。声望 ≤ −11 即通缉（`IsWanted`），由正式灰袍承办 `PLAYER_WANTED`。
   −1 到 −10 只派纠察队，见 `patrol.md`。
-- 新档必须清空：声望和案件池都是静态的，开新档不会触发 `SyncData`。
-  所以 `OnNewGameCreated` 手动 `ClearAll`，否则新档会继承上一个存档的声望。（依据：实机诊断）
+- 新档清空与读档恢复统一见[战役状态生命周期](infrastructure.md#战役状态生命周期)。
 
 ### 扣分
 

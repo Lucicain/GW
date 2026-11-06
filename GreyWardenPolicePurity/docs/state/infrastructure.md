@@ -2,12 +2,18 @@
 
 > 当前状态：兼容范围为 r15 及以后、不强求；r13 直升已放弃
 > 最后验收：未建立检查点
-> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `SubModule.cs` `tools/Verify-ContentKeys.ps1`
+> 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `SubModule.cs` `GwpRuntimeState.cs` `tools/Verify-ContentKeys.ps1`
 > 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
 
 模块初始化在场景与人物渲染任务产生前安装已查明的原生外观判空修复；具体指令签名、支持范围、运行时页与诊断生命周期归[搜捕](city-search.md)。不改游戏磁盘文件或存档。（依据：原生崩溃修复设计2026-10-27）
+
+## 战役状态生命周期
+
+`SubModule.OnGameStart` 在注册灰袍战役行为前调用 `GwpRuntimeState.ResetForCampaign`，清空上一战役的玩家池和案件池；只清自有集合与数值，不读取游戏对象。新档从空池开始，读档随后由原有行为的 `SyncData` 恢复。原版时序见[战役生命周期](../vanilla/campaign-lifecycle.md)。玩家数据与保存代码归 `PlayerBehaviorPool`，案卷与保存代码归 `CrimePool`；原来的两层纯转发包装及玩家监听器的晚期新档清空回调已退休。保存键、行为注册身份不变。（依据：原版 v1.4.8 源码与结构清理 2026-11-07）
+
+回退以 `bfadd61` 的 `GwpRuntimeState.cs`、`GwpData.cs`、`PlayerBehaviorMonitor.cs`、`SubModule.cs` 及其调用方为基线，按本批差异撤销。同进程旧档转新档、旧档切换及原生保存恢复仍待正常游玩核实。
 
 ## 存档兼容
 

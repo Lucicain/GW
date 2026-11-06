@@ -12,7 +12,6 @@ namespace GreyWardenPolicePurity
     /// Pending receipts and audits are saved, so a save/load inside one version picks them up again.</summary>
     public sealed class GwpFieldReportLedger : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
 
         internal sealed class PendingReport
         {
@@ -280,7 +279,7 @@ namespace GreyWardenPolicePurity
             float chance = Math.Min(GwpTuning.FieldArrest.AuditChanceCeiling,
                 GwpTuning.FieldArrest.ReportAuditChance
                 + GwpTuning.FieldArrest.AuditChancePerRepeatSquared * repeats * repeats);
-            int standing = PlayerState.Reputation;
+            int standing = PlayerBehaviorPool.Reputation;
             float trust = Math.Min(GwpTuning.FieldArrest.AuditMaximumTrustReduction,
                 Math.Max(0f, (float)standing - GwpTuning.FieldArrest.AuditTrustStanding)
                 * GwpTuning.FieldArrest.AuditTrustReductionPerPoint);
@@ -340,7 +339,7 @@ namespace GreyWardenPolicePurity
                 + "; chance=" + chance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
                 + "; discovered=" + discovered + "; standingPenalty=" + penalty);
             if (!discovered) return;
-            PlayerState.ChangeReputation(-penalty);
+            PlayerBehaviorPool.ChangeReputation(-penalty);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 GwpTextCatalog.gwp_report_excess_found,
                 "VAR_1", GetOffenderName(id), "VAR_2", -penalty), Colors.Red));
@@ -366,7 +365,7 @@ namespace GreyWardenPolicePurity
                 + "; roll=" + roll.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
                 + "; discovered=" + discovered + "; standingPenalty=" + penalty);
             if (!discovered) return;
-            PlayerState.ChangeReputation(-penalty);
+            PlayerBehaviorPool.ChangeReputation(-penalty);
             InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
                 GwpTextCatalog.gwp_report_audit_found,
                 "VAR_1", gap, "VAR_2", -penalty), Colors.Red));

@@ -28,8 +28,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed partial class GwpFieldArrestBehavior : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
 
         private readonly List<PersuasionTask> _reservations = new List<PersuasionTask>();
         // 谈崩之后要打的那支队伍。对话还开着时不能开打，先存在这里。
@@ -417,7 +415,7 @@ namespace GreyWardenPolicePurity
 
         internal static WardenStandingTier CurrentStandingTier()
         {
-            int standing = PlayerState.Reputation;
+            int standing = PlayerBehaviorPool.Reputation;
             if (standing < 0) return WardenStandingTier.UnderCharge;
             return standing >= GwpTuning.FieldArrest.RespectedStanding
                 ? WardenStandingTier.Respected
@@ -964,7 +962,7 @@ namespace GreyWardenPolicePurity
 
             RegisterFieldEnforcement(_offender, _crime);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_submitted");
-            PlayerState.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
+            PlayerBehaviorPool.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
             GwpAiDiagnostics.WriteFieldArrest(
                 stage,
@@ -1010,7 +1008,7 @@ namespace GreyWardenPolicePurity
             GwpPlayerCaseAssignment.NotifyCaptured(_offender, assessed, standing);
             RegisterFieldEnforcement(_offender, _crime);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_captured");
-            PlayerState.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
+            PlayerBehaviorPool.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
             GwpAiDiagnostics.WriteFieldArrest(
                 "SETTLED_SURRENDER",

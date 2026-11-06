@@ -52,10 +52,6 @@ Harmony启动期预编译目标可能触发其引用类的静态初始化；绑�
 - 练兵偏好每小时只扫灰袍队，维持玩家订单优先和配比；自动运兵派出只在日结检查。村庄观察和志愿兵格子仍每小时核对，因为原版会改民兵/志愿兵，这次不降低这些业务频率。（依据：源码复核 2026-10-15）
 - 旧卡死主线程曾落在火誓者统计/军械链，但受零人队无限增长污染。正常存档各段耗时与改善幅度尚未实测，离线缓存命中不能换算成游戏帧率。原版 v1.4.8 `CampaignObjectManager.Find<T>` 仍是线性查表；附近敌人已经用 `FindNextLocatable` 空间搜索，本轮不替换。后续若仍卡顿，再用实机采样定位真实热点。（依据：实机诊断 2026-10-09；离线执行 2026-10-15；C#反编译）
 
-## 兵员转移与临时队编号
-
-共享规则与原版依据只在 [临时队](temporary-parties.md) 定义。练兵、订单、追截、送信归队与火誓者名册转移统一调用 `GwpTroopTransfer`，各自保留原选兵策略；建队统一调用 `GwpPartyIdentity`。实际 v1.4.8 名册与注册表回归覆盖伤兵、经验余数、多来源回滚及改名后连续建队查重。没有新增存档字段。（依据：源码、C#反编译与实际游戏 DLL 离线执行 2026-10-14）
-
 ## 循环可靠性复核
 
 循环按明确进展核对终止依据：协力增员后候选被差事占用排除，补护卫的人数上限递增，配乐队列会出队，位读取会前进或抛出越界，UI 沿父级前进；没有再确认一处与旧巡逻相同的零人数循环。临时队查重不再随机重试，候选后缀每次严格递增，受有限注册表条目数约束。
@@ -113,7 +109,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 收束测试设施 | 通用桥与空回放设施已退休 | 按现有验证流程开发 |
 | 收尾分层试点 | 办案队已生产接入，留城限制已有首局观察，原生存读仍待核实 | 真实运行证据按搜捕支援登记 |
 | 改善真实问题的验证 | 留城生命周期修复已部署，谈判数值与抽签已接入 Core | 正常游玩核对新记录和实际谈判，后续按真实问题选机制 |
-| 增量清理 | 现有清理台账仍有未结事项 | 随改动处理旧路径与重复定义，待办在 workflow 原地销账 |
+| 稳定点集中清理 | 本批状态转发层、死接口与空接案刷新已退休，生产状态归属和启动边界已收束 | 剩余玩法文字与手册工作见 workflow；真实切档接续见公共底座 |
 
 ### 对照大型模组后的剩余差距
 
@@ -121,13 +117,10 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 
 | 方向 | 当前差距 | 下一步的具体落点 |
 |---|---|---|
-| 状态生命周期 | `GwpRuntimeState` 统一了入口，但案卷和玩家数据仍委托底层 static 池；读档、开新档的事件顺序依然影响状态隔离 | 优先查已登记的同进程旧案卷影响开局总督候选问题，闭合清空时机及调用方；不因包装层只转发就直接删除它。缺陷归[搜捕支援](city-search-support.md) |
+| 状态生命周期 | 两层纯转发已退休，玩家数据与保存归同一所有者；清空已移到战役启动，旧案卷影响新档初始化的窗口已修 | 实际切档和保存接续仍待核实，当前归属见[公共底座](infrastructure.md#战役状态生命周期) |
 | 资源交割 | 共享归属已有机械约束，但归属集中不自动保证战斗借出、扣账和加载接回一致 | 以[军械库缺账](firesworn-armory.md)为具体对象，查清借出、库存变化与恢复顺序；证据不足时继续取证，不新造一套账本 |
 | 可检查的业务边界 | Core 已覆盖办案队去留和谈判数值，尚不能代表各子系统；可指定抽签值也不能证明真实入口可达 | 下一次相关机制改动时核对入口、配置、候选及重复完成/失效/取消；只将有价值的纯决定抽出，执行继续用现有归属方 |
 | 小批次交付 | 已有检查脚本、钩子、部署哈希和独立审查；当前仓库未配置云端 CI，主工程构建依赖本机安装路径，许多功能仍待真实接续证据 | 优先收束已部署机制；需要多人/云端持续交付时再复用现有无游戏依赖检查建立 CI，本机兼容检查继续单独报告，不将 CI 通过称为实机验收 |
-
-退休方向继续沿现有台账：已替换的旧分支、无独立职责的过渡层及已确认范围的健康诊断；每项先核对真实调用、存读档与当前调查用途。桥、空回放及影子双轨已经删除，不重复建设；未闭合故障的证据采集仍有用途。具体删除按现有[改动流程](workflow.md#改动流程的细节)办理，不建立另一份退休清单。（依据：既有优化方案与结构复核 2026-11-06）
-
 
 ## 有意不做的重构
 
@@ -170,7 +163,8 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 搜捕现场模拟攻防 | `GwpCitySearchMissionController.CombatBalance` / `SimulationPower` | `GetSimulationAttackPower`；现场说服与打法选择共用，范围见[搜捕](city-search.md) |
 | 谁算灰袍 | `GwpCommon.IsGreyWarden*` | 家族 ID `PoliceClanId` |
 | 信众村民队的登记与生命周期介入 | `GwpFireswornBehavior.IsFaithVillager`、`GwpFaithVillagers.cs` | 别处给VillagerCampaignBehavior或SellGoodsForTradeAction加补丁；军械、装货、分账统一查询登记入口。规则归[村民队](firesworn-villagers.md) |
-| 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool`/`CrimeState` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
+| 战役静态状态清空 | `GwpRuntimeState.ResetForCampaign` | 外部调用 `CrimePool.ClearAll` 或 `PlayerBehaviorPool.ClearAll`，读取存档时各池仍独立恢复 |
+| 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
 | 玩家承办权限、占案与目标预留 | `GwpPlayerCaseAssignment` | 其他调用方直查普通悬赏或赎罪各自的权限/持案方法；共享规则与专项回归见[赎罪](atonement.md) |
 | 差事占用 | `GwpWardenDuties` | 其他系统的占用判断（`IsVillageReliefParty` 等） |
 | 守村经验分配与容量 | `GwpFireswornBehavior.GrantGuardExperience`（`GwpFireswornExperience.cs`） | `CanTroopGainXp`；烧人经验调用这一入口 |
@@ -181,8 +175,4 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 `tools/Check-CodeHygiene.py` 机械检查这张表，并找函数体完全相同的两个方法（重写的引擎事件除外）；
 预提交钩子遇到就拒绝提交。出现新的共享概念时，给它一个归属，在脚本的 `OWNERS` 里加一行。（依据：用户裁定 2026-10-07）
 
-## 接手与机械检查
-
-- CodeGraph 先定位源码与调用链，state 决定当前规则，测试和原版取证确认实际行为；动态图中没有边或测试时，仍需核对真实入口，不据此删代码。`python -m unittest discover -s tools/tests -p test_project_checks.py -v` 回归检查战力归属漏检、引用失效核对、提示与硬闸的区别；机械全零不代表正文语义正确，交接时仍需对照本次改到的源码。（依据：流程）
-- 火誓者按村庄、仪式、媒体、军械库、经济和队伍拆分，入口在 [firesworn.md](firesworn.md)。文档保留当前规则与验收项，旧说法只在 journal 追溯。
-- `Check-StateFreshness.py` 提示 state 正文引用了已不存在的文件、类型或成员；不会新增提交硬闸。改动牵连到哪些规则由 `Check-ChangeImpact.py` 点名，流程见 [workflow](workflow.md#改动流程的细节)。
+接手、检查与交接统一见 [state 索引](README.md) 和 [workflow](workflow.md)，不在本页重复维护。

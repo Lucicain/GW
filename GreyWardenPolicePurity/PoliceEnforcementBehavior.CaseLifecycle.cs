@@ -28,7 +28,7 @@ namespace GreyWardenPolicePurity
         /// <summary>结束一支灰袍的承办任务，按结局做全套善后。顺序有讲究，见各步注释。</summary>
         private void EndCaseTask(string policePartyId, CaseTaskEnd end, string reason)
         {
-            PoliceTask? task = CrimeState.GetTask(policePartyId);
+            PoliceTask? task = CrimePool.GetTask(policePartyId);
             if (task == null) return;
             MobileParty? police = FindActiveParty(policePartyId);
 
@@ -46,9 +46,9 @@ namespace GreyWardenPolicePurity
             ClearTaskWarTracking(policePartyId, true);
 
             if (end == CaseTaskEnd.Released)
-                CrimeState.ReleaseTask(policePartyId, reason);
+                CrimePool.ReleaseTask(policePartyId, reason);
             else
-                CrimeState.EndTask(policePartyId, reason);
+                CrimePool.EndTask(policePartyId, reason);
 
             if (end == CaseTaskEnd.Solved)
             {
@@ -60,7 +60,6 @@ namespace GreyWardenPolicePurity
             // 才不会把它当成继续打仗的理由；同一势力的其他案件、悬赏、纠察理由仍保留战争。
             // 结案后整国仍是敌人，承办领主会转身攻击刚协助缉捕的玩家。
             GwpPeace.EndPoliceWar(task?.WarTarget);
-            CrimeState.RefreshAccepting();
             if (police != null)
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
         }
@@ -74,13 +73,13 @@ namespace GreyWardenPolicePurity
             if (crime == null) return;
             if (_instance != null)
             {
-                foreach (string ownerId in CrimeState.ActiveTasks
+                foreach (string ownerId in CrimePool.ActiveTasks
                              .Where(kv => string.Equals(kv.Value.TargetCrimeId, crime.CrimeId,
                                  StringComparison.OrdinalIgnoreCase))
                              .Select(kv => kv.Key).ToList())
                     _instance.EndCaseTask(ownerId, CaseTaskEnd.Closed, reason);
             }
-            CrimeState.CloseCase(crime, reason);
+            CrimePool.CloseCase(crime, reason);
         }
 
         /// <summary>
@@ -94,7 +93,7 @@ namespace GreyWardenPolicePurity
             _instance.ReleaseEnvoysToPlayer(offenderHeroId!);
             _instance.ReleaseCityPartiesToPlayer(offenderHeroId!);
 
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values
                          .Where(t => string.Equals(t.TargetCrime?.OffenderHeroId, offenderHeroId,
                              StringComparison.OrdinalIgnoreCase))
                          .ToList())
@@ -114,9 +113,9 @@ namespace GreyWardenPolicePurity
         /// <summary>承办部队已经消失、或案卷目标无法恢复的任务按「撤人留责」收尾；死人的案卷移出台账。</summary>
         private void CleanCaseLedger()
         {
-            foreach (string ownerId in CrimeState.StaleTaskOwnerIds())
+            foreach (string ownerId in CrimePool.StaleTaskOwnerIds())
                 EndCaseTask(ownerId, CaseTaskEnd.Released, "owner_party_or_crime_record_missing");
-            CrimeState.RemoveDeadOffenderRecords();
+            CrimePool.RemoveDeadOffenderRecords();
         }
     }
 }

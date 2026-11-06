@@ -39,8 +39,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PlayerBountyBehavior : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
 
         // ---- 持久化状态 ----
         private string _activeBountyTargetId = null!;
@@ -88,7 +86,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>接单需声望达标且主动装备执勤旗；卸旗不影响已接受的任务。</summary>
         private bool MeetsBountyDutyAndStanding() =>
-            PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
+            PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold
             && GwpCommon.IsPlayerGreyWardenOnDuty();
 
         /// <summary>
@@ -628,7 +626,7 @@ namespace GreyWardenPolicePurity
             }
 
             // 保持悬赏与承办案件的护送关系一致，读档后也可立即恢复职责。
-            CrimeState.SetBountyEscortFlag(_escortPolicePartyId, true);
+            CrimePool.SetBountyEscortFlag(_escortPolicePartyId, true);
 
             // ── 仅追击阶段跟随玩家；目标落败后立即解除护送职责 ──
             if (!IsTrackingBountyTarget) return;
@@ -717,7 +715,7 @@ namespace GreyWardenPolicePurity
             var escort = MobileParty.All.FirstOrDefault(p => p.StringId == _escortPolicePartyId);
             if (escort != null && escort.IsActive)
             {
-                CrimeState.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
+                CrimePool.SetBountyEscortFlag(_escortPolicePartyId, false); // 恢复正常任务处理
                 PoliceEnforcementBehavior.RefreshPlayerBountyAssistanceEscort(
                     _escortPolicePartyId);
                 escort.Ai.SetDoNotMakeNewDecisions(false);
@@ -753,7 +751,7 @@ namespace GreyWardenPolicePurity
             // 声望达标且尚未招募过 → 生成招募使者
             if (!_recruitmentOffered &&
                 !_recruitmentAccepted &&
-                PlayerState.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
+                PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold)
             {
                 ReconcileRecruitmentPatrolState();
                 if (_recruitmentPatrolId == null)

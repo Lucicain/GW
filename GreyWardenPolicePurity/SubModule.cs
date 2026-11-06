@@ -77,6 +77,8 @@ namespace GreyWardenPolicePurity
             gameStarterObject.AddModel(new GwpAgentStatCalculateModel());
 
             if (game.GameType is not Campaign || gameStarterObject is not CampaignGameStarter starter) return;
+            // 原版 OnGameStart 早于新档事件及读档 LoadBehaviorData，见原版战役生命周期手册。
+            GwpRuntimeState.ResetForCampaign();
             RegisterCampaignComponents(starter);
         }
 

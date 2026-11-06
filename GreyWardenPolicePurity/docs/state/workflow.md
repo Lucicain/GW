@@ -101,13 +101,13 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 ### 清理台账
 
-上次集中清理：`51e6032`（2026-11-06，Claude Code；清理提交是它的下一个提交：删掉纠察队永不显示的调试输出及其每帧销毁标志、犯罪监控里只剩注释的报告方法、战争理由两个死方法、野外执法走不到的开场分支，修拒缴宣战时同一句提示连出两遍并合并两个相同回调，连同 25 条失效文字键；规则总数基线 959→752）
+上次集中清理：`59d8083`（2026-11-07 本批起点，紧接其后的集中清理提交为成果：移除运行时纯转发层，玩家数据与保存归同一所有者；退休四个失效查询/属性与空接案刷新及其调用；战役启动前清空旧池；补原版生命周期手册、合并重复状态规则。增量检查覆盖上次基线以来变更，工作树、临时目录、分支与机械卫生无未登记项。待实测仍归各子系统。）
 
-熵指标：state 规则总数（手写 state 里「依据」出现的次数，`Check-StateFreshness` 报告），基线 752（2026-11-06 集中清理后；上次 959 以来云端与本地分批合并同源规则压到约 745，当天新增用户裁定与谈判分层后为 752）。新裁定会让它上升，这不拦；手册替掉规则、合并重复让它下降。每次集中清理把它压回上次基线以下并更新基线，压不下就在台账写明原因。
+熵指标：state 规则总数（手写 state 里「依据」出现的次数，`Check-StateFreshness` 报告），基线 750（2026-11-07 集中清理后，上次基线 752）。新裁定可以使它上升；集中清理时通过手册替代与同源规则合并压回基线以下，压不下就在这里说明原因。
 
 清理待办：
 
-- 玩家文字分批审阅（2026-11-04）附带、需用户定玩法的代码问题，详见各稿「代码问题」（谈判数值已在 `51e6032` 迁入纯规则，打算候选表未动）：野外执法 `GwpOffenderDesire` 的 `PayToAvoidBattle/PayForPeace/PayGenerously/RashMost` 不在 `Roll` 候选表，18 条文字走不到（第 1、2 批），删掉还是放回候选表待定；`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；罪名以显示文字存进案件、切语言不随动（第 10 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批）；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，按技能分句需先有审阅稿批准的 24 条英文。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记，2026-11-06 清掉无需裁定的部分）
+- 玩家文字分批审阅（2026-11-04）附带、需用户定玩法的代码问题，详见各稿「代码问题」（谈判数值已在 `51e6032` 迁入纯规则，打算候选表未动）：野外执法四个性格空位已获用户裁定，具体行为只在 [野外交涉](field-arrest.md) 维护，待该玩法批次实现并清理替代文字（不再等删除或恢复候选的裁定）；`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；罪名以显示文字存进案件、切语言不随动（第 10 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批）；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，按技能分句需先有审阅稿批准的 24 条英文。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记，2026-11-06 清掉无需裁定的部分）
 - reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）
 - 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会、烧村五篇已写。（2026-10-28 登记）
 

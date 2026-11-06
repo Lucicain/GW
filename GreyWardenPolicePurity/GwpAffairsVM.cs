@@ -126,7 +126,7 @@ namespace GreyWardenPolicePurity
         [DataSourceProperty] public InputKeyItemVM? DoneInputKey { get; private set; }
         internal void SetDoneInputKey(HotKey key) => DoneInputKey = InputKeyItemVM.CreateFromHotKey(key, true);
         [DataSourceProperty] public string Title => GwpText.Get(GwpTextCatalog.gwp_gwpcasearchivescreen_001);
-        [DataSourceProperty] public string Standing => GwpText.Get(GwpTextCatalog.gwp_affairs_standing, "VALUE", GwpRuntimeState.Player.Reputation);
+        [DataSourceProperty] public string Standing => GwpText.Get(GwpTextCatalog.gwp_affairs_standing, "VALUE", PlayerBehaviorPool.Reputation);
         [DataSourceProperty] public string ListTitle => Categories.FirstOrDefault(c => c.Id == _category)?.Title ?? string.Empty;
         [DataSourceProperty] public string DetailTitle => _selected?.Title ?? (DispatchOptions.Count > 0 ? ListTitle
             : GwpText.Get(_page == 4 ? GwpTextCatalog.gwp_player_armory : GwpTextCatalog.gwp_affairs_empty));

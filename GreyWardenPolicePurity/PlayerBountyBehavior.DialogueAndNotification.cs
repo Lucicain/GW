@@ -320,7 +320,7 @@ namespace GreyWardenPolicePurity
                    _recruitmentOffered &&
                    !_recruitmentAccepted &&
                    _voluntaryExitCount < GwpTuning.Bounty.MaximumVoluntaryExits &&
-                   PlayerState.Reputation >= GetRequiredReadmissionReputation();
+                   PlayerBehaviorPool.Reputation >= GetRequiredReadmissionReputation();
         }
 
         private bool CanLeaveThroughLord()
@@ -619,7 +619,7 @@ namespace GreyWardenPolicePurity
 
         // The affairs screen lists every currently eligible case; no three-choice picker.
         internal IReadOnlyList<CrimeRecord> GetAffairsOffers() =>
-            CrimeState.GetAvailablePlayerBounties()
+            CrimePool.GetAvailablePlayerBounties()
                 .Where(crime => crime.CrimeCategory == GwpCrimeCategory.CaravanAttack ||
                                 crime.CrimeCategory == GwpCrimeCategory.VillageViolence)
                 .OrderByDescending(EstimateAffairsReward)

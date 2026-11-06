@@ -161,7 +161,7 @@ namespace GreyWardenPolicePurity
         private void BeginSearchPersuasion(GwpPersuasionRound round, PersuasionTask[] tasks)
         {
             (float ours, float theirs) = Scene!.CombatBalance();
-            int reputation = GwpRuntimeState.Player.Reputation;
+            int reputation = PlayerBehaviorPool.Reputation;
             float difficulty = SearchDifficulty(reputation, ours, theirs);
             round.Begin(tasks, difficulty);
         }

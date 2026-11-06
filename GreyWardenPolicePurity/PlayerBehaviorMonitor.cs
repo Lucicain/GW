@@ -21,8 +21,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PlayerBehaviorMonitor : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
 
         // 运行时（无需持久化）：记录战斗开始时敌方部队总人数，用于声望缩放计算
         private int _pendingEnemyCount = 0;
@@ -31,21 +29,6 @@ namespace GreyWardenPolicePurity
 
         public override void RegisterEvents()
         {
-            // ── 新档初始化 ──────────────────────────────────────────────────────────
-            // ★ 必须监听此事件以重置静态数据。
-            //
-            // 问题根因：PlayerBehaviorPool 和 CrimePool 均为 static 类，
-            // 其字段（包括 Reputation）在进程生命周期内持续存在，不随游戏会话重置。
-            // SyncData() 只在【加载/保存】已有存档时触发，【新建游戏】时不触发。
-            //
-            // 复现路径：
-            //   1. 加载旧档（Reputation = 3）→ SyncData 恢复 Reputation = 3
-            //   2. 退出到主菜单 → 新建游戏
-            //   3. 新档的 SyncData 不触发 → Reputation 仍为 3
-            //   4. OnHourlyTick 见 Reputation ≥ 1 → 立刻生成招募使者
-            //
-            // 修复：在此事件中手动调用 ClearAll()，保证新档从干净状态启动。
-            CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
 
             // ── 犯罪 / 行善监听 ─────────────────────────────────────────────────────
@@ -61,25 +44,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
         }
 
-        /// <summary>
-        /// 新建游戏时调用：重置所有静态状态数据。
-        ///
-        /// 与 SyncData(IsLoading) 的区别：
-        ///   SyncData 从存档文件读取并恢复数据（加载已有存档）。
-        ///   本方法直接归零所有数据（开新档，无存档文件可读）。
-        ///
-        /// PlayerBehaviorPool.ClearAll() → Reputation = 0, VictimFactions 清空
-        /// CrimePool.ClearAll()          → 待处理犯罪池清空, 活跃任务清空, IsAccepting = true
-        /// </summary>
-        private void OnNewGameCreated(CampaignGameStarter starter)
-        {
-            GwpRuntimeState.ResetForNewGame();
-        }
-
-        public override void SyncData(IDataStore dataStore)
-        {
-            GwpRuntimeState.SyncPlayerBehaviorData(dataStore);
-        }
+        public override void SyncData(IDataStore dataStore) => PlayerBehaviorPool.SyncData(dataStore);
 
         #region 犯罪监听
 
@@ -116,7 +81,7 @@ namespace GreyWardenPolicePurity
             // 只记受害势力，不扣声望：声望按击败人数在 OnMapEventEnded 中缩放扣除
             if (defender.PartyComponent is VillagerPartyComponent ||
                 defender.PartyComponent is CaravanPartyComponent)
-                PlayerState.TrackVictimFaction(defender.ActualClan?.MapFaction);
+                PlayerBehaviorPool.TrackVictimFaction(defender.ActualClan?.MapFaction);
         }
 
         /// <summary>
@@ -155,20 +120,20 @@ namespace GreyWardenPolicePurity
             IFaction victimFaction = village.Settlement.MapFaction;
 
             // ★ 功能 4A：劫掠村庄固定扣 -2 声望（无论村庄有无防守者）
-            PlayerState.ChangeReputation(-2);
+            PlayerBehaviorPool.ChangeReputation(-2);
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "VILLAGE_RAID_REPUTATION_APPLIED",
                 "village=" + village.Settlement.StringId + "; delta=-2");
 
             // 若已进入通缉状态，立即触发警察追捕
-            if (PlayerState.IsWanted)
-                CrimeState.TryAddPlayerCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_005), location, village.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_006));
+            if (PlayerBehaviorPool.IsWanted)
+                CrimePool.TryAddPlayerCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_005), location, village.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_006));
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_007, "VAR_1", village.Name),
                 Colors.Red));
 
-            PlayerState.TrackVictimFaction(victimFaction);
+            PlayerBehaviorPool.TrackVictimFaction(victimFaction);
         }
 
         private void OnForceVolunteers(BattleSideEnum side, ForceVolunteersEventComponent component)
@@ -187,7 +152,7 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_010), settlement.Position.ToVec2(),
+            PlayerBehaviorPool.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_010), settlement.Position.ToVec2(),
                 settlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_011), settlement.MapFaction);
         }
 
@@ -207,7 +172,7 @@ namespace GreyWardenPolicePurity
             }
             if (!playerInvolved) return;
 
-            PlayerState.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_012), settlement.Position.ToVec2(),
+            PlayerBehaviorPool.AddCrime(GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_012), settlement.Position.ToVec2(),
                 settlement.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_013), settlement.MapFaction);
         }
 
@@ -310,11 +275,11 @@ namespace GreyWardenPolicePurity
             if (anyGoodDeed)
             {
                 // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
-                int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
+                int repGain = PlayerBehaviorPool.AccumulateGoodDeedKills(playerKillCount);
 
                 if (repGain > 0)
                 {
-                    PlayerState.ChangeReputation(repGain);
+                    PlayerBehaviorPool.ChangeReputation(repGain);
 
                     string deedType = defenderIsVillageRaid ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
                                     : defenderIsCaravan     ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_015)
@@ -364,17 +329,17 @@ namespace GreyWardenPolicePurity
                 int repLoss   = (killCount + 9) / 10; // 向上取整；killCount=0 → repLoss=0
                 if (repLoss > 0)
                 {
-                    PlayerState.ChangeReputation(-repLoss);
+                    PlayerBehaviorPool.ChangeReputation(-repLoss);
 
                     // 若已进入通缉状态，触发警察追捕
-                    if (PlayerState.IsWanted)
+                    if (PlayerBehaviorPool.IsWanted)
                     {
                         string crimeType = playerRaidedVillage    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_019)
                                          : playerForcedVolunteers ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_020)
                                          : playerForcedSupplies   ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_021)
                                          : loserIsCaravan         ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_022)
                                          : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_023);
-                        CrimeState.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
+                        CrimePool.TryAddPlayerCrime(crimeType, mapEvent.Position.ToVec2(), crimeType);
                     }
 
                     string badDeedType = playerRaidedVillage    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_024)
@@ -486,11 +451,11 @@ namespace GreyWardenPolicePurity
             if (_pendingPoliceCrimeSupport > 0)
             {
                 // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
-                int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
+                int repGain = PlayerBehaviorPool.AccumulateGoodDeedKills(playerKillCount);
                 if (repGain <= 0)
                     return true;
 
-                PlayerState.ChangeReputation(repGain);
+                PlayerBehaviorPool.ChangeReputation(repGain);
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_043, "VAR_1", playerKillCount),
                     Colors.Green));
@@ -508,11 +473,11 @@ namespace GreyWardenPolicePurity
                 if (repLoss <= 0)
                     return true;
 
-                PlayerState.ChangeReputation(-repLoss);
+                PlayerBehaviorPool.ChangeReputation(-repLoss);
 
-                if (PlayerState.IsWanted)
+                if (PlayerBehaviorPool.IsWanted)
                 {
-                    CrimeState.TryAddPlayerCrime(
+                    CrimePool.TryAddPlayerCrime(
                         GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_044),
                         mapEvent.Position.ToVec2(),
                         GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_045));
@@ -546,7 +511,7 @@ namespace GreyWardenPolicePurity
             if (repLoss <= 0)
                 return false;
 
-            PlayerState.ChangeReputation(-repLoss);
+            PlayerBehaviorPool.ChangeReputation(-repLoss);
 
             string targetName = loserHadPatrol ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_047) : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_048);
             InformationManager.DisplayMessage(new InformationMessage(
@@ -574,11 +539,11 @@ namespace GreyWardenPolicePurity
             if (loser == null || !SideContainsOpenCaseCriminal(loser))
                 return false;
 
-            int repGain = PlayerState.AccumulateGoodDeedKills(playerKillCount);
+            int repGain = PlayerBehaviorPool.AccumulateGoodDeedKills(playerKillCount);
             if (repGain <= 0)
                 return true;
 
-            PlayerState.ChangeReputation(repGain);
+            PlayerBehaviorPool.ChangeReputation(repGain);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_054, "VAR_1", playerKillCount),
                 Colors.Green));
@@ -604,7 +569,7 @@ namespace GreyWardenPolicePurity
         {
             if (party == null || party.IsMainParty)
                 return false;
-            return CrimeState.GetByOffenderId(party.StringId) != null;
+            return CrimePool.GetByOffenderId(party.StringId) != null;
         }
 
         private static bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)
@@ -647,7 +612,7 @@ namespace GreyWardenPolicePurity
                     continue;
 
                 PoliceTask? task = policeParty?.StringId != null
-                    ? CrimeState.GetTask(policeParty.StringId)
+                    ? CrimePool.GetTask(policeParty.StringId)
                     : null;
                 MobileParty? offender = task?.TargetCrime?.Offender;
                 if (offender == null || !offender.IsActive || offender.IsMainParty)

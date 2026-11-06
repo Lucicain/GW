@@ -155,7 +155,7 @@ namespace GreyWardenPolicePurity
             MobileParty? party = MobileParty.ConversationParty;
             if (party == null) return false;
             if (IsPatrolParty(party) || IsEnforcementDelayPatrolParty(party)) return true;
-            return GwpRuntimeState.Crime.GetTask(party.StringId)?.TargetCrime?.Offender?.IsMainParty == true;
+            return CrimePool.GetTask(party.StringId)?.TargetCrime?.Offender?.IsMainParty == true;
         }
 
         /// <summary>

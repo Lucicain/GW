@@ -430,7 +430,7 @@ namespace GreyWardenPolicePurity
 
             _feePaid = true;
             _publicSupportPercent = GetPublicSupportPercent(
-                GwpRuntimeState.Player.Reputation);
+                PlayerBehaviorPool.Reputation);
             _activeStage = (int)FiefRequestStage.TravelingToSettlement;
             _nextContactHour = -1d;
             _deferredTasksRemaining = 0;
@@ -764,7 +764,7 @@ namespace GreyWardenPolicePurity
 
             record.Flags |= CaptureFlags.AutoRolled;
             int reputation = Math.Max(0, Math.Min(100,
-                GwpRuntimeState.Player.Reputation));
+                PlayerBehaviorPool.Reputation));
             if (MBRandom.RandomInt(100) < reputation)
                 record.Flags |= CaptureFlags.AutoTriggered;
         }

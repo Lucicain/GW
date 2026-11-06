@@ -201,7 +201,7 @@ namespace GreyWardenPolicePurity
             {
                 if (IsAssistanceMember(leader.StringId)) continue;
                 ReleaseUnownedAssistanceArmy(leader);
-                PoliceTask? task = CrimeState.GetTask(leader.StringId);
+                PoliceTask? task = CrimePool.GetTask(leader.StringId);
                 if (task != null) TryCaptureAssistanceLeaderSoloSpeed(leader, task);
                 MobileParty? offender = GetAssistanceEvaluationTarget(leader, task);
                 if (offender == null || FormationInBattle(leader)) continue;
@@ -396,7 +396,7 @@ namespace GreyWardenPolicePurity
         private static bool IsAssistancePlayerBountyEscort(
             LordAssistanceGroup group)
         {
-            PoliceTask? task = CrimeState.GetTask(group.LeaderPartyId);
+            PoliceTask? task = CrimePool.GetTask(group.LeaderPartyId);
             return task?.IsPlayerBountyEscort == true &&
                    IsAssistanceGroupCaseStillActive(group, task);
         }
@@ -440,7 +440,7 @@ namespace GreyWardenPolicePurity
         private void AdvancePlayerBountyAssistanceStrength(
             MobileParty leader, LordAssistanceGroup group, Army? army)
         {
-            PoliceTask? task = CrimeState.GetTask(leader.StringId);
+            PoliceTask? task = CrimePool.GetTask(leader.StringId);
             if (task == null || PlayerBountyBehavior.AwaitingSupportRequest(task))
                 return;
 
@@ -543,7 +543,7 @@ namespace GreyWardenPolicePurity
                 parties.UnionWith(_instance.FormationSupports(group));
 
             float playerStrength = 0f;
-            PoliceTask? task = CrimeState.GetTask(leader.StringId);
+            PoliceTask? task = CrimePool.GetTask(leader.StringId);
             MobileParty player = MobileParty.MainParty;
             if (task?.IsPlayerBountyEscort == true &&
                 !PlayerBountyBehavior.AwaitingSupportRequest(task) &&
@@ -923,7 +923,7 @@ namespace GreyWardenPolicePurity
             // 协办人手上的案子留着（用户裁定 2026-10-16）：协力期间先放着，他已派出的使者照常谈，
             // 谈成就结案；谈崩的等协力结束他接着办（UpdateTasks 里按协办人跳过）。
 #if GWP_DIAGNOSTICS
-            PoliceTask? kept = CrimeState.GetTask(helper.StringId);
+            PoliceTask? kept = CrimePool.GetTask(helper.StringId);
             if (kept != null)
                 GwpAiDiagnostics.WriteAction(helper, "ASSISTANCE_HELPER_CASE_KEPT",
                     "leader=" + leader.StringId + "; ownCrime=" + kept.TargetCrimeId +
@@ -1045,7 +1045,7 @@ namespace GreyWardenPolicePurity
         {
             foreach (LordAssistanceGroup group in _assistanceGroups.Values.ToList())
             {
-                PoliceTask? task = CrimeState.GetTask(group.LeaderPartyId);
+                PoliceTask? task = CrimePool.GetTask(group.LeaderPartyId);
                 if (IsAssistanceGroupCaseStillActive(group, task))
                     continue;
 
@@ -1065,7 +1065,7 @@ namespace GreyWardenPolicePurity
         private void HandleTaskOwnerMapEventEnded(MapEvent mapEvent)
         {
             foreach (KeyValuePair<string, PoliceTask> entry in
-                     CrimeState.ActiveTasks.ToList())
+                     CrimePool.ActiveTasks.ToList())
             {
                 string ownerId = entry.Key;
                 PoliceTask task = entry.Value;
@@ -1227,7 +1227,6 @@ namespace GreyWardenPolicePurity
                     "0.00", CultureInfo.InvariantCulture) +
                 "; remainingMembers=" + group.MemberPartyIds.Count +
                 "; surplusTicks=" + GwpTuning.Enforcement.AssistanceSurplusConfirmTicks);
-            CrimeState.RefreshAccepting();
         }
 
         /// <summary>
@@ -1399,7 +1398,7 @@ namespace GreyWardenPolicePurity
             return _instance._assistanceGroups.TryGetValue(
                        army.LeaderParty.StringId, out LordAssistanceGroup? group) &&
                    IsArmyOwnedByGroup(army, group) && !group.DispersedForSpeed &&
-                   IsAssistanceGroupCaseStillActive(group, CrimeState.GetTask(group.LeaderPartyId)) &&
+                   IsAssistanceGroupCaseStillActive(group, CrimePool.GetTask(group.LeaderPartyId)) &&
                    _instance.HasFormationParticipants(group);
         }
 
@@ -1424,7 +1423,7 @@ namespace GreyWardenPolicePurity
                         StringComparer.OrdinalIgnoreCase) ||
                     _instance.FormationSupports(candidate).Contains(party));
             }
-            if (group == null || group.PendingReleaseReason.Length != 0 || !IsAssistanceGroupCaseStillActive(group, CrimeState.GetTask(group.LeaderPartyId)))
+            if (group == null || group.PendingReleaseReason.Length != 0 || !IsAssistanceGroupCaseStillActive(group, CrimePool.GetTask(group.LeaderPartyId)))
                 return false;
 
             bool speedDetached =
@@ -1466,7 +1465,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>宣战前统一使用真实跟随，进出城交给原版行为。依据：用户裁定 2026-10-17。</summary>
         private static bool IsUndeclaredAssistancePursuit(LordAssistanceGroup group) =>
-            CrimeState.GetTask(group.LeaderPartyId)?.WarDeclared != true;
+            CrimePool.GetTask(group.LeaderPartyId)?.WarDeclared != true;
 
         private float GetAssistanceContactDistance(MobileParty leader,
             MobileParty offender, out MobileParty contactParty)
@@ -1540,7 +1539,7 @@ namespace GreyWardenPolicePurity
             // On a player commission the player himself is part of the force that
             // will engage, so he must count toward the local friendly strength.
             bool includePlayer =
-                CrimeState.GetTask(leader.StringId)?.IsPlayerBountyEscort == true;
+                CrimePool.GetTask(leader.StringId)?.IsPlayerBountyEscort == true;
             var candidates = new List<MobileParty>();
             if (_assistanceGroups.TryGetValue(leader.StringId,
                     out LordAssistanceGroup? group) &&
@@ -1658,7 +1657,7 @@ namespace GreyWardenPolicePurity
                 IsSpeedDetached(group, group.LeaderPartyId))
                 return false;
 
-            PoliceTask? task = CrimeState.GetTask(group.LeaderPartyId);
+            PoliceTask? task = CrimePool.GetTask(group.LeaderPartyId);
             if (!IsAssistanceGroupCaseStillActive(group, task)) return false;
             if (!string.IsNullOrEmpty(targetPartyId) &&
                 !string.Equals(group.TargetPartyId, targetPartyId,
@@ -1692,7 +1691,7 @@ namespace GreyWardenPolicePurity
                     !group.MemberPartyIds.Contains(party.StringId, StringComparer.OrdinalIgnoreCase) &&
                     !_instance.FormationSupports(group).Contains(party)) continue;
                 if (group.PendingReleaseReason.Length != 0) return false;
-                task = CrimeState.GetTask(group.LeaderPartyId);
+                task = CrimePool.GetTask(group.LeaderPartyId);
                 offender = GetActiveAssistanceCaseTarget(group, task);
                 return offender != null;
             }
@@ -1707,7 +1706,7 @@ namespace GreyWardenPolicePurity
             if (!TryGetAssistanceCase(actor, out task, out offender))
             {
                 if (IsPartyOccupiedByAssistance(actor)) return false;
-                task = CrimeState.GetTask(actor.StringId);
+                task = CrimePool.GetTask(actor.StringId);
                 offender = task?.TargetCrime?.Offender;
             }
             return task != null && offender?.IsActive == true && offender.CurrentSettlement == null &&
@@ -1717,7 +1716,7 @@ namespace GreyWardenPolicePurity
         internal static bool NativeCaseIncludesPlayer(MobileParty actor)
         {
             return TryGetAssistanceCase(actor, out PoliceTask? task, out _) ?
-                task?.IsPlayerBountyEscort == true : CrimeState.GetTask(actor.StringId)?.IsPlayerBountyEscort == true;
+                task?.IsPlayerBountyEscort == true : CrimePool.GetTask(actor.StringId)?.IsPlayerBountyEscort == true;
         }
 
         internal static bool CanInitiateCaseAttack(MobileParty actor, MobileParty target,
@@ -1763,7 +1762,7 @@ namespace GreyWardenPolicePurity
                     ? null
                     : GwpStrength.CombatGroupOf(diagnosticTarget);
                 PoliceTask? diagnosticTask =
-                    CrimeState.GetTask(led.LeaderPartyId);
+                    CrimePool.GetTask(led.LeaderPartyId);
                 float engagementStrength = GwpStrength.Party(party);
                 if (diagnosticTarget != null)
                 {

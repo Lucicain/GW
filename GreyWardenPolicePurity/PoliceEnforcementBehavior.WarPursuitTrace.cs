@@ -31,7 +31,7 @@ namespace GreyWardenPolicePurity
         {
             if (_warPursuitWatch.TryGetValue(source.StringId + ">" + target.StringId, out WarPursuitWatch? watch))
                 watch.InterceptorGate = reason;
-            else if (CrimeState.GetTask(source.StringId)?.WarDeclared == false)
+            else if (CrimePool.GetTask(source.StringId)?.WarDeclared == false)
                 GwpAiDiagnostics.WriteAction(source, "CASE_DECLARATION_WAITING_INTERCEPTOR",
                     "target=" + target.StringId + "; reason=" + reason);
         }
@@ -40,7 +40,7 @@ namespace GreyWardenPolicePurity
         {
             double now = CampaignTime.Now.ToHours;
             HashSet<string> live = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 if (task.FlowState != PoliceTaskFlowState.WarPursuit || string.IsNullOrEmpty(task.PolicePartyId))
                     continue;

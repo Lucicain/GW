@@ -19,7 +19,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public class PoliceAntiWarDeclaration : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
 
         /// <summary>
         /// 这一场战斗里，因为玩家跟灰袍一起动手才打起来的势力。只在本场战斗内有效、
@@ -329,7 +328,7 @@ namespace GreyWardenPolicePurity
                     else
                         regularPoliceInvolved = true;
 
-                    PoliceTask? task = CrimeState.GetTask(party.MobileParty.StringId);
+                    PoliceTask? task = CrimePool.GetTask(party.MobileParty.StringId);
                     if (task?.TargetCrimeId == CrimePool.PlayerCrimeId)
                         policeWasExecutingPlayerTask = true;
                 }

@@ -22,7 +22,7 @@ namespace GreyWardenPolicePurity
             if (settlement == null) return null;
 
             bool assigned = GwpPlayerCaseAssignment.IsCaseHeldByPlayer(hero.StringId)
-                || CrimeState.ActiveTasks.Values.Any(task => task.TargetCrimeId == crime.CrimeId)
+                || CrimePool.ActiveTasks.Values.Any(task => task.TargetCrimeId == crime.CrimeId)
                 || _instance?.CityPartyState(crime) != null;
             return assigned ? settlement : null;
         }
@@ -107,7 +107,7 @@ namespace GreyWardenPolicePurity
                 GwpCrimeCategory preferred = GetPreferredCrimeCategory(source);
                 var candidates = CrimePool.LedgerRecords.Where(record => record.IsOffenderSearchableInSettlement()
                         && CityPartyState(record) == null && !HasEnvoyAgreement(record)
-                        && !CrimeState.ActiveTasks.Values.Any(task => task.TargetCrimeId == record.CrimeId))
+                        && !CrimePool.ActiveTasks.Values.Any(task => task.TargetCrimeId == record.CrimeId))
                     .OrderBy(record => preferred != GwpCrimeCategory.Unknown && record.CrimeCategory == preferred ? 0 : 1)
                     .ThenBy(record => source.GetPosition2D.Distance(record.ShelterSettlement!.GetPosition2D))
                     .ToList();

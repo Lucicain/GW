@@ -48,7 +48,7 @@ namespace GreyWardenPolicePurity
 
         private void OnDailyTick()
         {
-            int reputation = GwpRuntimeState.Player.Reputation;
+            int reputation = PlayerBehaviorPool.Reputation;
             if (reputation < 0)
             {
                 ClearStoredReward();
@@ -67,7 +67,7 @@ namespace GreyWardenPolicePurity
 
         private void OnHourlyTick()
         {
-            if (GwpRuntimeState.Player.Reputation < 0)
+            if (PlayerBehaviorPool.Reputation < 0)
             {
                 ClearStoredReward();
             }
@@ -95,7 +95,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            int reputation = GwpRuntimeState.Player.Reputation;
+            int reputation = PlayerBehaviorPool.Reputation;
             if (reputation <= 0)
             {
                 return false;
@@ -154,7 +154,7 @@ namespace GreyWardenPolicePurity
 
         private void EnsureRewardMatchesReputation()
         {
-            if (GwpRuntimeState.Player.Reputation < 0)
+            if (PlayerBehaviorPool.Reputation < 0)
             {
                 ClearStoredReward();
             }

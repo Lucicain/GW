@@ -64,8 +64,8 @@ namespace GreyWardenPolicePurity
             }
 
             // 同一玩家准备入口已经处理了协力退出、旧案退回和意图交接。
-            CrimeState.BeginTask(lord.StringId, crime);
-            if (CrimeState.GetTask(lord.StringId)?.TargetCrimeId != crime.CrimeId)
+            CrimePool.BeginTask(lord.StringId, crime);
+            if (CrimePool.GetTask(lord.StringId)?.TargetCrimeId != crime.CrimeId)
             {
                 GwpAiDiagnostics.WriteFieldArrest("CASE_SUPPORT_ASSIGN_FAILED",
                     "source=" + source + "; lord=" + lord.StringId + "; crime=" + crime.CrimeId);
@@ -75,7 +75,7 @@ namespace GreyWardenPolicePurity
                 return false;
             }
 
-            CrimeState.SetBountyEscortFlag(lord.StringId, true);
+            CrimePool.SetBountyEscortFlag(lord.StringId, true);
             _escortPolicePartyId = lord.StringId;
             _supportRequested = true;
             _activeQuest?.WriteLog(GwpText.Create(

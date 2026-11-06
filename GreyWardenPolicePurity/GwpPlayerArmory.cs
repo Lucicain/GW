@@ -11,7 +11,7 @@ namespace GreyWardenPolicePurity
     {
         internal static bool CanManagePlayerArmory => _instance != null &&
             Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()?.IsRecruitedByGreyWardens == true &&
-            GwpRuntimeState.Player.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold &&
+            PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold &&
             MobileParty.MainParty?.IsActive == true && MobileParty.MainParty.MapEvent == null;
 
         internal static ItemRoster PlayerArmoryItems => _instance != null && MobileParty.MainParty != null &&

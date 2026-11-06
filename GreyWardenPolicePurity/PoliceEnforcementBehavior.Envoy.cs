@@ -929,7 +929,7 @@ namespace GreyWardenPolicePurity
         #endregion
 
         private static PoliceTask? TaskForCrime(CrimeRecord crime) =>
-            CrimeState.ActiveTasks.Values.FirstOrDefault(task =>
+            CrimePool.ActiveTasks.Values.FirstOrDefault(task =>
                 string.Equals(task.TargetCrimeId, crime.CrimeId, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>谈出了结果：有承办人就按结局收尾（办成记功），没有就直接销卷。</summary>

@@ -42,7 +42,7 @@ namespace GreyWardenPolicePurity
             else
                 stage = GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_encyclopedia_003);
 
-            return GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_encyclopedia_004, "VAR_1", stage, "VAR_2", PlayerState.Reputation);
+            return GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_encyclopedia_004, "VAR_1", stage, "VAR_2", PlayerBehaviorPool.Reputation);
         }
     }
 }

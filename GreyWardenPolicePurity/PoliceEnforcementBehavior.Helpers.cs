@@ -38,7 +38,7 @@ namespace GreyWardenPolicePurity
             if (!GwpWardenDuties.IsFreeFor(police, duty))
                 return false;
 
-            PoliceTask? task = CrimeState.GetTask(police.StringId);
+            PoliceTask? task = CrimePool.GetTask(police.StringId);
             if (task != null)
             {
                 if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||
@@ -73,7 +73,7 @@ namespace GreyWardenPolicePurity
             GreyWardenVillageReconstructionBehavior.ReleasePartyForForcedDuty(police);
             GreyWardenIssueResolutionBehavior.ReleasePartyForForcedDuty(police);
 
-            PoliceTask? task = CrimeState.GetTask(police.StringId);
+            PoliceTask? task = CrimePool.GetTask(police.StringId);
             if (task != null)
             {
                 if (task.IsEscortingPlayer || task.IsPlayerBountyEscort ||

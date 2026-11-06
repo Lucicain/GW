@@ -15,8 +15,6 @@ namespace GreyWardenPolicePurity
     public sealed class GreyWardenLoreBehavior : CampaignBehaviorBase
     {
         private const float MetGreetingChance = 0.5f;
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
         private static string _lastGreetingConversationKey = string.Empty;
         private static bool _lastGreetingConversationResult;
 
@@ -101,7 +99,7 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(
                 GwpTextKeys.GreyLordGreeting,
-                BuildMetGreeting(PlayerState.Reputation));
+                BuildMetGreeting(PlayerBehaviorPool.Reputation));
             return true;
         }
 

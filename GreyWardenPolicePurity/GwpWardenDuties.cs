@@ -59,9 +59,9 @@ namespace GreyWardenPolicePurity
                 [WardenDuty.Duel] = PoliceEnforcementBehavior.IsPartyHeldForDuel,
                 [WardenDuty.VillageRelief] = GreyWardenVillageAdoptionBehavior.IsVillageReliefParty,
                 [WardenDuty.PlayerEscort] = party =>
-                    GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && (task.IsEscortingPlayer || task.IsPlayerBountyEscort),
+                    CrimePool.GetTask(party.StringId) is { } task && (task.IsEscortingPlayer || task.IsPlayerBountyEscort),
                 [WardenDuty.PlayerCase] = party =>
-                    GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && task.TargetCrimeId == CrimePool.PlayerCrimeId &&
+                    CrimePool.GetTask(party.StringId) is { } task && task.TargetCrimeId == CrimePool.PlayerCrimeId &&
                     !task.IsEscortingPlayer && !task.IsPlayerBountyEscort,
                 [WardenDuty.Assistance] = PoliceEnforcementBehavior.IsPartyOccupiedByAssistance,
                 [WardenDuty.Reconstruction] = GreyWardenVillageReconstructionBehavior.IsReconstructionParty,
@@ -69,7 +69,7 @@ namespace GreyWardenPolicePurity
                 [WardenDuty.Issue] = GreyWardenIssueResolutionBehavior.IsIssueDutyParty,
                 [WardenDuty.IssueReserve] = GreyWardenIssueResolutionBehavior.ShouldReserveFromOrdinaryCases,
                 [WardenDuty.OrdinaryCase] = party =>
-                    GwpRuntimeState.Crime.GetTask(party.StringId) is { } task && task.TargetCrimeId != CrimePool.PlayerCrimeId &&
+                    CrimePool.GetTask(party.StringId) is { } task && task.TargetCrimeId != CrimePool.PlayerCrimeId &&
                     !task.IsEscortingPlayer && !task.IsPlayerBountyEscort,
             };
 

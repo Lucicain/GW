@@ -173,7 +173,7 @@ namespace GreyWardenPolicePurity
                     _atonementPayment = null; _atonementTurnInOpened = false;
                 });
 
-            PlayerState.SetAtonementTaskActive(HasAtonementTask);
+            PlayerBehaviorPool.SetAtonementTaskActive(HasAtonementTask);
             TryRestoreAtonementQuestOnSessionStart();
         }
 
@@ -185,14 +185,14 @@ namespace GreyWardenPolicePurity
             if (!GwpCommon.IsGreyWardenClanParty(conversationParty)) return false;
             if (GwpCommon.IsPatrolParty(conversationParty)) return false;
 
-            PoliceTask? task = CrimeState.GetTask(conversationParty.StringId);
+            PoliceTask? task = CrimePool.GetTask(conversationParty.StringId);
             if (task == null) return false;
             if (task.TargetCrime?.Offender?.IsMainParty != true) return false;
             if (task.FlowState != PoliceTaskFlowState.Pursuit) return false;
 
             CrimeRecord crime = task.TargetCrime!;
             bool playerCase = crime.CrimeId == CrimePool.PlayerCrimeId;
-            int rep = PlayerState.Reputation;
+            int rep = PlayerBehaviorPool.Reputation;
             // The fine follows standing, so at zero or better there is nothing
             // lawful left to demand.  The patrol dialogue has always refused to
             // open in that case; this one did not, which is how a task that
@@ -314,7 +314,7 @@ namespace GreyWardenPolicePurity
         {
             if (HasAtonementTask) return false;
 
-            CrimeRecord? targetCrime = CrimeState.GetNearestNonPlayerFromAll(
+            CrimeRecord? targetCrime = CrimePool.GetNearestNonPlayerFromAll(
                 MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero);
             if (targetCrime == null || targetCrime.Offender == null || !targetCrime.Offender.IsActive)
                 return false;
@@ -341,7 +341,7 @@ namespace GreyWardenPolicePurity
                 "; deadline=" + _atonementDeadlineHours + "; reward=" + _atonementReputationReward);
 #endif
 
-            CrimeState.EndPlayerHunt();
+            CrimePool.EndPlayerHunt();
             if (_dialogPolice != null && _dialogPolice.IsActive)
             {
                 GreyWardenPartyDesireBehavior.ClearIntent(_dialogPolice);
@@ -387,8 +387,8 @@ namespace GreyWardenPolicePurity
                 "; police=" + (_dialogPolice?.StringId ?? "-"));
             int paid = PoliceResourceManager.CollectFine(_dialogFine);
 
-            PlayerState.ResetReputation(0);
-            CrimeState.EndPlayerHunt();
+            PlayerBehaviorPool.ResetReputation(0);
+            CrimePool.EndPlayerHunt();
 
             if (_dialogPolice != null && _dialogPolice.IsActive)
             {
@@ -571,7 +571,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                var task = CrimeState.GetTask(p.MobileParty.StringId);
+                var task = CrimePool.GetTask(p.MobileParty.StringId);
                 if (task != null &&
                     task.TargetCrime?.Offender?.IsMainParty == true &&
                     !task.WarDeclared &&

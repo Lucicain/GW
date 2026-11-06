@@ -27,7 +27,7 @@ namespace GreyWardenPolicePurity
         public GwpCaseArchiveScreen(GwpAffairsState state) { _state = state; }
         internal static bool IsOpen => Game.Current?.GameStateManager.ActiveState is GwpAffairsState;
         internal static bool CanOpen => Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>()
-            ?.IsRecruitedByGreyWardens == true && GwpRuntimeState.Player.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold;
+            ?.IsRecruitedByGreyWardens == true && PlayerBehaviorPool.Reputation >= GwpTuning.Bounty.RecruitmentReputationThreshold;
         public static void Show()
         {
             Open(false);

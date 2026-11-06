@@ -209,7 +209,7 @@ namespace GreyWardenPolicePurity
         {
             if (!HasAtonementTask) return;
 
-            PlayerState.SetAtonementTaskActive(true);
+            PlayerBehaviorPool.SetAtonementTaskActive(true);
             _awaitingAtonementQuestReconnect = true;
         }
 
@@ -283,10 +283,10 @@ namespace GreyWardenPolicePurity
                 GwpFieldReportLedger.Instance.DeclareAmount(delivered, offenderId: _atonementTargetHeroId);
             _atonementPayment = null;
             _atonementTurnInOpened = false;
-            int before = PlayerState.Reputation;
+            int before = PlayerBehaviorPool.Reputation;
             int after = before < 0 ? Math.Min(0, before + Math.Max(1, _atonementReputationReward)) : before;
             int gain = after - before;
-            PlayerState.ResetReputation(after);
+            PlayerBehaviorPool.ResetReputation(after);
             MakePeaceWithAtonementTargetFaction();
 
             _atonementQuest?.SucceedQuestWithReputation(gain, after);

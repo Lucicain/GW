@@ -216,7 +216,7 @@ namespace GreyWardenPolicePurity
             MobileParty? best = null;
             float bestDist = float.MaxValue;
 
-            foreach (MobileParty offender in CrimeState.GetAllTrackedOffenders(includePlayer: false))
+            foreach (MobileParty offender in CrimePool.GetAllTrackedOffenders(includePlayer: false))
             {
                 if (offender == null || !offender.IsActive) continue;
                 float dist = patrol.GetPosition2D.Distance(offender.GetPosition2D);
@@ -268,7 +268,7 @@ namespace GreyWardenPolicePurity
         {
             var result = new Dictionary<string, PoliceTask>(
                 StringComparer.OrdinalIgnoreCase);
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 if (task.FlowState != PoliceTaskFlowState.WarPursuit) continue;
                 if (task.TargetCrime?.HasOpenCase != true) continue;
@@ -824,7 +824,7 @@ namespace GreyWardenPolicePurity
                 if (state.IsEnvoy && !state.Returning)
                     continue;
 
-                if (PlayerBountyBehavior.AwaitingSupportRequest(CrimeState.GetTask(state.SourceTaskPolicePartyId))
+                if (PlayerBountyBehavior.AwaitingSupportRequest(CrimePool.GetTask(state.SourceTaskPolicePartyId))
                     || GwpPlayerCaseAssignment.IsReservedTarget(MobileParty.All.FirstOrDefault(p => p.StringId == state.TargetPartyId)))
                     state.Returning = true;
                 if (!state.Returning &&
@@ -899,7 +899,7 @@ namespace GreyWardenPolicePurity
             if (!state.IsImmediateInterceptor || policeClan == null)
                 return false;
 
-            PoliceTask? task = CrimeState.GetTask(
+            PoliceTask? task = CrimePool.GetTask(
                 state.SourceTaskPolicePartyId);
             MobileParty? offender = task?.TargetCrime?.Offender;
             if (PlayerBountyBehavior.AwaitingSupportRequest(task) || task?.IsPlayerBountyEscort != true || !task.WarDeclared ||
@@ -1216,7 +1216,7 @@ namespace GreyWardenPolicePurity
             if (string.IsNullOrEmpty(offenderId))
                 return;
 
-            foreach (var kv in CrimeState.ActiveTasks.ToList())
+            foreach (var kv in CrimePool.ActiveTasks.ToList())
             {
                 PoliceTask task = kv.Value;
                 if (!string.Equals(task.TargetCrime?.Offender?.StringId, offenderId, StringComparison.OrdinalIgnoreCase))
@@ -1227,7 +1227,7 @@ namespace GreyWardenPolicePurity
 
             // 未分派案件同样已经进入总卷；支援队实际击败目标并移除该条目时
             // 按一次灰袍完成结算。外部势力代打不会进入本方法，因此不拨款。
-            if (CrimeState.RemovePendingCrimeByOffenderId(offenderId))
+            if (CrimePool.RemovePendingCrimeByOffenderId(offenderId))
                 PoliceResourceManager.CreditSuccessfulCaseCompletion();
         }
 
@@ -1306,22 +1306,22 @@ namespace GreyWardenPolicePurity
         {
             MobileParty playerParty = MobileParty.MainParty;
             if (playerParty == null || !playerParty.IsActive) return;
-            if (PlayerState.Reputation > -11) return;
-            if (PlayerState.HasAtonementTask) return;
+            if (PlayerBehaviorPool.Reputation > -11) return;
+            if (PlayerBehaviorPool.HasAtonementTask) return;
 
-            if (!CrimeState.IsPlayerHunted)
+            if (!CrimePool.IsPlayerHunted)
             {
-                CrimeState.TryAddPlayerCrime(
+                CrimePool.TryAddPlayerCrime(
                     GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_003),
                     playerParty.GetPosition2D,
-                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_004, "VAR_1", PlayerState.Reputation));
+                    GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_delaypatrols_004, "VAR_1", PlayerBehaviorPool.Reputation));
             }
 
             MobileParty nearestPolice = FindNearestPolicePartyForPlayerCase(playerParty.GetPosition2D);
             if (nearestPolice == null) return;
 
             string nearestId = nearestPolice.StringId;
-            string currentPlayerPoliceId = CrimeState.GetPlayerTaskPolicePartyId() ?? string.Empty;
+            string currentPlayerPoliceId = CrimePool.GetPlayerTaskPolicePartyId() ?? string.Empty;
             if (string.Equals(currentPlayerPoliceId, nearestId, StringComparison.OrdinalIgnoreCase))
             {
                 GreyWardenPartyDesireBehavior.RequestImmediateRethink(nearestPolice);
@@ -1331,11 +1331,11 @@ namespace GreyWardenPolicePurity
             // 旧追捕方撤下，回去做常规执法；最近那位手上的普通案退回台账。
             if (!string.IsNullOrEmpty(currentPlayerPoliceId))
                 EndCaseTask(currentPlayerPoliceId, CaseTaskEnd.Released, "player_case_reassigned");
-            PoliceTask? nearestTask = CrimeState.GetTask(nearestId);
+            PoliceTask? nearestTask = CrimePool.GetTask(nearestId);
             if (nearestTask != null && nearestTask.TargetCrimeId != CrimePool.PlayerCrimeId)
                 EndCaseTask(nearestId, CaseTaskEnd.Released, "displaced_by_player_case");
 
-            if (!CrimeState.TryAssignPlayerCrimeToPolice(nearestId))
+            if (!CrimePool.TryAssignPlayerCrimeToPolice(nearestId))
                 return;
 
             // A newly assigned warrant must not inherit the previous case's

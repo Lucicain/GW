@@ -353,7 +353,7 @@ namespace GreyWardenPolicePurity
         {
             return GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
                    GwpCommon.IsPlayerGreyWardenMember() &&
-                   GwpRuntimeState.Player.Reputation >=
+                   PlayerBehaviorPool.Reputation >=
                        GwpTuning.TroopRequest.MinimumReputation &&
                    (PlayerTroopOrderStage)_orderStage ==
                        PlayerTroopOrderStage.None &&
@@ -369,7 +369,7 @@ namespace GreyWardenPolicePurity
 
         private void ShowTroopOrderInquiry(Action<TroopOrderChoice>? onChosen)
         {
-            int reputation = GwpRuntimeState.Player.Reputation;
+            int reputation = PlayerBehaviorPool.Reputation;
             int orderLimit = GetOrderLimit(reputation);
             var choices = new List<TroopOrderChoice>();
             foreach (TroopKind kind in TroopKinds.Where(kind =>

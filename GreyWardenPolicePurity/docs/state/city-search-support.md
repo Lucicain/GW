@@ -3,11 +3,11 @@
 > 当前状态：已接住城案件限制目标换城和重新领军，城内任务去留接入纯规则待实测；支援只经三个求援入口成立、接案撤回独立办案队、选兵时办案队单列锁定、黑甲只换已有盾与护甲；路上遇袭后补派与事务页办案队卡片经用户实测确认，其余待验收
 > 最后验收：2026-10-28用户实测确认办案队路上打完仗继续跟来、失队另派、事务页「灰袍搜捕队」卡片
 > 覆盖源码：`PlayerBountyBehavior.CitySearch.cs` `GwpCitySearchCasePolicy.cs` `GwpCitySearchBehavior.Support.cs` `GwpCitySearchBehavior.SupportDialogue.cs` `GwpCitySearchSupportOrigin.cs` `GwpCitySearchSupportSelection.cs` `PoliceEnforcementBehavior.CitySearch.cs` `GwpCityCaseMovementPatch.cs` `GreyWardenPolicePurity/Core/CitySupport/*.cs`
-> 待实测：已接案目标留在原城且不建队、结案或无人承接后解除、失踪或独立办案城转敌对时小队返程、同版存读接续；住城委托经对话/事务/本队灰袍兵求援后办案队跟来、领主本人不跟；选兵界面办案队单列带锁、占15人名额且清空/重置不掉；步兵/弓手/骑兵只换已有盾与护甲；同兵种本队与办案队伤亡各回各的名册；接案时独立办案队撤回；此前失队补派、纯AI收款、约斗结算与同版接续仍待验收
+> 待实测：同进程旧档转新档不残留案件留城限制；已接案目标留在原城且不建队、结案或无人承接后解除、失踪或独立办案城转敌对时小队返程、同版存读接续；住城委托经对话/事务/本队灰袍兵求援后办案队跟来、领主本人不跟；选兵界面办案队单列带锁、占15人名额且清空/重置不掉；步兵/弓手/骑兵只换已有盾与护甲；同兵种本队与办案队伤亡各回各的名册；接案时独立办案队撤回；此前失队补派、纯AI收款、约斗结算与同版接续仍待验收
 
 [现场搜捕](city-search.md) · [催缴使者](case-envoy.md) · [临时队归还](temporary-parties.md)
 
-已知缺陷：同一游戏进程里读过旧档再开新档时，原版开局的总督分配可能早于灰袍 `GwpRuntimeState.ResetForNewGame` 清空上局案卷，同 StringId 的领主若在上局有已接住城案，会被排除出开局那一次总督候选；之后每日重排正常。属于静态案卷在开新档前未清空的既有问题，未修。（依据：独立审查与原版事件注册顺序推断 2026-11-06，未实测）
+旧案卷影响新档总督候选的窗口已修：清空移至战役启动，早于新档分配；根因及归属见[战役状态生命周期](infrastructure.md#战役状态生命周期)。原版调用顺序已查实，真实同进程切档仍待核实。
 
 ## 每案一次
 

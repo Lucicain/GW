@@ -28,8 +28,6 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public partial class PolicePatrolBehavior : CampaignBehaviorBase
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
-        private static GwpRuntimeState.PlayerState PlayerState => GwpRuntimeState.Player;
 
         private readonly List<string> _activePatrolIds = new List<string>();
         private readonly List<string> _returningPatrolIds = new List<string>();
@@ -242,7 +240,7 @@ namespace GreyWardenPolicePurity
 
             if (_suppressPatrolMeetings) return false;
 
-            int rep = PlayerState.Reputation;
+            int rep = PlayerBehaviorPool.Reputation;
             if (rep >= 0) return false;
 
             // 计算罚款并设对话变量
@@ -351,7 +349,7 @@ namespace GreyWardenPolicePurity
                 "; patrol=" + (_dialogPatrol?.StringId ?? "-") +
                 "; activePatrols=" + _activePatrolIds.Count +
                 "; returningPatrols=" + _returningPatrolIds.Count);
-            PlayerState.ResetReputation(0);
+            PlayerBehaviorPool.ResetReputation(0);
             GwpPeace.SettlePlayerCase();
             EndDialogueAndDismissPatrols();
             GwpAiDiagnostics.WritePlayerJusticeState(
@@ -406,12 +404,12 @@ namespace GreyWardenPolicePurity
             if (_dayCounter < 2) return;
             _dayCounter = 0;
 
-            int rep = PlayerState.Reputation;
+            int rep = PlayerBehaviorPool.Reputation;
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "DAILY_PUNISHMENT_CHECK",
                 "reputation=" + rep +
-                "; playerWanted=" + PlayerState.IsWanted +
-                "; isPlayerHunted=" + CrimeState.IsPlayerHunted +
+                "; playerWanted=" + PlayerBehaviorPool.IsWanted +
+                "; isPlayerHunted=" + CrimePool.IsPlayerHunted +
                 "; activePatrols=" + _activePatrolIds.Count +
                 "; returningPatrols=" + _returningPatrolIds.Count +
                 "; bribeProtectionDays=" + _bribeProtectionDays);
@@ -423,11 +421,11 @@ namespace GreyWardenPolicePurity
                 ReturnAllPatrols();
 
                 // 取消所有针对玩家的警察通缉
-                if (CrimeState.IsPlayerHunted)
+                if (CrimePool.IsPlayerHunted)
                 {
                     foreach (var pp in PoliceStats.GetAllPoliceParties())
                     {
-                        var task = CrimeState.GetTask(pp.StringId);
+                        var task = CrimePool.GetTask(pp.StringId);
                         if (task?.TargetCrimeId == CrimePool.PlayerCrimeId)
                         {
                             GwpCommon.TryResetAi(pp);
@@ -435,7 +433,7 @@ namespace GreyWardenPolicePurity
                             GreyWardenPartyDesireBehavior.RequestImmediateRethink(pp);
                         }
                     }
-                    CrimeState.EndPlayerHunt();
+                    CrimePool.EndPlayerHunt();
                     GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                     InformationManager.DisplayMessage(new InformationMessage(
                         GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_027),
@@ -497,7 +495,7 @@ namespace GreyWardenPolicePurity
             // 低于-11：转为追捕状态，由正式警察接管
             else if (reputation <= -11)
             {
-                if (PlayerState.HasAtonementTask)
+                if (PlayerBehaviorPool.HasAtonementTask)
                     return;
 
                 // 解散纠察队（已超出管辖范围），交由正式警察处理
@@ -505,9 +503,9 @@ namespace GreyWardenPolicePurity
                     ReturnAllPatrols();
 
                 // 检查是否已发出通缉令
-                if (!CrimeState.IsPlayerHunted)
+                if (!CrimePool.IsPlayerHunted)
                 {
-                    CrimeState.TryAddPlayerCrime(
+                    CrimePool.TryAddPlayerCrime(
                         GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_029),
                         MobileParty.MainParty?.GetPosition2D ?? Vec2.Zero,
                         GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_030, "VAR_1", reputation));
@@ -566,7 +564,7 @@ namespace GreyWardenPolicePurity
             // 玩家拒绝且纠察队全部消失（未通过战斗解决）→ 额外扣分
             if (_playerRefused && _activePatrolIds.Count == 0)
             {
-                PlayerState.ChangeReputation(-1);
+                PlayerBehaviorPool.ChangeReputation(-1);
                 GwpPeace.Make(PoliceStats.GetPoliceClan(), Clan.PlayerClan?.MapFaction);
                 _playerRefused = false;
                 return;
@@ -588,7 +586,7 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
-            int rep = PlayerState.Reputation;
+            int rep = PlayerBehaviorPool.Reputation;
 
             // 只在 -1 到 -10 范围内工作
             if (rep >= 0 || rep <= -11)
@@ -924,12 +922,12 @@ namespace GreyWardenPolicePurity
                 mainParty.Party.SetVisualAsDirty();
             }
 
-            int rep = PlayerState.Reputation;
+            int rep = PlayerBehaviorPool.Reputation;
             int fine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
             int paid = CollectFine(fine);
             int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
             int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
-            PlayerState.ResetReputation(repAfter);
+            PlayerBehaviorPool.ResetReputation(repAfter);
 
             GwpPeace.SettlePlayerCase();
 

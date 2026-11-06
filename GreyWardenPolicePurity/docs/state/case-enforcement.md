@@ -2,7 +2,7 @@
 
 > 当前状态：本职就近接案与区域判断已部署；玩家住城旧案走进城搜捕，NPC住城旧案由独立办案队接入，已部署待验收
 > 最后验收：2026-10-18 用户反馈前轮开发未发现问题（工作树构建74d7c8c）；未逐项声明覆盖的边界仍待核对
-> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpRuntimeState.cs` `GwpEncyclopediaHeroPageVM.cs`
+> 覆盖源码：`PoliceEnforcementBehavior*.cs` `PoliceAIDeterrenceBehavior.cs` `GwpArmyExitDisorganizedPatch.cs` `GwpData.cs` `GwpPlayerCaseAssignment.cs` `GwpFieldArrestBehavior.cs` `GwpEncyclopediaHeroPageVM.cs`
 > 待实测：第三方击溃/俘虏或人物暂离后罪责与伤亡保留、恢复带队自动重选；普通改追与使者原目标独立；进城跟随和战后恢复目标均不强制开打；同版本存读冷却接续；本职最近接案、无信众村远案优先；双方驻城不新宣战，离城继续原追捕
 
 本文件覆盖**人物追责与承办生命周期**。巡逻、悬赏、使者送单、练兵分别见

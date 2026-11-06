@@ -11,7 +11,6 @@ namespace GreyWardenPolicePurity
 {
     internal static class GwpPoliceWarReasonService
     {
-        private static GwpRuntimeState.CrimeState CrimeState => GwpRuntimeState.Crime;
 
         private sealed class FactionReasonBucket
         {
@@ -93,7 +92,7 @@ namespace GreyWardenPolicePurity
             if (policeClan == null) return false;
             if (!FactionManager.IsAtWarAgainstFaction(policeClan, targetFaction)) return false;
 
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 if (TaskMaintainsFactionWar(task) && TaskMatchesFaction(task, targetFaction))
                     return true;
@@ -119,7 +118,7 @@ namespace GreyWardenPolicePurity
         {
             var buckets = new Dictionary<string, FactionReasonBucket>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (PoliceTask task in CrimeState.ActiveTasks.Values)
+            foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 if (!TaskMaintainsFactionWar(task)) continue;
 
