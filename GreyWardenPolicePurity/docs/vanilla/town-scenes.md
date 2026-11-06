@@ -21,6 +21,19 @@
 - **场景里站在哪**：城镇和城堡里，无部队的成年贵族（`HeroesWithoutParty`）一律在领主大厅 `lordshall`
   （`DefaultHeroAgentLocationModel.GetLocationForHero`）。城堡有中心（庭院）、领主大厅、地牢，**没有竞技场**。
 
+### 日常换城与重新带队
+
+2026-11-06 按 v1.4.8 源码复核：`HeroSpawnCampaignBehavior.OnHeroDailyTick` 对在役英雄走独立分支，符合
+`CanHeroMoveToAnotherSettlement` 就调用选城（最低分 10），再 `TeleportHeroAction.ApplyImmediateTeleportToSettlement`，
+没有大地图行军过程。每日 30% 的随机门槛属于逃亡/获释分支；普通在役无部队领主不能套用这个概率。
+
+资格排除玩家家族、要人、玩家本人、部队领袖、俘虏、禁用英雄、总督、有所属部队、流浪者、特殊职业和未成年人；
+当前聚落有比武或被围也不挪动，最后经 `Hero.CanMoveToSettlement` 的事件询问允许与否，任务可另行阻止。
+选城权重见上文；留原地只是乘三，仍可能选中别处，公式没有距离或旅行耗时项。因此城间突然变更位置属于该原版机制。
+
+另一路是家族日结的 `ConsiderSpawningLordParties`：空余名额与指挥资格满足后直接生成真实领主部队。
+此后英雄有 `PartyBelongedTo`，不再符合“无部队住城”的资格，和直接换城不是同一状态。城内搜捕需识别这两种变化。
+
 ## 原版城内玩法
 
 | 玩法 | 入口 | 要点 |
