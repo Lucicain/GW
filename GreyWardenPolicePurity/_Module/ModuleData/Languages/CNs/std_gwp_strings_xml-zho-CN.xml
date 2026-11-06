@@ -1060,7 +1060,7 @@
   <string id="gwp_terms_final_rogue" text="把这笔钱付了，我今天就没有拦你的理由。你还想赌上更多？" />
   <string id="gwp_terms_final_trade" text="交清了，回报时就不会还挂着一笔余款。" />
   <string id="gwp_fa_desire_cautious" text="先把武器放下。钱我照数交，没必要打这一仗。" />
-  <string id="gwp_fa_desire_merciful" text="已经够多人受苦了。罚金我全交，别再流血了。" />
+  <string id="gwp_fa_desire_merciful" text="罚金我照数交。另外，{GWP_REPAIR_VILLAGE}还是一片废墟，我带人去把它修起来。" />
   <string id="gwp_fa_desire_generous" text="罚金我不跟你讲价。{GWP_CASE_OFFER_AMOUNT} 第纳尔，只多不少，拿去。" />
   <string id="gwp_report_audit_found" text="灰袍查出你上交的账目短缺 {VAR_1} 第纳尔。" />
   <string id="gwp_case_false_payment" text="【撒谎】只收上来这些，剩下的他实在付不起。我们点一下。" />
@@ -1190,7 +1190,7 @@
   <string id="gwp_voice_success_plain_1" text="嗯，这一点你说服我了。" />
   <string id="gwp_voice_demand_payinfull_alt" text="照数付清就是了。把这件事了结吧。" />
   <string id="gwp_voice_demand_paytoavoidbattle_alt" text="先叫你的人别动。钱我照付，犯不着在这里死人。" />
-  <string id="gwp_voice_demand_payforpeace_alt" text="已经够多人受罪了。我把罚金付清，别再牵连别人。" />
+  <string id="gwp_voice_demand_payforpeace_alt" text="钱你拿去。{GWP_REPAIR_VILLAGE}那边，我亲自带人去修。" />
   <string id="gwp_voice_demand_paygenerously_alt" text="我做下的事，我认。{GWP_CASE_OFFER_AMOUNT} 第纳尔，你点一点。" />
   <string id="gwp_voice_demand_surrenderself_alt" text="钱得留着养活这些人。你要交差，就带我一个走。" />
   <string id="gwp_voice_demand_bribethewarden_alt" text="这份好处值 {GWP_BRIBE_AMOUNT} 第纳尔，比白跑一趟强。拿了，我们就把话说到这里。" />

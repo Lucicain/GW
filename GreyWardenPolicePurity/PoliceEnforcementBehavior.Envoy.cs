@@ -477,8 +477,10 @@ namespace GreyWardenPolicePurity
             double refusal = GwpNegotiationPolicy.RefusalChance(layerOne,
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
                 offender.GetTraitLevel(DefaultTraits.Generosity), wealth, fine);
+            Settlement? repairVillage = GwpOffenderAmendsBehavior.RepairableVillage(crime, offender);
             GwpOffenderDesire desire = GwpOffenderDesires.Roll(offender, fine, true,
-                target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0), out int share);
+                target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0),
+                repairVillage != null, out int share);
             bool listens = refusal < 0.55d;
             bool acknowledged = listens && GwpNegotiationResistance.SimulatePersuasion(
                 GwpNegotiationResistance.LayerOneReservations, layerOne, true, charm);
@@ -547,8 +549,11 @@ namespace GreyWardenPolicePurity
                     return;
             }
 
-            SettleThroughEnvoy(envoyCase, crime, envoy, offender, fine * share / 100,
+            int collected = SettleThroughEnvoy(envoyCase, crime, envoy, offender, fine * share / 100,
                 share >= 100 ? "envoy_paid_in_full" : "envoy_paid_share");
+            // 仁慈高：罚金收齐，使者照常复命；他自己带队去修村。使者只收现金，没收齐就不修。
+            if (desire == GwpOffenderDesire.RepairVillage && repairVillage != null && collected >= fine)
+                GwpOffenderAmendsBehavior.Begin(offender, repairVillage);
             if (desire == GwpOffenderDesire.DeedsOnly)
             {
                 if (target.MapEvent == null)
@@ -604,12 +609,14 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>他交钱了结。钱交给使者带回公库；他名下的账按实缴清，和玩家当面收钱一样。</summary>
-        private void SettleThroughEnvoy(EnvoyCase envoyCase, CrimeRecord crime, MobileParty envoy,
+        /// <returns>实际收到的现金。</returns>
+        private int SettleThroughEnvoy(EnvoyCase envoyCase, CrimeRecord crime, MobileParty envoy,
             Hero offender, int demanded, string reason)
         {
             int collected = CollectEnvoyFine(crime, envoy, offender, demanded);
             RecordEnvoyReport(envoyCase, reason == "envoy_paid_share" ? "paid_share" : "paid", collected);
             ResolveEnvoyCase(envoyCase, crime, true, reason + "_" + collected);
+            return collected;
         }
 
         private static int CollectEnvoyFine(CrimeRecord crime, MobileParty envoy, Hero offender, int demanded)
@@ -896,26 +903,15 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 留城等赛。灰袍领主靠欲望层的去城意图（外部意图压过案件追捕）；目标是原版领主，
-        /// 直接下令进城并停掉他自己的决策，比武了结或作废时由 <see cref="ReleaseDuelists"/> 放开。
-        /// 原版把停决策这一位存进存档（MobilePartyAi.DoNotMakeNewDecisions），读档后接得上。
+        /// 由 <see cref="GwpCommon.HoldPartyAt"/> 直接下令进城并停掉他自己的决策，比武了结或作废时由
+        /// <see cref="ReleaseDuelists"/> 放开。
         /// </summary>
         private static void HoldForDuel(MobileParty party, Settlement town, bool warden)
         {
             if (warden)
-            {
                 GreyWardenPartyDesireBehavior.RequestVisit(party, town, 8f);
-                return;
-            }
-            if (party.MapEvent != null) return;
-            // 他在别人军团里当成员：先离队去赴约，和原版成婚时离开军团同一个做法（MarriageAction）。
-            if (party.Army != null && party.Army.LeaderParty != party)
-                party.Army = null;
-            if (party.CurrentSettlement != town && party.TargetSettlement != town)
-            {
-                party.Ai.SetDoNotMakeNewDecisions(false);
-                party.SetMoveGoToSettlement(town, party.NavigationCapability, false);
-            }
-            party.Ai.SetDoNotMakeNewDecisions(true);
+            else
+                GwpCommon.HoldPartyAt(party, town);
         }
 
         private static void ReleaseDuelists(EnvoyCase envoyCase)

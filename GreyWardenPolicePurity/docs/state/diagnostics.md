@@ -100,6 +100,7 @@
 | 协力与使者：`ASSISTANCE_WAITING_FOR_ENVOY`（组长等使者结果没调人，案子或使者阶段变了才再写）、`ASSISTANCE_HELPER_CASE_KEPT` / `_PAUSED` / `_RESUMED`（协办人带着自己的案子入组、暂停、协力结束接着办）、`ASSISTANCE_MEMBER_LEFT`（协办人约了比武离组）、`ENVOY_REPORT`（每次谈判结果，带是否协办人） | 用户要监控军团效率：协力不再打断有使者的案子、协办人回来接着办（用户裁定 2026-10-16） | 用户确认协力与使者配合可用后退休健康路径 |
 | 宗教：`PRIEST_DISAPPEAR_BLOCKED`（原版本要按低势力删掉的祭司）、`PRIEST_HOME_RESTORED`（家乡村补回祭司）；`DAILY_VILLAGE` 的 `others`（其他要人职业:势力，没有祭司时也写） | 用户要监控宗教：家乡村祭司曾被原版删掉，比例不够再也来不了人（实机诊断 2026-10-16） | 用户确认信众村祭司稳定后退休 |
 | `GwpAiDiagnostics.WriteFaith`：AI 日志里的 `\| FIRESWORN \|` 行（stage 清单见本页「火誓者监控字段」） | 信众村经济整套待实测：用户试玩暂无明显 bug，传教次数拉平被缺兵村阻塞仍在核查；保留派队、村庄兵力与经济快照用于定位，完整验收范围尚未逐项确认 | 用户确认信众村经济可用后，删健康路径的事件行，每日快照一并删 |
+| `OFFENDER_AMENDS_BEGUN` / `OFFENDER_AMENDS_FINISHED`（FIELD_ARREST 行：谁去修哪座村、结束原因 rebuilt/never_arrived/village_not_ruined/village_hostile/party_gone/offender_gone） | 仁慈高修村新机制待正常游玩取证，归[野外执法](field-arrest.md) | 用户确认修村可用后退休；只在开始与结束各写一行 |
 | `ARMORY_BATTLE_KIT_MISSING`（FIRESWORN 行：持有者、部队、兵种、物品、品质、同物品账面数、已借出套数、战斗） | 已借出战斗配装在库存账里找不到，原版只断言不扣（实机 2026-11-06 一次），归 [军械库](firesworn-armory.md#自动结算战损与销队) | 根因闭合并修复后删除；只在异常时写 |
 | `WARDEN_KINGDOM_JOIN_BLOCKED` / `WARDEN_BELLUM_EXILE_EXCLUDED` | 新入国动作及内战流亡排除来源待观察，见 kingdom-membership.md | 新入国拦截验收后退休 |
 | `WARDEN_AUTO_EQUIPMENT_REJECTED` | 灰袍英雄每个实例最多一条，真实 RBM 候选已离线确认 | 实机进城装备保持确认后退休 |

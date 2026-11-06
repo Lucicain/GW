@@ -667,7 +667,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fa_desire_generous = "{=gwp_fa_desire_generous}I will not haggle over the fine. {GWP_CASE_OFFER_AMOUNT} denars - more than you asked, not less. Take it.";
         internal const string gwp_fa_desire_grace = "{=gwp_fa_desire_grace}Give me three days to raise the money. Come back then and I will answer for the payment.";
         internal const string gwp_fa_desire_haggle = "{=gwp_fa_desire_haggle}I will give you seven tenths of the fine. That is my offer.";
-        internal const string gwp_fa_desire_merciful = "{=gwp_fa_desire_merciful}Enough people have suffered. Take the full fine, and let there be no more bloodshed.";
+        internal const string gwp_fa_desire_merciful = "{=gwp_fa_desire_merciful}I will pay the fine in full. And {GWP_REPAIR_VILLAGE} still lies in ruins - I will take my men there and rebuild it.";
         internal const string gwp_fa_desire_payfull = "{=gwp_fa_desire_payfull}Very well. The full sum, and we are finished here.";
         internal const string gwp_fa_desire_rash = "{=gwp_fa_desire_rash}I have no time for accounts. {GWP_CASE_OFFER_AMOUNT} denars - take it and go.";
         internal const string gwp_fa_desire_surrender = "{=gwp_fa_desire_surrender}That silver is my men's wages. Take me instead - I ride with you, and they go home.";
@@ -1312,7 +1312,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_voice_demand_deedsonly_alt = "{=gwp_voice_demand_deedsonly_alt}Two fifths is all I will pay. I will kill the men I blame myself.";
         internal const string gwp_voice_demand_demandduel_alt = "{=gwp_voice_demand_demandduel_alt}Just you and me. You win, I pay the fine. I win, you leave empty-handed.";
         internal const string gwp_voice_demand_haggledown_alt = "{=gwp_voice_demand_haggledown_alt}Seven tenths is plenty. Think carefully about that offer.";
-        internal const string gwp_voice_demand_payforpeace_alt = "{=gwp_voice_demand_payforpeace_alt}Enough people have suffered. I will pay in full; leave the others out of it.";
+        internal const string gwp_voice_demand_payforpeace_alt = "{=gwp_voice_demand_payforpeace_alt}Take the money. As for {GWP_REPAIR_VILLAGE}, I will see it rebuilt with my own men.";
         internal const string gwp_voice_demand_paygenerously_alt = "{=gwp_voice_demand_paygenerously_alt}What I did, I own. {GWP_CASE_OFFER_AMOUNT} denars - count it.";
         internal const string gwp_voice_demand_payinfull_alt = "{=gwp_voice_demand_payinfull_alt}I will pay the assessed sum. Let us settle this.";
         internal const string gwp_voice_demand_paytoavoidbattle_alt = "{=gwp_voice_demand_paytoavoidbattle_alt}Tell your men to hold. I will pay in full; nobody needs to die here.";

@@ -24,10 +24,11 @@ namespace GreyWardenPolicePurity
     /// <remarks>使者收尾把它按整数存档（EnvoyCase.PendingDesire），成员的数值不能变。</remarks>
     internal enum GwpOffenderDesire
     {
-        /// <summary>勇武低、仁慈高：照数全缴，不作他想。</summary>
+        /// <summary>勇武低；仁慈高而没有可修的村：照数全缴，不作他想。</summary>
         PayInFull = 0,
         PayToAvoidBattle = 1,
-        PayForPeace = 2,
+        /// <summary>仁慈高：罚金照交，再带人去修本国一座废村（GwpOffenderAmendsBehavior）。</summary>
+        RepairVillage = 2,
         /// <summary>慷慨高：按罚金的 120% 交。</summary>
         PayGenerously = 3,
         /// <summary>荣誉高：钱留给部下，人跟你走。</summary>
@@ -52,16 +53,16 @@ namespace GreyWardenPolicePurity
         // One weighted pool of distinct tools; trait extremes do not own fixed outcomes.
         // sharePercent 是他这次肯交罚金的几成，莽撞的比例在这里一并抽定，整场谈判沿用。
         internal static GwpOffenderDesire Roll(Hero offender, int fine, bool canGrace, bool hasTroops,
-            out int sharePercent)
+            bool canRepair, out int sharePercent)
         {
             int[] weights = GwpNegotiationPolicy.Weights(
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
                 offender.GetTraitLevel(DefaultTraits.Valor), offender.GetTraitLevel(DefaultTraits.Calculating),
-                offender.GetTraitLevel(DefaultTraits.Generosity), offender.PartyBelongedTo == null ? offender.Gold : GwpAssetPayment.Wealth(offender, offender.PartyBelongedTo.Party), fine, hasTroops, canGrace);
+                offender.GetTraitLevel(DefaultTraits.Generosity), offender.PartyBelongedTo == null ? offender.Gold : GwpAssetPayment.Wealth(offender, offender.PartyBelongedTo.Party), fine, hasTroops, canGrace, canRepair);
             var choices = new[] { GwpOffenderDesire.PayInFull, GwpOffenderDesire.HaggleDown,
                 GwpOffenderDesire.CunningHalf, GwpOffenderDesire.SurrenderSelf, GwpOffenderDesire.DeedsOnly,
                 GwpOffenderDesire.BribeTheWarden, GwpOffenderDesire.DemandDuel, GwpOffenderDesire.RequestGrace,
-                GwpOffenderDesire.PayGenerously, GwpOffenderDesire.RashMost };
+                GwpOffenderDesire.PayGenerously, GwpOffenderDesire.RashMost, GwpOffenderDesire.RepairVillage };
             int roll = MBRandom.RandomInt(weights.Sum());
             GwpOffenderDesire result = choices[GwpNegotiationPolicy.SelectDesireIndex(weights, roll)];
             int shareRoll = result == GwpOffenderDesire.RashMost
@@ -94,7 +95,7 @@ namespace GreyWardenPolicePurity
         /// <summary>他拿钱了结、而且给的不少于罚金：不用讨价还价，直接数钱。</summary>
         internal static bool IsFullPayment(GwpOffenderDesire desire, int sharePercent) => sharePercent >= 100
             && (desire == GwpOffenderDesire.PayInFull || desire == GwpOffenderDesire.PayGenerously
-                || desire == GwpOffenderDesire.RashMost);
+                || desire == GwpOffenderDesire.RashMost || desire == GwpOffenderDesire.RepairVillage);
 
         /// <summary>固定比例的方案肯交几成；莽撞的比例随抽签另定。不拿钱了结的方案记 100，不进讨价还价。</summary>
         private static int FixedSharePercent(GwpOffenderDesire desire) =>
@@ -137,7 +138,7 @@ namespace GreyWardenPolicePurity
             {
                 GwpOffenderDesire.RequestGrace => GwpText.Create(GwpTextCatalog.gwp_fa_desire_grace),
                 GwpOffenderDesire.PayToAvoidBattle => GwpText.Create(GwpTextCatalog.gwp_fa_desire_cautious),
-                GwpOffenderDesire.PayForPeace => GwpText.Create(GwpTextCatalog.gwp_fa_desire_merciful),
+                GwpOffenderDesire.RepairVillage => GwpText.Create(GwpTextCatalog.gwp_fa_desire_merciful),
                 GwpOffenderDesire.PayGenerously => GwpText.Create(GwpTextCatalog.gwp_fa_desire_generous),
                 GwpOffenderDesire.SurrenderSelf =>
                     GwpText.Create(GwpTextCatalog.gwp_fa_desire_surrender),

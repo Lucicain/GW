@@ -234,6 +234,8 @@ namespace GreyWardenPolicePurity
             public const int DeedsOnlyTroopsKilled = 5;
             /// <summary>请宽限给的时间（玩家当面与灰袍使者相同）。</summary>
             public const double GraceHours = 72d;
+            /// <summary>仁慈高答应修村后，这么多小时还没到村就作罢（试玩值）；工期与到达距离沿用灰袍重建。</summary>
+            public const double AmendsTravelHours = 120d;
             /// <summary>每条要点最多几次说辞（玩家当面与灰袍使者相同）。</summary>
             public const int ArgumentsPerReservation = 4;
             /// <summary>第二层抗性：他打算对应的那项特质每一级加多少（性格至上，用户裁定 2026-10-15；数值为试玩值）。</summary>

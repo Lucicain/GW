@@ -61,7 +61,7 @@ namespace GreyWardenPolicePurity
                 case "demand_RequestGrace": return GwpText.Create(GwpTextCatalog.gwp_voice_grace_alt);
                 case "demand_PayInFull": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_payinfull_alt);
                 case "demand_PayToAvoidBattle": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_paytoavoidbattle_alt);
-                case "demand_PayForPeace": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_payforpeace_alt);
+                case "demand_RepairVillage": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_payforpeace_alt);
                 case "demand_PayGenerously": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_paygenerously_alt);
                 case "demand_SurrenderSelf": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_surrenderself_alt);
                 case "demand_BribeTheWarden": return GwpText.Create(GwpTextCatalog.gwp_voice_demand_bribethewarden_alt);

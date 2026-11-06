@@ -521,7 +521,7 @@ namespace GreyWardenPolicePurity
             GreyWardenPartyDesireBehavior.RequestVisit(police, village, 10f);
         }
 
-        private static bool IsLootedVillage(Settlement? settlement)
+        internal static bool IsLootedVillage(Settlement? settlement)
         {
             return settlement?.IsVillage == true &&
                    (settlement.SettlementComponent as Village)?.VillageState ==

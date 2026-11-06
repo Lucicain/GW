@@ -9,15 +9,15 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
         [Fact]
         public void NeutralSolventOffenderKeepsExistingProposalWeights()
         {
-            Assert.Equal(new[] { 5, 3, 1, 1, 0, 0, 1, 1, 0, 0 },
-                GwpNegotiationPolicy.Weights(0, 0, 0, 0, 0, 1000, 1000, true, true));
+            Assert.Equal(new[] { 5, 3, 1, 1, 0, 0, 1, 1, 0, 0, 0 },
+                GwpNegotiationPolicy.Weights(0, 0, 0, 0, 0, 1000, 1000, true, true, false));
         }
 
         [Fact]
         public void GenerosityFeedsItsOwnProposalInsteadOfPlainFullPayment()
         {
             // 用户裁定 2026-11-06：慷慨高单独成一种打算（按罚金 120% 交），不再并进照数全缴。
-            int[] weights = GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, 1200, 1000, true, true);
+            int[] weights = GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, 1200, 1000, true, true, false);
             Assert.Equal(5, weights[0]);
             Assert.Equal(8, weights[8]);
         }
@@ -27,7 +27,7 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
         [InlineData(1200, 8)]
         public void GenerousNeedsTheExtraFifthOnHand(int gold, int expected)
         {
-            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, gold, 1000, true, true)[8]);
+            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, gold, 1000, true, true, false)[8]);
         }
 
         [Theory]
@@ -35,7 +35,19 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
         [InlineData(1, 8)]
         public void RashNeedsSomethingToHandOver(int gold, int expected)
         {
-            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, -2, 0, gold, 1000, true, true)[9]);
+            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, -2, 0, gold, 1000, true, true, false)[9]);
+        }
+
+        [Theory]
+        [InlineData(true, 1000, 10, 5)]   // 有村可修、交得起：仁慈整份移到修村。
+        [InlineData(false, 1000, 0, 15)]  // 没有可修的村：仁慈仍落在照数全缴。
+        [InlineData(true, 999, 0, 15)]    // 交不起罚金不答应修村（罚金照交是前提）。
+        public void MercyRepairsTheVillageOnlyWhenItCanAlsoPayTheFine(bool canRepair, int gold, int repair, int full)
+        {
+            // 用户裁定 2026-11-06、2026-11-07：仁慈高罚金照交，再带人去修本国的废村。
+            int[] weights = GwpNegotiationPolicy.Weights(0, 2, 0, 0, 0, gold, 1000, true, true, canRepair);
+            Assert.Equal(repair, weights[10]);
+            Assert.Equal(full, weights[0]);
         }
 
         [Theory]
@@ -76,9 +88,10 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
             for (int valor = -2; valor <= 2; valor++)
             for (int calculating = -2; calculating <= 2; calculating++)
             for (int generosity = -2; generosity <= 2; generosity++)
+            foreach (bool canRepair in new[] { false, true })
             {
                 int[] weights = GwpNegotiationPolicy.Weights(honor, mercy, valor, calculating,
-                    generosity, 1000, 1000, true, true);
+                    generosity, 1000, 1000, true, true, canRepair);
                 int[] before = (int[])weights.Clone();
                 int total = 0;
                 foreach (int weight in weights)
@@ -101,7 +114,7 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
         [InlineData(1000, 1000)]
         public void UnavailableProposalsNeverEnterThePool(int gold, int fine)
         {
-            int[] weights = GwpNegotiationPolicy.Weights(1, -2, 2, 2, -2, gold, fine, false, false);
+            int[] weights = GwpNegotiationPolicy.Weights(1, -2, 2, 2, -2, gold, fine, false, false, false);
             Assert.Equal(0, weights[2]); // 有荣誉的人不骗一道。
             Assert.Equal(0, weights[4]); // 没有兵不能拿兵出气。
             Assert.Equal(0, weights[5]); // 有荣誉的人不行贿。

@@ -348,6 +348,24 @@ namespace GreyWardenPolicePurity
         }
 
 
+        /// <summary>
+        /// 让一支原版领主部队去某个聚落并停在那里，直到 <see cref="TryResetAi"/> 放开。
+        /// 军团成员先离队，和原版成婚时离开军团同一个做法（MarriageAction）；原版把停决策这一位存进存档，
+        /// 读档后接得上。他正在打仗时不动名册与命令，下次再调。
+        /// </summary>
+        public static void HoldPartyAt(MobileParty party, Settlement settlement)
+        {
+            if (party.MapEvent != null) return;
+            if (party.Army != null && party.Army.LeaderParty != party)
+                party.Army = null;
+            if (party.CurrentSettlement != settlement && party.TargetSettlement != settlement)
+            {
+                party.Ai.SetDoNotMakeNewDecisions(false);
+                party.SetMoveGoToSettlement(settlement, party.NavigationCapability, false);
+            }
+            party.Ai.SetDoNotMakeNewDecisions(true);
+        }
+
         public static void TryResetAi(MobileParty? party)
         {
             if (party == null || !party.IsActive) return;

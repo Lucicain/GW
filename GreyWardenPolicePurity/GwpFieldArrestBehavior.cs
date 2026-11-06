@@ -12,6 +12,7 @@ using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Conversation.Persuasion;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -46,6 +47,8 @@ namespace GreyWardenPolicePurity
         private GwpOffenderDesire _desire;
         // 他这次肯交罚金的几成；莽撞的比例在抽打算时一并定下，整场谈判沿用。
         private int _share = 100;
+        // 仁慈高要去修的那座村（GwpOffenderAmendsBehavior）；没有可修的村时为空。
+        private Settlement? _repairVillage;
         private bool _enforcementAccepted;
         private bool _paymentAccepted;
         private PersuasionTask? _lastArgumentTask;
@@ -356,9 +359,10 @@ namespace GreyWardenPolicePurity
             if (_crime == null || _offender == null) return;
             _fine = CalculateFine(_crime);
             _share = 100;
+            _repairVillage = GwpOffenderAmendsBehavior.RepairableVillage(_crime, _offender);
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
                 CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true,
-                out _share);
+                _repairVillage != null, out _share);
             (float ours, float theirs) = FieldBalance();
             int resistance = LayerOneResistance();
             double refusalChance = GwpNegotiationPolicy.RefusalChance(resistance,
@@ -379,6 +383,7 @@ namespace GreyWardenPolicePurity
         private bool DemandCondition()
         {
             MBTextManager.SetTextVariable("GWP_BRIBE_AMOUNT", BribeOffer);
+            MBTextManager.SetTextVariable("GWP_REPAIR_VILLAGE", _repairVillage?.Name ?? TextObject.GetEmpty());
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestDemand, GwpOffenderDesires.IsFullPayment(_desire, _share) && AvailableProperty < EnsureFine()
                     ? GwpText.Create(GwpTextCatalog.gwp_case_purse_short, "VAR_1", AvailableProperty)
@@ -914,7 +919,11 @@ namespace GreyWardenPolicePurity
             _collection = null;
             if (!_collectionFull && _desire == GwpOffenderDesire.BribeTheWarden) { BribeConsequence(paid, receipt); return; }
             if (!_collectionFull && _desire == GwpOffenderDesire.DeedsOnly) PunishOwnMen();
+            // Settle 收尾会清掉本场谈判状态，修村的人和村子先记下；罚金收齐才去修村。
+            Hero? repairer = _desire == GwpOffenderDesire.RepairVillage && paid >= EnsureFine() ? _offender : null;
+            Settlement? village = _repairVillage;
             Settle(paid, "SETTLED_COLLECTION", paid, _collectionWasBroke, receipt);
+            if (repairer != null && village != null) GwpOffenderAmendsBehavior.Begin(repairer, village);
         }
 
         /// <summary>谈崩之后玩家选择照他的方案办。</summary>
@@ -1238,6 +1247,7 @@ namespace GreyWardenPolicePurity
             _fine = 0;
             _desire = GwpOffenderDesire.PayInFull;
             _share = 100;
+            _repairVillage = null;
         }
 
         #endregion
