@@ -1,4 +1,5 @@
-﻿using System;
+using GreyWardenPolicePurity.Core.Negotiation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -57,18 +58,13 @@ namespace GreyWardenPolicePurity
                 GwpOffenderDesire.CunningHalf, GwpOffenderDesire.SurrenderSelf, GwpOffenderDesire.DeedsOnly,
                 GwpOffenderDesire.BribeTheWarden, GwpOffenderDesire.DemandDuel, GwpOffenderDesire.RequestGrace };
             int roll = MBRandom.RandomInt(weights.Sum());
-            for (int i = 0; i < choices.Length; i++)
-            {
-                roll -= weights[i];
-                if (roll < 0)
-                {
-                    GwpAiDiagnostics.WriteFieldArrest("TOOLBOX_CHOICE", "offender=" + offender.StringId
-                        + "; gold=" + offender.Gold + "; fine=" + fine + "; weights=" + string.Join(",", weights)
-                        + "; result=" + choices[i]);
-                    return choices[i];
-                }
-            }
-            return GwpOffenderDesire.PayInFull;
+            GwpOffenderDesire result = choices[GwpNegotiationPolicy.SelectDesireIndex(weights, roll)];
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteFieldArrest("TOOLBOX_CHOICE", "offender=" + offender.StringId
+                + "; gold=" + offender.Gold + "; fine=" + fine + "; weights=" + string.Join(",", weights)
+                + "; roll=" + roll + "; result=" + result);
+#endif
+            return result;
         }
 
         /// <summary>仁慈低的附带动作：他不认那些死掉的村民，转手杀几个自己的兵出气。返回杀了几个。</summary>

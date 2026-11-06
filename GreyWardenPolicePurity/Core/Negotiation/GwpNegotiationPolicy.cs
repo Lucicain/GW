@@ -1,15 +1,15 @@
-﻿using System;
+using System;
 
-namespace GreyWardenPolicePurity
+namespace GreyWardenPolicePurity.Core.Negotiation
 {
     // Pure policy: the index order is full, bargain, deception, surrender,
     // sacrifice, bribe, duel, grace. Personality changes odds, not guarantees.
-    internal static class GwpNegotiationPolicy
+    public static class GwpNegotiationPolicy
     {
-        internal static float SuccessChance(float nativeChance, int resistance, bool firstLayer) =>
+        public static float SuccessChance(float nativeChance, int resistance, bool firstLayer) =>
             Math.Max(0.05f, Math.Min(0.95f, nativeChance + (50 - resistance) * (firstLayer ? 0.01f : 0.008f)));
         private static int Pos(int n) => Math.Max(0, n);
-        internal static int[] Weights(int honor, int mercy, int valor, int calculating,
+        public static int[] Weights(int honor, int mercy, int valor, int calculating,
             int generosity, int gold, int fine, bool hasTroops, bool canGrace)
         {
             // 打算按性格抽，家当不再给某个方案加权（用户裁定 2026-10-15）；下面只剩"做不做得到"的排除。
@@ -34,7 +34,20 @@ namespace GreyWardenPolicePurity
             return w;
         }
 
-        internal static double RefusalChance(int resistance, int honor, int mercy,
+        /// <summary>按已有权重和一次实际抽签值选择方案下标，区间为左闭右开。</summary>
+        public static int SelectDesireIndex(int[] weights, int roll)
+        {
+            if (roll < 0) throw new ArgumentOutOfRangeException(nameof(roll));
+            int remaining = roll;
+            for (int index = 0; index < weights.Length; index++)
+            {
+                remaining -= weights[index];
+                if (remaining < 0) return index;
+            }
+            throw new ArgumentOutOfRangeException(nameof(roll), roll, "抽签值超出方案总权重。");
+        }
+
+        public static double RefusalChance(int resistance, int honor, int mercy,
             int generosity, int gold, int fine)
         {
             // A well-disposed, solvent lord always hears the charge, even when
@@ -44,7 +57,7 @@ namespace GreyWardenPolicePurity
             return Math.Max(0, Math.Min(0.8, (resistance - 45) / 65.0));
         }
 
-        internal static float PurseResistance(int gold, int fine)
+        public static float PurseResistance(int gold, int fine)
         {
             float affordability = Math.Min(2f, Math.Max(0, gold) / (float)Math.Max(1, fine));
             return (1f - affordability) * 10f;

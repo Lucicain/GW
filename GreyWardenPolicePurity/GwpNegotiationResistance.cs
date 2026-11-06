@@ -1,4 +1,5 @@
-﻿using System;
+using GreyWardenPolicePurity.Core.Negotiation;
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Conversation.Persuasion;
@@ -9,7 +10,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 两层谈判的抗性与掷骰，读游戏里的人物和状态。纯数字的规则留在 <see cref="GwpNegotiationPolicy"/>
-    /// （它也编进脱离游戏的 CaseSettlement.Tests，所以不能引用引擎类型）。玩家当面谈和灰袍使者谈都调这里。
+    /// （同一份源码编入 Core，独立验证时不引用游戏 DLL）。玩家当面谈和灰袍使者谈都调这里。
     /// </summary>
     internal static class GwpNegotiationResistance
     {

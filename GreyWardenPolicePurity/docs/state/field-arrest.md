@@ -1,9 +1,9 @@
-﻿# 野外执法：肯不肯谈、两层谈判、兑现方式与结案
+# 野外执法：肯不肯谈、两层谈判、兑现方式与结案
 
 > 当前状态：强捕进入菜单、确认敌对及原版援军收集时序已反编译核对，援战缺口未修；已部署的俘虏排除和和平投案保持
 > 最后验收：`04ff2d6`（2026-10-02 用户确认）
-> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GwpNegotiationPolicy.cs` `GwpNegotiationResistance.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
-> 待实测：对方的打算更看性格，有钱的领主不再多半照数全缴；第二层更难谈（实力差不再进第二层），性格越极端越难
+> 覆盖源码：`GwpFieldArrestBehavior.cs` `GwpFieldArrestBehavior.Grace.cs` `GwpFieldArrestLines.cs` `GreyWardenPolicePurity/Core/Negotiation/*.cs` `GwpNegotiationResistance.cs` `GwpOffenderDesire.cs` `GwpNegotiationChancePatch.cs` `GwpFieldDialogueVoice.cs` `GwpFieldCollectionBarterable.cs` `GwpFieldFineBarterable.cs` `GwpBribeBarterable.cs` `GwpDuelOpponentMarkerPatch.cs`
+> 待实测：本批数值分层尚未部署，部署后由agent核对实际抽签记录与谈判接续；对方的打算更看性格，有钱的领主不再多半照数全缴；第二层更难谈（实力差不再进第二层），性格越极端越难
 
 玩家在野外拦下自己承办的罪犯之后的全部流程。罚金定价见 [`crime-intake.md`](crime-intake.md)；
 交差、查账见 [`player-justice.md`](player-justice.md)。
@@ -81,6 +81,8 @@
 原版领主家当动辄是罚金的几十倍，「有钱就照数全缴」让性格几乎不起作用）；家当只用来排除做不到的方案：
 身无分文不会讨价还价、塞私钱、拿兵出气，交不起罚金的不会骗一道。性格极端只是更可能抽到某个方案，不会锁死结果。
 [灰袍使者](case-envoy.md) 抽到什么就照办，第二层只在交钱的方案上讨价还价。
+
+数值规则与按权重选择集中在 Core 的同一份生产源码。游戏层读取人物与家当并调用一次原版随机数，再把实际抽签值传给规则，玩家交涉和使者共用此入口。诊断 TOOLBOX_CHOICE 同时记录权重、原始抽签值及结果，可直接核对该次区间选择。规则测试覆盖零权重、区间边界、不可用选项和抽签次数守恒，真实谈判执行仍待正常游玩取证。（依据：已授权优化方案实施 2026-11-06）
 
 | 方案 | 主要来自 | 他肯给 |
 |---|---|---|
