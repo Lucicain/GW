@@ -12,7 +12,7 @@
 | gwp_clan_intro | We are the Grey Wardens, bound by Heaven's commandments to watch over these lands. The order answers to no lord. We pursue those who raid villages or attack travellers, whoever they serve. | 我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。 | 首次相识时的灰袍组织介绍，来自comment_strings.xml。 |
 | gwp_clan_name | Grey Wardens | 灰袍守卫 | 家族百科与名牌的组织名，保留。 |
 | gwp_clan_short_name | Grey Wardens | 灰袍 | 家族百科与名牌的组织名，保留。 |
-| gwp_common_garrison | garrison | 驻地点 | PolicePatrolBehavior.cs:903 |
+| gwp_common_garrison | garrison | 驻地点 | PolicePatrolBehavior.cs:847 |
 | gwp_common_understood | Understood | 知道了 | PlayerBountyBehavior.cs:171 |
 | gwp_common_unknown_target | Unknown target | 未知目标 | PlayerBountyBehavior.cs:865, PlayerBountyBehavior.QuestAndNotification.cs:78, PoliceEnforcementBehavior.AtonementQuest.cs:103 |
 | gwp_crime_aid_criminals | Aiding malefactors against the Grey Wardens | 帮助罪犯对抗灰袍守卫 | GwpText.cs:51 |
@@ -209,17 +209,9 @@
 | gwp_gwppolicewarreasonservice_039 | — | 刚刚 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_040 | — | {VAR_1} 小时前 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_041 | — | {VAR_1} 天前 | 未检出直接引用；保留 |
-| gwp_gwppolicewarreasonservice_042 | Near {VAR_1} ({VAR_2}, {VAR_3}) | {VAR_1}附近 ({VAR_2}, {VAR_3}) | GwpPoliceWarReasonService.cs:341 |
-| gwp_gwppolicewarreasonservice_043 | wild ({VAR_1}, {VAR_2}) | 野外 ({VAR_1}, {VAR_2}) | GwpPoliceWarReasonService.cs:343 |
 | gwp_gwppolicewarreasonservice_044 | — | {VAR_1} 小时 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_045 | — | {VAR_1} 天 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_046 | — | {VAR_1} 天 {VAR_2} 小时 | 未检出直接引用；保留 |
-| gwp_gwppolicewarreasonservice_047 | spring | 春 | GwpPoliceWarReasonService.cs:351 |
-| gwp_gwppolicewarreasonservice_048 | Summer | 夏 | GwpPoliceWarReasonService.cs:352 |
-| gwp_gwppolicewarreasonservice_049 | Autumn | 秋 | GwpPoliceWarReasonService.cs:353 |
-| gwp_gwppolicewarreasonservice_050 | Winter | 冬 | GwpPoliceWarReasonService.cs:354 |
-| gwp_gwppolicewarreasonservice_051 | Unknown season | 未知季 | GwpPoliceWarReasonService.cs:355 |
-| gwp_gwppolicewarreasonservice_052 | Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00 | {VAR_1}年{VAR_2}季第{VAR_3}天 {VAR_4}:00 | GwpPoliceWarReasonService.cs:358 |
 | gwp_hero_chenxi | Eadgifu | 晨曦 | GreyWardenFamilyBehavior.cs:53, _Module/ModuleData/spspecialcharacters.xml |
 | gwp_hero_mise | Mildthryth | 弥瑟 | GreyWardenFamilyBehavior.cs:51, _Module/ModuleData/spspecialcharacters.xml |
 | gwp_hero_muguang | Wulfhild | 暮光 | GreyWardenFamilyBehavior.cs:54, _Module/ModuleData/spspecialcharacters.xml |
@@ -254,7 +246,7 @@
 | gwp_item_sword_2h | Grey Warden Greatsword | 灰袍守护者双手剑 | _Module/ModuleData/items.xml |
 | gwp_item_winged_helmet | Grey Warden Winged Helm | 灰袍守护者翼盔 | _Module/ModuleData/items.xml |
 | gwp_patrol_barter_name_cn | penalty clause | 罚金条款 | GwpBribeBarterable.cs:33 |
-| gwp_patrol_returning_dialogue | This patrol has rendered its account and is returning to quarters. No further hearing will be held. | 本轮案卷已结，纠察队正奉命返回驻地。此刻不再受理交涉。 | PolicePatrolBehavior.cs:132 |
+| gwp_patrol_returning_dialogue | This patrol has rendered its account and is returning to quarters. No further hearing will be held. | 本轮案卷已结，纠察队正奉命返回驻地。此刻不再受理交涉。 | PolicePatrolBehavior.cs:106 |
 | gwp_playerbehaviormonitor_001 | — | 村民 | 未检出直接引用；保留 |
 | gwp_playerbehaviormonitor_002 | — | 攻击村民 | 未检出直接引用；保留 |
 | gwp_playerbehaviormonitor_003 | — | 商队 | 未检出直接引用；保留 |
@@ -429,15 +421,11 @@
 | gwp_playerbountybehavior_questandnotification_009 | — | 该悬赏目标已失效 | 未检出直接引用；保留 |
 | gwp_policeantirecruitmentmodel_001 | The Grey Wardens do not declare wars for territorial expansion. | 灰袍不为争夺领土开战。 | PoliceAntiRecruitmentModel.cs:53 |
 | gwp_policecrimemonitorenhanced_001 | Villager | 村民 | PoliceCrimeMonitorEnhanced.cs:362 |
-| gwp_policecrimemonitorenhanced_002 | Attack villager | 攻击村民 | PoliceCrimeMonitorEnhanced.cs:365 |
-| gwp_policecrimemonitorenhanced_003 | Attack villager | 攻击村民 | PoliceCrimeMonitorEnhanced.cs:368 |
-| gwp_policecrimemonitorenhanced_004 | Caravan | 商队 | PoliceCrimeMonitorEnhanced.cs:375 |
-| gwp_policecrimemonitorenhanced_005 | Attack caravan | 攻击商队 | PoliceCrimeMonitorEnhanced.cs:377 |
-| gwp_policecrimemonitorenhanced_006 | Attack caravan | 攻击商队 | PoliceCrimeMonitorEnhanced.cs:379 |
-| gwp_policecrimemonitorenhanced_007 | {VAR_1} Villager | {VAR_1}村的村民 | PoliceCrimeMonitorEnhanced.cs:409 |
-| gwp_policecrimemonitorenhanced_008 | Raid village (start) | 劫掠村庄(开始) | PoliceCrimeMonitorEnhanced.cs:411 |
-| gwp_policecrimemonitorenhanced_009 | Village={VAR_1} | 村庄={VAR_1} | PoliceCrimeMonitorEnhanced.cs:411 |
-| gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:413 |
+| gwp_policecrimemonitorenhanced_003 | Attack villager | 攻击村民 | PoliceCrimeMonitorEnhanced.cs:365 |
+| gwp_policecrimemonitorenhanced_004 | Caravan | 商队 | PoliceCrimeMonitorEnhanced.cs:372 |
+| gwp_policecrimemonitorenhanced_006 | Attack caravan | 攻击商队 | PoliceCrimeMonitorEnhanced.cs:374 |
+| gwp_policecrimemonitorenhanced_007 | {VAR_1} Villager | {VAR_1}村的村民 | PoliceCrimeMonitorEnhanced.cs:404 |
+| gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:406 |
 | gwp_policeenforcementbehavior_001 | The time allowed for your atonement has expired. | 赎罪期限已过。 | PoliceEnforcementBehavior.cs:184 |
 | gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | 未检出直接引用；保留 |
 | gwp_policeenforcementbehavior_003 | The case against {VAR_1} has been dealt with. Report to a Warden lord. | {VAR_1}的案件已处置，回去向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:66 |
@@ -497,55 +485,43 @@
 | gwp_enforcement_companion_pay | Pay this companion's fine ({VAR_1} denars) | 替这名同伴缴纳罚金（{VAR_1} 金） | PoliceEnforcementBehavior.Dialogue.cs:256 |
 | gwp_enforcement_companion_paid | {VAR_1} has paid the fine of {VAR_2} denars. The case is closed. | {VAR_1}已缴清罚金 {VAR_2} 第纳尔，案件了结。 | PoliceEnforcementBehavior.Dialogue.cs:292 |
 | gwp_enforcement_companion_leave | I cannot settle this companion's case now. | 我现在无法替这名同伴结案。 | PoliceEnforcementBehavior.Dialogue.cs:137 |
-| gwp_policepatrolbehavior_001 | A return order has been issued, waiting to be destroyed upon arrival at the settlement. | 已下发返程命令，等待到达定居点后销毁 | PolicePatrolBehavior.cs:79 |
-| gwp_policepatrolbehavior_002 | has been scheduled: Destroy the pickets after returning to the settlement. | 已调度：返程至驻地后销毁纠察队 | PolicePatrolBehavior.cs:86 |
-| gwp_policepatrolbehavior_003 | According to the Grey Wardens decree, the formal fine must be paid first. | 按灰袍法令，先把正式罚金缴清。 | PolicePatrolBehavior.cs:161 |
-| gwp_policepatrolbehavior_004 | Penalty confirmation. This round of cases is concluded. | 罚金确认。本轮案件到此结案。 | PolicePatrolBehavior.cs:179 |
-| gwp_policepatrolbehavior_005 | Your bid is less than the formal penalty. You can continue bidding, or refuse enforcement. | 你的出价低于正式罚金。你可以继续出价，或拒绝执法。 | PolicePatrolBehavior.cs:188 |
-| gwp_policepatrolbehavior_006 | Yes, quote your release price. | 可以，报出你的放行价码。 | PolicePatrolBehavior.cs:207 |
-| gwp_policepatrolbehavior_007 | That will do. You may go. | 够了。你可以走了。 | PolicePatrolBehavior.cs:225 |
-| gwp_policepatrolbehavior_008 | That is not enough. Lay down your weapons! | 这点钱可不够。放下武器！ | PolicePatrolBehavior.cs:234 |
-| gwp_policepatrolbehavior_009 | I refuse enforcement. | 我拒绝执法。 | PolicePatrolBehavior.cs:244 |
-| gwp_policepatrolbehavior_010 | Refusal to Enforcement Recorded. Pickets, make arrests! | 拒绝执法已记录。纠察队，执行抓捕！ | PolicePatrolBehavior.cs:254 |
-| gwp_policepatrolbehavior_011 | The return trip is being suppressed and refuses to enter the picket dialogue again. | 返程抑制中，拒绝再次进入纠察队对话 | PolicePatrolBehavior.cs:271 |
-| gwp_policepatrolbehavior_012 | Enter the picket dialogue: party={VAR_1}, rep={VAR_2}, fine={VAR_3} | 进入纠察队对话：party={VAR_1}, rep={VAR_2}, fine={VAR_3} | PolicePatrolBehavior.cs:294 |
-| gwp_policepatrolbehavior_013 | You carry {VAR_1} denars, enough to pay in full. | 你当前携带 {VAR_1} 金，可直接缴清。 | PolicePatrolBehavior.cs:297 |
-| gwp_policepatrolbehavior_014 | You carry {VAR_1} denars. You may raise your offer at the table or refuse the order. | 你当前携带 {VAR_1} 金，可在谈判界面继续出价或选择拒绝。 | PolicePatrolBehavior.cs:298 |
-| gwp_policepatrolbehavior_015 | Stand! This provost patrol acts under warrant. Your standing is {VAR_1}; the lawful fine is {VAR_2} denars. {VAR_3} | 站住！纠察队正在执法。你当前负声望 {VAR_1}，正式罚金 {VAR_2} 金。{VAR_3} | PolicePatrolBehavior.cs:301 |
-| gwp_policepatrolbehavior_016 | Pay the lawful fine ({VAR_1} denars; end this pursuit) | 缴纳正式罚金（{VAR_1} 金，结束本轮追捕） | PolicePatrolBehavior.cs:321 |
-| gwp_policepatrolbehavior_017 | Negotiate passage ({VAR_1} denars sought; standing unchanged) | 谈判放行（目标 {VAR_1} 金，声望不变） | PolicePatrolBehavior.cs:330 |
-| gwp_policepatrolbehavior_018 | You refuse to submit. The patrol will take you by force. | 你拒绝伏法，纠察队将强行缉拿。 | PolicePatrolBehavior.cs:358 |
-| gwp_policepatrolbehavior_019 | Pay the facilitation fee | 缴纳通融费 | PolicePatrolBehavior.cs:364 |
-| gwp_policepatrolbehavior_020 | Pay the formal fine | 缴纳正式罚金 | PolicePatrolBehavior.cs:369 |
-| gwp_policepatrolbehavior_021 | The patrol lets you pass. | 纠察队同意放行。 | PolicePatrolBehavior.cs:378 |
-| gwp_policepatrolbehavior_022 | The fine is paid and you are no longer wanted. The patrol withdraws. | 罚金已缴清，通缉撤销，纠察队撤离。 | PolicePatrolBehavior.cs:400 |
-| gwp_policepatrolbehavior_023 | The conversation ends and repatriation begins. active={VAR_1}, returning={VAR_2} | 对话结束，开始遣返。active={VAR_1}, returning={VAR_2} | PolicePatrolBehavior.cs:423 |
-| gwp_policepatrolbehavior_024 | PlayerEncounter.Finish(false) has been called | PlayerEncounter.Finish(false) 已调用 | PolicePatrolBehavior.cs:429 |
+| gwp_policepatrolbehavior_003 | According to the Grey Wardens decree, the formal fine must be paid first. | 按灰袍法令，先把正式罚金缴清。 | PolicePatrolBehavior.cs:135 |
+| gwp_policepatrolbehavior_004 | Penalty confirmation. This round of cases is concluded. | 罚金确认。本轮案件到此结案。 | PolicePatrolBehavior.cs:153 |
+| gwp_policepatrolbehavior_005 | Your bid is less than the formal penalty. You can continue bidding, or refuse enforcement. | 你的出价低于正式罚金。你可以继续出价，或拒绝执法。 | PolicePatrolBehavior.cs:162 |
+| gwp_policepatrolbehavior_006 | Yes, quote your release price. | 可以，报出你的放行价码。 | PolicePatrolBehavior.cs:181 |
+| gwp_policepatrolbehavior_007 | That will do. You may go. | 够了。你可以走了。 | PolicePatrolBehavior.cs:199 |
+| gwp_policepatrolbehavior_008 | That is not enough. Lay down your weapons! | 这点钱可不够。放下武器！ | PolicePatrolBehavior.cs:208 |
+| gwp_policepatrolbehavior_009 | I refuse enforcement. | 我拒绝执法。 | PolicePatrolBehavior.cs:218 |
+| gwp_policepatrolbehavior_010 | Refusal to Enforcement Recorded. Pickets, make arrests! | 拒绝执法已记录。纠察队，执行抓捕！ | PolicePatrolBehavior.cs:228 |
+| gwp_policepatrolbehavior_013 | You carry {VAR_1} denars, enough to pay in full. | 你当前携带 {VAR_1} 金，可直接缴清。 | PolicePatrolBehavior.cs:265 |
+| gwp_policepatrolbehavior_014 | You carry {VAR_1} denars. You may raise your offer at the table or refuse the order. | 你当前携带 {VAR_1} 金，可在谈判界面继续出价或选择拒绝。 | PolicePatrolBehavior.cs:266 |
+| gwp_policepatrolbehavior_015 | Stand! This provost patrol acts under warrant. Your standing is {VAR_1}; the lawful fine is {VAR_2} denars. {VAR_3} | 站住！纠察队正在执法。你当前负声望 {VAR_1}，正式罚金 {VAR_2} 金。{VAR_3} | PolicePatrolBehavior.cs:269 |
+| gwp_policepatrolbehavior_016 | Pay the lawful fine ({VAR_1} denars; end this pursuit) | 缴纳正式罚金（{VAR_1} 金，结束本轮追捕） | PolicePatrolBehavior.cs:289 |
+| gwp_policepatrolbehavior_017 | Negotiate passage ({VAR_1} denars sought; standing unchanged) | 谈判放行（目标 {VAR_1} 金，声望不变） | PolicePatrolBehavior.cs:298 |
+| gwp_policepatrolbehavior_019 | Pay the facilitation fee | 缴纳通融费 | PolicePatrolBehavior.cs:328 |
+| gwp_policepatrolbehavior_020 | Pay the formal fine | 缴纳正式罚金 | PolicePatrolBehavior.cs:333 |
+| gwp_policepatrolbehavior_021 | The patrol lets you pass. | 纠察队同意放行。 | PolicePatrolBehavior.cs:342 |
+| gwp_policepatrolbehavior_022 | The fine is paid and you are no longer wanted. The patrol withdraws. | 罚金已缴清，通缉撤销，纠察队撤离。 | PolicePatrolBehavior.cs:364 |
 | gwp_policepatrolbehavior_026 | — | 与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1} | 未检出直接引用；保留 |
-| gwp_policepatrolbehavior_027 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | PolicePatrolBehavior.cs:494 |
-| gwp_policepatrolbehavior_028 | A Grey Warden patrol is coming for you. | 灰袍纠察队正前来缉拿你。 | PolicePatrolBehavior.cs:535 |
-| gwp_policepatrolbehavior_029 | Accumulated crimes | 累计犯罪 | PolicePatrolBehavior.cs:564 |
-| gwp_policepatrolbehavior_030 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PolicePatrolBehavior.cs:566 |
-| gwp_policepatrolbehavior_031 | The Grey Wardens have ordered your arrest. | 灰袍已下令缉拿你。 | PolicePatrolBehavior.cs:569 |
+| gwp_policepatrolbehavior_027 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | PolicePatrolBehavior.cs:441 |
+| gwp_policepatrolbehavior_028 | A Grey Warden patrol is coming for you. | 灰袍纠察队正前来缉拿你。 | PolicePatrolBehavior.cs:482 |
+| gwp_policepatrolbehavior_029 | Accumulated crimes | 累计犯罪 | PolicePatrolBehavior.cs:511 |
+| gwp_policepatrolbehavior_030 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PolicePatrolBehavior.cs:513 |
+| gwp_policepatrolbehavior_031 | The Grey Wardens have ordered your arrest. | 灰袍已下令缉拿你。 | PolicePatrolBehavior.cs:516 |
 | gwp_policepatrolbehavior_033 | — | 纠察队补给耗尽，正在撤回。 | 未检出直接引用；保留 |
-| gwp_policepatrolbehavior_034 | You refuse to submit. The patrol will take you by force. | 你拒绝伏法，纠察队将强行缉拿。 | PolicePatrolBehavior.cs:701 |
-| gwp_policepatrolbehavior_035 | Picket Patrol | 纠察队巡逻 | PolicePatrolBehavior.cs:729 |
-| gwp_policepatrolbehavior_036 | A Grey Warden patrol has set out from {VAR_1} after you. | 灰袍纠察队已从{VAR_1}出发追捕你。 | PolicePatrolBehavior.cs:755 |
-| gwp_policepatrolbehavior_037 | MapEventEnded It is detected that the player has been captured and enters the escort process | MapEventEnded 检测到玩家已被俘，进入押送流程 | PolicePatrolBehavior.cs:815 |
-| gwp_policepatrolbehavior_038 | MapEventEnded No winner, the surrender path is processed as the picket victory | MapEventEnded 无 winner，按投降路径处理为纠察队胜利 | PolicePatrolBehavior.cs:858 |
-| gwp_policepatrolbehavior_039 | The patrol has defeated you. You are being taken to {VAR_1}. | 你被纠察队击败，正被押往{VAR_1}。 | PolicePatrolBehavior.cs:903 |
-| gwp_policepatrolbehavior_040 | The nearest town | 最近城镇 | PolicePatrolBehavior.cs:992 |
-| gwp_policepatrolbehavior_041 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PolicePatrolBehavior.cs:994 |
-| gwp_policepatrolbehavior_042 | The patrol collects a fine of {VAR_1} denars. | 纠察队收取了罚金 {VAR_1} 第纳尔。 | PolicePatrolBehavior.cs:1006 |
+| gwp_policepatrolbehavior_034 | You refuse to submit. The patrol will take you by force. | 你拒绝伏法，纠察队将强行缉拿。 | PolicePatrolBehavior.cs:639 |
+| gwp_policepatrolbehavior_035 | Picket Patrol | 纠察队巡逻 | PolicePatrolBehavior.cs:675 |
+| gwp_policepatrolbehavior_036 | A Grey Warden patrol has set out from {VAR_1} after you. | 灰袍纠察队已从{VAR_1}出发追捕你。 | PolicePatrolBehavior.cs:701 |
+| gwp_policepatrolbehavior_039 | The patrol has defeated you. You are being taken to {VAR_1}. | 你被纠察队击败，正被押往{VAR_1}。 | PolicePatrolBehavior.cs:847 |
+| gwp_policepatrolbehavior_040 | The nearest town | 最近城镇 | PolicePatrolBehavior.cs:936 |
+| gwp_policepatrolbehavior_041 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PolicePatrolBehavior.cs:938 |
+| gwp_policepatrolbehavior_042 | The patrol collects a fine of {VAR_1} denars. | 纠察队收取了罚金 {VAR_1} 第纳尔。 | PolicePatrolBehavior.cs:950 |
 | gwp_policepatrolbehavior_encyclopedia_001 | The player is in provost custody, under escort or awaiting judgment. | 玩家已被纠察队控制，正在押送或等待处罚 | PolicePatrolBehavior.Encyclopedia.cs:39 |
 | gwp_policepatrolbehavior_encyclopedia_002 | {VAR_1} provost patrols remain upon the map under orders of arrest. | 地图上仍有 {VAR_1} 支纠察队在执行强制缉拿 | PolicePatrolBehavior.Encyclopedia.cs:41 |
 | gwp_policepatrolbehavior_encyclopedia_003 | has entered the picket war state and is waiting for the end. | 已进入纠察队战争状态，正在等待收尾 | PolicePatrolBehavior.Encyclopedia.cs:43 |
 | gwp_policepatrolbehavior_encyclopedia_004 | Provost enforcement: after the player refuses a lawful order while under warrant, the Grey Wardens declare war upon the player’s faction to compel arrest. Present stage: {VAR_1}; present standing: {VAR_2}. | 纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{VAR_1}；当前模组声望：{VAR_2}。 | PolicePatrolBehavior.Encyclopedia.cs:45 |
 | gwp_policepatrolbehavior_helpers_001 | Through the Wardens' mediation, you are at peace with {VAR_1}. | 经灰袍调停，你与{VAR_1}恢复了和平。 | GwpPeace.cs:96 |
 | gwp_policepatrolbehavior_helpers_002 | Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you. | 经灰袍调停，{VAR_1}不再追究你的罪行。 | GwpPeace.cs:103 |
-| gwp_policepatrolbehavior_helpers_003 | The return command has been issued, the number of candidates = {VAR_1}, returning = {VAR_2} | 已下发返程命令，候选数量={VAR_1}，returning={VAR_2} | PolicePatrolBehavior.Helpers.cs:60 |
-| gwp_policepatrolbehavior_helpers_004 | The provost patrol reached {VAR_1}; disbanding: {VAR_2} | 纠察队已到达 {VAR_1}，执行销毁：{VAR_2} | PolicePatrolBehavior.Helpers.cs:92 |
-| gwp_policepatrolbehavior_helpers_005 | The return destruction has been completed and the normal session has been restored. | 返程销毁已完成，恢复正常会话。 | PolicePatrolBehavior.Helpers.cs:178 |
 | gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:481 |
 | gwp_troop_archer | Grey Warden Archer | 灰袍守护者弓箭手 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_heavy_infantry | Grey Warden Heavy Infantry | 灰袍守护者重步兵 | _Module/ModuleData/spnpccharacters.xml |
@@ -919,11 +895,10 @@
 | gwp_fieldarrest_msg_captured | — | {VAR_1} 落在你手里。案底与声望罚款一并结清；把俘虏交给灰袍领主。 | 未检出直接引用；保留 |
 | gwp_fieldarrest_seize | — | 我要依照通缉令，抓你归案。 | 未检出直接引用；保留 |
 | gwp_fieldarrest_seize_reply | — | 原来灰袍就这点分量。动手吧。 | 未检出直接引用；保留 |
-| gwp_fa_open_under_charge | You work for the Wardens? Tell me what you want. | 你替灰袍办事？说吧，找我什么事。 | GwpFieldArrestLines.cs:91 |
-| gwp_fa_open_respected_known | You again. Or your order, at least. What is it this time? | 又见面了。我知道你替灰袍办过不少事。这回为了什么？ | GwpFieldArrestLines.cs:93 |
-| gwp_fa_open_respected | I know the grey. Speak, and speak plainly. | 我听说过你。既然受灰袍委托，就把来意说清楚。 | GwpFieldArrestLines.cs:95 |
-| gwp_fa_open_known | The Wardens again. I remember the last time. | 灰袍又来了。上次的事，我可还记得。 | GwpFieldArrestLines.cs:97 |
-| gwp_fa_open_plain | The Wardens. What do you want with me? | 灰袍。找我什么事？ | GwpFieldArrestLines.cs:99 |
+| gwp_fa_open_under_charge | You work for the Wardens? Tell me what you want. | 你替灰袍办事？说吧，找我什么事。 | GwpFieldArrestLines.cs:92 |
+| gwp_fa_open_respected_known | You again. Or your order, at least. What is it this time? | 又见面了。我知道你替灰袍办过不少事。这回为了什么？ | GwpFieldArrestLines.cs:94 |
+| gwp_fa_open_respected | I know the grey. Speak, and speak plainly. | 我听说过你。既然受灰袍委托，就把来意说清楚。 | GwpFieldArrestLines.cs:96 |
+| gwp_fa_open_known | The Wardens again. I remember the last time. | 灰袍又来了。上次的事，我可还记得。 | GwpFieldArrestLines.cs:98 |
 | gwp_fa_submit_upright | — | 这件事我认，罚金也照数交。请把交款记清楚。 | 未检出直接引用；保留 |
 | gwp_fa_submit_cold | — | 比另一条路便宜。就这一个理由，你我都清楚。 | 未检出直接引用；保留 |
 | gwp_fa_submit_soft | — | 钱补不回那些损失。至少这笔罚金，我愿意交。 | 未检出直接引用；保留 |
@@ -938,49 +913,49 @@
 | gwp_fa_resist_cold | — | 你那支队伍我数过了，我自己的我也数过了。不给。 | 未检出直接引用；保留 |
 | gwp_fa_resist_tight | — | 一个子儿你也别想拿走。一个都别想。 | 未检出直接引用；保留 |
 | gwp_fa_resist_plain | — | 不给。有本事你来拿。 | 未检出直接引用；保留 |
-| gwp_fa_task_rebuff | That is no answer. | 这不算回答。 | GwpFieldArrestLines.cs:124 |
-| gwp_fa_task_final | You have run out of words, Warden. | 你没词了，灰袍。 | GwpFieldArrestLines.cs:125 |
-| gwp_fa_task_later | I will hear no more arguments about this warrant. | 这份案子，我不想再听你争辩了。 | GwpFieldArrestLines.cs:126 |
-| gwp_fa_task_authority | You are not my liege and you are not a Warden. You are a man they hired. | 你不是我的主君，也不是灰袍。你是他们雇来的人。 | GwpFieldArrestLines.cs:294 |
-| gwp_fa_arg_authority_lead | The Wardens sent me to deal with this. I am conveying their demand. | 灰袍派我来处理这件事。我说的话，就是她们的要求。 | GwpFieldArrestLines.cs:296 |
-| gwp_fa_arg_authority_charm | Hired or sworn, the dead are still dead and someone had to come. | 我受谁雇用，不会改变受害者的损失。我们先把这件事说清楚。 | GwpFieldArrestLines.cs:297 |
-| gwp_fa_arg_authority_rogue | They hired me because they were tired of asking politely. | 灰袍把案子交给我，就不会因为你不认我而撤回去。 | GwpFieldArrestLines.cs:298 |
-| gwp_fa_arg_authority_trade | Whether you accept me or not, the Wardens will still demand payment. Settling now saves you trouble. | 你认不认我，灰袍要求的赔偿都不会少。趁现在把事情解决，对你也省事。 | GwpFieldArrestLines.cs:299 |
-| gwp_fa_task_under_charge | Your reputation is scarcely better than mine. Now you lecture me for the Wardens? | 你的名声也没比我好多少，倒来替灰袍教训我了？ | GwpFieldArrestLines.cs:302 |
-| gwp_fa_arg_under_lead | My conduct is a separate matter. You must answer to the Wardens for this. | 我做过什么，不妨另说。眼前这些事，你得向灰袍交代。 | GwpFieldArrestLines.cs:304 |
-| gwp_fa_arg_under_charm | Then let us avoid another bad outcome. Settle this today so everyone can go home. | 那就别再添一个坏结果了。今天把事情解决，让大家都能回去。 | GwpFieldArrestLines.cs:305 |
-| gwp_fa_arg_under_rogue | That gives me all the more reason not to return empty-handed. Think carefully. | 正因为如此，我更不会空手回去。你最好想清楚。 | GwpFieldArrestLines.cs:306 |
-| gwp_fa_arg_under_trade | Talking about me saves you not one denar. It does not reduce what you owe. | 议论我值不了一枚第纳尔。你该付的钱不会因此减少。 | GwpFieldArrestLines.cs:307 |
-| gwp_fa_task_price | And that number - where did it come from? You say it as if it fell from the sky. | 这个数——哪儿来的？你说得像是天上掉下来的。 | GwpFieldArrestLines.cs:310 |
-| gwp_fa_arg_price_lead | This is the fine the Wardens demand. I was sent to enforce it, not invent a price. | 这是灰袍要求的罚金。我受托来执行，不是来随口开价的。 | GwpFieldArrestLines.cs:312 |
-| gwp_fa_arg_price_charm | The victims have already borne the loss. Do not add another fight to it. | 受害者已经承担了损失。别再为这件事添一场厮杀。 | GwpFieldArrestLines.cs:313 |
-| gwp_fa_arg_price_rogue | It is the cheap answer. You are looking at the expensive one. | 这是便宜那条路。贵的那条正看着你。 | GwpFieldArrestLines.cs:314 |
-| gwp_fa_arg_price_trade | The damage and the people harmed both need answering for. This sum covers more than this one encounter. | 损毁的财物、受害的人，都得有个交代。这个数不是只算你眼前这一次。 | GwpFieldArrestLines.cs:315 |
-| gwp_fa_task_tally | You are charging me for things I did months apart, as if they were one crime. | 为什么把几次事情合在一起，收我这么一大笔钱？ | GwpFieldArrestLines.cs:318 |
-| gwp_fa_arg_tally_lead | Time passing does not remove your responsibility. The Wardens hold you answerable for all of it. | 事情过去了，不等于责任也没了。灰袍要你一起承担。 | GwpFieldArrestLines.cs:320 |
-| gwp_fa_arg_tally_charm | Each one had people in it. They were months apart for you, not for them. | 每一件里都有人。对你是隔了几个月，对他们不是。 | GwpFieldArrestLines.cs:321 |
-| gwp_fa_arg_tally_rogue | If you wanted them charged separately you should have been caught sooner. | 想一件一件算，早点被逮住就是了。 | GwpFieldArrestLines.cs:322 |
-| gwp_fa_arg_tally_trade | Settle these offences together today and spare your party repeated interruptions over them. | 今天一起付清，就不用为这些旧事反复停下队伍。 | GwpFieldArrestLines.cs:323 |
-| gwp_fa_task_denial | My men did that. I did not give the order, and I will not pay for their appetite. | 那是我手下干的。我没下这个令，凭什么让我替他们的胃口付钱。 | GwpFieldArrestLines.cs:326 |
-| gwp_fa_arg_denial_lead | They are your men. That is what the word means. | 那是你的兵。手下两个字就是这个意思。 | GwpFieldArrestLines.cs:328 |
-| gwp_fa_arg_denial_charm | Nobody in that village could tell your hand from theirs. | 村里没一个人分得清是你的手还是他们的手。 | GwpFieldArrestLines.cs:329 |
-| gwp_fa_arg_denial_rogue | They acted under your banner. Blame your men, and the Wardens will still come for you. | 他们打着你的旗号行事。推给部下，灰袍也还是会找你。 | GwpFieldArrestLines.cs:330 |
-| gwp_fa_arg_denial_trade | They are your men. Pay for the harm first; how you recover it from them is your affair. | 他们是你的部下。先把损失赔了，你回去怎么向他们追究，是你的事。 | GwpFieldArrestLines.cs:331 |
-| gwp_fa_task_war | There is a war on. Taking an enemy's goods is not a crime, it is the work. | 打着仗呢。拿敌方的东西不算犯罪，那叫干活。 | GwpFieldArrestLines.cs:334 |
-| gwp_fa_arg_war_lead | Your war does not reach the drivers. The Wardens' law does. | 你的仗轮不到赶车的头上。灰袍的律轮得到。 | GwpFieldArrestLines.cs:336 |
-| gwp_fa_arg_war_charm | Carters and guards. Not one of them was holding your line. | 车夫和护卫。没有一个是替你守过阵线的。 | GwpFieldArrestLines.cs:337 |
-| gwp_fa_arg_war_rogue | Call it war if it helps. The Wardens call it a caravan and a body count. | 你愿意叫它打仗就叫吧。灰袍这边写的是一支商队和几具尸首。 | GwpFieldArrestLines.cs:338 |
-| gwp_fa_arg_war_trade | Wars end. Accounts do not, until someone pays them. | 仗会打完。账不会，除非有人付。 | GwpFieldArrestLines.cs:339 |
-| gwp_fa_task_consequence | And if I simply refuse to pay? What can you do about it? | 我要是干脆不交呢？你还能把我怎么样？ | GwpFieldArrestLines.cs:342 |
-| gwp_fa_arg_consequence_lead | My departure would not make the Wardens drop this. We need an answer today. | 我离开了，灰袍也不会就此罢手。今天总得有个交代。 | GwpFieldArrestLines.cs:344 |
-| gwp_fa_arg_consequence_charm | Then the next grey rider is not here to talk, and neither of us wants that. | 那下一个穿灰的来就不是找你说话了，这对谁都不好。 | GwpFieldArrestLines.cs:345 |
-| gwp_fa_arg_consequence_rogue | You can wager that I cannot take you. You cannot choose how many Wardens come next time. | 你可以赌我拿不住你。下回灰袍来多少人，你可说了不算。 | GwpFieldArrestLines.cs:346 |
-| gwp_fa_arg_consequence_trade | The debt remains until it is settled. Waiting does not make it disappear. | 这笔欠款会一直留着，不会因为你拖延就消失。 | GwpFieldArrestLines.cs:347 |
-| gwp_fa_task_record | Your order has had me once already. Is this how it goes now - forever? | 你们抓过我一回了。以后就这么没完了是吗？ | GwpFieldArrestLines.cs:350 |
-| gwp_fa_arg_record_lead | It goes until you stop giving them cause. That part is yours. | 你不再给他们理由，就完了。这一半在你手上。 | GwpFieldArrestLines.cs:352 |
-| gwp_fa_arg_record_charm | They took you once and let you ride. Few orders would have. | 抓了一回还放你走的团，不多。 | GwpFieldArrestLines.cs:353 |
-| gwp_fa_arg_record_rogue | You know how an arrest ends. Do you want to go through that again? | 被捕是什么结果，你已经经历过。还要再来一回吗？ | GwpFieldArrestLines.cs:354 |
-| gwp_fa_arg_record_trade | Pay what is assessed now. Any future offence will have its own reckoning. | 先结清眼下这笔。以后再犯的事，另有新的账。 | GwpFieldArrestLines.cs:355 |
+| gwp_fa_task_rebuff | That is no answer. | 这不算回答。 | GwpFieldArrestLines.cs:123 |
+| gwp_fa_task_final | You have run out of words, Warden. | 你没词了，灰袍。 | GwpFieldArrestLines.cs:124 |
+| gwp_fa_task_later | I will hear no more arguments about this warrant. | 这份案子，我不想再听你争辩了。 | GwpFieldArrestLines.cs:125 |
+| gwp_fa_task_authority | You are not my liege and you are not a Warden. You are a man they hired. | 你不是我的主君，也不是灰袍。你是他们雇来的人。 | GwpFieldArrestLines.cs:293 |
+| gwp_fa_arg_authority_lead | The Wardens sent me to deal with this. I am conveying their demand. | 灰袍派我来处理这件事。我说的话，就是她们的要求。 | GwpFieldArrestLines.cs:295 |
+| gwp_fa_arg_authority_charm | Hired or sworn, the dead are still dead and someone had to come. | 我受谁雇用，不会改变受害者的损失。我们先把这件事说清楚。 | GwpFieldArrestLines.cs:296 |
+| gwp_fa_arg_authority_rogue | They hired me because they were tired of asking politely. | 灰袍把案子交给我，就不会因为你不认我而撤回去。 | GwpFieldArrestLines.cs:297 |
+| gwp_fa_arg_authority_trade | Whether you accept me or not, the Wardens will still demand payment. Settling now saves you trouble. | 你认不认我，灰袍要求的赔偿都不会少。趁现在把事情解决，对你也省事。 | GwpFieldArrestLines.cs:298 |
+| gwp_fa_task_under_charge | Your reputation is scarcely better than mine. Now you lecture me for the Wardens? | 你的名声也没比我好多少，倒来替灰袍教训我了？ | GwpFieldArrestLines.cs:301 |
+| gwp_fa_arg_under_lead | My conduct is a separate matter. You must answer to the Wardens for this. | 我做过什么，不妨另说。眼前这些事，你得向灰袍交代。 | GwpFieldArrestLines.cs:303 |
+| gwp_fa_arg_under_charm | Then let us avoid another bad outcome. Settle this today so everyone can go home. | 那就别再添一个坏结果了。今天把事情解决，让大家都能回去。 | GwpFieldArrestLines.cs:304 |
+| gwp_fa_arg_under_rogue | That gives me all the more reason not to return empty-handed. Think carefully. | 正因为如此，我更不会空手回去。你最好想清楚。 | GwpFieldArrestLines.cs:305 |
+| gwp_fa_arg_under_trade | Talking about me saves you not one denar. It does not reduce what you owe. | 议论我值不了一枚第纳尔。你该付的钱不会因此减少。 | GwpFieldArrestLines.cs:306 |
+| gwp_fa_task_price | And that number - where did it come from? You say it as if it fell from the sky. | 这个数——哪儿来的？你说得像是天上掉下来的。 | GwpFieldArrestLines.cs:309 |
+| gwp_fa_arg_price_lead | This is the fine the Wardens demand. I was sent to enforce it, not invent a price. | 这是灰袍要求的罚金。我受托来执行，不是来随口开价的。 | GwpFieldArrestLines.cs:311 |
+| gwp_fa_arg_price_charm | The victims have already borne the loss. Do not add another fight to it. | 受害者已经承担了损失。别再为这件事添一场厮杀。 | GwpFieldArrestLines.cs:312 |
+| gwp_fa_arg_price_rogue | It is the cheap answer. You are looking at the expensive one. | 这是便宜那条路。贵的那条正看着你。 | GwpFieldArrestLines.cs:313 |
+| gwp_fa_arg_price_trade | The damage and the people harmed both need answering for. This sum covers more than this one encounter. | 损毁的财物、受害的人，都得有个交代。这个数不是只算你眼前这一次。 | GwpFieldArrestLines.cs:314 |
+| gwp_fa_task_tally | You are charging me for things I did months apart, as if they were one crime. | 为什么把几次事情合在一起，收我这么一大笔钱？ | GwpFieldArrestLines.cs:317 |
+| gwp_fa_arg_tally_lead | Time passing does not remove your responsibility. The Wardens hold you answerable for all of it. | 事情过去了，不等于责任也没了。灰袍要你一起承担。 | GwpFieldArrestLines.cs:319 |
+| gwp_fa_arg_tally_charm | Each one had people in it. They were months apart for you, not for them. | 每一件里都有人。对你是隔了几个月，对他们不是。 | GwpFieldArrestLines.cs:320 |
+| gwp_fa_arg_tally_rogue | If you wanted them charged separately you should have been caught sooner. | 想一件一件算，早点被逮住就是了。 | GwpFieldArrestLines.cs:321 |
+| gwp_fa_arg_tally_trade | Settle these offences together today and spare your party repeated interruptions over them. | 今天一起付清，就不用为这些旧事反复停下队伍。 | GwpFieldArrestLines.cs:322 |
+| gwp_fa_task_denial | My men did that. I did not give the order, and I will not pay for their appetite. | 那是我手下干的。我没下这个令，凭什么让我替他们的胃口付钱。 | GwpFieldArrestLines.cs:325 |
+| gwp_fa_arg_denial_lead | They are your men. That is what the word means. | 那是你的兵。手下两个字就是这个意思。 | GwpFieldArrestLines.cs:327 |
+| gwp_fa_arg_denial_charm | Nobody in that village could tell your hand from theirs. | 村里没一个人分得清是你的手还是他们的手。 | GwpFieldArrestLines.cs:328 |
+| gwp_fa_arg_denial_rogue | They acted under your banner. Blame your men, and the Wardens will still come for you. | 他们打着你的旗号行事。推给部下，灰袍也还是会找你。 | GwpFieldArrestLines.cs:329 |
+| gwp_fa_arg_denial_trade | They are your men. Pay for the harm first; how you recover it from them is your affair. | 他们是你的部下。先把损失赔了，你回去怎么向他们追究，是你的事。 | GwpFieldArrestLines.cs:330 |
+| gwp_fa_task_war | There is a war on. Taking an enemy's goods is not a crime, it is the work. | 打着仗呢。拿敌方的东西不算犯罪，那叫干活。 | GwpFieldArrestLines.cs:333 |
+| gwp_fa_arg_war_lead | Your war does not reach the drivers. The Wardens' law does. | 你的仗轮不到赶车的头上。灰袍的律轮得到。 | GwpFieldArrestLines.cs:335 |
+| gwp_fa_arg_war_charm | Carters and guards. Not one of them was holding your line. | 车夫和护卫。没有一个是替你守过阵线的。 | GwpFieldArrestLines.cs:336 |
+| gwp_fa_arg_war_rogue | Call it war if it helps. The Wardens call it a caravan and a body count. | 你愿意叫它打仗就叫吧。灰袍这边写的是一支商队和几具尸首。 | GwpFieldArrestLines.cs:337 |
+| gwp_fa_arg_war_trade | Wars end. Accounts do not, until someone pays them. | 仗会打完。账不会，除非有人付。 | GwpFieldArrestLines.cs:338 |
+| gwp_fa_task_consequence | And if I simply refuse to pay? What can you do about it? | 我要是干脆不交呢？你还能把我怎么样？ | GwpFieldArrestLines.cs:341 |
+| gwp_fa_arg_consequence_lead | My departure would not make the Wardens drop this. We need an answer today. | 我离开了，灰袍也不会就此罢手。今天总得有个交代。 | GwpFieldArrestLines.cs:343 |
+| gwp_fa_arg_consequence_charm | Then the next grey rider is not here to talk, and neither of us wants that. | 那下一个穿灰的来就不是找你说话了，这对谁都不好。 | GwpFieldArrestLines.cs:344 |
+| gwp_fa_arg_consequence_rogue | You can wager that I cannot take you. You cannot choose how many Wardens come next time. | 你可以赌我拿不住你。下回灰袍来多少人，你可说了不算。 | GwpFieldArrestLines.cs:345 |
+| gwp_fa_arg_consequence_trade | The debt remains until it is settled. Waiting does not make it disappear. | 这笔欠款会一直留着，不会因为你拖延就消失。 | GwpFieldArrestLines.cs:346 |
+| gwp_fa_task_record | Your order has had me once already. Is this how it goes now - forever? | 你们抓过我一回了。以后就这么没完了是吗？ | GwpFieldArrestLines.cs:349 |
+| gwp_fa_arg_record_lead | It goes until you stop giving them cause. That part is yours. | 你不再给他们理由，就完了。这一半在你手上。 | GwpFieldArrestLines.cs:351 |
+| gwp_fa_arg_record_charm | They took you once and let you ride. Few orders would have. | 抓了一回还放你走的团，不多。 | GwpFieldArrestLines.cs:352 |
+| gwp_fa_arg_record_rogue | You know how an arrest ends. Do you want to go through that again? | 被捕是什么结果，你已经经历过。还要再来一回吗？ | GwpFieldArrestLines.cs:353 |
+| gwp_fa_arg_record_trade | Pay what is assessed now. Any future offence will have its own reckoning. | 先结清眼下这笔。以后再犯的事，另有新的账。 | GwpFieldArrestLines.cs:354 |
 | gwp_fieldarrest_war_mediated | — | 灰袍调停：案子已经了结，由此与{VAR_1}结下的战事就此停息。 | 未检出直接引用；保留 |
 | gwp_fa_desire_bribe | Property worth {GWP_BRIBE_AMOUNT} denars, for you alone. What you tell the Wardens is your affair. | 我给你价值 {GWP_BRIBE_AMOUNT} 第纳尔的财物，归你自己。回去怎么说，你来想办法。 | GwpOffenderDesire.cs:135 |
 | gwp_fa_desire_duel | Fight me alone. If you win, I pay the fine; if I win, you collect nothing. | 你我单挑。你赢了，我缴罚金；我赢了，你就不收这笔钱。 | GwpOffenderDesire.cs:141 |
@@ -1079,11 +1054,11 @@
 | gwp_fa_collection_cancel | No payment has changed hands. What do you intend to do? | 钱还没交出去。你到底打算怎么办？ | GwpFieldArrestBehavior.cs:291 |
 | gwp_fa_fight_reply | — | 那就拔剑吧。 | 未检出直接引用；保留 |
 | gwp_fa_accept_count | Show me the money and goods. We will agree what they cover. | 把钱和东西拿出来，能抵多少，我们当面说清。 | GwpFieldArrestBehavior.cs:1201 |
-| gwp_terms_final_objection | And if I pay the full amount, what do I gain by giving up my terms? | 就算照数交清，我放弃刚才的条件，又能换来什么？ | GwpFieldArrestLines.cs:183 |
-| gwp_terms_final_lead | Your command stays with you. I need the account settled, not another battle. | 你仍带你的队伍。我来是为了结清这笔账，不是再打一仗。 | GwpFieldArrestLines.cs:184 |
-| gwp_terms_final_charm | We both leave with our people alive. That is worth more than prolonging this quarrel. | 双方的人都能活着离开。这比继续争执要紧。 | GwpFieldArrestLines.cs:185 |
-| gwp_terms_final_rogue | You remove the reason I am standing in your path. Do you really want to wager more? | 把这笔钱付了，我今天就没有拦你的理由。你还想赌上更多？ | GwpFieldArrestLines.cs:186 |
-| gwp_terms_final_trade | An exact payment leaves no remainder to argue over when I deliver the account. | 交清了，回报时就不会还挂着一笔余款。 | GwpFieldArrestLines.cs:187 |
+| gwp_terms_final_objection | And if I pay the full amount, what do I gain by giving up my terms? | 就算照数交清，我放弃刚才的条件，又能换来什么？ | GwpFieldArrestLines.cs:182 |
+| gwp_terms_final_lead | Your command stays with you. I need the account settled, not another battle. | 你仍带你的队伍。我来是为了结清这笔账，不是再打一仗。 | GwpFieldArrestLines.cs:183 |
+| gwp_terms_final_charm | We both leave with our people alive. That is worth more than prolonging this quarrel. | 双方的人都能活着离开。这比继续争执要紧。 | GwpFieldArrestLines.cs:184 |
+| gwp_terms_final_rogue | You remove the reason I am standing in your path. Do you really want to wager more? | 把这笔钱付了，我今天就没有拦你的理由。你还想赌上更多？ | GwpFieldArrestLines.cs:185 |
+| gwp_terms_final_trade | An exact payment leaves no remainder to argue over when I deliver the account. | 交清了，回报时就不会还挂着一笔余款。 | GwpFieldArrestLines.cs:186 |
 | gwp_fa_desire_cautious | Keep your weapons lowered. I will pay what you ask; there need be no battle. | 先把武器放下。钱我照数交，没必要打这一仗。 | GwpOffenderDesire.cs:129 |
 | gwp_fa_desire_merciful | Enough people have suffered. Take the full fine, and let there be no more bloodshed. | 已经够多人受苦了。罚金我全交，别再流血了。 | GwpOffenderDesire.cs:130 |
 | gwp_fa_desire_generous | I can spare the silver. Take the full amount and see that this account is settled. | 这笔钱我拿得出。照数拿去，把账结清。 | GwpOffenderDesire.cs:131 |
@@ -1099,67 +1074,67 @@
 | gwp_case_truthful_poor_result | — | 实收的 {VAR_1} 第纳尔已经入账。他付不起的余款仍记在他名下，不追究你。办案酬劳为 {VAR_2} 第纳尔，委托结清。 | 未检出直接引用；保留 |
 | gwp_case_truthful_gap_result | — | 实收的 {VAR_1} 第纳尔已经入账。未能收足的差额按办案责任记下。办案酬劳为 {VAR_2} 第纳尔，委托结清。 | 未检出直接引用；保留 |
 | gwp_case_transfer_retry | — | 交付暂时没办成，钱已退回。你仍保管俘虏和款项，换一位灰袍领主再办。 | 未检出直接引用；保留 |
-| gwp_terms_surrenderself_lead | Your men also need their commander. Paying keeps you at their head. | 你的部下也需要统帅。交钱了结，你仍能带着他们。 | GwpFieldArrestLines.cs:199 |
-| gwp_terms_surrenderself_charm | You need not leave your people behind. Pay, and stay with them. | 不必把自己人丢下。交清罚金，你就能留在他们身边。 | GwpFieldArrestLines.cs:200 |
-| gwp_terms_surrenderself_rogue | Do you trust whoever commands in your absence? Silver is easier to replace. | 你放心把指挥权交给别人？钱可比你的位子容易找回来。 | GwpFieldArrestLines.cs:201 |
-| gwp_terms_surrenderself_trade | Captivity will cost your household and command as well. Settle in silver today. | 被关押也会拖累家族和队伍。用现钱了结，损失更可控。 | GwpFieldArrestLines.cs:202 |
-| gwp_terms_bribethewarden_lead | I carry a warrant, not a begging bowl. Pay what it names. | 灰袍让我来收罚金，不是收你的好处。该交多少就交多少。 | GwpFieldArrestLines.cs:204 |
-| gwp_terms_bribethewarden_charm | Do not put this between us. Settle openly and we can both ride away. | 别把事情弄成这样。光明正大地交清，双方都能走。 | GwpFieldArrestLines.cs:205 |
-| gwp_terms_bribethewarden_rogue | You want me to risk my name for your loose change. Keep the bribe and bring the fine. | 拿这点私钱换我背锅？贿金收回去，罚金拿出来。 | GwpFieldArrestLines.cs:206 |
-| gwp_terms_bribethewarden_trade | A private purse does not settle a public debt. The full account still needs paying. | 私下给我的钱抵不了公库的账。该缴的总数并没变。 | GwpFieldArrestLines.cs:207 |
-| gwp_terms_cunninghalf_lead | Then open the other baggage. I will not accept your word for half an account. | 那就把别的行李也打开。我不会凭一句话就认下只剩一半。 | GwpFieldArrestLines.cs:209 |
-| gwp_terms_cunninghalf_charm | Show me enough trust to stop bargaining with a story about your purse. | 别再拿钱袋当借口。把实情说清，事情也好收场。 | GwpFieldArrestLines.cs:210 |
-| gwp_terms_cunninghalf_rogue | Half conveniently missing? I have heard that trick before. Find the rest. | 刚好只剩一半？这套说辞我听过。把另一半找出来。 | GwpFieldArrestLines.cs:211 |
-| gwp_terms_cunninghalf_trade | Half the payment leaves half the account. Your story does not change the sum. | 付一半就还欠一半。你怎么解释钱袋，都改不了这个数。 | GwpFieldArrestLines.cs:212 |
-| gwp_terms_rashmost_lead | If you want this finished, finish the payment. Do not leave the last fifth hanging. | 真想快点了结，就把最后两成交齐。别留个尾巴。 | GwpFieldArrestLines.cs:214 |
-| gwp_terms_rashmost_charm | We are close enough to agreement. Do not throw it away over the remainder. | 已经谈到这一步了，别为最后一点余款闹翻。 | GwpFieldArrestLines.cs:215 |
-| gwp_terms_rashmost_rogue | You risk the whole purse to keep its last fifth. Think before you refuse. | 为留下最后两成，把整只钱袋赌上？你再想想。 | GwpFieldArrestLines.cs:216 |
-| gwp_terms_rashmost_trade | You have offered four fifths. Add the remaining fifth and there is no balance left. | 八成已经答应了，再补两成，账就齐了。 | GwpFieldArrestLines.cs:217 |
-| gwp_terms_demandduel_lead | This warrant is not a contest. Meet the charge without risking your commander's life. | 这份通缉令不是比武请帖。别为它拿自己的命去赌。 | GwpFieldArrestLines.cs:219 |
-| gwp_terms_demandduel_charm | You need not prove your courage to me. Spare both our people another loss. | 你不必向我证明勇气。双方都少受一次伤，不好吗？ | GwpFieldArrestLines.cs:220 |
-| gwp_terms_demandduel_rogue | A duel lets you gamble away somebody else's debt. I will not take that wager. | 拿单挑免掉别人的血债？这个赌法我不接。 | GwpFieldArrestLines.cs:221 |
-| gwp_terms_demandduel_trade | Even victory costs wounds and time. The fine is a known price; a duel is not. | 赢了也可能受伤耽误行程。罚金有定数，刀剑可没有。 | GwpFieldArrestLines.cs:222 |
-| gwp_terms_deedsonly_lead | Killing your own soldiers will not discharge your responsibility. Pay the full fine. | 杀自己的兵也免不了你的责任。把罚金交齐。 | GwpFieldArrestLines.cs:224 |
-| gwp_terms_deedsonly_charm | There have been enough deaths. Keep your men alive and settle this in silver. | 死的人已经够多了。留下他们的命，用钱了结。 | GwpFieldArrestLines.cs:225 |
-| gwp_terms_deedsonly_rogue | Cutting down witnesses does not make your account smaller. Do not pretend it does. | 砍掉几个知情人，账就会变少？别拿这个糊弄我。 | GwpFieldArrestLines.cs:226 |
-| gwp_terms_deedsonly_trade | Two fifths will not cover this account. Your men's lives are not a substitute for the rest. | 四成填不平这笔账。你部下的命也抵不了剩下的钱。 | GwpFieldArrestLines.cs:227 |
-| gwp_terms_haggledown_lead | This is an assessed fine. I have no order to discount it by three tenths. | 这是核定的罚金，我没有给你打七折的命令。 | GwpFieldArrestLines.cs:229 |
-| gwp_terms_haggledown_charm | Let us end this without another quarrel. Pay the remainder as well. | 别再为余款起争执了，照数交齐吧。 | GwpFieldArrestLines.cs:230 |
-| gwp_terms_haggledown_rogue | You are bargaining as though I must sell. I can still enforce the warrant. | 你以为我非卖给你不可？我还可以照令抓人。 | GwpFieldArrestLines.cs:231 |
-| gwp_terms_haggledown_trade | Seven tenths leaves three tenths unpaid. Close the balance now. | 七成交了还剩三成。把余款也结清。 | GwpFieldArrestLines.cs:232 |
+| gwp_terms_surrenderself_lead | Your men also need their commander. Paying keeps you at their head. | 你的部下也需要统帅。交钱了结，你仍能带着他们。 | GwpFieldArrestLines.cs:198 |
+| gwp_terms_surrenderself_charm | You need not leave your people behind. Pay, and stay with them. | 不必把自己人丢下。交清罚金，你就能留在他们身边。 | GwpFieldArrestLines.cs:199 |
+| gwp_terms_surrenderself_rogue | Do you trust whoever commands in your absence? Silver is easier to replace. | 你放心把指挥权交给别人？钱可比你的位子容易找回来。 | GwpFieldArrestLines.cs:200 |
+| gwp_terms_surrenderself_trade | Captivity will cost your household and command as well. Settle in silver today. | 被关押也会拖累家族和队伍。用现钱了结，损失更可控。 | GwpFieldArrestLines.cs:201 |
+| gwp_terms_bribethewarden_lead | I carry a warrant, not a begging bowl. Pay what it names. | 灰袍让我来收罚金，不是收你的好处。该交多少就交多少。 | GwpFieldArrestLines.cs:203 |
+| gwp_terms_bribethewarden_charm | Do not put this between us. Settle openly and we can both ride away. | 别把事情弄成这样。光明正大地交清，双方都能走。 | GwpFieldArrestLines.cs:204 |
+| gwp_terms_bribethewarden_rogue | You want me to risk my name for your loose change. Keep the bribe and bring the fine. | 拿这点私钱换我背锅？贿金收回去，罚金拿出来。 | GwpFieldArrestLines.cs:205 |
+| gwp_terms_bribethewarden_trade | A private purse does not settle a public debt. The full account still needs paying. | 私下给我的钱抵不了公库的账。该缴的总数并没变。 | GwpFieldArrestLines.cs:206 |
+| gwp_terms_cunninghalf_lead | Then open the other baggage. I will not accept your word for half an account. | 那就把别的行李也打开。我不会凭一句话就认下只剩一半。 | GwpFieldArrestLines.cs:208 |
+| gwp_terms_cunninghalf_charm | Show me enough trust to stop bargaining with a story about your purse. | 别再拿钱袋当借口。把实情说清，事情也好收场。 | GwpFieldArrestLines.cs:209 |
+| gwp_terms_cunninghalf_rogue | Half conveniently missing? I have heard that trick before. Find the rest. | 刚好只剩一半？这套说辞我听过。把另一半找出来。 | GwpFieldArrestLines.cs:210 |
+| gwp_terms_cunninghalf_trade | Half the payment leaves half the account. Your story does not change the sum. | 付一半就还欠一半。你怎么解释钱袋，都改不了这个数。 | GwpFieldArrestLines.cs:211 |
+| gwp_terms_rashmost_lead | If you want this finished, finish the payment. Do not leave the last fifth hanging. | 真想快点了结，就把最后两成交齐。别留个尾巴。 | GwpFieldArrestLines.cs:213 |
+| gwp_terms_rashmost_charm | We are close enough to agreement. Do not throw it away over the remainder. | 已经谈到这一步了，别为最后一点余款闹翻。 | GwpFieldArrestLines.cs:214 |
+| gwp_terms_rashmost_rogue | You risk the whole purse to keep its last fifth. Think before you refuse. | 为留下最后两成，把整只钱袋赌上？你再想想。 | GwpFieldArrestLines.cs:215 |
+| gwp_terms_rashmost_trade | You have offered four fifths. Add the remaining fifth and there is no balance left. | 八成已经答应了，再补两成，账就齐了。 | GwpFieldArrestLines.cs:216 |
+| gwp_terms_demandduel_lead | This warrant is not a contest. Meet the charge without risking your commander's life. | 这份通缉令不是比武请帖。别为它拿自己的命去赌。 | GwpFieldArrestLines.cs:218 |
+| gwp_terms_demandduel_charm | You need not prove your courage to me. Spare both our people another loss. | 你不必向我证明勇气。双方都少受一次伤，不好吗？ | GwpFieldArrestLines.cs:219 |
+| gwp_terms_demandduel_rogue | A duel lets you gamble away somebody else's debt. I will not take that wager. | 拿单挑免掉别人的血债？这个赌法我不接。 | GwpFieldArrestLines.cs:220 |
+| gwp_terms_demandduel_trade | Even victory costs wounds and time. The fine is a known price; a duel is not. | 赢了也可能受伤耽误行程。罚金有定数，刀剑可没有。 | GwpFieldArrestLines.cs:221 |
+| gwp_terms_deedsonly_lead | Killing your own soldiers will not discharge your responsibility. Pay the full fine. | 杀自己的兵也免不了你的责任。把罚金交齐。 | GwpFieldArrestLines.cs:223 |
+| gwp_terms_deedsonly_charm | There have been enough deaths. Keep your men alive and settle this in silver. | 死的人已经够多了。留下他们的命，用钱了结。 | GwpFieldArrestLines.cs:224 |
+| gwp_terms_deedsonly_rogue | Cutting down witnesses does not make your account smaller. Do not pretend it does. | 砍掉几个知情人，账就会变少？别拿这个糊弄我。 | GwpFieldArrestLines.cs:225 |
+| gwp_terms_deedsonly_trade | Two fifths will not cover this account. Your men's lives are not a substitute for the rest. | 四成填不平这笔账。你部下的命也抵不了剩下的钱。 | GwpFieldArrestLines.cs:226 |
+| gwp_terms_haggledown_lead | This is an assessed fine. I have no order to discount it by three tenths. | 这是核定的罚金，我没有给你打七折的命令。 | GwpFieldArrestLines.cs:228 |
+| gwp_terms_haggledown_charm | Let us end this without another quarrel. Pay the remainder as well. | 别再为余款起争执了，照数交齐吧。 | GwpFieldArrestLines.cs:229 |
+| gwp_terms_haggledown_rogue | You are bargaining as though I must sell. I can still enforce the warrant. | 你以为我非卖给你不可？我还可以照令抓人。 | GwpFieldArrestLines.cs:230 |
+| gwp_terms_haggledown_trade | Seven tenths leaves three tenths unpaid. Close the balance now. | 七成交了还剩三成。把余款也结清。 | GwpFieldArrestLines.cs:231 |
 | gwp_field_villagers | local villagers | 附近的村民 | GwpFieldArrestBehavior.cs:542 |
 | gwp_fa_retry_payment | I still stand by my terms. Have you another proposal? | 我还是坚持刚才的条件。你还有别的说法吗？ | GwpFieldArrestBehavior.cs:771 |
 | gwp_fa_retry_authority | That is not enough for me to accept your authority. Have you another reason? | 这还不足以让我接受你的处置。你还有别的理由吗？ | GwpFieldArrestBehavior.cs:772 |
 | gwp_fa_critical_rebuff | Enough. I will hear no more of this. | 够了，这件事我不想再谈。 | GwpFieldArrestBehavior.cs:846 |
-| gwp_rebuff_authority_lead | Your warrant is not a command I have sworn to obey. Give me a better reason. | 我可没向这份通缉令宣过誓。你得拿出更能让我信服的理由。 | GwpFieldArrestLines.cs:244 |
-| gwp_rebuff_authority_charm | I hear your concern for them. That does not settle whether I answer to you. | 我听见你替他们说话了，但这还没说明我为什么该接受你的处置。 | GwpFieldArrestLines.cs:245 |
-| gwp_rebuff_authority_rogue | Threats are easy to make. I have not agreed to your authority. | 威胁谁都会说。我还没答应听你的。 | GwpFieldArrestLines.cs:246 |
-| gwp_rebuff_authority_trade | You keep counting the fine before I have accepted the charge. | 你一直在算罚金，可我还没认下这份指控。 | GwpFieldArrestLines.cs:247 |
-| gwp_rebuff_surrenderself_lead | My answer is still to go with you. That money stays with my men. | 正因为我是统帅，才该由我跟你走。钱留给部下。 | GwpFieldArrestLines.cs:253 |
+| gwp_rebuff_authority_lead | Your warrant is not a command I have sworn to obey. Give me a better reason. | 我可没向这份通缉令宣过誓。你得拿出更能让我信服的理由。 | GwpFieldArrestLines.cs:243 |
+| gwp_rebuff_authority_charm | I hear your concern for them. That does not settle whether I answer to you. | 我听见你替他们说话了，但这还没说明我为什么该接受你的处置。 | GwpFieldArrestLines.cs:244 |
+| gwp_rebuff_authority_rogue | Threats are easy to make. I have not agreed to your authority. | 威胁谁都会说。我还没答应听你的。 | GwpFieldArrestLines.cs:245 |
+| gwp_rebuff_authority_trade | You keep counting the fine before I have accepted the charge. | 你一直在算罚金，可我还没认下这份指控。 | GwpFieldArrestLines.cs:246 |
+| gwp_rebuff_surrenderself_lead | My answer is still to go with you. That money stays with my men. | 正因为我是统帅，才该由我跟你走。钱留给部下。 | GwpFieldArrestLines.cs:252 |
 | gwp_rebuff_surrenderself_charm | My answer is still to go with you. That money stays with my men. | 他们不会因为我被押走就没了活路，没了军饷才会。 | 未检出直接引用；保留 |
 | gwp_rebuff_surrenderself_rogue | My answer is still to go with you. That money stays with my men. | 我离开后谁来指挥，自有安排。你不必替我操心。 | 未检出直接引用；保留 |
 | gwp_rebuff_surrenderself_trade | My answer is still to go with you. That money stays with my men. | 你算的是我的损失，我想的是他们明天吃什么。 | 未检出直接引用；保留 |
-| gwp_rebuff_bribethewarden_lead | You can put a brave face on it. I am offering you a private payment, not the full fine. | 别急着拿通缉令压人。我说的是给你个人的好处。 | GwpFieldArrestLines.cs:254 |
+| gwp_rebuff_bribethewarden_lead | You can put a brave face on it. I am offering you a private payment, not the full fine. | 别急着拿通缉令压人。我说的是给你个人的好处。 | GwpFieldArrestLines.cs:253 |
 | gwp_rebuff_bribethewarden_charm | You can put a brave face on it. I am offering you a private payment, not the full fine. | 你我都能好好离开，何必非要把钱送进公库？ | 未检出直接引用；保留 |
 | gwp_rebuff_bribethewarden_rogue | You can put a brave face on it. I am offering you a private payment, not the full fine. | 嫌这点钱不值得冒险？那也是私下谈价，不是让我照数缴罚。 | 未检出直接引用；保留 |
 | gwp_rebuff_bribethewarden_trade | You can put a brave face on it. I am offering you a private payment, not the full fine. | 公库的账是公库的账。我问的是你愿不愿意收这笔钱。 | 未检出直接引用；保留 |
-| gwp_rebuff_cunninghalf_lead | You suspect another purse, but suspicion does not put more money on this table. Half is my offer. | 要翻行李就直说，但我不会因此改口答应全额。 | GwpFieldArrestLines.cs:255 |
+| gwp_rebuff_cunninghalf_lead | You suspect another purse, but suspicion does not put more money on this table. Half is my offer. | 要翻行李就直说，但我不会因此改口答应全额。 | GwpFieldArrestLines.cs:254 |
 | gwp_rebuff_cunninghalf_charm | You suspect another purse, but suspicion does not put more money on this table. Half is my offer. | 信任不是你说一句，我就得掏出另一半。我的条件没变。 | 未检出直接引用；保留 |
 | gwp_rebuff_cunninghalf_rogue | You suspect another purse, but suspicion does not put more money on this table. Half is my offer. | 听过这种说辞，就能断定我还藏着钱？你得拿出点别的。 | 未检出直接引用；保留 |
 | gwp_rebuff_cunninghalf_trade | You suspect another purse, but suspicion does not put more money on this table. Half is my offer. | 我知道半款还剩多少。我是在给你条件，不是在请你算数。 | 未检出直接引用；保留 |
-| gwp_rebuff_rashmost_lead | I offered most of it to end this quickly. Now you want to keep arguing over the rest. | 我肯出八成，已经是让步。别把让步当成理所当然。 | GwpFieldArrestLines.cs:256 |
+| gwp_rebuff_rashmost_lead | I offered most of it to end this quickly. Now you want to keep arguing over the rest. | 我肯出八成，已经是让步。别把让步当成理所当然。 | GwpFieldArrestLines.cs:255 |
 | gwp_rebuff_rashmost_charm | I offered most of it to end this quickly. Now you want to keep arguing over the rest. | 既然只差这一点，你也可以让一步，何必全要我来让？ | 未检出直接引用；保留 |
 | gwp_rebuff_rashmost_rogue | I offered most of it to end this quickly. Now you want to keep arguing over the rest. | 我可没说要赌掉整只钱袋。你少拿最坏的事吓我。 | 未检出直接引用；保留 |
 | gwp_rebuff_rashmost_trade | I offered most of it to end this quickly. Now you want to keep arguing over the rest. | 不用教我算那两成。我知道差多少，只是不想再给。 | 未检出直接引用；保留 |
-| gwp_rebuff_demandduel_lead | All those reasons to avoid a duel. I still want this settled between the two of us. | 通缉令在你手上，剑也在你手上。为什么不敢亲自来了结？ | GwpFieldArrestLines.cs:257 |
+| gwp_rebuff_demandduel_lead | All those reasons to avoid a duel. I still want this settled between the two of us. | 通缉令在你手上，剑也在你手上。为什么不敢亲自来了结？ | GwpFieldArrestLines.cs:256 |
 | gwp_rebuff_demandduel_charm | All those reasons to avoid a duel. I still want this settled between the two of us. | 你说不必证明勇气，我却不想靠掏钱结束这件事。 | 未检出直接引用；保留 |
 | gwp_rebuff_demandduel_rogue | All those reasons to avoid a duel. I still want this settled between the two of us. | 你不肯接这个赌，我也没答应换个办法。 | 未检出直接引用；保留 |
 | gwp_rebuff_demandduel_trade | All those reasons to avoid a duel. I still want this settled between the two of us. | 你把伤口和行程都算进去了。我看重的可不只是钱。 | 未检出直接引用；保留 |
-| gwp_rebuff_deedsonly_lead | Their punishment is mine to decide. I offered you two fifths, no more. | 我的兵由我处置。你来收你的钱，别替我发号施令。 | GwpFieldArrestLines.cs:258 |
+| gwp_rebuff_deedsonly_lead | Their punishment is mine to decide. I offered you two fifths, no more. | 我的兵由我处置。你来收你的钱，别替我发号施令。 | GwpFieldArrestLines.cs:257 |
 | gwp_rebuff_deedsonly_charm | Their punishment is mine to decide. I offered you two fifths, no more. | 你想替他们求情？那也不会让我多交余下的罚金。 | 未检出直接引用；保留 |
 | gwp_rebuff_deedsonly_rogue | Their punishment is mine to decide. I offered you two fifths, no more. | 知情人？他们是犯错的部下。别给这件事再添一份指控。 | 未检出直接引用；保留 |
 | gwp_rebuff_deedsonly_trade | Their punishment is mine to decide. I offered you two fifths, no more. | 我知道钱不够你报的数。我只认我答应的四成。 | 未检出直接引用；保留 |
-| gwp_rebuff_haggledown_lead | You call it an exact account; I call it too much. My offer is still seven tenths. | 你说没有打折的命令，我也没答应任你开价。 | GwpFieldArrestLines.cs:259 |
+| gwp_rebuff_haggledown_lead | You call it an exact account; I call it too much. My offer is still seven tenths. | 你说没有打折的命令，我也没答应任你开价。 | GwpFieldArrestLines.cs:258 |
 | gwp_rebuff_haggledown_charm | You call it an exact account; I call it too much. My offer is still seven tenths. | 想少一次争执，你同样可以接受我给的七成。 | 未检出直接引用；保留 |
 | gwp_rebuff_haggledown_rogue | You call it an exact account; I call it too much. My offer is still seven tenths. | 我知道你能动手。不必每次还价都拿这句话压我。 | 未检出直接引用；保留 |
 | gwp_rebuff_haggledown_trade | You call it an exact account; I call it too much. My offer is still seven tenths. | 三成有多少，我算得明白。我争的就是这三成。 | 未检出直接引用；保留 |
@@ -1266,11 +1241,11 @@
 | gwp_grace_return_early | You gave me until the day we named. It has not come yet. I have nothing ready for you before then. | 说好的日子还没到。到那天之前，我这儿拿不出什么给你。 | GwpFieldArrestBehavior.cs:454 |
 | gwp_grace_return_due | The time we agreed is up. Let us see what I can pay now. | 说好的日子到了。你看看我现在能拿出多少吧。 | GwpFieldArrestBehavior.cs:455 |
 | gwp_grace_collect | Show me what you can pay now. | 把现在能交的钱拿出来看看。 | GwpFieldArrestBehavior.cs:139 |
-| gwp_terms_requestgrace_lead | The Wardens expect payment, not another delay. Show me what you have now. | 灰袍等的是罚金，不是再拖几天。先把你眼下能交的拿出来。 | GwpFieldArrestLines.cs:194 |
-| gwp_terms_requestgrace_charm | Let us settle what you can today. There is no need to leave this hanging over your people. | 今天能交多少就先解决多少，别让这件事一直压着你和部下。 | GwpFieldArrestLines.cs:195 |
-| gwp_terms_requestgrace_rogue | Three days to disappear? I would rather see the money you carry now. | 三天，够你走出多远？我更想先看看你现在的钱袋。 | GwpFieldArrestLines.cs:196 |
-| gwp_terms_requestgrace_trade | Waiting costs both our parties. Pay what you can now and save another journey. | 你我再跑一趟都要花钱。今天把能付的付了，少耽误些工夫。 | GwpFieldArrestLines.cs:197 |
-| gwp_rebuff_requestgrace_lead | I asked for time to raise it. Repeating the amount will not fill my purse today. | 我没说不交。我说的是筹钱需要时间。 | GwpFieldArrestLines.cs:252 |
+| gwp_terms_requestgrace_lead | The Wardens expect payment, not another delay. Show me what you have now. | 灰袍等的是罚金，不是再拖几天。先把你眼下能交的拿出来。 | GwpFieldArrestLines.cs:193 |
+| gwp_terms_requestgrace_charm | Let us settle what you can today. There is no need to leave this hanging over your people. | 今天能交多少就先解决多少，别让这件事一直压着你和部下。 | GwpFieldArrestLines.cs:194 |
+| gwp_terms_requestgrace_rogue | Three days to disappear? I would rather see the money you carry now. | 三天，够你走出多远？我更想先看看你现在的钱袋。 | GwpFieldArrestLines.cs:195 |
+| gwp_terms_requestgrace_trade | Waiting costs both our parties. Pay what you can now and save another journey. | 你我再跑一趟都要花钱。今天把能付的付了，少耽误些工夫。 | GwpFieldArrestLines.cs:196 |
+| gwp_rebuff_requestgrace_lead | I asked for time to raise it. Repeating the amount will not fill my purse today. | 我没说不交。我说的是筹钱需要时间。 | GwpFieldArrestLines.cs:251 |
 | gwp_rebuff_requestgrace_charm | I asked for time to raise it. Repeating the amount will not fill my purse today. | 我也想今天就了结，可你总得容我把钱凑来。 | 未检出直接引用；保留 |
 | gwp_rebuff_requestgrace_rogue | I asked for time to raise it. Repeating the amount will not fill my purse today. | 你不信我，我也没办法。但催得再紧，钱也不会自己出现。 | 未检出直接引用；保留 |
 | gwp_rebuff_requestgrace_trade | I asked for time to raise it. Repeating the amount will not fill my purse today. | 再跑一趟是麻烦，可现在让我凑齐，同样办不到。 | 未检出直接引用；保留 |

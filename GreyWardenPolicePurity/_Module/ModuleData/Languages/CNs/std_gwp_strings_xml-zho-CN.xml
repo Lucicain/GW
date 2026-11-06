@@ -209,17 +209,9 @@
   <string id="gwp_gwppolicewarreasonservice_039" text="刚刚" />
   <string id="gwp_gwppolicewarreasonservice_040" text="{VAR_1} 小时前" />
   <string id="gwp_gwppolicewarreasonservice_041" text="{VAR_1} 天前" />
-  <string id="gwp_gwppolicewarreasonservice_042" text="{VAR_1}附近 ({VAR_2}, {VAR_3})" />
-  <string id="gwp_gwppolicewarreasonservice_043" text="野外 ({VAR_1}, {VAR_2})" />
   <string id="gwp_gwppolicewarreasonservice_044" text="{VAR_1} 小时" />
   <string id="gwp_gwppolicewarreasonservice_045" text="{VAR_1} 天" />
   <string id="gwp_gwppolicewarreasonservice_046" text="{VAR_1} 天 {VAR_2} 小时" />
-  <string id="gwp_gwppolicewarreasonservice_047" text="春" />
-  <string id="gwp_gwppolicewarreasonservice_048" text="夏" />
-  <string id="gwp_gwppolicewarreasonservice_049" text="秋" />
-  <string id="gwp_gwppolicewarreasonservice_050" text="冬" />
-  <string id="gwp_gwppolicewarreasonservice_051" text="未知季" />
-  <string id="gwp_gwppolicewarreasonservice_052" text="{VAR_1}年{VAR_2}季第{VAR_3}天 {VAR_4}:00" />
   <string id="gwp_hero_chenxi" text="晨曦" />
   <string id="gwp_hero_mise" text="弥瑟" />
   <string id="gwp_hero_muguang" text="暮光" />
@@ -429,14 +421,10 @@
   <string id="gwp_playerbountybehavior_questandnotification_009" text="该悬赏目标已失效" />
   <string id="gwp_policeantirecruitmentmodel_001" text="灰袍不为争夺领土开战。" />
   <string id="gwp_policecrimemonitorenhanced_001" text="村民" />
-  <string id="gwp_policecrimemonitorenhanced_002" text="攻击村民" />
   <string id="gwp_policecrimemonitorenhanced_003" text="攻击村民" />
   <string id="gwp_policecrimemonitorenhanced_004" text="商队" />
-  <string id="gwp_policecrimemonitorenhanced_005" text="攻击商队" />
   <string id="gwp_policecrimemonitorenhanced_006" text="攻击商队" />
   <string id="gwp_policecrimemonitorenhanced_007" text="{VAR_1}村的村民" />
-  <string id="gwp_policecrimemonitorenhanced_008" text="劫掠村庄(开始)" />
-  <string id="gwp_policecrimemonitorenhanced_009" text="村庄={VAR_1}" />
   <string id="gwp_policecrimemonitorenhanced_010" text="劫掠村庄" />
   <string id="gwp_policeenforcementbehavior_001" text="赎罪期限已过。" />
   <string id="gwp_policeenforcementbehavior_002" text="你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。" />
@@ -497,8 +485,6 @@
   <string id="gwp_enforcement_companion_pay" text="替这名同伴缴纳罚金（{VAR_1} 金）" />
   <string id="gwp_enforcement_companion_paid" text="{VAR_1}已缴清罚金 {VAR_2} 第纳尔，案件了结。" />
   <string id="gwp_enforcement_companion_leave" text="我现在无法替这名同伴结案。" />
-  <string id="gwp_policepatrolbehavior_001" text="已下发返程命令，等待到达定居点后销毁" />
-  <string id="gwp_policepatrolbehavior_002" text="已调度：返程至驻地后销毁纠察队" />
   <string id="gwp_policepatrolbehavior_003" text="按灰袍法令，先把正式罚金缴清。" />
   <string id="gwp_policepatrolbehavior_004" text="罚金确认。本轮案件到此结案。" />
   <string id="gwp_policepatrolbehavior_005" text="你的出价低于正式罚金。你可以继续出价，或拒绝执法。" />
@@ -507,20 +493,15 @@
   <string id="gwp_policepatrolbehavior_008" text="这点钱可不够。放下武器！" />
   <string id="gwp_policepatrolbehavior_009" text="我拒绝执法。" />
   <string id="gwp_policepatrolbehavior_010" text="拒绝执法已记录。纠察队，执行抓捕！" />
-  <string id="gwp_policepatrolbehavior_011" text="返程抑制中，拒绝再次进入纠察队对话" />
-  <string id="gwp_policepatrolbehavior_012" text="进入纠察队对话：party={VAR_1}, rep={VAR_2}, fine={VAR_3}" />
   <string id="gwp_policepatrolbehavior_013" text="你当前携带 {VAR_1} 金，可直接缴清。" />
   <string id="gwp_policepatrolbehavior_014" text="你当前携带 {VAR_1} 金，可在谈判界面继续出价或选择拒绝。" />
   <string id="gwp_policepatrolbehavior_015" text="站住！纠察队正在执法。你当前负声望 {VAR_1}，正式罚金 {VAR_2} 金。{VAR_3}" />
   <string id="gwp_policepatrolbehavior_016" text="缴纳正式罚金（{VAR_1} 金，结束本轮追捕）" />
   <string id="gwp_policepatrolbehavior_017" text="谈判放行（目标 {VAR_1} 金，声望不变）" />
-  <string id="gwp_policepatrolbehavior_018" text="你拒绝伏法，纠察队将强行缉拿。" />
   <string id="gwp_policepatrolbehavior_019" text="缴纳通融费" />
   <string id="gwp_policepatrolbehavior_020" text="缴纳正式罚金" />
   <string id="gwp_policepatrolbehavior_021" text="纠察队同意放行。" />
   <string id="gwp_policepatrolbehavior_022" text="罚金已缴清，通缉撤销，纠察队撤离。" />
-  <string id="gwp_policepatrolbehavior_023" text="对话结束，开始遣返。active={VAR_1}, returning={VAR_2}" />
-  <string id="gwp_policepatrolbehavior_024" text="PlayerEncounter.Finish(false) 已调用" />
   <string id="gwp_policepatrolbehavior_026" text="与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1}" />
   <string id="gwp_policepatrolbehavior_027" text="灰袍已撤销对你的通缉。" />
   <string id="gwp_policepatrolbehavior_028" text="灰袍纠察队正前来缉拿你。" />
@@ -531,8 +512,6 @@
   <string id="gwp_policepatrolbehavior_034" text="你拒绝伏法，纠察队将强行缉拿。" />
   <string id="gwp_policepatrolbehavior_035" text="纠察队巡逻" />
   <string id="gwp_policepatrolbehavior_036" text="灰袍纠察队已从{VAR_1}出发追捕你。" />
-  <string id="gwp_policepatrolbehavior_037" text="MapEventEnded 检测到玩家已被俘，进入押送流程" />
-  <string id="gwp_policepatrolbehavior_038" text="MapEventEnded 无 winner，按投降路径处理为纠察队胜利" />
   <string id="gwp_policepatrolbehavior_039" text="你被纠察队击败，正被押往{VAR_1}。" />
   <string id="gwp_policepatrolbehavior_040" text="最近城镇" />
   <string id="gwp_policepatrolbehavior_041" text="你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。" />
@@ -543,9 +522,6 @@
   <string id="gwp_policepatrolbehavior_encyclopedia_004" text="纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{VAR_1}；当前模组声望：{VAR_2}。" />
   <string id="gwp_policepatrolbehavior_helpers_001" text="经灰袍调停，你与{VAR_1}恢复了和平。" />
   <string id="gwp_policepatrolbehavior_helpers_002" text="经灰袍调停，{VAR_1}不再追究你的罪行。" />
-  <string id="gwp_policepatrolbehavior_helpers_003" text="已下发返程命令，候选数量={VAR_1}，returning={VAR_2}" />
-  <string id="gwp_policepatrolbehavior_helpers_004" text="纠察队已到达 {VAR_1}，执行销毁：{VAR_2}" />
-  <string id="gwp_policepatrolbehavior_helpers_005" text="返程销毁已完成，恢复正常会话。" />
   <string id="gwp_policeresourcemanager_001" text="你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。" />
   <string id="gwp_troop_archer" text="灰袍守护者弓箭手" />
   <string id="gwp_troop_heavy_infantry" text="灰袍守护者重步兵" />
@@ -923,7 +899,6 @@
   <string id="gwp_fa_open_respected_known" text="又见面了。我知道你替灰袍办过不少事。这回为了什么？" />
   <string id="gwp_fa_open_respected" text="我听说过你。既然受灰袍委托，就把来意说清楚。" />
   <string id="gwp_fa_open_known" text="灰袍又来了。上次的事，我可还记得。" />
-  <string id="gwp_fa_open_plain" text="灰袍。找我什么事？" />
   <string id="gwp_fa_submit_upright" text="这件事我认，罚金也照数交。请把交款记清楚。" />
   <string id="gwp_fa_submit_cold" text="比另一条路便宜。就这一个理由，你我都清楚。" />
   <string id="gwp_fa_submit_soft" text="钱补不回那些损失。至少这笔罚金，我愿意交。" />

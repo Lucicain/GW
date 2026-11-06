@@ -101,15 +101,13 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 ### 清理台账
 
-上次集中清理：`2cf7b69`（2026-10-28，Claude Code；规则总数 1145→959：city-search、case-envoy、warden-ai、workflow、code-health、firesworn-villages/armory、case-enforcement/assistance、player-justice 按主题合并，新写原版手册 tournaments.md）
+上次集中清理：`51e6032`（2026-11-06，Claude Code；清理提交是它的下一个提交：删掉纠察队永不显示的调试输出及其每帧销毁标志、犯罪监控里只剩注释的报告方法、战争理由两个死方法、野外执法走不到的开场分支，修拒缴宣战时同一句提示连出两遍并合并两个相同回调，连同 25 条失效文字键；规则总数基线 959→752）
 
-熵指标：state 规则总数（手写 state 里「依据」出现的次数，`Check-StateFreshness` 报告），基线 959（2026-10-28 集中清理后）。新裁定会让它上升，这不拦；手册替掉规则、合并重复让它下降。每次集中清理把它压回上次基线以下并更新基线，压不下就在台账写明原因。
+熵指标：state 规则总数（手写 state 里「依据」出现的次数，`Check-StateFreshness` 报告），基线 752（2026-11-06 集中清理后；上次 959 以来云端与本地分批合并同源规则压到约 745，当天新增用户裁定与谈判分层后为 752）。新裁定会让它上升，这不拦；手册替掉规则、合并重复让它下降。每次集中清理把它压回上次基线以下并更新基线，压不下就在台账写明原因。
 
 清理待办：
 
-- 玩家文字分批审阅（2026-11-04）附带的代码问题，都不在审阅稿里改，详见各稿「代码问题」：野外执法 `GwpOffenderDesire` 的 `PayToAvoidBattle/PayForPeace/PayGenerously/RashMost` 不在 `Roll` 候选表，18 条文字走不到（第 1、2 批）；`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；`gwp_fa_open_plain` 走不到（第 1 批）；`GwpPoliceWarReasonService.FormatLocation/FormatCampaignDate` 无人调用、`Check-CodeHygiene` 未查出（第 8 批）；`PoliceCrimeMonitorEnhanced.Report` 方法体整段注释、调用仍在取文字，罪名以显示文字存进案件、切语言不随动（第 10 批）；`PolicePatrolBehavior.DebugLog` 用写死的 `DebugPatrol=false` 关闭而不在 `#if GWP_DIAGNOSTICS` 内，11 条调试文字编进玩家包（第 11 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批，待用户定）。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记）
-- 玩家文字附带的两处代码问题：`PolicePatrolBehavior.OnRefuseConsequence` 宣战时先显示 `gwp_policepatrolbehavior_034`，紧接着又显示同句的 `_018`，同一句提示连出两遍；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，`gwp_rebuff_<打算>_charm/rogue/trade` 的英文玩家看到的都是 lead 那句。详见 `docs/reference/text-review-term-check-20261104.md` 与 `text-review-player-enforcement-20261104.md`。（2026-11-04 登记）
-- 规则数继续压：2026-10-29 又清了 affairs-interface、firesworn-parties、firesworn、firesworn-rituals、firesworn-villagers、family（959→901），11-04 云端会话又清了 case-interceptors、diagnostics、infrastructure、crime-intake 与 player-text、warden-gear 等九页（→802）；第二批云端会话又清了另外二十四页并核对 progress 与索引；warden-ai 的原版评分段落等手册写成后替掉。（2026-10-28 登记）
+- 玩家文字分批审阅（2026-11-04）附带、需用户定玩法的代码问题，详见各稿「代码问题」（谈判数值已在 `51e6032` 迁入纯规则，打算候选表未动）：野外执法 `GwpOffenderDesire` 的 `PayToAvoidBattle/PayForPeace/PayGenerously/RashMost` 不在 `Roll` 候选表，18 条文字走不到（第 1、2 批），删掉还是放回候选表待定；`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；罪名以显示文字存进案件、切语言不随动（第 10 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批）；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，按技能分句需先有审阅稿批准的 24 条英文。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记，2026-11-06 清掉无需裁定的部分）
 - reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）
 - 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会、烧村五篇已写。（2026-10-28 登记）
 

@@ -82,6 +82,7 @@ namespace GreyWardenPolicePurity
 
         #region 开场：他先看你是谁
 
+        /// <summary>普通声望且没被带走过的人另走性格开场（GwpFieldArrestBehavior），不进这里。</summary>
         internal static TextObject Opening(
             GwpFieldArrestBehavior.WardenStandingTier tier,
             bool hasBeenTakenBefore) =>
@@ -93,10 +94,8 @@ namespace GreyWardenPolicePurity
                     GwpText.Create(GwpTextCatalog.gwp_fa_open_respected_known),
                 GwpFieldArrestBehavior.WardenStandingTier.Respected =>
                     GwpText.Create(GwpTextCatalog.gwp_fa_open_respected),
-                _ when hasBeenTakenBefore =>
-                    GwpText.Create(GwpTextCatalog.gwp_fa_open_known),
                 _ =>
-                    GwpText.Create(GwpTextCatalog.gwp_fa_open_plain)
+                    GwpText.Create(GwpTextCatalog.gwp_fa_open_known)
             };
 
         #endregion

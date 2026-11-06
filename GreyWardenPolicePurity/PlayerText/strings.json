@@ -850,14 +850,6 @@
       "en": null,
       "zh": "{VAR_1} 天前"
     },
-    "gwp_gwppolicewarreasonservice_042": {
-      "en": "Near {VAR_1} ({VAR_2}, {VAR_3})",
-      "zh": "{VAR_1}附近 ({VAR_2}, {VAR_3})"
-    },
-    "gwp_gwppolicewarreasonservice_043": {
-      "en": "wild ({VAR_1}, {VAR_2})",
-      "zh": "野外 ({VAR_1}, {VAR_2})"
-    },
     "gwp_gwppolicewarreasonservice_044": {
       "en": null,
       "zh": "{VAR_1} 小时"
@@ -869,30 +861,6 @@
     "gwp_gwppolicewarreasonservice_046": {
       "en": null,
       "zh": "{VAR_1} 天 {VAR_2} 小时"
-    },
-    "gwp_gwppolicewarreasonservice_047": {
-      "en": "spring",
-      "zh": "春"
-    },
-    "gwp_gwppolicewarreasonservice_048": {
-      "en": "Summer",
-      "zh": "夏"
-    },
-    "gwp_gwppolicewarreasonservice_049": {
-      "en": "Autumn",
-      "zh": "秋"
-    },
-    "gwp_gwppolicewarreasonservice_050": {
-      "en": "Winter",
-      "zh": "冬"
-    },
-    "gwp_gwppolicewarreasonservice_051": {
-      "en": "Unknown season",
-      "zh": "未知季"
-    },
-    "gwp_gwppolicewarreasonservice_052": {
-      "en": "Year {VAR_1}, {VAR_2}, day {VAR_3}, {VAR_4}:00",
-      "zh": "{VAR_1}年{VAR_2}季第{VAR_3}天 {VAR_4}:00"
     },
     "gwp_hero_chenxi": {
       "en": "Eadgifu",
@@ -1735,10 +1703,6 @@
       "en": "Villager",
       "zh": "村民"
     },
-    "gwp_policecrimemonitorenhanced_002": {
-      "en": "Attack villager",
-      "zh": "攻击村民"
-    },
     "gwp_policecrimemonitorenhanced_003": {
       "en": "Attack villager",
       "zh": "攻击村民"
@@ -1747,10 +1711,6 @@
       "en": "Caravan",
       "zh": "商队"
     },
-    "gwp_policecrimemonitorenhanced_005": {
-      "en": "Attack caravan",
-      "zh": "攻击商队"
-    },
     "gwp_policecrimemonitorenhanced_006": {
       "en": "Attack caravan",
       "zh": "攻击商队"
@@ -1758,14 +1718,6 @@
     "gwp_policecrimemonitorenhanced_007": {
       "en": "{VAR_1} Villager",
       "zh": "{VAR_1}村的村民"
-    },
-    "gwp_policecrimemonitorenhanced_008": {
-      "en": "Raid village (start)",
-      "zh": "劫掠村庄(开始)"
-    },
-    "gwp_policecrimemonitorenhanced_009": {
-      "en": "Village={VAR_1}",
-      "zh": "村庄={VAR_1}"
     },
     "gwp_policecrimemonitorenhanced_010": {
       "en": "Raid Village",
@@ -2009,14 +1961,6 @@
       "en": "I cannot settle this companion's case now.",
       "zh": "我现在无法替这名同伴结案。"
     },
-    "gwp_policepatrolbehavior_001": {
-      "en": "A return order has been issued, waiting to be destroyed upon arrival at the settlement.",
-      "zh": "已下发返程命令，等待到达定居点后销毁"
-    },
-    "gwp_policepatrolbehavior_002": {
-      "en": "has been scheduled: Destroy the pickets after returning to the settlement.",
-      "zh": "已调度：返程至驻地后销毁纠察队"
-    },
     "gwp_policepatrolbehavior_003": {
       "en": "According to the Grey Wardens decree, the formal fine must be paid first.",
       "zh": "按灰袍法令，先把正式罚金缴清。"
@@ -2049,14 +1993,6 @@
       "en": "Refusal to Enforcement Recorded. Pickets, make arrests!",
       "zh": "拒绝执法已记录。纠察队，执行抓捕！"
     },
-    "gwp_policepatrolbehavior_011": {
-      "en": "The return trip is being suppressed and refuses to enter the picket dialogue again.",
-      "zh": "返程抑制中，拒绝再次进入纠察队对话"
-    },
-    "gwp_policepatrolbehavior_012": {
-      "en": "Enter the picket dialogue: party={VAR_1}, rep={VAR_2}, fine={VAR_3}",
-      "zh": "进入纠察队对话：party={VAR_1}, rep={VAR_2}, fine={VAR_3}"
-    },
     "gwp_policepatrolbehavior_013": {
       "en": "You carry {VAR_1} denars, enough to pay in full.",
       "zh": "你当前携带 {VAR_1} 金，可直接缴清。"
@@ -2077,10 +2013,6 @@
       "en": "Negotiate passage ({VAR_1} denars sought; standing unchanged)",
       "zh": "谈判放行（目标 {VAR_1} 金，声望不变）"
     },
-    "gwp_policepatrolbehavior_018": {
-      "en": "You refuse to submit. The patrol will take you by force.",
-      "zh": "你拒绝伏法，纠察队将强行缉拿。"
-    },
     "gwp_policepatrolbehavior_019": {
       "en": "Pay the facilitation fee",
       "zh": "缴纳通融费"
@@ -2096,14 +2028,6 @@
     "gwp_policepatrolbehavior_022": {
       "en": "The fine is paid and you are no longer wanted. The patrol withdraws.",
       "zh": "罚金已缴清，通缉撤销，纠察队撤离。"
-    },
-    "gwp_policepatrolbehavior_023": {
-      "en": "The conversation ends and repatriation begins. active={VAR_1}, returning={VAR_2}",
-      "zh": "对话结束，开始遣返。active={VAR_1}, returning={VAR_2}"
-    },
-    "gwp_policepatrolbehavior_024": {
-      "en": "PlayerEncounter.Finish(false) has been called",
-      "zh": "PlayerEncounter.Finish(false) 已调用"
     },
     "gwp_policepatrolbehavior_026": {
       "en": null,
@@ -2145,14 +2069,6 @@
       "en": "A Grey Warden patrol has set out from {VAR_1} after you.",
       "zh": "灰袍纠察队已从{VAR_1}出发追捕你。"
     },
-    "gwp_policepatrolbehavior_037": {
-      "en": "MapEventEnded It is detected that the player has been captured and enters the escort process",
-      "zh": "MapEventEnded 检测到玩家已被俘，进入押送流程"
-    },
-    "gwp_policepatrolbehavior_038": {
-      "en": "MapEventEnded No winner, the surrender path is processed as the picket victory",
-      "zh": "MapEventEnded 无 winner，按投降路径处理为纠察队胜利"
-    },
     "gwp_policepatrolbehavior_039": {
       "en": "The patrol has defeated you. You are being taken to {VAR_1}.",
       "zh": "你被纠察队击败，正被押往{VAR_1}。"
@@ -2192,18 +2108,6 @@
     "gwp_policepatrolbehavior_helpers_002": {
       "en": "Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you.",
       "zh": "经灰袍调停，{VAR_1}不再追究你的罪行。"
-    },
-    "gwp_policepatrolbehavior_helpers_003": {
-      "en": "The return command has been issued, the number of candidates = {VAR_1}, returning = {VAR_2}",
-      "zh": "已下发返程命令，候选数量={VAR_1}，returning={VAR_2}"
-    },
-    "gwp_policepatrolbehavior_helpers_004": {
-      "en": "The provost patrol reached {VAR_1}; disbanding: {VAR_2}",
-      "zh": "纠察队已到达 {VAR_1}，执行销毁：{VAR_2}"
-    },
-    "gwp_policepatrolbehavior_helpers_005": {
-      "en": "The return destruction has been completed and the normal session has been restored.",
-      "zh": "返程销毁已完成，恢复正常会话。"
     },
     "gwp_policeresourcemanager_001": {
       "en": "You lack the coin, so the Wardens take goods worth {VAR_1} denars.",
@@ -3726,10 +3630,6 @@
     "gwp_fa_open_known": {
       "en": "The Wardens again. I remember the last time.",
       "zh": "灰袍又来了。上次的事，我可还记得。"
-    },
-    "gwp_fa_open_plain": {
-      "en": "The Wardens. What do you want with me?",
-      "zh": "灰袍。找我什么事？"
     },
     "gwp_fa_submit_upright": {
       "en": null,

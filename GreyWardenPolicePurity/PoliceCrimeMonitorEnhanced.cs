@@ -361,9 +361,6 @@ namespace GreyWardenPolicePurity
             {
                 string victimName = defender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_001);
 
-                // 显示消息
-                Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_002), attacker, victimName, location);
-
                 // 触发事件通知惩戒系统
                 RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_003), attacker, location, victimName);
                 return;
@@ -373,8 +370,6 @@ namespace GreyWardenPolicePurity
             if (defender.PartyComponent is CaravanPartyComponent)
             {
                 string victimName = defender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_004);
-
-                Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_005), attacker, victimName, location);
 
                 RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_006), attacker, location, victimName);
                 return;
@@ -408,25 +403,7 @@ namespace GreyWardenPolicePurity
             _raidHearthAtStart[villageId] = new RaidSnapshot(offender.StringId, village.Hearth, CampaignTime.Now.ToHours);
             string victimName = GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_007, "VAR_1", village.Name);
 
-            Report(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_008), offender, victimName, location, GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_009, "VAR_1", village.Name));
-
             RegisterCrime(GwpText.Get(GwpTextCatalog.gwp_policecrimemonitorenhanced_010), offender, location, victimName);
-
-        }
-
-        /// <summary>
-        /// 显示犯罪消息
-        /// </summary>
-        private void Report(string type, MobileParty offender, string victimName, Vec2 location, string? extra = null)
-        {
-            string offenderName = offender?.Name?.ToString() ?? "Unknown";
-            string extraInfo = string.IsNullOrEmpty(extra) ? "" : $" | {extra}";
-
-            // 犯罪检测内部日志（开发调试，正式版不显示）
-            // InformationManager.DisplayMessage(new InformationMessage(
-            //     $"[GWP Police] {type} | 犯罪者={offenderName} | 受害者={victimName} | 地点={location}{extraInfo}",
-            //     Colors.Red
-            // ));
         }
 
         /// <summary>

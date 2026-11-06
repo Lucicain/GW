@@ -333,29 +333,5 @@ namespace GreyWardenPolicePurity
 
             return fallback;
         }
-
-        private static string FormatLocation(Vec2 position)
-        {
-            Settlement? nearestTown = GwpCommon.FindNearestTown(position);
-            if (nearestTown != null)
-                return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_042, "VAR_1", nearestTown.Name, "VAR_2", GwpText.Format(position.x, "0.0"), "VAR_3", GwpText.Format(position.y, "0.0"));
-
-            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_043, "VAR_1", GwpText.Format(position.x, "0.0"), "VAR_2", GwpText.Format(position.y, "0.0"));
-        }
-
-        private static string FormatCampaignDate(double hours)
-        {
-            CampaignTime time = CampaignTime.Hours((float)hours);
-            string season = time.GetSeasonOfYear switch
-            {
-                CampaignTime.Seasons.Spring => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_047),
-                CampaignTime.Seasons.Summer => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_048),
-                CampaignTime.Seasons.Autumn => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_049),
-                CampaignTime.Seasons.Winter => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_050),
-                _ => GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_051)
-            };
-
-            return GwpText.Get(GwpTextCatalog.gwp_gwppolicewarreasonservice_052, "VAR_1", time.GetYear, "VAR_2", season, "VAR_3", time.GetDayOfSeason + 1, "VAR_4", time.GetHourOfDay);
-        }
     }
 }

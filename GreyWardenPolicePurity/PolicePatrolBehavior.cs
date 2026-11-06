@@ -34,8 +34,6 @@ namespace GreyWardenPolicePurity
         private readonly List<string> _activePatrolIds = new List<string>();
         private readonly List<string> _returningPatrolIds = new List<string>();
 
-        // 对话结束后延迟一帧销毁纠察队（对话 Consequence 中不能直接 Destroy）
-        private bool _destroyAllPatrolsOnNextTick = false;
         private bool _suppressPatrolMeetings = false;
 
         private bool _playerRefused = false;
@@ -59,37 +57,14 @@ namespace GreyWardenPolicePurity
         // 对话中使用的临时变量
         private int _dialogFine = 0;
         private MobileParty _dialogPatrol = null!;
-        private static readonly bool DebugPatrol = false;
 
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
-            CampaignEvents.TickEvent.AddNonSerializedListener(this, OnTick);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.MapEventStarted.AddNonSerializedListener(this, OnMapEventStarted);
-        }
-
-        private void OnTick(float dt)
-        {
-            if (!_destroyAllPatrolsOnNextTick) return;
-
-            _destroyAllPatrolsOnNextTick = false;
-            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_001));
-        }
-
-        private void FreezeAndScheduleDestroyAllPatrols()
-        {
-            ReturnAllPatrols();
-            _destroyAllPatrolsOnNextTick = true;
-            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_002));
-        }
-
-        private void DebugLog(string text)
-        {
-            if (!DebugPatrol) return;
-            InformationManager.DisplayMessage(new InformationMessage($"[GWP-Patrol] {text}", Colors.Magenta));
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -109,7 +84,6 @@ namespace GreyWardenPolicePurity
                 _dialogPatrol = null!;
                 _dayCounter = 0;
                 _bribeProtectionDays = 0;
-                _destroyAllPatrolsOnNextTick = false;
                 _suppressPatrolMeetings = false;
             }
 
@@ -233,7 +207,7 @@ namespace GreyWardenPolicePurity
                 "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_008),
                 () => !PatrolBarterSuccessfulCondition(),
-                OnPatrolBarterRejectedConsequence,
+                OnRefuseConsequence,
                 100);
 
             // 选项2：拒绝缴纳
@@ -266,11 +240,7 @@ namespace GreyWardenPolicePurity
             if (conversationParty == null) return false;
             if (!IsPatrol(conversationParty)) return false;
 
-            if (_suppressPatrolMeetings)
-            {
-                DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_011));
-                return false;
-            }
+            if (_suppressPatrolMeetings) return false;
 
             int rep = PlayerState.Reputation;
             if (rep >= 0) return false;
@@ -290,8 +260,6 @@ namespace GreyWardenPolicePurity
                 "; activePatrols=" + _activePatrolIds.Count +
                 "; returningPatrols=" + _returningPatrolIds.Count +
                 "; suppressMeetings=" + _suppressPatrolMeetings);
-
-            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_012, "VAR_1", conversationParty.StringId, "VAR_2", rep, "VAR_3", _dialogFine));
 
             string canPay = playerGold >= _dialogFine
                 ? GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_013, "VAR_1", playerGold)
@@ -337,7 +305,7 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 拒绝缴纳结果：标记拒绝 + 纠察队接战
+        /// 拒绝缴纳或交易谈崩：标记拒绝 + 纠察队接战
         /// 若已经宣战了，宣战后战斗依然继续
         /// </summary>
         private void OnRefuseConsequence()
@@ -353,10 +321,6 @@ namespace GreyWardenPolicePurity
                 GreyWardenPartyDesireBehavior.RequestPursuit(
                     _dialogPatrol, MobileParty.MainParty, 9f);
             }
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_018),
-                Colors.Red));
         }
 
         private void OnNegotiateBarterConsequence()
@@ -401,33 +365,16 @@ namespace GreyWardenPolicePurity
                 Colors.Green));
         }
 
-        private void OnPatrolBarterRejectedConsequence()
-        {
-            _playerRefused = true;
-            _suppressPatrolMeetings = false;
-            DeclareWarOnPlayer();
-
-            if (_dialogPatrol != null && _dialogPatrol.IsActive)
-            {
-                GreyWardenPartyDesireBehavior.RequestPursuit(
-                    _dialogPatrol, MobileParty.MainParty, 9f);
-            }
-        }
-
         private void EndDialogueAndDismissPatrols()
         {
             _warDeclared = false;
             _playerRefused = false;
             _suppressPatrolMeetings = true;
 
-            DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_023, "VAR_1", _activePatrolIds.Count, "VAR_2", _returningPatrolIds.Count));
-            FreezeAndScheduleDestroyAllPatrols();
+            ReturnAllPatrols();
 
             if (PlayerEncounter.IsActive)
-            {
                 GwpCommon.TryFinishPlayerEncounter();
-                DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_024));
-            }
         }
 
         #endregion
@@ -687,6 +634,10 @@ namespace GreyWardenPolicePurity
         private void DeclareWarOnPlayer()
         {
             _warDeclared = true;
+            // 拒缴与谈崩共用这一句；已在交战时也提示，只是不再重复宣战。
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_034),
+                Colors.Red));
 
             Clan policeClan = PoliceStats.GetPoliceClan();
             if (policeClan == null) return;
@@ -695,12 +646,7 @@ namespace GreyWardenPolicePurity
             if (playerFaction == null) return;
 
             if (!FactionManager.IsAtWarAgainstFaction(policeClan, playerFaction))
-            {
                 FactionManager.DeclareWar(policeClan, playerFaction);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_034),
-                    Colors.Yellow));
-            }
         }
 
         #endregion
@@ -812,7 +758,6 @@ namespace GreyWardenPolicePurity
             // 投降/战败兜底：玩家已被俘则直接走押送惩罚
             if (PlayerCaptivity.IsCaptive)
             {
-                DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_037));
                 OnPatrolVictory(involvedPatrol);
                 _playerRefused = false;
                 return;
@@ -855,7 +800,6 @@ namespace GreyWardenPolicePurity
             {
                 // 投降等收束路径可能没有 winner 信息，按纠察队执法成功处理
                 patrolWon = true;
-                DebugLog(GwpText.Get(GwpTextCatalog.gwp_policepatrolbehavior_038));
             }
 
             if (patrolWon)

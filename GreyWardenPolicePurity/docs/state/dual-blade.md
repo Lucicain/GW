@@ -166,12 +166,11 @@ seq4408/t112.276  仍空副手盾击
 
 ## 锻造模板的可见范围
 
-- 双刀不允许打造：铁匠铺、城镇订单、定制订单以及第三方锻造界面都不能做出双刀；熔炼玩家已有的双刀可以。（依据：用户裁定 2026-11-06）
-- 已知缺陷：隐藏只在下述三处原版方法内生效，第三方铁匠铺模组若自己用 `CraftingTemplate.All` 建武器类别列表，会列出双刀模板并可能打造，违反上条；尚未在实际打造入口拦截。（依据：用户裁定 2026-11-06；324fe6d 实现边界）
+- 双刀不允许打造：原版铁匠铺、城镇订单、定制订单都不列出双刀模板；熔炼玩家已有的双刀可以。第三方锻造界面自建模板列表时是否列出双刀不归本模组处理，见[与其他模组共存](infrastructure.md#与其他模组共存)。（依据：用户裁定 2026-11-06）
 
 双刀两件是 `CraftedItem`，模板 `GwpOneHandedSwordDualOffhand` / `GwpOneHandedSwordDualMainhand`。模板必须留在全局 `CraftingTemplate.All`：原版 `CraftingCampaignBehavior` 按它建已解锁部件与研究点两张字典，熔炼时 `DoSmelting → AddResearchPoints` 用物品自己的模板直接索引。入会时会把双刀发给玩家，所以玩家背包里通常有这两件。不要再对 `CraftingTemplate.All` 的 getter 做过滤：旧版这样做后，两张字典里没有这两个模板，熔炼双刀，或第三方铁匠铺模组遍历背包里的锻造物品，都会抛 KeyNotFoundException。全局 getter 补丁还受 Harmony 补丁先后与 JIT 内联影响，不同模组读到的模板目录可能不一致。（依据：C#反编译 v1.4.8 CraftingCampaignBehavior/WeaponDesignVM，2026-11-06；玩家反馈铁匠铺模组排序报错 2026-11-06）
 
-隐藏只发生在三处，由 `GwpDualBladeCraftingTemplateVisibilityPatch` 用转译补丁把这三处原版方法里的 `All` 读取换成可见列表：铁匠铺武器类别列表（`WeaponDesignVM` 构造）、城镇订单 `CreateTownOrder`、定制订单 `CreateCustomOrderForHero`。其他地方都看到完整目录，原版作弊「解锁全部部件」也会包含双刀模板，这一点无害。熔炼双刀得到的研究点由 `GwpDualBladeSmeltingResearchPatch` 改记到原版 `OneHandedSword` 模板：双刀的部件全部取自这个模板，两者同属单手剑。如果记在双刀模板上，研究点会浪费，原版还会弹出指向一个选不到的类别的解锁提示；原版 `WeaponDesignVM.OnNewPieceUnlocked` 只按部件、不按模板判断，还会让当前单手剑界面把这个部件误显示为已拥有。双刀模板的显示名由 `gwp_game_strings.xml` 的 `str_crafting_template.*` 提供，复用物品名文本键，供熔炼界面和第三方锻造界面使用。第三方模组自己用 `All` 建武器类别列表时的缺口见上方已知缺陷。（依据：设计 2026-11-06）
+隐藏只发生在三处，由 `GwpDualBladeCraftingTemplateVisibilityPatch` 用转译补丁把这三处原版方法里的 `All` 读取换成可见列表：铁匠铺武器类别列表（`WeaponDesignVM` 构造）、城镇订单 `CreateTownOrder`、定制订单 `CreateCustomOrderForHero`。其他地方都看到完整目录，原版作弊「解锁全部部件」也会包含双刀模板，这一点无害。熔炼双刀得到的研究点由 `GwpDualBladeSmeltingResearchPatch` 改记到原版 `OneHandedSword` 模板：双刀的部件全部取自这个模板，两者同属单手剑。如果记在双刀模板上，研究点会浪费，原版还会弹出指向一个选不到的类别的解锁提示；原版 `WeaponDesignVM.OnNewPieceUnlocked` 只按部件、不按模板判断，还会让当前单手剑界面把这个部件误显示为已拥有。双刀模板的显示名由 `gwp_game_strings.xml` 的 `str_crafting_template.*` 提供，复用物品名文本键，供熔炼界面和第三方锻造界面使用。（依据：设计 2026-11-06）
 
 ## 诊断现状
 
