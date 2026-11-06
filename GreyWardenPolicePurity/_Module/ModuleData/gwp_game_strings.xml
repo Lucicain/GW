@@ -15,4 +15,12 @@
 	<string
 		id="str_weapon_usage.GwpOneHandedSwordDualOffhand"
 		text="{=PiHpR4QL}One Handed" />
+	<!-- 双刀模板留在全局模板目录里（熔炼研究点按物品模板记账），原版部件解锁提示会读
+	     str_crafting_template 的模板名；名字复用物品的文本键。 -->
+	<string
+		id="str_crafting_template.GwpOneHandedSwordDualMainhand"
+		text="{=gwp_item_dual_mainhand}Grey Warden Dual Blade (Main Hand)" />
+	<string
+		id="str_crafting_template.GwpOneHandedSwordDualOffhand"
+		text="{=gwp_item_dual_offhand}Grey Warden Dual Blade (Off Hand)" />
 </strings>

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using IOPath = System.IO.Path;
 using HarmonyLib;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.ViewModelCollection.WeaponCrafting.WeaponDesign;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -221,36 +224,97 @@ namespace GreyWardenPolicePurity
     }
 
     /// <summary>
-    /// Keeps the fixed blade templates registered so CharacterCode and
-    /// tableaux can resolve the real crafted weapons. They are filtered only
-    /// from the native crafting-template catalogue, which also keeps them out
-    /// of the smithy and town-order selection.
+    /// The fixed blade templates stay in the global CraftingTemplate catalogue:
+    /// native CraftingCampaignBehavior builds its opened-part and research
+    /// dictionaries from it, and smelting a crafted item indexes them by the
+    /// item's template (v1.4.8 DoSmelting → AddResearchPoints). Hiding the
+    /// templates globally left the player's granted dual blades without keys,
+    /// so smelting them, or any smithing mod walking crafted items, threw
+    /// KeyNotFoundException. Only the smithy weapon-class list and the town /
+    /// custom order rolls read the visible list.
     /// </summary>
-    [HarmonyPatch(
-        typeof(CraftingTemplate),
-        nameof(CraftingTemplate.All),
-        MethodType.Getter)]
+    [HarmonyPatch]
     internal static class GwpDualBladeCraftingTemplateVisibilityPatch
     {
-        [HarmonyPostfix]
-        private static void Postfix(
-            ref MBReadOnlyList<CraftingTemplate> __result)
+        private static readonly MethodInfo NativeAllGetter =
+            AccessTools.PropertyGetter(
+                typeof(CraftingTemplate),
+                nameof(CraftingTemplate.All))
+            ?? throw new MissingMethodException(
+                typeof(CraftingTemplate).FullName,
+                nameof(CraftingTemplate.All));
+
+        private static readonly MethodInfo VisibleTemplatesMethod =
+            AccessTools.Method(
+                typeof(GwpDualBladeCraftingTemplateVisibilityPatch),
+                nameof(VisibleTemplates))
+            ?? throw new MissingMethodException(
+                typeof(GwpDualBladeCraftingTemplateVisibilityPatch).FullName,
+                nameof(VisibleTemplates));
+
+        private static IEnumerable<MethodBase> TargetMethods()
         {
-            if (__result == null)
-                return;
+            yield return AccessTools.FirstConstructor(
+                typeof(WeaponDesignVM),
+                constructor => !constructor.IsStatic);
+            yield return AccessTools.Method(
+                typeof(CraftingCampaignBehavior),
+                nameof(CraftingCampaignBehavior.CreateTownOrder));
+            yield return AccessTools.Method(
+                typeof(CraftingCampaignBehavior),
+                nameof(CraftingCampaignBehavior.CreateCustomOrderForHero));
+        }
 
-            CraftingTemplate[] visible = __result
-                .Where(template => template != null
-                    && !GwpIds.DualBladeCraftingTemplateIds.Any(
-                        id => string.Equals(
-                            id,
-                            template.StringId,
-                            StringComparison.OrdinalIgnoreCase)))
-                .ToArray();
-
-            if (visible.Length != __result.Count)
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> Transpiler(
+            IEnumerable<CodeInstruction> instructions,
+            MethodBase original)
+        {
+            bool replaced = false;
+            foreach (CodeInstruction instruction in instructions)
             {
-                __result = new MBReadOnlyList<CraftingTemplate>(visible);
+                if (instruction.Calls(NativeAllGetter))
+                {
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = VisibleTemplatesMethod;
+                    replaced = true;
+                }
+
+                yield return instruction;
+            }
+
+            if (!replaced)
+            {
+                throw new InvalidOperationException(
+                    "GreyWarden could not locate CraftingTemplate.All in "
+                    + original.DeclaringType?.Name + "." + original.Name + ".");
+            }
+        }
+
+        private static MBReadOnlyList<CraftingTemplate> VisibleTemplates() =>
+            new MBReadOnlyList<CraftingTemplate>(CraftingTemplate.All
+                .Where(template =>
+                    !GwpIds.DualBladeCraftingTemplateIds.Contains(
+                        template.StringId)));
+    }
+
+    /// <summary>
+    /// Smelting credits research to the item's own template. The dual blades
+    /// are one-handed swords built only from native OneHandedSword pieces, so
+    /// their research goes to that selectable template instead of unlocking
+    /// parts (and raising notices) for a template the smithy never offers.
+    /// </summary>
+    [HarmonyPatch(typeof(CraftingCampaignBehavior), "AddResearchPoints")]
+    internal static class GwpDualBladeSmeltingResearchPatch
+    {
+        [HarmonyPrefix]
+        private static void Prefix(ref CraftingTemplate craftingTemplate)
+        {
+            if (GwpIds.DualBladeCraftingTemplateIds.Contains(
+                    craftingTemplate.StringId))
+            {
+                craftingTemplate = CraftingTemplate.GetTemplateFromId(
+                    GwpIds.DualBladeResearchCraftingTemplateId);
             }
         }
     }

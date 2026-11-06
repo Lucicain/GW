@@ -51,6 +51,10 @@
 
 自主练兵送老兵已退休，TRAINING_TRANSPORT_DISPATCHED随机制删除；旧在途实体仍可用DELIVERED记录实际交付，随接续验收退休，规则只在[挂名练兵官](warden-training.md)维护。BALANCE_DISPATCHED增加真实capacity/weight与danger，DAMNATION增加surplusBurned/promotedToGuard，用于核对分批运量及超额两换一；确认后退休健康路径。（依据：用户裁定及诊断流程2026-10-20）
 
+## 玩家外部报告
+
+已知缺陷：玩家报告长局偶发报错闪退，根因未明。环境为 v1.4.8，灰袍最新版排在加载顺序最后，挂机 1600 天，并可能装有加速模组。600 多天时出现过两三次报错闪退，重开后能继续过时间，存档没有损坏。报告里没有日志、堆栈或转储，本机也没有同类记录：2026-11-06 查过 `GreyWarden-Faults.log`、`C:\ProgramData\Mount and Blade II Bannerlord\logs`，崩溃目录为空。因此目前不能确定是否由灰袍引起，未改业务代码。下次复发时请玩家提供同一时刻的 `C:\ProgramData\Mount and Blade II Bannerlord\crashes\<时间>` 整个目录，或报错窗口的完整文本（Better Exception Window 的 html），并附上模组列表；拿到后按本文件「谁来管」读取。玩家包不带诊断，这类报告只能依靠原版崩溃报告。（依据：玩家群反馈与本机日志核查 2026-11-06）
+
 ## 日志文件
 
 游戏 Documents 目录下：

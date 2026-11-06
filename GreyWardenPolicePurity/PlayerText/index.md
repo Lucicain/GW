@@ -900,8 +900,8 @@
 | gwp_player_troop_ledger_detail | Ready: {VAR_1}/{VAR_2} &#124; Paid: {VAR_3} denars | 已备：{VAR_1}/{VAR_2} &#124; 已付：{VAR_3} 第纳尔 | GwpCaseArchiveItemVM.cs:312 |
 | gwp_player_troop_stage_training | Training | 训练中 | GwpCaseArchiveItemVM.cs:535 |
 | gwp_player_troop_stage_delivery | Delivering troops | 正在送兵 | GwpCaseArchiveItemVM.cs:537 |
-| gwp_item_dual_offhand | Grey Warden Dual Blade (Off Hand) | 灰袍双持剑（副手） | _Module/ModuleData/gwp_crafting_pieces.xml, _Module/ModuleData/items.xml |
-| gwp_item_dual_mainhand | Grey Warden Dual Blade (Main Hand) | 灰袍双持剑（主手） | _Module/ModuleData/items.xml |
+| gwp_item_dual_offhand | Grey Warden Dual Blade (Off Hand) | 灰袍双持剑（副手） | _Module/ModuleData/gwp_crafting_pieces.xml, _Module/ModuleData/gwp_game_strings.xml, _Module/ModuleData/items.xml |
+| gwp_item_dual_mainhand | Grey Warden Dual Blade (Main Hand) | 灰袍双持剑（主手） | _Module/ModuleData/gwp_game_strings.xml, _Module/ModuleData/items.xml |
 | gwp_fieldarrest_open | Stand where you are. I speak for the Grey Wardens. | 我受灰袍委托，为你名下的一件案子而来。 | GwpFieldArrestBehavior.cs:104 |
 | gwp_fieldarrest_charge | The Grey Wardens charge you with {VAR_1}, against {VAR_2}. The fine is {VAR_3} denars. They sent me to settle this. | 灰袍指控你曾{VAR_1}，受害方是{VAR_2}。应缴罚金 {VAR_3} 第纳尔，我受托来处理这件事。 | GwpFieldArrestBehavior.cs:546 |
 | gwp_fieldarrest_walk_away | Never mind. Go on your way. | 算了，你走吧。 | GwpFieldArrestBehavior.cs:145 |

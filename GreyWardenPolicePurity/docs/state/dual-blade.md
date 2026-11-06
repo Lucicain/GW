@@ -3,7 +3,7 @@
 > 当前状态：双刀和踢击旧规则已验收；发射与击杀成长已扩展，规则见combat-growth.md
 > 最后验收：`03964e4`（v1.4-r13 构建；2026-09-26 用户确认）
 > 覆盖源码：`GwpDualBlade*.cs` `GwpKick*.cs` `GwpShieldBashGuardPatch.cs` `GwpAlternativeAttack*.cs` `GwpDualWieldingPatch.cs`
-> 待实测：无
+> 待实测：铁匠铺熔炼双刀不报错且研究点记到单手剑；武器类别与城镇订单仍不出现双刀模板
 
 ## 已修复的崩溃
 
@@ -163,6 +163,12 @@ seq4408/t112.276  仍空副手盾击
 `Agent.IsRangedCached` 读取**整套装备**有无带弹药的非消耗性远程武器，
 `QueryLibrary` 再结合是否骑乘判步兵/弓手/骑兵/骑射——**不是只看当前手持**。
 所以有可用弓箭时拔双刀不会把弓手算成步兵；箭耗尽可以改变该统计，但不代表立刻换编队。
+
+## 锻造模板的可见范围
+
+双刀两件是 `CraftedItem`，模板 `GwpOneHandedSwordDualOffhand` / `GwpOneHandedSwordDualMainhand`。模板必须留在全局 `CraftingTemplate.All`：原版 `CraftingCampaignBehavior` 按它建已解锁部件与研究点两张字典，熔炼时 `DoSmelting → AddResearchPoints` 用物品自己的模板直接索引。入会时会把双刀发给玩家，所以玩家背包里通常有这两件。不要再对 `CraftingTemplate.All` 的 getter 做过滤：旧版这样做后，两张字典里没有这两个模板，熔炼双刀，或第三方铁匠铺模组遍历背包里的锻造物品，都会抛 KeyNotFoundException。全局 getter 补丁还受 Harmony 补丁先后与 JIT 内联影响，不同模组读到的模板目录可能不一致。（依据：C#反编译 v1.4.8 CraftingCampaignBehavior/WeaponDesignVM，2026-11-06；玩家反馈铁匠铺模组排序报错 2026-11-06）
+
+隐藏只发生在三处，由 `GwpDualBladeCraftingTemplateVisibilityPatch` 用转译补丁把这三处原版方法里的 `All` 读取换成可见列表：铁匠铺武器类别列表（`WeaponDesignVM` 构造）、城镇订单 `CreateTownOrder`、定制订单 `CreateCustomOrderForHero`。其他地方都看到完整目录，原版作弊「解锁全部部件」也会包含双刀模板，这一点无害。熔炼双刀得到的研究点由 `GwpDualBladeSmeltingResearchPatch` 改记到原版 `OneHandedSword` 模板：双刀的部件全部取自这个模板，两者同属单手剑。如果记在双刀模板上，研究点会浪费，原版还会弹出指向一个选不到的类别的解锁提示；原版 `WeaponDesignVM.OnNewPieceUnlocked` 只按部件、不按模板判断，还会让当前单手剑界面把这个部件误显示为已拥有。双刀模板的显示名由 `gwp_game_strings.xml` 的 `str_crafting_template.*` 提供，复用物品名文本键，供熔炼界面和第三方锻造界面使用。第三方模组如果自己用 `All` 建武器类别列表，会列出双刀模板，这是已接受的代价。（依据：设计 2026-11-06）
 
 ## 诊断现状
 

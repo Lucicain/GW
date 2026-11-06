@@ -37,6 +37,8 @@ namespace GreyWardenPolicePurity
             "GwpOneHandedSwordDualOffhand";
         public const string DualBladeMainhandCraftingTemplateId =
             "GwpOneHandedSwordDualMainhand";
+        /// <summary>原版单手剑模板；双刀部件全部取自它，熔炼双刀的研究点记在这里。</summary>
+        public const string DualBladeResearchCraftingTemplateId = "OneHandedSword";
 
         public const string BountyQuestPrefix = "gwp_bounty_quest_";
         public const string BountyQuestFallbackId = "gwp_bounty_quest_0";
