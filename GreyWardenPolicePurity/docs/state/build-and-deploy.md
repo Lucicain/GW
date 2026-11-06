@@ -2,12 +2,12 @@
 
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
 > 最后验收：2026-10-28；正式包基线见下文
-> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py` `tools/gametest/gametest/*.py` `tools/gametest/bridge/GreyWardenTestBridge/*`
-> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进；测试桥的 MCP 服务层本身（经 Claude Code/Codex 注册调用）
+> 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
+> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进
 
 ## 当前开发部署
 
-live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（删除离线测试及其专用成员后重建）：构建0警告0错误，Client/wEditor的SHA-256同为`25954537D38C6D3943522FBA7D2D688C397A66180767BB38572493A0914EE88D`，live镜像无缺失、差异或散落，游戏兼容检查PASS（114条补丁绑定）。各功能的验收范围与待实测见所属state，本节不复述。（依据：构建、部署与哈希2026-10-28）
+live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-06（退休测试桥、城内办案队去留切换同一份生产纯规则）：构建0警告0错误，Client/Editor的SHA-256同为`88D558CF815F3258A2F9EC6684F6D51A39B3C2D5469B04DD21F318C3FE1D263C`，live镜像无缺失、差异或散落，兼容检查PASS（114条补丁绑定；隔离玩家版109条）。未启动游戏，本批真实抽兵、结算与原生存读档仍待正常游玩取证，归[搜捕支援](city-search-support.md)；静态验证不升级为游戏验收。（依据：构建、部署与哈希2026-11-06）
 
 灰袍兼容预检只覆盖本模块的引用、补丁绑定及已知静态初始化问题，不执行前置模组的完整启动构造，不能代替启动器整条加载链；2026-10-27前置模组重复勾选导致的启动失败即在此之外。（依据：预检边界与启动故障2026-10-27）
 
@@ -29,16 +29,11 @@ live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-04（删�
 
 本机 Native 声明 v1.4.8。原版 `Campaign.SpeedUpMultiplier` 默认 4；作弊模式控制台 `campaign.set_campaign_speed_multiplier 10` 可设快进倍率，普通模式上限 15、开发模式 30；倍率不保证实际吞吐。官方 `FastMode` 模块设置 `CampaignOptions.AccelerationMode`，不能据名称当作地图快进。（依据：本机模块与 C#反编译 2026-10-18）
 
-## 自动化实机测试桥
+## 自动化验证边界
 
-agent 经 MCP 服务 `tools/gametest/`（`python tools/gametest/server.py`，stdio）自己启动游戏跑自动化测试：
-一次工具调用办完一件事、返回结构化 JSON、不看屏幕。边界即 AGENTS.md「实机」：用户在玩（游戏相关进程在、live DLL 被占用）不启动，
-live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写 `gwp_test_` 存档，命令超时即杀进程，跑完关游戏；
-每条栅栏写在代码里并有单元测试。（依据：用户裁定 2026-11-04）
+通用测试桥及本机独立测试模组已退休；主 DLL 不再给桥开放内部成员，源码、协议、服务、自检与专属场景一并移除。用户启动器未引用它，未发现全局 MCP 注册；既有测试存档保留，其模块列表可能仍包含已退休模组，不作为普通游玩或验证入口。历史在 `b0787bc` 存档，维护理由见[原始方案](../reference/development-maintainability-plan-20261106.md)。（依据：用户授权落地与依赖核对 2026-11-06）
 
-游戏内一侧是独立测试模组 `GreyWardenTestBridge`，协议以 `tools/gametest/PROTOCOL.md` 为准；它只在测试工具经环境变量
-`GWP_TEST_BRIDGE_SESSION` 启动游戏时启用，用户自己开的游戏不会被连上或杀掉，也不进 `_Module` 与玩家包。
-源码在 `tools/gametest/bridge/GreyWardenTestBridge/`，引用 live 的主 DLL，先构建主项目再构建它；主 DLL 只在诊断版对它开放 internal 成员，非诊断构建的灰袍查询回 `unavailable`。现状：2026-11-06 本地首次跑通 `smoke` 场景（读 `gwp_test_smoke`、确认在战役中、快进 24 小时、读案件与哨兵、关游戏），全程约 70 秒，其中快进一个游戏日约 21 秒；这次由脚本直接调用场景运行器，没经过 MCP 层。测试存档 `gwp_test_smoke` 用最少模组（Native、SandBoxCore、Sandbox、StoryMode、CustomBattle、GreyWarden、GreyWardenTestBridge）新开沙盒战役，测试桥启动的模组列表必须与存档一致，否则读档弹窗、桥接回 `load_failed`。战役中再读档时少了原版 `MapCameraView.OnExit()` 一步，尚未修。构建、快照字段与待核对项见该目录 README，注册与场景写法见 `tools/gametest/README.md`。（依据：设计 2026-11-04）
+开发验证按 [workflow](workflow.md#验证如何选) 选择：自有纯规则直接调用同一份生产源码，实际游戏行为由正常游玩诊断及必要现场核实；不将局部通过等同于整局、引擎动作或原生存读档通过。游戏操作与部署占用边界见 AGENTS「实机」。（依据：用户裁定 2026-11-06）
 
 ## 两个开关决定一切
 
@@ -91,9 +86,9 @@ live DLL 与仓库最新构建或 `_Module` 镜像不一致不启动，只读写
 | `tests/test_player_text.py` | 中英输出、只读陈旧检查、新键生成、换行等价、占位符丢失拒绝及新增内联文本拒绝 |
 | `tests/test_project_checks.py` | 战力/讲和/守村经验容量/玩家委派/海陆交接归属、引用失效核对、严格模式保留原硬闸；运行 `python -m unittest discover -s tools/tests -p test_project_checks.py -v` |
 | `MusicTests` | FLAC 逐位无损、Wwise 曲线与片段包络、输出限制器、升档节奏、增援提示波数与分局档位、过渡规则、静音设备生命周期。`--fingerprint` 固定场景指纹；`--compare-old` 与旧预渲染对照；`--dump` 导出混音测响度 |
-| `gametest/tests` | 测试桥 Python 端：启动栅栏（在玩/占用/哈希/镜像/模组/存档名）、启动命令、协议客户端、超时与停止强杀、会话接回、场景断言、MCP 注册；假桥接服务器与假进程，不需要游戏；`python -m unittest discover -s tools/gametest/tests` |
+| `GreyWardenPolicePurity.Core.Tests` | 直接检查同一份 Core 生产规则的分支与优先级；`dotnet run --project GreyWardenPolicePurity.Core.Tests -c Release`，不模拟引擎，不提供无样本回放通过 |
 
-模拟游戏行为的离线测试（67 个 Python 测试、四个 C# 测试工程、七个行为验证脚本）已于 2026-11-04 全部删除；行为验证走测试桥，见上节。`MusicTests` 同时是配乐校准的混音导出工具（`Measure-MusicCalibration.py` 读它的输出），所以保留。（依据：用户裁定 2026-11-04）
+模拟游戏行为的离线测试不恢复；Core 只编译主项目的同一份纯规则源码，不引用游戏 DLL。`MusicTests` 同时是配乐校准的混音导出工具（`Measure-MusicCalibration.py` 读它的输出），继续保留。（依据：用户裁定 2026-11-04、2026-11-06）
 
 ## live 镜像是硬要求
 

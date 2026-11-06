@@ -1,5 +1,3 @@
-using System.IO;
-using System.Linq;
 using GreyWardenPolicePurity.Core.CitySupport;
 using Xunit;
 
@@ -10,7 +8,7 @@ namespace GreyWardenPolicePurity.Core.Tests.CitySupport
         /// <summary>一支正常在路上、目标住城可接触、独立办理的队。</summary>
         private static CityTeamView Travelling() => new CityTeamView
         {
-            TeamId = "team", PartyExists = true, CaseOpen = true, TargetAvailable = true,
+            PartyExists = true, CaseOpen = true, TargetAvailable = true,
             HealthyMembers = 5, ShelterKnown = true,
         };
 
@@ -105,38 +103,49 @@ namespace GreyWardenPolicePurity.Core.Tests.CitySupport
             Assert.Equal(new CityTeamDecision(CityTeamAction.Settle), Decide(view));
         }
 
-        [Fact]
-        public void RecordRoundTripsEveryField()
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        public void InvalidCaseReturnsWithoutReplacingOrChangingPlayerAssignment(bool open, bool available)
         {
-            var view = new CityTeamView
-            {
-                TeamId = "gw_city_7", UsedByActiveSearchScene = true, PartyExists = true, CaseOpen = true,
-                TargetAvailable = true, InBattle = true, HealthyMembers = 3, Holding = true, ForPlayer = true,
-                PlayerHoldsCase = true, ShelterKnown = true, AtWarWithShelter = true, ArrivedAtShelter = true,
-            };
-            Assert.Equal(view.ToRecord(), CityTeamView.FromRecord(view.ToRecord()).ToRecord());
-            var decision = new CityTeamDecision(CityTeamAction.GoToShelter, rethink: true, dropPlayerLink: true);
-            Assert.Equal(decision, CityTeamDecision.FromRecord(decision.ToRecord()));
+            var view = Travelling();
+            view.CaseOpen = open;
+            view.TargetAvailable = available;
+            view.PartyExists = false;
+            view.ForPlayer = true;
+            view.Holding = true;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Return), Decide(view));
         }
 
-        /// <summary>
-        /// 回放真实对局：每行是「局面 | 旧代码当时的决定」，新逻辑必须给出同样的决定。
-        /// 录像由诊断版的影子运行写出（CITY_TEAM_SHADOW），见 docs/state/code-health.md「分层架构」。
-        /// </summary>
         [Fact]
-        public void ReplayRecordedGamesMatchTheOldDecisions()
+        public void LostPlayerTeamKeepsItsAssignmentUntilReplacement()
         {
-            string dir = Path.Combine(System.AppContext.BaseDirectory, "Replay", "CitySupport");
-            if (!Directory.Exists(dir)) return;
-            var cases = Directory.GetFiles(dir, "*.log").SelectMany(File.ReadAllLines)
-                .Where(line => line.Contains('|')).ToList();
-            Assert.NotEmpty(cases);
-            foreach (string line in cases)
-            {
-                string[] parts = line.Split('|');
-                var expected = CityTeamDecision.FromRecord(parts[1].Trim());
-                Assert.True(expected.Equals(CityTeamRules.Decide(CityTeamView.FromRecord(parts[0].Trim()))), line);
-            }
+            var view = Travelling();
+            view.PartyExists = false;
+            view.ForPlayer = true;
+            view.Holding = true;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Replace), Decide(view));
+        }
+
+        [Fact]
+        public void PlayerEscortTakesPriorityOverIndependentSettlement()
+        {
+            var view = Travelling();
+            view.ForPlayer = true;
+            view.PlayerHoldsCase = true;
+            view.AtWarWithShelter = true;
+            view.ArrivedAtShelter = true;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.EscortPlayer), Decide(view));
+        }
+
+        [Fact]
+        public void ReleasedPlayerLinkIsClearedEvenWhileWaitingForTheTarget()
+        {
+            var view = Travelling();
+            view.ForPlayer = true;
+            view.ShelterKnown = false;
+            view.Holding = true;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Wait, rethink: true, dropPlayerLink: true), Decide(view));
         }
     }
 }

@@ -1,17 +1,13 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 
 namespace GreyWardenPolicePurity.Core.CitySupport
 {
     /// <summary>
     /// 一支城内办案队此刻的局面，由游戏层从实际部队、案卷和搜捕现场整理出来。
-    /// 逻辑层只看这些字段，不碰任何游戏对象，所以能直接录下来回放。
+    /// 逻辑层只看这些字段，不碰任何游戏对象；调用方按决定执行实际动作。
     /// </summary>
     public sealed class CityTeamView
     {
-        public string TeamId = string.Empty;
         /// <summary>地图暂停或存读后，搜捕现场仍占用这支队。</summary>
         public bool UsedByActiveSearchScene;
         public bool PartyExists;
@@ -29,49 +25,6 @@ namespace GreyWardenPolicePurity.Core.CitySupport
         public bool AtWarWithShelter;
         public bool ArrivedAtShelter;
 
-        private static readonly string[] Keys =
-        {
-            "team", "scene", "party", "open", "target", "battle", "healthy", "hold",
-            "player", "playerCase", "shelter", "war", "arrived",
-        };
-
-        /// <summary>录制用的一行文本：<c>键=值</c> 以分号隔开，键的顺序固定。</summary>
-        public string ToRecord() => string.Join(";", new[]
-        {
-            TeamId, Flag(UsedByActiveSearchScene), Flag(PartyExists), Flag(CaseOpen), Flag(TargetAvailable),
-            Flag(InBattle), HealthyMembers.ToString(CultureInfo.InvariantCulture), Flag(Holding), Flag(ForPlayer),
-            Flag(PlayerHoldsCase), Flag(ShelterKnown), Flag(AtWarWithShelter), Flag(ArrivedAtShelter),
-        }.Select((value, i) => Keys[i] + "=" + value));
-
-        public static CityTeamView FromRecord(string record)
-        {
-            var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (string part in record.Split(';'))
-            {
-                int eq = part.IndexOf('=');
-                if (eq > 0) fields[part.Substring(0, eq)] = part.Substring(eq + 1);
-            }
-            foreach (string key in Keys)
-                if (!fields.ContainsKey(key)) throw new FormatException("城内办案队录制缺少字段 " + key + "：" + record);
-            return new CityTeamView
-            {
-                TeamId = fields["team"],
-                UsedByActiveSearchScene = fields["scene"] == "1",
-                PartyExists = fields["party"] == "1",
-                CaseOpen = fields["open"] == "1",
-                TargetAvailable = fields["target"] == "1",
-                InBattle = fields["battle"] == "1",
-                HealthyMembers = int.Parse(fields["healthy"], CultureInfo.InvariantCulture),
-                Holding = fields["hold"] == "1",
-                ForPlayer = fields["player"] == "1",
-                PlayerHoldsCase = fields["playerCase"] == "1",
-                ShelterKnown = fields["shelter"] == "1",
-                AtWarWithShelter = fields["war"] == "1",
-                ArrivedAtShelter = fields["arrived"] == "1",
-            };
-        }
-
-        private static string Flag(bool value) => value ? "1" : "0";
     }
 
     public enum CityTeamAction
@@ -114,18 +67,6 @@ namespace GreyWardenPolicePurity.Core.CitySupport
 
         public override int GetHashCode() => ((int)Action * 4) + (Rethink ? 2 : 0) + (DropPlayerLink ? 1 : 0);
 
-        public string ToRecord() => "action=" + Action + ";rethink=" + (Rethink ? "1" : "0")
-            + ";drop=" + (DropPlayerLink ? "1" : "0");
-
-        public static CityTeamDecision FromRecord(string record)
-        {
-            var fields = record.Split(';').Select(part => part.Split(new[] { '=' }, 2))
-                .Where(pair => pair.Length == 2).ToDictionary(pair => pair[0], pair => pair[1], StringComparer.Ordinal);
-            return new CityTeamDecision((CityTeamAction)Enum.Parse(typeof(CityTeamAction), fields["action"]),
-                fields["rethink"] == "1", fields["drop"] == "1");
-        }
-
-        public override string ToString() => ToRecord();
     }
 
     /// <summary>

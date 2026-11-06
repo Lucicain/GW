@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- 逻辑层的单元测试：只测纯逻辑，不模拟游戏，不需要游戏 DLL，云端也能跑。
-       Replay/ 下是从真实对局录下的局面与当时旧代码的决定，回放时新逻辑必须给出同样的决定。 -->
+  <!-- 直接验证同一份生产规则；不模拟游戏，不证明引擎动作与原生存读档。 -->
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>10.0</LangVersion>
@@ -11,11 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\GreyWardenPolicePurity.Core\GreyWardenPolicePurity.Core.csproj" />
-    <None Include="Replay\**\*.log" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

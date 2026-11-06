@@ -186,6 +186,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("城内办案队去留", r"\bnew\s+CityTeamDecision\s*\(",
+     "CityTeamRules.cs", "CityTeamRules.Decide"),
     ("玩家搜捕单案机会", r"\bCitySearch(?:PersonalUsed|SupportUsed)\s*(?:=|\b)",
      "GwpData.cs|GwpCitySearchCasePolicy.cs", "GwpCitySearchCasePolicy"),
     ("搜捕街道伤亡快照", r"\"gwp_cs_street_body_(?:data|numbers)\"",

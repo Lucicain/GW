@@ -120,127 +120,87 @@ namespace GreyWardenPolicePurity
             {
                 MobileParty? party = FindActiveParty(state.PatrolPartyId);
                 var search = Campaign.Current.GetCampaignBehavior<GwpCitySearchBehavior>();
-                CityTeamView view = CityTeamViewOf(state, party, search);
-                // 地图暂停/存读后的现场仍占用该队；不能在另一处同时归还或自动结算。
-                if (search?.SearchActive == true && search.UsesSupportParty(state.PatrolPartyId))
+                CityTeamView view = CityTeamViewOf(state, party, search,
+                    out CrimeRecord? crime, out Hero? target, out Settlement? town);
+                CityTeamDecision decision = CityTeamRules.Decide(view);
+
+                // 两项前置动作的顺序保持原样；Rethink 只设置下次小时决策标志，不立即执行 AI。
+                if (decision.Rethink) GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
+                if (decision.DropPlayerLink) state.CityForPlayer = false;
+
+                switch (decision.Action)
                 {
-                    if (party == null) search.FinishSearch(false);
-                    ShadowCityTeam(view, party == null ? CityTeamAction.FinishSearchScene : CityTeamAction.Wait);
-                    continue;
+                    case CityTeamAction.Wait:
+                        break;
+                    case CityTeamAction.FinishSearchScene:
+                        search!.FinishSearch(false);
+                        break;
+                    case CityTeamAction.Return:
+                        MarkDelayPatrolReturning(state.PatrolPartyId);
+                        break;
+                    case CityTeamAction.Replace:
+                        // 决定补派不等于已经成功；实际抽兵、登记与旧队归还仍由派队入口办理。
+                        PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
+                            .OrderBy(source => source.GetPosition2D.Distance(
+                                state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
+                                    : crime!.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D))
+                            .Any(source => SendCitySearchParty(source, crime!, state.CityForPlayer, state));
+                        break;
+                    case CityTeamAction.EscortPlayer:
+                        GreyWardenPartyDesireBehavior.RequestEscort(party!, MobileParty.MainParty, 8f);
+                        break;
+                    case CityTeamAction.GoToShelter:
+                        GreyWardenPartyDesireBehavior.RequestVisit(party!, town!, 8f);
+                        break;
+                    case CityTeamAction.Settle:
+                        ResolveCitySearchParty(party!, crime!, target!);
+                        MarkDelayPatrolReturning(party!.StringId);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(decision.Action), decision.Action, null);
                 }
-                CrimeRecord? crime = CrimePool.GetRecordByKey(state.CityCrimeId);
-                Hero? target = crime?.OffenderHero;
-                if (crime?.HasOpenCase != true || target == null || !target.IsAlive || target.IsPrisoner)
-                {
-                    MarkDelayPatrolReturning(state.PatrolPartyId);
-                    ShadowCityTeam(view, CityTeamAction.Return);
-                    continue;
-                }
-                if (party?.MapEvent != null)
-                {
-                    ShadowCityTeam(view, CityTeamAction.Wait);
-                    continue;
-                }
-                if (party == null || party.MemberRoster.TotalHealthyCount == 0)
-                {
-                    // 派遣本身不是玩家的办理次数。失队后保留原指派，直到真实兵员能补派。
-                    PoliceStats.GetAllPoliceParties().Where(CanContinueLeadingPoliceTask)
-                        .OrderBy(source => source.GetPosition2D.Distance(
-                            state.CityForPlayer ? MobileParty.MainParty.GetPosition2D
-                                : crime.ShelterSettlement?.GetPosition2D ?? MobileParty.MainParty.GetPosition2D))
-                        .Any(source => SendCitySearchParty(source, crime, state.CityForPlayer, state));
-                    ShadowCityTeam(view, CityTeamAction.Replace);
-                    continue;
-                }
-                bool rethink = party.DefaultBehavior == AiBehavior.Hold;
-                if (rethink)
-                    GreyWardenPartyDesireBehavior.RequestImmediateRethink(party);
-                bool drop = false;
-                if (state.CityForPlayer)
-                {
-                    if (GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId))
-                    {
-                        GreyWardenPartyDesireBehavior.RequestEscort(party, MobileParty.MainParty, 8f);
-                        ShadowCityTeam(view, CityTeamAction.EscortPlayer, rethink);
-                        continue;
-                    }
-                    state.CityForPlayer = false;
-                    drop = true;
-                }
-                Settlement? town = CrimeRecord.ShelterOf(target);
-                if (town == null) // 同催缴：目标暂时不可接触时保留案卷和使者，不当作成功或重派。
-                {
-                    ShadowCityTeam(view, CityTeamAction.Wait, rethink, drop);
-                    continue;
-                }
-                if (FactionManager.IsAtWarAgainstFaction(party.MapFaction, town.MapFaction))
-                {
-                    MarkDelayPatrolReturning(party.StringId);
-                    ShadowCityTeam(view, CityTeamAction.Return, rethink, drop);
-                    continue;
-                }
-                if (!GwpFireswornBehavior.HasArrived(party, town))
-                {
-                    GreyWardenPartyDesireBehavior.RequestVisit(party, town, 8f);
-                    ShadowCityTeam(view, CityTeamAction.GoToShelter, rethink, drop);
-                    continue;
-                }
-                ResolveCitySearchParty(party, crime, target);
-                MarkDelayPatrolReturning(party.StringId);
-                ShadowCityTeam(view, CityTeamAction.Settle, rethink, drop);
             }
         }
 
         /// <summary>
-        /// 把一支城内办案队此刻的实际状态整理成逻辑层的局面；必须在本小时的任何改动之前调用。
-        /// 只读，不改任何游戏对象。
+        /// 采集生产规则所需的数据，并保留本次执行使用的真实对象。
+        /// 按现场、案卷、战斗、兵员、跟随、目的地依次读取；不可用阶段不访问后续对象。
         /// </summary>
-        private static CityTeamView CityTeamViewOf(DelayPatrolState state, MobileParty? party, GwpCitySearchBehavior? search)
+        private static CityTeamView CityTeamViewOf(DelayPatrolState state, MobileParty? party,
+            GwpCitySearchBehavior? search, out CrimeRecord? crime, out Hero? target, out Settlement? town)
         {
-            CrimeRecord? crime = CrimePool.GetRecordByKey(state.CityCrimeId);
-            Hero? target = crime?.OffenderHero;
-            Settlement? town = target == null ? null : CrimeRecord.ShelterOf(target);
-            return new CityTeamView
+            crime = null;
+            target = null;
+            town = null;
+            var view = new CityTeamView
             {
-                TeamId = state.PatrolPartyId,
-                UsedByActiveSearchScene = search?.SearchActive == true && search.UsesSupportParty(state.PatrolPartyId),
                 PartyExists = party != null,
-                CaseOpen = crime?.HasOpenCase == true,
-                TargetAvailable = target != null && target.IsAlive && !target.IsPrisoner,
-                InBattle = party?.MapEvent != null,
-                HealthyMembers = party?.MemberRoster.TotalHealthyCount ?? 0,
-                Holding = party?.DefaultBehavior == AiBehavior.Hold,
-                ForPlayer = state.CityForPlayer,
-                PlayerHoldsCase = target != null && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target.StringId),
-                ShelterKnown = town != null,
-                AtWarWithShelter = party != null && town != null
-                    && FactionManager.IsAtWarAgainstFaction(party.MapFaction, town.MapFaction),
-                ArrivedAtShelter = party != null && town != null && GwpFireswornBehavior.HasArrived(party, town),
+                UsedByActiveSearchScene = search?.SearchActive == true && search.UsesSupportParty(state.PatrolPartyId),
             };
-        }
+            if (view.UsedByActiveSearchScene) return view;
 
-#if GWP_DIAGNOSTICS
-        private readonly Dictionary<string, string> _cityTeamShadowLast = new Dictionary<string, string>();
-#endif
+            crime = CrimePool.GetRecordByKey(state.CityCrimeId);
+            target = crime?.OffenderHero;
+            view.CaseOpen = crime?.HasOpenCase == true;
+            view.TargetAvailable = target != null && target.IsAlive && !target.IsPrisoner;
+            if (!view.CaseOpen || !view.TargetAvailable) return view;
 
-        /// <summary>
-        /// 影子运行（分层试点，2026-11-06）：旧代码照常执行，这里把同一局面交给逻辑层算一遍；
-        /// 两边不一致记 MISMATCH。每支队只在局面或决定变化时记一行，供录成回放用例。
-        /// 迁移完成、旧分支删除后与本方法一起退休。
-        /// </summary>
-        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
-        private void ShadowCityTeam(CityTeamView view, CityTeamAction oldAction, bool rethink = false, bool drop = false)
-        {
-#if GWP_DIAGNOSTICS
-            var old = new CityTeamDecision(oldAction, rethink, drop);
-            CityTeamDecision core = CityTeamRules.Decide(view);
-            string line = view.ToRecord() + " >> " + old.ToRecord();
-            bool mismatch = !core.Equals(old);
-            if (!mismatch && _cityTeamShadowLast.TryGetValue(view.TeamId, out string? last) && last == line) return;
-            _cityTeamShadowLast[view.TeamId] = line;
-            GwpAiDiagnostics.WriteCitySearch(mismatch ? "CITY_TEAM_SHADOW_MISMATCH" : "CITY_TEAM_SHADOW",
-                line + (mismatch ? " >> core " + core.ToRecord() : string.Empty));
-#endif
+            view.InBattle = party?.MapEvent != null;
+            if (view.InBattle) return view;
+            view.HealthyMembers = party?.MemberRoster.TotalHealthyCount ?? 0;
+            if (party == null || view.HealthyMembers == 0) return view;
+
+            view.Holding = party.DefaultBehavior == AiBehavior.Hold;
+            view.ForPlayer = state.CityForPlayer;
+            view.PlayerHoldsCase = state.CityForPlayer && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target!.StringId);
+            if (view.PlayerHoldsCase) return view;
+
+            town = CrimeRecord.ShelterOf(target);
+            view.ShelterKnown = town != null;
+            if (town == null) return view;
+            view.AtWarWithShelter = FactionManager.IsAtWarAgainstFaction(party.MapFaction, town.MapFaction);
+            if (!view.AtWarWithShelter) view.ArrivedAtShelter = GwpFireswornBehavior.HasArrived(party, town);
+            return view;
         }
 
         private static void ResolveCitySearchParty(MobileParty party, CrimeRecord crime, Hero target)

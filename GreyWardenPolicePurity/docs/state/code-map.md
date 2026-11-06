@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-226 个源文件、59,663 行、433 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
+226 个源文件、59,559 行、433 个公开类型、114 条 Harmony 目标声明（含动态入口，共 114 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -653,7 +653,7 @@
 - `GwpFieldArrestLines.cs` — 360 行 · `GwpFieldArrestLines`，另含 1 个类型
 - `GwpAiDeterrenceDialogueCatalog.cs` — 339 行 · `DeterrenceSource`，另含 3 个类型
 - `PolicePatrolBehavior.Helpers.cs` — 311 行 · `PolicePatrolBehavior`
-- `PoliceEnforcementBehavior.CitySearch.cs` — 259 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.CitySearch.cs` — 219 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Helpers.cs` — 155 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.CaseLifecycle.cs` — 123 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PolicePrisonerImmunityBehavior.cs` — 121 行 · `PolicePrisonerImmunityBehavior` : CampaignBehaviorBase
@@ -733,7 +733,7 @@
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 191 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 186 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（131 个文件）
 
@@ -778,7 +778,6 @@
 - `GwpAgentStatCalculateModel.cs` — 175 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
 - `GwpCitySearchNativeVisualFix.cs` — 167 行 · `GwpCitySearchNativeVisualFix`
 - `GwpFaithBattleRewardModel.cs` — 167 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
-- `CityTeamRules.cs` — 160 行 · `CityTeamView`，另含 2 个类型
 - `GwpPlayerIntervention.cs` — 154 行 · `GwpPlayerIntervention`，另含 2 个类型
 - `GwpRuntimeState.cs` — 153 行 · `GwpRuntimeState`，另含 2 个类型
 - `GwpFieldDialogueVoice.cs` — 147 行 · `GwpFieldDialogueVoice`
@@ -802,6 +801,7 @@
 - `GwpArmoryBalance.cs` — 104 行 · `GwpFireswornBehavior`
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`
 - `GwpWardenRecruitment.cs` — 103 行 · `GwpWardenRecruitment` : VolunteerModel，另含 2 个类型
+- `CityTeamRules.cs` — 101 行 · `CityTeamView`，另含 2 个类型
 - `GwpArmoryBattleSave.cs` — 99 行 · `GwpFireswornBehavior`
 - `GreyWardenAdoptionLogEntry.cs` — 98 行 · `GreyWardenAdoptionLogEntry` : LogEntry
 - `GwpCitySearchMission.VisualDiagnostics.cs` — 98 行 · `GwpCitySearchMissionController`，另含 1 个类型

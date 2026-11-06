@@ -1,7 +1,7 @@
 # 后续开发与可维护性方案
 
-日期：2026-11-06。状态：建议稿，供本次路线决策；未实施工具退休、业务迁移或流程替换。
-当前有效规则仍在 [workflow](../state/workflow.md)、[诊断](../state/diagnostics.md) 与 [代码健康](../state/code-health.md)。本文中的“建议”不能作为已获批准的新规则。
+日期：2026-11-06。用户已授权落地，本文保留决策时的原始方案与验收目标，以下建议时态不代表当前进度。
+实际实施状态与有效规则只在 [workflow](../state/workflow.md)、[诊断](../state/diagnostics.md) 与 [代码健康](../state/code-health.md) 维护，不从本文恢复已替代的流程。
 
 ## 建议选择
 
