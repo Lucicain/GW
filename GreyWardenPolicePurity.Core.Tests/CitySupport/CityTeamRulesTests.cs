@@ -77,12 +77,12 @@ namespace GreyWardenPolicePurity.Core.Tests.CitySupport
         }
 
         [Fact]
-        public void UnreachableTargetKeepsTheTeamWithoutSuccessOrRedispatch()
+        public void MissingShelterReturnsWithoutSuccessOrRedispatch()
         {
             var view = Travelling();
             view.ShelterKnown = false;
             view.Holding = true;
-            Assert.Equal(new CityTeamDecision(CityTeamAction.Wait, rethink: true), Decide(view));
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Return), Decide(view));
         }
 
         [Fact]
@@ -91,6 +91,18 @@ namespace GreyWardenPolicePurity.Core.Tests.CitySupport
             var view = Travelling();
             view.AtWarWithShelter = true;
             view.ArrivedAtShelter = true;
+            Assert.Equal(CityTeamAction.Return, Decide(view).Action);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IndependentTeamReleasesHostileShelterEvenWithNoHealthyMembers(bool partyExists)
+        {
+            var view = Travelling();
+            view.PartyExists = partyExists;
+            view.HealthyMembers = 0;
+            view.AtWarWithShelter = true;
             Assert.Equal(CityTeamAction.Return, Decide(view).Action);
         }
 
@@ -139,13 +151,35 @@ namespace GreyWardenPolicePurity.Core.Tests.CitySupport
         }
 
         [Fact]
-        public void ReleasedPlayerLinkIsClearedEvenWhileWaitingForTheTarget()
+        public void PlayerEscortKeepsFollowingWhileTheTargetHasNoShelter()
+        {
+            // 审查发现：留城改动曾让玩家持案时的随行队因目标暂离城而返程。
+            var view = Travelling();
+            view.ForPlayer = true;
+            view.PlayerHoldsCase = true;
+            view.ShelterKnown = false;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.EscortPlayer), Decide(view));
+            view.PartyExists = false;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Replace), Decide(view));
+        }
+
+        [Fact]
+        public void ReleasedPlayerLinkReturnsWhenTheTargetHasNoShelter()
         {
             var view = Travelling();
             view.ForPlayer = true;
             view.ShelterKnown = false;
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Return), Decide(view));
+        }
+
+        [Fact]
+        public void LostTeamIsNotReplacedWhenTheTargetHasNoShelter()
+        {
+            var view = Travelling();
+            view.PartyExists = false;
+            view.ShelterKnown = false;
             view.Holding = true;
-            Assert.Equal(new CityTeamDecision(CityTeamAction.Wait, rethink: true, dropPlayerLink: true), Decide(view));
+            Assert.Equal(new CityTeamDecision(CityTeamAction.Return), Decide(view));
         }
     }
 }

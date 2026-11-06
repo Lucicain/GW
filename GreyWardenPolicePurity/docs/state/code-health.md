@@ -127,6 +127,7 @@ Harmony启动期预编译目标可能触发其引用类的静态初始化；绑�
 
 | 概念 | 归属 | 别处直接用就会被拦的写法 |
 |---|---|---|
+| 已接住城案的迁移与建队资格 | `PoliceEnforcementBehavior.AcceptedCityCaseSettlement` | 另行注册日常换城许可或在别处改原版领军/总督候选，规则见[搜捕支援](city-search-support.md#已接住城案的目标留城) |
 | 城内办案队去留 | `CityTeamRules.Decide` | 其他生产文件直接构造 `CityTeamDecision`；读取与执行归 `TendCitySearchParties`，语义见[搜捕支援](city-search-support.md) |
 | 搜捕单挑路线与大厅占用 | `GwpCitySearchBehavior.UsesHallDuel` / `HallDuelLocked` | 按真实竞技场场景名决定；菜单、走门、Tab与存读档共用入口，规则归[搜捕](city-search.md) |
 | 搜捕敌方追击 | `GwpCitySearchMissionController.SetCityPursuer` | 初始守方与新援军共用原版下马兵种编队、冲锋及自动选敌，不改我方编队与血量归属 |

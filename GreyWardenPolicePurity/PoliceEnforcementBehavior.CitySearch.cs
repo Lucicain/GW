@@ -13,6 +13,20 @@ namespace GreyWardenPolicePurity
         private DelayPatrolState? CityPartyState(CrimeRecord crime) => _delayPatrolStates.Values.FirstOrDefault(state =>
             state.CityCrimeId == crime.CrimeId && !state.Returning);
 
+        /// <summary>只有开放住城案件已有承办者时，才锁定该英雄当前的聚落。</summary>
+        internal static Settlement? AcceptedCityCaseSettlement(Hero hero)
+        {
+            CrimeRecord? crime = CrimePool.GetRecord(hero);
+            if (crime?.HasOpenCase != true) return null;
+            Settlement? settlement = CrimeRecord.ShelterOf(hero);
+            if (settlement == null) return null;
+
+            bool assigned = GwpPlayerCaseAssignment.IsCaseHeldByPlayer(hero.StringId)
+                || CrimeState.ActiveTasks.Values.Any(task => task.TargetCrimeId == crime.CrimeId)
+                || _instance?.CityPartyState(crime) != null;
+            return assigned ? settlement : null;
+        }
+
         internal MobileParty? CitySearchSupport(Hero target, bool requireArrival = true)
         {
             CrimeRecord? crime = CrimePool.GetRecord(target);
@@ -136,6 +150,12 @@ namespace GreyWardenPolicePurity
                         search!.FinishSearch(false);
                         break;
                     case CityTeamAction.Return:
+#if GWP_DIAGNOSTICS
+                        if (party != null)
+                            GwpAiDiagnostics.WriteAction(party, "CITY_CASE_RETURN", "crime=" + state.CityCrimeId
+                                + "; open=" + view.CaseOpen + "; available=" + view.TargetAvailable
+                                + "; shelter=" + (town?.StringId ?? "-") + "; hostile=" + view.AtWarWithShelter);
+#endif
                         MarkDelayPatrolReturning(state.PatrolPartyId);
                         break;
                     case CityTeamAction.Replace:
@@ -187,19 +207,23 @@ namespace GreyWardenPolicePurity
 
             view.InBattle = party?.MapEvent != null;
             if (view.InBattle) return view;
+            view.ForPlayer = state.CityForPlayer;
+            view.PlayerHoldsCase = state.CityForPlayer && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target!.StringId);
+            town = CrimeRecord.ShelterOf(target);
+            view.ShelterKnown = town != null;
+            if (!view.PlayerHoldsCase)
+            {
+                if (town == null) return view;
+                if ((party?.MapFaction ?? PoliceStats.GetPoliceClan()) is { } faction)
+                    view.AtWarWithShelter = FactionManager.IsAtWarAgainstFaction(faction, town.MapFaction);
+                if (view.AtWarWithShelter) return view;
+            }
             view.HealthyMembers = party?.MemberRoster.TotalHealthyCount ?? 0;
             if (party == null || view.HealthyMembers == 0) return view;
 
             view.Holding = party.DefaultBehavior == AiBehavior.Hold;
-            view.ForPlayer = state.CityForPlayer;
-            view.PlayerHoldsCase = state.CityForPlayer && GwpPlayerCaseAssignment.IsCaseHeldByPlayer(target!.StringId);
             if (view.PlayerHoldsCase) return view;
-
-            town = CrimeRecord.ShelterOf(target);
-            view.ShelterKnown = town != null;
-            if (town == null) return view;
-            view.AtWarWithShelter = FactionManager.IsAtWarAgainstFaction(party.MapFaction, town.MapFaction);
-            if (!view.AtWarWithShelter) view.ArrivedAtShelter = GwpFireswornBehavior.HasArrived(party, town);
+            view.ArrivedAtShelter = GwpFireswornBehavior.HasArrived(party, town!);
             return view;
         }
 

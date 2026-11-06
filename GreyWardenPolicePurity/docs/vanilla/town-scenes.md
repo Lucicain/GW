@@ -26,13 +26,31 @@
 2026-11-06 按 v1.4.8 源码复核：`HeroSpawnCampaignBehavior.OnHeroDailyTick` 对在役英雄走独立分支，符合
 `CanHeroMoveToAnotherSettlement` 就调用选城（最低分 10），再 `TeleportHeroAction.ApplyImmediateTeleportToSettlement`，
 没有大地图行军过程。每日 30% 的随机门槛属于逃亡/获释分支；普通在役无部队领主不能套用这个概率。
+逃亡/获释分支（非特殊英雄，玩家同伴必走，所在聚落与本方交战时也必走）直接选城传送并转回在役，不经
+`CanMoveToSettlement` 询问。获释状态的来源之一是 `EndCaptivityAction`：在聚落地牢里被释放的英雄转为
+`Released`，并加入该聚落的无部队英雄名单，所以他看起来仍是“住在城里”，但次日起可能被这一分支挪走。
 
 资格排除玩家家族、要人、玩家本人、部队领袖、俘虏、禁用英雄、总督、有所属部队、流浪者、特殊职业和未成年人；
 当前聚落有比武或被围也不挪动，最后经 `Hero.CanMoveToSettlement` 的事件询问允许与否，任务可另行阻止。
 选城权重见上文；留原地只是乘三，仍可能选中别处，公式没有距离或旅行耗时项。因此城间突然变更位置属于该原版机制。
 
 另一路是家族日结的 `ConsiderSpawningLordParties`：空余名额与指挥资格满足后直接生成真实领主部队。
-此后英雄有 `PartyBelongedTo`，不再符合“无部队住城”的资格，和直接换城不是同一状态。城内搜捕需识别这两种变化。
+`GetBestAvailableCommander` 两轮都调用 `GetHeroPartyCommandScore`，只接受高于初始值 0 的候选。
+第一轮优先允许领军的成年领主，第二轮只对非玩家家族重选，不检查 `CanLeadParty`。
+`SpawnLordParty` 经 `SettlementHelper.GetBestSettlementToSpawnAround` 另选生成位置，考虑领地类型、势力、家族、
+战事和距离等因素；必要时退回本方初始据点或同文化聚落。原版不保证在英雄当前所住城堡生成。
+选定后以城门为中心取可达点生成部队。英雄获得 `PartyBelongedTo`，不再符合无部队住城资格。
+
+已有部队换领袖不走组建评分。`TeleportationCampaignBehavior.DailyTickParty` 可为符合条件的非战斗领袖选家族替任者，
+成年事件可用刚成年的英雄替任；`DisbandPartyCampaignBehavior.OnPartyDisbandStarted` 可给待解散的非玩家家族部队
+选城中的无队成员。前两条在选好人后才撤下原领袖，后一条没有人选时保留待解散流程。接任调用
+`TeleportHeroAction.ApplyDelayedTeleportToPartyAsPartyLeader`，英雄先离城、进入旅行状态，再归入部队。
+
+总督也会让无队领主离城。`ClanVariablesCampaignBehavior.DailyTickClan` 每天对非玩家家族调
+`UpdateGovernorsOfClan`：封地按类型、繁荣、附属村、文化与离王国中心距离排序，逐个从 `clan.AliveLords`
+里挑能当总督、无部队、本轮未用过的领主，现任总督打满分、其他人乘 0.75。选中者不在该城时，
+`ChangeGovernorAction` 走 `ApplyDelayedTeleportToSettlementAsGovernor`，人先离城旅行再上任；已在该城则就地上任。
+当上总督后 `GovernorOf` 非空，日常换城不再选他。
 
 ## 原版城内玩法
 

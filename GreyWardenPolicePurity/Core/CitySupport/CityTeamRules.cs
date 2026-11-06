@@ -81,18 +81,20 @@ namespace GreyWardenPolicePurity.Core.CitySupport
                 return new CityTeamDecision(view.PartyExists ? CityTeamAction.Wait : CityTeamAction.FinishSearchScene);
             if (!view.CaseOpen || !view.TargetAvailable) return new CityTeamDecision(CityTeamAction.Return);
             if (view.PartyExists && view.InBattle) return new CityTeamDecision(CityTeamAction.Wait);
+            // 玩家仍持委托时跟着玩家走，住城地点暂缺或敌对不影响跟随；委托本身的去留归玩家委托方。
+            bool escorting = view.ForPlayer && view.PlayerHoldsCase;
+            if (!escorting)
+            {
+                // 已没有可办理的住城地点时结束差事，避免旧意图到期后落回原版巡逻。
+                if (!view.ShelterKnown) return new CityTeamDecision(CityTeamAction.Return);
+                // 独立办案的城已敌对，即使失队也要释放城内承接，不能留着一个永远补不出的名额。
+                if (view.AtWarWithShelter) return new CityTeamDecision(CityTeamAction.Return);
+            }
             // 派遣本身不是玩家的办理次数；失队后保留原指派，直到真实兵员能补派。
             if (!view.PartyExists || view.HealthyMembers == 0) return new CityTeamDecision(CityTeamAction.Replace);
             bool rethink = view.Holding;
-            bool drop = false;
-            if (view.ForPlayer)
-            {
-                if (view.PlayerHoldsCase) return new CityTeamDecision(CityTeamAction.EscortPlayer, rethink);
-                drop = true;
-            }
-            // 同催缴：目标暂时不可接触时保留案卷和办案队，不当作成功或重派。
-            if (!view.ShelterKnown) return new CityTeamDecision(CityTeamAction.Wait, rethink, drop);
-            if (view.AtWarWithShelter) return new CityTeamDecision(CityTeamAction.Return, rethink, drop);
+            if (escorting) return new CityTeamDecision(CityTeamAction.EscortPlayer, rethink);
+            bool drop = view.ForPlayer;
             if (!view.ArrivedAtShelter) return new CityTeamDecision(CityTeamAction.GoToShelter, rethink, drop);
             return new CityTeamDecision(CityTeamAction.Settle, rethink, drop);
         }

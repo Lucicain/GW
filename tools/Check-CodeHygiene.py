@@ -186,6 +186,11 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("已接住城案的迁移与建队资格", r'\bCanMoveToSettlementEvent\.AddNonSerializedListener\s*\(|'
+     r'\b(?:HeroSpawnCampaignBehavior|TeleportationCampaignBehavior|DisbandPartyCampaignBehavior|'
+     r'ClanVariablesCampaignBehavior)\)\s*,\s*"(?:GetBestAvailableCommander|GetHeroPartyCommandScore|'
+     r'OnHeroDailyTick|DailyTickParty|OnPartyDisbandStarted|OnHeroComesOfAge|UpdateGovernorsOfClan)"',
+     "GwpCityCaseMovementPatch.cs", "PoliceEnforcementBehavior.AcceptedCityCaseSettlement"),
     ("城内办案队去留", r"\bnew\s+CityTeamDecision\s*\(",
      "CityTeamRules.cs", "CityTeamRules.Decide"),
     ("玩家搜捕单案机会", r"\bCitySearch(?:PersonalUsed|SupportUsed)\s*(?:=|\b)",
