@@ -975,14 +975,14 @@
   <string id="gwp_fa_desire_payfull" text="也罢。全额，到此为止。" />
   <string id="gwp_fa_desire_surrender" text="那些银子是我部下的军饷。你带我走吧——我跟你，让他们回家。" />
   <string id="gwp_fa_desire_cunning" text="一半。辎重里就这么多，你能拿到的也就这么多。" />
-  <string id="gwp_fa_desire_rash" text="八成交给你。就这么了结，别再争了。" />
+  <string id="gwp_fa_desire_rash" text="我没工夫跟你算账。{GWP_CASE_OFFER_AMOUNT} 第纳尔，拿了就走。" />
   <string id="gwp_fa_desire_deeds" text="我只交四成。那些惹事的部下，我会当场处死，给你一个交代。" />
   <string id="gwp_fa_desire_haggle" text="我最多出七成。你愿意收，我们就此了结。" />
   <string id="gwp_fa_accept_payfull" text="全额。交出来。" />
   <string id="gwp_fa_accept_surrender" text="那就跟我走。你的人自己想办法。" />
   <string id="gwp_fa_accept_bribe" text="拿过来。这段话没发生过。" />
   <string id="gwp_fa_accept_cunning" text="我收这一半，剩下的差额也会写进报告。" />
-  <string id="gwp_fa_accept_rash" text="八成我收下，短缺的数目一并记下。" />
+  <string id="gwp_fa_accept_rash" text="就这些吧。我照实回去交代。" />
   <string id="gwp_fa_accept_duel" text="那就拔剑。你我之间了结。" />
   <string id="gwp_fa_accept_deeds" text="那就为你做下的事付钱。那些人命的账留着。" />
   <string id="gwp_fa_accept_haggle" text="七成就七成。剩下的差额，我回去交代。" />
@@ -1061,7 +1061,7 @@
   <string id="gwp_terms_final_trade" text="交清了，回报时就不会还挂着一笔余款。" />
   <string id="gwp_fa_desire_cautious" text="先把武器放下。钱我照数交，没必要打这一仗。" />
   <string id="gwp_fa_desire_merciful" text="已经够多人受苦了。罚金我全交，别再流血了。" />
-  <string id="gwp_fa_desire_generous" text="这笔钱我拿得出。照数拿去，把账结清。" />
+  <string id="gwp_fa_desire_generous" text="罚金我不跟你讲价。{GWP_CASE_OFFER_AMOUNT} 第纳尔，只多不少，拿去。" />
   <string id="gwp_report_audit_found" text="灰袍查出你上交的账目短缺 {VAR_1} 第纳尔。" />
   <string id="gwp_case_false_payment" text="【撒谎】只收上来这些，剩下的他实在付不起。我们点一下。" />
   <string id="gwp_case_false_zero" text="【撒谎】他身无分文，我一分钱也没收到。" />
@@ -1086,10 +1086,10 @@
   <string id="gwp_terms_cunninghalf_charm" text="别再拿钱袋当借口。把实情说清，事情也好收场。" />
   <string id="gwp_terms_cunninghalf_rogue" text="刚好只剩一半？这套说辞我听过。把另一半找出来。" />
   <string id="gwp_terms_cunninghalf_trade" text="付一半就还欠一半。你怎么解释钱袋，都改不了这个数。" />
-  <string id="gwp_terms_rashmost_lead" text="真想快点了结，就把最后两成交齐。别留个尾巴。" />
-  <string id="gwp_terms_rashmost_charm" text="已经谈到这一步了，别为最后一点余款闹翻。" />
-  <string id="gwp_terms_rashmost_rogue" text="为留下最后两成，把整只钱袋赌上？你再想想。" />
-  <string id="gwp_terms_rashmost_trade" text="八成已经答应了，再补两成，账就齐了。" />
+  <string id="gwp_terms_rashmost_lead" text="真想快点了结，就照罚金交齐，别留个尾巴。" />
+  <string id="gwp_terms_rashmost_charm" text="已经谈到这一步了，别为差的那些钱闹翻。" />
+  <string id="gwp_terms_rashmost_rogue" text="为少交几个钱，把整只钱袋赌上？你再想想。" />
+  <string id="gwp_terms_rashmost_trade" text="你报的这个数，连罚金都不够。补齐了，咱们两清。" />
   <string id="gwp_terms_demandduel_lead" text="这份通缉令不是比武请帖。别为它拿自己的命去赌。" />
   <string id="gwp_terms_demandduel_charm" text="你不必向我证明勇气。双方都少受一次伤，不好吗？" />
   <string id="gwp_terms_demandduel_rogue" text="拿单挑免掉别人的血债？这个赌法我不接。" />
@@ -1122,10 +1122,10 @@
   <string id="gwp_rebuff_cunninghalf_charm" text="信任不是你说一句，我就得掏出另一半。我的条件没变。" />
   <string id="gwp_rebuff_cunninghalf_rogue" text="听过这种说辞，就能断定我还藏着钱？你得拿出点别的。" />
   <string id="gwp_rebuff_cunninghalf_trade" text="我知道半款还剩多少。我是在给你条件，不是在请你算数。" />
-  <string id="gwp_rebuff_rashmost_lead" text="我肯出八成，已经是让步。别把让步当成理所当然。" />
-  <string id="gwp_rebuff_rashmost_charm" text="既然只差这一点，你也可以让一步，何必全要我来让？" />
+  <string id="gwp_rebuff_rashmost_lead" text="我说了这个数，就是这个数。别再跟我磨。" />
+  <string id="gwp_rebuff_rashmost_charm" text="你也可以让一步，何必全要我来让？" />
   <string id="gwp_rebuff_rashmost_rogue" text="我可没说要赌掉整只钱袋。你少拿最坏的事吓我。" />
-  <string id="gwp_rebuff_rashmost_trade" text="不用教我算那两成。我知道差多少，只是不想再给。" />
+  <string id="gwp_rebuff_rashmost_trade" text="不用教我算账。我知道差多少，只是不想再给。" />
   <string id="gwp_rebuff_demandduel_lead" text="通缉令在你手上，剑也在你手上。为什么不敢亲自来了结？" />
   <string id="gwp_rebuff_demandduel_charm" text="你说不必证明勇气，我却不想靠掏钱结束这件事。" />
   <string id="gwp_rebuff_demandduel_rogue" text="你不肯接这个赌，我也没答应换个办法。" />
@@ -1191,11 +1191,11 @@
   <string id="gwp_voice_demand_payinfull_alt" text="照数付清就是了。把这件事了结吧。" />
   <string id="gwp_voice_demand_paytoavoidbattle_alt" text="先叫你的人别动。钱我照付，犯不着在这里死人。" />
   <string id="gwp_voice_demand_payforpeace_alt" text="已经够多人受罪了。我把罚金付清，别再牵连别人。" />
-  <string id="gwp_voice_demand_paygenerously_alt" text="这些钱我出得起，全部拿去，把账结清。" />
+  <string id="gwp_voice_demand_paygenerously_alt" text="我做下的事，我认。{GWP_CASE_OFFER_AMOUNT} 第纳尔，你点一点。" />
   <string id="gwp_voice_demand_surrenderself_alt" text="钱得留着养活这些人。你要交差，就带我一个走。" />
   <string id="gwp_voice_demand_bribethewarden_alt" text="这份好处值 {GWP_BRIBE_AMOUNT} 第纳尔，比白跑一趟强。拿了，我们就把话说到这里。" />
   <string id="gwp_voice_demand_cunninghalf_alt" text="你要的数目我凑不齐。只有一半，你要就拿去。" />
-  <string id="gwp_voice_demand_rashmost_alt" text="八成，拿去吧。剩下两成就别再费口舌了。" />
+  <string id="gwp_voice_demand_rashmost_alt" text="{GWP_CASE_OFFER_AMOUNT} 第纳尔，就这些。要就拿，不要拉倒。" />
   <string id="gwp_voice_demand_demandduel_alt" text="我们两个来比一场。你赢，罚金照付；我赢，你空手走。" />
   <string id="gwp_voice_demand_deedsonly_alt" text="我只出四成。那几个办坏事的，我自己会杀给你看。" />
   <string id="gwp_voice_demand_haggledown_alt" text="七成已经够多了。这个价钱，你好好想想。" />

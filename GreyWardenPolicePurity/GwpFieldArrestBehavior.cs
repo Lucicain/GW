@@ -44,6 +44,8 @@ namespace GreyWardenPolicePurity
         private readonly GwpFieldDialogueVoice _voice = new GwpFieldDialogueVoice();
         private bool HasReceivedCash => _offender != null && (GwpFieldReportLedger.Instance?.PendingReceivedFor(_offender.StringId) ?? 0) > 0;
         private GwpOffenderDesire _desire;
+        // 他这次肯交罚金的几成；莽撞的比例在抽打算时一并定下，整场谈判沿用。
+        private int _share = 100;
         private bool _enforcementAccepted;
         private bool _paymentAccepted;
         private PersuasionTask? _lastArgumentTask;
@@ -207,7 +209,7 @@ namespace GreyWardenPolicePurity
                 "{" + GwpTextKeys.FieldArrestAccept + "}", AcceptDesireCondition, null);
             starter.AddPlayerLine("gwp_fa_offer_negotiate", "gwp_fa_offer_options", "gwp_fa_payment_begin",
                 GwpText.Get(GwpTextCatalog.gwp_fa_counter_offer),
-                () => !_paymentAccepted && !GwpOffenderDesires.IsFullPayment(_desire), null);
+                () => !_paymentAccepted && !GwpOffenderDesires.IsFullPayment(_desire, _share), null);
             starter.AddDialogLine("gwp_fa_payment_begin", "gwp_fa_payment_begin", "gwp_fa_layer2_next",
                 "{" + GwpTextKeys.FieldArrestDemand + "}", DemandCondition, BeginLayerTwoConsequence);
 
@@ -353,8 +355,10 @@ namespace GreyWardenPolicePurity
             _crime = _offender == null ? null : CrimePool.GetRecordByKey(_offender.StringId);
             if (_crime == null || _offender == null) return;
             _fine = CalculateFine(_crime);
+            _share = 100;
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
-                CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true);
+                CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true,
+                out _share);
             (float ours, float theirs) = FieldBalance();
             int resistance = LayerOneResistance();
             double refusalChance = GwpNegotiationPolicy.RefusalChance(resistance,
@@ -376,11 +380,11 @@ namespace GreyWardenPolicePurity
         {
             MBTextManager.SetTextVariable("GWP_BRIBE_AMOUNT", BribeOffer);
             MBTextManager.SetTextVariable(
-                GwpTextKeys.FieldArrestDemand, GwpOffenderDesires.IsFullPayment(_desire) && AvailableProperty < EnsureFine()
+                GwpTextKeys.FieldArrestDemand, GwpOffenderDesires.IsFullPayment(_desire, _share) && AvailableProperty < EnsureFine()
                     ? GwpText.Create(GwpTextCatalog.gwp_case_purse_short, "VAR_1", AvailableProperty)
                     : _voice.Alternate("demand_" + _desire, GwpOffenderDesires.Line(_desire)));
             MBTextManager.SetTextVariable("GWP_CASE_OFFER_AMOUNT", Math.Min(AvailableProperty,
-                EnsureFine() * GwpOffenderDesires.OfferedSharePercent(_desire) / 100));
+                EnsureFine() * _share / 100));
             return true;
         }
 
@@ -646,7 +650,7 @@ namespace GreyWardenPolicePurity
         private void BeginLayerTwoConsequence()
         {
             // 他本来就打算照数全缴时不需要第二轮。
-            if (GwpOffenderDesires.IsFullPayment(_desire))
+            if (GwpOffenderDesires.IsFullPayment(_desire, _share))
             {
                 _layer = NegotiationLayer.None;
                 return;
@@ -885,7 +889,7 @@ namespace GreyWardenPolicePurity
             _collectionEmpty = GwpAssetPayment.Wealth(_offender, _offenderParty.Party) <= 0;
             _collection = null;
             if (_collectionEmpty) return;
-            int limit = full ? EnsureFine() : _desire == GwpOffenderDesire.BribeTheWarden ? BribeOffer : EnsureFine() * GwpOffenderDesires.OfferedSharePercent(_desire) / 100;
+            int limit = full ? EnsureFine() : _desire == GwpOffenderDesire.BribeTheWarden ? BribeOffer : EnsureFine() * _share / 100;
             _collection = new GwpAssetPayment(_offender, Hero.MainHero, _offenderParty.Party, MobileParty.MainParty.Party, limit);
             BarterManager manager = Campaign.Current.BarterManager;
             var original = manager.BarterBegin;
@@ -1119,6 +1123,7 @@ namespace GreyWardenPolicePurity
             _enforcementAccepted = true;
             _paymentAccepted = true;
             _desire = GwpOffenderDesire.PayInFull;
+            _share = 100;
         }
 
         /// <summary>勇武高的兑现方式：单挑。交给既有的野外切磋流程。</summary>
@@ -1195,7 +1200,7 @@ namespace GreyWardenPolicePurity
         {
             MBTextManager.SetTextVariable(
                 GwpTextKeys.FieldArrestAccept,
-                _paymentAccepted || GwpOffenderDesires.IsFullPayment(_desire)
+                _paymentAccepted || GwpOffenderDesires.IsFullPayment(_desire, _share)
                     ? GwpText.Create(GwpTextCatalog.gwp_fa_accept_count)
                     : GwpOffenderDesires.PlayerAcceptLine(_desire));
             return true;
@@ -1232,6 +1237,7 @@ namespace GreyWardenPolicePurity
             _offenderParty = null;
             _fine = 0;
             _desire = GwpOffenderDesire.PayInFull;
+            _share = 100;
         }
 
         #endregion

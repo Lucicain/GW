@@ -9,8 +9,51 @@ namespace GreyWardenPolicePurity.Core.Tests.Negotiation
         [Fact]
         public void NeutralSolventOffenderKeepsExistingProposalWeights()
         {
-            Assert.Equal(new[] { 5, 3, 1, 1, 0, 0, 1, 1 },
+            Assert.Equal(new[] { 5, 3, 1, 1, 0, 0, 1, 1, 0, 0 },
                 GwpNegotiationPolicy.Weights(0, 0, 0, 0, 0, 1000, 1000, true, true));
+        }
+
+        [Fact]
+        public void GenerosityFeedsItsOwnProposalInsteadOfPlainFullPayment()
+        {
+            // 用户裁定 2026-11-06：慷慨高单独成一种打算（按罚金 120% 交），不再并进照数全缴。
+            int[] weights = GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, 1200, 1000, true, true);
+            Assert.Equal(5, weights[0]);
+            Assert.Equal(8, weights[8]);
+        }
+
+        [Theory]
+        [InlineData(1199, 0)]
+        [InlineData(1200, 8)]
+        public void GenerousNeedsTheExtraFifthOnHand(int gold, int expected)
+        {
+            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, 0, 2, gold, 1000, true, true)[8]);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 8)]
+        public void RashNeedsSomethingToHandOver(int gold, int expected)
+        {
+            Assert.Equal(expected, GwpNegotiationPolicy.Weights(0, 0, 0, -2, 0, gold, 1000, true, true)[9]);
+        }
+
+        [Theory]
+        [InlineData(0, 50)]
+        [InlineData(50, 100)]
+        [InlineData(100, 150)]
+        public void RashShareCoversFiftyToOneHundredFiftyPercentInclusive(int roll, int expected)
+        {
+            Assert.Equal(101, GwpNegotiationPolicy.RashShareRollSpan);
+            Assert.Equal(expected, GwpNegotiationPolicy.RashSharePercent(roll));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(101)]
+        public void RashShareRollOutsideTheSpanIsRejected(int roll)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => GwpNegotiationPolicy.RashSharePercent(roll));
         }
 
         [Theory]

@@ -3936,8 +3936,9 @@
       "zh": "一半。辎重里就这么多，你能拿到的也就这么多。"
     },
     "gwp_fa_desire_rash": {
-      "en": "Take four fifths of the fine and let us finish this.",
-      "zh": "八成交给你。就这么了结，别再争了。"
+      "en": "I have no time for accounts. {GWP_CASE_OFFER_AMOUNT} denars - take it and go.",
+      "zh": "我没工夫跟你算账。{GWP_CASE_OFFER_AMOUNT} 第纳尔，拿了就走。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_fa_desire_deeds": {
       "en": "I will pay two fifths. The men I blame will answer to me with their lives.",
@@ -3964,8 +3965,9 @@
       "zh": "我收这一半，剩下的差额也会写进报告。"
     },
     "gwp_fa_accept_rash": {
-      "en": "Most of it will do. The remainder stays on the account.",
-      "zh": "八成我收下，短缺的数目一并记下。"
+      "en": "That will do. I will report it as it is.",
+      "zh": "就这些吧。我照实回去交代。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_fa_accept_duel": {
       "en": "Draw, then. Let us settle it between us.",
@@ -4280,8 +4282,9 @@
       "zh": "已经够多人受苦了。罚金我全交，别再流血了。"
     },
     "gwp_fa_desire_generous": {
-      "en": "I can spare the silver. Take the full amount and see that this account is settled.",
-      "zh": "这笔钱我拿得出。照数拿去，把账结清。"
+      "en": "I will not haggle over the fine. {GWP_CASE_OFFER_AMOUNT} denars - more than you asked, not less. Take it.",
+      "zh": "罚金我不跟你讲价。{GWP_CASE_OFFER_AMOUNT} 第纳尔，只多不少，拿去。",
+      "context": "用户裁定2026-11-06：慷慨高按罚金120%交，不讨价还价。用户批准2026-11-07。"
     },
     "gwp_report_audit_found": {
       "en": "The Wardens find {VAR_1} denars missing from your accounts.",
@@ -4380,20 +4383,23 @@
       "zh": "付一半就还欠一半。你怎么解释钱袋，都改不了这个数。"
     },
     "gwp_terms_rashmost_lead": {
-      "en": "If you want this finished, finish the payment. Do not leave the last fifth hanging.",
-      "zh": "真想快点了结，就把最后两成交齐。别留个尾巴。"
+      "en": "If you want this finished, pay the fine in full. Do not leave a tail hanging.",
+      "zh": "真想快点了结，就照罚金交齐，别留个尾巴。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_terms_rashmost_charm": {
-      "en": "We are close enough to agreement. Do not throw it away over the remainder.",
-      "zh": "已经谈到这一步了，别为最后一点余款闹翻。"
+      "en": "We have come this far. Do not throw it away over the difference.",
+      "zh": "已经谈到这一步了，别为差的那些钱闹翻。"
     },
     "gwp_terms_rashmost_rogue": {
-      "en": "You risk the whole purse to keep its last fifth. Think before you refuse.",
-      "zh": "为留下最后两成，把整只钱袋赌上？你再想想。"
+      "en": "You would stake the whole purse to keep back a few coins? Think again.",
+      "zh": "为少交几个钱，把整只钱袋赌上？你再想想。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_terms_rashmost_trade": {
-      "en": "You have offered four fifths. Add the remaining fifth and there is no balance left.",
-      "zh": "八成已经答应了，再补两成，账就齐了。"
+      "en": "Your figure does not cover the fine. Make up the difference and we are square.",
+      "zh": "你报的这个数，连罚金都不够。补齐了，咱们两清。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_terms_demandduel_lead": {
       "en": "This warrant is not a contest. Meet the charge without risking your commander's life.",
@@ -4524,20 +4530,24 @@
       "zh": "我知道半款还剩多少。我是在给你条件，不是在请你算数。"
     },
     "gwp_rebuff_rashmost_lead": {
-      "en": "I offered most of it to end this quickly. Now you want to keep arguing over the rest.",
-      "zh": "我肯出八成，已经是让步。别把让步当成理所当然。"
+      "en": "I named my figure, and that is the figure. Stop grinding at me.",
+      "zh": "我说了这个数，就是这个数。别再跟我磨。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_rebuff_rashmost_charm": {
-      "en": "I offered most of it to end this quickly. Now you want to keep arguing over the rest.",
-      "zh": "既然只差这一点，你也可以让一步，何必全要我来让？"
+      "en": "I named my figure, and that is the figure. Stop grinding at me.",
+      "zh": "你也可以让一步，何必全要我来让？",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_rebuff_rashmost_rogue": {
-      "en": "I offered most of it to end this quickly. Now you want to keep arguing over the rest.",
-      "zh": "我可没说要赌掉整只钱袋。你少拿最坏的事吓我。"
+      "en": "I named my figure, and that is the figure. Stop grinding at me.",
+      "zh": "我可没说要赌掉整只钱袋。你少拿最坏的事吓我。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_rebuff_rashmost_trade": {
-      "en": "I offered most of it to end this quickly. Now you want to keep arguing over the rest.",
-      "zh": "不用教我算那两成。我知道差多少，只是不想再给。"
+      "en": "I named my figure, and that is the figure. Stop grinding at me.",
+      "zh": "不用教我算账。我知道差多少，只是不想再给。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_rebuff_demandduel_lead": {
       "en": "All those reasons to avoid a duel. I still want this settled between the two of us.",
@@ -4800,8 +4810,9 @@
       "zh": "已经够多人受罪了。我把罚金付清，别再牵连别人。"
     },
     "gwp_voice_demand_paygenerously_alt": {
-      "en": "I can afford it. Take the whole sum and settle the account.",
-      "zh": "这些钱我出得起，全部拿去，把账结清。"
+      "en": "What I did, I own. {GWP_CASE_OFFER_AMOUNT} denars - count it.",
+      "zh": "我做下的事，我认。{GWP_CASE_OFFER_AMOUNT} 第纳尔，你点一点。",
+      "context": "用户裁定2026-11-06：慷慨高按罚金120%交，不讨价还价。用户批准2026-11-07。"
     },
     "gwp_voice_demand_surrenderself_alt": {
       "en": "The money must feed these men. If you need a prisoner, take me alone.",
@@ -4816,8 +4827,9 @@
       "zh": "你要的数目我凑不齐。只有一半，你要就拿去。"
     },
     "gwp_voice_demand_rashmost_alt": {
-      "en": "Four fifths. Take it. Spare me the argument over the rest.",
-      "zh": "八成，拿去吧。剩下两成就别再费口舌了。"
+      "en": "{GWP_CASE_OFFER_AMOUNT} denars, and that is all. Take it or leave it.",
+      "zh": "{GWP_CASE_OFFER_AMOUNT} 第纳尔，就这些。要就拿，不要拉倒。",
+      "context": "用户裁定2026-11-06：莽撞（算计低）随口报罚金的50%～150%，{GWP_CASE_OFFER_AMOUNT}为他实际报的数（不超过身上家当）。用户批准2026-11-07。"
     },
     "gwp_voice_demand_demandduel_alt": {
       "en": "Just you and me. You win, I pay the fine. I win, you leave empty-handed.",

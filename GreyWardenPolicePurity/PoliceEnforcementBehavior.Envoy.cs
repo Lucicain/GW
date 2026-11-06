@@ -478,13 +478,13 @@ namespace GreyWardenPolicePurity
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
                 offender.GetTraitLevel(DefaultTraits.Generosity), wealth, fine);
             GwpOffenderDesire desire = GwpOffenderDesires.Roll(offender, fine, true,
-                target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0));
+                target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0), out int share);
             bool listens = refusal < 0.55d;
             bool acknowledged = listens && GwpNegotiationResistance.SimulatePersuasion(
                 GwpNegotiationResistance.LayerOneReservations, layerOne, true, charm);
 
-            // 交钱的打算：第二层谈下来，他肯给的比例往全额挪一半；谈不下来按他说的数。别的打算不谈，照办。
-            int share = GwpOffenderDesires.OfferedSharePercent(desire);
+            // 交钱的打算：第二层谈下来，他肯给的比例往全额挪一半；谈不下来按他说的数。
+            // 给到全额及以上（照数、慷慨、莽撞报高）和别的打算不谈，照办。
             bool bargains = acknowledged && share < 100 && desire != GwpOffenderDesire.BribeTheWarden;
             int layerTwo = bargains
                 ? GwpNegotiationResistance.LayerTwoResistance(offender, desire, charm, renown, wealth, fine)

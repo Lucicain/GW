@@ -223,12 +223,11 @@ namespace GreyWardenPolicePurity
             public const float DeterrenceReference = 60f;
 
             /// <summary>
-            /// 他自己那套兑现方式各自肯给多少。全缴以外都是打折，差额留在他名下的
-            /// 案底里——账没进公库，人就没赎。
+            /// 他自己那套兑现方式各自肯给多少。打折的差额留在他名下的
+            /// 案底里——账没进公库，人就没赎。慷慨与莽撞的比例在 Core 的 GwpNegotiationPolicy。
             /// </summary>
             public const int BribeSharePercent = 15;
             public const int CunningSharePercent = 50;
-            public const int RashSharePercent = 80;
             public const int DeedsOnlySharePercent = 40;
             public const int HaggleSharePercent = 70;
             /// <summary>仁慈低的人拿自己手下出气，杀这么多个。</summary>

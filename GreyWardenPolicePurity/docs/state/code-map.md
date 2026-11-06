@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-228 个源文件、59,510 行、438 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+228 个源文件、59,545 行、438 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -651,7 +651,7 @@
 - `PoliceEnforcementBehavior.Assistance.cs` — 1872 行 · `PoliceEnforcementBehavior`，另含 1 个类型
 - `PoliceEnforcementBehavior.cs` — 1410 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1372 行 · `PoliceEnforcementBehavior`
-- `GwpFieldArrestBehavior.cs` — 1305 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpFieldArrestBehavior.cs` — 1311 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.Envoy.cs` — 1018 行 · `PoliceEnforcementBehavior`，另含 2 个类型
 - `PolicePatrolBehavior.cs` — 956 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 740 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
@@ -674,7 +674,7 @@
 - `PolicePartyTroopUpgradeModel.cs` — 76 行 · `PolicePartyTroopUpgradeModel` : DefaultPartyTroopUpgradeModel
 - `PoliceMobilePartyAIModel.cs` — 75 行 · `PoliceMobilePartyAIModel` : DefaultMobilePartyAIModel
 - `PoliceAntiVanillaWarBehavior.cs` — 74 行 · `PoliceAntiVanillaWarBehavior` : CampaignBehaviorBase
-- `GwpFieldArrestBehavior.Grace.cs` — 70 行 · `GwpFieldArrestBehavior`
+- `GwpFieldArrestBehavior.Grace.cs` — 71 行 · `GwpFieldArrestBehavior`
 - `PoliceAntiRecruitmentModel.cs` — 67 行 · `PoliceAntiRecruitmentModel` : DefaultDiplomacyModel
 - `PoliceRaidDeterrenceModel.cs` — 58 行 · `PoliceRaidDeterrenceModel` : DefaultTargetScoreCalculatingModel
 - `PolicePatrolBehavior.Encyclopedia.cs` — 49 行 · `PolicePatrolBehavior`
@@ -738,7 +738,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1012 行 · `CrimeRecord`，另含 4 个类型
-- `GwpTuning.cs` — 457 行 · `GwpTuning`，另含 16 个类型
+- `GwpTuning.cs` — 456 行 · `GwpTuning`，另含 16 个类型
 - `GwpCommon.cs` — 366 行 · `GwpCommon`
 - `GwpIds.cs` — 98 行 · `GwpIds`
 
@@ -784,9 +784,9 @@
 - `GwpEncyclopediaClanPageVM.cs` — 192 行 · `GwpEncyclopediaClanPageExtension`，另含 2 个类型
 - `GreyWardenLoreBehavior.cs` — 189 行 · `GreyWardenLoreBehavior` : CampaignBehaviorBase
 - `GreyWardenSafeTroopSupplier.cs` — 188 行 · `GreyWardenSafeTroopSupplier` : IMissionTroopSupplier，另含 1 个类型
+- `GwpOffenderDesire.cs` — 184 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpPartyDutyMovementPatch.cs` — 184 行 · `GwpFinalDesireAuctionPatch`，另含 5 个类型
 - `GwpAgentStatCalculateModel.cs` — 175 行 · `GwpAgentStatCalculateModel` : AgentStatCalculateModel，另含 1 个类型
-- `GwpOffenderDesire.cs` — 174 行 · `GwpOffenderDesire`，另含 1 个类型
 - `GwpCitySearchNativeVisualFix.cs` — 167 行 · `GwpCitySearchNativeVisualFix`
 - `GwpFaithBattleRewardModel.cs` — 167 行 · `GwpFaithBattleRewardModel` : BattleRewardModel
 - `PlayerBehaviorPool.cs` — 155 行 · `PlayerBehaviorPool`
@@ -821,6 +821,7 @@
 - `GwpWardenMarriageBehavior.cs` — 94 行 · `GwpWardenMarriageBehavior` : CampaignBehaviorBase
 - `GwpDualWieldingPatch.cs` — 93 行 · `GwpDualWieldCollisionPatch`，另含 1 个类型
 - `GwpSettlementNotices.cs` — 93 行 · `GwpSettlementNotices` : SettlementNotificationItemBaseVM，另含 3 个类型
+- `GwpNegotiationPolicy.cs` — 86 行 · `GwpNegotiationPolicy`
 - `GwpFireswornSoundView.cs` — 84 行 · `GwpFireswornSoundView` : MenuView，另含 1 个类型
 - `GwpFireswornArmoryView.cs` — 82 行 · `GwpFireswornArmoryView`
 - `GwpSettlementReconsiderationDecision.cs` — 82 行 · `GwpSettlementReconsiderationDecision` : SettlementClaimantDecision
@@ -831,7 +832,6 @@
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
 - `GwpText.cs` — 69 行 · `GwpText`
-- `GwpNegotiationPolicy.cs` — 67 行 · `GwpNegotiationPolicy`
 - `GwpCitySearchBehavior.Menu.cs` — 67 行 · `GwpCitySearchBehavior`
 - `GwpAssistanceArmyTooltipPatch.cs` — 66 行 · `GwpAssistanceArmyTooltipPatch`
 - `GwpCitySearchMissionViews.cs` — 66 行 · `GwpCitySearchMissionViews` : DefaultVisualOrderProvider，另含 1 个类型

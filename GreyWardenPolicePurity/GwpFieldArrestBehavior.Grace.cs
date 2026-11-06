@@ -64,6 +64,7 @@ namespace GreyWardenPolicePurity
             _enforcementAccepted = true;
             _paymentAccepted = true;
             _desire = GwpOffenderDesire.PayInFull;
+            _share = 100;
         }
     }
 }
