@@ -276,10 +276,13 @@ namespace GreyWardenPolicePurity
             starter.AddDialogLine(
                 "gwp_fa_desire_done", "gwp_fa_desire_done", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_fa_desire_done_line),
-                () => _desire == GwpOffenderDesire.SurrenderSelf || _desire == GwpOffenderDesire.DemandDuel || (_desire == GwpOffenderDesire.RequestGrace && CanOfferGrace), ExecuteDesireConsequence);
+                () => _desire == GwpOffenderDesire.SurrenderSelf || _desire == GwpOffenderDesire.DemandDuel
+                    || ((_desire == GwpOffenderDesire.RequestGrace || _desire == GwpOffenderDesire.HideInTown) && CanOfferGrace),
+                ExecuteDesireConsequence);
             starter.AddDialogLine("gwp_fa_desire_money", "gwp_fa_desire_done", "gwp_fa_collection_result",
                 GwpText.Get(GwpTextCatalog.gwp_fa_count_money),
-                () => _desire != GwpOffenderDesire.SurrenderSelf && _desire != GwpOffenderDesire.DemandDuel && _desire != GwpOffenderDesire.RequestGrace,
+                () => _desire != GwpOffenderDesire.SurrenderSelf && _desire != GwpOffenderDesire.DemandDuel
+                    && _desire != GwpOffenderDesire.RequestGrace && _desire != GwpOffenderDesire.HideInTown,
                 () => OpenCollection(false));
             starter.AddDialogLine("gwp_fa_collection_paid", "gwp_fa_collection_result", "close_window",
                 GwpText.Get(GwpTextCatalog.gwp_fa_collection_paid),
@@ -362,7 +365,8 @@ namespace GreyWardenPolicePurity
             _repairVillage = GwpOffenderAmendsBehavior.RepairableVillage(_crime, _offender);
             _desire = HasGrace ? GwpOffenderDesire.PayInFull : GwpOffenderDesires.Roll(_offender, _fine,
                 CanOfferGrace, _offenderParty?.MemberRoster?.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0) == true,
-                _repairVillage != null, out _share);
+                _repairVillage != null, GwpCommon.NearestOwnFortification(_offenderParty) != null,
+                out _share);
             (float ours, float theirs) = FieldBalance();
             int resistance = LayerOneResistance();
             double refusalChance = GwpNegotiationPolicy.RefusalChance(resistance,
@@ -935,6 +939,12 @@ namespace GreyWardenPolicePurity
             {
                 case GwpOffenderDesire.RequestGrace:
                     GrantGrace();
+                    return;
+                case GwpOffenderDesire.HideInTown:
+                    // 玩家看到的就是请宽限：照样记下宽限；他实际带队去躲城（用户裁定 2026-11-06）。
+                    Hero hider = _offender;
+                    GrantGrace();
+                    GwpOffenderHidingBehavior.Begin(hider);
                     return;
                 case GwpOffenderDesire.SurrenderSelf:
                     SurrenderConsequence();

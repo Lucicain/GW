@@ -671,7 +671,7 @@ namespace GreyWardenPolicePurity
             _lastIntelReportTime = CampaignTime.Now;
 
             MobileParty? target = ResolveBountyTargetParty();
-            Settlement? shelter = target == null ? CrimeRecord.ShelterOf(CaseHero) : null;
+            Settlement? shelter = CrimeRecord.ShelterOf(CaseHero);
             if (shelter != null)
             {
                 _activeQuest.WriteLog(GwpText.Create(GwpTextCatalog.gwp_bounty_intel_sheltered,

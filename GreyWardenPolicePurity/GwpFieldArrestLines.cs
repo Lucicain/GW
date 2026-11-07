@@ -171,6 +171,7 @@ namespace GreyWardenPolicePurity
 
         internal static List<PersuasionTask> BuildPaymentReservations(GwpOffenderDesire desire, PersuasionArgumentStrength strength)
         {
+            desire = SpokenAs(desire);
             // Every counterargument answers the terms the offender actually offered.
             string key = desire.ToString().ToLowerInvariant();
             string[] lines = PaymentArguments(desire);
@@ -232,8 +233,13 @@ namespace GreyWardenPolicePurity
             _ => new[] { GwpTextCatalog.Raw_terms_default_lead, GwpTextCatalog.Raw_terms_default_charm, GwpTextCatalog.Raw_terms_default_rogue, GwpTextCatalog.Raw_terms_default_trade }
         };
 
+        /// <summary>躲城的人借请宽限脱身，第二层的劝说与回绝都用请宽限那一套。</summary>
+        private static GwpOffenderDesire SpokenAs(GwpOffenderDesire desire) =>
+            desire == GwpOffenderDesire.HideInTown ? GwpOffenderDesire.RequestGrace : desire;
+
         internal static TextObject ArgumentRebuff(PersuasionOptionArgs option, GwpOffenderDesire desire, bool payment)
         {
+            desire = SpokenAs(desire);
             string skill = option.SkillUsed == DefaultSkills.Leadership ? "lead"
                 : option.SkillUsed == DefaultSkills.Charm ? "charm"
                 : option.SkillUsed == DefaultSkills.Roguery ? "rogue" : "trade";

@@ -52,7 +52,7 @@ namespace GreyWardenPolicePurity
             TaleWorlds.Library.InformationManager.DisplayMessage(new TaleWorlds.Library.InformationMessage(message));
         }
 
-        /// <summary>玩家当前委托的目标正没带兵住在这座城里时返回他，进城搜捕由此开放。</summary>
+        /// <summary>玩家当前委托的目标住在这座城里（含约定带队躲城）时返回他，进城搜捕由此开放。</summary>
         internal Hero? CitySearchTargetIn(Settlement? settlement) =>
             settlement != null && IsTrackingBountyTarget && CaseHero is { } hero
             && CrimeRecord.ShelterOf(hero) == settlement ? hero : null;

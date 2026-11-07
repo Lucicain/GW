@@ -149,6 +149,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 搜捕敌方追击 | `GwpCitySearchMissionController.SetCityPursuer` | 初始守方与新援军共用原版下马兵种编队、冲锋及自动选敌，不改我方编队与血量归属 |
 | 人物外观原生渲染修复 | `GwpCitySearchNativeVisualFix` | 对已查明故障RVA的修复只在此处安装；签名、生命周期及验收归[搜捕](city-search.md) |
 | 和平投案退团、押人与原队收尾 | `GwpVoluntarySurrender` | 玩家当面投案与使者立即/战后投案均用此入口；规则归[使者](case-envoy.md#投案与原版军团退队衔接) |
+| 投案与躲城的本国城候选 | `GwpCommon.NearestOwnFortification` | 最近、同势力且未被围的城镇或城堡只在公共入口筛选；两种行为各自持有行程与终止条件 |
 | 兵员人数、伤兵与经验搬运 | `GwpTroopTransfer` | 各功能选兵后调用公共搬运入口；语义由实际游戏名册回归检查，不声称正则覆盖所有扣人加人代码 |
 | 玩家词句与中英变量 | `PlayerText/strings.json`、`Generate-PlayerText.py` | 构建拒绝新内联带键整句与陈旧生成文件；详见[玩家文字](player-text.md) |
 | 临时队海陆交接资格 | `GwpCommon.CanCompletePartyHandover` | 海陆相同判断只在公共入口实现；距离、接收人资格归各业务，规则见[临时队](temporary-parties.md#海陆交接资格) |

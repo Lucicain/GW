@@ -186,6 +186,8 @@ DUTY_PREDICATES = {
     "ShouldReserveFromNewDuties": "GreyWardenTrainingBehavior*.cs",
 }
 OWNERS = [
+    ("投案与躲城的本国城候选", r"\bsettlement\.IsFortification\s*&&\s*settlement\.MapFaction\s*==\s*party\.MapFaction",
+     "GwpCommon.cs", "GwpCommon.NearestOwnFortification"),
     ("已接住城案的迁移与建队资格", r'\bCanMoveToSettlementEvent\.AddNonSerializedListener\s*\(|'
      r'\b(?:HeroSpawnCampaignBehavior|TeleportationCampaignBehavior|DisbandPartyCampaignBehavior|'
      r'ClanVariablesCampaignBehavior)\)\s*,\s*"(?:GetBestAvailableCommander|GetHeroPartyCommandScore|'

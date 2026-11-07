@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.TournamentGames;
 using TaleWorlds.Core;
@@ -39,6 +40,11 @@ namespace GreyWardenPolicePurity
             Aftermath = 5,
             /// <summary>已答应单挑，承办人先履行已有玩家事务或另一场约斗，再选城赴会。</summary>
             WaitingForDuel = 6,
+            /// <summary>
+            /// 他要带队躲城（勇武低）。对灰袍的作用同谈崩：不再派使者，没躲成时照常追捕；
+            /// 但不通知玩家，事务界面与使者台账都不显示（用户裁定 2026-11-07）。
+            /// </summary>
+            NegotiationEndedForHiding = 7,
         }
 
         /// <summary>一宗案子的使者进度，按案卷记。谈崩记录留到销案为止，所以同一宗案子不会再派。</summary>
@@ -239,12 +245,16 @@ namespace GreyWardenPolicePurity
             if (task.WarDeclared || criminal.IsMainParty || crime == null)
                 return false;
             if (_envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase))
-                return envoyCase.Stage != EnvoyStage.Failed;
+                return !IsEnvoyClosed(envoyCase.Stage);
             // 承办人正在打仗，抽不出人：这一小时先不宣战，仗打完就派（实机诊断 2026-10-15）。
             if (police.MapEvent != null)
                 return true;
             return TrySendEnvoy(police, crime, criminal, false);
         }
+
+        /// <summary>这宗案子已不再派使者：谈崩，或他要带队躲城。</summary>
+        private static bool IsEnvoyClosed(EnvoyStage stage) =>
+            stage == EnvoyStage.Failed || stage == EnvoyStage.NegotiationEndedForHiding;
 
         /// <summary>他在宽限期里，或收钱的使者正在路上：这宗案子谁都不接（用户裁定 2026-10-15）。</summary>
         private bool IsAwaitingEnvoyCollection(CrimeRecord crime) =>
@@ -480,7 +490,7 @@ namespace GreyWardenPolicePurity
             Settlement? repairVillage = GwpOffenderAmendsBehavior.RepairableVillage(crime, offender);
             GwpOffenderDesire desire = GwpOffenderDesires.Roll(offender, fine, true,
                 target.MemberRoster.GetTroopRoster().Any(e => !e.Character.IsHero && e.Number > 0),
-                repairVillage != null, out int share);
+                repairVillage != null, GwpCommon.NearestOwnFortification(target) != null, out int share);
             bool listens = refusal < 0.55d;
             bool acknowledged = listens && GwpNegotiationResistance.SimulatePersuasion(
                 GwpNegotiationResistance.LayerOneReservations, layerOne, true, charm);
@@ -523,6 +533,16 @@ namespace GreyWardenPolicePurity
                     if (graceTask != null)
                         EndCaseTask(graceTask.PolicePartyId, CaseTaskEnd.Released, "envoy_grace");
                     return;
+                case GwpOffenderDesire.HideInTown:
+                    // 用户裁定 2026-11-06：他要带队躲城。使者返程，承办人去接别的差事，案子留着；
+                    // 他进了城就按住城案，由附近灰袍派城内办案队。这宗案子按谈崩处理但不通知玩家，不再派使者：
+                    // 他没躲成（路上作罢）时照原来的宣战流程走，不会再谈一轮又抽到躲城。
+                    envoyCase.TownId = GwpOffenderHidingBehavior.Begin(offender)?.StringId ?? string.Empty;
+                    envoyCase.Stage = EnvoyStage.NegotiationEndedForHiding;
+                    PoliceTask? hideTask = TaskForCrime(crime);
+                    if (hideTask != null)
+                        EndCaseTask(hideTask.PolicePartyId, CaseTaskEnd.Released, "envoy_hide");
+                    return;
                 case GwpOffenderDesire.DemandDuel:
                     StartDuel(envoyCase, police, target);
                     return;
@@ -533,7 +553,11 @@ namespace GreyWardenPolicePurity
                     GwpAiDeterrenceState.ClearArrestRecord(offender);
                     RecordEnvoyReport(envoyCase, "surrender", 0);
                     ResolveEnvoyCase(envoyCase, crime, true, "envoy_surrender");
-                    if (!GwpVoluntarySurrender.CanCapture(offender) ||
+                    // 用户裁定 2026-11-06：他带队去本国最近的城，把兵留在那里，使者一路跟进城再押走他。
+                    // 本国没有能去的城时照旧当场押人。
+                    GwpOffenderAmendsBehavior.Cancel(offender.StringId);
+                    envoyCase.TownId = GwpCommon.NearestOwnFortification(target)?.StringId ?? string.Empty;
+                    if (envoyCase.TownId.Length > 0 || !GwpVoluntarySurrender.CanCapture(offender) ||
                         !GwpVoluntarySurrender.TryCapture(envoy.Party, offender))
                         BeginAftermath(envoyCase, desire);
                     return;
@@ -571,7 +595,9 @@ namespace GreyWardenPolicePurity
         {
             envoyCase.Stage = EnvoyStage.Aftermath;
             envoyCase.PendingDesire = (int)desire;
-            envoyCase.DueHours = CampaignTime.Now.ToHours + GwpTuning.Enforcement.EnvoyAftermathWaitHours;
+            // 投案要走到城里，路程按长途算；其他收尾等他打完这一仗。
+            envoyCase.DueHours = CampaignTime.Now.ToHours + (desire == GwpOffenderDesire.SurrenderSelf && envoyCase.TownId.Length > 0
+                ? GwpTuning.FieldArrest.AmendsTravelHours : GwpTuning.Enforcement.EnvoyAftermathWaitHours);
             _envoyCases[envoyCase.CrimeId] = envoyCase;
             // 结案时承办人的临时队都被转成返程（ClearTaskWarTracking），这一支还要留下。
             if (_delayPatrolStates.TryGetValue(envoyCase.EnvoyPartyId, out DelayPatrolState? state))
@@ -583,11 +609,21 @@ namespace GreyWardenPolicePurity
             MobileParty? envoy = FindActiveParty(envoyCase.EnvoyPartyId);
             MobileParty? target = FindActiveParty(envoyCase.TargetPartyId);
             Hero? offender = target?.LeaderHero;
+            bool surrender = (GwpOffenderDesire)envoyCase.PendingDesire == GwpOffenderDesire.SurrenderSelf;
+            // 领袖换了人（原领袖阵亡后别人接任）就不是答应投案的那个人；他护送途中又犯案、
+            // 新案被玩家接下时，人归玩家去办，使者不再押他。
             if (envoy == null || target == null || offender == null ||
+                surrender && (offender.StringId != envoyCase.CrimeId
+                    || GwpPlayerCaseAssignment.IsCaseHeldByPlayer(envoyCase.CrimeId)) ||
                 CampaignTime.Now.ToHours >= envoyCase.DueHours)
             {
                 if (envoy != null) MarkDelayPatrolReturning(envoy.StringId);
                 ForgetEnvoyCase(envoyCase, "aftermath_lapsed");
+                return;
+            }
+            if (surrender && envoyCase.TownId.Length > 0)
+            {
+                EscortSurrenderToTown(envoyCase, envoy, target, offender);
                 return;
             }
             if (envoy.MapEvent != null || target.MapEvent != null || !EnvoyReached(envoy, target) ||
@@ -604,6 +640,60 @@ namespace GreyWardenPolicePurity
             }
             else
                 GwpOffenderDesires.SacrificeOwnMen(target);
+            MarkDelayPatrolReturning(envoy.StringId);
+            ForgetEnvoyCase(envoyCase, "aftermath_done");
+        }
+
+        /// <summary>
+        /// 荣誉高投案：他带队去本国那座城，把兵交给守军留在城里，使者跟进城再押走他（用户裁定 2026-11-06）。
+        /// 去城路上走欲望层访问意图，原版避敌照常；那座城丢了或被围就改去另一座，本国没城了就在原地押人。
+        /// </summary>
+        private void EscortSurrenderToTown(EnvoyCase envoyCase, MobileParty envoy, MobileParty target, Hero offender)
+        {
+            Settlement? town = Settlement.Find(envoyCase.TownId);
+            if (town == null || town.MapFaction != target.MapFaction ||
+                town.SiegeEvent != null && target.CurrentSettlement != town)
+            {
+                town = GwpCommon.NearestOwnFortification(target);
+                envoyCase.TownId = town?.StringId ?? string.Empty;
+                if (town == null)
+                {
+                    GreyWardenPartyDesireBehavior.ClearIntent(target);
+                    GwpCommon.TryResetAi(target);
+                    return;
+                }
+            }
+            if (envoy.MapEvent != null || target.MapEvent != null)
+            {
+                FollowTarget(envoy, target);
+                return;
+            }
+            if (target.CurrentSettlement != town)
+            {
+                if (target.Ai.DoNotMakeNewDecisions) GwpCommon.TryResetAi(target);
+                if (target.Army != null && target.Army.LeaderParty != target)
+                    target.Army = null;
+                GreyWardenPartyDesireBehavior.RequestVisit(target, town, 10f);
+                FollowTarget(envoy, target);
+                return;
+            }
+            GreyWardenPartyDesireBehavior.ClearIntent(target);
+            GwpCommon.HoldPartyAt(target, town);
+            GreyWardenPartyDesireBehavior.RequestVisit(envoy, town, 8f);
+            if (!GwpFireswornBehavior.HasArrived(envoy, town) || !GwpVoluntarySurrender.CanCapture(offender))
+                return;
+            GwpCommon.TryResetAi(target);
+            // 兵交给这座城的守军；没有守军时留给原版解散失去领袖的部队。
+            TroopRoster? garrison = town.Town?.GarrisonParty?.MemberRoster;
+            if (garrison != null)
+                foreach (TroopRosterElement element in target.MemberRoster.GetTroopRoster().ToList())
+                    if (element.Character?.IsHero == false && element.Number > 0)
+                        GwpTroopTransfer.Move(target.MemberRoster, garrison, element.Character, element.Number);
+            if (!GwpVoluntarySurrender.TryCapture(envoy.Party, offender)) return;
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteAction(envoy, "ENVOY_SURRENDER_DELIVERED", "offender=" + offender.StringId
+                + "; town=" + town.StringId + "; garrison=" + (garrison != null));
+#endif
             MarkDelayPatrolReturning(envoy.StringId);
             ForgetEnvoyCase(envoyCase, "aftermath_done");
         }
@@ -977,6 +1067,13 @@ namespace GreyWardenPolicePurity
 
         private void ForgetEnvoyCase(EnvoyCase envoyCase, string reason)
         {
+            if (envoyCase.Stage == EnvoyStage.Aftermath &&
+                (GwpOffenderDesire)envoyCase.PendingDesire == GwpOffenderDesire.SurrenderSelf)
+            {
+                MobileParty? target = FindActiveParty(envoyCase.TargetPartyId);
+                GreyWardenPartyDesireBehavior.ClearIntent(target);
+                GwpCommon.TryResetAi(target);
+            }
             _envoyCases.Remove(envoyCase.CrimeId);
             MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
             if (police != null)
@@ -996,7 +1093,7 @@ namespace GreyWardenPolicePurity
         {
             // A failed negotiation has already sent its envoy home. Keep the
             // recorded failure if the player's warrant later returns to the pool.
-            if (entry.Stage == EnvoyStage.Failed) return;
+            if (IsEnvoyClosed(entry.Stage)) return;
             if (entry.Stage == EnvoyStage.Duel || entry.Stage == EnvoyStage.DuelDecided)
                 ReleaseDuelists(entry);
             if (_delayPatrolStates.ContainsKey(entry.EnvoyPartyId))

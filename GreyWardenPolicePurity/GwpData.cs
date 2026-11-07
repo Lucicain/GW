@@ -118,17 +118,20 @@ namespace GreyWardenPolicePurity
             HasOpenCase &&
             (CrimeId == CrimePool.PlayerCrimeId || OffenderHero is { IsAlive: true, IsPrisoner: false, IsDisabled: false }) &&
             Offender?.IsActive == true && Offender.CurrentSettlement == null
+            // 答应了带队躲城的人在路上也不追，到了城里按住城案办。
+            && !GwpOffenderHidingBehavior.IsHiding(OffenderHeroId)
             // 玩家接手的案子由玩家承办，灰袍不再自行派人；支援另由求援送达后明确指派。
             && !GwpPlayerCaseAssignment.IsCaseHeldByPlayer(OffenderHeroId);
 
         /// <summary>
-        /// 没带部队、住在城镇或城堡里的人。原版把这样的贵族放在领主大厅
-        /// （DefaultHeroAgentLocationModel，依据：C#反编译 v1.4.8），玩家可以进城搜捕。
+        /// 没带部队、住在城镇或城堡里的人，或者带着部队躲进城的人（GwpOffenderHidingBehavior）。
+        /// 原版把两种贵族都放在领主大厅（DefaultHeroAgentLocationModel，依据：C#反编译 v1.4.8），玩家可以进城搜捕。
+        /// 只认答应了躲城的那些带队者，路过城镇的领主不算住城。
         /// </summary>
         public static Settlement? ShelterOf(Hero? hero) =>
             hero is { IsAlive: true, IsPrisoner: false, IsDisabled: false, IsFugitive: false, PartyBelongedTo: null }
             && hero.CurrentSettlement is { IsFortification: true } settlement
-            && settlement.HeroesWithoutParty.Contains(hero) ? settlement : null;
+            && settlement.HeroesWithoutParty.Contains(hero) ? settlement : GwpOffenderHidingBehavior.HideoutOf(hero);
 
         public Settlement? ShelterSettlement => ShelterOf(OffenderHero);
 

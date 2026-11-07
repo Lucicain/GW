@@ -4273,10 +4273,6 @@
       "en": "An exact payment leaves no remainder to argue over when I deliver the account.",
       "zh": "交清了，回报时就不会还挂着一笔余款。"
     },
-    "gwp_fa_desire_cautious": {
-      "en": "Keep your weapons lowered. I will pay what you ask; there need be no battle.",
-      "zh": "先把武器放下。钱我照数交，没必要打这一仗。"
-    },
     "gwp_fa_desire_merciful": {
       "en": "I will pay the fine in full. And {GWP_REPAIR_VILLAGE} still lies in ruins - I will take my men there and rebuild it.",
       "zh": "罚金我照数交。另外，{GWP_REPAIR_VILLAGE}还是一片废墟，我带人去把它修起来。",
@@ -4801,10 +4797,6 @@
     "gwp_voice_demand_payinfull_alt": {
       "en": "I will pay the assessed sum. Let us settle this.",
       "zh": "照数付清就是了。把这件事了结吧。"
-    },
-    "gwp_voice_demand_paytoavoidbattle_alt": {
-      "en": "Tell your men to hold. I will pay in full; nobody needs to die here.",
-      "zh": "先叫你的人别动。钱我照付，犯不着在这里死人。"
     },
     "gwp_voice_demand_payforpeace_alt": {
       "en": "Take the money. As for {GWP_REPAIR_VILLAGE}, I will see it rebuilt with my own men.",

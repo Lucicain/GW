@@ -117,13 +117,20 @@ namespace GreyWardenPolicePurity
 #endif
         }
 
+        /// <summary>他另有更要紧的去处（躲城）时，修村作罢。</summary>
+        internal static void Cancel(string heroId)
+        {
+            Amends? entry = _instance?._amends.FirstOrDefault(row => row.HeroId == heroId);
+            if (entry != null) _instance!.Finish(entry, "superseded");
+        }
+
         private void Tend()
         {
             double now = CampaignTime.Now.ToHours;
             foreach (Amends entry in _amends.ToList())
             {
                 Hero? hero = Hero.Find(entry.HeroId);
-                MobileParty? party = LedBy(hero, FindParty(entry.PartyId));
+                MobileParty? party = LedBy(hero, GwpCommon.FindParty(entry.PartyId));
                 Settlement? village = Settlement.Find(entry.VillageId);
                 string? lapse = hero?.IsAlive != true || hero.IsPrisoner ? "offender_gone"
                     : party == null ? "party_gone"
@@ -172,15 +179,12 @@ namespace GreyWardenPolicePurity
         private void Finish(Amends entry, string reason)
         {
             _amends.Remove(entry);
-            GreyWardenPartyDesireBehavior.ClearIntent(FindParty(entry.PartyId));
+            GreyWardenPartyDesireBehavior.ClearIntent(GwpCommon.FindParty(entry.PartyId));
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFieldArrest("OFFENDER_AMENDS_FINISHED", "offender=" + entry.HeroId
                 + "; village=" + entry.VillageId + "; reason=" + reason);
 #endif
         }
-
-        private static MobileParty? FindParty(string partyId) =>
-            string.IsNullOrEmpty(partyId) ? null : MobileParty.All.FirstOrDefault(party => party.StringId == partyId);
 
         private static MobileParty? LedBy(Hero? hero, MobileParty? party) =>
             party is { IsActive: true } && party.LeaderHero == hero ? party : null;

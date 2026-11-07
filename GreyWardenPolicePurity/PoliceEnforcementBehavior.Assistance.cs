@@ -275,7 +275,7 @@ namespace GreyWardenPolicePurity
             if (task.WarDeclared || task.IsPlayerBountyEscort || offender.IsMainParty || crime == null)
                 return false;
             if (_envoyCases.TryGetValue(crime.CrimeId, out EnvoyCase? envoyCase))
-                return envoyCase.Stage != EnvoyStage.Failed;
+                return !IsEnvoyClosed(envoyCase.Stage);
             return leader.MapEvent != null || EnvoyBlocker(leader, offender) == null;
         }
 

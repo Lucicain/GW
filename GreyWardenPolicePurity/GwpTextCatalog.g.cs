@@ -659,7 +659,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fa_counter_offer = "{=gwp_fa_counter_offer}Those terms will not do. Let us discuss the full fine.";
         internal const string gwp_fa_critical_rebuff = "{=gwp_fa_critical_rebuff}Enough. I will hear no more of this.";
         internal const string gwp_fa_desire_bribe = "{=gwp_fa_desire_bribe}Property worth {GWP_BRIBE_AMOUNT} denars, for you alone. What you tell the Wardens is your affair.";
-        internal const string gwp_fa_desire_cautious = "{=gwp_fa_desire_cautious}Keep your weapons lowered. I will pay what you ask; there need be no battle.";
         internal const string gwp_fa_desire_cunning = "{=gwp_fa_desire_cunning}Half. That is what the baggage carries, and that is what you are getting.";
         internal const string gwp_fa_desire_deeds = "{=gwp_fa_desire_deeds}I will pay two fifths. The men I blame will answer to me with their lives.";
         internal const string gwp_fa_desire_done_line = "{=gwp_fa_desire_done_line}Then we understand each other.";
@@ -1315,7 +1314,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_voice_demand_payforpeace_alt = "{=gwp_voice_demand_payforpeace_alt}Take the money. As for {GWP_REPAIR_VILLAGE}, I will see it rebuilt with my own men.";
         internal const string gwp_voice_demand_paygenerously_alt = "{=gwp_voice_demand_paygenerously_alt}What I did, I own. {GWP_CASE_OFFER_AMOUNT} denars - count it.";
         internal const string gwp_voice_demand_payinfull_alt = "{=gwp_voice_demand_payinfull_alt}I will pay the assessed sum. Let us settle this.";
-        internal const string gwp_voice_demand_paytoavoidbattle_alt = "{=gwp_voice_demand_paytoavoidbattle_alt}Tell your men to hold. I will pay in full; nobody needs to die here.";
         internal const string gwp_voice_demand_rashmost_alt = "{=gwp_voice_demand_rashmost_alt}{GWP_CASE_OFFER_AMOUNT} denars, and that is all. Take it or leave it.";
         internal const string gwp_voice_demand_surrenderself_alt = "{=gwp_voice_demand_surrenderself_alt}The money must feed these men. If you need a prisoner, take me alone.";
         internal const string gwp_voice_done1_alt = "{=gwp_voice_done1_alt}All right, I accept the charge. We still have to agree on how to settle it.";

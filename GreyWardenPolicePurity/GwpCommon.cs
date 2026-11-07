@@ -366,6 +366,21 @@ namespace GreyWardenPolicePurity
             party.Ai.SetDoNotMakeNewDecisions(true);
         }
 
+        /// <summary>投案与躲城共用的去处：离部队最近、属于本国且没被围的城镇或城堡。</summary>
+        internal static Settlement? NearestOwnFortification(MobileParty? party)
+        {
+            if (party?.MapFaction == null) return null;
+            return Settlement.All
+                .Where(settlement => settlement.IsFortification && settlement.MapFaction == party.MapFaction
+                    && settlement.SiegeEvent == null)
+                .OrderBy(settlement => settlement.GetPosition2D.Distance(party.GetPosition2D))
+                .FirstOrDefault();
+        }
+
+        /// <summary>按存档里记下的部队编号找回那支部队；找不到（已消灭）时为空。</summary>
+        public static MobileParty? FindParty(string partyId) =>
+            string.IsNullOrEmpty(partyId) ? null : MobileParty.All.FirstOrDefault(party => party.StringId == partyId);
+
         public static void TryResetAi(MobileParty? party)
         {
             if (party == null || !party.IsActive) return;

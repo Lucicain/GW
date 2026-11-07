@@ -26,7 +26,11 @@ namespace GreyWardenPolicePurity
     {
         /// <summary>勇武低；仁慈高而没有可修的村：照数全缴，不作他想。</summary>
         PayInFull = 0,
-        PayToAvoidBattle = 1,
+        /// <summary>
+        /// 勇武低：带着部队躲进本国的城，一直不出来（GwpOffenderHidingBehavior）。玩家当面时他嘴上说的是
+        /// 请宽限三天，对话与请宽限一模一样；使者那边谈到这一步就返程。
+        /// </summary>
+        HideInTown = 1,
         /// <summary>仁慈高：罚金照交，再带人去修本国一座废村（GwpOffenderAmendsBehavior）。</summary>
         RepairVillage = 2,
         /// <summary>慷慨高：按罚金的 120% 交。</summary>
@@ -53,16 +57,17 @@ namespace GreyWardenPolicePurity
         // One weighted pool of distinct tools; trait extremes do not own fixed outcomes.
         // sharePercent 是他这次肯交罚金的几成，莽撞的比例在这里一并抽定，整场谈判沿用。
         internal static GwpOffenderDesire Roll(Hero offender, int fine, bool canGrace, bool hasTroops,
-            bool canRepair, out int sharePercent)
+            bool canRepair, bool canHide, out int sharePercent)
         {
             int[] weights = GwpNegotiationPolicy.Weights(
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
                 offender.GetTraitLevel(DefaultTraits.Valor), offender.GetTraitLevel(DefaultTraits.Calculating),
-                offender.GetTraitLevel(DefaultTraits.Generosity), offender.PartyBelongedTo == null ? offender.Gold : GwpAssetPayment.Wealth(offender, offender.PartyBelongedTo.Party), fine, hasTroops, canGrace, canRepair);
+                offender.GetTraitLevel(DefaultTraits.Generosity), offender.PartyBelongedTo == null ? offender.Gold : GwpAssetPayment.Wealth(offender, offender.PartyBelongedTo.Party), fine, hasTroops, canGrace, canRepair, canHide);
             var choices = new[] { GwpOffenderDesire.PayInFull, GwpOffenderDesire.HaggleDown,
                 GwpOffenderDesire.CunningHalf, GwpOffenderDesire.SurrenderSelf, GwpOffenderDesire.DeedsOnly,
                 GwpOffenderDesire.BribeTheWarden, GwpOffenderDesire.DemandDuel, GwpOffenderDesire.RequestGrace,
-                GwpOffenderDesire.PayGenerously, GwpOffenderDesire.RashMost, GwpOffenderDesire.RepairVillage };
+                GwpOffenderDesire.PayGenerously, GwpOffenderDesire.RashMost, GwpOffenderDesire.RepairVillage,
+                GwpOffenderDesire.HideInTown };
             int roll = MBRandom.RandomInt(weights.Sum());
             GwpOffenderDesire result = choices[GwpNegotiationPolicy.SelectDesireIndex(weights, roll)];
             int shareRoll = result == GwpOffenderDesire.RashMost
@@ -118,6 +123,7 @@ namespace GreyWardenPolicePurity
             int level = desire switch
             {
                 GwpOffenderDesire.RequestGrace => Math.Max(1, offender.GetTraitLevel(DefaultTraits.Calculating)),
+                GwpOffenderDesire.HideInTown => -offender.GetTraitLevel(DefaultTraits.Valor),
                 GwpOffenderDesire.SurrenderSelf => offender.GetTraitLevel(DefaultTraits.Honor),
                 GwpOffenderDesire.BribeTheWarden => -offender.GetTraitLevel(DefaultTraits.Honor),
                 GwpOffenderDesire.CunningHalf => offender.GetTraitLevel(DefaultTraits.Calculating),
@@ -136,8 +142,8 @@ namespace GreyWardenPolicePurity
         internal static TextObject Line(GwpOffenderDesire desire) =>
             desire switch
             {
-                GwpOffenderDesire.RequestGrace => GwpText.Create(GwpTextCatalog.gwp_fa_desire_grace),
-                GwpOffenderDesire.PayToAvoidBattle => GwpText.Create(GwpTextCatalog.gwp_fa_desire_cautious),
+                // 躲城的人嘴上说的就是请宽限，玩家看不出分别。
+                GwpOffenderDesire.RequestGrace or GwpOffenderDesire.HideInTown => GwpText.Create(GwpTextCatalog.gwp_fa_desire_grace),
                 GwpOffenderDesire.RepairVillage => GwpText.Create(GwpTextCatalog.gwp_fa_desire_merciful),
                 GwpOffenderDesire.PayGenerously => GwpText.Create(GwpTextCatalog.gwp_fa_desire_generous),
                 GwpOffenderDesire.SurrenderSelf =>
@@ -162,7 +168,7 @@ namespace GreyWardenPolicePurity
         internal static TextObject PlayerAcceptLine(GwpOffenderDesire desire) =>
             desire switch
             {
-                GwpOffenderDesire.RequestGrace => GwpText.Create(GwpTextCatalog.gwp_fa_accept_grace),
+                GwpOffenderDesire.RequestGrace or GwpOffenderDesire.HideInTown => GwpText.Create(GwpTextCatalog.gwp_fa_accept_grace),
                 GwpOffenderDesire.SurrenderSelf =>
                     GwpText.Create(GwpTextCatalog.gwp_fa_accept_surrender),
                 GwpOffenderDesire.BribeTheWarden =>
