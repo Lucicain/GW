@@ -2,7 +2,7 @@
 
 > 游戏版本：v1.4.8
 > 源码：`managed/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/SetPartyAiAction.cs` 的 `ApplyInternal`；`managed/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/EncounterManager.cs` 的 `StartSettlementEncounter`
-> 部队行为：`TaleWorlds.CampaignSystem.Party/MobileParty.cs` 的 `SetMoveGoToSettlement`、`SetMovePatrolAroundSettlement`、`CheckExitingSettlementParallel`；`MobilePartyAi.cs` 的 `GetBehaviors`
+> 部队行为：`TaleWorlds.CampaignSystem.Party/MobileParty.cs` 的 `SetMoveGoToSettlement`、`SetMovePatrolAroundSettlement`、`CheckExitingSettlementParallel`；`MobilePartyAi.cs` 的 `TickInternal`、`GetBehaviors`、`GetLandPatrolBehavior`；`TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors/AiPartyThinkBehavior.cs` 的 `PartyHourlyAiTick`
 > 模组接入：[躲城与野外交涉](../state/field-arrest.md)、[使者投案](../state/case-envoy.md)
 
 ## 怎么运作
@@ -17,6 +17,8 @@
 `SetMoveGoToSettlement` 和 `SetMovePatrolAroundSettlement` 都能登记同一个 `TargetSettlement`，分别留下 `GoToSettlement` 和 `PatrolAroundPoint` 长期行为。进城时 `CurrentSettlement` 的 setter 记录 `LastVisitedSettlement`，离城清空当前位置时保留上一站。
 
 短期 AI 先取长期行为，再按原版主动性决定是否覆盖它。城内部队切为攻击城外部队后，`CheckExitingSettlementParallel` 可把它加入离城队列，即使长期目标城仍是当前城。`DoNotMakeNewDecisions` 会阻止原版小时重选和大部分短期覆盖，原有长期行为仍会执行。
+
+具体顺序是 `PartyHourlyAiTick` 看到 `DoNotMakeNewDecisions=True` 就提前返回；`MobilePartyAi.TickInternal` 仍能调用 `GetBehaviors` 和 `SetAiBehavior`。长期行为若是陆地巡逻，`GetLandPatrolBehavior` 会把它展开为 `GoToPoint`，按巡逻半径继续选可达点，部分分支回到城门中心点。因此保留同城巡逻并打开此标志，会继续绕城，靠近城门也不自动把长期行为改成访问。
 
 ## 容易想错的地方
 
