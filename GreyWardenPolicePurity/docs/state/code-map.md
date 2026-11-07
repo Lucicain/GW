@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,090 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,107 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -656,7 +656,7 @@
 - `PoliceEnforcementBehavior.cs` — 1410 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1372 行 · `PoliceEnforcementBehavior`
 - `GwpFieldArrestBehavior.cs` — 1331 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `PoliceEnforcementBehavior.Envoy.cs` — 1111 行 · `PoliceEnforcementBehavior`，另含 2 个类型
+- `PoliceEnforcementBehavior.Envoy.cs` — 1117 行 · `PoliceEnforcementBehavior`，另含 2 个类型
 - `PolicePatrolBehavior.cs` — 956 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
 - `PoliceResourceManager.cs` — 740 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 698 行 · `GwpAiDeterrenceState`
@@ -743,7 +743,7 @@
 
 - `GwpData.cs` — 1015 行 · `CrimeRecord`，另含 4 个类型
 - `GwpTuning.cs` — 458 行 · `GwpTuning`，另含 16 个类型
-- `GwpCommon.cs` — 399 行 · `GwpCommon`
+- `GwpCommon.cs` — 410 行 · `GwpCommon`
 - `GwpIds.cs` — 98 行 · `GwpIds`
 
 ### 入口（1 个文件）

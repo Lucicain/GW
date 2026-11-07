@@ -358,10 +358,21 @@ namespace GreyWardenPolicePurity
             if (party.MapEvent != null) return;
             if (party.Army != null && party.Army.LeaderParty != party)
                 party.Army = null;
-            if (party.CurrentSettlement != settlement && party.TargetSettlement != settlement)
+            if (party.DefaultBehavior != AiBehavior.GoToSettlement || party.TargetSettlement != settlement)
             {
+#if GWP_DIAGNOSTICS
+                bool repairingHeldMovement = party.Ai.DoNotMakeNewDecisions;
+                AiBehavior previousBehavior = party.DefaultBehavior;
+#endif
                 party.Ai.SetDoNotMakeNewDecisions(false);
                 party.SetMoveGoToSettlement(settlement, party.NavigationCapability, false);
+#if GWP_DIAGNOSTICS
+                if (repairingHeldMovement)
+                    GwpAiDiagnostics.WriteFieldArrest("HELD_PARTY_MOVEMENT_REPAIRED",
+                        "party=" + party.StringId + "; town=" + settlement.StringId +
+                        "; currentSettlement=" + (party.CurrentSettlement?.StringId ?? "-") +
+                        "; previousBehavior=" + previousBehavior + "; behavior=" + party.DefaultBehavior);
+#endif
             }
             party.Ai.SetDoNotMakeNewDecisions(true);
         }

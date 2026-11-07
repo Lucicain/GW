@@ -96,6 +96,7 @@
 |---|---|---|
 | CHARACTER_PREVIEW（动作表加载后安装；每外观3条、每进程60条）、ACTION_CACHE_EARLY_MISS/READY（原版三名字各一次早期失败栈、加载后一条缓存对照） | 已确认真实游戏默认idle缓存-1而动态4008，预览故障点已修复待验收；FadeOut改为首次搜捕绑定，最初缓存初始化来源仍待查，证据归code-health | 用户确认预览恢复后退休健康画面采样；责任来源闭合后退休启动取证，实际待机修复保留 |
 | `GwpAiDiagnostics`（AI 日志与 `GreyWarden-Case-Events.log`） | 案件收尾、战力归属与差事避让的共享判断改动仍待实测；各子系统已提取 state | 用户确认对应行为可用后，按所属 state 的待观察项退休健康路径 |
+| `HELD_PARTY_MOVEMENT_REPAIRED`（原本暂停重选却保留其他长期行为时，记录纠正前后行为）、`ENVOY_DUEL_RESULT_DECIDED`（首场大会的双方名次、所在城与已决定胜负） | 同城巡逻误接管与大会结束后继续等待已修复待实测，归[使者约斗](case-envoy.md) | 确认实际进城及首场结束结案后退休；前者仅真实改写冻结中的错误命令时记录，后者每案一次 |
 | `WAR_PURSUIT_STALLED`（ACTION 行，`PoliceEnforcementBehavior.WarPursuitTrace.cs`） | 宣战追捕为什么两天还抓不到：已宣战、有灰袍承办的案子每满 24 小时记双方速度、距离变化、战力、罪犯在不在聚落 / 军团 / 战斗 / 围城、双方原版行为、在外的追截队与支援队 | 查清原因、改掉两天支援队保底后退休 |
 | 协力与使者：`ASSISTANCE_WAITING_FOR_ENVOY`（组长等使者结果没调人，案子或使者阶段变了才再写）、`ASSISTANCE_HELPER_CASE_KEPT` / `_PAUSED` / `_RESUMED`（协办人带着自己的案子入组、暂停、协力结束接着办）、`ASSISTANCE_MEMBER_LEFT`（协办人约了比武离组）、`ENVOY_REPORT`（每次谈判结果，带是否协办人） | 用户要监控军团效率：协力不再打断有使者的案子、协办人回来接着办（用户裁定 2026-10-16） | 用户确认协力与使者配合可用后退休健康路径 |
 | 宗教：`PRIEST_DISAPPEAR_BLOCKED`（原版本要按低势力删掉的祭司）、`PRIEST_HOME_RESTORED`（家乡村补回祭司）；`DAILY_VILLAGE` 的 `others`（其他要人职业:势力，没有祭司时也写） | 用户要监控宗教：家乡村祭司曾被原版删掉，比例不够再也来不了人（实机诊断 2026-10-16） | 用户确认信众村祭司稳定后退休 |

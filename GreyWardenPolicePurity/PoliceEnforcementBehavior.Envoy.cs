@@ -869,17 +869,12 @@ namespace GreyWardenPolicePurity
 
             HoldForDuel(police, town, true);
             HoldForDuel(target, town, false);
-            TournamentGame? game = Campaign.Current.TournamentManager.GetTournamentGame(town.Town);
-            bool bothPresent = police.CurrentSettlement == town && target.CurrentSettlement == town;
             if (CampaignTime.Now.ToHours < envoyCase.DueHours)
-            {
-                // 别人赶在他们到之前把那场打完了，就再开一场。
-                if (game == null)
-                    EnsureTournament(town.Town);
                 return;
-            }
 
             // 到了截止时间：两人都在城里，就按原版的结算把这场打完；有人没到，按原版比武评分再比一次。
+            TournamentGame? game = Campaign.Current.TournamentManager.GetTournamentGame(town.Town);
+            bool bothPresent = police.CurrentSettlement == town && target.CurrentSettlement == town;
             if (bothPresent && game != null)
                 Campaign.Current.TournamentManager.ResolveTournament(game, town.Town);
             if (envoyCase.Stage == EnvoyStage.Duel)
@@ -891,8 +886,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 比武结束（AI 自行结算或玩家在场）。名次靠前者胜；都没夺冠又分不出先后，按原版比武评分再比一次
-        /// （用户裁定 2026-10-15）。这里可能在任务场景里，结算推到下一个小时做。
+        /// 约定后首场比武结束就定胜负（用户裁定 2026-11-07）。缺席排在参赛者之后，
+        /// 名次相同时沿用原版评分比一次。这里可能在任务场景里，收款和销案推到下一个小时做。
         /// </summary>
         private void OnTournamentFinished(CharacterObject winner, MBReadOnlyList<CharacterObject> participants,
             Town town, ItemObject prize)
@@ -900,36 +895,47 @@ namespace GreyWardenPolicePurity
             foreach (EnvoyCase envoyCase in _envoyCases.Values.Where(c => c.Stage == EnvoyStage.Duel &&
                          string.Equals(c.TownId, town.Settlement.StringId, StringComparison.OrdinalIgnoreCase)))
             {
-                Hero? warden = FindActiveParty(envoyCase.WardenPartyId)?.LeaderHero;
+                MobileParty? police = FindActiveParty(envoyCase.WardenPartyId);
+                Hero? warden = police?.LeaderHero;
                 Hero? offender = CrimePool.GetRecordByKey(envoyCase.CrimeId)?.OffenderHero;
-                if (warden == null || offender == null ||
-                    warden.CurrentSettlement != town.Settlement || offender.CurrentSettlement != town.Settlement)
+                if (warden == null || offender == null)
                     continue;
-                int wardenPlace = TournamentPlace(warden, winner);
-                int offenderPlace = TournamentPlace(offender, winner);
+                int wardenPlace = TournamentPlace(warden, winner, participants);
+                int offenderPlace = TournamentPlace(offender, winner, participants);
                 envoyCase.WardenWon = wardenPlace != offenderPlace
                     ? wardenPlace > offenderPlace
                     : WardenOutscores(warden, offender);
                 envoyCase.Stage = EnvoyStage.DuelDecided;
+#if GWP_DIAGNOSTICS
+                GwpAiDiagnostics.WriteFieldArrest("ENVOY_DUEL_RESULT_DECIDED",
+                    "crime=" + envoyCase.CrimeId + "; policeParty=" + police!.StringId +
+                    "; offender=" + offender.StringId + "; town=" + envoyCase.TownId +
+                    "; wardenPlace=" + wardenPlace + "; offenderPlace=" + offenderPlace +
+                    "; wardenSettlement=" + (warden.CurrentSettlement?.StringId ?? "-") +
+                    "; offenderSettlement=" + (offender.CurrentSettlement?.StringId ?? "-") +
+                    "; wardenWon=" + envoyCase.WardenWon);
+#endif
             }
         }
 
         /// <summary>
-        /// 打到了第几轮（0–3），夺冠记 4，没上场记 −1。AI 自行结算的比武原版只算出冠军，
-        /// 其余人都是 −1；玩家在场的那场读 SandBox <c>TournamentBehavior.Rounds</c>。
+        /// 打到了第几轮（0–3），夺冠记 4，缺席记 −1。AI 自行结算的比武只算出冠军，
+        /// 其余参赛者同记 0；玩家在场的那场读 SandBox <c>TournamentBehavior.Rounds</c>。
         /// </summary>
-        private static int TournamentPlace(Hero hero, CharacterObject winner)
+        private static int TournamentPlace(Hero hero, CharacterObject winner,
+            MBReadOnlyList<CharacterObject> participants)
         {
             if (winner == hero.CharacterObject) return TournamentBehavior.RoundCount;
+            if (!participants.Contains(hero.CharacterObject)) return -1;
             TournamentBehavior? tournament = Mission.Current?.GetMissionBehavior<TournamentBehavior>();
-            if (tournament?.Rounds == null) return -1;
+            if (tournament?.Rounds == null) return 0;
             for (int round = tournament.Rounds.Length - 1; round >= 0; round--)
             {
                 if (tournament.Rounds[round]?.Matches?.Any(match =>
                         match?.Participants.Any(p => p.Character == hero.CharacterObject) == true) == true)
                     return round;
             }
-            return -1;
+            return 0;
         }
 
         /// <summary>原版比武模拟同一个式子：评分 × (0.75 + 0.25 × 随机)（C#反编译 v1.4.8 TournamentManager.SimulateTournament）。</summary>
@@ -962,7 +968,7 @@ namespace GreyWardenPolicePurity
             string townName = town?.Name?.ToString() ?? string.Empty;
             if (envoyCase.WardenWon)
             {
-                // 他输了照数全缴。人就在承办领主跟前，钱直接入公库。
+                // 他输了照数全缴，钱直接入公库。
                 int fine = GwpFieldArrestPricing.AssessFine(crime);
                 int collected = Math.Min(Math.Max(0, offender.Gold), fine);
                 if (collected > 0)
