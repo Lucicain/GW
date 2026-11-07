@@ -4,6 +4,7 @@
 > 源码：`TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.TournamentGames/TournamentCampaignBehavior.cs`（`ConsiderStartOrEndTournament`）、
 > `TournamentManager.cs`（`ResolveTournament`、`SimulateTournament`）、`FightTournamentGame.cs`、
 > `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultTournamentModel.cs`、
+> `SandBox/SandBox.Tournaments.MissionLogics/TournamentBehavior.cs`（`CreateParticipants`、`EndCurrentMatch`）、
 > `SandBox/SandBox.Tournaments.MissionLogics/TournamentFightMissionController.cs`（`PrepareForMatch`、`Simulate`）、
 > `NavalDLC/NavalDLC.GameComponents/NavalDLCTournamentModel.cs`
 > 模组接入：[灰袍使者](../state/case-envoy.md)「单挑：比武大会」
@@ -34,6 +35,11 @@
 **5. 实际演出的比赛。** `PrepareForMatch` 按城镇文化与队伍人数模板给每人发 `MatchEquipment`（武器与坐骑），
 再从 `GetParticipantArmor` 取护甲，把 5～9 号槽（护甲）复制进去；比赛模式下 `GetParticipantArmor` 返回参赛者自己的
 `RandomBattleEquipment`。生成 Agent 时显式传 `MatchEquipment`。所以原配的武器、盾和坐骑通常被比赛模板替代，护甲则来自参赛者本人。
+
+**6. 玩家入场和结束事件。** 玩家报名或观战时，`TournamentManager` 把大会移出城镇的活动列表，已打开的任务继续用原大会对象。
+任务创建时，`TournamentBehavior.CreateParticipants` 从 `FightTournamentGame.GetParticipantCharacters` 取得名单并编排轮次。
+最后一轮结束后，`TournamentBehavior` 把冠军、这份名单、城镇和奖品发给 `TournamentFinished` 事件。
+冠军是英雄时，`DefaultLogsCampaignBehavior.OnTournamentFinished` 保存 `TournamentWonLogEntry`，内含冠军、城镇和参赛英雄，可用来区分大会打完与仅离开场景。
 
 ## 容易想错的地方
 
