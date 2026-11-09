@@ -143,6 +143,8 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 梵蒂是首个 Field Officer 换声对象，先整理会面对白和战斗声供听评。当前试听包见 `.codex_tmp/vandi-voice-audition/试听清单.html`。（依据：用户裁定 2026-11-10）
 
+梵蒂的配音素材分两路：她已有的对白和战斗声用 Field Officer 模型换声；Field Officer 的原声按语义配给对应场景。英文转写、原声和场景候选见本机 `C:/Users/lucif/Documents/声音转文本/输出文件夹/Field Officer 原声台词与梵蒂场景/`，待听评定稿。（依据：用户裁定 2026-11-10）
+
 晨曦与暮光按固定角色 ID 通过 `GwpFounderVoiceRegisterPatch` 使用帝国日常语体，原版对白标签与录音选择一起走该语体。嫁入玩家家族后仍按角色 ID 认，其他角色及后继成员照原版。选音流程见[普通 NPC 对白](../vanilla/npc-voices.md#对白)。（依据：C# 反编译与实际游戏 DLL 回归 2026-10-15）
 
 原版SandBox的voice_strings.xml与sandbox_voiced_lines_en.xml包含上述六组各自的首次会面录音。这里复用原版已有配音；模组自写且没有VoiceObject的台词保持无录音，不拿无关录音覆盖。原版素材不在仓库另存一份。（依据：当前v1.4.8语言资源、ConversationManager.ProcessSentence）
