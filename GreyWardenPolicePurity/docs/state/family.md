@@ -141,13 +141,15 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ### 对话声音
 
-原先族长curt、另外五人全为softspoken，六人均为帝国贵族口吻，故五人会选到相同配音组。`NPCCharacter.voice`是四种Persona，不是战斗声线。`ConversationTagHelper.EducatedClass`同时决定原版语体标签和DefaultVoiceOverModel的imperial_high/imperial_low选音。晨曦与暮光的固定角色ID在该helper后置补丁中改用日常语体，保持原版字幕与录音一致；不改文化、贵族身份、家族或职责，嫁入玩家家族后仍按角色ID认。其他角色及后继成员照原版。（依据：C#反编译、85项实际游戏DLL回归2026-10-15）
+晨曦与暮光按固定角色 ID 通过 `GwpFounderVoiceRegisterPatch` 使用帝国日常语体，原版对白标签与录音选择一起走该语体。嫁入玩家家族后仍按角色 ID 认，其他角色及后继成员照原版。选音流程见[普通 NPC 对白](../vanilla/npc-voices.md#对白)。（依据：C# 反编译与实际游戏 DLL 回归 2026-10-15）
 
 原版SandBox的voice_strings.xml与sandbox_voiced_lines_en.xml包含上述六组各自的首次会面录音。这里复用原版已有配音；模组自写且没有VoiceObject的台词保持无录音，不拿无关录音覆盖。原版素材不在仓库另存一份。（依据：当前v1.4.8语言资源、ConversationManager.ProcessSentence）
 
+配音调研可接用外部参考清单 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/bannerlord-voice-inventory.md`，以及 `D:/lucigames/toys/syndicate-cards/STATUS.md` 登记的换声试听与验收记录。（依据：本机文件核对 2026-11-10）
+
 ### 战斗声音与脸码
 
-成人woman skin有female_01至female_05共五个战斗音色，六人使用音色加不同音高的组合；不能声称有六名独立战斗演员。原始六人战斗索引为3/4/3/3/3/3，后三人的音高同为53，正是相同声音的第二个来源。（依据：原版Native/ModuleData/skins.xml、原始脸码解析）
+六人用上表的原版战斗音色与音高组合区分，约珥和暮光共用 `female_01`。原版音色定义和共享事件见[战场和场景内喊声](../vanilla/npc-voices.md#战场和场景内喊声)。（依据：原版 Native/ModuleData/skins.xml、脸码解析）
 
 v1.4.8原生接口401 GetParamsFromKey入口RVA 0x7027B0调用0x58E9A0；415 ProduceNumericKeyWithParams入口0x702A10调用0x590040。解码分别在0x58EC27与0x58EC84取BodyProperties+0x48，即StaticBodyProperties.KeyPart8的低6位声音索引、25至30位音高；音高为档值/63。反向写入在0x5901F7及0x59028F使用同样字段。仅改掩码 `0x7E00003F` 内声音位，所有可见脸部、头发、身材与其他位保持，族长连声音位也原样保留。（依据：C++反汇编与前后XML结构/掩码核对2026-10-15；Native.dll SHA-256 2a5e0e0b15513ebb7052d747a621b82c50ee834553eba283b33bbbc33766e12a）
 

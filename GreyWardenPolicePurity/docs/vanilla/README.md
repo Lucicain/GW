@@ -38,6 +38,7 @@
 
 ## 目录
 
+- [npc-voices](npc-voices.md)：普通 NPC 的对白、战场喊声与指令
 - [party-settlement-entry](party-settlement-entry.md)：部队访问聚落、军团统帅与附属部队进城
 
 - [campaign-lifecycle](campaign-lifecycle.md)：模块启动、新档事件与行为数据恢复的先后
