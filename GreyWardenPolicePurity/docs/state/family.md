@@ -141,9 +141,11 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ### 对话声音
 
-Field Officer 原声后续按语义和实际情境寻找移植场景，目标覆盖全库，不再用骑砍原版素材做额外训练。当前先核实《骑士精神 2》原版的调用条件，骑砍侧选段和移植暂停。原版调查见本机 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/chivalry2-field-officer-triggers.md`，台词、原声与逐条证据见 `C:/Users/lucif/Documents/声音转文本/输出文件夹/Field Officer 原声台词与梵蒂场景/`。（依据：用户裁定 2026-11-10）
+Field Officer 原声按语义和实际情境寻找移植场景，目标覆盖全库，不再用骑砍原版素材做额外训练。首轮以梵蒂现有的原版会面和战斗声音位筛选同类素材，近似及本轮排除项留档，移植暂停。原版调用调查见本机 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/chivalry2-field-officer-triggers.md`。（依据：用户裁定 2026-11-10）
 
 梵蒂的骑砍原版语音试听及四组换声对照见 `.codex_tmp/vandi-voice-audition/`，供选段时比较。
+
+首轮素材和声音位的对应、候选及排除理由见 `.codex_tmp/vandi-voice-audition/first-pass-type-match/首轮同类对照.md`，按媒体 ID 回查原声音库。（依据：本机两作语音索引对照 2026-11-10）
 
 晨曦与暮光按固定角色 ID 通过 `GwpFounderVoiceRegisterPatch` 使用帝国日常语体，原版对白标签与录音选择一起走该语体。嫁入玩家家族后仍按角色 ID 认，其他角色及后继成员照原版。选音流程见[普通 NPC 对白](../vanilla/npc-voices.md#对白)。（依据：C# 反编译与实际游戏 DLL 回归 2026-10-15）
 
