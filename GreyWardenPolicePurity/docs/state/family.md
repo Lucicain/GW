@@ -141,7 +141,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ### 对话声音
 
-梵蒂优先直接使用 Field Officer 原声，按台词语义、口令和动作选录音，不再用骑砍原版素材做额外训练。英文转写、原声和场景候选见本机 `C:/Users/lucif/Documents/声音转文本/输出文件夹/Field Officer 原声台词与梵蒂场景/`，具体选段待定。（依据：用户裁定 2026-11-10）
+Field Officer 原声后续按语义和实际情境寻找移植场景，目标覆盖全库，不再用骑砍原版素材做额外训练。当前先核实《骑士精神 2》原版的调用条件，骑砍侧选段和移植暂停。原版调查见本机 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/chivalry2-field-officer-triggers.md`，台词、原声与逐条证据见 `C:/Users/lucif/Documents/声音转文本/输出文件夹/Field Officer 原声台词与梵蒂场景/`。（依据：用户裁定 2026-11-10）
 
 梵蒂的骑砍原版语音试听及四组换声对照见 `.codex_tmp/vandi-voice-audition/`，供选段时比较。
 
