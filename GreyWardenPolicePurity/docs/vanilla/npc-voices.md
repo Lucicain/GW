@@ -19,6 +19,14 @@
 3. 攻击出力、受伤、死亡、惊恐、攀爬、欢呼、控马和溺水等也有对应类型。部分喊声由托管层主动触发，例如 `AgentMoraleInteractionLogic.OnAgentFleeing` 和城镇的 `AlarmedBehaviorGroup`。`Agent.MakeVoice` 把类型、位置和预测模式交给原生引擎。原生动作的发声时机尚未逐项反汇编。
 4. 本机 Native 人类语音表有 8 套男声和 5 套女声。每套登记 14 种动作或反应、6 种编队点名、20 种通用命令、8 种阵型、2 种海战命令、9 种联机短语。多个声组可指向同一事件，例如 `female_01` 至 `female_04` 的冲锋、盾墙和全体点名共用 `female/04` 事件。 [TaleWorlds 音频系统](https://moddocs.bannerlord.com/audio-modding/audio-modding-systems/)
 
+### 运行时语音索引与发声链
+
+- `Native/ModuleData/project.mbproj` 用 `soln_voice_definitions` 登记语音 XML。各加载模块的 `XmlResource.GetMbprojxmls` 收集同类登记，`MBObjectManager.GetMergedXmlForNative` 读取并合并。原生回调 `Module.CreateProcessedVoiceDefinitionsXMLForNative` 把语音类型声明并成一个块，同名语音定义合并子项，再把 XML 交给引擎；本机 Native 在 `0x64ACB8` 取回 XML，随后解析 `voice_definitions`、`voice_type_declarations`。这是独立模组登记的读取路径，和 `SubModule.xml` 的托管对象注册是两套入口。
+- `Agent.AgentVisuals` 取场上 Agent 的原生视觉对象；`MBAgentVisuals.SetVoiceDefinitionIndex(index, pitch)` 不是只影响预览。原生接口 319 走 `0x6FC7B0 → 0x622820`，核对索引范围后写视觉对象的 `+0x8C4` 索引和 `+0x8C8` 音高；接口 49 `GetAgentVoiceDefinition` 在 `0x6F71C0` 从 Agent 的 `+0x880` 取同一视觉对象，以该索引返回定义名。原生外观初始化也在 `0x6204EB` 调用同一个设置函数。只改托管 `Agent.UpdateBodyProperties` 会改 `BodyPropertiesValue`，不会立即执行这个原生设置函数。
+- 接口 157 `MakeVoice` 在 `0x6F8650` 转至 `0x5E9CB0`，再用该 Agent 的视觉对象进入 `0x621510`。后者按语音索引和 VoiceType 查脸部动作及声音事件（`0x62153E`、`0x6215EC`）。引擎自身另有直接调用同一发声函数的路径，例如 `0x60120D` 与 `0x60163C`；只观察托管 `Agent.MakeVoice` 会漏掉这类请求。这些地址对应 v1.4.8、本机 `TaleWorlds.Native.dll` SHA-256 `2a5e0e0b15513ebb7052d747a621b82c50ee834553eba283b33bbbc33766e12a`，证明选音链，未逐项证明原生动作何时叫声。
+- `OrderController.AfterSetOrder` 在有 Owner、手势开启时走口令；`PlayOrderGestures` 内部的口令分支检查加载窗口，后面的编队音效/冲锋响应还有自己条件。AI 的 `BehaviorCharge.TickOccasionally` 与 `BehaviorRetreat.TickOccasionally` 直接改 Formation，绕过 `OrderController`。因此能替换一条口令的录音，并不等于战役 AI 使用该战术时原版就会喊。
+- `AgentMoraleInteractionLogic.OnAgentFleeing` 在相应条件下以 70% 概率请求 `Debacle`；`AgentVictoryLogic` 胜方 AI 人类有原版胜利动作与请求，随机等待 1–8 秒。单人默认 O 是欢呼轮盘，长按后选动作；同一界面的文字喊话列表只在联机客户端分支构建。用单人的现成动作或新增语音入口时要区分这两种路径。
+
 ## 容易想错的地方
 
 - 首次问候和下一句动态自报家门是两个节点。`LordConversationsCampaignBehavior` 的自我介绍外层文本 ID 是 `B7rEq40B`，填写称号、家族或领地等变量。本机三份英文语音索引均无该外层 ID，也无君主模板 `tOanKs9o`。
