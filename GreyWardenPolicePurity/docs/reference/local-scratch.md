@@ -38,6 +38,7 @@
 
 | 路径 | 用途 |
 |---|---|
+| `vandi-voice-audition/` | 梵蒂原版对白、战斗事件与对应银行录音的本机试听包，含逐条播放页、索引与重建脚本，供 Field Officer 换声范围听评 |
 | `check-native-persuasion-direct.ps1` | `investigation-methods.md` 引用的运行时反射先例 |
 | `helper-mesh/` | 弓箭手替身 FBX 与预览、原版替身对照图（CSV 可用 `tpac-diagnose --dump-helpers` 重导） |
 | `cloth-gradient/warcharmor.original.fbx` | 写渐变之前的弓箭手源 FBX |

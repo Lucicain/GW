@@ -102,7 +102,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 宗教背景与文本方向统一见 [火誓者总览](firesworn.md)「人物与玩家文本」；旧「世俗警察家族」文字已按获批改稿替换，当前词句见[玩家文字](player-text.md)，前后对照见[文本审阅记录](../reference/faith-text-review/README.md)。（依据：用户反馈 2026-10-15）
 
-- 已认识的灰袍领主见到玩家时，开场白按玩家灰袍声望变化（`GreyWardenLoreBehavior`），创始成员另有百科人物介绍。
+- 已相识的普通会面里，灰袍自写开场每次对话有 50% 机会出现，按玩家灰袍声望选七档之一。执法、自动请求及俘虏对话跳过该开场。创始成员另有百科人物介绍。（依据：`GreyWardenLoreBehavior` 源码复核 2026-11-10）
 - 灰袍家族百科页（`GwpEncyclopediaClanPageVM`）有灰袍事务入口，不设门槛，见 `map-bar-affairs.md`。
 
 ## 成就
@@ -140,6 +140,8 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 以上为本轮实现选择，用户只指定六人互异、尽量积极向上；不冒充用户逐人钦定。人物简述在PlayerText/strings.json的六个gwp_enc_*键中，与各人本职接续，不另写完整个人剧情。性格由原版新建Hero从XML写入并存档，不在读档/每天刷新中重设。（依据：用户裁定、设计；C#反编译v1.4.8 Hero.SetInitialValuesFromCharacter）
 
 ### 对话声音
+
+梵蒂是首个 Field Officer 换声对象，先整理会面对白和战斗声供听评。当前试听包见 `.codex_tmp/vandi-voice-audition/试听清单.html`。（依据：用户裁定 2026-11-10）
 
 晨曦与暮光按固定角色 ID 通过 `GwpFounderVoiceRegisterPatch` 使用帝国日常语体，原版对白标签与录音选择一起走该语体。嫁入玩家家族后仍按角色 ID 认，其他角色及后继成员照原版。选音流程见[普通 NPC 对白](../vanilla/npc-voices.md#对白)。（依据：C# 反编译与实际游戏 DLL 回归 2026-10-15）
 
