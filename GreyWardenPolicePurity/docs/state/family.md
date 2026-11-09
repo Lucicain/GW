@@ -141,7 +141,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ### 对话声音
 
-Field Officer 原声的调查覆盖全库，逐条标注《骑士精神 2》中的播放条件、时机和证据；语义标签只作浏览。现在进入骑砍接入调研，范围是整个灰袍势力，普通女兵、领主及以后新增的具名要人均可接入；本轮只调查，尚未实现。不用骑砍原版素材做额外训练。原作调用调查见本机 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/chivalry2-field-officer-triggers.md`，接入方案见[灰袍语音接入调研](../reference/warden-voice-integration.md)。（依据：用户裁定 2026-11-10）
+Field Officer 原声的调查覆盖全库，逐条标注《骑士精神 2》中的播放条件、时机和证据。骑砍语音接入面向整个灰袍势力，普通女兵、领主及以后新增的具名要人均可接入。以新增骑砍实际情境覆盖全库为目标，同时支持原版动作换声；游戏尚未接入。不用骑砍原版素材做额外训练。原作调查见本机 `C:/Users/lucif/source/repos/BattlefieldSkills/docs/chivalry2-field-officer-triggers.md`，骑砍的[接入方式](../reference/warden-voice-integration.md)和[目标场景表](../reference/warden-voice-scenes.md)分别维护。（依据：用户裁定 2026-11-10）
 
 梵蒂的骑砍原版语音试听及四组换声对照见 `.codex_tmp/vandi-voice-audition/`，供选段时比较。
 
