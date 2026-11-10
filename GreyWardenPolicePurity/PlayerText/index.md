@@ -145,8 +145,8 @@
 | gwp_gwpbattlereinforcementbehavior_001 | You pray for help to come. | 你默默祈祷援军到来。 | GwpBattleReinforcementBehavior.cs:125 |
 | gwp_gwpbattlereinforcementbehavior_002 | Grey Warden reinforcements have arrived! | 灰袍援军赶到了！ | GwpBattleReinforcementBehavior.cs:182 |
 | gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:183 |
-| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:411 |
-| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:426 |
+| gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:410 |
+| gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:425 |
 | gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | PlayerBehaviorPool.cs:41 |
 | gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | PlayerBehaviorPool.cs:55 |
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
@@ -420,22 +420,22 @@
 | gwp_playerbountybehavior_questandnotification_008 | — | 灰袍悬赏：{VAR_1} | 未检出直接引用；保留 |
 | gwp_playerbountybehavior_questandnotification_009 | — | 该悬赏目标已失效 | 未检出直接引用；保留 |
 | gwp_policeantirecruitmentmodel_001 | The Grey Wardens do not declare wars for territorial expansion. | 灰袍不为争夺领土开战。 | PoliceAntiRecruitmentModel.cs:53 |
-| gwp_policecrimemonitorenhanced_001 | Villager | 村民 | PoliceCrimeMonitorEnhanced.cs:362 |
-| gwp_policecrimemonitorenhanced_003 | Attack villager | 攻击村民 | PoliceCrimeMonitorEnhanced.cs:365 |
-| gwp_policecrimemonitorenhanced_004 | Caravan | 商队 | PoliceCrimeMonitorEnhanced.cs:372 |
-| gwp_policecrimemonitorenhanced_006 | Attack caravan | 攻击商队 | PoliceCrimeMonitorEnhanced.cs:374 |
-| gwp_policecrimemonitorenhanced_007 | {VAR_1} Villager | {VAR_1}村的村民 | PoliceCrimeMonitorEnhanced.cs:404 |
-| gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:406 |
-| gwp_policeenforcementbehavior_001 | The time allowed for your atonement has expired. | 赎罪期限已过。 | PoliceEnforcementBehavior.cs:182 |
+| gwp_policecrimemonitorenhanced_001 | Villager | 村民 | PoliceCrimeMonitorEnhanced.cs:357 |
+| gwp_policecrimemonitorenhanced_003 | Attack villager | 攻击村民 | PoliceCrimeMonitorEnhanced.cs:360 |
+| gwp_policecrimemonitorenhanced_004 | Caravan | 商队 | PoliceCrimeMonitorEnhanced.cs:367 |
+| gwp_policecrimemonitorenhanced_006 | Attack caravan | 攻击商队 | PoliceCrimeMonitorEnhanced.cs:369 |
+| gwp_policecrimemonitorenhanced_007 | {VAR_1} Villager | {VAR_1}村的村民 | PoliceCrimeMonitorEnhanced.cs:399 |
+| gwp_policecrimemonitorenhanced_010 | Raid Village | 劫掠村庄 | PoliceCrimeMonitorEnhanced.cs:401 |
+| gwp_policeenforcementbehavior_001 | The time allowed for your atonement has expired. | 赎罪期限已过。 | PoliceEnforcementBehavior.cs:181 |
 | gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | 未检出直接引用；保留 |
 | gwp_policeenforcementbehavior_003 | The case against {VAR_1} has been dealt with. Report to a Warden lord. | {VAR_1}的案件已处置，回去向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:66 |
-| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:253 |
-| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:464 |
-| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:464 |
-| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:468 |
-| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:470 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1307 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1309 |
+| gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:252 |
+| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:459 |
+| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:459 |
+| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:463 |
+| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:465 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1293 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1295 |
 | gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
 | gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
 | gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |
@@ -453,11 +453,11 @@
 | gwp_policeenforcementbehavior_atonementquest_015 | The account is verified. Your atonement is complete, and the roll allows the restoration of up to {VAR_1} standing. | 核验无误。你已完成赎罪任务，按案卷可恢复最多 {VAR_1} 点声望。 | PoliceEnforcementBehavior.AtonementQuest.cs:273 |
 | gwp_policeenforcementbehavior_atonementquest_016 | Your atonement is complete. | 赎罪已完成。 | PoliceEnforcementBehavior.AtonementQuest.cs:300 |
 | gwp_policeenforcementbehavior_atonementquest_017 | Your atonement is complete. Through the Wardens' mediation, you are at peace with {VAR_1}. | 赎罪完成，经灰袍调停，你与{VAR_1}恢复了和平。 | PoliceEnforcementBehavior.AtonementQuest.cs:356 |
-| gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:737 |
+| gwp_policeenforcementbehavior_delaypatrols_001 | Grey Warden provost relief party | 灰袍纠察支援队 | PoliceEnforcementBehavior.DelayPatrols.cs:692 |
 | gwp_policeenforcementbehavior_delaypatrols_002 | — | 与灰袍守卫处于战争状态，声望 -4。当前声望：{VAR_1} | 未检出直接引用；保留 |
-| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1315 |
-| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1317 |
-| gwp_policeenforcementbehavior_delaypatrols_005 | Grey Warden pursuit detachment | 灰袍高速追截队 | PoliceEnforcementBehavior.DelayPatrols.cs:482 |
+| gwp_policeenforcementbehavior_delaypatrols_003 | Accumulated crimes | 累计犯罪 | PoliceEnforcementBehavior.DelayPatrols.cs:1269 |
+| gwp_policeenforcementbehavior_delaypatrols_004 | Reputation has reached {VAR_1} | 声望已达 {VAR_1} | PoliceEnforcementBehavior.DelayPatrols.cs:1271 |
+| gwp_policeenforcementbehavior_delaypatrols_005 | Grey Warden pursuit detachment | 灰袍高速追截队 | PoliceEnforcementBehavior.DelayPatrols.cs:437 |
 | gwp_troop_order_cohort_name | Grey Warden training cohort | 灰袍随行练兵队 | GreyWardenTroopRequestBehavior.Cohort.cs:156 |
 | gwp_troop_order_cohort_lost | The soldiers being trained for you were lost on the road. The Wardens are training another company. | 为你训练的士兵在途中覆没，灰袍正重新训练一批。 | GreyWardenTroopRequestBehavior.Cohort.cs:101 |
 | gwp_policeenforcementbehavior_dialogue_001 | By Grey Warden ordinance, the lawful fine must first be paid. | 按灰袍法令，先把正式罚金缴清。 | PoliceEnforcementBehavior.Dialogue.cs:65 |
@@ -520,9 +520,9 @@
 | gwp_policepatrolbehavior_encyclopedia_002 | {VAR_1} provost patrols remain upon the map under orders of arrest. | 地图上仍有 {VAR_1} 支纠察队在执行强制缉拿 | PolicePatrolBehavior.Encyclopedia.cs:41 |
 | gwp_policepatrolbehavior_encyclopedia_003 | has entered the picket war state and is waiting for the end. | 已进入纠察队战争状态，正在等待收尾 | PolicePatrolBehavior.Encyclopedia.cs:43 |
 | gwp_policepatrolbehavior_encyclopedia_004 | Provost enforcement: after the player refuses a lawful order while under warrant, the Grey Wardens declare war upon the player’s faction to compel arrest. Present stage: {VAR_1}; present standing: {VAR_2}. | 纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{VAR_1}；当前模组声望：{VAR_2}。 | PolicePatrolBehavior.Encyclopedia.cs:45 |
-| gwp_policepatrolbehavior_helpers_001 | Through the Wardens' mediation, you are at peace with {VAR_1}. | 经灰袍调停，你与{VAR_1}恢复了和平。 | GwpPeace.cs:96 |
-| gwp_policepatrolbehavior_helpers_002 | Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you. | 经灰袍调停，{VAR_1}不再追究你的罪行。 | GwpPeace.cs:103 |
-| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:481 |
+| gwp_policepatrolbehavior_helpers_001 | Through the Wardens' mediation, you are at peace with {VAR_1}. | 经灰袍调停，你与{VAR_1}恢复了和平。 | GwpPeace.cs:99 |
+| gwp_policepatrolbehavior_helpers_002 | Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you. | 经灰袍调停，{VAR_1}不再追究你的罪行。 | GwpPeace.cs:106 |
+| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:466 |
 | gwp_troop_archer | Grey Warden Archer | 灰袍守护者弓箭手 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_heavy_infantry | Grey Warden Heavy Infantry | 灰袍守护者重步兵 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_knight | Grey Warden Knight | 灰袍守护者骑士 | _Module/ModuleData/spnpccharacters.xml |
@@ -774,9 +774,9 @@
 | gwp_gwpcasearchivescreen_075 | Peace returns once no ground remains. | 依据全部消失后即恢复和平。 | GwpCaseArchiveItemVM.cs:34 |
 | gwp_location_duty_travelling | Travelling toward the last known position of {TARGET_PARTY}. | 正在前往{TARGET_PARTY}最后出现的位置。 | GwpPartyDutyMovementPatch.cs:178 |
 | gwp_location_duty_pursuing | Pursuing {TARGET_PARTY}. | 正在追捕{TARGET_PARTY}。 | GwpPartyDutyMovementPatch.cs:166 |
-| gwp_mapbar_reputation_title | Grey Warden Standing | 灰袍声望 | GwpMapBarReputationPatch.cs:67 |
-| gwp_mapbar_reputation_hint | How the Grey Wardens judge you. Crimes lower it, good deeds raise it. | 灰袍守卫对你的评价。犯罪扣分，行善加分。 | GwpMapBarReputationPatch.cs:70 |
-| gwp_mapbar_reputation_wanted | You are wanted. Grey Warden lords will open a case against you. | 你已被通缉。灰袍领主会对你立案。 | GwpMapBarReputationPatch.cs:77 |
+| gwp_mapbar_reputation_title | Grey Warden Standing | 灰袍声望 | GwpMapBarReputationPatch.cs:69 |
+| gwp_mapbar_reputation_hint | How the Grey Wardens judge you. Crimes lower it, good deeds raise it. | 灰袍守卫对你的评价。犯罪扣分，行善加分。 | GwpMapBarReputationPatch.cs:72 |
+| gwp_mapbar_reputation_wanted | You are wanted. Grey Warden lords will open a case against you. | 你已被通缉。灰袍领主会对你立案。 | GwpMapBarReputationPatch.cs:79 |
 | gwp_join_recruits_granted | {VAR_1} Grey Warden recruits have joined your party. | {VAR_1} 名灰袍新兵加入了你的队伍。 | PlayerBountyBehavior.DialogueAndNotification.cs:445 |
 | gwp_gwpencyclopediaheropagevm_020 | — | 村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_021 | — | 商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |

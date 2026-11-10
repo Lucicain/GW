@@ -110,6 +110,9 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 - 玩家文字分批审阅（2026-11-04）附带、需用户定玩法的代码问题，详见各稿「代码问题」（谈判数值与打算候选已迁入同一份生产纯规则）：`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；罪名以显示文字存进案件、切语言不随动（第 10 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批）；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，按技能分句需先有审阅稿批准的 24 条英文。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记，2026-11-06 清掉无需裁定的部分）
 - 按部队编号找部队的私有方法各写一份：`GreyWardenIssueResolutionBehavior`、`GreyWardenVillageReconstructionBehavior`、`GwpFireswornBehavior` 的 `FindParty`，`GwpAffairsData.FindParty`，`GreyWardenVillageAdoptionBehavior.FindPoliceParty` 等，写法略有差异（空串判定、是否只要活跃队），可逐个核对后并入 `GwpCommon.FindParty`。（2026-11-07 登记）
 - reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）
+- 跨战役残留的静态状态还有几处没收进 `GwpRuntimeState`：`GwpWardenDispatchDialogue` 的挂起对话/付款回调、`GwpPlayerIntervention._preview`、`GreyWardenVillageAdoptionBehavior._activeReliefPartyIds`（静态索引配实例数据）。只在交互进行到一半退回主菜单再开局时残留，或新档首小时内误认同号部队，影响小；改时一并做成实例字段或加进统一清空。（2026-11-11 登记）
+- 热路径小开销：`PoliceStats.GetPoliceClan()` 每次线性扫全部家族（80 多处调用）；`GwpLocationDutyBehaviorTextPatch` 对地图上每支部队的状态文字都跑三段 LINQ 查找，可先判是否灰袍部队。归入 progress「性能调查」一起测，不单独改。（2026-11-11 登记）
+- 发版核验归档位置不一：r12、r13 在 `GreyWardenPolicePurity/build-check/` 且进了 git（14 个文件约 9.7 MB，含 DLL/PDB），r14 起在被忽略的仓库根 `build-check/`。是否移出 git 待用户定。（2026-11-11 登记）
 - 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会、烧村五篇已写。（2026-10-28 登记）
 
 ## 接入 harness

@@ -27,6 +27,9 @@ namespace GreyWardenPolicePurity
         // 遭遇进行中不能存档，所以不进存档。
         private static readonly List<Pending> _afterPlayerBattle = new List<Pending>();
 
+        /// <summary>推迟的讲和记的是上一局的势力对象，不带进下一局（<see cref="GwpRuntimeState"/>）。</summary>
+        internal static void ResetForCampaign() => _afterPlayerBattle.Clear();
+
         /// <summary>灰袍与 target 结束交战；target 仍有合法交战理由时保持战争。</summary>
         /// <returns>false 只表示灰袍仍有合法交战理由、战争保留；等玩家战斗收尾的也算已讲和。</returns>
         internal static bool EndPoliceWar(IFaction? target)

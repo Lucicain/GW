@@ -137,7 +137,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_atone_target_size", ref _atonementTargetSizeSnapshot);
             dataStore.SyncData("gwp_enf_player_contact_hour",
                 ref _nextPlayerEnforcementContactHour);
-            SyncWarTargetStreakData(dataStore);
             SyncDelayPatrolStateData(dataStore);
             SyncEnvoyData(dataStore);
             SyncAssistanceData(dataStore);
@@ -280,11 +279,6 @@ namespace GreyWardenPolicePurity
             _atonementTurnInOpened = false;
             SetAtonementFlowState(AtonementFlowState.Inactive);
         }
-
-        #region 犯罪通知
-
-
-        #endregion
 
         #region 每帧检查 - 距城堡距离触发惩罚
 
@@ -445,11 +439,12 @@ namespace GreyWardenPolicePurity
             // ★步骤3★ 现在玩家已完全释放，再调用和平（SetNeutral 不会二次触发释放）
             GwpPeace.SettlePlayerCase();
 
-            // 步骤4：罚款（每点300金，仅收金币，不再没收背包物品）
+            // 步骤4：罚款（按押送费率，仅收金币，不没收背包物品）
             int rep = PlayerBehaviorPool.Reputation;
-            int fine = GwpFieldArrestPricing.StandingFine(rep, 300);
+            const int finePerPoint = GwpTuning.Enforcement.EscortFinePerPoint;
+            int fine = GwpFieldArrestPricing.StandingFine(rep, finePerPoint);
             int collected = PoliceResourceManager.CollectFineGoldOnly(fine);
-            int recovered = 300 > 0 ? collected / 300 : 0;
+            int recovered = collected / finePerPoint;
             int repAfter = collected >= fine ? 0 : Math.Min(0, rep + recovered);
 
             // 步骤5：声望按实缴比例恢复（不再直接归零）
@@ -668,8 +663,7 @@ namespace GreyWardenPolicePurity
         {
             if (!PoliceStats.CanHandleOrdinaryCase(pp)) return false;
             if (GwpCommon.IsEnforcementDelayPatrolParty(pp)) return false;
-            if (!GwpWardenDuties.IsFreeFor(pp, WardenDuty.OrdinaryCase)) return false;
-            return PoliceResourceManager.IsReady(pp);
+            return GwpWardenDuties.IsFreeFor(pp, WardenDuty.OrdinaryCase);
         }
 
         /// <summary>
@@ -778,11 +772,6 @@ namespace GreyWardenPolicePurity
             }
 
             GreyWardenPartyDesireBehavior.RequestImmediateRethink(police);
-
-            // 内部调度日志（开发调试）
-            // InformationManager.DisplayMessage(new InformationMessage(
-            //     $"[GWP 出警] {police.Name} → {crime.Offender.Name}（{crime.CrimeType}）",
-            //     Colors.Cyan));
         }
 
 #if GWP_DIAGNOSTICS
@@ -1131,13 +1120,10 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 把灰袍从这宗案子上撤下来：承办队伍撤职、协力解散、拦截队召回，并在没有其他
-        /// 合法战争理由时恢复和平。卷宗留着不销——玩家接案时他成为主理人，办成之后他
-        /// 可能还要继续追缴，而且始终欠一份汇报。
-        /// 两处调用：玩家接下这宗委托，以及玩家把这宗案子办成。
+        /// 撤案时可能还有别的合法理由撑着这场战争，逐小时重试讲和，最多 30 天，到期不再重试。
+        /// 键是本局的势力对象，所以跟着行为实例走，不做成静态。
         /// </summary>
-        /// <summary>撤案时可能还有别的合法理由撑着这场战争，逐小时重试直到不需要为止。</summary>
-        private static readonly Dictionary<IFaction, double> _peaceRetryTargets =
+        private readonly Dictionary<IFaction, double> _peaceRetryTargets =
             new Dictionary<IFaction, double>();
 
         /// <summary>
@@ -1181,7 +1167,7 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static void RetryPeaceAfterPlayerEnforcement()
+        private void RetryPeaceAfterPlayerEnforcement()
         {
             if (_peaceRetryTargets.Count == 0) return;
             Clan? policeClan = PoliceStats.GetPoliceClan();

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,107 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,030 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -52,8 +52,8 @@
 | `DefaultMobilePartyAIModel` | `GetBestInitiativeBehavior` | Postfix | `GwpInitiativeDiagnosticsPatch` | GwpPartyDutyMovementPatch.cs:116 |
 | `DefaultMobilePartyAIModel` | `GetBestInitiativeBehavior` | Finalizer/Postfix/Prefix/Transpiler | `GwpNativeRegionPatch` | GwpStrength.Native.cs:158 |
 | `DefaultPersuasionModel` | `GetChances` | Postfix/Prefix | `GwpNegotiationChancePatch` | GwpNegotiationChancePatch.cs:8 |
-| `DestroyPartyAction` | `ApplyForDisbanding` | Prefix | `GwpShipLoanReturnOnDisbandPatch` | PoliceResourceManager.cs:731 |
-| `DestroyPartyAction` | `ApplyInternal` | Prefix | `GwpShipLoanReturnPatch` | PoliceResourceManager.cs:717 |
+| `DestroyPartyAction` | `ApplyForDisbanding` | Prefix | `GwpShipLoanReturnOnDisbandPatch` | PoliceResourceManager.cs:710 |
+| `DestroyPartyAction` | `ApplyInternal` | Prefix | `GwpShipLoanReturnPatch` | PoliceResourceManager.cs:696 |
 | `DumpIntegrityCampaignBehavior` | `IsGameIntegrityAchieved` | Postfix | `GwpDumpIntegrityAchievementPatch` | GwpAchievementCompatibilityPatch.cs:109 |
 | `EncounterGameMenuBehavior` | `army_encounter_background_on_init` | Prefix | `GwpAssistanceArmyEncounterBackgroundPatch` | GwpAssistanceArmyLifecyclePatch.cs:178 |
 | `EncounterGameMenuBehavior` | `game_menu_army_talk_to_other_members_item_on_condition` | Prefix | `GwpLeaderlessSupportConversationItemPatch` | GwpAssistanceArmyLifecyclePatch.cs:200 |
@@ -71,8 +71,8 @@
 | `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:99 |
 | `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:781 |
 | `MapEventParty` | `Update` | Postfix/Prefix | `GwpArmoryBattleRosterPatch` | GwpArmoryBattle.cs:198 |
-| `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs:116 |
-| `MapInfoVM` | `UpdatePlayerInfo` | Postfix | `GwpMapInfoUpdatePatch` | GwpMapBarReputationPatch.cs:124 |
+| `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs:119 |
+| `MapInfoVM` | `UpdatePlayerInfo` | Postfix | `GwpMapInfoUpdatePatch` | GwpMapBarReputationPatch.cs:127 |
 | `MapNavigationHandler` | `OnCreateElements` | Postfix | `GwpAffairsNavigationPatch` | GwpAffairsNavigation.cs:72 |
 | `MapScreen` | `OnInitialize` | Postfix | `GwpRitualMapSoundViewPatch` | GwpRitualMapSoundView.cs:132 |
 | `MenuViewContext` | `TaleWorlds.CampaignSystem.GameState.IMenuContextHandler.OnMenuActivate` | Postfix | `GwpFireswornSoundMenuActivatePatch` | GwpFireswornSoundView.cs:73 |
@@ -653,15 +653,15 @@
 ### 执法：案件与巡逻（34 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 1872 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1410 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
-- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1372 行 · `PoliceEnforcementBehavior`
+- `PoliceEnforcementBehavior.cs` — 1396 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1331 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `PoliceEnforcementBehavior.DelayPatrols.cs` — 1326 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Envoy.cs` — 1117 行 · `PoliceEnforcementBehavior`，另含 2 个类型
 - `PolicePatrolBehavior.cs` — 956 行 · `PolicePatrolBehavior` : CampaignBehaviorBase
-- `PoliceResourceManager.cs` — 740 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
+- `PoliceResourceManager.cs` — 719 行 · `PoliceResourceManager` : CampaignBehaviorBase，另含 2 个类型
 - `GwpAiDeterrenceState.cs` — 698 行 · `GwpAiDeterrenceState`
 - `PoliceEnforcementBehavior.Dialogue.cs` — 599 行 · `PoliceEnforcementBehavior`
-- `PoliceCrimeMonitorEnhanced.cs` — 436 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
+- `PoliceCrimeMonitorEnhanced.cs` — 431 行 · `PoliceCrimeMonitorEnhanced` : CampaignBehaviorBase
 - `PoliceAIDeterrenceBehavior.cs` — 427 行 · `PoliceAIDeterrenceBehavior` : CampaignBehaviorBase
 - `PoliceAntiWarDeclaration.cs` — 423 行 · `PoliceAntiWarDeclaration` : CampaignBehaviorBase，另含 1 个类型
 - `GwpFieldArrestLines.cs` — 365 行 · `GwpFieldArrestLines`，另含 1 个类型
@@ -731,7 +731,7 @@
 
 ### 大地图欲望与 AI（3 个文件）
 
-- `GreyWardenPartyDesireBehavior.cs` — 789 行 · `GreyWardenPartyDesireBehavior` : CampaignBehaviorBase
+- `GreyWardenPartyDesireBehavior.cs` — 793 行 · `GreyWardenPartyDesireBehavior` : CampaignBehaviorBase
 - `PlayerBehaviorMonitor.cs` — 708 行 · `PlayerBehaviorMonitor` : CampaignBehaviorBase
 - `GwpArmyExitDisorganizedPatch.cs` — 75 行 · `GwpArmyExitDisorganizedPatch`
 
@@ -741,14 +741,14 @@
 
 ### 数据与共用（4 个文件）
 
-- `GwpData.cs` — 1015 行 · `CrimeRecord`，另含 4 个类型
-- `GwpTuning.cs` — 458 行 · `GwpTuning`，另含 16 个类型
-- `GwpCommon.cs` — 410 行 · `GwpCommon`
+- `GwpData.cs` — 1014 行 · `CrimeRecord`，另含 4 个类型
+- `GwpTuning.cs` — 461 行 · `GwpTuning`，另含 16 个类型
+- `GwpCommon.cs` — 403 行 · `GwpCommon`
 - `GwpIds.cs` — 98 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 190 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 189 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（135 个文件）
 
@@ -806,10 +806,10 @@
 - `GwpCitySearchBehavior.Hall.cs` — 137 行 · `GwpCitySearchBehavior`
 - `GwpFireswornPartyDialogs.cs` — 137 行 · `GwpFireswornPartyDialogs`
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
+- `GwpMapBarReputationPatch.cs` — 134 行 · `GwpMapBarReputation`，另含 2 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
-- `GwpMapBarReputationPatch.cs` — 131 行 · `GwpMapBarReputation`，另含 2 个类型
+- `GwpPeace.cs` — 118 行 · `GwpPeace`
 - `GwpCharacterPreviewDiagnostics.cs` — 115 行 · `GwpActionCacheDiagnostics`，另含 1 个类型
-- `GwpPeace.cs` — 115 行 · `GwpPeace`
 - `GwpCityCaseMovementPatch.cs` — 113 行 · `GwpCityCaseLock`，另含 5 个类型
 - `GwpNegotiationResistance.cs` — 113 行 · `GwpNegotiationResistance`
 - `GwpCitySearchMission.Movement.cs` — 110 行 · `GwpCitySearchMissionController`，另含 2 个类型
@@ -885,5 +885,5 @@
 - `GwpTextKeys.cs` — 22 行 · `GwpTextKeys`
 - `GwpPlayerRequestDeferral.cs` — 21 行 · `GwpPlayerRequestDeferral`
 - `GwpCitySearchCasePolicy.cs` — 20 行 · `GwpCitySearchCasePolicy`
+- `GwpRuntimeState.cs` — 18 行 · `GwpRuntimeState`
 - `GwpCitySearchSupportOrigin.cs` — 16 行 · `GwpCitySearchSupportOrigin` : PartyAgentOrigin
-- `GwpRuntimeState.cs` — 13 行 · `GwpRuntimeState`

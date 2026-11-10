@@ -925,7 +925,7 @@ namespace GreyWardenPolicePurity
             int rep = PlayerBehaviorPool.Reputation;
             int fine = GwpFieldArrestPricing.StandingFine(rep, GwpTuning.Patrol.FinePerPoint);
             int paid = CollectFine(fine);
-            int recovered = GwpTuning.Patrol.FinePerPoint > 0 ? paid / GwpTuning.Patrol.FinePerPoint : 0;
+            int recovered = paid / GwpTuning.Patrol.FinePerPoint;
             int repAfter = paid >= fine ? 0 : Math.Min(0, rep + recovered);
             PlayerBehaviorPool.ResetReputation(repAfter);
 

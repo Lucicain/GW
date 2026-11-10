@@ -167,7 +167,6 @@ namespace GreyWardenPolicePurity
         public int CrimeKillProgress { get; set; }
         public int GoodDeedKillProgress { get; set; }
 
-        /// <summary>Ten dead civilians, one point of standing - the player's own rate.</summary>
         /// <summary>
         /// 负声望背后压着多少条没赎回的人命。十条一点，不满十条的余数留在进度里，
         /// 所以两者要一起算。罚金按负声望收，对外报数就得报这个值——报案卷里那

@@ -103,7 +103,7 @@ namespace GreyWardenPolicePurity
                 _instance.EndCaseTask(policePartyId, CaseTaskEnd.Released, "player_enforcement_completed");
                 // 卷宗可能要等玩家汇报才销，这一刻的"仍有合法理由"未必是最终结论。
                 if (warTarget != null)
-                    _peaceRetryTargets[warTarget] = CampaignTime.Now.ToHours + 24 * 30;
+                    _instance._peaceRetryTargets[warTarget] = CampaignTime.Now.ToHours + 24 * 30;
                 GwpAiDiagnostics.WriteFieldArrest("CASE_RELEASED_TO_PLAYER",
                     "offender=" + offenderHeroId + "; police=" + policePartyId +
                     "; warTarget=" + (warTarget?.StringId ?? "-"));

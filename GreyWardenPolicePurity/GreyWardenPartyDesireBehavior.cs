@@ -73,16 +73,20 @@ namespace GreyWardenPolicePurity
             CampaignEvents.HeroPrisonerTaken.AddNonSerializedListener(this, OnHeroPrisonerTaken);
         }
 
-        public override void SyncData(IDataStore dataStore)
+        /// <summary>
+        /// 四个集合都按部队编号记、不进存档；灰袍领主队的编号各局相同，上一局留下的意图会被新档同号部队接走，
+        /// 目标还是上一局的对象。战役启动时清空（<see cref="GwpRuntimeState"/>）。
+        /// </summary>
+        internal static void ResetForCampaign()
         {
-            if (dataStore.IsLoading)
-            {
-                Intents.Clear();
-                DirectAttackLocks.Clear();
-                DirectAttackRefreshPending.Clear();
-                EscortSpeedUncapped.Clear();
-            }
+            Intents.Clear();
+            DirectAttackLocks.Clear();
+            DirectAttackRefreshPending.Clear();
+            EscortSpeedUncapped.Clear();
         }
+
+        // 不进存档；战役启动时已清空，读档阶段不再另清。
+        public override void SyncData(IDataStore dataStore) { }
 
         private static void OnSessionLaunched(CampaignGameStarter starter)
         {

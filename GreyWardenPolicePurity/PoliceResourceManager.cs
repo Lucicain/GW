@@ -22,8 +22,9 @@ namespace GreyWardenPolicePurity
     /// 1. 常驻领主资源完全交给原版经济和城镇访问欲望：不发钱、不造粮、不免费补兵
     ///    无英雄的临时纠察/支援队是一次性任务单位，只在生成时携带固定行军口粮，
     ///    不参与灰袍家族收支，也不会进城购买补给。
-    /// 2. 保留旧补给 API 仅用于存档/调用兼容；它只请求重新思考，不下移动命令
-    /// 3. 每小时给灰袍领主队纯化（规则在 GwpWardenPurification）。
+    /// 2. 临时队向灰袍领主或玩家借船，解散前原样归还。
+    /// 3. 司法公库（族长钱包）的进出账。
+    /// 4. 每小时给灰袍领主队纯化（规则在 GwpWardenPurification）。
     /// </summary>
     public class PoliceResourceManager : CampaignBehaviorBase
     {
@@ -35,12 +36,6 @@ namespace GreyWardenPolicePurity
         // 若 NavalDLC 未安装，借船与还船直接跳过，不影响游玩
         private static readonly bool _navalDlcLoaded =
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "NavalDLC");
-
-        public static bool IsReady(MobileParty party)
-        {
-            if (party == null || !party.IsActive) return false;
-            return true;
-        }
 
         /// <summary>
         /// 临时办差队没有英雄领队，也不是 WarPartyComponent，不进氏族军费结算。
@@ -287,24 +282,14 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 补给流程
-
-
-        #endregion
-
-        #region 补兵 / 补粮 / 释放俘虏
-
+        #region 借船与还船
 
         /// <summary>
-        /// 按当前兵力为警察部队补足缺少的船只。
-        /// 规则：每 50 人 1 艘，向上取整，最少 1 艘。
-        /// 只追加缺失的船，不删除现有船，也不重建整个舰队。
-        /// 不安装任何升级件，也不挂船首像。
-        /// 无 NavalDLC 时静默跳过，不报错。
+        /// 借船登记：借方队伍编号 → 出借方队伍编号。
         /// 船都是真船：常驻领主靠原版 NavalDLC 自行购船与海战缴获；模组的无领主临时队
-        /// 只能向出借方借（领主借给灰袍临时队、玩家借给送信队），队伍销毁前原样退回。
+        /// 只能向出借方借（领主借给灰袍临时队、玩家借给送信队），每 50 人一条，队伍销毁前原样退回。
         /// 不凭空生成任何船——凭空的船一旦随队伍解散，原版会把它分给同家族领主或折成
-        /// 金币发给家族族长，等于造钱。
+        /// 金币发给家族族长，等于造钱。无 NavalDLC 时借还都跳过。
         /// </summary>
         private Dictionary<string, string> _shipLenders =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -552,11 +537,8 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// A fine settled in the field leaves the offender's own purse. The arresting
-        /// Warden keeps a stated share as expenses and the rest reaches the judicial
-        /// treasury, which is the police clan leader's wallet. Returns what was actually
-        /// collected: a payer who is short pays what he has, and the caller decides what
-        /// happens to a man who cannot pay at all.
+        /// 野外执法里犯人当面交出的钱（罚金或私了的钱）：从他自己的钱包全额转到玩家手上，之后怎么上缴走交差账
+        /// （<see cref="GwpFieldReportLedger"/>）。返回实收：钱不够就交他有的，交不出的怎么办由调用方决定。
         /// </summary>
         internal static int CollectFieldFine(Hero? payer, int requested)
         {
@@ -570,11 +552,6 @@ namespace GreyWardenPolicePurity
             return amount;
         }
 
-        /// <summary>
-        /// A case closed by taking the man brings in no fine, so the expenses come out of
-        /// the judicial treasury. It pays what it can and no more - an empty treasury pays
-        /// nothing, which is itself information for the player.
-        /// </summary>
         /// <summary>
         /// 从司法公库支出，但不交到玩家本人手上——由派出去的使者带回来。路上出了事，
         /// 这笔钱就跟着没了，这正是派人代办应该承担的风险。
@@ -595,6 +572,9 @@ namespace GreyWardenPolicePurity
             return paid;
         }
 
+        /// <summary>
+        /// 从司法公库直接付给玩家（交差时的办案费、俘虏费、辛苦费）。有多少付多少，公库空了就是 0。
+        /// </summary>
         internal static int PayFromJudicialTreasury(int amount)
         {
             if (amount <= 0 || Hero.MainHero == null) return 0;
@@ -611,9 +591,7 @@ namespace GreyWardenPolicePurity
             return paid;
         }
 
-        /// <summary>
-        /// 罚没物离开玩家背包后视为由灰袍统一拍卖，估值直接归司法公库。
-        /// </summary>
+        /// <summary>灰袍办成一件差事（案件、请愿、救济、重建），公库进一笔固定经费（<see cref="SuccessfulCaseReward"/>）。</summary>
         internal static void CreditSuccessfulCaseCompletion() =>
             CreditJudicialTreasury(SuccessfulCaseReward);
 
@@ -678,6 +656,7 @@ namespace GreyWardenPolicePurity
                 treasurer.ChangeHeroGold(amount);
         }
 
+        /// <summary>金币不够时按价值从高到低没收背包物品抵罚金，返回估值；视为灰袍统一拍卖，入库由调用方做。</summary>
         private static int ConfiscateItems(int debt)
         {
             var roster = MobileParty.MainParty?.ItemRoster;

@@ -24,11 +24,6 @@ namespace GreyWardenPolicePurity
         // 0/1: 距离下次两日检查还差几天
         private int _warStatusCheckDayCounter = 0;
 
-        // 兼容旧存档字段：原“连续两次命中才派支援”逻辑已废弃。
-        // 现在改为每两日检查到仍未结案的宣战追捕就继续派出一支支援队。
-        private readonly Dictionary<string, int> _warTargetSeenStreak =
-            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
         private readonly Dictionary<string, DelayPatrolState> _delayPatrolStates =
             new Dictionary<string, DelayPatrolState>(StringComparer.OrdinalIgnoreCase);
 
@@ -54,34 +49,6 @@ namespace GreyWardenPolicePurity
             public CharacterObject Character { get; set; } = null!;
             public int Count { get; set; }
             public int Xp { get; set; }
-        }
-
-        private void SyncWarTargetStreakData(IDataStore dataStore)
-        {
-            List<string> keys = null!;
-            List<int> values = null!;
-
-            if (dataStore.IsSaving)
-            {
-                keys = _warTargetSeenStreak.Keys.ToList();
-                values = keys.Select(k => _warTargetSeenStreak[k]).ToList();
-            }
-
-            dataStore.SyncData("gwp_enf_war_streak_keys", ref keys);
-            dataStore.SyncData("gwp_enf_war_streak_values", ref values);
-
-            if (!dataStore.IsLoading) return;
-
-            _warTargetSeenStreak.Clear();
-            if (keys == null || values == null) return;
-
-            int count = Math.Min(keys.Count, values.Count);
-            for (int i = 0; i < count; i++)
-            {
-                string key = keys[i];
-                if (string.IsNullOrEmpty(key)) continue;
-                _warTargetSeenStreak[key] = values[i];
-            }
         }
 
         private void SyncDelayPatrolStateData(IDataStore dataStore)
@@ -174,12 +141,8 @@ namespace GreyWardenPolicePurity
                 // 读档后若支援队已经“卡进城”，直接清理
                 if (patrol.CurrentSettlement != null)
                 {
-                    if (IsActiveAssistanceArmy(patrol.Army))
-                        continue;
-                    if (TryDestroyDelayPatrolParty(patrol))
-                    {
-                        // no-op
-                    }
+                    if (!IsActiveAssistanceArmy(patrol.Army))
+                        TryDestroyDelayPatrolParty(patrol);
                     continue;
                 }
 
@@ -308,17 +271,12 @@ namespace GreyWardenPolicePurity
                     continue;
 
                 if (!string.IsNullOrEmpty(targetFaction.StringId))
-                {
                     MarkDelayPatrolsReturningForTarget(targetFaction.StringId);
-                    _warTargetSeenStreak.Remove(targetFaction.StringId);
-                }
             }
         }
 
         private void CleanupDelayPatrolsInsideSettlements()
         {
-            int removed = 0;
-
             foreach (var kv in _delayPatrolStates.ToList())
             {
                 MobileParty patrol = MobileParty.All.FirstOrDefault(p => p.StringId == kv.Key);
@@ -334,8 +292,7 @@ namespace GreyWardenPolicePurity
                 // 目标躲在城里时使者进城去谈，不是卡住。
                 if (kv.Value.IsEnvoy && !kv.Value.Returning) continue;
 
-                if (TryDestroyDelayPatrolParty(patrol))
-                    removed++;
+                TryDestroyDelayPatrolParty(patrol);
                 _delayPatrolStates.Remove(kv.Key);
             }
 
@@ -347,10 +304,8 @@ namespace GreyWardenPolicePurity
                 if (_delayPatrolStates.ContainsKey(patrol.StringId)) continue;
                 if (IsActiveAssistanceArmy(patrol.Army)) continue;
 
-                if (TryDestroyDelayPatrolParty(patrol))
-                    removed++;
+                TryDestroyDelayPatrolParty(patrol);
             }
-
         }
 
         private static bool TryDestroyDelayPatrolParty(MobileParty patrol)
@@ -1250,7 +1205,6 @@ namespace GreyWardenPolicePurity
             if (!GwpPeace.EndPoliceWar(targetFaction))
                 return;
             MarkDelayPatrolsReturningForTarget(warTargetId!);
-            _warTargetSeenStreak.Remove(warTargetId!);
         }
 
         private static IFaction? ResolveWarTargetFaction(string warTargetId)

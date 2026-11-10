@@ -63,6 +63,15 @@ class OwnershipTests(unittest.TestCase):
             self.assertEqual([], hygiene.owner_violations([str(owner)]))
             self.assertEqual(2, len(hygiene.owner_violations([str(caller)])))
 
+    def test_campaign_reset_has_one_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            entry = Path(directory) / "SubModule.cs"
+            caller = Path(directory) / "OtherBehavior.cs"
+            entry.write_text("GwpRuntimeState.ResetForCampaign();\n", encoding="utf-8")
+            caller.write_text("GwpPeace.ResetForCampaign();\n", encoding="utf-8")
+            self.assertEqual([], hygiene.owner_violations([str(entry)]))
+            self.assertEqual(1, len(hygiene.owner_violations([str(caller)])))
+
     def test_party_identity_has_one_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             owner = Path(directory) / "GwpPartyIdentity.cs"
@@ -170,6 +179,15 @@ class ChangeImpactTests(unittest.TestCase):
                          self.impact.owner_hits(changed, owners))
         changed.append("GreyWardenPolicePurity::GwpCommon::IsGreyWardenHero")
         self.assertIn(("灰袍身份", "GwpCommon.IsGreyWarden*"), self.impact.owner_hits(changed, owners))
+
+
+class ScratchListTests(unittest.TestCase):
+    def test_bare_wildcard_in_prose_claims_nothing(self):
+        text = ("路径可用 `*` 通配。\n"
+                "| `published-assets/2026/x.tpac` | 备份 |\n"
+                "| `exit-crash-2026092*-*.txt` | 取证 |\n")
+        self.assertEqual(["published-assets", "exit-crash-2026092*-*.txt"],
+                         freshness.scratch_patterns(text))
 
 
 class StrictModeTests(unittest.TestCase):

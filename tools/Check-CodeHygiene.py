@@ -228,7 +228,7 @@ OWNERS = [
      "GwpStrength.cs", "GwpStrength"),
     ("进聚落意愿", r"\[HarmonyPatch\(typeof\(AiVisitSettlementBehavior\)", "GwpWardenVisitDesire*.cs", "GwpWardenVisitDesire"),
     ("灰袍身份", r"\bPoliceClanId\b", "GwpCommon.cs|GwpIds.cs|GwpData.cs", "GwpCommon.IsGreyWarden*"),
-    ("战役状态清空", r"\b(?:CrimePool|PlayerBehaviorPool)\.ClearAll\s*\(",
+    ("战役状态清空", r"\b(?:CrimePool|PlayerBehaviorPool)\.ClearAll\s*\(|\b(?!GwpRuntimeState\b)\w+\.ResetForCampaign\s*\(",
      "GwpRuntimeState.cs", "GwpRuntimeState.ResetForCampaign"),
     ("案件状态", r"\bCrimePool\.(?:EndTask|ReleaseTask|CloseCase|ReopenCase)\s*\(",
      "PoliceEnforcementBehavior*.cs|GwpData.cs",

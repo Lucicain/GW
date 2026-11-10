@@ -111,9 +111,12 @@ namespace GreyWardenPolicePurity
             /// The fine a Grey Warden lord levies per point of negative
             /// standing.  It was a literal in the enforcement dialogue; the
             /// case ledger has to quote the same figure, so both read it here.
-            /// A provost patrol settles for less - see Patrol.FinePerPoint.
+            /// 三档费率各不相同：当面缴给灰袍领主 100，纠察队 200（Patrol.FinePerPoint），
+            /// 被正式灰袍击败后押送 300（EscortFinePerPoint）。
             /// </summary>
             public const int FinePerPoint = 100;
+            /// <summary>玩家被正式灰袍击败、押到城堡后的费率；只收现有金币，按实收每满一档恢复一点声望。</summary>
+            public const int EscortFinePerPoint = 300;
 
             // 协力候选须能在一天内到主办。
             public const float AssistanceMaximumTravelDays = 1f;
@@ -291,8 +294,8 @@ namespace GreyWardenPolicePurity
         internal static class Patrol
         {
             /// <summary>
-            /// A patrol settles for less than a Warden lord does; both fines
-            /// scale with the same standing.  See Enforcement.FinePerPoint.
+            /// 纠察队每点负声望收 200，高于当面缴给灰袍领主的 100（Enforcement.FinePerPoint）；
+            /// 两者按同一个声望计。
             /// </summary>
             public const int FinePerPoint = 200;
             public const int NegotiationDivisor = 4;

@@ -13,8 +13,8 @@ namespace GreyWardenPolicePurity
     ///
     /// 受影响的类型：
     ///   • 继承 QuestBase 且通过 StartQuest() 注册进 Campaign.QuestManager 的类。
-    ///   • 继承 InformationData 且通过 CampaignInformationManager.NewMapNoticeAdded()
-    ///     进入持久化通知列表的类。
+    ///   • 进入战役日志的 LogEntry、进入 Kingdom.UnresolvedDecisions 的决议。
+    ///   localId 2（悬赏地图通知）已删除，编号不再复用；遗留影响见 infrastructure.md 的已知缺陷。
     ///
     /// ── 如何生效 ──────────────────────────────────────────────────────────────────
     /// Bannerlord 在游戏启动时通过反射扫描所有已加载程序集，

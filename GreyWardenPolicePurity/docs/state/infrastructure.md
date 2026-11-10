@@ -3,7 +3,7 @@
 > 当前状态：兼容范围为 r15 及以后、不强求；r13 直升已放弃
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpCommon.cs` `GwpStrength.cs` `GwpIds.cs` `GwpTuning.cs` `GwpText.cs` `GwpTextKeys.cs` `GwpSaveableTypeDefiner.cs` `GwpFlowStates.cs` `GwpGauntletWidgetUtility.cs` `GwpSingleQueryLinkPatch.cs` `SubModule.cs` `GwpRuntimeState.cs` `tools/Verify-ContentKeys.ps1`
-> 待实测：同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
+> 待实测：见文末
 
 各子系统共用的东西。行为规则不在这里写，在各自的 state 文件里。
 
@@ -11,7 +11,7 @@
 
 ## 战役状态生命周期
 
-`SubModule.OnGameStart` 在注册灰袍战役行为前调用 `GwpRuntimeState.ResetForCampaign`，清空上一战役的玩家池和案件池；只清自有集合与数值，不读取游戏对象。新档从空池开始，读档随后由原有行为的 `SyncData` 恢复。原版时序见[战役生命周期](../vanilla/campaign-lifecycle.md)。玩家数据与保存代码归 `PlayerBehaviorPool`，案卷与保存代码归 `CrimePool`；原来的两层纯转发包装及玩家监听器的晚期新档清空回调已退休。保存键、行为注册身份不变。（依据：原版 v1.4.8 源码与结构清理 2026-11-07）
+`SubModule.OnGameStart` 在注册灰袍战役行为前调用 `GwpRuntimeState.ResetForCampaign`，清空上一战役的玩家池、案件池，以及不进存档的部队意图表（`GreyWardenPartyDesireBehavior`）和推迟到玩家战斗收尾的讲和（`GwpPeace`）；只清自有集合与数值，不读取游戏对象。新档从空池开始，读档随后由原有行为的 `SyncData` 恢复。按部队编号或游戏对象记账的静态集合不得只靠 `SyncData(IsLoading)` 清空：灰袍领主队编号各局相同，新档没有读档这一步；能跟着行为实例走的做成实例字段（待重试讲和表已改）。（依据：源码复核 2026-11-11）原版时序见[战役生命周期](../vanilla/campaign-lifecycle.md)。玩家数据与保存代码归 `PlayerBehaviorPool`，案卷与保存代码归 `CrimePool`；原来的两层纯转发包装及玩家监听器的晚期新档清空回调已退休。保存键、行为注册身份不变。（依据：原版 v1.4.8 源码与结构清理 2026-11-07）
 
 回退以 `bfadd61` 的 `GwpRuntimeState.cs`、`GwpData.cs`、`PlayerBehaviorMonitor.cs`、`SubModule.cs` 及其调用方为基线，按本批差异撤销。同进程旧档转新档、旧档切换及原生保存恢复仍待正常游玩核实。
 
@@ -108,3 +108,8 @@
   并把链接事件转到战役百科；弹窗清空时撤掉。
 - `GwpGauntletWidgetUtility`：在 Gauntlet 控件树里按 id 找子控件的辅助方法。
 - `GwpFlowStates`：赎罪、悬赏、承办任务三套流程的状态枚举。存进存档的数值不能改。
+
+## 待实测
+
+- 同一存档存读接续——进行中的悬赏、送信队、灰袍差事、火誓者仪式，读档后原样接上；左下角提示按「弹给玩家的提示怎么写」改写（不再出现声望数值、保护期天数、「梁子」之类），用户看是否还有别扭的说法
+- 同一次启动里玩过一局、回主菜单再开新档：新档灰袍领主正常接案巡区，不出现指向上一局部队的追捕/护送，也没有上一局遗留的讲和；agent 读新档首日 AUCTION 行的 intent 核对

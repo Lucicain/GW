@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapBar;
@@ -32,8 +33,9 @@ namespace GreyWardenPolicePurity
         // 灰袍的冷银蓝。金币图标本身偏暖黄，换成冷色才不会在一排里混成同一个东西。
         private static readonly Color ReputationIconColor = new Color(0.50f, 0.68f, 0.82f);
 
-        private static readonly Dictionary<MapInfoVM, MapInfoItemVM> Items =
-            new Dictionary<MapInfoVM, MapInfoItemVM>();
+        // 弱引用表：地图栏每次重建都换一个 MapInfoVM，普通字典会把历次的界面对象一直留在内存里。
+        private static readonly ConditionalWeakTable<MapInfoVM, MapInfoItemVM> Items =
+            new ConditionalWeakTable<MapInfoVM, MapInfoItemVM>();
 
         /// <summary>
         /// 往原版图标笔刷里补一层染过色的影响力图标。幂等：已经有了就不再加。
@@ -88,7 +90,8 @@ namespace GreyWardenPolicePurity
 
             // CreateItems 每次都会清空并重建两排，所以这里始终新建一个跟着走。
             var item = new MapInfoItemVM(ReputationVisualId, BuildTooltip);
-            Items[vm] = item;
+            Items.Remove(vm);
+            Items.Add(vm, item);
             // 紧跟原版影响力。代价要记清楚：影响力在 SecondaryInfoItems，那一排
             // 只在信息条展开（IsInfoBarExtended）时才显示；第纳尔所在的
             // PrimaryInfoItems 才是常驻的。按用户要求放在影响力旁边。

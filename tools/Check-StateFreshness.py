@@ -483,12 +483,19 @@ def check_leftovers():
     return found
 
 
+def scratch_patterns(text):
+    """Top-level name patterns the scratch list claims. The list's own prose
+    mentions a bare `*` ("paths may use `*`"); taken as a pattern it claimed
+    every entry and the check reported nothing. A claim has to name something."""
+    names = (g.rstrip("/").split("/")[0] for g in GLOB_RE.findall(text))
+    return [p for p in names if re.search(r"\w", p)]
+
+
 def check_scratch():
     """Top-level entries of the ignored scratch directories that local-scratch.md
     does not claim. Nothing there is in git; an unclaimed entry is either junk
     or the only copy of something, and only a listed one is safe to judge."""
-    listed = GLOB_RE.findall(SCRATCH_LIST.read_text(encoding="utf-8")) if SCRATCH_LIST.exists() else []
-    pats = [g.rstrip("/").split("/")[0] for g in listed]
+    pats = scratch_patterns(SCRATCH_LIST.read_text(encoding="utf-8")) if SCRATCH_LIST.exists() else []
     found = []
     for d in SCRATCH_DIRS:
         base = ROOT / d

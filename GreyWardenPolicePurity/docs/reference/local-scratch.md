@@ -34,6 +34,19 @@
 |---|---|
 | `choke-spacing-candidate-not-deployed-20260921` | `battle-tactics.md` 的已隔离候选表（从未部署的候选实现，不是回滚点） |
 
+## 仓库根 `build-check/`：正式发版核验归档
+
+同样被 git 忽略、只在本机。每个已发布版本一份，内含玩家 DLL、逐项 manifest、ZIP 哈希与远端复核记录，
+发版流程见 `build-and-deploy.md`「从 GitHub 重新下载后核验」。
+
+| 路径 | 是什么 |
+|---|---|
+| `package-v1.4-r14-original`、`package-v1.4-r14-refresh` | r14 同号替换前后两份 |
+| `package-v1.4-r15` | r15，含公开文字审批与远端玩家 DLL 复核 |
+| `package-v1.4-r16` | 当前最新正式版，`build-and-deploy.md`「当前正式玩家包」引用 |
+
+r12、r13 两版的归档在 `GreyWardenPolicePurity/build-check/` 下且进了 git，位置与此不一致，见清理待办。
+
 ## 在用的工作文件
 
 | 路径 | 用途 |

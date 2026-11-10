@@ -86,9 +86,8 @@ namespace GreyWardenPolicePurity
             new Dictionary<string, RaidSnapshot>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// What the burning actually cost the village, in people. A point of hearth is a
-        /// score of villagers; whatever the raid took between starting and ending is put
-        /// on the raider's account at that rate.
+        /// 劫掠让村子少了多少人：开始到结束之间掉的户数，按 GwpTuning.FieldArrest.VillagersPerHearthPoint
+        /// 折成人命记到劫掠者账上。
         /// </summary>
         private void OnVillageLooted(Village village)
         {
@@ -145,11 +144,7 @@ namespace GreyWardenPolicePurity
 
         }
 
-        /// <summary>
-        /// A man taken by force has paid with himself: the case closes and his standing
-        /// with the Wardens goes with it. Only a prisoner in the player's own hands counts
-        /// - beating him and letting him ride off settles nothing.
-        /// </summary>
+        /// <summary>把对面一边的平民死者（或匪徒死者）按这一边各队战后剩余人数分摊，记到各队领袖的账上。</summary>
         private static void AccumulateCasualties(MapEvent mapEvent, BattleSideEnum offenderSide)
         {
             MapEventSide side = mapEvent.GetMapEventSide(offenderSide);
