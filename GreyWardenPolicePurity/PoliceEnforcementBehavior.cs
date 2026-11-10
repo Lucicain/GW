@@ -302,16 +302,17 @@ namespace GreyWardenPolicePurity
 
             // Several wanted companions can travel in the same main party.
             // Contact is keyed by each case, but any nearby assignee may speak.
-            var assigneeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // 每帧都会走到这里；没有针对主队的案子时不分配集合。
+            HashSet<string>? assigneeIds = null;
             foreach (PoliceTask task in CrimePool.ActiveTasks.Values)
             {
                 if (task.FlowState == PoliceTaskFlowState.Pursuit &&
                     !task.WarDeclared && !task.IsEscortingPlayer &&
                     task.TargetCrime?.Offender?.IsMainParty == true &&
                     !string.IsNullOrWhiteSpace(task.PolicePartyId))
-                    assigneeIds.Add(task.PolicePartyId);
+                    (assigneeIds ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(task.PolicePartyId);
             }
-            if (assigneeIds.Count == 0)
+            if (assigneeIds == null)
                 return;
 
             MobileParty? contact = null;

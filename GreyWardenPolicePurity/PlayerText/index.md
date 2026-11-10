@@ -430,12 +430,12 @@
 | gwp_policeenforcementbehavior_002 | Your atonement target is gone. The Wardens close the charge unanswered, and it is held against your name. | 你要赎罪的那个人不见了。灰袍把这笔账原样收起，记在你名下。 | 未检出直接引用；保留 |
 | gwp_policeenforcementbehavior_003 | The case against {VAR_1} has been dealt with. Report to a Warden lord. | {VAR_1}的案件已处置，回去向灰袍领主复命。 | PoliceEnforcementBehavior.AtonementQuest.cs:66 |
 | gwp_policeenforcementbehavior_004 | Your atonement has failed. | 赎罪失败。 | PoliceEnforcementBehavior.cs:252 |
-| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:459 |
-| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:459 |
-| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:463 |
-| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:465 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1293 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1295 |
+| gwp_policeenforcementbehavior_005 | Insufficient fine | 罚款不足 | PoliceEnforcementBehavior.cs:460 |
+| gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:460 |
+| gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:464 |
+| gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:466 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1294 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1296 |
 | gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
 | gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
 | gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |

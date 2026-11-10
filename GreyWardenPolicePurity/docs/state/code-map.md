@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,030 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,048 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -43,8 +43,8 @@
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs:26 |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs:37 |
 | `ConversationTagHelper` | `EducatedClass` | Postfix | `GwpFounderVoiceRegisterPatch` | GwpFounderVoiceRegisterPatch.cs:14 |
-| `CraftingCampaignBehavior` | `AddResearchPoints` | Prefix | `GwpDualBladeSmeltingResearchPatch` | GwpDualBladeActionSetPatch.cs:308 |
-| `CustomBattleData` | `get_Characters` | Finalizer/Postfix | `GwpCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs:130 |
+| `CraftingCampaignBehavior` | `AddResearchPoints` | Prefix | `GwpDualBladeSmeltingResearchPatch` | GwpDualBladeActionSetPatch.cs:310 |
+| `CustomBattleData` | `get_Characters` | Finalizer/Postfix | `GwpCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs:132 |
 | `DefaultArmyManagementCalculationModel` | `CalculateDailyCohesionChange` | Postfix | `GwpAssistanceArmyCohesionPatch` | GwpAssistanceArmyLifecyclePatch.cs:81 |
 | `DefaultArmyManagementCalculationModel` | `CalculatePartyInfluenceCost` | Finalizer/Prefix | `GwpLeaderlessSupportArmyInfluencePatch` | GwpAssistanceArmyLifecyclePatch.cs:99 |
 | `DefaultArmyManagementCalculationModel` | `CalculateTotalInfluenceCost` | Finalizer | `GwpArmyInfluenceFailureTracePatch` | GwpAssistanceArmyLifecyclePatch.cs:148 |
@@ -133,12 +133,12 @@
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipSaleTownPatch` | GwpLandlessShipTradePatch.cs:127 |
 | `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCityCaseReplacementCommanderPatch` | GwpCityCaseMovementPatch.cs:84 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpCitySearchTargetRetreatPatch` | GwpCitySearchMission.Progress.cs:336 |
-| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpDualBladeCraftingTemplateVisibilityPatch` | GwpDualBladeActionSetPatch.cs:237 |
+| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpDualBladeCraftingTemplateVisibilityPatch` | GwpDualBladeActionSetPatch.cs:239 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpEngineAssertDiagnostics` | GwpEngineAssertDiagnostics.cs:12 |
 | `动态/未静态解析` | `TargetMethods()` | Postfix | `GwpInterventionChoicePatch` | GwpPlayerIntervention.cs:131 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpInterventionSelectionPatch` | GwpPlayerIntervention.cs:143 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpKingdomMembershipPatch` | GwpKingdomMembershipPatch.cs:13 |
-| `动态/未静态解析` | `TargetMethods()` | Finalizer/Postfix | `GwpNavalCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs:159 |
+| `动态/未静态解析` | `TargetMethods()` | Finalizer/Postfix | `GwpNavalCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs:161 |
 
 ## 注册入口（SubModule.cs）
 
@@ -633,7 +633,7 @@
 
 - `GwpShieldBashGuardPatch.cs` — 1236 行 · `GwpPassiveHeldShieldCollision` : MissionBehavior，另含 5 个类型
 - `GwpDualBladeAiBehavior.cs` — 753 行 · `GwpDualBladeAgentState` : MissionBehavior，另含 5 个类型
-- `GwpDualBladeActionSetPatch.cs` — 378 行 · `GwpFaultTrace`，另含 6 个类型
+- `GwpDualBladeActionSetPatch.cs` — 380 行 · `GwpFaultTrace`，另含 6 个类型
 - `GwpAlternativeAttackControlBehavior.cs` — 362 行 · `GwpAlternativeAttackControlBehavior` : MissionBehavior
 - `GwpKickInputComponent.cs` — 216 行 · `GwpKickInputComponent` : AgentComponent
 - `GwpAlternativeAttackControl.cs` — 177 行 · `GwpAlternativeAttackControl`
@@ -645,15 +645,15 @@
 
 ### 诊断（4 个文件）
 
-- `GwpAiDiagnostics.cs` — 609 行 · `GwpAiDiagnostics`，另含 1 个类型
-- `GwpRuntimeFaultWatch.cs` — 92 行 · `GwpRuntimeFaultWatch`
+- `GwpAiDiagnostics.cs` — 622 行 · `GwpAiDiagnostics`，另含 1 个类型
+- `GwpRuntimeFaultWatch.cs` — 94 行 · `GwpRuntimeFaultWatch`
 - `GwpEngineAssertDiagnostics.cs` — 34 行 · `GwpEngineAssertDiagnostics`
 - `GwpDispatchBarterFaultDiagnostics.cs` — 23 行 · `GwpDispatchBarterFaultDiagnostics`
 
 ### 执法：案件与巡逻（34 个文件）
 
 - `PoliceEnforcementBehavior.Assistance.cs` — 1872 行 · `PoliceEnforcementBehavior`，另含 1 个类型
-- `PoliceEnforcementBehavior.cs` — 1396 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
+- `PoliceEnforcementBehavior.cs` — 1397 行 · `PoliceEnforcementBehavior` : CampaignBehaviorBase
 - `GwpFieldArrestBehavior.cs` — 1331 行 · `GwpFieldArrestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `PoliceEnforcementBehavior.DelayPatrols.cs` — 1326 行 · `PoliceEnforcementBehavior`
 - `PoliceEnforcementBehavior.Envoy.cs` — 1117 行 · `PoliceEnforcementBehavior`，另含 2 个类型

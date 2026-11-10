@@ -79,10 +79,12 @@ namespace GreyWardenPolicePurity
         }
 
 #else
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void Arm()
         {
         }
 
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void StartSession() { }
 
 

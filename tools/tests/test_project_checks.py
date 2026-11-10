@@ -181,6 +181,26 @@ class ChangeImpactTests(unittest.TestCase):
         self.assertIn(("灰袍身份", "GwpCommon.IsGreyWarden*"), self.impact.owner_hits(changed, owners))
 
 
+class DiagnosticStubTests(unittest.TestCase):
+    def test_player_branch_void_stub_needs_conditional(self):
+        source = ("#if GWP_DIAGNOSTICS\n"
+                  "        internal static void Write(string s) { Log(s); }\n"
+                  "#else\n"
+                  "        [System.Diagnostics.Conditional(\"GWP_DIAGNOSTICS\")]\n"
+                  "        internal static void Write(string s) { }\n"
+                  "        internal static void Forgot(string s) { }\n"
+                  "        internal static bool Query() => false;\n"
+                  "#endif\n"
+                  "#if GWP_GAME_150_OR_LATER\n"
+                  "#else\n"
+                  "        internal static void NotDiagnostics() { }\n"
+                  "#endif\n")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "Stub.cs"
+            path.write_text(source, encoding="utf-8")
+            self.assertEqual(["Stub.cs:6  Forgot"], hygiene.unconditional_stubs([str(path)]))
+
+
 class ScratchListTests(unittest.TestCase):
     def test_bare_wildcard_in_prose_claims_nothing(self):
         text = ("路径可用 `*` 通配。\n"

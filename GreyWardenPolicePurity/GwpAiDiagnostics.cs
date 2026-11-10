@@ -573,11 +573,14 @@ namespace GreyWardenPolicePurity
 #else
     /// <summary>
     /// 玩家发行构建的空实现：保留调用接口，但不创建或写入任何诊断日志。
+    /// 无返回值的方法标 Conditional，编译器连调用处一起去掉，参数里的字符串拼接、ToList 等也不再求值。
     /// </summary>
     internal static class GwpAiDiagnostics
     {
         internal static string LogPath => string.Empty;
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void StartSession() { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteAuction(MobileParty party,
             IReadOnlyCollection<(AIBehaviorData, float)> rawScores,
             IReadOnlyCollection<(AIBehaviorData, float)> finalScores,
@@ -589,19 +592,29 @@ namespace GreyWardenPolicePurity
             float minimumPositiveNonPatrolScore,
             int nonPatrolAtOrBelowDutyCount,
             string dutyAdded) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void CaptureInitiative(MobileParty party,
             AiBehavior behavior, MobileParty? target, float score,
             TaleWorlds.Library.Vec2 averageEnemyVector) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteAction(MobileParty party, string action, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WritePartyLifecycle(MobileParty? party, string action, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteHeroLifecycle(Hero? hero, string action, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteMapEvent(MapEvent? mapEvent, string stage) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WritePlayerJusticeState(string action, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteFieldArrest(string stage, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteCitySearch(string stage, string details) { }
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteFaith(string stage, string details) { }
         internal static bool ShouldTraceParty(MobileParty? party) => false;
         internal static bool ShouldTraceObservedParty(MobileParty? party) => false;
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void RefreshObservedPartyCache() { }
     }
 #endif

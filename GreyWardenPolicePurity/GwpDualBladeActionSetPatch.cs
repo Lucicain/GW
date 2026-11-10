@@ -102,6 +102,7 @@ namespace GreyWardenPolicePurity
                 + " | " + (error?.ToString().Replace(Environment.NewLine, " | ") ?? "<null>"));
         }
 #else
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void Write(
             string stage,
             Agent? agent = null,
@@ -109,6 +110,7 @@ namespace GreyWardenPolicePurity
         {
         }
 
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         internal static void WriteQuiet(
             Exception? error,
             [System.Runtime.CompilerServices.CallerFilePath] string? file = null,

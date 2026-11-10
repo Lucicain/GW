@@ -311,10 +311,38 @@ def core_boundary(files):
     return found
 
 
+STUB_VOID_RE = re.compile(r"^\s*(?:internal|public)\s+static\s+void\s+(\w+)\s*\(")
+CONDITIONAL_RE = re.compile(r"\[\s*(?:System\.Diagnostics\.)?Conditional\s*\(\s*\"GWP_DIAGNOSTICS\"\s*\)\s*\]")
+
+
+def unconditional_stubs(files):
+    """Void methods in the player-build branch (`#else` of `#if GWP_DIAGNOSTICS`) of a
+    diagnostics class must carry [Conditional("GWP_DIAGNOSTICS")]. Without it every call
+    outside an #if still builds its message strings in the player build (2026-11-11)."""
+    found = []
+    for path in files:
+        stack = []  # one entry per open #if: True while inside the player branch of GWP_DIAGNOSTICS
+        previous = ""
+        for number, line in enumerate(read(path).splitlines(), 1):
+            text = line.strip()
+            if text.startswith("#if"):
+                stack.append(None if re.fullmatch(r"#if\s+GWP_DIAGNOSTICS", text) else False)
+            elif text.startswith("#else") and stack:
+                stack[-1] = True if stack[-1] is None else stack[-1]
+            elif text.startswith("#endif") and stack:
+                stack.pop()
+            elif any(stack) and STUB_VOID_RE.match(line) and not CONDITIONAL_RE.search(previous):
+                found.append(f"{os.path.basename(path)}:{number}  {STUB_VOID_RE.match(line).group(1)}")
+            if text:
+                previous = text
+    return found
+
+
 def main():
     files = sorted(glob.glob(os.path.join(MOD, "*.cs"))
                    + glob.glob(os.path.join(CORE, "**", "*.cs"), recursive=True))
     boundary = core_boundary(files)
+    stubs = unconditional_stubs(files)
     catches = unproven_catches(files)
     dead = unreferenced(files)
     owners = owner_violations(files)
@@ -344,9 +372,15 @@ def main():
         for d in dead:
             print("  " + d)
         print()
+    if stubs:
+        print('[!] 玩家版诊断空壳的无返回值方法没标 [Conditional("GWP_DIAGNOSTICS")]——不标的话调用处的参数在玩家版照样求值：\n')
+        for s in stubs:
+            print("  " + s)
+        print()
     print(f"{len(catches)} 个 catch 缺依据 / {len(dead)} 个声明无人引用 / "
-          f"{len(owners)} 处绕过归属方 / {len(copies)} 个重复函数体 / {len(boundary)} 处逻辑层越界")
-    return 1 if catches or dead or owners or copies or boundary else 0
+          f"{len(owners)} 处绕过归属方 / {len(copies)} 个重复函数体 / {len(boundary)} 处逻辑层越界 / "
+          f"{len(stubs)} 个诊断空壳未标 Conditional")
+    return 1 if catches or dead or owners or copies or boundary or stubs else 0
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-11：全库审计清理——战役启动时一并清空不进存档的部队意图表与推迟讲和，待重试讲和表改为行为实例字段，删除无人写入的旧存档字段 `gwp_enf_war_streak_*` 与若干死代码、过期注释，押送费率收进 `GwpTuning`。诊断/玩家构建0警告，46项纯规则、24项工具自检与120个补丁绑定通过；Client/Editor的SHA-256同为`4CB07976B3DBD0B7633F220CA0BFFCD7D92004862735806F5CA501D4B4CFCBB6`，live镜像无缺失、差异或散落。2026-11-07部署的约斗、躲城、同城巡逻改动仍在本部署内，其真实进城、首场结算和同版存读尚未验收，分归[野外执法](field-arrest.md)、[使者](case-envoy.md)和[搜捕支援](city-search-support.md)；跨战役清空的验收见[公共底座](infrastructure.md#待实测)。独立审查无阻断问题。（依据：构建、部署、哈希与独立审查2026-11-11）
+live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-11：全库审计清理——战役启动时一并清空不进存档的部队意图表与推迟讲和，待重试讲和表改为行为实例字段，删除无人写入的旧存档字段 `gwp_enf_war_streak_*` 与若干死代码、过期注释，押送费率收进 `GwpTuning`；玩家版诊断写入空壳标 `Conditional`，调用连参数一起编译掉，执法每帧回调不再无条件新建集合。诊断/玩家构建0警告，46项纯规则、25项工具自检与120个补丁绑定通过；Client/Editor的SHA-256同为`350BD8A437EA66A425F03D5AA0FC452A09D14B33EB1B26B4360CB063725D73B5`，live镜像无缺失、差异或散落。2026-11-07部署的约斗、躲城、同城巡逻改动仍在本部署内，其真实进城、首场结算和同版存读尚未验收，分归[野外执法](field-arrest.md)、[使者](case-envoy.md)和[搜捕支援](city-search-support.md)；跨战役清空的验收见[公共底座](infrastructure.md#待实测)。独立审查无阻断问题。（依据：构建、部署、哈希与独立审查2026-11-11）
 
 灰袍兼容预检只覆盖本模块的引用、补丁绑定及已知静态初始化问题，不执行前置模组的完整启动构造，不能代替启动器整条加载链；2026-10-27前置模组重复勾选导致的启动失败即在此之外。（依据：预检边界与启动故障2026-10-27）
 
@@ -73,7 +73,7 @@ live为诊断开发版，版本号1.4.16.0。最近一次部署2026-11-11：全�
 | `New-PlayerPackage.py` | 从隔离玩家DLL和_Module生成本地ZIP及逐项manifest，ASCII/UTF-16检查无监控、逐项解压哈希 | `PLAYER PACKAGE: PASS`；不自动上传 |
 | `Generate-CodeMap.py` | 从源码重建 `docs/state/code-map.md`；PostToolUse 钩子自动跑 | 不要手改产物（依据：流程） |
 | `Check-StateFreshness.py` | 报 state 引用失效的文件与符号、源码归属、state 堆积、残留的已取消头部与遗留物；生成进度汇总 | 被点名的当轮处理 |
-| `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体；预提交硬闸 | 四项全零 |
+| `Check-CodeHygiene.py` | catch 依据、无人引用声明、绕过共享归属、重复函数体、逻辑层越界、玩家版诊断空壳未标 `Conditional`；预提交硬闸 | 六项全零 |
 | `Analyze-Firesworn.py` | 只读：汇总最近一次启动游戏以来的火誓者监控行，主动列出平衡问题（见 `diagnostics.md`「火誓者监控字段」） | 不是闸门，读结果 |
 
 `Invoke-ModuleLoadPreflight.ps1` 只能用 Windows PowerShell 5.1：它在 .NET Framework 里加载游戏程序集，pwsh 下 Harmony 撞上已移除的 BinaryFormatter，68 个补丁全部报失败（2026-10-05 实测）。`Verify-GameCompat.ps1` 与 `Verify-ContentKeys.ps1` 只能用 PowerShell 7（pwsh）——前者需要 System.Reflection.Metadata，后者在 5.1 下读 XML 报解析错误（2026-09-26 实测）。`Verify-LiveModule.ps1` 两边都能跑。两个 `.py` 检查用 python。
