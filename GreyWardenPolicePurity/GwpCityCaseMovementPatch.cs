@@ -14,30 +14,23 @@ namespace GreyWardenPolicePurity
     {
         internal static bool IsUnlocked(Hero hero) => PoliceEnforcementBehavior.AcceptedCityCaseSettlement(hero) == null;
 
-        // 只替换原版读取的家族名单，保留候选顺序、评分、抽签和无人可选时的处理。
-        internal static IEnumerable<CodeInstruction> FilterCandidates(
-            IEnumerable<CodeInstruction> instructions, string clanList, string filter, int expected)
+        // 四个选人方法中，这类返回值只用来提供候选名单。保留名单来源，让其他补丁也能改写它。
+        internal static IEnumerable<CodeInstruction> FilterCandidates(IEnumerable<CodeInstruction> instructions, int expected)
         {
-            MethodInfo source = AccessTools.PropertyGetter(typeof(Clan), clanList);
-            MethodInfo filtered = AccessTools.Method(typeof(GwpCityCaseLock), filter);
-            int replaced = 0;
+            MethodInfo filter = AccessTools.Method(typeof(GwpCityCaseLock), nameof(Unlocked));
+            int matched = 0;
             foreach (CodeInstruction instruction in instructions)
             {
-                if (instruction.Calls(source))
-                {
-                    instruction.opcode = OpCodes.Call;
-                    instruction.operand = filtered;
-                    replaced++;
-                }
+                bool loadsCandidates = (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
+                    && instruction.operand is MethodInfo source && source.ReturnType == typeof(MBReadOnlyList<Hero>);
                 yield return instruction;
+                if (!loadsCandidates) continue;
+                yield return new CodeInstruction(OpCodes.Call, filter);
+                matched++;
             }
-            if (replaced != expected)
-                throw new InvalidOperationException($"城内案件候选入口有变：{clanList} 预期 {expected} 处，实际 {replaced} 处。");
+            if (matched != expected)
+                throw new InvalidOperationException($"城内案件候选入口有变：预期 {expected} 处，实际 {matched} 处。");
         }
-
-        internal static MBReadOnlyList<Hero> EligibleHeroes(Clan clan) => Unlocked(clan.Heroes);
-
-        internal static MBReadOnlyList<Hero> EligibleLords(Clan clan) => Unlocked(clan.AliveLords);
 
         private static MBReadOnlyList<Hero> Unlocked(MBReadOnlyList<Hero> heroes)
         {
@@ -76,7 +69,7 @@ namespace GreyWardenPolicePurity
     {
         [HarmonyTranspiler]
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
-            GwpCityCaseLock.FilterCandidates(instructions, nameof(Clan.Heroes), nameof(GwpCityCaseLock.EligibleHeroes), 2);
+            GwpCityCaseLock.FilterCandidates(instructions, 2);
     }
 
     // 非战斗领袖换人与待解散部队找接任者，各从家族英雄里取一次候选。
@@ -91,7 +84,7 @@ namespace GreyWardenPolicePurity
 
         [HarmonyTranspiler]
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
-            GwpCityCaseLock.FilterCandidates(instructions, nameof(Clan.Heroes), nameof(GwpCityCaseLock.EligibleHeroes), 1);
+            GwpCityCaseLock.FilterCandidates(instructions, 1);
     }
 
     // AI家族每日重排总督会把无队领主延迟传送到别的封地；已接案目标不进候选。
@@ -100,7 +93,7 @@ namespace GreyWardenPolicePurity
     {
         [HarmonyTranspiler]
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
-            GwpCityCaseLock.FilterCandidates(instructions, nameof(Clan.AliveLords), nameof(GwpCityCaseLock.EligibleLords), 1);
+            GwpCityCaseLock.FilterCandidates(instructions, 1);
     }
 
     [HarmonyPatch(typeof(TeleportationCampaignBehavior), "OnHeroComesOfAge")]

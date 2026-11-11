@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,067 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,060 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -39,7 +39,7 @@
 | `CampaignEventDispatcher` | `AiHourlyTick` | Postfix | `GwpFinalDesireAuctionPatch` | GwpPartyDutyMovementPatch.cs:22 |
 | `CharacterHelper` | `CanUseItem` | Prefix | `GwpWardenAutoEquipmentPatch` | GwpWardenAutoEquipmentPatch.cs:18 |
 | `Clan` | `Banner` (Getter) | Postfix | `GwpDutyBannerClanEmblemPatch` | GwpDutyBanner.cs:46 |
-| `ClanVariablesCampaignBehavior` | `UpdateGovernorsOfClan` | Transpiler | `GwpCityCaseGovernorPatch` | GwpCityCaseMovementPatch.cs:99 |
+| `ClanVariablesCampaignBehavior` | `UpdateGovernorsOfClan` | Transpiler | `GwpCityCaseGovernorPatch` | GwpCityCaseMovementPatch.cs:92 |
 | `CommonAIComponent` | `Panic` | Prefix | `GwpWardenPanicPatch` | GwpWardenResolve.cs:26 |
 | `CommonAIComponent` | `Retreat` | Prefix | `GwpWardenRetreatPatch` | GwpWardenResolve.cs:37 |
 | `ConversationTagHelper` | `EducatedClass` | Postfix | `GwpFounderVoiceRegisterPatch` | GwpFounderVoiceRegisterPatch.cs:14 |
@@ -64,8 +64,8 @@
 | `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaHeroPageWidgetPatch` | GwpEncyclopediaHeroPageVM.cs:327 |
 | `GauntletMovie` | `Load` | Postfix | `GwpSingleQueryPopupWidgetPatch` | GwpSingleQueryLinkPatch.cs:45 |
 | `GiveGoldAction` | `ApplyBetweenCharacters` | Postfix/Prefix | `GwpFireswornUpgradePaymentTracePatch` | GwpFireswornUpgradePayment.cs:85 |
-| `HeroSpawnCampaignBehavior` | `GetBestAvailableCommander` | Transpiler | `GwpCityCaseNewCommanderPatch` | GwpCityCaseMovementPatch.cs:75 |
-| `HeroSpawnCampaignBehavior` | `OnHeroDailyTick` | Prefix | `GwpCityCaseDailyMovePatch` | GwpCityCaseMovementPatch.cs:60 |
+| `HeroSpawnCampaignBehavior` | `GetBestAvailableCommander` | Transpiler | `GwpCityCaseNewCommanderPatch` | GwpCityCaseMovementPatch.cs:68 |
+| `HeroSpawnCampaignBehavior` | `OnHeroDailyTick` | Prefix | `GwpCityCaseDailyMovePatch` | GwpCityCaseMovementPatch.cs:53 |
 | `HumanAIComponent` | `RefreshBehaviorValues` | Prefix | `GwpWardenRetreatBehaviorPatch` | GwpWardenResolve.cs:52 |
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs:19 |
 | `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:99 |
@@ -115,7 +115,7 @@
 | `SettlementVisual` | `RefreshPartyIcon` | Postfix/Prefix | `GwpDamnationSmokePatch` | GwpDamnationSmokePatch.cs:16 |
 | `SingleQueryPopUpVM` | `OnClearData` | Postfix | `GwpSingleQueryPopupClearPatch` | GwpSingleQueryLinkPatch.cs:87 |
 | `SpawnedItemEntity` | `OnUseStopped` | Transpiler | `GwpDualBladeGroundPickupPatch` | GwpDualBladeGroundPickupPatch.cs:118 |
-| `TeleportationCampaignBehavior` | `OnHeroComesOfAge` | Prefix | `GwpCityCaseAdultCommanderPatch` | GwpCityCaseMovementPatch.cs:107 |
+| `TeleportationCampaignBehavior` | `OnHeroComesOfAge` | Prefix | `GwpCityCaseAdultCommanderPatch` | GwpCityCaseMovementPatch.cs:100 |
 | `VillagerCampaignBehavior` | `AddVillagersToParty` | Postfix/Prefix | `GwpFaithVillagerReplenishPatch` | GwpFaithVillagers.cs:305 |
 | `VillagerCampaignBehavior` | `CreateVillagerParty` | Postfix | `GwpFaithVillagerBirthPatch` | GwpFaithVillagers.cs:298 |
 | `VillagerCampaignBehavior` | `LoadAndSendVillagerParty` | Postfix/Prefix | `GwpFaithVillagerDeparturePatch` | GwpFaithVillagers.cs:318 |
@@ -131,7 +131,7 @@
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpEncyclopediaHeroPageExtensionPatch` | GwpEncyclopediaHeroPageVM.cs:288 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipPurchaseTownPatch` | GwpLandlessShipTradePatch.cs:109 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipSaleTownPatch` | GwpLandlessShipTradePatch.cs:127 |
-| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCityCaseReplacementCommanderPatch` | GwpCityCaseMovementPatch.cs:84 |
+| `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCityCaseReplacementCommanderPatch` | GwpCityCaseMovementPatch.cs:77 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpCitySearchTargetRetreatPatch` | GwpCitySearchMission.Progress.cs:336 |
 | `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpDualBladeCraftingTemplateVisibilityPatch` | GwpDualBladeActionSetPatch.cs:239 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpEngineAssertDiagnostics` | GwpEngineAssertDiagnostics.cs:12 |
@@ -809,11 +809,11 @@
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
 - `GwpPeace.cs` — 118 行 · `GwpPeace`
 - `GwpCharacterPreviewDiagnostics.cs` — 115 行 · `GwpActionCacheDiagnostics`，另含 1 个类型
-- `GwpCityCaseMovementPatch.cs` — 113 行 · `GwpCityCaseLock`，另含 5 个类型
 - `GwpNegotiationResistance.cs` — 113 行 · `GwpNegotiationResistance`
 - `GwpCitySearchMission.Movement.cs` — 110 行 · `GwpCitySearchMissionController`，另含 2 个类型
 - `GwpCitySearchMission.StreetState.cs` — 110 行 · `GwpCitySearchMissionController`，另含 1 个类型
 - `GwpFireswornUpgradePayment.cs` — 107 行 · `GwpFireswornUpgradePayment`，另含 4 个类型
+- `GwpCityCaseMovementPatch.cs` — 106 行 · `GwpCityCaseLock`，另含 5 个类型
 - `GwpAssetOfferValidationPatch.cs` — 105 行 · `GwpAssetOfferValidationPatch`，另含 6 个类型
 - `GwpArmoryBalance.cs` — 104 行 · `GwpFireswornBehavior`
 - `CityTeamRules.cs` — 103 行 · `CityTeamView`，另含 2 个类型
