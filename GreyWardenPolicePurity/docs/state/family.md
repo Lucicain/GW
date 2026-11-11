@@ -75,6 +75,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 | `gw_leader_4` | 重建 | 重建被焚村庄，见 `village-relief.md` |
 | `gw_leader_5` | 贵族事务 | 玩家的封地申诉等请求，见 `player-requests.md` |
 
+- 已知联用缺陷：内战 1.4.11 把与族长无血缘的非族长灰袍创始领主判为门客。其任命复核要求门客有封地或有效服役契约；授任未落实、也找不到合格接任者时，会撤去领袖，把原领主置为流亡，并让部队进入[原版待解散流程](../vanilla/town-scenes.md#日常换城与重新带队)。2026-11-11 15:38:25，灰袍日志以 `HERO_BECAME_FUGITIVE` 和 `PARTY_DISBAND_STARTED` 记录 `gw_leader_1` 至 `gw_leader_5` 同时进入流亡、原部队开始解散，随后的日志记录五队释放差事，族长梵蒂仍带队。内战日志直接记录约珥的撤任。（依据：本机内战及灰袍日志；安装版 `HouseholdMembership.IsRetainer` 与 `LordshipBehavior.CheckAppointment`、`Maintain` 反编译）
 - 新成员成年时补强仍有成年在世持有人的本职：选其中人数最少者；人数相同时按重建 → 请愿 → 护村 → 商队 → 练兵 → 贵族事务的顺序。不是优先填补人数为0的空缺。（依据：当前AssignDutyIfNeeded实现、生产方法离线复核2026-10-19）
 - 某个本职的最后一位持有人死了，这条线就断了，后来的孩子不会再补上。（依据：设计）
 - 本职名称和百科生平提示随本职变化。

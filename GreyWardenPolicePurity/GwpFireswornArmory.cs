@@ -657,13 +657,16 @@ namespace GreyWardenPolicePurity
             }
             foreach (MobileParty lord in PoliceStats.GetAllPoliceParties().Where(party => party.IsActive && party.IsLordParty).ToList())
             {
-                string holder = HolderOf(lord.Party)!;
-                ArmoryPlan? plan = _armories.ContainsKey(holder) ? PlanOf(holder) : null;
+                string? holder = HolderOf(lord.Party);
+                ItemRoster? armory = null;
+                ArmoryPlan? plan = null;
+                if (holder != null && _armories.TryGetValue(holder, out armory))
+                    plan = PlanOf(holder);
                 GwpAiDiagnostics.WriteFaith("DAILY_LORD",
                     "party=" + lord.StringId + "; members=" + lord.Party.NumberOfAllMembers + "/" + lord.Party.PartySizeLimit +
                     "; troops=" + Composition(lord.MemberRoster) +
                     "; prisoners=" + CountRegularPrisoners(lord) + "/" + lord.Party.PrisonerSizeLimit +
-                    "; armoryItems=" + (_armories.TryGetValue(holder, out ItemRoster? armory) ? CountItems(armory) : 0) +
+                    "; armoryHolder=" + (holder ?? "-") + "; armoryItems=" + (armory != null ? CountItems(armory) : 0) +
                     "; armed=" + (plan == null ? "0/0" : plan.Sets.Count(kit => IsArmoryKitArmed(kit)) + "/" + plan.Sets.Count) +
                     "; inventoryValue=" + NonFoodValue(lord.ItemRoster) +
                     "; faithVisit=" + GwpWardenVisitDesire.Describe(lord) +

@@ -46,6 +46,9 @@
 选城中的无队成员。每日换人与解散接任各从 `Clan.Heroes` 读取一次候选。前两条在选好人后才撤下原领袖，后一条没有人选时保留待解散流程。接任调用
 `TeleportHeroAction.ApplyDelayedTeleportToPartyAsPartyLeader`，英雄先离城、进入旅行状态，再归入部队。
 
+`StartDisband` 对有兵的部队发送解散事件，非玩家家族的候选分支无人接任时先登记一天待解散，部队仍在地图。
+`MobileParty.IsLordParty` 取决于组件类型，`LeaderHero` 取当前组件的领袖，因此待解散的领主部队可以同时活跃、无领袖。（2026-11-11 安装版 C# 核对）
+
 总督也会让无队领主离城。`ClanVariablesCampaignBehavior.DailyTickClan` 每天对非玩家家族调
 `UpdateGovernorsOfClan`：封地按类型、繁荣、附属村、文化与离王国中心距离排序，逐个从 `clan.AliveLords`
 里挑能当总督、无部队、本轮未用过的领主，现任总督打满分、其他人乘 0.75。选中者不在该城时，

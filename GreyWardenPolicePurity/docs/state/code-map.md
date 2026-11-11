@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,060 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,063 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -69,7 +69,7 @@
 | `HumanAIComponent` | `RefreshBehaviorValues` | Prefix | `GwpWardenRetreatBehaviorPatch` | GwpWardenResolve.cs:52 |
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs:19 |
 | `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:99 |
-| `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:781 |
+| `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:784 |
 | `MapEventParty` | `Update` | Postfix/Prefix | `GwpArmoryBattleRosterPatch` | GwpArmoryBattle.cs:198 |
 | `MapInfoVM` | `CreateItems` | Postfix | `GwpMapInfoCreateItemsPatch` | GwpMapBarReputationPatch.cs:119 |
 | `MapInfoVM` | `UpdatePlayerInfo` | Postfix | `GwpMapInfoUpdatePatch` | GwpMapBarReputationPatch.cs:127 |
@@ -81,7 +81,7 @@
 | `Mission` | `MeleeHitCallback` | Prefix | `GwpCitySearchMeleeStrikePatch` | GwpCitySearchMission.cs:564 |
 | `Mission` | `MeleeHitCallback` | Postfix/Prefix | `GwpPassiveHeldShieldMeleePatch` | GwpShieldBashGuardPatch.cs:982 |
 | `Mission` | `RegisterBlow` | Prefix | `GwpPassiveShieldRegisterBlowPatch` | GwpShieldBashGuardPatch.cs:1171 |
-| `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs:794 |
+| `Mission` | `SpawnAgent` | Prefix | `GwpArmorySpawnPatch` | GwpFireswornArmory.cs:797 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpHallDuelSpawnEquipmentPatch` | GwpCitySearchMission.HallDuel.cs:231 |
 | `Mission` | `SpawnAgent` | Prefix | `GwpWardenTroopGenderPatch` | GwpWardenTroopGenderPatch.cs:20 |
 | `MissionCombatMechanicsHelper` | `ComputeBlowDamage` | Prefix | `GwpDualWieldDamageTypePatch` | GwpDualWieldingPatch.cs:47 |
@@ -753,7 +753,7 @@
 
 - `GwpTextCatalog.g.cs` — 1422 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1356 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpFireswornArmory.cs` — 885 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
+- `GwpFireswornArmory.cs` — 888 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
