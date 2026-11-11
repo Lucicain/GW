@@ -4,10 +4,10 @@
 	<!-- 族长：梵蒂 -->
 	<Hero id="gw_leader_0" faction="Faction.gw" />
 	
-	<!-- 家族成员 -->
-	<Hero id="gw_leader_1" faction="Faction.gw" />
-	<Hero id="gw_leader_2" faction="Faction.gw" />
-	<Hero id="gw_leader_3" faction="Faction.gw" />
-	<Hero id="gw_leader_4" faction="Faction.gw" />
-	<Hero id="gw_leader_5" faction="Faction.gw" />
+	<!-- 梵蒂收养的五位领主 -->
+	<Hero id="gw_leader_1" faction="Faction.gw" mother="Hero.gw_leader_0" />
+	<Hero id="gw_leader_2" faction="Faction.gw" mother="Hero.gw_leader_0" />
+	<Hero id="gw_leader_3" faction="Faction.gw" mother="Hero.gw_leader_0" />
+	<Hero id="gw_leader_4" faction="Faction.gw" mother="Hero.gw_leader_0" />
+	<Hero id="gw_leader_5" faction="Faction.gw" mother="Hero.gw_leader_0" />
 </Heroes>

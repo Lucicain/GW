@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,063 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,107 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -718,8 +718,8 @@
 
 ### 家族与村庄（5 个文件）
 
-- `GreyWardenVillageAdoptionBehavior.cs` — 788 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GreyWardenFamilyBehavior.cs` — 614 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GreyWardenVillageAdoptionBehavior.cs` — 789 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GreyWardenFamilyBehavior.cs` — 657 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenVillageReconstructionBehavior.cs` — 550 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
 - `GreyWardenVillageRewardBehavior.cs` — 194 行 · `GreyWardenVillageRewardBehavior` : CampaignBehaviorBase

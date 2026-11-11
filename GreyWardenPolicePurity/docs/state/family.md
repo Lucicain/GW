@@ -1,8 +1,8 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
-> 当前状态：满关系写入/锁定已取消，免费求婚保留；成年分职与后继规则保持
+> 当前状态：创始领主与收养子女接入原版家谱，内战同开新档待实测；满关系锁定已取消，免费求婚保留
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `GwpFounderVoiceRegisterPatch.cs`
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `_Module/ModuleData/heroes.xml` `GwpFounderVoiceRegisterPatch.cs`
 > 待实测：见文末
 
 家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
@@ -14,9 +14,11 @@
 
 ## 成员
 
+梵蒂开局 38 岁，是另外五位创始领主的养母。原版生成的三个开局孩子依人物编号分给约珥、弥瑟、圣铎各一位。后续村庄收养由完成善后的领主作为养亲，所有收养使用[原版父母字段](../vanilla/campaign-lifecycle.md#开局孩子与家谱)随档保存。旧档在战役早期只给仍属灰袍且没有父母记录的创始领主补上梵蒂，开局年龄来自新档模板。诊断版每次补关系写一条 `ADOPTIVE_PARENT_LINKED`，验收后退休。（依据：用户裁定 2026-11-11；三个孩子的分配为实现选择；原版 C# 核对）
+
 **创始领主外貌**
 
-族长梵蒂 `gw_leader_0` 的完整 BodyProperties 保留原样；排除[社区候选②](../reference/community-female-face-shortlist.md)，其余五款按领主编号顺序分配。（依据：用户裁定 2026-10-15；顺序分配为实现选择）
+族长梵蒂 `gw_leader_0` 沿用原脸码和体型，年龄字段按本节开局设定；排除[社区候选②](../reference/community-female-face-shortlist.md)，其余五款按领主编号顺序分配。（依据：用户裁定 2026-10-15、2026-11-11；顺序分配为实现选择）
 
 | 领主 | 使用候选 |
 |---|---|
@@ -26,7 +28,7 @@
 | 晨曦 `gw_leader_4` | ⑤原帖6号 |
 | 暮光 `gw_leader_5` | ⑥原帖7号 |
 
-已选脸码与预设weight/build沿用，保留各领主原有age。本轮只调整五人的声音位，族长完整BodyProperties仍不变；规则见本页「六人声音与性格」。外貌定义作用于新档英雄；已有英雄的 StaticBodyProperties 已存档，预览使用新档，不增加读档改脸逻辑。（依据：现行实现；C#反编译 v1.4.8 Hero 存档属性；升级范围见公共底座）
+已选脸码与预设 weight/build 沿用，声音位按本页「六人声音与性格」。外貌与初始年龄定义作用于新档英雄；已有英雄的 StaticBodyProperties 已存档，预览使用新档。（依据：现行实现；C#反编译 v1.4.8 Hero 存档属性；升级范围见公共底座）
 
 回退：取回存档 `1f84971` 的 `_Module/ModuleData/spspecialcharacters.xml` 并镜像到 live，即恢复替换前六人的定义。（依据：流程）
 
@@ -75,7 +77,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 | `gw_leader_4` | 重建 | 重建被焚村庄，见 `village-relief.md` |
 | `gw_leader_5` | 贵族事务 | 玩家的封地申诉等请求，见 `player-requests.md` |
 
-- 已知联用缺陷：内战 1.4.11 把与族长无血缘的非族长灰袍创始领主判为门客。其任命复核要求门客有封地或有效服役契约；授任未落实、也找不到合格接任者时，会撤去领袖，把原领主置为流亡，并让部队进入[原版待解散流程](../vanilla/town-scenes.md#日常换城与重新带队)。2026-11-11 15:38:25，灰袍日志以 `HERO_BECAME_FUGITIVE` 和 `PARTY_DISBAND_STARTED` 记录 `gw_leader_1` 至 `gw_leader_5` 同时进入流亡、原部队开始解散，随后的日志记录五队释放差事，族长梵蒂仍带队。内战日志直接记录约珥的撤任。（依据：本机内战及灰袍日志；安装版 `HouseholdMembership.IsRetainer` 与 `LordshipBehavior.CheckAppointment`、`Maintain` 反编译）
+- 内战 1.4.11 按父母链识别直系与有共同祖先的家人。原先同开新档时五位无亲缘的创始领主被归为门客，授任未落实时被撤下，15:38 的内战日志记录约珥撤任，灰袍日志记录五人进入流亡及原队开始解散。16:10 读入原先未启内战建立的 `save002` 后，六队仍带队。内战首次迁移旧档时承认现有任命，新档从正常任命规则开始。接入家谱后，安装版内战 DLL 的家庭判定已核对创始五人、隔代收养及更换族长；同开新档的实际撤任次数待实测。（依据：2026-11-11 日志与保存记录、安装版 `HouseholdMembership`、`LordshipBehavior`、真实 Hero 对象离线对照）
 - 新成员成年时补强仍有成年在世持有人的本职：选其中人数最少者；人数相同时按重建 → 请愿 → 护村 → 商队 → 练兵 → 贵族事务的顺序。不是优先填补人数为0的空缺。（依据：当前AssignDutyIfNeeded实现、生产方法离线复核2026-10-19）
 - 某个本职的最后一位持有人死了，这条线就断了，后来的孩子不会再补上。（依据：设计）
 - 本职名称和百科生平提示随本职变化。
@@ -117,6 +119,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 待实测
 
+- 同开内战新档看梵蒂年龄、五位养女和三个开局孩子的家谱，过首次任命复核核对六队带队。旧档补齐缺失关系后另存，连续同版读档，核对双方家谱各记一次。
 - 正常游玩中的关系变化不再被恢复100，免费求婚入口及婚后身份保持。旧档现值保留，不将取消锁定误报为已还原历史关系。
 - 新档分别会面六人，听原版配音台词的声线与口吻；百科可见各自性格，战斗叫喊按六套声音/音高组合区分。文字自写台词没有新增录音。
 - 求的是灰袍族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转。

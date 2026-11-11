@@ -1,9 +1,9 @@
 # 村庄善后、收养、重建、请愿与村民打赏
 
-> 当前状态：事务页酬谢分类/入口按用户要求撤除；原村庄打赏与收养/重建/请愿规则保持
+> 当前状态：村庄收养接入原版家谱，待实测；事务页酬谢入口已撤除
 > 最后验收：未建立检查点
 > 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs`
-> 待实测：约斗不被收养抢人；先领收养后新约斗能暂停返回；离村不计时、返回续办；暂停与待派状态存读接续，agent读取诊断核对
+> 待实测：完成收养后查看养亲及读档接续；约斗不被收养抢人；先领收养后新约斗能暂停返回；离村不计时、返回续办；暂停与待派状态存读接续，agent读取诊断核对
 
 灰袍在聚落里做的非执法差事。范围都是全大陆，不看村子归谁。谁来做、谁让谁，见 [`warden-ai.md`](warden-ai.md)。
 
@@ -18,6 +18,7 @@
   中途她被俘、部队没了，或者村子失效，善后就作废，不收养。
 - 驻留满 72 小时：如果仍能收养，收养一名 2–6 岁的女孩。
   - 以 `gw_leader_0` 为模板生成，出生地是这个村子，发童装；
+  - 完成善后的领主成为女孩的养亲，家谱和存读规则见[家族](family.md#成员)。（依据：用户裁定 2026-11-11）
   - 记一条收养日志（`GreyWardenAdoptionLogEntry`）；
   - 公库加 3,000（`CreditSuccessfulCaseCompletion`）。
   

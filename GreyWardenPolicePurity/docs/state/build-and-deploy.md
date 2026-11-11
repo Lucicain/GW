@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为 r16.2 诊断开发版，版本号 1.4.16.2，包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[领主任命的战役加载修复](city-search-support.md#已接住城案的目标留城)和[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)。诊断和隔离玩家版构建均为 0 警告，安装版 v1.4.8 兼容预检绑定 live 的 120 个补丁。Client/Editor 的 SHA-256 同为 `C3ABB208495669236FAE7705490452A9389D5C42DAA81348FCFF2EDE01D33DCB`，与离线核对过的诊断 DLL 一致，live 镜像无缺失、差异或散落。（依据：构建、部署、哈希与独立审查 2026-11-11）
+live 为 r16.2 诊断开发版，版本号 1.4.16.2，包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱](family.md#成员)。诊断和隔离玩家版构建均为 0 警告，安装版 v1.4.8 兼容预检绑定 live 的 120 个补丁，25 项工具自检与文本键核对通过。Client/Editor 的 SHA-256 同为 `F0C9196511DCD228F951F89D7D90BF34C0638F7014D88FFB068D7EEF65C074BC`，与隔离诊断 DLL 一致。`heroes.xml` 与 `spspecialcharacters.xml` 的源和 live 哈希分别一致，live 镜像无缺失、差异或散落。（依据：构建、部署、哈希与独立审查 2026-11-11）
 
 同日审计清理包含战役启动时清空不进存档的部队意图表与推迟讲和，待重试讲和表改为行为实例字段，删除无人写入的旧存档字段 `gwp_enf_war_streak_*` 与若干死代码、过期注释，押送费率收进 `GwpTuning`，玩家版诊断空壳标 `Conditional`，执法每帧回调取消无条件新建集合。跨战役清空的验收见[公共底座](infrastructure.md#待实测)。2026-11-07 部署的约斗、躲城、同城巡逻涉及的真实进城、首场结算和同版存读验收分归[野外执法](field-arrest.md)、[使者](case-envoy.md)和[搜捕支援](city-search-support.md)。
 

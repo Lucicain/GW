@@ -29,6 +29,12 @@
 `UpdateGovernorsOfClan`。因此总督分配会在新档事件期间发生，并非必须等到第一个日结。
 仅在较晚的行为监听器中清除旧状态，无法保证较早的初始化和候选检查不读到它。
 
+## 开局孩子与家谱
+
+主新档事件完成后，`CampaignEvents` 依序分发补充事件索引 0 到 99，然后分发 `OnNewGameCreatedPartialFollowUpEndEvent`。原版 `InitialChildGenerationCampaignBehavior` 在索引 0 为符合条件的非玩家家族补孩子，目标数为成年领主数的一半向上取整。它用 `HeroCreator.CreateChild` 借用人物模板生成 2 至 17 岁的英雄，指定家族和出生地。
+
+`CreateChild` 和 `CreateSpecialHero` 都可生成没有父母的英雄。静态 `Heroes` XML 中的 `mother`、`father` 由 `Hero.Deserialize` 读取。运行时写 `Hero.Mother` 或 `Hero.Father` 会同时向对应父母的 `Children` 加入孩子，重复赋值会重复加入，旧父母记录也不会由 setter 自动移除。父母和孩子列表使用原版保存字段。（依据：安装版 v1.4.8 C# 核对 2026-11-11）
+
 ## 战役模型的注册顺序
 
 各模块按[当前模块列表的加载顺序](module-loading.md#怎么运作)，依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到

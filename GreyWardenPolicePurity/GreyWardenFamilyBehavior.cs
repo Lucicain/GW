@@ -125,6 +125,8 @@ namespace GreyWardenPolicePurity
         {
             CampaignEvents.HeroCreated.AddNonSerializedListener(this, OnHeroCreated);
             CampaignEvents.OnNewGameCreatedPartialFollowUpEvent.AddNonSerializedListener(this, OnNewGameCreatedPartialFollowUp);
+            CampaignEvents.OnNewGameCreatedPartialFollowUpEndEvent.AddNonSerializedListener(this, OnInitialChildrenCreated);
+            CampaignEvents.OnGameEarlyLoadedEvent.AddNonSerializedListener(this, RestoreFounderAdoptions);
             CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, OnGameLoaded);
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
@@ -176,6 +178,47 @@ namespace GreyWardenPolicePurity
                 _dutyByHeroId.Clear();
                 RefreshPoliceClanFamilyPresentation();
             }
+        }
+
+        private static void OnInitialChildrenCreated(CampaignGameStarter starter)
+        {
+            Clan? clan = PoliceStats.GetPoliceClan();
+            if (clan == null) return;
+
+            Hero[] adopters = CoreLeaderIds.Skip(1).Select(id => Hero.Find(id))
+                .Where(hero => hero != null && hero.IsAlive && hero.Clan == clan).ToArray();
+            if (adopters.Length == 0) return;
+
+            int nextAdopter = 0;
+            foreach (Hero child in clan.Heroes.Where(hero => hero.IsChild && IsGeneratedPoliceHero(hero))
+                         .OrderBy(hero => hero.StringId, StringComparer.Ordinal))
+            {
+                if (RegisterAdoptiveParent(child, adopters[nextAdopter % adopters.Length]))
+                    nextAdopter++;
+            }
+        }
+
+        private static void RestoreFounderAdoptions(CampaignGameStarter starter)
+        {
+            Hero? vandi = Hero.Find(CoreLeaderIds[0]);
+            if (vandi == null) return;
+
+            foreach (string id in CoreLeaderIds.Skip(1))
+                if (Hero.Find(id) is { } founder && GwpCommon.IsGreyWardenClanMember(founder))
+                    RegisterAdoptiveParent(founder, vandi);
+        }
+
+        internal static bool RegisterAdoptiveParent(Hero child, Hero parent)
+        {
+            // 原版父母 setter 会把孩子加入养亲的 Children；重复写会重复登记。
+            if (child.Mother != null || child.Father != null) return false;
+
+            if (parent.IsFemale) child.Mother = parent;
+            else child.Father = parent;
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WriteHeroLifecycle(child, "ADOPTIVE_PARENT_LINKED", "parent=" + parent.StringId);
+#endif
+            return true;
         }
 
         private void OnDailyTick()

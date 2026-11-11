@@ -4,7 +4,7 @@
 		id="gw_leader_0"
 		name="{=gwp_hero_vandi}Aethelflaed"
 		voice="curt"
-		age="22" 
+		age="38"
 		is_female="true"
 		default_group="Cavalry"
 		is_hero="true"
@@ -12,7 +12,7 @@
 		skill_template="SkillSet.spc_knight_skills"
 		occupation="Lord">
 		<face>
-			<BodyProperties version="4" age="22.01" weight="0.0463" build="0.0448"  key="00057C0FC00020029673264B47856554EA72881968858A46D9A287747665557700811603083345370000000000000000000000000000000000000000210C2003"  />
+			<BodyProperties version="4" age="38" weight="0.0463" build="0.0448"  key="00057C0FC00020029673264B47856554EA72881968858A46D9A287747665557700811603083345370000000000000000000000000000000000000000210C2003"  />
 			<hair_tags><hair_tag name="empire" /></hair_tags>
 			<tattoo_tags><tattoo_tag name="Cleanface" /></tattoo_tags>
 		</face>

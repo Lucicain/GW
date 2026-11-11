@@ -486,9 +486,9 @@ namespace GreyWardenPolicePurity
 #endif
             Settlement? village = FindSettlement(relief.VillageSettlementId);
             Hero? adoptedHero = null;
-            if (shouldAdopt && village != null && IsAdoptionSystemEligible())
+            if (shouldAdopt && village != null && police?.LeaderHero is { } adopter && IsAdoptionSystemEligible())
             {
-                adoptedHero = TryCreateAdoptedGirl(village, relief.VillageName);
+                adoptedHero = TryCreateAdoptedGirl(village, relief.VillageName, adopter);
             }
 
             if (police != null && police.IsActive)
@@ -515,7 +515,7 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private Hero? TryCreateAdoptedGirl(Settlement village, string fallbackVillageName)
+        private Hero? TryCreateAdoptedGirl(Settlement village, string fallbackVillageName, Hero adopter)
         {
             Clan? policeClan = PoliceStats.GetPoliceClan();
             CharacterObject? template = CharacterObject.Find(GwpIds.CommanderTemplateCharacterId);
@@ -529,6 +529,7 @@ namespace GreyWardenPolicePurity
                 GwpTuning.Family.AdoptedGirlMaxAge + 1);
 
             Hero hero = HeroCreator.CreateSpecialHero(template, village, policeClan, null, age);
+            GreyWardenFamilyBehavior.RegisterAdoptiveParent(hero, adopter);
             hero.IsFemale = true;
             hero.BornSettlement = village;
             hero.UpdateHomeSettlement();
