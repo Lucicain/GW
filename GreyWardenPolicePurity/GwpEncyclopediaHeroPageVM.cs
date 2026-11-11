@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+#if GWP_DIAGNOSTICS
+using System.Linq;
+#endif
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
@@ -351,6 +354,21 @@ namespace GreyWardenPolicePurity
             {
                 return;
             }
+
+#if GWP_DIAGNOSTICS
+            if (heroPage.Obj is Hero hero && GwpCommon.IsGreyWardenClanMember(hero))
+            {
+                Widget? nativeFamily = GwpGauntletWidgetUtility.FindById(__result.RootWidget, "FamilyGrid");
+                Widget? bellumFamily = GwpGauntletWidgetUtility.FindById(__result.RootWidget, "BellumFamilySection");
+                string children = string.Join(",", hero.Children.Select(child => child?.StringId ?? "-"));
+                GwpAiDiagnostics.WriteHeroLifecycle(hero, "ENCYCLOPEDIA_FAMILY_VIEW",
+                    $"known={hero.IsKnownToPlayer}; hidden={heroPage.IsInformationHidden}; " +
+                    $"mother={hero.Mother?.StringId ?? "-"}; father={hero.Father?.StringId ?? "-"}; " +
+                    $"children={children}; nativeRows={heroPage.Family.Count}; " +
+                    $"nativeGridVisible={nativeFamily?.IsVisible.ToString() ?? "-"}; " +
+                    $"bellumSectionVisible={bellumFamily?.IsVisible.ToString() ?? "-"}");
+            }
+#endif
 
             Widget? scrollablePanel = GwpGauntletWidgetUtility.FindById(
                 __result.RootWidget,

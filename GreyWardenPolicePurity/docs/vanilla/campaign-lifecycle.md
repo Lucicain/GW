@@ -35,6 +35,8 @@
 
 `CreateChild` 和 `CreateSpecialHero` 都可生成没有父母的英雄。静态 `Heroes` XML 中的 `mother`、`father` 由 `Hero.Deserialize` 读取。运行时写 `Hero.Mother` 或 `Hero.Father` 会同时向对应父母的 `Children` 加入孩子，重复赋值会重复加入，旧父母记录也不会由 setter 自动移除。父母和孩子列表使用原版保存字段。（依据：安装版 v1.4.8 C# 核对 2026-11-11）
 
+人物百科 `EncyclopediaHeroPageVM` 从这些父母字段及子女列表收集亲属。页面信息可见时，符合英雄百科收录条件的亲属会显示，称谓由 `EncyclopediaFamilyMemberVM` 按同一套家谱生成。家族百科列家族成员，个人亲属称谓在人物页查看。原版对玩家还未获知详情的人物隐藏亲属区，人物页创建时读取这一状态。（依据：安装版 v1.4.8 `EncyclopediaHeroPageVM`、`DefaultInformationRestrictionModel`、`DefaultEncyclopediaHeroPage` 核对 2026-11-11）
+
 ## 战役模型的注册顺序
 
 各模块按[当前模块列表的加载顺序](module-loading.md#怎么运作)，依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到

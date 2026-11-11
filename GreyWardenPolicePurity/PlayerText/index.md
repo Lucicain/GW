@@ -152,23 +152,23 @@
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_002 | — | 宣战详情 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_003 | — | 查看灰袍守卫当前对各势力宣战的详细原因。 | 未检出直接引用；保留 |
-| gwp_gwpencyclopediaheropagevm_001 | {VAR_1}: Grey Warden criminal record and deterrence | {VAR_1} 的灰袍案底与震慑 | GwpEncyclopediaHeroPageVM.cs:63 |
-| gwp_gwpencyclopediaheropagevm_002 | Close | 关闭 | GwpEncyclopediaHeroPageVM.cs:68 |
-| gwp_gwpencyclopediaheropagevm_003 | Record and deterrence | 案底与震慑 | GwpEncyclopediaHeroPageVM.cs:36 |
-| gwp_gwpencyclopediaheropagevm_004 | View this character's permanent criminal record and current Grey Warden deterrence. | 查看此人物永久保留的犯罪案底与当前灰袍震慑。 | GwpEncyclopediaHeroPageVM.cs:38 |
-| gwp_gwpencyclopediaheropagevm_005 | No record | 无记录 | GwpEncyclopediaHeroPageVM.cs:78 |
-| gwp_gwpencyclopediaheropagevm_006 | Just | 刚刚 | GwpEncyclopediaHeroPageVM.cs:81 |
-| gwp_gwpencyclopediaheropagevm_007 | {VAR_1} hours ago | {VAR_1} 小时前 | GwpEncyclopediaHeroPageVM.cs:86 |
-| gwp_gwpencyclopediaheropagevm_008 | {VAR_1} days ago | {VAR_1} 天前 | GwpEncyclopediaHeroPageVM.cs:89 |
+| gwp_gwpencyclopediaheropagevm_001 | {VAR_1}: Grey Warden criminal record and deterrence | {VAR_1} 的灰袍案底与震慑 | GwpEncyclopediaHeroPageVM.cs:66 |
+| gwp_gwpencyclopediaheropagevm_002 | Close | 关闭 | GwpEncyclopediaHeroPageVM.cs:71 |
+| gwp_gwpencyclopediaheropagevm_003 | Record and deterrence | 案底与震慑 | GwpEncyclopediaHeroPageVM.cs:39 |
+| gwp_gwpencyclopediaheropagevm_004 | View this character's permanent criminal record and current Grey Warden deterrence. | 查看此人物永久保留的犯罪案底与当前灰袍震慑。 | GwpEncyclopediaHeroPageVM.cs:41 |
+| gwp_gwpencyclopediaheropagevm_005 | No record | 无记录 | GwpEncyclopediaHeroPageVM.cs:81 |
+| gwp_gwpencyclopediaheropagevm_006 | Just | 刚刚 | GwpEncyclopediaHeroPageVM.cs:84 |
+| gwp_gwpencyclopediaheropagevm_007 | {VAR_1} hours ago | {VAR_1} 小时前 | GwpEncyclopediaHeroPageVM.cs:89 |
+| gwp_gwpencyclopediaheropagevm_008 | {VAR_1} days ago | {VAR_1} 天前 | GwpEncyclopediaHeroPageVM.cs:92 |
 | gwp_gwpencyclopediaheropagevm_009 | — | 累计犯罪：{VAR_1} | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_010 | — | 被灰袍抓获：{VAR_1} | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_011 | — | 本人震慑：{VAR_1} | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_012 | — | 烧村欲望倍率：{VAR_1} | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_013 | — | 攻击村民欲望倍率：{VAR_1} | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_014 | — | 攻击商队欲望倍率：{VAR_1} | 未检出直接引用；保留 |
-| gwp_gwpencyclopediaheropagevm_015 | Latest enforcement: {VAR_1} | 最近一次执法：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:131 |
-| gwp_gwpencyclopediaheropagevm_016 | Map status: {VAR_1} | 大地图状态：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:132 |
-| gwp_gwpencyclopediaheropagevm_017 | Location: {VAR_1} | 所在位置：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:134 |
+| gwp_gwpencyclopediaheropagevm_015 | Latest enforcement: {VAR_1} | 最近一次执法：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:134 |
+| gwp_gwpencyclopediaheropagevm_016 | Map status: {VAR_1} | 大地图状态：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:135 |
+| gwp_gwpencyclopediaheropagevm_017 | Location: {VAR_1} | 所在位置：{VAR_1} | GwpEncyclopediaHeroPageVM.cs:137 |
 | gwp_gwppolicewarreasonservice_001 | — | 灰袍守卫 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_002 | — | {VAR_1}当前宣战详情 | 未检出直接引用；保留 |
 | gwp_gwppolicewarreasonservice_003 | — | 只有灰袍守卫家族页会显示宣战详情。 | 未检出直接引用；保留 |
@@ -806,25 +806,25 @@
 | gwp_training_ledger_assignment | Trainer: {VAR_1} &#124; {VAR_2} | 练兵官：{VAR_1} &#124; {VAR_2} | 玩家灰袍事务台账中的标题、候选地点或阶段说明；没有宗教设定冲突，保留。 |
 | gwp_training_ledger_travel | Travelling to {VAR_1} | 运往{VAR_1} | 练兵官实体运兵队；地图状态和差事台账。 |
 | gwp_training_stage_travel | Delivering veterans | 运送老兵 | 练兵官实体运兵队；地图状态和差事台账。 |
-| gwp_det_ui_record | Recorded crimes: {VAR_1} &#124; Arrested by Grey Wardens: {VAR_2} | 累计犯罪：{VAR_1} &#124; 被灰袍抓获：{VAR_2} | GwpEncyclopediaHeroPageVM.cs:107 |
-| gwp_det_ui_village_heading | Harm against villagers | 【侵害村民】 | GwpEncyclopediaHeroPageVM.cs:111 |
-| gwp_det_ui_villager_desire | Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%) | 攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%） | GwpEncyclopediaHeroPageVM.cs:112 |
-| gwp_det_ui_raid_desire | Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers) | 烧村欲望：原版的 {VAR_1}%（与攻击村民共用同一压制） | GwpEncyclopediaHeroPageVM.cs:115 |
-| gwp_det_ui_caravan_heading | Harm against caravans | 【侵害商队】 | GwpEncyclopediaHeroPageVM.cs:122 |
-| gwp_det_ui_caravan_desire | Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%) | 攻击商队欲望：原版的 {VAR_1}%（已压制 {VAR_2}%） | GwpEncyclopediaHeroPageVM.cs:123 |
-| gwp_det_ui_source | Source of suppression: personal {VAR_1} &#124; passed on {VAR_2} ({VAR_3}) | 压制来源：本人 {VAR_1} &#124; 他人传递 {VAR_2}（{VAR_3}） | GwpEncyclopediaHeroPageVM.cs:210 |
-| gwp_det_ui_source_personal | mainly personal experience | 本人经历为主 | GwpEncyclopediaHeroPageVM.cs:201 |
-| gwp_det_ui_source_transmitted | mainly warnings passed on by clan members or witnesses | 族人转述或亲眼目击为主 | GwpEncyclopediaHeroPageVM.cs:203 |
-| gwp_det_ui_source_none | no active deterrence | 当前没有有效压制 | GwpEncyclopediaHeroPageVM.cs:206 |
-| gwp_det_ui_source_balanced | personal experience and passed-on warnings are similar | 本人经历与他人传递接近 | GwpEncyclopediaHeroPageVM.cs:207 |
-| gwp_det_ui_recovery_complete | Estimated return to normal: already restored | 预计恢复原状：已经恢复 | GwpEncyclopediaHeroPageVM.cs:243 |
-| gwp_det_ui_recovery_hours | {VAR_1} hours | {VAR_1} 小时 | GwpEncyclopediaHeroPageVM.cs:259 |
-| gwp_det_ui_recovery_days | {VAR_1} days | {VAR_1} 天 | GwpEncyclopediaHeroPageVM.cs:263 |
-| gwp_det_ui_recovery_paused | Estimated return to normal: recovery is currently paused; about {VAR_1} after it resumes | 预计恢复原状：当前暂停恢复；恢复后约需 {VAR_1} | GwpEncyclopediaHeroPageVM.cs:249 |
-| gwp_det_ui_recovery_active | Estimated return to normal: about {VAR_1} | 预计恢复原状：约 {VAR_1} | GwpEncyclopediaHeroPageVM.cs:252 |
-| gwp_det_ui_recovery_floor_complete | Minimum suppression: permanently fixed at level {VAR_1} | 最低压制：永久固定为 {VAR_1} 级 | GwpEncyclopediaHeroPageVM.cs:228 |
-| gwp_det_ui_recovery_floor_paused | Estimated recovery to the level-{VAR_1} minimum: recovery is currently paused; about {VAR_2} after it resumes | 预计恢复至最低压制 {VAR_1} 级：当前暂停恢复；恢复后约需 {VAR_2} | GwpEncyclopediaHeroPageVM.cs:234 |
-| gwp_det_ui_recovery_floor_active | Estimated recovery to the level-{VAR_1} minimum: about {VAR_2} | 预计恢复至最低压制 {VAR_1} 级：约 {VAR_2} | GwpEncyclopediaHeroPageVM.cs:237 |
+| gwp_det_ui_record | Recorded crimes: {VAR_1} &#124; Arrested by Grey Wardens: {VAR_2} | 累计犯罪：{VAR_1} &#124; 被灰袍抓获：{VAR_2} | GwpEncyclopediaHeroPageVM.cs:110 |
+| gwp_det_ui_village_heading | Harm against villagers | 【侵害村民】 | GwpEncyclopediaHeroPageVM.cs:114 |
+| gwp_det_ui_villager_desire | Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%) | 攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%） | GwpEncyclopediaHeroPageVM.cs:115 |
+| gwp_det_ui_raid_desire | Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers) | 烧村欲望：原版的 {VAR_1}%（与攻击村民共用同一压制） | GwpEncyclopediaHeroPageVM.cs:118 |
+| gwp_det_ui_caravan_heading | Harm against caravans | 【侵害商队】 | GwpEncyclopediaHeroPageVM.cs:125 |
+| gwp_det_ui_caravan_desire | Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%) | 攻击商队欲望：原版的 {VAR_1}%（已压制 {VAR_2}%） | GwpEncyclopediaHeroPageVM.cs:126 |
+| gwp_det_ui_source | Source of suppression: personal {VAR_1} &#124; passed on {VAR_2} ({VAR_3}) | 压制来源：本人 {VAR_1} &#124; 他人传递 {VAR_2}（{VAR_3}） | GwpEncyclopediaHeroPageVM.cs:213 |
+| gwp_det_ui_source_personal | mainly personal experience | 本人经历为主 | GwpEncyclopediaHeroPageVM.cs:204 |
+| gwp_det_ui_source_transmitted | mainly warnings passed on by clan members or witnesses | 族人转述或亲眼目击为主 | GwpEncyclopediaHeroPageVM.cs:206 |
+| gwp_det_ui_source_none | no active deterrence | 当前没有有效压制 | GwpEncyclopediaHeroPageVM.cs:209 |
+| gwp_det_ui_source_balanced | personal experience and passed-on warnings are similar | 本人经历与他人传递接近 | GwpEncyclopediaHeroPageVM.cs:210 |
+| gwp_det_ui_recovery_complete | Estimated return to normal: already restored | 预计恢复原状：已经恢复 | GwpEncyclopediaHeroPageVM.cs:246 |
+| gwp_det_ui_recovery_hours | {VAR_1} hours | {VAR_1} 小时 | GwpEncyclopediaHeroPageVM.cs:262 |
+| gwp_det_ui_recovery_days | {VAR_1} days | {VAR_1} 天 | GwpEncyclopediaHeroPageVM.cs:266 |
+| gwp_det_ui_recovery_paused | Estimated return to normal: recovery is currently paused; about {VAR_1} after it resumes | 预计恢复原状：当前暂停恢复；恢复后约需 {VAR_1} | GwpEncyclopediaHeroPageVM.cs:252 |
+| gwp_det_ui_recovery_active | Estimated return to normal: about {VAR_1} | 预计恢复原状：约 {VAR_1} | GwpEncyclopediaHeroPageVM.cs:255 |
+| gwp_det_ui_recovery_floor_complete | Minimum suppression: permanently fixed at level {VAR_1} | 最低压制：永久固定为 {VAR_1} 级 | GwpEncyclopediaHeroPageVM.cs:231 |
+| gwp_det_ui_recovery_floor_paused | Estimated recovery to the level-{VAR_1} minimum: recovery is currently paused; about {VAR_2} after it resumes | 预计恢复至最低压制 {VAR_1} 级：当前暂停恢复；恢复后约需 {VAR_2} | GwpEncyclopediaHeroPageVM.cs:237 |
+| gwp_det_ui_recovery_floor_active | Estimated recovery to the level-{VAR_1} minimum: about {VAR_2} | 预计恢复至最低压制 {VAR_1} 级：约 {VAR_2} | GwpEncyclopediaHeroPageVM.cs:240 |
 | gwp_fief_reconsideration_title | Petition to reconsider {SETTLEMENT_NAME} | 重新审议{SETTLEMENT_NAME}的归属 | GwpSettlementReconsiderationDecision.cs:44 |
 | gwp_fief_reconsideration_support | The Grey Wardens have presented a popular petition. The council will reconsider who should hold {SETTLEMENT_NAME}. | 灰袍已递交民间请愿，议会将重新审议谁应拥有{SETTLEMENT_NAME}。 | GwpSettlementReconsiderationDecision.cs:54 |
 | gwp_fief_appeal_file | I wish to file a petition for reconsideration of a fief. | 我想为一块封地申请重新审议。 | GreyWardenPlayerRequestBehavior.cs:227 |
@@ -1001,12 +1001,12 @@
 | gwp_report_result_clean | — | {VAR_1}，账平了。灰袍谢你。 | 未检出直接引用；保留 |
 | gwp_report_short | — | 卷宗写的是 {VAR_1}，你交上来 {VAR_2}。灰袍声望 {VAR_3}。 | 未检出直接引用；保留 |
 | gwp_report_exposed | — | 灰袍拿下了 {VAR_1}，他的钱袋和你当初说的对不上。灰袍声望 {VAR_2}。 | 未检出直接引用；保留 |
-| gwp_det_ui_ledger_clean | Grey Warden account: nothing outstanding. | 灰袍账目：没有未清的账。 | GwpEncyclopediaHeroPageVM.cs:160 |
-| gwp_det_ui_ledger_heading | Grey Warden account | 灰袍账目 | GwpEncyclopediaHeroPageVM.cs:165 |
-| gwp_det_ui_ledger_case | Open case: {VAR_1} deed(s), {VAR_2} dead on this case alone. | 未结案件：{VAR_1} 起；仅这件案子就死了 {VAR_2} 人。 | GwpEncyclopediaHeroPageVM.cs:171 |
-| gwp_det_ui_ledger_standing_lives | Civilian lives still on his record: {VAR_1}. | 尚未赎清的人命：{VAR_1} 条。 | GwpEncyclopediaHeroPageVM.cs:184 |
-| gwp_det_ui_ledger_total | Owed in full: {VAR_1} denars. | 合计应缴：{VAR_1} 第纳尔。 | GwpEncyclopediaHeroPageVM.cs:189 |
-| gwp_det_ui_ledger_no_case | No case is open against him, but the charge for the dead stands until it is paid off or he is taken. | 目前没有正在追捕的案件；若有待交付的罚金，交账后才会抵扣欠款。剿匪赎过也可能减少负声望。 | GwpEncyclopediaHeroPageVM.cs:193 |
+| gwp_det_ui_ledger_clean | Grey Warden account: nothing outstanding. | 灰袍账目：没有未清的账。 | GwpEncyclopediaHeroPageVM.cs:163 |
+| gwp_det_ui_ledger_heading | Grey Warden account | 灰袍账目 | GwpEncyclopediaHeroPageVM.cs:168 |
+| gwp_det_ui_ledger_case | Open case: {VAR_1} deed(s), {VAR_2} dead on this case alone. | 未结案件：{VAR_1} 起；仅这件案子就死了 {VAR_2} 人。 | GwpEncyclopediaHeroPageVM.cs:174 |
+| gwp_det_ui_ledger_standing_lives | Civilian lives still on his record: {VAR_1}. | 尚未赎清的人命：{VAR_1} 条。 | GwpEncyclopediaHeroPageVM.cs:187 |
+| gwp_det_ui_ledger_total | Owed in full: {VAR_1} denars. | 合计应缴：{VAR_1} 第纳尔。 | GwpEncyclopediaHeroPageVM.cs:192 |
+| gwp_det_ui_ledger_no_case | No case is open against him, but the charge for the dead stands until it is paid off or he is taken. | 目前没有正在追捕的案件；若有待交付的罚金，交账后才会抵扣欠款。剿匪赎过也可能减少负声望。 | GwpEncyclopediaHeroPageVM.cs:196 |
 | gwp_case_payment | Case fines delivered to the judicial treasury | 向灰袍司法公库上缴罚金 | GwpFieldFineBarterable.cs:28 |
 | gwp_case_captive_ready | You hold the target captive. Deliver him to any Warden lord to collect the reward. | 目标已被你俘获。将他押交任意一位灰袍领主即可领取赏金。 | PlayerBountyBehavior.CaseSettlement.cs:419 |
 | gwp_case_closed_elsewhere | Your commission concerning {VAR_1} has been withdrawn. Report to a Grey Warden lord in person or send a messenger. | 关于{VAR_1}的委托已撤回。请向灰袍领主复命，或派使者代为回报。 | PlayerBountyBehavior.CaseSettlement.cs:270 |
@@ -1037,7 +1037,7 @@
 | gwp_fa_payment_terms_charm | — | 你已经认了这件事。把它妥善了结，我们也就不必为此交战。 | 未检出直接引用；保留 |
 | gwp_fa_payment_terms_rogue | — | 你少交的钱，要我回去担责。我不会替你背这笔账。 | 未检出直接引用；保留 |
 | gwp_fa_payment_terms_trade | — | 缴清后，我交账时能替你抵清这笔欠款。只交一部分，余下的还记在你名下。 | 未检出直接引用；保留 |
-| gwp_case_pending_encyclopedia | Fine assessed: {VAR_1} denars. Paid by the offender: {VAR_2}. | 本次罚金：{VAR_1} 第纳尔。犯人已缴：{VAR_2} 第纳尔。 | GwpEncyclopediaHeroPageVM.cs:177 |
+| gwp_case_pending_encyclopedia | Fine assessed: {VAR_1} denars. Paid by the offender: {VAR_2}. | 本次罚金：{VAR_1} 第纳尔。犯人已缴：{VAR_2} 第纳尔。 | GwpEncyclopediaHeroPageVM.cs:180 |
 | gwp_case_duel_post_win | You won. I accept it. Inspect my property and let us settle the fine as agreed. | 你赢了，我认。照约定，看看我的财物，把罚金结清吧。 | GreyWardenSparringBehavior.cs:89 |
 | gwp_case_duel_post_loss | You lost. As agreed, you collect no fine from me today. | 你输了。按约定，今天你不能向我收这笔罚金。 | GreyWardenSparringBehavior.cs:97 |
 | gwp_case_duel_post_reply | I will report the outcome to the Grey Wardens. | 我会把结果向灰袍回报。 | GreyWardenSparringBehavior.cs:100 |
