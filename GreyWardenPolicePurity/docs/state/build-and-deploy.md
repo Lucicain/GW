@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为诊断开发版，版本号 1.4.16.0。2026-11-11 最新部署修复了[内战模组后加载时守村补兵的类型异常](firesworn-villages.md#信众户与守村队)。诊断和隔离玩家版构建均为 0 警告，46 项纯规则、25 项工具自检通过，安装版 v1.4.8 兼容预检分别绑定 120 和 115 个补丁。Client/Editor 的 SHA-256 同为 `CA45E5E958DAD902B686A86B132A85493F0FE8A5DB562FD6612DB366FB4A03AE`，live 镜像无缺失、差异或散落。独立审查无阻断问题。（依据：构建、部署、哈希与独立审查 2026-11-11）
+live 为 r16.2 诊断开发版，版本号 1.4.16.2，源码存档 `55fd717`。2026-11-11 同步中英 README 并重新构建，包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)。诊断和隔离玩家版构建均为 0 警告，46 项纯规则、25 项工具自检和文本键核对通过，安装版 v1.4.8 兼容预检分别绑定 120 和 115 个补丁。Client/Editor 的 SHA-256 同为 `5D042AFA1BD1182A4AC06C364FCE0BCCFFF2E12B5858E5599B6F771DB6212D09`，live 镜像无缺失、差异或散落。发版说明经独立审查后修订。（依据：构建、部署、哈希与独立审查 2026-11-11）
 
 同日审计清理包含战役启动时清空不进存档的部队意图表与推迟讲和，待重试讲和表改为行为实例字段，删除无人写入的旧存档字段 `gwp_enf_war_streak_*` 与若干死代码、过期注释，押送费率收进 `GwpTuning`，玩家版诊断空壳标 `Conditional`，执法每帧回调取消无条件新建集合。跨战役清空的验收见[公共底座](infrastructure.md#待实测)。2026-11-07 部署的约斗、躲城、同城巡逻涉及的真实进城、首场结算和同版存读验收分归[野外执法](field-arrest.md)、[使者](case-envoy.md)和[搜捕支援](city-search-support.md)。
 
@@ -166,9 +166,12 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 ## 已发布版本与下一版的对比基线
 
-- 最新正式版为 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本1.4.16），2026-10-29发布并设为latest；tag指向`fc87267`。**下一版的玩家说明对比`v1.4-r16`。**（依据：用户批准推送与发布、远端Release与tag核验2026-10-29）
-- 上一正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
+- 最新正式版为 [v1.4-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)（模组版本 1.4.16.2），2026-11-11 发布并设为 latest。tag 指向 `55fd717`。**下一版的玩家说明对比 `v1.4-r16.2`。**（依据：用户要求发版、远端 Release 与 tag 核验 2026-11-11）
+- 上一正式版 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本 1.4.16），2026-10-29 发布，tag 指向 `fc87267`。
+- 较早正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
 
 ## 当前正式玩家包
 
-v1.4-r16 正式包：78 项，ZIP 442,793,008 字节，SHA-256 `5e31041dbda8babd3c687bbed270c9f881887fcfb21f1b2a1204646aa28eef91`；玩家DLL `1C0C2FCA22E3C9AB2AD8BAAEBF6D7616DF3CF01C72AFF92C17354C4D6D18107D` 为隔离无诊断构建，五组监控标记双编码全无，兼容检查PASS（109条补丁）。Release 只有 ZIP 与 SHA256 两项附件；从 GitHub 重新下载后字节数、哈希、逐项清单与监控串复核一致。游戏Modules目录只留r16一对包。在`build-check`目录下直接加载DLL会被Windows PowerShell 5.1拒绝（0x80131515），兼容检查改用临时目录副本。核验证据在 `build-check/package-v1.4-r16/`。（依据：发布与重新下载核验2026-10-29）
+v1.4-r16.2 正式包有 78 项，ZIP 为 442,780,824 字节，SHA-256 `6fd4e11ad37fb7389c0cc93ae1272bb4cad429caf800e01882eb7fd621064b91`。隔离玩家 DLL 的 SHA-256 为 `12F3B7506517D4CA978CCFBF17ACD64F4A2070E47D8C322533DA519E1C3B5230`。安装版 v1.4.8 兼容预检通过，115 个补丁成功绑定。Release 附件为 ZIP 与 SHA-256 校验文件。从 GitHub 重新下载后，字节数、哈希、逐项清单与诊断标记双编码复核通过，中英 README 与本机一致。游戏 Modules 目录只留 r16.2 一对包。核验证据在 `build-check/package-v1.4-r16.2/`。（依据：发布与重新下载核验 2026-11-11）
+
+Windows PowerShell 5.1 直接加载 `build-check` 目录中的 DLL 曾报 0x80131515，兼容预检使用本机临时隔离目录的构建产物。
