@@ -166,12 +166,12 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 ## 已发布版本与下一版的对比基线
 
-- 最新正式版为 [v1.4-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)（模组版本 1.4.16.2），2026-11-11 发布并设为 latest。tag 指向 `55fd717`。**下一版的玩家说明对比 `v1.4-r16.2`。**（依据：用户要求发版、远端 Release 与 tag 核验 2026-11-11）
+- 最新正式版为 v1.4-r16.2（模组版本 1.4.16.2），2026-11-11 同号重发并设为 latest。发布页和下载地址沿用 `v1.4-r16.2`，首发 tag 指向 `55fd717`，修复包源码 tag `v1.4-r16.2-refresh` 指向 `9505b6d`。**下一版的玩家说明对比 `v1.4-r16.2-refresh`。**（依据：用户要求同号重发、远端 Release 与 tag 核验 2026-11-11） [GitHub 发布页](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)
 - 上一正式版 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本 1.4.16），2026-10-29 发布，tag 指向 `fc87267`。
 - 较早正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
 
 ## 当前正式玩家包
 
-v1.4-r16.2 正式包有 78 项，ZIP 为 442,780,824 字节，SHA-256 `6fd4e11ad37fb7389c0cc93ae1272bb4cad429caf800e01882eb7fd621064b91`。隔离玩家 DLL 的 SHA-256 为 `12F3B7506517D4CA978CCFBF17ACD64F4A2070E47D8C322533DA519E1C3B5230`。安装版 v1.4.8 兼容预检通过，115 个补丁成功绑定。Release 附件为 ZIP 与 SHA-256 校验文件。从 GitHub 重新下载后，字节数、哈希、逐项清单与诊断标记双编码复核通过，中英 README 与本机一致。游戏 Modules 目录只留 r16.2 一对包。核验证据在 `build-check/package-v1.4-r16.2/`。（依据：发布与重新下载核验 2026-11-11）
+v1.4-r16.2 修复包有 78 项，ZIP 为 442,781,486 字节，SHA-256 `ca14af3401e95d6725139c0cd94c666c11147cb61502e8821e891d697667d00f`。隔离玩家 DLL 的 SHA-256 为 `17F2BDFAC33D6935D2E9EA1EAC82C048DEE355AEFB6C69233D051DEEA784D5E3`。安装版 v1.4.8 兼容预检通过，115 个补丁成功绑定。Release 附件已换为修复版 ZIP 与 SHA-256 校验文件。从公开下载地址重新取包，字节数、哈希、78 项逐项清单与诊断标记双编码复核通过，两份 README 与 live 一致。游戏 Modules 目录只留这对包。核验证据在 `build-check/package-v1.4-r16.2/`，首发包核验证据在 `build-check/package-v1.4-r16.2-original/`。（依据：发布与重新下载核验 2026-11-11）
 
 Windows PowerShell 5.1 直接加载 `build-check` 目录中的 DLL 曾报 0x80131515，兼容预检使用本机临时隔离目录的构建产物。
