@@ -51,7 +51,7 @@ live 为诊断开发版，版本号 1.4.16.0。2026-11-11 最新部署修复了[
 - `DeployToLiveModule=false` 时输出隔离到 `bin\<Configuration>\isolated\`；
   命令行显式 `OutputPath` 优先。
 - `GameFolder` = `D:\steam\steamapps\common\Mount & Blade II Bannerlord`。
-- `<Version>` 是模组修订号（`1.4.12` ↔ 正式 `v1.4-r12`），**不是 Bannerlord 版本
+- `<Version>` 是模组修订号（`1.4.16.2` ↔ 正式 `v1.4-r16.2`），**不是 Bannerlord 版本
   依赖闸门**。
 
 ### 游戏世代检测

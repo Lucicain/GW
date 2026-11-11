@@ -23,8 +23,8 @@ def digest(handle):
 
 
 def build(binary, label, output):
-    if not re.fullmatch(r"v\d+\.\d+-r\d+", label):
-        raise ValueError("Expected a version label such as v1.4-r15")
+    if not re.fullmatch(r"v\d+\.\d+-r\d+(?:\.\d+)?", label):
+        raise ValueError("Expected a version label such as v1.4-r16 or v1.4-r16.2")
     data = binary.read_bytes()
     for marker in MARKERS:
         if marker.encode("ascii") in data or marker.encode("utf-16-le") in data:

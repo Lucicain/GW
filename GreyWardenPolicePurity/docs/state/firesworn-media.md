@@ -57,7 +57,6 @@
 
 ## 回退
 
-
 仪式媒体修复前存档为 `a1d6479`：取回 `GwpFireswornArt.cs`、`GwpFireswornMenus.cs`、
 `_Module/ModuleData/module_sounds.xml`、两张仪式 PNG 与两段 OGG，移除 `GwpFireswornSoundView.cs`、
 `GwpRitualSoundOutput.cs` 与两段 WAV，构建、同步 live 并比哈希；不涉及存档数据。

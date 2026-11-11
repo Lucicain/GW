@@ -140,7 +140,6 @@ cd ../BannerlordSource/v1.4.8 && codegraph explore "MissionAgentSpawnLogic 增�
 
 `tools/Check-StateFreshness.py` 会列出没有标依据的硬规则。
 
-
 ## 局部规则与真实战役的证据边界
 
 通用测试桥已于 2026-11-06 退休。当前验证路线以 [workflow](../state/workflow.md#验证如何选) 为准：直接执行生产纯规则不等于模拟游戏，正常游玩的现场用于集成取证；下面的分级用于说明证据能力，不要求重新建设完整战役宿主。

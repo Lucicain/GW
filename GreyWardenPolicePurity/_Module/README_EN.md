@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent religious order descended from the Imperial church to Mount & Blade II: Bannerlord. Its members protect civilians, pursue raiders, support villages and train successors. Village priests and believers provide recruits and supplies. Players can face the Wardens for their crimes, or earn their trust, join the order and take commissions.
 
-This guide describes v1.4-r16 (2026-10-28) for Bannerlord 1.4.8. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
+This guide describes v1.4-r16.2 (2026-11-11) for Bannerlord 1.4.8. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
 中文：README.md
 
 ## Main features
@@ -13,7 +13,7 @@ This guide describes v1.4-r16 (2026-10-28) for Bannerlord 1.4.8. Release package
 - Players can earn reputation by protecting civilians and helping the Wardens. Membership grants access to commissions, troop orders, battlefield support and fief appeals.
 - When a target hides in a town or castle, you can lead troops in to search for them: get past the watch, negotiate, duel or brawl in the lord's hall, then take them out of the settlement. You can also ask the Wardens for a black-armoured case team to come along.
 - The mod includes a Warden troop tree, black-and-gold equipment, warhorses, shields, dual blades, kicks, shield bashes and sparring. Wardens fight without routing and have their own battle music.
-- The training lord sends healthy veterans to villages. Player troop orders are paid when placed and delivered by the training lord when ready. An order messenger carries the order and payment, not the trained soldiers.
+- Player troop orders are paid when placed and delivered by the training lord when ready. An order messenger carries the order and payment, not the trained soldiers.
 - At 20 Warden reputation, a recruitment messenger comes to invite you. Members can talk to Warden soldiers in their party and send them on errands. New commissions require membership, at least 20 reputation and a Warden duty standard equipped in the banner slot. Unequipping it disables new commissions; existing work continues. Choose cases in Affairs; periodic commission offers have been removed.
 - The map-bar Affairs button requires membership and 20 reputation. The Warden clan's encyclopedia page also has a browsing entrance for non-members; browsing grants no membership or commission rights.
 - In Duties, cases appear first and are sorted by the offender's current distance from the player. Rows show offender and assignee portraits. Select a case to see the estimated case fee, current location and strength. The case fee is separate from the fine.
@@ -34,9 +34,23 @@ This guide describes v1.4-r16 (2026-10-28) for Bannerlord 1.4.8. Release package
 2. Extract the complete GreyWarden folder into the game's Modules directory.
 3. Enable GreyWarden in the launcher.
 
-Start a new campaign for this release. Saves are not supported across versions. Replace the complete module when updating.
-
 ## Changelog
+
+### 2026-11-11 v1.4-r16.2 (Bannerlord 1.4.8)
+
+#### Additions and changes
+
+- Offenders have more ways to respond in negotiations based on their personality. They may pay extra, name their own price, retreat to a settlement with their troops, or pay in full and lead a party to rebuild a village.
+- An offender who agrees to surrender to an envoy can lead their party back to a settlement in their own realm before handing themselves over.
+
+#### Fixes
+
+- Fixed a mod compatibility error.
+- Fixed an error when smelting paired blades.
+- Fixed arranged duels that stayed open after the winner was decided, and parties that kept patrolling outside their duel venue.
+- Fixed targets leaving a settlement after a city search was accepted, and case teams sometimes heading to the wrong settlement.
+- Fixed party assignments and pending peace requests carrying into a new campaign after returning to the main menu.
+- Fixed repeated notifications when a fine was refused.
 
 ### 2026-10-28 v1.4-r16 (Bannerlord 1.4.8)
 
@@ -66,32 +80,6 @@ Compared with v1.4-r15 (2026-10-17):
 - Fixed handovers starting before boarding or landing had finished; courier and envoy handovers between sea and land are more reliable.
 - Ordinary pursuits keep sending replacement interceptors after a detachment is lost; other existing soldiers fill in when healthy cavalry are short.
 - Recalibrated battle music volume.
-
-### 2026-10-17 v1.4-r15 (Bannerlord 1.4.8)
-
-Compared with v1.4-r14 (the replacement package dated 2026-10-07):
-
-#### Additions and changes
-
-- Warden priests preach, gather believers to defend villages and hold assemblies and executions by fire. Ceremonies include illustrations, sound and village smoke. Zealots now wear pilgrim, monk and ascetic clothing.
-- Believers donate money and goods, receive prisoners and equipment, and maintain village armories. Established priests build up village guards; Warden lords visit to recruit, deliver supplies and tend the wounded.
-- Villager parties recruit Warden troops in proportion to the village's believers and exchange them for veterans from the village guard. Villages can transfer soldiers, prisoners and equipment; villager parties take surplus goods to town.
-- Armories issue equipment to senior troops first. Light infantry and higher ranks keep their existing kit and fill empty slots; recruits and zealots can replace their gear. Surplus horses, cloaks and equipment are sold.
-- The training lord sends healthy, fully trained veterans and surplus equipment to villages in smaller groups.
-- Wardens send envoys before pursuing a case. Offenders may pay, request time, propose a tournament duel or surrender. An envoy already on the road finishes the negotiation.
-- Criminal records stay with the offender. Defeat, capture or temporarily losing a party does not erase outstanding guilt; pursuit can resume when the offender returns.
-- Against strong opponents, Wardens call allies who can arrive in time. The lead Warden follows the offender while allies gather, waits when nearby enemies are too strong, and can follow an offender into a settlement.
-- Villages with more believers are less attractive targets for raids, alongside the Wardens' existing deterrence.
-- Equip the Warden duty standard to take new commissions and display the order's black-and-gold emblem; unequip it to restore your own. Commissions can be taken from Grey Warden Affairs. Leaving returns the standard; rejoining grants a standard without another full equipment set.
-- Warden lords wear religious civilian clothing in towns and castles. Five founders have new faces, the clan leader retains her face, and all six have distinct voices and personalities.
-- Warden lords retain their combat abilities with ordinary weapons, shields and mounts, including actual tournament fights.
-- The order has a new gold bird emblem on a black field, a ceremonial duty standard, varied horse coats, adjusted helmet face openings and updated cloth.
-- Revised descriptions and dialogue for the order, priests and believers. Arranged duels, local requests and relief duties are handled in turn, with paused work resuming afterward.
-
-#### Fixes
-
-- Atonement commissions at negative reputation allow negotiation and completion; Warden envoys no longer intervene in a case already assigned to the player.
-- Improved temporary-party reunions, borrowed-ship returns and transfers of wounded troops and experience.
 
 ## Contact
 
